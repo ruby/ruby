@@ -1,3 +1,10 @@
+Fri Sep 19 01:00:48 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/log.rb (BasicLog#log): get rid of as ineffectual
+	  condition.
+
+	* lib/webrick/log.rb (BasicLog#format): add "\n" to message.
+
 Thu Sep 18 22:43:20 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (proc_invoke): should push PROT_PCALL tag for orphans.

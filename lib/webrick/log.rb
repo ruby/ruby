@@ -36,10 +36,8 @@ module WEBrick
 
     def log(level, data)
       if @log && level <= @level
-        if /\n\Z/ != data
-          @log << data
-          @log << "\n" if /\n\Z/ !~ data
-        end
+        data += "\n" if /\n\Z/ !~ data
+        @log << data
       end
     end
 
@@ -64,7 +62,7 @@ module WEBrick
     def format(arg)
       str = if arg.is_a?(Exception)
         "#{arg.class}: #{arg.message}\n\t" <<
-        arg.backtrace.join("\n\t")
+        arg.backtrace.join("\n\t") << "\n"
       elsif arg.respond_to?(:to_str)
         arg.to_str
       else
