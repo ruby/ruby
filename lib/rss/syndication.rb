@@ -13,8 +13,10 @@ module RSS
 		
 		ELEMENTS = []
 		
-		def self.included(mod)
-			mod.module_eval(<<-EOC)
+		def self.append_features(klass)
+			super
+			
+			klass.module_eval(<<-EOC)
 				%w(updatePeriod updateFrequency).each do |x|
 					install_text_element("\#{SY_PREFIX}_\#{x}")
 				end

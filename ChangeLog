@@ -1,3 +1,10 @@
+Mon Jul  5 23:56:42 2004  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/{trackback,syndication,dublincore,content}.rb: worked
+	  with ruby 1.6 again.
+
+	* test/rss/rss-assertions.rb: ditto.
+
 Mon Jul  5 22:54:39 2004  Tanaka Akira  <akr@m17n.org>
 
 	* lib/uri/common.rb (Kernel#URI): new global method for parsing URIs.
