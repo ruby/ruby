@@ -1026,43 +1026,47 @@ socks_s_close(sock)
 #endif
 
 static VALUE
-make_hostent(addr, ipaddr)
-    struct addrinfo *addr;
+sock_gethostbyname(host, ipaddr)
+    VALUE host;
     VALUE (*ipaddr) _((struct sockaddr*, size_t));
 {
+    struct addrinfo *addr;
     struct addrinfo *ai;
     struct hostent *h;
     VALUE ary, names;
+    char *hostname;
     char **pch;
 
+    addr = sock_addrinfo(host, Qnil, SOCK_STREAM, AI_CANONNAME);
     ary = rb_ary_new();
     if (addr->ai_canonname) {
-	rb_ary_push(ary, rb_str_new2(addr->ai_canonname));
+	hostname = addr->ai_canonname;
     }
     else {
-	rb_ary_push(ary, Qnil);
+	hostname = StringValuePtr(host);
     }
-    if (addr->ai_canonname) {
+    rb_ary_push(ary, rb_str_new2(hostname));
 #if defined(HAVE_GETIPNODEBYNAME)
+    {
 	int error;
 
-	h = getipnodebyname(addr->ai_canonname, addr->ai_family, AI_ALL, &error);
+	h = getipnodebyname(hostname, addr->ai_family, AI_ALL, &error);
+    }
 #elif defined(HAVE_GETHOSTBYNAME2)
-	h = gethostbyname2(addr->ai_canonname, addr->ai_family);
+    h = gethostbyname2(hostname, addr->ai_family);
 #else
-	h = gethostbyname(addr->ai_canonname);
+    h = gethostbyname(hostname);
 #endif
-	if (h) {
-	    names = rb_ary_new();
-	    if (h->h_aliases != NULL) {
-		for (pch = h->h_aliases; *pch; pch++) {
-		    rb_ary_push(names, rb_str_new2(*pch));
-		}
+    if (h) {
+	names = rb_ary_new();
+	if (h->h_aliases != NULL) {
+	    for (pch = h->h_aliases; *pch; pch++) {
+		rb_ary_push(names, rb_str_new2(*pch));
 	    }
-#if defined(HAVE_GETIPNODEBYNAME)
-	    freehostent(h);
-#endif
 	}
+#if defined(HAVE_GETIPNODEBYNAME)
+	freehostent(h);
+#endif
     }
     else {
 	names = rb_ary_new2(0);
@@ -1089,7 +1093,7 @@ tcp_s_gethostbyname(obj, host)
     VALUE obj, host;
 {
     rb_secure(3);
-    return make_hostent(sock_addrinfo(host, Qnil, SOCK_STREAM, AI_CANONNAME), tcp_sockaddr);
+    return sock_gethostbyname(host, tcp_sockaddr);
 }
 
 static VALUE
@@ -1981,6 +1985,9 @@ make_addrinfo(res0)
     base = rb_ary_new();
     for (res = res0; res; res = res->ai_next) {
 	ary = ipaddr(res->ai_addr);
+	if (res->ai_canonname) {
+	    RARRAY(ary)->ptr[2] = rb_str_new2(res->ai_canonname);
+	}
 	rb_ary_push(ary, INT2FIX(res->ai_family));
 	rb_ary_push(ary, INT2FIX(res->ai_socktype));
 	rb_ary_push(ary, INT2FIX(res->ai_protocol));
@@ -2002,7 +2009,7 @@ sock_s_gethostbyname(obj, host)
     VALUE obj, host;
 {
     rb_secure(3);
-    return make_hostent(sock_addrinfo(host, Qnil, SOCK_STREAM, AI_CANONNAME), sock_sockaddr);
+    return sock_gethostbyname(host, sock_sockaddr);
 }
 
 static VALUE

@@ -1,3 +1,8 @@
+Thu Jan 22 01:46:32 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (newline_node): do not use NODE_NEWLINE node anymore,
+	  use NEWLINE flag instead.
+
 Thu Jan 22 01:12:12 2004  Siena.  <siena@faculty.chiba-u.jp>
 
 	* missing/os2.c (chdir, getcwd):
@@ -57,6 +62,14 @@ Wed Jan 21 16:01:26 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/digest/rmd160/extconf.rb: have_library appends found library.
 
+Wed Jan 21 11:36:00 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (sock_gethostbyname): returns host if
+	  ai_canonname is NULL. (ruby-bugs PR#1243)
+
+	* parse.y (block_append): update nd_end for "real" head node.
+	  [ruby-list:39058]
+
 Tue Jan 20 14:48:28 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/extconf.rb: should check <openssl/conf_api.h> instead
@@ -84,6 +97,11 @@ Tue Jan 20 04:41:58 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_marshal.rb (MarshalTestLibtest_singleton): test
 	  for [ruby-dev:22588].
+
+Tue Jan 20 02:38:13 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (w_class): should not dump singleton class.
+	  [ruby-dev:22631]
 
 Tue Jan 20 02:49:22 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 

@@ -384,7 +384,7 @@ stmts		: none
 		    }
 		| stmts terms stmt
 		    {
-			$$ = block_append($1, newline_node($3));
+			$$ = block_append($1, $3);
 		    }
 		| error stmt
 		    {
@@ -1228,7 +1228,7 @@ aref_args	: none
 		| tSTAR arg opt_nl
 		    {
 			value_expr($2);
-			$$ = NEW_NEWLINE(NEW_SPLAT($2));
+			$$ = newline_node(NEW_SPLAT($2));
 		    }
 		;
 
@@ -2071,11 +2071,7 @@ string_content	: tSTRING_CONTENT
 		  compstmt '}'
 		    {
 			lex_strterm = $<node>2;
-			if (($$ = $3) && nd_type($$) == NODE_NEWLINE) {
-			    $$ = $$->nd_next;
-			    rb_gc_force_recycle((VALUE)$3);
-			}
-			$$ = new_evstr($$);
+			$$ = new_evstr($3);
 		    }
 		;
 
@@ -4456,14 +4452,8 @@ static NODE*
 newline_node(node)
     NODE *node;
 {
-    NODE *nl = 0;
-    if (node) {
-	if (nd_type(node) == NODE_NEWLINE) return node;
-        nl = NEW_NEWLINE(node);
-        fixpos(nl, node);
-        nl->nd_nth = nd_line(node);
-    }
-    return nl;
+    FL_SET(node, NODE_NEWLINE);
+    return node;
 }
 
 static void
@@ -4510,15 +4500,12 @@ block_append(head, tail)
   again:
     if (h == 0) return tail;
     switch (nd_type(h)) {
-      case NODE_NEWLINE:
-	h = h->nd_next;
-	goto again;
       case NODE_LIT:
       case NODE_STR:
 	parser_warning(h, "unused literal ignored");
 	return tail;
       default:
-	end = NEW_BLOCK(head);
+	h = end = NEW_BLOCK(head);
 	end->nd_end = end;
 	fixpos(end, head);
 	head = end;
@@ -4540,10 +4527,6 @@ block_append(head, tail)
 	    parser_warning(nd, "statement not reached");
 	    break;
 
-	case NODE_NEWLINE:
-	    nd = nd->nd_next;
-	    goto newline;
-
 	  default:
 	    break;
 	}
@@ -4554,7 +4537,7 @@ block_append(head, tail)
 	tail->nd_end = tail;
     }
     end->nd_next = tail;
-    head->nd_end = tail->nd_end;
+    h->nd_end = tail->nd_end;
     return head;
 }
 
@@ -4676,9 +4659,6 @@ new_evstr(node)
 	switch (nd_type(node)) {
 	  case NODE_STR: case NODE_DSTR: case NODE_EVSTR:
 	    return node;
-	  case NODE_NEWLINE:
-	    node = node->nd_next;
-	    goto again;
 	}
     }
     return NEW_EVSTR(head);
@@ -4995,10 +4975,6 @@ value_expr0(node)
 	    node = node->nd_2nd;
 	    break;
 
-	  case NODE_NEWLINE:
-	    node = node->nd_next;
-	    break;
-
 	  default:
 	    return Qtrue;
 	}
@@ -5018,10 +4994,6 @@ void_expr0(node)
   again:
     if (!node) return;
     switch (nd_type(node)) {
-      case NODE_NEWLINE:
-	node = node->nd_next;
-	goto again;
-
       case NODE_CALL:
 	switch (node->nd_mid) {
 	  case '+':
@@ -5124,15 +5096,10 @@ remove_begin(node)
 {
     NODE **n = &node;
     while (*n) {
-	switch (nd_type(*n)) {
-	  case NODE_NEWLINE:
-	    n = &(*n)->nd_next;
-	    continue;
-	  case NODE_BEGIN:
-	    *n = (*n)->nd_body;
-	  default:
+	if (nd_type(*n) != NODE_BEGIN) {
 	    return node;
 	}
+	*n = (*n)->nd_body;
     }
     return node;
 }
@@ -5152,7 +5119,6 @@ assign_in_cond(node)
       case NODE_IASGN:
 	break;
 
-      case NODE_NEWLINE:
       default:
 	return 0;
     }
@@ -5221,10 +5187,6 @@ range_op(node)
     value_expr(node);
     node = cond0(node);
     type = nd_type(node);
-    if (type == NODE_NEWLINE) {
-	node = node->nd_next;
-	type = nd_type(node);
-    }
     if (type == NODE_LIT && FIXNUM_P(node->nd_lit)) {
 	warn_unless_e_option(node, "integer literal in conditional range");
 	return call_op(node,tEQ,1,NEW_GVAR(rb_intern("$.")));
@@ -5324,10 +5286,6 @@ cond(node)
 {
     if (node == 0) return 0;
     value_expr(node);
-    if (nd_type(node) == NODE_NEWLINE){
-	node->nd_next = cond0(node->nd_next);
-	return node;
-    }
     return cond0(node);
 }
 
@@ -5359,11 +5317,6 @@ cond_negative(nodep)
       case NODE_NOT:
 	*nodep = c->nd_body;
 	return 1;
-      case NODE_NEWLINE:
-	if (c->nd_next && nd_type(c->nd_next) == NODE_NOT) {
-	    c->nd_next = c->nd_next->nd_body;
-	    return 1;
-	}
     }
     return 0;
 }
@@ -5386,7 +5339,7 @@ ret_args(node)
 	if (nd_type(node) == NODE_ARRAY && node->nd_next == 0) {
 	    node = node->nd_head;
 	}
-	if (node && nd_type(node) == NODE_SPLAT) {
+	else if (node && nd_type(node) == NODE_SPLAT) {
 	    node = NEW_SVALUE(node);
 	}
     }
@@ -5405,7 +5358,7 @@ new_yield(node)
             node = node->nd_head;
             state = Qfalse;
         }
-        if (node && nd_type(node) == NODE_SPLAT) {
+        else if (node && nd_type(node) == NODE_SPLAT) {
             state = Qtrue;
         }
     }

@@ -400,7 +400,7 @@ w_class(type, obj, arg, check)
     VALUE klass = CLASS_OF(obj);
     w_extended(klass, arg, check);
     w_byte(type, arg);
-    path = RSTRING(class2path(klass))->ptr;
+    path = RSTRING(class2path(rb_class_real(klass)))->ptr;
     w_unique(path, arg);
 }
 

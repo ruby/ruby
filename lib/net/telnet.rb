@@ -706,7 +706,7 @@ module Net # :nodoc:
       end
 
       if block_given?
-        line = waitfor(/login[: ]*\z/n){|c| yield c }
+        line = waitfor(/[Ll]ogin[: ]*\z/n){|c| yield c }
         if password
           line += cmd({"String" => username,
                        "Match" => /Password[: ]*\z/n}){|c| yield c }
@@ -715,7 +715,7 @@ module Net # :nodoc:
           line += cmd(username){|c| yield c }
         end
       else
-        line = waitfor(/login[: ]*\z/n)
+        line = waitfor(/[Ll]ogin[: ]*\z/n)
         if password
           line += cmd({"String" => username,
                        "Match" => /Password[: ]*\z/n})

@@ -113,7 +113,6 @@ enum node_type {
     NODE_TRUE,
     NODE_FALSE,
     NODE_DEFINED,
-    NODE_NEWLINE,
     NODE_POSTEXE,
 #ifdef C_ALLOCA
     NODE_ALLOCA,
@@ -155,9 +154,11 @@ typedef struct RNode {
 
 #define RNODE(obj)  (R_CAST(RNode)(obj))
 
-#define nd_type(n) ((int)(((RNODE(n))->flags>>FL_USHIFT)&0xff))
+#define nd_type(n) ((int)(((RNODE(n))->flags>>FL_USHIFT)&0x7f))
 #define nd_set_type(n,t) \
     RNODE(n)->flags=((RNODE(n)->flags&~FL_UMASK)|(((t)<<FL_USHIFT)&FL_UMASK))
+
+#define NODE_NEWLINE FL_USER7
 
 #define NODE_LSHIFT (FL_USHIFT+8)
 #define NODE_LMASK  (((long)1<<(sizeof(NODE*)*CHAR_BIT-NODE_LSHIFT))-1)
@@ -330,7 +331,6 @@ typedef struct RNode {
 #define NEW_TRUE() NEW_NODE(NODE_TRUE,0,0,0)
 #define NEW_FALSE() NEW_NODE(NODE_FALSE,0,0,0)
 #define NEW_DEFINED(e) NEW_NODE(NODE_DEFINED,e,0,0)
-#define NEW_NEWLINE(n) NEW_NODE(NODE_NEWLINE,0,0,n)
 #define NEW_PREEXE(b) NEW_SCOPE(b)
 #define NEW_POSTEXE() NEW_NODE(NODE_POSTEXE,0,0,0)
 #define NEW_DMETHOD(b) NEW_NODE(NODE_DMETHOD,0,0,b)

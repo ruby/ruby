@@ -777,7 +777,6 @@ gc_mark_children(ptr, lev)
 	  case NODE_SUPER:	/* 3 */
 	  case NODE_FCALL:
 	  case NODE_DEFN:
-	  case NODE_NEWLINE:
 	    ptr = (VALUE)obj->as.node.u3.node;
 	    goto again;
 
@@ -1431,7 +1430,7 @@ Init_stack(addr)
 	    STACK_LEVEL_MAX = (rlim.rlim_cur - space) / sizeof(VALUE);
 	}
     }
-#ifdef __ia64__
+#if defined(__ia64__) && (!defined(__GNUC__) || __GNUC__ < 2 || defined(__OPTIMIZE__))
     /* ruby crashes on IA64 if compiled with optimizer on */
     /* when if STACK_LEVEL_MAX is greater than this magic number */
     /* I know this is a kludge.  I suspect optimizer bug */
