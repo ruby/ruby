@@ -31,6 +31,8 @@ Tue Jan 13 10:00:18 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 Fri Jan  9 13:19:55 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
+	* version 1.1b4 released.
+
 	* eval.c (f_missing): class name omitted from the error message.
 
 	* error.c (exc_inspect): description changed.
