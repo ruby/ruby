@@ -1,3 +1,17 @@
+Sun Mar  7 05:34:42 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb: HTTPHeader keeps its header fields as an array.
+
+	* lib/net/http.rb: new method HTTPHeader#add_header, get_fields.
+
+	* lib/net/http.rb: new method HTTPHeader#content_length=.
+
+	* lib/net/http.rb: new method HTTPHeader#content_type, main_type,
+	  sub_type, type_params, content_type=, set_content_type.
+
+	* lib/net/http.rb (HTTPHeader#basic_encode): result of pack(m) may
+	  contain multiple LFs.
+
 Sun Mar  7 03:11:00 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb: new method Net::HTTPRequest#body(=).

@@ -49,6 +49,30 @@ class HTTPHeaderTest < Test::Unit::TestCase
     @c['Next-Header'] = 'next string'
     assert_equal 'next string', @c['next-header']
   end
+  
+  def test_add_field
+  end
+
+  def test_get_fields
+  end
+
+  def test_delete
+  end
+
+  def test_each
+  end
+
+  def test_each_key
+  end
+
+  def test_each_value
+  end
+
+  def test_key?
+  end
+
+  def test_to_hash
+  end
 
   def test_range
     try_range(1..5,     '1-5')
@@ -59,8 +83,7 @@ class HTTPHeaderTest < Test::Unit::TestCase
 
   def try_range(r, s)
     @c['range'] = "bytes=#{s}"
-    ret, = @c.range
-    assert_equal r, ret
+    assert_equal r, Array(@c.range)[0]
   end
 
   def test_range=
@@ -74,6 +97,18 @@ class HTTPHeaderTest < Test::Unit::TestCase
     assert_equal 'bytes=-400', @c['range']
     @c.set_range 0, 500
     assert_equal 'bytes=0-499', @c['range']
+  end
+
+  def test_content_range
+  end
+
+  def test_range_length
+    @c['Content-Range'] = "bytes 0-499/1000"
+    assert_equal 500, @c.range_length
+    @c['Content-Range'] = "bytes 1-500/1000"
+    assert_equal 500, @c.range_length
+    @c['Content-Range'] = "bytes 1-1/1000"
+    assert_equal 1, @c.range_length
   end
 
   def test_chunked?
@@ -110,28 +145,60 @@ class HTTPHeaderTest < Test::Unit::TestCase
     assert_equal len, @c.content_length
   end
 
-  def test_content_range
+  def test_content_length=
+    @c.content_length = 0
+    assert_equal 0, @c.content_length
+    @c.content_length = 1
+    assert_equal 1, @c.content_length
+    @c.content_length = 999
+    assert_equal 999, @c.content_length
+    @c.content_length = 10000000000000
+    assert_equal 10000000000000, @c.content_length
   end
 
-  def test_delete
+  def test_content_type
+    @c.content_type = 'text/html'
+    assert_equal 'text/html', @c.content_type
+    @c.content_type = 'application/pdf'
+    assert_equal 'application/pdf', @c.content_type
+    @c.set_content_type 'text/html', {'charset' => 'iso-2022-jp'}
+    assert_equal 'text/html', @c.content_type
   end
 
-  def test_each
+  def test_main_type
+    @c.content_type = 'text/html'
+    assert_equal 'text', @c.main_type
+    @c.content_type = 'application/pdf'
+    assert_equal 'application', @c.main_type
+    @c.set_content_type 'text/html', {'charset' => 'iso-2022-jp'}
+    assert_equal 'text', @c.main_type
   end
 
-  def test_each_key
+  def test_sub_type
+    @c.content_type = 'text/html'
+    assert_equal 'html', @c.sub_type
+    @c.content_type = 'application/pdf'
+    assert_equal 'pdf', @c.sub_type
+    @c.set_content_type 'text/html', {'charset' => 'iso-2022-jp'}
+    assert_equal 'html', @c.sub_type
   end
 
-  def test_each_value
+  def test_type_params
+    @c.content_type = 'text/html'
+    assert_equal({}, @c.type_params)
+    @c.content_type = 'application/pdf'
+    assert_equal({}, @c.type_params)
+    @c.set_content_type 'text/html', {'charset' => 'iso-2022-jp'}
+    assert_equal({'charset' => 'iso-2022-jp'}, @c.type_params)
   end
 
-  def test_key?
+  def test_set_content_type
   end
 
-  def test_range_length
+  def test_basic_auth
   end
 
-  def test_to_hash
+  def test_proxy_basic_auth
   end
 
 end

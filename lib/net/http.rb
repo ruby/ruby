@@ -1021,36 +1021,88 @@ module Net # :nodoc:
     # Returns the header field corresponding to the case-insensitive key.
     # For example, a key of "Content-Type" might return "text/html"
     def [](key)
-      @header[key.downcase]
+      a = @header[key.downcase] or return nil
+      a.join(', ')
     end
 
     # Sets the header field corresponding to the case-insensitive key.
     def []=(key, val)
-      @header[key.downcase] = val
+      unless val
+        @header.delete key.downcase
+        return val
+      end
+      @header[key.downcase] = Array(val).map {|s| s.to_str }
+    end
+
+    # Adds header name and field instead of replace.
+    #
+    #   request.add_header 'X-My-Header', 'a'
+    #   p request['X-My-Header']              #=> "a"
+    #   request.add_header 'X-My-Header', 'b'
+    #   p request['X-My-Header']              #=> "a, b"
+    #   request.add_header 'X-My-Header', 'c'
+    #   p request['X-My-Header']              #=> "a, b, c"
+    #   p request.get_fields('X-My-Header')   #=> ["a", "b", "c"]
+    #
+    def add_header(key, val)
+      if header.key?(key.downcase)
+        @header[key.downcase].concat Array(val)
+      else
+        @header[key.downcase] = Array(val).dup
+      end
+    end
+
+    # Returns the header field by Array, corresponding to the
+    # case-insensitive key.  This method allows you to get duplicated
+    # fields without any processing.
+    #
+    #   p response.get_fields('Set-Cookie')
+    #     #=> ["session=al98axx; expires=Fri, 31-Dec-1999 23:58:23",
+    #          "query=rubyscript; expires=Fri, 31-Dec-1999 23:58:23"]
+    #   p response['Set-Cookie']
+    #     #=> "session=al98axx; expires=Fri, 31-Dec-1999 23:58:23, query=rubyscript; expires=Fri, 31-Dec-1999 23:58:23"
+    #
+    def get_fields(key)
+      return nil unless @header[key.downcase]
+      @header[key.downcase].dup
     end
 
     # Returns the header field corresponding to the case-insensitive key.
     # Returns the default value +args+, or the result of the block, or nil,
     # if there's no header field named key.  See Hash#fetch
     def fetch(key, *args, &block)   #:yield: +key+
-      @header.fetch(key.downcase, *args, &block)
+      a = @header.fetch(key.downcase, *args, &block)
+      a.join(', ')
     end
 
     # Iterates for each header names and values.
-    def each_header(&block)   #:yield: +key+, +value+
-      @header.each(&block)
+    def each_header   #:yield: +key+, +value+
+      @header.each do |k,va|
+        yield k, va.join(', ')
+      end
     end
 
     alias each each_header
 
     # Iterates for each header names.
-    def each_key(&block)   #:yield: +key+
-      @header.each_key(&block)
+    def each_name(&block)   #:yield: +key+
+e      @header.each_key(&block)
+    end
+
+    alias each_key each_name
+
+    # Iterates for each capitalized header names.
+    def each_capitalized_name(&block)   #:yield: +key+
+      @header.each_key do |k|
+        yield capitalize(k)
+      end
     end
 
     # Iterates for each header values.
-    def each_value(&block)   #:yield: +value+
-      @header.each_value(&block)
+    def each_value   #:yield: +value+
+      @header.each_value do |va|
+        yield va.join(', ')
+      end
     end
 
     # Removes a header field.
@@ -1077,16 +1129,16 @@ module Net # :nodoc:
 
     alias canonical_each each_capitalized
 
-    def capitalize(k)
-      k.split(/-/).map {|i| i.capitalize }.join('-')
+    def capitalize(name)
+      name.split(/-/).map {|s| s.capitalize }.join('-')
     end
     private :capitalize
 
-    # Returns a Range object which represents Range: header field,
+    # Returns an Array of Range objects which represents Range: header field,
     # or +nil+ if there is no such header.
     def range
-      s = @header['range'] or return nil
-      s.split(/,/).map {|spec|
+      return nil unless @header['range']
+      self['Range'].split(/,/).map {|spec|
         m = /bytes\s*=\s*(\d+)?\s*-\s*(\d+)?/i.match(spec) or
                 raise HTTPHeaderSyntaxError, "wrong Range: #{spec}"
         d1 = m[1].to_i
@@ -1101,12 +1153,21 @@ module Net # :nodoc:
     end
 
     # Set Range: header from Range (arg r) or beginning index and
-    # length from it (arg i&len).
-    def range=(r, fin = nil)
-      r = (r ... r + fin) if fin
+    # length from it (arg idx&len).
+    #
+    #   req.range = (0..1023)
+    #   req.set_range 0, 1023
+    #
+    def set_range(r, e = nil)
+      unless r
+        @header.delete 'range'
+        return r
+      end
+      r = (r...r+e) if e
       case r
       when Numeric
-        rangestr = (r > 0 ? "0-#{r.to_i - 1}" : "-#{-r.to_i}")
+        n = r.to_i
+        rangestr = (n > 0 ? "0-#{n-1}" : "-#{-n}")
       when Range
         first = r.first
         last = r.last
@@ -1122,19 +1183,27 @@ module Net # :nodoc:
       else
         raise TypeError, 'Range/Integer is required'
       end
-      @header['range'] = "bytes=#{rangestr}"
+      @header['range'] = ["bytes=#{rangestr}"]
       r
     end
 
-    alias set_range range=
+    alias range= set_range
 
     # Returns an Integer object which represents the Content-Length: header field
     # or +nil+ if that field is not provided.
     def content_length
-      return nil unless @header.key?('content-length')
-      len = @header['content-length'].slice(/\d+/) or
+      return nil unless key?('Content-Length')
+      len = self['Content-Length'].slice(/\d+/) or
           raise HTTPHeaderSyntaxError, 'wrong Content-Length format'
       len.to_i
+    end
+    
+    def content_length=(len)
+      unless len
+        @header.delete 'content-length'
+        return nil
+      end
+      @header['content-length'] = [len.to_i.to_s]
     end
 
     # Returns "true" if the "transfer-encoding" header is present and
@@ -1142,8 +1211,9 @@ module Net # :nodoc:
     # the content to be sent in "chunks" without at the outset
     # stating the entire content length.
     def chunked?
-      field = @header['transfer-encoding'] or return false
-      (/(?:\A|[^\-\w])chunked(?:[^\-\w]|\z)/i =~ field) ? true : false
+      return false unless @header['transfer-encoding']
+      field = self['Transfer-Encoding']
+      (/(?:\A|[^\-\w])chunked(?![\-\w])/i =~ field) ? true : false
     end
 
     # Returns a Range object which represents Content-Range: header field.
@@ -1151,29 +1221,58 @@ module Net # :nodoc:
     # fits inside the full entity body, as range of byte offsets.
     def content_range
       return nil unless @header['content-range']
-      m = %r<bytes\s+(\d+)-(\d+)/(\d+|\*)>i.match(@header['content-range']) or
+      m = %r<bytes\s+(\d+)-(\d+)/(\d+|\*)>i.match(self['Content-Range']) or
           raise HTTPHeaderSyntaxError, 'wrong Content-Range format'
       m[1].to_i .. m[2].to_i + 1
     end
 
-    # The length of the range represented in Range: header.
+    # The length of the range represented in Content-Range: header.
     def range_length
       r = content_range() or return nil
       r.end - r.begin
     end
 
+    def content_type
+      "#{main_type()}/#{sub_type()}"
+    end
+
+    def main_type
+      return nil unless @header['content-type']
+      self['Content-Type'].split(';').first.to_s.split('/')[0].to_s.strip
+    end
+    
+    def sub_type
+      return nil unless @header['content-type']
+      self['Content-Type'].split(';').first.to_s.split('/')[1].to_s.strip
+    end
+
+    def type_params
+      result = {}
+      self['Content-Type'].to_s.split(';')[1..-1].each do |param|
+        k, v = *param.split('=', 2)
+        result[k.strip] = v.strip
+      end
+      result
+    end
+
+    def set_content_type(type, params = {})
+      @header['content-type'] = [type + params.map{|k,v|"; #{k}=#{v}"}.join('')]
+    end
+
+    alias content_type= set_content_type
+
     # Set the Authorization: header for "Basic" authorization.
     def basic_auth(account, password)
-      @header['authorization'] = basic_encode(account, password)
+      @header['authorization'] = [basic_encode(account, password)]
     end
 
     # Set Proxy-Authorization: header for "Basic" authorization.
     def proxy_basic_auth(account, password)
-      @header['proxy-authorization'] = basic_encode(account, password)
+      @header['proxy-authorization'] = [basic_encode(account, password)]
     end
 
     def basic_encode(account, password)
-      'Basic ' + ["#{account}:#{password}"].pack('m').strip
+      'Basic ' + ["#{account}:#{password}"].pack('m').delete("\r\n")
     end
     private :basic_encode
 
@@ -1269,23 +1368,21 @@ module Net # :nodoc:
     private
 
     def send_request_with_body(sock, ver, path, body)
-      @header['content-length'] = body.length.to_s
-      @header.delete 'transfer-encoding'
-      unless @header['content-type']
+      self.content_length = body.length
+      delete 'Transfer-Encoding'
+      unless content_type()
         warn 'net/http: warning: Content-Type did not set; using application/x-www-form-urlencoded' if $VERBOSE
-        @header['content-type'] = 'application/x-www-form-urlencoded'
+        set_content_type 'application/x-www-form-urlencoded'
       end
       write_header sock, ver, path
       sock.write body
     end
 
     def send_request_with_body_stream(sock, ver, path, f)
-      unless @header['content-length']
-        raise ArgumentError, "request body Content-Length not given but Transfer-Encoding is not `chunked'; give up" unless chunked?
-      end
-      unless @header['content-type']
+      raise ArgumentError, "Content-Length not given and Transfer-Encoding is not `chunked'" unless content_length() or chunked?
+      unless content_type()
         warn 'net/http: warning: Content-Type did not set; using application/x-www-form-urlencoded' if $VERBOSE
-        @header['content-type'] = 'application/x-www-form-urlencoded'
+        set_content_type 'application/x-www-form-urlencoded'
       end
       write_header sock, ver, path
       if chunked?
@@ -1730,11 +1827,7 @@ module Net # :nodoc:
         httpv, code, msg = read_status_line(sock)
         res = response_class(code).new(httpv, code, msg)
         each_response_header(sock) do |k,v|
-          if res.key?(k)
-            res[k] << ', ' << v
-          else
-            res[k] = v
-          end
+          res.add_header k, v
         end
         res
       end
