@@ -62,6 +62,8 @@
 #endif
 
 #ifdef RUBY_PLATFORM
+#include "defines.h"
+
 # define RUBY
 extern int rb_prohibit_interrupt;
 extern int rb_trap_pending;
@@ -128,11 +130,25 @@ char *alloca();
 
 #define FREE_VARIABLES()
 
-#define FREE_AND_RETURN_VOID(stackb)   do { xfree(stackb); return; } while(0)
-#define FREE_AND_RETURN(stackb,val)    do { xfree(stackb); return(val); } while(0)
+#define FREE_AND_RETURN_VOID(stackb)   do {				\
+  if (stackb != stacka) xfree(stackb);					\
+  return;								\
+} while(0)
+
+#define FREE_AND_RETURN(stackb,val)    do {				\
+  if (stackb != stacka) xfree(stackb);					\
+  return(val);								\
+} while(0)
+
 #define DOUBLE_STACK(stackx,stackb,len,type) do {			\
-        stackx = (type*)xrealloc(stackb, 2 * len * sizeof(type));	\
+  if (stackb == stacka) {						\
+    stackx = (type*)xmalloc(2*len*sizeof(type));			\
+  }									\
+  else {								\
+    stackx = (type*)xrealloc(stackb, 2 * len * sizeof(type));		\
+  }									\
 } while (0)
+
 #endif /* NO_ALLOCA */
 
 #define RE_TALLOC(n,t)  ((t*)RE_ALLOCATE((n)*sizeof(t)))
@@ -1245,7 +1261,8 @@ re_compile_pattern(pattern, size, bufp)
      Fourth, the value of regnum.
      Fifth, the type of the paren. */
 
-  int *stackb = RE_TALLOC(40, int);
+  int stacka[40];
+  int *stackb = stacka;
   int *stackp = stackb;
   int *stacke = stackb + 40;
   int *stackt;
@@ -2752,7 +2769,9 @@ re_compile_fastmap(bufp)
   register int j, k;
   unsigned is_a_succeed_n;
 
-  unsigned char **stackb = RE_TALLOC(NFAILURES, unsigned char*);
+  
+  unsigned char *stacka[NFAILURES];
+  unsigned char **stackb = stacka;
   unsigned char **stackp = stackb;
   unsigned char **stacke = stackb + NFAILURES;
   int options = bufp->options;
@@ -3545,10 +3564,10 @@ re_match(bufp, string_arg, size, pos, regs)
      ``dummy''; if a failure happens and the failure point is a dummy, it
      gets discarded and the next next one is tried.  */
 
+  unsigned char *stacka[MAX_NUM_FAILURE_ITEMS * NFAILURES];
   unsigned char **stackb;
   unsigned char **stackp;
   unsigned char **stacke;
-
 
   /* Information on the contents of registers. These are pointers into
      the input strings; they record just what was matched (on this
@@ -3594,7 +3613,7 @@ re_match(bufp, string_arg, size, pos, regs)
   }
 
   /* Initialize the stack. */
-  stackb = RE_TALLOC(MAX_NUM_FAILURE_ITEMS * NFAILURES, unsigned char*);
+  stackb = stacka;
   stackp = stackb;
   stacke = &stackb[MAX_NUM_FAILURE_ITEMS * NFAILURES];
 

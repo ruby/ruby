@@ -1,4 +1,13 @@
+Tue Sep 26 02:44:54 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (GC_MALLOC_LIMIT): size extended.
+
+	* regex.c (DOUBLE_STACK): use machine's stack region for regex
+	  stack if its size is small enough.
+
 Mon Sep 25 18:13:07 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* regex.c: include <defines.h>.
 
 	* eval.c (rb_add_method): cache mismatch by method
 	  definition. need to clear_cache_by_id every time.

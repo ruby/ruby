@@ -238,7 +238,6 @@ rb_add_method(klass, mid, node, noex)
     if (OBJ_FROZEN(klass)) rb_error_frozen("class/module");
     body = NEW_METHOD(node, noex);
     st_insert(RCLASS(klass)->m_tbl, mid, body);
-    rb_clear_cache_by_id(mid);
 }
 
 static NODE*
@@ -360,6 +359,7 @@ rb_disable_super(klass, name)
     }
     else {
 	rb_add_method(klass, mid, 0, NOEX_UNDEF);
+	rb_clear_cache_by_id(mid);
     }
 }
 
@@ -409,6 +409,7 @@ rb_export_method(klass, name, noex)
 	}
 	else {
 	    rb_add_method(klass, name, NEW_ZSUPER(), noex);
+	    rb_clear_cache_by_id(name);
 	}
     }
 }
@@ -477,12 +478,14 @@ rb_attr(klass, id, read, write, ex)
     if (read) {
 	rb_add_method(klass, id, NEW_IVAR(attriv), noex);
 	rb_funcall(klass, added, 1, ID2SYM(id));
+	rb_clear_cache_by_id(id);
     }
     sprintf(buf, "%s=", name);
     id = rb_intern(buf);
     if (write) {
 	rb_add_method(klass, id, NEW_ATTRSET(attriv), noex);
 	rb_funcall(klass, added, 1, ID2SYM(id));
+	rb_clear_cache_by_id(id);
     }
 }
 
@@ -1494,6 +1497,7 @@ rb_undef(klass, id)
 		 rb_id2name(id),s0,rb_class2name(c));
     }
     rb_add_method(klass, id, 0, NOEX_PUBLIC);
+    rb_clear_cache_by_id(id);
 }
 
 static VALUE
@@ -2851,6 +2855,7 @@ rb_eval(self, n)
 			      node->nd_mid, node->nd_defn, NOEX_PUBLIC);
 		rb_funcall(ruby_class, singleton_added, 1, ID2SYM(node->nd_mid));
 	    }
+	    rb_clear_cache_by_id(node->nd_mid);
 	    if (FL_TEST(ruby_class, FL_SINGLETON)) {
 		rb_funcall(rb_iv_get(ruby_class, "__attached__"),
 			   singleton_added, 1, ID2SYM(node->nd_mid));
@@ -2891,6 +2896,7 @@ rb_eval(self, n)
 	    rb_add_method(klass, node->nd_mid, node->nd_defn, 
 			  NOEX_PUBLIC|(body?body->nd_noex&NOEX_UNDEF:0));
 	    rb_funcall(recv, singleton_added, 1, ID2SYM(node->nd_mid));
+	    rb_clear_cache_by_id(node->nd_mid);
 	    result = Qnil;
 	}
 	break;
@@ -5035,12 +5041,12 @@ rb_feature_p(feature, wait)
 	if (strcmp(f, feature) == 0) {
 	    goto load_wait;
 	}
-	if (strncmp(f, feature, strlen(feature)) == 0) {
-	    char *ext = strrchr(f, '.');
-	    if (strcmp(ext, ".so") == 0) {
+	len = strlen(feature);
+	if (strncmp(f, feature, len) == 0) {
+	    if (strcmp(f+len, ".so") == 0) {
 		return Qtrue;
 	    }
-	    if (strcmp(ext, ".rb") == 0) {
+	    if (strcmp(f+len, ".rb") == 0) {
 		if (wait) goto load_wait;
 		return Qtrue;
 	    }
@@ -5345,6 +5351,7 @@ rb_mod_modfunc(argc, argv, module)
 	}
 	rb_add_method(rb_singleton_class(module), id, body->nd_body, NOEX_PUBLIC);
 	rb_funcall(module, singleton_added, 1, ID2SYM(id));
+	rb_clear_cache_by_id(id);
     }
     return module;
 }

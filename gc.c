@@ -41,9 +41,9 @@ static void run_final();
 
 #ifndef GC_MALLOC_LIMIT
 #if defined(MSDOS) || defined(__human68k__)
-#define GC_MALLOC_LIMIT 100000
+#define GC_MALLOC_LIMIT 200000
 #else
-#define GC_MALLOC_LIMIT 4000000
+#define GC_MALLOC_LIMIT 8000000
 #endif
 #endif
 
@@ -70,6 +70,7 @@ ruby_xmalloc(size)
     }
     if (size == 0) size = 1;
     malloc_memories += size;
+
     if (malloc_memories > GC_MALLOC_LIMIT) {
 	rb_gc();
     }
@@ -118,7 +119,7 @@ ruby_xrealloc(ptr, size)
 	rb_gc();
 	mem = realloc(ptr, size);
 	if (!mem)
-	    if (size >= 10 * 1024 * 1024) {
+	    if (size >= 50 * 1024 * 1024) {
 		rb_raise(rb_eNoMemError, "tryed to re-allocate too big memory");
 	    }
 	    mem_error("failed to allocate memory(realloc)");

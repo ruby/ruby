@@ -5,7 +5,9 @@ class String
   printf STDERR, "feel free for some warnings:\n" if $VERBOSE
 
   def _regex_quote(str)
-    a = str.gsub(/\W/){|s| if s == "-" then s else "\\\\#{s}" end}
+    str.gsub(/\W/){|s|
+      if s == "-" then s elsif s == "\\" then "\\\\" else "\\\\#{s}" end
+    }
   end
   private :_regex_quote
 
