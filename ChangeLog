@@ -1,3 +1,10 @@
+Sat Feb 19 18:46:56 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/drb.rb (DRbObject#respond_to?): take two arguments.
+	  [ruby-dev:25722]
+
+	* test/drb/drbtest.rb: ditto.
+
 Sat Feb 19 13:52:02 2005  Tanaka Akira  <akr@m17n.org>
 
 	* lib/open-uri.rb: call OpenSSL::SSL::SSLSocket#post_connection_check

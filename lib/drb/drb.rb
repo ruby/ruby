@@ -1046,14 +1046,14 @@ module DRb
     undef :to_s
     undef :to_a if respond_to?(:to_a)
 
-    def respond_to?(msg_id)
+    def respond_to?(msg_id, priv=false)
       case msg_id
       when :_dump
         true
       when :marshal_dump
         false
       else
-        method_missing(:respond_to?, msg_id)
+        method_missing(:respond_to?, msg_id, priv)
       end
     end
 
