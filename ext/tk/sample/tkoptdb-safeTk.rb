@@ -26,6 +26,7 @@ else
   ent = TkOptionDB.read_entries(File.expand_path('resource.en', 
 						File.dirname(__FILE__)))
 end
+
 file = File.expand_path('tkoptdb.rb', File.dirname(__FILE__))
 
 ip = MultiTkIp.new_safeTk{
@@ -50,12 +51,11 @@ print "ip.eval_proc{}, which includes insecure operiation in the given block, re
 print "If a proc object is given, the proc is evaluated on the safe-level which is kept on the proc :: ip.eval_proc( proc{$SAFE} ) ==> ", ip.eval_proc(proc{$SAFE}), "\n"
 
 safe0_cmd = Proc.new{
+  print 'safe0_cmd safe-level == ', $SAFE, "\n"
   # This proc object keeps current safe-level ($SAFE==0). 
   load file
 }
-ip.eval_proc(safe0_cmd)
-
+ip.eval_proc{safe0_cmd.call}
 
 # Tk.mainloop is ignored on the slave-IP
-
 Tk.mainloop
