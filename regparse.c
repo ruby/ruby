@@ -3631,6 +3631,9 @@ next_state_val(CClassNode* cc, OnigCodePoint *vs, OnigCodePoint v,
   case CCS_RANGE:
     if (intype == *type) {
       if (intype == CCV_SB) {
+        if (*vs > 0xff || v > 0xff)
+          return ONIGERR_INVALID_WIDE_CHAR_VALUE;
+
 	if (*vs > v) {
 	  if (IS_SYNTAX_BV(env->syntax, ONIG_SYN_ALLOW_EMPTY_RANGE_IN_CC))
 	    goto ccs_range_end;
@@ -3646,14 +3649,8 @@ next_state_val(CClassNode* cc, OnigCodePoint *vs, OnigCodePoint v,
     }
     else {
 #if 0
-      if (intype == CCV_CODE_POINT && *type == CCV_SB &&
-	  ONIGENC_IS_CONTINUOUS_SB_MB(env->enc)) {
-	bitset_set_range(cc->bs, (int )*vs, 0x7f);
-	r = add_code_range(&(cc->mbuf), env, (OnigCodePoint )0x80, v);
-	if (r < 0) return r;
-      }
-#else
       if (intype == CCV_CODE_POINT && *type == CCV_SB) {
+#endif
 	if (*vs > v) {
 	  if (IS_SYNTAX_BV(env->syntax, ONIG_SYN_ALLOW_EMPTY_RANGE_IN_CC))
 	    goto ccs_range_end;
@@ -3663,10 +3660,11 @@ next_state_val(CClassNode* cc, OnigCodePoint *vs, OnigCodePoint v,
 	bitset_set_range(cc->bs, (int )*vs, (int )(v < 0xff ? v : 0xff));
 	r = add_code_range(&(cc->mbuf), env, (OnigCodePoint )*vs, v);
 	if (r < 0) return r;
+#if 0
       }
-#endif
       else
 	return ONIGERR_MISMATCH_CODE_LENGTH_IN_CLASS_RANGE;
+#endif
     }
   ccs_range_end:
     *state = CCS_COMPLETE;
@@ -3826,7 +3824,7 @@ parse_char_class(Node** np, OnigToken* tok, UChar** src, UChar* end,
       break;
 
     case TK_CODE_POINT:
-      v = tok->u.code;
+      v = (OnigCodePoint )tok->u.code;
       in_israw = 1;
     val_entry:
       len = ONIGENC_CODE_TO_MBCLEN(env->enc, v);
@@ -3952,7 +3950,7 @@ parse_char_class(Node** np, OnigToken* tok, UChar** src, UChar* end,
     case TK_CC_AND: /* && */
       {
 	if (state == CCS_VALUE) {
-	  r = next_state_val(cc, &vs, 0, &val_israw, 0, CCV_SB,
+	  r = next_state_val(cc, &vs, 0, &val_israw, 0, val_type,
 			     &val_type, &state, env);
 	  if (r != 0) goto err;
 	}
@@ -3992,7 +3990,7 @@ parse_char_class(Node** np, OnigToken* tok, UChar** src, UChar* end,
   }
 
   if (state == CCS_VALUE) {
-    r = next_state_val(cc, &vs, 0, &val_israw, 0, CCV_SB,
+    r = next_state_val(cc, &vs, 0, &val_israw, 0, val_type,
 		       &val_type, &state, env);
     if (r != 0) goto err;
   }

@@ -1,3 +1,8 @@
+Sun Nov 28 12:08:15 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
+
+	* regparse.c, test/ruby/test_regexp.rb: fixed problem with UTF-8
+	characters that have U+00FE or invalid characters.
+
 Sun Nov 28 12:07:04 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
 
 	* regexec.c, test/ruby/test_regexp.rb: fixed segmentation falut
