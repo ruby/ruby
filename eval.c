@@ -3,7 +3,7 @@
   eval.c -
 
   $Author: matz $
-  $Date: 1994/12/19 08:39:17 $
+  $Date: 1994/12/20 05:07:05 $
   created at: Thu Jun 10 14:22:17 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -548,7 +548,6 @@ rb_eval(node)
 
     sourceline = node->line;
 
-#undef SAFE_SIGHANDLE
 #ifdef SAFE_SIGHANDLE
     {
 	extern int trap_pending;
@@ -1612,6 +1611,8 @@ rb_call(class, recv, mid, argc, argv, func, itr)
     else {
 	the_env->arg_ary = Qnil;
     }
+    the_env->argc = argc;
+    the_env->argv = argv;
 
     if (nd_type(body) == NODE_CFUNC) {
 	int len = body->nd_argc;
@@ -2109,8 +2110,10 @@ Sblk_new(class)
     if (!iterator_p() && !Fiterator_p()) {
 	Fail("tryed to create Block out of iterator");
     }
+
     if (the_block->block) return the_block->block;
-    blk = obj_alloc(C_Block);
+    blk = obj_alloc(class);
+
     Make_Data_Struct(blk, blkdata, struct BLOCK, Qnil, blk_free, data);
     memcpy(data, the_block, sizeof(struct BLOCK));
     scope = the_scope;
@@ -2139,6 +2142,12 @@ Sblk_new(class)
 
     the_block->block = blk;
     return blk;
+}
+
+VALUE
+blk_new()
+{
+    return Sblk_new(C_Block);
 }
 
 static VALUE

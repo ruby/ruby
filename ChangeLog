@@ -1,4 +1,24 @@
+Tue Dec 20 00:46:19 1994  Yukihiro Matsumoto  (matz@dyna)
+
+	* 0.63 released
+
+	* eval.c(rb_call): superの呼び出しで落ちる．argc, argvの設定を忘れ
+	  ていた．
+
+	* parse.y(read_escape): 展開エラー．
+
+	* variable.c: 定義済みの変数のhookを変更しないように．
+
 Mon Dec 19 12:01:10 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* parse.y(cond): 条件式に代入式が置かれた場合，`-v'オプションで警
+	  告が出るように．
+
+	* parse.y(**): 冪乗演算子`**'の優先順位を単項演算子より高くした．
+
+	* parse.y(and,or): 優先順位の低い演算子`and', `or'.
+
+	* 0.62 released.
 
 	* eval.c: 不必要になったPUSH_ENV, POP_ENVを減らした．
 

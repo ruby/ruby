@@ -1,4 +1,4 @@
-# methods access permission
+# method access permission
 # output:
 #	foobar
 #	foo

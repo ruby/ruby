@@ -3,7 +3,7 @@
   variable.c -
 
   $Author: matz $
-  $Date: 1994/12/19 08:30:16 $
+  $Date: 1994/12/20 05:07:14 $
   created at: Tue Apr 19 23:55:15 JST 1994
 
 ************************************************/
@@ -47,7 +47,7 @@ rb_name_class(class, id)
 }
 
 struct global_entry {
-    enum { GLOBAL_VAL, GLOBAL_VAR, GLOBAL_UNDEF } mode;
+    enum { GLOBAL_VAL, GLOBAL_VAR, GLOBAL_SYSVAR, GLOBAL_UNDEF } mode;
     ID id;
     union {
 	VALUE val;
@@ -68,6 +68,7 @@ mark_global_entry(key, entry)
 	gc_mark(entry->v.val);	/* normal global value */
 	break;
       case GLOBAL_VAR:
+      case GLOBAL_SYSVAR:
 	if (entry->v.var)
 	    gc_mark(*entry->v.var); /* c variable pointer */
 	break;
@@ -122,10 +123,8 @@ rb_define_variable(name, var, get_hook, set_hook, data)
 	id = rb_intern(buf);
     }
 
-    if (!st_lookup(global_tbl, id, &entry)) {
-	entry = rb_global_entry(id);
-    }
-    entry->mode = GLOBAL_VAR;
+    entry = rb_global_entry(id);
+    entry->mode = GLOBAL_SYSVAR;
     entry->v.var = var;
     entry->get_hook = get_hook;
     entry->set_hook = set_hook;
@@ -200,6 +199,7 @@ rb_gvar_get(entry)
 	return entry->v.val;
 
       case GLOBAL_VAR:
+      case GLOBAL_SYSVAR:
 	if (entry->v.var == Qnil) return val;
 	return *entry->v.var;
 
@@ -271,7 +271,7 @@ rb_gvar_set(entry, val)
     if (entry->set_hook)
 	(*entry->set_hook)(val, entry->id, entry->data);
 
-    if (entry->mode == GLOBAL_VAR) {
+    if (entry->mode == GLOBAL_VAR || entry->mode == GLOBAL_SYSVAR) {
 	if (entry->v.var == Qnil) {
 	    rb_readonly_hook(val, entry->id);
 	}
@@ -426,5 +426,5 @@ Fdefined(obj, name)
 	break;
     }
     return FALSE;
-}
 
+}

@@ -70,6 +70,7 @@ OBJS	      = array.o \
 		re.o \
 		regex.o \
 		ruby.o \
+		signal.o \
 		socket.o \
 		sprintf.o \
 		st.o \

@@ -3,7 +3,7 @@
   object.c -
 
   $Author: matz $
-  $Date: 1994/12/19 08:30:07 $
+  $Date: 1994/12/20 05:01:01 $
   created at: Thu Jul 15 12:01:24 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -424,6 +424,7 @@ Init_Object()
     rb_define_method(C_Kernel, "_inspect", Fkrn_inspect, 0);
 
     rb_define_private_method(C_Kernel, "defined", Fdefined, 1);
+
     rb_define_private_method(C_Kernel, "sprintf", Fsprintf, -1);
     rb_define_alias(C_Kernel, "format", "sprintf");
 

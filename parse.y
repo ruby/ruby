@@ -3,7 +3,7 @@
   parse.y -
 
   $Author: matz $
-  $Date: 1994/12/19 08:30:08 $
+  $Date: 1994/12/20 05:07:09 $
   created at: Fri May 28 18:02:42 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -115,6 +115,8 @@ static void setup_top_local();
 	RETRY
 	SELF
 	NIL
+	AND
+	OR
 	_FILE_
 	_LINE_
 	IF_MOD
@@ -144,7 +146,7 @@ static void setup_top_local();
 %token NEQ  		/* != <> */
 %token GEQ  		/* >= */
 %token LEQ  		/* <= */
-%token AND OR		/* && and || */
+%token ANDOP OROP	/* && and || */
 %token MATCH NMATCH	/* =~ and !~ */
 %token DOT2 DOT3	/* .. and ... */
 %token AREF ASET        /* [] and []= */
@@ -158,12 +160,14 @@ static void setup_top_local();
  *	precedence table
  */
 
+%left  OR
+%left  AND
 %left  YIELD RETURN FAIL
 %right '=' OP_ASGN
 %right COLON2
 %nonassoc DOT2 DOT3
-%left  OR
-%left  AND
+%left  OROP
+%left  ANDOP
 %nonassoc  CMP EQ NEQ MATCH NMATCH
 %left  '>' GEQ '<' LEQ
 %left  '|' '^'
@@ -171,8 +175,8 @@ static void setup_top_local();
 %left  LSHFT RSHFT
 %left  '+' '-'
 %left  '*' '/' '%'
-%right POW
 %right '!' '~' UPLUS UMINUS
+%right POW
 
 %token LAST_TOKEN
 
@@ -296,6 +300,14 @@ stmt		: CLASS IDENTIFIER superclass
 		| stmt0 UNTIL_MOD stmt0
 		    {
 			$$ = NEW_UNTIL2(cond($3), $1);
+		    }
+		| stmt AND stmt
+		    {
+			$$ = NEW_AND(cond($1), cond($3));
+		    }
+		| stmt OR stmt
+		    {
+			$$ = NEW_OR(cond($1), cond($3));
 		    }
 		| stmt0
 
@@ -753,11 +765,11 @@ expr		: variable '=' expr
 		    {
 			$$ = call_op($1, COLON2, 1, $3);
 		    }
-		| expr AND expr
+		| expr ANDOP expr
 		    {
 			$$ = NEW_AND(cond($1), cond($3));
 		    }
-		| expr OR expr
+		| expr OROP expr
 		    {
 			$$ = NEW_OR(cond($1), cond($3));
 		    }
@@ -1335,6 +1347,7 @@ static struct kwtable {
     "__END__",  0,              EXPR_BEG,
     "__FILE__", _FILE_,         EXPR_END,
     "__LINE__", _LINE_,         EXPR_END,
+    "and",	AND,		EXPR_BEG,
     "break",	BREAK,		EXPR_END,
     "case",	CASE,		EXPR_BEG,
     "class",	CLASS,		EXPR_BEG,
@@ -1351,6 +1364,7 @@ static struct kwtable {
     "include",	INCLUDE,	EXPR_BEG,
     "module",	MODULE,		EXPR_BEG,
     "nil",	NIL,		EXPR_END,
+    "or",	OR,		EXPR_BEG,
     "protect",	PROTECT,	EXPR_BEG,
     "redo",	REDO,		EXPR_END,
     "resque",	RESQUE,		EXPR_BEG,
@@ -1556,7 +1570,7 @@ retry:
       case '&':
 	lex_state = EXPR_BEG;
 	if ((c = nextc()) == '&') {
-	    return AND;
+	    return ANDOP;
 	}
 	else if (c == '=') {
 	    yylval.id = '&';
@@ -1568,7 +1582,7 @@ retry:
       case '|':
 	lex_state = EXPR_BEG;
 	if ((c = nextc()) == '|') {
-	    return OR;
+	    return OROP;
 	}
 	else if (c == '=') {
 	    yylval.id = '|';
@@ -2080,7 +2094,7 @@ read_escape(flag)
 	break;
 
       case 'f':	/* form-feed */
-	tokadd('\r');
+	tokadd('\f');
 	break;
 
       case 'v':	/* vertical tab */
@@ -2088,7 +2102,7 @@ read_escape(flag)
 	break;
 
       case 'a':	/* alarm(bell) */
-	tokadd('\1');
+	tokadd('\007');
 	break;
 
       case 'e':	/* escape */
@@ -2149,11 +2163,10 @@ read_escape(flag)
 
       case 'x':	/* hex constant */
 	{
-	    register int i = c - '0';
+	    register int i = 0;
 	    register int count = 0;
 
-	    while (++count < 2) {
-		c = nextc();
+	    while (++count < 3) {
 		if ((c = nextc()) >= '0' && c <= '9') {
 		    i *= 16;
 		    i += c - '0';
@@ -2526,6 +2539,17 @@ cond(node)
     enum node_type type = nd_type(node);
 
     value_expr(node);
+    switch (type) {
+      case NODE_MASGN:
+      case NODE_LASGN:
+      case NODE_GASGN:
+      case NODE_IASGN:
+      case NODE_CASGN:
+	if (verbose) {
+	    Warning("asignment in condition");
+	}
+	break;
+    }
 
     node = cond0(node);
     if (type == NODE_CALL && node->nd_mid == '!') {

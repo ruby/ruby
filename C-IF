@@ -53,11 +53,13 @@ Ruby-C インターフェース
 大域変数
 
  void rb_define_variable(char *name, VALUE *var,
-			 VALUE (*get_hook), VALUE (*set_hook)())
+			 VALUE (*get_hook), VALUE (*set_hook)(), void *data)
 
    RubyとCとで共有するグローバル変数を定義する. get_hookがQnilでない時, 
-   変数参照の際にget_hookにセットされた関数が呼ばれる. set_hookがQnil
-   でない時には代入の時にset_hookが呼ばれる.
+   変数参照の際にget_hookにセットされた関数が呼ばれる. set_hookがQnil 
+   でない時には代入の時にset_hookが呼ばれる. hook関数には変数名を示す 
+   ID，(set hookの場合新しい値も)とともにdataで与えたデータが引数とし
+   て渡される.
 
    変数名が`$'で始まらない時には自動的に追加される. 変数名としてrubyの
    識別子として許されない文字(例えば` ')を含む場合にはrubyプログラムか
