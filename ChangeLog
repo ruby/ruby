@@ -1,3 +1,7 @@
+Tue Sep 12 07:05:24 2000  Wakou Aoyama <wakou@fsinet.or.jp>
+
+	* lib/net/telnet.rb: version 1.6.0
+
 Wed Aug 30 14:23:48 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* ext/tcltklib/tcltklib.c: support --enable-tcltk_stubs
