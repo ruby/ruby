@@ -27,8 +27,8 @@ class TkText<TkTextWin
   def _addtag(name, obj)
     @tags[name] = obj
   end
-  def tag_names
-    tk_send('tag', 'names').collect{|elt|
+  def tag_names(index=nil)
+    tk_split_list(tk_send('tag', 'names', index)).collect{|elt|
       if not @tags[elt]
 	elt
       else
@@ -103,13 +103,17 @@ class TkTextTag<TkObject
     tk_call @t.path, 'tag', 'add', @id, *index
   end
 
+  def remove(*index)
+    tk_call @t.path, 'tag', 'remove', @id, *index
+  end
+
   def configure(keys)
     tk_call @t.path, 'tag', 'configure', @id, *hash_kv(keys)
   end
 
-  def bind(seq, cmd=Proc.new)
-    id = install_cmd(cmd)
-    tk_call @t, 'tag', 'bind', tag, "<#{seq}>", id
+  def bind(seq, cmd=Proc.new, args=nil)
+    id = install_bind(cmd, args)
+    tk_call @t, 'tag', 'bind', @id, "<#{seq}>", id
     @t._addcmd cmd
   end
 

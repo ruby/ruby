@@ -47,10 +47,13 @@ static unsigned long malloc_memories = 0;
 
 void *
 xmalloc(size)
-    unsigned long size;
+    int size;
 {
     void *mem;
 
+    if (size < 0) {
+	ArgError("negative allocation size (or too big)");
+    }
     if (size == 0) size = 1;
 #if 0
     malloc_memories += size;
@@ -71,7 +74,7 @@ xmalloc(size)
 
 void *
 xcalloc(n, size)
-    unsigned long n, size;
+    int n, size;
 {
     void *mem;
 
@@ -84,10 +87,13 @@ xcalloc(n, size)
 void *
 xrealloc(ptr, size)
     void *ptr;
-    unsigned long size;
+    int size;
 {
     void *mem;
 
+    if (size < 0) {
+	ArgError("negative re-allocation size");
+    }
     if (!ptr) return xmalloc(size);
     mem = realloc(ptr, size);
     if (!mem) {

@@ -1670,7 +1670,6 @@ re_compile_pattern(pattern, size, bufp)
 	  GET_UNSIGNED_NUMBER(lower_bound);
 	  if (c == ',') {
 	    GET_UNSIGNED_NUMBER(upper_bound);
-	    if (upper_bound < 0) upper_bound = RE_DUP_MAX;
 	  }
 	  else
 	    /* Interval such as `{1}' => match exactly once. */
@@ -1679,8 +1678,9 @@ re_compile_pattern(pattern, size, bufp)
 	  if (lower_bound < 0 || c != '}')
 	    goto unfetch_interval;
 
-	  if (lower_bound > RE_DUP_MAX || upper_bound > RE_DUP_MAX)
+	  if (lower_bound >= RE_DUP_MAX || upper_bound >= RE_DUP_MAX)
 	    FREE_AND_RETURN(stackb, "too big quantifier in {,}");
+	  if (upper_bound < 0) upper_bound = RE_DUP_MAX;
 	  if (lower_bound > upper_bound)
 	    FREE_AND_RETURN(stackb, "can't do {n,m} with n > m");
 

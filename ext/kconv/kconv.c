@@ -1893,8 +1893,22 @@ kconv_guess(obj, src)
 {
     unsigned char *p = RSTRING(src)->ptr;
     unsigned char *pend = p + RSTRING(src)->len;
+    int sequence_counter = 0;
 
-#define INCR {p++;if (p==pend) return INT2FIX(_UNKNOWN);}
+#define INCR do {\
+    p++;\
+    if (p==pend) return INT2FIX(_UNKNOWN);\
+    sequence_counter++;\
+    if (sequence_counter % 2 == 1 && *p != 0xa4)\
+	sequence_counter = 0;\
+    if (6 <= sequence_counter) {\
+	sequence_counter = 0;\
+	return INT2FIX(_EUC);\
+    }\
+} while (0)
+
+    if (*p == 0xa4)
+	sequence_counter = 1;
 
     while (p<pend) {
 	if (*p == '\033') {
@@ -1908,37 +1922,41 @@ kconv_guess(obj, src)
 	if (0x81 <= *p && *p <= 0x8d) {
 	    return INT2FIX(_SJIS);
 	}
-	if (*p == 0x8e) {
+	if (0x8f <= *p && *p <= 0x9f) {
+	    return INT2FIX(_SJIS);
+	}
+	if (*p == 0x8e) {	/* SS2 */
 	    INCR;
 	    if ((0x40 <= *p && *p <= 0x7e) ||
 		(0x80 <= *p && *p <= 0xa0) ||
 		(0xe0 <= *p && *p <= 0xfc))
 		return INT2FIX(_SJIS);
 	}
-	if (0xa1 <= *p && *p <= 0xdf) {
+	else if (0xa1 <= *p && *p <= 0xdf) {
 	    INCR;
 	    if (0xf0 <= *p && *p <= 0xfe)
 		return INT2FIX(_EUC);
 	    if (0xe0 <= *p && *p <= 0xef) {
-		while (*p >= 0x40) {
+		while (p < pend && *p >= 0x40) {
 		    if (*p >= 0x81) {
-			if (0x8d <= *p || (0x8f <= *p && *p <= 0x9f)) {
+			if (*p <= 0x8d || (0x8f <= *p && *p <= 0x9f)) {
 			    return INT2FIX(_SJIS);
 			}
 			else if (0xfd <= *p && *p <= 0xfe) {
 			    return INT2FIX(_EUC);
 			}
 		    }
+		    INCR;
 		}
 	    }
-	    if (*p <= 0x9f) {
+	    else if (*p <= 0x9f) {
 		return INT2FIX(_SJIS);
 	    }
 	}
-	if (0xf0 <= *p && *p <= 0xfe) {
+	else if (0xf0 <= *p && *p <= 0xfe) {
 	    return INT2FIX(_EUC);
 	}
-	if (0xe0 <= *p && *p <= 0xef) {
+	else if (0xe0 <= *p && *p <= 0xef) {
 	    INCR;
 	    if ((0x40 <= *p && *p <= 0x7e) ||
 		(0x80 <= *p && *p <= 0xa0)) {
@@ -1948,7 +1966,7 @@ kconv_guess(obj, src)
 		return INT2FIX(_EUC);
 	    }
 	}
-	p++;
+	INCR;
     }
     return INT2FIX(_UNKNOWN);
 }

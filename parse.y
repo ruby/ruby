@@ -1645,7 +1645,8 @@ nextc()
 		sourceline = heredoc_end+1;
 		heredoc_end = 0;
 	    }
-	    while (RSTRING(v)->ptr[RSTRING(v)->len-1] == '\n' &&
+	    while (RSTRING(v)->len >= 2 &&
+		   RSTRING(v)->ptr[RSTRING(v)->len-1] == '\n' &&
 		   RSTRING(v)->ptr[RSTRING(v)->len-2] == '\\') {
 		VALUE v2 = io_gets(lex_input);
 
@@ -3423,7 +3424,7 @@ assignable(id, val)
 	}
 	else{
 	    if (!dyna_var_defined(id)) {
-		dyna_var_asgn(id, 0);
+		dyna_var_asgn(0, id);
 	    }
 	    lhs = NEW_DASGN(id, val);
 	}

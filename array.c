@@ -63,14 +63,17 @@ ary_new2(len)
     NEWOBJ(ary, struct RArray);
     OBJSETUP(ary, cArray, T_ARRAY);
 
+    if (len < 0) {
+	ArgError("negative array size (or size too big)");
+    }
+    if (len > 0 && len*sizeof(VALUE) <= 0) {
+	ArgError("array size too big");
+    }
     ary->len = 0;
     ary->capa = len;
-    if (len == 0)
-	ary->ptr = 0;
-    else {
-	ary->ptr = ALLOC_N(VALUE, len);
-	memclear(ary->ptr, len);
-    }
+    ary->ptr = 0;
+    ary->ptr = ALLOC_N(VALUE, len);
+    memclear(ary->ptr, len);
 
     return (VALUE)ary;
 }
@@ -162,7 +165,19 @@ ary_s_new(argc, argv, klass)
 
     rb_scan_args(argc, argv, "01", &size);
     ary->len = 0;
-    ary->capa = NIL_P(size)?ARY_DEFAULT_SIZE:NUM2INT(size);
+    ary->ptr = 0;
+    if (NIL_P(size)) {
+	ary->capa = ARY_DEFAULT_SIZE;
+    }
+    else {
+	ary->capa = NUM2INT(size);
+	if (ary->capa < 0) {
+	    ArgError("negative array size");
+	}
+	if (ary->capa*sizeof(VALUE) < 0) {
+	    ArgError("array size too big");
+	}
+    }
     ary->ptr = ALLOC_N(VALUE, ary->capa);
     memclear(ary->ptr, ary->capa);
     obj_call_init((VALUE)ary);
@@ -986,13 +1001,14 @@ ary_times(ary, times)
 	return ary_join(ary, times);
     }
 
-    len = NUM2INT(times) * RARRAY(ary)->len;
-    ary2 = ary_new2(len);
-    RARRAY(ary2)->len = len;
-
+    len = NUM2INT(times);
     if (len < 0) {
 	ArgError("negative argument");
     }
+    len *= RARRAY(ary)->len;
+
+    ary2 = ary_new2(len);
+    RARRAY(ary2)->len = len;
 
     for (i=0; i<len; i+=RARRAY(ary)->len) {
 	MEMCPY(RARRAY(ary2)->ptr+i, RARRAY(ary)->ptr, VALUE, RARRAY(ary)->len);

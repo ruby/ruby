@@ -125,12 +125,7 @@ static VALUE
 collect_i(i, tmp)
     VALUE i, tmp;
 {
-    VALUE retval;
-
-    retval = rb_yield(i);
-    if (RTEST(retval)) {
-	ary_push(tmp, retval);
-    }
+    ary_push(tmp, rb_yield(i));
     return Qnil;
 }
 

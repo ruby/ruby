@@ -26,6 +26,9 @@ module TkComm
   private :error_at
 
   def tk_tcl2ruby(val)
+    if val =~ /^rb_out (c\d+)/
+      return Tk_CMDTBL[$1]
+    end
     if val.include? ?\s
       return val.split.collect{|v| tk_tcl2ruby(v)}
     end
@@ -34,8 +37,6 @@ module TkComm
       val.to_i
     when /^\./
       Tk_WINDOWS[val]
-    when /^rb_out (c\d+)/
-      Tk_CMDTBL[$1]
     when / /
       val.split.collect{|elt|
 	tk_tcl2ruby(elt)
@@ -134,6 +135,7 @@ module TkComm
   def _next_cmd_id
     id = _curr_cmd_id
     Tk_IDs[0] += 1
+    id
   end
   def install_cmd(cmd)
     return '' if cmd == ''
@@ -235,6 +237,10 @@ module TkComm
 
   def pack(*args)
     TkPack.configure *args
+  end
+
+  def grid(*args)
+    TkGrid.configure *args
   end
 
   def after(ms, cmd=Proc.new)
@@ -786,6 +792,70 @@ module TkPack
   module_function :configure, :forget, :propagate
 end
 
+module TkGrid
+  include Tk
+  extend Tk
+
+  def bbox(*args)
+    list(tk_call('grid', 'bbox', *args))
+  end
+
+  def configure(widget, *args)
+    if args[-1].kind_of?(Hash)
+      keys = args.pop
+    end
+    wins = [widget.path]
+    for i in args
+      wins.push i.epath
+    end
+    tk_call "grid", 'configure', *(wins+hash_kv(keys))
+  end
+
+  def columnconfigure(master, index, *args)
+    tk_call "grid", 'columnconfigure', master, index, *hash_kv(keys)
+  end
+
+  def rowconfigure(master, index, *args)
+    tk_call "grid", 'rowconfigure', master, index, *hash_kv(keys)
+  end
+
+  def add(widget, *args)
+    configure(widget, *args)
+  end
+
+  def forget(*args)
+    tk_call 'grid', 'forget', *args
+  end
+
+  def info(slave)
+    list(tk_call('grid', 'info', slave))
+  end
+
+  def location(master, x, y)
+    list(tk_call('grid', 'location', master, x, y))
+  end
+
+  def propagate(master, bool=None)
+    bool(tk_call('grid', 'propagate', master.epath, bool))
+  end
+
+  def remove(*args)
+    tk_call 'grid', 'remove', *args
+  end
+
+  def size(master)
+    tk_call 'grid', 'size', master
+  end
+
+  def slaves(*args)
+    list(tk_call('grid', 'slaves', *hash_kv(args)))
+  end
+
+  module_function :bbox, :forget, :propagate, :info
+  module_function :remove, :size, :slaves, :location
+  module_function :configure, :columnconfigure, :rowconfigure
+end
+
 module TkOption
   include Tk
   extend Tk
@@ -833,8 +903,16 @@ class TkObject<TkKernel
     end
   end
 
+  def [](id)
+    cget id
+  end
+
   def []=(id, val)
     configure id, val
+  end
+
+  def cget(slot)
+    tk_tcl2ruby tk_call path, 'cget', "-#{slot}"
   end
 
   def configure(slot, value)
@@ -888,6 +966,16 @@ class TkWindow<TkObject
 
   def unpack(keys = nil)
     tk_call 'pack', 'forget', epath
+    self
+  end
+
+  def grid(keys = nil)
+    tk_call 'grid', epath, *hash_kv(keys)
+    self
+  end
+
+  def ungrid(keys = nil)
+    tk_call 'grid', 'forget', epath
     self
   end
 
@@ -1131,6 +1219,10 @@ class TkScrollbar<TkWindow
 end
 
 class TkTextWin<TkWindow
+  def create_self
+    raise TypeError, "TkTextWin is abstract class"
+  end
+
   def bbox(index)
     tk_send 'bbox', index
   end

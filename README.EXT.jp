@@ -203,8 +203,8 @@ Rubyが用意している関数を用いてください．
 
     配列で与えたn要素の配列を生成する．
 
-  ary_push(VALUE ary)
-  ary_pop(VALUE ary, VALUE val)
+  ary_push(VALUE ary, VALUE val)
+  ary_pop(VALUE ary)
   ary_shift(VALUE ary)
   ary_unshift(VALUE ary, VALUE val)
   ary_entry(VALUE ary, int idx)

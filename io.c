@@ -289,8 +289,11 @@ io_eof(io)
     io_readable(fptr);
 
     if (READ_DATA_PENDING(fptr->f)) return FALSE;
+#if 0
     if (feof(fptr->f)) return TRUE;
-
+    return FALSE;
+#else
+    READ_CHECK(fptr->f);
     TRAP_BEG;
     ch = getc(fptr->f);
     TRAP_END;
@@ -300,6 +303,7 @@ io_eof(io)
 	return FALSE;
     }
     return TRUE;
+#endif
 }
 
 static VALUE
@@ -389,8 +393,10 @@ read_all(port)
 	TRAP_BEG;
 	n = fread(RSTRING(str)->ptr+bytes, 1, siz-bytes, fptr->f);
 	TRAP_END;
-	if (n == 0) break;
-	if (n < 0) rb_sys_fail(fptr->path);
+	if (n <= 0) {
+	    if (ferror(fptr->f)) rb_sys_fail(fptr->path);
+	    return Qnil;
+	}
 	bytes += n;
 	if (bytes <  siz) break;
 	siz += BUFSIZ;
@@ -425,11 +431,10 @@ io_read(argc, argv, io)
     TRAP_BEG;
     n = fread(RSTRING(str)->ptr, 1, len, fptr->f);
     TRAP_END;
-    if (n == 0) return Qnil;
-    if (n < 0) {
-	rb_sys_fail(fptr->path);
+    if (n <= 0) {
+	if (ferror(fptr->f)) rb_sys_fail(fptr->path);
+	return Qnil;
     }
-
     RSTRING(str)->len = n;
     RSTRING(str)->ptr[n] = '\0';
 
@@ -521,7 +526,13 @@ io_gets_method(argc, argv, io)
 	    TRAP_BEG;
 	    cnt = fread(buf, 1, sizeof(buf), f);
 	    TRAP_END;
-	    c = cnt ? 0 : EOF;
+	    if (cnt == 0) {
+		if (ferror(f)) rb_sys_fail(fptr->path);
+		c = EOF;
+	    }
+	    else {
+		c = 0;
+	    }
 	}
 
 	if (c == EOF && !append && cnt == 0) {
@@ -2164,6 +2175,7 @@ io_ctl(io, req, arg, io_p)
 	narg = (long)RSTRING(arg)->ptr;
     }
     fd = fileno(fptr->f);
+    TRAP_BEG;
 #ifdef HAVE_FCNTL
 # ifdef USE_CWGUSI
     retval = io_p?ioctl(fd, cmd, (void*) narg):fcntl(fd, cmd, narg);
@@ -2171,6 +2183,7 @@ io_ctl(io, req, arg, io_p)
     retval = io_p?ioctl(fd, cmd, narg):fcntl(fd, cmd, narg);
 # endif
 #else
+    TRAP_END;
     if (!io_p) {
 	rb_notimplement();
     }
@@ -2249,6 +2262,7 @@ f_syscall(argc, argv)
 	}
 	i++;
     }
+    TRAP_BEG;
     switch (argc) {
       case 1:
 	retval = syscall(arg[0]);
@@ -2302,6 +2316,7 @@ f_syscall(argc, argv)
 	break;
 #endif /* atarist */
     }
+    TRAP_END;
     if (retval == -1) rb_sys_fail(0);
     return INT2FIX(0);
 #else

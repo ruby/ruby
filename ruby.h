@@ -101,7 +101,7 @@ typedef unsigned int ID;
 #   include <limits.h>
 #  else
     /* assuming 32bit(2's compliment) long */
-#   define LONG_MAX 2147483647	
+#   define LONG_MAX 2147483647
 #  endif
 # endif
 # ifndef LONG_MIN
@@ -402,9 +402,9 @@ int rb_special_const_p _((VALUE));
 int rb_test_false_or_nil _((VALUE));
 #endif
 
-void *xmalloc _((unsigned long));
-void *xcalloc _((unsigned long,unsigned long));
-void *xrealloc _((void*,unsigned long));
+void *xmalloc _((int));
+void *xcalloc _((int,int));
+void *xrealloc _((void*,int));
 #define ALLOC_N(type,n) (type*)xmalloc(sizeof(type)*(n))
 #define ALLOC(type) (type*)xmalloc(sizeof(type))
 #define REALLOC_N(var,type,n) (var)=(type*)xrealloc((char*)(var),sizeof(type)*(n))

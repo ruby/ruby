@@ -413,6 +413,7 @@ def extmake(target)
       end
     end
     if $static
+      $extlibs = "" unless $extlibs
       $extlibs += " " + $LDFLAGS if $LDFLAGS
       $extlibs += " " + $local_libs if $local_libs
       $extlibs += " " + $libs if $libs
@@ -481,6 +482,7 @@ if $extlist.size > 0
 \tInit_%s();\n\
 \trb_provide(\"%s.o\");\n\
 ", t, t)
+      $extobjs = "" unless $extobjs
       $extobjs += "ext/"
       $extobjs += f
       $extobjs += " "

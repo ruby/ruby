@@ -1,6 +1,56 @@
+Thu Jun 11 18:19:18 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* experimental release 1.1b9_25.
+
+	* eval.c (dvar_add_compiling): register dyna_var at compile time.
+
+	* regex.c (re_compile_pattern): RE_DUP_MAX iteration is too big.
+
+Wed Jun 10 15:12:04 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (io_eof): do not block other threads.
+
+	* signal.c (trap): reserve SIGALRM for thread.
+
+	* eval.c (thread_create): use ITIMER_REAL also to avoid system
+	  call blocking.
+
+	* io.c (f_syscall): add TRAP_BEG, TRAP_END around system calls.
+
+	* io.c (io_ctl): add TRAP_BEG, TRAP_END around system calls.
+
+	* enum.c (enum_collect): did not collect false values.
+
+	* array.c (ary_new2): forgot to initialize capa field.
+
+Tue Jun  9 18:36:15 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* string.c (str_split_method): split dumped core for "\xff".
+
+Tue Jun  9 16:22:12 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* experimental release 1.1b9_24.
+
+Tue Jun  9 16:04:07 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* ext/kconv/kconv.c (kconv_guess): more precise decision for EUC,
+	  using jless algorithm (3 sequential EUC hiragana characters).
+
+Tue Jun  9 15:12:44 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ext/kconv/kconv.c (kconv_guess): wrong guess for EUC as SJIS in
+	  some cases (0xe0 - 0xef).
+
+	* gc.c (xmalloc): insert size check for big (negative in signed)
+	  allocation size.
+
 Tue Jun  9 02:54:51 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* lib/parsedate.rb: wday moved to the last in the return values.
+
+Mon Jun  8 10:40:16 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (str_split_method): split dumped core for "\0".
 
 Sat Jun  6 22:50:52 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

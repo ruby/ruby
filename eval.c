@@ -450,6 +450,17 @@ new_dvar(id, value)
     vars->id = id;
     vars->val = value;
     vars->next = the_dyna_vars;
+
+    return vars;
+}
+
+static struct RVarmap*
+push_dvar(id, value)
+    ID id;
+    VALUE value;
+{
+    struct RVarmap* vars = new_dvar(id, value);
+
     if (the_dyna_vars) {
 	vars->next = the_dyna_vars->next;
 	the_dyna_vars->next = vars;
@@ -491,21 +502,42 @@ dyna_var_ref(id)
     return Qnil;
 }
 
+static void
+dvar_add_compiling(id)
+    ID id;
+{
+    struct RVarmap *vars = the_dyna_vars;
+
+    while (vars) {
+	if (vars->id == 0) break;
+	if (vars->id == id) {
+	    return;
+	}
+	vars = vars->next;
+    }
+    the_dyna_vars = new_dvar(id, 0);
+}
+
 VALUE
 dyna_var_asgn(id, value)
     ID id;
     VALUE value;
 {
-    struct RVarmap *vars = the_dyna_vars;
-
-    while (vars) {
-	if (vars->id == id) {
-	    vars->val = value;
-	    return value;
-	}
-	vars = vars->next;
+    if (id == 0) {
+	dvar_add_compiling((ID)value);
     }
-    new_dvar(id, value);
+    else {
+	struct RVarmap *vars = the_dyna_vars;
+
+	while (vars) {
+	    if (vars->id == id) {
+		vars->val = value;
+		return value;
+	    }
+	    vars = vars->next;
+	}
+	push_dvar(id, value);
+    }
     return value;
 }
 
@@ -6159,14 +6191,21 @@ thread_create(fn, arg)
 
 #ifdef POSIX_SIGNAL
 	posix_signal(SIGVTALRM, catch_timer);
+	posix_signal(SIGALRM, catch_timer);
 #else
 	signal(SIGVTALRM, catch_timer);
+	posix_signal(SIGALRM, catch_timer);
 #endif
 
 	tval.it_interval.tv_sec = 0;
 	tval.it_interval.tv_usec = 100000;
 	tval.it_value = tval.it_interval;
 	setitimer(ITIMER_VIRTUAL, &tval, NULL);
+
+	tval.it_interval.tv_sec =  2; /* unblock system calls */
+	tval.it_interval.tv_usec = 0;
+	tval.it_value = tval.it_interval;
+	setitimer(ITIMER_REAL, &tval, NULL);
 
 	init = 1;
     }

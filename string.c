@@ -2002,7 +2002,7 @@ str_split_method(argc, argv, str)
     extern VALUE FS;
     VALUE spat;
     VALUE limit;
-    char char_sep = 0;
+    int char_sep = -1;
     int beg, end, lim, i;
     VALUE result, tmp;
 
@@ -2026,7 +2026,7 @@ str_split_method(argc, argv, str)
 	  case T_STRING:
 	  fs_set:
 	    if (STRLEN(spat) == 1) {
-		char_sep = RSTRING(spat)->ptr[0];
+		char_sep = (unsigned char)RSTRING(spat)->ptr[0];
 	    }
 	    else {
 		spat = reg_regcomp(spat);
@@ -2041,7 +2041,7 @@ str_split_method(argc, argv, str)
 
     result = ary_new();
     beg = 0;
-    if (char_sep != 0) {
+    if (char_sep >= 0) {
 	char *ptr = RSTRING(str)->ptr;
 	int len = RSTRING(str)->len;
 	char *eptr = ptr + len;
@@ -2074,7 +2074,7 @@ str_split_method(argc, argv, str)
 	}
 	else {
 	    for (end = beg = 0; ptr<eptr; ptr++) {
-		if (*ptr == char_sep) {
+		if (*ptr == (char)char_sep) {
 		    ary_push(result, str_substr(str, beg, end-beg));
 		    beg = end + 1;
 		    if (!NIL_P(limit) && lim <= ++i) break;
