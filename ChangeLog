@@ -1,3 +1,7 @@
+Mon Oct 18 15:58:01 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* range.c (range_step, range_each): need cast.
+
 Mon Oct 18 07:26:21 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_truncate): discard read buffer before truncation.
