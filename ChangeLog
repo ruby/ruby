@@ -1,3 +1,7 @@
+Wed Apr 23 08:39:27 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* ext/zlib/extconf.rb: bccwin32 is win32 too.
+
 Tue Apr 22 20:58:00 2003  Takaaki Uematsu  <uema2x@jcom.home.ne.jp>
 
 	* ruby.c: don't call VirtualQuery in ruby_init_loadpath()

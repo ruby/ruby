@@ -22,7 +22,7 @@ if %w'z libz zlib'.find {|z| have_library(z, 'deflateReset')} and
       os_code = 'AMIGA'
     when /\Aos2[\-_]emx\z/ then
       os_code = 'OS2'
-    when 'mswin32', 'mingw32' then
+    when 'mswin32', 'mingw32', 'bccwin32' then
       # NOTE: cygwin should be regarded as Unix.
       os_code = 'WIN32'
     else
