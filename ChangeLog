@@ -1,3 +1,12 @@
+Fri Jan  4 17:23:49 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* misc/ruby-mode.el (ruby-forward-string): forward a string. [new]
+
+	* misc/ruby-mode.el (ruby-parse-region): handle nested parentheses
+	  in a string and terminators in #{}.
+
+	* misc/ruby-mode.el (ruby-calculate-indent): ditto.
+
 Sat Jan  5 00:19:12 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* parse.y (yycompile): strdup()'ed twice.
@@ -94,6 +103,11 @@ Tue Dec 25 02:11:17 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  invoking rb_rescue().
 
 	* object.c (rb_check_convert_type): ditto.
+
+Mon Dec 24 02:37:40 2001  Le Wang  <lewang@bigfoot.com>
+
+	* misc/ruby-mode.el (ruby-font-lock-syntactic-keywords):
+	  fix font-lock problem [ruby-talk:29296].
 
 Sat Dec 22 22:52:14 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
