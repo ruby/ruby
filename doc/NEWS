@@ -1,3 +1,7 @@
+: Method#==
+
+  Added.
+
 : Multiple assignment behavior
 
   Fixed so that "*a = nil" results in "a == []".
