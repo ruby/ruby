@@ -2117,7 +2117,7 @@ rb_eval(self, node)
 		rb_clear_cache_by_id(node->nd_mid);
 	    }
 
-	    if (FL_TEST(the_scope,SCOPE_PRIVATE)) {
+	    if (FL_TEST(the_scope,SCOPE_PRIVATE) || node->nd_mid == init) {
 		noex = NOEX_PRIVATE;
 	    }
 	    else {
@@ -2127,9 +2127,6 @@ rb_eval(self, node)
 	    if (FL_TEST(the_scope,SCOPE_MODFUNC)) {
 		rb_add_method(rb_singleton_class(the_class),
 			      node->nd_mid, node->nd_defn, NOEX_PUBLIC);
-	    }
-
-	    if (FL_TEST(the_scope, SCOPE_MODFUNC)) {
 		rb_funcall(the_class, rb_intern("singleton_method_added"),
 			   1, INT2FIX(node->nd_mid));
 	    }

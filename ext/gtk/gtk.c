@@ -5246,7 +5246,6 @@ Init_gtk()
 
     /* GtkObject */
     rb_define_method(gObject, "initialize", gobj_initialize, -1);
-    rb_define_method(gObject, "initialize", gobj_initialize, -1);
     rb_define_method(gObject, "set_flags", gobj_set_flags, 1);
     rb_define_method(gObject, "unset_flags", gobj_unset_flags, 1);
     rb_define_method(gObject, "destroy", gobj_destroy, 0);
