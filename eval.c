@@ -2297,6 +2297,9 @@ rb_eval(self, node)
 		rb_clear_cache();
 		class = rb_singleton_class(class);
 	    }
+	    else {
+		class = CLASS_OF(class);
+	    }
 
 	    result = module_setup(class, node->nd_body);
 	}

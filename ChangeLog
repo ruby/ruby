@@ -1,5 +1,7 @@
 Thu Jan 22 16:21:08 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
+	* eval.c (rb_eval): some singleton class def cause SEGV.
+
 	* eval.c (ALLOCTMP): replace ALLOCA_N, where thread context switch 
 	  may happen.
 
