@@ -1053,7 +1053,7 @@ glob_helper(path, sub, flags, func, arg)
     return status;
 }
 
-static void
+static int
 rb_glob2(path, flags, func, arg)
     const char *path;
     int flags;
@@ -1067,7 +1067,7 @@ rb_glob2(path, flags, func, arg)
     strcpy(buf, path);
     status = glob_helper(buf, 0, flags, func, arg);
     free(buf);
-    if (status) rb_jump_tag(status);
+    return status;
 }
 
 void
@@ -1076,7 +1076,9 @@ rb_glob(path, func, arg)
     void (*func) _((const char*, VALUE));
     VALUE arg;
 {
-    rb_glob2(path, 0, func, arg);
+    int status = rb_glob2(path, 0, func, arg);
+
+    if (status) rb_jump_tag(status);
 }
 
 void
@@ -1085,7 +1087,9 @@ rb_globi(path, func, arg)
     void (*func) _((const char*, VALUE));
     VALUE arg;
 {
-    rb_glob2(path, FNM_CASEFOLD, func, arg);
+    int status = rb_glob2(path, FNM_CASEFOLD, func, arg);
+
+    if (status) rb_jump_tag(status);
 }
 
 static void
@@ -1103,16 +1107,16 @@ push_pattern(path, ary)
     }
 }
 
-static void
+static int
 push_globs(ary, s, flags)
     VALUE ary;
     const char *s;
     int flags;
 {
-    rb_glob2(s, flags, push_pattern, ary);
+    return rb_glob2(s, flags, push_pattern, ary);
 }
 
-static void
+static int
 push_braces(ary, s, flags)
     VALUE ary;
     const char *s;
@@ -1122,6 +1126,7 @@ push_braces(ary, s, flags)
     const char *p, *t;
     const char *lbrace, *rbrace;
     int nest = 0;
+    int status = 0;
 
     p = s;
     lbrace = rbrace = 0;
@@ -1155,13 +1160,16 @@ push_braces(ary, s, flags)
 	    }
 	    memcpy(b, t, p-t);
 	    strcpy(b+(p-t), rbrace+1);
-	    push_braces(ary, buf, flags);
+	    status = push_braces(ary, buf, flags);
+	    if (status) break;
 	}
 	free(buf);
     }
     else {
-	push_globs(ary, s, flags);
+	status = push_globs(ary, s, flags);
     }
+
+    return status;
 }
 
 #define isdelim(c) ((c)=='\0')
@@ -1175,6 +1183,7 @@ rb_push_glob(str, flags)
     char *buf;
     char *t;
     int nest, maxnest;
+    int status = 0;
     int noescape = flags & FNM_NOESCAPE;
     VALUE ary;
 
@@ -1204,14 +1213,18 @@ rb_push_glob(str, flags)
 	}
 	*t = '\0';
 	if (maxnest == 0) {
-	    push_globs(ary, buf, flags);
+	    status = push_globs(ary, buf, flags);
+	    if (status) break;
 	}
 	else if (nest == 0) {
-	    push_braces(ary, buf, flags);
+	    status = push_braces(ary, buf, flags);
+	    if (status) break;
 	}
 	/* else unmatched braces */
     }
     free(buf);
+
+    if (status) rb_jump_tag(status);
 
     return ary;
 }
