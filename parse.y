@@ -103,6 +103,8 @@ struct local_vars {
     int nofree;
     int cnt;
     int dlev;
+    int dname_size;
+    ID *dnames;
     struct RVarmap* dyna_vars;
     struct local_vars *prev;
 };
@@ -251,6 +253,8 @@ static NODE *gettable_gen _((struct parser_params*,ID));
 #define gettable(id) gettable_gen(parser,id)
 static NODE *assignable_gen _((struct parser_params*,ID,NODE*));
 #define assignable(id,node) assignable_gen(parser, id, node)
+static NODE *new_bv_gen _((struct parser_params*,ID,NODE*));
+#define new_bv(id,node) new_bv_gen(parser, id, node)
 static NODE *aryset_gen _((struct parser_params*,NODE*,NODE*));
 #define aryset(node1,node2) aryset_gen(parser, node1, node2)
 static NODE *attrset_gen _((struct parser_params*,NODE*,ID));
@@ -285,6 +289,10 @@ static int dyna_in_block_gen _((struct parser_params*));
 #define dyna_in_block() dyna_in_block_gen(parser)
 static NODE *dyna_init_gen _((struct parser_params*, NODE*, struct RVarmap *));
 #define dyna_init(node, pre) dyna_init_gen(parser, node, pre)
+static void dyna_var_gen _((struct parser_params*,ID));
+#define dyna_var(id) dyna_var_gen(parser, id)
+static void dyna_check_gen _((struct parser_params*,ID));
+#define dyna_check(id) dyna_check_gen(parser, id)
 
 static void top_local_init_gen _((struct parser_params*));
 #define top_local_init() top_local_init_gen(parser)
@@ -364,6 +372,8 @@ static VALUE ripper_id2sym _((ID));
 #define method_optarg(m,a) ((a)==Qundef ? m : dispatch2(method_add_arg,m,a))
 #define method_arg(m,a) dispatch2(method_add_arg,m,a)
 #define escape_Qundef(x) ((x)==Qundef ? Qnil : (x))
+
+#define FIXME 0
 
 #endif /* RIPPER */
 
@@ -492,7 +502,8 @@ static void ripper_compile_error _((struct parser_params*, const char *fmt, ...)
 %type <node> mrhs superclass block_call block_command
 %type <node> f_arglist f_args f_optarg f_opt f_block_arg opt_f_block_arg
 %type <node> assoc_list assocs assoc undef_list backref string_dvar
-%type <node> for_var block_var opt_block_var block_var_def block_par
+%type <node> for_var block_var opt_block_var block_var_def block_param
+%type <node> opt_bv_decl bv_decls bv_decl
 %type <node> brace_block cmd_brace_block do_block lhs none fitem
 %type <node> mlhs mlhs_head mlhs_basic mlhs_entry mlhs_item mlhs_node
 %type <id>   fsym variable sym symbol operation operation2 operation3
@@ -1098,7 +1109,9 @@ cmd_brace_block	: tLBRACE_ARG
 		  '}'
 		    {
 		    /*%%%*/
-			$$ = NEW_ITER($3, 0, dyna_init($5, $<vars>4));
+			$3->nd_body = block_append($3->nd_body,
+						   dyna_init($5, $<vars>4));
+			$$ = $3;
 			nd_set_line($$, $<num>1);
 			dyna_pop($<vars>2);
 		    /*%
@@ -2963,7 +2976,7 @@ for_var 	: lhs
 		| mlhs
 		;
 
-block_par	: mlhs_item
+block_param	: mlhs_item
 		    {
 		    /*%%%*/
 			$$ = NEW_LIST($1);
@@ -2971,7 +2984,7 @@ block_par	: mlhs_item
 			$$ = mlhs_add(mlhs_new(), $1);
 		    %*/
 		    }
-		| block_par ',' mlhs_item
+		| block_param ',' mlhs_item
 		    {
 		    /*%%%*/
 			$$ = list_append($1, $3);
@@ -2981,7 +2994,7 @@ block_par	: mlhs_item
 		    }
 		;
 
-block_var	: block_par
+block_var	: block_param
 		    {
 		    /*%%%*/
 			if ($1->nd_alen == 1) {
@@ -2995,7 +3008,7 @@ block_var	: block_par
 			$$ = blockvar_new($1);
 		    %*/
 		    }
-		| block_par ','
+		| block_param ','
 		    {
 		    /*%%%*/
 			$$ = NEW_MASGN($1, 0);
@@ -3003,7 +3016,7 @@ block_var	: block_par
 			$$ = blockvar_new($1);
 		    %*/
 		    }
-		| block_par ',' tAMPER lhs
+		| block_param ',' tAMPER lhs
 		    {
 		    /*%%%*/
 			$$ = NEW_BLOCK_VAR($4, NEW_MASGN($1, 0));
@@ -3011,7 +3024,7 @@ block_var	: block_par
 			$$ = blockvar_add_block(blockvar_new($1), $4);
 		    %*/
 		    }
-		| block_par ',' tSTAR lhs ',' tAMPER lhs
+		| block_param ',' tSTAR lhs ',' tAMPER lhs
 		    {
 		    /*%%%*/
 			$$ = NEW_BLOCK_VAR($7, NEW_MASGN($1, $4));
@@ -3020,7 +3033,7 @@ block_var	: block_par
 			$$ = blockvar_add_block($$, $7);
 		    %*/
 		    }
-		| block_par ',' tSTAR ',' tAMPER lhs
+		| block_param ',' tSTAR ',' tAMPER lhs
 		    {
 		    /*%%%*/
 			$$ = NEW_BLOCK_VAR($6, NEW_MASGN($1, -1));
@@ -3029,7 +3042,7 @@ block_var	: block_par
 			$$ = blockvar_add_block($$, $6);
 		    %*/
 		    }
-		| block_par ',' tSTAR lhs
+		| block_param ',' tSTAR lhs
 		    {
 		    /*%%%*/
 			$$ = NEW_MASGN($1, $4);
@@ -3037,7 +3050,7 @@ block_var	: block_par
 			$$ = blockvar_add_star(blockvar_new($1), $4);
 		    %*/
 		    }
-		| block_par ',' tSTAR
+		| block_param ',' tSTAR
 		    {
 		    /*%%%*/
 			$$ = NEW_MASGN($1, -1);
@@ -3090,34 +3103,85 @@ block_var	: block_par
 		;
 
 opt_block_var	: none
-		| block_var_def
-		    {
-			$$ = $1;
-		    }
-		;
-
-block_var_def	: '|' /* none */ '|'
 		    {
 		    /*%%%*/
-			$$ = (NODE*)1;
+			$$ = NEW_ITER(0, 0, 0);
 		    /*%
-			$$ = dispatch1(blockvar_new, mlhs_new());
+		    %*/
+		    }
+		| block_var_def
+		;
+
+block_var_def	: '|' opt_bv_decl '|'
+		    {
+		    /*%%%*/
+			$$ = NEW_ITER((NODE*)1, 0, $2);
+		    /*%
+			$$ = blockvar_new(mlhs_new());
 		    %*/
 		    }
 		| tOROP
 		    {
 		    /*%%%*/
-			$$ = (NODE*)1;
+			$$ = NEW_ITER((NODE*)1, 0, 0);
 		    /*%
-			$$ = dispatch1(blockvar_new, mlhs_new());
+			$$ = blockvar_new(mlhs_new());
 		    %*/
 		    }
-		| '|' block_var '|'
+		| '|' block_var opt_bv_decl '|'
+		    {
+		    /*%%%*/
+			$$ = NEW_ITER($2, 0, $3);
+		    /*%
+			$$ = blockvar_new($2);
+		    %*/
+		    }
+		;
+
+
+opt_bv_decl	: none
+		| ';' bv_decls
 		    {
 		    /*%%%*/
 			$$ = $2;
 		    /*%
-			$$ = dispatch1(blockvar_new, $2);
+			$$ = FIXME;
+		    %*/
+		    }
+		;
+
+bv_decls	: bv_decl
+		    {
+		    /*%%%*/
+			$$ = $1;
+		    /*%
+			$$ = FIXME;
+		    %*/
+		    }
+		| bv_decls ',' bv_decl
+		    {
+		    /*%%%*/
+			$$ = block_append($1, $3);
+		    /*%
+			$$ = FIXME;
+		    %*/
+		    }
+		;
+
+bv_decl		:  tIDENTIFIER
+		    {
+		    /*%%%*/
+                        $$ = new_bv($1, NEW_NIL());
+		    /*%
+			$$ = FIXME;
+		    %*/
+		    }
+		| tIDENTIFIER '=' primary
+		    {
+		    /*%%%*/
+                        $$ = new_bv($1, $3);
+		    /*%
+			$$ = FIXME;
 		    %*/
 		    }
 		;
@@ -3139,7 +3203,9 @@ do_block	: kDO_BLOCK
 		  kEND
 		    {
 		    /*%%%*/
-			$$ = NEW_ITER($3, 0, dyna_init($5, $<vars>4));
+			$3->nd_body = block_append($3->nd_body,
+						   dyna_init($5, $<vars>4));
+			$$ = $3;
 			nd_set_line($$, $<num>1);
 			dyna_pop($<vars>2);
 		    /*%
@@ -3253,7 +3319,9 @@ brace_block	: '{'
 		  compstmt '}'
 		    {
 		    /*%%%*/
-			$$ = NEW_ITER($3, 0, dyna_init($5, $<vars>4));
+			$3->nd_body = block_append($3->nd_body,
+						   dyna_init($5, $<vars>4));
+			$$ = $3;
 			nd_set_line($$, $<num>1);
 			dyna_pop($<vars>2);
 		    /*%
@@ -3277,7 +3345,9 @@ brace_block	: '{'
 		  compstmt kEND
 		    {
 		    /*%%%*/
-			$$ = NEW_ITER($3, 0, dyna_init($5, $<vars>4));
+			$3->nd_body = block_append($3->nd_body,
+						   dyna_init($5, $<vars>4));
+			$$ = $3;
 			nd_set_line($$, $<num>1);
 			dyna_pop($<vars>2);
 		    /*%
@@ -6831,6 +6901,7 @@ gettable_gen(parser, id)
 	if (dyna_in_block() && rb_dvar_defined(id)) return NEW_DVAR(id);
 	if (local_id(id)) return NEW_LVAR(id);
 	/* method call without arguments */
+        dyna_check(id);
 	return NEW_VCALL(id);
     }
     else if (is_global_id(id)) {
@@ -6885,7 +6956,7 @@ assignable_gen(parser, id, val)
 	    return NEW_LASGN(id, val);
 	}
 	else{
-	    rb_dvar_push(id, Qnil);
+	    dyna_var(id);
 	    return NEW_DASGN_CURR(id, val);
 	}
     }
@@ -6910,6 +6981,22 @@ assignable_gen(parser, id, val)
     return 0;
 }
 
+static NODE*
+new_bv_gen(parser, name, val)
+    struct parser_params *parser;
+    ID name;
+    NODE *val;
+{
+    if (is_local_id(name) && !rb_dvar_defined(name) && !local_id(name)) {
+	dyna_var(name);
+	return NEW_DASGN_CURR(name, val);
+    }
+    else {
+	compile_error(PARSER_ARG "local variable name conflict - %s",
+		      rb_id2name(name));
+	return 0;
+    }
+}
 static NODE *
 aryset_gen(parser, recv, idx)
     struct parser_params *parser;
@@ -7629,6 +7716,8 @@ local_push_gen(parser, top)
     local->cnt = 0;
     local->tbl = 0;
     local->dlev = 0;
+    local->dname_size = 0;
+    local->dnames = 0;
     local->dyna_vars = ruby_dyna_vars;
     lvtbl = local;
     if (!top) {
@@ -7647,6 +7736,9 @@ local_pop_gen(parser)
     if (lvtbl->tbl) {
 	if (!lvtbl->nofree) xfree(lvtbl->tbl);
 	else lvtbl->tbl[0] = lvtbl->cnt;
+    }
+    if (lvtbl->dnames) {
+	xfree(lvtbl->dnames);
     }
     ruby_dyna_vars = lvtbl->dyna_vars;
     xfree(lvtbl);
@@ -7770,6 +7862,42 @@ top_local_setup_gen(parser)
 	}
     }
     local_pop();
+}
+
+static void
+dyna_var_gen(parser, id)
+    struct parser_params *parser;
+    ID id;
+{
+    int i;
+
+    rb_dvar_push(id, Qnil);
+    for (i=0; i<lvtbl->dname_size; i++) {
+	if (lvtbl->dnames[i] == id) return;
+    }
+    if (lvtbl->dname_size == 0) {
+	lvtbl->dnames = ALLOC_N(ID, 1);
+    }
+    else {
+	REALLOC_N(lvtbl->dnames, ID, lvtbl->dname_size+1);
+    }
+    lvtbl->dnames[lvtbl->dname_size++] = id;
+}
+
+static void
+dyna_check_gen(parser, id)
+    struct parser_params *parser;
+    ID id;
+{
+    int i;
+
+    if (in_defined) return;	/* no check needed */
+    for (i=0; i<lvtbl->dname_size; i++) {
+	if (lvtbl->dnames[i] == id) {
+	    rb_warnS("out-of-scope variable - %s", rb_id2name(id));
+	    return;
+	}
+    }
 }
 
 static struct RVarmap*
@@ -8819,3 +8947,4 @@ Init_ripper()
     rb_intern("&&");
 }
 #endif /* RIPPER */
+

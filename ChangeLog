@@ -1,3 +1,11 @@
+Wed Mar  9 18:09:51 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (gettable_gen): warns if VCALL name is used as
+	  out-of-scope block local variable.  [EXPERIMENTAL]
+
+	* parse.y (opt_bv_decl): add explicit block local variable
+	  declaration.  raises error for name conflicts.  [EXPERIMENTAL]
+
 Wed Mar  9 13:37:57 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/sample/tktextio.rb: fix bug of handling 'end' position.
@@ -13,6 +21,12 @@ Tue Mar  8 13:39:25 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/mkconstants.rb: workaround for some of 4.4BSD-Lite
 	  derived OSs.
+
+Tue Mar  8 12:36:17 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c: document from Sam Roberts
+	  <sroberts@uniserve.com> for getsockopt and setsockopt is merged.
+	  [ruby-doc:824]
 
 Tue Mar  8 10:48:53 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 

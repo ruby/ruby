@@ -1667,8 +1667,8 @@ else
 
     pack('expand'=>'yes', 'fill'=>'both', 'padx'=>1, 'pady'=>1)
 
-    v.command(proc{|*args| c.yview(*args)})
-    h.command(proc{|*args| c.xview(*args)})
+    v.command(proc{|*args| f.yview(*args)})
+    h.command(proc{|*args| f.xview(*args)})
   }
 end
 

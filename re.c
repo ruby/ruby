@@ -1719,7 +1719,7 @@ rb_reg_match_m(argc, argv, re)
  *  options are propagated, and new options may not be specified (a change as of
  *  Ruby 1.8). If <i>options</i> is a <code>Fixnum</code>, it should be one or
  *  more of the constants <code>Regexp::EXTENDED</code>,
- *  <code>Regexp::IGNORECASE</code>, and <code>Regexp::POSIXLINE</code>,
+ *  <code>Regexp::IGNORECASE</code>, and <code>Regexp::MULTILINE</code>,
  *  <em>or</em>-ed together. Otherwise, if <i>options</i> is not
  *  <code>nil</code>, the regexp will be case insensitive. The <i>lang</i>
  *  parameter enables multibyte support for the regexp: `n', `N' = none, `e',
