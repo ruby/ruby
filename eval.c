@@ -8088,11 +8088,13 @@ rb_thread_select(max, read, write, except, timeout)
     return curr_thread->select_value;
 }
 
-static VALUE
-rb_thread_join(thread)
-    VALUE thread;
+static int rb_thread_join _((rb_thread_t, double));
+
+static int
+rb_thread_join(th, limit)
+    rb_thread_t th;
+    double limit;
 {
-    rb_thread_t th = rb_thread_check(thread);
     enum thread_status last_status = THREAD_RUNNABLE;
 
     if (rb_thread_critical) rb_thread_deadlock();
@@ -8103,11 +8105,15 @@ rb_thread_join(thread)
 	    rb_raise(rb_eThreadError, "Thread#join: deadlock - mutual join");
 	if (curr_thread->status == THREAD_TO_KILL)
 	    last_status = THREAD_TO_KILL;
+	if (limit == 0) return Qfalse;
 	curr_thread->status = THREAD_STOPPED;
 	curr_thread->join = th;
 	curr_thread->wait_for = WAIT_JOIN;
+	curr_thread->delay = timeofday() + limit;
+	if (limit < DELAY_INFTY) curr_thread->wait_for |= WAIT_TIME;
 	rb_thread_schedule();
 	curr_thread->status = last_status;
+	if (!rb_thread_dead(th)) return Qfalse;
     }
 
     if (!NIL_P(th->errinfo) && (th->flags & THREAD_RAISED)) {
@@ -8121,6 +8127,22 @@ rb_thread_join(thread)
 	rb_exc_raise(th->errinfo);
     }
 
+    return Qtrue;
+}
+
+static VALUE
+rb_thread_join_m(argc, argv, thread)
+    int argc;
+    VALUE *argv;
+{
+    VALUE limit;
+    double delay = DELAY_INFTY;
+    rb_thread_t th = rb_thread_check(thread);
+
+    rb_scan_args(argc, argv, "01", &limit);
+    if (!NIL_P(limit)) delay = rb_num2dbl(limit);
+    if (!rb_thread_join(th, delay))
+	return Qnil;
     return thread;
 }
 
@@ -8641,7 +8663,7 @@ rb_thread_value(thread)
 {
     rb_thread_t th = rb_thread_check(thread);
 
-    rb_thread_join(thread);
+    while (!rb_thread_join(th, DELAY_INFTY));
 
     return th->result;
 }
@@ -9135,7 +9157,7 @@ Init_Thread()
     rb_define_method(rb_cThread, "exit", rb_thread_kill, 0);
     rb_define_method(rb_cThread, "value", rb_thread_value, 0);
     rb_define_method(rb_cThread, "status", rb_thread_status, 0);
-    rb_define_method(rb_cThread, "join", rb_thread_join, 0);
+    rb_define_method(rb_cThread, "join", rb_thread_join_m, -1);
     rb_define_method(rb_cThread, "alive?", rb_thread_alive_p, 0);
     rb_define_method(rb_cThread, "stop?", rb_thread_stop_p, 0);
     rb_define_method(rb_cThread, "raise", rb_thread_raise_m, -1);

@@ -1,3 +1,10 @@
+Fri May 10 01:55:44 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* eval.c (rb_thread_join): added an argument to limit time to wait
+	  the thread.
+
+	* eval.c (rb_thread_join_m): new. and added optional argument.
+
 Tue May  7 17:13:40 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in: forgot to add '-Wl,' to the gcc option on Cygwin/MinGW.
