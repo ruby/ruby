@@ -87,9 +87,9 @@ module TkComm
       #return Tk_CMDTBL[$1]
       return TkCore::INTERP.tk_cmd_tbl[$1]
     end
-    if val.include? ?\s
-      return val.split.collect{|v| tk_tcl2ruby(v)}
-    end
+    #if val.include? ?\s
+    #  return val.split.collect{|v| tk_tcl2ruby(v)}
+    #end
     case val
     when /^@font/
       TkFont.get_obj(val)
@@ -101,17 +101,50 @@ module TkComm
            TkCore::INTERP.tk_windows[val] : _genobj_for_tkwidget(val)
     when /^i\d+$/
       TkImage::Tk_IMGTBL[val]? TkImage::Tk_IMGTBL[val] : val
-    when / /
+    when /^-?\d+\.?\d*(e[-+]?\d+)?$/
+      val.to_f
+    when /[^\\] /
       val.split.collect{|elt|
 	tk_tcl2ruby(elt)
       }
-    when /^-?\d+\.?\d*(e[-+]?\d+)?$/
-      val.to_f
+    when /\\ /
+      val.gsub(/\\ /, ' ')
     else
       val
     end
   end
 
+  def tk_split_list(str)
+    return [] if str == ""
+    list = []
+    token = nil
+    escape = false
+    brace = 0
+    str.split('').each {|c|
+      if c == '\\' && !escape
+        escape = true
+        token = (token || "") << c
+        next
+      end
+      brace += 1 if c == '{' && !escape
+      brace -= 1 if c == '}' && !escape
+      if brace == 0 && c == ' ' && !escape
+        list << token.gsub(/^\{(.*)\}$/, '\1') if token
+        token = nil
+      else
+        token = (token || "") << c
+      end
+      escape = false
+    }
+    list << token.gsub(/^\{(.*)\}$/, '\1') if token
+
+    if list.size == 1
+      tk_tcl2ruby(list[0].gsub(/\\(\{|})/, '\1'))
+    else
+      list.collect{|token| tk_split_list(token)}
+    end
+  end
+=begin
   def tk_split_list(str)
     return [] if str == ""
     idx = str.index('{')
@@ -130,11 +163,13 @@ module TkComm
     list = [] if list == ""
     str = str[idx+1..-1]
     i = -1
+    escape = false
     brace = 1
     str.each_byte {|c|
       i += 1
-      brace += 1 if c == ?{
-      brace -= 1 if c == ?}
+      brace += 1 if c == ?{ && !escape
+      brace -= 1 if c == ?} && !escape
+      escape = (c == ?\\)
       break if brace == 0
     }
     if str.size == i + 1
@@ -148,7 +183,33 @@ module TkComm
     list += tk_split_list(str[i+1..-1])
     list
   end
+=end
 
+  def tk_split_simplelist(str)
+    return [] if str == ""
+    list = []
+    token = nil
+    escape = false
+    brace = 0
+    str.split('').each {|c|
+      if c == '\\' && !escape
+        escape = true
+        next
+      end
+      brace += 1 if c == '{' && !escape
+      brace -= 1 if c == '}' && !escape
+      if brace == 0 && c == ' ' && !escape
+        list << token.gsub(/^\{(.*)\}$/, '\1') if token
+        token = nil
+      else
+        token = (token || "") << c
+      end
+      escape = false
+    }
+    list << token.gsub(/^\{(.*)\}$/, '\1') if token
+    list
+  end
+=begin
   def tk_split_simplelist(str)
     return [] if str == ""
     idx = str.index('{')
@@ -160,11 +221,13 @@ module TkComm
     list = str[0,idx].split
     str = str[idx+1..-1]
     i = -1
+    escape = false
     brace = 1
     str.each_byte {|c|
       i += 1
-      brace += 1 if c == ?{
-      brace -= 1 if c == ?}
+      brace += 1 if c == ?{ && !escape
+      brace -= 1 if c == ?} && !escape
+      escape = (c == ?\\)
       break if brace == 0
     }
     if i == 0
@@ -172,11 +235,14 @@ module TkComm
     elsif str[0, i] == ' '
       list.push ' '
     else
-      list.push str[0..i-1]
+      #list.push str[0..i-1]
+      list.push(str[0..i-1].gsub(/\\(\{|})/, '\1'))
     end
     list += tk_split_simplelist(str[i+1..-1])
     list
   end
+=end
+
   private :tk_tcl2ruby, :tk_split_list, :tk_split_simplelist
 
   def _symbolkey2str(keys)
@@ -236,7 +302,7 @@ module TkComm
   def string(val)
     if val == "{}"
       ''
-    elsif val[0] == ?{
+    elsif val[0] == ?{ && val[-1] == ?}
       val[1..-2]
     else
       val
@@ -748,6 +814,7 @@ module TkCore
   end
 
   INTERP.add_tk_procs('rb_out', 'args', <<-'EOL')
+    regsub -all {\\} $args {\\\\} args
     regsub -all {!} $args {\\!} args
     regsub -all "{" $args "\\{" args
     if {[set st [catch {ruby [format "TkCore.callback %%Q!%s!" $args]} ret]] != 0} {
@@ -897,7 +964,8 @@ module TkCore
   end
 
   def rb_appsend(interp, async, *args)
-    args = args.collect!{|c| _get_eval_string(c).gsub(/[\[\]$"]/, '\\\\\&')}
+    #args = args.collect!{|c| _get_eval_string(c).gsub(/[\[\]$"]/, '\\\\\&')}
+    args = args.collect!{|c| _get_eval_string(c).gsub(/[\[\]$"\\]/, '\\\\\&')}
     args.push(').to_s"')
     appsend(interp, async, 'ruby "(', *args)
   end
@@ -912,7 +980,8 @@ module TkCore
   end
 
   def rb_appsend_displayof(interp, win, async, *args)
-    args = args.collect!{|c| _get_eval_string(c).gsub(/[\[\]$"]/, '\\\\\&')}
+    #args = args.collect!{|c| _get_eval_string(c).gsub(/[\[\]$"]/, '\\\\\&')}
+    args = args.collect!{|c| _get_eval_string(c).gsub(/[\[\]$"\\]/, '\\\\\&')}
     args.push(').to_s"')
     appsend_displayof(interp, win, async, 'ruby "(', *args)
   end
@@ -1550,7 +1619,8 @@ module Tk
     @@enc_buf = '__rb_encoding_buffer__'
 
     def self.tk_escape(str)
-      s = '"' + str.gsub(/[\[\]$"]/, '\\\\\&') + '"'
+      #s = '"' + str.gsub(/[\[\]$"]/, '\\\\\&') + '"'
+      s = '"' + str.gsub(/[\[\]$"\\]/, '\\\\\&') + '"'
       TkCore::INTERP.__eval(Kernel.format('global %s; set %s %s', 
 					  @@enc_buf, @@enc_buf, s))
     end
@@ -1859,23 +1929,30 @@ class TkVariable
       # val.each_with_index{|e,i| a.push(i); a.push(array2tk_list(e))}
       # s = '"' + a.join(" ").gsub(/[\[\]$"]/, '\\\\\&') + '"'
       val.each_with_index{|e,i| a.push(i); a.push(e)}
-      s = '"' + array2tk_list(a).gsub(/[\[\]$"]/, '\\\\\&') + '"'
+      #s = '"' + array2tk_list(a).gsub(/[\[\]$"]/, '\\\\\&') + '"'
+      s = '"' + array2tk_list(a).gsub(/[\[\]$"\\]/, '\\\\\&') + '"'
       INTERP._eval(format('global %s; array set %s %s', @id, @id, s))
     elsif  val.kind_of?(Hash)
+      #s = '"' + val.to_a.collect{|e| array2tk_list(e)}.join(" ")\
+      #             .gsub(/[\[\]$"]/, '\\\\\&') + '"'
       s = '"' + val.to_a.collect{|e| array2tk_list(e)}.join(" ")\
-                   .gsub(/[\[\]$"]/, '\\\\\&') + '"'
+                   .gsub(/[\[\]$"\\]/, '\\\\\&') + '"'
       INTERP._eval(format('global %s; array set %s %s', @id, @id, s))
     else
-      s = '"' + _get_eval_string(val).gsub(/[\[\]$"]/, '\\\\\&') + '"'
+      #s = '"' + _get_eval_string(val).gsub(/[\[\]$"]/, '\\\\\&') + '"'
+      s = '"' + _get_eval_string(val).gsub(/[\[\]$"\\]/, '\\\\\&') + '"'
       INTERP._eval(format('global %s; set %s %s', @id, @id, s))
     end
 =end
     if  val.kind_of?(Hash)
+      #s = '"' + val.to_a.collect{|e| array2tk_list(e)}.join(" ")\
+      #             .gsub(/[\[\]$"]/, '\\\\\&') + '"'
       s = '"' + val.to_a.collect{|e| array2tk_list(e)}.join(" ")\
-                   .gsub(/[\[\]$"]/, '\\\\\&') + '"'
+                   .gsub(/[\[\]$"\\]/, '\\\\\&') + '"'
       INTERP._eval(Kernel.format('global %s; array set %s %s', @id, @id, s))
     else
-      s = '"' + _get_eval_string(val).gsub(/[\[\]$"]/, '\\\\\&') + '"'
+      #s = '"' + _get_eval_string(val).gsub(/[\[\]$"]/, '\\\\\&') + '"'
+      s = '"' + _get_eval_string(val).gsub(/[\[\]$"\\]/, '\\\\\&') + '"'
       INTERP._eval(Kernel.format('global %s; set %s %s', @id, @id, s))
     end
   end
@@ -1933,7 +2010,8 @@ class TkVariable
 
   def value=(val)
     begin
-      s = '"' + _get_eval_string(val).gsub(/[\[\]$"]/, '\\\\\&') + '"'
+      #s = '"' + _get_eval_string(val).gsub(/[\[\]$"]/, '\\\\\&') + '"'
+      s = '"' + _get_eval_string(val).gsub(/[\[\]$"\\]/, '\\\\\&') + '"'
       INTERP._eval(Kernel.format('global %s; set %s %s', @id, @id, s))
     rescue
       if INTERP._eval(Kernel.format('global %s; array exists %s', 
@@ -1945,12 +2023,15 @@ class TkVariable
 	elsif val.kind_of?(Array)
 	  a = []
 	  val.each_with_index{|e,i| a.push(i); a.push(array2tk_list(e))}
-	  s = '"' + a.join(" ").gsub(/[\[\]$"]/, '\\\\\&') + '"'
+	  #s = '"' + a.join(" ").gsub(/[\[\]$"]/, '\\\\\&') + '"'
+	  s = '"' + a.join(" ").gsub(/[\[\]$"\\]/, '\\\\\&') + '"'
 	  INTERP._eval(Kernel.format('global %s; unset %s; array set %s %s', 
 				     @id, @id, @id, s))
 	elsif  val.kind_of?(Hash)
+	  #s = '"' + val.to_a.collect{|e| array2tk_list(e)}.join(" ")\
+	  #                      .gsub(/[\[\]$"]/, '\\\\\&') + '"'
 	  s = '"' + val.to_a.collect{|e| array2tk_list(e)}.join(" ")\
-	                        .gsub(/[\[\]$"]/, '\\\\\&') + '"'
+	                        .gsub(/[\[\]$\\"]/, '\\\\\&') + '"'
 	  INTERP._eval(Kernel.format('global %s; unset %s; array set %s %s', 
 				     @id, @id, @id, s))
 	else
@@ -1993,7 +2074,8 @@ class TkVariable
   end
 
   def to_s
-    string(value).to_s
+    #string(value).to_s
+    value
   end
 
   def to_sym
@@ -2302,7 +2384,8 @@ class TkVarAccess<TkVariable
     @id = varname
     TkVar_ID_TBL[@id] = self
     if val
-      s = '"' + _get_eval_string(val).gsub(/[\[\]$"]/, '\\\\\&') + '"' #"
+      #s = '"' + _get_eval_string(val).gsub(/[\[\]$"]/, '\\\\\&') + '"' #"
+      s = '"' + _get_eval_string(val).gsub(/[\[\]$"\\]/, '\\\\\&') + '"' #"
       INTERP._eval(Kernel.format('global %s; set %s %s', @id, @id, s))
     end
   end

@@ -1,3 +1,8 @@
+Wed Feb 11 23:24:22 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: properly treat a Tcl/Tk's string with escaping
+	  special characters.
+
 Tue Feb 10 20:49:07 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (method_proc): return bound Proc object.  [ruby-dev:22854]
