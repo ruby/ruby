@@ -48,9 +48,9 @@ module Net # :nodoc:
   # (formal version)
   # 
   #     require 'net/http'
-  #     Net::HTTP.start('www.example.com', 80) { |http|
-  #         response = http.get('/index.html')
-  #         puts response.body
+  #     Net::HTTP.start('www.example.com', 80) {|http|
+  #       response = http.get('/index.html')
+  #       puts response.body
   #     }
   # 
   # (shorter version)
@@ -67,8 +67,8 @@ module Net # :nodoc:
   # === Posting Form Data
   # 
   #     require 'net/http'
-  #     Net::HTTP.start('some.www.server', 80) { |http|
-  #         response = http.post('/cgi-bin/search.rb', 'query=ruby')
+  #     Net::HTTP.start('some.www.server', 80) {|http|
+  #       response = http.post('/cgi-bin/search.rb', 'query=ruby')
   #     }
   # 
   # === Accessing via Proxy
@@ -83,7 +83,7 @@ module Net # :nodoc:
   #     proxy_port = 8080
   #             :
   #     Net::HTTP::Proxy(proxy_addr, proxy_port).start('www.example.com') {|http|
-  #         # always connect to your.proxy.addr:8080
+  #       # always connect to your.proxy.addr:8080
   #             :
   #     }
   # 
@@ -160,13 +160,13 @@ module Net # :nodoc:
   # allows you to use 1.2 features again.
   # 
   #     # example
-  #     Net::HTTP.start { |http1| ...(http1 has 1.2 features)... }
+  #     Net::HTTP.start {|http1| ...(http1 has 1.2 features)... }
   # 
   #     Net::HTTP.version_1_1
-  #     Net::HTTP.start { |http2| ...(http2 has 1.1 features)... }
+  #     Net::HTTP.start {|http2| ...(http2 has 1.1 features)... }
   # 
   #     Net::HTTP.version_1_2
-  #     Net::HTTP.start { |http3| ...(http3 has 1.2 features)... }
+  #     Net::HTTP.start {|http3| ...(http3 has 1.2 features)... }
   # 
   # This function is NOT thread-safe.
   #
@@ -819,7 +819,7 @@ module Net # :nodoc:
     def request(req, body = nil, &block)  # :yield: +response+
       unless started?
         start {
-          req['connection'] = 'close'
+          req['connection'] ||= 'close'
           return request(req, body, &block)
         }
       end

@@ -1,3 +1,8 @@
+Sun Feb  8 14:24:35 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb (HTTP#request): should not overwrite Connection
+	  header. (ruby-bugs:PR#1274)
+
 Sat Feb  8 10:11:21 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* dir.c (glob_helper): Dir.glob('**/') did not work. [ruby-dev:22832]
