@@ -1,3 +1,7 @@
+Mon Jan 26 12:45:23 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tcltklib/tcltklib.c: define CONST84 when TCL_MAJOR_VERSION == 7
+
 Mon Jan 26 11:30:58 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb: Makefiles should depend on also rbconfig.rb.
