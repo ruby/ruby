@@ -169,7 +169,7 @@ rb_get_method_body(klassp, idp, noexp)
     struct cache_entry *ent;
 
     if ((body = search_method(klass, id, &origin)) == 0 || !body->nd_body) {
-	/* store in cache */
+	/* store empty info in cache */
 	ent = cache + EXPR1(klass, id);
 	ent->klass  = klass;
 	ent->origin = klass;
@@ -1795,11 +1795,31 @@ rb_eval(self, node)
 	}
 	break;
 
-	/* nodes for speed-up(top-level loop for -n/-p) */
+	/* node for speed-up(top-level loop for -n/-p) */
       case NODE_OPT_N:
-	while (!NIL_P(rb_gets())) {
-	    rb_eval(self, node->nd_body);
+	PUSH_TAG(PROT_NONE);
+	switch (state = EXEC_TAG()) {
+	  case 0:
+	  opt_n_next:
+	    while (!NIL_P(rb_gets())) {
+	      opt_n_redo:
+		rb_eval(self, node->nd_body);
+	    }
+	    break;
+
+	  case TAG_REDO:
+	    state = 0;
+	    goto opt_n_redo;
+	  case TAG_NEXT:
+	    state = 0;
+	    goto opt_n_next;
+	  case TAG_BREAK:
+	    state = 0;
+	  default:
+	    break;
 	}
+	POP_TAG();
+	if (state) JUMP_TAG(state);
 	RETURN(Qnil);
 
       case NODE_SELF:
@@ -2371,10 +2391,8 @@ rb_eval(self, node)
 	/* check for static scope constants */
 	if (RTEST(ruby_verbose) &&
 	    ev_const_defined((NODE*)ruby_frame->cbase, node->nd_vid)) {
-	    if (RTEST(ruby_verbose)) {
-		rb_warning("already initialized constant %s",
-			   rb_id2name(node->nd_vid));
-	    }
+	    rb_warn("already initialized constant %s",
+		       rb_id2name(node->nd_vid));
 	}
 	rb_const_set(ruby_class, node->nd_vid, result);
 	break;

@@ -88,6 +88,7 @@ lib/English.rb
 lib/Env.rb
 lib/README
 lib/base64.rb
+lib/cgi.rb
 lib/cgi-lib.rb
 lib/complex.rb
 lib/date.rb
@@ -104,6 +105,18 @@ lib/ftools.rb
 lib/getopts.rb
 lib/getoptlong.rb
 lib/importenv.rb
+lib/irb/bind.rb
+lib/irb/completion.rb
+lib/irb/frame.rb
+lib/irb/input-method.rb
+lib/irb/loader.rb
+lib/irb/main.rb
+lib/irb/multi-irb.rb
+lib/irb/ruby-lex.rb
+lib/irb/ruby-token.rb
+lib/irb/slex.rb
+lib/irb/version.rb
+lib/irb/xmp.rb
 lib/jcode.rb
 lib/mailread.rb
 lib/mathn.rb
@@ -111,6 +124,9 @@ lib/matrix.rb
 lib/mkmf.rb
 lib/monitor.rb
 lib/mutex_m.rb
+lib/net/pop.rb
+lib/net/session.rb
+lib/net/smtp.rb
 lib/observer.rb
 lib/open3.rb
 lib/ostruct.rb

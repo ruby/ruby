@@ -376,7 +376,6 @@ num_eql(x, y)
     return rb_equal(x, y);
 }
 
-
 static VALUE
 num_equal(x, y)
     VALUE x, y;

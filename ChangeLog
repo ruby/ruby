@@ -1,3 +1,56 @@
+Thu Sep 16 18:40:08 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* stable version 1.4.1 released.
+
+Thu Sep 16 11:33:22 1999  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* string.c (rb_str_match): should return false.
+
+Wed Sep 15 22:46:37 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* re.c (rb_reg_s_quote): should quote `-' too.
+
+Tue Sep 14 15:23:22 1999  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* parse.y (yylex): no need to ignore `\r' here.
+
+	* parse.y (nextc): strip `\r' from text.
+
+	* parse.y (nextc): support `__END__\r\n' type terminator.
+
+Mon Sep 13 10:49:19 1999  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* eval.c (rb_eval): needless RTEST(ruby_verbose) removed.
+
+Wed Sep  8 11:37:38 1999  Tadayoshi Funaba  <tadf@kt.rim.or.jp>
+
+	* time.c (make_time_t): bit more strict comparison.
+
+Tue Sep  7 00:50:56 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* range.c (range_each): use rb_str_upto() for strings.
+
+	* string.c (rb_str_upto): set upper limit by comparing curr <= end.
+
+	* range.c (range_each): should check equality to handle magic
+	  increment.
+
+Mon Sep  6 22:43:33 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_eval): break/next/redo available within -n/-p loop.
+
+Fri Sep  3 11:14:31 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* compar.c (cmp_equal): should not raise exception; protect by
+	  rb_rescue().
+
+Thu Sep 2 05:23:05 1999  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* file.c (rb_file_s_expand_path): use dirsep, instead of character
+	  literal '/'.
+
+	* file.c (rb_file_s_expand_path): reduce multiple dirsep at the top.
+
 Wed Sep  1 00:28:27 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (rb_call): call rb_undefined() if a method appears not to

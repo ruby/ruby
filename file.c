@@ -1107,7 +1107,7 @@ rb_file_s_expand_path(argc, argv)
 	}
     }
 #endif
-    else if (s[0] != '/') {
+    else if (!isdirsep(*s)) {
 	if (argc == 2) {
 	    dname = rb_file_s_expand_path(1, &dname);
 	    strcpy(buf, RSTRING(dname)->ptr);
@@ -1121,6 +1121,13 @@ rb_file_s_expand_path(argc, argv)
 	}
 	p = &buf[strlen(buf)];
 	while (p > buf && *(p - 1) == '/') p--;
+    }
+    else if (isdirsep(*s)) {
+	while (*s && isdirsep(*s)) {
+	    *p++ = '/';
+	    s++;
+	}
+	if (p > buf && *s) p--;
     }
     *p = '/';
 

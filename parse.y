@@ -1840,7 +1840,8 @@ nextc()
 	    ruby_sourceline++;
 	    lex_pbeg = lex_p = RSTRING(v)->ptr;
 	    lex_pend = lex_p + RSTRING(v)->len;
-	    if (strncmp(lex_pbeg, "__END__", 7) == 0 && lex_pbeg[7] == '\n') {
+	    if (strncmp(lex_pbeg, "__END__", 7) == 0 &&
+		(RSTRING(v)->len == 7 || lex_pbeg[7] == '\n' || lex_pbeg[7] == '\r')) {
 		ruby__end__seen = 1;
 		lex_lastline = 0;
 		return -1;
@@ -1853,6 +1854,10 @@ nextc()
 	}
     }
     c = (unsigned char)*lex_p++;
+    if (c == '\r' && lex_p <= lex_pend && *lex_p == '\n') {
+	lex_p++;
+	c = '\n';
+    }
 
     return c;
 }
@@ -2916,7 +2921,7 @@ yylex()
       case ':':
 	c = nextc();
 	if (c == ':') {
-	    if (lex_state == EXPR_BEG) {
+	    if (lex_state == EXPR_BEG || lex_state == EXPR_MID) {
 		lex_state = EXPR_BEG;
 		return tCOLON3;
 	    }
@@ -3019,10 +3024,6 @@ yylex()
 
       case '\\':
 	c = nextc();
-	if (c == '\r') {
-	    c = nextc();
-	    if (c != '\n') pushback(c);
-	}
 	if (c == '\n') {
 	    space_seen = 1;
 	    goto retry; /* skip \\n */
@@ -3230,7 +3231,8 @@ yylex()
 	    }
 	    else if (toklast() == '!' || toklast() == '?') {
 		result = tFID;
-	    } else {
+	    }
+	    else {
 		result = tIDENTIFIER;
 		if (lex_state == EXPR_FNAME || lex_state == EXPR_DOT) {
 		    if ((c = nextc()) == '=' && !peek('=')) {
@@ -3243,7 +3245,7 @@ yylex()
 	    }
 	    if (lex_state == EXPR_BEG ||
 		lex_state == EXPR_DOT ||
-		lex_state == EXPR_ARG){
+		lex_state == EXPR_ARG) {
 		lex_state = EXPR_ARG;
 	    }
 	    else {

@@ -1,11 +1,11 @@
 =begin
-$Date: 1999/08/10 05:20:21 $
+$Date: 1999/09/14 23:09:05 $
 
 == SIMPLE TELNET CLIANT LIBRARY
 
 telnet.rb
 
-Version 0.232
+Version 0.30
 
 Wakou Aoyama <wakou@fsinet.or.jp>
 
@@ -34,7 +34,7 @@ the network or the host is very heavy, the value is enlarged.
 
 === STATUS OUTPUT
 
-	host = Telnet.new({"Host" => "localhost"){|c| print c }
+	host = Telnet.new({"Host" => "localhost"}){|c| print c }
 
 connection status output.
 
@@ -110,6 +110,13 @@ of cource, set sync=true or flush is necessary.
 	            "Prompt" => /[$%#>] \z/n,
 	            "Timeout" => 10})
 
+if no password prompt.
+
+	host.login("username")
+	host.login({"Name" => "username",
+	            "Prompt" => /[$%#>] \z/n,
+	            "Timeout" => 10})
+
 
 ==== REALTIME OUTPUT
 
@@ -147,13 +154,28 @@ of cource, set sync=true or flush is necessary.
 
 == HISTORY
 
+=== Version 0.30
+
+1999/09/14 23:09:05
+
+- change prompt check order.
+	not IO::select([@sock], nil, nil, waittime) and prompt === line
+	--> prompt === line and not IO::select([@sock], nil, nil, waittime)
+
+=== Version 0.24
+
+1999/09/13 22:28:33
+
+- Telnet#login
+if ommit password, then not require password prompt.
+
 === Version 0.232
 
 1999/08/10 05:20:21
 
 - STATUS OUTPUT sample code typo. thanks to Tadayoshi Funaba <tadf@kt.rim.or.jp>
 	host = Telnet.new({"Hosh" => "localhost"){|c| print c }
-	host = Telnet.new({"Host" => "localhost"){|c| print c }
+	--> host = Telnet.new({"Host" => "localhost"){|c| print c }
 
 === Version 0.231
 
@@ -370,8 +392,8 @@ class Telnet < SimpleDelegator
   EOL  = CR + LF
 v = $-v
 $-v = false
-  VERSION = "0.232"
-  RELEASE_DATE = "$Date: 1999/08/10 05:20:21 $"
+  VERSION = "0.30"
+  RELEASE_DATE = "$Date: 1999/09/14 23:09:05 $"
 $-v = v
 
   def initialize(options)
@@ -540,7 +562,7 @@ $-v = v
 
     line = ''
     buf = ''
-    until(not IO::select([@sock], nil, nil, waittime) and prompt === line)
+    until(prompt === line and not IO::select([@sock], nil, nil, waittime))
       unless IO::select([@sock], nil, nil, time_out)
         raise TimeOut, "timed-out; wait for the next data"
       end
@@ -611,7 +633,7 @@ $-v = v
     end
   end
 
-  def login(options, password = '')
+  def login(options, password = nil)
     if options.kind_of?(Hash)
       username = options["Name"]
       password = options["Password"]
@@ -621,14 +643,22 @@ $-v = v
 
     if iterator?
       line = waitfor(/login[: ]*\z/n){|c| yield c }
-      line.concat( cmd({"String" => username,
-                        "Match" => /Password[: ]*\z/n}){|c| yield c } )
-      line.concat( cmd(password){|c| yield c } )
+      if password
+        line.concat( cmd({"String" => username,
+                          "Match" => /Password[: ]*\z/n}){|c| yield c } )
+        line.concat( cmd(password){|c| yield c } )
+      else
+        line.concat( cmd(username){|c| yield c } )
+      end
     else
       line = waitfor(/login[: ]*\z/n)
-      line.concat( cmd({"String" => username,
-                        "Match" => /Password[: ]*\z/n}) )
-      line.concat( cmd(password) )
+      if password
+        line.concat( cmd({"String" => username,
+                          "Match" => /Password[: ]*\z/n}) )
+        line.concat( cmd(password) )
+      else
+        line.concat( cmd(username) )
+      end
     end
     line
   end

@@ -1,7 +1,7 @@
 #! /usr/local/bin/ruby
 
 # cal.rb: Written by Tadayoshi Funaba 1998, 1999
-# $Id: cal.rb,v 1.5 1999/08/04 14:54:18 tadf Exp $
+# $Id: cal.rb,v 1.6 1999/09/15 05:35:25 tadf Exp $
 
 require 'date2'
 
@@ -39,7 +39,7 @@ def cal(m, y, sg)
   for d in 1..31
     break if jd = Date.exist?(y, m, d, sg)
   end
-  fst = cur = Date.new(jd, sg)
+  fst = cur = Date.new1(jd, sg)
   ti = Date::MONTHNAMES[m]
   ti << ' ' << y.to_s unless $yr
   mo = ti.center((($w + 1) * 7) - 1) << "\n"

@@ -520,7 +520,7 @@ rb_str_match(x, y)
 	reg = rb_reg_regcomp(y);
 	start = rb_reg_search(reg, x, 0, 0);
 	if (start == -1) {
-	    return Qfalse;
+	    return Qnil;
 	}
 	return INT2NUM(start);
 
@@ -760,7 +760,7 @@ rb_str_upto(beg, end, excl)
     if (TYPE(end) != T_STRING) end = rb_str_to_str(end);
 
     current = beg;
-    for (;;) {
+    while (rb_str_cmp(current, end) <= 0) {
 	rb_yield(current);
 	if (!excl && rb_str_equal(current, end)) break;
 	current = rb_str_succ(current);

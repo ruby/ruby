@@ -17,14 +17,32 @@ VALUE rb_mComparable;
 static ID cmp;
 
 static VALUE
-cmp_eq(x, y)
-    VALUE x, y;
+cmp_eq(a)
+    VALUE *a;
 {
-    VALUE c = rb_funcall(x, cmp, 1, y);
+    VALUE c = rb_funcall(a[0], cmp, 1, a[1]);
     int t = NUM2INT(c);
 
     if (t == 0) return Qtrue;
     return Qfalse;
+}
+
+static VALUE
+cmp_failed()
+{
+    return Qfalse;
+}
+
+static VALUE
+cmp_equal(x, y)
+    VALUE x, y;
+{
+    VALUE a[2];
+
+    if (x == y) return Qtrue;
+
+    a[0] = x; a[1] = y;
+    return rb_rescue(cmp_eq, (VALUE)a, cmp_failed, 0);
 }
 
 static VALUE
@@ -89,7 +107,7 @@ void
 Init_Comparable()
 {
     rb_mComparable = rb_define_module("Comparable");
-    rb_define_method(rb_mComparable, "==", cmp_eq, 1);
+    rb_define_method(rb_mComparable, "==", cmp_equal, 1);
     rb_define_method(rb_mComparable, ">", cmp_gt, 1);
     rb_define_method(rb_mComparable, ">=", cmp_ge, 1);
     rb_define_method(rb_mComparable, "<", cmp_lt, 1);

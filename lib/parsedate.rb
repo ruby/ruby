@@ -67,7 +67,6 @@ module ParseDate
       mon = MONTHS[$2.downcase]
       year = $3.to_i
     end
-    p date
     if date.sub!(/\d{4}/i, ' ')
       year = $&.to_i
     elsif date.sub!(/\d\d/i, ' ')

@@ -208,8 +208,8 @@ time_arg(argc, argv, tm)
     }
 
     tm->tm_year = obj2long(v[0]);
-    if (tm->tm_year < 69) tm->tm_year += 100;
-    if (tm->tm_year >= 1000) tm->tm_year -= 1900;
+    if (0 < tm->tm_year && tm->tm_year < 69) tm->tm_year += 100;
+    if (tm->tm_year >= 1900) tm->tm_year -= 1900;
     if (NIL_P(v[1])) {
 	tm->tm_mon = 0;
     }
@@ -263,9 +263,9 @@ make_time_t(tptr, fn)
     struct tm *(*fn)();
 {
     struct timeval tv;
-    time_t guess, t;
+    time_t oguess, guess;
     struct tm *tm;
-    long diff;
+    long t, diff;
 
     if (gettimeofday(&tv, 0) < 0) {
 	rb_sys_fail("gettimeofday");
@@ -276,9 +276,10 @@ make_time_t(tptr, fn)
     if (!tm) goto error;
     t = tptr->tm_year;
     if (t < 69) goto out_of_range;
-    while (diff = t - (tm->tm_year)) {
+    while (diff = t - tm->tm_year) {
+	oguess = guess;
 	guess += diff * 364 * 24 * 3600;
-	if (diff > 0 && guess < 0) goto out_of_range;
+	if (diff > 0 && guess <= oguess) goto out_of_range;
 	tm = (*fn)(&guess);
 	if (!tm) goto error;
     }
@@ -292,7 +293,7 @@ make_time_t(tptr, fn)
     guess += (tptr->tm_mday - tm->tm_mday) * 3600 * 24;
     guess += (tptr->tm_hour - tm->tm_hour) * 3600;
     guess += (tptr->tm_min - tm->tm_min) * 60;
-    guess +=  tptr->tm_sec - tm->tm_sec;
+    guess += (tptr->tm_sec - tm->tm_sec);
     if (guess < 0) goto out_of_range;
 
     return guess;
@@ -302,7 +303,7 @@ make_time_t(tptr, fn)
 
   error:
     rb_raise(rb_eArgError, "gmtime/localtime error");
-    return Qnil;		/* not reached */
+    return 0;			/* not reached */
 }
 
 static VALUE

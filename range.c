@@ -134,14 +134,28 @@ range_each(range)
 	    rb_yield(INT2NUM(i));
 	}
     }
-    else {			      /* generic each */
+    else if (TYPE(b) == T_STRING) {
+	rb_str_upto(b, e, EXCL(range));
+    }
+    else {			/* generic each */
 	VALUE v = b;
-	ID le = EXCL(range)?'<':rb_intern("<=");
 	ID succ = rb_intern("succ");
 
-	while (rb_funcall(v, le, 1, e)) {
-	    rb_yield(v);
-	    v = rb_funcall(v, succ, 0, 0);
+	if (EXCL(range)) {
+	    while (RTEST(rb_funcall(v, '<', 1, e))) {
+		if (rb_equal(v, e)) break;
+		rb_yield(v);
+		v = rb_funcall(v, succ, 0, 0);
+	    }
+	}
+	else {
+	    ID le = rb_intern("<=");
+
+	    while (RTEST(rb_funcall(v, le, 1, e))) {
+		rb_yield(v);
+		if (rb_equal(v, e)) break;
+		v = rb_funcall(v, succ, 0, 0);
+	    }
 	}
     }
 

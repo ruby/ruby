@@ -92,10 +92,11 @@ rb_f_srand(argc, argv, obj)
     static int saved_seed;
 
     if (rb_scan_args(argc, argv, "01", &seed) == 0) {
+	static int n = 0;
 	struct timeval tv;
 
 	gettimeofday(&tv, 0);
-	seed = tv.tv_sec ^ tv.tv_usec ^ getpid();
+	seed = tv.tv_sec ^ tv.tv_usec ^ getpid() ^ n++;
     }
     else {
 	seed = NUM2UINT(seed);
