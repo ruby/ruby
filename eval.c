@@ -7055,6 +7055,7 @@ rb_mod_modfunc(argc, argv, module)
 		break;		/* normal case: need not to follow 'super' link */
 	    }
 	    m = RCLASS(m)->super;
+	    if (!m) break;
 	}
 	rb_add_method(rb_singleton_class(module), id, body->nd_body, NOEX_PUBLIC);
     }

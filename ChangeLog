@@ -45,6 +45,11 @@ Wed Jan  7 08:21:04 2004  Dave Thomas  <dave@pragprog.com>
 	  line in files that would otherwise be treated as
 	  plain text.
 
+Tue Jan  6 22:13:34 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_mod_modfunc): should break if m has no super class.
+	  [ruby-dev:22498]
+
 Tue Jan  6 21:51:37 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (fptr_finalize): should save errno just after failure.
