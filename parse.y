@@ -1385,7 +1385,7 @@ mrhs		: args ',' arg_value
 		    }
 		| tSTAR arg_value
 		    {
-			$$ = NEW_REXPAND($2);
+			$$ = NEW_SPLAT($2);
 		    }
 		;
 
@@ -5314,7 +5314,7 @@ ret_args(node)
 	}
     }
     if (node && nd_type(node) == NODE_RESTARY) {
-	nd_set_type(node, NODE_REXPAND);
+	nd_set_type(node, NODE_SPLAT);
     }
     return node;
 }

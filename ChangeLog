@@ -1,3 +1,20 @@
+Wed Mar 26 13:19:32 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (avalue_splat): new function to do unary * (splat)
+	  operator.
+
+	* eval.c (avalue_to_svalue,svalue_to_avalue,svalue_to_mrhs): do
+	  not use implicit "to_ary" conversion.
+
+	* ext/curses/curses.c (GetWINDOW,GetMOUSE): add taint check.
+
+	* ext/curses/curses.c (curses_init_screen): ditto.
+
+	* ext/curses/curses.c (window_initialize): ditto.
+
+	* gc.c (os_each_obj): prohibit ObjectSpace#each_object in safe
+	  mode ($SAFE >= 4).
+
 Tue Mar 25 23:26:02 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* signal.c (trap): return "DEFAULT" and "IGNORE" respectively for

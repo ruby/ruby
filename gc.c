@@ -705,6 +705,8 @@ rb_gc_mark(ptr)
 	  case NODE_YIELD:
 	  case NODE_COLON2:
 	  case NODE_ARGS:
+	  case NODE_SPLAT:
+	  case NODE_SVALUE:
 	    ptr = (VALUE)obj->as.node.u1.node;
 	    goto again;
 
@@ -1377,6 +1379,7 @@ os_each_obj(argc, argv)
 {
     VALUE of;
 
+    rb_secure(4);
     if (rb_scan_args(argc, argv, "01", &of) == 0) {
 	return os_live_obj();
     }

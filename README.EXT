@@ -94,9 +94,20 @@ The T_FIXNUM data is a 31bit length fixed integer (63bit length on
 some machines), which can be convert to a C integer by using the
 FIX2INT() macro.  There is also NUM2INT() which converts any Ruby
 numbers into C integers.  The NUM2INT() macro includes a type check, so
-an exception will be raised if the conversion failed. There are also
-a macro NUM2DBL() to retrieve the double float value and STR2CSTR() is
-useful to get the string as char*.
+an exception will be raised if the conversion failed.  NUM2DBL() can
+be used to retrieve the double float value in same way.
+
+To get char* from a VALUE, version 1.7 recommend to use new macros
+StringValue() and StringValuePtr().  StringValue(var) replaces var's
+value to the result of "var.to_str()".  StringValuePtr(var) does same
+replacement and returns char* representation of var.  These macros
+will skip the replacement if var is a String.  Notice that the macros
+requires to take only lvalue as their argument, to change the value
+of var in the replacement. 
+
+In version 1.6 or earlier, STR2CSTR() was used to do same thing
+but now it is obsoleted in version 1.7 because of STR2CSTR() has
+a risk of dangling pointer problem in to_str() impliclit conversion.
 
 Other data types have corresponding C structures, e.g. struct RArray
 for T_ARRAY etc. The VALUE of the type which has corresponding structure

@@ -248,13 +248,33 @@ f = lambda {|r,*l| test_ok([] == r); test_ok([1] == l)}
 f.call([], *[1])
 f.yield([], *[1])
 
-a = [42,55]
-lambda{|x| test_ok([42,55] == x)}.call(a)
-lambda{|x,| test_ok([42,55] == x)}.call(a)
-lambda{|*x| test_ok([[42,55]] == x)}.call(a)
+
+f = lambda{|x| x}
+test_ok(f.call(42) == 42)
+test_ok(f.call([42]) == [42])
+test_ok(f.call([[42]]) == [[42]])
+test_ok(f.call([42,55]) == [42,55])
+test_ok(f.call(42,55) == [42,55])
+
+f = lambda{|x,| x}
+test_ok(f.call(42) == 42)
+test_ok(f.call([42]) == [42])
+test_ok(f.call([[42]]) == [[42]])
+test_ok(f.call([42,55]) == [42,55])
+
+f = lambda{|*x| x}
+test_ok(f.call(42) == [42])
+test_ok(f.call([42]) == [[42]])
+test_ok(f.call([[42]]) == [[[42]]])
+test_ok(f.call([42,55]) == [[42,55]])
+test_ok(f.call(42,55) == [42,55])
 
 a,=*[1]
 test_ok(a == 1)
+a,=*[[1]]
+test_ok(a == 1)
+a,=*[[[1]]]
+test_ok(a == [1])
 
 a = loop do break; end; test_ok(a == nil)
 a = loop do break nil; end; test_ok(a == nil)
@@ -905,10 +925,12 @@ class IterTest
   def each8; @body.each {|x| yield(x) } end
 
   def f(a)
-    test_ok(a == [1])
+    a
   end
 end
-IterTest.new(nil).method(:f).to_proc.call([1])
+test_ok(IterTest.new(nil).method(:f).to_proc.call([1]) == [1])
+m = /\w+/.match("abc")
+test_ok(IterTest.new(nil).method(:f).to_proc.call([m]) == [m])
 
 IterTest.new([0]).each0 {|x| test_ok(x == 0)}
 IterTest.new([1]).each1 {|x| test_ok(x == 1)}

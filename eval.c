@@ -2201,28 +2201,23 @@ static VALUE
 avalue_to_svalue(v)
     VALUE v;
 {
-    VALUE tmp;
-
-    if (v == Qundef) return v;
-    tmp = rb_check_array_type(v);
-    if (NIL_P(tmp)) {
+    if (TYPE(v) != T_ARRAY) {
 	return v;
     }
-    v = tmp;
     if (RARRAY(v)->len == 0) {
 	return Qundef;
     }
     if (RARRAY(v)->len == 1) {
-	tmp = rb_check_array_type(RARRAY(v)->ptr[0]);
-	if (NIL_P(tmp)) {
-	    return RARRAY(v)->ptr[0];
+	VALUE tmp = RARRAY(v)->ptr[0];
+	if (TYPE(tmp) != T_ARRAY) {
+	    return tmp;
 	}
 	if (RARRAY(tmp)->len > 1) {
 	    return v;
 	}
 	return tmp;
     }
-    return tmp;
+    return v;
 }
 
 static VALUE
@@ -2232,40 +2227,29 @@ svalue_to_avalue(v)
     VALUE tmp;
 
     if (v == Qundef) return rb_ary_new2(0);
-    tmp = rb_check_array_type(v);
-
-    if (NIL_P(tmp)) {
+    if (TYPE(v) != T_ARRAY) {
 	return rb_ary_new3(1, v);
     }
-    v = tmp;
     if (RARRAY(v)->len == 1) {
-	tmp = rb_check_array_type(RARRAY(v)->ptr[0]);
-	if (NIL_P(tmp)) return rb_ary_new3(1, v);
-	if (RARRAY(tmp)->len > 1) return v;
-	return tmp;
+	tmp = RARRAY(v)->ptr[0];
+	if (TYPE(tmp) == T_ARRAY && RARRAY(tmp)->len > 1)
+	    return v;
+	return rb_ary_new3(1, v);
     }
     return v;
 }
 
 static VALUE
-avalue_to_mrhs(v)
+avalue_splat(v)
     VALUE v;
 {
-    VALUE tmp;
-
-    if (v == Qundef) return v;
-    tmp = rb_check_array_type(v);
-    if (NIL_P(tmp)) {
-	return v;
-    }
-    v = tmp;
     if (RARRAY(v)->len == 0) {
 	return Qundef;
     }
     if (RARRAY(v)->len == 1) {
 	return RARRAY(v)->ptr[0];
     }
-    return tmp;
+    return v;
 }
 
 static VALUE
@@ -2273,18 +2257,15 @@ svalue_to_mrhs(v, lhs)
     VALUE v;
     NODE *lhs;
 {
-    VALUE tmp;
-
     if (v == Qundef) return rb_ary_new2(0);
-    tmp = rb_check_array_type(v);
-
-    if (NIL_P(tmp)) {
+    if (TYPE(v) != T_ARRAY) {
 	return rb_ary_new3(1, v);
     }
-    if (!lhs && RARRAY(tmp)->len <= 1) {
-	return rb_ary_new3(1, tmp);
+    /* no lhs means splat lhs only */
+    if (!lhs && RARRAY(v)->len <= 1) {
+	return rb_ary_new3(1, v);
     }
-    return tmp;
+    return v;
 }
 
 static VALUE
@@ -2670,8 +2651,16 @@ rb_eval(self, n)
 	result = rb_ary_to_ary(rb_eval(self, node->nd_head));
 	break;
 
-      case NODE_REXPAND:
-	result = avalue_to_mrhs(rb_eval(self, node->nd_head));
+      case NODE_SPLAT:
+        {
+	    VALUE tmp;
+
+	    result = rb_eval(self, node->nd_head);
+	    tmp = rb_check_array_type(result);
+	    if (!NIL_P(tmp)) {
+		result = avalue_splat(tmp);
+	    }
+	}
 	break;
 
       case NODE_SVALUE:
@@ -3982,7 +3971,7 @@ rb_yield_0(val, self, klass, pcall, avalue)
 		massign(self, block->var, val, pcall);
 	    }
 	    else {
-		if (avalue) val = avalue_to_mrhs(val);
+		if (avalue) val = avalue_splat(val);
 		if (val == Qundef) val = Qnil;
 		assign(self, block->var, val, pcall);
 	    }
