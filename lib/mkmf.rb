@@ -1062,8 +1062,12 @@ end
 Config::CONFIG["srcdir"] = CONFIG["srcdir"] =
   $srcdir = arg_config("--srcdir", File.dirname($0))
 $configure_args["--topsrcdir"] ||= $srcdir
-Config::CONFIG["topdir"] = CONFIG["topdir"] =
-  $curdir = arg_config("--curdir", Dir.pwd)
+$curdir = arg_config("--curdir", Dir.pwd)
+Config.expand(curdir = $curdir.dup)
+unless File.expand_path(Config::CONFIG["topdir"]) == File.expand_path(curdir)
+  CONFIG["topdir"] = $curdir
+  Config::CONFIG["topdir"] = curdir
+end
 $configure_args["--topdir"] ||= $curdir
 $ruby = arg_config("--ruby", File.join(Config::CONFIG["bindir"], CONFIG["ruby_install_name"]))
 

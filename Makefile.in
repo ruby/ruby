@@ -27,7 +27,7 @@ TESTUI = console
 TESTS =
 RDOCTARGET = @RDOCTARGET@
 
-EXTOUT = .ext
+EXTOUT = @EXTOUT@
 RIDATADIR = $(DESTDIR)$(datadir)/ri/$(MAJOR).$(MINOR)/system
 
 OUTFLAG = -o 

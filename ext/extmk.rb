@@ -82,6 +82,7 @@ def extmake(target)
 	$defs = []
 	Logging::logfile 'mkmf.log'
 	Config::CONFIG["srcdir"] = $srcdir
+	Config::CONFIG["topdir"] = $topdir
 	rm_f makefile
 	begin
 	  if File.exist?($0 = "#{$srcdir}/makefile.rb")
@@ -317,7 +318,7 @@ exts |= Dir.glob("#{ext_prefix}/*/**/extconf.rb").collect {|d|
   d = File.dirname(d)
   d.slice!(0, ext_prefix.length + 1)
   d
-} unless $extension
+}.sort unless $extension
 
 if $extout
   Config.expand(extout = "#$extout", Config::CONFIG.merge("topdir"=>$topdir))
