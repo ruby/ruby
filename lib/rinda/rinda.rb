@@ -102,12 +102,12 @@ module Rinda
       port[0]
     end
     
-    def read(tuple, sec=nil)
-      @ts.read(tuple, sec)
+    def read(tuple, sec=nil, &block)
+      @ts.read(tuple, sec, &block)
     end
     
     def read_all(tuple)
-      @ts.read_all
+      @ts.read_all(tuple)
     end
     
     def notify(ev, tuple, sec=nil)

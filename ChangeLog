@@ -1,3 +1,7 @@
+Fri Nov 28 22:49:56 2003  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/rinda/rinda.rb: fix TupleSpaceProxy#read, read_all.
+
 Fri Nov 28 21:44:40 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* test/fileutils/test_fileutils.rb (test_ln_s): should be a file, not
