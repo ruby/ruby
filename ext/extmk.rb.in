@@ -280,8 +280,7 @@ def have_header(header)
 SRC
     return false
   end
-  header.tr!("a-z./\055", "A-Z___")
-  $defs.push(format("-DHAVE_%s", header))
+  $defs.push(format("-DHAVE_%s", header.tr("a-z./\055", "A-Z___")))
   return true
 end
 

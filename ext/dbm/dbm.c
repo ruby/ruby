@@ -18,11 +18,11 @@
 #ifdef HAVE_SYS_CDEFS_H
 # include <sys/cdefs.h>
 #endif
-#include <ndbm.h>
+#include DBM_HDR
 #include <fcntl.h>
 #include <errno.h>
 
-VALUE cDBM, rb_eDBMError;
+static VALUE rb_cDBM, rb_eDBMError;
 
 struct dbmdata {
     int  di_size;
@@ -675,48 +675,48 @@ fdbm_reject(obj)
 void
 Init_dbm()
 {
-    cDBM = rb_define_class("DBM", rb_cObject);
+    rb_cDBM = rb_define_class("DBM", rb_cObject);
     rb_eDBMError = rb_define_class("DBMError", rb_eStandardError);
-    rb_include_module(cDBM, rb_mEnumerable);
+    rb_include_module(rb_cDBM, rb_mEnumerable);
 
-    rb_define_singleton_method(cDBM, "new", fdbm_s_new, -1);
-    rb_define_singleton_method(cDBM, "open", fdbm_s_open, -1);
+    rb_define_singleton_method(rb_cDBM, "new", fdbm_s_new, -1);
+    rb_define_singleton_method(rb_cDBM, "open", fdbm_s_open, -1);
 
-    rb_define_method(cDBM, "initialize", fdbm_initialize, -1);
-    rb_define_method(cDBM, "close", fdbm_close, 0);
-    rb_define_method(cDBM, "[]", fdbm_aref, 1);
-    rb_define_method(cDBM, "fetch", fdbm_fetch_m, -1);
-    rb_define_method(cDBM, "[]=", fdbm_store, 2);
-    rb_define_method(cDBM, "store", fdbm_store, 2);
-    rb_define_method(cDBM, "index",  fdbm_index, 1);
-    rb_define_method(cDBM, "indexes",  fdbm_indexes, -1);
-    rb_define_method(cDBM, "indices",  fdbm_indexes, -1);
-    rb_define_method(cDBM, "length", fdbm_length, 0);
-    rb_define_alias(cDBM,  "size", "length");
-    rb_define_method(cDBM, "empty?", fdbm_empty_p, 0);
-    rb_define_method(cDBM, "each", fdbm_each_pair, 0);
-    rb_define_method(cDBM, "each_value", fdbm_each_value, 0);
-    rb_define_method(cDBM, "each_key", fdbm_each_key, 0);
-    rb_define_method(cDBM, "each_pair", fdbm_each_pair, 0);
-    rb_define_method(cDBM, "keys", fdbm_keys, 0);
-    rb_define_method(cDBM, "values", fdbm_values, 0);
-    rb_define_method(cDBM, "shift", fdbm_shift, 0);
-    rb_define_method(cDBM, "delete", fdbm_delete, 1);
-    rb_define_method(cDBM, "delete_if", fdbm_delete_if, 0);
-    rb_define_method(cDBM, "reject!", fdbm_delete_if, 0);
-    rb_define_method(cDBM, "reject", fdbm_reject, 0);
-    rb_define_method(cDBM, "clear", fdbm_clear, 0);
-    rb_define_method(cDBM,"invert", fdbm_invert, 0);
-    rb_define_method(cDBM,"update", fdbm_update, 1);
-    rb_define_method(cDBM,"replace", fdbm_replace, 1);
+    rb_define_method(rb_cDBM, "initialize", fdbm_initialize, -1);
+    rb_define_method(rb_cDBM, "close", fdbm_close, 0);
+    rb_define_method(rb_cDBM, "[]", fdbm_aref, 1);
+    rb_define_method(rb_cDBM, "fetch", fdbm_fetch_m, -1);
+    rb_define_method(rb_cDBM, "[]=", fdbm_store, 2);
+    rb_define_method(rb_cDBM, "store", fdbm_store, 2);
+    rb_define_method(rb_cDBM, "index",  fdbm_index, 1);
+    rb_define_method(rb_cDBM, "indexes",  fdbm_indexes, -1);
+    rb_define_method(rb_cDBM, "indices",  fdbm_indexes, -1);
+    rb_define_method(rb_cDBM, "length", fdbm_length, 0);
+    rb_define_method(rb_cDBM, "size", fdbm_length, 0);
+    rb_define_method(rb_cDBM, "empty?", fdbm_empty_p, 0);
+    rb_define_method(rb_cDBM, "each", fdbm_each_pair, 0);
+    rb_define_method(rb_cDBM, "each_value", fdbm_each_value, 0);
+    rb_define_method(rb_cDBM, "each_key", fdbm_each_key, 0);
+    rb_define_method(rb_cDBM, "each_pair", fdbm_each_pair, 0);
+    rb_define_method(rb_cDBM, "keys", fdbm_keys, 0);
+    rb_define_method(rb_cDBM, "values", fdbm_values, 0);
+    rb_define_method(rb_cDBM, "shift", fdbm_shift, 0);
+    rb_define_method(rb_cDBM, "delete", fdbm_delete, 1);
+    rb_define_method(rb_cDBM, "delete_if", fdbm_delete_if, 0);
+    rb_define_method(rb_cDBM, "reject!", fdbm_delete_if, 0);
+    rb_define_method(rb_cDBM, "reject", fdbm_reject, 0);
+    rb_define_method(rb_cDBM, "clear", fdbm_clear, 0);
+    rb_define_method(rb_cDBM,"invert", fdbm_invert, 0);
+    rb_define_method(rb_cDBM,"update", fdbm_update, 1);
+    rb_define_method(rb_cDBM,"replace", fdbm_replace, 1);
 
-    rb_define_method(cDBM, "include?", fdbm_has_key, 1);
-    rb_define_method(cDBM, "has_key?", fdbm_has_key, 1);
-    rb_define_method(cDBM, "member?", fdbm_has_key, 1);
-    rb_define_method(cDBM, "has_value?", fdbm_has_value, 1);
-    rb_define_method(cDBM, "key?", fdbm_has_key, 1);
-    rb_define_method(cDBM, "value?", fdbm_has_value, 1);
+    rb_define_method(rb_cDBM, "include?", fdbm_has_key, 1);
+    rb_define_method(rb_cDBM, "has_key?", fdbm_has_key, 1);
+    rb_define_method(rb_cDBM, "member?", fdbm_has_key, 1);
+    rb_define_method(rb_cDBM, "has_value?", fdbm_has_value, 1);
+    rb_define_method(rb_cDBM, "key?", fdbm_has_key, 1);
+    rb_define_method(rb_cDBM, "value?", fdbm_has_value, 1);
 
-    rb_define_method(cDBM, "to_a", fdbm_to_a, 0);
-    rb_define_method(cDBM, "to_hash", fdbm_to_hash, 0);
+    rb_define_method(rb_cDBM, "to_a", fdbm_to_a, 0);
+    rb_define_method(rb_cDBM, "to_hash", fdbm_to_hash, 0);
 }

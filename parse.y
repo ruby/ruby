@@ -1394,11 +1394,6 @@ opt_block_var	: none
 		    {
 			$$ = $2;
 		    }
-		| '<' f_args '>'
-		    {
-			$$ = (NODE*)2;
-		    }
-
 
 do_block	: kDO_BLOCK
 		    {
