@@ -1280,7 +1280,7 @@ $y = Marshal.dump($x)
 test_ok($x == Marshal.load($y))
 
 StrClone=String.clone;
-test_ok(Marshal.load(Marshal.dump(StrClone.new("abc"))).type == StrClone)
+test_ok(Marshal.load(Marshal.dump(StrClone.new("abc"))).class == StrClone)
 
 test_check "pack"
 
