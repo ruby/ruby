@@ -1,3 +1,8 @@
+Sat Jul 17 05:26:27 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/diagram.rb: Incorporate Micheal Neumann's
+	  client-side imagemao patch
+
 Fri Jul 16 11:17:38 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (exit_initialize): use EXIT_SUCCESS instead of 0.

@@ -309,7 +309,7 @@ module RDoc
     # the page
 
     def wrap_in_image_map(src, dot, name)
-      res = %{<map name="map">\n}
+      res = %{<map id="map" name="map">\n}
       dot_map = `dot -Tismap #{src}`
       dot_map.each do |area|
         unless area =~ /^rectangle \((\d+),(\d+)\) \((\d+),(\d+)\) ([\/\w.]+)\s*(.*)/
@@ -317,10 +317,10 @@ module RDoc
           return nil
         end
         
-        blx = $1; bly = $2
-        trx = $3; try = $4
-        url = $5; area_name = $6
-        res <<  %{  <area shape="RECT" coords="#{blx},#{try},#{trx},#{bly}" }
+        xs, ys = [$1.to_i, $3.to_i], [$2.to_i, $4.to_i]
+        url, area_name = $5, $6
+
+        res <<  %{  <area shape="RECT" coords="#{xs.min},#{ys.min},#{xs.max},#{ys.max}" }
         res <<  %{     href="#{url}" alt="#{area_name}">\n}
       end
       res << "</map>\n"
