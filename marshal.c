@@ -98,6 +98,24 @@ struct dump_call_arg {
     int limit;
 };
 
+static VALUE
+class2path(klass)
+    VALUE klass;
+{
+    VALUE path = rb_class_path(klass);
+    char *n = RSTRING(path)->ptr;
+
+    if (n[0] == '#') {
+	rb_raise(rb_eTypeError, "can't dump anonymous %s %s",
+		 (TYPE(klass) == T_CLASS ? "class" : "module"),
+		 n);
+    }
+    if (rb_path2class(n) != rb_class_real(klass)) {
+	rb_raise(rb_eTypeError, "%s cannot be referred", n);
+    }
+    return path;
+}
+
 static void w_long _((long, struct dump_arg*));
 
 static void
@@ -382,7 +400,7 @@ w_class(type, obj, arg, check)
     VALUE klass = CLASS_OF(obj);
     w_extended(klass, arg, check);
     w_byte(type, arg);
-    path = rb_class2name(klass);
+    path = RSTRING(class2path(rb_class_real(klass)))->ptr;
     w_unique(path, arg);
 }
 
@@ -397,7 +415,7 @@ w_uclass(obj, base_klass, arg)
     klass = rb_class_real(klass);
     if (klass != base_klass) {
 	w_byte(TYPE_UCLASS, arg);
-	w_unique(rb_class2name(klass), arg);
+	w_unique(RSTRING(class2path(klass))->ptr, arg);
     }
 }
 
@@ -517,11 +535,7 @@ w_object(obj, arg, limit)
 	    }
 	    w_byte(TYPE_CLASS, arg);
 	    {
-		VALUE path = rb_class_path(obj);
-		if (RSTRING(path)->ptr[0] == '#') {
-		    rb_raise(rb_eTypeError, "can't dump anonymous class %s",
-			     RSTRING(path)->ptr);
-		}
+		VALUE path = class2path(obj);
 		w_bytes(RSTRING(path)->ptr, RSTRING(path)->len, arg);
 	    }
 	    break;
@@ -529,11 +543,7 @@ w_object(obj, arg, limit)
 	  case T_MODULE:
 	    w_byte(TYPE_MODULE, arg);
 	    {
-		VALUE path = rb_class_path(obj);
-		if (RSTRING(path)->ptr[0] == '#') {
-		    rb_raise(rb_eTypeError, "can't dump anonymous module %s",
-			     RSTRING(path)->ptr);
-		}
+		VALUE path = class2path(obj);
 		w_bytes(RSTRING(path)->ptr, RSTRING(path)->len, arg);
 	    }
 	    break;

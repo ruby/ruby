@@ -189,11 +189,14 @@ class ConditionVariable
   # Releases the lock held in +mutex+ and waits; reacquires the lock on wakeup.
   #
   def wait(mutex)
-    mutex.exclusive_unlock do
-      @waiters.push(Thread.current)
-      Thread.stop
+    begin
+      mutex.exclusive_unlock do
+        @waiters.push(Thread.current)
+        Thread.stop
+      end
+    ensure
+      mutex.lock
     end
-    mutex.lock
   end
   
   #

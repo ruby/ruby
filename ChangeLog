@@ -1489,6 +1489,11 @@ Tue Jan 20 02:49:22 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	* ext/openssl/extconf.rb: add check for OpenSSL version.
 	  [ruby-list:39054]
 
+Tue Jan 20 02:38:13 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (w_class): should not dump singleton class.
+	  [ruby-dev:22631]
+
 Tue Jan 20 01:31:36 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* io.c (lineno): typo fix(FIX2INT -> INT2FIX).
@@ -1514,6 +1519,16 @@ Sun Jan 18 20:47:35 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 Sun Jan 18 02:33:26 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* defines.h (_WIN32): undef _WIN32 on Cygwin before defining DOSISH.
+
+Sun Jan 18 00:23:55 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (class2path): check anonymous class/module before
+	  checking referable, and allow singleton classes.
+
+Fri Jan 16 14:33:35 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (class2path): get class path and check referable.
+	  [ruby-dev:22588]
 
 Fri Jan 16 09:52:23 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
