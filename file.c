@@ -2307,7 +2307,7 @@ path_check_1(path)
 #ifndef S_IWOTH
 # define S_IWOTH 002
 #endif
-	if (stat(p0, &st) == 0 && S_ISDIR(st->st_mode) && (st.st_mode & S_IWOTH)
+	if (stat(p0, &st) == 0 && S_ISDIR(st.st_mode) && (st.st_mode & S_IWOTH)
 #ifdef S_ISVTX
 	    && !(st.st_mode & S_ISVTX)
 #endif
