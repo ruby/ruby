@@ -613,6 +613,7 @@ rb_hash_key(hash, value)
     return args[1];
 }
 
+/* :nodoc: */
 static VALUE
 rb_hash_index(hash, value)
     VALUE hash, value;

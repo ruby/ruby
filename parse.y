@@ -8218,6 +8218,7 @@ parser_new()
 #ifdef RIPPER_DEBUG
 extern int rb_is_pointer_to_heap _((VALUE));
 
+/* :nodoc: */
 static VALUE
 ripper_validate_object(self, x)
     VALUE self, x;
@@ -8696,6 +8697,7 @@ ripper_lineno(self)
 }
 
 #ifdef RIPPER_DEBUG
+/* :nodoc: */
 static VALUE
 ripper_assert_Qundef(self, obj, msg)
     VALUE self, obj, msg;
@@ -8707,6 +8709,7 @@ ripper_assert_Qundef(self, obj, msg)
     return Qnil;
 }
 
+/* :nodoc: */
 static VALUE
 ripper_value(self, obj)
     VALUE self, obj;

@@ -1530,6 +1530,15 @@ rb_reg_match_pos(re, str, pos)
     return LONG2FIX(pos);
 }
 
+/*
+ *  call-seq:
+ *     rxp =~ str    => integer or nil
+ *  
+ *  Match---Matches <i>rxp</i> against <i>str</i>.
+ *
+ *     /at/ =~ "input data"   #=> 7
+ */
+
 VALUE
 rb_reg_match(re, str)
     VALUE re, str;
