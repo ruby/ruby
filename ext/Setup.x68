@@ -21,6 +21,7 @@ nkf
 #openssl
 racc/cparse
 #readline
+#ripper
 #sdbm
 #socket
 stringio

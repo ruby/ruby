@@ -1,3 +1,17 @@
+Mon Sep 13 02:42:28 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/Setup: add ripper.
+
+	* ext/Setup.atheos: ditto.
+
+	* ext/Setup.dj: ditto.
+
+	* ext/Setup.emx: ditto.
+
+	* ext/Setup.nt: ditto.
+
+	* ext/Setup.x68: ditto.
+
 Mon Sep 13 02:26:31 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/ripper: ripper extention added.

@@ -21,6 +21,7 @@ pty
 #openssl
 racc/parse
 readline
+ripper
 sdbm
 socket
 stringio
