@@ -17,6 +17,7 @@ alias $0 $progname
 
 $extlist = []
 $extupdate = false
+$compiled = {}
 
 $:.replace ["."]
 require 'rbconfig'
@@ -44,6 +45,36 @@ def relative_from(path, base)
   end
 end
 
+def extract_makefile(makefile, force = false)
+  m = File.read(makefile)
+  if !(target = m[/^TARGET[ \t]*=[ \t]*(\S*)/, 1])
+    return force
+  end
+  installrb = {}
+  m.scan(/^install-rb-default:[ \t]*(\S+)\n\1:[ \t]*(\S+)/) {installrb[$2] = $1}
+  oldrb = installrb.keys.sort
+  newrb = install_rb(nil, "").collect {|d, *f| f}.flatten.sort
+  unless (oldrb -= newrb).empty?
+    FileUtils.rm_f(oldrb.collect {|old| Config.expand(installrb[old])}, :verbose => true)
+    return false
+  end
+  if target_prefix = m[/^target_prefix[ \t]*=[ \t]*\/(.*)/, 1]
+    target = "#{target_prefix}/#{target}"
+  end
+  $target = target
+  /^STATIC_LIB[ \t]*=[ \t]*\S+/ =~ m or $static = nil
+  $preload = Shellwords.shellwords(m[/^preload[ \t]*=[ \t]*(.*)/, 1] || "")
+  $DLDFLAGS += " " + (m[/^DLDFLAGS[ \t]*=[ \t]*(.*)/, 1] || "")
+  if s = m[/^LIBS[ \t]*=[ \t]*(.*)/, 1]
+    s.sub!(/^#{Regexp.quote($LIBRUBYARG)} */, "")
+    s.sub!(/ *#{Regexp.quote($LIBS)}$/, "")
+    $libs = s
+  end
+  $LOCAL_LIBS = m[/^LOCAL_LIBS[ \t]*=[ \t]*(.*)/, 1] || ""
+  $LIBPATH = Shellwords.shellwords(m[/^libpath[ \t]*=[ \t]*(.*)/, 1] || "") - %w[$(libdir) $(topdir)]
+  true
+end
+
 def extmake(target)
   print "#{$message} #{target}\n"
   $stdout.flush
@@ -56,8 +87,6 @@ def extmake(target)
   unless $ignore
     return true if $nodynamic and not $static
   end
-
-  init_mkmf
 
   FileUtils.mkpath target unless File.directory?(target)
   begin
@@ -73,18 +102,20 @@ def extmake(target)
     $mdir = target
     $srcdir = File.join($top_srcdir, "ext", $mdir)
     $preload = nil
+    $compiled[target] = false
     makefile = "./Makefile"
+    ok = File.exist?(makefile)
     unless $ignore
-      if !(t = modified?(makefile, MTIMES)) ||
-	 %W<#{$srcdir}/makefile.rb #{$srcdir}/extconf.rb
-	    #{$srcdir}/depend>.any? {|f| modified?(f, [t])}
-      then
-	$defs = []
-	Logging::logfile 'mkmf.log'
-	Config::CONFIG["srcdir"] = $srcdir
-	Config::CONFIG["topdir"] = $topdir
-	rm_f makefile
-	begin
+      Config::CONFIG["srcdir"] = $srcdir
+      Config::CONFIG["topdir"] = $topdir
+      begin
+	if (!(ok &&= extract_makefile(makefile)) ||
+	    !(t = modified?(makefile, MTIMES)) ||
+            %W"#{$srcdir}/makefile.rb #{$srcdir}/extconf.rb #{$srcdir}/depend".any? {|f| modified?(f, [t])})
+        then
+          init_mkmf
+	  Logging::logfile 'mkmf.log'
+	  rm_f makefile
 	  if File.exist?($0 = "#{$srcdir}/makefile.rb")
 	    load $0
 	  elsif File.exist?($0 = "#{$srcdir}/extconf.rb")
@@ -93,40 +124,23 @@ def extmake(target)
 	    create_makefile(target)
 	  end
 	  $extupdate = true
-	  File.exist?(makefile)
-	rescue SystemExit
-	  # ignore
-	ensure
-	  rm_f "conftest*"
-	  $0 = $PROGRAM_NAME
-	  Config::CONFIG["srcdir"] = $top_srcdir
+	  ok = File.exist?(makefile)
 	end
-      else
-	if $static
-	  m = File.read(makefile)
-	  if !($target = m[/^TARGET[ \t]*=[ \t]*(\S*)/, 1])
-	    $static = nil
-	  elsif target_prefix = m[/^target_prefix[ \t]*=[ \t]*\/(.*)/, 1]
-	    $target = "#{target_prefix}/#{$target}"
-	  end
-	  /^STATIC_LIB[ \t]*=[ \t]*\S+/ =~ m or $static = nil
-	  $preload = Shellwords.shellwords(m[/^preload[ \t]*=[ \t]*(.*)/, 1] || "")
-	  $DLDFLAGS += " " + (m[/^DLDFLAGS[ \t]*=[ \t]*(.*)/, 1] || "")
-	  if s = m[/^LIBS[ \t]*=[ \t]*(.*)/, 1]
-            s.sub!(/^#{Regexp.quote($LIBRUBYARG)} */, "")
-            s.sub!(/ *#{Regexp.quote($LIBS)}$/, "")
-            $libs = s
-          end
-	  $LOCAL_LIBS = m[/^LOCAL_LIBS[ \t]*=[ \t]*(.*)/, 1] || ""
-	  $LIBPATH = Shellwords.shellwords(m[/^libpath[ \t]*=[ \t]*(.*)/, 1] || "") -
-		     %w[$(libdir) $(topdir)]
-	end
-	true
+      rescue SystemExit
+	# ignore
+      ensure
+	rm_f "conftest*"
+	config = $0
+	$0 = $PROGRAM_NAME
+	Config::CONFIG["srcdir"] = $top_srcdir
+	Config::CONFIG["topdir"] = topdir
       end
-    else
-      File.exist?(makefile)
-    end or open(makefile, "w") do |f|
-      f.print dummy_makefile($srcdir)
+    end
+    ok = yield(ok) if block_given?
+    unless ok
+      open(makefile, "w") do |f|
+	f.print dummy_makefile($srcdir)
+      end
       return true
     end
     args = sysquote($mflags)
@@ -137,6 +151,7 @@ def extmake(target)
     unless system($make, *args)
       $ignore or $continue or return false
     end
+    $compiled[target] = true
     if $clean and $clean != true
       File.unlink(makefile) rescue nil
     end
@@ -164,11 +179,15 @@ def extmake(target)
   true
 end
 
+def compiled?(target)
+  $compiled[target]
+end
+
 def parse_args()
   $mflags = []
 
   opts = nil
-  ARGV.options do |opts|
+  $optparser ||= OptionParser.new do |opts|
     opts.on('-n') {$dryrun = true}
     opts.on('--[no-]extension [EXTS]', Array) do |v|
       $extension = (v == false ? [] : v)
@@ -200,13 +219,14 @@ def parse_args()
     opts.on('--message [MESSAGE]', String) do |v|
       $message = v
     end
-    begin
-      opts.parse!
-    rescue OptionParser::InvalidOption => e
-      retry if /^--/ =~ e.args[0]
-      raise
-    end
-  end or abort opts.to_s
+  end
+  begin
+    $optparser.parse!(ARGV)
+  rescue OptionParser::InvalidOption => e
+    retry if /^--/ =~ e.args[0]
+    $optparser.warn(e)
+    abort opts.to_s
+  end
 
   $destdir ||= ''
 

@@ -265,52 +265,14 @@ if mac_need_framework ||
     $LDFLAGS += ' -framework Tk -framework Tcl'
   end
 
-
   if stubs or pthread_check
     # create Makefile
 
-    # backup
-    if $INSTALLFILES
-      installfiles_bup = $INSTALLFILES.dup
-    else
-      installfiles_bup = nil
-      $INSTALLFILES = []
-    end
-
     # for SUPPORT_STATUS
+    $INSTALLFILES ||= []
     $INSTALLFILES << ["lib/tkextlib/SUPPORT_STATUS", "$(RUBYLIBDIR)", "lib"]
 
     # create
     create_makefile("tcltklib")
-
-    # reset
-    $INSTALLFILES = installfiles_bup
-
-    # add rules for tkutil
-    File::open('Makefile', 'a'){|mfile|
-      File::open('make-tkutil', 'r'){|dfile|
-        mfile.print "\n###\n"
-        while line = dfile.gets()
-          mfile.print line
-        end
-      }
-    }
-
-    # create tkutil/Makefile
-    Dir.chdir 'tkutil'
-    if $extout || $extmk
-      $srcdir = '../' << $srcdir << '/tkutil'
-      $topdir = '../' << $topdir
-      $hdrdir = '../' << $hdrdir
-      $objs = nil
-      $defs = []
-      Config::CONFIG["srcdir"] = $srcdir
-    else
-      puts "entering directory `tkutil'"
-    end
-    rm_f './Makefile'
-    init_mkmf
-    load 'subconf.rb'
-    Dir.chdir '..'
   end
 end

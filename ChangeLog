@@ -1,3 +1,29 @@
+Sun Feb  6 23:51:30 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (extract_makefile): extract previously collected
+	  informations from existing Makefile.
+
+	* ext/socket/extconf.rb: check if getaddrinfo() works fine only when
+	  wide-getaddrinfo option is not given.  fixed: [ruby-dev:25422]
+
+	* ext/tk/extconf.rb: separate tkutil configuration.
+
+	* lib/mkmf.rb ($extmk): check if under ext directory.
+
+	* lib/mkmf.rb (Logging.postpone): allow recursive operation.
+
+	* lib/mkmf.rb (try_constant): make sure if really a constant, reduce
+	  the number of times of compile.
+
+	* lib/mkmf.rb (have_macro, have_var, byte_order): new functions.
+
+	* lib/mkmf.rb (find_library): allow directory list with separators.
+
+	* lib/mkmf.rb (arg_config): manage provided configuration options.
+
+	* lib/mkmf.rb (dir_config): accept arrays of directory names as
+	  default values.
+
 Sun Feb  6 19:20:05 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* eval.c (stack_extend): add prototype because VC++8 doesn't
