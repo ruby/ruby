@@ -801,7 +801,8 @@ static rb_thread_t curr_thread = 0;
     if (!(ruby_scope->flag & SCOPE_MALLOC)) {\
 	ruby_scope->local_vars = 0;	\
 	ruby_scope->local_tbl  = 0;	\
-	if (ruby_scope != top_scope) {	\
+	if (!(ruby_scope->flag & SCOPE_DONT_RECYCLE) && \
+            ruby_scope != top_scope) {	\
 	    rb_gc_force_recycle((VALUE)ruby_scope);\
         }				\
     }					\

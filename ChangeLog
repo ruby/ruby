@@ -4,6 +4,8 @@ Fri Sep  1 10:36:45 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Fri Sep  1 10:36:29 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
+	* eval.c (POP_SCOPE): recycled scopes too much
+
 	* eval.c (Init_eval): extend room for stack allowance.
 
 	* eval.c (POP_SCOPE): frees scope too much.
