@@ -591,8 +591,8 @@ key_i(key, value, args)
  *  Returns the key for a given value. If not found, returns <code>nil</code>.
  *     
  *     h = { "a" => 100, "b" => 200 }
- *     h.index(200)   #=> "b"
- *     h.index(999)   #=> nil
+ *     h.key(200)   #=> "b"
+ *     h.key(999)   #=> nil
  *     
  */
 
@@ -2317,7 +2317,7 @@ env_has_value(dmy, value)
 }
 
 static VALUE
-env_index(dmy, value)
+env_key(dmy, value)
     VALUE dmy, value;
 {
     char **env;
@@ -2340,6 +2340,14 @@ env_index(dmy, value)
     }
     FREE_ENVIRON(environ);
     return Qnil;
+}
+
+static VALUE
+env_index(dmy, value)
+    VALUE dmy, value;
+{
+    rb_warn("ENV.index is deprecated; use ENV.key");
+    return env_key(dmy, value);
 }
 
 static VALUE
@@ -2559,6 +2567,7 @@ Init_Hash()
     rb_define_singleton_method(envtbl,"rehash", env_none, 0);
     rb_define_singleton_method(envtbl,"to_a", env_to_a, 0);
     rb_define_singleton_method(envtbl,"to_s", env_to_s, 0);
+    rb_define_singleton_method(envtbl,"key", env_key, 1);
     rb_define_singleton_method(envtbl,"index", env_index, 1);
     rb_define_singleton_method(envtbl,"size", env_size, 0);
     rb_define_singleton_method(envtbl,"length", env_size, 0);

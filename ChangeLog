@@ -1,3 +1,8 @@
+Sat Apr  2 13:23:17 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* hash.c (env_key): ENV.index is deprecated as well as Hash#index.
+	  use ENV.key instead. [ruby-dev:25974]
+
 Sat Apr  2 02:19:11 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb (TkWindow.initialize): accept 'without_creating'
