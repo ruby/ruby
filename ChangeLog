@@ -1,3 +1,12 @@
+Thu Oct 10 15:20:18 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* lib/weakref.rb (WeakRef::@@final): use Hash#delete.
+
+	* lib/weakref.rb (WeakRef::__getobj__): examin if alive or not by
+	  ID_REV_MAP to deal with recycled object.  [ruby-dev:18472]
+
+	* lib/weakref.rb (WeakRef::weakref_alive?): ditto.
+
 Wed Oct  9 07:11:25 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* gc.c (gc_sweep): also adjust heaps_limits when free unused heap
