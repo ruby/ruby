@@ -18,13 +18,6 @@ require "mkmf"
 
 dir_config("openssl")
 
-if !defined? message
-  def message(*s)
-    printf(*s)
-    Logging::message(*s)
-  end
-end
-
 
 message "=== OpenSSL for Ruby configurator ===\n"
 
@@ -65,22 +58,28 @@ EOD
 end
 
 
-message "=== Checking for required stuff... ===\n"
-
-result = have_header("openssl/crypto.h")
-result &= ( have_library("crypto", "OpenSSL_add_all_digests") ||
-            have_library("libeay32", "OpenSSL_add_all_digests") )
-result &= ( have_library("ssl", "SSL_library_init") ||
-            have_library("ssleay32", "SSL_library_init") )
-if !result
-  message "=== Checking for required stuff failed. ===\n"
-  message "Makefile wasn't created. Fix the errors above.\n"
-  exit 1
-end
 
 message "=== Checking for system dependent stuff... ===\n"
+have_library("nsl", "t_open")
+have_library("socket", "socket")
 have_header("unistd.h")
 have_header("sys/time.h")
+
+message "=== Checking for required stuff... ===\n"
+if find_executable("pkg-config") and system("pkg-config", "--exists", "openssl")
+  $CFLAGS += " " << `pkg-config --cflags openssl`.chomp
+  $DLDFLAGS += " " << `pkg-config --libs-only-L openssl`.chomp
+  $LIBS += " " << `pkg-config --libs-only-l openssl`.chomp
+else
+  result = have_header("openssl/crypto.h")
+  result &= %w[crypto libeay32].any? {|lib| have_library(lib, "OpenSSL_add_all_digests")}
+  result &= %w[ssl ssleay32].any? {|lib| have_library(lib, "SSL_library_init")}
+  if !result
+    message "=== Checking for required stuff failed. ===\n"
+    message "Makefile wasn't created. Fix the errors above.\n"
+    exit 1
+  end
+end
 
 message "=== Checking for OpenSSL features... ===\n"
 have_func("HMAC_CTX_copy")

@@ -1,3 +1,9 @@
+Fri Jul 25 02:55:59 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/extconf.rb: add check for libsocket and libnsl.
+
+	* ext/openssl/extconf.rb: use pkg-config to build CFLAGS and LDFLAGS.
+
 Fri Jul 25 01:27:59 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
 
     * ext/syck/emitter.c (syck_emitter_flush): accepts count
@@ -35,7 +41,7 @@ Thu Jul 24 15:50:42 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/extconf.rb: add check for win32 OpenSSL libraries.
 
-	* ext/openssl/extconf.rb: add check for __VA_AEGS__.
+	* ext/openssl/extconf.rb: add check for __VA_ARGS__.
 
 	* ext/openssl/ossl.h: avoid non C99 compiler errors.
 
