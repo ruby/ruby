@@ -1,3 +1,7 @@
+Fri Jan  3 22:26:07 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* process.c (rb_proc_times): need to initialize first.
+
 Thu Jan 02 11:01:20 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (bmcall): arguments should be an array.
