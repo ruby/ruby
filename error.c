@@ -393,11 +393,11 @@ exception(argc, argv)
     }
     for (i=0; i<argc; i++) {	/* argument check */
 	id = rb_to_id(argv[i]);
-	if (!rb_is_const_id(id)) {
-	    ArgError("identifier `%s' needs to be constant", rb_id2name(id));
-	}
 	if (!rb_id2name(id)) {
 	    ArgError("argument needs to be symbol or string");
+	}
+	if (!rb_is_const_id(id)) {
+	    ArgError("identifier `%s' needs to be constant", rb_id2name(id));
 	}
     }
     for (i=0; i<argc; i++) {

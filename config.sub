@@ -781,6 +781,9 @@ case $os in
 	-xenix)
 		os=-xenix
 		;;
+	-uxpds)
+		os=-uxpds
+		;;
 	-human)
 		;;
 	-beos)

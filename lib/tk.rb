@@ -453,9 +453,9 @@ module TkCore
   end
 
   def rb_appsend(interp, async, *args)
-    args.unshift('ruby {')
-    args.push('}')
-    appsend(interp, async, *args)
+    args = args.filter{|c| _get_eval_string(c).gsub(/[][$"]/, '\\\\\&')}
+    args.push(').to_s"')
+    appsend(interp, async, 'ruby "(', *args)
   end
 
   def appsend_displayof(interp, win, async, *args)
@@ -468,9 +468,9 @@ module TkCore
   end
 
   def rb_appsend_displayof(interp, win, async, *args)
-    args.unshift('ruby {')
-    args.push('}')
-    appsend_displayof(interp, win, async, *args)
+    args = args.filter{|c| _get_eval_string(c).gsub(/[][$"]/, '\\\\\&')}
+    args.push(').to_s"')
+    appsend_displayof(interp, win, async, 'ruby "(', *args)
   end
 
   def info(*args)
@@ -713,13 +713,14 @@ class TkVariable
 
   def value
     begin
-      tk_tcl2ruby(INTERP._eval(format('global %s; set %s', @id, @id)))
+      INTERP._eval(format('global %s; set %s', @id, @id))
     rescue
       if INTERP._eval(format('global %s; array exists %s', @id, @id)) != "1"
 	raise
       else
-	Hash[*tk_tcl2ruby(INTERP._eval(format('global %s; array get %s', 
-					      @id, @id)))]
+	Hash[*tk_split_simplelist(INTERP\
+				  ._eval(format('global %s; array get %s', 
+						@id, @id)))]
       end
     end
   end

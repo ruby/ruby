@@ -1,4 +1,3 @@
-#!/usr/local/bin/ruby
 #
 #   tracer.rb - 
 #   	$Release Version: 0.2$

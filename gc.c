@@ -686,7 +686,7 @@ obj_free(obj)
 	break;
       case T_DATA:
 	if (DATA_PTR(obj)) {
-	    if (RANY(obj)->as.data.dfree == (void*)-1) {
+	    if ((long)RANY(obj)->as.data.dfree == -1) {
 		free(DATA_PTR(obj));
 	    }
 	    if (RANY(obj)->as.data.dfree) {

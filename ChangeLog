@@ -1,3 +1,7 @@
+Fri Jul 24 13:40:19 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version 1.1c1 released.
+
 Fri Jul 24 02:10:22 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* marshal.c (r_bytes2): allocated buffer size was too short.
@@ -7,6 +11,14 @@ Fri Jul 24 02:10:22 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* re.c (reg_clone): now copies options properly.
 
 	* re.c (reg_get_kcode): code number was wrong.
+
+Thu Jul 23 13:11:32 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_attr): argument should be symbol or a string.
+
+Wed Jul 22 11:59:34 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (calculate_must_string): wrong offset added.
 
 Wed Jul 22 11:59:59 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

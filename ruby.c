@@ -580,7 +580,7 @@ load_file(fname, script)
     if (script) {
 	rb_define_global_const("DATA", f);
     }
-    if (f != rb_stdin) {
+    else if (f != rb_stdin) {
 	io_close(f);
     }
 }

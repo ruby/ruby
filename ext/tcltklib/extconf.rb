@@ -75,9 +75,9 @@ end
 if have_header("tcl.h") && have_header("tk.h") &&
     search_lib("libX11.{a,so}", "XOpenDisplay",
 	       "/usr/lib", "/usr/openwin/lib", "/usr/X11*/lib") &&
-    search_lib("libtcl{,7*,8*}.{a,so}", "Tcl_FindExecutable",
+    search_lib("libtcl{,8*,7*}.{a,so}", "Tcl_FindExecutable",
 	       "/usr/lib", "/usr/local/lib") &&
-    search_lib("libtk{,4*,8*}.{a,so}", "Tk_Init",
+    search_lib("libtk{,8*,4*}.{a,so}", "Tk_Init",
 	       "/usr/lib", "/usr/local/lib")
   $LDFLAGS = $libraries.collect{|path| "-L" + path}.join(" ")
   create_makefile("tcltklib")

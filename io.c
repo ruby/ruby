@@ -1327,7 +1327,6 @@ io_mode_string(fptr)
       case FMODE_READWRITE:
 	return "r+";
     }
-    return "r";
 }
 
 VALUE

@@ -326,7 +326,7 @@ rb_attr(klass, id, read, write, ex)
 {
     char *name;
     char *buf;
-    ID attr, attreq, attriv;
+    ID attr, attriv;
     int noex;
 
     if (!ex) noex = NOEX_PUBLIC;
@@ -344,17 +344,19 @@ rb_attr(klass, id, read, write, ex)
     }
 
     name = rb_id2name(id);
-    attr = rb_intern(name);
+    if (!name) {
+	ArgError("argument needs to be symbol or string");
+    }
     buf = ALLOCA_N(char,strlen(name)+2);
-    sprintf(buf, "%s=", name);
-    attreq = rb_intern(buf);
     sprintf(buf, "@%s", name);
     attriv = rb_intern(buf);
     if (read) {
-	rb_add_method(klass, attr, NEW_IVAR(attriv), noex);
+	rb_add_method(klass, id, NEW_IVAR(attriv), noex);
     }
+    sprintf(buf, "%s=", name);
+    id = rb_intern(buf);
     if (write) {
-	rb_add_method(klass, attreq, NEW_ATTRSET(attriv), noex);
+	rb_add_method(klass, id, NEW_ATTRSET(attriv), noex);
     }
 }
 

@@ -193,7 +193,7 @@ void
 re_set_casetable(table)
      char *table;
 {
-  translate = table;
+  translate = (unsigned char*)table;
 }
 
 /* Jim Meyering writes:
@@ -705,12 +705,12 @@ print_partial_compiled_pattern(start, end)
             printf ("/charset%s",
 	            (enum regexpcode) *(p - 1) == charset_not ? "_not" : "");
 
-            mcnt = *p;
+            mcnt = *p++;
 	    printf("/%d", mcnt);
             for (c = 0; c < mcnt; c++)
               {
                 unsigned bit;
-                unsigned char map_byte = p[1 + c];
+                unsigned char map_byte = p[c];
 
 		putchar ('/');
                 
@@ -718,7 +718,7 @@ print_partial_compiled_pattern(start, end)
                   if (map_byte & (1 << bit))
 		    printf("%c", c * BYTEWIDTH + bit);
               }
-	    p += mcnt + 1;
+	    p += mcnt;
 	    mcnt = EXTRACT_UNSIGNED_AND_INCR(p);
 	    while (mcnt--) {
 		int beg, end;
@@ -848,7 +848,7 @@ static void
 print_compiled_pattern(bufp)
     struct re_pattern_buffer *bufp;
 {
-  unsigned char *buffer = bufp->buffer;
+  unsigned char *buffer = (unsigned char*)bufp->buffer;
 
   print_partial_compiled_pattern (buffer, buffer + bufp->used);
 }
@@ -914,7 +914,7 @@ calculate_must_string(start, end)
 	case charset:
         case charset_not:
 	  mcnt = *p++;
-	  p += mcnt+1;
+	  p += mcnt;
 	  mcnt = EXTRACT_UNSIGNED_AND_INCR(p);
 	  while (mcnt--) {
 	    EXTRACT_MBC_AND_INCR(p);
