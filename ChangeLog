@@ -1,3 +1,7 @@
+Thu Feb 12 21:19:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
+
+	* lib/base64.rb: added and tidied documentation
+
 Thu Feb 12 20:45:01 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/protocol.rb (WriteAdapater#puts): must append "\n" to

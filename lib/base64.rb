@@ -1,27 +1,52 @@
+#
+# = base64.rb: methods for base64-encoding and -decoding stings
+#
+# Author:: Yukihiro Matsumoto 
+# Documentation:: Dave Thomas and Gavin Sinclair
+#
+# Until Ruby 1.8.1, these methods were defined at the top-level.  Now
+# they are in the Base64 module but included in the top-level, where
+# their usage is deprecated.
+#
+# See Base64 for documentation.
+#
+
 require "kconv"
 
-#  Perform encoding and decoding of binary data using a Base64
-#  representation. This library rather unfortunately loads its four
-#  methods directly into the top level namespace.
-# 
-#      require "base64"
-#
-#      enc   = encode64('Send reinforcements')
-#      puts enc
-#      plain = decode64(enc)
-#      puts plain
 
+# The Base64 module provides for the encoding (#encode64) and decoding
+# (#decode64) of binary data using a Base64 representation.
+# 
+# The following particular features are also provided:
+# - encode into lines of a given length (#b64encode)
+# - decode the special format specified in RFC2047 for the
+#   representation of email headers (decode_b)
+#
+# == Example
+#
+# A simple encoding and decoding. 
+# 
+#     require "base64"
+#
+#     enc   = Base64.encode64('Send reinforcements')
+#                         # -> "U2VuZCByZWluZm9yY2VtZW50cw==\n" 
+#     plain = Base64.decode64(enc)
+#                         # -> "Send reinforcements"
+#
+# The purpose of using base64 to encode data is that it translates any
+# binary data into purely printable characters.  It is specified in
+# RFC 2045 (http://www.faqs.org/rfcs/rfc2045.html).
 
 module Base64
   module_function
 
-  # Returns the Base64-decoded version of _str_.
+  # Returns the Base64-decoded version of +str+.
   #
   #   require 'base64'
   #   str = 'VGhpcyBpcyBsaW5lIG9uZQpUaGlzIG' +
   #         'lzIGxpbmUgdHdvClRoaXMgaXMgbGlu' +
   #         'ZSB0aHJlZQpBbmQgc28gb24uLi4K'
-  #    puts decode64(str)
+  #   puts Base64.decode64(str)
   #
   # <i>Generates:</i>
   #
@@ -36,11 +61,12 @@ module Base64
 
 
   # Decodes text formatted using a subset of RFC2047 (the one used for
-  # mime-encoding mail headers). Only supports an encoding type of 'b'
-  # (base 64), and only supports the character sets ISO-2022-JP and
-  # SHIFT_JIS (so the only two encoded word sequences recognized are
-  # <tt>=?ISO-2022-JP?B?...=</tt> and
-  # <tt>=?SHIFT_JIS?B?...=</tt>). Recognition of these sequences is case
+  # mime-encoding mail headers).
+  #
+  # Only supports an encoding type of 'b' (base 64), and only supports
+  # the character sets ISO-2022-JP and SHIFT_JIS (so the only two
+  # encoded word sequences recognized are <tt>=?ISO-2022-JP?B?...=</tt> and
+  # <tt>=?SHIFT_JIS?B?...=</tt>).  Recognition of these sequences is case
   # insensitive.
 
   def decode_b(str)
@@ -57,24 +83,28 @@ module Base64
     str
   end
 
-  # Returns the Base64-encoded version of \obj{str}.
+  # Returns the Base64-encoded version of +str+.
   #
-  #   require 'base64'
-  #   str = "Once\nupon\na\ntime."  #!sh!
-  #   enc = encode64(str)
-  #   decode64(enc)
+  #    require 'base64'
+  #    Base64.b64encode("Now is the time for all good coders\nto learn Ruby")
+  #
+  # <i>Generates:</i>
+  #
+  #    Tm93IGlzIHRoZSB0aW1lIGZvciBhbGwgZ29vZCBjb2RlcnMKdG8gbGVhcm4g
+  #    UnVieQ==
 
   def encode64(bin)
     [bin].pack("m")
   end
 
-  # Prints the Base64 encoded version of _bin_ (a +String+) in lines of
-  # _len_ (default 60) characters.
+  # _Prints_ the Base64 encoded version of +bin+ (a +String+) in lines of
+  # +len+ (default 60) characters.
   #
   #    require 'base64'
-  #    b64encode("Now is the time for all good coders\nto learn Ruby")
+  #    data = "Now is the time for all good coders\nto learn Ruby" 
+  #    puts Base64.b64encode(data)
   #
-  # Generates
+  # <i>Generates:</i>
   #
   #    Tm93IGlzIHRoZSB0aW1lIGZvciBhbGwgZ29vZCBjb2RlcnMKdG8gbGVhcm4g
   #    UnVieQ==
