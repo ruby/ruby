@@ -1280,8 +1280,8 @@ Init_process()
 
     rb_define_singleton_method(rb_mProcess, "fork", rb_f_fork, 0);
     rb_define_singleton_method(rb_mProcess, "exit!", rb_f_exit_bang, -1);
+
     rb_define_module_function(rb_mProcess, "kill", rb_f_kill, -1);
-#ifndef NT
     rb_define_module_function(rb_mProcess, "wait", proc_wait, -1);
     rb_define_module_function(rb_mProcess, "wait2", proc_wait2, -1);
     rb_define_module_function(rb_mProcess, "waitpid", proc_wait, -1);
@@ -1309,7 +1309,6 @@ Init_process()
 
     rb_define_module_function(rb_mProcess, "pid", get_pid, 0);
     rb_define_module_function(rb_mProcess, "ppid", get_ppid, 0);
-#endif /* ifndef NT */
 
     rb_define_module_function(rb_mProcess, "getpgrp", proc_getpgrp, 0);
     rb_define_module_function(rb_mProcess, "setpgrp", proc_setpgrp, 0);
