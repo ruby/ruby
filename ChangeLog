@@ -1,3 +1,7 @@
+Sat Apr 24 14:32:03 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
+
+	* re.c: applied stack error handling patch. [ruby-dev:22431]
+
 Sat Apr 24 10:38:31 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/markup/simple_markup.rb (SM::SimpleMarkup::group_lines):

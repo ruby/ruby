@@ -920,14 +920,16 @@ rb_reg_search(re, str, pos, reverse)
     if (FL_TEST(re, KCODE_FIXED))
 	kcode_reset_option();
 
-    if (result == -2) {
-	rb_reg_raise(RREGEXP(re)->str, RREGEXP(re)->len,
-		     "Stack overflow in regexp matcher", re);
-    }
-
     if (result < 0) {
-	rb_backref_set(Qnil);
-	return result;
+      if (result == ONIG_MISMATCH) {
+        rb_backref_set(Qnil);
+        return result;
+      }
+      else {
+        char err[ONIG_MAX_ERROR_MESSAGE_LEN];
+        re_error_code_to_str((UChar* )err, result);
+        rb_reg_raise(RREGEXP(re)->str, RREGEXP(re)->len, err, 0);
+      }
     }
 
     match = rb_backref_get();
