@@ -1915,17 +1915,26 @@ static VALUE
 clist_initialize(self, titles)
     VALUE self, titles;
 {
-    char **buf;
-    int i, len;
+    GtkWidget *widget;
 
-    Check_Type(titles, T_ARRAY);
-    len = RARRAY(titles)->len;
-    buf = ALLOCA_N(char*, len);
-    for (i=0; i<len; i++) {
-	Check_Type(RARRAY(titles)->ptr[i], T_STRING);
-	buf[i] = RSTRING(RARRAY(titles)->ptr[i])->ptr;
+    if (TYPE(titles) == T_ARRAY) {
+	char **buf;
+	int i, len;
+
+	Check_Type(titles, T_ARRAY);
+	len = RARRAY(titles)->len;
+	buf = ALLOCA_N(char*, len);
+	for (i=0; i<len; i++) {
+	    Check_Type(RARRAY(titles)->ptr[i], T_STRING);
+	    buf[i] = RSTRING(RARRAY(titles)->ptr[i])->ptr;
+	}
+	widget = gtk_clist_new_with_titles(len, buf);
     }
-    set_widget(self, gtk_clist_new(len));
+    else {
+	widget = gtk_clist_new(NUM2INT(titles));
+    }
+    set_widget(self, widget);
+
     return Qnil;
 }
 
@@ -1979,6 +1988,66 @@ clist_thaw(self)
     GtkWidget *widget = get_widget(self);
 
     gtk_clist_thaw(GTK_CLIST(widget));
+    return self;
+}
+
+static VALUE
+clist_col_titles_show(self)
+    VALUE self;
+{
+    GtkWidget *widget = get_widget(self);
+
+    gtk_clist_column_titles_show(GTK_CLIST(widget));
+    return self;
+}
+
+static VALUE
+clist_col_titles_hide(self)
+    VALUE self;
+{
+    GtkWidget *widget = get_widget(self);
+
+    gtk_clist_column_titles_hide(GTK_CLIST(widget));
+    return self;
+}
+
+static VALUE
+clist_col_title_active(self, column)
+    VALUE self, column;
+{
+    GtkWidget *widget = get_widget(self);
+
+    gtk_clist_column_title_active(GTK_CLIST(widget), NUM2INT(column));
+    return self;
+}
+
+static VALUE
+clist_col_title_passive(self, column)
+    VALUE self, column;
+{
+    GtkWidget *widget = get_widget(self);
+
+    gtk_clist_column_title_passive(GTK_CLIST(widget), NUM2INT(column));
+    return self;
+}
+
+static VALUE
+clist_col_titles_active(self)
+    VALUE self;
+{
+    GtkWidget *widget = get_widget(self);
+
+    gtk_clist_column_titles_active(GTK_CLIST(widget));
+    return self;
+}
+
+static VALUE
+clist_col_titles_passive(self)
+    VALUE self;
+{
+    GtkWidget *widget = get_widget(self);
+
+    gtk_clist_column_titles_passive(GTK_CLIST(widget));
     return self;
 }
 
@@ -3637,7 +3706,6 @@ tbar_append_item(self, text, ttext, icon, func)
     VALUE self, text, ttext, icon, func;
 {
     GtkWidget *widget = get_widget(self);
-    GtkObject *pixmap = get_gobject(icon);
 
     if (NIL_P(func)) {
 	func = f_lambda();
@@ -3645,7 +3713,7 @@ tbar_append_item(self, text, ttext, icon, func)
     gtk_toolbar_append_item(GTK_TOOLBAR(widget),
 			    STR2CSTR(text),
 			    STR2CSTR(ttext),
-			    GTK_PIXMAP(pixmap),
+			    get_widget(icon),
 			    exec_callback,
 			    (gpointer)ary_new3(1, func));
     return self;
@@ -3656,7 +3724,6 @@ tbar_prepend_item(self, text, ttext, icon, func)
     VALUE self, text, ttext, icon, func;
 {
     GtkWidget *widget = get_widget(self);
-    GtkObject *pixmap = get_gobject(icon);
 
     if (NIL_P(func)) {
 	func = f_lambda();
@@ -3664,7 +3731,7 @@ tbar_prepend_item(self, text, ttext, icon, func)
     gtk_toolbar_prepend_item(GTK_TOOLBAR(widget),
 			     STR2CSTR(text),
 			     STR2CSTR(ttext),
-			     GTK_PIXMAP(pixmap),
+			     get_widget(icon),
 			     exec_callback,
 			     (gpointer)ary_new3(1, func));
     return self;
@@ -3675,7 +3742,6 @@ tbar_insert_item(self, text, ttext, icon, func, pos)
     VALUE self, text, ttext, icon, func, pos;
 {
     GtkWidget *widget = get_widget(self);
-    GtkObject *pixmap = get_gobject(icon);
 
     if (NIL_P(func)) {
 	func = f_lambda();
@@ -3683,7 +3749,7 @@ tbar_insert_item(self, text, ttext, icon, func, pos)
     gtk_toolbar_insert_item(GTK_TOOLBAR(widget),
 			    STR2CSTR(text),
 			    STR2CSTR(ttext),
-			    GTK_PIXMAP(pixmap),
+			    get_widget(icon),
 			    exec_callback,
 			    (gpointer)ary_new3(1, func),
 			    NUM2INT(pos));
@@ -5417,12 +5483,18 @@ Init_gtk()
     rb_define_method(gBBox, "set_child_ipadding", bbox_set_child_ipadding, 2);
 
     /* CList */
-    rb_define_method(gCList, "initialize", clist_initialize, 1);
+    rb_define_method(gCList, "initialize", clist_initialize, -1);
     rb_define_method(gCList, "set_border", clist_set_border, 1);
     rb_define_method(gCList, "set_selection_mode", clist_set_sel_mode, 1);
     rb_define_method(gCList, "set_policy", clist_set_policy, 2);
     rb_define_method(gCList, "freeze", clist_freeze, 0);
     rb_define_method(gCList, "thaw", clist_thaw, 0);
+    rb_define_method(gCList, "column_titles_show", clist_col_titles_show, 0);
+    rb_define_method(gCList, "column_titles_hide", clist_col_titles_hide, 0);
+    rb_define_method(gCList, "column_title_active", clist_col_title_active, 1);
+    rb_define_method(gCList, "column_title_passive", clist_col_title_passive, 1);
+    rb_define_method(gCList, "column_titles_active", clist_col_title_active, 0);
+    rb_define_method(gCList, "column_titles_passive", clist_col_title_passive, 0);
     rb_define_method(gCList, "set_column_title", clist_set_col_title, 2);
     rb_define_method(gCList, "set_column_widget", clist_set_col_wigdet, 2);
     rb_define_method(gCList, "set_column_justification", clist_set_col_just, 2);
@@ -5850,7 +5922,6 @@ Init_gtk()
     rb_define_const(mGtk, "ANCHORED", INT2FIX(GTK_ANCHORED));
     rb_define_const(mGtk, "BASIC", INT2FIX(GTK_BASIC));
     rb_define_const(mGtk, "USER_STYLE", INT2FIX(GTK_USER_STYLE));
-/*    rb_define_const(mGtk, "GRAB_ALL", INT2FIX(GTK_GRAB_ALL)); */
     rb_define_const(mGtk, "REDRAW_PENDING", INT2FIX(GTK_REDRAW_PENDING));
     rb_define_const(mGtk, "RESIZE_PENDING", INT2FIX(GTK_RESIZE_PENDING));
     rb_define_const(mGtk, "RESIZE_NEEDED", INT2FIX(GTK_RESIZE_NEEDED));
