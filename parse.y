@@ -18,7 +18,6 @@
 #include "node.h"
 #include "st.h"
 #include <stdio.h>
-#include <string.h>
 #include <errno.h>
 
 /* hack for bison */
@@ -1608,7 +1607,7 @@ none		: /* none */
 static char *tokenbuf = NULL;
 static int   tokidx, toksiz = 0;
 
-#ifndef strdup
+#ifndef HAVE_STRDUP
 char *strdup();
 #endif
 
@@ -1722,7 +1721,7 @@ rb_compile_string(f, s, line)
     lex_gets_ptr = 0;
     lex_input = s;
     lex_pbeg = lex_p = lex_pend = 0;
-    ruby_sourceline = line;
+    ruby_sourceline = line - 1;
     compile_for_eval = 1;
 
     return yycompile(f);
@@ -2072,7 +2071,7 @@ parse_regx(term, paren)
 	    tokfix();
 	    lex_state = EXPR_END;
 	    if (list) {
-		nd_set_line(list, re_start-1);
+		nd_set_line(list, re_start);
 		if (toklen() > 0) {
 		    VALUE ss = rb_str_new(tok(), toklen());
 		    list_append(list, NEW_STR(ss));
@@ -2161,7 +2160,7 @@ parse_string(func, term, paren)
     lex_state = EXPR_END;
 
     if (list) {
-	nd_set_line(list, strstart-1);
+	nd_set_line(list, strstart);
 	if (toklen() > 0) {
 	    VALUE ss = rb_str_new(tok(), toklen());
 	    list_append(list, NEW_STR(ss));
@@ -2246,8 +2245,6 @@ parse_quotedword(term, paren)
     yylval.node = NEW_CALL(NEW_STR(yylval.val), rb_intern("split"), 0);
     return tDSTRING;
 }
-
-char *strdup();
 
 static int
 here_document(term, indent)
@@ -2365,7 +2362,7 @@ here_document(term, indent)
     ruby_sourceline = linesave;
 
     if (list) {
-	nd_set_line(list, linesave);
+	nd_set_line(list, linesave+1);
 	yylval.node = list;
     }
     switch (term) {
