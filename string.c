@@ -898,14 +898,15 @@ str_sub_s(str, pat, val, once)
 	repl = reg_regsub(val, str, regs);
 	str_cat(result, RSTRING(repl)->ptr, RSTRING(repl)->len);
 	if (BEG(0) == END(0)) {
+	    int len = ismbchar(RSTRING(str)->ptr[END(0)])?2:1;
 	    /*
 	     * Always consume at least one character of the input string
 	     * in order to prevent infinite loops.
 	     */
 	    if (RSTRING(str)->len > END(0)) {
-		str_cat(result, RSTRING(str)->ptr+END(0), 1);
+		str_cat(result, RSTRING(str)->ptr+END(0), len);
 	    }
-	    offset = END(0)+1;
+	    offset = END(0)+len;
 	}
 	else {
 	    offset = END(0);
@@ -970,25 +971,28 @@ str_sub_iter_s(str, pat, once)
     result = str_new(0,0);
     n = 0; offset = 0;
     while ((beg=reg_search(pat, str, offset, 0)) >= 0) {
-	n++;
 
-	null = 0;
+	n++;
+	regs = RMATCH(backref_get())->regs;
 	str_cat(result, RSTRING(str)->ptr+offset, beg-offset);
 
-	regs = RMATCH(backref_get())->regs;
-	if (END(0) == offset) {
-	    null = 1;
-	    offset = END(0)+1;
+	val = obj_as_string(rb_yield(reg_nth_match(0, backref_get())));
+	str_cat(result, RSTRING(val)->ptr, RSTRING(val)->len);
+
+	if (BEG(0) == END(0)) {
+	    int len = ismbchar(RSTRING(str)->ptr[END(0)])?2:1;
+
+	    /*
+	     * Always consume at least one character of the input string
+	     * in order to prevent infinite loops.
+	     */
+	    if (RSTRING(str)->len > END(0)) {
+		str_cat(result, RSTRING(str)->ptr+END(0), len);
+	    }
+	    offset = END(0)+len;
 	}
 	else {
 	    offset = END(0);
-	}
-
-	val = rb_yield(reg_nth_match(0, backref_get()));
-	val = obj_as_string(val);
-	str_cat(result, RSTRING(val)->ptr, RSTRING(val)->len);
-	if (null && RSTRING(str)->len) {
-	    str_cat(result, RSTRING(str)->ptr+offset-1, 1);
 	}
 
 	if (once) break;
@@ -2506,7 +2510,4 @@ Init_String()
     rb_define_global_function("split", f_split, -1);
 
     pr_str = rb_intern("to_s");
-
-    /* Fix-up initialize ordering */
-    RCLASS(eGlobalExit)->super = cString;
 }

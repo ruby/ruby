@@ -1,5 +1,10 @@
 Fri Feb 20 10:17:51 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
+	* ext/kconv/kconv.c (kconv_kconv): default output code now be
+	  determined according to the value of $KCODE.
+
+	* re.c (rb_get_kcode): can retrieve $KCODE from C. 
+
 	* parse.y (stmt): if/unless modifiers returns nil, if condition is 
 	  not established.
 
@@ -13,12 +18,18 @@ Thu Feb 19 11:06:47 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* regex.c (re_compile_pattern): needed to clear pending_exact on
 	  non-registering grouping (?:...).
 
+Wed Feb 18 19:54:21 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (here_document): needed to set lex_state to EXPR_END.
+
 Wed Feb 18 18:45:10 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
 
 	* patches for cygwin32 applied.
 
 Wed Feb 18 00:41:31 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
+	* string.c (str_sub_s): needed to be mbchar aware to increment one
+ 	  character.
 	* regex.c (re_match): \Z matches newline just before the end of
 	  the string.
 

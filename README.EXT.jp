@@ -39,6 +39,7 @@ rubyにはユーザが使う可能性のある以下のタイプがあります．
 	T_HASH		連想配列
 	T_STRUCT	(rubyの)構造体
 	T_BIGNUM	多倍長整数
+	T_FILE		入出力
 	T_TRUE		真
 	T_FALSE		偽
 	T_DATA		データ
@@ -51,7 +52,7 @@ rubyにはユーザが使う可能性のある以下のタイプがあります．
 	T_SCOPE
 	T_NODE
 
-いくつかのタイプはCの構造体で実装されています．
+ほとんどのタイプはCの構造体で実装されています．
 
 1.2 VALUEのデータタイプをチェックする
 
@@ -72,7 +73,7 @@ ruby.hではTYPE()というマクロが定義されていて，VALUEのデータ
       break;
     default:
       /* 例外を発生させる */
-      Fail("not valid value");
+      TypeError("not valid value");
       break;
   }
 
@@ -93,7 +94,7 @@ FIXNUMとNILに関してはより高速な判別マクロが用意されています．
 1.3 VALUEをCのデータに変換する
 
 データタイプがT_NIL, T_FALSE, T_TRUEである時，データはそれぞ
-れnil, FALSE, TRUEです．このデータタイプのオブジェクトはひと
+れnil, false, trueです．このデータタイプのオブジェクトはひと
 つずつしか存在しません．
 
 データタイプがT_FIXNUMの時，これは31bitのサイズを持つ整数で
@@ -102,6 +103,9 @@ FIXNUMとNILに関してはより高速な判別マクロが用意されています．
 「NUM2INT()」というマクロがあります．このマクロはデータタイ
 プのチェック無しで使えます(整数に変換できない場合には例外が
 発生する)．
+
+同様にチェック無しで使える変換マクロはdoubleを取り出す
+「NUM2DBL()」とchar*を取り出す「STR2CSTR()」があります．
 
 それ以外のデータタイプは対応するCの構造体があります．対応す
 る構造体のあるVALUEはそのままキャスト(型変換)すれば構造体の
@@ -144,13 +148,13 @@ VALUEの実際の構造は
 にキャストするだけでVALUEに変換出来ます．ただし，任意の構造
 体がVALUEにキャスト出来るわけではありません．キャストするの
 はrubyの知っている構造体(ruby.hで定義されているstruct RXxxx
-のもの)だけにしておいてください．
+のもの)だけです．
 
 FIXNUMに関しては変換マクロを経由する必要があります．Cの整数
 からVALUEに変換するマクロは以下のものがあります．必要に応じ
 て使い分けてください．
 
-  INT2FIX()	もとの整数が31bit以内に収まる時
+  INT2FIX()	もとの整数が31bit以内に収まる自信がある時
   INT2NUM()	任意の整数からVALUEへ
 
 INT2NUM()は整数がFIXNUMの範囲に収まらない場合，Bignumに変換
@@ -238,6 +242,12 @@ rubyで提供されている関数を使えばrubyインタプリタに新しい機能
 メソッドや定数の定義にこれらの値が必要なので，ほとんどの場合
 は戻り値を変数に格納しておく必要があるでしょう．
 
+クラスやモジュールを他のクラスの内部にネストして定義する時に
+は以下の関数を使います．
+
+  VALUE rb_define_class(VALUE outer, char *name, VALUE super)
+  VALUE rb_define_module(VALUE outer, char *name)
+
 2.1.2 メソッド/特異メソッド定義
 
 メソッドや特異メソッドを定義するには以下の関数を使います．
@@ -257,7 +267,8 @@ rubyで提供されている関数を使えばrubyインタプリタに新しい機能
 これらの関数の argcという引数はCの関数へ渡される引数の数(と
 形式)を決めます．argcが正の時は関数に引き渡す引数の数を意味
 します．16個以上の引数は使えません(が，要りませんよね，そん
-なに)．
+なに)．実際の関数には先頭の引数としてselfが与えられますので，
+指定した数より1多い引数を持つことになります．
 
 argcが負の時は引数の数ではなく，形式を指定したことになります．
 argcが-1の時は引数を配列に入れて渡されます．argcが-2の時は引
@@ -290,7 +301,7 @@ privateメソッドとは関数形式でしか呼び出すことの出来ないメソッ
   void rb_define_module_function(VALUE module, char *name, 
 		                 VALUE (*func)(), int argc)
 
-関数的メソッド(Kernelモジュールのprivaet method)を定義するた
+関数的メソッド(Kernelモジュールのprivate method)を定義するた
 めの関数は以下の通りです．
 
   void rb_define_global_function(char *name, VALUE (*func)(), int argc)
@@ -343,7 +354,10 @@ IDとは変数名，メソッド名を表す整数です．rubyの中では
   rb_intern(char *name)
 
 を使います．また一文字の演算子はその文字コードがそのままシン
-ボルになっています．
+ボルになっています．rubyから引数として与えられたシンボル(ま
+たは文字列)をIDに変換するには以下の関数を使います．
+
+  rb_to_id(VALUE symbol)
 
 2.2.3 Cからrubyのメソッドを呼び出す
 
@@ -353,7 +367,12 @@ Cから文字列を経由せずにrubyのメソッドを呼び出すためには以下
   VALUE rb_funcall(VALUE recv, ID mid, int argc, ...)
 
 この関数はオブジェクトrecvのmidで指定されるメソッドを呼び出
-します．
+します．その他に引数の指定の仕方が違う以下の関数もあります．
+
+  VALUE rb_funcall2(VALUE recv, ID mid, int argc, VALUE *argv)
+  VALUE rb_apply(VALUE recv, ID mid, VALUE args)
+
+applyには引数としてrubyの配列を与えます．
 
 2.2.4 変数/定数を参照/更新する
 
@@ -493,9 +512,11 @@ rubyのextディレクトリにすでに含まれているdbmモジュールを例に
 
   % mkdir ext/dbm
 
-rubyを展開したディレクトリの下，extディレクトリの中に拡張モ
-ジュール用のディレクトリを作ります．名前は適当に選んで構いま
-せん．
+ruby 1.1からは任意のディレクトリでダイナミックライブラリを作
+ることができるようになりました．rubyに静的にリンクする場合に
+はrubyを展開したディレクトリの下，extディレクトリの中に拡張
+モジュール用のディレクトリを作る必要があります．名前は適当に
+選んで構いません．
 
 (2) MANIFESTファイルを作る
 
@@ -506,8 +527,10 @@ rubyを展開したディレクトリの下，extディレクトリの中に拡張モ
 必要なので，とりあえず空のファイルを作っておきます．後でこの
 ファイルには必要なファイル一覧が入ることになります．
 
-MANIFESTというファイルは，makeの時にディレクトリが拡張モジュー
-ルを含んでいるかどうか判定するために使われれています．
+MANIFESTというファイルは，静的リンクのmakeの時にディレクトリ
+が拡張モジュールを含んでいるかどうか判定するために使われれて
+います．ダイナミックライブラリを作る場合には必ずしも必要では
+ありません．
 
 (3) 設計する
 
@@ -664,12 +687,10 @@ Cの大域変数は以下の関数を使ってrubyインタプリタに変数の存在
 
 (5) extconf.rbを用意する
 
-もしディレクトリに「extconf.rb」というファイルが存在すれば，
-make時に実行されます．なければ適当にMakefileが生成されます．
-
-extconf.rbはモジュールのコンパイルに必要な条件のチェックなど
-を行うことが目的です．extconf.rbの中では以下のruby関数を使う
-ことが出来ます．
+Makefileを作る場合の雛型になるextconf.rbというファイルを作り
+ます．extconf.rbはモジュールのコンパイルに必要な条件のチェッ
+クなどを行うことが目的です．extconf.rbの中では以下のruby関数
+を使うことが出来ます．
 
   have_library(lib, func): ライブラリの存在チェック
   have_func(func): 関数の存在チェック
@@ -684,6 +705,12 @@ extconf.rbはモジュールのコンパイルに必要な条件のチェックなど
 モジュールをコンパイルする条件が揃わなず，そのモジュールはコ
 ンパイルしない時にはcreate_makefileを呼ばなければMakefileは
 生成されず，コンパイルも行われません．
+
+モジュールがruby 1.1専用である場合には 
+
+  require 'mkmf'
+
+をextconf.rbの先頭に置くと便利でしょう．
 
 (6) dependを用意する
 
@@ -705,12 +732,32 @@ make時にはMANIFESTの内容は参照しませんので，空のままでも問題
 必要なファイルを区別できるので，用意しておいた方が良いでしょ
 う．
 
-(8) makeする
+(8) Makefileを生成する
 
-rubyのディレクトリでmakeを実行するとMakefileを生成からmake，
-必要によってはそのモジュールのrubyへのリンクまで自動的に実行
-してくれます．extconf.rbを書き換えるなどしてMakefileの再生成
-が必要な時はまたrubyディレクトリでmakeしてください．
+Makefileを実際に生成するためには
+
+  ruby extconf.rb
+
+とします．extconf.rbに require 'mkmf' の行がない場合にはエラー
+になりますので，引数を追加して
+
+  ruby -r mkmf extconf.rb
+
+としてください．
+
+ディレクトリをext以下に用意した場合にはruby全体のmakeの時に
+自動的にMakefileが生成されますので，このステップは不要です．
+
+(9) makeする
+
+動的リンクライブラリを生成する場合にはその場でmakeしてくださ
+い．必要であれば make install でインストールされます．
+
+ext以下にディレクトリを用意した場合は，rubyのディレクトリで
+makeを実行するとMakefileを生成からmake，必要によってはそのモ
+ジュールのrubyへのリンクまで自動的に実行してくれます．
+extconf.rbを書き換えるなどしてMakefileの再生成が必要な時はま
+たrubyディレクトリでmakeしてください．
 
 動的リンクライブラリはmake installでrubyライブラリのディレク
 トリの下にコピーされます．もしモジュールと協調して使うrubyで
@@ -719,13 +766,13 @@ rubyのディレクトリでmakeを実行するとMakefileを生成からmake，
 を作り，そこに 拡張子 .rb のファイルを置いておけば同時にイン
 ストールされます．
 
-(9) デバッグ
+(10) デバッグ
 
 まあ，デバッグしないと動かないでしょうね．ext/Setupにディレ
 クトリ名を書くと静的にリンクするのでデバッガが使えるようにな
 ります．その分コンパイルが遅くなりますけど．
 
-(10) できあがり
+(11) できあがり
 
 後はこっそり使うなり，広く公開するなり，売るなり，ご自由にお
 使いください．rubyの作者は拡張モジュールに関して一切の権利を
@@ -775,6 +822,7 @@ rubyコマンドの実装
   file.c
   hash.c
   io.c
+  marshal.c
   math.c
   numeric.c
   pack.c
@@ -809,15 +857,15 @@ rubyオブジェクトを表現する型．必要に応じてキャストして用いる．
 
  TRUE
 
-定数: TRUEオブジェクト(真のデフォルト値)
+定数: trueオブジェクト(真のデフォルト値)
 
  FALSE
 
-定数: FALSEオブジェクト
+定数: falseオブジェクト
 
 ** Cデータのカプセル化
 
- Wrap_Data_Ptr(VALUE class, void (*mark)(), void (*free)(), void *sval)
+ Data_Wrap_Struct(VALUE class, void (*mark)(), void (*free)(), void *sval)
 
 Cの任意のポインタをカプセル化したrubyオブジェクトを返す．こ
 のポインタがrubyからアクセスされなくなった時，freeで指定した
@@ -825,7 +873,7 @@ Cの任意のポインタをカプセル化したrubyオブジェクトを返す．こ
 ジェクトを指している場合，markに指定する関数でマークする必要
 がある．
 
- Make_Data_Struct(class, type, mark, free, sval)
+ Data_Make_Struct(class, type, mark, free, sval)
 
 type型のメモリをmallocし，変数svalに代入した後，それをカプセ
 ル化したデータを返すマクロ．
@@ -833,6 +881,25 @@ type型のメモリをmallocし，変数svalに代入した後，それをカプセ
  Data_Get_Struct(data, type, sval)
 
 dataからtype型のポインタを取り出し変数svalに代入するマクロ．
+
+** 型チェック
+
+ TYPE(value)
+ FIXNUM_P(value)
+ NIL_P(value)
+ void Check_Type(VALUE value, int type)
+ void Check_SafeStr(VALUE value)
+
+** 型変換
+
+ FIX2INT(value)
+ INT2FIX(i)
+ NUM2INT(value)
+ INT2NUM(i)
+ NUM2DBL(value)
+ float_new(f)
+ STR2CSTR(value)
+ str_new2(s)
 
 ** クラス/モジュール定義
 

@@ -1780,15 +1780,19 @@ kconv_kconv(argc, argv)
     VALUE src, dst;
     VALUE in, out;
     int in_code, out_code;
+    char *codename = 0;
 
     rb_scan_args(argc, argv, "12", &src, &out, &in);
     Check_Type(src, T_STRING);
 
     if (NIL_P(out)) {
-	out_code = _JIS;
+	codename = rb_get_kcode();
+	goto codeselect;
     }
     else if (TYPE(out) == T_STRING) {
-	switch (RSTRING(out)->ptr[0]) {
+	codename = RSTRING(out)->ptr;
+      codeselect:
+	switch (codename[0]) {
 	  case 'E': case 'e':
 	    out_code = _EUC;
 	    break;

@@ -118,8 +118,8 @@ rb_define_class(name, super)
 }
 
 VALUE
-rb_define_class_under(under, name, super)
-    VALUE under;
+rb_define_class_under(outer, name, super)
+    VALUE outer;
     char *name;
     VALUE super;
 {
@@ -128,8 +128,8 @@ rb_define_class_under(under, name, super)
 
     id = rb_intern(name);
     klass = rb_define_class_id(id, super);
-    rb_const_set(under, id, klass);
-    rb_set_class_path(klass, under, name);
+    rb_const_set(outer, id, klass);
+    rb_set_class_path(klass, outer, name);
 
     return klass;
 }
@@ -175,8 +175,8 @@ rb_define_module(name)
 }
 
 VALUE
-rb_define_module_under(under, name)
-    VALUE under;
+rb_define_module_under(outer, name)
+    VALUE outer;
     char *name;
 {
     VALUE module;
@@ -184,8 +184,8 @@ rb_define_module_under(under, name)
 
     id = rb_intern(name);
     module = rb_define_module_id(id);
-    rb_const_set(under, id, module);
-    rb_set_class_path(module, under, name);
+    rb_const_set(outer, id, module);
+    rb_set_class_path(module, outer, name);
 
     return module;
 }

@@ -248,13 +248,6 @@ make_widget(klass, widget)
     return make_gobject(klass, GTK_OBJECT(widget));
 }
 
-static void
-free_gstyle(style)
-    GtkStyle *style;
-{
-    gtk_style_unref(style);
-}
-
 static VALUE
 make_gstyle(style)
     GtkStyle *style;
@@ -262,7 +255,7 @@ make_gstyle(style)
     VALUE obj;
 
     gtk_style_ref(style);
-    obj = Data_Wrap_Struct(gStyle, 0, free_gstyle, style);
+    obj = Data_Wrap_Struct(gStyle, 0, gtk_style_unref, style);
     rb_funcall(obj, id_init, 0, 0);
 
     return obj;
@@ -283,13 +276,6 @@ get_gstyle(style)
     return gstyle;
 }
 
-static void
-free_gaccel(tbl)
-    GtkAcceleratorTable *tbl;
-{
-    gtk_accelerator_table_unref(tbl);
-}
-
 static VALUE
 make_gtkacceltbl(tbl)
     GtkAcceleratorTable *tbl;
@@ -297,7 +283,8 @@ make_gtkacceltbl(tbl)
     VALUE obj;
 
     gtk_accelerator_table_ref(tbl);
-    obj = Data_Wrap_Struct(gAcceleratorTable, 0, free_gaccel, tbl);
+    obj = Data_Wrap_Struct(gAcceleratorTable, 0,
+			   gtk_accelerator_table_unref, tbl);
     rb_funcall(obj, id_init, 0, 0);
 
     return obj;
@@ -319,18 +306,11 @@ get_gtkacceltbl(value)
     return tbl;
 }
 
-static void
-free_gtkprevinfo(info)
-    GtkPreviewInfo *info;
-{
-    /* no need to free() */
-}
-
 static VALUE
 make_gtkprevinfo(info)
     GtkPreviewInfo *info;
 {
-    VALUE obj = Data_Wrap_Struct(gPreviewInfo, 0, free_gtkprevinfo, info);
+    VALUE obj = Data_Wrap_Struct(gPreviewInfo, 0, 0, info);
     rb_funcall(obj, id_init, 0, 0);
     return obj;
 }
@@ -351,13 +331,6 @@ get_gtkprevinfo(value)
     return info;
 }
 
-static void
-free_ttips(tips)
-    GtkTooltips *tips;
-{
-    gtk_tooltips_unref(tips);
-}
-
 static VALUE
 make_ttips(klass, tips)
     VALUE klass;
@@ -366,7 +339,7 @@ make_ttips(klass, tips)
     VALUE obj;
 
     gtk_tooltips_ref(tips);
-    obj = Data_Wrap_Struct(klass, 0, free_ttips, tips);
+    obj = Data_Wrap_Struct(klass, 0, gtk_tooltips_unref, tips);
     rb_funcall(obj, id_init, 0, 0);
     return obj;
 }
@@ -387,13 +360,6 @@ get_ttips(tips)
     return gtips;
 }
 
-static void
-free_gdkfont(font)
-    GdkFont *font;
-{
-    gdk_font_unref(font);
-}
-
 static VALUE
 make_gdkfont(font)
     GdkFont *font;
@@ -401,7 +367,7 @@ make_gdkfont(font)
     VALUE obj;
 
     gdk_font_ref(font);
-    obj = Data_Wrap_Struct(gdkFont, 0, free_gdkfont, font);
+    obj = Data_Wrap_Struct(gdkFont, 0, gdk_font_unref, font);
     rb_funcall(obj, id_init, 0, 0);
     return obj;
 }
@@ -488,19 +454,12 @@ get_tobj(obj, klass)
 #define make_gdkrectangle(r) make_tobj(r, gdkRectangle, sizeof(GdkRectangle))
 #define get_gdkrectangle(r) ((GdkRectangle*)get_tobj(r, gdkRectangle))
 
-static void
-free_gdkcmap(cmap)
-    GdkColormap *cmap;
-{
-    gdk_colormap_unref(cmap);
-}
-
 static VALUE
 make_gdkcmap(cmap)
     GdkColormap *cmap;
 {
     gdk_colormap_ref(cmap);
-    return Data_Wrap_Struct(gdkColormap, 0, free_gdkcmap, cmap);
+    return Data_Wrap_Struct(gdkColormap, 0, gdk_colormap_unref, cmap);
 }
 
 static GdkColormap*
@@ -519,19 +478,12 @@ get_gdkcmap(cmap)
     return gcmap;
 }
 
-static void
-free_gdkvisual(visual)
-    GdkVisual *visual;
-{
-    gdk_visual_unref(visual);
-}
-
 static VALUE
 make_gdkvisual(visual)
     GdkVisual *visual;
 {
     gdk_visual_ref(visual);
-    return Data_Wrap_Struct(gdkVisual, 0, free_gdkvisual, visual);
+    return Data_Wrap_Struct(gdkVisual, 0, gdk_visual_unref, visual);
 }
 
 static GdkVisual*
@@ -550,68 +502,45 @@ get_gdkvisual(visual)
     return gvisual;
 }
 
-static void
-free_gdkwindow(window)
-    GdkWindow *window;
+static VALUE
+make_gdkdraw(klass, draw, ref, unref)
+    VALUE klass;
+    GdkDrawable *draw;
+    void (*ref)();
+    void (*unref)();
 {
-    gdk_window_unref(window);
+    (*ref)(draw);
+    return Data_Wrap_Struct(gdkWindow, 0, unref, draw);
 }
 
-static VALUE
-make_gdkwindow(window)
-    GdkWindow *window;
-{
-    gdk_window_ref(window);
-    return Data_Wrap_Struct(gdkWindow, 0, free_gdkwindow, window);
-}
+#define make_gdkwindow2(c,w) make_gdkdraw(c,(w),gdk_window_ref,gdk_window_unref)
+#define make_gdkbitmap2(c,w) make_gdkdraw(c,(w),gdk_bitmap_ref,gdk_bitmap_unref)
+#define make_gdkpixmap2(c,w) make_gdkdraw(c,(w),gdk_pixmap_ref,gdk_pixmap_unref)
+#define make_gdkwindow(w) make_gdkwindow0(gdkWindow,(w))
+#define make_gdkbitmap(w) make_gdkbitmap0(gdkBitmap,(w))
+#define make_gdkpixmap(w) make_gdkpixmap0(gdkPixmap,(w))
 
 static GdkWindow*
-get_gdkwindow(window)
-    VALUE window;
+get_gdkdraw(draw, klass, kname)
+    VALUE draw, klass;
+    char *kname;
 {
-    GdkWindow *gwindow;
+    GdkDrawable *d;
 
-    if (NIL_P(window)) return NULL;
+    if (NIL_P(draw)) return NULL;
 
-    if (!obj_is_kind_of(window, gdkWindow)) {
-	TypeError("not a GdkWindow");
+    if (!obj_is_kind_of(draw, klass)) {
+	TypeError("not a %s", kname);
     }
-    Data_Get_Struct(window, GdkWindow, gwindow);
+    Data_Get_Struct(draw, GdkDrawable, d);
 
-    return gwindow;
+    return d;
 }
 
-static void
-free_gdkpixmap(pixmap)
-    GdkPixmap *pixmap;
-{
-    gdk_pixmap_unref(pixmap);
-}
-
-static VALUE
-make_gdkpixmap(klass, pixmap)
-    VALUE klass;
-    GdkPixmap *pixmap;
-{
-    gdk_pixmap_ref(pixmap);
-    return Data_Wrap_Struct(klass, 0, free_gdkpixmap, pixmap);
-}
-
-static GdkPixmap*
-get_gdkpixmap(pixmap)
-    VALUE pixmap;
-{
-    GdkPixmap *gpixmap;
-
-    if (NIL_P(pixmap)) return NULL;
-
-    if (!obj_is_kind_of(pixmap, gdkPixmap)) {
-	TypeError("not a GdkPixmap");
-    }
-    Data_Get_Struct(pixmap, GdkPixmap, gpixmap);
-
-    return gpixmap;
-}
+#define get_gdkdrawable(w) get_gdkdraw((w),gdkDrawable,"GdkDrawable")
+#define get_gdkwindow(w) get_gdkdraw((w),gdkWindow,"GdkWindow")
+#define get_gdkpixmap(w) get_gdkdraw((w),gdkPixmap,"GdkPixmap")
+#define get_gdkbitmap(w) get_gdkdraw((w),gdkBitmap,"GdkBitmap")
 
 static VALUE
 gdkpmap_s_new(self, win, w, h, depth)
@@ -621,7 +550,7 @@ gdkpmap_s_new(self, win, w, h, depth)
     GdkWindow *window = get_gdkwindow(win);
 
     new = gdk_pixmap_new(window, NUM2INT(w), NUM2INT(h), NUM2INT(depth));
-    return make_gdkpixmap(self, new);
+    return make_gdkpixmap2(self,new);
 }
 
 static VALUE
@@ -638,7 +567,7 @@ gdkpmap_create_from_data(self, win, data, w, h, depth, fg, bg)
 				      NUM2INT(depth),
 				      get_gdkcolor(fg),
 				      get_gdkcolor(bg));
-    return make_gdkpixmap(self, new);
+    return make_gdkpixmap2(self,new);
 }
 
 static VALUE
@@ -656,8 +585,8 @@ gdkpmap_create_from_xpm(self, win, tcolor, fname)
     if (!new) {
 	ArgError("Pixmap not created from %s", RSTRING(fname)->ptr);
     }
-    return assoc_new(make_gdkpixmap(self, new),
-		     make_gdkpixmap(gdkBitmap, mask));
+    return assoc_new(make_gdkpixmap2(self,new),
+		     make_gdkbitmap(mask));
 }
 
 static VALUE
@@ -681,8 +610,8 @@ gdkpmap_create_from_xpm_d(self, win, tcolor, data)
 				       get_gdkcolor(tcolor),
 				       buf);
 
-    return assoc_new(make_gdkpixmap(self, new),
-		     make_gdkpixmap(gdkBitmap, mask));
+    return assoc_new(make_gdkpixmap2(self,new),
+		     make_gdkbitmap(mask));
 }
 
 static VALUE
@@ -693,7 +622,7 @@ gdkbmap_s_new(self, win, w, h)
     GdkWindow *window = get_gdkwindow(win);
 
     new = gdk_pixmap_new(window, NUM2INT(w), NUM2INT(h), 1);
-    return make_gdkpixmap(self, new);
+    return make_gdkpixmap2(self,new);
 }
 
 static VALUE
@@ -707,20 +636,14 @@ gdkbmap_create_from_data(self, win, data, w, h)
     new = gdk_bitmap_create_from_data(window,
 				      RSTRING(data)->ptr,
 				      NUM2INT(w), NUM2INT(h));
-    return make_gdkpixmap(self, (GdkPixmap*)new);
-}
-
-static void
-free_gdkimage(image)
-    GdkImage *image;
-{
+    return make_gdkbitmap2(self,new);
 }
 
 static VALUE
 make_gdkimage(image)
     GdkImage *image;
 {
-    return Data_Wrap_Struct(gdkImage, 0, free_gdkimage, image);
+    return Data_Wrap_Struct(gdkImage, 0, gdk_image_destroy, image);
 }
 
 static GdkImage*
@@ -735,6 +658,9 @@ get_gdkimage(image)
 	TypeError("not a GdkImage");
     }
     Data_Get_Struct(image, GdkImage, gimage);
+    if (gimage == 0) {
+	ArgError("destroyed GdkImage");
+    }
 
     return gimage;
 }
@@ -800,14 +726,8 @@ gdkimage_destroy(self)
     VALUE self;
 {
     gdk_image_destroy(get_gdkimage(self));
+    DATA_PTR(self) = 0;
     return Qnil;
-}
-
-static void
-free_gdkevent(event)
-    GdkEvent *event;
-{
-    gdk_event_free(event);
 }
 
 static VALUE
@@ -815,7 +735,7 @@ make_gdkevent(event)
     GdkEvent *event;
 {
     event = gdk_event_copy(event);
-    return Data_Wrap_Struct(gdkEvent, 0, free_gdkevent, event);
+    return Data_Wrap_Struct(gdkEvent, 0, gdk_event_free, event);
 }
 
 static GdkEvent*
@@ -832,6 +752,56 @@ get_gdkevent(event)
     Data_Get_Struct(event, GdkEvent, gevent);
 
     return gevent;
+}
+
+static VALUE
+make_gdkgc(gc)
+    GdkGC *gc;
+{
+    return Data_Wrap_Struct(gdkGC, 0, gdk_gc_destroy, gc);
+}
+
+static GdkGC*
+get_gdkgc(gc)
+    VALUE gc;
+{
+    GdkGC *ggc;
+
+    if (NIL_P(gc)) return NULL;
+
+    if (!obj_is_instance_of(gc, gdkGC)) {
+	TypeError("not a GdkGC");
+    }
+    Data_Get_Struct(gc, GdkGC, ggc);
+    if (ggc == 0) {
+	ArgError("destroyed GdkGC");
+    }
+
+    return ggc;
+}
+
+static VALUE
+gdkgc_s_new(self, win)
+    VALUE self, win;
+{
+    return make_gdkgc(gdk_gc_new(get_widget(win)->window));
+}
+
+static VALUE
+gdkgc_copy(self, copy)
+    VALUE copy;
+{
+    gdk_gc_copy(get_gdkgc(self), get_gdkgc(copy));
+    return copy;
+}
+
+static VALUE
+gdkgc_destroy(self)
+    VALUE self;
+{
+    gdk_gc_destroy(get_gdkgc(self));
+    DATA_PTR(self) = 0;
+    return Qnil;
 }
 
 static VALUE
@@ -951,7 +921,7 @@ arg_to_value(arg)
 #endif
 #ifdef GTK_TYPE_GDK_PIXMAP
 	else if (arg->type == GTK_TYPE_GDK_PIXMAP) {
-	    return make_gdkpixmap(gdkPixmap, GTK_VALUE_BOXED(*arg));
+	    return make_gdkpixmap(GTK_VALUE_BOXED(*arg));
 	}
 #endif
 #ifdef GTK_TYPE_GDK_VISUAL
@@ -3662,7 +3632,7 @@ image_get(self)
     gtk_image_get(GTK_IMAGE(widget), &val, &mask);
 
     return assoc_new(make_gdkimage(self, val),
-		     make_gdkpixmap(self, mask));
+		     make_gdkpixmap(mask));
 }
 
 static VALUE
@@ -3672,7 +3642,6 @@ preview_initialize(self, type)
     set_widget(self, gtk_preview_new((GtkPreviewType)NUM2INT(type)));
     return Qnil;
 }
-
 
 static VALUE
 preview_size(self, w, h)
@@ -3684,11 +3653,65 @@ preview_size(self, w, h)
     return self;
 }
 
-#if 0
-    rb_define_method(gPixmap, "put", preview_size, 8);
-    rb_define_method(gPixmap, "put_row", preview_size, 5);
-    rb_define_method(gPixmap, "draw_row", preview_size, 4);
-#endif
+static VALUE
+preview_put(self, win, gc, srcx, srcy, dstx, dsty, w, h)
+    VALUE self, win, gc, srcx, srcy, dstx, dsty, w, h;
+{
+    GtkWidget *widget = get_widget(self);
+
+    gtk_preview_put(GTK_PREVIEW(widget), get_gdkwindow(win), get_gdkgc(gc),
+		    NUM2INT(srcx), NUM2INT(srcy),
+		    NUM2INT(dstx), NUM2INT(dsty),
+		    NUM2INT(w), NUM2INT(h));
+    return self;
+}
+
+static VALUE
+preview_put_row(self, src, dst, x, y, w)
+    VALUE self, src, dst, x, y, w;
+{
+    GtkWidget *widget = get_widget(self);
+    int width = NUM2INT(w);
+    int dlen = width;
+
+    if (GTK_PREVIEW(widget)->type == GTK_PREVIEW_COLOR) {
+	dlen *= 3;
+    }
+    Check_Type(src, T_STRING);
+    if (RSTRING(src)->len < dlen) {
+	ArgError("src too short");
+    }
+    Check_Type(dst, T_STRING);
+    if (RSTRING(dst)->len < dlen) {
+	ArgError("dst too short");
+    }
+    str_modify(dst);
+    gtk_preview_put_row(GTK_PREVIEW(widget),
+			RSTRING(src)->ptr, RSTRING(dst)->ptr,
+			NUM2INT(x), NUM2INT(y), width);
+    return self;
+}
+
+static VALUE
+preview_draw_row(self, data, x, y, w)
+    VALUE self, data, x, y, w;
+{
+    GtkWidget *widget = get_widget(self);
+    int width = NUM2INT(w);
+    int dlen = width;
+
+    if (GTK_PREVIEW(widget)->type == GTK_PREVIEW_COLOR) {
+	dlen *= 3;
+    }
+    Check_Type(data, T_STRING);
+    if (RSTRING(data)->len < dlen) {
+	ArgError("data too short");
+    }
+
+    gtk_preview_draw_row(GTK_PREVIEW(widget), RSTRING(data)->ptr,
+			 NUM2INT(x), NUM2INT(y), width);
+    return self;
+}
 
 static VALUE
 preview_set_expand(self, expand)
@@ -3723,7 +3746,7 @@ static VALUE
 preview_set_install_cmap(self, cmap)
     VALUE self, cmap;
 {
-    gtk_preview_set_install_cmap(NUM2INT(cmap));
+    gtk_preview_set_install_cmap(RTEST(cmap));
     return Qnil;
 }
 
@@ -3739,16 +3762,14 @@ static VALUE
 preview_get_visual(self)
     VALUE self;
 {
-    GdkVisual *v = gtk_preview_get_visual();
-    return make_gdkvisual(v);
+    return make_gdkvisual(gtk_preview_get_visual());
 }
 
 static VALUE
 preview_get_cmap(self)
     VALUE self;
 {
-    GdkColormap *c = gtk_preview_get_cmap();
-    return make_gdkcmap(c);
+    return make_gdkcmap(gtk_preview_get_cmap());
 }
 
 static VALUE
@@ -4754,8 +4775,8 @@ pixmap_get(self)
 
     gtk_pixmap_get(GTK_PIXMAP(widget), &val, &mask);
 
-    return assoc_new(make_gdkpixmap(self, val),
-		     make_gdkpixmap(self, mask));
+    return assoc_new(make_gdkpixmap(val),
+		     make_gdkbitmap(mask));
 }
 
 static VALUE
@@ -5385,6 +5406,168 @@ gtk_m_main(self)
 {
     gtk_main();
     return Qnil;
+}
+
+
+static VALUE
+gdkdraw_draw_point(self, gc, x, y)
+    VALUE self, gc, x, y;
+{
+    gdk_draw_point(get_gdkdrawable(self), get_gdkgc(gc),
+		   NUM2INT(x), NUM2INT(y));
+    return self;
+}
+
+static VALUE
+gdkdraw_draw_line(self, gc, x1, y1, x2, y2)
+    VALUE self, gc, x1, y1, x2, y2;
+{
+    gdk_draw_line(get_gdkdrawable(self), get_gdkgc(gc),
+		  NUM2INT(x1), NUM2INT(y1),
+		  NUM2INT(x2), NUM2INT(y2));
+    return self;
+}
+
+static VALUE
+gdkdraw_draw_rect(self, gc, filled, x, y, w, h)
+    VALUE self, gc, filled, x, y, w, h;
+{
+    gdk_draw_rectangle(get_gdkdrawable(self), get_gdkgc(gc),
+		       RTEST(filled),
+		       NUM2INT(x), NUM2INT(y),
+		       NUM2INT(w), NUM2INT(h));
+    return self;
+}
+
+static VALUE
+gdkdraw_draw_arc(self, gc, filled, x, y, w, h, a1, a2)
+    VALUE gc, filled, x, y, w, h, a1, a2;
+{
+    gdk_draw_arc(get_gdkdrawable(self), get_gdkgc(gc),
+		 RTEST(filled),
+		 NUM2INT(x), NUM2INT(y),
+		 NUM2INT(w), NUM2INT(h),
+		 NUM2INT(a1), NUM2INT(a2));
+    return self;
+}
+
+static VALUE
+gdkdraw_draw_poly(self, gc, filled, pnts)
+    VALUE self, gc, filled, pnts;
+{
+    GdkPoint *points;
+    int i;
+
+    Check_Type(pnts, T_ARRAY);
+    points = ALLOCA_N(GdkPoint,RARRAY(pnts)->len);
+    for (i=0; i<RARRAY(pnts)->len; i++) {
+	Check_Type(RARRAY(pnts)->ptr[i], T_ARRAY);
+	if (RARRAY(RARRAY(pnts)->ptr[i])->len < 2) {
+	    ArgError("point %d should be array of size 2", i);
+	}
+	points[i].x = NUM2INT(RARRAY(RARRAY(pnts)->ptr[i])->ptr[0]);
+	points[i].y = NUM2INT(RARRAY(RARRAY(pnts)->ptr[i])->ptr[1]);
+    }
+    gdk_draw_polygon(get_gdkdrawable(self), get_gdkgc(gc),
+		     RTEST(filled),
+		     points,
+		     RARRAY(pnts)->len);
+    return self;
+}
+
+static VALUE
+gdkdraw_draw_text(self, font, gc, x, y, str)
+    VALUE self, font, gc, x, y, str;
+{
+    Check_Type(str, T_STRING);
+    gdk_draw_text(get_gdkdrawable(self), get_gdkfont(font), get_gdkgc(gc),
+		  NUM2INT(x), NUM2INT(y),
+		  RSTRING(str)->ptr, RSTRING(str)->len);
+    return self;
+}
+
+static VALUE
+gdkdraw_draw_pmap(self, gc, src, xsrc, ysrc, xdst, ydst, w, h)
+    VALUE self, gc, src, xsrc, ysrc, xdst, ydst, w, h;
+{
+    gdk_draw_pixmap(get_gdkdrawable(self), get_gdkgc(gc),
+		    get_gdkdrawable(src),
+		    NUM2INT(xsrc), NUM2INT(ysrc),
+		    NUM2INT(xdst), NUM2INT(ydst),
+		    NUM2INT(w), NUM2INT(h));
+    return self;
+}
+
+static VALUE
+gdkdraw_draw_bmap(self, gc, src, xsrc, ysrc, xdst, ydst, w, h)
+    VALUE self, gc, src, xsrc, ysrc, xdst, ydst, w, h;
+{
+    gdk_draw_bitmap(get_gdkdrawable(self), get_gdkgc(gc),
+		    get_gdkdrawable(src),
+		    NUM2INT(xsrc), NUM2INT(ysrc),
+		    NUM2INT(xdst), NUM2INT(ydst),
+		    NUM2INT(w), NUM2INT(h));
+    return self;
+}
+
+static VALUE
+gdkdraw_draw_image(self, gc, image, xsrc, ysrc, xdst, ydst, w, h)
+    VALUE self, gc, image, xsrc, ysrc, xdst, ydst, w, h;
+{
+    gdk_draw_image(get_gdkdrawable(self), get_gdkgc(gc),
+		   get_gdkimage(image),
+		   NUM2INT(xsrc), NUM2INT(ysrc),
+		   NUM2INT(xdst), NUM2INT(ydst),
+		   NUM2INT(w), NUM2INT(h));
+    return self;
+}
+
+static VALUE
+gdkdraw_draw_pnts(self, gc, pnts)
+    VALUE self, gc, pnts;
+{
+    GdkPoint *points;
+    int i;
+
+    Check_Type(pnts, T_ARRAY);
+    points = ALLOCA_N(GdkPoint,RARRAY(pnts)->len);
+    for (i=0; i<RARRAY(pnts)->len; i++) {
+	Check_Type(RARRAY(pnts)->ptr[i], T_ARRAY);
+	if (RARRAY(RARRAY(pnts)->ptr[i])->len < 2) {
+	    ArgError("point %d should be array of size 2", i);
+	}
+	points[i].x = NUM2INT(RARRAY(RARRAY(pnts)->ptr[i])->ptr[0]);
+	points[i].y = NUM2INT(RARRAY(RARRAY(pnts)->ptr[i])->ptr[1]);
+    }
+    gdk_draw_points(get_gdkdrawable(self), get_gdkgc(gc),
+		    points,
+		    RARRAY(pnts)->len);
+    return self;
+}
+
+static VALUE
+gdkdraw_draw_segs(self, gc, segs)
+    VALUE self, gc, segs;
+{
+    GdkSegment *segments;
+    int i;
+
+    Check_Type(segs, T_ARRAY);
+    segments = ALLOCA_N(GdkSegment,RARRAY(segs)->len);
+    for (i=0; i<RARRAY(segs)->len; i++) {
+	Check_Type(RARRAY(segs)->ptr[i], T_ARRAY);
+	if (RARRAY(RARRAY(segs)->ptr[i])->len < 4) {
+	    ArgError("segment %d should be array of size 4", i);
+	}
+	segments[i].x1 = NUM2INT(RARRAY(RARRAY(segs)->ptr[i])->ptr[0]);
+	segments[i].y1 = NUM2INT(RARRAY(RARRAY(segs)->ptr[i])->ptr[1]);
+	segments[i].x2 = NUM2INT(RARRAY(RARRAY(segs)->ptr[i])->ptr[2]);
+	segments[i].y2 = NUM2INT(RARRAY(RARRAY(segs)->ptr[i])->ptr[3]);
+    }
+    gdk_draw_segments(get_gdkdrawable(self), get_gdkgc(gc),
+		      segments,
+		      RARRAY(segs)->len);
+    return self;
 }
 
 static gint
@@ -6126,9 +6309,9 @@ Init_gtk()
     /* Preview */
     rb_define_method(gPreview, "initialize", preview_initialize, 1);
     rb_define_method(gPreview, "size", preview_size, 2);
-    rb_define_method(gPreview, "put", preview_size, 8);
-    rb_define_method(gPreview, "put_row", preview_size, 5);
-    rb_define_method(gPreview, "draw_row", preview_size, 4);
+    rb_define_method(gPreview, "put", preview_put, 8);
+    rb_define_method(gPreview, "put_row", preview_put_row, 5);
+    rb_define_method(gPreview, "draw_row", preview_draw_row, 4);
     rb_define_method(gPreview, "set_expand", preview_set_expand, 1);
     rb_define_singleton_method(gPreview, "set_gamma", preview_set_gamma, 1);
     rb_define_singleton_method(gPreview, "set_color_cube",
@@ -6233,10 +6416,19 @@ Init_gtk()
     /* GdkFont */
     rb_define_method(gdkFont, "==", gdkfnt_equal, 1);
 
-    /* GdkBitmap */
-    rb_define_singleton_method(gdkBitmap, "new", gdkbmap_s_new, 3);
-    rb_define_singleton_method(gdkBitmap, "create_from_data",
-			       gdkbmap_create_from_data, 4);
+    /* GdkDrawable */
+    rb_define_method(gdkDrawable, "draw_point", gdkdraw_draw_point, 3);
+    rb_define_method(gdkDrawable, "draw_line", gdkdraw_draw_line, 5);
+    rb_define_method(gdkDrawable, "draw_rectangle", gdkdraw_draw_rect, 6);
+    rb_define_method(gdkDrawable, "draw_arc", gdkdraw_draw_arc, 8);
+    rb_define_method(gdkDrawable, "draw_polygon", gdkdraw_draw_poly, 3);
+    rb_define_method(gdkDrawable, "draw_string", gdkdraw_draw_text, 5);
+    rb_define_method(gdkDrawable, "draw_text", gdkdraw_draw_text, 5);
+    rb_define_method(gdkDrawable, "draw_pixmap", gdkdraw_draw_pmap, 8);
+    rb_define_method(gdkDrawable, "draw_bitmap", gdkdraw_draw_bmap, 8);
+    rb_define_method(gdkDrawable, "draw_image", gdkdraw_draw_image, 8);
+    rb_define_method(gdkDrawable, "draw_points", gdkdraw_draw_pnts, 2);
+    rb_define_method(gdkDrawable, "draw_segments", gdkdraw_draw_segs, 2);
 
     /* GdkPixmap */
     rb_define_singleton_method(gdkPixmap, "new", gdkpmap_s_new, 4);
@@ -6247,7 +6439,17 @@ Init_gtk()
     rb_define_singleton_method(gdkPixmap, "create_from_xpm_d",
 			       gdkpmap_create_from_xpm_d, 3);
 
+    /* GdkBitmap */
+    rb_define_singleton_method(gdkBitmap, "new", gdkbmap_s_new, 3);
+    rb_define_singleton_method(gdkBitmap, "create_from_data",
+			       gdkbmap_create_from_data, 4);
+
     /* GdkWindow */
+
+    /* GdkGC */
+    rb_define_singleton_method(gdkGC, "new", gdkgc_s_new, 1);
+    rb_define_method(gdkGC, "copy", gdkgc_copy, 1);
+    rb_define_method(gdkGC, "destroy", gdkgc_destroy, 0);
 
     /* GdkImage */
     rb_define_singleton_method(gdkImage, "new_bitmap", gdkimage_s_newbmap, 4);

@@ -969,17 +969,23 @@ reg_prepare_operation(re1, re2)
     return flag;
 }
 
-static VALUE
-kcode_getter()
+char*
+rb_get_kcode()
 {
     switch (reg_kcode) {
       case KCODE_SJIS:
-	return str_new2("SJIS");
+	return "SJIS";
       case KCODE_EUC:
-	return str_new2("EUC");
+	return "EUC";
       default:
-	return str_new2("NONE");
+	return "NONE";
     }
+}
+
+static VALUE
+kcode_getter()
+{
+    return str_new2(rb_get_kcode());
 }
 
 void

@@ -2100,6 +2100,7 @@ here_document(term)
     lex_p = save_lexp;
     lex_pbeg = save_beg;
     lex_pend = save_end;
+    lex_state = EXPR_END;
 
     if (list) {
 	yylval.node = list;
