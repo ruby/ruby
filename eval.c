@@ -5549,6 +5549,7 @@ proc_s_new(klass)
 
     data->orig_thread = rb_thread_current();
     data->iter = data->prev?Qtrue:Qfalse;
+    data->tag = 0;		/* should not point into stack */
     frame_dup(&data->frame);
     if (data->iter) {
 	blk_copy_prev(data);
@@ -5589,6 +5590,7 @@ proc_call(proc, args)
     VALUE proc, args;		/* OK */
 {
     struct BLOCK * volatile old_block;
+    struct BLOCK _block;
     struct BLOCK *data;
     volatile VALUE result = Qnil;
     int state;
@@ -5600,7 +5602,8 @@ proc_call(proc, args)
 
     /* PUSH BLOCK from data */
     old_block = ruby_block;
-    ruby_block = data;
+    _block = *data;
+    ruby_block = &_block;
     PUSH_ITER(ITER_CUR);
     ruby_frame->iter = ITER_CUR;
 
@@ -5625,6 +5628,7 @@ proc_call(proc, args)
     }
 
     PUSH_TAG(PROT_NONE);
+    _block.tag = prot_tag;
     state = EXEC_TAG();
     if (state == 0) {
 	proc_set_safe_level(proc);
@@ -5690,6 +5694,7 @@ block_pass(self, node)
 {
     VALUE block = rb_eval(self, node->nd_body);
     struct BLOCK * volatile old_block;
+    struct BLOCK _block;
     struct BLOCK *data;
     volatile VALUE result = Qnil;
     int state;
@@ -5712,11 +5717,13 @@ block_pass(self, node)
 
     /* PUSH BLOCK from data */
     old_block = ruby_block;
-    ruby_block = data;
+    _block = *data;
+    ruby_block = &_block;
     PUSH_ITER(ITER_PRE);
     ruby_frame->iter = ITER_PRE;
 
     PUSH_TAG(PROT_NONE);
+    _block.tag = prot_tag;
     state = EXEC_TAG();
     if (state == 0) {
 	proc_set_safe_level(block);
@@ -5724,7 +5731,7 @@ block_pass(self, node)
     }
     POP_TAG();
     POP_ITER();
-    if (ruby_block->tag->dst == state) {
+    if (_block.tag->dst == state) {
 	state &= TAG_MASK;
 	orphan = 2;
     }

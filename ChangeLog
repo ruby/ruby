@@ -1,5 +1,11 @@
 Tue Oct 12 22:29:04 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
+	* eval.c (block_pass): should copy block to prevent modifications.
+	  tag in the structure should be updated from latest prot_tag.
+
+	* eval.c (proc_s_new): tag in struct BLOCK should not point into
+	  unused stack.
+
 	* io.c (io_read): length may be 0 or negative.
 
 Tue Oct 12 13:26:27 1999  Jun-ichiro itojun Hagino  <itojun@itojun.org>
