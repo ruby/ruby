@@ -1,0 +1,50 @@
+Class SHA1
+
+	A class to implement the SHA1 Secure Hash Algorithm by NIST (the US'
+	National Institute of Standards and Technology), described in FIPS PUB
+	180-1.
+
+Superclass: Object
+
+Class Methods:
+
+    new([str])
+    sha1([str])
+
+	Creates a new SHA1 object.  If a string argument is given, it
+        is added to the object. (see update.)
+
+Methods:
+
+    clone
+
+	Copies the SHA1 object.
+
+    digest
+
+	Returns the SHA1 hash of the added strings as a string of 20 bytes.
+
+    hexdigest
+
+	Returns the SHA1 hash of the added strings as a string of 40
+	hexadecimal digits. This method is equal to:
+
+	def hexdigest
+	  ret = ''
+	  digest.each_byte {|i| ret << sprintf('%02x', i) }
+	  ret
+	end
+
+    update(str)
+    << str
+
+	Updates the SHA1 object with string str.  Repeated calls are
+	equivalent to a single call with the concatenation of all the
+	arguments, i.e. m.update(a); m.update(b) is equivalent to
+	m.update(a+b) and m << a << b is equivalent to m << a+b.
+
+Copyright:
+
+	README and sha1-ruby.c are derived from the Ruby source and so fall
+	under the same license as Ruby.  The rest of this package is in the
+	public domain.
