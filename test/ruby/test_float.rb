@@ -45,4 +45,10 @@ class TestFloat < Test::Unit::TestCase
     f = 3.7517675036461267e+17
     assert_equal(f, sprintf("%.16e", f).to_f)
   end
+
+  def test_symmetry_bignum # [ruby-bugs-ja:118]
+    a = 100000000000000000000000
+    b = 100000000000000000000000.0
+    assert_equal(a == b, b == a)
+  end
 end
