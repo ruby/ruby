@@ -1496,7 +1496,7 @@ rb_ary_or(ary1, ary2)
     for (i=0; i<RARRAY(ary2)->len; i++) {
 	v = RARRAY(ary2)->ptr[i];
 	if (st_delete(RHASH(hash)->tbl, &v, 0)) {
-	    rb_ary_push(ary3, RARRAY(ary1)->ptr[i]);
+	    rb_ary_push(ary3, RARRAY(ary2)->ptr[i]);
 	}
     }
 
@@ -1520,7 +1520,7 @@ rb_ary_uniq_bang(ary)
     while (p < end) {
 	VALUE v = *p++;
 	if (st_delete(RHASH(hash)->tbl, &v, 0)) {
-	    *q++ = v;
+	    *q++ = *(p-1);
 	}
     }
     RARRAY(ary)->len = (q - RARRAY(ary)->ptr);
