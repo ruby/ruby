@@ -1,3 +1,16 @@
+Mon Jul  3 13:15:02 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* numeric.c (fix_divmod): x * d + m = y where d, m = x.divmod(y).
+
+	* bignum.c (rb_big_divmod): ditto.
+
+	* numeric.c (fixdivmod): does not depend C's undifined %
+	  behavior.  adopt to fmod(3m) behavior.
+
+	* numeric.c (flo_mod): modulo now reserves fmod(3m) behavior.
+
+	* numeric.c (num_remainder): 'deprecated' warning.
+
 Mon Jul  3 10:27:28 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* configure.in: use AC_CANONICAL_SYSTEM.
@@ -14,6 +27,10 @@ Sun Jul  2 21:17:37 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* util.c (ruby_mktemp): remove unused ruby_mktemp().
 
+Sun Jul  2 14:18:04 2000  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* eval.c (TMP_PROTECT_END): tmp__protect_tmp may be NULL.
+
 Sun Jul  2 03:37:50 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.25.
@@ -21,6 +38,11 @@ Sun Jul  2 03:37:50 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 	* lib/net/protocol.rb (each_crlf_line): beg = 0 is needed in adding{}
 
 	* lib/net/smtp.rb: allow String for to_addr of SMTP#sendmail
+
+Sat Jul  1 15:22:35 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* numeric.c (fix_rshift): should handle shift value more than
+	  sizeof(long). 
 
 Sat Jul  1 15:22:35 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

@@ -133,6 +133,14 @@ num_divmod(x, y)
 }
 
 static VALUE
+num_remainder(x, y)
+    VALUE x, y;
+{
+    rb_warn("remainder is deprecated; use % opearator");
+    return rb_funcall(x, '%', 1, y);
+}
+
+static VALUE
 num_int_p(num)
     VALUE num;
 {
@@ -295,94 +303,73 @@ flo_div(x, y)
     }
 }
 
-static VALUE
-flo_modulo(x, y, modulo)
-    VALUE x, y;
-    int modulo;
+static void
+flodivmod(x, y, divp, modp)
+    double x, y;
+    double *divp, *modp;
 {
-    double value, result;
-
-    switch (TYPE(y)) {
-      case T_FIXNUM:
-	value = (double)FIX2LONG(y);
-	break;
-      case T_BIGNUM:
-	value = rb_big2dbl(y);
-	break;
-      case T_FLOAT:
-	value = RFLOAT(y)->value;
-	break;
-      default:
-	return rb_num_coerce_bin(x, y);
-    }
+    double mod;
 
 #ifdef HAVE_FMOD
-    result = fmod(RFLOAT(x)->value, value);
+    mod = fmod(x, y);
 #else
     {
-	double value1 = RFLOAT(x)->value;
-	double value2;
+	double z;
 
-	modf(value1/value, &value2);
-	result = value1 - value2 * value;
+	modf(x/y, &);
+	mod = x - z * x;
     }
 #endif
-    if (modulo && value*result<0.0) {
-	result += value;
+    if (modp) *modp = mod;
+    if (divp) {
+	*divp = (x - mod) / y;
     }
-    return rb_float_new(result);
 }
 
 static VALUE
 flo_mod(x, y)
     VALUE x, y;
 {
-    return flo_modulo(x,y,1);
-}
+    double fy, mod;
 
-static VALUE
-flo_remainder(x, y)
-    VALUE x, y;
-{
-    return flo_modulo(x,y,0);
+    switch (TYPE(y)) {
+      case T_FIXNUM:
+	fy = (double)FIX2LONG(y);
+	break;
+      case T_BIGNUM:
+	fy = rb_big2dbl(y);
+	break;
+      case T_FLOAT:
+	fy = RFLOAT(y)->value;
+	break;
+      default:
+	return rb_num_coerce_bin(x, y);
+    }
+    flodivmod(RFLOAT(x)->value, fy, 0, &mod);
+    return rb_float_new(mod);
 }
 
 static VALUE
 flo_divmod(x, y)
     VALUE x, y;
 {
-    double value, div, mod;
+    double fy;
+    VALUE div, mod;
 
     switch (TYPE(y)) {
       case T_FIXNUM:
-	value = (double)FIX2LONG(y);
+	fy = (double)FIX2LONG(y);
 	break;
       case T_BIGNUM:
-	value = rb_big2dbl(y);
+	fy = rb_big2dbl(y);
 	break;
       case T_FLOAT:
-	value = RFLOAT(y)->value;
+	fy = RFLOAT(y)->value;
 	break;
       default:
 	return rb_num_coerce_bin(x, y);
     }
-
-#ifdef HAVE_FMOD
-    mod = fmod(RFLOAT(x)->value, value);
-#else
-    {
-	double value1 = RFLOAT(x)->value;
-	double value2;
-
-	modf(value1/value, &value2);
-	mod = value1 - value2 * value;
-    }
-#endif
-    div = (RFLOAT(x)->value - mod) / value;
-    if (value*mod<0.0) {
-	mod += value;
-	div -= 1.0;
-    }
+    flodivmod(RFLOAT(x)->value, fy, &div, &mod);
     return rb_assoc_new(rb_float_new(div), rb_float_new(mod));
 }
 
@@ -1010,37 +997,40 @@ fix_mul(x, y)
     return rb_num_coerce_bin(x, y);
 }
 
+static void
+fixdivmod(x, y, divp, modp)
+    long x, y;
+    long *divp, *modp;
+{
+    long div, mod;
+
+    if (y == 0) rb_num_zerodiv();
+    if (y < 0) {
+	if (x < 0)
+	    div = -x / -y;
+	else
+	    div = - (x / -y);
+    }
+    else {
+	if (x < 0)
+	    div = - (-x / y);
+	else
+	    div = x / y;
+    }
+    mod = x - div*y;
+    if (divp) *divp = div;
+    if (modp) *modp = mod;
+}
+
 static VALUE
 fix_div(x, y)
     VALUE x, y;
 {
     if (FIXNUM_P(y)) {
-	long i;
+	long div;
 
-	i = FIX2LONG(y);
-	if (i == 0) rb_num_zerodiv();
-	i = FIX2LONG(x)/i;
-	return INT2NUM(i);	/* FIXNUM_MIN / -1 > FIXNUM_MAX */
-    }
-    return rb_num_coerce_bin(x, y);
-}
-
-static VALUE
-fix_modulo(x, y, modulo)
-    VALUE x, y;
-{
-    long i;
-
-    if (FIXNUM_P(y)) {
-	i = FIX2LONG(y);
-	if (i == 0) rb_num_zerodiv();
-	i = FIX2LONG(x)%i;
-	if (modulo &&
-	    (FIX2LONG(x) < 0) != (FIX2LONG(y) < 0) &&
-	    i != 0) {
-	    i += FIX2LONG(y);
-	}
-	return INT2FIX(i);
+	fixdivmod(FIX2LONG(x), FIX2LONG(y), &div, 0);
+	return INT2NUM(div);
     }
     return rb_num_coerce_bin(x, y);
 }
@@ -1049,14 +1039,27 @@ static VALUE
 fix_mod(x, y)
     VALUE x, y;
 {
-    return fix_modulo(x, y, 1);
+    if (FIXNUM_P(y)) {
+	long mod;
+
+	fixdivmod(FIX2LONG(x), FIX2LONG(y), 0, &mod);
+	return INT2NUM(mod);
+    }
+    return rb_num_coerce_bin(x, y);
 }
 
 static VALUE
-fix_remainder(x, y)
+fix_divmod(x, y)
     VALUE x, y;
 {
-    return fix_modulo(x, y, 0);
+    if (FIXNUM_P(y)) {
+	long div, mod;
+
+	fixdivmod(FIX2LONG(x), FIX2LONG(y), &div, &mod);
+
+	return rb_assoc_new(INT2NUM(div), INT2NUM(mod));
+    }
+    return rb_num_coerce_bin(x, y);
 }
 
 static VALUE
@@ -1219,11 +1222,10 @@ static VALUE
 fix_lshift(x, y)
     VALUE x, y;
 {
-    long val;
-    int width;
+    long val, width;
 
     val = NUM2LONG(x);
-    width = NUM2INT(y);
+    width = NUM2LONG(y);
     if (width > (sizeof(VALUE)*CHAR_BIT-1)
 	|| ((unsigned long)val)>>(sizeof(VALUE)*CHAR_BIT-1-width) > 0) {
 	return rb_big_lshift(rb_int2big(val), y);
@@ -1241,6 +1243,11 @@ fix_rshift(x, y)
     i = NUM2LONG(y);
     if (i < 0)
 	return fix_lshift(x, INT2FIX(-i));
+    if (i == 0) return x;
+    if (i >= sizeof(long)*CHAR_BIT-1) {
+	if (i < 0) return INT2FIX(-1);
+	return INT2FIX(0);
+    }
     val = RSHIFT(FIX2LONG(x), i);
     return INT2FIX(val);
 }
@@ -1536,7 +1543,7 @@ Init_Numeric()
     rb_define_method(rb_cFixnum, "*", fix_mul, 1);
     rb_define_method(rb_cFixnum, "/", fix_div, 1);
     rb_define_method(rb_cFixnum, "%", fix_mod, 1);
-    rb_define_method(rb_cFixnum, "remainder", fix_remainder, 1);
+    rb_define_method(rb_cFixnum, "divmod", fix_divmod, 1);
     rb_define_method(rb_cFixnum, "**", fix_pow, 1);
 
     rb_define_method(rb_cFixnum, "abs", fix_abs, 0);
@@ -1586,7 +1593,6 @@ Init_Numeric()
     rb_define_method(rb_cFloat, "/", flo_div, 1);
     rb_define_method(rb_cFloat, "%", flo_mod, 1);
     rb_define_method(rb_cFloat, "divmod", flo_divmod, 1);
-    rb_define_method(rb_cFloat, "remainder", flo_remainder, 1);
     rb_define_method(rb_cFloat, "**", flo_pow, 1);
     rb_define_method(rb_cFloat, "==", flo_eq, 1);
     rb_define_method(rb_cFloat, "<=>", flo_cmp, 1);

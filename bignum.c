@@ -777,10 +777,9 @@ rb_big_mul(x, y)
 }
 
 static void
-bigdivmod(x, y, div, mod, modulo)
+bigdivmod(x, y, div, mod)
     VALUE x, y;
     VALUE *div, *mod;
-    int modulo;
 {
     long nx = RBIGNUM(x)->len, ny = RBIGNUM(y)->len;
     long i, j;
@@ -812,9 +811,6 @@ bigdivmod(x, y, div, mod, modulo)
 	if (div) *div = bignorm(z);
 	if (mod) {
 	    if (!RBIGNUM(x)->sign) t2 = -(long)t2;
-	    if (modulo && RBIGNUM(x)->sign != RBIGNUM(y)->sign) {
-		t2 = t2 + yds[0] * (RBIGNUM(y)->sign ? 1 : -1);
-	    }
 	    *mod = INT2NUM(t2);
 	}
 	return;
@@ -898,10 +894,6 @@ bigdivmod(x, y, div, mod, modulo)
 	}
 	RBIGNUM(*mod)->len = ny;
 	RBIGNUM(*mod)->sign = RBIGNUM(x)->sign;
-	if (modulo && RBIGNUM(x)->sign != RBIGNUM(y)->sign) {
-	    *mod = bigadd(*mod, y, 1);
-	    return;
-	}
 	*mod = bignorm(*mod);
     }
 }
@@ -933,9 +925,8 @@ rb_big_div(x, y)
 
 
 static VALUE
-rb_big_modulo(x, y, modulo)
+rb_big_mod(x, y)
     VALUE x, y;
-    int modulo;
 {
     VALUE z;
 
@@ -954,23 +945,9 @@ rb_big_modulo(x, y, modulo)
       default:
 	return rb_num_coerce_bin(x, y);
     }
-    bigdivmod(x, y, 0, &z, modulo);
+    bigdivmod(x, y, 0, &z);
 
     return z;
-}
-
-static VALUE
-rb_big_mod(x, y)
-    VALUE x, y;
-{
-    return rb_big_modulo(x, y, 1);
-}
-
-static VALUE
-rb_big_remainder(x, y)
-    VALUE x, y;
-{
-    return rb_big_modulo(x, y, 0);
 }
 
 VALUE
@@ -994,7 +971,7 @@ rb_big_divmod(x, y)
       default:
 	return rb_num_coerce_bin(x, y);
     }
-    bigdivmod(x, y, &div, &mod, 1);
+    bigdivmod(x, y, &div, &mod);
 
     return rb_assoc_new(div, mod);
 }
@@ -1382,7 +1359,6 @@ Init_Bignum()
     rb_define_method(rb_cBignum, "/", rb_big_div, 1);
     rb_define_method(rb_cBignum, "%", rb_big_mod, 1);
     rb_define_method(rb_cBignum, "divmod", rb_big_divmod, 1);
-    rb_define_method(rb_cBignum, "remainder", rb_big_remainder, 1);
     rb_define_method(rb_cBignum, "**", rb_big_pow, 1);
     rb_define_method(rb_cBignum, "&", rb_big_and, 1);
     rb_define_method(rb_cBignum, "|", rb_big_or, 1);

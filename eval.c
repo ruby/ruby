@@ -1539,8 +1539,10 @@ rb_mod_alias_method(mod, newname, oldname)
 			     ALLOC_N(VALUE,n),tmp__protect_tmp,n),	\
      (void*)tmp__protect_tmp->nd_head)
 # define TMP_PROTECT_END do {\
-    rb_gc_force_recycle((VALUE)tmp__protect_tmp);\
-    alloca(0);\
+    if (tmp__protect_tmp) {\
+	rb_gc_force_recycle((VALUE)tmp__protect_tmp);\
+	alloca(0);\
+    }\
 } while (0)
 #else
 # define TMP_PROTECT typedef int foobazzz

@@ -426,7 +426,6 @@ expr		: mlhs '=' mrhs
 		    }
 		| '!' command_call
 		    {
-			value_expr($2);
 			$$ = NEW_NOT(cond($2));
 		    }
 		| arg
@@ -849,12 +848,24 @@ arg		: lhs '=' arg
 			$$ = $1;
 		    }
 
-aref_args	: opt_call_args
+aref_args	: none
+		| args opt_nl
 		    {
-			if ($1 && nd_type($1) == NODE_BLOCK_PASS) {
-			    rb_compile_error("block argument should not be given");
-			}
 			$$ = $1;
+		    }
+		| args ',' opt_nl
+		    {
+			$$ = $1;
+		    }
+		| args ',' tSTAR arg opt_nl
+		    {
+			value_expr($4);
+			$$ = arg_concat($1, $4);
+		    }
+		| tSTAR arg opt_nl
+		    {
+			value_expr($2);
+			$$ = NEW_RESTARGS($2);
 		    }
 
 opt_call_args	: none
@@ -863,10 +874,6 @@ opt_call_args	: none
 call_args	: command_call
 		    {
 			$$ = NEW_LIST($1);
-		    }
-		| args ','
-		    {
-			$$ = $1;
 		    }
 		| args ',' command_call
 		    {
@@ -878,6 +885,7 @@ call_args	: command_call
 		    }
 		| args ',' tSTAR arg opt_block_arg
 		    {
+			value_expr($4);
 			$$ = arg_concat($1, $4);
 			$$ = arg_blk_pass($$, $5);
 		    }
@@ -892,6 +900,7 @@ call_args	: command_call
 		    }
 		| assocs ',' tSTAR arg opt_block_arg
 		    {
+			value_expr($4);
 			$$ = arg_concat(NEW_LIST(NEW_HASH($1)), $4);
 			$$ = arg_blk_pass($$, $5);
 		    }
@@ -906,6 +915,7 @@ call_args	: command_call
 		    }
 		| args ',' assocs ',' tSTAR arg opt_block_arg
 		    {
+			value_expr($6);
 			$$ = arg_concat(list_append($1, NEW_HASH($3)), $6);
 			$$ = arg_blk_pass($$, $7);
 		    }
