@@ -2,7 +2,7 @@
 # test_scanner_events.rb
 #
 
-require 'ripper.so'
+require 'ripper'
 raise 'ripper version differ' unless Ripper::Version == '0.1.0'
 require 'test/unit'
 
@@ -10,38 +10,26 @@ class TestRipper_ScannerEvents < Test::Unit::TestCase
 
   class R < Ripper
     def R.scan(target, src)
-      r = new(src, target)
-      r.parse
-      r.tokens.map {|id, tok| tok }
-    end
-
-    def R.lex(src)
-      r = new(src, 'scan')
-      r.parse
-      r.tokens
+      new(src, target).parse.map {|id, tok| tok }
     end
 
     def initialize(src, target)
       super src
-      @target = ('on__' + target).intern
-      @tokens = []
+      if target
+        @target = ('on__' + target).intern
+      else
+        @target = nil
+      end
     end
 
-    attr_reader :tokens
+    def parse
+      @tokens = []
+      super
+      @tokens
+    end
 
-    def method_missing(mid, *args)
-      case mid.to_s
-      when /\Aon__scan/
-        if @target == :on__scan
-          @tokens.push args
-        else
-          @tokens.push args if @target == args[0]
-        end
-      when /\Aon__/
-        ;
-      else
-        raise NoMethodError, "no such method: #{mid}"
-      end
+    def on__scan(type, tok)
+      @tokens.push [type,tok] if !@target or type == @target
     end
 
     def warn(fmt, *args)
@@ -58,13 +46,17 @@ class TestRipper_ScannerEvents < Test::Unit::TestCase
 
   def test_scan
     assert_equal [],
-                 R.scan('scan', '')
+                 R.scan(nil, '')
     assert_equal ['a'],
-                 R.scan('scan', 'a')
+                 R.scan(nil, 'a')
     assert_equal ['1'],
-                 R.scan('scan', '1')
+                 R.scan(nil, '1')
     assert_equal ['1', ';', 'def', ' ', 'm', '(', 'arg', ')', 'end'],
-                 R.scan('scan', "1;def m(arg)end")
+                 R.scan(nil, "1;def m(arg)end")
+    assert_equal ['print', '(', '<<EOS', "heredoc\n", "EOS\n", ')', "\n"],
+                 R.scan(nil, "print(<<EOS)\nheredoc\nEOS\n")
+    assert_equal ['print', '(', ' ', '<<EOS', "heredoc\n", "EOS\n", ')', "\n"],
+                 R.scan(nil, "print( <<EOS)\nheredoc\nEOS\n")
   end
 
   def test_backref
