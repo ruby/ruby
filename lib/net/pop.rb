@@ -337,20 +337,14 @@ Net::POP3
     end
 
 
-    def auth( acnt, pass )
+    def auth( account, pass )
       critical {
-        @socket.writeline( "APOP #{acnt} #{digest(@stamp + pass)}" )
+        @socket.writeline sprintf( 'APOP %s %s',
+                            account, MD5.new(@stamp + pass).hexdigest )
         check_reply_auth
       }
     end
 
-
-    def digest( str )
-      ret = ''
-      MD5.new( str ).digest.each_byte {|i| ret << sprintf('%02x', i) }
-      ret
-    end
-      
   end
 
 end
