@@ -2,6 +2,8 @@ Mon Dec  3 16:06:57 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/socket/extconf.rb: remove -L/usr/local/lib.
 
+	* configure.in: add -Wl,-export-dynamic on NetBSD.
+
 Mon Dec  3 16:06:04 2001  Usaku Nakamura <usa@ruby-lang.org>
 
 	* configure.in: not use X11BASE, since it's not always set.
