@@ -296,7 +296,8 @@ void dlptr_free(struct ptr_data *data);
 void dlptr_init(VALUE val);
 
 VALUE rb_dlptr_new(void *ptr, long size, freefunc_t func);
-VALUE rb_dlptr_alloc(long size, freefunc_t func);
+VALUE rb_dlptr_new2(VALUE klass, void *ptr, long size, freefunc_t func);
+VALUE rb_dlptr_malloc(long size, freefunc_t func);
 void *rb_dlptr2cptr(VALUE val);
 
 VALUE rb_dlsym_new(void (*func)(), const char *name, const char *type);

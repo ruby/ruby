@@ -83,7 +83,7 @@ dlptr_init(VALUE val)
 }
 
 VALUE
-rb_dlptr_new(void *ptr, long size, freefunc_t func)
+rb_dlptr_new2(VALUE klass, void *ptr, long size, freefunc_t func)
 {
   struct ptr_data *data;
   VALUE val;
@@ -91,7 +91,7 @@ rb_dlptr_new(void *ptr, long size, freefunc_t func)
   if( ptr ){
     val = rb_dlmem_aref(ptr);
     if( val == Qnil ){
-      val = Data_Make_Struct(rb_cDLPtrData, struct ptr_data,
+      val = Data_Make_Struct(klass, struct ptr_data,
 			     0, dlptr_free, data);
       data->ptr = ptr;
       data->free = func;
@@ -119,9 +119,19 @@ rb_dlptr_new(void *ptr, long size, freefunc_t func)
 }
 
 VALUE
-rb_dlptr_alloc(long size, freefunc_t func)
+rb_dlptr_new(void *ptr, long size, freefunc_t func)
 {
-  return rb_dlptr_new(dlmalloc((size_t)size), size, func);
+  return rb_dlptr_new2(rb_cDLPtrData, ptr, size, func);
+}
+
+VALUE
+rb_dlptr_malloc(long size, freefunc_t func)
+{
+  void *ptr;
+
+  ptr = dlmalloc((size_t)size);
+  memset(ptr,0,(size_t)size);
+  return rb_dlptr_new(ptr, size, func);
 }
 
 void *
@@ -177,7 +187,7 @@ rb_dlptr_s_new(int argc, VALUE argv[], VALUE klass)
 }
 
 static VALUE
-rb_dlptr_s_alloc(int argc, VALUE argv[], VALUE klass)
+rb_dlptr_s_malloc(int argc, VALUE argv[], VALUE klass)
 {
   VALUE size, sym, obj;
   int   s;
@@ -195,9 +205,7 @@ rb_dlptr_s_alloc(int argc, VALUE argv[], VALUE klass)
     rb_bug("rb_dlptr_s_new");
   };
 
-  obj = rb_dlptr_alloc(s,f);
-
-  rb_obj_call_init(obj, argc, argv);
+  obj = rb_dlptr_malloc(s,f);
 
   return obj;
 }
@@ -996,7 +1004,7 @@ Init_dlptr()
 {
   rb_cDLPtrData = rb_define_class_under(rb_mDL, "PtrData", rb_cData);
   rb_define_singleton_method(rb_cDLPtrData, "new", rb_dlptr_s_new, -1);
-  rb_define_singleton_method(rb_cDLPtrData, "alloc", rb_dlptr_s_alloc, -1);
+  rb_define_singleton_method(rb_cDLPtrData, "malloc", rb_dlptr_s_malloc, -1);
   rb_define_method(rb_cDLPtrData, "initialize", rb_dlptr_init, -1);
   rb_define_method(rb_cDLPtrData, "free=", rb_dlptr_free_set, 1);
   rb_define_method(rb_cDLPtrData, "free",  rb_dlptr_free_get, 0);

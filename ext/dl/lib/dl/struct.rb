@@ -81,7 +81,7 @@ module DL
 	  return mem
 	end
 
-	def alloc(size = nil)
+	def malloc(size = nil)
 	  if( !size )
 	    size = @size
 	  end

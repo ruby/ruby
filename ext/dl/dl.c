@@ -457,13 +457,7 @@ rb_dl_dlopen(int argc, VALUE argv[], VALUE self)
 VALUE
 rb_dl_malloc(VALUE self, VALUE size)
 {
-  void *ptr;
-  long s;
-
-  s = DLNUM2LONG(size);
-  ptr = dlmalloc((size_t)s);
-  memset(ptr,0,(size_t)s);
-  return rb_dlptr_new(ptr, s, dlfree);
+  return rb_dlptr_malloc(DLNUM2LONG(size), dlfree);
 }
 
 VALUE

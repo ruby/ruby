@@ -1,3 +1,9 @@
+Tue May 21 00:20:25 2002  Takaaki Tateishi <ttate@kt.jaist.ac.jp>
+
+	* ext/dl/ptr.c: rename PtrData::alloc to PtrData::malloc.
+
+	* ext/dl/lib/dl/struct.c: rename Struct#alloc to Struct#malloc.
+
 Mon May 20 13:28:52 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* io.c (rb_io_clone): writing stream was not copied properly.

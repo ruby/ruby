@@ -57,8 +57,8 @@ ptr = ary.to_ptr
 LIBC.qsort(ptr, ary.length, DL.sizeof('P'), $cb1)
 p ptr.to_a('S', ary.length)
 
-tv = LIBC::Timeval.alloc
-tz = LIBC::Timezone.alloc
+tv = LIBC::Timeval.malloc
+tz = LIBC::Timezone.malloc
 LIBC.gettimeofday(tv, tz)
 
 p Time.at(tv.tv_sec)
