@@ -414,6 +414,14 @@ class Object
   include PP::ObjectMixin
 end
 
+[Numeric, Symbol, FalseClass, TrueClass, NilClass, Module].each {|c|
+  c.class_eval {
+    def pretty_print_cycle(pp)
+      pp.text inspect
+    end
+  }
+}
+
 if __FILE__ == $0
   require 'runit/testcase'
   require 'runit/cui/testrunner'
