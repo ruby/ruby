@@ -1,3 +1,9 @@
+Fri Feb 22 03:34:38 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (get2comp): need to specify to carry or not.
+
+	* io.c (rb_io_inspect): embed path info.
+
 Fri Feb 22 11:30:01 2002  Tanaka Akira  <akr@m17n.org>
 
 	* prettyprint.rb: FillGroup implemented.

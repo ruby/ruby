@@ -116,11 +116,7 @@ class Shell
   attr_reader :process_controller
 
   def expand_path(path)
-    if /^[\/~]/ =~ path
-      File.expand_path(path)
-    else
-      File.expand_path(File.join(@cwd, path))
-    end
+    File.expand_path(path)
   end
 
   # Most Shell commands are defined via CommandProcessor

@@ -491,6 +491,21 @@ rb_io_pid(io)
 }
 
 static VALUE
+rb_io_inspect(obj)
+    VALUE obj;
+{
+    OpenFile *fptr;
+    char *buf, *cname;
+
+    GetOpenFile(obj, fptr);
+    if (!fptr->path) return rb_any_to_s(obj);
+    cname = rb_class2name(CLASS_OF(obj));
+    buf = ALLOCA_N(char, strlen(cname) + strlen(fptr->path) + 5);
+    sprintf(buf, "#<%s:%s>", cname, fptr->path);
+    return rb_str_new2(buf);
+}
+
+static VALUE
 rb_io_to_io(io)
     VALUE io;
 {
@@ -3691,6 +3706,7 @@ Init_IO()
     rb_define_method(rb_cIO, "ioctl", rb_io_ioctl, -1);
     rb_define_method(rb_cIO, "fcntl", rb_io_fcntl, -1);
     rb_define_method(rb_cIO, "pid", rb_io_pid, 0);
+    rb_define_method(rb_cIO, "inspect",  rb_io_inspect, 0);
 
     rb_stdin = orig_stdin = prep_stdio(stdin, FMODE_READABLE, rb_cIO);
     rb_define_hooked_variable("$stdin", &rb_stdin, 0, set_stdin);
