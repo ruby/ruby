@@ -1,3 +1,8 @@
+Mon Nov 15 08:58:55 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (Init_Proc): make proc as an alias to Proc.new.
+	  [ruby-dev:24848]
+
 Mon Nov 15 00:46:03 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_yield_0): lambda{}.call(1) should raise exception.

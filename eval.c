@@ -8060,6 +8060,13 @@ proc_s_new(argc, argv, klass)
     return block;
 }
 
+/*
+ * call-seq:
+ *   proc   { |...| block }  => a_proc
+ *
+ * Equivalent to <code>Proc.new</code>.
+ */
+
 VALUE
 rb_block_proc()
 {
@@ -8075,7 +8082,6 @@ rb_f_lambda()
 
 /*
  * call-seq:
- *   proc   { |...| block }  => a_proc
  *   lambda { |...| block }  => a_proc
  *
  * Equivalent to <code>Proc.new</code>, except the resulting Proc objects
@@ -8231,8 +8237,7 @@ proc_call(proc, args)
  *  to take exactly n arguments, returns n. If the block has optional
  *  arguments, return -n-1, where n is the number of mandatory
  *  arguments. A <code>proc</code> with no argument declarations
- *  returns -1, as it can accept (and ignore) an arbitrary number of
- *  parameters.
+ *  is handled like a block declaring <code>||</code> as its arguments.
  *     
  *     Proc.new {}.arity          #=>  0
  *     Proc.new {||}.arity        #=>  0
@@ -9294,7 +9299,7 @@ Init_Proc()
     rb_define_method(rb_cProc, "to_proc", proc_to_self, 0);
     rb_define_method(rb_cProc, "binding", proc_binding, 0);
 
-    rb_define_global_function("proc", proc_lambda, 0);
+    rb_define_global_function("proc", rb_block_proc, 0);
     rb_define_global_function("lambda", proc_lambda, 0);
 
     rb_cMethod = rb_define_class("Method", rb_cObject);
