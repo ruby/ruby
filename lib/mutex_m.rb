@@ -1,10 +1,12 @@
 #
 #   mutex_m.rb - 
-#   	$Release Version: 2.0$
+#   	$Release Version: 3.0$
 #   	$Revision: 1.7 $
 #   	$Date: 1998/02/27 04:28:57 $
 #       Original from mutex.rb
-#   	by Keiju ISHITSUKA(SHL Japan Inc.)
+#   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
+#       modified by matz
+#       patched by akira yamada
 #
 # --
 #   Usage:
@@ -13,10 +15,18 @@
 #	obj.extend Mutex_m
 #	...
 #	extended object can be handled like Mutex
+#       or
+#	class Foo
+#	  include Mutex_m
+#	  ...
+#	end
+#	obj = Foo.new
+#	this obj can be handled like Mutex
 #
 
 module Mutex_m
-  def Mutex_m.included(cl)
+  def Mutex_m.append_features(cl)
+    super
     unless cl.instance_of?(Module)
       cl.module_eval %q{
 	alias locked? mu_locked?
@@ -26,7 +36,7 @@ module Mutex_m
 	alias synchronize mu_synchronize
       }
     end
-    return self
+    self
   end
   
   def Mutex_m.extend_object(obj)
@@ -48,7 +58,7 @@ module Mutex_m
 	alias synchronize mu_synchronize
       end"
     end
-    initialize
+    mu_initialize
   end
   
   # locking 
@@ -101,10 +111,13 @@ module Mutex_m
   
   private
   
-  def initialize(*args)
-    ret = super
+  def mu_initialize
     @mu_waiting = []
     @mu_locked = false;
-    return ret
+  end
+
+  def initialize(*args)
+    mu_initialize
+    super
   end
 end
