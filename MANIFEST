@@ -168,6 +168,7 @@ sample/freq.rb
 sample/from.rb
 sample/fullpath.rb
 sample/getopts.test
+sample/goodfriday.rb
 sample/less.rb
 sample/list.rb
 sample/list2.rb

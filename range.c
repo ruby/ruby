@@ -18,19 +18,32 @@ extern VALUE cNumeric;
 static ID upto;
 
 static VALUE
+range_check(args)
+    VALUE *args;
+{
+    VALUE v = rb_funcall(args[0], rb_intern("<="), 1, args[1]);
+
+    if (!RTEST(v)) {
+	Fail("");		/* no ascending values */
+    }
+    return Qnil;
+}
+
+static VALUE
+range_failed()
+{
+    ArgError("bad value for range");
+}
+
+static VALUE
 range_s_new(klass, first, last)
     VALUE klass, first, last;
 {
     VALUE obj;
+    VALUE args[2];
 
-    if (!(FIXNUM_P(first) && FIXNUM_P(last))
-	&& (TYPE(first) != TYPE(last)
-	    || CLASS_OF(first) != CLASS_OF(last)
-	    || !rb_respond_to(first, upto))
-	&& !(obj_is_kind_of(first, cNumeric)
-	     && obj_is_kind_of(last, cNumeric))) {
-	ArgError("bad value for range");
-    }
+    args[0] = first; args[1] = last;
+    rb_rescue(range_check, args, range_failed, 0);
 
     obj = obj_alloc(klass);
 

@@ -444,7 +444,7 @@ rb_undef_method(klass, name)
     VALUE klass;
     char *name;
 {
-    rb_add_method(klass, rb_intern(name), 0, NOEX_PUBLIC);
+    rb_add_method(klass, rb_intern(name), 0, NOEX_UNDEF);
 }
 
 VALUE

@@ -1,3 +1,10 @@
+Thu Mar 12 15:33:57 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* range.c (range_s_new): check values by `first <= last'.
+
+	* parse.y (lastline_set): fixed offset for $_ and $~ in the local
+	  variable space.
+
 Wed Mar 11 02:14:17 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* io.c (io_gets): handle normal case specially for speed.
