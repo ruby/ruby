@@ -1,6 +1,10 @@
+Tue Oct 26 23:52:32 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_getline): rs modification check should not interfere in the loop.
+
 Tue Oct 26 23:30:39 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/rdoc/code_objects.rb (RDoc::Context::add_class_or_module): 
+	* lib/rdoc/code_objects.rb (RDoc::Context::add_class_or_module):
 	  Restore correct :nopdoc: behavior with nested classes and modules.
 
 Mon Oct 25 18:35:39 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
