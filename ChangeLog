@@ -3,6 +3,9 @@ Thu Aug 19 09:19:27 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 	* configure.in, win32/Makefile.sub (LIBS): need to link shell32
 	  library for SH* functions on mswin32 and mingw32.
 
+	* wince/Makefile.sub (LIBS): need to link ceshell library for SH*
+	  functions on mswince.
+
 Thu Aug 19 03:07:00 2004  why the lucky stiff  <why@ruby-lang.org>
 
 	* lib/yaml/baseemitter.rb: folding now handles double-quoted strings,

@@ -125,7 +125,7 @@ RFLAGS = -r
 !if !defined(EXTLIBS)
 EXTLIBS =
 !endif
-LIBS = coredll.lib winsock.lib  $(EXTLIBS)
+LIBS = coredll.lib ceshell.lib winsock.lib  $(EXTLIBS)
 MISSING = acosh.obj crypt.obj dup2.obj erf.obj hypot.obj \
           isinf.obj isnan.obj strftime.obj win32.obj \
           assert.obj direct.obj errno.obj io_wce.obj process_wce.obj \
