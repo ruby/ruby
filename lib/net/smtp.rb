@@ -108,8 +108,24 @@ of SMTP.start/SMTP#start. It is the domain name which you are on
 SMTP server will judge if he/she should send or reject
 the SMTP session by inspecting HELO domain.
 
-    Net::SMTP.start( 'your.smtp.server', 25,
-                     'mail.from.domain' ) {|smtp|
+    Net::SMTP.start('your.smtp.server', 25,
+                    'mail.from.domain') {|smtp|
+
+=== SMTP Authentication
+
+net/smtp supports three authentication scheme.
+PLAIN, LOGIN and CRAM MD5.  (SMTP Authentication: [RFC2554])
+
+    # PLAIN
+    Net::SMTP.start('your.smtp.server', 25, 'mail.from,domain',
+                    'Your Account', 'Your Password', :plain)
+    # LOGIN
+    Net::SMTP.start('your.smtp.server', 25, 'mail.from,domain',
+                    'Your Account', 'Your Password', :login)
+
+    # CRAM MD5
+    Net::SMTP.start('your.smtp.server', 25, 'mail.from,domain',
+                    'Your Account', 'Your Password', :cram_md5)
 
 
 == class Net::SMTP
@@ -141,8 +157,8 @@ the SMTP session by inspecting HELO domain.
     close session after block call finished.
 
     If both of account and password are given, is trying to get
-    authentication by using AUTH command. :plain or :cram_md5 is
-    allowed for AUTHTYPE.
+    authentication by using AUTH command. AUTHTYPE is an either of
+    :login, :plain, and :cram_md5.
 
 : started?
     true if SMTP session is started.
@@ -410,15 +426,23 @@ module Net
       getok('EHLO %s', domain)
     end
 
-    # "PLAIN" authentication [RFC2554]
     def auth_plain( user, secret )
       res = critical { get_response('AUTH PLAIN %s',
-                                    ["\0#{user}\0#{secret}"].pack('m').chomp) }
+                                    base64_encode("\0#{user}\0#{secret}")) }
       raise SMTPAuthenticationError, res unless /\A2../ === res
     end
 
-    # "CRAM-MD5" authentication [RFC2195]
+    def auth_login( user, secret )
+      res = critical {
+          check_response(get_response('AUTH LOGIN'), true)
+          check_response(get_response(base64_encode(user)), true)
+          get_response(base64_encode(secret))
+      }
+      raise SMTPAuthenticationError, res unless /\A2../ === res
+    end
+
     def auth_cram_md5( user, secret )
+      # CRAM-MD5: [RFC2195]
       res = nil
       critical {
           res = check_response(get_response('AUTH CRAM-MD5'), true)
@@ -434,10 +458,16 @@ module Net
           tmp = Digest::MD5.digest(isecret + challenge)
           tmp = Digest::MD5.hexdigest(osecret + tmp)
 
-          res = get_response([user + ' ' + tmp].pack('m').gsub(/\s+/, ''))
+          res = get_response(base64_encode(user + ' ' + tmp))
       }
       raise SMTPAuthenticationError, res unless /\A2../ === res
     end
+
+    def base64_encode( str )
+      # expects "str" may not become too long
+      [str].pack('m').gsub(/\s+/, '')
+    end
+    private :base64_encode
 
     def mailfrom( fromaddr )
       getok('MAIL FROM:<%s>', fromaddr)
@@ -493,10 +523,10 @@ module Net
       res
     end
 
-    def check_response( res, cont = false )
+    def check_response( res, allow_continue = false )
       etype = case res[0]
               when ?2 then nil
-              when ?3 then cont ? nil : ProtoUnknownError
+              when ?3 then allow_continue ? nil : ProtoUnknownError
               when ?4 then ProtoServerError
               when ?5 then
                 case res[1]

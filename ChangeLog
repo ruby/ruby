@@ -1,3 +1,8 @@
+Sun May 25 03:27:25 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/smtp.rb: support LOGIN authentication, based on
+	  the patch by Kazuhiko Izawa. [ruby-talk:78981]
+
 Sat May 24 18:19:51 2003  Takaaki Uematsu  <uema2x@jcom.home.ne.jp>
 
 	* wince/Makefile.sub: add eMbedded Visual C++ 4.0 support.
