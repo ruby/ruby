@@ -145,6 +145,10 @@
 #endif
 #define utime      _utime
 #define vsnprintf  _vsnprintf
+#define snprintf   _snprintf
+#define popen      _popen
+#define pclose     _pclose
+#define strcasecmp _strcmpi
 
 /* these are defined in nt.c */
 
@@ -212,10 +216,6 @@ extern char *mystrerror(int);
 #define LOCK_UN 8
 #ifndef EWOULDBLOCK
 #define EWOULDBLOCK 10035 /* EBASEERR + 35 (winsock.h) */
-#endif
-
-#ifndef O_BINARY
-#define O_BINARY 0x8000
 #endif
 
 #ifdef popen

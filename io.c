@@ -20,7 +20,7 @@
 #if !defined(DJGPP) && !defined(NT) && !defined(__human68k__)
 #include <sys/ioctl.h>
 #endif
-#if defined(HAVE_FCNTL)
+#if defined(HAVE_FCNTL) || defined(NT)
 #include <fcntl.h>
 #endif
 

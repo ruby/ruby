@@ -1,3 +1,8 @@
+Wed Jan 27 17:50:02 1999  Kazuhiro HIWADA  <hiwada@kuee.kyoto-u.ac.jp>
+
+	* bignum.c (dbl2big): raised error if double is too big to cast
+	  into long.  check added.
+
 Wed Jan 27 03:16:18 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* variable.c (rb_mod_const_at): can't list constants of the

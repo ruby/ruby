@@ -396,7 +396,7 @@ rb_dbl2big(d)
     VALUE z;
     double u = (d < 0)?-d:d;
 
-    while (0 != (long)u) {
+    while (!POSFIXABLE(u) || 0 != (long)u) {
 	u /= (double)(BIGRAD);
 	i++;
     }
