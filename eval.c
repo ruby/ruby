@@ -1141,18 +1141,17 @@ compile_error(at)
     const char *at;
 {
     VALUE str;
-    char *mesg;
-    int len;
 
-    mesg = rb_str2cstr(ruby_errinfo, &len);
     ruby_nerrs = 0;
     str = rb_str_new2("compile error");
     if (at) {
-	rb_str_cat(str, " in ", 4);
-	rb_str_cat(str, at, strlen(at));
+	rb_str_cat2(str, " in ");
+	rb_str_cat2(str, at);
     }
     rb_str_cat(str, "\n", 1);
-    rb_str_cat(str, mesg, len);
+    if (!NIL_P(ruby_errinfo)) {
+	rb_str_concat(str, ruby_errinfo);
+    }
     rb_exc_raise(rb_exc_new3(rb_eSyntaxError, str));
 }
 
@@ -1678,7 +1677,10 @@ is_defined(self, node, buf)
 	    val = CLASS_OF(val);
 	}
 	POP_TAG();
-	if (state) return 0;
+	if (state) {
+	    ruby_errinfo = Qnil;
+	    return 0;
+	}
       check_bound:
 	if (rb_method_boundp(val, node->nd_mid, nd_type(node)== NODE_CALL)) {
 	    return arg_defined(self, node->nd_args, buf, "method");
@@ -1748,7 +1750,10 @@ is_defined(self, node, buf)
 	    val = rb_eval(self, node->nd_head);
 	}
 	POP_TAG();
-	if (state) return 0;
+	if (state) {
+	    ruby_errinfo = Qnil;
+	    return 0;
+	}
 	else {
 	    switch (TYPE(val)) {
 	      case T_CLASS:
@@ -1786,6 +1791,7 @@ is_defined(self, node, buf)
 	if (!state) {
 	    return "expression";
 	}
+	ruby_errinfo = Qnil;
 	break;
     }
     return 0;
@@ -2722,6 +2728,8 @@ rb_eval(self, n)
 			str2 = list->nd_head->nd_lit;
 			break;
 		      case NODE_EVSTR:
+			result = ruby_errinfo;
+			ruby_errinfo = Qnil;
 			ruby_sourceline = nd_line(node);
 			ruby_in_eval++;
 			list->nd_head = compile(list->nd_head->nd_lit,
@@ -2732,10 +2740,10 @@ rb_eval(self, n)
 			if (ruby_nerrs > 0) {
 			    compile_error("string expansion");
 			}
+			if (!NIL_P(result)) ruby_errinfo = result;
 			/* fall through */
 		      default:
-			str2 = rb_eval(self, list->nd_head);
-			str2 = rb_obj_as_string(str2);
+			str2 = rb_obj_as_string(rb_eval(self, list->nd_head));
 			break;
 		    }
 		    rb_str_append(str, str2);
@@ -4569,10 +4577,15 @@ eval(self, src, scope, file, line)
     }
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
-	NODE *node = compile(src, file, line);
+	NODE *node;
+
+	result = ruby_errinfo;
+	ruby_errinfo = Qnil;
+	node = compile(src, file, line);
 	if (ruby_nerrs > 0) {
 	    compile_error(0);
 	}
+	if (!NIL_P(result)) ruby_errinfo = result;
 	result = eval_node(self, node); 
     }
     POP_TAG();

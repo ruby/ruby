@@ -98,12 +98,12 @@ range_eqq(range, obj)
     end = rb_ivar_get(range, id_end);
 
     if (FIXNUM_P(beg) && FIXNUM_P(obj) && FIXNUM_P(end)) {
-	if (NUM2LONG(beg) <= NUM2LONG(obj)) {
+	if (FIX2LONG(beg) <= FIX2LONG(obj)) {
 	    if (EXCL(range)) {
-		if (NUM2LONG(obj) < NUM2LONG(end)) return Qtrue;
+		if (FIX2LONG(obj) < FIX2LONG(end)) return Qtrue;
 	    }
 	    else {
-		if (NUM2LONG(obj) <= NUM2LONG(end)) return Qtrue;
+		if (FIX2LONG(obj) <= FIX2LONG(end)) return Qtrue;
 	    }
 	}
 	return Qfalse;

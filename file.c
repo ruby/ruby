@@ -1590,6 +1590,11 @@ rb_f_test(argc, argv)
     int cmd;
 
     if (argc == 0) rb_raise(rb_eArgError, "wrong # of arguments");
+#if 0 /* 1.7 behavior? */
+    if (argc == 1) {
+	return RTEST(argv[0]) ? Qtrue : Qfalse;
+    }
+#endif
     cmd = NUM2CHR(argv[0]);
     if (cmd == 0) return Qfalse;
     if (strchr("bcdefgGkloOprRsSuwWxXz", cmd)) {

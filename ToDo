@@ -88,6 +88,7 @@ Standard Libraries
 * optional stepsize argument for succ()
 * Ruby module -- Ruby::Version, Ruby::Interpreter
 * introduce Boolean class; super of TrueClass, FalseClass
+* Process::waitall [ruby-talk:4557]
 
 Extension Libraries
 

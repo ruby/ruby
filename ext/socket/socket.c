@@ -1044,6 +1044,7 @@ s_accept(class, fd, sockaddr, len)
     socklen_t *len;
 {
     int fd2;
+    int retry = 0;
 
     rb_secure(3);
   retry:
@@ -1053,6 +1054,12 @@ s_accept(class, fd, sockaddr, len)
     TRAP_END;
     if (fd2 < 0) {
 	switch (errno) {
+	  case EMFILE:
+	  case ENFILE:
+	    if (retry) break;
+	    rb_gc();
+	    retry = 1;
+	    goto retry;
 	  case EINTR:
 	    rb_thread_schedule();
 	    goto retry;

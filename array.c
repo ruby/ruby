@@ -893,8 +893,8 @@ rb_ary_reverse(ary)
     VALUE *p1, *p2;
     VALUE tmp;
 
+    if (RARRAY(ary)->len <= 1) return ary;
     rb_ary_modify(ary);
-    if (RARRAY(ary)->len == 0) return ary;
 
     p1 = RARRAY(ary)->ptr;
     p2 = p1 + RARRAY(ary)->len - 1;	/* points last item */
@@ -907,6 +907,14 @@ rb_ary_reverse(ary)
     }
 
     return ary;
+}
+
+static VALUE
+rb_ary_reverse_bang(ary)
+    VALUE ary;
+{
+    if (RARRAY(ary)->len <= 1) return Qnil;
+    return rb_ary_reverse(ary);
 }
 
 static VALUE
@@ -965,7 +973,7 @@ rb_ary_sort_bang(ary)
     VALUE ary;
 {
     rb_ary_modify(ary);
-    if (RARRAY(ary)->len <= 1) return ary;
+    if (RARRAY(ary)->len <= 1) return Qnil;
 
     FL_SET(ary, ARY_TMPLOCK);	/* prohibit modification during sort */
     rb_ensure(sort_internal, ary, sort_unlock, ary);
@@ -1625,7 +1633,7 @@ Init_Array()
     rb_define_method(rb_cArray, "clone", rb_ary_clone, 0);
     rb_define_method(rb_cArray, "join", rb_ary_join_m, -1);
     rb_define_method(rb_cArray, "reverse", rb_ary_reverse_m, 0);
-    rb_define_method(rb_cArray, "reverse!", rb_ary_reverse, 0);
+    rb_define_method(rb_cArray, "reverse!", rb_ary_reverse_bang, 0);
     rb_define_method(rb_cArray, "sort", rb_ary_sort, 0);
     rb_define_method(rb_cArray, "sort!", rb_ary_sort_bang, 0);
     rb_define_method(rb_cArray, "collect", rb_ary_collect, 0);

@@ -313,18 +313,23 @@ def create_header()
   end
 end
 
-def dir_config(target)
-  dir = with_config("%s-dir"%target)
+def dir_config(target, idefault=nil, ldefault=nil)
+  if idefault && ldefault == nil
+    default = idefault
+    idefault = default + "/include"
+    ldefault = default + "/lib"
+  end
+  dir = with_config("%s-dir"%target, default)
   if dir
     idir = " -I"+dir+"/include"
     ldir = " -L"+dir+"/lib"
   end
   unless idir
-    dir = with_config("%s-include"%target)
+    dir = with_config("%s-include"%target, idefault)
     idir = " -I"+dir if dir
   end
   unless ldir
-    dir = with_config("%s-lib"%target)
+    dir = with_config("%s-lib"%target, ldefault)
     ldir = " -L"+dir if dir
   end
 
@@ -386,7 +391,7 @@ hdrdir = #{$hdrdir}
 CC = #{CONFIG["CC"]}
 
 CFLAGS   = #{CONFIG["CCDLFLAGS"]} #{CFLAGS} #{$CFLAGS}
-  CPPFLAGS = -I$(hdrdir) -I#{CONFIG["includedir"]} #{$defs.join(" ")} #{CONFIG["CPPFLAGS"]}
+CPPFLAGS = -I$(hdrdir) -I#{CONFIG["includedir"]} #{$defs.join(" ")} #{CONFIG["CPPFLAGS"]}
 CXXFLAGS = $(CFLAGS)
 DLDFLAGS = #{$DLDFLAGS} #{$LDFLAGS}
 LDSHARED = #{CONFIG["LDSHARED"]} #{defflag}

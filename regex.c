@@ -1991,7 +1991,7 @@ re_compile_pattern(pattern, size, bufp)
 	break;
       }
 
-      /* If lower_bound == upper_bound, repeat cound can be removed */
+      /* If lower_bound == upper_bound, repeat count can be removed */
       if (lower_bound == upper_bound) {
 	int mcnt;
 	int skip_stop_paren = 0;
@@ -2069,7 +2069,7 @@ re_compile_pattern(pattern, size, bufp)
 	     jump back only `upper_bound - 1' times.  */
 	  GET_BUFFER_SPACE(5);
 	  store_jump_n(b, greedy?jump_n:finalize_push_n, laststart + 5,
-		       upper_bound - 1);
+		       upper_bound/* - 1*/);
 	  b += 5;
 
 	  /* The location we want to set is the second
@@ -2087,7 +2087,7 @@ re_compile_pattern(pattern, size, bufp)
 	     so that if we fail during matching, we'll
 	     reinitialize the bounds.  */
 	  insert_op_2(set_number_at, laststart, b, b - laststart,
-		      upper_bound - 1);
+		      upper_bound/* - 1*/);
 	  b += 5;
 	}
       }
@@ -3408,8 +3408,7 @@ re_search(bufp, string, size, startpos, range, regs)
   do { unsigned this_reg;						\
     for (this_reg = 0; this_reg < num_regs; this_reg++) { 		\
         if (IS_ACTIVE(reg_info[this_reg]))				\
-          MATCHED_SOMETHING(reg_info[this_reg])				\
-            = 1;							\
+          MATCHED_SOMETHING(reg_info[this_reg]) = 1;			\
         else								\
           MATCHED_SOMETHING(reg_info[this_reg]) = 0;			\
       } 								\

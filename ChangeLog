@@ -5,6 +5,21 @@ Sat Aug 19 01:34:02 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* ext/sdbm/_sdbm.c (makroom): fill hole with 0 on Win32 too.
 
+Fri Aug 18 13:23:59 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): should preserve and clear $! value before
+	  compilation. 
+
+	* eval.c (eval): ditto.
+
+Fri Aug 18 11:06:19 2000  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* ext/socket/socket.c (s_accept): start GC on EMFILE/ENFILE.
+
+Thu Aug 17 16:04:48 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (is_defined): should clear ruby_errinfo.
+
 Thu Aug 17 04:26:31 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.27.
@@ -12,6 +27,10 @@ Thu Aug 17 04:26:31 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 	* lib/net/protocol.rb: writing methods returns written byte size.
 
 	* lib/net/smtp.rb: send_mail accepts many destinations.
+
+Wed Aug 16 00:43:47 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (time_s_times): use CLK_TCK for HZ if it's defined.
 
 Tue Aug 15 17:30:59 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

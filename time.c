@@ -946,7 +946,11 @@ time_s_times(obj)
 {
 #ifdef HAVE_TIMES
 #ifndef HZ
-#define HZ 60 /* Universal constant :-) */
+# ifdef CLK_TCK
+#   define HZ CLK_TCK
+# else
+#   define HZ 60
+# endif
 #endif /* HZ */
     struct tms buf;
 

@@ -1087,8 +1087,8 @@ err_append(s)
 	else {
 	    VALUE str = rb_str_to_str(ruby_errinfo);
 
-	    rb_str_cat(str, "\n", 1);
-	    rb_str_cat(str, s, strlen(s));
+	    rb_str_cat2(str, "\n");
+	    rb_str_cat2(str, s);
 	    ruby_errinfo = rb_exc_new3(rb_eSyntaxError, str);
 	}
     }
