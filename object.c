@@ -76,9 +76,6 @@ VALUE
 rb_class_real(cl)
     VALUE cl;
 {
-    if (TYPE(cl) == T_ICLASS) {
-	cl = RBASIC(cl)->klass;
-    }
     while (FL_TEST(cl, FL_SINGLETON) || TYPE(cl) == T_ICLASS) {
 	cl = RCLASS(cl)->super;
     }

@@ -1,3 +1,9 @@
+Mon Feb  4 15:38:29 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_class_real): should not follow ICLASS link
+
+	* variable.c (classname): should follow ICLASS link explicitly.
+
 Thu Jan 31 20:45:33 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* lib/mkmf.rb (dir_config): prior --with flag.
