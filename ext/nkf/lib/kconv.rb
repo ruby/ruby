@@ -166,7 +166,7 @@ module Kconv
   module_function :guess
 
   def guess_old(str)
-    ::NKF::guess_old(str)
+    ::NKF::guess1(str)
   end
   module_function :guess_old
 
