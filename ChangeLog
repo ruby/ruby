@@ -68,16 +68,13 @@ Mon Dec 17 15:19:32 2001  Tanaka Akira  <akr@m17n.org>
 
 	* missing/strftime.c: fix overflow by tm_year + 1900.
 
+	* lib/time.rb: use Time#utc_offset.
+
 Mon Dec 17 00:02:04 2001  Guy Decoux  <ts@moulon.inra.fr>
 
-<<<<<<< ChangeLog
 	* variable.c (find_class_path): should initialize iv_tbl if it's
 	  NULL.
 
-=======
-	* lib/time.rb: use Time#utc_offset.
-
->>>>>>> 1.655
 Fri Dec 14 04:23:36 2001  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/pop.rb: new method Net::POP3.APOP
