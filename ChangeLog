@@ -1,3 +1,7 @@
+Mon Jan 20 15:40:15 2003  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ruby.1: Properly close .Bl with .El.
+
 Mon Jan 20 04:14:17 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* lib/mkmf.rb (egrep_cpp): use inspect to show options.
