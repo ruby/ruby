@@ -9,7 +9,7 @@ require 'tk/scrollable'
 require 'tk/validation'
 
 class TkEntry<TkLabel
-  include Scrollable
+  include X_Scrollable
   include TkValidation
 
   TkCommandNames = ['entry'.freeze].freeze
