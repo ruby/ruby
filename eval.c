@@ -96,7 +96,6 @@ char *strrchr _((const char*,const char));
 VALUE rb_cBlock, rb_cProc;
 static VALUE rb_cBinding;
 static VALUE block_invoke _((VALUE,VALUE,VALUE,VALUE));
-static VALUE block_new _((void));
 static VALUE rb_f_binding _((VALUE));
 static void rb_f_END _((void));
 static VALUE rb_f_block_given_p _((void));
@@ -3223,7 +3222,7 @@ rb_eval(self, n)
 	if (ruby_scope->local_vars == 0)
 	    rb_bug("unexpected block argument");
 	if (rb_block_given_p()) {
-	    result = block_new();
+	    result = rb_block_new();
 	    ruby_scope->local_vars[node->nd_cnt] = result;
 	}
 	else {
@@ -6377,7 +6376,7 @@ rb_f_END()
 {
     PUSH_FRAME();
     ruby_frame->argc = 0;
-    rb_set_end_proc(call_end_proc, rb_f_lambda());
+    rb_set_end_proc(call_end_proc, rb_block_new());
     POP_FRAME();
 }
 
@@ -6880,8 +6879,8 @@ block_s_new(argc, argv, klass)
     return block;
 }
 
-static VALUE
-block_new()
+VALUE
+rb_block_new()
 {
     if (ruby_block->flags & BLOCK_PROC) {
 	return block_alloc(rb_cProc, Qtrue);
@@ -7504,7 +7503,7 @@ mblock(method)
     /* emulate ruby's method call */
     PUSH_ITER(ITER_CUR);
     PUSH_FRAME();
-    proc = rb_f_lambda();
+    proc = rb_block_new();
     POP_FRAME();
     POP_ITER();
 

@@ -1411,25 +1411,25 @@ os_each_obj(argc, argv)
 static VALUE finalizers;
 
 static VALUE
-add_final(os, proc)
-    VALUE os, proc;
+add_final(os, block)
+    VALUE os, block;
 {
     rb_warn("ObjectSpace::add_finalizer is deprecated; use define_finalizer");
-    if (!rb_obj_is_kind_of(proc, rb_cProc)) {
-	rb_raise(rb_eArgError, "wrong type argument %s (Proc required)",
-		 rb_obj_classname(proc));
+    if (!rb_obj_is_kind_of(block, rb_cBlock)) {
+	rb_raise(rb_eArgError, "wrong type argument %s (Block required)",
+		 rb_obj_classname(block));
     }
-    rb_ary_push(finalizers, proc);
-    return proc;
+    rb_ary_push(finalizers, block);
+    return block;
 }
 
 static VALUE
-rm_final(os, proc)
-    VALUE os, proc;
+rm_final(os, block)
+    VALUE os, block;
 {
     rb_warn("ObjectSpace::remove_finalizer is deprecated; use undefine_finalizer");
-    rb_ary_delete(finalizers, proc);
-    return proc;
+    rb_ary_delete(finalizers, block);
+    return block;
 }
 
 static VALUE
@@ -1465,15 +1465,15 @@ define_final(argc, argv, os)
     VALUE *argv;
     VALUE os;
 {
-    VALUE obj, proc, table;
+    VALUE obj, block, table;
 
-    rb_scan_args(argc, argv, "11", &obj, &proc);
+    rb_scan_args(argc, argv, "11", &obj, &block);
     if (argc == 1) {
-	proc = rb_f_lambda();
+	block = rb_block_new();
     }
-    else if (!rb_obj_is_kind_of(proc, rb_cProc)) {
-	rb_raise(rb_eArgError, "wrong type argument %s (Proc required)",
-		 rb_obj_classname(proc));
+    else if (!rb_obj_is_kind_of(block, rb_cBlock)) {
+	rb_raise(rb_eArgError, "wrong type argument %s (Block required)",
+		 rb_obj_classname(block));
     }
     need_call_final = 1;
     FL_SET(obj, FL_FINALIZE);
@@ -1482,12 +1482,12 @@ define_final(argc, argv, os)
 	finalizer_table = st_init_numtable();
     }
     if (st_lookup(finalizer_table, obj, &table)) {
-	rb_ary_push(table, proc);
+	rb_ary_push(table, block);
     }
     else {
-	st_add_direct(finalizer_table, obj, rb_ary_new3(1, proc));
+	st_add_direct(finalizer_table, obj, rb_ary_new3(1, block));
     }
-    return proc;
+    return block;
 }
 
 void

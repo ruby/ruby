@@ -540,7 +540,7 @@ rb_f_trace_var(argc, argv)
 
     rb_secure(4);
     if (rb_scan_args(argc, argv, "11", &var, &cmd) == 1) {
-	cmd = rb_f_lambda();
+	cmd = rb_block_new();
     }
     if (NIL_P(cmd)) {
 	return rb_f_untrace_var(argc, argv);

@@ -5224,7 +5224,7 @@ ev_on_event(argc, argv, self, is_ary_arg)
     if(!NIL_P(event)) {
         Check_SafeStr(event);
     }
-    data = rb_ary_new3(4, rb_f_lambda(), event, args, is_ary_arg);
+    data = rb_ary_new3(4, rb_block_new(), event, args, is_ary_arg);
     add_event_call_back(self, data);
     return Qnil;
 }

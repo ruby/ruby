@@ -585,7 +585,7 @@ rb_dl_callback(int argc, VALUE argv[], VALUE self)
   switch (rb_scan_args(argc, argv, "11", &type, &proc)) {
   case 1:
     if (rb_block_given_p()) {
-      proc = rb_f_lambda();
+      proc = rb_block_new();
     }
     else{
       proc = Qnil;

@@ -1,13 +1,25 @@
+Fri Jun  6 18:33:27 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (define_final): eliminate rb_f_lambda() call.
+
+	* class.c (rb_scan_args): ditto.
+
+	* signal.c (sig_trap): ditto.
+
+	* hash.c (rb_hash_initialize): ditto. 
+
+	* variable.c (rb_f_trace_var): ditto.
+
+	* ext/dl/dl.c (rb_dl_callback): ditto.
+
+	* ext/win32ole/win32ole.c (ev_on_event): ditto.
+
 Fri Jun  6 16:10:01 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb: define Net::HTTPResponse#to_ary for backward
 	  compatibility.  [ruby-talk:72927]
 
 	* lib/net/protocol.rb: add warning.
-
-Thu Jun  5 21:31:55 2003  Takaaki Uematsu <uema2x@jcom.home.ne.jp>
-
-	* wince/stdlib.c: add mblen().
 
 Fri Jun  6 13:30:57 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -24,6 +36,10 @@ Fri Jun  6 13:30:57 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_last): optional argument to retrieve last n
 	  elements.
+
+Thu Jun  5 21:31:55 2003  Takaaki Uematsu <uema2x@jcom.home.ne.jp>
+
+	* wince/stdlib.c: add mblen().
 
 Thu Jun  5 18:33:46 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
