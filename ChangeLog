@@ -1,3 +1,7 @@
+Sun Mar 11 00:55:31 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* lib/mkmf.rb (install_rb): fix handling of destination path.
+
 Sat Mar 10 02:34:18 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* math.c (math_log, math_log10): use nan() instead of 0.0/0.0 on Cygwin.

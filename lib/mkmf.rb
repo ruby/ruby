@@ -155,7 +155,9 @@ def install_rb(mfile, dest, srcdir = nil)
     mfile.printf "\t@$(RUBY) -r ftools -e 'File::makedirs(*ARGV)' %s/%s\n", dest, f
   end
   for f in path
-    mfile.printf "\t@$(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0644, true)' %s/%s %s\n", libdir, f, dest
+    d = '/' + File::dirname(f)
+    d = '' if d == '/.' 
+    mfile.printf "\t@$(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0644, true)' %s/%s %s%s\n", libdir, f, dest, d
   end
 end
 
