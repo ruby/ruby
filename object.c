@@ -926,6 +926,30 @@ rb_obj_public_methods(obj)
 }
 
 static VALUE
+rb_obj_ivar_get(obj, iv)
+    VALUE obj, iv;
+{
+    ID id = rb_to_id(iv);
+
+    if (!rb_is_instance_id(id)) {
+	rb_name_error(id, "`%s' is not an instance variable name", rb_id2name(id));
+    }
+    return rb_ivar_get(obj, id);
+}
+
+static VALUE
+rb_obj_ivar_set(obj, iv, val)
+    VALUE obj, iv, val;
+{
+    ID id = rb_to_id(iv);
+
+    if (!rb_is_instance_id(id)) {
+	rb_name_error(id, "`%s' is not an instance variable name", rb_id2name(id));
+    }
+    return rb_ivar_set(obj, id, val);
+}
+
+static VALUE
 convert_type(val, tname, method, raise)
     VALUE val;
     const char *tname, *method;
@@ -1346,6 +1370,8 @@ Init_Object()
     rb_define_method(rb_mKernel, "private_methods", rb_obj_private_methods, 0);
     rb_define_method(rb_mKernel, "public_methods", rb_obj_public_methods, 0);
     rb_define_method(rb_mKernel, "instance_variables", rb_obj_instance_variables, 0);
+    rb_define_method(rb_mKernel, "instance_variable_get", rb_obj_ivar_get, 1);
+    rb_define_method(rb_mKernel, "instance_variable_set", rb_obj_ivar_set, 2);
     rb_define_private_method(rb_mKernel, "remove_instance_variable",
 			     rb_obj_remove_instance_variable, 1);
 

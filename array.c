@@ -1001,6 +1001,18 @@ static VALUE
 rb_ary_to_a(ary)
     VALUE ary;
 {
+    if (rb_obj_class(ary) != rb_cArray) {
+	VALUE dup = rb_ary_new2(RARRAY(ary)->len);
+	rb_ary_replace(dup, ary);
+	return dup;
+    }
+    return ary;
+}
+
+static VALUE
+rb_ary_to_ary_m(ary)
+    VALUE ary;
+{
     return ary;
 }
 
@@ -1891,7 +1903,7 @@ Init_Array()
     rb_define_method(rb_cArray, "to_s", rb_ary_to_s, 0);
     rb_define_method(rb_cArray, "inspect", rb_ary_inspect, 0);
     rb_define_method(rb_cArray, "to_a", rb_ary_to_a, 0);
-    rb_define_method(rb_cArray, "to_ary", rb_ary_to_a, 0);
+    rb_define_method(rb_cArray, "to_ary", rb_ary_to_ary_m, 0);
     rb_define_method(rb_cArray, "frozen?",  rb_ary_frozen_p, 0);
 
     rb_define_method(rb_cArray, "==", rb_ary_equal, 1);

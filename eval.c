@@ -4352,6 +4352,7 @@ static int last_call_status;
 #define CSTAT_PRIV  1
 #define CSTAT_PROT  2
 #define CSTAT_VCALL 4
+#define CSTAT_SUPER 8
 
 static VALUE
 rb_f_missing(argc, argv, obj)
@@ -4411,6 +4412,9 @@ rb_f_missing(argc, argv, obj)
 	    format = "undefined local variable or method `%s' for %s%s%s";
 	    exc = rb_eNameError;
 	}
+    }
+    else if (last_call_status & CSTAT_SUPER) {
+	format = "super: no superclass method `%s'";
     }
     if (!format) {
 	format = "undefined method `%s' for %s%s%s";
@@ -4807,8 +4811,7 @@ rb_call(klass, recv, mid, argc, argv, scope)
     }
     else if ((body = rb_get_method_body(&klass, &id, &noex)) == 0) {
 	if (scope == 3) {
-	    rb_name_error(mid, "super: no superclass method `%s'",
-			  rb_id2name(mid));
+	    return rb_undefined(recv, mid, argc, argv, CSTAT_SUPER);
 	}
 	return rb_undefined(recv, mid, argc, argv, scope==2?CSTAT_VCALL:0);
     }

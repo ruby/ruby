@@ -1,3 +1,11 @@
+Mon Feb 10 10:14:26 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_to_a): return value should be an Array if the
+	  receiver is an instance of subclass of Array.
+
+	* string.c (rb_str_to_s): return value should be a String if the
+	  receiver is an instance of subclass of String.
+
 Mon Feb 10 03:33:42 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* io.c (rb_file_sysopen): rb_file_sysopen_internal() needs four
@@ -53,6 +61,19 @@ Sat Feb  8 03:34:28 2003  Akinori MUSHA  <knu@iDaemons.org>
 	* intern.h (RB_CVAR_SET_4ARGS): Ditto.
 
 	* ruby.h (NORETURN_STYLE_NEW): Ditto.
+
+Sat Feb  8 00:47:24 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_call): calls method_missing when superclass method
+	  does not exist.
+
+	* eval.c (rb_f_missing): now handles "no super" case.
+
+	* object.c (rb_obj_ivar_get): Object#instance_variable_get: new
+	  method to get instance variable value without eval(). [new]
+
+	* object.c (rb_obj_ivar_set): Object#instance_variable_set: new
+	  method to set instance variable value without eval(). [new]
 
 Fri Feb  7 15:35:21 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 

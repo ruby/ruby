@@ -1849,6 +1849,11 @@ static VALUE
 rb_str_to_s(str)
     VALUE str;
 {
+    if (rb_obj_class(str) != rb_cString) {
+	VALUE dup = str_alloc(rb_cString);
+	rb_str_replace(dup, str);
+	return dup;
+    }
     return str;
 }
 
