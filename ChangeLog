@@ -1,3 +1,10 @@
+Fri Nov 19 17:46:56 2004  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/maker/0.9.rb (RSS::Maker::RSS09::Image#have_required_values): 
+	  changed /rss/channel/image to be optional. [ruby-Bugs:1047]
+
+	* test/rss/test_maker_0.9.rb: added tests for the above.
+	
 Fri Nov 19 17:18:17 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/rss.rb (RSS::VERSION): 0.1.0 -> 0.1.1.

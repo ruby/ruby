@@ -48,8 +48,7 @@ module RSS
         end
         
         def have_required_values?
-          @title and @link and @description and @language and
-            @maker.image.have_required_values?
+          @title and @link and @description and @language
         end
         
         private
