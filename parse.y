@@ -1438,7 +1438,10 @@ primary		: literal
 		  bodystmt
 		  kEND
 		    {
-			$$ = NEW_BEGIN($3);
+			if ($3 == NULL)
+			    $$ = NEW_NIL();
+			else
+			    $$ = NEW_BEGIN($3);
 			nd_set_line($$, $<num>1);
 		    }
 		| tLPAREN_ARG expr {lex_state = EXPR_ENDARG;} opt_nl ')'
