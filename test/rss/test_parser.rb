@@ -3,6 +3,8 @@
 require "rss-testcase"
 
 require "rss/1.0"
+require "rss/2.0"
+require "rss/dublincore"
 
 module RSS
 	class TestParser < TestCase
@@ -76,14 +78,19 @@ EOR
 EOR
 			end
 
-			assert_not_excepted_tag("image", "RDF") do
-				Parser.parse(make_RDF(<<-EOR))
+			assert_parse(make_RDF(<<-EOR), :nothing_raised)
 #{make_channel}
 #{make_item}
 #{make_image}
 #{make_textinput}
 EOR
-			end
+
+			assert_parse(make_RDF(<<-EOR), :nothing_raised)
+#{make_channel}
+#{make_item}
+#{make_textinput}
+#{make_image}
+EOR
 
 			assert_parse(make_RDF(<<-EOR), :nothing_raised)
 #{make_channel}
@@ -279,23 +286,6 @@ EOR
 </image>
 EOR
 
-			rss = make_RDF(<<-EOR)
-#{make_channel}
-<image rdf:about="http://example.com/hoge.png">
-  <title>hoge</title>
-  <link>http://example.com/</link>
-  <url>http://example.com/hoge.png</url>
-</image>
-EOR
-
-			assert_missing_tag("url", "image") do
-				Parser.parse(rss)
-			end
-
-			assert_missing_tag("item", "RDF") do
-				Parser.parse(rss, false).validate
-			end
-
 			assert_parse(make_RDF(<<-EOR), :missing_tag, "item", "RDF")
 #{make_channel}
 <image rdf:about="http://example.com/hoge.png">
@@ -304,6 +294,23 @@ EOR
   <link>http://example.com/</link>
 </image>
 EOR
+
+			rss = make_RDF(<<-EOR)
+#{make_channel}
+<image rdf:about="http://example.com/hoge.png">
+  <link>http://example.com/</link>
+  <url>http://example.com/hoge.png</url>
+  <title>hoge</title>
+</image>
+EOR
+
+			assert_missing_tag("item", "RDF") do
+				Parser.parse(rss)
+			end
+
+			assert_missing_tag("item", "RDF") do
+				Parser.parse(rss, false).validate
+			end
 
 	  end
 
@@ -436,6 +443,142 @@ EOR
   <link>http://example.com/search.html</link>
 </textinput>
 EOR
+
+		end
+
+		def test_rss20
+			
+			assert_parse(make_rss20(<<-EOR), :missing_tag, "channel", "rss")
+EOR
+
+			assert_parse(make_rss20(<<-EOR), :nothing_raised)
+#{make_channel20("")}
+EOR
+
+		end
+
+		def test_cloud20
+
+			attrs = [
+				["domain", CLOUD_DOMAIN],
+				["port", CLOUD_PORT],
+				["path", CLOUD_PATH],
+				["registerProcedure", CLOUD_REGISTER_PROCEDURE],
+				["protocol", CLOUD_PROTOCOL],
+			]
+			
+			(attrs.size + 1).times do |i|
+				missing_attr = attrs[i]
+				if missing_attr
+					meth = :missing_attribute
+					args = ["cloud", missing_attr[0]]
+				else
+					meth = :nothing_raised
+					args = []
+				end
+
+				cloud_attrs = []
+				attrs.each_with_index do |attr, j|
+					unless i == j
+						cloud_attrs << %Q[#{attr[0]}="#{attr[1]}"]
+					end
+				end
+
+				assert_parse(make_rss20(<<-EOR), meth, *args)
+#{make_channel20(%Q[<cloud #{cloud_attrs.join("\n")}/>])}
+EOR
+
+			end
+
+		end
+
+		def test_source20
+
+				assert_parse(make_rss20(<<-EOR), :missing_attribute, "source", "url")
+#{make_channel20(make_item20(%Q[<source>Example</source>]))}
+EOR
+
+				assert_parse(make_rss20(<<-EOR), :nothing_raised)
+#{make_channel20(make_item20(%Q[<source url="http://example.com/" />]))}
+EOR
+
+				assert_parse(make_rss20(<<-EOR), :nothing_raised)
+#{make_channel20(make_item20(%Q[<source url="http://example.com/">Example</source>]))}
+EOR
+		end
+
+		def test_enclosure20
+
+			attrs = [
+				["url", ENCLOSURE_URL],
+				["length", ENCLOSURE_LENGTH],
+				["type", ENCLOSURE_TYPE],
+			]
+			
+			(attrs.size + 1).times do |i|
+				missing_attr = attrs[i]
+				if missing_attr
+					meth = :missing_attribute
+					args = ["enclosure", missing_attr[0]]
+				else
+					meth = :nothing_raised
+					args = []
+				end
+
+				enclosure_attrs = []
+				attrs.each_with_index do |attr, j|
+					unless i == j
+						enclosure_attrs << %Q[#{attr[0]}="#{attr[1]}"]
+					end
+				end
+
+				assert_parse(make_rss20(<<-EOR), meth, *args)
+#{make_channel20(%Q[
+#{make_item20(%Q[
+<enclosure
+  #{enclosure_attrs.join("\n")} />
+		])}
+	])}
+EOR
+
+			end
+
+		end
+
+		def test_category20
+
+			attrs = [
+				["domain", CATEGORY_DOMAIN],
+			]
+			
+			(attrs.size + 1).times do |i|
+				missing_attr = attrs[i]
+				if missing_attr
+					meth = :missing_attribute
+					args = ["category", missing_attr[0]]
+				else
+					meth = :nothing_raised
+					args = []
+				end
+
+				category_attrs = []
+				attrs.each_with_index do |attr, j|
+					unless i == j
+						category_attrs << %Q[#{attr[0]}="#{attr[1]}"]
+					end
+				end
+
+				["", "Example Text"].each do |text|
+					assert_parse(make_rss20(<<-EOR), meth, *args)
+#{make_channel20(%Q[
+#{make_item20(%Q[
+<category
+  #{category_attrs.join("\n")}>#{text}</category>
+		])}
+	])}
+EOR
+				end
+			end
 
 		end
 

@@ -35,6 +35,20 @@ class Time
 	end
 end
 
+module Enumerable
+	unless instance_methods.include?("sort_by")
+		def sort_by
+			collect do |x|
+				[yield(x), x]
+			end.sort do |x, y|
+				x[0] <=> y[0]
+			end.collect! do |x|
+				x[1]
+			end
+		end
+	end
+end
+
 require "English"
 require "rss/utils"
 require "rss/converter"
@@ -42,7 +56,9 @@ require "rss/xml-stylesheet"
 
 module RSS
 
-	VERSION = "0.0.8"
+	VERSION = "0.0.9"
+
+	URI = "http://purl.org/rss/1.0/"
 
 	DEBUG = false
 
@@ -298,8 +314,6 @@ EOC
 
 	end
 
-	URI = "http://purl.org/rss/1.0/"
-
 	class Element
 
 		extend BaseModel
@@ -314,7 +328,7 @@ EOC
 				TAG_NAME = name.split('::').last.downcase
 
 
-				@@must_call_validators = {::RSS::URI => ''}
+				@@must_call_validators = {}
 
 				def self.must_call_validators
 					@@must_call_validators
@@ -427,6 +441,7 @@ EOC
 		end
 		
 		def validate_for_stream(tags)
+			validate_attribute
 			__validate(tags, false)
 		end
 
@@ -504,6 +519,11 @@ EOC
 			do_redo = false
 			not_shift = false
 			tag = nil
+			element_names = model.collect {|elem| elem[0]}
+			if tags
+				tags_size = tags.size
+				tags = tags.sort_by {|x| element_names.index(x) || tags_size}
+			end
 
 			model.each_with_index do |elem, i|
 

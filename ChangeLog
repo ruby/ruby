@@ -1,3 +1,12 @@
+Wed Jul  7 02:31:41 2004  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/{rss,parser,0.9,1.0,2.0}.rb: supported RSS 0.9x/2.0
+	  validation and validation which disregard order of elements.
+	* test/rss/test_parser.rb: added tests for RSS 0.9x/2.0
+	  validation.
+	* test/rss/{test_trackback,rss-testcase}.rb: fixed no good method
+	  name.
+
 Wed Jul  7 00:48:34 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/tk/lib/tkextlib/tktrans.rb,

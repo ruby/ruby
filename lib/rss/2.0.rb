@@ -4,30 +4,21 @@ module RSS
 
 	class Rss
 
-# 		URI = "http://backend.userland.com/rss2"
-
-# 		install_ns('', URI)
-		
-# 		def self.required_uri
-# 			URI
-# 		end
-
 		class Channel
-
-# 			def self.required_uri
-# 				URI
-# 			end
 
 			%w(generator ttl).each do |x|
 				install_text_element(x)
+				install_model(x, '?')
 			end
 
 			%w(category).each do |x|
 				install_have_child_element(x)
+				install_model(x, '?')
 			end
 
 			[
 				["image", "?"],
+				["language", "?"],
 			].each do |x, occurs|
 				install_model(x, occurs)
 			end
@@ -40,17 +31,33 @@ module RSS
 EOT
 				rv << super
 			end
+			
+			private
+			alias children09 children
+			def children
+				children09 + [@category].compact
+			end
+
+			alias _tags09 _tags
+			def _tags
+				%w(generator ttl category).delete_if do |x|
+					send(x).nil?
+				end.collect do |elem|
+					[nil, elem]
+				end + _tags09
+			end
 
 			Category = Item::Category
-# 			def Category.required_uri
-# 				URI
-# 			end
 
 			class Item
 			
-# 				def self.required_uri
-# 					URI
-# 				end
+				[
+					["comments", "?"],
+					["author", "?"],
+				].each do |x, occurs|
+					install_text_element(x)
+					install_model(x, occurs)
+				end
 
 				[
 					["pubDate", '?'],
@@ -68,19 +75,32 @@ EOT
 			
 				def other_element(convert, indent='')
 					rv = <<-EOT
+#{indent}#{author_element(false)}
+#{indent}#{comments_element(false)}
 #{indent}#{pubDate_element(false)}
 #{indent}#{guid_element(false)}
 EOT
 					rv << super
 				end
 
+				private
+				alias children09 children
+				def children
+					children09 + [@guid].compact
+				end
+
+				alias _tags09 _tags
+				def _tags
+					%w(comments author pubDate guid).delete_if do |x|
+						send(x).nil?
+					end.collect do |elem|
+						[nil, elem]
+					end + _tags09
+				end
+
 				class Guid < Element
 					
 					include RSS09
-
-# 					def self.required_uri
-# 						URI
-# 					end
 
 					[
 						["isPermaLink", nil, false]
@@ -124,24 +144,7 @@ EOT
 	end
 
 	RSS09::ELEMENTS.each do |x|
-#		BaseListener.install_get_text_element(x, Rss::URI, "#{x}=")
 		BaseListener.install_get_text_element(x, nil, "#{x}=")
-	end
-
-	module ListenerMixin
-		private
-		alias start_rss09 start_rss
-		def start_rss(tag_name, prefix, attrs, ns)
-# 			check_ns(tag_name, prefix, ns, Rss::URI)
-			
-			@rss = Rss.new(attrs['version'], @version, @encoding, @standalone)
-			@rss.xml_stylesheets = @xml_stylesheets
-			@last_element = @rss
-			@proc_stack.push Proc.new { |text, tags|
-				@rss.validate_for_stream(tags) if @do_validate
-			}
-		end
-		
 	end
 
 end

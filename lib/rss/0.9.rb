@@ -5,6 +5,12 @@ module RSS
 	module RSS09
 		NSPOOL = {}
 		ELEMENTS = []
+
+		def self.append_features(klass)
+			super
+			
+			klass.install_must_call_validator('', nil)
+		end
 	end
 
 	class Rss < Element
@@ -62,22 +68,34 @@ EOR
 			[@channel]
 		end
 
+		def _tags
+			[
+				[nil, 'channel'],
+			].delete_if {|x| send(x[1]).nil?}
+		end
+
+		def _attrs
+			[
+				["version", true],
+			]
+		end
+
 		class Channel < Element
 
 			include RSS09
 
 			[
 				["title", nil],
-			 ["link", nil],
-			 ["description", nil],
-			 ["language", nil],
-			 ["copyright", "?"],
-			 ["managingEditor", "?"],
-			 ["webMaster", "?"],
-			 ["rating", "?"],
-			 ["docs", "?"],
-			 ["skipDays", "?"],
-			 ["skipHours", "?"],
+				["link", nil],
+				["description", nil],
+				["language", nil],
+				["copyright", "?"],
+				["managingEditor", "?"],
+				["webMaster", "?"],
+				["rating", "?"],
+				["docs", "?"],
+				["skipDays", "?"],
+				["skipHours", "?"],
 			].each do |x, occurs|
 				install_text_element(x)
 				install_model(x, occurs)
@@ -85,7 +103,7 @@ EOR
 
 			[
 				["pubDate", "?"],
-			 ["lastBuildDate", "?"],
+				["lastBuildDate", "?"],
 			].each do |x, occurs|
 				install_date_element(x, 'rfc822')
 				install_model(x, occurs)
@@ -93,10 +111,16 @@ EOR
 
 			[
 				["image", nil],
-			 ["textInput", "?"],
-			 ["cloud", "?"]
+				["textInput", "?"],
 			].each do |x, occurs|
 				install_have_child_element(x)
+				install_model(x, occurs)
+			end
+			
+			[
+				["cloud", "?"]
+			].each do |x, occurs|
+				install_have_attribute_element(x)
 				install_model(x, occurs)
 			end
 			
@@ -142,12 +166,46 @@ EOT
 				[@image, @textInput, @cloud, *@item]
 			end
 
+			def _tags
+				rv = [
+					"title",
+					"link",
+					"description",
+					"language",
+					"copyright",
+					"managingEditor",
+					"webMaster",
+					"rating",
+					"docs",
+					"skipDays",
+					"skipHours",
+					"image",
+					"textInput",
+					"cloud",
+				].delete_if do |x|
+					send(x).nil?
+				end.collect do |elem|
+					[nil, elem]
+				end
+
+				@item.each do
+					rv << [nil, "item"]
+				end
+
+				rv
+			end
+
 			class Image < Element
 
 				include RSS09
 				
-				%w(url title link width height description).each do |x|
+				%w(url title link).each do |x|
 					install_text_element(x)
+					install_model(x, nil)
+				end
+				%w(width height description).each do |x|
+					install_text_element(x)
+					install_model(x, "?")
 				end
 
 				def to_s(convert=true)
@@ -166,6 +224,14 @@ EOT
 	  	    rv
 				end
 
+				private
+				def _tags
+					%w(url title link width height description).delete_if do |x|
+						send(x).nil?
+					end.collect do |elem|
+						[nil, elem]
+					end
+				end
 			end
 			
 			class Cloud < Element
@@ -173,13 +239,22 @@ EOT
 				include RSS09
 				
 				[
-					["domain", nil, false],
-					["port", nil, false],
-					["path", nil, false],
-					["registerProcedure", nil, false],
-					["protocol", nil ,false],
+					["domain", nil, true],
+					["port", nil, true],
+					["path", nil, true],
+					["registerProcedure", nil, true],
+					["protocol", nil ,true],
 				].each do |name, uri, required|
 					install_get_attribute(name, uri, required)
+				end
+
+				def initialize(domain, port, path, rp, protocol)
+					super()
+					@domain = domain
+					@port = port
+					@path = path
+					@registerProcedure = rp
+					@protocol = protocol
 				end
 
 				def to_s(convert=true)
@@ -195,13 +270,20 @@ EOT
 	  	    rv
 				end
 
+				private
+				def _attrs
+					%w(domain port path registerProcedure protocol).collect do |attr|
+						[attr, true]
+					end
+				end
+
 			end
 			
 			class Item < Element
 				
 				include RSS09
 
-				%w(title link description author comments).each do |x|
+				%w(title link description).each do |x|
 					install_text_element(x)
 				end
 
@@ -213,8 +295,6 @@ EOT
 					["title", '?'],
 					["link", '?'],
 					["description", '?'],
-					["author", '?'],
-					["comments", '?'],
 					["category", '?'],
 					["source", '?'],
 					["enclosure", '?'],
@@ -228,16 +308,28 @@ EOT
 				#{title_element(false)}
 				#{link_element(false)}
 				#{description_element(false)}
-				#{author_element(false)}
 				#{category_element(false)}
-				#{comments_element(false)}
-				#{enclosure_element(false)}
 				#{source_element(false)}
+				#{enclosure_element(false)}
 #{other_element(false, "\t\t\t\t")}
 			</item>
 EOT
 	     		rv = @converter.convert(rv) if convert and @converter
 	  	    rv
+				end
+
+				private
+				def children
+					[@category, @source, @enclosure,].compact
+				end
+
+				def _tags
+					%w(title link description author comments category
+						source enclosure).delete_if do |x|
+						send(x).nil?
+					end.collect do |x|
+						[nil, x]
+					end
 				end
 
 				class Source < Element
@@ -249,7 +341,7 @@ EOT
 					].each do |name, uri, required|
 						install_get_attribute(name, uri, required)
 					end
-
+					
 					content_setup
 
 					def initialize(url=nil, content=nil)
@@ -270,6 +362,10 @@ EOT
 					end
 
 					private
+					def _tags
+						[]
+					end
+
 					def _attrs
 						[
 							["url", true]
@@ -284,8 +380,8 @@ EOT
 
 					[
 						["url", nil, true],
-					 ["length", nil, true],
-					 ["type", nil, true],
+						["length", nil, true],
+						["type", nil, true],
 					].each do |name, uri, required|
 						install_get_attribute(name, uri, required)
 					end
@@ -312,8 +408,8 @@ EOT
 					def _attrs
 						[
 							["url", true],
-						 ["length", true],
-						 ["type", true],
+							["length", true],
+							["type", true],
 						]
 					end
 
@@ -365,6 +461,7 @@ EOT
 
 				%w(title description name link).each do |x|
 					install_text_element(x)
+					install_model(x, nil)
 				end
 
 				def to_s(convert=true)
@@ -381,6 +478,14 @@ EOT
 	  	    rv
 				end
 
+				private
+				def _tags
+					%w(title description name link).each do |x|
+						send(x).nil?
+					end.collect do |elem|
+						[nil, elem]
+					end
+				end
 			end
 			
 		end
@@ -397,6 +502,7 @@ EOT
 			check_ns(tag_name, prefix, ns, nil)
 			
 			@rss = Rss.new(attrs['version'], @version, @encoding, @standalone)
+			@rss.do_validate = @do_validate
 			@rss.xml_stylesheets = @xml_stylesheets
 			@last_element = @rss
 			@proc_stack.push Proc.new { |text, tags|

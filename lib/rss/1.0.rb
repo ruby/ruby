@@ -5,6 +5,13 @@ module RSS
 	module RSS10
 		NSPOOL = {}
 		ELEMENTS = []
+
+		def self.append_features(klass)
+			super
+			
+			klass.install_must_call_validator('', ::RSS::URI)
+		end
+
 	end
 
 	class RDF < Element
