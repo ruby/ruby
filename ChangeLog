@@ -1,3 +1,7 @@
+Sun Mar 21 21:04:42 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ruby.1: add -width option to .Bl for old groff.
+
 Sun Mar 21 18:57:37 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rss/*: Test::Unit::TestCase -> RSS::TestCase and
