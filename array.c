@@ -779,7 +779,7 @@ rb_ary_last(argc, argv, ary)
  *  lies outside the array, the first form throws an
  *  <code>IndexError</code> exception, the second form returns
  *  <i>default</i>, and the third form returns the value of invoking
- *  the block, passing in the index. Negative values of <i>idex</i>
+ *  the block, passing in the index. Negative values of <i>index</i>
  *  count from the end of the array.
  *     
  *     a = [ 11, 22, 33, 44 ]
@@ -2255,7 +2255,8 @@ rb_ary_plus(x, y)
 }
 
 /* 
- * self.concat(other_array)   =>  array
+ * call-seq:
+ *   self.concat(other_array)   =>  array
  *
  *  Appends the elements in other_array to _self_.
  *  
