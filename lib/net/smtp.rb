@@ -289,14 +289,14 @@ module Net
 
     def send_mail( mailsrc, from_addr, *to_addrs )
       do_ready from_addr, to_addrs.flatten
-      command().write_mail mailsrc
+      command().write_mail(mailsrc)
     end
 
     alias sendmail send_mail
 
     def ready( from_addr, *to_addrs, &block )
       do_ready from_addr, to_addrs.flatten
-      command().through_mail &block
+      command().through_mail(&block)
     end
 
     private
@@ -304,7 +304,7 @@ module Net
     def do_ready( from_addr, to_addrs )
       raise ArgumentError, 'mail destination does not given' if to_addrs.empty?
       command().mailfrom from_addr
-      command().rcpt to_addrs
+      command().rcpt(to_addrs)
     end
 
   end

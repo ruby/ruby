@@ -104,7 +104,7 @@ module IRB
 
     def EXCB.install_extend_commands
       for args in @EXTEND_COMMANDS
-	def_extend_command *args
+	def_extend_command(*args)
       end
     end
 
@@ -193,7 +193,7 @@ module IRB
 
     def CE.install_extend_commands
       for args in @EXTEND_COMMANDS
-	def_extend_command *args
+	def_extend_command(*args)
       end
     end
 

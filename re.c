@@ -1205,6 +1205,9 @@ rb_reg_quote(str)
   meta_found:
     tmp = rb_str_new(0, RSTRING(str)->len*2);
     t = RSTRING(tmp)->ptr;
+    /* copy upto metacharacter */
+    memcpy(t, RSTRING(str)->ptr, s - RSTRING(str)->ptr);
+    t += s - RSTRING(str)->ptr;
 
     for (; s < send; s++) {
 	c = *s;

@@ -737,7 +737,7 @@ class RubyLex
   def identify_identifier
     token = ""
     if peek(0) =~ /[$@]/
-      token.concat (c = getc)
+      token.concat(c = getc)
       if c == "@" and peek(0) == "@"
 	token.concat getc
       end

@@ -1,3 +1,13 @@
+Sat Jul 27 23:07:52 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (num_to_int): default to_int implementaion for every
+	  numeric class.
+
+Sat Jul 27 08:09:03 2002  Booker C. Bense  <bbense@slac.stanford.edu>
+
+	* re.c (rb_reg_quote): initial part of the string was never copied
+	  to the quoted string.
+
 Fri Jul 26 23:03:53 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (rb_eval): no need to convert to string twice.

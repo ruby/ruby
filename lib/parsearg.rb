@@ -73,7 +73,7 @@ def parseArgs(argc, nopt, single_opts, *opts)
       end
     rescue
       print "Format Error!! : \"" + nopt + "\"\t[parseArgs]\n"
-      exit! -1
+      exit!(-1)
     end
   end
   if ARGV.length < argc

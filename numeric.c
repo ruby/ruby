@@ -200,6 +200,13 @@ num_nonzero_p(num)
     return num;
 }
 
+static VALUE
+num_to_int(num)
+    VALUE num;
+{
+    return rb_funcall(num, id_to_i, 0, 0);
+}
+
 VALUE
 rb_float_new(d)
     double d;
@@ -838,7 +845,7 @@ rb_num2long(val)
     VALUE val;
 {
     if (NIL_P(val)) {
-	rb_raise(rb_eTypeError, "no implicit conversion to integer from nil");
+	rb_raise(rb_eTypeError, "no implicit conversion from nil to integer");
     }
 
     if (FIXNUM_P(val)) return FIX2LONG(val);
@@ -861,16 +868,6 @@ rb_num2long(val)
       case T_BIGNUM:
 	return rb_big2long(val);
 
-#if 0
-      case T_STRING:
-	rb_raise(rb_eTypeError, "no implicit conversion to integer from string");
-	return Qnil;		/* not reached */
-
-      case T_TRUE:
-      case T_FALSE:
-	rb_raise(rb_eTypeError, "no implicit conversion to integer from boolean");
-	return Qnil;		/* not reached */
-#endif
       default:
 	val = rb_to_int(val);
 	return NUM2LONG(val);
@@ -1052,7 +1049,7 @@ rb_int_induced_from(klass, x)
     case T_BIGNUM:
        return x;
     case T_FLOAT:
-       return rb_funcall(x, rb_intern("to_i"), 0);
+       return rb_funcall(x, id_to_i, 0);
     default:
        rb_raise(rb_eTypeError, "failed to convert %s into Integer",
                 rb_class2name(CLASS_OF(x)));
@@ -1635,6 +1632,7 @@ Init_Numeric()
     rb_define_method(rb_cNumeric, "modulo", num_modulo, 1);
     rb_define_method(rb_cNumeric, "remainder", num_remainder, 1);
     rb_define_method(rb_cNumeric, "abs", num_abs, 0);
+    rb_define_method(rb_cNumeric, "to_int", num_to_int, 0);
 
     rb_define_method(rb_cNumeric, "integer?", num_int_p, 0);
     rb_define_method(rb_cNumeric, "zero?", num_zero_p, 0);
@@ -1739,6 +1737,7 @@ Init_Numeric()
     rb_define_method(rb_cFloat, "zero?", flo_zero_p, 0);
 
     rb_define_method(rb_cFloat, "to_i", flo_truncate, 0);
+    rb_define_method(rb_cFloat, "to_int", flo_truncate, 0);
     rb_define_method(rb_cFloat, "floor", flo_floor, 0);
     rb_define_method(rb_cFloat, "ceil", flo_ceil, 0);
     rb_define_method(rb_cFloat, "round", flo_round, 0);
