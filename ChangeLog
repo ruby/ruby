@@ -1,3 +1,14 @@
+Sun Feb 13 23:13:46 2005  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/dublincore.rb (RSS::DublicCoreModel#date{,=}): added
+	  convenient methods.
+
+	* lib/rss/0.9.rb (RSS::Rss::Channel#date{,=}): ditto.
+
+	* lib/rss/2.0.rb (RSS::Rss::Channel::Item#date{,=}): ditto.
+
+	* test/rss/: added tests for the convenient methods.
+
 Sun Feb 13 23:12:47 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_thread_start_0): restore prot_tag before rewinding.

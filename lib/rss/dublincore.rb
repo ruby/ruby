@@ -26,6 +26,8 @@ module RSS
         %w(date).each do |x|
           install_date_element("\#{DC_PREFIX}_\#{x}", 'w3cdtf', x)
         end
+        alias date #{DC_PREFIX}_date
+        alias date= #{DC_PREFIX}_date=
       EOC
     end
 

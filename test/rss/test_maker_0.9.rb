@@ -102,6 +102,7 @@ module RSS
       assert_equal(rating, channel.rating)
       assert_equal(docs, channel.docs)
       assert_equal(pubDate, channel.pubDate)
+      assert_equal(pubDate, channel.date)
       assert_equal(lastBuildDate, channel.lastBuildDate)
 
       skipDays.each_with_index do |day, i|

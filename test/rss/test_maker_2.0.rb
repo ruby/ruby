@@ -110,6 +110,7 @@ module RSS
       assert_equal(rating, channel.rating)
       assert_equal(docs, channel.docs)
       assert_equal(pubDate, channel.pubDate)
+      assert_equal(pubDate, channel.date)
       assert_equal(lastBuildDate, channel.lastBuildDate)
 
       skipDays.each_with_index do |day, i|
@@ -385,6 +386,7 @@ module RSS
         assert_equal("#{author}#{i}", item.author)
         assert_equal("#{comments}#{i}", item.comments)
         assert_equal(pubDate, item.pubDate)
+        assert_equal(pubDate, item.date)
       end
 
       rss = RSS::Maker.make("2.0") do |maker|
@@ -411,6 +413,7 @@ module RSS
         assert_equal("#{author}#{i}", item.author)
         assert_equal("#{comments}#{i}", item.comments)
         assert_equal(pubDate, item.pubDate)
+        assert_equal(pubDate, item.date)
       end
     end
 

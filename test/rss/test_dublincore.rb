@@ -90,6 +90,11 @@ EOR
             end
             @rss.send(parent).send("dc_#{name}=", t.iso8601)
             assert_equal(t, @rss.send(parent).send("dc_#{name}"))
+            assert_equal(t, @rss.send(parent).date)
+            
+            @rss.send(parent).date = value
+            assert_equal(value, @rss.send(parent).date)
+            assert_equal(value, @rss.send(parent).send("dc_#{name}"))
           else
             @rss.send(parent).send("dc_#{name}=", new_value)
             assert_equal(new_value, @rss.send(parent).send("dc_#{name}"))

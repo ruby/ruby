@@ -78,6 +78,8 @@ EOT
           install_date_element(x, 'rfc822')
           install_model(x, occurs)
         end
+        alias date pubDate
+        alias date= pubDate=
 
         [
           ["guid", '?'],
