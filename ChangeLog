@@ -1,3 +1,8 @@
+Tue Jun 22 15:28:12 2004  Michal Rokos  <michal@ruby-lang.org>
+
+	* compar.c: Remove explicit NIL_P() checks since rb_cmpint() does it
+	again in the exactly same manner.
+
 Tue Jun 22 01:32:40 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_pkey_dh.c (ossl_dh_initialize): should create

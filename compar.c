@@ -50,8 +50,6 @@ rb_cmperr(x, y)
 	     rb_obj_classname(x), classname);
 }
 
-#define cmperr() (rb_cmperr(x, y), Qnil)
-
 static VALUE
 cmp_eq(a)
     VALUE *a;
@@ -104,7 +102,6 @@ cmp_gt(x, y)
 {
     VALUE c = rb_funcall(x, cmp, 1, y);
 
-    if (NIL_P(c)) return cmperr();
     if (rb_cmpint(c, x, y) > 0) return Qtrue;
     return Qfalse;
 }
@@ -123,7 +120,6 @@ cmp_ge(x, y)
 {
     VALUE c = rb_funcall(x, cmp, 1, y);
 
-    if (NIL_P(c)) return cmperr();
     if (rb_cmpint(c, x, y) >= 0) return Qtrue;
     return Qfalse;
 }
@@ -142,7 +138,6 @@ cmp_lt(x, y)
 {
     VALUE c = rb_funcall(x, cmp, 1, y);
 
-    if (NIL_P(c)) return cmperr();
     if (rb_cmpint(c, x, y) < 0) return Qtrue;
     return Qfalse;
 }
@@ -162,7 +157,6 @@ cmp_le(x, y)
 {
     VALUE c = rb_funcall(x, cmp, 1, y);
 
-    if (NIL_P(c)) return cmperr();
     if (rb_cmpint(c, x, y) <= 0) return Qtrue;
     return Qfalse;
 }
