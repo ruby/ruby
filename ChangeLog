@@ -1,3 +1,8 @@
+Wed Apr  6 16:06:30 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* test/ruby/test_env.rb (test_key): should test ENV.key instead of
+	  ENV.index. [ruby-dev:25994]
+
 Tue Apr  5 16:01:12 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/*: refactored.

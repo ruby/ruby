@@ -59,26 +59,26 @@ class TestEnv < Test::Unit::TestCase
     assert_equal(true, ENV.has_value?(val.upcase))
   end
 
-  def test_index
+  def test_key
     val = 'a'
     val.succ! while ENV.has_value?(val) && ENV.has_value?(val.upcase)
     ENV['test'] = val[0...-1]
 
-    assert_nil(ENV.index(val))
-    assert_nil(ENV.index(val.upcase))
+    assert_nil(ENV.key(val))
+    assert_nil(ENV.key(val.upcase))
     ENV['test'] = val
     if IGNORE_CASE
-      assert_equal('TEST', ENV.index(val).upcase)
+      assert_equal('TEST', ENV.key(val).upcase)
     else
-      assert_equal('test', ENV.index(val))
+      assert_equal('test', ENV.key(val))
     end
-    assert_nil(ENV.index(val.upcase))
+    assert_nil(ENV.key(val.upcase))
     ENV['test'] = val.upcase
-    assert_nil(ENV.index(val))
+    assert_nil(ENV.key(val))
     if IGNORE_CASE
-      assert_equal('TEST', ENV.index(val.upcase).upcase)
+      assert_equal('TEST', ENV.key(val.upcase).upcase)
     else
-      assert_equal('test', ENV.index(val.upcase))
+      assert_equal('test', ENV.key(val.upcase))
     end
   end
 end
