@@ -1,3 +1,14 @@
+Mon Jul 28 01:35:32 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_chomp_bang): defer rb_str_modify() to actual
+	  modify point.  other methods, replace, tr, delete, squeeze,
+	  lstrip, and rstrip as well.
+
+	* string.c (rb_str_rstrip_bang): remove trailing '\0' at the end
+	  of string.
+
+	* string.c (rb_str_lstrip_bang): do not strip '\0' from the left.
+
 Sun Jul 27 21:16:30 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/openssl/extconf.rb: better support MinGW.  add

@@ -234,6 +234,7 @@ rb_str_shared_replace(str, str2)
     VALUE str, str2;
 {
     if (str == str2) return;
+    rb_str_modify(str);
     if (!FL_TEST(str, ELTS_SHARED)) free(RSTRING(str)->ptr);
     if (NIL_P(str2)) {
 	RSTRING(str)->ptr = 0;
@@ -1162,7 +1163,6 @@ static VALUE
 rb_str_succ_bang(str)
     VALUE str;
 {
-    rb_str_modify(str);
     rb_str_shared_replace(str, rb_str_succ(str));
 
     return str;
@@ -2246,7 +2246,6 @@ tr_trans(str, src, repl, sflag)
     int i, c, modify = 0;
     char *s, *send;
 
-    rb_str_modify(str);
     StringValue(src);
     StringValue(repl);
     if (RSTRING(str)->len == 0 || !RSTRING(str)->ptr) return Qnil;
@@ -2292,6 +2291,7 @@ tr_trans(str, src, repl, sflag)
 	}
     }
 
+    rb_str_modify(str);
     s = RSTRING(str)->ptr; send = s + RSTRING(str)->len;
     if (sflag) {
 	char *t = s;
@@ -2395,7 +2395,6 @@ rb_str_delete_bang(argc, argv, str)
     if (argc < 1) {
 	rb_raise(rb_eArgError, "wrong number of arguments");
     }
-    rb_str_modify(str);
     for (i=0; i<argc; i++) {
 	VALUE s = argv[i];
 
@@ -2404,6 +2403,7 @@ rb_str_delete_bang(argc, argv, str)
 	init = 0;
     }
 
+    rb_str_modify(str);
     s = t = RSTRING(str)->ptr;
     if (!s || RSTRING(str)->len == 0) return Qnil;
     send = s + RSTRING(str)->len;
@@ -2444,7 +2444,6 @@ rb_str_squeeze_bang(argc, argv, str)
     int init = 1;
     int i;
 
-    rb_str_modify(str);
     if (argc == 0) {
 	for (i=0; i<256; i++) {
 	    squeez[i] = 1;
@@ -2460,6 +2459,7 @@ rb_str_squeeze_bang(argc, argv, str)
 	}
     }
 
+    rb_str_modify(str);
     s = t = RSTRING(str)->ptr;
     if (!s || RSTRING(str)->len == 0) return Qnil;
     send = s + RSTRING(str)->len;
@@ -2828,8 +2828,8 @@ rb_str_chomp_bang(argc, argv, str)
 	rs = rb_rs;
 	if (rs == rb_default_rs) {
 	  smart_chomp:
-	    rb_str_modify(str);
 	    if (RSTRING(str)->ptr[len-1] == '\n') {
+		rb_str_modify(str);
 		RSTRING(str)->len--;
 		if (RSTRING(str)->len > 0 &&
 		    RSTRING(str)->ptr[RSTRING(str)->len-1] == '\r') {
@@ -2837,6 +2837,7 @@ rb_str_chomp_bang(argc, argv, str)
 		}
 	    }
 	    else if (RSTRING(str)->ptr[len-1] == '\r') {
+		rb_str_modify(str);
 		RSTRING(str)->len--;
 	    }
 	    else {
@@ -2850,7 +2851,6 @@ rb_str_chomp_bang(argc, argv, str)
     if (len == 0) return Qnil;
 
     StringValue(rs);
-    rb_str_modify(str);
     rslen = RSTRING(rs)->len;
     if (rslen == 0) {
 	while (len>0 && p[len-1] == '\n') {
@@ -2921,15 +2921,15 @@ rb_str_lstrip_bang(str)
 {
     char *s, *t, *e;
 
-    rb_str_modify(str);
     s = RSTRING(str)->ptr;
     if (!s || RSTRING(str)->len == 0) return Qnil;
     e = t = s + RSTRING(str)->len;
     /* remove spaces at head */
-    while (s < t && (ISSPACE(*s) || !*s)) s++;
+    while (s < t && ISSPACE(*s)) s++;
 
-    RSTRING(str)->len = t-s;
     if (s > RSTRING(str)->ptr) {
+	rb_str_modify(str);
+	RSTRING(str)->len = t-s;
 	memmove(RSTRING(str)->ptr, s, RSTRING(str)->len);
 	RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
 	return str;
@@ -2952,16 +2952,19 @@ rb_str_rstrip_bang(str)
 {
     char *s, *t, *e;
 
-    rb_str_modify(str);
     s = RSTRING(str)->ptr;
     if (!s || RSTRING(str)->len == 0) return Qnil;
     e = t = s + RSTRING(str)->len;
 
-    /* remove trailing spaces */
-    while (s < t && (ISSPACE(*(t-1)) || !*(t-1))) t--;
+    /* remove trailing '\0's */
+    while (s < t && t[-1] == '\0') t--;
 
-    RSTRING(str)->len = t-s;
+    /* remove trailing spaces */
+    while (s < t && ISSPACE(*(t-1))) t--;
+
     if (t < e) {
+	rb_str_modify(str);
+	RSTRING(str)->len = t-s;
 	RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
 	return str;
     }

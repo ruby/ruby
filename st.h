@@ -6,7 +6,7 @@
 
 #define ST_INCLUDED
 
-typedef long st_data_t;
+typedef unsigned long st_data_t;
 #define ST_DATA_T_DEFINED
 
 typedef struct st_table st_table;
