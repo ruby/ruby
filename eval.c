@@ -4505,42 +4505,6 @@ rb_f_block_given_p()
 
 static VALUE rb_eThreadError;
 
-static void
-localjump_jump(state, retval)
-    int state;
-    VALUE retval;
-{
-    struct tag *tt = prot_tag;
-    VALUE tag = (state == TAG_BREAK) ? PROT_LOOP : PROT_FUNC;
-    int yield = Qfalse;
-
-    if (retval == Qundef) retval = Qnil;
-    while (tt) {
-	if (tt->tag == PROT_YIELD) {
-	    yield = Qtrue;
-	    tt = tt->prev;
-	}
-	if ((tt->tag == PROT_THREAD && state == TAG_BREAK) ||
-	    ((tt->tag == PROT_LAMBDA || tt->tag == PROT_LOOP) &&
-	     tt->frame->uniq == ruby_frame->uniq)) {
-	    tt->dst = (VALUE)ruby_frame->uniq;
-	    tt->retval = retval;
-	    JUMP_TAG(state);
-	}
-	if (tt->tag == PROT_LAMBDA && !yield) {
-	    tt->dst = (VALUE)tt->frame->uniq;
-	    tt->retval = retval;
-	    JUMP_TAG(state);
-	}
-	if (tt->tag == PROT_FUNC && tt->frame->uniq == ruby_frame->uniq) break;
-	if (tt->tag == PROT_THREAD) {
-	    rb_raise(rb_eThreadError, "return jump can't across threads");
-	}
-	tt = tt->prev;
-    }
-    jump_tag_but_local_jump(state, retval);
-}
-
 NORETURN(static void proc_jump_error(int, VALUE));
 static void
 proc_jump_error(state, result)
@@ -4615,26 +4579,6 @@ break_jump(retval)
 	    break;
 	  default:
 	    break;
-	}
-	tt = tt->prev;
-    }
-    proc_jump_error(TAG_BREAK, retval);
-}
-
-NORETURN(static void break_jump2 _((VALUE)));
-static void
-break_jump2(retval)
-    VALUE retval;
-{
-    struct tag *tt = prot_tag;
-    int yield = Qfalse;
-
-    if (retval == Qundef) retval = Qnil;
-    while (tt) {
-	if (tt->tag == PROT_LOOP && tt->blkid == ruby_block->uniq) {
-	    tt->dst = (VALUE)tt->frame->uniq;
-	    tt->retval = retval;
-	    JUMP_TAG(TAG_BREAK);
 	}
 	tt = tt->prev;
     }
@@ -4822,7 +4766,17 @@ rb_yield_0(val, self, klass, flags, avalue)
 	break;
       case TAG_BREAK:
 	if (!lambda) {
-	    break_jump2(result);
+	    struct tag *tt = prot_tag;
+
+	    while (tt) {
+		if (tt->tag == PROT_LOOP && tt->blkid == ruby_block->uniq) {
+		    tt->dst = (VALUE)tt->frame->uniq;
+		    tt->retval = result;
+		    JUMP_TAG(TAG_BREAK);
+		}
+		tt = tt->prev;
+	    }
+	    proc_jump_error(TAG_BREAK, result);
 	}
 	/* fall through */
       default:
