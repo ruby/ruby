@@ -21,10 +21,8 @@
 char *strchr();
 #endif
 
-#define HASH_DELETED  0x1
-#define HASH_REHASHED 0x2
-
 #define HASH_FREEZE   FL_USER1
+#define HASH_DELETED  FL_USER2
 
 static void
 hash_modify(hash)
@@ -131,10 +129,14 @@ hash_foreach_iter(key, value, arg)
     struct hash_foreach_arg *arg;
 {
     int status;
+    st_table *tbl = RHASH(arg->hash)->tbl;
+    st_table_entry **bins = tbl->bins;
 
     if (key == Qnil) return ST_CONTINUE;
     status = (*arg->func)(key, value, arg->arg);
-    if (RHASH(arg->hash)->status & HASH_REHASHED) return ST_STOP;
+    if (RHASH(arg->hash)->tbl != tbl || RHASH(arg->hash)->tbl->bins != bins){
+	IndexError("rehash occurred during iteration");
+    }
     return status;
 }
 
@@ -150,7 +152,7 @@ static int
 hash_delete_nil(key, value)
     VALUE key, value;
 {
-    if (key == Qnil) return ST_DELETE;
+    if (value == Qnil) return ST_DELETE;
     return ST_CONTINUE;
 }
 
@@ -161,10 +163,10 @@ hash_foreach_ensure(hash)
     RHASH(hash)->iter_lev--;
 
     if (RHASH(hash)->iter_lev == 0) {
-	if (RHASH(hash)->status & HASH_DELETED) {
+	if (FL_TEST(hash, HASH_DELETED)) {
 	    st_foreach(RHASH(hash)->tbl, hash_delete_nil, 0);
+	    FL_UNSET(hash, HASH_DELETED);
 	}
-	RHASH(hash)->status = 0;
     }
 }
 
@@ -306,7 +308,6 @@ hash_rehash(hash)
     st_foreach(RHASH(hash)->tbl, hash_rehash_i, tbl);
     st_free_table(RHASH(hash)->tbl);
     RHASH(hash)->tbl = tbl;
-    if (RHASH(hash)->iter_lev > 0) RHASH(hash)->status |= HASH_REHASHED;
 
     return hash;
 }
@@ -347,9 +348,11 @@ hash_delete(hash, key)
     VALUE val;
 
     hash_modify(hash);
-    if (RHASH(hash)->iter_lev > 0
-	&& st_delete_safe(RHASH(hash)->tbl, &key, &val, Qnil))
+    if (RHASH(hash)->iter_lev > 0 &&
+	st_delete_safe(RHASH(hash)->tbl, &key, &val, Qnil)) {
+	FL_SET(hash, HASH_DELETED);
 	return val;
+    }
     else if (st_delete(RHASH(hash)->tbl, &key, &val))
 	return val;
     if (iterator_p()) rb_yield(key);

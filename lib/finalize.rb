@@ -170,7 +170,7 @@ module Finalizer
   # ObjectSpace#add_finalizer¤Ø¤ÎÅÐÏ¿´Ø¿ô
   def final_of(id)
     if assocs = Dependency.delete(id)
-      for dependant, method, *opt in assocs
+      for dependant, method, opt in assocs
 	dependant.send(method, id, *opt)
       end
     end

@@ -50,14 +50,11 @@ class Mutex
 
   def unlock
     return unless @locked
-    Thread.critical = true
-    wait = @waiting
-    @waiting = []
-    @locked = false
-    Thread.critical = false
-    for w in wait
-      w.run
-    end
+    Thread.critical = TRUE
+    t = @waiting.shift
+    @locked = FALSE
+    Thread.critical = FALSE
+    t.run if t
     self
   end
 
