@@ -1046,8 +1046,10 @@ make_hostent(addr, ipaddr)
 #else
     h = gethostbyname(addr->ai_canonname);
 #endif
-    for (pch = h->h_aliases; *pch; pch++) {
-	rb_ary_push(names, rb_str_new2(*pch));
+    if (h->h_aliases != NULL) {
+	for (pch = h->h_aliases; *pch; pch++) {
+	    rb_ary_push(names, rb_str_new2(*pch));
+	}
     }
 #if defined(HAVE_GETIPNODEBYNAME)
     freehostent(h);
@@ -2022,8 +2024,10 @@ sock_s_gethostbyaddr(argc, argv)
     rb_ary_push(ary, rb_str_new2(h->h_name));
     names = rb_ary_new();
     rb_ary_push(ary, names);
-    for (pch = h->h_aliases; *pch; pch++) {
-	rb_ary_push(names, rb_str_new2(*pch));
+    if (h->h_aliases != NULL) {
+	for (pch = h->h_aliases; *pch; pch++) {
+	    rb_ary_push(names, rb_str_new2(*pch));
+	}
     }
     rb_ary_push(ary, INT2NUM(h->h_addrtype));
 #ifdef h_addr

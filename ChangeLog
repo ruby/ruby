@@ -1,3 +1,11 @@
+Mon Oct 20 11:00:46 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (gc_sweep): loosen page free condition to avoid add_heap()
+	  race condition. [ruby-dev:21633]
+
+	* gc.c (gc_sweep): do not update malloc_limit when malloc_increase
+	  is smaller than malloc_limit.
+
 Mon Oct 20 09:45:12 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* lib/debug.rb (debug_command): remove debug print.
@@ -53,10 +61,17 @@ Fri Oct 17 11:15:22 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* MANIFEST: add test/ruby/test_range.rb.
 
+Fri Oct 17 03:21:23 2003  William Sobel  <will.sobel@barra.com>
+
+	* ext/socket/socket.c (make_hostent): h_aliases may be NULL.
+	  (ruby-bugs PR#1195)
+
+	* ext/socket/socket.c (sock_s_gethostbyaddr): ditto.
+
 Fri Oct 17 00:12:41 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: (bug fix) instance variable @frame was used
-	  without initializing on TkComposite module 
+	  without initializing on TkComposite module.
 
 Thu Oct 16 23:51:04 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 

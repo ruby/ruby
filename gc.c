@@ -969,7 +969,7 @@ gc_sweep()
 	    }
 	    p++;
 	}
-	if (n == heaps[i].limit && freed + n > FREE_MIN) {
+	if (n == heaps[i].limit && freed > FREE_MIN) {
 	    RVALUE *pp;
 
 	    heaps[i].limit = 0;
@@ -982,8 +982,10 @@ gc_sweep()
 	    freed += n;
 	}
     }
-    malloc_limit += (malloc_increase - malloc_limit) * (double)live / (live + freed);
-    if (malloc_limit < GC_MALLOC_LIMIT) malloc_limit = GC_MALLOC_LIMIT;
+    if (malloc_increase > malloc_limit) {
+	malloc_limit += (malloc_increase - malloc_limit) * (double)live / (live + freed);
+	if (malloc_limit < GC_MALLOC_LIMIT) malloc_limit = GC_MALLOC_LIMIT;
+    }
     malloc_increase = 0;
     if (freed < FREE_MIN) {
 	add_heap();

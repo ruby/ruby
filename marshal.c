@@ -952,11 +952,11 @@ path2module(path)
 }
 
 static VALUE
-r_object0(arg, proc, ivp, extended)
+r_object0(arg, proc, ivp, extmod)
     struct load_arg *arg;
     VALUE proc;
     int *ivp;
-    VALUE extended;
+    VALUE extmod;
 {
     VALUE v = Qnil;
     int type = r_byte(arg);
@@ -975,7 +975,7 @@ r_object0(arg, proc, ivp, extended)
         {
 	    int ivar = Qtrue;
 
-	    v = r_object0(arg, 0, &ivar, extended);
+	    v = r_object0(arg, 0, &ivar, extmod);
 	    if (ivar) r_ivar(v, arg);
 	}
 	break;
@@ -984,12 +984,12 @@ r_object0(arg, proc, ivp, extended)
 	{
 	    VALUE m = path2module(r_unique(arg));
 
-            if (NIL_P(extended)) extended = rb_ary_new2(0);
-            rb_ary_push(extended, m);
+            if (NIL_P(extmod)) extmod = rb_ary_new2(0);
+            rb_ary_push(extmod, m);
 
-	    v = r_object0(arg, 0, 0, extended);
-            while (RARRAY(extended)->len > 0) {
-                m = rb_ary_pop(extended);
+	    v = r_object0(arg, 0, 0, extmod);
+            while (RARRAY(extmod)->len > 0) {
+                m = rb_ary_pop(extmod);
                 rb_extend_object(v, m);
             }
 	}
@@ -1002,7 +1002,7 @@ r_object0(arg, proc, ivp, extended)
 	    if (FL_TEST(c, FL_SINGLETON)) {
 		rb_raise(rb_eTypeError, "singleton can't be loaded");
 	    }
-	    v = r_object0(arg, 0, 0, extended);
+	    v = r_object0(arg, 0, 0, extmod);
 	    if (rb_special_const_p(v) || TYPE(v) == T_OBJECT || TYPE(v) == T_CLASS) {
 	      format_error:
 		rb_raise(rb_eArgError, "dump format error (user class)");
@@ -1206,9 +1206,9 @@ r_object0(arg, proc, ivp, extended)
 	    VALUE data;
 
 	    v = rb_obj_alloc(klass);
-            if (! NIL_P(extended)) {
-                while (RARRAY(extended)->len > 0) {
-                    VALUE m = rb_ary_pop(extended);
+            if (! NIL_P(extmod)) {
+                while (RARRAY(extmod)->len > 0) {
+                    VALUE m = rb_ary_pop(extmod);
                     rb_extend_object(v, m);
                 }
             }
@@ -1258,7 +1258,7 @@ r_object0(arg, proc, ivp, extended)
                         "class %s needs to have instance method `_load_data'",
                         rb_class2name(klass));
            }
-           rb_funcall(v, s_load_data, 1, r_object0(arg, 0, 0, extended));
+           rb_funcall(v, s_load_data, 1, r_object0(arg, 0, 0, extmod));
        }
        break;
 
