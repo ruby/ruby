@@ -431,9 +431,6 @@ security(str)
 	if (rb_safe_level() > 0) {
 	    rb_raise(rb_eSecurityError, "Insecure PATH - %s", str);
 	}
-	else {
-	    rb_warn("Insecure PATH - %s", str);
-	}
     }
 }
 

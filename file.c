@@ -2304,7 +2304,14 @@ path_check_1(path)
 	return path_check_1(newpath);
     }
     for (;;) {
-	if (stat(p0, &st) == 0 && (st.st_mode & 002)) {
+#ifndef S_IWOTH
+# define S_IWOTH 002
+#endif
+	if (stat(p0, &st) == 0 && S_ISDIR(st->st_mode) && (st.st_mode & S_IWOTH)
+#ifdef S_ISVTX
+	    && !(st.st_mode & S_ISVTX)
+#endif
+	    ) {
 	    if (p) *p = '/';
 	    rb_warn("Unsecure world writeable dir %s , mode 0%o", p0, st.st_mode);
 	    return 0;

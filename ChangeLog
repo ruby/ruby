@@ -1,3 +1,12 @@
+Tue Feb 19 14:45:32 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* file.c (path_check_1): should check directory sticky bits.
+
+	* process.c (security): need not to warn twice.
+
+	* marshal.c (r_object): complete restoration before calling
+	  r_regist(). 
+
 Tue Feb 19 14:24:36 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (yylex): operators in the "op" rule should make
