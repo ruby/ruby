@@ -1,1 +1,3 @@
+tcltklib.o: tcltklib.c $(hdrdir)/ruby.h $(topdir)/config.h $(hdrdir)/defines.h
+stubs.o: stubs.c $(hdrdir)/ruby.h $(topdir)/config.h $(hdrdir)/defines.h
 tkutil.o: tkutil.c $(hdrdir)/ruby.h $(topdir)/config.h $(hdrdir)/defines.h
