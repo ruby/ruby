@@ -23,11 +23,11 @@
 #     file = open('foo.log', File::WRONLY | File::APPEND)
 #     # To create new (and to remove old) logfile, add File::CREAT like;
 #     #   file = open('foo.log', File::WRONLY | File::APPEND | File::CREAT)
-#     logger = Device::Logger.new(file)
+#     logger = Logger.new(file)
 #
 #   4. Create logger which ages logfile automatically.  Leave 10 ages and each
 #      file is about 102400 bytes.
-#     logger = Device::Logger.new('foo.log', 10, 102400)
+#     logger = Logger.new('foo.log', 10, 102400)
 #
 #   5. Create logger which ages logfile daily/weekly/monthly automatically.
 #     logger = Logger.new('foo.log', 'daily')
