@@ -716,7 +716,7 @@ ruby_connect(fd, sockaddr, len, socks)
 #if defined(HAVE_FCNTL)
     mode = fcntl(fd, F_GETFL, 0);
 
-#ifdef O_NDELAY 
+#ifdef O_NDELAY
 # define NONBLOCKING O_NDELAY
 #else
 #ifdef O_NBIO
@@ -781,7 +781,7 @@ ruby_connect(fd, sockaddr, len, socks)
     }
 }
 
-static VALUE
+static void
 load_addr_info(h, serv, type, res)
     VALUE h, serv;
     int type;
@@ -820,8 +820,8 @@ load_addr_info(h, serv, type, res)
     if (error) {
 	rb_raise(rb_eSocket, "getaddrinfo: %s", gai_strerror(error));
     }
-
 }
+
 static VALUE
 open_inet(class, remote_host, remote_serv, local_host, local_serv, type)
     VALUE class, remote_host, remote_serv, local_host, local_serv;
@@ -838,8 +838,8 @@ open_inet(class, remote_host, remote_serv, local_host, local_serv, type)
      */
 
     if (type != INET_SERVER && (!NIL_P(local_host) || !NIL_P(local_serv)))
-      load_addr_info(local_host, local_serv, type, &res_local);
-      
+	load_addr_info(local_host, local_serv, type, &res_local);
+
     fd = -1;
     for (res = res_remote; res; res = res->ai_next) {
 	status = ruby_socket(res->ai_family,res->ai_socktype,res->ai_protocol);
@@ -911,13 +911,13 @@ tcp_s_open(argc, argv, class)
 {
     VALUE remote_host, remote_serv;
     VALUE local_host, local_serv;
-  
+
     int pcount = rb_scan_args(argc, argv, "22",
 			      &remote_host, &remote_serv,
 			      &local_host, &local_serv);
 
     Check_SafeStr(remote_host);
-  
+
     if (!NIL_P(local_host)) {
 	Check_SafeStr(local_host);
     }
@@ -937,7 +937,7 @@ socks_s_open(class, host, serv)
 	SOCKSinit("ruby");
 	init = 1;
     }
-	
+
     Check_SafeStr(host);
     return open_inet(class, host, serv, Qnil, Qnil, INET_SOCKS);
 }

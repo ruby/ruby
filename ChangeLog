@@ -1,3 +1,9 @@
+Tue Jul 31 15:16:39 2001  Nobuyoshi Nakada <nobu.nakada@nifty.ne.jp>
+
+	* process.c (last_status_set): nothing returned, should be void.
+
+	* ext/socket/socket.c (load_addr_info): ditto.
+
 Tue Jul 31 12:11:42 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* marshal.c (Init_marshal): new constant Marshal::MAJOR_VERSION

@@ -95,7 +95,7 @@ get_ppid()
 static VALUE rb_cProcStatus;
 VALUE rb_last_status = Qnil;
 
-static VALUE
+static void
 last_status_set(status)
     int status;
 {
@@ -653,7 +653,7 @@ proc_spawn_v(argv, prog)
     }
     before_exec();
     status = spawnv(P_WAIT, prog, argv);
-    after_exec();    
+    after_exec();
     return status;
 }
 
