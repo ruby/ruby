@@ -1,3 +1,12 @@
+Fri Oct 31 01:02:24 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* compar.c (cmp_equal): protect exceptions from <=> comparison
+	  again.  returns nil if any exception or error happened during
+	  comparison.
+
+	* eval.c (search_required): should update *featurep when DLEXT2 is
+	  defined. (ruby-bugs-ja PR#581)
+
 Thu Oct 30 23:41:04 2003  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/drb.rb: add DRbArray

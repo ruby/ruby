@@ -6011,6 +6011,7 @@ search_required(fname, featurep, path)
 	    *featurep = tmp;
 #ifdef DLEXT2
 	    if (rb_find_file_ext(&tmp, loadable_ext+1)) {
+		*featurep = tmp;
 		*path = rb_find_file(tmp);
 		return 's';
 	    }

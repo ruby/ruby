@@ -53,18 +53,32 @@ rb_cmperr(x, y)
 #define cmperr() (rb_cmperr(x, y), Qnil)
 
 static VALUE
+cmp_eq(a)
+    VALUE *a;
+{
+    VALUE c = rb_funcall(a[0], cmp, 1, a[1]);
+
+    if (NIL_P(c)) return Qnil;
+    if (rb_cmpint(c, a[0], a[1]) == 0) return Qtrue;
+    return Qfalse;
+}
+
+static VALUE
+cmp_failed()
+{
+    return Qnil;
+}
+
+static VALUE
 cmp_equal(x, y)
     VALUE x, y;
 {
-    int c;
+    VALUE a[2];
 
     if (x == y) return Qtrue;
 
-    c  = rb_funcall(x, cmp, 1, y);
-    if (NIL_P(c)) return Qnil;
-    if (c == INT2FIX(0)) return Qtrue;
-    if (rb_cmpint(c, x, y) == 0) return Qtrue;
-    return Qfalse;
+    a[0] = x; a[1] = y;
+    return rb_rescue(cmp_eq, (VALUE)a, cmp_failed, 0);
 }
 
 static VALUE
