@@ -7127,6 +7127,7 @@ static VALUE
 bmcall(args, method)
     VALUE args, method;
 {
+    args = mrhs_to_avalue(args);
     return method_call(RARRAY(args)->len, RARRAY(args)->ptr, method);
 }
 
