@@ -405,9 +405,10 @@ proc_options(argcp, argvp)
 	    break;
 
 	  case 'K':
-	    s++;
-	    rb_set_kcode(s);
-	    s++;
+	    if (*++s) {
+		rb_set_kcode(s);
+		s++;
+	    }
 	    goto reswitch;
 
 	  case 'T':

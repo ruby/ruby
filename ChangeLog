@@ -1,3 +1,7 @@
+Tue Aug 29 15:18:20 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.c (proc_options): the value of -K may be empty.
+
 Sat Aug 26 01:37:09 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* configure.in: check _mktemp.
