@@ -558,5 +558,5 @@ static int
 numhash(n)
     long n;
 {
-    return n;
+    return n / 7;
 }

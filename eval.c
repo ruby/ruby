@@ -2344,6 +2344,7 @@ rb_eval(self, n)
 	break;
 
       case NODE_RESTARGS:
+      case NODE_RESTARY:
 	result = rb_eval(self, node->nd_head);
 	if (TYPE(result) != T_ARRAY) {
 	    result = rb_Array(result);
@@ -2355,7 +2356,10 @@ rb_eval(self, n)
 	if (TYPE(result) != T_ARRAY) {
 	    result = rb_Array(result);
 	}
-	if (RARRAY(result)->len == 1) {
+	if (RARRAY(result)->len == 0) {
+	    result = Qnil;
+	}
+	else if (RARRAY(result)->len == 1) {
 	    result = RARRAY(result)->ptr[0];
 	}
 	break;
@@ -3724,7 +3728,7 @@ massign(self, node, val, check)
     NODE *list;
     int i = 0, len;
 
-    if (val == Qundef) {
+    if (val == Qundef || val == Qnil) {
 	val = rb_ary_new2(0);
     }
     else if (TYPE(val) != T_ARRAY) {
@@ -5425,17 +5429,22 @@ rb_f_require(obj, fname)
 
   load_dyna:
     rb_provide(feature);
+    {
+	int volatile old_vmode = scope_vmode;
 
-    PUSH_TAG(PROT_NONE);
-    if ((state = EXEC_TAG()) == 0) {
-	void *handle;
+	PUSH_TAG(PROT_NONE);
+	if ((state = EXEC_TAG()) == 0) {
+	    void *handle;
 
-	load = rb_str_new2(file);
-	file = RSTRING(load)->ptr;
-	handle = dln_load(file);
-	rb_ary_push(ruby_dln_librefs, INT2NUM((long)handle));
+	    SCOPE_SET(SCOPE_PUBLIC);
+	    load = rb_str_new2(file);
+	    file = RSTRING(load)->ptr;
+	    handle = dln_load(file);
+	    rb_ary_push(ruby_dln_librefs, INT2NUM((long)handle));
+	}
+	POP_TAG();
+	SCOPE_SET(old_vmode);
     }
-    POP_TAG();
     if (state) JUMP_TAG(state);
 
     return Qtrue;

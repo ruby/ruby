@@ -426,9 +426,6 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    }
 		| lhs '=' mrhs_basic
 		    {
-			if (nd_type($3) == NODE_RESTARGS) {
-			    nd_set_type($3, NODE_REXPAND);
-			}
 			$$ = node_assign($1, $3);
 		    }
 		| mlhs '=' mrhs
@@ -954,7 +951,7 @@ aref_args	: none
 		| tSTAR arg opt_nl
 		    {
 			value_expr($2);
-			$$ = NEW_RESTARGS($2);
+			$$ = NEW_RESTARY($2);
 		    }
 
 paren_args	: '(' none ')'
@@ -1150,7 +1147,7 @@ mrhs_basic	: args ',' arg
 		| tSTAR arg
 		    {
 			value_expr($2);
-			$$ = NEW_RESTARGS($2);
+			$$ = NEW_REXPAND($2);
 		    }
 
 primary		: literal

@@ -1019,8 +1019,6 @@ Init_stack(addr)
 #if defined(__human68k__)
     extern void *_SEND;
     rb_gc_stack_start = _SEND;
-#elif defined(__GNUC__) && defined(USE_BUILTIN_FRAME_ADDRESS)
-    rb_gc_stack_start = __builtin_frame_address(2);
 #else
     VALUE start;
 

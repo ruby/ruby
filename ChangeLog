@@ -1,3 +1,22 @@
+Fri Jun  8 22:37:40 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (Init_stack): avoid __builtin_frame_address(2) to retrieve
+	  stack bottom line.
+
+Fri Jun  8 18:14:12 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* st.c (numhash): should shuffle bits by dividing by prime number.
+
+Fri Jun  8 17:05:21 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): multiple assignment behavior fixed, which
+	  results "*a = nil" makes "a == []" now.
+
+Fri Jun  8 15:25:09 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_f_require): should set SCOPE_PUBLIC before calling
+	  dln_load().
+
 Thu Jun  7 17:28:00 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (yylex): exclude kDO_BLOCK too much by false condition.
