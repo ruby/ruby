@@ -1,3 +1,9 @@
+Tue May 18 14:00:46 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* node.h (NEW_DSTR): adjust list length.
+
+	* parse.y (literal_concat): ditto.
+
 Mon May 17 16:14:25  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* numeric.c (flo_to_s): p 0.0 should be '0.0' not '0.0e+00'.
@@ -56,7 +62,7 @@ Sun May 16 22:36:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
 
 Sun May 16 20:55:49 2004  Tanaka Akira  <akr@m17n.org>
 
-	* ext/dbm/dbm.c (fdbm_initialize): accept optional 3rd argument to 
+	* ext/dbm/dbm.c (fdbm_initialize): accept optional 3rd argument to
 	  specify an open flag.
 	  (Init_dbm): define open flags: DBM::READER, DBM::WRITER, DBM::WRCREAT
 	  and DBM::NEWDB.
@@ -84,7 +90,7 @@ Fri May 14 22:08:38 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Fri May 14 18:39:25 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/canvas.rb: improve coords support for canvas items.
-	  Now, supports all of the followings. 
+	  Now, supports all of the followings.
 	    TkcLine.new(c, 0, 0, 100, 100, :fill=>'red')
 	    TkcLine.new(c, [0, 0, 100, 100], :fill=>'red')
 	    TkcLine.new(c, [0, 0], [100, 100], :fill=>'red')

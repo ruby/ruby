@@ -4652,6 +4652,7 @@ literal_concat(head, tail)
       case NODE_EVSTR:
 	if (htype == NODE_STR) {
 	    nd_set_type(head, NODE_DSTR);
+	    head->nd_alen = 1;
 	}
 	list_append(head, tail);
 	break;
