@@ -1,3 +1,8 @@
+Fri Oct 29 10:00:30 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (ruby_cleanup): ruby_finalize_1 may cause exception,
+	  should be wrapped by PUSH_TAG/POP_TAG().  [ruby-dev:24627]
+
 Thu Oct 28 23:32:54 2004  akira yamada  <akira@ruby-lang.org>
 
 	* ext/zlib/zlib.c (zstream_detach_input): resets klass of z->input if
