@@ -13,11 +13,18 @@ end
 # ERB::Compiler
 class ERB
   class Compiler
+    class PercentLine
+      def initialize(str)
+        @value = str
+      end
+      attr_reader :value
+      alias :to_s :value
+    end
+
     class Scanner
       SplitRegexp = /(<%%)|(%%>)|(<%=)|(<%#)|(<%)|(%>)|(\n)/
 
-      def initialize(compiler, src)
-	@compiler = compiler
+      def initialize(src)
 	@src = src
 	@stag = nil
       end
@@ -27,10 +34,10 @@ class ERB
     end
 
     class TrimScanner < Scanner
-      def initialize(compiler, src)
-	super(compiler, src)
-	@trim_mode = compiler.trim_mode
-	@percent = compiler.percent
+      def initialize(src, trim_mode, percent)
+	super(src)
+	@trim_mode = trim_mode
+	@percent = percent
 	if @trim_mode
 	  @scan_line = self.method(:trim_line)
 	else
@@ -62,9 +69,7 @@ class ERB
 	if line[0] == ?%
 	  @scan_line.call(line, &block)
 	else
-	  yield('<%')
-	  yield(' ' +line.chomp)
-	  yield('%>')
+          yield(PercentLine.new(line.chomp))
 	end
       end
 
@@ -148,6 +153,11 @@ class ERB
       scanner.scan do |token|
 	if scanner.stag.nil?
 	  case token
+          when PercentLine
+	    out.push("#{@put_cmd} #{content.dump}") if content.size > 0
+	    content = ''
+            out.push(token.to_s)
+            out.cr
 	  when '<%', '<%=', '<%#'
 	    scanner.stag = token
 	    out.push("#{@put_cmd} #{content.dump}") if content.size > 0
@@ -217,9 +227,9 @@ class ERB
 
     def make_scanner(src)
       if @percent || @trim_mode
-	TrimScanner.new(self, src)
+	TrimScanner.new(src, @trim_mode, @percent)
       else
-	SimpleScanner.new(self, src)
+	SimpleScanner.new(src)
       end
     end
 
