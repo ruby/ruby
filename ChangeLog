@@ -1,3 +1,7 @@
+Mon Oct  7 16:43:07 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (bigdivrem): bignum zero's len should not be 0.
+
 Mon Oct  7 15:36:42 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (bigdivmod): wrong condition check for Bignum zero.
