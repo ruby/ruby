@@ -1002,8 +1002,10 @@ static VALUE
 env_delete_m(obj, name)
     VALUE obj, name;
 {
-    VALUE val = env_delete(obj, name);
-    if (rb_block_given_p()) rb_yield(name);
+    VALUE val;
+
+    val = env_delete(obj, name);
+    if (NIL_P(val) && rb_block_given_p()) rb_yield(name);
     return val;
 }
 
@@ -1342,6 +1344,7 @@ env_reject_bang()
 	VALUE val = rb_f_getenv(Qnil, *ptr);
 	if (!NIL_P(val)) {
 	    if (RTEST(rb_yield(rb_assoc_new(*ptr, val)))) {
+		FL_UNSET(*ptr, FL_TAINT);
 		env_delete(Qnil, *ptr);
 		del++;
 	    }

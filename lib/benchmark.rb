@@ -450,11 +450,11 @@ module Benchmark
     STDOUT.sync = sync
   end
 
-  def bm(label_width = 0, *labels, &blk)
-    benchmark(" "*label_width + CAPTION, label_width, FMTSTR, *labels, &blk)
+  def bm(label_width = 0, *labels)
+    benchmark(" "*label_width + CAPTION, label_width, FMTSTR, *labels){|*x|yield *x}
   end
 
-  def bmbm(width = 0, &blk)
+  def bmbm(width = 0)
     job = Job.new(width)
     yield(job)
     width = job.width
