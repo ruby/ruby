@@ -1,7 +1,102 @@
+Thu Nov 18 16:18:27 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* lib/pstore.rb: mutual lock by flock(2).
+
+Thu Nov 18 11:44:13 1999  Masahiro Tomita  <tommy@tmtm.org>
+
+	* io.c (read_all): should check bytes too.
+
+Mon Nov 15 16:50:34 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* enum.c (enum_grep): grep with block returns collection of
+	  evaluated values of block over matched elements.
+
+Mon Nov 15 04:50:33 1999  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* re.c (rb_reg_source): should not call rb_reg_expr_str()
+	  everytime.
+
+Fri Nov 12 23:52:19 1999  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* process.c (rb_f_system): argument check for NT, __EMX__, DJGPP.
+
+Wed Nov 10 21:54:11 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* hash.c (rb_any_cmp): Fixed return without value.
+
+Tue Nov  9 13:21:04 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* configure.in: AC_MINIX move to before AC_EXEEXT and AC_OBJEXT.
+
+Mon Nov  8 19:52:29 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* configure.in: Renamed AC_CHAR_UNSIGNED to AC_C_CHAR_UNSIGNED.
+
+	* configure.in: Added default to AC_CHECK_SIZEOF().
+
+Mon Nov  8 14:28:18 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_f_eval): fake outer scope when eval() called without
+	  bindings.
+
+	* eval.c (rb_f_binding): should copy last_class in the outer frame too.
+
+Sun Nov  7 18:31:04 1999  Yasuhiro Fukuma  <yasuf@big.or.jp>
+
+	* eval.c (is_defined): last_class may be 0.
+
+Sat Nov  6 19:26:55 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* Makefile.in: Added depend entry make parse.@OBJEXT@ from parse.c
+	  for UCB make
+
+Wed Nov  3 08:52:57 1999  Masaki Fukushima  <fukusima@goto.info.waseda.ac.jp>
+
+	* io.c (Init_IO): forgot to use INT2FIX() around SEEK_SET, etc. 
+
+Wed Nov  3 00:25:20 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (rb_str_split_method): use mbclen2() to handle kcode
+	  option of regexp objects.
+
+Sun Oct 31 13:12:42 1999  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* regex.c (re_compile_pattern): wrong [\W] match.
+
+Thu Oct 28 13:35:40 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (rb_str_split_method): should be mbchar aware with
+	  single char separators.
+
+Wed Oct 27 12:57:21 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* random.c (rb_f_srand): random seed should be unsigned.
+
+Tue Oct 26 19:20:54 1999  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* marshal.c (r_object): should register class/module objects.
+
+Sat Oct 23 15:59:39 1999  Takaaki Tateishi  <ttate@jaist.ac.jp>
+
+	* process.c (rb_f_system): should require at least one argument.
+
+Thu Oct 21 16:14:19 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* dir.c (fnmatch): use eban's fnmatch; do not depend on systems's
+	  fnmatch (which may have portability problem) anymore.
+
 Wed Oct 20 15:14:24 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* marshal.c (marshal_load): should protect the generated object
 	  table (arg->data) from GC.
+
+Mon Oct 18 16:15:52 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ext/nkf/nkf.c (rb_nkf_kconv): output should be NUL terminated.
+
+Fri Oct 15 22:50:41 1999  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* error.c (sys_nerr): on CYGWIN, it is _sys_nerr.
 
 Fri Oct 15 01:32:31 1999  WATANABE Hirofumi  <eban@os.rim.or.jp>
 

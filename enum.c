@@ -33,11 +33,11 @@ grep_i(i, arg)
 }
 
 static VALUE
-grep_iter_i(i, pat)
-    VALUE i, pat;
+grep_iter_i(i, arg)
+    VALUE i, *arg;
 {
-    if (RTEST(rb_funcall(pat, id_eqq, 1, i))) {
-	rb_yield(i);
+    if (RTEST(rb_funcall(arg[0], id_eqq, 1, i))) {
+	rb_ary_push(arg[1], rb_yield(i));
     }
     return Qnil;
 }
@@ -46,19 +46,17 @@ static VALUE
 enum_grep(obj, pat)
     VALUE obj, pat;
 {
+    VALUE tmp, arg[2];
+
+    arg[0] = pat; arg[1] = tmp = rb_ary_new();
     if (rb_iterator_p()) {
-	rb_iterate(rb_each, obj, grep_iter_i, pat);
-	return obj;
+	rb_iterate(rb_each, obj, grep_iter_i, (VALUE)arg);
     }
     else {
-	VALUE tmp, arg[2];
-
-	arg[0] = pat; arg[1] = tmp = rb_ary_new();
 	rb_iterate(rb_each, obj, grep_i, (VALUE)arg);
-
 	if (RARRAY(tmp)->len == 0) return Qnil;
-	return tmp;
     }
+    return tmp;
 }
 
 struct find_arg {
