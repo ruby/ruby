@@ -1020,6 +1020,7 @@ static VALUE
 rb_str_match(x, y)
     VALUE x, y;
 {
+    VALUE reg;
     long start;
 
     switch (TYPE(y)) {
@@ -1027,11 +1028,15 @@ rb_str_match(x, y)
 	return rb_reg_match(y, x);
 
       case T_STRING:
-	start = rb_str_index(x, y, 0);
+#if RUBY_VERSION_CODE < 181
+	rb_warn("string =~ string will be obsolete; use explicit regexp");
+#endif
+	reg = rb_reg_regcomp(y);
+	start = rb_reg_search(reg, x, 0, 0);
 	if (start == -1) {
 	    return Qnil;
 	}
-	return LONG2NUM(start);
+	return INT2NUM(start);
 
       default:
 	return rb_funcall(y, rb_intern("=~"), 1, x);
@@ -1459,7 +1464,7 @@ get_pat(pat, quote)
 
     if (quote) {
 	val = rb_reg_quote(pat);
-#if RUBY_VERSION_CODE < 180
+#if RUBY_VERSION_CODE < 181
 	if (val != pat && rb_str_cmp(val, pat) != 0) {
 	    rb_warn("string pattern instead of regexp; metacharacters no longer effective");
 	}

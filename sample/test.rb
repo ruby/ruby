@@ -11,13 +11,13 @@ def test_check(what)
   $testnum = 0
 end
 
-def test_ok(cond)
+def test_ok(cond,n=1)
   $testnum+=1
   $ntest+=1
   if cond
     printf "ok %d\n", $testnum
   else
-    where = caller[0]
+    where = caller(n)[0]
     printf "not ok %s %d -- %s\n", $what, $testnum, where
     $failed+=1 
   end
@@ -239,12 +239,9 @@ def r; return *[*[1,2]]; end; a,b,*c = r(); test_ok([a,b,c] == [1,2,[]])
 
 f = lambda {|r,| test_ok([] == r)}
 f.call([], *[])
-f.yield([], *[])
 
 f = lambda {|r,*l| test_ok([] == r); test_ok([1] == l)}
 f.call([], *[1])
-f.yield([], *[1])
-
 
 f = lambda{|x| x}
 test_ok(f.call(42) == 42)
@@ -980,6 +977,96 @@ end
 
 test_ok(C.new.collect{|n| n} == [1,2,3])
 
+test_ok(Proc < Block)
+test_ok(Proc == lambda{}.class)
+test_ok(Proc == proc{}.class)
+test_ok(Proc == Proc.new{}.class)
+lambda{|a|test_ok(a==1)}.call(1)
+def block_test(klass, &block)
+  test_ok(klass === block)
+end
+
+block_test(NilClass)
+block_test(Block){}
+
+def argument_test(state, proc, *args)
+  x = state
+  begin
+    proc.call(*args)
+  rescue ArgumentError
+    x = !x
+  end
+  test_ok(x,2)
+end
+
+argument_test(true, lambda{||})
+argument_test(false, lambda{||}, 1)
+argument_test(true, lambda{|a,|}, 1)
+argument_test(false, lambda{|a,|})
+argument_test(false, lambda{|a,|}, 1,2)
+
+def get_block(&block)
+  block
+end
+
+test_ok(Block == get_block{}.class)
+argument_test(true, get_block{||})
+argument_test(true, get_block{||}, 1)
+argument_test(true, get_block{|a,|}, 1)
+argument_test(true, get_block{|a,|})
+argument_test(true, get_block{|a,|}, 1,2)
+
+argument_test(true, get_block(&lambda{||}))
+argument_test(false, get_block(&lambda{||}),1)
+argument_test(true, get_block(&lambda{|a,|}),1)
+argument_test(false, get_block(&lambda{|a,|}),1,2)
+
+block = get_block{11}
+proc = lambda{44}
+test_ok(block.class == Block)
+test_ok(proc.class == Proc)
+test_ok(block.to_block.class == Block)
+test_ok(proc.to_block.class == Proc)
+test_ok(block.clone.call == 11)
+test_ok(proc.clone.call == 44)
+
+test_ok(get_block(&block).class == Block)
+test_ok(get_block(&proc).class == Proc)
+
+test_ok(Block.new{|a,| a}.call(1,2,3) == 1)
+argument_test(false, Proc.new{|a,| p a}, 1,2)
+
+def ljump_test(state, proc, *args)
+  x = state
+  begin
+    proc.call(*args)
+  rescue LocalJumpError
+    x = !x
+  end
+  test_ok(x,2)
+end
+
+ljump_test(false, get_block{break})
+ljump_test(true, lambda{break})
+
+test_ok(block.arity == -1)
+test_ok(proc.arity == -1)
+test_ok(lambda{||}.arity == 0)
+test_ok(lambda{|a|}.arity == 1)
+test_ok(lambda{|a,|}.arity == 1)
+test_ok(lambda{|a,b|}.arity == 2)
+
+def marity_test(m)
+  method = method(m)
+  test_ok(method.arity == method.to_block.arity)
+end
+marity_test(:test_ok)
+marity_test(:marity_test)
+marity_test(:p)
+
+lambda(&method(:test_ok)).call(true)
+lambda(&get_block{|a,n| test_ok(a,n)}).call(true, 2)
+
 test_check "float"
 test_ok(2.6.floor == 2)
 test_ok((-2.6).floor == -3)
@@ -1111,7 +1198,7 @@ shift_test(-0xfffffffffffffffff)
 test_check "string & char"
 
 test_ok("abcd" == "abcd")
-test_ok("abcd" =~ "abcd")
+test_ok("abcd" =~ /abcd/)
 test_ok("abcd" === "abcd")
 # compile time string concatenation
 test_ok("ab" "cd" == "abcd")
@@ -1605,6 +1692,9 @@ ary2 = $x.unpack($format)
 test_ok(ary.length == ary2.length)
 test_ok(ary.join(':') == ary2.join(':'))
 test_ok($x =~ /def/)
+
+$x = [-1073741825]
+test_ok($x.pack("q").unpack("q") == $x)
 
 test_check "math"
 test_ok(Math.sqrt(4) == 2)

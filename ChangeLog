@@ -1,3 +1,16 @@
+Mon May 26 16:39:10 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (Init_Proc): Block/Proc separation. [huge change]
+
+	* eval.c (block_arity): returns exact arity number for Procs out
+	  of methods. also gives 1 for {|a|..}.
+
+	* string.c (rb_str_match): revert use of String#index for
+	  invocation like string =~ string.
+
+	* eval.c (rb_Array): move Object#to_a exclusion hack from
+	  splat_value().  need to be in eval.c for a while.
+
 Sun May 25 23:48:21 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* bignum.c (rb_quad_pack): should negate negative bignum.

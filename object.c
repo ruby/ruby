@@ -1288,34 +1288,30 @@ rb_f_string(obj, arg)
     return rb_String(arg);
 }
 
+#if 0
 VALUE
 rb_Array(val)
     VALUE val;
 {
-    ID to_ary;
+    VALUE tmp = rb_check_array_type(val);
+    ID to_a;
 
-    if (NIL_P(val)) {
-	rb_raise(rb_eTypeError, "cannot convert nil into Array");
-    }
-    if (TYPE(val) == T_ARRAY) return val;
-    to_ary = rb_intern("to_ary");
-    if (rb_respond_to(val, to_ary)) {
-	val = rb_funcall(val, to_ary, 0);
-    }
-    else {
-	to_ary = rb_intern("to_a");
-	if (rb_respond_to(val, to_ary)) {
-	    val = rb_funcall(val, to_ary, 0);
+    if (NIL_P(tmp)) {
+	to_a = rb_intern("to_a");
+	if (rb_respond_to(val, to_a)) {
+	    val = rb_funcall(val, to_a, 0);
+	    if (TYPE(val) != T_ARRAY) {
+		rb_raise(rb_eTypeError, "`to_a' did not return Array");
+	    }
+	    return val;
 	}
 	else {
-	    val = rb_ary_new3(1, val);
+	    return rb_ary_new3(1, val);
 	}
     }
-    if (TYPE(val) != T_ARRAY) {
-	rb_raise(rb_eTypeError, "`%s' did not return Array", rb_id2name(to_ary));
-    }
-    return val;
+    return tmp;
 }
+#endif
 
 static VALUE
 rb_f_array(obj, arg)

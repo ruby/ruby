@@ -45,7 +45,7 @@ rb_hash_freeze(hash)
 VALUE rb_cHash;
 
 static VALUE envtbl;
-static ID id_hash, id_yield, id_default;
+static ID id_hash, id_call, id_default;
 
 VALUE
 rb_hash(obj)
@@ -329,7 +329,7 @@ rb_hash_default(argc, argv, hash)
 
     rb_scan_args(argc, argv, "01", &key);
     if (FL_TEST(hash, HASH_PROC_DEFAULT)) {
-	return rb_funcall(RHASH(hash)->ifnone, id_yield, 2, hash, key);
+	return rb_funcall(RHASH(hash)->ifnone, id_call, 2, hash, key);
     }
     return RHASH(hash)->ifnone;
 }
@@ -453,7 +453,7 @@ rb_hash_shift(hash)
 	return rb_assoc_new(var.key, var.val);
     }
     else if (FL_TEST(hash, HASH_PROC_DEFAULT)) {
-	return rb_funcall(RHASH(hash)->ifnone, id_yield, 2, hash, Qnil);
+	return rb_funcall(RHASH(hash)->ifnone, id_call, 2, hash, Qnil);
     }
     else {
 	return RHASH(hash)->ifnone;
@@ -1730,7 +1730,7 @@ void
 Init_Hash()
 {
     id_hash = rb_intern("hash");
-    id_yield = rb_intern("yield");
+    id_call = rb_intern("call");
     id_default = rb_intern("default");
 
     rb_cHash = rb_define_class("Hash", rb_cObject);

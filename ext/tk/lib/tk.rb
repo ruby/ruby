@@ -80,7 +80,13 @@ module TkComm
     while idx and idx > 0 and str[idx-1] == ?\\
       idx = str.index('{', idx+1)
     end
-    return tk_tcl2ruby(str) unless idx
+    unless idx
+      list = tk_tcl2ruby(str)
+      unless Array === list
+        list = [list]
+      end
+      return list
+    end
 
     list = tk_tcl2ruby(str[0,idx])
     list = [] if list == ""
@@ -93,6 +99,9 @@ module TkComm
       brace -= 1 if c == ?}
       break if brace == 0
     }
+    if str.size == i + 1
+      return tk_split_list(str[0, i])
+    end
     if str[0, i] == ' '
       list.push ' '
     else
@@ -193,7 +202,7 @@ module TkComm
     end
   end
   def list(val)
-    tk_split_list(val).to_a
+    tk_split_list(val)
   end
   def window(val)
     Tk_WINDOWS[val]
@@ -573,7 +582,7 @@ module TkCore
   end
 
   def TkCore.callback(arg)
-    arg = Array(tk_split_list(arg))
+    arg = tk_split_list(arg)
     _get_eval_string(TkUtil.eval_cmd(Tk_CMDTBL[arg.shift], *arg))
   end
 
