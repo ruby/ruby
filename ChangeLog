@@ -1,3 +1,8 @@
+Mon Feb 14 13:12:38 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/lib/openssl/ssl.rb
+	  (OpenSSL::SSL::SSLSocket#post_connection_check): new method.
+
 Mon Feb 14 00:10:17 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/drb.rb (DRbServer): add default_safe_level, safe_level,

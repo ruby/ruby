@@ -52,6 +52,32 @@ module OpenSSL
     class SSLSocket
       include Buffering
       include SocketForwarder
+
+      def post_connection_check(hostname)
+        check_common_name = true
+        cert = peer_cert
+        cert.extensions.each{|ext|
+          next if ext.oid != "subjectAltName"
+          ext.value.split(/,\s+/).each{|general_name|
+            if /\ADNS:(.*)/ =~ general_name
+              check_common_name = false
+              reg = Regexp.escape($1).gsub(/\\\*/, "[^.]+")
+              return true if /\A#{reg}\z/i =~ hostname
+            elsif /\AIP Address:(.*)/ =~ general_name
+              check_common_name = false
+              return true if $1 == hostname
+            end
+          }
+        }
+        if check_common_name
+          cert.subject.to_a.each{|oid, value|
+            if oid == "CN" && value.casecmp(hostname) == 0
+              return true
+            end
+          }
+        end
+        raise SSLError, "hostname not match"
+      end
     end
 
     class SSLServer
