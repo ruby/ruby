@@ -9941,6 +9941,11 @@ thread_mark(th)
     }
 }
 
+static struct {
+    rb_thread_t thread;
+    VALUE proc, arg;
+} new_thread;
+
 void
 rb_gc_mark_threads()
 {
@@ -9953,6 +9958,11 @@ rb_gc_mark_threads()
     FOREACH_THREAD(th) {
 	rb_gc_mark(th->thread);
     } END_FOREACH(th);
+    if (new_thread.thread) {
+	rb_gc_mark(new_thread.thread->thread);
+	rb_gc_mark(new_thread.proc);
+	rb_gc_mark(new_thread.arg);
+    }
 }
 
 static void
@@ -11603,11 +11613,6 @@ thread_insert(th)
     }
 }
 
-static struct {
-    rb_thread_t thread;
-    VALUE proc, arg;
-} new_thread;
-
 static VALUE
 rb_thread_start_0(fn, arg, th)
     VALUE (*fn)();
@@ -11652,6 +11657,8 @@ rb_thread_start_0(fn, arg, th)
 	new_thread.proc = rb_block_proc();
 	new_thread.arg = (VALUE)arg;
 	th->anchor = ip;
+	thread_insert(th);
+	curr_thread = th;
 	longjmp((prot_tag = ip->tag)->buf, TAG_THREAD);
     }
 
@@ -11747,8 +11754,6 @@ rb_thread_start_1()
     enum thread_status status;
     int state;
 
-    thread_insert(th);
-
     ruby_frame = ip->frame;
     ruby_block = ip->block;
     ruby_scope = ip->scope;
@@ -11762,6 +11767,7 @@ rb_thread_start_1()
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
 	if (THREAD_SAVE_CONTEXT(th) == 0) {
+	    new_thread.thread = 0;
 	    curr_thread = th;
 	    th->result = rb_block_pass(rb_thread_yield_0, arg, proc);
 	}
