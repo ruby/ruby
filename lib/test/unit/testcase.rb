@@ -31,7 +31,9 @@ module Test
       # Creates a new instance of the fixture for running the
       # test represented by test_method_name.
       def initialize(test_method_name)
-        unless(respond_to?(test_method_name) && method(test_method_name).arity == 0)
+        unless(respond_to?(test_method_name) and
+               (method(test_method_name).arity == 0 ||
+                method(test_method_name).arity == -1))
           throw :invalid_test
         end
         @method_name = test_method_name

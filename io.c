@@ -2368,15 +2368,28 @@ rb_fdopen(fd, mode)
 {
     FILE *file;
 
+#if defined(sun)
+    errno = 0;
+#endif
     file = fdopen(fd, mode);
     if (!file) {
+#if defined(sun)
+	if (errno == 0 || errno == EMFILE || errno == ENFILE) {
+#else
 	if (errno == EMFILE || errno == ENFILE) {
+#endif
 	    rb_gc();
+#if defined(sun)
+	    errno = 0;
+#endif
 	    file = fdopen(fd, mode);
 	}
 	if (!file) {
 #ifdef _WIN32
 	    if (errno == 0) errno = EINVAL;
+#endif
+#if defined(sun)
+	    if (errno == 0) errno = EMFILE;
 #endif
 	    rb_sys_fail(0);
 	}
@@ -2993,6 +3006,13 @@ rb_io_get_io(io)
     return rb_convert_type(io, T_FILE, "IO", "to_io");
 }
 
+static VALUE
+rb_io_check_io(io)
+    VALUE io;
+{
+    return rb_check_convert_type(io, T_FILE, "IO", "to_io");
+}
+
 static char*
 rb_io_mode_string(fptr)
     OpenFile *fptr;
@@ -3122,8 +3142,9 @@ rb_io_reopen(argc, argv, file)
 
     rb_secure(4);
     if (rb_scan_args(argc, argv, "11", &fname, &nmode) == 1) {
-	if (TYPE(fname) != T_STRING) { /* fname must be IO */
-	    return io_reopen(file, fname);
+	VALUE tmp = rb_io_check_io(fname);
+	if (!NIL_P(tmp)) {
+	    return io_reopen(file, tmp);
 	}
     }
 

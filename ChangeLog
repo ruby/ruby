@@ -62,6 +62,10 @@ Fri Apr 30 20:08:41 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* time.c (SIZEOF_TIME_T): support SIZEOF_TIME_T == SIZEOF_INT.
 
+Tue Apr 27 13:12:42 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): too many line trace call. (ruby-bugs PR#1320)
+
 Tue Apr 27 08:41:28 2004  why the lucky stiff  <why@ruby-lang.org>
 
 	* lib/yaml/rubytypes.rb: passing Range tests.
@@ -129,6 +133,14 @@ Thu Apr 22 04:15:36 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (aref_args): should pass expanded list.  [ruby-core:02793]
 
+Thu Apr 22 01:12:57 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (flo_to_s): tweak output string based to preserve
+	  decimal point and to remove trailing zeros.  [ruby-talk:97891]
+
+	* string.c (rb_str_index_m): use unsigned comparison for T_FIXNUM
+	  search.  [ruby-talk:97342]
+
 Wed Apr 21 22:57:27 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/rinda/rinda.rb, test/rinda/test_rinda.rb: check Hash tuple size.
@@ -137,6 +149,14 @@ Wed Apr 21 20:05:00 2004  Tanaka Akira  <akr@m17n.org>
 
 	* lib/open-uri.rb (URI::HTTP#proxy_open): set Host: field explicitly.
 	  [ruby-list:39542]
+
+Mon Apr 19 18:11:15 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (rb_hash_equal): returns true if two hashes have same set
+	  of key-value set.  [ruby-talk:97559]
+
+	* hash.c (rb_hash_eql): returns true if two hashes are equal and
+	  have same default values.
 
 Mon Apr 19 08:19:58 2004  Doug Kearns  <djkea2@mugca.its.monash.edu.au>
 
@@ -157,6 +177,11 @@ Mon Apr 19 08:14:18 2004  Dave Thomas  <dave@pragprog.com>
 Fri Apr 16 22:33:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
 
 	* ext/iconv/iconv.c: nearly finished RDoc comments.
+
+Fri Apr 16 17:04:07 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_equal): always returns true or false, never
+	  returns nil. [ruby-dev:23404]
 
 Fri Apr 16 08:27:02 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -262,6 +287,10 @@ Wed Apr  7 00:19:50 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 	* lib/rinda/tuplespace.rb: ditto.
 
 	* test/rinda/test_rinda.rb
+
+Tue Apr  6 18:24:18 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_reopen): should use rb_io_check_io().
 
 Tue Apr  6 16:46:09 2004  Tanaka Akira  <akr@m17n.org>
 

@@ -125,7 +125,7 @@ class Generator
   # Returns the element at the current position and moves forward.
   def next()
     if end?
-      raise EOFError, "no more element is supplied"
+      raise EOFError, "no more elements available"
     end
 
     if @cont_next = callcc { |c| c }
@@ -140,7 +140,7 @@ class Generator
   # Returns the element at the current position.
   def current()
     if @queue.empty?
-      raise EOFError, "no more element is supplied"
+      raise EOFError, "no more elements available"
     end
 
     @queue.first

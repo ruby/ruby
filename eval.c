@@ -2697,11 +2697,6 @@ rb_eval(self, n)
     if (!node) RETURN(Qnil);
 
     ruby_current_node = node;
-    if (trace_func && FL_TEST(node, NODE_NEWLINE)) {
-	call_trace_func("line", node, self,
-			ruby_frame->last_func,
-			ruby_frame->last_class);
-    }
     switch (nd_type(node)) {
       case NODE_BLOCK:
 	if (contnode) {

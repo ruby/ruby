@@ -13,7 +13,7 @@
 #    a == b   # => true
 #    a.new    #  NoMethodError - new is private ...
 #
-# *  ``The instance'' is created at instanciation time, in other
+# *  ``The instance'' is created at instantiation time, in other
 #    words the first call of Klass.instance(), thus
 #
 #    class OtherKlass
@@ -44,11 +44,11 @@
 #
 # *  Klass._load(str)  -  calling Klass.instance()
 #
-# *  Klass._instanciate?()  -  returning ``the instance'' or
+# *  Klass._instantiate?()  -  returning ``the instance'' or
 #    nil. This hook method puts a second (or nth) thread calling
 #    Klass.instance() on a waiting loop. The return value
 #    signifies the successful completion or premature termination
-#    of the first, or more generally, current "instanciation thread".
+#    of the first, or more generally, current "instantiation thread".
 #
 #
 # The instance method of Singleton are
@@ -103,7 +103,7 @@ class << Singleton
           @__instance__ = nil #  failed instance creation
         end
       end
-    elsif  _instanciate?()
+    elsif  _instantiate?()
       Thread.critical = false    
     else
       @__instance__  = false
@@ -144,7 +144,7 @@ class << Singleton
     end
     
     # waiting-loop hook
-    def _instanciate?()
+    def _instantiate?()
       while false.equal?(@__instance__)
         Thread.critical = false
         sleep(0.08)   # timeout
@@ -209,7 +209,7 @@ end
 
 
 
-puts "\nThreaded example with exception and customized #_instanciate?() hook"; p
+puts "\nThreaded example with exception and customized #_instantiate?() hook"; p
 Thread.abort_on_exception = false
 
 class Ups < SomeSingletonClass
@@ -220,7 +220,7 @@ class Ups < SomeSingletonClass
 end
   
 class << Ups
-  def _instanciate?
+  def _instantiate?
     @enter.push Thread.current[:i]
     while false.equal?(@__instance__)
       Thread.critical = false
@@ -247,7 +247,7 @@ class << Ups
     end
   end
   
-  def instanciate_all
+  def instantiate_all
     @enter = []
     @leave = []
     1.upto(9) {|i|  
@@ -270,7 +270,7 @@ class << Ups
 end
 
 
-Ups.instanciate_all
+Ups.instantiate_all
 # results in message like
 # Before there were 0 Ups instance(s)
 # boom - thread #6 failed to create instance
@@ -293,7 +293,7 @@ def Yup.new
     end
   end
 end
-Yup.instanciate_all
+Yup.instantiate_all
 
 
 puts "\n\n","Customized marshalling"

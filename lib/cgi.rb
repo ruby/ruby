@@ -30,7 +30,7 @@
 # See http://www.w3.org/CGI/ for more information on the CGI
 # protocol.
 
-raise "Please, use ruby1.5.4 or later." if RUBY_VERSION < "1.5.4"
+raise "Please, use ruby 1.5.4 or later." if RUBY_VERSION < "1.5.4"
 
 require 'English'
 

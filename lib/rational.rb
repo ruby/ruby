@@ -48,7 +48,7 @@ class Rational < Numeric
   @RCS_ID='-$Id: rational.rb,v 1.7 1999/08/24 12:49:28 keiju Exp keiju $-'
 
   def Rational.reduce(num, den = 1)
-    raise ZeroDivisionError, "denominator is 0" if den == 0
+    raise ZeroDivisionError, "denominator is zero" if den == 0
 
     if den < 0
       num = -num
@@ -135,7 +135,7 @@ class Rational < Numeric
       den = @denominator * a.numerator
       Rational(num, den)
     elsif a.kind_of?(Integer)
-      raise ZeroDivisionError, "divided by 0" if a == 0
+      raise ZeroDivisionError, "division by zero" if a == 0
       self / Rational.new!(a, 1)
     elsif a.kind_of?(Float)
       Float(self) / a
