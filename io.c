@@ -2792,8 +2792,10 @@ prep_stdio(f, mode, klass)
 
     MakeOpenFile(io, fp);
 #ifdef __CYGWIN__
-    mode |= O_BINARY;
-    setmode(fileno(f), O_BINARY);
+    if (!isatty(fileno(f))) {
+	mode |= O_BINARY;
+	setmode(fileno(f), O_BINARY);
+    }
 #endif
     fp->f = f;
     fp->mode = mode;
