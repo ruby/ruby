@@ -1,3 +1,9 @@
+Thu Mar 14 16:42:37 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* class.c (rb_define_class): should handle autoload.
+
+	* class.c (rb_define_module): ditto.
+
 Thu Mar 14 00:29:12 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* re.c (rb_reg_match): should clear $~ if operand is nil.

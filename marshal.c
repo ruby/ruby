@@ -471,11 +471,12 @@ w_object(obj, arg, limit)
 		VALUE klass = CLASS_OF(obj);
 		char *path;
 
-		if (FL_TEST(klass, FL_SINGLETON)) {
+		while (FL_TEST(klass, FL_SINGLETON) || BUILTIN_TYPE(klass) == T_ICLASS) {
 		    if (RCLASS(klass)->m_tbl->num_entries > 0 ||
 			RCLASS(klass)->iv_tbl->num_entries > 1) {
 			rb_raise(rb_eTypeError, "singleton can't be dumped");
 		    }
+		    klass = RCLASS(klass)->super;
 		}
 		path = rb_class2name(klass);
 		w_unique(path, arg);

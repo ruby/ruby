@@ -380,7 +380,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			if (in_def || in_single) {
 			    yyerror("BEGIN in method");
 			}
-			local_push();
+			local_push(1);
 		    }
 		  '{' compstmt '}'
 		    {
@@ -1249,7 +1249,7 @@ primary		: literal
 			if (in_def || in_single)
 			    yyerror("class definition in method body");
 			class_nest++;
-			local_push();
+			local_push(1);
 		        $<num>$ = ruby_sourceline;
 		    }
 		  compstmt
@@ -1270,7 +1270,7 @@ primary		: literal
 		        $<num>$ = in_single;
 		        in_single = 0;
 			class_nest++;
-			local_push();
+			local_push(1);
 		    }
 		  compstmt
 		  kEND
@@ -1287,7 +1287,7 @@ primary		: literal
 			if (in_def || in_single)
 			    yyerror("module definition in method body");
 			class_nest++;
-			local_push();
+			local_push(1);
 		        $<num>$ = ruby_sourceline;
 		    }
 		  compstmt
@@ -1305,7 +1305,7 @@ primary		: literal
 			$<id>$ = cur_mid;
 			cur_mid = $2;
 			in_def++;
-			local_push();
+			local_push(1);
 		    }
 		  f_arglist
 		  compstmt
@@ -1333,7 +1333,7 @@ primary		: literal
 		    {
 			value_expr($2);
 			in_single++;
-			local_push();
+			local_push(1);
 		        lex_state = EXPR_END; /* force for args */
 		    }
 		  f_arglist
@@ -4684,11 +4684,12 @@ static struct local_vars {
     int nofree;
     int cnt;
     int dlev;
+    struct RVarmap* dyna_vars;
     struct local_vars *prev;
 } *lvtbl;
 
 static void
-local_push()
+local_push(int dyna_init)
 {
     struct local_vars *local;
 
@@ -4698,7 +4699,10 @@ local_push()
     local->cnt = 0;
     local->tbl = 0;
     local->dlev = 0;
+    local->dyna_vars = ruby_dyna_vars;
     lvtbl = local;
+
+    if (dyna_init) ruby_dyna_vars = (struct RVarmap* )0;
 }
 
 static void
@@ -4710,6 +4714,7 @@ local_pop()
 	if (!lvtbl->nofree) free(lvtbl->tbl);
 	else lvtbl->tbl[0] = lvtbl->cnt;
     }
+    ruby_dyna_vars = lvtbl->dyna_vars;
     free(lvtbl);
     lvtbl = local;
 }
@@ -4772,7 +4777,7 @@ local_id(id)
 static void
 top_local_init()
 {
-    local_push();
+    local_push(0);
     lvtbl->cnt = ruby_scope->local_tbl?ruby_scope->local_tbl[0]:0;
     if (lvtbl->cnt > 0) {
 	lvtbl->tbl = ALLOC_N(ID, lvtbl->cnt+3);
