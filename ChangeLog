@@ -1,3 +1,9 @@
+Fri Apr 16 15:09:20 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* util.c (mmprepare): int is too small to cast from pointers.
+
+	* config.guess: avoid 'linux-gnu' for alpha-unknown-linux.
+
 Thu Apr 15 23:46:20 1999  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
 
 	* ruby.c (rubylib_mangle): mangle path by RUBYLIB_PREFIX.

@@ -572,10 +572,10 @@ static void mmprepare(base, size) void *base; int size;
  if (size <= 0) die("mmsize <= 0");
 #endif
 
- if ( ((int)base & (4-1)) == 0  &&  (size & (4-1)) == 0 )
-   if      (size >= 16) mmkind = 1;
-   else                 mmkind = 0;
- else                   mmkind = -1;
+ if (((long)base & (4-1)) == 0 && (long & (4-1)) == 0)
+   if (size >= 16) mmkind = 1;
+   else            mmkind = 0;
+ else              mmkind = -1;
  
  mmsize = size;
  high = (size & (-16));
@@ -594,7 +594,7 @@ static void mmswap(a, b) register char *a, *b;
        s = A[1]; A[1] = B[1]; B[1] = s;
        s = A[2]; A[2] = B[2]; B[2] = s;
        s = A[3]; A[3] = B[3]; B[3] = s;  a += 16; b += 16;
-     }while (a < t);
+     } while (a < t);
    }
    if (low != 0) { s = A[0]; A[0] = B[0]; B[0] = s;
      if (low >= 8) { s = A[1]; A[1] = B[1]; B[1] = s;
