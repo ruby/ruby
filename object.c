@@ -350,7 +350,7 @@ inspect_obj(obj, str, recur)
     int recur;
 {
     if (recur) {
-	rb_str_cat2(str, "...");
+	rb_str_cat2(str, " ...");
     }
     else {
 	st_foreach_safe(ROBJECT(obj)->iv_tbl, inspect_i, str);

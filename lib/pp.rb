@@ -95,17 +95,27 @@ class PP < PrettyPrint
 
     def guard_inspect_key
       if Thread.current[InspectKey] == nil
-        Thread.current[InspectKey] = []
+        Thread.current[InspectKey] = {inspect: []}
       end
 
-      save = Thread.current[InspectKey]
+      save = Thread.current[InspectKey][:inspect]
 
       begin
-        Thread.current[InspectKey] = []
+        Thread.current[InspectKey][:inspect] = []
         yield
       ensure
-        Thread.current[InspectKey] = save
+        Thread.current[InspectKey][:inspect] = save
       end
+    end
+
+    def check_inspect_key(id)
+      Thread.current[InspectKey][:inspect].include?(id)
+    end
+    def push_inspect_key(id)
+      Thread.current[InspectKey][:inspect] << id
+    end
+    def pop_inspect_key
+      Thread.current[InspectKey][:inspect].pop
     end
 
     # Adds +obj+ to the pretty printing buffer
@@ -116,16 +126,16 @@ class PP < PrettyPrint
     def pp(obj)
       id = obj.__id__
 
-      if Thread.current[InspectKey].include? id
+      if check_inspect_key(id)
         group {obj.pretty_print_cycle self}
         return
       end
 
       begin
-        Thread.current[InspectKey] << id
+        push_inspect_key(id)
         group {obj.pretty_print self}
       ensure
-        Thread.current[InspectKey].pop unless PP.sharing_detection
+        pop_inspect_key unless PP.sharing_detection
       end
     end
 

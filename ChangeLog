@@ -1,3 +1,14 @@
+Mon Mar  7 10:28:00 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (inspect_obj): unintended space removal.
+	  [ruby-dev:25810]
+
+	* eval.c (rb_exec_recursive): should not use NODE in disclosed
+	  context.  [ruby-dev:25812]
+
+	* io.c (rb_f_open): need not to check if to_open value is a
+	  T_FILE.  [ruby-dev:25812]
+
 Mon Mar  7 01:21:01 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tkutil/tkutil.c: follow the change of st.c (committed 

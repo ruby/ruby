@@ -155,8 +155,8 @@ class CGI
   #
   class Session
 
-    #:nodoc:
-    class NoSession < RuntimeError; end
+    class NoSession < RuntimeError #:nodoc:
+    end
 
     # The id of this session.
     attr_reader :session_id, :new_session

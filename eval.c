@@ -12991,49 +12991,83 @@ rb_throw(tag, val)
     rb_f_throw(2, argv);
 }
 
+static VALUE
+recursive_check(obj)
+    VALUE obj;
+{
+    VALUE hash = rb_thread_local_aref(rb_thread_current(), recursive_key);
+
+    if (NIL_P(hash) || TYPE(hash) != T_HASH) {
+	return Qfalse;
+    }
+    else {
+	VALUE list = rb_hash_aref(hash, ID2SYM(ruby_frame->this_func));
+
+	if (NIL_P(list)) return Qfalse;
+	return rb_ary_includes(list, rb_obj_id(obj));
+    }
+}
+
+static void
+recursive_push(obj)
+    VALUE obj;
+{
+    VALUE hash = rb_thread_local_aref(rb_thread_current(), recursive_key);
+    VALUE list, sym;
+
+    sym = ID2SYM(ruby_frame->this_func);
+    if (NIL_P(hash) || TYPE(hash) != T_HASH) {
+	hash = rb_hash_new();
+	rb_thread_local_aset(rb_thread_current(), recursive_key, hash);
+	list = Qnil;
+    }
+    else {
+	list = rb_hash_aref(hash, sym);
+    }
+    if (NIL_P(list)) {
+	list = rb_ary_new();
+	rb_hash_aset(hash, sym, list);
+    }
+    rb_ary_push(list, rb_obj_id(obj));
+}
+
+static void
+recursive_pop()
+{
+    VALUE hash = rb_thread_local_aref(rb_thread_current(), recursive_key);
+    VALUE list, sym;
+
+    sym = ID2SYM(ruby_frame->this_func);
+    if (NIL_P(hash) || TYPE(hash) != T_HASH) {
+	rb_bug("invalid inspect_tbl hash");
+    }
+    list = rb_hash_aref(hash, sym);
+    if (NIL_P(list) || TYPE(list) != T_ARRAY) {
+	rb_bug("invalid inspect_tbl list");
+    }
+    rb_ary_pop(list);
+}
+
 VALUE
 rb_exec_recursive(func, obj, arg)
     VALUE (*func)(ANYARGS);	/* VALUE obj, VALUE arg, int flag */
     VALUE obj, arg;
 {
-    VALUE list = rb_thread_local_aref(rb_thread_current(), recursive_key);
-    int found = Qfalse;
-
-    if (NIL_P(list) || TYPE(list) != T_NODE) {
-	list = Qnil;
-    }
-    else {
-	NODE *tmp = (NODE*)list;
-	
-	while (!NIL_P(tmp)) {
-	    if (tmp->nd_cfnc == func && tmp->nd_tval == obj) {
-		found = Qtrue;
-		break;
-	    }
-	    tmp = tmp->nd_next;
-	}
-    }
-    if (found) {
+    if (recursive_check(obj)) {
 	return (*func)(obj, arg, Qtrue);
     }
     else {
-	NODE *node = rb_node_newnode(NODE_MEMO, (VALUE)func, obj, list);
+	recursive_push(obj);
 	VALUE result;
 	int state;
 
-	rb_thread_local_aset(rb_thread_current(), recursive_key, (VALUE)node);
 	PUSH_TAG(PROT_NONE);
 	if ((state = EXEC_TAG()) == 0) {
 	    result = (*func)(obj, arg, Qfalse);
 	}
 	POP_TAG();
+	recursive_pop();
 	if (state) JUMP_TAG(state);
-
-	/* remove pushed tag */
-	list = rb_thread_local_aref(rb_thread_current(), recursive_key);
-	node = (NODE*)list;
-
-	rb_thread_local_aset(rb_thread_current(), recursive_key, (VALUE)node->nd_next);
 	return result;
     }
 }

@@ -3277,9 +3277,6 @@ rb_f_open(argc, argv)
 	if (rb_respond_to(argv[0], to_open)) {
 	    VALUE io = rb_funcall2(argv[0], to_open, argc-1, argv+1);
 
-	    if (TYPE(io) != T_FILE) {
-		rb_raise(rb_eTypeError, "to_open should return IO value");
-	    }
 	    if (rb_block_given_p()) {
 		return rb_ensure(rb_yield, io, io_close, io);
 	    }
