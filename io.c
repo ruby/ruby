@@ -2288,7 +2288,7 @@ rb_io_flags_mode(flags)
     int flags;
 {
 #ifdef O_BINARY
-# define MODE_BINMODE(a,b) ((flags & FMODE_BINMODE) ? (a) : (b))
+# define MODE_BINMODE(a,b) ((flags & FMODE_BINMODE) ? (b) : (a))
 #else
 # define MODE_BINMODE(a,b) (a)
 #endif
@@ -2425,7 +2425,7 @@ rb_io_modenum_mode(flags)
     int flags;
 {
 #ifdef O_BINARY
-# define MODE_BINARY(a,b) ((flags & O_BINARY) ? (a) : (b))
+# define MODE_BINARY(a,b) ((flags & O_BINARY) ? (b) : (a))
 #else
 # define MODE_BINARY(a,b) (a)
 #endif

@@ -1,3 +1,7 @@
+Tue Oct 12 15:05:32 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* io.c (MODE_BINMODE, MODE_BINARY): fixed reversed condition.
+
 Mon Oct 11 13:48:20 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/*: untabify
