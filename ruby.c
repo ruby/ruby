@@ -729,6 +729,7 @@ load_file(fname, script)
 		if (RSTRING(line)->ptr[RSTRING(line)->len-2] == '\r')
 		    RSTRING(line)->ptr[RSTRING(line)->len-2] = '\0';
 		if (p = strstr(p, " -")) {
+		    p++;	/* skip space before `-' */
 		    while (*p == '-') {
 			p = moreswitches(p+1);
 		    }
