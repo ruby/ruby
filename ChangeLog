@@ -1,3 +1,7 @@
+Thu Feb 19 22:39:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
+
+	* lib/ostruct.rb: documented
+
 Thu Feb 19 22:39:04 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* test/rinda/test_rinda.rb: DRb.start_service only once in testsuites.
