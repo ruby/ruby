@@ -182,9 +182,14 @@ OBJS          = array.obj \
 		version.obj \
 		$(MISSING)
 
+SCRIPT_ARGS   =	"--dest-dir=$(DESTDIR)" \
+		"--make=$(MAKE)" \
+		"--mflags=$(MFLAGS)" \
+		"--make-flags=$(MAKEFLAGS)"
+
 all:		miniruby$(EXEEXT) rbconfig.rb \
 		$(LIBRUBY) $(MISCLIBS)
-		.\miniruby$(EXEEXT) $(srcdir)ext/extmk.rb --extstatic=$(EXTSTATIC) --make "$(MAKE)" --make-flags "$(MFLAGS)$(MAKEFLAGS)"
+		.\miniruby$(EXEEXT) $(srcdir)ext/extmk.rb --extstatic=$(EXTSTATIC) $(SCRIPT_ARGS)
 
 ruby: $(PROGRAM)
 rubyw: $(WPROGRAM)
@@ -408,12 +413,12 @@ $(RUBYDEF):	$(LIBRUBY_A) miniruby$(EXEEXT)
 		$(MINIRUBY) $(srcdir)bcc32/mkexports.rb -output=$@ $(LIBRUBY_A)
 
 install:	rbconfig.rb
-		$(MINIRUBY) $(srcdir)instruby.rb --make "$(MAKE)" --make-flags "$(MFLAGS)$(MAKEFLAGS)" $(DESTDIR)
-		$(MINIRUBY) $(srcdir)ext/extmk.rb --make "$(MAKE)" --make-flags "$(MFLAGS)$(MAKEFLAGS) DESTDIR=$(DESTDIR)" install
+		$(MINIRUBY) $(srcdir)instruby.rb $(SCRIPT_ARGS)
+		$(MINIRUBY) $(srcdir)ext/extmk.rb $(SCRIPT_ARGS) install
 
 what-where no-install:	rbconfig.rb
-		$(MINIRUBY) $(srcdir)instruby.rb --make "$(MAKE)" --make-flags "$(MFLAGS)$(MAKEFLAGS) -n" $(DESTDIR)
-		$(MINIRUBY) $(srcdir)ext/extmk.rb --make "$(MAKE)" --make-flags "$(MFLAGS)$(MAKEFLAGS) -n DESTDIR=$(DESTDIR)" install
+		$(MINIRUBY) $(srcdir)instruby.rb -n $(SCRIPT_ARGS)
+		$(MINIRUBY) $(srcdir)ext/extmk.rb -n $(SCRIPT_ARGS) install
 
 clean:		clean-ext clean-local
 
@@ -430,7 +435,7 @@ clean-local:
 		@if exist *.il? del *.il?
 
 clean-ext:
-		@-$(MINIRUBY) $(srcdir)ext/extmk.rb --make "$(MAKE)" --make-flags "$(MFLAGS)$(MAKEFLAGS)" clean
+		@-$(MINIRUBY) $(srcdir)ext/extmk.rb $(SCRIPT_ARGS) clean
 
 distclean:	distclean-ext distclean-local
 
@@ -464,7 +469,7 @@ distclean-local:	clean-local
 		@if exist miniruby$(EXEEXT) del miniruby$(EXEEXT)
 
 distclean-ext:
-		@-$(MINIRUBY) $(srcdir)ext/extmk.rb --make "$(MAKE)" --make-flags "$(MFLAGS)$(MAKEFLAGS)" distclean
+		@-$(MINIRUBY) $(srcdir)ext/extmk.rb $(SCRIPT_ARGS) distclean
 
 realclean:	distclean
 		@if exist parse.c del parse.c

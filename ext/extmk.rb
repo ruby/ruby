@@ -27,6 +27,7 @@ $:.replace [srcdir, srcdir+"/lib", "."]
 require 'mkmf'
 require 'ftools'
 require 'shellwords'
+require 'getopts'
 
 $topdir = File.expand_path(".")
 $top_srcdir = srcdir
@@ -113,22 +114,40 @@ def extmake(target)
   true
 end
 
-require 'getopts'
+def parse_args()
+  getopts('n', 'extstatic:', 'dest-dir:',
+	  'make:', 'make-flags:', 'mflags:')
 
-getopts('', 'extstatic', 'make:', 'make-flags:')
+  $dryrun = $OPT['n']
+  $force_static = $OPT['extstatic'] == 'static'
+  $destdir = $OPT['dest-dir'] || ''
+  $make = $OPT['make'] || $make
+  make_flags = ($OPT['make-flags'] || '').strip
+  mflags = ($OPT['mflags'] || '').strip
 
-$force_static = $OPT['extstatic'] == 'static'
-$make = $OPT['make'] || $make
-$mflags = Shellwords.shellwords($OPT['make-flags'] || "").uniq
-$mflags[0].sub!(/^\w+$/, '-\&') unless $mflags.empty?
-$make, *$mflags[0, 0] = Shellwords.shellwords($make)
+  # BSD make defines both MFLAGS and MAKEFLAGS, and MAKEFLAGS it
+  # defines includes a preceding '-' unlike other implementations.
+  # So we use MFLAGS if defined, otherwise use ('-' + MAKEFLAGS).
+  if mflags.empty?
+    mflags = "-#{make_flags}" unless make_flags.empty?
+  end
 
-$mflags.delete_if{|x| x == '-' || x == '--'}
+  $mflags = Shellwords.shellwords(mflags)
+  $make, *rest = Shellwords.shellwords($make)
+  $mflags.unshift(*rest) unless rest.empty?
 
-mflags = $mflags.grep(/^-([^-])/){$1}.join
-mflags.downcase! if $nmake == ?m
-$continue = mflags.include?(?k)
-$dryrun = mflags.include?(?n)
+  $mflags << '-n' if $dryrun
+
+  $mflags << "DESTDIR=#{$destdir}"
+
+  # Most make implementations put each flag separated in MAKEFLAGS, so
+  # we can just search for an option with exact match.  Only nmake
+  # puts flags together, but nmake does not propagate -k via MAKEFLAGS
+  # anyway.
+  $continue = $mflags.include?('-k')
+end
+
+parse_args()
 
 unless $message
   if $message = ARGV.shift and /^[a-z]+$/ =~ $message
@@ -148,8 +167,6 @@ unless $message
     $message = "compiling"
   end
 end
-
-$mflags = $mflags.partition{|x| x[0] == ?-}.flatten!
 
 EXEEXT = CONFIG['EXEEXT']
 if CROSS_COMPILING

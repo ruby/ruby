@@ -11,18 +11,40 @@ require 'tempfile'
 
 File.umask(0)
 
-getopts("n", "make:", "make-flags:", "mantype:doc")
-$dryrun = $OPT["n"]
-mflags = Shellwords.shellwords($OPT["make-flags"] || "").uniq
-mflags[0].sub!(/^\w+$/, '-\&') unless mflags.empty?
-make, *mflags[0, 0] = Shellwords.shellwords($OPT['make'] || ENV["MAKE"] || "")
-mflags = mflags.grep(/^-([^-])/){$1}.join
-mflags.downcase! if /nmake/i == make
-$dryrun = true if mflags.include?(?n)
-mantype = $OPT["mantype"]
+def parse_args()
+  getopts('n', 'dest-dir:',
+	  'make:', 'make-flags:', 'mflags:',
+	  'mantype:doc')
 
-ARGV.delete_if{|x|x[0] == ?-}
-destdir = ARGV[0] || ''
+  $dryrun = $OPT['n']
+  $destdir = $OPT['dest-dir'] || ''
+  $make = $OPT['make'] || $make
+  make_flags = ($OPT['make-flags'] || '').strip
+  mflags = ($OPT['mflags'] || '').strip
+  $mantype = $OPT["mantype"]
+
+  # BSD make defines both MFLAGS and MAKEFLAGS, and MAKEFLAGS it
+  # defines includes a preceding '-' unlike other implementations.
+  # So we use MFLAGS if defined, otherwise use ('-' + MAKEFLAGS).
+  if mflags.empty?
+    mflags = "-#{make_flags}" unless make_flags.empty?
+  end
+
+  $mflags = Shellwords.shellwords(mflags)
+  $make, *rest = Shellwords.shellwords($make)
+  $mflags.unshift(*rest) unless rest.empty?
+
+  $mflags << '-n' if $dryrun
+
+  $mflags << "DESTDIR=#{$destdir}"
+
+  # Most make implementations put each flag separated in MAKEFLAGS, so
+  # we can just search with exact match.  Only nmake puts flags
+  # together, but nmake does not propagate -k via MAKEFLAGS anyway.
+  $continue = $mflags.include?('-k')
+end
+
+parse_args()
 
 include FileUtils::Verbose
 include FileUtils::NoWrite if $dryrun
@@ -36,13 +58,13 @@ ruby_install_name = CONFIG["ruby_install_name"]
 rubyw_install_name = CONFIG["rubyw_install_name"]
 
 version = CONFIG["ruby_version"]
-bindir = destdir+CONFIG["bindir"]
-libdir = destdir+CONFIG["libdir"]
-rubylibdir = destdir+CONFIG["rubylibdir"]
-archlibdir = destdir+CONFIG["archdir"]
-sitelibdir = destdir+CONFIG["sitelibdir"]
-sitearchlibdir = destdir+CONFIG["sitearchdir"]
-mandir = File.join(destdir+CONFIG["mandir"], "man")
+bindir = $destdir+CONFIG["bindir"]
+libdir = $destdir+CONFIG["libdir"]
+rubylibdir = $destdir+CONFIG["rubylibdir"]
+archlibdir = $destdir+CONFIG["archdir"]
+sitelibdir = $destdir+CONFIG["sitelibdir"]
+sitearchlibdir = $destdir+CONFIG["sitearchdir"]
+mandir = File.join($destdir+CONFIG["mandir"], "man")
 configure_args = Shellwords.shellwords(CONFIG["configure_args"])
 enable_shared = CONFIG["ENABLE_SHARED"] == 'yes'
 dll = CONFIG["LIBRUBY_SO"]
@@ -139,12 +161,12 @@ end
 Dir.glob("*.[1-9]") do |mdoc|
   section = mdoc[-1,1]
 
-  destdir = mandir + section
-  destfile = File.join(destdir, mdoc.sub(/ruby/, ruby_install_name))
+  $destdir = mandir + section
+  destfile = File.join($destdir, mdoc.sub(/ruby/, ruby_install_name))
 
-  makedirs destdir
+  makedirs $destdir
 
-  if mantype == "doc"
+  if $mantype == "doc"
     install mdoc, destfile, 0644
   else
     require 'mdoc2man.rb'

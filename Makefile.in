@@ -102,8 +102,13 @@ OBJS	      = array.@OBJEXT@ \
 
 MANTYPE	      = @MANTYPE@
 
+SCRIPT_ARGS   =	--dest-dir="$(DESTDIR)" \
+		--make="$(MAKE)" \
+		--mflags="$(MFLAGS)" \
+		--make-flags="$(MAKEFLAGS)"
+
 all:		@MAKEFILES@ miniruby$(EXEEXT) rbconfig.rb $(LIBRUBY)
-		@$(MINIRUBY) $(srcdir)/ext/extmk.rb --extstatic="@EXTSTATIC@" --make="$(MAKE)" --make-flags="$(MFLAGS)$(MAKEFLAGS)"
+		@$(MINIRUBY) $(srcdir)/ext/extmk.rb --extstatic="@EXTSTATIC@" $(SCRIPT_ARGS)
 
 miniruby$(EXEEXT):	config.status $(LIBRUBY_A) $(MAINOBJ) dmyext.@OBJEXT@
 		@rm -f $@
@@ -128,15 +133,15 @@ ruby.imp:	$(LIBRUBY_A)
 # $(MINIRUBY) $< $@
 
 install:	rbconfig.rb
-		$(MINIRUBY) $(srcdir)/instruby.rb --make="$(MAKE)" --make-flags="$(MFLAGS)$(MAKEFLAGS)" --mantype=$(MANTYPE) $(DESTDIR)
-		$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" --make-flags="$(MFLAGS)$(MAKEFLAGS) DESTDIR=$(DESTDIR)" install
+		$(MINIRUBY) $(srcdir)/instruby.rb $(SCRIPT_ARGS) --mantype="$(MANTYPE)"
+		$(MINIRUBY) $(srcdir)/ext/extmk.rb $(SCRIPT_ARGS) install
 
 what-where no-install:	rbconfig.rb
-		$(MINIRUBY) $(srcdir)/instruby.rb --make="$(MAKE)" --make-flags="$(MFLAGS)$(MAKEFLAGS) -n" --mantype=$(MANTYPE) $(DESTDIR)
-		$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" --make-flags="$(MFLAGS)$(MAKEFLAGS) -n DESTDIR=$(DESTDIR)" install
+		$(MINIRUBY) $(srcdir)/instruby.rb -n $(SCRIPT_ARGS) --mantype="$(MANTYPE)"
+		$(MINIRUBY) $(srcdir)/ext/extmk.rb -n $(SCRIPT_ARGS) install
 
 clean-ext:
-		@-$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" --make-flags="$(MFLAGS)$(MAKEFLAGS)" clean 2> /dev/null || true
+		@-$(MINIRUBY) $(srcdir)/ext/extmk.rb $(SCRIPT_ARGS) clean 2> /dev/null || true
 
 clean-local:
 		@rm -f $(OBJS) $(MAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY_ALIASES)
@@ -146,7 +151,7 @@ clean-local:
 clean: clean-ext clean-local
 
 distclean-ext:
-		@-$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" --make-flags="$(MFLAGS)$(MAKEFLAGS)" distclean 2> /dev/null || true
+		@-$(MINIRUBY) $(srcdir)/ext/extmk.rb $(SCRIPT_ARGS) distclean 2> /dev/null || true
 
 distclean-local: clean-local
 		@rm -f @MAKEFILES@ config.h rbconfig.rb
