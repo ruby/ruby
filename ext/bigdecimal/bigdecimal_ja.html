@@ -170,10 +170,10 @@ EXCEPTION_NaNが設定されているという意味です。<BR>
 f = BigDecimal::mode(BigDecimal::COMP_MODE,flag)
 </BLOCKQUOTE>
 の形式で指定します。<BR>
-ここで、flag は以下の一つを指定します。
+ここで、flag は以下(括弧内は対応するインスタンスメソッド)の一つを指定します。
 <TABLE>
 <TR><TD>COMP_MODE_TRUNCATE</TD><TD>全て切り捨てます(truncate)。</TD></TR>
-<TR><TD>COMP_MODE_ROUNDUP</TD><TD>四捨五入します(roundup、デフォルト)。</TD></TR>
+<TR><TD>COMP_MODE_ROUND</TD><TD>四捨五入します(round、デフォルト)。</TD></TR>
 <TR><TD>COMP_MODE_CEIL</TD><TD>数値の大きい方に繰り上げます(ceil)。</TD></TR>
 <TR><TD>COMP_MODE_FLOOR</TD><TD>数値の小さい方に繰り下げます(floor)。</TD></TR>
 <TR><TD>COMP_MODE_EVEN</TD><TD>四捨六入します。５の時は上位１桁が奇数の時のみ繰り上げます(Banker's rounding)。</TD></TR>
@@ -181,7 +181,7 @@ f = BigDecimal::mode(BigDecimal::COMP_MODE,flag)
 戻り値は指定前の flag の値です。
 引数に正しくないものが指定された場合は nil が返ります。<BR>
 mode メソッドでは丸め操作の位置をユーザが指定することはできません。
-丸め操作と位置を自分で制御したい場合は truncate/roundup/ceil/floor といった
+丸め操作と位置を自分で制御したい場合は truncate/round/ceil/floor といった
 インスタンスメソッドを使用して下さい。
 </BLOCKQUOTE>
 <LI><B>limit([n])</B></LI><BLOCKQUOTE>

@@ -1402,7 +1402,7 @@ Init_bigdecimal(void)
     /* Computation mode */
     rb_define_const(rb_cBigDecimal, "COMP_MODE",INT2FIX(VP_COMP_MODE));
     rb_define_const(rb_cBigDecimal, "COMP_MODE_TRUNCATE",INT2FIX(VP_COMP_MODE_TRUNCATE));
-    rb_define_const(rb_cBigDecimal, "COMP_MODE_ROUNDUP",INT2FIX(VP_COMP_MODE_ROUNDUP));
+    rb_define_const(rb_cBigDecimal, "COMP_MODE_ROUND",INT2FIX(VP_COMP_MODE_ROUNDUP));
     rb_define_const(rb_cBigDecimal, "COMP_MODE_CEIL",INT2FIX(VP_COMP_MODE_CEIL));
     rb_define_const(rb_cBigDecimal, "COMP_MODE_FLOOR",INT2FIX(VP_COMP_MODE_FLOOR));
     rb_define_const(rb_cBigDecimal, "COMP_MODE_EVEN",INT2FIX(VP_COMP_MODE_EVEN));
@@ -3912,8 +3912,15 @@ VpPower(Real *y, Real *x, S_INT n)
     Real *w2 = NULL;
 
     if(VpIsZero(x)) {
-        if(n<0) n = -n;
-        VpSetZero(y,(n%2)?VpGetSign(x):(-VpGetSign(x)));
+        sign = VpGetSign(x);
+        if(n<0) {
+           n = -n;
+           if(sign<0) sign = (n%2)?(-1):(1);
+           VpSetInf (y,sign);
+        } else {
+           if(sign<0) sign = (n%2)?(-1):(1);
+           VpSetZero(y,sign);
+        }
         goto Exit;
     }
     if(!VpIsDef(x)) {

@@ -161,14 +161,14 @@ f = BigDecimal::mode(BigDecimal::COMP_MODE,flag)
 where flag must be one of:
 <TABLE>
 <TR><TD>COMP_MODE_TRUNCATE</TD><TD>truncate</TD></TR>
-<TR><TD>COMP_MODE_ROUNDUP</TD><TD>roundup,default</TD></TR>
+<TR><TD>COMP_MODE_ROUND</TD><TD>round,default</TD></TR>
 <TR><TD>COMP_MODE_CEIL</TD><TD>ceil</TD></TR>
 <TR><TD>COMP_MODE_FLOOR</TD><TD>floor</TD></TR>
 <TR><TD>COMP_MODE_EVEN</TD><TD>Banker's rounding</TD></TR>
 </TABLE>
 nil is returned if any argument is illegal.<BR>
 The digit location for rounding operation can not be specified by mode method,
-use truncate/roundup/ceil/floor mthods for each instance instead.
+use truncate/round/ceil/floor mthods for each instance instead.
 
 </BLOCKQUOTE>
 
