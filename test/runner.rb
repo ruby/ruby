@@ -3,8 +3,7 @@ require 'test/unit/testcase'
 require 'optparse'
 
 rcsid = %w$Id$
-Runner = rcsid[1].chomp(",v").freeze
-Version = rcsid[2].scan(/\d+/, &method(:Integer)).freeze
+Version = rcsid[2].scan(/\d+/).collect!(&method(:Integer)).freeze
 Release = rcsid[3].freeze
 
 class BulkTestSuite < Test::Unit::TestSuite
@@ -35,7 +34,7 @@ runners_map = {
 
 runner = 'console'
 ARGV.options do |opt|
-  opt.program_name = Runner
+  opt.program_name = $0
   opt.banner << " [tests...]"
   opt.on("--runner=mode", runners_map, "UI mode (console, gtk,fox)") do |arg|
     runner = arg
