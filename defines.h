@@ -188,6 +188,10 @@ typedef int pid_t;
 #include "vms/vms.h"
 #endif
 
+#if defined(__BEOS__)
+#include <net/socket.h> /* intern.h needs fd_set definition */
+#endif
+
 #undef RUBY_EXTERN
 #if defined _WIN32 && !defined __GNUC__
 # ifndef RUBY_EXPORT
@@ -228,7 +232,7 @@ flush_register_windows(void)
 #  define FLUSH_REGISTER_WINDOWS flush_register_windows()
 #else
 #  define FLUSH_REGISTER_WINDOWS ((void)0)
-#endif 
+#endif
 
 #if defined(DOSISH)
 #define PATH_SEP ";"
