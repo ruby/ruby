@@ -627,7 +627,7 @@ rb_str_resize(str, len)
     if (len < 0) {
 	rb_raise(rb_eArgError, "negative string size (or size too big)");
     }
-	
+
     if (len != RSTRING(str)->len) {
 	rb_str_modify(str);
 	if (RSTRING(str)->len < len || RSTRING(str)->len - len > 1024) {
@@ -1281,7 +1281,7 @@ rb_str_match_m(argc, argv, str)
     VALUE str;
 {
     VALUE re;
-    if (argc < 1) 
+    if (argc < 1)
 	rb_raise(rb_eArgError, "wrong number of arguments(%d for 1)", argc);
     re = argv[0];
     argv[0] = str;
@@ -1418,6 +1418,7 @@ rb_str_upto(beg, end, excl)
 	rb_yield(current);
 	if (!excl && rb_str_equal(current, end)) break;
 	current = rb_funcall(current, succ, 0, 0);
+	StringValue(current);
 	if (excl && rb_str_equal(current, end)) break;
 	if (RSTRING(current)->len > RSTRING(end)->len)
 	    break;
@@ -1464,7 +1465,7 @@ rb_str_subpat(str, re, nth)
     }
     return Qnil;
 }
-    
+
 static VALUE
 rb_str_aref(str, indx)
     VALUE str;
@@ -2027,7 +2028,7 @@ str_gsub(argc, argv, str, bang)
     }
 
     pat = get_pat(argv[0], 1);
-    offset=0; n=0; 
+    offset=0; n=0;
     beg = rb_reg_search(pat, str, 0, 0);
     if (beg < 0) {
 	if (bang) return Qnil;	/* no match, no substitution */
@@ -2064,7 +2065,7 @@ str_gsub(argc, argv, str, bang)
 	bp += len;
 	memcpy(bp, RSTRING(val)->ptr, RSTRING(val)->len);
 	bp += RSTRING(val)->len;
-       offset = END(0);
+	offset = END(0);
 	if (BEG(0) == END(0)) {
 	    /*
 	     * Always consume at least one character of the input string
@@ -2214,7 +2215,7 @@ rb_str_replace(str, str2)
     return str;
 }
 
-/* 
+/*
  *  call-seq:
  *     string.clear    ->  string
  *
@@ -2621,7 +2622,7 @@ rb_str_dump(str)
 	  case '"':  case '\\':
 	  case '\n': case '\r':
 	  case '\t': case '\f': case '#':
-	  case '\013': case '\007': case '\033': 
+	  case '\013': case '\007': case '\033':
 	    len += 2;
 	    break;
 
@@ -4243,7 +4244,7 @@ rb_str_scan(str, pat)
 	rb_backref_set(match);
 	return ary;
     }
-    
+
     while (!NIL_P(result = scan_once(str, pat, &start))) {
 	match = rb_backref_get();
 	rb_match_busy(match);
@@ -4613,7 +4614,7 @@ Init_String()
     rb_include_module(rb_cString, rb_mEnumerable);
     rb_define_alloc_func(rb_cString, str_alloc);
     rb_define_method(rb_cString, "initialize", rb_str_init, -1);
-    rb_define_method(rb_cString, "initialize_copy", rb_str_replace, 1); 
+    rb_define_method(rb_cString, "initialize_copy", rb_str_replace, 1);
     rb_define_method(rb_cString, "<=>", rb_str_cmp_m, 1);
     rb_define_method(rb_cString, "==", rb_str_equal, 1);
     rb_define_method(rb_cString, "eql?", rb_str_eql, 1);

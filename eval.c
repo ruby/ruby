@@ -455,7 +455,7 @@ rb_method_node(klass, id)
 {
     int noex;
     struct cache_entry *ent;
-  
+
     ent = cache + EXPR1(klass, id);
     if (ent->mid == id && ent->klass == klass && ent->method){
 	return ent->method;
@@ -733,9 +733,9 @@ struct RVarmap *ruby_dyna_vars;
     ruby_dyna_vars = 0
 
 #define POP_VARS() \
-   if (_old && (ruby_scope->flags & SCOPE_DONT_RECYCLE)) {\
-       if (RBASIC(_old)->flags) /* unless it's already recycled */ \
-           FL_SET(_old, DVAR_DONT_RECYCLE); \
+    if (_old && (ruby_scope->flags & SCOPE_DONT_RECYCLE)) {\
+	if (RBASIC(_old)->flags) /* unless it's already recycled */ \
+	    FL_SET(_old, DVAR_DONT_RECYCLE); \
     }\
     ruby_dyna_vars = _old; \
 } while (0)
@@ -983,15 +983,15 @@ static void scope_dup _((struct SCOPE *));
 
 #define POP_SCOPE() 			\
     if (ruby_scope->flags & SCOPE_DONT_RECYCLE) {\
-       if (_old) scope_dup(_old);	\
+	if (_old) scope_dup(_old);	\
     }					\
     if (!(ruby_scope->flags & SCOPE_MALLOC)) {\
 	ruby_scope->local_vars = 0;	\
 	ruby_scope->local_tbl  = 0;	\
 	if (!(ruby_scope->flags & SCOPE_DONT_RECYCLE) && \
-            ruby_scope != top_scope) {	\
+	    ruby_scope != top_scope) {	\
 	    rb_gc_force_recycle((VALUE)ruby_scope);\
-        }				\
+	}				\
     }					\
     ruby_scope->flags |= SCOPE_NOSTACK;	\
     ruby_scope = _old;			\
@@ -1031,7 +1031,7 @@ void
 ruby_set_current_source()
 {
     if (ruby_current_node) {
-        ruby_sourcefile = ruby_current_node->nd_file;
+	ruby_sourcefile = ruby_current_node->nd_file;
 	ruby_sourceline = nd_line(ruby_current_node);
     }
 }
@@ -1130,6 +1130,7 @@ error_print()
     eclass = CLASS_OF(ruby_errinfo);
     if (EXEC_TAG() == 0) {
 	e = rb_funcall(ruby_errinfo, rb_intern("message"), 0, 0);
+	StringValue(e);
 	einfo = RSTRING(e)->ptr;
 	elen = RSTRING(e)->len;
     }
@@ -1209,7 +1210,7 @@ void Init_ext _((void));
 
 #ifdef HAVE_NATIVETHREAD
 static rb_nativethread_t ruby_thid;
-int 
+int
 is_ruby_native_thread() {
     return NATIVETHREAD_EQUAL(ruby_thid, NATIVETHREAD_CURRENT());
 }
@@ -1712,7 +1713,7 @@ rb_eval_cmd(cmd, arg, level)
 	val = eval(ruby_top_self, cmd, Qnil, 0, 0);
     }
     if (ruby_scope->flags & SCOPE_DONT_RECYCLE)
-       scope_dup(saved_scope);
+	scope_dup(saved_scope);
     ruby_scope = saved_scope;
     ruby_safe_level = safe;
     POP_TAG();
@@ -2093,25 +2094,25 @@ copy_node_scope(node, rval)
     }\
     else if (nd_type(n) == NODE_ARRAY) {\
 	argc=alen;\
-        if (argc > 0) {\
-            int i;\
+	if (argc > 0) {\
+	    int i;\
 	    n = anode;\
 	    argv = TMP_ALLOC(argc);\
 	    for (i=0;i<argc;i++) {\
 		argv[i] = rb_eval(self,n->nd_head);\
 		n=n->nd_next;\
 	    }\
-        }\
-        else {\
+	}\
+	else {\
 	    argc = 0;\
 	    argv = 0;\
-        }\
+	}\
     }\
     else {\
-        VALUE args = rb_eval(self,n);\
+	VALUE args = rb_eval(self,n);\
 	if (TYPE(args) != T_ARRAY)\
 	    args = rb_ary_to_ary(args);\
-        argc = RARRAY(args)->len;\
+	argc = RARRAY(args)->len;\
 	argv = ALLOCA_N(VALUE, argc);\
 	MEMCPY(argv, RARRAY(args)->ptr, VALUE, argc);\
     }\
@@ -2124,7 +2125,7 @@ copy_node_scope(node, rval)
     int tmp_iter = ruby_iter->iter;\
     if (tmp_iter == ITER_PRE) {\
 	ruby_block = ruby_block->outer;\
-        tmp_iter = ITER_NOT;\
+	tmp_iter = ITER_NOT;\
     }\
     PUSH_ITER(tmp_iter)
 
@@ -2150,13 +2151,13 @@ arg_defined(self, node, buf, type)
     if (!node) return type;	/* no args */
     if (nd_type(node) == NODE_ARRAY) {
 	argc=node->nd_alen;
-        if (argc > 0) {
+	if (argc > 0) {
 	    for (i=0;i<argc;i++) {
 		if (!is_defined(self, node->nd_head, buf, 0))
 		    return 0;
 		node = node->nd_next;
 	    }
-        }
+	}
     }
     else if (!is_defined(self, node, buf, 0)) {
 	return 0;
@@ -2687,7 +2688,7 @@ rb_eval(self, n)
 
 	/* nodes for speed-up(literal match) */
       case NODE_MATCH3:
-        {
+	{
 	    VALUE r = rb_eval(self,node->nd_recv);
 	    VALUE l = rb_eval(self,node->nd_value);
 	    if (TYPE(l) == T_STRING) {
@@ -3000,7 +3001,7 @@ rb_eval(self, n)
 	break;
 
       case NODE_RESCUE:
-        {
+	{
 	    volatile VALUE e_info = ruby_errinfo;
 	    volatile int rescuing = 0;
 
@@ -3051,7 +3052,7 @@ rb_eval(self, n)
 		goto again;
 	    }
 	}
-        break;
+	break;
 
       case NODE_ENSURE:
 	PUSH_TAG(PROT_NONE);
@@ -3609,8 +3610,8 @@ rb_eval(self, n)
 		nd_set_type(node, NODE_LIT);
 		node->nd_lit = result;
 		break;
-              case NODE_LIT:
-                /* other thread may replace NODE_DREGX_ONCE to NODE_LIT */
+	      case NODE_LIT:
+		/* other thread may replace NODE_DREGX_ONCE to NODE_LIT */
 		goto again;
 	      case NODE_DXSTR:
 		result = rb_funcall(self, '`', 1, str);
@@ -3747,8 +3748,8 @@ rb_eval(self, n)
 		rb_raise(rb_eTypeError, "no outer class/module");
 	    }
 	    if (node->nd_super) {
-               super = rb_eval(self, node->nd_super);
-               rb_check_inheritable(super);
+	       super = rb_eval(self, node->nd_super);
+	       rb_check_inheritable(super);
 	    }
 	    else {
 		super = 0;
@@ -4754,7 +4755,7 @@ rb_yield_0(val, self, klass, flags, avalue)
     ruby_cref = (NODE*)old_cref;
     ruby_wrapper = old_wrapper;
     if (ruby_scope->flags & SCOPE_DONT_RECYCLE)
-       scope_dup(old_scope);
+	scope_dup(old_scope);
     ruby_scope = old_scope;
     scope_vmode = old_vmode;
     switch (state) {
@@ -4835,7 +4836,7 @@ rb_yield_splat(values)
 
 /*
  *  call-seq:
- *     loop {|| block } 
+ *     loop {|| block }
  *  
  *  Repeatedly executes the block.
  *     
@@ -7590,7 +7591,7 @@ Init_eval()
  *  call-seq:
  *     mod.autoload(name, filename)   => nil
  *  
- *  Registers _filename_ to be loaded (using <code>Kernel::require</code>) 
+ *  Registers _filename_ to be loaded (using <code>Kernel::require</code>)
  *  the first time that _module_ (which may be a <code>String</code> or
  *  a symbol) is accessed in the namespace of _mod_.
  *     
@@ -7628,7 +7629,7 @@ rb_mod_autoload_p(mod, sym)
  *  call-seq:
  *     autoload(module, filename)   => nil
  *  
- *  Registers _filename_ to be loaded (using <code>Kernel::require</code>) 
+ *  Registers _filename_ to be loaded (using <code>Kernel::require</code>)
  *  the first time that _module_ (which may be a <code>String</code> or
  *  a symbol) is accessed.
  *     
@@ -7966,8 +7967,8 @@ proc_alloc(klass, proc)
 
 /*
  *  call-seq:
- *     Proc.new {|...| block } => a_proc 
- *     Proc.new                => a_proc 
+ *     Proc.new {|...| block } => a_proc
+ *     Proc.new                => a_proc
  *  
  *  Creates a new <code>Proc</code> object, bound to the current
  *  context. <code>Proc::new</code> may be called without a block only
@@ -8133,9 +8134,9 @@ proc_invoke(proc, args, self, klass)
  *  <i>params</i> using something close to method calling semantics.
  *  Generates a warning if multiple values are passed to a proc that
  *  expects just one (previously this silently converted the parameters
- *  to an array). 
+ *  to an array).
  *
- *  For procs created using <code>Kernel.proc</code>, generates an 
+ *  For procs created using <code>Kernel.proc</code>, generates an
  *  error if the wrong number of parameters
  *  are passed to a proc with multiple parameters. For procs created using
  *  <code>Proc.new</code>, extra parameters are silently discarded.
@@ -8174,7 +8175,7 @@ static VALUE method_arity _((VALUE));
  *  is declared to take no arguments, returns 0. If the block is known
  *  to take exactly n arguments, returns n. If the block has optional
  *  arguments, return -n-1, where n is the number of mandatory
- *  arguments. A <code>proc</code> with no argument declarations 
+ *  arguments. A <code>proc</code> with no argument declarations
  *  returns -1, as it can accept (and ignore) an arbitrary number of
  *  parameters.
  *     
@@ -8934,7 +8935,7 @@ method_arity(method)
       case NODE_IVAR:
 	return INT2FIX(0);
       case NODE_BMETHOD:
-       return proc_arity(body->nd_cval);
+	return proc_arity(body->nd_cval);
       default:
 	body = body->nd_next;	/* skip NODE_SCOPE */
 	if (nd_type(body) == NODE_BLOCK)
@@ -9272,7 +9273,7 @@ Init_Proc()
 
 /*
  *  Objects of class <code>Binding</code> encapsulate the execution
- *  context at some particular place in the code and retain this context 
+ *  context at some particular place in the code and retain this context
  *  for future use. The variables, methods, value of <code>self</code>,
  *  and possibly an iterator block that can be accessed in this context
  *  are all retained. Binding objects can be created using
@@ -9305,8 +9306,8 @@ Init_Proc()
  *     
  */
 
-void 
-Init_Binding() 
+void
+Init_Binding()
 {
     rb_cBinding = rb_define_class("Binding", rb_cObject);
     rb_undef_alloc_func(rb_cBinding);
@@ -9955,7 +9956,7 @@ rb_thread_restore_context(th, exit)
 	VALUE *base;
 #ifdef HAVE_UNWIND_H
 	_Unwind_Context *unwctx = _UNW_createContextForSelf();
-	
+
 	_UNW_currentContext(unwctx);
 	base = (VALUE*)(long)_UNW_getAR(unwctx, _UNW_AR_BSP);
 	_UNW_destroyContext(unwctx);
@@ -10270,9 +10271,9 @@ rb_thread_schedule()
  		    th->wait_for = 0;
  		    th->select_value = 0;
  		    found = 1;
-                    intersect_fds(&readfds, &th->readfds, max);
-                    intersect_fds(&writefds, &th->writefds, max);
-                    intersect_fds(&exceptfds, &th->exceptfds, max);
+		    intersect_fds(&readfds, &th->readfds, max);
+		    intersect_fds(&writefds, &th->writefds, max);
+		    intersect_fds(&exceptfds, &th->exceptfds, max);
 		}
 	    }
 	    END_FOREACH_FROM(curr, th);
@@ -12129,7 +12130,7 @@ static VALUE rb_cCont;
  *  cause the <code>callcc</code> to return (as will falling through the
  *  end of the block). The value returned by the <code>callcc</code> is
  *  the value of the block, or the value passed to
- *  <em>cont</em><code>.call</code>. See class <code>Continuation</code> 
+ *  <em>cont</em><code>.call</code>. See class <code>Continuation</code>
  *  for more details. Also see <code>Kernel::throw</code> for
  *  an alternative mechanism for unwinding a call stack.
  */
@@ -12168,7 +12169,7 @@ rb_callcc(self)
 
 /*
  *  call-seq:
- *     cont.call(args, ...) 
+ *     cont.call(args, ...)
  *     cont[args, ...]
  *  
  *  Invokes the continuation. The program continues from the end of the
@@ -12391,7 +12392,7 @@ thgroup_add(group, thread)
  *  execution, including the main thread of the Ruby script.
  *     
  *  In the descriptions of the methods in this class, the parameter _sym_
- *  refers to a symbol, which is either a quoted string or a 
+ *  refers to a symbol, which is either a quoted string or a
  *  +Symbol+ (such as <code>:name</code>).
  */
 
