@@ -34,7 +34,7 @@ module Tk::BLT
       end
       private :__item_strval_optkeys
 
-      def _item_listval_optkeys(id)
+      def __item_listval_optkeys(id)
         ['bindtags']
       end
       private :__item_listval_optkeys
@@ -266,8 +266,9 @@ module Tk::BLT
         @cpath = @chart.path
         Axis::OBJ_TBL[@cpath][@axis] = self
         keys = _symbolkey2str(keys)
-        unless keys.delete['without_creating']
-          @chart.axis_create(@axis, keys)
+        unless keys.delete('without_creating')
+          # @chart.axis_create(@axis, keys)
+          tk_call(@chart, 'axis', 'create', @axis, keys)
         end
       end
 
@@ -420,8 +421,9 @@ module Tk::BLT
         @cpath = @chart.path
         Element::OBJ_TBL[@cpath][@element] = self
         keys = _symbolkey2str(keys)
-        unless keys.delete['without_creating']
-          @chart.element_create(@element, keys)
+        unless keys.delete('without_creating')
+          # @chart.element_create(@element, keys)
+          tk_call(@chart, 'element', 'create', @element, keys)
         end
       end
 
@@ -623,8 +625,9 @@ module Tk::BLT
         @cpath = @chart.path
         Pen::OBJ_TBL[@cpath][@pen] = self
         keys = _symbolkey2str(keys)
-        unless keys.delete['without_creating']
-          @chart.pen_create(@pen, keys)
+        unless keys.delete('without_creating')
+          # @chart.pen_create(@pen, keys)
+          tk_call(@chart, 'pen', 'create', @pen, keys)
         end
       end
 
@@ -782,6 +785,24 @@ module Tk::BLT
                                     self::MarkerTypeName, *args)
         chart.marker_configure(idnum, fontkeys) unless fontkeys.empty?
         idnum.to_i  # 'item id' is an integer number
+      end
+
+      def self.create_type(chart, type, keys={})
+        args, fontkeys = _parse_create_args(keys)
+        idnum = tk_call_without_enc(chart.path, 'create', type, *args)
+        chart.marker_configure(idnum, fontkeys) unless fontkeys.empty?
+        id = idnum.to_i  # 'item id' is an integer number
+        obj = self.allocate
+        obj.instance_eval{
+          @parent = @chart = chart
+          @path = chart.path
+          @id = id
+          unless Tk::BLT::PlotComponent::MarkerID_TBL[@path]
+            Tk::BLT::PlotComponent::MarkerID_TBL[@path] = {}
+          end
+          Tk::BLT::PlotComponent::MarkerID_TBL[@path][@id] = self
+        }
+        obj
       end
 
       def initialize(parent, *args)
@@ -980,12 +1001,10 @@ module Tk::BLT
 
     ###################
 
-    def marker_create(type, *args)
-      type.create(self, *args)
+    def axis_create(id=nil, keys={})
+      # tk_send('axis', 'create', tagid(id), keys)
+      Tk::BLT::PlotComponent::Axis.new(self, id, keys)
     end
-
-    ###################
-
     def axis_delete(*ids)
       tk_send('axis', 'delete', *(ids.collect{|id| tagid(id)}))
       self
@@ -1033,6 +1052,10 @@ module Tk::BLT
 
     ###################
 
+    def element_create(id=nil, keys={})
+      # tk_send('element', 'create', tagid(id), keys)
+      Tk::BLT::PlotComponent::Element.new(self, id, keys)
+    end
     def element_activate(id, *indices)
       tk_send('element', 'activate', tagid(id), *indices)
       self
@@ -1109,6 +1132,10 @@ module Tk::BLT
 
     ###################
 
+    def pen_create(id=nil, keys={})
+      # tk_send('pen', 'create', tagid(id), keys)
+      Tk::BLT::PlotComponent::Pen.new(self, id, keys)
+    end
     def pen_delete(*ids)
       tk_send('pen', 'delete', *(ids.collect{|id| tagid(id)}))
       self
@@ -1137,6 +1164,28 @@ module Tk::BLT
 
     ###################
 
+    def marker_create(type, keys={})
+      case type
+      when :text, 'text'
+        Tk::BLT::PlotComponent::TextMarker.new(self, keys)
+      when :line, 'line'
+        Tk::BLT::PlotComponent::LineMarker.new(self, keys)
+      when :bitmap, 'bitmap'
+        Tk::BLT::PlotComponent::BitmapMarker.new(self, keys)
+      when :image, 'image'
+        Tk::BLT::PlotComponent::ImageMarker.new(self, keys)
+      when :polygon, 'polygon'
+        Tk::BLT::PlotComponent::PolygonMarker.new(self, keys)
+      when :window, 'window'
+        Tk::BLT::PlotComponent::WindowMarker.new(self, keys)
+      else
+        if type.kind_of?(Tk::BLT::PlotComponent::Marker)
+          type.new(self, keys)
+        else
+          Tk::BLT::PlotComponent::Marker.create_type(self, type, keys)
+        end
+      end
+    end
     def marker_after(id, target=nil)
       if target
         tk_send_without_enc('marker', 'after', tagid(id), tagid(target))
@@ -1183,103 +1232,219 @@ module Tk::BLT
     ###################
 
     def xaxis_cget(option)
-      axis_cget('xaxis', option)
+      itemcget('xaxis', option)
     end
     def xaxis_configure(slot, value=None)
-      axis_configure('xaxis', slot, value)
+      itemconfigure('xaxis', slot, value)
     end
     def xaxis_configinfo(slot=nil)
-      axis_configinfo('xaxis', slot)
+      itemconfiginfo('xaxis', slot)
     end
     def current_xaxis_configinfo(slot=nil)
-      current_axis_configinfo('xaxis', slot)
+      current_itemconfiginfo('xaxis', slot)
+    end
+    def xaxis_bind(context, *args)
+      if TkComm._callback_entry?(args[0]) || !block_given?
+        cmd = args.shift
+      else
+        cmd = Proc.new
+      end
+      _bind([path, 'xaxis', 'bind'], context, cmd, *args)
+      self
+    end
+    def xaxis_bind_append(context, *args)
+      if TkComm._callback_entry?(args[0]) || !block_given?
+        cmd = args.shift
+      else
+        cmd = Proc.new
+      end
+      _bind_append([path, 'xaxis', 'bind'], context, cmd, *args)
+      self
+    end
+    def xaxis_bind_remove(context)
+      _bind_remove([path, 'xaxis', 'bind'], context)
+      self
+    end
+    def xaxis_bindinfo(context=nil)
+      _bindinfo([path, 'xaxis', 'bind'], context)
     end
     def xaxis_invtransform(val)
-      axis_invtransform('xaxis', val)
+      list(tk_send('xaxis', 'invtransform', val))
     end
     def xaxis_limits
-      axis_limits('xaxis')
+      list(tk_send('xaxis', 'limits'))
     end
     def xaxis_transform(val)
-      axis_transform('xaxis', val)
+      list(tk_send('xaxis', 'transform', val))
     end
     def xaxis_use(target=nil)
-      axis_use('xaxis', target)
+      if target
+        Axis.id2obj(self, tk_send('xaxis', 'use', tagid(target)))
+      else
+        Axis.id2obj(self, tk_send('xaxis', 'use'))
+      end
     end
 
     def x2axis_cget(option)
-      axis_cget('x2axis', option)
+      itemcget('x2axis', option)
     end
     def x2axis_configure(slot, value=None)
-      axis_configure('x2axis', slot, value)
+      itemconfigure('x2axis', slot, value)
     end
     def x2axis_configinfo(slot=nil)
-      axis_configinfo('x2axis', slot)
+      itemconfiginfo('x2axis', slot)
     end
     def current_x2axis_configinfo(slot=nil)
-      current_axis_configinfo('x2axis', slot)
+      current_itemconfiginfo('x2axis', slot)
+    end
+    def x2axis_bind(context, *args)
+      if TkComm._callback_entry?(args[0]) || !block_given?
+        cmd = args.shift
+      else
+        cmd = Proc.new
+      end
+      _bind([path, 'x2axis', 'bind'], context, cmd, *args)
+      self
+    end
+    def x2axis_bind_append(context, *args)
+      if TkComm._callback_entry?(args[0]) || !block_given?
+        cmd = args.shift
+      else
+        cmd = Proc.new
+      end
+      _bind_append([path, 'x2axis', 'bind'], context, cmd, *args)
+      self
+    end
+    def x2axis_bind_remove(context)
+      _bind_remove([path, 'x2axis', 'bind'], context)
+      self
+    end
+    def x2axis_bindinfo(context=nil)
+      _bindinfo([path, 'x2axis', 'bind'], context)
     end
     def x2axis_invtransform(val)
-      axis_invtransform('x2axis', val)
+      list(tk_send('x2axis', 'invtransform', val))
     end
     def x2axis_limits
-      axis_limits('x2axis')
+      list(tk_send('x2axis', 'limits'))
     end
     def x2axis_transform(val)
-      axis_transform('x2axis', val)
+      list(tk_send('x2axis', 'transform', val))
     end
     def x2axis_use(target=nil)
-      axis_use('x2axis', target)
+      if target
+        Axis.id2obj(self, tk_send('x2axis', 'use', tagid(target)))
+      else
+        Axis.id2obj(self, tk_send('x2axis', 'use'))
+      end
     end
 
     def yaxis_cget(option)
-      axis_cget('yaxis', option)
+      itemcget('yaxis', option)
     end
     def yaxis_configure(slot, value=None)
-      axis_configure('yaxis', slot, value)
+      itemconfigure('yaxis', slot, value)
     end
     def yaxis_configinfo(slot=nil)
-      axis_configinfo('yaxis', slot)
+      itemconfiginfo('yaxis', slot)
     end
     def current_yaxis_configinfo(slot=nil)
-      current_axis_configinfo('yaxis', slot)
+      current_itemconfiginfo('yaxis', slot)
+    end
+    def yaxis_bind(context, *args)
+      if TkComm._callback_entry?(args[0]) || !block_given?
+        cmd = args.shift
+      else
+        cmd = Proc.new
+      end
+      _bind([path, 'yaxis', 'bind'], context, cmd, *args)
+      self
+    end
+    def yaxis_bind_append(context, *args)
+      if TkComm._callback_entry?(args[0]) || !block_given?
+        cmd = args.shift
+      else
+        cmd = Proc.new
+      end
+      _bind_append([path, 'yaxis', 'bind'], context, cmd, *args)
+      self
+    end
+    def yaxis_bind_remove(context)
+      _bind_remove([path, 'yaxis', 'bind'], context)
+      self
+    end
+    def yaxis_bindinfo(context=nil)
+      _bindinfo([path, 'yaxis', 'bind'], context)
     end
     def yaxis_invtransform(val)
-      axis_invtransform('yaxis', val)
+      list(tk_send('yaxis', 'invtransform', val))
     end
     def yaxis_limits
-      axis_limits('yaxis')
+      list(tk_send('yaxis', 'limits'))
     end
     def yaxis_transform(val)
-      axis_transform('yaxis', val)
+      list(tk_send('yaxis', 'transform', val))
     end
     def yaxis_use(target=nil)
-      axis_use('yaxis', target)
+      if target
+        Axis.id2obj(self, tk_send('yaxis', 'use', tagid(target)))
+      else
+        Axis.id2obj(self, tk_send('yaxis', 'use'))
+      end
     end
 
     def y2axis_cget(option)
-      axis_cget('y2axis', option)
+      itemcget('y2axis', option)
     end
     def y2axis_configure(slot, value=None)
-      axis_configure('y2axis', slot, value)
+      itemconfigure('y2axis', slot, value)
     end
     def y2axis_configinfo(slot=nil)
       axis_configinfo('y2axis', slot)
     end
     def current_y2axis_configinfo(slot=nil)
-      current_axis_configinfo('y2axis', slot)
+      current_itemconfiginfo('y2axis', slot)
+    end
+    def y2axis_bind(context, *args)
+      if TkComm._callback_entry?(args[0]) || !block_given?
+        cmd = args.shift
+      else
+        cmd = Proc.new
+      end
+      _bind([path, 'y2axis', 'bind'], context, cmd, *args)
+      self
+    end
+    def y2axis_bind_append(context, *args)
+      if TkComm._callback_entry?(args[0]) || !block_given?
+        cmd = args.shift
+      else
+        cmd = Proc.new
+      end
+      _bind_append([path, 'y2axis', 'bind'], context, cmd, *args)
+      self
+    end
+    def y2axis_bind_remove(context)
+      _bind_remove([path, 'y2axis', 'bind'], context)
+      self
+    end
+    def y2axis_bindinfo(context=nil)
+      _bindinfo([path, 'y2axis', 'bind'], context)
     end
     def y2axis_invtransform(val)
-      axis_invtransform('y2axis', val)
+      list(tk_send('y2axis', 'invtransform', val))
     end
     def y2axis_limits
-      axis_limits('y2axis')
+      list(tk_send('y2axis', 'limits'))
     end
     def y2axis_transform(val)
-      axis_transform('y2axis', val)
+      list(tk_send('y2axis', 'transform', val))
     end
     def y2axis_use(target=nil)
-      axis_use('y2axis', target)
+      if target
+        Axis.id2obj(self, tk_send('y2axis', 'use', tagid(target)))
+      else
+        Axis.id2obj(self, tk_send('y2axis', 'use'))
+      end
     end
   end
 end

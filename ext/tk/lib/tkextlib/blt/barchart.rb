@@ -14,6 +14,7 @@ module Tk::BLT
     WidgetClassNames[WidgetClassName] = self
 
     include PlotComponent
+    include GraphCommand
 
     def __boolval_optkeys
       ['bufferelements', 'invertxy']

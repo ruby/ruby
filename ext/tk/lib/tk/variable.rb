@@ -109,11 +109,12 @@ TkCore::INTERP.add_tk_procs('rb_var', 'args', <<-'EOL')
     end
     self
   end
-  def default_value=(val)
+  def set_default_value(val)
     @def_default = :val
     @default_val = val
     self
   end
+  alias default_value= set_default_value
   def default_proc(cmd = Proc.new)
     @def_default = :proc
     @default_val = cmd
@@ -129,59 +130,111 @@ TkCore::INTERP.add_tk_procs('rb_var', 'args', <<-'EOL')
   def default_value_type
     @type
   end
+  def default_element_value_type(idxs)
+    if idxs.kind_of?(Array)
+      index = idxs.collect{|idx| _get_eval_string(idx, true)}.join(',')
+    else
+      index = _get_eval_string(idxs, true)
+    end
+    @element_type[index]
+  end
 
-  def default_value_type=(type)
+  def _set_default_value_type_core(type, idxs)
     if type.kind_of?(Class)
       if type == NilClass
-        @type = nil
+        type = nil
       elsif type == Numeric
-        @type = :numeric
+        type = :numeric
       elsif type == TrueClass || type == FalseClass
-        @type = :bool
+        type = :bool
       elsif type == String
-        @type = :string
+        type = :string
       elsif type == Symbol
-        @type = :symbol
+        type = :symbol
       elsif type == Array
-        @type = :list
+        type = :list
+      elsif type <= TkVariable
+        type = :variable
+      elsif type <= TkWindow
+        type = :window
+      elsif TkComm._callback_entry_class?(type)
+        type = :procedure
       else
-        @type = nil
+        type = nil
       end
     else
       case(type)
       when nil
-        @type = nil
+        type = nil
       when :numeric, 'numeric'
-        @type = :numeric
+        type = :numeric
       when true, false, :bool, 'bool'
-        @type = :bool
+        type = :bool
       when :string, 'string'
-        @type = :string
+        type = :string
       when :symbol, 'symbol'
-        @type = :symbol
+        type = :symbol
       when :list, 'list'
-        @type = :list
+        type = :list
       when :numlist, 'numlist'
-        @type = :numlist
+        type = :numlist
+      when :variable, 'variable'
+        type = :variable
+      when :window, 'window'
+        type = :window
+      when :procedure, 'procedure'
+        type = :procedure
       else
-        self.default_value_type = type.class
+        return _set_default_value_type_core(type.class, idxs)
       end
     end
-    @type
+    if idxs
+      if idxs.kind_of?(Array)
+        index = idxs.collect{|idx| _get_eval_string(idx, true)}.join(',')
+      else
+        index = _get_eval_string(idxs, true)
+      end
+      @element_type[index] = type
+    else
+      @type = type
+    end
+    type
+  end
+  private :_set_default_value_type_core
+
+  def set_default_value_type(type)
+    _set_default_value_type_core(type, nil)
+    self
+  end
+  alias default_value_type= set_default_value_type
+
+  def set_default_element_value_type(idxs, type)
+    _set_default_value_type_core(type, idxs)
+    self
   end
 
-  def _to_default_type(val)
-    return val unless @type
+  def _to_default_type(val, idxs = nil)
+    if idxs
+      if idxs.kind_of?(Array)
+        index = idxs.collect{|idx| _get_eval_string(idx, true)}.join(',')
+      else
+        index = _get_eval_string(idxs, true)
+      end
+      type = @element_type[index]
+    else
+      type = @type
+    end
+    return val unless type
     if val.kind_of?(Hash)
-      val.keys.each{|k| val[k] = _to_default_type(val[k]) }
+      val.keys.each{|k| val[k] = _to_default_type(val[k], idxs) }
       val
     else
       begin
-        case(@type)
+        case(type)
         when :numeric
           number(val)
         when :bool
-          TkComm
+          TkComm.bool(val)
         when :string
           val
         when :symbol
@@ -190,6 +243,12 @@ TkCore::INTERP.add_tk_procs('rb_var', 'args', <<-'EOL')
           tk_split_simplelist(val)
         when :numlist
           tk_split_simplelist(val).collect!{|v| number(v)}
+        when :variable
+          TkVarAccess.new(val)
+        when :window
+          TkComm.window(val)
+        when :procedure
+          TkComm.procedure(val)
         else
           val
         end
@@ -199,6 +258,11 @@ TkCore::INTERP.add_tk_procs('rb_var', 'args', <<-'EOL')
     end
   end
   private :_to_default_type
+
+  def _to_default_element_type(idxs, val)
+    _to_default_type(val, idxs)
+  end
+  private :_to_default_element_type
 
   def initialize(val="", type=nil)
     # @id = Tk_VARIABLE_ID.join('')
@@ -212,6 +276,10 @@ TkCore::INTERP.add_tk_procs('rb_var', 'args', <<-'EOL')
     @trace_var  = nil
     @trace_elem = nil
     @trace_opts = nil
+
+    @type = nil
+    var = self
+    @element_type = Hash.new{|k,v| var.default_value_type }
 
     self.default_value_type = type
 
@@ -326,14 +394,15 @@ TkCore::INTERP.add_tk_procs('rb_var', 'args', <<-'EOL')
     ! is_hash?
   end
 
-  def exist?(idx = nil)
+  def exist?(*elems)
     INTERP._invoke_without_enc('global', @id)
-    if idx
-      # array
-      TkComm.bool(tk_call('info', 'exist', "#{@id}")) && 
-        TkComm.bool(tk_call('info', 'exist', "#{@id}(#{idx})"))
-    else
+    if elems.empty?
       TkComm.bool(tk_call('info', 'exist', @id))
+    else
+      # array
+      index = elems.collect{|idx| _get_eval_string(idx, true)}.join(',')
+      TkComm.bool(tk_call('info', 'exist', "#{@id}")) && 
+        TkComm.bool(tk_call('info', 'exist', "#{@id}(#{index})"))
     end
   end
 
@@ -389,6 +458,7 @@ if USE_TCLs_SET_VARIABLE_FUNCTIONS
   end
 
   def value=(val)
+    val = val._value if !@type && @type != :variable && val.kind_of?(TkVariable)
     if val.kind_of?(Hash)
       self.clear
       val.each{|k, v|
@@ -418,11 +488,10 @@ if USE_TCLs_SET_VARIABLE_FUNCTIONS
     end
   end
 
-  def [](*idxs)
+  def _element_value(*idxs)
     index = idxs.collect{|idx| _get_eval_string(idx, true)}.join(',')
     begin
-      # _fromUTF8(INTERP._get_global_var2(@id, index))
-      _to_default_type(_fromUTF8(INTERP._get_global_var2(@id, index)))
+      _fromUTF8(INTERP._get_global_var2(@id, index))
     rescue => e
       case @def_default
       when :proc
@@ -440,6 +509,8 @@ if USE_TCLs_SET_VARIABLE_FUNCTIONS
 
   def []=(*args)
     val = args.pop
+    type = default_element_value_type(args)
+    val = val._value if !type && type != :variable && val.kind_of?(TkVariable)
     index = args.collect{|idx| _get_eval_string(idx, true)}.join(',')
     _fromUTF8(INTERP._set_global_var2(@id, index, _get_eval_string(val, true)))
     #_fromUTF8(INTERP._set_global_var2(@id, _toUTF8(_get_eval_string(index)), 
@@ -448,11 +519,12 @@ if USE_TCLs_SET_VARIABLE_FUNCTIONS
     #                                 _get_eval_string(val, true)))
   end
 
-  def unset(elem=nil)
-    if elem
-      INTERP._unset_global_var2(@id, _get_eval_string(elem, true))
-    else
+  def unset(*elems)
+    if elems.empty?
       INTERP._unset_global_var(@id)
+    else
+      index = elems.collect{|idx| _get_eval_string(idx, true)}.join(',')
+      INTERP._unset_global_var2(@id, index)
     end
   end
   alias remove unset
@@ -481,6 +553,7 @@ else
   end
 
   def value=(val)
+    val = val._value if !@type && @type != :variable && val.kind_of?(TkVariable)
     begin
       #s = '"' + _get_eval_string(val).gsub(/[\[\]$"]/, '\\\\\&') + '"'
       s = '"' + _get_eval_string(val).gsub(/[\[\]$"\\]/, '\\\\\&') + '"'
@@ -530,11 +603,10 @@ else
     end
   end
 
-  def [](*idxs)
+  def _element_value(*idxs)
     index = idxs.collect{|idx| _get_eval_string(idx)}.join(',')
     begin
-      # INTERP._eval(Kernel.format('global %s; set %s(%s)', @id, @id, index))
-      _to_default_type(INTERP._eval(Kernel.format('global %s; set %s(%s)', @id, @id, index)))
+      INTERP._eval(Kernel.format('global %s; set %s(%s)', @id, @id, index))
     rescue => e
       case @def_default
       when :proc
@@ -554,6 +626,8 @@ else
 
   def []=(*args)
     val = args.pop
+    type = default_element_value_type(args)
+    val = val._value if !type && type != :variable && val.kind_of?(TkVariable)
     index = args.collect{|idx| _get_eval_string(idx)}.join(',')
     INTERP._eval(Kernel.format('global %s; set %s(%s) %s', @id, @id, 
                               index, _get_eval_string(val)))
@@ -565,37 +639,73 @@ else
     #            _get_eval_string(val))
   end
 
-  def unset(elem=nil)
-    if elem
-      INTERP._eval(Kernel.format('global %s; unset %s(%s)', 
-                                 @id, @id, _get_eval_string(elem)))
-      #INTERP._eval(Kernel.format('unset %s(%s)', @id, tk_tcl2ruby(elem)))
-      #INTERP._eval('unset ' + @id + '(' + _get_eval_string(elem) + ')')
-    else
+  def unset(*elems)
+    if elems.empty?
       INTERP._eval(Kernel.format('global %s; unset %s', @id, @id))
       #INTERP._eval(Kernel.format('unset %s', @id))
       #INTERP._eval('unset ' + @id)
+    else
+      index = elems.collect{|idx| _get_eval_string(idx, true)}.join(',')
+      INTERP._eval(Kernel.format('global %s; unset %s(%s)', @id, @id, index))
+      #INTERP._eval(Kernel.format('global %s; unset %s(%s)', 
+      #                           @id, @id, _get_eval_string(elem)))
+      #INTERP._eval(Kernel.format('unset %s(%s)', @id, tk_tcl2ruby(elem)))
+      #INTERP._eval('unset ' + @id + '(' + _get_eval_string(elem) + ')')
     end
   end
   alias remove unset
 
 end
 
-  protected :_value
+  protected :_value, :_element_value
 
   def value
     _to_default_type(_value)
   end
 
-  def value_type=(val)
-    self.default_value_type = val
-    self.value=(val)
+  def [](*idxs)
+    _to_default_element_type(idxs, _element_value(*idxs))
+  end
+
+  def set_value(val)
+    self.value = val
+    self
+  end
+
+  def set_element_value(idxs, val)
+    if idxs.kind_of?(Array)
+      self[*idxs]=val
+    else
+      self[idxs]=val
+    end
+    self
+  end
+
+  def set_value_type(val)
+    self.default_value_type = val.class
+    self.value = val
+    self
+  end
+
+  alias value_type= set_value_type
+
+  def set_element_value_type(idxs, val)
+    self.set_default_element_value_type(idxs, val.class)
+    if idxs.kind_of?(Array)
+      self[*idxs]=val
+    else
+      self[idxs]=val
+    end
+    self
   end
 
   def numeric
     number(_value)
   end
-  def numeric=(val)
+  def numeric_element(*idxs)
+    number(_element_value(*idxs))
+  end
+  def set_numeric(val)
     case val
     when Numeric
       self.value=(val)
@@ -604,14 +714,39 @@ end
     else
       raise ArgumentError, "Numeric is expected"
     end
-    val
+    self
   end
-  def numeric_type=(val)
+  alias numeric= set_numeric
+  def set_numeric_element(idxs, val)
+    case val
+    when Numeric
+      val
+    when TkVariable
+      val = val.numeric
+    else
+      raise ArgumentError, "Numeric is expected"
+    end
+    if idxs.kind_of?(Array)
+      self[*idxs]=val
+    else
+      self[idxs]=val
+    end
+    self
+  end
+  def set_numeric_type(val)
     @type = :numeric
     self.numeric=(val)
+    self
+  end
+  alias numeric_type= set_numeric_type
+  def set_numeric_element_type(idxs, val)
+    self.set_default_element_value_type(idxs, :numeric)
+    self.set_numeric_element(idxs, val)
   end
 
   def bool
+    TkComm.bool(_value)
+=begin
     # see Tcl_GetBoolean man-page
     case _value.downcase
     when '0', 'false', 'no', 'off'
@@ -619,8 +754,12 @@ end
     else
       true
     end
+=end
   end
-  def bool=(val)
+  def bool_element(*idxs)
+    TkComm.bool(_element_value(*idxs))
+  end
+  def set_bool(val)
     if ! val
       self.value = '0'
     else
@@ -631,37 +770,216 @@ end
         self.value = '1'
       end
     end
+    self
   end
-  def bool_type=(val)
+  alias bool= set_bool
+  def set_bool_element(idxs, val)
+    if ! val
+      val = '0'
+    else
+      case val.to_s.downcase
+      when 'false', '0', 'no', 'off'
+        val = '0'
+      else
+        val = '1'
+      end
+    end
+    if idxs.kind_of?(Array)
+      self[*idxs]=val
+    else
+      self[idxs]=val
+    end
+    self
+  end
+  def set_bool_type(val)
     @type = :bool
     self.bool=(val)
+    self
+  end
+  alias bool_type= set_bool_type
+  def set_bool_element_type(idxs, val)
+    self.set_default_element_value_type(idxs, :bool)
+    self.set_bool_element(idxs, val)
+  end
+
+  def variable
+    TkVarAccess.new(self._value)
+  end
+  def variable_element(*idxs)
+    TkVarAccess.new(_element_value(*idxs))
+  end
+  def set_variable(var)
+    var = var.id if var.kind_of?(TkVariable)
+    self.value = var
+    self
+  end
+  alias variable= set_variable
+  def set_variable_element(idxs, var)
+    var = var.id if var.kind_of?(TkVariable)
+    if idxs.kind_of?(Array)
+      self[*idxs]=var
+    else
+      self[idxs]=var
+    end
+    self
+  end
+  def set_variable_type(var)
+    @type = :variable
+    var = var.id if var.kind_of?(TkVariable)
+    self.value = var
+    self
+  end
+  alias variable_type= set_variable_type
+  def set_variable_element_type(idxs, var)
+    self.set_default_element_value_type(idxs, :variable)
+    self.set_variable_element(idxs, var)
+  end
+
+  def window
+    TkComm.window(self._value)
+  end
+  def window_element(*idxs)
+    TkComm.window(_element_value(*idxs))
+  end
+  def set_window(win)
+    win = win._value if win.kind_of?(TkVariable)
+    self.value = win
+    self
+  end
+  alias window= set_window
+  def set_window_element(idxs, win)
+    win = win._value if win.kind_of?(TkVariable)
+    if idxs.kind_of?(Array)
+      self[*idxs]=win
+    else
+      self[idxs]=win
+    end
+    self
+  end
+  def set_window_type(win)
+    @type = :window
+    self.window=(win)
+    self
+  end
+  alias window_type= set_window_type
+  def set_window_element_type(idxs, win)
+    self.set_default_element_value_type(idxs, :window)
+    self.set_window_element(idxs, win)
+  end
+
+  def procedure
+    TkComm.procedure(self._value)
+  end
+  def procedure_element(*idxs)
+    TkComm.procedure(_element_value(*idxs))
+  end
+  def set_procedure(cmd)
+    self.value = cmd
+    self
+  end
+  alias procedure= set_procedure
+  def set_procedure_element(idxs, cmd)
+    cmd = cmd._value if cmd.kind_of?(TkVariable)
+    if idxs.kind_of?(Array)
+      self[*idxs]=cmd
+    else
+      self[idxs]=cmd
+    end
+    self
+  end
+  def set_procedure_type(cmd)
+    @type = :procedure
+    self.procedure=(cmd)
+    self
+  end
+  alias procedure_type= set_procedure_type
+  def set_procedure_element_type(idxs, cmd)
+    self.set_default_element_value_type(idxs, :procedure)
+    self.set_proceure_element(idxs, cmd)
   end
 
   def to_i
     number(_value).to_i
   end
+  def element_to_i(*idxs)
+    number(_element_value(*idxs)).to_i
+  end
 
   def to_f
     number(_value).to_f
+  end
+  def element_to_f(*idxs)
+    number(_element_value(*idxs)).to_f
   end
 
   def to_s
     #string(value).to_s
     _value
   end
-  alias string= value=
-  def string_type=(val)
+  def element_to_s(*idxs)
+    _element_value(*idxs)
+  end
+  def string_element(*idxs)
+    _element_value(*idxs)
+  end
+  def set_string(val)
+    val = val._value if val.kind_of?(TkVariable)
+    self.value=val
+    self
+  end
+  alias string= set_string
+  def set_string_element(idxs, val)
+    val = val._value if val.kind_of?(TkVariable)
+    if idxs.kind_of?(Array)
+      self[*idxs]=val
+    else
+      self[idxs]=val
+    end
+    self
+  end
+  def set_string_type(val)
     @type = :string
-    self.value=(val)
+    self.string=(val)
+    self
+  end
+  alias string_type= set_string_type
+  def set_string_element_type(idxs, val)
+    self.set_default_element_value_type(idxs, :string)
+    self.set_string_element(idxs, val)
   end
 
   def to_sym
     _value.intern
   end
-  alias symbol= value=
-  def symbol_type=(val)
+  alias symbol to_sym
+  def element_to_sym(*idxs)
+    _element_value(*idxs).intern
+  end
+  alias symbol_element element_to_sym
+  def set_symbol(val)
+    val = val._value if val.kind_of?(TkVariable)
+    self.value=val
+    self
+  end
+  alias symbol= set_symbol
+  def set_symbol_element(idxs, val)
+    val = val._value if val.kind_of?(TkVariable)
+    if idxs.kind_of?(Array)
+      self[*idxs]=val
+    else
+      self[idxs]=val
+    end
+    self
+  end
+  def set_symbol_type(val)
     @type = :symbol
     self.value=(val)
+    self
+  end
+  alias symbol_type= set_symbol_type
+  def set_symbol_element_type(idxs, val)
+    self.set_default_element_value_type(idxs, :symbol)
+    self.set_symbol_element(idxs, val)
   end
 
   def list
@@ -669,12 +987,19 @@ end
     tk_split_simplelist(_value)
   end
   alias to_a list
+  def list_element(*idxs)
+    tk_split_simplelist(_element_value(*idxs))
+  end
+  alias element_to_a list_element
 
   def numlist
     list.collect!{|val| number(val)}
   end
+  def numlist_element(*idxs)
+    list_element(*idxs).collect!{|val| number(val)}
+  end
 
-  def list=(val)
+  def set_list(val)
     case val
     when Array
       self.value=(val)
@@ -683,21 +1008,61 @@ end
     else
       raise ArgumentError, "Array is expected"
     end
-    val
+    self
   end
-  alias numlist= list=
+  alias list= set_list
 
-  def list_type=(val)
+  alias set_numlist set_list
+  alias numlist= set_numlist
+
+  def set_list_element(idxs, val)
+    case val
+    when Array
+      val
+    when TkVariable
+      val = val.list
+    else
+      raise ArgumentError, "Array is expected"
+    end
+    if idxs.kind_of?(Array)
+      self[*idxs]=val
+    else
+      self[idxs]=val
+    end
+    self
+  end
+  alias set_numlist_element set_list_element
+
+  def set_list_type(val)
     @type = :list
     self.list=(val)
+    self
   end
-  def numlist_type=(val)
+  alias list_type= set_list_type
+  def set_list_element_type(idxs, val)
+    self.set_default_element_value_type(idxs, :list)
+    self.set_list_element(idxs, val)
+  end
+  def set_numlist_type(val)
     @type = :numlist
     self.numlist=(val)
+    self
+  end
+  alias numlist_type= set_numlist_type
+  def set_numlist_element_type(idxs, val)
+    self.set_default_element_value_type(idxs, :numlist)
+    self.set_numlist_element(idxs, val)
   end
 
   def lappend(*elems)
     tk_call('lappend', @id, *elems)
+    self
+  end
+  def element_lappend(idxs, *elems)
+    if idxs.kind_of?(Array)
+      idxs = idxs.collect{|idx| _get_eval_string(idx, true)}.join(',')
+    end
+    tk_call('lappend', "#{@id}(#{idxs})", *elems)
     self
   end
 
@@ -705,17 +1070,39 @@ end
     tk_call('lindex', self._value, idx)
   end
   alias lget lindex
+  def element_lindex(elem_idxs, idx)
+    if elem_idxs.kind_of?(Array)
+      val = _element_value(*elem_idxs)
+    else
+      val = _element_value(elem_idxs)
+    end
+    tk_call('lindex', val, idx)
+  end
+  alias element_lget element_lindex
 
   def lget_i(idx)
     number(lget(idx)).to_i
+  end
+  def element_lget_i(elem_idxs, idx)
+    number(element_lget(elem_idxs, idx)).to_i
   end
 
   def lget_f(idx)
     number(lget(idx)).to_f
   end
+  def element_lget_f(elem_idxs, idx)
+    number(element_lget(elem_idxs, idx)).to_f
+  end
 
   def lset(idx, val)
     tk_call('lset', @id, idx, val)
+    self
+  end
+  def element_lset(elem_idxs, idx, val)
+    if elem_idxs.kind_of?(Array)
+      idxs = elem_idxs.collect{|i| _get_eval_string(i, true)}.join(',')
+    end
+    tk_call('lset', "#{@id}(#{idxs})", idx, val)
     self
   end
 
@@ -823,7 +1210,8 @@ end
       # false if self is not an assoc array
       self._value == other
     else
-      false
+      # false
+      self._value == _get_eval_string(other)
     end
   end
 
@@ -842,13 +1230,14 @@ end
       rescue
         other = other._value
       end
-    end
-    if other.kind_of?(Numeric)
+    elsif other.kind_of?(Numeric)
       begin
         return self.numeric <=> other
       rescue
         return self._value <=> other.to_s
       end
+    elsif other.kind_of?(Array)
+      return self.list <=> other
     else
       return self._value <=> other
     end
@@ -1107,7 +1496,6 @@ end
   end
 end
 
-
 class TkVarAccess<TkVariable
   def self.new(name, *args)
     return TkVar_ID_TBL[name] if TkVar_ID_TBL[name]
@@ -1134,6 +1522,10 @@ class TkVarAccess<TkVariable
     @trace_var  = nil
     @trace_elem = nil
     @trace_opts = nil
+
+    @type = nil
+    var = self
+    @element_type = Hash.new{|k,v| var.default_value_type }
 
     # teach Tk-ip that @id is global var
     INTERP._invoke_without_enc('global', @id)

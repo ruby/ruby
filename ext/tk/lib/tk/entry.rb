@@ -27,11 +27,13 @@ class TkEntry<TkLabel
   def cursor
     number(tk_send_without_enc('index', 'insert'))
   end
+  alias icursor cursor
   def cursor=(index)
     tk_send_without_enc('icursor', index)
     #self
     index
   end
+  alias icursor= cursor=
   def index(idx)
     number(tk_send_without_enc('index', idx))
   end

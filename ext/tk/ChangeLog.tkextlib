@@ -1,3 +1,35 @@
+2005-03-26  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* lib/tkextlib/blt.rb: add commands for zooming.
+
+	* lib/tkextlib/blt/bitmap.rb (new_with_name): add for using
+          given name.
+
+	* lib/tkextlib/blt/busy.rb: bug fix on Tk::BLT::Busy::Shild class.
+
+	* lib/tkextlib/blt/component.rb: typo fix.
+
+	* lib/tkextlib/blt/component.rb: fix lack of *_create methods
+
+	* lib/tkextlib/blt/component.rb: proper call on xaxis_* and so on.
+
+	* lib/tkextlib/blt/htext.rb: add TkVariable object to access
+          special Tcl variables. 
+
+	* ext/tk/lib/tkextlib/treectrl/tktreectrl.rb: typo fix.
+
+	* ext/tk/lib/tkextlib/treectrl/tktreectrl.rb: proper treatment
+          of 'font' option of element_configure.
+
+	* ext/tk/lib/tkextlib/treectrl/tktreectrl.rb: bug fix on item_sort.
+
+	* ext/tk/lib/tkextlib/treectrl/tktreectrl.rb: add methods to
+          call TreeCtrl commands for bindings.
+
+	* ext/tk/sample/tkextlib/blt/*: add some sample scripts.
+
+	* ext/tk/sample/tkextlib/treectrl/*: add some sample scripts.
+
 2005-03-18  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* lib/tkextlib/treectrl/tktreectrl.rb: bug fix and define some

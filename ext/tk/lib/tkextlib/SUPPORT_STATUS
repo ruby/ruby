@@ -73,6 +73,14 @@ ICONS        1.0     http://www.satisoft.com/tcltk/icons/        ==> ICONS
 TkImg        1.3     http://sf.net/projects/tkimg                ==> tkimg
 
 
+BLT          2.4z   http://sourceforge.net/projects/blt
+                        * see also tcltk-ext library on RAA 
+                                (http://raa.ruby-lang.org/)
+                      ==> blt
+
+TkTreeCtrl   1.1     http://tktreectrl.sourceforge.net/          ==> treectrl
+
+
 
 ===< support (may be alpha or beta quality) >=================================
 
@@ -84,18 +92,11 @@ TclX         CVS/Hd(2005-02-07)
                        ==> tclx (partial support; infox command and 
                                                    XPG/3 message catalogs only)
 
-TkTreeCtrl   1.1     http://tktreectrl.sourceforge.net/          ==> treectrl
-
 Tile         0.6     http://tktable.sourceforge.net/tile/        ==> tile
 
 
 
 ===< possibly available (not tested; alpha quality) >=========================
-
-BLT          2.4z   http://sourceforge.net/projects/blt
-                        * see also tcltk-ext library on RAA 
-                                (http://raa.ruby-lang.org/)
-                      ==> blt
 
 winico       CVS/Hd(2004-11-02)
                     http://tktable.sourceforge.net

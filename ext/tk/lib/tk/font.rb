@@ -164,6 +164,7 @@ class TkFont
   # class methods
   ###################################
   def TkFont.actual(fnt, option=nil)
+    fnt = '{}' if fnt == ''
     if fnt.kind_of?(TkFont)
      fnt.actual(option)
     else
@@ -172,6 +173,7 @@ class TkFont
   end
 
   def TkFont.actual_displayof(fnt, win, option=nil)
+    fnt = '{}' if fnt == ''
     if fnt.kind_of?(TkFont)
      fnt.actual_displayof(win, option)
     else
@@ -206,6 +208,7 @@ class TkFont
   end
 
   def TkFont.measure(fnt, text)
+    fnt = '{}' if fnt == ''
     if fnt.kind_of?(TkFont)
       fnt.measure(text)
     else
@@ -214,6 +217,7 @@ class TkFont
   end
 
   def TkFont.measure_displayof(fnt, win, text)
+    fnt = '{}' if fnt == ''
     if fnt.kind_of?(TkFont)
       fnt.measure_displayof(win, text)
     else
@@ -223,6 +227,7 @@ class TkFont
   end
 
   def TkFont.metrics(fnt, option=nil)
+    fnt = '{}' if fnt == ''
     if fnt.kind_of?(TkFont)
       fnt.metrics(option)
     else
@@ -231,6 +236,7 @@ class TkFont
   end
 
   def TkFont.metrics_displayof(fnt, win, option=nil)
+    fnt = '{}' if fnt == ''
     if fnt.kind_of?(TkFont)
       font.metrics_displayof(win, option=nil)
     else
@@ -338,13 +344,17 @@ class TkFont
       fnt = nil if fnt == [] || fnt == ""
 
       unless fnt
-        TkFont.new(nil, nil).call_font_configure([path, key], *args)
+        # create dummy
+        # TkFont.new(nil, nil).call_font_configure([path, key], *args)
+        dummy_fnt = TkFont.allocate
+        dummy_fnt.instance_eval{ init_dummy_fontobj() }
+        dummy_fnt
       else
         begin
           compound = tk_split_simplelist(
               Hash[*tk_split_simplelist(tk_call('font', 'configure', 
-                                                fnt))].collect{|key,value|
-                [key[1..-1], value]
+                                                fnt))].collect{|k,v|
+                [k[1..-1], v]
               }.assoc('compound')[1])
         rescue
           compound = []
@@ -381,7 +391,51 @@ class TkFont
   ###################################
   private
   ###################################
+  def init_dummy_fontobj
+    @id = Tk_FontID.join(TkCore::INTERP._ip_id_)
+    Tk_FontID[1].succ!
+    Tk_FontNameTBL[@id] = self
+
+    @latin_desscendant = nil
+    @kanji_desscendant = nil
+
+    case (Tk::TK_VERSION)
+    when /^4\.*/
+      @latinfont = ""
+      @kanjifont = ""
+      if JAPANIZED_TK
+        @compoundfont = [[@latinfont], [@kanjifont]]
+        @fontslot = {'font'=>@latinfont, 'kanjifont'=>@kanjifont}
+      else
+        @compoundfont = @latinfont
+        @fontslot = {'font'=>@latinfont}
+      end
+    else
+      @latinfont = @id + 'l'
+      @kanjifont = @id + 'k'
+      @compoundfont = @id + 'c'
+
+      if JAPANIZED_TK
+        tk_call('font', 'create', @latinfont, '-charset', 'iso8859')
+        tk_call('font', 'create', @kanjifont, '-charset', 'jisx0208.1983')
+        tk_call('font', 'create', @compoundfont, 
+                '-compound', [@latinfont, @kanjifont])
+      else
+        tk_call('font', 'create', @latinfont)
+        tk_call('font', 'create', @kanjifont)
+        tk_call('font', 'create', @compoundfont)
+      end
+
+      @fontslot = {'font'=>@compoundfont}
+    end
+
+    self
+  end
+
   def initialize(ltn=nil, knj=nil, keys=nil)
+    ltn = '{}' if ltn == ''
+    knj = '{}' if knj == ''
+
     # @id = Tk_FontID.join('')
     @id = Tk_FontID.join(TkCore::INTERP._ip_id_)
     Tk_FontID[1].succ!
@@ -657,10 +711,17 @@ class TkFont
   end
 
   def create_compoundfont_tk8x(ltn, knj, keys)
-    create_latinfont(ltn)
-    create_kanjifont(knj)
+    if knj
+      create_latinfont(ltn)
+      create_kanjifont(knj)
+    else
+      cfnt = ltn
+      create_kanjifont(cfnt)
+      create_latinfont(cfnt)
+    end
 
     @compoundfont = @id + 'c'
+
     if JAPANIZED_TK
       unless keys
         keys = {}
@@ -735,6 +796,7 @@ class TkFont
       end
 
       if knj
+        compoundkeys = nil
         kanjikeys = {}
         begin
           actual_core(@kanjifont).each{|key,val| kanjikeys[key] = val}
@@ -746,6 +808,17 @@ class TkFont
         end
       end
 
+      if cfnt
+        if cfnt.kind_of?(Hash)
+          compoundkeys = cfnt.dup
+        else
+          compoundkeys = {}
+          actual_core(cfnt).each{|key,val| compoundkeys[key] = val}
+        end
+        compoundkeys.update(_symbolkey2str(keys))
+        keys = compoundkeys
+      end
+
       @fontslot = {'font'=>@compoundfont}
       tk_call('font', 'configure', @compoundfont, *hash_kv(keys))
     end
@@ -754,11 +827,21 @@ class TkFont
   ###################################
   public
   ###################################
+  def inspect
+    sprintf("#<%s:%0x:%s>", self.class.inspect, self.__id__, @compoundfont)
+  end
+
   def method_missing(id, *args)
     name = id.id2name
     case args.length
     when 1
-      configure name, args[0]
+      if name[-1] == ?=
+        configure name[0..-2], args[0]
+        args[0]
+      else
+        configure name, args[0]
+        self
+      end
     when 0
       begin
         configinfo name
@@ -1099,6 +1182,7 @@ class TkFont
   alias ascii_metrics          latin_metrics
 
   ###################################
+=begin
   def dup
     src = self
     obj = super()
@@ -1110,6 +1194,13 @@ class TkFont
     obj = super()
     obj.instance_eval{ initialize(src) }
     obj
+  end
+=end
+  def dup
+    TkFont.new(self)
+  end
+  def clone
+    TkFont.new(self)
   end
 end
 
@@ -1140,6 +1231,8 @@ module TkFont::CoreMethods
   end
 
   def actual_core_tk8x(font, win=nil, option=nil)
+    font = '{}' if font == ''
+
     if option == 'compound' || option == :compound
       ""
     elsif option
@@ -1465,6 +1558,8 @@ module TkFont::CoreMethods
   end
 
   def latin_replace_core_tk8x(ltn)
+    ltn = '{}' if ltn == ''
+
     if JAPANIZED_TK
       begin
         tk_call('font', 'delete', '@font_tmp')
@@ -1528,6 +1623,8 @@ module TkFont::CoreMethods
   end
 
   def kanji_replace_core_tk8x(knj)
+    knj = '{}' if knj == ''
+
     if JAPANIZED_TK
       begin
         tk_call('font', 'delete', '@font_tmp')
@@ -1573,6 +1670,8 @@ module TkFont::CoreMethods
   end
 
   def measure_core_tk8x(font, win, text)
+    font = '{}' if font == ''
+
     if win
       number(tk_call('font', 'measure', font, 
                      '-displayof', win, text))
@@ -1591,6 +1690,8 @@ module TkFont::CoreMethods
   end
 
   def metrics_core_tk8x(font, win, option=nil)
+    font = '{}' if font == ''
+
     if option
       if win
         number(tk_call('font', 'metrics', font, 
