@@ -277,17 +277,17 @@ EOS
   exit
 end
       
-case with_config("ipv6-lookup-order", "INET")
+case with_config("lookup-order-hack", "UNSPEC")
 when "INET"
-  $CFLAGS="-DDEFAULT_LOOKUP_ORDER_INET "+$CFLAGS
+  $CFLAGS="-DLOOKUP_ORDER_HACK_INET "+$CFLAGS
 when "INET6"
-  $CFLAGS="-DDEFAULT_LOOKUP_ORDER_INET6 "+$CFLAGS
+  $CFLAGS="-DLOOKUP_ORDER_HACK_INET6 "+$CFLAGS
 when "UNSPEC"
-  $CFLAGS="-DDEFAULT_LOOKUP_ORDER_UNSPEC "+$CFLAGS
+  # nothing special
 else
   print <<EOS
 
-Fatal: invalid --ipv6-lookup-order (expected INET, INET6 or UNSPEC)
+Fatal: invalid value for --with-lookup-order-hack (expected INET, INET6 or UNSPEC)
 EOS
   exit
 end

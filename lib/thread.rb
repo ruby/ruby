@@ -162,9 +162,11 @@ class Queue
     end
     t.run if t
   end
-  alias enq push
+  def enq(obj)
+    push(obj)
+  end
 
-  def pop non_block=false
+  def pop(non_block=false)
     Thread.critical = true
     begin
       loop do
@@ -182,8 +184,10 @@ class Queue
       Thread.critical = false
     end
   end
-  alias shift pop
-  alias deq pop
+  def shift(non_block=false)
+    pop(non_block=false)
+  end
+  alias deq shift
 
   def empty?
     @que.length == 0
@@ -196,8 +200,9 @@ class Queue
   def length
     @que.length
   end
-  alias size length
-
+  def size
+    length
+  end
 
   def num_waiting
     @waiting.size

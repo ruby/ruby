@@ -1,4 +1,4 @@
-/* C code produced by gperf version 2.7 */
+/* C code produced by gperf version 2.7.1 (19981006 egcs) */
 /* Command-line: gperf -p -j1 -i 1 -g -o -t -N rb_reserved_word -k1,3,$ ./keywords  */
 struct kwtable {char *name; int id[2]; enum lex_state state;};
 
@@ -79,10 +79,10 @@ rb_reserved_word (str, len)
       {"module", kMODULE, kMODULE, EXPR_BEG},
       {"elsif", kELSIF, kELSIF, EXPR_BEG},
       {"def", kDEF, kDEF, EXPR_FNAME},
-      {"rescue", kRESCUE, kRESCUE_MOD, EXPR_MID},
+      {"rescue", kRESCUE, kRESCUE_MOD, EXPR_END},
       {"not", kNOT, kNOT, EXPR_BEG},
       {"then", kTHEN, kTHEN, EXPR_BEG},
-      {"yield", kYIELD, kYIELD, EXPR_END},
+      {"yield", kYIELD, kYIELD, EXPR_ARG},
       {"for", kFOR, kFOR, EXPR_BEG},
       {"self", kSELF, kSELF, EXPR_END},
       {"false", kFALSE, kFALSE, EXPR_END},
@@ -90,8 +90,8 @@ rb_reserved_word (str, len)
       {"return", kRETURN, kRETURN, EXPR_MID},
       {"true", kTRUE, kTRUE, EXPR_END},
       {"if", kIF, kIF_MOD, EXPR_BEG},
-      {"defined?", kDEFINED, kDEFINED, EXPR_END},
-      {"super", kSUPER, kSUPER, EXPR_END},
+      {"defined?", kDEFINED, kDEFINED, EXPR_ARG},
+      {"super", kSUPER, kSUPER, EXPR_ARG},
       {"undef", kUNDEF, kUNDEF, EXPR_FNAME},
       {"break", kBREAK, kBREAK, EXPR_END},
       {"in", kIN, kIN, EXPR_BEG},

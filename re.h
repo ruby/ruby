@@ -37,7 +37,7 @@ int rb_reg_adjust_startpos _((VALUE, VALUE, int, int));
 int rb_kcode _((void));
 void rb_match_busy _((VALUE));
 
-extern int ruby_ignorecase;
+EXTERN int ruby_ignorecase;
 
 int rb_reg_mbclen2 _((unsigned int, VALUE));
 #define mbclen2(c,re) rb_reg_mbclen2((c),(re))

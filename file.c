@@ -1330,19 +1330,20 @@ rb_file_s_basename(argc, argv)
     name = STR2CSTR(fname);
     p = strrchr(name, '/');
     if (!p) {
-	if (!NIL_P(fext)) {
-	    f = rmext(name, ext);
-	    if (f) return rb_str_new(name, f);
+	if (NIL_P(fext) || !(f = rmext(p, ext)))
+	    return fname;
+	basename = rb_str_new(p, f);
+    }
+    else {
+	p++;			/* skip last `/' */
+	if (NIL_P(fext) || !(f = rmext(p, ext))) {
+	    basename = rb_str_new2(p);
 	}
-	return fname;
+	else {
+	    basename = rb_str_new(p, f);
+	}
     }
-    p++;			/* skip last `/' */
-    if (!NIL_P(fext)) {
-	f = rmext(p, ext);
-	if (f) return rb_str_new(p, f);
-    }
-    basename = rb_str_new2(p);
-    if (OBJ_TAINTED(fname)) OBJ_TAINT(basename);
+    OBJ_INFECT(basename, fname);
     return basename;
 }
 

@@ -24,6 +24,7 @@ Language Spec.
 * discourage use of symbol variable (e.g. $/, etc.) in manual
 * discourage use of Perlish features by giving warnings.
 * `exception' method to be alternative for `$!'. ??
+* non confusing in-block local variable (is it possible?)
 
 Hacking Interpreter
 
@@ -63,9 +64,11 @@ Standard Libraries
 - Struct::new([name,]member,...)
 - IO#reopen accepts path as well
 - Kernel#scan
-- call initialize for builtin classes too (not yet: Class, Module)
+- call initialize for builtin classes too
 - performance tune for String's non-bang methods.
 - 'w' template for pack/unpack
+- alternative for interator? => block_given?
+- regex - /p (make obsolete), /m (new)
 * String#scanf(?)
 * Object#fmt(?)
 * Integer#{bin,oct,hex,heX}
@@ -106,8 +109,5 @@ Things To Do Before 1.6
 
 * fix spec. for the following:
 
-  * alternative for $! (exception? in? into? =>?)
-  * alternative for interator?
-  - regex - /p, /m
-  * odd? even?
+  * alternative for $! (exception? in? =>? :?)
   * mkmf.rb - create_makefile("net/socket")

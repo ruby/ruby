@@ -6793,7 +6793,7 @@ rb_thread_schedule()
     END_FOREACH_FROM(curr, th);
     
     /* Do the select if needed */
-    if (need_select || !found) {
+    if (need_select) {
 	/* Convert delay to a timeval */
 	/* If a thread is runnable, just poll */
 	if (found) {
@@ -7321,7 +7321,7 @@ rb_thread_abort_exc_set(thread, val)
 #define THREAD_ALLOC(th) do {\
     th = ALLOC(struct thread);\
 \
-    th->status = 0;\
+    th->status = THREAD_RUNNABLE;\
     th->result = 0;\
     th->errinfo = Qnil;\
 \

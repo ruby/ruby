@@ -1082,6 +1082,13 @@ rb_ary_delete_at(ary, pos)
     return del;
 }
 
+VALUE
+rb_ary_delete_at_m(ary, pos)
+    VALUE ary, pos;
+{
+    return rb_ary_delete_at(ary, NUM2LONG(pos));
+}
+
 static VALUE
 rb_ary_slice_bang(argc, argv, ary)
     int argc;
@@ -1629,7 +1636,7 @@ Init_Array()
     rb_define_method(rb_cArray, "map!", rb_ary_collect_bang, 0);
     rb_define_method(rb_cArray, "filter", rb_ary_filter, 0);
     rb_define_method(rb_cArray, "delete", rb_ary_delete, 1);
-    rb_define_method(rb_cArray, "delete_at", rb_ary_delete_at, -1);
+    rb_define_method(rb_cArray, "delete_at", rb_ary_delete_at_m, 1);
     rb_define_method(rb_cArray, "delete_if", rb_ary_delete_if, 0);
     rb_define_method(rb_cArray, "reject!", rb_ary_delete_if, 0);
     rb_define_method(rb_cArray, "replace", rb_ary_replace_m, 1);

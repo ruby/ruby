@@ -88,6 +88,7 @@ EXPORTS
 ;range.c
 	rb_cRange
 ;re.c
+	ruby_ignorecase
 	rb_cRegexp
 ;regex.c
 	re_mbctab
@@ -236,6 +237,8 @@ EXPORTS
 	rb_define_alias
 	rb_define_attr
 	rb_scan_args
+;dir.c
+	rb_glob
 ;dln.c
 	dln_load
 	dln_find_exe
@@ -479,6 +482,17 @@ EXPORTS
 	rb_reg_regsub
 	rb_get_kcode
 	rb_set_kcode
+;regex.c
+	ruby_re_set_casetable
+	ruby_re_compile_pattern
+	ruby_re_free_pattern
+	ruby_re_compile_fastmap
+	ruby_re_adjust_startpos
+	ruby_re_search
+	ruby_re_match
+	ruby_re_copy_registers
+	ruby_re_free_registers
+	ruby_re_mbcinit
 ;ruby.c
 	rb_load_file
 	ruby_script

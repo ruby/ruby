@@ -1,3 +1,7 @@
+Mon May 29 10:41:10 2000  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* file.c (rb_file_s_basename): should propagate taintness.
+
 Sun May 28 21:37:13 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* eval.c: bug fix: DLEXT2.
@@ -18,6 +22,20 @@ Wed May 25 22:25:13 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 	
 	* lib/mkmf.rb: ditto.
 
+Thu May 25 22:01:32 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* defines.h: mswin32: remove obsolete USHORT definition.
+
+	* re.h: mswin32: use EXTERN instead of extern.
+
+	* regex.h: mswin32: export re_mbctab properly.
+
+	* win32/win32.def: add ruby_ignorecase and regex.c's exports.
+
+Thu May 25 21:28:44 JST 2000  Minero Aoki <aamine@dp.u-netsurf.ne.jp>
+
+	* re.c (rb_reg_expr_str): escape un-printable character.
+
 Wed May 24 23:17:50 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
 
 	* win32/Makefile: remove unnecessary mv and rm command call.
@@ -33,6 +51,10 @@ Thu May 25 01:35:15 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 Wed May 24 23:49:47 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* object.c (rb_mod_initialize): should provide initialize.
+
+Wed May 24 23:17:50 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* win32/Makefile: remove unnecessary mv and rm command call.
 
 Wed May 24 21:01:04 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
 

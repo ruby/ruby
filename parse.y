@@ -48,10 +48,10 @@ static int yyerror();
 
 static enum lex_state {
     EXPR_BEG,			/* ignore newline, +/- is a sign. */
-    EXPR_MID,			/* newline significant, +/- is a sign. */
     EXPR_END,			/* newline significant, +/- is a operator. */
     EXPR_PAREN,			/* almost like EXPR_END, `do' works as `{'. */
     EXPR_ARG,			/* newline significant, +/- is a operator. */
+    EXPR_MID,			/* newline significant, +/- is a operator. */
     EXPR_FNAME,			/* ignore newline, no reserved words. */
     EXPR_DOT,			/* right after `.' or `::', no reserved words. */
     EXPR_CLASS,			/* immediate after `class', no here document. */
@@ -1431,16 +1431,16 @@ when_args	: args
 cases		: opt_else
 		| case_body
 
-exc_list	: args
-		| none
+exc_list	: none
+		| args
 
-exc_var		: ':' lhs
+exc_var		: tASSOC lhs
 		    {
 			$$ = $2;
 		    }
 		| none
 
-rescue		: kRESCUE exc_list exc_var do
+rescue		: kRESCUE exc_list exc_var then
 		  compstmt
 		  rescue
 		    {
@@ -1908,7 +1908,7 @@ rb_compile_string(f, s, line)
     lex_input = s;
     lex_pbeg = lex_p = lex_pend = 0;
     ruby_sourceline = line - 1;
-    compile_for_eval = 1;
+    compile_for_eval = ruby_in_eval;
 
     return yycompile(f, line);
 }
@@ -2743,15 +2743,17 @@ yylex()
 	}
 	pushback(c);
 	if (lex_state == EXPR_ARG && space_seen && !ISSPACE(c)){
-	    lex_state = EXPR_BEG;
-	    return tSTAR;
+	    rb_warning("`*' interpreted as argument prefix");
+	    c = tSTAR;
 	}
-	if (lex_state == EXPR_BEG || lex_state == EXPR_MID) {
-	    lex_state = EXPR_BEG;
-	    return tSTAR;
+	else if (lex_state == EXPR_BEG || lex_state == EXPR_MID) {
+	    c = tSTAR;
+	}
+	else {
+	    c = '*';
 	}
 	lex_state = EXPR_BEG;
-	return '*';
+	return c;
 
       case '!':
 	lex_state = EXPR_BEG;
@@ -2900,15 +2902,17 @@ yylex()
 	}
 	pushback(c);
 	if (lex_state == EXPR_ARG && space_seen && !ISSPACE(c)){
-	    lex_state = EXPR_BEG;
-	    return tAMPER;
+	    rb_warning("`&' interpreted as argument prefix");
+	    c = tAMPER;
 	}
-	if (lex_state == EXPR_BEG || lex_state == EXPR_MID) {
-	    lex_state = EXPR_BEG;
-	    return tAMPER;
+	else if (lex_state == EXPR_BEG || lex_state == EXPR_MID) {
+	    c = tAMPER;
+	}
+	else {
+	    c = '&';
 	}
 	lex_state = EXPR_BEG;
-	return '&';
+	return c;
 
       case '|':
 	lex_state = EXPR_BEG;
@@ -2943,13 +2947,13 @@ yylex()
 	}
 	if (lex_state == EXPR_BEG || lex_state == EXPR_MID ||
 	    (lex_state == EXPR_ARG && space_seen && !ISSPACE(c))) {
-	    pushback(c);
 	    if (lex_state == EXPR_ARG) arg_ambiguous();
+	    lex_state = EXPR_BEG;
+	    pushback(c);
 	    if (ISDIGIT(c)) {
 		c = '+';
 		goto start_num;
 	    }
-	    lex_state = EXPR_BEG;
 	    return tUPLUS;
 	}
 	lex_state = EXPR_BEG;
@@ -3147,7 +3151,7 @@ yylex()
       case ':':
 	c = nextc();
 	if (c == ':') {
-	    if (lex_state == EXPR_BEG || lex_state == EXPR_MID ||
+	    if (lex_state == EXPR_BEG ||  lex_state == EXPR_MID ||
 		(lex_state == EXPR_ARG && space_seen)) {
 		lex_state = EXPR_BEG;
 		return tCOLON3;
@@ -3172,15 +3176,14 @@ yylex()
 	    yylval.id = '/';
 	    return tOP_ASGN;
 	}
-	if (lex_state == EXPR_ARG) {
-	    if (space_seen && !ISSPACE(c)) {
-		pushback(c);
-		arg_ambiguous();
+	pushback(c);
+	if (lex_state == EXPR_ARG && space_seen) {
+	    arg_ambiguous();
+	    if (!ISSPACE(c)) {
 		return parse_regx('/', '/');
 	    }
 	}
 	lex_state = EXPR_BEG;
-	pushback(c);
 	return '/';
 
       case '^':
@@ -3209,14 +3212,11 @@ yylex()
       case '(':
 	if (lex_state == EXPR_BEG || lex_state == EXPR_MID) {
 	    c = tLPAREN;
-	    lex_state = EXPR_BEG;
 	}
-	else {
-	    if (lex_state == EXPR_ARG && space_seen) {
-		rb_warning("%s (...) interpreted as function", tok());
-	    }
-	    lex_state = EXPR_BEG;
+	else if (lex_state == EXPR_ARG && space_seen) {
+	    rb_warning("%s (...) interpreted as method call", tok());
 	}
+	lex_state = EXPR_BEG;
 	return c;
 
       case '[':

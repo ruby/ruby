@@ -29,6 +29,7 @@ class TimeoutError<StandardError
 end
 
 def timeout(sec)
+  return yield if sec == nil
   begin
     x = Thread.current
     y = Thread.start {

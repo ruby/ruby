@@ -211,17 +211,17 @@ rb_reg_expr_str(str, s, len)
     int len;
 {
     const char *p, *pend;
-    int slash = 0;
+    int need_escape = 0;
 
     p = s; pend = p + len;
     while (p<pend) {
-	if (*p == '/') {
-	    slash = 1;
+	if (*p == '/' || (!ISPRINT(*p) && !ismbchar(*p))) {
+	    need_escape = 1;
 	    break;
 	}
 	p++;
     }
-    if (!slash) {
+    if (!need_escape) {
 	rb_str_cat(str, s, len);
     }
     else {
@@ -232,8 +232,43 @@ rb_reg_expr_str(str, s, len)
 		rb_str_cat(str, &c, 1);
 		rb_str_cat(str, p, 1);
 	    }
-	    else {
+	    else if (ismbchar(*p)) {
+	    	rb_str_cat(str, p, mbclen(*p));
+		p += mbclen(*p);
+		continue;
+	    }
+	    else if (ISPRINT(*p)) {
 		rb_str_cat(str, p, 1);
+	    }
+	    else {
+		char b[8];
+		switch (*p) {
+		case '\r':
+		    rb_str_cat(str, "\\r", 2);
+		    break;
+		case '\n':
+		    rb_str_cat(str, "\\n", 2);
+		    break;
+		case '\t':
+		    rb_str_cat(str, "\\t", 2);
+		    break;
+		case '\f':
+		    rb_str_cat(str, "\\f", 2);
+		    break;
+		case 007:
+		    rb_str_cat(str, "\\a", 2);
+		    break;
+		case 013:
+		    rb_str_cat(str, "\\v", 2);
+		    break;
+		case 033:
+		    rb_str_cat(str, "\\e", 2);
+		    break;
+		default:
+		    sprintf(b, "\\%03o", *p & 0377);
+		    rb_str_cat(str, b, 4);
+		    break;
+		}
 	    }
 	    p++;
 	}

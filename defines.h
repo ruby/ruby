@@ -31,9 +31,7 @@
 #endif /* NeXT */
 
 #ifdef NT
-#define USHORT _USHORT
 #include "win32/win32.h"
-#undef USHORT
 #endif
 
 #if defined __CYGWIN__

@@ -229,13 +229,16 @@ void
 require_libraries()
 {
     extern NODE *ruby_eval_tree;
+    extern NODE *ruby_eval_tree_begin;
     char *orig_sourcefile = ruby_sourcefile;
-    NODE *save;
+    NODE *save[2];
     struct req_list *list = req_list_head.next;
     struct req_list *tmp;
 
     ruby_sourcefile = 0;
-    save = ruby_eval_tree;
+    save[0] = ruby_eval_tree;
+    save[1] = ruby_eval_tree_begin;
+    ruby_eval_tree = ruby_eval_tree_begin = 0;
     req_list_last = 0;
     while (list) {
 	rb_require(list->name);
@@ -244,7 +247,8 @@ require_libraries()
 	free(list);
 	list = tmp;
     }
-    ruby_eval_tree = save;
+    ruby_eval_tree = save[0];
+    ruby_eval_tree_begin = save[1];
     ruby_sourcefile = orig_sourcefile;
 }
 
@@ -622,8 +626,10 @@ proc_options(argc, argv)
     ruby_set_argv(argc, argv);
     process_sflag();
 
+#if 0
     Init_ext();		/* should be called here for some reason :-( */
     require_libraries();
+#endif
 
     ruby_sourcefile = argv0;
     if (e_script) {
@@ -643,6 +649,11 @@ proc_options(argc, argv)
 
     process_sflag();
     xflag = 0;
+
+#if 1
+    Init_ext();		/* should be called here for some reason :-( */
+    require_libraries();
+#endif
 }
 
 extern int ruby__end__seen;
