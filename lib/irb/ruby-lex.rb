@@ -1,9 +1,9 @@
 #
-#   ruby-lex.rb - ruby lexcal analizer
-#   	$Release Version: 0.6$
+#   irb/ruby-lex.rb - ruby lexcal analizer
+#   	$Release Version: 0.7.3$
 #   	$Revision$
 #   	$Date$
-#   	by Keiju ISHITSUKA(Nippon Rational Inc.)
+#   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
 #
 # --
 #
@@ -24,11 +24,13 @@ class RubyLex
   def_exception(:TkReading2TokenDuplicateError, 
 		"key duplicate(token_n='%s', key='%s')")
   def_exception(:SyntaxError, "%s")
+
+  def_exception(:TerminateLineInput, "Terminate Line Input")
   
   include RubyToken
 
   class << self
-    attr :debug_level, TRUE
+    attr_accessor :debug_level
     def debug?
       @debug_level > 0
     end
@@ -54,14 +56,14 @@ class RubyLex
     @exception_on_syntax_error = true
   end
 
-  attr :skip_space, true
-  attr :readed_auto_clean_up, true
-  attr :exception_on_syntax_error, true
+  attr_accessor :skip_space
+  attr_accessor :readed_auto_clean_up
+  attr_accessor :exception_on_syntax_error
 
-  attr :seek
-  attr :char_no
-  attr :line_no
-  attr :indent
+  attr_reader :seek
+  attr_reader :char_no
+  attr_reader :line_no
+  attr_reader :indent
 
   # io functions
   def set_input(io, p = nil)
@@ -202,8 +204,8 @@ class RubyLex
     @space_seen = false
     @here_header = false
     
+    @continue = false
     prompt
-    @continue = FALSE
 
     @line = ""
     @exp_line_no = @line_no
@@ -211,27 +213,35 @@ class RubyLex
   
   def each_top_level_statement
     initialize_input
-    loop do
-      @continue = FALSE
-      prompt
-      unless l = lex
-	break if @line == ''
-      else
-	# p l
-	@line.concat l
-	if @ltype or @continue or @indent > 0
-	  next
+    catch(:TERM_INPUT) do
+      loop do
+	begin
+	  @continue = false
+	  prompt
+	  unless l = lex
+	    throw :TERM_INPUT if @line == ''
+	  else
+	    #p l
+	    @line.concat l
+	    if @ltype or @continue or @indent > 0
+	      next
+	    end
+	  end
+	  if @line != "\n"
+	    yield @line, @exp_line_no
+	  end
+	  break unless l
+	  @line = ''
+	  @exp_line_no = @line_no
+
+	  @indent = 0
+	  prompt
+	rescue TerminateLineInput
+	  initialize_input
+	  prompt
+	  get_readed
 	end
       end
-      if @line != "\n"
-	yield @line, @exp_line_no
-      end
-      break unless l
-      @line = ''
-      @exp_line_no = @line_no
-
-      @indent = 0
-      prompt
     end
   end
 
@@ -239,8 +249,8 @@ class RubyLex
     until (((tk = token).kind_of?(TkNL) || tk.kind_of?(TkEND_OF_SCRIPT)) &&
 	     !@continue or
 	     tk.nil?)
-      #	p tk
-      #	p self
+      #p tk
+      #p self
     end
     line = get_readed
     #      print self.inspect
@@ -315,7 +325,7 @@ class RubyLex
     end
 
     @OP.def_rules(" ", "\t", "\f", "\r", "\13") do
-      @space_seen = TRUE
+      @space_seen = true
       while getc =~ /[ \t\f\r\13]/; end
       ungetc
       Token(TkSPACE)
@@ -333,7 +343,7 @@ class RubyLex
       until peek_equal?("=end") && peek(4) =~ /\s/
 	until getc == "\n"; end
       end
-      getc; getc; getc; getc
+      gets
       @ltype = nil
       Token(TkRD_COMMENT)
     end
@@ -342,9 +352,9 @@ class RubyLex
       print "\\n\n" if RubyLex.debug?
       case @lex_state
       when EXPR_BEG, EXPR_FNAME, EXPR_DOT
-	@continue = TRUE
+	@continue = true
       else
-	@continue = FALSE
+	@continue = false
 	@lex_state = EXPR_BEG
       end
       @here_header = false
@@ -458,7 +468,7 @@ class RubyLex
 	ungetc
 	identify_number
       else
-	# for obj.if
+	# for "obj.if" etc.
 	@lex_state = EXPR_DOT
 	Token(TkDOT)
       end
@@ -608,7 +618,7 @@ class RubyLex
 	identify_quotation
       elsif peek(0) == '='
 	getc
-	Token(OP_ASGIN, "%")
+	Token(TkOPASGN, :%)
       elsif @lex_state == EXPR_ARG and @space_seen and peek(0) !~ /\s/
 	identify_quotation
       else
@@ -691,7 +701,7 @@ class RubyLex
     if ch == "!" or ch == "?"
       token.concat getc
     end
-    # fix token
+    # almost fix token
 
     case token
     when /^\$/
@@ -752,6 +762,7 @@ class RubyLex
 
   def identify_here_document
     ch = getc
+#    if lt = PERCENT_LTYPE[ch]
     if ch == "-"
       ch = getc
       indent = true
@@ -835,8 +846,8 @@ class RubyLex
     end
     
     type = TkINTEGER
-    allow_point = TRUE
-    allow_e = TRUE
+    allow_point = true
+    allow_e = true
     while ch = getc
       case ch
       when /[0-9_]/
@@ -954,7 +965,7 @@ class RubyLex
 	read_escape(chrs)
       end
     else
-      # other characters
+      # other characters 
     end
   end
 end

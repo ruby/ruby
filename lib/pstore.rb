@@ -41,11 +41,10 @@ class PStore
 
   def [](name)
     in_transaction
-    value = @table[name]
-    if value == nil
+    unless @table.key? name
       raise PStore::Error, format("undefined root name `%s'", name)
     end
-    value
+    @table[name]
   end
   def []=(name, value)
     in_transaction
@@ -69,10 +68,12 @@ class PStore
   end
 
   def commit
+    in_transaction
     @abort = false
     throw :pstore_abort_transaction
   end
   def abort
+    in_transaction
     @abort = true
     throw :pstore_abort_transaction
   end

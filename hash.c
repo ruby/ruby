@@ -79,16 +79,16 @@ static int
 rb_any_hash(a)
     VALUE a;
 {
-    unsigned int hval;
+    VALUE hval;
 
     switch (TYPE(a)) {
       case T_FIXNUM:
       case T_SYMBOL:
-	hval = a;
+	return (int)a;
 	break;
 
       case T_STRING:
-	hval = rb_str_hash(a);
+	return rb_str_hash(a);
 	break;
 
       default:
@@ -98,9 +98,8 @@ rb_any_hash(a)
 	    hval = rb_funcall(hval, '%', 1, INT2FIX(65439));
 	}
 	ENABLE_INTS;
-	hval = FIX2LONG(hval);
+	return (int)FIX2LONG(hval);
     }
-    return  hval;
 }
 
 static struct st_hash_type objhash = {
@@ -511,7 +510,10 @@ static int
 replace_i(key, val, hash)
     VALUE key, val, hash;
 {
-    rb_hash_aset(hash, key, val);
+    if (key != Qundef) {
+	rb_hash_aset(hash, key, val);
+    }
+
     return ST_CONTINUE;
 }
 

@@ -1,9 +1,9 @@
 #
-#   ruby-token.rb - ruby tokens 
-#   	$Release Version: 0.6$
+#   irb/ruby-token.rb - ruby tokens 
+#   	$Release Version: 0.7.3$
 #   	$Revision$
 #   	$Date$
-#   	by Keiju ISHITSUKA(Nippon Rational Inc.)
+#   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
 #
 # --
 #
@@ -17,6 +17,11 @@ module RubyToken
   EXPR_FNAME = :EXPR_FNAME
   EXPR_DOT = :EXPR_DOT
   EXPR_CLASS = :EXPR_CLASS
+
+  # for ruby 1.4X
+  if !defined?(Symbol)
+    Symbol = Integer
+  end
   
   class Token
     def initialize(seek, line_no, char_no)
@@ -241,7 +246,7 @@ module RubyToken
   TkSymbol2Token = {}
 
   def RubyToken.def_token(token_n, super_token = Token, reading = nil, *opts)
-    token_n = token_n.id2name unless token_n.kind_of?(String)
+    token_n = token_n.id2name if token_n.kind_of?(Symbol)
     if RubyToken.const_defined?(token_n)
       IRB.fail AlreadyDefinedToken, token_n
     end

@@ -27,7 +27,6 @@ fi
 
 AC_CANONICAL_HOST
 AC_CANONICAL_TARGET
-AC_CANONICAL_BUILD
 
 dnl checks for fat-binary
 fat_binary=no
@@ -90,13 +89,13 @@ AC_CHECK_TOOL(AR, ar)
 AC_CHECK_PROGS(AR, ar aal, ar)
 
 case "$target_os" in
-    cygwin*|mingw*)
-	AC_CHECK_TOOL(NM, nm)
-	AC_CHECK_TOOL(DLLWRAP, dllwrap)
-	AC_CHECK_TOOL(AS, as)
-	AC_CHECK_TOOL(DLLTOOL, dlltool)
-	AC_CHECK_TOOL(WINDRES, windres)
-	;;
+cygwin*|mingw*)
+    AC_CHECK_TOOL(NM, nm)
+    AC_CHECK_TOOL(DLLWRAP, dllwrap)
+    AC_CHECK_TOOL(AS, as)
+    AC_CHECK_TOOL(DLLTOOL, dlltool)
+    AC_CHECK_TOOL(WINDRES, windres)
+    ;;
 esac
 
 AC_PROG_LN_S
@@ -163,6 +162,14 @@ if test "$rb_cv_have_attr_noreturn" = yes; then
   AC_DEFINE(HAVE_ATTR_NORETURN)
 fi
 
+dnl wheather link libc_r or not
+AC_ARG_WITH(libc_r, 
+	[--with-libc_r             link libc_r if possible (FreeBSD only)], [
+	case $withval in
+	yes) with_libc_r=yes;;
+	*)   with_libc_r=no;;
+	esac], [with_libc_r=no])
+
 dnl Checks for libraries.
 case "$target_os" in
 nextstep*)	;;
@@ -171,7 +178,8 @@ rhapsody*)	;;
 darwin*)	LIBS="-lobjc $LIBS";;
 human*)		ac_cv_func_getpgrp_void=yes;;
 beos*)		;;
-cygwin*)	rb_cv_have_daylight=no;;
+cygwin*)	rb_cv_have_daylight=no
+		ac_cv_var_tzname=no;;
 mingw*)		LIBS="-lwsock32 -lmsvcrt $LIBS"
 		ac_cv_header_a_out_h=no
 		ac_cv_header_pwd_h=no
@@ -181,9 +189,12 @@ mingw*)		LIBS="-lwsock32 -lmsvcrt $LIBS"
 		ac_cv_header_sys_resource_h=no
 		ac_cv_header_sys_select_h=no
 		ac_cv_header_sys_times_h=no
-		ac_cv_func_times=yes;;
+		ac_cv_func_times=yes
+		ac_cv_func_waitpid=yes;;
 os2_emx*)	LIBS="-lm $LIBS"
 		ac_cv_lib_dir_opendir=no;;
+msdosdjgpp*)	LIBS="-lm $LIBS"
+		ac_cv_func_getpgrp_void=yes;;
 freebsd*)	LIBS="-lm $LIBS"
 		AC_CACHE_CHECK([whether -lxpg4 has to be linked],
 		  rb_cv_lib_xpg4_needed,
@@ -200,7 +211,38 @@ freebsd*)	LIBS="-lm $LIBS"
 		if test "$rb_cv_lib_xpg4_needed" = yes; then
 			AC_CHECK_LIB(xpg4, setlocale)
 		fi
+		if test "$with_libc_r" = yes; then
+			AC_CACHE_CHECK([whether libc_r is supplementary to libc],
+			  rb_cv_supplementary_lib_c_r,
+			  [AC_TRY_CPP([
+#include <osreldate.h>
+#if 500016 <= __FreeBSD_version
+#error libc_r is supplementary to libc
+#endif
+			   ],
+			   rb_cv_supplementary_lib_c_r=no,
+			   rb_cv_supplementary_lib_c_r=yes,
+			   rb_cv_supplementary_lib_c_r=yes)])
+			if test "$rb_cv_supplementary_lib_c_r" = yes; then
+				MAINLIBS="-lc_r $MAINLIBS"			
+			else
+				MAINLIBS="-pthread $MAINLIBS"			
+				CFLAGS="-D_THREAD_SAFE $CFLAGS"
+			fi
+		fi
 		;;
+linux*)		LIBS="-lm $LIBS"
+		case "$target_cpu" in
+		alpha*)
+		    CFLAGS="-mieee $CFLAGS" ;;
+		esac ;;
+osf*)		LIBS="-lm $LIBS"
+		case "$target_cpu"::"$without_gcc" in
+		alpha*::no)
+		    CFLAGS="-mieee $CFLAGS" ;;
+		alpha*::yes)
+		    CFLAGS="-ieee $CFLAGS" ;;
+		esac ;;
 *) LIBS="-lm $LIBS";;
 esac
 AC_CHECK_LIB(crypt, crypt)
@@ -316,6 +358,7 @@ test $rb_cv_func_strtod = no && LIBOBJS="$LIBOBJS strtod.o"
 AC_C_BIGENDIAN
 AC_C_CONST
 AC_C_CHAR_UNSIGNED
+AC_C_INLINE
 
 AC_CACHE_CHECK(whether right shift preserve sign bit, rb_cv_rshift_sign,
     [AC_TRY_RUN([
@@ -380,7 +423,7 @@ AC_ARG_WITH(default-kcode,
 	esac])
 AC_DEFINE_UNQUOTED(DEFAULT_KCODE, $DEFAULT_KCODE)
 
-dnl wheather use dln_a_out ot not
+dnl wheather use dln_a_out or not
 AC_ARG_WITH(dln-a-out, 
 	[--with-dln-a-out          use dln_a_out if possible], [
 	case $withval in
@@ -452,7 +495,7 @@ if test "$with_dln_a_out" != yes; then
     nextstep*)	;;
     openstep*)	;;
     rhapsody*)	;;
-    darwin*)	;;
+    darwin*)	CCDLFLAGS=-fno-common;;
     human*)	;;
     bsdi*)	;;
     beos*)	;;
@@ -494,6 +537,8 @@ if test "$with_dln_a_out" != yes; then
 			rb_cv_dlopen=yes;;
 	sysv4*) 	LDSHARED='ld -G'
 			rb_cv_dlopen=yes;;
+        nto-qnx*)       LDSHARED="qcc -shared"
+                        rb_cv_dlopen=yes ;;
 	esix*|uxpds*) 	LDSHARED="ld -G"
 			rb_cv_dlopen=yes ;;
 	osf*) 		LDSHARED="$CC -shared"
@@ -757,6 +802,9 @@ if test "$enable_shared" = 'yes'; then
   LIBRUBYARG='-L. -l$(RUBY_INSTALL_NAME)'
   CFLAGS="$CFLAGS $CCDLFLAGS"
   ENABLE_SHARED=yes
+  if test "$rb_cv_binary_elf" = yes; then
+    SOLIBS='$(LIBS)'
+  fi
   case "$target_os" in
     sunos4*)
 	LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_INSTALL_NAME).so'
@@ -766,6 +814,7 @@ if test "$enable_shared" = 'yes'; then
 	LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_INSTALL_NAME).so'
 	;;
     freebsd*)
+	SOLIBS='$(LIBS)'
 	LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).so.$(MAJOR)$(MINOR)'
 	if test "$rb_cv_binary_elf" != "yes" ; then
 	    LIBRUBY_SO="$LIBRUBY_SO.\$(TEENY)"
@@ -773,12 +822,16 @@ if test "$enable_shared" = 'yes'; then
 	fi
 	;;
     netbsd*)
+	SOLIBS='$(LIBS)'
 	LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR)'
 	if test "$rb_cv_binary_elf" = yes; then # ELF platforms
 	   LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so.$(MAJOR) lib$(RUBY_INSTALL_NAME).so'
 	else
 	   LIBRUBY_ALIASES=  # a.out platforms
 	fi
+ 	;;
+    openbsd*)
+	SOLIBS='$(LIBS)'
  	;;
     solaris*)
 	XLDFLAGS='-R${prefix}/lib'
@@ -806,6 +859,12 @@ if test "$enable_shared" = 'yes'; then
 	    ;;
 	esac
 	;;
+    darwin*)
+	LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).$(MAJOR).$(MINOR).$(TEENY).dylib'
+	LIBRUBY_LDSHARED='cc -dynamiclib -undefined suppress'
+	LIBRUBY_DLDFLAGS='-install_name lib$(RUBY_INSTALL_NAME).dylib -current_version $(MAJOR).$(MINOR).$(TEENY) -compatibility_version $(MAJOR).$(MINOR)'
+	LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).$(MAJOR).$(MINOR).dylib lib$(RUBY_INSTALL_NAME).dylib'
+	;;
     *)
 	;;
   esac
@@ -828,9 +887,7 @@ case "$target_os" in
     	CFLAGS="$CFLAGS -DOS2"
 	;;
     osf*)
-	if test "$without_gcc" = "no" ; then
-	  CFLAGS="$CFLAGS -ansi"
-	else
+	if test "$without_gcc" = "yes" ; then
 	  # compile something small: taint.c is fine for this.
 	  # the main point is the '-v' flag of 'cc'.
 	  case "`cc -v -I. -c main.c -o /tmp/main.o 2>&1`" in
@@ -893,6 +950,7 @@ AC_SUBST(LIBRUBYARG)
 AC_SUBST(SOLIBS)
 AC_SUBST(DLDLIBS)
 AC_SUBST(ENABLE_SHARED)
+AC_SUBST(MAINLIBS)
 
 ri_prefix=
 test "$program_prefix" != NONE &&
@@ -963,5 +1021,6 @@ fi
 
 echo "creating config.h"
 tr -d '\015' < confdefs.h > config.h
+: > confdefs.h
 
 AC_OUTPUT($FIRSTMAKEFILE Makefile ext/extmk.rb)

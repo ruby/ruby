@@ -985,6 +985,11 @@ These functions are available in extconf.rb:
 Checks whether library which contains specified function exists.
 Returns true if the library exists.
 
+ find_library(lib, func, path...)
+
+Checks whether library which contains specified function exists in
+path.  Returns true if the library exists.
+
  have_func(func, header)
 
 Checks whether func exists with header.  Returns true if the function
@@ -993,12 +998,26 @@ check that library first using have_library().
 
  have_header(header)
 
-Checks for the header files.  Returns true if the header file exists.
+Checks whether header exists.  Returns true if the header file exists.
 
  create_makefile(target)
 
 Generates the Makefile for the extension library.  If you don't invoke
 this method, the compilation will not be done.
+
+ with_config(withval[, default=nil])
+
+Parses the command line options and returns the value specified by
+--with-<withval>.
+
+ dir_config(target[, default_dir])
+ dir_config(target[, default_include, default_lib])
+
+Parses the command line options and adds the directories specified by
+--with-<target>-dir, --with-<target>-include, and/or --with-<target>-lib
+to $CFLAGS and/or $LDFLAGS.  --with-<target>-dir=/path is equivalent to
+--with-<target>-include=/path/include --with-<target>-lib=/path/lib.
+Returns an array of the added directories ([include_dir, lib_dir]).
 
 /*
  * Local variables:

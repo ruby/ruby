@@ -1,5 +1,5 @@
 #
-#		tk.rb - Tk interface modue using tcltklib
+#		tk.rb - Tk interface module using tcltklib
 #			$Date$
 #			by Yukihiro Matsumoto <matz@netlab.co.jp>
 
@@ -351,7 +351,7 @@ module TkComm
     end
     if context.kind_of? Array
       context = context.collect{|ev|
-	if context.kind_of? TkVirtualEvent
+	if ev.kind_of? TkVirtualEvent
 	  ev.path
 	else
 	  ev
@@ -397,8 +397,18 @@ module TkComm
 	end
       }
     else
-      tk_split_list(tk_call(*what)).collect{|seq|
-	seq[1..-2].gsub(/></,',')
+      tk_split_simplelist(tk_call(*what)).collect!{|seq|
+	l = seq.scan(/<*[^<>]+>*/).collect!{|subseq|
+	  case (subseq)
+	  when /^<<[^<>]+>>$/
+	    TkVirtualEvent.getobj(subseq[1..-2])
+	  when /^<[^<>]+>$/
+	    subseq[1..-2]
+	  else
+	    subseq.split('')
+	  end
+	}.flatten
+	(l.size == 1) ? l[0] : l
       }
     end
   end
@@ -651,12 +661,77 @@ module TkCore
   end
 end
 
+module TkPackage
+  include TkCore
+  extend TkPackage
+
+  def add_path(path)
+    Tk::AUTO_PATH.value = Tk::AUTO_PATH.to_a << path
+  end
+
+  def forget(package)
+    tk_call('package', 'forget', package)
+    nil
+  end
+
+  def names
+    tk_split_simplelist(tk_call('package', 'names'))
+  end
+
+  def provide(package, version=nil)
+    if version
+      tk_call('package', 'provide', package, version)
+      nil
+    else
+      tk_call('package', 'provide', package)
+    end
+  end
+
+  def present(package, version=None)
+    tk_call('package', 'present', package, version)
+  end
+
+  def present_exact(package, version)
+    tk_call('package', 'present', '-exact', package, version)
+  end
+
+  def require(package, version=None)
+    tk_call('package', 'require', package, version)
+  end
+
+  def require_exact(package, version)
+    tk_call('package', 'require', '-exact', package, version)
+  end
+
+  def versions(package)
+    tk_split_simplelist(tk_call('package', 'versions', package))
+  end
+
+  def vcompare(version1, version2)
+    Integer(tk_call('package', 'vcompare', version1, version2))
+  end
+
+  def vsatisfies(version1, version2)
+    bool(tk_call('package', 'vsatisfies', version1, version2))
+  end
+end
+
 module Tk
   include TkCore
   extend Tk
 
   TCL_VERSION = INTERP._invoke("info", "tclversion")
   TK_VERSION  = INTERP._invoke("set", "tk_version")
+
+  TCL_PATCHLEVEL = INTERP._invoke("info", "patchlevel")
+  TK_PATCHLEVEL  = INTERP._invoke("set", "tk_patchLevel")
+
+  TCL_LIBRARY = INTERP._invoke("set", "tcl_library")
+  TK_LIBRARY  = INTERP._invoke("set", "tk_library")
+  LIBRARY     = INTERP._invoke("info", "library")
+
+  PLATFORM = Hash[*tk_split_simplelist(INTERP._eval('array get tcl_platform'))]
+
   JAPANIZED_TK = (INTERP._invoke("info", "commands", "kanji") != "")
 
   def root
@@ -678,6 +753,10 @@ module Tk
 
   def Tk.focus_lastfor(win)
     tk_tcl2ruby(tk_call('focus', '-lastfor', win))
+  end
+
+  def Tk.strictMotif(bool=None)
+    bool(tk_call('set', 'tk_strictMotif', bool))
   end
 
   def Tk.show_kinsoku(mode='both')
@@ -710,11 +789,11 @@ module Tk
     end
   end
 
-  def toUTF8(str,encoding)
+  def Tk.toUTF8(str,encoding)
     INTERP._toUTF8(str,encoding)
   end
   
-  def fromUTF8(str,encoding)
+  def Tk.fromUTF8(str,encoding)
     INTERP._fromUTF8(str,encoding)
   end
 
@@ -978,6 +1057,12 @@ class TkBindTag
     BTagID_TBL[id]? BTagID_TBL[id]: id
   end
 
+  ALL = self.new
+  ALL.instance_eval {
+    @id = 'all'
+    BTagID_TBL[@id] = self
+  }
+
   def initialize(*args)
     @id = Tk_BINDTAG_ID[0]
     Tk_BINDTAG_ID[0] = Tk_BINDTAG_ID[0].succ
@@ -995,20 +1080,11 @@ class TkBindTag
 end
 
 class TkBindTagAll<TkBindTag
-  BindTagALL = []
   def TkBindTagAll.new(*args)
-    if BindTagALL[0]
-      BindTagALL[0].bind(*args) if args != []
-    else
-      new = super()
-      BindTagALL[0] = new
-    end
-    BindTagALL[0]
-  end
+    $stderr.puts "Warning: TkBindTagALL is obsolete. Use TkBindTag::ALL\n"
 
-  def initialize(*args)
-    @id = 'all'
-    BindTagALL[0].bind(*args) if args != []
+    TkBindTag::ALL.bind(*args) if args != []
+    TkBindTag::ALL
   end
 end
 
@@ -1112,15 +1188,15 @@ class TkVariable
   end
 
   def to_i
-    Integer(number(value))
+    number(value).to_i
   end
 
   def to_f
-    Float(number(value))
+    number(value).to_f
   end
 
   def to_s
-    String(string(value))
+    string(value).to_s
   end
 
   def inspect
@@ -1304,6 +1380,21 @@ class TkVarAccess<TkVariable
   end
 end
 
+module Tk
+  begin
+    auto_path = INTERP._invoke('set', 'auto_path')
+  rescue
+    begin
+      auto_path = INTERP._invoke('set', 'env(TCLLIBPATH)')
+    rescue
+      auto_path = Tk::LIBRARY
+    end
+  end
+  AUTO_PATH = TkVarAccess.new('auto_path', auto_path)
+
+  TCL_PACKAGE_PATH = TkVarAccess.new('tcl_pkgPath')
+end
+
 module TkSelection
   include Tk
   extend Tk
@@ -1446,7 +1537,7 @@ module TkXIM
   end
 
   def useinputmethods(value=nil)
-    TkXIM.useinputmethods(self, value=nil)
+    TkXIM.useinputmethods(self, value)
   end
 
   def imconfigure(window, slot, value=None)
@@ -2370,7 +2461,7 @@ class TkWindow<TkObject
 
   def grid_propagate(mode=nil)
     if mode
-      tk_call('grid', 'propagate', epath, bool)
+      tk_call('grid', 'propagate', epath, mode)
     else
       bool(tk_call('grid', 'propagate', epath))
     end
@@ -2507,7 +2598,7 @@ class TkWindow<TkObject
 
   def bindtags(taglist=nil)
     if taglist
-      fail unless taglist.kind_of? Array
+      fail ArgumentError unless taglist.kind_of? Array
       tk_call('bindtags', path, taglist)
     else
       list(tk_call('bindtags', path)).collect{|tag|
@@ -2708,8 +2799,16 @@ class TkScale<TkWindow
     tk_call 'scale', path
   end
 
-  def get
-    number(tk_send('get'))
+  def get(x=None, y=None)
+    number(tk_send('get', x, y))
+  end
+
+  def coords(val=None)
+    tk_split_list(tk_send('coords', val))
+  end
+
+  def identify(x, y)
+    tk_send('identify', x, y)
   end
 
   def set(val)
@@ -2744,8 +2843,8 @@ class TkScrollbar<TkWindow
     number(tk_send('fraction', x, y))
   end
 
-  def identify(x=None, y=None)
-    tk_send('fraction', x, y)
+  def identify(x, y)
+    tk_send('identify', x, y)
   end
 
   def get
@@ -2759,6 +2858,10 @@ class TkScrollbar<TkWindow
 
   def set(first, last)
     tk_send "set", first, last
+  end
+
+  def activate(element=None)
+    tk_send('activate', element)
   end
 end
 
@@ -3033,12 +3136,12 @@ class TkMenu<TkWindow
     tk_send 'invoke', index
   end
   def insert(index, type, keys=nil)
-    tk_send 'add', index, type, *hash_kv(keys)
+    tk_send 'insert', index, type, *hash_kv(keys)
   end
   def delete(index, last=None)
     tk_send 'delete', index, last
   end
-  def popup(x, y, index=nil)
+  def popup(x, y, index=None)
     tk_call 'tk_popup', path, x, y, index
   end
   def post(x, y)
@@ -3128,12 +3231,12 @@ class TkMenu<TkWindow
 end
 
 class TkMenuClone<TkMenu
-  def initialize(parent, type=nil)
+  def initialize(parent, type=None)
     unless parent.kind_of?(TkMenu)
       fail ArgumentError, "parent must be TkMenu"
     end
     @parent = parent
-    install_win(@parent)
+    install_win(@parent.path)
     tk_call @parent.path, 'clone', @path, type
   end
 end

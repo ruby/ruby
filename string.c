@@ -174,7 +174,7 @@ rb_str_associate(str, add)
     rb_ary_push(RSTRING(str)->orig, add);
 }
 
-static ID to_str;
+static ID id_to_s;
 
 VALUE
 rb_obj_as_string(obj)
@@ -185,7 +185,7 @@ rb_obj_as_string(obj)
     if (TYPE(obj) == T_STRING) {
 	return obj;
     }
-    str = rb_funcall(obj, to_str, 0);
+    str = rb_funcall(obj, id_to_s, 0);
     if (TYPE(str) != T_STRING)
 	return rb_any_to_s(obj);
     if (OBJ_TAINTED(obj)) OBJ_TAINT(str);
@@ -339,7 +339,6 @@ rb_str_substr(str, beg, len)
 
     if (len < 0) return Qnil;
     if (beg > RSTRING(str)->len) return Qnil;
-    if (beg == RSTRING(str)->len && len > 0) return Qnil;
     if (beg < 0) {
 	beg += RSTRING(str)->len;
 	if (beg < 0) return Qnil;
@@ -367,7 +366,6 @@ str_independent(str)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify string");
     if (!RSTRING(str)->orig || FL_TEST(str, STR_NO_ORIG)) return 1;
     if (TYPE(RSTRING(str)->orig) != T_STRING) rb_bug("non string str->orig");
-    RSTRING(str)->orig = 0;
     return 0;
 }
 
@@ -384,6 +382,7 @@ rb_str_modify(str)
     }
     ptr[RSTRING(str)->len] = 0;
     RSTRING(str)->ptr = ptr;
+    RSTRING(str)->orig = 0;
 }
 
 VALUE
@@ -969,6 +968,7 @@ rb_str_replace(str, beg, len, val)
     }
     RSTRING(str)->len += RSTRING(val)->len - len;
     RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
+    OBJ_INFECT(str, val);
 }
 
 static VALUE rb_str_sub_bang _((int, VALUE*, VALUE));
@@ -1127,7 +1127,7 @@ rb_str_sub_bang(argc, argv, str)
 	iter = 1;
     }
     else if (argc == 2) {
-	repl = rb_obj_as_string(argv[1]);;
+	repl = rb_str_to_str(argv[1]);;
 	if (OBJ_TAINTED(repl)) tainted = 1;
     }
     else {
@@ -1200,7 +1200,7 @@ str_gsub(argc, argv, str, bang)
 	iter = 1;
     }
     else if (argc == 2) {
-	repl = rb_obj_as_string(argv[1]);
+	repl = rb_str_to_str(argv[1]);
 	if (OBJ_TAINTED(repl)) tainted = 1;
     }
     else {
@@ -1278,6 +1278,9 @@ str_gsub(argc, argv, str, bang)
 	if (str_independent(str)) {
 	    free(RSTRING(str)->ptr);
 	}
+	else {
+	    RSTRING(str)->orig = 0;
+	}
     }
     else {
 	NEWOBJ(dup, struct RString);
@@ -1316,15 +1319,19 @@ static VALUE
 rb_str_replace_m(str, str2)
     VALUE str, str2;
 {
+    if (str == str2) return str;
     if (TYPE(str2) != T_STRING) str2 = rb_str_to_str(str2);
-    rb_str_modify(str);
 
-    if (RSTRING(str2)->orig && FL_TEST(str2, STR_NO_ORIG)) {
+    if (RSTRING(str2)->orig && !FL_TEST(str2, STR_NO_ORIG)) {
+	if (str_independent(str)) {
+	    free(RSTRING(str)->ptr);
+	}
 	RSTRING(str)->len = RSTRING(str2)->len;
 	RSTRING(str)->ptr = RSTRING(str2)->ptr;
 	RSTRING(str)->orig = RSTRING(str2)->orig;
     }
     else {
+	rb_str_modify(str);
 	rb_str_resize(str, RSTRING(str2)->len);
 	memcpy(RSTRING(str)->ptr, RSTRING(str2)->ptr, RSTRING(str2)->len);
     }
@@ -1395,6 +1402,7 @@ rb_str_reverse_bang(str)
     char *s, *e;
     char c;
 
+    rb_str_modify(str);
     s = RSTRING(str)->ptr;
     e = s + RSTRING(str)->len - 1;
     while (s < e) {
@@ -1490,8 +1498,8 @@ rb_str_inspect(str)
 	char c = *p++;
 	if (ismbchar(c) && p < pend) {
 	    int len = mbclen(c);
-	    rb_str_cat(result, p, len);
-	    p += len;
+	    rb_str_cat(result, p - 1, len);
+	    p += len - 1;
 	}
 	else if (c == '"'|| c == '\\') {
 	    s[0] = '\\'; s[1] = c;
@@ -1644,7 +1652,7 @@ rb_str_upcase_bang(str)
 	if (ismbchar(*s)) {
 	    s+=mbclen(*s) - 1;
 	}
-	else if (islower(*s)) {
+	else if (ISLOWER(*s)) {
 	    *s = toupper(*s);
 	    modify = 1;
 	}
@@ -1784,7 +1792,10 @@ trnext(t)
 	if (!t->gen) {
 	    if (t->p == t->pend) return -1;
 	    t->now = *(USTR)t->p++;
-	    if (t->p < t->pend - 1 && *t->p == '-') {
+	    if (t->p < t->pend - 1 && *t->p == '\\') {
+		t->p++;
+	    }
+	    else if (t->p < t->pend - 1 && *t->p == '-') {
 		t->p++;
 		if (t->p < t->pend) {
 		    if (t->now > *(USTR)t->p) {
@@ -1965,6 +1976,9 @@ rb_str_delete_bang(argc, argv, str)
     int init = 1;
     int i;
 
+    if (argc < 1) {
+	rb_raise(rb_eArgError, "wrong # of arguments");
+    }
     for (i=0; i<argc; i++) {
 	VALUE s = argv[i];
 
@@ -2621,11 +2635,15 @@ rb_str_crypt(str, salt)
     VALUE str, salt;
 {
     extern char *crypt();
+    VALUE result;
 
     if (TYPE(salt) != T_STRING) salt = rb_str_to_str(salt);
     if (RSTRING(salt)->len < 2)
 	rb_raise(rb_eArgError, "salt too short(need >=2 bytes)");
-    return rb_str_new2(crypt(RSTRING(str)->ptr, RSTRING(salt)->ptr));
+
+    result = rb_str_new2(crypt(RSTRING(str)->ptr, RSTRING(salt)->ptr));
+    OBJ_INFECT(result, str);
+    return result;
 }
 
 static VALUE
@@ -2702,6 +2720,7 @@ rb_str_ljust(str, w)
     while (p < pend) {
 	*p++ = ' ';
     }
+    OBJ_INFECT(res, str);
     return res;
 }
 
@@ -2721,6 +2740,7 @@ rb_str_rjust(str, w)
 	*p++ = ' ';
     }
     memcpy(pend, RSTRING(str)->ptr, RSTRING(str)->len);
+    OBJ_INFECT(res, str);
     return res;
 }
 
@@ -2746,6 +2766,7 @@ rb_str_center(str, w)
     while (p < pend) {
 	*p++ = ' ';
     }
+    OBJ_INFECT(res, str);
     return res;
 }
 
@@ -2877,7 +2898,7 @@ Init_String()
     rb_define_method(rb_cString, "slice", rb_str_aref_m, -1);
     rb_define_method(rb_cString, "slice!", rb_str_slice_bang, -1);
 
-    to_str = rb_intern("to_s");
+    id_to_s = rb_intern("to_s");
 
     rb_fs = Qnil;
     rb_define_hooked_variable("$;", &rb_fs, 0, rb_str_setter);

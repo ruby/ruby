@@ -1,5 +1,5 @@
-# date.rb: Written by Tadayoshi Funaba 1998-2000
-# $Id: date.rb,v 1.22 2000-07-16 10:23:40+09 tadf Exp $
+# date2.rb: Written by Tadayoshi Funaba 1998-2001
+# $Id: date2.rb,v 1.23 2001-01-18 12:09:47+09 tadf Exp $
 
 class Date
 
@@ -128,16 +128,15 @@ class Date
       end
       if d < 0
 	ny, nm = clfloor(y * 12 + m, 12)
-	nm,    = clfloor(m + 1, 1)
-	la = nil
-	31.downto 1 do |z|
-	  break if la = exist3?(y, m, z, sg)
-	end
-	ns = ns?(la, sg)
-	d = jd_to_civil(civil_to_jd(ny, nm, 1, ns) + d, ns)[-1]
+	nm,    = clfloor(nm + 1, 1)
+	jd = civil_to_jd(ny, nm, d + 1, sg)
+	ns = ns?(jd, sg)
+	return unless [y, m] == jd_to_civil(jd, sg)[0..1]
+	return unless [ny, nm, 1] == jd_to_civil(jd - d, ns)
+      else
+	jd = civil_to_jd(y, m, d, sg)
+	return unless [y, m, d] == jd_to_civil(jd, sg)
       end
-      jd = civil_to_jd(y, m, d, sg)
-      return unless [y, m, d] == jd_to_civil(jd, sg)
       jd
     end
 
@@ -154,16 +153,15 @@ class Date
 
     def exist2? (y, d, sg=ITALY)
       if d < 0
-	ny = y + 1
-	la = nil
-	366.downto 1 do |z|
-	  break if la = exist2?(y, z, sg)
-	end
-	ns = ns?(la, sg)
-	d = jd_to_ordinal(ordinal_to_jd(ny, 1, ns) + d, ns)[-1]
+	ny, = clfloor(y + 1, 1)
+	jd = ordinal_to_jd(ny, d + 1, sg)
+	ns = ns?(jd, sg)
+	return unless [y] == jd_to_ordinal(jd, sg)[0..0]
+	return unless [ny, 1] == jd_to_ordinal(jd - d, ns)
+      else
+	jd = ordinal_to_jd(y, d, sg)
+	return unless [y, d] == jd_to_ordinal(jd, sg)
       end
-      jd = ordinal_to_jd(y, d, sg)
-      return unless [y, d] == jd_to_ordinal(jd, sg)
       jd
     end
 

@@ -103,10 +103,8 @@ static int   duppair proto((char *, datum));
 /*
  * externals
  */
-#ifndef sun
-#ifndef MSDOS
+#if !defined sun && !defined MSDOS && !defined _WIN32 && !defined __CYGWIN__
 extern int errno;
-#endif
 #endif
 
 /*

@@ -12,7 +12,7 @@
 
 **********************************************************************/
 
-#ifdef _WIN32
+#if defined _WIN32 || defined __CYGWIN__
 #include <windows.h>
 #endif
 #include "ruby.h"
@@ -106,7 +106,7 @@ extern VALUE rb_load_path;
 
 #define STATIC_FILE_LENGTH 255
 
-#if defined(_WIN32) || defined(DJGPP)
+#if defined _WIN32 || defined __CYGWIN__ || defined __DJGPP__
 static char *
 rubylib_mangle(s, l)
     char *s;
@@ -172,7 +172,7 @@ ruby_incpush(path)
     const char sep = PATH_SEP_CHAR;
 
     if (path == 0) return;
-#if defined(__CYGWIN32__)
+#if defined(__CYGWIN__)
     {
 	char rubylib[FILENAME_MAX];
 	conv_to_posix_path(path, rubylib, FILENAME_MAX);
@@ -202,25 +202,44 @@ ruby_incpush(path)
     }
 }
 
+#if defined _WIN32 || defined __CYGWIN__ || defined __DJGPP__ || defined __EMX__
+#define LOAD_RELATIVE 1
+#endif
+
 void
 ruby_init_loadpath()
 {
-#if defined(_WIN32) || defined(DJGPP) || defined(__EMX__)
+#if defined LOAD_RELATIVE
     char libpath[FILENAME_MAX+1];
     char *p;
     int rest;
-#if defined(_WIN32)
-    GetModuleFileName(NULL, libpath, sizeof libpath);
+#if defined _WIN32 || defined __CYGWIN__
+# if defined LIBRUBY_SO
+    HMODULE libruby = GetModuleHandle(LIBRUBY_SO);
+# else
+    HMODULE libruby = NULL;
+# endif
+    GetModuleFileName(libruby, libpath, sizeof libpath);
 #elif defined(DJGPP)
     extern char *__dos_argv0;
     strncpy(libpath, __dos_argv0, FILENAME_MAX);
+#define CharNext(p) ((p) + mblen(p, MB_CUR_MAX))
 #elif defined(__EMX__)
     _execname(libpath, FILENAME_MAX);
 #endif
-    p = strrchr(libpath, '\\');
+
+#ifndef CharNext		/* defined as CharNext[AW] on Windows. */
+#define CharNext(p) ((p) + 1)
+#endif
+
+    for (p = libpath; *p; p = CharNext(p))
+	if (*p == '\\')
+	    *p = '/';
+
+    p = strrchr(libpath, '/');
     if (p) {
 	*p = 0;
-	if (p-libpath > 3 && !strcasecmp(p-4, "\\bin")) {
+	if (p-libpath > 3 && !strcasecmp(p-4, "/bin")) {
 	    p -= 4;
 	    *p = 0;
 	}
@@ -229,14 +248,6 @@ ruby_init_loadpath()
 	p = libpath + 1;
     }
 
-#if !defined(__CYGWIN32__)
-#ifndef CharNext		/* defined as CharNext[AW] on Windows. */
-#define CharNext(p) ((p) + 1)
-#endif
-    for (p = libpath; *p; p = CharNext(p))
-	if (*p == '\\')
-	    *p = '/';
-#endif
     rest = FILENAME_MAX - (p - libpath);
 
 #define RUBY_RELATIVE(path) (strncpy(p, (path), rest), libpath)
@@ -428,6 +439,10 @@ proc_options(argc, argv)
 	    goto reswitch;
 
 	  case 'v':
+	    if (verbose) {
+		s++;
+		goto reswitch;
+	    }
 	    ruby_show_version();
 	    verbose = 1;
 	  case 'w':
@@ -663,6 +678,11 @@ proc_options(argc, argv)
 	ruby_show_copyright();
     }
 
+    if (rb_safe_level() >= 4) {
+      OBJ_TAINT(rb_argv);
+      OBJ_TAINT(rb_load_path);
+    }
+
     if (!e_script && argc == 0) { /* no more args */
 	if (verbose) exit(0);
 	script = "-";
@@ -708,6 +728,11 @@ proc_options(argc, argv)
 
     process_sflag();
     xflag = 0;
+
+    if (rb_safe_level() >= 4) {
+      FL_UNSET(rb_argv, FL_TAINT);
+      FL_UNSET(rb_load_path, FL_TAINT);
+    }
 }
 
 extern int ruby__end__seen;
@@ -728,7 +753,7 @@ load_file(fname, script)
 	FILE *fp = fopen(fname, "r");
 
 	if (fp == NULL) {
-	    rb_raise(rb_eLoadError, "No such file to load -- %s", fname);
+	    rb_load_fail(fname);
 	}
 	fclose(fp);
 
@@ -871,9 +896,9 @@ set_arg0(val, id)
 #endif
     s = rb_str2cstr(val, &i);
 #ifndef __hpux
-    if (i > len) {
-	memcpy(origargv[0], s, len);
-	origargv[0][len] = '\0';
+    if (i < len) {
+	memcpy(origargv[0], s, i);
+	origargv[0][i] = '\0';
     }
     else {
 	memcpy(origargv[0], s, i);
@@ -983,6 +1008,7 @@ ruby_set_argv(argc, argv)
     if (origargv) dln_argv0 = origargv[0];
     else          dln_argv0 = argv[0];
 #endif
+    rb_ary_clear(rb_argv);
     for (i=0; i < argc; i++) {
 	rb_ary_push(rb_argv, rb_tainted_str_new2(argv[i]));
     }

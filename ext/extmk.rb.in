@@ -12,7 +12,13 @@ elsif ARGV[0] == 'install'
   $destdir = ARGV[1] || ''
   ARGV.shift
 elsif ARGV[0] == 'clean'
-  $clean = true
+  $clean = "clean"
+  ARGV.shift
+elsif ARGV[0] == 'distclean'
+  $clean = "distclean"
+  ARGV.shift
+elsif ARGV[0] == 'realclean'
+  $clean = "realclean"
   ARGV.shift
 end
 
@@ -332,21 +338,27 @@ def dir_config(target, idefault=nil, ldefault=nil)
     idefault = default + "/include"
     ldefault = default + "/lib"
   end
-  dir = with_config("%s-dir"%target, default)
-  if dir
-    idir = " -I"+dir+"/include"
-    ldir = dir+"/lib"
-  end
-  unless idir
-    dir = with_config("%s-include"%target, idefault)
-    idir = " -I"+dir if dir
-  end
-  unless ldir
-    ldir = with_config("%s-lib"%target, ldefault)
+
+  dir = with_config(target + "-dir", default)
+
+  idir, ldir = if dir then [
+      dir + "/include",
+      dir + "/lib"
+    ] else [
+      with_config(target + "-include", idefault),
+      with_config(target + "-lib", ldefault)
+    ] end
+
+  if idir
+    idircflag = "-I" + idir
+    $CPPFLAGS += " " + idircflag unless $CPPFLAGS.split.include?(idircflag)
   end
 
-  $CPPFLAGS += idir if idir
-  $LIBPATH |= [ldir] if ldir
+  if ldir
+    $LIBPATH << ldir unless $LIBPATH.include?(ldir)
+  end
+
+  [idir, ldir]
 end
 
 def create_makefile(target)
@@ -370,13 +382,15 @@ def create_makefile(target)
 
   if $configure_args['--enable-shared'] or "@LIBRUBY@" != "@LIBRUBY_A@"
     $libs = "@LIBRUBYARG@ " + $libs
-    $LIBPATH |= [$topdir]
+    $LIBPATH.unshift $topdir
   end
 
   defflag = ''
   if RUBY_PLATFORM =~ /cygwin|mingw/ and not $static
-    open(target + '.def', 'wb') do |f|
-      f.print "EXPORTS\n", "Init_", target, "\n"
+    if not File.exist? target + '.def'
+      open(target + '.def', 'wb') do |f|
+        f.print "EXPORTS\n", "Init_", target, "\n"
+      end
     end
     defflag = "--def=" + target + ".def"
   end
@@ -488,23 +502,44 @@ EOS
   install_rb(mfile, $srcdir)
   mfile.printf "\n"
 
-  if /mswin32/ !~ RUBY_PLATFORM
+  unless /nmake/i =~ $make
+    unless /mswin32/ =~ RUBY_PLATFORM
+      src = '$<'
+    else
+      src = '$(subst /,\\\\,$<)'
+    end
     mfile.puts "
-.c.@OBJEXT@:
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $<
-"
-  elsif /nmake/i =~ $make
-    mfile.print "
-{$(srcdir)}.c{}.@OBJEXT@:
-	$(CC) -I. -I$(<D) $(CFLAGS) $(CPPFLAGS) -c $(<:/=\\)
+.cc.@OBJEXT@:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{src}
+.cpp.@OBJEXT@:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{src}
+.cxx.@OBJEXT@:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{src}
+.C.@OBJEXT@:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{src}
 
 .c.@OBJEXT@:
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(<:/=\\)
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c #{src}
 "
   else
     mfile.print "
+{$(srcdir)}.c{}.@OBJEXT@:
+	$(CC) -I. -I$(<D) $(CFLAGS) $(CPPFLAGS) -c $(<:/=\\)
 .c.@OBJEXT@:
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(subst /,\\\\,$<)
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(<:/=\\)
+
+{$(srcdir)}.cc{}.@OBJEXT@:
+	$(CXX) -I. -I$(<D) $(CXXFLAGS) $(CPPFLAGS) -c $(<:/=\\)
+.cc.@OBJEXT@:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $(<:/=\\)
+{$(srcdir)}.cpp{}.@OBJEXT@:
+	$(CXX) -I. -I$(<D) $(CXXFLAGS) $(CPPFLAGS) -c $(<:/=\\)
+.cpp.@OBJEXT@:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $(<:/=\\)
+{$(srcdir)}.cxx{}.@OBJEXT@:
+	$(CXX) -I. -I$(<D) $(CXXFLAGS) $(CPPFLAGS) -c $(<:/=\\)
+.cxx.@OBJEXT@:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $(<:/=\\)
 "
   end
 
@@ -577,23 +612,12 @@ def extmake(target)
     $local_flags = "-link /INCREMENTAL:no /EXPORT:Init_$(TARGET)"
   end
   $LOCAL_LIBS = ""		# to be assigned in extconf.rb
-  dir = with_config("opt-dir")
-  if dir
-    idir = "-I"+dir+"/include"
-    ldir = dir+"/lib"
-  end
-  unless idir
-    dir = with_config("opt-include")
-    idir = "-I"+dir if dir
-  end
-  unless ldir
-    ldir = with_config("opt-lib")
-  end
-
   $CFLAGS = ""
-  $CPPFLAGS = idir || ""
+  $CPPFLAGS = ""
   $LDFLAGS = ""
-  $LIBPATH = [ldir].compact
+  $LIBPATH = []
+
+  dir_config("opt")
 
   begin
     Dir.mkdir target unless File.directory?(target)
@@ -625,7 +649,7 @@ def extmake(target)
       if $install
 	system "#{$make} install DESTDIR=#{$destdir}"
       elsif $clean
-	system "#{$make} clean"
+	system "#{$make} #{$clean}"
       else
 	unless system "#{$make} all"
 	  if ENV["MAKEFLAGS"] != "k" and ENV["MFLAGS"] != "-k"
@@ -654,15 +678,15 @@ $static_ext = {}
 for setup in ["@setup@", "#{$top_srcdir}/ext/@setup@"]
   if File.file? setup
     f = open(setup) 
-    while f.gets()
-      $_.chomp!
-      sub!(/#.*$/, '')
-      next if /^\s*$/
-      if /^option +nodynamic/
+    while line = f.gets()
+      line.chomp!
+      line.sub!(/#.*$/, '')
+      next if /^\s*$/ =~ line
+      if /^option +nodynamic/ =~ line
 	$nodynamic = true
 	next
       end
-      target = $_.split[0]
+      target = line.split[0]
       target = target.downcase if /mswin32/ =~ RUBY_PLATFORM
       $static_ext[target] = true
     end

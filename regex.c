@@ -370,6 +370,7 @@ enum regexpcode
     duplicate,   /* Match a duplicate of something remembered.
 		    Followed by one byte containing the index of the memory 
                     register.  */
+    fail,        /* always fails. */
     wordchar,    /* Matches any word-constituent character.  */
     notwordchar, /* Matches any char that is not a word-constituent.  */
     wordbeg,	 /* Succeeds if at word beginning.  */
@@ -1049,7 +1050,7 @@ calculate_must_string(start, end)
       EXTRACT_NUMBER_AND_INCR(mcnt, p);
       if (mcnt > 0) p += mcnt;
       if ((enum regexpcode)p[-3] == jump) {
-	p -= 3;
+       p -= 2;
 	EXTRACT_NUMBER_AND_INCR(mcnt, p);
 	if (mcnt > 0) p += mcnt;
       }
@@ -1438,6 +1439,9 @@ re_compile_pattern(pattern, size, bufp)
 	    EXTEND_BUFFER;
 	}
       range_retry:
+	if (range && had_char_class) {
+	  FREE_AND_RETURN(stackb, "invalid regular expression; can't use character class as an end value of range");
+	}
 	PATFETCH(c);
 
 	if (c == ']') {
@@ -1459,6 +1463,7 @@ re_compile_pattern(pattern, size, bufp)
 	  PATFETCH_MBC(c);
 	  had_mbchar++;
 	}
+	had_char_class = 0;
 
 	/* \ escapes characters when inside [...].  */
 	if (c == '\\') {
@@ -1473,6 +1478,7 @@ re_compile_pattern(pattern, size, bufp)
 	    if (current_mbctype) {
 	      set_list_bits(0x80, 0xffffffff, b);
 	    }
+	    had_char_class = 1;
 	    last = -1;
 	    continue;
 
@@ -1483,6 +1489,7 @@ re_compile_pattern(pattern, size, bufp)
 		  !current_mbctype && SYNTAX(c) != Sword2))
 		SET_LIST_BIT(c);
 	    }
+	    had_char_class = 1;
 	    last = -1;
 	    continue;
 
@@ -1490,6 +1497,7 @@ re_compile_pattern(pattern, size, bufp)
 	    for (c = 0; c < 256; c++)
 	      if (ISSPACE(c))
 		SET_LIST_BIT(c);
+	    had_char_class = 1;
 	    last = -1;
 	    continue;
 
@@ -1499,12 +1507,14 @@ re_compile_pattern(pattern, size, bufp)
 		SET_LIST_BIT(c);
 	    if (current_mbctype)
 	      set_list_bits(0x80, 0xffffffff, b);
+	    had_char_class = 1;
 	    last = -1;
 	    continue;
 
 	  case 'd':
 	    for (c = '0'; c <= '9'; c++)
 	      SET_LIST_BIT(c);
+	    had_char_class = 1;
 	    last = -1;
 	    continue;
 
@@ -1514,6 +1524,7 @@ re_compile_pattern(pattern, size, bufp)
 		SET_LIST_BIT(c);
 	    if (current_mbctype)
 	      set_list_bits(0x80, 0xffffffff, b);
+	    had_char_class = 1;
 	    last = -1;
 	    continue;
 
@@ -2236,32 +2247,23 @@ re_compile_pattern(pattern, size, bufp)
       case '1': case '2': case '3':
       case '4': case '5': case '6':
       case '7': case '8': case '9':
-	{
-	  const char *p_save;
-
 	  PATUNFETCH;
-	  p_save = p;
+	p0 = p;
 
 	  had_mbchar = 0;
 	  c1 = 0;
 	  GET_UNSIGNED_NUMBER(c1);
 	  if (!ISDIGIT(c)) PATUNFETCH;
 
-	  if (c1 >= regnum) {
+	if (9 < c1 && c1 >= regnum) {
 	    /* need to get octal */
-	    p = p_save;
-	    c = scan_oct(p_save, 3, &numlen) & 0xff;
-	    p = p_save + numlen;
+	  c = scan_oct(p0, 3, &numlen) & 0xff;
+	  p = p0 + numlen;
 	    c1 = 0;
 	    had_num_literal = 1;
 	    goto numeric_char;
 	  }
-	}
 
-	/* Can't back reference to a subexpression if inside of it.  */
-	for (stackt = stackp - 2;  stackt > stackb;  stackt -= 5)
-	  if (*stackt == c1)
-	    goto normal_char;
 	laststart = b;
 	BUFPUSH(duplicate);
 	BUFPUSH(c1);
@@ -3353,7 +3355,7 @@ re_search(bufp, string, size, startpos, range, regs)
 #define NUM_COUNT_ITEMS 2
 
 /* Individual items aside from the registers.  */
-#define NUM_NONREG_ITEMS 3
+#define NUM_NONREG_ITEMS 4
 
 /* We push at most this many things on the stack whenever we
    fail.  The `+ 2' refers to PATTERN_PLACE and STRING_PLACE, which are
@@ -3403,6 +3405,7 @@ re_search(bufp, string, size, startpos, range, regs)
 									\
     *stackp++ = pattern_place;                                          \
     *stackp++ = string_place;                                           \
+    *stackp++ = (unsigned char*)options; /* current option status */	\
     *stackp++ = (unsigned char*)0; /* non-greedy flag */		\
   } while(0)
 
@@ -3461,7 +3464,8 @@ re_search(bufp, string, size, startpos, range, regs)
 #define PREV_IS_A_LETTER(d) ((current_mbctype == MBCTYPE_SJIS)?		\
 			     IS_A_LETTER((d)-(!AT_STRINGS_BEG((d)-1)&&	\
 					      ismbchar((d)[-2])?2:1)):	\
-			     ((d)[-1] >= 0x80 || IS_A_LETTER((d)-1)))
+                             ((current_mbctype && ((d)[-1] >= 0x80)) ||	\
+			      IS_A_LETTER((d)-1)))
 
 static void
 init_regs(regs, num_regs)
@@ -3725,11 +3729,12 @@ re_match(bufp, string_arg, size, pos, regs)
 	  int regno = *p++;   /* Get which register to match against */
 	  register unsigned char *d2, *dend2;
 
-	  if (IS_ACTIVE(reg_info[regno])) break;
+	  /* Check if corresponding group is still open */
+	  if (IS_ACTIVE(reg_info[regno])) goto fail;
 
 	  /* Where in input to try to start matching.  */
 	  d2 = regstart[regno];
-	  if (REG_UNSET(d2)) break;
+	  if (REG_UNSET(d2)) goto fail;
 
 	  /* Where to stop matching; if both the place to start and
 	     the place to stop matching are in the same string, then
@@ -3737,7 +3742,7 @@ re_match(bufp, string_arg, size, pos, regs)
 	     the end of the first string.  */
 
 	  dend2 = regend[regno];
-	  if (REG_UNSET(dend2)) break;
+	  if (REG_UNSET(dend2)) goto fail;
 	  for (;;) {
 	    /* At end of register contents => success */
 	    if (d2 == dend2) break;
@@ -3776,7 +3781,7 @@ re_match(bufp, string_arg, size, pos, regs)
       case stop_nowidth:
 	EXTRACT_NUMBER_AND_INCR(mcnt, p);
 	stackp = stackb + mcnt;
-	d = stackp[-2];
+	d = stackp[-3];
 	POP_FAILURE_POINT();
 	continue;
 
@@ -4000,8 +4005,8 @@ re_match(bufp, string_arg, size, pos, regs)
 	   because didn't fail.  Also remove the register information
 	   put on by the on_failure_jump.  */
       case finalize_jump:
-	if (stackp > stackb && stackp[-2] == d) {
-	  p = stackp[-3];
+	if (stackp > stackb && stackp[-3] == d) {
+	  p = stackp[-4];
 	  POP_FAILURE_POINT();
 	  continue;
 	}
@@ -4017,7 +4022,7 @@ re_match(bufp, string_arg, size, pos, regs)
       case jump:
       nofinalize:
         EXTRACT_NUMBER_AND_INCR(mcnt, p);
-        if (mcnt < 0 && stackp > stackb && stackp[-2] == d) /* avoid infinite loop */
+        if (mcnt < 0 && stackp > stackb && stackp[-3] == d) /* avoid infinite loop */
 	   goto fail;
         p += mcnt;
         continue;
@@ -4108,7 +4113,7 @@ re_match(bufp, string_arg, size, pos, regs)
       case finalize_push:
 	POP_FAILURE_POINT();
 	EXTRACT_NUMBER_AND_INCR(mcnt, p);
-        if (mcnt < 0 && stackp > stackb  && stackp[-2] == d) /* avoid infinite loop */
+        if (mcnt < 0 && stackp > stackb  && stackp[-3] == d) /* avoid infinite loop */
 	   goto fail;
 	PUSH_FAILURE_POINT(p + mcnt, d);
 	stackp[-1] = NON_GREEDY;
@@ -4273,11 +4278,12 @@ re_match(bufp, string_arg, size, pos, regs)
 
       /* If this failure point is from a dummy_failure_point, just
 	 skip it.  */
-      if (stackp[-3] == 0 || (best_regs_set && stackp[-1] == NON_GREEDY)) {
+      if (stackp[-4] == 0 || (best_regs_set && stackp[-1] == NON_GREEDY)) {
 	POP_FAILURE_POINT();
 	goto fail;
       }
-      stackp--;		/* discard flag */
+      stackp--;		/* discard greedy flag */
+      options = (int)*--stackp;
       d = *--stackp;
       p = *--stackp;
       /* Restore register info.  */

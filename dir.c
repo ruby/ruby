@@ -26,10 +26,10 @@
 #include <unistd.h>
 #endif
 
-#if HAVE_DIRENT_H
+#if defined HAVE_DIRENT_H && !defined NT
 # include <dirent.h>
 # define NAMLEN(dirent) strlen((dirent)->d_name)
-#elif HAVE_DIRECT_H
+#elif defined HAVE_DIRECT_H && !defined NT
 # include <direct.h>
 # define NAMLEN(dirent) strlen((dirent)->d_name)
 #else
@@ -44,8 +44,8 @@
 # if HAVE_NDIR_H
 #  include <ndir.h>
 # endif
-# if defined(NT) && defined(_MSC_VER)
-#  include "missing/dir.h"
+# if defined(NT)
+#  include "win32/dir.h"
 # endif
 #endif
 
@@ -61,6 +61,10 @@ char *strchr _((char*,char));
 
 #include <ctype.h>
 
+#ifndef HAVE_LSTAT
+#define lstat rb_sys_stat
+#endif
+
 #define FNM_NOESCAPE	0x01
 #define FNM_PATHNAME	0x02
 #define FNM_PERIOD	0x04
@@ -69,7 +73,7 @@ char *strchr _((char*,char));
 #define FNM_NOMATCH	1
 #define FNM_ERROR	2
 
-#define downcase(c) (nocase && isupper(c) ? tolower(c) : (c))
+#define downcase(c) (nocase && ISUPPER(c) ? tolower(c) : (c))
 
 #if defined DOSISH
 #define isdirsep(c) ((c) == '/' || (c) == '\\')
@@ -126,17 +130,18 @@ range(pat, test, flags)
     return 0;
 }
 
+#define ISDIRSEP(c) (pathname && isdirsep(c))
 #define PERIOD(s) (period && *(s) == '.' && \
-		  ((s) == string || pathname && isdirsep(*(s))))
+		  ((s) == string || ISDIRSEP((s)[-1])))
 static int
 fnmatch(pat, string, flags)
-    char *pat;
-    char *string;
+    const char *pat;
+    const char *string;
     int flags;
 {
     int c;
     int test;
-    char *s = string;
+    const char *s = string;
     int escape = !(flags & FNM_NOESCAPE);
     int pathname = flags & FNM_PATHNAME;
     int period = flags & FNM_PERIOD;
@@ -145,7 +150,7 @@ fnmatch(pat, string, flags)
     while (c = *pat++) {
 	switch (c) {
 	case '?':
-	    if (!*s || pathname && isdirsep(*s) || PERIOD(s))
+	    if (!*s || ISDIRSEP(*s) || PERIOD(s))
 		return FNM_NOMATCH;
 	    s++;
 	    break;
@@ -162,7 +167,7 @@ fnmatch(pat, string, flags)
 		else
 		    return 0;
 	    }
-	    else if (pathname && isdirsep(c)) {
+	    else if (ISDIRSEP(c)) {
 		s = find_dirsep(s);
 		if (s)
 		    break;
@@ -176,14 +181,14 @@ fnmatch(pat, string, flags)
 		if ((c == '[' || downcase(*s) == test) &&
 		    !fnmatch(pat, s, flags & ~FNM_PERIOD))
 		    return 0;
-		else if (pathname && isdirsep(*s))
+		else if (ISDIRSEP(*s))
 		    break;
 		s++;
 	    }
 	    return FNM_NOMATCH;
       
 	case '[':
-	    if (!*s || pathname && isdirsep(*s) || PERIOD(s))
+	    if (!*s || ISDIRSEP(*s) || PERIOD(s))
 		return FNM_NOMATCH;
 	    pat = range(pat, *s, flags);
 	    if (!pat)
@@ -207,7 +212,7 @@ fnmatch(pat, string, flags)
 
 	default:
 #if defined DOSISH
-	    if (pathname && isdirsep(c) && isdirsep(*s))
+	    if (ISDIRSEP(c) && isdirsep(*s))
 		;
 	    else
 #endif
@@ -490,12 +495,14 @@ dir_s_rmdir(obj, dir)
 
 /* Return nonzero if S has any special globbing chars in it.  */
 static int
-has_magic(s, send)
+has_magic(s, send, flags)
      char *s, *send;
+     int flags;
 {
     register char *p = s;
     register char c;
     int open = 0;
+    int escape = !(flags & FNM_NOESCAPE);
 
     while ((c = *p++) != '\0') {
 	switch (c) {
@@ -512,7 +519,7 @@ has_magic(s, send)
 	    continue;
 
 	  case '\\':
-	    if (*p++ == '\0')
+	    if (escape && *p++ == '\0')
 		return Qfalse;
 	}
 
@@ -531,7 +538,11 @@ extract_path(p, pend)
     len = pend - p;
     alloc = ALLOC_N(char, len+1);
     memcpy(alloc, p, len);
-    if (len > 1 && pend[-1] == '/') {
+    if (len > 1 && pend[-1] == '/'
+#if defined DOSISH
+    && pend[-2] != ':'
+#endif
+    ) {
 	alloc[len-1] = 0;
     }
     else {
@@ -558,17 +569,17 @@ extract_elem(path)
 #endif
 
 void
-rb_glob_helper(path, flag, func, arg)
+rb_glob_helper(path, flags, func, arg)
     char *path;
-    int flag;
+    int flags;
     void (*func)();
     VALUE arg;
 {
     struct stat st;
     char *p, *m;
 
-    if (!has_magic(path, 0)) {
-	if (stat(path, &st) == 0) {
+    if (!has_magic(path, 0, flags)) {
+	if (rb_sys_stat(path, &st) == 0) {
 	    (*func)(path, arg);
 	}
 	return;
@@ -578,7 +589,7 @@ rb_glob_helper(path, flag, func, arg)
     while (p) {
 	if (*p == '/') p++;
 	m = strchr(p, '/');
-	if (has_magic(p, m)) {
+	if (has_magic(p, m, flags)) {
 	    char *dir, *base, *magic, *buf;
 	    DIR *dirp;
 	    struct dirent *dp;
@@ -598,15 +609,30 @@ rb_glob_helper(path, flag, func, arg)
 		recursive = 1;
 		buf = ALLOC_N(char, strlen(base)+strlen(m)+3);
 		sprintf(buf, "%s%s%s", base, (*base)?"":".", m);
-		rb_glob_helper(buf, flag, func, arg);
+		rb_glob_helper(buf, flags, func, arg);
 		free(buf);
 	    }
-	    dirp = opendir(dir);
-	    if (dirp == NULL) {
-		free(base);
-		break;
+	    if (rb_sys_stat(dir, &st) < 0) {
+	        free(base);
+	        break;
 	    }
+	    if (S_ISDIR(st.st_mode)) {
+	       dirp = opendir(dir);
+	       if (dirp == NULL) {
+		   free(base);
+		   break;
+	       }
+	    }
+	    else {
+	      free(base);
+	      break;
+	    }
+	    
+#if defined DOSISH
+#define BASE (*base && !((isdirsep(*base) && !base[1]) || (base[1] == ':' && isdirsep(base[2]) && !base[3])))
+#else
 #define BASE (*base && !(*base == '/' && !base[1]))
+#endif
 
 	    for (dp = readdir(dirp); dp != NULL; dp = readdir(dirp)) {
 		if (recursive) {
@@ -614,11 +640,19 @@ rb_glob_helper(path, flag, func, arg)
 			continue;
 		    buf = ALLOC_N(char, strlen(base)+NAMLEN(dp)+strlen(m)+6);
 		    sprintf(buf, "%s%s%s/**%s", base, (BASE)?"/":"", dp->d_name, m);
-		    rb_glob_helper(buf, flag, func, arg);
+		    sprintf(buf, "%s%s%s", base, (BASE)?"/":"", dp->d_name);
+		    if (lstat(buf, &st) < 0) {
+			continue;
+		    }
+		    if (S_ISDIR(st.st_mode)) {
+		        strcat(buf, "/**");
+			strcat(buf, m);
+			rb_glob_helper(buf, flags, func, arg);
+		    }
 		    free(buf);
 		    continue;
 		}
-		if (fnmatch(magic, dp->d_name, flag) == 0) {
+		if (fnmatch(magic, dp->d_name, flags) == 0) {
 		    buf = ALLOC_N(char, strlen(base)+NAMLEN(dp)+2);
 		    sprintf(buf, "%s%s%s", base, (BASE)?"/":"", dp->d_name);
 		    if (!m) {
@@ -643,7 +677,7 @@ rb_glob_helper(path, flag, func, arg)
 		    char *t = ALLOC_N(char, len+mlen+1);
 
 		    sprintf(t, "%s%s", link->path, m);
-		    rb_glob_helper(t, flag, func, arg);
+		    rb_glob_helper(t, flags, func, arg);
 		    free(t);
 		}
 		tmp = link;
@@ -662,7 +696,7 @@ rb_glob(path, func, arg)
     void (*func)();
     VALUE arg;
 {
-    rb_glob_helper(path, FNM_PERIOD|FNM_PATHNAME, func, arg);
+    rb_glob_helper(path, FNM_PERIOD, func, arg);
 }
 
 void
@@ -671,7 +705,7 @@ rb_iglob(path, func, arg)
     void (*func)();
     VALUE arg;
 {
-    rb_glob_helper(path, FNM_PERIOD|FNM_PATHNAME|FNM_NOCASE, func, arg);
+    rb_glob_helper(path, FNM_PERIOD|FNM_NOCASE, func, arg);
 }
 
 static void
@@ -679,7 +713,14 @@ push_pattern(path, ary)
     char *path;
     VALUE ary;
 {
-    rb_ary_push(ary, rb_tainted_str_new2(path));
+    VALUE str = rb_tainted_str_new2(path);
+
+    if (ary) {
+	rb_ary_push(ary, str);
+    }
+    else {
+	rb_yield(str);
+    }
 }
 
 static void
@@ -750,15 +791,19 @@ dir_s_glob(dir, str)
     VALUE dir, str;
 {
     char *p, *pend;
-    char buffer[MAXPATHLEN], *buf = buffer;
+    char buffer[MAXPATHLEN], *buf;
     char *t;
     int nest;
-    VALUE ary;
+    VALUE ary = 0;
 
     Check_SafeStr(str);
-    ary = rb_ary_new();
+    if (!rb_block_given_p()) {
+	ary = rb_ary_new();
+    }
     if (RSTRING(str)->len >= MAXPATHLEN)
 	buf = xmalloc(RSTRING(str)->len + 1);
+    else
+	buf = buffer;
 
     p = RSTRING(str)->ptr;
     pend = p + RSTRING(str)->len;
@@ -783,14 +828,6 @@ dir_s_glob(dir, str)
     }
     if (buf != buffer)
 	free(buf);
-    if (rb_block_given_p()) {
-	long len = RARRAY(ary)->len;
-	VALUE *ptr = RARRAY(ary)->ptr;
-
-	while (len--) {
-	    rb_yield(*ptr++);
-	}
-    }
     return ary;
 }
 

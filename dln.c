@@ -50,6 +50,10 @@ void *xrealloc();
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#ifndef S_ISDIR
+#   define S_ISDIR(m) ((m & S_IFMT) == S_IFDIR)
+#endif
+
 #ifdef HAVE_SYS_PARAM_H
 # include <sys/param.h>
 #else
@@ -1166,7 +1170,7 @@ dln_strerror()
 }
 
 
-#if defined(_AIX)
+#if defined(_AIX) && ! defined(_IA64)
 static void
 aix_loaderror(const char *pathname)
 {
@@ -1214,7 +1218,7 @@ aix_loaderror(const char *pathname)
 }
 #endif
 
-void
+void*
 dln_load(file)
     const char *file;
 {
@@ -1234,23 +1238,21 @@ dln_load(file)
     /* Load file */
     if ((handle =
 	LoadLibraryExA(winfile, NULL, LOAD_WITH_ALTERED_SEARCH_PATH)) == NULL) {
-        printf("LoadLibraryExA: %s\n", winfile);
 	goto failed;
     }
 
     if ((init_fct = (void(*)())GetProcAddress(handle, buf)) == NULL) {
-        printf("GetProcAddress %s\n", buf);
-	goto failed;
+	rb_loaderror("%s - %s\n%s", dln_strerror(), buf, file);
     }
     /* Call the init code */
     (*init_fct)();
-    return;
+    return handle;
 #else
 #ifdef USE_DLN_A_OUT
     if (load(file) == -1) {
 	goto failed;
     }
-    return;
+    return 0;
 #else
 
     char buf[MAXPATHLEN];
@@ -1276,11 +1278,12 @@ dln_load(file)
 	}
 
 	if ((init_fct = (void(*)())dlsym(handle, buf)) == NULL) {
+	    dlclose(handle);
 	    goto failed;
 	}
 	/* Call the init code */
 	(*init_fct)();
-	return;
+	return handle;
     }
 #endif /* USE_DLN_DLOPEN */
 
@@ -1306,11 +1309,11 @@ dln_load(file)
 	    }
 	}
 	(*init_fct)();
-	return;
+	return (void*)lib;
     }
 #endif /* hpux */
 
-#if defined(_AIX)
+#if defined(_AIX) && ! defined(_IA64)
 #define DLN_DEFINED
     {
 	void (*init_fct)();
@@ -1323,7 +1326,7 @@ dln_load(file)
 	    aix_loaderror(file);
 	}
 	(*init_fct)();
-	return;
+	return (void*)init_fct;
     }
 #endif /* _AIX */
 
@@ -1362,7 +1365,7 @@ dln_load(file)
 
 	init_fct = (void(*)())init_address;
 	(*init_fct)();
-	return;
+	return (void*)init_address;
     }
 #else/* OPENSTEP dyld functions */
     {
@@ -1392,7 +1395,7 @@ dln_load(file)
 	init_fct = NSAddressOfSymbol(NSLookupAndBindSymbol(buf));
 	(*init_fct)();
 
-	return;
+	return (void*)init_fct;
     }
 #endif /* rld or dyld */
 #endif
@@ -1440,7 +1443,7 @@ dln_load(file)
 
       /* call module initialize function. */
       (*init_fct)();
-      return;
+      return (void*)img_id;
     }
 #endif /* __BEOS__*/
 
@@ -1488,7 +1491,7 @@ dln_load(file)
 	
       init_fct = (void (*)())symAddr;
       (*init_fct)();
-      return;
+      return (void*)init_fct;
     }
 #endif /* __MACOS__ */
 
@@ -1669,7 +1672,7 @@ dln_find_1(fname, path, exe_flag)
 	if (stat(fbuf, &st) == 0) {
 	    if (exe_flag == 0) return fbuf;
 	    /* looking for executable */
-	    if (eaccess(fbuf, X_OK) == 0) return fbuf;
+	    if (!S_ISDIR(st.st_mode) && eaccess(fbuf, X_OK) == 0) return fbuf;
 	}
 #else
 	if (mac_fullpath = _macruby_exist_file_in_libdir_as_posix_name(fbuf)) {

@@ -3,8 +3,6 @@ s%@CFLAGS@%-nologo -DNT=1 -Zi -MD -O2b2x -G5%g
 s%@CPPFLAGS@%%g
 s%@CXXFLAGS@%%g
 s%@FFLAGS@%%g
-s%@DEFS@%
- -DUSE_THREAD -DSIZEOF_INT=4 -DSIZEOF_SHORT=2 -DSIZEOF_LONG=4 -DSIZEOF_VOIDP=4 -DSIZEOF_FLOAT=4 -DSIZEOF_DOUBLE=8 -DHAVE_PROTOTYPES=1 -DHAVE_STDARG_PROTOTYPES=1 -DHAVE_STDLIB_H=1 -DHAVE_LIMITS_H=1 -DHAVE_FCNTL_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_ST_RDEV=1 -DGETGROUPS_T=int -DRETSIGTYPE=void -DHAVE_ALLOCA=1 -DHAVE_FMOD=1 -DHAVE_WAITPID=1 -DHAVE_GETCWD=1 -DHAVE_CHSIZE=1 -DHAVE_GETGROUPS=1 -DHAVE_GETLOGIN=1 -DRSHIFT=\(x,y\)\ \(\(x\)\>\>y\) -DFILE_COUNT=_cnt -DDLEXT=\".so\" -DDLEXT2=\".dll\" -DRUBY_PLATFORM=\"i586-mswin32\" %g
 s%@LDFLAGS@%-nologo%g
 s%@LIBS@%user32.lib advapi32.lib wsock32.lib%g
 s%@exec_prefix@%${prefix}%g
@@ -34,7 +32,7 @@ s%@RANLIB@%rem%g
 s%@AR@%lib -nologo%g
 s%@LN_S@%%g
 s%@SET_MAKE@%%g
-s%@LIBOBJS@% crypt.obj alloca.obj win32.obj isinf.obj isnan.obj%g
+s%@LIBOBJS@% crypt.obj win32.obj isinf.obj isnan.obj%g
 s%@ALLOCA@%%g
 s%@DEFAULT_KCODE@%%g
 s%@EXEEXT@%.exe%g

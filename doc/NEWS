@@ -1,0 +1,285 @@
+Summary of the changes since 1.6.3:
+
+: Hash#replace
+
+  Fixed so the following code does not fail in core dump.
+
+    h  = { 10 => 100, 20 => 200 }
+    h2 = { }
+
+    h.each { |k, v|
+      if (k == 10)
+        h.delete(10)
+        h2.replace(h)  # => Abort core dumped
+      end
+    }
+
+: File::unlink
+
+  Changed to be forbidden under $SAFE >= 2.
+
+: ruby -T4
+
+  Fixed.  ARGV is now properly marked as tainted so ruby -T4 no longer
+  fails in SecurityError.
+
+: Regexp
+
+  Fixed.  Now \1 .. \9 always mean backreferences, and referring to
+  unclosed/unmatched parentheses always fails.
+
+: String taint infection
+
+  Fixed for the following cases.  [ruby-dev:13340]
+
+  # []=
+  s1 = "abc"
+  s2 = "cde".taint
+  s1[0]= s2
+  p s1.tainted?             # => false
+
+  # crypt
+  s = "abc".taint
+  p s.crypt("cd").tainted?  # => false
+
+  # ljust
+  s = "abc".taint
+  p s.ljust(10).tainted?    # => false
+
+  # rjust
+  s = "abc".taint
+  p s.rjust(10).tainted?    # => false
+
+  # center
+  s = "abc".taint
+  p s.center(10).tainted?   # => false
+
+  Now they will all be marked as tainted.
+
+: rb_yield_0()
+
+  Fixed so it adjusts a 1-element array when yielded from C API, as
+  well.  Previously, the following code produced a wrong result:
+
+    class X
+      include Enumerable
+
+      def each(&block)
+        block.call(1)
+        block.call(2)
+        block.call(3)
+      end
+    end
+
+    x = X.new
+    p x.to_a #=> [[1], [2], [3]]
+
+  Now it properly produces [1, 2, 3].
+
+: $SAFE
+
+  Fixed so aliasing global valiables is disallowed under $SAFE = 4.
+ ((<ruby-dev:13287>))
+
+: Open3::popen3
+
+  Fixed to do exit! instead of exit so the dying process does not
+  invoke at_exit. ((<ruby-dev:13170>))
+
+: SizedQueue#pop
+
+  Fixed so the following code does not cause a dead lock.
+  ((<ruby-dev:13169>))
+
+    ruby -r thread -e 'q = SizedQueue.new(1); q.push(1);'
+                   -e 'Thread.new{sleep 1; q.pop}; q.push(1);'
+
+: SizedQueue#max=
+
+  Fixed so it really works. ((<ruby-dev:13170>))
+
+: Queue
+: SizedQueue
+
+  Fixed to rescue ThreadError in case the thread is dead just before
+  calling Thread#run. ((<ruby-dev:13194>))
+
+: Array#&
+: Array#|
+: Array#uniq
+
+  Fixed so they do not freeze the elements. ((<ruby-list:29665>))
+
+    (%w(foo bar) & %w(foo baz))[0].upcase!
+    => -:1:in `upcase!': can't modify frozen string (TypeError)
+
+    %w(foo bar bar baz).uniq[0].upcase!
+    => -:1:in `upcase!': can't modify frozen string (TypeError)
+
+: shell.rb
+
+    shell.rb 0.6 is newly imported as a standard library, along with
+    documents.
+
+: forwardable.rb
+
+    forwardable.rb 1.1 is newly imported as a standard library, along with
+    documents.
+
+: irb & irb-tools
+
+    irb and irb-tolls are updated to 0.7.4 and 0.7.1, respectively.
+
+: Daylight saving time
+
+  Fixed so it is handled correctly. [ruby-bugs-ja (PR#46)]
+
+    env TZ=America/Managua ruby -e 'p Time.local(1998,12,1,0,59,59)'
+    => Mon Nov 30 01:59:59 EST 1998
+    env TZ=America/Managua ruby -e 'p Time.local(1998,12,1,0,59,59).tv_sec'   
+    => 912409199
+
+: SIGINFO
+
+  Support SIGINFO of 4.4BSD.  [ruby-bugs-ja (PR#45)]
+
+: Modifier rescue
+
+  Fixed so the following code does not emit a parse error any more.
+  ((<ruby-dev:13073>)), ((<ruby-dev:13292>))
+
+    raise "" rescue []
+    raise "" rescue (p "foo"; true)
+    raise "" rescue -1
+    raise "" rescue (-1)
+
+: Thread
+
+  Fixed so the following code does not cause a dead lock any more.
+
+    Thread.start { Thread.stop }
+    sleep
+
+    => deadlock 0x40199b58: 2:0  - -:1
+       deadlock 0x401a2528: 2:4 (main) - -:2
+       -:2:in `sleep': Thread: deadlock (fatal)
+               from -:2
+       ruby 1.6.3 (2001-03-19) [i586-linux]
+
+: Module#const_defined?
+: Module#const_get
+: Module#const_set
+
+  Fixed so they do not access to anything other than constants.
+  ((<ruby-dev:13019>))
+
+: Marshal.dump
+
+  Improved so it dumps Float with better precision: "%.12g" -> "%.16g"
+  ((<ruby-list:29349>))
+
+: Fixnum#[]
+
+  Fixed a bug on the platforms which sizeof(long) > sizeof(int).
+
+: Regular Expression
+
+  Fixed a couple of minor bugs. ((<ruby-talk:13658>)), ((<ruby-talk:13744>))
+
+: retry
+
+  Fixed so the following code works correctly again. ((<ruby-talk:13957>))
+
+        def WHILE(cond)
+          return if not cond
+          yield
+          retry
+        end
+
+        i=0
+        WHILE(i<3) {
+          print i
+          i+=1
+        }
+
+        ruby 1.6.2 (2000-12-25) [i586-linux]
+        => 012
+
+        ruby 1.6.3 (2001-03-19) [i586-linux]
+        => 0
+
+        ruby 1.6.4 (2001-05-02) [i586-linux]
+        => 012
+
+: ((<File::Stat>))#size
+
+  Fixed to return a correct value for files larger than 1G bytes.
+
+        File.open("/tmp/1GB", "w") {|f|
+          f.seek(2**30-1, 0)
+          f.puts
+          f.flush
+          p f.stat.size
+        }
+
+        # => ruby 1.6.3 (2001-04-03) [i586-linux]
+             -1073741824
+        # => ruby 1.6.4 (2001-04-19) [i586-linux]
+             1073741824
+
+: ((<Float>))#modulo, ((<Float>))#divmod
+
+  Fixed. ((<ruby-dev:12718>))
+
+: ((<ObjectSpace>))#_id2ref
+
+  Fixed so it does not raise a  exception.
+
+: recursive malloc problem
+
+  Fixed by preallocating a buffer for stdio using setvbuf().
+  ((<ruby-dev:12795>))
+
+: ((<File>))#flock
+
+  Fixed so it does not raise Errno::EACCES when the file to flock is
+  already locked. (only applicable to the platforms which lack
+  flock())
+
+: ((<File::Stat>)).new(filename)
+
+  Added. ((<ruby-dev:12803>))
+
+: ((<Bignum>))#% miscalculation
+
+  (Re-)Fixed.
+
+        a = 677330545177305025495135714080
+        b = 14269972710765292560
+        p a % b  #=> 0
+        p -a % b #=> 
+
+        => ruby 1.6.3 (2001-04-02) [i386-cygwin]
+           0
+           14269972710765292560
+
+        => ruby 1.6.4 (2001-04-19) [i586-linux]
+           0
+           0
+
+: ((<Marshal>))
+
+  Fixed so a Bignum is properly restored through dump & load.
+
+: Universal Naming Convention(UNC) support (win32)
+
+  Added.  Now the UNC form (//host/share) is supported.  Use slash
+  (`(({/}))') instead of backslash (`(({\}))') for separating
+  components.
+
+: ((<Dir>)).glob (win32)
+
+  Fixed so it works for the current directory as well.
+
+        p Dir["./*.c"]
+        => []

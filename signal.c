@@ -163,6 +163,9 @@ static struct signals {
 #ifdef SIGSOUND
     "SOUND", SIGSOUND,
 #endif
+#ifdef SIGINFO
+    "INFO", SIGINFO,
+#endif
     NULL, 0,
 };
 
@@ -252,7 +255,7 @@ rb_f_kill(argc, argv)
     else {
 	for (i=1; i<argc; i++) {
 	    Check_Type(argv[i], T_FIXNUM);
-	    if (kill(FIX2UINT(argv[i]), sig) < 0)
+	    if (kill(FIX2INT(argv[i]), sig) < 0)
 		rb_sys_fail(0);
 	}
     }
@@ -383,6 +386,16 @@ sigsegv(sig)
     int sig;
 {
     rb_bug("Segmentation fault");
+}
+#endif
+
+#ifdef SIGPIPE
+static RETSIGTYPE sigpipe _((int));
+static RETSIGTYPE
+sigpipe(sig)
+    int sig;
+{
+    /* do nothing */
 }
 #endif
 
@@ -546,7 +559,7 @@ trap(arg)
 #endif
 #ifdef SIGPIPE
 	  case SIGPIPE:
-	    func = SIG_IGN;
+	    func = sigpipe;
 	    break;
 #endif
 	}
@@ -659,7 +672,7 @@ Init_signal()
     ruby_signal(SIGSEGV, sigsegv);
 #endif
 #ifdef SIGPIPE
-    ruby_signal(SIGPIPE, SIG_IGN);
+    ruby_signal(SIGPIPE, sigpipe);
 #endif
 #endif /* MACOS_UNUSE_SIGNAL */
 }
