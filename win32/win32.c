@@ -3330,3 +3330,55 @@ rb_w32_snprintf(char *buf, size_t size, const char *format, ...)
     va_end(va);
     return ret;
 }
+
+//
+// Fix bcc32's stdio bug
+//
+
+#ifdef __BORLANDC__
+static int
+too_many_files()
+{
+    FILE *f;
+    for (f = _streams; f < _streams + _nfile; f++) {
+	if (f->fd < 0) return 0;
+    }
+    return 1;
+}
+
+#undef fopen
+FILE *
+rb_w32_fopen(const char *path, const char *mode)
+{
+    FILE *f = (errno = 0, fopen(path, mode));
+    if (f == NULL && errno == 0) {
+	if (too_many_files())
+	    errno = EMFILE;
+    }
+    return f;
+}
+
+FILE *
+rb_w32_fdopen(int handle, char *type)
+{
+    FILE *f = (errno = 0, _fdopen(handle, type));
+    if (f == NULL && errno == 0) {
+	if (handle < 0)
+	    errno = EBADF;
+	else if (too_many_files())
+	    errno = EMFILE;
+    }
+    return f;
+}
+
+FILE *
+rb_w32_fsopen(const char *path, const char *mode, int shflags)
+{
+    FILE *f = (errno = 0, _fsopen(path, mode, shflags));
+    if (f == NULL && errno == 0) {
+	if (too_many_files())
+	    errno = EMFILE;
+    }
+    return f;
+}
+#endif

@@ -15,9 +15,6 @@ class DRbService
   @@ruby = EnvUtil.rubybin
   @@ruby += " -d" if $DEBUG
   @@dir = File.dirname(File.expand_path(__FILE__))
-  def self.manager
-    @@manager
-  end
   def self.add_service_command(nm)
     DRb::ExtServManager.command[nm] = "#{@@ruby} #{@@dir}/#{nm}"
   end

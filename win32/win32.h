@@ -115,6 +115,12 @@ extern "C++" {
 #define sopen			_sopen
 #undef fstat
 #define fstat(fd,st)		rb_w32_fstat(fd,st)
+#undef fopen
+#define fopen(p, m)		rb_w32_fopen(p, m)
+#undef fdopen
+#define fdopen(h, m)		rb_w32_fdopen(h, m)
+#undef fsopen
+#define fsopen(p, m, sh)	rb_w32_fsopen(p, m, sh)
 #endif
 #define fsync(h)		_commit(h)
 #undef stat
@@ -178,6 +184,13 @@ extern int rb_w32_spawn(int, const char *, const char*);
 extern int rb_w32_aspawn(int, const char *, char *const *);
 extern int kill(int, int);
 extern pid_t rb_w32_getpid(void);
+
+#ifdef __BORLANDC__
+extern int rb_w32_fstat(int, struct stat *);
+extern FILE *rb_w32_fopen(const char *, const char *);
+extern FILE *rb_w32_fdopen(int, char *);
+extern FILE *rb_w32_fsopen(const char *, const char *, int);
+#endif
 
 #include <float.h>
 #if !defined __MINGW32__ || defined __NO_ISOCEXT

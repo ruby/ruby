@@ -1,3 +1,10 @@
+Sun Jul 25 10:56:28 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* win32/win32.{h,c} (rb_w32_{f,fd,fs}open): workaround for bcc32's
+	  {f,fd,fs}open bug. set errno EMFILE and EBADF. [ruby-dev:23963]
+
+	* test/drb/drbtest.rb: fix method duplication.
+
 Sat Jul 24 13:32:47 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* range.c (rb_range_beg_len): returns Qnil only when "beg" points
