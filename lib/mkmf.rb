@@ -639,8 +639,6 @@ def create_makefile(target, srcprefix = nil)
 
   target = nil if $objs == ""
 
-  cleanfiles = []
-  distcleanfiles = []
   if target and EXPORT_PREFIX
     origdef = target + '.def'
     deffile = EXPORT_PREFIX + origdef
@@ -665,7 +663,7 @@ def create_makefile(target, srcprefix = nil)
 	end
       end
     end
-    distcleanfiles << deffile unless deffile == origdef
+    $distcleanfiles << deffile unless deffile == origdef
   end
 
   libpath = libpathflag(libpath)
@@ -677,8 +675,8 @@ def create_makefile(target, srcprefix = nil)
 LIBPATH = #{libpath}
 DEFFILE = #{deffile}
 
-CLEANFILES = #{cleanfiles.join(' ')}
-DISTCLEANFILES = #{distcleanfiles.join(' ')}
+CLEANFILES = #{$cleanfiles.join(' ')}
+DISTCLEANFILES = #{$distcleanfiles.join(' ')}
 
 target_prefix = #{target_prefix}
 LOCAL_LIBS = #{$LOCAL_LIBS}
@@ -809,11 +807,14 @@ def init_mkmf(config = CONFIG)
   end
 
   $LOCAL_LIBS = ""
+  
+  $cleanfiles = []
+  $distcleanfiles = []
+  
   dir_config("opt")
 end
 
 init_mkmf
-dir_config("opt")
 
 $make = with_config("make-prog", ENV["MAKE"] || "make")
 make, = Shellwords.shellwords($make)

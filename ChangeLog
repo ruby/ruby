@@ -1,3 +1,7 @@
+Tue Jan 21 20:29:31 2003  Michal Rokos  <michal@rokos.homeip.net>
+
+	* mkmf.rb: make possible to add files to clean and distclean targets 
+
 Tue Jan 21 18:05:25 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* bcc32/Makefile.sub (LIBRUBY_A): link dmyext.
