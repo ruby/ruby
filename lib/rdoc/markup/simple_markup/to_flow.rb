@@ -23,14 +23,13 @@ module SM
   end
 
   class ToFlow
-
     LIST_TYPE_TO_HTML = {
-      ListBase::BULLET =>  [ "<ul>", "</ul>" ],
-      ListBase::NUMBER =>  [ "<ol>", "</ol>" ],
-      ListBase::UPPERALPHA =>  [ "<ol>", "</ol>" ],
-      ListBase::LOWERALPHA =>  [ "<ol>", "</ol>" ],
-      ListBase::LABELED => [ "<dl>", "</dl>" ],
-      ListBase::NOTE    => [ "<table>", "</table>" ],
+      SM::ListBase::BULLET     =>  [ "<ul>", "</ul>" ],
+      SM::ListBase::NUMBER     =>  [ "<ol>", "</ol>" ],
+      SM::ListBase::UPPERALPHA =>  [ "<ol>", "</ol>" ],
+      SM::ListBase::LOWERALPHA =>  [ "<ol>", "</ol>" ],
+      SM::ListBase::LABELED    =>  [ "<dl>", "</dl>" ],
+      SM::ListBase::NOTE       =>  [ "<table>", "</table>" ],
     }
 
     InlineTag = Struct.new(:bit, :on, :off)

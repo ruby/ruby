@@ -3,15 +3,21 @@ module RI
   class ClassEntry
 
     attr_reader :name
-    attr_reader :path_name
+    attr_reader :path_names
     
     def initialize(path_name, name, in_class)
-      @path_name = path_name
+      @path_names = [ path_name ]
       @name = name
       @in_class = in_class
       @class_methods    = []
       @instance_methods = []
       @inferior_classes = []
+    end
+
+    # We found this class in more tha one place, so add
+    # in the name from there.
+    def add_path(path)
+      @path_names << path
     end
 
     # read in our methods and any classes
@@ -38,9 +44,14 @@ module RI
         else
           full_name = File.join(dir, name)
           if File.directory?(full_name)
-            inf_class = ClassEntry.new(full_name, name, self)
+            inf_class = @inferior_classes.find {|c| c.name == name }
+            if inf_class
+              inf_class.add_path(full_name)
+            else
+              inf_class = ClassEntry.new(full_name, name, self)
+              @inferior_classes << inf_class
+            end
             inf_class.load_from(full_name)
-            @inferior_classes << inf_class
           end
         end
       end

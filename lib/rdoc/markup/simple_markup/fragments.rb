@@ -1,5 +1,5 @@
 require 'rdoc/markup/simple_markup/lines.rb'
-require 'rdoc/markup/simple_markup/inline.rb'
+#require 'rdoc/markup/simple_markup/to_flow.rb'
 
 module SM
 

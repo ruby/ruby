@@ -1,4 +1,5 @@
 require 'yaml'
+require 'rdoc/markup/simple_markup/fragments'
 
 # Descriptions are created by RDoc (in ri_generator) and
 # written out in serialized form into the documentation
@@ -93,6 +94,9 @@ module RI
       merge(@includes, old.includes)
       if @comment.nil? || @comment.empty?
         @comment = old.comment
+      else
+        @comment << SM::Flow::RULE.new
+        @comment.concat old.comment
       end
     end
 

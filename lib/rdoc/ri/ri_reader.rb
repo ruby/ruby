@@ -48,8 +48,17 @@ module RI
 
     # Return a class description
     def get_class(class_entry)
-      path = RiWriter.class_desc_path(class_entry.path_name, class_entry)
-      File.open(path) {|f| RI::Description.deserialize(f) }
+      result = nil
+      for path in class_entry.path_names
+        path = RiWriter.class_desc_path(path, class_entry)
+        desc = File.open(path) {|f| RI::Description.deserialize(f) }
+        if result
+          result.merge_in(desc)
+        else
+          result = desc
+        end
+      end
+      result
     end
 
     # return the names of all classes and modules

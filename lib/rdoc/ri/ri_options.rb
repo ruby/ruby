@@ -208,7 +208,13 @@ module RI
           when "--list-names" then @list_names = true
           when "--no-pager"   then @use_stdout = true
           when "--classes"    then @list_classes = true
-          when "--doc-dir"    then @doc_dir = arg
+          when "--doc-dir"
+            if File.directory?(arg)
+              @doc_dir = arg
+            else
+              $stderr.puts "Invalid directory: #{arg}"
+              exit 1
+            end
 
           when "--format"
             @formatter = RI::TextFormatter.for(arg)
