@@ -111,6 +111,7 @@ new_size(size)
 {
     int i, newsize;
 
+#if 0
     for (i = 0, newsize = MINSIZE;
 	 i < sizeof(primes)/sizeof(primes[0]);
 	 i++, newsize <<= 1)
@@ -119,6 +120,23 @@ new_size(size)
     }
     /* Ran out of polynomials */
     return -1;			/* should raise exception */
+#else
+    for (i=3; i<31; i++) {
+	if ((1<<i) > size) return 1<<i;
+    }
+    return -1;
+#endif
+}
+
+static int collision = 0;
+static int init_st = 0;
+
+static void
+stat_col()
+{
+    FILE *f = fopen("/tmp/col", "w");
+    fprintf(f, "collision: %d\n", collision);
+    fclose(f);
 }
 
 st_table*
@@ -127,6 +145,11 @@ st_init_table_with_size(type, size)
     int size;
 {
     st_table *tbl;
+
+    if (init_st == 0) {
+	init_st = 1;
+	atexit(stat_col);
+    }
 
     size = new_size(size);	/* round up to prime number */
 
@@ -198,6 +221,7 @@ st_free_table(table)
 bin_pos = hash_val%(table)->num_bins;\
 ptr = (table)->bins[bin_pos];\
 if (PTR_NOT_EQUAL(table, ptr, hash_val, key)) {\
+    collision++;\
     while (PTR_NOT_EQUAL(table, ptr->next, hash_val, key)) {\
 	ptr = ptr->next;\
     }\

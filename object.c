@@ -168,6 +168,7 @@ inspect_i(id, value, str)
     rb_str_cat(str, "=", 1);
     str2 = rb_inspect(value);
     rb_str_cat(str, RSTRING(str2)->ptr, RSTRING(str2)->len);
+    OBJ_INFECT(str, str2);
 
     return ST_CONTINUE;
 }
@@ -178,6 +179,7 @@ inspect_obj(obj, str)
 {
     st_foreach(ROBJECT(obj)->iv_tbl, inspect_i, str);
     rb_str_cat(str, ">", 1);
+    OBJ_INFECT(str, obj);
 
     return str;
 }

@@ -6,8 +6,8 @@
 #			by Yasuo OHBA(SHL Japan Inc. Technology Dept.)
 #
 # --
+# this is obsolete; use getoptlong
 #
-#	
 #
 
 $RCS_ID=%q$Header$

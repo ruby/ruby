@@ -89,7 +89,23 @@ rb_any_hash(a)
 	break;
 
       case T_STRING:
+#if 0
 	hval = rb_str_hash(a);
+#else
+	{
+	    register const char *p = RSTRING(a)->ptr;
+	    register int len = RSTRING(a)->len;
+	    register unsigned int h = 0, g;
+
+	    while (len--) {
+		h = ( h << 4 ) + *p++;
+		if ( g = h & 0xF0000000 )
+		    h ^= g >> 24;
+		h &= ~g;
+	    }
+	    hval = h;
+	}
+#endif
 	break;
 
       default:
@@ -648,9 +664,11 @@ inspect_i(key, value, str)
     }
     str2 = rb_inspect(key);
     rb_str_cat(str, RSTRING(str2)->ptr, RSTRING(str2)->len);
+    OBJ_INFECT(str, str2);
     rb_str_cat(str, "=>", 2);
     str2 = rb_inspect(value);
     rb_str_cat(str, RSTRING(str2)->ptr, RSTRING(str2)->len);
+    OBJ_INFECT(str, str2);
 
     return ST_CONTINUE;
 }
@@ -664,7 +682,8 @@ inspect_hash(hash)
     str = rb_str_new2("{");
     st_foreach(RHASH(hash)->tbl, inspect_i, str);
     rb_str_cat(str, "}", 1);
-
+    
+    OBJ_INFECT(str, hash);
     return str;
 }
 

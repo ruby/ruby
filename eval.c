@@ -5958,6 +5958,21 @@ rb_obj_method(obj, vid)
 }
 
 static VALUE
+method_clone(self)
+    VALUE self;
+{
+    VALUE clone;
+    struct METHOD *orig, *data;
+
+    Data_Get_Struct(self, struct METHOD, orig);
+    clone = Data_Make_Struct(rb_cMethod,struct METHOD,bm_mark,free,data);
+    CLONESETUP(clone, self);
+    *data = *orig;
+
+    return clone;
+}
+
+static VALUE
 method_call(argc, argv, method)
     int argc;
     VALUE *argv;
@@ -6094,6 +6109,7 @@ Init_Proc()
 
     rb_cMethod = rb_define_class("Method", rb_cObject);
     rb_undef_method(CLASS_OF(rb_cMethod), "new");
+    rb_define_method(rb_cMethod, "clone", method_clone, 0);
     rb_define_method(rb_cMethod, "call", method_call, -1);
     rb_define_method(rb_cMethod, "[]", method_call, -1);
     rb_define_method(rb_cMethod, "arity", method_arity, 0);

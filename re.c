@@ -268,6 +268,7 @@ rb_reg_desc(s, len, re)
 	    }
 	}
     }
+    OBJ_INFECT(str, re);
     return str;
 }
 
@@ -1298,7 +1299,8 @@ Init_Regexp()
 
     rb_global_variable(&reg_cache);
 
-    rb_cMatch  = rb_define_class("MatchingData", rb_cObject);
+    rb_cMatch  = rb_define_class("MatchData", rb_cObject);
+    rb_define_global_const("MatchingData", rb_cMatch);
     rb_undef_method(CLASS_OF(rb_cMatch), "new");
 
     rb_define_method(rb_cMatch, "clone", match_clone, 0);

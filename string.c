@@ -421,6 +421,7 @@ rb_str_hash(str)
     register char *p = RSTRING(str)->ptr;
     register int key = 0;
 
+#if 0
     if (ruby_ignorecase) {
 	while (len--) {
 	    key = key*65599 + toupper(*p);
@@ -433,6 +434,20 @@ rb_str_hash(str)
 	    p++;
 	}
     }
+#else
+    if (ruby_ignorecase) {
+	while (len--) {
+	    key = key*33 + toupper(*p);
+	    p++;
+	}
+    }
+    else {
+	while (len--) {
+	    key = key*33 + *p++;
+	}
+    }
+    key = key + (key>>5);
+#endif
     return key;
 }
 
@@ -1354,6 +1369,7 @@ rb_str_inspect(str)
     char buf[STRMAX];
     char *p, *pend;
     char *b;
+    VALUE inspect;
 
     p = RSTRING(str)->ptr; pend = p + RSTRING(str)->len;
     b = buf;
@@ -1430,7 +1446,9 @@ rb_str_inspect(str)
 	}
     }
     *b++ = '"';
-    return rb_str_new(buf, b - buf);
+    inspect = rb_str_new(buf, b - buf);
+    OBJ_INFECT(inspect, str);
+    return inspect;
 }
 
 static VALUE

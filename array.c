@@ -669,7 +669,7 @@ rb_ary_join(ary, sep)
     VALUE ary, sep;
 {
     long i;
-    int taint;
+    int taint = 0;
     VALUE result, tmp;
 
     if (RARRAY(ary)->len == 0) return rb_str_new(0, 0);
@@ -823,6 +823,7 @@ static VALUE
 inspect_ary(ary)
     VALUE ary;
 {
+    int tainted = OBJ_TAINTED(ary);
     long i = 0;
     VALUE s, str;
 
@@ -830,11 +831,13 @@ inspect_ary(ary)
 
     for (i=0; i<RARRAY(ary)->len; i++) {
 	s = rb_inspect(RARRAY(ary)->ptr[i]);
+	tainted = OBJ_TAINTED(s);
 	if (i > 0) rb_str_cat(str, ", ", 2);
 	rb_str_cat(str, RSTRING(s)->ptr, RSTRING(s)->len);
     }
     rb_str_cat(str, "]", 1);
 
+    if (tainted) OBJ_TAINT(str);
     return str;
 }
 

@@ -1,3 +1,21 @@
+Wed Feb 23 14:22:32 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* array.c (rb_ary_join): forgot to initialize a local variable
+	  `taint'.
+
+Tue Feb 22 07:40:55 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* re.c (Init_Regexp): renamed to MatchData, old name MatchingData
+	  remain as alias.
+
+Sat Feb 19 23:58:51 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_match): pop_loop should not pop at forward jump.
+
+Fri Feb 18 17:15:40 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (method_clone): method objects are now clonable.
+
 Fri Feb 18 00:27:34 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* variable.c (rb_shared_variable_declare): shared variable (aka

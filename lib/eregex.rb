@@ -1,3 +1,4 @@
+# this is just a proof of concept toy.
 
 class RegOr
   def initialize(re1, re2)

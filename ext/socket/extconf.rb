@@ -244,7 +244,9 @@ main()
     }
   }
 
-  if (inet6 != 2 || inet4 != 2)
+  if (!(inet4 == 0 || inet4 == 2))
+    goto bad;
+  if (!(inet6 == 0 || inet6 == 2))
     goto bad;
 
   if (aitop)

@@ -1,4 +1,4 @@
-# importenv.rb -- imports environment variables as global variables
+# importenv.rb -- imports environment variables as global variables, Perlish ;(
 #
 # Usage:
 #
