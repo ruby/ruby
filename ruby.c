@@ -17,6 +17,7 @@
 #endif
 #ifdef _WIN32_WCE
 #include <winsock.h>
+#include "wince.h"
 #endif
 #include "ruby.h"
 #include "dln.h"
@@ -241,9 +242,11 @@ ruby_init_loadpath()
     HMODULE libruby = NULL;
     MEMORY_BASIC_INFORMATION m;
 
+#ifndef _WIN32_WCE
     memset(&m, 0, sizeof(m));
     if (VirtualQuery(ruby_init_loadpath, &m, sizeof(m)) && m.State == MEM_COMMIT)
 	libruby = (HMODULE)m.AllocationBase;
+#endif
     GetModuleFileName(libruby, libpath, sizeof libpath);
 #elif defined(DJGPP)
     extern char *__dos_argv0;
