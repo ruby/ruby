@@ -1,3 +1,8 @@
+Wed Dec  8 11:52:51 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_fclose, rb_w32_close): shutdown socket
+	  before closesocket(). fixed: [ruby-dev:25112]
+
 Wed Dec  8 11:46:26 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (string_content): get rid of segfault at empty evstr.
