@@ -12,6 +12,10 @@
   %W(...) notation, word list literal like %w(...) with the
   exception that #{} interpolation is allowed.
 
+: arbitrary delimited symbol literl
+
+  :"foo", :"foo#{bar}", etc.
+
 : expression interpolation in strings
 
   Now arbitrary statements are allowed inside #{} interpolation
@@ -39,12 +43,20 @@
   Extended to take an optional expression, which is used as a value
   for termination.
 
+: direct assignment to Foo::Bar is allowed
+
+  also, you can define "class Foo::Bar; end".
+
 = language core
 
 : $stdin, $stdout, $stderr
 
   can be assignable again.  the original stdio are preserved as STDIN,
   STDOUT, STDERR.
+
+: $VERBOSE now has 3 levels
+
+  nil - silence, false - medium (default), true - verbose
 
 : allocation framework
 
@@ -67,6 +79,9 @@
 
   improved at the performance of searching by using an internal hash
   table.
+
+  calls const_missing method of the class/module, if constant is not
+  found in the look up path.
 
 : expression parenthesis in the first argument
 
@@ -117,75 +132,46 @@
 
 = changes in core class library
 
-: Marshal to use marshal_dump and marshal_load
+: open
 
-  if a dumping object responds to 'marshal_dump', Marshal.dump calls
-  it, and dumps object returned.  Marshal.load allocates a new instance
-  using "allocate", then calls its "marshal_load" with dumped data.
-  Marshal format version is now 4.8 (was 4.6 in 1.6.8).
+  Extended so that when the third argument is permission flags it
+  calls open(2) instead of fopen(3).
 
-: Thread#group
+: sprintf
 
-  new method to get belonging  ThreadGroup.
+  new format specifier "%p" is available.
 
-: Kernel#warn(message)
+: lambda and proc
+
+  Proc object returns from these methods has the following attributes:
+
+  * strict argument number check
+  * break and return terminates the proc execution.
+
+: warn(message)
 
   a method to give warnings.
 
-: Process::detach(pid)
+: abort()
 
-  new method to detach child process.  child process will be "wait"ed
-  automagically.
+  takes optional terminate message argument.
+
+: Object#initialize_copy
+
+  copy constructor for clone and dup.
 
 : Object#instance_variable_set, Object#instance_variable_get
 
   added.
 
-: Class#inherited
+: Object#singleton_method_removed
+: Object#singleton_method_undefined
 
-  Method is called when Class is inherited by another class.
+  Added.
 
-	class A; end
-	def A.inherited(by)
-          puts "A inherited by #{by.inspect}"
-        end
-        class B < A; end
+: Array#transpose
 
-        Prints out "A inherited by B"
-
-: String#split
-
-  if "sep" argument is a string, regular expression meta characters
-  are escaped internally.
-
-: String#to_i
-
-  Now accepts optional base argument.
-
-	"101".to_i(10) => 101
-	"101".to_i(2)  => 5
-	"101".to_i(8)  => 65
-	"101".to_i(16) => 257
-
-  A base argument of 0 guesses at the base.
-
-	"101".to_i(0)   => 101
-	"0b101".to_i(0) => 5
-	"0101".to_i(0)  => 65
-	"0x101".to_i(0) => 257
-
-: SystemCallError
-
-  SystemCallError's "===" match (used in rescue also) is now based on its errno.
-
-: IO::sysopen
-
-  New method to get a raw file descriptor.
-
-: open
-
-  Extended so that when the third argument is permission flags it
-  calls open(2) instead of fopen(3).
+  added.
 
 : Array#fetch(index [, default])
 
@@ -215,43 +201,9 @@
   Beware that this behavior is not guaranteed to continue in the
   future.  Do not rely on its return value. [ruby-dev:12506]
 
-: Thread#join
-
-  Optional argument limits maximum time to wait the thread in second.
-  And returns nil if timed out.
-
 : Array#filter
 
   Previously deprecated, now removed.  Use Array#collect!.
-
-: IO#sysseek
-
-  Added.
-
-: IO
-
-  64bit off_t support by Janathan Baker.
-
-: abort()
-
-  Takes optional terminate message argument.
-
-: IO.fsync
-
-  New method that copies all in-memory parts of a file to disk and
-  waits until the device reports that all parts are on stable storage.
-  Implemented with fsync(2) or equivalent.
-
-: Dir#pos=
-
-  Returns the new position instead of self.
-
-: Dir::glob
-
-  Now accepts optional FNM_* flags via the second argument, whereas
-  Dir::[] doesn't.
-
-    Dir.glob("makefile", File::FNM_CASEFOLD) #=> ['Makefile', 'makefile']
 
 : Array#pack, String#unpack
 
@@ -276,178 +228,42 @@
 
   Takes block to get the default value.
 
+: Array#zip
+
+  added.
+
 : Hash#update
 
   Takes block to resolve key conflict.
 
-: IO#fsync
+: Hash#merge and Hash#merge!
 
-  Added.
+  update hash.  Hash#merge! is a synonym of Hash#update.
 
-: Dir#path
+: String#split
 
-  Added.
+  if "sep" argument is a string, regular expression meta characters
+  are escaped internally.
 
-: Dir.chdir
+: String#rstrip
 
-  Extended to take a block.
+  chop off NULs at the end of strings.
 
-: Dir.glob
+: String#to_i
 
-  Made to support meta-character escaping by a backslash.  Wildcards
-  and spaces may now be escaped using a backslash.
+  Now accepts optional base argument.
 
-: Dir.open
+	"101".to_i(10) => 101
+	"101".to_i(2)  => 5
+	"101".to_i(8)  => 65
+	"101".to_i(16) => 257
 
-  Changed to return what the block returns when a block is given, just
-  as File.open does. (It always returned (({nil})) in 1.6 and
-  prior)
+  A base argument of 0 guesses at the base.
 
-: Dir.chdir
-
-  Changed to warn only when invoked from multiple threads or no block
-  is given. [ruby-dev:13823]
-
-    Dir.chdir('foo') {
-      Dir.chdir('bar') {   # previously warned
-        puts Dir.pwd
-      }
-    }
-
-: Enumerable#all?
-: Enumerable#any?
-: Enumerable#inject
-: Enumerable#sort_by
-
-  Added.
-
-: File#fnmatch, File::Constants::FNM_*
-
-  Added.  Refer to the fnmatch(3) manpage for details.
-
-  Localism is FNM_DOTMATCH which has the opposite meaning of the
-  commonly known FNM_PERIOD, which does not exist in Ruby.
-
-  e.g.
-
-    # exclude files matching "*.bak" case-insensitively.
-    files.reject! {|fn| File.fnmatch?("*.bak", fn, File::FNM_CASEFOLD) }
-
-: File.lchmod
-: File.lchown
-
-  Added.
-
-: File.open, IO.open
-
-  File mode can be specified by flags like open(2),
-  e.g. File::open(path, File::CREAT|File::WRONLY).
-
-: IO.open
-
-  Made public.  Can only associate an IO object with a file number
-  like IO.new and IO.for_fd, but can take a block.
-
-: IO.for_fd
-
-  Added as a synonym for IO.new.
-
-: IO.read
-
-  Added.  Like IO.readlines, except it returns the entire file as a
-  string.  [ruby-talk:9460]
-
-: Interrupt
-
-  Made a subclass of SignalException. (It was a subclass of
-  Exception in 1.6 and prior)
-
-: Marshal
-
-  Fixed not to dump anonymous classes/modules.
-
-  Fixed with loading modules.
-
-: Math.acos(x)
-: Math.asin(x)
-: Math.atan(x)
-: Math.cosh(x)
-: Math.hypot(x,y)
-: Math.sinh(x)
-: Math.tanh(x)
-
-  Added.
-
-: Method#==
-
-  Added.
-
-: Module#include?
-
-  Added. [ruby-dev:13941] 
-
-: Module#included
-
-  Added.  This is a hook called after Module#append_feature.
-
-: Module#method_removed
-: Module#method_undefined
-
-  Added.
-
-: Module.new, Class.new
-
-  Extended to take block.
-
-: NameError and NoMethodError
-
-  Moved and now NoMethodError < NameError < StandardError.
-
-: NoMethodError
-
-  Added. [ruby-dev:12763]
-
-: NotImplementError
-
-  Finally obsoleted.  Use NotImplementedError.
-
-: Object#singleton_method_removed
-: Object#singleton_method_undefined
-
-  Added.
-
-: Proc#==
-
-  Added.
-
-: Process.times
-
-  Moved from Time.times. (Time.times still remains but emits a
-  warning)
-
-: Process.waitall
-
-  Added.
-
-: Process::Status
-
-  Added.  (({$?})) is now an instance of this class.
-
-: Range#step([step=1])
-
-  Added.
-
-: Regexp#options
-
-  Added.
-
-: Regexp.last_match(n)
-
-  Extended to take an optional argument.
-
-: Signal
-
-  Added. This module has module functions Signal.trap and Signal.list.
+	"101".to_i(0)   => 101
+	"0b101".to_i(0) => 5
+	"0101".to_i(0)  => 65
+	"0x101".to_i(0) => 257
 
 : String#[regexp, nth]
 
@@ -499,14 +315,146 @@
 
   Added. [ruby-dev:12921]
 
-: SystemCallError.===
+: IO
 
-  Added. (See the "Comparison of exception classes in a rescue clause"
-  paragraph above) [ruby-dev:12670]
+  64bit off_t support by Janathan Baker.
 
-: SystemExit#status
+: IO#read
+: IO#sysread
+
+  takes optinal second argument for read buffer.
+
+: IO::sysopen
+
+  New method to get a raw file descriptor.
+
+: IO#sysseek
 
   Added.
+
+: IO#fsync
+
+  new method that copies all in-memory parts of a file to disk and
+  waits until the device reports that all parts are on stable storage.
+  Implemented with fsync(2) or equivalent.
+
+: IO.open
+
+  Made public.  Can only associate an IO object with a file number
+  like IO.new and IO.for_fd, but can take a block.
+
+: IO.for_fd
+
+  Added as a synonym for IO.new.
+
+: IO.read
+
+  Added.  Like IO.readlines, except it returns the entire file as a
+  string.  [ruby-talk:9460]
+
+: File#fnmatch, File::Constants::FNM_*
+
+  Added.  Refer to the fnmatch(3) manpage for details.
+
+  Localism is FNM_DOTMATCH which has the opposite meaning of the
+  commonly known FNM_PERIOD, which does not exist in Ruby.
+
+  e.g.
+
+    # exclude files matching "*.bak" case-insensitively.
+    files.reject! {|fn| File.fnmatch?("*.bak", fn, File::FNM_CASEFOLD) }
+
+: File.lchmod
+: File.lchown
+
+  Added.
+
+: File.open, IO.open
+
+  File mode can be specified by flags like open(2),
+  e.g. File::open(path, File::CREAT|File::WRONLY).
+
+: Regexp#options
+
+  Added.
+
+: Regexp.last_match(n)
+
+  Extended to take an optional argument.
+
+: MatchData#captures
+
+  added.
+
+: Dir#path
+
+  Added.
+
+: Dir.chdir
+
+  Extended to take a block.
+
+: Dir.glob
+
+  Made to support meta-character escaping by a backslash.  Wildcards
+  and spaces may now be escaped using a backslash.
+
+: Dir.open
+
+  Changed to return what the block returns when a block is given, just
+  as File.open does. (It always returned (({nil})) in 1.6 and
+  prior)
+
+: Dir.chdir
+
+  Changed to warn only when invoked from multiple threads or no block
+  is given. [ruby-dev:13823]
+
+    Dir.chdir('foo') {
+      Dir.chdir('bar') {   # previously warned
+        puts Dir.pwd
+      }
+    }
+
+: Dir#pos=
+
+  Returns the new position instead of self.
+
+: Dir::glob
+
+  Now accepts optional FNM_* flags via the second argument, whereas
+  Dir::[] doesn't.
+
+    Dir.glob("makefile", File::FNM_CASEFOLD) #=> ['Makefile', 'makefile']
+
+: Class#inherited
+
+  Method is called when Class is inherited by another class.
+
+	class A; end
+	def A.inherited(by)
+          puts "A inherited by #{by.inspect}"
+        end
+        class B < A; end
+
+        Prints out "A inherited by B"
+
+: Module#include?
+
+  Added. [ruby-dev:13941] 
+
+: Module#included
+
+  Added.  This is a hook called after Module#append_feature.
+
+: Module#method_removed
+: Module#method_undefined
+
+  Added.
+
+: Module.new, Class.new
+
+  Extended to take block.
 
 : Time
 
@@ -521,6 +469,130 @@
 
   Made to return "UTC" under gmtime.  It used to return a platform
   dependent value, typically "GMT", in 1.6 and prior.
+
+: Marshal to use marshal_dump and marshal_load
+
+  if a dumping object responds to 'marshal_dump', Marshal.dump calls
+  it, and dumps object returned.  Marshal.load allocates a new instance
+  using "allocate", then calls its "marshal_load" with dumped data.
+  Marshal format version is now 4.8 (was 4.6 in 1.6.8).
+
+: Marshal
+
+  Fixed not to dump anonymous classes/modules.
+
+  Fixed with loading modules.
+
+: Thread#group
+
+  new method to get belonging  ThreadGroup.
+
+: Thread#terminate
+
+  synonym of Thread#exit
+
+: Thread#join
+
+  Optional argument limits maximum time to wait the thread in second.
+  And returns nil if timed out.
+
+: ThreagGroup#enclose
+
+  prohibits thread movement from/to enclosed groups.
+
+: Range#step([step=1])
+
+  Added.
+
+: SystemCallError
+
+  SystemCallError's "===" match (used in rescue also) is now based on its errno.
+
+: Interrupt
+
+  Made a subclass of SignalException. (It was a subclass of
+  Exception in 1.6 and prior)
+
+: NameError and NoMethodError
+
+  Moved and now NoMethodError < NameError < StandardError.
+
+: NoMethodError
+
+  Added. [ruby-dev:12763]
+
+: NotImplementError
+
+  Finally obsoleted.  Use NotImplementedError.
+
+: SystemCallError.===
+
+  Added. (See the "Comparison of exception classes in a rescue clause"
+  paragraph above) [ruby-dev:12670]
+
+: SystemExit#status
+
+  Added.
+
+: Proc#==
+
+  Added.
+
+: Method#==
+
+  Added.
+
+: UnboundMethod is no longer subclass of Method
+
+  class hierarchy changed. 
+
+: Enumerable#all?
+: Enumerable#any?
+: Enumerable#inject
+: Enumerable#sort_by
+
+  Added.
+
+: Math.acos(x)
+: Math.asin(x)
+: Math.atan(x)
+: Math.cosh(x)
+: Math.hypot(x,y)
+: Math.sinh(x)
+: Math.tanh(x)
+
+  Added.
+
+: Process.abort
+: Process.exit
+
+  synonym of Kernel#abort, and Kernel#exit respectively.
+
+: Process::detach(pid)
+
+  new method to detach child process.  child process will be "wait"ed
+  automagically.
+
+: Process.times
+
+  Moved from Time.times. (Time.times still remains but emits a
+  warning)
+
+: Process.waitall
+
+  Added.
+
+: Process::Status
+
+  Added.  (({$?})) is now an instance of this class.
+
+: Process::UID, Process::GID, Process::Sys,
+
+  Added.
+
+: Signal
+
+  Added. This module has module functions Signal.trap and Signal.list.
 
 = changes in bundled libraries
 
