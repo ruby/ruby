@@ -1,3 +1,7 @@
+Wed Jun 28 09:30:09 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* cygwin/GNUmakefile: add $(LIBS).
+
 Tue Jun 27 22:38:15 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.24.
