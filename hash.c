@@ -24,16 +24,6 @@
 #define HASH_DELETED  FL_USER1
 #define HASH_PROC_DEFAULT FL_USER2
 
-static void
-rb_hash_modify(hash)
-    VALUE hash;
-{
-    if (!RHASH(hash)->tbl) rb_raise(rb_eTypeError, "uninitialized Hash");
-    if (OBJ_FROZEN(hash)) rb_error_frozen("hash");
-    if (!OBJ_TAINTED(hash) && rb_safe_level() >= 4)
-	rb_raise(rb_eSecurityError, "Insecure: can't modify hash");
-}
-
 VALUE
 rb_hash_freeze(hash)
     VALUE hash;
@@ -121,24 +111,33 @@ struct rb_hash_foreach_arg {
 };
 
 static int
-rb_hash_foreach_iter(key, value, arg)
+rb_hash_foreach_iter(key, value, arg, err)
     VALUE key, value;
     struct rb_hash_foreach_arg *arg;
+    int err;
 {
     int status;
-    st_table *tbl = RHASH(arg->hash)->tbl;
-    struct st_table_entry **bins = tbl->bins;
+    st_table *tbl;
 
+    if (err) {
+	rb_raise(rb_eRuntimeError, "hash modified during iteration");
+    }
+    tbl = RHASH(arg->hash)->tbl;
     if (key == Qundef) return ST_CONTINUE;
     status = (*arg->func)(key, value, arg->arg);
-    if (RHASH(arg->hash)->tbl != tbl ||
-	RHASH(arg->hash)->tbl->bins != bins) {
-	rb_raise(rb_eArgError, "rehash occurred during iteration");
+    if (RHASH(arg->hash)->tbl != tbl) {
+	rb_raise(rb_eRuntimeError, "rehash occurred during iteration");
     }
-    if (RHASH(arg->hash)->iter_lev == 0) {
-	rb_raise(rb_eArgError, "block re-entered");
+    switch (status) {
+      case ST_DELETE:
+	st_delete_safe(tbl, (st_data_t*)&key, 0, Qundef);
+	FL_SET(arg->hash, HASH_DELETED);
+      case ST_CONTINUE:
+	break;
+      case ST_STOP:
+	return ST_STOP;
     }
-    return status;
+    return ST_CHECK;
 }
 
 static VALUE
@@ -188,7 +187,7 @@ hash_alloc(klass)
     OBJSETUP(hash, klass, T_HASH);
 
     hash->ifnone = Qnil;
-    hash->tbl = st_init_table(&objhash);
+    hash->tbl = 0;
 
     return (VALUE)hash;
 }
@@ -197,6 +196,18 @@ VALUE
 rb_hash_new()
 {
     return hash_alloc(rb_cHash);
+}
+
+static void
+rb_hash_modify(hash)
+    VALUE hash;
+{
+    if (OBJ_FROZEN(hash)) rb_error_frozen("hash");
+    if (!OBJ_TAINTED(hash) && rb_safe_level() >= 4)
+	rb_raise(rb_eSecurityError, "Insecure: can't modify hash");
+    if (RHASH(hash)->tbl == 0) {
+	RHASH(hash)->tbl = st_init_table(&objhash);
+    }
 }
 
 /*
@@ -325,7 +336,7 @@ rb_hash_rehash_i(key, value, tbl)
  *  values of key objects have changed since they were inserted, this
  *  method will reindex <i>hsh</i>. If <code>Hash#rehash</code> is
  *  called while an iterator is traversing the hash, an
- *  <code>IndexError</code> will be raised in the iterator.
+ *  <code>RuntimeError</code> will be raised in the iterator.
  *     
  *     a = [ "a", "b" ]
  *     c = [ "c", "d" ]
@@ -343,6 +354,9 @@ rb_hash_rehash(hash)
 {
     st_table *tbl;
 
+    if (RHASH(hash)->iter_lev > 0) {
+	rb_raise(rb_eRuntimeError, "rehash during iteration");
+    }
     rb_hash_modify(hash);
     tbl = st_init_table_with_size(&objhash, RHASH(hash)->tbl->num_entries);
     st_foreach(RHASH(hash)->tbl, rb_hash_rehash_i, (st_data_t)tbl);
@@ -385,7 +399,7 @@ rb_hash_aref(hash, key)
  *  
  *  Returns a value from the hash for the given key. If the key can't be
  *  found, there are several options: With no other arguments, it will
- *  raise an <code>IndexError</code> exception; if <i>default</i> is
+ *  raise an <code>KeyError</code> exception; if <i>default</i> is
  *  given, then that will be returned; if the optional code block is
  *  specified, then that will be run and its result returned.
  *     
@@ -402,7 +416,7 @@ rb_hash_aref(hash, key)
  *     
  *  <em>produces:</em>
  *     
- *     prog.rb:2:in `fetch': key not found (IndexError)
+ *     prog.rb:2:in `fetch': key not found (KeyError)
  *      from prog.rb:2
  *     
  */
@@ -426,7 +440,7 @@ rb_hash_fetch(argc, argv, hash)
     if (!st_lookup(RHASH(hash)->tbl, key, &val)) {
 	if (block_given) return rb_yield(key);
 	if (argc == 1) {
-	    rb_raise(rb_eIndexError, "key not found");
+	    rb_raise(rb_eKeyError, "key not found");
 	}
 	return if_none;
     }
@@ -525,7 +539,7 @@ rb_hash_default_proc(hash)
 }
 
 static int
-index_i(key, value, args)
+key_i(key, value, args)
     VALUE key, value;
     VALUE *args;
 {
@@ -538,7 +552,7 @@ index_i(key, value, args)
 
 /*
  *  call-seq:
- *     hsh.index(value)    => key
+ *     hsh.key(value)    => key
  *  
  *  Returns the key for a given value. If not found, returns <code>nil</code>.
  *     
@@ -549,7 +563,7 @@ index_i(key, value, args)
  */
 
 static VALUE
-rb_hash_index(hash, value)
+rb_hash_key(hash, value)
     VALUE hash, value;
 {
     VALUE args[2];
@@ -557,9 +571,17 @@ rb_hash_index(hash, value)
     args[0] = value;
     args[1] = Qnil;
 
-    st_foreach(RHASH(hash)->tbl, index_i, (st_data_t)args);
+    st_foreach(RHASH(hash)->tbl, key_i, (st_data_t)args);
 
     return args[1];
+}
+
+static VALUE
+rb_hash_index(hash, value)
+    VALUE hash, value;
+{
+    rb_warn("Hash#index is deprecated; use Hash#key");
+    return rb_hash_key(hash, value);
 }
 
 /*
@@ -803,8 +825,12 @@ static VALUE
 rb_hash_clear(hash)
     VALUE hash;
 {
+    void *tmp;
+
     rb_hash_modify(hash);
-    st_foreach(RHASH(hash)->tbl, clear_i, 0);
+    if (RHASH(hash)->tbl->num_entries > 0) {
+	st_foreach(RHASH(hash)->tbl, clear_i, 0);
+    }
 
     return hash;
 }
@@ -1671,7 +1697,7 @@ env_fetch(argc, argv)
     if (!env) {
 	if (block_given) return rb_yield(key);
 	if (argc == 1) {
-	    rb_raise(rb_eIndexError, "key not found");
+	    rb_raise(rb_eKeyError, "key not found");
 	}
 	return if_none;
     }
@@ -2345,6 +2371,7 @@ Init_Hash()
     rb_define_method(rb_cHash,"default", rb_hash_default, -1);
     rb_define_method(rb_cHash,"default=", rb_hash_set_default, 1);
     rb_define_method(rb_cHash,"default_proc", rb_hash_default_proc, 0);
+    rb_define_method(rb_cHash,"key", rb_hash_key, 1);
     rb_define_method(rb_cHash,"index", rb_hash_index, 1);
     rb_define_method(rb_cHash,"size", rb_hash_size, 0);
     rb_define_method(rb_cHash,"length", rb_hash_size, 0);

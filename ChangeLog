@@ -1,3 +1,13 @@
+Wed Sep 22 13:38:12 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (rb_hash_rehash): add iteration check.  [ruby-dev:24301]
+
+	* st.c (st_foreach): add deep check.
+
+	* hash.c (rb_hash_fetch): returns KeyError instead of IndexError.
+
+	* hash.c (env_fetch): ditto.
+
 Wed Sep 22 13:02:02 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_call_handler): workaround for Ctrl-C.
