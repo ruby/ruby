@@ -1,3 +1,7 @@
+Tue Jan 21 18:05:25 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* bcc32/Makefile.sub (LIBRUBY_A): link dmyext.
+
 Tue Jan 21 16:59:18 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* instruby.rb: use real interpreter pathname at shebang line.
