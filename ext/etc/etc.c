@@ -339,7 +339,7 @@ etc_getgrent(obj)
     struct group *gr;
 
     if (gr = getgrent()) {
-	return setup_passwd(gr);
+	return setup_group(gr);
     }
 #endif
     return Qnil;
