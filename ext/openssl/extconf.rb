@@ -33,8 +33,6 @@ if with_config("debug") or enable_config("debug")
   end
 end
 
-
-
 message "=== Checking for system dependent stuff... ===\n"
 have_library("nsl", "t_open")
 have_library("socket", "socket")
@@ -58,13 +56,7 @@ if !result
   end
 end
 
-check_opensslv = <<_end_of_src_
-#include <openssl/opensslv.h>
-#if OPENSSL_VERSION_NUMBER < 0x0090600fL
-#  error too old
-#endif
-_end_of_src_
-if !try_compile(check_opensslv)
+unless have_header("openssl/conf_api.h")
   message "OpenSSL 0.9.6 or later required.\n"
   exit 1
 end
