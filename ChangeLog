@@ -1,3 +1,7 @@
+Wed Jun 12 15:00:57 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* parse.y (stmt): fix typo.
+
 Mon Jun 10 19:02:19 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* numeric.c (fix_lshift): negative shift count means right shift.
