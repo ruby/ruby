@@ -91,7 +91,7 @@ module SM
     def accept_rule(am, fragment)
       size = fragment.param
       size = 10 if size > 10
-      @res << Rule.new(size)
+      @res << Flow::RULE.new(size)
     end
 
     def accept_list_start(am, fragment)
