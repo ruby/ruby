@@ -14,21 +14,32 @@
 
 typedef struct RVALUE {
     union {
+	//struct {
+	//    unsigned long flags;	/* always 0 for freed obj */
+	//    struct RVALUE *next;
+	//} free;
 	struct RBasic  basic;
 	struct RObject object;
 	struct RClass  klass;
+	//struct RFloat  flonum;
+	//struct RString string;
 	struct RArray  array;
+	//struct RRegexp regexp;
 	struct RHash   hash;
+	//struct RData   data;
 	struct RStruct rstruct;
+	//struct RBignum bignum;
+	//struct RFile   file;
     } as;
 } RVALUE;
 
 #define RUBY_DOMAIN   "ruby.yaml.org,2002"
 
-static ID s_new, s_utc, s_at, s_to_f, s_read, s_binmode, s_call, s_transfer;
+static ID s_new, s_utc, s_at, s_to_f, s_read, s_binmode, s_call, s_transfer, s_update, s_dup, s_match;
 static VALUE sym_model, sym_generic;
 static VALUE sym_scalar, sym_seq, sym_map;
-VALUE cDate, cParser, cLoader, cNode, cPrivateType, cDomainType, cBadAlias, oDefaultLoader;
+VALUE cDate, cParser, cLoader, cNode, cPrivateType, cDomainType, cBadAlias, cMergeKey;
+VALUE oDefaultLoader;
 
 /*
  * my private collection of numerical oddities.
@@ -46,7 +57,7 @@ void rb_syck_err_handler _((SyckParser *, char *));
 SyckNode * rb_syck_bad_anchor_handler _((SyckParser *, char *));
 
 struct parser_xtra {
-    VALUE data;  // Borrowed this idea from marshal.c to fix [ruby-dev:8067] problem
+    VALUE data;  // Borrowed this idea from marshal.c to fix [ruby-core:8067] problem
     VALUE proc;
 };
 
@@ -270,6 +281,21 @@ rb_syck_parse_handler(p, n)
 }
 
 /*
+ * handles merging of an array of hashes
+ * (see http://www.yaml.org/type/merge/)
+ */
+VALUE
+syck_merge_i( entry, hsh )
+    VALUE entry, hsh;
+{
+	if ( rb_obj_is_kind_of( entry, rb_cHash ) )
+	{
+		rb_funcall( hsh, s_update, 1, entry );
+	}
+    return Qnil;
+}
+
+/*
  * {native mode} node handler
  * - Converts data into native Ruby types
  */
@@ -363,15 +389,15 @@ rb_syck_load_handler(p, n)
                 day = INT2FIX(strtol(ptr, NULL, 10));
 
                 obj = rb_funcall( cDate, s_new, 3, year, mon, day );
-
-                // S_REALLOC_N( n->data.str->ptr, char, 22 );
-                // strcat( n->data.str->ptr, "t00:00:00Z" );
-                // obj = rb_syck_mktime( n->data.str->ptr );
             }
             else if ( strncmp( n->type_id, "timestamp", 9 ) == 0 )
             {
                 obj = rb_syck_mktime( n->data.str->ptr );
             }
+			else if ( strncmp( n->type_id, "merge", 5 ) == 0 )
+			{
+				obj = rb_funcall( cMergeKey, s_new, 0 );
+			}
             else
             {
                 check_transfers = 1;
@@ -392,7 +418,41 @@ rb_syck_load_handler(p, n)
             obj = rb_hash_new();
             for ( i = 0; i < n->data.pairs->idx; i++ )
             {
-                rb_hash_aset( obj, syck_map_read( n, map_key, i ), syck_map_read( n, map_value, i ) );
+				VALUE k = syck_map_read( n, map_key, i );
+				VALUE v = syck_map_read( n, map_value, i );
+				int merge_key = 0;
+
+				//
+				// Handle merge keys
+				//
+				if ( rb_obj_is_kind_of( k, cMergeKey ) )
+				{
+					if ( rb_obj_is_kind_of( v, rb_cHash ) )
+					{
+						VALUE dup = rb_funcall( v, s_dup, 0 );
+						rb_funcall( dup, s_update, 1, obj );
+						obj = dup;
+						merge_key = 1;
+					}
+					else if ( rb_obj_is_kind_of( v, rb_cArray ) )
+					{
+						VALUE end = rb_ary_pop( v );
+						if ( rb_obj_is_kind_of( end, rb_cHash ) )
+						{
+							VALUE dup = rb_funcall( end, s_dup, 0 );
+							v = rb_ary_reverse( v );
+							rb_ary_push( v, obj );
+							rb_iterate( rb_each, v, syck_merge_i, dup );
+							obj = dup;
+							merge_key = 1;
+						}
+					}
+				}
+
+				if ( ! merge_key )
+				{
+					rb_hash_aset( obj, k, v );
+				}
             }
             check_transfers = 1;
         break;
@@ -746,12 +806,15 @@ transfer_find_i(entry, col)
 {
     VALUE key = rb_ary_entry( entry, 0 );
     VALUE tid = rb_ary_entry( col, 0 );
-    VALUE match = rb_funcall(tid, rb_intern("=~"), 1, key);
-    if ( ! NIL_P( match ) )
-    {
-        rb_ary_push( col, rb_ary_entry( entry, 1 ) );
-        rb_iter_break();
-    }
+	if ( rb_respond_to( key, s_match ) )
+	{
+		VALUE match = rb_funcall( key, rb_intern("match"), 1, tid );
+		if ( ! NIL_P( match ) )
+		{
+			rb_ary_push( col, rb_ary_entry( entry, 1 ) );
+			rb_iter_break();
+		}
+	}
     return Qnil;
 }
 
@@ -957,6 +1020,10 @@ Init_syck()
     s_binmode = rb_intern("binmode");
     s_transfer = rb_intern("transfer");
     s_call = rb_intern("call");
+	s_update = rb_intern("update");
+	s_dup = rb_intern("dup");
+	s_match = rb_intern("match");
+
 	sym_model = ID2SYM(rb_intern("Model"));
 	sym_generic = ID2SYM(rb_intern("Generic"));
     sym_map = ID2SYM(rb_intern("map"));
@@ -1030,5 +1097,10 @@ Init_syck()
     cBadAlias = rb_define_class_under( rb_syck, "BadAlias", rb_cObject );
     rb_define_attr( cBadAlias, "name", 1, 1 );
     rb_define_method( cBadAlias, "initialize", syck_badalias_initialize, 1);
+
+	//
+	// Define YAML::Syck::MergeKey class
+	//
+	cMergeKey = rb_define_class_under( rb_syck, "MergeKey", rb_cObject );
 }
 

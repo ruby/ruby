@@ -286,7 +286,7 @@ module YAML
             @buffer.push( "" )
             #p [ self.id, @level, :END ]
 			if @level < 0
-				header + @buffer.to_s[@headless..-1]
+				header + @buffer.to_s[@headless..-1].to_s
 			end
 		end
 	end

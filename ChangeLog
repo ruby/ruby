@@ -1,3 +1,16 @@
+Wed Jun 18 01:13:36 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
+
+    * ext/syck/rubyext.c (rb_syck_load_handler): merge key implemented.
+
+    * ext/syck/rubyext.c (transfer_find_i): removed use of String#=~ in favor
+        of Regexp#match.
+
+    * lib/yaml.rb: YAML::try_implicit returns.
+
+    * lib/yaml/rubytypes.rb: Regexps added for type matching.
+
+    * lib/yaml/emitter.rb: fix String + nil error.
+
 Tue Jun 17 17:01:08 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
 
     * ext/syck/gram.c: added grammar for certain empty sequence entries.

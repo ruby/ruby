@@ -30,7 +30,7 @@ class Object
 	end
 end
 
-YAML.add_ruby_type( 'object' ) { |type, val|
+YAML.add_ruby_type( /^object/ ) { |type, val|
     type, obj_class = YAML.read_type_class( type, Object )
     YAML.object_maker( obj_class, val )
 }
@@ -86,7 +86,7 @@ hash_proc = Proc.new { |type, val|
 	val
 }
 YAML.add_builtin_type( 'map', &hash_proc )
-YAML.add_ruby_type( 'hash', &hash_proc ) 
+YAML.add_ruby_type( /^hash/, &hash_proc ) 
 
 module YAML
 
@@ -166,7 +166,7 @@ class Struct
 	end
 end
 
-YAML.add_ruby_type( 'struct' ) { |type, val|
+YAML.add_ruby_type( /^struct/ ) { |type, val|
 	if Hash === val
         struct_type = nil
 
@@ -238,7 +238,7 @@ array_proc = Proc.new { |type, val|
     end
 }
 YAML.add_builtin_type( 'seq', &array_proc )
-YAML.add_ruby_type( 'array', &array_proc ) 
+YAML.add_ruby_type( /^array/, &array_proc ) 
 
 #
 # Exception#to_yaml
@@ -262,7 +262,7 @@ class Exception
 	end
 end
 
-YAML.add_ruby_type( 'exception' ) { |type, val|
+YAML.add_ruby_type( /^exception/ ) { |type, val|
     type, obj_class = YAML.read_type_class( type, Exception )
     o = YAML.object_maker( obj_class, { 'mesg' => val.delete( 'message' ) }, true )
     val.each_pair { |k,v|

@@ -118,6 +118,13 @@ module YAML
         @@loader.transfer( type_id, obj )
     end
 
+	#
+	# Apply any implicit a node may qualify for
+	#
+	def YAML.try_implicit( obj )
+		YAML.transfer( YAML.detect_implicit( obj ), obj )
+	end
+
     #
     # Method to extract colon-seperated type and class, returning
     # the type and the constant of the class
