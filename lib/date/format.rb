@@ -1,5 +1,5 @@
-# format.rb: Written by Tadayoshi Funaba 1999-2004
-# $Id: format.rb,v 2.14 2004-11-06 10:58:40+09 tadf Exp $
+# format.rb: Written by Tadayoshi Funaba 1999-2005
+# $Id: format.rb,v 2.15 2005-02-06 13:28:48+09 tadf Exp $
 
 require 'rational'
 
@@ -116,6 +116,12 @@ class Date
 	val = $1.to_i
 	return unless (1..12) === val
 	elem[:mon] = val
+=begin
+      when '%N'
+	return unless str.sub!(/\A(\d+)/o, '')
+	val = $1.to_i.to_r / (10**9)
+	elem[:sec_fraction] = val
+=end
       when '%n'
 	return unless __strptime(str, ' ', elem)
       when '%p', '%P'
@@ -191,12 +197,21 @@ class Date
 	elem[:sec_fraction] = val
 =end
       when '%1'
+	if $VERBOSE
+	  warn("warning: %1 is deprecated; forget this")
+	end
 	return unless str.sub!(/\A(\d+)/o, '')
 	val = $1.to_i
 	elem[:jd] = val
       when '%2'
+	if $VERBOSE
+	  warn("warning: %2 is deprecated; use '%Y-%j'")
+	end
 	return unless __strptime(str, '%Y-%j', elem)
       when '%3'
+	if $VERBOSE
+	  warn("warning: %3 is deprecated; use '%F'")
+	end
 	return unless __strptime(str, '%F', elem)
       else
 	return unless str.sub!(Regexp.new('\\A' + Regexp.quote(c)), '')
@@ -498,6 +513,10 @@ class Date
       when '%l'; o <<  '%2d' % ((hour % 12).nonzero? or 12)	# AR,TZ,GL
       when '%M'; o << '%02d' % min
       when '%m'; o << '%02d' % mon
+=begin
+      when '%N'							# GNU date
+	o << '%09d' % (sec_fraction / (1.to_r/86400/(10**9)))
+=end
       when '%n'; o << "\n"					# P2,ID
       when '%P'; o << if hour < 12 then 'am' else 'pm' end	# GL
       when '%p'; o << if hour < 12 then 'AM' else 'PM' end
@@ -537,9 +556,21 @@ class Date
       when '%.'
 	o << '%06d' % (sec_fraction / (1.to_r/86400/(10**6)))
 =end
-      when '%1'; o <<   '%d' % jd
-      when '%2'; o << strftime('%Y-%j')
-      when '%3'; o << strftime('%Y-%m-%d')
+      when '%1'
+	if $VERBOSE
+	  warn("warning: %1 is deprecated; forget this")
+	end
+	o <<   '%d' % jd
+      when '%2'
+	if $VERBOSE
+	  warn("warning: %2 is deprecated; use '%Y-%j'")
+	end
+	o << strftime('%Y-%j')
+      when '%3'
+	if $VERBOSE
+	  warn("warning: %3 is deprecated; use '%F'")
+	end
+	o << strftime('%F')
       else;      o << c
       end
     end
