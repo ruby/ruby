@@ -3826,6 +3826,9 @@ rb_iter_break()
 NORETURN(static void rb_longjmp _((int, VALUE)));
 static VALUE make_backtrace _((void));
 
+static int thread_set_raised();
+static void thread_reset_raised();
+
 static void
 rb_longjmp(tag, mesg)
     int tag;
@@ -3851,14 +3854,22 @@ rb_longjmp(tag, mesg)
     }
 
     if (RTEST(ruby_debug) && !NIL_P(ruby_errinfo)
+	&& !thread_set_raised()
 	&& !rb_obj_is_kind_of(ruby_errinfo, rb_eSystemExit)) {
 	VALUE e = ruby_errinfo;
+	int status;
 
-	StringValue(e);
-	warn_printf("Exception `%s' at %s:%d - %s\n",
-		    rb_obj_classname(ruby_errinfo),
-		    ruby_sourcefile, ruby_sourceline,
-		    RSTRING(e)->ptr);
+	PUSH_TAG(PROT_NONE);
+	if ((status = EXEC_TAG()) == 0) {
+	    StringValue(e);
+	    warn_printf("Exception `%s' at %s:%d - %s\n",
+			rb_obj_classname(ruby_errinfo),
+			ruby_sourcefile, ruby_sourceline,
+			RSTRING(e)->ptr);
+	}
+	POP_TAG();
+	thread_reset_raised();
+	JUMP_TAG(tag);
     }
 
     rb_trap_restore_mask();
@@ -7761,6 +7772,20 @@ struct thread_status_t {
     (dst)->delay = (src)->delay,		\
     (dst)->join = (src)->join,			\
     0)
+
+static int
+thread_set_raised()
+{
+    if (curr_thread->flags & THREAD_RAISED) return 1;
+    curr_thread->flags |= THREAD_RAISED;
+    return 0;
+}
+
+static void
+thread_reset_raised()
+{
+    curr_thread->flags &= ~THREAD_RAISED;
+}
 
 static void rb_thread_ready _((rb_thread_t));
 

@@ -1,3 +1,8 @@
+Fri May 23 18:34:05 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* eval.c (rb_longjmp): get rid of reentering while debug warning.
+	  (ruby-bugs-ja:PR473)
+
 Fri May 23 15:16:16 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* pack.c (pack_unpack): sign-extend if sizeof long is bigger than
