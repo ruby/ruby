@@ -1,3 +1,7 @@
+Sat Nov  6 11:18:59 2004  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date.rb (_parse): checks whether zone was given.
+
 Fri Nov  5 19:07:16 2004  NARUSE, Yui  <naruse@ruby-lang.org>
 
         * ext/nkf: follow CVS Head of original nkf.
