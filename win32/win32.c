@@ -1243,13 +1243,13 @@ rb_w32_opendir(const char *filename)
     // check to see if we've got a directory
     //
 
-    if ((rb_w32_stat (filename, &sbuf) < 0 ||
+    if ((rb_w32_stat(filename, &sbuf) < 0 || (
 #ifdef __BORLANDC__
 	 (unsigned short)(sbuf.st_mode)
 #else
 	 sbuf.st_mode
 #endif
-	 & _S_IFDIR == 0) &&
+	 & _S_IFDIR) == 0) &&
 	(!ISALPHA(filename[0]) || filename[1] != ':' || filename[2] != '\0' ||
 	((1 << (filename[0] & 0x5f) - 'A') & GetLogicalDrives()) == 0)) {
 	return NULL;
@@ -3151,7 +3151,7 @@ rb_w32_utime(const char *path, struct utimbuf *times)
     if (rb_w32_stat(path, &stat)) {
 	return -1;
     }
-    if (stat.st_mode & S_IFDIR == 0 || IsWin95()) {
+    if ((stat.st_mode & S_IFDIR) == 0 || IsWin95()) {
 	return utime(path, times);
     }
 

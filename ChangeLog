@@ -1,3 +1,7 @@
+Mon Feb 17 14:36:56 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* win32/win32.c (rb_w32_opendir, rb_w32_utime): need parens.
+
 Mon Feb 17 14:13:25 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* win32/win32.c (link): implement with CreateHardLink().
