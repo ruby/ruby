@@ -1,3 +1,7 @@
+Mon Dec 16 15:41:56 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* eval.c (rb_eval): untangled ruby_dyna_vars.  [ruby-talk:59035]
+
 Sat Dec 14 02:03:51 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/dbm/extconf.rb (db_check): support for GNU dbm 1.8.3.

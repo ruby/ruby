@@ -2901,6 +2901,7 @@ rb_eval(self, n)
 	    NODE *list = node->nd_next;
 
 	    str = rb_str_new3(node->nd_lit);
+	    if (!ruby_dyna_vars) rb_dvar_push(0, 0);
 	    while (list) {
 		if (list->nd_head) {
 		    switch (nd_type(list->nd_head)) {
@@ -2912,7 +2913,6 @@ rb_eval(self, n)
 			ruby_errinfo = Qnil;
 			ruby_sourceline = nd_line(list->nd_head);
 			ruby_in_eval++;
-			if (!ruby_dyna_vars) rb_dvar_push(0, 0);
 			list->nd_head = compile(list->nd_head->nd_lit,
 						ruby_sourcefile,
 						ruby_sourceline);
@@ -2920,8 +2920,8 @@ rb_eval(self, n)
 			    NODE *body = (NODE *)ruby_scope->scope_node;
 			    if (body && body->nd_tbl != ruby_scope->local_tbl) {
 				if (body->nd_tbl) free(body->nd_tbl);
-                               ruby_scope->local_vars[-1] = (VALUE)body;
-                               body->nd_tbl = ruby_scope->local_tbl;
+				ruby_scope->local_vars[-1] = (VALUE)body;
+				body->nd_tbl = ruby_scope->local_tbl;
 			    }
 			}
 			ruby_eval_tree = 0;
