@@ -1,3 +1,12 @@
+Tue Oct  7 15:23:09 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/ruby/test_beginendblock.rb: add tests for nested BEGIN/END.
+
+	* test/ruby/beginmainend.rb: add tests for nested BEGIN/END.
+
+	* test/ruby/endblockwarn.rb: new file added to test of END-in-method
+	  warning.
+
 Tue Oct  7 12:23:47 2003  Tanaka Akira  <akr@m17n.org>
 
 	* ext/fcntl/fcntl.c (Init_fcntl): define Fcntl::O_ACCMODE.

@@ -1,25 +1,31 @@
+errout = ARGV.shift
+
 BEGIN {
-  puts "begin1"
+  puts "b1"
   local_begin1 = "local_begin1"
   $global_begin1 = "global_begin1"
   ConstBegin1 = "ConstBegin1"
 }
 
 BEGIN {
-  puts "begin2"
+  puts "b2"
+
+  BEGIN {
+    puts "b2-1"
+  }
 }
 
 # for scope check
 raise if defined?(local_begin1)
 raise unless defined?($global_begin1)
 raise unless defined?(::ConstBegin1)
-local_for_end2 = "end2"
-$global_for_end1 = "end1"
+local_for_end2 = "e2"
+$global_for_end1 = "e1"
 
 puts "main"
 
 END {
-  puts local_for_end2
+  puts local_for_end2	# e2
 }
 
 END {
@@ -29,27 +35,51 @@ END {
 
 eval <<EOE
   BEGIN {
-    puts "innerbegin1"
+    puts "b3"
+
+    BEGIN {
+      puts "b3-1"
+    }
   }
 
   BEGIN {
-    puts "innerbegin2"
+    puts "b4"
   }
 
   END {
-    puts "innerend2"
+    puts "e3"
   }
 
   END {
-    puts "innerend1"
+    puts "e4"
+
+    END {
+      puts "e4-1"
+
+      END {
+	puts "e4-1-1"
+      }
+    }
+
+    END {
+      puts "e4-2"
+    }
   }
 EOE
 
 END {
   exit
   puts "should not be dumped"
+
+  END {
+    puts "not reached"
+  }
 }
 
 END {
-  puts $global_for_end1
+  puts $global_for_end1	# e1
+
+  END {
+    puts "e1-1"
+  }
 }

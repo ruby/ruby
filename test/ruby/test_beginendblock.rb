@@ -1,27 +1,57 @@
 require 'test/unit'
+require 'tempfile'
 require "#{File.dirname(File.expand_path(__FILE__))}/envutil"
 
 class TestBeginEndBlock < Test::Unit::TestCase
   DIR = File.dirname(File.expand_path(__FILE__))
 
+  def q(content)
+    "\"#{content}\""
+  end
+
   def test_beginendblock
     ruby = EnvUtil.rubybin
-    io = IO.popen("\"#{ruby}\" \"#{DIR}/beginmainend.rb\"")
-    assert_equal(%w(begin1 begin2 main innerbegin1 innerbegin2 end1 innerend1 innerend2 end2).join("\n") << "\n", io.read)
+    target = File.join(DIR, 'beginmainend.rb')
+    io = IO.popen("#{q(ruby)} #{q(target)}")
+    assert_equal(%w(b1 b2-1 b2 main b3-1 b3 b4 e1 e4 e3 e2 e4-2 e4-1 e1-1 e4-1-1), io.read.split)
+    io.close
   end
 
   def test_begininmethod
     assert_raises(SyntaxError) do
       eval("def foo; BEGIN {}; end")
     end
+
+    assert_raises(SyntaxError) do
+      eval('eval("def foo; BEGIN {}; end")')
+    end
   end
 
-  def test_endinmethod
-    verbose, $VERBOSE = $VERBOSE, nil
-    assert_nothing_raised(SyntaxError) do
-      eval("def foo; END {}; end")
-    end
-  ensure
-    $VERBOSE = verbose
+  def test_endblockwarn
+    ruby = EnvUtil.rubybin
+    # Use Tempfile to create temporary file path.
+    launcher = Tempfile.new(self.class.name)
+    errout = Tempfile.new(self.class.name)
+
+    launcher << <<EOF
+errout = ARGV.shift
+STDERR.reopen(File.open(errout, "w"))
+STDERR.sync = true
+Dir.chdir(#{q(DIR)})
+cmd = "\\"#{ruby}\\" \\"endblockwarn.rb\\""
+exec(cmd)
+exit!("must not reach here")
+EOF
+    launcher.close
+    launcherpath = launcher.path
+    errout.close
+    erroutpath = errout.path
+    system("#{q(ruby)} #{q(launcherpath)} #{q(erroutpath)}")
+    expected = <<EOW
+endblockwarn.rb:16: warning: END in method; use at_exit
+(eval):2: warning: END in method; use at_exit
+EOW
+    assert_equal(expected, File.read(erroutpath))
+    # expecting Tempfile to unlink launcher and errout file.
   end
 end

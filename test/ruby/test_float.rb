@@ -13,6 +13,9 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(3, 2.6.round)
     assert_equal(-2, (-2.4).truncate)
     assert((13.4 % 1 - 0.4).abs < 0.0001)
+  end
+
+  def test_nan
     nan = 0.0/0
     def nan.test(v)
       extend Test::Unit::Assertions
@@ -36,7 +39,9 @@ class TestFloat < Test::Unit::TestCase
     nan.test(-0.001);
     nan.test(1.0/0);
     nan.test(-1.0/0);
+  end
 
+  def test_precision
     #s = "3.7517675036461267e+17"
     #assert(s == sprintf("%.16e", s.to_f))
     f = 3.7517675036461267e+17
