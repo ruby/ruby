@@ -1,325 +1,122 @@
-=begin
-
-= net/smtp.rb
-
-Copyright (c) 1999-2003 Yukihiro Matsumoto
-Copyright (c) 1999-2003 Minero Aoki
-
-written & maintained by Minero Aoki <aamine@loveruby.net>
-
-This program is free software. You can re-distribute and/or
-modify this program under the same terms as Ruby itself,
-Ruby Distribute License or GNU General Public License.
-
-NOTE: You can find Japanese version of this document in
-the doc/net directory of the standard ruby interpreter package.
-
-$Id$
-
-== What is This Module?
-
-This module provides your program the functions to send internet
-mail via SMTP, Simple Mail Transfer Protocol. For details of
-SMTP itself, refer [RFC2821] ((<URL:http://www.ietf.org/rfc/rfc2821.txt>)).
-
-== What is NOT This Module?
-
-This module does NOT provide functions to compose internet mails.
-You must create it by yourself. If you want better mail support,
-try RubyMail or TMail. You can get both libraries from RAA.
-((<URL:http://www.ruby-lang.org/en/raa.html>))
-
-FYI: official documentation of internet mail is:
-[RFC2822] ((<URL:http://www.ietf.org/rfc/rfc2822.txt>)).
-
-== Examples
-
-=== Sending Message
-
-You must open connection to SMTP server before sending messages.
-First argument is the address of SMTP server, and second argument
-is port number. Using SMTP.start with block is the most simple way
-to do it. SMTP connection is closed automatically after block is
-executed.
-
-    require 'net/smtp'
-    Net::SMTP.start('your.smtp.server', 25) {|smtp|
-      # use a SMTP object only in this block
-    }
-
-Replace 'your.smtp.server' by your SMTP server. Normally
-your system manager or internet provider is supplying a server
-for you.
-
-Then you can send messages.
-
-    msgstr = <<END_OF_MESSAGE
-    From: Your Name <your@mail.address>
-    To: Destination Address <someone@example.com>
-    Subject: test message
-    Date: Sat, 23 Jun 2001 16:26:43 +0900
-    Message-Id: <unique.message.id.string@example.com>
-
-    This is a test message.
-    END_OF_MESSAGE
-
-    require 'net/smtp'
-    Net::SMTP.start('your.smtp.server', 25) {|smtp|
-      smtp.send_message msgstr,
-                        'your@mail.address',
-                        'his_addess@example.com'
-    }
-
-=== Closing Session
-
-You MUST close SMTP session after sending messages, by calling #finish
-method:
-
-    # using SMTP#finish
-    smtp = Net::SMTP.start('your.smtp.server', 25)
-    smtp.send_message msgstr, 'from@address', 'to@address'
-    smtp.finish
-
-You can also use block form of SMTP.start/SMTP#start.  They closes
-SMTP session automatically:
-
-    # using block form of SMTP.start
-    Net::SMTP.start('your.smtp.server', 25) {|smtp|
-      smtp.send_message msgstr, 'from@address', 'to@address'
-    }
-
-I strongly recommend this scheme.  This form is more simple and robust.
-
-=== HELO domain
-
-In almost all situation, you must designate the third argument
-of SMTP.start/SMTP#start. It is the domain name which you are on
-(the host to send mail from). It is called "HELO domain".
-SMTP server will judge if he/she should send or reject
-the SMTP session by inspecting HELO domain.
-
-    Net::SMTP.start('your.smtp.server', 25,
-                    'mail.from.domain') {|smtp|
-
-=== SMTP Authentication
-
-The Net::SMTP class supports three authentication schemes;
-PLAIN, LOGIN and CRAM MD5.  (SMTP Authentication: [RFC2554])
-To use SMTP authentication, pass extra arguments to
-SMTP.start/SMTP#start methods.
-
-    # PLAIN
-    Net::SMTP.start('your.smtp.server', 25, 'mail.from,domain',
-                    'Your Account', 'Your Password', :plain)
-    # LOGIN
-    Net::SMTP.start('your.smtp.server', 25, 'mail.from,domain',
-                    'Your Account', 'Your Password', :login)
-
-    # CRAM MD5
-    Net::SMTP.start('your.smtp.server', 25, 'mail.from,domain',
-                    'Your Account', 'Your Password', :cram_md5)
-
-== class Net::SMTP
-
-=== Class Methods
-
-: new( address, port = 25 )
-    creates a new Net::SMTP object.
-    This method does not open TCP connection.
-
-: start( address, port = 25, helo_domain = 'localhost.localdomain', account = nil, password = nil, authtype = nil )
-: start( address, port = 25, helo_domain = 'localhost.localdomain', account = nil, password = nil, authtype = nil ) {|smtp| .... }
-    is equal to:
-        Net::SMTP.new(address,port).start(helo_domain,account,password,authtype)
-
-        # example
-        Net::SMTP.start('your.smtp.server') {
-          smtp.send_message msgstr, 'from@example.com', ['dest@example.com']
-        }
-
-    This method may raise:
-
-      * Net::SMTPAuthenticationError
-      * Net::SMTPServerBusy
-      * Net::SMTPSyntaxError
-      * Net::SMTPFatalError
-      * Net::SMTPUnknownError
-      * IOError
-      * TimeoutError
-
-=== Instance Methods
-
-: start( helo_domain = <local host name>, account = nil, password = nil, authtype = nil )
-: start( helo_domain = <local host name>, account = nil, password = nil, authtype = nil ) {|smtp| .... }
-    opens TCP connection and starts SMTP session.
-    HELO_DOMAIN is a domain that you'll dispatch mails from.
-    If protocol had been started, raises IOError.
-
-    When this methods is called with block, give a SMTP object to block and
-    close session after block call finished.
-
-    If both of account and password are given, is trying to get
-    authentication by using AUTH command. AUTHTYPE is an either of
-    :login, :plain, and :cram_md5.
-
-    This method may raise:
-
-      * Net::SMTPAuthenticationError
-      * Net::SMTPServerBusy
-      * Net::SMTPSyntaxError
-      * Net::SMTPFatalError
-      * Net::SMTPUnknownError
-      * IOError
-      * TimeoutError
-
-: started?
-: active?    OBSOLETE
-    true if SMTP session is started.
-
-: esmtp?
-    true if the SMTP object uses ESMTP.
-
-: esmtp=(b)
-    set wheather SMTP should use ESMTP.
-
-: address
-    the address to connect
-
-: port
-    the port number to connect
-
-: open_timeout
-: open_timeout=(n)
-    seconds to wait until connection is opened.
-    If SMTP object cannot open a conection in this seconds,
-    it raises TimeoutError exception.
-
-: read_timeout
-: read_timeout=(n)
-    seconds to wait until reading one block (by one read(2) call).
-    If SMTP object cannot open a conection in this seconds,
-    it raises TimeoutError exception.
-
-: finish
-    finishes SMTP session.
-    If SMTP session had not started, raises an IOError.
-    If SMTP session timed out, raises TimeoutError.
-
-: send_message( msgstr, from_addr, *dest_addrs )
-: send_mail( msgstr, from_addr, *dest_addrs )
-: sendmail( msgstr, from_addr, *dest_addrs )   OBSOLETE
-    sends a String MSGSTR.  If a single CR ("\r") or LF ("\n") found
-    in the MEGSTR, converts it to the CR LF pair.  You cannot send a
-    binary message with this class.
-
-    FROM_ADDR must be a String, representing source mail address.
-    TO_ADDRS must be Strings or an Array of Strings, representing
-    destination mail addresses.
-
-        # example
-        Net::SMTP.start('smtp.example.com') {|smtp|
-          smtp.send_message msgstr,
-                            'from@example.com',
-                            ['dest@example.com', 'dest2@example.com']
-        }
-
-    This method may raise:
-
-      * Net::SMTPServerBusy
-      * Net::SMTPSyntaxError
-      * Net::SMTPFatalError
-      * Net::SMTPUnknownError
-      * IOError
-      * TimeoutError
-
-: open_message_stream( from_addr, *dest_addrs ) {|stream| .... }
-: ready( from_addr, *dest_addrs ) {|stream| .... }    OBSOLETE
-    opens a message writer stream and gives it to the block.
-    STREAM is valid only in the block, and has these methods:
-
-      : puts(str = '')
-          outputs STR and CR LF.
-      : print(str)
-          outputs STR.
-      : printf(fmt, *args)
-          outputs sprintf(fmt,*args).
-      : write(str)
-          outputs STR and returns the length of written bytes.
-      : <<(str)
-          outputs STR and returns self.
-
-    If a single CR ("\r") or LF ("\n") found in the message,
-    converts it to the CR LF pair.  You cannot send a binary
-    message with this class.
-
-    FROM_ADDR must be a String, representing source mail address.
-    TO_ADDRS must be Strings or an Array of Strings, representing
-    destination mail addresses.
-
-        # example
-        Net::SMTP.start('smtp.example.com', 25) {|smtp|
-          smtp.open_message_stream('from@example.com', ['dest@example.com']) {|f|
-            f.puts 'From: from@example.com'
-            f.puts 'To: dest@example.com'
-            f.puts 'Subject: test message'
-            f.puts
-            f.puts 'This is a test message.'
-          }
-        }
-
-    This method may raise:
-
-      * Net::SMTPServerBusy
-      * Net::SMTPSyntaxError
-      * Net::SMTPFatalError
-      * Net::SMTPUnknownError
-      * IOError
-      * TimeoutError
-
-: set_debug_output( output )
-    WARNING: This method causes serious security holes.
-    Use this method for only debugging.
-
-    set an output stream for debug logging.
-    You must call this before #start.
-
-      # example
-      smtp = Net::SMTP.new(addr, port)
-      smtp.set_debug_output $stderr
-      smtp.start {
-        ....
-      }
-
-
-== SMTP Related Exception Classes
-
-: Net::SMTPAuthenticationError
-    SMTP authentication error.
-
-    ancestors: SMTPError, ProtoAuthError (obsolete), ProtocolError (obsolete)
-
-: Net::SMTPServerBusy
-    Temporal error; error number 420/450.
-
-    ancestors: SMTPError, ProtoServerError (obsolete), ProtocolError (obsolete)
-
-: Net::SMTPSyntaxError
-    SMTP command syntax error (error number 500)
-
-    ancestors: SMTPError, ProtoSyntaxError (obsolete), ProtocolError (obsolete)
-
-: Net::SMTPFatalError
-    Fatal error (error number 5xx, except 500)
-
-    ancestors: SMTPError, ProtoFatalError (obsolete), ProtocolError (obsolete)
-
-: Net::SMTPUnknownError
-    Unexpected reply code returned from server
-    (might be a bug of this library).
-
-    ancestors: SMTPError, ProtoUnkownError (obsolete), ProtocolError (obsolete)
-
-=end
+# = net/smtp.rb
+# 
+#--
+# Copyright (c) 1999-2003 Yukihiro Matsumoto
+# Copyright (c) 1999-2003 Minero Aoki
+# 
+# written & maintained by Minero Aoki <aamine@loveruby.net>
+# 
+# This program is free software. You can re-distribute and/or
+# modify this program under the same terms as Ruby itself,
+# Ruby Distribute License or GNU General Public License.
+# 
+# NOTE: You can find Japanese version of this document in
+# the doc/net directory of the standard ruby interpreter package.
+# 
+# $Id$
+#++
+# 
+# == What is This Library?
+# 
+# This library provides functionality to send internet
+# mail via SMTP, the Simple Mail Transfer Protocol. For details of
+# SMTP itself, see [RFC2821] (http://www.ietf.org/rfc/rfc2821.txt).
+# 
+# == What is This Library NOT?
+# 
+# This library does NOT provide functions to compose internet mails.
+# You must create them by yourself. If you want better mail support,
+# try RubyMail or TMail. You can get both libraries from RAA.
+# (http://www.ruby-lang.org/en/raa.html)
+# 
+# FYI: the official documentation on internet mail is: [RFC2822] (http://www.ietf.org/rfc/rfc2822.txt).
+# 
+# == Examples
+# 
+# === Sending Messages
+# 
+# You must open a connection to an SMTP server before sending messages.
+# The first argument is the address of your SMTP server, and the second 
+# argument is the port number. Using SMTP.start with a block is the simplest 
+# way to do this. This way, the SMTP connection is closed automatically 
+# after the block is executed.
+# 
+#     require 'net/smtp'
+#     Net::SMTP.start('your.smtp.server', 25) {|smtp|
+#       # use the SMTP object smtp only in this block
+#     }
+# 
+# Replace 'your.smtp.server' with your SMTP server. Normally
+# your system manager or internet provider supplies a server
+# for you.
+# 
+# Then you can send messages.
+# 
+#     msgstr = <<END_OF_MESSAGE
+#     From: Your Name <your@mail.address>
+#     To: Destination Address <someone@example.com>
+#     Subject: test message
+#     Date: Sat, 23 Jun 2001 16:26:43 +0900
+#     Message-Id: <unique.message.id.string@example.com>
+# 
+#     This is a test message.
+#     END_OF_MESSAGE
+# 
+#     require 'net/smtp'
+#     Net::SMTP.start('your.smtp.server', 25) {|smtp|
+#       smtp.send_message msgstr,
+#                         'your@mail.address',
+#                         'his_addess@example.com'
+#     }
+# 
+# === Closing the Session
+# 
+# You MUST close the SMTP session after sending messages, by calling 
+# the #finish method:
+# 
+#     # using SMTP#finish
+#     smtp = Net::SMTP.start('your.smtp.server', 25)
+#     smtp.send_message msgstr, 'from@address', 'to@address'
+#     smtp.finish
+# 
+# You can also use the block form of SMTP.start/SMTP#start.  This closes
+# the SMTP session automatically:
+# 
+#     # using block form of SMTP.start
+#     Net::SMTP.start('your.smtp.server', 25) {|smtp|
+#       smtp.send_message msgstr, 'from@address', 'to@address'
+#     }
+# 
+# I strongly recommend this scheme.  This form is simpler and more robust.
+# 
+# === HELO domain
+# 
+# In almost all situations, you must provide a third argument
+# to SMTP.start/SMTP#start. This is the domain name which you are on
+# (the host to send mail from). It is called the "HELO domain".
+# The SMTP server will judge whether it should send or reject
+# the SMTP session by inspecting the HELO domain.
+# 
+#     Net::SMTP.start('your.smtp.server', 25,
+#                     'mail.from.domain') {|smtp| ... }
+# 
+# === SMTP Authentication
+# 
+# The Net::SMTP class supports three authentication schemes;
+# PLAIN, LOGIN and CRAM MD5.  (SMTP Authentication: [RFC2554])
+# To use SMTP authentication, pass extra arguments to 
+# SMTP.start/SMTP#start.
+# 
+#     # PLAIN
+#     Net::SMTP.start('your.smtp.server', 25, 'mail.from,domain',
+#                     'Your Account', 'Your Password', :plain)
+#     # LOGIN
+#     Net::SMTP.start('your.smtp.server', 25, 'mail.from,domain',
+#                     'Your Account', 'Your Password', :login)
+# 
+#     # CRAM MD5
+#     Net::SMTP.start('your.smtp.server', 25, 'mail.from,domain',
+#                     'Your Account', 'Your Password', :cram_md5)
 
 require 'net/protocol'
 require 'digest/md5'
@@ -327,35 +124,55 @@ require 'digest/md5'
 
 module Net
 
+  # Module mixed in to all SMTP error classes
   module SMTPError
     # This *class* is module for some reason.
     # In ruby 1.9.x, this module becomes a class.
   end
+
+  # Represents an SMTP authentication error.
   class SMTPAuthenticationError < ProtoAuthError
     include SMTPError
   end
+
+  # Represents SMTP error code 420 or 450, a temporary error.
   class SMTPServerBusy < ProtoServerError
     include SMTPError
   end
+
+  # Represents an SMTP command syntax error (error code 500)
   class SMTPSyntaxError < ProtoSyntaxError
     include SMTPError
   end
+
+  # Represents a fatal SMTP error (error code 5xx, except for 500)
   class SMTPFatalError < ProtoFatalError
     include SMTPError
   end
+
+  # Unexpected reply code returned from server.
   class SMTPUnknownError < ProtoUnknownError
     include SMTPError
   end
 
-
+  #
+  # Class providing SMTP client functionality.
+  #
+  # See documentation for the file smtp.rb for examples of usage.
+  #
   class SMTP
 
     Revision = %q$Revision$.split[1]
 
+    # The default SMTP port, port 25.
     def SMTP.default_port
       25
     end
 
+    # Creates a new Net::SMTP object. +address+ is the hostname
+    # or ip address of your SMTP server.  +port+ is the port to
+    # connect to; it defaults to port 25.
+    # This method does not open the TCP connection.
     def initialize( address, port = nil )
       @address = address
       @port = (port || SMTP.default_port)
@@ -368,31 +185,62 @@ module Net
       @debug_output = nil
     end
 
+    # Provide human-readable stringification of class state.
     def inspect
       "#<#{self.class} #{@address}:#{@port} started=#{@started}>"
     end
 
+    # +true+ if the SMTP object uses ESMTP (which it does by default).
     def esmtp?
       @esmtp
     end
 
+    # Set whether to use ESMTP or not.  This should be done before 
+    # calling #start.  Note that if #start is called in ESMTP mode,
+    # and the connection fails due to a ProtocolError, the SMTP
+    # object will automatically switch to plain SMTP mode and
+    # retry (but not vice versa).
     def esmtp=( bool )
       @esmtp = bool
     end
 
     alias esmtp esmtp?
 
+    # The address of the SMTP server to connect to.
     attr_reader :address
+
+    # The port number of the SMTP server to connect to.
     attr_reader :port
 
+    # Seconds to wait while attempting to open a connection.
+    # If the connection cannot be opened within this time, a
+    # TimeoutError is raised.
     attr_accessor :open_timeout
+
+    # Seconds to wait while reading one block (by one read(2) call).
+    # If the read(2) call does not complete within this time, a
+    # TimeoutError is raised.
     attr_reader :read_timeout
 
+    # Set the number of seconds to wait until timing-out a read(2)
+    # call.
     def read_timeout=( sec )
       @socket.read_timeout = sec if @socket
       @read_timeout = sec
     end
 
+    # WARNING: This method causes serious security holes.
+    # Use this method for only debugging.
+    #
+    # Set an output stream for debug logging.
+    # You must call this before #start.
+    #
+    #   # example
+    #   smtp = Net::SMTP.new(addr, port)
+    #   smtp.set_debug_output $stderr
+    #   smtp.start {
+    #     ....
+    #   }
     def set_debug_output( arg )
       @debug_output = arg
     end
@@ -401,19 +249,83 @@ module Net
     # SMTP session control
     #
 
+    # Creates a new Net::SMTP object and connects to the server.
+    #
+    # This method is equivalent to:
+    # 
+    #     Net::SMTP.new(address,port).start(helo_domain,account,password,authtype)
+    #
+    #     # example
+    #     Net::SMTP.start('your.smtp.server') {
+    #       smtp.send_message msgstr, 'from@example.com', ['dest@example.com']
+    #     }
+    #
+    # If called with a block, the newly-opened Net::SMTP object is yielded
+    # to the block, and automatically closed when the block finishes.  If called
+    # without a block, the newly-opened Net::SMTP object is returned to
+    # the caller, and it is the caller's responsibility to close it when
+    # finished.
+    #
+    # +address+ is the hostname or ip address of your smtp server.
+    # +port+ is the port to connect to; it defaults to port 25.
+    # +helo+ is the _HELO_ _domain_ provided by the client to the
+    # server (see overview comments); it defaults to 'localhost.localdomain'. 
+    # The remaining arguments are used for SMTP authentication, if required
+    # or desired.  +user+ is the account name; +secret+ is your password
+    # or other authentication token; and +authtype+ is the authentication
+    # type, one of :plain, :login, or :cram_md5.  See the discussion of
+    # SMTP Authentication in the overview notes.
+    #
+    # This method may raise:
+    #
+    # * Net::SMTPAuthenticationError
+    # * Net::SMTPServerBusy
+    # * Net::SMTPSyntaxError
+    # * Net::SMTPFatalError
+    # * Net::SMTPUnknownError
+    # * IOError
+    # * TimeoutError
     def SMTP.start( address, port = nil,
                     helo = 'localhost.localdomain',
                     user = nil, secret = nil, authtype = nil,
-                    &block)
+                    &block) # :yield: smtp
       new(address, port).start(helo, user, secret, authtype, &block)
     end
 
+    # +true+ if the SMTP session has been started.
     def started?
       @started
     end
 
+    # Opens a TCP connection and starts the SMTP session.
+    #
+    # +helo+ is the _HELO_ _domain_ that you'll dispatch mails from; see
+    # the discussion in the overview notes.
+    #
+    # When this methods is called with a block, the newly-started SMTP
+    # object is yielded to the block, and automatically closed after
+    # the block call finishes.  Otherwise, it is the caller's 
+    # responsibility to close the session when finished.
+    #
+    # If both of +user+ and +secret+ are given, SMTP authentication 
+    # will be attempted using the AUTH command.  +authtype+ specifies 
+    # the type of authentication to attempt; it must be one of
+    # :login, :plain, and :cram_md5.  See the notes on SMTP Authentication
+    # in the overview.
+    #
+    # If session has already been started, an IOError will be raised.
+    #
+    # This method may raise:
+    #
+    # * Net::SMTPAuthenticationError
+    # * Net::SMTPServerBusy
+    # * Net::SMTPSyntaxError
+    # * Net::SMTPFatalError
+    # * Net::SMTPUnknownError
+    # * IOError
+    # * TimeoutError
     def start( helo = 'localhost.localdomain',
-               user = nil, secret = nil, authtype = nil )
+               user = nil, secret = nil, authtype = nil ) # :yield: smtp
       if block_given?
         begin
           do_start(helo, user, secret, authtype)
@@ -453,6 +365,9 @@ module Net
     end
     private :do_start
 
+    # Finish (close) the SMTP session.  
+    #
+    # If the SMTP session has not been started, an IOError is raised.
     def finish
       raise IOError, 'closing already closed SMTP session' unless @started
       quit if @socket and not @socket.closed? and not @error_occured
@@ -468,6 +383,30 @@ module Net
 
     public
 
+    # Sends +msgstr+ as a message.  Single CR ("\r") and LF ("\n") found
+    # in the +msgstr+, are converted into the CR LF pair.  You cannot send a
+    # binary message with this method. +msgstr+ should include both 
+    # the message headers and body.
+    #
+    # +from_addr+ is a String representing the source mail address.
+    # +to_addr+ is a String or Strings or Array of Strings, representing
+    # the destination mail address or addresses.
+    #
+    #     # example
+    #     Net::SMTP.start('smtp.example.com') {|smtp|
+    #       smtp.send_message msgstr,
+    #                         'from@example.com',
+    #                         ['dest@example.com', 'dest2@example.com']
+    #     }
+    #
+    # This method may raise:
+    #
+    # * Net::SMTPServerBusy
+    # * Net::SMTPSyntaxError
+    # * Net::SMTPFatalError
+    # * Net::SMTPUnknownError
+    # * IOError
+    # * TimeoutError
     def send_message( msgstr, from_addr, *to_addrs )
       send0(from_addr, to_addrs.flatten) {
         @socket.write_message msgstr
@@ -477,7 +416,43 @@ module Net
     alias send_mail send_message
     alias sendmail send_message   # obsolete
 
-    def open_message_stream( from_addr, *to_addrs, &block )
+    # Opens a message writer stream and gives it to the block.
+    # The stream is valid only in the block, and has these methods:
+    #
+    # puts(str = '')::       outputs STR and CR LF.
+    # print(str)::       outputs STR.
+    # printf(fmt, *args)::       outputs sprintf(fmt,*args).
+    # write(str)::       outputs STR and returns the length of written bytes.
+    # <<(str)::       outputs STR and returns self.
+    #
+    # If a single CR ("\r") or LF ("\n") is found in the message,
+    # it is converted to the CR LF pair.  You cannot send a binary
+    # message with this method.
+    #
+    # +from_addr+ is a String representing the source mail address.
+    # +to_addr+ is a String or Strings or Array of Strings, representing
+    # the destination mail address or addresses.
+    #
+    #     # example
+    #     Net::SMTP.start('smtp.example.com', 25) {|smtp|
+    #       smtp.open_message_stream('from@example.com', ['dest@example.com']) {|f|
+    #         f.puts 'From: from@example.com'
+    #         f.puts 'To: dest@example.com'
+    #         f.puts 'Subject: test message'
+    #         f.puts
+    #         f.puts 'This is a test message.'
+    #       }
+    #     }
+    #
+    # This method may raise:
+    #
+    # * Net::SMTPServerBusy
+    # * Net::SMTPSyntaxError
+    # * Net::SMTPFatalError
+    # * Net::SMTPUnknownError
+    # * IOError
+    # * TimeoutError
+    def open_message_stream( from_addr, *to_addrs, &block ) # :yield: stream
       send0(from_addr, to_addrs.flatten) {
         @socket.write_message_by_block(&block)
       }
@@ -651,3 +626,4 @@ module Net
   SMTPSession = SMTP
 
 end   # module Net
+
