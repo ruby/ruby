@@ -1,3 +1,11 @@
+Thu Aug 19 16:29:45 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: Fail to treat a hash value of 'font' option. 
+
+	* ext/tk/lib/tk.rb: bindinfo cannot return '%' substiturion infomation.
+
+	* ext/tk/lib/menu.rb: typo bug.
+
 Thu Aug 19 15:15:24 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* dir.c (free_dir): fix memory leak.  reported by yamamoto
