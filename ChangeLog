@@ -1,3 +1,8 @@
+Tue Jul 24 19:28:23 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/extmk.rb.in, lib/mkmf.rb: dig the target subdirectory for
+	  lib/* files properly in case of create_makefile("dir/name").
+
 Mon Jul 23 00:26:04 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_provide_feature): should not tweak extension used for
