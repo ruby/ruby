@@ -1,3 +1,10 @@
+Sun Sep  8 14:36:40 2002  KONISHI Hiromasa <konishih@fd6.so-net.ne.jp>
+
+	* bcc32/configure.bat : Control of a message.
+	* bcc32/makefile.sub  : @(sitearch) typo.
+	* ext/extmk.rb.in     : [bccwin32] libdir is added to a library path.
+	* lib/mkmf.rb         : ditto.
+
 Sat Sep  7 23:32:56 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* misc/inf-ruby.el (inferior-ruby-error-regexp-alist): regexp

@@ -117,7 +117,7 @@ CFLAGS   = %s #{CFLAGS} #$CFLAGS
 CPPFLAGS = -I$(topdir) -I$(hdrdir) %s #$CPPFLAGS
 #{
 if /bccwin32/ =~ RUBY_PLATFORM
-  "DLDFLAGS = #$LDFLAGS -L" + '"$(topdir:/=\\)"' + "\n" +
+  "DLDFLAGS = #$LDFLAGS -L" + '"$(libdir:/=\\);$(topdir:/=\\)"' + "\n" +
   "LDSHARED = #{CONFIG['LDSHARED']}\n"
 else
   "DLDFLAGS = #$DLDFLAGS #$LDFLAGS\n" +
