@@ -1,3 +1,8 @@
+Wed Dec 11 20:48:03 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/getoptlong.rb (GetoptLong::Error): provide a common ancestor
+	  for GetoptLong error classes (RCR#129).
+
 Mon Dec  9 15:13:14 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* stable version 1.6.8 release candidate.
