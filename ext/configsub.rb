@@ -10,9 +10,9 @@ BEGIN {
     CONFIG['TEENY'] = $3
   end
 
-  File.foreach($config || "config.status") do |$_|
-    next if /^#/
-    if /^s%@(\w+)@%(.*)%g/
+  File.foreach($config || "config.status") do |line|
+    next if /^#/ =~ line
+    if /^s%@(\w+)@%(.*)%g/ =~ line
       name = $1
       val = $2 || ""
       next if /^(INSTALL|DEFS|configure_input|srcdir)$/ =~ name

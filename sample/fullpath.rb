@@ -8,16 +8,16 @@ end
 
 if path == nil
   path = ""
-elsif path !~ /\/$/
+elsif path !~ %r|/$|
   path += "/"
 end
 
-while gets()
-  if /:$/
+while line = gets()
+  case line
+  when /:$/
     path = $_.chop.chop + "/"
-  elsif /^total/ || /^d/
-  elsif /^(.*\d )(.+)$/
+  when /^total/, /^d/
+  when /^(.*\d )(.+)$/
     print($1, path, $2, "\n")
   end
 end
-    

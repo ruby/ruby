@@ -116,21 +116,21 @@ tmp.close
 tmp = open("while_tmp", "r")
 test_ok(tmp.kind_of?(File))
 
-while tmp.gets()
-  break if /vt100/
+while line = tmp.gets()
+  break if /vt100/ =~ line
 end
 
-test_ok(!tmp.eof? && /vt100/)
+test_ok(!tmp.eof? && /vt100/ =~ line)
 tmp.close
 
 # test next
 $bad = false
 tmp = open("while_tmp", "r")
-while tmp.gets()
-  next if /vt100/;
-  $bad = 1 if /vt100/;
+while line = tmp.gets()
+  next if /vt100/ =~ line
+  $bad = 1 if /vt100/ =~ line
 end
-test_ok(!(!tmp.eof? || /vt100/ || $bad))
+test_ok(!(!tmp.eof? || /vt100/ =~ line || $bad))
 tmp.close
 
 # test redo
@@ -138,13 +138,13 @@ $bad = false
 tmp = open("while_tmp", "r")
 while tmp.gets()
   line = $_
-  $_ = gsub(/vt100/, 'VT100')
+  gsub(/vt100/, 'VT100')
   if $_ != line
-    gsub!('VT100', 'Vt100')
-    redo;
+    $_.gsub!('VT100', 'Vt100')
+    redo
   end
-  $bad = 1 if /vt100/
-  $bad = 1 if /VT100/
+  $bad = 1 if /vt100/ =~ $_
+  $bad = 1 if /VT100/ =~ $_
 end
 test_ok(tmp.eof? && !$bad)
 tmp.close
@@ -162,11 +162,11 @@ test_ok(sum == 220)
 # test interval
 $bad = false
 tmp = open("while_tmp", "r")
-while tmp.gets()
-  break unless 1..2
-  if /vt100/ || /Amiga/ || /paper/
+while line = tmp.gets()
+  break if 3
+  case line
+  when /vt100/, /Amiga/, /paper/
     $bad = true
-    break
   end
 end
 test_ok(!$bad)

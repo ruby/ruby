@@ -38,11 +38,11 @@ class Mail
   def initialize(f)
     @header = {}
     @body = []
-    while f.gets()
-      $_.chop!
-      next if /^From /	# skip From-line  
-      break if /^$/		# end of header
-      if /^(\S+):\s*(.*)/
+    while line = f.gets()
+      line.chop!
+      next if /^From / =~ line	# skip From-line  
+      break if /^$/ =~ line	# end of header
+      if /^(\S+):\s*(.*)/ =~ line
 	@header[attr = $1.capitalize] = $2
       elsif attr
 	sub(/^\s*/, '')
@@ -50,10 +50,10 @@ class Mail
       end
     end
 
-    return if ! $_
+    return unless $_
 
-    while f.gets()
-      break if /^From /
+    while line = f.gets()
+      break if /^From / =~ line
       @body.push($_)
     end
   end

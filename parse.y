@@ -4387,8 +4387,6 @@ void_stmts(node)
     }
 }
 
-static NODE *cond2();
-
 static int
 assign_in_cond(node)
     NODE *node;
@@ -4435,65 +4433,79 @@ assign_in_cond(node)
     return 1;
 }
 
+static void
+warn_unless_e_option(str)
+    const char *str;
+{
+    if (strcmp(ruby_sourcefile, "-e") != 0)
+	rb_warning(str);
+}
+
 static NODE*
-cond0(node, log)
+cond0(node, logop)
     NODE *node;
-    int log;
+    int logop;
 {
     enum node_type type = nd_type(node);
 
     assign_in_cond(node);
     switch (type) {
       case NODE_DSTR:
-	if (log) break;
+	if (logop) break;
 	nd_set_type(node, NODE_DREGX);
 	/* fall through */
       case NODE_DREGX:
       case NODE_DREGX_ONCE:
 	local_cnt('_');
 	local_cnt('~');
-	rb_warn("string/regex literal in condition");
+	warn_unless_e_option("string/regex literal in condition");
 	return NEW_MATCH2(node, NEW_GVAR(rb_intern("$_")));
 
       case NODE_DOT2:
       case NODE_DOT3:
-	node->nd_beg = cond0(node->nd_beg, log);
-	node->nd_end = cond0(node->nd_end, log);
+	node->nd_beg = cond0(node->nd_beg, logop);
+	node->nd_end = cond0(node->nd_end, logop);
 	if (type == NODE_DOT2) nd_set_type(node,NODE_FLIP2);
 	else if (type == NODE_DOT3) nd_set_type(node, NODE_FLIP3);
 	node->nd_cnt = local_append(0);
-	rb_warn("range literal in condition");
-	return node;
+	warn_unless_e_option("range literal in condition");
+	break;
 
       case NODE_STR:
-	if (log) break;
+	if (logop) break;
 	node->nd_lit = rb_reg_new(RSTRING(node->nd_lit)->ptr,RSTRING(node->nd_lit)->len,0);
 	goto regexp;
 
       case NODE_LIT:
-	if (TYPE(node->nd_lit) == T_REGEXP) {
+	switch (TYPE(node->nd_lit)) {
+	  case T_REGEXP:
 	  regexp:
 	    nd_set_type(node, NODE_MATCH);
 	    local_cnt('_');
 	    local_cnt('~');
-	    rb_warn("string/regex literal in condition");
-	    return node;
+	    warn_unless_e_option("string/regex literal in condition");
+	    break;
+
+	  case T_FIXNUM:
+	    if (logop) break;
+	    warn_unless_e_option("integer literal in condition");
+	    return call_op(node,tEQ,1,NEW_GVAR(rb_intern("$.")));
 	}
     }
     return node;
 }
 
 static NODE*
-cond1(node, log)
+cond1(node, logop)
     NODE *node;
-    int log;
+    int logop;
 {
     if (node == 0) return 0;
     if (nd_type(node) == NODE_NEWLINE){
-	node->nd_next = cond0(node->nd_next, log);
+	node->nd_next = cond0(node->nd_next, logop);
 	return node;
     }
-    return cond0(node, log);
+    return cond0(node, logop);
 }
 
 static NODE*

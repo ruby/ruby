@@ -8,8 +8,8 @@ end
 $sawbegin = 0
 $sawend = 0
 
-while gets()
-  if /^begin\s*(\d*)\s*(\S*)/
+while line = gets()
+  if /^begin\s*(\d*)\s*(\S*)/ =~ line
     $mode, $file = $1, $2
     $sawbegin+=1
     if out_stdout
@@ -25,15 +25,15 @@ end
 raise "missing begin" unless $sawbegin
 
 out.binmode
-while gets()
-  if /^end/
+while line = gets()
+  if /^end/ =~ line
     $sawend+=1
     out.close unless out_stdout
     File.chmod $mode.oct, $file unless out_stdout
     next
   end
-  sub(/[a-z]+$/, "")		# handle stupid trailing lowercase letters
-  next if /[a-z]/
+  line.sub!(/[a-z]+$/, "")	# handle stupid trailing lowercase letters
+  next if /[a-z]/ =~ line
   next if !(((($_[0] - 32) & 077) + 2) / 3 == $_.length / 4)
   out << $_.unpack("u") if $sawbegin > $sawend
 end

@@ -654,15 +654,15 @@ $static_ext = {}
 for setup in ["@setup@", "#{$top_srcdir}/ext/@setup@"]
   if File.file? setup
     f = open(setup) 
-    while f.gets()
-      $_.chomp!
-      sub!(/#.*$/, '')
-      next if /^\s*$/
-      if /^option +nodynamic/
+    while line = f.gets()
+      line.chomp!
+      line.sub!(/#.*$/, '')
+      next if /^\s*$/ =~ line
+      if /^option +nodynamic/ =~ line
 	$nodynamic = true
 	next
       end
-      target = $_.split[0]
+      target = line.split[0]
       target = target.downcase if /mswin32/ =~ RUBY_PLATFORM
       $static_ext[target] = true
     end

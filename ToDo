@@ -29,6 +29,8 @@ Language Spec.
 * Regexp: make /o thread safe.
 * decide if begin with rescue or ensure make do..while loop.
 * a +1 to be a+1, not a(+1).
+* unify == and eql? again
+* to_i returns nil if str contains no digit.
 
 Hacking Interpreter
 
