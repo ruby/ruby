@@ -409,6 +409,22 @@ public
     file.close
   end
 
+  def test_IOReader_s_create_binmode
+    file = File.open(@outfile, "wb")
+    file << "\"\r\n\",\"\r\",\"\n\"\r1,2,3"
+    file.close
+
+    file = File.open(@outfile, "r")	# not "rb"
+    begin
+      reader = CSV::IOReader.new(file, ?,, ?\r)
+      assert_equal(["\r\n", "\r", "\n"], reader.shift.to_a)
+      assert_equal(["1", "2", "3"], reader.shift.to_a)
+      reader.close
+    ensure
+      file.close
+    end
+  end
+
   def test_Reader_s_parse
     ret = CSV::Reader.parse("a,b,c") { |row|
       assert_instance_of(CSV::Row, row, "Block parameter")
@@ -486,7 +502,9 @@ public
 
       writer << [nil, 'e', 'f'] << [nil, nil, '']
     end
-    str = file.open.read
+    file.open
+    file.binmode
+    str = file.read
     assert_equal("a,b,c\r\n,e,f\r\n,,\"\"\r\n", str, 'Normal')
 
     file = Tempfile.new("out2.csv")
@@ -496,7 +514,9 @@ public
 
       writer << [d(nil, true), d('e'), d('f')] << [d(nil, true), d(nil, true), d('')]
     end
-    str = file.open.read
+    file.open
+    file.binmode
+    str = file.read
     assert_equal("a,b,c\r\n,e,f\r\n,,\"\"\r\n", str, 'Normal')
   end
 
@@ -513,7 +533,9 @@ public
 	[d('a', true), d('b', true), d('', false)]
      )
     end
-    str = file.open.read
+    file.open
+    file.binmode
+    str = file.read
     assert_equal("a,b,c\r\n,e,f\r\n,,\"\"\r\n", str, 'Normal')
   end
 
@@ -533,12 +555,28 @@ public
     f.close
 
     f = File.open(@outfile, "w")
-    writer = CSV::BasicWriter.create(f)
+    writer = CSV::BasicWriter.new(f)
     writer.close_on_terminate
     writer.close
     assert(f.closed?)
   end
 
+  def test_BasicWriter_s_create_binmode
+    file = File.open(@outfile, "w")	# not "wb"
+    begin
+      writer = CSV::BasicWriter.new(file, ?,, ?\r)
+      writer << ["\r\n", "\r", "\n"]
+      writer << ["1", "2", "3"]
+      writer.close
+    ensure
+      file.close
+    end
+
+    file = File.open(@outfile, "rb")
+    str = file.read
+    file.close
+    assert_equal("\"\r\n\",\"\r\",\"\n\"\r1,2,3\r", str)
+  end
 
   #### CSV unit test
 
@@ -582,7 +620,7 @@ public
     end
 
     # Illegal format.
-    File.open(@outfile, "w") do |f|
+    File.open(@outfile, "wb") do |f|
       f << "a,b\r\na,b,\"c\"\ra"
     end
     assert_raises(CSV::IllegalFormatError) do
@@ -590,7 +628,7 @@ public
       end
     end
 
-    File.open(@outfile, "w") do |f|
+    File.open(@outfile, "wb") do |f|
       f << "a,b\r\na,b\""
     end
     assert_raises(CSV::IllegalFormatError) do
@@ -1192,7 +1230,7 @@ public
 
     rows = []
     file = File.open(@bomfile)
-    CSV::Reader.parse(file.read) do |row|
+    CSV::Reader.parse(file) do |row|
       rows << row.to_a
     end
     assert_equal([["foo"], ["bar"]], rows)
@@ -1215,7 +1253,7 @@ public
 
     rows = []
     file = File.open(@macfile)
-    CSV::Reader.parse(file.read, ?,, ?\r) do |row|
+    CSV::Reader.parse(file, ?,, ?\r) do |row|
       rows << row.to_a
     end
     assert_equal([["Avenches", "aus Umgebung"], ["Bad Hersfeld", "Ausgrabung"]], rows)
@@ -1224,7 +1262,7 @@ public
     rows = []
     file = File.open(@macfile)
     assert_raises(CSV::IllegalFormatError) do
-      CSV::Reader.parse(file.read, ?,) do |row|
+      CSV::Reader.parse(file, ?,) do |row|
 	rows << row.to_a
       end
     end

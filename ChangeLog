@@ -1,3 +1,11 @@
+Mon Oct  6 22:59:46 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/csv.rb (IOReader, BasicWriter): call binmode when a given IO
+	  respond_to?(:binmode).  record separator was wrong when you gave
+	  text mode IO to Reader.parse and Writer.generate.
+
+	* test/csv/test_csv.rb: add tests for above change.
+
 Sun Oct  5 23:27:09 2003  Tanaka Akira  <akr@m17n.org>
 
 	* ext/socket/extconf.rb: check recvmsg even if sendmsg is exists.
@@ -60,13 +68,13 @@ Sun Oct  5 14:37:39 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/soap/marshal/test_marshal.rb: ditto.
 
-	* test/soap/calc/test_calc_cgi.rb: add Config::CONFIG["EXEECT"] to
+	* test/soap/calc/test_calc_cgi.rb: add Config::CONFIG["EXEEXT"] to
 	  RUBYBIN.
 
 Sun Oct  5 13:47:22 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/ruby/test_beginendblock.rb, test/ruby/beginmainend.rb: add tests
-	  about scope, order and allowd syntax.
+	  about scope, order and allowed syntax.
 
 Sun Oct  5 11:54:29 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 

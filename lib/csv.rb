@@ -463,6 +463,7 @@ public
     #   
     def initialize(io, col_sep = ?,, row_sep = nil)
       @io = io
+      @io.binmode if @io.respond_to?(:binmode)
       @col_sep = col_sep
       @row_sep = row_sep
       @dev = CSV::IOBuf.new(@io)
@@ -551,8 +552,8 @@ public
     #   Create instance.  To add CSV data to generate CSV string, see
     #   CSV::Writer#<< or CSV::Writer#add_row.
     #   
-    def Writer.create(str_or_readable, col_sep = ?,, row_sep = nil)
-      BasicWriter.new(str_or_readable, col_sep, row_sep)
+    def Writer.create(str_or_writable, col_sep = ?,, row_sep = nil)
+      BasicWriter.new(str_or_writable, col_sep, row_sep)
     end
 
     # SYNOPSIS
@@ -675,6 +676,7 @@ public
       @col_sep = col_sep
       @row_sep = row_sep
       @dev = str_or_writable
+      @dev.binmode if @dev.respond_to?(:binmode)
       @close_on_terminate = false
     end
 
@@ -1036,7 +1038,7 @@ private
       when :DT_COLSEP
         out_dev << col_sep.chr
       when :DT_ROWSEP
-        out_dev << (row_sep || "\r\n")
+        out_dev << (row_sep ? row_sep.chr : "\r\n")
       end
     end
   end
