@@ -2116,7 +2116,7 @@ str_gsub(argc, argv, str, bang)
 	if (str_independent(str)) {
 	    free(RSTRING(str)->ptr);
 	}
-	FL_UNSET(str, ELTS_SHARED|STR_ASSOC);
+	FL_UNSET(str, STR_NOCAPA);
 	RSTRING(str)->ptr = buf;
 	RSTRING(str)->aux.capa = blen;
 	RSTRING(dest)->ptr = 0;
