@@ -1,3 +1,9 @@
+Mon Dec 20 00:28:20 2004  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/encodings/SHIFT-JIS.rb: backported from CVS HEAD.
+
+	* lib/rexml/encodings/SHIFT_JIS.rb: ditto.
+
 Sun Dec 19 17:19:48 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_x509store.c
