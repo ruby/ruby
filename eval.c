@@ -1982,7 +1982,7 @@ rb_eval(self, n)
 
 	/* nodes for speed-up(default match) */
       case NODE_MATCH:
-	result = rb_reg_match2(node->nd_head->nd_lit);
+	result = rb_reg_match2(node->nd_lit);
 	break;
 
 	/* nodes for speed-up(literal match) */
@@ -3558,17 +3558,18 @@ rb_yield_0(val, self, klass, acheck)
   pop_state:
     POP_ITER();
     POP_CLASS();
-    if ((block->flags & BLOCK_D_SCOPE) &&
+    if (ruby_dyna_vars && (block->flags & BLOCK_D_SCOPE) &&
 	!FL_TEST(ruby_dyna_vars, DVAR_DONT_RECYCLE)) {
-	struct RVarmap *vars = ruby_dyna_vars;
+	struct RVarmap *vars, *tmp;
 
-	while (vars && vars->id != 0) {
-	    struct RVarmap *tmp = vars->next;
-	    rb_gc_force_recycle((VALUE)vars);
-	    vars = tmp;
-	}
-	if (ruby_dyna_vars && ruby_dyna_vars->id == 0) {
+	if (ruby_dyna_vars->id == 0) {
+	    vars = ruby_dyna_vars->next;
 	    rb_gc_force_recycle((VALUE)ruby_dyna_vars);
+	    while (vars && vars->id != 0) {
+		tmp = vars->next;
+		rb_gc_force_recycle((VALUE)vars);
+		vars = tmp;
+	    }
 	}
     }
     POP_VARS();

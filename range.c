@@ -341,6 +341,9 @@ range_length(range)
     if (!EXCL(range)) {
 	size = rb_funcall(size, '+', 1, INT2FIX(1));
     }
+    if (TYPE(size) == T_FLOAT) {
+	size = rb_funcall(size, rb_intern("floor"), 0);
+    }
 
     return size;
 }
