@@ -1,3 +1,8 @@
+Wed Jan 26 10:51:50 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (flock_winnt, flock_win95): unlock file even if
+	  LOCK_NB is specified. (backported from CVS HEAD)
+
 Tue Jan 25 17:11:51 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ruby.c (proc_options): correct -T option in RUBYOPT. (backported
