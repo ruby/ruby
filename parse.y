@@ -5024,7 +5024,7 @@ local_id(id)
 static void
 top_local_init()
 {
-    local_push();
+    local_push(1);
     lvtbl->cnt = ruby_scope->local_tbl?ruby_scope->local_tbl[0]:0;
     if (lvtbl->cnt > 0) {
 	lvtbl->tbl = ALLOC_N(ID, lvtbl->cnt+3);
