@@ -4928,6 +4928,7 @@ exec_under(func, under, args)
     if (ruby_cbase != under) {
 	ruby_frame->cbase = (VALUE)rb_node_newnode(NODE_CREF,under,0,ruby_frame->cbase);
     }
+    PUSH_CREF(under);
 
     mode = scope_vmode;
     SCOPE_SET(SCOPE_PUBLIC);
@@ -4936,6 +4937,7 @@ exec_under(func, under, args)
 	val = (*func)(args);
     }
     POP_TAG();
+    POP_CREF();
     SCOPE_SET(mode);
     POP_FRAME();
     POP_CLASS();

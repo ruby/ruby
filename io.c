@@ -3324,11 +3324,12 @@ static void
 opt_i_set(val)
     VALUE val;
 {
+    if (ruby_inplace_mode) free(ruby_inplace_mode);
     if (!RTEST(val)) {
 	ruby_inplace_mode = 0;
 	return;
     }
-    ruby_inplace_mode = STR2CSTR(val);
+    ruby_inplace_mode = strdup(STR2CSTR(val));
 }
 
 void

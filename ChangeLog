@@ -1,3 +1,11 @@
+Tue Apr 10 02:24:40 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* io.c (opt_i_set): should strdup() inplace_edit string.
+
+Mon Apr  9 23:29:54 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (exec_under): need to push cref too.
+
 Mon Apr  9 12:05:44 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* file.c (Init_File): should redifine "new" class method.

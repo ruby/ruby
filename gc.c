@@ -1337,37 +1337,3 @@ Init_GC()
     rb_gc_unregister_address(&rb_mObSpace);
     finalizers = rb_ary_new();
 }
-
-#undef xmalloc
-#undef xcalloc
-#undef xrealloc
-#undef xfree
-
-void*
-xmalloc(size)
-    long size;
-{
-    return ruby_xmalloc(size);
-}
-
-void*
-xcalloc(n,size)
-    long n,size;
-{
-    return ruby_xcalloc(n, size);
-}
-
-void*
-xrealloc(ptr,size)
-    void *ptr;
-    long size;
-{
-    return ruby_xrealloc(ptr, size);
-}
-
-void
-xfree(ptr)
-    void *ptr;
-{
-    ruby_xfree(ptr);
-}
