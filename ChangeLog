@@ -1,3 +1,10 @@
+Sat Jan 13 19:18:18 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* re.c (rb_reg_desc): separate RE_OPTION_MULTILINE
+
+	* re.c (rb_reg_options): add RE_OPTION_{POSIXLINE,RE_OPTION_MULTILINE,
+	  RE_OPTION_EXTENDED}
+
 Wed Jan 10 01:50:45 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_reverse_bang): forgot to call rb_str_modify().
