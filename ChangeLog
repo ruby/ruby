@@ -1,3 +1,11 @@
+Mon Apr  8 04:50:51 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* eval.c (error_handle): default to 1 unless status is set.
+
+	* eval.c (ruby_options): guard error_handle() with PROT_NONE.
+
+	* eval.c (ruby_stop): ditto.
+
 Fri Apr  5 05:07:28 2002  Takaaki Tateishi <ttate@kt.jaist.ac.jp>
 
 	* ext/dl: Add dl/struct.rb.

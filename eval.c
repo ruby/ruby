@@ -1129,7 +1129,7 @@ error_handle(ex)
       case TAG_FATAL:
 	if (rb_obj_is_kind_of(ruby_errinfo, rb_eSystemExit)) {
 	    VALUE st = rb_iv_get(ruby_errinfo, "status");
-	    ex = NUM2INT(st);
+	    ex = NIL_P(st) ? 1 : NUM2INT(st);
 	}
 	else {
 	    error_print();
@@ -1154,12 +1154,12 @@ ruby_options(argc, argv)
     if ((state = EXEC_TAG()) == 0) {
 	ruby_process_options(argc, argv);
     }
-    POP_TAG();
     if (state) {
 	trace_func = 0;
 	tracing = 0;
 	exit(error_handle(state));
     }
+    POP_TAG();
 }
 
 void rb_exec_end_proc _((void));
@@ -1194,11 +1194,11 @@ ruby_stop(ex)
 	ex = state;
     }   
     POP_ITER();
-    POP_TAG();
 
     trace_func = 0;
     tracing = 0;
     ex = error_handle(ex);
+    POP_TAG();
     ruby_finalize();
     exit(ex);
 }
