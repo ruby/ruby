@@ -542,9 +542,6 @@ BigDecimal_sub(VALUE self, VALUE r)
 
 static VALUE
 BigDecimalCmp(VALUE self, VALUE r,char op)
-/*
- *  op: '=' 
- */
 {
     ENTER(5);
     S_INT e;
