@@ -164,11 +164,11 @@ module Test
 
         def test_dir
           inner_dir = nil
-          dir = FileSystem::Directory.new('/', nil) do
+          dirs = FileSystem::Directory.new('/', nil) do
             file 'a', nil
             inner_dir = dir 'b'
           end
-          assert_equal(inner_dir, dir['b'])
+          assert_equal(inner_dir, dirs['b'])
         end
 
         def test_fs
@@ -365,7 +365,7 @@ module Test
         def test_nil_pattern
           expected = TestSuite.new('d2')
           expected << @t5.suite
-          @c.pattern = nil
+          @c.pattern.clear
           assert_equal(expected, @c.collect('d2'))
         end
 
@@ -380,7 +380,7 @@ module Test
           expected = TestSuite.new('[d1, d2]')
           expected << (TestSuite.new('d1') << @t3.suite)
           expected << (TestSuite.new('d2') << @t5.suite)
-          @c.pattern = /^test_/
+          @c.pattern.replace([/\btest_/])
           assert_equal(expected, @c.collect('d1', 'd2'))
         end
       end
