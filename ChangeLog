@@ -1,3 +1,13 @@
+Tue Jan  4 23:25:29 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_big_rand): should return positive random number.
+	  [ruby-dev:25401]
+
+Tue Jan  4 11:15:29 2005  TAMURA Takashi  <sheepman@tcn.zaq.ne.jp>
+
+	* bignum.c (rb_big_rand): do not use rb_big_modulo to generate
+	  random bignums.  [ruby-dev:25396]
+
 Mon Jan  3 14:01:54 2005  Tanaka Akira  <akr@m17n.org>
 
 	* random.c (random_seed): don't use /dev/urandom if it is not
