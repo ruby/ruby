@@ -1,3 +1,8 @@
+Fri Jul 16 11:17:09 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* sprintf.c (rb_f_sprintf): fix output of NaN, Inf and -Inf with
+	  "%f" or etc on MSVCRT platforms. (backported from HEAD)
+
 Fri Jul 16 11:17:38 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (exit_initialize): use EXIT_SUCCESS instead of 0.

@@ -690,6 +690,63 @@ rb_f_sprintf(argc, argv)
 		char fbuf[32];
 
 		fval = RFLOAT(rb_Float(val))->value;
+#if defined(_WIN32) && !defined(__BORLANDC__)
+		if (isnan(fval) || isinf(fval)) {
+		    char *expr;
+
+		    if  (isnan(fval)) {
+			expr = "NaN";
+		    }
+		    else {
+			expr = "Inf";
+		    }
+		    need = strlen(expr);
+		    if ((!isnan(fval) && fval < 0.0) || (flags & FPLUS))
+			need++;
+		    if ((flags & FWIDTH) && need < width)
+			need = width;
+
+		    CHECK(need);
+		    sprintf(&buf[blen], "%*s", need, "");
+		    if (flags & FMINUS) {
+			if (!isnan(fval) && fval < 0.0)
+			    buf[blen++] = '-';
+			else if (flags & FPLUS)
+			    buf[blen++] = '+';
+			else if (flags & FSPACE)
+			    blen++;
+			strncpy(&buf[blen], expr, strlen(expr));
+		    }
+		    else if (flags & FZERO) {
+			if (!isnan(fval) && fval < 0.0) {
+			    buf[blen++] = '-';
+			    need--;
+			}
+			else if (flags & FPLUS) {
+			    buf[blen++] = '+';
+			    need--;
+			}
+			else if (flags & FSPACE) {
+			    blen++;
+			    need--;
+			}
+			while (need-- - strlen(expr) > 0) {
+			    buf[blen++] = '0';
+			}
+			strncpy(&buf[blen], expr, strlen(expr));
+		    }
+		    else {
+			if (!isnan(fval) && fval < 0.0)
+			    buf[blen + need - strlen(expr) - 1] = '-';
+			else if (flags & FPLUS)
+			    buf[blen + need - strlen(expr) - 1] = '+';
+			strncpy(&buf[blen + need - strlen(expr)], expr,
+				strlen(expr));
+		    }
+		    blen += strlen(&buf[blen]);
+		    break;
+		}
+#endif	/* defined(_WIN32) && !defined(__BORLANDC__) */
 		fmt_setup(fbuf, *p, flags, width, prec);
 		need = 0;
 		if (*p != 'e' && *p != 'E') {
