@@ -1,3 +1,9 @@
+Tue May 14 14:49:05 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* gc.c (is_pointer_to_heap): avoid GCC 3.1 warnings.
+
+	* missing/strftime.c (timezone): it should take no argument on Cygwin.
+
 Mon May 13 14:38:33 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* djgpp/config.hin, djgpp/config.sed: catch up with the latest change.
