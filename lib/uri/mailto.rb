@@ -50,6 +50,10 @@ module URI
         \\?
         (#{HEADER_PATTERN}(?:\\&#{HEADER_PATTERN})*)  (?# 2: headers)
       )?
+      (?:
+        \\#
+        (#{PATTERN::FRAGMENT})                        (?# 3: fragment)
+      )?
       \\z
     ", Regexp::EXTENDED, 'N').freeze
     # :startdoc:
