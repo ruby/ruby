@@ -2524,14 +2524,16 @@ wait()
 char *
 win32_getenv(const char *name)
 {
-    char *curitem = NULL;	/* XXX threadead */
-    DWORD curlen = 0;		/* XXX threadead */
+    static char *curitem = NULL;
+    static DWORD curlen = 0;
     DWORD needlen;
 
-    curlen = 512;
-    curitem = ALLOC_N(char, curlen);
+    if (curitem == NULL || curlen == 0) {
+	curlen = 512;
+	curitem = ALLOC_N(char, curlen);
+    }
 
-    needlen = GetEnvironmentVariable(name,curitem,curlen);
+    needlen = GetEnvironmentVariable(name, curitem, curlen);
     if (needlen != 0) {
 	while (needlen > curlen) {
 	    REALLOC_N(curitem, char, needlen);
@@ -2960,4 +2962,36 @@ VALUE win32_asynchronize(asynchronous_func_t func,
     }
 
     return val;
+}
+
+char **win32_get_environ(void)
+{
+    char *envtop, *env;
+    char **myenvtop, **myenv;
+    int num;
+
+    envtop = GetEnvironmentStrings();
+    for (env = envtop, num = 0; *env; env += strlen(env) + 1)
+	if (*env != '=') num++;
+
+    myenvtop = ALLOC_N(char*, num + 1);
+    for (env = envtop, myenv = myenvtop; *env; env += strlen(env) + 1) {
+	if (*env != '=') {
+	    *myenv = ALLOC_N(char, strlen(env) + 1);
+	    strcpy(*myenv, env);
+	    myenv++;
+	}
+    }
+    *myenv = NULL;
+    FreeEnvironmentStrings(envtop);
+
+    return myenvtop;
+}
+
+void win32_free_environ(char **env)
+{
+    char **t = env;
+
+    while (*t) free(*t++);
+    free(env);
 }

@@ -38,7 +38,7 @@ AUTOCONF = autoconf
 
 prefix = /usr
 CFLAGS = -nologo -DNT=1 -Zi -MD -O2b2xg- -G5
-CPPFLAGS = -I$(srcdir) -I$(srcdir)/missing
+CPPFLAGS = -I. -I$(srcdir) -I$(srcdir)/missing -DLIBRUBY_SO=\"$(LIBRUBY_SO)\"
 LDFLAGS = $(CFLAGS) -Fm
 XLDFLAGS = 
 #EXTLIBS = 

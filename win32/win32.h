@@ -214,6 +214,8 @@ extern struct servent *  mygetservbyname(char *, char *);
 extern struct servent * mygetservbyport(int, char *);
 extern char *win32_getenv(const char *);
 extern int myrename(const char *, const char *);
+extern char **win32_get_environ(void);
+extern void win32_free_environ(char **);
 
 extern int chown(const char *, int, int);
 extern int link(char *, char *);
