@@ -672,6 +672,9 @@ rb_cv_missing_fconvert=yes, rb_cv_missing_fconvert=no, rb_cv_missing_fconvert=no
     LIBOBJS="$LIBOBJS os2.$OBJEXT"
     setup=Setup.emx
     ;;
+  *djgpp*)
+    setup=Setup.dj
+    ;;
   *)
     setup=Setup
     ;;

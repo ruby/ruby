@@ -1,3 +1,11 @@
+Sun May 21 21:17:00 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* configure.in: add Setup.dj for djgpp cross-compiling.
+
+	* Setup.dj: add readline.
+
+	* instruby.rb: copy win32/win32.h to archlibdir on mingw32.
+
 Sun May 21 17:31:37 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* instruby.rb: support "make install" for cross-compiling.

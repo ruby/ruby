@@ -9,6 +9,7 @@ fcntl
 nkf
 marshal
 md5
+readline
 sdbm
 #socket
 #tkutil
