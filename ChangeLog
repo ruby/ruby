@@ -1,3 +1,7 @@
+Wed Feb 18 22:53:41 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/unix.rb: remove O_NONBLOCk, thanks \ay
+
 Wed Feb 18 22:42:19 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* test/rinda/test_rinda.rb: improt test_rinda.rb
