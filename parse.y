@@ -3094,7 +3094,7 @@ yylex()
 	    return tLEQ;
 	}
 	if (c == '<') {
-	    if (nextc() == '=') {
+	    if ((c = nextc()) == '=') {
 		yylval.id = tLSHFT;
 		lex_state = EXPR_BEG;
 		return tOP_ASGN;
