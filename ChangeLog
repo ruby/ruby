@@ -1,3 +1,7 @@
+Wed Nov 12 10:14:28 2003  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/monitor.rb: refactored. Thanks, Gennady Bystritsky.
+
 Wed Nov 12 06:11:39 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl.c (ossl_x509_sk2ary, ossl_x509crl_sk2ary): 

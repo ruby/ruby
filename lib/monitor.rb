@@ -77,22 +77,6 @@ empty_cond.signal.
 # empty_cond.signal.
 #
 module MonitorMixin
-  module Accessible
-  protected
-    attr_accessor :mon_owner, :mon_count
-    attr_reader :mon_entering_queue, :mon_waiting_queue
-  end
-  
-  module Initializable
-  protected
-    def mon_initialize
-      @mon_owner = nil
-      @mon_count = 0
-      @mon_entering_queue = []
-      @mon_waiting_queue = []
-    end
-  end
-  
   #
   # FIXME: This isn't documented in Nutshell.
   #
@@ -102,32 +86,12 @@ module MonitorMixin
   class ConditionVariable
     class Timeout < Exception; end
     
-    include Accessible
-    
     def wait(timeout = nil)
-      if @monitor.mon_owner != Thread.current
-	raise ThreadError, "current thread not owner"
-      end
+      @monitor.send(:mon_check_owner)
+      timer = create_timer(timeout)
       
-      if timeout
-	ct = Thread.current
-	timeout_thread = Thread.start {
-	  Thread.pass
-	  sleep(timeout)
-	  ct.raise(Timeout.new)
-	}
-      end
-
       Thread.critical = true
-      count = @monitor.mon_count
-      @monitor.mon_count = 0
-      @monitor.mon_owner = nil
-      if @monitor.mon_waiting_queue.empty?
-	t = @monitor.mon_entering_queue.shift
-      else
-	t = @monitor.mon_waiting_queue.shift
-      end
-      t.wakeup if t
+      count = @monitor.send(:mon_exit_for_cond)
       @waiters.push(Thread.current)
 
       begin
@@ -137,20 +101,13 @@ module MonitorMixin
         return false
       ensure
 	Thread.critical = true
-	if timeout && timeout_thread.alive?
-	  Thread.kill(timeout_thread)
+	if timer && timer.alive?
+	  Thread.kill(timer)
 	end
 	if @waiters.include?(Thread.current)  # interrupted?
 	  @waiters.delete(Thread.current)
 	end
-	while @monitor.mon_owner &&
-	    @monitor.mon_owner != Thread.current
-	  @monitor.mon_waiting_queue.push(Thread.current)
-	  Thread.stop
-	  Thread.critical = true
-	end
-	@monitor.mon_owner = Thread.current
-	@monitor.mon_count = count
+        @monitor.send(:mon_enter_for_cond, count)
 	Thread.critical = false
       end
     end
@@ -168,9 +125,7 @@ module MonitorMixin
     end
     
     def signal
-      if @monitor.mon_owner != Thread.current
-	raise ThreadError, "current thread not owner"
-      end
+      @monitor.send(:mon_check_owner)
       Thread.critical = true
       t = @waiters.shift
       t.wakeup if t
@@ -179,9 +134,7 @@ module MonitorMixin
     end
     
     def broadcast
-      if @monitor.mon_owner != Thread.current
-	raise ThreadError, "current thread not owner"
-      end
+      @monitor.send(:mon_check_owner)
       Thread.critical = true
       for t in @waiters
 	t.wakeup
@@ -195,51 +148,59 @@ module MonitorMixin
       return @waiters.length
     end
     
-  private
+    private
+
     def initialize(monitor)
       @monitor = monitor
       @waiters = []
     end
+
+    def create_timer(timeout)
+      if timeout
+	waiter = Thread.current
+	return Thread.start {
+	  Thread.pass
+	  sleep(timeout)
+	  Thread.critical = true
+	  waiter.raise(Timeout.new)
+	}
+      else
+        return nil
+      end
+    end
   end
-  
-  include Accessible
-  include Initializable
-  extend Initializable
   
   def self.extend_object(obj)
     super(obj)
-    obj.mon_initialize
+    obj.send(:mon_initialize)
   end
   
   #
   # Attempts to enter exclusive section.  Returns +false+ if lock fails.
   #
-  def try_mon_enter
+  def mon_try_enter
     result = false
     Thread.critical = true
-    if mon_owner.nil?
-      self.mon_owner = Thread.current
+    if @mon_owner.nil?
+      @mon_owner = Thread.current
     end
-    if mon_owner == Thread.current
-      self.mon_count += 1
+    if @mon_owner == Thread.current
+      @mon_count += 1
       result = true
     end
     Thread.critical = false
     return result
   end
+  # For backward compatibility
+  alias try_mon_enter mon_try_enter
 
   #
   # Enters exlusive section.
   #
   def mon_enter
     Thread.critical = true
-    while mon_owner != nil && mon_owner != Thread.current
-      mon_entering_queue.push(Thread.current)
-      Thread.stop
-      Thread.critical = true
-    end
-    self.mon_owner = Thread.current
-    self.mon_count += 1
+    mon_acquire(@mon_entering_queue)
+    @mon_count += 1
     Thread.critical = false
   end
   
@@ -247,20 +208,12 @@ module MonitorMixin
   # Leaves exclusive section.
   #
   def mon_exit
-    if mon_owner != Thread.current
-      raise ThreadError, "current thread not owner"
-    end
+    mon_check_owner
     Thread.critical = true
-    self.mon_count -= 1
-    if mon_count == 0
-      self.mon_owner = nil
-      if mon_waiting_queue.empty?
-	t = mon_entering_queue.shift
-      else
-	t = mon_waiting_queue.shift
-      end
+    @mon_count -= 1
+    if @mon_count == 0
+      mon_release
     end
-    t.wakeup if t
     Thread.critical = false
     Thread.pass
   end
@@ -286,11 +239,53 @@ module MonitorMixin
   def new_cond
     return ConditionVariable.new(self)
   end
-  
-private
+
+  private
+
   def initialize(*args)
     super
     mon_initialize
+  end
+
+  def mon_initialize
+    @mon_owner = nil
+    @mon_count = 0
+    @mon_entering_queue = []
+    @mon_waiting_queue = []
+  end
+
+  def mon_check_owner
+    if @mon_owner != Thread.current
+      raise ThreadError, "current thread not owner"
+    end
+  end
+
+  def mon_acquire(queue)
+    while @mon_owner && @mon_owner != Thread.current
+      queue.push(Thread.current)
+      Thread.stop
+      Thread.critical = true
+    end
+    @mon_owner = Thread.current
+  end
+
+  def mon_release
+    @mon_owner = nil
+    t = @mon_waiting_queue.shift
+    t = @mon_entering_queue.shift unless t
+    t.wakeup if t
+  end
+
+  def mon_enter_for_cond(count)
+    mon_acquire(@mon_waiting_queue)
+    @mon_count = count
+  end
+
+  def mon_exit_for_cond
+    count = @mon_count
+    @mon_count = 0
+    mon_release
+    return count
   end
 end
 
@@ -299,7 +294,6 @@ class Monitor
   alias try_enter try_mon_enter
   alias enter mon_enter
   alias exit mon_exit
-  alias owner mon_owner
 end
 
 
