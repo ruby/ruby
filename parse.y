@@ -4947,7 +4947,7 @@ arg_prepend(node1, node2)
 	return node2;
 
       default:
-	rb_bug("unknown nodetype(%d) for arg_prepend");
+	rb_bug("unknown nodetype(%d) for arg_prepend", nodetype(node2));
     }
     return 0;			/* not reached */
 }

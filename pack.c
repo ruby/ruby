@@ -338,7 +338,7 @@ pack_pack(ary, fmt)
     char *p, *pend;
     VALUE res, from, associates = 0;
     char type;
-    int items, len, idx;
+    long items, len, idx;
     char *ptr;
     int plen;
 #ifdef NATINT_PACK
@@ -825,7 +825,7 @@ pack_pack(ary, fmt)
 	    if (!NIL_P(from)) {
 		StringValue(from);
 		if (RSTRING(from)->len < len) {
-		    rb_raise(rb_eArgError, "too short buffer for P(%d for %d)",
+		    rb_raise(rb_eArgError, "too short buffer for P(%ld for %ld)",
 			     RSTRING(from)->len, len);
 		}
 	    }

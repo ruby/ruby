@@ -1198,10 +1198,10 @@ rb_str_update(str, beg, len, val)
     long len;
     VALUE val;
 {
-    if (len < 0) rb_raise(rb_eIndexError, "negative length %d", len);
+    if (len < 0) rb_raise(rb_eIndexError, "negative length %ld", len);
     if (RSTRING(str)->len < beg) {
       out_of_range:
-	rb_raise(rb_eIndexError, "index %d out of string", beg);
+	rb_raise(rb_eIndexError, "index %ld out of string", beg);
     }
     if (beg < 0) {
 	if (-beg > RSTRING(str)->len) {
@@ -1282,7 +1282,7 @@ rb_str_aset(str, indx, val)
 	idx = NUM2INT(indx);
 	if (RSTRING(str)->len <= idx) {
 	  out_of_range:
-	    rb_raise(rb_eIndexError, "index %d out of string", idx);
+	    rb_raise(rb_eIndexError, "index %ld out of string", idx);
 	}
 	if (idx < 0) {
 	    if (-idx > RSTRING(str)->len)

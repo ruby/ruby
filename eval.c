@@ -3778,13 +3778,13 @@ rb_yield_0(val, self, klass, pcall)
 	if ((state = EXEC_TAG()) == 0) {
 	    if (block->var == (NODE*)1) {
 		if (pcall && RARRAY(val)->len != 0) {
-		    rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)",
+		    rb_raise(rb_eArgError, "wrong number of arguments (%ld for 0)",
 			     RARRAY(val)->len);
 		}
 	    }
 	    else if (block->var == (NODE*)2) {
 		if (TYPE(val) == T_ARRAY && RARRAY(val)->len != 0) {
-		    rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)",
+		    rb_raise(rb_eArgError, "wrong number of arguments (%ld for 0)",
 			     RARRAY(val)->len);
 		}
 	    }
@@ -3906,7 +3906,7 @@ massign(self, node, val, pcall)
     int pcall;
 {
     NODE *list;
-    int i = 0, len;
+    long i = 0, len;
 
     if (!pcall) {
 	val = svalue_to_mvalue(val);
@@ -3945,7 +3945,7 @@ massign(self, node, val, pcall)
 	i++;
 	list = list->nd_next;
     }
-    rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)", len, i);
+    rb_raise(rb_eArgError, "wrong number of arguments (%ld for %ld)", len, i);
 }
 
 static void

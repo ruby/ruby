@@ -292,7 +292,7 @@ rb_ary_store(ary, idx, val)
     if (idx < 0) {
 	idx += RARRAY(ary)->len;
 	if (idx < 0) {
-	    rb_raise(rb_eIndexError, "index %d out of array",
+	    rb_raise(rb_eIndexError, "index %ld out of array",
 		    idx - RARRAY(ary)->len);
 	}
     }
@@ -563,7 +563,7 @@ rb_ary_fetch(argc, argv, ary)
 	    return rb_yield(pos);
 	}
 	if (argc == 1) {
-	    rb_raise(rb_eIndexError, "index %d out of array", idx);
+	    rb_raise(rb_eIndexError, "index %ld out of array", idx);
 	}
 	return ifnone;
     }
@@ -642,12 +642,12 @@ rb_ary_update(ary, beg, len, rpl)
     rpl = rb_ary_to_ary(rpl);
     rlen = RARRAY(rpl)->len;
 
-    if (len < 0) rb_raise(rb_eIndexError, "negative length (%d)", len);
+    if (len < 0) rb_raise(rb_eIndexError, "negative length (%ld)", len);
     if (beg < 0) {
 	beg += RARRAY(ary)->len;
 	if (beg < 0) {
 	    beg -= RARRAY(ary)->len;
-	    rb_raise(rb_eIndexError, "index %d out of array", beg);
+	    rb_raise(rb_eIndexError, "index %ld out of array", beg);
 	}
     }
     if (beg + len > RARRAY(ary)->len) {
