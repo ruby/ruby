@@ -388,7 +388,7 @@ summary feature.
 --- OptionParser::List#reject(type)
     see ((<OptionParser.reject>)).
 =end #'#"#`#
-    def accept(t, pat = nil, &block)
+    def accept(t, pat = /.*/, &block)
       if pat
 	pat.respond_to?(:match) or raise TypeError, "has no `match'"
       else

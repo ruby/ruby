@@ -1,3 +1,8 @@
+Fri Jan 31 02:50:34 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* lib/optparse.rb (OptionParser::List::accept): default
+	  pattern must not be nil.
+
 Thu Jan 30 16:46:43 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* lib/optparse.rb (OptionParser::Switch::PlacedArgument): added.
