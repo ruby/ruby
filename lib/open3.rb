@@ -40,6 +40,7 @@ module Open3
     pe[1].close
     Process.waitpid(pid)
     pi = [pw[1], pr[0], pe[0]]
+    pw[1].sync = true
     if defined? yield
       begin
 	return yield(*pi)

@@ -211,6 +211,30 @@ rb_stat_rdev(self)
 }
 
 static VALUE
+rb_stat_rdev_major(self)
+    VALUE self;
+{
+#if defined(HAVE_ST_RDEV) && defined(major)
+    long rdev = get_stat(self)->st_rdev;
+    return ULONG2NUM(major(rdev));
+#else
+    return INT2FIX(0);
+#endif
+}
+
+static VALUE
+rb_stat_rdev_minor(self)
+    VALUE self;
+{
+#if defined(HAVE_ST_RDEV) && defined(minor)
+    long rdev = get_stat(self)->st_rdev;
+    return ULONG2NUM(minor(rdev));
+#else
+    return INT2FIX(0);
+#endif
+}
+
+static VALUE
 rb_stat_size(self)
     VALUE self;
 {
@@ -290,15 +314,23 @@ rb_stat_inspect(self)
     rb_str_buf_cat2(str, " ");
 
     for (i = 0; i < sizeof(member)/sizeof(member[0]); i++) {
-	VALUE str2;
+	VALUE v;
 
 	if (i > 0) {
 	    rb_str_buf_cat2(str, ", ");
 	}
 	rb_str_buf_cat2(str, member[i].name);
 	rb_str_buf_cat2(str, "=");
-	str2 = rb_inspect((*member[i].func)(self));
-	rb_str_append(str, str2);
+	v = (*member[i].func)(self);
+	if (i == 2) {		/* mode */
+	    char buf[32];
+
+	    sprintf(buf, "0%o", NUM2INT(v));
+	    rb_str_buf_cat2(str, buf);
+	}
+	else {
+	    rb_str_append(str, rb_inspect(v));
+	}
     }
     rb_str_buf_cat2(str, ">");
     OBJ_INFECT(str, self);
@@ -2553,6 +2585,8 @@ Init_File()
     rb_define_method(rb_cStat, "uid", rb_stat_uid, 0);
     rb_define_method(rb_cStat, "gid", rb_stat_gid, 0);
     rb_define_method(rb_cStat, "rdev", rb_stat_rdev, 0);
+    rb_define_method(rb_cStat, "rdev_major", rb_stat_rdev_major, 0);
+    rb_define_method(rb_cStat, "rdev_minor", rb_stat_rdev_minor, 0);
     rb_define_method(rb_cStat, "size", rb_stat_size, 0);
     rb_define_method(rb_cStat, "blksize", rb_stat_blksize, 0);
     rb_define_method(rb_cStat, "blocks", rb_stat_blocks, 0);

@@ -15,7 +15,7 @@
 ;;;     for example :
 ;;;
 ;;;    (autoload 'ruby-mode "ruby-mode"
-;;;      "Mode for editing ruby source files")
+;;;      "Mode for editing ruby source files" t)
 ;;;    (setq auto-mode-alist
 ;;;          (append '(("\\.rb$" . ruby-mode)) auto-mode-alist))
 ;;;    (setq interpreter-mode-alist (append '(("ruby" . ruby-mode))
@@ -35,9 +35,16 @@
 ;;; HISTORY
 ;;; senda -  8 Apr 1998: Created.
 ;;;	 $Log$
+;;;	 Revision 1.4  2002/01/29 07:16:09  matz
+;;;	 * file.c (rb_stat_rdev_major): added. [new]
+;;;
+;;;	 * file.c (rb_stat_rdev_minor): added. [new]
+;;;
+;;;	 * file.c (rb_stat_inspect): print mode in octal.
+;;;
 ;;;	 Revision 1.3  1999/12/01 09:24:18  matz
 ;;;	 19991201
-;;;
+;;;	
 ;;;	 Revision 1.2  1999/08/13 05:45:18  matz
 ;;;	 1.4.0
 ;;;	
