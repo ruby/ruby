@@ -2909,7 +2909,7 @@ ip_rbUpdateCommand(clientData, interp, objc, objv)
         flags = TCL_ALL_EVENTS|TCL_DONT_WAIT;
 
     } else if (objc == 2) {
-        if (Tcl_GetIndexFromObj(interp, objv[1], updateOptions,
+        if (Tcl_GetIndexFromObj(interp, objv[1], (CONST84 char **)updateOptions,
                 "option", 0, &optionIndex) != TCL_OK) {
             return TCL_ERROR;
         }
@@ -3060,7 +3060,7 @@ ip_rb_threadUpdateCommand(clientData, interp, objc, objv)
         flags = TCL_ALL_EVENTS|TCL_DONT_WAIT;
 
     } else if (objc == 2) {
-        if (Tcl_GetIndexFromObj(interp, objv[1], updateOptions,
+        if (Tcl_GetIndexFromObj(interp, objv[1], (CONST84 char **)updateOptions,
                 "option", 0, &optionIndex) != TCL_OK) {
             return TCL_ERROR;
         }

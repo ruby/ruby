@@ -1,4 +1,4 @@
-Thu Mar  3 18:44:18 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Mar  3 18:47:18 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* {bcc32,win32,wince}/Makefile.sub (config.h): check if affected
 	  when makefiles are modified.
@@ -16,6 +16,9 @@ Thu Mar  3 18:44:18 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bcc32/Makefile.sub (post-install-ext): remove debug information
 	  files after installation.
+
+	* ext/tk/tcltklib.c (ip_rbUpdateCommand, ip_rb_threadUpdateCommand):
+	  get rid of warnings with Tcl/Tk 8.3 or former.
 
 Thu Mar  3 11:49:51 2005  Kouhei Sutou  <kou@cozmixng.org>
 
