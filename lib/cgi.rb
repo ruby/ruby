@@ -1152,11 +1152,9 @@ class CGI
       end
       alias last first
       def to_a
-        @params
+        @params || [self]
       end
-      def to_ary                # to be rhs of multiple assignment
-        @params
-      end
+      alias to_ary to_a   	# to be rhs of multiple assignment
     end
 
     # Get the value for the parameter with a given key.

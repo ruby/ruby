@@ -7053,7 +7053,7 @@ proc_invoke(proc, args, self, klass)
     volatile int safe = ruby_safe_level;
     volatile VALUE old_wrapper = ruby_wrapper;
     struct RVarmap * volatile old_dvars = ruby_dyna_vars;
-    volatile int pcall;
+    volatile int pcall, avalue = Qtrue;
 
     if (rb_block_given_p() && ruby_frame->last_func) {
 	rb_warning("block for %s#%s is useless",
@@ -7064,6 +7064,10 @@ proc_invoke(proc, args, self, klass)
     Data_Get_Struct(proc, struct BLOCK, data);
     orphan = block_orphan(data);
     pcall = data->flags & BLOCK_LAMBDA ? YIELD_PROC_CALL : 0;
+    if (!pcall && RARRAY(args)->len == 1) {
+	avalue = Qfalse;
+	args = RARRAY(args)->ptr[0];
+    }
 
     ruby_wrapper = data->wrapper;
     ruby_dyna_vars = data->dyna_vars;
@@ -7080,7 +7084,7 @@ proc_invoke(proc, args, self, klass)
     state = EXEC_TAG();
     if (state == 0) {
 	proc_set_safe_level(proc);
-	result = rb_yield_0(args, self, self!=Qundef?CLASS_OF(self):0, pcall, Qtrue);
+	result = rb_yield_0(args, self, (self!=Qundef)?CLASS_OF(self):0, pcall, avalue);
     }
     else if (pcall || orphan || TAG_DST()) {
 	result = prot_tag->retval;

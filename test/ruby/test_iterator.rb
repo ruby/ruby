@@ -328,6 +328,32 @@ class TestIterator < Test::Unit::TestCase
     lambda(&get_block{|a,n| assert(a,n)}).call(true, "marity")
   end
 
+  def foo
+    yield([:key, :value])
+  end
+  def bar(&blk)
+    blk.call([:key, :value])
+  end
+
+  def test_yield_vs_call
+    foo{|k,v| assert_equal([:key, :value], [k,v])}
+    bar{|k,v| assert_equal([:key, :value], [k,v])}
+  end
+
+  class H
+    def each
+      yield [:key, :value]
+    end
+  end
+
+  def test_assoc_yield
+    [{:key=>:value}, H.new].each {|h|
+      h.each{|a| assert_equal([:key, :value], a)}
+      h.each{|*a| assert_equal([[:key, :value]], a)}
+      h.each{|k,v| assert_equal([:key, :value], [k,v])}
+    }
+  end
+
   class ITER_TEST1
     def a
       block_given?

@@ -1,3 +1,9 @@
+Thu Oct 30 02:46:35 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (proc_invoke): single array value to normal Proc#call
+	  (i.e. not via lambda call), should be treated just like yield.
+	  [ruby-dev:21726]
+
 Thu Oct 30 02:25:48 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/lib/openssl/buffering.rb (Buffering#initialize):
@@ -56,12 +62,6 @@ Tue Oct 28 15:20:12 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 	  rb_threadWaitVisibilityProc, rb_threadWaitWindowProc,
 	  ip_rb_threadVwaitObjCmd, ip_rb_threadTkWaitObjCmd): prototype;
 	  avoid VC++ warnings.
-
-Tue Oct 28 11:24:18 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
-
-	* parse.y (new_yield): remove magic argument rule; "yield [1,2]"
-	  should yield single array of two elements, not two values.
-	  [ruby-dev:21726]
 
 Mon Oct 27 19:19:55 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

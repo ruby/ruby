@@ -130,13 +130,13 @@ class TestAssignment < Test::Unit::TestCase
     def f; yield; end; f {|a,b,*c| assert_equal([nil,nil,[]], [a,b,c])}
     def f; yield nil; end; f {|a,b,*c| assert_equal([nil,nil,[]], [a,b,c])}
     def f; yield 1; end; f {|a,b,*c| assert_equal([1,nil,[]], [a,b,c])}
-    def f; yield []; end; f {|a,b,*c| assert_equal([[],nil,[]], [a,b,c])}
-    def f; yield [1]; end; f {|a,b,*c| assert_equal([[1],nil,[]], [a,b,c])}
-    def f; yield [nil]; end; f {|a,b,*c| assert_equal([[nil],nil,[]], [a,b,c])}
-    def f; yield [[]]; end; f {|a,b,*c| assert_equal([[[]],nil,[]], [a,b,c])}
-    def f; yield [*[]]; end; f {|a,b,*c| assert_equal([[],nil,[]], [a,b,c])}
-    def f; yield [*[1]]; end; f {|a,b,*c| assert_equal([[1],nil,[]], [a,b,c])}
-    def f; yield [*[1,2]]; end; f {|a,b,*c| assert_equal([[1,2],nil,[]], [a,b,c])}
+    def f; yield []; end; f {|a,b,*c| assert_equal([nil,nil,[]], [a,b,c])}
+    def f; yield [1]; end; f {|a,b,*c| assert_equal([1,nil,[]], [a,b,c])}
+    def f; yield [nil]; end; f {|a,b,*c| assert_equal([nil,nil,[]], [a,b,c])}
+    def f; yield [[]]; end; f {|a,b,*c| assert_equal([[],nil,[]], [a,b,c])}
+    def f; yield [*[]]; end; f {|a,b,*c| assert_equal([nil,nil,[]], [a,b,c])}
+    def f; yield [*[1]]; end; f {|a,b,*c| assert_equal([1,nil,[]], [a,b,c])}
+    def f; yield [*[1,2]]; end; f {|a,b,*c| assert_equal([1,2,[]], [a,b,c])}
 
     def f; yield *nil; end; f {|a,b,*c| assert_equal([nil,nil,[]], [a,b,c])}
     def f; yield *1; end; f {|a,b,*c| assert_equal([1,nil,[]], [a,b,c])}
