@@ -11,9 +11,8 @@ This program is free software. You can re-distribute and/or
 modify this program under the same terms as Ruby itself,
 Ruby Distribute License or GNU General Public License.
 
-NOTE: You can get Japanese version of this document from
-Ruby Documentation Project (RDP):
-((<URL:http://www.ruby-lang.org/~rubikitch/RDP.cgi>))
+NOTE: You can find Japanese version of this document in
+the doc/net directory of the standard ruby interpreter package.
 
 == What is this module?
 
@@ -639,7 +638,14 @@ module Net
     define_http_method_interface :Post, true,  true
     define_http_method_interface :Put,  false, true
 
-    def request( req, body = nil )
+    def request( req, body = nil, &block )
+      unless active? then
+        start {
+          req['connection'] = 'close'
+          return request(req, body, &block)
+        }
+      end
+        
       connecting( req ) {
         req.__send__( :exec,
                 @socket, @curr_http_version, edit_path(req.path), body )
@@ -660,14 +666,7 @@ module Net
 
 
     def connecting( req )
-      unless active? then
-        implicit = true
-        req['connection'] ||= 'close'
-      end
-
-      if not @socket then
-        start
-      elsif @socket.closed? then
+      if @socket.closed? then
         re_connect
       end
       if not req.body_exist? or @seems_1_0_server then
@@ -691,10 +690,6 @@ module Net
       else
         D 'Conn close'
         @socket.close
-      end
-
-      if implicit then
-        finish
       end
     end
 

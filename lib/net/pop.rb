@@ -10,9 +10,8 @@ This program is free software. You can re-distribute and/or
 modify this program under the same terms as Ruby itself,
 Ruby Distribute License or GNU General Public License.
 
-NOTE: You can get Japanese version of this document from
-Ruby Documentation Project (RDP):
-((<URL:http://www.ruby-lang.org/~rubikitch/RDP.cgi>))
+NOTE: You can find Japanese version of this document in
+the doc/net directory of the standard ruby interpreter package.
 
 == What is This Module?
 
@@ -422,14 +421,15 @@ module Net
       "#<#{type} #{@num}#{@deleted ? ' deleted' : ''}>"
     end
 
-    def all( dest = '' )
-      if block_given? then
-        dest = NetPrivate::ReadAdapter.new( Proc.new )
+    def pop( dest = '', &block )
+      if block then
+        dest = NetPrivate::ReadAdapter.new( block )
       end
       @command.retr( @num, dest )
     end
-    alias pop all
-    alias mail all
+
+    alias all pop
+    alias mail pop
 
     def top( lines, dest = '' )
       @command.top( @num, lines, dest )
@@ -440,7 +440,7 @@ module Net
     end
 
     def delete
-      @command.dele( @num )
+      @command.dele @num
       @deleted = true
     end
 
@@ -470,9 +470,9 @@ module Net
       }
     end
 
-    def auth( acnt, pass )
+    def auth( account, pass )
       critical {
-        @socket.writeline 'USER ' + acnt
+        @socket.writeline 'USER ' + account
         check_reply_auth
 
         @socket.writeline 'PASS ' + pass
@@ -537,21 +537,19 @@ module Net
 
     def check_reply_auth
       begin
-        cod = check_reply( SuccessCode )
-      rescue ProtocolError
-        raise ProtoAuthError, 'Fail to POP authentication'
+        return check_reply( SuccessCode )
+      rescue ProtocolError => err
+        raise ProtoAuthError.new( 'Fail to POP authentication', err.response )
       end
-
-      return cod
     end
 
     def get_reply
       str = @socket.readline
 
       if /\A\+/ === str then
-        return Response.new( SuccessCode, str[0,3], str[3, str.size - 3].strip )
+        Response.new( SuccessCode, str[0,3], str[3, str.size - 3].strip )
       else
-        return Response.new( ErrorCode, str[0,4], str[4, str.size - 4].strip )
+        Response.new( ErrorCode, str[0,4], str[4, str.size - 4].strip )
       end
     end
 
@@ -564,7 +562,7 @@ module Net
       rep = super( sock )
 
       m = /<.+>/.match( rep.msg ) or
-              raise ProtoAuthError, "not APOP server: cannot login"
+              raise ProtoAuthError.new( "not APOP server: cannot login", nil )
       @stamp = m[0]
     end
 

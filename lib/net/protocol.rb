@@ -10,9 +10,8 @@ This program is free software. You can re-distribute and/or
 modify this program under the same terms as Ruby itself,
 Ruby Distribute License or GNU General Public License.
 
-NOTE: You can get Japanese version of this document from
-Ruby Documentation Project (RDP):
-((<URL:http://www.ruby-lang.org/~rubikitch/RDP.cgi>))
+NOTE: You can find Japanese version of this document in
+the doc/net directory of the standard ruby interpreter package.
 
 =end
 
@@ -80,7 +79,7 @@ module Net
 
 
     def initialize( addr, port = nil )
-      @address = addr || 'localhost'
+      @address = addr
       @port    = port || type.port
 
       @command = nil
@@ -213,9 +212,9 @@ module Net
 
   class Response
 
-    def initialize( ctype, cno, msg )
+    def initialize( ctype, code, msg )
       @code_type = ctype
-      @code      = cno
+      @code      = code
       @message   = msg
       super()
     end

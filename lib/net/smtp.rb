@@ -10,9 +10,8 @@ This program is free software. You can re-distribute and/or
 modify this program under the same terms as Ruby itself,
 Ruby Distribute License or GNU General Public License.
 
-NOTE: You can get Japanese version of this document from
-Ruby Documentation Project (RDP):
-((<URL:http://www.ruby-lang.org/~rubikitch/RDP.cgi>))
+NOTE: You can find Japanese version of this document in
+the doc/net directory of the standard ruby interpreter package.
 
 == What is This Module?
 
