@@ -1182,7 +1182,10 @@ re_compile_pattern(pattern, size, bufp)
 
     switch (c) {
     case '$':
-      {
+      if (bufp->options & RE_OPTION_POSIXLINE) {
+	BUFPUSH(endbuf2);
+      }
+      else {
 	p0 = p;
 	/* When testing what follows the $,
 	   look past the \-constructs that don't consume anything.  */
@@ -1195,10 +1198,13 @@ re_compile_pattern(pattern, size, bufp)
 	    break;
 	}
 	BUFPUSH(endline);
-	break;
       }
+      break;
     case '^':
-      BUFPUSH(begline);
+      if (bufp->options & RE_OPTION_POSIXLINE)
+	  BUFPUSH(begbuf);
+      else
+	  BUFPUSH(begline);
       break;
 
     case '+':
@@ -1313,8 +1319,6 @@ re_compile_pattern(pattern, size, bufp)
       if ((enum regexpcode)b[-2] == charset_not) {
 	if (bufp->options & RE_OPTION_POSIXLINE)
 	  SET_LIST_BIT ('\n');
-	else
-	  SET_LIST_BIT ('\0');
       }
 
       /* Read in characters and ranges, setting map bits.  */
@@ -2042,9 +2046,11 @@ re_compile_pattern(pattern, size, bufp)
 	break;
 
       case 'Z':
-	BUFPUSH(endbuf2);
-	break;
-
+	if ((bufp->options & RE_OPTION_POSIXLINE) == 0) {
+	  BUFPUSH(endbuf2);
+	  break;
+	}
+	/* fall through */
       case 'z':
 	BUFPUSH(endbuf);
 	break;

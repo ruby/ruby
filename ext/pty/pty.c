@@ -22,7 +22,7 @@
 #define	DEVICELEN	16
 
 #if !defined(HAVE_OPENPTY)
-#ifdef hpux
+#ifdef __hpux
 char	*MasterDevice = "/dev/ptym/pty%s",
 	*SlaveDevice =  "/dev/pty/tty%s",
 	*deviceNo[] = {
@@ -108,9 +108,10 @@ struct pty_info {
 };
 
 static void
-set_signal_action(RETSIGTYPE (*action)())
+set_signal_action(action)
+    RETSIGTYPE (*action)();
 {
-#ifdef hpux
+#ifdef __hpux
     struct sigvec sv;
     /*
      * signal SIGCHLD should be delivered on stop of the child
@@ -194,7 +195,9 @@ chld_changed()
 static void getDevice _((int*, int*));
 
 static void
-establishShell(char *shellname, struct pty_info *info)
+establishShell(shellname, info)
+    char *shellname;
+    struct pty_info *info;
 {	
     static int		i,j,master,slave,currentPid;
     static char		procName[32];

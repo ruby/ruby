@@ -403,6 +403,7 @@ void rb_p _((VALUE));
 
 VALUE rb_eval_string _((const char*));
 VALUE rb_eval_string_protect _((const char*, int*));
+VALUE rb_eval_string_wrap _((const char*, int*));
 VALUE rb_funcall __((VALUE, ID, int, ...));
 int rb_scan_args __((int, VALUE*, const char*, ...));
 

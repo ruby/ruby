@@ -413,6 +413,7 @@ VALUE
 rb_str_concat(str1, str2)
     VALUE str1, str2;
 {
+    rb_str_modify(str1);
     if (FIXNUM_P(str2)) {
 	int i = FIX2INT(str2);
 	if (0 <= i && i <= 0xff) { /* byte */

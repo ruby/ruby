@@ -69,7 +69,7 @@
 # ifdef HAVE_PROTOTYPES
 #  define __P(args) args
 # else
-#  define __P(args)
+#  define __P(args) ()
 # endif
 #endif
 

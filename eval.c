@@ -1125,6 +1125,33 @@ rb_eval_string_protect(str, state)
 }
 
 VALUE
+rb_eval_string_wrap(str, state)
+    const char *str;
+    int *state;
+{
+    int status;
+    VALUE self = ruby_top_self;
+    VALUE val;
+
+    PUSH_CLASS();
+    ruby_class = ruby_wrapper = rb_module_new();
+    ruby_top_self = rb_obj_clone(ruby_top_self);
+    rb_extend_object(self, ruby_class);
+
+    val = rb_eval_string_protect(str, &status);
+    ruby_top_self = self;
+
+    POP_CLASS();
+    if (state) {
+	if (status == 0) {
+	    JUMP_TAG(state);
+	}
+	*state = status;
+    }
+    return val;
+}
+
+VALUE
 rb_eval_cmd(cmd, arg)
     VALUE cmd, arg;
 {

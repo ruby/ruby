@@ -493,7 +493,7 @@ link_undef(name, base, reloc)
 }
 
 struct reloc_arg {
-    char *name;
+    const char *name;
     long value;
 };
 
@@ -1077,7 +1077,7 @@ dln_sym(name)
 # endif
 #endif
 
-#ifdef hpux
+#ifdef __hpux
 #include <errno.h>
 #include "dl.h"
 #endif
@@ -1307,7 +1307,7 @@ dln_load(file)
     }
 #endif /* USE_DLN_DLOPEN */
 
-#ifdef hpux
+#ifdef __hpux
 #define DLN_DEFINED
     {
 	shl_t lib = NULL;
