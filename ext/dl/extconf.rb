@@ -177,6 +177,9 @@ $INSTALLFILES = [
   ["./dlconfig.h", "$(archdir)$(target_prefix)", "."],
   ["dl.h", "$(archdir)$(target_prefix)", ""],
 ]
+$cleanfiles = %w[test/test.o]
+$distcleanfiles = %w[call.func callback.func cbtable.func dlconfig.rb
+./dlconfig.h test/libtest.so test/*~ *~ mkmf.log]
 
 create_makefile('dl')
 rescue SystemExit

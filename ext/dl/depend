@@ -1,6 +1,3 @@
-CLEANFILES = test/test.o
-DISTCLEANFILES = call.func callback.func cbtable.func dlconfig.rb dlconfig.h \
-                 test/libtest.so test/*~ *~ mkmf.log
 LDSHARED_TEST = $(LDSHARED) $(LDFLAGS) test/test.o -o test/libtest.so $(LOCAL_LIBS)
 
 libtest.so: test/libtest.so

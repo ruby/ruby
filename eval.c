@@ -1301,7 +1301,7 @@ ruby_options(argc, argv)
     if ((state = EXEC_TAG()) == 0) {
 	ruby_process_options(argc, argv);
     }
-    if (state) {
+    else {
 	trace_func = 0;
 	tracing = 0;
 	exit(error_handle(state));
@@ -1347,6 +1347,7 @@ ruby_cleanup(ex)
     volatile VALUE err = ruby_errinfo;
 
     ruby_safe_level = 0;
+    Init_stack((void*)&state);
     ruby_finalize_0();
     if (ruby_errinfo) err = ruby_errinfo;
     PUSH_TAG(PROT_NONE);

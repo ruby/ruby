@@ -1,3 +1,11 @@
+Thu Oct 23 17:59:36 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (ruby_cleanup): initialize stack bottom for embedding.
+	  [ruby-dev:21686]
+
+	* ext/dl/extconf.rb: move list of files to clean from DEPEND file,
+	  to get rid of macro redefinitions.
+
 Thu Oct 23 13:44:00 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y: integrate operations for stack_type.  [ruby-dev:21681]
