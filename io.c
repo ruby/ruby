@@ -95,6 +95,7 @@ VALUE rb_eEOFError;
 VALUE rb_eIOError;
 
 VALUE rb_stdin, rb_stdout, rb_stderr;
+VALUE rb_deferr;		/* rescue VIM plugin */
 static VALUE orig_stdout, orig_stderr;
 
 VALUE rb_output_fs;
@@ -4128,7 +4129,7 @@ Init_IO()
     rb_define_hooked_variable("$stderr", &rb_stderr, 0, stdout_setter);
     rb_define_hooked_variable("$>", &rb_stdout, 0, stdout_setter);
     orig_stdout = rb_stdout;
-    orig_stderr = rb_stderr;
+    rb_deferr = orig_stderr = rb_stderr;
 
     /* variables to be removed in 1.8.1 */
     rb_define_hooked_variable("$defout", &rb_stdout, 0, defout_setter);

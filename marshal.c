@@ -493,6 +493,9 @@ w_object(obj, arg, limit)
 	    VALUE v;
 
 	    v = rb_funcall(obj, s_dump, 1, INT2NUM(limit));
+	    if (TYPE(v) != T_STRING) {
+		rb_raise(rb_eTypeError, "_dump() must return string");
+	    }
 	    w_class(TYPE_USERDEF, obj, arg);
 	    w_bytes(RSTRING(v)->ptr, RSTRING(v)->len, arg);
 	    if (ivtbl) w_ivar(ivtbl, &c_arg);

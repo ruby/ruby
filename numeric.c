@@ -144,8 +144,8 @@ rb_num_coerce_cmp(x, y)
     return Qnil;
 }
 
-static VALUE
-num_coerce_relop(x, y)
+VALUE
+rb_num_coerce_relop(x, y)
     VALUE x, y;
 {
     VALUE c, x0 = x, y0 = y;
@@ -620,7 +620,7 @@ flo_gt(x, y)
 	break;
 
       default:
-	return num_coerce_relop(x, y);
+	return rb_num_coerce_relop(x, y);
     }
     if (isnan(a) || isnan(b)) return Qfalse;
     return (a > b)?Qtrue:Qfalse;
@@ -647,7 +647,7 @@ flo_ge(x, y)
 	break;
 
       default:
-	return num_coerce_relop(x, y);
+	return rb_num_coerce_relop(x, y);
     }
     if (isnan(a) || isnan(b)) return Qfalse;
     return (a >= b)?Qtrue:Qfalse;
@@ -674,7 +674,7 @@ flo_lt(x, y)
 	break;
 
       default:
-	return num_coerce_relop(x, y);
+	return rb_num_coerce_relop(x, y);
     }
     if (isnan(a) || isnan(b)) return Qfalse;
     return (a < b)?Qtrue:Qfalse;
@@ -701,7 +701,7 @@ flo_le(x, y)
 	break;
 
       default:
-	return num_coerce_relop(x, y);
+	return rb_num_coerce_relop(x, y);
     }
     if (isnan(a) || isnan(b)) return Qfalse;
     return (a <= b)?Qtrue:Qfalse;
@@ -1501,7 +1501,7 @@ fix_gt(x, y)
 	return Qfalse;
     }
     else {
-	return num_coerce_relop(x, y);
+	return rb_num_coerce_relop(x, y);
     }
 }
 
@@ -1516,7 +1516,7 @@ fix_ge(x, y)
 	return Qfalse;
     }
     else {
-	return num_coerce_relop(x, y);
+	return rb_num_coerce_relop(x, y);
     }
 }
 
@@ -1531,7 +1531,7 @@ fix_lt(x, y)
 	return Qfalse;
     }
     else {
-	return num_coerce_relop(x, y);
+	return rb_num_coerce_relop(x, y);
     }
 }
 
@@ -1546,7 +1546,7 @@ fix_le(x, y)
 	return Qfalse;
     }
     else {
-	return num_coerce_relop(x, y);
+	return rb_num_coerce_relop(x, y);
     }
 }
 

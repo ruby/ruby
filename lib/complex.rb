@@ -27,22 +27,71 @@
 
 
 #
+# Numeric is a built-in class on which Fixnum, Bignum, etc., are based.  Here
+# some methods are added so that all number types can be treated to some extent
+# as Complex numbers.
+#
+class Numeric
+  #
+  # Returns a Complex number <tt>(0,<i>self</i>)</tt>.
+  #
+  def im
+    Complex(0, self)
+  end
+  
+  #
+  # The real part of a complex number, i.e. <i>self</i>.
+  #
+  def real
+    self
+  end
+  
+  #
+  # The imaginary part of a complex number, i.e. 0.
+  #
+  def image
+    0
+  end
+  alias imag image
+  
+  #
+  # See Complex#arg.
+  #
+  def arg
+    if self >= 0
+      return 0
+    else
+      return Math::PI
+    end
+  end
+  alias angle arg
+  
+  #
+  # See Complex#polar.
+  #
+  def polar
+    return abs, arg
+  end
+  
+  #
+  # See Complex#conjugate (short answer: returns <i>self</i>).
+  #
+  def conjugate
+    self
+  end
+  alias conj conjugate
+end
+
+
+#
 # Creates a Complex number.  +a+ and +b+ should be Numeric.  The result will be
 # <tt>a+bi</tt>.
 #
 def Complex(a, b = 0)
-  if a.kind_of?(Complex) and b == 0
-    a
-  elsif b.kind_of?(Complex)
-    if a.kind_of?(Complex)
-      Complex(a.real-b.image, a.image + b.real)
-    else
-      Complex(a-b.image, b.real)
-    end
-  elsif b == 0 and defined? Complex::Unify
+  if b == 0 and (a.kind_of?(Complex) or defined? Complex::Unify)
     a
   else
-    Complex.new!(a, b)
+    Complex.new( a.real-b.imag, a.imag+b.real )
   end
 end
 
@@ -361,61 +410,6 @@ class Complex < Numeric
 end
 
 
-#
-# Numeric is a built-in class on which Fixnum, Bignum, etc., are based.  Here
-# some methods are added so that all number types can be treated to some extent
-# as Complex numbers.
-#
-class Numeric
-  #
-  # Returns a Complex number <tt>(0,<i>self</i>)</tt>.
-  #
-  def im
-    Complex(0, self)
-  end
-  
-  #
-  # The real part of a complex number, i.e. <i>self</i>.
-  #
-  def real
-    self
-  end
-  
-  #
-  # The imaginary part of a complex number, i.e. 0.
-  #
-  def image
-    0
-  end
-  alias imag image
-  
-  #
-  # See Complex#arg.
-  #
-  def arg
-    if self >= 0
-      return 0
-    else
-      return Math::PI
-    end
-  end
-  alias angle arg
-  
-  #
-  # See Complex#polar.
-  #
-  def polar
-    return abs, arg
-  end
-  
-  #
-  # See Complex#conjugate (short answer: returns <i>self</i>).
-  #
-  def conjugate
-    self
-  end
-  alias conj conjugate
-end
 
 
 module Math
@@ -538,7 +532,7 @@ module Math
   end
 
   def acos(z)
-    if Complex.generic?(z)
+    if Complex.generic?(z) and z >= -1 and z <= 1
       acos!(z)
     else
       -1.0.im * log( z + 1.0.im * sqrt(1.0-z*z) )
@@ -546,7 +540,7 @@ module Math
   end
 
   def asin(z)
-    if Complex.generic?(z)
+    if Complex.generic?(z) and z >= -1 and z <= 1
       asin!(z)
     else
       -1.0.im * log( 1.0.im * z + sqrt(1.0-z*z) )
@@ -570,7 +564,7 @@ module Math
   end
 
   def acosh(z)
-    if Complex.generic?(z)
+    if Complex.generic?(z) and z >= 1
       acosh!(z)
     else
       log( z + sqrt(z*z-1.0) )
@@ -586,7 +580,7 @@ module Math
   end
 
   def atanh(z)
-    if Complex.generic?(z)
+    if Complex.generic?(z) and z >= -1 and z <= 1
       atanh!(z)
     else
       log( (1.0+z) / (1.0-z) ) / 2.0

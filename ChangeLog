@@ -13,6 +13,10 @@ Thu Jul 31 12:36:11 2003  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* bin/erb, lib/erb.rb: add explicit trim mode.
 
+Thu Jul 31 04:59:10 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (rb_num_coerce_relop): export function.
+
 Thu Jul 31 00:17:19 2003  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (return_code): obsolete.
@@ -21,6 +25,11 @@ Thu Jul 31 00:17:19 2003  Shugo Maeda  <shugo@ruby-lang.org>
 	alias to last_response_code.
 	
 	* lib/net/ftp.rb (last_response): new method.
+
+Wed Jul 30 23:55:44 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (w_object): check has been dropped. "_dump must return
+	  string." [ruby-dev:21024]
 
 Wed Jul 30 22:35:19 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 

@@ -268,8 +268,8 @@ VALUE rb_io_print _((int, VALUE*, VALUE));
 VALUE rb_io_puts _((int, VALUE*, VALUE));
 VALUE rb_file_open _((const char*, const char*));
 VALUE rb_gets _((void));
-void rb_write_deferr _((const char*));
-void rb_write_deferr2 _((const char*, long));
+void rb_write_error _((const char*));
+void rb_write_error2 _((const char*, long));
 /* marshal.c */
 VALUE rb_marshal_dump _((VALUE, VALUE));
 VALUE rb_marshal_load _((VALUE));
@@ -277,6 +277,7 @@ VALUE rb_marshal_load _((VALUE));
 void rb_num_zerodiv _((void));
 VALUE rb_num_coerce_bin _((VALUE, VALUE));
 VALUE rb_num_coerce_cmp _((VALUE, VALUE));
+VALUE rb_num_coerce_relop _((VALUE, VALUE));
 VALUE rb_float_new _((double));
 VALUE rb_num2fix _((VALUE));
 VALUE rb_fix2str _((VALUE, int));
