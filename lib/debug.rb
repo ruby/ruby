@@ -456,14 +456,14 @@ class DEBUGGER__
 	    end
 
 	  when /^\s*p\s+/
-	    stdout.printf "%s\n", debug_eval($', binding)
+	    stdout.printf "%s\n", debug_eval($', binding).inspect
 
 	  when /^\s*h(?:elp)?$/
 	    debug_print_help()
 
 	  else
 	    v = debug_eval(input, binding)
-	    stdout.printf "%s\n", v unless (v == nil)
+	    stdout.printf "%s\n", v.inspect unless (v == nil)
 	  end
 	end
       end
@@ -474,7 +474,7 @@ class DEBUGGER__
 Debugger help v.-0.002b
 Commands
   b[reak] [file|method:]<line|method>
-	                     set breakpoint to some position
+                             set breakpoint to some position
   wat[ch] <expression>       set watchpoint to some expression
   cat[ch] <an Exception>     set catchpoint to an exception
   b[reak]                    list breakpoints
@@ -587,8 +587,7 @@ EOHELP
     end
 
     def check_break_points(file, pos, binding, id)
-      return false if break_points.empty?
-      MUTEX.lock
+      MUTEX.lock	# Stop all threads before 'line' and 'call'.
       file = File.basename(file)
       n = 1
       for b in break_points
@@ -610,24 +609,22 @@ EOHELP
     end
 
     def excn_handle(file, line, id, binding)
-      stdout.printf "Exception `%s': %s\n", $!.type, $!
+      stdout.printf "%s:%d: `%s' (%s)\n", file, line, $!, $!.type
       if $!.type <= SystemExit
 	set_trace_func nil
 	exit
       end
 
-      MUTEX.lock
-      fs = @frames.size
-      tb = caller(0)[-fs..-1]
-      if tb
-	for i in tb
-	  stdout.printf "\tfrom %s\n", i
-	end
-      end
       if @catch and ($!.type.ancestors.find { |e| e.to_s == @catch })
+	MUTEX.lock
+	fs = @frames.size
+	tb = caller(0)[-fs..-1]
+	if tb
+	  for i in tb
+	    stdout.printf "\tfrom %s\n", i
+	  end
+	end
 	debug_command(file, line, id, binding)
-      else
-	MUTEX.unlock
       end
     end
 

@@ -177,7 +177,7 @@ proc_wait()
     while (1) {
 	TRAP_BEG;
 	pid = wait(&state);
-	TRA_END;
+	TRAP_END;
 	if (pid >= 0) break;
         if (errno == EINTR) {
             rb_thread_schedule();

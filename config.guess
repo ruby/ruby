@@ -682,11 +682,11 @@ EOF
 		if test "$?" = 0 ; then
 			./$dummy | grep 1\.99 > /dev/null
 			if test "$?" = 0 ; then
-				LIBC="libc1"
+				LIBC="-libc1"
 			fi
 		fi	
 		rm -f $dummy.c $dummy
-		echo powerpc-unknown-linux-${LIBC} ; exit 0 ;;
+		echo powerpc-unknown-linux${LIBC} ; exit 0 ;;
 	esac
 
 	if test "${UNAME_MACHINE}" = "alpha" ; then
@@ -736,7 +736,7 @@ EOF
 			fi
 		fi
 		rm -f $dummy.s $dummy
-		echo ${UNAME_MACHINE}-unknown-linux{LIBC} ; exit 0
+		echo ${UNAME_MACHINE}-unknown-linux${LIBC} ; exit 0
 	elif test "${UNAME_MACHINE}" = "mips" ; then
 	  cat >$dummy.c <<EOF
 #ifdef __cplusplus

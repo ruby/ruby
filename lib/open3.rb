@@ -14,8 +14,8 @@ module Open3
     pr = IO::pipe
     pe = IO::pipe
 
-    pid = fork
-    if pid == nil then # child
+    pid = fork{
+      # child
       pw[1].close
       STDIN.reopen(pw[0])
       pw[0].close
@@ -29,13 +29,21 @@ module Open3
       pe[1].close
 
       exec(cmd)
-      exit
-    else
-      pw[0].close
-      pr[1].close
-      pe[1].close
-      pi = [ pw[1], pr[0], pe[0] ]
+      _exit 127
+    }
+
+    pw[0].close
+    pr[1].close
+    pe[1].close
+    Thread.start do
+      sleep 1
+      Process.waitpid(pid)
     end
+    pi = [ pw[1], pr[0], pe[0] ]
+    if defined? yield
+      return yield *pi
+    end
+    pi
   end
   module_function :popen3
 end

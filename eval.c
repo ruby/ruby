@@ -2386,7 +2386,7 @@ rb_eval(self, n)
 	break;
 
       case NODE_ARGSPUSH:
-	result = rb_ary_push(rb_eval(self, node->nd_head),
+	result = rb_ary_push(rb_obj_dup(rb_eval(self, node->nd_head)),
 			     rb_eval(self, node->nd_body));
 	break;
 

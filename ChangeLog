@@ -1,6 +1,14 @@
+Fri Oct 20 07:56:23 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): ARGSPUSH should not modify args array.
+
 Wed Oct 18 03:10:20 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* stable version 1.6.2 released.
+
+Thu Oct 19 16:51:46 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* pack.c (NUM2U32): should use NUM2ULONG().
 
 Tue Oct 17 17:30:34 2000  WATANABE Hirofumi  <eban@ruby-lang.org>
 

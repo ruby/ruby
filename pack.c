@@ -308,7 +308,7 @@ endian()
 typedef long I32;
 typedef unsigned long U32;
 #define NUM2I32(x) NUM2LONG(x)
-#define NUM2U32(x) NUM2LONG(x)
+#define NUM2U32(x) NUM2ULONG(x)
 #elif SIZEOF_INT == SIZE32
 typedef int I32;
 typedef unsigned int U32;
