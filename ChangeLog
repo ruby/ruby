@@ -1,3 +1,7 @@
+Wed Jan 28 13:07:02 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/iconv/extconf.rb: include iconv.h for libiconv.  [ruby-dev:22715]
+
 Wed Jan 28 12:43:07 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/rss: rss library imported. [ruby-dev:22726]
