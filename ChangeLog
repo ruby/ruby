@@ -1,3 +1,7 @@
+Wed Apr 21 11:45:22  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* process.c: Recover wrongly removed spaces at end of the lines.
+
 Wed Apr 21 10:18:06  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* process.c(rb_spawn): fix SEGV at "p system('command line here')"
