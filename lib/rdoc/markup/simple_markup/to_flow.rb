@@ -89,6 +89,8 @@ module SM
     end
 
     def accept_rule(am, fragment)
+      size = fragment.param
+      size = 10 if size > 10
       @res << Rule.new(size)
     end
 
