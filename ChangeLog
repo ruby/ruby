@@ -1,3 +1,11 @@
+Sat Sep 21 22:23:41 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* eval.c (rb_thread_raise): no need to save dead thread context.
+
+Sat Sep 21 00:00:24 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* parse.y (whole_match_p): avoid overrun.
+
 Fri Sep 20 23:02:01 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* parse.y (block_append): eliminate unused literal nodes.

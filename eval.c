@@ -9037,7 +9037,7 @@ rb_thread_raise(argc, argv, th)
 	rb_f_raise(argc, argv);
     }
 
-    if (THREAD_SAVE_CONTEXT(curr_thread)) {
+    if (!rb_thread_dead(curr_thread) && THREAD_SAVE_CONTEXT(curr_thread)) {
 	return th->thread;
     }
 
