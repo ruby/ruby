@@ -54,5 +54,6 @@ void io_writable _((OpenFile *));
 void io_readable _((OpenFile *));
 void io_fptr_finalize _((OpenFile *));
 void io_unbuffered _((OpenFile *));
+void io_check_closed _((OpenFile *));
 
 #endif

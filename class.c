@@ -95,11 +95,11 @@ rb_define_class_id(id, super)
     klass = class_new(super);
     rb_name_class(klass, id);
     /* make metaclass */
-    RBASIC(klass)->class = singleton_class_new(RBASIC(super)->class);
-    singleton_class_attached(RBASIC(klass)->class, klass);
+    RBASIC(klass)->klass = singleton_class_new(RBASIC(super)->klass);
+    singleton_class_attached(RBASIC(klass)->klass, klass);
     rb_funcall(super, rb_intern("inherited"), 1, klass);
 
-    return (VALUE)klass;
+    return klass;
 }
 
 VALUE
@@ -201,10 +201,10 @@ include_class_new(module, super)
     klass->iv_tbl = RCLASS(module)->iv_tbl;
     klass->super = super;
     if (TYPE(module) == T_ICLASS) {
-	RBASIC(klass)->class = RBASIC(module)->class;
+	RBASIC(klass)->klass = RBASIC(module)->klass;
     }
     else {
-	RBASIC(klass)->class = module;
+	RBASIC(klass)->klass = module;
     }
 
     return (VALUE)klass;
@@ -253,7 +253,7 @@ mod_included_modules(mod)
 
     for (p = RCLASS(mod)->super; p; p = RCLASS(p)->super) {
 	if (BUILTIN_TYPE(p) == T_ICLASS) {
-	    ary_push(ary, RBASIC(p)->class);
+	    ary_push(ary, RBASIC(p)->klass);
 	}
     }
     return ary;
@@ -270,7 +270,7 @@ mod_ancestors(mod)
 	if (FL_TEST(p, FL_SINGLETON))
 	    continue;
 	if (BUILTIN_TYPE(p) == T_ICLASS) {
-	    ary_push(ary, RBASIC(p)->class);
+	    ary_push(ary, RBASIC(p)->klass);
 	}
 	else {
 	    ary_push(ary, p);
@@ -453,12 +453,12 @@ rb_singleton_class(obj)
     if (rb_special_const_p(obj)) {
 	TypeError("cannot define singleton");
     }
-    if (FL_TEST(RBASIC(obj)->class, FL_SINGLETON)) {
-	return (VALUE)RBASIC(obj)->class;
+    if (FL_TEST(RBASIC(obj)->klass, FL_SINGLETON)) {
+	return RBASIC(obj)->klass;
     }
-    RBASIC(obj)->class = singleton_class_new(RBASIC(obj)->class);
-    singleton_class_attached(RBASIC(obj)->class, obj);
-    return RBASIC(obj)->class;
+    RBASIC(obj)->klass = singleton_class_new(RBASIC(obj)->klass);
+    singleton_class_attached(RBASIC(obj)->klass, obj);
+    return RBASIC(obj)->klass;
 }
 
 void

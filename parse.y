@@ -210,6 +210,7 @@ static void top_local_setup();
 %right kNOT
 %nonassoc kDEFINED
 %right '=' OP_ASGN
+%right '?' ':'
 %nonassoc DOT2 DOT3
 %left  OROP
 %left  ANDOP
@@ -694,6 +695,12 @@ arg		: variable '=' arg
 		        in_defined = 0;
 			$$ = NEW_DEFINED($4);
 		    }
+		| arg '?' arg ':' arg
+		    {
+			value_expr($1);
+			$$ = NEW_IF(cond($1), $3, $5);
+		        fixpos($$, $1);
+		    }
 		| primary
 		    {
 			$$ = $1;
@@ -975,9 +982,6 @@ primary		: literal
 		    }
 		| kCLASS LSHFT expr term
 		    {
-			if (cur_mid || in_single)
-			    yyerror("class definition in method body");
-
 			class_nest++;
 			cref_push();
 			local_push();
@@ -1257,7 +1261,7 @@ superclass	: term
 		    {
 			$$ = $3;
 		    }
-		| error term {yyerrok;}
+		| error term {yyerrok; $$ = 0}
 
 f_arglist	: '(' f_args ')'
 		    {
@@ -2307,7 +2311,20 @@ retry:
 	return parse_qstring(c);
 
       case '?':
-	if ((c = nextc()) == '\\') {
+	if (lex_state == EXPR_END) {
+	    Warning("a?b:c is undocumented feature ^^;;;");
+	    lex_state = EXPR_BEG;
+	    return '?';
+	}
+	c = nextc();
+	if (lex_state == EXPR_ARG && space_seen && isspace(c)){
+	    pushback(c);
+	    arg_ambiguous();
+	    lex_state = EXPR_BEG;
+	    Warning("a?b:c is undocumented feature ^^;;;");
+	    return '?';
+	}
+	if (c == '\\') {
 	    c = read_escape();
 	}
 	c &= 0xff;
@@ -2388,6 +2405,7 @@ retry:
 	    return OP_ASGN;
 	}
 	if (c == '>') {
+	    Warning("-> is undocumented feature ^^;;;");
 	    lex_state = EXPR_BEG;
 	    return KW_ASSOC;
 	}
@@ -2553,8 +2571,10 @@ retry:
 	    return COLON2;
 	}
 	pushback(c);
-	if (isspace(c))
+	if (lex_state == EXPR_END || isspace(c)) {
+	    lex_state = EXPR_BEG;
 	    return ':';
+	}
 	lex_state = EXPR_FNAME;
 	return SYMBEG;
 
@@ -2588,9 +2608,6 @@ retry:
 	return c;
 
       case ',':
-	lex_state = EXPR_BEG;
-	return c;
-
       case ';':
 	lex_state = EXPR_BEG;
 	return c;

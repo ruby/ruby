@@ -6,7 +6,7 @@
   $Date$
   created at: Tue Aug 10 12:47:31 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1996 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -56,24 +56,11 @@ static void forbid_setid _((char *));
 static VALUE do_loop = FALSE, do_print = FALSE;
 static VALUE do_check = FALSE, do_line = FALSE;
 static VALUE do_split = FALSE;
-static int do_search = FALSE;
+
 static char *script;
-static char *e_body;
 
 static int origargc;
 static char **origargv;
-
-#if defined(NeXT) && defined(__DYNAMIC__)
-
-#include <mach-o/dyld.h>
-extern char *** environ_pointer;
-#define environ (*environ_pointer)
-#else
-#ifndef NT
-extern char **environ;
-#endif
-#endif
-static char **origenviron;
 
 extern int   sourceline;
 extern char *sourcefile;
@@ -158,7 +145,7 @@ proc_options(argcp, argvp)
 {
     int argc = *argcp;
     char **argv = *argvp;
-    int script_given;
+    int script_given, do_search;
     char *s;
 
     if (argc == 0) return;
@@ -232,11 +219,11 @@ proc_options(argcp, argvp)
 	    script_given++;
 	    if (script == 0) script = "-e";
 	    if (argv[1]) {
-		e_body = argv[1];
+		compile_string("-e", argv[1], strlen(argv[1]));
 		argc--,argv++;
 	    }
 	    else {
-		e_body = "";
+		compile_string("-e", "", 0);
 	    }
 	    break;
 
@@ -374,24 +361,40 @@ proc_options(argcp, argvp)
 	show_copyright();
     }
 
+    Init_ext();		/* should be called here for some reason :-( */
     if (script_given == FALSE) {
 	if (argc == 0) {	/* no more args */
 	    if (verbose == 3) exit(0);
 	    script = "-";
+	    load_stdin();
 	}
 	else {
 	    script = argv[0];
 	    if (script[0] == '\0') {
 		script = "-";
+		load_stdin();
 	    }
 	    else {
-		script = argv[0];
+		if (do_search) {
+		    char *path = getenv("RUBYPATH");
+
+		    script = 0;
+		    if (path) {
+			script = dln_find_file(argv[0], path);
+		    }
+		    if (!script) {
+			script = dln_find_file(argv[0], getenv("PATH"));
+		    }
+		    if (!script) script = argv[0];
+		}
+		load_file(script, 1);
 	    }
 	    argc--; argv++;
 	}
     }
     if (verbose) verbose = TRUE;
 
+    xflag = FALSE;
     *argvp = argv;
     *argcp = argc;
 
@@ -416,41 +419,6 @@ proc_options(argcp, argvp)
 	*argcp = argc; *argvp = argv;
     }
 
-}
-
-void
-ruby_load_script()
-{
-    if (script[0] == '-') {
-	if (script[1] == '\0') {
-	    load_stdin();
-	}
-	else if (script[1] == 'e') {
-	    compile_string("-e", e_body, strlen(e_body));
-	}
-    }
-    else {
-	if (do_search) {
-	    char *path = getenv("RUBYPATH");
-	    char *s = 0;
-
-	    if (path) {
-		s = dln_find_file(script, path);
-	    }
-	    if (!s) {
-		s = dln_find_file(script, getenv("PATH"));
-	    }
-	    if (s) script = s;
-	}
-	load_file(script, 1);
-    }
-    xflag = FALSE;
-    if (do_print) {
-	yyappend_print();
-    }
-    if (do_loop) {
-	yywhile_loop(do_line, do_split);
-    }
 }
 
 static void
@@ -508,7 +476,7 @@ load_file(fname, script)
 		    char *path;
 		    char *pend = RSTRING(line)->ptr + RSTRING(line)->len;
 
-		    p = RSTRING(line)->ptr + 1;	/* skip `#!' */
+		    p = RSTRING(line)->ptr + 2;	/* skip `#!' */
 		    if (pend[-1] == '\n') pend--; /* chomp line */
 		    if (pend[-1] == '\r') pend--;
 		    *pend = '\0';
@@ -547,9 +515,6 @@ load_file(fname, script)
 			RSTRING(line)->ptr[RSTRING(line)->len-2] = '\0';
 		    argc = 2; argv[0] = 0; argv[1] = p + 5;
 		    proc_options(&argc, &argvp);
-#if 0
-		    proc_sflag(&argc, &argvp);
-#endif
 		}
 	    }
 	}
@@ -589,7 +554,7 @@ set_arg0(val, id)
     int i;
     static int len;
 
-    if (origargv == 0) ArgError("$0 not initialized");
+    if (origargv == 0) Fail("$0 not initialized");
     Check_Type(val, T_STRING);
     if (len == 0) {
 	s = origargv[0];
@@ -598,14 +563,6 @@ set_arg0(val, id)
 	for (i = 1; i < origargc; i++) {
 	    if (origargv[i] == s + 1)
 		s += strlen(++s);	/* this one is ok too */
-	}
-	/* can grab env area too? */
-	if (origenviron && origenviron[0] == s + 1) {
-	    setenv("NoNe  SuCh", "Ruby Compiler :-)", 1);
-	    /* force copy of environment */
-	    for (i = 0; origenviron[i]; i++)
-		if (origenviron[i] == s + 1)
-		    s += strlen(++s);
 	}
 	len = s - origargv[0];
     }
@@ -773,11 +730,6 @@ ruby_process_options(argc, argv)
     int i;
 
     origargc = argc; origargv = argv;
-#if defined(NeXT) && defined(__DYNAMIC__)
-    _dyld_lookup_and_bind("__environ", (unsigned long*)&environ_pointer, NULL);
-#endif /* environ */
-    origenviron = environ;
-
     ruby_script(argv[0]);	/* for the time being */
     rb_argv0 = str_taint(str_new2(argv[0]));
 #if defined(USE_DLN_A_OUT)
@@ -790,5 +742,11 @@ ruby_process_options(argc, argv)
     if (do_check && nerrs == 0) {
 	printf("Syntax OK\n");
 	exit(0);
+    }
+    if (do_print) {
+	yyappend_print();
+    }
+    if (do_loop) {
+	yywhile_loop(do_line, do_split);
     }
 }

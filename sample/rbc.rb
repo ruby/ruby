@@ -11,29 +11,29 @@
 #
 #   rbc.rb [options] file_name opts
 #   options:
-#	-d		    ¥Ç¥Ð¥Ã¥°¥â¡¼¥É(ÍøÍÑ¤·¤Ê¤¤Êý¤¬ÎÉ¤¤¤Ç¤·¤ç¤¦)
-#	-m		    bc¥â¡¼¥É(Ê¬¿ô, ¹ÔÎó¤Î·×»»¤¬¤Ç¤­¤Þ¤¹)
-#	-r load-module	    ruby -r ¤ÈÆ±¤¸
-#	--inspect	    ·ë²Ì½ÐÎÏ¤Ëinspect¤òÍÑ¤¤¤ë(bc¥â¡¼¥É°Ê³°¤Ï¥Ç
-#			    ¥Õ¥©¥ë¥È). 
-#	--noinspect	    ·ë²Ì½ÐÎÏ¤Ëinspect¤òÍÑ¤¤¤Ê¤¤.
-#	--noreadline	    readline¥é¥¤¥Ö¥é¥ê¤òÍøÍÑ¤·¤Ê¤¤(¥Ç¥Õ¥©¥ë¥È
-#			    ¤Ç¤Ïreadline¥é¥¤¥Ö¥é¥ê¤òÍøÍÑ¤·¤è¤¦¤È¤¹¤ë).
+#	-d		    debug mode(not encouraged)
+#	-m		    bc mode(calculate rational, matrix)
+#	-r load-module	    same as `ruby -r'
+#	--inspect	    use inspect for output.
+#                           (default except in bc mode)
+#	--noinspect	    do not use inspect for output.
+#	--noreadline	    do not use readline library.
+#                           (rbc tries to use readline as default).
 #
-# ÄÉ²Ã private method:
-#   exit, quit		    ½ªÎ»¤¹¤ë.
-#   inspect(sw = nil)	    ¥¤¥ó¥¹¥Ú¥¯¥È¥â¡¼¥É¤Î¥È¥°¥ë
-#   trace_load(sw = nil)    load/require»þ¤Ërbc¤ÎfileÆÉ¤ß¹þ¤ßµ¡Ç½¤òÍÑ
-#			    ¤¤¤ë¥â¡¼¥É¤Î¥¹¥¤¥Ã¥Á(¥Ç¥Õ¥©¥ë¥È¤Ï¥È¥ì¡¼¥¹
-#			    ¥â¡¼¥É)
+# additional private methods:
+#   exit, quit		    quit
+#   inspect(sw = nil)	    toggle inspect mode
+#   trace_load(sw = nil)    toggle trace mode for load/require.
+#			    (default is trace mode on)
 #
 require "e2mmap.rb"
 
 $stdout.sync = TRUE
 
 module BC_APPLICATION__
-  RCS_ID='-$Header: /home/keiju/var/src/var.lib/ruby/ruby/RCS/rbc.rb,v 1.2 1997/11/27 13:46:06 keiju Exp keiju $-'
-  
+
+  RCS_ID=%q$Id: rbc.rb,v 1.2 1997/11/27 13:46:06 keiju Exp keiju $
+
   extend Exception2MessageMapper
   def_exception :UnrecognizedSwitch, "Unrecognized switch: %s"
   
@@ -186,7 +186,7 @@ module BC_APPLICATION__
 
     PARCENT_LTYPE = {
       "q" => "\'",
-      "Q" => "\"",
+      "Q" => "\"", #"
       "x" => "\`",
       "r" => "\/"
     }
@@ -332,7 +332,7 @@ module BC_APPLICATION__
 	  @lex_state = EXPR_BEG
 	end
       end
-      @OP.def_rule('$') do
+      @OP.def_rule('$') do #'
 	|op, rests|
 	identify_gvar(rests)
       end
@@ -444,7 +444,7 @@ module BC_APPLICATION__
       print token, "\n" if $DEBUG
       if state = CLAUSE_STATE_TRANS[token]
 	if @lex_state != EXPR_BEG and token =~ /^(if|unless|while|until)/
-	  # ½¤¾þ»Ò
+	  # $B=$>~;R(B
 	else
 	  if ENINDENT_CLAUSE.include?(token)
 	    @indent += 1
@@ -472,7 +472,7 @@ module BC_APPLICATION__
       if lt = PARCENT_LTYPE[ch]
 	ch = chrs.shift
       else
-	lt = "\""
+	lt = "\"" #"
       end
       if ch !~ /\W/
 	chrs.unshift ch
@@ -618,7 +618,7 @@ module BC_APPLICATION__
     def_exception :ErrNodeAlreadyExists, "node already exists"
 
     class Node
-      # postproc¤¬¤Ê¤±¤ì¤ÐÃê¾Ý¥Î¡¼¥É, nil¤¸¤ã¤Ê¤±¤ì¤Ð¶ñ¾Ý¥Î¡¼¥É
+      # postproc$B$,$J$1$l$PCj>]%N!<%I(B, nil$B$8$c$J$1$l$P6q>]%N!<%I(B
       def initialize(preproc = nil, postproc = nil)
 	@Tree = {}
 	@preproc = preproc

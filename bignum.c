@@ -1181,7 +1181,7 @@ big_abs(x)
 	x = big_clone(x);
 	RBIGNUM(x)->sign = 1;
     }
-    return (VALUE)x;
+    return x;
 }
 
 /* !!!warnig!!!!

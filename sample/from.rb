@@ -9,8 +9,6 @@ include Kconv
 
 class String
 
-  public :kconv
-
   def kconv(code = Kconv::EUC)
     Kconv.kconv(self, code, Kconv::AUTO)
   end
@@ -35,10 +33,11 @@ if ARGV.length == 0
   user = ENV['USER']
 else
   user = ARGV[0]
+  ARGV.clear
 end
 
 [ENV['SPOOLDIR'], '/usr/spool', '/var/spool', '/usr', '/var'].each do |m|
-  break if File.exist? ARGV[0] = "#{m}/mail/#{user}" 
+  break if File.exist? file = "#{m}/mail/#{user}" 
 end
 
 $outcount = 0;
@@ -67,14 +66,19 @@ def fromout(date, from, subj)
   $outcount += 1
 end
 
-for file in ARGV
-  next if !File.exist?(file)
+if File.exist?(file)
+  atime = File.atime(file)
+  mtime = File.mtime(file)
   f = open(file, "r")
-  while !f.eof?
-    mail = Mail.new(f)
-    fromout mail.header['Date'], mail.header['From'], mail.header['Subject']
+  begin
+    until f.eof?
+      mail = Mail.new(f)
+      fromout mail.header['Date'],mail.header['From'],mail.header['Subject']
+    end
+  ensure
+    f.close
+    File.utime(atime, mtime, file)
   end
-  f.close
 end
 
 if $outcount == 0

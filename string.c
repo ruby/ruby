@@ -100,6 +100,20 @@ str_new4(orig)
     return (VALUE)str;
 }
 
+static void
+str_assign(str, str2)
+    VALUE str, str2;
+{
+    if (NIL_P(str2) || str == str2) return;
+    free(RSTRING(str)->ptr);
+    RSTRING(str)->ptr = RSTRING(str2)->ptr;
+    RSTRING(str)->len = RSTRING(str2)->len;
+    RSTRING(str)->orig = RSTRING(str2)->orig;
+    RSTRING(str2)->ptr = 0;	/* abandon str2 */
+    RSTRING(str2)->len = 0;
+    if (str_tainted(str2)) str_taint(str);
+}
+
 static ID pr_str;
 
 VALUE
@@ -171,6 +185,15 @@ str_length(str)
     return INT2FIX(RSTRING(str)->len);
 }
 
+static VALUE
+str_empty(str)
+    VALUE str;
+{
+    if (RSTRING(str)->len == 0)
+	return TRUE;
+    return FALSE;
+}
+
 VALUE
 str_plus(str1, str2)
     VALUE str1, str2;
@@ -185,7 +208,7 @@ str_plus(str1, str2)
 
     if (str_tainted(str1) || str_tainted(str2))
 	return str_taint(str3);
-    return (VALUE)str3;
+    return str3;
 }
 
 VALUE
@@ -208,7 +231,7 @@ str_times(str, times)
     RSTRING(str2)->ptr[RSTRING(str2)->len] = '\0';
 
     if (str_tainted(str)) {
-	return str_taint((VALUE)str2);
+	return str_taint(str2);
     }
 
     return str2;
@@ -371,7 +394,7 @@ str_resize(str, len)
 	RSTRING(str)->len = len;
 	RSTRING(str)->ptr[len] = '\0';	/* sentinel */
     }
-    return (VALUE)str;
+    return str;
 }
 
 VALUE
@@ -696,6 +719,16 @@ str_succ(orig)
     return str;
 }
 
+static VALUE
+str_succ_bang(str)
+    VALUE str;
+{
+    str_modify(str);
+    str_assign(str, str_succ(str));
+
+    return str;
+}
+
 VALUE
 str_upto(beg, end)
     VALUE beg, end;
@@ -735,7 +768,7 @@ str_aref(str, indx)
 	if (idx < 0 || RSTRING(str)->len <= idx) {
 	    return Qnil;
 	}
-	return (VALUE)INT2FIX(RSTRING(str)->ptr[idx] & 0xff);
+	return INT2FIX(RSTRING(str)->ptr[idx] & 0xff);
 
       case T_REGEXP:
 	if (str_match(str, indx))
@@ -900,13 +933,10 @@ str_sub_f(str, pat, val, once)
 
     str_modify(str);
     result = str_sub_s(str, pat, val, once);
-
     if (NIL_P(result)) return Qnil;
-    str_resize(str, RSTRING(result)->len);
-    memcpy(RSTRING(str)->ptr, RSTRING(result)->ptr, RSTRING(result)->len);
-    if (str_tainted(result)) str_taint(str);
+    str_assign(str, result);
 
-    return (VALUE)str;
+    return str;
 }
 
 static VALUE
@@ -981,12 +1011,10 @@ str_sub_iter_f(str, pat, once)
 
     str_modify(str);
     result = str_sub_iter_s(str, pat, once);
-
     if (NIL_P(result)) return Qnil;
-    str_resize(str, RSTRING(result)->len);
-    memcpy(RSTRING(str)->ptr, RSTRING(result)->ptr, RSTRING(result)->len);
+    str_assign(str, result);
 
-    return (VALUE)str;
+    return str;
 }
 
 static VALUE
@@ -1131,6 +1159,20 @@ str_gsub(argc, argv, str)
 }
 
 static VALUE
+str_replace_method(str, str2)
+    VALUE str, str2;
+{
+    Check_Type(str2, T_STRING);
+
+    str_modify(str);
+    str_resize(str, RSTRING(str2)->len);
+    memcpy(RSTRING(str)->ptr, RSTRING(str2)->ptr, RSTRING(str2)->len);
+    if (str_tainted(str2)) str_taint(str);
+
+    return str;
+}
+
+static VALUE
 uscore_get()
 {
     VALUE line;
@@ -1227,7 +1269,7 @@ str_reverse_bang(str)
     }
     MEMCPY(RSTRING(str)->ptr, p, char, RSTRING(str)->len);
 
-    return (VALUE)str;
+    return str;
 }
 
 static VALUE
@@ -1406,7 +1448,7 @@ str_upcase_bang(str)
 	s++;
     }
 
-    return (VALUE)str;
+    return str;
 }
 
 static VALUE
@@ -1434,7 +1476,7 @@ str_downcase_bang(str)
 	s++;
     }
 
-    return (VALUE)str;
+    return str;
 }
 
 static VALUE
@@ -1462,7 +1504,7 @@ str_capitalize_bang(str)
 	    *s = tolower(*s);
 	}
     }
-    return (VALUE)str;
+    return str;
 }
 
 static VALUE
@@ -1493,7 +1535,7 @@ str_swapcase_bang(str)
 	s++;
     }
 
-    return (VALUE)str;
+    return str;
 }
 
 static VALUE
@@ -1623,7 +1665,7 @@ tr_trans(str, src, repl, sflag)
     *t = '\0';
     if (sflag) RSTRING(str)->len = (t - RSTRING(str)->ptr);
 
-    return (VALUE)str;
+    return str;
 }
 
 static VALUE
@@ -1687,7 +1729,7 @@ str_delete_bang(str1, str2)
     *t = '\0';
     RSTRING(str1)->len = t - RSTRING(str1)->ptr;
 
-    return (VALUE)str1;
+    return str1;
 }
 
 static VALUE
@@ -1730,7 +1772,7 @@ tr_squeeze(str1, str2)
     *t = '\0';
     RSTRING(str1)->len = t - RSTRING(str1)->ptr;
 
-    return (VALUE)str1;
+    return str1;
 }
 
 static VALUE
@@ -2112,7 +2154,7 @@ str_strip_bang(str)
 	RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
     }
 
-    return (VALUE)str;
+    return str;
 }
 
 static VALUE
@@ -2241,7 +2283,7 @@ str_sum(argc, argv, str)
     else bits = NUM2INT(vbits);
 
     p = RSTRING(str)->ptr; pend = p + RSTRING(str)->len;
-    if (bits > 32) {
+    if (bits > sizeof(UINT)*CHAR_BIT) {
 	VALUE res = INT2FIX(0);
 	VALUE mod;
 
@@ -2250,20 +2292,23 @@ str_sum(argc, argv, str)
 
 	while (p < pend) {
 	    res = rb_funcall(res, '+', 1, INT2FIX((UINT)*p));
-	    res = rb_funcall(res, '%', 1, mod);
 	    p++;
 	}
+	res = rb_funcall(res, '&', 1, mod);
 	return res;
     }
     else {
 	UINT res = 0;
 	UINT mod = (1<<bits)-1;
 
+	if (mod == 0) {
+	    mod = -1;
+	}
 	while (p < pend) {
 	    res += (UINT)*p;
-	    res %= mod;
 	    p++;
 	}
+	res &= mod;
 	return int2inum(res);
     }
 }
@@ -2277,7 +2322,7 @@ str_ljust(str, w)
     VALUE res;
     UCHAR *p, *pend;
 
-    if (RSTRING(str)->len >= width) return (VALUE)str;
+    if (RSTRING(str)->len >= width) return str;
     res = str_new(0, width);
     memcpy(RSTRING(res)->ptr, RSTRING(str)->ptr, RSTRING(str)->len);
     p = RSTRING(res)->ptr + RSTRING(str)->len; pend = RSTRING(res)->ptr + width;
@@ -2296,7 +2341,7 @@ str_rjust(str, w)
     VALUE res;
     UCHAR *p, *pend;
 
-    if (RSTRING(str)->len >= width) return (VALUE)str;
+    if (RSTRING(str)->len >= width) return str;
     res = str_new(0, width);
     p = RSTRING(res)->ptr; pend = p + width - RSTRING(str)->len;
     while (p < pend) {
@@ -2316,7 +2361,7 @@ str_center(str, w)
     UCHAR *p, *pend;
     int n;
 
-    if (RSTRING(str)->len >= width) return (VALUE)str;
+    if (RSTRING(str)->len >= width) return str;
     res = str_new(0, width);
     n = (width - RSTRING(str)->len)/2;
     p = RSTRING(res)->ptr; pend = p + n;
@@ -2357,12 +2402,15 @@ Init_String()
     rb_define_method(cString, "[]=", str_aset_method, -1);
     rb_define_method(cString, "length", str_length, 0);
     rb_define_alias(cString,  "size", "length");
+    rb_define_method(cString, "empty?", str_empty, 0);
     rb_define_method(cString, "=~", str_match, 1);
     rb_define_method(cString, "~", str_match2, 0);
     rb_define_method(cString, "succ", str_succ, 0);
+    rb_define_method(cString, "succ!", str_succ_bang, 0);
     rb_define_method(cString, "upto", str_upto, 1);
     rb_define_method(cString, "index", str_index_method, -1);
     rb_define_method(cString, "rindex", str_rindex, -1);
+    rb_define_method(cString, "replace", str_replace_method, 1);
 
     rb_define_method(cString, "freeze", str_freeze, 0);
     rb_define_method(cString, "frozen?", str_frozen_p, 0);

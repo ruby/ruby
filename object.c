@@ -96,11 +96,11 @@ obj_clone(obj)
     if (TYPE(obj) != T_OBJECT) {
 	TypeError("can't clone %s", rb_class2name(CLASS_OF(obj)));
     }
-    clone = obj_alloc(RBASIC(obj)->class);
+    clone = obj_alloc(RBASIC(obj)->klass);
     CLONESETUP(clone,obj);
     if (ROBJECT(obj)->iv_tbl) {
 	ROBJECT(clone)->iv_tbl = st_copy(ROBJECT(obj)->iv_tbl);
-	RBASIC(clone)->class = singleton_class_clone(RBASIC(obj)->class);
+	RBASIC(clone)->klass = singleton_class_clone(RBASIC(obj)->klass);
 	RBASIC(clone)->flags = RBASIC(obj)->flags;
     }
 
@@ -488,8 +488,8 @@ class_s_new(argc, argv)
     }
     klass = class_new(super);
     /* make metaclass */
-    RBASIC(klass)->class = singleton_class_new(RBASIC(super)->class);
-    singleton_class_attached(RBASIC(klass)->class, klass);
+    RBASIC(klass)->klass = singleton_class_new(RBASIC(super)->klass);
+    singleton_class_attached(RBASIC(klass)->klass, klass);
 
     return klass;
 }
@@ -774,7 +774,7 @@ boot_defclass(name, super)
 
     rb_name_class(obj, id);
     st_add_direct(rb_class_tbl, id, obj);
-    return (VALUE)obj;
+    return obj;
 }
 
 VALUE
@@ -786,7 +786,7 @@ rb_class_of(obj)
     if (obj == FALSE) return cFalseClass;
     if (obj == TRUE) return cTrueClass;
 
-    return RBASIC(obj)->class;
+    return RBASIC(obj)->klass;
 }
 
 VALUE TopSelf;
@@ -800,11 +800,11 @@ Init_Object()
     cModule = boot_defclass("Module", cObject);
     cClass =  boot_defclass("Class",  cModule);
 
-    metaclass = RBASIC(cObject)->class = singleton_class_new(cClass);
+    metaclass = RBASIC(cObject)->klass = singleton_class_new(cClass);
     singleton_class_attached(metaclass, cObject);
-    metaclass = RBASIC(cModule)->class = singleton_class_new(metaclass);
+    metaclass = RBASIC(cModule)->klass = singleton_class_new(metaclass);
     singleton_class_attached(metaclass, cModule);
-    metaclass = RBASIC(cClass)->class = singleton_class_new(metaclass);
+    metaclass = RBASIC(cClass)->klass = singleton_class_new(metaclass);
     singleton_class_attached(metaclass, cClass);
 
     mKernel = rb_define_module("Kernel");

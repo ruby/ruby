@@ -40,20 +40,48 @@ num_coerce(x, y)
     return assoc_new(rb_Float(x),rb_Float(y));
 }
 
+coerce_body(x)
+    VALUE *x;
+{
+    return rb_funcall(x[1], coerce, 1, x[0]);
+}
+
+coerce_rescue(x)
+    VALUE *x;
+{
+    TypeError("%s can't convert into %s",
+	      rb_class2name(CLASS_OF(x[1])),
+	      rb_class2name(CLASS_OF(x[0])));
+}
+
+static void
+do_coerce(x, y)
+    VALUE *x, *y;
+{
+    VALUE ary;
+#if 0
+    VALUE a[2];
+
+    a[0] = *x; a[1] = *y;
+    ary = rb_rescue(coerce_body, a, coerce_rescue, a);
+#else
+    ary = rb_funcall(*y, coerce, 1, *x);
+#endif
+    if (TYPE(ary) != T_ARRAY || RARRAY(ary)->len != 2) {
+	TypeError("coerce must return [x, y]");
+    }
+
+    *x = RARRAY(ary)->ptr[0];
+    *y = RARRAY(ary)->ptr[1];
+}
+
 VALUE
 num_coerce_bin(x, y)
     VALUE x, y;
 {
     VALUE ary;
 
-    ary = rb_funcall(y, coerce, 1, x);
-    if (TYPE(ary) != T_ARRAY || RARRAY(ary)->len != 2) {
-	TypeError("coerce must return [x, y]");
-    }
-
-    x = RARRAY(ary)->ptr[0];
-    y = RARRAY(ary)->ptr[1];
-
+    do_coerce(&x, &y);
     return rb_funcall(x, rb_frame_last_func(), 1, y);
 }
 
@@ -68,17 +96,12 @@ static VALUE
 num_uminus(num)
     VALUE num;
 {
-    VALUE ary, x, y;
+    VALUE zero;
 
-    ary = rb_funcall(num, coerce, 1, INT2FIX(0));
-    if (TYPE(ary) != T_ARRAY || RARRAY(ary)->len != 2) {
-	TypeError("coerce must return [x, y]");
-    }
+    zero = INT2FIX(0);
+    do_coerce(&num, &zero);
 
-    x = RARRAY(ary)->ptr[0];
-    y = RARRAY(ary)->ptr[1];
-
-    return rb_funcall(x, '-', 1, y);
+    return rb_funcall(zero, '-', 1, num);
 }
 
 static VALUE

@@ -929,7 +929,7 @@ reg_regsub(str, src, regs)
 	if (!val) val = str_new(p, e-p);
 	else      str_cat(val, p, e-p);
     }
-    if (!val) return (VALUE)str;
+    if (!val) return str;
 
     return val;
 }

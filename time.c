@@ -414,16 +414,16 @@ time_asctime(time)
     VALUE time;
 {
     struct time_object *tobj;
-    char buf[64];
-    int len;
+    char *s;
 
     GetTimeval(time, tobj);
     if (tobj->tm_got == 0) {
 	time_localtime(time);
     }
-    len = strftime(buf, 64, "%c", &(tobj->tm));
+    s = asctime(&(tobj->tm));
+    if (s[24] == '\n') s[24] = '\0';
 
-    return str_new(buf, len);
+    return str_new2(s);
 }
 
 static VALUE

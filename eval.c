@@ -52,7 +52,7 @@ static void f_END _((void));
 struct cache_entry {		/* method hash table. */
     ID mid;			/* method's id */
     ID mid0;			/* method's original id */
-    VALUE class;		/* receiver's class */
+    VALUE klass;		/* receiver's class */
     VALUE origin;		/* where method defined  */
     NODE *method;
     int noex;
@@ -88,80 +88,80 @@ rb_clear_cache_by_id(id)
 }
 
 void
-rb_add_method(class, mid, node, noex)
-    VALUE class;
+rb_add_method(klass, mid, node, noex)
+    VALUE klass;
     ID mid;
     NODE *node;
     int noex;
 {
     NODE *body;
 
-    if (NIL_P(class)) class = cObject;
+    if (NIL_P(klass)) klass = cObject;
     body = NEW_METHOD(node, noex);
-    st_insert(RCLASS(class)->m_tbl, mid, body);
+    st_insert(RCLASS(klass)->m_tbl, mid, body);
 }
 
 void
-rb_remove_method(class, mid)
-    VALUE class;
+rb_remove_method(klass, mid)
+    VALUE klass;
     ID mid;
 {
     NODE *body;
 
-    if (!st_delete(RCLASS(class)->m_tbl, &mid, &body)) {
+    if (!st_delete(RCLASS(klass)->m_tbl, &mid, &body)) {
 	NameError("method `%s' not defined in %s",
-		  rb_id2name(mid), rb_class2name(class));
+		  rb_id2name(mid), rb_class2name(klass));
     }
     rb_clear_cache_by_id(mid);
 }
 
 static NODE*
-search_method(class, id, origin)
-    VALUE class, *origin;
+search_method(klass, id, origin)
+    VALUE klass, *origin;
     ID id;
 {
     NODE *body;
 
-    while (!st_lookup(RCLASS(class)->m_tbl, id, &body)) {
-	class = (VALUE)RCLASS(class)->super;
-	if (!class) return 0;
+    while (!st_lookup(RCLASS(klass)->m_tbl, id, &body)) {
+	klass = RCLASS(klass)->super;
+	if (!klass) return 0;
     }
 
-    if (origin) *origin = class;
+    if (origin) *origin = klass;
     return body;
 }
 
 static NODE*
-rb_get_method_body(classp, idp, noexp)
-    VALUE *classp;
+rb_get_method_body(klassp, idp, noexp)
+    VALUE *klassp;
     ID *idp;
     int *noexp;
 {
     ID id = *idp;
-    VALUE class = *classp;
+    VALUE klass = *klassp;
     VALUE origin;
     NODE *body;
     struct cache_entry *ent;
 
-    if ((body = search_method(class, id, &origin)) == 0) {
+    if ((body = search_method(klass, id, &origin)) == 0) {
 	return 0;
     }
     if (!body->nd_body) return 0;
 
     /* store in cache */
-    ent = cache + EXPR1(class, id);
-    ent->class  = class;
+    ent = cache + EXPR1(klass, id);
+    ent->klass  = klass;
     ent->noex   = body->nd_noex;
     body = body->nd_body;
     if (nd_type(body) == NODE_FBODY) {
 	ent->mid = id;
-	*classp = body->nd_orig;
+	*klassp = body->nd_orig;
 	ent->origin = body->nd_orig;
 	*idp = ent->mid0 = body->nd_mid;
 	body = ent->method = body->nd_head;
     }
     else {
-	*classp = (VALUE)origin;
+	*klassp = origin;
 	ent->origin = origin;
 	ent->mid = ent->mid0 = id;
 	ent->method = body;
@@ -172,23 +172,23 @@ rb_get_method_body(classp, idp, noexp)
 }
 
 void
-rb_alias(class, name, def)
-    VALUE class;
+rb_alias(klass, name, def)
+    VALUE klass;
     ID name, def;
 {
     VALUE origin;
     NODE *orig, *body;
 
     if (name == def) return;
-    orig = search_method(class, def, &origin);
+    orig = search_method(klass, def, &origin);
     if (!orig || !orig->nd_body) {
-	if (TYPE(class) == T_MODULE) {
+	if (TYPE(klass) == T_MODULE) {
 	    orig = search_method(cObject, def, &origin);
 	}
     }
     if (!orig || !orig->nd_body) {
 	NameError("undefined method `%s' for `%s'",
-		  rb_id2name(def), rb_class2name((VALUE)class));
+		  rb_id2name(def), rb_class2name(klass));
     }
     body = orig->nd_body;
     if (nd_type(body) == NODE_FBODY) { /* was alias */
@@ -197,47 +197,47 @@ rb_alias(class, name, def)
 	origin = body->nd_orig;
     }
 
-    st_insert(RCLASS(class)->m_tbl, name,
+    st_insert(RCLASS(klass)->m_tbl, name,
 	      NEW_METHOD(NEW_FBODY(body, def, origin), orig->nd_noex));
 }
 
 static void
-rb_export_method(class, name, noex)
-    VALUE class;
+rb_export_method(klass, name, noex)
+    VALUE klass;
     ID name;
     int noex;
 {
     NODE *body;
-    struct RClass *origin;
+    VALUE origin;
 
-    body = search_method(class, name, &origin);
-    if (!body && TYPE(class) == T_MODULE) {
+    body = search_method(klass, name, &origin);
+    if (!body && TYPE(klass) == T_MODULE) {
 	body = search_method(cObject, name, &origin);
     }
     if (!body) {
 	NameError("undefined method `%s' for `%s'",
-		  rb_id2name(name), rb_class2name(class));
+		  rb_id2name(name), rb_class2name(klass));
     }
     if (body->nd_noex != noex) {
-	if (class == (VALUE)origin) {
+	if (klass == origin) {
 	    body->nd_noex = noex;
 	}
 	else {
 	    rb_clear_cache_by_id(name);
-	    rb_add_method(class, name, NEW_ZSUPER(), noex);
+	    rb_add_method(klass, name, NEW_ZSUPER(), noex);
 	}
     }
 }
 
 static VALUE
-method_boundp(class, id, ex)
-    VALUE class;
+method_boundp(klass, id, ex)
+    VALUE klass;
     ID id;
     int ex;
 {
     int noex;
 
-    if (rb_get_method_body(&class, &id, &noex)) {
+    if (rb_get_method_body(&klass, &id, &noex)) {
 	if (ex && noex == NOEX_PRIVATE)
 	    return FALSE;
 	return TRUE;
@@ -246,12 +246,12 @@ method_boundp(class, id, ex)
 }
 
 int
-rb_method_boundp(class, id, ex)
-    VALUE class;
+rb_method_boundp(klass, id, ex)
+    VALUE klass;
     ID id;
     int ex;
 {
-    if (method_boundp(class, id, ex))
+    if (method_boundp(klass, id, ex))
 	return TRUE;
     return FALSE;
 }
@@ -299,7 +299,7 @@ struct BLOCK {
     VALUE self;
     struct FRAME frame;
     struct SCOPE *scope;
-    VALUE class;
+    VALUE klass;
     struct tag *tag;
     int iter;
     struct RVarmap *d_vars;
@@ -316,7 +316,7 @@ struct BLOCK {
     _block.body = b;			\
     _block.self = self;			\
     _block.frame = *the_frame;		\
-    _block.class = the_class;		\
+    _block.klass = the_class;		\
     _block.frame.file = sourcefile;	\
     _block.frame.line = sourceline;	\
     _block.scope = the_scope;		\
@@ -733,13 +733,14 @@ ruby_options(argc, argv)
 
     PUSH_TAG(PROT_NONE)
     if ((state = EXEC_TAG()) == 0) {
+	NODE *save;
 
 	ruby_process_options(argc, argv);
-	Init_ext();
-	ext_init = 1;
-	ruby_require_modules();
+	ext_init = 1;	/* Init_ext() called in ruby_process_options */
+	save = eval_tree;
 	eval_tree = 0;
-	ruby_load_script();
+	ruby_require_modules();
+	eval_tree = save;
     }
     POP_TAG();
     if (state) {
@@ -1012,10 +1013,10 @@ ev_const_defined(cref, id)
     NODE *cbase = cref;
 
     while (cbase && cbase->nd_clss != cObject) {
-	struct RClass *class = RCLASS(cbase->nd_clss);
+	struct RClass *klass = RCLASS(cbase->nd_clss);
 
-	if (class->iv_tbl &&
-	    st_lookup(class->iv_tbl, id, 0)) {
+	if (klass->iv_tbl &&
+	    st_lookup(klass->iv_tbl, id, 0)) {
 	    return TRUE;
 	}
 	cbase = cbase->nd_next;
@@ -1032,10 +1033,10 @@ ev_const_get(cref, id)
     VALUE result;
 
     while (cbase && cbase->nd_clss != cObject) {
-	struct RClass *class = RCLASS(cbase->nd_clss);
+	struct RClass *klass = RCLASS(cbase->nd_clss);
 
-	if (class->iv_tbl &&
-	    st_lookup(class->iv_tbl, id, &result)) {
+	if (klass->iv_tbl &&
+	    st_lookup(klass->iv_tbl, id, &result)) {
 	    return result;
 	}
 	cbase = cbase->nd_next;
@@ -1091,12 +1092,12 @@ mod_undef_method(mod, name)
 }
 
 static VALUE
-mod_alias_method(mod, new, old)
-    VALUE mod, new, old;
+mod_alias_method(mod, newname, oldname)
+    VALUE mod, newname, oldname;
 {
-    ID id = rb_to_id(new);
+    ID id = rb_to_id(newname);
 
-    rb_alias(mod, id, rb_to_id(old));
+    rb_alias(mod, id, rb_to_id(oldname));
     rb_clear_cache_by_id(id);
     return mod;
 }
@@ -1821,7 +1822,7 @@ rb_eval(self, node)
 
 	    PUSH_SCOPE();
 	    PUSH_TAG(PROT_NONE);
-	    if (node->nd_rval) the_frame->cbase = (VALUE)node->nd_rval;
+	    if (node->nd_rval) the_frame->cbase = node->nd_rval;
 	    if (node->nd_tbl) {
 		VALUE *vars = ALLOCA_N(VALUE, node->nd_tbl[0]+1);
 		*vars++ = (VALUE)node;
@@ -1953,18 +1954,18 @@ rb_eval(self, node)
 
       case NODE_COLON2:
 	{
-	    VALUE cls;
+	    VALUE klass;
 
-	    cls = rb_eval(self, node->nd_head);
-	    switch (TYPE(cls)) {
+	    klass = rb_eval(self, node->nd_head);
+	    switch (TYPE(klass)) {
 	      case T_CLASS:
 	      case T_MODULE:
 		break;
 	      default:
-		Check_Type(cls, T_CLASS);
+		Check_Type(klass, T_CLASS);
 		break;
 	    }
-	    result = rb_const_get_at(cls, node->nd_mid);
+	    result = rb_const_get_at(klass, node->nd_mid);
 	}
 	break;
 
@@ -2109,7 +2110,7 @@ rb_eval(self, node)
 
 	    body = search_method(the_class, node->nd_mid, &origin);
 	    if (body) {
-		if (origin == (VALUE)the_class) {
+		if (origin == the_class) {
 		    Warning("discarding old %s", rb_id2name(node->nd_mid));
 		}
 		rb_clear_cache_by_id(node->nd_mid);
@@ -2144,7 +2145,7 @@ rb_eval(self, node)
       case NODE_DEFS:
 	if (node->nd_defn) {
 	    VALUE recv = rb_eval(self, node->nd_recv);
-	    VALUE class;
+	    VALUE klass;
 	    NODE *body;
 
 	    if (FIXNUM_P(recv)) {
@@ -2160,12 +2161,12 @@ rb_eval(self, node)
 			  rb_id2name(node->nd_mid));
 	    }
 
-	    class = rb_singleton_class(recv);
-	    if (st_lookup(RCLASS(class)->m_tbl, node->nd_mid, &body)) {
+	    klass = rb_singleton_class(recv);
+	    if (st_lookup(RCLASS(klass)->m_tbl, node->nd_mid, &body)) {
 		Warning("redefine %s", rb_id2name(node->nd_mid));
 	    }
 	    rb_clear_cache_by_id(node->nd_mid);
-	    rb_add_method(class, node->nd_mid, node->nd_defn, NOEX_PUBLIC);
+	    rb_add_method(klass, node->nd_mid, node->nd_defn, NOEX_PUBLIC);
 	    rb_funcall(recv, rb_intern("singleton_method_added"),
 		       1, INT2FIX(node->nd_mid));
 	    result = Qnil;
@@ -2180,7 +2181,7 @@ rb_eval(self, node)
 	    body = search_method(the_class, node->nd_mid, &origin);
 	    if (!body || !body->nd_body) {
 		NameError("undefined method `%s' for class `%s'",
-			  rb_id2name(node->nd_mid), rb_class2name((VALUE)the_class));
+			  rb_id2name(node->nd_mid), rb_class2name(the_class));
 	    }
 	    rb_clear_cache_by_id(node->nd_mid);
 	    rb_add_method(the_class, node->nd_mid, 0, NOEX_PUBLIC);
@@ -2202,7 +2203,7 @@ rb_eval(self, node)
 
       case NODE_CLASS:
 	{
-	    VALUE super, class, tmp;
+	    VALUE super, klass, tmp;
 
 	    if (node->nd_super) {
 		super = superclass(self, node->nd_super);
@@ -2212,15 +2213,15 @@ rb_eval(self, node)
 	    }
 
 	    if (rb_const_defined_at(the_class, node->nd_cname) &&
-		((VALUE)the_class != cObject ||
+		(the_class != cObject ||
 		 !rb_autoload_defined(node->nd_cname))) {
 
-		class = rb_const_get_at(the_class, node->nd_cname);
-		if (TYPE(class) != T_CLASS) {
+		klass = rb_const_get_at(the_class, node->nd_cname);
+		if (TYPE(klass) != T_CLASS) {
 		    TypeError("%s is not a class", rb_id2name(node->nd_cname));
 		}
 		if (super) {
-		    tmp = RCLASS(class)->super;
+		    tmp = RCLASS(klass)->super;
 		    if (FL_TEST(tmp, FL_SINGLETON)) {
 			tmp = RCLASS(tmp)->super;
 		    }
@@ -2239,12 +2240,12 @@ rb_eval(self, node)
 	    }
 	    else {
 		if (!super) super = cObject;
-		class = rb_define_class_id(node->nd_cname, super);
-		rb_const_set(the_class, node->nd_cname, class);
-		rb_set_class_path(class,the_class,rb_id2name(node->nd_cname));
+		klass = rb_define_class_id(node->nd_cname, super);
+		rb_const_set(the_class, node->nd_cname, klass);
+		rb_set_class_path(klass,the_class,rb_id2name(node->nd_cname));
 	    }
 
-	    return module_setup(class, node->nd_body);
+	    return module_setup(klass, node->nd_body);
 	}
 	break;
 
@@ -2253,7 +2254,7 @@ rb_eval(self, node)
 	    VALUE module;
 
 	    if (rb_const_defined_at(the_class, node->nd_cname) &&
-		((VALUE)the_class != cObject ||
+		(the_class != cObject ||
 		 !rb_autoload_defined(node->nd_cname))) {
 
 		module = rb_const_get_at(the_class, node->nd_cname);
@@ -2276,24 +2277,24 @@ rb_eval(self, node)
 
       case NODE_SCLASS:
 	{
-	    VALUE class;
+	    VALUE klass;
 
-	    class = rb_eval(self, node->nd_recv);
-	    if (FIXNUM_P(class)) {
+	    klass = rb_eval(self, node->nd_recv);
+	    if (FIXNUM_P(klass)) {
 		TypeError("No virtual class for Fixnums");
 	    }
-	    if (NIL_P(class)) {
+	    if (NIL_P(klass)) {
 		TypeError("No virtual class for nil");
 	    }
-	    if (rb_special_const_p(class)) {
+	    if (rb_special_const_p(klass)) {
 		TypeError("No virtual class for special constants");
 	    }
-	    if (FL_TEST(CLASS_OF(class), FL_SINGLETON)) {
+	    if (FL_TEST(CLASS_OF(klass), FL_SINGLETON)) {
 		rb_clear_cache();
 	    }
-	    class = rb_singleton_class(class);
+	    klass = rb_singleton_class(klass);
 	    
-	    result = module_setup(class, node->nd_body);
+	    result = module_setup(klass, node->nd_body);
 	}
 	break;
 
@@ -2364,7 +2365,7 @@ module_setup(module, node)
 	    call_trace_func("class", file, line,
 			    the_class, the_frame->last_func);
 	}
-	result = rb_eval((VALUE)the_class, node->nd_body);
+	result = rb_eval(the_class, node->nd_body);
     }
     POP_TAG();
     POP_SCOPE();
@@ -2624,7 +2625,7 @@ rb_yield_0(val, self)
     the_scope = block->scope;
     the_block = block->prev;
     the_dyna_vars = block->d_vars;
-    the_class = block->class;
+    the_class = block->klass;
     if (!self) self = block->self;
     node = block->body;
     if (block->var) {
@@ -3033,8 +3034,8 @@ stack_length()
 }
 
 static VALUE
-rb_call(class, recv, mid, argc, argv, scope)
-    VALUE class, recv;
+rb_call(klass, recv, mid, argc, argv, scope)
+    VALUE klass, recv;
     ID    mid;
     int argc;			/* OK */
     VALUE *argv;		/* OK */
@@ -3052,14 +3053,14 @@ rb_call(class, recv, mid, argc, argv, scope)
 
   again:
     /* is it in the method cache? */
-    ent = cache + EXPR1(class, mid);
-    if (ent->mid == mid && ent->class == class) {
-	class = ent->origin;
+    ent = cache + EXPR1(klass, mid);
+    if (ent->mid == mid && ent->klass == klass) {
+	klass = ent->origin;
 	id    = ent->mid0;
 	noex  = ent->noex;
 	body  = ent->method;
     }
-    else if ((body = rb_get_method_body(&class, &id, &noex)) == 0) {
+    else if ((body = rb_get_method_body(&klass, &id, &noex)) == 0) {
 	return rb_undefined(recv, mid, argc, argv, scope==2?CSTAT_VCALL:0);
     }
 
@@ -3082,19 +3083,19 @@ rb_call(class, recv, mid, argc, argv, scope)
 	/* for re-scoped/renamed method */
 	mid = id;
 	if (scope == 0) scope = 1;
-	if (RCLASS(class)->super == 0) {
+	if (RCLASS(klass)->super == 0) {
 	    /* origin is the Module, so need to scan superclass hierarchy. */
-	    struct RClass *cl = RCLASS(class);
+	    struct RClass *cl = RCLASS(klass);
 
-	    class = RBASIC(recv)->class;
-	    while (class) {
-		if (RCLASS(class)->m_tbl == cl->m_tbl)
+	    klass = RBASIC(recv)->klass;
+	    while (klass) {
+		if (RCLASS(klass)->m_tbl == cl->m_tbl)
 		    break;
-		class = RCLASS(class)->super;
+		klass = RCLASS(klass)->super;
 	    }
 	}
 	else {
-	    class = RCLASS(class)->super;
+	    klass = RCLASS(klass)->super;
 	}
 	goto again;
     }
@@ -3105,7 +3106,7 @@ rb_call(class, recv, mid, argc, argv, scope)
     PUSH_ITER(itr);
     PUSH_FRAME();
     the_frame->last_func = id;
-    the_frame->last_class = class;
+    the_frame->last_class = klass;
     the_frame->argc = argc;
     the_frame->argv = argv;
 
@@ -3212,7 +3213,7 @@ rb_call(class, recv, mid, argc, argv, scope)
 	      default:
 		if (len < 0) {
 		    Bug("bad argc(%d) specified for `%s(%s)'",
-			len, rb_class2name((VALUE)class), rb_id2name(mid));
+			len, rb_class2name(klass), rb_id2name(mid));
 		}
 		else {
 		    ArgError("too many arguments(%d)", len);
@@ -3584,7 +3585,7 @@ eval(self, src, scope)
 
     rb_in_eval++;
     if (TYPE(the_class) == T_ICLASS) {
-	the_class = RBASIC(the_class)->class;
+	the_class = RBASIC(the_class)->klass;
     }
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
@@ -4075,17 +4076,17 @@ mod_include(argc, argv, module)
 }
 
 VALUE
-class_new_instance(argc, argv, class)
+class_new_instance(argc, argv, klass)
     int argc;
     VALUE *argv;
-    VALUE class;
+    VALUE klass;
 {
     VALUE obj;
 
-    if (FL_TEST(class, FL_SINGLETON)) {
+    if (FL_TEST(klass, FL_SINGLETON)) {
 	TypeError("can't create instance of virtual class");
     }
-    obj = obj_alloc(class);
+    obj = obj_alloc(klass);
     PUSH_ITER(iterator_p()?ITER_PRE:ITER_NOT);
     rb_funcall2(obj, init, argc, argv);
     POP_ITER();
@@ -4369,8 +4370,8 @@ f_binding(self)
 #define PROC_TMASK (FL_USER1|FL_USER2)
 
 static VALUE
-proc_s_new(class)
-    VALUE class;
+proc_s_new(klass)
+    VALUE klass;
 {
     volatile VALUE proc;
     struct BLOCK *data;
@@ -4379,7 +4380,7 @@ proc_s_new(class)
 	ArgError("tryed to create Procedure-Object out of iterator");
     }
 
-    proc = Data_Make_Struct(class, struct BLOCK, blk_mark, blk_free, data);
+    proc = Data_Make_Struct(klass, struct BLOCK, blk_mark, blk_free, data);
     *data = *the_block;
 
 #ifdef THREAD
@@ -4414,6 +4415,22 @@ f_lambda()
     return proc_s_new(cProc);
 }
 
+static int
+blk_orphan(data)
+    struct BLOCK *data;
+{
+    if (data->scope && data->scope != top_scope &&
+	(data->scope->flag & SCOPE_NOSTACK)) {
+	return 1;
+    }
+#ifdef THREAD
+    if (data->orig_thread != thread_current()) {
+	return 1;
+    }
+#endif
+    return 0;
+}
+
 static VALUE
 proc_call(proc, args)
     VALUE proc, args;		/* OK */
@@ -4436,32 +4453,22 @@ proc_call(proc, args)
     }
 
     Data_Get_Struct(proc, struct BLOCK, data);
-
-    if (data->scope && (data->scope->flag & SCOPE_NOSTACK)) {
-	orphan = 1;
-    }
-    else {
-#ifdef THREAD
-	if (data->orig_thread != thread_current()) {
-	    orphan = 1;
-	}
-	else
-#endif
-	orphan = 0;
-    }
-    if (orphan) {/* orphan procedure */
-	if (iterator_p()) {
-	    data->frame.iter = ITER_CUR;
-	}
-	else {
-	    data->frame.iter = ITER_NOT;
-	}
-    }
+    orphan = blk_orphan(data);
 
     /* PUSH BLOCK from data */
     PUSH_BLOCK2(data);
     PUSH_ITER(ITER_CUR);
     the_frame->iter = ITER_CUR;
+
+    if (orphan) {/* orphan procedure */
+	if (iterator_p()) {
+	    the_block->frame.iter = ITER_CUR;
+	}
+	else {
+	    the_block->frame.iter = ITER_NOT;
+	}
+    }
+
     if (FL_TEST(proc, PROC_TAINT)) {
 	switch (RBASIC(proc)->flags & PROC_TMASK) {
 	  case PROC_T3:
@@ -4509,6 +4516,76 @@ proc_call(proc, args)
     return result;
 }
 
+static VALUE
+proc_iterate(proc)
+    VALUE proc;
+{
+    VALUE lambda = f_lambda();
+    struct BLOCK *data;
+    volatile VALUE result = Qnil;
+    int state;
+    volatile int orphan;
+    volatile int safe = safe_level;
+
+    Data_Get_Struct(lambda, struct BLOCK, data);
+    data->frame.iter = ITER_PRE;
+    data->iter = ITER_PRE;
+
+    Data_Get_Struct(proc, struct BLOCK, data);
+    orphan = blk_orphan(data);
+
+    /* PUSH BLOCK from data */
+    PUSH_BLOCK2(data);
+    PUSH_ITER(ITER_PRE);
+    the_frame->iter = ITER_PRE;
+    if (FL_TEST(proc, PROC_TAINT)) {
+	switch (RBASIC(proc)->flags & PROC_TMASK) {
+	  case PROC_T3:
+	    safe_level = 3;
+	    break;
+	  case PROC_T4:
+	    safe_level = 4;
+	    break;
+	  case PROC_T5:
+	    safe_level = 5;
+	    break;
+	}
+    }
+
+    PUSH_TAG(PROT_NONE);
+    state = EXEC_TAG();
+    if (state == 0) {
+	result = proc_call(lambda, Qnil);
+    }
+    POP_TAG();
+
+    POP_ITER();
+    if (the_block->tag->dst == state) {
+	state &= TAG_MASK;
+	orphan = 2;
+    }
+    POP_BLOCK();
+    safe_level = safe;
+
+    if (state) {
+	if (orphan == 2) {/* escape from orphan procedure */
+	    switch (state) {
+	      case TAG_BREAK:
+		Raise(eLocalJumpError, "break from proc-closure");
+		break;
+	      case TAG_RETRY:
+		Raise(eLocalJumpError, "retry from proc-closure");
+		break;
+	      case TAG_RETURN:
+		Raise(eLocalJumpError, "return from proc-closure");
+		break;
+	    }
+	}
+	JUMP_TAG(state);
+    }
+    return result;
+}
+
 void
 Init_Proc()
 {
@@ -4518,6 +4595,7 @@ Init_Proc()
     rb_define_singleton_method(cProc, "new", proc_s_new, 0);
 
     rb_define_method(cProc, "call", proc_call, -2);
+    rb_define_method(cProc, "iterate", proc_iterate, 0);
     rb_define_global_function("proc", f_lambda, 0);
     rb_define_global_function("lambda", f_lambda, 0);
     rb_define_global_function("binding", f_binding, 0);
@@ -4584,7 +4662,7 @@ struct thread {
     struct BLOCK *block;
     struct iter *iter;
     struct tag *tag;
-    VALUE class;
+    VALUE klass;
 
     VALUE trace;
 
@@ -4729,7 +4807,7 @@ thread_save_context(th)
 
     th->frame = the_frame;
     th->scope = the_scope;
-    th->class = the_class;
+    th->klass = the_class;
     th->dyna_vars = the_dyna_vars;
     th->block = the_block;
     th->iter = the_iter;
@@ -4786,12 +4864,11 @@ thread_restore_context(th, exit)
 
     the_frame = th->frame;
     the_scope = th->scope;
-    the_class = th->class;
+    the_class = th->klass;
     the_dyna_vars = th->dyna_vars;
     the_block = th->block;
     the_iter = th->iter;
     prot_tag = th->tag;
-    the_class = th->class;
     errat = th->errat;
     errinfo = th->errinfo;
     last_status = th->last_status;
@@ -5398,7 +5475,7 @@ thread_alloc()
 
     th->frame = 0;
     th->scope = 0;
-    th->class = 0;
+    th->klass = 0;
     th->dyna_vars = 0;
     th->block = 0;
     th->iter = 0;

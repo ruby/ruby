@@ -15,6 +15,19 @@ require 'final'
 class Tempfile < SimpleDelegator
   Max_try = 10
 
+  def Tempfile.callback(path)
+    lambda{
+      print "removing ", path, "..."
+      if File.exist?(path)
+	File.unlink(path) 
+      end
+      if File.exist?(path + '.lock')
+	File.unlink(path + '.lock')
+      end
+      print "done\n"
+    }
+  end
+
   def initialize(basename, tmpdir = '/tmp')
     umask = File.umask(0177)
     begin
@@ -33,14 +46,7 @@ class Tempfile < SimpleDelegator
 	n += 1
       end
 
-      @clean_files = proc {|id| 
-	if File.exist?(@tmpname)
-	  File.unlink(@tmpname) 
-	end
-	if File.exist?(@tmpname + '.lock')
-	  File.unlink(@tmpname + '.lock')
-	end
-      }
+      @clean_files = Tempfile.callback(@tmpname)
       ObjectSpace.define_finalizer(self, @clean_files)
 
       @tmpfile = File.open(@tmpname, 'w+')
@@ -75,6 +81,7 @@ if __FILE__ == $0
   f = Tempfile.new("foo")
   f.print("foo\n")
   f.close
+  f = nil
   f.open
   p f.gets # => "foo\n"
   f.close(true)

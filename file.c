@@ -77,10 +77,10 @@ file_open(fname, mode)
 }
 
 static VALUE
-file_s_open(argc, argv, class)
+file_s_open(argc, argv, klass)
     int argc;
     VALUE *argv;
-    VALUE class;
+    VALUE klass;
 {
     VALUE fname, vmode, file;
     char *mode;
@@ -96,7 +96,7 @@ file_s_open(argc, argv, class)
     }
     file = file_open(RSTRING(fname)->ptr, mode);
 
-    RBASIC(file)->class = class;
+    RBASIC(file)->klass = klass;
     if (iterator_p()) {
 	rb_ensure(rb_yield, file, io_close, file);
     }
@@ -185,7 +185,7 @@ file_tell(obj)
     long pos;
 
     GetOpenFile(obj, fptr);
-
+    io_check_closed(fptr);
     pos = ftell(fptr->f);
     if (ferror(fptr->f) != 0) rb_sys_fail(0);
 
@@ -200,7 +200,7 @@ file_seek(obj, offset, ptrname)
     long pos;
 
     GetOpenFile(obj, fptr);
-
+    io_check_closed(fptr);
     pos = fseek(fptr->f, NUM2INT(offset), NUM2INT(ptrname));
     if (pos != 0) rb_sys_fail(0);
     clearerr(fptr->f);
@@ -216,6 +216,7 @@ file_set_pos(obj, offset)
     long pos;
 
     GetOpenFile(obj, fptr);
+    io_check_closed(fptr);
     pos = fseek(fptr->f, NUM2INT(offset), 0);
     if (pos != 0) rb_sys_fail(0);
     clearerr(fptr->f);
@@ -230,6 +231,7 @@ file_rewind(obj)
     OpenFile *fptr;
 
     GetOpenFile(obj, fptr);
+    io_check_closed(fptr);
     if (fseek(fptr->f, 0L, 0) != 0) rb_sys_fail(0);
     clearerr(fptr->f);
 
@@ -243,6 +245,7 @@ file_eof(obj)
     OpenFile *fptr;
 
     GetOpenFile(obj, fptr);
+    io_check_closed(fptr);
     if (feof(fptr->f) == 0) return FALSE;
     return TRUE;
 }
@@ -254,14 +257,8 @@ file_path(obj)
     OpenFile *fptr;
 
     GetOpenFile(obj, fptr);
+    if (fptr->path == NULL) return Qnil;
     return str_new2(fptr->path);
-}
-
-static VALUE
-file_isatty(obj)
-    VALUE obj;
-{
-    return FALSE;
 }
 
 #include <sys/types.h>
@@ -379,6 +376,7 @@ file_lstat(obj)
     struct stat st;
 
     GetOpenFile(obj, fptr);
+    io_check_closed(fptr);
     if (lstat(fptr->path, &st) == -1) {
 	rb_sys_fail(fptr->path);
     }
@@ -938,6 +936,7 @@ file_chmod(obj, vmode)
 
     GetOpenFile(obj, fptr);
 #if defined(DJGPP) || defined(__CYGWIN32__) || defined(NT)
+    io_check_closed(fptr);
     if (chmod(fptr->path, mode) == -1)
 	rb_sys_fail(fptr->path);
 #else
@@ -997,6 +996,7 @@ file_chown(obj, owner, group)
     rb_secure(2);
     GetOpenFile(obj, fptr);
 #if defined(DJGPP) || defined(__CYGWIN32__) || defined(NT)
+    io_check_closed(fptr);
     if (chown(fptr->path, NUM2INT(owner), NUM2INT(group)) == -1)
 	rb_sys_fail(fptr->path);
 #else
@@ -1315,7 +1315,7 @@ file_s_basename(argc, argv)
 	    f = rmext(RSTRING(fname)->ptr, RSTRING(ext)->ptr);
 	    if (f) return str_new(RSTRING(fname)->ptr, f);
 	}
-	return (VALUE)fname;
+	return fname;
     }
     p++;			/* skip last `/' */
     if (!NIL_P(ext)) {
@@ -1688,12 +1688,11 @@ Init_File()
     rb_define_method(cFile, "tell",  file_tell, 0);
     rb_define_method(cFile, "seek",  file_seek, 2);
 
+    rb_define_method(cFile, "rewind", file_rewind, 0);
+
     rb_define_method(cFile, "pos",  file_tell, 0);
     rb_define_method(cFile, "pos=", file_set_pos, 1);
 
-    rb_define_method(cFile, "rewind", file_rewind, 0);
-    rb_define_method(cFile, "isatty", file_isatty, 0);
-    rb_define_method(cFile, "tty?",  file_isatty, 0);
     rb_define_method(cFile, "eof", file_eof, 0);
     rb_define_method(cFile, "eof?", file_eof, 0);
 

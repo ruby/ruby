@@ -1,3 +1,38 @@
+Mon Feb  9 14:51:56 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* numeric.c (do_coerce): proper error message.
+
+	* string.c (str_sum): bug - masked by wrong value. (sigh..)
+
+Sat Feb  7 15:11:14 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (str_empty): new method
+
+Fri Feb  6 01:42:15 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* time.c (time_asctime): use asctime(3), not strftime(3).
+
+Thu Feb  5 18:58:46 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (io_fptr_close): do not free path on close().
+
+	* array.c (ary_filter): new method.
+
+	* enum.c (enum_each_with_index): new method.
+
+Thu Feb  5 14:10:35 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (primary): singleton class def can be appeared inside
+ 	  method bodies.
+
+	* hash.c (hash_replace): replace content.
+
+	* string.c (str_replace_method): replace content.
+
+	* array.c (ary_replace_method): replace elements.
+
+	* string.c (str_succ_bang): String#succ!
+
 Thu Feb  5 18:20:30 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
 
 	* string.c (str_upcase_bang): multi byte character support.

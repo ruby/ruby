@@ -173,7 +173,7 @@ typedef struct RVALUE {
 	} free;
 	struct RBasic  basic;
 	struct RObject object;
-	struct RClass  class;
+	struct RClass  klass;
 	struct RFloat  flonum;
 	struct RString string;
 	struct RArray  array;
@@ -249,14 +249,14 @@ rb_newobj()
 }
 
 VALUE
-data_object_alloc(class, datap, dmark, dfree)
-    VALUE class;
+data_object_alloc(klass, datap, dmark, dfree)
+    VALUE klass;
     void *datap;
     void (*dfree)();
     void (*dmark)();
 {
     NEWOBJ(data, struct RData);
-    OBJSETUP(data, class, T_DATA);
+    OBJSETUP(data, klass, T_DATA);
     data->data = datap;
     data->dfree = dfree;
     data->dmark = dmark;
@@ -466,19 +466,19 @@ gc_mark(ptr)
 	return;			/* no need to mark class. */
     }
 
-    gc_mark(obj->as.basic.class);
+    gc_mark(obj->as.basic.klass);
     switch (obj->as.basic.flags & T_MASK) {
       case T_ICLASS:
-	gc_mark(obj->as.class.super);
-	mark_tbl(obj->as.class.iv_tbl);
-	mark_tbl(obj->as.class.m_tbl);
+	gc_mark(obj->as.klass.super);
+	mark_tbl(obj->as.klass.iv_tbl);
+	mark_tbl(obj->as.klass.m_tbl);
 	break;
 
       case T_CLASS:
       case T_MODULE:
-	gc_mark(obj->as.class.super);
-	mark_tbl(obj->as.class.m_tbl);
-	mark_tbl(obj->as.class.iv_tbl);
+	gc_mark(obj->as.klass.super);
+	mark_tbl(obj->as.klass.m_tbl);
+	mark_tbl(obj->as.klass.iv_tbl);
 	break;
 
       case T_ARRAY:
@@ -644,7 +644,7 @@ obj_free(obj)
       case T_MODULE:
       case T_CLASS:
 	rb_clear_cache();
-	st_free_table(RANY(obj)->as.class.m_tbl);
+	st_free_table(RANY(obj)->as.klass.m_tbl);
 	if (RANY(obj)->as.object.iv_tbl) {
 	    st_free_table(RANY(obj)->as.object.iv_tbl);
 	}

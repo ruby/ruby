@@ -356,6 +356,25 @@ enum_length(obj)
     return INT2FIX(length);
 }
 
+each_with_index_i(val, indexp)
+    VALUE val;
+    int *indexp;
+{
+    rb_yield(assoc_new(val, INT2FIX(*indexp)));
+    (*indexp)++;
+    return Qnil;
+}
+
+VALUE
+enum_each_with_index(obj)
+    VALUE obj;
+{
+    int index = 0;
+
+    rb_iterate(rb_each, obj, each_with_index_i, (VALUE)&index);
+    return Qnil;
+}
+
 void
 Init_Enumerable()
 {
@@ -376,6 +395,7 @@ Init_Enumerable()
     rb_define_method(mEnumerable,"include?", enum_member, 1);
     rb_define_method(mEnumerable,"length", enum_length, 0);
     rb_define_method(mEnumerable,"size", enum_length, 0);
+    rb_define_method(mEnumerable,"each_with_index", enum_each_with_index, 0);
 
     id_eqq  = rb_intern("===");
     id_each = rb_intern("each");
