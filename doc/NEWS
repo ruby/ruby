@@ -20,6 +20,18 @@
   Extended to take an optional expression, which is used as a value
   for termination. [experimental]
 
+: comparison of exception classes in a rescue clause
+
+  Changed to use Module#=== for comparing $! with the exception
+  class specified in each rescue clause.
+
+  As the previous behavior was to use kind_of?, the effect is limited
+  to the SystemCallError case.  SystemCallError.=== has been newly
+  defined to return true when the two have the same errno.  With this
+  change, SystemCallError's with the same errno, such as Errno::EAGAIN
+  and Errno::EWOULDBLOCK, can both be rescued by listing just one of
+  them.
+
 : constants lookup
 
   Improved at the performance of searching by using an internal hash
@@ -39,6 +51,16 @@
   Instead of:
 
     (p("xx"*2)).to_i
+
+: implicit comparison in conditional expressions
+
+  is obsoleted except when it is used in -e.
+
+  : between Range and $.
+      Use explicit comparison instead.
+
+  : between Regexp and $_
+      Use the unary method ~/re/ instead.
 
 : to_str
 
@@ -106,18 +128,6 @@
 
   Beware that this behavior is not guaranteed to continue in the
   future.  Do not rely on its return value. [ruby-dev:12506]
-
-: Comparison of exception classes in a rescue clause
-
-  Changed to use Module#=== for comparing $! with the exception
-  class specified in each rescue clause.
-
-  As the previous behavior was to use kind_of?, the effect is limited
-  to the SystemCallError case.  SystemCallError.=== has been newly
-  defined to return true when the two have the same errno.  With this
-  change, SystemCallError's with the same errno, such as Errno::EAGAIN
-  and Errno::EWOULDBLOCK, can both be rescued by listing just one of
-  them.
 
 : Curses
 
@@ -192,12 +202,6 @@
   Made a subclass of SignalException. (It was a subclass of
   Exception in 1.6 and prior)
 
-: Line-range operation
-
-  Obsoleted except the case when used in a one-liner (ruby -e "..."),
-  which means "if 101..200" in a script is no longer interpreted as
-  comparison between (({$.})) and 101 or 200.
-
 : Marshal
 
   Fixed not to dump anonymous classes/modules.
@@ -253,7 +257,7 @@
 
   Fixed so that "*a = nil" results in "a == []".
 
-: NameError & NoMethodError
+: NameError and NoMethodError
 
   Moved and now NoMethodError < NameError < StandardError.
 
@@ -301,11 +305,6 @@
   Added.  You can now do something like this:
 
     a, b, c = 1..3
-
-: Regexp
-
-  It is being obsoleted to regard /re/ as /re/ =~ $_ in a conditional
-  context.  Use ~/re/ instead.
 
 : Regexp#options
 
@@ -367,7 +366,7 @@
 
 : String.new
 
-  returns "".
+  The first argument becomes optional.
 
 : Symbol#intern
 
