@@ -2,6 +2,10 @@ Thu Apr 11 18:40:38 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* io.c (read_all): return "" if file.size == 0.
 
+	* random.c (rand_init): add check for initstate(3).
+
+	* configure.in: ditto.
+
 Thu Apr 11 01:55:52 2002  Wakou Aoyama  <wakou@fsinet.or.jp>
 
 	* lib/cgi/session.rb: support for multipart form.
