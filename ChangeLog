@@ -1,3 +1,11 @@
+Mon May 28 02:20:38 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* dir.c (glob_helper): teach has_magic() to handle flags and get
+	  glob_helper to properly support FNM_NOESCAPE.
+
+	* dir.c (fnmatch): fix a bug when FNM_PATHNAME and FNM_PERIOD are
+	  specified at the same time.
+
 Sat May 26 07:05:45 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
 
 	* MANIFEST: add win32/dir.h .

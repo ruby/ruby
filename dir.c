@@ -130,8 +130,9 @@ range(pat, test, flags)
     return 0;
 }
 
+#define ISDIRSEP(c) (pathname && isdirsep(c))
 #define PERIOD(s) (period && *(s) == '.' && \
-		  ((s) == string || pathname && isdirsep(*(s))))
+		  ((s) == string || ISDIRSEP((s)[-1])))
 static int
 fnmatch(pat, string, flags)
     const char *pat;
@@ -149,7 +150,7 @@ fnmatch(pat, string, flags)
     while (c = *pat++) {
 	switch (c) {
 	case '?':
-	    if (!*s || pathname && isdirsep(*s) || PERIOD(s))
+	    if (!*s || ISDIRSEP(*s) || PERIOD(s))
 		return FNM_NOMATCH;
 	    s++;
 	    break;
@@ -166,7 +167,7 @@ fnmatch(pat, string, flags)
 		else
 		    return 0;
 	    }
-	    else if (pathname && isdirsep(c)) {
+	    else if (ISDIRSEP(c)) {
 		s = find_dirsep(s);
 		if (s)
 		    break;
@@ -180,14 +181,14 @@ fnmatch(pat, string, flags)
 		if ((c == '[' || downcase(*s) == test) &&
 		    !fnmatch(pat, s, flags & ~FNM_PERIOD))
 		    return 0;
-		else if (pathname && isdirsep(*s))
+		else if (ISDIRSEP(*s))
 		    break;
 		s++;
 	    }
 	    return FNM_NOMATCH;
       
 	case '[':
-	    if (!*s || pathname && isdirsep(*s) || PERIOD(s))
+	    if (!*s || ISDIRSEP(*s) || PERIOD(s))
 		return FNM_NOMATCH;
 	    pat = range(pat, *s, flags);
 	    if (!pat)
@@ -211,7 +212,7 @@ fnmatch(pat, string, flags)
 
 	default:
 #if defined DOSISH
-	    if (pathname && isdirsep(c) && isdirsep(*s))
+	    if (ISDIRSEP(c) && isdirsep(*s))
 		;
 	    else
 #endif
@@ -522,12 +523,14 @@ dir_s_rmdir(obj, dir)
 
 /* Return nonzero if S has any special globbing chars in it.  */
 static int
-has_magic(s, send)
+has_magic(s, send, flags)
      char *s, *send;
+     int flags;
 {
     register char *p = s;
     register char c;
     int open = 0;
+    int escape = !(flags & FNM_NOESCAPE);
 
     while ((c = *p++) != '\0') {
 	switch (c) {
@@ -544,7 +547,7 @@ has_magic(s, send)
 	    continue;
 
 	  case '\\':
-	    if (*p++ == '\0')
+	    if (escape && *p++ == '\0')
 		return Qfalse;
 	}
 
@@ -610,16 +613,16 @@ remove_backslashes(p)
 #endif
 
 static void
-glob_helper(path, flag, func, arg)
+glob_helper(path, flags, func, arg)
     char *path;
-    int flag;
+    int flags;
     void (*func)();
     VALUE arg;
 {
     struct stat st;
     char *p, *m;
 
-    if (!has_magic(path, 0)) {
+    if (!has_magic(path, 0, flags)) {
 	remove_backslashes(path);
 	if (stat(path, &st) == 0) {
 	    (*func)(path, arg);
@@ -636,7 +639,7 @@ glob_helper(path, flag, func, arg)
     while (p) {
 	if (*p == '/') p++;
 	m = strchr(p, '/');
-	if (has_magic(p, m)) {
+	if (has_magic(p, m, flags)) {
 	    char *dir, *base, *magic, *buf;
 	    DIR *dirp;
 	    struct dirent *dp;
@@ -662,7 +665,7 @@ glob_helper(path, flag, func, arg)
 		    recursive = 1;
 		    buf = ALLOC_N(char, strlen(base)+strlen(m)+3);
 		    sprintf(buf, "%s%s", base, *base ? m : m+1);
-		    glob_helper(buf, flag, func, arg);
+		    glob_helper(buf, flags, func, arg);
 		    free(buf);
 		}
 		dirp = opendir(dir);
@@ -696,12 +699,12 @@ glob_helper(path, flag, func, arg)
 		    if (S_ISDIR(st.st_mode)) {
 		        strcat(buf, "/**");
 			strcat(buf, m);
-			glob_helper(buf, flag, func, arg);
+			glob_helper(buf, flags, func, arg);
 		    }
 		    free(buf);
 		    continue;
 		}
-		if (fnmatch(magic, dp->d_name, flag) == 0) {
+		if (fnmatch(magic, dp->d_name, flags) == 0) {
 		    buf = ALLOC_N(char, strlen(base)+NAMLEN(dp)+2);
 		    sprintf(buf, "%s%s%s", base, (BASE)?"/":"", dp->d_name);
 		    if (!m) {
@@ -727,7 +730,7 @@ glob_helper(path, flag, func, arg)
 			    char *t = ALLOC_N(char, len+mlen+1);
 
 			    sprintf(t, "%s%s", link->path, m);
-			    glob_helper(t, flag, func, arg);
+			    glob_helper(t, flags, func, arg);
 			    free(t);
 			}
 			tmp = link;
@@ -849,7 +852,7 @@ dir_s_glob(dir, str)
     VALUE dir, str;
 {
     char *p, *pend;
-    char buffer[MAXPATHLEN], *buf = buffer;
+    char buffer[MAXPATHLEN], *buf;
     char *t;
     int nest;
     VALUE ary = 0;
@@ -860,6 +863,8 @@ dir_s_glob(dir, str)
     }
     if (RSTRING(str)->len >= MAXPATHLEN) {
 	buf = xmalloc(RSTRING(str)->len + 1);
+    } else {
+	buf = buffer;
     }
 
     p = RSTRING(str)->ptr;
