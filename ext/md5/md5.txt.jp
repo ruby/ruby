@@ -3,7 +3,7 @@
 ** MD5(クラス)
 
 RFC1321に記述されているRSA Data Security, Inc. の MD5 Message-Digest
-Algorithmを実装するクラス．
+Algorithmを実装するクラス。
 
 SuperClass: Object
 
@@ -13,18 +13,18 @@ Class Methods:
    md5([str])
 
         新しいMD5オブジェクトを生成する．文字列引数が与えられるとそれ
-        を追加する(see update)．
+        を追加する(see update)。
 
 Methods:
 
    clone
 
-	MD5オブジェクトの複製を作る
+	MD5オブジェクトの複製を作る。
 
    digest
 
         今までに追加した文字列に対するハッシュ値を16バイト長の文字列で
-        返す．
+        返す。
 
    hexdigest
 
@@ -41,7 +41,8 @@ Methods:
    update(str)
 
         MD5オブジェクトに文字列を追加する。複数回updateを呼ぶことは文
-        字列を連結してupdateを呼ぶことと等しい．
+        字列を連結してupdateを呼ぶことと等しい。すなわち m.update(a);
+	m.update(b) は m.update(a+b) と等価である。
 
 -------------------------------------------------------
 Local variables:
