@@ -1,3 +1,8 @@
+Fri May 18 05:29:21 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/mkmf.rb (xsystem): make a temporary fix to get $(...) macros
+	  properly expanded on a command execution.
+
 Fri May 18 03:49:55 2001  Brian F. Feldman  <green@FreeBSD.org>
 
 	* lib/mkmf.rb: unbreak "make install".  lib/* must be installed
