@@ -101,6 +101,9 @@ enum node_type {
     NODE_TAG,
     NODE_NEWLINE,
     NODE_POSTEXE,
+#ifdef C_ALLOCA
+    NODE_ALLOCA,
+#endif
 };
 
 typedef struct RNode {

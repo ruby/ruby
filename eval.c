@@ -1103,6 +1103,17 @@ mod_alias_method(mod, new, old)
     return mod;
 }
 
+#if defined(C_ALLOCA) && defined(THREAD)
+# define TMP_PROTECT NODE *__protect_tmp=0
+# define ALLOCTMP(type,n)						   \
+    (__protect_tmp = node_newnode(NODE_ALLOCA,				   \
+			     str_new(0,sizeof(type)*(n)),0,__protect_tmp), \
+     (void*)RSTRING(__protect_tmp->nd_head)->ptr)
+#else
+# define TMP_PROTECT typedef int foobazzz
+# define ALLOCTMP(type,n) ALLOCA_N(type,n)
+#endif
+
 #define SETUP_ARGS(anode) {\
     NODE *n = anode;\
     if (!n) {\
@@ -1116,7 +1127,7 @@ mod_alias_method(mod, new, old)
 	    int line = sourceline;\
             int i;\
 	    n = anode;\
-	    argv = ALLOCA_N(VALUE,argc);\
+	    argv = ALLOCTMP(VALUE,argc);\
 	    for (i=0;i<argc;i++) {\
 		argv[i] = rb_eval(self,n->nd_head);\
 		n=n->nd_next;\
@@ -1757,6 +1768,7 @@ rb_eval(self, node)
 	{
 	    VALUE recv;
 	    int argc; VALUE *argv; /* used in SETUP_ARGS */
+	    TMP_PROTECT;
 
 	    PUSH_ITER(ITER_NOT);
 	    recv = rb_eval(self, node->nd_recv);
@@ -1769,6 +1781,7 @@ rb_eval(self, node)
       case NODE_FCALL:
 	{
 	    int argc; VALUE *argv; /* used in SETUP_ARGS */
+	    TMP_PROTECT;
 
 	    PUSH_ITER(ITER_NOT);
 	    SETUP_ARGS(node->nd_args);
@@ -1785,6 +1798,7 @@ rb_eval(self, node)
       case NODE_ZSUPER:
 	{
 	    int argc; VALUE *argv; /* used in SETUP_ARGS */
+	    TMP_PROTECT;
 
 	    if (nd_type(node) == NODE_ZSUPER) {
 		argc = the_frame->argc;
@@ -1836,6 +1850,7 @@ rb_eval(self, node)
 	    int argc; VALUE *argv; /* used in SETUP_ARGS */
 	    VALUE recv, val;
 	    NODE *rval;
+	    TMP_PROTECT;
 
 	    recv = rb_eval(self, node->nd_recv);
 	    rval = node->nd_args->nd_head;
@@ -2325,6 +2340,7 @@ module_setup(module, node)
     VALUE result;		/* OK */
     char *file = sourcefile;
     int line = sourceline;
+    TMP_PROTECT;
 
     /* fill c-ref */
     node->nd_clss = module;
@@ -2336,7 +2352,7 @@ module_setup(module, node)
 
     if (node->nd_rval) the_frame->cbase = node->nd_rval;
     if (node->nd_tbl) {
-	VALUE *vars = ALLOCA_N(VALUE, node->nd_tbl[0]+1);
+	VALUE *vars = ALLOCTMP(VALUE, node->nd_tbl[0]+1);
 	*vars++ = (VALUE)node;
 	the_scope->local_vars = vars;
 	memclear(the_scope->local_vars, node->nd_tbl[0]);
@@ -2827,6 +2843,7 @@ handle_rescue(self, node)
     NODE *node;
 {
     int argc; VALUE *argv; /* used in SETUP_ARGS */
+    TMP_PROTECT;
 
     if (!node->nd_args) {
 	return obj_is_kind_of(errinfo, eException);
@@ -3036,6 +3053,7 @@ rb_call(class, recv, mid, argc, argv, scope)
     int itr;
     enum node_type type;
     static int tick;
+    TMP_PROTECT;
 
   again:
     /* is it in the method cache? */
@@ -3224,7 +3242,7 @@ rb_call(class, recv, mid, argc, argv, scope)
 
 	    if (body->nd_rval) the_frame->cbase = body->nd_rval;
 	    if (body->nd_tbl) {
-		local_vars = ALLOCA_N(VALUE, body->nd_tbl[0]+1);
+		local_vars = ALLOCTMP(VALUE, body->nd_tbl[0]+1);
 		*local_vars++ = (VALUE)body;
 		memclear(local_vars, body->nd_tbl[0]);
 		the_scope->local_tbl = body->nd_tbl;
@@ -3721,6 +3739,7 @@ f_load(obj, fname)
     int state;
     char *file;
     volatile ID last_func;
+    TMP_PROTECT;
 
     Check_SafeStr(fname);
     if (RSTRING(fname)->ptr[0] == '~') {
@@ -3736,7 +3755,7 @@ f_load(obj, fname)
     if (top_scope->local_tbl) {
 	int len = top_scope->local_tbl[0]+1;
 	ID *tbl = ALLOC_N(ID, len);
-	VALUE *vars = ALLOCA_N(VALUE, len);
+	VALUE *vars = ALLOCTMP(VALUE, len);
 	*vars++ = 0;
 	MEMCPY(tbl, top_scope->local_tbl, ID, len);
 	MEMCPY(vars, top_scope->local_vars, ID, len-1);

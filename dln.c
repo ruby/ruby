@@ -10,15 +10,15 @@
 
 ************************************************/
 
-#ifdef _AIX
-#pragma alloca
-#endif
-
 #include "config.h"
 #include "defines.h"
 #include "dln.h"
 
 char *dln_argv0;
+
+#ifdef _AIX
+#pragma alloca
+#endif
 
 #if defined(HAVE_ALLOCA_H) && !defined(__GNUC__)
 #include <alloca.h>

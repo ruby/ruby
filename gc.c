@@ -26,10 +26,6 @@
 #endif
 #endif
 
-#ifdef _AIX
-#pragma alloca
-#endif
-
 #ifdef C_ALLOCA
 void *alloca();
 #endif
@@ -400,6 +396,10 @@ gc_mark(ptr)
 	  case NODE_DREGX_ONCE:
 	  case NODE_FBODY:
 	  case NODE_CALL:
+	  case NODE_CREF:
+#ifdef C_ALLOCA
+	  case NODE_ALLOCA:
+#endif
 	    gc_mark(obj->as.node.u1.node);
 	    /* fall through */
 	  case NODE_SUPER:	/* 3 */
