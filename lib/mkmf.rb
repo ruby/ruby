@@ -819,8 +819,6 @@ def create_makefile(target, srcprefix = nil)
     target_prefix = ""
   end
 
-  $extout_prefix = $extout ? "$(extout)$(target_prefix)/" : ""
-
   srcprefix ||= '$(srcdir)'
   Config::expand(srcdir = srcprefix.dup)
 
@@ -898,7 +896,7 @@ RUBYARCHDIR   = $(sitearchdir)$(target_prefix)
 }
   end
   mfile.print %{
-CLEANLIBS     = #{$extout_prefix}$(TARGET).{#{CONFIG['DLEXT']},#{$LIBEXT},exp,il?,tds,map}
+CLEANLIBS     = #{$extout ? '$(RUBYARCHDIR)/' : ''}$(TARGET).{#{CONFIG['DLEXT']},exp,il?,tds,map}
 CLEANOBJS     = *.#{$OBJEXT} *.#{$LIBEXT} *.s[ol] *.pdb *.bak
 
 all:		#{target ? $extout ? "install" : "$(DLLIB)" : "Makefile"}
@@ -1025,6 +1023,7 @@ def init_mkmf(config = CONFIG)
   $distcleanfiles = []
 
   $extout ||= nil
+  $extout_prefix ||= nil
 
   dir_config("opt")
 end

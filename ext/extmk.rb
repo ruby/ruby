@@ -51,10 +51,8 @@ def extmake(target)
 
   init_mkmf
 
-  begin
-    dir = Dir.pwd
-    FileUtils.mkpath target unless File.directory?(target)
-    Dir.chdir target
+  FileUtils.mkpath target unless File.directory?(target)
+  Dir.chdir(target) do
     $target = target
     $mdir = target
     $srcdir = File.join($top_srcdir, "ext", $mdir)
@@ -95,7 +93,7 @@ def extmake(target)
       f.print dummy_makefile($srcdir)
       return true
     end
-    args = sysquote($mflags.map {|m| /\Aextout_prefix=\z/ =~ m ? m + $extout_prefix : m})
+    args = sysquote($mflags)
     if $static
       args += ["static"]
       $extlist.push [$static, $target, File.basename($target), $preload]
@@ -114,9 +112,13 @@ def extmake(target)
       $extlibs = merge_libs($extlibs, $libs.split, $LOCAL_LIBS.split)
       $extpath |= $LIBPATH
     end
-  ensure
-    Dir.chdir dir
   end
+  begin
+    Dir.rmdir target
+    target = File.dirname(target)
+  rescue SystemCallError
+    break
+  end while true
   true
 end
 
@@ -185,7 +187,8 @@ def parse_args()
     unless Config::expand($extout.dup) == $absextout
       $extout = $absextout
     end
-    $mflags << ("extout=" << $extout) << "extout_prefix="
+    $extout_prefix = $extout ? "$(extout)$(target_prefix)/" : ""
+    $mflags << "extout=#$extout" << "extout_prefix=#$extout_prefix"
   end
 
   $message = $OPT['message']
@@ -199,6 +202,7 @@ if target = ARGV.shift and /^[a-z-]+$/ =~ target
   case target
   when /clean/
     $ignore ||= true
+    $clean = true
   when /^install\b/
     $install = true
     $ignore ||= true
@@ -292,6 +296,10 @@ end
 
 if $ignore
   Dir.chdir ".."
+  if $clean
+    Dir.rmdir('ext') rescue nil
+    FileUtils.rm_rf($absextout) if $extout
+  end
   exit
 end
 
