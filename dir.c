@@ -178,7 +178,7 @@ fnmatch(pat, string, flags)
 	    test = downcase(test);
 	    pat--;
 	    while (*s) {
-		if ((c == '[' || downcase(*s) == test) &&
+		if ((c == '?' || c == '[' || downcase(*s) == test) &&
 		    !fnmatch(pat, s, flags | FNM_DOTMATCH))
 		    return 0;
 		else if (ISDIRSEP(*s))
@@ -186,7 +186,7 @@ fnmatch(pat, string, flags)
 		s++;
 	    }
 	    return FNM_NOMATCH;
-      
+
 	case '[':
 	    if (!*s || ISDIRSEP(*s) || PERIOD(s))
 		return FNM_NOMATCH;
@@ -199,7 +199,7 @@ fnmatch(pat, string, flags)
 	case '\\':
 	    if (escape
 #if defined DOSISH
-		&& *pat && strchr("*?[\\", *pat)
+		&& *pat && strchr("*?[]\\", *pat)
 #endif
 		) {
 		c = *pat;

@@ -1,3 +1,9 @@
+Mon Feb  9 13:00:55 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* dir.c (fnmatch):
+	  File.fnmatch('*?', 'a') should return true. [ruby-dev:22815]
+	  File.fnmatch('\[1\]' , '[1]') should return true. [ruby-dev:22819]
+
 Sun Feb  8 16:46:13 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/pp.rb (PP::PPMethods::object_address_group): suppress negative
