@@ -1,3 +1,11 @@
+Sun Dec 28 20:19:11 2003  Tanaka Akira  <akr@m17n.org>
+
+	* ext/stringio/stringio.c (strio_sysread): StringIO.new.sysread didn't
+	  raise EOFError.
+
+	* ext/zlib/zlib.c (gzreader_gets): don't increment lineno when
+	  gzfile_read_all returns "".
+
 Sun Dec 28 15:25:08 2003  Dave Thomas  <dave@pragprog.com>
 
 	* class.c,object.c,parse.y,sprintf.c,variable.c: Document classes
