@@ -337,6 +337,7 @@ s,@SOLIBS@,$(SOLIBS),;t t
 s,@DLDLIBS@,$(DLDLIBS),;t t
 s,@ENABLE_SHARED@,yes,;t t
 s,@arch@,$(ARCH)-$(OS),;t t
+s,@sitearch@,$(ARCH)-$(RT),;t t
 s,@sitedir@,$${prefix}/lib/ruby/site_ruby,;t t
 s,@configure_args@,--enable-shared $(configure_args),;t t
 s,@configure_input@,$$configure_input,;t t

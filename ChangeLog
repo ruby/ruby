@@ -1,3 +1,7 @@
+Thu Aug 29 23:34:42 2002  KONISHI Hiromasa <konishih@fd6.so-net.ne.jp>
+
+	* bcc32/MakeFile.sub (sitearch): add.
+
 Thu Aug 29 13:36:42 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* io.c (read_all): should use off_t instead of long.
