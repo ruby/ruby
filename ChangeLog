@@ -1,3 +1,10 @@
+Mon Sep 20 13:22:55 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* parse.y [ripper]: remove Ripper#pos.
+
+	* parse.y [ripper]: Ripper#column should return the column of the
+	  current token.
+
 Mon Sep 20 12:02:41 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* parse.y [ripper]: unify old_lex_p and token_head.

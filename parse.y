@@ -146,7 +146,6 @@ struct parser_params {
     VALUE parser_ruby_sourcefile;
     VALUE delayed;
     char *tokp;
-    long current_position;
 #endif
 };
 
@@ -4227,7 +4226,6 @@ ripper_dispatch_scan_event(parser, t)
 
         ripper_dispatch2(parser, ripper_id_scan, ID2SYM(event), rb_str_dup(str));
         ripper_dispatch1(parser, event, str);
-        parser->current_position += RSTRING(str)->len;
         ripper_flush(parser);
     }
 }
@@ -8108,7 +8106,6 @@ parser_initialize(parser)
     parser->parser_lex_pend = 0;
 #ifdef RIPPER
     parser->delayed = rb_ary_new();
-    parser->current_position = 0;
 #endif
 }
 
@@ -8595,27 +8592,6 @@ ripper_parse(self)
 
 /*
  *  call-seq:
- *    ripper#pos   -> Integer
- *
- *  Return the byte index of the current lexer pointer in whole input.
- *  This number starts from 0.
- */
-static VALUE
-ripper_pos(self)
-    VALUE self;
-{
-    struct parser_params *parser;
-
-    Data_Get_Struct(self, struct parser_params, parser);
-    if (!ripper_initialized_p(parser)) {
-        rb_raise(rb_eArgError, "method called for uninitialized object");
-    }
-    if (NIL_P(parser->parsing_thread)) return Qnil;
-    return LONG2NUM(parser->current_position);
-}
-
-/*
- *  call-seq:
  *    ripper#column   -> Integer
  *
  *  Return column number of current parsing line.
@@ -8633,7 +8609,7 @@ ripper_column(self)
         rb_raise(rb_eArgError, "method called for uninitialized object");
     }
     if (NIL_P(parser->parsing_thread)) return Qnil;
-    col = parser->parser_lex_p - parser->parser_lex_pbeg;
+    col = parser->tokp - parser->parser_lex_pbeg;
     return LONG2NUM(col);
 }
 
@@ -8690,7 +8666,6 @@ Init_ripper()
     rb_define_alloc_func(Ripper, ripper_s_allocate);
     rb_define_method(Ripper, "initialize", ripper_initialize, -1);
     rb_define_method(Ripper, "parse", ripper_parse, 0);
-    rb_define_method(Ripper, "pos", ripper_pos, 0);
     rb_define_method(Ripper, "column", ripper_column, 0);
     rb_define_method(Ripper, "lineno", ripper_lineno, 0);
 #ifdef RIPPER_DEBUG
