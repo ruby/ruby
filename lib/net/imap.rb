@@ -7,8 +7,128 @@
 # You can freely distribute/modify this library.
 #++
 #
-# Client functionality for the IMAP mail protocol.  
-# See the Net::IMAP class for details and examples of use.
+# == IMAP OVERVIEW
+#
+# An IMAP client connects to a server, and then authenticates
+# itself using either #authenticate() or #login().  Having
+# authenticated itself, there is a range of commands
+# available to it.  Most work with mailboxes, which may be
+# arranged in an hierarchical namespace, and each of which
+# contains zero or more messages.  How this is implemented on
+# the server is implementation-dependent; on a UNIX server, it
+# will frequently be implemented as a files in mailbox format
+# within a hierarchy of directories.
+#
+# To work on the messages within a mailbox, the client must
+# first select that mailbox, using either #select() or (for
+# read-only access) #examine().  Once the client has successfully
+# selected a mailbox, they enter _selected_ state, and that
+# mailbox becomes the _current_ mailbox, on which mail-item
+# related commands implicitly operate.  
+#
+# Messages have two sorts of identifiers: message sequence
+# numbers, and UIDs.  
+#
+# Message sequence numbers number messages within a mail box 
+# from 1 up to the number of items in the mail box.  If new
+# message arrives during a session, it receives a sequence
+# number equal to the new size of the mail box.  If messages
+# are expunged from the mailbox, remaining messages have their
+# sequence numbers "shuffled down" to fill the gaps.
+#
+# UIDs, on the other hand, are permanently guaranteed not to
+# identify another message within the same mailbox, even if 
+# the existing message is deleted.  UIDs are required to
+# be assigned in ascending (but not necessarily sequential)
+# order within a mailbox; this means that if a non-IMAP client
+# rearranges the order of mailitems within a mailbox, the
+# UIDs have to be reassigned.  An IMAP client cannot thus
+# rearrange message orders.
+#
+# == EXAMPLES OF USAGE
+#
+# === List sender and subject of all recent messages in the default mailbox
+#
+#   imap = Net::IMAP.new('mail.example.com')
+#   imap.authenticate('LOGIN', 'joe_user', 'joes_password')
+#   imap.examine('INBOX')
+#   imap.search(["RECENT"]).each do |message_id|
+#     envelope = imap.fetch(message_id, "ENVELOPE")[0].attr["ENVELOPE"]
+#     puts "#{envelope.from[0].name}: \t#{envelope.subject}"
+#   end
+#
+# === Move all messages from April 2003 from "Mail/sent-mail" to "Mail/sent-apr03"
+#
+#   imap = Net::IMAP.new('mail.example.com')
+#   imap.authenticate('LOGIN', 'joe_user', 'joes_password')
+#   imap.select('Mail/sent-mail')
+#   if not imap.list('Mail/', 'sent-apr03')
+#     imap.create('Mail/sent-apr03')
+#   end
+#   imap.search(["BEFORE", "30-Apr-2003", "SINCE", "1-Apr-2003"]).each do |message_id|
+#     imap.copy(message_id, "Mail/sent-apr03")
+#     imap.store(message_id, "+FLAGS", [:Deleted])
+#   end
+#   imap.expunge
+# 
+# == THREAD-SAFENESS
+#
+# Net::IMAP supports concurrent threads. For example,
+# 
+#   imap = Net::IMAP.new("imap.foo.net", "imap2")
+#   imap.authenticate("cram-md5", "bar", "password")
+#   imap.select("inbox")
+#   fetch_thread = Thread.start { imap.fetch(1..-1, "UID") }
+#   search_result = imap.search(["BODY", "hello"])
+#   fetch_result = fetch_thread.value
+#   imap.disconnect
+# 
+# This script invokes the FETCH command and the SEARCH command concurrently.
+#
+# == ERRORS
+#
+# An IMAP server can send three different types of responses to indicate
+# failure:
+#
+# NO:: the attempted command could not be successfully completed.  For
+#      instance, the username/password used for logging in are incorrect;
+#      the selected mailbox does not exists; etc.  
+#
+# BAD:: the request from the client does not follow the server's 
+#       understanding of the IMAP protocol.  This includes attempting
+#       commands from the wrong client state; for instance, attempting
+#       to perform a SEARCH command without having SELECTed a current
+#       mailbox.  It can also signal an internal server
+#       failure (such as a disk crash) has occurred.
+#
+# BYE:: the server is saying goodbye.  This can be part of a normal
+#       logout sequence, and can be used as part of a login sequence
+#       to indicate that the server is (for some reason) unwilling
+#       to accept our connection.  As a response to any other command,
+#       it indicates either that the server is shutting down, or that
+#       the server is timing out the client connection due to inactivity.
+#
+# These three error response are represented by the errors
+# Net::IMAP::NoResponseError, Net::IMAP::BadResponseError, and
+# Net::IMAP::ByeResponseError, all of which are subclasses of
+# Net::IMAP::ResponseError.  Essentially, all methods that involve
+# sending a request to the server can generate one of these errors.
+# Only the most pertinent instances have been documented below.
+#
+# Because the IMAP class uses Sockets for communication, its methods
+# are also susceptible to the various errors that can occur when
+# working with sockets.  These are generally represented as
+# Errno errors.  For instance, any method that involves sending a
+# request to the server and/or receiving a response from it could
+# raise an Errno::EPIPE error if the network connection unexpectedly
+# goes down.  See the socket(7), ip(7), tcp(7), socket(2), connect(2),
+# and associated man pages.
+#
+# Finally, a Net::IMAP::DataFormatError is thrown if low-level data
+# is found to be in an incorrect format (for instance, when converting
+# between UTF-8 and UTF-16), and Net::IMAP::ResponseParseError is 
+# thrown if a server response is non-parseable. 
+#
 #
 # == References
 #
@@ -39,6 +159,10 @@
 # [[RFC-2086]]
 #    Myers, J., "IMAP4 ACL extension", RFC 2086, January 1997.
 #
+# [[RFC-2195]]
+#    Klensin, J., Catoe, R., and Krumviede, P., "IMAP/POP AUTHorize Extension
+#    for Simple Challenge/Response", RFC 2195, September 1997.
+#
 # [[SORT-THREAD-EXT]]
 #    Crispin, M., "INTERNET MESSAGE ACCESS PROTOCOL - SORT and THREAD
 #    Extensions", draft-ietf-imapext-sort, May 2003.
@@ -48,6 +172,10 @@
 #
 # [[RSSL]]
 #    http://savannah.gnu.org/projects/rubypki
+#
+# [[UTF7]]
+#    Goldsmith, D. and Davis, M., "UTF-7: A Mail-Safe Transformation Format of
+#    Unicode", RFC 2152, May 1997.
 
 require "socket"
 require "monitor"
@@ -62,128 +190,7 @@ module Net
   # Net::IMAP implements Internet Message Access Protocol (IMAP) client
   # functionality.  The protocol is described in [IMAP].
   #
-  # == IMAP OVERVIEW
-  #
-  # An IMAP client connects to a server, and then authenticates
-  # itself using either #authenticate() or #login().  Having
-  # authenticated itself, there is a range of commands
-  # available to it.  Most work with mailboxes, which may be
-  # arranged in an hierarchical namespace, and each of which
-  # contains zero or more messages.  How this is implemented on
-  # the server is implementation-dependent; on a UNIX server, it
-  # will frequently be implemented as a files in mailbox format
-  # within a hierarchy of directories.
-  #
-  # To work on the messages within a mailbox, the client must
-  # first select that mailbox, using either #select() or (for
-  # read-only access) #examine().  Once the client has successfully
-  # selected a mailbox, they enter _selected_ state, and that
-  # mailbox becomes the _current_ mailbox, on which mail-item
-  # related commands implicitly operate.  
-  #
-  # Messages have two sorts of identifiers: message sequence
-  # numbers, and UIDs.  
-  #
-  # Message sequence numbers number messages within a mail box 
-  # from 1 up to the number of items in the mail box.  If new
-  # message arrives during a session, it receives a sequence
-  # number equal to the new size of the mail box.  If messages
-  # are expunged from the mailbox, remaining messages have their
-  # sequence numbers "shuffled down" to fill the gaps.
-  #
-  # UIDs, on the other hand, are permanently guaranteed not to
-  # identify another message within the same mailbox, even if 
-  # the existing message is deleted.  UIDs are required to
-  # be assigned in ascending (but not necessarily sequential)
-  # order within a mailbox; this means that if a non-IMAP client
-  # rearranges the order of mailitems within a mailbox, the
-  # UIDs have to be reassigned.  An IMAP client cannot thus
-  # rearrange message orders.
-  #
-  # == EXAMPLES OF USAGE
-  #
-  # === List sender and subject of all recent messages in the default mailbox
-  #
-  #   imap = Net::IMAP.new('mail.example.com', 143)
-  #   imap.authenticate('LOGIN', 'joe_user', 'joes_password')
-  #   imap.examine('INBOX')
-  #   imap.search(["RECENT"]).each do |message_id|
-  #     envelope = imap.fetch(message_id, "ENVELOPE")[0].attr["ENVELOPE"]
-  #     puts "#{envelope.from[0].name}: \t#{envelope.subject}"
-  #   end
-  #
-  # === Move all messages from April 2003 from "Mail/sent-mail" to "Mail/sent-apr03"
-  #
-  #   imap = Net::IMAP.new('mail.example.com', 143)
-  #   imap.authenticate('LOGIN', 'joe_user', 'joes_password')
-  #   imap.select('Mail/sent-mail')
-  #   if not imap.list('Mail/', 'sent-apr03')
-  #     imap.create('Mail/sent-apr03')
-  #   end
-  #   imap.search(["BEFORE", "30-Apr-2003", "SINCE", "1-Apr-2003"]).each do |message_id|
-  #     imap.copy(message_id, "Mail/sent-apr03")
-  #     imap.store(message_id, "+FLAGS", [:Deleted])
-  #   end
-  #   imap.expunge
-  # 
-  # == THREAD-SAFENESS
-  #
-  # Net::IMAP supports concurrent threads. For example,
-  # 
-  #   imap = Net::IMAP.new("imap.foo.net", "imap2")
-  #   imap.authenticate("cram-md5", "bar", "password")
-  #   imap.select("inbox")
-  #   fetch_thread = Thread.start { imap.fetch(1..-1, "UID") }
-  #   search_result = imap.search(["BODY", "hello"])
-  #   fetch_result = fetch_thread.value
-  #   imap.disconnect
-  # 
-  # This script invokes the FETCH command and the SEARCH command concurrently.
-  #
-  # == ERRORS
-  #
-  # An IMAP server can send three different types of responses to indicate
-  # failure:
-  #
-  # NO:: the attempted command could not be successfully completed.  For
-  #      instance, the username/password used for logging in are incorrect;
-  #      the selected mailbox does not exists; etc.  
-  #
-  # BAD:: the request from the client does not follow the server's 
-  #       understanding of the IMAP protocol.  This includes attempting
-  #       commands from the wrong client state; for instance, attempting
-  #       to perform a SEARCH command without having SELECTed a current
-  #       mailbox.  It can also signal an internal server
-  #       failure (such as a disk crash) has occurred.
-  #
-  # BYE:: the server is saying goodbye.  This can be part of a normal
-  #       logout sequence, and can be used as part of a login sequence
-  #       to indicate that the server is (for some reason) unwilling
-  #       to accept our connection.  As a response to any other command,
-  #       it indicates either that the server is shutting down, or that
-  #       the server is timing out the client connection due to inactivity.
-  #
-  # These three error response are represented by the errors
-  # Net::IMAP::NoResponseError, Net::IMAP::BadResponseError, and
-  # Net::IMAP::ByeResponseError, all of which are subclasses of
-  # Net::IMAP::ResponseError.  Essentially, all methods that involve
-  # sending a request to the server can generate one of these errors.
-  # Only the most pertinent instances have been documented below.
-  #
-  # Because the IMAP class uses Sockets for communication, its methods
-  # are also susceptible to the various errors that can occur when
-  # working with sockets.  These are generally represented as
-  # Errno errors.  For instance, any method that involves sending a
-  # request to the server and/or receiving a response from it could
-  # raise an Errno::EPIPE error if the network connection unexpectedly
-  # goes down.  See the socket(7), ip(7), tcp(7), socket(2), connect(2),
-  # and associated man pages.
-  #
-  # Finally, a Net::IMAP::DataFormatError is thrown if low-level data
-  # is found to be in an incorrect format (for instance, when converting
-  # between UTF-8 and UTF-16), and Net::IMAP::ResponseParseError is 
-  # thrown if a server response is non-parseable. 
-  #
+  # See comment to the file imap.rb for examples of usage.
   class IMAP
     include MonitorMixin
     if defined?(OpenSSL)
@@ -256,7 +263,15 @@ module Net
       return @@debug = val
     end
 
-    # Adds an authenticator for Net::IMAP#authenticate.
+    # Adds an authenticator for Net::IMAP#authenticate.  +auth_type+
+    # is the type of authentication this authenticator supports
+    # (for instance, "LOGIN").  The +authenticator+ is an object
+    # which defines a process() method to handle authentication with
+    # the server.  See Net::IMAP::LoginAuthenticator and 
+    # Net::IMAP::CramMD5Authenticator for examples.
+    #
+    # If +auth_type+ refers to an existing authenticator, it will be
+    # replaced by the new one.
     def self.add_authenticator(auth_type, authenticator)
       @@authenticators[auth_type] = authenticator
     end
@@ -268,8 +283,16 @@ module Net
       @sock.close
     end
 
-    # Sends a CAPABILITY command, and returns a listing of
-    # capabilities that the server supports.
+    # Sends a CAPABILITY command, and returns an array of
+    # capabilities that the server supports.  Each capability
+    # is a string.  See [IMAP] for a list of possible
+    # capabilities.
+    #
+    # Note that the Net::IMAP class does not modify its
+    # behaviour according to the capabilities of the server;
+    # it is up to the user of the class to ensure that 
+    # a certain capability is supported by a server before
+    # using it.
     def capability
       synchronize do
 	send_command("CAPABILITY")
@@ -291,7 +314,24 @@ module Net
     # Sends an AUTHENTICATE command to authenticate the client.
     # The +auth_type+ parameter is a string that represents
     # the authentication mechanism to be used. Currently Net::IMAP
-    # supports "LOGIN" and "CRAM-MD5" for the +auth_type+. For example:
+    # supports authentication mechanisms:
+    #
+    #   LOGIN:: login using cleartext user and password. 
+    #   CRAM-MD5:: login with cleartext user and encrypted password
+    #              (see [RFC-2195] for a full description).  This
+    #              mechanism requires that the server have the user's
+    #              password stored in clear-text password.
+    #
+    # For both these mechanisms, there should be two +args+: username
+    # and (cleartext) password.  A server may not support one or other
+    # of these mechanisms; check #capability() for a capability of
+    # the form "AUTH=LOGIN" or "AUTH=CRAM-MD5".
+    #
+    # Authentication is done using the appropriate authenticator object:
+    # see @@authenticators for more information on plugging in your own
+    # authenticator.
+    #
+    # For example:
     #
     #    imap.authenticate('LOGIN', user, password)
     #
@@ -312,7 +352,9 @@ module Net
     end
 
     # Sends a LOGIN command to identify the client and carries
-    # the plaintext +password+ authenticating this +user+.
+    # the plaintext +password+ authenticating this +user+.  Note
+    # that, unlike calling #authenticate() with an +auth_type+
+    # of "LOGIN", #login() does *not* use the login authenticator.
     #
     # A Net::IMAP::NoResponseError is raised if authentication fails.
     def login(user, password)
@@ -755,6 +797,14 @@ module Net
       return thread_internal("UID THREAD", algorithm, search_keys, charset)
     end
 
+    # Decode a string from modified UTF-7 format to UTF-8.
+    #
+    # UTF-7 is a 7-bit encoding of Unicode [UTF7].  IMAP uses a
+    # slightly modified version of this to encode mailbox names
+    # containing non-ASCII characters; see [IMAP] section 5.1.3.
+    #
+    # Net::IMAP does _not_ automatically encode and decode
+    # mailbox names to and from utf7.
     def self.decode_utf7(s)
       return s.gsub(/&(.*?)-/n) {
 	if $1.empty?
@@ -770,6 +820,7 @@ module Net
       }
     end
 
+    # Encode a string from UTF-8 format to modified UTF-7.
     def self.encode_utf7(s)
       return s.gsub(/(&)|([^\x20-\x25\x27-\x7e]+)/n) { |x|
 	if $1
@@ -1221,7 +1272,7 @@ module Net
     end
     private_class_method :u8tou16
 
-    class RawData
+    class RawData # :nodoc:
       def format_data
 	return @data
       end
@@ -1233,7 +1284,7 @@ module Net
       end
     end
 
-    class Atom
+    class Atom # :nodoc:
       def format_data
 	return @data
       end
@@ -1245,7 +1296,7 @@ module Net
       end
     end
 
-    class QuotedString
+    class QuotedString # :nodoc:
       def format_data
 	return '"' + @data.gsub(/["\\]/n, "\\\\\\&") + '"'
       end
@@ -1257,7 +1308,7 @@ module Net
       end
     end
 
-    class Literal
+    class Literal # :nodoc:
       def format_data
 	return "{" + @data.length.to_s + "}" + CRLF + @data
       end
@@ -1269,7 +1320,7 @@ module Net
       end
     end
 
-    class MessageSet
+    class MessageSet # :nodoc:
       def format_data
 	return format_internal(@data)
       end
@@ -1743,7 +1794,7 @@ module Net
       end
     end
 
-    class ResponseParser
+    class ResponseParser # :nodoc:
       def parse(str)
 	@str = str
 	@pos = 0
@@ -2964,6 +3015,8 @@ module Net
       end
     end
 
+    # Authenticator for the "LOGIN" authentication type.  See
+    # #authenticate().
     class LoginAuthenticator
       def process(data)
 	case @state
@@ -2988,6 +3041,8 @@ module Net
     end
     add_authenticator "LOGIN", LoginAuthenticator
 
+    # Authenticator for the "CRAM-MD5" authentication type.  See
+    # #authenticate().
     class CramMD5Authenticator
       def process(challenge)
 	digest = hmac_md5(challenge, @password)
@@ -3020,24 +3075,37 @@ module Net
     end
     add_authenticator "CRAM-MD5", CramMD5Authenticator
 
+    # Superclass of IMAP errors.
     class Error < StandardError
     end
 
+    # Error raised when data is in the incorrect format.
     class DataFormatError < Error
     end
 
+    # Error raised when a response from the server is non-parseable.
     class ResponseParseError < Error
     end
 
+    # Superclass of all errors used to encapsulate "fail" responses
+    # from the server.
     class ResponseError < Error
     end
 
+    # Error raised upon a "NO" response from the server, indicating
+    # that the client command could not be completed successfully.
     class NoResponseError < ResponseError
     end
 
+    # Error raised upon a "BAD" response from the server, indicating
+    # that the client command violated the IMAP protocol, or an internal
+    # server failure has occurred.
     class BadResponseError < ResponseError
     end
 
+    # Error raised upon a "BYE" response from the server, indicating 
+    # that the client is not being allowed to login, or has been timed
+    # out due to inactivity.
     class ByeResponseError < ResponseError
     end
   end
@@ -3183,3 +3251,4 @@ EOF
     imap.disconnect
   end
 end
+
