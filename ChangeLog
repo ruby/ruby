@@ -1,3 +1,8 @@
+Wed Aug 21 16:43:19 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_thread_cleanup): should not modify the global
+	  variable curr_thread.
+
 Tue Aug 20 19:39:03 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* file.c (rb_file_s_expand_path): accept drive letter on Cygwin.
@@ -16,6 +21,11 @@ Mon Aug 19 19:01:55 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* misc/inf-ruby.el (ruby-send-terminator): added to make unique
 	  terminator.
+
+Mon Aug 19 17:08:19 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_initialize_m): frozen check should be moved here
+	  from rb_reg_initialize().
 
 Mon Aug 19 15:38:44 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

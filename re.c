@@ -833,9 +833,6 @@ rb_reg_initialize(obj, s, len, options)
 {
     struct RRegexp *re = RREGEXP(obj);
 
-    if (OBJ_FROZEN(obj)) {
-	rb_error_frozen("Regexp");
-    }
     if (re->ptr) re_free_pattern(re->ptr);
     if (re->str) free(re->str);
     re->ptr = 0;
@@ -1023,6 +1020,9 @@ rb_reg_initialize_m(argc, argv, self)
 	}
     }
 
+    if (OBJ_FROZEN(self)) {
+	rb_error_frozen("Regexp");
+    }
     src = argv[0];
     if (TYPE(src) == T_REGEXP) {
 	rb_reg_check(src);

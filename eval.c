@@ -8627,13 +8627,14 @@ rb_thread_wait_other_threads()
 static void
 rb_thread_cleanup()
 {
-    rb_thread_t th;
+    rb_thread_t curr, th;
 
-    while (curr_thread->status == THREAD_KILLED) {
-	curr_thread = curr_thread->prev;
+    curr = curr_thread;
+    while (curr->status == THREAD_KILLED) {
+	curr = curr_thread->prev;
     }
 
-    FOREACH_THREAD(th) {
+    FOREACH_THREAD_FROM(curr, th) {
 	if (th->status != THREAD_KILLED) {
 	    rb_thread_ready(th);
 	    th->gid = 0;
@@ -8643,7 +8644,7 @@ rb_thread_cleanup()
 	    }
 	}
     }
-    END_FOREACH(th);
+    END_FOREACH_FROM(curr, th);
 }
 
 int rb_thread_critical;
