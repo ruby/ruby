@@ -1382,24 +1382,24 @@ rb_reg_quote(str)
 	    break;
 	  case ' ':
 	    *t++ = '\\';
-	    *t++ = 's';
-	    break;
+	    *t++ = ' ';
+	    continue;
 	  case '\t':
 	    *t++ = '\\';
 	    *t++ = 't';
-	    break;
+	    continue;
 	  case '\n':
 	    *t++ = '\\';
 	    *t++ = 'n';
-	    break;
+	    continue;
 	  case '\r':
 	    *t++ = '\\';
 	    *t++ = 'r';
-	    break;
+	    continue;
 	  case '\f':
 	    *t++ = '\\';
 	    *t++ = 'f';
-	    break;
+	    continue;
 	}
 	*t++ = c;
     }

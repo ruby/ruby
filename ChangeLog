@@ -1,3 +1,10 @@
+Mon May 19 13:51:50 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* re.c (rb_reg_quote): \n \r \f \v quoting was wrong.
+
+	* re.c (rb_reg_quote): rb_reg_quote(" ") should be "\\ ", not
+	  "\\s".
+
 Mon May 19 08:08:51 2003  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb: use warn() instead of $stderr.puts().
