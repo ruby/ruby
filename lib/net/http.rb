@@ -65,12 +65,12 @@ module Net
 
   If called as iterator, gives a part String of entity body.
 
-: get2( path, header = nil ) {|writer| .... }
+: get2( path, header = nil ) {|adapter| .... }
   send GET request for "path".
   "header" must be a Hash like { 'Accept' => '*/*', ... }.
   This method gives HTTPReadAdapter object to block.
 
-: post2( path, data, header = nil ) {|writer| .... }
+: post2( path, data, header = nil ) {|adapter| .... }
   post "data"(must be String now) to "path".
   "header" must be a Hash like { 'Accept' => '*/*', ... }.
   This method gives HTTPReadAdapter object to block.
@@ -84,10 +84,10 @@ HTTP response object.
 All "key" is case-insensitive.
 
 : code
-  HTTP result code. ex. '302'
+  HTTP result code. For example, '302'
 
 : message
-  HTTP result message. ex. 'Not Found'
+  HTTP result message. For example, 'Not Found'
 
 : self[ key ]
   returns header field for "key".
@@ -101,6 +101,9 @@ All "key" is case-insensitive.
 : key?( key )
   true if key is exist
 
+: each {|name,value| .... }
+  iterate for each field name and value pair
+
 
 = class HTTPReadAdapter
 
@@ -110,13 +113,14 @@ All "key" is case-insensitive.
 : response
   Net::HTTPResponse object
 
-: entity( dest = '' )
 : body( dest = '' )
-  entity body
+: entity( dest = '' )
+  entity body. A body is written to "dest" using "<<" method.
 
-: entity {|str| ... }
+: body {|str| ... }
   get entity body by using iterator.
-  If this method is called twice, block is not called.
+  If this method is called twice, block is not called and
+  returns first "dest".
 
 =end
 
@@ -136,30 +140,32 @@ All "key" is case-insensitive.
 
 
     def get( path, u_header = nil, dest = nil, &block )
-      u_header = procheader( u_header )
-      dest, ret = HTTP.procdest( dest, block )
-      resp = nil
-      connecting( u_header ) {
-        @command.get edit_path(path), u_header
-        resp = @command.get_response
-        @command.get_body( resp, dest )
-      }
-
-      return resp, ret
+      resp = get2( path, u_header ) {|f| dest = f.entity( dest, &block ) }
+      resp.value
+      return resp, dest
     end
 
     def get2( path, u_header = nil )
       u_header = procheader( u_header )
+      resp = nil
       connecting( u_header ) {
         @command.get edit_path(path), u_header
         tmp = HTTPReadAdapter.new( @command )
         yield tmp
-        tmp.off
+        resp = tmp.off
       }
+
+      resp
     end
 
 
     def head( path, u_header = nil )
+      resp = head2( path, u_header )
+      resp.value
+      resp
+    end
+
+    def head2( path, u_header = nil )
       u_header = procheader( u_header )
       resp = nil
       connecting( u_header ) {
@@ -172,41 +178,46 @@ All "key" is case-insensitive.
 
 
     def post( path, data, u_header = nil, dest = nil, &block )
-      u_header = procheader( u_header )
-      dest, ret = HTTP.procdest( dest, block )
-      resp = nil
-      connecting( u_header ) {
-        @command.post edit_path(path), u_header, data
-        resp = @command.get_response
-        @command.get_body( resp, dest )
-      }
-
-      return resp, ret
+      resp = post2( path, data, u_header ) {|f|
+                    dest = f.entity( dest, &block ) }
+      resp.value
+      return resp, dest
     end
 
     def post2( path, data, u_header = nil )
       u_header = procheader( u_header )
+      resp = nil
       connecting( u_header ) {
         @command.post edit_path(path), u_header, data
         tmp = HTTPReadAdapter.new( @command )
         yield tmp
-        tmp.off
+        resp = tmp.off
       }
+
+      resp
     end
 
 
     # not tested because I could not setup apache  (__;;;
     def put( path, src, u_header = nil )
+      ret = nil
+      resp = put2( path, src, u_header ) {|f| ret = f.entity }
+      resp.value
+      return resp, ret
+    end
+
+    def put2( path, src, u_header = nil )
       u_header = procheader( u_header )
       ret = ''
       resp = nil
       connecting( u_header ) {
         @command.put path, u_header, src, dest
-        resp = @comman.get_response
-        @command.get_body( resp, ret )
+        tmp = HTTPReadAdapter.new( @command )
+        yield tmp
+        resp = tmp.off
       }
 
-      return resp, ret
+      resp
     end
 
 
@@ -319,6 +330,7 @@ All "key" is case-insensitive.
     def off
       body
       @command = nil
+      @header
     end
   
   end
@@ -326,13 +338,13 @@ All "key" is case-insensitive.
 
   class HTTPResponse < Response
 
-    def initialize( code_type, code, msg )
-      super
+    def initialize( code_type, bexist, code, msg )
+      super( code_type, code, msg )
       @data = {}
-      @http_body_exist = true
+      @http_body_exist = bexist
     end
 
-    attr_accessor :http_body_exist
+    attr_reader :http_body_exist
 
     def []( key )
       @data[ key.downcase ]
@@ -364,6 +376,10 @@ All "key" is case-insensitive.
 
     def to_hash
       @data.dup
+    end
+
+    def value
+      error! unless SuccessCode === self
     end
 
   end
@@ -445,6 +461,7 @@ All "key" is case-insensitive.
 
     def post( path, u_header, data )
       return unless begin_critical
+      u_header[ 'Content-Length' ] = data.size.to_s
       request sprintf('POST %s HTTP/%s', path, HTTPVersion), u_header
       @socket.write data
     end
@@ -489,10 +506,6 @@ All "key" is case-insensitive.
       resp
     end
 
-    def check_response( resp )
-      reply_must resp, SuccessCode
-    end
-
     def get_body( resp, dest )
       if resp.http_body_exist then
         if chunked? resp then
@@ -516,7 +529,6 @@ All "key" is case-insensitive.
         end
       end
       end_critical
-      reply_must resp, SuccessCode
 
       dest
     end
@@ -524,7 +536,6 @@ All "key" is case-insensitive.
     def get_response_no_body
       resp = get_response
       end_critical
-      reply_must resp, SuccessCode
       resp
     end
 
@@ -576,13 +587,13 @@ All "key" is case-insensitive.
       '408' => [HTTPRequestTimeOut,                  true],
       '409' => [HTTPConflict,                        true],
       '410' => [HTTPGone,                            true],
-      '411' => [FatalErrorCode,                      true],
+      '411' => [HTTPFatalErrorCode,                  true],
       '412' => [HTTPPreconditionFailed,              true],
       '413' => [HTTPRequestEntityTooLarge,           true],
       '414' => [HTTPRequestURITooLarge,              true],
       '415' => [HTTPUnsupportedMediaType,            true],
 
-      '500' => [FatalErrorCode,                      true],
+      '500' => [HTTPFatalErrorCode,                  true],
       '501' => [HTTPNotImplemented,                  true],
       '502' => [HTTPBadGateway,                      true],
       '503' => [HTTPServiceUnavailable,              true],
@@ -601,9 +612,7 @@ All "key" is case-insensitive.
       discrip = m[3]
       
       klass, bodyexist = HTTPCODE_TO_OBJ[status] || [UnknownCode, true]
-      resp = HTTPResponse.new( klass, status, discrip )
-      resp.http_body_exist = bodyexist
-      resp
+      HTTPResponse.new( klass, bodyexist, status, discrip )
     end
 
     def read_chunked( ret, header )
