@@ -1,4 +1,7 @@
 struct kwtable {char *name; int id[2]; enum lex_state_e state;};
+struct kwtable *rb_reserved_word _((const char *, unsigned int));
+#ifndef RIPPER
+
 %%
 __LINE__, {k__LINE__, k__LINE__}, EXPR_END
 __FILE__, {k__FILE__, k__FILE__}, EXPR_END
@@ -40,3 +43,5 @@ until, {kUNTIL, kUNTIL_MOD}, EXPR_BEG
 when, {kWHEN, kWHEN}, EXPR_BEG
 while, {kWHILE, kWHILE_MOD}, EXPR_BEG
 yield, {kYIELD, kYIELD}, EXPR_ARG
+%%
+#endif

@@ -5046,6 +5046,7 @@ parser_heredoc_identifier(parser)
 
     tokfix();
 #ifdef RIPPER
+    ripper_dispatch_space(parser);
     ripper_dispatch_nonspace(parser, tHEREDOC_BEG);
 #endif
     len = lex_p - lex_pbeg;

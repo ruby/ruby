@@ -1,6 +1,9 @@
 /* C code produced by gperf version 2.7.2 */
-/* Command-line: gperf -p -j1 -i 1 -g -o -t -N rb_reserved_word -k'1,3,$' keywords  */
+/* Command-line: gperf -p -j1 -i 1 -g -o -t -N rb_reserved_word -k'1,3,$' /home/aamine/c/ruby/keywords  */
 struct kwtable {char *name; int id[2]; enum lex_state_e state;};
+struct kwtable *rb_reserved_word _((const char *, unsigned int));
+#ifndef RIPPER
+;
 
 #define TOTAL_KEYWORDS 40
 #define MIN_WORD_LENGTH 2
@@ -134,3 +137,4 @@ rb_reserved_word (str, len)
     }
   return 0;
 }
+#endif

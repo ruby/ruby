@@ -13,7 +13,7 @@ require 'ripper.so'
 
 class Ripper
   def Ripper.parse(str, *args)
-    new.parse(str, *args)
+    new(str, *args).parse
   end
 
   private
