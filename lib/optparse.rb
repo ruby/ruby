@@ -923,11 +923,11 @@ class OptionParser
   end
 
   def warn(mesg = $!)
-    super(program_name + ': ' + mesg)
+    super("#{program_name}: #{mesg}")
   end
 
   def abort(mesg = $!)
-    super(program_name + ': ' + mesg)
+    super("#{program_name}: #{mesg}")
   end
 
 =begin
