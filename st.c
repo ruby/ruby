@@ -49,6 +49,7 @@ static void rehash();
 #define EQUAL(table, x, y) ((*table->type->compare)(x, y) == 0)
 
 #define do_hash(key, table) (*(table)->type->hash)((key), (table)->num_bins)
+#define do_hash2(key, table, bins) (*(table)->type->hash)((key), bins)
 
 st_table*
 st_init_table_with_size(type, size)
@@ -222,29 +223,31 @@ rehash(table)
     register st_table *table;
 {
     register st_table_entry *ptr, *next, **old_bins = table->bins;
-    int i, old_num_bins = table->num_bins, hash_val;
+    int i, old_num_bins = table->num_bins, new_num_bins, hash_val;
 
-    table->num_bins = 1.79*old_num_bins;
+    new_num_bins = 1.79*old_num_bins;
 
-    if (table->num_bins%2 == 0) {
-	table->num_bins += 1;
+    if (new_num_bins%2 == 0) {
+	new_num_bins += 1;
     }
 
+    table->num_bins = 0;
     table->num_entries = 0;
     table->bins = (st_table_entry **)
-	Calloc((unsigned)table->num_bins, sizeof(st_table_entry*));
+	Calloc((unsigned)new_num_bins, sizeof(st_table_entry*));
 
     for(i = 0; i < old_num_bins ; i++) {
 	ptr = old_bins[i];
 	while (ptr != nil(st_table_entry)) {
 	    next = ptr->next;
-	    hash_val = do_hash(ptr->key, table);
+	    hash_val = do_hash2(ptr->key, table, new_num_bins);
 	    ptr->next = table->bins[hash_val];
 	    table->bins[hash_val] = ptr;
 	    table->num_entries++;
 	    ptr = next;
 	}
     }
+    table->num_bins = new_num_bins;
     free((char*)old_bins);
 }
 

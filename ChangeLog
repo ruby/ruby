@@ -1,3 +1,7 @@
+Tue Jul 21 13:19:30 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* st.c (rehash): GC during rehash caused SEGV.
+
 Tue Jul 21 01:25:10 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* sprintf.c (f_sprintf): integer formatter totally re-written.

@@ -25,6 +25,28 @@ module TkComm
   end
   private :error_at
 
+  def _genobj_for_tkwidget(path)
+    return TkRoot.new if path == '.'
+
+    begin
+      tk_class = TkCore::INTERP._invoke('winfo', 'class', path)
+    rescue
+      return path
+    end
+
+    ruby_class = TkClassBind::WidgetClassNameTBL[tk_class]
+    gen_class_name = ruby_class.name + 'GeneratedOnTk'
+    unless Object.const_defined? gen_class_name
+      eval "class #{gen_class_name}<#{ruby_class.name}
+              def initialize(path)
+                @path=path
+                Tk_WINDOWS[@path] = self
+              end
+            end"
+    end
+    eval "#{gen_class_name}.new('#{path}')"
+  end
+
   def tk_tcl2ruby(val)
     if val =~ /^rb_out (c\d+)/
       return Tk_CMDTBL[$1]
@@ -38,7 +60,7 @@ module TkComm
     when /^-?\d+$/
       val.to_i
     when /^\./
-      Tk_WINDOWS[val]
+      Tk_WINDOWS[val] ? Tk_WINDOWS[val] : _genobj_for_tkwidget(val)
     when / /
       val.split.collect{|elt|
 	tk_tcl2ruby(elt)
@@ -74,7 +96,33 @@ module TkComm
     list += tk_split_list(str[i+1..-1])
     list
   end
-  private :tk_tcl2ruby, :tk_split_list
+
+  def tk_split_simplelist(str)
+    return [] if str == ""
+    idx = str.index('{')
+    return str.split unless idx
+
+    list = str[0,idx].split
+    str = str[idx+1..-1]
+    i = -1
+    brace = 1
+    str.each_byte {|c|
+      i += 1
+      brace += 1 if c == ?{
+      brace -= 1 if c == ?}
+      break if brace == 0
+    }
+    if i == 0
+      list.push ''
+    elsif str[0, i] == ' '
+      list.push ' '
+    else
+      list.push str[0..i-1]
+    end
+    list += tk_split_simplelist(str[i+1..-1])
+    list
+  end
+  private :tk_tcl2ruby, :tk_split_list, :tk_split_simplelist
 
   def hash_kv(keys)
     conf = []
@@ -425,6 +473,10 @@ module TkCore
     appsend_displayof(interp, win, async, *args)
   end
 
+  def info(*args)
+    tk_call('info', *args)
+  end
+
   def mainloop
     TclTkLib.mainloop
   end
@@ -661,7 +713,7 @@ class TkVariable
 
   def value
     begin
-      INTERP._eval(format('global %s; set %s', @id, @id))
+      tk_tcl2ruby(INTERP._eval(format('global %s; set %s', @id, @id)))
     rescue
       if INTERP._eval(format('global %s; array exists %s', @id, @id)) != "1"
 	raise
@@ -1029,7 +1081,7 @@ module TkWinfo
     TkWinfo.classname self
   end
   def TkWinfo.containing(rootX, rootY)
-    path = tk_call('winfo', 'class', window.path)
+    path = tk_call('winfo', 'containing', rootX, rootY)
     window(path)
   end
   def winfo_containing(x, y)
@@ -1073,22 +1125,10 @@ module TkWinfo
   end
   def TkWinfo.interps(window=nil)
     if window
-      tk_split_list(tk_call('winfo', '-displayof', window.path, 
-			    'interps')).collect{|ip|
-	if ip.kind_of? Array
-	  ip.flatten.join(' ')
-	else
-	  ip
-	end
-      }
+      tk_split_simplelist(tk_call('winfo', '-displayof', window.path, 
+				  'interps'))
     else
-      tk_split_list(tk_call('winfo', 'interps')).collect{|ip|
-	if ip.kind_of? Array
-	  ip.flatten.join(' ')
-	else
-	  ip
-	end
-      }
+      tk_split_simplelist(tk_call('winfo', 'interps'))
     end
   end
   def winfo_interps
@@ -1099,6 +1139,12 @@ module TkWinfo
   end
   def winfo_mapped?
     TkWinfo.mapped? self
+  end
+  def TkWinfo.appname(window)
+    bool(tk_call('winfo', 'name', window.path))
+  end
+  def winfo_appname
+    TkWinfo.appname self
   end
   def TkWinfo.parent(window)
     window(tk_call('winfo', 'parent', window.path))
@@ -1803,16 +1849,51 @@ class TkToplevel<TkWindow
   end
 
   def initialize(parent=nil, screen=nil, classname=nil, keys=nil)
-    @screen = screen if screen
-    @classname = classname if classname
+    if screen.kind_of? Hash
+      keys = screen.dup
+    else
+      @screen = screen
+    end
+    @classname = classname
+    if keys.kind_of? Hash
+      keys = keys.dup
+      if keys['classname']
+	@classname = keys['classname']
+	keys['classname'] = nil
+      end
+      if keys['colormap']
+	@colormap = keys['colormap']
+	keys['colormap'] = nil
+      end
+      if keys['container']
+	@classname = keys['container']
+	keys['classname'] = nil
+      end
+      if keys['screen']
+	@screen = keys['screen']
+	keys['screen'] = nil
+      end
+      if keys['use']
+	@use = keys['use']
+	keys['use'] = nil
+      end
+      if keys['visual']
+	@screen = keys['visual']
+	keys['visual'] = nil
+      end
+    end
     super(parent, keys)
   end
 
   def create_self
     s = []
-    s.push "-screen #@screen" if @screen 
-    s.push "-class #@classname" if @classname
-    tk_call 'toplevel', path, *s
+    s.push << "-class"     << @classname if @classname
+    s.push << "-colormap"  << @colormap  if @colormap
+    s.push << "-container" << @container if @container
+    s.push << "-screen"    << @screen    if @screen 
+    s.push << "-use"       << @use       if @use
+    s.push << "-visual"    << @visual    if @visual
+    tk_call 'toplevel', @path, *s
   end
 
   def specific_class
@@ -1826,8 +1907,37 @@ class TkFrame<TkWindow
   def self.to_eval
     WidgetClassName
   end
+
+  def initialize(parent=nil, keys=nil)
+    if keys.kind_of? Hash
+      keys = keys.dup
+      if keys['classname']
+	@classname = keys['classname']
+	keys['classname'] = nil
+      end
+      if keys['colormap']
+	@colormap = keys['colormap']
+	keys['colormap'] = nil
+      end
+      if keys['container']
+      @classname = keys['container']
+	keys['classname'] = nil
+      end
+      if keys['visual']
+	@screen = keys['visual']
+	keys['visual'] = nil
+      end
+    end
+    super(parent, keys)
+  end
+
   def create_self
-    tk_call 'frame', @path
+    s = []
+    s.push << "-class"     << @classname if @classname
+    s.push << "-colormap"  << @colormap  if @colormap
+    s.push << "-container" << @container if @container
+    s.push << "-visual"    << @visual    if @visual
+    tk_call 'frame', @path, *s
   end
 end
 
@@ -2045,7 +2155,120 @@ class TkListbox<TkTextWin
   end
 end
 
+module TkTreatMenuEntryFont
+  def tagfont_configinfo(index)
+    pathname = self.path + ';' + index
+    ret = TkFont.used_on(pathname)
+    if ret == nil
+      ret = TkFont.init_widget_font(pathname, 
+				    self.path, 'entryconfigure', index)
+    end
+    ret
+  end
+  alias tagfontobj tagfont_configinfo
+
+  def tagfont_configure(index, slot)
+    pathname = self.path + ';' + index
+    if (fnt = slot['font'])
+      slot['font'] = nil
+      if fnt.kind_of? TkFont
+	return fnt.call_font_configure(pathname, 
+				       self.path,'entryconfigure',index,slot)
+      else
+	latintagfont_configure(index, fnt) if fnt
+      end
+    end
+    if (ltn = slot['latinfont'])
+      slot['latinfont'] = nil
+      latintagfont_configure(index, ltn) if ltn
+    end
+    if (ltn = slot['asciifont'])
+      slot['asciifont'] = nil
+      latintagfont_configure(index, ltn) if ltn
+    end
+    if (knj = slot['kanjifont'])
+      slot['kanjifont'] = nil
+      kanjitagfont_configure(index, knj) if knj
+    end
+
+    tk_call(self.path, 'entryconfigure', index, *hash_kv(slot)) if slot != {}
+    self
+  end
+
+  def latintagfont_configure(index, ltn, keys=nil)
+    fobj = tagfontobj(index)
+    if ltn.kind_of? TkFont
+      conf = {}
+      ltn.latin_configinfo.each{|key,val| conf[key] = val if val != []}
+      if conf == {}
+	fobj.latin_replace(ltn)
+	fobj.latin_configure(keys) if keys
+      elsif keys
+	fobj.latin_configure(conf.update(keys))
+      else
+	fobj.latin_configure(conf)
+      end
+    else
+      fobj.latin_replace(ltn)
+    end
+  end
+  alias asciitagfont_configure latintagfont_configure
+
+  def kanjitagfont_configure(index, knj, keys=nil)
+    fobj = tagfontobj(index)
+    if knj.kind_of? TkFont
+      conf = {}
+      knj.kanji_configinfo.each{|key,val| conf[key] = val if val != []}
+      if conf == {}
+	fobj.kanji_replace(knj)
+	fobj.kanji_configure(keys) if keys
+      elsif keys
+	fobj.kanji_configure(conf.update(keys))
+      else
+	fobj.kanji_configure(conf)
+      end
+    else
+      fobj.kanji_replace(knj)
+    end
+  end
+
+  def tagfont_copy(index, window, wintag=nil)
+    if wintag
+      window.tagfontobj(wintag).configinfo.each{|key,value|
+	tagfontobj(index).configure(key,value)
+      }
+      tagfontobj(index).replace(window.tagfontobj(wintag).latin_font, 
+			      window.tagfontobj(wintag).kanji_font)
+    else
+      window.tagfont(wintag).configinfo.each{|key,value|
+	tagfontobj(index).configure(key,value)
+      }
+      tagfontobj(index).replace(window.fontobj.latin_font, 
+			      window.fontobj.kanji_font)
+    end
+  end
+
+  def latintagfont_copy(index, window, wintag=nil)
+    if wintag
+      tagfontobj(index).latin_replace(window.tagfontobj(wintag).latin_font)
+    else
+      tagfontobj(index).latin_replace(window.fontobj.latin_font)
+    end
+  end
+  alias asciitagfont_copy latintagfont_copy
+
+  def kanjitagfont_copy(index, window, wintag=nil)
+    if wintag
+      tagfontobj(index).kanji_replace(window.tagfontobj(wintag).kanji_font)
+    else
+      tagfontobj(index).kanji_replace(window.fontobj.kanji_font)
+    end
+  end
+end
+
 class TkMenu<TkWindow
+  include TkTreatMenuEntryFont
+
   WidgetClassName = 'Menu'.freeze
   TkClassBind::WidgetClassNameTBL[WidgetClassName] = self
   def self.to_eval
@@ -2069,6 +2292,9 @@ class TkMenu<TkWindow
   def insert(index, type, keys=nil)
     tk_send 'add', index, type, *hash_kv(keys)
   end
+  def delete(index, last=None)
+    tk_send 'delete', index, last
+  end
   def post(x, y)
     tk_send 'post', x, y
   end
@@ -2089,6 +2315,43 @@ class TkMenu<TkWindow
   end
   def entryconfigure(index, keys=nil)
     tk_send 'entryconfigure', index, *hash_kv(keys)
+  end
+#  def entryconfigure(index, keys=nil)
+#    tk_send 'entryconfigure', index, *hash_kv(keys)
+#  end
+  def entrycget(index, key)
+    tk_tcl2ruby tk_send 'entrycget', index, "-#{key}"
+  end
+  def entryconfigure(index, key, val=None)
+    if key.kind_of? Hash
+      if ( key['font'] || key['kanjifont'] \
+	  || key['latinfont'] || key['asciifont'] )
+	tagfont_configure(index, key.dup)
+      else
+	tk_send 'entryconfigure', index, *hash_kv(key)
+      end
+
+    else
+      if ( key == 'font' || key == 'kanjifont' \
+	  || key == 'latinfont' || key == 'asciifont' )
+	tagfont_configure({key=>val})
+      else
+	tk_call 'entryconfigure', index, "-#{key}", val
+      end
+    end
+  end
+
+  def entryconfiginfo(index, key=nil)
+    if key
+      conf = tk_split_list(tk_send('entryconfigure',index,"-#{key}"))
+      conf[0] = conf[0][1..-1]
+      conf
+    else
+      tk_split_list(tk_send('entryconfigure', index)).collect{|conf|
+	conf[0] = conf[0][1..-1]
+	conf
+      }
+    end
   end
 end
 

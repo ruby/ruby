@@ -293,7 +293,7 @@ class TkCanvas<TkWindow
   end
 
   def itemcget(tagOrId, option)
-    tk_send 'itemcget', tagid(tagOrId), "-#{option}"
+    tk_tcl2ruby tk_send 'itemcget', tagid(tagOrId), "-#{option}"
   end
 
   def itemconfigure(tagOrId, key, value=None)
@@ -772,7 +772,7 @@ class TkPhotoImage<TkImage
   end
 
   def cget(option)
-    tk_send 'cget', option
+    tk_tcl2ruby tk_send 'cget', option
   end
 
   def copy(source, *opts)

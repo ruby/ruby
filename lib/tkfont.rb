@@ -493,6 +493,8 @@ class TkFont
 	      tk_call(win, 'tag', 'configure', tag, '-font', @latinfont)
 	    elsif winobj.kind_of? TkCanvas
 	      tk_call(win, 'itemconfigure', tag, '-font', @latinfont)
+	    elsif winobj.kind_of? TkMenu
+	      tk_call(win, 'entryconfigure', tag, '-font', @latinfont)
 	    else
 	      raise RuntimeError, "unknown widget type"
 	    end
@@ -525,6 +527,8 @@ class TkFont
 	      tk_call(win, 'tag', 'configure', tag, '-kanjifont', @kanjifont)
 	    elsif winobj.kind_of? TkCanvas
 	      tk_call(win, 'itemconfigure', tag, '-kanjifont', @kanjifont)
+	    elsif winobj.kind_of? TkMenu
+	      tk_call(win, 'entryconfigure', tag, '-kanjifont', @latinfont)
 	    else
 	      raise RuntimeError, "unknown widget type"
 	    end
@@ -692,6 +696,8 @@ class TkFont
 	  else
 	    ret.push([winobj, tag])
 	  end
+	elsif winobj.kind_of? TkMenu
+	  ret.push([winobj, tag])
 	else
 	  ret.push([win, tag])
 	end

@@ -99,7 +99,7 @@ module TkTreatTextTagFont
       tagfontobj(tag).replace(window.tagfontobj(wintag).latin_font, 
 			      window.tagfontobj(wintag).kanji_font)
     else
-      window.tagfont(tag).configinfo.each{|key,value|
+      window.tagfont(wintag).configinfo.each{|key,value|
 	tagfontobj(tag).configure(key,value)
       }
       tagfontobj(tag).replace(window.fontobj.latin_font, 
@@ -272,7 +272,7 @@ class TkText<TkTextWin
   end
 
   def tag_cget(tag, key)
-    tk_call @t.path, 'tag', 'cget', tag, "-#{key}"
+    tk_tcl2ruby tk_call @t.path, 'tag', 'cget', tag, "-#{key}"
   end
 
   def tag_configure(tag, key, val=None)
@@ -486,7 +486,7 @@ class TkTextTag<TkObject
   end
 
   def cget(key)
-    tk_call @t.path, 'tag', 'cget', @id, "-#{key}"
+    tk_tcl2ruby tk_call @t.path, 'tag', 'cget', @id, "-#{key}"
   end
 
   def configure(key, val=None)
@@ -668,7 +668,7 @@ class TkTextWindow<TkObject
   end
 
   def cget(slot)
-    tk_call @t.path, 'window', 'cget', @index, "-#{slot}"
+    tk_tcl2ruby tk_call @t.path, 'window', 'cget', @index, "-#{slot}"
   end
 
   def configure(slot, value=None)
@@ -758,7 +758,7 @@ class TkTextImage<TkObject
   end
 
   def cget(slot)
-    tk_call @t.path, 'image', 'cget', @index, "-#{slot}"
+    tk_tcl2ruby tk_call @t.path, 'image', 'cget', @index, "-#{slot}"
   end
 
   def configure(slot, value=None)
