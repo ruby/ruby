@@ -1,3 +1,11 @@
+Fri Jan  9 11:20:24 2004  Siena.  <siena@faculty.chiba-u.jp>
+
+	* ext/extmk.rb (extmake): should not reduce necessary libraries.
+	  [ruby-dev:22440]
+
+	* lib/mkmf.rb (merge_libs): merge libraries according to
+	  dependency.
+
 Fri Jan  9 10:05:23 2004  Siena.  <siena@faculty.chiba-u.jp>
 
 	* lib/mkmf.rb (libpathflag): use single quotes.  [ruby-dev:22440]

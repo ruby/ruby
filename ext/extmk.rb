@@ -109,7 +109,7 @@ def extmake(target)
       $extpath ||= []
       $extflags += " " + $DLDFLAGS unless $DLDFLAGS.empty?
       $extflags += " " + $LDFLAGS unless $LDFLAGS.empty?
-      $extlibs |= $libs.split | $LOCAL_LIBS.split
+      $extlibs = merge_libs($extlibs, $libs.split, $LOCAL_LIBS.split)
       $extpath |= $LIBPATH
     end
   ensure
