@@ -709,11 +709,11 @@ proc_options(argc, argv)
 
     if (rb_safe_level() == 0 && (s = getenv("RUBYOPT"))) {
 	while (ISSPACE(*s)) s++;
-	if (*s == '-' && *(s+1) == 'T') {
+	if (*s == 'T' || *s == '-' && *(s+1) == 'T') {
 	    int numlen;
 	    int v = 1;
 
-	    s += 2;
+	    if (*s != 'T') ++s;
 	    if (*++s) {
 		v = scan_oct(s, 2, &numlen);
 		if (numlen == 0) v = 1;
