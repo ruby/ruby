@@ -100,6 +100,8 @@ OBJS	      = array.@OBJEXT@ \
 		version.@OBJEXT@ \
 		$(MISSING)
 
+MANTYPE	      = @MANTYPE@
+
 all:		@MAKEFILES@ miniruby$(EXEEXT) rbconfig.rb $(LIBRUBY)
 		@$(MINIRUBY) $(srcdir)/ext/extmk.rb --extstatic="@EXTSTATIC@" --make="$(MAKE)" --make-flags="$(MFLAGS)$(MAKEFLAGS)"
 
@@ -126,11 +128,11 @@ ruby.imp:	$(LIBRUBY_A)
 # $(MINIRUBY) $< $@
 
 install:	rbconfig.rb
-		$(MINIRUBY) $(srcdir)/instruby.rb --make="$(MAKE)" --make-flags="$(MFLAGS)$(MAKEFLAGS)" $(DESTDIR)
+		$(MINIRUBY) $(srcdir)/instruby.rb --make="$(MAKE)" --make-flags="$(MFLAGS)$(MAKEFLAGS)" --mantype=$(MANTYPE) $(DESTDIR)
 		$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" --make-flags="$(MFLAGS)$(MAKEFLAGS) DESTDIR=$(DESTDIR)" install
 
 what-where no-install:	rbconfig.rb
-		$(MINIRUBY) $(srcdir)/instruby.rb --make="$(MAKE)" --make-flags="$(MFLAGS)$(MAKEFLAGS) -n" $(DESTDIR)
+		$(MINIRUBY) $(srcdir)/instruby.rb --make="$(MAKE)" --make-flags="$(MFLAGS)$(MAKEFLAGS) -n" --mantype=$(MANTYPE) $(DESTDIR)
 		$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" --make-flags="$(MFLAGS)$(MAKEFLAGS) -n DESTDIR=$(DESTDIR)" install
 
 clean-ext:

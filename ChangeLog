@@ -1,3 +1,15 @@
+Mon Jan 20 21:48:43 2003  Akinori MUSHA  <knu@iDaemons.org>
+
+	* configure.in (MANTYPE): Detect if the system's nroff(1) groks
+	  mdoc.  Provide a new option --with-mantype={doc|man} in case the
+	  check does not work as expected.
+
+	* Makefile.in (MANTYPE): Define MANTYPE and pass it to
+	  instruby.rb.
+
+	* instruby.rb: Convert mdoc manpages to man for systems which
+	  nroff(1) does not grok mdoc.
+
 Mon Jan 20 21:25:18 2003  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/tempfile.rb (self.open): If a block is given, call it with

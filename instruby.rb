@@ -7,10 +7,11 @@ $:.unshift File.join(CONFIG["srcdir"], "lib")
 require 'fileutils'
 require 'shellwords'
 require 'getopts'
+require 'tempfile'
 
 File.umask(0)
 
-getopts("n", "make:", "make-flags:")
+getopts("n", "make:", "make-flags:", "mantype:doc")
 $dryrun = $OPT["n"]
 mflags = Shellwords.shellwords($OPT["make-flags"] || "").uniq
 mflags[0].sub!(/^\w+$/, '-\&') unless mflags.empty?
@@ -18,6 +19,7 @@ make, *mflags[0, 0] = Shellwords.shellwords($OPT['make'] || ENV["MAKE"] || "")
 mflags = mflags.grep(/^-([^-])/){$1}.join
 mflags.downcase! if /nmake/i == make
 $dryrun = true if mflags.include?(?n)
+mantype = $OPT["mantype"]
 
 ARGV.delete_if{|x|x[0] == ?-}
 destdir = ARGV[0] || ''
@@ -40,14 +42,14 @@ rubylibdir = destdir+CONFIG["rubylibdir"]
 archlibdir = destdir+CONFIG["archdir"]
 sitelibdir = destdir+CONFIG["sitelibdir"]
 sitearchlibdir = destdir+CONFIG["sitearchdir"]
-mandir = File.join(destdir+CONFIG["mandir"], "man1")
+mandir = File.join(destdir+CONFIG["mandir"], "man")
 configure_args = Shellwords.shellwords(CONFIG["configure_args"])
 enable_shared = CONFIG["ENABLE_SHARED"] == 'yes'
 dll = CONFIG["LIBRUBY_SO"]
 lib = CONFIG["LIBRUBY"]
 arc = CONFIG["LIBRUBY_A"]
 
-makedirs [bindir, libdir, rubylibdir, archlibdir, sitelibdir, sitearchlibdir, mandir]
+makedirs [bindir, libdir, rubylibdir, archlibdir, sitelibdir, sitearchlibdir]
 
 install ruby_install_name+exeext, File.join(bindir, ruby_install_name+exeext), 0755
 if rubyw_install_name and !rubyw_install_name.empty?
@@ -115,14 +117,38 @@ Dir.glob("lib/**/*{.rb,help-message}") do |f|
   install f, dir, 0644
 end
 
-for f in Dir["*.h"]
+Dir.glob("*.h") do |f|
   install f, archlibdir, 0644
 end
+
 if RUBY_PLATFORM =~ /mswin32|mingw|bccwin32/
   makedirs File.join(archlibdir, "win32")
   install "win32/win32.h", File.join(archlibdir, "win32"), 0644
 end
 
-install "ruby.1", File.join(mandir, ruby_install_name+".1"), 0644
+Dir.glob("*.[1-9]") do |mdoc|
+  section = mdoc[-1,1]
+
+  destdir = mandir + section
+  destfile = File.join(destdir, mdoc.sub(/ruby/, ruby_install_name))
+
+  makedirs destdir
+
+  if mantype == "doc"
+    install mdoc, destfile, 0644
+  else
+    require 'mdoc2man.rb'
+
+    w = Tempfile.open(mdoc)
+
+    open(mdoc) { |r|
+      Mdoc2Man.mdoc2man(r, w)
+    }
+
+    w.close
+
+    install w.path, destfile, 0644
+  end
+end
 
 # vi:set sw=2:
