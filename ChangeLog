@@ -1,3 +1,12 @@
+Tue Aug 24 08:57:51 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_x509attr.c (ossl_x509attr_initialize): d2i
+	  functions may replace the pointer indicated by the first argument.
+
+	* ext/openssl/ossl_x509ext.c (ossl_x509ext_initialize): ditto.
+
+	* ext/openssl/ossl_x509name.c (ossl_x509name_initialize): ditto.
+
 Mon Aug 23 12:43:32 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/resolv.rb (Config.default_config_hash): when multiple domains
