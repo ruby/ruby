@@ -1,3 +1,7 @@
+Tue Dec 25 02:37:49 2001  Tanaka Akira  <akr@m17n.org>
+
+	* lib/pp.rb, lib/prettyprint.rb: new files.
+
 Sat Dec 22 22:52:14 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* time.c (time_timeval): wrong cast to time_t.
