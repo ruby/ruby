@@ -1,3 +1,8 @@
+Fri Jun 22 23:17:28 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/socket/socket.c (ruby_connect): workaround for the setup of
+	  Cygwin socket.
+
 Fri Jun 22 22:54:33 2001  Keiju Ishitsuka <keiju@ishitsuka.com>
 
 	* lib/irb/locale.rb: fix for require "kconv" problem

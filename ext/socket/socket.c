@@ -756,6 +756,14 @@ ruby_connect(fd, sockaddr, len, socks)
 	      case EAGAIN:
 #ifdef EINPROGRESS
 	      case EINPROGRESS:
+#if defined __CYGWIN__
+		{
+		    struct timeval tv;
+		    tv.tv_sec = 0;
+		    tv.tv_usec = 100000;
+		    rb_thread_wait_for(&tv);
+		}
+#endif
 #endif
 		thread_write_select(fd);
 		continue;
