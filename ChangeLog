@@ -1,6 +1,10 @@
+Thu Jul 18 06:51:24 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* parse.y (yylex): fix typo.
+
 Mon Jul 15 10:35:35 2002  Minero Aoki  <aamine@loveruby.net>
 
-	* parse.y (heredoc_identifier): modify typo.
+	* parse.y (heredoc_identifier): fix typo.
 
 Sat Jul 13 09:30:04 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 

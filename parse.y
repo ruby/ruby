@@ -3417,7 +3417,7 @@ yylex()
 	}
 	pushback(c);
 	if (IS_ARG() && space_seen && !ISSPACE(c)){
-	    rb_warning("`&' interpeted as argument prefix");
+	    rb_warning("`&' interpreted as argument prefix");
 	    c = tAMPER;
 	}
 	else if (lex_state == EXPR_BEG || lex_state == EXPR_MID) {
