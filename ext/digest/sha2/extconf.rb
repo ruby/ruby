@@ -3,7 +3,7 @@
 
 require "mkmf"
 
-$CFLAGS << " -DHAVE_CONFIG_H -I#{File.dirname(__FILE__)}/.."
+$CPPFLAGS << " -DHAVE_CONFIG_H -I#{File.dirname(__FILE__)}/.."
 
 $objs = [
   "sha2.#{$OBJEXT}",

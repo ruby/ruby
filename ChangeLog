@@ -1,8 +1,10 @@
-Sun Feb 22 14:44:28 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Feb 22 14:58:04 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb: $extstatic is Array or nil now.  [ruby-talk:93383]
 
 	* Makefile.in, bcc32/Makefile.sub, win32/Makefile.sub: terminate options.
+
+	* lib/mkmf.rb (init_mkmf): $INCFLAGS also should be lazy-evaluated.
 
 Sun Feb 22 13:05:37 2004  akira yamada  <akira@ruby-lang.org>
 
