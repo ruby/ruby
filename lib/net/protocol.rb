@@ -403,7 +403,7 @@ module Net # :nodoc:
     end
 
     def puts( str = '' )
-      write str.sub(/\n?/, "\n")
+      write str.chomp("\n") + "\n"
     end
 
     def printf( *args )

@@ -1,3 +1,8 @@
+Wed Jan 26 23:09:11 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/protocol.rb (WriteAdapter#puts): should append \n, not
+	  prepend. [ruby-talk:128302] (backport from HEAD, rev 1.75)
+
 Wed Jan 26 10:51:50 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (flock_winnt, flock_win95): unlock file even if
