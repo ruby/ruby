@@ -179,14 +179,14 @@ module WEBrick
       if value
         parts = value.split(/,\s*/)
         parts.each {|part|
-          if m = %r{^([^\s,]+?)(?:;\s*q=([\d]+(?:\.[\d]+)))?$}.match(part)
-            lang = m[1]
+          if m = %r{^([^\s,]+?)(?:;\s*q=(\d+(?:\.\d+)?))?$}.match(part)
+            val = m[1]
             q = (m[2] or 1).to_f
-            tmp.push([lang, q])
+            tmp.push([val, q])
           end
         }
-        tmp = tmp.sort_by{|lang, q| -q}
-        tmp.collect!{|lang, q| lang}
+        tmp = tmp.sort_by{|val, q| -q}
+        tmp.collect!{|val, q| val}
       end
       return tmp
     end

@@ -1,3 +1,20 @@
+Fri Jan  7 20:01:31 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/httpproxy.rb (WEBrick::HTTPProxyServer#proxy_service):
+	  should delete trailing LF from the result of pack("m*").
+
+	* lib/webrick/httpproxy.rb (WEBrick::HTTPProxyServer#proxy_connect):
+	  - should delete trailing LF from the result of pack("m*").
+	  - clear Request-Line not to send the sesponse by HTTPServer#run.
+
+	* lib/webrick/httputils (WEBrick::HTTPUtils.parse_qvalues): 
+	  refine regexp (and change the name of a local variable).
+
+	* lib/webrick/server.rb (WEBrick::Daemon.start): prepared stdio 
+	  don't allow changing its mode.
+
+	* test/webrick/*, sample/webrick/httpproxy.rb: add new files.
+
 Fri Jan  7 18:03:35 2005  Tanaka Akira  <akr@m17n.org>
 
 	* gc.c (mark_locations_array): avoid core dump with -O3.
