@@ -242,6 +242,36 @@ def have_header(header)
   return TRUE
 end
 
+def arg_config(config, default="yes")
+  unless defined? $configure_args
+    $configure_args = {}
+    for arg in CONFIG["configure_args"].split + ARGV
+      next unless /^--/ =~ arg
+      if /=/ =~ arg
+	$configure_args[$`] = $'
+      else
+	$configure_args[arg] = default
+      end
+    end
+  end
+  p [$configure_args, config]
+  $configure_args.fetch(config, default)
+end
+
+def with_config(config, default="yes")
+  unless /^--with-/ =~ config
+    config = '--with-' + config
+  end
+  arg_config(config, default)
+end
+
+def with_config(config, value="yes")
+  unless /^-with-/ =~ config
+    config = '-with-' + config
+  end
+  arg_config(config, value)
+end
+
 def create_header()
   print "creating extconf.h\n"
   STDOUT.flush

@@ -656,7 +656,7 @@ echo "configure:624: checking target architecture" >&5
         echo -n " $archs"
     done
     cat >> confdefs.h <<\EOF
-#define NEXT_FAT_BINARY  1
+#define NEXT_FAT_BINARY 1
 EOF
 
     echo "."
@@ -4527,6 +4527,8 @@ cat >> confdefs.h <<EOF
 EOF
 
 
+configure_args=$ac_configure_args
+
 if test "$fat_binary" = yes ; then
     arch="fat-${host_os}"
 
@@ -4746,6 +4748,7 @@ s%@LIBRUBY@%$LIBRUBY%g
 s%@LIBRUBYARG@%$LIBRUBYARG%g
 s%@SOLIBS@%$SOLIBS%g
 s%@arch@%$arch%g
+s%@configure_args@%$configure_args%g
 
 CEOF
 EOF

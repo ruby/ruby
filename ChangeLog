@@ -1,3 +1,12 @@
+Tue Apr 27 14:11:45 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ext/extmk.rb.in: `--with-xxx=yyy' argument configuration.
+
+	* misc/ruby-mode.el: forgot to handle $`.
+
+	* ext/extmk.rb.in: better AIX link support proposed by
+	  <komatsu@sarion.co.jp>.
+
 Mon Apr 26 16:46:59 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* ext/extmk.rb.in: AIX shared library support modified.

@@ -691,7 +691,7 @@ An end of a defun is found by moving forward from the beginning of one."
    (lambda ()
      (make-local-variable 'font-lock-syntactic-keywords)
      (setq font-lock-syntactic-keywords
-	   '(("\\$\\([#\"'$\\]\\)" 1 (1 . nil))
+	   '(("\\$\\([#\"'`$\\]\\)" 1 (1 . nil))
 	     ("\\(#\\)[{$@]" 1 (1 . nil))))
      (make-local-variable 'font-lock-defaults)
      (setq font-lock-defaults '((ruby-font-lock-keywords) nil nil))
