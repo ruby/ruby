@@ -1,3 +1,8 @@
+Wed Oct 20 12:42:53 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_getline): rs modification check should not interfere
+	  in the loop.
+
 Wed Oct 20 10:31:33 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (lex_getline): should update ruby_debug_lines.
