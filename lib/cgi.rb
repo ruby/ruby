@@ -17,59 +17,59 @@ Wakou Aoyama <wakou@fsinet.or.jp>
 
 === GET FORM VALUES
 
-	require "cgi"
-	cgi = CGI.new
-	values = cgi['field_name']   # <== array of 'field_name'
-	  # if not 'field_name' included, then return [].
-	fields = cgi.keys            # <== array of field names
+        require "cgi"
+        cgi = CGI.new
+        values = cgi['field_name']   # <== array of 'field_name'
+          # if not 'field_name' included, then return [].
+        fields = cgi.keys            # <== array of field names
 
-	# returns true if form has 'field_name'
-	cgi.has_key?('field_name')
-	cgi.has_key?('field_name')
-	cgi.include?('field_name')
+        # returns true if form has 'field_name'
+        cgi.has_key?('field_name')
+        cgi.has_key?('field_name')
+        cgi.include?('field_name')
 
 
 === GET FORM VALUES AS HASH
 
-	require "cgi"
-	cgi = CGI.new
-	params = cgi.params
+        require "cgi"
+        cgi = CGI.new
+        params = cgi.params
 
 cgi.params is a hash.
 
-	cgi.params['new_field_name'] = ["value"]  # add new param
-	cgi.params['field_name'] = ["new_value"]  # change value
-	cgi.params.delete('field_name')           # delete param
-	cgi.params.clear                          # delete all params
+        cgi.params['new_field_name'] = ["value"]  # add new param
+        cgi.params['field_name'] = ["new_value"]  # change value
+        cgi.params.delete('field_name')           # delete param
+        cgi.params.clear                          # delete all params
 
 
 === SAVE FORM VALUES TO FILE
 
-	require "pstore"
-	db = PStore.new("query.db")
-	db.transaction do
-	  db["params"] = cgi.params
-	end
+        require "pstore"
+        db = PStore.new("query.db")
+        db.transaction do
+          db["params"] = cgi.params
+        end
 
 
 === RESTORE FORM VALUES FROM FILE
 
-	require "pstore"
-	db = PStore.new("query.db")
-	db.transaction do
-	  cgi.params = db["params"]
-	end
+        require "pstore"
+        db = PStore.new("query.db")
+        db.transaction do
+          cgi.params = db["params"]
+        end
 
 
 === GET MULTIPART FORM VALUES
 
-	require "cgi"
-	cgi = CGI.new
-	values = cgi['field_name']   # <== array of 'field_name'
-	values[0].read               # <== body of values[0]
-	values[0].local_path         # <== path to local file of values[0]
-	values[0].original_filename  # <== original filename of values[0]
-	values[0].content_type       # <== content_type of values[0]
+        require "cgi"
+        cgi = CGI.new
+        values = cgi['field_name']   # <== array of 'field_name'
+        values[0].read               # <== body of values[0]
+        values[0].local_path         # <== path to local file of values[0]
+        values[0].original_filename  # <== original filename of values[0]
+        values[0].content_type       # <== content_type of values[0]
 
 and values[0] has Tempfile class methods.
 
@@ -78,40 +78,40 @@ and values[0] has Tempfile class methods.
 
 === GET COOKIE VALUES
 
-	require "cgi"
-	cgi = CGI.new
-	values = cgi.cookies['name']  # <== array of 'name'
-	  # if not 'name' included, then return [].
-	names = cgi.cookies.keys      # <== array of cookie names
+        require "cgi"
+        cgi = CGI.new
+        values = cgi.cookies['name']  # <== array of 'name'
+          # if not 'name' included, then return [].
+        names = cgi.cookies.keys      # <== array of cookie names
 
 and cgi.cookies is a hash.
 
 
 === GET COOKIE OBJECTS
 
-	require "cgi"
-	cgi = CGI.new
-	for name, cookie in cgi.cookies
-	  cookie.expires = Time.now + 30
-	end
-	cgi.out("cookie" => cgi.cookies){"string"}
+        require "cgi"
+        cgi = CGI.new
+        for name, cookie in cgi.cookies
+          cookie.expires = Time.now + 30
+        end
+        cgi.out("cookie" => cgi.cookies){"string"}
 
-	cgi.cookies # { "name1" => cookie1, "name2" => cookie2, ... }
+        cgi.cookies # { "name1" => cookie1, "name2" => cookie2, ... }
 
-	require "cgi"
-	cgi = CGI.new
-	cgi.cookies['name'].expires = Time.now + 30
-	cgi.out("cookie" => cgi.cookies['name']){"string"}
+        require "cgi"
+        cgi = CGI.new
+        cgi.cookies['name'].expires = Time.now + 30
+        cgi.out("cookie" => cgi.cookies['name']){"string"}
 
 and see MAKE COOKIE OBJECT.
 
 
 === GET ENVIRONMENT VALUE
 
-	require "cgi"
-	cgi = CGI.new
-	value = cgi.auth_type
-	  # ENV["AUTH_TYPE"]
+        require "cgi"
+        cgi = CGI.new
+        value = cgi.auth_type
+          # ENV["AUTH_TYPE"]
 
 http://www.w3.org/CGI/
 
@@ -124,17 +124,17 @@ content_length and server_port return Integer. and the others return String.
 
 and HTTP_COOKIE, HTTP_COOKIE2
 
-	value = cgi.raw_cookie
-	  # ENV["HTTP_COOKIE"]
-	value = cgi.raw_cookie2
-	  # ENV["HTTP_COOKIE2"]
+        value = cgi.raw_cookie
+          # ENV["HTTP_COOKIE"]
+        value = cgi.raw_cookie2
+          # ENV["HTTP_COOKIE2"]
 
 and other HTTP_*
 
-	value = cgi.accept
-	  # ENV["HTTP_ACCEPT"]
-	value = cgi.accept_charset
-	  # ENV["HTTP_ACCEPT_CHARSET"]
+        value = cgi.accept
+          # ENV["HTTP_ACCEPT"]
+        value = cgi.accept_charset
+          # ENV["HTTP_ACCEPT_CHARSET"]
 
 HTTP_ACCEPT HTTP_ACCEPT_CHARSET HTTP_ACCEPT_ENCODING HTTP_ACCEPT_LANGUAGE
 HTTP_CACHE_CONTROL HTTP_FROM HTTP_HOST HTTP_NEGOTIATE HTTP_PRAGMA
@@ -143,35 +143,35 @@ HTTP_REFERER HTTP_USER_AGENT
 
 === PRINT HTTP HEADER AND HTML STRING TO $DEFAULT_OUTPUT ($>)
 
-	require "cgi"
-	cgi = CGI.new("html3")  # add HTML generation methods
-	cgi.out() do
-	  cgi.html() do
-	    cgi.head{ cgi.title{"TITLE"} } +
-	    cgi.body() do
-	      cgi.form() do
-	        cgi.textarea("get_text") +
-	        cgi.br +
-	        cgi.submit
-	      end +
-	      cgi.pre() do
-	        CGI::escapeHTML(
-	          "params: " + cgi.params.inspect + "\n" +
-	          "cookies: " + cgi.cookies.inspect + "\n" +
-	          ENV.collect() do |key, value|
-	            key + " --> " + value + "\n"
-	          end.join("")
-	        )
-	      end
-	    end
-	  end
-	end
+        require "cgi"
+        cgi = CGI.new("html3")  # add HTML generation methods
+        cgi.out() do
+          cgi.html() do
+            cgi.head{ cgi.title{"TITLE"} } +
+            cgi.body() do
+              cgi.form() do
+                cgi.textarea("get_text") +
+                cgi.br +
+                cgi.submit
+              end +
+              cgi.pre() do
+                CGI::escapeHTML(
+                  "params: " + cgi.params.inspect + "\n" +
+                  "cookies: " + cgi.cookies.inspect + "\n" +
+                  ENV.collect() do |key, value|
+                    key + " --> " + value + "\n"
+                  end.join("")
+                )
+              end
+            end
+          end
+        end
 
-	# add HTML generation methods
-	CGI.new("html3")    # html3.2
-	CGI.new("html4")    # html4.0 (Strict)
-	CGI.new("html4Tr")  # html4.0 Transitional
-	CGI.new("html4Fr")  # html4.0 Frameset
+        # add HTML generation methods
+        CGI.new("html3")    # html3.2
+        CGI.new("html4")    # html4.0 (Strict)
+        CGI.new("html4Tr")  # html4.0 Transitional
+        CGI.new("html4Fr")  # html4.0 Frameset
 
 =end
 
@@ -236,7 +236,7 @@ $-v = v
 
 =begin
 === ESCAPE URL ENCODE
-	url_encoded_string = CGI::escape("string")
+        url_encoded_string = CGI::escape("string")
 =end
   def CGI::escape(string)
     string.gsub(/([^a-zA-Z0-9_.-])/n) do
@@ -251,7 +251,7 @@ $-v = v
 
 =begin
 === UNESCAPE URL ENCODED
-	string = CGI::unescape("url encoded string")
+        string = CGI::unescape("url encoded string")
 =end
   def CGI::unescape(string)
     string.gsub(/\+/n, ' ').gsub(/%([0-9a-fA-F]{2})/n) do
@@ -262,7 +262,7 @@ $-v = v
 
 =begin
 === ESCAPE HTML &"<>
-	CGI::escapeHTML("string")
+        CGI::escapeHTML("string")
 =end
   def CGI::escapeHTML(string)
     string.gsub(/&/n, '&amp;').gsub(/\"/n, '&quot;').gsub(/>/n, '&gt;').gsub(/</n, '&lt;')
@@ -271,7 +271,7 @@ $-v = v
 
 =begin
 === UNESCAPE HTML
-	CGI::unescapeHTML("HTML escaped string")
+        CGI::unescapeHTML("HTML escaped string")
 =end
   def CGI::unescapeHTML(string)
     string.gsub(/&(.*?);/n) do
@@ -299,11 +299,11 @@ $-v = v
 
 =begin
 === ESCAPE ELEMENT
-	print CGI::escapeElement("<BR><A HREF="url"></A>", "A", "IMG")
-	  # "<BR>&lt;A HREF="url"&gt;&lt;/A&gt"
+        print CGI::escapeElement("<BR><A HREF="url"></A>", "A", "IMG")
+          # "<BR>&lt;A HREF="url"&gt;&lt;/A&gt"
 
-	print CGI::escapeElement("<BR><A HREF="url"></A>", ["A", "IMG"])
-	  # "<BR>&lt;A HREF="url"&gt;&lt;/A&gt"
+        print CGI::escapeElement("<BR><A HREF="url"></A>", ["A", "IMG"])
+          # "<BR>&lt;A HREF="url"&gt;&lt;/A&gt"
 =end
   def CGI::escapeElement(string, *element)
     string.gsub(/<\/?(?:#{element.join("|")})(?!\w)(?:.|\n)*?>/ni) do
@@ -314,13 +314,13 @@ $-v = v
 
 =begin
 === UNESCAPE ELEMENT
-	print CGI::unescapeElement(
-	        CGI::escapeHTML("<BR><A HREF="url"></A>"), "A", "IMG")
-	  # "&lt;BR&gt;<A HREF="url"></A>"
+        print CGI::unescapeElement(
+                CGI::escapeHTML("<BR><A HREF="url"></A>"), "A", "IMG")
+          # "&lt;BR&gt;<A HREF="url"></A>"
 
-	print CGI::unescapeElement(
-	        CGI::escapeHTML("<BR><A HREF="url"></A>"), ["A", "IMG"])
-	  # "&lt;BR&gt;<A HREF="url"></A>"
+        print CGI::unescapeElement(
+                CGI::escapeHTML("<BR><A HREF="url"></A>"), ["A", "IMG"])
+          # "&lt;BR&gt;<A HREF="url"></A>"
 =end
   def CGI::unescapeElement(string, *element)
     string.gsub(/&lt;\/?(?:#{element.join("|")})(?!\w)(?:.|\n)*?&gt;/ni) do
@@ -331,8 +331,8 @@ $-v = v
 
 =begin
 === MAKE RFC1123 DATE STRING
-	CGI::rfc1123_date(Time.now)
-	  # Sut, 1 Jan 2000 00:00:00 GMT
+        CGI::rfc1123_date(Time.now)
+          # Sut, 1 Jan 2000 00:00:00 GMT
 =end
   def CGI::rfc1123_date(time)
     t = time.clone.gmtime
@@ -344,47 +344,47 @@ $-v = v
 
 =begin
 === MAKE HTTP HEADER STRING
-	header
-	  # Content-Type: text/html
+        header
+          # Content-Type: text/html
 
-	header("text/plain")
-	  # Content-Type: text/plain
+        header("text/plain")
+          # Content-Type: text/plain
 
-	header({"nph"        => true,
-	        "status"     => "OK",  # == "200 OK"
-	          # "status"     => "200 GOOD",
-	        "server"     => ENV['SERVER_SOFTWARE'],
-	        "connection" => "close",
-	        "type"       => "text/html",
-	        "charset"    => "iso-2022-jp",
-	          # Content-Type: text/html; charset=iso-2022-jp
-	        "language"   => "ja",
-	        "expires"    => Time.now + 30,
-	        "cookie"     => [cookie1, cookie2],
-	        "my_header1" => "my_value"
-	        "my_header2" => "my_value"})
+        header({"nph"        => true,
+                "status"     => "OK",  # == "200 OK"
+                  # "status"     => "200 GOOD",
+                "server"     => ENV['SERVER_SOFTWARE'],
+                "connection" => "close",
+                "type"       => "text/html",
+                "charset"    => "iso-2022-jp",
+                  # Content-Type: text/html; charset=iso-2022-jp
+                "language"   => "ja",
+                "expires"    => Time.now + 30,
+                "cookie"     => [cookie1, cookie2],
+                "my_header1" => "my_value"
+                "my_header2" => "my_value"})
 
 header will not convert charset.
 
 status:
-	"OK"                  --> "200 OK"
-	"PARTIAL_CONTENT"     --> "206 Partial Content"
-	"MULTIPLE_CHOICES"    --> "300 Multiple Choices"
-	"MOVED"               --> "301 Moved Permanently"
-	"REDIRECT"            --> "302 Found"
-	"NOT_MODIFIED"        --> "304 Not Modified"
-	"BAD_REQUEST"         --> "400 Bad Request"
-	"AUTH_REQUIRED"       --> "401 Authorization Required"
-	"FORBIDDEN"           --> "403 Forbidden"
-	"NOT_FOUND"           --> "404 Not Found"
-	"METHOD_NOT_ALLOWED"  --> "405 Method Not Allowed"
-	"NOT_ACCEPTABLE"      --> "406 Not Acceptable"
-	"LENGTH_REQUIRED"     --> "411 Length Required"
-	"PRECONDITION_FAILED" --> "412 Rrecondition Failed"
-	"SERVER_ERROR"        --> "500 Internal Server Error"
-	"NOT_IMPLEMENTED"     --> "501 Method Not Implemented"
-	"BAD_GATEWAY"         --> "502 Bad Gateway"
-	"VARIANT_ALSO_VARIES" --> "506 Variant Also Negotiates"
+        "OK"                  --> "200 OK"
+        "PARTIAL_CONTENT"     --> "206 Partial Content"
+        "MULTIPLE_CHOICES"    --> "300 Multiple Choices"
+        "MOVED"               --> "301 Moved Permanently"
+        "REDIRECT"            --> "302 Found"
+        "NOT_MODIFIED"        --> "304 Not Modified"
+        "BAD_REQUEST"         --> "400 Bad Request"
+        "AUTH_REQUIRED"       --> "401 Authorization Required"
+        "FORBIDDEN"           --> "403 Forbidden"
+        "NOT_FOUND"           --> "404 Not Found"
+        "METHOD_NOT_ALLOWED"  --> "405 Method Not Allowed"
+        "NOT_ACCEPTABLE"      --> "406 Not Acceptable"
+        "LENGTH_REQUIRED"     --> "411 Length Required"
+        "PRECONDITION_FAILED" --> "412 Rrecondition Failed"
+        "SERVER_ERROR"        --> "500 Internal Server Error"
+        "NOT_IMPLEMENTED"     --> "501 Method Not Implemented"
+        "BAD_GATEWAY"         --> "502 Bad Gateway"
+        "VARIANT_ALSO_VARIES" --> "506 Variant Also Negotiates"
 
 =end
   def header(options = "text/html")
@@ -464,7 +464,7 @@ status:
     end
     if @output_cookies
       for cookie in @output_cookies
-	buf.concat("Set-Cookie: " + cookie.to_s + EOL)
+        buf.concat("Set-Cookie: " + cookie.to_s + EOL)
       end
     end
 
@@ -487,31 +487,31 @@ status:
 
 =begin
 === PRINT HTTP HEADER AND STRING TO $DEFAULT_OUTPUT ($>)
-	cgi = CGI.new
-	cgi.out{ "string" }
-	  # Content-Type: text/html
-	  # Content-Length: 6
-	  #
-	  # string
+        cgi = CGI.new
+        cgi.out{ "string" }
+          # Content-Type: text/html
+          # Content-Length: 6
+          #
+          # string
 
-	cgi.out("text/plain"){ "string" }
-	  # Content-Type: text/plain
-	  # Content-Length: 6
-	  #
-	  # string
+        cgi.out("text/plain"){ "string" }
+          # Content-Type: text/plain
+          # Content-Length: 6
+          #
+          # string
 
-	cgi.out({"nph"        => true,
-	         "status"     => "OK",  # == "200 OK"
-	         "server"     => ENV['SERVER_SOFTWARE'],
-	         "connection" => "close",
-	         "type"       => "text/html",
-	         "charset"    => "iso-2022-jp",
-	           # Content-Type: text/html; charset=iso-2022-jp
-	         "language"   => "ja",
-	         "expires"    => Time.now + (3600 * 24 * 30),
-	         "cookie"     => [cookie1, cookie2],
-	         "my_header1" => "my_value",
-	         "my_header2" => "my_value"}){ "string" }
+        cgi.out({"nph"        => true,
+                 "status"     => "OK",  # == "200 OK"
+                 "server"     => ENV['SERVER_SOFTWARE'],
+                 "connection" => "close",
+                 "type"       => "text/html",
+                 "charset"    => "iso-2022-jp",
+                   # Content-Type: text/html; charset=iso-2022-jp
+                 "language"   => "ja",
+                 "expires"    => Time.now + (3600 * 24 * 30),
+                 "cookie"     => [cookie1, cookie2],
+                 "my_header1" => "my_value",
+                 "my_header2" => "my_value"}){ "string" }
 
 if "HEAD" == REQUEST_METHOD then output only HTTP header.
 
@@ -549,8 +549,8 @@ convert string charset, and set language to "ja".
 
 =begin
 === PRINT
-	cgi = CGI.new
-	cgi.print    # default:  cgi.print == $DEFAULT_OUTPUT.print
+        cgi = CGI.new
+        cgi.print    # default:  cgi.print == $DEFAULT_OUTPUT.print
 =end
   def print(*options)
     stdoutput.print(*options)
@@ -559,31 +559,31 @@ convert string charset, and set language to "ja".
 
 =begin
 === MAKE COOKIE OBJECT
-	cookie1 = CGI::Cookie::new("name", "value1", "value2", ...)
-	cookie1 = CGI::Cookie::new({"name" => "name", "value" => "value"})
-	cookie1 = CGI::Cookie::new({'name'    => 'name',
-	                            'value'   => ['value1', 'value2', ...],
-	                            'path'    => 'path',   # optional
-	                            'domain'  => 'domain', # optional
-	                            'expires' => Time.now, # optional
-	                            'secure'  => true      # optional
-	                           })
+        cookie1 = CGI::Cookie::new("name", "value1", "value2", ...)
+        cookie1 = CGI::Cookie::new({"name" => "name", "value" => "value"})
+        cookie1 = CGI::Cookie::new({'name'    => 'name',
+                                    'value'   => ['value1', 'value2', ...],
+                                    'path'    => 'path',   # optional
+                                    'domain'  => 'domain', # optional
+                                    'expires' => Time.now, # optional
+                                    'secure'  => true      # optional
+                                   })
 
-	cgi.out({"cookie" => [cookie1, cookie2]}){ "string" }
+        cgi.out({"cookie" => [cookie1, cookie2]}){ "string" }
 
-	name    = cookie1.name
-	values  = cookie1.value
-	path    = cookie1.path
-	domain  = cookie1.domain
-	expires = cookie1.expires
-	secure  = cookie1.secure
+        name    = cookie1.name
+        values  = cookie1.value
+        path    = cookie1.path
+        domain  = cookie1.domain
+        expires = cookie1.expires
+        secure  = cookie1.secure
 
-	cookie1.name    = 'name'
-	cookie1.value   = ['value1', 'value2', ...]
-	cookie1.path    = 'path'
-	cookie1.domain  = 'domain'
-	cookie1.expires = Time.now + 30
-	cookie1.secure  = true
+        cookie1.name    = 'name'
+        cookie1.value   = ['value1', 'value2', ...]
+        cookie1.path    = 'path'
+        cookie1.domain  = 'domain'
+        cookie1.expires = Time.now + 30
+        cookie1.secure  = true
 =end
   require "delegate"
   class Cookie < SimpleDelegator
@@ -659,8 +659,8 @@ convert string charset, and set language to "ja".
 
 =begin
 === PARSE RAW COOKIE STRING
-	cookies = CGI::Cookie::parse("raw_cookie_string")
-	  # { "name1" => cookie1, "name2" => cookie2, ... }
+        cookies = CGI::Cookie::parse("raw_cookie_string")
+          # { "name1" => cookie1, "name2" => cookie2, ... }
 =end
   def Cookie::parse(raw_cookie)
     cookies = Hash.new([])
@@ -684,9 +684,9 @@ convert string charset, and set language to "ja".
 
 =begin
 === PARSE QUERY STRING
-	params = CGI::parse("query_string")
-	  # {"name1" => ["value1", "value2", ...],
-	  #  "name2" => ["value1", "value2", ...], ... }
+        params = CGI::parse("query_string")
+          # {"name1" => ["value1", "value2", ...],
+          #  "name2" => ["value1", "value2", ...], ... }
 =end
   def CGI::parse(query)
     params = Hash.new([])
@@ -918,17 +918,17 @@ convert string charset, and set language to "ja".
 
 =begin
 === HTML PRETTY FORMAT
-	print CGI::pretty("<HTML><BODY></BODY></HTML>")
-	  # <HTML>
-	  #   <BODY>
-	  #   </BODY>
-	  # </HTML>
+        print CGI::pretty("<HTML><BODY></BODY></HTML>")
+          # <HTML>
+          #   <BODY>
+          #   </BODY>
+          # </HTML>
 
-	print CGI::pretty("<HTML><BODY></BODY></HTML>", "\t")
-	  # <HTML>
-	  # 	<BODY>
-	  # 	</BODY>
-	  # </HTML>
+        print CGI::pretty("<HTML><BODY></BODY></HTML>", "\t")
+          # <HTML>
+          #         <BODY>
+          #         </BODY>
+          # </HTML>
 =end
   def CGI::pretty(string, shift = "  ")
     lines = string.gsub(/(?!\A)<(?:.|\n)*?>/n, "\n\\0").gsub(/<(?:.|\n)*?>(?!\n)/n, "\\0\n")
@@ -945,17 +945,17 @@ convert string charset, and set language to "ja".
 =begin
 == HTML ELEMENTS
 
-	cgi = CGI.new("html3")  # add HTML generation methods
-	cgi.element
-	cgi.element{ "string" }
-	cgi.element({ "ATTRILUTE1" => "value1", "ATTRIBUTE2" => "value2" })
-	cgi.element({ "ATTRILUTE1" => "value1", "ATTRIBUTE2" => "value2" }){ "string" }
+        cgi = CGI.new("html3")  # add HTML generation methods
+        cgi.element
+        cgi.element{ "string" }
+        cgi.element({ "ATTRILUTE1" => "value1", "ATTRIBUTE2" => "value2" })
+        cgi.element({ "ATTRILUTE1" => "value1", "ATTRIBUTE2" => "value2" }){ "string" }
 
-	# add HTML generation methods
-	CGI.new("html3")    # html3.2
-	CGI.new("html4")    # html4.0 (Strict)
-	CGI.new("html4Tr")  # html4.0 Transitional
-	CGI.new("html4Fr")  # html4.0 Frameset
+        # add HTML generation methods
+        CGI.new("html3")    # html3.2
+        CGI.new("html4")    # html4.0 (Strict)
+        CGI.new("html4Tr")  # html4.0 Transitional
+        CGI.new("html4Fr")  # html4.0 Frameset
 
 =end
 
@@ -1026,8 +1026,8 @@ convert string charset, and set language to "ja".
 
 =begin
 === A ELEMENT
-	a("url")
-	  # = a({ "HREF" => "url" })
+        a("url")
+          # = a({ "HREF" => "url" })
 =end
     def a(href = "")
       attributes = if href.kind_of?(String)
@@ -1045,8 +1045,8 @@ convert string charset, and set language to "ja".
 
 =begin
 === BASE ELEMENT
-	base("url")
-	  # = base({ "HREF" => "url" })
+        base("url")
+          # = base({ "HREF" => "url" })
 =end
     def base(href = "")
       attributes = if href.kind_of?(String)
@@ -1064,8 +1064,8 @@ convert string charset, and set language to "ja".
 
 =begin
 === BLOCKQUOTE ELEMENT
-	blockquote("url"){ "string" }
-	  # = blockquote({ "CITE" => "url" }){ "string" }
+        blockquote("url"){ "string" }
+          # = blockquote({ "CITE" => "url" }){ "string" }
 =end
     def blockquote(cite = nil)
       attributes = if cite.kind_of?(String)
@@ -1083,8 +1083,8 @@ convert string charset, and set language to "ja".
 
 =begin
 === CAPTION ELEMENT
-	caption("align"){ "string" }
-	  # = caption({ "ALIGN" => "align" }){ "string" }
+        caption("align"){ "string" }
+          # = caption({ "ALIGN" => "align" }){ "string" }
 =end
     def caption(align = nil)
       attributes = if align.kind_of?(String)
@@ -1102,14 +1102,14 @@ convert string charset, and set language to "ja".
 
 =begin
 === CHECKBOX
-	checkbox("name")
-	  # = checkbox({ "NAME" => "name" })
+        checkbox("name")
+          # = checkbox({ "NAME" => "name" })
 
-	checkbox("name", "value")
-	  # = checkbox({ "NAME" => "name", "VALUE" => "value" })
+        checkbox("name", "value")
+          # = checkbox({ "NAME" => "name", "VALUE" => "value" })
 
-	checkbox("name", "value", true)
-	  # = checkbox({ "NAME" => "name", "VALUE" => "value", "CHECKED" => true })
+        checkbox("name", "value", true)
+          # = checkbox({ "NAME" => "name", "VALUE" => "value", "CHECKED" => true })
 =end
     def checkbox(name = "", value = nil, checked = nil)
       attributes = if name.kind_of?(String)
@@ -1125,29 +1125,29 @@ convert string charset, and set language to "ja".
 
 =begin
 === CHECKBOX_GROUP
-	checkbox_group("name", "foo", "bar", "baz")
-	  # <INPUT TYPE="checkbox" NAME="name" VALUE="foo">foo
-	  # <INPUT TYPE="checkbox" NAME="name" VALUE="bar">bar
-	  # <INPUT TYPE="checkbox" NAME="name" VALUE="baz">baz
+        checkbox_group("name", "foo", "bar", "baz")
+          # <INPUT TYPE="checkbox" NAME="name" VALUE="foo">foo
+          # <INPUT TYPE="checkbox" NAME="name" VALUE="bar">bar
+          # <INPUT TYPE="checkbox" NAME="name" VALUE="baz">baz
 
-	checkbox_group("name", ["foo"], ["bar", true], "baz")
-	  # <INPUT TYPE="checkbox" NAME="name" VALUE="foo">foo
-	  # <INPUT TYPE="checkbox" SELECTED NAME="name" VALUE="bar">bar
-	  # <INPUT TYPE="checkbox" NAME="name" VALUE="baz">baz
+        checkbox_group("name", ["foo"], ["bar", true], "baz")
+          # <INPUT TYPE="checkbox" NAME="name" VALUE="foo">foo
+          # <INPUT TYPE="checkbox" SELECTED NAME="name" VALUE="bar">bar
+          # <INPUT TYPE="checkbox" NAME="name" VALUE="baz">baz
 
-	checkbox_group("name", ["1", "Foo"], ["2", "Bar", true], "Baz")
-	  # <INPUT TYPE="checkbox" NAME="name" VALUE="1">Foo
-	  # <INPUT TYPE="checkbox" SELECTED NAME="name" VALUE="2">Bar
-	  # <INPUT TYPE="checkbox" NAME="name" VALUE="Baz">Baz
+        checkbox_group("name", ["1", "Foo"], ["2", "Bar", true], "Baz")
+          # <INPUT TYPE="checkbox" NAME="name" VALUE="1">Foo
+          # <INPUT TYPE="checkbox" SELECTED NAME="name" VALUE="2">Bar
+          # <INPUT TYPE="checkbox" NAME="name" VALUE="Baz">Baz
 
-	checkbox_group({ "NAME" => "name",
-	                 "VALUES" => ["foo", "bar", "baz"] })
+        checkbox_group({ "NAME" => "name",
+                         "VALUES" => ["foo", "bar", "baz"] })
 
-	checkbox_group({ "NAME" => "name",
-	                 "VALUES" => [["foo"], ["bar", true], "baz"] })
+        checkbox_group({ "NAME" => "name",
+                         "VALUES" => [["foo"], ["bar", true], "baz"] })
 
-	checkbox_group({ "NAME" => "name",
-	                 "VALUES" => [["1", "Foo"], ["2", "Bar", true], "Baz"] })
+        checkbox_group({ "NAME" => "name",
+                         "VALUES" => [["1", "Foo"], ["2", "Bar", true], "Baz"] })
 =end
     def checkbox_group(name = "", *values)
       if name.kind_of?(Hash)
@@ -1172,17 +1172,17 @@ convert string charset, and set language to "ja".
 
 =begin
 === FILE_FIELD
-	file_field("name")
-	  # <INPUT TYPE="file" NAME="name" SIZE="20">
+        file_field("name")
+          # <INPUT TYPE="file" NAME="name" SIZE="20">
 
-	file_field("name", 40)
-	  # <INPUT TYPE="file" NAME="name" SIZE="40">
+        file_field("name", 40)
+          # <INPUT TYPE="file" NAME="name" SIZE="40">
 
-	file_field("name", 40, 100)
-	  # <INPUT TYPE="file" NAME="name" SIZE="40", MAXLENGTH="100">
+        file_field("name", 40, 100)
+          # <INPUT TYPE="file" NAME="name" SIZE="40", MAXLENGTH="100">
 
-	file_field({ "NAME" => "name", "SIZE" => 40 })
-	  # <INPUT TYPE="file" NAME="name" SIZE="40">
+        file_field({ "NAME" => "name", "SIZE" => 40 })
+          # <INPUT TYPE="file" NAME="name" SIZE="40">
 =end
     def file_field(name = "", size = 20, maxlength = nil)
       attributes = if name.kind_of?(String)
@@ -1199,17 +1199,17 @@ convert string charset, and set language to "ja".
 
 =begin
 === FORM ELEMENT
-	form{ "string" }
-	  # <FORM METHOD="post" ENCTYPE="application/x-www-form-urlencoded">string</FORM>
+        form{ "string" }
+          # <FORM METHOD="post" ENCTYPE="application/x-www-form-urlencoded">string</FORM>
 
-	form("get"){ "string" }
-	  # <FORM METHOD="get" ENCTYPE="application/x-www-form-urlencoded">string</FORM>
+        form("get"){ "string" }
+          # <FORM METHOD="get" ENCTYPE="application/x-www-form-urlencoded">string</FORM>
 
-	form("get", "url"){ "string" }
-	  # <FORM METHOD="get" ACTION="url" ENCTYPE="application/x-www-form-urlencoded">string</FORM>
+        form("get", "url"){ "string" }
+          # <FORM METHOD="get" ACTION="url" ENCTYPE="application/x-www-form-urlencoded">string</FORM>
 
-	form({"METHOD" => "post", ENCTYPE => "enctype"}){ "string" }
-	  # <FORM METHOD="post" ENCTYPE="enctype">string</FORM>
+        form({"METHOD" => "post", ENCTYPE => "enctype"}){ "string" }
+          # <FORM METHOD="post" ENCTYPE="enctype">string</FORM>
 =end
     def form(method = "post", action = nil, enctype = "application/x-www-form-urlencoded")
       attributes = if method.kind_of?(String)
@@ -1225,29 +1225,29 @@ convert string charset, and set language to "ja".
                      method
                    end
       if iterator?
-	body = yield
+        body = yield
       else
         body = ""
       end
       if @output_hidden
-	hidden = @output_hidden.collect{|k,v|
-	  "<INPUT TYPE=HIDDEN NAME=\"#{k}\" VALUE=\"#{v}\">"
-	}.to_s
-	body.concat hidden
+        hidden = @output_hidden.collect{|k,v|
+          "<INPUT TYPE=HIDDEN NAME=\"#{k}\" VALUE=\"#{v}\">"
+        }.to_s
+        body.concat hidden
       end
       super(attributes){body}
     end
 
 =begin
 === HIDDEN FIELD
-	hidden("name")
-	  # <INPUT TYPE="hidden" NAME="name">
+        hidden("name")
+          # <INPUT TYPE="hidden" NAME="name">
 
-	hidden("name", "value")
-	  # <INPUT TYPE="hidden" NAME="name" VALUE="value">
+        hidden("name", "value")
+          # <INPUT TYPE="hidden" NAME="name" VALUE="value">
 
-	hidden({ "NAME" => "name", "VALUE" => "reset", "ID" => "foo" })
-	  # <INPUT TYPE="hidden" NAME="name" VALUE="value" ID="foo">
+        hidden({ "NAME" => "name", "VALUE" => "reset", "ID" => "foo" })
+          # <INPUT TYPE="hidden" NAME="name" VALUE="value" ID="foo">
 =end
     def hidden(name = "", value = nil)
       attributes = if name.kind_of?(String)
@@ -1263,36 +1263,36 @@ convert string charset, and set language to "ja".
 =begin
 === HTML ELEMENT
 
-	html{ "string" }
-	  # <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN"><HTML>string</HTML>
+        html{ "string" }
+          # <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN"><HTML>string</HTML>
 
-	html({ "LANG" => "ja" }){ "string" }
-	  # <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN"><HTML LANG="ja">string</HTML>
+        html({ "LANG" => "ja" }){ "string" }
+          # <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN"><HTML LANG="ja">string</HTML>
 
-	html({ "DOCTYPE" => false }){ "string" }
-	  # <HTML>string</HTML>
+        html({ "DOCTYPE" => false }){ "string" }
+          # <HTML>string</HTML>
 
-	html({ "DOCTYPE" => '<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">' }){ "string" }
-	  # <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN"><HTML>string</HTML>
+        html({ "DOCTYPE" => '<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">' }){ "string" }
+          # <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN"><HTML>string</HTML>
 
-	html({ "PRETTY" => "  " }){ "<BODY></BODY>" }
-	  # <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
-	  # <HTML>
-	  #   <BODY>
-	  #   </BODY>
-	  # </HTML>
+        html({ "PRETTY" => "  " }){ "<BODY></BODY>" }
+          # <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+          # <HTML>
+          #   <BODY>
+          #   </BODY>
+          # </HTML>
 
-	html({ "PRETTY" => "\t" }){ "<BODY></BODY>" }
-	  # <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
-	  # <HTML>
-	  # 	<BODY>
-	  # 	</BODY>
-	  # </HTML>
+        html({ "PRETTY" => "\t" }){ "<BODY></BODY>" }
+          # <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+          # <HTML>
+          #         <BODY>
+          #         </BODY>
+          # </HTML>
 
-	html("PRETTY"){ "<BODY></BODY>" }
-	  # = html({ "PRETTY" => "  " }){ "<BODY></BODY>" }
+        html("PRETTY"){ "<BODY></BODY>" }
+          # = html({ "PRETTY" => "  " }){ "<BODY></BODY>" }
 
-	html(if $VERBOSE then "PRETTY" end){ "HTML string" }
+        html(if $VERBOSE then "PRETTY" end){ "HTML string" }
 
 =end
     def html(attributes = {})
@@ -1331,14 +1331,14 @@ convert string charset, and set language to "ja".
 
 =begin
 === IMAGE_BUTTON
-	image_button("url")
-	  # <INPUT TYPE="image" SRC="url">
+        image_button("url")
+          # <INPUT TYPE="image" SRC="url">
 
-	image_button("url", "name", "string")
-	  # <INPUT TYPE="image" SRC="url" NAME="name", ALT="string">
+        image_button("url", "name", "string")
+          # <INPUT TYPE="image" SRC="url" NAME="name", ALT="string">
 
-	image_button({ "SRC" => "url", "ATL" => "strng" })
-	  # <INPUT TYPE="image" SRC="url" ALT="string">
+        image_button({ "SRC" => "url", "ATL" => "strng" })
+          # <INPUT TYPE="image" SRC="url" ALT="string">
 =end
     def image_button(src = "", name = nil, alt = nil)
       attributes = if src.kind_of?(String)
@@ -1355,11 +1355,11 @@ convert string charset, and set language to "ja".
 
 =begin
 === IMG ELEMENT
-	img("src", "alt", 100, 50)
-	  # <IMG SRC="src" ALT="alt" WIDTH="100", HEIGHT="50">
+        img("src", "alt", 100, 50)
+          # <IMG SRC="src" ALT="alt" WIDTH="100", HEIGHT="50">
 
-	img({ "SRC" => "src", "ALT" => "alt", "WIDTH" => 100, "HEIGHT" => 50 })
-	  # <IMG SRC="src" ALT="alt" WIDTH="100", HEIGHT="50">
+        img({ "SRC" => "src", "ALT" => "alt", "WIDTH" => 100, "HEIGHT" => 50 })
+          # <IMG SRC="src" ALT="alt" WIDTH="100", HEIGHT="50">
 =end
     def img(src = "", alt = "", width = nil, height = nil)
       attributes = if src.kind_of?(String)
@@ -1375,11 +1375,11 @@ convert string charset, and set language to "ja".
 
 =begin
 === MULTIPART FORM
-	multipart_form{ "string" }
-	  # <FORM METHOD="post" ENCTYPE="multipart/form-data">string</FORM>
+        multipart_form{ "string" }
+          # <FORM METHOD="post" ENCTYPE="multipart/form-data">string</FORM>
 
-	multipart_form("url"){ "string" }
-	  # <FORM METHOD="post" ACTION="url" ENCTYPE="multipart/form-data">string</FORM>
+        multipart_form("url"){ "string" }
+          # <FORM METHOD="post" ACTION="url" ENCTYPE="multipart/form-data">string</FORM>
 =end
     def multipart_form(action = nil, enctype = "multipart/form-data")
       attributes = if action == nil
@@ -1406,17 +1406,17 @@ convert string charset, and set language to "ja".
 
 =begin
 === PASSWORD_FIELD
-	password_field("name")
-	  # <INPUT TYPE="password" NAME="name" SIZE="40">
+        password_field("name")
+          # <INPUT TYPE="password" NAME="name" SIZE="40">
 
-	password_field("name", "value")
-	  # <INPUT TYPE="password" NAME="name" VALUE="value" SIZE="40">
+        password_field("name", "value")
+          # <INPUT TYPE="password" NAME="name" VALUE="value" SIZE="40">
 
-	password_field("password", "value", 80, 200)
-	  # <INPUT TYPE="password" NAME="name" VALUE="value", SIZE="80", MAXLENGTH="200">
+        password_field("password", "value", 80, 200)
+          # <INPUT TYPE="password" NAME="name" VALUE="value", SIZE="80", MAXLENGTH="200">
 
-	password_field({ "NAME" => "name", "VALUE" => "value" })
-	  # <INPUT TYPE="password" NAME="name" VALUE="value">
+        password_field({ "NAME" => "name", "VALUE" => "value" })
+          # <INPUT TYPE="password" NAME="name" VALUE="value">
 =end
     def password_field(name = "", value = nil, size = 40, maxlength = nil)
       attributes = if name.kind_of?(String)
@@ -1433,34 +1433,34 @@ convert string charset, and set language to "ja".
 
 =begin
 === POPUP_MENU
-	popup_menu("name", "foo", "bar", "baz")
-	  # <SELECT NAME="name">
-	  #   <OPTION VALUE="foo">foo</OPTION>
-	  #   <OPTION VALUE="bar">bar</OPTION>
-	  #   <OPTION VALUE="baz">baz</OPTION>
-	  # </SELECT>
+        popup_menu("name", "foo", "bar", "baz")
+          # <SELECT NAME="name">
+          #   <OPTION VALUE="foo">foo</OPTION>
+          #   <OPTION VALUE="bar">bar</OPTION>
+          #   <OPTION VALUE="baz">baz</OPTION>
+          # </SELECT>
 
-	popup_menu("name", ["foo"], ["bar", true], "baz")
-	  # <SELECT NAME="name">
-	  #   <OPTION VALUE="foo">foo</OPTION>
-	  #   <OPTION VALUE="bar" SELECTED>bar</OPTION>
-	  #   <OPTION VALUE="baz">baz</OPTION>
-	  # </SELECT>
+        popup_menu("name", ["foo"], ["bar", true], "baz")
+          # <SELECT NAME="name">
+          #   <OPTION VALUE="foo">foo</OPTION>
+          #   <OPTION VALUE="bar" SELECTED>bar</OPTION>
+          #   <OPTION VALUE="baz">baz</OPTION>
+          # </SELECT>
 
-	popup_menu("name", ["1", "Foo"], ["2", "Bar", true], "Baz")
-	  # <SELECT NAME="name">
-	  #   <OPTION VALUE="1">Foo</OPTION>
-	  #   <OPTION SELECTED VALUE="2">Bar</OPTION>
-	  #   <OPTION VALUE="Baz">Baz</OPTION>
-	  # </SELECT>
+        popup_menu("name", ["1", "Foo"], ["2", "Bar", true], "Baz")
+          # <SELECT NAME="name">
+          #   <OPTION VALUE="1">Foo</OPTION>
+          #   <OPTION SELECTED VALUE="2">Bar</OPTION>
+          #   <OPTION VALUE="Baz">Baz</OPTION>
+          # </SELECT>
 
-	popup_menu({"NAME" => "name", "SIZE" => 2, "MULTIPLE" => true,
-	            "VALUES" => [["1", "Foo"], ["2", "Bar", true], "Baz"] })
-	  # <SELECT NAME="name" MULTIPLE SIZE="2">
-	  #   <OPTION VALUE="1">Foo</OPTION>
-	  #   <OPTION SELECTED VALUE="2">Bar</OPTION>
-	  #   <OPTION VALUE="Baz">Baz</OPTION>
-	  # </SELECT>
+        popup_menu({"NAME" => "name", "SIZE" => 2, "MULTIPLE" => true,
+                    "VALUES" => [["1", "Foo"], ["2", "Bar", true], "Baz"] })
+          # <SELECT NAME="name" MULTIPLE SIZE="2">
+          #   <OPTION VALUE="1">Foo</OPTION>
+          #   <OPTION SELECTED VALUE="2">Bar</OPTION>
+          #   <OPTION VALUE="Baz">Baz</OPTION>
+          # </SELECT>
 =end
     def popup_menu(name = "", *values)
 
@@ -1498,14 +1498,14 @@ convert string charset, and set language to "ja".
 
 =begin
 === RADIO_BUTTON
-	radio_button("name", "value")
-	  # <INPUT TYPE="radio" NAME="name", VALUE="value">
+        radio_button("name", "value")
+          # <INPUT TYPE="radio" NAME="name", VALUE="value">
 
-	radio_button("name", "value", true)
-	  # <INPUT TYPE="radio" NAME="name", VALUE="value", CHECKED>
+        radio_button("name", "value", true)
+          # <INPUT TYPE="radio" NAME="name", VALUE="value", CHECKED>
 
-	radio_button({ "NAME" => "name", "VALUE" => "value", "ID" => "foo" })
-	  # <INPUT TYPE="radio" NAME="name" VALUE="value" ID="foo">
+        radio_button({ "NAME" => "name", "VALUE" => "value", "ID" => "foo" })
+          # <INPUT TYPE="radio" NAME="name" VALUE="value" ID="foo">
 =end
     def radio_button(name = "", value = nil, checked = nil)
       attributes = if name.kind_of?(String)
@@ -1521,29 +1521,29 @@ convert string charset, and set language to "ja".
 
 =begin
 === RADIO_GROUP
-	radio_group("name", "foo", "bar", "baz")
-	  # <INPUT TYPE="radio" NAME="name" VALUE="foo">foo
-	  # <INPUT TYPE="radio" NAME="name" VALUE="bar">bar
-	  # <INPUT TYPE="radio" NAME="name" VALUE="baz">baz
+        radio_group("name", "foo", "bar", "baz")
+          # <INPUT TYPE="radio" NAME="name" VALUE="foo">foo
+          # <INPUT TYPE="radio" NAME="name" VALUE="bar">bar
+          # <INPUT TYPE="radio" NAME="name" VALUE="baz">baz
 
-	radio_group("name", ["foo"], ["bar", true], "baz")
-	  # <INPUT TYPE="radio" NAME="name" VALUE="foo">foo
-	  # <INPUT TYPE="radio" SELECTED NAME="name" VALUE="bar">bar
-	  # <INPUT TYPE="radio" NAME="name" VALUE="baz">baz
+        radio_group("name", ["foo"], ["bar", true], "baz")
+          # <INPUT TYPE="radio" NAME="name" VALUE="foo">foo
+          # <INPUT TYPE="radio" SELECTED NAME="name" VALUE="bar">bar
+          # <INPUT TYPE="radio" NAME="name" VALUE="baz">baz
 
-	radio_group("name", ["1", "Foo"], ["2", "Bar", true], "Baz")
-	  # <INPUT TYPE="radio" NAME="name" VALUE="1">Foo
-	  # <INPUT TYPE="radio" SELECTED NAME="name" VALUE="2">Bar
-	  # <INPUT TYPE="radio" NAME="name" VALUE="Baz">Baz
+        radio_group("name", ["1", "Foo"], ["2", "Bar", true], "Baz")
+          # <INPUT TYPE="radio" NAME="name" VALUE="1">Foo
+          # <INPUT TYPE="radio" SELECTED NAME="name" VALUE="2">Bar
+          # <INPUT TYPE="radio" NAME="name" VALUE="Baz">Baz
 
-	radio_group({ "NAME" => "name",
-	              "VALUES" => ["foo", "bar", "baz"] })
+        radio_group({ "NAME" => "name",
+                      "VALUES" => ["foo", "bar", "baz"] })
 
-	radio_group({ "NAME" => "name",
-	              "VALUES" => [["foo"], ["bar", true], "baz"] })
+        radio_group({ "NAME" => "name",
+                      "VALUES" => [["foo"], ["bar", true], "baz"] })
 
-	radio_group({ "NAME" => "name",
-	              "VALUES" => [["1", "Foo"], ["2", "Bar", true], "Baz"] })
+        radio_group({ "NAME" => "name",
+                      "VALUES" => [["1", "Foo"], ["2", "Bar", true], "Baz"] })
 =end
     def radio_group(name = "", *values)
       if name.kind_of?(Hash)
@@ -1568,14 +1568,14 @@ convert string charset, and set language to "ja".
 
 =begin
 === RESET BUTTON
-	reset
-	  # <INPUT TYPE="reset">
+        reset
+          # <INPUT TYPE="reset">
 
-	reset("reset")
-	  # <INPUT TYPE="reset" VALUE="reset">
+        reset("reset")
+          # <INPUT TYPE="reset" VALUE="reset">
 
-	reset({ "VALUE" => "reset", "ID" => "foo" })
-	  # <INPUT TYPE="reset" VALUE="reset" ID="foo">
+        reset({ "VALUE" => "reset", "ID" => "foo" })
+          # <INPUT TYPE="reset" VALUE="reset" ID="foo">
 =end
     def reset(value = nil, name = nil)
       attributes = if (not value) or value.kind_of?(String)
@@ -1590,30 +1590,30 @@ convert string charset, and set language to "ja".
 
 =begin
 === SCROLLING_LIST
-	scrolling_list({"NAME" => "name", "SIZE" => 2, "MULTIPLE" => true,
-	                "VALUES" => [["1", "Foo"], ["2", "Bar", true], "Baz"] })
-	  # <SELECT NAME="name" MULTIPLE SIZE="2">
-	  #   <OPTION VALUE="1">Foo</OPTION>
-	  #   <OPTION SELECTED VALUE="2">Bar</OPTION>
-	  #   <OPTION VALUE="Baz">Baz</OPTION>
-	  # </SELECT>
+        scrolling_list({"NAME" => "name", "SIZE" => 2, "MULTIPLE" => true,
+                        "VALUES" => [["1", "Foo"], ["2", "Bar", true], "Baz"] })
+          # <SELECT NAME="name" MULTIPLE SIZE="2">
+          #   <OPTION VALUE="1">Foo</OPTION>
+          #   <OPTION SELECTED VALUE="2">Bar</OPTION>
+          #   <OPTION VALUE="Baz">Baz</OPTION>
+          # </SELECT>
 =end
     alias scrolling_list popup_menu
 
 
 =begin
 === SUBMIT BUTTON
-	submit
-	  # <INPUT TYPE="submit">
+        submit
+          # <INPUT TYPE="submit">
 
-	submit("ok")
-	  # <INPUT TYPE="submit" VALUE="ok">
+        submit("ok")
+          # <INPUT TYPE="submit" VALUE="ok">
 
-	submit("ok", "button1")
-	  # <INPUT TYPE="submit" VALUE="ok" NAME="button1">
+        submit("ok", "button1")
+          # <INPUT TYPE="submit" VALUE="ok" NAME="button1">
 
-	submit({ "VALUE" => "ok", "NAME" => "button1", "ID" => "foo" })
-	  # <INPUT TYPE="submit" VALUE="ok" NAME="button1" ID="foo">
+        submit({ "VALUE" => "ok", "NAME" => "button1", "ID" => "foo" })
+          # <INPUT TYPE="submit" VALUE="ok" NAME="button1" ID="foo">
 =end
     def submit(value = nil, name = nil)
       attributes = if (not value) or value.kind_of?(String)
@@ -1628,20 +1628,20 @@ convert string charset, and set language to "ja".
 
 =begin
 === TEXT_FIELD
-	text_field("name")
-	  # <INPUT TYPE="text" NAME="name" SIZE="40">
+        text_field("name")
+          # <INPUT TYPE="text" NAME="name" SIZE="40">
 
-	text_field("name", "value")
-	  # <INPUT TYPE="text" NAME="name" VALUE="value" SIZE="40">
+        text_field("name", "value")
+          # <INPUT TYPE="text" NAME="name" VALUE="value" SIZE="40">
 
-	text_field("name", "value", 80)
-	  # <INPUT TYPE="text" NAME="name" VALUE="value", SIZE="80">
+        text_field("name", "value", 80)
+          # <INPUT TYPE="text" NAME="name" VALUE="value", SIZE="80">
 
-	text_field("name", "value", 80, 200)
-	  # <INPUT TYPE="text" NAME="name" VALUE="value", SIZE="80", MAXLENGTH="200">
+        text_field("name", "value", 80, 200)
+          # <INPUT TYPE="text" NAME="name" VALUE="value", SIZE="80", MAXLENGTH="200">
 
-	text_field({ "NAME" => "name", "VALUE" => "value" })
-	  # <INPUT TYPE="text" NAME="name" VALUE="value">
+        text_field({ "NAME" => "name", "VALUE" => "value" })
+          # <INPUT TYPE="text" NAME="name" VALUE="value">
 =end
     def text_field(name = "", value = nil, size = 40, maxlength = nil)
       attributes = if name.kind_of?(String)
@@ -1659,11 +1659,11 @@ convert string charset, and set language to "ja".
 =begin
 === TEXTAREA ELEMENT
 
-	textarea("name")
-	  # = textarea({ "NAME" => "name", "COLS" => 70, "ROWS" => 10 })
+        textarea("name")
+          # = textarea({ "NAME" => "name", "COLS" => 70, "ROWS" => 10 })
 
-	textarea("name", 40, 5)
-	  # = textarea({ "NAME" => "name", "COLS" => 40, "ROWS" => 5 })
+        textarea("name", 40, 5)
+          # = textarea({ "NAME" => "name", "COLS" => 40, "ROWS" => 5 })
 =end
     def textarea(name = "", cols = 70, rows = 10)
       attributes = if name.kind_of?(String)
@@ -2001,7 +2001,7 @@ if not ENV included it, then return nil.
 1999/08/05 18:04:59
 
 - typo. thanks to MJ Ray <markj@altern.org>
-	HTTP_STATUS["NOT_INPLEMENTED"] --> HTTP_STATUS["NOT_IMPLEMENTED"]
+        HTTP_STATUS["NOT_INPLEMENTED"] --> HTTP_STATUS["NOT_IMPLEMENTED"]
 
 === Version 0.40 - wakou
 
@@ -2012,12 +2012,12 @@ if not ENV included it, then return nil.
 
 - CGI::print  -->  CGI#out
 
-	cgi = CGI.new
-	cgi.out{"string"}             # old: CGI::print{"string"}
+        cgi = CGI.new
+        cgi.out{"string"}             # old: CGI::print{"string"}
 
 - CGI::cookie  --> CGI::Cookie::new
 
-	cookie1 = CGI::Cookie::new    # old: CGI::cookie
+        cookie1 = CGI::Cookie::new    # old: CGI::cookie
 
 - CGI::header  -->  CGI#header
 
@@ -2026,9 +2026,9 @@ if not ENV included it, then return nil.
 1999/06/29 06:50:21
 
 - COUTION! incompatible change.
-	query = CGI.new
-	cookies = query.cookies       # old: query.cookie
-	values = query.cookies[name]  # old: query.cookie[name]
+        query = CGI.new
+        cookies = query.cookies       # old: query.cookie
+        values = query.cookies[name]  # old: query.cookie[name]
 
 === Version 0.24 - wakou
 

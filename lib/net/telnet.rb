@@ -12,20 +12,20 @@ Wakou Aoyama <wakou@fsinet.or.jp>
 
 === MAKE NEW TELNET OBJECT
 
-	host = Net::Telnet::new({
-	         "Binmode"    => false,        # default: false
-	         "Host"       => "localhost",  # default: "localhost"
-	         "Output_log" => "output_log", # default: nil (no output)
-	         "Dump_log"   => "dump_log",   # default: nil (no output)
-	         "Port"       => 23,           # default: 23
-	         "Prompt"     => /[$%#>] \z/n, # default: /[$%#>] \z/n
-	         "Telnetmode" => true,         # default: true
-	         "Timeout"    => 10,           # default: 10
-	           # if ignore timeout then set "Timeout" to false.
-	         "Waittime"   => 0,            # default: 0
-	         "Proxy"      => proxy         # default: nil
-	                         # proxy is Net::Telnet or IO object
-	       })
+        host = Net::Telnet::new({
+                 "Binmode"    => false,        # default: false
+                 "Host"       => "localhost",  # default: "localhost"
+                 "Output_log" => "output_log", # default: nil (no output)
+                 "Dump_log"   => "dump_log",   # default: nil (no output)
+                 "Port"       => 23,           # default: 23
+                 "Prompt"     => /[$%#>] \z/n, # default: /[$%#>] \z/n
+                 "Telnetmode" => true,         # default: true
+                 "Timeout"    => 10,           # default: 10
+                   # if ignore timeout then set "Timeout" to false.
+                 "Waittime"   => 0,            # default: 0
+                 "Proxy"      => proxy         # default: nil
+                                 # proxy is Net::Telnet or IO object
+               })
 
 Telnet object has socket class methods.
 
@@ -36,98 +36,98 @@ the network or the host is very heavy, the value is enlarged.
 
 === STATUS OUTPUT
 
-	host = Net::Telnet::new({"Host" => "localhost"}){|c| print c }
+        host = Net::Telnet::new({"Host" => "localhost"}){|c| print c }
 
 connection status output.
 
 example
 
-	Trying localhost...
-	Connected to localhost.
+        Trying localhost...
+        Connected to localhost.
 
 
 === WAIT FOR MATCH
 
-	line = host.waitfor(/match/)
-	line = host.waitfor({"Match"   => /match/,
-	                     "String"  => "string",
-	                     "Timeout" => secs})
-	                       # if ignore timeout then set "Timeout" to false.
+        line = host.waitfor(/match/)
+        line = host.waitfor({"Match"   => /match/,
+                             "String"  => "string",
+                             "Timeout" => secs})
+                               # if ignore timeout then set "Timeout" to false.
 
 if set "String" option, then Match == Regexp.new(quote("string"))
 
 
 ==== REALTIME OUTPUT
 
-	host.waitfor(/match/){|c| print c }
-	host.waitfor({"Match"   => /match/,
-	              "String"  => "string",
-	              "Timeout" => secs}){|c| print c}
+        host.waitfor(/match/){|c| print c }
+        host.waitfor({"Match"   => /match/,
+                      "String"  => "string",
+                      "Timeout" => secs}){|c| print c}
 
 of cource, set sync=true or flush is necessary.
 
 
 === SEND STRING AND WAIT PROMPT
 
-	line = host.cmd("string")
-	line = host.cmd({"String" => "string",
-	                 "Prompt" => /[$%#>] \z/n,
-	                 "Timeout" => 10})
+        line = host.cmd("string")
+        line = host.cmd({"String" => "string",
+                         "Prompt" => /[$%#>] \z/n,
+                         "Timeout" => 10})
 
 
 ==== REALTIME OUTPUT
 
-	host.cmd("string"){|c| print c }
-	host.cmd({"String" => "string",
-	          "Prompt" => /[$%#>] \z/n,
-	          "Timeout" => 10}){|c| print c }
+        host.cmd("string"){|c| print c }
+        host.cmd({"String" => "string",
+                  "Prompt" => /[$%#>] \z/n,
+                  "Timeout" => 10}){|c| print c }
 
 of cource, set sync=true or flush is necessary.
 
 
 === SEND STRING
 
-	host.print("string")
-	  # == host.write("string\n")
+        host.print("string")
+          # == host.write("string\n")
 
 
 === TOGGLE TELNET COMMAND INTERPRETATION
 
-	host.telnetmode          # return the current status (true or false)
-	host.telnetmode = true   # do telnet command interpretation (default)
-	host.telnetmode = false  # don't telnet command interpretation
+        host.telnetmode          # return the current status (true or false)
+        host.telnetmode = true   # do telnet command interpretation (default)
+        host.telnetmode = false  # don't telnet command interpretation
 
 
 === TOGGLE NEWLINE TRANSLATION
 
-	host.binmode          # return the current status (true or false)
-	host.binmode = true   # no translate newline
-	host.binmode = false  # translate newline (default)
+        host.binmode          # return the current status (true or false)
+        host.binmode = true   # no translate newline
+        host.binmode = false  # translate newline (default)
 
 
 === LOGIN
 
-	host.login("username", "password")
-	host.login({"Name" => "username",
-	            "Password" => "password",
-	            "Prompt" => /[$%#>] \z/n,
-	            "Timeout" => 10})
+        host.login("username", "password")
+        host.login({"Name" => "username",
+                    "Password" => "password",
+                    "Prompt" => /[$%#>] \z/n,
+                    "Timeout" => 10})
 
 if no password prompt.
 
-	host.login("username")
-	host.login({"Name" => "username",
-	            "Prompt" => /[$%#>] \z/n,
-	            "Timeout" => 10})
+        host.login("username")
+        host.login({"Name" => "username",
+                    "Prompt" => /[$%#>] \z/n,
+                    "Timeout" => 10})
 
 
 ==== REALTIME OUTPUT
 
-	host.login("username", "password"){|c| print c }
-	host.login({"Name" => "username",
-	            "Password" => "password",
-	            "Prompt" => /[$%#>] \z/n,
-	            "Timeout" => 10}){|c| print c }
+        host.login("username", "password"){|c| print c }
+        host.login({"Name" => "username",
+                    "Password" => "password",
+                    "Prompt" => /[$%#>] \z/n,
+                    "Timeout" => 10}){|c| print c }
 
 of cource, set sync=true or flush is necessary.
 
@@ -136,23 +136,23 @@ of cource, set sync=true or flush is necessary.
 
 === LOGIN AND SEND COMMAND
 
-	localhost = Net::Telnet::new({"Host" => "localhost",
-	                              "Timeout" => 10,
-	                              "Prompt" => /[$%#>] \z/n})
-	localhost.login("username", "password"){|c| print c }
-	localhost.cmd("command"){|c| print c }
-	localhost.close
+        localhost = Net::Telnet::new({"Host" => "localhost",
+                                      "Timeout" => 10,
+                                      "Prompt" => /[$%#>] \z/n})
+        localhost.login("username", "password"){|c| print c }
+        localhost.cmd("command"){|c| print c }
+        localhost.close
 
 
 === CHECKS A POP SERVER TO SEE IF YOU HAVE MAIL
 
-	pop = Net::Telnet::new({"Host" => "your_destination_host_here",
-	                        "Port" => 110,
-	                        "Telnetmode" => false,
-	                        "Prompt" => /^\+OK/n})
-	pop.cmd("user " + "your_username_here"){|c| print c}
-	pop.cmd("pass " + "your_password_here"){|c| print c}
-	pop.cmd("list"){|c| print c}
+        pop = Net::Telnet::new({"Host" => "your_destination_host_here",
+                                "Port" => 110,
+                                "Telnetmode" => false,
+                                "Prompt" => /^\+OK/n})
+        pop.cmd("user " + "your_username_here"){|c| print c}
+        pop.cmd("pass " + "your_password_here"){|c| print c}
+        pop.cmd("list"){|c| print c}
 
 
 == HISTORY
@@ -224,8 +224,8 @@ of cource, set sync=true or flush is necessary.
 1999/09/14 23:09:05
 
 - change prompt check order.
-	not IO::select([@sock], nil, nil, waittime) and prompt === line
-	--> prompt === line and not IO::select([@sock], nil, nil, waittime)
+        not IO::select([@sock], nil, nil, waittime) and prompt === line
+        --> prompt === line and not IO::select([@sock], nil, nil, waittime)
 
 === Version 0.24
 
@@ -239,8 +239,8 @@ if ommit password, then not require password prompt.
 1999/08/10 05:20:21
 
 - STATUS OUTPUT sample code typo. thanks to Tadayoshi Funaba <tadf@kt.rim.or.jp>
-	host = Telnet.new({"Hosh" => "localhost"){|c| print c }
-	--> host = Telnet.new({"Host" => "localhost"){|c| print c }
+        host = Telnet.new({"Hosh" => "localhost"){|c| print c }
+        --> host = Telnet.new({"Host" => "localhost"){|c| print c }
 
 === Version 0.231
 
