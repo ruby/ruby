@@ -427,7 +427,7 @@ private
 
   def format_datetime(datetime)
     if @datetime_format.nil?
-      datetime.strftime("%Y-%m-%dT%H:%M:%S.") << "%6d " % datetime.usec
+      datetime.strftime("%Y-%m-%dT%H:%M:%S.") << "%06d " % datetime.usec
     else
       datetime.strftime(@datetime_format)
     end
