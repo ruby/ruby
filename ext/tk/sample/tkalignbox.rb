@@ -20,12 +20,12 @@ class TkAlignBox < TkFrame
   end
 
   def _set_framesize
-    fail RuntimeError, "TkAlignBox is an abstruct class"
+    fail RuntimeError, "TkAlignBox is an abstract class"
   end
   private :_set_framesize
 
   def _place_config(widget, idx, cnt)
-    fail RuntimeError, "TkAlignBox is an abstruct class"
+    fail RuntimeError, "TkAlignBox is an abstract class"
   end
   private :_place_config
 
