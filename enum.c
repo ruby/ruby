@@ -92,12 +92,13 @@ find_i(i, memo)
 
 /*
  *  call-seq:
- *     enum.detect {| obj | block }  => obj or nil
- *     enum.find   {| obj | block }  => obj or nil
+ *     enum.detect(ifnone = nil) {| obj | block }  => obj or nil
+ *     enum.find(ifnone = nil)   {| obj | block }  => obj or nil
  *  
  *  Passes each entry in <i>enum</i> to <em>block</em>. Returns the
- *  first for which <em>block</em> is not <code>false</code>. Returns
- *  <code>nil</code> if no object matches.
+ *  first for which <em>block</em> is not <code>false</code>.  If no
+ *  object matches, calls <i>ifnone</i> and returns its result when it
+ *  is specified, or returns <code>nil</code>
  *     
  *     (1..10).detect  {|i| i % 5 == 0 and i % 7 == 0 }   #=> nil
  *     (1..100).detect {|i| i % 5 == 0 and i % 7 == 0 }   #=> 35
@@ -198,7 +199,7 @@ collect_i(i, ary)
     VALUE i, ary;
 {
     rb_ary_push(ary, rb_yield(i));
-    
+
     return Qnil;
 }
 
@@ -207,7 +208,7 @@ collect_all(i, ary)
     VALUE i, ary;
 {
     rb_ary_push(ary, i);
-    
+
     return Qnil;
 }
 
@@ -229,7 +230,7 @@ enum_collect(obj)
     VALUE obj;
 {
     VALUE ary = rb_ary_new();
-    
+
     rb_iterate(rb_each, obj, rb_block_given_p() ? collect_i : collect_all, ary);
 
     return ary;
@@ -250,7 +251,7 @@ enum_to_a(obj)
     VALUE obj;
 {
     VALUE ary = rb_ary_new();
-    
+
     rb_iterate(rb_each, obj, collect_all, ary);
 
     return ary;
