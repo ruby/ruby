@@ -1004,21 +1004,17 @@ module Net
      end
 
     def range_length
-      if @header.key? 'content-range' then
-        m = %r<bytes\s+(\d+)-(\d+)/\d+>.match( @header['content-range'] )
-        unless m then
-          raise HTTPBadResponse, 'wrong Content-Range format'
-        end
-        l = m[2].to_i
-        u = m[1].to_i
-        if l > u then
-          nil
-        else
-          u - l
-        end
-      else
-        nil
-      end
+      s = @header['content-range']
+      s or return nil
+
+      m = %r<bytes\s+(\d+)-(\d+)/(?:\d+|\*)>.match( s )
+      m or raise HTTPBadResponse, 'wrong Content-Range format'
+
+      low = m[1].to_i
+      up  = m[2].to_i
+      return nil if low > up
+
+      up - low + 1
     end
 
     def stream_check
@@ -1035,7 +1031,7 @@ module Net
       if block then
         ::Net::NetPrivate::ReadAdapter.new block
       else
-        dest or ''
+        dest || ''
       end
     end
 
