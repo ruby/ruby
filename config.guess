@@ -870,11 +870,11 @@ EOF
 			objdump --private-headers $dummy | \
 			  grep ld.so.1 > /dev/null
 			if test "$?" = 0 ; then
-			LIBC="libc1"
+			LIBC="-libc1"
 			fi
 		fi
 		rm -f $dummy.s $dummy
-	echo ${UNAME_MACHINE}-unknown-linux-${LIBC}
+	echo ${UNAME_MACHINE}-unknown-linux${LIBC}
 	exit 0 ;;
     parisc:Linux:*:* | hppa:Linux:*:*)
 	# Look for CPU level

@@ -3415,7 +3415,7 @@ re_search(bufp, string, size, startpos, range, regs)
 									\
     *stackp++ = pattern_place;                                          \
     *stackp++ = string_place;                                           \
-    *stackp++ = (unsigned char*)options; /* current option status */	\
+    *stackp++ = (unsigned char*)(long)options; /* current option status */	\
     *stackp++ = (unsigned char*)0; /* non-greedy flag */		\
   } while(0)
 
@@ -4296,7 +4296,7 @@ re_match(bufp, string_arg, size, pos, regs)
 	goto fail;
       }
       stackp--;		/* discard greedy flag */
-      options = (int)*--stackp;
+      options = (long)*--stackp;
       d = *--stackp;
       p = *--stackp;
       /* Restore register info.  */

@@ -3082,7 +3082,6 @@ rb_eval(self, n)
 			tmp = RCLASS(tmp)->super;
 		    }
 		    if (tmp != super) {
-			super = tmp;
 			goto override_class;
 		    }
 		}

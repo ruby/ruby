@@ -1,3 +1,7 @@
+Tue Oct  2 18:31:20 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): should override existing class.
+
 Mon Oct  1 19:18:54 2001  Tanaka Akira  <akr@m17n.org>
 
 	* ext/socket/socket.c (unix_addr): getsockname(2) may result len = 0. 
