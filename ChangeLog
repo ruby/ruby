@@ -1,3 +1,8 @@
+Wed Mar 31 11:52:39 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/delegate.rb (DelegateClass): define internal methods of the
+	  result class, but not metaclass of the caller.
+
 Tue Mar 30 20:25:34 2004  Tanaka Akira  <akr@m17n.org>
 
 	* time.c (search_time_t): limit guess range by mktime if it is
