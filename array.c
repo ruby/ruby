@@ -44,7 +44,7 @@ memfill(mem, size, val)
 
 #define ARY_TMPLOCK  FL_USER1
 
-static void
+static inline void
 rb_ary_modify_check(ary)
     VALUE ary;
 {

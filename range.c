@@ -306,7 +306,16 @@ range_each(range)
 	rb_raise(rb_eTypeError, "cannot iterate from %s",
 		 rb_class2name(CLASS_OF(beg)));
     }
-    if (TYPE(beg) == T_STRING) {
+    if (FIXNUM_P(beg) && FIXNUM_P(end)) { /* fixnums are special */
+	long lim = FIX2LONG(end);
+	long i;
+
+	if (!EXCL(range)) lim += 1;
+	for (i=FIX2LONG(beg); i<lim; i++) {
+	    rb_yield(LONG2NUM(i));
+	}
+    }
+    else if (TYPE(beg) == T_STRING) {
 	VALUE args[5];
 	long iter[2];
 

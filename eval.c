@@ -917,14 +917,19 @@ static VALUE trace_func = 0;
 static int tracing = 0;
 static void call_trace_func _((char*,NODE*,VALUE,ID,VALUE));
 
+#if 0
 #define SET_CURRENT_SOURCE() (ruby_sourcefile = ruby_current_node->nd_file, \
 			      ruby_sourceline = nd_line(ruby_current_node))
+#else
+#define SET_CURRENT_SOURCE() 0
+#endif
 
 void
 ruby_set_current_source()
 {
     if (ruby_current_node) {
-	SET_CURRENT_SOURCE();
+        ruby_sourcefile = ruby_current_node->nd_file;
+	ruby_sourceline = nd_line(ruby_current_node);
     }
 }
 
@@ -3390,7 +3395,6 @@ rb_eval(self, n)
 	break;
 
       case NODE_NEWLINE:
-	ruby_sourcefile = node->nd_file;
 	ruby_sourceline = node->nd_nth;
 	if (trace_func) {
 	    call_trace_func("line", node, self,
@@ -4443,7 +4447,7 @@ rb_undefined(obj, id, argc, argv, call_status)
     return rb_funcall2(obj, missing, argc+1, nargv);
 }
 
-static VALUE
+static inline VALUE
 call_cfunc(func, recv, len, argc, argv)
     VALUE (*func)();
     VALUE recv;

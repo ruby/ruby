@@ -850,11 +850,21 @@ num_step(argc, argv, from)
 {
     VALUE to, step;
 
-    if (rb_scan_args(argc, argv, "11", &to, &step) == 1) {
+    if (argc == 1) {
+	to = argv[0];
 	step = INT2FIX(1);
     }
-    else if (rb_equal(step, INT2FIX(0))) {
-	rb_raise(rb_eArgError, "step cannot be 0");
+    else {
+	if (argc == 2) {
+	    to = argv[0];
+	    step = argv[1];
+	}
+	else {
+	    rb_raise(rb_eArgError, "wrong number of arguments");
+	}
+	if (rb_equal(step, INT2FIX(0))) {
+	    rb_raise(rb_eArgError, "step cannot be 0");
+	}
     }
 
     if (FIXNUM_P(from) && FIXNUM_P(to) && FIXNUM_P(step)) {
