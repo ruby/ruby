@@ -1,3 +1,7 @@
+Sat Dec 18 10:51:01 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dir.c (dir_open_dir): new function.  [ruby-dev:25242]
+
 Fri Dec 17 18:07:01 2004  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* test/readline/test_readline.rb: fix for BSD. Thanks, GOTOU Yuuzou.
@@ -122,6 +126,14 @@ Thu Dec 16 03:14:28 2004  Minero Aoki  <aamine@loveruby.net>
 	  include multiple CR/LFs.  Backported from main trunk (rev 1.112).
 	  [ruby-dev:25212]
 
+Thu Dec 16 00:33:37 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (Init_Hash): remove custom "hash" and "eql?".
+
+Wed Dec 15 18:57:01 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/set.rb (Set::eql): wrong definition.  [ruby-dev:25207]
+
 Wed Dec 15 18:48:42 2004  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* ext/curses/curses.c (window_subwin): call NUM2INT() before
@@ -136,6 +148,16 @@ Wed Dec 15 15:39:32 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_x509name.c (ossl_x509name_to_a): avoid SEGV
 	  (rollback the previous commit).
+
+Wed Dec 15 16:10:23 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_obj_id_obsolete): warn always.
+
+	* eval.c (rb_enable_super): ditto.
+
+Wed Dec 15 15:31:02 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/set.rb (Set#==): [ruby-dev:25206]
 
 Wed Dec 15 14:22:10 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -1252,6 +1274,11 @@ Fri Oct 22 00:20:33 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* string.c (rb_str_include): should not treat char as negative value.
 	  [ruby-dev:24558]
 
+Thu Oct 21 21:32:30 2004  IWATSUKI Hiroyuki  <don@na.rim.or.jp>
+
+	* lib/pstore.rb (PStore#transaction): Use the empty content when a
+	  file is not found.  [ruby-dev:24561]
+	
 Thu Oct 21 19:06:15 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httpresponse.rb (WEBrick::HTTPResponse#send_body_io):

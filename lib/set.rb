@@ -251,7 +251,7 @@ class Set
   # Merges the elements of the given enumerable object to the set and
   # returns self.
   def merge(enum)
-    if enum.class == self.class
+    if enum.is_a?(Set)
       @hash.update(enum.instance_eval { @hash })
     else
       enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
@@ -291,7 +291,7 @@ class Set
   def &(enum)
     enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
     n = self.class.new
-    enum.each { |o| include?(o) and n.add(o) }
+    enum.each { |o| n.add(o) if include?(o) }
     n
   end
   alias intersection &	##
@@ -313,7 +313,8 @@ class Set
 
     set.is_a?(Set) && size == set.size or return false
 
-    set.all? { |o| include?(o) }
+    hash = @hash.dup
+    set.all? { |o| hash.include?(o) }
   end
 
   def hash	# :nodoc:
@@ -321,7 +322,8 @@ class Set
   end
 
   def eql?(o)	# :nodoc:
-    @hash.hash == o.hash
+    return false unless o.is_a?(Set)
+    @hash.eql?(o.instance_eval{@hash})
   end
 
   # Classifies the set by the return value of the given block and
@@ -583,7 +585,9 @@ end
 #     else
 #       instance_eval %{
 # 	def add(o)
-# 	  @hash[o] = true if @proc.call(o)
+#         if @proc.call(o)
+# 	    @hash[o] = true 
+#         end
 # 	  self
 # 	end
 # 	alias << add

@@ -1318,6 +1318,22 @@ dir_s_glob(argc, argv, obj)
     return rb_push_glob(str, flags);
 }
 
+static VALUE
+dir_open_dir(path)
+    VALUE path;
+{
+    struct dir_data *dp;
+    VALUE dir = rb_funcall(rb_cDir, rb_intern("open"), 1, path);
+
+    if (TYPE(dir) != T_DATA ||
+	RDATA(dir)->dfree != (RUBY_DATA_FUNC)free_dir) {
+	rb_raise(rb_eTypeError, "wrong argument type %s (expected Dir)",
+		 rb_obj_classname(dir));
+    }
+    return dir;
+}
+
+
 /*
  *  call-seq:
  *     Dir.foreach( dirname ) {| filename | block }  => nil
@@ -1341,7 +1357,7 @@ dir_foreach(io, dirname)
 {
     VALUE dir;
 
-    dir = rb_funcall(rb_cDir, rb_intern("open"), 1, dirname);
+    dir = dir_open_dir(dirname);
     rb_ensure(dir_each, dir, dir_close, dir);
     return Qnil;
 }
@@ -1363,7 +1379,7 @@ dir_entries(io, dirname)
 {
     VALUE dir;
 
-    dir = rb_funcall(rb_cDir, rb_intern("open"), 1, dirname);
+    dir = dir_open_dir(dirname);
     return rb_ensure(rb_Array, dir, dir_close, dir);
 }
 

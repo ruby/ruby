@@ -538,7 +538,7 @@ rb_enable_super(klass, name)
     VALUE klass;
     const char *name;
 {
-    rb_warning("rb_enable_super() is obsolete");
+    rb_warn("rb_enable_super() is obsolete");
 }
 
 static void
