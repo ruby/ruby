@@ -123,15 +123,6 @@ ID id_gtkdata, id_relatives, id_call, id_init;
 
 static void gobj_free();
 
-static char*
-get_cstring(str)
-    VALUE str;
-{
-    if (NIL_P(str)) return NULL;
-    Check_Type(str, T_STRING);
-    return RSTRING(str)->ptr;
-}
-
 static GtkObject*
 get_gobject(obj)
     VALUE obj;
@@ -1171,7 +1162,7 @@ static VALUE
 frame_initialize(self, label)
     VALUE self, label;
 {
-    set_widget(self, gtk_frame_new(get_cstring(label)));
+    set_widget(self, gtk_frame_new(STR2CSTR(label)));
     return Qnil;
 }
 
@@ -1181,7 +1172,7 @@ frame_set_label(self, label)
 {
     GtkWidget *widget = get_widget(self);
 
-    gtk_frame_set_label(GTK_FRAME(widget), get_cstring(label));
+    gtk_frame_set_label(GTK_FRAME(widget), STR2CSTR(label));
     return self;
 }
 
@@ -1213,7 +1204,7 @@ static VALUE
 aframe_initialize(self, label, xalign, yalign, ratio, obey_child)
     VALUE self, label, xalign, yalign, ratio, obey_child;
 {
-    set_widget(self, gtk_aspect_frame_new(get_cstring(label),
+    set_widget(self, gtk_aspect_frame_new(STR2CSTR(label),
 					  NUM2DBL(xalign),
 					  NUM2DBL(yalign),
 					  NUM2DBL(ratio),
@@ -1390,7 +1381,7 @@ widget_inst_accel(self, accel, sig, key, mod)
 {
     gtk_widget_install_accelerator(get_widget(self),
 				   get_gtkacceltbl(accel),
-				   get_cstring(sig),
+				   STR2CSTR(sig),
 				   NUM2INT(key),
 				   (guint8)NUM2INT(mod));
     return self;
@@ -1402,7 +1393,7 @@ widget_rm_accel(self, accel, sig)
 {
     gtk_widget_remove_accelerator(get_widget(self),
 				  get_gtkacceltbl(accel),
-				  get_cstring(sig));
+				  STR2CSTR(sig));
     return self;
 }
 
@@ -1520,7 +1511,7 @@ static VALUE
 widget_set_name(self, name)
     VALUE self, name;
 {
-    gtk_widget_set_name(get_widget(self), get_cstring(name));
+    gtk_widget_set_name(get_widget(self), STR2CSTR(name));
     return self;
 }
 
@@ -1999,7 +1990,7 @@ clist_set_col_title(self, col, title)
 
     gtk_clist_set_column_title(GTK_CLIST(widget),
 			       NUM2INT(col),
-			       get_cstring(title));
+			       STR2CSTR(title));
     return self;
 }
 
@@ -2068,7 +2059,7 @@ clist_set_text(self, row, col, text)
 
     gtk_clist_set_text(GTK_CLIST(widget),
 		       NUM2INT(row), NUM2INT(col),
-		       get_cstring(text));
+		       STR2CSTR(text));
     return self;
 }
 
@@ -2093,7 +2084,7 @@ clist_set_pixtext(self, row, col, text, spacing, pixmap, mask)
 
     gtk_clist_set_pixtext(GTK_CLIST(widget),
 			  NUM2INT(row), NUM2INT(col),
-			  get_cstring(text),
+			  STR2CSTR(text),
 			  NUM2INT(spacing),
 			  get_gdkpixmap(pixmap),
 			 (GdkBitmap*)get_gdkpixmap(mask));
@@ -2263,7 +2254,7 @@ gwin_set_title(self, title)
 {
     GtkWidget *widget = get_widget(self);
 
-    gtk_window_set_title(GTK_WINDOW(widget), get_cstring(title));
+    gtk_window_set_title(GTK_WINDOW(widget), STR2CSTR(title));
     return self;
 }
 
@@ -2286,8 +2277,8 @@ gwin_set_wmclass(self, wmclass1, wmclass2)
     GtkWidget *widget = get_widget(self);
 
     gtk_window_set_wmclass(GTK_WINDOW(widget),
-			   get_cstring(wmclass1),
-			   get_cstring(wmclass2));
+			   STR2CSTR(wmclass1),
+			   STR2CSTR(wmclass2));
     return self;
 }
 
@@ -2345,7 +2336,7 @@ static VALUE
 fsel_initialize(self, title)
     VALUE self, title;
 {
-    set_widget(self, gtk_file_selection_new(get_cstring(title)));
+    set_widget(self, gtk_file_selection_new(STR2CSTR(title)));
     return Qnil;
 }
 
@@ -2426,7 +2417,7 @@ static VALUE
 label_initialize(self, label)
     VALUE self, label;
 {
-    set_widget(self, gtk_label_new(get_cstring(label)));
+    set_widget(self, gtk_label_new(STR2CSTR(label)));
     return Qnil;
 }
 
@@ -2625,7 +2616,7 @@ litem_initialize(argc, argv, self)
     GtkWidget *widget;
 
     if (rb_scan_args(argc, argv, "01", &label) == 1) {
-	widget = gtk_list_item_new_with_label(get_cstring(label));
+	widget = gtk_list_item_new_with_label(STR2CSTR(label));
     }
     else {
 	widget = gtk_list_item_new();
@@ -2836,7 +2827,7 @@ mitem_initialize(argc, argv, self)
     GtkWidget *widget;
 
     if (rb_scan_args(argc, argv, "01", &label) == 1) {
-	widget = gtk_menu_item_new_with_label(get_cstring(label));
+	widget = gtk_menu_item_new_with_label(STR2CSTR(label));
     }
     else {
 	widget = gtk_menu_item_new();
@@ -2949,7 +2940,7 @@ cmitem_initialize(argc, argv, self)
     GtkWidget *widget;
 
     if (rb_scan_args(argc, argv, "01", &label) == 1) {
-	widget = gtk_check_menu_item_new_with_label(get_cstring(label));
+	widget = gtk_check_menu_item_new_with_label(STR2CSTR(label));
     }
     else {
 	widget = gtk_check_menu_item_new();
@@ -3652,8 +3643,8 @@ tbar_append_item(self, text, ttext, icon, func)
 	func = f_lambda();
     }
     gtk_toolbar_append_item(GTK_TOOLBAR(widget),
-			    get_cstring(text),
-			    get_cstring(ttext),
+			    STR2CSTR(text),
+			    STR2CSTR(ttext),
 			    GTK_PIXMAP(pixmap),
 			    exec_callback,
 			    (gpointer)ary_new3(1, func));
@@ -3671,8 +3662,8 @@ tbar_prepend_item(self, text, ttext, icon, func)
 	func = f_lambda();
     }
     gtk_toolbar_prepend_item(GTK_TOOLBAR(widget),
-			     get_cstring(text),
-			     get_cstring(ttext),
+			     STR2CSTR(text),
+			     STR2CSTR(ttext),
 			     GTK_PIXMAP(pixmap),
 			     exec_callback,
 			     (gpointer)ary_new3(1, func));
@@ -3690,8 +3681,8 @@ tbar_insert_item(self, text, ttext, icon, func, pos)
 	func = f_lambda();
     }
     gtk_toolbar_insert_item(GTK_TOOLBAR(widget),
-			    get_cstring(text),
-			    get_cstring(ttext),
+			    STR2CSTR(text),
+			    STR2CSTR(ttext),
 			    GTK_PIXMAP(pixmap),
 			    exec_callback,
 			    (gpointer)ary_new3(1, func),
