@@ -277,8 +277,10 @@ class ERB
       if erb.kind_of? String
 	fname = erb
 	File.open(fname) {|f| erb = ERB.new(f.read) }
+	erb.def_method(self, methodname, fname)
+      else
+	erb.def_method(self, methodname)
       end
-      erb.def_method(self, methodname, fname)
     end
     module_function :def_erb_method
   end
