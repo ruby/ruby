@@ -1,3 +1,10 @@
+Fri Aug 24 14:45:26 2001  Usaku Nakamura  <usa@ruby-lang.org>
+
+	* dln.c (dln_strerror): fix a bug that sometimes made null message on
+	  win32 (Tietew <tietew@tietew.net>'s patch).
+
+	* win32/win32.c (mystrerror): ditto.
+
 Thu Aug 23 10:10:59 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (is_defined): should not dump core for "defined?(())".

@@ -1794,7 +1794,8 @@ mystrerror(int e)
     if (e < 0 || e > sys_nerr) {
 	if (e < 0)
 	    e = GetLastError();
-	if (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, &source, e, 0,
+	if (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM |
+			  FORMAT_MESSAGE_IGNORE_INSERTS, &source, e, 0,
 			  buffer, 512, NULL) == 0) {
 	    strcpy(buffer, "Unknown Error");
 	}
