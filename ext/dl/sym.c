@@ -154,8 +154,9 @@ rb_dlsym_initialize(int argc, VALUE argv[], VALUE self)
   rb_scan_args(argc, argv, "12", &addr, &name, &type);
 
   saddr = (void*)(DLNUM2LONG(rb_Integer(addr)));
-  sname = NIL_P(name) ? NULL : StringValuePtr(name);
+  if (!NIL_P(name)) StringValue(name);
   stype = NIL_P(type) ? NULL : StringValuePtr(type);
+  sname = NIL_P(name) ? NULL : RSTRING(name)->ptr;
 
   if( saddr ){
     Data_Get_Struct(self, struct sym_data, data);
