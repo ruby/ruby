@@ -1,3 +1,9 @@
+Thu Mar 31 11:00:36 2005  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/parser.rb
+	  (RSS::BaseListener.install_setter)
+	  (RSS::BaseListener.register_uri): changed fallback way.
+
 Thu Mar 31 08:25:40 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (RUBYOPT): clear for the environment RubyGems installed.

@@ -127,12 +127,12 @@ module RSS
       @@registered_uris = {}
 
       def install_setter(uri, tag_name, setter)
-        @@setter[uri] = {}  unless @@setter.has_key?(uri)
+        @@setter[uri] ||= {}
         @@setter[uri][tag_name] = setter
       end
 
       def register_uri(name, uri)
-        @@registered_uris[name] = {}  unless @@registered_uris.has_key?(name)
+        @@registered_uris[name] ||= {}
         @@registered_uris[name][uri] = nil
       end
 
