@@ -19,6 +19,10 @@ extern "C" {
 #include "config.h"
 #include "defines.h"
 
+#if defined HAVE__MKTEMP && !defined mktemp
+#define mktemp _mktemp
+#endif
+
 #ifdef HAVE_STDLIB_H
 # include <stdlib.h>
 #endif

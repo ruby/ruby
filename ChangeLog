@@ -1,3 +1,10 @@
+Sat Aug 26 01:37:09 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* configure.in: check _mktemp.
+
+	* ruby.h: use _mktemp instead of mktemp if available.
+	  quiet ld warning.
+
 Thu Aug 24 15:27:39 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* ext/socket/socketport.h: use `extern int h_errno' if needed.

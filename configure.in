@@ -198,7 +198,7 @@ AC_CHECK_FUNCS(fmod killpg drand48 random wait4 waitpid syscall getcwd\
 	      truncate chsize times utimes fcntl lockf setitimer\
 	      setruid seteuid setreuid setrgid setegid setregid\
 	      getpgrp setpgrp getpgid setpgid getgroups getpriority\
-	      dlopen sigprocmask sigaction _setjmp setsid)
+	      dlopen sigprocmask sigaction _setjmp setsid _mktemp)
 AC_STRUCT_TIMEZONE
 if test "$ac_cv_func_strftime" = no; then
     AC_TRY_LINK([],
