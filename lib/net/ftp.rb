@@ -507,12 +507,12 @@ module Net
     # Retrieves +remotefile+ in whatever mode the session is set (text or
     # binary).  See #gettextfile and #getbinaryfile.
     #
-    def get(localfile, remotefile = File.basename(localfile),
+    def get(remotefile, localfile = File.basename(remotefile),
 	    blocksize = DEFAULT_BLOCKSIZE, &block) # :yield: data
       unless @binary
-	gettextfile(localfile, remotefile, &block)
+	gettextfile(remotefile, localfile, &block)
       else
-	getbinaryfile(localfile, remotefile, blocksize, &block)
+	getbinaryfile(remotefile, localfile, blocksize, &block)
       end
     end
     
