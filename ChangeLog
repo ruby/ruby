@@ -9,6 +9,14 @@ Sat Aug 19 01:34:02 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* ext/sdbm/_sdbm.c (makroom): fill hole with 0 on Win32 too.
 
+Fri Aug 18 11:06:19 2000  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* ext/socket/socket.c (s_accept): start GC on EMFILE/ENFILE.
+
+Thu Aug 17 16:04:48 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (is_defined): should clear ruby_errinfo.
+
 Wed Aug 16 15:30:58 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* stable version 1.4.6 released.

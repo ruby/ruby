@@ -4,20 +4,20 @@
 
 module Observable
   def add_observer(observer)
-    @observer_peers = [] unless @observer_peers
+    @observer_peers = [] unless defined? @observer_peers
     unless defined? observer.update
       raise NameError, "observer needs to respond to `update'" 
     end
     @observer_peers.push observer
   end
   def delete_observer(observer)
-    @observer_peers.delete observer if @observer_peers
+    @observer_peers.delete observer if defined? @observer_peers
   end
   def delete_observers
-    @observer_peers.clear if @observer_peers
+    @observer_peers.clear if defined? @observer_peers
   end
   def count_observers
-    if @observer_peers
+    if defined? @observer_peers
       @observer_peers.size
     else
       0
@@ -27,11 +27,15 @@ module Observable
     @observer_state = state
   end
   def changed?
-    @observer_state
+    if defined? @observer_state and @observer_state
+      true
+    else
+      false
+    end
   end
   def notify_observers(*arg)
-    if @observer_state
-      if @observer_peers
+    if defined? @observer_state and @observer_state
+      if defined? @observer_peers
 	for i in @observer_peers.dup
 	  i.update(*arg)
 	end

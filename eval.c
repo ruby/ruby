@@ -1556,7 +1556,10 @@ is_defined(self, node, buf)
 	    val = CLASS_OF(val);
 	}
 	POP_TAG();
-	if (state) return 0;
+	if (state) {
+	    ruby_errinfo = Qnil;
+	    return 0;
+	}
       check_bound:
 	if (rb_method_boundp(val, node->nd_mid, nd_type(node)== NODE_CALL)) {
 	    return arg_defined(self, node->nd_args, buf, "method");
@@ -1626,7 +1629,10 @@ is_defined(self, node, buf)
 	    val = rb_eval(self, node->nd_head);
 	}
 	POP_TAG();
-	if (state) return 0;
+	if (state) {
+	    ruby_errinfo = Qnil;
+	    return 0;
+	}
 	else {
 	    switch (TYPE(val)) {
 	      case T_CLASS:
@@ -1664,6 +1670,7 @@ is_defined(self, node, buf)
 	if (!state) {
 	    return "expression";
 	}
+	ruby_errinfo = Qnil;
 	break;
     }
     return 0;
