@@ -1,3 +1,8 @@
+Thu Dec 16 16:29:44 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/sample/demos-en/widget: modify version check for
+	  supporting features
+
 Thu Dec 16 16:03:50 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/bindtag.rb: bug fix [ruby-talk: 123667]
