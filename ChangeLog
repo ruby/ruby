@@ -1,3 +1,8 @@
+Tue Feb 15 22:14:34 2005  sheepman  <sheepman@tcn.zaq.ne.jp>
+
+	* ext/readline/readline.c (Readline.readline): use rl_outstream 
+	  and rl_instream.  [ruby-dev:25699]
+
 Mon Feb 14 23:58:17 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/parser.rb (RSS::ListenerMixin::tag_end):
