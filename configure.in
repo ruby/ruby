@@ -1305,7 +1305,7 @@ case "$target_os" in
 	    fi
 	    AC_LIBOBJ([win32])
 	    COMMON_LIBS=m
-	    COMMON_MACROS="WIN32_LEAN_AND_MEAN="
+#	    COMMON_MACROS="WIN32_LEAN_AND_MEAN="
 	    COMMON_HEADERS="winsock2.h windows.h"
 	    ;;
 	esac
