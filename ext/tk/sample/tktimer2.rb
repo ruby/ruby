@@ -32,6 +32,10 @@ TkButton.new(:text=>'Start') {
   command proc{ timer.continue unless timer.running? }
   pack(:side=>:left, :fill=>:both, :expand=>true)
 }
+TkButton.new(:text=>'Restart') {
+  command proc{ timer.restart(0, proc{ label.text('0.00'); 0 }) }
+  pack(:side=>:left, :fill=>:both, :expand=>true)
+}
 TkButton.new(:text=>'Stop') {
   command proc{ timer.stop if timer.running? }
   pack('side'=>'right','fill'=>'both','expand'=>'yes')

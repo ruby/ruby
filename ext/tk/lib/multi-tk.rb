@@ -27,6 +27,7 @@ MultiTkIp_OK.freeze
 class MultiTkIp
 
   # ignore exception on the mainloop
+  #TclTkLib.mainloop_abort_on_exception = false
   TclTkLib.mainloop_abort_on_exception = nil
 
   ######################################

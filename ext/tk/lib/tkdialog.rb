@@ -57,6 +57,7 @@ class TkDialog2 < TkWindow
 
     @message = message
     @message_config = message_config
+    @msgframe_config = msgframe_config
 
     @bitmap  = bitmap
     @bitmap_config = message_config
@@ -65,9 +66,12 @@ class TkDialog2 < TkWindow
 
     @buttons = buttons
     @button_configs = proc{|num| button_configs(num)}
+    @btnframe_config = btnframe_config
 
     #@config = "puts [winfo children .w0000];"
     @config = ""
+
+    @command = nil
 
     if keys.kind_of? Hash
       keys = _symbolkey2str(keys)

@@ -1693,6 +1693,11 @@ class TkVariable
     @id = Tk_VARIABLE_ID.join
     Tk_VARIABLE_ID[1].succ!
     TkVar_ID_TBL[@id] = self
+
+    @trace_var  = nil
+    @trace_elem = nil
+    @trace_opts = nil
+
     if val == []
       INTERP._eval(format('global %s; set %s(0) 0; unset %s(0)', 
 			  @id, @id, @id))

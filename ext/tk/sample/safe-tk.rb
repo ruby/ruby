@@ -14,11 +14,13 @@ safe_slave2   = MultiTkIp.new_safeTk('fill'=>:none, 'expand'=>false)
 cmd = Proc.new{|txt|
   #####################
   ## from TkTimer2.rb
-  begin
-    root = TkRoot.new(:title=>'timer sample')
-  rescue
+
+  if TkCore::INTERP.safe?
     # safeTk doesn't have permission to call 'wm' command
+  else
+    root = TkRoot.new(:title=>'timer sample')
   end
+
   label = TkLabel.new(:parent=>root, :relief=>:raised, :width=>10) \
                   .pack(:side=>:bottom, :fill=>:both)
 
@@ -34,6 +36,10 @@ cmd = Proc.new{|txt|
     command proc{ timer.continue unless timer.running? }
     pack(:side=>:left, :fill=>:both, :expand=>true)
   }
+  TkButton.new(:text=>'Restart') {
+    command proc{ timer.restart(0, proc{ label.text('0.00'); 0 }) }
+    pack('side'=>'right','fill'=>'both','expand'=>'yes')
+  }
   TkButton.new(:text=>'Stop') {
     command proc{ timer.stop if timer.running? }
     pack('side'=>'right','fill'=>'both','expand'=>'yes')
@@ -45,9 +51,9 @@ cmd = Proc.new{|txt|
 
 # call on the default master interpreter
 trusted_slave.eval_proc(cmd, 'trusted')  # label -> .w00012
-safe_slave1.eval_proc(cmd, 'safe1')      # label -> .w00015
-safe_slave2.eval_proc(cmd, 'safe2')      # label -> .w00018
-cmd.call('master')                       # label -> .w00021
+safe_slave1.eval_proc(cmd, 'safe1')      # label -> .w00016
+safe_slave2.eval_proc(cmd, 'safe2')      # label -> .w00020
+cmd.call('master')                       # label -> .w00024
 
 TkTimer.new(2000, -1, proc{p ['safe1', safe_slave1.deleted?]}).start
 TkTimer.new(2000, -1, proc{p ['safe2', safe_slave2.deleted?]}).start

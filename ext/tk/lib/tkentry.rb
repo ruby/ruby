@@ -140,6 +140,9 @@ class TkEntry<TkLabel
     self
   end
 
+  def bbox(index)
+    list(tk_send('bbox', index))
+  end
   def cursor
     number(tk_send('index', 'insert'))
   end
@@ -152,6 +155,10 @@ class TkEntry<TkLabel
   end
   def insert(pos,text)
     tk_send 'insert', pos, text
+    self
+  end
+  def delete(first, last=None)
+    tk_send 'insert', first, last
     self
   end
   def mark(pos)
