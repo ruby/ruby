@@ -775,7 +775,7 @@ strio_ungetc(self, ch)
 
 /*
  * call-seq:
- *   strio.readchar   => fixnum
+ *   strio.readchar   -> fixnum
  *
  * See IO#readchar.
  */
@@ -941,8 +941,8 @@ strio_readline(argc, argv, self)
 
 /*
  * call-seq:
- *   strio.each(sep_string=$/)      {|line| block }  => strio
- *   strio.each_line(sep_string=$/) {|line| block }  => strio
+ *   strio.each(sep_string=$/)      {|line| block }  -> strio
+ *   strio.each_line(sep_string=$/) {|line| block }  -> strio
  *
  * See IO#each.
  */
@@ -963,7 +963,7 @@ strio_each(argc, argv, self)
 
 /*
  * call-seq:
- *   strio.readlines(sep_string=$/)  =>   array
+ *   strio.readlines(sep_string=$/)  ->   array
  *
  * See IO#readlines.
  */
@@ -983,8 +983,8 @@ strio_readlines(argc, argv, self)
 
 /*
  * call-seq:
- *   strio.write(string)    => integer
- *   strio.syswrite(string) => integer
+ *   strio.write(string)    -> integer
+ *   strio.syswrite(string) -> integer
  *
  * Appends the given string to the underlying buffer string of *strio*.
  * The stream must be opened for writing.  If the argument is not a
@@ -1021,7 +1021,7 @@ strio_write(self, str)
 
 /*
  * call-seq:
- *   strio << obj     => strio
+ *   strio << obj     -> strio
  *
  * See IO#<<.
  */
@@ -1029,8 +1029,8 @@ strio_write(self, str)
 
 /*
  * call-seq:
- *   strio.print()             => nil
- *   strio.print(obj, ...)     => nil
+ *   strio.print()             -> nil
+ *   strio.print(obj, ...)     -> nil
  *
  * See IO#print.
  */
@@ -1038,7 +1038,7 @@ strio_write(self, str)
 
 /*
  * call-seq:
- *   strio.printf(format_string [, obj, ...] )   => nil
+ *   strio.printf(format_string [, obj, ...] )   -> nil
  *
  * See IO#printf.
  */
@@ -1046,7 +1046,7 @@ strio_write(self, str)
 
 /*
  * call-seq:
- *   strio.putc(obj)    => obj
+ *   strio.putc(obj)    -> obj
  *
  * See IO#putc.
  */
@@ -1071,7 +1071,7 @@ strio_putc(self, ch)
 
 /*
  * call-seq:
- *   strio.puts(obj, ...)    => nil
+ *   strio.puts(obj, ...)    -> nil
  *
  * See IO#puts.
  */
@@ -1079,7 +1079,7 @@ strio_putc(self, ch)
 
 /*
  * call-seq:
- *   strio.read([length [, buffer]])    => string, buffer, or nil
+ *   strio.read([length [, buffer]])    -> string, buffer, or nil
  *
  * See IO#read.
  */
@@ -1151,7 +1151,7 @@ strio_read(argc, argv, self)
 
 /*
  * call-seq:
- *   strio.sysread(integer[, outbuf])    => string
+ *   strio.sysread(integer[, outbuf])    -> string
  *
  * Similar to #read, but raises +EOFError+ at end of string instead of
  * returning +nil+, as well as IO#sysread does.
@@ -1190,7 +1190,7 @@ strio_sysread(argc, argv, self)
 
 /*
  * call-seq:
- *   strio.size   => integer
+ *   strio.size   -> integer
  *
  * Returns the size of the buffer string.
  */
@@ -1207,7 +1207,7 @@ strio_size(self)
 
 /*
  * call-seq:
- *   strio.truncate(integer)    => 0
+ *   strio.truncate(integer)    -> 0
  *
  * Truncates the buffer string to at most _integer_ bytes. The *strio*
  * must be opened for writing.
