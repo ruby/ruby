@@ -1,3 +1,7 @@
+Sat Sep  7 08:44:27 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* parse.y (rb_gc_mark_parser): ruby_eval_tree is marked in eval.c.
+
 Fri Sep  6 12:01:18 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* parse.y (rb_gc_mark_parser): should mark all global variables
