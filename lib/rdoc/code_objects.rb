@@ -441,10 +441,10 @@ module RDoc
         cls = all[name]
         if !cls
           cls = class_type.new(name, superclass)
-          all[name] = cls
+          all[name] = cls  unless @done_documenting
         end
         puts "Adding class/module #{name} to #@name" if $DEBUG
-        collection[name] = cls
+        collection[name] = cls unless @done_documenting
         cls.parent = self
       end
       cls
