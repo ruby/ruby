@@ -598,18 +598,12 @@ rb_scan_args(argc, argv, fmt, va_alist)
     va_dcl
 #endif
 {
-    int n, i;
+    int n, i = 0;
     const char *p = fmt;
     VALUE *var;
     va_list vargs;
 
     va_init_list(vargs, fmt);
-
-    if (*p == '*') {
-	var = va_arg(vargs, VALUE*);
-	*var = rb_ary_new4(argc, argv);
-	return argc;
-    }
 
     if (ISDIGIT(*p)) {
 	n = *p - '0';
@@ -643,21 +637,34 @@ rb_scan_args(argc, argv, fmt, va_alist)
 	var = va_arg(vargs, VALUE*);
 	if (argc > i) {
 	    if (var) *var = rb_ary_new4(argc-i, argv+i);
+	    i = argc;
 	}
 	else {
 	    if (var) *var = rb_ary_new();
 	}
+	p++;
     }
-    else if (*p == '\0') {
-	if (argc > i) {
-	    rb_raise(rb_eArgError, "wrong # of arguments(%d for %d)", argc, i);
+
+    if (*p == '&') {
+	var = va_arg(vargs, VALUE*);
+	if (rb_iterator_p()) {
+	    *var = rb_f_lambda();
 	}
+	else {
+	    *var = Qnil;
+	}
+	p++;
     }
-    else {
+    va_end(vargs);
+
+    if (*p != '\0') {
 	goto error;
     }
 
-    va_end(vargs);
+    if (argc > i) {
+	rb_raise(rb_eArgError, "wrong # of arguments(%d for %d)", argc, i);
+    }
+
     return argc;
 
   error:

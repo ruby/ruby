@@ -1216,23 +1216,33 @@ rb_const_defined(klass, id)
     return rb_autoload_defined(id);
 }
 
+static void
+rb_mod_av_set(klass, id, val, dest)
+    VALUE klass;
+    ID id;
+    VALUE val;
+    char *dest;
+{
+    if (!OBJ_TAINTED(klass) && rb_safe_level() >= 4)
+	rb_raise(rb_eSecurityError, "Insecure: can't set %s", dest);
+    if (OBJ_FROZEN(klass)) rb_error_frozen("class/module");
+    if (!RCLASS(klass)->iv_tbl) {
+	RCLASS(klass)->iv_tbl = st_init_numtable();
+    }
+    else if (st_lookup(RCLASS(klass)->iv_tbl, id, 0)) {
+	rb_warn("already initialized %s %s", dest, rb_id2name(id));
+    }
+
+    st_insert(RCLASS(klass)->iv_tbl, id, val);
+}
+    
 void
 rb_const_set(klass, id, val)
     VALUE klass;
     ID id;
     VALUE val;
 {
-    if (!OBJ_TAINTED(klass) && rb_safe_level() >= 4)
-	rb_raise(rb_eSecurityError, "Insecure: can't set constant");
-    if (OBJ_FROZEN(klass)) rb_error_frozen("class/module");
-    if (!RCLASS(klass)->iv_tbl) {
-	RCLASS(klass)->iv_tbl = st_init_numtable();
-    }
-    else if (st_lookup(RCLASS(klass)->iv_tbl, id, 0)) {
-	rb_warn("already initialized constant %s", rb_id2name(id));
-    }
-
-    st_insert(RCLASS(klass)->iv_tbl, id, val);
+    rb_mod_av_set(klass, id, val, "constant");
 }
 
 void
@@ -1300,6 +1310,89 @@ rb_define_global_const(name, val)
     VALUE val;
 {
     rb_define_const(rb_cObject, name, val);
+}
+
+void
+rb_shared_variable_declare(klass, id, val)
+    VALUE klass;
+    ID id;
+    VALUE val;
+{
+    rb_mod_av_set(klass, id, val, "shared variable");
+}
+
+void
+rb_shared_variable_set(klass, id, val)
+    VALUE klass;
+    ID id;
+    VALUE val;
+{
+    VALUE value;
+    VALUE tmp;
+
+    tmp = klass;
+    while (tmp) {
+	if (RCLASS(tmp)->iv_tbl && st_lookup(RCLASS(tmp)->iv_tbl,id,0)) {
+	    st_insert(RCLASS(tmp)->iv_tbl,id,val);
+	    return;
+	}
+	tmp = RCLASS(tmp)->super;
+    }
+
+    rb_raise(rb_eNameError,"uninitialized shared variable %s",rb_id2name(id));
+}
+
+VALUE
+rb_shared_variable_get(klass, id)
+    VALUE klass;
+    ID id;
+{
+    VALUE value;
+    VALUE tmp;
+
+    tmp = klass;
+    while (tmp) {
+	if (RCLASS(tmp)->iv_tbl && st_lookup(RCLASS(tmp)->iv_tbl,id,&value)) {
+	    return value;
+	}
+	tmp = RCLASS(tmp)->super;
+    }
+
+    rb_raise(rb_eNameError,"uninitialized shared variable %s",rb_id2name(id));
+    return Qnil;		/* not reached */
+}
+
+int
+rb_shared_variable_defined(klass, id)
+    VALUE klass;
+    ID id;
+{
+    VALUE value;
+    VALUE tmp;
+
+    tmp = klass;
+    while (tmp) {
+	if (RCLASS(tmp)->iv_tbl && st_lookup(RCLASS(tmp)->iv_tbl,id,0)) {
+	    return Qtrue;
+	}
+	tmp = RCLASS(tmp)->super;
+    }
+
+    return Qfalse;
+}
+
+void
+rb_define_shared_variable(klass, name, val)
+    VALUE klass;
+    const char *name;
+    VALUE val;
+{
+    ID id = rb_intern(name);
+
+    if (!rb_is_shared_id(id)) {
+	rb_raise(rb_eNameError, "wrong shared variable name %s", name);
+    }
+    rb_shared_variable_declare(klass, id, val);
 }
 
 VALUE

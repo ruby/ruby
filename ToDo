@@ -19,6 +19,7 @@ Language Spec.
 * class Foo::Bar<Baz .. end, module Boo::Bar .. end
 * def Foo::Bar::baz() .. end ??
 * I18N (or M17N) script/string/regexp
+* Fixnum 0 as false ????
 
 Hacking Interpreter
 
@@ -53,9 +54,8 @@ Standard Libraries
   ScriptError<Exception, not StandardError.
 - String's bang methods return string always
 - Thread::start gives arguments, not a thread object to the block
-- regexp: (?>..)
-* regexp: \G
-* Struct::new([name,]member,...) ??
+- regexp: (?>..), \G
+- Struct::new([name,]member,...)
 * String#scanf(?)
 * Object#fmt(?)
 * Integer#{bin,oct,hex,heX}
@@ -65,12 +65,14 @@ Standard Libraries
 * Stream or Port, abstract superclass of IO ?
 * String#{pred,prev}, String#downto
 * optional stepsize argument for succ()
+* performance tune for String's non-bang methods.
 
 Extension Libraries
 
 - FastCGI ruby
 * ptk.rb pTk wrapper that is compatible to tk.rb
 * Berkeley DB extension
+* BitVector
 
 Ruby Libraries
 

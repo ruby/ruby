@@ -3398,6 +3398,6 @@ Init_IO()
     rb_file_const("BINARY", INT2FIX(O_BINARY));
 #endif
 #ifdef O_SYNC
-    rb_file_const("BINARY", INT2FIX(O_SYNC));
+    rb_file_const("SYNC", INT2FIX(O_SYNC));
 #endif
 }

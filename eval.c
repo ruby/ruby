@@ -1316,6 +1316,8 @@ superclass(self, node)
     return val;
 }
 
+#define ruby_cbase (((NODE*)ruby_frame->cbase)->nd_clss)
+
 static VALUE
 ev_const_defined(cref, id)
     NODE *cref;
@@ -1400,7 +1402,7 @@ rb_mod_s_constants()
 	cbase = cbase->nd_next;
     }
 
-    rb_mod_const_of(((NODE*)ruby_frame->cbase)->nd_clss, ary);
+    rb_mod_const_of(ruby_cbase, ary);
     return ary;
 }
 
@@ -2510,6 +2512,22 @@ rb_eval(self, node)
 	rb_const_set(ruby_class, node->nd_vid, result);
 	break;
 
+      case NODE_SHASGN:
+	if (NIL_P(ruby_class)) {
+	    rb_raise(rb_eTypeError, "no class/module to define shared variable");
+	}
+	result = rb_eval(self, node->nd_value);
+	rb_shared_variable_set(ruby_cbase, node->nd_vid, result);
+	break;
+
+      case NODE_SHDECL:
+	if (NIL_P(ruby_class)) {
+	    rb_raise(rb_eTypeError, "no class/module to define shared variable");
+	}
+	result = rb_eval(self, node->nd_value);
+	rb_shared_variable_declare(ruby_class, node->nd_vid, result);
+	break;
+
       case NODE_LVAR:
 	if (ruby_scope->local_vars == 0) {
 	    rb_bug("unexpected local variable");
@@ -2531,6 +2549,10 @@ rb_eval(self, node)
 
       case NODE_CVAR:
 	result = ev_const_get((NODE*)ruby_frame->cbase, node->nd_vid);
+	break;
+
+      case NODE_SHVAR:
+	result = rb_shared_variable_get(ruby_cbase, node->nd_vid);
 	break;
 
       case NODE_BLOCK_ARG:
@@ -3486,6 +3508,11 @@ assign(self, lhs, val, check)
 	rb_const_set(ruby_class, lhs->nd_vid, val);
 	break;
 
+      case NODE_SHDECL:
+      case NODE_SHASGN:
+	rb_shared_variable_set(ruby_cbase, lhs->nd_vid, val);
+	break;
+
       case NODE_MASGN:
 	massign(self, lhs, val, check);
 	break;
@@ -4433,7 +4460,7 @@ eval(self, src, scope, file, line)
 	}
     }
     PUSH_CLASS();
-    ruby_class = ((NODE*)ruby_frame->cbase)->nd_clss;
+    ruby_class = ruby_cbase;
 
     ruby_in_eval++;
     if (TYPE(ruby_class) == T_ICLASS) {

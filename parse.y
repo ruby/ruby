@@ -27,6 +27,7 @@
 #define ID_GLOBAL   0x03
 #define ID_ATTRSET  0x04
 #define ID_CONST    0x05
+#define ID_SHARED   0x06
 
 #define is_notop_id(id) ((id)>LAST_TOKEN)
 #define is_local_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_LOCAL)
@@ -34,6 +35,7 @@
 #define is_instance_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_INSTANCE)
 #define is_attrset_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_ATTRSET)
 #define is_const_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_CONST)
+#define is_shared_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_SHARED)
 
 NODE *ruby_eval_tree_begin = 0;
 NODE *ruby_eval_tree = 0;
@@ -164,7 +166,7 @@ static void top_local_setup();
 	k__LINE__
 	k__FILE__
 
-%token <id>   tIDENTIFIER tFID tGVAR tIVAR tCONSTANT
+%token <id>   tIDENTIFIER tFID tGVAR tIVAR tCONSTANT tSHVAR
 %token <val>  tINTEGER tFLOAT tSTRING tXSTRING tREGEXP
 %token <node> tDSTRING tDXSTRING tDREGEXP tNTH_REF tBACK_REF
 
@@ -1507,6 +1509,7 @@ variable	: tIDENTIFIER
 		| tIVAR
 		| tGVAR
 		| tCONSTANT
+		| tSHVAR
 		| kNIL {$$ = kNIL;}
 		| kSELF {$$ = kSELF;}
 		| kTRUE {$$ = kTRUE;}
@@ -1633,6 +1636,10 @@ f_rest_arg	: tSTAR tIDENTIFIER
 
 f_block_arg	: tAMPER tIDENTIFIER
 		    {
+			if (!is_local_id($2))
+			    yyerror("block argument must be local variable");
+			else if (local_id($2))
+			    yyerror("duplicate block argument name");
 			$$ = NEW_BLOCK_ARG($2);
 		    }
 
@@ -3342,12 +3349,16 @@ yylex()
 
       case '@':
 	c = nextc();
+	newtok();
+	tokadd('@');
+	if (c == '@') {
+	    tokadd('@');
+	    c = nextc();
+	}
 	if (!is_identchar(c)) {
 	    pushback(c);
 	    return '@';
 	}
-	newtok();
-	tokadd('@');
 	break;
 
       default:
@@ -3390,7 +3401,10 @@ yylex()
 	    break;
 	  case '@':
 	    lex_state = EXPR_END;
-	    result = tIVAR;
+	    if (tok()[1] == '@')
+		result = tSHVAR;
+	    else
+		result = tIVAR;
 	    break;
 	  default:
 	    if (lex_state != EXPR_DOT) {
@@ -3835,6 +3849,9 @@ gettable(id)
     else if (is_const_id(id)) {
 	return NEW_CVAR(id);
     }
+    else if (is_shared_id(id)) {
+	return NEW_SHVAR(id);
+    }
     rb_bug("invalid id for gettable");
     return 0;
 }
@@ -3890,6 +3907,14 @@ assignable(id, val)
 	if (cur_mid || in_single)
 	    yyerror("dynamic constant assignment");
 	lhs = NEW_CDECL(id, val);
+    }
+    else if (is_shared_id(id)) {
+	if (cur_mid || in_single) {
+	    lhs = NEW_SHASGN(id, val);
+	}
+	else {
+	    lhs = NEW_SHDECL(id, val);
+	}
     }
     else {
 	rb_bug("bad id for variable");
@@ -3978,6 +4003,8 @@ node_assign(lhs, rhs)
       case NODE_MASGN:
       case NODE_CASGN:
       case NODE_CDECL:
+      case NODE_SHASGN:
+      case NODE_SHDECL:
 	lhs->nd_value = rhs;
 	break;
 
@@ -4588,7 +4615,10 @@ rb_intern(name)
 	id |= ID_GLOBAL;
 	break;
       case '@':
-	id |= ID_INSTANCE;
+	if (name[1] == '@')
+	    id |= ID_SHARED;
+	else
+	    id |= ID_INSTANCE;
 	break;
       default:
 	if (name[0] != '_' && !ISALPHA(name[0]) && !ismbchar(name[0])) {
@@ -4676,6 +4706,14 @@ rb_is_const_id(id)
     ID id;
 {
     if (is_const_id(id)) return Qtrue;
+    return Qfalse;
+}
+
+int
+rb_is_shared_id(id)
+    ID id;
+{
+    if (is_shared_id(id)) return Qtrue;
     return Qfalse;
 }
 

@@ -387,6 +387,11 @@ extern char *mystrerror(int);
 #endif
 #define get_osfhandle myget_osfhandle
 
+#ifdef getcwd
+#undef getcwd
+#endif
+#define getcwd win32_getcwd
+
 #ifdef getenv
 #undef getenv
 #endif

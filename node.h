@@ -50,6 +50,8 @@ enum node_type {
     NODE_IASGN,
     NODE_CASGN,
     NODE_CDECL,
+    NODE_SHASGN,
+    NODE_SHDECL,
     NODE_OP_ASGN1,
     NODE_OP_ASGN2,
     NODE_OP_ASGN_AND,
@@ -69,6 +71,7 @@ enum node_type {
     NODE_GVAR,
     NODE_IVAR,
     NODE_CVAR,
+    NODE_SHVAR,
     NODE_NTH_REF,
     NODE_BACK_REF,
     NODE_MATCH,
@@ -264,6 +267,8 @@ typedef struct RNode {
 #define NEW_IASGN(v,val) rb_node_newnode(NODE_IASGN,v,val,0)
 #define NEW_CASGN(v,val) rb_node_newnode(NODE_CASGN,v,val,0)
 #define NEW_CDECL(v,val) rb_node_newnode(NODE_CDECL,v,val,0)
+#define NEW_SHASGN(v,val) rb_node_newnode(NODE_SHASGN,v,val,0)
+#define NEW_SHDECL(v,val) rb_node_newnode(NODE_SHDECL,v,val,0)
 #define NEW_OP_ASGN1(p,id,a) rb_node_newnode(NODE_OP_ASGN1,p,id,a)
 #define NEW_OP_ASGN2(r,i,o,val) rb_node_newnode(NODE_OP_ASGN2,r,val,NEW_OP_ASGN22(i,o))
 #define NEW_OP_ASGN22(i,o) rb_node_newnode(NODE_OP_ASGN2,i,o,rb_id_attrset(i))
@@ -274,6 +279,7 @@ typedef struct RNode {
 #define NEW_DVAR(v) rb_node_newnode(NODE_DVAR,v,0,0);
 #define NEW_IVAR(v) rb_node_newnode(NODE_IVAR,v,0,0)
 #define NEW_CVAR(v) rb_node_newnode(NODE_CVAR,v,0,0)
+#define NEW_SHVAR(v) rb_node_newnode(NODE_SHVAR,v,0,0)
 #define NEW_NTH_REF(n)  rb_node_newnode(NODE_NTH_REF,0,n,local_cnt('~'))
 #define NEW_BACK_REF(n) rb_node_newnode(NODE_BACK_REF,0,n,local_cnt('~'))
 #define NEW_MATCH(c) rb_node_newnode(NODE_MATCH,c,0,0)
