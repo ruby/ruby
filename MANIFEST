@@ -85,7 +85,6 @@ ext/Setup.x68
 ext/aix_mksym.rb
 ext/mswin32_extmk.rb
 ext/extmk.rb.in
-lib/CGI.rb
 lib/English.rb
 lib/Env.rb
 lib/README
