@@ -1,3 +1,7 @@
+Thu May 16 15:14:48 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* djgpp/config.hin, djgpp/config.sed: catch up with the latest change.
+
 Tue May 14 14:49:05 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* gc.c (is_pointer_to_heap): avoid GCC 3.1 warnings.
