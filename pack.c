@@ -1311,9 +1311,9 @@ pack_unpack(str, fmt)
 #endif
 
     StringValue(str);
+    StringValue(fmt);
     s = RSTRING(str)->ptr;
     send = s + RSTRING(str)->len;
-    StringValue(fmt);
     p = RSTRING(fmt)->ptr;
     pend = p + RSTRING(fmt)->len;
 

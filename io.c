@@ -1195,10 +1195,10 @@ io_read(argc, argv, io)
 	rb_str_modify(str);
 	rb_str_resize(str,len);
     }
-    FL_SET(str, FL_FREEZE);
     if (len == 0) return str;
 
     READ_CHECK(fptr->f);
+    FL_SET(str, FL_FREEZE);
     n = rb_io_fread(RSTRING(str)->ptr, len, fptr->f);
     FL_UNSET(str, FL_FREEZE);
     if (n == 0) {
