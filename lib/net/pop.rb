@@ -561,6 +561,7 @@ module Net
           list = []
           @socket.each_list_item do |line|
             m = /\A(\d+)[ \t]+(\d+)/.match(line) or
+                    raise BadResponse, "bad response: #{line}"
             list[m[1].to_i] = m[2].to_i
           end
           return list

@@ -1,3 +1,8 @@
+Thu Apr 10 21:12:19 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/pop.rb: Exception line was accidentaly removed.
+	  [ruby-dev:19989]
+
 Thu Apr 10 18:42:13 2003  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* array.c (rb_ary_times): added some checks for request size.
