@@ -1,3 +1,8 @@
+Fri Sep  3 11:31:44 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: Tk.after makes TkCore::INTERP.tk_cmd_tbl grow
+	  [ruby-dev:24207]
+
 Fri Sep  3 02:12:48 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c: fix typo [ruby-talk:111266]

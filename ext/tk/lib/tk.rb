@@ -1191,8 +1191,14 @@ module TkCore
   end
 
   def after(ms, cmd=Proc.new)
+    crit_bup = Thread.critical
+    Thread.critical = true
+
     myid = _curr_cmd_id
-    cmdid = install_cmd(cmd)
+    cmdid = install_cmd(proc{ret = cmd.call;uninstall_cmd(myid); ret})
+
+    Thread.critical = crit_bup
+
     tk_call_without_enc("after",ms,cmdid)  # return id
 #    return
 #    if false #defined? Thread
@@ -1209,8 +1215,14 @@ module TkCore
   end
 
   def after_idle(cmd=Proc.new)
+    crit_bup = Thread.critical
+    Thread.critical = true
+
     myid = _curr_cmd_id
-    cmdid = install_cmd(cmd)
+    cmdid = install_cmd(proc{ret = cmd.call;uninstall_cmd(myid); ret})
+
+    Thread.critical = crit_bup
+
     tk_call_without_enc('after','idle',cmdid)
   end
 
