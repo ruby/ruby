@@ -2864,12 +2864,12 @@ rb_eval(self, n)
 	if (ruby_verbose && FL_TEST(ruby_cbase, FL_SINGLETON)) {
 	    rb_warn("declaring singleton class variable");
 	}
-	rb_cvar_declare(ruby_cbase, node->nd_vid, result);
+	rb_cvar_set(ruby_cbase, node->nd_vid, result, Qtrue);
 	break;
 
       case NODE_CVASGN:
 	result = rb_eval(self, node->nd_value);
-	rb_cvar_set(ruby_cbase, node->nd_vid, result);
+	rb_cvar_set(ruby_cbase, node->nd_vid, result, Qfalse);
 	break;
 
       case NODE_LVAR:
@@ -3915,11 +3915,11 @@ assign(self, lhs, val, pcall)
 	if (ruby_verbose && FL_TEST(ruby_cbase, FL_SINGLETON)) {
 	    rb_warn("declaring singleton class variable");
 	}
-	rb_cvar_declare(ruby_cbase, lhs->nd_vid, val);
+	rb_cvar_set(ruby_cbase, lhs->nd_vid, val, Qtrue);
 	break;
 
       case NODE_CVASGN:
-	rb_cvar_set(ruby_cbase, lhs->nd_vid, val);
+	rb_cvar_set(ruby_cbase, lhs->nd_vid, val, Qfalse);
 	break;
 
       case NODE_MASGN:

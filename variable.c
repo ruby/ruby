@@ -1440,10 +1440,11 @@ cvar_override_check(id, a)
 }
 
 void
-rb_cvar_set(klass, id, val)
+rb_cvar_set(klass, id, val, warn)
     VALUE klass;
     ID id;
     VALUE val;
+    int warn;
 {
     VALUE tmp;
 
@@ -1453,34 +1454,7 @@ rb_cvar_set(klass, id, val)
 	    if (OBJ_FROZEN(tmp)) rb_error_frozen("class/module");
 	    if (!OBJ_TAINTED(tmp) && rb_safe_level() >= 4)
 		rb_raise(rb_eSecurityError, "Insecure: can't modify class variable");
-	    st_insert(RCLASS(tmp)->iv_tbl,id,val);
-	    if (ruby_verbose) {
-		cvar_override_check(id, tmp);
-	    }
-	    return;
-	}
-	tmp = RCLASS(tmp)->super;
-    }
-
-    rb_name_error(id,"uninitialized class variable %s in %s",
-		  rb_id2name(id), rb_class2name(klass));
-}
-
-void
-rb_cvar_declare(klass, id, val)
-    VALUE klass;
-    ID id;
-    VALUE val;
-{
-    VALUE tmp;
-
-    tmp = klass;
-    while (tmp) {
-	if (RCLASS(tmp)->iv_tbl && st_lookup(RCLASS(tmp)->iv_tbl,id,0)) {
-	    if (OBJ_FROZEN(tmp)) rb_error_frozen("class/module");
-	    if (!OBJ_TAINTED(tmp) && rb_safe_level() >= 4)
-		rb_raise(rb_eSecurityError, "Insecure: can't modify class variable");
-	    if (ruby_verbose && klass != tmp) {
+	    if (warn && ruby_verbose && klass != tmp) {
 		rb_warning("already initialized class variable %s", rb_id2name(id));
 	    }
 	    st_insert(RCLASS(tmp)->iv_tbl,id,val);
@@ -1549,7 +1523,7 @@ rb_cv_set(klass, name, val)
     if (!rb_is_class_id(id)) {
 	rb_name_error(id, "wrong class variable name %s", name);
     }
-    rb_cvar_set(klass, id, val);
+    rb_cvar_set(klass, id, val, Qfalse);
 }
 
 VALUE
@@ -1575,7 +1549,7 @@ rb_define_class_variable(klass, name, val)
     if (!rb_is_class_id(id)) {
 	rb_name_error(id, "wrong class variable name %s", name);
     }
-    rb_cvar_declare(klass, id, val);
+    rb_cvar_set(klass, id, val, Qtrue);
 }
 
 static int

@@ -1,3 +1,14 @@
+Fri Feb 15 14:40:38 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): replace rb_cvar_declare() by rb_cvar_set().
+
+	* eval.c (assign): ditto.
+
+	* variable.c (rb_cvar_set): 4th argument (warn) added; define new
+	  class variable if it's not defined yet.
+
+	* variable.c (rb_cvar_declare): removed.
+
 Fri Feb 15 13:36:58 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (rb_big_rshift): should properly convert the nagative
