@@ -67,6 +67,9 @@ char *strrchr _((const char*,const char));
 #ifndef HAVE_LSTAT
 #define lstat(path,st) stat(path,st)
 #endif
+#if !HAVE_FSEEKO && !defined(fseeko)
+# define fseeko  fseek
+#endif
 
 VALUE rb_cFile;
 VALUE rb_mFileTest;
@@ -2973,6 +2976,7 @@ rb_file_truncate(obj, len)
     }
     f = GetWriteFile(fptr);
     fflush(f);
+    fseeko(f, (off_t)0, SEEK_CUR);
 #ifdef HAVE_TRUNCATE
     if (ftruncate(fileno(f), NUM2OFFT(len)) < 0)
 	rb_sys_fail(fptr->path);
