@@ -1,3 +1,19 @@
+Sat Jan 31 01:00:32 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* lib/soap/wsdlDriver.rb, lib/wsdl/soap/operation.rb: add support of
+          "parts" attribute of soap:body element in WSDL.
+
+	* lib/wsdl/xmlSchema/schema.rb: friendly warning message for
+          simpleType element which is not supported for now.
+
+	* lib/soap/mapping/factory.rb: deleted unused methods.
+
+	* lib/soap/mapping/rubytypeFactory.rb: do no ignore case while xsi:type
+          string <-> Ruby class name matching.
+
+	* test/wsdl/soap/{soapbodyparts.wsdl,test_soapbodyparts.wsdl}: new
+          files.
+
 Thu Jan 29 23:56:00 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* util.c (mblen): fix overrun.  [ruby-dev:22672]
