@@ -1,3 +1,9 @@
+Thu Mar 31 06:00:20 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_engine.c (ossl_engine_s_load): should not raise
+	  error even if the specified engine could not be loaded. (Dynamic
+	  engines don't have fixed name to load.)
+
 Wed Mar 30 17:41:48 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c: add TclTkIp#_create_console() method to create 

@@ -70,7 +70,7 @@ ossl_engine_s_load(int argc, VALUE *argv, VALUE klass)
 #ifdef HAVE_ENGINE_LOAD_OPENBSD_DEV_CRYPTO
     OSSL_ENGINE_LOAD_IF_MATCH(openbsd_dev_crypto);
 #endif
-    rb_raise(eEngineError, "no such engine `%s'", RSTRING(name)->ptr);
+    rb_warning("no such engine `%s'", RSTRING(name)->ptr);
 #endif /* HAVE_ENGINE_LOAD_BUILTIN_ENGINES */
 }
 
