@@ -13,6 +13,9 @@ Sun Nov 30 20:18:07 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* Makefile.in: add ARCH_FLAG to DLDFLAGS.
 
+	* configure.in: should put getcwd in AC_CHECK_FUNCS, not
+	  AC_REPLACE_FUNCS.  [ruby-core:01826]
+
 Sun Nov 30 18:22:48 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in: do not override CCDLDFLAGS, LDFLAGS, XLDFLAGS,
