@@ -2000,6 +2000,35 @@ call_trace_func(event, file, line, self, id, klass)
     if (state) JUMP_TAG(state);
 }
 
+static VALUE
+svalue_to_mvalue(v)
+    VALUE v;
+{
+    if (NIL_P(v)) return rb_ary_new2(0);
+    if (TYPE(v) != T_ARRAY) {
+	v = rb_ary_to_ary(v);
+    }
+    return v;
+}
+
+static VALUE
+mvalue_to_svalue(v)
+    VALUE v;
+{
+    if (TYPE(v) != T_ARRAY) {
+	v = rb_ary_to_ary(v);
+    }
+    if (RARRAY(v)->len == 0) {
+	return Qnil;
+    }
+    if (RARRAY(v)->len == 1 &&
+	!NIL_P(RARRAY(v)->ptr[0]) &&
+	TYPE(RARRAY(v)->ptr[0]) != T_ARRAY) {
+	return RARRAY(v)->ptr[0];
+    }
+    return v;
+}
+
 static void return_check _((void));
 #define return_value(v) prot_tag->retval = (v)
 
@@ -2345,23 +2374,11 @@ rb_eval(self, n)
 
       case NODE_RESTARGS:
       case NODE_RESTARY:
-	result = rb_eval(self, node->nd_head);
-	if (TYPE(result) != T_ARRAY) {
-	    result = rb_ary_to_ary(result);
-	}
+	result = svalue_to_mvalue(rb_eval(self, node->nd_head));
 	break;
 
       case NODE_REXPAND:
-	result = rb_eval(self, node->nd_head);
-	if (TYPE(result) != T_ARRAY) {
-	    result = rb_ary_to_ary(result);
-	}
-	if (RARRAY(result)->len == 0) {
-	    result = Qnil;
-	}
-	else if (RARRAY(result)->len == 1) {
-	    result = RARRAY(result)->ptr[0];
-	}
+	result = mvalue_to_svalue(rb_eval(self, node->nd_head));
 	break;
 
       case NODE_YIELD:
@@ -2520,7 +2537,7 @@ rb_eval(self, n)
 
       case NODE_ARGSCAT:
 	result = rb_ary_concat(rb_eval(self, node->nd_head),
-			       rb_ary_to_ary(rb_eval(self, node->nd_body)));
+			       svalue_to_mvalue(rb_eval(self, node->nd_body)));
 	break;
 
       case NODE_ARGSPUSH:
@@ -3546,10 +3563,6 @@ rb_f_block_given_p()
     return Qfalse;
 }
 
-#define PC_NONE   0x0
-#define PC_ACHECK 0x1
-#define PC_PCALL  0x2
-
 static VALUE
 rb_yield_0(val, self, klass, pcall)
     VALUE val, self, klass;	/* OK */
@@ -3595,40 +3608,40 @@ rb_yield_0(val, self, klass, pcall)
 	PUSH_TAG(PROT_NONE);
 	if ((state = EXEC_TAG()) == 0) {
 	    if (block->var == (NODE*)1) {
-		if ((pcall&PC_ACHECK) && val != Qundef &&
-		    TYPE(val) == T_ARRAY && RARRAY(val)->len != 0) {
+		if (pcall && RARRAY(val)->len != 0) {
 		    rb_raise(rb_eArgError, "wrong # of arguments (%d for 0)",
 			     RARRAY(val)->len);
 		}
 	    }
 	    else if (block->var == (NODE*)2) {
-		if (val != Qundef && TYPE(val) == T_ARRAY && RARRAY(val)->len != 0) {
+		if (TYPE(val) == T_ARRAY && RARRAY(val)->len != 0) {
 		    rb_raise(rb_eArgError, "wrong # of arguments (%d for 0)",
 			     RARRAY(val)->len);
 		}
 	    }
 	    else {
 		if (nd_type(block->var) == NODE_MASGN)
-		    massign(self, block->var, val, (pcall&PC_ACHECK));
+		    massign(self, block->var, val, pcall);
 		else {
 		    /* argument adjust for proc_call etc. */
-		    if (pcall && val != Qundef && 
-			TYPE(val) == T_ARRAY && RARRAY(val)->len == 1) {
-			val = RARRAY(val)->ptr[0];
+		    if (pcall) {
+			if (RARRAY(val)->len == 1) {
+			    val = RARRAY(val)->ptr[0];
+			}
+			else {
+			    val = mvalue_to_svalue(val);
+			}
 		    }
-		    assign(self, block->var, val, (pcall&PC_ACHECK));
+		    assign(self, block->var, val, pcall);
 		}
 	    }
 	}
 	POP_TAG();
 	if (state) goto pop_state;
     }
-    else {
+    else if (pcall) {
 	/* argument adjust for proc_call etc. */
-	if (pcall && val != Qundef &&
-	    TYPE(val) == T_ARRAY && RARRAY(val)->len == 1) {
-	    val = RARRAY(val)->ptr[0];
-	}
+	val = mvalue_to_svalue(val);
     }
 
     PUSH_ITER(block->iter);
@@ -3639,7 +3652,6 @@ rb_yield_0(val, self, klass, pcall)
 	    result = Qnil;
 	}
 	else if (nd_type(node) == NODE_CFUNC || nd_type(node) == NODE_IFUNC) {
-	    if (val == Qundef) val = rb_ary_new2(0);
 	    result = (*node->nd_cfnc)(val, node->nd_tval, self);
 	}
 	else {
@@ -3723,56 +3735,43 @@ rb_f_loop()
 }
 
 static VALUE
-massign(self, node, val, check)
+massign(self, node, val, pcall)
     VALUE self;
     NODE *node;
     VALUE val;
-    int check;
+    int pcall;
 {
     NODE *list;
     int i = 0, len;
 
-    if (val == Qundef || val == Qnil) {
-	val = rb_ary_new2(0);
-    }
-    else if (TYPE(val) != T_ARRAY) {
-	if (rb_respond_to(val, to_ary)) {
-	    VALUE ary = rb_funcall(val, to_ary, 0);
-	    if (TYPE(ary) != T_ARRAY) {
-		rb_raise(rb_eTypeError, "%s#to_ary should return Array",
-			 rb_class2name(CLASS_OF(val)));
-	    }
-	    val = ary;
-	}
-	else {
-	    val = rb_ary_new3(1, val);
-	}
+    if (!pcall) {
+	val = svalue_to_mvalue(val);
     }
     len = RARRAY(val)->len;
     list = node->nd_head;
     for (i=0; list && i<len; i++) {
-	assign(self, list->nd_head, RARRAY(val)->ptr[i], check);
+	assign(self, list->nd_head, RARRAY(val)->ptr[i], pcall);
 	list = list->nd_next;
     }
-    if (check && list) goto arg_error;
+    if (pcall && list) goto arg_error;
     if (node->nd_args) {
 	if (node->nd_args == (NODE*)-1) {
 	    /* no check for mere `*' */
 	}
 	else if (!list && i<len) {
-	    assign(self, node->nd_args, rb_ary_new4(len-i, RARRAY(val)->ptr+i), check);
+	    assign(self, node->nd_args, rb_ary_new4(len-i, RARRAY(val)->ptr+i), pcall);
 	}
 	else {
-	    assign(self, node->nd_args, rb_ary_new2(0), check);
+	    assign(self, node->nd_args, rb_ary_new2(0), pcall);
 	}
     }
-    else if (check && i < len) {
+    else if (pcall && i < len) {
 	goto arg_error;
     }
 
     while (list) {
 	i++;
-	assign(self, list->nd_head, Qnil, check);
+	assign(self, list->nd_head, Qnil, pcall);
 	list = list->nd_next;
     }
     return val;
@@ -3786,11 +3785,11 @@ massign(self, node, val, check)
 }
 
 static void
-assign(self, lhs, val, check)
+assign(self, lhs, val, pcall)
     VALUE self;
     NODE *lhs;
     VALUE val;
-    int check;
+    int pcall;
 {
     if (val == Qundef) val = Qnil;
     switch (nd_type(lhs)) {
@@ -3832,7 +3831,7 @@ assign(self, lhs, val, check)
 	break;
 
       case NODE_MASGN:
-	massign(self, lhs, val, check);
+	massign(self, lhs, val, pcall);
 	break;
 
       case NODE_CALL:
@@ -5842,7 +5841,7 @@ call_end_proc(data)
     ruby_frame->self = ruby_frame->prev->self;
     ruby_frame->last_func = 0;
     ruby_frame->last_class = 0;
-    proc_call(data, Qundef);
+    proc_call(data, rb_ary_new2(0));
     POP_FRAME();
     POP_ITER();
 }
@@ -6318,19 +6317,6 @@ blk_orphan(data)
 }
 
 static VALUE
-callargs(args)
-    VALUE args;
-{
-    switch (RARRAY(args)->len) {
-      case 0:
-	return Qundef;
-	break;
-      default:
-	return args;
-    }
-}
-
-static VALUE
 proc_invoke(proc, args, pcall)
     VALUE proc, args;		/* OK */
     int pcall;
@@ -6342,13 +6328,6 @@ proc_invoke(proc, args, pcall)
     int state;
     volatile int orphan;
     volatile int safe = ruby_safe_level;
-
-    if (pcall) {
-	pcall = PC_ACHECK|PC_PCALL;
-    }
-    else {
-	pcall = PC_PCALL;
-    }
 
     if (rb_block_given_p() && ruby_frame->last_func) {
 	rb_warning("block for %s#%s is useless",
@@ -6368,10 +6347,9 @@ proc_invoke(proc, args, pcall)
     PUSH_ITER(ITER_CUR);
     ruby_frame->iter = ITER_CUR;
 
-    if (args != Qundef && TYPE(args) == T_ARRAY) {
-	args = callargs(args);
+    if (!pcall) {
+	args = mvalue_to_svalue(args);
     }
-
     PUSH_TAG(PROT_NONE);
     state = EXEC_TAG();
     if (state == 0) {
@@ -8337,7 +8315,7 @@ rb_thread_yield(arg, th)
     rb_thread_t th;
 {
     scope_dup(ruby_block->scope);
-    return rb_yield_0(callargs(arg), 0, 0, Qtrue);
+    return rb_yield_0(mvalue_to_svalue(arg), 0, 0, Qtrue);
 }
 
 static VALUE
