@@ -214,6 +214,7 @@ lib/matrix.rb
 lib/mkmf.rb
 lib/monitor.rb
 lib/mutex_m.rb
+lib/net/.document
 lib/net/ftp.rb
 lib/net/http.rb
 lib/net/https.rb
