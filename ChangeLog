@@ -1,3 +1,7 @@
+Wed Dec  3 19:38:36 2003  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/drb.rb: correct fcntl parameter. [ruby-dev:22120]
+
 Wed Dec  3 13:49:07 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: 'format'==>'Kernel.format' (avoid override trouble)
