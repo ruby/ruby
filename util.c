@@ -642,7 +642,7 @@ ruby_getcwd()
     char *buf = xmalloc(size);
 
     while (!getcwd(buf, size)) {
-	if (errno != ERANGE) rb_sys_fail(buf);
+	if (errno != ERANGE) rb_sys_fail(NULL);
 	size *= 2;
 	buf = xrealloc(buf, size);
     }
