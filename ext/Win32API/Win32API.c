@@ -8,26 +8,10 @@
 #include <stdio.h>
 #endif
 
-#if defined(_MSC_VER)
-#if defined(_M_ALPHA)
-#ifdef __cplusplus
-extern "C" { long __asm(char *,...); };
-#else
-long __asm(char *,...);
-#endif
-#pragma intrinsic(__asm)
-#endif
-#endif
-
 #define _T_VOID     0
 #define _T_NUMBER   1
 #define _T_POINTER  2
 #define _T_INTEGER  3
-
-typedef char *ApiPointer(void);
-typedef long  ApiNumber(void);
-typedef void  ApiVoid(void);
-typedef int   ApiInteger(void);
 
 #include "ruby.h"
 
@@ -62,7 +46,7 @@ Win32API_initialize(self, dllname, proc, import, export)
     char *s;
     int i;
     int len;
-    int ex;
+    int ex = _T_VOID;
 
     SafeStringValue(dllname);
     SafeStringValue(proc);
@@ -85,37 +69,37 @@ Win32API_initialize(self, dllname, proc, import, export)
 
     a_import = rb_ary_new();
     switch (TYPE(import)) {
-      case T_NIL:
+    case T_NIL:
 	break;
-      case T_ARRAY:
+    case T_ARRAY:
 	ptr = RARRAY(import)->ptr;
 	for (i = 0, len = RARRAY(import)->len; i < len; i++) {
 	    SafeStringValue(ptr[i]);
 	    switch (*(char *)RSTRING(ptr[i])->ptr) {
-	      case 'N': case 'n': case 'L': case 'l':
+	    case 'N': case 'n': case 'L': case 'l':
 		rb_ary_push(a_import, INT2FIX(_T_NUMBER));
 		break;
-	      case 'P': case 'p':
+	    case 'P': case 'p':
 		rb_ary_push(a_import, INT2FIX(_T_POINTER));
 		break;
-	      case 'I': case 'i':
+	    case 'I': case 'i':
 		rb_ary_push(a_import, INT2FIX(_T_INTEGER));
 		break;
 	    }
 	}
         break;
-      default:
+    default:
 	SafeStringValue(import);
 	s = RSTRING(import)->ptr;
 	for (i = 0, len = RSTRING(import)->len; i < len; i++) {
 	    switch (*s++) {
-	      case 'N': case 'n': case 'L': case 'l':
+	    case 'N': case 'n': case 'L': case 'l':
 		rb_ary_push(a_import, INT2FIX(_T_NUMBER));
 		break;
-	      case 'P': case 'p':
+	    case 'P': case 'p':
 		rb_ary_push(a_import, INT2FIX(_T_POINTER));
 		break;
-	      case 'I': case 'i':
+	    case 'I': case 'i':
 		rb_ary_push(a_import, INT2FIX(_T_INTEGER));
 		break;
 	    }
@@ -129,16 +113,16 @@ Win32API_initialize(self, dllname, proc, import, export)
     } else {
 	SafeStringValue(export);
 	switch (*RSTRING(export)->ptr) {
-	  case 'V': case 'v':
+        case 'V': case 'v':
 	    ex = _T_VOID;
 	    break;
-	  case 'N': case 'n': case 'L': case 'l':
+	case 'N': case 'n': case 'L': case 'l':
 	    ex = _T_NUMBER;
 	    break;
-	  case 'P': case 'p':
+	case 'P': case 'p':
 	    ex = _T_POINTER;
 	    break;
-	  case 'I': case 'i':
+	case 'I': case 'i':
 	    ex = _T_INTEGER;
 	    break;
 	}
@@ -148,15 +132,6 @@ Win32API_initialize(self, dllname, proc, import, export)
     return Qnil;
 }
 
-#ifdef __BORLANDC__ 
-int c_m( FARPROC api, long* p )
-{
-  long pp[16];
-  memcpy( pp, p, 16*sizeof(long) );
-  return api();
-}
-#endif
-
 static VALUE
 Win32API_Call(argc, argv, obj)
     int argc;
@@ -164,171 +139,62 @@ Win32API_Call(argc, argv, obj)
     VALUE obj;
 {
     VALUE args;
+    unsigned long ret;
+    int i;
+    struct {
+	unsigned long params[16];
+    } param;
+#define params param.params
 
-    FARPROC ApiFunction;
+    VALUE obj_proc = rb_iv_get(obj, "__proc__");
+    VALUE obj_import = rb_iv_get(obj, "__import__");
+    VALUE obj_export = rb_iv_get(obj, "__export__");
+    FARPROC ApiFunction = (FARPROC)NUM2ULONG(obj_proc);
+    int items = rb_scan_args(argc, argv, "0*", &args);
+    int nimport = RARRAY(obj_import)->len;
 
-    ApiPointer  *ApiFunctionPointer;
-    ApiNumber   *ApiFunctionNumber;
-    ApiVoid     *ApiFunctionVoid;
-    ApiInteger  *ApiFunctionInteger;
-
-    long  lParam;
-    char *pParam;
-
-    VALUE Return;
-
-    VALUE obj_proc;
-    VALUE obj_import;
-    VALUE obj_export;
-    VALUE import_type;
-    int nimport, timport, texport, i;
-    int items;
-    int ret;
-#ifdef __BORLANDC__ 
-    long* ptr;
-    long p[16];
-#endif
-
-    items = rb_scan_args(argc, argv, "0*", &args);
-
-    obj_proc = rb_iv_get(obj, "__proc__");
-
-    ApiFunction = (FARPROC)NUM2ULONG(obj_proc);
-
-    obj_import = rb_iv_get(obj, "__import__");
-    obj_export = rb_iv_get(obj, "__export__");
-    nimport = RARRAY(obj_import)->len;
-    texport = FIX2INT(obj_export);
 
     if (items != nimport)
 	rb_raise(rb_eRuntimeError, "Wrong number of parameters: expected %d, got %d.\n",
 	    nimport, items);
 
-    if (0 < nimport) {
-#ifdef __BORLANDC__ 
-       ptr = p + ( nimport - 1 );
-#endif
-	for (i = nimport - 1; 0 <= i; i--) {
+    for (i = 0; i < nimport; i++) {
+	unsigned long lParam = 0;
+	switch (FIX2INT(rb_ary_entry(obj_import, i))) {
 	    VALUE str;
-	    import_type = rb_ary_entry(obj_import, i);
-	    timport = FIX2INT(import_type);
-	    switch (timport) {
-	    case _T_NUMBER:
-	    case _T_INTEGER:
-		lParam = NUM2ULONG(rb_ary_entry(args, i));
-#if defined(_MSC_VER) || defined(__LCC__)
-#if defined(_M_IX86)
-		_asm {
-		    mov     eax, lParam
-		    push    eax
-		}
-#elif defined(_M_ALPHA)
-		__asm(
-			"ldl r0, 0(%0);"
-			"stq r0, -(sp);"
-			, lParam
-		);
-#else
-#error
-#endif
-#elif defined(__BORLANDC__)
-		*ptr = lParam;
-		--ptr;
-#elif defined __GNUC__
-		asm volatile ("pushl %0" :: "g" (lParam));
-#else
-#error
-#endif
-		break;
-	    case _T_POINTER:
-		str = rb_ary_entry(args, i);
-		if (NIL_P(str)) {
-		    pParam = 0;
-		} else if (FIXNUM_P(str)){
-		    pParam = (char *)NUM2ULONG(str);
-		} else {
-		    StringValue(str);
-		    rb_str_modify(str);
-		    pParam = StringValuePtr(str);
-		}
-#if defined(_MSC_VER) || defined(__LCC__)
-#if defined(_M_IX86)
-		_asm {
-		    mov     eax, pParam
-		    push    eax
-		}
-#elif defined(_M_ALPHA)
-		__asm(
-			"ldl r0, 0(%0);"
-			"stq r0, -(sp);"
-			, pParam
-		);
-#else
-#error
-#endif
-#elif defined(__BORLANDC__)
-		*ptr = (long)pParam;
-		--ptr;
-#elif defined __GNUC__
-		asm volatile ("pushl %0" :: "g" (pParam));
-#else
-#error
-#endif
-		break;
+	case _T_NUMBER:
+	case _T_INTEGER:
+	default:
+	    lParam = NUM2ULONG(rb_ary_entry(args, i));
+	    break;
+	case _T_POINTER:
+	    str = rb_ary_entry(args, i);
+	    if (NIL_P(str)) {
+		lParam = 0;
+	    } else if (FIXNUM_P(str)) {
+		lParam = NUM2ULONG(str);
+	    } else {
+		StringValue(str);
+		rb_str_modify(str);
+		lParam = (unsigned long)StringValuePtr(str);
 	    }
+	    break;
 	}
+	params[i] = lParam;
     }
 
-#if defined __GNUC__
-    asm volatile ("call *%1" : "=r" (ret) : "g" (ApiFunction));
-    switch (texport) {
+    ret = ApiFunction(param);
+
+    switch (FIX2INT(obj_export)) {
     case _T_NUMBER:
     case _T_INTEGER:
-	Return = INT2NUM(ret);
-	break;
+	return INT2NUM(ret);
     case _T_POINTER:
-	Return = rb_str_new2((char *)ret);
-	break;
+	return rb_str_new2((char *)ret);
     case _T_VOID:
     default:
-	Return = INT2NUM(0);
-	break;
+	return INT2NUM(0);
     }
-#else
-    switch (texport) {
-    case _T_NUMBER:
-#if defined(__BORLANDC__)
-	Return = INT2NUM((long)c_m(ApiFunction, p));
-#else
-	ApiFunctionNumber = (ApiNumber *) ApiFunction;
-	Return = INT2NUM(ApiFunctionNumber());
-#endif
-	break;
-    case _T_POINTER:
-#if defined(__BORLANDC__)
-	Return = rb_str_new2((char *)c_m(ApiFunction, p));
-#else
-	ApiFunctionPointer = (ApiPointer *) ApiFunction;
-	Return = rb_str_new2((char *)ApiFunctionPointer());
-#endif
-	break;
-    case _T_INTEGER:
-#if defined(__BORLANDC__)
-	Return = INT2NUM((int)c_m(ApiFunction, p));
-#else
-	ApiFunctionInteger = (ApiInteger *) ApiFunction;
-	Return = INT2NUM(ApiFunctionInteger());
-#endif
-	break;
-    case _T_VOID:
-    default:
-	ApiFunctionVoid = (ApiVoid *) ApiFunction;
-	ApiFunctionVoid();
-	Return = INT2NUM(0);
-	break;
-    }
-#endif
-    return Return;
 }
 
 void

@@ -1,3 +1,9 @@
+Fri Mar  7 00:30:33 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/Win32API/Win32API.c: no longer use inline-asms.
+
+	* ext/Win32API/extconf.rb: no need to add gcc options.
+
 Wed Mar  5 12:13:21 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in: better YACC support on HP-UX.
