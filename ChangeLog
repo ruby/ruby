@@ -1,3 +1,8 @@
+Wed May 14 12:23:46 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb (Net::HTTP#start): should check whether HTTP
+	  session is opened before finishing. (ruby-bugs-ja:PR#463)
+
 Wed May 14 09:12:55 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb: reduce warning. (ruby-bugs-ja:PR#462)

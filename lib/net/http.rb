@@ -721,7 +721,7 @@ module Net
           do_start
           return yield(self)
         ensure
-          finish
+          finish if @started
         end
       end
       do_start
