@@ -344,9 +344,6 @@ rb_ary_push_m(argc, argv, ary)
     VALUE *argv;
     VALUE ary;
 {
-    if (argc <= 0) {
-	rb_raise(rb_eArgError, "wrong number arguments (at least 1)");
-    }
     while (argc--) {
 	rb_ary_push(ary, *argv++);
     }
@@ -431,10 +428,6 @@ rb_ary_unshift_m(argc, argv, ary)
 {
     long len = RARRAY(ary)->len;
     
-    if (argc <= 0) {
-	rb_raise(rb_eArgError, "wrong number of arguments (at least 1)");
-    }
-
     /* make rooms by setting the last item */
     rb_ary_store(ary, len + argc - 1, Qnil);
 
@@ -759,8 +752,8 @@ rb_ary_insert(argc, argv, ary)
 {
     long pos;
 
-    if (argc < 2) {
-	rb_raise(rb_eArgError, "wrong number of arguments (at least 2)");
+    if (argc < 1) {
+	rb_raise(rb_eArgError, "wrong number of arguments (at least 1)");
     }
     pos = NUM2LONG(argv[0]);
     if (pos == -1) {
@@ -770,6 +763,7 @@ rb_ary_insert(argc, argv, ary)
 	pos++;
     }
 
+    if (argc == 1) return ary;
     rb_ary_update(ary, pos, 0, rb_ary_new4(argc - 1, argv + 1));
     return ary;
 }
@@ -1057,7 +1051,6 @@ static VALUE
 rb_ary_reverse_bang(ary)
     VALUE ary;
 {
-    if (RARRAY(ary)->len <= 1) return Qnil;
     return rb_ary_reverse(ary);
 }
 

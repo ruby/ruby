@@ -10,8 +10,8 @@
 #   
 #
 
-require "rational.rb"
 require "complex.rb"
+require "rational.rb"
 require "matrix.rb"
 
 class Integer

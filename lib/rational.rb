@@ -329,7 +329,7 @@ class Integer
 end
 
 class Fixnum
-  if not defined? Complex
+  unless defined? Complex
     alias power! **;
   end
   
@@ -347,13 +347,13 @@ class Fixnum
     end
   end
     
-  if not defined? Complex
+  unless defined? Complex
     alias ** rpower
   end
 end
 
 class Bignum
-  if not defined? power!
+  unless defined? Complex
     alias power! **
   end
 
@@ -371,7 +371,7 @@ class Bignum
     end
   end
   
-  if not defined? Complex
+  unless defined? Complex
     alias ** rpower
   end
 end

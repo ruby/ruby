@@ -3756,13 +3756,12 @@ argf_readchar()
 static VALUE
 argf_eof()
 {
-    if (!next_argv()) return Qtrue;
-    if (next_p == 1) {
-	return Qtrue;
-    }
-    if (rb_io_eof(current_file)) {
-	next_p = 1;
-	return Qtrue;
+    if (current_file) {
+	if (init_p == 0) return Qtrue;
+	if (rb_io_eof(current_file)) {
+	    next_p = 1;
+	    return Qtrue;
+	}
     }
     return Qfalse;
 }
@@ -4052,7 +4051,6 @@ Init_IO()
     rb_define_singleton_method(argf, "lineno",   argf_lineno, 0);
     rb_define_singleton_method(argf, "lineno=",  argf_set_lineno, 1);
 
-    current_file = rb_stdin;
     rb_global_variable(&current_file);
     filename = rb_str_new2("-");
     rb_define_readonly_variable("$FILENAME", &filename);

@@ -1,3 +1,28 @@
+Fri May  2 09:38:06 2003  Warren Brown  <wkb@airmail.net>
+
+	* string.c (rb_str_ljust): now takes optional argument to specify
+	  pad string. [ruby-talk:70482]
+
+	* string.c (rb_str_rjust): ditto.
+
+	* string.c (rb_str_center): ditto.
+
+	* string.c (rb_str_justify): utility function.
+
+Fri May  2 04:10:59 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_add_method): call singleton_method_added or
+	  method_added for every method definition (after ruby_running).
+	  [ruby-talk:70471]
+
+	* array.c (rb_ary_reverse_bang): Array#reverse! should not return
+	  nil even for arrays sized less than 2.
+
+Thu May  1 23:18:01 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (argf_eof): should not block after reading all argument
+	  files. (ruby-bugs-ja PR#449)
+
 Fri May  2 15:10:41 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb: use hashes to pass options.

@@ -279,6 +279,14 @@ rb_add_method(klass, mid, node, noex)
     rb_clear_cache_by_id(mid);
     body = NEW_METHOD(node, noex);
     st_insert(RCLASS(klass)->m_tbl, mid, (st_data_t)body);
+    if (node && mid != ID_ALLOCATOR && ruby_running) {
+	if (FL_TEST(klass, FL_SINGLETON)) {
+	    rb_funcall(rb_iv_get(klass, "__attached__"), singleton_added, 1, ID2SYM(mid));
+	}
+	else {
+	    rb_funcall(klass, added, 1, ID2SYM(mid));
+	}
+    }
 }
 
 void
@@ -3353,14 +3361,6 @@ rb_eval(self, n)
 	    if (scope_vmode == SCOPE_MODFUNC) {
 		rb_add_method(rb_singleton_class(ruby_class),
 			      node->nd_mid, defn, NOEX_PUBLIC);
-		rb_funcall(ruby_class, singleton_added, 1, ID2SYM(node->nd_mid));
-	    }
-	    if (FL_TEST(ruby_class, FL_SINGLETON)) {
-		rb_funcall(rb_iv_get(ruby_class, "__attached__"),
-			   singleton_added, 1, ID2SYM(node->nd_mid));
-	    }
-	    else {
-		rb_funcall(ruby_class, added, 1, ID2SYM(node->nd_mid));
 	    }
 	    result = Qnil;
 	}
@@ -3396,7 +3396,6 @@ rb_eval(self, n)
 	    defn->nd_rval = (VALUE)ruby_cref;
 	    rb_add_method(klass, node->nd_mid, defn, 
 			  NOEX_PUBLIC|(body?body->nd_noex&NOEX_UNDEF:0));
-	    rb_funcall(recv, singleton_added, 1, ID2SYM(node->nd_mid));
 	    result = Qnil;
 	}
 	break;
@@ -6033,7 +6032,6 @@ rb_mod_modfunc(argc, argv, module)
 	    m = RCLASS(m)->super;
 	}
 	rb_add_method(rb_singleton_class(module), id, body->nd_body, NOEX_PUBLIC);
-	rb_funcall(module, singleton_added, 1, ID2SYM(id));
     }
     return module;
 }
@@ -7418,16 +7416,6 @@ rb_mod_define_method(argc, argv, mod)
 	noex = NOEX_PUBLIC;
     }
     rb_add_method(mod, id, node, noex);
-    if (scope_vmode == SCOPE_MODFUNC) {
-	rb_add_method(rb_singleton_class(mod), id, node, NOEX_PUBLIC);
-	rb_funcall(mod, singleton_added, 1, ID2SYM(id));
-    }
-    if (FL_TEST(mod, FL_SINGLETON)) {
-	rb_funcall(rb_iv_get(mod, "__attached__"), singleton_added, 1, ID2SYM(id));
-    }
-    else {
-	rb_funcall(mod, added, 1, ID2SYM(id));
-    }
     return body;
 }
 

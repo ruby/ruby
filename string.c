@@ -3121,69 +3121,99 @@ rb_str_sum(argc, argv, str)
 }
 
 static VALUE
-rb_str_ljust(str, w)
+rb_str_justify(argc, argv, str, jflag)
+    int argc;
+    VALUE *argv;
     VALUE str;
-    VALUE w;
+    char jflag;
 {
-    long width = NUM2LONG(w);
-    VALUE res;
-    char *p, *pend;
-
-    if (width < 0 || RSTRING(str)->len >= width) return rb_str_dup(str);
-    res = rb_str_new5(str, 0, width);
-    memcpy(RSTRING(res)->ptr, RSTRING(str)->ptr, RSTRING(str)->len);
-    p = RSTRING(res)->ptr + RSTRING(str)->len; pend = RSTRING(res)->ptr + width;
-    while (p < pend) {
-	*p++ = ' ';
-    }
-    OBJ_INFECT(res, str);
-    return res;
-}
-
-static VALUE
-rb_str_rjust(str, w)
-    VALUE str;
     VALUE w;
-{
-    long width = NUM2LONG(w);
+    long width, flen = 0;
     VALUE res;
-    char *p, *pend;
-
-    if (width < 0 || RSTRING(str)->len >= width) return rb_str_dup(str);
-    res = rb_str_new5(str, 0, width);
-    p = RSTRING(res)->ptr; pend = p + width - RSTRING(str)->len;
-    while (p < pend) {
-	*p++ = ' ';
-    }
-    memcpy(pend, RSTRING(str)->ptr, RSTRING(str)->len);
-    OBJ_INFECT(res, str);
-    return res;
-}
-
-static VALUE
-rb_str_center(str, w)
-    VALUE str;
-    VALUE w;
-{
-    long width = NUM2LONG(w);
-    VALUE res;
-    char *p, *pend;
+    char *p, *pend, *f = " ";
     long n;
+    VALUE pad;
 
+    if (rb_scan_args(argc, argv, "11", &w, &pad) == 2) {
+        if (!NIL_P(pad)) {
+            StringValue(pad);
+            if (RSTRING(pad)->len > 0) {
+                f = RSTRING(pad)->ptr;
+                flen = RSTRING(pad)->len;
+            }
+        }
+    }
+    width = NUM2LONG(w);
     if (width < 0 || RSTRING(str)->len >= width) return rb_str_dup(str);
     res = rb_str_new5(str, 0, width);
-    n = (width - RSTRING(str)->len)/2;
-    p = RSTRING(res)->ptr; pend = p + n;
-    while (p < pend) {
-	*p++ = ' ';
+    p = RSTRING(res)->ptr;
+    if (jflag != 'l') {
+        n = width - RSTRING(str)->len;
+        pend = p + ((jflag == 'r') ? n : n/2);
+        if (flen <= 1) {
+            while (p < pend) {
+                *p++ = *f;
+            }
+        }
+        else {
+            char *q = f;
+            while (p + flen <= pend) {
+                memcpy(p,f,flen);
+                p += flen;
+            }
+            while (p < pend) {
+                *p++ = *q++;
+            }
+        }
     }
-    memcpy(pend, RSTRING(str)->ptr, RSTRING(str)->len);
-    p = pend + RSTRING(str)->len; pend = RSTRING(res)->ptr + width;
-    while (p < pend) {
-	*p++ = ' ';
+    memcpy(p, RSTRING(str)->ptr, RSTRING(str)->len);
+    if (jflag != 'r') {
+        p += RSTRING(str)->len; pend = RSTRING(res)->ptr + width;
+        if (flen <= 1) {
+            while (p < pend) {
+                *p++ = *f;
+            }
+        }
+        else {
+            while (p + flen <= pend) {
+                memcpy(p,f,flen);
+                p += flen;
+            }
+            while (p < pend) {
+                *p++ = *f++;
+            }
+        }
     }
     OBJ_INFECT(res, str);
+    if (flen > 0) OBJ_INFECT(res, pad);
     return res;
+}
+
+static VALUE
+rb_str_ljust(argc, argv, str)
+    int argc;
+    VALUE *argv;
+    VALUE str;
+{
+    return rb_str_justify(argc, argv, str, 'l');
+}
+
+static VALUE
+rb_str_rjust(argc, argv, str)
+    int argc;
+    VALUE *argv;
+    VALUE str;
+{
+    return rb_str_justify(argc, argv, str, 'r');
+}
+
+static VALUE
+rb_str_center(argc, argv, str)
+    int argc;
+    VALUE *argv;
+    VALUE str;
+{
+    return rb_str_justify(argc, argv, str, 'c');
 }
 
 void
@@ -3265,9 +3295,9 @@ Init_String()
 
     rb_define_method(rb_cString, "scan", rb_str_scan, 1);
 
-    rb_define_method(rb_cString, "ljust", rb_str_ljust, 1);
-    rb_define_method(rb_cString, "rjust", rb_str_rjust, 1);
-    rb_define_method(rb_cString, "center", rb_str_center, 1);
+    rb_define_method(rb_cString, "ljust", rb_str_ljust, -1);
+    rb_define_method(rb_cString, "rjust", rb_str_rjust, -1);
+    rb_define_method(rb_cString, "center", rb_str_center, -1);
 
     rb_define_method(rb_cString, "sub", rb_str_sub, -1);
     rb_define_method(rb_cString, "gsub", rb_str_gsub, -1);

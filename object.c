@@ -1398,9 +1398,9 @@ Init_Object()
     rb_define_method(rb_mKernel, "kind_of?", rb_obj_is_kind_of, 1);
     rb_define_method(rb_mKernel, "is_a?", rb_obj_is_kind_of, 1);
 
-    rb_define_global_function("singleton_method_added", rb_obj_dummy, 1);
-    rb_define_global_function("singleton_method_removed", rb_obj_dummy, 1);
-    rb_define_global_function("singleton_method_undefined", rb_obj_dummy, 1);
+    rb_define_private_method(rb_mKernel, "singleton_method_added", rb_obj_dummy, 1);
+    rb_define_private_method(rb_mKernel, "singleton_method_removed", rb_obj_dummy, 1);
+    rb_define_private_method(rb_mKernel, "singleton_method_undefined", rb_obj_dummy, 1);
 
     rb_define_global_function("sprintf", rb_f_sprintf, -1);
     rb_define_global_function("format", rb_f_sprintf, -1);
