@@ -1,3 +1,9 @@
+Fri Oct 31 22:26:29 2003  Takaaki Uematsu  <uema2x@jcom.home.ne.jp>
+
+	* wince/string_wce.c (strrchr): should decrement pointer.
+
+	* wince/Makefile.sub: correct a range of isdigit().
+
 Fri Oct 31 12:55:24 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in, lib/mkmf.rb: add RPATHFLAG for NetBSD.

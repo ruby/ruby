@@ -44,7 +44,7 @@ int strnicmp( const char *s1, const char *s2, size_t count )
 char *strrchr( const char *p, int c )
 {
 	char *pp;
-	for( pp=(char*)p+strlen(p); pp!=p; p-- )
+	for( pp=(char*)p+strlen(p); pp!=p; pp-- )
 	{
 		if( *pp==c ) break;
 	}

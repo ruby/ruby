@@ -313,7 +313,7 @@ $(BANG)endif
 #if _WIN32_WCE < 300
   #define isascii(c) ( (c>=0x00&&c<=0x7f)?1:0 )
   #define isspace(c) ( ((c>=0x09&&c<=0x0d)||c==0x20)?1:0 )
-  #define isdigit(c) ( (c>=0x00&&c<=0x09)?1:0 )
+  #define isdigit(c) ( (c>=0x30&&c<=0x39)?1:0 )
   #define isupper(c) ( (c>='A'&&c<='Z')?1:0 )
   #define isalpha(c) ( ((c>='A'&&c<='Z')||(c>='a'&&c<='z'))?1:0 )
   #define isprint(c) ( (c>=0x20&&c<=0x7e)?1:0 )
