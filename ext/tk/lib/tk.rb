@@ -3089,6 +3089,7 @@ module TkConfigMethod
 end
 
 class TkObject<TkKernel
+  extend  TkCore
   include Tk
   include TkConfigMethod
   include TkBindCore
