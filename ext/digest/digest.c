@@ -151,7 +151,7 @@ rb_digest_base_s_hexdigest(class, str)
 
     hexdigest = xmalloc(len + 1); /* +1 is for '\0' */
     algo->end_func(pctx, hexdigest);
-    puts(hexdigest);
+
     obj = rb_str_new(hexdigest, len);
 
     free(hexdigest);

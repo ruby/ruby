@@ -1,3 +1,8 @@
+Thu Sep  6 14:25:15 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/digest.c (rb_digest_base_s_hexdigest): remove a debug
+	  print.
+
 Sun Aug 26 20:26:40 2001  Koji Arai  <JCA02266@nifty.ne.jp>
 
 	* ext/readline/readline.c: restore terminal mode
