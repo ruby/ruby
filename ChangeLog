@@ -1,11 +1,8 @@
-Thu Jul 15 20:29:15  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+Thu Jul 15 20:29:15 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* class.c, error.c, eval.c, intern.h, object.c, variable.c:
 	  do not set path if it is a singleton class.  [ruby-dev:22588]
 	  (backport from 1.9)
-
-variable.c (rb_set_class_path): do not set path if it is a singleton
->  class.  [ruby-dev:22588]
 
 Thu Jul 15 10:15:04 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
@@ -40,18 +37,18 @@ Wed Jul 14 18:08:37 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	* test/openssl/test_x509store.rb: prune tests for CRL checking
 	  unless X509::V_FLAG_CRL_CHECK is defined.
 
-Wed Jul 14 12:29:07  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+Wed Jul 14 12:29:07 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* util.c (ruby_strtod): should not convert string in the form of
 	  "-I.FE-X" which both "I" and "F" are ommitted. [ruby-dev:23883]
 
 	* test/ruby/test_float.rb (test_strtod): add test for bug fix.
 
-Wed Jul 14 01:18:45  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+Wed Jul 14 01:18:45 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* array.c: rdoc patch - unified margin.
 
-Wed Jul 14 00:31:15  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+Wed Jul 14 00:31:15 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* array.c: rdoc patch. merged patch from Johan Holmberg
 	  <holmberg@iar.se> [ruby-core:3170]
@@ -100,7 +97,7 @@ Sat Jul 10 04:21:56 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	  function of Tk::ValidateConfigure to define validatecommand 
 	  methods easier
 
-Fri Jul  9 22:36:36  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+Fri Jul  9 22:36:36 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* array.c, enum.c, pack.c: rdoc patch from Johan Holmberg
 	  <holmberg@iar.se> [ruby-core:3132] [ruby-core:3136]
@@ -177,7 +174,7 @@ Mon Jul  5 09:02:52 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* eval.c (rb_thread_yield, rb_f_catch): 4th argument to rb_yield_0()
 	  is a set of bit flags.  [ruby-dev:23859]
 
-Mon Jul  5 01:27:32  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+Mon Jul  5 01:27:32 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* lib/drb/drb.rb(DRbConn self.open): If socket pool is full, close
 	  the socket whose last-access-time is oldest. (and add new one)
@@ -502,7 +499,7 @@ Wed Jun 23 01:45:27 2004  Dave Thomas  <dave@pragprog.com>
 	* lib/rdoc/parsers/parse_rb.rb (RubyLex::identify_quotation):
 	  Fix problem with the 'r' being dropped from %r{xxx}
 
-Wed Jun 23 00:20:20  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+Wed Jun 23 00:20:20 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_hresult2msg): remove trailing
 	  CR and LF. (doesn't depend on CR+LF) [ruby-dev:23694]
@@ -708,7 +705,7 @@ Thu May 27 21:37:50 2004  Tanaka Akira  <akr@m17n.org>
 	* lib/pathname.rb (Pathname#initialize): refine pathname initialization
 	  by pathname.
 
-Thu May 27 20:22:05  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+Thu May 27 20:22:05 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* io.c (rb_io_fwrite): check all case errno != 0 [ruby-dev:23648]
 
@@ -776,7 +773,7 @@ Thu May 20 17:02:03 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* lib/mkmf.rb (create_header): macro name should not include equal
 	  sign.
 
-Thu May 20 15:59:50  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+Thu May 20 15:59:50 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/socket/socket.c: fix SEGV. [ruby-dev:23550]
 
@@ -813,7 +810,7 @@ Tue May 18 14:00:46 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (literal_concat): ditto.
 
-Mon May 17 16:14:25  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+Mon May 17 16:14:25 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* numeric.c (flo_to_s): p 0.0 should be '0.0' not '0.0e+00'.
 
@@ -907,7 +904,7 @@ Fri May 14 18:39:25 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	    TkcLine.new(c, :coords=>[0, 0, 100, 100], :fill=>'red')
 	    TkcLine.new(c, :coords=>[[0, 0], [100, 100]], :fill=>'red')
 
-Fri May 14 12:11:43  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+Fri May 14 12:11:43 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* util.c (ruby_strtod): strtod("0", &end); => end should point '\0'.
 	 [ruby-dev:23498]
@@ -998,7 +995,7 @@ Fri May  7 21:31:56 2004  Minero Aoki  <aamine@loveruby.net>
 	* lib/fileutils.rb (fu_list): Array() breaks pathes including "\n".
 	  [ruby-core:02843]
 
-Fri May  7 11:25:53  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+Fri May  7 11:25:53 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* util.c (ruby_strtod): 0.0000000000000000001 == 0.0 should be false.
 	  [ruby-talk:99318] [ruby-dev:23465]
@@ -1209,7 +1206,7 @@ Wed Apr 14 13:06:35 2004  Doug Kearns  <djkea2@mugca.its.monash.edu.au>
 	* array.c, enum.c, eval.c, file.c, io.c, numeric.c, object.c, prec.c,
 	  process.c, re.c, string.c: typos in RDoc comments.  [ruby-core:02783]
 
-Wed Apr 14 11:03:22  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+Wed Apr 14 11:03:22 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* defines.h: include <net/socket.h> to get fd_set definition in BeOS.
 
@@ -1245,13 +1242,13 @@ Mon Apr 12 18:52:32 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	* ext/openssl/ossl_x509name.c (ossl_x509name_init_i): should return
 	  a value.
 
-Mon Apr 12 10:43:47  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+Mon Apr 12 10:43:47 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* dir.c (rb_glob2, rb_glob, rb_globi, push_globs, push_braces,
 	  rb_push_glob):
 	  fix memory leak to occur when block is interrupted in Dir.glob.
 
-Mon Apr 12 10:27:37  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+Mon Apr 12 10:27:37 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* bcc32/Makefile.sub: backport SIZEOF_TIME_T definition from 1.9.
 
@@ -1538,7 +1535,7 @@ Thu Mar 18 16:22:38 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* eval.c (proc_eq): avoid false positive by using scope and
 	  dyna_vars.  no longer use frame.uniq.
 
-Wed Mar 17 14:44:43  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+Wed Mar 17 14:44:43 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* dir.c (range): fix possible "\0" overrun. (in case of "\0-")
 
@@ -1584,7 +1581,7 @@ Mon Mar  8 19:32:28 2004  akira yamada  <akira@ruby-lang.org>
 	* lib/uri/common.rb (URI::REGEXP::PATTERN::HOSTPORT): (?:#{PORT})
 	  -> (?::#{PORT}).  [ruby-dev:23170]
 
-Mon Mar  8 15:31:41  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+Mon Mar  8 15:31:41 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* dir.c (range): treat incomplete '[' as ordinary character (like
 	  has_magic does).
@@ -1654,7 +1651,7 @@ Wed Feb 25 09:35:22 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 	* eval.c (rb_method_missing): use NameError::Message. merge from
 	  HEAD. (ruby-bugs-ja:PR#588)
 
-Tue Feb 24 18:59:37  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+Tue Feb 24 18:59:37 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* dir.c (glob_helper): '**/' should not match leading period
 	  unless File::FNM_DOTMATCH is set. (like '*/') [ruby-dev:23014]
