@@ -511,7 +511,27 @@ pst_wexitstatus(st)
 
 /*
  *  call-seq:
- *     stat.coredump   => true or false
+ *     stat.success?   => true, false or nil
+ *  
+ *  Returns +true+ if _stat_ is successful, +false+ if not.
+ *  Returns +nil+ if <code>exited?</code> is not +true+.
+ */
+
+static VALUE
+pst_success_p(st)
+    VALUE st;
+{
+    int status = NUM2INT(st);
+
+    if (!WIFEXITED(status))
+	return Qnil;
+    return WEXITSTATUS(status) == EXIT_SUCCESS ? Qtrue : Qfalse;
+}
+
+
+/*
+ *  call-seq:
+ *     stat.coredump?   => true or false
  *  
  *  Returns +true+ if _stat_ generated a coredump
  *  when it terminated. Not available on all platforms.
