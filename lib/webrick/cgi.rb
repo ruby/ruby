@@ -41,7 +41,7 @@ module WEBrick
         @header["status"] ||= @status
         super
       end
-      unless @config[:NPH] or defined?(MOD_RUBY)
+      unless @config[:NPH]
         def res.status_line
           ""
         end
