@@ -82,6 +82,7 @@ end
 $orgerr = $stderr.dup
 $orgout = $stdout.dup
 def xsystem command
+  Config.expand(command)
   if $DEBUG
     puts command
     return system(command)
