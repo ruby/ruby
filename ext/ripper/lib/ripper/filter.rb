@@ -8,7 +8,7 @@
 # For details of Ruby License, see ruby/COPYING.
 #
 
-require 'ripper/tokenizer'
+require 'ripper/lexer'
 
 class Ripper
 
@@ -17,14 +17,14 @@ class Ripper
   class Filter
 
     def initialize(src, filename = '-', lineno = 1)
-      @__parser = Tokenizer.new(src, filename, lineno)
+      @__lexer = Lexer.new(src, filename, lineno)
       @__line = nil
       @__col = nil
     end
 
     # The file name of the input.
     def filename
-      @__parser.filename
+      @__lexer.filename
     end
 
     # The line number of the current token.
@@ -45,7 +45,7 @@ class Ripper
     # It is passed to the next event handler (as of Enumerable#inject).
     def parse(init = nil)
       data = init
-      @__parser.parse.each do |pos, event, tok|
+      @__lexer.lex.each do |pos, event, tok|
         @__line, @__col = *pos
         data = if respond_to?(event, true)
                then __send__(event, tok, data)

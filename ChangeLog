@@ -1,3 +1,8 @@
+Fri Feb  4 14:33:25 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/ripper/lib/ripper/filter.rb: ripper/tokenizer ->
+	  ripper/lexer. [ruby-dev:25632]
+
 Fri Feb  4 00:24:15 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss: supported Image module.
