@@ -3869,7 +3869,7 @@ rb_longjmp(tag, mesg)
 	}
 	POP_TAG();
 	thread_reset_raised();
-	JUMP_TAG(tag);
+	if (status) JUMP_TAG(status);
     }
 
     rb_trap_restore_mask();
