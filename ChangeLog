@@ -1,3 +1,21 @@
+Thu Oct  2 17:39:38 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_engine.c: add a new module OpenSSL::Engine.
+	  it supports OpenSSL hardware cryptographic engine interface.
+
+	* ext/openssl/ossl_engine.h: ditto.
+
+	* ext/openssl/MANIFEST: add ossl_engine.c and ossl_engine.h.
+
+	* ext/openssl/extconf.rb: add check for openssl/engine.h.
+
+	* ext/openssl/ossl.c: call Init_ossl_engine().
+
+	* ext/openssl/ossl.h: include openssl/engine.h.
+
+	* ext/openssl/ossl_pkey_{rsa,dsa,dh}.c: check if underlying
+	  EVP_PKEY referes engine.
+
 Thu Oct  2 17:22:37 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* time.c (time_load): restore instance variables (if any) before

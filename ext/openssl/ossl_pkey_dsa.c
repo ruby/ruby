@@ -19,7 +19,14 @@
     } \
 } while (0)
 
-#define DSA_PRIVATE(dsa) ((dsa)->priv_key)
+#define DSA_HAS_PRIVATE(dsa) ((dsa)->priv_key)
+
+#ifdef OSSL_ENGINE_ENABLED
+#  define DSA_PRIVATE(dsa) (DSA_HAS_PRIVATE(dsa) || (dsa)->engine)
+#else
+#  define DSA_PRIVATE(dsa) DSA_HAS_PRIVATE(dsa)
+#endif
+
 
 /*
  * Classes
@@ -203,7 +210,7 @@ ossl_dsa_export(int argc, VALUE *argv, VALUE self)
     if (!(out = BIO_new(BIO_s_mem()))) {
 	ossl_raise(eDSAError, NULL);
     }
-    if (DSA_PRIVATE(pkey->pkey.dsa)) {
+    if (DSA_HAS_PRIVATE(pkey->pkey.dsa)) {
 	if (!PEM_write_bio_DSAPrivateKey(out, pkey->pkey.dsa, ciph,
 					 NULL, 0, ossl_pem_passwd_cb, passwd)){
 	    BIO_free(out);

@@ -27,6 +27,8 @@ ossl_config.c
 ossl_config.h
 ossl_digest.c
 ossl_digest.h
+ossl_engine.c
+ossl_engine.h
 ossl_hmac.c
 ossl_hmac.h
 ossl_ns_spki.c

@@ -433,6 +433,7 @@ Init_openssl()
     Init_ossl_ssl();
     Init_ossl_x509();
     Init_ossl_ocsp();
+    Init_ossl_engine();
 }
 
 #if defined(OSSL_DEBUG)

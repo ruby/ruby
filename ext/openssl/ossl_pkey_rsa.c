@@ -19,7 +19,13 @@
     } \
 } while (0)
 
-#define RSA_PRIVATE(rsa) ((rsa)->p && (rsa)->q)
+#define RSA_HAS_PRIVATE(rsa) ((rsa)->p && (rsa)->q)
+
+#ifdef OSSL_ENGINE_ENABLED
+#  define RSA_PRIVATE(rsa) (RSA_HAS_PRIVATE(rsa) || (rsa)->engine)
+#else
+#  define RSA_PRIVATE(rsa) RSA_HAS_PRIVATE(rsa)
+#endif
 
 /*
  * Classes
@@ -199,7 +205,7 @@ ossl_rsa_export(int argc, VALUE *argv, VALUE self)
     if (!(out = BIO_new(BIO_s_mem()))) {
 	ossl_raise(eRSAError, NULL);
     }
-    if (RSA_PRIVATE(pkey->pkey.rsa)) {
+    if (RSA_HAS_PRIVATE(pkey->pkey.rsa)) {
 	if (!PEM_write_bio_RSAPrivateKey(out, pkey->pkey.rsa, ciph,
 					 NULL, 0, ossl_pem_passwd_cb, passwd)) {
 	    BIO_free(out);

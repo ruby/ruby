@@ -19,7 +19,14 @@
     } \
 } while (0)
 
-#define DH_PRIVATE(dh) ((dh)->priv_key)
+#define DH_HAS_PRIVATE(dh) ((dh)->priv_key)
+
+#ifdef OSSL_ENGINE_ENABLED
+#  define DH_PRIVATE(dh) (DH_HAS_PRIVATE(dh) || (dh)->engine)
+#else
+#  define DH_PRIVATE(dh) DH_HAS_PRIVATE(dh)
+#endif
+
 
 /*
  * Classes
