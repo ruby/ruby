@@ -240,7 +240,15 @@ can see the formatted result in EXAMPLE.rb and Anagram.
 
 = Markup
 
-Comment blocks can be written fairly naturally. 
+Comment blocks can be written fairly naturally, either using '#' on
+successive lines of the comment, or by including the comment in 
+an =begin/=end block. If you use the latter form, the =begin line
+must be flagged with an RDoc tag:
+
+  =begin rdoc
+  Documentation to 
+  be processed by RDoc.
+  =end
 
 Paragraphs are lines that share the left margin. Text indented past
 this margin are formatted verbatim.

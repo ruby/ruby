@@ -3,6 +3,18 @@ Thu Apr  1 19:58:37 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 	* lib/soap/mapping/{factory.rb,registry.rb}: fixed illegal mapped URI
           object with soap/marshal.
           added URIFactory class for URI mapping.  BasetypeFactory checks
+Thu Apr  1 22:55:33 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/parsers/parse_rb.rb: Allow rdoc comments in
+	  =begin rdoc/=end
+
+	* lib/rdoc/parsers/parse_rb.rb: Fix problem with comment in
+	  top-level method being taken as file comment.
+
+Thu Apr  1 22:55:04 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/ri/ri_options.rb: Fix undefined variable warning.
+
           instance_variables when original mapping is not allowed (ivar must
           be empty).  Instance of URI have instance_variables but it must be
           llowed whenever original mapping is allowed or not.
