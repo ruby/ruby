@@ -366,7 +366,7 @@ module Net # :nodoc:
     #   http.start { .... }
     #
     def set_debug_output( output )
-      warn 'Net::HTTP#set_debug_output called after HTTP started'
+      warn 'Net::HTTP#set_debug_output called after HTTP started' if started?
       @debug_output = output
     end
 
