@@ -1,3 +1,10 @@
+Thu Sep  9 13:58:56 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tcltklib/tcltklib.c (ip_init): change flag value for setting 
+	  'argv' and 'argv0' variable
+
+	* ext/tk/lib/remote-tk.rb: follow changes of multi-tk.rb
+
 Thu Sep  9 11:46:18 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser::do_classes): Allow
