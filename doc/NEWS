@@ -1,3 +1,12 @@
+: File#fnmatch, File::Constants::FNM_*
+
+  Added.  Refer to the fnmatch(3) manpage for details.
+
+  e.g.
+
+    # exclude files matching "*.bak".
+    files.reject! { |fn| File::fnmatch?("*.bak", fn) }
+
 : Method#==
 
   Added.

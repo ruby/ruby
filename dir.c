@@ -68,7 +68,7 @@ char *strchr _((char*,char));
 #define FNM_NOESCAPE	0x01
 #define FNM_PATHNAME	0x02
 #define FNM_PERIOD	0x04
-#define FNM_NOCASE	0x08
+#define FNM_CASEFOLD	0x08
 
 #define FNM_NOMATCH	1
 #define FNM_ERROR	2
@@ -100,7 +100,7 @@ range(pat, test, flags)
     int flags;
 {
     int not, ok = 0;
-    int nocase = flags & FNM_NOCASE;
+    int nocase = flags & FNM_CASEFOLD;
     int escape = !(flags & FNM_NOESCAPE);
 
     not = *pat == '!' || *pat == '^';
@@ -145,7 +145,7 @@ fnmatch(pat, string, flags)
     int escape = !(flags & FNM_NOESCAPE);
     int pathname = flags & FNM_PATHNAME;
     int period = flags & FNM_PERIOD;
-    int nocase = flags & FNM_NOCASE;
+    int nocase = flags & FNM_CASEFOLD;
 
     while (c = *pat++) {
 	switch (c) {
@@ -764,7 +764,7 @@ rb_globi(path, func, arg)
     void (*func)();
     VALUE arg;
 {
-    glob_helper(path, FNM_PERIOD|FNM_NOCASE, func, arg);
+    glob_helper(path, FNM_PERIOD|FNM_CASEFOLD, func, arg);
 }
 
 static void push_pattern _((const char *path, VALUE ary));
@@ -921,6 +921,30 @@ dir_entries(io, dirname)
     return rb_ensure(rb_Array, dir, dir_close, dir);
 }
 
+static VALUE
+file_s_fnmatch(argc, argv, obj)
+    int argc;
+    VALUE *argv;
+    VALUE obj;
+{
+    VALUE pattern, path;
+    VALUE rflags;
+    int flags;
+
+    if (rb_scan_args(argc, argv, "21", &pattern, &path, &rflags) == 3)
+	flags = NUM2INT(rflags);
+    else
+	flags = 0;
+
+    StringValue(pattern);
+    StringValue(path);
+
+    if (fnmatch(RSTRING(pattern)->ptr, RSTRING(path)->ptr, flags) == 0)
+	return Qtrue;
+
+    return Qfalse;
+}
+
 void
 Init_Dir()
 {
@@ -954,4 +978,12 @@ Init_Dir()
 
     rb_define_singleton_method(rb_cDir,"glob", dir_s_glob, 1);
     rb_define_singleton_method(rb_cDir,"[]", dir_s_glob, 1);
+
+    rb_define_singleton_method(rb_cFile,"fnmatch", file_s_fnmatch, -1);
+    rb_define_singleton_method(rb_cFile,"fnmatch?", file_s_fnmatch, -1);
+
+    rb_file_const("FNM_NOESCAPE", INT2FIX(FNM_NOESCAPE));
+    rb_file_const("FNM_PATHNAME", INT2FIX(FNM_PATHNAME));
+    rb_file_const("FNM_PERIOD", INT2FIX(FNM_PERIOD));
+    rb_file_const("FNM_CASEFOLD", INT2FIX(FNM_CASEFOLD));
 }
