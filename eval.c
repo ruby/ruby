@@ -93,7 +93,7 @@ char *strrchr _((const char*,const char));
 
 #include <sys/stat.h>
 
-VALUE rb_cBlock, rb_cProc;
+VALUE rb_cProc;
 static VALUE rb_cBinding;
 static VALUE proc_invoke _((VALUE,VALUE,VALUE,VALUE));
 static VALUE rb_f_binding _((VALUE));
@@ -2180,20 +2180,10 @@ static int handle_rescue _((VALUE,NODE*));
 static void blk_free();
 
 static VALUE
-rb_obj_is_block(block)
-    VALUE block;
-{
-    if (TYPE(block) == T_DATA && RDATA(block)->dfree == (RUBY_DATA_FUNC)blk_free) {
-	return Qtrue;
-    }
-    return Qfalse;
-}
-
-static VALUE
 rb_obj_is_proc(proc)
     VALUE proc;
 {
-    if (rb_obj_is_block(proc) && rb_obj_is_kind_of(proc, rb_cProc)) {
+    if (TYPE(proc) == T_DATA && RDATA(proc)->dfree == (RUBY_DATA_FUNC)blk_free) {
 	return Qtrue;
     }
     return Qfalse;
@@ -5341,7 +5331,7 @@ eval(self, src, scope, file, line)
     int state;
 
     if (!NIL_P(scope)) {
-	if (!rb_obj_is_block(scope)) {
+	if (!rb_obj_is_proc(scope)) {
 	    rb_raise(rb_eTypeError, "wrong argument type %s (expected Proc/Binding)",
 		     rb_obj_classname(scope));
 	}
@@ -6837,8 +6827,7 @@ proc_alloc(klass, proc)
     struct RVarmap *vars;
 
     if (!rb_block_given_p() && !rb_f_block_given_p()) {
-	rb_raise(rb_eArgError, "tried to create %s object without a block",
-		 proc ? "Proc" : "Block");
+	rb_raise(rb_eArgError, "tried to create Proc object without a block");
     }
     if (proc && !rb_block_given_p()) {
 	rb_warn("tried to create Proc object without a block");
@@ -7132,7 +7121,7 @@ block_pass(self, node)
     VALUE self;
     NODE *node;
 {
-    VALUE block = rb_eval(self, node->nd_body);	/* OK */
+    VALUE proc = rb_eval(self, node->nd_body);	/* OK */
     VALUE b;
     struct BLOCK * volatile old_block;
     struct BLOCK _block;
@@ -7142,28 +7131,28 @@ block_pass(self, node)
     volatile int orphan;
     volatile int safe = ruby_safe_level;
 
-    if (NIL_P(block)) {
+    if (NIL_P(proc)) {
 	PUSH_ITER(ITER_NOT);
 	result = rb_eval(self, node->nd_iter);
 	POP_ITER();
 	return result;
     }
-    if (!rb_obj_is_block(block)) {
-	b = rb_check_convert_type(block, T_DATA, "Block", "to_proc");
-	if (!rb_obj_is_block(b)) {
-	    rb_raise(rb_eTypeError, "wrong argument type %s (expected Block)",
-		     rb_obj_classname(block));
+    if (!rb_obj_is_proc(proc)) {
+	b = rb_check_convert_type(proc, T_DATA, "Proc", "to_proc");
+	if (!rb_obj_is_proc(b)) {
+	    rb_raise(rb_eTypeError, "wrong argument type %s (expected Proc)",
+		     rb_obj_classname(proc));
 	}
-	block = b;
+	proc = b;
     }
 
-    if (ruby_safe_level >= 1 && OBJ_TAINTED(block)) {
-	if (ruby_safe_level > proc_get_safe_level(block)) {
+    if (ruby_safe_level >= 1 && OBJ_TAINTED(proc)) {
+	if (ruby_safe_level > proc_get_safe_level(proc)) {
 	    rb_raise(rb_eSecurityError, "Insecure: tainted block value");
 	}
     }
 
-    Data_Get_Struct(block, struct BLOCK, data);
+    Data_Get_Struct(proc, struct BLOCK, data);
     orphan = block_orphan(data);
 
   retry:
@@ -7178,7 +7167,7 @@ block_pass(self, node)
     PUSH_TAG(PROT_NONE);
     state = EXEC_TAG();
     if (state == 0) {
-	proc_set_safe_level(block);
+	proc_set_safe_level(proc);
 	if (safe > ruby_safe_level)
 	    ruby_safe_level = safe;
 	result = rb_eval(self, node->nd_iter);
@@ -7217,7 +7206,7 @@ block_pass(self, node)
 	goto retry;
       case TAG_RETURN:
 	if (orphan) {
-	    localjump_error("return from block-closure", prot_tag->retval, state);
+	    localjump_error("return from proc-closure", prot_tag->retval, state);
 	}
       default:
 	JUMP_TAG(state);
@@ -7513,16 +7502,6 @@ mproc(method)
     POP_FRAME();
     POP_ITER();
 
-    if (method) {
-	struct METHOD *mdata;
-	struct BLOCK *bdata;
-
-	Data_Get_Struct(method, struct METHOD, mdata);
-	Data_Get_Struct(proc, struct BLOCK, bdata);
-	bdata->body->nd_file = mdata->body->nd_file;
-	nd_set_line(bdata->body, nd_line(mdata->body));
-    }
-
     return proc;
 }
 
@@ -7548,7 +7527,17 @@ static VALUE
 method_proc(method)
     VALUE method;
 {
-    return rb_iterate((VALUE(*)_((VALUE)))mproc, method, bmcall, method);
+    VALUE proc;
+    struct METHOD *mdata;
+    struct BLOCK *bdata;
+
+    proc = rb_iterate((VALUE(*)_((VALUE)))mproc, 0, bmcall, method);
+    Data_Get_Struct(method, struct METHOD, mdata);
+    Data_Get_Struct(proc, struct BLOCK, bdata);
+    bdata->body->nd_file = mdata->body->nd_file;
+    nd_set_line(bdata->body, nd_line(mdata->body));
+
+    return proc;
 }
 
 static VALUE
@@ -7579,8 +7568,8 @@ rb_mod_define_method(argc, argv, mod)
     else if (argc == 2) {
 	id = rb_to_id(argv[0]);
 	body = argv[1];
-	if (!rb_obj_is_method(body) && !rb_obj_is_block(body)) {
-	    rb_raise(rb_eTypeError, "wrong argument type %s (expected Block/Method)",
+	if (!rb_obj_is_method(body) && !rb_obj_is_proc(body)) {
+	    rb_raise(rb_eTypeError, "wrong argument type %s (expected Proc/Method)",
 		     rb_obj_classname(body));
 	}
     }
@@ -7602,7 +7591,7 @@ rb_mod_define_method(argc, argv, mod)
     }
     else {
 	/* type error */
-	rb_raise(rb_eTypeError, "wrong argument type (expected Block/Method)");
+	rb_raise(rb_eTypeError, "wrong argument type (expected Proc/Method)");
     }
 
     if (SCOPE_TEST(SCOPE_PRIVATE)) {
@@ -7633,7 +7622,6 @@ Init_Proc()
     rb_global_variable(&sysstack_error);
 
     rb_cProc = rb_define_class("Proc", rb_cObject);
-    rb_cBlock = rb_cProc;
     rb_undef_alloc_func(rb_cProc);
     rb_define_singleton_method(rb_cProc, "new", proc_s_new, -1);
 
