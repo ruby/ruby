@@ -8,7 +8,7 @@ include OpenSSL
 def usage
   myname = File::basename($0)
   $stderr.puts <<EOS
-Usage: #{myname} name [keypair_file]
+Usage: #{myname} [--key keypair_file] name
   name ... ex. /C=JP/O=RRR/OU=CA/CN=NaHi/emailAddress=nahi@example.org
 EOS
   exit

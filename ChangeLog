@@ -1,3 +1,11 @@
+Sat Mar 27 01:47:09 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* lib/logger.rb: trim tail space of each line.  no user visible change.
+
+	* lib/rss/dublincore.rb: fixed class definition mismatch.
+
+	* sample/openssl/gen_csr.rb: fixed wrong usage text.
+
 Thu Mar 25 23:15:24 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/ri/ri_options.rb (RI::Options::show_version): 

@@ -167,7 +167,7 @@
 #   I, [Wed Mar 03 02:34:24 JST 1999 895701 #19074]  INFO -- Main: info.
 #
 # You may change the date and time format in this manner:
-# 
+#
 #   logger.datetime_format = "%Y-%m-%d %H:%M:%S"
 #         # e.g. "2004-01-03 00:54:26"
 #
@@ -259,7 +259,7 @@ class Logger
 
   #
   # === Synopsis
-  # 
+  #
   #   Logger#add(severity, message = nil, progname = nil) { ... }
   #
   # === Args
@@ -355,18 +355,18 @@ class Logger
   #
   # === Examples
   #
-  #   logger.info("MainApp") { "Received connection from #{ip}" } 
+  #   logger.info("MainApp") { "Received connection from #{ip}" }
   #   # ...
   #   logger.info "Waiting for input from user"
   #   # ...
   #   logger.info { "User typed #{input}" }
   #
   # You'll probably stick to the second form above, unless you want to provide a
-  # program name (which you can do with <tt>Logger#progname=</tt> as well). 
+  # program name (which you can do with <tt>Logger#progname=</tt> as well).
   #
   # === Return
   #
-  # See #add. 
+  # See #add.
   #
   def info(progname = nil, &block)
     add(INFO, nil, progname, &block)
@@ -487,7 +487,7 @@ private
     # IO object).  The beginning of each file created by this class is tagged
     # with a header message.
     #
-    # This class is unlikely to be used directly; it is a backend for Logger. 
+    # This class is unlikely to be used directly; it is a backend for Logger.
     #
     def initialize(log = nil, opt = {})
       @dev = @filename = @shift_age = @shift_size = nil
@@ -517,7 +517,7 @@ private
    	end
       end
 
-      @dev.write(message) 
+      @dev.write(message)
     end
 
     #
