@@ -136,8 +136,7 @@ file_reopen(argc, argv, file)
     if (!fptr->f) {
 	fptr->f = rb_fopen(RSTRING(fname)->ptr, mode);
 	if (fptr->f2) {
-	    if (fileno(fptr->f2) < 3)	/* need to keep stdio */
-		fclose(fptr->f2);
+	    fclose(fptr->f2);
 	    fptr->f2 = NULL;
 	}
 	return file;
