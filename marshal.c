@@ -434,6 +434,10 @@ w_object(obj, arg, limit)
 	rb_raise(rb_eArgError, "exceed depth limit");
     }
 
+    limit--;
+    c_arg.limit = limit;
+    c_arg.arg = arg;
+
     if (ivtbl = rb_generic_ivar_table(obj)) {
 	w_byte(TYPE_IVAR, arg);
     }
@@ -465,10 +469,6 @@ w_object(obj, arg, limit)
     }
     else {
 	long num;
-
-	limit--;
-	c_arg.limit = limit;
-	c_arg.arg = arg;
 
 	if (st_lookup(arg->data, obj, &num)) {
 	    w_byte(TYPE_LINK, arg);

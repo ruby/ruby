@@ -3,6 +3,10 @@ Fri Aug  8 12:33:17 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 	* bcc32/Makefile.sub: rubyw.exe should be a Windows GUI program.
 	  add the -aa option to WLDFLAGS.
 
+Fri Aug  8 11:29:26 2003  Koji Arai  <jca02266@nifty.ne.jp>
+
+	* marshal.c (w_object): should set `c_arg' at first.
+
 Fri Aug  8 03:22:28 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httputils.rb (FormData#list): should not take
