@@ -1,3 +1,7 @@
+2004-12-24  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* add BLT extension support
+
 2004-12-16  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* bwidget/labelentry.rb: use TkCore.callback_obj?()

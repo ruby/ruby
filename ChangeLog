@@ -1,3 +1,11 @@
+Fri Dec 24 01:21:00 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tkextlib/blt.rb: add BLT extension support
+
+	* ext/tk/lib/tkextlib/blt/*.rb: ditto
+
+	* ext/tk/lib/tkextlib/blt/tile/*.rb: ditto
+
 Thu Dec 23 23:43:24 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (proc_setgroups): check if the argument lenght is
