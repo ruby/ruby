@@ -1,6 +1,0 @@
-MANIFEST
-_sdbm.c
-depend
-extconf.rb
-init.c
-sdbm.h
