@@ -15,6 +15,7 @@ class TestCalcCGI < Test::Unit::TestCase
     Config::CONFIG["bindir"],
     Config::CONFIG["ruby_install_name"] + Config::CONFIG["EXEEXT"]
   )
+  RUBYBIN << " -d" if $DEBUG
 
   Port = 17171
 

@@ -1,3 +1,14 @@
+Thu Oct 30 23:19:11 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/soap/generator.rb: better XML pretty printing.
+
+	* lib/soap/encodingstyle/soapHandler.rb: remove unnecessary namespace
+	  assignment in the element which has "encodingStyle" attribute, and
+	  add necessary namespace assignment for "arrayType" attribute.
+
+	* test/soap/calc/test_calc_cgi.rb: take over $DEBUG to ruby process
+	  through CGI.
+
 Thu Oct 30 22:59:39 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
 
 	* ext/syck/yaml2byte.c: HASH const too long.  Thanks, matz.
@@ -22,7 +33,7 @@ Thu Oct 30 13:23:39 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Thu Oct 30 10:14:51 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
-	* lib/test/unit/autorunner.rb: make fox runners work.
+	* lib/test/unit/autorunner.rb: make fox runner work.
 
 Thu Oct 30 09:32:26 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
