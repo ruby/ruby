@@ -5050,6 +5050,14 @@ ruby_parser_stack_on_heap()
 }
 
 void
+rb_gc_mark_parser()
+{
+    if (ruby_in_compile) {
+        rb_gc_mark_maybe(yylval.val);
+    }
+}
+
+void
 rb_parser_append_print()
 {
     ruby_eval_tree =

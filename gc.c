@@ -1069,6 +1069,8 @@ rb_gc()
     /* mark generic instance variables for special constants */
     rb_mark_generic_ivar_tbl();
 
+    rb_gc_mark_parser();
+
     gc_sweep();
 }
 

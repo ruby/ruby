@@ -1,3 +1,11 @@
+Fri Sep  6 05:11:48 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* gc.c (rb_gc): should mark parser.
+
+	* parse.y (rb_gc_mark_parser): new function.
+
+	* intern.h (rb_gc_mark_parser): added.
+
 Thu Sep  5 13:09:22 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (rb_eval): overriding false constant with class/module
