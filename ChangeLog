@@ -1,3 +1,21 @@
+Tue Aug 19 07:47:09 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_ssl.c: sync_close is moved to SSLSocket as
+	  a builtin.
+
+	* ext/openssl/lib/openssl/buffering.rb (Buffering#close): ditto.
+
+	* ext/openssl/lib/openssl/buffering.rb (Buffering#puts): should
+	  add a return to the tails of each line.
+
+	* ext/openssl/lib/openssl/ssl.rb: new class OpenSSL::SSL::SSLServer.
+
+	* ext/openssl/lib/net/protocols.rb (SSLIO#ssl_connect): use sync_close.
+
+	* ext/openssl/sample/echo_svr.rb: use SSLServer.
+
+	* ext/openssl/sample/echo_cli.rb: add example of SSLSocket#sync_close.
+
 Tue Aug 19 01:24:34 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/curses/curses.c (_XOPEN_SOURCE_EXTENDED): Mac OS X standard

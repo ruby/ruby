@@ -40,15 +40,10 @@ module Net
     end
 
     def ssl_connect()
-      @raw_socket = @socket
-      @socket = OpenSSL::SSL::SSLSocket.new(@raw_socket, @ssl_context)
-      @scoket.sync = true
+      @socket = OpenSSL::SSL::SSLSocket.new(@socket, @ssl_context)
+      @socket.sync = true
+      @socket.sync_close = true
       @socket.connect
-    end
-
-    def close
-      super
-      @raw_socket.close if @raw_socket
     end
 
     def peer_cert

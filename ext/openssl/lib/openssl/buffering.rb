@@ -16,7 +16,7 @@
 
 module Buffering
   include Enumerable
-  attr_accessor :sync, :sync_close
+  attr_accessor :sync
   BLOCK_SIZE = 1024*16
 
   #
@@ -158,7 +158,12 @@ module Buffering
 
   def puts(*args)
     s = ""
-    args.each{ |arg| s << arg.to_s + $/ }
+    args.each{|arg|
+      s << arg.to_s
+      unless /#{$/}\Z/o =~ s
+        s << $/
+      end
+    }
     do_write(s)
     nil
   end
@@ -183,9 +188,7 @@ module Buffering
   end
 
   def close
-    flush
+    flush rescue nil
     sysclose
-    @sync_close ||= false
-    @io.close if @sync_close
   end
 end

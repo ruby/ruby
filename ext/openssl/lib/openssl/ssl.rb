@@ -18,31 +18,66 @@ require 'openssl/buffering'
 
 module OpenSSL
   module SSL
-    class SSLSocket
-      include Buffering
-
+    module SocketForwarder
       def addr
-        @io.addr
+        to_io.addr
       end
 
       def peeraddr
-        @io.peeraddr
+        to_io.peeraddr
       end
 
       def getsockopt(level, optname, optval)
-        @io.setsockopt(level, optname, optval)
+        to_io.setsockopt(level, optname, optval)
       end
 
       def setsockopt(level, optname)
-        @io.setsockopt(level, optname)
+        to_io.setsockopt(level, optname)
       end
 
       def fcntl(*args)
-        @io.fcntl(*args)
+        to_io.fcntl(*args)
       end
 
       def closed?
-        @io.closed?
+        to_io.closed?
+      end
+    end
+
+    class SSLSocket
+      include Buffering
+      include SocketForwarder
+    end
+
+    class SSLServer
+      include SocketForwarder
+      attr_accessor :start_immediately
+
+      def initialize(svr, ctx)
+        @svr = svr
+        @ctx = ctx
+        @start_immediately = true
+      end
+
+      def to_io
+        @svr
+      end
+
+      def listen(basklog=5)
+        @svr.listen(backlog)
+      end
+
+      def accept
+        sock = @svr.accept
+        ssl = OpenSSL::SSL::SSLSocket.new(sock, @ctx)
+        ssl.sync = true
+        ssl.sync_close = true
+        ssl.accept if @start_immediately
+        ssl
+      end
+
+      def close
+        @svr.close
       end
     end
   end

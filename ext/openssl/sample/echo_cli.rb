@@ -26,11 +26,12 @@ end
 
 s = TCPSocket.new(host, port)
 ssl = OpenSSL::SSL::SSLSocket.new(s, ctx)
-ssl.connect
+ssl.connect # start SSL session
+ssl.sync_close = true  # if true the underlying socket will be
+                       # closed in SSLSocket#close. (default: false)
 while line = $stdin.gets
   ssl.write line
   print ssl.gets
 end
 
 ssl.close
-s.close

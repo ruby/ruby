@@ -51,14 +51,12 @@ else
   $stderr.puts "!!! WARNING: PEER CERTIFICATE WON'T BE VERIFIED !!!"
 end
 
-svr = TCPServer.new(port)
+tcps = TCPServer.new(port)
+ssls = OpenSSL::SSL::SSLServer.new(tcps, ctx)
 loop do
-  ns = svr.accept
-  ssl = OpenSSL::SSL::SSLSocket.new(ns, ctx)
-  ssl.accept
-  while line = ssl.gets
-    ssl.write line
+  ns = ssls.accept
+  while line = ns.gets
+    ns.write line
   end
-  ssl.close
   ns.close
 end

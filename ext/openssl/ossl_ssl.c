@@ -333,13 +333,16 @@ ossl_sslctx_set_ciphers(VALUE self, VALUE v)
 /*
  * SSLSocket class
  */
-#define ossl_ssl_get_io(o)    rb_iv_get((o),"@io")
-#define ossl_ssl_get_ctx(o)   rb_iv_get((o),"@context")
+#define ossl_ssl_get_io(o)           rb_iv_get((o),"@io")
+#define ossl_ssl_get_ctx(o)          rb_iv_get((o),"@context")
+#define ossl_ssl_get_sync_close(o)   rb_iv_get((o),"@sync_close")
 
-#define ossl_ssl_set_io(o,v)  rb_iv_set((o),"@io",(v))
-#define ossl_ssl_set_ctx(o,v) rb_iv_set((o),"@context",(v))
+#define ossl_ssl_set_io(o,v)         rb_iv_set((o),"@io",(v))
+#define ossl_ssl_set_ctx(o,v)        rb_iv_set((o),"@context",(v))
+#define ossl_ssl_set_sync_close(o,v) rb_iv_set((o),"@sync_close",(v))
 
-static char *ossl_ssl_attrs[] = { "io", "context", };
+static char *ossl_ssl_attr_readers[] = { "io", "context", };
+static char *ossl_ssl_attrs[] = { "sync_close", };
 
 static void
 ossl_ssl_shutdown(SSL *ssl)
@@ -376,6 +379,7 @@ ossl_ssl_initialize(int argc, VALUE *argv, VALUE self)
     Check_Type(io, T_FILE);
     ossl_ssl_set_io(self, io);
     ossl_ssl_set_ctx(self, ctx);
+    ossl_ssl_set_sync_close(self, Qfalse);
     ossl_sslctx_setup(ctx);
 
     return self;
@@ -522,8 +526,9 @@ ossl_ssl_close(VALUE self)
     SSL *ssl;
 
     Data_Get_Struct(self, SSL, ssl);
-
     ossl_ssl_shutdown(ssl);
+    if (RTEST(ossl_ssl_get_sync_close(self)))
+	rb_funcall(ossl_ssl_get_io(self), rb_intern("close"), 0);
 
     return Qnil;
 }
@@ -635,8 +640,10 @@ Init_ossl_ssl()
     /* class SSLSocket */
     cSSLSocket = rb_define_class_under(mSSL, "SSLSocket", rb_cObject);
     rb_define_alloc_func(cSSLSocket, ossl_ssl_s_alloc);
+    for(i = 0; i < numberof(ossl_ssl_attr_readers); i++)
+        rb_attr(cSSLSocket, rb_intern(ossl_ssl_attr_readers[i]), 1, 0, Qfalse);
     for(i = 0; i < numberof(ossl_ssl_attrs); i++)
-        rb_attr(cSSLSocket, rb_intern(ossl_ssl_attrs[i]), 1, 0, Qfalse);
+        rb_attr(cSSLSocket, rb_intern(ossl_ssl_attrs[i]), 1, 1, Qfalse);
     rb_define_alias(cSSLSocket, "to_io", "io");
     rb_define_method(cSSLSocket, "initialize", ossl_ssl_initialize, -1);
     rb_define_method(cSSLSocket, "connect",    ossl_ssl_connect, 0);
