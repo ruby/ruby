@@ -44,6 +44,7 @@ VALUE cSSLSocket;
 #define ossl_sslctx_set_verify_cb(o,v)   rb_iv_set((o),"@verify_callback",(v))
 #define ossl_sslctx_set_options(o,v)     rb_iv_set((o),"@options",(v))
 #define ossl_sslctx_set_cert_store(o,v)  rb_iv_set((o),"@cert_store",(v))
+#define ossl_sslctx_set_extra_cert(o,v)  rb_iv_set((o),"@extra_chain_cert",(v))
 
 #define ossl_sslctx_get_cert(o)          rb_iv_get((o),"@cert")
 #define ossl_sslctx_get_key(o)           rb_iv_get((o),"@key")
@@ -56,11 +57,12 @@ VALUE cSSLSocket;
 #define ossl_sslctx_get_verify_cb(o)     rb_iv_get((o),"@verify_callback")
 #define ossl_sslctx_get_options(o)       rb_iv_get((o),"@options")
 #define ossl_sslctx_get_cert_store(o)    rb_iv_get((o),"@cert_store")
+#define ossl_sslctx_get_extra_cert(o)    rb_iv_get((o),"@extra_chain_cert")
 
 static char *ossl_sslctx_attrs[] = {
     "cert", "key", "client_ca", "ca_file", "ca_path",
     "timeout", "verify_mode", "verify_depth",
-    "verify_callback", "options", "cert_store",
+    "verify_callback", "options", "cert_store", "extra_chain_cert"
 };
 
 struct {
@@ -160,6 +162,21 @@ ossl_ssl_verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
 }
 
 static VALUE
+ossl_sslctx_add_extra_chain_cert_i(VALUE i, VALUE arg)
+{
+    X509 *x509;
+    SSL_CTX *ctx;
+
+    Data_Get_Struct(arg, SSL_CTX, ctx);
+    x509 = DupX509CertPtr(i);
+    if(!SSL_CTX_add_extra_chain_cert(ctx, x509)){
+	ossl_raise(eSSLError, NULL);
+    }
+
+    return i;
+}
+
+static VALUE
 ossl_sslctx_setup(VALUE self)
 {
     SSL_CTX *ctx;
@@ -184,6 +201,11 @@ ossl_sslctx_setup(VALUE self)
         store = GetX509StorePtr(val); /* NO NEED TO DUP */
         SSL_CTX_set_cert_store(ctx, store);
         SSL_CTX_set_ex_data(ctx, ossl_ssl_ex_store_p, (void*)1);
+    }
+
+    val = ossl_sslctx_get_extra_cert(self);
+    if(!NIL_P(val)){
+	rb_iterate(rb_each, val, ossl_sslctx_add_extra_chain_cert_i, self);
     }
 
     /* private key may be bundled in certificate file. */
@@ -379,6 +401,7 @@ ossl_ssl_initialize(int argc, VALUE *argv, VALUE self)
     ossl_ssl_set_ctx(self, ctx);
     ossl_ssl_set_sync_close(self, Qfalse);
     ossl_sslctx_setup(ctx);
+    rb_call_super(0, 0);
 
     return self;
 }

@@ -71,7 +71,6 @@ module OpenSSL
         sock = @svr.accept
         begin
           ssl = OpenSSL::SSL::SSLSocket.new(sock, @ctx)
-          ssl.sync = true
           ssl.sync_close = true
           ssl.accept if @start_immediately
           ssl

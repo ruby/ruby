@@ -19,6 +19,10 @@ module Buffering
   attr_accessor :sync
   BLOCK_SIZE = 1024*16
 
+  def initialize(*args)
+    @sync = @io.sync
+  end
+
   #
   # for reading.
   #

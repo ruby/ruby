@@ -45,7 +45,6 @@ module Net
         @ssl_context.verify_mode = OpenSSL::SSL::VERIFY_NONE
       end
       @socket = OpenSSL::SSL::SSLSocket.new(@socket, @ssl_context)
-      @socket.sync = true
       @socket.sync_close = true
       @socket.connect
     end

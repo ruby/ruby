@@ -1,3 +1,16 @@
+Thu Oct 30 02:25:48 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/lib/openssl/buffering.rb (Buffering#initialize):
+	  add new method to inherit @sync from @io.sync.
+
+	* ext/openssl/lib/net/protocols.rb (SSLIO#ssl_connect): no need to
+	  set sync flag explicitly.
+
+	* ext/openssl/ossl_ssl.c (ossl_sslctx_initialize): call super.
+
+	* ext/openssl/ossl_ssl.c (ossl_sslctx_setup): set extra chain
+	  certificates in @extra_chain_cert.
+
 Wed Oct 29 22:02:04 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/drb/drbtest.rb: use rbconfig.rb to make the path of ruby
