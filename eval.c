@@ -8724,7 +8724,7 @@ method_call(argc, argv, method)
     VALUE result = Qnil;	/* OK */
     struct METHOD *data;
     int state;
-    volatile int safe = ruby_safe_level;
+    volatile int safe = -1;
 
     Data_Get_Struct(method, struct METHOD, data);
     if (data->recv == Qundef) {
@@ -8732,15 +8732,16 @@ method_call(argc, argv, method)
     }
     PUSH_ITER(rb_block_given_p()?ITER_PRE:ITER_NOT);
     PUSH_TAG(PROT_NONE);
-    if (OBJ_TAINTED(method) && ruby_safe_level < 4) {
-	ruby_safe_level = 4;
+    if (OBJ_TAINTED(method)) {
+	safe = ruby_safe_level;
+	if (ruby_safe_level < 4) ruby_safe_level = 4;
     }
     if ((state = EXEC_TAG()) == 0) {
 	result = rb_call0(data->klass,data->recv,data->id,data->oid,argc,argv,data->body,0);
     }
     POP_TAG();
     POP_ITER();
-    ruby_safe_level = safe;
+    if (safe >= 0) ruby_safe_level = safe;
     if (state) JUMP_TAG(state);
     return result;
 }
