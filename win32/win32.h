@@ -130,6 +130,11 @@ extern "C++" {
 #undef isatty
 #define isatty(h)		rb_w32_isatty(h)
 
+#undef mkdir
+#define mkdir(p, m)		rb_w32_mkdir(p, m)
+#undef rmdir
+#define rmdir(p)		rb_w32_rmdir(p)
+
 #ifdef __MINGW32__
 struct timezone {
   int tz_minuteswest;
@@ -190,6 +195,8 @@ extern int kill(int, int);
 extern int fcntl(int, int, ...);
 extern pid_t rb_w32_getpid(void);
 extern int rb_w32_isatty(int);
+extern int rb_w32_mkdir(const char *, int);
+extern int rb_w32_rmdir(const char *);
 
 #ifdef __BORLANDC__
 extern int rb_w32_fstat(int, struct stat *);

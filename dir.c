@@ -895,13 +895,8 @@ dir_s_mkdir(argc, argv, obj)
     }
 
     check_dirname(&path);
-#ifndef _WIN32
     if (mkdir(RSTRING(path)->ptr, mode) == -1)
 	rb_sys_fail(RSTRING(path)->ptr);
-#else
-    if (mkdir(RSTRING(path)->ptr) == -1)
-	rb_sys_fail(RSTRING(path)->ptr);
-#endif
 
     return INT2FIX(0);
 }

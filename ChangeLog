@@ -1,3 +1,12 @@
+Tue Dec  7 13:42:07 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io.c (dir_s_mkdir): win32 special processing doesn't need any longer.
+
+	* win32/win32.[ch] (rb_w32_mkdir): new function. POSIX.1 compatible
+	  interface.
+
+	* win32/win32.[ch] (rb_w32_rmdir): new function.
+
 Tue Dec  7 00:27:37 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* process.c (proc_setgroups): [ruby-dev:25081]
