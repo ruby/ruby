@@ -82,14 +82,14 @@ usage(name)
 "-Idirectory     specify $LOAD_PATH directory (may be used more than once)",
 "-Kkcode         specifies KANJI (Japanese) code-set",
 "-l              enable line ending processing",
-"-n              assume 'while gets; ...; end' loop around your script",
+"-n              assume 'while gets(); ... end' loop around your script",
 "-p              assume loop like -n but print line also like sed",
 "-rlibrary       require the library, before executing your script",
 "-s              enable some switch parsing for switches after script name",
 "-S              look for the script using PATH environment variable",
 "-T[level]       turn on tainting checks",
-"-v              enables verbose mode",
-"-w              turn warnings on for compilation of your script",
+"-v              print version number, then turn on verbose mode",
+"-w              turn warnings on for your script",
 "-x[directory]   strip off text before #!ruby line and perhaps cd to directory",
 "--copyright     print the copyright",
 "--version       print the version",
@@ -167,7 +167,7 @@ rubylib_mangle(s, l)
 #endif
 
 static void
-addpath(path)
+incpush(path)
     const char *path;
 {
     const char sep = PATH_SEP_CHAR;
@@ -196,10 +196,43 @@ addpath(path)
 		break;
 	    }
 	}
-	rb_load_path = rb_ary_plus(ary, rb_load_path);
+	rb_ary_concat(rb_load_path, ary);
     }
     else {
-	rb_ary_unshift(rb_load_path, rubylib_mangled_path2(path));
+	rb_ary_push(rb_load_path, rubylib_mangled_path2(path));
+    }
+}
+
+static void
+ruby_path_init()
+{
+    if (rb_safe_level() == 0) {
+	incpush(getenv("RUBYLIB"));
+    }
+
+#ifdef RUBY_SEARCH_PATH
+    incpush(RUBY_SEARCH_PATH);
+#endif
+
+#ifdef RUBY_SITE_THIN_ARCHLIB
+    incpush(RUBY_SITE_THIN_ARCHLIB);
+#endif
+    incpush(RUBY_SITE_ARCHLIB);
+    incpush(RUBY_SITE_LIB2);
+    incpush(RUBY_SITE_LIB);
+
+#ifdef RUBY_THIN_ARCHLIB
+    incpush(RUBY_THIN_ARCHLIB);
+#endif
+    incpush(RUBY_ARCHLIB);
+
+    incpush(RUBY_LIB);
+#if defined(_WIN32) || defined(DJGPP)
+    incpush(ruby_libpath());
+#endif
+
+    if (rb_safe_level() == 0) {
+	incpush(".");
     }
 }
 
@@ -234,11 +267,6 @@ require_libraries()
     NODE *save[2];
     struct req_list *list = req_list_head.next;
     struct req_list *tmp;
-
-    if (rb_safe_level() == 0) {
-	rb_ary_push(rb_load_path, rb_str_new2("."));
-	addpath(getenv("RUBYLIB"));
-    }
 
     Init_ext();		/* should be called here for some reason :-( */
     ruby_sourcefile = 0;
@@ -487,9 +515,9 @@ proc_options(argc, argv)
 	  case 'I':
 	    forbid_setid("-I");
 	    if (*++s)
-		addpath(s);
+		incpush(s);
 	    else if (argv[1]) {
-		addpath(argv[1]);
+		incpush(argv[1]);
 		argc--,argv++;
 	    }
 	    break;
@@ -631,6 +659,7 @@ proc_options(argc, argv)
     ruby_set_argv(argc, argv);
     process_sflag();
 
+    ruby_path_init();
     ruby_sourcefile = argv0;
     if (e_script) {
 	require_libraries();
@@ -928,27 +957,6 @@ ruby_prog_init()
     rb_define_variable("$-d", &ruby_debug);
     rb_define_readonly_variable("$-p", &do_print);
     rb_define_readonly_variable("$-l", &do_line);
-
-    addpath(RUBY_LIB);
-#if defined(_WIN32) || defined(DJGPP)
-    addpath(ruby_libpath());
-#endif
-
-    addpath(RUBY_ARCHLIB);
-#ifdef RUBY_THIN_ARCHLIB
-    addpath(RUBY_THIN_ARCHLIB);
-#endif
-
-    addpath(RUBY_SITE_LIB);
-    addpath(RUBY_SITE_LIB2);
-    addpath(RUBY_SITE_ARCHLIB);
-#ifdef RUBY_SITE_THIN_ARCHLIB
-    addpath(RUBY_SITE_THIN_ARCHLIB);
-#endif
-
-#ifdef RUBY_SEARCH_PATH
-    addpath(RUBY_SEARCH_PATH);
-#endif
 
     rb_define_hooked_variable("$0", &rb_progname, 0, set_arg0);
 

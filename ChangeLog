@@ -1,3 +1,12 @@
+Tue Aug  1 16:41:58 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ruby.c (proc_options): global load path setting moved from
+	  ruby_prog_init().
+
+	* ruby.c (incpush): renamed.  push path entry at the END of the
+	  load path array.  This makes -I directories sorted in order in
+	  the arguments.
+
 Sat Jul 29 23:42:04 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* dir.c (dir_each): should check whether dir is closed during the

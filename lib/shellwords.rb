@@ -16,27 +16,27 @@ module Shellwords
     unless line.kind_of?(String)
       raise ArgumentError, "Argument must be String class object."
     end
-    line.sub!(/^\s+/, '')
+    line.sub!(/\A\s+/, '')
     words = []
     while line != ''
       field = ''
       while true
-	if line.sub!(/^"(([^"\\]|\\.)*)"/, '') then #"
+	if line.sub!(/\A"(([^"\\]|\\.)*)"/, '') then #"
 	  snippet = $1
 	  snippet.gsub!(/\\(.)/, '\1')
-	elsif line =~ /^"/ then #"
+	elsif line =~ /\A"/ then #"
 	  raise ArgumentError, "Unmatched double quote: #{line}"
-        elsif line.sub!(/^'(([^'\\]|\\.)*)'/, '') then #'
+        elsif line.sub!(/\A'(([^'\\]|\\.)*)'/, '') then #'
 	  snippet = $1
 	  snippet.gsub!(/\\(.)/, '\1')
-	elsif line =~ /^'/ then #'
+	elsif line =~ /\A'/ then #'
 	  raise ArgumentError, "Unmatched single quote: #{line}"
-	elsif line.sub!(/^\\(.)/, '') then
+	elsif line.sub!(/\A\\(.)/, '') then
 	  snippet = $1
-	elsif line.sub!(/^([^\s\\'"]+)/, '') then #'
+	elsif line.sub!(/\A([^\s\\'"]+)/, '') then #'
 	  snippet = $1
 	else
-	  line.sub!(/^\s+/, '')
+	  line.sub!(/\A\s+/, '')
 	  break
 	end
 	field.concat(snippet)

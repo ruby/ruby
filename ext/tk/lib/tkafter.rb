@@ -1,6 +1,6 @@
 #
 #   tkafter.rb : methods for Tcl/Tk after command
-#                     1998/07/02 by Hidetoshi Nagai <nagai@ai.kyutech.ac.jp>
+#                     2000/08/01 by Hidetoshi Nagai <nagai@ai.kyutech.ac.jp>
 #
 require 'tk'
 
@@ -37,7 +37,16 @@ class TkAfter
   ###############################
   def do_callback(*args)
     @in_callback = true
-    ret = @current_proc.call(*args)
+    begin
+      ret = @current_proc.call(*args)
+    rescue StandardError, NameError
+      if @cancel_on_exception
+	cancel
+	return nil
+      else
+	fail $!
+      end
+    end
     if @set_next
       set_next_callback(*args)
     else
@@ -118,6 +127,8 @@ class TkAfter
     @after_id = nil
     @after_script = nil
 
+    @cancel_on_exception = true
+
     set_procs(*args) if args != []
 
     @running = false
@@ -135,7 +146,16 @@ class TkAfter
   end
 
   def current_status
-    [@running, @current_sleep, @current_proc, @current_args, @do_loop]
+    [@running, @current_sleep, @current_proc, @current_args, 
+      @do_loop, @cancel_on_exception]
+  end
+
+  def cancel_on_exception?
+    @cancel_on_exception
+  end
+
+  def cancel_on_exception=(mode)
+    @cancel_on_exception = mode
   end
 
   def running?
