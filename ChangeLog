@@ -1,6 +1,19 @@
+Fri Jul 23 16:40:25 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (define_final): should not disclose NODE* to Ruby world.
+	  [ruby-dev:23957]
+
 Fri Jul 23 08:52:22 2004  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (disconnected?): new method.
+
+Thu Jul 22 16:41:54 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/cgi/session.rb (CGI::Session::FileStore#update): sets the
+	  permission of the session data file to 0600.
+
+	* lib/cgi/session/pstore.rb (CGI::Session::Pstore#initialize):
+	  ditto.
 
 Mon Jul 19 00:53:46 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 

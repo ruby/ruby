@@ -10971,10 +10971,13 @@ rb_thread_sleep(sec)
 void
 rb_thread_sleep_forever()
 {
+    int thr_critical = rb_thread_critical;
     if (curr_thread == curr_thread->next ||
 	curr_thread->status == THREAD_TO_KILL) {
+	rb_thread_critical = Qtrue;
 	TRAP_BEG;
 	pause();
+	rb_thread_critical = thr_critical;
 	TRAP_END;
 	return;
     }

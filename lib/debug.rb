@@ -189,10 +189,10 @@ class Context
 
   def debug_variable_info(input, binding)
     case input
-    when /^\s*g(?:lobal)?$/
+    when /^\s*g(?:lobal)?\s*$/
       var_list(global_variables, binding)
 
-    when /^\s*l(?:ocal)?$/
+    when /^\s*l(?:ocal)?\s*$/
       var_list(eval("local_variables", binding), binding)
 
     when /^\s*i(?:nstance)?\s+/

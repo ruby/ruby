@@ -61,7 +61,7 @@ extern int ruby_yydebug;
 char *ruby_inplace_mode = Qfalse;
 
 static void load_stdin _((void));
-static void load_file _((char *, int));
+static void load_file _((const char *, int));
 static void forbid_setid _((const char *));
 
 static VALUE do_loop = Qfalse, do_print = Qfalse;
@@ -801,7 +801,7 @@ extern int ruby__end__seen;
 
 static void
 load_file(fname, script)
-    char *fname;
+    const char *fname;
     int script;
 {
     extern VALUE rb_stdin;
@@ -924,7 +924,7 @@ load_file(fname, script)
 
 void
 rb_load_file(fname)
-    char *fname;
+    const char *fname;
 {
     load_file(fname, 0);
 }
@@ -1010,7 +1010,7 @@ set_arg0(val, id)
 
 void
 ruby_script(name)
-    char *name;
+    const char *name;
 {
     if (name) {
 	rb_progname = rb_tainted_str_new2(name);

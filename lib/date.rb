@@ -711,7 +711,7 @@ class Date
 	  alias_method :__#{id.to_i}__, :#{id.to_s}
 	  private :__#{id.to_i}__
 	  def #{id.to_s}(*args, &block)
-            if @__#{id.to_i}__
+            if defined? @__#{id.to_i}__
               @__#{id.to_i}__
             elsif ! self.frozen?
 	      @__#{id.to_i}__ ||= __#{id.to_i}__(*args, &block)

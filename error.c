@@ -1147,14 +1147,14 @@ rb_sys_warning(fmt, va_alist)
 
 void
 rb_load_fail(path)
-    char *path;
+    const char *path;
 {
     rb_loaderror("%s -- %s", strerror(errno), path);
 }
 
 void
 rb_error_frozen(what)
-    char *what;
+    const char *what;
 {
     rb_raise(rb_eTypeError, "can't modify frozen %s", what);
 }

@@ -1685,8 +1685,6 @@ undefine_final(os, obj)
     return obj;
 }
 
-#define NODE_FINAL NODE_LIT
-
 /*
  *  call-seq:
  *     ObjectSpace.define_finalizer(obj, aProc=proc())
@@ -1715,7 +1713,7 @@ define_final(argc, argv, os)
     need_call_final = 1;
     FL_SET(obj, FL_FINALIZE);
 
-    block = (VALUE)rb_node_newnode(NODE_FINAL, block, ruby_safe_level, 0);
+    block = rb_ary_new3(2, INT2FIX(ruby_safe_level), block);
 
     if (!finalizer_table) {
 	finalizer_table = st_init_numtable();
@@ -1768,9 +1766,9 @@ run_final(obj)
     }
     if (finalizer_table && st_delete(finalizer_table, (st_data_t*)&obj, &table)) {
 	for (i=0; i<RARRAY(table)->len; i++) {
-	    NODE *final = (NODE *)RARRAY(table)->ptr[i];
-	    args[0] = final->nd_lit;
-	    args[2] = final->nd_nth;
+	    VALUE final = RARRAY(table)->ptr[i];
+	    args[0] = FIX2INT(RARRAY(final)->ptr[0]);
+	    args[2] = RARRAY(final)->ptr[1];
 	    rb_protect((VALUE(*)_((VALUE)))run_single_final, (VALUE)args, &status);
 	}
     }

@@ -143,8 +143,8 @@ NORETURN(void rb_name_error __((ID, const char*, ...)));
 NORETURN(void rb_invalid_str _((const char*, const char*)));
 void rb_compile_error __((const char*, ...));
 void rb_compile_error_append __((const char*, ...));
-NORETURN(void rb_load_fail _((char*)));
-NORETURN(void rb_error_frozen _((char*)));
+NORETURN(void rb_load_fail _((const char*)));
+NORETURN(void rb_error_frozen _((const char*)));
 void rb_check_frozen _((VALUE));
 /* eval.c */
 RUBY_EXTERN struct RNode *ruby_current_node;
@@ -381,8 +381,8 @@ const char* rb_get_kcode _((void));
 /* ruby.c */
 RUBY_EXTERN VALUE rb_argv;
 RUBY_EXTERN VALUE rb_argv0;
-void rb_load_file _((char*));
-void ruby_script _((char*));
+void rb_load_file _((const char*));
+void ruby_script _((const char*));
 void ruby_prog_init _((void));
 void ruby_set_argv _((int, char**));
 void ruby_process_options _((int, char**));
