@@ -693,6 +693,7 @@ sample/soap/calc/calc2.rb
 sample/soap/calc/client.rb
 sample/soap/calc/client2.rb
 sample/soap/calc/httpd.rb
+sample/soap/calc/samplehttpd.conf
 sample/soap/calc/server.cgi
 sample/soap/calc/server.rb
 sample/soap/calc/server2.rb
@@ -700,6 +701,7 @@ sample/soap/digraph.rb
 sample/soap/exchange/client.rb
 sample/soap/exchange/exchange.rb
 sample/soap/exchange/httpd.rb
+sample/soap/exchange/samplehttpd.conf
 sample/soap/exchange/server.cgi
 sample/soap/exchange/server.rb
 sample/soap/helloworld/hw_c.rb
@@ -713,6 +715,7 @@ sample/rss/rss_recent.rb
 sample/rss/tdiary_plugin/rss-recent.rb
 sample/soap/sampleStruct/client.rb
 sample/soap/sampleStruct/httpd.rb
+sample/soap/sampleStruct/samplehttpd.conf
 sample/soap/sampleStruct/iSampleStruct.rb
 sample/soap/sampleStruct/sampleStruct.rb
 sample/soap/sampleStruct/server.cgi
@@ -744,6 +747,7 @@ sample/wsdl/googleSearch/GoogleSearch.rb
 sample/wsdl/googleSearch/GoogleSearchDriver.rb
 sample/wsdl/googleSearch/README
 sample/wsdl/googleSearch/httpd.rb
+sample/wsdl/googleSearch/samplehttpd.conf
 sample/wsdl/googleSearch/sampleClient.rb
 sample/wsdl/googleSearch/sjissearch.sh
 sample/wsdl/googleSearch/wsdlDriver.rb

@@ -1,3 +1,15 @@
+Sun Feb 15 20:41:15 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* sample/soap/calc/httpd.rb, sample/soap/exchange/httpd.rb,
+	  sample/soap/sampleStruct/httpd.rb, sample/wsdl/googleSearch/httpd.rb:
+	  use soap/property instead of getopts for configuring DocumentRoot
+	  and port# of httpd.  see samplehttpd.conf below.
+
+	* sample/soap/calc/samplehttpd.conf,
+	  sample/soap/exchange/samplehttpd.conf,
+	  sample/soap/sampleStruct/samplehttpd.conf,
+	  sample/wsdl/googleSearch/samplehttpd.conf: added.
+
 Sun Feb 15 19:13:33 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/rinda/tuplespace.rb: read(tpl,0), raise RequestExpiredError

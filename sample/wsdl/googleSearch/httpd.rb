@@ -1,14 +1,19 @@
 #!/usr/bin/env ruby
 
 require 'webrick'
-require 'getopts'
+require 'soap/property'
 
-getopts "", 'r:', 'p:8808'
+docroot = "."
+port = 8808
+if opt = SOAP::Property.loadproperty("samplehttpd.conf")
+  docroot = opt["docroot"]
+  port = Integer(opt["port"])
+end
 
 s = WEBrick::HTTPServer.new(
   :BindAddress => "0.0.0.0",
-  :Port => $OPT_p.to_i,
-  :DocumentRoot => $OPT_r || ".",
+  :Port => port,
+  :DocumentRoot => docroot,
   :CGIPathEnv => ENV['PATH']
 )
 trap(:INT){ s.shutdown }
