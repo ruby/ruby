@@ -1,3 +1,14 @@
+Sun Jan 18 20:00:16 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* lib/soap/wsdlDriver.rb, lib/wsdl/soap/operation.rb: add support of
+	  "parts" attribute of soap:body element in WSDL.
+
+	* lib/wsdl/xmlSchema/schema.rb: friendly warning message for
+	  simpleType element which is not supported for now.
+
+	* test/wsdl/soap/{soapbodyparts.wsdl,test_soapbodyparts.wsdl}: new
+	  files.
+
 Sun Jan 18 16:46:48 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* time.c (time_overflow_p): should return results.  [ruby-dev:22614]

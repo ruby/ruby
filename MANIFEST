@@ -749,6 +749,7 @@ test/ruby/test_signal.rb
 test/ruby/test_stringchar.rb
 test/ruby/test_struct.rb
 test/ruby/test_system.rb
+test/ruby/test_time.rb
 test/ruby/test_trace.rb
 test/ruby/test_variable.rb
 test/ruby/test_whileuntil.rb
@@ -821,6 +822,8 @@ test/wsdl/raa/RAAService.rb
 test/wsdl/raa/README.txt
 test/wsdl/raa/raa.wsdl
 test/wsdl/raa/test_raa.rb
+test/wsdl/soap/soapbodyparts.wsdl
+test/wsdl/soap/test_soapbodyparts.rb
 test/wsdl/test_emptycomplextype.rb
 test/wsdl/test_fault.rb
 test/xsd/noencoding.xml

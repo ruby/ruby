@@ -206,11 +206,7 @@ class WSDLDriver
       log(DEBUG) { "call: parameters '#{ params.inspect }'." }
 
       op_info = @operations[method_name]
-      parts_names = op_info.bodyparts.collect { |part| part.name }
-      obj = create_method_obj(parts_names, params)
-      method = Mapping.obj2soap(obj, @wsdl_mapping_registry, op_info.optype_name)
-      method.elename = op_info.op_name
-      method.type = XSD::QName.new	# Request should not be typed.
+      method = create_method_struct(op_info, params)
       req_header = nil
       req_body = SOAPBody.new(method)
       req_env = SOAPEnvelope.new(req_header, req_body)
@@ -263,6 +259,24 @@ class WSDLDriver
     end
 
   private
+
+    def create_method_struct(op_info, params)
+      parts_names = op_info.bodyparts.collect { |part| part.name }
+      obj = create_method_obj(parts_names, params)
+      method = Mapping.obj2soap(obj, @wsdl_mapping_registry, op_info.optype_name)
+      if method.members.size != parts_names.size
+	new_method = SOAPStruct.new
+	method.each do |key, value|
+	  if parts_names.include?(key)
+	    new_method.add(key, value)
+	  end
+	end
+	method = new_method
+      end
+      method.elename = op_info.op_name
+      method.type = XSD::QName.new	# Request should not be typed.
+      method
+    end
 
     def create_method_obj(names, params)
       o = Object.new
