@@ -13,6 +13,8 @@
  * - Takaaki Tateishi (ttate@kt.jaist.ac.jp)
  */
 
+#include "ruby.h"
+
 #if defined(HAVE_NCURSES_H)
 # include <ncurses.h>
 #elif defined(HAVE_NCURSES_CURSES_H)
@@ -46,7 +48,6 @@
 #endif
 
 #include <stdio.h>
-#include "ruby.h"
 #include "rubyio.h"
 
 static VALUE mCurses;

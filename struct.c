@@ -529,9 +529,8 @@ rb_struct_aset(s, idx, val)
     return RSTRUCT(s)->ptr[i] = val;
 }
 
-
 static VALUE
-rb_struct_select(argc, argv, s)
+rb_struct_values_at(argc, argv, s)
     int argc;
     VALUE *argv;
     VALUE s;
@@ -539,21 +538,34 @@ rb_struct_select(argc, argv, s)
     VALUE result = rb_ary_new();
     long i;
 
-    if (rb_block_given_p()) {
-	if (argc > 0) {
-	    rb_raise(rb_eArgError, "wrong number arguments(%d for 0)", argc);
-	}
-	for (i = 0; i < RSTRUCT(s)->len; i++) {
-	    if (RTEST(rb_yield(RSTRUCT(s)->ptr[i]))) {
-		rb_ary_push(result, RSTRUCT(s)->ptr[i]);
-	    }
+    for (i=0; i<argc; i++) {
+	rb_ary_push(result, rb_struct_aref(s, argv[i]));
+    }
+}
+
+static VALUE
+rb_struct_select(argc, argv, s)
+    int argc;
+    VALUE *argv;
+    VALUE s;
+{
+    VALUE result;
+    long i;
+
+    if (!rb_block_given_p()) {
+	rb_warn("Struct#select(index..) is deprecated; use Struct#values_at");
+	return rb_struct_values_at(argc, argv, s);
+    }
+    if (argc > 0) {
+	rb_raise(rb_eArgError, "wrong number arguments(%d for 0)", argc);
+    }
+    result = rb_ary_new();
+    for (i = 0; i < RSTRUCT(s)->len; i++) {
+	if (RTEST(rb_yield(RSTRUCT(s)->ptr[i]))) {
+	    rb_ary_push(result, RSTRUCT(s)->ptr[i]);
 	}
     }
-    else {
-	for (i=0; i<argc; i++) {
-	    rb_ary_push(result, rb_struct_aref(s, argv[i]));
-	}
-    }
+
     return result;
 }
 
@@ -646,6 +658,7 @@ Init_Struct()
     rb_define_method(rb_cStruct, "[]", rb_struct_aref, 1);
     rb_define_method(rb_cStruct, "[]=", rb_struct_aset, 2);
     rb_define_method(rb_cStruct, "select", rb_struct_select, -1);
+    rb_define_method(rb_cStruct, "values_at", rb_struct_values_at, -1);
 
     rb_define_method(rb_cStruct, "members", rb_struct_members, 0);
 }

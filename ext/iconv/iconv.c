@@ -32,10 +32,10 @@ Which coding systems are available, it depends on the platform.
 =end
 */
 
+#include "ruby.h"
 #include <errno.h>
 #include <iconv.h>
 #include <assert.h>
-#include "ruby.h"
 #include "intern.h"
 
 /* Invalid value for iconv_t is -1 but 0 for VALUE, I hope VALUE is

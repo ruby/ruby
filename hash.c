@@ -388,7 +388,7 @@ rb_hash_indexes(argc, argv, hash)
     VALUE indexes;
     int i;
 
-    rb_warn("Hash#%s is deprecated; use Hash#select",
+    rb_warn("Hash#%s is deprecated; use Hash#values_at",
 	    rb_id2name(rb_frame_last_func()));
     indexes = rb_ary_new2(argc);
     for (i=0; i<argc; i++) {
@@ -509,7 +509,7 @@ select_i(key, value, result)
 }
 
 VALUE
-rb_hash_select(argc, argv, hash)
+rb_hash_values_at(argc, argv, hash)
     int argc;
     VALUE *argv;
     VALUE hash;
@@ -517,17 +517,30 @@ rb_hash_select(argc, argv, hash)
     VALUE result = rb_ary_new();
     long i;
 
-    if (rb_block_given_p()) {
-	if (argc > 0) {
-	    rb_raise(rb_eArgError, "wrong number arguments(%d for 0)", argc);
-	}
-	rb_hash_foreach(hash, select_i, result);
+    for (i=0; i<argc; i++) {
+	rb_ary_push(result, rb_hash_aref(hash, argv[i]));
     }
-    else {
-	for (i=0; i<argc; i++) {
-	    rb_ary_push(result, rb_hash_aref(hash, argv[i]));
-	}
+    return result;
+}
+
+VALUE
+rb_hash_select(argc, argv, hash)
+    int argc;
+    VALUE *argv;
+    VALUE hash;
+{
+    VALUE result;
+    long i;
+
+    if (!rb_block_given_p()) {
+	rb_warn("Hash#select(key..) is deprecated; use Hash#values_at");
+	return rb_hash_values_at(argc, argv, hash);
     }
+    result = rb_ary_new();
+    if (argc > 0) {
+	rb_raise(rb_eArgError, "wrong number arguments(%d for 0)", argc);
+    }
+    rb_hash_foreach(hash, select_i, result);
     return result;
 }
 
@@ -1363,38 +1376,50 @@ env_delete_if()
 }
 
 static VALUE
-env_select(argc, argv)
+env_values_at(argc, argv)
     int argc;
     VALUE *argv;
 {
     VALUE result = rb_ary_new();
     long i;
 
-    if (rb_block_given_p()) {
-	char **env;
+    for (i=0; i<argc; i++) {
+	rb_ary_push(result, rb_f_getenv(Qnil, argv[i]));
+    }
+    return result;
+}
 
-	if (argc > 0) {
-	    rb_raise(rb_eArgError, "wrong number arguments(%d for 0)", argc);
-	}
-	env = GET_ENVIRON(environ);
-	while (*env) {
-	    char *s = strchr(*env, '=');
-	    if (s) {
-                VALUE assoc = rb_assoc_new(rb_tainted_str_new(*env, s-*env),
-                                           rb_tainted_str_new2(s+1));
-		if (RTEST(rb_yield(assoc))) {
-		    rb_ary_push(result, assoc);
-		}
+static VALUE
+env_select(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    VALUE result;
+    long i;
+    char **env;
+
+    if (!rb_block_given_p()) {
+	rb_warn("ENV.select(index..) is deprecated; use ENV.values_at");
+	return env_values_at(argc, argv);
+    }
+    if (argc > 0) {
+	rb_raise(rb_eArgError, "wrong number arguments(%d for 0)", argc);
+    }
+    result = rb_ary_new();
+    env = GET_ENVIRON(environ);
+    while (*env) {
+	char *s = strchr(*env, '=');
+	if (s) {
+	    VALUE assoc = rb_assoc_new(rb_tainted_str_new(*env, s-*env),
+				       rb_tainted_str_new2(s+1));
+	    if (RTEST(rb_yield(assoc))) {
+		rb_ary_push(result, assoc);
 	    }
-	    env++;
 	}
-	FREE_ENVIRON(environ);
+	env++;
     }
-    else {
-	for (i=0; i<argc; i++) {
-	    rb_ary_push(result, rb_f_getenv(Qnil, argv[i]));
-	}
-    }
+    FREE_ENVIRON(environ);
+
     return result;
 }
 
@@ -1575,7 +1600,7 @@ env_indexes(argc, argv)
     int i;
     VALUE indexes = rb_ary_new2(argc);
 
-    rb_warn("ENV.%s is deprecated; use ENV.select",
+    rb_warn("ENV.%s is deprecated; use ENV.values_at",
 	    rb_id2name(rb_frame_last_func()));
     for (i=0;i<argc;i++) {
 	char *v = 0;
@@ -1746,6 +1771,7 @@ Init_Hash()
 
     rb_define_method(rb_cHash,"keys", rb_hash_keys, 0);
     rb_define_method(rb_cHash,"values", rb_hash_values, 0);
+    rb_define_method(rb_cHash,"values_at", rb_hash_values_at, -1);
 
     rb_define_method(rb_cHash,"shift", rb_hash_shift, 0);
     rb_define_method(rb_cHash,"delete", rb_hash_delete, 1);
@@ -1801,6 +1827,7 @@ Init_Hash()
     rb_define_singleton_method(envtbl,"empty?", env_empty_p, 0);
     rb_define_singleton_method(envtbl,"keys", env_keys, 0);
     rb_define_singleton_method(envtbl,"values", env_values, 0);
+    rb_define_singleton_method(envtbl,"values_at", env_values_at, -1);
     rb_define_singleton_method(envtbl,"include?", env_has_key, 1);
     rb_define_singleton_method(envtbl,"member?", env_has_key, 1);
     rb_define_singleton_method(envtbl,"has_key?", env_has_key, 1);

@@ -912,7 +912,7 @@ num_step(argc, argv, from)
 	double n = (end - beg)/unit;
 	long i;
 
-	n = floor(n + n*epsilon) + 1;
+	n = floor(n + n*epsilon + 1);
 	for (i=0; i<n; i++) {
 	    rb_yield(rb_float_new(i*unit+beg));
 	}

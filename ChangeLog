@@ -1,3 +1,15 @@
+Mon May  5 00:46:10 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_values_at): new method to replace select(index..).
+
+	* hash.c (rb_hash_values_at,env_values_at): ditto.
+
+	* re.c (match_values_at): ditto.
+
+	* struct.c (rb_struct_values_at): ditto.
+
+	* re.c (match_select): add iterator behavior.
+
 Sun May  4 19:08:53 2003  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date/format.rb: synchronized with date2 3.3.2.
@@ -10,10 +22,23 @@ Sun May  4 15:06:37 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/pop.rb: APOP did not work.  [ruby-dev:20149]
 
-Sat May  3 00:58:53 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Sat May  3 21:14:29 2003  Johan Holmberg  <holmberg@iar.se>
+
+	* ext/curses/curses.c, ext/digest/sha2/sha2.c, ext/iconv/iconv.c,
+	  ext/racc/cparse/cparse.c: include "ruby.h" at the top to shut up
+	  "_FILE_OFFSET_BITS redefined" warning on Solaris.
+
+Sat May  3 11:00:12 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* class.c (rb_class_protected_instance_methods): now gives
-	  warnings to show migration path.
+	  warnings to show migration path.  The default will be reversed
+	  on Jan 2004.
+
+	* numeric.c (num_step): "1.1.step(1.5,0.1)" to work.
+
+Sat May  3 00:58:53 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_obj_methods): now accepts recurse parameter.
 
 	* lib/delegate.rb (Delegator::initialize): instance_methods
 	  etc. now recurse by default.  need to specify false.

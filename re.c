@@ -953,7 +953,7 @@ match_aref(argc, argv, match)
 }
 
 static VALUE
-match_select(argc, argv, match)
+match_values_at(argc, argv, match)
     int argc;
     VALUE *argv;
     VALUE match;
@@ -978,6 +978,34 @@ match_select(argc, argv, match)
 	}
     }
     return result;
+}
+
+static VALUE
+match_select(argc, argv, match)
+    int argc;
+    VALUE *argv;
+    VALUE match;
+{
+    if (!rb_block_given_p()) {
+	rb_warn("MatchData#select(index..) is deprecated; use MatchData#values_at");
+	return match_values_at(argc, argv, match);
+    }
+    else {
+	struct re_registers *regs = RMATCH(match)->regs;
+	VALUE target = RMATCH(match)->str;
+	VALUE result = rb_ary_new();
+	int i;
+	int taint = OBJ_TAINTED(match);
+
+	for (i=0; i<regs->num_regs; i++) {
+	    VALUE str = rb_str_substr(target, regs->beg[i], regs->end[i]-regs->beg[i]);
+	    if (taint) OBJ_TAINT(str);
+	    if (rb_yield(str)) {
+		rb_ary_push(result, str);
+	    }
+	}
+	return result;
+    }
 }
 
 static VALUE
@@ -1715,6 +1743,7 @@ Init_Regexp()
     rb_define_method(rb_cMatch, "to_a", match_to_a, 0);
     rb_define_method(rb_cMatch, "[]", match_aref, -1);
     rb_define_method(rb_cMatch, "select", match_select, -1);
+    rb_define_method(rb_cMatch, "values_at", match_values_at, -1);
     rb_define_method(rb_cMatch, "pre_match", rb_reg_match_pre, 0);
     rb_define_method(rb_cMatch, "post_match", rb_reg_match_post, 0);
     rb_define_method(rb_cMatch, "to_s", match_to_s, 0);

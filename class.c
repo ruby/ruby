@@ -564,8 +564,11 @@ rb_class_instance_methods(argc, argv, mod)
 
     rb_scan_args(argc, argv, "01", &recur);
     if (argc == 0) {
-	rb_warn("instance_methods() default to true; specify false explicitly");
+#if RUBY_RELEASE_CODE < 20040101
+	rb_warn("instance_methods parameter will default to 'true' in Jan 2004");
+#else
 	recur = Qtrue;
+#endif
     }
     return method_list(mod, RTEST(recur), ins_methods_i);
 }
@@ -580,8 +583,11 @@ rb_class_protected_instance_methods(argc, argv, mod)
 
     rb_scan_args(argc, argv, "01", &recur);
     if (argc == 0) {
-	rb_warn("protected_instance_methods() default to true; specify false explicitly");
+#if RUBY_RELEASE_CODE < 20040101
+	rb_warn("protected_instance_methods parameter will default to 'true' in Jan 2004");
+#else
 	recur = Qtrue;
+#endif
     }
     if (argc == 0) recur = Qtrue;
     return method_list(mod, RTEST(recur), ins_methods_prot_i);
@@ -597,8 +603,11 @@ rb_class_private_instance_methods(argc, argv, mod)
 
     rb_scan_args(argc, argv, "01", &recur);
     if (argc == 0) {
-	rb_warn("private_instance_methods() default to true; specify false explicitly");
+#if RUBY_RELEASE_CODE < 20040101
+	rb_warn("private_instance_methods parameter will default to 'true' in Jan 2004");
+#else
 	recur = Qtrue;
+#endif
     }
     if (argc == 0) recur = Qtrue;
     return method_list(mod, RTEST(recur), ins_methods_priv_i);
@@ -614,8 +623,13 @@ rb_class_public_instance_methods(argc, argv, mod)
 
     rb_scan_args(argc, argv, "01", &recur);
     if (argc == 0) {
-	rb_warn("public_instance_methods() default to true; specify false explicitly");
+#if RUBY_RELEASE_CODE < 20040101
+	rb_warn("instance_methods parameter will default to 'true' in Jan 2004");
+#else
 	recur = Qtrue;
+#endif
+	rb_warn("public_instance_methods parameter will default to 'true' in Jan 2004");
+	/* recur = Qtrue; */
     }
     if (argc == 0) recur = Qtrue;
     return method_list(mod, RTEST(recur), ins_methods_pub_i);
@@ -632,8 +646,11 @@ rb_obj_singleton_methods(argc, argv, obj)
 
     rb_scan_args(argc, argv, "01", &all);
     if (argc == 0) {
-	rb_warn("singleton_methods() default to true; specify false explicitly");
-	all = Qtrue;
+#if RUBY_RELEASE_CODE < 20040101
+	rb_warn("singleton_methods parameter will default to 'true' in Jan 2004");
+#else
+	recur = Qtrue;
+#endif
     }
     klass = CLASS_OF(obj);
     list = st_init_numtable();

@@ -899,43 +899,63 @@ rb_mod_const_defined(mod, name)
 }
 
 static VALUE
-rb_obj_methods(obj)
+rb_obj_methods(argc, argv, obj)
+    int argc;
+    VALUE *argv;
     VALUE obj;
 {
-    VALUE argv[1];
+    if (argc == 0) {
+	VALUE args[1];
 
-    argv[0] = Qtrue;
-    return rb_class_instance_methods(1, argv, CLASS_OF(obj));
+	args[0] = Qtrue;
+	return rb_class_instance_methods(1, args, CLASS_OF(obj));
+    }
+    return rb_class_instance_methods(argc, argv, CLASS_OF(obj));
 }
 
 static VALUE
-rb_obj_protected_methods(obj)
+rb_obj_protected_methods(argc, argv, obj)
+    int argc;
+    VALUE *argv;
     VALUE obj;
 {
-    VALUE argv[1];
+    if (argc == 0) {		/* hack to stop warning */
+	VALUE args[1];
 
-    argv[0] = Qtrue;
-    return rb_class_protected_instance_methods(1, argv, CLASS_OF(obj));
+	args[0] = Qtrue;
+	return rb_class_protected_instance_methods(1, args, CLASS_OF(obj));
+    }
+    return rb_class_protected_instance_methods(argc, argv, CLASS_OF(obj));
 }
 
 static VALUE
-rb_obj_private_methods(obj)
+rb_obj_private_methods(argc, argv, obj)
+    int argc;
+    VALUE *argv;
     VALUE obj;
 {
-    VALUE argv[1];
+    if (argc == 0) {		/* hack to stop warning */
+	VALUE args[1];
 
-    argv[0] = Qtrue;
-    return rb_class_private_instance_methods(1, argv, CLASS_OF(obj));
+	args[0] = Qtrue;
+	return rb_class_private_instance_methods(1, args, CLASS_OF(obj));
+    }
+    return rb_class_private_instance_methods(argc, argv, CLASS_OF(obj));
 }
 
 static VALUE
-rb_obj_public_methods(obj)
+rb_obj_public_methods(argc, argv, obj)
+    int argc;
+    VALUE *argv;
     VALUE obj;
 {
-    VALUE argv[1];
+    if (argc == 0) {		/* hack to stop warning */
+	VALUE args[1];
 
-    argv[0] = Qtrue;
-    return rb_class_public_instance_methods(1, argv, CLASS_OF(obj));
+	args[0] = Qtrue;
+	return rb_class_public_instance_methods(1, args, CLASS_OF(obj));
+    }
+    return rb_class_public_instance_methods(argc, argv, CLASS_OF(obj));
 }
 
 static VALUE
@@ -1382,12 +1402,11 @@ Init_Object()
     rb_define_method(rb_mKernel, "to_a", rb_any_to_a, 0); /* to be removed */
     rb_define_method(rb_mKernel, "to_s", rb_any_to_s, 0);
     rb_define_method(rb_mKernel, "inspect", rb_obj_inspect, 0);
-    rb_define_method(rb_mKernel, "methods", rb_obj_methods, 0);
-    rb_define_method(rb_mKernel, "public_methods", rb_obj_methods, 0);
+    rb_define_method(rb_mKernel, "methods", rb_obj_methods, -1);
     rb_define_method(rb_mKernel, "singleton_methods", rb_obj_singleton_methods, -1);
-    rb_define_method(rb_mKernel, "protected_methods", rb_obj_protected_methods, 0);
-    rb_define_method(rb_mKernel, "private_methods", rb_obj_private_methods, 0);
-    rb_define_method(rb_mKernel, "public_methods", rb_obj_public_methods, 0);
+    rb_define_method(rb_mKernel, "protected_methods", rb_obj_protected_methods, -1);
+    rb_define_method(rb_mKernel, "private_methods", rb_obj_private_methods, -1);
+    rb_define_method(rb_mKernel, "public_methods", rb_obj_public_methods, -1);
     rb_define_method(rb_mKernel, "instance_variables", rb_obj_instance_variables, 0);
     rb_define_method(rb_mKernel, "instance_variable_get", rb_obj_ivar_get, 1);
     rb_define_method(rb_mKernel, "instance_variable_set", rb_obj_ivar_set, 2);

@@ -616,7 +616,7 @@ rb_ary_indexes(argc, argv, ary)
     VALUE new_ary;
     long i;
 
-    rb_warn("Array#%s is deprecated; use Array#select",
+    rb_warn("Array#%s is deprecated; use Array#values_at",
 	    rb_id2name(rb_frame_last_func()));
     new_ary = rb_ary_new2(argc);
     for (i=0; i<argc; i++) {
@@ -1160,6 +1160,21 @@ rb_ary_collect_bang(ary)
 }
 
 static VALUE
+rb_ary_values_at(argc, argv, ary)
+    int argc;
+    VALUE *argv;
+    VALUE ary;
+{
+    VALUE result = rb_ary_new2(argc);
+    long i;
+
+    for (i=0; i<argc; i++) {
+	rb_ary_push(result, rb_ary_entry(ary, NUM2LONG(argv[i])));
+    }
+    return result;
+}
+
+static VALUE
 rb_ary_select(argc, argv, ary)
     int argc;
     VALUE *argv;
@@ -1168,21 +1183,17 @@ rb_ary_select(argc, argv, ary)
     VALUE result;
     long i;
 
-    if (rb_block_given_p()) {
-	if (argc > 0) {
-	    rb_raise(rb_eArgError, "wrong number arguments (%d for 0)", argc);
-	}
-	result = rb_ary_new2(RARRAY(ary)->len);
-	for (i = 0; i < RARRAY(ary)->len; i++) {
-	    if (RTEST(rb_yield(RARRAY(ary)->ptr[i]))) {
-		rb_ary_push(result, RARRAY(ary)->ptr[i]);
-	    }
-	}
+    if (!rb_block_given_p()) {
+	rb_warn("Array#select(index..) is deprecated; use Array#values_at");
+	return rb_ary_values_at(argc, argv, ary);
     }
-    else {
-	result = rb_ary_new2(argc);
-	for (i=0; i<argc; i++) {
-	    rb_ary_push(result, rb_ary_entry(ary, NUM2LONG(argv[i])));
+    if (argc > 0) {
+	rb_raise(rb_eArgError, "wrong number arguments (%d for 0)", argc);
+    }
+    result = rb_ary_new2(RARRAY(ary)->len);
+    for (i = 0; i < RARRAY(ary)->len; i++) {
+	if (RTEST(rb_yield(RARRAY(ary)->ptr[i]))) {
+	    rb_ary_push(result, RARRAY(ary)->ptr[i]);
 	}
     }
     return result;
@@ -1954,9 +1965,10 @@ Init_Array()
     rb_define_method(rb_cArray, "sort!", rb_ary_sort_bang, 0);
     rb_define_method(rb_cArray, "collect", rb_ary_collect, 0);
     rb_define_method(rb_cArray, "collect!", rb_ary_collect_bang, 0);
-    rb_define_method(rb_cArray, "select", rb_ary_select, -1);
     rb_define_method(rb_cArray, "map", rb_ary_collect, 0);
     rb_define_method(rb_cArray, "map!", rb_ary_collect_bang, 0);
+    rb_define_method(rb_cArray, "select", rb_ary_select, -1);
+    rb_define_method(rb_cArray, "values_at", rb_ary_values_at, -1);
     rb_define_method(rb_cArray, "delete", rb_ary_delete, 1);
     rb_define_method(rb_cArray, "delete_at", rb_ary_delete_at_m, 1);
     rb_define_method(rb_cArray, "delete_if", rb_ary_delete_if, 0);

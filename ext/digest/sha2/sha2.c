@@ -36,10 +36,10 @@
 /* $RoughId: sha2.c,v 1.3 2002/02/26 22:03:36 knu Exp $ */
 /* $Id$ */
 
+#include "sha2.h"
 #include <stdio.h>
 #include <string.h>	/* memcpy()/memset() or bcopy()/bzero() */
 #include <assert.h>	/* assert() */
-#include "sha2.h"
 
 /*
  * ASSERT NOTE:
