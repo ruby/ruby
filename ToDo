@@ -14,7 +14,7 @@ Language Spec.
 * def Foo::Bar::baz() .. end ??
 * I18N (or M17N) script/string/regexp
 * Fixnum 0 as false ????
-* discourage use of symbol variable (e.g. $/, etc.) in manual
+* discourage use of symbol variables (e.g. $/, etc.) in manual
 * discourage use of Perlish features by giving warnings.
 * non confusing in-block local variable (is it possible?)
   + remove scope by block
@@ -24,7 +24,7 @@ Language Spec.
 * a +1 to be a+1, not a(+1).
 * unify == and eql? again
 * to_i returns nil if str contains no digit.
-* raise exception by ``
+* raise exception by `` error
 
 Hacking Interpreter
 
@@ -47,6 +47,7 @@ Hacking Interpreter
 Standard Libraries
 
 - Module#define_method which takes a name and a body (block, proc or method).
+- Enume#inject
 * Enumerable#sort_by for Schwartzian transformation
 * String#scanf(?)
 * Object#fmt(?)
@@ -69,7 +70,6 @@ Standard Libraries
 * or raise ForkException to every thread but fork caller.
 * Array#fetch
 * Hash::new{default} or recommend Hash#fetch?
-* Enume#inject
 
 Extension Libraries
 
