@@ -2297,7 +2297,7 @@ yy215:
 #line 938
 	{   if ( YYTOKEN == YYLINEPTR )
                         {
-                            if ( blockType == BLOCK_FOLD )
+                            if ( blockType == BLOCK_FOLD && qidx > 0 )
                             {
                                 qidx -= 1;
                             }
