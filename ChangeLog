@@ -1,3 +1,9 @@
+Mon Dec  8 13:02:11 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/uri/common.rb: new method URI.regexp. [ruby-dev:22121]
+
+	* test/uri/test_common.rb: add test for URI.regexp.
+
 Mon Dec  8 12:44:14 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* pack.c: define swap16 and swap32 only if they are not

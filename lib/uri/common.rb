@@ -396,28 +396,46 @@ module URI
 --- URI::extract(str[, schemes])
 
 =end
-  def self.extract(str, schemes = [])
-    urls = []
-    regexp = ABS_URI_REF
-    unless schemes.empty?
-      regexp = Regexp.new('(?=' + schemes.collect{|s| 
-			    Regexp.quote(s + ':')
-			  }.join('|') + ')' + PATTERN::X_ABS_URI, 
-			  Regexp::EXTENDED, 'N')
-    end
-
-    str.scan(regexp) {
-      if block_given?
-	yield($&)
-      else
-	urls << $&
-      end
-    }
-
+  def self.extract(str, schemes = nil, &block)
     if block_given?
-      return nil
+      str.scan(regexp(schemes)) { yield $& }
+      nil
     else
-      return urls
+      result = []
+      str.scan(regexp(schemes)) { result.push $& }
+      result
+    end
+  end
+
+=begin
+
+--- URI::regexp([match_schemes])
+
+    Returns a Regexp object which matches to URI-like strings.
+    If MATCH_SCHEMES given, resulting regexp matches to URIs
+    whose scheme is one of the MATCH_SCHEMES.
+
+    The Regexp object returned by this method includes arbitrary
+    number of capture group (parentheses).  Never rely on its
+    number.
+
+      # extract first URI from html_string
+      html_string.slice(URI.regexp)
+
+      # remove ftp URIs
+      html_string.sub(URI.regexp(['ftp'])
+
+      # You should not rely on the number of parentheses
+      html_string.scan(URI.regexp) do |*matches|
+        p $&
+      end
+
+=end
+  def self.regexp(schemes = nil)
+    unless schemes
+      ABS_URI_REF
+    else
+      /(?=#{Regexp.union(*schemes)}:)#{PATTERN::X_ABS_URI}/xn
     end
   end
 
