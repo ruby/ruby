@@ -5,8 +5,8 @@ dir_config("iconv")
 conf = File.exist?(File.join($srcdir, "config.charset"))
 conf = with_config("config-charset", enable_config("config-charset", conf))
 
-if have_header("iconv.h")
-  have_library("iconv", "iconv") {|s| s.sub(/(?=\n\/\*top\*\/)/, "#include <iconv.h>")}
+if have_func("iconv", "iconv.h") or
+    have_library("iconv", "iconv") {|s| s.sub(/(?=\n\/\*top\*\/)/, "#include <iconv.h>")}
   if checking_for("const of iconv() 2nd argument") do
       create_tmpsrc(cpp_include("iconv.h") + "---> iconv(cd,0,0,0,0) <---")
       src = xpopen(cpp_command("")) {|f|f.read}

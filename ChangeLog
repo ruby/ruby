@@ -1,3 +1,7 @@
+Fri Jun 25 15:33:01 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/iconv/extconf.rb: check stricter.  [ruby-talk:104501]
+
 Fri Jun 25 01:58:01 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* {bcc32,win32,wince}/setup.mak: remove RUBY_EXTERN lines when
