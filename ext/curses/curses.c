@@ -2,7 +2,7 @@
  * ext/curses/curses.c
  * 
  * by MAEDA Shugo (ender@pic-internet.or.jp)
- * modified by Yukihiro Matsumoto (matz@ruby.club.or.jp)
+ * modified by Yukihiro Matsumoto (matz@netlab.co.jp)
  */
 
 #ifdef HAVE_NCURSES_H
@@ -12,11 +12,17 @@
 #  include <ncurses/curses.h>
 # else
 #  include <curses.h>
-#  if defined(__NetBSD__) && !defined(_maxx)
+#  if (defined(__bsdi__) || defined(__NetBSD__)) && !defined(_maxx)
 #   define _maxx maxx
 #  endif
-#  if defined(__NetBSD__) && !defined(_maxy)
+#  if (defined(__bsdi__) || defined(__NetBSD__)) && !defined(_maxy)
 #   define _maxy maxy
+#  endif
+#  if (defined(__bsdi__) || defined(__NetBSD__)) && !defined(_begx)
+#   define _begx begx
+#  endif
+#  if (defined(__bsdi__) || defined(__NetBSD__)) && !defined(_begy)
+#   define _begy begy
 #  endif
 # endif
 #endif
@@ -32,14 +38,10 @@ struct windata {
     WINDOW *window;
 };
 
-#define NUM2CHAR(x) ((TYPE(x) == T_STRING)&&(RSTRING(x)->len>=1))?\
-    RSTRING(x)->ptr[0]:(char)NUM2INT(x)
-#define CHAR2FIX(x) INT2FIX((int)x)
-
 static void
 no_window()
 {
-    Fail("already closed window");
+    rb_raise(rb_eRuntimeError, "already closed window");
 }
 
 #define GetWINDOW(obj, winp) {\
@@ -55,6 +57,7 @@ free_window(winp)
 {
     if (winp->window && winp->window != stdscr) delwin(winp->window);
     winp->window = 0;
+    free(winp);
 }
 
 static VALUE
@@ -66,7 +69,7 @@ prep_window(class, window)
     struct windata *winp;
 
     if (window == NULL) {
-	Fail("failed to create window");
+	rb_raise(rb_eRuntimeError, "failed to create window");
     }
 
     obj = Data_Make_Struct(class, struct windata, 0, free_window, winp);
@@ -83,7 +86,7 @@ curses_init_screen()
 {
     initscr();
     if (stdscr == 0) {
-	Fail("cannot initialize curses");
+	rb_raise(rb_eRuntimeError, "cannot initialize curses");
     }
     clear();
     rb_stdscr = prep_window(cWindow, stdscr);
@@ -102,19 +105,33 @@ curses_stdscr()
 static VALUE
 curses_close_screen()
 {
-    endwin();
+#ifdef HAVE_ISENDWIN
+    if (!isendwin())
+#endif
+	endwin();
     return Qnil;
+}
+
+static void
+curses_finalize()
+{
+    if (stdscr
+#ifdef HAVE_ISENDWIN
+	&& !isendwin()
+#endif
+	)
+	endwin();
 }
 
 /* def closed? */
 static VALUE
 curses_closed()
 {
-#ifdef HAVE_ENDWIN
+#ifdef HAVE_ISENDWIN
     if (isendwin()) {
-	return TRUE;
+	return Qtrue;
     }
-    return FALSE;
+    return Qfalse;
 #else
     rb_notimplement();
 #endif
@@ -138,12 +155,16 @@ curses_refresh(obj)
     return Qnil;
 }
 
-/* def refresh */
+/* def doupdate */
 static VALUE
 curses_doupdate(obj)
     VALUE obj;
 {
+#ifdef HAVE_DOUPDATE
     doupdate();
+#else
+    refresh();
+#endif
     return Qnil;
 }
 
@@ -235,7 +256,9 @@ static VALUE
 curses_flash(obj)
     VALUE obj;
 {
+#ifdef HAVE_FLASH
     flash();
+#endif
     return Qnil;
 }
 
@@ -287,7 +310,7 @@ static VALUE
 curses_inch(obj)
     VALUE obj;
 {
-    return CHAR2FIX(inch());
+    return CHR2FIX(inch());
 }
 
 /* def addch(ch) */
@@ -296,7 +319,7 @@ curses_addch(obj, ch)
     VALUE obj;
     VALUE ch;
 {
-    addch(NUM2CHAR(ch));
+    addch(NUM2CHR(ch));
     return Qnil;
 }
 
@@ -306,7 +329,7 @@ curses_insch(obj, ch)
     VALUE obj;
     VALUE ch;
 {
-    insch(NUM2CHAR(ch));
+    insch(NUM2CHR(ch));
     return Qnil;
 }
 
@@ -316,7 +339,9 @@ curses_addstr(obj, str)
     VALUE obj;
     VALUE str;
 {
-    addstr(RSTRING(str)->ptr);
+    if (!NIL_P(str)) {
+	addstr(STR2CSTR(str));
+    }
     return Qnil;
 }
 
@@ -325,7 +350,7 @@ static VALUE
 curses_getch(obj)
     VALUE obj;
 {
-    return CHAR2FIX(getch());
+    return CHR2FIX(getch());
 }
 
 /* def getstr */
@@ -335,7 +360,7 @@ curses_getstr(obj)
 {
     char rtn[1024]; /* This should be big enough.. I hope */
     getstr(rtn);
-    return str_taint(str_new2(rtn));
+    return rb_tainted_str_new2(rtn);
 }
 
 /* def delch */
@@ -352,7 +377,9 @@ static VALUE
 curses_deleteln(obj)
     VALUE obj;
 {
+#ifdef HAVE_DELETELN
     deleteln();
+#endif
     return Qnil;
 }
 
@@ -379,11 +406,15 @@ window_s_new(class, lines, cols, top, left)
     VALUE top;
     VALUE left;
 {
+    VALUE w;
     WINDOW *window;
     
     window = newwin(NUM2INT(lines), NUM2INT(cols), NUM2INT(top), NUM2INT(left));
     wclear(window);
-    return prep_window(class, window);
+    w = prep_window(class, window);
+    rb_obj_call_init(w);
+
+    return w;
 }
 
 /* def subwin(lines, cols, top, left) */
@@ -412,7 +443,8 @@ window_close(obj)
     struct windata *winp;
     
     GetWINDOW(obj, winp);
-    free_window(winp);
+    delwin(winp->window);
+    winp->window = 0;
 
     return Qnil;
 }
@@ -453,7 +485,7 @@ window_box(obj, vert, hor)
     struct windata *winp; 
    
     GetWINDOW(obj, winp);
-    box(winp->window, NUM2CHAR(vert), NUM2CHAR(hor));
+    box(winp->window, NUM2CHR(vert), NUM2CHR(hor));
     
     return Qnil;
 }
@@ -622,7 +654,7 @@ window_inch(obj)
     struct windata *winp;
     
     GetWINDOW(obj, winp);
-    return CHAR2FIX(winch(winp->window));
+    return CHR2FIX(winch(winp->window));
 }
 
 /* def addch(ch) */
@@ -634,7 +666,7 @@ window_addch(obj, ch)
     struct windata *winp;
     
     GetWINDOW(obj, winp);
-    waddch(winp->window, NUM2CHAR(ch));
+    waddch(winp->window, NUM2CHR(ch));
     
     return Qnil;
 }
@@ -648,7 +680,7 @@ window_insch(obj, ch)
     struct windata *winp;
     
     GetWINDOW(obj, winp);
-    winsch(winp->window, NUM2CHAR(ch));
+    winsch(winp->window, NUM2CHR(ch));
     
     return Qnil;
 }
@@ -659,11 +691,12 @@ window_addstr(obj, str)
     VALUE obj;
     VALUE str;
 {
-    struct windata *winp;
-    
-    GetWINDOW(obj, winp);
-    waddstr(winp->window, RSTRING(str)->ptr);
-    
+    if (!NIL_P(str)) {
+	struct windata *winp;
+
+	GetWINDOW(obj, winp);
+	waddstr(winp->window, STR2CSTR(str));
+    }
     return Qnil;
 }
 
@@ -685,7 +718,7 @@ window_getch(obj)
     struct windata *winp;
     
     GetWINDOW(obj, winp);
-    return CHAR2FIX(wgetch(winp->window));
+    return CHR2FIX(wgetch(winp->window));
 }
 
 /* def getstr */
@@ -698,7 +731,7 @@ window_getstr(obj)
     
     GetWINDOW(obj, winp);
     wgetstr(winp->window, rtn);
-    return str_taint(str_new2(rtn));
+    return rb_tainted_str_new2(rtn);
 }
 
 /* def delch */
@@ -718,10 +751,12 @@ static VALUE
 window_deleteln(obj)
     VALUE obj;
 {
+#ifdef HAVE_WDELETELN
     struct windata *winp;
     
     GetWINDOW(obj, winp);
     wdeleteln(winp->window);
+#endif
     return Qnil;
 }
 
@@ -764,7 +799,7 @@ Init_curses()
     rb_define_module_function(mCurses, "lines", curses_lines, 0);
     rb_define_module_function(mCurses, "cols", curses_cols, 0);
     
-    cWindow = rb_define_class_under(mCurses, "Window", cObject);
+    cWindow = rb_define_class_under(mCurses, "Window", rb_cObject);
     rb_define_singleton_method(cWindow, "new", window_s_new, 4);
     rb_define_method(cWindow, "subwin", window_subwin, 4);
     rb_define_method(cWindow, "close", window_close, 0);
@@ -790,4 +825,6 @@ Init_curses()
     rb_define_method(cWindow, "getstr", window_getstr, 0);
     rb_define_method(cWindow, "delch", window_delch, 0);
     rb_define_method(cWindow, "deleteln", window_deleteln, 0);
+
+    rb_set_end_proc(curses_finalize, 0);
 }

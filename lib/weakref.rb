@@ -10,9 +10,10 @@
 
 require "delegate"
 
-class WeakRef<Delegater
+class WeakRef<Delegator
 
-  Exception :RefError
+  class RefError<StandardError
+  end
 
   ID_MAP =  {}
   ID_REV_MAP =  {}
@@ -31,26 +32,22 @@ class WeakRef<Delegater
 			    
   def initialize(orig)
     super
-    @id = orig.id
+    @__id = orig.__id__
     ObjectSpace.call_finalizer orig
-    ID_MAP[@id] = self.id
-    ID_REV_MAP[self.id] = @id
+    ObjectSpace.call_finalizer self
+    ID_MAP[@__id] = self.__id__
+    ID_REV_MAP[self.id] = @__id
   end
 
   def __getobj__
-    unless ID_MAP[@id]
-      $@ = caller(1)
-      $! = RefError.new("Illegal Reference - probably recycled")
-      raise
+    unless ID_MAP[@__id]
+      raise RefError, "Illegal Reference - probably recycled", caller(2)
     end
-    ObjectSpace.id2ref(@id)
-#    ObjectSpace.each_object do |obj|
-#      return obj if obj.id == @id
-#    end
+    ObjectSpace._id2ref(@__id)
   end
 
   def weakref_alive?
-    if ID_MAP[@id]
+    if ID_MAP[@__id]
       true
     else
       false
@@ -62,9 +59,11 @@ class WeakRef<Delegater
   end
 end
 
-foo = Object.new
-p foo.hash
-foo = WeakRef.new(foo)
-p foo.hash
-ObjectSpace.garbage_collect
-p foo.hash
+if __FILE__ == $0
+  foo = Object.new
+  p foo.hash			# original's hash value
+  foo = WeakRef.new(foo)
+  p foo.hash			# should be same hash value
+  ObjectSpace.garbage_collect
+  p foo.hash			# should raise exception (recycled)
+end

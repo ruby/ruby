@@ -18,21 +18,19 @@ module Shellwords
     while line != ''
       field = ''
       while TRUE
-	if line.sub! /^"(([^"\\]|\\.)*)"/, '' then
+	if line.sub! /^"(([^"\\]|\\.)*)"/, '' then #"
 	  snippet = $1
 	  snippet.gsub! /\\(.)/, '\1'
-	elsif line =~ /^"/ then
-	  STDOUT.print "Unmatched double quote: $_\n"
-	  exit
-        elsif line.sub! /^'(([^'\\]|\\.)*)'/, '' then
+	elsif line =~ /^"/ then #"
+	  raise ArgError, "Unmatched double quote: #{line}"
+        elsif line.sub! /^'(([^'\\]|\\.)*)'/, '' then #'
 	  snippet = $1
 	  snippet.gsub! /\\(.)/, '\1'
-	elsif line =~ /^'/ then
-	  STDOUT.print "Unmatched single quote: $_\n"
-	  exit
+	elsif line =~ /^'/ then #'
+	  raise ArgError, "Unmatched single quote: #{line}"
 	elsif line.sub! /^\\(.)/, '' then
 	  snippet = $1
-	elsif line.sub! /^([^\s\\'"]+)/, '' then
+	elsif line.sub! /^([^\s\\'"]+)/, '' then #'
 	  snippet = $1
 	else
 	  line.sub! /^\s+/, ''

@@ -30,4 +30,5 @@ main(argc, argv, envp)
     ruby_init();
     ruby_options(argc, argv);
     ruby_run();
+    return 0;
 }

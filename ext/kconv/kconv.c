@@ -1780,12 +1780,30 @@ kconv_kconv(argc, argv)
     VALUE src, dst;
     VALUE in, out;
     int in_code, out_code;
+    char *codename = 0;
 
     rb_scan_args(argc, argv, "12", &src, &out, &in);
     Check_Type(src, T_STRING);
 
     if (NIL_P(out)) {
-	out_code = _JIS;
+	codename = rb_get_kcode();
+	goto codeselect;
+    }
+    else if (TYPE(out) == T_STRING) {
+	codename = RSTRING(out)->ptr;
+      codeselect:
+	switch (codename[0]) {
+	  case 'E': case 'e':
+	    out_code = _EUC;
+	    break;
+	  case 'S': case 's':
+	    out_code = _SJIS;
+	    break;
+	  case 'J': case 'j':
+	  default:
+	    out_code = _JIS;
+	    break;
+	}
     }
     else {
 	out_code = NUM2INT(out);
@@ -1794,12 +1812,28 @@ kconv_kconv(argc, argv)
     if (NIL_P(in)) {
 	in_code = _AUTO;
     }
+    else if (TYPE(in) == T_STRING) {
+	switch (RSTRING(in)->ptr[0]) {
+	  case 'E': case 'e':
+	    in_code = _EUC;
+	    break;
+	  case 'S': case 's':
+	    in_code = _SJIS;
+	    break;
+	  case 'J': case 'j':
+	    in_code = _JIS;
+	    break;
+	  default:
+	    in_code = _AUTO;
+	    break;
+	}
+    }
     else {
 	in_code = NUM2INT(in);
 	if (in_code == _NOCONV) return (VALUE)src;
     }
 
-    dst = str_new(0, RSTRING(src)->len*3+10); /* large enough? */
+    dst = rb_str_new(0, RSTRING(src)->len*3+10); /* large enough? */
     RSTRING(dst)->len = do_kconv(RSTRING(src)->ptr, RSTRING(dst)->ptr, RSTRING(dst)->len, out_code, in_code);
 
     return dst;
@@ -1813,7 +1847,7 @@ kconv_tojis(obj, src)
 
     Check_Type(src, T_STRING);
 
-    dst = str_new(0, RSTRING(src)->len*3+10); /* large enough? */
+    dst = rb_str_new(0, RSTRING(src)->len*3+10); /* large enough? */
     RSTRING(dst)->len = do_kconv(RSTRING(src)->ptr, RSTRING(dst)->ptr, RSTRING(dst)->len, _JIS, _AUTO);
 
     return dst;
@@ -1827,7 +1861,7 @@ kconv_toeuc(obj, src)
 
     Check_Type(src, T_STRING);
 
-    dst = str_new(0, RSTRING(src)->len*3+10); /* large enough? */
+    dst = rb_str_new(0, RSTRING(src)->len*3+10); /* large enough? */
     RSTRING(dst)->len = do_kconv(RSTRING(src)->ptr, RSTRING(dst)->ptr, RSTRING(dst)->len, _EUC, _AUTO);
 
     return (VALUE)dst;
@@ -1841,7 +1875,7 @@ kconv_tosjis(obj, src)
 
     Check_Type(src, T_STRING);
 
-    dst = str_new(0, RSTRING(src)->len*3+10); /* large enough? */
+    dst = rb_str_new(0, RSTRING(src)->len*3+10); /* large enough? */
     RSTRING(dst)->len = do_kconv(RSTRING(src)->ptr, RSTRING(dst)->ptr, RSTRING(dst)->len, _SJIS, _AUTO);
 
     return dst;
@@ -1857,10 +1891,29 @@ static VALUE
 kconv_guess(obj, src)
     VALUE obj, src;
 {
-    unsigned char *p = RSTRING(src)->ptr;
-    unsigned char *pend = p + RSTRING(src)->len;
+    unsigned char *p;
+    unsigned char *pend;
+    int sequence_counter = 0;
 
-#define INCR {p++;if (p==pend) return INT2FIX(_UNKNOWN);}
+    Check_Type(src, T_STRING);
+
+    p = RSTRING(src)->ptr;
+    pend = p + RSTRING(src)->len;
+
+#define INCR do {\
+    p++;\
+    if (p==pend) return INT2FIX(_UNKNOWN);\
+    sequence_counter++;\
+    if (sequence_counter % 2 == 1 && *p != 0xa4)\
+	sequence_counter = 0;\
+    if (6 <= sequence_counter) {\
+	sequence_counter = 0;\
+	return INT2FIX(_EUC);\
+    }\
+} while (0)
+
+    if (*p == 0xa4)
+	sequence_counter = 1;
 
     while (p<pend) {
 	if (*p == '\033') {
@@ -1874,37 +1927,41 @@ kconv_guess(obj, src)
 	if (0x81 <= *p && *p <= 0x8d) {
 	    return INT2FIX(_SJIS);
 	}
-	if (*p == 0x8e) {
+	if (0x8f <= *p && *p <= 0x9f) {
+	    return INT2FIX(_SJIS);
+	}
+	if (*p == 0x8e) {	/* SS2 */
 	    INCR;
 	    if ((0x40 <= *p && *p <= 0x7e) ||
 		(0x80 <= *p && *p <= 0xa0) ||
 		(0xe0 <= *p && *p <= 0xfc))
 		return INT2FIX(_SJIS);
 	}
-	if (0xa1 <= *p && *p <= 0xdf) {
+	else if (0xa1 <= *p && *p <= 0xdf) {
 	    INCR;
 	    if (0xf0 <= *p && *p <= 0xfe)
 		return INT2FIX(_EUC);
 	    if (0xe0 <= *p && *p <= 0xef) {
-		while (*p >= 0x40) {
+		while (p < pend && *p >= 0x40) {
 		    if (*p >= 0x81) {
-			if (0x8d <= *p || (0x8f <= *p && *p <= 0x9f)) {
+			if (*p <= 0x8d || (0x8f <= *p && *p <= 0x9f)) {
 			    return INT2FIX(_SJIS);
 			}
 			else if (0xfd <= *p && *p <= 0xfe) {
 			    return INT2FIX(_EUC);
 			}
 		    }
+		    INCR;
 		}
 	    }
-	    if (*p <= 0x9f) {
+	    else if (*p <= 0x9f) {
 		return INT2FIX(_SJIS);
 	    }
 	}
-	if (0xf0 <= *p && *p <= 0xfe) {
+	else if (0xf0 <= *p && *p <= 0xfe) {
 	    return INT2FIX(_EUC);
 	}
-	if (0xe0 <= *p && *p <= 0xef) {
+	else if (0xe0 <= *p && *p <= 0xef) {
 	    INCR;
 	    if ((0x40 <= *p && *p <= 0x7e) ||
 		(0x80 <= *p && *p <= 0xa0)) {
@@ -1914,7 +1971,7 @@ kconv_guess(obj, src)
 		return INT2FIX(_EUC);
 	    }
 	}
-	p++;
+	INCR;
     }
     return INT2FIX(_UNKNOWN);
 }

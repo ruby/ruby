@@ -1,9 +1,9 @@
 #!/usr/local/bin/ruby
 #
 #   rbc.rb - 
-#   	$Release Version: 0.6 $
-#   	$Revision: 1.2 $
-#   	$Date: 1997/11/27 13:46:06 $
+#   	$Release Version: 0.8 $
+#   	$Revision: 1.8 $
+#   	$Date: 1998/03/11 05:43:00 $
 #   	by Keiju ISHITSUKA(Nippon Rational Inc.)
 #
 # --
@@ -11,46 +11,46 @@
 #
 #   rbc.rb [options] file_name opts
 #   options:
-#	-d		    デバッグモード(利用しない方が良いでしょう)
-#	-m		    bcモード(分数, 行列の計算ができます)
-#	-r load-module	    ruby -r と同じ
-#	--inspect	    結果出力にinspectを用いる(bcモード以外はデ
-#			    フォルト). 
-#	--noinspect	    結果出力にinspectを用いない.
-#	--noreadline	    readlineライブラリを利用しない(デフォルト
-#			    ではreadlineライブラリを利用しようとする).
+#	-d		    debug mode (not recommended)
+#	-f		    does not read ~/.irbrc
+#	-m		    bc mode (rational/matrix calc)
+#	-r load-module	    same as `ruby -r'
+#	--inspect	    use inspect for result output
+#			    (default for non-bc mode)
+#	--noinspect	    does not use inspect for result output
+#	--noreadline	    does not use readline library
+#			    (default: try to use readline)
 #
-# 追加 private method:
-#   exit, quit		    終了する.
-#   inspect(sw = nil)	    インスペクトモードのトグル
-#   trace_load(sw = nil)    load/require時にrbcのfile読み込み機能を用
-#			    いるモードのスイッチ(デフォルトはトレース
-#			    モード)
+# additional private method (as function):
+#   exit, quit		    terminate the interpreter
+#   inspect_mode(sw = nil)  toggle inspect mode
+#   trace_load(sw = nil)    change trace mode for file loading using
+#			    load/require.  (default: trace-mode on)
 #
 require "e2mmap.rb"
 
 $stdout.sync = TRUE
 
 module BC_APPLICATION__
-  RCS_ID='-$Header: /home/keiju/var/src/var.lib/ruby/ruby/RCS/rbc.rb,v 1.2 1997/11/27 13:46:06 keiju Exp keiju $-'
+  RCS_ID='-$Id: rbc.rb,v 1.8 1998/03/11 05:43:00 keiju Exp keiju $-'
   
   extend Exception2MessageMapper
   def_exception :UnrecognizedSwitch, "Unrecognized switch: %s"
-  
-  $DEBUG = FALSE
-  $INSPECT = nil
   
   CONFIG = {}
   CONFIG[0] = $0
   CONFIG[:USE_READLINE] = TRUE
   CONFIG[:LOAD_MODULES] = []
   CONFIG[:INSPECT] = nil
-  CONFIG[:TRACE_LOAD] = TRUE
+  CONFIG[:TRACE_LOAD] = FALSE
+  CONFIG[:RC] = TRUE
+
+  CONFIG[:DEBUG] = FALSE
 
   while opt = ARGV.shift
     case opt
     when "-d"
-      $DEBUG = TRUE
+      CONFIG[:DEBUG] = TRUE
     when "-m"
       CONFIG[:INSPECT] = FALSE if CONFIG[:INSPECT].nil?
       require "mathn.rb"
@@ -58,6 +58,9 @@ module BC_APPLICATION__
     when "-r"
       opt = ARGV.shift
       CONFIG[:LOAD_MODULES].push opt if opt
+    when "-f"
+      opt = ARGV.shift
+      CONFIG[:RC] = FALSE
     when "--inspect"
       CONFIG[:INSPECT] = TRUE
     when "--noinspect"
@@ -66,7 +69,7 @@ module BC_APPLICATION__
       CONFIG[:USE_READLINE] = FALSE
     when /^-/
       #	  print UnrecognizedSwitch.inspect, "\n"
-      BC.fail UnrecognizedSwitch, opt
+      BC_APPLICATION__.fail UnrecognizedSwitch, opt
     else
       CONFIG[:USE_READLINE] = FALSE
       $0 = opt
@@ -104,7 +107,7 @@ module BC_APPLICATION__
 	  line = line + l
 	  
 	  lex(l) if l != "\n"
-	  print @quoted.inspect, "\n" if $DEBUG
+	  print @quoted.inspect, "\n" if CONFIG[:DEBUG]
 	  if @ltype
 	    @io.prompt = format(PROMPTs, @indent, @ltype)
 	    next
@@ -120,9 +123,9 @@ module BC_APPLICATION__
 	if line != "\n"
 	  begin
 	    if CONFIG[:INSPECT]
-	      print (cont._=eval(line, bind)).inspect, "\n"
+	      print((cont._=eval(line, bind)).inspect, "\n")
 	    else
-	      print (cont._=eval(line, bind)), "\n"
+	      print((cont._=eval(line, bind)), "\n")
 	    end
 	  rescue
 	    #	$! = 'exception raised' unless $!
@@ -182,7 +185,8 @@ module BC_APPLICATION__
       "case", "class", "def", "do", "for", "if",
       "module", "unless", "until", "while", "begin" #, "when"
     ]
-    DEINDENT_CLAUSE = ["end"]
+    DEINDENT_CLAUSE = ["end" #, "when"
+    ]
 
     PARCENT_LTYPE = {
       "q" => "\'",
@@ -197,7 +201,7 @@ module BC_APPLICATION__
       "<" => ">",
       "(" => ")"
     }
-    
+
     def lex_init()
       @OP = Trie.new
       @OP.def_rules("\0", "\004", "\032"){}
@@ -211,7 +215,7 @@ module BC_APPLICATION__
 	identify_comment(rests)
       end
       @OP.def_rule("\n") do
-	print "\\n\n" if $DEBUG
+	print "\\n\n" if CONFIG[:DEBUG]
 	if @lex_state == EXPR_BEG || @lex_state == EXPR_FNAME
 	  @continue = TRUE
 	else
@@ -220,9 +224,9 @@ module BC_APPLICATION__
       end
       @OP.def_rules("*", "*=", "**=", "**") {@lex_state = EXPR_BEG}
       @OP.def_rules("!", "!=", "!~") {@lex_state = EXPR_BEG}
-      @OP.def_rules("=", "==", "===", "=~", "=>") {@lex_state = EXPR_BEG}
-      @OP.def_rules("<", "<=", "<=>", "<<", "<=") {@lex_state = EXPR_BEG}
-      @OP.def_rules(">", ">=", ">>", ">=") {@lex_state = EXPR_BEG}
+      @OP.def_rules("=", "==", "===", "=~", "<=>") {@lex_state = EXPR_BEG}
+      @OP.def_rules("<", "<=", "<<") {@lex_state = EXPR_BEG}
+      @OP.def_rules(">", ">=", ">>") {@lex_state = EXPR_BEG}
       @OP.def_rules("'", '"') do
 	|op, rests|
 	@ltype = op
@@ -268,10 +272,14 @@ module BC_APPLICATION__
 	if rests[0] =~ /[0-9]/
 	  rests.unshift op
 	  identify_number(rests)
+	else
+	  # obj.if などの対応
+	  identify_identifier(rests, TRUE)
+	  @lex_state = EXPR_ARG
 	end
       end
       @OP.def_rules("..", "...") {@lex_state = EXPR_BEG}
-      
+
       lex_int2
     end
     
@@ -280,8 +288,12 @@ module BC_APPLICATION__
 	@lex_state = EXPR_END
 	@indent -= 1
       end
-      @OP.def_rule(":") {}
-      @OP.def_rule("::") {@lex_state = EXPR_BEG}
+      @OP.def_rule(":") {|op,rests|
+	identify_identifier(rests, TRUE)
+      }
+      @OP.def_rule("::") {|op,rests|
+	identify_identifier(rests, TRUE);
+      }
       @OP.def_rule("/") do
 	|op, rests|
 	if @lex_state == EXPR_BEG || @lex_state == EXPR_MID
@@ -343,16 +355,26 @@ module BC_APPLICATION__
 	  identify_identifier(rests)
 	end
       end
+      @OP.def_rule("def", proc{|op, chrs| /\s/ =~ chrs[0]}) do 
+	|op, rests|
+	@indent += 1
+	@lex_state = EXPR_END
+	until rests[0] == "\n" or rests[0] == ";"
+	  rests.shift
+	end
+      end
       @OP.def_rule("") do
 	|op, rests|
-	printf "match: start %s: %s", op, rests.inspect if $DEBUG
+	printf "MATCH: start %s: %s\n", op, rests.inspect if CONFIG[:DEBUG]
 	if rests[0] =~ /[0-9]/
 	  identify_number(rests)
 	elsif rests[0] =~ /[\w_]/
 	  identify_identifier(rests)
 	end
-	printf "match: end %s: %s", op, rests.inspect if $DEBUG
+	printf "MATCH: end %s: %s\n", op, rests.inspect if CONFIG[:DEBUG]
       end
+      
+      p @OP if CONFIG[:DEBUG]
     end
     
     def lex(l)
@@ -380,9 +402,9 @@ module BC_APPLICATION__
       
       until chrs.empty?
 	@space_seen = FALSE
-	printf "perse: %s\n", chrs.join("") if $DEBUG
+	printf "perse: %s\n", chrs.join("") if CONFIG[:DEBUG]
 	@OP.match(chrs)
-	printf "lex_state: %s continue: %s\n", @lex_state.id2name, @continue if $DEBUG
+	printf "lex_state: %s continue: %s\n", @lex_state.id2name, @continue if CONFIG[:DEBUG]
       end
     end
     
@@ -421,11 +443,11 @@ module BC_APPLICATION__
       end
     end
     
-    def identify_identifier(chrs)
+    def identify_identifier(chrs, escaped = FALSE)
       token = ""
-      token.concat chrs.shift if chrs[0] =~ /[$@]/
+      token.concat chrs.shift if chrs[0] =~ /[$@]/ or escaped
       while (ch = chrs.shift) =~ /\w|_/
-	print ":", ch, ":" if $DEBUG
+	print ":", ch, ":" if CONFIG[:DEBUG]
 	token.concat ch
       end
       chrs.unshift ch
@@ -436,12 +458,12 @@ module BC_APPLICATION__
       end
       # fix token
       
-      if token =~ /^[$@]/
+      if token =~ /^[$@]/ or escaped
 	@lex_state = EXPR_END
 	return
       end
       
-      print token, "\n" if $DEBUG
+      print token, "\n" if CONFIG[:DEBUG]
       if state = CLAUSE_STATE_TRANS[token]
 	if @lex_state != EXPR_BEG and token =~ /^(if|unless|while|until)/
 	  # 修飾子
@@ -624,14 +646,9 @@ module BC_APPLICATION__
 	@preproc = preproc
 	@postproc = postproc
       end
-      
-      def preproc(p)
-	@preproc = p
-      end
-      
-      def postproc(p)
-	@postproc = p
-      end
+
+      attr :preproc, TRUE
+      attr :postproc, TRUE
       
       def search(chrs, opt = nil)
 	return self if chrs.empty?
@@ -649,10 +666,29 @@ module BC_APPLICATION__
       end
       
       def create_subnode(chrs, preproc = nil, postproc = nil)
+	if chrs.empty?
+	  if @postproc
+	    p node
+	    Trie.fail ErrNodeAlreadyExists
+	  else
+	    print "Warn: change abstruct node to real node\n" if CONFIG[:DEBUG]
+	    @preproc = preproc
+	    @postproc = postproc
+	  end
+	  return self
+	end
+	
 	ch = chrs.shift
 	if node = @Tree[ch]
 	  if chrs.empty?
-	    Trie.fail ErrNodeAlreadyExists
+	    if node.postproc
+	      p node
+	      Trie.fail ErrNodeAlreadyExists
+	    else
+	      print "Warn: change abstruct node to real node\n" if CONFIG[:DEBUG]
+	      node.preproc = preproc
+	      node.postproc = postproc
+	    end
 	  else
 	    node.create_subnode(chrs, preproc, postproc)
 	  end
@@ -669,10 +705,10 @@ module BC_APPLICATION__
       end
       
       def match(chrs, op = "")
-	print "match: ", chrs, ":", op, "\n" if $DEBUG
+	print "match>: ", chrs, "op:", op, "\n" if CONFIG[:DEBUG]
 	if chrs.empty?
 	  if @preproc.nil? || @preproc.call(op, chrs)
-	    printf "op1: %s\n", op if $DEBUG
+	    printf "op1: %s\n", op if CONFIG[:DEBUG]
 	    @postproc.call(op, chrs)
 	    ""
 	  else
@@ -683,23 +719,23 @@ module BC_APPLICATION__
 	  if node = @Tree[ch]
 	    if ret = node.match(chrs, op+ch)
 	      return ch+ret
-	    elsif @postproc and @preproc.nil? || @preproc.call(op, chrs)
-	      chrs.unshift ch
-	      printf "op2: %s\n", op if $DEBUG
-	      @postproc.call(op, chrs)
-	      return ""
 	    else
 	      chrs.unshift ch
-	      return nil
+	      if @postproc and @preproc.nil? || @preproc.call(op, chrs)
+		printf "op2: %s\n", op.inspect if CONFIG[:DEBUG]
+		@postproc.call(op, chrs)
+		return ""
+	      else
+		return nil
+	      end
 	    end
 	  else
+	    chrs.unshift ch
 	    if @postproc and @preproc.nil? || @preproc.call(op, chrs)
-	      printf "op3: %s\n", op if $DEBUG
-	      chrs.unshift ch
+	      printf "op3: %s\n", op if CONFIG[:DEBUG]
 	      @postproc.call(op, chrs)
 	      return ""
 	    else
-	      chrs.unshift ch
 	      return nil
 	    end
 	  end
@@ -712,14 +748,9 @@ module BC_APPLICATION__
     end
     
     def def_rule(token, preproc = nil, postproc = nil)
-      node = search(token, :CREATE)
-#      print node.inspect, "\n" if $DEBUG
-      node.preproc(preproc)
-      if iterator?
-	node.postproc(proc)
-      elsif postproc
-	node.postproc(postproc)
-      end
+#      print node.inspect, "\n" if CONFIG[:DEBUG]
+      postproc = proc if iterator?
+      node = create(token, preproc, postproc)
     end
     
     def def_rules(*tokens)
@@ -731,24 +762,28 @@ module BC_APPLICATION__
       end
     end
     
-    def preporc(token)
+    def preporc(token, proc)
       node = search(token)
-      node.preproc proc
+      node.preproc=proc
     end
     
     def postproc(token)
-      node = search(token)
-      node.postproc proc
+      node = search(token, proc)
+      node.postproc=proc
     end
     
-    def search(token, opt = nil)
-      @head.search(token.split(//), opt)
+    def search(token)
+      @head.search(token.split(//))
+    end
+
+    def create(token, preproc = nil, postproc = nil)
+      @head.create_subnode(token.split(//), preproc, postproc)
     end
     
     def match(token)
       token = token.split(//) if token.kind_of?(String)
       ret = @head.match(token)
-      printf "match end: %s:%s", ret, token.inspect if $DEBUG
+      printf "match end: %s:%s", ret, token.inspect if CONFIG[:DEBUG]
       ret
     end
     
@@ -795,25 +830,26 @@ module BC_APPLICATION__
   
   module CONTEXT
     def _=(value)
-      @_ = value
+      CONFIG[:_] = value
+      eval "_=BC_APPLICATION__::CONFIG[:_]", CONFIG[:BIND]
     end
     
-    def _
-      @_
-    end
+#    def _
+#      eval "_", CONFIG[:BIND]
+#    end
     
     def quit
       exit
     end
     
     def trace_load(opt = nil)
-      if opt
-	@Trace_require = opt
+      if !opt.nil?
+	CONFIG[:TRACE_LOAD] = opt
       else
-	@Trace_require = !@Trace_require
+	CONFIG[:TRACE_LOAD] = !CONFIG[:TRACE_LOAD]
       end
-      print "Switch to load/require #{unless @Trace_require; ' non';end} trace mode.\n"
-      if @Trace_require
+      print "Switch to load/require #{unless CONFIG[:TRACE_LOAD]; ' non';end} trace mode.\n"
+      if CONFIG[:TRACE_LOAD]
 	eval %{
 	  class << self
 	    alias load rbc_load
@@ -828,7 +864,7 @@ module BC_APPLICATION__
 	  end
 	}
       end
-      @Trace_require
+      CONFIG[:TRACE_LOAD]
     end
     
     alias rbc_load_org load
@@ -845,17 +881,18 @@ module BC_APPLICATION__
       case file_name
       when /\.rb$/
 	if load_sub(file_name)
-	  $:.push file_name
+	  $".push file_name
 	  return true
 	end
       when /\.(so|o|sl)$/
-	require_org(file_name)
+	rbc_require_org(file_name)
       end
       
       if load_sub(f = file_name + ".rb")
-	  $:.push f
+	$".push f
+	return true
       end
-      require(file_name)
+      rbc_require_org(file_name)
     end
 
     def load_sub(fn)
@@ -874,19 +911,34 @@ module BC_APPLICATION__
       return false
     end
 
-    def inspect(opt = nil)
+    def inspect_mode(opt = nil)
       if opt
 	CONFIG[:INSPECT] = opt
       else
-	CONFIG[:INSPECT] = !$INSPECT
+	CONFIG[:INSPECT] = !CONFIG[:INSPECT]
       end
-      print "Switch to#{unless $INSPECT; ' non';end} inspect mode.\n"
-      $INSPECT
+      print "Switch to#{unless CONFIG[:INSPECT]; ' non';end} inspect mode.\n"
+      CONFIG[:INSPECT]
     end
     
-    def run
-      CONFIG[:BIND] = proc
+    def run(bind)
+      CONFIG[:BIND] = bind
 
+      if CONFIG[:RC]
+	rc = File.expand_path("~/.irbrc")
+	if File.exists?(rc)
+	  begin
+	    load rc
+	  rescue
+	    print "load error: #{rc}\n"
+	    print $!.type, ": ", $!, "\n"
+	    for err in $@[0, $@.size - 2]
+	      print "\t", err, "\n"
+	    end
+	  end 
+	end
+      end
+  
       if CONFIG[:TRACE_LOAD]
 	trace_load true
       end
@@ -898,7 +950,7 @@ module BC_APPLICATION__
 	  print $@[0], ":", $!.type, ": ", $!, "\n"
 	end
       end
-  
+
       if !$0.equal?(CONFIG[0])
 	io = FileInputMethod.new($0)
       elsif defined? Readline
@@ -959,4 +1011,5 @@ module BC_APPLICATION__
 end
 
 extend BC_APPLICATION__::CONTEXT
-run{}
+run(binding)
+

@@ -1,6 +1,9 @@
-#!./miniruby
+#!./miniruby -I.
+
 require "rbconfig.rb"
 include Config
+
+destdir = ARGV[0] || ''
 
 $:.unshift CONFIG["srcdir"]+"/lib"
 require "ftools"
@@ -12,26 +15,43 @@ else
   prefix = CONFIG["prefix"]
 end
 ruby_install_name = CONFIG["ruby_install_name"]
-bindir = prefix + "/bin"
-libdir = prefix + "/lib/" + ruby_install_name
-archdir = libdir+"/"+CONFIG["arch"]
+bindir = CONFIG["bindir"]
+libdir = CONFIG["libdir"]
+pkglibdir = libdir + "/" + ruby_install_name
+archdir = pkglibdir + "/" + CONFIG["arch"]
 mandir = CONFIG["mandir"] + "/man1"
+wdir = Dir.getwd
 
+File.makedirs "#{destdir}#{bindir}", true
 File.install "ruby#{binsuffix}",
-  "#{bindir}/#{ruby_install_name}#{binsuffix}", 0755, TRUE
-File.makedirs libdir, TRUE
-Dir.chdir "ext"
-system "../miniruby#{binsuffix} extmk.rb install"
-Dir.chdir CONFIG["srcdir"]
-IO.foreach 'MANIFEST' do |$_|
-  $_.chop!
-  if /^lib/
-    File.install $_, libdir, 0644, TRUE
-  elsif /^[a-z]+\.h$/
-    File.install $_, archdir, 0644, TRUE
-  end
-  File.install "config.h", archdir, 0644, TRUE
+  "#{destdir}#{bindir}/#{ruby_install_name}#{binsuffix}", 0755, true
+for dll in Dir['*.dll']
+  File.install dll, "#{destdir}#{bindir}/#{dll}", 0755, true
 end
-File.install "rbconfig.rb", archdir, 0644, TRUE
-File.install "ruby.1", mandir, 0644, TRUE
+File.makedirs "#{destdir}#{libdir}", true
+for lib in ["libruby.so", "libruby.so.LIB"]
+  if File.exist? lib
+    File.install lib, "#{destdir}#{libdir}", 0644, true
+  end
+end
+File.makedirs "#{destdir}#{pkglibdir}", true
+File.makedirs "#{destdir}#{archdir}", true
+Dir.chdir "ext"
+system "../miniruby#{binsuffix} extmk.rb install #{destdir}"
+Dir.chdir CONFIG["srcdir"]
+for f in Dir["lib/*.rb"]
+  File.install f, "#{destdir}#{pkglibdir}", 0644, true
+end
+
+File.makedirs(archdir,true)
+for f in Dir["*.h"]
+  File.install f, "#{destdir}#{archdir}", 0644, true
+end
+File.install "libruby.a", "#{destdir}#{archdir}", 0644, true
+
+File.makedirs "#{destdir}#{mandir}", true
+File.install "ruby.1", "#{destdir}#{mandir}", 0644, true
+Dir.chdir wdir
+File.install "config.h", "#{destdir}#{archdir}", 0644, true
+File.install "rbconfig.rb", "#{destdir}#{archdir}", 0644, true
 # vi:set sw=2:

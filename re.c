@@ -3,17 +3,16 @@
   re.c -
 
   $Author$
-  $Date$
   created at: Mon Aug  9 18:24:49 JST 1993
 
-  Copyright (C) 1993-1996 Yukihiro Matsumoto
+  Copyright (C) 1993-1998 Yukihiro Matsumoto
 
 ************************************************/
 
 #include "ruby.h"
 #include "re.h"
 
-static VALUE eRegxpError;
+static VALUE rb_eRegxpError;
 
 #define BEG(no) regs->beg[no]
 #define END(no) regs->end[no]
@@ -69,16 +68,16 @@ static char casetable[] = {
 >>> "You lose. You will need a translation table for your character set." <<<
 #endif
 
-#define min(a,b) (((a)>(b))?(b):(a))
+#define MIN(a,b) (((a)>(b))?(b):(a))
 
 int
-str_cicmp(str1, str2)
+rb_str_cicmp(str1, str2)
     VALUE str1, str2;
 {
     int len, i;
     char *p1, *p2;
 
-    len = min(RSTRING(str1)->len, RSTRING(str2)->len);
+    len = MIN(RSTRING(str1)->len, RSTRING(str2)->len);
     p1 = RSTRING(str1)->ptr; p2 = RSTRING(str2)->ptr;
 
     for (i = 0; i < len; i++, p1++, p2++) {
@@ -89,27 +88,33 @@ str_cicmp(str1, str2)
 }
 
 #define REG_IGNORECASE FL_USER0
+#define REG_CASESTATE  FL_USER1
 
 #define KCODE_NONE  0
 #define KCODE_EUC   FL_USER2
 #define KCODE_SJIS  FL_USER3
-#define KCODE_FIXED FL_USER4
-#define KCODE_MASK (KCODE_EUC|KCODE_SJIS)
+#define KCODE_UTF8  FL_USER4
+#define KCODE_FIXED FL_USER5
+#define KCODE_MASK (KCODE_EUC|KCODE_SJIS|KCODE_UTF8)
 
 static int reg_kcode = 
-#ifdef EUC
+#ifdef RUBY_USE_EUC
     KCODE_EUC;
 #else
-# ifdef SJIS
+# ifdef RUBY_USE_SJIS
     KCODE_SJIS;
 # else
+#  ifdef RUBY_USE_UTF8
+    KCODE_UTF8
+#  else
     KCODE_NONE;
+#  endif
 # endif
 #endif
 
 static void
 kcode_euc(reg)
-    VALUE reg;
+    struct RRegexp *reg;
 {
     FL_UNSET(reg, KCODE_MASK);
     FL_SET(reg, KCODE_EUC);
@@ -118,7 +123,7 @@ kcode_euc(reg)
 
 static void
 kcode_sjis(reg)
-    VALUE reg;
+    struct RRegexp *reg;
 {
     FL_UNSET(reg, KCODE_MASK);
     FL_SET(reg, KCODE_SJIS);
@@ -126,12 +131,23 @@ kcode_sjis(reg)
 }
 
 static void
+kcode_utf8(reg)
+    struct RRegexp *reg;
+{
+    FL_UNSET(reg, KCODE_MASK);
+    FL_SET(reg, KCODE_UTF8);
+    FL_SET(reg, KCODE_FIXED);
+}
+
+static void
 kcode_none(reg)
-    VALUE reg;
+    struct RRegexp *reg;
 {
     FL_UNSET(reg, KCODE_MASK);
     FL_SET(reg, KCODE_FIXED);
 }
+
+static int curr_kcode;
 
 static void
 kcode_set_option(reg)
@@ -139,41 +155,48 @@ kcode_set_option(reg)
 {
     if (!FL_TEST(reg, KCODE_FIXED)) return;
 
-    re_syntax_options &= ~RE_MBCTYPE_MASK;
-    switch ((RBASIC(reg)->flags & KCODE_MASK)) {
+    curr_kcode = RBASIC(reg)->flags & KCODE_MASK;
+    if (reg_kcode == curr_kcode) return;
+    switch (curr_kcode) {
       case KCODE_NONE:
+	re_mbcinit(MBCTYPE_ASCII);
 	break;
       case KCODE_EUC:
-	re_syntax_options |= RE_MBCTYPE_EUC;
+	re_mbcinit(MBCTYPE_EUC);
 	break;
       case KCODE_SJIS:
-	re_syntax_options |= RE_MBCTYPE_SJIS;
+	re_mbcinit(MBCTYPE_SJIS);
+	break;
+      case KCODE_UTF8:
+	re_mbcinit(MBCTYPE_UTF8);
 	break;
     }
-    re_set_syntax(re_syntax_options);
 }	  
 
-void
+static void
 kcode_reset_option()
 {
-    re_syntax_options &= ~RE_MBCTYPE_MASK;
+    if (reg_kcode == curr_kcode) return;
     switch (reg_kcode) {
       case KCODE_NONE:
+	re_mbcinit(MBCTYPE_ASCII);
 	break;
       case KCODE_EUC:
-	re_syntax_options |= RE_MBCTYPE_EUC;
+	re_mbcinit(MBCTYPE_EUC);
 	break;
       case KCODE_SJIS:
-	re_syntax_options |= RE_MBCTYPE_SJIS;
+	re_mbcinit(MBCTYPE_SJIS);
+	break;
+      case KCODE_UTF8:
+	re_mbcinit(MBCTYPE_UTF8);
 	break;
     }
-    re_set_syntax(re_syntax_options);
 }
 
-extern int rb_in_eval;
+extern int ruby_in_compile;
 
 static void
-reg_expr_str(str, s, len)
+rb_reg_expr_str(str, s, len)
     VALUE str;
     char *s;
     int len;
@@ -190,18 +213,18 @@ reg_expr_str(str, s, len)
 	p++;
     }
     if (!slash) {
-	str_cat(str, s, len);
+	rb_str_cat(str, s, len);
     }
     else {
 	p = s; 
 	while (p<pend) {
 	    if (*p == '/') {
 		char c = '\\';
-		str_cat(str, &c, 1);
-		str_cat(str, p, 1);
+		rb_str_cat(str, &c, 1);
+		rb_str_cat(str, p, 1);
 	    }
 	    else {
-		str_cat(str, p, 1);
+		rb_str_cat(str, p, 1);
 	    }
 	    p++;
 	}
@@ -209,27 +232,30 @@ reg_expr_str(str, s, len)
 }
 
 static VALUE
-reg_desc(s, len, re)
+rb_reg_desc(s, len, re)
     char *s;
     int len;
     VALUE re;
 {
-    VALUE str = str_new2("/");
-    reg_expr_str(str, s, len);
-    str_cat(str, "/", 1);
+    VALUE str = rb_str_new2("/");
+    rb_reg_expr_str(str, s, len);
+    rb_str_cat(str, "/", 1);
     if (re) {
-	if (FL_TEST(re,REG_IGNORECASE))
-	    str_cat(str, "i", 1);
-	if (FL_TEST(re,KCODE_FIXED)) {
+	if (FL_TEST(re, REG_IGNORECASE))
+	    rb_str_cat(str, "i", 1);
+	if (FL_TEST(re, KCODE_FIXED)) {
 	    switch ((RBASIC(re)->flags & KCODE_MASK)) {
 	      case KCODE_NONE:
-		str_cat(str, "n", 1);
+		rb_str_cat(str, "n", 1);
 		break;
 	      case KCODE_EUC:
-		str_cat(str, "e", 1);
+		rb_str_cat(str, "e", 1);
 		break;
 	      case KCODE_SJIS:
-		str_cat(str, "s", 1);
+		rb_str_cat(str, "s", 1);
+		break;
+	      case KCODE_UTF8:
+		rb_str_cat(str, "u", 1);
 		break;
 	    }
 	}
@@ -238,47 +264,47 @@ reg_desc(s, len, re)
 }
 
 static VALUE
-reg_source(re)
+rb_reg_source(re)
     VALUE re;
 {
-    VALUE str = str_new(0,0);
-    reg_expr_str(str, RREGEXP(re)->str,RREGEXP(re)->len,re);
+    VALUE str = rb_str_new(0,0);
+    rb_reg_expr_str(str, RREGEXP(re)->str,RREGEXP(re)->len);
 
     return str;
 }
 
 static VALUE
-reg_inspect(re)
+rb_reg_inspect(re)
     VALUE re;
 {
-    return reg_desc(RREGEXP(re)->str, RREGEXP(re)->len, re);
+    return rb_reg_desc(RREGEXP(re)->str, RREGEXP(re)->len, re);
 }
 
 static void
-reg_raise(s, len, err, re)
+rb_reg_raise(s, len, err, re)
     char *s;
     int len;
     char *err;
     VALUE re;
 {
-    VALUE desc = reg_desc(s, len, re);
+    VALUE desc = rb_reg_desc(s, len, re);
 
-    if (rb_in_eval)
-	Raise(eRegxpError, "%s: %s", err, RSTRING(desc)->ptr);
+    if (ruby_in_compile)
+	rb_compile_error("%s: %s", err, RSTRING(desc)->ptr);
     else
-	Error("%s: %s", err, RSTRING(desc)->ptr);
+	rb_raise(rb_eRegxpError, "%s: %s", err, RSTRING(desc)->ptr);
 }
 
 static VALUE
-reg_casefold_p(re)
+rb_reg_casefold_p(re)
     VALUE re;
 {
-    if (FL_TEST(re, REG_IGNORECASE)) return TRUE;
-    return FALSE;
+    if (FL_TEST(re, REG_IGNORECASE)) return Qtrue;
+    return Qfalse;
 }
 
 static VALUE
-reg_kcode_method(re)
+rb_reg_kcode_method(re)
     VALUE re;
 {
     char *kcode = "$KCODE";
@@ -291,18 +317,20 @@ reg_kcode_method(re)
 	    kcode = "euc"; break;
 	  case KCODE_SJIS:
 	    kcode = "sjis"; break;
+	  case KCODE_UTF8:
+	    kcode = "utf8"; break;
 	  default:
 	    break;
 	}
     }
 
-    return str_new2(kcode);
+    return rb_str_new2(kcode);
 }
 
 static Regexp*
 make_regexp(s, len, flag)
     char *s;
-    int len, flag;
+    size_t len, flag;
 {
     Regexp *rp;
     char *err;
@@ -320,27 +348,26 @@ make_regexp(s, len, flag)
     rp->allocated = 16;
     rp->fastmap = ALLOC_N(char, 256);
     if (flag) {
-	rp->translate = casetable;
+	rp->options = flag;
     }
-    err = re_compile_pattern(s, (size_t)len, rp);
-    kcode_reset_option();
+    err = re_compile_pattern(s, len, rp);
     if (err != NULL) {
-	reg_raise(s, len, err, 0);
+	rb_reg_raise(s, len, err, 0);
     }
 
     return rp;
 }
 
-extern VALUE cData;
-static VALUE cMatch;
+static VALUE rb_cMatch;
 
 static VALUE
 match_alloc()
 {
     NEWOBJ(match, struct RMatch);
-    OBJSETUP(match, cMatch, T_MATCH);
+    OBJSETUP(match, rb_cMatch, T_MATCH);
 
     match->str = 0;
+    match->regs = 0;
     match->regs = ALLOC(struct re_registers);
     MEMZERO(match->regs, struct re_registers, 1);
 
@@ -351,88 +378,91 @@ static VALUE
 match_clone(orig)
     VALUE orig;
 {
-    struct re_registers *rr;
-
     NEWOBJ(match, struct RMatch);
-    OBJSETUP(match, cMatch, T_MATCH);
+    OBJSETUP(match, rb_cMatch, T_MATCH);
 
     match->str = RMATCH(orig)->str;
+    match->regs = 0;
 
     match->regs = ALLOC(struct re_registers);
     match->regs->allocated = 0;
     re_copy_registers(match->regs, RMATCH(orig)->regs);
+    CLONESETUP(match, orig);
 
     return (VALUE)match;
 }
 
-VALUE ignorecase;
+int ruby_ignorecase;
+static int may_need_recompile;
 static VALUE matchcache;
 
-void
-reg_prepare_re(reg)
+static void
+rb_reg_prepare_re(reg)
     VALUE reg;
 {
-    int result;
-    int casefold = RTEST(ignorecase);
     int need_recompile = 0;
 
-    /* case-flag set for the object */
-    if (FL_TEST(reg, REG_IGNORECASE)) {
-	casefold = TRUE;
-    }
-    if (casefold) {
-	if (RREGEXP(reg)->ptr->translate != casetable) {
-	    RREGEXP(reg)->ptr->translate = casetable;
-	    RREGEXP(reg)->ptr->fastmap_accurate = 0;
+    /* case-flag not set for the object */
+    if (!FL_TEST(reg, REG_IGNORECASE)) {
+	int state = FL_TEST(reg, REG_CASESTATE);
+
+	if ((ruby_ignorecase || state) && !(ruby_ignorecase && state))  {
+	    RBASIC(reg)->flags ^= REG_CASESTATE;
 	    need_recompile = 1;
 	}
     }
-    else if (RREGEXP(reg)->ptr->translate) {
-	RREGEXP(reg)->ptr->translate = NULL;
-	RREGEXP(reg)->ptr->fastmap_accurate = 0;
-	need_recompile = 1;
-    }
 
-    if (FL_TEST(reg, KCODE_FIXED)) {
-	kcode_set_option(reg);
-    }
-    else if ((RBASIC(reg)->flags & KCODE_MASK) != reg_kcode) {
+    if (!FL_TEST(reg, KCODE_FIXED) &&
+	(RBASIC(reg)->flags & KCODE_MASK) != reg_kcode) {
 	need_recompile = 1;
-	RBASIC(reg)->flags = RBASIC(reg)->flags & ~KCODE_MASK;
+	RBASIC(reg)->flags &= ~KCODE_MASK;
 	RBASIC(reg)->flags |= reg_kcode;
     }
 
     if (need_recompile) {
 	char *err;
 
+	if (FL_TEST(reg, KCODE_FIXED))
+	    kcode_set_option(reg);
+	RREGEXP(reg)->ptr->fastmap_accurate = 0;
 	err = re_compile_pattern(RREGEXP(reg)->str, RREGEXP(reg)->len, RREGEXP(reg)->ptr);
 	if (err != NULL) {
-	    kcode_reset_option();
-	    reg_raise(RREGEXP(reg)->str, RREGEXP(reg)->len, err, reg);
+	    rb_reg_raise(RREGEXP(reg)->str, RREGEXP(reg)->len, err, reg);
 	}
     }
 }
 
 int
-reg_search(reg, str, start, regs)
+rb_reg_search(reg, str, start, reverse)
     VALUE reg, str;
-    int start;
-    struct re_registers *regs;
+    int start, reverse;
 {
     int result;
-    int casefold = RTEST(ignorecase);
-    VALUE match = 0;
-    struct re_registers *regs0 = 0;
-    int need_recompile = 0;
+    VALUE match;
+    struct re_registers *regs = 0;
+    int range;
 
     if (start > RSTRING(str)->len) return -1;
 
-    reg_prepare_re(reg);
+    if (may_need_recompile)
+	rb_reg_prepare_re(reg);
 
-    if (regs == (struct re_registers*)-1) {
-	regs = 0;
+    if (FL_TEST(reg, KCODE_FIXED))
+	kcode_set_option(reg);
+    else if (reg_kcode != curr_kcode)
+	kcode_reset_option();
+
+#ifdef USE_THREAD
+    if (rb_thread_scope_shared_p()) {
+	match = Qnil;
     }
     else {
+	match = rb_backref_get();
+    }
+#else
+    match = rb_backref_get();
+#endif
+    if (NIL_P(match)) {
 	if (matchcache) {
 	    match = matchcache;
 	    matchcache = 0;
@@ -440,45 +470,49 @@ reg_search(reg, str, start, regs)
 	else {
 	    match = match_alloc();
 	}
-	regs0 = RMATCH(match)->regs;
     }
+    regs = RMATCH(match)->regs;
 
+    if (reverse) {
+	range = -start;
+    }
+    else {
+	range = RSTRING(str)->len - start;
+    }
     result = re_search(RREGEXP(reg)->ptr,RSTRING(str)->ptr,RSTRING(str)->len,
-		       start,RSTRING(str)->len-start,regs0);
-    kcode_reset_option();
+		       start, range, regs);
 
-    if (start == -2) {
-	reg_raise(RREGEXP(reg)->str, RREGEXP(reg)->len,
+    if (result == -2) {
+	rb_reg_raise(RREGEXP(reg)->str, RREGEXP(reg)->len,
 		  "Stack overfow in regexp matcher", reg);
     }
     if (result < 0) {
 	matchcache = match;
-	backref_set(Qnil);
+	rb_backref_set(Qnil);
     }
-    else if (match) {
-	RMATCH(match)->str = str_new4(str);
-	backref_set(match);
+    else {
+	RMATCH(match)->str = rb_str_new4(str);
+	rb_backref_set(match);
     }
-    if (regs && regs0) re_copy_registers(regs, regs0);
 
     return result;
 }
 
 VALUE
-reg_nth_defined(nth, match)
+rb_reg_nth_defined(nth, match)
     int nth;
     VALUE match;
 {
     if (NIL_P(match)) return Qnil;
     if (nth >= RMATCH(match)->regs->num_regs) {
-	return FALSE;
+	return Qfalse;
     }
-    if (RMATCH(match)->BEG(nth) == -1) return FALSE;
-    return TRUE;
+    if (RMATCH(match)->BEG(nth) == -1) return Qfalse;
+    return Qtrue;
 }
 
 VALUE
-reg_nth_match(nth, match)
+rb_reg_nth_match(nth, match)
     int nth;
     VALUE match;
 {
@@ -492,37 +526,37 @@ reg_nth_match(nth, match)
     if (start == -1) return Qnil;
     end = RMATCH(match)->END(nth);
     len = end - start;
-    return str_new(RSTRING(RMATCH(match)->str)->ptr + start, len);
+    return rb_str_new(RSTRING(RMATCH(match)->str)->ptr + start, len);
 }
 
 VALUE
-reg_last_match(match)
+rb_reg_last_match(match)
     VALUE match;
 {
-    return reg_nth_match(0, match);
+    return rb_reg_nth_match(0, match);
 }
 
 VALUE
-reg_match_pre(match)
-    VALUE match;
-{
-    if (NIL_P(match)) return Qnil;
-    if (RMATCH(match)->BEG(0) == -1) return Qnil;
-    return str_new(RSTRING(RMATCH(match)->str)->ptr, RMATCH(match)->BEG(0));
-}
-
-VALUE
-reg_match_post(match)
+rb_reg_match_pre(match)
     VALUE match;
 {
     if (NIL_P(match)) return Qnil;
     if (RMATCH(match)->BEG(0) == -1) return Qnil;
-    return str_new(RSTRING(RMATCH(match)->str)->ptr+RMATCH(match)->END(0),
+    return rb_str_new(RSTRING(RMATCH(match)->str)->ptr, RMATCH(match)->BEG(0));
+}
+
+VALUE
+rb_reg_match_post(match)
+    VALUE match;
+{
+    if (NIL_P(match)) return Qnil;
+    if (RMATCH(match)->BEG(0) == -1) return Qnil;
+    return rb_str_new(RSTRING(RMATCH(match)->str)->ptr+RMATCH(match)->END(0),
 		   RSTRING(RMATCH(match)->str)->len-RMATCH(match)->END(0));
 }
 
 VALUE
-reg_match_last(match)
+rb_reg_match_last(match)
     VALUE match;
 {
     int i;
@@ -533,31 +567,31 @@ reg_match_last(match)
     for (i=RMATCH(match)->regs->num_regs-1; RMATCH(match)->BEG(i) == -1 && i > 0; i--)
 	;
     if (i == 0) return Qnil;
-    return reg_nth_match(i, match);
+    return rb_reg_nth_match(i, match);
 }
 
 static VALUE
 last_match_getter()
 {
-    return reg_last_match(backref_get());
+    return rb_reg_last_match(rb_backref_get());
 }
 
 static VALUE
 prematch_getter()
 {
-    return reg_match_pre(backref_get());
+    return rb_reg_match_pre(rb_backref_get());
 }
 
 static VALUE
 postmatch_getter()
 {
-    return reg_match_post(backref_get());
+    return rb_reg_match_post(rb_backref_get());
 }
 
 static VALUE
 last_paren_match_getter()
 {
-    return reg_match_last(backref_get());
+    return rb_reg_match_last(rb_backref_get());
 }
 
 static VALUE
@@ -565,13 +599,13 @@ match_to_a(match)
     VALUE match;
 {
     struct re_registers *regs = RMATCH(match)->regs;
-    VALUE ary = ary_new2(regs->num_regs);
+    VALUE ary = rb_ary_new2(regs->num_regs);
     char *ptr = RSTRING(RMATCH(match)->str)->ptr;
     int i;
 
     for (i=0; i<regs->num_regs; i++) {
-	if (regs->beg[0] == -1) ary_push(ary, Qnil);
-	else ary_push(ary, str_new(ptr+regs->beg[i],
+	if (regs->beg[i] == -1) rb_ary_push(ary, Qnil);
+	else rb_ary_push(ary, rb_str_new(ptr+regs->beg[i],
 				   regs->end[i]-regs->beg[i]));
     }
     return ary;
@@ -591,7 +625,7 @@ match_aref(argc, argv, match)
     rb_scan_args(argc, argv, "11", &idx, &rest);
 
     if (!NIL_P(rest) || !FIXNUM_P(idx) || FIX2INT(idx) < 0) {
-	return ary_aref(argc, argv, match_to_a(match));
+	return rb_ary_aref(argc, argv, match_to_a(match));
     }
 
     regs = RMATCH(match)->regs;
@@ -600,100 +634,111 @@ match_aref(argc, argv, match)
     if (i>=regs->num_regs) return Qnil;
 
     ptr = RSTRING(RMATCH(match)->str)->ptr;
-    return str_new(ptr+regs->beg[i], regs->end[i]-regs->beg[i]);
+    return rb_str_new(ptr+regs->beg[i], regs->end[i]-regs->beg[i]);
 }
 
 static VALUE
 match_to_s(match)
     VALUE match;
 {
-    VALUE str = reg_last_match(match);
+    VALUE str = rb_reg_last_match(match);
 
-    if (NIL_P(str)) return str_new(0,0);
+    if (NIL_P(str)) return rb_str_new(0,0);
     return str;
 }
 
-void
-reg_free(rp)
-Regexp *rp;
-{
-    free(rp->buffer);
-    free(rp->fastmap);
-    free(rp);
-}
-
-VALUE cRegexp;
+VALUE rb_cRegexp;
 
 static VALUE
-reg_new_1(class, s, len, flag)
-    VALUE class;
+rb_reg_new_1(klass, s, len, options)
+    VALUE klass;
     char *s;
-    int len;
-    int flag;			/* CASEFOLD  = 0x1 */
-				/* CODE_NONE = 0x2 */
-				/* CODE_EUC  = 0x4 */
-				/* CODE_SJIS = 0x6 */
+    size_t len;
+    int options;		/* CASEFOLD  = 1 */
+				/* EXTENDED  = 2 */
+				/* CODE_NONE = 4 */
+				/* CODE_EUC  = 8 */
+				/* CODE_SJIS = 12 */
+				/* CODE_UTF8 = 16 */
 {
     NEWOBJ(re, struct RRegexp);
-    OBJSETUP(re, class, T_REGEXP);
+    OBJSETUP(re, klass, T_REGEXP);
+    re->ptr = 0;
+    re->str = 0;
 
-    if (flag & 0x1) {
+    if (options & RE_OPTION_IGNORECASE) {
 	FL_SET(re, REG_IGNORECASE);
     }
-    switch (flag & ~0x1) {
+    switch (options & ~0x3) {
       case 0:
       default:
 	FL_SET(re, reg_kcode);
 	break;
-      case 2:
+      case 4:
 	kcode_none(re);
 	break;
-      case 4:
+      case 8:
 	kcode_euc(re);
 	break;
-      case 6:
+      case 12:
 	kcode_sjis(re);
+	break;
+      case 16:
+	kcode_utf8(re);
 	break;
     }
 
-    kcode_set_option(re);
-    re->ptr = make_regexp(s, len, flag & 0x1);
+    if (options & ~0x3) {
+	kcode_set_option((VALUE)re);
+    }
+    if (ruby_ignorecase) {
+	options |= RE_OPTION_IGNORECASE;
+	FL_SET(re, REG_CASESTATE);
+    }
+    re->ptr = make_regexp(s, len, options & 0x3);
     re->str = ALLOC_N(char, len+1);
     memcpy(re->str, s, len);
     re->str[len] = '\0';
     re->len = len;
+    if (options & ~0x3) {
+	kcode_reset_option();
+    }
+    rb_obj_call_init((VALUE)re);
 
     return (VALUE)re;
 }
 
 VALUE
-reg_new(s, len, flag)
+rb_reg_new(s, len, options)
     char *s;
-    int len, flag;
+    size_t len;
+    int options;
 {
-    return reg_new_1(cRegexp, s, len, flag);
+    return rb_reg_new_1(rb_cRegexp, s, len, options);
 }
 
-static int ign_cache;
+static int case_cache;
+static int kcode_cache;
 static VALUE reg_cache;
 
 VALUE
-reg_regcomp(str)
+rb_reg_regcomp(str)
     VALUE str;
 {
-    int ignc = RTEST(ignorecase);
-
     if (reg_cache && RREGEXP(reg_cache)->len == RSTRING(str)->len
-	&& ign_cache == ignc
+	&& case_cache == ruby_ignorecase
+	&& kcode_cache == reg_kcode
 	&& memcmp(RREGEXP(reg_cache)->str, RSTRING(str)->ptr, RSTRING(str)->len) == 0)
 	return reg_cache;
 
-    ign_cache = ignc;
-    return reg_cache = reg_new(RSTRING(str)->ptr, RSTRING(str)->len, ignc);
+    case_cache = ruby_ignorecase;
+    kcode_cache = reg_kcode;
+    return reg_cache = rb_reg_new(RSTRING(str)->ptr, RSTRING(str)->len,
+				  ruby_ignorecase);
 }
 
 static int
-reg_cur_kcode(re)
+rb_reg_cur_kcode(re)
     VALUE re;
 {
     if (FL_TEST(re, KCODE_FIXED)) {
@@ -703,57 +748,58 @@ reg_cur_kcode(re)
 }
 
 static VALUE
-reg_equal(re1, re2)
+rb_reg_equal(re1, re2)
     VALUE re1, re2;
 {
     int min;
 
-    if (re1 == re2) return TRUE;
-    if (TYPE(re2) != T_REGEXP) return FALSE;
-    if (RREGEXP(re1)->len != RREGEXP(re2)->len) return FALSE;
+    if (re1 == re2) return Qtrue;
+    if (TYPE(re2) != T_REGEXP) return Qfalse;
+    if (RREGEXP(re1)->len != RREGEXP(re2)->len) return Qfalse;
     min = RREGEXP(re1)->len;
     if (min > RREGEXP(re2)->len) min = RREGEXP(re2)->len;
     if (memcmp(RREGEXP(re1)->str, RREGEXP(re2)->str, min) == 0 &&
-	reg_cur_kcode(re1) == reg_cur_kcode(re2) &&
+	rb_reg_cur_kcode(re1) == rb_reg_cur_kcode(re2) &&
 	!(FL_TEST(re1,REG_IGNORECASE) ^ FL_TEST(re2,REG_IGNORECASE))) {
-	return TRUE;
+	return Qtrue;
     }
-    return FALSE;
+    return Qfalse;
 }
 
 VALUE
-reg_match(re, str)
+rb_reg_match(re, str)
     VALUE re, str;
 {
     int start;
 
-    if (TYPE(str) != T_STRING) return FALSE;
-    start = reg_search(re, str, 0, 0);
+    if (NIL_P(str)) return Qnil;
+    str = rb_str_to_str(str);
+    start = rb_reg_search(re, str, 0, 0);
     if (start < 0) {
-	return FALSE;
+	return Qnil;
     }
     return INT2FIX(start);
 }
 
 VALUE
-reg_match2(re)
+rb_reg_match2(re)
     VALUE re;
 {
     int start;
-    VALUE line = lastline_get();
+    VALUE line = rb_lastline_get();
 
     if (TYPE(line) != T_STRING)
-	return FALSE;
+	return Qnil;
 
-    start = reg_search(re, line, 0, 0);
+    start = rb_reg_search(re, line, 0, 0);
     if (start < 0) {
-	return FALSE;
+	return Qnil;
     }
     return INT2FIX(start);
 }
 
 static VALUE
-reg_s_new(argc, argv, self)
+rb_reg_s_new(argc, argv, self)
     int argc;
     VALUE *argv;
     VALUE self;
@@ -762,22 +808,23 @@ reg_s_new(argc, argv, self)
     int flag = 0;
 
     if (argc == 0 || argc > 3) {
-	ArgError("wrong # of argument");
+	rb_raise(rb_eArgError, "wrong # of argument");
     }
     if (argc >= 2 && RTEST(argv[1])) {
-	flag = 1;
+	flag = RE_OPTION_IGNORECASE;
     }
     if (argc == 3) {
-	Check_Type(argv[2], T_STRING);
-	switch (RSTRING(argv[2])->ptr[0]) {
+	char *kcode = STR2CSTR(argv[2]);
+
+	switch (kcode[0]) {
 	  case 'n': case 'N':
-	    flag |= 2;
-	    break;
-	  case 'e': case 'E':
 	    flag |= 4;
 	    break;
+	  case 'e': case 'E':
+	    flag |= 8;
+	    break;
 	  case 's': case 'S':
-	    flag |= 6;
+	    flag |= 12;
 	    break;
 	  default:
 	    break;
@@ -785,37 +832,37 @@ reg_s_new(argc, argv, self)
     }
 
     src = argv[0];
-    switch (TYPE(src)) {
-      case T_STRING:
-	return reg_new_1(self, RSTRING(src)->ptr, RSTRING(src)->len, flag);
-	break;
-
-      case T_REGEXP:
-	return reg_new_1(self, RREGEXP(src)->str, RREGEXP(src)->len, flag);
-	break;
-
-      default:
-	Check_Type(src, T_STRING);
+    if (TYPE(src) == T_REGEXP) {
+	return rb_reg_new_1(self, RREGEXP(src)->str, RREGEXP(src)->len, flag);
     }
+    else {
+	char *p;
+	size_t len;
 
-    return Qnil;
+	p = str2cstr(src, &len);
+	return rb_reg_new_1(self, p, len, flag);
+    }
 }
 
 static VALUE
-reg_s_quote(re, str)
+rb_reg_s_quote(re, str)
     VALUE re, str;
 {
   char *s, *send, *t;
   char *tmp;
+  int len;
 
-  Check_Type(str, T_STRING);
-
-  tmp = ALLOCA_N(char, RSTRING(str)->len*2);
-
-  s = RSTRING(str)->ptr; send = s + RSTRING(str)->len;
+  s = str2cstr(str, &len);
+  send = s + len;
+  tmp = ALLOCA_N(char, len*2);
   t = tmp;
 
   for (; s != send; s++) {
+      if (ismbchar(*s)) {
+	  *t++ = *s++;
+	  *t++ = *s;
+	  continue;
+      }
       if (*s == '[' || *s == ']'
 	  || *s == '{' || *s == '}'
 	  || *s == '(' || *s == ')'
@@ -828,22 +875,36 @@ reg_s_quote(re, str)
       *t++ = *s;
     }
 
-  return str_new(tmp, t - tmp);
+  return rb_str_new(tmp, t - tmp);
+}
+
+int
+rb_kcode()
+{
+    switch (reg_kcode) {
+      case KCODE_EUC:
+	return MBCTYPE_EUC;
+      case KCODE_SJIS:
+	return MBCTYPE_SJIS;
+      case KCODE_NONE:
+	return MBCTYPE_ASCII;
+    }
+    rb_bug("wrong reg_kcode value (0x%x)", reg_kcode);
 }
 
 static int
-reg_get_kcode(re)
+rb_reg_get_kcode(re)
     VALUE re;
 {
     int kcode = 0;
 
     switch (RBASIC(re)->flags & KCODE_MASK) {
       case KCODE_NONE:
-	kcode |= 2; break;
-      case KCODE_EUC:
 	kcode |= 4; break;
+      case KCODE_EUC:
+	kcode |= 8; break;
       case KCODE_SJIS:
-	kcode |= 6; break;
+	kcode |= 12; break;
       default:
 	break;
     }
@@ -851,25 +912,38 @@ reg_get_kcode(re)
     return kcode;
 }
 
-static VALUE
-reg_clone(re)
+int
+rb_reg_options(re)
     VALUE re;
 {
-    int flag = FL_TEST(re, REG_IGNORECASE)?1:0;
+    int options = 0;
 
+    if (FL_TEST(re, REG_IGNORECASE)) 
+	options |= RE_OPTION_IGNORECASE;
     if (FL_TEST(re, KCODE_FIXED)) {
-	flag |= reg_get_kcode(re);
+	options |= rb_reg_get_kcode(re);
     }
-    return reg_new_1(CLASS_OF(re), RREGEXP(re)->str, RREGEXP(re)->len, flag);
+    return options;
+}
+
+static VALUE
+rb_reg_clone(orig)
+    VALUE orig;
+{
+    VALUE reg;
+    
+    reg = rb_reg_new_1(CLASS_OF(orig), RREGEXP(orig)->str, RREGEXP(orig)->len,
+		       rb_reg_options(orig));
+    CLONESETUP(reg, orig);
+    return reg;
 }
 
 VALUE
-reg_regsub(str, src, regs)
+rb_reg_regsub(str, src, regs)
     VALUE str, src;
     struct re_registers *regs;
 {
     VALUE val = 0;
-    VALUE tmp;
     char *p, *s, *e, c;
     int no;
 
@@ -880,10 +954,14 @@ reg_regsub(str, src, regs)
 	char *ss = s;
 
 	c = *s++;
-	if (c != '\\') continue;
+	if (ismbchar(c)) {
+	    s++;
+	    continue;
+	}
+	if (c != '\\' || s == e) continue;
 
-	if (!val) val = str_new(p, ss-p);
-	else      str_cat(val, p, ss-p);
+	if (!val) val = rb_str_new(p, ss-p);
+	else      rb_str_cat(val, p, ss-p);
 
 	c = *s++;
 	p = s;
@@ -897,11 +975,11 @@ reg_regsub(str, src, regs)
 	    break;
 
 	  case '`':
-	    str_cat(val, RSTRING(src)->ptr, BEG(0));
+	    rb_str_cat(val, RSTRING(src)->ptr, BEG(0));
 	    continue;
 
 	  case '\'':
-	    str_cat(val, RSTRING(src)->ptr+END(0), RSTRING(src)->len-END(0));
+	    rb_str_cat(val, RSTRING(src)->ptr+END(0), RSTRING(src)->len-END(0));
 	    continue;
 
 	  case '+':
@@ -911,117 +989,110 @@ reg_regsub(str, src, regs)
 	    break;
 
 	  case '\\':
-	    str_cat(val, s-1, 1);
+	    rb_str_cat(val, s-1, 1);
 	    continue;
 
 	  default:
-	    str_cat(val, s-2, 2);
+	    rb_str_cat(val, s-2, 2);
 	    continue;
 	}
 
 	if (no >= 0) {
 	    if (BEG(no) == -1) continue;
-	    str_cat(val, RSTRING(src)->ptr+BEG(no), END(no)-BEG(no));
+	    rb_str_cat(val, RSTRING(src)->ptr+BEG(no), END(no)-BEG(no));
 	}
     }
 
     if (p < e) {
-	if (!val) val = str_new(p, e-p);
-	else      str_cat(val, p, e-p);
+	if (!val) val = rb_str_new(p, e-p);
+	else      rb_str_cat(val, p, e-p);
     }
-    if (!val) return (VALUE)str;
+    if (!val) return str;
 
     return val;
 }
 
-#define IS_KCODE_FIXED(re) (FL_TEST((re), KCODE_FIXED)?1:0)
-
-static int
-reg_prepare_operation(re1, re2)
-    VALUE re1, re2;
+char*
+rb_get_kcode()
 {
-    int flag = 0;
-
-    Check_Type(re2, T_REGEXP);
-    flag = IS_KCODE_FIXED(re1)+IS_KCODE_FIXED(re2)*2;
-    switch (IS_KCODE_FIXED(re1)+IS_KCODE_FIXED(re2)*2) {
-      case 3:			/* both have fixed kcode (must match) */
-	if (((RBASIC(re1)->flags^RBASIC(re2)->flags)&KCODE_MASK) != 0) {
-	    Raise(eRegxpError, "kanji code mismatch");
-	}
-	/* fall through */
-      case 2:			/* re2 has fixed kcode */
-	flag = reg_get_kcode(re2);
-	break;
-      case 1:			/* re1 has fixed kcode */
-	flag = reg_get_kcode(re1);
-	break;
-      case 0:			/* neither has fixed kcode */
-	flag = 0;
-	break;
+    switch (reg_kcode) {
+      case KCODE_SJIS:
+	return "SJIS";
+      case KCODE_EUC:
+	return "EUC";
+      case KCODE_UTF8:
+	return "UTF8";
+      default:
+	return "NONE";
     }
-
-    if (FL_TEST(re1, REG_IGNORECASE) ^ FL_TEST(re2, REG_IGNORECASE)) {
-	Raise(eRegxpError, "casefold mismatch");
-    }
-    if (FL_TEST(re1, REG_IGNORECASE)) flag |= 0x1;
-
-    return flag;
 }
 
 static VALUE
 kcode_getter()
 {
-    switch (reg_kcode) {
-      case KCODE_SJIS:
-	return str_new2("SJIS");
-      case KCODE_EUC:
-	return str_new2("EUC");
-      default:
-	return str_new2("NONE");
-    }
+    return rb_str_new2(rb_get_kcode());
 }
 
 void
 rb_set_kcode(code)
     char *code;
 {
-    re_syntax_options &= ~RE_MBCTYPE_MASK;
     if (code == 0) goto set_no_conversion;
 
     switch (code[0]) {
       case 'E':
       case 'e':
 	reg_kcode = KCODE_EUC;
-	re_syntax_options |= RE_MBCTYPE_EUC;
+	re_mbcinit(MBCTYPE_EUC);
 	break;
       case 'S':
       case 's':
 	reg_kcode = KCODE_SJIS;
-	re_syntax_options |= RE_MBCTYPE_SJIS;
+	re_mbcinit(MBCTYPE_SJIS);
+	break;
+      case 'U':
+      case 'u':
+	reg_kcode = KCODE_UTF8;
+	re_mbcinit(MBCTYPE_UTF8);
 	break;
       default:
       case 'N':
       case 'n':
+      case 'A':
+      case 'a':
       set_no_conversion:
 	reg_kcode = KCODE_NONE;
+	re_mbcinit(MBCTYPE_ASCII);
 	break;
     }
-    re_set_syntax(re_syntax_options);
 }
 
 static void
 kcode_setter(val)
     struct RString *val;
 {
-    Check_Type(val, T_STRING);
-    rb_set_kcode(val->ptr);
+    may_need_recompile = 1;
+    rb_set_kcode(STR2CSTR(val));
+}
+
+static VALUE
+ignorecase_getter()
+{
+    return ruby_ignorecase?Qtrue:Qfalse;
+}
+
+static void
+ignorecase_setter(val)
+    VALUE val;
+{
+    may_need_recompile = 1;
+    ruby_ignorecase = RTEST(val);
 }
 
 static VALUE
 match_getter()
 {
-    return backref_get();
+    return match_clone(rb_backref_get());
 }
 
 static void
@@ -1029,27 +1100,28 @@ match_setter(val)
     VALUE val;
 {
     Check_Type(val, T_MATCH);
-    backref_set(val);
+    rb_backref_set(val);
 }
-
-VALUE any_to_s();
 
 void
 Init_Regexp()
 {
-    extern VALUE eException;
+    rb_eRegxpError = rb_define_class("RegxpError", rb_eStandardError);
 
-    eRegxpError = rb_define_class("RegxpError", eException);
-
-    re_set_syntax(RE_NO_BK_PARENS | RE_NO_BK_VBAR
-		  | RE_INTERVALS
-		  | RE_NO_BK_BRACES
-		  | RE_CONTEXTUAL_INVALID_OPS
-		  | RE_BACKSLASH_ESCAPE_IN_LISTS
-#ifdef DEFAULT_MBCTYPE
-		  | DEFAULT_MBCTYPE
+    re_set_casetable(casetable);
+#ifdef RUBY_USE_EUC
+    re_mbcinit(MBCTYPE_EUC);
+#else
+#ifdef RUBY_USE_SJIS
+    re_mbcinit(MBCTYPE_SJIS);
+#else
+#ifdef RUBY_USE_UTF8
+    re_mbcinit(MBCTYPE_UTF8);
+#else
+    re_mbcinit(MBCTYPE_ASCII);
 #endif
-	);
+#endif
+#endif
 
     rb_define_virtual_variable("$~", match_getter, match_setter);
     rb_define_virtual_variable("$&", last_match_getter, 0);
@@ -1057,31 +1129,32 @@ Init_Regexp()
     rb_define_virtual_variable("$'", postmatch_getter, 0);
     rb_define_virtual_variable("$+", last_paren_match_getter, 0);
 
-    rb_define_variable("$=", &ignorecase);
+    rb_define_virtual_variable("$=", ignorecase_getter, ignorecase_setter);
     rb_define_virtual_variable("$KCODE", kcode_getter, kcode_setter);
     rb_define_virtual_variable("$-K", kcode_getter, kcode_setter);
 
-    cRegexp  = rb_define_class("Regexp", cObject);
-    rb_define_singleton_method(cRegexp, "new", reg_s_new, -1);
-    rb_define_singleton_method(cRegexp, "compile", reg_s_new, -1);
-    rb_define_singleton_method(cRegexp, "quote", reg_s_quote, 1);
+    rb_cRegexp = rb_define_class("Regexp", rb_cObject);
+    rb_define_singleton_method(rb_cRegexp, "new", rb_reg_s_new, -1);
+    rb_define_singleton_method(rb_cRegexp, "compile", rb_reg_s_new, -1);
+    rb_define_singleton_method(rb_cRegexp, "quote", rb_reg_s_quote, 1);
 
-    rb_define_method(cRegexp, "clone", reg_clone, 0);
-    rb_define_method(cRegexp, "==", reg_equal, 1);
-    rb_define_method(cRegexp, "=~", reg_match, 1);
-    rb_define_method(cRegexp, "===", reg_match, 1);
-    rb_define_method(cRegexp, "~", reg_match2, 0);
-    rb_define_method(cRegexp, "inspect", reg_inspect, 0);
-    rb_define_method(cRegexp, "source", reg_source, 0);
-    rb_define_method(cRegexp, "casefold?", reg_casefold_p, 0);
-    rb_define_method(cRegexp, "kcode", reg_kcode_method, 0);
+    rb_define_method(rb_cRegexp, "clone", rb_reg_clone, 0);
+    rb_define_method(rb_cRegexp, "==", rb_reg_equal, 1);
+    rb_define_method(rb_cRegexp, "=~", rb_reg_match, 1);
+    rb_define_method(rb_cRegexp, "===", rb_reg_match, 1);
+    rb_define_method(rb_cRegexp, "~", rb_reg_match2, 0);
+    rb_define_method(rb_cRegexp, "inspect", rb_reg_inspect, 0);
+    rb_define_method(rb_cRegexp, "source", rb_reg_source, 0);
+    rb_define_method(rb_cRegexp, "casefold?", rb_reg_casefold_p, 0);
+    rb_define_method(rb_cRegexp, "kcode", rb_reg_kcode_method, 0);
 
     rb_global_variable(&reg_cache);
     rb_global_variable(&matchcache);
 
-    cMatch  = rb_define_class("MatchingData", cData);
-    rb_define_method(cMatch, "to_a", match_to_a, 0);
-    rb_define_method(cMatch, "[]", match_aref, -1);
-    rb_define_method(cMatch, "to_s", match_to_s, 0);
-    rb_define_method(cMatch, "inspect", any_to_s, 0);
+    rb_cMatch  = rb_define_class("MatchingData", rb_cData);
+    rb_define_method(rb_cMatch, "clone", match_clone, 0);
+    rb_define_method(rb_cMatch, "to_a", match_to_a, 0);
+    rb_define_method(rb_cMatch, "[]", match_aref, -1);
+    rb_define_method(rb_cMatch, "to_s", match_to_s, 0);
+    rb_define_method(rb_cMatch, "inspect", rb_any_to_s, 0);
 }

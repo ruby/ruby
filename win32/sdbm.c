@@ -634,7 +634,7 @@ register DBM *db;
  */
 
 #ifndef lint
-/*char pair_rcsid[] = "$Id: pair.c,v 1.10 90/12/13 13:00:35 oz Exp $";*/
+/*char pair_rcsid[] = "$Id: sdbm.c,v 1.1.1.1.2.1 1998/01/16 12:36:12 matz Exp $";*/
 #endif
 
 #ifndef BSD42

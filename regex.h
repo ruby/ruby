@@ -22,6 +22,8 @@
 #ifndef __REGEXP_LIBRARY
 #define __REGEXP_LIBRARY
 
+#include <stddef.h>
+
 /* Define number of parens for which we record the beginnings and ends.
    This affects how much space the `struct re_registers' type takes up.  */
 #ifndef RE_NREGS
@@ -38,174 +40,52 @@
 #endif
 
 
-/* This defines the various regexp syntaxes.  */
-extern long re_syntax_options;
-
-
-/* The following bits are used in the re_syntax_options variable to choose among
-   alternative regexp syntaxes.  */
-
-/* If this bit is set, plain parentheses serve as grouping, and backslash
-     parentheses are needed for literal searching.
-   If not set, backslash-parentheses are grouping, and plain parentheses
-     are for literal searching.  */
-#define RE_NO_BK_PARENS	1L
-
-/* If this bit is set, plain | serves as the `or'-operator, and \| is a 
-     literal.
-   If not set, \| serves as the `or'-operator, and | is a literal.  */
-#define RE_NO_BK_VBAR (1L << 1)
-
-/* If this bit is set, | binds tighter than ^ or $.
-   If not set, the contrary.  */
-#define RE_TIGHT_VBAR (1L << 3)
-
-/* If this bit is set, then treat newline as an OR operator.
-   If not set, treat it as a normal character.  */
-#define RE_NEWLINE_OR (1L << 4)
-
-/* If this bit is set, then special characters may act as normal
-   characters in some contexts. Specifically, this applies to:
-	^ -- only special at the beginning, or after ( or |;
-	$ -- only special at the end, or before ) or |;
-	*, +, ? -- only special when not after the beginning, (, or |.
-   If this bit is not set, special characters (such as *, ^, and $)
-   always have their special meaning regardless of the surrounding
-   context.  */
-#define RE_CONTEXT_INDEP_OPS (1L << 5)
-
-/* If this bit is not set, then \ before anything inside [ and ] is taken as 
-     a real \.
-   If set, then such a \ escapes the following character.  This is a
-     special case for awk.  */
-#define RE_AWK_CLASS_HACK (1L << 6)
-
-/* If this bit is set, then \{ and \} or { and } serve as interval operators.
-   If not set, then \{ and \} and { and } are treated as literals.  */
-#define RE_INTERVALS (1L << 7)
-
-/* If this bit is not set, then \{ and \} serve as interval operators and 
-     { and } are literals.
-   If set, then { and } serve as interval operators and \{ and \} are 
-     literals.  */
-#define RE_NO_BK_CURLY_BRACES (1L << 8)
-#define RE_NO_BK_BRACES RE_NO_BK_CURLY_BRACES
-
 /* If this bit is set, then character classes are supported; they are:
      [:alpha:],	[:upper:], [:lower:],  [:digit:], [:alnum:], [:xdigit:],
      [:space:], [:print:], [:punct:], [:graph:], and [:cntrl:].
    If not set, then character classes are not supported.  */
 #define RE_CHAR_CLASSES (1L << 9)
 
-/* If this bit is set, then the dot re doesn't match a null byte.
-   If not set, it does.  */
-#define RE_DOT_NOT_NULL (1L << 10)
-
-/* If this bit is set, then [^...] doesn't match a newline.
-   If not set, it does.  */
-#define RE_HAT_NOT_NEWLINE (1L << 11)
-
-/* If this bit is set, back references are recognized.
-   If not set, they aren't.  */
-#define RE_NO_BK_REFS (1L << 12)
-
-/* If this bit is set, back references must refer to a preceding
-   subexpression.  If not set, a back reference to a nonexistent
-   subexpression is treated as literal characters.  */
-#define RE_NO_EMPTY_BK_REF (1L << 13)
-
-/* If this bit is set, bracket expressions can't be empty.  
-   If it is set, they can be empty.  */
-#define RE_NO_EMPTY_BRACKETS (1L << 14)
-
-/* If this bit is set, then *, +, ? and { cannot be first in an re or
-   immediately after a |, or a (.  Furthermore, a | cannot be first or
-   last in an re, or immediately follow another | or a (.  Also, a ^
-   cannot appear in a nonleading position and a $ cannot appear in a
-   nontrailing position (outside of bracket expressions, that is).  */
-#define RE_CONTEXTUAL_INVALID_OPS (1L << 15)
-
-/* If this bit is set, then +, ? and | aren't recognized as operators.
-   If it's not, they are.  */
-#define RE_LIMITED_OPS (1L << 16)
-
-/* If this bit is set, then an ending range point has to collate higher
-     or equal to the starting range point.
-   If it's not set, then when the ending range point collates higher
-     than the starting range point, the range is just considered empty.  */
-#define RE_NO_EMPTY_RANGES (1L << 17)
-
-/* If this bit is set, then a hyphen (-) can't be an ending range point.
-   If it isn't, then it can.  */
-#define RE_NO_HYPHEN_RANGE_END (1L << 18)
-
-/* If this bit is not set, then \ inside a bracket expression is literal.
-   If set, then such a \ quotes the following character.  */
-#define RE_BACKSLASH_ESCAPE_IN_LISTS (1L << 19)
-
-/* Define combinations of bits for the standard possibilities.  */
-#define RE_SYNTAX_POSIX_AWK (RE_NO_BK_PARENS | RE_NO_BK_VBAR \
-			| RE_CONTEXT_INDEP_OPS)
-#define RE_SYNTAX_AWK (RE_NO_BK_PARENS | RE_NO_BK_VBAR | RE_AWK_CLASS_HACK)
-#define RE_SYNTAX_EGREP (RE_NO_BK_PARENS | RE_NO_BK_VBAR \
-			| RE_CONTEXT_INDEP_OPS | RE_NEWLINE_OR)
-#define RE_SYNTAX_GREP (RE_BK_PLUS_QM | RE_NEWLINE_OR)
-#define RE_SYNTAX_EMACS 0
-#define RE_SYNTAX_POSIX_BASIC (RE_INTERVALS | RE_BK_PLUS_QM 		\
-			| RE_CHAR_CLASSES | RE_DOT_NOT_NULL 		\
-                        | RE_HAT_NOT_NEWLINE | RE_NO_EMPTY_BK_REF 	\
-                        | RE_NO_EMPTY_BRACKETS | RE_LIMITED_OPS		\
-                        | RE_NO_EMPTY_RANGES | RE_NO_HYPHEN_RANGE_END)	
-                        
-#define RE_SYNTAX_POSIX_EXTENDED (RE_INTERVALS | RE_NO_BK_CURLY_BRACES	   \
-			| RE_NO_BK_VBAR | RE_NO_BK_PARENS 		   \
-                        | RE_HAT_NOT_NEWLINE | RE_CHAR_CLASSES 		   \
-                        | RE_NO_EMPTY_BRACKETS | RE_CONTEXTUAL_INVALID_OPS \
-                        | RE_NO_BK_REFS | RE_NO_EMPTY_RANGES 		   \
-                        | RE_NO_HYPHEN_RANGE_END)
+#define RE_OPTION_EXTENDED   (1L<<0)
+#define RE_OPTION_IGNORECASE (1L<<1)
+#define RE_MAY_IGNORECASE    (1L<<2)
+#define RE_OPTIMIZE_ANCHOR   (1L<<4)
+#define RE_OPTIMIZE_EXACTN   (1L<<5)
+#define RE_OPTIMIZE_NO_BM    (1L<<6)
 
 /* For multi-byte char support */
-#define RE_MBCTYPE_EUC (1L << 20)
-#define RE_MBCTYPE_SJIS (1L << 21)
-#define RE_MBCTYPE_MASK (RE_MBCTYPE_EUC | RE_MBCTYPE_SJIS)
+#define MBCTYPE_ASCII 0
+#define MBCTYPE_EUC 1
+#define MBCTYPE_SJIS 2
+#define MBCTYPE_UTF8 3
 
-#ifdef EUC
-#define DEFAULT_MBCTYPE RE_MBCTYPE_EUC
+#ifdef __STDC__
+extern const unsigned char *re_mbctab;
+void re_mbcinit (int);
 #else
-#ifdef SJIS
-#define DEFAULT_MBCTYPE RE_MBCTYPE_SJIS
-#else
-#define DEFAULT_MBCTYPE 0
-#endif
+extern unsigned char *re_mbctab;
+void re_mbcinit ();
 #endif
 
 #undef ismbchar
-#define ismbchar(c) \
-  (re_syntax_options & RE_MBCTYPE_EUC		\
-   ? ((unsigned char) (c) >= 0x80)		\
-   : (re_syntax_options & RE_MBCTYPE_SJIS		\
-      ? ((   0x80 <= (unsigned char) (c)	\
-	  && (unsigned char) (c) <= 0x9f)	\
-	 || (0xe0 <= (unsigned char) (c)))	\
-      : 0))
+#define ismbchar(c) re_mbctab[(unsigned char)(c)]
+#define mbclen(c)   (re_mbctab[(unsigned char)(c)]+1)
 
 /* This data structure is used to represent a compiled pattern.  */
 
 struct re_pattern_buffer
   {
     char *buffer;	/* Space holding the compiled pattern commands.  */
-    long allocated;	/* Size of space that `buffer' points to. */
-    long used;		/* Length of portion of buffer actually occupied  */
+    size_t allocated;	/* Size of space that `buffer' points to. */
+    size_t used;		/* Length of portion of buffer actually occupied  */
     char *fastmap;	/* Pointer to fastmap, if any, or zero if none.  */
 			/* re_search uses the fastmap, if there is one,
 			   to skip over totally implausible characters.  */
-    char *translate;	/* Translate table to apply to all characters before 
-		           comparing, or zero for no translation.
-			   The translation is applied to a pattern when it is 
-                           compiled and to data when it is matched.  */
     char *must;	        /* Pointer to exact pattern which strings should have
 			   to be matched.  */
-
+    int *must_skip;     /* Pointer to exact pattern skip table for bm_search */
+    char *stclass;      /* Pointer to character class list at top */
+    long options;	/* Flags for options such as extended_pattern. */
     long re_nsub;	/* Number of subexpressions found by the compiler. */
     char fastmap_accurate;
 			/* Set to zero when a new pattern is stored,
@@ -219,11 +99,7 @@ struct re_pattern_buffer
 			   listed in the fastmap.  */
   };
 
-
-/* search.c (search_buffer) needs this one value.  It is defined both in
-   regex.c and here.  */
-#define RE_EXACTN_VALUE 1
-
+typedef struct re_pattern_buffer regex_t;
 
 /* Structure to store register contents data in.
 
@@ -237,12 +113,23 @@ struct re_pattern_buffer
 
 struct re_registers
   {
-    unsigned allocated;
-    unsigned num_regs;
+    size_t allocated;
+    size_t num_regs;
     int *beg;
     int *end;
   };
 
+/* Type for byte offsets within the string.  POSIX mandates this.  */
+typedef size_t regoff_t;
+
+/* POSIX specification for registers.  Aside from the different names than
+   `re_registers', POSIX uses an array of structures, instead of a
+   structure of arrays.  */
+typedef struct
+{
+  regoff_t rm_so;  /* Byte offset from string's start to substring's start.  */
+  regoff_t rm_eo;  /* Byte offset from string's start to substring's end.  */
+} regmatch_t;
 
 
 #ifdef NeXT
@@ -252,14 +139,16 @@ struct re_registers
 #ifdef __STDC__
 
 extern char *re_compile_pattern (char *, size_t, struct re_pattern_buffer *);
+void re_free_pattern (struct re_pattern_buffer *);
 /* Is this really advertised?  */
 extern void re_compile_fastmap (struct re_pattern_buffer *);
-extern int re_search (struct re_pattern_buffer *, char*, int, int, int,
+extern int re_search (struct re_pattern_buffer *, char*, size_t, size_t, size_t,
 		      struct re_registers *);
-extern int re_match (struct re_pattern_buffer *, char *, int, int,
+extern int re_match (struct re_pattern_buffer *, char *, size_t, size_t,
 		     struct re_registers *);
-extern long re_set_syntax (long syntax);
+extern void re_set_casetable (char *table);
 extern void re_copy_registers (struct re_registers*, struct re_registers*);
+extern void re_free_registers (struct re_registers*);
 
 #ifndef RUBY
 /* 4.2 bsd compatibility.  */
@@ -270,19 +159,15 @@ extern int re_exec (char *);
 #else /* !__STDC__ */
 
 extern char *re_compile_pattern ();
+void re_free_regexp ();
 /* Is this really advertised? */
 extern void re_compile_fastmap ();
 extern int re_search ();
 extern int re_match ();
-extern long re_set_syntax();
+extern void re_set_casetable ();
 extern void re_copy_registers ();
 extern void re_free_registers ();
 
 #endif /* __STDC__ */
-
-
-#ifdef SYNTAX_TABLE
-extern char *re_syntax_table;
-#endif
 
 #endif /* !__REGEXP_LIBRARY */

@@ -1,7 +1,6 @@
 # sieve of Eratosthenes
 sieve = []
-if ! max = ARGV.shift; max = 100; end
-max = max.to_i
+max = Integer(ARGV.shift || 100)
 
 print "1"
 for i in 2 .. max 

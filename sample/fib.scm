@@ -3,4 +3,6 @@
       n
       (+ (fib (- n 2)) (fib (- n 1)))))
 
-(fib 20)
+(display (fib 20))
+(newline)
+

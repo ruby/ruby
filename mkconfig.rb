@@ -26,14 +26,14 @@ v_others = []
 File.foreach "config.status" do |$_|
   next if /^#/
   if /^s%@program_transform_name@%s,(.*)%g$/
-    ptn = $1.sub(/\$\$/, '$').split(/,/)
+    ptn = $1.sub(/\$\$/, '$').split(/,/)	#'
     v_fast << "  CONFIG[\"ruby_install_name\"] = \"" + "ruby".sub(ptn[0],ptn[1]) + "\"\n"
   elsif /^s%@(\w+)@%(.*)%g/
     name = $1
     val = $2 || ""
     next if name =~ /^(INSTALL|DEFS|configure_input|srcdir|top_srcdir)$/
     v = "  CONFIG[\"" + name + "\"] = " +
-    val.sub(/^\s*(.*)\s*$/, '"\1"').gsub(/\$\{?([^}]*)\}?/) {
+      val.sub(/^\s*(.*)\s*$/, '"\1"').gsub(/\$[{(]?([^})]+)[})]?/) {
       "\#{CONFIG[\\\"#{$1}\\\"]}"
     } + "\n"
     if fast[name]

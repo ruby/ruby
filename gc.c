@@ -6,18 +6,22 @@
   $Date$
   created at: Tue Oct  5 09:44:46 JST 1993
 
-  Copyright (C) 1993-1996 Yukihiro Matsumoto
+  Copyright (C) 1993-1998 Yukihiro Matsumoto
 
 ************************************************/
 
+#define RUBY_NO_INLINE
 #include "ruby.h"
-#include "sig.h"
+#include "rubysig.h"
 #include "st.h"
 #include "node.h"
 #include "env.h"
 #include "re.h"
 #include <stdio.h>
 #include <setjmp.h>
+
+void re_free_registers _((struct re_registers*));
+void rb_io_fptr_finalize _((struct OpenFile*));
 
 #ifndef setjmp
 #ifdef HAVE__SETJMP
@@ -26,43 +30,46 @@
 #endif
 #endif
 
-#ifdef _AIX
-#pragma alloca
-#endif
-
 #ifdef C_ALLOCA
+#ifndef alloca
 void *alloca();
+#endif
 #endif
 
 static void run_final();
 
 #ifndef GC_MALLOC_LIMIT
 #if defined(MSDOS) || defined(__human68k__)
-#define GC_MALLOC_LIMIT 200000
+#define GC_MALLOC_LIMIT 100000
 #else
-#define GC_MALLOC_LIMIT 400000
+#define GC_MALLOC_LIMIT 200000
 #endif
 #endif
+#define GC_NEWOBJ_LIMIT 1000
 
 static unsigned long malloc_memories = 0;
+static unsigned long alloc_objects = 0;
 
 void *
 xmalloc(size)
-    unsigned long size;
+    size_t size;
 {
     void *mem;
 
+    if (size < 0) {
+	rb_raise(rb_eArgError, "negative allocation size (or too big)");
+    }
     if (size == 0) size = 1;
     malloc_memories += size;
-    if (malloc_memories > GC_MALLOC_LIMIT) {
-	gc_gc();
+    if (malloc_memories > GC_MALLOC_LIMIT && alloc_objects > GC_NEWOBJ_LIMIT) {
+	rb_gc();
     }
     mem = malloc(size);
     if (!mem) {
-	gc_gc();
+	rb_gc();
 	mem = malloc(size);
 	if (!mem)
-	    Fatal("failed to allocate memory");
+	    rb_fatal("failed to allocate memory");
     }
 
     return mem;
@@ -70,7 +77,7 @@ xmalloc(size)
 
 void *
 xcalloc(n, size)
-    unsigned long n, size;
+    size_t n, size;
 {
     void *mem;
 
@@ -83,17 +90,22 @@ xcalloc(n, size)
 void *
 xrealloc(ptr, size)
     void *ptr;
-    unsigned long size;
+    size_t size;
 {
     void *mem;
 
+    if (size < 0) {
+	rb_raise(rb_eArgError, "negative re-allocation size");
+    }
     if (!ptr) return xmalloc(size);
+    if (size == 0) size = 1;
+    malloc_memories += size;
     mem = realloc(ptr, size);
     if (!mem) {
-	gc_gc();
+	rb_gc();
 	mem = realloc(ptr, size);
 	if (!mem)
-	    Fatal("failed to allocate memory(realloc)");
+	    rb_fatal("failed to allocate memory(realloc)");
     }
 
     return mem;
@@ -129,28 +141,30 @@ Paradigm Associates Inc		 Phone: 617-492-6079
 Cambridge, MA 02138
 */
 
-extern int rb_in_compile;
+extern int ruby_in_compile;
 static int dont_gc;
+static int during_gc;
+static int need_call_final = 0;
 
-VALUE
-gc_s_enable()
+static VALUE
+gc_enable()
 {
     int old = dont_gc;
 
-    dont_gc = FALSE;
+    dont_gc = Qfalse;
     return old;
 }
 
-VALUE
-gc_s_disable()
+static VALUE
+gc_disable()
 {
     int old = dont_gc;
 
-    dont_gc = TRUE;
+    dont_gc = Qtrue;
     return old;
 }
 
-VALUE mGC;
+VALUE rb_mGC;
 
 static struct gc_list {
     VALUE *varptr;
@@ -172,12 +186,12 @@ rb_global_variable(var)
 typedef struct RVALUE {
     union {
 	struct {
-	    UINT flag;		/* always 0 for freed obj */
+	    unsigned long flag;	/* always 0 for freed obj */
 	    struct RVALUE *next;
 	} free;
 	struct RBasic  basic;
 	struct RObject object;
-	struct RClass  class;
+	struct RClass  klass;
 	struct RFloat  flonum;
 	struct RString string;
 	struct RArray  array;
@@ -194,7 +208,7 @@ typedef struct RVALUE {
     } as;
 } RVALUE;
 
-RVALUE *freelist = 0;
+static RVALUE *freelist = 0;
 
 #define HEAPS_INCREMENT 10
 static RVALUE **heaps;
@@ -217,11 +231,11 @@ add_heap()
 	heaps = (heaps_used>0)?
 	    (RVALUE**)realloc(heaps, heaps_length*sizeof(RVALUE)):
 	    (RVALUE**)malloc(heaps_length*sizeof(RVALUE));
-	if (heaps == 0) Fatal("can't alloc memory");
+	if (heaps == 0) rb_fatal("can't alloc memory");
     }
 
     p = heaps[heaps_used++] = (RVALUE*)malloc(sizeof(RVALUE)*HEAP_SLOTS);
-    if (p == 0) Fatal("can't alloc memory");
+    if (p == 0) rb_fatal("add_heap: can't alloc memory");
     pend = p + HEAP_SLOTS;
     if (lomem == 0 || lomem > p) lomem = p;
     if (himem < pend) himem = pend;
@@ -244,23 +258,24 @@ rb_newobj()
       retry:
 	obj = (VALUE)freelist;
 	freelist = freelist->as.free.next;
+	alloc_objects++;
 	return obj;
     }
-    if (dont_gc) add_heap();
-    else gc_gc();
+    if (dont_gc || during_gc || rb_prohibit_interrupt) add_heap();
+    else rb_gc();
 
     goto retry;
 }
 
 VALUE
-data_object_alloc(class, datap, dmark, dfree)
-    VALUE class;
+rb_data_object_alloc(klass, datap, dmark, dfree)
+    VALUE klass;
     void *datap;
     void (*dfree)();
     void (*dmark)();
 {
     NEWOBJ(data, struct RData);
-    OBJSETUP(data, class, T_DATA);
+    OBJSETUP(data, klass, T_DATA);
     data->data = datap;
     data->dfree = dfree;
     data->dmark = dmark;
@@ -269,8 +284,11 @@ data_object_alloc(class, datap, dmark, dfree)
 }
 
 extern st_table *rb_class_tbl;
-VALUE *gc_stack_start;
+VALUE *rb_gc_stack_start;
 
+#if defined(__GNUC__) && __GNUC__ >= 2
+__inline__
+#endif
 static int
 looks_pointerp(ptr)
     void *ptr;
@@ -279,33 +297,33 @@ looks_pointerp(ptr)
     register RVALUE *heap_org;
     register long i;
 
-    if (p < lomem || p > himem) return FALSE;
+    if (p < lomem || p > himem) return Qfalse;
 
     /* check if p looks like a pointer */
     for (i=0; i < heaps_used; i++) {
 	heap_org = heaps[i];
 	if (heap_org <= p && p < heap_org + HEAP_SLOTS
 	    && ((((char*)p)-((char*)heap_org))%sizeof(RVALUE)) == 0)
-	    return TRUE;
+	    return Qtrue;
     }
-    return FALSE;
+    return Qfalse;
 }
 
 static void
 mark_locations_array(x, n)
-    VALUE *x;
-    long n;
+    register VALUE *x;
+    register long n;
 {
     while (n--) {
 	if (looks_pointerp(*x)) {
-	    gc_mark(*x);
+	    rb_gc_mark(*x);
 	}
 	x++;
     }
 }
 
 void
-gc_mark_locations(start, end)
+rb_gc_mark_locations(start, end)
     VALUE *start, *end;
 {
     VALUE *tmp;
@@ -325,12 +343,12 @@ mark_entry(key, value)
     ID key;
     VALUE value;
 {
-    gc_mark(value);
+    rb_gc_mark(value);
     return ST_CONTINUE;
 }
 
-static void
-mark_tbl(tbl)
+void
+rb_mark_tbl(tbl)
     st_table *tbl;
 {
     if (!tbl) return;
@@ -342,13 +360,13 @@ mark_hashentry(key, value)
     ID key;
     VALUE value;
 {
-    gc_mark(key);
-    gc_mark(value);
+    rb_gc_mark(key);
+    rb_gc_mark(value);
     return ST_CONTINUE;
 }
 
-static void
-mark_hash(tbl)
+void
+rb_mark_hash(tbl)
     st_table *tbl;
 {
     if (!tbl) return;
@@ -356,16 +374,16 @@ mark_hash(tbl)
 }
 
 void
-gc_mark_maybe(obj)
+rb_gc_mark_maybe(obj)
     void *obj;
 {
     if (looks_pointerp(obj)) {
-	gc_mark(obj);
+	rb_gc_mark(obj);
     }
 }
 
 void
-gc_mark(ptr)
+rb_gc_mark(ptr)
     void *ptr;
 {
     register RVALUE *obj = RANY(ptr);
@@ -374,14 +392,18 @@ gc_mark(ptr)
     if (FIXNUM_P(obj)) return;	/* fixnum not marked */
     if (rb_special_const_p((VALUE)obj)) return; /* special const not marked */
     if (obj->as.basic.flags == 0) return; /* free cell */
-    if (obj->as.basic.flags & FL_MARK) return; /* marked */
+    if (obj->as.basic.flags & FL_MARK) return; /* already marked */
 
     obj->as.basic.flags |= FL_MARK;
+
+    if (FL_TEST(obj, FL_EXIVAR)) {
+	rb_mark_generic_ivar((VALUE)obj);
+    }
 
     switch (obj->as.basic.flags & T_MASK) {
       case T_NIL:
       case T_FIXNUM:
-	Bug("gc_mark() called for broken object");
+	rb_bug("rb_gc_mark() called for broken object");
 	break;
 
       case T_NODE:
@@ -389,7 +411,12 @@ gc_mark(ptr)
 	  case NODE_IF:		/* 1,2,3 */
 	  case NODE_FOR:
 	  case NODE_ITER:
-	    gc_mark(obj->as.node.u2.node);
+	  case NODE_CREF:
+	  case NODE_WHEN:
+	  case NODE_MASGN:
+	  case NODE_RESCUE:
+	  case NODE_RESBODY:
+	    rb_gc_mark(obj->as.node.u2.node);
 	    /* fall through */
 	  case NODE_BLOCK:	/* 1,3 */
 	  case NODE_ARRAY:
@@ -399,23 +426,47 @@ gc_mark(ptr)
 	  case NODE_DREGX:
 	  case NODE_DREGX_ONCE:
 	  case NODE_FBODY:
+	  case NODE_ENSURE:
 	  case NODE_CALL:
-	    gc_mark(obj->as.node.u1.node);
+	  case NODE_DEFS:
+	  case NODE_OP_ASGN1:
+	    rb_gc_mark(obj->as.node.u1.node);
 	    /* fall through */
 	  case NODE_SUPER:	/* 3 */
 	  case NODE_FCALL:
+	  case NODE_DEFN:
 	  case NODE_NEWLINE:
 	    obj = RANY(obj->as.node.u3.node);
 	    goto Top;
 
 	  case NODE_WHILE:	/* 1,2 */
 	  case NODE_UNTIL:
+	  case NODE_AND:
+	  case NODE_OR:
+	  case NODE_CASE:
+	  case NODE_SCLASS:
+	  case NODE_ARGS:
+	  case NODE_DOT2:
+	  case NODE_DOT3:
+	  case NODE_FLIP2:
+	  case NODE_FLIP3:
 	  case NODE_MATCH2:
 	  case NODE_MATCH3:
-	    gc_mark(obj->as.node.u1.node);
+	  case NODE_OP_ASGN_OR:
+	  case NODE_OP_ASGN_AND:
+	    rb_gc_mark(obj->as.node.u1.node);
 	    /* fall through */
 	  case NODE_METHOD:	/* 2 */
 	  case NODE_NOT:
+	  case NODE_GASGN:
+	  case NODE_LASGN:
+	  case NODE_DASGN:
+	  case NODE_DASGN_PUSH:
+	  case NODE_IASGN:
+	  case NODE_CASGN:
+	  case NODE_MODULE:
+	  case NODE_COLON3:
+	  case NODE_OPT_N:
 	    obj = RANY(obj->as.node.u2.node);
 	    goto Top;
 
@@ -425,15 +476,21 @@ gc_mark(ptr)
 	  case NODE_XSTR:
 	  case NODE_DEFINED:
 	  case NODE_MATCH:
+	  case NODE_RETURN:
+	  case NODE_YIELD:
+	  case NODE_COLON2:
 	    obj = RANY(obj->as.node.u1.node);
 	    goto Top;
 
 	  case NODE_SCOPE:	/* 2,3 */
-	    gc_mark(obj->as.node.u3.node);
+	  case NODE_CLASS:
+	  case NODE_BLOCK_PASS:
+	    rb_gc_mark(obj->as.node.u3.node);
 	    obj = RANY(obj->as.node.u2.node);
 	    goto Top;
 
 	  case NODE_ZARRAY:	/* - */
+	  case NODE_ZSUPER:
 	  case NODE_CFUNC:
 	  case NODE_VCALL:
 	  case NODE_GVAR:
@@ -445,18 +502,33 @@ gc_mark(ptr)
 	  case NODE_BACK_REF:
 	  case NODE_ALIAS:
 	  case NODE_VALIAS:
+	  case NODE_BREAK:
+	  case NODE_NEXT:
+	  case NODE_REDO:
+	  case NODE_RETRY:
 	  case NODE_UNDEF:
 	  case NODE_SELF:
 	  case NODE_NIL:
+	  case NODE_TRUE:
+	  case NODE_FALSE:
+	  case NODE_ATTRSET:
+	  case NODE_BLOCK_ARG:
 	  case NODE_POSTEXE:
 	    break;
+#ifdef C_ALLOCA
+	  case NODE_ALLOCA:
+	    mark_locations_array((VALUE*)obj->as.node.u1.value,
+				 obj->as.node.u3.cnt);
+	    obj = RANY(obj->as.node.u2.node);
+	    goto Top;
+#endif
 
 	  default:
 	    if (looks_pointerp(obj->as.node.u1.node)) {
-		gc_mark(obj->as.node.u1.node);
+		rb_gc_mark(obj->as.node.u1.node);
 	    }
 	    if (looks_pointerp(obj->as.node.u2.node)) {
-		gc_mark(obj->as.node.u2.node);
+		rb_gc_mark(obj->as.node.u2.node);
 	    }
 	    if (looks_pointerp(obj->as.node.u3.node)) {
 		obj = RANY(obj->as.node.u3.node);
@@ -466,19 +538,14 @@ gc_mark(ptr)
 	return;			/* no need to mark class. */
     }
 
-    gc_mark(obj->as.basic.class);
+    rb_gc_mark(obj->as.basic.klass);
     switch (obj->as.basic.flags & T_MASK) {
       case T_ICLASS:
-	gc_mark(obj->as.class.super);
-	mark_tbl(obj->as.class.iv_tbl);
-	mark_tbl(obj->as.class.m_tbl);
-	break;
-
       case T_CLASS:
       case T_MODULE:
-	gc_mark(obj->as.class.super);
-	mark_tbl(obj->as.class.m_tbl);
-	mark_tbl(obj->as.class.iv_tbl);
+	rb_gc_mark(obj->as.klass.super);
+	rb_mark_tbl(obj->as.klass.m_tbl);
+	rb_mark_tbl(obj->as.klass.iv_tbl);
 	break;
 
       case T_ARRAY:
@@ -487,12 +554,13 @@ gc_mark(ptr)
 	    VALUE *ptr = obj->as.array.ptr;
 
 	    for (i=0; i < len; i++)
-		gc_mark(*ptr++);
+		rb_gc_mark(*ptr++);
 	}
 	break;
 
       case T_HASH:
-	mark_hash(obj->as.hash.tbl);
+	rb_mark_hash(obj->as.hash.tbl);
+	rb_gc_mark(obj->as.hash.ifnone);
 	break;
 
       case T_STRING:
@@ -507,7 +575,7 @@ gc_mark(ptr)
 	break;
 
       case T_OBJECT:
-	mark_tbl(obj->as.object.iv_tbl);
+	rb_mark_tbl(obj->as.object.iv_tbl);
 	break;
 
       case T_FILE:
@@ -524,7 +592,7 @@ gc_mark(ptr)
 	break;
 
       case T_VARMAP:
-	gc_mark(obj->as.varmap.val);
+	rb_gc_mark(obj->as.varmap.val);
 	obj = RANY(obj->as.varmap.next);
 	goto Top;
 	break;
@@ -535,7 +603,7 @@ gc_mark(ptr)
 	    VALUE *vars = &obj->as.scope.local_vars[-1];
 
 	    while (n--) {
-		gc_mark_maybe(*vars);
+		rb_gc_mark(*vars);
 		vars++;
 	    }
 	}
@@ -547,77 +615,101 @@ gc_mark(ptr)
 	    VALUE *ptr = obj->as.rstruct.ptr;
 
 	    for (i=0; i < len; i++)
-		gc_mark(*ptr++);
+		rb_gc_mark(*ptr++);
 	}
 	break;
 
       default:
-	Bug("gc_mark(): unknown data type 0x%x(0x%x) %s",
-	    obj->as.basic.flags & T_MASK, obj,
-	    looks_pointerp(obj)?"corrupted object":"non object");
+	rb_bug("rb_gc_mark(): unknown data type 0x%x(0x%x) %s",
+	       obj->as.basic.flags & T_MASK, obj,
+	       looks_pointerp(obj)?"corrupted object":"non object");
     }
 }
 
 #define MIN_FREE_OBJ 512
 
-static void obj_free();
+static void obj_free _((VALUE));
 
 static void
 gc_sweep()
 {
-    RVALUE *p, *pend;
+    RVALUE *p, *pend, *final_list;
     int freed = 0;
-    int  i;
+    int i, used = heaps_used;
 
-    if (rb_in_compile) {
-	for (i = 0; i < heaps_used; i++) {
+    if (ruby_in_compile) {
+	/* sould not reclaim nodes during compilation */
+	for (i = 0; i < used; i++) {
 	    p = heaps[i]; pend = p + HEAP_SLOTS;
 	    while (p < pend) {
 		if (!(p->as.basic.flags&FL_MARK) && BUILTIN_TYPE(p) == T_NODE)
-		    gc_mark(p);
+		    rb_gc_mark(p);
 		p++;
 	    }
 	}
     }
 
     freelist = 0;
-    for (i = 0; i < heaps_used; i++) {
-	RVALUE *nfreelist;
+    final_list = 0;
+    for (i = 0; i < used; i++) {
 	int n = 0;
 
-	nfreelist = freelist;
 	p = heaps[i]; pend = p + HEAP_SLOTS;
-
 	while (p < pend) {
 	    if (!(p->as.basic.flags & FL_MARK)) {
-		if (p->as.basic.flags) obj_free(p);
-		p->as.free.flag = 0;
-		p->as.free.next = nfreelist;
-		nfreelist = p;
+		if (p->as.basic.flags) {
+		    obj_free((VALUE)p);
+		}
+		if (need_call_final && FL_TEST(p, FL_FINALIZE)) {
+		    p->as.free.flag = FL_MARK; /* remain marked */
+		    p->as.free.next = final_list;
+		    final_list = p;
+		}
+		else {
+		    p->as.free.flag = 0;
+		    p->as.free.next = freelist;
+		    freelist = p;
+		}
 		n++;
 	    }
-	    else
+	    else if (RBASIC(p)->flags == FL_MARK) {
+		/* objects to be finalized */
+		/* do notning remain marked */
+	    }
+	    else {
 		RBASIC(p)->flags &= ~FL_MARK;
+	    }
 	    p++;
 	}
 	freed += n;
-	freelist = nfreelist;
     }
     if (freed < FREE_MIN) {
 	add_heap();
     }
+    during_gc = 0;
+
+    /* clear finalization list */
+    if (need_call_final) {
+	RVALUE *tmp;
+
+	for (p = final_list; p; p = tmp) {
+	    tmp = p->as.free.next;
+	    run_final((VALUE)p);
+	    p->as.free.flag = 0;
+	    p->as.free.next = freelist;
+	    freelist = p;
+	}
+    }
 }
 
 void
-gc_force_recycle(p)
+rb_gc_force_recycle(p)
     VALUE p;
 {
     RANY(p)->as.free.flag = 0;
     RANY(p)->as.free.next = freelist;
     freelist = RANY(p);
 }
-
-static int need_call_final = 0;
 
 static void
 obj_free(obj)
@@ -628,13 +720,14 @@ obj_free(obj)
       case T_FIXNUM:
       case T_TRUE:
       case T_FALSE:
-	Bug("obj_free() called for broken object");
+	rb_bug("obj_free() called for broken object");
 	break;
     }
 
-    if (need_call_final) {
-	run_final(obj);
+    if (FL_TEST(obj, FL_EXIVAR)) {
+	rb_free_generic_ivar((VALUE)obj);
     }
+
     switch (RANY(obj)->as.basic.flags & T_MASK) {
       case T_OBJECT:
 	if (RANY(obj)->as.object.iv_tbl) {
@@ -644,35 +737,48 @@ obj_free(obj)
       case T_MODULE:
       case T_CLASS:
 	rb_clear_cache();
-	st_free_table(RANY(obj)->as.class.m_tbl);
+	st_free_table(RANY(obj)->as.klass.m_tbl);
 	if (RANY(obj)->as.object.iv_tbl) {
 	    st_free_table(RANY(obj)->as.object.iv_tbl);
 	}
 	break;
       case T_STRING:
-	if (!RANY(obj)->as.string.orig) free(RANY(obj)->as.string.ptr);
+#define STR_NO_ORIG FL_USER3	/* copied from string.c */
+	if (!RANY(obj)->as.string.orig || FL_TEST(obj, STR_NO_ORIG))
+	    free(RANY(obj)->as.string.ptr);
 	break;
       case T_ARRAY:
 	if (RANY(obj)->as.array.ptr) free(RANY(obj)->as.array.ptr);
 	break;
       case T_HASH:
-	st_free_table(RANY(obj)->as.hash.tbl);
+	if (RANY(obj)->as.hash.tbl)
+	    st_free_table(RANY(obj)->as.hash.tbl);
 	break;
       case T_REGEXP:
-	reg_free(RANY(obj)->as.regexp.ptr);
-	free(RANY(obj)->as.regexp.str);
+	if (RANY(obj)->as.regexp.ptr) re_free_pattern(RANY(obj)->as.regexp.ptr);
+	if (RANY(obj)->as.regexp.str) free(RANY(obj)->as.regexp.str);
 	break;
       case T_DATA:
-	if (RANY(obj)->as.data.dfree && DATA_PTR(obj))
-	    (*RANY(obj)->as.data.dfree)(DATA_PTR(obj));
+	if (DATA_PTR(obj)) {
+	    if ((long)RANY(obj)->as.data.dfree == -1) {
+		free(DATA_PTR(obj));
+	    }
+	    else if (RANY(obj)->as.data.dfree) {
+		(*RANY(obj)->as.data.dfree)(DATA_PTR(obj));
+	    }
+	}
 	break;
       case T_MATCH:
-	re_free_registers(RANY(obj)->as.match.regs);
-	free(RANY(obj)->as.match.regs);
+	if (RANY(obj)->as.match.regs)
+	    re_free_registers(RANY(obj)->as.match.regs);
+	if (RANY(obj)->as.match.regs)
+	    free(RANY(obj)->as.match.regs);
 	break;
       case T_FILE:
-	io_fptr_finalize(RANY(obj)->as.file.fptr);
-	free(RANY(obj)->as.file.fptr);
+	if (RANY(obj)->as.file.fptr) {
+	    rb_io_fptr_finalize(RANY(obj)->as.file.fptr);
+	    free(RANY(obj)->as.file.fptr);
+	}
 	break;
       case T_ICLASS:
 	/* iClass shares table with the module */
@@ -686,8 +792,17 @@ obj_free(obj)
 	if (RANY(obj)->as.bignum.digits) free(RANY(obj)->as.bignum.digits);
 	break;
       case T_NODE:
-	if (nd_type(obj) == NODE_SCOPE && RANY(obj)->as.node.u1.tbl) {
-	    free(RANY(obj)->as.node.u1.tbl);
+	switch (nd_type(obj)) {
+	  case NODE_SCOPE:
+	    if (RANY(obj)->as.node.u1.tbl) {
+		free(RANY(obj)->as.node.u1.tbl);
+	    }
+	    break;
+#ifdef C_ALLOCA
+	  case NODE_ALLOCA:
+	    free(RANY(obj)->as.node.u1.value);
+	    break;
+#endif
 	}
 	return;			/* no need to free iv_tbl */
 
@@ -702,26 +817,22 @@ obj_free(obj)
 	break;
 
       case T_STRUCT:
-	free(RANY(obj)->as.rstruct.ptr);
+	if (RANY(obj)->as.rstruct.ptr)
+	    free(RANY(obj)->as.rstruct.ptr);
 	break;
 
       default:
-	Bug("gc_sweep(): unknown data type %d", RANY(obj)->as.basic.flags & T_MASK);
+	rb_bug("gc_sweep(): unknown data type %d",
+	       RANY(obj)->as.basic.flags & T_MASK);
     }
 }
 
 void
-gc_mark_frame(frame)
+rb_gc_mark_frame(frame)
     struct FRAME *frame;
 {
-    int n = frame->argc;
-    VALUE *tbl = frame->argv;
-
-    while (n--) {
-	gc_mark_maybe(*tbl);
-	tbl++;
-    }
-    gc_mark(frame->cbase);
+    mark_locations_array(frame->argv, frame->argc);
+    rb_gc_mark(frame->cbase);
 }
 
 #ifdef __GNUC__
@@ -760,68 +871,73 @@ int rb_setjmp (rb_jmp_buf);
 #endif /* __GNUC__ */
 
 void
-gc_gc()
+rb_gc()
 {
     struct gc_list *list;
     struct FRAME *frame;
     jmp_buf save_regs_gc_mark;
     VALUE stack_end;
 
-    if (dont_gc) return;
-    dont_gc++;
-
+    alloc_objects = 0;
     malloc_memories = 0;
+
+    if (during_gc) return;
+    during_gc++;
+
 #ifdef C_ALLOCA
     alloca(0);
 #endif
 
     /* mark frame stack */
-    for (frame = the_frame; frame; frame = frame->prev) {
-	gc_mark_frame(frame);
+    for (frame = ruby_frame; frame; frame = frame->prev) {
+	rb_gc_mark_frame(frame);
     }
-    gc_mark(the_scope);
-    gc_mark(the_dyna_vars);
+    rb_gc_mark(ruby_class);
+    rb_gc_mark(ruby_scope);
+    rb_gc_mark(ruby_dyna_vars);
 
     FLUSH_REGISTER_WINDOWS;
     /* This assumes that all registers are saved into the jmp_buf */
     setjmp(save_regs_gc_mark);
     mark_locations_array((VALUE*)&save_regs_gc_mark, sizeof(save_regs_gc_mark) / sizeof(VALUE *));
-    gc_mark_locations(gc_stack_start, (VALUE*)&stack_end);
+    rb_gc_mark_locations(rb_gc_stack_start, (VALUE*)&stack_end);
 #if defined(THINK_C) || defined(__human68k__)
 #ifndef __human68k__
     mark_locations_array((VALUE*)((char*)save_regs_gc_mark+2),
 			 sizeof(save_regs_gc_mark) / sizeof(VALUE *));
 #endif
-    gc_mark_locations((VALUE*)((char*)gc_stack_start + 2),
+    rb_gc_mark_locations((VALUE*)((char*)rb_gc_stack_start + 2),
 		   (VALUE*)((char*)&stack_end + 2));
 #endif
 
-#ifdef THREAD
-    gc_mark_threads();
+#ifdef USE_THREAD
+    rb_gc_mark_threads();
 #endif
 
     /* mark protected global variables */
     for (list = Global_List; list; list = list->next) {
-	gc_mark(*list->varptr);
+	rb_gc_mark(*list->varptr);
     }
+    rb_gc_mark_global_tbl();
 
-    gc_mark_global_tbl();
-    mark_tbl(rb_class_tbl);
-    gc_mark_trap_list();
+    rb_mark_tbl(rb_class_tbl);
+    rb_gc_mark_trap_list();
+
+    /* mark generic instance variables for special constants */
+    rb_mark_generic_ivar_tbl();
 
     gc_sweep();
-    dont_gc--;
 }
 
 static VALUE
-gc_method()
+gc_start()
 {
-    gc_gc();
+    rb_gc();
     return Qnil;
 }
 
 void
-init_stack()
+Init_stack()
 {
 #ifdef __human68k__
     extern void *_SEND;
@@ -829,14 +945,14 @@ init_stack()
 #else
     VALUE start;
 
-    gc_stack_start = &start;
+    rb_gc_stack_start = &start;
 #endif
 }
 
 void
-init_heap()
+Init_heap()
 {
-    init_stack();
+    Init_stack();
     add_heap();
 }
 
@@ -893,7 +1009,7 @@ os_obj_of(of)
 		  case T_CLASS:
 		    if (FL_TEST(p, FL_SINGLETON)) continue;
 		  default:
-		    if (obj_is_kind_of((VALUE)p, of)) {
+		    if (rb_obj_is_kind_of((VALUE)p, of)) {
 			rb_yield((VALUE)p);
 			n++;
 		    }
@@ -926,13 +1042,11 @@ static VALUE
 add_final(os, proc)
     VALUE os, proc;
 {
-    extern VALUE cProc;
-
-    if (!obj_is_kind_of(proc, cProc)) {
-	ArgError("wrong type argument %s (Proc required)",
-		  rb_class2name(CLASS_OF(proc)));
+    if (!rb_obj_is_kind_of(proc, rb_cProc)) {
+	rb_raise(rb_eArgError, "wrong type argument %s (Proc required)",
+		 rb_class2name(CLASS_OF(proc)));
     }
-    ary_push(finalizers, proc);
+    rb_ary_push(finalizers, proc);
     return proc;
 }
 
@@ -940,7 +1054,7 @@ static VALUE
 rm_final(os, proc)
     VALUE os, proc;
 {
-    ary_delete(finalizers, proc);
+    rb_ary_delete(finalizers, proc);
     return proc;
 }
 
@@ -965,24 +1079,31 @@ run_final(obj)
 {
     int i;
 
-    if (!FL_TEST(obj, FL_FINALIZE)) return;
-
-    obj = INT2NUM((int)obj);	/* make obj into id */
+    obj = rb_obj_id(obj);	/* make obj into id */
     for (i=0; i<RARRAY(finalizers)->len; i++) {
-	rb_eval_cmd(RARRAY(finalizers)->ptr[i], ary_new3(1,obj));
+	rb_eval_cmd(RARRAY(finalizers)->ptr[i], rb_ary_new3(1, obj));
     }
 }
 
 void
-gc_call_finalizer_at_exit()
+rb_gc_call_finalizer_at_exit()
 {
     RVALUE *p, *pend;
     int i;
 
+    /* run finalizers */
     for (i = 0; i < heaps_used; i++) {
 	p = heaps[i]; pend = p + HEAP_SLOTS;
 	while (p < pend) {
-	    run_final(p);
+	    if (FL_TEST(p, FL_FINALIZE))
+		run_final((VALUE)p);
+	    p++;
+	}
+    }
+    /* run data object's finaliers */
+    for (i = 0; i < heaps_used; i++) {
+	p = heaps[i]; pend = p + HEAP_SLOTS;
+	while (p < pend) {
 	    if (BUILTIN_TYPE(p) == T_DATA &&
 		DATA_PTR(p) &&
 		RANY(p)->as.data.dfree)
@@ -996,40 +1117,45 @@ static VALUE
 id2ref(obj, id)
     VALUE obj, id;
 {
-    INT ptr = NUM2INT(id);
+    unsigned long ptr;
 
+    rb_secure(4);
+    ptr = NUM2UINT(id);
     if (FIXNUM_P(ptr)) return (VALUE)ptr;
+    if (ptr == Qtrue) return Qtrue;
+    if (ptr == Qfalse) return Qfalse;
+    if (ptr == Qnil) return Qnil;
+
+    ptr = id ^ FIXNUM_FLAG;
     if (!looks_pointerp(ptr)) {
-	IndexError("0x%x is not the id value", ptr);
+	rb_raise(rb_eIndexError, "0x%x is not id value", ptr);
     }
-    if (RANY(ptr)->as.free.flag == 0) {
-	IndexError("0x%x is recycled object", ptr);
+    if (BUILTIN_TYPE(ptr) == 0) {
+	rb_raise(rb_eIndexError, "0x%x is recycled object", ptr);
     }
     return (VALUE)ptr;
 }
 
-extern VALUE cModule;
-
 void
 Init_GC()
 {
-    VALUE mObSpace;
+    VALUE rb_mObSpace;
 
-    mGC = rb_define_module("GC");
-    rb_define_singleton_method(mGC, "start", gc_method, 0);
-    rb_define_singleton_method(mGC, "enable", gc_s_enable, 0);
-    rb_define_singleton_method(mGC, "disable", gc_s_disable, 0);
-    rb_define_method(mGC, "garbage_collect", gc_method, 0);
+    rb_mGC = rb_define_module("GC");
+    rb_define_singleton_method(rb_mGC, "start", gc_start, 0);
+    rb_define_singleton_method(rb_mGC, "enable", gc_enable, 0);
+    rb_define_singleton_method(rb_mGC, "disable", gc_disable, 0);
+    rb_define_method(rb_mGC, "garbage_collect", gc_start, 0);
 
-    mObSpace = rb_define_module("ObjectSpace");
-    rb_define_module_function(mObSpace, "each_object", os_each_obj, -1);
-    rb_define_module_function(mObSpace, "garbage_collect", gc_method, 0);
-    rb_define_module_function(mObSpace, "add_finalizer", add_final, 1);
-    rb_define_module_function(mObSpace, "remove_finalizer", rm_final, 1);
-    rb_define_module_function(mObSpace, "finalizers", finals, 0);
-    rb_define_module_function(mObSpace, "call_finalizer", call_final, 1);
-    rb_define_module_function(mObSpace, "id2ref", id2ref, 1);
+    rb_mObSpace = rb_define_module("ObjectSpace");
+    rb_define_module_function(rb_mObSpace, "each_object", os_each_obj, -1);
+    rb_define_module_function(rb_mObSpace, "garbage_collect", gc_start, 0);
+    rb_define_module_function(rb_mObSpace, "add_finalizer", add_final, 1);
+    rb_define_module_function(rb_mObSpace, "remove_finalizer", rm_final, 1);
+    rb_define_module_function(rb_mObSpace, "finalizers", finals, 0);
+    rb_define_module_function(rb_mObSpace, "call_finalizer", call_final, 1);
+    rb_define_module_function(rb_mObSpace, "_id2ref", id2ref, 1);
 
     rb_global_variable(&finalizers);
-    finalizers = ary_new();
+    finalizers = rb_ary_new();
 }

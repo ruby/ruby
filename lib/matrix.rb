@@ -1,9 +1,8 @@
-#!/usr/local/bin/ruby
 #
 #   matrix.rb - 
 #   	$Release Version: 1.0$
-#   	$Revision: 1.0 $
-#   	$Date: 97/05/23 11:35:28 $
+#   	$Revision: 1.6 $
+#   	$Date: 1998/07/31 03:39:49 $
 #       Original Version from Smalltalk-80 version
 #	   on July 23, 1985 at 8:37:17 am
 #   	by Keiju ISHITSUKA
@@ -18,9 +17,158 @@
 #	    :
 #          rown]
 #
-#   column: Îó
-#   row:    ¹Ô
 #
+# module ExceptionForMatrix::
+#   Exceptions:
+#	ErrDimensionMismatch
+#	    number of column/row do not match
+#	ErrNotRegular
+#	    not a regular matrix
+#	ErrOperationNotDefined
+#	    specified operator is not defined (yet)
+#
+# class Matrix
+#   include ExceptionForMatrix
+#
+#   Methods:
+#   class methods:
+#	Matrix.[](*rows)
+#	    creates a matrix where `rows' indicates rows. 
+#	    `rows' is an array of arrays, 
+#	    e.g, Matrix[[11, 12], [21, 22]]
+#	Matrix.rows(rows, copy = TRUE)
+#	    creates a matrix where `rows' indicates rows. 
+#           if optional argument `copy' is false, use the array as
+#	    internal structure of the metrix without copying.
+#	Matrix.columns(columns)
+#           creates a new matrix using `columns` as set of colums vectors.
+#	Matrix.diagonal(*values)
+#	    creates a matrix where `columns' indicates columns. 
+#	Matrix.scalar(n, value)
+#	    creates a diagonal matrix such that the diagal compornents is
+#	    given by `values'.
+#	Matrix.scalar(n, value)
+#	    creates an n-by-n scalar matrix such that the diagal compornent is 
+#	    given by `value'.
+#	Matrix.identity(n)
+#	Matrix.unit(n)
+#	Matrix.I(n)
+#	    creates an n-by-n unit matrix.
+#	Matrix.zero(n)
+#	    creates an n-by-n zero matrix.
+#	Matrix.row_vector(row)
+#	    creates a 1-by-n matrix such the row vector is `row'. 
+#	    `row' is specifed as a Vector or an Array.
+#	Matrix.column_vector(column)
+#	    creates a 1-by-n matrix such that column vector is `column'. 
+#	    `column' is specifed as a Vector or an Array.
+#   accessing:
+#	[](i, j)
+#	    returns (i,j) compornent
+#	row_size
+#	    returns the number of rows
+#	column_size
+#	    returns the number of columns
+#	row(i)
+#	    returns the i-th row vector. 
+#	    when the block is supplied for the method, the block is iterated
+#	    over all row vectors. 
+#	column(j)
+#	    returns the jth column vector. 
+#	    when the block is supplied for the method, the block is iterated
+#	    over all column vectors. 
+#	collect
+#	map
+#	    creates a matrix which is the result of iteration of given
+#	    block over all compornents. 
+#	minor(*param)
+#	    returns sub matrix. parameter is specified as the following:
+#	    1. from_row, row_size, from_col, size_col
+#	    2. from_row..to_row, from_col..to_col
+#   TESTING:
+#	regular?
+#	    Is regular?
+#	singular?
+#	    Is singular? i.e. Is non-regular?
+#	square?
+#	    Is square?
+#   ARITHMETIC:
+#	*(m)
+#	    times
+#	+(m)
+#	    plus
+#	-(m)
+#	    minus
+#	/(m)
+#	    self * m.inv
+#	inverse
+#	inv
+#	    inverse
+#	**
+#	    power
+#   Matrix functions:
+#	determinant
+#	det
+#	    returns the determinant
+#	rank
+#	    returns the rank
+#	trace
+#	tr
+#	    returns the trace
+#	transpose
+#	t
+#	    returns the transposed
+#   CONVERTING:
+#	coerce(other)
+#	row_vectors
+#	    array of row vectors
+#	column_vectors
+#	    array of column vectors
+#	to_a
+#	    converts each element to Array
+#	to_f
+#	    converts each element to Float
+#	to_i
+#	    converts each element to Integer
+#	to_r
+#	    converts each element to Rational
+#   PRINTING:
+#	to_s
+#	    returns string representation
+#	inspect
+#
+# class Vector
+#   include ExceptionForMatrix
+#
+#   INSTANCE CREATION:
+#	Vector.[](*array)
+#	Vector.elements(array, copy = TRUE)
+#   ACCSESSING:
+#	[](i)
+#	size
+#   ENUMRATIONS:
+#	each2(v)
+#	collect2(v)
+#   ARITHMETIC:
+#	*(x) "is matrix or number"
+#	+(v)
+#	-(v)
+#   VECTOR FUNCTIONS:
+#	inner_product(v)
+#	collect
+#	map
+#	map2(v)
+#	r
+#   CONVERTING:
+#	covector
+#	to_a
+#	to_f
+#	to_i
+#	to_r
+#	coerce(other)
+#   PRINTING:
+#	to_s
+#	inspect
 
 require "e2mmap.rb"
 
@@ -36,8 +184,8 @@ module ExceptionForMatrix
 end
 
 class Matrix
-  RCS_ID='-$Header: ruby-mode,v 1.2 91/04/20 17:24:57 keiju Locked $-'
-  
+  @RCS_ID='-$Id: matrix.rb,v 1.6 1998/07/31 03:39:49 keiju Exp keiju $-'
+
   include ExceptionForMatrix
   
   # instance creations
@@ -144,6 +292,7 @@ class Matrix
     if iterator?
       for e in @rows[i]
 	yield e
+
       end
     else
       Vector.elements(@rows[i])
@@ -209,6 +358,38 @@ class Matrix
 
   def square?
     column_size == row_size
+  end
+  
+  # COMPARING
+  def ==(other)
+    return FALSE unless Matrix === other
+    
+    other.compare_by_row_vectors(@rows)
+  end
+  alias eql? ==
+  
+  def compare_by_row_vectors(rows)
+    return FALSE unless @rows.size == rows.size
+    
+    0.upto(@rows.size - 1) do
+      |i|
+      return FALSE unless @rows[i] == rows[i]
+    end
+    TRUE
+  end
+  
+  def clone
+    Matrix.rows(@rows)
+  end
+  
+  def hash
+    value = 0
+    for row in @rows
+      for e in row
+	value ^= e.hash
+      end
+    end
+    return value
   end
   
   # ARITHMETIC
@@ -296,6 +477,25 @@ class Matrix
       }
     }
     Matrix.rows(rows, FALSE)
+  end
+  
+  def /(other)
+    case other
+    when Numeric
+      rows = @rows.collect {
+	|row|
+	row.collect {
+	  |e|
+	  e / other
+	}
+      }
+      return Matrix.rows(rows, FALSE)
+    when Matrix
+      return self * other.inverse
+    else
+      x, y = other.coerce(self)
+      rerurn x / y
+    end
   end
 
   def inverse
@@ -597,13 +797,12 @@ end
 #----------------------------------------------------------------------
 class Vector
   include ExceptionForMatrix
-
   
   #INSTANCE CREATION
   
   private_class_method :new
   def Vector.[](*array)
-    new(:init_elements, array, copy = FALSE)
+    new(:init_elements, array, FALSE)
   end
   
   def Vector.elements(array, copy = TRUE)
@@ -649,6 +848,26 @@ class Vector
     end
   end
 
+  # COMPARING
+  def ==(other)
+    return FALSE unless Vector === other
+    
+    other.compare_by(@elements)
+  end
+  alias eqn? ==
+  
+  def compare_by(elements)
+    @elements == elements
+  end
+  
+  def clone
+    Vector.elements(@elements)
+  end
+  
+  def hash
+    @elements.hash
+  end
+  
   # ARITHMETIC
   
   def *(x) "is matrix or number"
@@ -733,7 +952,7 @@ class Vector
     for e in @elements
       v += e*e
     end
-    return v.sqrt
+    return Math.sqrt(v)
   end
   
   # CONVERTING

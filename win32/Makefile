@@ -15,12 +15,12 @@ INSTALL_DATA = $(INSTALL) -m 644
 PURIFY =
 
 
-CFLAGS = -nologo -DNT=1 -Ox 
+CFLAGS = -nologo -DNT=1 -Ox -I. -I./missing
 LDFLAGS =  $(CFLAGS) -Fm
 #CFLAGS = -nologo -DNT=1 -Zi -MD 
 #LDFLAGS =  $(CFLAGS) -Fm -MD
 LIBS =  $(EXTLIBS)  advapi32.lib wsock32.lib
-MISSING = crypt.obj setenv.obj alloca.obj nt.obj
+MISSING = crypt.obj alloca.obj win32.obj
 
 prefix = 
 binprefix = 
@@ -30,7 +30,6 @@ libdir =
 
 STACK = 0x200000
 ORGLIBPATH = $(LIB)
-#MISCLIBS = win32\sdbm.lib
 
 #### End of system configuration section. ####
 
@@ -157,9 +156,6 @@ memmove.obj: missing/memmove.c
 mkdir.obj: missing/mkdir.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c missing/mkdir.c
 
-setenv.obj: missing/setenv.c
-	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c missing/setenv.c
-
 strerror.obj: missing/strerror.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c missing/strerror.c
 
@@ -180,21 +176,14 @@ strtoul.obj: missing/strtoul.c
 
 # when I use -I., there is confliction at "OpenFile" 
 # so, set . into environment varible "include"
-nt.obj: missing/nt.c
+win32.obj: win32/win32.c
 	@set include=$(INCLUDE);.
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c missing/nt.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c win32/win32.c
 
 parse.c: parse.y
 	$(YACC) $(YFLAGS) parse.y
 	sed -e "s!^extern char \*getenv();!/* & */!" y.tab.c > parse.c
 	@rm y.tab.c
-
-win32\sdbm.lib : win32\sdbm.c win32\sdbm.h
-	cd win32
-	$(CC) $(CFLAGS) $(CPPFLAGS) -DMSDOS -c sdbm.c
-	lib /OUT:sdbm.lib sdbm.obj
-	copy sdbm.h ndbm.h
-	cd ..
 
 # Prevent GNU make v3 from overflowing arg limit on SysV.
 .NOEXPORT:
@@ -210,26 +199,26 @@ dln.obj: dln.c config.h defines.h dln.h st.h
 dmyext.obj: dmyext.c
 enum.obj: enum.c ruby.h config.h defines.h
 error.obj: error.c ruby.h config.h defines.h env.h
-eval.obj: eval.c ruby.h config.h defines.h env.h node.h sig.h st.h dln.h
-file.obj: file.c ruby.h config.h defines.h io.h sig.h
+eval.obj: eval.c ruby.h config.h defines.h env.h node.h rubysig.h st.h dln.h
+file.obj: file.c ruby.h config.h defines.h rubyio.h rubysig.h
 fnmatch.obj: fnmatch.c config.h fnmatch.h
-gc.obj: gc.c ruby.h config.h defines.h env.h sig.h st.h node.h re.h regex.h
+gc.obj: gc.c ruby.h config.h defines.h env.h rubysig.h st.h node.h re.h regex.h
 glob.obj: glob.c config.h fnmatch.h
 hash.obj: hash.c ruby.h config.h defines.h st.h
 inits.obj: inits.c ruby.h config.h defines.h
-io.obj: io.c ruby.h config.h defines.h io.h sig.h
+io.obj: io.c ruby.h config.h defines.h rubyio.h rubysig.h
 main.obj: main.c
 math.obj: math.c ruby.h config.h defines.h
 numeric.obj: numeric.c ruby.h config.h defines.h
 object.obj: object.c ruby.h config.h defines.h st.h
 pack.obj: pack.c ruby.h config.h defines.h
-process.obj: process.c ruby.h config.h defines.h sig.h st.h
+process.obj: process.c ruby.h config.h defines.h rubysig.h st.h
 random.obj: random.c ruby.h config.h defines.h
 range.obj: range.c ruby.h config.h defines.h
 re.obj: re.c ruby.h config.h defines.h re.h regex.h
 regex.obj: regex.c config.h defines.h regex.h util.h
 ruby.obj: ruby.c ruby.h config.h defines.h re.h regex.h dln.h
-signal.obj: signal.c ruby.h config.h defines.h sig.h
+signal.obj: signal.c ruby.h config.h defines.h rubysig.h
 sprintf.obj: sprintf.c ruby.h config.h defines.h
 st.obj: st.c config.h st.h
 string.obj: string.c ruby.h config.h defines.h re.h regex.h

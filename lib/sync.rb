@@ -4,6 +4,7 @@
 #   	$Revision$
 #   	$Date$
 #   	by Keiju ISHITSUKA
+#   	modified by matz
 #
 # --
 #  Sync_m, Synchronizer_m
@@ -43,7 +44,7 @@ unless defined? Thread
   fail "Thread not available for this ruby interpreter"
 end
 
-require "finalize"
+require "final"
 
 module Sync_m
   RCS_ID='-$Header$-'
@@ -54,7 +55,7 @@ module Sync_m
   EX = :EX
   
   # 例外定義
-  class Err < Exception
+  class Err < StandardError
     def Err.Fail(*opt)
       fail self, sprintf(self::Message, *opt)
     end
@@ -296,8 +297,8 @@ module Sync_m
   private :sync_try_lock_sub
   
   def sync_synchronize(mode = EX)
+    sync_lock(mode)
     begin
-      sync_lock(mode)
       yield
     ensure
       sync_unlock
@@ -321,7 +322,11 @@ module Sync_m
     def For_primitive_object.extend_object(obj)
       super
       obj.sync_extended
-      Finalizer.add(obj, For_primitive_object, :sync_finalize)
+      # Changed to use `final.rb'.
+      # Finalizer.add(obj, For_primitive_object, :sync_finalize)
+      ObjectSpace.define_finalizer(obj) do |id|
+	For_primitive_object.sync_finalize(id)
+      end
     end
     
     def initialize

@@ -11,12 +11,20 @@
 #ifndef DLN_H
 #define DLN_H
 
-char *dln_find_exe();
-char *dln_find_file();
+#ifndef _
+#ifndef __STDC__
+# define _(args) ()
+#else
+# define _(args) args
+#endif
+#endif
+
+char *dln_find_exe _((char*,char*));
+char *dln_find_file _((char*,char*));
 
 #ifdef USE_DLN_A_OUT
 extern char *dln_argv0;
 #endif
 
-void dln_load();
+void dln_load _((char*));
 #endif

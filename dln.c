@@ -6,19 +6,19 @@
   $Date$
   created at: Tue Jan 18 17:05:06 JST 1994
 
-  Copyright (C) 1993-1996 Yukihiro Matsumoto
+  Copyright (C) 1993-1998 Yukihiro Matsumoto
 
 ************************************************/
-
-#ifdef _AIX
-#pragma alloca
-#endif
 
 #include "config.h"
 #include "defines.h"
 #include "dln.h"
 
 char *dln_argv0;
+
+#ifdef _AIX
+#pragma alloca
+#endif
 
 #if defined(HAVE_ALLOCA_H) && !defined(__GNUC__)
 #include <alloca.h>
@@ -36,7 +36,9 @@ void *xrealloc();
 
 #include <stdio.h>
 #ifndef NT
-#include <sys/file.h>
+# ifndef USE_CWGUSI
+#  include <sys/file.h>
+# endif
 #else
 #include "missing/file.h"
 #endif
@@ -58,15 +60,25 @@ char *strdup();
 char *getenv();
 #endif
 
+#ifdef __MACOS__
+# include <TextUtils.h>
+# include <CodeFragments.h>
+# include <Aliases.h>
+#endif
+
+#ifdef __BEOS__
+# include <image.h>
+#endif
+
 int eaccess();
 
-#if defined(HAVE_DLOPEN) && !defined(USE_DLN_A_OUT)
+#if defined(HAVE_DLOPEN) && !defined(USE_DLN_A_OUT) && !defined(__CYGWIN32__) && !defined(_AIX)
 /* dynamic load with dlopen() */
 # define USE_DLN_DLOPEN
 #endif
 
 #ifndef FUNCNAME_PATTERN
-# if defined(__hp9000s300) || defined(__NetBSD__) || defined(__BORLANDC__) || defined(__FreeBSD__) || defined(NeXT)
+# if defined(__hp9000s300) || defined(__NetBSD__) || defined(__BORLANDC__) || (defined(__FreeBSD__) && __FreeBSD__ < 3) || defined(NeXT) || defined(__WATCOMC__)
 #  define FUNCNAME_PATTERN "_Init_%.200s"
 # else
 #  define FUNCNAME_PATTERN "Init_%.200s"
@@ -81,7 +93,11 @@ init_funcname(buf, file)
 
     /* Load the file as an object one */
     for (p = file, slash = p-1; *p; p++) /* Find position of last '/' */
+#ifdef __MACOS__
+	if (*p == ':') slash = p;
+#else
 	if (*p == '/') slash = p;
+#endif
 
     sprintf(buf, FUNCNAME_PATTERN, slash + 1);
     for (p = buf; *p; p++) {         /* Delete suffix it it exists */
@@ -407,7 +423,7 @@ load_text_data(fd, hdrp, bss, disp)
 }
 
 static int
-undef_print(key, value)
+underb_f_print(key, value)
     char *key, *value;
 {
     fprintf(stderr, "  %s\n", key);
@@ -418,7 +434,7 @@ static void
 dln_print_undef()
 {
     fprintf(stderr, " Undefined symbols:\n");
-    st_foreach(undef_tbl, undef_print, NULL);
+    st_foreach(undef_tbl, underb_f_print, NULL);
 }
 
 static void
@@ -814,7 +830,7 @@ load_1(fd, disp, need_init)
 	for (sym = syms; sym<end; sym++) {
 	    char *name = sym->n_un.n_name;
 	    if (name[0] == '_' && sym->n_value >= block) {
-		if (strcmp(name+1, "libs_to_be_linked") == 0) {
+		if (strcmp(name+1, "dln_libs_to_be_linked") == 0) {
 		    libs_to_be_linked = (char**)sym->n_value;
 		}
 		else if (strcmp(name+1, buf) == 0) {
@@ -869,11 +885,11 @@ search_undef(key, value, lib_tbl)
 }
 
 struct symdef {
-    int str_index;
+    int rb_str_index;
     int lib_offset;
 };
 
-char *dln_library_path = DLN_DEFAULT_LIB_PATH;
+char *dln_librrb_ary_path = DLN_DEFAULT_LIB_PATH;
 
 static int
 load_lib(lib)
@@ -904,10 +920,10 @@ load_lib(lib)
 
     /* library search path: */
     /* look for environment variable DLN_LIBRARY_PATH first. */
-    /* then variable dln_library_path. */
+    /* then variable dln_librrb_ary_path. */
     /* if path is still NULL, use "." for path. */
     path = getenv("DLN_LIBRARY_PATH");
-    if (path == NULL) path = dln_library_path;
+    if (path == NULL) path = dln_librrb_ary_path;
 
     file = dln_find_file(lib, path);
     fd = open(file, O_RDONLY);
@@ -936,7 +952,7 @@ load_lib(lib)
 	base = (struct symdef*)(data + 1);
 	name_base = (char*)(base + nsym) + sizeof(int);
 	while (nsym > 0) {
-	    char *name = name_base + base->str_index;
+	    char *name = name_base + base->rb_str_index;
 
 	    st_insert(lib_tbl, name, base->lib_offset + sizeof(ahdr));
 	    nsym--;
@@ -1065,14 +1081,18 @@ dln_sym(name)
 #include "dl.h"
 #endif
 
-#ifdef _AIX
+#if defined(_AIX)
 #include <ctype.h>	/* for isdigit()	*/
 #include <errno.h>	/* for global errno	*/
 #include <sys/ldr.h>
 #endif
 
 #ifdef NeXT
-/*#include <mach-o/rld.h>*/
+#if NS_TARGET_MAJOR < 4
+#include <mach-o/rld.h>
+#else
+#include <mach-o/dyld.h>
+#endif
 #endif
 
 #ifdef _WIN32
@@ -1109,21 +1129,28 @@ dln_strerror()
 
 #ifdef _WIN32
     static char message[1024];
+    int error = GetLastError();
+    char *p = message;
+    p += sprintf(message, "%d: ", error);
     FormatMessage(
 	FORMAT_MESSAGE_FROM_SYSTEM,
 	NULL,
-	GetLastError(),
-	MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
-	message,
-	sizeof message,
+	error,
+	MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+	p,
+	sizeof message - strlen(message),
 	NULL);
 
+    for (p = message; *p; p++) {
+	if (*p == '\n' || *p == '\r')
+	    *p = ' ';
+    }
     return message;
 #endif
 }
 
 
-#ifdef _AIX
+#if defined(_AIX)
 static void
 aix_loaderror(char *pathname)
 {
@@ -1166,7 +1193,7 @@ aix_loaderror(char *pathname)
 	ERRBUF_APPEND("\n");
     }
     errbuf[strlen(errbuf)-1] = '\0';	/* trim off last newline */
-    LoadError(errbuf);
+    rb_loaderror(errbuf);
     return;
 }
 #endif
@@ -1193,7 +1220,7 @@ dln_load(file)
     /* Load file */
     if ((handle =
 	LoadLibraryExA(winfile, NULL, LOAD_WITH_ALTERED_SEARCH_PATH)) == NULL) {
-        printf("LoadLibraryExA\n");
+        printf("LoadLibraryExA: %s\n", winfile);
 	goto failed;
     }
 
@@ -1229,15 +1256,15 @@ dln_load(file)
 	void *handle;
 	void (*init_fct)();
 
-# ifndef RTLD_LAZY
-#  define RTLD_LAZY 1
-# endif
-# ifndef RTLD_GLOBAL
-#  define RTLD_GLOBAL 0
-# endif
+#ifndef RTLD_LAZY
+# define RTLD_LAZY 1
+#endif
+#ifndef RTLD_GLOBAL
+# define RTLD_GLOBAL 0
+#endif
 
 	/* Load file */
-	if ((handle = dlopen(file, RTLD_LAZY|RTLD_GLOBAL)) == NULL) {
+	if ((handle = (void*)dlopen(file, RTLD_LAZY|RTLD_GLOBAL)) == NULL) {
 	    goto failed;
 	}
 
@@ -1260,15 +1287,15 @@ dln_load(file)
 	flags = BIND_DEFERRED;
 	lib = shl_load(file, flags, 0);
 	if (lib == NULL) {
-	    rb_sys_fail(file);
+	    extern int errno;
+	    rb_loaderror("%s - %s", strerror(errno), file);
 	}
 	shl_findsym(&lib, buf, TYPE_PROCEDURE, (void*)&init_fct);
 	if (init_fct == NULL) {
 	    shl_findsym(&lib, buf, TYPE_UNDEFINED, (void*)&init_fct);
 	    if (init_fct == NULL) {
-		extern int errno;
 		errno = ENOSYM;
-		rb_sys_fail(file);
+		rb_loaderror("%s - %s", strerror(ENOSYM), file);
 	    }
 	}
 	(*init_fct)();
@@ -1276,7 +1303,7 @@ dln_load(file)
     }
 #endif /* hpux */
 
-#ifdef _AIX
+#if defined(_AIX)
 #define DLN_DEFINED
     {
 	void (*init_fct)();
@@ -1300,6 +1327,7 @@ dln_load(file)
     Mi hisho@tasihara.nest.or.jp,
     and... Miss ARAI Akino(^^;)
  ----------------------------------------------------*/
+#if NS_TARGET_MAJOR < 4 /* NeXTSTEP rld functions */
     {
 	unsigned long init_address;
 	char *object_files[2] = {NULL, NULL};
@@ -1310,12 +1338,12 @@ dln_load(file)
 	
 	/* Load object file, if return value ==0 ,  load failed*/
 	if(rld_load(NULL, NULL, object_files, NULL) == 0) {
-	    LoadError("Failed to load %.200s", file);
+	    rb_loaderror("Failed to load %.200s", file);
 	}
 
 	/* lookup the initial function */
 	if(rld_lookup(NULL, buf, &init_address) == 0) {
-	    LoadError("Failed to lookup Init function %.200s",file);
+	    rb_loaderror("Failed to lookup Init function %.200s", file);
 	}
 
 	 /* Cannot call *init_address directory, so copy this value to
@@ -1325,7 +1353,132 @@ dln_load(file)
 	(*init_fct)();
 	return ;
     }
+#else/* OPENSTEP dyld functions */
+    {
+	int dyld_result ;
+	NSObjectFileImage obj_file ; /* handle, but not use it */
+	/* "file" is module file name .
+	   "buf" is initial function name with "_" . */
+
+	void (*init_fct)();
+
+
+	dyld_result = NSCreateObjectFileImageFromFile( file, &obj_file );
+
+	if (dyld_result != NSObjectFileImageSuccess) {
+	    rb_loaderror("Failed to load %.200s", file);
+	}
+
+	NSLinkModule(obj_file, file, TRUE);
+
+	/* lookup the initial function */
+	/*NSIsSymbolNameDefined require function name without "_" */
+	if( NSIsSymbolNameDefined( buf + 1 ) ) {
+	    rb_loaderror("Failed to lookup Init function %.200s",file);
+	}
+
+	/* NSLookupAndBindSymbol require function name with "_" !! */
+	init_fct = NSAddressOfSymbol( NSLookupAndBindSymbol( buf ) );
+	(*init_fct)();
+
+	return ;
+    }
+#endif /* rld or dyld */
 #endif
+
+#ifdef __BEOS__
+# define DLN_DEFINED
+    {
+      status_t err_stat;  /* BeOS error status code */
+      image_id img_id;    /* extention module unique id */
+      void (*init_fct)(); /* initialize function for extention module */
+
+      /* load extention module */
+      img_id = load_add_on(file);
+      if (img_id <= 0) {
+	rb_loaderror("Failed to load %.200s", file);
+      }
+      
+      /* find symbol for module initialize function. */
+	  /* The Be Book KernelKit Images section described to use
+		 B_SYMBOL_TYPE_TEXT for symbol of function, not
+		 B_SYMBOL_TYPE_CODE. Why ? */
+	  /* strcat(init_fct_symname, "__Fv"); */  /* parameter nothing. */
+	  /* "__Fv" dont need! The Be Book Bug ? */
+      err_stat = get_image_symbol(img_id, buf,
+				  B_SYMBOL_TYPE_TEXT, &init_fct);
+
+      if (err_stat != B_NO_ERROR) {
+	    char real_name[1024];
+	    strcpy(real_name, buf);
+	    strcat(real_name, "__Fv");
+        err_stat = get_image_symbol(img_id, real_name,
+				  B_SYMBOL_TYPE_TEXT, &init_fct);
+      }
+
+      if ((B_BAD_IMAGE_ID == err_stat) || (B_BAD_INDEX == err_stat)) {
+	unload_add_on(img_id);
+	rb_loaderror("Failed to lookup Init function %.200s", file);
+      }
+      else if (B_NO_ERROR != err_stat) {
+	char errmsg[] = "Internal of BeOS version. %.200s (symbol_name = %s)";
+	unload_add_on(img_id);
+	rb_loaderror(errmsg, strerror(err_stat), buf);
+      }
+
+      /* call module initialize function. */
+      (*init_fct)();
+      return;
+    }
+#endif /* __BEOS__*/
+
+#ifdef __MACOS__
+# define DLN_DEFINED
+    {
+      OSErr err;
+      FSSpec libspec;
+      CFragConnectionID connID;
+      Ptr mainAddr;
+      char errMessage[1024];
+      Boolean isfolder, didsomething;
+      Str63 fragname;
+      Ptr symAddr;
+      CFragSymbolClass class;
+      void (*init_fct)();
+      char fullpath[MAXPATHLEN];
+
+      strcpy(fullpath, file);
+
+      /* resolve any aliases to find the real file */
+      c2pstr(fullpath);
+      (void)FSMakeFSSpec(0, 0, fullpath, &libspec);
+      err = ResolveAliasFile(&libspec, 1, &isfolder, &didsomething);
+      if ( err ) {
+	rb_loaderror("Unresolved Alias - %s", file);
+      }
+
+      /* Load the fragment (or return the connID if it is already loaded */
+      fragname[0] = 0;
+      err = GetDiskFragment(&libspec, 0, 0, fragname, 
+			    kLoadCFrag, &connID, &mainAddr,
+			    errMessage);
+      if ( err ) {
+	p2cstr(errMessage);
+	rb_loaderror("%s - %s",errMessage , file);
+      }
+
+      /* Locate the address of the correct init function */
+      c2pstr(buf);
+      err = FindSymbol(connID, buf, &symAddr, &class);
+      if ( err ) {
+	rb_loaderror("Unresolved symbols - %s" , file);
+      }
+	
+      init_fct = (void (*)())symAddr;
+      (*init_fct)();
+      return;
+    }
+#endif /* __MACOS__ */
 
 #ifndef DLN_DEFINED
     rb_notimplement("dynamic link not supported");
@@ -1335,7 +1488,7 @@ dln_load(file)
 #endif
 #if !defined(_AIX) && !defined(NeXT)
   failed:
-    LoadError("%s - %s", dln_strerror(), file);
+    rb_loaderror("%s - %s", dln_strerror(), file);
 #endif
 }
 
@@ -1346,15 +1499,21 @@ dln_find_exe(fname, path)
     char *fname;
     char *path;
 {
+    if (!path) {
 #if defined(__human68k__)
-    if (!path)
 	path = getenv("path");
-    if (!path)
-	path = "/usr/local/bin;/usr/usb;/usr/bin;/bin;.";
 #else
-    if (!path) path = getenv("PATH");
-    if (!path) path = "/usr/local/bin:/usr/ucb:/usr/bin:/bin:.";
+	path = getenv("PATH");
 #endif
+    }
+
+    if (!path) {
+#if defined(MSDOS) || defined(NT) || defined(__human68k__) || defined(__MACOS__)
+	path = "/usr/local/bin;/usr/ucb;/usr/bin;/bin;.";
+#else
+	path = "/usr/local/bin:/usr/ucb:/usr/bin:/bin:.";
+#endif
+    }
     return dln_find_1(fname, path, 1);
 }
 
@@ -1366,6 +1525,30 @@ dln_find_file(fname, path)
     if (!path) path = ".";
     return dln_find_1(fname, path, 0);
 }
+
+#if defined(__CYGWIN32__)
+char *
+conv_to_posix_path(win32, posix)
+    char *win32;
+    char *posix;
+{
+    char *first = win32;
+    char *p = win32;
+    char *dst = posix;
+
+    for (p = win32; *p; p++)
+	if (*p == ';') {
+	    *p = 0;
+	    cygwin32_conv_to_posix_path(first, posix);
+	    posix += strlen(posix);
+	    *posix++ = ':';
+	    first = p + 1;
+	    *p = ';';
+	}
+    cygwin32_conv_to_posix_path(first, posix);
+    return dst;
+}
+#endif
 
 static char fbuf[MAXPATHLEN];
 
@@ -1380,15 +1563,24 @@ dln_find_1(fname, path, exe_flag)
     register char *bp;
     struct stat st;
 
+#if defined(__CYGWIN32__)
+    char rubypath[MAXPATHLEN];
+    conv_to_posix_path(path, rubypath);
+    path = rubypath;
+#endif
+#ifndef __MACOS__
     if (fname[0] == '/') return fname;
     if (strncmp("./", fname, 2) == 0 || strncmp("../", fname, 3) == 0)
       return fname;
+    if (exe_flag && strchr(fname, '/')) return fname;
 #if defined(MSDOS) || defined(NT) || defined(__human68k__)
     if (fname[0] == '\\') return fname;
-    if (fname[1] == ':') return fname;
+    if (strlen(fname) > 2 && fname[1] == ':') return fname;
     if (strncmp(".\\", fname, 2) == 0 || strncmp("..\\", fname, 3) == 0)
       return fname;
+    if (exe_flag && strchr(fname, '\\')) return fname;
 #endif
+#endif /* __MACOS__ */
 
     for (dp = path;; dp = ++ep) {
 	register int l;
@@ -1396,11 +1588,7 @@ dln_find_1(fname, path, exe_flag)
 	int fspace;
 
 	/* extract a component */
-#if !defined(MSDOS)  && !defined(NT) && !defined(__human68k__)
-	ep = strchr(dp, ':');
-#else
-	ep = strchr(dp, ';');
-#endif
+	ep = strchr(dp, RUBY_PATH_SEP[0]);
 	if (ep == NULL)
 	    ep = dp+strlen(dp);
 
@@ -1417,7 +1605,11 @@ dln_find_1(fname, path, exe_flag)
 	    **	take the path literally.
 	    */
 
-	    if (*dp == '~' && (l == 1 || dp[1] == '/')) {
+	    if (*dp == '~' && (l == 1 ||
+#if defined(MSDOS) || defined(NT) || defined(__human68k__)
+			       dp[1] == '\\' || 
+#endif
+			       dp[1] == '/')) {
 		char *home;
 
 		home = getenv("HOME");
@@ -1440,7 +1632,11 @@ dln_find_1(fname, path, exe_flag)
 
 	    /* add a "/" between directory and filename */
 	    if (ep[-1] != '/')
+#ifdef __MACOS__
+		*bp++ = ':';
+#else
 		*bp++ = '/';
+#endif
 	}
 
 	/* now append the file name */

@@ -8,17 +8,17 @@ while gets()
       arg.gsub! ' +', ' '
       if arg =~ /,/
 	if arg =~ /(([^*]+) *\** *[\w\d_]+),/
-	  type = $2.strip!
-	  args.push $1.strip!
+	  type = $2.strip
+	  args.push $1.strip
 	  arg = $'
 	else
 	  type = ""
 	end
 	while arg.sub!(/(\** *[\w\d_]+)(,|$)/, "")
-	  args.push type + " " + $1.strip!
+	  args.push type + " " + $1.strip
 	end
       else
-	args.push arg.strip!
+	args.push arg.strip
       end
     end
     printf "%s);\n", args.join(', ')

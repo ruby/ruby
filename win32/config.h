@@ -1,4 +1,10 @@
-#define THREAD 1
+#define USE_THREAD 1
+#define SIZEOF_INT 4
+#define SIZEOF_LONG 4
+#define SIZEOF_VOIDP 4
+#define HAVE_PROTOTYPES 1
+#define HAVE_STDARG_PROTOTYPES 1
+/* #define HAVE_ATTR_NORETURN 1 */
 /* #define HAVE_DIRENT_H 1 */
 /* #define HAVE_UNISTD_H 1 */
 #define HAVE_STDLIB_H 1
@@ -31,6 +37,7 @@
 /* #define HAVE_SETITIMER 1 */
 #define HAVE_GETGROUPS 1
 /* #define HAVE_SIGPROCMASK 1 */
+#define RSHIFT(x,y) ((x)>>y)
 #define FILE_COUNT _cnt
 #define DLEXT ".dll"
 #define RUBY_LIB ";/usr/local/lib/ruby;."
@@ -43,6 +50,9 @@
 #define pclose _pclose
 #define pipe   _pipe
 #define bzero(x, y) memset(x, 0, y)
+#define snprintf _snprintf
+#define vsnprintf _vsnprintf
+
 
 #define S_IFMT   _S_IFMT
 #define S_IFDIR  _S_IFDIR

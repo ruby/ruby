@@ -5,7 +5,7 @@
   $Author$
   created at: Fri Aug  2 09:24:12 JST 1996
 
-  Copyright (C) 1995 Yukihiro Matsumoto
+  Copyright (C) 1995-1998 Yukihiro Matsumoto
 
 ************************************************/
 /* This module provides an interface to the RSA Data Security,
@@ -42,7 +42,7 @@ md5_digest(obj)
     ctx = *md5;
     MD5Final(digest, &ctx);
 
-    return str_new(digest, 16);
+    return rb_str_new(digest, 16);
 }
 
 static VALUE
@@ -53,7 +53,7 @@ md5_clone(obj)
     MD5_CTX *md5, *md5_new;
 
     Data_Get_Struct(obj, MD5_CTX, md5);
-    obj = Data_Make_Struct(CLASS_OF(obj), MD5_CTX, 0, 0, md5_new);
+    obj = Data_Make_Struct(CLASS_OF(obj), MD5_CTX, 0, free, md5_new);
     *md5_new = *md5;
 
     return obj;
@@ -61,6 +61,9 @@ md5_clone(obj)
 
 static VALUE
 md5_new(argc, argv, class)
+    int argc;
+    VALUE* argv;
+    VALUE class;
 {
     int i;
     VALUE arg, obj;
@@ -69,18 +72,19 @@ md5_new(argc, argv, class)
     rb_scan_args(argc, argv, "01", &arg);
     if (!NIL_P(arg)) Check_Type(arg, T_STRING);
 
-    obj = Data_Make_Struct(class, MD5_CTX, 0, 0, md5);
+    obj = Data_Make_Struct(class, MD5_CTX, 0, free, md5);
     MD5Init(md5);
     if (!NIL_P(arg)) {
 	md5_update(obj, arg);
     }
+    rb_obj_call_init(obj);
 
     return obj;
 }
 
 Init_md5()
 {
-    cMD5 = rb_define_class("MD5", cObject);
+    cMD5 = rb_define_class("MD5", rb_cObject);
 
     rb_define_singleton_method(cMD5, "new", md5_new, -1);
 

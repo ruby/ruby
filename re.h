@@ -3,11 +3,10 @@
   re.h -
 
   $Author$
-  $Revision$
   $Date$
   created at: Thu Sep 30 14:18:32 JST 1993
 
-  Copyright (C) 1993-1996 Yukihiro Matsumoto
+  Copyright (C) 1993-1998 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -29,9 +28,12 @@ struct RMatch {
 
 #define RMATCH(obj)  (R_CAST(RMatch)(obj))
 
-int str_cicmp _((VALUE, VALUE));
-VALUE reg_regcomp _((VALUE));
-int reg_search _((VALUE, VALUE, int, struct re_registers *));
-VALUE reg_regsub _((VALUE, VALUE, struct re_registers *));
-void reg_free _((Regexp *));
+int rb_str_cicmp _((VALUE, VALUE));
+VALUE rb_reg_regcomp _((VALUE));
+int rb_reg_search _((VALUE, VALUE, int, int));
+VALUE rb_reg_regsub _((VALUE, VALUE, struct re_registers *));
+
+int rb_kcode _((void));
+
+extern int ruby_ignorecase;
 #endif
