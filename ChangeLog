@@ -1,3 +1,7 @@
+Mon Apr  5 19:43:40 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
+
+	* regexec.c: imported Oni Guruma 2.2.6.
+
 Mon Apr  5 19:39:10 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
 
 	* regparse.c, oniguruma.h: imported Oni Guruma 2.2.6.
