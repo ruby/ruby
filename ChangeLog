@@ -1,3 +1,7 @@
+Sat Mar 10 02:34:18 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* math.c (math_log, math_log10): use nan() instead of 0.0/0.0 on Cygwin.
+
 Thu Mar  8 17:43:59 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/protocol.rb: one write(2) per one line.
