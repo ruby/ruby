@@ -2,9 +2,8 @@
 # test/strscan/test_stringscanner.rb
 #
 
-require 'test/unit/testsuite'
-require 'test/unit/testcase'
 require 'strscan'
+require 'test/unit'
 
 
 class TestStringScanner < Test::Unit::TestCase
@@ -394,10 +393,4 @@ end
     assert_equal 0, s.pos
   end
 
-end
-
-
-if $0 == __FILE__
-  require 'test/unit/ui/console/testrunner'
-  Test::Unit::UI::Console::TestRunner.run(TestStringScanner.suite)
 end
