@@ -39,7 +39,12 @@ end
 
 $log = open('mkmf.log', 'w')
 
-LINK = "#{CONFIG['CC']} -o conftest -I#{$hdrdir} #{CFLAGS} -I#{CONFIG['includedir']} %s %s #{CONFIG['LDFLAGS']} %s conftest.c %s %s #{CONFIG['LIBS']}"
+if /mswin32/ =~ RUBY_PLATFORM
+  OUTFLAG = '-Fe'
+else
+  OUTFLAG = '-o '
+end
+LINK = "#{CONFIG['CC']} #{OUTFLAG}conftest -I#{$hdrdir} #{CFLAGS} -I#{CONFIG['includedir']} %s %s #{CONFIG['LDFLAGS']} %s conftest.c %s %s #{CONFIG['LIBS']}"
 CPP = "#{CONFIG['CPP']} -E %s -I#{$hdrdir} #{CFLAGS} -I#{CONFIG['includedir']} %s %s conftest.c"
 
 def rm_f(*files)
@@ -497,49 +502,49 @@ EOMF
   install_rb(mfile, "$(sitelibdir)", srcdir)
   mfile.printf "\n"
 
-  if /mswin32/ !~ RUBY_PLATFORM
-    mfile.print "
-.c.#{$OBJEXT}:
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $@ $<
-
+  unless /mswin32/ =~ RUBY_PLATFORM
+    src = '$<'
+    copt = cxxopt = ''
+  else
+    if /nmake/i =~ $make
+      src = '$(<:\\=/)'
+    else
+      src = '$(subst /,\\\\,$<)'
+    end
+    copt = '-Tc'
+    cxxopt = '-Tp'
+  end
+  unless /nmake/i =~ $make
+    mfile.puts "
 .cc.#{$OBJEXT}:
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{cxxopt}#{src}
 .cpp.#{$OBJEXT}:
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{cxxopt}#{src}
 .cxx.#{$OBJEXT}:
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{cxxopt}#{src}
 .C.#{$OBJEXT}:
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
-"
-  elsif /nmake/i =~ $make
-    mfile.print "
-{$(srcdir)}.c.#{$OBJEXT}:
-	$(CC) $(CFLAGS) -I$(<D) $(CPPFLAGS) -c $(<:/=\\)
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{cxxopt}#{src}
 .c.#{$OBJEXT}:
-	$(CC) $(CFLAGS) -I$(<D) $(CPPFLAGS) -c $(<:/=\\)
-
-{$(srcdir)}.cc{}.#{$OBJEXT}:
-	$(CXX) -I. -I$(<D) $(CXXFLAGS) $(CPPFLAGS) -c $(<:/=\\)
-.cc.#{$OBJEXT}:
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $(<:/=\\)
-{$(srcdir)}.cpp{}.#{$OBJEXT}:
-	$(CXX) -I. -I$(<D) $(CXXFLAGS) $(CPPFLAGS) -c $(<:/=\\)
-.cpp.#{$OBJEXT}:
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $(<:/=\\)
-{$(srcdir)}.cxx{}.#{$OBJEXT}:
-	$(CXX) -I. -I$(<D) $(CXXFLAGS) $(CPPFLAGS) -c $(<:/=\\)
-.cxx.#{$OBJEXT}:
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $(<:/=\\)
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c #{copt}#{src}
 "
   else
     mfile.print "
-.SUFFIXES: .#{$OBJEXT}
-
+{$(srcdir)}.c{}.#{$OBJEXT}:
+	$(CC) -I. -I$(<D) $(CFLAGS) $(CPPFLAGS) -c #{copt}#{src}
 .c.#{$OBJEXT}:
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(subst /,\\\\,$<)
-
-.cc.#{$OBJEXT} .cpp.#{$OBJEXT} .cxx.#{$OBJEXT} .C.#{$OBJEXT}:
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $(subst /,\\\\,$<)
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c #{copt}#{src}
+{$(srcdir)}.cc{}.#{$OBJEXT}:
+	$(CXX) -I. -I$(<D) $(CXXFLAGS) $(CPPFLAGS) -c #{cxxopt}#{src}
+.cc.#{$OBJEXT}:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{cxxopt}#{src}
+{$(srcdir)}.cpp{}.#{$OBJEXT}:
+	$(CXX) -I. -I$(<D) $(CXXFLAGS) $(CPPFLAGS) -c #{cxxopt}#{src}
+.cpp.#{$OBJEXT}:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{cxxopt}#{src}
+{$(srcdir)}.cxx{}.#{$OBJEXT}:
+	$(CXX) -I. -I$(<D) $(CXXFLAGS) $(CPPFLAGS) -c #{cxxopt}#{src}
+.cxx.#{$OBJEXT}:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{cxxopt}#{src}
 "
   end
 
@@ -552,7 +557,7 @@ EOMF
 	mfile.print "\tenv LIB='$(subst /,\\\\,$(LIBPATH));$(LIB)' \\\n"
       end
     end
-    mfile.print "\t$(LDSHARED) $(DLDFLAGS) -o $(DLLIB) $(OBJS) $(LIBS) $(LOCAL_LIBS)\n"
+    mfile.print "\t$(LDSHARED) $(DLDFLAGS) #{OUTFLAG}$(DLLIB) $(OBJS) $(LIBS) $(LOCAL_LIBS)\n"
   elsif not File.exist?(target + ".c") and not File.exist?(target + ".cc")
     mfile.print "$(DLLIB): $(OBJS)\n"
     case RUBY_PLATFORM

@@ -68,7 +68,12 @@ if RUBY_PLATFORM == "m68k-human"
 else
   CFLAGS = "@CFLAGS@"
 end
-LINK = "@CC@ -o conftest -I#$topdir -I#$top_srcdir #{CFLAGS} -I#$includedir @LDFLAGS@ %s %s %s conftest.c %s %s @LIBS@"
+if /mswin32/ =~ RUBY_PLATFORM
+  OUTFLAG = '-Fe'
+else
+  OUTFLAG = '-o '
+end
+LINK = "@CC@ #{OUTFLAG}conftest -I#$topdir -I#$top_srcdir #{CFLAGS} -I#$includedir @LDFLAGS@ %s %s %s conftest.c %s %s @LIBS@"
 CPP = "@CPP@ @CPPFLAGS@ -I#$topdir -I#$top_srcdir #{CFLAGS} -I#$includedir %s %s %s conftest.c"
 
 $log = open('extmk.log', 'w')
@@ -496,44 +501,49 @@ EOS
   install_rb(mfile, $srcdir)
   mfile.printf "\n"
 
-  unless /nmake/i =~ $make
-    unless /mswin32/ =~ RUBY_PLATFORM
-      src = '$<'
+  unless /mswin32/ =~ RUBY_PLATFORM
+    src = '$<'
+    copt = cxxopt = ''
+  else
+    if /nmake/i =~ $make
+      src = '$(<:\\=/)'
     else
       src = '$(subst /,\\\\,$<)'
     end
+    copt = '-Tc'
+    cxxopt = '-Tp'
+  end
+  unless /nmake/i =~ $make
     mfile.puts "
 .cc.@OBJEXT@:
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{src}
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{cxxopt}#{src}
 .cpp.@OBJEXT@:
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{src}
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{cxxopt}#{src}
 .cxx.@OBJEXT@:
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{src}
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{cxxopt}#{src}
 .C.@OBJEXT@:
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{src}
-
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{cxxopt}#{src}
 .c.@OBJEXT@:
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c #{src}
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c #{copt}#{src}
 "
   else
     mfile.print "
 {$(srcdir)}.c{}.@OBJEXT@:
-	$(CC) -I. -I$(<D) $(CFLAGS) $(CPPFLAGS) -c $(<:/=\\)
+	$(CC) -I. -I$(<D) $(CFLAGS) $(CPPFLAGS) -c #{copt}#{src}
 .c.@OBJEXT@:
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(<:/=\\)
-
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c #{copt}#{src}
 {$(srcdir)}.cc{}.@OBJEXT@:
-	$(CXX) -I. -I$(<D) $(CXXFLAGS) $(CPPFLAGS) -c $(<:/=\\)
+	$(CXX) -I. -I$(<D) $(CXXFLAGS) $(CPPFLAGS) -c #{cxxopt}#{src}
 .cc.@OBJEXT@:
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $(<:/=\\)
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{cxxopt}#{src}
 {$(srcdir)}.cpp{}.@OBJEXT@:
-	$(CXX) -I. -I$(<D) $(CXXFLAGS) $(CPPFLAGS) -c $(<:/=\\)
+	$(CXX) -I. -I$(<D) $(CXXFLAGS) $(CPPFLAGS) -c #{cxxopt}#{src}
 .cpp.@OBJEXT@:
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $(<:/=\\)
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{cxxopt}#{src}
 {$(srcdir)}.cxx{}.@OBJEXT@:
-	$(CXX) -I. -I$(<D) $(CXXFLAGS) $(CPPFLAGS) -c $(<:/=\\)
+	$(CXX) -I. -I$(<D) $(CXXFLAGS) $(CPPFLAGS) -c #{cxxopt}#{src}
 .cxx.@OBJEXT@:
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $(<:/=\\)
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{cxxopt}#{src}
 "
   end
 
@@ -559,7 +569,7 @@ $(DLLIB): $(OBJS)
 	mfile.print "\tenv LIB='$(subst /,\\\\,$(LIBPATH));$(LIB)' \\\n"
       end
     end
-    mfile.print "\t$(LDSHARED) $(DLDFLAGS) -o $(DLLIB) $(OBJS) $(LIBS) $(LOCAL_LIBS)\n"
+    mfile.print "\t$(LDSHARED) $(DLDFLAGS) #{OUTFLAG}$(DLLIB) $(OBJS) $(LIBS) $(LOCAL_LIBS)\n"
   elsif RUBY_PLATFORM == "m68k-human"
     mfile.printf "\
 $(DLLIB): $(OBJS)

@@ -22,6 +22,6 @@ Makefile:
 	@echo !INCLUDE $$(srcdir)/win32/Makefile.sub>> $@
 
 config.h config.status: $(srcdir)/win32/$$@.in
-	@copy $(srcdir:/=\)\win32\$@.in $@ > nul
+	@type $(srcdir:/=\)\win32\$@.in > $@
 
 ext:;	@if not exist $@\* mkdir $@

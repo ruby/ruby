@@ -1,3 +1,15 @@
+Sat Jun  9 16:31:03 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
+
+	* ext/extmk.rb.in: Use -F and -T for mswin32 because cl.exe doesn't
+	  support -o officially and cl.exe considers that *.cc and *.cxx are
+	  OBJs.
+
+	* lib/mkmf.rb: ditto.
+
+	* win32/Makefile.sub: Use del instead of rm.
+	  All these changes are derived from Nobuyoshi Nakada's patch.
+	  Thanks.
+
 Fri Jun  8 22:37:40 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (Init_stack): avoid __builtin_frame_address(2) to retrieve
