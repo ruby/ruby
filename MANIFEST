@@ -73,7 +73,7 @@ version.c
 version.h
 djgpp/README.djgpp
 djgpp/config.hin
-djgpp/config.status
+djgpp/config.sed
 djgpp/configure.bat
 djgpp/mkver.sed
 cygwin/GNUmakefile.in
