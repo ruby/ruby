@@ -1,3 +1,8 @@
+Fri Dec 17 13:33:58 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/cgi/session.rb (CGI::Session#initialize): control adding
+	  session_id hidden fields.  fixed: [ruby-talk:123850]
+
 Sun Dec 17 00:01:48 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_proc_arity, rb_node_arity, rb_mod_method_arity,

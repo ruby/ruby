@@ -253,15 +253,14 @@ class CGI
 	end
       end
       unless session_id
-	if request.key?(session_key)
-	  session_id = request[session_key] 
+	if session_id = request[session_key] 
 	  session_id = session_id.read if session_id.respond_to?(:read)
 	end
 	unless session_id
 	  session_id, = request.cookies[session_key]
 	end
 	unless session_id
-	  if option.key?('new_session') and not option['new_session']
+	  unless option.fetch('new_session', true)
 	    raise ArgumentError, "session_key `%s' should be supplied"%session_key
 	  end
 	  session_id = create_new_id
@@ -272,14 +271,14 @@ class CGI
       begin
         @dbman = dbman::new(self, option)
       rescue NoSession
-        if option.key?('new_session') and not option['new_session']
+        unless option.fetch('new_session', true)
           raise ArgumentError, "invalid session_id `%s'"%session_id
         end
         session_id = @session_id = create_new_id
         retry
       end
       request.instance_eval do
-	@output_hidden = {session_key => session_id}
+	@output_hidden = {session_key => session_id} unless option['no_hidden']
 	@output_cookies =  [
           Cookie::new("name" => session_key,
 		      "value" => session_id,
@@ -293,7 +292,7 @@ class CGI
 				else
 				  ""
 				end)
-        ]
+        ] unless option['no_cookies']
       end
       @dbprot = [@dbman]
       ObjectSpace::define_finalizer(self, Session::callback(@dbprot))
