@@ -580,56 +580,30 @@ typedef short int MemNumType;
 #define SIZE_OPTION        sizeof(OnigOptionType)
 #define SIZE_CODE_POINT    sizeof(OnigCodePoint)
 
+
+
 #ifdef PLATFORM_UNALIGNED_WORD_ACCESS
-#define GET_RELADDR_INC(addr,p) do{\
-  addr = *((RelAddrType* )(p));\
-  (p) += SIZE_RELADDR;\
-} while(0)
 
-#define GET_ABSADDR_INC(addr,p) do{\
-  addr = *((AbsAddrType* )(p));\
-  (p) += SIZE_ABSADDR;\
-} while(0)
-
-#define GET_LENGTH_INC(len,p) do{\
-  len = *((LengthType* )(p));\
-  (p) += SIZE_LENGTH;\
-} while(0)
-
-#define GET_MEMNUM_INC(num,p) do{\
-  num = *((MemNumType* )(p));\
-  (p) += SIZE_MEMNUM;\
-} while(0)
-
-#define GET_REPEATNUM_INC(num,p) do{\
-  num = *((RepeatNumType* )(p));\
-  (p) += SIZE_REPEATNUM;\
-} while(0)
-
-#define GET_OPTION_INC(option,p) do{\
-  option = *((OnigOptionType* )(p));\
-  (p) += SIZE_OPTION;\
+#define PLATFORM_GET_INC(val,p,type) do{\
+  val  = *(type* )p;\
+  (p) += sizeof(type);\
 } while(0)
 
 #else
 
-#define GET_RELADDR_INC(addr,p)      GET_SHORT_INC(addr,p)
-#define GET_ABSADDR_INC(addr,p)      GET_SHORT_INC(addr,p)
-#define GET_LENGTH_INC(len,p)        GET_SHORT_INC(len,p)
-#define GET_MEMNUM_INC(num,p)        GET_SHORT_INC(num,p)
-#define GET_REPEATNUM_INC(num,p)     GET_INT_INC(num,p)
-#define GET_OPTION_INC(option,p)     GET_UINT_INC(option,p)
-
-#define SERIALIZE_RELADDR(addr,p)    SERIALIZE_SHORT(addr,p)
-#define SERIALIZE_ABSADDR(addr,p)    SERIALIZE_SHORT(addr,p)
-#define SERIALIZE_LENGTH(len,p)      SERIALIZE_SHORT(len,p)
-#define SERIALIZE_MEMNUM(num,p)      SERIALIZE_SHORT(num,p)
-#define SERIALIZE_REPEATNUM(num,p)   SERIALIZE_INT(num,p)
-#define SERIALIZE_OPTION(option,p)   SERIALIZE_UINT(option,p)
-
-#define SERIALIZE_BUFSIZE            SIZEOF_INT
+#define PLATFORM_GET_INC(val,p,type) do{\
+  xmemcpy(&val, (p), sizeof(type));\
+  (p) += sizeof(type);\
+} while(0)
 
 #endif  /* PLATFORM_UNALIGNED_WORD_ACCESS */
+
+#define GET_RELADDR_INC(addr,p)    PLATFORM_GET_INC(addr,   p, RelAddrType)
+#define GET_ABSADDR_INC(addr,p)    PLATFORM_GET_INC(addr,   p, AbsAddrType)
+#define GET_LENGTH_INC(len,p)      PLATFORM_GET_INC(len,    p, LengthType)
+#define GET_MEMNUM_INC(num,p)      PLATFORM_GET_INC(num,    p, MemNumType)
+#define GET_REPEATNUM_INC(num,p)   PLATFORM_GET_INC(num,    p, RepeatNumType)
+#define GET_OPTION_INC(option,p)   PLATFORM_GET_INC(option, p, OnigOptionType)
 
 /* code point's address must be aligned address. */
 #define GET_CODE_POINT(code,p)   code = *((OnigCodePoint* )(p))

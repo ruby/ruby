@@ -1,3 +1,8 @@
+Sun Nov 28 12:05:48 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
+
+	* regcomp.c, regint.h: fixed PLATFORM_UNALIGNED_WORD_ACCESS
+	problem ([ruby-dev:24802] and [ruby-core:3733])
+
 Sat Nov 27 21:43:39 2004  Tanaka Akira  <akr@m17n.org>
 
 	* io.c: avoid data lost with nonblocking fd and

@@ -158,13 +158,7 @@ add_rel_addr(regex_t* reg, int addr)
 {
   RelAddrType ra = (RelAddrType )addr;
 
-#ifdef PLATFORM_UNALIGNED_WORD_ACCESS
   BBUF_ADD(reg, &ra, SIZE_RELADDR);
-#else
-  UChar buf[SERIALIZE_BUFSIZE];
-  SERIALIZE_RELADDR(ra, buf);
-  BBUF_ADD(reg, buf, SIZE_RELADDR);
-#endif
   return 0;
 }
 
@@ -173,13 +167,7 @@ add_abs_addr(regex_t* reg, int addr)
 {
   AbsAddrType ra = (AbsAddrType )addr;
 
-#ifdef PLATFORM_UNALIGNED_WORD_ACCESS
   BBUF_ADD(reg, &ra, SIZE_ABSADDR);
-#else
-  UChar buf[SERIALIZE_BUFSIZE];
-  SERIALIZE_ABSADDR(ra, buf);
-  BBUF_ADD(reg, buf, SIZE_ABSADDR);
-#endif
   return 0;
 }
 
@@ -188,13 +176,7 @@ add_length(regex_t* reg, int len)
 {
   LengthType l = (LengthType )len;
 
-#ifdef PLATFORM_UNALIGNED_WORD_ACCESS
   BBUF_ADD(reg, &l, SIZE_LENGTH);
-#else
-  UChar buf[SERIALIZE_BUFSIZE];
-  SERIALIZE_LENGTH(l, buf);
-  BBUF_ADD(reg, buf, SIZE_LENGTH);
-#endif
   return 0;
 }
 
@@ -203,13 +185,7 @@ add_mem_num(regex_t* reg, int num)
 {
   MemNumType n = (MemNumType )num;
 
-#ifdef PLATFORM_UNALIGNED_WORD_ACCESS
   BBUF_ADD(reg, &n, SIZE_MEMNUM);
-#else
-  UChar buf[SERIALIZE_BUFSIZE];
-  SERIALIZE_MEMNUM(n, buf);
-  BBUF_ADD(reg, buf, SIZE_MEMNUM);
-#endif
   return 0;
 }
 
@@ -219,13 +195,7 @@ add_repeat_num(regex_t* reg, int num)
 {
   RepeatNumType n = (RepeatNumType )num;
 
-#ifdef PLATFORM_UNALIGNED_WORD_ACCESS
   BBUF_ADD(reg, &n, SIZE_REPEATNUM);
-#else
-  UChar buf[SERIALIZE_BUFSIZE];
-  SERIALIZE_REPEATNUM(n, buf);
-  BBUF_ADD(reg, buf, SIZE_REPEATNUM);
-#endif
   return 0;
 }
 #endif
@@ -233,13 +203,7 @@ add_repeat_num(regex_t* reg, int num)
 static int
 add_option(regex_t* reg, OnigOptionType option)
 {
-#ifdef PLATFORM_UNALIGNED_WORD_ACCESS
   BBUF_ADD(reg, &option, SIZE_OPTION);
-#else
-  UChar buf[SERIALIZE_BUFSIZE];
-  SERIALIZE_OPTION(option, buf);
-  BBUF_ADD(reg, buf, SIZE_OPTION);
-#endif
   return 0;
 }
 
@@ -1638,9 +1602,6 @@ unset_addr_list_fix(UnsetAddrList* uslist, regex_t* reg)
   int i, offset;
   EffectNode* en;
   AbsAddrType addr;
-#ifndef PLATFORM_UNALIGNED_WORD_ACCESS
-  UChar buf[SERIALIZE_BUFSIZE];
-#endif
 
   for (i = 0; i < uslist->num; i++) {
     en = &(NEFFECT(uslist->us[i].target));
@@ -1648,12 +1609,7 @@ unset_addr_list_fix(UnsetAddrList* uslist, regex_t* reg)
     addr = en->call_addr;
     offset = uslist->us[i].offset;
 
-#ifdef PLATFORM_UNALIGNED_WORD_ACCESS
     BBUF_WRITE(reg, offset, &addr, SIZE_ABSADDR);
-#else
-    SERIALIZE_ABSADDR(addr, buf);
-    BBUF_WRITE(reg, offset, buf, SIZE_ABSADDR);
-#endif
   }
   return 0;
 }
@@ -5125,8 +5081,7 @@ onig_print_compiled_byte_code(FILE* f, UChar* bp, UChar** nextp,
     case ARG_NON:
       break;
     case ARG_RELADDR:
-      addr = *((RelAddrType* )bp);
-      bp += SIZE_RELADDR;
+      GET_RELADDR_INC(addr, bp);
       fprintf(f, ":(%d)", addr);
       break;
     case ARG_ABSADDR:
