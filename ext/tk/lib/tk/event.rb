@@ -8,7 +8,7 @@ end
 ########################
 
 require 'tkutil'
-require 'tk'
+# require 'tk'
 
 ########################
 

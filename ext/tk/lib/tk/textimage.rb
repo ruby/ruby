@@ -5,12 +5,14 @@ require 'tk'
 require 'tk/text'
 
 class TkTextImage<TkObject
+  include TkText::IndexModMethods
+
   def initialize(parent, index, keys)
     #unless parent.kind_of?(TkText)
     #  fail ArguemntError, "expect TkText for 1st argument"
     #end
     @t = parent
-    if index == 'end'
+    if index == 'end' || index == :end
       @path = TkTextMark.new(@t, tk_call(@t.path, 'index', 'end - 1 chars'))
     elsif index.kind_of? TkTextMark
       if tk_call_without_enc(@t.path,'index',index.path) == tk_call_without_enc(@t.path,'index','end')
@@ -27,7 +29,15 @@ class TkTextImage<TkObject
     @path.gravity = 'left'
     @index = @path.path
     @id = tk_call_without_enc(@t.path, 'image', 'create', @index, 
-                              *hash_kv(keys, true))
+                              *hash_kv(keys, true)).freeze
+    @path.gravity = 'right'
+  end
+
+  def id
+    TkText::IndexString.new(@id)
+  end
+  def mark
+    @path
   end
 
   def [](slot)
@@ -59,7 +69,7 @@ class TkTextImage<TkObject
   end
 
   def image
-    img = tk_call_without_enc(@t.path, 'image', 'configure', @index, '-image')
+    img = tk_call_without_enc(@t.path, 'image', 'cget', @index, '-image')
     TkImage::Tk_IMGTBL[img]? TkImage::Tk_IMGTBL[img] : img
   end
 

@@ -7,6 +7,7 @@ require 'tk/tagfont'
 
 class TkTextTag<TkObject
   include TkTreatTagFont
+  include TkText::IndexModMethods
 
   TTagID_TBL = TkCore::INTERP.create_table
   Tk_TextTag_ID = ['tag'.freeze, '00000'.taint].freeze
@@ -26,7 +27,7 @@ class TkTextTag<TkObject
     @parent = @t = parent
     @tpath = parent.path
     # @path = @id = Tk_TextTag_ID.join('')
-    @path = @id = Tk_TextTag_ID.join(TkCore::INTERP._ip_id_)
+    @path = @id = Tk_TextTag_ID.join(TkCore::INTERP._ip_id_).freeze
     # TTagID_TBL[@id] = self
     TTagID_TBL[@tpath] = {} unless TTagID_TBL[@tpath]
     TTagID_TBL[@tpath][@id] = self
@@ -46,7 +47,7 @@ class TkTextTag<TkObject
   end
 
   def id
-    @id
+    TkText::IndexString.new(@id)
   end
 
   def exist?
@@ -58,11 +59,11 @@ class TkTextTag<TkObject
   end
 
   def first
-    @id + '.first'
+    TkText::IndexString.new(@id + '.first')
   end
 
   def last
-    @id + '.last'
+    TkText::IndexString.new(@id + '.last')
   end
 
   def add(*indices)
@@ -81,21 +82,25 @@ class TkTextTag<TkObject
     l = tk_split_simplelist(tk_call_without_enc(@t.path, 'tag', 'ranges', @id))
     r = []
     while key=l.shift
-      r.push [key, l.shift]
+      r.push [TkText::IndexString.new(key), TkText::IndexString.new(l.shift)]
     end
     r
   end
 
   def nextrange(first, last=None)
-    tk_split_list(tk_call_without_enc(@t.path, 'tag', 'nextrange', @id, 
-                                      _get_eval_enc_str(first), 
-                                      _get_eval_enc_str(last)))
+    simplelist(tk_call_without_enc(@t.path, 'tag', 'nextrange', @id, 
+                                   _get_eval_enc_str(first), 
+                                   _get_eval_enc_str(last))).collect{|idx|
+      TkText::IndexString.new(idx)
+    }
   end
 
   def prevrange(first, last=None)
-    tk_split_list(tk_call_without_enc(@t.path, 'tag', 'prevrange', @id, 
-                                      _get_eval_enc_str(first), 
-                                      _get_eval_enc_str(last)))
+    simplelist(tk_call_without_enc(@t.path, 'tag', 'prevrange', @id, 
+                                   _get_eval_enc_str(first), 
+                                   _get_eval_enc_str(last))).collect{|idx|
+      TkText::IndexString.new(idx)
+    }
   end
 
   def [](key)

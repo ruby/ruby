@@ -66,6 +66,64 @@ class TkText<TkTextWin
   include TkTextTagConfig
   include Scrollable
 
+  #######################################
+
+  module IndexModMethods
+    def chars(mod)
+      fail ArgumentError, 'expect Integer'  unless mod.kind_of?(Integer)
+      if mod < 0
+        TkText::IndexString.new(id + ' ' << mod.to_s << ' chars')
+      else
+        TkText::IndexString.new(id + ' + ' << mod.to_s << ' chars')
+      end
+    end
+    alias char chars
+
+    def lines(mod)
+      fail ArgumentError, 'expect Integer'  unless mod.kind_of?(Integer)
+      if mod < 0
+        TkText::IndexString.new(id + ' ' << mod.to_s << ' lines')
+      else
+        TkText::IndexString.new(id + ' + ' << mod.to_s << ' lines')
+      end
+    end
+    alias line lines
+
+    def linestart
+      TkText::IndexString.new(id + ' linestart')
+    end
+    def lineend
+      TkText::IndexString.new(id + ' lineend')
+    end
+
+    def wordstart
+      TkText::IndexString.new(id + ' wordstart')
+    end
+    def wordend
+      TkText::IndexString.new(id + ' wordend')
+    end
+  end
+
+  class IndexString < String
+    include IndexModMethods
+
+    def self.new(str)
+      if str.kind_of?(String)
+        super(str)
+      elsif str.kind_of?(Symbol)
+        super(str.to_s)
+      else
+        str
+      end
+    end
+
+    def id
+      self
+    end
+  end
+
+  #######################################
+
   TkCommandNames = ['text'.freeze].freeze
   WidgetClassName = 'Text'.freeze
   WidgetClassNames[WidgetClassName] = self
@@ -102,7 +160,8 @@ class TkText<TkTextWin
   private :create_self
 
   def index(index)
-    tk_send_without_enc('index', _get_eval_enc_str(index))
+    TkText::IndexString.new(tk_send_without_enc('index', 
+                                                _get_eval_enc_str(index)))
   end
 
   def get_displaychars(*index)
@@ -757,23 +816,27 @@ class TkText<TkTextWin
                                                 _get_eval_enc_str(tag)))
     r = []
     while key=l.shift
-      r.push [key, l.shift]
+      r.push [TkText::IndexString.new(key), TkText::IndexString.new(l.shift)]
     end
     r
   end
 
   def tag_nextrange(tag, first, last=None)
-    tk_split_list(tk_send_without_enc('tag', 'nextrange', 
-                                      _get_eval_enc_str(tag), 
-                                      _get_eval_enc_str(first), 
-                                      _get_eval_enc_str(last)))
+    simplelist(tk_send_without_enc('tag', 'nextrange', 
+                                   _get_eval_enc_str(tag), 
+                                   _get_eval_enc_str(first), 
+                                   _get_eval_enc_str(last))).collect{|idx|
+      TkText::IndexString.new(idx)
+    }
   end
 
   def tag_prevrange(tag, first, last=None)
-    tk_split_list(tk_send_without_enc('tag', 'prevrange', 
-                                      _get_eval_enc_str(tag), 
-                                      _get_eval_enc_str(first), 
-                                      _get_eval_enc_str(last)))
+    simplelist(tk_send_without_enc('tag', 'prevrange', 
+                                   _get_eval_enc_str(tag), 
+                                   _get_eval_enc_str(first), 
+                                   _get_eval_enc_str(last))).collect{|idx|
+      TkText::IndexString.new(idx)
+    }
   end
 
 =begin
@@ -1016,7 +1079,7 @@ class TkText<TkTextWin
     if ret == ""
       nil
     else
-      ret
+      TkText::IndexString.new(ret)
     end
   end
 
@@ -1051,7 +1114,7 @@ class TkText<TkTextWin
     if ret == ""
       nil
     else
-      ret
+      TkText::IndexString.new(ret)
     end
   end
 
@@ -1173,6 +1236,11 @@ class TkText<TkTextWin
   end
 
   def dump(type_info, *index, &block)
+    if type_info.kind_of?(Symbol)
+      type_info = [ type_info.to_s ]
+    elsif type_info.kind_of?(String)
+      type_info = [ type_info ]
+    end
     args = type_info.collect{|inf| '-' + inf}
     args << '-command' << block if block
     str = tk_send('dump', *(args + index))
@@ -1226,6 +1294,8 @@ class TkText<TkTextWin
             result.push tk_tcl2ruby(val)
         when 'window'
           result.push tk_tcl2ruby(val)
+        when 'image'
+          result.push tk_tcl2ruby(val)
         end
         i = idx + 1
       end
@@ -1233,10 +1303,10 @@ class TkText<TkTextWin
       # retrieve index
       idx = str.index(/ /, i)
       if idx
-        result.push str[i..(idx-1)]
+        result.push(TkText::IndexString.new(str[i..(idx-1)]))
         i = idx + 1
       else
-        result.push str[i..-1]
+        result.push(TkText::IndexString.new(str[i..-1]))
         break
       end
     end

@@ -5,6 +5,8 @@ require 'tk'
 require 'tk/text'
 
 class TkTextMark<TkObject
+  include TkText::IndexModMethods
+
   TMarkID_TBL = TkCore::INTERP.create_table
   Tk_TextMark_ID = ['mark'.freeze, '00000'.taint].freeze
 
@@ -23,7 +25,7 @@ class TkTextMark<TkObject
     @parent = @t = parent
     @tpath = parent.path
     # @path = @id = Tk_TextMark_ID.join('')
-    @path = @id = Tk_TextMark_ID.join(TkCore::INTERP._ip_id_)
+    @path = @id = Tk_TextMark_ID.join(TkCore::INTERP._ip_id_).freeze
     TMarkID_TBL[@id] = self
     TMarkID_TBL[@tpath] = {} unless TMarkID_TBL[@tpath]
     TMarkID_TBL[@tpath][@id] = self
@@ -34,7 +36,7 @@ class TkTextMark<TkObject
   end
 
   def id
-    @id
+    TkText::IndexString.new(@id)
   end
 
   def exist?
@@ -46,10 +48,10 @@ class TkTextMark<TkObject
   end
 
   def +(mod)
-    @id + ' + ' + mod
+    TkText::IndexString.new(@id + ' + ' + mod)
   end
   def -(mod)
-    @id + ' - ' + mod
+    TkText::IndexString.new(@id + ' - ' + mod)
   end
 
   def set(where)

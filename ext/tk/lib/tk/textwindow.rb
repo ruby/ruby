@@ -5,12 +5,14 @@ require 'tk'
 require 'tk/text'
 
 class TkTextWindow<TkObject
-  def initialize(parent, index, keys)
+  include TkText::IndexModMethods
+
+  def initialize(parent, index, keys = {})
     #unless parent.kind_of?(TkText)
     #  fail ArguemntError, "expect TkText for 1st argument"
     #end
     @t = parent
-    if index == 'end'
+    if index == 'end' || index == :end
       @path = TkTextMark.new(@t, tk_call_without_enc(@t.path, 'index', 
                                                      'end - 1 chars'))
     elsif index.kind_of?(TkTextMark)
@@ -49,6 +51,14 @@ class TkTextWindow<TkObject
     end
     tk_call_without_enc(@t.path, 'window', 'create', @index, 
                         *hash_kv(keys, true))
+    @path.gravity = 'right'
+  end
+
+  def id
+    TkText::IndexString.new(_epath(@id))
+  end
+  def mark
+    @path
   end
 
   def [](slot)

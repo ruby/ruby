@@ -2056,15 +2056,28 @@ if (/^(8\.[1-9]|9\.|[1-9][0-9])/ =~ Tk::TCL_VERSION && !Tk::JAPANIZED_TK)
   case $KCODE
   when /^e/i  # EUC
     Tk.encoding = 'euc-jp'
+    Tk.encoding_system = 'euc-jp'
   when /^s/i  # SJIS
-    Tk.encoding = 'shiftjis'
+    begin
+      if Tk.encoding_system == 'cp932'
+        Tk.encoding = 'cp932'
+      else
+        Tk.encoding = 'shiftjis'
+        Tk.encoding_system = 'shiftjis'
+      end
+    rescue StandardError, NameError
+      Tk.encoding = 'shiftjis'
+      Tk.encoding_system = 'shiftjis'
+    end
   when /^u/i  # UTF8
     Tk.encoding = 'utf-8'
+    Tk.encoding_system = 'utf-8'
   else        # NONE
     begin
       Tk.encoding = Tk.encoding_system
     rescue StandardError, NameError
       Tk.encoding = 'utf-8'
+      Tk.encoding_system = 'utf-8'
     end
   end
 
