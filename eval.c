@@ -3299,14 +3299,11 @@ rb_eval(self, n)
 		super = 0;
 	    }
 
-	    klass = 0;
 	    if ((ruby_class == rb_cObject) && rb_autoload_defined(node->nd_cname)) {
 		rb_autoload_load(node->nd_cname);
 	    }
 	    if (rb_const_defined_at(ruby_class, node->nd_cname)) {
 		klass = rb_const_get(ruby_class, node->nd_cname);
-	    }
-	    if (klass) {
 		if (TYPE(klass) != T_CLASS) {
 		    rb_raise(rb_eTypeError, "%s is not a class",
 			     rb_id2name(node->nd_cname));
@@ -3345,14 +3342,11 @@ rb_eval(self, n)
 	    if (NIL_P(ruby_class)) {
 		rb_raise(rb_eTypeError, "no outer class/module");
 	    }
-	    module = 0;
 	    if ((ruby_class == rb_cObject) && rb_autoload_defined(node->nd_cname)) {
 		rb_autoload_load(node->nd_cname);
 	    }
 	    if (rb_const_defined_at(ruby_class, node->nd_cname)) {
 		module = rb_const_get(ruby_class, node->nd_cname);
-	    }
-	    if (module) {
 		if (TYPE(module) != T_MODULE) {
 		    rb_raise(rb_eTypeError, "%s is not a module",
 			     rb_id2name(node->nd_cname));
