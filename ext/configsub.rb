@@ -24,7 +24,7 @@ BEGIN {
   CONFIG['top_srcdir'] = File.expand_path($srcdir || ".")
   CONFIG['RUBY_INSTALL_NAME'] = $install_name if $install_name
   CONFIG['RUBY_SO_NAME'] = $so_name if $so_name
-  $defout = open($output, 'w') if $output
+  $stdout = open($output, 'w') if $output
 }
 
 gsub!(/@(\w+)@/) {CONFIG[$1] || $&}
