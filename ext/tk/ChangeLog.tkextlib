@@ -1,3 +1,21 @@
+2005-03-29  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* lib/tkextlib/blt/component.rb: cannot create elements except
+	  default type of element. 
+
+	* lib/tkextlib/blt/barchart.rb: ditto.
+
+	* lib/tkextlib/blt/graph.rb: ditto.
+
+	* lib/tkextlib/blt/stripchart.rb: ditto.
+
+	* lib/tkextlib/blt/component.rb: axis command option gets
+	  proper object type of arguments.
+
+	* sample/tkextlib/blt/calendar.rb: new sample.
+
+	* sample/tkextlib/blt/pareto.rb: ditto.
+
 2005-03-26  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* lib/tkextlib/blt.rb: add commands for zooming.
@@ -16,19 +34,19 @@
 	* lib/tkextlib/blt/htext.rb: add TkVariable object to access
           special Tcl variables. 
 
-	* ext/tk/lib/tkextlib/treectrl/tktreectrl.rb: typo fix.
+	* lib/tkextlib/treectrl/tktreectrl.rb: typo fix.
 
-	* ext/tk/lib/tkextlib/treectrl/tktreectrl.rb: proper treatment
+	* lib/tkextlib/treectrl/tktreectrl.rb: proper treatment
           of 'font' option of element_configure.
 
-	* ext/tk/lib/tkextlib/treectrl/tktreectrl.rb: bug fix on item_sort.
+	* lib/tkextlib/treectrl/tktreectrl.rb: bug fix on item_sort.
 
-	* ext/tk/lib/tkextlib/treectrl/tktreectrl.rb: add methods to
+	* lib/tkextlib/treectrl/tktreectrl.rb: add methods to
           call TreeCtrl commands for bindings.
 
-	* ext/tk/sample/tkextlib/blt/*: add some sample scripts.
+	* sample/tkextlib/blt/*: add some sample scripts.
 
-	* ext/tk/sample/tkextlib/treectrl/*: add some sample scripts.
+	* sample/tkextlib/treectrl/*: add some sample scripts.
 
 2005-03-18  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
