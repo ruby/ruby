@@ -162,10 +162,10 @@ pst_inspect(st)
 	int stopsig = WSTOPSIG(status);
 	char *signame = ruby_signal_name(stopsig);
 	if (signame) {
-	    snprintf(buf, sizeof(buf), ",signaled(SIG%s=%d)", signame, stopsig);
+	    snprintf(buf, sizeof(buf), ",stopped(SIG%s=%d)", signame, stopsig);
 	}
 	else {
-	    snprintf(buf, sizeof(buf), ",signaled(%d)", stopsig);
+	    snprintf(buf, sizeof(buf), ",stopped(%d)", stopsig);
 	}
 	rb_str_cat2(str, buf);
     }
