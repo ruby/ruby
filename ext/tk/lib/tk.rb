@@ -3233,94 +3233,131 @@ module TkTreatFont
 
   def font_configure(slot)
     slot = _symbolkey2str(slot)
-    if (fnt = slot.delete('font'))
+
+    if slot.key?('font')
+      fnt = slot.delete('font')
       if fnt.kind_of? TkFont
 	return fnt.call_font_configure(self.path, self.path,'configure',slot)
       else
-	if fnt
-	  latinfont_configure(fnt)
-	  kanjifont_configure(fnt)
+	if fnt 
+	  if (slot.key?('kanjifont') || 
+	      slot.key?('latinfont') || 
+	      slot.key?('asciifont'))
+	    fnt = TkFont.new(fnt)
+
+	    lfnt = slot.delete('latinfont')
+	    lfnt = slot.delete('asciifont') if slot.key?('asciifont')
+	    kfnt = slot.delete('kanjifont')
+
+	    fnt.latin_replace(lfnt) if lfnt
+	    fnt.kanji_replace(kfnt) if kfnt
+	  else
+	    slot['font'] = fnt
+	    tk_call(self.path, 'configure', *hash_kv(slot))
+	  end
 	end
+	return self
       end
     end
-    if (ltn = slot.delete('latinfont'))
-      latinfont_configure(ltn) if ltn
-    end
-    if (ltn = slot.delete('asciifont'))
-      latinfont_configure(ltn) if ltn
-    end
-    if (knj = slot.delete('kanjifont'))
-      kanjifont_configure(knj) if knj
+
+    lfnt = slot.delete('latinfont')
+    lfnt = slot.delete('asciifont') if slot.key?('asciifont')
+    kfnt = slot.delete('kanjifont')
+
+    if lfnt && kfnt
+      return TkFont.new(lfnt, kfnt).call_font_configure(self.path, self.path, 
+							'configure', slot)
     end
 
+    latinfont_configure(lfnt) if lfnt
+    kanjifont_configure(kfnt) if kfnt
+      
     tk_call(self.path, 'configure', *hash_kv(slot)) if slot != {}
     self
   end
 
   def latinfont_configure(ltn, keys=nil)
-    fobj = fontobj
-    if ltn.kind_of? TkFont
-      conf = {}
-      ltn.latin_configinfo.each{|key,val| conf[key] = val}
-      if keys
-	fobj.latin_configure(conf.update(keys))
-      else
-	fobj.latin_configure(conf)
-      end
+    if (fobj = TkFont.used_on(self.path))
+      fobj = TkFont.new(fobj) # create a new TkFont object
+    elsif Tk::JAPANIZED_TK
+      fobj = fontobj          # create a new TkFont object
     else
-      fobj.latin_replace(ltn)
+      tk_call(self.path, 'configure', '-font', ltn)
+      return self
     end
-    self
+
+    if fobj.kind_of?(TkFont)
+      if ltn.kind_of? TkFont
+	conf = {}
+	ltn.latin_configinfo.each{|key,val| conf[key] = val}
+	if keys
+	  fobj.latin_configure(conf.update(keys))
+	else
+	  fobj.latin_configure(conf)
+	end
+      else
+	fobj.latin_replace(ltn)
+      end
+    end
+
+    return fobj.call_font_configure(self.path, self.path, 'configure', {})
   end
   alias asciifont_configure latinfont_configure
 
   def kanjifont_configure(knj, keys=nil)
-    fobj = fontobj
-    if knj.kind_of? TkFont
-      conf = {}
-      knj.kanji_configinfo.each{|key,val| conf[key] = val}
-      if keys
-	fobj.kanji_configure(conf.update(keys))
-      else
-	fobj.kanji_configure(cond)
-      end
+    if (fobj = TkFont.used_on(self.path))
+      fobj = TkFont.new(fobj) # create a new TkFont object
+    elsif Tk::JAPANIZED_TK
+      fobj = fontobj          # create a new TkFont object
     else
-      fobj.kanji_replace(knj)
+      tk_call(self.path, 'configure', '-font', knj)
+      return self
     end
-    self
+
+    if fobj.kind_of?(TkFont)
+      if knj.kind_of? TkFont
+	conf = {}
+	knj.kanji_configinfo.each{|key,val| conf[key] = val}
+	if keys
+	  fobj.kanji_configure(conf.update(keys))
+	else
+	  fobj.kanji_configure(conf)
+	end
+      else
+	fobj.kanji_replace(knj)
+      end
+    end
+
+    return fobj.call_font_configure(self.path, self.path, 'configure', {})
   end
 
   def font_copy(window, tag=nil)
     if tag
-      window.tagfontobj(tag).configinfo.each{|key,value|
-	fontobj.configure(key,value)
-      }
-      fontobj.replace(window.tagfontobj(tag).latin_font, 
-		      window.tagfontobj(tag).kanji_font)
+      fnt = window.tagfontobj(tag).dup
     else
-      window.fontobj.configinfo.each{|key,value|
-	fontobj.configure(key,value)
-      }
-      fontobj.replace(window.fontobj.latin_font, window.fontobj.kanji_font)
+      fnt = window.fontobj.dup
     end
+    fnt.call_font_configure(self.path, self.path, 'configure', {})
     self
   end
 
   def latinfont_copy(window, tag=nil)
+    fontobj.dup.call_font_configure(self.path, self.path, 'configure', {})
     if tag
-      fontobj.latin_replace(window.tagfontobj(tag).latin_font)
+      fontobj.latin_replace(window.tagfontobj(tag).latin_font_id)
     else
-      fontobj.latin_replace(window.fontobj.latin_font)
+      fontobj.latin_replace(window.fontobj.latin_font_id)
     end
     self
   end
   alias asciifont_copy latinfont_copy
 
   def kanjifont_copy(window, tag=nil)
+    fontobj.dup.call_font_configure(self.path, self.path, 'configure', {})
     if tag
-      fontobj.kanji_replace(window.tagfontobj(tag).kanji_font)
+      fontobj.kanji_replace(window.tagfontobj(tag).kanji_font_id)
     else
-      fontobj.kanji_replace(window.fontobj.kanji_font)
+      fontobj.kanji_replace(window.fontobj.kanji_font_id)
     end
     self
   end
@@ -3357,104 +3394,151 @@ module TkTreatItemFont
   def tagfont_configure(tagOrId, slot)
     pathname = __item_pathname(tagOrId)
     slot = _symbolkey2str(slot)
-    if (fnt = slot.delete('font'))
+
+    if slot.key?('font')
+      fnt = slot.delete('font')
       if fnt.kind_of? TkFont
-	return fnt.call_font_configure(pathname, self.path, 
+	return fnt.call_font_configure(pathname, self.path,
 				       __conf_cmd(0), __conf_cmd(1), 
 				       tagOrId, slot)
       else
-	if fnt
-	  latintagfont_configure(tagOrId, fnt)
-	  kanjitagfont_configure(tagOrId, fnt)
+	if fnt 
+	  if (slot.key?('kanjifont') || 
+	      slot.key?('latinfont') || 
+	      slot.key?('asciifont'))
+	    fnt = TkFont.new(fnt)
+
+	    lfnt = slot.delete('latinfont')
+	    lfnt = slot.delete('asciifont') if slot.key?('asciifont')
+	    kfnt = slot.delete('kanjifont')
+
+	    fnt.latin_replace(lfnt) if lfnt
+	    fnt.kanji_replace(kfnt) if kfnt
+	  end
+
+	  slot['font'] = fnt
+	  tk_call(self.path, __conf_cmd(0), __conf_cmd(1), 
+		  tagOrId, *hash_kv(slot))
 	end
+	return self
       end
     end
-    if (ltn = slot.delete('latinfont'))
-      latintagfont_configure(tagOrId, ltn) if ltn
-    end
-    if (ltn = slot.delete('asciifont'))
-      latintagfont_configure(tagOrId, ltn) if ltn
-    end
-    if (knj = slot.delete('kanjifont'))
-      kanjitagfont_configure(tagOrId, knj) if knj
+
+    lfnt = slot.delete('latinfont')
+    lfnt = slot.delete('asciifont') if slot.key?('asciifont')
+    kfnt = slot.delete('kanjifont')
+
+    if lfnt && kfnt
+      return TkFont.new(lfnt, kfnt).call_font_configure(pathname, self.path,
+							__conf_cmd(0), 
+							__conf_cmd(1), 
+							tagOrId, slot)
     end
 
+    latintagfont_configure(tagOrId, lfnt) if lfnt
+    kanjitagfont_configure(tagOrId, kfnt) if kfnt
+      
     tk_call(self.path, __conf_cmd(0), __conf_cmd(1), 
 	    tagOrId, *hash_kv(slot)) if slot != {}
     self
   end
 
   def latintagfont_configure(tagOrId, ltn, keys=nil)
-    fobj = tagfontobj(tagOrId)
-    if ltn.kind_of? TkFont
-      conf = {}
-      ltn.latin_configinfo.each{|key,val| conf[key] = val if val != []}
-      if conf == {}
-	fobj.latin_replace(ltn)
-	fobj.latin_configure(keys) if keys
-      elsif keys
-	fobj.latin_configure(conf.update(keys))
-      else
-	fobj.latin_configure(conf)
-      end
+    pathname = __item_pathname(tagOrId)
+    if (fobj = TkFont.used_on(pathname))
+      fobj = TkFont.new(fobj)    # create a new TkFont object
+    elsif Tk::JAPANIZED_TK
+      fobj = tagfontobj(tagOrId) # create a new TkFont object
     else
-      fobj.latin_replace(ltn)
+      tk_call(self.path, __conf_cmd(0), __conf_cmd(1), tagOrId, '-font', ltn)
+      return self
     end
-    self
+
+    if fobj.kind_of?(TkFont)
+      if ltn.kind_of? TkFont
+	conf = {}
+	ltn.latin_configinfo.each{|key,val| conf[key] = val}
+	if keys
+	  fobj.latin_configure(conf.update(keys))
+	else
+	  fobj.latin_configure(conf)
+	end
+      else
+	fobj.latin_replace(ltn)
+      end
+    end
+
+    return fobj.call_font_configure(pathname, self.path,
+				    __conf_cmd(0), __conf_cmd(1), tagOrId, {})
   end
   alias asciitagfont_configure latintagfont_configure
 
   def kanjitagfont_configure(tagOrId, knj, keys=nil)
-    fobj = tagfontobj(tagOrId)
-    if knj.kind_of? TkFont
-      conf = {}
-      knj.kanji_configinfo.each{|key,val| conf[key] = val if val != []}
-      if conf == {}
-	fobj.kanji_replace(knj)
-	fobj.kanji_configure(keys) if keys
-      elsif keys
-	fobj.kanji_configure(conf.update(keys))
-      else
-	fobj.kanji_configure(conf)
-      end
+    pathname = __item_pathname(tagOrId)
+    if (fobj = TkFont.used_on(pathname))
+      fobj = TkFont.new(fobj)    # create a new TkFont object
+    elsif Tk::JAPANIZED_TK
+      fobj = tagfontobj(tagOrId) # create a new TkFont object
     else
-      fobj.kanji_replace(knj)
+      tk_call(self.path, __conf_cmd(0), __conf_cmd(1), tagOrId, '-font', knj)
+      return self
     end
-    self
+
+    if fobj.kind_of?(TkFont)
+      if knj.kind_of? TkFont
+	conf = {}
+	knj.kanji_configinfo.each{|key,val| conf[key] = val}
+	if keys
+	  fobj.kanji_configure(conf.update(keys))
+	else
+	  fobj.kanji_configure(conf)
+	end
+      else
+	fobj.kanji_replace(knj)
+      end
+    end
+
+    return fobj.call_font_configure(pathname, self.path,
+				    __conf_cmd(0), __conf_cmd(1), tagOrId, {})
   end
 
   def tagfont_copy(tagOrId, window, wintag=nil)
+    pathname = __item_pathname(tagOrId)
     if wintag
-      window.tagfontobj(wintag).configinfo.each{|key,value|
-	tagfontobj(tagOrId).configure(key,value)
-      }
-      tagfontobj(tagOrId).replace(window.tagfontobj(wintag).latin_font, 
-				window.tagfontobj(wintag).kanji_font)
+      fnt = window.tagfontobj(wintag).dup
     else
-      window.tagfont(wintag).configinfo.each{|key,value|
-	tagfontobj(tagOrId).configure(key,value)
-      }
-      tagfontobj(tagOrId).replace(window.fontobj.latin_font, 
-				window.fontobj.kanji_font)
+      fnt = window.fontobj.dup
     end
-    self
+    fnt.call_font_configure(pathname, self.path, 
+			    __conf_cmd(0), __conf_cmd(1), tagOrId, {})
+    return self
   end
 
   def latintagfont_copy(tagOrId, window, wintag=nil)
+    pathname = __item_pathname(tagOrId)
+    tagfontobj(tagOrId).dup.call_font_configure(pathname, self.path, 
+						__conf_cmd(0), __conf_cmd(1), 
+						tagOrId, {})
     if wintag
-      tagfontobj(tagOrId).latin_replace(window.tagfontobj(wintag).latin_font)
+      tagfontobj(tagOrId).
+	latin_replace(window.tagfontobj(wintag).latin_font_id)
     else
-      tagfontobj(tagOrId).latin_replace(window.fontobj.latin_font)
+      tagfontobj(tagOrId).latin_replace(window.fontobj.latin_font_id)
     end
     self
   end
   alias asciitagfont_copy latintagfont_copy
 
   def kanjitagfont_copy(tagOrId, window, wintag=nil)
+    pathname = __item_pathname(tagOrId)
+    tagfontobj(tagOrId).dup.call_font_configure(pathname, self.path, 
+						__conf_cmd(0), __conf_cmd(1), 
+						tagOrId, {})
     if wintag
-      tagfontobj(tagOrId).kanji_replace(window.tagfontobj(wintag).kanji_font)
+      tagfontobj(tagOrId).
+	kanji_replace(window.tagfontobj(wintag).kanji_font_id)
     else
-      tagfontobj(tagOrId).kanji_replace(window.fontobj.kanji_font)
+      tagfontobj(tagOrId).kanji_replace(window.fontobj.kanji_font_id)
     end
     self
   end
@@ -3513,11 +3597,17 @@ class TkObject<TkKernel
     when 'text', 'label', 'show', 'data', 'file'
       tk_call path, 'cget', "-#{slot}"
     when 'font', 'kanjifont'
-      fnt = tk_tcl2ruby(tk_call(path, 'cget', "-#{slot}"))
+      #fnt = tk_tcl2ruby(tk_call(path, 'cget', "-#{slot}"))
+      fnt = tk_tcl2ruby(tk_call(path, 'cget', "-font"))
       unless fnt.kind_of?(TkFont)
 	fnt = fontobj(fnt)
       end
-      fnt
+      if slot == 'kanjifont' && JAPANIZED_TK && TK_VERSION =~ /^4\.*/
+	# obsolete; just for compatibility
+	fnt.kanji_font
+      else
+	fnt
+      end
     else
       tk_tcl2ruby tk_call(path, 'cget', "-#{slot}")
     end
@@ -4883,11 +4973,17 @@ class TkListbox<TkTextWin
     when 'text', 'label', 'show'
       tk_send('itemcget', index, "-#{key}")
     when 'font', 'kanjifont'
-      fnt = tk_tcl2ruby(tk_send('itemcget', index, "-#{key}"))
+      #fnt = tk_tcl2ruby(tk_send('itemcget', index, "-#{key}"))
+      fnt = tk_tcl2ruby(tk_send('itemcget', index, '-font'))
       unless fnt.kind_of?(TkFont)
 	fnt = tagfontobj(index, fnt)
       end
-      fnt
+      if key.to_s == 'kanjifont' && JAPANIZED_TK && TK_VERSION =~ /^4\.*/
+	# obsolete; just for compatibility
+	fnt.kanji_font
+      else
+	fnt
+      end
     else
       tk_tcl2ruby(tk_send('itemcget', index, "-#{key}"))
     end
@@ -4908,7 +5004,11 @@ class TkListbox<TkTextWin
           key == 'kanjifont' || key == :kanjifont || 
 	  key == 'latinfont' || key == :latinfont || 
           key == 'asciifont' || key == :asciifont )
-	tagfont_configure(index, {key=>val})
+	if val == None
+	  tagfontobj(index)
+	else
+	  tagfont_configure(index, {key=>val})
+	end
       else
 	tk_call 'itemconfigure', index, "-#{key}", val
       end
@@ -5065,11 +5165,17 @@ class TkMenu<TkWindow
     when 'text', 'label', 'show'
       tk_send 'entrycget', index, "-#{key}"
     when 'font', 'kanjifont'
-      fnt = tk_tcl2ruby(tk_send('entrycget', index, "-#{key}"))
+      #fnt = tk_tcl2ruby(tk_send('entrycget', index, "-#{key}"))
+      fnt = tk_tcl2ruby(tk_send('entrycget', index, '-font'))
       unless fnt.kind_of?(TkFont)
 	fnt = tagfontobj(index, fnt)
       end
-      fnt
+      if key.to_s == 'kanjifont' && JAPANIZED_TK && TK_VERSION =~ /^4\.*/
+	# obsolete; just for compatibility
+	fnt.kanji_font
+      else
+	fnt
+      end
     else
       tk_tcl2ruby(tk_send('entrycget', index, "-#{key}"))
     end
@@ -5090,7 +5196,11 @@ class TkMenu<TkWindow
           key == 'kanjifont' || key == :kanjifont || 
 	  key == 'latinfont' || key == :latinfont || 
           key == 'asciifont' || key == :asciifont )
-	tagfont_configure({key=>val})
+	if val == None
+	  tagfontobj(index)
+	else
+	  tagfont_configure(index, {key=>val})
+	end
       else
 	tk_call 'entryconfigure', index, "-#{key}", val
       end

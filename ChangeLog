@@ -1,3 +1,10 @@
+Tue Sep  2 14:02:19 2003    <nagai@ai.kyutech.ac.jp>
+
+	* ext/tcltklib/tcltklib.c (ip_invoke): fixed bug on passing a exception
+
+	* ext/tk/lib/{tk.rb, tkcanvas.rb, tkfont.rb, tktext.rb} : 
+	  bug fix and improvement of font control
+
 Tue Sep  2 09:51:36 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_eval): should not handle exceptions within rescue

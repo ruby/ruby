@@ -25,6 +25,7 @@ class TkFont
   when /^4\.*/
     DEFAULT_LATIN_FONT_NAME = 'a14'.freeze
     DEFAULT_KANJI_FONT_NAME = 'k14'.freeze
+
   when /^8\.*/
     if JAPANIZED_TK
       begin
@@ -89,6 +90,8 @@ class TkFont
 	ltn = 'Helvetica'
 	knj = 'mincho'
       end
+
+      knj = ltn
     end
 
     DEFAULT_LATIN_FONT_NAME = ltn.freeze
@@ -104,6 +107,49 @@ class TkFont
     print "default latin font = "; p DEFAULT_LATIN_FONT_NAME
     print "default kanji font = "; p DEFAULT_KANJI_FONT_NAME
   end
+
+
+  ###################################
+  class DescendantFont
+    def initialize(compound, type)
+      unless compound.kind_of?(TkFont)
+	fail ArgumentError, "a TkFont object is expected for the 1st argument"
+      end
+      @compound = compound
+      case type
+      when 'kanji', 'latin', 'ascii'
+	@type = type
+      else
+	fail ArgumentError, "unknown type '#{type}'"
+      end
+    end
+
+    def dup
+      fail RuntimeError, "cannot dupulicate a descendant font"
+    end
+    def clone
+      fail RuntimeError, "cannot clone a descendant font"
+    end
+
+    def to_eval
+      @compound.__send__(@type + '_font_id')
+    end
+    def font
+      @compound.__send__(@type + '_font_id')
+    end
+
+    def [](slot)
+      @compound.__send__(@type + '_configinfo', slot)
+    end
+    def []=(slot, value=None)
+      @compound.__send__(@type + '_configure', slot, value)
+    end
+
+    def method_missing(id, *args)
+      @compound.__send__(@type + '_' + id.id2name, *args)
+    end
+  end
+
 
   ###################################
   # class methods
@@ -140,7 +186,7 @@ class TkFont
     fail 'source-font must be a TkFont object' unless font.kind_of? TkFont
     keys = {}
     font.configinfo.each{|key,value| keys[key] = value }
-    TkFont.new(font.latin_font, font.kanji_font, keys)
+    TkFont.new(font.latin_font_id, font.kanji_font_id, keys)
   end
 
   def TkFont.get_obj(name)
@@ -222,6 +268,8 @@ class TkFont
   end
 
   ###################################
+  # instance methods
+  ###################################
   private
   ###################################
   def initialize(ltn=nil, knj=nil, keys=nil)
@@ -229,13 +277,16 @@ class TkFont
     Tk_FontID[1].succ!
     Tk_FontNameTBL[@id] = self
 
+    @latin_desscendant = nil
+    @kanji_desscendant = nil
+
     if knj.kind_of?(Hash) && !keys
       keys = knj
       knj = nil
     end
 
     # compound font check
-    if /^8\.*/ === Tk::TK_VERSION  && JAPANIZED_TK
+    if Tk::TK_VERSION == '8.0' && JAPANIZED_TK
       begin
 	compound = tk_split_simplelist(tk_call('font', 'configure', 
 					       ltn, '-compound'))
@@ -374,7 +425,7 @@ class TkFont
 
       @kanjifont = '-' + _get_font_info_from_hash(finfo).join('-') + '-'
     elsif font.kind_of? TkFont
-      @kanjifont = font.kanji_font
+      @kanjifont = font.kanji_font_id
     else
       if font
         @kanjifont = font
@@ -457,7 +508,7 @@ class TkFont
         tk_call('font', 'create', @kanjifont, '-copy', array2tk_list(font))
         tk_call('font', 'configure', @kanjifont, '-charset', 'jisx0208.1983')
       elsif font.kind_of? TkFont
-        tk_call('font', 'create', @kanjifont, '-copy', font.kanji_font)
+        tk_call('font', 'create', @kanjifont, '-copy', font.kanji_font_id)
       elsif font
         tk_call('font', 'create', @kanjifont, '-copy', font, 
 	        '-charset', 'jisx0208.1983')
@@ -474,7 +525,7 @@ class TkFont
         if font.kind_of? Array
 	  actual_core(array2tk_list(font)).each{|key,val| keys[key] = val}
         elsif font.kind_of? TkFont
-	  actual_core(font.kanji_font).each{|key,val| keys[key] = val}
+	  actual_core(font.kanji_font_id).each{|key,val| keys[key] = val}
         elsif font
 	  actual_core(font).each{|key,val| keys[key] = val}
         end
@@ -495,6 +546,22 @@ class TkFont
 
     @compoundfont = @id + 'c'
     if JAPANIZED_TK
+      unless keys
+	keys = {}
+      else
+	keys = keys.dup
+      end
+      if (tk_call('font', 'configure', @latinfont, '-underline') == '1' &&
+	  tk_call('font', 'configure', @kanjifont, '-underline') == '1' &&
+	  !keys.key?('underline'))
+	keys['underline'] = true
+      end
+      if (tk_call('font', 'configure', @latinfont, '-overstrike') == '1' &&
+	  tk_call('font', 'configure', @kanjifont, '-overstrike') == '1' &&
+	  !keys.key?('overstrike'))
+	keys['overstrike'] = true
+      end
+
       @fontslot = {'font'=>@compoundfont}
       begin
 	tk_call('font', 'create', @compoundfont, 
@@ -806,7 +873,8 @@ class TkFont
       begin
 	fnt_bup = tk_call('font', 'create', '@font_tmp', '-copy', @latinfont)
       rescue
-	fnt_bup = ''
+	#fnt_bup = ''
+	fnt_bup = DEFAULT_LATIN_FONT_NAME
       end
     end
 
@@ -822,16 +890,29 @@ class TkFont
       begin
 	tk_call('font', 'create', @compoundfont, 
 		'-compound', [@latinfont, @kanjifont], *hash_kv(keys))
+=begin
+	latinkeys = {}
+	begin
+	  actual_core(@latinfont).each{|key,val| latinkeys[key] = val}
+	rescue
+	  latinkeys {}
+	end
+	if latinkeys != {}
+	  tk_call('font', 'configure', @compoundfont, *hash_kv(latinkeys))
+	end
+=end
       rescue RuntimeError => e
 	tk_call('font', 'delete', @latinfont)
-	if fnt_bup != ''
+	if fnt_bup && fnt_bup != ''
 	  tk_call('font', 'create', @latinfont, '-copy', fnt_bup)
 	  tk_call('font', 'create', @compoundfont, 
 		  '-compound', [@latinfont, @kanjifont], *hash_kv(keys))
 	  tk_call('font', 'delete', fnt_bup)
+	else
+	  fail e
 	end
-	fail e
       end
+
     else
       latinkeys = {}
       begin
@@ -855,7 +936,8 @@ class TkFont
       begin
 	fnt_bup = tk_call('font', 'create', '@font_tmp', '-copy', @kanjifont)
       rescue
-	fnt_bup = ''
+	#fnt_bup = ''
+	fnt_bup = DEFAULT_KANJI_FONT_NAME
       end
     end
 
@@ -873,13 +955,14 @@ class TkFont
 		'-compound', [@latinfont, @kanjifont], *hash_kv(keys))
       rescue RuntimeError => e
 	tk_call('font', 'delete', @kanjifont)
-	if fnt_bup != ''
+	if fnt_bup && fnt_bup != ''
 	  tk_call('font', 'create', @kanjifont, '-copy', fnt_bup)
 	  tk_call('font', 'create', @compoundfont, 
 		  '-compound', [@latinfont, @kanjifont], *hash_kv(keys))
 	  tk_call('font', 'delete', fnt_bup)
+	else
+	  fail e
 	end
-	fail e
       end
     end    
     self
@@ -1039,14 +1122,35 @@ class TkFont
   def font
     @compoundfont
   end
+  alias font_id font
 
-  def latin_font
+  def latin_font_id
     @latinfont
   end
 
-  def kanji_font
+  def latin_font
+    # @latinfont
+    if @latin_descendant
+      @latin_descendant
+    else
+      @latin_descendant = DescendantFont.new(self, 'latin')
+    end
+  end
+  alias latinfont latin_font
+
+  def kanji_font_id
     @kanjifont
   end
+
+  def kanji_font
+    # @kanjifont
+    if @kanji_descendant
+      @kanji_descendant
+    else
+      @kanji_descendant = DescendantFont.new(self, 'kanji')
+    end
+  end
+  alias kanjifont kanji_font
 
   def actual(option=nil)
     actual_core(@compoundfont, nil, option)
@@ -1222,6 +1326,7 @@ class TkFont
   # public alias
   ###################################
   alias ascii_font             latin_font
+  alias asciifont              latinfont
   alias create_asciifont       create_latinfont
   alias ascii_actual           latin_actual
   alias ascii_actual_displayof latin_actual_displayof
@@ -1230,6 +1335,19 @@ class TkFont
   alias ascii_replace          latin_replace
   alias ascii_metrics          latin_metrics
 
+  ###################################
+  def dup
+    src = self
+    obj = super()
+    obj.instance_eval{ initialize(src) }
+    obj
+  end
+  def clone
+    src = self
+    obj = super()
+    obj.instance_eval{ initialize(src) }
+    obj
+  end
 end
 
 module TkTreatTagFont

@@ -62,7 +62,7 @@ $ctag_text.withtag(TkcText.new($ctext_canvas, 250, 200,
 			       'text'=>"これはキャンバスwidgetのテキスト機能をデモするための文字列です。マウスを持っていき、クリックして入力できます。選択してコントロール-Dで消去することもできます。",
 			       'width'=>440, 'anchor'=>'n', 
 			       'font'=>'-*-Helvetica-Medium-R-Normal--*-240-*-*-*-*-*-*', 
-			       'kanjifont'=>'-*--24-*-jisx0208.1983-0', 
+			       'kanjifont'=>'-*-r-*--24-*-jisx0208.1983-0', 
 			       'justify'=>'left') )
 
 $ctag_text.bind('1', proc{|x,y| textB1Press $ctext_canvas,x,y}, "%x %y")

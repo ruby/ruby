@@ -1313,7 +1313,11 @@ ip_invoke(argc, argv, obj)
     }
     if (eventloop_thread == 0 || current == eventloop_thread) {
 	DUMP2("invoke from current eventloop %lx", current);
-	return ip_invoke_real(argc, argv, obj);
+	result = ip_invoke_real(argc, argv, obj);
+	if (rb_obj_is_kind_of(result, rb_eException)) {
+	    rb_exc_raise(result);
+	}
+	return result;
     }
 
     DUMP2("invoke from thread %lx (NOT current eventloop)", current);

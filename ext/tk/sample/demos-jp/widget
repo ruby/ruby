@@ -18,12 +18,12 @@ $tk_platform = TkVarAccess.new('tcl_platform')
 
 # フォント設定
 $font = TkFont.new('-*-Helvetica-Medium-R-Normal--*-140-*-*-*-*-*-*', nil)
-knjfont = '-*--16-*-jisx0208.1983-0'
+knjfont = '-*-r-*--16-*-jisx0208.1983-0'
 $kanji_font = TkFont.new('-*-Helvetica-Medium-R-Normal--*-140-*-*-*-*-*-*',
 			 knjfont)
 TkOption.add('*kanjiFont', knjfont, 'startupFile')
 $msg_kanji_font = TkFont.new('-*-Helvetica-Medium-R-Normal--*-140-*-*-*-*-*-*',
-			     '-*--24-*-jisx0208.1983-0')
+			     '-*-r-*--24-*-jisx0208.1983-0')
 #######
 #case($tk_version)
 #when /^4.*/

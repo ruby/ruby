@@ -212,11 +212,17 @@ class TkCanvas<TkWindow
     when 'text', 'label', 'show', 'data', 'file', 'maskdata', 'maskfile'
       tk_send 'itemcget', tagid(tagOrId), "-#{option}"
     when 'font', 'kanjifont'
-      fnt = tk_tcl2ruby(tk_send('itemcget', tagid(tagOrId), "-#{option}"))
+      #fnt = tk_tcl2ruby(tk_send('itemcget', tagid(tagOrId), "-#{option}"))
+      fnt = tk_tcl2ruby(tk_send('itemcget', tagid(tagOrId), '-font'))
       unless fnt.kind_of?(TkFont)
 	fnt = tagfontobj(tagid(tagOrId), fnt)
       end
-      fnt
+      if option.to_s == 'kanjifont' && JAPANIZED_TK && TK_VERSION =~ /^4\.*/
+	# obsolete; just for compatibility
+	fnt.kanji_font
+      else
+	fnt
+      end
     else
       tk_tcl2ruby tk_send('itemcget', tagid(tagOrId), "-#{option}")
     end
@@ -227,7 +233,7 @@ class TkCanvas<TkWindow
       key = _symbolkey2str(key)
       if ( key['font'] || key['kanjifont'] \
 	  || key['latinfont'] || key['asciifont'] )
-	tagfont_configure(tagOrId, key.dup)
+	tagfont_configure(tagid(tagOrId), key.dup)
       else
 	tk_send 'itemconfigure', tagid(tagOrId), *hash_kv(key)
       end
@@ -237,7 +243,11 @@ class TkCanvas<TkWindow
            key == 'kanjifont' || key == :kanjifont || 
 	   key == 'latinfont' || key == :latinfont || 
            key == 'asciifont' || key == :asciifont )
-	tagfont_configure(tagid(tagOrId), {key=>value})
+	if value == None
+	  tagfontobj(tagid(tagOrId))
+	else
+	  tagfont_configure(tagid(tagOrId), {key=>value})
+	end
       else
 	tk_send 'itemconfigure', tagid(tagOrId), "-#{key}", value
       end
@@ -750,7 +760,7 @@ class TkcItem<TkObject
     @id = create_self(*args).to_i ;# 'canvas item id' is integer number
     CItemID_TBL[@path] = {} unless CItemID_TBL[@path]
     CItemID_TBL[@path][@id] = self
-    font_configure(fontkeys) unless fontkeys.empty?
+    configure(fontkeys) unless fontkeys.empty?
 
 ######## old version
 #    if args[-1].kind_of? Hash
