@@ -1491,36 +1491,34 @@ rb_reg_equal(re1, re2)
     return Qfalse;
 }
 
-
-/*
- *  call-seq:
- *     rxp.match(str)   => matchdata or nil
- *  
- *  Returns a <code>MatchData</code> object describing the match, or
- *  <code>nil</code> if there was no match. This is equivalent to retrieving the
- *  value of the special variable <code>$~</code> following a normal match.
- *     
- *     /(.)(.)(.)/.match("abc")[2]   #=> "b"
- */
+static VALUE
+rb_reg_match_pos(re, str, pos)
+    VALUE re, str;
+    long pos;
+{
+    StringValue(str);
+    if (pos != 0) {
+	if (pos < 0) {
+	    pos += RSTRING(str)->len;
+	    if (pos < 0) {
+		return Qnil;
+	    }
+	}
+	pos = rb_reg_adjust_startpos(re, str, pos, 0);
+    }
+    pos = rb_reg_search(re, str, pos, 0);
+    if (pos < 0) {
+	return Qnil;
+    }
+    return LONG2FIX(pos);
+}
 
 VALUE
 rb_reg_match(re, str)
     VALUE re, str;
 {
-    long start;
-
-    if (NIL_P(str)) {
-	rb_backref_set(Qnil);
-	return Qnil;
-    }
-    StringValue(str);
-    start = rb_reg_search(re, str, 0, 0);
-    if (start < 0) {
-	return Qnil;
-    }
-    return LONG2FIX(start);
+    return rb_reg_match_pos(re, str, 0);
 }
-
 
 /*
  *  call-seq:
@@ -1595,22 +1593,40 @@ rb_reg_match2(re)
 
 /*
  *  call-seq:
- *     rxp.match(str)   => matchdata or nil
+ *     rxp.match(str)       => matchdata or nil
+ *     rxp.match(str,pos)   => matchdata or nil
  *  
  *  Returns a <code>MatchData</code> object describing the match, or
  *  <code>nil</code> if there was no match. This is equivalent to retrieving the
  *  value of the special variable <code>$~</code> following a normal match.
- *     
+ *  If the second parameter is present, it specifies the position in the string
+ *  to begin the search.
+ *        
  *     /(.)(.)(.)/.match("abc")[2]   #=> "b"
+ *     /(.)(.)/.match("abc", 1)[2]   #=> "c"
  */
 
 static VALUE
-rb_reg_match_m(re, str)
-    VALUE re, str;
+rb_reg_match_m(argc, argv, re)
+    int argc;
+    VALUE *argv;
+    VALUE re;
 {
-    VALUE result = rb_reg_match(re, str);
+    VALUE result, str, initpos;
+    long pos;
 
-    if (NIL_P(result)) return Qnil;
+    if (rb_scan_args(argc, argv, "11", &str, &initpos) == 2) {
+	pos = NUM2LONG(initpos);
+    }
+    else {
+	pos = 0;
+    }
+
+    result = rb_reg_match_pos(re, str, pos);
+    if (NIL_P(result)) {
+	rb_backref_set(Qnil);
+	return Qnil;
+    }
     result = rb_backref_get();
     rb_match_busy(result);
     return result;
@@ -2267,7 +2283,7 @@ Init_Regexp()
     rb_define_method(rb_cRegexp, "=~", rb_reg_match, 1);
     rb_define_method(rb_cRegexp, "===", rb_reg_eqq, 1);
     rb_define_method(rb_cRegexp, "~", rb_reg_match2, 0);
-    rb_define_method(rb_cRegexp, "match", rb_reg_match_m, 1);
+    rb_define_method(rb_cRegexp, "match", rb_reg_match_m, -1);
     rb_define_method(rb_cRegexp, "to_s", rb_reg_to_s, 0);
     rb_define_method(rb_cRegexp, "inspect", rb_reg_inspect, 0);
     rb_define_method(rb_cRegexp, "source", rb_reg_source, 0);

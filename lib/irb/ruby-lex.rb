@@ -973,7 +973,7 @@ class RubyLex
       while ch = getc
 	if @quoted == ch and nest == 0
 	  break
-	elsif @ltype != "'" && @ltype != "]" and ch == "#"
+	elsif @ltype != "'" && @ltype != "]" && @ltype != ":" and ch == "#"
 	  subtype = true
 	elsif ch == '\\' #'
 	  read_escape

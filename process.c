@@ -1490,6 +1490,10 @@ rb_f_exit_bang(argc, argv, obj)
     return Qnil;		/* not reached */
 }
 
+#if defined(sun)
+#define signal(a,b) sigset(a,b)
+#endif
+
 void
 rb_syswait(pid)
     int pid;

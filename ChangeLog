@@ -1,3 +1,13 @@
+Sat Jul 17 14:18:11 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_match_m): add optional second argugment "pos" to
+	  specify match start point.  [ruby-core:03203]
+
+Sat Jul 17 13:13:32 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/irb/ruby-lex.rb (RubyLex::identify_string): %s string do not
+	  process expression interpolation.  [ruby-talk:106691]
+
 Sat Jul 17 05:26:27 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/diagram.rb: Incorporate Micheal Neumann's
