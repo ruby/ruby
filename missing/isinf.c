@@ -31,7 +31,7 @@ int
 isinf(n)
     double n;
 {
-    return (!finite(x) && !isnan(x))
+    return (!finite(n) && !isnan(n));
 }
 
 #else
