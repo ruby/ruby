@@ -997,6 +997,7 @@ Init_stringio()
     rb_define_method(StringIO, "readlines", strio_readlines, -1);
     rb_define_method(StringIO, "read", strio_read, -1);
     rb_define_method(StringIO, "sysread", strio_sysread, -1);
+    rb_define_method(StringIO, "readpartial", strio_sysread, -1);
 
     rb_define_method(StringIO, "write", strio_write, 1);
     rb_define_method(StringIO, "<<", strio_addstr, 1);
