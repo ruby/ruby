@@ -1,3 +1,9 @@
+Sun Mar  6 11:36:37 2005  Tanaka Akira  <akr@m17n.org>
+
+	* lib/pp.rb (File::Stat#pretty_print): Etc.getpwuid and Etc.getgrgid
+	  may return nil.  [ruby-talk:129826]
+	  reported by Daniel Berger.
+
 Sat Mar  5 18:06:21 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* dir.c (fnmatch): removed unnecessary code. (ruby_1_8 didn't have
