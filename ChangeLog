@@ -1,3 +1,8 @@
+Mon Dec 18 23:18:39 2000  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* util.c (mblen, __crt0_glob_function): add for multibyte
+	  on DJGPP 2.03.
+
 Mon Dec 18 18:10:30 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* time.c (time_plus): usec might underflow (ruby-bugs-ja:#PR33).

@@ -299,216 +299,130 @@ valid_filename(char *s)
 #endif
 #endif
 
-#ifdef DJGPP
-#include <libc/stubs.h>
-#include <stdio.h>		/* For FILENAME_MAX */
-#include <errno.h>		/* For errno */
-#include <fcntl.h>		/* For LFN stuff */
-#include <go32.h>
-#include <dpmi.h>		/* For dpmisim */
-#include <crt0.h>		/* For crt0 flags */
-#include <libc/dosio.h>
+#if defined __DJGPP__
 
-static unsigned use_lfn;
+#include <dpmi.h>
 
-static char *__get_current_directory(char *out, int drive_number);
+static char dbcs_table[256];
 
-static char *
-__get_current_directory(char *out, int drive_number)
+int
+make_dbcs_table()
 {
-  __dpmi_regs r;
-  char tmpbuf[FILENAME_MAX];
-
-  memset(&r, 0, sizeof(r));
-  if(use_lfn)
-    r.x.ax = 0x7147;
-  else
-    r.h.ah = 0x47;
-  r.h.dl = drive_number + 1;
-  r.x.si = __tb_offset;
-  r.x.ds = __tb_segment;
-  __dpmi_int(0x21, &r);
-
-  if (r.x.flags & 1)
-  {
-    errno = r.x.ax;
-    return out;
-  }
-  else
-  {
-    dosmemget(__tb, sizeof(tmpbuf), tmpbuf);
-    strcpy(out+1,tmpbuf);
-
-    /* Root path, don't insert "/", it'll be added later */
-    if (*(out + 1) != '\0')
-      *out = '/';
-    else
-      *out = '\0';
-    return out + strlen(out);
-  }
-}
-
-__inline__ static int
-is_slash(int c)
-{
-  return c == '/' || c == '\\';
-}
-
-__inline__ static int
-is_term(int c)
-{
-  return c == '/' || c == '\\' || c == '\0';
-}
-
-#ifdef SJIS
-__inline__ static int
-is_sjis1(int c)
-{
-  return 0x81 <= c && (c <= 0x9f || 0xe0 <= c);
-}
-#endif
-
-/* Takes as input an arbitrary path.  Fixes up the path by:
-   1. Removing consecutive slashes
-   2. Removing trailing slashes
-   3. Making the path absolute if it wasn't already
-   4. Removing "." in the path
-   5. Removing ".." entries in the path (and the directory above them)
-   6. Adding a drive specification if one wasn't there
-   7. Converting all slashes to '/'
- */
-void
-fixpath(const char *in, char *out)
-{
-  int		drive_number;
-  const char	*ip = in;
-  char		*op = out;
-  int		preserve_case = _preserve_fncase();
-  char		*name_start;
-
-  use_lfn = _USE_LFN;
-
-  /* Add drive specification to output string */
-  if (((*ip >= 'a' && *ip <= 'z') ||
-       (*ip >= 'A' && *ip <= 'Z'))
-      && (*(ip + 1) == ':'))
-  {
-    if (*ip >= 'a' && *ip <= 'z')
-    {
-      drive_number = *ip - 'a';
-      *op++ = *ip++;
-    }
-    else
-    {
-      drive_number = *ip - 'A';
-      if (*ip <= 'Z')
-	*op++ = drive_number + 'a';
-      else
-	*op++ = *ip;
-      ++ip;
-    }
-    *op++ = *ip++;
-  }
-  else
-  {
     __dpmi_regs r;
-    r.h.ah = 0x19;
+    struct {
+	unsigned char start;
+	unsigned char end;
+    } vec;
+    int offset;
+
+    memset(&r, 0, sizeof(r));
+    r.x.ax = 0x6300;
     __dpmi_int(0x21, &r);
-    drive_number = r.h.al;
-    *op++ = drive_number + (drive_number < 26 ? 'a' : 'A');
-    *op++ = ':';
-  }
+    offset = r.x.ds * 16 + r.x.si;
 
-  /* Convert relative path to absolute */
-  if (!is_slash(*ip))
-    op = __get_current_directory(op, drive_number);
-
-  /* Step through the input path */
-  while (*ip)
-  {
-    /* Skip input slashes */
-    if (is_slash(*ip))
-    {
-      ip++;
-      continue;
+    for (;;) {
+	int i;
+	dosmemget(offset, sizeof vec, &vec);
+	if (!vec.start && !vec.end)
+	    break;
+	for (i = vec.start; i <= vec.end; i++)
+	    dbcs_table[i] = 1;
+	offset += 2;
     }
-
-    /* Skip "." and output nothing */
-    if (*ip == '.' && is_term(*(ip + 1)))
-    {
-      ip++;
-      continue;
-    }
-
-    /* Skip ".." and remove previous output directory */
-    if (*ip == '.' && *(ip + 1) == '.' && is_term(*(ip + 2)))
-    {
-      ip += 2;
-      /* Don't back up over drive spec */
-      if (op > out + 2)
-	/* This requires "/" to follow drive spec */
-	while (!is_slash(*--op));
-      continue;
-    }
-
-    /* Copy path component from in to out */
-    *op++ = '/';
-#ifndef SJIS
-    while (!is_term(*ip)) *op++ = *ip++;
-#else
-    while (!is_term(*ip)) {
-      if (is_sjis1((unsigned char)*ip))
-	*op++ = *ip++;
-      *op++ = *ip++;
-    }
-#endif
-  }
-
-  /* If root directory, insert trailing slash */
-  if (op == out + 2) *op++ = '/';
-
-  /* Null terminate the output */
-  *op = '\0';
-
-  /* switch FOO\BAR to foo/bar, downcase where appropriate */
-  for (op = out + 3, name_start = op - 1; *name_start; op++)
-  {
-    char long_name[FILENAME_MAX], short_name[13];
-
-#ifdef SJIS
-    if (is_sjis1((unsigned char)*op)) {
-      op++;
-      continue;
-    }
-#endif
-    if (*op == '\\')
-      *op = '/';
-    if (!preserve_case && (*op == '/' || *op == '\0'))
-    {
-      memcpy(long_name, name_start+1, op - name_start - 1);
-      long_name[op - name_start - 1] = '\0';
-      if (!strcmp(_lfn_gen_short_fname(long_name, short_name), long_name))
-      {
-#ifndef SJIS
-	while (++name_start < op)
-	  if (*name_start >= 'A' && *name_start <= 'Z')
-	    *name_start += 'a' - 'A';
-#else
-	while (++name_start < op) {
-	  if (is_sjis1((unsigned char)*name_start))
-	    name_start++;
-	  else if (*name_start >= 'A' && *name_start <= 'Z')
-	    *name_start += 'a' - 'A';
-	}
-#endif
-      }
-      else
-	name_start = op;
-    }
-    else if (*op == '\0')
-      break;
-  }
 }
+
+int
+mblen(const char *s, size_t n)
+{
+    static int need_init = 1;
+    if (need_init) {
+	make_dbcs_table();
+	need_init = 0;
+    }
+    if (s) {
+	if (n == 0 || *s == 0)
+	    return 0;
+	return dbcs_table[(unsigned char)*s] + 1;
+    }
+    else
+	return 1;
+}
+
+struct PathList {
+    struct PathList *next;
+    char *path;
+};
+
+struct PathInfo {
+    struct PathList *head;
+    int count;
+};
+
+static void
+push_element(char *path, struct PathInfo *info)
+{
+    struct PathList *p;
+
+    p = ALLOC(struct PathList);
+    MEMZERO(p, struct PathList, 1);
+    p->path = ruby_strdup(path);
+    p->next = info->head;
+    info->head = p;
+    info->count++;
+}
+
+#include <dirent.h>
+int __opendir_flags = __OPENDIR_PRESERVE_CASE;
+
+char **
+__crt0_glob_function(char *path)
+{
+    int len = strlen(path);
+    int i;
+    char **rv;
+    char path_buffer[PATH_MAX];
+    char *buf = path_buffer;
+    char *p;
+    struct PathInfo info;
+    struct PathList *plist;
+
+    if (PATH_MAX <= len)
+	buf = ruby_xmalloc(len + 1);
+
+    strncpy(buf, path, len);
+    buf[len] = '\0';
+
+    for (p = buf; *p; p += mblen(p, MB_CUR_MAX))
+	if (*p == '\\')
+	    *p = '/';
+
+    info.count = 0;
+    info.head = 0;
+
+    rb_iglob(buf, push_element, (VALUE)&info);
+
+    if (buf != path_buffer)
+	ruby_xfree(buf);
+
+    if (info.count == 0)
+	return 0;
+
+    rv = ruby_xmalloc((info.count + 1) * sizeof (char *));
+
+    plist = info.head;
+    i = 0;
+    while (plist) {
+	struct PathList *cur;
+	rv[i] = plist->path;
+	cur = plist;
+	plist = plist->next;
+	ruby_xfree(cur);
+	i++;
+    }
+    rv[i] = 0;
+    return rv;
+}
+
 #endif
 
 /* mm.c */
