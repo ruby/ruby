@@ -637,7 +637,6 @@ static void
 remove_backslashes(p)
     char *p;
 {
-#if defined DOSISH
     char *pend = p + strlen(p);
     char *t = p;
 
@@ -648,7 +647,6 @@ remove_backslashes(p)
 	*t++ = *p++;
     }
     *t = '\0';
-#endif
 }
 
 #ifndef S_ISDIR
@@ -668,7 +666,11 @@ glob_helper(path, sub, flags, func, arg)
 
     p = sub ? sub : path;
     if (!has_magic(p, 0, flags)) {
+#if defined DOSISH
 	remove_backslashes(path);
+#else
+	if (!(flags & FNM_NOESCAPE)) remove_backslashes(p);
+#endif
 	if (stat(path, &st) == 0) {
 	    (*func)(path, arg);
 	}
