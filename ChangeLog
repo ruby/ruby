@@ -1,3 +1,8 @@
+Sat Aug 28 23:04:41 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_big_and): protect parameters from GC.
+	  [ruby-talk:110664]
+
 Fri Aug 27 12:13:50 2004  Tanaka Akira  <akr@m17n.org>
 
 	* ext/stringio/stringio.c (Init_stringio): add StringIO#readpartial as
@@ -17,6 +22,13 @@ Thu Aug 26 04:38:29 2004  Dave Thomas  <dave@pragprog.com>
 Wed Aug 25 15:18:52 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_longjmp): Exception#to_str is no longer defined.
+
+Wed Aug 25 11:39:10 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* error.c (exc_equal): exceptions are equal if they share same
+	  class, message and backtrace. [ruby-talk:110354]
+
+	* error.c (name_err_mesg_equal): ditto.
 
 Tue Aug 24 16:41:48 2004  Shugo Maeda  <shugo@ruby-lang.org>
 

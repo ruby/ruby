@@ -535,6 +535,32 @@ exc_set_backtrace(exc, bt)
 }
 
 /*
+ *  call-seq:
+ *     exc == obj   => true or false
+ *  
+ *  Equality---If <i>obj</i> is not an <code>Exception</code>, returns
+ *  <code>false</code>. Otherwise, returns <code>true</code> if <i>exc</i> and 
+ *  <i>obj</i> share same class, messages, and backtrace.
+ */
+
+static VALUE
+exc_equal(exc, obj)
+    VALUE exc;
+    VALUE obj;
+{
+    ID id_mesg = rb_intern("mesg");
+
+    if (exc == obj) return Qtrue;
+    if (rb_obj_class(exc) != rb_obj_class(obj))
+	return Qfalse;
+    if (!rb_equal(rb_attr_get(exc, id_mesg), rb_attr_get(obj, id_mesg)))
+	return Qfalse;
+    if (!rb_equal(exc_backtrace(exc), exc_backtrace(obj)))
+	return Qfalse;
+    return Qtrue;
+}
+
+/*
  * call-seq:
  *   SystemExit.new(status=0)   => system_exit
  *
@@ -662,7 +688,8 @@ static VALUE
 name_err_to_s(exc)
     VALUE exc;
 {
-    VALUE mesg = rb_attr_get(exc, rb_intern("mesg")), str = mesg;
+    VALUE mesg = rb_attr_get(exc, rb_intern("mesg"));
+    VALUE str = mesg;
 
     if (NIL_P(mesg)) return rb_class_name(CLASS_OF(exc));
     StringValue(str);
@@ -714,6 +741,27 @@ name_err_mesg_new(obj, mesg, recv, method)
     ptr[1] = recv;
     ptr[2] = method;
     return Data_Wrap_Struct(rb_cNameErrorMesg, name_err_mesg_mark, -1, ptr);
+}
+
+/* :nodoc: */
+static VALUE
+name_err_mesg_equal(obj1, obj2)
+    VALUE obj1, obj2;
+{
+    VALUE *ptr1, *ptr2;
+    int i;
+
+    if (obj1 == obj2) return Qtrue;
+    if (rb_obj_class(obj2) != rb_cNameErrorMesg)
+	return Qfalse;
+
+    Data_Get_Struct(obj1, VALUE, ptr1);
+    Data_Get_Struct(obj2, VALUE, ptr2);
+    for (i=0; i<3; i++) {
+	if (!rb_equal(ptr1[i], ptr2[i]))
+	    return Qfalse;
+    }
+    return Qtrue;
 }
 
 /* :nodoc: */
@@ -984,6 +1032,7 @@ Init_Exception()
     rb_define_singleton_method(rb_eException, "exception", rb_class_new_instance, -1);
     rb_define_method(rb_eException, "exception", exc_exception, -1);
     rb_define_method(rb_eException, "initialize", exc_initialize, -1);
+    rb_define_method(rb_eException, "==", exc_equal, 1);
     rb_define_method(rb_eException, "to_s", exc_to_s, 0);
     rb_define_method(rb_eException, "message", exc_message, 0);
     rb_define_method(rb_eException, "inspect", exc_inspect, 0);
@@ -1010,6 +1059,7 @@ Init_Exception()
     rb_define_method(rb_eNameError, "to_s", name_err_to_s, 0);
     rb_cNameErrorMesg = rb_define_class_under(rb_eNameError, "message", rb_cData);
     rb_define_singleton_method(rb_cNameErrorMesg, "!", name_err_mesg_new, 3);
+    rb_define_method(rb_cNameErrorMesg, "==", name_err_mesg_equal, 1);
     rb_define_method(rb_cNameErrorMesg, "to_str", name_err_mesg_to_str, 0);
     rb_define_method(rb_cNameErrorMesg, "_dump", name_err_mesg_to_str, 1);
     rb_define_singleton_method(rb_cNameErrorMesg, "_load", name_err_mesg_load, 1);

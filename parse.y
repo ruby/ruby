@@ -3398,7 +3398,7 @@ arg_ambiguous()
 }
 
 #define IS_ARG() (lex_state == EXPR_ARG || lex_state == EXPR_CMDARG)
-#define IS_BEG() (lex_state == EXPR_BEG || lex_state == EXPR_MID || lex_state == EXPR_TERNARY)
+#define IS_BEG() (lex_state == EXPR_BEG || lex_state == EXPR_MID || lex_state == EXPR_TERNARY || lex_state == EXPR_CLASS)
 
 static int
 yylex()

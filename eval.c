@@ -3765,6 +3765,9 @@ rb_eval(self, n)
 	    ID cname;
 	    int gen = Qfalse;
 
+	    cbase = class_prefix(self, node->nd_cpath);
+	    cname = node->nd_cpath->nd_mid;
+
 	    if (NIL_P(ruby_cbase)) {
 		rb_raise(rb_eTypeError, "no outer class/module");
 	    }
@@ -3775,8 +3778,6 @@ rb_eval(self, n)
 		super = 0;
 	    }
 
-	    cbase = class_prefix(self, node->nd_cpath);
-	    cname = node->nd_cpath->nd_mid;
 	    if (rb_const_defined_at(cbase, cname)) {
 		klass = rb_const_get_at(cbase, cname);
 		if (TYPE(klass) != T_CLASS) {

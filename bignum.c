@@ -1638,15 +1638,16 @@ rb_big_pow(x, y)
  */
 
 VALUE
-rb_big_and(x, y)
-    VALUE x, y;
+rb_big_and(xx, yy)
+    VALUE xx, yy;
 {
-    VALUE z;
+    volatile VALUE x, y, z;
     BDIGIT *ds1, *ds2, *zds;
     long i, l1, l2;
     char sign;
 
-    y = rb_to_int(y);
+    x = xx;
+    y = rb_to_int(yy);
     if (FIXNUM_P(y)) {
 	y = rb_int2big(FIX2LONG(y));
     }
@@ -1693,15 +1694,16 @@ rb_big_and(x, y)
  */
 
 VALUE
-rb_big_or(x, y)
-    VALUE x, y;
+rb_big_or(xx, yy)
+    VALUE xx, yy;
 {
-    VALUE z;
+    volatile VALUE x, y, z;
     BDIGIT *ds1, *ds2, *zds;
     long i, l1, l2;
     char sign;
 
-    y = rb_to_int(y);
+    x = xx;
+    y = rb_to_int(yy);
     if (FIXNUM_P(y)) {
 	y = rb_int2big(FIX2LONG(y));
     }
