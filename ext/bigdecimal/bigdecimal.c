@@ -47,7 +47,11 @@ VALUE rb_cBigDecimal;
 static VALUE
 BigDecimal_version(VALUE self)
 {
-    return rb_str_new2("1.0.0");
+    /*
+     * 1.0.0: Ruby 1.8.0
+     * 1.0.1: Ruby 1.8.1
+    */
+    return rb_str_new2("1.0.1");
 }
 
 /*
