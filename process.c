@@ -1416,9 +1416,20 @@ rb_fork(status, chfunc, charg)
 
 /*
  *  call-seq:
+ *     Kernel.fork  [{ block }]   => fixnum or nil
  *     Process.fork [{ block }]   => fixnum or nil
  *
- *  See <code>Kernel::fork</code>.
+ *  Creates a subprocess. If a block is specified, that block is run
+ *  in the subprocess, and the subprocess terminates with a status of
+ *  zero. Otherwise, the +fork+ call returns twice, once in
+ *  the parent, returning the process ID of the child, and once in
+ *  the child, returning _nil_. The child process can exit using
+ *  <code>Kernel.exit!</code> to avoid running any
+ *  <code>at_exit</code> functions. The parent process should 
+ *  use <code>Process.wait</code> to collect the termination statuses 
+ *  of its children or use <code>Process.detach</code> to register
+ *  disinterest in their status; otherwise, the operating system
+ *  may accumulate zombie processes.
  */
 
 static VALUE
