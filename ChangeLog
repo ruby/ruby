@@ -1,3 +1,7 @@
+Sun Mar 21 18:48:20 2004  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/{rss,dublincore,syndication}.rb: handled W3CDTF correctly.
+
 Sun Mar 21 18:15:29 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rss/test_xml-stylesheet.rb: added tests for xml-stylesheet.

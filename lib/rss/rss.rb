@@ -1,5 +1,35 @@
 require "time"
 
+class Time
+	class << Time
+		unless respond_to?(:w3cdtf)
+			def w3cdtf(date)
+				if /\A\s*
+				    (-?\d+)-(\d\d)-(\d\d)
+				    (?:T
+				    (\d\d):(\d\d)(?::(\d\d))?
+				    (\.\d+)?
+				    (Z|[+-]\d\d:\d\d)?)?
+				    \s*\z/ix =~ date and (($5 and $8) or (!$5 and !$8))
+					datetime = [$1.to_i, $2.to_i, $3.to_i, $4.to_i, $5.to_i, $6.to_i] 
+					datetime << $7.to_f * 1000000 if $7
+					if $8
+						Time.utc(*datetime) - zone_offset($8)
+					else
+						Time.local(*datetime)
+					end
+				else
+					raise ArgumentError.new("invalid date: #{date.inspect}")
+				end
+			end
+		end
+	end
+
+	unless instance_methods.include?("w3cdtf")
+		alias w3cdtf iso8601
+	end
+end
+
 require "English"
 require "rss/utils"
 require "rss/converter"
@@ -168,10 +198,14 @@ EOC
 						rescue ArgumentError
 							raise NotAvailableValueError.new('#{disp_name}', new_value)
 						end
-					elsif /\\A\\s*\\z/ !~ new_value.to_s
-						@#{name} = Time.parse(new_value)
 					else
 						@#{name} = nil
+						if /\\A\\s*\\z/ !~ new_value.to_s
+							begin
+								@#{name} = Time.parse(new_value)
+							rescue ArgumentError
+							end
+						end
 					end
 				end
 

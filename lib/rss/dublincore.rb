@@ -22,7 +22,7 @@ module RSS
 				end
 
 				%w(date).each do |x|
-					install_date_element("\#{DC_PREFIX}_\#{x}", 'iso8601', x)
+					install_date_element("\#{DC_PREFIX}_\#{x}", 'w3cdtf', x)
 				end
 			EOC
 		end

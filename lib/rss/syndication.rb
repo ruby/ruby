@@ -20,7 +20,7 @@ module RSS
 				end
 
 				%w(updateBase).each do |x|
-					install_date_element("\#{SY_PREFIX}_\#{x}", 'iso8601', x)
+					install_date_element("\#{SY_PREFIX}_\#{x}", 'w3cdtf', x)
 				end
 
 				alias_method(:_sy_updatePeriod=, :sy_updatePeriod=)
