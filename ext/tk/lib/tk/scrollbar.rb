@@ -29,6 +29,15 @@ class TkScrollbar<TkWindow
   end
   private :create_self
 
+  def propagate_set(src_win, first, last)
+    self.set(first, last)
+    if self.orient == 'horizontal'
+      @assigned.each{|w| w.xview('moveto', first) if w != src_win}
+    else # 'vertical'
+      @assigned.each{|w| w.yview('moveto', first) if w != src_win}
+    end
+  end
+
   def assign(*wins)
     begin
       self.command(@scroll_proc) if self.cget('command').cmd != @scroll_proc
@@ -39,9 +48,9 @@ class TkScrollbar<TkWindow
     wins.each{|w|
       @assigned << w unless @assigned.index(w)
       if orient == 'horizontal'
-	w.xscrollcommand proc{|first, last| self.set(first, last)}
+	w.xscrollcommand proc{|first, last| self.propagate_set(w, first, last)}
       else # 'vertical'
-	w.yscrollcommand proc{|first, last| self.set(first, last)}
+	w.yscrollcommand proc{|first, last| self.propagate_set(w, first, last)}
       end
     }
     Tk.update  # avoid scrollbar trouble
