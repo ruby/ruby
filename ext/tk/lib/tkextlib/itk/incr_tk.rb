@@ -350,7 +350,8 @@ module Tk
             fail RuntimeError, 'component is not assigned to a widget'
           end
         end
-        if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+        # if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+        if TkComm._callback_entry?(args[0])
           cmd = args.shift
         else
           cmd = Proc.new
@@ -378,7 +379,8 @@ module Tk
             fail RuntimeError, 'component is not assigned to a widget'
           end
         end
-        if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+        # if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+        if TkComm._callback_entry?(args[0])
           cmd = args.shift
         else
           cmd = Proc.new

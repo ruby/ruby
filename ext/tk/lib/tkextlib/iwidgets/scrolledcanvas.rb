@@ -102,7 +102,8 @@ class Tk::Iwidgets::Scrolledcanvas
   #  self
   #end
   def itembind(tag, context, *args)
-    if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    # if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    if TkComm._callback_entry?(args[0])
       cmd = args.shift
     else
       cmd = Proc.new
@@ -116,7 +117,8 @@ class Tk::Iwidgets::Scrolledcanvas
   #  self
   #end
   def itembind_append(tag, context, *args)
-    if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    # if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    if TkComm._callback_entry?(args[0])
       cmd = args.shift
     else
       cmd = Proc.new

@@ -46,7 +46,8 @@ class Tk::BWidget::NoteBook
   #  self
   #end
   def tabbind(context, *args)
-    if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    #if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    if TkComm._callback_entry?(args[0])
       cmd = args.shift
     else
       cmd = Proc.new
@@ -61,7 +62,8 @@ class Tk::BWidget::NoteBook
   #  self
   #end
   def tabbind_append(context, *args)
-    if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    #if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    if TkComm._callback_entry?(args[0])
       cmd = args.shift
     else
       cmd = Proc.new

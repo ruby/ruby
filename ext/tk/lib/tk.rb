@@ -574,6 +574,12 @@ end
   private :_toUTF8, :_fromUTF8
   module_function :_toUTF8, :_fromUTF8
 
+  def _callback_entry?(obj)
+    obj.kind_of?(Proc) || obj.kind_of?(Method) || obj.kind_of?(TkCallbackEntry)
+  end
+  private :_callback_entry?
+  module_function :_callback_entry?
+
 =begin
   ### --> definition is moved to TkUtil module
   def _get_eval_string(str, enc_mode = nil)
@@ -906,7 +912,8 @@ module TkComm
   #  tagOrClass
   #end
   def bind(tagOrClass, context, *args)
-    if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    # if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    if TkComm._callback_entry?(args[0])
       cmd = args.shift
     else
       cmd = Proc.new
@@ -920,7 +927,8 @@ module TkComm
   #  tagOrClass
   #end
   def bind_append(tagOrClass, context, *args)
-    if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    # if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    if TkComm._callback_entry?(args[0])
       cmd = args.shift
     else
       cmd = Proc.new
@@ -943,7 +951,8 @@ module TkComm
   #  TkBindTag::ALL
   #end
   def bind_all(context, *args)
-    if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    # if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    if TkComm._callback_entry?(args[0])
       cmd = args.shift
     else
       cmd = Proc.new
@@ -957,7 +966,8 @@ module TkComm
   #  TkBindTag::ALL
   #end
   def bind_append_all(context, *args)
-    if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    # if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    if TkComm._callback_entry?(args[0])
       cmd = args.shift
     else
       cmd = Proc.new
@@ -2107,7 +2117,8 @@ module TkBindCore
   #  Tk.bind(self, context, cmd, *args)
   #end
   def bind(context, *args)
-    if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    # if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    if TkComm._callback_entry?(args[0])
       cmd = args.shift
     else
       cmd = Proc.new
@@ -2119,7 +2130,8 @@ module TkBindCore
   #  Tk.bind_append(self, context, cmd, *args)
   #end
   def bind_append(context, *args)
-    if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    # if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    if TkComm._callback_entry?(args[0])
       cmd = args.shift
     else
       cmd = Proc.new

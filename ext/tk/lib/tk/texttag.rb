@@ -32,9 +32,9 @@ class TkTextTag<TkObject
     TTagID_TBL[@tpath][@id] = self
     Tk_TextTag_ID[1].succ!
     #tk_call @t.path, "tag", "configure", @id, *hash_kv(keys)
-    if args != [] then
+    if args != []
       keys = args.pop
-      if keys.kind_of? Hash then
+      if keys.kind_of?(Hash)
         add(*args) if args != []
         configure(keys)
       else
@@ -139,7 +139,7 @@ class TkTextTag<TkObject
     @t.tag_configure @id, key, val
   end
 #  def configure(key, val=None)
-#    if key.kind_of? Hash
+#    if key.kind_of?(Hash)
 #      tk_call @t.path, 'tag', 'configure', @id, *hash_kv(key)
 #    else
 #      tk_call @t.path, 'tag', 'configure', @id, "-#{key}", val
@@ -148,7 +148,7 @@ class TkTextTag<TkObject
 #  def configure(key, value)
 #    if value == FALSE
 #      value = "0"
-#    elsif value.kind_of? Proc
+#    elsif value.kind_of?(Proc)
 #      value = install_cmd(value)
 #    end
 #    tk_call @t.path, 'tag', 'configure', @id, "-#{key}", value
@@ -167,7 +167,8 @@ class TkTextTag<TkObject
   #  self
   #end
   def bind(seq, *args)
-    if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    # if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    if TkComm._callback_entry?(args[0])
       cmd = args.shift
     else
       cmd = Proc.new
@@ -181,7 +182,8 @@ class TkTextTag<TkObject
   #  self
   #end
   def bind_append(seq, *args)
-    if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    # if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    if TkComm._callback_entry?(args[0])
       cmd = args.shift
     else
       cmd = Proc.new
@@ -222,9 +224,9 @@ class TkTextNamedTag<TkTextTag
   def self.new(parent, name, *args)
     if TTagID_TBL[parent.path] && TTagID_TBL[parent.path][name]
       tagobj = TTagID_TBL[parent.path][name]
-      if args != [] then
+      if args != []
         keys = args.pop
-        if keys.kind_of? Hash then
+        if keys.kind_of?(Hash)
           tagobj.add(*args) if args != []
           tagobj.configure(keys)
         else
@@ -250,9 +252,9 @@ class TkTextNamedTag<TkTextTag
     #if mode
     #  tk_call @t.path, "addtag", @id, *args
     #end
-    if args != [] then
+    if args != []
       keys = args.pop
-      if keys.kind_of? Hash then
+      if keys.kind_of?(Hash)
         add(*args) if args != []
         configure(keys)
       else

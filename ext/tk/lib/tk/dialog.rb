@@ -30,21 +30,21 @@ class TkDialogObj < TkWindow
     case configs
     when Proc
       @buttons.each_index{|i|
-        if (c = configs.call(i)).kind_of? Hash
+        if (c = configs.call(i)).kind_of?(Hash)
           set_config.call(c,i)
         end
       }
 
     when Array
       @buttons.each_index{|i|
-        if (c = configs[i]).kind_of? Hash
+        if (c = configs[i]).kind_of?(Hash)
           set_config.call(c,i)
         end
       }
 
     when Hash
       @buttons.each_with_index{|s,i|
-        if (c = configs[s]).kind_of? Hash
+        if (c = configs[s]).kind_of?(Hash)
           set_config.call(c,i)
         end
       }
@@ -78,7 +78,7 @@ class TkDialogObj < TkWindow
 
     @command = prev_command
 
-    if keys.kind_of? Hash
+    if keys.kind_of?(Hash)
       @title   = keys['title'] if keys.key? 'title'
       @message = keys['message'] if keys.key? 'message'
       @bitmap  = keys['bitmap'] if keys.key? 'bitmap'
@@ -99,18 +99,18 @@ class TkDialogObj < TkWindow
       @title = '{' + @title + '}'
     end
 
-    if @buttons.kind_of? Array
+    if @buttons.kind_of?(Array)
       _set_button_config(@buttons.collect{|cfg| 
                            (cfg.kind_of? Array)? cfg[1]: nil})
       @buttons = @buttons.collect{|cfg| (cfg.kind_of? Array)? cfg[0]: cfg}
     end
-    if @buttons.kind_of? Hash 
+    if @buttons.kind_of?(Hash)
       _set_button_config(@buttons)
       @buttons = @buttons.keys
     end
-    @buttons = tk_split_simplelist(@buttons) if @buttons.kind_of? String
+    @buttons = tk_split_simplelist(@buttons) if @buttons.kind_of?(String)
     @buttons = @buttons.collect{|s|
-      if s.kind_of? Array
+      if s.kind_of?(Array)
         s = s.join(' ')
       end
       if s.include? ?\s
@@ -120,7 +120,7 @@ class TkDialogObj < TkWindow
       end
     }
 
-    if @message_config.kind_of? Hash
+    if @message_config.kind_of?(Hash)
       # @config << Kernel.format("%s.msg configure %s;", 
       #                        @path, hash_kv(@message_config).join(' '))
       # @config << @path+'.msg configure '+hash_kv(@message_config).join(' ')+';'
@@ -128,7 +128,7 @@ class TkDialogObj < TkWindow
                    array2tk_list(hash_kv(@message_config))+';'
     end
 
-    if @msgframe_config.kind_of? Hash
+    if @msgframe_config.kind_of?(Hash)
       # @config << Kernel.format("%s.top configure %s;", 
       #                        @path, hash_kv(@msgframe_config).join(' '))
       # @config << @path+'.top configure '+hash_kv(@msgframe_config).join(' ')+';'
@@ -136,7 +136,7 @@ class TkDialogObj < TkWindow
                    array2tk_list(hash_kv(@msgframe_config))+';'
     end
 
-    if @btnframe_config.kind_of? Hash
+    if @btnframe_config.kind_of?(Hash)
       # @config << Kernel.format("%s.bot configure %s;", 
       #                        @path, hash_kv(@btnframe_config).join(' '))
       # @config << @path+'.bot configure '+hash_kv(@btnframe_config).join(' ')+';'
@@ -144,7 +144,7 @@ class TkDialogObj < TkWindow
                    array2tk_list(hash_kv(@btnframe_config))+';'
     end
 
-    if @bitmap_config.kind_of? Hash
+    if @bitmap_config.kind_of?(Hash)
       # @config << Kernel.format("%s.bitmap configure %s;", 
       #                        @path, hash_kv(@bitmap_config).join(' '))
       # @config << @path+'.bitmap configure '+hash_kv(@bitmap_config).join(' ')+';'
@@ -157,11 +157,12 @@ class TkDialogObj < TkWindow
   private :create_self
 
   def show
-    if @command.kind_of? Proc
+    # if @command.kind_of?(Proc)
+    if TkComm._callback_entry?(@command)
       @command.call(self)
     end
 
-    if @default_button.kind_of? String
+    if @default_button.kind_of?(String)
       default_button = @buttons.index(@default_button)
     else
       default_button = @default_button
@@ -265,7 +266,7 @@ end
 class TkWarningObj < TkDialogObj
   def initialize(parent = nil, mes = nil)
     if !mes
-      if parent.kind_of? TkWindow
+      if parent.kind_of?(TkWindow)
         mes = ""
       else
         mes = parent.to_s
