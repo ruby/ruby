@@ -1,3 +1,7 @@
+Sun Dec 28 08:56:51 2003  Dave Thomas  <dave@pragprog.com>
+
+	* eval.c: Thead[Group] RDoc (thanks to MG)
+
 Sun Dec 28 03:50:05 2003  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser::find_override_comment): 

@@ -9215,6 +9215,47 @@ rb_thread_join(th, limit)
     return Qtrue;
 }
 
+
+/*
+ *  call-seq:
+ *     thr.join          => thr
+ *     thr.join(limit)   => thr
+ *  
+ *  The calling thread will suspend execution and run <i>thr</i>. Does not
+ *  return until <i>thr</i> exits or until <i>limit</i> seconds have passed. If
+ *  the time limit expires, <code>nil</code> will be returned, otherwise
+ *  <i>thr</i> is returned.
+ *     
+ *  Any threads not joined will be killed when the main program exits.  If
+ *  <i>thr</i> had previously raised an exception and the
+ *  <code>abort_on_exception</code> and <code>$DEBUG</code> flags are not set
+ *  (so the exception has not yet been processed) it will be processed at this
+ *  time.
+ *     
+ *     a = Thread.new { print "a"; sleep(10); print "b"; print "c" }
+ *     x = Thread.new { print "x"; Thread.pass; print "y"; print "z" }
+ *     x.join # Let x thread finish, a will be killed on exit.
+ *     
+ *  <em>produces:</em>
+ *     
+ *     axyz
+ *     
+ *  The following example illustrates the <i>limit</i> parameter.
+ *     
+ *     y = Thread.new { 4.times { sleep 0.1; puts 'tick... ' }}
+ *     puts "Waiting" until y.join(0.15)
+ *     
+ *  <em>produces:</em>
+ *     
+ *     tick...
+ *     Waiting
+ *     tick...
+ *     Waitingtick...
+ *     
+ *     
+ *     tick...
+ */
+
 static VALUE
 rb_thread_join_m(argc, argv, thread)
     int argc;
@@ -9232,17 +9273,58 @@ rb_thread_join_m(argc, argv, thread)
     return thread;
 }
 
+
+/*
+ *  call-seq:
+ *     Thread.current   => thread
+ *  
+ *  Returns the currently executing thread.
+ *     
+ *     Thread.current   #=> #<Thread:0x401bdf4c run>
+ */
+
 VALUE
 rb_thread_current()
 {
     return curr_thread->thread;
 }
 
+
+/*
+ *  call-seq:
+ *     Thread.main   => thread
+ *  
+ *  Returns the main thread for the process.
+ *     
+ *     Thread.main   #=> #<Thread:0x401bdf4c run>
+ */
+
 VALUE
 rb_thread_main()
 {
     return main_thread->thread;
 }
+
+
+/*
+ *  call-seq:
+ *     Thread.list   => array
+ *  
+ *  Returns an array of <code>Thread</code> objects for all threads that are
+ *  either runnable or stopped.
+ *     
+ *     Thread.new { sleep(200) }
+ *     Thread.new { 1000000.times {|i| i*i } }
+ *     Thread.new { Thread.stop }
+ *     Thread.list.each {|t| p t}
+ *     
+ *  <em>produces:</em>
+ *     
+ *     #<Thread:0x401b3e84 sleep>
+ *     #<Thread:0x401b3f38 run>
+ *     #<Thread:0x401b3fb0 sleep>
+ *     #<Thread:0x401bdf4c run>
+ */
 
 VALUE
 rb_thread_list()
@@ -9265,6 +9347,22 @@ rb_thread_list()
     return ary;
 }
 
+
+/*
+ *  call-seq:
+ *     thr.wakeup   => thr
+ *  
+ *  Marks <i>thr</i> as eligible for scheduling (it may still remain blocked on
+ *  I/O, however). Does not invoke the scheduler (see <code>Thread#run</code>).
+ *     
+ *     c = Thread.new { Thread.stop; puts "hey!" }
+ *     c.wakeup
+ *     
+ *  <em>produces:</em>
+ *     
+ *     hey!
+ */
+
 VALUE
 rb_thread_wakeup(thread)
     VALUE thread;
@@ -9278,6 +9376,27 @@ rb_thread_wakeup(thread)
     return thread;
 }
 
+
+/*
+ *  call-seq:
+ *     thr.run   => thr
+ *  
+ *  Wakes up <i>thr</i>, making it eligible for scheduling. If not in a critical
+ *  section, then invokes the scheduler.
+ *     
+ *     a = Thread.new { puts "a"; Thread.stop; puts "c" }
+ *     Thread.pass
+ *     puts "Got here"
+ *     a.run
+ *     a.join
+ *     
+ *  <em>produces:</em>
+ *     
+ *     a
+ *     Got here
+ *     c
+ */
+
 VALUE
 rb_thread_run(thread)
     VALUE thread;
@@ -9287,6 +9406,19 @@ rb_thread_run(thread)
 
     return thread;
 }
+
+
+/*
+ *  call-seq:
+ *     thr.exit        => thr or nil
+ *     thr.kill        => thr or nil
+ *     thr.terminate   => thr or nil
+ *  
+ *  Terminates <i>thr</i> and schedules another thread to be run. If this thread
+ *  is already marked to be killed, <code>exit</code> returns the
+ *  <code>Thread</code>. If this is the main thread, or the last thread, exits
+ *  the process.
+ */
 
 VALUE
 rb_thread_kill(thread)
@@ -9307,6 +9439,21 @@ rb_thread_kill(thread)
     return thread;
 }
 
+
+/*
+ *  call-seq:
+ *     Thread.kill(thread)   => thread
+ *  
+ *  Causes the given <em>thread</em> to exit (see <code>Thread::exit</code>).
+ *     
+ *     count = 0
+ *     a = Thread.new { loop { count += 1 } }
+ *     sleep(0.1)       #=> 0
+ *     Thread.kill(a)   #=> #<Thread:0x401b3d30 dead>
+ *     count            #=> 93947
+ *     a.alive?         #=> false
+ */
+
 static VALUE
 rb_thread_s_kill(obj, th)
     VALUE obj, th;
@@ -9314,11 +9461,43 @@ rb_thread_s_kill(obj, th)
     return rb_thread_kill(th);
 }
 
+
+/*
+ *  call-seq:
+ *     Thread.exit   => thread
+ *  
+ *  Terminates the currently running thread and schedules another thread to be
+ *  run. If this thread is already marked to be killed, <code>exit</code>
+ *  returns the <code>Thread</code>. If this is the main thread, or the last
+ *  thread, exit the process.
+ */
+
 static VALUE
 rb_thread_exit()
 {
     return rb_thread_kill(curr_thread->thread);
 }
+
+
+/*
+ *  call-seq:
+ *     Thread.pass   => nil
+ *  
+ *  Invokes the thread scheduler to pass execution to another thread.
+ *     
+ *     a = Thread.new { print "a"; Thread.pass;
+ *                      print "b"; Thread.pass;
+ *                      print "c" }
+ *     b = Thread.new { print "x"; Thread.pass;
+ *                      print "y"; Thread.pass;
+ *                      print "z" }
+ *     a.join
+ *     b.join
+ *     
+ *  <em>produces:</em>
+ *     
+ *     axbycz
+ */
 
 static VALUE
 rb_thread_pass()
@@ -9326,6 +9505,26 @@ rb_thread_pass()
     rb_thread_schedule();
     return Qnil;
 }
+
+
+/*
+ *  call-seq:
+ *     Thread.stop   => nil
+ *  
+ *  Stops execution of the current thread, putting it into a ``sleep'' state,
+ *  and schedules execution of another thread. Resets the ``critical'' condition
+ *  to <code>false</code>.
+ *     
+ *     a = Thread.new { print "a"; Thread.stop; print "c" }
+ *     Thread.pass
+ *     print "b"
+ *     a.run
+ *     a.join
+ *     
+ *  <em>produces:</em>
+ *     
+ *     abc
+ */
 
 VALUE
 rb_thread_stop()
@@ -9388,12 +9587,47 @@ rb_thread_sleep_forever()
     rb_thread_schedule();
 }
 
+
+/*
+ *  call-seq:
+ *     thr.priority   => integer
+ *  
+ *  Returns the priority of <i>thr</i>. Default is zero; higher-priority threads
+ *  will run before lower-priority threads.
+ *     
+ *     Thread.current.priority   #=> 0
+ */
+
 static VALUE
 rb_thread_priority(thread)
     VALUE thread;
 {
     return INT2NUM(rb_thread_check(thread)->priority);
 }
+
+
+/*
+ *  call-seq:
+ *     thr.priority= integer   => thr
+ *  
+ *  Sets the priority of <i>thr</i> to <i>integer</i>. Higher-priority threads
+ *  will run before lower-priority threads.
+ *     
+ *     count1 = count2 = 0
+ *     a = Thread.new do
+ *           loop { count1 += 1 }
+ *         end
+ *     a.priority = -1
+ *     
+ *     b = Thread.new do
+ *           loop { count2 += 1 }
+ *         end
+ *     b.priority = -2
+ *     sleep 1   #=> 1
+ *     Thread.critical = 1
+ *     count1    #=> 622504
+ *     count2    #=> 5832
+ */
 
 static VALUE
 rb_thread_priority_set(thread, prio)
@@ -9408,6 +9642,19 @@ rb_thread_priority_set(thread, prio)
     rb_thread_schedule();
     return prio;
 }
+
+
+/*
+ *  call-seq:
+ *     thr.safe_level   => integer
+ *  
+ *  Returns the safe level in effect for <i>thr</i>. Setting thread-local safe
+ *  levels can help when implementing sandboxes which run insecure code.
+ *     
+ *     thr = Thread.new { $SAFE = 3; sleep }
+ *     Thread.current.safe_level   #=> 0
+ *     thr.safe_level              #=> 3
+ */
 
 static VALUE
 rb_thread_safe_level(thread)
@@ -9425,11 +9672,49 @@ rb_thread_safe_level(thread)
 static int ruby_thread_abort;
 static VALUE thgroup_default;
 
+
+/*
+ *  call-seq:
+ *     Thread.abort_on_exception   => true or false
+ *  
+ *  Returns the status of the global ``abort on exception'' condition.  The
+ *  default is <code>false</code>. When set to <code>true</code>, or if the
+ *  global <code>$DEBUG</code> flag is <code>true</code> (perhaps because the
+ *  command line option <code>-d</code> was specified) all threads will abort
+ *  (the process will <code>exit(0)</code>) if an exception is raised in any
+ *  thread. See also <code>Thread::abort_on_exception=</code>.
+ */
+
 static VALUE
 rb_thread_s_abort_exc()
 {
     return ruby_thread_abort?Qtrue:Qfalse;
 }
+
+
+/*
+ *  call-seq:
+ *     Thread.abort_on_exception= boolean   => true or false
+ *  
+ *  When set to <code>true</code>, all threads will abort if an exception is
+ *  raised. Returns the new state.
+ *     
+ *     Thread.abort_on_exception = true
+ *     t1 = Thread.new do
+ *       puts  "In new thread"
+ *       raise "Exception from thread"
+ *     end
+ *     sleep(1)
+ *     puts "not reached"
+ *     
+ *  <em>produces:</em>
+ *     
+ *     In new thread
+ *     prog.rb:4: Exception from thread (RuntimeError)
+ *     	from prog.rb:2:in `initialize'
+ *     	from prog.rb:2:in `new'
+ *     	from prog.rb:2
+ */
 
 static VALUE
 rb_thread_s_abort_exc_set(self, val)
@@ -9440,12 +9725,32 @@ rb_thread_s_abort_exc_set(self, val)
     return val;
 }
 
+
+/*
+ *  call-seq:
+ *     thr.abort_on_exception   => true or false
+ *  
+ *  Returns the status of the thread-local ``abort on exception'' condition for
+ *  <i>thr</i>. The default is <code>false</code>. See also
+ *  <code>Thread::abort_on_exception=</code>.
+ */
+
 static VALUE
 rb_thread_abort_exc(thread)
     VALUE thread;
 {
     return rb_thread_check(thread)->abort?Qtrue:Qfalse;
 }
+
+
+/*
+ *  call-seq:
+ *     thr.abort_on_exception= boolean   => true or false
+ *  
+ *  When set to <code>true</code>, causes all threads (including the main
+ *  program) to abort if an exception is raised in <i>thr</i>. The process will
+ *  effectively <code>exit(0)</code>.
+ */
 
 static VALUE
 rb_thread_abort_exc_set(thread, val)
@@ -9455,6 +9760,17 @@ rb_thread_abort_exc_set(thread, val)
     rb_thread_check(thread)->abort = RTEST(val);
     return val;
 }
+
+
+/*
+ *  call-seq:
+ *     thr.group   => thgrp or nil
+ *  
+ *  Returns the <code>ThreadGroup</code> which contains <i>thr</i>, or nil if
+ *  the thread is not a member of any group.
+ *     
+ *     Thread.main.group   #=> #<ThreadGroup:0x4029d914>
+ */
 
 VALUE
 rb_thread_group(thread)
@@ -9792,6 +10108,25 @@ rb_thread_s_new(argc, argv, klass)
     return th->thread;
 }
 
+
+/*
+ *  call-seq:
+ *     Thread.new([arg]*) {|args| block }   => thread
+ *  
+ *  Creates and runs a new thread to execute the instructions given in
+ *  <i>block</i>. Any arguments passed to <code>Thread::new</code> are passed
+ *  into the block.
+ *     
+ *     x = Thread.new { sleep 0.1; print "x"; print "y"; print "z" }
+ *     a = Thread.new { print "a"; print "b"; sleep 0.2; print "c" }
+ *     x.join # Let the threads finish before
+ *     a.join # main thread exits...
+ *     
+ *  <em>produces:</em>
+ *     
+ *     abxyzc
+ */
+
 static VALUE
 rb_thread_initialize(thread, args)
     VALUE thread, args;
@@ -9801,6 +10136,17 @@ rb_thread_initialize(thread, args)
     }
     return rb_thread_start_0(rb_thread_yield, args, rb_thread_check(thread));
 }
+
+
+/*
+ *  call-seq:
+ *     Thread.start([args]*) {|args| block }   => thread
+ *     Thread.fork([args]*) {|args| block }    => thread
+ *  
+ *  Basically the same as <code>Thread::new</code>. However, if class
+ *  <code>Thread</code> is subclassed, then calling <code>start</code> in that
+ *  subclass will not invoke the subclass's <code>initialize</code> method.
+ */
 
 static VALUE
 rb_thread_start(klass, args)
@@ -9812,6 +10158,18 @@ rb_thread_start(klass, args)
     return rb_thread_start_0(rb_thread_yield, args, rb_thread_alloc(klass));
 }
 
+
+/*
+ *  call-seq:
+ *     thr.value   => obj
+ *  
+ *  Waits for <i>thr</i> to complete (via <code>Thread#join</code>) and returns
+ *  its value.
+ *     
+ *     a = Thread.new { 2 + 2 }
+ *     a.value   #=> 4
+ */
+
 static VALUE
 rb_thread_value(thread)
     VALUE thread;
@@ -9822,6 +10180,30 @@ rb_thread_value(thread)
 
     return th->result;
 }
+
+
+/*
+ *  call-seq:
+ *     thr.status   => string, false or nil
+ *  
+ *  Returns the status of <i>thr</i>: ``<code>sleep</code>'' if <i>thr</i> is
+ *  sleeping or waiting on I/O, ``<code>run</code>'' if <i>thr</i> is executing,
+ *  ``<code>aborting</code>'' if <i>thr</i> is aborting, <code>false</code> if
+ *  <i>thr</i> terminated normally, and <code>nil</code> if <i>thr</i>
+ *  terminated with an exception.
+ *     
+ *     a = Thread.new { raise("die now") }
+ *     b = Thread.new { Thread.stop }
+ *     c = Thread.new { Thread.exit }
+ *     d = Thread.new { sleep }
+ *     Thread.critical = true
+ *     d.kill                  #=> #<Thread:0x401b3678 aborting>
+ *     a.status                #=> nil
+ *     b.status                #=> "sleep"
+ *     c.status                #=> false
+ *     d.status                #=> "aborting"
+ *     Thread.current.status   #=> "run"
+ */
 
 static VALUE
 rb_thread_status(thread)
@@ -9838,6 +10220,19 @@ rb_thread_status(thread)
     return rb_str_new2(thread_status_name(th->status));
 }
 
+
+/*
+ *  call-seq:
+ *     thr.alive?   => true or false
+ *  
+ *  Returns <code>true</code> if <i>thr</i> is running or sleeping.
+ *     
+ *     thr = Thread.new { }
+ *     thr.join                #=> #<Thread:0x401b3fb0 dead>
+ *     Thread.current.alive?   #=> true
+ *     thr.alive?              #=> false
+ */
+
 static VALUE
 rb_thread_alive_p(thread)
     VALUE thread;
@@ -9847,6 +10242,19 @@ rb_thread_alive_p(thread)
     if (rb_thread_dead(th)) return Qfalse;
     return Qtrue;
 }
+
+
+/*
+ *  call-seq:
+ *     thr.stop?   => true or false
+ *  
+ *  Returns <code>true</code> if <i>thr</i> is dead or sleeping.
+ *     
+ *     a = Thread.new { Thread.stop }
+ *     b = Thread.current
+ *     a.stop?   #=> true
+ *     b.stop?   #=> false
+ */
 
 static VALUE
 rb_thread_stop_p(thread)
@@ -9906,11 +10314,34 @@ rb_thread_cleanup()
 
 int rb_thread_critical;
 
+
+/*
+ *  call-seq:
+ *     Thread.critical   => true or false
+ *  
+ *  Returns the status of the global ``thread critical'' condition.
+ */
+
 static VALUE
 rb_thread_critical_get()
 {
     return rb_thread_critical?Qtrue:Qfalse;
 }
+
+
+/*
+ *  call-seq:
+ *     Thread.critical= boolean   => true or false
+ *  
+ *  Sets the status of the global ``thread critical'' condition and returns
+ *  it. When set to <code>true</code>, prohibits scheduling of any existing
+ *  thread. Does not block new threads from being created and run. Certain
+ *  thread operations (such as stopping or killing a thread, sleeping in the
+ *  current thread, and raising an exception) may cause a thread to be scheduled
+ *  even when in a critical section.  <code>Thread::critical</code> is not
+ *  intended for daily use: it is primarily there to support folks writing
+ *  threading libraries.
+ */
 
 static VALUE
 rb_thread_critical_set(obj, val)
@@ -10004,6 +10435,26 @@ rb_thread_raise(argc, argv, th)
     return Qnil;		/* not reached */
 }
 
+
+/*
+ *  call-seq:
+ *     thr.raise(exception)
+ *  
+ *  Raises an exception (see <code>Kernel::raise</code>) from <i>thr</i>. The
+ *  caller does not have to be <i>thr</i>.
+ *     
+ *     Thread.abort_on_exception = true
+ *     a = Thread.new { sleep(200) }
+ *     a.raise("Gotcha")
+ *     
+ *  <em>produces:</em>
+ *     
+ *     prog.rb:3: Gotcha (RuntimeError)
+ *     	from prog.rb:2:in `initialize'
+ *     	from prog.rb:2:in `new'
+ *     	from prog.rb:2
+ */
+
 static VALUE
 rb_thread_raise_m(argc, argv, thread)
     int argc;
@@ -10038,6 +10489,28 @@ rb_thread_local_aref(thread, id)
     return Qnil;
 }
 
+
+/*
+ *  call-seq:
+ *      thr[sym]   => obj or nil
+ *  
+ *  Attribute Reference---Returns the value of a thread-local variable, using
+ *  either a symbol or a string name. If the specified variable does not exist,
+ *  returns <code>nil</code>.
+ *     
+ *     a = Thread.new { Thread.current["name"] = "A"; Thread.stop }
+ *     b = Thread.new { Thread.current[:name]  = "B"; Thread.stop }
+ *     c = Thread.new { Thread.current["name"] = "C"; Thread.stop }
+ *     Thread.list.each {|x| puts "#{x.inspect}: #{x[:name]}" }
+ *     
+ *  <em>produces:</em>
+ *     
+ *     #<Thread:0x401b3b3c sleep>: C
+ *     #<Thread:0x401b3bc8 sleep>: B
+ *     #<Thread:0x401b3c68 sleep>: A
+ *     #<Thread:0x401bdf4c run>:
+ */
+
 static VALUE
 rb_thread_aref(thread, id)
     VALUE thread, id;
@@ -10070,12 +10543,35 @@ rb_thread_local_aset(thread, id, val)
     return val;
 }
 
+
+/*
+ *  call-seq:
+ *      thr[sym] = obj   => obj
+ *  
+ *  Attribute Assignment---Sets or creates the value of a thread-local variable,
+ *  using either a symbol or a string. See also <code>Thread#[]</code>.
+ */
+
 static VALUE
 rb_thread_aset(thread, id, val)
     VALUE thread, id, val;
 {
     return rb_thread_local_aset(thread, rb_to_id(id), val);
 }
+
+
+/*
+ *  call-seq:
+ *     thr.key?(sym)   => true or false
+ *  
+ *  Returns <code>true</code> if the given string (or symbol) exists as a
+ *  thread-local variable.
+ *     
+ *     me = Thread.current
+ *     me[:oliver] = "a"
+ *     me.key?(:oliver)    #=> true
+ *     me.key?(:stanley)   #=> false
+ */
 
 static VALUE
 rb_thread_key_p(thread, id)
@@ -10097,6 +10593,21 @@ thread_keys_i(key, value, ary)
     rb_ary_push(ary, ID2SYM(key));
     return ST_CONTINUE;
 }
+
+
+/*
+ *  call-seq:
+ *     thr.keys   => array
+ *  
+ *  Returns an an array of the names of the thread-local variables (as Symbols).
+ *     
+ *     thr = Thread.new do
+ *       Thread.current[:cat] = 'meow'
+ *       Thread.current["dog"] = 'woof'
+ *     end
+ *     thr.join   #=> #<Thread:0x401b3f10 dead>
+ *     thr.keys   #=> [:dog, :cat]
+ */
 
 static VALUE
 rb_thread_keys(thread)
@@ -10291,6 +10802,19 @@ struct thgroup {
     VALUE group;
 };
 
+
+/*
+ * Document-class: ThreadGroup
+ *
+ *  <code>ThreadGroup</code> provides a means of keeping track of a number of
+ *  threads as a group. A <code>Thread</code> can belong to only one
+ *  <code>ThreadGroup</code> at a time; adding a thread to a new group will
+ *  remove it from any previous group.
+ *     
+ *  Newly created threads belong to the same group as the thread from which they
+ *  were created.
+ */
+
 static VALUE thgroup_s_alloc _((VALUE));
 static VALUE
 thgroup_s_alloc(klass)
@@ -10305,6 +10829,17 @@ thgroup_s_alloc(klass)
 
     return group;
 }
+
+
+/*
+ *  call-seq:
+ *     thgrp.list   => array
+ *  
+ *  Returns an array of all existing <code>Thread</code> objects that belong to
+ *  this group.
+ *     
+ *     ThreadGroup::Default.list   #=> [#<Thread:0x401bdf4c run>]
+ */
 
 static VALUE
 thgroup_list(group)
@@ -10327,6 +10862,25 @@ thgroup_list(group)
     return ary;
 }
 
+
+/*
+ *  call-seq:
+ *     thgrp.enclose   => thgrp
+ *  
+ *  Prevents threads from being added to or removed from the receiving
+ *  <code>ThreadGroup</code>. New threads can still be started in an enclosed
+ *  <code>ThreadGroup</code>.
+ *     
+ *     ThreadGroup::Default.enclose        #=> #<ThreadGroup:0x4029d914>
+ *     thr = Thread::new { Thread.stop }   #=> #<Thread:0x402a7210 sleep>
+ *     tg = ThreadGroup::new               #=> #<ThreadGroup:0x402752d4>
+ *     tg.add thr
+ *
+ *  <em>produces:</em>
+ *
+ *     ThreadError: can't move from the enclosed thread group
+ */
+
 VALUE
 thgroup_enclose(group)
     VALUE group;
@@ -10339,6 +10893,15 @@ thgroup_enclose(group)
     return group;
 }
 
+
+/*
+ *  call-seq:
+ *     thgrp.enclosed?   => true or false
+ *  
+ *  Returns <code>true</code> if <em>thgrp</em> is enclosed. See also
+ *  ThreadGroup#enclose.
+ */
+
 static VALUE
 thgroup_enclosed_p(group)
     VALUE group;
@@ -10349,6 +10912,33 @@ thgroup_enclosed_p(group)
     if (data->enclosed) return Qtrue;
     return Qfalse;
 }
+
+
+/*
+ *  call-seq:
+ *     thgrp.add(thread)   => thgrp
+ *  
+ *  Adds the given <em>thread</em> to this group, removing it from any other
+ *  group to which it may have previously belonged.
+ *     
+ *     puts "Initial group is #{ThreadGroup::Default.list}"
+ *     tg = ThreadGroup.new
+ *     t1 = Thread.new { sleep }
+ *     t2 = Thread.new { sleep }
+ *     puts "t1 is #{t1}"
+ *     puts "t2 is #{t2}"
+ *     tg.add(t1)
+ *     puts "Initial group now #{ThreadGroup::Default.list}"
+ *     puts "tg group now #{tg.list}"
+ *     
+ *  <em>produces:</em>
+ *     
+ *     Initial group is #<Thread:0x401bdf4c>
+ *     t1 is #<Thread:0x401b3c90>
+ *     t2 is #<Thread:0x401b3c18>
+ *     Initial group now #<Thread:0x401b3c18>#<Thread:0x401bdf4c>
+ *     tg group now #<Thread:0x401b3c90>
+ */
 
 static VALUE
 thgroup_add(group, thread)
@@ -10382,6 +10972,17 @@ thgroup_add(group, thread)
     th->thgroup = group;
     return group;
 }
+
+
+/*
+ *  <code>Thread</code> encapsulates the behavior of a thread of
+ *  execution, including the main thread of the Ruby script.
+ *     
+ *  In the descriptions of the methods in this class, the parameter <i>sym</i>
+ *  refers to a symbol, which is either a quoted string or a <code>Symbol</code>
+ *  (such as <code>:name</code>).
+ *     
+ */
 
 void
 Init_Thread()
