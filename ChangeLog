@@ -1,3 +1,8 @@
+Thu Jan  6 00:02:35 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* test/rinda/test_rinda.rb: use MockClock.sleep instead of Kernel.sleep
+	  [ruby-dev:25387]
+
 Wed Jan  5 20:16:32 2005  Tanaka Akira  <akr@m17n.org>
 
 	* random.c (limited_big_rand): didn't work if SIZEOF_BDIGITS == 2.

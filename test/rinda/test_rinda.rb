@@ -4,9 +4,118 @@ require 'drb/drb'
 require 'drb/eq'
 require 'rinda/tuplespace'
 
+require 'singleton'
+
 module Rinda
 
+class MockClock
+  include Singleton
+
+  class MyTS < Rinda::TupleSpace
+    def keeper
+      nil
+    end
+  end
+  
+  def initialize
+    @now = 2
+    @reso = 0.1
+    @ts = MyTS.new
+    @ts.write([2, :now])
+    @inf = 2**31 - 1
+  end
+
+  def now
+    @now.to_f
+  end
+
+  def at(n)
+    n
+  end
+    
+  def _forward(n=nil)
+    now ,= @ts.take([nil, :now])
+    @now = now + n
+    n = @reso if n.nil?
+    @ts.write([@now, :now])
+  end
+
+  def forward(n=nil)
+    while n > 0
+      _forward(@reso)
+      n -= @reso
+    end
+  end
+
+  def rewind
+    now ,= @ts.take([nil, :now])
+    @ts.write([@inf, :now])
+    @ts.take([nil, :now])
+    @now = 2
+    @ts.write([2, :now])
+  end
+
+  def sleep(n=nil)
+    while will_deadlock? 
+      n -= @reso
+      forward
+      return 0 if n <= 0
+    end
+    now ,= @ts.read([nil, :now])
+    @ts.read([(now + n)..@inf, :now])
+    0
+  end
+
+  def will_deadlock?
+    sz = Thread.current.group.list.find_all {|x| x.status != 'sleep'}.size
+    sz <= 1
+  end
+end
+
+module Time
+  def sleep(n)
+    @m.sleep(n)
+  end
+  module_function :sleep
+
+  def at(n)
+    n
+  end
+  module_function :at
+
+  def now
+    @m ? @m.now : 2
+  end
+  module_function :now
+
+  def rewind
+    @m.rewind
+  end
+  module_function :rewind
+
+  def forward(n)
+    @m.forward(n)
+  end
+  module_function :forward
+
+  @m = MockClock.instance
+end
+
+class TupleSpace
+  def sleep(n)
+    Time.sleep(n)
+  end
+end
+
 module TupleSpaceTestModule
+  def sleep(n)
+    if Thread.current == Thread.main
+      Time.forward(n)
+    else
+      Time.sleep(n)
+    end
+  end
+  
   def test_00_tuple
     tuple = Rinda::TupleEntry.new([1,2,3])
     assert(!tuple.canceled?)
@@ -153,8 +262,9 @@ module TupleSpaceTestModule
       @ts.write([:ans, s])
       s
     end
-
-    tuple = @ts.take([:ans, nil], 20)
+    
+    sleep(20)
+    tuple = @ts.take([:ans, nil])
     assert_equal(10, tuple[1])
     assert_equal(10, taker.value)
   end
@@ -179,7 +289,8 @@ module TupleSpaceTestModule
       @ts.write([:req, 2])
     end
 
-    tuple = @ts.take([:ans, nil], 20)
+    sleep(20)
+    tuple = @ts.take([:ans, nil])
     assert_equal(10, tuple[1])
     assert_equal(10, taker.value)
     assert_equal([], @ts.read_all([nil, nil]))
@@ -257,7 +368,8 @@ module TupleSpaceTestModule
 
     @ts.take({"message"=>"first", "name"=>"3"})
 
-    tuple = @ts.take([:ans, nil], 20)
+    sleep(4)
+    tuple = @ts.take([:ans, nil])
     assert_equal(10, tuple[1])
     assert_equal(10, taker.value)
     assert_equal([], @ts.read_all([nil, nil]))
@@ -299,7 +411,7 @@ module TupleSpaceTestModule
       end
     end
     
-    sleep 1
+    sleep(1)
     assert(template.canceled?)
     
     @ts.write([:take, 1])
@@ -326,8 +438,8 @@ module TupleSpaceTestModule
 	end
       end
     end
-    
-    sleep 1
+
+    sleep(1)
     assert(template.canceled?)
     
     @ts.write([:take, 1])
@@ -384,6 +496,7 @@ class TupleSpaceTest < Test::Unit::TestCase
   include TupleSpaceTestModule
 
   def setup
+    ThreadGroup.new.add(Thread.current)
     @ts = Rinda::TupleSpace.new(1)
   end
 end
@@ -392,6 +505,7 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
   include TupleSpaceTestModule
 
   def setup
+    ThreadGroup.new.add(Thread.current)
     @ts_base = Rinda::TupleSpace.new(1)
     @ts = Rinda::TupleSpaceProxy.new(@ts_base)
   end
