@@ -169,7 +169,7 @@ rb_gdbm_fetch(dbm, key)
     RSTRING(str)->len = val.dsize;
     RSTRING(str)->orig = 0;
     RSTRING(str)->ptr = REALLOC_N(val.dptr,char,val.dsize+1);
-    RSTRING(str)->ptr[str->len] = '\0';
+    RSTRING(str)->ptr[val.dsize] = '\0';
 
     OBJ_TAINT(str);
     return (VALUE)str;
