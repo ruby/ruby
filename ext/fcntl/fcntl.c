@@ -104,4 +104,9 @@ Init_fcntl()
 #ifdef O_WRONLY
     rb_define_const(mFcntl, "O_WRONLY", INT2NUM(O_WRONLY));
 #endif
+#ifdef O_ACCMODE
+    rb_define_const(mFcntl, "ACCMODE", INT2FIX(O_ACCMODE));
+#else
+    rb_define_const(mFcntl, "ACCMODE", INT2FIX(O_RDONLY | O_WRONLY | O_RDWR));
+#endif
 }

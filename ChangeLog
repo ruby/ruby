@@ -1,4 +1,6 @@
-Tue Oct  7 10:02:30 2003  Tanaka Akira  <akr@m17n.org>
+Tue Oct  7 12:23:47 2003  Tanaka Akira  <akr@m17n.org>
+
+	* ext/fcntl/fcntl.c (Init_fcntl): define Fcntl::ACCMODE.
 
 	* ext/socket/extconf.rb: useless assignment removed.
 
