@@ -214,7 +214,7 @@ module URI
     # :startdoc:
   end # REGEXP
 
-  module Util
+  module Util # :nodoc:
     def make_components_hash(klass, array_hash)
       tmp = {}
       if array_hash.kind_of?(Array) &&
@@ -260,7 +260,7 @@ module URI
     #   String to replaces in.
     # +unsafe+::
     #   Regexp that matches all symbols that must be replaced with codes.
-    #   By default uses <tt>REGEXP::SAFE</tt>.
+    #   By default uses <tt>REGEXP::UNSAFE</tt>.
     #
     # == Description
     #

@@ -180,10 +180,10 @@ module URI
       set_extensions(val)
       val
     end
-  end
 
-  def hierarchical?
-    false
+    def hierarchical?
+      false
+    end
   end
 
   @@schemes['LDAP'] = LDAP
