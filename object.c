@@ -668,11 +668,10 @@ rb_mod_cmp(mod, arg)
     }
 
     cmp = rb_mod_le(mod, arg);
-
+    if (NIL_P(cmp)) return Qnil;
     if (cmp) {
 	return INT2FIX(-1);
     }
-    if (NIL_P(cmp)) return Qnil;
     return INT2FIX(1);
 }
 

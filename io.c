@@ -4036,6 +4036,7 @@ Init_IO()
 
     rb_define_singleton_method(argf, "to_s", argf_filename, 0);
     rb_define_singleton_method(argf, "filename", argf_filename, 0);
+    rb_define_singleton_method(argf, "path", argf_filename, 0);
     rb_define_singleton_method(argf, "file", argf_file, 0);
     rb_define_singleton_method(argf, "skip", argf_skip, 0);
     rb_define_singleton_method(argf, "close", argf_close, 0);

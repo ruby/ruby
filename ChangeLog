@@ -1,3 +1,10 @@
+Mon May 19 14:42:50 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_mod_cmp): stupid comparison fixed.
+
+	* io.c (Init_IO): ARGF.path added (alias to ARGF.filename).
+	  [ruby-dev:20197]
+
 Mon May 19 13:58:03 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c (init_copy): rename copy_object as initialize_copy,
