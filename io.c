@@ -254,7 +254,7 @@ rb_io_check_writable(fptr)
     if (!(fptr->mode & FMODE_WRITABLE)) {
 	rb_raise(rb_eIOError, "not opened for writing");
     }
-    if (READ_DATA_BUFFERED(fptr->f)) {
+    if ((fptr->mode & FMODE_RBUF) && READ_DATA_BUFFERED(fptr->f)) {
 	rb_warn("read buffer data lost");
     }
 #if NEED_IO_SEEK_BETWEEN_RW

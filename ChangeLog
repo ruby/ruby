@@ -1,3 +1,8 @@
+Fri Aug 20 14:49:42 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io.c (rb_io_check_writable): no need to check read buffer if
+	  already changed to write mode.
+
 Fri Aug 20 11:46:43 2004  UENO Katsuhiro  <katsu@blue.sky.or.jp>
 
 	* ext/zlib/zlib.c: GzipReader#ungetc caused crc error.
