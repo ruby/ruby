@@ -9,6 +9,8 @@ Wed Feb  2 21:56:01 2005  Kouhei Sutou  <kou@cozmixng.org>
 	* lib/rss/0.9.rb: ditto.
 	
 	* lib/rss/2.0.rb: ditto.
+	
+	* lib/rss/trackback.rb: ditto.
 
 Wed Feb  2 03:30:58 2005  Minero Aoki  <aamine@loveruby.net>
 
