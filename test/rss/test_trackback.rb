@@ -1,5 +1,3 @@
-# -*- tab-width: 2 -*- vim: ts=2
-
 require "cgi"
 require "rexml/document"
 

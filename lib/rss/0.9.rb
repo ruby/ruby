@@ -51,6 +51,14 @@ module RSS
       end
     end
 
+    def textinput
+      if @channel
+        @channel.textInput
+      else
+        nil
+      end
+    end
+    
     def to_s(convert=true, indent=calc_indent)
       next_indent = indent + INDENT
       rv = <<-EOR

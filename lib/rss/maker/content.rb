@@ -13,17 +13,17 @@ module RSS
           klass.__send__(:attr_accessor, element)
           klass.module_eval(<<-EOC, __FILE__, __LINE__)
             def setup_#{element}(rss, current)
-              current.#{element} = @#{element} if @#{element}
+              if #{element} and current.respond_to?(:#{element}=)
+                current.#{element} = @#{element} if @#{element}
+              end
             end
-EOC
+          EOC
         end
       end
     end
 
-    class RSS10
-      class Items
-        class Item; include ContentModel; end
-      end
+    class ItemsBase
+      class ItemBase; include ContentModel; end
     end
   end
 end

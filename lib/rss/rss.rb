@@ -4,6 +4,7 @@
 # Author:: Kouhei Sutou <kou@cozmixng.org>
 # Tutorial:: http://www.cozmixng.org/~rwiki/?cmd=view;name=RSS+Parser%3A%3ATutorial.en
 
+
 require "time"
 
 class Time
@@ -234,7 +235,7 @@ EOC
         # Is it need?
         if @#{name}
           class << @#{name}
-            alias_method(:_to_s, :to_s) unless respond_to?(:_to_s)
+            undef_method(:to_s)
             alias_method(:to_s, :#{type})
           end
         end

@@ -16,26 +16,34 @@ module RSS
         NEED_INITIALIZE_VARIABLES = []
 
         def self.inherited(subclass)
-          subclass.const_set("OTHER_ELEMENTS",
-                             OTHER_ELEMENTS.dup)
-          subclass.const_set("NEED_INITIALIZE_VARIABLES",
-                             NEED_INITIALIZE_VARIABLES.dup)
+          subclass.const_set("OTHER_ELEMENTS", [])
+          subclass.const_set("NEED_INITIALIZE_VARIABLES", [])
+
+          subclass.module_eval(<<-EOEOC, __FILE__, __LINE__)
+            def self.other_elements
+              const_get("OTHER_ELEMENTS") + super
+            end
+
+            def self.need_initialize_variables
+              const_get("NEED_INITIALIZE_VARIABLES") + super
+            end
+          EOEOC
         end
 
         def self.add_other_element(variable_name)
           const_get("OTHER_ELEMENTS") << variable_name
         end
-        
+
         def self.other_elements
-          const_get("OTHER_ELEMENTS")
+          OTHER_ELEMENTS
         end
 
         def self.add_need_initialize_variable(variable_name)
           const_get("NEED_INITIALIZE_VARIABLES") << variable_name
         end
-        
+
         def self.need_initialize_variables
-          const_get("NEED_INITIALIZE_VARIABLES")
+          NEED_INITIALIZE_VARIABLES
         end
         EOC
       end
@@ -84,10 +92,10 @@ module RSS
       end
       
     end
-    
+
     class RSSBase
       include Base
-      
+
       class << self
         def make(&block)
           new.make(&block)
@@ -151,10 +159,12 @@ module RSS
     class XMLStyleSheets
       include Base
 
+      include Enumerable
       extend Forwardable
 
       def_delegators(:@xml_stylesheets, :<<, :[], :[]=, :first, :last)
       def_delegators(:@xml_stylesheets, :push, :pop, :shift, :unshift)
+      def_delegators(:@xml_stylesheets, :each)
 
       def initialize(maker)
         super
@@ -183,9 +193,22 @@ module RSS
         
         def to_rss(rss)
           xss = ::RSS::XMLStyleSheet.new
+          guess_type_if_need(xss)
           set = setup_values(xss)
           if set
             rss.xml_stylesheets << xss
+          end
+        end
+
+        def have_required_values?
+          @href and @type
+        end
+
+        private
+        def guess_type_if_need(xss)
+          if @type.nil?
+            xss.href = @href
+            @type = xss.type
           end
         end
       end
@@ -203,6 +226,9 @@ module RSS
         attr_accessor element
         add_need_initialize_variable(element)
       end
+
+      alias_method(:pubDate, :date)
+      alias_method(:pubDate=, :date=)
 
       def initialize(maker)
         super
@@ -253,17 +279,19 @@ module RSS
     class ItemsBase
       include Base
 
+      include Enumerable
       extend Forwardable
 
       def_delegators(:@items, :<<, :[], :[]=, :first, :last)
       def_delegators(:@items, :push, :pop, :shift, :unshift)
+      def_delegators(:@items, :each)
       
-      attr_accessor :sort
+      attr_accessor :do_sort
       
       def initialize(maker)
         super
         @items = []
-        @sort = false
+        @do_sort = false
       end
       
       def normalize
@@ -282,11 +310,11 @@ module RSS
       
       private
       def sort_if_need
-        if @sort.respond_to?(:call)
+        if @do_sort.respond_to?(:call)
           @items.sort do |x, y|
-            @sort.call(x, y)
+            @do_sort.call(x, y)
           end
-        elsif @sort
+        elsif @do_sort
           @items.sort do |x, y|
             y <=> x
           end
@@ -317,6 +345,9 @@ EOC
           attr_accessor element
           add_need_initialize_variable(element)
         end
+
+        alias_method(:pubDate, :date)
+        alias_method(:pubDate=, :date=)
 
         def initialize(maker)
           super

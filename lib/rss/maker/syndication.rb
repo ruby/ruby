@@ -13,15 +13,15 @@ module RSS
           klass.__send__(:attr_accessor, element)
           klass.module_eval(<<-EOC, __FILE__, __LINE__)
             def setup_#{element}(rss, current)
-              current.#{element} = @#{element} if @#{element}
+              if #{element} and current.respond_to?(:#{element}=)
+                current.#{element} = @#{element} if @#{element}
+              end
             end
-EOC
+          EOC
         end
       end
     end
 
-    class RSS10
-      class Channel; include SyndicationModel; end
-    end
+    class ChannelBase; include SyndicationModel; end
   end
 end

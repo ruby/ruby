@@ -48,8 +48,6 @@ module RSS
         
         class Item < RSS09::Items::Item
 
-          alias_method(:pubDate, :date)
-          
           def have_required_values?
             @title or @description
           end

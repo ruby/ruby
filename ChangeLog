@@ -1,3 +1,22 @@
+Wed Nov  3 15:38:28 2004  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rss/*.rb: removed tab width configuration headers.
+
+	* test/rss/test_maker_{0.9,1.0}.rb: sort -> do_sort.
+	
+	* lib/rss/maker/*.rb: changed API to RSS version independence.
+
+	* lib/rss/maker/base.rb
+	  (RSS::Maker::XMLStyleSheets::XMLStyleSheet): checked required
+	  (pseudo) attributes.
+
+	* lib/rss/maker/base.rb (RSS::Maker::Items): sort -> do_sort.
+
+	* lib/rss/rss.rb (RSS::BaseModel.install_date_element): avoided
+	  warning.
+
+	* lib/rss/0.9.rb (RSS::Rss#textinput): added convenience method.
+
 Tue Nov  2 16:35:57 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/enumerator/enumerator.c (each_cons_i): pass copy of an
@@ -20,7 +39,7 @@ Tue Nov  2 01:20:09 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Mon Nov  1 22:25:56 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/maker/base.rb: changed xml-stylesheet's API of RSS Maker
-	  like item's one.
+	  like to item's one.
 
 	* lib/rss/xml-stylesheet.rb (RSS::XMLStyleSheet#guess_type): fixed
 	  regular expression bug.

@@ -5,7 +5,7 @@ require "rss/maker"
 module RSS
   class TestMakerXMLStyleSheet < TestCase
 
-    def test_rss10
+    def test_xml_stylesheet
       href = 'a.xsl'
       type = 'text/xsl'
       title = 'sample'
@@ -46,6 +46,29 @@ module RSS
       xss = rss.xml_stylesheets.first
       assert_equal(href, xss.href)
       assert_equal(type, xss.type)
+    end
+
+    def test_not_valid_xml_stylesheet
+      href = 'xss.XXX'
+      type = "text/xsl"
+      
+      rss = RSS::Maker.make("1.0") do |maker|
+        xss = maker.xml_stylesheets.new_xml_stylesheet
+        # xss.href = href
+        xss.type = type
+        
+        setup_dummy_channel(maker)
+      end
+      assert(rss.xml_stylesheets.empty?)
+
+      rss = RSS::Maker.make("1.0") do |maker|
+        xss = maker.xml_stylesheets.new_xml_stylesheet
+        xss.href = href
+        # xss.type = type
+        
+        setup_dummy_channel(maker)
+      end
+      assert(rss.xml_stylesheets.empty?)
     end
     
   end

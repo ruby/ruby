@@ -30,9 +30,6 @@ module RSS
       
       class Channel < ChannelBase
         
-        alias_method(:pubDate, :date)
-        alias_method(:pubDate=, :date=)
-          
         def to_rss(rss)
           channel = Rss::Channel.new
           set = setup_values(channel)
@@ -150,7 +147,7 @@ module RSS
             setup_other_elements(rss)
           end
         end
-        
+
         private
         def have_required_values?
           @title and @description and @name and @link

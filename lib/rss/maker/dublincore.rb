@@ -13,35 +13,35 @@ module RSS
           klass.__send__(:attr_accessor, element)
           klass.module_eval(<<-EOC, __FILE__, __LINE__)
             def setup_#{element}(rss, current)
-              current.#{element} = #{element} if #{element}
+              if #{element} and current.respond_to?(:#{element}=)
+                current.#{element} = #{element}
+              end
             end
 EOC
         end
       end
     end
 
-    class RSS10
-      class Channel
-        include DublinCoreModel
+    class ChannelBase
+      include DublinCoreModel
 
-        alias_method(:_dc_date, :dc_date)
-        alias_method(:_dc_date=, :dc_date=)
+      undef_method(:dc_date)
+      undef_method(:dc_date=)
+      alias_method(:dc_date, :date)
+      alias_method(:dc_date=, :date=)
+    end
+    
+    class ImageBase; include DublinCoreModel; end
+    class ItemsBase
+      class ItemBase
+        include DublinCoreModel
+        
+        undef_method(:dc_date)
+        undef_method(:dc_date=)
         alias_method(:dc_date, :date)
         alias_method(:dc_date=, :date=)
       end
-      
-      class Image; include DublinCoreModel; end
-      class Items
-        class Item
-          include DublinCoreModel
-
-          alias_method(:_dc_date, :dc_date)
-          alias_method(:_dc_date=, :dc_date=)
-          alias_method(:dc_date, :date)
-          alias_method(:dc_date=, :date=)
-        end
-      end
-      class Textinput; include DublinCoreModel; end
     end
+    class TextinputBase; include DublinCoreModel; end
   end
 end

@@ -220,7 +220,7 @@ module RSS
           item.link = "#{link}#{i}"
           item.description = "#{description}#{i}"
         end
-        maker.items.sort = true
+        maker.items.do_sort = true
       end
       assert_equal(item_size, rss.items.size)
       rss.items.each_with_index do |item, i|
@@ -239,7 +239,7 @@ module RSS
           item.link = "#{link}#{i}"
           item.description = "#{description}#{i}"
         end
-        maker.items.sort = Proc.new do |x, y|
+        maker.items.do_sort = Proc.new do |x, y|
           y.title[-1] <=> x.title[-1]
         end
       end

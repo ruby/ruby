@@ -16,7 +16,7 @@ module RSS
     def self.append_features(klass)
       super
       
-      klass.module_eval(<<-EOC)
+      klass.module_eval(<<-EOC, *get_file_and_line_from_caller(1))
         %w(updatePeriod updateFrequency).each do |x|
           install_text_element("\#{SY_PREFIX}_\#{x}")
         end
