@@ -440,7 +440,7 @@ module Test
             @result
           end # def start
 
-          def initialize(suite)
+          def initialize(suite, output_level = NORMAL)
             if suite.respond_to?(:suite) then
               @suite = suite.suite
             else

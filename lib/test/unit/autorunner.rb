@@ -1,7 +1,6 @@
+require 'test/unit/ui/testrunnerutilities'
 require 'optparse'
 
-require 'test/unit/ui/console/testrunner'
-          
 module Test
   module Unit
     class AutoRunner
@@ -17,31 +16,32 @@ module Test
 
       RUNNERS = {
         :console => proc do |r|
-          Test::Unit::UI::Console::TestRunner.run(r.suite, r.output_level)
+          require 'test/unit/ui/console/testrunner'
+          Test::Unit::UI::Console::TestRunner
         end,
         :gtk => proc do |r|
           require 'test/unit/ui/gtk/testrunner'
-          Test::Unit::UI::GTK::TestRunner.run(r.suite)
+          Test::Unit::UI::GTK::TestRunner
         end,
         :gtk2 => proc do |r|
           require 'test/unit/ui/gtk2/testrunner'
-          Test::Unit::UI::GTK2::TestRunner.run(r.suite)
+          Test::Unit::UI::GTK2::TestRunner
         end,
         :fox => proc do |r|
           require 'test/unit/ui/fox/testrunner'
-          Test::Unit::UI::Fox::TestRunner.run(r.suite)
+          Test::Unit::UI::Fox::TestRunner
         end,
         :tk => proc do |r|
           require 'test/unit/ui/tk/testrunner'
-          Test::Unit::UI::Tk::TestRunner.run(r.suite)
+          Test::Unit::UI::Tk::TestRunner
         end,
       }
 
       OUTPUT_LEVELS = {
-        :silent => UI::Console::TestRunner::SILENT,
-        :progress => UI::Console::TestRunner::PROGRESS_ONLY,
-        :normal => UI::Console::TestRunner::NORMAL,
-        :verbose => UI::Console::TestRunner::VERBOSE,
+        :silent => UI::SILENT,
+        :progress => UI::PROGRESS_ONLY,
+        :normal => UI::NORMAL,
+        :verbose => UI::VERBOSE,
       }
 
       COLLECTORS = {
@@ -71,7 +71,7 @@ module Test
         @collector = COLLECTORS[(standalone ? :dir : :objectspace)]
         @filters = []
         @to_run = []
-        @output_level = Test::Unit::UI::Console::TestRunner::NORMAL
+        @output_level = UI::NORMAL
         yield(self) if(block_given?)
       end
 
@@ -180,7 +180,7 @@ module Test
       def run
         @suite = @collector[self]
         result = @runner[self] or return false
-        result.passed?
+        result.run(@suite, @output_level).passed?
       end
     end
   end

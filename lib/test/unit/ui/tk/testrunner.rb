@@ -28,7 +28,7 @@ module Test
 
           # Creates a new TestRunner for running the passed
           # suite.
-          def initialize(suite)
+          def initialize(suite, output_level = NORMAL)
             if (suite.respond_to?(:suite))
               @suite = suite.suite
             else

@@ -16,11 +16,6 @@ module Test
         class TestRunner
           extend TestRunnerUtilities
           
-          SILENT = 0
-          PROGRESS_ONLY = 1
-          NORMAL = 2
-          VERBOSE = 3
-
           # Creates a new TestRunner and runs the suite.
           def self.run(suite, output_level=NORMAL)
             return new(suite, output_level).start

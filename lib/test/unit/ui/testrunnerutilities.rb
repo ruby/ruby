@@ -8,6 +8,11 @@ module Test
   module Unit
     module UI
 
+      SILENT = 0
+      PROGRESS_ONLY = 1
+      NORMAL = 2
+      VERBOSE = 3
+
       # Provides some utilities common to most, if not all,
       # TestRunners.
       #

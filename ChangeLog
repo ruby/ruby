@@ -1,3 +1,16 @@
+Mon Dec  8 22:48:03 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit/autorunner.rb: remove dependency to a particular
+	  runner.  [ruby-core:01901], [ruby-list:38869]
+
+	* lib/test/unit/ui/testrunnerutilities.rb: moved output level
+	  constants from Console.
+
+	* lib/test/unit/ui/console/testrunner.rb: ditto.
+
+	* lib/test/unit/ui/{fox,gtk,gtk2,tk}/testrunner.rb (initialize):
+	  accept output_level.
+
 Mon Dec  8 15:03:30 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/syck/syck.c (syck_io_str_read): get rid of buffer overflow.
