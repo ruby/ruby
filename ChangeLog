@@ -1,3 +1,8 @@
+Thu Dec 18 16:38:44 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (fnmatch): unlike find_dirsep(), rb_path_next() never
+	  return NULL.
+
 Thu Dec 18 15:27:59 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/ipaddr.rb (IPSocket::getaddress): merge usa's patch.
@@ -44,7 +49,7 @@ Tue Dec 16 21:20:47 2003  Tanaka Akira  <akr@m17n.org>
 
 Tue Dec 16 13:20:43 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tk.rb: condition bug of if statement on 
+	* ext/tk/lib/tk.rb: condition bug of if statement on
 	  {pack,grid}_propagate methods
 
 Tue Dec 16 03:17:29 2003  why the lucky stiff  <why@ruby-lang.org>

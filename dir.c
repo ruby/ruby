@@ -90,7 +90,6 @@ char *strchr _((char*,char));
 #else
 #define isdirsep(c) ((c) == '/')
 #endif
-#define find_dirsep(s) rb_path_next(s)
 
 static char *
 range(pat, test, flags)
@@ -161,14 +160,14 @@ fnmatch(pat, string, flags)
 		return FNM_NOMATCH;
 
 	    if (!c) {
-		if (pathname && find_dirsep(s))
+		if (pathname && *rb_path_next(s))
 		    return FNM_NOMATCH;
 		else
 		    return 0;
 	    }
 	    else if (ISDIRSEP(c)) {
-		s = find_dirsep(s);
-		if (s) {
+		s = rb_path_next(s);
+		if (*s) {
                     s++;
 		    break;
                 }
