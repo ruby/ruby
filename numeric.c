@@ -22,8 +22,39 @@
 #include <float.h>
 #endif
 
+/* use IEEE 64bit values if not defined */
+#ifndef FLT_RADIX
+#define FLT_RADIX 2
+#endif
+#ifndef FLT_ROUNDS
+#define FLT_ROUNDS 1
+#endif
+#ifndef DBL_MIN
+#define DBL_MIN 2.2250738585072014e-308
+#endif
+#ifndef DBL_MAX
+#define DBL_MAX 1.7976931348623157e+308
+#endif
+#ifndef DBL_MIN_EXP
+#define DBL_MIN_EXP (-1021)
+#endif
+#ifndef DBL_MAX_EXP
+#define DBL_MAX_EXP 1024
+#endif
+#ifndef DBL_MIN_10_EXP
+#define DBL_MIN_10_EXP (-307)
+#endif
+#ifndef DBL_MAX_10_EXP
+#define DBL_MAN_10_EXP 308
+#endif
+#ifndef DBL_DIG
+#define DBL_DIG 15
+#endif
+#ifndef DBL_MANT_DIG
+#define DBL_MANT_DIG 53
+#endif
 #ifndef DBL_EPSILON
-#define DBL_EPSILON 2.2204460492503131E-16
+#define DBL_EPSILON 2.2204460492503131e-16
 #endif
 
 static ID id_coerce, id_to_i, id_div;
@@ -1767,6 +1798,18 @@ Init_Numeric()
     rb_define_singleton_method(rb_cFloat, "induced_from", rb_flo_induced_from, 1);
     rb_include_module(rb_cFloat, rb_mPrecision);
 
+    rb_define_const(rb_cFloat, "ROUNDS", INT2FIX(FLT_ROUNDS));
+    rb_define_const(rb_cFloat, "RADIX", INT2FIX(FLT_RADIX));
+    rb_define_const(rb_cFloat, "MANT_DIG", INT2FIX(DBL_MANT_DIG));
+    rb_define_const(rb_cFloat, "DIG", INT2FIX(DBL_DIG));
+    rb_define_const(rb_cFloat, "MIN_EXP", INT2FIX(DBL_MIN_EXP));
+    rb_define_const(rb_cFloat, "MAX_EXP", INT2FIX(DBL_MAX_EXP));
+    rb_define_const(rb_cFloat, "MIN_10_EXP", INT2FIX(DBL_MIN_10_EXP));
+    rb_define_const(rb_cFloat, "MAX_10_EXP", INT2FIX(DBL_MAX_10_EXP));
+    rb_define_const(rb_cFloat, "MIN", rb_float_new(DBL_MIN));
+    rb_define_const(rb_cFloat, "MAX", rb_float_new(DBL_MAX));
+    rb_define_const(rb_cFloat, "EPSILON", rb_float_new(DBL_EPSILON));
+
     rb_define_method(rb_cFloat, "to_s", flo_to_s, 0);
     rb_define_method(rb_cFloat, "coerce", flo_coerce, 1);
     rb_define_method(rb_cFloat, "-@", flo_uminus, 0);
@@ -1801,4 +1844,3 @@ Init_Numeric()
     rb_define_method(rb_cFloat, "infinite?", flo_is_infinite_p, 0);
     rb_define_method(rb_cFloat, "finite?",   flo_is_finite_p, 0);
 }
-

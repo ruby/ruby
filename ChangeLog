@@ -1,3 +1,7 @@
+Tue Dec 24 17:02:46 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_undefined): use NoMethodError instead of fatal.
+
 Tue Dec 24 02:12:45 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/README: Synchronize with reality.

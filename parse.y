@@ -41,7 +41,7 @@
 #define ID_JUNK     0x07
 #define ID_INTERNAL ID_JUNK
 
-#define is_notop_id(id) ((id)>LAST_TOKEN)
+#define is_notop_id(id) ((id)>tLAST_TOKEN)
 #define is_local_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_LOCAL)
 #define is_global_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_GLOBAL)
 #define is_instance_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_INSTANCE)
@@ -286,7 +286,7 @@ static void top_local_setup();
  *	precedence table
  */
 
-%nonassoc LOWEST
+%nonassoc tLOWEST
 %nonassoc tLBRACE_ARG
 
 %left  kIF_MOD kUNLESS_MOD kWHILE_MOD kUNTIL_MOD
@@ -309,7 +309,7 @@ static void top_local_setup();
 %right '!' '~' tUPLUS tUMINUS
 %right tPOW
 
-%token LAST_TOKEN
+%token tLAST_TOKEN
 
 %%
 program		:  {
@@ -631,7 +631,7 @@ cmd_brace_block	: tLBRACE_ARG
 		    }
 		;
 
-command		: operation command_args       %prec LOWEST
+command		: operation command_args       %prec tLOWEST
 		    {
 			$$ = new_fcall($1, $2);
 		        fixpos($$, $2);
@@ -648,7 +648,7 @@ command		: operation command_args       %prec LOWEST
 			}
 		        fixpos($$, $2);
 		   }
-		| primary_value '.' operation2 command_args %prec LOWEST
+		| primary_value '.' operation2 command_args	%prec tLOWEST
 		    {
 			$$ = new_call($1, $3, $4);
 		        fixpos($$, $1);
@@ -665,7 +665,7 @@ command		: operation command_args       %prec LOWEST
 			}
 		        fixpos($$, $1);
 		   }
-		| primary_value tCOLON2 operation2 command_args %prec LOWEST
+		| primary_value tCOLON2 operation2 command_args	%prec tLOWEST
 		    {
 			$$ = new_call($1, $3, $4);
 		        fixpos($$, $1);
@@ -5550,7 +5550,7 @@ Init_sym()
     sym_rev_tbl = st_init_numtable_with_size(200);
 }
 
-static ID last_id = LAST_TOKEN;
+static ID last_id = tLAST_TOKEN;
 
 static ID
 internal_id()
@@ -5608,7 +5608,7 @@ rb_intern(name)
 	    strncpy(buf, name, last);
 	    buf[last] = '\0';
 	    id = rb_intern(buf);
-	    if (id > LAST_TOKEN && !is_attrset_id(id)) {
+	    if (id > tLAST_TOKEN && !is_attrset_id(id)) {
 		id = rb_id_attrset(id);
 		goto id_regist;
 	    }
@@ -5640,7 +5640,7 @@ rb_id2name(id)
 {
     char *name;
 
-    if (id < LAST_TOKEN) {
+    if (id < tLAST_TOKEN) {
 	int i = 0;
 
 	for (i=0; op_tbl[i].token; i++) {

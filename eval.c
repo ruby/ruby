@@ -4465,7 +4465,7 @@ rb_undefined(obj, id, argc, argv, call_status)
 	POP_FRAME();
     }
     else if (id == ID_ALLOCATOR) {
-	rb_fatal("allocator undefined for %s", rb_class2name(obj));
+	rb_raise(rb_eNoMethodError, "allocator undefined for %s", rb_class2name(obj));
     }
 
     nargv = ALLOCA_N(VALUE, argc+1);
