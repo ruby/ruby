@@ -476,9 +476,6 @@ s_recvfrom(sock, argc, argv, from)
   retry:
     rb_str_locktmp(str);
     rb_thread_wait_fd(fd);
-    if (buflen != RSTRING(str)->len) {
-	rb_raise(rb_eRuntimeError, "buffer modified");
-    }
     TRAP_BEG;
     slen = recvfrom(fd, RSTRING(str)->ptr, buflen, flags, (struct sockaddr*)buf, &alen);
     TRAP_END;
@@ -1989,8 +1986,6 @@ sock_connect(sock, addr)
     int fd, n;
 
     StringValue(addr);
-    rb_str_modify(addr);
-
     GetOpenFile(sock, fptr);
     fd = fileno(fptr->f);
     rb_str_locktmp(addr);
@@ -2010,8 +2005,6 @@ sock_bind(sock, addr)
     OpenFile *fptr;
 
     StringValue(addr);
-    rb_str_modify(addr);
-
     GetOpenFile(sock, fptr);
     if (bind(fileno(fptr->f), (struct sockaddr*)RSTRING(addr)->ptr, RSTRING(addr)->len) < 0)
 	rb_sys_fail("bind(2)");

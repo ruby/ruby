@@ -303,6 +303,8 @@ fnmatch(p, s, flags)
     const char *ptmp = 0;
     const char *stmp = 0;
 
+    if (!p) p = "";
+    if (!s) s = "";
     if (pathname) {
 	while (1) {
 	    if (p[0] == '*' && p[1] == '*' && p[2] == '/') {
@@ -1120,22 +1122,21 @@ glob_free_pattern(list)
     }
 }
 
-static char *
+static VALUE
 join_path(path, dirsep, name)
-    const char *path;
+    VALUE path;
     int dirsep;
     const char *name;
 {
-    const int len = strlen(path);
-    char *buf = ALLOC_N(char, len+1+strlen(name)+1);
-    strcpy(buf, path);
+    long len = RSTRING(path)->len;
+    VALUE buf = rb_str_new(0, RSTRING(path)->len+strlen(name)+(dirsep?1:0));
+
+    memcpy(RSTRING(buf)->ptr, RSTRING(path)->ptr, len);
     if (dirsep) {
-	strcpy(buf+len, "/");
-	strcpy(buf+len+1, name);
+	strcpy(RSTRING(buf)->ptr+len, "/");
+	len++;
     }
-    else {
-	strcpy(buf+len, name);
-    }
+    strcpy(RSTRING(buf)->ptr+len, name);
     return buf;
 }
 
@@ -1154,8 +1155,8 @@ enum answer { YES, NO, UNKNOWN };
 #endif
 
 struct glob_args {
-    void (*func) _((const char*, VALUE));
-    const char *c;
+    void (*func) _((VALUE, VALUE));
+    VALUE c;
     VALUE v;
 };
 
@@ -1166,14 +1167,17 @@ glob_func_caller(val)
     VALUE val;
 {
     struct glob_args *args = (struct glob_args *)val;
-    (*args->func)(args->c, args->v);
+    VALUE path = args->c;
+
+    OBJ_TAINT(path);
+    (*args->func)(path, args->v);
     return Qnil;
 }
 
 static int
 glob_call_func(func, path, arg)
-    void (*func) _((const char*, VALUE));
-    const char *path;
+    void (*func) _((VALUE, VALUE));
+    VALUE path;
     VALUE arg;
 {
     int status;
@@ -1189,14 +1193,14 @@ glob_call_func(func, path, arg)
 
 static int
 glob_helper(path, dirsep, exist, isdir, beg, end, flags, func, arg)
-    const char *path;
+    VALUE path;
     int dirsep; /* '/' should be placed before appending child entry's name to 'path'. */
     enum answer exist; /* Does 'path' indicate an existing entry? */
     enum answer isdir; /* Does 'path' indicate a directory or a symlink to a directory? */
     struct glob_pattern **beg;
     struct glob_pattern **end;
     int flags;
-    void (*func) _((const char*, VALUE));
+    void (*func) _((VALUE, VALUE));
     VALUE arg;
 {
     struct stat st;
@@ -1227,7 +1231,7 @@ glob_helper(path, dirsep, exist, isdir, beg, end, flags, func, arg)
 	}
     }
 
-    if (*path) {
+    if (RSTRING(path)->len > 0) {
 	if (match_all && exist == UNKNOWN) {
 	    if (do_lstat(path, &st) == 0) {
 		exist = YES;
@@ -1256,9 +1260,7 @@ glob_helper(path, dirsep, exist, isdir, beg, end, flags, func, arg)
 	}
 
 	if (match_dir && isdir == YES) {
-	    char *buf = join_path(path, dirsep, "");
-	    status = glob_call_func(func, buf, arg);
-	    free(buf);
+	    status = glob_call_func(func, join_path(path, dirsep, ""), arg);
 	    if (status) return status;
 	}
     }
@@ -1267,17 +1269,17 @@ glob_helper(path, dirsep, exist, isdir, beg, end, flags, func, arg)
 
     if (magical || recursive) {
 	struct dirent *dp;
-	DIR *dirp = do_opendir(*path ? path : ".");
+	DIR *dirp = do_opendir(RSTRING(path)->len > 0 ? RSTRING(path)->ptr : ".");
 	if (dirp == NULL) return 0;
 
 	for (dp = readdir(dirp); dp != NULL; dp = readdir(dirp)) {
-	    char *buf = join_path(path, dirsep, dp->d_name);
+	    VALUE buf = join_path(path, dirsep, dp->d_name);
 
 	    enum answer new_isdir = UNKNOWN;
 	    if (recursive && strcmp(dp->d_name, ".") != 0 && strcmp(dp->d_name, "..") != 0
 		&& fnmatch("*", dp->d_name, flags) == 0) {
 #ifndef _WIN32
-		if (do_lstat(buf, &st) == 0)
+		if (do_lstat(RSTRING(buf)->ptr, &st) == 0)
 		    new_isdir = S_ISDIR(st.st_mode) ? YES : S_ISLNK(st.st_mode) ? UNKNOWN : NO;
 		else
 		    new_isdir = NO;
@@ -1303,7 +1305,6 @@ glob_helper(path, dirsep, exist, isdir, beg, end, flags, func, arg)
 
 	    status = glob_helper(buf, 1, YES, new_isdir, new_beg, new_end, flags, func, arg);
 	    free(new_beg);
-	    free(buf);
 	    if (status) break;
 	}
 
@@ -1318,7 +1319,8 @@ glob_helper(path, dirsep, exist, isdir, beg, end, flags, func, arg)
 
 	for (cur = copy_beg; cur < copy_end; ++cur) {
 	    if (*cur) {
-		char *name, *buf;
+		VALUE buf;
+		char *name;
 		name = ALLOC_N(char, strlen((*cur)->str) + 1);
 		strcpy(name, (*cur)->str);
 		if (escape) remove_backslashes(name);
@@ -1333,10 +1335,9 @@ glob_helper(path, dirsep, exist, isdir, beg, end, flags, func, arg)
 		}
 
 		buf = join_path(path, dirsep, name);
-		status = glob_helper(buf, 1, UNKNOWN, UNKNOWN, new_beg, new_end, flags, func, arg);
-		free(buf);
-		free(new_beg);
 		free(name);
+		status = glob_helper(buf, 1, UNKNOWN, UNKNOWN, new_beg, new_end, flags, func, arg);
+		free(new_beg);
 		if (status) break;
 	    }
 	}
@@ -1349,14 +1350,14 @@ glob_helper(path, dirsep, exist, isdir, beg, end, flags, func, arg)
 
 static int
 rb_glob2(path, flags, func, arg)
-    const char *path;
+    VALUE path;
     int flags;
-    void (*func) _((const char*, VALUE));
+    void (*func) _((VALUE, VALUE));
     VALUE arg;
 {
     struct glob_pattern *list;
-    const char *root = path;
-    char *buf;
+    const char *root;
+    VALUE buf;
     int n;
     int status;
 
@@ -1366,25 +1367,36 @@ rb_glob2(path, flags, func, arg)
 
 #if defined DOSISH
     flags |= FNM_CASEFOLD;
-    root = rb_path_skip_prefix(root);
+    root = rb_path_skip_prefix(RSTRING(path)->ptr);
 #else
+    root = StringValuePtr(path);
     flags &= ~FNM_CASEFOLD;
 #endif
 
-    if (*root == '/') root++;
+    if (root && *root == '/') root++;
 
-    n = root - path;
-    buf = ALLOC_N(char, n+1);
-    memcpy(buf, path, n);
-    buf[n] = '\0';
+    n = root - RSTRING(path)->ptr;
+    buf = rb_str_new(RSTRING(path)->ptr, n);
 
     list = glob_make_pattern(root, flags);
     status = glob_helper(buf, 0, UNKNOWN, UNKNOWN, &list, &list + 1, flags, func, arg);
     glob_free_pattern(list);
 
-    free(buf);
-
     return status;
+}
+
+struct rb_glob_args {
+    void (*func) _((const char*, VALUE));
+    VALUE arg;
+};
+
+static VALUE
+rb_glob_caller(path, a)
+    VALUE path, a;
+{
+    struct rb_glob_args *args = (struct rb_glob_args *)a;
+    (*args->func)(RSTRING(path)->ptr, args->arg);
+    return Qnil;
 }
 
 void
@@ -1393,28 +1405,37 @@ rb_glob(path, func, arg)
     void (*func) _((const char*, VALUE));
     VALUE arg;
 {
-    int status = rb_glob2(path, 0, func, arg);
+    struct rb_glob_args args;
+    int status;
+
+    args.func = func;
+    args.arg = arg;
+    status = rb_glob2(rb_str_new2(path), 0, func, &args);
 
     if (status) rb_jump_tag(status);
 }
 
 static void
 push_pattern(path, ary)
-    const char *path;
-    VALUE ary;
+    VALUE path, ary;
 {
-    rb_ary_push(ary, rb_tainted_str_new2(path));
+    rb_ary_push(ary, path);
 }
 
 static int
-push_glob(ary, s, flags)
+push_glob(VALUE ary, VALUE s, long offset, int flags);
+
+static int
+push_glob(ary, str, offset, flags)
     VALUE ary;
-    const char *s;
+    VALUE str;
+    long offset;
     int flags;
 {
     const int escape = !(flags & FNM_NOESCAPE);
 
-    const char *p = s;
+    const char *p = RSTRING(str)->ptr + offset;
+    const char *s = RSTRING(str)->ptr + offset;
     const char *lbrace = 0, *rbrace = 0;
     int nest = 0, status = 0;
 
@@ -1433,10 +1454,13 @@ push_glob(ary, s, flags)
     }
 
     if (lbrace && rbrace) {
-	char *buf, *b;
-	buf = xmalloc(strlen(s) + 1);
+	VALUE buffer = rb_str_new(0, strlen(s));
+	char *buf;
+	long offset;
+
+	buf = RSTRING(buffer)->ptr;
 	memcpy(buf, s, lbrace-s);
-	b = buf + (lbrace-s);
+	offset = (lbrace-s);
 	p = lbrace;
 	while (p < rbrace) {
 	    const char *t = ++p;
@@ -1449,15 +1473,14 @@ push_glob(ary, s, flags)
 		}
 		Inc(p);
 	    }
-	    memcpy(b, t, p-t);
-	    strcpy(b+(p-t), rbrace+1);
-	    status = push_glob(ary, buf, flags);
+	    memcpy(buf+offset, t, p-t);
+	    strcpy(buf+offset+(p-t), rbrace+1);
+	    status = push_glob(ary, buffer, offset, flags);
 	    if (status) break;
 	}
-	free(buf);
     }
     else if (!lbrace && !rbrace) {
-	status = rb_glob2(s, flags, push_pattern, ary);
+	status = rb_glob2(str, flags, push_pattern, ary);
     }
 
     return status;
@@ -1468,22 +1491,18 @@ rb_push_glob(str, flags) /* '\0' is delimiter */
     VALUE str;
     int flags;
 {
-    const char *p, *pend;
+    long offset = 0;
     VALUE ary;
 
     FilePathValue(str);
 
     ary = rb_ary_new();
-    p = RSTRING(str)->ptr;
-    pend = p + RSTRING(str)->len;
 
-    while (p < pend) {
-	if (*p) {
-	    int status = push_glob(ary, p, flags);
-	    if (status) rb_jump_tag(status);
-	    p += strlen(p);
-	}
-	else p++;
+    while (offset < RSTRING(str)->len) {
+	int status = push_glob(ary, str, offset, flags);
+	if (status) rb_jump_tag(status);
+	offset += strlen(RSTRING(str)->ptr+offset) + 1;
+	while (!RSTRING(str)->ptr[offset]) offset++;
     }
 
     if (rb_block_given_p()) {

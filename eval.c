@@ -1393,6 +1393,7 @@ ruby_finalize_0()
 static void
 ruby_finalize_1()
 {
+    signal(SIGINT, SIG_DFL);
     ruby_errinfo = 0;
     rb_gc_call_finalizer_at_exit();
     trace_func = 0;

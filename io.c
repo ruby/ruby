@@ -330,7 +330,9 @@ io_fflush(f, fptr)
         rb_io_check_closed(fptr);
     }
     for (;;) {
+	TRAP_BEG;
 	n = fflush(f);
+	TRAP_END;
 	if (n != EOF) break;
 	if (!rb_io_wait_writable(fileno(f)))
 	    rb_sys_fail(fptr->path);
@@ -1216,6 +1218,9 @@ io_read(argc, argv, io)
 
     rb_str_locktmp(str);
     READ_CHECK(fptr->f);
+    if (RSTRING(str)->len != len) {
+	rb_raise(rb_eRuntimeError, "buffer string modified");
+    }
     n = rb_io_fread(RSTRING(str)->ptr, len, fptr->f);
     rb_str_unlocktmp(str);
     if (n == 0) {

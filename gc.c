@@ -709,7 +709,7 @@ gc_mark(ptr, lev)
     if (obj->as.basic.flags & FL_MARK) return;  /* already marked */ 
     obj->as.basic.flags |= FL_MARK;
 
-    if (lev > GC_LEVEL_MAX) {
+    if (lev > GC_LEVEL_MAX || (lev == 0 && ruby_stack_check())) {
 	if (!mark_stack_overflow) {
 	    if (mark_stack_ptr - mark_stack < MARK_STACK_MAX) {
 		*mark_stack_ptr = ptr;

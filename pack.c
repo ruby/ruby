@@ -175,7 +175,7 @@ define_swapx(d, double)
 #endif	/* #if SIZEOF_LONG == 8 */
 #else	/* SIZEOF_DOUBLE != 8 */
 define_swapx(d, double)
-#endif	/* #if SIZEOF_DPOUBLE == 8 */
+#endif	/* #if SIZEOF_DOUBLE == 8 */
 
 #undef define_swapx
 
@@ -248,7 +248,7 @@ endian()
 #define hton32(x) (x)
 # endif
 #else /* LITTLE ENDIAN */
-#ifndef ntohs
+#ifdef ntohs
 #undef ntohs
 #undef ntohl
 #undef htons

@@ -41,8 +41,8 @@ module Shellwords
 	  snippet = $1
 	elsif line =~ /\A'/ then
 	  raise ArgumentError, "Unmatched single quote: #{line}"
-	elsif line.sub!(/\A\\(.)/, '') then
-	  snippet = $1
+	elsif line.sub!(/\A\\(.)?/, '') then
+	  snippet = $1 || '\\'
 	elsif line.sub!(/\A([^\s\\'"]+)/, '') then
 	  snippet = $1
 	else

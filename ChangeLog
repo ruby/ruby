@@ -25,6 +25,19 @@ Tue Nov  9 00:50:06 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/rdoc.rb: Change version numbering of RDoc and ri
 
+Tue Nov  9 01:05:04 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dir.c (rb_glob2): do not allocate buffer from heap to avoid
+	  memory leaks.  use string object for buffering instead.
+	  [ruby-dev:24738]
+
+	* dir.c (join_path): ditto.
+
+	* io.c (io_read): external input buffer may be modified even after
+	  rb_str_locktmp().  [ruby-dev:24735]
+
+	* dir.c (fnmatch): p or s may be NULL.  [ruby-dev:24749]
+
 Tue Nov  9 00:36:26 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/extservm.rb: add DRb::ExtServManager#uri=.
@@ -67,6 +80,11 @@ Sat Nov  6 11:18:59 2004  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb (_parse): checks whether zone was given.
 
+Sat Nov  6 00:46:27 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_locktmp): check STR_TMPLOCK flag before
+	  locking.  [ruby-dev:24727]
+
 Fri Nov  5 19:07:16 2004  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf: follow CVS Head of original nkf.
@@ -92,6 +110,10 @@ Fri Nov  5 13:22:58 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 Fri Nov  5 13:17:54 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/text.rb: bug fix
+
+Fri Nov  5 08:52:48 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (gc_mark): stricter GC stack check.
 
 Fri Nov  5 08:34:43 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

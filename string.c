@@ -252,13 +252,6 @@ rb_str_shared_replace(str, str2)
     if (str == str2) return;
     rb_str_modify(str);
     if (!FL_TEST(str, ELTS_SHARED)) free(RSTRING(str)->ptr);
-    if (NIL_P(str2)) {
-	RSTRING(str)->ptr = 0;
-	RSTRING(str)->len = 0;
-	RSTRING(str)->aux.capa = 0;
-	FL_UNSET(str, STR_NOCAPA);
-	return;
-    }
     RSTRING(str)->ptr = RSTRING(str2)->ptr;
     RSTRING(str)->len = RSTRING(str2)->len;
     FL_UNSET(str, STR_NOCAPA);
@@ -640,6 +633,9 @@ VALUE
 rb_str_locktmp(str)
     VALUE str;
 {
+    if (FL_TEST(str, STR_TMPLOCK)) {
+	rb_raise(rb_eRuntimeError, "temporal locking already locked string");
+    }
     FL_SET(str, STR_TMPLOCK);
     return str;
 }
@@ -648,6 +644,9 @@ VALUE
 rb_str_unlocktmp(str)
     VALUE str;
 {
+    if (!FL_TEST(str, STR_TMPLOCK)) {
+	rb_raise(rb_eRuntimeError, "temporal unlocking already unlocked string");
+    }
     FL_UNSET(str, STR_TMPLOCK);
     return str;
 }
@@ -2278,7 +2277,8 @@ rb_str_clear(str)
     }
     RSTRING(str)->aux.shared = 0;
     FL_UNSET(str, STR_NOCAPA);
-    RSTRING(str)->ptr = 0;
+    FL_SET(str, ELTS_SHARED);
+    RSTRING(str)->ptr = null_str;
     RARRAY(str)->len = 0;
     return str;
 }
