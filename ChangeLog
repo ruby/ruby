@@ -1,4 +1,14 @@
-Thu Oct 24 14:27:38 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+Thu Oct 24 21:57:02 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* configure.in (LIBPATHFLAG): avoid $ substitution.
+	  [ruby-dev:18577]
+
+	* ext/extmk.rb (extmake): expand $srcdir.
+
+	* ext/win32ole/extconf.rb: should not override $CFLAGS, but
+	  append.
+
+	* lib/mkmf.rb (config_string): use given config hash.
 
 	* bcc32/Makefile.sub (.rc.res): directory part may be empty in
 	  Borland make.

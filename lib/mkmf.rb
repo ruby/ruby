@@ -820,8 +820,8 @@ Config::CONFIG["topdir"] = CONFIG["topdir"] =
 $configure_args["--topdir"] ||= $curdir
 $ruby = arg_config("--ruby", CONFIG["ruby_install_name"])
 
-def config_string(key)
-  return unless s = CONFIG[key] and !s.empty?
+def config_string(key, config = CONFIG)
+  return unless s = config[key] and !s.empty?
   return s unless block_given?
   yield s
 end

@@ -50,7 +50,7 @@ def extmake(target)
     $srcdir = File.join($top_srcdir, "ext", $mdir)
     unless $ignore
       if $static ||
-	older("./Makefile", *MTIMES + %w"#{$srcdir}/makefile.rb #{$srcdir}/extconf.rb")
+	older("./Makefile", *MTIMES + %W"#{$srcdir}/makefile.rb #{$srcdir}/extconf.rb")
       then
 	$defs = []
 	Logging::logfile 'mkmf.log'
