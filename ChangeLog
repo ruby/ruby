@@ -1,3 +1,8 @@
+Wed Mar 23 00:39:05 2005  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* test/ruby/test_settracefunc.rb (test_event): added tests for
+	  "class" and "end" and "raise".
+
 Sun Mar 20 22:51:19 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (mkmf_failed): check if Makefile is created without
