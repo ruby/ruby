@@ -83,8 +83,8 @@ def test(opt, input, expects)
     end
   end
   puts "Fail"
-  puts result.unpack('H*').first
-  puts expects.map{|x|x.unpack('H*').first}.join("\n")
+#  puts result.unpack('H*').first
+#  puts expects.map{|x|x.unpack('H*').first}.join("\n")
 end
 
 
