@@ -572,7 +572,7 @@ void
 rb_glob_helper(path, flags, func, arg)
     char *path;
     int flags;
-    void (*func)();
+    void (*func) _((const char*, VALUE));
     VALUE arg;
 {
     struct stat st;
@@ -702,7 +702,7 @@ rb_glob(path, func, arg)
 void
 rb_iglob(path, func, arg)
     char *path;
-    void (*func)();
+    void (*func) _((const char*, VALUE));
     VALUE arg;
 {
     rb_glob_helper(path, FNM_PERIOD|FNM_NOCASE, func, arg);

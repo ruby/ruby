@@ -115,6 +115,9 @@ rb_obj_dup(obj)
     if (!SPECIAL_CONST_P(dup)) {
 	OBJSETUP(dup, rb_obj_type(obj), BUILTIN_TYPE(obj));
 	OBJ_INFECT(dup, obj);
+	if (FL_TEST(obj, FL_EXIVAR)) {
+	    FL_SET(dup, FL_EXIVAR);
+	}
     }
     return dup;
 }

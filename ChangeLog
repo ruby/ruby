@@ -17,6 +17,11 @@ Sun Jul  8 16:05:36 2001  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/protocol.rb (ProtoSocket#read): modify typo.
 
+Fri Jul  6 18:01:10 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_obj_dup): should free generic_ivar if original owns
+	  them.
+
 Fri Jul  6 15:11:38 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/tempfile.rb: merge from 1.7: do not delete a used tempfile
@@ -45,6 +50,10 @@ Thu Jul  5 22:53:27 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* file.c (rb_find_file_noext): move rb_file_s_expand_path to
 	  rb_f_require(). 
+
+Thu Jul  5 22:01:02 2001  Mitsuhiro Kondo  <kondo@nik-prt.co.jp>
+
+	* dln.c (dln_load): should use NSLINKMODULE_OPTION_BINDNOW.
 
 Thu Jul  5 20:28:53 2001  Tietew <tietew@tietew.net>
 
