@@ -15,6 +15,16 @@
 
 #if defined(HAVE_DLFCN_H)
 # include <dlfcn.h>
+# /* some stranger systems may not define all of these */
+#ifndef RTLD_LAZY
+#define RTLD_LAZY 0
+#endif
+#ifndef RTLD_GLOBAL
+#define RTLD_GLOBAL 0
+#endif
+#ifndef RTLD_NOW
+#define RTLD_NOW 0
+#endif
 #else
 # if defined(HAVE_WINDOWS_H)
 #   include <windows.h>

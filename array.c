@@ -734,7 +734,7 @@ rb_ary_insert(argc, argv, ary)
     }
     pos = NUM2LONG(argv[0]);
     if (pos == -1) {
-	pos = RSTRING(ary)->len;
+	pos = RARRAY(ary)->len;
     }
     else if (pos < 0) {
 	pos++;

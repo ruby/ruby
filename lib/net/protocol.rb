@@ -395,7 +395,7 @@ module Net
     def connect( otime )
       D "opening connection to #{@address}..."
       timeout( otime ) {
-          @socket = TCPsocket.new( @address, @port )
+          @socket = TCPSocket.new( @address, @port )
       }
       @rbuf = ''
     end

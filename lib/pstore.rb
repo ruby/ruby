@@ -42,10 +42,17 @@ class PStore
 
   def [](name)
     in_transaction
-    unless @table.key? name
-      raise PStore::Error, format("undefined root name `%s'", name)
-    end
     @table[name]
+  end
+  def fetch(name, default=PStore::Error)
+    unless @table.key? name
+      if default==PStore::Error
+	raise PStore::Error, format("undefined root name `%s'", name)
+      else
+	default
+      end
+    end
+    self[name]
   end
   def []=(name, value)
     in_transaction

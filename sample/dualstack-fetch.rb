@@ -1,7 +1,7 @@
 # simple webpage fetcher
 
 # The code demonstrates how a multi-protocol client should be written.
-# TCPsocket is using getaddrinfo() internally, so there should be no problem.
+# TCPSocket is using getaddrinfo() internally, so there should be no problem.
 
 require "socket"
 
@@ -36,7 +36,7 @@ end
 #STDERR.print "path=<#{path}>\n"
 
 STDERR.print "conntecting to #{host} port #{port}\n"
-c = TCPsocket.new(host, port)
+c = TCPSocket.new(host, port)
 dest = Socket.getnameinfo(c.getpeername,
 		Socket::NI_NUMERICHOST|Socket::NI_NUMERICSERV)
 STDERR.print "conntected to #{dest[0]} port #{dest[1]}\n"

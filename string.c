@@ -56,17 +56,21 @@ str_new(klass, ptr, len)
     const char *ptr;
     long len;
 {
-    VALUE str = rb_obj_alloc(klass);
+    VALUE str;
 
     if (len < 0) {
 	rb_raise(rb_eArgError, "negative string size (or size too big)");
     }
 
+    str = rb_obj_alloc(klass);
     RSTRING(str)->len = len;
     RSTRING(str)->aux.capa = len;
     RSTRING(str)->ptr = ALLOC_N(char,len+1);
     if (ptr) {
 	memcpy(RSTRING(str)->ptr, ptr, len);
+    }
+    else {
+	MEMZERO(RSTRING(str)->ptr, char, len);
     }
     RSTRING(str)->ptr[len] = '\0';
     return str;
@@ -176,8 +180,9 @@ rb_str_buf_new(capa)
 {
     VALUE str = rb_obj_alloc(rb_cString);
 
-    if (capa < STR_BUF_MIN_SIZE)
+    if (capa < STR_BUF_MIN_SIZE) {
 	capa = STR_BUF_MIN_SIZE;
+    }
     RSTRING(str)->ptr = 0;
     RSTRING(str)->len = 0;
     RSTRING(str)->aux.capa = capa;
@@ -194,8 +199,8 @@ rb_str_buf_new2(ptr)
     VALUE str;
     long len = strlen(ptr);
 
-    str = rb_str_buf_new(len + STR_BUF_MIN_SIZE);
-    rb_str_cat(str, ptr, len);
+    str = rb_str_buf_new(len);
+    rb_str_buf_cat(str, ptr, len);
 
     return str;
 }
@@ -212,13 +217,13 @@ rb_str_become(str, str2)
     VALUE str, str2;
 {
     if (str == str2) return;
+    if (!FL_TEST(str, ELTS_SHARED)) free(RSTRING(str)->ptr);
     if (NIL_P(str2)) {
 	RSTRING(str)->ptr = 0;
 	RSTRING(str)->len = 0;
 	RSTRING(str)->aux.capa = 0;
 	return;
     }
-    if (FL_TEST(str, ELTS_SHARED)) free(RSTRING(str)->ptr);
     RSTRING(str)->ptr = RSTRING(str2)->ptr;
     RSTRING(str)->len = RSTRING(str2)->len;
     if (FL_TEST(str2, ELTS_SHARED|STR_ASSOC)) {
@@ -800,51 +805,6 @@ rb_str_casecmp(str1, str2)
     return INT2FIX(-1);
 }
 
-static VALUE
-rb_str_match(x, y)
-    VALUE x, y;
-{
-    VALUE reg;
-    long start;
-
-    switch (TYPE(y)) {
-      case T_REGEXP:
-	return rb_reg_match(y, x);
-
-      case T_STRING:
-	reg = rb_reg_regcomp(y);
-	start = rb_reg_search(reg, x, 0, 0);
-	if (start == -1) {
-	    return Qnil;
-	}
-	return INT2NUM(start);
-
-      default:
-	return rb_funcall(y, rb_intern("=~"), 1, x);
-    }
-}
-
-static VALUE
-rb_str_match2(str)
-    VALUE str;
-{
-    StringValue(str);
-    return rb_reg_match2(rb_reg_regcomp(str));
-}
-
-static VALUE
-rb_str_match_m(str, re)
-    VALUE str, re;
-{
-    VALUE str2 = rb_check_convert_type(re, T_STRING, "String", "to_str");
-
-    if (!NIL_P(str2)) {
-	StringValue(re);
-	re = rb_reg_regcomp(re);
-    }
-    return rb_funcall(re, rb_intern("match"), 1, str);
-}
-
 static long
 rb_str_index(str, sub, offset)
     VALUE str, sub;
@@ -1007,6 +967,50 @@ rb_str_rindex(argc, argv, str)
 		 rb_class2name(CLASS_OF(sub)));
     }
     return Qnil;
+}
+
+static VALUE
+rb_str_match(x, y)
+    VALUE x, y;
+{
+    VALUE reg;
+    long start;
+
+    switch (TYPE(y)) {
+      case T_REGEXP:
+	return rb_reg_match(y, x);
+
+      case T_STRING:
+	start = rb_str_index(reg, x, 0);
+	if (start == -1) {
+	    return Qnil;
+	}
+	return INT2NUM(start);
+
+      default:
+	return rb_funcall(y, rb_intern("=~"), 1, x);
+    }
+}
+
+static VALUE
+rb_str_match2(str)
+    VALUE str;
+{
+    StringValue(str);
+    return rb_reg_match2(rb_reg_regcomp(str));
+}
+
+static VALUE
+rb_str_match_m(str, re)
+    VALUE str, re;
+{
+    VALUE str2 = rb_check_convert_type(re, T_STRING, "String", "to_str");
+
+    if (!NIL_P(str2)) {
+	StringValue(re);
+	re = rb_reg_regcomp(re);
+    }
+    return rb_funcall(re, rb_intern("match"), 1, str);
 }
 
 static char
@@ -1384,7 +1388,9 @@ rb_str_slice_bang(argc, argv, str)
     }
     buf[i] = rb_str_new(0,0);
     result = rb_str_aref_m(argc, buf, str);
-    rb_str_aset_m(argc+1, buf, str);
+    if (!NIL_P(result)) {
+	rb_str_aset_m(argc+1, buf, str);
+    }
     return result;
 }
 
@@ -2456,7 +2462,7 @@ rb_str_split_m(argc, argv, str)
 	i = 1;
     }
 
-    if (argc == 0) {
+    if (NIL_P(spat)) {
 	if (!NIL_P(rb_fs)) {
 	    spat = rb_fs;
 	    goto fs_set;

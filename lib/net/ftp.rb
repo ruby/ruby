@@ -55,7 +55,7 @@ module Net
 	@passive = true
 	return SOCKSsocket.open(host, port)
       else
-	return TCPsocket.open(host, port)
+	return TCPSocket.open(host, port)
       end
     end
     private :open_socket
@@ -173,7 +173,7 @@ module Net
     private :sendport
     
     def makeport
-      sock = TCPserver.open(@sock.addr[3], 0)
+      sock = TCPServer.open(@sock.addr[3], 0)
       port = sock.addr[1]
       host = sock.addr[3]
       resp = sendport(host, port)

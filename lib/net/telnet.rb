@@ -313,10 +313,10 @@ module Net
 
         begin
           if @options["Timeout"] == false
-            @sock = TCPsocket.open(@options["Host"], @options["Port"])
+            @sock = TCPSocket.open(@options["Host"], @options["Port"])
           else
             timeout(@options["Timeout"]) do
-              @sock = TCPsocket.open(@options["Host"], @options["Port"])
+              @sock = TCPSocket.open(@options["Host"], @options["Port"])
             end
           end
         rescue TimeoutError

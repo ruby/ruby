@@ -1014,14 +1014,16 @@ proc_getpgrp()
 static VALUE
 proc_setpgrp()
 {
-#if defined(HAVE_SETPGRP) && defined(SETPGRP_VOID)
+  /* check for posix setpgid() first; this matches the posix */
+  /* getpgrp() above.  It appears that configure will set SETPGRP_VOID */
+  /* even though setpgrp(0,0) would be prefered. The posix call avoids */
+  /* this confusion. */
+#ifdef HAVE_SETPGID
+  if (setpgid(0,0) < 0) rb_sys_fail(0);
+#elif defined(HAVE_SETPGRP) && defined(SETPGRP_VOID)
     if (setpgrp() < 0) rb_sys_fail(0);
 #else
-# ifdef HAVE_SETPGID
-    if (setpgid(0, 0) < 0) rb_sys_fail(0);
-# else
     rb_notimplement();
-# endif
 #endif
     return INT2FIX(0);
 }

@@ -25,9 +25,13 @@ allclean: distclean
 
 $(OBJS): ./dlconfig.h
 
-sym.o: call.func
+sym.o: dl.h call.func
 
-dl.o: callback.func cbtable.func
+dl.o: dl.h callback.func cbtable.func
+
+ptr.o: dl.h
+
+handle.o: dl.h
 
 call.func: $(srcdir)/mkcall.rb ./dlconfig.rb
 	@echo "Generating call.func"

@@ -6,7 +6,7 @@ require "socket"
 host=(if ARGV.length == 2; ARGV.shift; else "localhost"; end)
 print("Trying ", host, " ...")
 STDOUT.flush
-s = TCPsocket.open(host, ARGV.shift)
+s = TCPSocket.open(host, ARGV.shift)
 print(" done\n")
 print("addr: ", s.addr.join(":"), "\n")
 print("peer: ", s.peeraddr.join(":"), "\n")
