@@ -2418,7 +2418,8 @@ class_prefix(self, cpath)
     prot_tag->retval = Qnil;\
   }\
 } while (0)
-static void localjump_destination _((int, struct SCOPE*, VALUE));
+
+NORETURN(static void localjump_destination _((int, struct SCOPE*, VALUE)));
 
 static VALUE
 rb_eval(self, n)
@@ -3831,7 +3832,7 @@ rb_f_abort(argc, argv)
 void
 rb_iter_break()
 {
-    JUMP_TAG(TAG_BREAK);
+    localjump_destination(TAG_BREAK, ruby_scope, Qnil);
 }
 
 NORETURN(static void rb_longjmp _((int, VALUE)));

@@ -1,3 +1,7 @@
+Sat Aug 30 14:25:43 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_iter_break): should not call TAG_JUMP directly.
+
 Sat Aug 30 03:58:21 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (struct BLOCK): remove BLOCKTAG, use scope instead.
