@@ -1,3 +1,8 @@
+Thu Jan  6 17:22:41 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* random.c (random_seed): O_NONBLOCK isn't defined on some
+	  platforms. [ruby-dev:25417]
+
 Thu Jan  6 13:45:35 2005  Tanaka Akira  <akr@m17n.org>
 
 	* lib/time.rb: recognize +00:00 and GMT as a localtime.
