@@ -1548,9 +1548,15 @@ module TkTreatFont
   end
 end
 
-class TkObject<TkKernel
+class TkObject
   include Tk
   include TkTreatFont
+
+  def TkObject.new(*args, &block)
+    obj = super
+    obj.instance_eval(&block) if block
+    obj
+  end
 
   def path
     return @path

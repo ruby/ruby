@@ -100,7 +100,7 @@ remove_sign_bits(str, base)
     return str;
 }
 
-double big2dbl _((VALUE));
+double rb_big2dbl _((VALUE));
 
 #define FNONE  0
 #define FSHARP 1
@@ -125,10 +125,10 @@ double big2dbl _((VALUE));
 }
 
 #define GETARG() \
-    ((argc == 0)?(ArgError("too few argument."),0):(argc--,((argv++)[0])))
+    ((argc == 0)?(rb_raise(rb_eArgError, "too few argument."),0):(argc--,((argv++)[0])))
 
 VALUE
-f_sprintf(argc, argv)
+rb_f_sprintf(argc, argv)
     int argc;
     VALUE *argv;
 {
@@ -165,9 +165,9 @@ f_sprintf(argc, argv)
 	switch (*p) {
 	  default:
 	    if (ISPRINT(*p))
-		ArgError("malformed format string - %%%c", *p);
+		rb_raise(rb_eArgError, "malformed format string - %%%c", *p);
 	    else
-		ArgError("malformed format string");
+		rb_raise(rb_eArgError, "malformed format string");
 	    break;
 
 	  case ' ':
@@ -203,13 +203,13 @@ f_sprintf(argc, argv)
 		width = 10 * width + (*p - '0');
 	    }
 	    if (p >= end) {
-		ArgError("malformed format string - %%[0-9]");
+		rb_raise(rb_eArgError, "malformed format string - %%[0-9]");
 	    }
 	    goto retry;
 
 	  case '*':
 	    if (flags & FWIDTH) {
-		ArgError("width given twice");
+		rb_raise(rb_eArgError, "width given twice");
 	    }
 
 	    flags |= FWIDTH;
@@ -224,7 +224,7 @@ f_sprintf(argc, argv)
 
 	  case '.':
 	    if (flags & FPREC) {
-		ArgError("precision given twice");
+		rb_raise(rb_eArgError, "precision given twice");
 	    }
 
 	    prec = 0;
@@ -242,7 +242,7 @@ f_sprintf(argc, argv)
 		prec = 10 * prec + (*p - '0');
 	    }
 	    if (p >= end) {
-		ArgError("malformed format string - %%.[0-9]");
+		rb_raise(rb_eArgError, "malformed format string - %%.[0-9]");
 	    }
 	    if (prec > 0)
 		flags |= FPREC;
@@ -275,7 +275,7 @@ f_sprintf(argc, argv)
 		VALUE arg = GETARG();
 		int len;
 
-		str = obj_as_string(arg);
+		str = rb_obj_as_string(arg);
 		len = RSTRING(str)->len;
 		if (flags&FPREC) {
 		    if (prec < len) {
@@ -356,12 +356,12 @@ f_sprintf(argc, argv)
 		    v = FIX2LONG(val);
 		    break;
 		  case T_FLOAT:
-		    val = dbl2big(RFLOAT(val)->value);
+		    val = rb_dbl2big(RFLOAT(val)->value);
 		    if (FIXNUM_P(val)) goto bin_retry;
 		    bignum = 1;
 		    break;
 		  case T_STRING:
-		    val = str2inum(RSTRING(val)->ptr, 10);
+		    val = rb_str2inum(RSTRING(val)->ptr, 10);
 		    goto bin_retry;
 		  case T_BIGNUM:
 		    bignum = 1;
@@ -377,7 +377,7 @@ f_sprintf(argc, argv)
 		else if (*p == 'b') base = 2;
 		if (!bignum) {
 		    if (base == 2) {
-			val = int2big(v);
+			val = rb_int2big(v);
 			goto bin_retry;
 		    }
 		    if (sign) {
@@ -429,7 +429,7 @@ f_sprintf(argc, argv)
 		}
 
 		if (sign) {
-		    val = big2str(val, base);
+		    val = rb_big2str(val, base);
 		    s = RSTRING(val)->ptr;
 		    if (s[0] == '-') {
 			s++;
@@ -447,14 +447,14 @@ f_sprintf(argc, argv)
 		    goto format_integer;
 		}
 		if (!RBIGNUM(val)->sign) {
-		    val = big_clone(val);
-		    big_2comp(val);
+		    val = rb_big_clone(val);
+		    rb_big_2comp(val);
 		}
-		val = big2str(val, base);
+		val = rb_big2str(val, base);
 		s = RSTRING(val)->ptr;
 		if (*s == '-') {
 		    remove_sign_bits(++s, base);
-		    val = str_new(0, 3+strlen(s));
+		    val = rb_str_new(0, 3+strlen(s));
 		    t = RSTRING(val)->ptr;
 		    strcpy(t, "..");
 		    t += 2;
@@ -563,7 +563,7 @@ f_sprintf(argc, argv)
 		    fval = RFLOAT(val)->value;
 		    break;
 		  case T_BIGNUM:
-		    fval = big2dbl(val);
+		    fval = rb_big2dbl(val);
 		    break;
 		  case T_STRING:
 		    fval = atof(RSTRING(val)->ptr);
@@ -585,10 +585,10 @@ f_sprintf(argc, argv)
     }
 
   sprint_exit:
-    if (RTEST(verbose) && argc > 1) {
-	ArgError("too many argument for format string");
+    if (RTEST(rb_verbose) && argc > 1) {
+	rb_raise(rb_eArgError, "too many argument for format string");
     }
-    result = str_new(buf, blen);
+    result = rb_str_new(buf, blen);
     free(buf);
 
     return result;

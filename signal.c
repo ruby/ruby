@@ -180,7 +180,7 @@ signm2signo(nm)
 }
 
 VALUE
-f_kill(argc, argv)
+rb_f_kill(argc, argv)
     int argc;
     VALUE *argv;
 {
@@ -194,13 +194,13 @@ f_kill(argc, argv)
 
     rb_secure(2);
     if (argc < 2)
-	ArgError("wrong # of arguments -- kill(sig, pid...)");
+	rb_raise(rb_eArgError, "wrong # of arguments -- kill(sig, pid...)");
     switch (TYPE(argv[0])) {
       case T_FIXNUM:
 	sig = FIX2UINT(argv[0]);
 	if (sig >= NSIG) {
 	    s = rb_id2name(sig);
-	    if (!s) ArgError("Bad signal");
+	    if (!s) rb_raise(rb_eArgError, "Bad signal");
 	    goto str_signal;
 	}
 	break;
@@ -216,7 +216,7 @@ f_kill(argc, argv)
 	    if (strncmp("SIG", s, 3) == 0)
 		s += 3;
 	    if((sig = signm2signo(s)) == 0)
-		ArgError("Unrecognized signal name `%s'", s);
+		rb_raise(rb_eArgError, "Unrecognized signal name `%s'", s);
 
 	    if (negative)
 		sig = -sig;
@@ -224,7 +224,8 @@ f_kill(argc, argv)
 	break;
 
       default:
-	ArgError("bad signal type %s", rb_class2name(CLASS_OF(argv[0])));
+	rb_raise(rb_eArgError, "bad signal type %s",
+		 rb_class2name(CLASS_OF(argv[0])));
 	break;
     }
 
@@ -253,19 +254,19 @@ f_kill(argc, argv)
 
 static VALUE trap_list[NSIG];
 static int trap_pending_list[NSIG];
-int trap_pending;
-int trap_immediate;
-int prohibit_interrupt;
+int rb_trap_pending;
+int rb_trap_immediate;
+int rb_prohibit_interrupt;
 
 void
-gc_mark_trap_list()
+rb_gc_mark_trap_list()
 {
 #ifndef MACOS_UNUSE_SIGNAL
     int i;
 
     for (i=0; i<NSIG; i++) {
 	if (trap_list[i])
-	    gc_mark(trap_list[i]);
+	    rb_gc_mark(trap_list[i]);
     }
 #endif /* MACOS_UNUSE_SIGNAL */
 }
@@ -286,8 +287,8 @@ posix_signal(signum, handler)
 #endif
 
 #ifdef THREAD
-# define rb_interrupt thread_interrupt
-# define rb_trap_eval thread_trap_eval
+# define rb_interrupt rb_thread_interrupt
+# define rb_trap_eval rb_thread_trap_eval
 #endif
 
 static RETSIGTYPE
@@ -295,22 +296,22 @@ sighandle(sig)
     int sig;
 {
     if (sig >= NSIG ||(sig != SIGINT && !trap_list[sig]))
-	Bug("trap_handler: Bad signal %d", sig);
+	rb_bug("trap_handler: Bad signal %d", sig);
 
 #if !defined(POSIX_SIGNAL) && !defined(BSD_SIGNAL)
     signal(sig, sighandle);
 #endif
 
-    if (trap_immediate) {
-	trap_immediate = 0;
+    if (rb_trap_immediate) {
+	rb_trap_immediate = 0;
 	if (sig == SIGINT && !trap_list[SIGINT]) {
 	    rb_interrupt();
 	}
 	rb_trap_eval(trap_list[sig], sig);
-	trap_immediate = 1;
+	rb_trap_immediate = 1;
     }
     else {
-	trap_pending++;
+	rb_trap_pending++;
 	trap_pending_list[sig]++;
     }
 }
@@ -320,7 +321,7 @@ static RETSIGTYPE
 sigbus(sig)
     int sig;
 {
-    Bug("Bus Error");
+    rb_bug("Bus Error");
 }
 #endif
 
@@ -329,7 +330,7 @@ static RETSIGTYPE
 sigsegv(sig)
     int sig;
 {
-    Bug("Segmentation fault");
+    rb_bug("Segmentation fault");
 }
 #endif
 
@@ -338,7 +339,7 @@ rb_trap_exit()
 {
 #ifndef MACOS_UNUSE_SIGNAL
     if (trap_list[0])
-	rb_eval_cmd(trap_list[0], ary_new3(1, INT2FIX(0)));
+	rb_eval_cmd(trap_list[0], rb_ary_new3(1, INT2FIX(0)));
 #endif
 }
 
@@ -359,7 +360,7 @@ rb_trap_exec()
 	}
     }
 #endif /* MACOS_UNUSE_SIGNAL */
-    trap_pending = 0;
+    rb_trap_pending = 0;
 }
 
 struct trap_arg {
@@ -436,17 +437,17 @@ trap(arg)
 	    s += 3;
 	sig = signm2signo(s);
 	if (sig == 0 && strcmp(s, "EXIT") != 0)
-	    ArgError("Invalid signal SIG%s", s);
+	    rb_raise(rb_eArgError, "Invalid signal SIG%s", s);
     }
     else {
 	sig = NUM2INT(arg->sig);
     }
     if (sig < 0 || sig > NSIG) {
-	ArgError("Invalid signal no %d", sig);
+	rb_raise(rb_eArgError, "Invalid signal no %d", sig);
     }
 #if defined(THREAD) && defined(HAVE_SETITIMER) && !defined(__BOW__)
     if (sig == SIGVTALRM) {
-	ArgError("SIGVTALRM reserved for Thread; cannot set handler");
+	rb_raise(rb_eArgError, "SIGVTALRM reserved for Thread; cannot set handler");
     }
 #endif
     if (func == SIG_DFL) {
@@ -503,7 +504,7 @@ trap_ensure(arg)
 #endif
 
 void
-trap_restore_mask()
+rb_trap_restore_mask()
 {
 #ifndef NT
 # ifdef HAVE_SIGPROCMASK
@@ -515,7 +516,7 @@ trap_restore_mask()
 }
 
 static VALUE
-f_trap(argc, argv)
+rb_f_trap(argc, argv)
     int argc;
     VALUE *argv;
 {
@@ -523,12 +524,12 @@ f_trap(argc, argv)
 
     rb_secure(2);
     if (argc == 0 || argc > 2) {
-	ArgError("wrong # of arguments -- trap(sig, cmd)/trap(sig){...}");
+	rb_raise(rb_eArgError, "wrong # of arguments -- trap(sig, cmd)/trap(sig){...}");
     }
 
     arg.sig = argv[0];
     if (argc == 1) {
-	arg.cmd = f_lambda();
+	arg.cmd = rb_f_lambda();
     }
     else if (argc == 2) {
 	arg.cmd = argv[1];
@@ -553,7 +554,7 @@ void
 Init_signal()
 {
 #ifndef MACOS_UNUSE_SIGNAL
-    rb_define_global_function("trap", f_trap, -1);
+    rb_define_global_function("trap", rb_f_trap, -1);
 #ifdef POSIX_SIGNAL
     posix_signal(SIGINT, sighandle);
 #else

@@ -1,4 +1,3 @@
-* remove Enumerable#reverse at 1.2
 * non-blocking open/write for thread
 * package or access control for global variables
 * format

@@ -35,7 +35,7 @@ struct timeval {
 #endif
 #include <math.h>
 
-static VALUE cTime;
+VALUE rb_cTime;
 #if defined(HAVE_TIMES) || defined(NT)
 static VALUE S_Tms;
 #endif
@@ -66,7 +66,7 @@ time_s_now(klass)
     if (gettimeofday(&(tobj->tv), 0) == -1) {
 	rb_sys_fail("gettimeofday");
     }
-    obj_call_init(obj);
+    rb_obj_call_init(obj);
 
     return obj;
 }
@@ -88,14 +88,14 @@ time_new_internal(klass, sec, usec)
 }
 
 VALUE
-time_new(sec, usec)
+rb_time_new(sec, usec)
     int sec, usec;
 {
-    return time_new_internal(cTime, sec, usec);
+    return time_new_internal(rb_cTime, sec, usec);
 }
 
 struct timeval
-time_timeval(time)
+rb_time_timeval(time)
     VALUE time;
 {
     struct time_object *tobj;
@@ -105,7 +105,7 @@ time_timeval(time)
       case T_FIXNUM:
 	t.tv_sec = FIX2UINT(time);
 	if (t.tv_sec < 0)
-	    ArgError("time must be positive");
+	    rb_raise(rb_eArgError, "time must be positive");
 	t.tv_usec = 0;
 	break;
 
@@ -114,7 +114,7 @@ time_timeval(time)
 	    double seconds, microseconds;
 
 	    if (RFLOAT(time)->value < 0.0)
-		ArgError("time must be positive");
+		rb_raise(rb_eArgError, "time must be positive");
 	    seconds = floor(RFLOAT(time)->value);
 	    microseconds = (RFLOAT(time)->value - seconds) * 1000000.0;
 	    t.tv_sec = seconds;
@@ -128,9 +128,9 @@ time_timeval(time)
 	break;
 
       default:
-	if (!obj_is_kind_of(time, cTime)) {
-	    TypeError("Can't convert %s into Time",
-		      rb_class2name(CLASS_OF(time)));
+	if (!rb_obj_is_kind_of(time, rb_cTime)) {
+	    rb_raise(rb_eTypeError, "Can't convert %s into Time",
+		     rb_class2name(CLASS_OF(time)));
 	}
 	GetTimeval(time, tobj);
 	t = tobj->tv;
@@ -145,7 +145,7 @@ time_s_at(klass, time)
 {
     struct timeval tv;
 
-    tv = time_timeval(time);
+    tv = rb_time_timeval(time);
     return time_new_internal(klass, tv.tv_sec, tv.tv_usec);
 }
 
@@ -159,7 +159,7 @@ obj2int(obj)
     VALUE obj;
 {
     if (TYPE(obj) == T_STRING) {
-	obj = str2inum(RSTRING(obj)->ptr, 10);
+	obj = rb_str2inum(RSTRING(obj)->ptr, 10);
     }
 
     return NUM2INT(obj);
@@ -233,7 +233,7 @@ time_arg(argc, argv, args)
 	|| args[3] < 0 || args[3] > 23
 	|| args[4] < 0 || args[4] > 60
 	|| args[5] < 0 || args[5] > 61)
-	ArgError("argument out of range");
+	rb_raise(rb_eArgError, "argument out of range");
 }
 
 static VALUE time_gmtime _((VALUE));
@@ -264,7 +264,7 @@ time_gm_or_local(argc, argv, gm_or_local, klass)
     t = args[0];
     while (diff = t - (tm->tm_year)) {
 	guess += diff * 364 * 24 * 3600;
-	if (guess < 0) ArgError("too far future");
+	if (guess < 0) rb_raise(rb_eArgError, "too far future");
 	tm = (*fn)(&guess);
 	if (!tm) goto error;
     }
@@ -284,7 +284,7 @@ time_gm_or_local(argc, argv, gm_or_local, klass)
     return time_localtime(time);
 
   error:
-    ArgError("gmtime/localtime error");
+    rb_raise(rb_eArgError, "gmtime/localtime error");
 }
 
 static VALUE
@@ -312,7 +312,7 @@ time_to_i(time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    return int2inum(tobj->tv.tv_sec);
+    return rb_int2inum(tobj->tv.tv_sec);
 }
 
 static VALUE
@@ -322,7 +322,7 @@ time_to_f(time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    return float_new((double)tobj->tv.tv_sec+(double)tobj->tv.tv_usec/1000000);
+    return rb_float_new((double)tobj->tv.tv_sec+(double)tobj->tv.tv_usec/1000000);
 }
 
 static VALUE
@@ -362,7 +362,7 @@ time_cmp(time1, time2)
 	}
     }
 
-    if (obj_is_instance_of(time2, cTime)) {
+    if (rb_obj_is_instance_of(time2, rb_cTime)) {
 	GetTimeval(time2, tobj2);
 	if (tobj1->tv.tv_sec == tobj2->tv.tv_sec) {
 	    if (tobj1->tv.tv_usec == tobj2->tv.tv_usec) return INT2FIX(0);
@@ -385,13 +385,13 @@ time_eql(time1, time2)
     struct time_object *tobj1, *tobj2;
 
     GetTimeval(time1, tobj1);
-    if (obj_is_instance_of(time2, cTime)) {
+    if (rb_obj_is_instance_of(time2, rb_cTime)) {
 	GetTimeval(time2, tobj2);
 	if (tobj1->tv.tv_sec == tobj2->tv.tv_sec) {
-	    if (tobj1->tv.tv_usec == tobj2->tv.tv_usec) return TRUE;
+	    if (tobj1->tv.tv_usec == tobj2->tv.tv_usec) return Qtrue;
 	}
     }
-    return FALSE;
+    return Qfalse;
 }
 
 static VALUE
@@ -454,7 +454,7 @@ time_asctime(time)
     s = asctime(&(tobj->tm));
     if (s[24] == '\n') s[24] = '\0';
 
-    return str_new2(s);
+    return rb_str_new2(s);
 }
 
 static VALUE
@@ -478,7 +478,7 @@ time_to_s(time)
     {
 	len = strftime(buf, 64, "%a %b %d %H:%M:%S %Z %Y", &(tobj->tm));
     }
-    return str_new(buf, len);
+    return rb_str_new(buf, len);
 }
 
 static VALUE
@@ -494,7 +494,7 @@ time_plus(time1, time2)
 	sec = tobj1->tv.tv_sec + nsec;
 	usec = tobj1->tv.tv_usec + (RFLOAT(time2)->value - (double)nsec)*1e6;
     }
-    else if (obj_is_instance_of(time2, cTime)) {
+    else if (rb_obj_is_instance_of(time2, rb_cTime)) {
 	GetTimeval(time2, tobj2);
 	sec = tobj1->tv.tv_sec + tobj2->tv.tv_sec;
 	usec = tobj1->tv.tv_usec + tobj2->tv.tv_usec;
@@ -508,7 +508,7 @@ time_plus(time1, time2)
 	sec++;
 	usec -= 1000000;
     }
-    return time_new(sec, usec);
+    return rb_time_new(sec, usec);
 }
 
 static VALUE
@@ -519,7 +519,7 @@ time_minus(time1, time2)
     int sec, usec;
 
     GetTimeval(time1, tobj1);
-    if (obj_is_instance_of(time2, cTime)) {
+    if (rb_obj_is_instance_of(time2, rb_cTime)) {
 	double f;
 
 	GetTimeval(time2, tobj2);
@@ -527,7 +527,7 @@ time_minus(time1, time2)
 
 	f += (tobj1->tv.tv_usec - tobj2->tv.tv_usec)*1e-6;
 
-	return float_new(f);
+	return rb_float_new(f);
     }
     else if (TYPE(time2) == T_FLOAT) {
 	sec = tobj1->tv.tv_sec - (int)RFLOAT(time2)->value;
@@ -542,7 +542,7 @@ time_minus(time1, time2)
 	sec--;
 	usec += 1000000;
     }
-    return time_new(sec, usec);
+    return rb_time_new(sec, usec);
 }
 
 static VALUE
@@ -607,7 +607,6 @@ time_mon(time)
     if (tobj->tm_got == 0) {
 	time_localtime(time);
     }
-    Warning("Time#month now start from 1 for January");
     return INT2FIX(tobj->tm.tm_mon+1);
 }
 
@@ -621,7 +620,6 @@ time_year(time)
     if (tobj->tm_got == 0) {
 	time_localtime(time);
     }
-    Warning("Time#year now returns 19xx");
     return INT2FIX(tobj->tm.tm_year+1900);
 }
 
@@ -661,8 +659,7 @@ time_isdst(time)
     if (tobj->tm_got == 0) {
 	time_localtime(time);
     }
-    Warning("Time#isdst now returns boolean value");
-    return tobj->tm.tm_isdst?TRUE:FALSE;
+    return tobj->tm.tm_isdst?Qtrue:Qfalse;
 }
 
 static VALUE
@@ -679,7 +676,7 @@ time_zone(time)
     }
 
     len = strftime(buf, 10, "%Z", &(tobj->tm));
-    return str_new(buf, len);
+    return rb_str_new(buf, len);
 }
 
 static VALUE
@@ -692,8 +689,7 @@ time_to_a(time)
     if (tobj->tm_got == 0) {
 	time_localtime(time);
     }
-    Warning("Time#to_a's return values are now changed");
-    return ary_new3(10,
+    return rb_ary_new3(10,
 		    INT2FIX(tobj->tm.tm_sec),
 		    INT2FIX(tobj->tm.tm_min),
 		    INT2FIX(tobj->tm.tm_hour),
@@ -702,7 +698,7 @@ time_to_a(time)
 		    INT2FIX(tobj->tm.tm_year+1900),
 		    INT2FIX(tobj->tm.tm_wday),
 		    INT2FIX(tobj->tm.tm_yday),
-		    tobj->tm.tm_isdst?TRUE:FALSE,
+		    tobj->tm.tm_isdst?Qtrue:Qfalse,
 		    time_zone(time));
 }
 
@@ -728,7 +724,7 @@ rb_strftime(buf, format, time)
 	return len;
     }
 
-    ArgError("bad strftime format or result too long");
+    rb_raise(rb_eArgError, "bad strftime format or result too long");
 }
 
 static VALUE
@@ -751,17 +747,17 @@ time_strftime(time, format)
 	/* Ruby string may contain \0's. */
 	char *p = fmt, *pe = fmt + len;
 
-	str = str_new(0, 0);
+	str = rb_str_new(0, 0);
 	while (p < pe) {
 	    len = rb_strftime(&buf, p, &(tobj->tm));
-	    str_cat(str, buf, len);
+	    rb_str_cat(str, buf, len);
 	    p += strlen(p) + 1;
 	    if (len > SMALLBUF) free(buf);
 	}
 	return str;
     }
     len = rb_strftime(&buf, RSTRING(format)->ptr, &(tobj->tm));
-    str = str_new(buf, len);
+    str = rb_str_new(buf, len);
     if (buf != buffer) free(buf);
     return str;
 }
@@ -777,11 +773,11 @@ time_s_times(obj)
     struct tms buf;
 
     if (times(&buf) == -1) rb_sys_fail(0);
-    return struct_new(S_Tms,
-		      float_new((double)buf.tms_utime / HZ),
-		      float_new((double)buf.tms_stime / HZ),
-		      float_new((double)buf.tms_cutime / HZ),
-		      float_new((double)buf.tms_cstime / HZ));
+    return rb_struct_new(S_Tms,
+			 rb_float_new((double)buf.tms_utime / HZ),
+			 rb_float_new((double)buf.tms_stime / HZ),
+			 rb_float_new((double)buf.tms_cutime / HZ),
+			 rb_float_new((double)buf.tms_cstime / HZ));
 #else
 #ifdef NT
     FILETIME create, exit, kernel, user;
@@ -789,11 +785,11 @@ time_s_times(obj)
 
     hProc = GetCurrentProcess();
     GetProcessTimes(hProc,&create, &exit, &kernel, &user);
-    return struct_new(S_Tms,
-      float_new((double)(kernel.dwHighDateTime*2e32+kernel.dwLowDateTime)/2e6),
-      float_new((double)(user.dwHighDateTime*2e32+user.dwLowDateTime)/2e6),
-      float_new((double)0),
-      float_new((double)0));
+    return rb_struct_new(S_Tms,
+      rb_float_new((double)(kernel.dwHighDateTime*2e32+kernel.dwLowDateTime)/2e6),
+      rb_float_new((double)(user.dwHighDateTime*2e32+user.dwLowDateTime)/2e6),
+      rb_float_new((double)0),
+      rb_float_new((double)0));
 #else
     rb_notimplement();
 #endif
@@ -803,55 +799,55 @@ time_s_times(obj)
 void
 Init_Time()
 {
-    cTime = rb_define_class("Time", cObject);
-    rb_include_module(cTime, mComparable);
+    rb_cTime = rb_define_class("Time", rb_cObject);
+    rb_include_module(rb_cTime, rb_mComparable);
 
-    rb_define_singleton_method(cTime, "now", time_s_now, 0);
-    rb_define_singleton_method(cTime, "new", time_s_now, 0);
-    rb_define_singleton_method(cTime, "at", time_s_at, 1);
-    rb_define_singleton_method(cTime, "gm", time_s_timegm, -1);
-    rb_define_singleton_method(cTime, "local", time_s_timelocal, -1);
-    rb_define_singleton_method(cTime, "mktime", time_s_timelocal, -1);
+    rb_define_singleton_method(rb_cTime, "now", time_s_now, 0);
+    rb_define_singleton_method(rb_cTime, "new", time_s_now, 0);
+    rb_define_singleton_method(rb_cTime, "at", time_s_at, 1);
+    rb_define_singleton_method(rb_cTime, "gm", time_s_timegm, -1);
+    rb_define_singleton_method(rb_cTime, "local", time_s_timelocal, -1);
+    rb_define_singleton_method(rb_cTime, "mktime", time_s_timelocal, -1);
 
-    rb_define_singleton_method(cTime, "times", time_s_times, 0);
+    rb_define_singleton_method(rb_cTime, "times", time_s_times, 0);
 
-    rb_define_method(cTime, "to_i", time_to_i, 0);
-    rb_define_method(cTime, "to_f", time_to_f, 0);
-    rb_define_method(cTime, "<=>", time_cmp, 1);
-    rb_define_method(cTime, "eql?", time_eql, 0);
-    rb_define_method(cTime, "hash", time_hash, 0);
+    rb_define_method(rb_cTime, "to_i", time_to_i, 0);
+    rb_define_method(rb_cTime, "to_f", time_to_f, 0);
+    rb_define_method(rb_cTime, "<=>", time_cmp, 1);
+    rb_define_method(rb_cTime, "eql?", time_eql, 0);
+    rb_define_method(rb_cTime, "hash", time_hash, 0);
 
-    rb_define_method(cTime, "localtime", time_localtime, 0);
-    rb_define_method(cTime, "gmtime", time_gmtime, 0);
-    rb_define_method(cTime, "ctime", time_asctime, 0);
-    rb_define_method(cTime, "asctime", time_asctime, 0);
-    rb_define_method(cTime, "to_s", time_to_s, 0);
-    rb_define_method(cTime, "inspect", time_to_s, 0);
-    rb_define_method(cTime, "to_a", time_to_a, 0);
+    rb_define_method(rb_cTime, "localtime", time_localtime, 0);
+    rb_define_method(rb_cTime, "gmtime", time_gmtime, 0);
+    rb_define_method(rb_cTime, "ctime", time_asctime, 0);
+    rb_define_method(rb_cTime, "asctime", time_asctime, 0);
+    rb_define_method(rb_cTime, "to_s", time_to_s, 0);
+    rb_define_method(rb_cTime, "inspect", time_to_s, 0);
+    rb_define_method(rb_cTime, "to_a", time_to_a, 0);
 
-    rb_define_method(cTime, "+", time_plus, 1);
-    rb_define_method(cTime, "-", time_minus, 1);
+    rb_define_method(rb_cTime, "+", time_plus, 1);
+    rb_define_method(rb_cTime, "-", time_minus, 1);
 
-    rb_define_method(cTime, "sec", time_sec, 0);
-    rb_define_method(cTime, "min", time_min, 0);
-    rb_define_method(cTime, "hour", time_hour, 0);
-    rb_define_method(cTime, "mday", time_mday, 0);
-    rb_define_method(cTime, "day", time_mday, 0);
-    rb_define_method(cTime, "mon", time_mon, 0);
-    rb_define_method(cTime, "month", time_mon, 0);
-    rb_define_method(cTime, "year", time_year, 0);
-    rb_define_method(cTime, "wday", time_wday, 0);
-    rb_define_method(cTime, "yday", time_yday, 0);
-    rb_define_method(cTime, "isdst", time_isdst, 0);
-    rb_define_method(cTime, "zone", time_zone, 0);
+    rb_define_method(rb_cTime, "sec", time_sec, 0);
+    rb_define_method(rb_cTime, "min", time_min, 0);
+    rb_define_method(rb_cTime, "hour", time_hour, 0);
+    rb_define_method(rb_cTime, "mday", time_mday, 0);
+    rb_define_method(rb_cTime, "day", time_mday, 0);
+    rb_define_method(rb_cTime, "mon", time_mon, 0);
+    rb_define_method(rb_cTime, "month", time_mon, 0);
+    rb_define_method(rb_cTime, "year", time_year, 0);
+    rb_define_method(rb_cTime, "wday", time_wday, 0);
+    rb_define_method(rb_cTime, "yday", time_yday, 0);
+    rb_define_method(rb_cTime, "isdst", time_isdst, 0);
+    rb_define_method(rb_cTime, "zone", time_zone, 0);
 
-    rb_define_method(cTime, "tv_sec", time_to_i, 0);
-    rb_define_method(cTime, "tv_usec", time_usec, 0);
-    rb_define_method(cTime, "usec", time_usec, 0);
+    rb_define_method(rb_cTime, "tv_sec", time_to_i, 0);
+    rb_define_method(rb_cTime, "tv_usec", time_usec, 0);
+    rb_define_method(rb_cTime, "usec", time_usec, 0);
 
-    rb_define_method(cTime, "strftime", time_strftime, 1);
+    rb_define_method(rb_cTime, "strftime", time_strftime, 1);
 
 #if defined(HAVE_TIMES) || defined(NT)
-    S_Tms = struct_define("Tms", "utime", "stime", "cutime", "cstime", 0);
+    S_Tms = rb_struct_define("Tms", "utime", "stime", "cutime", "cstime", 0);
 #endif
 }

@@ -37,7 +37,7 @@ etc_getlogin(obj)
 #endif
 
     if (login)
-	return str_new2(login);
+	return rb_str_new2(login);
     return Qnil;
 }
 
@@ -47,36 +47,36 @@ setup_passwd(pwd)
     struct passwd *pwd;
 {
     if (pwd == 0) rb_sys_fail("/etc/passwd");
-    return struct_new(sPasswd,
-		      str_new2(pwd->pw_name),
-		      str_new2(pwd->pw_passwd),
-		      INT2FIX(pwd->pw_uid),
-		      INT2FIX(pwd->pw_gid),
+    return rb_struct_new(sPasswd,
+			 rb_str_new2(pwd->pw_name),
+			 rb_str_new2(pwd->pw_passwd),
+			 INT2FIX(pwd->pw_uid),
+			 INT2FIX(pwd->pw_gid),
 #ifdef PW_GECOS
-		      str_new2(pwd->pw_gecos),
+			 rb_str_new2(pwd->pw_gecos),
 #endif
-		      str_new2(pwd->pw_dir),
-		      str_new2(pwd->pw_shell),
+			 rb_str_new2(pwd->pw_dir),
+			 rb_str_new2(pwd->pw_shell),
 #ifdef PW_CHANGE
-		      INT2FIX(pwd->pw_change),
+			 INT2FIX(pwd->pw_change),
 #endif
 #ifdef PW_QUOTA
-		      INT2FIX(pwd->pw_quota),
+			 INT2FIX(pwd->pw_quota),
 #endif
 #ifdef PW_AGE
-		      INT2FIX(pwd->pw_age),
+			 INT2FIX(pwd->pw_age),
 #endif
 #ifdef PW_CLASS
-		      str_new2(pwd->pw_class),
+			 rb_str_new2(pwd->pw_class),
 #endif
 #ifdef PW_COMMENT
-		      str_new2(pwd->pw_comment),
+			 rb_str_new2(pwd->pw_comment),
 #endif
 #ifdef PW_EXPIRE
-		      INT2FIX(pwd->pw_expire),
+			 INT2FIX(pwd->pw_expire),
 #endif
-		      0		/*dummy*/
-		      );
+			 0		/*dummy*/
+	);
 }
 #endif
 
@@ -98,7 +98,7 @@ etc_getpwuid(argc, argv, obj)
 	uid = getuid();
     }
     pwd = getpwuid(uid);
-    if (pwd == 0) Fail("can't find user for %d", uid);
+    if (pwd == 0) rb_raise(rb_eArgError, "can't find user for %d", uid);
     return setup_passwd(pwd);
 #else 
     return Qnil;
@@ -114,7 +114,7 @@ etc_getpwnam(obj, nam)
 
     Check_Type(nam, T_STRING);
     pwd = getpwnam(RSTRING(nam)->ptr);
-    if (pwd == 0) Fail("can't find user for %s", RSTRING(nam)->ptr);
+    if (pwd == 0) rb_raise(rb_eArgError, "can't find user for %s", RSTRING(nam)->ptr);
     return setup_passwd(pwd);
 #else 
     return Qnil;
@@ -128,7 +128,7 @@ etc_passwd(obj)
 #if defined(HAVE_GETPWENT)
     struct passwd *pw;
 
-    if (iterator_p()) {
+    if (rb_iterator_p()) {
 	setpwent();
 	while (pw = getpwent()) {
 	    rb_yield(setup_passwd(pw));
@@ -137,7 +137,7 @@ etc_passwd(obj)
 	return obj;
     }
     pw = getpwent();
-    if (pw == 0) Fail("can't fetch next -- /etc/passwd");
+    if (pw == 0) rb_raise(rb_eRuntimeError, "can't fetch next -- /etc/passwd");
     return setup_passwd(pw);
 #else 
     return Qnil;
@@ -152,17 +152,17 @@ setup_group(grp)
     VALUE mem;
     char **tbl;
 
-    mem = ary_new();
+    mem = rb_ary_new();
     tbl = grp->gr_mem;
     while (*tbl) {
-	ary_push(mem, str_new2(*tbl));
+	rb_ary_push(mem, rb_str_new2(*tbl));
 	tbl++;
     }
-    return struct_new(sGroup,
-		      str_new2(grp->gr_name),
-		      str_new2(grp->gr_passwd),
-		      INT2FIX(grp->gr_gid),
-		      mem);
+    return rb_struct_new(sGroup,
+			 rb_str_new2(grp->gr_name),
+			 rb_str_new2(grp->gr_passwd),
+			 INT2FIX(grp->gr_gid),
+			 mem);
 }
 #endif
 
@@ -176,7 +176,7 @@ etc_getgrgid(obj, id)
 
     gid = NUM2INT(id);
     grp = getgrgid(gid);
-    if (grp == 0) Fail("can't find group for %d", gid);
+    if (grp == 0) rb_raise(rb_eArgError, "can't find group for %d", gid);
     return setup_group(grp);
 #else
     return Qnil;
@@ -192,7 +192,7 @@ etc_getgrnam(obj, nam)
 
     Check_Type(nam, T_STRING);
     grp = getgrnam(RSTRING(nam)->ptr);
-    if (grp == 0) Fail("can't find group for %s", RSTRING(nam)->ptr);
+    if (grp == 0) rb_raise(rb_eArgError, "can't find group for %s", RSTRING(nam)->ptr);
     return setup_group(grp);
 #else
     return Qnil;
@@ -206,7 +206,7 @@ etc_group(obj)
 #ifdef HAVE_GETGRENT
     struct group *grp;
 
-    if (iterator_p()) {
+    if (rb_iterator_p()) {
 	setgrent();
 	while (grp = getgrent()) {
 	    rb_yield(setup_group(grp));
@@ -237,32 +237,32 @@ Init_etc()
     rb_define_module_function(mEtc, "getgrnam", etc_getgrnam, 1);
     rb_define_module_function(mEtc, "group", etc_group, 0);
 
-    sPasswd =  struct_define("Passwd",
-			     "name", "passwd", "uid", "gid",
-			     "gecos", "dir", "shell",
+    sPasswd =  rb_struct_define("Passwd",
+				"name", "passwd", "uid", "gid",
+				"gecos", "dir", "shell",
 #ifdef PW_CHANGE
-			     "change",
+				"change",
 #endif
 #ifdef PW_QUOTA
-			     "quota",
+				"quota",
 #endif
 #ifdef PW_AGE
-			     "age",
+				"age",
 #endif
 #ifdef PW_CLASS
-			     "class",
+				"class",
 #endif
 #ifdef PW_COMMENT
-			     "comment",
+				"comment",
 #endif
 #ifdef PW_EXPIRE
-			     "expire",
+				"expire",
 #endif
-			     0);
+				0);
     rb_global_variable(&sPasswd);
 
 #ifdef HAVE_GETGRENT
-    sGroup = struct_define("Group", "name", "passwd", "gid", "mem", 0);
+    sGroup = rb_struct_define("Group", "name", "passwd", "gid", "mem", 0);
     rb_global_variable(&sGroup);
 #endif
 }

@@ -42,7 +42,7 @@ md5_digest(obj)
     ctx = *md5;
     MD5Final(digest, &ctx);
 
-    return str_new(digest, 16);
+    return rb_str_new(digest, 16);
 }
 
 static VALUE
@@ -77,14 +77,14 @@ md5_new(argc, argv, class)
     if (!NIL_P(arg)) {
 	md5_update(obj, arg);
     }
-    obj_call_init(obj);
+    rb_obj_call_init(obj);
 
     return obj;
 }
 
 Init_md5()
 {
-    cMD5 = rb_define_class("MD5", cObject);
+    cMD5 = rb_define_class("MD5", rb_cObject);
 
     rb_define_singleton_method(cMD5, "new", md5_new, -1);
 

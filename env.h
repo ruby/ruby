@@ -22,16 +22,16 @@ extern struct FRAME {
     char *file;
     int line;
     int iter;
-} *the_frame;
+} *ruby_frame;
 
-void gc_mark_frame _((struct FRAME *));
+void rb_gc_mark_frame _((struct FRAME *));
 
 extern struct SCOPE {
     struct RBasic super;
     ID *local_tbl;
     VALUE *local_vars;
     int flag;
-} *the_scope;
+} *ruby_scope;
 
 #define SCOPE_ALLOCA  0
 #define SCOPE_MALLOC  1
@@ -39,7 +39,7 @@ extern struct SCOPE {
 
 extern int rb_in_eval;
 
-extern VALUE the_class;
+extern VALUE ruby_class;
 
 struct RVarmap {
     struct RBasic super;
@@ -47,6 +47,6 @@ struct RVarmap {
     VALUE val;
     struct RVarmap *next;
 };
-extern struct RVarmap *the_dyna_vars;
+extern struct RVarmap *ruby_dyna_vars;
 
 #endif /* ENV_H */

@@ -28,9 +28,6 @@
 #include "node.h"
 #endif
 
-void show_version();
-void show_copyright();
-
 #ifdef USE_CWGUSI
 #include "macruby_missing.h"
 #endif
@@ -41,42 +38,37 @@ char *strrchr _((char*,char));
 char *strstr _((char*,char*));
 #endif
 
-char *ruby_mktemp _((void));
+#include "util.h"
 
+#ifndef HAVE_STDLIB_H
 char *getenv();
+#endif
 
 static int version, copyright;
 
-VALUE debug = FALSE;
-VALUE verbose = FALSE;
-int tainting = FALSE;
-static int sflag = FALSE;
+VALUE rb_debug = Qfalse;
+VALUE rb_verbose = Qfalse;
+int tainting = Qfalse;
+static int sflag = Qfalse;
 
-char *inplace = FALSE;
+char *ruby_inplace_mode = Qfalse;
 char *strdup();
 
-extern char *sourcefile;
 extern int yydebug;
-extern int nerrs;
-
-static int xflag = FALSE;
-extern VALUE RS, RS_default, ORS, FS;
+static int xflag = Qfalse;
 
 static void load_stdin _((void));
 static void load_file _((char *, int));
 static void forbid_setid _((char *));
 
-static VALUE do_loop = FALSE, do_print = FALSE;
-static VALUE do_check = FALSE, do_line = FALSE;
-static VALUE do_split = FALSE;
+static VALUE do_loop = Qfalse, do_print = Qfalse;
+static VALUE do_check = Qfalse, do_line = Qfalse;
+static VALUE do_split = Qfalse;
 
 static char *script;
 
 static int origargc;
 static char **origargv;
-
-extern int   sourceline;
-extern char *sourcefile;
 
 #ifndef RUBY_LIB
 #define RUBY_LIB "/usr/local/lib/ruby"
@@ -110,24 +102,24 @@ addpath(path)
 #endif
     if (strchr(path, RUBY_LIB_SEP)) {
 	char *p, *s;
-	VALUE ary = ary_new();
+	VALUE ary = rb_ary_new();
 
 	p = path;
 	while (*p) {
 	    while (*p == RUBY_LIB_SEP) p++;
 	    if (s = strchr(p, RUBY_LIB_SEP)) {
-		ary_push(ary, str_new(p, (int)(s-p)));
+		rb_ary_push(ary, rb_str_new(p, (int)(s-p)));
 		p = s + 1;
 	    }
 	    else {
-		ary_push(ary, str_new2(p));
+		rb_ary_push(ary, rb_str_new2(p));
 		break;
 	    }
 	}
-	rb_load_path = ary_plus(ary, rb_load_path);
+	rb_load_path = rb_ary_plus(ary, rb_load_path);
     }
     else {
-	ary_unshift(rb_load_path, str_new2(path));
+	rb_ary_unshift(rb_load_path, rb_str_new2(path));
     }
 }
 
@@ -158,7 +150,7 @@ ruby_require_modules()
 
     req_list_last = 0;
     while (list) {
-	f_require(Qnil, str_new2(list->name));
+	rb_f_require(Qnil, rb_str_new2(list->name));
 	tmp = list->next;
 	free(list);
 	list = tmp;
@@ -177,8 +169,8 @@ proc_options(argcp, argvp)
 
     if (argc == 0) return;
 
-    version = FALSE;
-    do_search = FALSE;
+    version = Qfalse;
+    do_search = Qfalse;
     script_given = 0;
     e_tmpname = NULL;
 
@@ -189,21 +181,21 @@ proc_options(argcp, argvp)
       reswitch:
 	switch (*s) {
 	  case 'a':
-	    do_split = TRUE;
+	    do_split = Qtrue;
 	    s++;
 	    goto reswitch;
 
 	  case 'p':
-	    do_print = TRUE;
+	    do_print = Qtrue;
 	    /* through */
 	  case 'n':
-	    do_loop = TRUE;
+	    do_loop = Qtrue;
 	    s++;
 	    goto reswitch;
 
 	  case 'd':
-	    debug = TRUE;
-	    verbose |= 1;
+	    rb_debug = Qtrue;
+	    rb_verbose |= 1;
 	    s++;
 	    goto reswitch;
 
@@ -213,33 +205,33 @@ proc_options(argcp, argvp)
 	    goto reswitch;
 
 	  case 'v':
-	    show_version();
-	    verbose = 2;
+	    ruby_show_version();
+	    rb_verbose = 2;
 	  case 'w':
-	    verbose |= 1;
+	    rb_verbose |= 1;
 	    s++;
 	    goto reswitch;
 
 	  case 'c':
-	    do_check = TRUE;
+	    do_check = Qtrue;
 	    s++;
 	    goto reswitch;
 
 	  case 's':
 	    forbid_setid("-s");
-	    sflag = TRUE;
+	    sflag = Qtrue;
 	    s++;
 	    goto reswitch;
 
 	  case 'l':
-	    do_line = TRUE;
-	    ORS = RS;
+	    do_line = Qtrue;
+	    rb_output_rs = rb_rs;
 	    s++;
 	    goto reswitch;
 
 	  case 'S':
 	    forbid_setid("-S");
-	    do_search = TRUE;
+	    do_search = Qtrue;
 	    s++;
 	    goto reswitch;
 
@@ -247,10 +239,10 @@ proc_options(argcp, argvp)
 	    forbid_setid("-e");
 	    if (!e_fp) {
 		e_tmpname = ruby_mktemp();
-		if (!e_tmpname) Fatal("Can't mktemp");
+		if (!e_tmpname) rb_fatal("Can't mktemp");
 		e_fp = fopen(e_tmpname, "w");
 		if (!e_fp) {
-		    Fatal("Cannot open temporary file: %s", e_tmpname);
+		    rb_fatal("Cannot open temporary file: %s", e_tmpname);
 		}
 		if (script == 0) script = e_tmpname;
 	    }
@@ -274,15 +266,15 @@ proc_options(argcp, argvp)
 
 	  case 'i':
 	    forbid_setid("-i");
-	    if (inplace) free(inplace);
-	    inplace = strdup(s+1);
+	    if (ruby_inplace_mode) free(ruby_inplace_mode);
+	    ruby_inplace_mode = strdup(s+1);
 	    break;
 
 	  case 'x':
-	    xflag = TRUE;
+	    xflag = Qtrue;
 	    s++;
 	    if (*s && chdir(s) < 0) {
-		Fatal("Can't chdir to %s", s);
+		rb_fatal("Can't chdir to %s", s);
 	    }
 	    break;
 
@@ -293,12 +285,12 @@ proc_options(argcp, argvp)
 		argc--,argv++;
 	    }
 	    if (*s && chdir(s) < 0) {
-		Fatal("Can't chdir to %s", s);
+		rb_fatal("Can't chdir to %s", s);
 	    }
 	    break;
 
 	  case 'F':
-	    FS = str_new2(s+1);
+	    rb_fs = rb_str_new2(s+1);
 	    break;
 
 	  case 'K':
@@ -317,7 +309,7 @@ proc_options(argcp, argvp)
 		    if (numlen == 0) v = 1;
 		}
 		rb_set_safe_level(v);
-		tainting = TRUE;
+		tainting = Qtrue;
 	    }
 	    break;
 
@@ -339,13 +331,13 @@ proc_options(argcp, argvp)
 
 		v = scan_oct(s, 4, &numlen);
 		s += numlen;
-		if (v > 0377) RS = Qnil;
+		if (v > 0377) rb_rs = Qnil;
 		else if (v == 0 && numlen >= 2) {
-		    RS = str_new2("\n\n");
+		    rb_rs = rb_str_new2("\n\n");
 		}
 		else {
 		    c = v & 0xff;
-		    RS = str_new(&c, 1);
+		    rb_rs = rb_str_new(&c, 1);
 		}
 	    }
 	    goto reswitch;
@@ -359,15 +351,15 @@ proc_options(argcp, argvp)
 	    if (strcmp("copyright", s) == 0)
 		copyright = 1;
 	    else if (strcmp("debug", s) == 0)
-		debug = 1;
+		rb_debug = 1;
 	    else if (strcmp("version", s) == 0)
 		version = 1;
 	    else if (strcmp("verbose", s) == 0)
-		verbose = 2;
+		rb_verbose = 2;
 	    else if (strcmp("yydebug", s) == 0)
 		yydebug = 1;
 	    else {
-		Fatal("Unrecognized long option: --%s",s);
+		rb_fatal("Unrecognized long option: --%s",s);
 	    }
 	    break;
 
@@ -377,7 +369,7 @@ proc_options(argcp, argvp)
 	    break;
 
 	  default:
-	    Fatal("Unrecognized switch: -%s",s);
+	    rb_fatal("Unrecognized switch: -%s",s);
 
 	  case 0:
 	    break;
@@ -389,24 +381,24 @@ proc_options(argcp, argvp)
 
     if (e_fp) {
 	if (fflush(e_fp) || ferror(e_fp) || fclose(e_fp))
-	    Fatal("Cannot write to temp file for -e");
+	    rb_fatal("Cannot write to temp file for -e");
 	e_fp = NULL;
 	argc++, argv--;
 	argv[0] = e_tmpname;
     }
 
     if (version) {
-	show_version();
+	ruby_show_version();
 	exit(0);
     }
     if (copyright) {
-	show_copyright();
+	ruby_show_copyright();
     }
 
     Init_ext();		/* should be called here for some reason :-( */
-    if (script_given == FALSE) {
+    if (script_given == Qfalse) {
 	if (argc == 0) {	/* no more args */
-	    if (verbose == 3) exit(0);
+	    if (rb_verbose == 3) exit(0);
 	    script = "-";
 	    load_stdin();
 	}
@@ -434,9 +426,9 @@ proc_options(argcp, argvp)
 	    argc--; argv++;
 	}
     }
-    if (verbose) verbose = TRUE;
+    if (rb_verbose) rb_verbose = Qtrue;
 
-    xflag = FALSE;
+    xflag = Qfalse;
     *argvp = argv;
     *argcp = argc;
 
@@ -452,10 +444,10 @@ proc_options(argcp, argvp)
 	    argv[0][0] = '$';
 	    if (s = strchr(argv[0], '=')) {
 		*s++ = '\0';
-		rb_gvar_set2(argv[0], str_new2(s));
+		rb_gvar_set2(argv[0], rb_str_new2(s));
 	    }
 	    else {
-		rb_gvar_set2(argv[0], TRUE);
+		rb_gvar_set2(argv[0], Qtrue);
 	    }
 	    argv[0][0] = '-';
 	}
@@ -480,24 +472,24 @@ load_file(fname, script)
 	FILE *fp = fopen(fname, "r");
 
 	if (fp == NULL) {
-	    LoadError("No such file to load -- %s", fname);
+	    rb_raise(rb_eLoadError, "No such file to load -- %s", fname);
 	}
 	fclose(fp);
 
-	f = file_open(fname, "r");
+	f = rb_file_open(fname, "r");
     }
 
     if (script) {
 	VALUE c;
 	VALUE line;
-	VALUE rs = RS;
+	VALUE rs = rb_rs;
 	char *p;
 
-	RS = RS_default;
+	rb_rs = rb_default_rs;
 	if (xflag) {
 	    forbid_setid("-x");
-	    xflag = FALSE;
-	    while (!NIL_P(line = io_gets(f))) {
+	    xflag = Qfalse;
+	    while (!NIL_P(line = rb_io_gets(f))) {
 		line_start++;
 		if (RSTRING(line)->len > 2
 		    && RSTRING(line)->ptr[0] == '#'
@@ -507,13 +499,13 @@ load_file(fname, script)
 		    }
 		}
 	    }
-	    RS = rs;
-	    LoadError("No Ruby script found in input");
+	    rb_rs = rs;
+	    rb_raise(rb_eLoadError, "No Ruby script found in input");
 	}
 
-	c = io_getc(f);
+	c = rb_io_getc(f);
 	if (c == INT2FIX('#')) {
-	    line = io_gets(f);
+	    line = rb_io_gets(f);
 	    line_start++;
 
 	    if (RSTRING(line)->len > 2 && RSTRING(line)->ptr[0] == '!') {
@@ -545,9 +537,9 @@ load_file(fname, script)
 #ifndef USE_CWGUSI
 		    execv(path, argv);
 #endif
-		    sourcefile = fname;
-		    sourceline = 1;
-		    Fatal("Can't exec %s", path);
+		    ruby_sourcefile = fname;
+		    ruby_sourceline = 1;
+		    rb_fatal("Can't exec %s", path);
 		}
 
 	      start_read:
@@ -574,16 +566,16 @@ load_file(fname, script)
 	    }
 	}
 	else if (!NIL_P(c)) {
-	    io_ungetc(f, c);
+	    rb_io_ungetc(f, c);
 	}
-	RS = rs;
+	rb_rs = rs;
     }
-    compile_file(fname, f, line_start);
+    rb_compile_file(fname, f, line_start);
     if (script) {
 	rb_define_global_const("DATA", f);
     }
     else if (f != rb_stdin) {
-	io_close(f);
+	rb_io_close(f);
     }
 }
 
@@ -614,7 +606,7 @@ set_arg0(val, id)
     int i;
     static int len;
 
-    if (origargv == 0) Fail("$0 not initialized");
+    if (origargv == 0) rb_raise(rb_eRuntimeError, "$0 not initialized");
     if (len == 0) {
 	s = origargv[0];
 	s += strlen(s);
@@ -637,7 +629,7 @@ set_arg0(val, id)
 	while (++i < len)
 	    *s++ = ' ';
     }
-    rb_progname = str_taint(str_new2(origargv[0]));
+    rb_progname = rb_str_taint(rb_str_new2(origargv[0]));
 }
 
 void
@@ -645,8 +637,8 @@ ruby_script(name)
     char *name;
 {
     if (name) {
-	rb_progname = str_taint(str_new2(name));
-	sourcefile = name;
+	rb_progname = rb_str_taint(rb_str_new2(name));
+	ruby_sourcefile = name;
     }
 }
 
@@ -673,11 +665,11 @@ forbid_setid(s)
     char *s;
 {
     if (euid != uid)
-        Fatal("No %s allowed while running setuid", s);
+        rb_raise(rb_eSecurityError, "No %s allowed while running setuid", s);
     if (egid != gid)
-        Fatal("No %s allowed while running setgid", s);
+        rb_raise(rb_eSecurityError, "No %s allowed while running setgid", s);
     if (rb_safe_level() > 0)
-        Fatal("No %s allowed in tainted mode", s);
+        rb_raise(rb_eSecurityError, "No %s allowed in tainted mode", s);
 }
 
 #if defined(_WIN32) || defined(DJGPP)
@@ -719,11 +711,11 @@ ruby_prog_init()
 {
     init_ids();
 
-    sourcefile = "ruby";
-    rb_define_variable("$VERBOSE", &verbose);
-    rb_define_variable("$-v", &verbose);
-    rb_define_variable("$DEBUG", &debug);
-    rb_define_variable("$-d", &debug);
+    ruby_sourcefile = "ruby";
+    rb_define_variable("$VERBOSE", &rb_verbose);
+    rb_define_variable("$-v", &rb_verbose);
+    rb_define_variable("$DEBUG", &rb_debug);
+    rb_define_variable("$-d", &rb_debug);
     rb_define_readonly_variable("$-p", &do_print);
     rb_define_readonly_variable("$-l", &do_line);
 
@@ -760,7 +752,7 @@ ruby_prog_init()
 
     rb_define_hooked_variable("$0", &rb_progname, 0, set_arg0);
 
-    rb_argv = ary_new();
+    rb_argv = rb_ary_new();
     rb_define_readonly_variable("$*", &rb_argv);
     rb_define_global_const("ARGV", rb_argv);
     rb_define_readonly_variable("$-a", &do_split);
@@ -788,7 +780,7 @@ ruby_set_argv(argc, argv)
     else          dln_argv0 = argv[0];
 #endif
     for (i=0; i < argc; i++) {
-	ary_push(rb_argv, str_taint(str_new2(argv[i])));
+	rb_ary_push(rb_argv, rb_str_taint(rb_str_new2(argv[i])));
     }
 }
 
@@ -807,15 +799,15 @@ ruby_process_options(argc, argv)
     ruby_script(script);
     ruby_set_argv(argc, argv);
 
-    if (do_check && nerrs == 0) {
+    if (do_check && ruby_nerrs == 0) {
 	printf("Syntax OK\n");
 	exit(0);
     }
     if (do_print) {
-	yyappend_print();
+	rb_parser_append_print();
     }
     if (do_loop) {
-	yywhile_loop(do_line, do_split);
+	rb_parser_while_loop(do_line, do_split);
     }
     if (e_fp) {
 	fclose(e_fp);

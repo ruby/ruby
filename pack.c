@@ -84,10 +84,10 @@ pack_add_ptr(str, add)
 {
 #define STR_NO_ORIG FL_USER3	/* copied from string.c */
     if (!RSTRING(str)->orig) {
-	RSTRING(str)->orig = ary_new();
+	RSTRING(str)->orig = rb_ary_new();
 	FL_SET(str, STR_NO_ORIG);
     }
-    ary_push(RSTRING(str)->orig, add);
+    rb_ary_push(RSTRING(str)->orig, add);
 }
 
 static VALUE
@@ -106,12 +106,12 @@ pack_pack(ary, fmt)
     
     p = str2cstr(fmt, &plen);
     pend = p + plen;
-    res = str_new(0, 0);
+    res = rb_str_new(0, 0);
 
     items = RARRAY(ary)->len;
     idx = 0;
 
-#define NEXTFROM (items-- > 0 ? RARRAY(ary)->ptr[idx++] : (ArgError(toofew),0))
+#define NEXTFROM (items-- > 0 ? RARRAY(ary)->ptr[idx++] : (rb_raise(rb_eArgError, toofew),0))
 
     while (p < pend) {
 	type = *p++;		/* get data type */
@@ -137,7 +137,7 @@ pack_pack(ary, fmt)
 		plen = 0;
 	    }
 	    else {
-		from = obj_as_string(from);
+		from = rb_obj_as_string(from);
 		ptr = RSTRING(from)->ptr;
 		plen = RSTRING(from)->len;
 	    }
@@ -149,15 +149,15 @@ pack_pack(ary, fmt)
 	      case 'a':
 	      case 'A':
 		if (plen >= len)
-		    str_cat(res, ptr, len);
+		    rb_str_cat(res, ptr, len);
 		else {
-		    str_cat(res, ptr, plen);
+		    rb_str_cat(res, ptr, plen);
 		    len -= plen;
 		    while (len >= 10) {
-			str_cat(res, (type == 'A')?spc10:nul10, 10);
+			rb_str_cat(res, (type == 'A')?spc10:nul10, 10);
 			len -= 10;
 		    }
-		    str_cat(res, (type == 'A')?spc10:nul10, len);
+		    rb_str_cat(res, (type == 'A')?spc10:nul10, len);
 		}
 		break;
 
@@ -173,7 +173,7 @@ pack_pack(ary, fmt)
 			    byte >>= 1;
 			else {
 			    char c = byte & 0xff;
-			    str_cat(res, &c, 1);
+			    rb_str_cat(res, &c, 1);
 			    byte = 0;
 			}
 		    }
@@ -181,7 +181,7 @@ pack_pack(ary, fmt)
 			char c;
 			byte >>= 7 - (len & 7);
 			c = byte & 0xff;
-			str_cat(res, &c, 1);
+			rb_str_cat(res, &c, 1);
 		    }
 		}
 		break;
@@ -197,7 +197,7 @@ pack_pack(ary, fmt)
 			    byte <<= 1;
 			else {
 			    char c = byte & 0xff;
-			    str_cat(res, &c, 1);
+			    rb_str_cat(res, &c, 1);
 			    byte = 0;
 			}
 		    }
@@ -205,7 +205,7 @@ pack_pack(ary, fmt)
 			char c;
 			byte <<= 7 - (len & 7);
 			c = byte & 0xff;
-			str_cat(res, &c, 1);
+			rb_str_cat(res, &c, 1);
 		    }
 		}
 		break;
@@ -225,14 +225,14 @@ pack_pack(ary, fmt)
 				byte >>= 4;
 			    else {
 				char c = byte & 0xff;
-				str_cat(res, &c, 1);
+				rb_str_cat(res, &c, 1);
 				byte = 0;
 			    }
 			}
 		    }
 		    if (len & 1) {
 			char c = byte & 0xff;
-			str_cat(res, &c, 1);
+			rb_str_cat(res, &c, 1);
 		    }
 		}
 		break;
@@ -252,14 +252,14 @@ pack_pack(ary, fmt)
 				byte <<= 4;
 			    else {
 				char c = byte & 0xff;
-				str_cat(res, &c, 1);
+				rb_str_cat(res, &c, 1);
 				byte = 0;
 			    }
 			}
 		    }
 		    if (len & 1) {
 			char c = byte & 0xff;
-			str_cat(res, &c, 1);
+			rb_str_cat(res, &c, 1);
 		    }
 		}
 		break;
@@ -276,7 +276,7 @@ pack_pack(ary, fmt)
 		else {
 		    c = NUM2INT(from);
 		}
-		str_cat(res, &c, sizeof(char));
+		rb_str_cat(res, &c, sizeof(char));
 	    }
 	    break;
 
@@ -290,7 +290,7 @@ pack_pack(ary, fmt)
 		else {
 		    s = NUM2INT(from);
 		}
-		str_cat(res, (char*)&s, sizeof(short));
+		rb_str_cat(res, (char*)&s, sizeof(short));
 	    }
 	    break;
 
@@ -304,7 +304,7 @@ pack_pack(ary, fmt)
 		else {
 		    i = NUM2UINT(from);
 		}
-		str_cat(res, (char*)&i, sizeof(int));
+		rb_str_cat(res, (char*)&i, sizeof(int));
 	    }
 	    break;
 
@@ -318,7 +318,7 @@ pack_pack(ary, fmt)
 		else {
 		    l = NUM2ULONG(from);
 		}
-		str_cat(res, (char*)&l, sizeof(long));
+		rb_str_cat(res, (char*)&l, sizeof(long));
 	    }
 	    break;
 
@@ -332,7 +332,7 @@ pack_pack(ary, fmt)
 		    s = NUM2INT(from);
 		}
 		s = htons(s);
-		str_cat(res, (char*)&s, sizeof(short));
+		rb_str_cat(res, (char*)&s, sizeof(short));
 	    }
 	    break;
 
@@ -346,7 +346,7 @@ pack_pack(ary, fmt)
 		    l = NUM2ULONG(from);
 		}
 		l = htonl(l);
-		str_cat(res, (char*)&l, sizeof(long));
+		rb_str_cat(res, (char*)&l, sizeof(long));
 	    }
 	    break;
 
@@ -360,7 +360,7 @@ pack_pack(ary, fmt)
 		    s = NUM2INT(from);
 		}
 		s = htovs(s);
-		str_cat(res, (char*)&s, sizeof(short));
+		rb_str_cat(res, (char*)&s, sizeof(short));
 	    }
 	    break;
 
@@ -374,7 +374,7 @@ pack_pack(ary, fmt)
 		    l = NUM2ULONG(from);
 		}
 		l = htovl(l);
-		str_cat(res, (char*)&l, sizeof(long));
+		rb_str_cat(res, (char*)&l, sizeof(long));
 	    }
 	    break;
 
@@ -394,7 +394,7 @@ pack_pack(ary, fmt)
 		    f = (float)NUM2INT(from);
 		    break;
 		}
-		str_cat(res, (char*)&f, sizeof(float));
+		rb_str_cat(res, (char*)&f, sizeof(float));
 	    }
 	    break;
 
@@ -414,23 +414,23 @@ pack_pack(ary, fmt)
 		    d = (double)NUM2INT(from);
 		    break;
 		}
-		str_cat(res, (char*)&d, sizeof(double));
+		rb_str_cat(res, (char*)&d, sizeof(double));
 	    }
 	    break;
 
 	  case 'x':
 	  grow:
 	    while (len >= 10) {
-		str_cat(res, nul10, 10);
+		rb_str_cat(res, nul10, 10);
 		len -= 10;
 	    }
-	    str_cat(res, nul10, len);
+	    rb_str_cat(res, nul10, len);
 	    break;
 
 	  case 'X':
 	  shrink:
 	    if (RSTRING(res)->len < len)
-		ArgError("X outside of string");
+		rb_raise(rb_eArgError, "X outside of string");
 	    RSTRING(res)->len -= len;
 	    RSTRING(res)->ptr[RSTRING(res)->len] = '\0';
 	    break;
@@ -443,12 +443,12 @@ pack_pack(ary, fmt)
 	    break;
 
 	  case '%':
-	    ArgError("% may only be used in unpack");
+	    rb_raise(rb_eArgError, "% may only be used in unpack");
 	    break;
 
 	  case 'u':
 	  case 'm':
-	    from = obj_as_string(NEXTFROM);
+	    from = rb_obj_as_string(NEXTFROM);
 	    ptr = RSTRING(from)->ptr;
 	    plen = RSTRING(from)->len;
 
@@ -481,7 +481,7 @@ pack_pack(ary, fmt)
 		    t = STR2CSTR(from);
 		    pack_add_ptr(res, from);
 		}
-		str_cat(res, (char*)&t, sizeof(char*));
+		rb_str_cat(res, (char*)&t, sizeof(char*));
 	    }
 	    break;
 
@@ -512,7 +512,7 @@ encodes(str, s, len, type)
 
     if (type == 'u') {
 	*hunk = len + ' ';
-	str_cat(str, hunk, 1);
+	rb_str_cat(str, hunk, 1);
 	padding = '`';
     }
     else {
@@ -523,7 +523,7 @@ encodes(str, s, len, type)
 	hunk[1] = trans[077 & (((*s << 4) & 060) | ((s[1] >> 4) & 017))];
 	hunk[2] = trans[077 & (((s[1] << 2) & 074) | ((s[2] >> 6) & 03))];
 	hunk[3] = trans[077 & s[2]];
-	str_cat(str, hunk, 4);
+	rb_str_cat(str, hunk, 4);
 	s += 3;
 	len -= 3;
     }
@@ -536,7 +536,7 @@ encodes(str, s, len, type)
 	pend[-2] = padding;
 	pend[-1] = padding;
     }
-    str_cat(str, "\n", 1);
+    rb_str_cat(str, "\n", 1);
 }
 
 static VALUE
@@ -555,7 +555,7 @@ pack_unpack(str, fmt)
     p = str2cstr(fmt, &len);
     pend = p + len;
 
-    ary = ary_new();
+    ary = rb_ary_new();
     while (p < pend) {
 	type = *p++;
 	if (*p == '*') {
@@ -571,7 +571,7 @@ pack_unpack(str, fmt)
 
 	switch (type) {
 	  case '%':
-	    ArgError("% is not supported(yet)");
+	    rb_raise(rb_eArgError, "% is not supported(yet)");
 	    break;
 
 	  case 'A':
@@ -585,14 +585,14 @@ pack_unpack(str, fmt)
 		    t--;
 		    len--;
 		}
-		ary_push(ary, str_new(s, len));
+		rb_ary_push(ary, rb_str_new(s, len));
 		s += end;
 	    }
 	    break;
 
 	  case 'a':
 	    if (len > send - s) len = send - s;
-	    ary_push(ary, str_new(s, len));
+	    rb_ary_push(ary, rb_str_new(s, len));
 	    s += len;
 	    break;
 
@@ -605,7 +605,7 @@ pack_unpack(str, fmt)
 		if (p[-1] == '*' || len > (send - s) * 8)
 		    len = (send - s) * 8;
 		bits = 0;
-		ary_push(ary, bitstr = str_new(0, len));
+		rb_ary_push(ary, bitstr = rb_str_new(0, len));
 		t = RSTRING(bitstr)->ptr;
 		for (i=0; i<len; i++) {
 		    if (i & 7) bits >>= 1;
@@ -624,7 +624,7 @@ pack_unpack(str, fmt)
 		if (p[-1] == '*' || len > (send - s) * 8)
 		    len = (send - s) * 8;
 		bits = 0;
-		ary_push(ary, bitstr = str_new(0, len));
+		rb_ary_push(ary, bitstr = rb_str_new(0, len));
 		t = RSTRING(bitstr)->ptr;
 		for (i=0; i<len; i++) {
 		    if (i & 7) bits <<= 1;
@@ -643,7 +643,7 @@ pack_unpack(str, fmt)
 		if (p[-1] == '*' || len > (send - s) * 2)
 		    len = (send - s) * 2;
 		bits = 0;
-		ary_push(ary, bitstr = str_new(0, len));
+		rb_ary_push(ary, bitstr = rb_str_new(0, len));
 		t = RSTRING(bitstr)->ptr;
 		for (i=0; i<len; i++) {
 		    if (i & 1)
@@ -664,7 +664,7 @@ pack_unpack(str, fmt)
 		if (p[-1] == '*' || len > (send - s) * 2)
 		    len = (send - s) * 2;
 		bits = 0;
-		ary_push(ary, bitstr = str_new(0, len));
+		rb_ary_push(ary, bitstr = rb_str_new(0, len));
 		t = RSTRING(bitstr)->ptr;
 		for (i=0; i<len; i++) {
 		    if (i & 1)
@@ -682,7 +682,7 @@ pack_unpack(str, fmt)
 	    while (len-- > 0) {
                 int c = *s++;
                 if (c > (char)127) c-=256;
-		ary_push(ary, INT2FIX(c));
+		rb_ary_push(ary, INT2FIX(c));
 	    }
 	    break;
 
@@ -691,7 +691,7 @@ pack_unpack(str, fmt)
 		len = send - s;
 	    while (len-- > 0) {
 		unsigned char c = *s++;
-		ary_push(ary, INT2FIX(c));
+		rb_ary_push(ary, INT2FIX(c));
 	    }
 	    break;
 
@@ -702,7 +702,7 @@ pack_unpack(str, fmt)
 		short tmp;
 		memcpy(&tmp, s, sizeof(short));
 		s += sizeof(short);
-		ary_push(ary, INT2FIX(tmp));
+		rb_ary_push(ary, INT2FIX(tmp));
 	    }
 	    break;
 
@@ -713,7 +713,7 @@ pack_unpack(str, fmt)
 		unsigned short tmp;
 		memcpy(&tmp, s, sizeof(short));
 		s += sizeof(short);
-		ary_push(ary, INT2FIX(tmp));
+		rb_ary_push(ary, INT2FIX(tmp));
 	    }
 	    break;
 
@@ -724,7 +724,7 @@ pack_unpack(str, fmt)
 		int tmp;
 		memcpy(&tmp, s, sizeof(int));
 		s += sizeof(int);
-		ary_push(ary, int2inum(tmp));
+		rb_ary_push(ary, rb_int2inum(tmp));
 	    }
 	    break;
 
@@ -735,7 +735,7 @@ pack_unpack(str, fmt)
 		unsigned int tmp;
 		memcpy(&tmp, s, sizeof(int));
 		s += sizeof(int);
-		ary_push(ary, uint2inum(tmp));
+		rb_ary_push(ary, rb_uint2inum(tmp));
 	    }
 	    break;
 
@@ -746,7 +746,7 @@ pack_unpack(str, fmt)
 		long tmp;
 		memcpy(&tmp, s, sizeof(long));
 		s += sizeof(long);
-		ary_push(ary, int2inum(tmp));
+		rb_ary_push(ary, rb_int2inum(tmp));
 	    }
 	    break;
 
@@ -757,7 +757,7 @@ pack_unpack(str, fmt)
 		unsigned long tmp;
 		memcpy(&tmp, s, sizeof(long));
 		s += sizeof(long);
-		ary_push(ary, uint2inum(tmp));
+		rb_ary_push(ary, rb_uint2inum(tmp));
 	    }
 	    break;
 
@@ -769,7 +769,7 @@ pack_unpack(str, fmt)
 		memcpy(&tmp, s, sizeof(short));
 		s += sizeof(short);
 		tmp = ntohs(tmp);
-		ary_push(ary, uint2inum(tmp));
+		rb_ary_push(ary, rb_uint2inum(tmp));
 	    }
 	    break;
 
@@ -781,7 +781,7 @@ pack_unpack(str, fmt)
 		memcpy(&tmp, s, sizeof(long));
 		s += sizeof(long);
 		tmp = ntohl(tmp);
-		ary_push(ary, uint2inum(tmp));
+		rb_ary_push(ary, rb_uint2inum(tmp));
 	    }
 	    break;
 
@@ -793,7 +793,7 @@ pack_unpack(str, fmt)
 		memcpy(&tmp, s, sizeof(short));
 		s += sizeof(short);
 		tmp = vtohs(tmp);
-		ary_push(ary, uint2inum(tmp));
+		rb_ary_push(ary, rb_uint2inum(tmp));
 	    }
 	    break;
 
@@ -805,7 +805,7 @@ pack_unpack(str, fmt)
 		memcpy(&tmp, s, sizeof(long));
 		s += sizeof(long);
 		tmp = vtohl(tmp);
-		ary_push(ary, uint2inum(tmp));
+		rb_ary_push(ary, rb_uint2inum(tmp));
 	    }
 	    break;
 
@@ -817,7 +817,7 @@ pack_unpack(str, fmt)
 		float tmp;
 		memcpy(&tmp, s, sizeof(float));
 		s += sizeof(float);
-		ary_push(ary, float_new((double)tmp));
+		rb_ary_push(ary, rb_float_new((double)tmp));
 	    }
 	    break;
 
@@ -829,13 +829,13 @@ pack_unpack(str, fmt)
 		double tmp;
 		memcpy(&tmp, s, sizeof(double));
 		s += sizeof(double);
-		ary_push(ary, float_new(tmp));
+		rb_ary_push(ary, rb_float_new(tmp));
 	    }
 	    break;
 
 	  case 'u':
 	    {
-		VALUE str = str_new(0, (send - s)*3/4);
+		VALUE str = rb_str_new(0, (send - s)*3/4);
 		char *ptr = RSTRING(str)->ptr;
 		int total = 0;
 
@@ -883,13 +883,13 @@ pack_unpack(str, fmt)
 			s += 2;	/* possible checksum byte */
 		}
 		RSTRING(str)->len = total;
-		ary_push(ary, str);
+		rb_ary_push(ary, str);
 	    }
 	    break;
 
 	  case 'm':
 	    {
-		VALUE str = str_new(0, (send - s)*3/4);
+		VALUE str = rb_str_new(0, (send - s)*3/4);
 		char *ptr = RSTRING(str)->ptr;
 		int a,b,c,d;
 		static int first = 1;
@@ -925,7 +925,7 @@ pack_unpack(str, fmt)
 		    *ptr++ = b << 4 | c >> 2;
 		}
 		RSTRING(str)->len = ptr - RSTRING(str)->ptr;
-		ary_push(ary, str);
+		rb_ary_push(ary, str);
 	    }
 	    break;
 
@@ -935,25 +935,25 @@ pack_unpack(str, fmt)
 
 	  case 'X':
 	    if (len > s - RSTRING(str)->ptr)
-		ArgError("X outside of string");
+		rb_raise(rb_eArgError, "X outside of string");
 	    s -= len;
 	    break;
 
 	  case 'x':
 	    if (len > send - s)
-		ArgError("x outside of string");
+		rb_raise(rb_eArgError, "x outside of string");
 	    s += len;
 	    break;
 
 	  case 'P':
 	    if (sizeof(char *) <= send - s) {
 		char *t;
-		VALUE str = str_new(0, 0);
+		VALUE str = rb_str_new(0, 0);
 		memcpy(&t, s, sizeof(char *));
 		s += sizeof(char *);
 		if (t)
-		    str_cat(str, t, len);
-		ary_push(ary, str);
+		    rb_str_cat(str, t, len);
+		rb_ary_push(ary, str);
 	    }
 	    break;
 
@@ -965,12 +965,12 @@ pack_unpack(str, fmt)
 		    break;
 		else {
 		    char *t;
-		    VALUE str = str_new(0, 0);
+		    VALUE str = rb_str_new(0, 0);
 		    memcpy(&t, s, sizeof(char *));
 		    s += sizeof(char *);
 		    if (t)
-			str_cat(str, t, strlen(t));
-		    ary_push(ary, str);
+			rb_str_cat(str, t, strlen(t));
+		    rb_ary_push(ary, str);
 		}
 	    }
 	    break;
@@ -986,6 +986,6 @@ pack_unpack(str, fmt)
 void
 Init_pack()
 {
-    rb_define_method(cArray, "pack", pack_pack, 1);
-    rb_define_method(cString, "unpack", pack_unpack, 1);
+    rb_define_method(rb_cArray, "pack", pack_pack, 1);
+    rb_define_method(rb_cString, "unpack", pack_unpack, 1);
 }

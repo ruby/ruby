@@ -64,7 +64,7 @@ w_byte(c, arg)
     struct dump_arg *arg;
 {
     if (arg->fp) putc(c, arg->fp);
-    else str_cat(arg->str, &c, 1);
+    else rb_str_cat(arg->str, &c, 1);
 }
 
 static void
@@ -78,7 +78,7 @@ w_bytes(s, n, arg)
 	fwrite(s, 1, n, arg->fp);
     }
     else {
-	str_cat(arg->str, s, n);
+	rb_str_cat(arg->str, s, n);
     }
 }
 
@@ -150,7 +150,7 @@ w_symbol(id, arg)
     else {
 	w_byte(TYPE_SYMBOL, arg);
 	w_bytes(sym, strlen(sym), arg);
-	st_insert(arg->symbol, id, arg->symbol->num_entries);
+	st_add_direct(arg->symbol, id, arg->symbol->num_entries);
     }
 }
 
@@ -165,7 +165,7 @@ w_unique(s, arg)
 static void w_object _((VALUE,struct dump_arg*,int));
 
 static int
-hash_each(key, value, arg)
+rb_hash_each(key, value, arg)
     VALUE key, value;
     struct dump_call_arg *arg;
 {
@@ -175,7 +175,7 @@ hash_each(key, value, arg)
 }
 
 static int
-obj_each(id, value, arg)
+rb_obj_each(id, value, arg)
     ID id;
     VALUE value;
     struct dump_call_arg *arg;
@@ -205,15 +205,15 @@ w_object(obj, arg, limit)
     struct dump_call_arg c_arg;
 
     if (limit == 0) {
-	Fail("exceed depth limit");
+	rb_raise(rb_eRuntimeError, "exceed depth limit");
     }
     if (obj == Qnil) {
 	w_byte(TYPE_NIL, arg);
     }
-    else if (obj == TRUE) {
+    else if (obj == Qtrue) {
 	w_byte(TYPE_TRUE, arg);
     }
-    else if (obj == FALSE) {
+    else if (obj == Qfalse) {
 	w_byte(TYPE_FALSE, arg);
     }
     else if (FIXNUM_P(obj)) {
@@ -226,7 +226,7 @@ w_object(obj, arg, limit)
 	    w_long(FIX2LONG(obj), arg);
 	}
 	else {
-	    w_object(int2big(FIX2LONG(obj)), arg, limit);
+	    w_object(rb_int2big(FIX2LONG(obj)), arg, limit);
 	    return;
 	}
 #endif
@@ -244,7 +244,7 @@ w_object(obj, arg, limit)
 	    return;
 	}
 
-	st_insert(arg->data, obj, arg->data->num_entries);
+	st_add_direct(arg->data, obj, arg->data->num_entries);
 	if (rb_respond_to(obj, s_dump)) {
 	    VALUE v;
 
@@ -252,7 +252,7 @@ w_object(obj, arg, limit)
 	    w_unique(rb_class2name(CLASS_OF(obj)), arg);
 	    v = rb_funcall(obj, s_dump, 1, limit);
 	    if (TYPE(v) != T_STRING) {
-		TypeError("_dump_to must return String");
+		rb_raise(rb_eTypeError, "_dump_to must return String");
 	    }
 	    w_bytes(RSTRING(v)->ptr, RSTRING(v)->len, arg);
 	    return;
@@ -290,20 +290,20 @@ w_object(obj, arg, limit)
 	    return;
 
 	  case T_STRING:
-	    w_uclass(obj, cString, arg);
+	    w_uclass(obj, rb_cString, arg);
 	    w_byte(TYPE_STRING, arg);
 	    w_bytes(RSTRING(obj)->ptr, RSTRING(obj)->len, arg);
 	    return;
 
 	  case T_REGEXP:
-	    w_uclass(obj, cRegexp, arg);
+	    w_uclass(obj, rb_cRegexp, arg);
 	    w_byte(TYPE_REGEXP, arg);
 	    w_bytes(RREGEXP(obj)->str, RREGEXP(obj)->len, arg);
-	    w_byte(reg_options(obj), arg);
+	    w_byte(rb_reg_options(obj), arg);
 	    return;
 
 	  case T_ARRAY:
-	    w_uclass(obj, cArray, arg);
+	    w_uclass(obj, rb_cArray, arg);
 	    w_byte(TYPE_ARRAY, arg);
 	    {
 		int len = RARRAY(obj)->len;
@@ -318,10 +318,10 @@ w_object(obj, arg, limit)
 	    break;
 
 	  case T_HASH:
-	    w_uclass(obj, cHash, arg);
+	    w_uclass(obj, rb_cHash, arg);
 	    w_byte(TYPE_HASH, arg);
 	    w_long(RHASH(obj)->tbl->num_entries, arg);
-	    st_foreach(RHASH(obj)->tbl, hash_each, &c_arg);
+	    st_foreach(RHASH(obj)->tbl, rb_hash_each, &c_arg);
 	    break;
 
 	  case T_STRUCT:
@@ -336,7 +336,7 @@ w_object(obj, arg, limit)
 		w_long(len, arg);
 		mem = rb_ivar_get(CLASS_OF(obj), rb_intern("__member__"));
 		if (mem == Qnil) {
-		    Fatal("non-initialized struct");
+		    rb_raise(rb_eTypeError, "non-initialized struct");
 		}
 		for (i=0; i<len; i++) {
 		    w_symbol(FIX2LONG(RARRAY(mem)->ptr[i]), arg);
@@ -352,13 +352,13 @@ w_object(obj, arg, limit)
 		char *path;
 
 		if (FL_TEST(klass, FL_SINGLETON)) {
-		    TypeError("singleton can't be dumped");
+		    rb_raise(rb_eTypeError, "singleton can't be dumped");
 		}
 		path = rb_class2name(klass);
 		w_unique(path, arg);
 		if (ROBJECT(obj)->iv_tbl) {
 		    w_long(ROBJECT(obj)->iv_tbl->num_entries, arg);
-		    st_foreach(ROBJECT(obj)->iv_tbl, obj_each, &c_arg);
+		    st_foreach(ROBJECT(obj)->iv_tbl, rb_obj_each, &c_arg);
 		}
 		else {
 		    w_long(0, arg);
@@ -367,7 +367,8 @@ w_object(obj, arg, limit)
 	    break;
 
 	  default:
-	    TypeError("can't dump %s", rb_class2name(CLASS_OF(obj)));
+	    rb_raise(rb_eTypeError, "can't dump %s",
+		     rb_class2name(CLASS_OF(obj)));
 	    break;
 	}
     }
@@ -411,21 +412,21 @@ marshal_dump(argc, argv)
 	else port = a1;
     }
     if (port) {
-	if (obj_is_kind_of(port, cIO)) {
+	if (rb_obj_is_kind_of(port, rb_cIO)) {
 	    OpenFile *fptr;
 
-	    io_binmode(port);
+	    rb_io_binmode(port);
 	    GetOpenFile(port, fptr);
-	    io_writable(fptr);
+	    rb_io_check_writable(fptr);
 	    arg.fp = (fptr->f2) ? fptr->f2 : fptr->f;
 	}
 	else {
-	    TypeError("instance of IO needed");
+	    rb_raise(rb_eTypeError, "instance of IO needed");
 	}
     }
     else {
 	arg.fp = 0;
-	port = str_new(0, 0);
+	port = rb_str_new(0, 0);
 	arg.str = port;
     }
 
@@ -479,8 +480,8 @@ static void
 long_toobig(size)
     int size;
 {
-    TypeError("long too big for this architecture (size %d, given %d)",
-	      sizeof(long), size);
+    rb_raise(rb_eTypeError, "long too big for this architecture (size %d, given %d)",
+	     sizeof(long), size);
 }
 
 static long
@@ -554,7 +555,7 @@ r_symbol(arg)
 	if (st_lookup(arg->symbol, num, &id)) {
 	    return id;
 	}
-	TypeError("bad symbol");
+	rb_raise(rb_eTypeError, "bad symbol");
     }
     r_bytes(buf, arg);
     id = rb_intern(buf);
@@ -578,7 +579,7 @@ r_string(arg)
     int len;
 
     r_bytes2(buf, len, arg);
-    return str_taint(str_new(buf, len));
+    return rb_str_taint(rb_str_new(buf, len));
 }
 
 static VALUE
@@ -602,14 +603,14 @@ r_object(arg)
 
     switch (type) {
       case EOF:
-	eof_error();
+	rb_eof_error();
 	return Qnil;
 
       case TYPE_LINK:
 	if (st_lookup(arg->data, r_long(arg), &v)) {
 	    return v;
 	}
-	ArgError("dump format error (unlinked)");
+	rb_raise(rb_eArgError, "dump format error (unlinked)");
 	break;
 
       case TYPE_UCLASS:
@@ -617,7 +618,7 @@ r_object(arg)
 	    VALUE c = rb_path2class(r_unique(arg));
 	    v = r_object(arg);
 	    if (rb_special_const_p(v)) {
-		ArgError("dump format error (user class)");
+		rb_raise(rb_eArgError, "dump format error (user class)");
 	    }
 	    RBASIC(v)->klass = c;
 	    return v;
@@ -627,10 +628,10 @@ r_object(arg)
 	return Qnil;
 
       case TYPE_TRUE:
-	return TRUE;
+	return Qtrue;
 
       case TYPE_FALSE:
-	return FALSE;
+	return Qfalse;
 
       case TYPE_FIXNUM:
 	{
@@ -646,7 +647,7 @@ r_object(arg)
 	    char *buf;
 
 	    r_bytes(buf, arg);
-	    v = float_new(atof(buf));
+	    v = rb_float_new(atof(buf));
 	    return r_regist(v, arg);
 	}
 
@@ -656,14 +657,14 @@ r_object(arg)
 	    unsigned short *digits;
 
 	    NEWOBJ(big, struct RBignum);
-	    OBJSETUP(big, cBignum, T_BIGNUM);
+	    OBJSETUP(big, rb_cBignum, T_BIGNUM);
 	    big->sign = (r_byte(arg) == '+');
 	    big->len = len = r_long(arg);
 	    big->digits = digits = ALLOC_N(unsigned short, len);
 	    while (len--) {
 		*digits++ = r_short(arg);
 	    }
-	    big = RBIGNUM(big_norm((VALUE)big));
+	    big = RBIGNUM(rb_big_norm((VALUE)big));
 	    if (TYPE(big) == T_BIGNUM) {
 		r_regist((VALUE)big, arg);
 	    }
@@ -681,16 +682,16 @@ r_object(arg)
 
 	    r_bytes2(buf, len, arg);
 	    options = r_byte(arg);
-	    return r_regist(reg_new(buf, len, options), arg);
+	    return r_regist(rb_reg_new(buf, len, options), arg);
 	}
 
       case TYPE_ARRAY:
 	{
 	    volatile int len = r_long(arg);
-	    v = ary_new2(len);
+	    v = rb_ary_new2(len);
 	    r_regist(v, arg);
 	    while (len--) {
-		ary_push(v, r_object(arg));
+		rb_ary_push(v, r_object(arg));
 	    }
 	    return v;
 	}
@@ -699,12 +700,12 @@ r_object(arg)
 	{
 	    int len = r_long(arg);
 
-	    v = hash_new();
+	    v = rb_hash_new();
 	    r_regist(v, arg);
 	    while (len--) {
 		VALUE key = r_object(arg);
 		VALUE value = r_object(arg);
-		hash_aset(v, key, value);
+		rb_hash_aset(v, key, value);
 	    }
 	    return v;
 	}
@@ -719,26 +720,26 @@ r_object(arg)
 	    klass = rb_path2class(r_unique(arg));
 	    mem = rb_ivar_get(klass, rb_intern("__member__"));
 	    if (mem == Qnil) {
-		Fatal("non-initialized struct");
+		rb_raise(rb_eTypeError, "non-initialized struct");
 	    }
 	    len = r_long(arg);
 
-	    values = ary_new2(len);
+	    values = rb_ary_new2(len);
 	    for (i=0; i<len; i++) {
-		ary_push(values, Qnil);
+		rb_ary_push(values, Qnil);
 	    }
-	    v = struct_alloc(klass, values);
+	    v = rb_struct_alloc(klass, values);
 	    r_regist(v, arg);
 	    for (i=0; i<len; i++) {
 		slot = r_symbol(arg);
 
 		if (RARRAY(mem)->ptr[i] != INT2FIX(slot)) {
-		    TypeError("struct %s not compatible (:%s for :%s)",
-			      rb_class2name(klass),
-			      rb_id2name(slot),
-			      rb_id2name(FIX2INT(RARRAY(mem)->ptr[i])));
+		    rb_raise(rb_eTypeError, "struct %s not compatible (:%s for :%s)",
+			     rb_class2name(klass),
+			     rb_id2name(slot),
+			     rb_id2name(FIX2INT(RARRAY(mem)->ptr[i])));
 		}
-		struct_aset(v, INT2FIX(i), r_object(arg));
+		rb_struct_aset(v, INT2FIX(i), r_object(arg));
 	    }
 	    return v;
 	}
@@ -753,8 +754,8 @@ r_object(arg)
 		v = rb_funcall(klass, s_load, 1, r_string(arg));
 		return r_regist(v, arg);
 	    }
-	    TypeError("class %s needs to have method `_load_from'",
-		      rb_class2name(klass));
+	    rb_raise(rb_eTypeError, "class %s needs to have method `_load_from'",
+		     rb_class2name(klass));
 	}
         break;
 
@@ -765,7 +766,7 @@ r_object(arg)
 
 	    klass = rb_path2class(r_unique(arg));
 	    len = r_long(arg);
-	    v = obj_alloc(klass);
+	    v = rb_obj_alloc(klass);
 	    r_regist(v, arg);
 	    if (len > 0) {
 		while (len--) {
@@ -786,7 +787,7 @@ r_object(arg)
 	}
 
       default:
-	ArgError("dump format error(0x%x)", type);
+	rb_raise(rb_eArgError, "dump format error(0x%x)", type);
 	break;
     }
 }
@@ -819,10 +820,10 @@ marshal_load(argc, argv)
     struct load_arg arg;
 
     rb_scan_args(argc, argv, "11", &port, &proc);
-    if (obj_is_kind_of(port, cIO)) {
-	io_binmode(port);
+    if (rb_obj_is_kind_of(port, rb_cIO)) {
+	rb_io_binmode(port);
 	GetOpenFile(port, fptr);
-	io_readable(fptr);
+	rb_io_check_readable(fptr);
 	arg.fp = fptr->f;
     }
     else if (rb_respond_to(port, rb_intern("to_str"))) {
@@ -833,13 +834,13 @@ marshal_load(argc, argv)
 	arg.end = arg.ptr + RSTRING(port)->len;
     }
     else {
-	TypeError("instance of IO needed");
+	rb_raise(rb_eTypeError, "instance of IO needed");
     }
 
     major = r_byte(&arg);
     if (major == MARSHAL_MAJOR) {
 	if (r_byte(&arg) != MARSHAL_MINOR) {
-	    Warn("Old marshal file format (can be read)");
+	    rb_warn("Old marshal file format (can be read)");
 	}
 	arg.symbol = st_init_numtable();
 	arg.data   = st_init_numtable();
@@ -848,7 +849,7 @@ marshal_load(argc, argv)
 	v = rb_ensure(load, (VALUE)&arg, load_ensure, (VALUE)&arg);
     }
     else {
-	TypeError("Old marshal file format (can't read)");
+	rb_raise(rb_eTypeError, "Old marshal file format (can't read)");
     }
 
     return v;
@@ -857,13 +858,13 @@ marshal_load(argc, argv)
 void
 Init_marshal()
 {
-    VALUE mMarshal = rb_define_module("Marshal");
+    VALUE rb_mMarshal = rb_define_module("Marshal");
 
     s_dump = rb_intern("_dump_to");
     s_load = rb_intern("_load_from");
-    rb_define_module_function(mMarshal, "dump", marshal_dump, -1);
-    rb_define_module_function(mMarshal, "load", marshal_load, -1);
-    rb_define_module_function(mMarshal, "restore", marshal_load, 1);
+    rb_define_module_function(rb_mMarshal, "dump", marshal_dump, -1);
+    rb_define_module_function(rb_mMarshal, "load", marshal_load, -1);
+    rb_define_module_function(rb_mMarshal, "restore", marshal_load, 1);
 
     rb_provide("marshal.o");	/* for backward compatibility */
 }

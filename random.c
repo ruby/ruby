@@ -79,7 +79,7 @@ static char state[256];
 #endif
 
 static VALUE
-f_srand(argc, argv, obj)
+rb_f_srand(argc, argv, obj)
     int argc;
     VALUE *argv;
     VALUE obj;
@@ -112,38 +112,38 @@ f_srand(argc, argv, obj)
     old = saved_seed;
     saved_seed = seed;
 
-    return int2inum(old);
+    return rb_int2inum(old);
 }
 
 static VALUE
-f_rand(obj, vmax)
+rb_f_rand(obj, vmax)
     VALUE obj, vmax;
 {
     long val, max;
 
     switch (TYPE(vmax)) {
       case T_BIGNUM:
-	return big_rand(vmax);
+	return rb_big_rand(vmax);
 	
       case T_FLOAT:
 	if (RFLOAT(vmax)->value > LONG_MAX || RFLOAT(vmax)->value < LONG_MIN)
-	    return big_rand(dbl2big(RFLOAT(vmax)->value));
+	    return rb_big_rand(rb_dbl2big(RFLOAT(vmax)->value));
 	break;
     }
 
     max = NUM2LONG(vmax);
     if (max == 0) {
-	return float_new(RANDOM_NUMBER);
+	return rb_float_new(RANDOM_NUMBER);
     }
     val = max*RANDOM_NUMBER;
 
     if (val < 0) val = -val;
-    return int2inum(val);
+    return rb_int2inum(val);
 }
 
 void
 Init_Random()
 {
-    rb_define_global_function("srand", f_srand, -1);
-    rb_define_global_function("rand", f_rand, 1);
+    rb_define_global_function("srand", rb_f_srand, -1);
+    rb_define_global_function("rand", rb_f_rand, 1);
 }

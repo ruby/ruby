@@ -22,7 +22,7 @@ class Tempfile < SimpleDelegator
 	File.unlink(path) 
       end
       if File.exist?(path + '.lock')
-	File.rmdir(path + '.lock')
+	Dir.rmdir(path + '.lock')
       end
       print "done\n" if $DEBUG
     }
@@ -51,8 +51,8 @@ class Tempfile < SimpleDelegator
       @clean_files = Tempfile.callback(tmpname)
       ObjectSpace.define_finalizer(self, @clean_files)
 
-      @tmpname = tmpname
       @tmpfile = File.open(tmpname, 'w+')
+      @tmpname = tmpname
       super(@tmpfile)
       Dir.rmdir(lock)
     ensure

@@ -17,6 +17,7 @@ else
 end
 have_header("sys/un.h")
 if have_func(test_func)
+  have_func("inet_aton")
   have_func("hsterror")
   unless have_func("gethostname")
     have_func("uname")

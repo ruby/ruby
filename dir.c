@@ -57,7 +57,7 @@ char *getenv();
 # include <sys/errno.h>
 #endif
 
-static VALUE cDir;
+VALUE rb_cDir;
 
 static void
 free_dir(dir)
@@ -80,7 +80,7 @@ dir_s_open(dir_class, dirname)
     dirp = opendir(RSTRING(dirname)->ptr);
     if (dirp == NULL) {
 	if (errno == EMFILE || errno == ENFILE) {
-	    gc_gc();
+	    rb_gc();
 	    dirp = opendir(RSTRING(dirname)->ptr);
 	}
 	if (dirp == NULL) {
@@ -90,7 +90,7 @@ dir_s_open(dir_class, dirname)
 
     obj = Data_Wrap_Struct(dir_class, 0, free_dir, dirp);
 
-    if (iterator_p()) {
+    if (rb_iterator_p()) {
 	return rb_ensure(rb_yield, obj, dir_close, obj);
     }
 
@@ -100,7 +100,7 @@ dir_s_open(dir_class, dirname)
 static void
 dir_closed()
 {
-    Fail("closed directory");
+    rb_raise(rb_eIOError, "closed directory");
 }
 
 #define GetDIR(obj, dirp) {\
@@ -119,7 +119,7 @@ dir_read(dir)
     errno = 0;
     dp = readdir(dirp);
     if (dp)
-	return str_taint(str_new(dp->d_name, NAMLEN(dp)));
+	return rb_str_taint(rb_str_new(dp->d_name, NAMLEN(dp)));
     else if (errno == 0) {	/* end of stream */
 	return Qnil;
     }
@@ -138,7 +138,7 @@ dir_each(dir)
 
     GetDIR(dir, dirp);
     for (dp = readdir(dirp); dp != NULL; dp = readdir(dirp)) {
-	file = str_taint(str_new(dp->d_name, NAMLEN(dp)));
+	file = rb_str_taint(rb_str_new(dp->d_name, NAMLEN(dp)));
 	rb_yield(file);
     }
     return dir;
@@ -154,7 +154,7 @@ dir_tell(dir)
 #if !defined(__CYGWIN32__) && !defined(__BEOS__)
     GetDIR(dir, dirp);
     pos = telldir(dirp);
-    return int2inum(pos);
+    return rb_int2inum(pos);
 #else
     rb_notimplement();
 #endif
@@ -240,7 +240,7 @@ dir_s_getwd(dir)
     if (getwd(path) == 0) rb_sys_fail(path);
 #endif
 
-    return str_taint(str_new2(path));
+    return rb_str_taint(rb_str_new2(path));
 }
 
 static VALUE
@@ -298,7 +298,7 @@ dir_s_rmdir(obj, dir)
     if (rmdir(RSTRING(dir)->ptr) < 0)
 	rb_sys_fail(RSTRING(dir)->ptr);
 
-    return TRUE;
+    return Qtrue;
 }
 
 #define isdelim(c) ((c)==' '||(c)=='\t'||(c)=='\n'||(c)=='\0')
@@ -317,7 +317,7 @@ push_globs(ary, s)
     if (fnames == (char**)-1) rb_sys_fail(s);
     ff = fnames;
     while (*ff) {
-	ary_push(ary, str_taint(str_new2(*ff)));
+	rb_ary_push(ary, rb_str_taint(rb_str_new2(*ff)));
 	free(*ff);
 	ff++;
     }
@@ -384,9 +384,10 @@ dir_s_glob(dir, str)
 
     Check_SafeStr(str);
     if (RSTRING(str)->len > MAXPATHLEN) {
-	ArgError("pathname too long (%d bytes)", RSTRING(str)->len);
+	rb_raise(rb_eArgError, "pathname too long (%d bytes)",
+		 RSTRING(str)->len);
     }
-    ary = ary_new();
+    ary = rb_ary_new();
 
     p = RSTRING(str)->ptr;
     pend = p + RSTRING(str)->len;
@@ -422,37 +423,37 @@ dir_foreach(io, dirname)
 {
     VALUE dir;
 
-    dir = rb_funcall(cDir, rb_intern("open"), 1, dirname);
+    dir = rb_funcall(rb_cDir, rb_intern("open"), 1, dirname);
     return rb_ensure(dir_each, dir, dir_close, dir);
 }
 
 void
 Init_Dir()
 {
-    cDir = rb_define_class("Dir", cObject);
+    rb_cDir = rb_define_class("Dir", rb_cObject);
 
-    rb_include_module(cDir, mEnumerable);
+    rb_include_module(rb_cDir, rb_mEnumerable);
 
-    rb_define_singleton_method(cDir, "new", dir_s_open, 1);
-    rb_define_singleton_method(cDir, "open", dir_s_open, 1);
-    rb_define_singleton_method(cDir, "foreach", dir_foreach, 1);
+    rb_define_singleton_method(rb_cDir, "new", dir_s_open, 1);
+    rb_define_singleton_method(rb_cDir, "open", dir_s_open, 1);
+    rb_define_singleton_method(rb_cDir, "foreach", dir_foreach, 1);
 
-    rb_define_method(cDir,"read", dir_read, 0);
-    rb_define_method(cDir,"each", dir_each, 0);
-    rb_define_method(cDir,"rewind", dir_rewind, 0);
-    rb_define_method(cDir,"tell", dir_tell, 0);
-    rb_define_method(cDir,"seek", dir_seek, 1);
-    rb_define_method(cDir,"close", dir_close, 0);
+    rb_define_method(rb_cDir,"read", dir_read, 0);
+    rb_define_method(rb_cDir,"each", dir_each, 0);
+    rb_define_method(rb_cDir,"rewind", dir_rewind, 0);
+    rb_define_method(rb_cDir,"tell", dir_tell, 0);
+    rb_define_method(rb_cDir,"seek", dir_seek, 1);
+    rb_define_method(rb_cDir,"close", dir_close, 0);
 
-    rb_define_singleton_method(cDir,"chdir", dir_s_chdir, -1);
-    rb_define_singleton_method(cDir,"getwd", dir_s_getwd, 0);
-    rb_define_singleton_method(cDir,"pwd", dir_s_getwd, 0);
-    rb_define_singleton_method(cDir,"chroot", dir_s_chroot, 1);
-    rb_define_singleton_method(cDir,"mkdir", dir_s_mkdir, -1);
-    rb_define_singleton_method(cDir,"rmdir", dir_s_rmdir, 1);
-    rb_define_singleton_method(cDir,"delete", dir_s_rmdir, 1);
-    rb_define_singleton_method(cDir,"unlink", dir_s_rmdir, 1);
+    rb_define_singleton_method(rb_cDir,"chdir", dir_s_chdir, -1);
+    rb_define_singleton_method(rb_cDir,"getwd", dir_s_getwd, 0);
+    rb_define_singleton_method(rb_cDir,"pwd", dir_s_getwd, 0);
+    rb_define_singleton_method(rb_cDir,"chroot", dir_s_chroot, 1);
+    rb_define_singleton_method(rb_cDir,"mkdir", dir_s_mkdir, -1);
+    rb_define_singleton_method(rb_cDir,"rmdir", dir_s_rmdir, 1);
+    rb_define_singleton_method(rb_cDir,"delete", dir_s_rmdir, 1);
+    rb_define_singleton_method(rb_cDir,"unlink", dir_s_rmdir, 1);
 
-    rb_define_singleton_method(cDir,"glob", dir_s_glob, 1);
-    rb_define_singleton_method(cDir,"[]", dir_s_glob, 1);
+    rb_define_singleton_method(rb_cDir,"glob", dir_s_glob, 1);
+    rb_define_singleton_method(rb_cDir,"[]", dir_s_glob, 1);
 }

@@ -74,9 +74,9 @@ OBJS	      = array.o \
 all:		miniruby$(binsuffix) rbconfig.rb
 		@./miniruby$(binsuffix) -Xext extmk.rb @EXTSTATIC@
 
-miniruby$(binsuffix):	$(OBJS) $(MAINOBJ) dmyext.o
+miniruby$(binsuffix):	$(LIBRUBY) $(MAINOBJ) dmyext.o
 		@rm -f $@
-		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(OBJS) dmyext.o $(LIBS) -o $@
+		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) dmyext.o $(LIBRUBYARG) $(LIBS) -o $@
 
 ruby$(binsuffix):     	$(LIBRUBY) $(MAINOBJ) $(EXTOBJS) 
 		@rm -f $@
@@ -213,7 +213,7 @@ random.o: random.c ruby.h config.h defines.h intern.h
 range.o: range.c ruby.h config.h defines.h intern.h
 re.o: re.c ruby.h config.h defines.h intern.h re.h regex.h
 regex.o: regex.c config.h regex.h util.h
-ruby.o: ruby.c ruby.h config.h defines.h intern.h dln.h
+ruby.o: ruby.c ruby.h config.h defines.h intern.h dln.h util.h
 signal.o: signal.c ruby.h config.h defines.h intern.h rubysig.h
 sprintf.o: sprintf.c ruby.h config.h defines.h intern.h
 st.o: st.c config.h st.h

@@ -30,7 +30,7 @@ struct timeval {
 #endif /* NT */
 #include <ctype.h>
 
-struct timeval time_timeval _((VALUE));
+struct timeval rb_time_timeval _((VALUE));
 
 #ifdef HAVE_SYS_WAIT_H
 # include <sys/wait.h>
@@ -64,7 +64,7 @@ get_ppid()
 #endif
 }
 
-VALUE last_status = Qnil;
+VALUE rb_last_status = Qnil;
 
 #if !defined(HAVE_WAITPID) && !defined(HAVE_WAIT4)
 #define NO_WAITPID
@@ -81,7 +81,7 @@ rb_waitpid(pid, flags, st)
 #ifndef NO_WAITPID
 #if defined(THREAD)
     int oflags = flags;
-    if (!thread_alone()) {	/* there're other threads to run */
+    if (!rb_thread_alone()) {	/* there're other threads to run */
 	flags |= WNOHANG;
     }
 #endif
@@ -95,7 +95,7 @@ rb_waitpid(pid, flags, st)
     if (result < 0) {
 	if (errno == EINTR) {
 #ifdef THREAD
-	    thread_schedule();
+	    rb_thread_schedule();
 #endif
 	    goto retry;
 	}
@@ -104,20 +104,20 @@ rb_waitpid(pid, flags, st)
 #ifdef THREAD
     if (result == 0) {
 	if (oflags & WNOHANG) return 0;
-	thread_schedule();
-	if (thread_alone()) flags = oflags;
+	rb_thread_schedule();
+	if (rb_thread_alone()) flags = oflags;
 	goto retry;
     }
 #endif
 #else  /* NO_WAITPID */
     if (pid_tbl && st_lookup(pid_tbl, pid, st)) {
-	last_status = INT2FIX(*st);
+	rb_last_status = INT2FIX(*st);
 	st_delete(pid_tbl, &pid, NULL);
 	return pid;
     }
 
     if (flags) {
-	ArgError("Can't do waitpid with flags");
+	rb_raise(rb_eArgError, "Can't do waitpid with flags");
     }
 
     for (;;) {
@@ -125,7 +125,7 @@ rb_waitpid(pid, flags, st)
 	if (result < 0) {
 	    if (errno == EINTR) {
 #ifdef THREAD
-		thread_schedule();
+		rb_thread_schedule();
 #endif
 		continue;
 	    }
@@ -138,11 +138,11 @@ rb_waitpid(pid, flags, st)
 	    pid_tbl = st_init_numtable();
 	st_insert(pid_tbl, pid, st);
 #ifdef THREAD
-	if (!thread_alone()) thread_schedule();
+	if (!thread_alone()) rb_thread_schedule();
 #endif
     }
 #endif
-    last_status = INT2FIX(*st);
+    rb_last_status = INT2FIX(*st);
     return result;
 }
 
@@ -166,7 +166,7 @@ wait_each(key, value, data)
 #endif
 
 static VALUE
-f_wait()
+rb_f_wait()
 {
     int pid, state;
 #ifdef NO_WAITPID
@@ -175,20 +175,20 @@ f_wait()
     data.status = -1;
     st_foreach(pid_tbl, wait_each, &data);
     if (data.status != -1) {
-	last_status = data.status;
+	rb_last_status = data.status;
 	return INT2FIX(data.pid);
     }
 
     while ((pid = wait(&state)) < 0) {
         if (errno == EINTR) {
 #ifdef THREAD
-            thread_schedule();
+            rb_thread_schedule();
 #endif
             continue;
         }
         rb_sys_fail(0);
     }
-    last_status = INT2FIX(state);
+    rb_last_status = INT2FIX(state);
 #else
     if ((pid = rb_waitpid(-1, 0, &state)) < 0)
 	rb_sys_fail(0);
@@ -197,7 +197,7 @@ f_wait()
 }
 
 static VALUE
-f_waitpid(obj, vpid, vflags)
+rb_f_waitpid(obj, vpid, vflags)
     VALUE obj, vpid, vflags;
 {
     int pid, flags, status;
@@ -247,8 +247,8 @@ security(str)
 {
     if (rb_safe_level() > 0) {
 #ifndef USE_CWGUSI
-	if (env_path_tainted()) {
-	    Raise(eSecurityError, "Insecure PATH - %s", str);
+	if (rb_env_path_tainted()) {
+	    rb_raise(rb_eSecurityError, "Insecure PATH - %s", str);
 	}
 #endif
     }
@@ -496,7 +496,7 @@ proc_spawn(sv)
 #endif /* __human68k__ */
 
 static VALUE
-f_exec(argc, argv)
+rb_f_exec(argc, argv)
     int argc;
     VALUE *argv;
 {
@@ -505,7 +505,7 @@ f_exec(argc, argv)
 
     if (TYPE(argv[0]) == T_ARRAY) {
 	if (RARRAY(argv[0])->len != 2) {
-	    ArgError("wrong first argument");
+	    rb_raise(rb_eArgError, "wrong first argument");
 	}
 	prog = RARRAY(argv[0])->ptr[0];
 	argv[0] = RARRAY(argv[0])->ptr[1];
@@ -513,7 +513,7 @@ f_exec(argc, argv)
 
     if (TYPE(argv[0]) == T_ARRAY) {
 	if (RARRAY(argv[0])->len != 2) {
-	    ArgError("wrong first argument");
+	    rb_raise(rb_eArgError, "wrong first argument");
 	}
 	prog = RARRAY(argv[0])->ptr[0];
 	argv[0] = RARRAY(argv[0])->ptr[1];
@@ -534,7 +534,7 @@ f_exec(argc, argv)
 }
 
 static VALUE
-f_fork(obj)
+rb_f_fork(obj)
     VALUE obj;
 {
 #if !defined(__human68k__)
@@ -546,7 +546,7 @@ f_fork(obj)
 #ifdef linux
 	after_exec();
 #endif
-	if (iterator_p()) {
+	if (rb_iterator_p()) {
 	    rb_yield(Qnil);
 	    _exit(0);
 	}
@@ -565,7 +565,7 @@ f_fork(obj)
 }
 
 static VALUE
-f_exit_bang(obj, status)
+rb_f_exit_bang(obj, status)
     VALUE obj, status;
 {
     int code = -1;
@@ -614,7 +614,7 @@ rb_syswait(pid)
 }
 
 static VALUE
-f_system(argc, argv)
+rb_f_system(argc, argv)
     int argc;
     VALUE *argv;
 {
@@ -624,18 +624,18 @@ f_system(argc, argv)
 
     if (TYPE(argv[0]) == T_ARRAY) {
 	if (RARRAY(argv[0])->len != 2) {
-	    ArgError("wrong first argument");
+	    rb_raise(rb_eArgError, "wrong first argument");
 	}
 	argv[0] = RARRAY(argv[0])->ptr[0];
     }
-    cmd = ary_join(ary_new4(argc, argv), str_new2(" "));
+    cmd = rb_ary_join(ary_new4(argc, argv), rb_str_new2(" "));
 
     Check_SafeStr(cmd);
     state = do_spawn(RSTRING(cmd)->ptr);
-    last_status = INT2FIX(state);
+    rb_last_status = INT2FIX(state);
 
-    if (state == 0) return TRUE;
-    return FALSE;
+    if (state == 0) return Qtrue;
+    return Qfalse;
 #else
 #if defined(DJGPP)
     VALUE cmd;
@@ -643,18 +643,18 @@ f_system(argc, argv)
 
     if (TYPE(argv[0]) == T_ARRAY) {
 	if (RARRAY(argv[0])->len != 2) {
-	    ArgError("wrong first argument");
+	    rb_raise(rb_eArgError, "wrong first argument");
 	}
 	argv[0] = RARRAY(argv[0])->ptr[0];
     }
-    cmd = ary_join(ary_new4(argc, argv), str_new2(" "));
+    cmd = rb_ary_join(ary_new4(argc, argv), rb_str_new2(" "));
 
     Check_SafeStr(cmd);
     state = system(RSTRING(cmd)->ptr);
-    last_status = INT2FIX(state);
+    rb_last_status = INT2FIX(state);
 
-    if (state == 0) return TRUE;
-    return FALSE;
+    if (state == 0) return Qtrue;
+    return Qfalse;
 #else
 #if defined(__human68k__)
     VALUE prog = 0;
@@ -665,13 +665,13 @@ f_system(argc, argv)
     fflush(stdout);
     fflush(stderr);
     if (argc == 0) {
-	last_status = INT2FIX(0);
+	rb_last_status = INT2FIX(0);
 	return INT2FIX(0);
     }
 
     if (TYPE(argv[0]) == T_ARRAY) {
 	if (RARRAY(argv[0])->len != 2) {
-	    ArgError("wrong first argument");
+	    rb_raise(rb_eArgError, "wrong first argument");
 	}
 	prog = RARRAY(argv[0])->ptr[0];
 	argv[0] = RARRAY(argv[0])->ptr[1];
@@ -683,8 +683,8 @@ f_system(argc, argv)
     else {
 	state = proc_spawn_n(argc, argv, prog);
     }
-    last_status = state == -1 ? INT2FIX(127) : INT2FIX(state);
-    return state == 0 ? TRUE : FALSE ;
+    rb_last_status = state == -1 ? INT2FIX(127) : INT2FIX(state);
+    return state == 0 ? Qtrue : Qfalse ;
 #else
     volatile VALUE prog = 0;
     int pid;
@@ -693,13 +693,13 @@ f_system(argc, argv)
     fflush(stdout);
     fflush(stderr);
     if (argc == 0) {
-	last_status = INT2FIX(0);
+	rb_last_status = INT2FIX(0);
 	return INT2FIX(0);
     }
 
     if (TYPE(argv[0]) == T_ARRAY) {
 	if (RARRAY(argv[0])->len != 2) {
-	    ArgError("wrong first argument");
+	    rb_raise(rb_eArgError, "wrong first argument");
 	}
 	prog = RARRAY(argv[0])->ptr[0];
 	argv[0] = RARRAY(argv[0])->ptr[1];
@@ -726,7 +726,7 @@ f_system(argc, argv)
       case -1:
 	if (errno == EAGAIN) {
 #ifdef THREAD
-	    thread_sleep(1);
+	    rb_thread_sleep(1);
 #else
 	    sleep(1);
 #endif
@@ -739,15 +739,15 @@ f_system(argc, argv)
 	rb_syswait(pid);
     }
 
-    if (last_status == INT2FIX(0)) return TRUE;
-    return FALSE;
+    if (rb_last_status == INT2FIX(0)) return Qtrue;
+    return Qfalse;
 #endif
 #endif
 #endif
 }
 
 static VALUE
-f_sleep(argc, argv)
+rb_f_sleep(argc, argv)
     int argc;
     VALUE *argv;
 {
@@ -756,10 +756,10 @@ f_sleep(argc, argv)
     beg = time(0);
 #ifdef THREAD
     if (argc == 0) {
-	thread_sleep_forever();
+	rb_thread_sleep_forever();
     }
     else if (argc == 1) {
-	thread_wait_for(time_timeval(argv[0]));
+	rb_thread_wait_for(rb_time_timeval(argv[0]));
     }
 #else
     if (argc == 0) {
@@ -771,7 +771,7 @@ f_sleep(argc, argv)
 	struct timeval tv;
 	int n;
 
-	tv = time_timeval(argv[0]);
+	tv = rb_time_timeval(argv[0]);
 	TRAP_BEG;
 	n = select(0, 0, 0, 0, &tv);
 	TRAP_END;
@@ -779,7 +779,7 @@ f_sleep(argc, argv)
     }
 #endif
     else {
-	ArgError("wrong # of arguments");
+	rb_raise(rb_eArgError, "wrong # of arguments");
     }
 
     end = time(0) - beg;
@@ -1022,9 +1022,7 @@ proc_setegid(obj, egid)
     return egid;
 }
 
-VALUE mProcess;
-
-extern VALUE f_kill();
+VALUE rb_mProcess;
 
 void
 Init_process()
@@ -1032,74 +1030,74 @@ Init_process()
 #ifndef USE_CWGUSI
     rb_define_virtual_variable("$$", get_pid, 0);
 #endif
-    rb_define_readonly_variable("$?", &last_status);
+    rb_define_readonly_variable("$?", &rb_last_status);
 #ifndef USE_CWGUSI
-    rb_define_global_function("exec", f_exec, -1);
+    rb_define_global_function("exec", rb_f_exec, -1);
 #endif
 #if !defined(NT) && !defined(USE_CWGUSI)
-    rb_define_global_function("fork", f_fork, 0);
+    rb_define_global_function("fork", rb_f_fork, 0);
 #endif
-    rb_define_global_function("exit!", f_exit_bang, 1);
+    rb_define_global_function("exit!", rb_f_exit_bang, 1);
 #ifndef USE_CWGUSI
-    rb_define_global_function("system", f_system, -1);
+    rb_define_global_function("system", rb_f_system, -1);
 #endif
-    rb_define_global_function("sleep", f_sleep, -1);
+    rb_define_global_function("sleep", rb_f_sleep, -1);
 
-    mProcess = rb_define_module("Process");
+    rb_mProcess = rb_define_module("Process");
 
 #if !defined(NT) && !defined(DJGPP)
 #ifdef WNOHANG
-    rb_define_const(mProcess, "WNOHANG", INT2FIX(WNOHANG));
+    rb_define_const(rb_mProcess, "WNOHANG", INT2FIX(WNOHANG));
 #else
-    rb_define_const(mProcess, "WNOHANG", INT2FIX(0));
+    rb_define_const(rb_mProcess, "WNOHANG", INT2FIX(0));
 #endif
 #ifdef WUNTRACED
-    rb_define_const(mProcess, "WUNTRACED", INT2FIX(WUNTRACED));
+    rb_define_const(rb_mProcess, "WUNTRACED", INT2FIX(WUNTRACED));
 #else
-    rb_define_const(mProcess, "WUNTRACED", INT2FIX(0));
+    rb_define_const(rb_mProcess, "WUNTRACED", INT2FIX(0));
 #endif
 #endif
 
 #if !defined(NT) && !defined(USE_CWGUSI)
-    rb_define_singleton_method(mProcess, "fork", f_fork, 0);
+    rb_define_singleton_method(rb_mProcess, "fork", rb_f_fork, 0);
 #endif
-    rb_define_singleton_method(mProcess, "exit!", f_exit_bang, 1);
+    rb_define_singleton_method(rb_mProcess, "exit!", rb_f_exit_bang, 1);
 #ifndef USE_CWGUSI
-    rb_define_module_function(mProcess, "kill", f_kill, -1);
+    rb_define_module_function(rb_mProcess, "kill", rb_f_kill, -1);
 #endif
 #ifndef NT
-    rb_define_module_function(mProcess, "wait", f_wait, 0);
-    rb_define_module_function(mProcess, "waitpid", f_waitpid, 2);
+    rb_define_module_function(rb_mProcess, "wait", rb_f_wait, 0);
+    rb_define_module_function(rb_mProcess, "waitpid", rb_f_waitpid, 2);
 
 #ifndef USE_CWGUSI
-    rb_define_module_function(mProcess, "pid", get_pid, 0);
-    rb_define_module_function(mProcess, "ppid", get_ppid, 0);
+    rb_define_module_function(rb_mProcess, "pid", get_pid, 0);
+    rb_define_module_function(rb_mProcess, "ppid", get_ppid, 0);
 #endif /* ifndef USE_CWGUSI */
 #endif /* ifndef NT */
 
 #if !defined(NT) && !defined(DJGPP) && !defined(__human68k__) && !defined(USE_CWGUSI)
-    rb_define_module_function(mProcess, "getpgrp", proc_getpgrp, -1);
-    rb_define_module_function(mProcess, "setpgrp", proc_setpgrp, -1);
-    rb_define_module_function(mProcess, "setpgid", proc_setpgid, 2);
+    rb_define_module_function(rb_mProcess, "getpgrp", proc_getpgrp, -1);
+    rb_define_module_function(rb_mProcess, "setpgrp", proc_setpgrp, -1);
+    rb_define_module_function(rb_mProcess, "setpgid", proc_setpgid, 2);
 
-    rb_define_module_function(mProcess, "setsid", proc_setsid, 0);
+    rb_define_module_function(rb_mProcess, "setsid", proc_setsid, 0);
 
-    rb_define_module_function(mProcess, "getpriority", proc_getpriority, 2);
-    rb_define_module_function(mProcess, "setpriority", proc_setpriority, 3);
+    rb_define_module_function(rb_mProcess, "getpriority", proc_getpriority, 2);
+    rb_define_module_function(rb_mProcess, "setpriority", proc_setpriority, 3);
 
 #ifdef PRIO_PROCESS
-    rb_define_const(mProcess, "PRIO_PROCESS", INT2FIX(PRIO_PROCESS));
-    rb_define_const(mProcess, "PRIO_PGRP", INT2FIX(PRIO_PGRP));
-    rb_define_const(mProcess, "PRIO_USER", INT2FIX(PRIO_USER));
+    rb_define_const(rb_mProcess, "PRIO_PROCESS", INT2FIX(PRIO_PROCESS));
+    rb_define_const(rb_mProcess, "PRIO_PGRP", INT2FIX(PRIO_PGRP));
+    rb_define_const(rb_mProcess, "PRIO_USER", INT2FIX(PRIO_USER));
 #endif
 
-    rb_define_module_function(mProcess, "uid", proc_getuid, 0);
-    rb_define_module_function(mProcess, "uid=", proc_setuid, 1);
-    rb_define_module_function(mProcess, "gid", proc_getgid, 0);
-    rb_define_module_function(mProcess, "gid=", proc_setgid, 1);
-    rb_define_module_function(mProcess, "euid", proc_geteuid, 0);
-    rb_define_module_function(mProcess, "euid=", proc_seteuid, 1);
-    rb_define_module_function(mProcess, "egid", proc_getegid, 0);
-    rb_define_module_function(mProcess, "egid=", proc_setegid, 1);
+    rb_define_module_function(rb_mProcess, "uid", proc_getuid, 0);
+    rb_define_module_function(rb_mProcess, "uid=", proc_setuid, 1);
+    rb_define_module_function(rb_mProcess, "gid", proc_getgid, 0);
+    rb_define_module_function(rb_mProcess, "gid=", proc_setgid, 1);
+    rb_define_module_function(rb_mProcess, "euid", proc_geteuid, 0);
+    rb_define_module_function(rb_mProcess, "euid=", proc_seteuid, 1);
+    rb_define_module_function(rb_mProcess, "egid", proc_getegid, 0);
+    rb_define_module_function(rb_mProcess, "egid=", proc_setegid, 1);
 #endif
 }
