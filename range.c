@@ -149,6 +149,18 @@ r_gt(a,b)
 }
 
 static VALUE
+r_eqq_str_i(i, data)
+    VALUE i;
+    VALUE *data;
+{
+    if (rb_str_cmp(i, data[0]) == 0) {
+	data[1] = Qtrue;
+	rb_iter_break();
+    }
+    return Qnil;
+}
+
+static VALUE
 range_eqq(range, obj)
     VALUE range, obj;
 {
@@ -167,6 +179,15 @@ range_eqq(range, obj)
 	    }
 	}
 	return Qfalse;
+    }
+    else if (TYPE(beg) == T_STRING &&
+	     TYPE(obj) == T_STRING &&
+	     TYPE(end) == T_STRING) {
+	VALUE data[2];
+
+	data[0] = obj; data[1] = Qfalse;
+	rb_iterate(rb_each, range, r_eqq_str_i, (VALUE)data);
+	return data[1];
     }
     else if (r_le(beg, obj)) {
 	if (EXCL(range)) {

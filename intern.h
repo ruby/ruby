@@ -49,6 +49,7 @@ VALUE rb_ary_concat _((VALUE, VALUE));
 VALUE rb_ary_assoc _((VALUE, VALUE));
 VALUE rb_ary_rassoc _((VALUE, VALUE));
 VALUE rb_ary_includes _((VALUE, VALUE));
+VALUE rb_ary_cmp _((VALUE, VALUE));
 VALUE rb_protect_inspect _((VALUE(*)(),VALUE,VALUE));
 VALUE rb_inspecting_p _((VALUE));
 /* bignum.c */

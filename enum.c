@@ -204,6 +204,44 @@ enum_sort(obj)
 }
 
 static VALUE
+sort_by_i(i, memo)
+    VALUE i;
+    NODE *memo;
+{
+    VALUE e = rb_ary_new3(3, rb_yield(e), INT2NUM(memo->u3.cnt), i);
+    rb_ary_push(memo->u1.value, e);
+    memo->u3.cnt++;
+    return Qnil;
+}
+
+static VALUE
+sort_by_sort_body(a)
+    VALUE a;
+{
+    return rb_ary_cmp(RARRAY(a)->ptr[0], RARRAY(a)->ptr[1]);
+}
+
+static VALUE
+enum_sort_by(obj)
+    VALUE obj;
+{
+    VALUE ary = rb_ary_new();
+    NODE *memo = rb_node_newnode(NODE_MEMO, ary, 0, 0);
+    long i;
+
+    rb_iterate(rb_each, obj, sort_by_i, (VALUE)memo);
+    rb_gc_force_recycle((VALUE)memo);
+    rb_iterate(rb_ary_sort_bang, ary, sort_by_sort_body, 0);
+    for (i=0; i<RARRAY(ary)->len; i++) {
+	VALUE e = RARRAY(ary)->ptr[i];
+	RARRAY(ary)->ptr[i] = rb_ary_entry(e, 2);
+	rb_gc_force_recycle(e);
+    }
+
+    return ary;
+}
+
+static VALUE
 all_i(i, memo)
     VALUE i;
     NODE *memo;
@@ -397,6 +435,7 @@ Init_Enumerable()
     rb_define_method(rb_mEnumerable,"entries", enum_to_a, 0);
 
     rb_define_method(rb_mEnumerable,"sort", enum_sort, 0);
+    rb_define_method(rb_mEnumerable,"sort_by", enum_sort_by, 0);
     rb_define_method(rb_mEnumerable,"grep", enum_grep, 1);
     rb_define_method(rb_mEnumerable,"find", enum_find, -1);
     rb_define_method(rb_mEnumerable,"detect", enum_find, -1);

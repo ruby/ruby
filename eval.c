@@ -1748,6 +1748,7 @@ is_defined(self, node, buf)
     VALUE val;			/* OK */
     int state;
 
+    if (!node) return "expression";
     switch (nd_type(node)) {
       case NODE_SUPER:
       case NODE_ZSUPER:
@@ -2272,7 +2273,7 @@ rb_eval(self, n)
 	switch (state = EXEC_TAG()) {
 	  case 0:
 	    ruby_sourceline = nd_line(node);
-	    if (node->nd_state && !RTEST(rb_eval(self, node->nd_cond)))
+	    if (node->nd_state && !RTEST(result = rb_eval(self, node->nd_cond)))
 		goto while_out;
 	    do {
 	      while_redo:
@@ -2290,19 +2291,20 @@ rb_eval(self, n)
 	    goto while_next;
 	  case TAG_BREAK:
 	    state = 0;
+	    result = prot_tag->retval;
 	  default:
 	    break;
 	}
       while_out:
 	POP_TAG();
 	if (state) JUMP_TAG(state);
-	RETURN(Qnil);
+	RETURN(result);
 
       case NODE_UNTIL:
 	PUSH_TAG(PROT_NONE);
 	switch (state = EXEC_TAG()) {
 	  case 0:
-	    if (node->nd_state && RTEST(rb_eval(self, node->nd_cond)))
+	    if (node->nd_state && RTEST(result = rb_eval(self, node->nd_cond)))
 		goto until_out;
 	    do {
 	      until_redo:
@@ -2320,6 +2322,7 @@ rb_eval(self, n)
 	    goto until_next;
 	  case TAG_BREAK:
 	    state = 0;
+	    result = prot_tag->retval;
 	  default:
 	    break;
 	}
@@ -6804,7 +6807,9 @@ umethod_bind(method, recv)
 	    st_lookup(RCLASS(CLASS_OF(recv))->m_tbl, data->oid, 0)) {
 	    rb_raise(rb_eTypeError, "method `%s' overridden", rb_id2name(data->oid));
 	}
-	if (!rb_obj_is_instance_of(recv, data->oklass)) {
+	if (!((TYPE(data->oklass) == T_MODULE) ?
+	      rb_obj_is_kind_of(recv, data->oklass) :
+	      rb_obj_is_instance_of(recv, data->oklass))) {
 	    rb_raise(rb_eTypeError, "bind argument must be an instance of %s",
 		     rb_class2name(data->oklass));
 	}

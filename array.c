@@ -1443,7 +1443,7 @@ rb_ary_includes(ary, item)
     return Qfalse;
 }
 
-static VALUE
+VALUE
 rb_ary_cmp(ary, ary2)
     VALUE ary;
     VALUE ary2;

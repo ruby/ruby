@@ -609,7 +609,7 @@ rb_trap_restore_mask()
 }
 
 static VALUE
-rb_f_trap(argc, argv)
+sig_trap(argc, argv)
     int argc;
     VALUE *argv;
 {
@@ -643,11 +643,28 @@ rb_f_trap(argc, argv)
 #endif
 }
 
+static VALUE
+sig_list()
+{
+    VALUE h = rb_hash_new();
+    struct signals *sigs;
+
+    for (sigs = siglist; sigs->signm; sigs++) {
+	rb_hash_aset(h, rb_str_new2(sigs->signm), INT2FIX(sigs->signo));
+    }
+    return h;
+}
+
 void
 Init_signal()
 {
 #ifndef MACOS_UNUSE_SIGNAL
-    rb_define_global_function("trap", rb_f_trap, -1);
+    VALUE mSignal = rb_define_module("Signal");
+
+    rb_define_global_function("trap", sig_trap, -1);
+    rb_define_module_function(mSignal, "trap", sig_trap, -1);
+    rb_define_module_function(mSignal, "list", sig_list, 0);
+
     ruby_signal(SIGINT, sighandle);
 #ifdef SIGHUP
     ruby_signal(SIGHUP, sighandle);

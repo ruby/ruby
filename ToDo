@@ -28,6 +28,7 @@ Language Spec.
 * jar like combined library package.
 * resumable Exception via Exception#resume.
 * method combination, e.g. before, after, around, etc.
+* .. or something like defactive in Emacs.
 
 Hacking Interpreter
 

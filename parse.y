@@ -1191,7 +1191,7 @@ primary		: literal
 		    }
 		| tLPAREN_ARG expr {lex_state = EXPR_ENDARG;} ')'
 		    {
-		        rb_warning("%s (...) interpreted as command call", rb_id2name($<id>1));
+		        rb_warning("%s (...) interpreted as grouped expression", rb_id2name($<id>1));
 			$$ = $2;
 		    }
 		| tLPAREN compstmt ')'
@@ -4355,20 +4355,22 @@ value_expr(node)
     if (node == 0) return Qtrue;
 
     switch (nd_type(node)) {
-      case NODE_RETURN:
-      case NODE_BREAK:
-      case NODE_NEXT:
-      case NODE_REDO:
-      case NODE_RETRY:
       case NODE_WHILE:
       case NODE_UNTIL:
       case NODE_CLASS:
       case NODE_MODULE:
       case NODE_DEFN:
       case NODE_DEFS:
+	rb_warning("void value expression");
+	return Qfalse;
+
+      case NODE_RETURN:
+      case NODE_BREAK:
+      case NODE_NEXT:
+      case NODE_REDO:
+      case NODE_RETRY:
 	yyerror("void value expression");
 	return Qfalse;
-	break;
 
       case NODE_BLOCK:
 	while (node->nd_next) {

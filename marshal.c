@@ -293,7 +293,7 @@ w_object(obj, arg, limit)
 	w_byte(TYPE_FIXNUM, arg);
 	w_long(FIX2INT(obj), arg);
 #else
-	if (RSHIFT((long)obj, 30) == 0 || RSHIFT((long)obj, 30) == -1) {
+	if (RSHIFT((long)obj, 31) == 0 || RSHIFT((long)obj, 31) == -1) {
 	    w_byte(TYPE_FIXNUM, arg);
 	    w_long(FIX2LONG(obj), arg);
 	}

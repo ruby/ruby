@@ -3399,7 +3399,7 @@ argf_eof()
     int first = first_p;
 
     if (!next_argv()) return Qtrue;
-    if (!first && next_p == -1) {
+    if (next_p == 1) {
 	return Qtrue;
     }
     if (TYPE(current_file) != T_FILE) {

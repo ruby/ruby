@@ -1,8 +1,52 @@
+Thu Aug 23 10:10:59 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (is_defined): should not dump core for "defined?(())".
+
+	* eval.c (umethod_bind): recv can be an instance of descender of
+	  oklass if oklass is a Module.
+
+Wed Aug 22 23:20:03 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (rb_hash_equal): check identiry equality first.
+
+Tue Aug 21 22:28:09 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* file.c (group_member): should check real gid only.
+
+	* file.c (eaccess): do not cache euid, since effective euid may be
+	  changed via Process.euid=().
+
+	* file.c (eaccess): return -1 unless every specified access mode
+	  is permitted.
+
+Tue Aug 21 16:09:27 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): while/until returns the value which is given
+	  to break.
+
+	* parse.y (value_expr): using while/until/class/def as an
+	  expression is now gives a warning, not an error.
+
+Tue Aug 21 11:56:02 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* range.c (range_eqq): should compare strings based on magical
+	  increment (using String#upto), not dictionary order.
+
 Mon Aug 20 19:53:16 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/digest/sha2/extconf.rb: fix support for cross-compiling.
 
 	* mkconfig.rb: fix support for autoconf 2.52.
+
+Mon Aug 20 17:24:15 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (enum_sort_by): new method for Schewartzian transformed
+	  stable sort.
+
+Mon Aug 20 16:09:05 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* variable.c (mod_av_set): detect constant overriding for built-in
+	  classes/modules.
 
 Mon Aug 20 15:14:27 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
