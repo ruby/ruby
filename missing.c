@@ -60,7 +60,7 @@ strdup(str)
 
     tmp = xmalloc(len);
     if (tmp == NULL) return NULL;
-    bcopy(str, tmp, len);
+    memcpy(tmp, str, len);
 
     return tmp;
 }

@@ -3,7 +3,7 @@
   pack.c -
 
   $Author: matz $
-  $Date: 1994/06/17 14:23:50 $
+  $Date: 1994/08/12 04:47:44 $
   created at: Thu Feb 10 15:17:05 JST 1994
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -76,7 +76,7 @@ Fpck_pack(ary, fmt)
 	type = *p++;		/* get data type */
 
 	if (*p == '*') {	/* set data length */
-	    len = index("@Xxu", type) ? 0 : items;
+	    len = strchr("@Xxu", type) ? 0 : items;
             p++;
 	}
 	else if (isdigit(*p)) {
@@ -773,13 +773,15 @@ Fpck_unpack(str, fmt)
 	    {
 		VALUE str = str_new(0, (send - s)*3/4);
 		char *ptr = RSTRING(str)->ptr;
+		int total = 0;
 
 		while (s < send && *s > ' ' && *s < 'a') {
-		    int a,b,c,d;
+		    long a,b,c,d;
 		    char hunk[4];
 
 		    hunk[3] = '\0';
 		    len = (*s++ - ' ') & 077;
+		    total += len;
 		    while (len > 0) {
 			if (s < send && *s >= ' ')
 			    a = (*s++ - ' ') & 077;
@@ -804,11 +806,12 @@ Fpck_unpack(str, fmt)
 			ptr += 3;
 			len -= 3;
 		    }
-		    if (s[0] == '\n')
+		    if (*s == '\n')
 			s++;
 		    else if (s[1] == '\n') /* possible checksum byte */
 			s += 2;
 		}
+		RSTRING(str)->len = total;
 		Fary_push(ary, str);
 	    }
 	    break;

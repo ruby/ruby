@@ -3,7 +3,7 @@
   numeric.c -
 
   $Author: matz $
-  $Date: 1994/06/27 15:48:32 $
+  $Date: 1994/08/12 04:47:41 $
   created at: Fri Aug 13 18:33:09 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -11,7 +11,6 @@
 ************************************************/
 
 #include "ruby.h"
-#include "env.h"
 #include <math.h>
 
 static ID coerce;
@@ -25,12 +24,23 @@ VALUE C_Fixnum;
 extern VALUE C_Range;
 double big2dbl();
 
-static
-num_coerce_bin(this, other)
-    VALUE this, other;
+VALUE
+float_new(d)
+    double d;
 {
-    return rb_funcall(rb_funcall(other, coerce, 1, this),
-		      the_env->last_func, 1, other);
+    NEWOBJ(flt, struct RFloat);
+    OBJSETUP(flt, C_Float, T_FLOAT);
+
+    flt->value = d;
+    return (VALUE)flt;
+}
+
+static
+num_coerce_bin(x, mid, y)
+    VALUE x, y;
+    ID mid;
+{
+    return rb_funcall(rb_funcall(y, coerce, 1, x), mid, 1, y);
 }
 
 static VALUE
@@ -57,6 +67,14 @@ Fnum_dot2(left, right)
 }
 
 static VALUE
+Fnum_next(num)
+    VALUE num;
+{
+    num = rb_funcall(num, rb_intern("to_i"), 0);
+    return rb_funcall(num, '+', 1, INT2FIX(1));
+}
+
+VALUE
 Fnum_upto(from, to)
     VALUE from, to;
 {
@@ -128,8 +146,15 @@ Fnum_divmod(x, y)
 {
     VALUE div, mod;
 
-    div = rb_funcall(x, '/', 1, y); 
-    mod = rb_funcall(x, '%', 1, y); 
+    div = rb_funcall(x, '/', 1, y);
+    if (TYPE(div) == T_FLOAT) {
+	double d = floor(RFLOAT(div)->value);
+
+	if (RFLOAT(div)->value > d) {
+	    div = float_new(d);
+	}
+    }
+    mod = rb_funcall(x, '%', 1, y);
     return assoc_new(div, mod);
 }
 
@@ -140,28 +165,17 @@ Fnum_is_int(num)
     return FALSE;
 }
 
-VALUE
-float_new(flt)
-    double flt;
-{
-    NEWOBJ(flo, struct RFloat);
-    OBJSETUP(flo, C_Float, T_FLOAT);
-
-    flo->value = flt;
-    return (VALUE)flo;
-}
-
 static VALUE
-Fflo_new(flo)
-    struct RFloat *flo;
+Fflo_new(flt)
+    struct RFloat *flt;
 {
-    Check_Type(flo, T_FLOAT);
+    Check_Type(flt, T_FLOAT);
     {
-	NEWOBJ(flo2, struct RFloat);
-	CLONESETUP(flo2, flo);
+	NEWOBJ(flt2, struct RFloat);
+	CLONESETUP(flt2, flt);
 
-	flo2->value = flo->value;
-	return (VALUE)flo2;
+	flt2->value = flt->value;
+	return (VALUE)flt2;
     }
 }
 
@@ -177,18 +191,18 @@ Fflo_to_s(flt)
 }
 
 static VALUE
-Fflo_coerce(this, other)
-    VALUE this, other;
+Fflo_coerce(x, y)
+    VALUE x, y;
 {
-    switch (TYPE(other)) {
+    switch (TYPE(y)) {
       case T_FIXNUM:
-	return float_new((double)FIX2INT(other));
+	return float_new((double)FIX2INT(y));
       case T_FLOAT:
-	return other;
+	return y;
       case T_BIGNUM:
-	return Fbig_to_f(other);
+	return Fbig_to_f(y);
       default:
-	Fail("can't coerce %s to Float", rb_class2name(CLASS_OF(other)));
+	Fail("can't coerce %s to Float", rb_class2name(CLASS_OF(y)));
     }
     /* not reached */
     return Qnil;
@@ -215,7 +229,7 @@ Fflo_plus(x, y)
       case T_STRING:
 	return Fstr_plus(obj_as_string(x), y);
       default:
-	return num_coerce_bin(x, y);
+	return num_coerce_bin(x, '+', y);
     }
 }
 
@@ -231,7 +245,7 @@ Fflo_minus(x, y)
       case T_FLOAT:
 	return float_new(x->value - y->value);
       default:
-	return num_coerce_bin(x, y);
+	return num_coerce_bin(x, '-', y);
     }
 }
 
@@ -249,7 +263,7 @@ Fflo_mul(x, y)
       case T_STRING:
 	return Fstr_times(y, INT2FIX((int)x->value));
       default:
-	return num_coerce_bin(x, y);
+	return num_coerce_bin(x, '*', y);
     }
 }
 
@@ -273,7 +287,7 @@ Fflo_div(x, y)
 	if (y->value == 0.0) Fail("devided by 0");
 	return float_new(x->value / y->value);
       default:
-	return num_coerce_bin(x, y);
+	return num_coerce_bin(x, '/', y);
     }
 }
 
@@ -294,7 +308,7 @@ Fflo_mod(x, y)
 	value = y->value;
 	break;
       default:
-	return num_coerce_bin(x, y);
+	return num_coerce_bin(x, '%', y);
     }
 #ifdef HAVE_FMOD
     {
@@ -324,7 +338,7 @@ Fflo_pow(x, y)
       case T_FLOAT:
         return float_new(pow(x->value, y->value));
       default:
-        return num_coerce_bin(x, y);
+        return num_coerce_bin(x, rb_intern("**"), y);
     }
 }
 
@@ -343,7 +357,7 @@ Fflo_eq(x, y)
       case T_FLOAT:
 	return (x->value == y->value)?TRUE:FALSE;
       default:
-	return num_coerce_bin(x, y);
+	return num_coerce_bin(x, rb_intern("=="), y);
     }
 }
 
@@ -385,7 +399,7 @@ Fflo_cmp(x, y)
 	break;
 
       default:
-	return num_coerce_bin(x, y);
+	return num_coerce_bin(x, rb_intern("<=>"), y);
     }
     if (a == b) return INT2FIX(0);
     if (a > b) return INT2FIX(1);
@@ -430,6 +444,20 @@ Fflo_abs(flt)
     return float_new(val);
 }
 
+static VALUE
+to_integer(val)
+    VALUE val;
+{
+    return rb_funcall(val, to_i, 0);
+}
+
+static VALUE
+fail_to_integer(val)
+    VALUE val;
+{
+    Fail("failed to convert %s into integer", rb_class2name(CLASS_OF(val)));
+}
+
 int
 num2int(val)
     VALUE val;
@@ -444,7 +472,7 @@ num2int(val)
       case T_FLOAT:
 	if (RFLOAT(val)->value <= (double) LONG_MAX
 	    && RFLOAT(val)->value >= (double) LONG_MIN) {
-	    return (int)RFLOAT(val)->value;
+	    return (int)(RFLOAT(val)->value);
 	}
 	else {
 	    Fail("float %g out of rang of integer", RFLOAT(val)->value);
@@ -455,23 +483,9 @@ num2int(val)
 	return big2int(val);
 
       default:
-	Fail("failed to convert %s into int", rb_class2name(CLASS_OF(val)));
-	break;
+	val = rb_resque(to_integer, val, fail_to_integer, val);
+	return NUM2INT(val);
     }
-}
-
-static VALUE
-to_fixnum(val)
-    VALUE val;
-{
-    return rb_funcall(val, to_i, 0);
-}
-
-static VALUE
-fail_to_fixnum(val)
-    VALUE val;
-{
-    Fail("failed to convert %s into fixnum", rb_class2name(CLASS_OF(val)));
 }
 
 VALUE
@@ -487,13 +501,11 @@ num2fix(val)
 
       case T_FLOAT:
       case T_BIGNUM:
+      default:
 	v = num2int(val);
 	if (!FIXABLE(v))
 	    Fail("integer %d out of rang of Fixnum", v);
 	return INT2FIX(v);
-
-      default:
-	return rb_resque(to_fixnum, val, fail_to_fixnum, val);
     }
 }
 
@@ -579,7 +591,7 @@ Ffix_plus(x, y)
       case T_FLOAT:
 	return float_new((double)FIX2INT(x) + y->value);
       default:
-	return num_coerce_bin(x, y);
+	return num_coerce_bin(x, '+', y);
     }
 }
 
@@ -607,7 +619,7 @@ Ffix_minus(x, y)
       case T_FLOAT:
 	return float_new((double)FIX2INT(x) - y->value);
       default:
-	return num_coerce_bin(x, y);
+	return num_coerce_bin(x, '-', y);
     }
 }
 
@@ -631,7 +643,7 @@ Ffix_mul(x, y)
       case T_FLOAT:
 	return float_new((double)FIX2INT(x) * y->value);
       default:
-	return num_coerce_bin(x, y);
+	return num_coerce_bin(x, '*', y);
     }
 }
 
@@ -648,7 +660,7 @@ Ffix_div(x, y)
 	i = FIX2INT(x)/i;
 	return INT2FIX(i);
     }
-    return num_coerce_bin(x, y);
+    return num_coerce_bin(x, '/', y);
 }
 
 static VALUE
@@ -663,7 +675,7 @@ Ffix_mod(x, y)
 	i = FIX2INT(x)%i;
 	return INT2FIX(i);
     }
-    return num_coerce_bin(x, y);
+    return num_coerce_bin(x, '%', y);
 }
 
 static VALUE
@@ -686,7 +698,7 @@ Ffix_pow(x, y)
     else if (NIL_P(y)) {
 	return INT2FIX(1);
     }
-    return num_coerce_bin(x, y);
+    return num_coerce_bin(x, rb_intern("**"), y);
 }
 
 static VALUE
@@ -700,7 +712,7 @@ Ffix_equal(x, y)
 	return Qnil;
     }
     else {
-	return num_coerce_bin(x, y);
+	return num_coerce_bin(x, rb_intern("=="), y);
     }
 }
 
@@ -716,7 +728,7 @@ Ffix_cmp(x, y)
 	return INT2FIX(-1);
     }
     else {
-	return num_coerce_bin(x, y);
+	return num_coerce_bin(x, rb_intern("<=>"), y);
     }
 }
 
@@ -861,6 +873,15 @@ Ffix_id2name(fix)
     return Qnil;
 }
 
+static VALUE
+Ffix_next(fix)
+    VALUE fix;
+{
+    int i = FIX2INT(fix) + 1;
+
+    return int2inum(i);
+}
+
 extern VALUE M_Comparable;
 extern Fkrn_inspect();
 
@@ -874,7 +895,9 @@ Init_Numeric()
     rb_define_method(C_Numeric, "+@", Fnum_uplus, 0);
     rb_define_method(C_Numeric, "-@", Fnum_uminus, 0);
     rb_define_method(C_Numeric, "..", Fnum_dot2, 1);
+    rb_define_method(C_Numeric, "divmod", Fnum_divmod, 1);
 
+    rb_define_method(C_Numeric, "next", Fnum_next, 0);
     rb_define_method(C_Numeric, "upto", Fnum_upto, 1);
     rb_define_method(C_Numeric, "downto", Fnum_downto, 1);
     rb_define_method(C_Numeric, "step", Fnum_step, 2);
@@ -918,6 +941,8 @@ Init_Numeric()
 
     rb_define_method(C_Fixnum, "to_i", Ffix_to_i, 0);
     rb_define_method(C_Fixnum, "to_f", Ffix_to_f, 0);
+
+    rb_define_method(C_Fixnum, "next", Ffix_next, 0);
 
     C_Float  = rb_define_class("Float", C_Numeric);
     rb_define_single_method(C_Float, "new", Fflo_new, 1);

@@ -3,7 +3,7 @@
   compar.c -
 
   $Author: matz $
-  $Date: 1994/06/17 14:23:49 $
+  $Date: 1994/08/12 04:47:09 $
   created at: Thu Aug 26 14:39:48 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -17,10 +17,10 @@ VALUE M_Comparable;
 static ID cmp;
 
 static VALUE
-Fcmp_eq(this, other)
-    VALUE this, other;
+Fcmp_eq(x, y)
+    VALUE x, y;
 {
-    VALUE c = rb_funcall(this, cmp, 1, other);
+    VALUE c = rb_funcall(x, cmp, 1, y);
     int t = NUM2INT(c);
 
     if (t == 0) return TRUE;
@@ -28,58 +28,58 @@ Fcmp_eq(this, other)
 }
 
 static VALUE
-Fcmp_gt(this, other)
-    VALUE this, other;
+Fcmp_gt(x, y)
+    VALUE x, y;
 {
-    VALUE c = rb_funcall(this, cmp, 1, other);
+    VALUE c = rb_funcall(x, cmp, 1, y);
     int t = NUM2INT(c);
 
-    if (t > 0) return other;
+    if (t > 0) return y;
     return FALSE;
 }
 
 static VALUE
-Fcmp_ge(this, other)
-    VALUE this, other;
+Fcmp_ge(x, y)
+    VALUE x, y;
 {
-    VALUE c = rb_funcall(this, cmp, 1, other);
+    VALUE c = rb_funcall(x, cmp, 1, y);
     int t = NUM2INT(c);
 
-    if (t >= 0) return other;
+    if (t >= 0) return y;
     return FALSE;
 }
 
 static VALUE
-Fcmp_lt(this, other)
-    VALUE this, other;
+Fcmp_lt(x, y)
+    VALUE x, y;
 {
-    VALUE c = rb_funcall(this, cmp, 1, other);
+    VALUE c = rb_funcall(x, cmp, 1, y);
     int t = NUM2INT(c);
 
-    if (t < 0) return other;
+    if (t < 0) return y;
     return FALSE;
 }
 
 static VALUE
-Fcmp_le(this, other)
-    VALUE this, other;
+Fcmp_le(x, y)
+    VALUE x, y;
 {
-    VALUE c = rb_funcall(this, cmp, 1, other);
+    VALUE c = rb_funcall(x, cmp, 1, y);
     int t = NUM2INT(c);
 
-    if (t <= 0) return other;
+    if (t <= 0) return y;
     return FALSE;
 }
 
 static VALUE
-Fcmp_between(this, min, max)
-    VALUE this, min, max;
+Fcmp_between(x, min, max)
+    VALUE x, min, max;
 {
-    VALUE c = rb_funcall(this, cmp, 1, min);
+    VALUE c = rb_funcall(x, cmp, 1, min);
     int t = NUM2INT(c);
     if (t < 0) return FALSE;
 
-    c = rb_funcall(this, cmp, 1, min);
+    c = rb_funcall(x, cmp, 1, min);
     t = NUM2INT(c);
     if (t > 0) return FALSE;
     return TRUE;

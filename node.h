@@ -3,7 +3,7 @@
   node.h -
 
   $Author: matz $
-  $Date: 1994/06/17 14:23:50 $
+  $Date: 1994/08/24 09:25:29 $
   created at: Fri May 28 15:14:02 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -20,9 +20,9 @@ enum node_type {
     NODE_IF,
     NODE_CASE,
     NODE_WHEN,
-    NODE_UNLESS,
     NODE_WHILE,
-    NODE_UNTIL,
+    NODE_WHILE2,
+    NODE_EXNOT,
     NODE_DO,
     NODE_FOR,
     NODE_PROT,
@@ -46,6 +46,7 @@ enum node_type {
     NODE_CONTINUE,
     NODE_RETURN,
     NODE_RETRY,
+    NODE_FAIL,
     NODE_YIELD,
     NODE_LVAR,
     NODE_GVAR,
@@ -59,6 +60,7 @@ enum node_type {
     NODE_XSTR,
     NODE_XSTR2,
     NODE_DREGX,
+    NODE_DGLOB,
     NODE_ARGS,
     NODE_DEFN,
     NODE_DEFS,
@@ -165,11 +167,14 @@ typedef struct node {
 #define NEW_SCOPE(b) newnode(NODE_SCOPE, local_tbl(),(b),local_cnt(0))
 #define NEW_BLOCK(a) newnode(NODE_BLOCK,a,Qnil,Qnil)
 #define NEW_IF(c,t,e) newnode(NODE_IF,c,t,e)
-#define NEW_UNLESS(c,t,e) newnode(NODE_UNLESS,c,t,e)
+#define NEW_EXNOT(c) newnode(NODE_EXNOT,c,Qnil,Qnil)
+#define NEW_UNLESS(c,t,e) newnode(NODE_IF,NEW_EXNOT(c),t,e)
 #define NEW_CASE(h,b) newnode(NODE_CASE,h,b,Qnil)
 #define NEW_WHEN(c,t,e) newnode(NODE_WHEN,c,t,e)
 #define NEW_WHILE(c,b) newnode(NODE_WHILE,c,b,Qnil)
-#define NEW_UNTIL(c,b) newnode(NODE_UNTIL,c,b,Qnil)
+#define NEW_UNTIL(c,b) newnode(NODE_WHILE,NEW_EXNOT(c),b,Qnil)
+#define NEW_WHILE2(c,b) newnode(NODE_WHILE2,c,b,Qnil)
+#define NEW_UNTIL2(c,b) newnode(NODE_WHILE2,NEW_EXNOT(c),b,Qnil)
 #define NEW_FOR(v,i,b) newnode(NODE_FOR,v,b,i)
 #define NEW_DO(v,i,b) newnode(NODE_DO,v,b,i)
 #define NEW_PROT(b,ex,en) newnode(NODE_PROT,b,ex,en)
@@ -178,6 +183,7 @@ typedef struct node {
 #define NEW_CONT()  newnode(NODE_CONTINUE,Qnil,Qnil,Qnil)
 #define NEW_RETRY() newnode(NODE_RETRY,Qnil,Qnil,Qnil)
 #define NEW_RET(s)  newnode(NODE_RETURN,s,Qnil,Qnil)
+#define NEW_FAIL(s)  newnode(NODE_FAIL,s,Qnil,Qnil)
 #define NEW_YIELD(a) newnode(NODE_YIELD,a,Qnil,Qnil)
 #define NEW_LIST(a) NEW_ARRAY(a)
 #define NEW_QLIST(a) newnode(NODE_QLIST,a,Qnil,Qnil)
@@ -186,7 +192,7 @@ typedef struct node {
 #define NEW_HASH(a) newnode(NODE_HASH,a,Qnil,Qnil)
 #define NEW_AND(a,b) newnode(NODE_AND,a,b,Qnil)
 #define NEW_OR(a,b)  newnode(NODE_OR,a,b,Qnil)
-#define NEW_MASGN(l,val) newnode(NODE_MASGN,l,val,Qnil)
+#define NEW_MASGN(l,r) newnode(NODE_MASGN,l,r,Qnil)
 #define NEW_GASGN(v,val) newnode(NODE_GASGN,v,val,rb_global_entry(v))
 #define NEW_LASGN(v,val) newnode(NODE_LASGN,v,val,local_cnt(v))
 #define NEW_IASGN(v,val) newnode(NODE_IASGN,v,val,Qnil)
@@ -217,7 +223,7 @@ typedef struct node {
 #define NEW_NIL() newnode(NODE_NIL,Qnil,Qnil,Qnil)
 
 NODE *newnode();
-NODE *rb_get_method_body();
+VALUE rb_method_booundp();
 void freenode();
 
 #endif

@@ -8,22 +8,23 @@
 ;;;
 
 (defconst ruby-block-beg-re
-  "class\\|module\\|def\\|if\\|case\\|while\\|do\\|for\\|protect"
+  "class\\|module\\|def\\|if\\|unless\\|case\\|while\\|until\\|for\\|protect"
   )
 
 (defconst ruby-block-mid-re
-  "else\\|elsif\\|when\\|using\\|resque\\|ensure"
+  "else\\|elsif\\|when\\|resque\\|ensure"
   )
 
-(defconst ruby-block-end-re
-  (concat "\\(end\\([ \t]+\\(" ruby-block-beg-re "\\)\\)?\\)")
-  )
+(defconst ruby-block-end-re "end")
 
 (defconst ruby-delimiter
-  (concat "(\\|)\\|\\{\\|\\}\\|\"\\|\'\\|\\b\\(" ruby-block-beg-re "\\|" ruby-block-end-re "\\)\\b\\|#")
+  (concat "[/<(){}#\"'`]\\|\\[\\|\\]\\|\\b\\("
+	  ruby-block-beg-re "\\|" ruby-block-end-re "\\)\\b")
   )
+
 (defconst ruby-negative
-  (concat "^[ \t]*\\b\\(\\(" ruby-block-mid-re "\\)\\|\\(" ruby-block-end-re "\\)\\)\\b")
+  (concat "^[ \t]*\\(\\b\\(" ruby-block-mid-re "\\)\\|\\("
+	  ruby-block-end-re "\\)\\b\\|\\}\\|\\]\\)")
   )
 
 (defvar ruby-mode-abbrev-table nil
@@ -51,9 +52,10 @@
   (setq ruby-mode-syntax-table (make-syntax-table))
   (modify-syntax-entry ?\' "\"" ruby-mode-syntax-table)
   (modify-syntax-entry ?\" "\"" ruby-mode-syntax-table)
-  (modify-syntax-entry ?\n ">   " ruby-mode-syntax-table)
-  (modify-syntax-entry ?\f ">   " ruby-mode-syntax-table)
-  (modify-syntax-entry ?# "<   " ruby-mode-syntax-table)
+;;(modify-syntax-entry ?\n ">" ruby-mode-syntax-table)
+;;(modify-syntax-entry ?\f ">" ruby-mode-syntax-table)
+  (modify-syntax-entry ?# "<" ruby-mode-syntax-table)
+  (modify-syntax-entry ?\\ "'" ruby-mode-syntax-table)
   (modify-syntax-entry ?_ "w" ruby-mode-syntax-table)
   (modify-syntax-entry ?< "." ruby-mode-syntax-table)
   (modify-syntax-entry ?> "." ruby-mode-syntax-table)
@@ -68,32 +70,15 @@
   (modify-syntax-entry ?- "." ruby-mode-syntax-table)
   (modify-syntax-entry ?\; "." ruby-mode-syntax-table)
   (modify-syntax-entry ?\( "()" ruby-mode-syntax-table)
-  (modify-syntax-entry ?) ")(" ruby-mode-syntax-table)
-  (modify-syntax-entry ?{ "(}" ruby-mode-syntax-table)
-  (modify-syntax-entry ?} "){" ruby-mode-syntax-table)
+  (modify-syntax-entry ?\) ")(" ruby-mode-syntax-table)
+  (modify-syntax-entry ?\{ "(}" ruby-mode-syntax-table)
+  (modify-syntax-entry ?\} "){" ruby-mode-syntax-table)
   (modify-syntax-entry ?\[ "(]" ruby-mode-syntax-table)
   (modify-syntax-entry ?\] ")[" ruby-mode-syntax-table)
   )
 
 (defvar ruby-indent-level 2
   "*Indentation of ruby statements.")
-
-(defun ruby-mode-variables ()
-  (setq local-abbrev-table ruby-mode-abbrev-table)
-  (make-local-variable 'indent-line-function)
-  (setq indent-line-function 'ruby-indent-line)
-  (make-local-variable 'require-final-newline)
-  (setq require-final-newline t)
-  (make-variable-buffer-local 'comment-start)
-  (setq comment-start "# ")
-  (make-variable-buffer-local 'comment-end)
-  (setq comment-end "")
-  (make-variable-buffer-local 'comment-column)
-  (setq comment-column 32)
-  (make-variable-buffer-local 'comment-start-skip)
-  (setq comment-start-skip "#+ *")
-  (make-local-variable 'parse-sexp-ignore-comments)
-  (setq parse-sexp-ignore-comments t))
 
 (defun ruby-mode ()
   "Major mode for editing ruby scripts.
@@ -109,7 +94,21 @@ The variable ruby-indent-level controls the amount of indentation.
   (setq mode-name "ruby")
   (setq major-mode 'ruby-mode)
   (set-syntax-table ruby-mode-syntax-table)
-  (ruby-mode-variables)
+  (setq local-abbrev-table ruby-mode-abbrev-table)
+  (make-local-variable 'indent-line-function)
+  (setq indent-line-function 'ruby-indent-line)
+  (make-local-variable 'require-final-newline)
+  (setq require-final-newline t)
+  (make-variable-buffer-local 'comment-start)
+  (setq comment-start "# ")
+  (make-variable-buffer-local 'comment-end)
+  (setq comment-end "")
+  (make-variable-buffer-local 'comment-column)
+  (setq comment-column 32)
+  (make-variable-buffer-local 'comment-start-skip)
+  (setq comment-start-skip "#+ *")
+  (make-local-variable 'parse-sexp-ignore-comments)
+  (setq parse-sexp-ignore-comments t)
   (run-hooks 'ruby-mode-hook))
 
 (defun ruby-current-indentation ()
@@ -131,10 +130,8 @@ The variable ruby-indent-level controls the amount of indentation.
 
 (defun ruby-indent-line (&optional flag)
   "Correct indentation of the current ruby line."
-  (let
-      ((x (ruby-calculate-indent)))
-    (ruby-indent-to x)))
-  
+  (ruby-indent-to (ruby-calculate-indent)))
+
 (defun ruby-indent-command ()
   (interactive)
   (ruby-indent-line t))
@@ -166,14 +163,36 @@ The variable ruby-indent-level controls the amount of indentation.
 	(ruby-beginning-of-defun))
       (while (and (> indent-point (point))
 		  (re-search-forward ruby-delimiter indent-point t))
-	(let ((w (buffer-substring (match-beginning 0) (match-end 0))))
+	(let ((w (buffer-substring (match-beginning 0) (match-end 0)))
+	      (pnt (match-beginning 0)))
 	  (cond
 	   ((or (string= "\"" w)	;skip string
-		(string= "\'" w))
+		(string= "'" w)
+		(string= "`" w))
 	    (if (search-forward w indent-point t)
 		nil
 	      (goto-char indent-point)
 	      (setq in-string t)))
+	   ((or (string= "/" w)
+		(string= "<" w))
+	    (if (string= "<" w) (setq w ">"))
+	    (let (c)
+	      (save-excursion
+		(goto-char pnt)
+		(skip-chars-backward " \t")
+		(setq c (char-after (1- (point))))
+		(if c
+		    (setq c (char-syntax c))))
+	      (cond
+	       ((or (eq c ?.)
+		    (and (eq c ?w)
+			 (save-excursion
+			   (forward-word -1)
+			   (looking-at ruby-block-beg-re))))
+		(if (search-forward w indent-point t)
+		    nil
+		  (goto-char indent-point)
+		  (setq in-string t))))))
 	   ((string= "#" w)		;skip comment
 	    (forward-line 1))
 	   ((string= "(" w)		;skip to matching paren
@@ -189,7 +208,21 @@ The variable ruby-indent-level controls the amount of indentation.
 		 (t
 		  (setq nest (cdr nest))
 		  (setq depth (1- depth)))))
-	      (if (> depth orig) (setq in-paren t))))
+	      (if (> depth orig) (setq in-paren ?\())))
+	   ((string= "[" w)		;skip to matching paren
+	    (let ((orig depth))
+	      (setq nest (cons (point) nest))
+	      (setq depth (1+ depth))
+	      (while (and (/= depth orig)
+			  (re-search-forward "\\[\\|\\]" indent-point t))
+		(cond
+		 ((= (char-after (match-beginning 0)) ?\[ )
+		  (setq nest (cons (point) nest))
+		  (setq depth (1+ depth)))
+		 (t
+		  (setq nest (cdr nest))
+		  (setq depth (1- depth)))))
+	      (if (> depth orig) (setq in-paren ?\[))))
 	   ((string= "{" w)		;skip to matching paren
 	    (let ((orig depth))
 	      (setq nest (cons (point) nest))
@@ -197,22 +230,28 @@ The variable ruby-indent-level controls the amount of indentation.
 	      (while (and (/= depth orig)
 			  (re-search-forward "[{}]" indent-point t))
 		(cond
-		 ((= (char-after (match-beginning 0)) ?\{ )
+		 ((= (char-after (match-beginning 0)) ?{ )
 		  (setq nest (cons (point) nest))
 		  (setq depth (1+ depth)))
 		 (t
 		  (setq nest (cdr nest))
 		  (setq depth (1- depth)))))
-	      (if (> depth orig) (setq in-paren t))))
-	   ((string-match "^end" w)
+	      (if (> depth orig) (setq in-paren ?{))))
+	   ((string-match ruby-block-end-re w)
 	    (setq nest (cdr nest))
 	    (setq depth (1- depth)))
 	   ((string-match ruby-block-beg-re w)
-	    (setq nest (cons (point) nest))
-	    (setq depth (1+ depth)))
+	    (let (c)
+	      (save-excursion
+		(goto-char pnt)
+		(skip-chars-backward " \t")
+		(setq c (char-after (1- (point)))))
+	      (if (or (null c) (= c ?\n) (= c ?\;))
+		  (progn
+		    (setq nest (cons (point) nest))
+		    (setq depth (1+ depth))))))
 	   (t
 	    (error (format "bad string %s" w)))))))
-    (if in-paren (message "in-paren"))
     (list in-string in-paren (car nest) depth)))
 
 (defun ruby-calculate-indent (&optional parse-start)
@@ -224,7 +263,7 @@ The variable ruby-indent-level controls the amount of indentation.
 	  (indent 0))
       (if parse-start
 	  (goto-char parse-start)
-	(beginning-of-defun)
+	(ruby-beginning-of-defun)
 	(setq parse-start (point)))
       (setq state (ruby-parse-region parse-start indent-point))
       (cond
@@ -234,9 +273,9 @@ The variable ruby-indent-level controls the amount of indentation.
        ((nth 1 state)			; in paren
 	(goto-char (nth 2 state))
 	(setq indent
-	      (if (looking-at "$")
-		  (+ (current-indentation) ruby-indent-level)
-		(current-column))))
+	      (if (and (eq (nth 1 state) ?\( ) (not (looking-at "$")))
+		  (current-column)
+		(+ (current-indentation) ruby-indent-level))))
 
        ((> (nth 3 state) 0)		; in nest
 	(goto-char (nth 2 state))
@@ -258,7 +297,7 @@ The variable ruby-indent-level controls the amount of indentation.
 With argument, do this that many times.
 Returns t unless search stops due to end of buffer."
   (interactive "p")
-  (and (re-search-backward (concat "^\\(" ruby-block-beg-re "\\)")
+  (and (re-search-backward (concat "^\\(" ruby-block-beg-re "\\)\\b")
 			   nil 'move (or arg 1))
        (progn (beginning-of-line) t)))
 
@@ -266,7 +305,7 @@ Returns t unless search stops due to end of buffer."
   "Move forward to next end of defun.
 An end of a defun is found by moving forward from the beginning of one."
   (interactive "p")
-  (and (re-search-forward (concat "^\\(" ruby-block-end-re "\\)")
+  (and (re-search-forward (concat "^\\(" ruby-block-end-re "\\)\\b")
 			  nil 'move (or arg 1))
        (progn (beginning-of-line) t))
   (forward-line 1))

@@ -3,7 +3,7 @@
   process.c -
 
   $Author: matz $
-  $Date: 1994/06/17 14:23:50 $
+  $Date: 1994/08/12 04:47:47 $
   created at: Tue Aug 10 14:30:50 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -84,6 +84,8 @@ static int wait_status;
 static wait_each(key, value)
     int key, value;
 {
+    if (wait_status != -1) return ST_STOP;
+
     wait_pid = key;
     wait_status = value;
     return ST_DELETE;
@@ -135,7 +137,7 @@ rb_proc_exec(str)
     char **argv, **a;
 
     for (s=str; *s; s++) {
-	if (*s != ' ' && !isalpha(*s) && index("*?{}[]<>()~&|\\$;'`\"\n",*s)) {
+	if (*s != ' ' && !isalpha(*s) && strchr("*?{}[]<>()~&|\\$;'`\"\n",*s)) {
 	    execl("/bin/sh", "sh", "-c", str, (char *)NULL);
 	    return -1;
 	}
@@ -173,10 +175,10 @@ Ffork(obj)
 
     switch (pid = fork()) {
       case 0:
-	return Qnil;
+	return INT2FIX(0);
 
       case -1:
-	rb_sys_fail(Qnil);
+	rb_sys_fail("fork(2)");
 	break;
 
       default:
@@ -410,18 +412,18 @@ Fkill(argc, argv)
     int sig;
     int i;
 
-    if (argc < 3)
+    if (argc < 2)
 	Fail("wrong # of arguments -- kill(sig, pid...)");
-    switch (TYPE(argv[1])) {
+    switch (TYPE(argv[0])) {
       case T_FIXNUM:
-	sig = FIX2UINT(argv[1]);
+	sig = FIX2UINT(argv[0]);
 	break;
 
       case T_STRING:
 	{
 	    int negative = 0;
 
-	    char *s = RSTRING(argv[1])->ptr;
+	    char *s = RSTRING(argv[0])->ptr;
 	    if (*s == '-') {
 		negative++;
 		s++;
@@ -437,13 +439,13 @@ Fkill(argc, argv)
 	break;
 
       default:
-	Fail("bad signal type %s", rb_class2name(CLASS_OF(argv[1])));
+	Fail("bad signal type %s", rb_class2name(CLASS_OF(argv[0])));
 	break;
     }
 
     if (sig < 0) {
 	sig = -sig;
-	for (i=2; i<argc; i++) {
+	for (i=1; i<argc; i++) {
 	    int pid = NUM2INT(argv[i]);
 #ifdef HAS_KILLPG
 	    if (killpg(pid, sig) < 0)
@@ -454,13 +456,13 @@ Fkill(argc, argv)
 	}
     }
     else {
-	for (i=2; i<argc; i++) {
+	for (i=1; i<argc; i++) {
 	    Check_Type(argv[i], T_FIXNUM);
 	    if (kill(FIX2UINT(argv[i]), sig) < 0)
 		rb_sys_fail(Qnil);
 	}
     }
-    return INT2FIX(i-2);
+    return INT2FIX(i-1);
 }
 
 static VALUE trap_list[NSIG];
@@ -601,39 +603,48 @@ Ftrap(argc, argv)
     RETSIGTYPE (*func)();
     VALUE command;
     int i, sig;
+#ifdef HAVE_SIGPROCMASK
+    sigset_t mask;
+#else
     int mask;
+#endif
 
-    if (argc < 3)
+    if (argc < 2)
 	Fail("wrong # of arguments -- kill(cmd, sig...)");
 
     /* disable interrupt */
+#ifdef HAVE_SIGPROCMASK
+    sigfillset(&mask);
+    sigprocmask(SIG_BLOCK, &mask, &mask);
+#else
     mask = sigblock(~0);
+#endif
 
     func = sighandle;
 
-    if (argv[1] == Qnil) {
+    if (argv[0] == Qnil) {
 	func = SIG_IGN;
 	command = Qnil;
     }
     else {
-	Check_Type(argv[1], T_STRING);
-	command = argv[1];
-	if (RSTRING(argv[1])->len == 0) {
+	Check_Type(argv[0], T_STRING);
+	command = argv[0];
+	if (RSTRING(argv[0])->len == 0) {
 	    func = SIG_IGN;
 	}
-	else if (RSTRING(argv[1])->len == 7) {
-	    if (strncmp(RSTRING(argv[1])->ptr, "SIG_IGN", 7) == 0) {
+	else if (RSTRING(argv[0])->len == 7) {
+	    if (strncmp(RSTRING(argv[0])->ptr, "SIG_IGN", 7) == 0) {
 		func = SIG_IGN;
 	    }
-	    else if (strncmp(RSTRING(argv[1])->ptr, "SIG_DFL", 7) == 0) {
+	    else if (strncmp(RSTRING(argv[0])->ptr, "SIG_DFL", 7) == 0) {
 		func = SIG_DFL;
 	    }
-	    else if (strncmp(RSTRING(argv[1])->ptr, "DEFAULT", 7) == 0) {
+	    else if (strncmp(RSTRING(argv[0])->ptr, "DEFAULT", 7) == 0) {
 		func = SIG_DFL;
 	    }
 	}
-	else if (RSTRING(argv[1])->len == 6) {
-	    if (strncmp(RSTRING(argv[1])->ptr, "IGNORE", 6) == 0) {
+	else if (RSTRING(argv[0])->len == 6) {
+	    if (strncmp(RSTRING(argv[0])->ptr, "IGNORE", 6) == 0) {
 		func = SIG_IGN;
 	    }
 	}
@@ -641,7 +652,7 @@ Ftrap(argc, argv)
     if (func == SIG_IGN || func == SIG_DFL)
 	command = Qnil;
 
-    for (i=2; i<argc; i++) {
+    for (i=1; i<argc; i++) {
 	if (TYPE(argv[i]) == T_STRING) {
 	    char *s = RSTRING(argv[i])->ptr;
 
@@ -654,15 +665,24 @@ Ftrap(argc, argv)
 	else {
 	    sig = NUM2INT(argv[i]);
 	}
-	if (i < 0 || i > NSIG)
+	if (sig < 0 || sig > NSIG)
 	    Fail("Invalid signal no %d", sig);
 
 	signal(sig, sighandle);
 	trap_list[sig] = command;
 	/* enable at least specified signal. */
+#ifdef HAVE_SIGPROCMASK
+	sigdelset(&mask, sig);
+#else
 	mask &= ~sigmask(sig);
+#endif
     }
+    /* disable interrupt */
+#ifdef HAVE_SIGPROCMASK
+    sigprocmask(SIG_SETMASK, &mask, NULL);
+#else
     sigsetmask(mask);
+#endif
     return Qnil;
 }
 
@@ -676,8 +696,8 @@ Fsleep(argc, argv)
     if (argc == 1) {
 	sleep((32767<<16)+32767);
     }
-    else if (argc == 2) {
-	sleep(NUM2INT(argv[1]));
+    else if (argc == 1) {
+	sleep(NUM2INT(argv[0]));
     }
     else {
 	Fail("wrong # of arguments");
@@ -718,13 +738,14 @@ Fproc_setpgrp(obj, pid, pgrp)
 
     if (getpgrp(ipid, ipgrp) == -1) rb_sys_fail(Qnil);
 
-    return Qnil;
+    return INT2FIX(0);
 }
 
 static VALUE
 Fproc_getpriority(obj, which, who)
     VALUE obj, which, who;
 {
+#ifdef HAVE_GETPRIORITY
     int prio, iwhich, iwho;
 
     iwhich = NUM2INT(which);
@@ -733,12 +754,16 @@ Fproc_getpriority(obj, which, who)
     prio = getpriority(iwhich, iwho);
     if (prio == -1) rb_sys_fail(Qnil);
     return INT2FIX(prio);
+#else
+    Fail("The getpriority() function is unimplemented on this machine");
+#endif
 }
 
 static VALUE
 Fproc_setpriority(obj, which, who, prio)
     VALUE obj, which, who, prio;
 {
+#ifdef HAVE_GETPRIORITY
     int iwhich, iwho, iprio;
 
     iwhich = NUM2INT(which);
@@ -747,7 +772,10 @@ Fproc_setpriority(obj, which, who, prio)
 
     if (setpriority(iwhich, iwho, iprio) == -1)
 	rb_sys_fail(Qnil);
-    return Qnil;
+    return INT2FIX(0);
+#else
+    Fail("The setpriority() function is unimplemented on this machine");
+#endif
 }
 
 static VALUE
@@ -826,14 +854,14 @@ Init_process()
     rb_define_single_method(M_Process, "waitpid", Fwaitpid, 2);
     rb_define_single_method(M_Process, "kill", Fkill, -1);
 
-    rb_define_mfunc(M_Process, "pid", get_pid, 0);
-    rb_define_mfunc(M_Process, "ppid", get_ppid, 0);
+    rb_define_method(M_Process, "pid", get_pid, 0);
+    rb_define_method(M_Process, "ppid", get_ppid, 0);
 
-    rb_define_mfunc(M_Process, "getpgrp", Fproc_getpgrp, -2);
-    rb_define_mfunc(M_Process, "setpgrp", Fproc_setpgrp, 2);
+    rb_define_method(M_Process, "getpgrp", Fproc_getpgrp, -2);
+    rb_define_method(M_Process, "setpgrp", Fproc_setpgrp, 2);
 
-    rb_define_mfunc(M_Process, "getpriority", Fproc_getpriority, 2);
-    rb_define_mfunc(M_Process, "setpriority", Fproc_setpriority, 3);
+    rb_define_method(M_Process, "getpriority", Fproc_getpriority, 2);
+    rb_define_method(M_Process, "setpriority", Fproc_setpriority, 3);
     
     rb_define_const(M_Process, "%PRIO_PROCESS", INT2FIX(PRIO_PROCESS));
     rb_define_const(M_Process, "%PRIO_PGRP", INT2FIX(PRIO_PGRP));
@@ -847,4 +875,6 @@ Init_process()
     rb_define_method(M_Process, "euid", Fproc_geteuid, 0);
     rb_define_single_method(M_Process, "euid=", Fproc_seteuid, 1);
     rb_define_method(M_Process, "euid=", Fproc_seteuid, 1);
+
+    rb_include_module(CLASS_OF(M_Process), M_Process);
 }

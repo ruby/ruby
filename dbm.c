@@ -3,7 +3,7 @@
   dbm.c -
 
   $Author: matz $
-  $Date: 1994/06/17 14:23:49 $
+  $Date: 1994/08/12 11:06:37 $
   created at: Mon Jan 24 15:59:52 JST 1994
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -15,10 +15,11 @@
 #ifdef USE_DBM
 
 #include <ndbm.h>
-#include <sys/file.h>
+#include <sys/fcntl.h>
 #include <errno.h>
 
 VALUE C_DBM;
+static ID id_dbm;
 
 extern VALUE M_Enumerable;
 
@@ -30,7 +31,7 @@ closeddbm()
 
 #define GetDBM(obj, dbmp) {\
     DBM **_dbm;\
-    Get_Data_Struct(obj, "dbm", DBM*, _dbm);\
+    Get_Data_Struct(obj, id_dbm, DBM*, _dbm);\
     dbmp = *_dbm;\
     if (dbmp == Qnil) closeddbm();\
 }
@@ -44,7 +45,7 @@ free_dbm(dbmp)
 
 #define MakeDBM(obj, dp) {\
     DBM **_dbm;\
-    Make_Data_Struct(obj,"dbm",DBM*,Qnil,free_dbm,_dbm);\
+    Make_Data_Struct(obj,id_dbm,DBM*,Qnil,free_dbm,_dbm);\
     *_dbm=dp;\
 }
 
@@ -93,7 +94,7 @@ Fdbm_close(obj)
 {
     DBM **dbmp;
 
-    Get_Data_Struct(obj, "dbm", DBM*, dbmp);
+    Get_Data_Struct(obj, id_dbm, DBM*, dbmp);
     if (*dbmp == Qnil) Fail("already closed DBM file");
     dbm_close(*dbmp);
     *dbmp = Qnil;
@@ -121,6 +122,29 @@ Fdbm_fetch(obj, keystr)
 }
 
 static VALUE
+Fdbm_indexes(obj, args)
+    VALUE obj;
+    struct RArray *args;
+{
+    VALUE *p, *pend;
+    struct RArray *new;
+    int i = 0;
+
+    if (!args || args->len == 1 && TYPE(args->ptr) != T_ARRAY) {
+	args = (struct RArray*)rb_to_a(args->ptr[0]);
+    }
+
+    new = (struct RArray*)ary_new2(args->len);
+
+    p = args->ptr; pend = p + args->len;
+    while (p < pend) {
+	new->ptr[i++] = Fdbm_fetch(obj, *p++);
+	new->len = i;
+    }
+    return (VALUE)new;
+}
+
+static VALUE
 Fdbm_delete(obj, keystr)
     VALUE obj, keystr;
 {
@@ -133,7 +157,7 @@ Fdbm_delete(obj, keystr)
     
     GetDBM(obj, dbm);
     if (dbm_delete(dbm, key)) {
-	Fail("DBM delete failed");
+	Fail("dbm_delete failed");
     }
     return obj;
 }
@@ -153,7 +177,7 @@ Fdbm_delete_if(obj)
 	valstr = str_new(val.dptr, val.dsize);
 	if (rb_yield(assoc_new(keystr, valstr))
 	    && dbm_delete(dbm, key)) {
-	    Fail("DBM delete failed");
+	    Fail("dbm_delete failed");
 	}
     }
     return obj;
@@ -169,7 +193,7 @@ Fdbm_clear(obj)
     GetDBM(obj, dbm);
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	if (dbm_delete(dbm, key)) {
-	    Fail("DBM delete failed");
+	    Fail("dbm_delete failed");
 	}
     }
     return obj;
@@ -198,7 +222,7 @@ Fdbm_store(obj, keystr, valstr)
     if (dbm_store(dbm, key, val, DBM_REPLACE)) {
 	dbm_clearerr(dbm);
 	if (errno == EPERM) rb_sys_fail(Qnil);
-	Fail("DBM store failed");
+	Fail("dbm_store failed");
     }
     return valstr;
 }
@@ -369,7 +393,9 @@ Init_DBM()
     rb_define_method(C_DBM, "close", Fdbm_close, 0);
     rb_define_method(C_DBM, "[]", Fdbm_fetch, 1);
     rb_define_method(C_DBM, "[]=", Fdbm_store, 2);
+    rb_define_method(C_DBM, "indexes",  Fdbm_indexes, -2);
     rb_define_method(C_DBM, "length", Fdbm_length, 0);
+    rb_define_alias(C_DBM,  "size", "length");
     rb_define_method(C_DBM, "each", Fdbm_each, 0);
     rb_define_method(C_DBM, "each_value", Fdbm_each, 0);
     rb_define_method(C_DBM, "each_key", Fdbm_each_key, 0);
@@ -384,5 +410,7 @@ Init_DBM()
     rb_define_method(C_DBM, "has_value", Fdbm_has_value, 1);
 
     rb_define_method(C_DBM, "to_a", Fdbm_to_a, 0);
+
+    id_dbm = rb_intern("dbm");
 }
 #endif				/* USE_DBM */

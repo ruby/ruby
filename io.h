@@ -3,8 +3,8 @@
   io.h -
 
   $Author: matz $
-  $Revision: 1.1.1.1 $
-  $Date: 1994/06/17 14:23:50 $
+  $Revision: 1.3 $
+  $Date: 1994/08/12 11:06:42 $
   created at: Fri Nov 12 16:47:09 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -31,12 +31,14 @@ typedef struct {
 #define FMODE_READWRITE 3
 #define FMODE_SYNC      4
 
-#define GetOpenFile(obj,fp) Get_Data_Struct(obj, "fd", OpenFile, fp)
+extern ID id_fd;
+
+#define GetOpenFile(obj,fp) Get_Data_Struct(obj, id_fd, OpenFile, fp)
 
 void io_free_OpenFile();
 
 #define MakeOpenFile(obj, fp) {\
-    Make_Data_Struct(obj, "fd", OpenFile, Qnil, io_free_OpenFile, fp);\
+    Make_Data_Struct(obj, id_fd, OpenFile, Qnil, io_free_OpenFile, fp);\
     fp->f = fp->f2 = NULL;\
     fp->mode = 0;\
     fp->pid = 0;\

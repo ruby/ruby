@@ -2,7 +2,7 @@
 
 static	char	sccsid[] = "@(#) st.c 5.1 89/12/14 Crucible";
 #ifndef lint
-static char *rcsid = "$Header: /work/cvsroot/ruby/st.c,v 1.2 1994/06/27 15:48:41 matz Exp $";
+static char *rcsid = "$Header: /usr/ext/cvsroot/ruby/st.c,v 1.2 1994/08/12 04:47:59 matz Exp $";
 #endif
 
 #include <stdio.h>

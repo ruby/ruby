@@ -5,13 +5,13 @@ module Print
       print(a)
     end
     print("\n")
-  end def
+  end
 
   def println2(*args)
     print(*args)
     print("\n")
-  end def
-end module
+  end
+end
 
 module Print2
   def println(*args)
@@ -52,20 +52,20 @@ class Fib:Object
     if args; println(*args) end
     args = args.grep(/^c/)
     super(*args)
-  end def
+  end
 
   def init
     println("in Fib.init");
-  end def
+  end
 
   def fib(n)
     a =0; b = 1
 
     while b <= n
       c = a; a = b; b = c+b
-    end while
+    end
     return b
-  end def
+  end
 end
 
 def Object.test(*args)
@@ -96,8 +96,5 @@ def tt
   end
 end
 
-test = do tt() using i
-  if i == 2; break end
-end
-
+test = tt() {i|break if i == 2}
 println([1,2,3,4].join(":"))

@@ -3,7 +3,7 @@
   error.c -
 
   $Author: matz $
-  $Date: 1994/06/17 14:23:49 $
+  $Date: 1994/08/12 04:47:21 $
   created at: Mon Aug  9 16:11:34 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -53,9 +53,16 @@ err_print(fmt, args)
     }
 }
 
+void
 yyerror(msg)
     char *msg;
 {
+    static char *f;
+    static int line;
+
+    if (line == sourceline && strcmp(f, sourcefile) == 0)
+	return;
+    f = sourcefile; line = sourceline;
     Error("%s", msg);
 }
 

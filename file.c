@@ -4,7 +4,7 @@
   file.c -
 
   $Author: matz $
-  $Date: 1994/06/27 15:48:26 $
+  $Date: 1994/08/18 07:06:21 $
   created at: Mon Nov 15 12:24:34 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -23,6 +23,7 @@ char *strdup();
 
 extern VALUE C_IO;
 VALUE C_File;
+VALUE M_FileTest;
 
 VALUE time_new();
 
@@ -76,11 +77,24 @@ Ffile_seek(obj, offset, ptrname)
     OpenFile *fptr;
     long pos;
 
-    Check_Type(ptrname, T_FIXNUM);
-
     GetOpenFile(obj, fptr);
 
     pos = fseek(fptr->f, NUM2INT(offset), NUM2INT(ptrname));
+    if (pos != 0) rb_sys_fail(Qnil);
+    clearerr(fptr->f);
+
+    return obj;
+}
+
+static VALUE
+Ffile_set_pos(obj, offset)
+    VALUE obj, offset;
+{
+    OpenFile *fptr;
+    long pos;
+
+    GetOpenFile(obj, fptr);
+    pos = fseek(fptr->f, NUM2INT(offset), 0);
     if (pos != 0) rb_sys_fail(Qnil);
     clearerr(fptr->f);
 
@@ -310,7 +324,7 @@ eaccess(path, mode)
 }
 
 static VALUE
-Ffile_d(obj, fname)
+Ftest_d(obj, fname)
     VALUE obj;
     struct RString *fname;
 {
@@ -327,7 +341,7 @@ Ffile_d(obj, fname)
 }
 
 static VALUE
-Ffile_p(obj, fname)
+Ftest_p(obj, fname)
     VALUE obj;
     struct RString *fname;
 {
@@ -347,7 +361,7 @@ Ffile_p(obj, fname)
 }
 
 static VALUE
-Ffile_l(obj, fname)
+Ftest_l(obj, fname)
     VALUE obj;
     struct RString *fname;
 {
@@ -376,7 +390,7 @@ Ffile_l(obj, fname)
     return FALSE;
 }
 
-Ffile_S(obj, fname)
+Ftest_S(obj, fname)
     VALUE obj;
     struct RString *fname;
 {
@@ -406,7 +420,7 @@ Ffile_S(obj, fname)
 }
 
 static VALUE
-Ffile_b(obj, fname)
+Ftest_b(obj, fname)
     VALUE obj;
     struct RString *fname;
 {
@@ -428,7 +442,7 @@ Ffile_b(obj, fname)
 }
 
 static VALUE
-Ffile_c(obj, fname)
+Ftest_c(obj, fname)
     VALUE obj;
     struct RString *fname;
 {
@@ -446,7 +460,7 @@ Ffile_c(obj, fname)
 }
 
 static VALUE
-Ffile_e(obj, fname)
+Ftest_e(obj, fname)
     VALUE obj;
     struct RString *fname;
 {
@@ -458,7 +472,7 @@ Ffile_e(obj, fname)
 }
 
 static VALUE
-Ffile_r(obj, fname)
+Ftest_r(obj, fname)
     VALUE obj;
     struct RString *fname;
 {
@@ -468,7 +482,7 @@ Ffile_r(obj, fname)
 }
 
 static VALUE
-Ffile_R(obj, fname)
+Ftest_R(obj, fname)
     VALUE obj;
     struct RString *fname;
 {
@@ -478,7 +492,7 @@ Ffile_R(obj, fname)
 }
 
 static VALUE
-Ffile_w(obj, fname)
+Ftest_w(obj, fname)
     VALUE obj;
     struct RString *fname;
 {
@@ -488,7 +502,7 @@ Ffile_w(obj, fname)
 }
 
 static VALUE
-Ffile_W(obj, fname)
+Ftest_W(obj, fname)
     VALUE obj;
     struct RString *fname;
 {
@@ -498,7 +512,7 @@ Ffile_W(obj, fname)
 }
 
 static VALUE
-Ffile_x(obj, fname)
+Ftest_x(obj, fname)
     VALUE obj;
     struct RString *fname;
 {
@@ -508,7 +522,7 @@ Ffile_x(obj, fname)
 }
 
 static VALUE
-Ffile_X(obj, fname)
+Ftest_X(obj, fname)
     VALUE obj;
     struct RString *fname;
 {
@@ -518,7 +532,7 @@ Ffile_X(obj, fname)
 }
 
 static VALUE
-Ffile_f(obj, fname)
+Ftest_f(obj, fname)
     VALUE obj;
     struct RString *fname;
 {
@@ -531,7 +545,7 @@ Ffile_f(obj, fname)
 }
 
 static VALUE
-Ffile_z(obj, fname)
+Ftest_z(obj, fname)
     VALUE obj;
     struct RString *fname;
 {
@@ -544,7 +558,7 @@ Ffile_z(obj, fname)
 }
 
 static VALUE
-Ffile_s(obj, fname)
+Ftest_s(obj, fname)
     VALUE obj;
     struct RString *fname;
 {
@@ -557,7 +571,7 @@ Ffile_s(obj, fname)
 }
 
 static VALUE
-Ffile_owned(obj, fname)
+Ftest_owned(obj, fname)
     VALUE obj;
     struct RString *fname;
 {
@@ -570,7 +584,7 @@ Ffile_owned(obj, fname)
 }
 
 static VALUE
-Ffile_grpowned(obj, fname)
+Ftest_grpowned(obj, fname)
     VALUE obj;
     struct RString *fname;
 {
@@ -597,7 +611,7 @@ check3rdbyte(file, mode)
 #endif
 
 static VALUE
-Ffile_suid(obj, fname)
+Ftest_suid(obj, fname)
     VALUE obj;
     struct RString *fname;
 {
@@ -610,7 +624,7 @@ Ffile_suid(obj, fname)
 }
 
 static VALUE
-Ffile_sgid(obj, fname)
+Ftest_sgid(obj, fname)
     VALUE obj;
     struct RString *fname;
 {
@@ -623,7 +637,7 @@ Ffile_sgid(obj, fname)
 }
 
 static VALUE
-Ffile_sticky(obj, fname)
+Ftest_sticky(obj, fname)
     VALUE obj;
     struct RString *fname;
 {
@@ -633,6 +647,51 @@ Ffile_sticky(obj, fname)
 #else
     return FALSE;
 #endif
+}
+
+static VALUE
+Ffile_type(obj, fname)
+    VALUE obj;
+    struct RString *fname;
+{
+    struct stat st;
+    char *t;
+
+    Check_Type(fname, T_STRING);
+    if (cache_stat(fname->ptr, &st) < 0) rb_sys_fail(fname->ptr);
+
+    if (S_ISREG(st.st_mode)) {
+	t = "file";
+    } else if (S_ISDIR(st.st_mode)) {
+	t = "directory";
+    } else if (S_ISCHR(st.st_mode)) {
+	t = "characterSpecial";
+    } 
+#ifdef S_ISBLK
+    else if (S_ISBLK(st.st_mode)) {
+	t = "blockSpecial";
+    }
+#endif
+#ifndef S_ISFIFO
+    else if (S_ISFIFO(st.st_mode)) {
+	t = "fifo";
+    } 
+#endif
+#ifdef S_ISLNK
+    else if (S_ISLNK(st.st_mode)) {
+	t = "link";
+    }
+#endif
+#ifdef S_ISSOCK
+    else if (S_ISSOCK(st.st_mode)) {
+	t = "socket";
+    }
+#endif
+    else {
+	t = "unknown";
+    }
+
+    return str_new2(t);
 }
 
 static VALUE
@@ -733,7 +792,7 @@ Ffile_chmod(obj, args)
 	    rb_sys_fail(RSTRING(path)->ptr);
     }
 
-    return Qnil;
+    return INT2FIX(i);
 }
 
 static VALUE
@@ -749,7 +808,7 @@ Ffile_chmod2(obj, vmode)
     if (fchmod(fileno(fptr->f), mode) == -1)
 	rb_sys_fail(fptr->path);
 
-    return obj;
+    return INT2FIX(0);
 }
 
 static VALUE
@@ -797,7 +856,7 @@ Ffile_chown2(obj, owner, group)
     if (fchown(fileno(fptr->f), NUM2INT(owner), NUM2INT(group)) == -1)
 	rb_sys_fail(fptr->path);
 
-    return obj;
+    return INT2FIX(0);
 }
 
 struct timeval *time_timeval();
@@ -838,7 +897,7 @@ Ffile_link(obj, from, to)
 
     if (link(from->ptr, to->ptr) < 0)
 	rb_sys_fail(from->ptr);
-    return TRUE;
+    return INT2FIX(0);
 }
 
 static VALUE
@@ -899,7 +958,7 @@ Ffile_rename(obj, from, to)
     if (rename(from->ptr, to->ptr) == -1)
 	rb_sys_fail(from->ptr);
 
-    return TRUE;
+    return INT2FIX(0);
 }
 
 static VALUE
@@ -910,11 +969,11 @@ Ffile_umask(argc, argv)
     VALUE mask;
     int omask;
 
-    if (argc == 1) {
+    if (argc == 0) {
 	int omask = umask(0);
 	umask(omask);
     }
-    else if (argc == 2) {
+    else if (argc == 1) {
 	omask = umask(NUM2INT(argv[1]));
     }
     else {
@@ -962,64 +1021,69 @@ Ffile_fcntl(obj, req, arg)
 
 Init_File()
 {
+    M_FileTest = rb_define_module("FileTest");
+
+    rb_define_method(M_FileTest, "d",  Ftest_d, 1);
+    rb_define_method(M_FileTest, "isdirectory",  Ftest_d, 1);
+    rb_define_method(M_FileTest, "a",  Ftest_e, 1);
+    rb_define_method(M_FileTest, "e",  Ftest_e, 1);
+    rb_define_method(M_FileTest, "exists",  Ftest_e, 1);
+    rb_define_method(M_FileTest, "r",  Ftest_r, 1);
+    rb_define_method(M_FileTest, "readable",  Ftest_r, 1);
+    rb_define_method(M_FileTest, "R",  Ftest_R, 1);
+    rb_define_method(M_FileTest, "w",  Ftest_w, 1);
+    rb_define_method(M_FileTest, "writable",  Ftest_w, 1);
+    rb_define_method(M_FileTest, "W",  Ftest_W, 1);
+    rb_define_method(M_FileTest, "x",  Ftest_x, 1);
+    rb_define_method(M_FileTest, "executable",  Ftest_x, 1);
+    rb_define_method(M_FileTest, "X",  Ftest_X, 1);
+    rb_define_method(M_FileTest, "f",  Ftest_f, 1);
+    rb_define_method(M_FileTest, "isfile",  Ftest_f, 1);
+    rb_define_method(M_FileTest, "z",  Ftest_z, 1);
+    rb_define_method(M_FileTest, "s",  Ftest_s, 1);
+    rb_define_method(M_FileTest, "size",  Ftest_s, 1);
+    rb_define_method(M_FileTest, "O",  Ftest_owned, 1);
+    rb_define_method(M_FileTest, "owned",  Ftest_owned, 1);
+    rb_define_method(M_FileTest, "G",  Ftest_grpowned, 1);
+
+    rb_define_method(M_FileTest, "p",  Ftest_p, 1);
+    rb_define_method(M_FileTest, "ispipe",  Ftest_p, 1);
+    rb_define_method(M_FileTest, "l",  Ftest_l, 1);
+    rb_define_method(M_FileTest, "issymlink",  Ftest_l, 1);
+    rb_define_method(M_FileTest, "S",  Ftest_S, 1);
+    rb_define_method(M_FileTest, "issocket",  Ftest_S, 1);
+
+    rb_define_method(M_FileTest, "b",  Ftest_b, 1);
+    rb_define_method(M_FileTest, "c",  Ftest_c, 1);
+
+    rb_define_method(M_FileTest, "u",  Ftest_suid, 1);
+    rb_define_method(M_FileTest, "setuid",  Ftest_suid, 1);
+    rb_define_method(M_FileTest, "g",  Ftest_sgid, 1);
+    rb_define_method(M_FileTest, "setgid",  Ftest_sgid, 1);
+    rb_define_method(M_FileTest, "k",  Ftest_sticky, 1);
+
     C_File = rb_define_class("File", C_IO);
 
+    rb_include_module(CLASS_OF(C_File), M_FileTest);
+
     rb_define_single_method(C_File, "stat",  Ffile_stat, 1);
-    rb_define_single_method(C_File, "lstat",  Ffile_lstat, 1);
-
-    rb_define_single_method(C_File, "d",  Ffile_d, 1);
-    rb_define_single_method(C_File, "isdirectory",  Ffile_d, 1);
-    rb_define_single_method(C_File, "a",  Ffile_e, 1);
-    rb_define_single_method(C_File, "e",  Ffile_e, 1);
-    rb_define_single_method(C_File, "exists",  Ffile_e, 1);
-    rb_define_single_method(C_File, "r",  Ffile_r, 1);
-    rb_define_single_method(C_File, "readable",  Ffile_r, 1);
-    rb_define_single_method(C_File, "R",  Ffile_R, 1);
-    rb_define_single_method(C_File, "w",  Ffile_w, 1);
-    rb_define_single_method(C_File, "writable",  Ffile_w, 1);
-    rb_define_single_method(C_File, "W",  Ffile_W, 1);
-    rb_define_single_method(C_File, "x",  Ffile_x, 1);
-    rb_define_single_method(C_File, "executable",  Ffile_x, 1);
-    rb_define_single_method(C_File, "X",  Ffile_X, 1);
-    rb_define_single_method(C_File, "f",  Ffile_f, 1);
-    rb_define_single_method(C_File, "isfile",  Ffile_f, 1);
-    rb_define_single_method(C_File, "z",  Ffile_z, 1);
-    rb_define_single_method(C_File, "s",  Ffile_s, 1);
-    rb_define_single_method(C_File, "size",  Ffile_s, 1);
-    rb_define_single_method(C_File, "O",  Ffile_owned, 1);
-    rb_define_single_method(C_File, "owned",  Ffile_owned, 1);
-    rb_define_single_method(C_File, "G",  Ffile_grpowned, 1);
-
-    rb_define_single_method(C_File, "p",  Ffile_p, 1);
-    rb_define_single_method(C_File, "ispipe",  Ffile_p, 1);
-    rb_define_single_method(C_File, "l",  Ffile_l, 1);
-    rb_define_single_method(C_File, "issymlink",  Ffile_l, 1);
-    rb_define_single_method(C_File, "S",  Ffile_S, 1);
-    rb_define_single_method(C_File, "issocket",  Ffile_S, 1);
-
-    rb_define_single_method(C_File, "b",  Ffile_b, 1);
-    rb_define_single_method(C_File, "c",  Ffile_c, 1);
-
-    rb_define_single_method(C_File, "u",  Ffile_suid, 1);
-    rb_define_single_method(C_File, "setuid",  Ffile_suid, 1);
-    rb_define_single_method(C_File, "g",  Ffile_sgid, 1);
-    rb_define_single_method(C_File, "setgid",  Ffile_sgid, 1);
-    rb_define_single_method(C_File, "k",  Ffile_sticky, 1);
+    rb_define_single_method(C_File, "lstat", Ffile_lstat, 1);
+    rb_define_single_method(C_File, "type",  Ffile_type, 1);
 
     rb_define_single_method(C_File, "atime", Ffile_atime, 1);
     rb_define_single_method(C_File, "mtime", Ffile_mtime, 1);
     rb_define_single_method(C_File, "ctime", Ffile_ctime, 1);
 
-    rb_define_single_method(C_File, "utime", Ffile_utime, -1);
+    rb_define_single_method(C_File, "utime", Ffile_utime, -2);
     rb_define_single_method(C_File, "chmod", Ffile_chmod, -2);
-    rb_define_single_method(C_File, "chown", Ffile_chown, -1);
+    rb_define_single_method(C_File, "chown", Ffile_chown, -2);
 
     rb_define_single_method(C_File, "link", Ffile_link, 2);
     rb_define_single_method(C_File, "symlink", Ffile_symlink, 2);
     rb_define_single_method(C_File, "readlink", Ffile_readlink, 1);
 
-    rb_define_single_method(C_File, "unlink", Ffile_unlink, -1);
-    rb_define_single_method(C_File, "delete", Ffile_unlink, -1);
+    rb_define_single_method(C_File, "unlink", Ffile_unlink, -2);
+    rb_define_single_method(C_File, "delete", Ffile_unlink, -2);
     rb_define_single_method(C_File, "rename", Ffile_rename, 2);
     rb_define_single_method(C_File, "umask", Ffile_umask, -1);
     rb_define_single_method(C_File, "truncate", Ffile_truncate, 2);
@@ -1037,6 +1101,11 @@ Init_File()
 
     rb_define_method(C_File, "tell",  Ffile_tell, 0);
     rb_define_method(C_File, "seek",  Ffile_seek, 2);
+
+
+    rb_define_method(C_File, "pos",  Ffile_tell, 0);
+    rb_define_method(C_File, "pos=", Ffile_set_pos, 1);
+
     rb_define_method(C_File, "rewind",  Ffile_rewind, 0);
     rb_define_method(C_File, "isatty",  Ffile_isatty, 0);
     rb_define_method(C_File, "eof",  Ffile_eof, 0);

@@ -3,7 +3,7 @@
   socket.c -
 
   $Author: matz $
-  $Date: 1994/06/17 14:23:51 $
+  $Date: 1994/08/12 04:47:56 $
   created at: Thu Mar 31 12:21:29 JST 1994
 
 ************************************************/
@@ -65,7 +65,8 @@ Fbsock_shutdown(sock, args)
     GetOpenFile(sock, fptr);
     if (shutdown(fileno(fptr->f), how) == -1)
 	rb_sys_fail(Qnil);
-    return sock;
+
+    return INT2FIX(0);
 }
 
 static VALUE
@@ -84,7 +85,8 @@ Fbsock_setopt(sock, lev, optname, val)
     GetOpenFile(sock, fptr);
     if (setsockopt(fileno(fptr->f), level, option, val->ptr, val->len) < 0)
 	rb_sys_fail(fptr->path);
-    return sock;
+
+    return INT2FIX(0);
 }
 
 static VALUE
@@ -533,6 +535,13 @@ Fsock_open(class, domain, type, protocol)
 }
 
 static VALUE
+Fsock_for_fd(class, fd)
+    VALUE class, fd;
+{
+    return sock_new(class, NUM2INT(fd));
+}
+
+static VALUE
 Fsock_socketpair(class, domain, type, protocol)
     VALUE class, domain, type, protocol;
 {
@@ -559,7 +568,8 @@ Fsock_connect(sock, addr)
     GetOpenFile(sock, fptr);
     if (connect(fileno(fptr->f), (struct sockaddr*)addr->ptr, addr->len) < 0)
 	rb_sys_fail("connect(2)");
-    return sock;
+
+    return INT2FIX(0);
 }
 
 static VALUE
@@ -575,7 +585,8 @@ Fsock_bind(sock, addr)
     GetOpenFile(sock, fptr);
     if (bind(fileno(fptr->f), (struct sockaddr*)addr->ptr, addr->len) < 0)
 	rb_sys_fail("bind(2)");
-    return sock;
+
+    return INT2FIX(0);
 }
 
 static VALUE
@@ -587,7 +598,8 @@ Fsock_listen(sock, log)
     GetOpenFile(sock, fptr);
     if (listen(fileno(fptr->f), NUM2INT(log)) < 0)
 	rb_sys_fail("listen(2)");
-    return sock;
+
+    return INT2FIX(0);
 }
 
 static VALUE
@@ -695,6 +707,7 @@ Init_Socket ()
     C_Socket = rb_define_class("Socket", C_BasicSocket);
     rb_define_single_method(C_Socket, "open", Fsock_open, 3);
     rb_define_single_method(C_Socket, "new", Fsock_open, 3);
+    rb_define_single_method(C_Socket, "for_fd", Fsock_for_fd, 1);
 
     rb_define_method(C_Socket, "connect", Fsock_connect, 1);
     rb_define_method(C_Socket, "bind", Fsock_bind, 1);

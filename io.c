@@ -3,7 +3,7 @@
   io.c -
 
   $Author: matz $
-  $Date: 1994/06/27 15:48:29 $
+  $Date: 1994/08/12 11:06:40 $
   created at: Fri Oct 15 18:08:59 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -21,7 +21,7 @@
 
 VALUE rb_ad_string();
 
-VALUE C_IO;
+VALUE C_IO, C_ARGFILE;
 extern VALUE C_File;
 
 VALUE rb_stdin, rb_stdout, rb_stderr, rb_defout;
@@ -29,12 +29,12 @@ VALUE rb_stdin, rb_stdout, rb_stderr, rb_defout;
 VALUE FS, OFS;
 VALUE RS, ORS;
 
-ID id_write;
+ID id_write, id_fd, id_print_on;
 
 extern char *inplace;
 
 /* writing functions */
-static VALUE
+VALUE
 Fio_write(obj, str)
     VALUE obj;
     struct RString *str;
@@ -151,11 +151,11 @@ Fio_fileno(obj)
     VALUE obj;
 {
     OpenFile *fptr;
-    int f;
+    int fd;
 
     GetOpenFile(obj, fptr);
-    f = fileno(fptr->f);
-    return INT2FIX(f);
+    fd = fileno(fptr->f);
+    return INT2FIX(fd);
 }
 
 /* reading functions */
@@ -178,7 +178,7 @@ read_all(port)
     for (;;) {
 	n = fread(buf, 1, BUFSIZ, fptr->f);
 	if (n == 0) {
-	    if (feof(fptr->f)) break;
+	    if (feof(fptr->f)) return Qnil;
 	    rb_sys_fail(Qnil);
 	}
 	str_cat(str, buf, n);
@@ -218,15 +218,6 @@ Fio_read(obj, args)
 
     return str;
 }
-
-static void
-io_gets(str)
-    VALUE str;
-{
-    rb_break();
-}
-
-void rb_each();
 
 VALUE rb_lastline;
 static VALUE lineno;
@@ -660,12 +651,12 @@ Fprintf(argc, argv)
 {
     VALUE out;
 
-    if (argc == 1) return Qnil;
-    if (TYPE(argv[1]) == T_STRING) {
+    if (argc == 0) return Qnil;
+    if (TYPE(argv[0]) == T_STRING) {
 	out = rb_defout;
     }
-    else if (obj_responds_to(argv[1], INT2FIX(id_write))) {
-	out = argv[1];
+    else if (obj_responds_to(argv[0], INT2FIX(id_write))) {
+	out = argv[0];
 	argv++;
 	argc--;
     }
@@ -678,15 +669,6 @@ Fprintf(argc, argv)
     return Qnil;
 }
 
-static void
-obj_print(obj)
-    VALUE obj;
-{
-    int i;
-
-    Fio_write(rb_defout, obj);
-}
-
 static VALUE
 Fprint(argc, argv)
     int argc;
@@ -695,22 +677,29 @@ Fprint(argc, argv)
     int i;
 
     /* if no argument given, print recv */
-    if (argc == 1) {
-	obj_print(argv[0]);
+    if (argc == 0) {
+	rb_funcall(Qself, id_print_on, 1, rb_defout);
     }
     else {
-	for (i=1; i<argc; i++) {
-	    obj_print(argv[i]);
-	    if (OFS && i>1) {
-		obj_print(OFS);
+	for (i=0; i<argc; i++) {
+	    if (OFS && i>0) {
+		Fio_write(rb_defout, OFS);
 	    }
+	    rb_funcall(argv[i], id_print_on, 1, rb_defout);
 	}
     }
     if (ORS) {
-	obj_print(ORS);
+	Fio_write(rb_defout, ORS);
     }
 
     return Qnil;
+}
+
+static VALUE
+Fprint_on(obj, port)
+    VALUE obj, port;
+{
+    return Fio_write(port, obj);
 }
 
 static VALUE
@@ -806,8 +795,7 @@ next_argv()
 }
 
 static VALUE
-Fgets(obj)
-    VALUE obj;
+Fgets()
 {
     VALUE line;
 
@@ -827,8 +815,7 @@ Fgets(obj)
 }
 
 static VALUE
-Feof(obj)
-    VALUE obj;
+Feof()
 {
     if (init_p == 0 && !next_argv())
 	return TRUE;
@@ -840,8 +827,7 @@ Feof(obj)
 }
 
 static VALUE
-Fgetc(obj)
-    VALUE obj;
+Fgetc()
 {
     return Fio_getc(rb_stdin);
 }
@@ -1120,14 +1106,14 @@ Fsyscall(argc, argv)
     unsigned long arg[8];
 #endif
     int retval = -1;
-    int i = 1;
-    int items = argc - 2;
+    int i = 0;
+    int items = argc - 1;
 
     /* This probably won't work on machines where sizeof(long) != sizeof(int)
      * or where sizeof(long) != sizeof(char*).  But such machines will
      * not likely have syscall implemented either, so who cares?
      */
-    argv++;			/* skip SELF */
+
     arg[0] = NUM2INT(argv[0]); argv++;
     while (items--) {
 	if (FIXNUM_P(*argv)) {
@@ -1140,7 +1126,7 @@ Fsyscall(argc, argv)
 	}
 	i++;
     }
-    switch (argc-1) {
+    switch (argc) {
       case 0:
 	Fail("Too few args to syscall");
       case 1:
@@ -1196,10 +1182,78 @@ Fsyscall(argc, argv)
 #endif /* atarist */
     }
     if (retval == -1) rb_sys_fail(0);
-    return Qnil;
+    return INT2FIX(0);
 #else
     Fail("syscall() unimplemented");
 #endif
+}
+
+static VALUE
+Farg_read(obj)
+    VALUE obj;
+{
+    VALUE str, str2;
+
+    str = str_new(0, 0);
+    for (;;) {
+      retry:
+	if (!next_argv()) return Qnil;
+	str2 = Fio_read(file, Qnil);
+	if (str2 == Qnil && next_p != -1) {
+	    Fio_close(file);
+	    next_p = 1;
+	    goto retry;
+	}
+	if (str2 == Qnil) break;
+	str_cat(str, RSTRING(str2)->ptr, RSTRING(str2)->len);
+    }
+
+    return str;
+}
+
+static VALUE
+Farg_getc()
+{
+    VALUE byte;
+
+  retry:
+    if (!next_argv()) return Qnil;
+    byte = Fio_getc(file);
+    if (byte == Qnil && next_p != -1) {
+	Fio_close(file);
+	next_p = 1;
+	goto retry;
+    }
+
+    return byte;
+}
+
+static VALUE
+Farg_each()
+{
+    VALUE str;
+
+    while (str = Fgets()) {
+	rb_yield(str);
+    }
+    return Qnil;
+}
+
+static VALUE
+Farg_each_byte()
+{
+    VALUE byte;
+
+    while (byte = Farg_getc()) {
+	rb_yield(byte);
+    }
+    return Qnil;
+}
+
+static VALUE
+Farg_to_s()
+{
+    return str_new2("$ARGF");
 }
 
 extern VALUE M_Enumerable;
@@ -1209,18 +1263,24 @@ Init_IO()
 {
     extern VALUE C_Kernel;
 
+    id_write = rb_intern("write");
+    id_fd = rb_intern("fd");
+    id_print_on = rb_intern("print_on");
+
     rb_define_method(C_Kernel, "syscall", Fsyscall, -1);
 
     rb_define_method(C_Kernel, "open", Fopen, -2);
     rb_define_method(C_Kernel, "printf", Fprintf, -1);
     rb_define_method(C_Kernel, "print", Fprint, -1);
     rb_define_method(C_Kernel, "gets", Fgets, 0);
-    rb_define_method(C_Kernel, "eof", Feof, 0);
     rb_define_alias(C_Kernel,"readline", "gets");
+    rb_define_method(C_Kernel, "eof", Feof, 0);
     rb_define_method(C_Kernel, "getc", Fgetc, 0);
     rb_define_method(C_Kernel, "select", Fselect, -2);
 
     rb_define_method(C_Kernel, "readlines", Freadlines, 0);
+
+    rb_define_method(C_Kernel, "print_on", Fprint_on, 1);
 
     C_IO = rb_define_class("IO", C_Object);
     rb_include_module(C_IO, M_Enumerable);
@@ -1245,7 +1305,9 @@ Init_IO()
     rb_define_method(C_IO, "sysread",  Fio_sysread, 1);
 
     rb_define_method(C_IO, "fileno", Fio_fileno, 0);
-    rb_define_method(C_IO, "sync",  Fio_sync, 0);
+    rb_define_alias(C_IO, "to_i", "fileno");
+
+    rb_define_method(C_IO, "sync",   Fio_sync, 0);
     rb_define_method(C_IO, "sync=",  Fio_set_sync, 1);
 
     rb_define_alias(C_IO, "readlines", "to_a");
@@ -1278,6 +1340,22 @@ Init_IO()
     rb_define_single_method(C_IO, "default", Fio_defget, 0);
     rb_define_single_method(C_IO, "default=", Fio_defset, 1);
 
-    id_write = rb_intern("write");
+    C_ARGFILE = rb_define_class("ARGFILE", C_Object);
+    rb_include_module(C_ARGFILE, M_Enumerable);
+
+    rb_define_variable("$ARGF", &C_ARGFILE, Qnil, rb_readonly_hook);
+
+    rb_define_single_method(C_ARGFILE, "each",  Farg_each, 0);
+    rb_define_single_method(C_ARGFILE, "each_byte",  Farg_each_byte, 0);
+
+    rb_define_single_method(C_ARGFILE, "read",  Farg_read, 0);
+    rb_define_single_method(C_ARGFILE, "readlines", Freadlines, 0);
+    rb_define_single_method(C_ARGFILE, "gets", Fgets, 0);
+    rb_define_single_method(C_ARGFILE, "realine", Fgets, 0);
+    rb_define_single_method(C_ARGFILE, "getc", Farg_getc, 0);
+    rb_define_single_method(C_ARGFILE, "eof", Feof, 0);
+
+    rb_define_single_method(C_ARGFILE, "to_s", Farg_to_s, 0);
+
     Init_File();
 }

@@ -41,7 +41,7 @@ def leapyear(y)
   return ta
 end
   
-def bcalc(t, m, j)
+def bcalc(tt, m, j)
   ta = 0
   if (m <= 2)
     ta = (m - 1) * 31
@@ -51,7 +51,7 @@ def bcalc(t, m, j)
   end
   ta = ta + (j - 1) * 365 + ((j - 1) / 4.0).to_i
   ta = ta - ((j - 1) / 100) + ((j - 1) / 400.0).to_i
-  ta = ta + t
+  ta = ta + tt
   return ta
 end
 

@@ -21,8 +21,19 @@ Ruby-C インターフェース
 
    変数: 現在のselfオブジェクトの値. 一般にメソッドにはselfを指す引数
    が与えられるので, この変数にアクセスする必要はない. この変数の値を
-   変更する時は以後のselfの値そのものが変わってしまうので, 慎重に行な
-   うこと.
+   変更する時は以後のselfの値そのものが変わってしまうので, 特別な事情
+   がない限り代入してはならない.
+
+   注意: ヘッダファイル"env.h"をインクルードしていないファイルでは,
+   Qselfは定数であり, 代入は文法エラーとなる.
+
+ TRUE
+
+   定数: tオブジェクト(真のデフォルト値)
+
+ FALSE
+
+   定数: nilオブジェクト
 
 クラス・モジュール定義
 
@@ -54,8 +65,8 @@ Ruby-C インターフェース
 
  void rb_global_variable(VALUE *var)
 
-   GCにRubyからはアクセスされないが, Rubyオブジェクトを含む大域変数を
-   マークする.
+   GCのためRubyからはアクセスされないが, Rubyオブジェクトを含む大域変
+   数をマークする.
 
  void rb_read_only_hook()
 
@@ -72,9 +83,10 @@ Ruby-C インターフェース
 
  rb_define_method(VALUE class, char *name, VALUE (*func)(), int argc)
 
-   メソッドを定義する. argcはselfを除く引数の数. argcが-1の時, 引数は 
-   argc, argv形式で与えられる.  argcが-2の時, 引数はself, args(argsは
-   引数を含むrubyの配列)という形式で与えられる.
+   メソッドを定義する. argcはselfを除く引数の数. argcが-1の時, 関数に
+   は引数の数(selfを含まない)を第1引数, 引数の配列を第2引数とする形式
+   で与えられる. argcが-2の時, 引数はself, args(argsは引数を含むrubyの
+   配列)という形式で与えられる.
 
  rb_define_single_method(VALUE class, char *name, VALUE (*func)(), int argc)
 
@@ -83,10 +95,10 @@ Ruby-C インターフェース
  rb_scan_args(VALUE args, char *fmt, ...)
 
    args形式で与えられた引数を分解する. fmtは必須引数の数, 付加引数の数, 
-   残りの引数があるかを指定する文字列で, "数字数字*"という形式である. 
-   2 番目の数字と"*"は省略可能である. 第3引数以降は変数へのポインタで, 
-   該当する要素がその変数に格納される. 付加引数が与えられない場合は変
-   数に Qnilが代入される.
+   残りの引数があるかを指定する文字列で, "数字数字*"という形式である.
+   2 番目の数字と"*"はそれぞれ省略可能である. 第3引数以降は変数へのポ
+   インタで, 該当する要素がその変数に格納される. 付加引数に対応する引
+   数が与えられていない場合は変数にQnilが代入される.
 
 Rubyメソッド呼び出し
 
@@ -109,6 +121,11 @@ Rubyメソッド呼び出し
 
    IDに対応する文字列を返す(デバッグ用).
 
+ char *rb_class2name(VALUE class)
+
+   classの名前を返す(デバッグ用). classが名前を持たない時には, 一番近
+   い名前を持つクラスの名前を返す.
+
 インスタンス変数
 
  VALUE rb_iv_get(VALUE obj, char *name)
@@ -125,8 +142,8 @@ Rubyメソッド呼び出し
  VALUE rb_iterate(VALUE (*func1)(), char *arg1, VALUE (*func2)(), char *arg2)
 
    func2をブロックとして設定し, func1をイテレータとして呼ぶ.  func1に
-   は arg1が引数として渡され, func2には第1引数にイテレータとして与えら
-   れた値, 第2引数にarg2が渡される.
+   は arg1が引数として渡され, func2には第1引数にイテレータから与えられ
+   た値, 第2引数にarg2が渡される.
  
  VALUE rb_yield(VALUE val)
 
@@ -142,9 +159,13 @@ Rubyメソッド呼び出し
 
    関数func1をarg1を引数として実行し, 実行終了後(たとえ例外が発生して
    も) func2をarg2を引数として実行する. 戻り値はfunc1の戻り値である(例
-   外が発生した時はnil).
+   外が発生した時は戻らない).
 
 例外・エラー
+
+ void Warning(char *fmt, ...)
+
+   標準エラー出力に警告情報を表示する. 引数はprintf()と同じ.
 
  void Fail(char *fmt, ...)
 
@@ -160,6 +181,20 @@ Rubyメソッド呼び出し
    インタープリタなどプログラムのバグでしか発生するはずのない状況の時
    呼ぶ. インタープリタはコアダンプし直ちに終了する. 例外処理は一切行
    なわれない.
+
+rubyの初期化・実行
+
+ void ruby_init(int argc, char **argv, char **envp)
+
+  rubyインタプリタの初期化を行なう.
+
+ void ruby_run()
+
+  rubyインタプリタを実行する.
+
+ void ruby_script(char *name)
+
+  rubyのスクリプト名($0)を設定する.
 
 /*
  * Local variables:

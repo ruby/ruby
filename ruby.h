@@ -3,7 +3,7 @@
   ruby.h -
 
   $Author: matz $
-  $Date: 1994/06/27 15:48:38 $
+  $Date: 1994/08/12 11:06:43 $
   created at: Thu Jun 10 14:26:32 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -70,7 +70,8 @@ typedef unsigned short USHORT;
 #define POINTER(p) (p)
 #define NIL_P(p) ((p) == Qnil)
 
-#define TRUE  INT2FIX(1)
+#undef TRUE
+extern VALUE TRUE;
 #define FALSE Qnil
 
 extern VALUE C_Object;
@@ -179,9 +180,12 @@ struct RData {
 
 #define DATA_PTR(dta) (RDATA(dta)->data)
 
+VALUE rb_ivar_get_1();
+VALUE rb_ivar_set_1();
+
 #define Get_Data_Struct(obj, iv, type, sval) {\
     VALUE _data_;\
-    _data_ = rb_iv_get(obj, iv);\
+    _data_ = rb_ivar_get_1(obj, iv);\
     Check_Type(_data_, T_DATA);\
     sval = (type*)DATA_PTR(_data_);\
 }
@@ -192,8 +196,8 @@ struct RData {
     _new_->dmark = (void (*)())(mark);\
     _new_->dfree = (void (*)())(free);\
     sval = (type*)DATA_PTR(_new_);\
-    bzero(sval, sizeof(type));\
-    rb_iv_set(obj, iv, _new_);\
+    memset(sval, 0, sizeof(type));\
+    rb_ivar_set_1(obj, iv, _new_);\
 }
 
 struct RStruct {
@@ -226,6 +230,8 @@ struct RBignum {
 #define RSTRUCT(obj) (R_CAST(RStruct)(obj))
 #define RBIGNUM(obj) (R_CAST(RBignum)(obj))
 
+extern VALUE rb_self();
+#define Qself rb_self()
 #define Qnil (VALUE)0
 
 #define ALLOC_N(type,n) (type*)xmalloc(sizeof(type)*(n))
@@ -240,7 +246,6 @@ void rb_define_const();
 
 void rb_define_method();
 void rb_define_single_method();
-void rb_define_mfunc();
 void rb_undef_method();
 void rb_define_alias();
 void rb_define_attr();

@@ -3,7 +3,7 @@
   object.c -
 
   $Author: matz $
-  $Date: 1994/06/17 14:23:50 $
+  $Date: 1994/08/12 04:47:42 $
   created at: Thu Jul 15 12:01:24 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -27,7 +27,6 @@ VALUE C_Method;
 struct st_table *new_idhash();
 
 VALUE Fsprintf();
-VALUE Ffail();
 VALUE Fexit();
 VALUE Feval();
 VALUE Fapply();
@@ -274,6 +273,13 @@ Fmain_to_s(obj)
     return str_new2("main");
 }
 
+static VALUE
+Ftrue_to_s(obj)
+    VALUE obj;
+{
+    return str_new2("t");
+}
+
 VALUE
 obj_alloc(class)
     VALUE class;
@@ -335,6 +341,7 @@ static VALUE boot_defclass(name, super)
 }
 
 VALUE TopSelf;
+VALUE TRUE = 1;
 
 Init_Object()
 {
@@ -351,31 +358,33 @@ Init_Object()
     metaclass = RBASIC(C_Class)->class = single_class_new(metaclass);
 
     /*
+     * Ruby's Class Hierarchy Chart
+     *
      * 	+-------nil	      +---------------------+
      *  |        ^	      |			    |
      *  |        |     	      |			    |
      *  |      Kernel----->(Kernel)		    |
      *  |       ^  ^         ^  ^		    |
      *	|       |  |         |  |		    |
-     *	|   +---+  +-----+   |  +---+		    |
-     *	|   |     +------|---+      |		    |
-     *	|   |     |      |          |		    |
+     *	|   +---+  +----+    |  +---+		    |
+     *	|   |     +-----|----+      |		    |
+     *	|   |     |     |           |		    |
      * 	+->Nil->(Nil) Object---->(Object)	    |
-     *	   	      ^  ^         ^  ^	            |
-     *	   	      |  |         |  |	            |
-     *                |  | +-------+  |	            |
-     *                |  | |          |	    	    |
-     *                |  +---------+  +------+	    |
-     *	       	      |	   |       |          |	    |
-     * 	     +--------+    |     Module--->(Module) |
+     *	   	       ^ ^         ^  ^	            |
+     *	   	       | |         |  |	            |
+     *                 | | +-------+  |	            |
+     *                 | | |          |	    	    |
+     *                 | +---------+  +------+	    |
+     *	       	       |   |       |          |	    |
+     * 	     +---------+   |     Module--->(Module) |
      *	     |             |       ^          ^	    |
      *  OtherClass-->(OtherClass)  |          |	    |
      * 		                 Class---->(Class)  |
-     *					      ^     |
-     *					      |     |
-     *					      +-----+
+     *				   ^                |
+     *				   |                |
+     *				   +----------------+
      *
-     *   + all metaclasses are instance of class Class
+     *   + All metaclasses are instances of the class `Class'.
      */
 
     rb_define_method(C_Kernel, "is_nil", P_false, 0);
@@ -393,8 +402,9 @@ Init_Object()
     rb_define_method(C_Kernel, "to_s", Fkrn_to_s, 0);
     rb_define_method(C_Kernel, "_inspect", Fkrn_inspect, 0);
 
+#ifdef USE_CALLER
     rb_define_method(C_Kernel, "caller", Fcaller, -2);
-    rb_define_method(C_Kernel, "fail", Ffail, -2);
+#endif
     rb_define_method(C_Kernel, "exit", Fexit, -2);
     rb_define_method(C_Kernel, "eval", Feval, 1);
     rb_define_method(C_Kernel, "defined", Fdefined, 1);
@@ -403,9 +413,6 @@ Init_Object()
     rb_define_method(C_Kernel, "iterator_p", Fiterator_p, 0);
 
     rb_define_method(C_Kernel, "apply", Fapply, -2);
-
-    rb_define_const(C_Kernel, "%TRUE", TRUE);
-    rb_define_const(C_Kernel, "%FALSE", FALSE);
 
     rb_define_method(C_Object, "_inspect", Fobj_inspect, 0);
 
@@ -443,4 +450,10 @@ Init_Object()
 
     Qself = TopSelf = obj_alloc(C_Object);
     rb_define_single_method(TopSelf, "to_s", Fmain_to_s, 0);
+
+    TRUE = obj_alloc(C_Object);
+    rb_define_single_method(TRUE, "to_s", Ftrue_to_s, 0);
+    rb_define_const(C_Kernel, "%TRUE", TRUE);
+    rb_define_const(C_Kernel, "%FALSE", FALSE);
 }
+

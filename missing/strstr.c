@@ -14,7 +14,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$Header: /work/cvsroot/ruby/missing/strstr.c,v 1.1 1994/06/27 15:49:21 matz Exp $ SPRITE (Berkeley)";
+static char rcsid[] = "$Header: /usr/ext/cvsroot/ruby/missing/strstr.c,v 1.2 1994/08/12 04:48:34 matz Exp $ SPRITE (Berkeley)";
 #endif /* not lint */
 
 /*

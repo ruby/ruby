@@ -3,7 +3,7 @@
   gc.c -
 
   $Author: matz $
-  $Date: 1994/06/27 15:48:27 $
+  $Date: 1994/08/12 04:47:27 $
   created at: Tue Oct  5 09:44:46 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -48,7 +48,7 @@ xcalloc(n, size)
     void *mem;
 
     mem = xmalloc(n * size);
-    bzero(mem, n * size);
+    memset(mem, 0, n * size);
 
     return mem;
 }
@@ -318,12 +318,13 @@ mark_locations_array(x, n)
 {
     int j;
     VALUE p;
-    for(j=0;j<n;++j)
-	{p = x[j];
-	 if (looks_pointerp(p)) {
-	     gc_mark(p);
-	 }
-     }
+
+    for(j=0;j<n;++j) {
+	p = x[j];
+	if (looks_pointerp(p)) {
+	    gc_mark(p);
+	}
+    }
 }
 
 static void
@@ -590,12 +591,10 @@ gc()
     setjmp(save_regs_gc_mark);
     mark_locations((VALUE*)save_regs_gc_mark,
 		   (VALUE*)(((char*)save_regs_gc_mark)+sizeof(save_regs_gc_mark)));
-    mark_locations((VALUE*)save_regs_gc_mark,
-		   sizeof save_regs_gc_mark/sizeof(VALUE));
     mark_locations(stack_start_ptr, (VALUE*) &stack_end);
 #if defined(THINK_C)
-    mark_locations(((char*)stack_start_ptr + 2),
-		   ((char*)&stack_end + 2));
+    mark_locations((VALUE*)((char*)stack_start_ptr + 2),
+		   (VALUE*)((char*)&stack_end + 2));
 #endif
 
     /* mark protected global variables */

@@ -7,7 +7,7 @@ def println(*args)
     print(a)
   end
   print("\n")
-end def
+end
 
 def tt
   for i in 1..10
@@ -16,9 +16,8 @@ def tt
   end
 end
 
-test = 
-do tt() using i
+test = tt{i|
   if i == 3; break end
   println("ttt: ", i);
-end
+}
 #exit()

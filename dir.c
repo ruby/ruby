@@ -3,7 +3,7 @@
   dir.c -
 
   $Author: matz $
-  $Date: 1994/06/17 14:23:49 $
+  $Date: 1994/08/12 11:06:38 $
   created at: Wed Jan  5 09:51:01 JST 1994
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -37,6 +37,7 @@
 #endif /* not (DIRENT or _POSIX_VERSION) */
 
 static VALUE C_Dir;
+static ID id_dir;
 
 static void
 free_dir(dir)
@@ -59,7 +60,7 @@ Fdir_open(dir_class, dirname)
     if (dirp == NULL) Fail("Can't open directory %s", dirname->ptr);
 
     obj = obj_alloc(dir_class);
-    Make_Data_Struct(obj, "dir", DIR*, Qnil, free_dir, d);
+    Make_Data_Struct(obj, id_dir, DIR*, Qnil, free_dir, d);
     *d = dirp;
 
     return obj;
@@ -73,7 +74,7 @@ closeddir()
 
 #define GetDIR(obj, dirp) {\
     DIR **_dp;\
-    Get_Data_Struct(obj, "dir", DIR*, _dp);\
+    Get_Data_Struct(obj, id_dir, DIR*, _dp);\
     dirp = *_dp;\
     if (dirp == NULL) closeddir();\
 }
@@ -134,7 +135,7 @@ Fdir_close(dir)
 {
     DIR **dirpp;
 
-    Get_Data_Struct(dir, "dir", DIR*, dirpp);
+    Get_Data_Struct(dir, id_dir, DIR*, dirpp);
     if (*dirpp == NULL) Fail("already closed directory");
     closedir(*dirpp);
     *dirpp = NULL;
@@ -166,7 +167,7 @@ Fdir_chdir(obj, args)
     if (chdir(dist) < 0)
 	rb_sys_fail(Qnil);
 
-    return Qnil;
+    return INT2FIX(0);
 }
 
 static VALUE
@@ -176,7 +177,11 @@ Fdir_getwd(dir)
     extern char *getwd();
     char path[MAXPATHLEN];
 
+#ifdef HAVE_GETCWD
+    if (getcwd(path, sizeof(path)) == 0) Fail(path);
+#else
     if (getwd(path) == 0) Fail(path);
+#endif
 
     return str_new2(path);
 }
@@ -190,7 +195,7 @@ Fdir_chroot(dir, path)
     if (chroot(RSTRING(path)->ptr) == -1)
 	rb_sys_fail(Qnil);
 
-    return Qnil;
+    return INT2FIX(0);
 }
 
 static VALUE
@@ -211,7 +216,7 @@ Fdir_mkdir(obj, args)
     if (mkdir(RSTRING(path)->ptr, mode) == -1)
 	rb_sys_fail(RSTRING(path)->ptr);
 
-    return Qnil;
+    return INT2FIX(0);
 }
 
 static VALUE
@@ -251,4 +256,6 @@ Init_Dir()
     rb_define_single_method(C_Dir,"rmdir", Fdir_rmdir, 1);
     rb_define_single_method(C_Dir,"delete", Fdir_rmdir, 1);
     rb_define_single_method(C_Dir,"unlink", Fdir_rmdir, 1);
+
+    id_dir = rb_intern("dir");
 }

@@ -3,7 +3,7 @@
   dln.c -
 
   $Author: matz $
-  $Date: 1994/06/17 14:23:49 $
+  $Date: 1994/08/12 04:47:16 $
   created at: Tue Jan 18 17:05:06 JST 1994
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -32,7 +32,7 @@ static int dln_init_p = 0;
 static char fbuf[MAXPATHLEN];
 static char *dln_find_1();
 char *getenv();
-char *index();
+char *strchr();
 int strcmp();
 
 char *
@@ -74,7 +74,7 @@ dln_find_1(fname, path, exe_flag)
 	int fspace;
 
 	/* extract a component */
-	ep = index(dp, ':');
+	ep = strchr(dp, ':');
 	if (ep == NULL)
 	    ep = dp+strlen(dp);
 
@@ -420,18 +420,18 @@ dln_load_text_data(fd, hdrp, bss, disp)
     }
 
     if (bss == -1) {
-	bzero(addr +  hdrp->a_text + hdrp->a_data, hdrp->a_bss);
+	memset(addr +  hdrp->a_text + hdrp->a_data, 0, hdrp->a_bss);
     }
     else if (bss > 0) {
-	bzero(addr +  hdrp->a_text + hdrp->a_data, bss );
+	memset(addr +  hdrp->a_text + hdrp->a_data, 0, bss);
     }
 
     return (long)addr;
 }
 
 static int
-undef_print(key, value, arg)
-    char *key;
+undef_print(key, value)
+    char *key, *value;
 {
     fprintf(stderr, "  %s\n", key);
     return ST_CONTINUE;

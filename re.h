@@ -3,8 +3,8 @@
   re.h -
 
   $Author: matz $
-  $Revision: 1.1.1.1 $
-  $Date: 1994/06/17 14:23:50 $
+  $Revision: 1.2 $
+  $Date: 1994/08/12 04:47:52 $
   created at: Thu Sep 30 14:18:32 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto

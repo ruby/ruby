@@ -3,7 +3,7 @@
   re.c -
 
   $Author: matz $
-  $Date: 1994/06/27 15:48:36 $
+  $Date: 1994/08/18 07:06:23 $
   created at: Mon Aug  9 18:24:49 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -101,7 +101,7 @@ int len;
     */
 
     rp = ALLOC(Regexp);
-    bzero((char *)rp, sizeof(Regexp));
+    memset((char *)rp, 0, sizeof(Regexp));
     rp->pat.buffer = ALLOC_N(char, 16);
     rp->pat.allocated = 16;
     rp->pat.fastmap = ALLOC_N(char, 256);
@@ -153,7 +153,7 @@ research(reg, str, start, ignorecase)
 	OBJSETUP(obj, C_Data, T_DATA);
 	obj->dfree = free_match;
 	data = (struct match*)DATA_PTR(obj);
-	bzero(data, sizeof(struct match));
+	memset(data, 0, sizeof(struct match));
 	beg = reg->ptr->regs.start[0];
 	data->len  = reg->ptr->regs.end[0] - beg;
 	data->ptr = ALLOC_N(char, data->len+1);
@@ -410,6 +410,11 @@ VALUE rb_readonly_hook();
 void
 Init_Regexp()
 {
+    obscure_syntax = RE_NO_BK_PARENS | RE_NO_BK_VBAR
+	| RE_CONTEXT_INDEP_OPS | RE_INTERVALS
+	| RE_NO_BK_CURLY_BRACES
+	| RE_MBCTYPE_EUC;
+
     rb_define_variable("$~", last_match_data, Qnil, store_match_data);
 
     rb_define_variable("$&", Qnil, re_last_match, rb_readonly_hook);

@@ -3,8 +3,8 @@
   ident.h -
 
   $Author: matz $
-  $Revision: 1.1.1.1 $
-  $Date: 1994/06/17 14:23:49 $
+  $Revision: 1.2 $
+  $Date: 1994/08/12 04:47:29 $
   created at: Mon Jan 31 16:23:19 JST 1994
 
   Copyright (C) 1994 Yukihiro Matsumoto

@@ -3,7 +3,7 @@
   range.c -
 
   $Author: matz $
-  $Date: 1994/06/17 14:23:50 $
+  $Date: 1994/08/12 04:47:49 $
   created at: Thu Aug 19 17:46:47 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -59,6 +59,24 @@ Frng_match(rng, obj)
     }
 }
 
+struct upto_data {
+    VALUE beg;
+    VALUE end;
+};
+
+static rng_upto(data)
+    struct upto_data *data;
+{
+    return rb_funcall(data->beg, rb_intern("upto"), 1, data->end);
+}
+
+static rng_upto_yield(v)
+    VALUE v;
+{
+    rb_yield(v);
+    return Qnil;
+}
+
 static VALUE
 Frng_each(obj)
     VALUE obj;
@@ -69,22 +87,18 @@ Frng_each(obj)
     e = rb_iv_get(obj, "end");
 
     if (FIXNUM_P(b)) {		/* fixnum is a special case(for performance) */
-	int beg, end, i;
-
-	beg = FIX2INT(b);
-	end = FIX2INT(e);
-
-	for (i=beg; i<=end; i++) {
-	    rb_yield(INT2FIX(i));
-	}
+	Fnum_upto(b, e);
+    }
+    else if (TYPE(b) == T_STRING) {
+	Fstr_upto(b, e);
     }
     else {
-	current = b;
-	for (;;) {
-	    rb_yield(current);
-	    if (rb_funcall(current, eq, 1, e)) break;
-	    current = rb_funcall(current, next, 0);
-	}
+	struct upto_data data;
+
+	data.beg = b;
+	data.end = e;
+
+	rb_iterate(rng_upto, &data, rng_upto_yield, Qnil);
     }
 
     return Qnil;
@@ -114,18 +128,12 @@ static VALUE
 Frng_to_s(obj)
     VALUE obj;
 {
-    int beg, end;
-    VALUE fmt, str, args[4];
-    
+    VALUE args[4];
 
-    beg = rb_iv_get(obj, "start");
-    end = rb_iv_get(obj, "end");
-
-    fmt = str_new2("%d..%d");
-    args[0] = obj; args[1] = fmt; args[2]= beg; args[3] = end;
-    str = Fsprintf(4, args);
-
-    return str;
+    args[0] = str_new2("%d..%d");
+    args[1] = rb_iv_get(obj, "start");
+    args[2] = rb_iv_get(obj, "end");
+    return Fsprintf(3, args);
 }
 
 extern VALUE M_Enumerable;

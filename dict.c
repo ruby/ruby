@@ -3,7 +3,7 @@
   dict.c -
 
   $Author: matz $
-  $Date: 1994/06/17 14:23:49 $
+  $Date: 1994/08/12 04:47:13 $
   created at: Mon Nov 22 18:51:18 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -74,6 +74,29 @@ Fdic_aref(dic, key)
 }
 
 static VALUE
+Fdic_indexes(dic, args)
+    struct RDict *dic;
+    struct RArray *args;
+{
+    VALUE *p, *pend;
+    struct RArray *new;
+    int i = 0;
+
+    if (!args || args->len == 1 && TYPE(args->ptr) != T_ARRAY) {
+	args = (struct RArray*)rb_to_a(args->ptr[0]);
+    }
+
+    new = (struct RArray*)ary_new2(args->len);
+
+    p = args->ptr; pend = p + args->len;
+    while (p < pend) {
+	new->ptr[i++] = Fdic_aref(dic, *p++);
+    }
+    new->len = i;
+    return (VALUE)new;
+}
+
+static VALUE
 Fdic_delete(dic, key)
     struct RDict *dic;
     VALUE key;
@@ -140,7 +163,7 @@ Fdic_length(dic)
 }
 
 static
-dic_each(key, value)
+dic_each_value(key, value)
     VALUE key, value;
 {
     rb_yield(value);
@@ -148,10 +171,10 @@ dic_each(key, value)
 }
 
 static VALUE
-Fdic_each(dic)
+Fdic_each_value(dic)
     struct RDict *dic;
 {
-    st_foreach(dic->tbl, dic_each);
+    st_foreach(dic->tbl, dic_each_value);
     return (VALUE)dic;
 }
 
@@ -304,14 +327,12 @@ Fdic_has_key(dic, key)
     return FALSE;
 }
 
-static VALUE value_found;
-
 static int
-dic_search_value(key, value, arg)
-    VALUE key, value, arg;
+dic_search_value(key, value, data)
+    VALUE key, value, *data;
 {
-    if (rb_funcall(value, eq, 1, arg)) {
-	value_found = TRUE;
+    if (rb_funcall(value, eq, 1, data[1])) {
+	data[0] = TRUE;
 	return ST_STOP;
     }
     return ST_CONTINUE;
@@ -322,9 +343,12 @@ Fdic_has_value(dic, val)
     struct RDict *dic;
     VALUE val;
 {
-    value_found = FALSE;
-    st_foreach(dic->tbl, dic_search_value, val);
-    return value_found;
+    VALUE data[2];
+
+    data[0] = FALSE;
+    data[1] = val;
+    st_foreach(dic->tbl, dic_search_value, data);
+    return data[0];
 }
 
 struct equal_data {
@@ -367,7 +391,27 @@ Fdic_equal(dic1, dic2)
     return data.result;
 }
 
-char *index();
+static int
+dic_hash(key, val, data)
+    VALUE key, val;
+    int *data;
+{
+    *data ^= rb_funcall(key, hash, 0);
+    *data ^= rb_funcall(val, hash, 0);
+    return ST_CONTINUE;
+}
+
+static VALUE
+Fdic_hash(dic)
+    struct RDict *dic;
+{
+    int h;
+
+    st_foreach(dic->tbl, dic_hash, &h);
+    return INT2FIX(h);
+}
+
+char *strchr();
 extern VALUE rb_readonly_hook();
 
 extern char **environ;
@@ -381,7 +425,7 @@ Fenv_each(dic)
     env = environ;
     while (*env) {
 	VALUE var, val;
-	char *s = index(*env, '=');
+	char *s = strchr(*env, '=');
 
 	var = str_new(*env, s-*env);
 	val = str_new2(s+1);
@@ -500,11 +544,14 @@ Init_Dict()
     rb_define_method(C_Dict,"_inspect",  Fdic_inspect, 0);
 
     rb_define_method(C_Dict,"==",  Fdic_equal, 1);
+    rb_define_method(C_Dict,"hash",  Fdic_hash, 0);
     rb_define_method(C_Dict,"[]",  Fdic_aref, 1);
     rb_define_method(C_Dict,"[]=", Fdic_aset, 2);
+    rb_define_method(C_Dict,"indexes",  Fdic_indexes, -2);
     rb_define_method(C_Dict,"length", Fdic_length, 0);
-    rb_define_method(C_Dict,"each", Fdic_each, 0);
-    rb_define_method(C_Dict,"each_value", Fdic_each, 0);
+    rb_define_alias(C_Dict,  "size", "length");
+    rb_define_method(C_Dict,"each", Fdic_each_pair, 0);
+    rb_define_method(C_Dict,"each_value", Fdic_each_value, 0);
     rb_define_method(C_Dict,"each_key", Fdic_each_key, 0);
     rb_define_method(C_Dict,"each_pair", Fdic_each_pair, 0);
 

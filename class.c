@@ -3,7 +3,7 @@
   class.c -
 
   $Author: matz $
-  $Date: 1994/06/17 14:23:49 $
+  $Date: 1994/08/12 11:06:35 $
   created at: Tue Aug 10 15:05:44 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -131,6 +131,12 @@ include_class_new(module, super)
     cls->m_tbl = module->m_tbl;
     cls->c_tbl = module->c_tbl;
     cls->super = super;
+    if (TYPE(module) == T_ICLASS) {
+	RBASIC(cls)->class = RBASIC(module)->class;
+    }
+    else {
+	RBASIC(cls)->class = (VALUE)module;
+    }
 
     return cls;
 }
@@ -243,17 +249,6 @@ rb_define_single_method(obj, name, func, argc)
 }
 
 void
-rb_define_mfunc(class, name, func, argc)
-    struct RClass *class;
-    char *name;
-    VALUE (*func)();
-    int argc;
-{
-    rb_define_method(class, name, func, argc);
-    rb_define_single_method(class, name, func, argc);
-}
-
-void
 rb_define_alias(class, name1, name2)
     struct RClass *class;
     char *name1, *name2;
@@ -276,11 +271,11 @@ rb_define_attr(class, name, pub)
     attreq = rb_intern(buf);
     sprintf(buf, "@%s", name);
     attriv = rb_intern(buf);
-    if (rb_get_method_body(class, attr, 0) == Qnil) {
-	rb_add_method(class, attr, NEW_IVAR(attriv), TRUE);
+    if (rb_method_boundp(class, attr) == Qnil) {
+	rb_add_method(class, attr, NEW_IVAR(attriv), FALSE);
     }
-    if (pub && rb_get_method_body(class, attreq, 0) == Qnil) {
-	rb_add_method(class, attreq, NEW_ATTRSET(attriv), TRUE);
+    if (pub && rb_method_boundp(class, attreq) == Qnil) {
+	rb_add_method(class, attreq, NEW_ATTRSET(attriv), FALSE);
     }
 }
 
@@ -309,6 +304,7 @@ rb_scan_args(args, fmt, va_alist)
 
     if (NIL_P(args)) {
 	len = 0;
+	args = ary_new();
     }
     else {
 	Check_Type(args, T_ARRAY);

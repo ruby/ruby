@@ -3,7 +3,7 @@
   time.c -
 
   $Author: matz $
-  $Date: 1994/06/17 14:23:51 $
+  $Date: 1994/08/12 11:06:46 $
   created at: Tue Dec 28 14:31:59 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -28,10 +28,12 @@ struct time_object {
     int tm_got;
 };
 
+static ID id_tv;
+
 #define GetTimeval(obj, tobj) \
-    Get_Data_Struct(obj, "tv", struct time_object, tobj)
+    Get_Data_Struct(obj, id_tv, struct time_object, tobj)
 #define MakeTimeval(obj,tobj) {\
-    Make_Data_Struct(obj, "tv", struct time_object, Qnil, Qnil, tobj);\
+    Make_Data_Struct(obj, id_tv, struct time_object, Qnil, Qnil, tobj);\
     tobj->tm_got=0;\
 }
 
@@ -543,4 +545,6 @@ Init_Time()
     rb_define_method(C_Time, "usec", Ftime_usec, 0);
 
     rb_define_method(C_Time, "strftime", Ftime_strftime, 1);
+
+    id_tv = rb_intern("tv");
 }

@@ -3,7 +3,7 @@
   string.c -
 
   $Author: matz $
-  $Date: 1994/06/27 15:48:44 $
+  $Date: 1994/08/12 11:06:44 $
   created at: Mon Aug  9 17:12:58 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -31,7 +31,7 @@ str_new(ptr, len)
     str->len = len;
     str->ptr = ALLOC_N(char,len+1);
     if (ptr) {
-	memmove(str->ptr, ptr, len);
+	memcpy(str->ptr, ptr, len);
     }
     str->ptr[len] = '\0';
     str->orig = Qnil;
@@ -285,61 +285,6 @@ Fstr_concat(str1, str2)
     return (VALUE)str1;
 }
 
-static char
-str_next(s)
-    char *s;
-{
-    char c = *s;
-
-    /* control code */
-    if (c < ' ') return 0;
-
-    /* numerics */
-    if ('0' <= c && c < '9') (*s)++;
-    else if (c == '9') {
-	*s = '0';
-	return '1';
-    }
-    /* small alphabets */
-    else if ('a' <= c && c < 'z') (*s)++;
-    else if (c == 'z') {
-	return *s = 'a';
-    }
-    /* capital alphabets */
-    else if ('A' <= c && c < 'Z') (*s)++;
-    else if (c == 'Z') {
-	return *s = 'A';
-    }
-    return 0;
-}
-
-static VALUE
-Fstr_next(orig)
-    struct RString *orig;
-{
-    struct RString *str, *str2;
-    char *sbeg, *s;
-    char c = -1;
-
-    str = (struct RString*)str_new(orig->ptr, orig->len);
-    
-    sbeg = str->ptr; s = sbeg + str->len - 1;
-
-    while (sbeg <= s) {
-	if (isalnum(*s) && (c = str_next(s)) == Qnil) break;
-	s--;
-    }
-    if (s < sbeg && c != -1) {
-	str2 = (struct RString*)str_new(0, str->len+1);
-	str2->ptr[0] = c;
-	memmove(str2->ptr+1, str->ptr, str->len);
-	obj_free(str);
-	str = str2;
-    }
-
-    return (VALUE)str;
-}
-
 static
 str_hash(str)
     struct RString *str;
@@ -418,24 +363,29 @@ Fstr_cmp(str1, str2)
 Regexp * make_regexp();
 VALUE Freg_match();
 
+extern VALUE C_Glob;
+
 static VALUE
-Fstr_match(this, other)
-    struct RString *this, *other;
+Fstr_match(x, y)
+    struct RString *x, *y;
 {
     VALUE reg;
     int start;
 
-    switch (TYPE(other)) {
+    switch (TYPE(y)) {
       case T_REGEXP:
-	return Freg_match(other, this);
+	return Freg_match(y, x);
       case T_STRING:
-	reg = re_regcomp(other);
-	start = research(reg, this, 0, ignorecase);
+	reg = re_regcomp(y);
+	start = research(reg, x, 0, ignorecase);
 	if (start == -1) {
 	    return FALSE;
 	}
 	return INT2FIX(start);
       default:
+	if (obj_is_kind_of(y, C_Glob)) {
+	    return Fglob_match(y, x);
+	}
 	Fail("type mismatch");
 	break;
     }
@@ -544,6 +494,74 @@ Fstr_rindex(str, args)
 	}
 	s--;
     }
+    return Qnil;
+}
+
+static char
+str_next(s)
+    char *s;
+{
+    char c = *s;
+
+    /* numerics */
+    if ('0' <= c && c < '9') (*s)++;
+    else if (c == '9') {
+	*s = '0';
+	return '1';
+    }
+    /* small alphabets */
+    else if ('a' <= c && c < 'z') (*s)++;
+    else if (c == 'z') {
+	return *s = 'a';
+    }
+    /* capital alphabets */
+    else if ('A' <= c && c < 'Z') (*s)++;
+    else if (c == 'Z') {
+	return *s = 'A';
+    }
+    return 0;
+}
+
+static VALUE
+Fstr_next(orig)
+    struct RString *orig;
+{
+    struct RString *str, *str2;
+    char *sbeg, *s;
+    char c = -1;
+
+    str = (struct RString*)str_new(orig->ptr, orig->len);
+    
+    sbeg = str->ptr; s = sbeg + str->len - 1;
+
+    while (sbeg <= s) {
+	if (isalnum(*s) && (c = str_next(s)) == Qnil) break;
+	s--;
+    }
+    if (s < sbeg && c != -1) {
+	str2 = (struct RString*)str_new(0, str->len+1);
+	str2->ptr[0] = c;
+	memmove(str2->ptr+1, str->ptr, str->len);
+	obj_free(str);
+	str = str2;
+    }
+
+    return (VALUE)str;
+}
+
+VALUE
+Fstr_upto(beg, end)
+    VALUE beg, end;
+{
+    VALUE current;
+
+    current = beg;
+    for (;;) {
+	rb_yield(current);
+	if (Fstr_equal(current, end)) break;
+	current = Fstr_next(current);
+    }
+
     return Qnil;
 }
 
@@ -1474,6 +1492,47 @@ Fstr_intern(str)
     return rb_intern(str->ptr)|FIXNUM_FLAG;
 }
 
+static VALUE
+Fstr_sum(str, args)
+    struct RString *str;
+    VALUE args;
+{
+    VALUE vbits;
+    int   bits;
+    char *p, *pend;
+
+    rb_scan_args(args, "01", &vbits);
+    if (vbits == Qnil) bits = 16;
+    else bits = NUM2INT(vbits);
+
+    p = str->ptr; pend = p + str->len;
+    if (bits > 32) {
+	VALUE res = INT2FIX(0);
+	VALUE mod;
+
+	mod = rb_funcall(INT2FIX(1), rb_intern("<<"), 1, INT2FIX(bits));
+	mod = rb_funcall(mod, '-', 1, INT2FIX(1));
+
+	while (p < pend) {
+	    res = rb_funcall(res, '+', 1, INT2FIX((UINT)*p));
+	    res = rb_funcall(res, '%', 1, mod);
+	    p++;
+	}
+	return res;
+    }
+    else {
+	UINT res = 0;
+	UINT mod = (1<<bits)-1;
+
+	while (p < pend) {
+	    res += (UINT)*p;
+	    res %= mod;
+	    p++;
+	}
+	return int2inum(res);
+    }
+}
+
 extern VALUE C_Kernel;
 extern VALUE M_Comparable;
 extern VALUE M_Enumerable;
@@ -1494,9 +1553,11 @@ Init_String()
     rb_define_method(C_String, "[]", Fstr_aref, -2);
     rb_define_method(C_String, "[]=", Fstr_aset, -2);
     rb_define_method(C_String, "length", Fstr_length, 0);
+    rb_define_alias(C_String,  "size", "length");
     rb_define_method(C_String, "=~", Fstr_match, 1);
     rb_define_method(C_String, "~", Fstr_match2, 0);
     rb_define_method(C_String, "next", Fstr_next, 0);
+    rb_define_method(C_String, "upto", Fstr_next, 1);
     rb_define_method(C_String, "index", Fstr_index, -2);
     rb_define_method(C_String, "rindex", Fstr_rindex, -2);
 
@@ -1531,6 +1592,8 @@ Init_String()
 
     rb_define_method(C_String, "each", Fstr_each, 0);
     rb_define_method(C_String, "each_byte", Fstr_each_byte, 0);
+
+    rb_define_method(C_String, "sum", Fstr_sum, -2);
 
     rb_define_method(C_Kernel, "sub", Fsub, 2);
     rb_define_method(C_Kernel, "gsub", Fgsub, 2);

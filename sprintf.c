@@ -3,7 +3,7 @@
   sprintf.c -
 
   $Author: matz $
-  $Date: 1994/06/27 15:48:40 $
+  $Date: 1994/08/12 04:47:57 $
   created at: Fri Oct 15 10:39:26 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -51,7 +51,7 @@ Fsprintf(argc, argv)
 }
 
 #define GETARG() \
-    ((argc == 1)?Fail("too few argument."):(argc--, argv++, argv[0]))
+    ((argc == 0)?Fail("too few argument."):(argc--, (argv++)[0]))
 
     fmt = (struct RString*)GETARG();
     Check_Type(fmt, T_STRING);
@@ -314,8 +314,8 @@ Fsprintf(argc, argv)
 		    bignum = 1;
 		    break;
 		  default:
-		    WrongType(val, T_FIXNUM);
-		    break;
+		    val = num2fix(val);
+		    goto int_retry;
 		}
 
 		if (bignum) {

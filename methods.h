@@ -2,9 +2,9 @@
 
   methods.h -
 
-  $Author$
-  $Revision$
-  $Date$
+  $Author: matz $
+  $Revision: 1.2 $
+  $Date: 1994/08/12 04:47:38 $
   created at: Fri Jul 29 14:43:03 JST 1994
 
 ************************************************/

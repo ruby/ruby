@@ -55,7 +55,7 @@ def getopts(single_opts, *opts)
   while ($ARGV.length != 0)
     compare = nil
     case $ARGV[0]
-    when /^-*$/
+    when /^--?$/
       $ARGV.shift
       break
     when /^--.*/

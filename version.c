@@ -3,8 +3,8 @@
   version.c -
 
   $Author: matz $
-  $Revision: 1.1.1.1 $
-  $Date: 1994/06/17 14:23:51 $
+  $Revision: 1.3 $
+  $Date: 1994/08/18 07:06:32 $
   created at: Thu Sep 30 20:08:01 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -27,5 +27,11 @@ Init_version()
 
 show_version()
 {
-    printf("ruby - version %s (%s)\n", RUBY_VERSION, VERSION_DATE);
+    fprintf(stderr, "ruby - version %s (%s)\n", RUBY_VERSION, VERSION_DATE);
+}
+
+show_copyright()
+{
+    fprintf(stderr, "ruby - Copyright (C) 1994 Yukihiro Matsumoto\n");
+    exit(0);
 }

@@ -13,7 +13,7 @@ end
 
 printf("%s:(%d)%s\n", $0, $ARGV.length, $ARGV[0])
 passwd = open($ARGV[0], "r")
-#printf("%s", do passwd.find using i; i =~ /\*/ end)
+#printf("%s", passwd.find{i|i =~ /\*/})
 
 n = 1
 for i in passwd #.grep(/^\*/)

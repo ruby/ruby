@@ -3,7 +3,7 @@
   variable.c -
 
   $Author: matz $
-  $Date: 1994/06/17 14:23:51 $
+  $Date: 1994/08/19 09:32:10 $
   created at: Tue Apr 19 23:55:15 JST 1994
 
 ************************************************/
@@ -200,6 +200,7 @@ rb_gvar_get(entry)
     return Qnil;
 }
 
+VALUE
 rb_ivar_get_1(obj, id)
     struct RBasic *obj;
     ID id;
@@ -285,6 +286,7 @@ rb_gvar_set2(name, val)
     return val;
 }
 
+VALUE
 rb_ivar_set_1(obj, id, val)
     struct RBasic *obj;
     ID id;
@@ -304,11 +306,10 @@ rb_ivar_set(id, val)
 }
 
 static VALUE
-const_bound(id)
+const_bound(class, id)
+    struct RClass *class;
     ID id;
 {
-    struct RClass *class = (struct RClass*)CLASS_OF(Qself);
-
     while (class) {
 	if (class->c_tbl && st_lookup(class->c_tbl, id, Qnil)) {
 	    return TRUE;
@@ -324,7 +325,7 @@ rb_const_set_1(class, id, val)
     ID id;
     VALUE val;
 {
-    if (const_bound(id))
+    if (const_bound(class, id))
 	Fail("already initialized constnant");
 
     if (class->c_tbl == Qnil)
@@ -402,7 +403,7 @@ Fdefined(obj, name)
 	break;
 
       case ID_CONST:
-	return const_bound(id);
+	return const_bound(CLASS_OF(Qself), id);
 	break;
 
       default:

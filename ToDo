@@ -1,3 +1,5 @@
+* 適切なsignal handling
+* dlnのCOFF対応
 * rubyで定義する変数hookの実現
 * write debugger for ruby
 * re-write regex code for speeding
