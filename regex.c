@@ -1307,6 +1307,9 @@ re_compile_pattern(pattern, size, bufp)
 			(!current_mbctype && SYNTAX(c) == Sword2))
 		      SET_LIST_BIT(c);
 		  }
+		  if (current_mbctype) {
+		    set_list_bits(0x0, 0xffffffff, b);
+		  }
 		  last = -1;
 		  continue;
 
@@ -1315,9 +1318,6 @@ re_compile_pattern(pattern, size, bufp)
 		    if (SYNTAX(c) != Sword &&
 			(current_mbctype || SYNTAX(c) != Sword2))
 		      SET_LIST_BIT(c);
-		  }
-		  if (current_mbctype) {
-		    set_list_bits(0x0, 0xffffffff, b);
 		  }
 		  last = -1;
 		  continue;
@@ -3087,19 +3087,18 @@ typedef union
       } 								\
   } while(0)
 
-#define AT_STRINGS_BEG(d)  (d == string)
-#define AT_STRINGS_END(d)  (d == dend)
+#define AT_STRINGS_BEG(d)  ((d) == string)
+#define AT_STRINGS_END(d)  ((d) == dend)
 
-/* We have two special cases to check for: 
-     1) if we're past the end of string1, we have to look at the first
-        character in string2;
-     2) if we're before the beginning of string2, we have to look at the
-        last character in string1; we assume there is a string1, so use
-        this in conjunction with AT_STRINGS_BEG.  */
 #define IS_A_LETTER(d) (SYNTAX(*(d)) == Sword ||			\
 			(current_mbctype ?				\
 			 re_mbctab[*(d)] == 1 :				\
 			 SYNTAX(*(d)) == Sword2))
+
+#define PREV_IS_A_LETTER(d) ((current_mbctype == MBCTYPE_SJIS)?		\
+			     IS_A_LETTER((d)-(!AT_STRINGS_BEG((d)-1)&&	\
+					      ismbchar((d)[-2])?2:1)):	\
+			     ((d)[-1] >= 0x80 || IS_A_LETTER((d)-1)))
 
 static void
 init_regs(regs, num_regs)
@@ -3823,10 +3822,10 @@ re_match(bufp, string_arg, size, pos, regs)
 	    else goto fail;
 	  }
 	  if (AT_STRINGS_BEG(d)) {
-	    if (IS_A_LETTER(d-1)) break;
+	    if (PREV_IS_A_LETTER(d)) break;
 	    else goto fail;
 	  }
-	  if (IS_A_LETTER(d - 1) != IS_A_LETTER(d))
+	  if (PREV_IS_A_LETTER(d) != IS_A_LETTER(d))
 	    break;
 	  goto fail;
 
@@ -3836,20 +3835,20 @@ re_match(bufp, string_arg, size, pos, regs)
 	    else break;
 	  }
 	  if (AT_STRINGS_END(d)) {
-	    if (IS_A_LETTER(d-1)) goto fail;
+	    if (PREV_IS_A_LETTER(d)) goto fail;
 	    else break;
 	  }
-	  if (IS_A_LETTER(d - 1) != IS_A_LETTER(d))
+	  if (PREV_IS_A_LETTER(d) != IS_A_LETTER(d))
 	    goto fail;
 	  break;
 
 	case wordbeg:
-	  if (IS_A_LETTER(d) && (AT_STRINGS_BEG(d) || !IS_A_LETTER(d - 1)))
+	  if (IS_A_LETTER(d) && (AT_STRINGS_BEG(d) || !PREV_IS_A_LETTER(d)))
 	    break;
           goto fail;
 
 	case wordend:
-	  if (!AT_STRINGS_BEG(d) && IS_A_LETTER(d - 1)
+	  if (!AT_STRINGS_BEG(d) && PREV_IS_A_LETTER(d)
               && (!IS_A_LETTER(d) || AT_STRINGS_END(d)))
 	    break;
           goto fail;
@@ -3858,6 +3857,8 @@ re_match(bufp, string_arg, size, pos, regs)
 	  PREFETCH;
           if (!IS_A_LETTER(d))
             goto fail;
+	  if (ismbchar(*d) && d + ismbchar(*d) < dend)
+	    d += ismbchar(*d);
 	  d++;
 	  SET_REGS_MATCHED;
 	  break;

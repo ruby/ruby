@@ -18,6 +18,8 @@
 #include "node.h"
 #include "st.h"
 #include <stdio.h>
+#include <string.h>
+#include <errno.h>
 
 /* hack for bison */
 #ifdef const
@@ -801,6 +803,10 @@ call_args	: command_call
 			value_expr($1);
 			$$ = NEW_LIST($1);
 		    }
+		| args ','
+		    {
+			$$ = $1;
+		    }
 		| args opt_block_arg
 		    {
 			$$ = arg_blk_pass($1, $2);
@@ -809,6 +815,10 @@ call_args	: command_call
 		    {
 			$$ = arg_add($1, $4);
 			$$ = arg_blk_pass($$, $5);
+		    }
+		| assocs ','
+		    {
+			$$ = NEW_LIST(NEW_HASH($1));
 		    }
 		| assocs opt_block_arg
 		    {
@@ -824,6 +834,10 @@ call_args	: command_call
 		    {
 			$$ = list_append($1, NEW_HASH($3));
 			$$ = arg_blk_pass($$, $4);
+		    }
+		| args ',' assocs ','
+		    {
+			$$ = list_append($1, NEW_HASH($3));
 		    }
 		| args ',' assocs ',' tSTAR arg opt_block_arg
 		    {
@@ -2844,7 +2858,11 @@ retry:
 	    pushback(c);
 	    tokfix();
 	    if (is_float) {
-		yylval.val = rb_float_new(atof(tok()));
+		double d = strtod(tok(), 0);
+		if (errno == ERANGE) {
+		    yyerror("Float out of range");
+		}
+		yylval.val = rb_float_new(d);
 		return tFLOAT;
 	    }
 	    yylval.val = rb_str2inum(tok(), 10);
@@ -3427,7 +3445,7 @@ block_append(head, tail)
 	end = head->nd_end;
     }
 
-    if (RTEST(rb_verbose)) {
+    if (RTEST(ruby_verbose)) {
 	NODE *nd = end->nd_head;
       newline:
 	switch (nd_type(nd)) {

@@ -589,7 +589,7 @@ rb_f_sprintf(argc, argv)
     }
 
   sprint_exit:
-    if (RTEST(rb_verbose) && argc > 1) {
+    if (RTEST(ruby_verbose) && argc > 1) {
 	rb_raise(rb_eArgError, "too many argument for format string");
     }
     result = rb_str_new(buf, blen);

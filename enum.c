@@ -56,6 +56,7 @@ enum_grep(obj, pat)
 	arg[0] = pat; arg[1] = tmp = rb_ary_new();
 	rb_iterate(rb_each, obj, grep_i, (VALUE)arg);
 
+	if (RARRAY(tmp)->len == 0) return Qnil;
 	return tmp;
     }
 }
@@ -373,7 +374,9 @@ Init_Enumerable()
     rb_define_method(rb_mEnumerable,"sort", enum_sort, 0);
     rb_define_method(rb_mEnumerable,"grep", enum_grep, 1);
     rb_define_method(rb_mEnumerable,"find", enum_find, -1);
+    rb_define_method(rb_mEnumerable,"detect", enum_find, -1);
     rb_define_method(rb_mEnumerable,"find_all", enum_find_all, 0);
+    rb_define_method(rb_mEnumerable,"select", enum_find_all, 0);
     rb_define_method(rb_mEnumerable,"collect", enum_collect, 0);
     rb_define_method(rb_mEnumerable,"min", enum_min, 0);
     rb_define_method(rb_mEnumerable,"max", enum_max, 0);

@@ -666,16 +666,13 @@ Rubyの配列で引数を受け取るものはindexesがあります．実装はこ
 --
 static VALUE
 fdbm_indexes(obj, args)
-    VALUE obj;
-    struct RArray *args;
+    VALUE obj, args;
 {
 	:
 }
 --
 
-第1引数はself，第2引数はRubyの配列です．ここではキャストを減
-らすため struct RArray* で受けていますが，VALUEでも同じこと
-です．
+第1引数はself，第2引数はRubyの配列です．
 
 ** 注意事項
 

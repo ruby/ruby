@@ -365,7 +365,7 @@ method_list(mod, option, func)
     VALUE klass;
     VALUE *p, *q, *pend;
 
-    if (rb_safe_level() >= 4 && !FL_TEST(mod, FL_TAINT))
+    if (!FL_TEST(mod, FL_TAINT) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't get metainfo");
     ary = rb_ary_new();
     for (klass = mod; klass; klass = RCLASS(klass)->super) {

@@ -124,7 +124,7 @@ rb_warning(fmt, va_alist)
     char buf[BUFSIZ];
     va_list args;
 
-    if (!RTEST(rb_verbose)) return;
+    if (!RTEST(ruby_verbose)) return;
 
     snprintf(buf, BUFSIZ, "warning: %s", fmt);
 
@@ -146,7 +146,7 @@ rb_bug(fmt, va_alist)
     va_list args;
 
     snprintf(buf, BUFSIZ, "[BUG] %s", fmt);
-    rb_in_eval = 0;
+    ruby_in_eval = 0;
 
     va_init_list(args, fmt);
     err_print(buf, args);
@@ -625,7 +625,7 @@ rb_fatal(fmt, va_alist)
     vsnprintf(buf, BUFSIZ, fmt, args);
     va_end(args);
 
-    rb_in_eval = 0;
+    ruby_in_eval = 0;
     rb_exc_fatal(rb_exc_new2(rb_eFatal, buf));
 }
 
@@ -1082,18 +1082,18 @@ static void
 err_append(s)
     char *s;
 {
-    extern VALUE rb_errinfo;
+    extern VALUE ruby_errinfo;
 
-    if (rb_in_eval) {
-	if (NIL_P(rb_errinfo)) {
-	    rb_errinfo = rb_exc_new2(rb_eSyntaxError, s);
+    if (ruby_in_eval) {
+	if (NIL_P(ruby_errinfo)) {
+	    ruby_errinfo = rb_exc_new2(rb_eSyntaxError, s);
 	}
 	else {
-	    VALUE str = rb_str_to_str(rb_errinfo);
+	    VALUE str = rb_str_to_str(ruby_errinfo);
 
 	    rb_str_cat(str, "\n", 1);
 	    rb_str_cat(str, s, strlen(s));
-	    rb_errinfo = rb_exc_new3(rb_eSyntaxError, str);
+	    ruby_errinfo = rb_exc_new3(rb_eSyntaxError, str);
 	}
     }
     else {

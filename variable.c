@@ -106,7 +106,7 @@ find_class_path(klass)
 	st_foreach(rb_class_tbl, fc_i, &arg);
     }
     if (arg.name) {
-	rb_iv_set(klass, "__classpath__", arg.path);
+	st_insert(ROBJECT(klass)->iv_tbl,rb_intern("__classpath__"),arg.path);
 	return arg.path;
     }
     return Qnil;
@@ -123,15 +123,13 @@ classname(klass)
 	klass = (VALUE)RCLASS(klass)->super;
     }
     if (!klass) klass = rb_cObject;
-    if (!ROBJECT(klass)->iv_tbl ||
-	!st_lookup(ROBJECT(klass)->iv_tbl, classpath, &path)) {
+    if (!ROBJECT(klass)->iv_tbl)
+	ROBJECT(klass)->iv_tbl = st_init_numtable();
+    else if (!st_lookup(ROBJECT(klass)->iv_tbl, classpath, &path)) {
 	ID classid = rb_intern("__classid__");
 
-	path = rb_ivar_get(klass, classid);
-	if (!NIL_P(path)) {
+	if (st_lookup(ROBJECT(klass)->iv_tbl, classid, &path)) {
 	    path = rb_str_new2(rb_id2name(FIX2INT(path)));
-	    if (!ROBJECT(klass)->iv_tbl)
-		ROBJECT(klass)->iv_tbl = st_init_numtable();
 	    st_insert(ROBJECT(klass)->iv_tbl, classpath, path);
 	    st_delete(RCLASS(klass)->iv_tbl, &classid, 0);
 	}
@@ -305,7 +303,7 @@ static VALUE
 undef_getter(id)
     ID id;
 {
-    if (rb_verbose) {
+    if (ruby_verbose) {
 	rb_warning("global variable `%s' not initialized", rb_id2name(id));
     }
     return Qnil;
@@ -841,7 +839,7 @@ rb_ivar_get(obj, id)
 	    return generic_ivar_get(obj, id);
 	break;
     }
-    if (rb_verbose) {
+    if (ruby_verbose) {
 	rb_warning("instance var %s not initialized", rb_id2name(id));
     }
     return Qnil;

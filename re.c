@@ -826,6 +826,9 @@ rb_reg_s_new(argc, argv, self)
 	  case 's': case 'S':
 	    flag |= 12;
 	    break;
+	  case 'u': case 'U':
+	    flag |= 16;
+	    break;
 	  default:
 	    break;
 	}
@@ -886,6 +889,8 @@ rb_kcode()
 	return MBCTYPE_EUC;
       case KCODE_SJIS:
 	return MBCTYPE_SJIS;
+      case KCODE_UTF8:
+	return MBCTYPE_UTF8;
       case KCODE_NONE:
 	return MBCTYPE_ASCII;
     }
@@ -905,6 +910,8 @@ rb_reg_get_kcode(re)
 	kcode |= 8; break;
       case KCODE_SJIS:
 	kcode |= 12; break;
+      case KCODE_UTF8:
+	kcode |= 16; break;
       default:
 	break;
     }

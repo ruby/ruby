@@ -183,10 +183,10 @@ static VALUE
 flo_to_s(flt)
     VALUE flt;
 {
-    char buf[32];
+    char buf[24];
 
-    sprintf(buf, "%g", RFLOAT(flt)->value);
-    if (strchr(buf, '.') == 0) {
+    snprintf(buf, 24, "%.10g", RFLOAT(flt)->value);
+    if (strchr(buf, '.') == 0 && strcmp(buf, "Inf") != 0) {
 	int len = strlen(buf);
 	char *ind = strchr(buf, 'e');
 
@@ -704,7 +704,7 @@ rb_num2int(val)
     long num = rb_num2long(val);
 
     if (num < INT_MIN || INT_MAX < num) {
-	rb_raise(rb_eArgError, "integer %d too big to convert to `int'.", num);
+	rb_raise(rb_eArgError, "integer %d too big to convert to `int'", num);
     }
     return (int)num;
 }
@@ -716,7 +716,7 @@ rb_fix2int(val)
     long num = FIXNUM_P(val)?FIX2LONG(val):rb_num2long(val);
 
     if (num < INT_MIN || INT_MAX < num) {
-	rb_raise(rb_eArgError, "integer %d too big to convert to `int'.", num);
+	rb_raise(rb_eArgError, "integer %d too big to convert to `int'", num);
     }
     return (int)num;
 }
@@ -781,7 +781,7 @@ static VALUE
 rb_fix_induced_from(klass, x)
     VALUE klass, x;
 {
-    return rb_funcall(x, rb_intern("to_i"), 0);
+    return rb_num2fix(x);
 }
 
 static VALUE
@@ -818,7 +818,7 @@ rb_fix2str(x, base)
     else if (base == 8) fmt[2] = 'o';
     else rb_fatal("fixnum cannot treat base %d", base);
 
-    sprintf(buf, fmt, FIX2LONG(x));
+    snprintf(buf, 22, fmt, FIX2LONG(x));
     return rb_str_new2(buf);
 }
 

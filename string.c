@@ -355,7 +355,7 @@ rb_str_modify(str)
 
     if (FL_TEST(str, STR_FREEZE))
 	rb_raise(rb_eTypeError, "can't modify frozen string");
-    if (rb_safe_level() >= 4 && !FL_TEST(str, FL_TAINT))
+    if (!FL_TEST(str, FL_TAINT) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify string");
     if (!RSTRING(str)->orig || FL_TEST(str, STR_NO_ORIG)) return;
     ptr = RSTRING(str)->ptr;

@@ -94,7 +94,7 @@ static VALUE rb_struct_ref7(obj) VALUE obj; {return RSTRUCT(obj)->ptr[7];}
 static VALUE rb_struct_ref8(obj) VALUE obj; {return RSTRUCT(obj)->ptr[8];}
 static VALUE rb_struct_ref9(obj) VALUE obj; {return RSTRUCT(obj)->ptr[9];}
 
-VALUE (*ref_func[10])() = {
+static VALUE (*ref_func[10])() = {
     rb_struct_ref0,
     rb_struct_ref1,
     rb_struct_ref2,

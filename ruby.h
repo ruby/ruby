@@ -414,7 +414,7 @@ void rb_const_set _((VALUE, ID, VALUE));
 
 VALUE rb_equal _((VALUE,VALUE));
 
-EXTERN VALUE rb_verbose, rb_debug;
+EXTERN VALUE ruby_verbose, ruby_debug;
 
 int rb_safe_level _((void));
 void rb_set_safe_level _((int));

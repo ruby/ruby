@@ -49,7 +49,7 @@ rb_ary_modify(ary)
 	rb_raise(rb_eTypeError, "can't modify frozen array");
     if (FL_TEST(ary, ARY_TMPLOCK))
 	rb_raise(rb_eTypeError, "can't modify array during sort");
-    if (rb_safe_level() >= 4 && !FL_TEST(ary, FL_TAINT))
+    if (!FL_TEST(ary, FL_TAINT) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify array");
 }
 
@@ -236,7 +236,11 @@ rb_ary_store(ary, idx, val)
     }
 
     if (idx >= RARRAY(ary)->capa) {
-	RARRAY(ary)->capa = idx + ARY_DEFAULT_SIZE;
+	int capa_inc = RARRAY(ary)->capa / 2;
+	if (capa_inc < ARY_DEFAULT_SIZE) {
+	    capa_inc = ARY_DEFAULT_SIZE;
+	}
+	RARRAY(ary)->capa = idx + capa_inc;
 	REALLOC_N(RARRAY(ary)->ptr, VALUE, RARRAY(ary)->capa);
     }
     if (idx > RARRAY(ary)->len) {
@@ -310,7 +314,11 @@ rb_ary_unshift(ary, item)
 {
     rb_ary_modify(ary);
     if (RARRAY(ary)->len >= RARRAY(ary)->capa) {
-	RARRAY(ary)->capa+=ARY_DEFAULT_SIZE;
+	int capa_inc = RARRAY(ary)->capa / 2;
+	if (capa_inc < ARY_DEFAULT_SIZE) {
+	    capa_inc = ARY_DEFAULT_SIZE;
+	}
+	RARRAY(ary)->capa+=capa_inc;
 	REALLOC_N(RARRAY(ary)->ptr, VALUE, RARRAY(ary)->capa);
     }
 
@@ -1007,7 +1015,7 @@ rb_ary_delete_if(ary)
 
     rb_ary_modify(ary);
     for (i1 = i2 = 0; i1 < RARRAY(ary)->len; i1++) {
-	if (rb_yield(RARRAY(ary)->ptr[i1])) continue;
+	if (RTEST(rb_yield(RARRAY(ary)->ptr[i1]))) continue;
 	if (i1 != i2) {
 	    RARRAY(ary)->ptr[i2] = RARRAY(ary)->ptr[i1];
 	}

@@ -129,9 +129,7 @@ VALUEの実際の構造は
 はRubyの知っている構造体(ruby.hで定義されているstruct RXxxx
 のもの)だけにしておいてください．
 
-FIXNUMに関しては変換マクロを経由する必要があります．Cの整数
-からVALUEに変換するマクロは以下のものがあります．必要に応じ
-て使い分けてください．
+To convert C numbers to Ruby value, use these macros.
 
   INT2FIX()	for intergers within 31bits.
   INT2NUM()	for arbitrary sized integer.
@@ -197,9 +195,8 @@ interpreter.  Useful functions are listed below (not all):
 
 2.1 Add new features to Ruby
 
-Rubyで提供されている関数を使えばRubyインタプリタに新しい機能
-を追加することができます．Rubyでは以下の機能を追加する関数が
-提供されています．
+You can add new features (classes, methods, etc.) to the Ruby
+interpreter.  Ruby provides the API to define things below:
 
  * Classes, Modules
  * Methods, Singleton Methods
@@ -325,9 +322,9 @@ by the symbol mid.
 
 2.2.4 Accessing the variables and constants
 
-Cから関数を使って参照・更新できるのは，クラス定数，インスタ
-ンス変数です．大域変数は一部のものはCの大域変数としてアクセ
-スできます．ローカル変数を参照する方法は公開していません．
+You can access class variables, and instance variables using access
+functions.  Also, global variables can be shared between both worlds.
+There's no way to access Ruby's local variables.
 
 The functions to access/modify instance variables are below:
 
@@ -344,9 +341,7 @@ See 2.1.3 for defining new constant.
 
 3. Informatin sharing between Ruby and C
 
-C言語とRubyの間で情報を共有する方法について解説します．
-
-3.1 Ruby constant that Cから参照できるRubyの定数
+3.1 Ruby constant that C can be accessed from C
 
 Following Ruby constants can be referred from C.
 
@@ -367,12 +362,12 @@ CとRubyで大域変数を使って情報を共有できます．共有できる大域
 
   void rb_define_variable(char *name, VALUE *var)
 
-この関数はRubyとCとで共有する大域変数を定義します．変数名が
-`$'で始まらない時には自動的に追加されます．この変数の値を変
-更すると自動的にRubyの対応する変数の値も変わります．
+This function defines the variable which is shared by the both world.
+The value of the global variable pointerd by `var', can be accessed
+through Ruby's global variable named `name'.
 
-またRuby側からは更新できない変数もあります．このread onlyの
-変数は以下の関数で定義します．
+You can define read-only (from Ruby, of course) variable by the
+function below.
 
   void rb_define_readonly_variable(char *name, VALUE *var)
 
@@ -411,12 +406,11 @@ Cの世界で定義されたデータ(構造体)をRubyのオブジェクトとして
 RubyオブジェクトにCの構造体(へのポインタ)をくるむことでRuby
 オブジェクトとして取り扱えるようになります．
 
-Dataオブジェクトを生成して構造体をRubyオブジェクトにカプセル
-化するためには，以下のマクロを使います．
+To wrapping and objectify the C pointer, use Data_Wrap_Struct().
 
   Data_Wrap_Struct(class,mark,free,ptr)
 
-このマクロの戻り値は生成されたDataオブジェクトです．
+Data_Wrap_Struct() returns a created Data object.
 
 classはこのDataオブジェクトのクラスです．ptrはカプセル化する
 Cの構造体へのポインタです．markはこの構造体がRubyのオブジェ
@@ -433,21 +427,21 @@ Cの構造体の割当とDataオブジェクトの生成を同時に行うマクロと
 
   Data_Make_Struct(class, type, mark, free, sval)
 
-このマクロの戻り値は生成されたDataオブジェクトです．
+This macro returns an allocated Data object, wrapping the pointer to
+the structure, which is also allocated.
 
-class, mark, freeはData_Wrap_Structと同じ働きをします．type
-は割り当てるC構造体の型です．割り当てられた構造体は変数sval
-に代入されます．この変数の型は (type*) である必要があります．
+Arguments, class, mark, free, works like thier counterpart of
+Data_Wrap_Struct().  The pointer to allocated structure will be
+assigned to sval, which should be the pointer to the type specified.
 
-Dataオブジェクトからポインタを取り出すのは以下のマクロを用い
-ます．
+To retrieve the C pointer from the Data object, use the macro
+Data_Get_Struct().
 
   Data_Get_Struct(obj, type, sval)
 
-Cの構造体へのポインタは変数svalに代入されます．
+The pointer to the structure will be assigned to the variable sval.
 
-これらのDataの使い方はちょっと分かりにくいので，後で説明する
-例題を参照してください．
+See example below for detail. 
 
 4．Example - Create dbm module
 
@@ -598,16 +592,14 @@ Rubyの配列で引数を受け取るものはindexesがあります．実装はこ
 --
 static VALUE
 fdbm_indexes(obj, args)
-    VALUE obj;
-    struct RArray *args;
+    VALUE obj, args;
 {
 	:
 }
 --
 
-第1引数はself，第2引数はRubyの配列です．ここではキャストを減
-らすため struct RArray* で受けていますが，VALUEでも同じこと
-です．
+The first argument is the receiver, the second one is the Ruby array
+which contains the arguments to the method.
 
 ** Notice
 
@@ -618,8 +610,9 @@ not exported to the Ruby world.  You need to protect them by
 
 (5) prepare extconf.rb
 
-もしディレクトリに「extconf.rb」というファイルが存在すれば，
-make時に実行されます．なければ適当にMakefileが生成されます．
+If there exists the file named extconf.rb, it will be executed to
+generate Makefile.  If not, compilation scheme try to generate
+Makefile anyway.
 
 extconf.rbはモジュールのコンパイルに必要な条件のチェックなど
 を行うことが目的です．extconf.rbの中では以下のRuby関数を使う

@@ -47,7 +47,7 @@ int
 rb_eql(obj1, obj2)
     VALUE obj1, obj2;
 {
-    return rb_funcall(obj1, eql, 1, obj2);
+    return rb_funcall(obj1, eql, 1, obj2) == Qtrue;
 }
 
 static VALUE
