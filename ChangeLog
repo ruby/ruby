@@ -1,6 +1,11 @@
+Fri Apr 23 23:25:22 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb: $hdrdir should not contain macros for backward
+	  compatibilitiy.  [bruby-dev:28]
+
 Fri Apr 23 16:38:46 2004  Tanaka Akira  <akr@m17n.org>
 
-	* lib/pathname.rb: sync taint/freeze flag between 
+	* lib/pathname.rb: sync taint/freeze flag between
 	  a pathname object and its internal string object.
 
 Fri Apr 23 14:52:08 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>

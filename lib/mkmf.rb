@@ -79,8 +79,7 @@ end
 libdir = File.dirname(__FILE__)
 $extmk = libdir != Config::CONFIG["rubylibdir"]
 if not $extmk and File.exist? Config::CONFIG["archdir"] + "/ruby.h"
-  $topdir = Config::CONFIG["archdir"]
-  $hdrdir = $archdir
+  $hdrdir = $topdir = Config::CONFIG["archdir"]
 elsif File.exist? $srcdir + "/ruby.h"
   $topdir = Config::CONFIG["compile_dir"]
   $hdrdir = $srcdir
