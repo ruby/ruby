@@ -1,3 +1,8 @@
+Fri May 10 19:00:47 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* parse.y (here_document): preserve line number begins here
+	  document.
+
 Fri May 10 01:55:44 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (rb_thread_join): added an argument to limit time to wait
