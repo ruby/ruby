@@ -1,3 +1,7 @@
+Wed Jul 23 18:21:52 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* ext/io/wait: imported.
+
 Wed Jul 23 15:49:01 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_lstrip_bang): strip NUL along with white
