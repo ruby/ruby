@@ -1,3 +1,10 @@
+Thu Dec  9 16:05:00 2004  Akiyoshi, Masamichi <akiyoshi@hp.com>
+
+	* defines.h: change path of vms.h
+	* vms/vms.h: delete reference for snprintf()
+	* vms/config.h: new file
+	* vms/config.h_in: deleted
+
 Thu Dec  9 14:38:35 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_inspect): escape # which starts an expression

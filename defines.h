@@ -185,7 +185,7 @@ typedef int pid_t;
 #endif
 
 #if defined(__VMS)
-#include "vms/vms.h"
+#include "vms.h"
 #endif
 
 #if defined(__BEOS__)
