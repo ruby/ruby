@@ -10,16 +10,16 @@ Fri Aug 22 17:07:05 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Fri Aug 22 06:13:22 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
 
-    * ext/syck/rubyext.c: refactoring of the transfer method
-      dispatch.  added yaml_org_handler for faster dispatch of
-      transfers to base types.
+	* ext/syck/rubyext.c: refactoring of the transfer method
+	  dispatch.  added yaml_org_handler for faster dispatch of
+	  transfers to base types.
 
-    * lib/yaml/rubytypes.rb: removed handling of builtins from
-      Ruby library.
+	* lib/yaml/rubytypes.rb: removed handling of builtins from
+	  Ruby library.
 
-    * ext/syck/token.c: quoted and block scalars are now implicit !str
-      
-    * ext/syck/implicit.c: empty string detected as !null.
+	* ext/syck/token.c: quoted and block scalars are now implicit !str
+
+	* ext/syck/implicit.c: empty string detected as !null.
 
 Fri Aug 22 01:00:31 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -27,8 +27,8 @@ Fri Aug 22 01:00:31 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Tue Aug 21 00:13:00 2003  Shigeo Kobayashi  <shigek@ruby-lang.org>
 
-	* ext/bigdecimal/bigdecimal.c: Int. overflow bug in multiplication fixed,
-	  and VpNmlz() speed up.
+	* ext/bigdecimal/bigdecimal.c: Int. overflow bug in multiplication
+	  fixed, and VpNmlz() speed up.
 
 Wed Aug 20 16:44:49 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -37,13 +37,14 @@ Wed Aug 20 16:44:49 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Wed Aug 20 01:31:17 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
 
-    * ext/syck/syck.h: Parser definition problems on HP-UX. [ruby-talk:79389]
+	* ext/syck/syck.h: Parser definition problems on HP-UX.
+	  [ruby-talk:79389]
 
-    * ext/syck/handler.c (syck_hdlr_get_anchor): Memory leak.
+	* ext/syck/handler.c (syck_hdlr_get_anchor): Memory leak.
 
-    * ext/syck/syck.s (syck_io_file_read): Bad arguments to fread.
+	* ext/syck/syck.s (syck_io_file_read): Bad arguments to fread.
 
-    * ext/syck/rubyext.c: Tainting issues.
+	* ext/syck/rubyext.c: Tainting issues.
 
 Tue Aug 19 23:20:00 2003  Shigeo Kobayashi  <shigek@ruby-lang.org>
 
@@ -75,7 +76,7 @@ Tue Aug 19 07:47:09 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 Tue Aug 19 11:19:33 2003  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* io.c (next_argv): should not call GetOpenFile() if rb_stdout is
-	not a IO (T_FILE).
+	  not a IO (T_FILE).
 
 Tue Aug 19 07:47:09 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
@@ -461,7 +462,7 @@ Wed Aug  6 01:18:50 2003  Minero Aoki  <aamine@loveruby.net>
 Wed Aug  6 00:48:37 2003  Koji Arai  <jca02266@nifty.ne.jp>
 
 	* marshal.c (w_object): should recommend marshal_dump rather than
-	_dump_data.
+	  _dump_data.
 
 Tue Aug  5 17:58:57 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
