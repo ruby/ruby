@@ -108,7 +108,7 @@ class  RiDriver
 
   def process_args
     if @options.list_classes
-      classes = @ri_reader.class_names
+      classes = @ri_reader.full_class_names
       @display.list_known_classes(classes)
     else
       if ARGV.size.zero?
