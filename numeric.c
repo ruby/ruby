@@ -1525,6 +1525,18 @@ fix_id2name(fix)
 }
 
 static VALUE
+fix_to_sym(fix)
+    VALUE fix;
+{
+    ID id = FIX2UINT(fix);
+
+    if (rb_id2name(id)) {
+	return ID2SYM(id);
+    }
+    return Qnil;
+}
+
+static VALUE
 fix_size(fix)
     VALUE fix;
 {
@@ -1680,6 +1692,7 @@ Init_Numeric()
     rb_define_method(rb_cFixnum, "to_s", fix_to_s, -1);
 
     rb_define_method(rb_cFixnum, "id2name", fix_id2name, 0);
+    rb_define_method(rb_cFixnum, "to_sym", fix_to_sym, 0);
 
     rb_define_method(rb_cFixnum, "-@", fix_uminus, 0);
     rb_define_method(rb_cFixnum, "+", fix_plus, 1);

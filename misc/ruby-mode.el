@@ -866,6 +866,10 @@ An end of a defun is found by moving forward from the beginning of one."
 
   (defvar ruby-font-lock-keywords
     (list
+     ;; functions
+     '("^\\s *def\\s +\\([^( ]+\\)"
+       1 font-lock-function-name-face)
+     ;; keywords
      (cons (concat
 	    "\\(^\\|[^_:.@$]\\|\\.\\.\\)\\b\\("
 	    (mapconcat
@@ -925,9 +929,6 @@ An end of a defun is found by moving forward from the beginning of one."
      ;; constants
      '("\\(^\\|[^_]\\)\\b\\([A-Z]+\\(\\w\\|_\\)*\\)"
        2 font-lock-type-face)
-     ;; functions
-     '("^\\s *def\\s +\\([^( ]+\\)"
-       1 font-lock-function-name-face)
      ;; symbols
      '("\\(^\\|[^:]\\)\\(:\\([-+~]@?\\|[/%&|^`]\\|\\*\\*?\\|<\\(<\\|=>?\\)?\\|>[>=]?\\|===?\\|=~\\|\\[\\]=?\\|\\(\\w\\|_\\)+\\([!?=]\\|\\b_*\\)\\|#{[^}\n\\\\]*\\(\\\\.[^}\n\\\\]*\\)*}\\)\\)"
        2 font-lock-reference-face)

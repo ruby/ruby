@@ -3208,6 +3208,7 @@ Init_String()
     rb_define_method(rb_cString, "<<", rb_str_concat, 1);
     rb_define_method(rb_cString, "crypt", rb_str_crypt, 1);
     rb_define_method(rb_cString, "intern", rb_str_intern, 0);
+    rb_define_method(rb_cString, "to_sym", rb_str_intern, 0);
 
     rb_define_method(rb_cString, "include?", rb_str_include, 1);
 

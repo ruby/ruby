@@ -74,6 +74,14 @@ rb_obj_id(obj)
 }
 
 VALUE
+rb_obj_id_obsolete(obj)
+    VALUE obj;
+{
+    rb_warning("Object#id will be deprecated; use Object#object_id");
+    return rb_obj_id(obj);
+}
+
+VALUE
 rb_class_real(cl)
     VALUE cl;
 {
@@ -540,7 +548,7 @@ sym_to_s(sym)
 }
 
 static VALUE
-sym_intern(sym)
+sym_to_sym(sym)
     VALUE sym;
 {
     return sym;
@@ -1316,8 +1324,9 @@ Init_Object()
     rb_define_method(rb_mKernel, "eql?", rb_obj_equal, 1);
 
     rb_define_method(rb_mKernel, "hash", rb_obj_id, 0);
-    rb_define_method(rb_mKernel, "id", rb_obj_id, 0);
+    rb_define_method(rb_mKernel, "id", rb_obj_id_obsolete, 0);
     rb_define_method(rb_mKernel, "__id__", rb_obj_id, 0);
+    rb_define_method(rb_mKernel, "object_id", rb_obj_id, 0);
     rb_define_method(rb_mKernel, "type", rb_obj_type, 0);
     rb_define_method(rb_mKernel, "class", rb_obj_class, 0);
 
@@ -1386,7 +1395,7 @@ Init_Object()
     rb_define_method(rb_cSymbol, "inspect", sym_inspect, 0);
     rb_define_method(rb_cSymbol, "to_s", sym_to_s, 0);
     rb_define_method(rb_cSymbol, "id2name", sym_to_s, 0);
-    rb_define_method(rb_cSymbol, "intern", sym_intern, 0);
+    rb_define_method(rb_cSymbol, "to_sym", sym_to_sym, 0);
 
     rb_define_method(rb_cModule, "===", rb_mod_eqq, 1);
     rb_define_method(rb_cModule, "==", rb_obj_equal, 1);

@@ -1300,6 +1300,33 @@ rb_ary_delete_if(ary)
 }
 
 static VALUE
+rb_ary_zip(argc, argv, ary)
+    int argc;
+    VALUE *argv;
+    VALUE ary;
+{
+    int i, j, len;
+    VALUE result;
+
+    len = RARRAY(ary)->len;
+    for (i=0; i<argc; i++) {
+	argv[i] = to_ary(argv[i]);
+	if (RARRAY(argv[i])->len > len) len = RARRAY(argv[i])->len;
+    }
+    result = rb_ary_new2(len);
+    for (i=0; i<len; i++) {
+	VALUE tmp = rb_ary_new2(argc+1);
+
+	rb_ary_push(tmp, rb_ary_entry(ary, i));
+	for (j=0; j<argc; j++) {
+	    rb_ary_push(tmp, rb_ary_entry(argv[j], i));
+	}
+	rb_ary_push(result, tmp);
+    }
+    return result;
+}
+
+static VALUE
 rb_ary_replace(copy, orig)
     VALUE copy, orig;
 {
@@ -1865,6 +1892,7 @@ Init_Array()
     rb_define_method(rb_cArray, "delete_if", rb_ary_delete_if, 0);
     rb_define_method(rb_cArray, "reject", rb_ary_reject, 0);
     rb_define_method(rb_cArray, "reject!", rb_ary_reject_bang, 0);
+    rb_define_method(rb_cArray, "zip", rb_ary_zip, -1);
     rb_define_method(rb_cArray, "replace", rb_ary_replace, 1);
     rb_define_method(rb_cArray, "clear", rb_ary_clear, 0);
     rb_define_method(rb_cArray, "fill", rb_ary_fill, -1);

@@ -428,7 +428,7 @@ rb_export_method(klass, name, noex)
     if (!body && TYPE(klass) == T_MODULE) {
 	body = search_method(rb_cObject, name, &origin);
     }
-    if (!body) {
+    if (!body || !body->nd_body) {
 	print_undef(klass, name);
     }
     if (body->nd_noex != noex) {
@@ -9367,7 +9367,7 @@ rb_cont_call(argc, argv, cont)
 	th->result = Qnil;
 	break;
       case 1:
-	th->result = *argv;
+	th->result = argv[0];
 	break;
       default:
 	th->result = rb_ary_new4(argc, argv);

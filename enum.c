@@ -486,6 +486,63 @@ enum_each_with_index(obj)
     return obj;
 }
 
+static VALUE
+zip_i(val, memo)
+    VALUE val;
+    NODE *memo;
+{
+    VALUE ary = memo->u1.value;
+    int i = memo->u3.cnt++;
+    int elen = memo->u2.argc+1;
+    VALUE tmp;
+
+    if (i < RARRAY(ary)->len) {
+	tmp = RARRAY(ary)->ptr[i];
+	RARRAY(tmp)->ptr[0] = val;
+    }
+    else {
+	tmp = rb_ary_new2(elen);
+	RARRAY(tmp)->ptr[0] = val;
+	for (i=1; i<elen; i++) {
+	    RARRAY(tmp)->ptr[i] = Qnil;
+	}
+	RARRAY(tmp)->len = elen;
+	rb_ary_push(ary, tmp);
+    }
+    return Qnil;
+}
+
+static VALUE
+enum_zip(argc, argv, obj)
+    int argc;
+    VALUE *argv;
+    VALUE obj;
+{
+    int i, j, len;
+    VALUE result;
+    NODE *memo;
+
+    len = 0;
+    for (i=0; i<argc; i++) {
+	argv[i] = rb_convert_type(argv[i], T_ARRAY, "Array", "to_ary");
+	if (RARRAY(argv[i])->len > len) len = RARRAY(argv[i])->len;
+    }
+    result = rb_ary_new2(len);
+    for (i=0; i<len; i++) {
+	VALUE tmp = rb_ary_new2(argc+1);
+
+	rb_ary_push(tmp, Qnil);
+	for (j=0; j<argc; j++) {
+	    rb_ary_push(tmp, rb_ary_entry(argv[j], i));
+	}
+	rb_ary_push(result, tmp);
+    }
+    memo = rb_node_newnode(NODE_MEMO, result, argc, 0);
+    rb_iterate(rb_each, obj, zip_i, (VALUE)memo);
+
+    return result;
+}
+
 void
 Init_Enumerable()
 {
@@ -513,6 +570,7 @@ Init_Enumerable()
     rb_define_method(rb_mEnumerable,"member?", enum_member, 1);
     rb_define_method(rb_mEnumerable,"include?", enum_member, 1);
     rb_define_method(rb_mEnumerable,"each_with_index", enum_each_with_index, 0);
+    rb_define_method(rb_mEnumerable, "zip", enum_zip, -1);
 
     id_eqq  = rb_intern("===");
     id_each = rb_intern("each");

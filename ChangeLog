@@ -1,3 +1,29 @@
+Sat Nov  2 00:38:55 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (Init_Object): added Object#object_id, new name for
+	  Object#id. [new]
+
+	* object.c (rb_obj_id_obsolete): give warning for Object#id.
+
+	* numeric.c (fix_intern): added Fixnum#to_sym. [new]
+
+	* object.c (sym_to_sym): rename from Symbol#intern
+
+Fri Nov  1 14:21:06 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (enum_zip): added Enumerable#zip. [new]
+
+	* array.c (rb_ary_zip): added Array#zip.
+
+Thu Oct 31 20:10:18 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* error.c (init_syserr): remove sys_nerr dependency.
+
+Thu Oct 31 09:31:51 2002  K.Kosako  <kosako@sofnec.co.jp>
+
+	* eval.c (rb_export_method): undef'ed method visibility should not
+	  be changed.
+
 Wed Oct 30 17:00:47 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_mod_public_method_defined, etc.): new methods:
