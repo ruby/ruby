@@ -62,7 +62,8 @@ VALUE
 rb_mod_clone(module)
     VALUE module;
 {
-    VALUE clone = rb_obj_clone(module);
+    NEWOBJ(clone, struct RClass);
+    CLONESETUP(clone, module);
 
     RCLASS(clone)->super = RCLASS(module)->super;
     if (RCLASS(module)->iv_tbl) {
@@ -79,7 +80,7 @@ rb_mod_clone(module)
 	st_foreach(RCLASS(module)->m_tbl, clone_method, RCLASS(clone)->m_tbl);
     }
 
-    return clone;
+    return (VALUE)clone;
 }
 
 VALUE
@@ -652,6 +653,8 @@ rb_undef_method(klass, name)
     rb_add_method(klass, rb_intern(name), 0, NOEX_UNDEF);
 }
 
+#if 0
+
 #define SPECIAL_SINGLETON(x,c) if (obj == (x)) {\
     if (!FL_TEST(c, FL_SINGLETON)) {\
 	c = rb_singleton_class_new(c);\
@@ -659,6 +662,14 @@ rb_undef_method(klass, name)
     }\
     return c;\
 }
+
+#else
+
+#define SPECIAL_SINGLETON(x,c) if (obj == (x)) {\
+    return c;\
+}
+
+#endif
 
 VALUE
 rb_singleton_class(obj)
@@ -677,11 +688,14 @@ rb_singleton_class(obj)
     }
 
     DEFER_INTS;
-    if (FL_TEST(RBASIC(obj)->klass, FL_SINGLETON)) {
+    if (FL_TEST(RBASIC(obj)->klass, FL_SINGLETON) &&
+	(BUILTIN_TYPE(obj) == T_CLASS || BUILTIN_TYPE(obj) == T_MODULE) &&
+	rb_iv_get(RBASIC(obj)->klass, "__attached__") == obj) {
 	klass = RBASIC(obj)->klass;
     }
     else {
 	klass = rb_make_metaclass(obj, RBASIC(obj)->klass);
+	RBASIC(klass)->klass = CLASS_OF(RCLASS(klass)->super);
     }
     if (OBJ_TAINTED(obj)) {
 	OBJ_TAINT(klass);

@@ -97,7 +97,7 @@ rb_obj_clone(obj)
     if (rb_special_const_p(obj)) {
         rb_raise(rb_eTypeError, "can't clone %s", rb_class2name(CLASS_OF(obj)));
     }
-    clone = rb_obj_alloc(RBASIC(obj)->klass);
+    clone = rb_obj_alloc(rb_class_real(RBASIC(obj)->klass));
     CLONESETUP(clone,obj);
     if (TYPE(clone) == T_OBJECT && ROBJECT(obj)->iv_tbl) {
 	ROBJECT(clone)->iv_tbl = st_copy(ROBJECT(obj)->iv_tbl);
@@ -658,7 +658,12 @@ VALUE
 rb_obj_alloc(klass)
     VALUE klass;
 {
-    VALUE obj = rb_funcall(klass, alloc, 0, 0);
+    VALUE obj;
+
+    if (FL_TEST(klass, FL_SINGLETON)) {
+	rb_raise(rb_eTypeError, "can't create instance of virtual class");
+    }
+    obj = rb_funcall(klass, alloc, 0, 0);
 
     if (rb_obj_class(obj) != rb_class_real(klass)) {
 	rb_raise(rb_eTypeError, "wrong instance allocation");
@@ -684,9 +689,6 @@ rb_class_new_instance(argc, argv, klass)
 {
     VALUE obj;
 
-    if (FL_TEST(klass, FL_SINGLETON)) {
-	rb_raise(rb_eTypeError, "can't create instance of virtual class");
-    }
     obj = rb_obj_alloc(klass);
     rb_obj_call_init(obj, argc, argv);
 

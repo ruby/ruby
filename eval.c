@@ -1493,15 +1493,29 @@ ev_const_get(cref, id, self)
     VALUE result;
 
     while (cbase && cbase->nd_next) {
-	struct RClass *klass = RCLASS(cbase->nd_clss);
+	VALUE klass = cbase->nd_clss;
 
 	if (NIL_P(klass)) return rb_const_get(CLASS_OF(self), id);
-	if (klass->iv_tbl && st_lookup(klass->iv_tbl, id, &result)) {
+	if (RCLASS(klass)->iv_tbl && st_lookup(RCLASS(klass)->iv_tbl, id, &result)) {
 	    return result;
 	}
 	cbase = cbase->nd_next;
     }
     return rb_const_get(cref->nd_clss, id);
+}
+
+static VALUE
+cvar_cbase()
+{
+    NODE *cref = RNODE(ruby_frame->cbase);
+
+    while (cref && cref->nd_next && FL_TEST(cref->nd_clss, FL_SINGLETON)) {
+	cref = cref->nd_next;
+	if (!cref->nd_next) {
+	    rb_warn("class variable access from toplevel singleton method");
+	}
+    }
+    return cref->nd_clss;
 }
 
 static VALUE
@@ -1901,19 +1915,7 @@ is_defined(self, node, buf)
 	break;
 
       case NODE_CVAR:
-	if (NIL_P(ruby_cbase)) {
-	    if (rb_cvar_defined(CLASS_OF(self), node->nd_vid)) {
-		return "class variable";
-	    }
-	    break;
-	}
-	if (!FL_TEST(ruby_cbase, FL_SINGLETON)) {
-	    if (rb_cvar_defined(ruby_cbase, node->nd_vid)) {
-		return "class variable";
-	    }
-	    break;
-	}
-	if (rb_cvar_defined(rb_iv_get(ruby_cbase, "__attached__"), node->nd_vid)) {
+	if (rb_cvar_defined(cvar_cbase(), node->nd_vid)) {
 	    return "class variable";
 	}
 	break;
@@ -2871,15 +2873,12 @@ rb_eval(self, n)
 	    rb_raise(rb_eTypeError, "no class/module to define class variable");
 	}
 	result = rb_eval(self, node->nd_value);
-	if (ruby_verbose && FL_TEST(ruby_cbase, FL_SINGLETON)) {
-	    rb_warn("declaring singleton class variable");
-	}
-	rb_cvar_set(ruby_cbase, node->nd_vid, result, Qtrue);
+	rb_cvar_set(cvar_cbase(), node->nd_vid, result, Qtrue);
 	break;
 
       case NODE_CVASGN:
 	result = rb_eval(self, node->nd_value);
-	rb_cvar_set(ruby_cbase, node->nd_vid, result, Qfalse);
+	rb_cvar_set(cvar_cbase(), node->nd_vid, result, Qfalse);
 	break;
 
       case NODE_LVAR:
@@ -2906,15 +2905,7 @@ rb_eval(self, n)
 	break;
 
       case NODE_CVAR:
-	if (NIL_P(ruby_cbase)) {
-	    result = rb_cvar_get(CLASS_OF(self), node->nd_vid);
-	    break;
-	}
-	if (!FL_TEST(ruby_cbase, FL_SINGLETON)) {
-	    result = rb_cvar_get(ruby_cbase, node->nd_vid);
-	    break;
-	}
-	result = rb_cvar_get(rb_iv_get(ruby_cbase, "__attached__"), node->nd_vid);
+	result = rb_cvar_get(cvar_cbase(), node->nd_vid);
 	break;
 
       case NODE_BLOCK_ARG:
@@ -3164,7 +3155,7 @@ rb_eval(self, n)
 	    NODE *body = 0, *defn;
 
 	    if (rb_safe_level() >= 4 && !OBJ_TAINTED(recv)) {
-		rb_raise(rb_eSecurityError, "Insecure; can't define singleton method");
+		rb_raise(rb_eSecurityError, "Insecure: can't define singleton method");
 	    }
 	    if (FIXNUM_P(recv) || SYMBOL_P(recv)) {
 		rb_raise(rb_eTypeError,
@@ -3308,24 +3299,13 @@ rb_eval(self, n)
 	    VALUE klass;
 
 	    result = rb_eval(self, node->nd_recv);
-	    if (result == Qtrue) {
-		klass = rb_cTrueClass;
+	    if (FIXNUM_P(result) || SYMBOL_P(result)) {
+		rb_raise(rb_eTypeError, "no virtual class for %s",
+			 rb_class2name(CLASS_OF(result)));
 	    }
-	    else if (result == Qfalse) {
-		klass = rb_cTrueClass;
-	    }
-	    else if (result == Qnil) {
-		klass = rb_cNilClass;
-	    }
-	    else {
-		if (rb_special_const_p(result)) {
-		    rb_raise(rb_eTypeError, "no virtual class for %s",
-			     rb_class2name(CLASS_OF(result)));
-		}
-		if (rb_safe_level() >= 4 && !OBJ_TAINTED(result))
-		    rb_raise(rb_eSecurityError, "Insecure: can't extend object");
-		klass = rb_singleton_class(result);
-	    }
+	    if (rb_safe_level() >= 4 && !OBJ_TAINTED(result))
+		rb_raise(rb_eSecurityError, "Insecure: can't extend object");
+	    klass = rb_singleton_class(result);
 	    
 	    if (ruby_wrapper) {
 		rb_extend_object(klass, ruby_wrapper);
@@ -3936,11 +3916,11 @@ assign(self, lhs, val, pcall)
 	if (ruby_verbose && FL_TEST(ruby_cbase, FL_SINGLETON)) {
 	    rb_warn("declaring singleton class variable");
 	}
-	rb_cvar_set(ruby_cbase, lhs->nd_vid, val, Qtrue);
+	rb_cvar_set(cvar_cbase(), lhs->nd_vid, val, Qtrue);
 	break;
 
       case NODE_CVASGN:
-	rb_cvar_set(ruby_cbase, lhs->nd_vid, val, Qfalse);
+	rb_cvar_set(cvar_cbase(), lhs->nd_vid, val, Qfalse);
 	break;
 
       case NODE_MASGN:
@@ -5848,8 +5828,8 @@ rb_obj_extend(argc, argv, obj)
 	rb_raise(rb_eArgError, "wrong number of arguments(0 for 1)");
     }
     for (i=0; i<argc; i++) Check_Type(argv[i], T_MODULE);
-    for (i=0; i<argc; i++) {
-	rb_funcall(argv[i], rb_intern("extend_object"), 1, obj);
+    while (argc--) {
+	rb_funcall(argv[argc], rb_intern("extend_object"), 1, obj);
     }
     return obj;
 }

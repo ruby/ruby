@@ -450,11 +450,11 @@ module TkComm
   end
 
   def pack(*args)
-    TkPack.configure *args
+    TkPack.configure(*args)
   end
 
   def grid(*args)
-    TkGrid.configure *args
+    TkGrid.configure(*args)
   end
 
   def update(idle=nil)
@@ -495,18 +495,18 @@ module TkCore
     myid = _curr_cmd_id
     cmdid = install_cmd(cmd)
     tk_call("after",ms,cmdid)
-    return
-    if false #defined? Thread
-      Thread.start do
-	ms = Float(ms)/1000
-	ms = 10 if ms == 0
-	sleep ms/1000
-	cmd.call
-      end
-    else
-      cmdid = install_cmd(cmd)
-      tk_call("after",ms,cmdid)
-    end
+#    return
+#    if false #defined? Thread
+#      Thread.start do
+#	ms = Float(ms)/1000
+#	ms = 10 if ms == 0
+#	sleep ms/1000
+#	cmd.call
+#      end
+#    else
+#      cmdid = install_cmd(cmd)
+#      tk_call("after",ms,cmdid)
+#    end
   end
 
   def after_idle(cmd=Proc.new)
@@ -620,6 +620,12 @@ module TkCore
     TclTkLib.mainloop
   end
 
+  def restart
+    TkCore::INTERP.restart
+    TkComm::Tk_WINDOWS.clear
+    nil
+  end
+
   def event_generate(window, context, keys=nil)
     window = window.path if window.kind_of? TkObject
     if keys
@@ -651,10 +657,11 @@ module TkCore
   end
 
   def tk_call(*args)
-    print args.join(" "), "\n" if $DEBUG
+    puts args.inspect if $DEBUG
     args.collect! {|x|ruby2tcl(x)}
     args.compact!
     args.flatten!
+    print "=> ", args.join(" ").inspect, "\n" if $DEBUG
     begin
       res = INTERP._invoke(*args)
     rescue NameError
@@ -670,7 +677,7 @@ module TkCore
     if  INTERP._return_value() != 0
       fail RuntimeError, res, error_at
     end
-    print "==> ", res, "\n" if $DEBUG
+    print "==> ", res.inspect, "\n" if $DEBUG
     return res
   end
 end
@@ -830,8 +837,8 @@ module Tk
       if bar
 	@xscrollbar = bar
 	@xscrollbar.orient 'horizontal'
-	self.xscrollcommand {|arg| @xscrollbar.set *arg}
-	@xscrollbar.command {|arg| self.xview *arg}
+	self.xscrollcommand {|arg| @xscrollbar.set(*arg)}
+	@xscrollbar.command {|arg| self.xview(*arg)}
       end
       @xscrollbar
     end
@@ -839,8 +846,8 @@ module Tk
       if bar
 	@yscrollbar = bar
 	@yscrollbar.orient 'vertical'
-	self.yscrollcommand {|arg| @yscrollbar.set *arg}
-	@yscrollbar.command {|arg| self.yview *arg}
+	self.yscrollcommand {|arg| @yscrollbar.set(*arg)}
+	@yscrollbar.command {|arg| self.yview(*arg)}
       end
       @yscrollbar
     end

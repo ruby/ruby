@@ -38,7 +38,7 @@ class TkText<TkTextWin
   def self.new(*args, &block)
     obj = super(*args){}
     obj.init_instance_variable
-    obj.instance_eval &block if defined? yield
+    obj.instance_eval(&block) if defined? yield
     obj
   end
 

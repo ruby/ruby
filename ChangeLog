@@ -2,6 +2,17 @@ Fri Mar  8 12:19:15 2002  Tanaka Akira  <akr@m17n.org>
 
 	* lib/resolv.rb: use its own thread group for background threads.
 
+Fri Mar  8 02:21:32 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (cvar_cbase): utility function to find innermost non
+	  singleton cbase.
+
+	* eval.c (is_defined): adopt new cvar behavior.
+
+	* eval.c (rb_eval): ditto.
+
+	* eval.c (assign): ditto.
+
 Thu Mar  7 20:08:25 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* gc.c (rb_source_filename): added. holds unique strings for file
@@ -31,6 +42,17 @@ Wed Mar  6 17:58:08 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* dln.c (dln_load): use LoadLibrary instead of LoadLibraryEx.
 
+Wed Mar  6 16:50:37 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* class.c (rb_mod_clone): should not call rb_obj_clone(), since
+	  Module does not provide "allocate".
+
+	* class.c (rb_singleton_class): should crate new singleton class
+	  if obj is a class or module and attached object is different,
+	  which means metaclass of singleton class is sought.
+
+	* time.c (time_s_alloc): now follows allocation framework.
+
 Tue Mar  5 05:56:29 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/getopts.rb: Rewrite to fix some bugs and complete features.
@@ -47,6 +69,13 @@ Mon Mar  4 13:19:18 2002  Akinori MUSHA  <knu@iDaemons.org>
 	* ext/extmk.rb.in (dir_config): Sync with mkmf.rb: Fix a bug where
 	  --with-xx-{include,lib} is ignored when --with-xx-dir is
 	  specified.
+
+Mon Mar  4 00:09:55 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): should initialize outer class variables from
+	  methods in singleton class definitions.
+
+	* eval.c (assign): ditto.
 
 Fri Mar  1 11:29:10 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 

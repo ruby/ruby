@@ -402,7 +402,7 @@ rb_ary_unshift(ary, item)
     VALUE ary, item;
 {
     rb_ary_modify(ary);
-    if (RARRAY(ary)->len >= RARRAY(ary)->aux.capa) {
+    if (RARRAY(ary)->len == RARRAY(ary)->aux.capa) {
 	long capa_inc = RARRAY(ary)->aux.capa / 2;
 	if (capa_inc < ARY_DEFAULT_SIZE) {
 	    capa_inc = ARY_DEFAULT_SIZE;

@@ -45,7 +45,7 @@ struct time_object {
 }
 
 static VALUE
-time_s_now(klass)
+time_s_alloc(klass)
     VALUE klass;
 {
     VALUE obj;
@@ -53,13 +53,20 @@ time_s_now(klass)
 
     obj = Data_Make_Struct(klass, struct time_object, 0, free, tobj);
     tobj->tm_got=0;
-
     if (gettimeofday(&tobj->tv, 0) < 0) {
 	rb_sys_fail("gettimeofday");
     }
 
     return obj;
 }
+
+static VALUE
+time_s_now(klass)
+    VALUE klass;
+{
+    return rb_obj_alloc(klass);
+}
+
 
 #define NDIV(x,y) (-(-((x)+1)/(y))-1)
 #define NMOD(x,y) ((y)-(-((x)+1)%(y))-1)
@@ -1413,7 +1420,7 @@ Init_Time()
     rb_include_module(rb_cTime, rb_mComparable);
 
     rb_define_singleton_method(rb_cTime, "now", time_s_now, 0);
-    rb_define_singleton_method(rb_cTime, "allocate", time_s_now, 0);
+    rb_define_singleton_method(rb_cTime, "allocate", time_s_alloc, 0);
     rb_define_singleton_method(rb_cTime, "at", time_s_at, -1);
     rb_define_singleton_method(rb_cTime, "utc", time_s_mkutc, -1);
     rb_define_singleton_method(rb_cTime, "gm", time_s_mkutc, -1);

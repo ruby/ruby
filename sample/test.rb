@@ -1351,6 +1351,17 @@ atlas = Titans.new
 test_ok(atlas.ruler0 == "Cronus")
 test_ok(atlas.ruler3 == "Zeus")
 
+class <<a="a"
+  def foo=(n)
+    @@cv=n
+  end
+  def foo
+    @@cv
+  end
+end
+a.foo=5
+test_ok(a.foo == 5)
+
 test_check "trace"
 $x = 1234
 $y = 0

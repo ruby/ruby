@@ -97,10 +97,10 @@ rb_any_hash(a)
 	DEFER_INTS;
 	hval = rb_funcall(a, id_hash, 0);
 	if (FIXNUM_P(hval)) {
-	    hval %= 536870917;
+	    hval %= 536870923;
 	}
 	else {
-	    hval = rb_funcall(hval, '%', 1, INT2FIX(536870917));
+	    hval = rb_funcall(hval, '%', 1, INT2FIX(536870923));
 	}
 	ENABLE_INTS;
 	return (int)FIX2LONG(hval);
