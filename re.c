@@ -791,33 +791,33 @@ rb_reg_initialize(obj, s, len, options)
       default:
 	FL_SET(re, reg_kcode);
 	break;
-      case 8:
+      case 16:
 	kcode_none(re);
 	break;
-      case 16:
+      case 32:
 	kcode_euc(re);
 	break;
-      case 24:
+      case 48:
 	kcode_sjis(re);
 	break;
-      case 32:
+      case 64:
 	kcode_utf8(re);
 	break;
     }
 
-    if (options & ~0x7) {
+    if (options & ~0xf) {
 	kcode_set_option((VALUE)re);
     }
     if (ruby_ignorecase) {
 	options |= RE_OPTION_IGNORECASE;
 	FL_SET(re, REG_CASESTATE);
     }
-    re->ptr = make_regexp(s, len, options & 0x7);
+    re->ptr = make_regexp(s, len, options & 0xf);
     re->str = ALLOC_N(char, len+1);
     memcpy(re->str, s, len);
     re->str[len] = '\0';
     re->len = len;
-    if (options & ~0x7) {
+    if (options & ~0xf) {
 	kcode_reset_option();
     }
 }

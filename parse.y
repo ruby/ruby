@@ -1434,7 +1434,7 @@ cases		: opt_else
 exc_list	: args
 		| none
 
-exc_var		: kIN lhs
+exc_var		: ':' lhs
 		    {
 			$$ = $2;
 		    }
@@ -2257,7 +2257,8 @@ parse_regx(term, paren)
 		    options |= RE_OPTION_EXTENDED;
 		    break;
 		  case 'p':	/* /p is obsolete, works as /m */
-		    yyerror("/p option is obsolete; use /m\n\tnote: /m does not change ^, $ behavior");
+		    rb_warn("/p option is obsolete; use /m\n\tnote: /m does not change ^, $ behavior");
+		    options |= RE_OPTION_POSIXLINE;
 		    break;
 		  case 'm':
 		    options |= RE_OPTION_MULTILINE;
@@ -2266,16 +2267,16 @@ parse_regx(term, paren)
 		    once = 1;
 		    break;
 		  case 'n':
-		    kcode = 8;
-		    break;
-		  case 'e':
 		    kcode = 16;
 		    break;
+		  case 'e':
+		    kcode = 32;
+		    break;
 		  case 's':
-		    kcode = 24;
+		    kcode = 48;
 		    break;
 		  case 'u':
-		    kcode = 32;
+		    kcode = 64;
 		    break;
 		  default:
 		    pushback(c);
@@ -4654,7 +4655,7 @@ rb_intern(name)
     const char *name;
 {
     static ID last_id = LAST_TOKEN;
-    int id;
+    ID id;
     int last;
 
     if (st_lookup(sym_tbl, name, &id))
