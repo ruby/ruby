@@ -1430,8 +1430,8 @@ ev_const_defined(cref, id)
     while (cbase && cbase->nd_clss != rb_cObject) {
 	struct RClass *klass = RCLASS(cbase->nd_clss);
 
-	if (klass->iv_tbl &&
-	    st_lookup(klass->iv_tbl, id, 0)) {
+	if (NIL_P(klass)) return rb_const_defined(rb_cObject, id);
+	if (klass->iv_tbl && st_lookup(klass->iv_tbl, id, 0)) {
 	    return Qtrue;
 	}
 	cbase = cbase->nd_next;
@@ -3516,7 +3516,7 @@ rb_yield_0(val, self, klass, acheck)
     int state;
     static unsigned serial = 1;
 
-    if (!ruby_frame->iter || !ruby_block) {
+    if (!(rb_block_given_p() || rb_f_block_given_p()) || !ruby_block) {
 	rb_raise(rb_eLocalJumpError, "yield called out of block");
     }
 

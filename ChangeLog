@@ -1,10 +1,23 @@
+Wed Feb 28 11:02:41 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_delete_bang): delete! should take at least 1
+	  argument. 
+
 Tue Feb 27 16:38:15 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (ev_const_get): retrieve Object's caonstat if no current
 	  class is available (e.g. defining singleton class for Fixnums).
 
+	* eval.c (ev_const_defined): check Object's constant if no current
+	  class is available (e.g. defining singleton class for Fixnums).
+
 	* eval.c (proc_call): ignore block to `call' always, despite of
 	  being orphan or not.
+
+Wed Feb 27 10:16:32 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* eval.c (rb_yield_0): should check based on rb_block_given_p()
+	  and rb_f_block_given_p().
 
 Mon Feb 26 16:20:27 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
