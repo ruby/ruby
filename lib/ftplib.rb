@@ -1,7 +1,7 @@
 ## ftplib.rb
 
 # Author: Shugo Maeda <shugo@netlab.co.jp>
-# Version: 1.7.1
+# Version: $Revision:$
 
 ## Code:
 
