@@ -650,6 +650,7 @@ iconv_s_conv
 struct iconv_name_list {
     unsigned int namescount;
     const char *const *names;
+    VALUE array;
 };
 
 static VALUE
@@ -668,6 +669,9 @@ list_iconv_i
 
     for (i = 0; i < namescount; i++) {
 	rb_ary_push(ary, rb_str_new2(names[i]));
+    }
+    if (p->array) {
+	return rb_ary_push(p->array, ary);
     }
     return rb_yield(ary);
 }
@@ -688,6 +692,7 @@ list_iconv
 
     list.namescount = namescount;
     list.names = names;
+    list.array = ((VALUE *)data)[1];
     rb_protect(list_iconv_i, (VALUE)&list, state);
     return *state;
 }
@@ -697,8 +702,14 @@ static VALUE
 iconv_s_list _((void))
 {
 #ifdef HAVE_ICONVLIST
-    int state = 0;
-    iconvlist(list_iconv, &state);
+    int state;
+    VALUE args[2];
+
+    args[1] = rb_block_given_p() ? 0 : rb_ary_new();
+    iconvlist(list_iconv, args);
+    state = *(int *)args;
+    if (state) rb_jump_tag(state);
+    if (args[1]) return args[1];
 #else
     rb_notimplement();
 #endif
