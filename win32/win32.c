@@ -2917,3 +2917,13 @@ void rb_w32_free_environ(char **env)
     while (*t) free(*t++);
     free(env);
 }
+
+pid_t rb_w32_getpid(void)
+{
+    pid_t pid;
+
+    pid = _getpid();
+    if (IsWin95()) pid = -pid;
+
+    return pid;
+}

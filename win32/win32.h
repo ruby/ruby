@@ -141,7 +141,7 @@ extern "C++" {
 #define umask	   _umask
 #define unlink	   _unlink
 #define write	   _write
-#define getpid	   _getpid
+#define getpid	   rb_w32_getpid
 #define sleep(x)   rb_w32_sleep((x)*1000)
 #define utime      _utime
 #define vsnprintf  _vsnprintf
@@ -201,6 +201,7 @@ extern int gettimeofday(struct timeval *, struct timezone *);
 extern pid_t waitpid (pid_t, int *, int);
 extern int do_spawn(char *);
 extern int kill(int, int);
+extern pid_t rb_w32_getpid(void);
 #ifndef __BORLANDC__
 extern int isinf(double);
 extern int isnan(double);

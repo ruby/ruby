@@ -1,3 +1,8 @@
+Wed Sep 11 17:47:17 2002  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* win32/win32.c, win32/win32.h (rb_w32_getpid): negate pid under Win9x.
+	  [ruby-dev:18262]
+
 Wed Sep 11 12:58:57 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* string.c (get_pat): Add an extra argument "quote".
