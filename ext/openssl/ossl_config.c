@@ -264,6 +264,7 @@ ossl_config_get_section_old(VALUE self, VALUE section)
     return ossl_config_get_section(self, section);
 }
 
+#ifdef IMPLEMENT_LHASH_DOALL_ARG_FN
 static void
 get_conf_section(CONF_VALUE *cv, VALUE ary)
 {
@@ -285,7 +286,16 @@ ossl_config_get_sections(VALUE self)
 
     return ary;
 }
+#else
+static VALUE
+ossl_config_get_sections(VALUE self)
+{
+    rb_warn("Config::sections don't work with %s", OPENSSL_VERSION_TEXT);
+    return rb_ary_new();
+}
+#endif
 
+#ifdef IMPLEMENT_LHASH_DOALL_ARG_FN
 static void
 dump_conf_value(CONF_VALUE *cv, VALUE str)
 {
@@ -331,6 +341,14 @@ ossl_config_to_s(VALUE self)
 
     return dump_conf(conf);
 }
+#else
+static VALUE
+ossl_config_to_s(VALUE self)
+{
+    rb_warn("Config::to_s don't work with %s", OPENSSL_VERSION_TEXT);
+    return rb_str_new(0, 0);
+}
+#endif
 
 static VALUE
 ossl_config_inspect(VALUE self)

@@ -1,3 +1,7 @@
+Tue Sep  9 05:17:04 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_config.rb: avoid compile error in OpenSSL-0.9.6.
+
 Tue Sep  9 01:50:45 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httpserver.rb (HTTPServer#access_log): add "\n" to
