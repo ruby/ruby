@@ -15,7 +15,7 @@ module Test
           @file = file
           @object_space = object_space
           @req = req
-          @pattern = /\Atest_.*\.rb\Z/m
+          @pattern = /\btest_.*\.rb\Z/m
           @exclude = nil
         end
 
@@ -55,8 +55,8 @@ module Test
                 sub_suite = recursive_collect(e_name, already_gathered)
                 sub_suites << sub_suite unless(sub_suite.empty?)
               else
-                (next unless(@pattern =~ e)) if(@pattern)
-                (next if(@exclude =~ e)) if(@exclude)
+                (next unless(@pattern =~ e_name)) if(@pattern)
+                (next if(@exclude =~ e_name)) if(@exclude)
                 collect_file(e_name, sub_suites, already_gathered)
               end
             end

@@ -385,7 +385,7 @@ module Test
           expected = TestSuite.new('[d1, d2]')
           expected << (TestSuite.new('d1') << @t3.suite)
           expected << (TestSuite.new('d2') << @t5.suite)
-          @c.pattern = /^test_/
+          @c.pattern = /\btest_/
           assert_equal(expected, @c.collect('d1', 'd2'))
         end
       end
