@@ -1,5 +1,33 @@
 This file is not actively maintained.  See ChangeLog for recent changes.
 
+: Class#inherited
+
+  Method is called when Class is inherited by another class.
+
+	class A; end
+	def A.inherited(by)
+          puts "A inherited by #{by.inspect}"
+        end
+        class B < A; end
+
+        Prints out "A inherited by B"
+
+: String#to_i
+
+  Now accepts optional base argument.
+
+	"101".to_i(10) => 101
+	"101".to_i(2)  => 5
+	"101".to_i(8)  => 65
+	"101".to_i(16) => 257
+
+  A base argument of 0 guesses at the base.
+
+	"101".to_i(0)   => 101
+	"0b101".to_i(0) => 5
+	"0101".to_i(0)  => 65
+	"0x101".to_i(0) => 1
+
 : Set class (set.rb)
 
   Imported.
@@ -25,11 +53,11 @@ This file is not actively maintained.  See ChangeLog for recent changes.
 
 : IO::sysopen
 
-  a new method to get a raw file descriptor.
+  New method to get a raw file descriptor.
 
 : TCPServer#accept, UNIXServer#accept, Socket#accept
 
-  new methods to return an accepted socket fd.
+  New methods to return an accepted socket fd.
 
 : Date and DateTime
 
@@ -48,6 +76,10 @@ This file is not actively maintained.  See ChangeLog for recent changes.
   Optional argument limits maximum time to wait the thread in second.
   And returns nil if timed out.
 
+: Array#filter
+
+  Previously deprecated, now removed.  Use Array#collect!.
+
 : dl module
 
   Imported. An interface to the dynamic linker.
@@ -62,11 +94,21 @@ This file is not actively maintained.  See ChangeLog for recent changes.
 
 : abort()
 
-  optional terminate message argument.
+  Takes optional terminate message argument.
 
 : iconv module
 
   Imported.  Wrapper library of (({iconv})).
+
+: IO.fsync
+
+  New method that copies all in-memory parts of a file to disk and
+  waits until the deice reports that all parts are on stable storage.
+  Implemented with fsync(2) or equivalent.
+
+: Dir#pos=
+
+  Returns the new position instead of self.
 
 : Dir::glob
 
@@ -97,27 +139,30 @@ This file is not actively maintained.  See ChangeLog for recent changes.
 
 : Array#pack, String#unpack
 
-  allows comment in template strings.
+  Allows comment in template strings.
 
 : Array#pack, String#unpack
 
-  new templates 'q' and 'Q' for 64bit integer (signed and unsigned respectively).
-
-: Array#fill
-
-  takes block to get the values to fill.
+  New templates 'q' and 'Q' for 64bit integer (signed and unsigned respectively).
 
 : Array#new
 
-  takes block to get the values to fill.
+  Now takes block to fill initial values.  E.g.
+
+	Array.new(10) { |i| i + 1 }
+	=> [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+: Array#fill
+
+  Takes block to get the values to fill.
 
 : Array#fetch
 
-  takes block to get the default value.
+  Takes block to get the default value.
 
 : Hash#update
 
-  takes block to resolve key conflict.
+  Takes block to resolve key conflict.
 
 : IO#fsync
 
@@ -179,7 +224,7 @@ This file is not actively maintained.  See ChangeLog for recent changes.
 
 : implicit comparison in conditional expressions
 
-  is obsoleted except when it is used in -e.
+  Obsoleted except when it is used in -e.
 
   : between Range and $.
       Use explicit comparison instead.
@@ -215,9 +260,10 @@ This file is not actively maintained.  See ChangeLog for recent changes.
   Extended so that when the third argument is permission flags it
   calls open(2) instead of fopen(3).
 
-: Array#fetch
+: Array#fetch(index [, default])
 
-  Added.
+  Added.  If a default value isn't given, raises index error if index
+  is out of range.
 
 : Array#insert(n, other, ...)
 
@@ -301,17 +347,24 @@ This file is not actively maintained.  See ChangeLog for recent changes.
 
   Added.
 
-: IO#puts
+: File.open, IO.open
 
-  do not treat Array specially.
+  File mode can be specified by flags like open(2),
+  e.g. File::open(path, File::CREAT|File::WRONLY).
+
+: IO.open
+
+  Made public.  Can only associate an IO object with a file number
+  like IO.new and IO.for_fd, but can take a block.
 
 : IO.for_fd
 
-  Added.
+  Added as a synonym for IO.new.
 
 : IO.read
 
-  Added. [ruby-talk:9460]
+  Added.  Like IO.readlines, except it returns the entire file as a
+  string.  [ruby-talk:9460]
 
 : Interrupt
 
@@ -451,7 +504,7 @@ This file is not actively maintained.  See ChangeLog for recent changes.
 
   Extended to accepts optional second argument.
 
-  tries match between self and REGEXP, then returns the
+  It tries match between self and REGEXP, then returns the
   content of the NTH regexp register.
 
 : String#casecmp
@@ -460,7 +513,7 @@ This file is not actively maintained.  See ChangeLog for recent changes.
 
 : String#chomp
 
-  if $/ == '\n', chops off last newlines (any of \n, \r, \r\n).
+  If $/ == "\n", chops off last newlines (any of \n, \r, \r\n).
 
 : String#eql?
 
@@ -483,7 +536,7 @@ This file is not actively maintained.  See ChangeLog for recent changes.
 
 : String/Array methods
 
-  returns an instance of receivers class.
+  Returns an instance of receivers class.
 
 : String.new
 
