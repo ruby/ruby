@@ -197,6 +197,15 @@ rb_mbclen2(c, re)
     return len;
 }
 
+static void
+rb_reg_check(re)
+    VALUE re;
+{
+    if (!RREGEXP(re)->ptr || !RREGEXP(re)->str) {
+	rb_raise(rb_eTypeError, "uninitialized Regexp");
+    }
+}
+
 extern int ruby_in_compile;
 
 static void
@@ -472,8 +481,8 @@ static int may_need_recompile;
 static VALUE matchcache;
 
 static void
-rb_reg_prepare_re(reg)
-    VALUE reg;
+rb_reg_prepare_re(re)
+    VALUE re;
 {
     int need_recompile = 0;
 
@@ -493,22 +502,22 @@ rb_reg_prepare_re(reg)
 	need_recompile = 1;
     }
 
-    if (!FL_TEST(reg, KCODE_FIXED) &&
-	(RBASIC(reg)->flags & KCODE_MASK) != reg_kcode) {
+    if (!FL_TEST(re, KCODE_FIXED) &&
+	(RBASIC(re)->flags & KCODE_MASK) != reg_kcode) {
 	need_recompile = 1;
-	RBASIC(reg)->flags &= ~KCODE_MASK;
-	RBASIC(reg)->flags |= reg_kcode;
+	RBASIC(re)->flags &= ~KCODE_MASK;
+	RBASIC(re)->flags |= reg_kcode;
     }
 
     if (need_recompile) {
 	char *err;
 
-	if (FL_TEST(reg, KCODE_FIXED))
-	    kcode_set_option(reg);
-	RREGEXP(reg)->ptr->fastmap_accurate = 0;
-	err = re_compile_pattern(RREGEXP(reg)->str, RREGEXP(reg)->len, RREGEXP(reg)->ptr);
+	if (FL_TEST(re, KCODE_FIXED))
+	    kcode_set_option(re);
+	RREGEXP(re)->ptr->fastmap_accurate = 0;
+	err = re_compile_pattern(RREGEXP(re)->str, RREGEXP(re)->len, RREGEXP(re)->ptr);
 	if (err != NULL) {
-	    rb_reg_raise(RREGEXP(reg)->str, RREGEXP(reg)->len, err, reg);
+	    rb_reg_raise(RREGEXP(re)->str, RREGEXP(re)->len, err, re);
 	}
     }
 }

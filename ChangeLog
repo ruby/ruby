@@ -1,6 +1,12 @@
+Wed Jun 14 13:17:02 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* io.c: typo(ig/if).
+
+	* re.c: typo(re/reg). add rb_reg_check().
+
 Wed Jun 14 00:50:14 2000  Wakou Aoyama <wakou@fsinet.or.jp>
 
-	* lib/cig.rb: read_multipart(): if no content body then raise EOFError.
+	* lib/cgi.rb: read_multipart(): if no content body then raise EOFError.
 
 Fri Jun  9 15:11:35 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

@@ -583,7 +583,7 @@ rb_io_gets_internal(argc, argv, io)
 		TRAP_END;
 		if (c == EOF) {
 		    if (ferror(f)) {
-			ig (errno == EINTR) continue;
+			if (errno == EINTR) continue;
 			rb_sys_fail(fptr->path);
 		    }
 		    break;
@@ -673,7 +673,7 @@ rb_io_gets(io)
 	TRAP_END;
 	if (c == EOF) {
 	    if (ferror(f)) {
-		ig (errno == EINTR) continue;
+		if (errno == EINTR) continue;
 		rb_sys_fail(fptr->path);
 	    }
 	    break;
