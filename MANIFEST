@@ -114,6 +114,7 @@ lib/benchmark.rb
 lib/cgi-lib.rb
 lib/cgi.rb
 lib/cgi/session.rb
+lib/cgi/session/pstore.rb
 lib/complex.rb
 lib/csv.rb
 lib/date.rb
@@ -331,6 +332,7 @@ lib/xmlrpc/parser.rb
 lib/xmlrpc/server.rb
 lib/xmlrpc/utils.rb
 lib/yaml.rb
+lib/yaml/baseemitter.rb
 lib/yaml/basenode.rb
 lib/yaml/constants.rb
 lib/yaml/dbm.rb
