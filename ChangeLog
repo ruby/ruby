@@ -1,3 +1,7 @@
+Tue Feb  3 11:23:17 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (reduce_nodes): remove tail returns.  [ruby-talk:90934]
+
 Tue Feb  3 08:04:57 2004  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pp.rb (Struct#pretty_print_cycle): follow 1.8 style.

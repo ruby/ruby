@@ -119,6 +119,7 @@ static void void_stmts();
 static NODE *remove_begin();
 #define value_expr(node) value_expr0((node) = remove_begin(node))
 #define void_expr(node) void_expr0((node) = remove_begin(node))
+static void reduce_nodes();
 
 static NODE *block_append();
 static NODE *list_append();
@@ -364,7 +365,12 @@ bodystmt	: compstmt
 			    $$ = block_append($$, $3);
 			}
 			if ($4) {
-			    $$ = NEW_ENSURE($$, $4);
+			    if ($$) {
+				$$ = NEW_ENSURE($$, $4);
+			    }
+			    else {
+				$$ = block_append($4, NEW_NIL());
+			    }
 			}
 			fixpos($$, $1);
 		    }
@@ -1649,7 +1655,9 @@ primary		: literal
 		  bodystmt
 		  kEND
 		    {
-			$$ = NEW_DEFN($2, $4, $5, NOEX_PRIVATE);
+			NODE *body = remove_begin($5);
+			reduce_nodes(&body);
+			$$ = NEW_DEFN($2, $4, body, NOEX_PRIVATE);
 		        fixpos($$, $4);
 		        local_pop();
 			in_def--;
@@ -1665,7 +1673,9 @@ primary		: literal
 		  bodystmt
 		  kEND
 		    {
-			$$ = NEW_DEFS($2, $5, $7, $8);
+			NODE *body = remove_begin($8);
+			reduce_nodes(&body);
+			$$ = NEW_DEFS($2, $5, $7, body);
 		        fixpos($$, $2);
 		        local_pop();
 			in_single--;
@@ -4497,7 +4507,7 @@ static NODE*
 block_append(head, tail)
     NODE *head, *tail;
 {
-    NODE *end, *h = head;
+    NODE *end, *h = head, *nd;
 
     if (tail == 0) return head;
 
@@ -4518,20 +4528,20 @@ block_append(head, tail)
 	break;
     }
 
-    if (RTEST(ruby_verbose)) {
-	NODE *nd = end->nd_head;
-	switch (nd_type(nd)) {
-	  case NODE_RETURN:
-	  case NODE_BREAK:
-	  case NODE_NEXT:
-	  case NODE_REDO:
-	  case NODE_RETRY:
+    nd = end->nd_head;
+    switch (nd_type(nd)) {
+      case NODE_RETURN:
+      case NODE_BREAK:
+      case NODE_NEXT:
+      case NODE_REDO:
+      case NODE_RETRY:
+	if (RTEST(ruby_verbose)) {
 	    parser_warning(nd, "statement not reached");
-	    break;
-
-	  default:
-	    break;
 	}
+	break;
+
+      default:
+	break;
     }
 
     if (nd_type(tail) != NODE_BLOCK) {
@@ -5102,6 +5112,56 @@ remove_begin(node)
 	*n = (*n)->nd_body;
     }
     return node;
+}
+
+static void
+reduce_nodes(body)
+    NODE **body;
+{
+    NODE *node = *body;
+
+#define subnodes(n1, n2) \
+    ((!node->n1) ? (node->n2 ? (body = &node->n2, 1) : 0) : \
+     (!node->n2) ? (body = &node->n1, 1) : \
+     (reduce_nodes(&node->n1), body = &node->n2, 1))
+
+    while (node) {
+	switch (nd_type(node)) {
+	  end:
+	  case NODE_NIL:
+	    *body = 0;
+	    return;
+	  case NODE_RETURN:
+	    *body = node = node->nd_stts;
+	    continue;
+	  case NODE_BEGIN:
+	    *body = node = node->nd_body;
+	    continue;
+	  case NODE_BLOCK:
+	    body = &node->nd_end->nd_head;
+	    break;
+	  case NODE_IF:
+	    if (subnodes(nd_body, nd_else)) break;
+	    return;
+	  case NODE_CASE:
+	    body = &node->nd_body;
+	    break;
+	  case NODE_WHEN:
+	    if (!subnodes(nd_body, nd_next)) goto end;
+	    break;
+	  case NODE_ENSURE:
+	    if (!subnodes(nd_head, nd_resq)) goto end;
+	    break;
+	  case NODE_RESCUE:
+	    if (!subnodes(nd_head, nd_resq)) goto end;
+	    break;
+	  default:
+	    return;
+	}
+	node = *body;
+    }
+
+#undef subnodes
 }
 
 static int
