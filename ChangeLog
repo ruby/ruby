@@ -1,3 +1,24 @@
+Wed Sep 11 09:59:46 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* io.c (rb_io_wait_readable): added.
+
+	* io.c (rb_io_wait_writable): added.
+
+	* io.c (io_read_retryable): added.
+
+	* io.c (io_write): retry on EINTR, ERESTART and EWOULDBLOCK.
+	  [ruby-dev:17855], [ruby-dev:17878], [ruby-core:00444]
+
+	* io.c (rb_io_fread): ditto.
+
+	* io.c (read_all): ditto.
+
+	* io.c (appendline): ditto.
+
+	* io.c (rb_io_each_byte): ditto.
+
+	* io.c (rb_io_getc): ditto.
+
 Wed Sep 11 09:29:24 2002  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (ext): make directory `ext' on compile dir.
