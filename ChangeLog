@@ -1,3 +1,12 @@
+Thu Feb 17 19:09:05 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* win32/win32.c (mypopen): don't close handle if it is not assigned.
+	* win32/win32.c (my_open_osfhandle): support O_NOINHERIT flag.
+	* win32/win32.c (win32_getcwd): rename getcwd to win32_getcwd
+	  in order to avoid using the C/C++ runtime DLL's getcwd.
+	  Use CharNext() to process directory name.
+	* win32/win32.h: map getcwd to win32_getcwd.
+
 Wed Feb 16 00:32:49 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (method_arity): nd_rest is -1 for no rest argument.

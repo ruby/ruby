@@ -546,14 +546,13 @@ mypopen (char *cmd, char *mode)
 		if (lpCmd2)
 			free(lpCmd2);
 
-		CloseHandle(aProcessInformation.hThread);
-
 		if (!fRet) {
 			CloseHandle(hInFile);
 			CloseHandle(hOutFile);
-			CloseHandle(aProcessInformation.hProcess);
 			return NULL;
 		}
+
+		CloseHandle(aProcessInformation.hThread);
 
 		if (reading) {
 			fd = _open_osfhandle((long)hInFile,  (_O_RDONLY | pipemode));
@@ -1541,7 +1540,7 @@ typedef struct	{
 #endif  /* defined (_MT) && !defined (DLL_FOR_WIN32S) */
 }	ioinfo;
 
-EXTERN_C ioinfo * __pioinfo[];
+EXTERN_C _CRTIMP ioinfo * __pioinfo[];
 
 #define IOINFO_L2E			5
 #define IOINFO_ARRAY_ELTS	(1 << IOINFO_L2E)
@@ -1549,6 +1548,7 @@ EXTERN_C ioinfo * __pioinfo[];
 #define _osfile(i)	(_pioinfo(i)->osfile)
 
 #define FOPEN			0x01	/* file handle open */
+#define FNOINHERIT		0x10	/* file handle opened O_NOINHERIT */
 #define FAPPEND			0x20	/* file handle opened O_APPEND */
 #define FDEV			0x40	/* file handle refers to device */
 #define FTEXT			0x80	/* file handle is in text mode */
@@ -1567,6 +1567,9 @@ my_open_osfhandle(long osfhandle, int flags)
 
     if (flags & O_TEXT)
 	fileflags |= FTEXT;
+
+    if (flags & O_NOINHERIT)
+	fileflags |= FNOINHERIT;
 
     /* attempt to allocate a C Runtime file handle */
     if ((fh = _alloc_osfhnd()) == -1) {
@@ -2203,7 +2206,7 @@ gettimeofday(struct timeval *tv, struct timezone *tz)
 }
 
 char *
-getcwd(buffer, size)
+win32_getcwd(buffer, size)
     char *buffer;
     int size;
 {
@@ -2218,7 +2221,7 @@ getcwd(buffer, size)
         return NULL;
     }
 
-    for (bp = buffer; *bp != '\0'; bp++) {
+    for (bp = buffer; *bp != '\0'; bp = CharNext(bp)) {
 	if (*bp == '\\') {
 	    *bp = '/';
 	}

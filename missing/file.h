@@ -12,12 +12,11 @@
 # define L_XTND 2       /* seek from end.  */
 #endif
 
-# ifndef R_OK
-#  define R_OK  4       /* test whether readable.  */
-#  define W_OK  2       /* test whether writable.  */
-#  define X_OK  1       /* test whether execubale. */
-#  define F_OK  0       /* test whether exist.  */
-# endif
+#ifndef R_OK
+# define R_OK  4        /* test whether readable.  */
+# define W_OK  2        /* test whether writable.  */
+# define X_OK  1        /* test whether execubale. */
+# define F_OK  0        /* test whether exist.  */
 #endif
 
 #endif
