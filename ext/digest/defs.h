@@ -18,7 +18,7 @@
 
 #if defined(HAVE_INTTYPES_H)
 # include <inttypes.h>
-#else
+#elif !defined __CYGWIN__
   typedef unsigned char uint8_t;
   typedef unsigned int  uint32_t;
 # if SIZEOF_LONG == 8

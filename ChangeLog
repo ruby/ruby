@@ -7,6 +7,8 @@ Sun Jun  1 21:50:01 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* cygwin/GNUmakefile.in: ditto.
 
+	* ext/digest/defs.h: avoid warnings on Cygwin.
+
 Sun Jun 01 13:33:49 2003 Takaaki Uematsu <uema2x@jcom.home.ne.jp>
 
 	* wince/string_wce.c: add strpbrk() for hpcpro support.
