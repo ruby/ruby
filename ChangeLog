@@ -1,3 +1,14 @@
+Mon Feb 26 04:55:50 2001  Wakou Aoyama  <wakou@fsinet.or.jp>
+
+	* lib/cgi.rb: CGI#form(): bug fix.
+	  thanks to MoonWolf <moonwolf@moonwolf.com>.
+
+	* lib/cgi.rb: CGI#rfc1123_date(): improvement.
+	  thanks to Tomoyasu Akita <genzo-@dm4lab.to>.
+
+	* lib/cgi.rb: CGI#header(): improvement for mod_ruby.
+	  thanks to Shugo Maeda <shugo@ruby-lang.org>.
+
 Sun Feb 25 02:45:30 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* file.c (rb_file_s_rename): avoid Cygwin's bug.
