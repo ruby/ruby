@@ -30,9 +30,9 @@ int mblen(const char *mbstr, size_t count)
 	{
 		if( *p=='\0' ) break;
 		if( IsDBCSLeadByteEx( CP_ACP, *p ) )
-			n+=2;
+			n+=2, p+=2;
 		else
-			n+=1;
+			n+=1, p+=1;
 	}
 
 	return n;

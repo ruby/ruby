@@ -105,7 +105,7 @@ $(CPU) = $(PROCESSOR_LEVEL)
 	@$(APPEND) CECPUDEF = -DARM -D_ARM_ -DARMV4
 	@$(APPEND) $(ARCH) = ARM
 -armv4t-::
-	@$(APPEND) CECPUDEF = -DARM -D_ARM_ -DARMV4T
+	@$(APPEND) CECPUDEF = -DARM -D_ARM_ -DARMV4T -DTHUMB -D_THUMB_
 	@$(APPEND) $(ARCH) = THUMB
 
 
@@ -131,7 +131,6 @@ EMBEDDED_TOOLS_DIR = $(EMBEDDED_TOOLS_DIR)
 
 OS = mswince
 RT = $$(OS)
-SUBSYSTEM = windowsce
 <<
 
 -mswince4-:
@@ -145,7 +144,6 @@ EMBEDDED_TOOLS4_DIR = $(EMBEDDED_TOOLS4_DIR)
 
 OS = mswince
 RT = $$(OS)
-SUBSYSTEM = windowsce
 <<
 
 
@@ -167,12 +165,14 @@ PATH = $$(EMBEDDED_TOOLS4_DIR)/common/evc/bin;$$(EMBEDDED_TOOLS4_DIR)/EVC/WCE$$(
 
 -hpc2000-:
 	@type << >>$(MAKEFILE)
+SUBSYSTEM = windowsce,3.0
 INCLUDE = $$(CE_TOOLS_DIR)/wce$$(SUBSYSVERSION:.=)/$(@:-=)/include
 LIB = $$(CE_TOOLS_DIR)/wce$$(SUBSYSVERSION:.=)/$(@:-=)/lib/$$(PROCESSOR_ARCHITECTURE)
 <<
 
 "-MS Pocket PC-":
 	@type << >>$(MAKEFILE)
+SUBSYSTEM = windowsce,3.0
 INCLUDE = $$(CE_TOOLS_DIR)/wce$$(SUBSYSVERSION:.=)/MS Pocket PC/include
 LIB = $$(CE_TOOLS_DIR)/wce$$(SUBSYSVERSION:.=)/MS Pocket PC/lib/$$(PROCESSOR_ARCHITECTURE)
 <<
@@ -180,12 +180,14 @@ LIB = $$(CE_TOOLS_DIR)/wce$$(SUBSYSVERSION:.=)/MS Pocket PC/lib/$$(PROCESSOR_ARC
 
 "-MS HPC Pro--":
 	@type << >>$(MAKEFILE)
+SUBSYSTEM = windowsce,2.11
 INCLUDE = $$(CE_TOOLS_DIR)/wce$$(SUBSYSVERSION:.=)/MS HPC Pro/include
 LIB = $$(CE_TOOLS_DIR)/wce$$(SUBSYSVERSION:.=)/MS HPC Pro/lib/$$(PROCESSOR_ARCHITECTURE)
 <<
 
 -.net41-:
 	@type << >>$(MAKEFILE)
+SUBSYSTEM = windowsce,4.1
 INCLUDE = $$(CE_TOOLS4_DIR)/wce400/STANDARDSDK/include/$$(ARCHFOLDER)
 LIB = $$(CE_TOOLS4_DIR)/wce400/STANDARDSDK/lib/$$(ARCHFOLDER)
 <<
@@ -208,7 +210,7 @@ RUBY_SO_NAME = $(RUBY_SO_NAME)
 CPPFLAGS = -I. -I$$(srcdir) -I$$(srcdir)/missing -I$$(srcdir)/wince \
            $$(CECPUDEF) -DUNDER_CE -D_WIN32_WCE=$$(SUBSYSVERSION:.=) \
            -DFILENAME_MAX=MAX_PATH -DTLS_OUT_OF_INDEXES=0xFFFFFFFF \
-           -DBUFSIZ=512 -D_UNICODE -DUNICODE -DUNDER_CE
+           -DBUFSIZ=512 -D_UNICODE -DUNICODE
 # STACK = 0x10000,0x1000
 # LDFLAGS = $$(CFLAGS) -Fm
 # XLDFLAGS = 

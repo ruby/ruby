@@ -1,3 +1,9 @@
+Sun Jun  8 13:37:21 2003  Takaaki Uematsu  <uema2x@jcom.home.ne.jp>
+
+	* wince/setup.mak: set SUBSYSTEM in each platform.
+
+	* wince/stdlib.c: fix mblen() bug.
+
 Sat Jun  7 22:22:03 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (value_expr0): class and module statements should not be
