@@ -2292,12 +2292,9 @@ rb_eval(self, node)
 	    }
 	    if (FL_TEST(CLASS_OF(class), FL_SINGLETON)) {
 		rb_clear_cache();
-		class = rb_singleton_class(class);
 	    }
-	    else {
-		class = CLASS_OF(class);
-	    }
-
+	    class = rb_singleton_class(class);
+	    
 	    result = module_setup(class, node->nd_body);
 	}
 	break;
