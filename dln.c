@@ -1248,8 +1248,7 @@ dln_load(file)
     strcpy(winfile, file);
 
     /* Load file */
-    if ((handle =
-	LoadLibraryExA(winfile, NULL, LOAD_WITH_ALTERED_SEARCH_PATH)) == NULL) {
+    if ((handle = LoadLibrary(winfile)) == NULL) {
 	goto failed;
     }
 
