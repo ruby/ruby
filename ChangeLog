@@ -1,3 +1,9 @@
+Tue Mar  1 00:34:24 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/rinda/tuplespace.rb (Rinda::TupleSpace): improved keeper thread.
+
+	* test/rinda/test_rinda.rb: ditto.
+
 Mon Feb 28 11:42:23 2005  Ian Macdonald  <ian@caliban.org>
 
 	* exception error messages updated.  [ruby-core:04497]

@@ -4,6 +4,8 @@ require 'drb/drb'
 require 'drb/eq'
 require 'rinda/tuplespace'
 
+require 'weakref'
+
 module Rinda
 
 module TupleSpaceTestModule
@@ -385,6 +387,14 @@ class TupleSpaceTest < Test::Unit::TestCase
 
   def setup
     @ts = Rinda::TupleSpace.new(1)
+  end
+  
+  def test_gc
+    w = WeakRef.new(Rinda::TupleSpace.new)
+    GC.start
+    assert_raises(WeakRef::RefError) do
+      w.__getobj__
+    end
   end
 end
 

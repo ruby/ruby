@@ -64,7 +64,7 @@ module Rinda
       sec, @renewer = get_renewer(sec_or_renewer)
       @expires = make_expires(sec)
     end
-    
+
     # Create an expiry time. Called with:
     #
     # +true+:: the expiry time is the start of 1970 (i.e. expired).
@@ -97,12 +97,12 @@ module Rinda
     def size
       @ary.size
     end
-    
+
     # Create a new tuple from the supplied object (array-like).
     def make_tuple(ary)
       Rinda::Tuple.new(ary)
     end
-    
+
     private
     # Given +true+, +nil+, or +Numeric+, returns that (suitable input to
     # make_expires) and +nil+ (no actual +renewer+), else it return the
@@ -165,12 +165,12 @@ module Rinda
     def wait
       @cond.wait
     end
-    
+
     def read(tuple)
       @found = tuple
       signal
     end
-    
+
     def signal
       @place.synchronize do
 	@cond.signal
@@ -188,7 +188,7 @@ module Rinda
       @queue = Queue.new
       @done = false
     end
-    
+
     def notify(ev)
       @queue.push(ev)
     end
@@ -199,7 +199,7 @@ module Rinda
       @done = true if it[0] == 'close'
       return it
     end
- 
+
     def each
       while !@done
         it = pop
@@ -219,14 +219,23 @@ module Rinda
     def initialize
       @hash = {}
     end
-    
+
+    def has_expires?
+      @hash.each do |k, v|
+        v.each do |tuple|
+          return true if tuple.expires
+        end
+      end
+      false
+    end
+
     # Add the object to the TupleBag.
     def push(ary)
       size = ary.size
       @hash[size] ||= []
       @hash[size].push(ary)
     end
-    
+
     # Remove the object from the TupleBag.
     def delete(ary)
       size = ary.size
@@ -288,12 +297,13 @@ module Rinda
       @take_waiter = TupleBag.new
       @notify_waiter = TupleBag.new
       @period = period
-      @keeper = keeper
+      @keeper = nil
     end
 
     # Put a tuple into the tuplespace.
     def write(tuple, sec=nil)
       entry = TupleEntry.new(tuple, sec)
+      start_keeper
       synchronize do
 	if entry.expired?
 	  @read_waiter.find_all_template(entry).each do |template|
@@ -323,6 +333,7 @@ module Rinda
     def move(port, tuple, sec=nil)
       template = WaitTemplateEntry.new(self, tuple, sec)
       yield(template) if block_given?
+      start_keeper
       synchronize do
 	entry = @bag.find(template)
 	if entry
@@ -356,6 +367,7 @@ module Rinda
     def read(tuple, sec=nil)
       template = WaitTemplateEntry.new(self, tuple, sec)
       yield(template) if block_given?
+      start_keeper
       synchronize do
 	entry = @bag.find(template)
 	return entry.value if entry
@@ -390,7 +402,7 @@ module Rinda
       end
       template
     end
-    
+
     private
     def keep_clean
       synchronize do
@@ -408,7 +420,7 @@ module Rinda
 	end
       end
     end
-    
+
     def notify_event(event, tuple)
       ev = [event, tuple]
       @notify_waiter.find_all_template(ev).each do |template|
@@ -416,13 +428,21 @@ module Rinda
       end
     end
 
-    def keeper
-      Thread.new do
-	loop do
-	  sleep(@period)
-	  keep_clean
+    def start_keeper
+      return if @keeper && @keeper.alive?
+      @keeper = Thread.new do
+        while need_keeper?
+          keep_clean
+          sleep(@period)
 	end
       end
+    end
+
+    def need_keeper?
+      return true if @bag.has_expires?
+      return true if @read_waiter.has_expires?
+      return true if @take_waiter.has_expires?
+      return true if @notify_waiter.has_expires?
     end
   end
 end
