@@ -1,4 +1,3 @@
-#!/usr/local/bin/ruby
 #
 # telnet.rb
 # ver0.11 1998/04/21
