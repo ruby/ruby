@@ -3,6 +3,7 @@
 #
 require 'tk'
 require 'tk/itemconfig'
+require 'tk/menuspec'
 
 module TkMenuEntryConfig
   include TkItemConfigMethod
@@ -33,6 +34,7 @@ end
 
 class TkMenu<TkWindow
   include TkMenuEntryConfig
+  extend TkMenuSpec
 
   TkCommandNames = ['menu'.freeze].freeze
   WidgetClassName = 'Menu'.freeze
@@ -46,6 +48,24 @@ class TkMenu<TkWindow
   #  end
   #end
   #private :create_self
+
+  def self.new_menuspec(menu_spec, parent = nil, tearoff = false, keys = nil)
+    if parent.kind_of?(Hash)
+      keys = _symbolkey2str(parent)
+      parent = keys.delete('parent')
+      tearoff = keys.delete('tearoff')
+    elsif tearoff.kind_of?(Hash)
+      keys = _symbolkey2str(tearoff)
+      tearoff = keys.delete('tearoff')
+    elsif keys
+      keys = _symbolkey2str(keys)
+    else
+      keys = {}
+    end
+
+    widgetname = keys.delete('widgetname')
+    _create_menu(parent, menu_spec, widgetname, tearoff, keys)
+  end
 
   def tagid(id)
     #id.to_s
@@ -389,6 +409,7 @@ class TkMenubutton<TkLabel
   end
   private :create_self
 end
+TkMenuButton = TkMenubutton
 
 
 class TkOptionMenubutton<TkMenubutton
@@ -509,3 +530,4 @@ class TkOptionMenubutton<TkMenubutton
     @menu.current_entryconfiginfo(index, key)
   end
 end
+TkOptionMenuButton = TkOptionMenubutton

@@ -743,13 +743,36 @@ class Tk::TreeCtrl
     marquee_visible()
   end
 
-  def notify_bind(obj, event, cmd=Proc.new, *args)
+  #def notify_bind(obj, event, cmd=Proc.new, *args)
+  #  _bind([@path, 'notify', 'bind', obj], event, cmd, *args)
+  #  self
+  #end
+  def notify_bind(obj, event, *args)
+    if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+      cmd = args.shift
+    else
+      cmd = Proc.new
+    end
     _bind([@path, 'notify', 'bind', obj], event, cmd, *args)
     self
   end
 
-  def notify_bind_append(obj, event, cmd=Proc.new, *args)
+  #def notify_bind_append(obj, event, cmd=Proc.new, *args)
+  #  _bind([@path, 'notify', 'bind', obj], event, cmd, *args)
+  #  self
+  #end
+  def notify_bind_append(obj, event, *args)
+    if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+      cmd = args.shift
+    else
+      cmd = Proc.new
+    end
     _bind([@path, 'notify', 'bind', obj], event, cmd, *args)
+    self
+  end
+
+  def notify_bindremove(obj, event)
+    _bind_remove([@path, 'notify', 'bind', obj], event)
     self
   end
 

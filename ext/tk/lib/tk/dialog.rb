@@ -3,7 +3,7 @@
 #
 require 'tk'
 
-class TkDialog2 < TkWindow
+class TkDialogObj < TkWindow
   extend Tk
 
   TkCommandNames = ['tk_dialog'.freeze].freeze
@@ -23,7 +23,9 @@ class TkDialog2 < TkWindow
       c.delete('command'); c.delete(:command)
       # @config << Kernel.format("%s.button%s configure %s; ", 
       #                                @path, i, hash_kv(c).join(' '))
-      @config << @path+'.button'+i.to_s+'configure '+hash_kv(c).join(' ')+'; '
+      # @config << @path+'.button'+i.to_s+' configure '+hash_kv(c).join(' ')+'; '
+      @config << @path+'.button'+i.to_s+' configure '+
+                   array2tk_list(hash_kv(c))+'; '
     }
     case configs
     when Proc
@@ -74,7 +76,7 @@ class TkDialog2 < TkWindow
     #@config = "puts [winfo children .w0000];"
     @config = ""
 
-    @command = nil
+    @command = prev_command
 
     if keys.kind_of? Hash
       @title   = keys['title'] if keys.key? 'title'
@@ -84,7 +86,7 @@ class TkDialog2 < TkWindow
       @default_button = keys['default'] if keys.key? 'default'
       @buttons = keys['buttons'] if keys.key? 'buttons'
 
-      @command = keys['prev_command']
+      @command = keys['prev_command'] if keys.key? 'prev_command'
 
       @message_config = keys['message_config'] if keys.key? 'message_config'
       @msgframe_config = keys['msgframe_config'] if keys.key? 'msgframe_config'
@@ -121,36 +123,44 @@ class TkDialog2 < TkWindow
     if @message_config.kind_of? Hash
       # @config << Kernel.format("%s.msg configure %s;", 
       #                        @path, hash_kv(@message_config).join(' '))
-      @config << @path+'.msg configure '+hash_kv(@message_config).join(' ')+';'
+      # @config << @path+'.msg configure '+hash_kv(@message_config).join(' ')+';'
+      @config << @path+'.msg configure '+
+                   array2tk_list(hash_kv(@message_config))+';'
     end
 
     if @msgframe_config.kind_of? Hash
       # @config << Kernel.format("%s.top configure %s;", 
       #                        @path, hash_kv(@msgframe_config).join(' '))
-      @config << @path+'.top configure '+hash_kv(@msgframe_config).join(' ')+';'
+      # @config << @path+'.top configure '+hash_kv(@msgframe_config).join(' ')+';'
+      @config << @path+'.top configure '+
+                   array2tk_list(hash_kv(@msgframe_config))+';'
     end
 
     if @btnframe_config.kind_of? Hash
       # @config << Kernel.format("%s.bot configure %s;", 
       #                        @path, hash_kv(@btnframe_config).join(' '))
-      @config << @path+'.bot configure '+hash_kv(@btnframe_config).join(' ')+';'
+      # @config << @path+'.bot configure '+hash_kv(@btnframe_config).join(' ')+';'
+      @config << @path+'.bot configure '+
+                   array2tk_list(hash_kv(@btnframe_config))+';'
     end
 
     if @bitmap_config.kind_of? Hash
       # @config << Kernel.format("%s.bitmap configure %s;", 
       #                        @path, hash_kv(@bitmap_config).join(' '))
-      @config << @path+'.bitmap configure '+hash_kv(@bitmap_config).join(' ')+';'
+      # @config << @path+'.bitmap configure '+hash_kv(@bitmap_config).join(' ')+';'
+      @config << @path+'.bitmap configure '+
+                    array2tk_list(hash_kv(@bitmap_config))+';'
     end
 
     _set_button_config(@button_configs) if @button_configs
-
-    if @command.kind_of? Proc
-      @command.call(self)
-    end
   end
   private :create_self
 
   def show
+    if @command.kind_of? Proc
+      @command.call(self)
+    end
+
     if @default_button.kind_of? String
       default_button = @buttons.index(@default_button)
     else
@@ -173,6 +183,10 @@ class TkDialog2 < TkWindow
   def value
     # @var.value.to_i
     @val
+  end
+
+  def name
+    @buttons[@val]
   end
   ######################################################
   #                                                    #
@@ -223,13 +237,17 @@ class TkDialog2 < TkWindow
     # returns nil or a Hash {option=>value, ...} for the button frame
     return nil
   end
+  def prev_command
+    # returns nil or a Proc
+    return nil
+  end
 end
-
+TkDialog2 = TkDialogObj
 
 #
 # TkDialog : with showing at initialize
 #
-class TkDialog < TkDialog2
+class TkDialog < TkDialogObj
   def self.show(*args)
     self.new(*args)
   end
@@ -244,7 +262,7 @@ end
 #
 # dialog for warning
 #
-class TkWarning2 < TkDialog2
+class TkWarningObj < TkDialogObj
   def initialize(parent = nil, mes = nil)
     if !mes
       if parent.kind_of? TkWindow
@@ -281,8 +299,9 @@ class TkWarning2 < TkDialog2
     return "OK";
   end
 end
+TkWarning2 = TkWarningObj
 
-class TkWarning < TkWarning2
+class TkWarning < TkWarningObj
   def self.show(*args)
     self.new(*args)
   end

@@ -130,6 +130,15 @@ module TkEvent
     #  []
     #end
 
+    alias button num
+    alias delta  wheel_delta
+    alias root   rootwin_id
+    alias rootx  x_root
+    alias root_x x_root
+    alias rooty  y_root
+    alias root_y y_root
+    alias sendevent send_event
+
   end
 
   ###############################################

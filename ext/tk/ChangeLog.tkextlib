@@ -1,3 +1,25 @@
+2004-12-08  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* bwidget/notebook.rb: raise method cannot return the raised page.
+
+	* bwidget/labelentry.rb: bind methods accept subst_args + block
+
+	* bwidget/listbox.rb: ditto
+
+	* bwidget/notebook.rb: ditto
+
+	* bwidget/spinbox.rb: ditto
+
+	* bwidget/tree.rb: ditto
+
+	* itk/incr_tk.rb: ditto
+
+	* iwidgets/scrolledcanvas.rb: ditto
+
+	* tkDND/tkdnd.rb: ditto
+
+	* treectrl/tktreectrl.rb: ditto
+
 2004-11-26  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* bwidget/notebook.rb: uses epath

@@ -29,7 +29,7 @@ class TkRadioButton<TkButton
     configure 'variable', tk_trace_variable(v)
   end
 
-  def value
+  def get_value
     var = tk_send_without_enc('cget', '-variable')
     if TkVariable::USE_TCLs_SET_VARIABLE_FUNCTIONS
       _fromUTF8(INTERP._get_global_var(var))
@@ -38,7 +38,7 @@ class TkRadioButton<TkButton
     end
   end
 
-  def value=(val)
+  def set_value(val)
     var = tk_send_without_enc('cget', '-variable')
     if TkVariable::USE_TCLs_SET_VARIABLE_FUNCTIONS
       _fromUTF8(INTERP._set_global_var(var, _get_eval_string(val, true)))

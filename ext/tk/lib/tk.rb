@@ -901,12 +901,30 @@ module TkComm
           :_bind_append_for_event_class, :_bind_remove_for_event_class, 
           :_bindinfo_for_event_class
 
-  def bind(tagOrClass, context, cmd=Proc.new, *args)
+  #def bind(tagOrClass, context, cmd=Proc.new, *args)
+  #  _bind(["bind", tagOrClass], context, cmd, *args)
+  #  tagOrClass
+  #end
+  def bind(tagOrClass, context, *args)
+    if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+      cmd = args.shift
+    else
+      cmd = Proc.new
+    end
     _bind(["bind", tagOrClass], context, cmd, *args)
     tagOrClass
   end
 
-  def bind_append(tagOrClass, context, cmd=Proc.new, *args)
+  #def bind_append(tagOrClass, context, cmd=Proc.new, *args)
+  #  _bind_append(["bind", tagOrClass], context, cmd, *args)
+  #  tagOrClass
+  #end
+  def bind_append(tagOrClass, context, *args)
+    if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+      cmd = args.shift
+    else
+      cmd = Proc.new
+    end
     _bind_append(["bind", tagOrClass], context, cmd, *args)
     tagOrClass
   end
@@ -920,12 +938,30 @@ module TkComm
     _bindinfo(['bind', tagOrClass], context)
   end
 
-  def bind_all(context, cmd=Proc.new, *args)
+  #def bind_all(context, cmd=Proc.new, *args)
+  #  _bind(['bind', 'all'], context, cmd, *args)
+  #  TkBindTag::ALL
+  #end
+  def bind_all(context, *args)
+    if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+      cmd = args.shift
+    else
+      cmd = Proc.new
+    end
     _bind(['bind', 'all'], context, cmd, *args)
     TkBindTag::ALL
   end
 
-  def bind_append_all(context, cmd=Proc.new, *args)
+  #def bind_append_all(context, cmd=Proc.new, *args)
+  #  _bind_append(['bind', 'all'], context, cmd, *args)
+  #  TkBindTag::ALL
+  #end
+  def bind_append_all(context, *args)
+    if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+      cmd = args.shift
+    else
+      cmd = Proc.new
+    end
     _bind_append(['bind', 'all'], context, cmd, *args)
     TkBindTag::ALL
   end
@@ -2067,11 +2103,27 @@ end
 
 
 module TkBindCore
-  def bind(context, cmd=Proc.new, *args)
+  #def bind(context, cmd=Proc.new, *args)
+  #  Tk.bind(self, context, cmd, *args)
+  #end
+  def bind(context, *args)
+    if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+      cmd = args.shift
+    else
+      cmd = Proc.new
+    end
     Tk.bind(self, context, cmd, *args)
   end
 
-  def bind_append(context, cmd=Proc.new, *args)
+  #def bind_append(context, cmd=Proc.new, *args)
+  #  Tk.bind_append(self, context, cmd, *args)
+  #end
+  def bind_append(context, *args)
+    if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+      cmd = args.shift
+    else
+      cmd = Proc.new
+    end
     Tk.bind_append(self, context, cmd, *args)
   end
 

@@ -75,7 +75,28 @@ module Tk
         end
       end
 
-      def dnd_bindtarget(type, event, cmd=Proc.new, prior=50, *args)
+      #def dnd_bindtarget(type, event, cmd=Proc.new, prior=50, *args)
+      #  event = tk_event_sequence(event)
+      #  if prior.kind_of?(Numeric)
+      #    tk_call('dnd', 'bindtarget', @path, type, event, 
+      #            install_bind_for_event_class(DND_Subst, cmd, *args), 
+      #            prior)
+      #  else
+      #    tk_call('dnd', 'bindtarget', @path, type, event, 
+      #            install_bind_for_event_class(DND_Subst, cmd, prior, *args))
+      #  end
+      #  self
+      #end
+      def dnd_bindtarget(type, event, *args)
+        if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+          cmd = args.shift
+        else
+          cmd = Proc.new
+        end
+
+        prior = 50
+        prior = args.shift unless args.empty?
+
         event = tk_event_sequence(event)
         if prior.kind_of?(Numeric)
           tk_call('dnd', 'bindtarget', @path, type, event, 
@@ -101,8 +122,20 @@ module Tk
         end
       end
 
-      def dnd_bindsource(type, cmd=Proc.new, prior=None)
-        tk_call('dnd', 'bindsource', @path, type, cmd, prior)
+      #def dnd_bindsource(type, cmd=Proc.new, prior=None)
+      #  tk_call('dnd', 'bindsource', @path, type, cmd, prior)
+      #  self
+      #end
+      def dnd_bindsource(type, *args)
+        if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+          cmd = args.shift
+        else
+          cmd = Proc.new
+        end
+
+        args = [None] if args.empty
+
+        tk_call('dnd', 'bindsource', @path, type, cmd, *args)
         self
       end
 

@@ -201,18 +201,18 @@ class TkToplevel<TkWindow
     self.database_class.name
   end
 
-  def self.bind(*args)
+  def self.bind(*args, &b)
     if self == WidgetClassNames[WidgetClassName] || self.name == ''
-      super(*args)
+      super(*args, &b)
     else
-      TkDatabaseClass.new(self.name).bind(*args)
+      TkDatabaseClass.new(self.name).bind(*args, &b)
     end
   end
-  def self.bind_append(*args)
+  def self.bind_append(*args, &b)
     if self == WidgetClassNames[WidgetClassName] || self.name == ''
-      super(*args)
+      super(*args, &b)
     else
-      TkDatabaseClass.new(self.name).bind_append(*args)
+      TkDatabaseClass.new(self.name).bind_append(*args, &b)
     end
   end
   def self.bind_remove(*args)

@@ -41,13 +41,33 @@ class Tk::BWidget::NoteBook
     end
   end
 
-  def tabbind(*args)
-    _bind_for_event_class(Event_for_Tabs, [path, 'bindtabs'], *args)
+  #def tabbind(*args)
+  #  _bind_for_event_class(Event_for_Tabs, [path, 'bindtabs'], *args)
+  #  self
+  #end
+  def tabbind(context, *args)
+    if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+      cmd = args.shift
+    else
+      cmd = Proc.new
+    end
+    _bind_for_event_class(Event_for_Tabs, [path, 'bindtabs'], 
+                          context, cmd, *args)
     self
   end
 
-  def tabbind_append(*args)
-    _bind_append_for_event_class(Event_for_Tabs, [path, 'bindtabs'], *args)
+  #def tabbind_append(*args)
+  #  _bind_append_for_event_class(Event_for_Tabs, [path, 'bindtabs'], *args)
+  #  self
+  #end
+  def tabbind_append(context, *args)
+    if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+      cmd = args.shift
+    else
+      cmd = Proc.new
+    end
+    _bind_append_for_event_class(Event_for_Tabs, [path, 'bindtabs'], 
+                                 context, cmd, *args)
     self
   end
 
@@ -105,9 +125,13 @@ class Tk::BWidget::NoteBook
     list(tk_send('pages', first, last))
   end
 
-  def raise(page=None)
-    tk_send('raise', page)
-    self
+  def raise(page=nil)
+    if page
+      tk_send('raise', page)
+      self
+    else
+      tk_send('raise')
+    end
   end
 
   def see(page)
