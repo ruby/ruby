@@ -1,3 +1,11 @@
+Wed Feb  3 03:31:20 2005  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/nkf.c: follow original v 1.57 
+
+	* ext/nkf/nkf-utf8/utf8tbl.c: follow original v 1.8
+
+	* ext/nkf/nkf-utf8/config.h: follow original v 1.7 
+
 Wed Feb  2 23:52:53 2005  sheepman  <sheepman@tcn.zaq.ne.jp>
 
 	* ext/stringio/stringio.c (strio_truncate): should MEMZERO an extended
