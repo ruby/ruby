@@ -333,6 +333,28 @@ math_log(obj, x)
 
 /*
  *  call-seq:
+ *     Math.log2(numeric)    => float
+ *  
+ *  Returns the base 2 logarithm of <i>numeric</i>.
+ */
+
+static VALUE
+math_log2(obj, x)
+    VALUE obj, x;
+{
+    double d;
+
+    Need_Float(x);
+    errno = 0;
+    d = log2(RFLOAT(x)->value);
+    if (errno) {
+	rb_sys_fail("log2");
+    }
+    return rb_float_new(d);
+}
+
+/*
+ *  call-seq:
  *     Math.log10(numeric)    => float
  *  
  *  Returns the base 10 logarithm of <i>numeric</i>.
@@ -511,6 +533,7 @@ Init_Math()
 
     rb_define_module_function(rb_mMath, "exp", math_exp, 1);
     rb_define_module_function(rb_mMath, "log", math_log, 1);
+    rb_define_module_function(rb_mMath, "log2", math_log, 1);
     rb_define_module_function(rb_mMath, "log10", math_log10, 1);
     rb_define_module_function(rb_mMath, "sqrt", math_sqrt, 1);
 

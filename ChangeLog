@@ -1,3 +1,8 @@
+Fri Sep  3 17:47:58 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* struct.c (make_struct): remove redefining constant when
+	  conflict.  [ruby-dev:24210]
+
 Fri Sep  3 11:31:44 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: Tk.after makes TkCore::INTERP.tk_cmd_tbl grow

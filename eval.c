@@ -1717,37 +1717,6 @@ rb_eval_cmd(cmd, arg, level)
     return val;
 }
 
-static VALUE
-superclass(self, node)
-    VALUE self;
-    NODE *node;
-{
-    VALUE val = Qnil;		/* OK */
-    int state;
-
-    PUSH_TAG(PROT_NONE);
-    if ((state = EXEC_TAG()) == 0) {
-	val = rb_eval(self, node);
-    }
-    POP_TAG();
-    if (state) {
-	switch (nd_type(node)) {
-	  case NODE_COLON2:
-	    rb_raise(rb_eTypeError, "undefined superclass `%s'",
-		     rb_id2name(node->nd_mid));
-	  case NODE_CONST:
-	    rb_raise(rb_eTypeError, "undefined superclass `%s'",
-		     rb_id2name(node->nd_vid));
-	  default:
-	    break;
-	}
-	JUMP_TAG(state);
-    }
-    rb_check_inheritable(val);
-
-    return val;
-}
-
 #define ruby_cbase (ruby_cref->nd_clss)
 
 static VALUE
@@ -3772,7 +3741,8 @@ rb_eval(self, n)
 		rb_raise(rb_eTypeError, "no outer class/module");
 	    }
 	    if (node->nd_super) {
-		super = superclass(self, node->nd_super);
+               super = rb_eval(self, node->nd_super);
+               rb_check_inheritable(super);
 	    }
 	    else {
 		super = 0;

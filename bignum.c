@@ -1752,15 +1752,17 @@ rb_big_or(xx, yy)
  */
 
 VALUE
-rb_big_xor(x, y)
-    VALUE x, y;
+rb_big_xor(xx, yy)
+    VALUE xx, yy;
 {
+    volatile VALUE x, y;
     VALUE z;
     BDIGIT *ds1, *ds2, *zds;
     long i, l1, l2;
     char sign;
 
-    y = rb_to_int(y);
+    x = xx;
+    y = rb_to_int(yy);
     if (FIXNUM_P(y)) {
 	y = rb_int2big(FIX2LONG(y));
     }

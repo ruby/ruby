@@ -177,6 +177,10 @@ make_struct(name, member, klass)
 	if (!rb_is_const_id(id)) {
 	    rb_name_error(id, "identifier %s needs to be constant", cname);
 	}
+	if (rb_const_defined_at(klass, id)) {
+	    rb_warn("redefining constant Struct::%s", cname);
+	    rb_mod_remove_const(klass, ID2SYM(id));
+	}
 	nstr = rb_define_class_under(klass, cname, klass);
     }
     rb_iv_set(nstr, "__size__", LONG2NUM(RARRAY(member)->len));
@@ -454,6 +458,10 @@ inspect_struct(s)
     member = rb_struct_iv_get(rb_obj_class(s), "__member__");
     if (NIL_P(member)) {
 	rb_bug("non-initialized struct");
+    }
+    if (RSTRUCT(s)->len != RARRAY(member)->len) {
+	rb_raise(rb_eTypeError, "struct size differs (%d required %d given)",
+		 RARRAY(member)->len, RSTRUCT(s)->len);
     }
 
     str = rb_str_buf_new2("#<struct ");
