@@ -1,3 +1,8 @@
+Mon Aug  2 18:04:21 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/msgcat.rb (set_translation): bug fix (fail to set
+	  trans_str to the same as src_str when trans_str is not given.)
+
 Mon Aug  2 11:53:06 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/code_objects.rb (RDoc::Context::find_symbol): Fix infinite recursion

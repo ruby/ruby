@@ -217,20 +217,33 @@ class TkMsgCatalog < TkObject
   alias load load_rb
 
   def self.set_translation(locale, src_str, trans_str=None, enc='utf-8')
-    trans_str = Tk.UTF8_String(_toUTF8(trans_str, enc)) if trans_str != None
-    Tk.UTF8_String(tk_call_without_enc('::msgcat::mcset', 
-				       locale, 
-				       _get_eval_string(src_str, true), 
-				       trans_str))
-  end
-  def set_translation(locale, src_str, trans_str=None, enc='utf-8')
-    trans_str = Tk.UTF8_String(_toUTF8(trans_str, enc)) if trans_str != None
-    Tk.UTF8_String(@namespace.eval{
-		     tk_call_without_enc('::msgcat::mcset', 
+    if trans_str && trans_str != None
+      trans_str = Tk.UTF8_String(_toUTF8(trans_str, enc))
+      Tk.UTF8_String(tk_call_without_enc('::msgcat::mcset', 
 					 locale, 
 					 _get_eval_string(src_str, true), 
-					 trans_str)
-		   })
+					 trans_str))
+    else
+      Tk.UTF8_String(tk_call_without_enc('::msgcat::mcset', 
+					 locale, 
+					 _get_eval_string(src_str, true)))
+    end
+  end
+  def set_translation(locale, src_str, trans_str=None, enc='utf-8')
+    if trans_str && trans_str != None
+      trans_str = Tk.UTF8_String(_toUTF8(trans_str, enc)) 
+      Tk.UTF8_String(@namespace.eval{
+		       tk_call_without_enc('::msgcat::mcset', 
+					   locale, 
+					   _get_eval_string(src_str, true), 
+					   trans_str)
+		     })
+    else
+      Tk.UTF8_String(@namespace.eval{
+		       tk_call_without_enc('::msgcat::mcset', 
+					   locale, 
+					   _get_eval_string(src_str, true))})
+    end
   end
 
   def self.set_translation_list(locale, trans_list, enc='utf-8')
