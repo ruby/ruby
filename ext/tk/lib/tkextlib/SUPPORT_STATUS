@@ -83,6 +83,9 @@ Tile        http://tktable.sourceforge.net/tile/        ==> tile
 
 ===< possibly available (not tested; alpha quality) >=========================
 
+winico      http://tktable.sourceforge.net
+               ==> winico (win32 only)
+
 TkTrans     http://www2.cmp.uea.ac.uk/~fuzz/tktrans/default.html
                ==>  tktrans (win32 only)
 
@@ -91,8 +94,6 @@ TkDND       http://sourceforge.net/projects/tkdnd       ==> tkDND
 
 
 ===< plan to support (alpha quality libraries may be included) >==============
-
-winico      http://tktable.sourceforge.net
 
 GraphViz    http://www.graphviz.org/
 

@@ -51,7 +51,7 @@ module Tk
 	if keys[key].kind_of?(Array)
 	  cmd, *args = keys[key]
 	  keys[key] = klass.new(cmd, args.join(' '))
-	elsif keys[key].kind_of? Proc
+	elsif keys[key].kind_of?(Proc) ||  keys[key].kind_of?(Method)
 	  keys[key] = klass.new(keys[key])
 	end
       }
@@ -64,6 +64,15 @@ module Tk
     private :create_self
 
     def configure(slot, value=TkComm::None)
+      if slot.kind_of?(Hash)
+	super(__conv_vcmd_on_hash_kv(slot))
+      else
+	super(__conv_vcmd_on_hash_kv(slot=>value))
+      end
+      self
+    end
+=begin
+    def configure(slot, value=TkComm::None)
       key2class = __get_validate_key2class
 
       if slot.kind_of?(Hash)
@@ -72,7 +81,7 @@ module Tk
 	  if slot[key].kind_of?(Array)
 	    cmd, *args = slot[key]
 	    slot[key] = klass.new(cmd, args.join(' '))
-	  elsif slot[key].kind_of? Proc
+	  elsif slot[key].kind_of?(Proc) || slot[key].kind_of?(Method)
 	    slot[key] = klass.new(slot[key])
 	  end
 	}
@@ -81,10 +90,10 @@ module Tk
       else
 	slot = slot.to_s
 	if (klass = key2class[slot])
-	  if value.kind_of? Array
+	  if value.kind_of?(Array)
 	    cmd, *args = value
 	    value = klass.new(cmd, args.join(' '))
-	  elsif value.kind_of? Proc
+	  elsif value.kind_of?(Proc) || value.kind_of?(Method)
 	    value = klass.new(value)
 	  end
 	end
@@ -93,6 +102,7 @@ module Tk
 
       self
     end
+=end
   end
 
   module ItemValidateConfigure
@@ -141,13 +151,22 @@ module Tk
 	if keys[key].kind_of?(Array)
 	  cmd, *args = keys[key]
 	  keys[key] = klass.new(cmd, args.join(' '))
-	elsif keys[key].kind_of? Proc
+	elsif keys[key].kind_of?(Proc) || keys[key].kind_of?(Method)
 	  keys[key] = klass.new(keys[key])
 	end
       }
       keys
     end
 
+    def itemconfigure(tagOrId, slot, value=TkComm::None)
+      if slot.kind_of?(Hash)
+	super(__conv_item_vcmd_on_hash_kv(slot))
+      else
+	super(__conv_item_vcmd_on_hash_kv(slot=>value))
+      end
+      self
+    end
+=begin
     def itemconfigure(tagOrId, slot, value=TkComm::None)
       key2class = __get_item_validate_key2class(tagid(tagOrId))
 
@@ -157,7 +176,7 @@ module Tk
 	  if slot[key].kind_of?(Array)
 	    cmd, *args = slot[key]
 	    slot[key] = klass.new(cmd, args.join(' '))
-	  elsif slot[key].kind_of? Proc
+	  elsif slot[key].kind_of?(Proc) ||  slot[key].kind_of?(Method)
 	    slot[key] = klass.new(slot[key])
 	  end
 	}
@@ -166,10 +185,10 @@ module Tk
       else
 	slot = slot.to_s
 	if (klass = key2class[slot])
-	  if value.kind_of? Array
+	  if value.kind_of?(Array)
 	    cmd, *args = value
 	    value = klass.new(cmd, args.join(' '))
-	  elsif value.kind_of? Proc
+	  elsif value.kind_of?(Proc) || value.kind_of?(Method)
 	    value = klass.new(value)
 	  end
 	end
@@ -178,6 +197,7 @@ module Tk
 
       self
     end
+=end
   end
 end
 
