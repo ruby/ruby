@@ -659,7 +659,7 @@ module REXML
         end
 				writer << "/" 
 			else
-				if transitive and indent>-1 and !@children[0].kind_of? Text
+				if transitive and indent>-1 and !@children[0].instance_of? Text
 					writer << "\n"
 					indent writer, indent+1
 				end

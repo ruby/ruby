@@ -59,7 +59,7 @@ module REXML
 		#  c = CData.new( " Some text " )
 		#  c.write( $stdout )     #->  <![CDATA[ Some text ]]>
 		def write( output=$stdout, indent=-1, transitive=false, ie_hack=false )
-			indent( output, indent )
+			indent( output, indent ) unless transitive
 			output << START
 			output << @string
 			output << STOP

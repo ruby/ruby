@@ -194,7 +194,7 @@ module REXML
       @raw = false
     end
  
- 		def indent(string, level=1, style="\t", indentfirstline=true)
+ 		def indent_text(string, level=1, style="\t", indentfirstline=true)
       return string if level < 0
  			new_string = ''
  			string.each { |line|
@@ -211,7 +211,7 @@ module REXML
       if not (@parent and @parent.whitespace) then
         s = wrap(s, 60, false) if @parent and @parent.context[:wordwrap] == :all
         if @parent and not @parent.context[:indentstyle].nil? and indent > 0 and s.count("\n") > 0
-          s = indent(s, indent, @parent.context[:indentstyle], false)
+          s = indent_text(s, indent, @parent.context[:indentstyle], false)
         end
         s.squeeze!(" \n\t") if @parent and !@parent.whitespace
       end
