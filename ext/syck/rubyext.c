@@ -379,7 +379,7 @@ rb_syck_err_handler(p, msg)
         endl++;
 
     endl[0] = '\0';
-    rb_raise(rb_eLoadError, "%s on line %d, col %d: `%s'",
+    rb_raise(rb_eArgError, "%s on line %d, col %d: `%s'",
            msg,
            p->linect,
            p->cursor - p->lineptr, 

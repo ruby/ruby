@@ -1,3 +1,11 @@
+Thu May 22 06:21:33 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
+
+    * ext/syck/rubyext.c (rb_syck_err_handler): raise ArgumentError on
+      malformed YAML.
+
+    * lib/yaml/rubytypes.rb: String#to_yaml was missing space indicators at
+      the end of a line.
+
 Thu May 22 05:43:24 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
 
     * ext/syck/rubyext.c (syck_parser_load): root-level false was returning 

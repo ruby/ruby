@@ -1,4 +1,5 @@
 require 'date'
+require 'yaml/constants'
 #
 # Type conversions
 #
@@ -273,7 +274,7 @@ class String
                             "''"
                         elsif YAML.detect_implicit( self ) != 'str'
                             "\"#{YAML.escape( self )}\"" 
-                        elsif self =~ /#{YAML::ESCAPE_CHAR}|[#{YAML::SPACE_INDICATORS}] |\n|\'/
+                        elsif self =~ /#{YAML::ESCAPE_CHAR}|[#{YAML::SPACE_INDICATORS}]( |\n|$)|\'/
                             "\"#{YAML.escape( self )}\"" 
                         elsif self =~ /^[^#{YAML::WORD_CHAR}]/
                             "\"#{YAML.escape( self )}\"" 
