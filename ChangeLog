@@ -1,3 +1,22 @@
+Fri Sep  6 20:01:38 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* lib/mkmf.rb ($CC): command to compile C source.
+
+	* lib/mkmf.rb (logging): added.
+
+	* lib/mkmf.rb (try_compile): added.
+
+	* lib/mkmf.rb (egrep_cpp): use internal grep when pattern is
+	  Regexp, otherwise use external egrep command but get rid of
+	  pipe of command.com.
+
+	* lib/mkmf.rb (have_func): local variable should be volatile not
+	  to be eliminated by optimization.
+
+	* lib/mkmf.rb (create_makefile): link with CONFIG["LIBS"].
+
+	* lib/mkmf.rb (create_makefile): emit .SUFFIXES:.
+
 Fri Sep  6 12:11:22 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* parse.y (rb_gc_mark_parser): should mark ALL global variables
