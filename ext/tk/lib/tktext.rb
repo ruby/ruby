@@ -460,7 +460,7 @@ class TkText<TkTextWin
 	  when 'anchor'
 	    result.push TkTextMarkAnchor.new(self)
 	  else
-	    result.push tk_tcl2rb(val)
+	    result.push tk_tcl2ruby(val)
 	  end
 	when 'tagon'
 	  if val == 'sel'
@@ -470,12 +470,12 @@ class TkText<TkTextWin
 	      result.push TkTextTagSel.new(self)
 	    end
 	  else
-	    result.push tk_tcl2rb val
+	    result.push tk_tcl2ruby(val)
 	  end
 	when 'tagoff'
-	    result.push tk_tcl2rb sel
+	    result.push tk_tcl2ruby(sel)
 	when 'window'
-	  result.push tk_tcl2rb val
+	  result.push tk_tcl2ruby(val)
 	end
 	i = idx + 1
       end
