@@ -1,3 +1,83 @@
+Summary of the changes since 1.6.7:
+
+: Marshal.dump
+
+  Fixed where Marshal::dump(foo, proc{...}) fails. (which was
+  accidentally broken between 1.6.6 and 1.6.7)
+
+Summary of the changes since 1.6.6:
+
+: Digest::SHA2
+
+  Fixed where it had a couple of off-by-one errors in the algorithm
+  implementation.
+
+: Digest
+
+  Fixed where it polluted namespace by defining some global symbols
+  that conflict with OpenSSL.
+
+: Syslog
+
+  Changed from a singleton class to a module for ease of use, keeping
+  backward compatibility intact.
+
+: URI::join
+
+  Added.
+
+: URI
+
+  Fixed where some methods did not conform to the RFC's in some
+  (rather trivial) points.
+
+: Float()
+
+  Enhanced so that it allows underscores between digits.
+
+: net/protocol: Protocol#start
+
+  Now returns the return value of the given block.
+
+: net/protocol
+
+  Fixed to set timeout limit by default, and set read_timeout
+  dynamically.
+
+: net/smtp
+
+  Fixed not to resolve HELO domain automatically.
+
+: net/http: HTTP#{request_get,request_post}
+
+  Renamed from get2 and post2, respectively.
+
+: net/pop: POP#auth_only
+
+  Fixed.
+
+: $SAFE / block
+
+  Fixed not to pass a tainted block if $SAFE > 0.
+
+: ruby-mode.el
+
+  Now handles nested parentheses in a string and terminators in #{},
+  and fontifies instance/class/global variables that start with '_'.
+
+: Time#{gmtoff,gmt_offset,utc_offset}
+
+  Added.
+
+: time.rb
+
+  Imported. (which is formerly known as "timex.rb")
+
+: bugfixes
+
+  Numeral bugs have been fixed.  There are too many to mention here.
+  Please refer to ChangeLog.
+
 Summary of the changes since 1.6.5:
 
 : Syslog module
