@@ -1,3 +1,8 @@
+Tue Jun 24 14:31:17 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* config.guess: have wrongly returned "alphaev56-unknown-linux-"
+	  on Linux/Alpha. [ruby-dev:20434]
+
 Tue Jun 24 04:54:46 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* configure.in: always add -mieee for gcc/alpha. [ruby-dev:20429]
