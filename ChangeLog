@@ -1,3 +1,9 @@
+Thu Mar 31 06:00:20 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_engine.c (ossl_engine_s_load): should not raise
+	  error even if the specified engine could not be loaded. (Dynamic
+	  engines don't have fixed name to load.)
+
 Thu Mar 31 00:18:27 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* win32/ifchange.bat, win32/rm.bat: backported from HEAD.
