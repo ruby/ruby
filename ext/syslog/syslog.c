@@ -3,7 +3,7 @@
  * Amos Gouaux, University of Texas at Dallas
  * <amos+ruby@utdallas.edu>
  *
- * $RoughId: syslog.c,v 1.20 2002/02/25 08:20:14 knu Exp $
+ * $RoughId: syslog.c,v 1.21 2002/02/25 12:21:17 knu Exp $
  * $Id$
  */
 
@@ -62,7 +62,11 @@ static VALUE mSyslog_open(int argc, VALUE *argv, VALUE self)
         fac = INT2NUM(LOG_USER);
     }
 
+#ifdef SafeStringValue
+    SafeStringValue(ident);
+#else
     Check_SafeStr(ident);
+#endif
     syslog_ident = ident;
     syslog_options = opt;
     syslog_facility = fac;
