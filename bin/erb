@@ -60,7 +60,7 @@ class ERB
 	    require ARGV.req_arg
 	  when '-S'			# sacurity level
 	    arg = ARGV.req_arg
-	    raise "invalid security level #{arg.dump}" unless arg =~ /^[0-3]$/
+	    raise "invalid safe_level #{arg.dump}" unless arg =~ /^[0-4]$/
 	    safe_level = arg.to_i
 	  when '-T'			# trim mode
 	    arg = ARGV.req_arg
@@ -99,7 +99,7 @@ class ERB
   -d               set $DBEUG to true
   -r [library]     load a library
   -K [kcode]       specify KANJI code-set
-  -S [safe_level]  set $SAFE (0..3)
+  -S [safe_level]  set $SAFE (0..4)
   -T [trim_mode]   specify trim_mode (0..2)
   -P               disregard the lin which starts in "%" 
 EOU
@@ -121,7 +121,7 @@ EOU
 	  puts erb.src
 	end
       else
-	erb.run
+	erb.run(TOPLEVEL_BINDING.taint)
       end
     end
     module_function :run
@@ -131,5 +131,3 @@ end
 if __FILE__ == $0
   ERB::Main.run
 end
-
-
