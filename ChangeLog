@@ -1,3 +1,7 @@
+Sat Jul 14 06:25:00 2001  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb: HTTP#proxy? did not worked.
+
 Sat Jul 14 02:56:19 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/extmk.rb.in: support multi-level ext/ directories.
