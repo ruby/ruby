@@ -2311,7 +2311,7 @@ module RDoc
 
         when "section"
           context.set_current_section(param, comment)
-          comment.clear
+          comment.replace("") # 1.8 doesn't support #clear
           break 
         else
           warn "Unrecognized directive '#{directive}'"
