@@ -1,3 +1,8 @@
+Fri Nov 28 21:44:40 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* test/fileutils/test_fileutils.rb (test_ln_s): should be a file, not
+	  a directory.
+
 Fri Nov 28 19:37:56 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (env_has_value, env_index): must match exactly.
@@ -71,8 +76,8 @@ Thu Nov 27 16:58:48 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 Wed Nov 26 15:38:47 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
-	* test/fileutils/test_fileutils.rb: should take the existing symbolic
-	  link for OpenBSD.
+	* test/fileutils/test_fileutils.rb (test_ln_s): should take the
+	  existing symbolic link for OpenBSD.
 
 Wed Nov 26 04:48:42 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
 

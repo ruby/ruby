@@ -303,7 +303,7 @@ if have_symlink?
     assert_raises(Errno::EEXIST) {
       ln 'tmp/cptmp', 'tmp/cptmp_symlink'
     }
-    File.symlink '.', 'tmp/symlink'
+    File.symlink 'cptmp', 'tmp/symlink'
     assert_raises(Errno::EEXIST) {
       ln 'tmp/symlink', 'tmp/symlink'
     }
