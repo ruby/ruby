@@ -1,6 +1,6 @@
 /************************************************
 
-  missing.h - prototype for missing/*.c
+  missing.h - prototype for *.c in ./missing
 
   $Author$
   $Date$

@@ -1000,7 +1000,7 @@ proc{
 test_ok(!defined?(iii))		# out of scope
 
 loop{iii=5; test_ok(eval("defined? iii")); break}
-loop {|iii|
+loop {
   iii = 10
   def dyna_var_check
     loop {

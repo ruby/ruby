@@ -223,9 +223,6 @@ strftime.@OBJEXT@: $(srcdir)/missing/strftime.c
 strstr.@OBJEXT@: $(srcdir)/missing/strstr.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/strstr.c
 
-strtod.@OBJEXT@: $(srcdir)/missing/strtod.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/strtod.c
-
 strtol.@OBJEXT@: $(srcdir)/missing/strtol.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/strtol.c
 

@@ -6,7 +6,7 @@
   $Date$
   created at: Fri Aug 13 18:33:09 JST 1993
 
-  Copyright (C) 1993-2001 Yukihiro Matsumoto
+  Copyright (C) 1993-2002 Yukihiro Matsumoto
 
 **********************************************************************/
 
@@ -216,7 +216,7 @@ flo_to_s(flt)
     VALUE flt;
 {
     char buf[24];
-    char *fmt = "%.10g";
+    char *fmt = "%.16g";
     double value = RFLOAT(flt)->value;
     double avalue, d1, d2;
 
@@ -235,11 +235,12 @@ flo_to_s(flt)
 	d1 = modf(d1, &d2);
 	if (d1 == 0) fmt = "%.1e";
     }    
-    else if (avalue >= 1.0e10) {
+    else if (avalue >= 1.0e15) {
 	d1 = avalue;
 	while (d1 > 10.0) d1 /= 10.0;
 	d1 = modf(d1, &d2);
 	if (d1 == 0) fmt = "%.1e";
+	else fmt = "%.16e";
     }    
     else if ((d1 = modf(value, &d2)) == 0) {
 	fmt = "%.1f";

@@ -15,10 +15,7 @@
 #include "ruby.h"
 #include "rubyio.h"
 #include "st.h"
-
-#if !defined(atof) && !defined(HAVE_STDLIB_H)
-double strtod();
-#endif
+#include "util.h"
 
 #define BITSPERSHORT (2*CHAR_BIT)
 #define SHORTMASK ((1<<BITSPERSHORT)-1)
@@ -884,7 +881,6 @@ r_object(arg)
 		d = -1.0 / t;
 	    }
 	    else {
-		/* xxx: should not use system's strtod(3) */
 		d = strtod(buf, 0);
 	    }
 	    v = rb_float_new(d);

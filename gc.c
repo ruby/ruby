@@ -1128,18 +1128,7 @@ rb_gc()
     struct gc_list *list;
     struct FRAME * volatile frame; /* gcc 2.7.2.3 -O2 bug??  */
     jmp_buf save_regs_gc_mark;
-#ifdef C_ALLOCA
-    VALUE stack_end;
-    alloca(0);
-# define STACK_END (&stack_end)
-#else
-# if defined(__GNUC__) && defined(USE_BUILTIN_FRAME_ADDRESS)
-    VALUE *stack_end = __builtin_frame_address(0);
-# else
-    VALUE *stack_end = alloca(1);
-# endif
-# define STACK_END (stack_end)
-#endif
+    SET_STACK_END;
 
     if (dont_gc || during_gc) {
 	if (!freelist || malloc_memories > GC_MALLOC_LIMIT) {

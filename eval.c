@@ -217,6 +217,21 @@ rb_clear_cache_by_id(id)
     }
 }
 
+static void
+rb_clear_cache_by_class(klass)
+    VALUE klass;
+{
+    struct cache_entry *ent, *end;
+
+    ent = cache; end = ent + CACHE_SIZE;
+    while (ent < end) {
+	if (ent->origin == klass) {
+	    ent->mid = 0;
+	}
+	ent++;
+    }
+}
+
 void
 rb_add_method(klass, mid, node, noex)
     VALUE klass;
@@ -2112,10 +2127,27 @@ avalue_to_svalue(v)
 }
 
 static VALUE
+avalue_to_yvalue(v)
+    VALUE v;
+{
+    if (TYPE(v) != T_ARRAY) {
+	v = rb_ary_to_ary(v);
+    }
+    if (RARRAY(v)->len == 0) {
+	return Qundef;
+    }
+    if (RARRAY(v)->len == 1) {
+	return RARRAY(v)->ptr[0];
+    }
+    return v;
+}
+
+static VALUE
 svalue_to_mvalue(v)
     VALUE v;
 {
-    if (NIL_P(v)) return rb_ary_new2(0);
+    if (v == Qnil || v == Qundef)
+	return rb_ary_new2(0);
     if (TYPE(v) == T_ARRAY) {
 	return v;
     }
@@ -2511,10 +2543,10 @@ rb_eval(self, n)
 
       case NODE_YIELD:
 	if (node->nd_stts) {
-	    result = avalue_to_svalue(rb_eval(self, node->nd_stts));
+	    result = avalue_to_yvalue(rb_eval(self, node->nd_stts));
 	}
 	else {
-	    result = Qnil;
+	    result = Qundef;	/* no arg */
 	}
 	result = rb_yield_0(result, 0, 0, 0);
 	break;
@@ -3745,21 +3777,21 @@ rb_yield_0(val, self, klass, pcall)
 			     RARRAY(val)->len);
 		}
 	    }
+	    else if (nd_type(block->var) == NODE_MASGN) {
+		massign(self, block->var, val, pcall);
+	    }
 	    else {
-		if (nd_type(block->var) == NODE_MASGN) {
-		    massign(self, block->var, val, pcall);
+		if (pcall) {
+		    val = avalue_to_yvalue(val);
 		}
-		else {
-		    if (pcall) val = avalue_to_svalue(val);
-		    assign(self, block->var, val, pcall);
-		}
+		assign(self, block->var, val, pcall);
 	    }
 	}
 	POP_TAG();
 	if (state) goto pop_state;
     }
     else if (pcall) {
-	val = avalue_to_svalue(val);
+	val = avalue_to_yvalue(val);
     }
 
     PUSH_ITER(block->iter);
@@ -3849,7 +3881,7 @@ static VALUE
 rb_f_loop()
 {
     for (;;) {
-	rb_yield_0(Qnil, 0, 0, 0);
+	rb_yield_0(Qundef, 0, 0, 0);
 	CHECK_INTS;
     }
     return Qnil;		/* dummy */
@@ -3912,7 +3944,10 @@ assign(self, lhs, val, pcall)
     VALUE val;
     int pcall;
 {
-    if (val == Qundef) val = Qnil;
+    if (val == Qundef) {
+	rb_warning("assigning void value");
+	val = Qnil;
+    }
     switch (nd_type(lhs)) {
       case NODE_GASGN:
 	rb_gvar_set(lhs->nd_entry, val);
@@ -5623,6 +5658,7 @@ set_method_visibility(self, argc, argv, ex)
     for (i=0; i<argc; i++) {
 	rb_export_method(self, rb_to_id(argv[i]), ex);
     }
+    rb_clear_cache_by_class(self);
 }
 
 static VALUE
@@ -6470,7 +6506,7 @@ proc_invoke(proc, args, pcall, self)
     ruby_frame->iter = ITER_CUR;
 
     if (!pcall) {
-	args = avalue_to_svalue(args);
+	args = avalue_to_yvalue(args);
     }
     PUSH_TAG(PROT_NONE);
     state = EXEC_TAG();

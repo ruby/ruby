@@ -4,9 +4,23 @@ Tue May 14 14:49:05 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* missing/strftime.c (timezone): it should take no argument on Cygwin.
 
+Tue May 14 03:07:35 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_clear_cache_by_class): new function.
+
+	* eval.c (set_method_visibility): should have clear cache forq
+	  updated visibility.
+
 Mon May 13 14:38:33 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* djgpp/config.hin, djgpp/config.sed: catch up with the latest change.
+
+Mon May 13 01:59:55 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (flo_to_s): default format precision to be "%.16g".
+
+	* util.c (ruby_strtod): use own strtod(3) implementation to avoid
+	  locale hell.  Due to this change "0xff".to_f no longer returns 255.0
 
 Sun May 12 03:01:08 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
@@ -26,6 +40,16 @@ Sat May 11 10:52:09 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* dir.c (glob_helper): remove escaping backslashes.
 
+Sat May 11 02:46:43 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (avalue_to_yvalue): new function to distinguish yvalue
+	  (no-arg == Qundef) from svalue (no-arg == Qnil).
+
+	* eval.c (rb_yield_0): use avalue_to_yvalue().
+
+	* eval.c (assign): warn if val == Qundef where it means rhs is
+	  void (e.g. yield without value or call without argument).
+
 Fri May 10 19:00:47 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* parse.y (here_document): preserve line number begins here
@@ -37,6 +61,11 @@ Fri May 10 01:55:44 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	  the thread.
 
 	* eval.c (rb_thread_join_m): new. and added optional argument.
+
+Wed May  8 23:48:40 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (value_expr): need not to warn for WHILE and UNTIL,
+	  since they can have return value (via valued break).
 
 Tue May  7 17:13:40 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 

@@ -265,7 +265,7 @@ range_step(argc, argv, range)
     }
 
     if (FIXNUM_P(b) && FIXNUM_P(e)) { /* fixnums are special */
-	long beg, end = FIX2LONG(e), s = NUM2LONG(step);
+	long end = FIX2LONG(e), s = NUM2LONG(step);
 	long i;
 	if (s <= 0) {
 	    rb_raise(rb_eArgError, "step can't be <= 0");

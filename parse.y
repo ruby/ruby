@@ -4597,8 +4597,6 @@ value_expr(node)
     if (node == 0) return Qtrue;
 
     switch (nd_type(node)) {
-      case NODE_WHILE:
-      case NODE_UNTIL:
       case NODE_CLASS:
       case NODE_MODULE:
       case NODE_DEFN:
@@ -4612,6 +4610,7 @@ value_expr(node)
       case NODE_REDO:
       case NODE_RETRY:
 	yyerror("void value expression");
+	/* or "control never reach"? */
 	return Qfalse;
 
       case NODE_BLOCK:

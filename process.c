@@ -726,7 +726,7 @@ rb_f_fork(obj)
 	if (rb_block_given_p()) {
 	    int status;
 
-	    rb_protect(rb_yield, Qnil, &status);
+	    rb_protect(rb_yield, Qundef, &status);
 	    ruby_stop(status);
 	}
 	return Qnil;

@@ -126,6 +126,9 @@
 (defvar ruby-indent-level 2
   "*Indentation of ruby statements.")
 
+(defvar ruby-deep-arglist t
+  "*Deep indent argument lists when non-nil.")
+
 (eval-when-compile (require 'cl))
 (defun ruby-imenu-create-index ()
   (let ((index-alist '())
@@ -366,18 +369,18 @@ The variable ruby-indent-level controls the amount of indentation.
 		(forward-line 1)
 		(goto-char (point))
 		)
-	       ((looking-at "(")
+	       ((and (looking-at "(") ruby-deep-arglist)
 		(setq nest (cons (cons (char-after (point)) pnt) nest))
 		(setq pcol (cons (cons pnt depth) pcol))
 		(setq depth 0)
 		(goto-char pnt)
 		)
-	       ((looking-at "[\\[{]")
+	       ((looking-at "[\\[{(]")
 		(setq nest (cons (cons (char-after (point)) pnt) nest))
 		(setq depth (1+ depth))
 		(goto-char pnt)
 		)
-	       ((looking-at ")")
+	       ((and (looking-at ")") ruby-deep-arglist)
 		(setq nest (cdr nest))
 		(setq depth (cdr (car pcol)))
 		(setq pcol (cdr pcol))
@@ -478,7 +481,7 @@ The variable ruby-indent-level controls the amount of indentation.
 	  (setq indent nil))		;  do nothing
 	 ((car (nth 1 state))		; in paren
 	  (goto-char (cdr (nth 1 state)))
-	  (if (eq (car (nth 1 state)) ?\( )
+	  (if (and (eq (car (nth 1 state)) ?\( ) ruby-deep-arglist)
 	      (let ((column (current-column))
 		    (s (ruby-parse-region (point) indent-point)))
 		(cond

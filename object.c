@@ -14,6 +14,7 @@
 
 #include "ruby.h"
 #include "st.h"
+#include "util.h"
 #include <stdio.h>
 #include <errno.h>
 #include <ctype.h>
@@ -990,7 +991,7 @@ rb_cstr_to_dbl(p, badcheck)
     d = strtod(p, &end);
     if (p == end) {
 	if (badcheck) {
-      bad:
+	  bad:
 	    rb_invalid_str(q, "Float()");
 	}
 	return d;

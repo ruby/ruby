@@ -10,9 +10,10 @@
 
 **********************************************************************/
 
+#include "ruby.h"
+
 #include <math.h>
 #include <ctype.h>
-#include "ruby.h"
 
 VALUE rb_cBignum;
 

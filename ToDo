@@ -95,7 +95,7 @@ Standard Libraries
 * new user-defined marshal scheme. _dump(dumper), _load(restorer)
 * library to load per-user profile seeking .ruby_profile or ruby.ini file.
 * warning framework (warn, warning for Ruby level)
-* marshal should not depend on sprintf/strtod (works bad with locale).
+* marshal should not depend on sprintf (works bad with locale).
 * ternary arg pow: a.pow(b,c) == a**b%c
 * new caller(), e.g. call_stack; needs better name.
 * remove dependency on MAXPATHLEN.
