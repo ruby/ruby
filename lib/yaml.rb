@@ -148,7 +148,7 @@ module YAML
 	end
 
     #
-    # Method to extract colon-seperated type and class, returning
+    # Method to extract colon-separated type and class, returning
     # the type and the constant of the class
     #
     def YAML.read_type_class( type, obj_class )

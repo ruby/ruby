@@ -158,7 +158,7 @@ ThWait = ThreadsWait
 
 
 # Documentation comments:
-#  - Source of doumentation is evenly split between Nutshell, existing
+#  - Source of documentation is evenly split between Nutshell, existing
 #    comments, and my own rephrasing.
 #  - I'm not particularly confident that the comments are all exactly correct.
 #  - The history, etc., up the top appears in the RDoc output.  Perhaps it would

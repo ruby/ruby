@@ -748,7 +748,7 @@ class TC_Set < Test::Unit::TestCase
     assert_same(orig_set1, set1)
     assert_equal(set3, set1)
 
-    # test3; multiple occurences of a set in an set
+    # test3; multiple occurrences of a set in an set
     set1 = Set[1, 2]
     set2 = Set[set1, Set[set1, 4], 3]
 
@@ -767,7 +767,7 @@ class TC_Set < Test::Unit::TestCase
       set1.flatten!
     }
 
-    # test5; miscellaneus
+    # test5; miscellaneous
     empty = Set[]
     set =  Set[Set[empty, "a"],Set[empty, "b"]]
 

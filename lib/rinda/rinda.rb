@@ -1,5 +1,5 @@
 #
-# rinda.rb: A Ruby implementation of the Linda distibuted computing paradigm.
+# rinda.rb: A Ruby implementation of the Linda distributed computing paradigm.
 #
 # <i>Introduction to Linda/rinda?</i>
 #

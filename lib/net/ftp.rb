@@ -577,7 +577,7 @@ module Net # :nodoc:
     end
 
     #
-    # Tranfers +localfile+ to the server in whatever mode the session is set
+    # Transfers +localfile+ to the server in whatever mode the session is set
     # (text or binary).  See #puttextfile and #putbinaryfile.
     #
     def put(localfile, remotefile = File.basename(localfile),

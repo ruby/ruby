@@ -195,7 +195,7 @@ module MonitorMixin
   alias try_mon_enter mon_try_enter
 
   #
-  # Enters exlusive section.
+  # Enters exclusive section.
   #
   def mon_enter
     Thread.critical = true

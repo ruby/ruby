@@ -21,11 +21,11 @@
 #
 #  : timout
 #
-#    The time in seconds to wait for block teminatation.   
+#    The time in seconds to wait for block termination.   
 #
 #  : [exception]
 #
-#    The exception classs to be raised on timeout.
+#    The exception class to be raised on timeout.
 #
 #=end
 
