@@ -553,7 +553,7 @@ sock_addrinfo(host, port, socktype, flags)
     struct addrinfo hints, *hintsp, *res;
     char *hostp, *portp;
     int error;
-    char hbuf[1024], pbuf[16];
+    char hbuf[1024], pbuf[32];
 
     if (NIL_P(host)) {
 	hostp = NULL;
@@ -569,7 +569,7 @@ sock_addrinfo(host, port, socktype, flags)
 
 	SafeStringValue(host);
 	name = RSTRING(host)->ptr;
-	if (*name == 0 || (name[0] == '<' && strcmp(name, "<any>") == 0)) {
+	if (!name || *name == 0 || (name[0] == '<' && strcmp(name, "<any>") == 0)) {
 	    mkinetaddr(INADDR_ANY, hbuf, sizeof(hbuf));
 	}
 	else if (name[0] == '<' && strcmp(name, "<broadcast>") == 0) {

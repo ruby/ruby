@@ -1,3 +1,8 @@
+Tue May 27 20:07:52 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* ext/socket/socket.c (sock_addrinfo): get rid of SEGV at NULL ptr
+	  String.  increase buffer size for 64bit platforms.
+
 Mon May 26 21:39:46 2003  MoonWolf  <moonwolf@moonwolf.com>
 
 	* lib/mkmf.rb, lib/optparse.rb, lib/tracer.rb: use Method#to_block
