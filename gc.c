@@ -138,11 +138,12 @@ ruby_xrealloc(ptr, size)
     if (!mem) {
 	rb_gc();
 	RUBY_CRITICAL(mem = realloc(ptr, size));
-	if (!mem)
+	if (!mem) {
 	    if (size >= 50 * 1024 * 1024) {
 		rb_raise(rb_eNoMemError, "tried to re-allocate too big memory");
 	    }
 	    mem_error("failed to allocate memory(realloc)");
+	}
     }
 
     return mem;

@@ -1,3 +1,9 @@
+Sat Jul 21 00:19:54 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* gc.c (ruby_xrealloc): fix a dangling bug which led memory
+	  reallocation to fail even though the second try after a GC
+	  succeeds.
+
 Fri Jul 20 22:35:23 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
 
 	* win32/config.h.in: merge from 1.7: add SIZEOF___INT64 definition.
