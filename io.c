@@ -787,6 +787,7 @@ read_all(fptr, siz, str)
 	str = rb_tainted_str_new(0, siz);
     }
     else {
+	StringValue(str);
 	rb_str_resize(str, siz);
     }
     for (;;) {
@@ -1027,8 +1028,8 @@ rb_io_getline(rs, fptr)
 
     rb_io_check_readable(fptr);
     if (NIL_P(rs)) {
-	if (feof(fptr->f)) return Qnil;
 	str = read_all(fptr, 0, Qnil);
+	if (RSTRING(str)->len == 0) return Qnil;
     }
     else if (rs == rb_default_rs) {
 	return rb_io_getline_fast(fptr, '\n');
@@ -2992,23 +2993,22 @@ next_argv()
 	}
 	else {
 	    next_p = -1;
-	    current_file = rb_stdin;
-	    filename = rb_str_new2("-");
 	}
 	init_p = 1;
 	gets_lineno = 0;
     }
 
-  retry:
     if (next_p == 1) {
 	next_p = 0;
+      retry:
 	if (RARRAY(rb_argv)->len > 0) {
 	    filename = rb_ary_shift(rb_argv);
 	    fn = StringValuePtr(filename);
 	    if (strlen(fn) == 1 && fn[0] == '-') {
 		current_file = rb_stdin;
 		if (ruby_inplace_mode) {
-		    rb_warn("Can't do inplace edit for stdio");
+		    rb_warn("Can't do inplace edit for stdio; skipping");
+		    goto retry;
 		}
 	    }
 	    else {
@@ -3079,10 +3079,15 @@ next_argv()
 	}
 	else {
 	    init_p = 0;
-	    if (ruby_inplace_mode) {
-		rb_stdout = orig_stdout;
-	    }
 	    return Qfalse;
+	}
+    }
+    else if (next_p == -1) {
+	current_file = rb_stdin;
+	filename = rb_str_new2("-");
+	if (ruby_inplace_mode) {
+	    rb_warn("Can't do inplace edit for stdio");
+	    rb_stdout = orig_stdout;
 	}
     }
     return Qtrue;
@@ -3828,11 +3833,22 @@ argf_read(argc, argv)
     VALUE tmp, str;
     long len = 0;
 
-    if (argc == 1) len = NUM2LONG(argv[0]);
+    if (argc == 1 && !NIL_P(argv[0]))
+	len = NUM2LONG(argv[0]);
     str = Qnil;
 
   retry:
-    if (!next_argv()) return str;
+    if (!next_argv()) {
+	if (NIL_P(str)) {
+	    VALUE length;
+
+	    rb_scan_args(argc, argv, "02", &length, &str);
+	    if (NIL_P(str)) return rb_str_new(0,0);
+	    StringValue(str);
+	    rb_str_resize(str,0);
+	}
+	return str;
+    }
     if (TYPE(current_file) != T_FILE) {
 	tmp = argf_forward();
     }

@@ -1,10 +1,18 @@
+Sat Dec 27 00:44:00 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (next_argv): warn always for stdin on inplace edit mode.
+
+	* io.c (read_all): need to check string value.
+
+	* io.c (argf_read): allow ARGF.read(nil).  [ruby-dev:22433]
+
 Fri Dec 26 23:02:09 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_f_backquote): need not to check nil result.
 	  [ruby-core:02078]
 
-	* io.c (rb_io_getline): should return nil on eof, even when nil rs is
-	  specified. [ruby-core:02077]
+	* io.c (rb_io_getline): should return nil when read_all gives
+	  empty string, even when nil rs is specified. [ruby-core:02077]
 
 Fri Dec 26 18:33:54 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
