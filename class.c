@@ -63,6 +63,9 @@ rb_mod_init_copy(clone, orig)
     VALUE clone, orig;
 {
     rb_obj_init_copy(clone, orig);
+    if (!FL_TEST(CLASS_OF(clone), FL_SINGLETON)) {
+	RBASIC(clone)->klass = rb_singleton_class_clone(orig);
+    }
     RCLASS(clone)->super = RCLASS(orig)->super;
     if (RCLASS(orig)->iv_tbl) {
 	ID id;

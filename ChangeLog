@@ -1,8 +1,13 @@
+Mon Dec 22 21:15:29 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (rb_mod_init_copy): always copy singleton class.
+	  [ruby-dev:22325]
+
 Mon Dec 22 20:44:36 2003  akira yamada  <akira@ruby-lang.org>
 
 	* lib/uri/generic.rb (URI::Generic#route_from): accepts urls which
 	  has no host-part.
-	
+
 	* test/uri/test_generic.rb (TestGeneric::test_route): added a test.
 
 Mon Dec 22 20:38:44 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
