@@ -47,12 +47,14 @@
 #
 # There are some `low level' methods, which does not accept any option:
 #
-#   uptodate?(file, cmp_list)
 #   copy_entry(src, dest, preserve = false, dereference = false)
 #   copy_file(src, dest, preserve = false, dereference = true)
 #   copy_stream(srcstream, deststream)
+#   remove_file(path, force = false)
+#   remove_dir(path, force = false)
 #   compare_file(path_a, path_b)
 #   compare_stream(stream_a, stream_b)
+#   uptodate?(file, cmp_list)
 #
 # == module FileUtils::Verbose
 # 
@@ -434,18 +436,16 @@ module FileUtils
 
   #
   # Copies stream +src+ to +dest+.
-  # Both of +src+ and +dest+ must be a IO.
+  # +src+ must be respond to #read(n) and
+  # +dest+ must be respond to #write(str).
   #
   def copy_stream(src, dest)
     fu_copy_stream0 src, dest, fu_stream_blksize(src, dest)
   end
 
   def fu_copy_stream0(src, dest, blksize)   #:nodoc:
-    begin
-      while true
-        dest.syswrite src.sysread(blksize)
-      end
-    rescue EOFError
+    while s = src.read(blksize)
+      dest.write s
     end
   end
   private :fu_copy_stream0
@@ -530,7 +530,11 @@ module FileUtils
     end
 
     def stat(path)
-      @stat ||= ::File.stat(path)
+      if @dereference
+        @stat ||= ::File.stat(path)
+      else
+        @stat ||= ::File.lstat(path)
+      end
     end
 
     def chmod(mode, path)

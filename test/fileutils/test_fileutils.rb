@@ -141,6 +141,16 @@ class TestFileUtils
     File.utime t-4, t-4, 'data/newer'
   end
 
+  def each_sample_file
+    TARGETS.each do |srcpath|
+      yield srcpath, "tmp/#{File.basename(srcpath)}"
+    end
+  end
+
+  #
+  # Test Cases
+  #
+
   def test_pwd
     assert_equal Dir.pwd, pwd()
 
@@ -176,24 +186,19 @@ end
   end
 
   def test_cp
-    TARGETS.each do |fname|
-      cp fname, 'tmp/cp'
-      assert_same_file fname, 'tmp/cp'
+    each_sample_file do |srcpath, destpath|
+      cp srcpath, destpath
+      assert_same_file srcpath, destpath
 
-      cp fname, 'tmp'
-      assert_same_file fname, 'tmp/' + File.basename(fname)
+      cp srcpath, File.dirname(destpath)
+      assert_same_file srcpath, destpath
 
-      cp fname, 'tmp/'
-      assert_same_file fname, 'tmp/' + File.basename(fname)
+      cp srcpath, File.dirname(destpath) + '/'
+      assert_same_file srcpath, destpath
 
-      cp fname, 'tmp/preserve', :preserve => true
-      assert_same_file fname, 'tmp/preserve'
-      a = File.stat(fname)
-      b = File.stat('tmp/preserve')
-      assert_equal a.mode, b.mode
-      assert_equal a.mtime, b.mtime
-      assert_equal a.uid, b.uid
-      assert_equal a.gid, b.gid
+      cp srcpath, destpath, :preserve => true
+      assert_same_file srcpath, destpath
+      assert_same_entry srcpath, destpath
     end
 
     # src==dest (1) same path
@@ -673,25 +678,6 @@ end
     }
   end
 
-  def test_uptodate?
-    Dir.chdir('data') {
-      assert(   uptodate?('newest', %w(old newer notexist)) )
-      assert( ! uptodate?('newer', %w(old newest notexist)) )
-      assert( ! uptodate?('notexist', %w(old newest newer)) )
-    }
-
-    # pathname
-    touch 'tmp/a'
-    touch 'tmp/b'
-    touch 'tmp/c'
-    assert_nothing_raised {
-      uptodate? Pathname.new('tmp/a'), ['tmp/b', 'tmp/c']
-      uptodate? 'tmp/a', [Pathname.new('tmp/b'), 'tmp/c']
-      uptodate? 'tmp/a', ['tmp/b', Pathname.new('tmp/c')]
-      uptodate? Pathname.new('tmp/a'), [Pathname.new('tmp/b'), Pathname.new('tmp/c')]
-    }
-  end
-
   def test_install
     File.open('tmp/aaa', 'w') {|f| f.puts 'aaa' }
     File.open('tmp/bbb', 'w') {|f| f.puts 'bbb' }
@@ -759,6 +745,99 @@ end
 
   def test_chown_R
     # FIXME
+  end
+
+  def test_copy_entry
+    each_sample_file do |srcpath, destpath|
+      copy_entry srcpath, destpath
+      assert_same_file srcpath, destpath
+      assert_same_entry srcpath, destpath
+    end
+if have_symlink?
+    File.symlink 'somewhere', 'tmp/symsrc'
+    copy_entry 'tmp/symsrc', 'tmp/symdest'
+    assert_equal File.lstat('tmp/symsrc').mode, File.lstat('tmp/symdest').mode
+end
+  end
+
+  def test_copy_file
+    each_sample_file do |srcpath, destpath|
+      copy_file srcpath, destpath
+      assert_same_file srcpath, destpath
+    end
+  end
+
+  def test_copy_stream
+    # IO
+    each_sample_file do |srcpath, destpath|
+      File.open(srcpath) {|src|
+        File.open(destpath, 'w') {|dest|
+          copy_stream src, dest
+        }
+      }
+      assert_same_file srcpath, destpath
+    end
+
+    # duck typing test  [ruby-dev:25369]
+    rm_rf 'tmp'
+    Dir.mkdir 'tmp'
+    each_sample_file do |srcpath, destpath|
+      File.open(srcpath) {|src|
+        File.open(destpath, 'w') {|dest|
+          copy_stream Stream.new(src), Stream.new(dest)
+        }
+      }
+      assert_same_file srcpath, destpath
+    end
+  end
+
+  def test_remove_file
+    # FIXME
+  end
+
+  def test_remove_dir
+    # FIXME
+  end
+
+  def test_compare_file
+    # FIXME
+  end
+
+  def test_compare_stream
+    # FIXME
+  end
+
+  class Stream
+    def initialize(f)
+      @f = f
+    end
+
+    def read(n)
+      @f.read(n)
+    end
+
+    def write(str)
+      @f.write str
+    end
+  end
+
+  def test_uptodate?
+    Dir.chdir('data') {
+      assert(   uptodate?('newest', %w(old newer notexist)) )
+      assert( ! uptodate?('newer', %w(old newest notexist)) )
+      assert( ! uptodate?('notexist', %w(old newest newer)) )
+    }
+
+    # pathname
+    touch 'tmp/a'
+    touch 'tmp/b'
+    touch 'tmp/c'
+    assert_nothing_raised {
+      uptodate? Pathname.new('tmp/a'), ['tmp/b', 'tmp/c']
+      uptodate? 'tmp/a', [Pathname.new('tmp/b'), 'tmp/c']
+      uptodate? 'tmp/a', ['tmp/b', Pathname.new('tmp/c')]
+      uptodate? Pathname.new('tmp/a'), [Pathname.new('tmp/b'), Pathname.new('tmp/c')]
+    }
   end
 
 end

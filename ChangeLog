@@ -1,3 +1,14 @@
+Sat Jan  1 16:21:29 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb (copy_stream): use read/write instead of
+	  sysread/syswrite, which allows duck typing. [ruby-dev:25369]
+
+	* lib/fileutils.rb (copy_stream): does NOT support nonblocking IO.
+	  [ruby-dev:25370]
+
+	* test/fileutils/test_fileutils.rb: test copy_entry, copy_file,
+	  copy_stream.
+
 Sat Jan  1 04:20:23 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_ns_spki.c (ossl_spki_set_challenge): should call 
