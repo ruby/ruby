@@ -29,7 +29,7 @@
 #endif
 
 #include <stdio.h>
-#if defined(HAVE_UCONTEXT_H) && (defined(__ia64__) || defined(HAVE_NATIVETHREAD)) && !defined(__stub_getcontext)
+#if defined(HAVE_GETCONTEXT) && defined(HAVE_SETCONTEXT)
 #include <ucontext.h>
 #define USE_CONTEXT
 #else

@@ -1,3 +1,9 @@
+Fri Dec 26 18:33:54 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: check if getcontext and setcontext are available.
+
+	* eval.c: use presence of getcontext/setcontext.
+
 Fri Dec 26 16:40:53 2003  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pathname.rb (PathnameTest#test_plus): add 2 assertions.

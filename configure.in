@@ -685,46 +685,37 @@ int main()
 AC_DEFINE_UNQUOTED(STACK_GROW_DIRECTION, $rb_cv_stack_grow_dir)
 
 if test "$enable_pthread" = "yes"; then
-   AC_CHECK_LIB(pthread, pthread_kill, 
-                rb_with_pthread=yes, rb_with_pthread=no)
-   if test "$rb_with_pthread" = "yes"; then
-      LIBS="-lpthread $LIBS"
-      AC_DEFINE(_REENTRANT)
-      AC_DEFINE(_THREAD_SAFE)
-      AC_DEFINE(HAVE_LIBPTHREAD)
-   else
-      AC_CHECK_LIB(pthreads, pthread_kill, 
-                   rb_with_pthread=yes, rb_with_pthread=no)
-      if test "$rb_with_pthread" = "yes"; then
-         LIBS="-lpthreads $LIBS"
-	 AC_DEFINE(_REENTRANT)
-	 AC_DEFINE(_THREAD_SAFE)
-	 AC_DEFINE(HAVE_LIBPTHREAD)
-      else
-         AC_CHECK_LIB(c, pthread_kill, 
-                      rb_with_pthread=yes, rb_with_pthread=no)
-         if test "$rb_with_pthread" = "yes"; then
-            AC_DEFINE(_REENTRANT)
-	    AC_DEFINE(_THREAD_SAFE)
-	    AC_DEFINE(HAVE_LIBPTHREAD)
-         else
-	    AC_CHECK_LIB(c_r, pthread_kill, 
-                         rb_with_pthread=yes, rb_with_pthread=no)
-	    if test "$rb_with_pthread" = "yes"; then
-	       AC_DEFINE(_REENTRANT)
-	       AC_DEFINE(_THREAD_SAFE)
-	       AC_DEFINE(HAVE_LIBPTHREAD)
-	       MAINLIBS="-pthread $MAINLIBS"
-	    else
-	       AC_MSG_WARN("Don't know how to find pthread library on your system -- thread support disabled")
-	    fi
-         fi
-      fi
-   fi
-   AC_CHECK_FUNC(nanosleep)
-   if test "$ac_cv_func_nanosleep" = "no"; then
-       AC_CHECK_LIB(rt, nanosleep, AC_DEFINE(HAVE_NANOSLEEP))
-   fi
+    for pthread_lib in pthread pthreads c c_r; do
+ 	AC_CHECK_LIB($pthread_lib, pthread_kill,
+		     rb_with_pthread=yes, rb_with_pthread=no)
+	if test "$rb_with_pthread" = "yes"; then break; fi
+    done
+    if test $rb_with_pthread = yes; then
+	AC_DEFINE(_REENTRANT)
+	AC_DEFINE(_THREAD_SAFE)
+	AC_DEFINE(HAVE_LIBPTHREAD)
+	case $pthread_lib in
+	c)
+	    ;;
+	c_r)
+	    MAINLIBS="-pthread $MAINLIBS"
+	    ;;
+	*)
+      	    LIBS="-l$pthread_lib $LIBS"
+	    ;;
+	esac
+    else
+	AC_MSG_WARN("Don't know how to find pthread library on your system -- thread support disabled")
+    fi
+    AC_CHECK_FUNC(nanosleep)
+    if test "$ac_cv_func_nanosleep" = "no"; then
+	AC_CHECK_LIB(rt, nanosleep, AC_DEFINE(HAVE_NANOSLEEP))
+    fi
+fi
+if test $ac_cv_header_ucontext_h = yes; then
+    if test $target_cpu = ia64 -o $rb_with_pthread = yes; then
+	AC_CHECK_FUNCS(getcontext setcontext)
+    fi
 fi
 
 dnl default value for $KANJI
