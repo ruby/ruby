@@ -259,7 +259,7 @@ SRC
 end
 
 def try_constant(const, headers = nil, opt = "")
-  if true # CROSS_COMPILING
+  if CROSS_COMPILING
     unless try_compile(<<"SRC", opt)
 #{COMMON_HEADERS}
 #{cpp_include(headers)}
