@@ -1,3 +1,7 @@
+Sun Mar 23 19:54:53 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* gc.c (rb_gc_call_finalizer_at_exit): use free() if dfree is -1.
+
 Sat Mar 22 15:50:29 2003  Tanaka Akira  <akr@m17n.org>
 
         * time.c (make_time_t): try search_time_t if mktime/timegm is failed.
