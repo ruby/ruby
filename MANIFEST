@@ -802,6 +802,11 @@ test/inlinetest.rb
 test/logger/test_logger.rb
 test/monitor/test_monitor.rb
 test/net/http/test_httpheader.rb
+test/openssl/test_x509cert.rb
+test/openssl/test_x509crl.rb
+test/openssl/test_x509name.rb
+test/openssl/test_x509req.rb
+test/openssl/utils.rb
 test/optparse/test_noarg.rb
 test/optparse/test_optarg.rb
 test/optparse/test_optparse.rb
