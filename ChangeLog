@@ -1,3 +1,8 @@
+Tue Oct 21 15:57:11 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit/collector/dir.rb (Test::Unit::Collector::Dir#collect_file):
+	  prepend the directory of target file to the load path.
+
 Tue Oct 21 15:08:53 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* win32/win32.c (do_spawn, do_aspawn): should wait child process even
