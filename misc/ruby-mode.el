@@ -26,7 +26,7 @@
     )
 
 (defconst ruby-modifier-re
-  "if\\|unless\\|while\\|until"
+  "if\\|unless\\|while\\|until\\|rescue"
   )
 
 (defconst ruby-block-mid-re
@@ -856,7 +856,7 @@ An end of a defun is found by moving forward from the beginning of one."
      ;; variables
      '("\\(\\$\\([^a-zA-Z0-9 \n]\\|[0-9]\\)\\)\\W"
        1 font-lock-variable-name-face)
-     '("\\(\\$\\|@\\|@@\\)\\(\\w\\(\\w\\|_\\)*\\|#{\\)"
+     '("\\(\\$\\|@\\|@@\\)\\(\\w\\|_\\)+"
        0 font-lock-variable-name-face)
      ;; embedded document
      '(ruby-font-lock-docs
@@ -873,7 +873,7 @@ An end of a defun is found by moving forward from the beginning of one."
      '("\\(^\\|[^:]\\)\\(:\\([-+/%&|^~`]\\|\\*\\*?\\|<\\(<\\|=>?\\)?\\|>[>=]?\\|===?\\|=~\\|\\[\\]\\|\\(\\w\\|_\\)+\\([!?=]\\|\\b\\)\\|#{[^}\n\\\\]*\\(\\\\.[^}\n\\\\]*\\)*}\\)\\)"
        2 font-lock-reference-face)
      ;; expression expansion
-     '("#{[^}\n\\\\]*\\(\\\\.[^}\n\\\\]*\\)*}" 
+     '("#\\({[^}\n\\\\]*\\(\\\\.[^}\n\\\\]*\\)*}\\|\\(\\$\\|@\\|@@\\)\\(\\w\\|_\\)+\\)"
        0 font-lock-variable-name-face t))
     "*Additional expressions to highlight in ruby mode."))
 

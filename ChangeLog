@@ -26,6 +26,11 @@ Sun Feb 17 18:10:09 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* class.c (rb_define_class_under): ditto.
 
+Thu Feb 16 02:11:08 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* misc/ruby-mode.el (ruby-font-lock-keywords): fontify
+	  instance/class/global variables start with '_'.
+
 Fri Feb 15 14:40:38 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_eval): replace rb_cvar_declare() by rb_cvar_set().
