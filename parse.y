@@ -4501,14 +4501,16 @@ list_append(list, item)
     NODE *last;
 
     if (list == 0) return NEW_LIST(item);
-
-    last = list;
-    while (last->nd_next) {
-	last = last->nd_next;
+    if (list->nd_next) {
+	last = list->nd_next->nd_end;
+    }
+    else {
+	last = list;
     }
 
-    last->nd_next = NEW_LIST(item);
     list->nd_alen += 1;
+    last->nd_next = NEW_LIST(item);
+    list->nd_next->nd_end = last->nd_next;
     return list;
 }
 
@@ -4519,13 +4521,21 @@ list_concat(head, tail)
 {
     NODE *last;
 
-    last = head;
-    while (last->nd_next) {
-	last = last->nd_next;
+    if (head->nd_next) {
+	last = head->nd_next->nd_end;
+    }
+    else {
+	last = head;
     }
 
-    last->nd_next = tail;
     head->nd_alen += tail->nd_alen;
+    last->nd_next = tail;
+    if (tail->nd_next) {
+	head->nd_next->nd_end = tail->nd_next->nd_end;
+    }
+    else {
+	head->nd_next->nd_end = tail;
+    }
 
     return head;
 }
@@ -4543,9 +4553,7 @@ literal_concat(head, tail)
     htype = nd_type(head);
     if (htype == NODE_EVSTR) {
 	NODE *node = NEW_DSTR(rb_str_new(0, 0));
-	node->nd_next = NEW_LIST(head);
-	node->nd_alen += 1;
-	head = node;
+	head = list_append(node, head);
     }
     switch (nd_type(tail)) {
       case NODE_STR:

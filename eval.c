@@ -186,12 +186,14 @@ struct cache_entry {		/* method hash table. */
 };
 
 static struct cache_entry cache[CACHE_SIZE];
+static int ruby_running = 0;
 
 void
 rb_clear_cache()
 {
    struct cache_entry *ent, *end;
 
+    if (!ruby_running) return;
     ent = cache; end = ent + CACHE_SIZE;
     while (ent < end) {
 	ent->mid = 0;
@@ -205,6 +207,7 @@ rb_clear_cache_by_id(id)
 {
     struct cache_entry *ent, *end;
 
+    if (!ruby_running) return;
     ent = cache; end = ent + CACHE_SIZE;
     while (ent < end) {
 	if (ent->mid == id) {
@@ -220,6 +223,7 @@ rb_clear_cache_by_class(klass)
 {
     struct cache_entry *ent, *end;
 
+    if (!ruby_running) return;
     ent = cache; end = ent + CACHE_SIZE;
     while (ent < end) {
 	if (ent->origin == klass) {
@@ -322,26 +326,40 @@ rb_get_method_body(klassp, idp, noexp)
 	return 0;
     }
 
-    /* store in cache */
-    ent = cache + EXPR1(klass, id);
-    ent->klass  = klass;
-    ent->noex   = body->nd_noex;
-    body = body->nd_body;
-    if (nd_type(body) == NODE_FBODY) {
-	ent->mid = id;
-	*klassp = body->nd_orig;
-	ent->origin = body->nd_orig;
-	*idp = ent->mid0 = body->nd_mid;
-	body = ent->method = body->nd_head;
+    if (ruby_running) {
+	/* store in cache */
+	ent = cache + EXPR1(klass, id);
+	ent->klass  = klass;
+	ent->noex   = body->nd_noex;
+	if (noexp) *noexp = body->nd_noex;
+	body = body->nd_body;
+	if (nd_type(body) == NODE_FBODY) {
+	    ent->mid = id;
+	    *klassp = body->nd_orig;
+	    ent->origin = body->nd_orig;
+	    *idp = ent->mid0 = body->nd_mid;
+	    body = ent->method = body->nd_head;
+	}
+	else {
+	    *klassp = origin;
+	    ent->origin = origin;
+	    ent->mid = ent->mid0 = id;
+	    ent->method = body;
+	}
     }
     else {
-	*klassp = origin;
-	ent->origin = origin;
-	ent->mid = ent->mid0 = id;
-	ent->method = body;
+	if (noexp) *noexp = body->nd_noex;
+	body = body->nd_body;
+	if (nd_type(body) == NODE_FBODY) {
+	    *klassp = body->nd_orig;
+	    *idp = body->nd_mid;
+	    body = body->nd_head;
+	}
+	else {
+	    *klassp = origin;
+	}
     }
 
-    if (noexp) *noexp = ent->noex;
     return body;
 }
 
@@ -1287,6 +1305,7 @@ ruby_exec()
     volatile NODE *tmp;
 
     Init_stack((void*)&tmp);
+    ruby_running = 1;
     PUSH_TAG(PROT_NONE);
     PUSH_ITER(ITER_NOT);
     /* default visibility is private at toplevel */
@@ -1311,6 +1330,7 @@ ruby_run()
 {
     int state;
     static int ex;
+
     if (ruby_nerrs > 0) exit(ruby_nerrs);
     state = ruby_exec();
     if (state && !ex) ex = state;
@@ -1796,14 +1816,14 @@ copy_node_scope(node, rval)
 # define TMP_ALLOC(n) ALLOCA_N(VALUE,n)
 #endif
 
-#define SETUP_ARGS(anode) do {\
+#define SETUP_ARGS0(anode,alen) do {\
     NODE *n = anode;\
     if (!n) {\
 	argc = 0;\
 	argv = 0;\
     }\
     else if (nd_type(n) == NODE_ARRAY) {\
-	argc=n->nd_alen;\
+	argc=alen;\
         if (argc > 0) {\
             int i;\
 	    n = anode;\
@@ -1827,6 +1847,8 @@ copy_node_scope(node, rval)
 	MEMCPY(argv, RARRAY(args)->ptr, VALUE, argc);\
     }\
 } while (0)
+
+#define SETUP_ARGS(anode) SETUP_ARGS0(anode, anode->nd_alen)
 
 #define BEGIN_CALLARGS do {\
     struct BLOCK *tmp_block = ruby_block;\
@@ -2854,7 +2876,7 @@ rb_eval(self, n)
 
 	    recv = rb_eval(self, node->nd_recv);
 	    rval = node->nd_args->nd_head;
-	    SETUP_ARGS(node->nd_args->nd_next);
+	    SETUP_ARGS0(node->nd_args->nd_next, node->nd_args->nd_alen - 1);
 	    val = rb_funcall2(recv, aref, argc-1, argv);
 	    switch (node->nd_mid) {
 	    case 0: /* OR */
@@ -9578,6 +9600,9 @@ rb_f_throw(argc, argv)
     return_value(value);
     rb_trap_restore_mask();
     JUMP_TAG(TAG_THROW);
+#ifndef __GNUC__
+    return Qnil; 		/* not reached */
+#endif
 }
 
 void

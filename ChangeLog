@@ -2,6 +2,14 @@ Tue Jan 14 01:21:32 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* io.c (next_argv): not always set binmode.
 
+Mon Jan 13 20:45:19 2003  Guy Decoux  <ts@moulon.inra.fr>
+
+	* parse.y (list_append): avoid O(n) search using node->nd_next->nd_end.
+
+	* parse.y (list_append): ditto.
+
+	* eval.c (rb_eval): NODE_ARRY nd_end adoption.
+
 Mon Jan 13 02:22:11 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/dl/lib/dl/win32.rb: elimitate unnecessary "A" adding.

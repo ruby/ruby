@@ -31,6 +31,7 @@ VALUE rb_cBignum;
 #define BIGUP(x) ((BDIGIT_DBL)(x) << BITSPERDIG)
 #define BIGDN(x) RSHIFT(x,BITSPERDIG)
 #define BIGLO(x) ((BDIGIT)((x) & (BIGRAD-1)))
+#define BDIGMAX ((BDIGIT)-1)
 
 static VALUE
 bignew_1(klass, len, sign)
