@@ -235,7 +235,7 @@ rb_struct_s_def(argc, argv, klass)
 	id = rb_to_id(RARRAY(rest)->ptr[i]);
 	RARRAY(rest)->ptr[i] = ID2SYM(id);
     }
-    if (TYPE(name) != T_STRING) {
+    if (!NIL_P(name) && TYPE(name) != T_STRING) {
 	id = rb_to_id(name);
 	rb_ary_unshift(rest, ID2SYM(id));
 	name = Qnil;

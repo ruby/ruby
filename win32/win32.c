@@ -11,6 +11,7 @@
  */
 
 #include "ruby.h"
+#include "rubysig.h"
 #include <fcntl.h>
 #include <process.h>
 #include <sys/stat.h>
@@ -1884,6 +1885,7 @@ myselect (int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
     fd_set file_rd;
     fd_set file_wr;
     int file_nfds;
+    int trap_immediate = rb_trap_immediate;
 
     if (!NtSocketsInitialized++) {
 	StartSockets();
@@ -1902,6 +1904,8 @@ myselect (int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 	if (wr) *wr = file_wr;
 	return file_nfds;
     }
+    if (trap_immediate)
+	TRAP_END;
     if ((r = select (nfds, rd, wr, ex, timeout)) == SOCKET_ERROR) {
 	errno = WSAGetLastError();
 	switch (errno) {
@@ -1910,6 +1914,8 @@ myselect (int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 	    break;
 	}
     }
+    if (trap_immediate)
+	TRAP_BEG;
     return r;
 }
 
@@ -1949,12 +1955,17 @@ SOCKET
 myaccept (SOCKET s, struct sockaddr *addr, int *addrlen)
 {
     SOCKET r;
+    int trap_immediate = rb_trap_immediate;
 
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
+    if (trap_immediate)
+	TRAP_END;
     if ((r = accept (TO_SOCKET(s), addr, addrlen)) == INVALID_SOCKET)
 	errno = WSAGetLastError();
+    if (trap_immediate)
+	TRAP_BEG;
     return r;
 }
 

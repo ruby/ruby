@@ -132,8 +132,9 @@ rb_io_check_closed(fptr)
     if (!fptr) {
 	rb_raise(rb_eIOError, "uninitialized stream");
     }
-    if (fptr->f == NULL && fptr->f2 == NULL)
+    if (!fptr->f && !fptr->f2) {
 	rb_raise(rb_eIOError, "closed stream");
+    }
 }
 
 void
@@ -980,10 +981,10 @@ static void
 fptr_finalize(fptr)
     OpenFile *fptr;
 {
-    if (fptr->f != NULL) {
+    if (fptr->f) {
 	fclose(fptr->f);
     }
-    if (fptr->f2 != NULL) {
+    if (fptr->f2) {
 	fclose(fptr->f2);
     }
 }
@@ -993,7 +994,7 @@ rb_io_fptr_finalize(fptr)
     OpenFile *fptr;
 {
     if (!fptr) return;
-    if (fptr->f == NULL && fptr->f2 == NULL) return;
+    if (!fptr->f && !fptr->f2) return;
 
     if (fptr->finalize) {
 	(*fptr->finalize)(fptr);
@@ -1001,11 +1002,11 @@ rb_io_fptr_finalize(fptr)
     else {
 	fptr_finalize(fptr);
     }
-    fptr->f = fptr->f2 = NULL;
+    fptr->f = fptr->f2 = 0;
 
     if (fptr->path) {
 	free(fptr->path);
-	fptr->path = NULL;
+	fptr->path = 0;
     }
 }
 
@@ -1016,7 +1017,7 @@ rb_io_fptr_close(fptr)
     int fd;
 
     if (!fptr) return;
-    if (fptr->f == NULL && fptr->f2 == NULL) return;
+    if (!fptr->f && !fptr->f2) return;
 
     fd = fileno(fptr->f);
     rb_io_fptr_finalize(fptr);
@@ -1295,7 +1296,7 @@ rb_io_flags_mode(flags)
 }
 
 static int
-rb_open(fname, flag, mode)
+rb_sysopen(fname, flag, mode)
     char *fname;
     int flag;
     unsigned int mode;
@@ -1323,12 +1324,12 @@ rb_fopen(fname, mode)
     FILE *file;
 
     file = fopen(fname, mode);
-    if (file == NULL) {
+    if (!file) {
 	if (errno == EMFILE || errno == ENFILE) {
 	    rb_gc();
 	    file = fopen(fname, mode);
 	}
-	if (file == NULL) {
+	if (!file) {
 	    rb_sys_fail(fname);
 	}
     }
@@ -1346,12 +1347,12 @@ rb_fdopen(fd, mode)
     FILE *file;
 
     file = fdopen(fd, mode);
-    if (file == NULL) {
+    if (!file) {
 	if (errno == EMFILE || errno == ENFILE) {
 	    rb_gc();
 	    file = fdopen(fd, mode);
 	}
-	if (file == NULL) {
+	if (!file) {
 	    rb_sys_fail(0);
 	}
     }
@@ -1395,7 +1396,7 @@ rb_file_sysopen_internal(io, fname, flags, mode)
 
     MakeOpenFile(io, fptr);
 
-    fd = rb_open(fname, flags, mode);
+    fd = rb_sysopen(fname, flags, mode);
     m = rb_io_flags_mode(flags);
     fptr->mode = rb_io_mode_flags2(flags);
     fptr->f = rb_fdopen(fd, m);
@@ -1474,13 +1475,13 @@ pipe_finalize(fptr)
     OpenFile *fptr;
 {
 #if !defined (__CYGWIN__)
-    if (fptr->f != NULL) {
+    if (fptr->f) {
 	pclose(fptr->f);
     }
-    if (fptr->f2 != NULL) {
+    if (fptr->f2) {
 	pclose(fptr->f2);
     }
-    fptr->f = fptr->f2 = NULL;
+    fptr->f = fptr->f2 = 0;
 #else
     fptr_finalize(fptr);
 #endif
@@ -1512,7 +1513,7 @@ pipe_open(pname, mode)
 #if defined(NT) || defined(DJGPP) || defined(__human68k__)
     FILE *f = popen(pname, mode);
 
-    if (f == NULL) rb_sys_fail(pname);
+    if (!f) rb_sys_fail(pname);
     else {
 	NEWOBJ(port, struct RFile);
 	OBJSETUP(port, rb_cIO, T_FILE);
@@ -1680,6 +1681,11 @@ rb_file_s_open(argc, argv, klass)
     Check_SafeStr(fname);
     path = RSTRING(fname)->ptr;
 
+    if (RFILE(io)->fptr) {
+	rb_io_close_m(io);
+	free(RFILE(io)->fptr);
+	RFILE(io)->fptr = 0;
+    }
     if (FIXNUM_P(vmode)) {
 	int flags = NUM2INT(vmode);
 	int fmode = NIL_P(perm) ? 0666 : NUM2INT(perm);
@@ -1687,12 +1693,7 @@ rb_file_s_open(argc, argv, klass)
 	file = rb_file_sysopen_internal((VALUE)io, path, flags, fmode);
     }
     else {
-	if (NIL_P(vmode)) {
-	    mode = "r";
-	}
-	else {
-	    mode = STR2CSTR(vmode);
-	}
+	mode = NIL_P(vmode) ? "r" : STR2CSTR(vmode);
 	file = rb_file_open_internal((VALUE)io, RSTRING(fname)->ptr, mode);
     }
 
@@ -1854,23 +1855,27 @@ rb_io_reopen(argc, argv, file)
     }
 
     GetOpenFile(file, fptr);
-    if (fptr->path) free(fptr->path);
+    if (fptr->path) {
+	free(fptr->path);
+	fptr->path = 0;
+    }
+
     fptr->path = strdup(RSTRING(fname)->ptr);
     fptr->mode = rb_io_mode_flags(mode);
     if (!fptr->f) {
 	fptr->f = rb_fopen(RSTRING(fname)->ptr, mode);
 	if (fptr->f2) {
 	    fclose(fptr->f2);
-	    fptr->f2 = NULL;
+	    fptr->f2 = 0;
 	}
 	return file;
     }
 
-    if (freopen(RSTRING(fname)->ptr, mode, fptr->f) == NULL) {
+    if (freopen(RSTRING(fname)->ptr, mode, fptr->f) == 0) {
 	rb_sys_fail(fptr->path);
     }
     if (fptr->f2) {
-	if (freopen(RSTRING(fname)->ptr, "w", fptr->f2) == NULL) {
+	if (freopen(RSTRING(fname)->ptr, "w", fptr->f2) == 0) {
 	    rb_sys_fail(fptr->path);
 	}
     }
@@ -2296,6 +2301,11 @@ rb_file_initialize(argc, argv, io)
     Check_SafeStr(fname);
     path = RSTRING(fname)->ptr;
 
+    if (RFILE(io)->fptr) {
+	rb_io_close_m(io);
+	free(RFILE(io)->fptr);
+	RFILE(io)->fptr = 0;
+    }
     if (FIXNUM_P(vmode)) {
 	int flags = NUM2INT(vmode);
 	int fmode = NIL_P(perm) ? 0666 : NUM2INT(perm);
@@ -2599,7 +2609,7 @@ rb_f_select(argc, argv, obj)
 
     rb_scan_args(argc, argv, "13", &read, &write, &except, &timeout);
     if (NIL_P(timeout)) {
-	tp = NULL;
+	tp = 0;
     }
     else {
 	timerec = rb_time_interval(timeout);
@@ -2626,7 +2636,7 @@ rb_f_select(argc, argv, obj)
 	}
     }
     else
-	rp = NULL;
+	rp = 0;
 
     if (!NIL_P(write)) {
 	Check_Type(write, T_ARRAY);
@@ -2643,7 +2653,7 @@ rb_f_select(argc, argv, obj)
 	}
     }
     else
-	wp = NULL;
+	wp = 0;
 
     if (!NIL_P(except)) {
 	Check_Type(except, T_ARRAY);
@@ -2659,8 +2669,9 @@ rb_f_select(argc, argv, obj)
 	    }
 	}
     }
-    else
-	ep = NULL;
+    else {
+	ep = 0;
+    }
 
     max++;
 

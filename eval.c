@@ -2790,6 +2790,7 @@ rb_eval(self, n)
 		}
 		rb_clear_cache_by_id(node->nd_mid);
 		if (node->nd_noex) { /* toplevel */
+		    /* should be upgrade to rb_warn() if no super was called? */
 		    rb_warning("overriding global function `%s'",
 			       rb_id2name(node->nd_mid));
 		}

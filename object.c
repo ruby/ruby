@@ -718,6 +718,8 @@ rb_to_id(name)
       case T_SYMBOL:
 	id = SYM2ID(name);
 	break;
+      default:
+	rb_raise(rb_eTypeError, "%s is not a symbol", STR2CSTR(rb_inspect(name)));
     }
     return id;
 }

@@ -377,6 +377,7 @@ EXPORTS
 	rb_hash_new
 	rb_hash_aref
 	rb_hash_aset
+	rb_hash_delete_if
 	rb_path_check
 	rb_env_path_tainted
 	ruby_setenv

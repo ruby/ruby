@@ -1,3 +1,21 @@
+Thu Jul  6 13:51:57 2000  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* object.c (rb_to_id): name may not be symbol or fixnum.
+
+	* struct.c (rb_struct_s_def): name may be nil.
+
+Thu Jul  6 02:09:06 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* bignum.c (bigdivrem): new function to return remainder.
+
+	* numeric.c (fixdivmod): now returns modulo, not remainder.
+
+	* numeric.c (flodivmod): ditto.
+
+	* bignum.c (bigdivmod): ditto.
+
+	* numeric.c (num_modulo): new method; alias to '%'.
+
 Thu Jul  6 00:51:43 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* win32/win32.c (NtCmdGlob): patterns should be separated and
@@ -10,6 +28,26 @@ Wed Jul  5 22:27:56 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 	* ext/extmk.rb.in: create target.def.
 
 	* lib/mkmf.rb: ditto.
+
+Wed Jul  5 09:47:14 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* time.c (time_arg): Time::local, Time::gm now take 7th optional
+	  argument for usec.
+
+	* numeric.c (num_ceil, etc): default ceil, floor, round, trancate
+	  implementation for Numeric, using `to_f'.
+
+	* io.c (rb_io_reopen): clear fptr->path after free() to prevent
+	  potential GC crash.
+
+	* io.c (rb_file_s_open): terminate fptr uless null.
+
+	* io.c (rb_file_initialize): ditto.
+
+	* lib/tempfile.rb: specify FILE::CREAT|File::EXCL to open for
+	  better security.
+
+	* numeric.c (flo_truncate): new method.
 
 Wed Jul  5 01:02:53 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
@@ -56,6 +94,12 @@ Tue Jul  4 01:27:13 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 Tue Jul  4 00:15:23 2000  Dave Thomas  <Dave@thomases.com>
 
 	* numeric.c (Init_Numeric): forgot to register Numeric#remainder.
+
+Mon Jul  3 23:46:56 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* win32/win32.c (myselect, myaccept): disable interrupt while
+	  executing accept() or select() to avoid Ctrl-C causes
+	  "unknown software exception (0xc0000029)".
 
 Mon Jul  3 18:35:41 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 

@@ -49,7 +49,6 @@ module Profiler__
       f.printf "%6.2f %8.2f  %8.2f %8d ", d[2]/total*100, sum, d[2], d[0]
       f.printf "%8.2f %8.2f  %s\n", d[2]*1000/d[0], d[1]*1000/d[0], d[3]
     end
-    p total
     f.close
   }
   set_trace_func p

@@ -200,12 +200,13 @@ obj2long(obj)
 }
 
 static void
-time_arg(argc, argv, tm)
+time_arg(argc, argv, tm, usec)
     int argc;
     VALUE *argv;
     struct tm *tm;
+    time_t *usec;
 {
-    VALUE v[6];
+    VALUE v[7];
     int i;
 
     MEMZERO(tm, struct tm, 1);
@@ -216,10 +217,12 @@ time_arg(argc, argv, tm)
 	v[3] = argv[2];
 	v[4] = argv[1];
 	v[5] = argv[0];
+	*usec = 0;
 	tm->tm_isdst = RTEST(argv[9]) ? 1 : 0;
     }
     else {
-	rb_scan_args(argc, argv, "15", &v[0],&v[1],&v[2],&v[3],&v[4],&v[5]);
+	rb_scan_args(argc, argv, "16", &v[0],&v[1],&v[2],&v[3],&v[4],&v[5],&v[6]);
+	*usec = (argc == 7) ? NUM2INT(v[6]) : 0;
     }
 
     tm->tm_year = obj2long(v[0]);
@@ -370,18 +373,19 @@ make_time_t(tptr, utc_or_local)
 }
 
 static VALUE
-time_utc_or_local(argc, argv, utc_or_local, klass)
+time_utc_or_local(argc, argv, utc_p, klass)
     int argc;
     VALUE *argv;
-    int utc_or_local;
+    int utc_p;
     VALUE klass;
 {
     struct tm tm;
     VALUE time;
+    time_t usec;
 
-    time_arg(argc, argv, &tm);
-    time = time_new_internal(klass, make_time_t(&tm, utc_or_local), 0);
-    if (utc_or_local) return time_gmtime(time);
+    time_arg(argc, argv, &tm, &usec);
+    time = time_new_internal(klass, make_time_t(&tm, utc_p), usec);
+    if (utc_p) return time_gmtime(time);
     return time_localtime(time);
 }
 
@@ -420,7 +424,7 @@ time_to_f(time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    return rb_float_new((double)tobj->tv.tv_sec+(double)tobj->tv.tv_usec/1000000);
+    return rb_float_new((double)tobj->tv.tv_sec+(double)tobj->tv.tv_usec/1e6);
 }
 
 static VALUE
@@ -1065,6 +1069,7 @@ Init_Time()
 
     rb_define_method(rb_cTime, "localtime", time_localtime, 0);
     rb_define_method(rb_cTime, "gmtime", time_gmtime, 0);
+    rb_define_method(rb_cTime, "utc", time_gmtime, 0);
     rb_define_method(rb_cTime, "ctime", time_asctime, 0);
     rb_define_method(rb_cTime, "asctime", time_asctime, 0);
     rb_define_method(rb_cTime, "to_s", time_to_s, 0);

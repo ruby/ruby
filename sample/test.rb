@@ -550,6 +550,17 @@ ok($x == [0,0])
 IterTest.new([[8,8]]).each8 { |x| $x = x }
 ok($x == [8,8])
 
+check "float"
+ok(2.6.floor == 2)
+ok(-2.6.floor == -3)
+ok(2.6.ceil == 3)
+ok(-2.6.ceil == -2)
+ok(2.6.truncate == 2)
+ok(-2.6.truncate == -2)
+ok(2.6.round == 3)
+ok(-2.4.truncate == -2)
+ok((13.4 % 1 - 0.4).abs < 0.0001)
+
 check "bignum"
 def fact(n)
   return 1 if n == 0
@@ -609,10 +620,14 @@ ok($good)
 
 b = 10**80
 a = b * 9 + 7
-ok(7 ==a % b)
-ok(7 ==a % -b)
-ok(-7 == (-a) % b)
-ok(-7 == (-a) % (-b))
+ok(7 == a.modulo(b))
+ok(-b + 7 == a.modulo(-b))
+ok(b + -7 == (-a).modulo(b))
+ok(-7 == (-a).modulo(-b))
+ok(7 == a.remainder(b))
+ok(7 == a.remainder(-b))
+ok(-7 == (-a).remainder(b))
+ok(-7 == (-a).remainder(-b))
 
 check "string & char"
 

@@ -445,13 +445,6 @@ rb_big2long(x)
 }
 
 static VALUE
-rb_big_to_i(x)
-    VALUE x;
-{
-    return bignorm(x);
-}
-
-static VALUE
 dbl2big(d)
     double d;
 {
@@ -777,7 +770,7 @@ rb_big_mul(x, y)
 }
 
 static void
-bigdivmod(x, y, div, mod)
+bigdivrem(x, y, div, mod)
     VALUE x, y;
     VALUE *div, *mod;
 {
@@ -793,7 +786,7 @@ bigdivmod(x, y, div, mod)
     if (ny == 0 && yds[0] == 0) rb_num_zerodiv();
     if (nx < ny	|| nx == ny && BDIGITS(x)[nx - 1] < BDIGITS(y)[ny - 1]) {
 	if (div) *div = INT2FIX(0);
-	if (mod) *mod = bignorm(x);
+	if (mod) *mod = x;
 	return;
     }
     xds = BDIGITS(x);
@@ -808,11 +801,9 @@ bigdivmod(x, y, div, mod)
 	    t2 %= dd;
 	}
 	RBIGNUM(z)->sign = RBIGNUM(x)->sign==RBIGNUM(y)->sign;
-	if (div) *div = bignorm(z);
-	if (mod) {
-	    if (!RBIGNUM(x)->sign) t2 = -(long)t2;
-	    *mod = INT2NUM(t2);
-	}
+	if (!RBIGNUM(x)->sign) t2 = -(long)t2;
+	if (mod) *mod = rb_uint2big(t2);
+	if (div) *div = z;
 	return;
     }
     z = bignew(nx==ny?nx+2:nx+1, RBIGNUM(x)->sign==RBIGNUM(y)->sign);
@@ -879,7 +870,6 @@ bigdivmod(x, y, div, mod)
 	j = (nx==ny ? nx+2 : nx+1) - ny;
 	for (i = 0;i < j;i++) zds[i] = zds[i+ny];
 	RBIGNUM(*div)->len = i;
-	*div = bignorm(*div);
     }
     if (mod) {			/* just normalize remainder */
 	*mod = rb_big_clone(z);
@@ -894,7 +884,24 @@ bigdivmod(x, y, div, mod)
 	}
 	RBIGNUM(*mod)->len = ny;
 	RBIGNUM(*mod)->sign = RBIGNUM(x)->sign;
-	*mod = bignorm(*mod);
+    }
+}
+
+static void
+bigdivmod(x, y, divp, modp)
+    VALUE x, y;
+    VALUE *divp, *modp;
+{
+    VALUE mod;
+
+    bigdivrem(x, y, divp, &mod);
+    if (RBIGNUM(x)->sign != RBIGNUM(y)->sign && RBIGNUM(mod)->len > 0) {
+	if (divp) *divp = bigadd(*divp, rb_int2big(1), 0);
+	if (modp) *modp = bigadd(mod, y, 1);
+    }
+    else {
+	if (divp) *divp = bignorm(*divp);
+	if (modp) *modp = bignorm(mod);
     }
 }
 
@@ -918,14 +925,14 @@ rb_big_div(x, y)
       default:
 	return rb_num_coerce_bin(x, y);
     }
-    bigdivmod(x, y, &z, 0, 0);
+    bigdivmod(x, y, &z, 0);
 
     return z;
 }
 
 
 static VALUE
-rb_big_mod(x, y)
+rb_big_modulo(x, y)
     VALUE x, y;
 {
     VALUE z;
@@ -948,6 +955,32 @@ rb_big_mod(x, y)
     bigdivmod(x, y, 0, &z);
 
     return z;
+}
+
+static VALUE
+rb_big_remainder(x, y)
+    VALUE x, y;
+{
+    VALUE z;
+
+    switch (TYPE(y)) {
+      case T_FIXNUM:
+	y = rb_int2big(FIX2LONG(y));
+	break;
+
+      case T_BIGNUM:
+	break;
+
+      case T_FLOAT:
+	y = dbl2big(RFLOAT(y)->value);
+	break;
+
+      default:
+	return rb_num_coerce_bin(x, y);
+    }
+    bigdivrem(x, y, 0, &z);
+
+    return bignorm(z);
 }
 
 VALUE
@@ -1326,7 +1359,7 @@ rb_big_rand(max, rand)
 	BDIGITS(v)[len] = ((USHORT)~0) * rand;
     }
 
-    return rb_big_mod((VALUE)v, max);
+    return rb_big_modulo((VALUE)v, max);
 }
 
 static VALUE
@@ -1357,8 +1390,10 @@ Init_Bignum()
     rb_define_method(rb_cBignum, "-", rb_big_minus, 1);
     rb_define_method(rb_cBignum, "*", rb_big_mul, 1);
     rb_define_method(rb_cBignum, "/", rb_big_div, 1);
-    rb_define_method(rb_cBignum, "%", rb_big_mod, 1);
+    rb_define_method(rb_cBignum, "%", rb_big_modulo, 1);
     rb_define_method(rb_cBignum, "divmod", rb_big_divmod, 1);
+    rb_define_method(rb_cBignum, "modulo", rb_big_modulo, 1);
+    rb_define_method(rb_cBignum, "remainder", rb_big_remainder, 1);
     rb_define_method(rb_cBignum, "**", rb_big_pow, 1);
     rb_define_method(rb_cBignum, "&", rb_big_and, 1);
     rb_define_method(rb_cBignum, "|", rb_big_or, 1);
@@ -1373,7 +1408,6 @@ Init_Bignum()
     rb_define_method(rb_cBignum, "===", rb_big_eq, 1);
     rb_define_method(rb_cBignum, "eql?", rb_big_eq, 1);
     rb_define_method(rb_cBignum, "hash", rb_big_hash, 0);
-    rb_define_method(rb_cBignum, "to_i", rb_big_to_i, 0);
     rb_define_method(rb_cBignum, "to_f", rb_big_to_f, 0);
     rb_define_method(rb_cBignum, "abs", rb_big_abs, 0);
     rb_define_method(rb_cBignum, "size", rb_big_size, 0);

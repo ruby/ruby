@@ -1,8 +1,8 @@
 #
 #               Date.rb - 
 #                       $Release Version: $
-#                       $Revision: 1.1.1.1.4.5 $
-#                       $Date: 1998/03/03 02:39:34 $
+#                       $Revision: 1.1.1.2 $
+#                       $Date: 1999/01/20 04:59:35 $
 #                       by Yasuo OHBA(SHL Japan Inc. Technology Dept.)
 #
 # --
@@ -64,14 +64,17 @@ class Date
   def month
     return @month
   end
+  alias mon month
   
   def day
     return @day
   end
+  alias mday day
   
   def period
     return Date.period!(@year, @month, @day)
   end
+  protected :period
 
   def jd
     return period + 1721423
@@ -89,10 +92,15 @@ class Date
     to_s
   end
 
-  def day_of_week
+  def wday
     return (period + 5) % 7
   end
-  
+  alias day_of_week wday
+
+  def yday
+    return period - Date.new(@year-1,12,31).period
+  end
+
   def name_of_week
     return Weektag[self.day_of_week]
   end
@@ -148,9 +156,10 @@ class Date
     return @year ^ @month ^ @day
   end
   
-  def leapyear?
+  def leap?
     Date.leapyear(@year) != 1
   end
+  alias leapyear? leap?
 
   def _check_date
     if @year == nil or @month == nil or @day == nil
@@ -175,6 +184,31 @@ class Date
       return nil
     end
     return self
+  end
+
+  def << (n)
+    self >> -n
+  end
+  
+  def >> (n)
+    y = @year
+    m = @month-1
+    d = @day
+
+    m += n
+    y += m/12
+    m = m%12
+    m += 1
+
+    if y == 1752 && m == 9 && d >= 3 && d <= 13
+      d = 2
+    else
+      lasts = Date.daylist(y)
+      if d > lasts[m]
+	d = lasts[m]
+      end
+    end
+    Date.new(y,m,d)
   end
   
   private :_check_date
@@ -213,6 +247,15 @@ def Date.at(d)
   return Date.new(yy, mm, dd)
 end
 
+def Date.new3(year,mon=1,day=1)
+  Date.new(year,mon,day)
+end
+
+def Date.today
+  Date.new(*Time.now.to_a[3,3].reverse!)
+end
+
+## private class methods - do not call
 def Date.period!(y, m, d)
   p = d
   dl = Date.daylist(y)
@@ -256,3 +299,4 @@ def Date.jan1!(y)
   end
   return (d % 7)
 end
+

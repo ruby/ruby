@@ -133,11 +133,25 @@ num_divmod(x, y)
 }
 
 static VALUE
+num_modulo(x, y)
+    VALUE x, y;
+{
+    return rb_funcall(x, '%', 1, y);
+}
+
+static VALUE
 num_remainder(x, y)
     VALUE x, y;
 {
-    rb_warn("remainder is deprecated; use %% opearator");
-    return rb_funcall(x, '%', 1, y);
+    VALUE z = rb_funcall(x, '%', 1, y);
+
+    if ((RTEST(rb_funcall(x, '<', 1, INT2FIX(0))) &&
+	 RTEST(rb_funcall(y, '>', 1, INT2FIX(0)))) ||
+	(RTEST(rb_funcall(x, '>', 1, INT2FIX(0))) &&
+	 RTEST(rb_funcall(y, '<', 1, INT2FIX(0))))) {
+	return rb_funcall(z, '-', 1, y);
+    }
+    return z;
 }
 
 static VALUE
@@ -308,7 +322,7 @@ flodivmod(x, y, divp, modp)
     double x, y;
     double *divp, *modp;
 {
-    double mod;
+    double div, mod;
 
 #ifdef HAVE_FMOD
     mod = fmod(x, y);
@@ -320,10 +334,13 @@ flodivmod(x, y, divp, modp)
 	mod = x - z * x;
     }
 #endif
-    if (modp) *modp = mod;
-    if (divp) {
-	*divp = (x - mod) / y;
+    div = (x - mod) / y;
+    if (y*mod < 0) {
+	mod += y;
+	div -= 1.0;
     }
+    if (modp) *modp = mod;
+    if (divp) *divp = div;
 }
 
 static VALUE
@@ -582,18 +599,62 @@ flo_eql(x, y)
 }
 
 static VALUE
-flo_to_i(num)
+flo_to_f(num)
     VALUE num;
 {
-    double f = RFLOAT(num)->value;
-    long val;
-
-    if (!FIXABLE(f)) {
-	return rb_dbl2big(f);
-    }
-    val = f;
-    return INT2FIX(val);
+    return num;
 }
+
+static VALUE
+flo_abs(flt)
+    VALUE flt;
+{
+    double val = fabs(RFLOAT(flt)->value);
+    return rb_float_new(val);
+}
+
+static VALUE
+flo_zero_p(num)
+    VALUE num;
+{
+    if (RFLOAT(num)->value == 0.0) {
+	return Qtrue;
+    }
+    return Qfalse;
+}
+
+static VALUE flo_is_nan_p(num)
+     VALUE num;
+{     
+
+  double value = RFLOAT(num)->value;
+
+  return isnan(value) ? Qtrue : Qfalse;
+}
+
+static VALUE flo_is_infinite_p(num)
+     VALUE num;
+{     
+  double value = RFLOAT(num)->value;
+
+  if (isinf(value)) {
+    return INT2FIX( value < 0 ? -1 : +1 );
+  }
+
+  return Qnil;
+}
+
+static VALUE flo_is_finite_p(num)
+     VALUE num;
+{     
+  double value = RFLOAT(num)->value;
+
+  if (isinf(value) || isnan(value))
+    return Qfalse;
+  
+  return Qtrue;
+}
+
 
 static VALUE
 flo_floor(num)
@@ -641,63 +702,49 @@ flo_round(num)
 }
 
 static VALUE
-flo_to_f(num)
+flo_truncate(num)
     VALUE num;
 {
-    return num;
-}
+    double f = RFLOAT(num)->value;
+    long val;
 
-static VALUE
-flo_abs(flt)
-    VALUE flt;
-{
-    double val = fabs(RFLOAT(flt)->value);
-    return rb_float_new(val);
-}
+    if (f > 0.0) f = floor(f);
+    if (f < 0.0) f = ceil(f);
 
-static VALUE
-flo_zero_p(num)
-    VALUE num;
-{
-    if (RFLOAT(num)->value == 0.0) {
-	return Qtrue;
+    if (!FIXABLE(f)) {
+	return rb_dbl2big(f);
     }
-    return Qfalse;
+    val = f;
+    return INT2FIX(val);
 }
 
-static VALUE flo_is_nan_p(num)
-     VALUE num;
-{     
-
-  double value = RFLOAT(num)->value;
-
-  return isnan(value) ? Qtrue : Qfalse;
+static VALUE
+num_floor(num)
+    VALUE num;
+{
+    return flo_floor(rb_Float(num));
 }
 
-static VALUE flo_is_infinite_p(num)
-     VALUE num;
-{     
-  double value = RFLOAT(num)->value;
-
-  if (isinf(value)) {
-    return INT2FIX( value < 0 ? -1 : +1 );
-  }
-
-  return Qnil;
+static VALUE
+num_ceil(num)
+    VALUE num;
+{
+    return flo_ceil(rb_Float(num));
 }
 
-
-static VALUE flo_is_finite_p(num)
-     VALUE num;
-{     
-  double value = RFLOAT(num)->value;
-
-  if (isinf(value) || isnan(value))
-    return Qfalse;
-  
-  return Qtrue;
+static VALUE
+num_round(num)
+    VALUE num;
+{
+    return flo_round(rb_Float(num));
 }
 
+static VALUE
+num_truncate(num)
+    VALUE num;
+{
+    return flo_truncate(rb_Float(num));
+}
 
 static VALUE
 to_integer(val)
@@ -823,6 +870,13 @@ rb_num2fix(val)
     if (!FIXABLE(v))
 	rb_raise(rb_eRangeError, "integer %d out of range of fixnum", v);
     return INT2FIX(v);
+}
+
+static VALUE
+int_to_i(num)
+    VALUE num;
+{
+    return num;
 }
 
 static VALUE
@@ -1017,6 +1071,10 @@ fixdivmod(x, y, divp, modp)
 	    div = x / y;
     }
     mod = x - div*y;
+    if ((mod < 0 && y > 0) || (mod > 0 && y < 0)) {
+	mod += y;
+	div -= 1;
+    }
     if (divp) *divp = div;
     if (modp) *modp = mod;
 }
@@ -1266,13 +1324,6 @@ fix_aref(fix, idx)
 }
 
 static VALUE
-fix_to_i(num)
-    VALUE num;
-{
-    return num;
-}
-
-static VALUE
 fix_to_f(num)
     VALUE num;
 {
@@ -1507,12 +1558,18 @@ Init_Numeric()
     rb_define_method(rb_cNumeric, "===", num_equal, 1);
     rb_define_method(rb_cNumeric, "eql?", num_eql, 1);
     rb_define_method(rb_cNumeric, "divmod", num_divmod, 1);
+    rb_define_method(rb_cNumeric, "modulo", num_modulo, 1);
     rb_define_method(rb_cNumeric, "remainder", num_remainder, 1);
     rb_define_method(rb_cNumeric, "abs", num_abs, 0);
 
     rb_define_method(rb_cNumeric, "integer?", num_int_p, 0);
     rb_define_method(rb_cNumeric, "zero?", num_zero_p, 0);
     rb_define_method(rb_cNumeric, "nonzero?", num_nonzero_p, 0);
+
+    rb_define_method(rb_cNumeric, "floor", num_floor, 0);
+    rb_define_method(rb_cNumeric, "ceil", num_ceil, 0);
+    rb_define_method(rb_cNumeric, "round", num_round, 0);
+    rb_define_method(rb_cNumeric, "truncate", num_truncate, 0);
 
     rb_cInteger = rb_define_class("Integer", rb_cNumeric);
     rb_define_method(rb_cInteger, "integer?", int_int_p, 0);
@@ -1524,6 +1581,11 @@ Init_Numeric()
     rb_define_method(rb_cInteger, "succ", int_succ, 0);
     rb_define_method(rb_cInteger, "next", int_succ, 0);
     rb_define_method(rb_cInteger, "chr", int_chr, 0);
+    rb_define_method(rb_cInteger, "to_i", int_to_i, 0);
+    rb_define_method(rb_cInteger, "floor", int_to_i, 0);
+    rb_define_method(rb_cInteger, "ceil", int_to_i, 0);
+    rb_define_method(rb_cInteger, "round", int_to_i, 0);
+    rb_define_method(rb_cInteger, "truncate", int_to_i, 0);
 
     rb_cFixnum = rb_define_class("Fixnum", rb_cInteger);
     rb_include_module(rb_cFixnum, rb_mPrecision);
@@ -1543,6 +1605,7 @@ Init_Numeric()
     rb_define_method(rb_cFixnum, "*", fix_mul, 1);
     rb_define_method(rb_cFixnum, "/", fix_div, 1);
     rb_define_method(rb_cFixnum, "%", fix_mod, 1);
+    rb_define_method(rb_cFixnum, "modulo", fix_mod, 1);
     rb_define_method(rb_cFixnum, "divmod", fix_divmod, 1);
     rb_define_method(rb_cFixnum, "**", fix_pow, 1);
 
@@ -1564,7 +1627,6 @@ Init_Numeric()
     rb_define_method(rb_cFixnum, "<<", fix_lshift, 1);
     rb_define_method(rb_cFixnum, ">>", fix_rshift, 1);
 
-    rb_define_method(rb_cFixnum, "to_i", fix_to_i, 0);
     rb_define_method(rb_cFixnum, "to_f", fix_to_f, 0);
 
     rb_define_method(rb_cFixnum, "succ", fix_succ, 0);
@@ -1592,6 +1654,7 @@ Init_Numeric()
     rb_define_method(rb_cFloat, "*", flo_mul, 1);
     rb_define_method(rb_cFloat, "/", flo_div, 1);
     rb_define_method(rb_cFloat, "%", flo_mod, 1);
+    rb_define_method(rb_cFloat, "modulo", flo_mod, 1);
     rb_define_method(rb_cFloat, "divmod", flo_divmod, 1);
     rb_define_method(rb_cFloat, "**", flo_pow, 1);
     rb_define_method(rb_cFloat, "==", flo_eq, 1);
@@ -1602,14 +1665,15 @@ Init_Numeric()
     rb_define_method(rb_cFloat, "<=", flo_le, 1);
     rb_define_method(rb_cFloat, "eql?", flo_eql, 1);
     rb_define_method(rb_cFloat, "hash", flo_hash, 0);
-    rb_define_method(rb_cFloat, "to_i", flo_to_i, 0);
     rb_define_method(rb_cFloat, "to_f", flo_to_f, 0);
     rb_define_method(rb_cFloat, "abs", flo_abs, 0);
     rb_define_method(rb_cFloat, "zero?", flo_zero_p, 0);
 
+    rb_define_method(rb_cFloat, "to_i", flo_truncate, 0);
     rb_define_method(rb_cFloat, "floor", flo_floor, 0);
     rb_define_method(rb_cFloat, "ceil", flo_ceil, 0);
     rb_define_method(rb_cFloat, "round", flo_round, 0);
+    rb_define_method(rb_cFloat, "truncate", flo_truncate, 0);
 
     rb_define_method(rb_cFloat, "nan?",      flo_is_nan_p, 0);
     rb_define_method(rb_cFloat, "infinite?", flo_is_infinite_p, 0);
