@@ -156,8 +156,8 @@ EOT
       end
 
       # Compares the two objects based on the passed
-      # operator. Passes if object1.send(operator, object2) is
-      # true.
+      # operator. Passes if object1.__send__(operator, object2)
+      # is true.
       public
       def assert_operator(object1, operator, object2, message="")
         _wrap_assertion do
@@ -168,7 +168,7 @@ EOT
 ?
 <?>.
 EOT
-          assert_block(full_message) { object1.send(operator, object2) }
+          assert_block(full_message) { object1.__send__(operator, object2) }
         end
       end
 
@@ -236,7 +236,7 @@ EOT
       end
 
       UncaughtThrow = {NameError => /^uncaught throw \`(.+)\'$/,
-                       ThreadError => /^uncaught throw \`(.+)\' in thread /}
+                       ThreadError => /^uncaught throw \`(.+)\' in thread /} #`
 
       # Passes if block throws symbol.
       public

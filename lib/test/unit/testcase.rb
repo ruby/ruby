@@ -67,7 +67,7 @@ module Test
         @_result = result
         begin
           setup
-          send(@method_name)
+          __send__(@method_name)
         rescue AssertionFailedError => e
           add_failure(e.message, e.backtrace)
         rescue StandardError, ScriptError
