@@ -48,10 +48,13 @@ Win32API_initialize(self, dllname, proc, import, export)
     VALUE str;
     VALUE a_import;
     VALUE *ptr;
+    char *s;
     int i;
     int len;
     int ex;
 
+    Check_SafeStr(dllname);
+    Check_SafeStr(proc);
     hdll = LoadLibrary(RSTRING(dllname)->ptr);
     if (!hdll)
 	rb_raise(rb_eRuntimeError, "LoadLibrary: %s\n", RSTRING(dllname)->ptr);
@@ -70,11 +73,13 @@ Win32API_initialize(self, dllname, proc, import, export)
     rb_iv_set(self, "__proc__", UINT2NUM((unsigned long)hproc));
 
     a_import = rb_ary_new();
-    if (!NIL_P(import)) {
-	Check_Type(import, T_ARRAY);
+    switch (TYPE(import)) {
+      case T_NIL:
+	break;
+      case T_ARRAY:
 	ptr = RARRAY(import)->ptr;
 	for (i = 0, len = RARRAY(import)->len; i < len; i++) {
-	    Check_Type(ptr[i], T_STRING);
+	    Check_SafeStr(ptr[i]);
 	    switch (*(char *)RSTRING(ptr[i])->ptr) {
 	      case 'N': case 'n': case 'L': case 'l':
 		rb_ary_push(a_import, INT2FIX(_T_NUMBER));
@@ -87,13 +92,31 @@ Win32API_initialize(self, dllname, proc, import, export)
 		break;
 	    }
 	}
+        break;
+      default:
+	Check_SafeStr(import);
+	s = RSTRING(import)->ptr;
+	for (i = 0, len = RSTRING(import)->len; i < len; i++) {
+	    switch (*s++) {
+	      case 'N': case 'n': case 'L': case 'l':
+		rb_ary_push(a_import, INT2FIX(_T_NUMBER));
+		break;
+	      case 'P': case 'p':
+		rb_ary_push(a_import, INT2FIX(_T_POINTER));
+		break;
+	      case 'I': case 'i':
+		rb_ary_push(a_import, INT2FIX(_T_INTEGER));
+		break;
+	    }
+	}
+        break;
     }
     rb_iv_set(self, "__import__", a_import);
 
     if (NIL_P(export)) {
 	ex = _T_VOID;
     } else {
-	Check_Type(export, T_STRING);
+	Check_SafeStr(export);
 	switch (*RSTRING(export)->ptr) {
 	  case 'V': case 'v':
 	    ex = _T_VOID;
