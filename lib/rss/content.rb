@@ -46,7 +46,7 @@ module RSS
   prefix_size = CONTENT_PREFIX.size + 1
   ContentModel::ELEMENTS.uniq!
   ContentModel::ELEMENTS.each do |x|
-    BaseListener.install_get_text_element(x[prefix_size..-1], CONTENT_URI, "#{x}=")
+    BaseListener.install_get_text_element(CONTENT_URI, x[prefix_size..-1], "#{x}=")
   end
 
 end

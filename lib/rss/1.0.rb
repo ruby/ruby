@@ -629,7 +629,7 @@ module RSS
   end
 
   RSS10::ELEMENTS.each do |x|
-    BaseListener.install_get_text_element(x, URI, "#{x}=")
+    BaseListener.install_get_text_element(URI, x, "#{x}=")
   end
 
   module ListenerMixin

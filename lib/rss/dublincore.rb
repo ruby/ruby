@@ -59,7 +59,7 @@ module RSS
 
   prefix_size = DC_PREFIX.size + 1
   DublinCoreModel::ELEMENTS.each do |x|
-    BaseListener.install_get_text_element(x[prefix_size..-1], DC_URI, "#{x}=")
+    BaseListener.install_get_text_element(DC_URI, x[prefix_size..-1], "#{x}=")
   end
 
 end

@@ -1,3 +1,24 @@
+Thu Mar 31 11:07:50 2005  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/parser.rb: @@setter -> @@setters.
+	
+	* lib/rss/parser.rb
+	  (RSS::BaseListener.register_uri)
+	  (RSS::BaseListener.uri_registered?)
+	  (RSS::BaseListener.install_get_text_element):
+	  swapped the first argument and the second argument.
+    
+	* lib/rss/taxonomy.rb: swapped the first argument and the second
+	  argument for RSS::BaseListener.install_get_text_element.
+	* lib/rss/image.rb: ditto.
+	* lib/rss/syndication.rb: ditto.
+	* lib/rss/dublincore.rb: ditto.
+	* lib/rss/parser.rb: ditto.
+	* lib/rss/1.0.rb: ditto.
+	* lib/rss/2.0.rb: ditto.
+	* lib/rss/0.9.rb: ditto.
+	* lib/rss/content.rb: ditto.
+
 Thu Mar 31 11:00:36 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/parser.rb

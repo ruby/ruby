@@ -13,7 +13,7 @@ module RSS
 
   %w(link).each do |x|
     if const_defined? :Listener
-      Listener.install_get_text_element(x, TAXO_NS, "#{TAXO_PREFIX}_#{x}=")
+      Listener.install_get_text_element(TAXO_NS, x, "#{TAXO_PREFIX}_#{x}=")
     end
     TAXO_ELEMENTS << "#{TAXO_PREFIX}_#{x}"
   end

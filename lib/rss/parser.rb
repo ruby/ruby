@@ -123,26 +123,17 @@ module RSS
 
     class << self
 
-      @@setter = {}
+      @@setters = {}
       @@registered_uris = {}
 
       def install_setter(uri, tag_name, setter)
-        @@setter[uri] ||= {}
-        @@setter[uri][tag_name] = setter
-      end
-
-      def register_uri(name, uri)
-        @@registered_uris[name] ||= {}
-        @@registered_uris[name][uri] = nil
-      end
-
-      def uri_registered?(name, uri)
-        @@registered_uris[name].has_key?(uri)
+        @@setters[uri] ||= {}
+        @@setters[uri][tag_name] = setter
       end
 
       def setter(uri, tag_name)
         begin
-          @@setter[uri][tag_name]
+          @@setters[uri][tag_name]
         rescue NameError
           nil
         end
@@ -150,13 +141,22 @@ module RSS
 
       def available_tags(uri)
         begin
-          @@setter[uri].keys
+          @@setters[uri].keys
         rescue NameError
           []
         end
       end
           
-      def install_get_text_element(name, uri, setter)
+      def register_uri(uri, name)
+        @@registered_uris[name] ||= {}
+        @@registered_uris[name][uri] = nil
+      end
+
+      def uri_registered?(uri, name)
+        @@registered_uris[name].has_key?(uri)
+      end
+
+      def install_get_text_element(uri, name, setter)
         install_setter(uri, name, setter)
         def_get_text_element(uri, name, *get_file_and_line_from_caller(1))
       end
@@ -164,12 +164,12 @@ module RSS
       private
 
       def def_get_text_element(uri, name, file, line)
-        register_uri(name, uri)
+        register_uri(uri, name)
         unless private_instance_methods(false).include?("start_#{name}")
           module_eval(<<-EOT, file, line)
           def start_#{name}(name, prefix, attrs, ns)
             uri = ns[prefix]
-            if self.class.uri_registered?(#{name.inspect}, uri)
+            if self.class.uri_registered?(uri, #{name.inspect})
               if @do_validate
                 tags = self.class.available_tags(uri)
                 unless tags.include?(name)

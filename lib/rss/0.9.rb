@@ -645,7 +645,7 @@ module RSS
   end
 
   RSS09::ELEMENTS.each do |x|
-    BaseListener.install_get_text_element(x, nil, "#{x}=")
+    BaseListener.install_get_text_element(nil, x, "#{x}=")
   end
 
   module ListenerMixin
