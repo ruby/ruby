@@ -1,3 +1,9 @@
+Sun Dec 21 00:12:37 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: add new methods (TkScrollbar#assign, assign_list)
+
+	* ext/tk/sample/tkmultilistframe.rb: use TkScrollbar#assign method
+
 Sat Dec 20 21:59:03 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httprequest.rb (HTTPRequest#meta_vars): refine regexp.
