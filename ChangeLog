@@ -1,3 +1,12 @@
+Sun Feb 16 19:22:31 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* file.c (file_expand_path): buffer might be reallocated while
+	  expanding default directory.
+
+	* file.c (file_expand_path): default directory was being
+	  ignored if path was full path with no drive letter, under
+	  DOSISH.
+
 Sun Feb 16 03:14:33 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* io.c (prep_stdio, Init_io): always set binmode on Cygwin.

@@ -1424,6 +1424,16 @@ skiproot(path)
     return (char *)path;
 }
 
+static inline char *
+nextdirsep(s)
+    const char *s;
+{
+    while (*s && !isdirsep(*s)) {
+	s = CharNext(s);
+    }
+    return (char *)s;
+}
+
 static char *
 strrdirsep(path)
     const char *path;
@@ -1469,6 +1479,11 @@ chompdirsep(path)
     pend = buf + buflen;\
 }
 
+#define BUFINIT() (\
+    p = buf = RSTRING(result)->ptr,\
+    buflen = RSTRING(result)->len,\
+    pend = p + buflen)
+
 #if !defined(TOLOWER)
 #define TOLOWER(c) (ISUPPER(c) ? tolower(c) : (c))
 #endif
@@ -1484,9 +1499,7 @@ file_expand_path(fname, dname, result)
     int tainted;
 
     s = StringValuePtr(fname);
-    p = buf = RSTRING(result)->ptr;
-    buflen = RSTRING(result)->len - 2;
-    pend = p + buflen;
+    BUFINIT();
     tainted = OBJ_TAINTED(fname);
 
     if (s[0] == '~') {
@@ -1515,10 +1528,7 @@ file_expand_path(fname, dname, result)
 	    struct passwd *pwPtr;
 	    s++;
 #endif
-	    b = s;
-	    while (*s && !isdirsep(*s)) {
-		s = CharNext(s);
-	    }
+	    s = nextdirsep(b = s);
 	    BUFCHECK(p + (s-b) >= pend);
 	    memcpy(p, b, s-b);
 	    p += s-b;
@@ -1542,26 +1552,24 @@ file_expand_path(fname, dname, result)
 	if (isdirsep(s[2])) {
 	    /* specified drive letter, and full path */
 	    /* skip drive letter */
-	    b = s;
-	    while (*s && !isdirsep(*s)) {
-		s = CharNext(s);
-	    }
-	    BUFCHECK(p + (s-b) >= pend);
-	    memcpy(p, b, s-b);
-	    p += s-b;
+	    BUFCHECK(p + 2 >= pend);
+	    memcpy(p, s, 2);
+	    p += 2;
+	    s += 2;
 	}
 	else {
 	    /* specified drive, but not full path */
 	    int same = 0;
 	    if (!NIL_P(dname)) {
-		dname = file_expand_path(dname, Qnil, result);
-		if (has_drive_letter(RSTRING(dname)->ptr) &&
-		    TOLOWER(*RSTRING(dname)->ptr) == TOLOWER(s[0])) {
+		file_expand_path(dname, Qnil, result);
+		BUFINIT();
+		if (has_drive_letter(p) && TOLOWER(p[0]) == TOLOWER(s[0])) {
 		    /* ok, same drive */
 		    same = 1;
 		}
 	    }
 	    if (!same) {
+		BUFCHECK(buflen < MAXPATHLEN);
 		getcwdofdrv(*s, buf, MAXPATHLEN);
 		tainted = 1;
 	    }
@@ -1570,36 +1578,10 @@ file_expand_path(fname, dname, result)
 	}
     }
 #endif
-#ifdef DOSISH
-    else if (isdirsep(*s) && !is_absolute_path(s)) {
-	/* specified full path, but not drive letter */
-	/* we need to get the drive letter */
-	tainted = 1;
-	getcwd(buf, MAXPATHLEN);
-	p = &buf[2];
-	if (!isdirsep(*p)) {
-	    while (*p && !isdirsep(*p)) {
-		p = CharNext(p);
-	    }
-	    if (*p) {
-		p++;
-		while (*p && !isdirsep(*p)) {
-		    p = CharNext(p);
-		}
-	    }
-	}
-	b = s;
-	while (*s && !isdirsep(*s)) {
-	    s = CharNext(s);
-	}
-	BUFCHECK(p + (s-b) >= pend);
-	memcpy(p, b, s-b);
-	p += s-b;
-    }
-#endif
     else if (!is_absolute_path(s)) {
 	if (!NIL_P(dname)) {
 	    file_expand_path(dname, Qnil, result);
+	    BUFINIT();
 	}
 	else {
 	    char *dir = my_getcwd();
@@ -1610,9 +1592,23 @@ file_expand_path(fname, dname, result)
 	    free(dir);
 	}
 	p = skiproot(buf);
+#ifdef DOSISH
+	if (isdirsep(*s)) {
+	    /* specified full path, but not drive letter nor UNC */
+	    if (has_drive_letter(buf)) {
+		/* we need to get the drive letter */
+		p = &buf[2];
+	    }
+	    else if (isdirsep(buf[0]) && isdirsep(buf[1])) {
+		/* or UNC share name */
+		if (*(p = nextdirsep(p))) p = nextdirsep(p + 1);
+	    }
+	}
+	else
+#endif
 	if (*p)
 	    p = chompdirsep(p);
-	else
+	else if (p > buf)
 	    --p;
     }
     else {
@@ -2541,7 +2537,7 @@ is_absolute_path(path)
     const char *path;
 {
 #ifdef DOSISH_DRIVE_LETTER
-    if (ISALPHA(path[0]) && path[1] == ':' && isdirsep(path[2])) return 1;
+    if (has_drive_letter(path) && isdirsep(path[2])) return 1;
 #endif
 #ifdef DOSISH_UNC
     if (isdirsep(path[0]) && isdirsep(path[1])) return 1;
