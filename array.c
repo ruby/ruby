@@ -1572,6 +1572,7 @@ sort_1(a, b, data)
     int n;
 
     n = rb_cmpint(retval, *a, *b);
+    ary_sort_check(data);
     return n;
 }
 
@@ -1595,6 +1596,7 @@ sort_2(ap, bp, data)
 
     retval = rb_funcall(a, id_cmp, 1, b);
     n = rb_cmpint(retval, a, b);
+    ary_sort_check(data);
 
     return n;
 }

@@ -1,3 +1,11 @@
+Thu Oct  7 12:55:04 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* pack.c (pack_unpack): string conversion should at the top of the
+	  method.  [ruby-dev:24439]
+
+	* io.c (io_read): buffer should be frozen only after the length
+	  check.  [ruby-dev:24440]
+
 Thu Oct  7 02:56:43 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c: use FMODE_APPEND.
