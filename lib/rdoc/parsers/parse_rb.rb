@@ -1986,6 +1986,7 @@ module RDoc
 
     def parse_method_parameters(method)
       res = parse_method_or_yield_parameters(method)
+      res = "(" + res + ")" unless res[0] == ?(
       method.params = res unless method.params
       if method.block_params.nil?
           skip_tkspace(false)

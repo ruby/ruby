@@ -1,3 +1,8 @@
+Fri May 21 09:22:05 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_method_parameters):
+	  Add ()'s around parameters that don't have them
+
 Thu May 20 17:02:03 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (check_sizeof): define result size.  [ruby-core:02911]
