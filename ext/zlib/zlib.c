@@ -1205,18 +1205,19 @@ rb_deflate_s_deflate(argc, argv, klass)
 {
     struct zstream z;
     VALUE src, level, dst;
-    int err;
+    int err, lev;
 
     rb_scan_args(argc, argv, "11", &src, &level);
 
+    lev = ARG_LEVEL(level);
+    StringValue(src);
     zstream_init_deflate(&z);
-    err = deflateInit(&z.stream, ARG_LEVEL(level));
+    err = deflateInit(&z.stream, lev);
     if (err != Z_OK) {
 	raise_zlib_error(err, z.stream.msg);
     }
     ZSTREAM_READY(&z);
 
-    StringValue(src);
     zstream_run(&z, RSTRING(src)->ptr, RSTRING(src)->len, Z_FINISH);
     dst = zstream_detach_buffer(&z);
     zstream_end(&z);
@@ -1457,6 +1458,7 @@ rb_inflate_s_inflate(obj, src)
     VALUE dst;
     int err;
 
+    StringValue(src);
     zstream_init_inflate(&z);
     err = inflateInit(&z.stream);
     if (err != Z_OK) {
@@ -1464,7 +1466,6 @@ rb_inflate_s_inflate(obj, src)
     }
     ZSTREAM_READY(&z);
 
-    StringValue(src);
     zstream_run(&z, RSTRING(src)->ptr, RSTRING(src)->len, Z_SYNC_FLUSH);
     zstream_run(&z, "", 0, Z_FINISH);  /* for checking errors */
     dst = zstream_detach_buffer(&z);
