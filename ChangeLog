@@ -1,4 +1,4 @@
-Thu Apr  8 19:45:08 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Apr  8 20:25:19 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (extmake): skip uncompiled extensions.
 
@@ -13,10 +13,13 @@ Thu Apr  8 19:45:08 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* test/runner.rb: do nothing while cross-compiling.
 
 	* test/drb/drbtest.rb, test/soap/calc/test_calc_cgi.rb: use envutil to
-	  know ruby binary.
+	  know ruby binary, and restore $: after require.
 
 	* test/ruby/envutil.rb: give priority to RUBY environment variable to
 	  use just compiled binary and libraries.
+
+	* test/drb/drbtest.rb, test/soap/calc/test_calc_cgi.rb: restore $:
+	  after require.
 
 Thu Apr  8 19:03:33 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

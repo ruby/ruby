@@ -2,8 +2,13 @@ require 'test/unit'
 require 'soap/rpc/driver'
 require 'logger'
 require 'webrick'
-$:.replace($: | [File.expand_path("../ruby", File.dirname(__FILE__))])
-require 'envutil'
+begin
+  loadpath = $:.dup
+  $:.replace($: | [File.expand_path("../ruby", File.dirname(__FILE__))])
+  require 'envutil'
+ensure
+  $:.replace(loadpath)
+end
 
 
 module SOAP
