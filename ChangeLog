@@ -1,3 +1,16 @@
+Sun Nov 30 13:02:00 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/soap/encodingstyle/soapHandler.rb: refactoring - Simplifying
+	  Conditional Expressions.
+
+	* lib/wsdl/soap/definitions.rb: refactoring - Move Method.
+
+	* test/xsd/{test_noencoding.rb,noencoding.xml}: new files.  test for
+	  encoding unspecified XML file parsing.
+
+	* test/wsdl/{test_fault.rb,map,datetime}: new files.  test of
+	  SOAPFault, dateTime and Apache's Map.
+
 Sun Nov 30 09:35:14 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_update): get rid of SEGV at just allocated String.

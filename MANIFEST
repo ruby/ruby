@@ -729,7 +729,15 @@ test/uri/test_mailto.rb
 test/wsdl/axisArray/axisArray.wsdl
 test/wsdl/axisArray/itemList.rb
 test/wsdl/axisArray/test_axisarray.rb
+test/wsdl/datetime/DatetimeService.rb
+test/wsdl/datetime/datetime.rb
+test/wsdl/datetime/datetime.wsdl
+test/wsdl/datetime/datetimeServant.rb
+test/wsdl/datetime/test_datetime.rb
 test/wsdl/emptycomplextype.wsdl
+test/wsdl/map/map.wsdl
+test/wsdl/map/map.xml
+test/wsdl/map/test_map.rb
 test/wsdl/raa/RAA.rb
 test/wsdl/raa/README.txt
 test/wsdl/raa/RAAServant.rb
@@ -737,6 +745,8 @@ test/wsdl/raa/RAAService.rb
 test/wsdl/raa/raa.wsdl
 test/wsdl/raa/test_raa.rb
 test/wsdl/test_emptycomplextype.rb
+test/xsd/noencoding.xml
+test/xsd/test_noencoding.rb
 test/xsd/test_xmlschemaparser.rb
 test/xsd/test_xsd.rb
 test/xsd/xmlschema.xml

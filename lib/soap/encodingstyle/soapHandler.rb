@@ -331,30 +331,30 @@ private
 
   def decode_tag_by_wsdl(ns, elename, typestr, parent, arytypestr, extraattr)
     o = nil
-    # should branch by root attribute?
     if parent.class == SOAPBody
+      # root element: should branch by root attribute?
       if @is_first_top_ele
 	# Unqualified name is allowed here.
 	@is_first_top_ele = false
 	type = @decode_typemap[elename] ||
 	  @decode_typemap.find_name(elename.name)
-	unless type
-	  raise EncodingStyleError.new("Unknown operation '#{ elename }'.")
+	if type
+	  o = SOAPStruct.new(elename)
+	  o.definedtype = type
+	  return o
 	end
-	o = SOAPStruct.new(elename)
-	o.definedtype = type
-	return o
-      elsif !typestr
-	# typeless multi-ref element.
-	return decode_tag_by_type(ns, elename, typestr, parent, arytypestr,
-	  extraattr)
-      else
-	# typed multi-ref element.
+      end
+      # multi-ref element.
+      if typestr
 	typename = ns.parse(typestr)
 	typedef = @decode_typemap[typename]
-	return decode_defined_compoundtype(elename, typename, typedef,
-	  arytypestr)
+	if typedef
+	  return decode_defined_compoundtype(elename, typename, typedef,
+	    arytypestr)
+	end
       end
+      return decode_tag_by_type(ns, elename, typestr, parent, arytypestr,
+	extraattr)
     end
 
     if parent.type == XSD::AnyTypeName

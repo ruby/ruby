@@ -1,0 +1,66 @@
+<?xml version="1.0"?>
+<definitions
+    name="RAA"
+    targetNamespace="http://www.ruby-lang.org/xmlns/soap/interface/RAA/0.0.2/"
+    xmlns:tns="http://www.ruby-lang.org/xmlns/soap/interface/RAA/0.0.2/"
+    xmlns:txd="http://www.ruby-lang.org/xmlns/soap/interface/RAA/0.0.2/"
+    xmlns="http://schemas.xmlsoap.org/wsdl/"
+    xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+    xmlns:apachesoap="http://xml.apache.org/xml-soap">
+
+  <types>
+    <schema
+	xmlns="http://www.w3.org/2001/XMLSchema"
+	targetNamespace="http://xml.apache.org/xml-soap">
+      <complexType name="Map">
+	<sequence>
+	  <element name="item" minOccurs="0" maxOccurs="unbounded">
+	    <complexType>
+	      <sequence>
+		<element name="key" type="anyType" />
+		<element name="value" type="anyType" />
+	      </sequence>
+	    </complexType>
+	  </element>
+	</sequence>
+      </complexType>
+    </schema>
+  </types>
+
+  <message name="mapRequest"/>
+  <message name="mapResponse">
+    <part name="return" type="apachesoap:Map"/>
+  </message>
+
+  <portType name="RAABaseServicePortType">
+    <operation name="map" parameterOrder="">
+      <input message="tns:mapRequest"/>
+      <output message="tns:mapResponse"/>
+    </operation>
+  </portType>
+
+  <binding name="RAABaseServicePortBinding" type="tns:RAABaseServicePortType">
+    <soap:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <operation name="map">
+      <soap:operation soapAction=""/>
+      <input>
+	<soap:body use="encoded"
+	    encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"
+	    namespace="http://www.ruby-lang.org/xmlns/soap/interface/RAA/0.0.2/"/>
+      </input>
+      <output>
+	<soap:body use="encoded"
+	    encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"
+	    namespace="http://www.ruby-lang.org/xmlns/soap/interface/RAA/0.0.2/"/>
+      </output>
+    </operation>
+  </binding>
+
+  <service name="RAAService">
+    <port name="RAABaseServicePort" binding="tns:RAABaseServicePortBinding">
+      <soap:address location="http://raa.ruby-lang.org/soap/1.0.2/"/>
+    </port>
+  </service>
+</definitions>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions name = "datetime"
+    targetNamespace="urn:jp.gr.jin.rrr.example.datetime"
+    xmlns:tns="urn:jp.gr.jin.rrr.example.datetime"
+    xmlns="http://schemas.xmlsoap.org/wsdl/"
+    xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+    xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+
+  <wsdl:message name="nowRequest">
+    <wsdl:part name="now" type="xsd:dateTime"/>
+  </wsdl:message>
+
+  <wsdl:message name="nowResponse">
+    <wsdl:part name="now" type="xsd:dateTime"/>
+  </wsdl:message>
+
+  <wsdl:portType name="DatetimePortType">
+    <wsdl:operation name="now">
+      <wsdl:input message="tns:nowRequest" name="nowRequest"/>
+      <wsdl:output message="tns:nowResponse" name="nowResponse"/>
+    </wsdl:operation>
+  </wsdl:portType>
+
+  <wsdl:binding name="DatetimeBinding" type="tns:DatetimePortType">
+    <soap:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <wsdl:operation name="now">
+      <soap:operation soapAction=""/>
+      <wsdl:input name="nowRequest">
+	<soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"
+	    namespace="urn:jp.gr.jin.rrr.example.datetime" use="encoded"/>
+      </wsdl:input>
+      <wsdl:output name="nowResponse">
+	<soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"
+	    namespace="urn:jp.gr.jin.rrr.example.datetime" use="encoded"/>
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+
+  <wsdl:service name="DatetimeService">
+    <wsdl:port binding="tns:DatetimeBinding" name="DatetimePort">
+      <soap:address location="http://localhost:10080/"/>
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>
