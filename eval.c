@@ -6997,6 +6997,24 @@ struct thread {
 #define FOREACH_THREAD(x) FOREACH_THREAD_FROM(curr_thread,x)
 #define END_FOREACH(x)    END_FOREACH_FROM(curr_thread,x)
 
+static const char *
+thread_status_name(status)
+    enum thread_status status;
+{
+    switch (status) {
+      case THREAD_RUNNABLE:
+	return "run";
+      case THREAD_STOPPED:
+	return "sleep";
+      case THREAD_TO_KILL:
+	return "aborting";
+      case THREAD_KILLED:
+	return "dead";
+      default:
+	return "unknown";
+    }
+}
+
 /* $SAFE accessor */
 void
 rb_set_safe_level(level)
@@ -8014,7 +8032,7 @@ rb_thread_priority_set(thread, prio)
 
     th->priority = NUM2INT(prio);
     rb_thread_schedule();
-    return thread;
+    return prio;
 }
 
 static VALUE
@@ -8354,9 +8372,7 @@ rb_thread_status(thread)
 	return Qfalse;
     }
 
-    if (th->status == THREAD_STOPPED)
-	return rb_str_new2("sleep");
-    return rb_str_new2("run");
+    return rb_str_new2(thread_status_name(th->status));
 }
 
 static VALUE
@@ -8611,21 +8627,9 @@ rb_thread_inspect(thread)
 {
     char *cname = rb_class2name(CLASS_OF(thread));
     rb_thread_t th = rb_thread_check(thread);
-    char *status;
+    const char *status = thread_status_name(th->status);
     VALUE str;
 
-    switch (th->status) {
-      case THREAD_RUNNABLE:
-	status = "run"; break;
-      case THREAD_STOPPED:
-	status = "sleep"; break;
-      case THREAD_TO_KILL:
-	status = "aborting"; break;
-      case THREAD_KILLED:
-	status = "dead"; break;
-      default:
-	status = "unknown"; break;
-    }
     str = rb_str_new(0, strlen(cname)+7+16+9+1); /* 7:tags 16:addr 9:status 1:nul */ 
     sprintf(RSTRING(str)->ptr, "#<%s:0x%lx %s>", cname, thread, status);
     RSTRING(str)->len = strlen(RSTRING(str)->ptr);

@@ -1,3 +1,14 @@
+Tue Oct  9 17:08:00 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* eval.c (thread_status_name): separated from
+	  rb_thread_inspect(). return string expression for thread status.
+
+	* eval.c (rb_thread_status, rb_thread_inspect): use
+	  thread_status_name().
+
+	* eval.c (rb_thread_priority_set): return the priority not but
+	  self.
+
 Thu Oct  4 14:11:03 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/socket/socket.c (ruby_connect): EALREADY is the equivalent
