@@ -235,6 +235,7 @@ char *rb_path_skip_prefix _((const char *));
 char *rb_path_last_separator _((const char *));
 char *rb_path_end _((const char *));
 /* gc.c */
+void ruby_set_stack_size _((size_t));
 NORETURN(void rb_memerror __((void)));
 int ruby_stack_check _((void));
 int ruby_stack_length _((VALUE**));

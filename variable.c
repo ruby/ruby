@@ -967,6 +967,7 @@ rb_free_generic_ivar(obj)
 {
     st_table *tbl;
 
+//    if (!generic_iv_tbl) return;
     if (st_delete(generic_iv_tbl, &obj, (st_data_t *)&tbl))
 	st_free_table(tbl);
 }

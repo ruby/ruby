@@ -156,17 +156,20 @@ typedef struct RNode {
 
 #define RNODE(obj)  (R_CAST(RNode)(obj))
 
-#define nd_type(n) ((int)(((RNODE(n))->flags>>FL_USHIFT)&0x7f))
+#define NODE_TYPESHIFT 7
+#define NODE_TYPEMASK  (0xff<<NODE_TYPESHIFT)
+
+#define nd_type(n) ((int)(((RNODE(n))->flags>>NODE_TYPESHIFT)&0x7f))
 #define nd_set_type(n,t) \
-    RNODE(n)->flags=((RNODE(n)->flags&~FL_UMASK)|(((t)<<FL_USHIFT)&FL_UMASK))
+    RNODE(n)->flags=((RNODE(n)->flags&~NODE_TYPEMASK)|(((t)<<NODE_TYPESHIFT)&NODE_TYPEMASK))
 
-#define NODE_NEWLINE FL_USER7
-
-#define NODE_LSHIFT (FL_USHIFT+8)
+#define NODE_LSHIFT (NODE_TYPESHIFT+8)
 #define NODE_LMASK  (((long)1<<(sizeof(NODE*)*CHAR_BIT-NODE_LSHIFT))-1)
 #define nd_line(n) ((unsigned int)(((RNODE(n))->flags>>NODE_LSHIFT)&NODE_LMASK))
 #define nd_set_line(n,l) \
     RNODE(n)->flags=((RNODE(n)->flags&~(-1<<NODE_LSHIFT))|(((l)&NODE_LMASK)<<NODE_LSHIFT))
+
+#define NODE_NEWLINE FL_USER7
 
 #define nd_head  u1.node
 #define nd_alen  u2.argc

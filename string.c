@@ -28,10 +28,12 @@
 VALUE rb_cString;
 
 #define STR_ASSOC   FL_USER3
+#define STR_NOCAPA  (ELTS_SHARED|STR_ASSOC)
 
 #define RESIZE_CAPA(str,capacity) do {\
     REALLOC_N(RSTRING(str)->ptr, char, (capacity)+1);\
-    RSTRING(str)->aux.capa = (capacity);\
+    if (!FL_TEST(str, STR_NOCAPA))\
+        RSTRING(str)->aux.capa = (capacity);\
 } while (0)
 
 VALUE rb_fs;
@@ -253,14 +255,14 @@ rb_str_shared_replace(str, str2)
 	RSTRING(str)->ptr = 0;
 	RSTRING(str)->len = 0;
 	RSTRING(str)->aux.capa = 0;
-	FL_UNSET(str, ELTS_SHARED|STR_ASSOC);
+	FL_UNSET(str, STR_NOCAPA);
 	return;
     }
     RSTRING(str)->ptr = RSTRING(str2)->ptr;
     RSTRING(str)->len = RSTRING(str2)->len;
-    FL_UNSET(str, ELTS_SHARED|STR_ASSOC);
-    if (FL_TEST(str2, ELTS_SHARED|STR_ASSOC)) {
-	FL_SET(str, RBASIC(str2)->flags & (ELTS_SHARED|STR_ASSOC));
+    FL_UNSET(str, STR_NOCAPA);
+    if (FL_TEST(str2, STR_NOCAPA)) {
+	FL_SET(str, RBASIC(str2)->flags & STR_NOCAPA);
 	RSTRING(str)->aux.shared = RSTRING(str2)->aux.shared;
     }
     else {
@@ -269,7 +271,7 @@ rb_str_shared_replace(str, str2)
     RSTRING(str2)->ptr = 0;	/* abandon str2 */
     RSTRING(str2)->len = 0;
     RSTRING(str2)->aux.capa = 0;
-    FL_UNSET(str2, ELTS_SHARED|STR_ASSOC);
+    FL_UNSET(str2, STR_NOCAPA);
     if (OBJ_TAINTED(str2)) OBJ_TAINT(str);
 }
 
@@ -480,7 +482,7 @@ str_make_independent(str)
     ptr[RSTRING(str)->len] = 0;
     RSTRING(str)->ptr = ptr;
     RSTRING(str)->aux.capa = RSTRING(str)->len;
-    FL_UNSET(str, ELTS_SHARED|STR_ASSOC);
+    FL_UNSET(str, STR_NOCAPA);
 }
 
 void
@@ -643,7 +645,7 @@ rb_str_resize(str, len)
 	rb_str_modify(str);
 	if (RSTRING(str)->len < len || RSTRING(str)->len - len > 1024) {
 	    REALLOC_N(RSTRING(str)->ptr, char, len+1);
-	    if (!FL_TEST(str, STR_ASSOC|ELTS_SHARED)) {
+	    if (!FL_TEST(str, STR_NOCAPA)) {
 		RSTRING(str)->aux.capa = len;
 	    }
 	}
@@ -1615,7 +1617,7 @@ rb_str_splice(str, beg, len, val)
     StringValue(val);
     if (len < RSTRING(val)->len) {
 	/* expand string */
-	RESIZE_CAPA(str, RSTRING(str)->len + RSTRING(val)->len - len);
+	RESIZE_CAPA(str, RSTRING(str)->len + RSTRING(val)->len - len + 1);
     }
 
     if (RSTRING(val)->len != len) {
@@ -2252,7 +2254,7 @@ rb_str_clear(str)
 	free(RSTRING(str)->ptr);
     }
     RSTRING(str)->aux.shared = 0;
-    FL_UNSET(str, ELTS_SHARED|STR_ASSOC);
+    FL_UNSET(str, STR_NOCAPA);
     RSTRING(str)->ptr = 0;
     RARRAY(str)->len = 0;
     return str;

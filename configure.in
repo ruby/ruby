@@ -348,7 +348,7 @@ freebsd*)	LIBS="-lm $LIBS"
 			   rb_cv_supplementary_lib_c_r=no,
 			   rb_cv_supplementary_lib_c_r=yes,
 			   rb_cv_supplementary_lib_c_r=yes)])
-			if test ; then
+			if test "$rb_cv_supplementary_lib_c_r" = yes; then
 			   MAINLIBS="-lc_r $MAINLIBS"
 			fi
 		fi

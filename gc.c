@@ -1423,6 +1423,15 @@ rb_gc_start()
 }
 
 void
+ruby_set_stack_size(size)
+    size_t size;
+{
+#ifndef STACK_LEVEL_MAX
+    STACK_LEVEL_MAX = size/sizeof(VALUE);
+#endif
+}
+
+void
 Init_stack(addr)
     VALUE *addr;
 {
@@ -1752,7 +1761,7 @@ rb_gc_copy_finalizer(dest, obj)
     if (st_lookup(finalizer_table, obj, &table)) {
 	st_insert(finalizer_table, dest, table);
     }
-    RBASIC(dest)->flags |= FL_FINALIZE;
+    FL_SET(dest, FL_FINALIZE);
 }
 
 static VALUE

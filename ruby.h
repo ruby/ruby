@@ -441,11 +441,9 @@ struct RBignum {
 #define FL_USER6     (1<<(FL_USHIFT+6))
 #define FL_USER7     (1<<(FL_USHIFT+7))
 
-#define FL_UMASK  (0xff<<FL_USHIFT)
-
 #define SPECIAL_CONST_P(x) (IMMEDIATE_P(x) || !RTEST(x))
 
-#define FL_ABLE(x) (!SPECIAL_CONST_P(x))
+#define FL_ABLE(x) (!SPECIAL_CONST_P(x) && BUILTIN_TYPE(x) != T_NODE)
 #define FL_TEST(x,f) (FL_ABLE(x)?(RBASIC(x)->flags&(f)):0)
 #define FL_SET(x,f) do {if (FL_ABLE(x)) RBASIC(x)->flags |= (f);} while (0)
 #define FL_UNSET(x,f) do {if (FL_ABLE(x)) RBASIC(x)->flags &= ~(f);} while (0)

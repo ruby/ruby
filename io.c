@@ -1391,7 +1391,7 @@ rscheck(rsptr, rslen, rs)
 {
     if (RSTRING(rs)->ptr != rsptr && RSTRING(rs)->len != rslen)
 	rb_raise(rb_eRuntimeError, "rs modified");
-    return 1;
+    return 0;
 }
 
 static VALUE
@@ -1433,7 +1433,7 @@ rb_io_getline(rs, fptr)
 
 	while ((c = appendline(fptr, newline, &str)) != EOF &&
 	       (c != newline || RSTRING(str)->len < rslen ||
-		(rspara || rscheck(rsptr,rslen,rs), 0) ||
+		(rspara || rscheck(rsptr,rslen,rs)) ||
 		memcmp(RSTRING(str)->ptr+RSTRING(str)->len-rslen,rsptr,rslen)));
 
 	if (rspara) {
@@ -1927,6 +1927,9 @@ rb_io_fptr_finalize(fptr)
     OpenFile *fptr;
 {
     if (!fptr) return 0;
+    if (fptr->f == stdin || fptr->f == stdout || fptr->f == stderr) {
+	return 0;
+    }
     if (fptr->refcnt <= 0 || --fptr->refcnt) return 0;
     if (fptr->path) {
 	free(fptr->path);
@@ -4128,16 +4131,19 @@ rb_io_s_for_fd(argc, argv, klass)
 static int binmode = 0;
 
 static VALUE
-argf_forward()
+argf_forward(argv)
+    VALUE *argv;
 {
-    return rb_funcall3(current_file, ruby_frame->last_func,
-		       ruby_frame->argc, ruby_scope->local_vars + 2);
+    return rb_funcall3(current_file, ruby_frame->last_func, ruby_frame->argc, argv);
 }
 
-#define ARGF_FORWARD() do { if (TYPE(current_file) != T_FILE) return argf_forward(); } while (0)
-#define NEXT_ARGF_FORWARD() do {\
+#define ARGF_FORWARD(argv) do {\
+  if (TYPE(current_file) != T_FILE)\
+     return argf_forward(argv);\
+} while (0)
+#define NEXT_ARGF_FORWARD(argv) do {\
      if (!next_argv()) return Qnil;\
-      ARGF_FORWARD();\
+     ARGF_FORWARD(argv);\
 } while (0)
 
 static void
@@ -4396,7 +4402,7 @@ rb_f_readline(argc, argv)
     VALUE line;
 
     if (!next_argv()) rb_eof_error();
-    ARGF_FORWARD();
+    ARGF_FORWARD(argv);
     line = rb_f_gets(argc, argv);
     if (NIL_P(line)) {
 	rb_eof_error();
@@ -4433,7 +4439,7 @@ rb_f_readlines(argc, argv)
 {
     VALUE line, ary;
 
-    NEXT_ARGF_FORWARD();
+    NEXT_ARGF_FORWARD(argv);
     ary = rb_ary_new();
     while (!NIL_P(line = argf_getline(argc, argv))) {
 	rb_ary_push(ary, line);
@@ -5126,7 +5132,7 @@ argf_tell()
     if (!next_argv()) {
 	rb_raise(rb_eArgError, "no stream to tell");
     }
-    ARGF_FORWARD();
+    ARGF_FORWARD(0);
     return rb_io_tell(current_file);
 }
 
@@ -5139,7 +5145,7 @@ argf_seek_m(argc, argv, self)
     if (!next_argv()) {
 	rb_raise(rb_eArgError, "no stream to seek");
     }
-    ARGF_FORWARD();
+    ARGF_FORWARD(argv);
     return rb_io_seek_m(argc, argv, current_file);
 }
 
@@ -5150,7 +5156,7 @@ argf_set_pos(self, offset)
     if (!next_argv()) {
 	rb_raise(rb_eArgError, "no stream to set position");
     }
-    ARGF_FORWARD();
+    ARGF_FORWARD(&offset);
     return rb_io_set_pos(current_file, offset);
 }
 
@@ -5160,7 +5166,7 @@ argf_rewind()
     if (!next_argv()) {
 	rb_raise(rb_eArgError, "no stream to rewind");
     }
-    ARGF_FORWARD();
+    ARGF_FORWARD(0);
     return rb_io_rewind(current_file);
 }
 
@@ -5170,7 +5176,7 @@ argf_fileno()
     if (!next_argv()) {
 	rb_raise(rb_eArgError, "no stream");
     }
-    ARGF_FORWARD();
+    ARGF_FORWARD(0);
     return rb_io_fileno(current_file);
 }
 
@@ -5178,7 +5184,7 @@ static VALUE
 argf_to_io()
 {
     next_argv();
-    ARGF_FORWARD();
+    ARGF_FORWARD(0);
     return current_file;
 }
 
@@ -5187,7 +5193,7 @@ argf_eof()
 {
     if (current_file) {
 	if (init_p == 0) return Qtrue;
-	ARGF_FORWARD();
+	ARGF_FORWARD(0);
 	if (rb_io_eof(current_file)) {
 	    return Qtrue;
 	}
@@ -5269,7 +5275,7 @@ argf_readchar()
 {
     VALUE c;
 
-    NEXT_ARGF_FORWARD();
+    NEXT_ARGF_FORWARD(0);
     c = argf_getc();
     if (NIL_P(c)) {
 	rb_eof_error();
@@ -5328,7 +5334,7 @@ argf_binmode()
 {
     binmode = 1;
     next_argv();
-    ARGF_FORWARD();
+    ARGF_FORWARD(0);
     rb_io_binmode(current_file);
     return argf;
 }
@@ -5359,7 +5365,7 @@ static VALUE
 argf_closed()
 {
     next_argv();
-    ARGF_FORWARD();
+    ARGF_FORWARD(0);
     return rb_io_closed(current_file);
 }
 

@@ -3,10 +3,35 @@ Wed Oct 27 09:17:30 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* string.c (str_gsub): use a string object for exception safeness.
 	  [ruby-dev:24601]
 
+Wed Oct 27 07:38:55 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* node.h (NODE_TYPESHIFT): allow 4 more bits for line numbers.
+	  [ruby-talk:117841]
+
+	* ruby.h (FL_ABLE): nodes are not subject for flag operations.
+
+	* io.c (ARGF_FORWARD): should have specified argv explicitly,
+	  since we no longer have frame->argv saved.  [ruby-dev:24602]
+
 Tue Oct 26 23:30:39 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/code_objects.rb (RDoc::Context::add_class_or_module):
 	  Restore correct :nopdoc: behavior with nested classes and modules.
+
+Tue Oct 26 18:21:29 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (RESIZE_CAPA): check string attribute before modifying
+	  capacity member of string structure.  [ruby-dev:24594]
+
+Tue Oct 26 11:33:26 2004  David G. Andersen  <dga@lcs.mit.edu>
+
+	* ext/zlib/zlib.c (gzreader_gets): use memchr() to to gain
+	  performance.  [ruby-talk:117701]
+
+Tue Oct 26 10:56:55 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* sprintf.c (rb_f_sprintf): raise ArgumentError for extra
+	  arguments, unless (digit)$ style used.
 
 Mon Oct 25 18:35:39 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
@@ -23,6 +48,16 @@ Sun Oct 24 00:40:50 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_load, search_required, rb_require_safe, rb_require): use
 	  frozen shared string to avoid outside modification.  [ruby-dev:24580]
+
+Sat Oct 23 23:40:34 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_fptr_finalize): leave stdin/stdout/stderr open in
+	  interpreter termination.  [ruby-dev:24579]
+
+Sat Oct 23 22:18:32 2004  Guy Decoux  <ts@moulon.inra.fr>
+
+	* eval.c (frame_free): Guy Decoux solved the leak problem.
+	  Thanks.  [ruby-core:03549]
 
 Sat Oct 23 00:20:55 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

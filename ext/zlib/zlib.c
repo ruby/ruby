@@ -701,7 +701,7 @@ zstream_run(z, src, len, flush)
     uInt n;
     int err;
 
-    if (len == 0) {
+    if (NIL_P(z->input) && len == 0) {
 	z->stream.next_in = "";
 	z->stream.avail_in = 0;
     }
@@ -3137,6 +3137,16 @@ gzreader_skip_linebreaks(gz)
     gzfile_calc_crc(gz, str);
 }
 
+static void
+rscheck(rsptr, rslen, rs)
+    char *rsptr;
+    long rslen;
+    VALUE rs;
+{
+    if (RSTRING(rs)->ptr != rsptr && RSTRING(rs)->len != rslen)
+	rb_raise(rb_eRuntimeError, "rs modified");
+}
+
 static VALUE
 gzreader_gets(argc, argv, obj)
     int argc;
@@ -3144,8 +3154,9 @@ gzreader_gets(argc, argv, obj)
     VALUE obj;
 {
     struct gzfile *gz = get_gzfile(obj);
-    VALUE rs, dst;
-    char *rsptr, *p;
+    volatile VALUE rs;
+    VALUE dst;
+    char *rsptr, *p, *res;
     long rslen, n;
     int rspara;
 
@@ -3187,16 +3198,24 @@ gzreader_gets(argc, argv, obj)
 	gzfile_read_more(gz);
     }
 
-    n = rslen;
     p = RSTRING(gz->z.buf)->ptr;
+    n = rslen;
     for (;;) {
 	if (n > gz->z.buf_filled) {
 	    if (ZSTREAM_IS_FINISHED(&gz->z)) break;
 	    gzfile_read_more(gz);
 	    p = RSTRING(gz->z.buf)->ptr + n - rslen;
 	}
-	if (memcmp(p, rsptr, rslen) == 0) break;
-	p++, n++;
+	if (!rspara) rscheck(rsptr, rslen, rs);
+	res = memchr(p, rsptr[0], (gz->z.buf_filled - n + 1));
+	if (!res) {
+	    n = gz->z.buf_filled + 1;
+	} else {
+	    n += (long)(res - p);
+	    p = res;
+	    if (rslen == 1 || memcmp(p, rsptr, rslen) == 0) break;
+	    p++, n++;
+	}
     }
 
     gz->lineno++;

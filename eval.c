@@ -7737,19 +7737,27 @@ blk_mark(data)
 }
 
 static void
-blk_free(data)
-    struct BLOCK *data;
-{
+frame_free(frame)
     struct FRAME *frame;
-    void *tmp;
+{
+    struct FRAME *tmp;
 
-    frame = data->frame.prev;
+    frame = frame->prev;
     while (frame) {
 	tmp = frame;
 	frame = frame->prev;
 	free(tmp);
     }
+}
+
+static void
+blk_free(data)
+    struct BLOCK *data;
+{
+    void *tmp;
+ 
     while (data) {
+        frame_free(&data->frame);
 	tmp = data;
 	data = data->prev;
 	free(tmp);

@@ -816,9 +816,6 @@ rb_ary_aref(argc, argv, ary)
     long beg, len;
 
     if (argc == 2) {
-	if (SYMBOL_P(argv[0])) {
-	    rb_raise(rb_eTypeError, "Symbol as array index");
-	}
 	beg = NUM2LONG(argv[0]);
 	len = NUM2LONG(argv[1]);
 	if (beg < 0) {
@@ -833,9 +830,6 @@ rb_ary_aref(argc, argv, ary)
     /* special case - speeding up */
     if (FIXNUM_P(arg)) {
 	return rb_ary_entry(ary, FIX2LONG(arg));
-    }
-    if (SYMBOL_P(arg)) {
-	rb_raise(rb_eTypeError, "Symbol as array index");
     }
     /* check if idx is Range */
     switch (rb_range_beg_len(arg, &beg, &len, RARRAY(ary)->len, 0)) {
@@ -1178,12 +1172,6 @@ rb_ary_aset(argc, argv, ary)
     long offset, beg, len;
 
     if (argc == 3) {
-	if (SYMBOL_P(argv[0])) {
-	    rb_raise(rb_eTypeError, "Symbol as array index");
-	}
-	if (SYMBOL_P(argv[1])) {
-	    rb_raise(rb_eTypeError, "Symbol as subarray length");
-	}
 	rb_ary_update(ary, NUM2LONG(argv[0]), NUM2LONG(argv[1]), argv[2]);
 	return argv[2];
     }
@@ -1193,9 +1181,6 @@ rb_ary_aset(argc, argv, ary)
     if (FIXNUM_P(argv[0])) {
 	offset = FIX2LONG(argv[0]);
 	goto fixnum;
-    }
-    if (SYMBOL_P(argv[0])) {
-	rb_raise(rb_eTypeError, "Symbol as array index");
     }
     if (rb_range_beg_len(argv[0], &beg, &len, RARRAY(ary)->len, 1)) {
 	/* check if idx is Range */

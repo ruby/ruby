@@ -544,7 +544,6 @@ ossl_ssl_write(VALUE self, VALUE str)
 {
     SSL *ssl;
     int nwrite = 0;
-    FILE *fp;
 
     Data_Get_Struct(self, SSL, ssl);
     StringValue(str);
