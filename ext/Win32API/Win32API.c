@@ -249,7 +249,7 @@ Win32API_Call(argc, argv, obj)
 		} else {
 		    StringValue(str);
 		    rb_str_modify(str);
-		    pParam = RSTRING(str)->ptr;
+		    pParam = StringValuePtr(str)
 		}
 #if defined(_MSC_VER) || defined(__LCC__)
 #if defined(_M_IX86)

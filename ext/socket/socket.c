@@ -2133,7 +2133,7 @@ sock_s_getaddrinfo(argc, argv)
 {
     VALUE host, port, family, socktype, protocol, flags, ret;
     char hbuf[1024], pbuf[1024];
-    char *hptr, *pptr;
+    char *hptr, *pptr, *ap;
     struct addrinfo hints, *res;
     int error;
 
@@ -2167,13 +2167,12 @@ sock_s_getaddrinfo(argc, argv)
     else if (FIXNUM_P(family)) {
 	hints.ai_family = FIX2INT(family);
     }
-    else {
-	StringValue(family);
-	if (strcmp(RSTRING(family)->ptr, "AF_INET") == 0) {
+    else if ((ap = StringValuePtr(family)) != 0) {
+	if (strcmp(ap, "AF_INET") == 0) {
 	    hints.ai_family = PF_INET;
 	}
 #ifdef INET6
-	else if (strcmp(RSTRING(family)->ptr, "AF_INET6") == 0) {
+	else if (strcmp(ap, "AF_INET6") == 0) {
 	    hints.ai_family = PF_INET6;
 	}
 #endif
@@ -2211,7 +2210,7 @@ sock_s_getnameinfo(argc, argv)
     int error;
     struct sockaddr_storage ss;
     struct sockaddr *sap;
-    char *ep;
+    char *ep, *ap;
 
     sa = flags = Qnil;
     rb_scan_args(argc, argv, "11", &sa, &flags);
@@ -2287,13 +2286,12 @@ sock_s_getnameinfo(argc, argv)
 	else if (FIXNUM_P(af)) {
 	    hints.ai_family = FIX2INT(af);
 	}
-	else {
-	    StringValue(af);
-	    if (strcmp(RSTRING(af)->ptr, "AF_INET") == 0) {
+	else if ((ap = StringValuePtr(af)) != 0) {
+	    if (strcmp(ap, "AF_INET") == 0) {
 		hints.ai_family = PF_INET;
 	    }
 #ifdef INET6
-	    else if (strcmp(RSTRING(af)->ptr, "AF_INET6") == 0) {
+	    else if (ap, "AF_INET6") == 0) {
 		hints.ai_family = PF_INET6;
 	    }
 #endif

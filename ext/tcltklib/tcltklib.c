@@ -565,6 +565,7 @@ ip_toUTF8(self, str, encodename)
     StringValue(encodename);
     StringValue(str);
     encoding = Tcl_GetEncoding(interp, RSTRING(encodename)->ptr);
+    if (!RSTRING(str)->len) return str;
     buf = ALLOCA_N(char,strlen(RSTRING(str)->ptr)+1);
     strcpy(buf, RSTRING(str)->ptr);
 
@@ -598,6 +599,7 @@ ip_fromUTF8(self, str, encodename)
     StringValue(encodename);
     StringValue(str);
     encoding = Tcl_GetEncoding(interp,RSTRING(encodename)->ptr);
+    if (!RSTRING(str)->len) return str;
     buf = ALLOCA_N(char,strlen(RSTRING(str)->ptr)+1);
     strcpy(buf,RSTRING(str)->ptr);
 

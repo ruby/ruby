@@ -191,11 +191,9 @@ readline_s_set_completion_append_character(self, str)
     VALUE self, str;
 {
 #ifdef READLINE_21_OR_LATER
-    if (NIL_P(str)) {
+    if (NIL_P(str) || !StringValuePtr(str) || !RSTRING(str)->len) {
 	rl_completion_append_character = '\0';
     } else {
-	StringValue(str);
-
 	rl_completion_append_character = RSTRING(str)->ptr[0];
     }
 

@@ -104,6 +104,7 @@ rb_nkf_guess(obj, src)
   StringValue(src);
   p = RSTRING(src)->ptr;
   pend = p + RSTRING(src)->len;
+  if (p == pend) return INT2FIX(_UNKNOWN);
 
 #define INCR do {\
     p++;\
