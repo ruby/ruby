@@ -504,6 +504,7 @@ read_all(port)
     long siz = BUFSIZ;
     long bytes = 0;
     int n;
+    long pos = 0;
 
     GetOpenFile(port, fptr);
     rb_io_check_readable(fptr);
@@ -515,7 +516,7 @@ read_all(port)
 #endif
 	)
     {
-	long pos = ftell(fptr->f);
+	pos = ftell(fptr->f);
 	if (st.st_size > pos && pos >= 0) {
 	    siz = st.st_size - pos + 1;
 	}
@@ -524,7 +525,7 @@ read_all(port)
     READ_CHECK(fptr->f);
     for (;;) {
 	n = io_fread(RSTRING(str)->ptr+bytes, siz-bytes, fptr->f);
-	if (n == 0 && bytes == 0) {
+	if (pos > 0 && n == 0 && bytes == 0) {
 	    if (feof(fptr->f)) return Qnil;
 	    rb_sys_fail(fptr->path);
 	}
