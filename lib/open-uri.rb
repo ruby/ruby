@@ -362,60 +362,66 @@ module OpenURI
     # field for HTTP.
     # I.e. it is ignored for FTP without HTTP proxy.
     #
-    # The hash may include other option which key is a symbol:
+    # The hash may include other options which key is a symbol:
     #
-    # :proxy => "http://proxy.foo.com:8000/"
-    # :proxy => URI.parse("http://proxy.foo.com:8000/")
-    # :proxy => true
-    # :proxy => false
-    # :proxy => nil
+    # [:proxy]
+    #  Synopsis:
+    #    :proxy => "http://proxy.foo.com:8000/"
+    #    :proxy => URI.parse("http://proxy.foo.com:8000/")
+    #    :proxy => true
+    #    :proxy => false
+    #    :proxy => nil
+    #   
+    #  If :proxy option is specified, the value should be String, URI,
+    #  boolean or nil.
+    #  When String or URI is given, it is treated as proxy URI.
+    #  When true is given or the option itself is not specified,
+    #  environment variable `scheme_proxy' is examined.
+    #  `scheme' is replaced by `http' or `ftp'.
+    #  When false or nil is given, the environment variables are ignored and
+    #  connection will be made to a server directly.
     #
-    #    If :proxy option is specified, the value should be String, URI,
-    #    boolean or nil.
-    #    When String or URI is given, it is treated as proxy URI.
-    #    When true is given or the option itself is not specified,
-    #    environment variable `scheme_proxy'(or `SCHEME_PROXY') is examined.
-    #    `scheme' is replaced by `http' or `ftp'.
-    #    When false or nil is given, the environment variables are ignored and
-    #    connection will be made to a server directly.
+    # [:content_length_proc]
+    #  Synopsis:
+    #    :content_length_proc => lambda {|content_length| ... }
+    # 
+    #  If :content_length_proc option is specified, the option value procedure
+    #  is called before actual transfer is started.
+    #  It takes one argument which is expected content length in bytes.
+    # 
+    #  If two or more transfer is done by HTTP redirection, the procedure
+    #  is called only one for a last transfer.
+    # 
+    #  When expected content length is unknown, the procedure is called with
+    #  nil.
+    #  It is happen when HTTP response has no Content-Length header.
     #
-    # :content_length_proc => lambda {|content_length| ... }
+    # [:progress_proc]
+    #  Synopsis:
+    #    :progress_proc => lambda {|size| ...}
     #
-    #   If :content_length_proc option is specified, the option value procedure
-    #   is called before actual transfer is started.
-    #   It takes one argument which is expected content length in bytes.
+    #  If :progress_proc option is specified, the proc is called with one
+    #  argument each time when `open' gets content fragment from network.
+    #  The argument `size' `size' is a accumulated transfered size in bytes.
     #
-    #   If two or more transfer is done by HTTP redirection, the procedure
-    #   is called only one for a last transfer.
+    #  If two or more transfer is done by HTTP redirection, the procedure
+    #  is called only one for a last transfer.
     #
-    #   When expected content length is unknown, the procedure is called with
-    #   nil.
-    #   It is happen when HTTP response has no Content-Length header.
+    #  :progress_proc and :content_length_proc are intended to be used for
+    #  progress bar.
+    #  For example, it can be implemented as follows using Ruby/ProgressBar.
     #
-    # :progress_proc => lambda {|size| ...}
-    #
-    #   If :progress_proc option is specified, the proc is called with one
-    #   argument each time when `open' gets content fragment from network.
-    #   The argument `size' `size' is a accumulated transfered size in bytes.
-    #
-    #   If two or more transfer is done by HTTP redirection, the procedure
-    #   is called only one for a last transfer.
-    #
-    #   :progress_proc and :content_length_proc are intended to be used for
-    #   progress bar.
-    #   For example, it can be implemented as follows using Ruby/ProgressBar.
-    #
-    #     pbar = nil
-    #     open("http://...",
-    #       :content_length_proc => lambda {|t|
-    #         if t && 0 < t
-    #           pbar = ProgressBar.new("...", t)
-    #           pbar.file_transfer_mode
-    #         end
-    #       },
-    #       :progress_proc => lambda {|s|
-    #         pbar.set s if pbar
-    #       }) {|f| ... }
+    #    pbar = nil
+    #    open("http://...",
+    #      :content_length_proc => lambda {|t|
+    #        if t && 0 < t
+    #          pbar = ProgressBar.new("...", t)
+    #          pbar.file_transfer_mode
+    #        end
+    #      },
+    #      :progress_proc => lambda {|s|
+    #        pbar.set s if pbar
+    #      }) {|f| ... }
     #
     # OpenURI::OpenRead#open returns an IO like object if block is not given.
     # Otherwise it yields the IO object and return the value of the block.
