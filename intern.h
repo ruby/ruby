@@ -216,6 +216,9 @@ VALUE rb_io_eof _((VALUE));
 VALUE rb_io_binmode _((VALUE));
 VALUE rb_file_open _((const char*, const char*));
 VALUE rb_gets _((void));
+/* marshal.c */
+VALUE rb_marshal_dump _((VALUE, VALUE));
+VALUE rb_marshal_load _((VALUE));
 /* numeric.c */
 void rb_num_zerodiv _((void));
 VALUE rb_num_coerce_bin _((VALUE, VALUE));

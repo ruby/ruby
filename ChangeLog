@@ -4,7 +4,7 @@ Tue Jul  3 14:56:27 2001  Shugo Maeda <shugo@ruby-lang.org>
 
 	* eval.c (rb_yield_0):  preserve wrapper information.
 
-Tue Jul  3 14:49:51 2001  Shugo Maeda <shugo@ruby-lang.org>
+Tue Jul  3 08:59:50 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* error.c (rb_name_error): raise NameError instead of LoadError.
 

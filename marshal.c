@@ -1097,3 +1097,23 @@ Init_marshal()
     rb_define_module_function(rb_mMarshal, "load", marshal_load, -1);
     rb_define_module_function(rb_mMarshal, "restore", marshal_load, -1);
 }
+
+VALUE
+rb_marshal_dump(obj, port)
+    VALUE obj, port;
+{
+    int argc = 1;
+    VALUE argv[2];
+
+    argv[0] = obj;
+    argv[1] = port;
+    if (!NIL_P(port)) argc = 2;
+    return marshal_dump(argc, argv);
+}
+
+VALUE
+rb_marshal_load(port)
+    VALUE port;
+{
+    return marshal_load(1, &port);
+}
