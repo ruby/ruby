@@ -1,3 +1,8 @@
+Tue Feb  1 21:49:24 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/drb.rb (DRb::DRbObject#respond_to?): check marshal_dump and
+	_dump.
+
 Tue Feb  1 00:20:23 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in, configure.in: made EXTOUT configurable.

@@ -1045,7 +1045,17 @@ module DRb
 
     undef :to_s
     undef :to_a if respond_to?(:to_a)
-    undef :respond_to?
+
+    def respond_to?(msg_id)
+      case msg_id
+      when :_dump
+        true
+      when :marshal_dump
+        false
+      else
+        method_missing(:respond_to?, msg_id)
+      end
+    end
 
     # Routes method calls to the referenced object.
     def method_missing(msg_id, *a, &b)
