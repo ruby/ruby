@@ -930,7 +930,7 @@ set_arg0(val, id)
     }
     rb_progname = rb_tainted_str_new(s, i);
 #elif defined(HAVE_SETPROCTITLE)
-    setproctitle("%.*s", i, s);
+    setproctitle("%.*s", (int)i, s);
     rb_progname = rb_tainted_str_new(s, i);
 #else
     if (len == 0) {

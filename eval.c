@@ -4722,7 +4722,7 @@ rb_call(klass, recv, mid, argc, argv, scope)
     struct cache_entry *ent;
 
     if (!klass) {
-	rb_raise(rb_eNotImpError, "method `%s' called on terminated object (0x%x)",
+	rb_raise(rb_eNotImpError, "method `%s' called on terminated object (0x%lx)",
 		 rb_id2name(mid), recv);
     }
     /* is it in the method cache? */
@@ -9512,7 +9512,7 @@ rb_f_throw(argc, argv)
 	    break;
 	}
 	if (tt->tag == PROT_THREAD) {
-	    rb_raise(rb_eThreadError, "uncaught throw `%s' in thread 0x%x",
+	    rb_raise(rb_eThreadError, "uncaught throw `%s' in thread 0x%lx",
 		     rb_id2name(t),
 		     curr_thread);
 	}
@@ -9549,7 +9549,7 @@ return_check()
 	    break;
 	}
 	if (tt->tag == PROT_THREAD) {
-	    rb_raise(rb_eThreadError, "return from within thread 0x%x",
+	    rb_raise(rb_eThreadError, "return from within thread 0x%lx",
 		     curr_thread);
 	}
 	tt = tt->prev;

@@ -240,10 +240,10 @@ int rb_fix2int _((VALUE));
 #define NUM2UINT(x) ((unsigned int)NUM2INT(x))
 #define FIX2UINT(x) ((unsigned int)FIX2INT(x))
 #else
-#define NUM2INT(x) NUM2LONG(x)
-#define NUM2UINT(x) NUM2ULONG(x)
-#define FIX2INT(x) FIX2LONG(x)
-#define FIX2UINT(x) FIX2ULONG(x)
+#define NUM2INT(x) ((int)NUM2LONG(x))
+#define NUM2UINT(x) ((unsigned int)NUM2ULONG(x))
+#define FIX2INT(x) ((int)FIX2LONG(x))
+#define FIX2UINT(x) ((unsigned int)FIX2ULONG(x))
 #endif
 
 #if HAVE_LONG_LONG

@@ -1,3 +1,9 @@
+Wed Oct 30 06:29:00 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* eval.c, file.c, gc.c, io.c, object.c, ruby.c, ruby.h, struct.c,
+	  ext/socket/socket.c: differentiate long and int; use proper
+	  printf type specifiers and do casts where appropriate.
+
 Wed Oct 30 04:07:33 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (error_print, rb_longjmp, rb_thread_schedule): flush

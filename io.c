@@ -786,7 +786,7 @@ io_read(argc, argv, io)
 
     len = NUM2LONG(length);
     if (len < 0) {
-	rb_raise(rb_eArgError, "negative length %d given", len);
+	rb_raise(rb_eArgError, "negative length %ld given", len);
     }
 
     if (feof(fptr->f)) return Qnil;

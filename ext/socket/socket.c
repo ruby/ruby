@@ -824,13 +824,13 @@ load_addr_info(h, serv, type, res)
 	host = NULL;
     }
     if (FIXNUM_P(serv)) {
-	snprintf(pbuf, sizeof(pbuf), "%ld", FIX2UINT(serv));
+	snprintf(pbuf, sizeof(pbuf), "%u", FIX2UINT(serv));
 	portp = pbuf;
     }
     else {
 	SafeStringValue(serv);
 	if (RSTRING(serv)->len >= sizeof(pbuf))
-	    rb_raise(rb_eArgError, "servicename too long (%d)", RSTRING(serv)->len);
+	    rb_raise(rb_eArgError, "servicename too long (%ld)", RSTRING(serv)->len);
 	strcpy(pbuf, RSTRING(serv)->ptr);
 	portp = pbuf;
     }
@@ -2126,7 +2126,7 @@ sock_s_getaddrinfo(argc, argv)
 	pptr = NULL;
     }
     else if (FIXNUM_P(port)) {
-	snprintf(pbuf, sizeof(pbuf), "%ld", FIX2INT(port));
+	snprintf(pbuf, sizeof(pbuf), "%d", FIX2INT(port));
 	pptr = pbuf;
     }
     else {
@@ -2227,7 +2227,7 @@ sock_s_getnameinfo(argc, argv)
 	    }
 	}
 	else {
-	    rb_raise(rb_eArgError, "array size should be 3 or 4, %d given",
+	    rb_raise(rb_eArgError, "array size should be 3 or 4, %ld given",
 		     RARRAY(sa)->len);
 	}
 	/* host */
@@ -2245,7 +2245,7 @@ sock_s_getnameinfo(argc, argv)
 	    pptr = NULL;
 	}
 	else if (FIXNUM_P(port)) {
-	    snprintf(pbuf, sizeof(pbuf), "%ld", NUM2INT(port));
+	    snprintf(pbuf, sizeof(pbuf), "%d", NUM2INT(port));
 	    pptr = pbuf;
 	}
 	else {
@@ -2331,7 +2331,7 @@ sock_s_unpack_sockaddr_in(self, addr)
 
     sockaddr = (struct sockaddr_in*)StringValuePtr(addr);
     if (RSTRING(addr)->len != sizeof(struct sockaddr_in)) {
-	rb_raise(rb_eTypeError, "sockaddr_in size differs - %d required; %d given",
+	rb_raise(rb_eTypeError, "sockaddr_in size differs - %ld required; %d given",
 		 RSTRING(addr)->len, sizeof(struct sockaddr_in));
     }
     host = mkipaddr(sockaddr);
@@ -2365,7 +2365,7 @@ sock_s_unpack_sockaddr_un(self, addr)
 
     sockaddr = (struct sockaddr_un*)StringValuePtr(addr);
     if (RSTRING(addr)->len != sizeof(struct sockaddr_un)) {
-	rb_raise(rb_eTypeError, "sockaddr_un size differs - %d required; %d given",
+	rb_raise(rb_eTypeError, "sockaddr_un size differs - %ld required; %d given",
 		 RSTRING(addr)->len, sizeof(struct sockaddr_un));
     }
     /* xxx: should I check against sun_path size? */
