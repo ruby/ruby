@@ -1,3 +1,8 @@
+Wed Aug 15 04:04:02 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/sha2/extconf.rb: fix so that they build from any
+	  directory.
+
 Wed Aug 15 01:59:19 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/defs.h: Define NO_UINT64_T instead of emitting an

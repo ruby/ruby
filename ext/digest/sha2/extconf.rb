@@ -17,7 +17,7 @@ have_header("inttypes.h")
 
 have_header("unistd.h")
 
-if try_run(<<SRC, $defs.join(' '))
+if try_run(<<SRC, $defs.join(' ') + " -I#{$srcdir}")
 #include "../defs.h"
 int main(void) {
 #ifdef NO_UINT64_T
