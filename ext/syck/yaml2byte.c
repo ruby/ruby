@@ -27,7 +27,7 @@
 
 /* Reinvent the wheel... */
 #define CHUNKSIZE 64
-#define HASH ((long)0xCAFECAFECAFECAFE)
+#define HASH ((long)0xCAFECAFE)
 typedef struct {
    long hash;
    char *buffer;
