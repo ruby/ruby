@@ -66,7 +66,7 @@ time_s_now(klass)
     obj = Data_Make_Struct(klass, struct time_object, 0, free, tobj);
     tobj->tm_got=0;
 
-    if (gettimeofday(&(tobj->tv), 0) < 0) {
+    if (gettimeofday(&tobj->tv, 0) < 0) {
 	rb_sys_fail("gettimeofday");
     }
     rb_obj_call_init(obj, 0, 0);
@@ -469,9 +469,10 @@ time_localtime(time)
 {
     struct time_object *tobj;
     struct tm *tm_tmp;
+    time_t t = tobj->tv.tv_sec;
 
     GetTimeval(time, tobj);
-    tm_tmp = localtime((const time_t*)&tobj->tv.tv_sec);
+    tm_tmp = localtime(&t);
     tobj->tm = *tm_tmp;
     tobj->tm_got = 1;
     tobj->gmt = 0;
@@ -484,9 +485,10 @@ time_gmtime(time)
 {
     struct time_object *tobj;
     struct tm *tm_tmp;
+    time_t t = tobj->tv.tv_sec;
 
     GetTimeval(time, tobj);
-    tm_tmp = gmtime((const time_t*)&tobj->tv.tv_sec);
+    tm_tmp = gmtime(&t);
     tobj->tm = *tm_tmp;
     tobj->tm_got = 1;
     tobj->gmt = 1;
@@ -513,7 +515,7 @@ time_asctime(time)
     if (tobj->tm_got == 0) {
 	time_get_tm(time, tobj->gmt);
     }
-    s = asctime(&(tobj->tm));
+    s = asctime(&tobj->tm);
     if (s[24] == '\n') s[24] = '\0';
 
     return rb_str_new2(s);
@@ -886,12 +888,13 @@ time_dump(argc, argv, time)
     struct tm *tm;
     unsigned long p, s;
     unsigned char buf[8];
+    time_t t = tobj->tv.tv_sec;
     int i;
 
     rb_scan_args(argc, argv, "01", &dummy);
     GetTimeval(time, tobj);
 
-  tm = gmtime((const time_t*)&tobj->tv.tv_sec);
+    tm = gmtime(&t);
 
     p = 0x1          << 31 | /*  1 */
 	tm->tm_year  << 14 | /* 17 */
