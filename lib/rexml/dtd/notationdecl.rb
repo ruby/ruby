@@ -31,7 +31,7 @@ module REXML
 
 			def NotationDecl.parse_source source, listener
 				md = source.match( PATTERN_RE, true )
-				thing = md[0].squeeze " \t\n\r"
+				thing = md[0].squeeze(" \t\n\r")
 				listener.send inspect.downcase, thing 
 			end
 		end

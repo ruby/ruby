@@ -313,7 +313,7 @@ module Net # :nodoc:
             end
             hexvals = line.unpack('H*')[0]
             hexvals += ' ' * (32 - hexvals.length)
-            hexvals = format "%s %s %s %s  " * 4, *hexvals.unpack('a2' * 16)
+            hexvals = format("%s %s %s %s  " * 4, *hexvals.unpack('a2' * 16))
             line = line.gsub(/[\000-\037\177-\377]/n, '.')
             printf "%s 0x%5.5x: %s%s\n", dir, addr, hexvals, line
             addr += 16

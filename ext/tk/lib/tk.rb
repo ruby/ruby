@@ -1388,7 +1388,7 @@ module Tk
       end
     end
     def group(*args)
-      w = tk_call 'wm', 'group', path, *args
+      w = tk_call('wm', 'group', path, *args)
       if args.size == 0
 	window(w) 
       else
@@ -3303,7 +3303,7 @@ module TkOptionDB
         proc_str = '{' + proc_str + '}' unless /\A\{.*\}\Z/ =~ proc_str
 	proc_str = __closed_block_check__(proc_str)
         proc_str = __check_proc_string__(proc_str)
-        res_proc = eval 'Proc.new' + proc_str
+        res_proc = eval('Proc.new' + proc_str)
         self::METHOD_TBL[id] = res_proc
       end
       proc{

@@ -14,7 +14,7 @@ def uname_s
   case Config::CONFIG['host_os']
   when 'cygwin'
     require 'Win32API'
-    uname = Win32API.new 'cygwin1', 'uname', 'P', 'I'
+    uname = Win32API.new('cygwin1', 'uname', 'P', 'I')
     utsname = ' ' * 100
     raise 'cannot get system name' if uname.call(utsname) == -1
 

@@ -69,7 +69,7 @@ class CGI
 	unless File::exist? path
 	  @hash = {}
 	end
-	@p = ::PStore.new path 
+	@p = ::PStore.new(path)
       end
 
       # Restore session state from the session's PStore file.
@@ -114,7 +114,7 @@ if $0 == __FILE__
   # :enddoc:
   STDIN.reopen("/dev/null")
   cgi = CGI.new
-  session = CGI::Session.new cgi, 'database_manager' => CGI::Session::PStore
+  session = CGI::Session.new(cgi, 'database_manager' => CGI::Session::PStore)
   session['key'] = {'k' => 'v'}
   puts session['key'].class
   fail unless Hash === session['key']

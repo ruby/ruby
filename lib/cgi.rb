@@ -2302,8 +2302,8 @@ class CGI
         else
           at_exit() do
             if defined?(CGI_PARAMS)
-              self.class.class_eval("remove_const(:CGI_PARAMS)")
-              self.class.class_eval("remove_const(:CGI_COOKIES)")
+              CGI.class_eval("remove_const(:CGI_PARAMS)")
+              CGI.class_eval("remove_const(:CGI_COOKIES)")
             end
           end
         end

@@ -111,7 +111,7 @@ module XMLRPC
       else
         begin
           mod = Module
-          klass.split("::").each {|const| mod = mod.const_get const.strip }
+          klass.split("::").each {|const| mod = mod.const_get(const.strip)}
           
           Thread.critical = true
           # let initialize take 0 parameters

@@ -102,7 +102,7 @@ module REXML
 		# @return the current line in the source
 		def current_line
 			lines = @orig.split
-			res = lines.grep @buffer[0..30]
+			res = lines.grep(@buffer[0..30])
 			res = res[-1] if res.kind_of? Array
 			lines.index( res ) if res
 		end

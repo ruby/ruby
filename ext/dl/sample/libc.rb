@@ -39,7 +39,7 @@ module LIBC
   def my_compare(ptr1, ptr2)
     ptr1.ptr.to_s <=> ptr2.ptr.to_s
   end
-  COMPARE = callback "int my_compare(char**, char**)"
+  COMPARE = callback("int my_compare(char**, char**)")
 end
 
 

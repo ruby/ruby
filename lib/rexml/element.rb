@@ -52,8 +52,8 @@ module REXML
 		def initialize( arg = UNDEFINED, parent=nil, context=nil )
 			super(parent)
 
-			@elements = Elements.new self
-			@attributes = Attributes.new self
+			@elements = Elements.new(self)
+			@attributes = Attributes.new(self)
 			@context = context
 
 			if arg.kind_of? String
@@ -253,7 +253,7 @@ module REXML
 		#  el = Element.new 'my-tag'
 		#  doc.add_element el
 		def add_element element=nil, attrs=nil
-			el = @elements.add element
+			el = @elements.add(element)
 			if attrs.kind_of? Hash
 				attrs.each do |key, value|
 					el.attributes[key]=value if key =~ /^xmlns:/
@@ -412,7 +412,7 @@ module REXML
 		#  # The element 'p' has two text elements, "some text " and " more text".
 		#  doc.root.text              #-> "some text "
 		def text( path = nil )
-			rv = get_text path
+			rv = get_text(path)
 			return rv.value unless rv.nil?
 			nil
 		end
@@ -724,7 +724,7 @@ module REXML
 		def []( index, name=nil)
 			if index.kind_of? Integer
 				raise "index (#{index}) must be >= 1" if index < 1
-				name = literalize name if name
+				name = literalize(name) if name
 				num = 0
 				child = nil
 				@element.find { |child|
@@ -1016,13 +1016,13 @@ module REXML
 		#  doc.root.attributes['x:foo'] = nil
 		def []=( name, value )
 			if value.nil?		# Delete the named attribute
-				attr = get_attribute name
+				attr = get_attribute(name)
 				delete attr
 				return
 			end
 			value = Attribute.new(name, value) unless value.kind_of? Attribute
 			value.element = @element
-			old_attr = fetch value.name, nil
+			old_attr = fetch(value.name, nil)
 			if old_attr.nil?
 				store(value.name, value)
 			elsif old_attr.kind_of? Hash
@@ -1104,7 +1104,7 @@ module REXML
 				prefix, name = $1, $2
 				prefix = '' unless prefix
 			end
-			old = fetch name, nil
+			old = fetch(name, nil)
 			attr = nil
 			if old.kind_of? Hash # the supplied attribute is one of many
 				attr = old.delete(prefix)

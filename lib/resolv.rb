@@ -1155,7 +1155,7 @@ class Resolv
           len, = self.get_unpack('n')
           save_limit = @limit
           @limit = @index + len
-          d = yield len
+          d = yield(len)
           if @index < @limit
             raise DecodeError.new("junk exist")
           elsif @limit < @index

@@ -135,7 +135,7 @@ class Time
     #
     def parse(date, now=Time.now)
       year, mon, day, hour, min, sec, zone, _ = ParseDate.parsedate(date)
-      year = yield year if year && block_given?
+      year = yield(year) if year && block_given?
 
       if now
         begin

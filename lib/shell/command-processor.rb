@@ -393,7 +393,7 @@ class Shell
 	                end]), nil, __FILE__, __LINE__ - 1)
     
 	else
-           args = opts.collect{|opt| '"' + opt + '"'}.join ","
+           args = opts.collect{|opt| '"' + opt + '"'}.join(",")
            eval((d = %Q[def #{ali}(*opts)
                           @shell.__send__(:#{command}, #{args}, *opts)
                         end]), nil, __FILE__, __LINE__ - 1)

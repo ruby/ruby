@@ -56,7 +56,7 @@ EOF
 	end
       end
       if main.empty?
-	@main = eval "self", @binding
+	@main = eval("self", @binding)
       else
 	@main = main[0]
 	IRB.conf[:__MAIN__] = @main

@@ -732,7 +732,7 @@ $x.sort!{|a,b| b-a}		# reverse sort
 test_ok($x == [7,5,3,2,1])
 
 # split test
-$x = "The Botest_ok of Mormon"
+$x = "The Book of Mormon"
 test_ok($x.split(//).reverse!.join == $x.reverse)
 test_ok($x.reverse == $x.reverse!)
 test_ok("1 byte string".split(//).reverse.join(":") == "g:n:i:r:t:s: :e:t:y:b: :1")
@@ -1233,14 +1233,14 @@ test_ok(2**32 - 5 == (2**32-3)-2)
 
 $good = true;
 for i in 1000..1014
-  $good = false if ((1<<i) != (2**i))
+  $good = false if ((1 << i) != (2**i))
 end
 test_ok($good)
 
 $good = true;
-n1=1<<1000
+n1= 1 << 1000
 for i in 1000..1014
-  $good = false if ((1<<i) != n1)
+  $good = false if ((1 << i) != n1)
   n1 *= 2
 end
 test_ok($good)

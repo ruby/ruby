@@ -165,7 +165,7 @@ class Shell
 	  return
 	elsif @active_jobs.include?(command)
 	  begin
-	    r = command.kill sig
+	    r = command.kill(sig)
 	    ProcessController.inactivate(self)
 	  rescue
 	    print "Shell: Warn: $!\n" if @shell.verbose?

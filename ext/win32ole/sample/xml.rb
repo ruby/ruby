@@ -5651,7 +5651,7 @@ class Microsoft_XMLDOM_1_0 # DOMDocument
     @clsid = "{2933BF90-7B36-11D2-B20E-00C04F983E60}"
     @progid = "Microsoft.XMLDOM.1.0"
     if obj.nil?
-      @dispatch = WIN32OLE.new @progid
+      @dispatch = WIN32OLE.new(@progid)
     else
       @dispatch = obj
     end
@@ -6258,7 +6258,7 @@ class Microsoft_FreeThreadedXMLDOM_1_0 # DOMFreeThreadedDocument
     @clsid = "{2933BF91-7B36-11D2-B20E-00C04F983E60}"
     @progid = "Microsoft.FreeThreadedXMLDOM.1.0"
     if obj.nil?
-      @dispatch = WIN32OLE.new @progid
+      @dispatch = WIN32OLE.new(@progid)
     else
       @dispatch = obj
     end
@@ -6992,7 +6992,7 @@ class Microsoft_XMLHTTP_1 # XMLHTTPRequest
     @clsid = "{ED8C108E-4349-11D2-91A4-00C04F7969E8}"
     @progid = "Microsoft.XMLHTTP.1"
     if obj.nil?
-      @dispatch = WIN32OLE.new @progid
+      @dispatch = WIN32OLE.new(@progid)
     else
       @dispatch = obj
     end
@@ -7136,7 +7136,7 @@ class Microsoft_XMLDSO_1_0 # XMLDSOControl
     @clsid = "{550DDA30-0541-11D2-9CA9-0060B0EC3D39}"
     @progid = "Microsoft.XMLDSO.1.0"
     if obj.nil?
-      @dispatch = WIN32OLE.new @progid
+      @dispatch = WIN32OLE.new(@progid)
     else
       @dispatch = obj
     end
@@ -7207,7 +7207,7 @@ class Msxml # XMLDocument
     @clsid = "{CFC399AF-D876-11D0-9C10-00C04FC99C8E}"
     @progid = "Msxml"
     if obj.nil?
-      @dispatch = WIN32OLE.new @progid
+      @dispatch = WIN32OLE.new(@progid)
     else
       @dispatch = obj
     end

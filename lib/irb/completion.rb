@@ -112,7 +112,7 @@ module IRB
 	select_message(receiver, message, candidates)
 
       when /^(\$[^.]*)$/
-	candidates = global_variables.grep Regexp.new(Regexp.quote($1))
+	candidates = global_variables.grep(Regexp.new(Regexp.quote($1)))
 
 #      when /^(\$?(\.?[^.]+)+)\.([^.]*)$/
       when /^((\.?[^.]+)+)\.([^.]*)$/
@@ -120,9 +120,9 @@ module IRB
 	receiver = $1
 	message = Regexp.quote($3)
 
-	gv = eval "global_variables", bind
-	lv = eval "local_variables", bind
-	cv = eval "self.class.constants", bind
+	gv = eval("global_variables", bind)
+	lv = eval("local_variables", bind)
+	cv = eval("self.class.constants", bind)
 	
 	if (gv | lv | cv).include?(receiver)
 	  # foo.func and foo is local var.

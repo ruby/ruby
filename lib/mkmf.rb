@@ -797,7 +797,7 @@ def create_makefile(target, srcprefix = nil)
     deffile = EXPORT_PREFIX + origdef
     unless File.exist? deffile
       if File.exist? File.join(srcdir, deffile)
-	deffile = File.join srcdir, deffile
+	deffile = File.join(srcdir, deffile)
       elsif !EXPORT_PREFIX.empty? and File.exist?(origdef = File.join(srcdir, origdef))
 	open(origdef) do |d|
 	  open(deffile, 'wb') do |f|

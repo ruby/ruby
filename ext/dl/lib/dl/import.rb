@@ -79,7 +79,7 @@ module DL
 	symty = rty + ty
 
 	module_eval("module_function :#{func}")
-	sym = module_eval [
+	sym = module_eval([
 	  "DL::callback(\"#{symty}\"){|*args|",
 	  "  sym,rdec,enc,dec  = @SYM['#{func}']",
 	  "  args = enc.call(args) if enc",
@@ -90,7 +90,7 @@ module DL
 	  "  @args   = rs",
 	  "  @retval",
 	  "}",
-	].join("\n")
+	].join("\n"))
 
 	@SYM[func] = [sym,rdec,enc,dec]
 
