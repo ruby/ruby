@@ -1,3 +1,10 @@
+Wed Nov 10 03:33:36 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tcltklib/tcltklib.c: fix SEGV when compiled with Tcl/Tk8.3.x
+	  or older
+
+	* ext/tk/lib/tkextlib/tile/style.rb: bug fix
+
 Tue Nov  9 22:24:07 2004  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf: original nkf.c rev:1.38

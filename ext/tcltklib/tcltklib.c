@@ -3306,9 +3306,12 @@ delete_slaves(ip)
 
         Tcl_Preserve(slave);
 
+#if TCL_MAJOR_VERSION < 8 || ( TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION < 4)
+#else
         if (!Tcl_InterpDeleted(slave)) {
             Tcl_Eval(slave, "foreach i [after info] { after cancel $i }");
         }
+#endif
 
         /* delete slaves of slave */
         delete_slaves(slave);
@@ -3356,9 +3359,12 @@ ip_free(ptr)
                 Tcl_Eval(ptr->ip, finalize_hook_name);
             }
 
+#if TCL_MAJOR_VERSION < 8 || ( TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION < 4)
+#else
             if (!Tcl_InterpDeleted(ptr->ip)) {
                 Tcl_Eval(ptr->ip, "foreach i [after info] {after cancel $i}");
             }
+#endif
 
             del_root(ptr->ip);
 
@@ -3820,9 +3826,12 @@ ip_delete(self)
     /* Tcl_Preserve(ptr->ip); */
     rbtk_preserve_ip(ptr);
 
+#if TCL_MAJOR_VERSION < 8 || ( TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION < 4)
+#else
     if (!Tcl_InterpDeleted(ptr->ip)) {
         Tcl_Eval(ptr->ip, "foreach i [after info] { after cancel $i }");
     }
+#endif
 
     del_root(ptr->ip);
 
