@@ -6,7 +6,7 @@ FIPS PUB 180-1に記述されているNIST (the US' National Institute of
 Standards and Technology) の SHA1 Secure Hash Algorithm Algorithmを実装
 するクラス。
 
-SuperClass: Object
+Superclass: Object
 
 Class Methods:
 

@@ -1,3 +1,8 @@
+Thu May 17 07:27:09 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/md5/md5.txt.jp, ext/sha1/sha1.txt.jp:
+	s/SuperClass/Superclass/.
+
 Thu May 17 07:21:44 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/Setup.dj, ext/Setup.emx, ext/Setup.nt, ext/Setup.x68:
