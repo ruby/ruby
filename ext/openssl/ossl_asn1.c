@@ -28,9 +28,7 @@ asn1time_to_time(ASN1_TIME *time)
     struct tm tm;
     VALUE argv[6];
     
-    if (!time) {
-	ossl_raise(rb_eTypeError, "ASN1_TIME is NULL!");
-    }
+    if (!time || !time->data) return Qnil;
     memset(&tm, 0, sizeof(struct tm));
 	
     switch (time->type) {
