@@ -256,6 +256,9 @@ lib/tkextlib/vu/dial.rb
 lib/tkextlib/vu/pie.rb
 lib/tkextlib/vu/setup.rb
 lib/tkextlib/vu/spinbox.rb
+lib/tkextlib/winico.rb
+lib/tkextlib/winico/setup.rb
+lib/tkextlib/winico/winico.rb
 sample/binding_sample.rb
 sample/bindtag_sample.rb
 sample/binstr_usage.rb
