@@ -105,11 +105,19 @@ def getopts(single_options, *options)
   #
   # set
   #
+  $OPT = {}
+
   boolopts.each do |opt, val|
-    eval "$OPT_#{opt} = val"
+    $OPT[opt] = val
+
+    sopt = opt.gsub(/[^A-Za-z0-9_]/, '_')
+    eval "$OPT_#{sopt} = val"
   end
   valopts.each do |opt, val|
-    eval "$OPT_#{opt} = val"
+    $OPT[opt] = val
+
+    sopt = opt.gsub(/[^A-Za-z0-9_]/, '_')
+    eval "$OPT_#{sopt} = val"
   end
 
   c

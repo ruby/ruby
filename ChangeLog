@@ -1,3 +1,9 @@
+Mon Nov  4 03:59:51 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/getopts.rb: Do not choke on characters that cannot be used
+	  in a variable name.  Replace them with `_'.  Define a hash named
+	  $OPT for convenience.
+
 Sat Nov  2 00:38:55 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c (Init_Object): added Object#object_id, new name for
