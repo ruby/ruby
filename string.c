@@ -1151,7 +1151,7 @@ rb_str_gsub(argc, argv, str)
 {
     str = rb_str_dup(str);
 
-    rb_str_gsub_bang(argc, argv, dup);
+    rb_str_gsub_bang(argc, argv, str);
     return str;
 }
 

@@ -957,7 +957,7 @@ rb_io_close(io)
 {
     OpenFile *fptr;
 
-    GetOpenFile(io, fptr);
+    fptr = RFILE(io)->fptr;
     rb_io_fptr_close(fptr);
     if (fptr->pid) {
 	rb_syswait(fptr->pid);
@@ -2369,7 +2369,7 @@ rb_f_gets_internal(argc, argv)
     if (TYPE(current_file) != T_FILE) {
 	line = rb_funcall3(current_file, rb_intern("gets"), argc, argv);
     }
-    if (argc == 0 && rb_rs == rb_default_rs) {
+    else if (argc == 0 && rb_rs == rb_default_rs) {
 	line = rb_io_gets(current_file);
     }
     else {

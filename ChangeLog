@@ -1,3 +1,11 @@
+Fri Feb  4 10:20:25 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (rb_io_close): should not check closed IO.
+
+Fri Feb  4 05:44:01 2000  Kentaro Inagaki  <inagaki@tg.rim.or.jp>
+
+	* ext/socket/socket.c (s_recv): TRAP_BEG after retry entry.
+
 Wed Jan 26 22:30:47 2000  Shigeo Kobayashi  <shigeo@tinyforest.gr.jp>
 
 	* numeric.c (flo_modulo): wrong result for negative modulo.

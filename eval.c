@@ -4653,7 +4653,7 @@ find_file(file)
 	vpath = rb_ary_join(vpath, rb_str_new2(PATH_SEP));
 	path = STR2CSTR(vpath);
 	if (safe_level >= 2 && !rb_path_check(path)) {
-	    rb_raise(rb_eSecurityError, "loading from unsefe path %s", path);
+	    rb_raise(rb_eSecurityError, "loading from unsafe path %s", path);
 	}
     }
     else {

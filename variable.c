@@ -704,6 +704,18 @@ rb_alias_variable(name1, name2)
 static int special_generic_ivar = 0;
 static st_table *generic_iv_tbl;
 
+st_table*
+rb_generic_ivar_table(obj)
+    VALUE obj;
+{
+    st_table *tbl;
+    VALUE val;
+
+    if (!generic_iv_tbl) return 0;
+    if (!st_lookup(generic_iv_tbl, obj, &tbl)) return 0;
+    return tbl;
+}
+
 static VALUE
 generic_ivar_get(obj, id)
     VALUE obj;

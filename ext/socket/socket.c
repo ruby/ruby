@@ -391,8 +391,8 @@ s_recv(sock, argc, argv, from)
     GetOpenFile(sock, fptr);
     fd = fileno(fptr->f);
     rb_thread_wait_fd(fd);
-    TRAP_BEG;
   retry:
+    TRAP_BEG;
     RSTRING(str)->len = recvfrom(fd, RSTRING(str)->ptr, RSTRING(str)->len, flags,
 				 (struct sockaddr*)buf, &alen);
     TRAP_END;
