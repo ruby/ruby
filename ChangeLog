@@ -1,3 +1,8 @@
+Sat Jul 17 23:59:01 2004  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (send_string_data): wait command continuation
+	requests before sending octet data of literals.
+
 Sat Jul 17 23:54:59 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/variable.rb: TkVariable#ref returns a TkVariable object
