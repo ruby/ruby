@@ -1,3 +1,8 @@
+Tue Oct 14 19:09:35 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (ruby_finalize_0): return the given exit status unless
+	  SystemExit got raised.
+
 Tue Oct 14 11:53:49 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* intern.h (ruby_stop): never return.

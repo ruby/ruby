@@ -1309,8 +1309,8 @@ ruby_options(argc, argv)
 void rb_exec_end_proc _((void));
 
 static int
-ruby_finalize_0(exp)
-    int exp;
+ruby_finalize_0(ex)
+    int ex;
 {
     ruby_errinfo = 0;
     PUSH_TAG(PROT_NONE);
@@ -1326,7 +1326,7 @@ ruby_finalize_0(exp)
 	VALUE st = rb_iv_get(ruby_errinfo, "status");
 	return NUM2INT(st);
     }
-    return EXIT_SUCCESS;
+    return ex;
 }
 
 void
