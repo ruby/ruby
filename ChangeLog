@@ -1,3 +1,11 @@
+Mon Jun  3 07:07:07 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* parse.y (here_document): check if identifier is terminated.
+	  (ruby-bugs-ja:PR#239)
+
+	* parse.y (yylex): should pushback proper char after '**'.
+	  (ruby-bugs-ja:PR#240)
+
 Sat Jun  1 19:20:07 2002  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole: merge from rough
