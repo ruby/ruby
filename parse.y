@@ -861,6 +861,9 @@ opt_call_args	: none
 		| call_args opt_nl
 
 call_args	: command_call
+		    {
+			$$ = NEW_LIST($1);
+		    }
 		| args ','
 		    {
 			$$ = $1;
