@@ -1,3 +1,8 @@
+Sun Nov 28 12:07:04 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
+
+	* regexec.c, test/ruby/test_regexp.rb: fixed segmentation falut
+	([ruby-dev:24887]).
+
 Sun Nov 28 12:05:48 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
 
 	* regcomp.c, regint.h: fixed PLATFORM_UNALIGNED_WORD_ACCESS

@@ -3199,7 +3199,7 @@ onig_search(regex_t* reg, UChar* str, UChar* end,
       }
     }
     else if (reg->anchor & ANCHOR_SEMI_END_BUF) {
-      UChar* pre_end = ONIGENC_STEP_BACK(reg->enc, start, end, 1);
+      UChar* pre_end = ONIGENC_STEP_BACK(reg->enc, str, end, 1);
 
       if (ONIGENC_IS_MBC_NEWLINE(reg->enc, pre_end, end)) {
 	semi_end = pre_end;
