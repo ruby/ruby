@@ -1,0 +1,163 @@
+=begin
+
+= net/smtp.rb version 1.2.3
+
+== このライブラリについて
+
+メールを送信するためのプロトコル SMTP (Simple Mail Transfer Protocol)
+を扱うライブラリです。ヘッダなどメールのデータを扱うことはできません。
+SMTP の実装は [RFC2821] ((<URL:http://www.ietf.org/rfc/rfc2821.txt>))
+に基いています。
+
+== 使用例
+
+=== とにかくメールを送る
+
+SMTP を使ってメールを送るにはまず SMTP.start でセッションを開きます。
+第一引数がサーバのアドレスで第二引数がポート番号です。
+ブロックを使うと File.open と同じように終端処理を自動的にやってくれる
+のでおすすめです。
+
+    require 'net/smtp'
+    Net::SMTP.start( 'your.smtp.server', 25 ) {|smtp|
+      # use smtp object only in this block
+    }
+
+your.smtp.server は適切な SMTP サーバのアドレスに読みかえてください。
+通常は LAN の管理者やプロバイダが SMTP サーバを用意してくれているはずです。
+
+セッションが開いたらあとは send_mail でメールを流しこむだけです。
+
+    require 'net/smtp'
+
+    Net::SMTP.start( 'your.smtp.server', 25 ) {|smtp|
+      smtp.send_mail <<EndOfMail, 'your@mail.address', 'to@some.domain'
+    From: Your Name <your@mail.address>
+    To: Dest Address <to@some.domain>
+    Subject: test mail
+    Date: Sat, 23 Jun 2001 16:26:43 +0900
+    Message-Id: <unique.message.id.string@some.domain>
+
+    This is test mail.
+    EndOfMail
+    }
+
+=== 文字列以外からの送信
+
+ひとつ上の例では文字列リテラル(ヒアドキュメント)を使って送信しましたが、
+each メソッドを持ったオブジェクトからならなんでも送ることができます。
+以下は File オブジェクトから直接送信する例です。
+
+    require 'net/smtp'
+    Net::SMTP.start( 'your.smtp.server', 25 ) {|smtp|
+      File.open( 'Mail/draft/1' ) {|f|
+        smtp.send_mail f, 'your@mail.address', 'to@some.domain'
+      }
+    }
+
+=== Hello ドメイン
+
+SMTP ではメールを送る側のホストの名前を要求されるのですが、
+ダイヤルアップなどの場合には自分のマシンに正式な名前がない場合が
+あります。そのような場合は適宜 SMTP サーバの名前などを与えてやら
+ないと配送を拒否されることがあります。SMTP.start あるいは SMTP#start
+の引数 helo_domain がそれです。
+
+    Net::SMTP.start( 'your.smtp.server', 25,
+                     'mail.from.domain' ) {|smtp|
+
+
+== class Net::SMTP
+
+=== クラスメソッド
+
+: new( address = 'localhost', port = 25 )
+    新しい SMTP オブジェクトを生成します。address はSMTPサーバーのFQDNで、
+    port は接続するポート番号です。ただし、このメソッドではまだ接続はしません。
+
+: start( address = 'localhost', port = 25, helo_domain = Socket.gethostname, account = nil, password = nil, authtype = nil )
+: start( address = 'localhost', port = 25, helo_domain = Socket.gethostname, account = nil, password = nil, authtype = nil ) {|smtp| .... }
+    以下と同じです。
+        Net::SMTP.new(address,port).start(helo_domain,account,password,authtype)
+
+        # example
+        Net::SMTP.start( 'your.smtp.server' ) {
+          smtp.send_mail mail_string, 'from@mail.address', 'dest@mail.address'
+        }
+
+=== メソッド
+
+: start( helo_domain = <local host name>, account = nil, password = nil, authtype = nil )
+: start( helo_domain = <local host name>, account = nil, password = nil, authtype = nil ) {|smtp| .... }
+    TCP コネクションを張り、同時に SMTP セッションを開始します。そのとき、
+    こちらのホストの FQDN を helo_domain に指定します。
+    もしすでにセッションが開始していたら IOError を発生します。
+
+    account と password の両方が与えられた場合、AUTH コマンドによって
+    認証を行います。authtype は使用する認証のタイプで、シンボル
+    で :plain か :cram_md5 を指定します。
+
+: active?
+    SMTP セッションが開始されていたら真。
+
+: address
+    接続するアドレス
+
+: port
+    接続するポート番号
+
+: open_timeout
+: open_timeout=(n)
+    接続時に待つ最大秒数。この秒数たってもコネクションが
+    開かなければ例外 TimeoutError を発生します。
+
+: read_timeout
+: read_timeout=(n)
+    読みこみ (read(1) 一回) でブロックしてよい最大秒数。
+    この秒数たっても読みこめなければ例外 TimeoutError を発生します。
+
+: finish
+    SMTP セッションを終了します。セッション開始前にこのメソッドが
+    呼ばれた場合は例外 IOError を発生します。
+
+: send_mail( mailsrc, from_addr, *to_addrs )
+    mailsrc をメールとして送信します。mailsrc は each イテレータを持つ
+    オブジェクトならなんでも構いません (たとえば String や File)。
+    from_domain は送り主のメールアドレス ('...@...'のかたちのもの) で、
+    to_addrs には送信先メールアドレスを並べます。
+
+        # example
+        Net::SMTP.start( 'your.smtp.server' ) {|smtp|
+          smtp.send_mail mail_string,
+                         'from@mail.address',
+                         'dest@mail.address' 'dest2@mail.address'
+        }
+
+: ready( from_addr, *to_addrs ) {|adapter| .... }
+    メール書きこみの準備をしたうえで、write メソッドを持つオブジェクトを
+    ブロックにあたえます。from_addr は送信元メールアドレスで to_addrs は
+    宛先のメールボックスです。
+
+        # example
+        Net::SMTP.start( 'your.smtp.server', 25 ) {|smtp|
+          smtp.ready( 'from@mail.addr', 'dest@mail.addr' ) do |adapter|
+            adapter.write str1
+            adapter.write str2
+            adapter.write str3
+          end
+        }
+
+== 発生する例外
+
+セッション中に (SMTP レベルの) エラーがおこった場合、
+以下の例外が発生します。
+: Net::ProtoSyntaxError
+    SMTP コマンドの構文ミス(500番台)
+: Net::ProtoFatalError
+    恒久的なエラー(550番台)
+: Net::ProtoUnknownError
+    予期しないエラー。おそらくバグ
+: Net::ProtoServerBusy
+    一時的なエラー(420/450番台)
+
+=end
