@@ -1,3 +1,7 @@
+Mon Feb  2 13:31:51 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/net/http.rb (canonical_each): fix merge miss.
+
 Mon Feb  2 01:54:00 2004  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pp.rb (Struct#pretty_print): make it 1.8 style.

@@ -970,7 +970,7 @@ module Net # :nodoc:
     end
 
     # As for #each_header, except the keys are provided in capitalized form.
-    def each_capitalized
+    def canonical_each
       @header.each do |k,v|
         yield canonical(k), v
       end
