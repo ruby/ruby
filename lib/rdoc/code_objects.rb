@@ -126,10 +126,36 @@ module RDoc
         @title = title
         @@sequence.succ!
         @sequence = @@sequence.dup
-        if comment
-          @comment = comment.sub(/.*$/, '')
-          @comment = nil if @comment.empty?
+        set_comment(comment)
+      end
+
+      private
+
+      # Set the comment for this section from the original comment block
+      # If the first line contains :section:, strip it and use the rest. Otherwise
+      # remove lines up to the line containing :section:, and look for 
+      # those lines again at the end and remove them. This lets us write
+      #
+      #   # ---------------------
+      #   # :SECTION: The title
+      #   # The body
+      #   # ---------------------
+
+      def set_comment(comment)
+        return unless comment
+
+        if comment =~ /^.*?:section:.*$/
+          start = $`
+          rest = $'
+          if start.empty?
+            @comment = rest
+          else
+            @comment = rest.sub(/#{start.chomp}\Z/, '')
+          end
+        else
+          @comment = comment
         end
+        @comment = nil if @comment.empty?
       end
     end
 

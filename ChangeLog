@@ -1,3 +1,15 @@
+Sat Dec  4 14:28:56 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/code_objects.rb (RDoc::Context::Section::set_comment):
+	  Section comments may now be bracketed by lines which are
+	  ignored. You can now write
+	      # -----------
+	      # :section: Dave's Section
+	      # comment material
+	      # -----------
+	   The lines before :section: are removed, and identical lines at the end are 
+	   also removed if present.
+
 Fri Dec  3 12:25:21 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* st.h: fix prototype for C++.
