@@ -1,3 +1,8 @@
+Tue Jan  6 21:51:37 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (fptr_finalize): should save errno just after failure.
+	  [ruby-dev:22492]
+
 Tue Jan  6 20:51:10 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* lib/logger.rb(Logger#msg2str): no special treatment for the object
@@ -75,7 +80,7 @@ Tue Jan  6 06:37:53 2004  Dave Thomas  <dave@pragprog.com>
 
 Tue Jan  6 00:04:40 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_method_or_yield_parameters): 
+	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_method_or_yield_parameters):
 	  fix parsing if there are braces in a method parameter list
 
 Tue Jan  6 01:01:04 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
@@ -96,7 +101,7 @@ Mon Jan  5 18:58:47 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* pack.c (pack_unpack): unpack requires big endian offet (OFF16B
 	  and OFF32B).  The patch is from Minero Aoki in [ruby-dev:22489]
 
-	* pack.c (OFF16B): add big-endian offset again. 
+	* pack.c (OFF16B): add big-endian offset again.
 
 Mon Jan  5 03:00:53 2004  Minero Aoki  <aamine@loveruby.net>
 
@@ -118,7 +123,7 @@ Sat Jan  3 01:18:08 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  [ruby-dev:22476]
 
 Fri Jan  2 14:54:11 2004  Dave Thomas  <dave@pragprog.com>
-	
+
 	* bin/ri: Add new --classes option, and arrange for
 	  help messages to be paged too.
 
@@ -126,7 +131,7 @@ Fri Jan  2 14:54:11 2004  Dave Thomas  <dave@pragprog.com>
 
 	* process.c: (MG) Added Process documentation
 
-	* lib/rdoc/ri/ri_formatter.rb (RI::AttributeFormatter::wrap): 
+	* lib/rdoc/ri/ri_formatter.rb (RI::AttributeFormatter::wrap):
 	  Fix problem with labels not displaying in RI labeled
 	  lists using BS and ANSI modes.
 
@@ -266,7 +271,7 @@ Sun Dec 28 08:56:51 2003  Dave Thomas  <dave@pragprog.com>
 
 Sun Dec 28 03:50:05 2003  Dave Thomas  <dave@pragprog.com>
 
-	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser::find_override_comment): 
+	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser::find_override_comment):
 	  Escape method names used in regexp
 
 Sun Dec 28 01:46:02 2003  Dave Thomas  <dave@wireless_3.local.thomases.com>

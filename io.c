@@ -1727,12 +1727,12 @@ fptr_finalize(fptr, noraise)
     OpenFile *fptr;
     int noraise;
 {
-    int n1 = 0, n2 = 0, e = 0, f1, f2 = -1;
+    int n1 = 0, n2 = 0, f1, f2 = -1;
 
     if (fptr->f2) {
 	f2 = fileno(fptr->f2);
-	while ((n2 = fclose(fptr->f2)) < 0) {
-	    e = errno;
+	while (n2 = 0, fclose(fptr->f2) < 0) {
+	    n2 = errno;
 	    if (!rb_io_wait_writable(f2)) {
 		break;
 	    }
@@ -1742,18 +1742,19 @@ fptr_finalize(fptr, noraise)
     }
     if (fptr->f) {
 	f1 = fileno(fptr->f);
-	while ((n1 = fclose(fptr->f)) < 0) {
+	while (n1 = 0, fclose(fptr->f) < 0) {
+	    n1 = errno;
 	    if (f2 != -1 || !(fptr->mode & FMODE_WBUF)) break;
 	    if (!rb_io_wait_writable(f1)) break;
 	    if (!fptr->f) break;
 	}
 	fptr->f = 0;
-	if (n1 < 0 && errno == EBADF && f1 == f2) {
+	if (n1 == EBADF && f1 == f2) {
 	    n1 = 0;
 	}
     }
-    if (!noraise && (n1 < 0 || n2 < 0)) {
-	if (n1 == 0) errno = e;
+    if (!noraise && (n1 || n2)) {
+	errno = (n1 ? n1 : n2);
 	rb_sys_fail(fptr->path);
     }
 }
