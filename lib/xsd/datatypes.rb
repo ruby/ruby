@@ -600,7 +600,7 @@ private
       year, @data.mon, @data.mday, @data.hour, @data.min, @data.sec)
     if @data.sec_fraction.nonzero?
       fr = @data.sec_fraction * SecInDay
-      shiftsize = fr.denominator.to_s.size
+      shiftsize = fr.denominator.to_s.size + 1
       fr_s = (fr * (10 ** shiftsize)).to_i.to_s
       s << '.' << '0' * (shiftsize - fr_s.size) << fr_s.sub(/0+$/, '')
     end

@@ -1,3 +1,12 @@
+Sun Oct  5 14:37:39 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/xsd/datatypes.rb: Rational -> Decimal string bug fix.
+
+	* test/soap/marshal/test_marshal.rb: ditto.
+
+	* test/soap/calc/test_calc_cgi.rb: add Config::CONFIG["EXEECT"] to
+	  RUBYBIN.
+
 Sun Oct  5 13:47:22 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/ruby/test_beginendblock.rb, test/ruby/beginmainend.rb: add tests

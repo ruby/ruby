@@ -11,7 +11,11 @@ module Calc
 
 class TestCalcCGI < Test::Unit::TestCase
   # This test shuld be run after installing ruby.
-  RUBYBIN = File.join(Config::CONFIG["bindir"], Config::CONFIG["ruby_install_name"])
+  RUBYBIN = File.join(
+    Config::CONFIG["bindir"],
+    Config::CONFIG["ruby_install_name"] + Config::CONFIG["EXEEXT"]
+  )
+
   def setup
     logger = Logger.new(STDERR)
     logger.level = Logger::Severity::FATAL
