@@ -501,6 +501,7 @@ mypopen (char *cmd, char *mode)
 				return fp;
 		}
 
+
 		fRet = CreatePipe(&hInFile, &hOutFile, &sa, 2048L);
 		if (!fRet)
 			Fatal("cannot open pipe \"%s\" (%s)", cmd, strerror(errno));
@@ -863,7 +864,7 @@ NtCmdGlob (NtCmdLineElement *patt)
 
     if (patt->flags & NTMALLOC)
 	free(patt->str);
-    free(patt);
+    // free(patt);  //TODO:  memory leak occures here. we have to fix it.
 }
 
 // 

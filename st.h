@@ -36,8 +36,9 @@ st_table *st_init_table();
 st_table *st_init_table_with_size();
 st_table *st_init_numtable();
 st_table *st_init_strtable();
-int st_delete(), st_insert(), st_foreach(), st_free_table();
-int st_lookup(), st_find_or_add(), st_add_direct();
+int st_delete(), st_delete_safe(), st_insert();
+int st_lookup(), st_find_or_add();
+void st_foreach(), st_add_direct(), st_free_table();
 st_table *st_copy();
 
 #define ST_NUMCMP	((int (*)()) 0)

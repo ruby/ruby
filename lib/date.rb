@@ -151,7 +151,7 @@ end
 
 def Date.at(d)
   if d.kind_of? Time
-    return Date.new(1900+d.year, d.mon, d.mday)
+    return Date.new(1900+d.year, d.mon+1, d.mday)
   end
   if d.kind_of? Date
     return Date.at(d.period)

@@ -32,7 +32,9 @@ static struct st_hash_type type_strhash = {
     strhash,
 };
 
-extern void *xmalloc();
+void *xmalloc();
+void *xcalloc();
+void *xrealloc();
 static void rehash();
 
 #define max(a,b) ((a) > (b) ? (a) : (b))
@@ -84,7 +86,7 @@ st_init_strtable()
     return st_init_table(&type_strhash);
 }
 
-int
+void
 st_free_table(table)
     st_table *table;
 {
@@ -175,7 +177,7 @@ st_insert(table, key, value)
     }
 }
 
-int
+void
 st_add_direct(table, key, value)
     st_table *table;
     char *key;
@@ -334,7 +336,6 @@ st_delete_safe(table, key, value, never)
     char *never;
 {
     int hash_val;
-    st_table_entry *tmp;
     register st_table_entry *ptr;
 
     hash_val = do_hash(*key, table);
@@ -367,7 +368,7 @@ st_delete_safe(table, key, value, never)
     return 0;
 }
 
-int
+void
 st_foreach(table, func, arg)
     st_table *table;
     enum st_retval (*func)();

@@ -108,11 +108,12 @@ hash_foreach_iter(key, value, arg)
     return status;
 }
 
-static int
+static VALUE
 hash_foreach_call(arg)
     struct hash_foreach_arg *arg;
 {
-    return st_foreach(arg->hash->tbl, hash_foreach_iter, arg);
+    st_foreach(arg->hash->tbl, hash_foreach_iter, arg);
+    return Qnil;
 }
 
 static int
