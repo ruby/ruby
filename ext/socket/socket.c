@@ -705,13 +705,13 @@ ipaddr(sockaddr)
 	family = rb_str_new2(pbuf);
 	break;
     }
+    addr1 = Qnil;
     if (!do_not_reverse_lookup) {
 	error = getnameinfo(sockaddr, SA_LEN(sockaddr), hbuf, sizeof(hbuf),
 			    NULL, 0, 0);
-	if (error) {
-	    rb_raise(rb_eSocket, "getnameinfo: %s", gai_strerror(error));
+	if (! error) {
+	    addr1 = rb_str_new2(hbuf);
 	}
-	addr1 = rb_str_new2(hbuf);
     }
     error = getnameinfo(sockaddr, SA_LEN(sockaddr), hbuf, sizeof(hbuf),
 			pbuf, sizeof(pbuf), NI_NUMERICHOST | NI_NUMERICSERV);
@@ -719,7 +719,7 @@ ipaddr(sockaddr)
 	rb_raise(rb_eSocket, "getnameinfo: %s", gai_strerror(error));
     }
     addr2 = rb_str_new2(hbuf);
-    if (do_not_reverse_lookup) {
+    if (addr1 == Qnil) {
 	addr1 = addr2;
     }
     port = INT2FIX(atoi(pbuf));
