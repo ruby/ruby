@@ -417,7 +417,7 @@ if __FILE__ == $0
                    Time.rfc2822("21 Nov 97 09:55:06 GMT"))
       assert_equal(Time.utc(1997, 11, 21, 9, 55, 6) + 6 * 3600,
                    Time.rfc2822("Fri, 21 Nov 1997 09 :   55  :  06 -0600"))
-      assert_raises(ArgumentError) {
+      assert_raise(ArgumentError) {
         # inner comment is not supported.
         Time.rfc2822("Fri, 21 Nov 1997 09(comment):   55  :  06 -0600")
       }
@@ -552,65 +552,65 @@ if __FILE__ == $0
 
     def test_invalid
       # They were actually used in some web sites.
-      assert_raises(ArgumentError) { Time.httpdate("1 Dec 2001 10:23:57 GMT") }
-      assert_raises(ArgumentError) { Time.httpdate("Sat, 1 Dec 2001 10:25:42 GMT") }
-      assert_raises(ArgumentError) { Time.httpdate("Sat,  1-Dec-2001 10:53:55 GMT") }
-      assert_raises(ArgumentError) { Time.httpdate("Saturday, 01-Dec-2001 10:15:34 GMT") }
-      assert_raises(ArgumentError) { Time.httpdate("Saturday, 01-Dec-101 11:10:07 GMT") }
-      assert_raises(ArgumentError) { Time.httpdate("Fri, 30 Nov 2001 21:30:00 JST") }
+      assert_raise(ArgumentError) { Time.httpdate("1 Dec 2001 10:23:57 GMT") }
+      assert_raise(ArgumentError) { Time.httpdate("Sat, 1 Dec 2001 10:25:42 GMT") }
+      assert_raise(ArgumentError) { Time.httpdate("Sat,  1-Dec-2001 10:53:55 GMT") }
+      assert_raise(ArgumentError) { Time.httpdate("Saturday, 01-Dec-2001 10:15:34 GMT") }
+      assert_raise(ArgumentError) { Time.httpdate("Saturday, 01-Dec-101 11:10:07 GMT") }
+      assert_raise(ArgumentError) { Time.httpdate("Fri, 30 Nov 2001 21:30:00 JST") }
 
       # They were actually used in some mails.
-      assert_raises(ArgumentError) { Time.rfc2822("01-5-20") }
-      assert_raises(ArgumentError) { Time.rfc2822("7/21/00") }
-      assert_raises(ArgumentError) { Time.rfc2822("2001-8-28") }
-      assert_raises(ArgumentError) { Time.rfc2822("00-5-6 1:13:06") }
-      assert_raises(ArgumentError) { Time.rfc2822("2001-9-27 9:36:49") }
-      assert_raises(ArgumentError) { Time.rfc2822("2000-12-13 11:01:11") }
-      assert_raises(ArgumentError) { Time.rfc2822("2001/10/17 04:29:55") }
-      assert_raises(ArgumentError) { Time.rfc2822("9/4/2001 9:23:19 PM") }
-      assert_raises(ArgumentError) { Time.rfc2822("01 Nov 2001 09:04:31") }
-      assert_raises(ArgumentError) { Time.rfc2822("13 Feb 2001 16:4 GMT") }
-      assert_raises(ArgumentError) { Time.rfc2822("01 Oct 00 5:41:19 PM") }
-      assert_raises(ArgumentError) { Time.rfc2822("2 Jul 00 00:51:37 JST") }
-      assert_raises(ArgumentError) { Time.rfc2822("01 11 2001 06:55:57 -0500") }
-      assert_raises(ArgumentError) { Time.rfc2822("18 \343\366\356\341\370 2000") }
-      assert_raises(ArgumentError) { Time.rfc2822("Fri, Oct 2001  18:53:32") }
-      assert_raises(ArgumentError) { Time.rfc2822("Fri, 2 Nov 2001 03:47:54") }
-      assert_raises(ArgumentError) { Time.rfc2822("Fri, 27 Jul 2001 11.14.14 +0200") }
-      assert_raises(ArgumentError) { Time.rfc2822("Thu, 2 Nov 2000 04:13:53 -600") }
-      assert_raises(ArgumentError) { Time.rfc2822("Wed, 5 Apr 2000 22:57:09 JST") }
-      assert_raises(ArgumentError) { Time.rfc2822("Mon, 11 Sep 2000 19:47:33 00000") }
-      assert_raises(ArgumentError) { Time.rfc2822("Fri, 28 Apr 2000 20:40:47 +-900") }
-      assert_raises(ArgumentError) { Time.rfc2822("Fri, 19 Jan 2001 8:15:36 AM -0500") }
-      assert_raises(ArgumentError) { Time.rfc2822("Thursday, Sep 27 2001 7:42:35 AM EST") }
-      assert_raises(ArgumentError) { Time.rfc2822("3/11/2001 1:31:57 PM Pacific Daylight Time") }
-      assert_raises(ArgumentError) { Time.rfc2822("Mi, 28 Mrz 2001 11:51:36") }
-      assert_raises(ArgumentError) { Time.rfc2822("P, 30 sept 2001 23:03:14") }
-      assert_raises(ArgumentError) { Time.rfc2822("fr, 11 aug 2000 18:39:22") }
-      assert_raises(ArgumentError) { Time.rfc2822("Fr, 21 Sep 2001 17:44:03 -1000") }
-      assert_raises(ArgumentError) { Time.rfc2822("Mo, 18 Jun 2001 19:21:40 -1000") }
-      assert_raises(ArgumentError) { Time.rfc2822("l\366, 12 aug 2000 18:53:20") }
-      assert_raises(ArgumentError) { Time.rfc2822("l\366, 26 maj 2001 00:15:58") }
-      assert_raises(ArgumentError) { Time.rfc2822("Dom, 30 Sep 2001 17:36:30") }
-      assert_raises(ArgumentError) { Time.rfc2822("%&, 31 %2/ 2000 15:44:47 -0500") }
-      assert_raises(ArgumentError) { Time.rfc2822("dom, 26 ago 2001 03:57:07 -0300") }
-      assert_raises(ArgumentError) { Time.rfc2822("ter, 04 set 2001 16:27:58 -0300") }
-      assert_raises(ArgumentError) { Time.rfc2822("Wen, 3 oct 2001 23:17:49 -0400") }
-      assert_raises(ArgumentError) { Time.rfc2822("Wen, 3 oct 2001 23:17:49 -0400") }
-      assert_raises(ArgumentError) { Time.rfc2822("ele, 11 h: 2000 12:42:15 -0500") }
-      assert_raises(ArgumentError) { Time.rfc2822("Tue, 14 Aug 2001 3:55:3 +0200") }
-      assert_raises(ArgumentError) { Time.rfc2822("Fri, 25 Aug 2000 9:3:48 +0800") }
-      assert_raises(ArgumentError) { Time.rfc2822("Fri, 1 Dec 2000 0:57:50 EST") }
-      assert_raises(ArgumentError) { Time.rfc2822("Mon, 7 May 2001 9:39:51 +0200") }
-      assert_raises(ArgumentError) { Time.rfc2822("Wed, 1 Aug 2001 16:9:15 +0200") }
-      assert_raises(ArgumentError) { Time.rfc2822("Wed, 23 Aug 2000 9:17:36 +0800") }
-      assert_raises(ArgumentError) { Time.rfc2822("Fri, 11 Aug 2000 10:4:42 +0800") }
-      assert_raises(ArgumentError) { Time.rfc2822("Sat, 15 Sep 2001 13:22:2 +0300") }
-      assert_raises(ArgumentError) { Time.rfc2822("Wed,16 \276\305\324\302 2001 20:06:25 +0800") }
-      assert_raises(ArgumentError) { Time.rfc2822("Wed,7 \312\256\322\273\324\302 2001 23:47:22 +0800") }
-      assert_raises(ArgumentError) { Time.rfc2822("=?iso-8859-1?Q?(=C5=DA),?= 10   2 2001 23:32:26 +0900 (JST)") }
-      assert_raises(ArgumentError) { Time.rfc2822("\307\341\314\343\332\311, 30 \344\346\335\343\310\321 2001 10:01:06") }
-      assert_raises(ArgumentError) { Time.rfc2822("=?iso-8859-1?Q?(=BF=E5),?= 12  =?iso-8859-1?Q?9=B7=EE?= 2001 14:52:41\n+0900 (JST)") }
+      assert_raise(ArgumentError) { Time.rfc2822("01-5-20") }
+      assert_raise(ArgumentError) { Time.rfc2822("7/21/00") }
+      assert_raise(ArgumentError) { Time.rfc2822("2001-8-28") }
+      assert_raise(ArgumentError) { Time.rfc2822("00-5-6 1:13:06") }
+      assert_raise(ArgumentError) { Time.rfc2822("2001-9-27 9:36:49") }
+      assert_raise(ArgumentError) { Time.rfc2822("2000-12-13 11:01:11") }
+      assert_raise(ArgumentError) { Time.rfc2822("2001/10/17 04:29:55") }
+      assert_raise(ArgumentError) { Time.rfc2822("9/4/2001 9:23:19 PM") }
+      assert_raise(ArgumentError) { Time.rfc2822("01 Nov 2001 09:04:31") }
+      assert_raise(ArgumentError) { Time.rfc2822("13 Feb 2001 16:4 GMT") }
+      assert_raise(ArgumentError) { Time.rfc2822("01 Oct 00 5:41:19 PM") }
+      assert_raise(ArgumentError) { Time.rfc2822("2 Jul 00 00:51:37 JST") }
+      assert_raise(ArgumentError) { Time.rfc2822("01 11 2001 06:55:57 -0500") }
+      assert_raise(ArgumentError) { Time.rfc2822("18 \343\366\356\341\370 2000") }
+      assert_raise(ArgumentError) { Time.rfc2822("Fri, Oct 2001  18:53:32") }
+      assert_raise(ArgumentError) { Time.rfc2822("Fri, 2 Nov 2001 03:47:54") }
+      assert_raise(ArgumentError) { Time.rfc2822("Fri, 27 Jul 2001 11.14.14 +0200") }
+      assert_raise(ArgumentError) { Time.rfc2822("Thu, 2 Nov 2000 04:13:53 -600") }
+      assert_raise(ArgumentError) { Time.rfc2822("Wed, 5 Apr 2000 22:57:09 JST") }
+      assert_raise(ArgumentError) { Time.rfc2822("Mon, 11 Sep 2000 19:47:33 00000") }
+      assert_raise(ArgumentError) { Time.rfc2822("Fri, 28 Apr 2000 20:40:47 +-900") }
+      assert_raise(ArgumentError) { Time.rfc2822("Fri, 19 Jan 2001 8:15:36 AM -0500") }
+      assert_raise(ArgumentError) { Time.rfc2822("Thursday, Sep 27 2001 7:42:35 AM EST") }
+      assert_raise(ArgumentError) { Time.rfc2822("3/11/2001 1:31:57 PM Pacific Daylight Time") }
+      assert_raise(ArgumentError) { Time.rfc2822("Mi, 28 Mrz 2001 11:51:36") }
+      assert_raise(ArgumentError) { Time.rfc2822("P, 30 sept 2001 23:03:14") }
+      assert_raise(ArgumentError) { Time.rfc2822("fr, 11 aug 2000 18:39:22") }
+      assert_raise(ArgumentError) { Time.rfc2822("Fr, 21 Sep 2001 17:44:03 -1000") }
+      assert_raise(ArgumentError) { Time.rfc2822("Mo, 18 Jun 2001 19:21:40 -1000") }
+      assert_raise(ArgumentError) { Time.rfc2822("l\366, 12 aug 2000 18:53:20") }
+      assert_raise(ArgumentError) { Time.rfc2822("l\366, 26 maj 2001 00:15:58") }
+      assert_raise(ArgumentError) { Time.rfc2822("Dom, 30 Sep 2001 17:36:30") }
+      assert_raise(ArgumentError) { Time.rfc2822("%&, 31 %2/ 2000 15:44:47 -0500") }
+      assert_raise(ArgumentError) { Time.rfc2822("dom, 26 ago 2001 03:57:07 -0300") }
+      assert_raise(ArgumentError) { Time.rfc2822("ter, 04 set 2001 16:27:58 -0300") }
+      assert_raise(ArgumentError) { Time.rfc2822("Wen, 3 oct 2001 23:17:49 -0400") }
+      assert_raise(ArgumentError) { Time.rfc2822("Wen, 3 oct 2001 23:17:49 -0400") }
+      assert_raise(ArgumentError) { Time.rfc2822("ele, 11 h: 2000 12:42:15 -0500") }
+      assert_raise(ArgumentError) { Time.rfc2822("Tue, 14 Aug 2001 3:55:3 +0200") }
+      assert_raise(ArgumentError) { Time.rfc2822("Fri, 25 Aug 2000 9:3:48 +0800") }
+      assert_raise(ArgumentError) { Time.rfc2822("Fri, 1 Dec 2000 0:57:50 EST") }
+      assert_raise(ArgumentError) { Time.rfc2822("Mon, 7 May 2001 9:39:51 +0200") }
+      assert_raise(ArgumentError) { Time.rfc2822("Wed, 1 Aug 2001 16:9:15 +0200") }
+      assert_raise(ArgumentError) { Time.rfc2822("Wed, 23 Aug 2000 9:17:36 +0800") }
+      assert_raise(ArgumentError) { Time.rfc2822("Fri, 11 Aug 2000 10:4:42 +0800") }
+      assert_raise(ArgumentError) { Time.rfc2822("Sat, 15 Sep 2001 13:22:2 +0300") }
+      assert_raise(ArgumentError) { Time.rfc2822("Wed,16 \276\305\324\302 2001 20:06:25 +0800") }
+      assert_raise(ArgumentError) { Time.rfc2822("Wed,7 \312\256\322\273\324\302 2001 23:47:22 +0800") }
+      assert_raise(ArgumentError) { Time.rfc2822("=?iso-8859-1?Q?(=C5=DA),?= 10   2 2001 23:32:26 +0900 (JST)") }
+      assert_raise(ArgumentError) { Time.rfc2822("\307\341\314\343\332\311, 30 \344\346\335\343\310\321 2001 10:01:06") }
+      assert_raise(ArgumentError) { Time.rfc2822("=?iso-8859-1?Q?(=BF=E5),?= 12  =?iso-8859-1?Q?9=B7=EE?= 2001 14:52:41\n+0900 (JST)") }
     end
   end
 

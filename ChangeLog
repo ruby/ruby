@@ -1,3 +1,14 @@
+Thu Feb 12 02:23:56 2004  Tanaka Akira  <akr@m17n.org>
+
+	* lib/pathname.rb: use assert_raise instead of assert_raises.
+
+	* lib/pp.rb: ditto.
+
+	* lib/time.rb: ditto.
+
+	* lib/tsort.rb: ditto.
+	  use TSortHash and TSortArray instead of Hash and Array in test.
+
 Wed Feb 11 23:24:22 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: properly treat a Tcl/Tk's string with escaping

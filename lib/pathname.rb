@@ -719,7 +719,7 @@ class Pathname    # * FileTest *
   # See <tt>FileTest.readable?</tt>.
   def readable?() FileTest.readable?(@path) end
 
-  # See <tt>FileTest.readable_world?</tt>.
+  # See <tt>FileTest.world_readable?</tt>.
   def world_readable?() FileTest.world_readable?(@path) end
 
   # See <tt>FileTest.readable_real?</tt>.
@@ -746,7 +746,7 @@ class Pathname    # * FileTest *
   # See <tt>FileTest.writable?</tt>.
   def writable?() FileTest.writable?(@path) end
 
-  # See <tt>FileTest.writable_world?</tt>.
+  # See <tt>FileTest.world_writable?</tt>.
   def world_writable?() FileTest.world_writable?(@path) end
 
   # See <tt>FileTest.writable_real?</tt>.
@@ -1040,7 +1040,7 @@ if $0 == __FILE__
     end
 
     def test_null_character
-      assert_raises(ArgumentError) { Pathname.new("\0") }
+      assert_raise(ArgumentError) { Pathname.new("\0") }
     end
 
     def assert_relpath(result, dest, base)
@@ -1049,7 +1049,7 @@ if $0 == __FILE__
     end
 
     def assert_relpath_err(dest, base)
-      assert_raises(ArgumentError) {
+      assert_raise(ArgumentError) {
         Pathname.new(dest).relative_path_from(Pathname.new(base))
       }
     end
