@@ -1,3 +1,8 @@
+Thu Jan  6 20:31:07 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/zlib/zlib.c (zstream_end): should return value. (backported
+	  from CVS HEAD)
+
 Thu Jan  6 19:55:13 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* win32/win32.c (rb_w32_close): didn't close socket handle.

@@ -679,7 +679,7 @@ zstream_end(z)
 	if (RTEST(ruby_debug)) {
 	    rb_warning("attempt to close uninitialized zstream; ignored.");
 	}
-	return;
+	return Qnil;
     }
     if (z->flags & ZSTREAM_FLAG_IN_STREAM) {
 	if (RTEST(ruby_debug)) {
