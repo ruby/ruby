@@ -8394,6 +8394,7 @@ Init_tcltklib()
 #define DEFAULT_EVENTLOOP_DEPTH 7
 #endif 
     eventloop_stack = rb_ary_new2(DEFAULT_EVENTLOOP_DEPTH);
+    OBJ_TAINT(eventloop_stack);
 
     watchdog_thread  = Qnil;
 
