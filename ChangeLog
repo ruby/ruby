@@ -2,6 +2,22 @@ Wed May 29 13:45:15 2002  Wakou Aoyama  <wakou@ruby-lang.org>
 
 	* lib/cgi.rb: not use const if GET, HEAD. check multipart form head.
 
+Tue May 28 17:56:02 2002  Sean Chittenden  <sean@ruby-lang.org>
+
+	* parse.y: yyparse #defines moved from intern.h
+
+	* ruby.c (proc_options): access prefixed "ruby_yydebug".
+
+	* applied modifies to pacify some of gcc -Wall warnings.
+	
+Tue May 28 14:07:00 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (arg): no more ugly hack for "**", so that "-2**2" to be
+	  parsed as "(-2)**2", whereas "- 2**2" or "-(2)**2" to be parsed
+	  as "-(2**2)".
+
+	* parse.y (yylex): '-2' to be literal fixnum. [new]
+
 Tue May 28 12:13:37 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (scope_node): trick to keep the node has a scope.
@@ -15,6 +31,14 @@ Tue May 28 12:13:37 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	* eval.c (rb_call0): ditto.
 
 	* node.h (NEW_DASGN, NEW_DASGN_CURR): remove surplus semicolons.
+
+Mon May 27 04:31:37 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (time_succ): new method for Range support.
+
+Fri May 24 09:06:29 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (time_arg): nil test against v[6] (usec).
 
 Thu May 23 16:39:21 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 

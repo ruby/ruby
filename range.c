@@ -22,9 +22,9 @@ static VALUE
 range_check(args)
     VALUE *args;
 {
-    rb_funcall(args[0], id_cmp, 1, args[1]);
     if (!FIXNUM_P(args[0]) && !rb_obj_is_kind_of(args[0], rb_cNumeric)) {
-	rb_funcall(args[0], id_succ, 0, 0);
+	rb_funcall(args[0], id_cmp, 1, args[1]);
+	/* rb_funcall(args[0], id_succ, 0, 0); */
     }
     return Qnil;
 }

@@ -215,6 +215,7 @@ end
 
 class SizedQueue<Queue
   def initialize(max)
+    raise ArgumentError, "queue size must be positive" unless max > 0
     @max = max
     @queue_wait = []
     @queue_wait.taint		# enable tainted comunication

@@ -1,3 +1,7 @@
+: parser
+
+  Digits preceded minus sign is a literal integer.
+
 : IO::sysopen
 
   a new method to get a raw file descriptor.

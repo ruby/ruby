@@ -25,16 +25,17 @@
 
 static VALUE sPasswd, sGroup;
 
+char *getenv();
+char *getlogin();
+
 static VALUE
 etc_getlogin(obj)
     VALUE obj;
 {
-    char *getenv();
     char *login;
 
+    rb_secure(4);
 #ifdef HAVE_GETLOGIN
-    char *getlogin();
-
     login = getlogin();
     if (!login) login = getenv("USER");
 #else
@@ -91,11 +92,12 @@ etc_getpwuid(argc, argv, obj)
     VALUE *argv;
     VALUE obj;
 {
-#ifdef HAVE_GETPWENT
-    VALUE id;
+#if defined(HAVE_GETPWENT)
+    VALUE id, ary;
     int uid;
     struct passwd *pwd;
 
+    rb_secure(4);
     if (rb_scan_args(argc, argv, "01", &id) == 1) {
 	uid = NUM2INT(id);
     }
@@ -117,7 +119,7 @@ etc_getpwnam(obj, nam)
 #ifdef HAVE_GETPWENT
     struct passwd *pwd;
 
-    StringValue(nam);
+    SafeStringValue(nam);
     pwd = getpwnam(RSTRING(nam)->ptr);
     if (pwd == 0) rb_raise(rb_eArgError, "can't find user for %s", RSTRING(nam)->ptr);
     return setup_passwd(pwd);
@@ -126,6 +128,29 @@ etc_getpwnam(obj, nam)
 #endif
 }
 
+#ifdef HAVE_GETPWENT
+static int passwd_blocking = 0;
+static VALUE
+passwd_ensure()
+{
+    passwd_blocking = Qfalse;
+    return Qnil;
+}
+
+static VALUE
+passwd_iterate()
+{
+    struct passwd *pw;
+
+    setpwent();
+    while (pw = getpwent()) {
+	rb_yield(setup_passwd(pw));
+    }
+    endpwent();
+    return Qnil;
+}
+#endif
+
 static VALUE
 etc_passwd(obj)
     VALUE obj;
@@ -133,13 +158,13 @@ etc_passwd(obj)
 #ifdef HAVE_GETPWENT
     struct passwd *pw;
 
+    rb_secure(4);
     if (rb_block_given_p()) {
-	setpwent();
-	while (pw = getpwent()) {
-	    rb_yield(setup_passwd(pw));
+	if (passwd_blocking) {
+	    rb_raise(rb_eRuntimeError, "parallel passwd iteration");
 	}
-	endpwent();
-	return obj;
+	passwd_blocking = Qtrue;
+	rb_ensure(passwd_iterate, 0, passwd_ensure, 0);
     }
     if (pw = getpwent()) {
 	return setup_passwd(pw);
@@ -178,6 +203,7 @@ etc_getgrgid(obj, id)
     int gid;
     struct group *grp;
 
+    rb_secure(4);
     gid = NUM2INT(id);
     grp = getgrgid(gid);
     if (grp == 0) rb_raise(rb_eArgError, "can't find group for %d", gid);
@@ -194,7 +220,8 @@ etc_getgrnam(obj, nam)
 #ifdef HAVE_GETGRENT
     struct group *grp;
 
-    StringValue(nam);
+    rb_secure(4);
+    SafeStringValue(nam);
     grp = getgrnam(RSTRING(nam)->ptr);
     if (grp == 0) rb_raise(rb_eArgError, "can't find group for %s", RSTRING(nam)->ptr);
     return setup_group(grp);
@@ -203,6 +230,29 @@ etc_getgrnam(obj, nam)
 #endif
 }
 
+#ifdef HAVE_GETGRENT
+static int group_blocking = 0;
+static VALUE
+group_ensure()
+{
+    group_blocking = Qfalse;
+    return Qnil;
+}
+
+static VALUE
+group_iterate()
+{
+    struct group *pw;
+
+    setpwent();
+    while (pw = getgrent()) {
+	rb_yield(setup_group(pw));
+    }
+    endpwent();
+    return Qnil;
+}
+#endif
+
 static VALUE
 etc_group(obj)
     VALUE obj;
@@ -210,13 +260,13 @@ etc_group(obj)
 #ifdef HAVE_GETGRENT
     struct group *grp;
 
+    rb_secure(4);
     if (rb_block_given_p()) {
-	setgrent();
-	while (grp = getgrent()) {
-	    rb_yield(setup_group(grp));
+	if (group_blocking) {
+	    rb_raise(rb_eRuntimeError, "parallel group iteration");
 	}
-	endgrent();
-	return obj;
+	group_blocking = Qtrue;
+	rb_ensure(group_iterate, 0, group_ensure, 0);
     }
     if (grp = getgrent()) {
 	return setup_group(grp);
@@ -258,7 +308,7 @@ Init_etc()
 				"age",
 #endif
 #ifdef PW_CLASS
-				"class",
+				"uclass",
 #endif
 #ifdef PW_COMMENT
 				"comment",

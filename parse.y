@@ -13,13 +13,22 @@
 %{
 
 #define YYDEBUG 1
+
 #include "ruby.h"
 #include "env.h"
+#include "intern.h"
 #include "node.h"
 #include "st.h"
 #include <stdio.h>
 #include <errno.h>
 #include <ctype.h>
+
+#define yyparse ruby_yyparse
+#define yylex ruby_yylex
+#define yyerror ruby_yyerror
+#define yylval ruby_yylval
+#define yychar ruby_yychar
+#define yydebug ruby_yydebug
 
 #define ID_SCOPE_SHIFT 3
 #define ID_SCOPE_MASK 0x07

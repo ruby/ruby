@@ -55,19 +55,6 @@ eql(args)
     return (VALUE)rb_eql(args[0], args[1]);
 }
 
-static VALUE
-eql_failed()
-{
-    return Qfalse;
-}
-
-static VALUE
-any_eql(args)
-    VALUE *args;
-{
-    return rb_rescue(eql, (VALUE)args, eql_failed, 0);
-}
-
 static int
 rb_any_cmp(a, b)
     VALUE a, b;

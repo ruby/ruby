@@ -284,12 +284,6 @@ double rb_str_to_dbl _((VALUE, int));
 /* parse.y */
 EXTERN int   ruby_sourceline;
 EXTERN char *ruby_sourcefile;
-#define yyparse ruby_yyparse
-#define yylex ruby_yylex
-#define yyerror ruby_yyerror
-#define yylval ruby_yylval
-#define yychar ruby_yychar
-#define yydebug ruby_yydebug
 int yyparse _((void));
 ID rb_id_attrset _((ID));
 void rb_parser_append_print _((void));

@@ -1549,7 +1549,7 @@ pack_unpack(str, fmt)
 	    {
 		VALUE str = infected_str_new(0, (send - s)*3/4, str);
 		char *ptr = RSTRING(str)->ptr;
-		int a,b,c,d;
+		int a,b,c = 0,d;
 		static int first = 1;
 		static int b64_xtable[256];
 
@@ -1834,7 +1834,7 @@ utf8_to_uv(p, lenp)
     if (n != 0) {
 	uv &= (1<<(BYTEWIDTH-2-n)) - 1;
 	while (n--) {
-	    uv = uv << 6 | *p++ & ((1<<6)-1);
+	    uv = uv << 6 | (*p++ & ((1<<6)-1));
 	}
     }
     return uv;

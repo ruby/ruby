@@ -2444,7 +2444,7 @@ rb_str_split_m(argc, argv, str)
     VALUE spat;
     VALUE limit;
     int char_sep = -1;
-    long beg, end, i;
+    long beg, end, i = 0;
     int lim = 0;
     VALUE result, tmp;
 

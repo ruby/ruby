@@ -2081,7 +2081,7 @@ io_reopen(io, nfile)
     OpenFile *fptr, *orig;
     char *mode;
     int fd;
-    off_t pos;
+    off_t pos = 0;
 
     nfile = rb_io_get_io(nfile);
     if (rb_safe_level() >= 4 && (!OBJ_TAINTED(io) || !OBJ_TAINTED(nfile))) {
@@ -3508,7 +3508,7 @@ argf_read(argc, argv)
     VALUE *argv;
 {
     VALUE tmp, str;
-    int len;
+    int len = 0;
 
     if (argc == 1) len = NUM2INT(argv[0]);
     str = Qnil;

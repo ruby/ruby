@@ -254,7 +254,7 @@ time_arg(argc, argv, tm, usec)
     }
     else {
 	rb_scan_args(argc, argv, "16", &v[0],&v[1],&v[2],&v[3],&v[4],&v[5],&v[6]);
-	*usec = (argc == 7) ? NUM2INT(v[6]) : 0;
+	*usec = NIL_P(v[6]) ? 0 : obj2long(v[6]);
 	tm->tm_isdst = -1;
     }
 
@@ -686,6 +686,16 @@ time_usec(time)
 
     GetTimeval(time, tobj);
     return INT2NUM(tobj->tv.tv_usec);
+}
+
+static VALUE
+time_succ(time)
+    VALUE time;
+{
+    struct time_object *tobj;
+
+    GetTimeval(time, tobj);
+    return rb_time_new(tobj->tv.tv_sec + 1, tobj->tv.tv_usec);
 }
 
 static VALUE
@@ -1437,6 +1447,8 @@ Init_Time()
     rb_define_method(rb_cTime, "hash", time_hash, 0);
     rb_define_method(rb_cTime, "clone", time_clone, 0);
     rb_define_method(rb_cTime, "dup", time_dup, 0);
+    rb_define_method(rb_cTime, "succ", time_succ, 0);
+    rb_define_method(rb_cTime, "next", time_succ, 0);
 
     rb_define_method(rb_cTime, "localtime", time_localtime, 0);
     rb_define_method(rb_cTime, "gmtime", time_gmtime, 0);

@@ -3075,6 +3075,7 @@ rb_eval(self, n)
 			ruby_errinfo = Qnil;
 			ruby_sourceline = nd_line(node);
 			ruby_in_eval++;
+			rb_dvar_push(0, 0);
 			list->nd_head = compile(list->nd_head->nd_lit,
 						ruby_sourcefile,
 						ruby_sourceline);
@@ -6627,7 +6628,7 @@ proc_to_s(self, other)
 
     Data_Get_Struct(self, struct BLOCK, data);
     str = rb_str_new(0, strlen(cname)+6+16+1); /* 6:tags 16:addr 1:nul */
-    sprintf(RSTRING(str)->ptr, "#<%s:0x%lx>", cname, data->tag);
+    sprintf(RSTRING(str)->ptr, "#<%s:0x%p>", cname, data->tag);
     RSTRING(str)->len = strlen(RSTRING(str)->ptr);
     if (OBJ_TAINTED(self)) OBJ_TAINT(str);
 
@@ -6639,6 +6640,28 @@ proc_to_proc(proc)
     VALUE proc;
 {
     return proc;
+}
+
+static VALUE
+proc_binding(proc)
+    VALUE proc;
+{
+    struct BLOCK *orig, *data;
+    VALUE bind;
+
+    Data_Get_Struct(proc, struct BLOCK, orig);
+    bind = Data_Make_Struct(rb_cBinding,struct BLOCK,blk_mark,blk_free,data);
+    MEMCPY(data, orig, struct BLOCK, 1);
+    frame_dup(&data->frame);
+
+    if (data->iter) {
+	blk_copy_prev(data);
+    }
+    else {
+	data->prev = 0;
+    }
+
+    return bind;
 }
 
 static VALUE
@@ -7149,6 +7172,7 @@ Init_Proc()
     rb_define_method(rb_cProc, "==", proc_eq, 1);
     rb_define_method(rb_cProc, "to_s", proc_to_s, 0);
     rb_define_method(rb_cProc, "to_proc", proc_to_proc, 0);
+    rb_define_method(rb_cProc, "binding", proc_binding, 0);
     rb_define_global_function("proc", rb_f_lambda, 0);
     rb_define_global_function("lambda", rb_f_lambda, 0);
     rb_define_global_function("binding", rb_f_binding, 0);

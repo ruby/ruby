@@ -12,6 +12,7 @@
 
 #include "ruby.h"
 
+#include <ctype.h>
 #include <stdio.h>
 #include <errno.h>
 
@@ -747,8 +748,9 @@ ruby_strtod(string, endPtr)
      * Strip off leading blanks and check for a sign.
      */
 
+    errno = 0;
     p = string;
-    while (isspace(*p)) {
+    while (ISSPACE(*p)) {
 	p += 1;
     }
     if (*p == '-') {
@@ -770,7 +772,7 @@ ruby_strtod(string, endPtr)
     decPt = -1;
     for (mantSize = 0; ; mantSize += 1) {
 	c = *p;
-	if (!isdigit(c)) {
+	if (!ISDIGIT(c)) {
 	    if ((c != '.') || (decPt >= 0)) {
 		break;
 	    }
@@ -848,7 +850,7 @@ ruby_strtod(string, endPtr)
 	    }
 	    expSign = FALSE;
 	}
-	while (isdigit(*p)) {
+	while (ISDIGIT(*p)) {
 	    exp = exp * 10 + (*p - '0');
 	    p += 1;
 	}

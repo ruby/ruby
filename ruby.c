@@ -46,7 +46,7 @@ VALUE ruby_debug = Qfalse;
 VALUE ruby_verbose = Qfalse;
 static int sflag = 0;
 static int xflag = 0;
-extern int yydebug;
+extern int ruby_yydebug;
 
 char *ruby_inplace_mode = Qfalse;
 
@@ -436,7 +436,7 @@ proc_options(argc, argv)
 	    goto reswitch;
 
 	  case 'y':
-	    yydebug = 1;
+	    ruby_yydebug = 1;
 	    s++;
 	    goto reswitch;
 
@@ -612,7 +612,7 @@ proc_options(argc, argv)
 		ruby_verbose = Qtrue;
 	    }
 	    else if (strcmp("yydebug", s) == 0)
-		yydebug = 1;
+		ruby_yydebug = 1;
 	    else if (strcmp("help", s) == 0) {
 		usage(origargv[0]);
 		exit(0);
