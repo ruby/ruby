@@ -1,3 +1,9 @@
+Sat Nov  6 14:58:44 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/server.rb (WEBrick::HTTPServer#start): remove
+	  :DoNotReverseLookup option. (Socket#do_not_reverse_lookup is a 
+	  ruby 1.9 feature)
+
 Sat Nov  6 11:31:04 2004  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb (_parse): checks whether zone was given.
@@ -67,7 +73,7 @@ Wed Nov  3 22:32:12 2004  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* process.c: On NetBSD don't use setruid() and setrgid().
 
-Wed Nov  3 22:24:17 2004  GOTOU Yuuzou <gotoyuzo@notwork.org>
+Wed Nov  3 22:24:17 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httpauth/digestauth.rb: use Base64.encode64 to
 	  avoid warnings.
