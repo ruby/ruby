@@ -2232,6 +2232,50 @@ Init_socket()
 #ifdef SO_LINGER
     sock_define_const("SO_LINGER", SO_LINGER);
 #endif
+#ifdef SO_PASSCRED
+    sock_define_const("SO_PASSCRED", SO_PASSCRED);
+#endif
+#ifdef SO_PEERCRED
+    sock_define_const("SO_PEERCRED", SO_PEERCRED);
+#endif
+#ifdef SO_RCVLOWAT
+    sock_define_const("SO_RCVLOWAT", SO_RCVLOWAT);
+#endif
+#ifdef SO_SNDLOWAT
+    sock_define_const("SO_SNDLOWAT", SO_SNDLOWAT);
+#endif
+#ifdef SO_RCVTIMEO
+    sock_define_const("SO_RCVTIMEO", SO_RCVTIMEO);
+#endif
+#ifdef SO_SNDTIMEO
+    sock_define_const("SO_SNDTIMEO", SO_SNDTIMEO);
+#endif
+
+#ifdef SO_SECURITY_AUTHENTICATION
+    sock_define_const("SO_SECURITY_AUTHENTICATION", SO_SECURITY_AUTHENTICATION);
+#endif
+#ifdef SO_SECURITY_ENCRYPTION_TRANSPORT
+    sock_define_const("SO_SECURITY_ENCRYPTION_TRANSPORT", SO_SECURITY_ENCRYPTION_TRANSPORT);
+#endif
+#ifdef SO_SECURITY_ENCRYPTION_NETWORK
+    sock_define_const("SO_SECURITY_ENCRYPTION_NETWORK", SO_SECURITY_ENCRYPTION_NETWORK);
+#endif
+
+#ifdef SO_BINDTODEVICE
+    sock_define_const("SO_BINDTODEVICE", SO_BINDTODEVICE);
+#endif
+#ifdef SO_ATTACH_FILTER
+    sock_define_const("SO_ATTACH_FILTER", SO_ATTACH_FILTER);
+#endif
+#ifdef SO_DETACH_FILTER
+    sock_define_const("SO_DETACH_FILTER", SO_DETACH_FILTER);
+#endif
+#ifdef SO_PEERNAME
+    sock_define_const("SO_PEERNAME", SO_PEERNAME);
+#endif
+#ifdef SO_TIMESTAMP
+    sock_define_const("SO_TIMESTAMP", SO_TIMESTAMP);
+#endif
 
 #ifdef SOPRI_INTERACTIVE
     sock_define_const("SOPRI_INTERACTIVE", SOPRI_INTERACTIVE);

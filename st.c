@@ -114,7 +114,7 @@ new_size(size)
 {
     int i, newsize;
 
-#if 1
+#if 0
     for (i=3; i<31; i++) {
 	if ((1<<i) > size) return 1<<i;
     }
@@ -231,7 +231,7 @@ st_free_table(table)
 #endif
 
 #define FIND_ENTRY(table, ptr, hash_val, bin_pos) \
-bin_pos = hash_val&(table)->num_bins;\
+bin_pos = hash_val%(table)->num_bins;\
 ptr = (table)->bins[bin_pos];\
 if (PTR_NOT_EQUAL(table, ptr, hash_val, key)) {\
     COLLISION;\
@@ -266,7 +266,7 @@ st_lookup(table, key, value)
     st_table_entry *entry;\
     if (table->num_entries/(table->num_bins+1) > ST_DEFAULT_MAX_DENSITY) {\
 	rehash(table);\
-        bin_pos = hash_val & table->num_bins;\
+        bin_pos = hash_val % table->num_bins;\
     }\
     \
     entry = alloc(st_table_entry);\
@@ -309,7 +309,7 @@ st_add_direct(table, key, value)
     unsigned int hash_val, bin_pos;
 
     hash_val = do_hash(key, table);
-    bin_pos = hash_val & table->num_bins;
+    bin_pos = hash_val % table->num_bins;
     ADD_DIRECT(table, key, value, hash_val, bin_pos);
 }
 
@@ -329,7 +329,7 @@ rehash(table)
 	ptr = table->bins[i];
 	while (ptr != 0) {
 	    next = ptr->next;
-	    hash_val = ptr->hash & new_num_bins;
+	    hash_val = ptr->hash % new_num_bins;
 	    ptr->next = new_bins[hash_val];
 	    new_bins[hash_val] = ptr;
 	    ptr = next;
@@ -555,5 +555,5 @@ static int
 numhash(n)
     long n;
 {
-    return n/7;
+    return n;
 }
