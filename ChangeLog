@@ -1,3 +1,7 @@
+Tue Dec 21 12:10:04 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/grid.rb: rescue bug of 'grid configure' on Tcl/Tk8.3-
+
 Tue Dec 21 00:53:01 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/openssl/ossl_asn1.c (ossl_asn1_traverse): [ruby-dev:25261]
