@@ -1,3 +1,7 @@
+Wed Apr 18 04:37:51 2001  Wakou Aoyama  <wakou@fsinet.or.jp>
+
+	* lib/cgi.rb: CGI::Cookie: no use PATH_INFO.
+
 Wed Apr 18 00:24:40 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* regex.c (re_compile_pattern): char class at either edge of range
@@ -293,17 +297,17 @@ Mon Mar 19 11:03:10 2001  Koji Arai  <JCA02266@nifty.ne.jp>
 
 Sun Mar 18 08:58:18 2001  Wakou Aoyama  <wakou@fsinet.or.jp>
 
-	* lib/net/cgi.rb: // === '' --> //.match('')
+	* lib/cgi.rb: // === '' --> //.match('')
 
-	* lib/net/cgi.rb: cgi#header(): improvement for mod_ruby.
+	* lib/cgi.rb: cgi#header(): improvement for mod_ruby.
 
-	* lib/net/cgi.rb: cgi#rfc1123date(): improvement.
+	* lib/cgi.rb: cgi#rfc1123date(): improvement.
 	  thanks to TADA Tadashi <sho@spc.gr.jp>.
 
-	* lib/net/cgi.rb: cgi#rfc1123date(): document bug fix.
+	* lib/cgi.rb: cgi#rfc1123date(): document bug fix.
 	  thanks to Kazuhiro NISHIYAMA <zn@mbf.nifty.com>.
 
-	* lib/net/cgi.rb: cgi#header(): bug fix.
+	* lib/cgi.rb: cgi#header(): bug fix.
 	  thanks to IWATSUKI Hiroyuki <don@na.rim.or.jp>.
 
 Fri Mar 16 17:21:25 2001  Akinori MUSHA  <knu@iDaemons.org>
