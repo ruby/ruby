@@ -1470,14 +1470,14 @@ module TkCore
     nil
   end
 
-  def event_generate(window, context, keys=nil)
-    #window = window.path if window.kind_of?(TkObject)
+  def event_generate(win, context, keys=nil)
+    #win = win.path if win.kind_of?(TkObject)
     if keys
-      tk_call_without_enc('event', 'generate', window, 
+      tk_call_without_enc('event', 'generate', win, 
                           "<#{tk_event_sequence(context)}>", 
                           *hash_kv(keys, true))
     else
-      tk_call_without_enc('event', 'generate', window, 
+      tk_call_without_enc('event', 'generate', win, 
                           "<#{tk_event_sequence(context)}>")
     end
     nil
@@ -1874,8 +1874,8 @@ module Tk
     TkManageFocus.prev(win)
   end
 
-  def Tk.strictMotif(bool=None)
-    bool(tk_call_without_enc('set', 'tk_strictMotif', bool))
+  def Tk.strictMotif(mode=None)
+    bool(tk_call_without_enc('set', 'tk_strictMotif', mode))
   end
 
   def Tk.show_kinsoku(mode='both')
@@ -2435,18 +2435,18 @@ module TkTreatFont
     self
   end
 
-  def font_copy(window, wintag=nil, winkey=nil, targetkey=nil)
+  def font_copy(win, wintag=nil, winkey=nil, targetkey=nil)
     if wintag
       if winkey
-        fnt = window.tagfontobj(wintag, winkey).dup
+        fnt = win.tagfontobj(wintag, winkey).dup
       else
-        fnt = window.tagfontobj(wintag).dup
+        fnt = win.tagfontobj(wintag).dup
       end
     else
       if winkey
-        fnt = window.fontobj(winkey).dup
+        fnt = win.fontobj(winkey).dup
       else
-        fnt = window.fontobj.dup
+        fnt = win.fontobj.dup
       end
     end
 
@@ -2458,7 +2458,7 @@ module TkTreatFont
     self
   end
 
-  def latinfont_copy(window, wintag=nil, winkey=nil, targetkey=nil)
+  def latinfont_copy(win, wintag=nil, winkey=nil, targetkey=nil)
     if targetkey
       fontobj(targetkey).dup.call_font_configure([__pathname, targetkey], 
                                                  *(__config_cmd << {}))
@@ -2468,22 +2468,22 @@ module TkTreatFont
 
     if wintag
       if winkey
-        fontobj.latin_replace(window.tagfontobj(wintag, winkey).latin_font_id)
+        fontobj.latin_replace(win.tagfontobj(wintag, winkey).latin_font_id)
       else
-        fontobj.latin_replace(window.tagfontobj(wintag).latin_font_id)
+        fontobj.latin_replace(win.tagfontobj(wintag).latin_font_id)
       end
     else
       if winkey
-        fontobj.latin_replace(window.fontobj(winkey).latin_font_id)
+        fontobj.latin_replace(win.fontobj(winkey).latin_font_id)
       else
-        fontobj.latin_replace(window.fontobj.latin_font_id)
+        fontobj.latin_replace(win.fontobj.latin_font_id)
       end
     end
     self
   end
   alias asciifont_copy latinfont_copy
 
-  def kanjifont_copy(window, wintag=nil, winkey=nil, targetkey=nil)
+  def kanjifont_copy(win, wintag=nil, winkey=nil, targetkey=nil)
     if targetkey
       fontobj(targetkey).dup.call_font_configure([__pathname, targetkey], 
                                                  *(__config_cmd << {}))
@@ -2493,15 +2493,15 @@ module TkTreatFont
 
     if wintag
       if winkey
-        fontobj.kanji_replace(window.tagfontobj(wintag, winkey).kanji_font_id)
+        fontobj.kanji_replace(win.tagfontobj(wintag, winkey).kanji_font_id)
       else
-        fontobj.kanji_replace(window.tagfontobj(wintag).kanji_font_id)
+        fontobj.kanji_replace(win.tagfontobj(wintag).kanji_font_id)
       end
     else
       if winkey
-        fontobj.kanji_replace(window.fontobj(winkey).kanji_font_id)
+        fontobj.kanji_replace(win.fontobj(winkey).kanji_font_id)
       else
-        fontobj.kanji_replace(window.fontobj.kanji_font_id)
+        fontobj.kanji_replace(win.fontobj.kanji_font_id)
       end
     end
     self
@@ -4002,7 +4002,7 @@ end
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2005-03-05'.freeze
+  RELEASE_DATE = '2005-03-10'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'

@@ -401,6 +401,8 @@ class TkTimer
 
     @current_pos   = 0
     @current_args  = @init_args
+    @current_script = []
+
     @set_next = false if @in_callback
 
     self
@@ -428,6 +430,7 @@ class TkTimer
 
   def continue(wait=nil)
     fail RuntimeError, "is already running" if @running
+    return restart() if @current_script.empty?
     sleep, cmd = @current_script
     fail RuntimeError, "no procedure to continue" unless cmd
     if wait
@@ -498,3 +501,98 @@ class TkTimer
 end
 
 TkAfter = TkTimer
+
+
+class TkRTTimer < TkTimer
+  DEFAULT_OFFSET_LIST_SIZE = 5
+
+  def initialize(*args, &b)
+    super(*args, &b)
+
+    @offset_list = Array.new(DEFAULT_OFFSET_LIST_SIZE, 0.0)
+    @est_time = nil
+  end
+
+  def start(*args, &b)
+    return nil if @running
+    @est_time = nil
+    @cb_start_time = Time.now
+    super(*args, &b)
+  end
+
+  def cancel
+    super()
+    @est_time = nil
+    self
+  end
+  alias stop cancel
+
+  def set_interval(interval)
+    super(interval)
+    @est_time = nil
+  end
+
+  def _offset_ave
+    size = @offset_list.size.to_f
+    s = 0.0
+    @offset_list.each{|n| s + n}
+    s / size
+  end
+  private :_offset_ave
+
+  def set_next_callback(args)
+    if @running == false || @proc_max == 0 || @do_loop == 0
+      Tk_CBTBL.delete(@id) ;# for GC
+      @running = false
+      @wait_var.value = 0
+      return
+    end
+    if @current_pos >= @proc_max
+      if @do_loop < 0 || (@do_loop -= 1) > 0
+        @current_pos = 0
+      else
+        Tk_CBTBL.delete(@id) ;# for GC
+        @running = false
+        @wait_var.value = 0
+        return
+      end
+    end
+
+    @current_args = args
+
+    cmd, *cmd_args = @loop_proc[@current_pos]
+    @current_pos += 1
+    @current_proc = cmd
+
+    if TkComm._callback_entry?(@sleep_time)
+      sleep = @sleep_time.call(self)
+    else
+      sleep = @sleep_time
+    end
+
+    if @est_time
+      @est_time = Time.at(@est_time.to_f + sleep / 1000.0)
+    else
+      @est_time = Time.at(@cb_start_time.to_f + sleep / 1000.0)
+    end
+
+    offset = _offset_ave
+
+    real_sleep = ((@est_time - Time.now)*1000.0 + offset).round
+    real_sleep = 0 if real_sleep < 0
+    @current_sleep = real_sleep
+
+    set_callback(real_sleep, cmd_args)
+  end
+
+  def cb_call
+    @cb_start_time = Time.now
+
+    if @est_time
+      @offset_list.shift
+      @offset_list.push((@est_time - @cb_start_time) * 1000.0)
+    end
+
+    @cb_cmd.call
+  end
+end

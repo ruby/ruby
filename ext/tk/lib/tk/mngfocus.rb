@@ -17,15 +17,15 @@ module TkManageFocus
     tk_call_without_enc('tk_focusFollowsMouse')
   end
 
-  def TkManageFocus.next(window)
-    tk_tcl2ruby(tk_call('tk_focusNext', window))
+  def TkManageFocus.next(win)
+    tk_tcl2ruby(tk_call('tk_focusNext', win))
   end
   def focusNext
     TkManageFocus.next(self)
   end
 
-  def TkManageFocus.prev(window)
-    tk_tcl2ruby(tk_call('tk_focusPrev', window))
+  def TkManageFocus.prev(win)
+    tk_tcl2ruby(tk_call('tk_focusPrev', win))
   end
   def focusPrev
     TkManageFocus.prev(self)

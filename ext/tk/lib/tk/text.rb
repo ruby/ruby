@@ -69,12 +69,36 @@ class TkText<TkTextWin
   #######################################
 
   module IndexModMethods
+    def +(mod)
+      return chars(mod) if mod.kind_of?(Numeric)
+
+      mod = mod.to_s
+      if mod =~ /^\s*[+-]?\d/
+        TkText::IndexString.new(String.new(id) << ' + ' << mod)
+      else
+        TkText::IndexString.new(String.new(id) << ' ' << mod)
+      end
+    end
+
+    def -(mod)
+      return chars(-mod) if mod.kind_of?(Numeric)
+
+      mod = mod.to_s
+      if mod =~ /^\s*[+-]?\d/
+        TkText::IndexString.new(String.new(id) << ' - ' << mod)
+      elsif mod =~ /^\s*[-]\s+(\d.*)$/
+        TkText::IndexString.new(String.new(id) << ' - -' << $1)
+      else
+        TkText::IndexString.new(String.new(id) << ' ' << mod)
+      end
+    end
+
     def chars(mod)
       fail ArgumentError, 'expect Integer'  unless mod.kind_of?(Integer)
       if mod < 0
-        TkText::IndexString.new(id + ' ' << mod.to_s << ' chars')
+        TkText::IndexString.new(String.new(id) << ' ' << mod.to_s << ' chars')
       else
-        TkText::IndexString.new(id + ' + ' << mod.to_s << ' chars')
+        TkText::IndexString.new(String.new(id) << ' + ' << mod.to_s << ' chars')
       end
     end
     alias char chars
@@ -82,25 +106,25 @@ class TkText<TkTextWin
     def lines(mod)
       fail ArgumentError, 'expect Integer'  unless mod.kind_of?(Integer)
       if mod < 0
-        TkText::IndexString.new(id + ' ' << mod.to_s << ' lines')
+        TkText::IndexString.new(String.new(id) << ' ' << mod.to_s << ' lines')
       else
-        TkText::IndexString.new(id + ' + ' << mod.to_s << ' lines')
+        TkText::IndexString.new(String.new(id) << ' + ' << mod.to_s << ' lines')
       end
     end
     alias line lines
 
     def linestart
-      TkText::IndexString.new(id + ' linestart')
+      TkText::IndexString.new(String.new(id) << ' linestart')
     end
     def lineend
-      TkText::IndexString.new(id + ' lineend')
+      TkText::IndexString.new(String.new(id) << ' lineend')
     end
 
     def wordstart
-      TkText::IndexString.new(id + ' wordstart')
+      TkText::IndexString.new(String.new(id) << ' wordstart')
     end
     def wordend
-      TkText::IndexString.new(id + ' wordend')
+      TkText::IndexString.new(String.new(id) << ' wordend')
     end
   end
 
@@ -159,9 +183,9 @@ class TkText<TkTextWin
   end
   private :create_self
 
-  def index(index)
+  def index(idx)
     TkText::IndexString.new(tk_send_without_enc('index', 
-                                                _get_eval_enc_str(index)))
+                                                _get_eval_enc_str(idx)))
   end
 
   def get_displaychars(*index)

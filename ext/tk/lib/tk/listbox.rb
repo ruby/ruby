@@ -73,8 +73,8 @@ class TkListbox<TkTextWin
     self
   end
 
-  def index(index)
-    tk_send_without_enc('index', index).to_i
+  def index(idx)
+    tk_send_without_enc('index', idx).to_i
   end
 
   def value

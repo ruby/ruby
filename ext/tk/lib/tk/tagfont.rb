@@ -25,19 +25,19 @@ module TkTreatTagFont
     self
   end
 
-  def font_copy(window, wintag=nil)
-    @parent.tagfont_copy(@id, window, wintag)
+  def font_copy(win, wintag=nil)
+    @parent.tagfont_copy(@id, win, wintag)
     self
   end
 
-  def latinfont_copy(window, wintag=nil)
-    @parent.latintagfont_copy(@id, window, wintag)
+  def latinfont_copy(win, wintag=nil)
+    @parent.latintagfont_copy(@id, win, wintag)
     self
   end
   alias asciifont_copy latinfont_copy
 
-  def kanjifont_copy(window, wintag=nil)
-    @parent.kanjitagfont_copy(@id, window, wintag)
+  def kanjifont_copy(win, wintag=nil)
+    @parent.kanjitagfont_copy(@id, win, wintag)
     self
   end
 end

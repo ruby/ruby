@@ -139,24 +139,24 @@ class Tk::Iwidgets::Notebook
   end
   alias scrollbar yscrollbar
 
-  def view(*index)
-    if index.size == 0
+  def view(*idxs)
+    if idxss.size == 0
       window(tk_send_without_enc('view'))
     else
-      tk_send_without_enc('view', *index)
+      tk_send_without_enc('view', *idxs)
       self
     end
   end
   alias xview view
   alias yview view
 
-  def view_moveto(*index)
-    view('moveto', *index)
+  def view_moveto(*idxs)
+    view('moveto', *idxs)
   end
   alias xview_moveto view_moveto
   alias yview_moveto view_moveto
-  def view_scroll(*index)
-    view('scroll', *index)
+  def view_scroll(*idxs)
+    view('scroll', *idxs)
   end
   alias xview_scroll view_scroll
   alias yview_scroll view_scroll

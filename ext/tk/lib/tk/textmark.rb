@@ -47,11 +47,39 @@ class TkTextMark<TkObject
     end
   end
 
+=begin
+  # move to TkText::IndexModMethods module
   def +(mod)
-    TkText::IndexString.new(@id + ' + ' + mod)
+    return chars(mod) if mod.kind_of?(Numeric)
+
+    mod = mod.to_s
+    if mod =~ /^\s*[+-]?\d/
+      TkText::IndexString.new(@id + ' + ' + mod)
+    else
+      TkText::IndexString.new(@id + ' ' + mod)
+    end
   end
+
   def -(mod)
-    TkText::IndexString.new(@id + ' - ' + mod)
+    return chars(-mod) if mod.kind_of?(Numeric)
+
+    mod = mod.to_s
+    if mod =~ /^\s*[+-]?\d/
+      TkText::IndexString.new(@id + ' - ' + mod)
+    elsif mod =~ /^\s*[-]\s+(\d.*)$/
+      TkText::IndexString.new(@id + ' - -' + $1)
+    else
+      TkText::IndexString.new(@id + ' ' + mod)
+    end
+  end
+=end
+
+  def pos
+    @t.index(@id)
+  end
+
+  def pos=(where)
+    set(where)
   end
 
   def set(where)

@@ -552,10 +552,10 @@ else # ver >= 8.4
 end
 
 # テキスト上での click に対する動作
-def invoke (txt, index)
-  tag = txt.tag_names(index).find{|t| t.kind_of?(String) && t =~ /^demo-/}
+def invoke (txt, idx)
+  tag = txt.tag_names(idx).find{|t| t.kind_of?(String) && t =~ /^demo-/}
   return unless tag
-  cursor = txt.cget('cursor')
+  current_cursor = txt.cget('cursor')
   txt.cursor('watch')
   Tk.update
 #  eval `cat #{tag[5..-1]}.rb`
@@ -563,9 +563,9 @@ def invoke (txt, index)
   eval IO.readlines("#{[$demo_dir, tag[5..-1]].join(File::Separator)}.rb").join
   Tk.update
 #  txt.cursor('xterm')
-  txt.cursor(cursor)
+  txt.cursor(current_cursor)
 
-  $tag_visited.add("#{index} linestart +1 chars", "#{index} lineend +1 chars")
+  $tag_visited.add("#{idx} linestart +1 chars", "#{idx} lineend +1 chars")
 end
 
 # 状態表示
@@ -819,7 +819,7 @@ end
 #
 def aboutBox
   Tk.messageBox('icon'=>'info', 'type'=>'ok', 'title'=>'About Widget Demo', 
-                'message'=>"Ruby/Tk ウィジェットデモ Ver.1.5.2-jp\n\n" + 
+                'message'=>"Ruby/Tk ウィジェットデモ Ver.1.5.3-jp\n\n" + 
                            "based on demos of Tk8.1 -- 8.5  " + 
                            "( Copyright:: " + 
                            "(c) 1996-1997 Sun Microsystems, Inc. / " + 

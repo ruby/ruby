@@ -95,8 +95,8 @@ class TkMenu<TkWindow
   def add_separator(keys=nil)
     add('separator', keys)
   end
-  def index(index)
-    ret = tk_send_without_enc('index', _get_eval_enc_str(index))
+  def index(idx)
+    ret = tk_send_without_enc('index', _get_eval_enc_str(idx))
     (ret == 'none')? nil: number(ret)
   end
   def invoke(index)

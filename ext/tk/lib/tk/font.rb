@@ -163,14 +163,14 @@ class TkFont
   ###################################
   # class methods
   ###################################
-  def TkFont.families(window=nil)
+  def TkFont.families(win=nil)
     case (Tk::TK_VERSION)
     when /^4\.*/
       ['fixed']
 
     when /^8\.*/
-      if window
-        tk_split_simplelist(tk_call('font', 'families', '-displayof', window))
+      if win
+        tk_split_simplelist(tk_call('font', 'families', '-displayof', win))
       else
         tk_split_simplelist(tk_call('font', 'families'))
       end
@@ -675,7 +675,7 @@ class TkFont
     end
   end
 
-  def actual_core_tk4x(font, window=nil, option=nil)
+  def actual_core_tk4x(font, win=nil, option=nil)
     # dummy
     if option == 'pointadjust' || option == :pointadjust
         1.0
@@ -695,13 +695,13 @@ class TkFont
     end
   end
 
-  def actual_core_tk8x(font, window=nil, option=nil)
+  def actual_core_tk8x(font, win=nil, option=nil)
     if option == 'compound' || option == :compound
       ""
     elsif option
-      if window
+      if win
         val = tk_call('font', 'actual', font, 
-                      "-displayof", window, "-#{option}")
+                      "-displayof", win, "-#{option}")
       else
         val = tk_call('font', 'actual', font, "-#{option}")
       end
@@ -714,9 +714,9 @@ class TkFont
         val
       end
     else
-      l = tk_split_simplelist(if window
+      l = tk_split_simplelist(if win
                                  tk_call('font', 'actual', font, 
-                                                     "-displayof", window)
+                                                     "-displayof", win)
                               else
                                  tk_call('font', 'actual', font)
                               end)
@@ -1124,20 +1124,20 @@ class TkFont
     self
   end
 
-  def measure_core_tk4x(window, text)
+  def measure_core_tk4x(win, text)
     0
   end
 
-  def measure_core_tk8x(window, text)
-    if window
+  def measure_core_tk8x(win, text)
+    if win
       number(tk_call('font', 'measure', @compoundfont, 
-                     '-displayof', window, text))
+                     '-displayof', win, text))
     else
       number(tk_call('font', 'measure', @compoundfont, text))
     end
   end
 
-  def metrics_core_tk4x(font, window, option=nil)
+  def metrics_core_tk4x(font, win, option=nil)
     # dummy
     if option
       ""
@@ -1146,17 +1146,17 @@ class TkFont
     end
   end
 
-  def metrics_core_tk8x(font, window, option=nil)
+  def metrics_core_tk8x(font, win, option=nil)
     if option
-      if window
+      if win
         number(tk_call('font', 'metrics', font, 
-                       "-displayof", window, "-#{option}"))
+                       "-displayof", win, "-#{option}"))
       else
         number(tk_call('font', 'metrics', font, "-#{option}"))
       end
     else
-      l = tk_split_list(if window
-                          tk_call('font','metrics',font,"-displayof",window)
+      l = tk_split_list(if win
+                          tk_call('font','metrics',font,"-displayof",win)
                         else
                           tk_call('font','metrics',font)
                         end)
@@ -1357,18 +1357,18 @@ class TkFont
     actual_core(@compoundfont, nil, option)
   end
 
-  def actual_displayof(window, option=nil)
-    window = '.' unless window
-    actual_core(@compoundfont, window, option)
+  def actual_displayof(win, option=nil)
+    win = '.' unless win
+    actual_core(@compoundfont, win, option)
   end
 
   def latin_actual(option=nil)
     actual_core(@latinfont, nil, option)
   end
 
-  def latin_actual_displayof(window, option=nil)
-    window = '.' unless window
-    actual_core(@latinfont, window, option)
+  def latin_actual_displayof(win, option=nil)
+    win = '.' unless win
+    actual_core(@latinfont, win, option)
   end
 
   def kanji_actual(option=nil)
@@ -1380,13 +1380,13 @@ class TkFont
     end
   end
 
-  def kanji_actual_displayof(window, option=nil)
+  def kanji_actual_displayof(win, option=nil)
     #if JAPANIZED_TK
     if @kanjifont != ""
-      window = '.' unless window
-      actual_core(@kanjifont, window, option)
+      win = '.' unless win
+      actual_core(@kanjifont, win, option)
     else
-      actual_core_tk4x(nil, window, option)
+      actual_core_tk4x(nil, win, option)
     end
   end
 
@@ -1478,27 +1478,27 @@ class TkFont
     measure_core(nil, text)
   end
 
-  def measure_displayof(window, text)
-    window = '.' unless window
-    measure_core(window, text)
+  def measure_displayof(win, text)
+    win = '.' unless win
+    measure_core(win, text)
   end
 
   def metrics(option=nil)
     metrics_core(@compoundfont, nil, option)
   end
 
-  def metrics_displayof(window, option=nil)
-    window = '.' unless window
-    metrics_core(@compoundfont, window, option)
+  def metrics_displayof(win, option=nil)
+    win = '.' unless win
+    metrics_core(@compoundfont, win, option)
   end
 
   def latin_metrics(option=nil)
     metrics_core(@latinfont, nil, option)
   end
 
-  def latin_metrics_displayof(window, option=nil)
-    window = '.' unless window
-    metrics_core(@latinfont, window, option)
+  def latin_metrics_displayof(win, option=nil)
+    win = '.' unless win
+    metrics_core(@latinfont, win, option)
   end
 
   def kanji_metrics(option=nil)
@@ -1509,12 +1509,12 @@ class TkFont
     end
   end
 
-  def kanji_metrics_displayof(window, option=nil)
+  def kanji_metrics_displayof(win, option=nil)
     if JAPANIZED_TK
-      window = '.' unless window
-      metrics_core(@kanjifont, window, option)
+      win = '.' unless win
+      metrics_core(@kanjifont, win, option)
     else
-      metrics_core_tk4x(nil, window, option)
+      metrics_core_tk4x(nil, win, option)
     end
   end
 
