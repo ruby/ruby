@@ -747,8 +747,7 @@ Init_strscan()
     rb_obj_freeze(tmp);
     rb_const_set(StringScanner, rb_intern("Id"), tmp);
     
-    rb_define_singleton_method(StringScanner, "allocate",
-                               strscan_s_allocate, 0);
+    rb_define_alloc_func(StringScanner, strscan_s_allocate);
     rb_define_private_method(StringScanner, "initialize",
                              strscan_initialize, -1);
     rb_define_singleton_method(StringScanner, "must_C_version",

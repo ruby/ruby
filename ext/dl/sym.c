@@ -822,7 +822,7 @@ void
 Init_dlsym()
 {
   rb_cDLSymbol = rb_define_class_under(rb_mDL, "Symbol", rb_cObject);
-  rb_define_singleton_method(rb_cDLSymbol, "allocate", rb_dlsym_s_allocate, 0);
+  rb_define_alloc_func(rb_cDLSymbol, rb_dlsym_s_allocate);
   rb_define_singleton_method(rb_cDLSymbol, "char2type", rb_s_dlsym_char2type, 1);
   rb_define_method(rb_cDLSymbol, "initialize", rb_dlsym_initialize, -1);
   rb_define_method(rb_cDLSymbol, "call", rb_dlsym_call, -1);

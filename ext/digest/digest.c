@@ -297,7 +297,7 @@ Init_digest()
 
     cDigest_Base = rb_define_class_under(mDigest, "Base", rb_cObject);
 
-    rb_define_singleton_method(cDigest_Base, "allocate", rb_digest_base_alloc, 0);
+    rb_define_alloc_func(cDigest_Base, rb_digest_base_alloc);
     rb_define_singleton_method(cDigest_Base, "digest", rb_digest_base_s_digest, 1);
     rb_define_singleton_method(cDigest_Base, "hexdigest", rb_digest_base_s_hexdigest, 1);
 

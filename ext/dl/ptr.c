@@ -1035,7 +1035,7 @@ void
 Init_dlptr()
 {
   rb_cDLPtrData = rb_define_class_under(rb_mDL, "PtrData", rb_cObject);
-  rb_define_singleton_method(rb_cDLPtrData, "allocate", rb_dlptr_s_allocate, 0);
+  rb_define_alloc_func(rb_cDLPtrData, rb_dlptr_s_allocate);
   rb_define_singleton_method(rb_cDLPtrData, "malloc", rb_dlptr_s_malloc, -1);
   rb_define_method(rb_cDLPtrData, "initialize", rb_dlptr_initialize, -1);
   rb_define_method(rb_cDLPtrData, "free=", rb_dlptr_free_set, 1);

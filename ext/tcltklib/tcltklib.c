@@ -869,7 +869,7 @@ Init_tcltklib()
     rb_define_module_function(lib, "get_eventloop_weight", 
 			      get_eventloop_weight, 0);
 
-    rb_define_singleton_method(ip, "allocate", ip_alloc, 0);
+    rb_define_alloc_func(ip, ip_alloc);
     rb_define_method(ip, "initialize", ip_init, 0);
     rb_define_method(ip, "_eval", ip_eval, 1);
     rb_define_method(ip, "_toUTF8",ip_toUTF8,2);

@@ -1308,7 +1308,7 @@ Init_curses()
 #endif /* USE_MOUSE */
 
     cWindow = rb_define_class_under(mCurses, "Window", rb_cData);
-    rb_define_singleton_method(cWindow, "allocate", window_s_allocate, 0);
+    rb_define_alloc_func(cWindow, window_s_allocate);
     rb_define_method(cWindow, "initialize", window_initialize, 4);
     rb_define_method(cWindow, "subwin", window_subwin, 4);
     rb_define_method(cWindow, "close", window_close, 0);

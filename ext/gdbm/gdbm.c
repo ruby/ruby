@@ -921,7 +921,7 @@ Init_gdbm()
     rb_eGDBMFatalError = rb_define_class("GDBMFatalError", rb_eException);
     rb_include_module(rb_cGDBM, rb_mEnumerable);
 
-    rb_define_singleton_method(rb_cGDBM, "allocate", fgdbm_s_alloc, 0);
+    rb_define_alloc_func(rb_cGDBM, fgdbm_s_alloc);
     rb_define_singleton_method(rb_cGDBM, "open", fgdbm_s_open, -1);
 
     rb_define_method(rb_cGDBM, "initialize", fgdbm_initialize, -1);
