@@ -4999,6 +4999,7 @@ exec_under(func, under, args)
     PUSH_CLASS();
     ruby_class = under;
     PUSH_FRAME();
+    ruby_frame->self = _frame.prev->self;
     ruby_frame->last_func = _frame.prev->last_func;
     ruby_frame->last_class = _frame.prev->last_class;
     ruby_frame->argc = _frame.prev->argc;
