@@ -1,3 +1,7 @@
+Wed Feb  4 13:55:26 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* array.c (ary_reverse): SEGV on empty array reverse.
+
 Tue Feb  3 12:24:07 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* re.c (match_to_a): non matching element should be nil.

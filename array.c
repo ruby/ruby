@@ -410,7 +410,7 @@ ary_indexes(ary, args)
     VALUE new_ary;
     int i = 0;
 
-    if (!args || NIL_P(args)) {
+    if (!args || NIL_P(args) || RARRAY(args)->len == 0) {
 	return ary_new2(0);
     }
 
@@ -683,6 +683,8 @@ ary_reverse(ary)
     VALUE *p1, *p2;
     VALUE tmp;
 
+    if (RARRAY(ary)->len == 0) return ary;
+
     p1 = RARRAY(ary)->ptr;
     p2 = p1 + RARRAY(ary)->len - 1;	/* points last item */
 
@@ -734,6 +736,8 @@ VALUE
 ary_sort_bang(ary)
     VALUE ary;
 {
+    if (RARRAY(ary)->len == 0) return ary;
+
     ary_modify(ary);
     qsort(RARRAY(ary)->ptr, RARRAY(ary)->len, sizeof(VALUE), iterator_p()?sort_1:sort_2);
     return ary;
@@ -743,6 +747,7 @@ VALUE
 ary_sort(ary)
     VALUE ary;
 {
+    if (RARRAY(ary)->len == 0) return ary;
     return ary_sort_bang(ary_clone(ary));
 }
 
