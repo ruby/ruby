@@ -1,3 +1,7 @@
+Mon Jan  6 02:32:46 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* struct.c (make_struct): needs meta class.
+
 Sun Jan  5 09:36:46 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ruby.c (ruby_init_loadpath): under Windows, get the module
