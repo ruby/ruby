@@ -1,3 +1,29 @@
+Tue Nov 16 14:31:54 2004  Michael Neumann  <mneumann@ruby-lang.org>
+
+	* test/xmlrpc/*: imported and refactored original test cases.
+
+	* test/xmlrpc/test_webrick_server.rb, test/xmlrpc/webrick_testing.rb:
+	  added test case that starts up a WEBrick XML-RPC server and performs
+	  some tests on it (both http and https servers are started).
+
+	* lib/xmlrpc/create.rb (XMLWriter::each_installed_writer),
+	  lib/xmlrpc/parser.rb (XMLParser::each_installed_parser): 
+	  added methods to simply original test cases
+
+	* lib/xmlrpc/parser.rb, lib/xmlrpc/datetime.rb: applied patch by
+	  MoonWolf <moonwolf@moonwolf.com> to allow parsing datetime.iso8601
+	  (e.g. 20041105T01:15:23Z).
+
+	* lib/xmlrpc/server.rb: fixed issue #998
+	  (http://rubyforge.org/tracker/?func=detail&atid=1700&aid=998&group_id=426)
+
+	* lib/xmlrpc/create.rb, lib/xmlrpc/utils.rb: when marshalling/loading
+	  user-defined data structures, use Class#allocate instead of defining
+	  an empty #initialize method. module XMLRPC::Marshallable is now only
+	  used for tagging.
+
+	* lib/xmlrpc/.document, lib/xmlrpc/README.rdoc: added howto
+
 Tue Nov 16 16:26:12 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* {bcc32,win32,wince}/setup.mak (-epilogue-): remove config.h and
