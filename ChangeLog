@@ -1,3 +1,14 @@
+Fri Dec 12 19:33:06 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb (mkdir): remove trailing `/' from pathes.
+
+	* lib/fileutils.rb (rmdir): ditto. [ruby-dev:22238]
+
+	* lib/fileutils.rb (rmdir_r): ditto.
+
+	* lib/fileutils.rb (fu_copy_dir): check if it is a directory after
+	  mkdir(2).
+
 Fri Dec 12 06:06:09 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (proc_invoke): fix class name in warning message for

@@ -164,6 +164,9 @@ end
       cp fname, 'tmp'
       assert_same_file fname, 'tmp/' + File.basename(fname)
 
+      cp fname, 'tmp/'
+      assert_same_file fname, 'tmp/' + File.basename(fname)
+
       cp fname, 'tmp/preserve', :preserve => true
       assert_same_file fname, 'tmp/preserve'
       a = File.stat(fname)
@@ -221,9 +224,16 @@ end
   end
 
   def test_mv
+    mkdir 'tmp/dest'
     TARGETS.each do |fname|
       cp fname, 'tmp/mvsrc'
       mv 'tmp/mvsrc', 'tmp/mvdest'
+      assert_same_file fname, 'tmp/mvdest'
+
+      mv 'tmp/mvdest', 'tmp/dest/'
+      assert_same_file fname, 'tmp/dest/mvdest'
+
+      mv 'tmp/dest/mvdest', 'tmp'
       assert_same_file fname, 'tmp/mvdest'
     end
 
@@ -474,6 +484,10 @@ end
     assert_directory 'tmpdatadir'
     Dir.rmdir 'tmpdatadir'
 
+    mkdir 'tmpdatadir/'
+    assert_directory 'tmpdatadir'
+    Dir.rmdir 'tmpdatadir'
+
     mkdir 'tmp/mkdirdest'
     assert_directory 'tmp/mkdirdest'
     Dir.rmdir 'tmp/mkdirdest'
@@ -485,7 +499,8 @@ end
 
     # pathname
     assert_nothing_raised {
-      mkdir 'tmp/tmpdirtmp'
+      mkdir Pathname.new('tmp/tmpdirtmp')
+      mkdir [Pathname.new('tmp/tmpdirtmp2'), Pathname.new('tmp/tmpdirtmp3')]
     }
   end
 
@@ -518,7 +533,7 @@ end
     end
     rm_rf 'tmpdir'
     dirs.each do |d|
-      mkdir_p File.expand_path(d)
+      mkdir_p "#{Dir.pwd}/#{d}"
       assert_directory d
     end
     rm_rf 'tmpdir'

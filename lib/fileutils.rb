@@ -143,7 +143,7 @@ module FileUtils
 
     mode = options[:mode] || (0777 & ~File.umask)
     list.each do |dir|
-      Dir.mkdir dir, mode
+      Dir.mkdir dir.sub(%r</\z>, ''), mode
     end
   end
 
@@ -209,7 +209,7 @@ module FileUtils
     return if options[:noop]
 
     list.each do |dir|
-      Dir.rmdir dir
+      Dir.rmdir dir.sub(%r</\z>, '')
     end
   end
 
@@ -357,8 +357,11 @@ module FileUtils
 
   def fu_copy_dir(src, dest, rel, preserve) #:nodoc:
     fu_preserve_attr(preserve, "#{src}/#{rel}", "#{dest}/#{rel}") {|s,d|
-        dir = File.expand_path(d)   # to remove '/./'
-        Dir.mkdir dir unless File.directory?(dir)
+        begin
+          Dir.mkdir File.expand_path(d)
+        rescue => err
+          raise unless File.directory?(d)
+        end
     }
     Dir.entries("#{src}/#{rel}").each do |fname|
       if File.directory?(File.join(src,rel,fname))
@@ -585,7 +588,7 @@ module FileUtils
       end
     end
     begin
-      Dir.rmdir dir
+      Dir.rmdir dir.sub(%r</\z>, '')
     rescue Errno::ENOENT
       raise unless force
     end
@@ -601,9 +604,10 @@ module FileUtils
   def compare_file(a, b)
     return false unless File.size(a) == File.size(b)
     File.open(a, 'rb') {|fa|
-    File.open(b, 'rb') {|fb|
+      File.open(b, 'rb') {|fb|
         return compare_stream(fa, fb)
-    } }
+      }
+    }
   end
 
   alias identical? compare_file
@@ -644,11 +648,11 @@ module FileUtils
 
     fu_each_src_dest(src, dest) do |s,d|
       unless File.exist?(d) and compare_file(s,d)
-	remove_file d, true
-	st = File.stat(s) if options[:preserve]
-	copy_file s, d
-	File.utime st.atime, st.mtime, d if options[:preserve]
-	File.chmod options[:mode], d if options[:mode]
+        remove_file d, true
+        st = File.stat(s) if options[:preserve]
+        copy_file s, d
+        File.utime st.atime, st.mtime, d if options[:preserve]
+        File.chmod options[:mode], d if options[:mode]
       end
     end
   end
@@ -694,7 +698,7 @@ module FileUtils
         File.utime(t, t, fname)
       rescue Errno::ENOENT
         File.open(fname, 'a') {
-            ;
+          ;
         }
       end
     end
@@ -722,23 +726,16 @@ module FileUtils
   end
 
   def fu_each_src_dest0(src, dest)
-    unless src.is_a?(Array)
-      yield src.to_str, fu_dest_filename(src.to_str, dest.to_str)
-    else
-      dir = dest.to_str
-      #raise ArgumentError, "not a directory: #{dir}" unless File.directory?(dir)
-      dir += (dir[-1,1] == '/') ? '' : '/'
-      src.map {|s| s.to_str }.each do |fname|
-        yield fname, dir + File.basename(fname)
+    if src.is_a?(Array)
+      src.each do |s|
+        yield s.to_str, File.join(dest, File.basename(s))
       end
-    end
-  end
-
-  def fu_dest_filename(src, dest)
-    if File.directory?(dest)
-      (dest[-1,1] == '/' ? dest : dest + '/') + File.basename(src)
     else
-      dest
+      if File.directory?(dest)
+        yield src.to_str, File.join(dest, File.basename(src))
+      else
+        yield src.to_str, dest.to_str
+      end
     end
   end
 
