@@ -1,3 +1,9 @@
+Sat Jul 31 17:39:47 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-expr-beg, ruby-parse-partial,
+	  ruby-calculate-indent, ruby-move-to-block, ruby-forward-sexp,
+	  ruby-backward-sexp): keywords must match word-wise.
+
 Sat Jul 31 13:37:51 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (is_defined): avoid unnecessary method invocations.
