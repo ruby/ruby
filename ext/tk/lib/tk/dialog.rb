@@ -51,7 +51,7 @@ class TkDialogObj < TkWindow
       }
     end
     # @config = 'after idle {' + @config + '};' if @config != ""
-    @config = array2tk_list['after', 'idle', @config] << ';' if @config != ""
+    @config = array2tk_list(['after', 'idle', @config]) << ';' if @config != ""
   end
   private :_set_button_config
 
