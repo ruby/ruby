@@ -96,7 +96,7 @@ rb_memcmp(p1, p2, len)
     return rb_memcicmp(p1, p2, len);
 }
 
-int
+long
 rb_memsearch(x0, m, y0, n)
     char *x0, *y0;
     long m, n;

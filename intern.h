@@ -330,7 +330,7 @@ VALUE rb_length_by_each _((VALUE));
 /* re.c */
 int rb_memcmp _((char*,char*,long));
 int rb_memcicmp _((char*,char*,long));
-int rb_memsearch _((char*,long,char*,long));
+long rb_memsearch _((char*,long,char*,long));
 VALUE rb_reg_nth_defined _((int, VALUE));
 VALUE rb_reg_nth_match _((int, VALUE));
 VALUE rb_reg_last_match _((VALUE));
