@@ -1,3 +1,7 @@
+Wed Aug 16 15:30:58 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* stable version 1.4.6 released.
+
 Tue Aug 15 17:30:59 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (frame_dup): should set flag FRAME_MALLOC after
