@@ -55,6 +55,15 @@ Object
     end
 
 =begin
+--- URI::Generic::use_registry
+=end
+    USE_REGISTRY = false
+
+    def self.use_registry
+      self::USE_REGISTRY
+    end
+
+=begin
 
 --- URI::Generic::build2
     At first, try to create a new URI::Generic object using
@@ -156,6 +165,9 @@ Object
 	self.set_opaque(opaque)
 	self.set_registry(registry)
 	self.set_fragment(fragment)
+      end
+      if @registry && !self.class.use_registry
+	raise InvalidURIError, "the scheme #{@scheme} does not accept registry part: #{@registry} (or bad hostname?)"
       end
       
       @scheme.freeze if @scheme
@@ -803,7 +815,7 @@ Object
       if self.absolute?
 	return self.dup, oth
       else
-	return oth.dup, self
+	return oth, oth
       end
     end
     private :merge0

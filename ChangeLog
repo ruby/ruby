@@ -1,3 +1,11 @@
+Tue Feb 26 11:25:50 2002  akira yamada  <akira@arika.org>
+
+	* lib/uri/generic.rb: merge0 shuld return [oth, oth] if oth is
+	  absolute URI. 
+
+	* lib/uri/generic.rb: registry part must not be allowed for any
+	  schemes for the Internet. (RFC2396, section 3.2.2 and 3.2.1.) 
+
 Mon Feb 25 21:28:46 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/syslog/syslog.c: Merge from rough.  Turn Syslog into a
