@@ -33,10 +33,11 @@ class GetoptLong
   #
   # Error types.
   #
-  class AmbigousOption   < StandardError; end
-  class NeedlessArgument < StandardError; end
-  class MissingArgument  < StandardError; end
-  class InvalidOption    < StandardError; end
+  class Error  < StandardError; end
+  class AmbigousOption   < Error; end
+  class NeedlessArgument < Error; end
+  class MissingArgument  < Error; end
+  class InvalidOption    < Error; end
 
   #
   # Initializer.

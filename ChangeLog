@@ -1,8 +1,24 @@
+Wed Dec 11 17:54:59 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (io_read): takes optional second argument to specify a
+	  string to be written.  the string should not be frozen.
+
+	* io.c (rb_io_sysread): ditto.
+
 Wed Dec 11 11:30:28 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ext/digest/digest.c (rb_digest_base_copy): renamed "become".
 
 	* ext/stringio/stringio.c (strio_copy): ditto.
+
+Wed Dec 11 00:45:00 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/getoptlong.rb (GetoptLong::Error): provide a common ancestor
+	  for GetoptLong error classes (RCR#129).
+
+Tue Dec 10 17:42:39 2002 2002  K.Kosako  <kosako@sofnec.co.jp>
+
+	* re.c (rb_reg_copy_object): fixed memory leak.
 
 Tue Dec 10 17:30:35 2002  Tanaka Akira  <akr@m17n.org>
 

@@ -1318,9 +1318,6 @@ rb_reg_copy_object(copy, re)
     if (!rb_obj_is_instance_of(re, rb_obj_class(copy))) {
 	rb_raise(rb_eTypeError, "wrong argument type");
     }
-    RREGEXP(copy)->ptr = 0;
-    RREGEXP(copy)->len = 0;
-    RREGEXP(copy)->str = 0;
     rb_reg_check(re);
     rb_reg_initialize(copy, RREGEXP(re)->str, RREGEXP(re)->len,
 		      rb_reg_options(re));

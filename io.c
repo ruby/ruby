@@ -734,11 +734,11 @@ remain_size(fptr)
 }
 
 static VALUE
-read_all(fptr, siz)
+read_all(fptr, siz, str)
     OpenFile *fptr;
     long siz;
-{
     VALUE str;
+{
     long bytes = 0;
     long n;
     off_t pos = 0;
@@ -746,7 +746,12 @@ read_all(fptr, siz)
     if (feof(fptr->f)) return Qnil;
     READ_CHECK(fptr->f);
     if (!siz) siz = BUFSIZ;
-    str = rb_tainted_str_new(0, siz);
+    if (NIL_P(str)) {
+	str = rb_tainted_str_new(0, siz);
+    }
+    else {
+	rb_str_resize(str, siz);
+    }
     pos = io_tell(fptr);
     for (;;) {
 	n = rb_io_fread(RSTRING(str)->ptr+bytes, siz-bytes, fptr->f);
@@ -776,12 +781,12 @@ io_read(argc, argv, io)
     long n, len;
     VALUE length, str;
 
-    rb_scan_args(argc, argv, "01", &length);
+    rb_scan_args(argc, argv, "02", &length, &str);
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
     if (NIL_P(length)) {
-	return read_all(fptr, remain_size(fptr));
+	return read_all(fptr, remain_size(fptr), str);
     }
 
     len = NUM2LONG(length);
@@ -790,8 +795,18 @@ io_read(argc, argv, io)
     }
 
     if (feof(fptr->f)) return Qnil;
-    str = rb_str_new(0, len);
-    if (len == 0) return str;
+    if (NIL_P(str)) {
+	str = rb_str_new(0, len);
+	if (len == 0) return str;
+    }
+    else {
+	StringValue(str);
+	rb_str_modify(str);
+	if (len == 0) {
+	    rb_str_resize(str, 0);
+	    return str;
+	}
+    }
 
     READ_CHECK(fptr->f);
     n = rb_io_fread(RSTRING(str)->ptr, len, fptr->f);
@@ -967,7 +982,7 @@ rb_io_getline(rs, fptr)
     VALUE str = Qnil;
 
     if (NIL_P(rs)) {
-	str = read_all(fptr, 0);
+	str = read_all(fptr, 0, Qnil);
     }
     else if (rs == rb_default_rs) {
 	return rb_io_getline_fast(fptr, '\n');
@@ -1498,13 +1513,16 @@ rb_io_syswrite(io, str)
 }
 
 static VALUE
-rb_io_sysread(io, len)
-    VALUE io, len;
+rb_io_sysread(argc, argv, io)
+    int argc;
+    VALUE *argv;
+    VALUE io;
 {
+    VALUE len, str;
     OpenFile *fptr;
     long n, ilen;
-    VALUE str;
 
+    rb_scan_args(argc, argv, "11", &len, &str);
     ilen = NUM2LONG(len);
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
@@ -1512,7 +1530,14 @@ rb_io_sysread(io, len)
     if (READ_DATA_PENDING(fptr->f)) {
 	rb_raise(rb_eIOError, "sysread for buffered IO");
     }
-    str = rb_str_new(0, ilen);
+    if (NIL_P(str)) {
+	str = rb_str_new(0, ilen);
+    }
+    else {
+	StringValue(str);
+	rb_str_modify(str);
+	rb_str_resize(str, ilen);
+    }
 
     n = fileno(fptr->f);
     rb_thread_wait_fd(fileno(fptr->f));
@@ -3086,7 +3111,7 @@ rb_f_backquote(obj, str)
     if (NIL_P(port)) return rb_str_new(0,0);
 
     GetOpenFile(port, fptr);
-    result = read_all(fptr, remain_size(fptr));
+    result = read_all(fptr, remain_size(fptr), Qnil);
 
     rb_io_close(port);
 
@@ -3919,7 +3944,7 @@ Init_IO()
     rb_define_method(rb_cIO, "each_byte",  rb_io_each_byte, 0);
 
     rb_define_method(rb_cIO, "syswrite", rb_io_syswrite, 1);
-    rb_define_method(rb_cIO, "sysread",  rb_io_sysread, 1);
+    rb_define_method(rb_cIO, "sysread",  rb_io_sysread, -1);
 
     rb_define_method(rb_cIO, "fileno", rb_io_fileno, 0);
     rb_define_alias(rb_cIO, "to_i", "fileno");
