@@ -87,6 +87,7 @@ static stack_type cmdarg_stack = 0;
 
 static int class_nest = 0;
 static int in_single = 0;
+static int in_def = 0;
 static int compile_for_eval = 0;
 static ID cur_mid = 0;
 
@@ -314,13 +315,13 @@ stmts		: none
 
 stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    {
-			if (cur_mid || in_single)
+			if (in_def || in_single)
 			    yyerror("alias within method");
 		        $$ = NEW_ALIAS($2, $4);
 		    }
 		| kALIAS tGVAR tGVAR
 		    {
-			if (cur_mid || in_single)
+			if (in_def || in_single)
 			    yyerror("alias within method");
 		        $$ = NEW_VALIAS($2, $3);
 		    }
@@ -328,7 +329,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    {
 			char buf[3];
 
-			if (cur_mid || in_single)
+			if (in_def || in_single)
 			    yyerror("alias within method");
 			sprintf(buf, "$%c", $3->nd_nth);
 		        $$ = NEW_VALIAS($2, rb_intern(buf));
@@ -340,7 +341,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    }
 		| kUNDEF undef_list
 		    {
-			if (cur_mid || in_single)
+			if (in_def || in_single)
 			    yyerror("undef within method");
 			$$ = $2;
 		    }
@@ -392,7 +393,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    }
 		| klBEGIN
 		    {
-			if (cur_mid || in_single) {
+			if (in_def || in_single) {
 			    yyerror("BEGIN in method");
 			}
 			local_push();
@@ -406,7 +407,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    }
 		| klEND '{' compstmt '}'
 		    {
-			if (compile_for_eval && (cur_mid || in_single)) {
+			if (compile_for_eval && (in_def || in_single)) {
 			    yyerror("END in method; use at_exit");
 			}
 
@@ -437,7 +438,7 @@ expr		: mlhs '=' mrhs
 		    }
 		| kRETURN ret_args
 		    {
-			if (!compile_for_eval && !cur_mid && !in_single)
+			if (!compile_for_eval && !in_def && !in_single)
 			    yyerror("return appeared outside of method");
 			$$ = NEW_RETURN($2);
 		    }
@@ -495,7 +496,7 @@ command		:  operation command_args
 		    }
 		| kSUPER command_args
 		    {
-			if (!compile_for_eval && !cur_mid && !in_single)
+			if (!compile_for_eval && !in_def && !in_single)
 			    yyerror("super called outside of method");
 			$$ = new_super($2);
 		        fixpos($$, $2);
@@ -1148,20 +1149,20 @@ primary		: literal
 		    }
 		| kRETURN '(' ret_args ')'
 		    {
-			if (!compile_for_eval && !cur_mid && !in_single)
+			if (!compile_for_eval && !in_def && !in_single)
 			    yyerror("return appeared outside of method");
 			value_expr($3);
 			$$ = NEW_RETURN($3);
 		    }
 		| kRETURN '(' ')'
 		    {
-			if (!compile_for_eval && !cur_mid && !in_single)
+			if (!compile_for_eval && !in_def && !in_single)
 			    yyerror("return appeared outside of method");
 			$$ = NEW_RETURN(0);
 		    }
 		| kRETURN
 		    {
-			if (!compile_for_eval && !cur_mid && !in_single)
+			if (!compile_for_eval && !in_def && !in_single)
 			    yyerror("return appeared outside of method");
 			$$ = NEW_RETURN(0);
 		    }
@@ -1254,9 +1255,8 @@ primary		: literal
 		    }
 		| kCLASS cname superclass
 		    {
-			if (cur_mid || in_single)
+			if (in_def || in_single)
 			    yyerror("class definition in method body");
-
 			class_nest++;
 			cref_push();
 			local_push();
@@ -1273,22 +1273,30 @@ primary		: literal
 		    }
 		| kCLASS tLSHFT expr term
 		    {
+		        $<num>$ = in_single;
+		        in_single = 0;
 			class_nest++;
 			cref_push();
 			local_push();
 		    }
+		    {
+			$<num>$ = in_def;
+		        in_def = 0;
+		    }
 		  compstmt
 		  kEND
 		    {
-		        $$ = NEW_SCLASS($3, $6);
+		        $$ = NEW_SCLASS($3, $7);
 		        fixpos($$, $3);
 		        local_pop();
 			cref_pop();
 			class_nest--;
+		        in_single = $<num>5;
+		        in_def = $<num>6;
 		    }
 		| kMODULE cname
 		    {
-			if (cur_mid || in_single)
+			if (in_def || in_single)
 			    yyerror("module definition in method body");
 			class_nest++;
 			cref_push();
@@ -1306,9 +1314,11 @@ primary		: literal
 		    }
 		| kDEF fname
 		    {
-			if (cur_mid || in_single)
+			if (in_def || in_single)
 			    yyerror("nested method definition");
+			$<id>$ = cur_mid;
 			cur_mid = $2;
+			in_def++;
 			local_push();
 		    }
 		  f_arglist
@@ -1330,7 +1340,8 @@ primary		: literal
 			if (is_attrset_id($2)) $$->nd_noex = NOEX_PUBLIC;
 		        fixpos($$, $4);
 		        local_pop();
-			cur_mid = 0;
+			in_def--;
+			cur_mid = $<id>3;
 		    }
 		| kDEF singleton dot_or_colon {lex_state = EXPR_FNAME;} fname
 		    {
@@ -1463,14 +1474,14 @@ method_call	: operation paren_args
 		    }
 		| kSUPER paren_args
 		    {
-			if (!compile_for_eval && !cur_mid &&
+			if (!compile_for_eval && !in_def &&
 		            !in_single && !in_defined)
 			    yyerror("super called outside of method");
 			$$ = new_super($2);
 		    }
 		| kSUPER
 		    {
-			if (!compile_for_eval && !cur_mid &&
+			if (!compile_for_eval && !in_def &&
 		            !in_single && !in_defined)
 			    yyerror("super called outside of method");
 			$$ = NEW_ZSUPER();
@@ -1975,6 +1986,7 @@ yycompile(f, line)
     cond_stack = 0;
     class_nest = 0;
     in_single = 0;
+    in_def = 0;
     cur_mid = 0;
 
     if (n == 0) node = ruby_eval_tree;
@@ -3393,8 +3405,7 @@ yylex()
 	return c;
 
       case '{':
-	if (lex_state != EXPR_END &&
-	    lex_state != EXPR_ARG)
+	if (lex_state != EXPR_END && lex_state != EXPR_ARG)
 	    c = tLBRACE;
 	lex_state = EXPR_BEG;
 	return c;
@@ -4123,7 +4134,7 @@ assignable(id, val)
 	return NEW_IASGN(id, val);
     }
     else if (is_const_id(id)) {
-	if (cur_mid || in_single)
+	if (in_def || in_single)
 	    yyerror("dynamic constant assignment");
 	return NEW_CDECL(id, val);
     }
