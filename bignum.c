@@ -15,10 +15,10 @@
 VALUE rb_cBignum;
 typedef unsigned short USHORT;
 
-#define BDIGITS(x) RBIGNUM(x)->digits
+#define BDIGITS(x) ((USHORT*)RBIGNUM(x)->digits)
 #define BITSPERDIG (sizeof(short)*CHAR_BIT)
 #define BIGRAD (1L << BITSPERDIG)
-#define DIGSPERINT ((unsigned int)(sizeof(long)/sizeof(short)))
+#define DIGSPERLONG ((unsigned int)(sizeof(long)/sizeof(short)))
 #define BIGUP(x) ((unsigned long)(x) << BITSPERDIG)
 #define BIGDN(x) RSHIFT(x,BITSPERDIG)
 #define BIGLO(x) ((USHORT)((x) & (BIGRAD-1)))
@@ -33,7 +33,7 @@ bignew_1(klass, len, sign)
     OBJSETUP(big, klass, T_BIGNUM);
     big->sign = sign;
     big->len = len;
-    BDIGITS(big) = ALLOC_N(USHORT, len);
+    big->digits = ALLOC_N(USHORT, len);
 
     return (VALUE)big;
 }
@@ -116,14 +116,14 @@ rb_uint2big(n)
     VALUE big;
 
     i = 0;
-    big = bignew(DIGSPERINT, 1);
+    big = bignew(DIGSPERLONG, 1);
     digits = BDIGITS(big);
-    while (i < DIGSPERINT) {
+    while (i < DIGSPERLONG) {
 	digits[i++] = BIGLO(n);
 	n = BIGDN(n);
     }
 
-    i = DIGSPERINT;
+    i = DIGSPERLONG;
     while (i-- && !digits[i]) ;
     RBIGNUM(big)->len = i+1;
     return big;
@@ -164,10 +164,13 @@ rb_int2inum(n)
 }
 
 VALUE
-rb_str2inum(str, base)
+rb_cstr2inum(str, base)
     const char *str;
     int base;
 {
+    const char *s = str;
+    char *end;
+    int badcheck = (base==0)?1:0;
     char sign = 1, c;
     unsigned long num;
     long len, blen = 1;
@@ -175,7 +178,7 @@ rb_str2inum(str, base)
     VALUE z;
     USHORT *zds;
 
-    while (ISSPACE(*str)) str++;
+    while (*str && ISSPACE(*str)) str++;
 
     if (*str == '+') {
 	str++;
@@ -197,11 +200,12 @@ rb_str2inum(str, base)
 	    }
 	    else {
 		base = 8;
+		if (!*str) return INT2FIX(0);
 	    }
-	    if (*str == '\0') return INT2FIX(0);
 	}
 	else {
 	    base = 10;
+	    if (!*str) return INT2FIX(0);
 	}
     }
     if (base == 8) {
@@ -215,12 +219,23 @@ rb_str2inum(str, base)
 	if (base == 2 && str[0] == '0' && (str[1] == 'b'||str[1] == 'B')) {
 	    str += 2;
 	}
-	while (str[0] == '0') str++;
+	while (*str && *str == '0') str++;
+	if (!*str) str--;
 	len = 4*strlen(str)*sizeof(char);
     }
 
     if (len <= (sizeof(VALUE)*CHAR_BIT)) {
-	unsigned long val = strtoul((char*)str, 0, base);
+	unsigned long val = strtoul((char*)str, &end, base);
+
+	if (badcheck) {
+	    if (end == str || *end)
+		goto bad;
+	    while (*end && ISSPACE(*end)) end++;
+	    if (*end) {
+	      bad:
+		rb_raise(rb_eArgError, "invalid literal for Integer: %s", s);
+	    }
+	}
 
 	if (POSFIXABLE(val)) {
 	    if (sign) return INT2FIX(val);
@@ -256,6 +271,15 @@ rb_str2inum(str, base)
 	    break;
 	  default:
 	    c = base;
+	    if (badcheck) {
+		if (ISSPACE(c)) {
+		    while (*str && ISSPACE(*str)) str++;
+		    if (*str) {
+			break;
+		    }
+		}
+		rb_raise(rb_eArgError, "invalid literal for Integer: %s", s);
+	    }
 	    break;
 	}
 	if (c >= base) break;
@@ -274,7 +298,23 @@ rb_str2inum(str, base)
 	    break;
 	}
     }
+
     return bignorm(z);
+}
+
+VALUE
+rb_str2inum(str, base)
+    VALUE str;
+    int base;
+{
+    char *s;
+    int len;
+
+    s = rb_str2cstr(str, &len);
+    if (len != strlen(s)) {
+	rb_raise(rb_eArgError, "string for Integer contains null byte");
+    }
+    return rb_cstr2inum(s, base); 
 }
 
 static char hexmap[] = "0123456789abcdef";
@@ -354,16 +394,17 @@ rb_big_to_s(x)
     return rb_big2str(x, 10);
 }
 
-unsigned long
-rb_big2ulong(x)
+static unsigned long
+big2ulong(x, type)
     VALUE x;
+    char *type;
 {
     unsigned long num;
     long len = RBIGNUM(x)->len;
     USHORT *ds;
 
     if (len > sizeof(long)/sizeof(USHORT))
-	rb_raise(rb_eArgError, "bignum too big to convert into `uint'");
+	rb_raise(rb_eArgError, "bignum too big to convert into `%s'", type);
     ds = BDIGITS(x);
     num = 0;
     while (len--) {
@@ -373,11 +414,20 @@ rb_big2ulong(x)
     return num;
 }
 
+unsigned long
+rb_big2ulong(x)
+    VALUE x;
+{
+    unsigned long num = big2ulong(x, "unsigned long");
+
+    if (!RBIGNUM(x)->sign) return -num;
+}
+
 long
 rb_big2long(x)
     VALUE x;
 {
-    unsigned long num = rb_big2ulong(x);
+    unsigned long num = big2ulong(x, "int");
 
     if ((long)num < 0) {
 	rb_raise(rb_eArgError, "bignum too big to convert into `int'");

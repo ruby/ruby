@@ -5,7 +5,7 @@
   $Author$
   created at: Thu Jun 10 14:26:32 JST 1993
 
-  Copyright (C) 1993-1999 Yukihiro Matsumoto
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
 
 *************************************************/
 
@@ -131,8 +131,9 @@ VALUE rb_uint2inum _((unsigned long));
 #define Qfalse 0
 #define Qtrue  2
 #define Qnil   4
+#define Qundef 6		/* undefined value for placeholder */
 
-#define RTEST(v) rb_test_false_or_nil((VALUE)(v))
+#define RTEST(v) ((VALUE)(v) & ~Qnil)
 #define NIL_P(v) ((VALUE)(v) == Qnil)
 
 #define CLASS_OF(v) rb_class_of((VALUE)(v))
@@ -306,7 +307,7 @@ struct RBignum {
     struct RBasic basic;
     char sign;
     long len;
-    unsigned short *digits;
+    void *digits;
 };
 
 #define R_CAST(st)   (struct st*)
@@ -343,14 +344,17 @@ struct RBignum {
 
 #define FL_UMASK  (0xff<<FL_USHIFT)
 
-#define FL_ABLE(x) (!(FIXNUM_P(x)||rb_special_const_p((VALUE)(x))))
+#define SPECIAL_CONST_P(x) (FIXNUM_P((VALUE)x) || (VALUE)(x) <= Qundef)
+
+#define FL_ABLE(x) (!SPECIAL_CONST_P(x))
 #define FL_TEST(x,f) (FL_ABLE(x)?(RBASIC(x)->flags&(f)):0)
-#define FL_SET(x,f) if (FL_ABLE(x)) {RBASIC(x)->flags |= (f);}
-#define FL_UNSET(x,f) if(FL_ABLE(x)){RBASIC(x)->flags &= ~(f);}
-#define FL_REVERSE(x,f) if(FL_ABLE(x)){RBASIC(x)->flags ^= f;}
+#define FL_SET(x,f) (FL_ABLE(x) && (RBASIC(x)->flags |= (f)))
+#define FL_UNSET(x,f) (FL_ABLE(x) && (RBASIC(x)->flags &= ~(f)))
+#define FL_REVERSE(x,f) (FL_ABLE(x) && (RBASIC(x)->flags ^= (f)))
 
 #define OBJ_TAINTED(x) FL_TEST((x), FL_TAINT)
 #define OBJ_TAINT(x) FL_SET((x), FL_TAINT)
+#define OBJ_INFECT(x,s) (FL_ABLE(x) && FL_ABLE(s) && (RBASIC(x)->flags |= RBASIC(s)->flags & FL_TAINT))
 
 void *xmalloc _((size_t));
 void *xcalloc _((size_t,size_t));
@@ -503,7 +507,6 @@ EXTERN VALUE rb_eFloatDomainError;
 extern __inline__ VALUE rb_class_of _((VALUE));
 extern __inline__ int rb_type _((VALUE));
 extern __inline__ int rb_special_const_p _((VALUE));
-extern __inline__ int rb_test_false_or_nil _((VALUE));
 
 extern __inline__ VALUE
 rb_class_of(VALUE obj)
@@ -529,23 +532,14 @@ rb_type(VALUE obj)
 extern __inline__ int
 rb_special_const_p(VALUE obj)
 {
-    if (FIXNUM_P(obj)) return Qtrue;
-    if (obj == Qnil) return Qtrue;
-    if (obj == Qfalse) return Qtrue;
-    if (obj == Qtrue) return Qtrue;;
+    if (SPECIAL_CONST_P(obj)) return Qtrue;
     return Qfalse;
 }
 
-extern __inline__ int
-rb_test_false_or_nil(VALUE v)
-{
-    return (v != Qnil) && (v != Qfalse);
-}
 #else
 VALUE rb_class_of _((VALUE));
 int rb_type _((VALUE));
 int rb_special_const_p _((VALUE));
-int rb_test_false_or_nil _((VALUE));
 #endif
 
 #include "intern.h"

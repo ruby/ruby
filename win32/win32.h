@@ -87,7 +87,7 @@
 #undef leave
 
 #if defined(__cplusplus)
-}
+extern "C++" {
 #endif
 
 #include <stdio.h>
@@ -103,7 +103,7 @@
 #include <malloc.h>
 
 #if defined(__cplusplus)
-extern "C" {
+}
 #endif
 
 #define UIDTYPE int

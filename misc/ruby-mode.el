@@ -189,7 +189,7 @@ The variable ruby-indent-level controls the amount of indentation.
 	  (indent-to x)
 	  (move-to-column (+ x shift))))))
 
-(defun ruby-expr-beg (&optional modifier)
+(defun ruby-expr-beg (&optional option)
   (save-excursion
     (if (looking-at "\\?")
 	(progn
@@ -201,15 +201,11 @@ The variable ruby-indent-level controls the amount of indentation.
       (or (bolp)
 	  (looking-at ruby-operator-re)
 	  (looking-at "[\\[({]")
-	  (and (not modifier) (looking-at "[!?]"))
+	  (and (not (eq option 'modifier))
+	       (looking-at "[!?]"))
 	  (and (looking-at ruby-symbol-re)
-	       (save-restriction
-		 (let ((p (point)))
-		   (beginning-of-line)
-		   (narrow-to-region (point) p)
-		   (goto-char p)
-		   (forward-word -1)))
-	       (if (and (not modifier) (bolp))
+	       (skip-chars-backward ruby-symbol-chars)
+	       (if (and (not (eq option 'modifier)) (bolp))
 		   t
 		 (if (or (looking-at ruby-block-beg-re)
 			 (looking-at ruby-block-op-re)
@@ -217,7 +213,8 @@ The variable ruby-indent-level controls the amount of indentation.
 		     (progn
 		       (goto-char (match-end 0))
 		       (looking-at "\\>"))
-		   (looking-at "[a-zA-Z][a-zA-z0-9_]* +/[^ \t]"))))))))
+		   (and (not (eq option 'expr-arg))
+			(looking-at "[a-zA-Z][a-zA-z0-9_]* +/[^ \t]")))))))))
 
 (defun ruby-parse-region (start end)
   (let ((indent-point end)
@@ -252,7 +249,7 @@ The variable ruby-indent-level controls the amount of indentation.
 		  (goto-char indent-point))))
 	       ((looking-at "/")
 		(cond
-		 ((and (not (eobp)) (ruby-expr-beg))
+		 ((and (not (eobp)) (ruby-expr-beg 'expr-arg))
 		  (if (re-search-forward "[^\\]/" indent-point t)
 		      nil
 		    (setq in-string (point))
@@ -261,7 +258,7 @@ The variable ruby-indent-level controls the amount of indentation.
 		  (goto-char pnt))))
 	       ((looking-at "%")
 		(cond
-		 ((and (not (eobp)) (ruby-expr-beg)
+		 ((and (not (eobp)) (ruby-expr-beg 'expr-arg)
 		       (not (looking-at "%="))
 		       (looking-at "%[Qqrxw]?\\(.\\)"))
 		  (setq w (buffer-substring (match-beginning 1)
@@ -352,7 +349,7 @@ The variable ruby-indent-level controls the amount of indentation.
 		     (progn
 		       (goto-char (match-beginning 0))
 		       (if (looking-at ruby-modifier-re)
-			   (ruby-expr-beg t)
+			   (ruby-expr-beg 'modifier)
 			 t))
 		   t)
 		 (goto-char pnt)

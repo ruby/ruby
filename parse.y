@@ -6,7 +6,7 @@
   $Date$
   created at: Fri May 28 18:02:42 JST 1993
 
-  Copyright (C) 1993-1999 Yukihiro Matsumoto
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -331,21 +331,31 @@ stmt		: block_call
 		| stmt kWHILE_MOD expr
 		    {
 			value_expr($3);
-			if (nd_type($1) == NODE_BEGIN) {
-			    $$ = NEW_WHILE(cond($3), $1->nd_body, 0);
+			if ($1) {
+			    if (nd_type($1) == NODE_BEGIN) {
+				$$ = NEW_WHILE(cond($3), $1->nd_body, 0);
+			    }
+			    else {
+				$$ = NEW_WHILE(cond($3), $1, 1);
+			    }
 			}
 			else {
-			    $$ = NEW_WHILE(cond($3), $1, 1);
+			    $$ = 0;
 			}
 		    }
 		| stmt kUNTIL_MOD expr
 		    {
 			value_expr($3);
-			if (nd_type($1) == NODE_BEGIN) {
-			    $$ = NEW_UNTIL(cond($3), $1->nd_body, 0);
+			if ($1) {
+			    if (nd_type($1) == NODE_BEGIN) {
+				$$ = NEW_UNTIL(cond($3), $1->nd_body, 0);
+			    }
+			    else {
+				$$ = NEW_UNTIL(cond($3), $1, 1);
+			    }
 			}
 			else {
-			    $$ = NEW_UNTIL(cond($3), $1, 1);
+			    $$ = 0;
 			}
 		    }
 		| stmt kRESCUE_MOD expr
@@ -606,7 +616,7 @@ op		: tDOT2		{ $$ = tDOT2; }
 		| tASET		{ $$ = tASET; }
 		| '`'		{ $$ = '`'; }
 
-reswords	: k__LINE__ | k__FILE__ | klBEGIN | klEND
+reswords	: k__LINE__ | k__FILE__  | klBEGIN | klEND
 		| kALIAS | kAND | kBEGIN | kBREAK | kCASE | kCLASS | kDEF
 		| kDEFINED | kDO | kELSE | kELSIF | kEND | kENSURE | kFALSE
 		| kFOR | kIF_MOD | kIN | kMODULE | kNEXT | kNIL | kNOT
@@ -713,7 +723,7 @@ arg		: lhs '=' arg
 		    }
 		| tUPLUS arg
 		    {
-			if (nd_type($2) == NODE_LIT) {
+			if ($2 && nd_type($2) == NODE_LIT) {
 			    $$ = $2;
 			}
 			else {
@@ -722,7 +732,7 @@ arg		: lhs '=' arg
 		    }
 		| tUMINUS arg
 		    {
-			if (nd_type($2) == NODE_LIT && FIXNUM_P($2->nd_lit)) {
+			if ($2 && nd_type($2) == NODE_LIT && FIXNUM_P($2->nd_lit)) {
 			    long i = FIX2LONG($2->nd_lit);
 
 			    $2->nd_lit = INT2FIX(-i);
@@ -1781,22 +1791,30 @@ int ruby__end__seen;
 static VALUE ruby_debug_lines;
 
 static NODE*
-yycompile(f)
+yycompile(f, line)
     char *f;
+    int line;
 {
     int n;
 
     if (!ruby_in_eval && rb_safe_level() == 0 &&
-	rb_const_defined(rb_cObject, rb_intern("LINES__"))) {
+	rb_const_defined(rb_cObject, rb_intern("SCRIPT_LINES__"))) {
 	VALUE hash, fname;
 
-	hash = rb_const_get(rb_cObject, rb_intern("LINES__"));
+	hash = rb_const_get(rb_cObject, rb_intern("SCRIPT_LINES__"));
 	if (TYPE(hash) == T_HASH) {
 	    fname = rb_str_new2(f);
 	    ruby_debug_lines = rb_hash_aref(hash, fname);
 	    if (NIL_P(ruby_debug_lines)) {
 		ruby_debug_lines = rb_ary_new();
 		rb_hash_aset(hash, fname, ruby_debug_lines);
+	    }
+	}
+	if (line > 1) {
+	    VALUE str = rb_str_new(0,0);
+	    while (line > 1) {
+		rb_ary_push(ruby_debug_lines, str);
+		line--;
 	    }
 	}
     }
@@ -1864,7 +1882,7 @@ rb_compile_string(f, s, line)
     ruby_sourceline = line - 1;
     compile_for_eval = 1;
 
-    return yycompile(f);
+    return yycompile(f, line);
 }
 
 NODE*
@@ -1886,7 +1904,7 @@ rb_compile_file(f, file, start)
     lex_pbeg = lex_p = lex_pend = 0;
     ruby_sourceline = start - 1;
 
-    return yycompile(strdup(f));
+    return yycompile(strdup(f), start);
 }
 
 #if defined(__GNUC__) && __GNUC__ >= 2
@@ -2873,7 +2891,7 @@ yylex()
 		    } while (c = nextc());
 		    pushback(c);
 		    tokfix();
-		    yylval.val = rb_str2inum(tok(), 16);
+		    yylval.val = rb_cstr2inum(tok(), 16);
 		    return tINTEGER;
 		}
 		if (c == 'b' || c == 'B') {
@@ -2889,7 +2907,7 @@ yylex()
 		    } while (c = nextc());
 		    pushback(c);
 		    tokfix();
-		    yylval.val = rb_str2inum(tok(), 2);
+		    yylval.val = rb_cstr2inum(tok(), 2);
 		    return tINTEGER;
 		}
 		if (c >= '0' && c <= '7' || c == '_') {
@@ -2901,7 +2919,7 @@ yylex()
 		    } while (c = nextc());
 		    pushback(c);
 		    tokfix();
-		    yylval.val = rb_str2inum(tok(), 8);
+		    yylval.val = rb_cstr2inum(tok(), 8);
 		    return tINTEGER;
 		}
 		if (c > '7' && c <= '9') {
@@ -2977,7 +2995,7 @@ yylex()
 		yylval.val = rb_float_new(d);
 		return tFLOAT;
 	    }
-	    yylval.val = rb_str2inum(tok(), 10);
+	    yylval.val = rb_cstr2inum(tok(), 10);
 	    return tINTEGER;
 	}
 

@@ -6,7 +6,7 @@
   $Date$
   created at: Thu Jul 15 12:01:24 JST 1993
 
-  Copyright (C) 1993-1999 Yukihiro Matsumoto
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -801,7 +801,7 @@ rb_Integer(val)
 	return val;
 
       case T_STRING:
-	return rb_str2inum(RSTRING(val)->ptr, 0);
+	return rb_str2inum(val, 0);
 
       case T_NIL:
 	return INT2FIX(0);
@@ -826,8 +826,6 @@ rb_f_integer(obj, arg)
 {
     return rb_Integer(arg);
 }
-
-double rb_big2dbl _((VALUE));
 
 VALUE
 rb_Float(val)

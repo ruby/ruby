@@ -6,7 +6,7 @@
   $Date$
   created at: Tue Dec 28 14:31:59 JST 1993
 
-  Copyright (C) 1993-1999 Yukihiro Matsumoto
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -188,7 +188,7 @@ obj2long(obj)
     VALUE obj;
 {
     if (TYPE(obj) == T_STRING) {
-	obj = rb_str2inum(RSTRING(obj)->ptr, 10);
+	obj = rb_str2inum(obj, 10);
     }
 
     return NUM2LONG(obj);
@@ -470,15 +470,15 @@ static VALUE
 time_clone(time)
     VALUE time;
 {
-    VALUE obj;
-    struct time_object *tobj, *newtobj;
+    VALUE clone;
+    struct time_object *tobj, *tclone;
 
     GetTimeval(time, tobj);
-    obj = Data_Make_Struct(0, struct time_object, 0, free, newtobj);
-    CLONESETUP(obj, time);
-    MEMCPY(newtobj, tobj, struct time_object, 1);
+    clone = Data_Make_Struct(0, struct time_object, 0, free, tclone);
+    CLONESETUP(clone, time);
+    MEMCPY(tclone, tobj, struct time_object, 1);
 
-    return obj;
+    return clone;
 }
 
 static VALUE
@@ -838,7 +838,7 @@ time_strftime(time, format)
     if (tobj->tm_got == 0) {
 	time_get_tm(time, tobj->gmt);
     }
-    fmt = str2cstr(format, &len);
+    fmt = rb_str2cstr(format, &len);
     if (len == 0) {
 	rb_warning("strftime called with empty format string");
     }
@@ -948,7 +948,7 @@ time_load(klass, str)
     struct tm tm;
     int i;
 
-    buf = str2cstr(str, &i);
+    buf = rb_str2cstr(str, &i);
     if (i != 8) {
 	rb_raise(rb_eTypeError, "marshaled time format differ");
     }

@@ -81,8 +81,8 @@ OBJS	      = array.@OBJEXT@ \
 		version.@OBJEXT@ \
 		$(MISSING)
 
-all:		miniruby$(EXEEXT) rbconfig.rb
-		@./miniruby$(EXEEXT) -Xext extmk.rb @EXTSTATIC@
+all:		miniruby$(EXEEXT) @PREP@ rbconfig.rb
+		@@MINIRUBY@ -Xext extmk.rb @EXTSTATIC@
 
 miniruby$(EXEEXT):	config.status $(LIBRUBY_A) $(MAINOBJ) dmyext.@OBJEXT@
 		@rm -f $@
@@ -98,16 +98,16 @@ $(LIBRUBY_A):	$(OBJS) dmyext.@OBJEXT@
 
 $(LIBRUBY_SO):	$(OBJS) dmyext.@OBJEXT@
 		$(LDSHARED) $(DLDFLAGS) $(SOLIBS) $(OBJS) dmyext.@OBJEXT@ -o $@
-		@-./miniruby -e 'ARGV.each{|link| File.delete link if File.exist? link; \
+		@-@MINIRUBY@ -e 'ARGV.each{|link| File.delete link if File.exist? link; \
 						  File.symlink "$(LIBRUBY_SO)", link}' \
 				$(LIBRUBY_ALIASES) || true
 
 install:	rbconfig.rb
-		./miniruby$(EXEEXT) $(srcdir)/instruby.rb $(DESTDIR)
+		@MINIRUBY@ $(srcdir)/instruby.rb $(DESTDIR)
 
 clean:;		@rm -f $(OBJS) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY_ALIASES) $(MAINOBJ) rbconfig.rb
 		@rm -f ext/extinit.c ext/extinit.@OBJEXT@ dmyext.@OBJEXT@
-		@-./miniruby$(EXEEXT) -Xext extmk.rb clean 2> /dev/null || true
+		@-@MINIRUBY@ -Xext extmk.rb clean 2> /dev/null || true
 		@rm -f $(PROGRAM) miniruby$(EXEEXT)
 
 distclean:	clean
@@ -123,7 +123,10 @@ test:		miniruby$(EXEEXT)
 		@./miniruby$(EXEEXT) $(srcdir)/rubytest.rb
 
 rbconfig.rb:	miniruby$(EXEEXT)
-		@./miniruby$(EXEEXT) $(srcdir)/mkconfig.rb rbconfig.rb
+		@@MINIRUBY@ $(srcdir)/mkconfig.rb rbconfig.rb
+
+prep.rb:	miniruby$(EXEEXT)
+		@echo 'PLATFORM=RUBY_PLATFORM="@arch@"' > $@
 
 config.status:	$(srcdir)/configure
 		$(SHELL) ./config.status --recheck

@@ -6,7 +6,7 @@
   $Date$
   created at: Fri Mar 10 17:22:34 JST 1995
 
-  Copyright (C) 1993-1999 Yukihiro Matsumoto
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -51,19 +51,9 @@ int
 rb_special_const_p(obj)
     VALUE obj;
 {
-    if (FIXNUM_P(obj)) return Qtrue;
-    if (obj == Qnil) return Qtrue;
-    if (obj == Qfalse) return Qtrue;
-    if (obj == Qtrue) return Qtrue;
+    if (SPECIAL_CONST_P(obj)) return Qtrue;
 
     return Qfalse;
-}
-
-int
-rb_test_false_or_nil(v)
-    VALUE v;
-{
-    return (v != Qnil) && (v != Qfalse);
 }
 
 #include "util.h"

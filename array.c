@@ -6,7 +6,7 @@
   $Date$
   created at: Fri Aug  6 09:46:12 JST 1993
 
-  Copyright (C) 1993-1999 Yukihiro Matsumoto
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -268,7 +268,7 @@ rb_ary_push(ary, item)
 }
 
 static VALUE
-rb_ary_push_method(argc, argv, ary)
+rb_ary_push_m(argc, argv, ary)
     int argc;
     VALUE *argv;
     VALUE ary;
@@ -292,6 +292,31 @@ rb_ary_pop(ary)
     return RARRAY(ary)->ptr[--RARRAY(ary)->len];
 }
 
+static VALUE
+rb_ary_pop_m(argc, argv, ary)
+    int argc;
+    VALUE *argv;
+    VALUE ary;
+{
+    int n = 1;
+    VALUE result;
+
+    if (argc == 0) {
+	return rb_ary_pop(ary);
+    }
+    if (argc > 2) {
+	rb_raise(rb_eArgError, "wrong # of arguments (%d for 1)", argc);
+    }
+    n = NUM2INT(argv[0]);
+    if (RARRAY(ary)->len < n)
+	n = RARRAY(ary)->len;
+    result = rb_ary_new2(n);
+    while (n--) {
+	rb_ary_store(result, n, rb_ary_pop(ary));
+    }
+    return result;
+}
+
 VALUE
 rb_ary_shift(ary)
     VALUE ary;
@@ -312,6 +337,31 @@ rb_ary_shift(ary)
     }
 
     return top;
+}
+
+static VALUE
+rb_ary_shift_m(argc, argv, ary)
+    int argc;
+    VALUE *argv;
+    VALUE ary;
+{
+    int n = 1;
+    VALUE result;
+
+    if (argc == 0) {
+	return rb_ary_shift(ary);
+    }
+    if (argc > 2) {
+	rb_raise(rb_eArgError, "wrong # of arguments (%d for 1)", argc);
+    }
+    n = NUM2INT(argv[0]);
+    if (RARRAY(ary)->len < n)
+	n = RARRAY(ary)->len;
+    result = rb_ary_new2(n);
+    while (n--) {
+	rb_ary_push(result, rb_ary_shift(ary));
+    }
+    return result;
 }
 
 VALUE
@@ -506,8 +556,11 @@ rb_ary_replace(ary, beg, len, rpl)
 	len = RARRAY(ary)->len - beg;
     }
 
-    if (TYPE(rpl) != T_ARRAY) {
-	rpl = rb_Array(rpl);
+    if (NIL_P(rpl)) {
+	rpl = rb_ary_new2(0);
+    }
+    else if (TYPE(rpl) != T_ARRAY) {
+	rpl = rb_ary_new3(1, rpl);
     }
 
     rb_ary_modify(ary);
@@ -631,19 +684,23 @@ static VALUE
 rb_ary_clone(ary)
     VALUE ary;
 {
-    VALUE ary2 = rb_ary_new2(RARRAY(ary)->len);
+    VALUE clone = rb_ary_new2(RARRAY(ary)->len);
 
-    CLONESETUP(ary2, ary);
-    MEMCPY(RARRAY(ary2)->ptr, RARRAY(ary)->ptr, VALUE, RARRAY(ary)->len);
-    RARRAY(ary2)->len = RARRAY(ary)->len;
-    return ary2;
+    CLONESETUP(clone, ary);
+    MEMCPY(RARRAY(clone)->ptr, RARRAY(ary)->ptr, VALUE, RARRAY(ary)->len);
+    RARRAY(clone)->len = RARRAY(ary)->len;
+    return clone;
 }
 
 static VALUE
 rb_ary_dup(ary)
     VALUE ary;
 {
-    return rb_ary_s_create(RARRAY(ary)->len, RARRAY(ary)->ptr, CLASS_OF(ary));
+    VALUE dup;
+
+    dup = rb_ary_s_create(RARRAY(ary)->len, RARRAY(ary)->ptr, CLASS_OF(ary));
+    if (OBJ_TAINTED(ary)) OBJ_TAINT(dup);
+    return dup;
 }
 
 static VALUE
@@ -668,10 +725,15 @@ rb_ary_join(ary, sep)
     VALUE ary, sep;
 {
     long i;
+    int taint;
     VALUE result, tmp;
+
     if (RARRAY(ary)->len == 0) return rb_str_new(0, 0);
+    if (OBJ_TAINTED(ary)) taint = 1;
+    if (OBJ_TAINTED(sep)) taint = 1;
 
     tmp = RARRAY(ary)->ptr[0];
+    if (OBJ_TAINTED(tmp)) taint = 1;
     switch (TYPE(tmp)) {
       case T_STRING:
 	result = rb_str_dup(tmp);
@@ -715,14 +777,15 @@ rb_ary_join(ary, sep)
 	}
 	if (!NIL_P(sep)) rb_str_concat(result, sep);
 	rb_str_cat(result, RSTRING(tmp)->ptr, RSTRING(tmp)->len);
-	if (OBJ_TAINTED(tmp)) OBJ_TAINT(result);
+	if (OBJ_TAINTED(tmp)) taint = 1;
     }
 
+    if (taint) OBJ_TAINT(result);
     return result;
 }
 
 static VALUE
-rb_ary_join_method(argc, argv, ary)
+rb_ary_join_m(argc, argv, ary)
     int argc;
     VALUE *argv;
     VALUE ary;
@@ -788,10 +851,14 @@ rb_protect_inspect(func, obj, arg)
 	inspect_tbl = rb_ary_new();
 	rb_thread_local_aset(rb_thread_current(), inspect_key, inspect_tbl);
     }
+    if (rb_ary_includes(inspect_tbl, obj)) {
+	return (*func)(obj, arg);
+    }
     rb_ary_push(inspect_tbl, obj);
     iarg.func = func;
     iarg.arg1 = obj;
     iarg.arg2 = arg;
+
     return rb_ensure(inspect_call, (VALUE)&iarg, inspect_ensure, obj);
 }
 
@@ -866,7 +933,7 @@ rb_ary_reverse(ary)
 }
 
 static VALUE
-rb_ary_reverse_method(ary)
+rb_ary_reverse_m(ary)
     VALUE ary;
 {
     return rb_ary_reverse(rb_ary_dup(ary));
@@ -985,11 +1052,11 @@ rb_ary_delete(ary, item)
 }
 
 VALUE
-rb_ary_delete_at(ary, at)
+rb_ary_delete_at(ary, pos)
     VALUE ary;
-    VALUE at;
+    long pos;
 {
-    long i, pos = NUM2LONG(at), len = RARRAY(ary)->len;
+    long i, len = RARRAY(ary)->len;
     VALUE del = Qnil;
 
     rb_ary_modify(ary);
@@ -1006,6 +1073,47 @@ rb_ary_delete_at(ary, at)
     return del;
 }
 
+static VALUE
+rb_ary_delete_at_m(argc, argv, ary)
+    int argc;
+    VALUE *argv;
+    VALUE ary;
+{
+    VALUE arg1, arg2;
+    long pos, len, i;
+
+    rb_ary_modify(ary);
+    if (rb_scan_args(argc, argv, "11", &arg1, &arg2) == 2) {
+	pos = NUM2LONG(arg1);
+	len = NUM2LONG(arg2);
+      delete_pos_len:
+	if (pos < 0) {
+	    pos = RARRAY(ary)->len + pos;
+	}
+	arg2 = rb_ary_subary(ary, pos, len);
+	rb_ary_replace(ary, pos, len, Qnil);	/* Qnil/rb_ary_new2(0) */
+	return arg2;
+    }
+
+    if (!FIXNUM_P(arg1) && rb_range_beg_len(arg1, &pos, &len, RARRAY(ary)->len, 1)) {
+	goto delete_pos_len;
+    }
+
+    pos = NUM2LONG(arg1);
+    len = RARRAY(ary)->len;
+
+    if (pos >= len) return Qnil;
+    if (pos < 0) pos += len;
+    if (pos < 0) return Qnil;
+
+    arg2 = RARRAY(ary)->ptr[pos];
+    for (i = pos + 1; i < len; i++, pos++) {
+	RARRAY(ary)->ptr[pos] = RARRAY(ary)->ptr[i];
+    }
+    RARRAY(ary)->len = pos;
+
+    return arg2;
+}
 static VALUE
 rb_ary_delete_if(ary)
     VALUE ary;
@@ -1039,7 +1147,7 @@ rb_ary_filter(ary)
 }
 
 static VALUE
-rb_ary_replace_method(ary, ary2)
+rb_ary_replace_m(ary, ary2)
     VALUE ary, ary2;
 {
     ary2 = to_ary(ary2);
@@ -1116,9 +1224,7 @@ rb_ary_plus(x, y)
 {
     VALUE z;
 
-    if (TYPE(y) != T_ARRAY) {
-	y = rb_Array(y);
-    }
+    Check_Type(y, T_ARRAY);
 
     z = rb_ary_new2(RARRAY(x)->len + RARRAY(y)->len);
     MEMCPY(RARRAY(z)->ptr, RARRAY(x)->ptr, VALUE, RARRAY(x)->len);
@@ -1134,9 +1240,7 @@ rb_ary_concat(x, y)
     VALUE *p, *pend;
 
     rb_ary_modify(x);
-    if (TYPE(y) != T_ARRAY) {
-	y = rb_Array(y);
-    }
+    Check_Type(y, T_ARRAY);
 
     p = RARRAY(y)->ptr;
     pend = p + RARRAY(y)->len;
@@ -1339,7 +1443,7 @@ rb_ary_or(ary1, ary2)
 
     if (TYPE(ary2) != T_ARRAY) {
 	if (rb_ary_includes(ary1, ary2)) return ary1;
-	else return rb_ary_plus(ary1, ary2);
+	else return rb_ary_push(ary1, ary2);
     }
 
     ary3 = rb_ary_new();
@@ -1495,9 +1599,9 @@ Init_Array()
     rb_define_method(rb_cArray, "last", rb_ary_last, 0);
     rb_define_method(rb_cArray, "concat", rb_ary_concat, 1);
     rb_define_method(rb_cArray, "<<", rb_ary_push, 1);
-    rb_define_method(rb_cArray, "push", rb_ary_push_method, -1);
-    rb_define_method(rb_cArray, "pop", rb_ary_pop, 0);
-    rb_define_method(rb_cArray, "shift", rb_ary_shift, 0);
+    rb_define_method(rb_cArray, "push", rb_ary_push_m, -1);
+    rb_define_method(rb_cArray, "pop", rb_ary_pop_m, -1);
+    rb_define_method(rb_cArray, "shift", rb_ary_shift_m, -1);
     rb_define_method(rb_cArray, "unshift", rb_ary_unshift, 1);
     rb_define_method(rb_cArray, "each", rb_ary_each, 0);
     rb_define_method(rb_cArray, "each_index", rb_ary_each_index, 0);
@@ -1511,18 +1615,18 @@ Init_Array()
     rb_define_method(rb_cArray, "indices", rb_ary_indexes, -1);
     rb_define_method(rb_cArray, "clone", rb_ary_clone, 0);
     rb_define_method(rb_cArray, "dup", rb_ary_dup, 0);
-    rb_define_method(rb_cArray, "join", rb_ary_join_method, -1);
-    rb_define_method(rb_cArray, "reverse", rb_ary_reverse_method, 0);
+    rb_define_method(rb_cArray, "join", rb_ary_join_m, -1);
+    rb_define_method(rb_cArray, "reverse", rb_ary_reverse_m, 0);
     rb_define_method(rb_cArray, "reverse!", rb_ary_reverse, 0);
     rb_define_method(rb_cArray, "sort", rb_ary_sort, 0);
     rb_define_method(rb_cArray, "sort!", rb_ary_sort_bang, 0);
     rb_define_method(rb_cArray, "collect", rb_ary_collect, 0);
     rb_define_method(rb_cArray, "delete", rb_ary_delete, 1);
-    rb_define_method(rb_cArray, "delete_at", rb_ary_delete_at, 1);
+    rb_define_method(rb_cArray, "delete_at", rb_ary_delete_at_m, -1);
     rb_define_method(rb_cArray, "delete_if", rb_ary_delete_if, 0);
     rb_define_method(rb_cArray, "reject!", rb_ary_delete_if, 0);
     rb_define_method(rb_cArray, "filter", rb_ary_filter, 0);
-    rb_define_method(rb_cArray, "replace", rb_ary_replace_method, 1);
+    rb_define_method(rb_cArray, "replace", rb_ary_replace_m, 1);
     rb_define_method(rb_cArray, "clear", rb_ary_clear, 0);
     rb_define_method(rb_cArray, "fill", rb_ary_fill, -1);
     rb_define_method(rb_cArray, "include?", rb_ary_includes, 1);

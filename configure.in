@@ -26,6 +26,7 @@ then
 fi
 
 AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
 
 dnl checks for fat-binary
 fat_binary=no
@@ -36,7 +37,7 @@ AC_ARG_ENABLE(fat-binary,
 
     AC_MSG_CHECKING(target architecture)
 
-    case "$host_os" in
+    case "$target_os" in
     rhapsody*)
         echo -n "MacOS X Server: "
 	  	if test "$TARGET_ARCHS" = "" ; then
@@ -136,11 +137,11 @@ if test "$rb_cv_have_attr_noreturn" = yes; then
 fi
 
 dnl Checks for libraries.
-case "$host_os" in
+case "$target_os" in
 nextstep*)	;;
 openstep*)	;;
 rhapsody*)	;;
-human*)		;;
+human*)		ac_cv_func_getpgrp_void=yes;;
 beos*)		;;
 cygwin*)	;;
 *) LIBS="-lm $LIBS";;
@@ -326,7 +327,7 @@ AC_ARG_WITH(dln-a-out,
 
 AC_SUBST(XLDFLAGS)dnl
 
-case "$host_os" in
+case "$target_os" in
     linux*)
   AC_CACHE_CHECK(whether ELF binaries are produced, rb_cv_binary_elf,
   [AC_TRY_RUN([
@@ -351,7 +352,7 @@ main() {
 	rb_cv_binary_elf=yes)])
   if test "$rb_cv_binary_elf" = no; then
     with_dln_a_out=yes
-    host_os=${host_os}-a_out
+    target_os=${target_os}-a_out
   else
     LDFLAGS="-rdynamic"
   fi;;
@@ -370,7 +371,7 @@ if test "$with_dln_a_out" != yes; then
   rb_cv_dlopen=unknown
   AC_MSG_CHECKING(whether OS depend dynamic link works)
   if test "$GCC" = yes; then
-    case "$host_os" in
+    case "$target_os" in
     nextstep*)	;;
     openstep*)	;;
     rhapsody*)	;;
@@ -378,14 +379,14 @@ if test "$with_dln_a_out" != yes; then
     bsdi*)	;;
     cygwin*)	;;
     netbsd*) CCDLFLAGS=-fpic
-     case "$host_cpu" in
+     case "$target_cpu" in
      mips*) CCDLFLAGS=-fPIC ;;
      *) ;;
      esac ;;
     *) CCDLFLAGS=-fPIC;;
     esac
   else
-    case "$host_os" in
+    case "$target_os" in
 	hpux*)		CCDLFLAGS='+z';;
 	solaris*|irix*)	CCDLFLAGS='-K PIC' ;;
 	sunos*)		CCDLFLAGS='-PIC' ;;
@@ -394,7 +395,7 @@ if test "$with_dln_a_out" != yes; then
     esac
   fi
 
-  case "$host_os" in
+  case "$target_os" in
 	hpux*)		DLDFLAGS="-E"
 			LDSHARED='ld -b'
 			LDFLAGS="-Wl,-E"
@@ -429,7 +430,7 @@ if test "$with_dln_a_out" != yes; then
 			fi
 			rb_cv_dlopen=yes ;;
 	netbsd*)  	LDSHARED="ld -shared"
-                      	case "$host_cpu" in
+                      	case "$target_cpu" in
                       	alpha)
                           LDFLAGS="-export-dynamic" ;;
                       	esac
@@ -464,7 +465,7 @@ if test "$with_dln_a_out" != yes; then
 			LDSHARED=''
 			LDFLAGS=''
 			rb_cv_dlopen=yes ;;
-	beos*) 		case "$host_cpu" in
+	beos*) 		case "$target_cpu" in
 			  powerpc*)
 			    LDSHARED="ld -xms"
 			    DLDFLAGS="-f ruby.exp -lbe -lroot glue-noinit.a init_term_dyn.o start_dyn.o"
@@ -477,7 +478,7 @@ if test "$with_dln_a_out" != yes; then
 			    DLDFLAGS="ruby.def -lbe -lroot glue-noinit.a init_term_dyn.o start_dyn.o"
 			esac
 			rb_cv_dlopen=yes ;;
-	cygwin*)	LDSHARED='dllwrap --export-all -s'
+	cygwin*)	: ${LDSHARED='dllwrap --export-all -s'}
 			rb_cv_dlopen=yes ;;
 	*) 		LDSHARED='ld' ;;
   esac
@@ -513,7 +514,7 @@ if test "$dln_a_out_works" = yes; then
   AC_DEFINE(DLEXT, ".so")
   CCDLFLAGS=
 else
-  case "$host_os" in
+  case "$target_os" in
     hpux*)	DLEXT=sl
 	 	AC_DEFINE(DLEXT, ".sl");;
     nextstep*)	DLEXT=bundle
@@ -538,7 +539,7 @@ else
   STRIP=strip
 fi
 
-case "$host_os" in
+case "$target_os" in
   linux*)
 	STRIP='strip -S -x';;
   nextstep*)
@@ -559,11 +560,11 @@ AC_ARG_WITH(static-linked-ext,
 	     *)	;;
 	     esac])
 
-case "$host_os" in
+case "$target_os" in
   human*)
     AC_CHECK_LIB(signal, _harderr)
     AC_CHECK_LIB(hmem, hmemset)
-    AC_CHECK_FUNCS(select)
+    AC_CHECK_FUNCS(select gettimeofday)
     AC_CACHE_CHECK(whether PD libc _dtos18 fail to convert big number,
 		   rb_cv_missing__dtos18,
     [AC_TRY_RUN(
@@ -602,7 +603,7 @@ rb_cv_missing_fconvert=yes, rb_cv_missing_fconvert=no, rb_cv_missing_fconvert=no
       AC_DEFINE(MISSING_FCONVERT)
     fi
     LIBOBJS="$LIBOBJS x68.o"
-    CFLAGS="$CFLAGS -fansi-only -cc1-stack=196608 -cpp-stack=2694144"
+    CFLAGS="$CFLAGS -fansi-only -cc1-stack=262144 -cpp-stack=2694144"
     EXEEXT=.x
     OBJEXT=o
     setup=Setup.x68
@@ -630,16 +631,26 @@ if test "$fat_binary" = yes ; then
   CFLAGS="$CFLAGS $ARCH_FLAG"
 fi
 
+if test x"$cross_compiling" = xyes; then
+  MINIRUBY='ruby -I.. -rprep'
+  PREP=prep.rb
+else
+  MINIRUBY='./miniruby$(EXEEXT)'
+  PREP=''
+fi
+AC_SUBST(MINIRUBY)
+AC_SUBST(PREP)
+
 LIBRUBY_A='lib$(RUBY_INSTALL_NAME).a'
 LIBRUBY='$(LIBRUBY_A)'
 LIBRUBYARG='$(LIBRUBY_A)'
 SOLIBS=
-if test "$host_os" = "beos"; then
+if test "$target_os" = "beos"; then
   LIBRUBY='$(LIBRUBY_SO)'
   LIBRUBYARG='-l$(RUBY_INSTALL_NAME)'
   SOLIBS='-lnet'
   echo creating ruby.def
-  case "$host_cpu" in
+  case "$target_cpu" in
     powerpc*)
       cp beos/ruby.def.in ruby.exp
       CFLAGS="$CFLAGS -relax_pointers"
@@ -666,12 +677,12 @@ if test "$enable_shared" = 'yes'; then
   LIBRUBY='$(LIBRUBY_SO)'
   LIBRUBYARG='-L. -l$(RUBY_INSTALL_NAME)'
   CFLAGS="$CFLAGS $CCDLFLAGS"
-  case "$host_os" in
+  case "$target_os" in
     sunos4*)
 	LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_INSTALL_NAME).so'
 	;;
     linux*)
-	XLDFLAGS='-Wl,-rpath,${prefix}/lib':/usr/lib:/lib
+	LIBRUBY_DLDFLAGS='-Wl,-soname,lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR)'
 	LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_INSTALL_NAME).so'
 	;;
     freebsd*)
@@ -683,7 +694,7 @@ if test "$enable_shared" = 'yes'; then
 	;;
     netbsd*)
 	LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR)'
- 	case "$host_cpu" in
+ 	case "$target_cpu" in
 	alpha|mipsel|mipseb|powerpc|sparc64)  # ELF platforms
 	   LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so.$(MAJOR) lib$(RUBY_INSTALL_NAME).so' ;;
  	*) LIBRUBY_ALIASES= ;;  # a.out platforms
@@ -716,13 +727,17 @@ if test "$enable_shared" = 'yes'; then
 	FIRSTMAKEFILE=GNUmakefile:cygwin/GNUmakefile.in
 	LIBOBJS="$LIBOBJS strftime.o"
 	CCDLFLAGS=-DUSEIMPORTLIB
+	: ${NM=nm}
+	AC_SUBST(NM)
+        : ${DLLWRAP=dllwrap}
+	AC_SUBST(DLLWRAP)
 	    ;;
     *)
 	;;
   esac
 fi
 
-case "$host_os" in
+case "$target_os" in
 	nextstep*)
     	CFLAGS="$CFLAGS -pipe"
 		;;
@@ -765,16 +780,16 @@ configure_args=$ac_configure_args
 AC_SUBST(configure_args)dnl
 
 if test "$fat_binary" = yes ; then
-    arch="fat-${host_os}"
+    arch="fat-${target_os}"
 
     AC_DEFINE_UNQUOTED(RUBY_THIN_ARCHLIB,
-                 "${RUBY_LIB_PATH}/" __ARCHITECTURE__ "-${host_os}")
+                 "${RUBY_LIB_PATH}/" __ARCHITECTURE__ "-${target_os}")
 
     AC_DEFINE_UNQUOTED(RUBY_SITE_THIN_ARCHLIB,
-                 "${RUBY_SITE_LIB_PATH}/" __ARCHITECTURE__ "-${host_os}")
-    AC_DEFINE_UNQUOTED(RUBY_PLATFORM, __ARCHITECTURE__ "-${host_os}")
+                 "${RUBY_SITE_LIB_PATH}/" __ARCHITECTURE__ "-${target_os}")
+    AC_DEFINE_UNQUOTED(RUBY_PLATFORM, __ARCHITECTURE__ "-${target_os}")
 else
-    arch="${host_cpu}-${host_os}"
+    arch="${target_cpu}-${target_os}"
     AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "${arch}")
 fi
 AC_DEFINE_UNQUOTED(RUBY_ARCHLIB, "${RUBY_LIB_PATH}/${arch}")

@@ -44,6 +44,7 @@ Standard Libraries
 - sprintf/printf's $ to specify argument order
 - Dir.glob("**/*.c") ala zsh
 - Remove Enumerable#{size,length}
+* Marshal should handle generic instance variables.
 * SyntaxError and NameError should not be subclasses of StandardError, maybe.
 * debugger for thread programming
 * Struct::new([name,]member,...) ??

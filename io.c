@@ -6,7 +6,7 @@
   $Date$
   created at: Fri Oct 15 18:08:59 JST 1993
 
-  Copyright (C) 1993-1999 Yukihiro Matsumoto
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -82,7 +82,6 @@ VALUE rb_eIOError;
 VALUE rb_stdin, rb_stdout, rb_stderr, rb_defout;
 static VALUE orig_stdin, orig_stdout, orig_stderr;
 
-VALUE rb_fs;
 VALUE rb_output_fs;
 VALUE rb_rs;
 VALUE rb_output_rs;
@@ -701,7 +700,7 @@ rb_io_gets(io)
 }
 
 static VALUE
-rb_io_gets_method(argc, argv, io)
+rb_io_gets_m(argc, argv, io)
     int argc;
     VALUE *argv;
     VALUE io;
@@ -767,7 +766,7 @@ rb_io_readline(argc, argv, io)
     VALUE *argv;
     VALUE io;
 {
-    VALUE line = rb_io_gets_method(argc, argv, io);
+    VALUE line = rb_io_gets_m(argc, argv, io);
 
     if (NIL_P(line)) {
 	rb_eof_error();
@@ -885,12 +884,12 @@ rb_io_ungetc(io, c)
     VALUE io, c;
 {
     OpenFile *fptr;
+    int cc = NUM2INT(c);
 
-    Check_Type(c, T_FIXNUM);
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
 
-    if (ungetc(FIX2INT(c), fptr->f) == EOF)
+    if (ungetc(cc, fptr->f) == EOF)
 	rb_sys_fail(fptr->path);
     return Qnil;
 }
@@ -966,7 +965,7 @@ rb_io_close(io)
 }
 
 static VALUE
-rb_io_close_method(io)
+rb_io_close_m(io)
     VALUE io;
 {
     if (rb_safe_level() >= 4 && !OBJ_TAINTED(io)) {
@@ -1260,6 +1259,9 @@ rb_fopen(fname, mode)
 	    rb_sys_fail(fname);
 	}
     }
+#ifdef __human68k__
+    fmode(file, _IOTEXT);
+#endif
     return file;
 }
 
@@ -1809,11 +1811,11 @@ rb_io_clone(io)
     int fd;
     char *mode;
 
-    NEWOBJ(obj, struct RFile);
-    CLONESETUP(obj, io);
+    NEWOBJ(clone, struct RFile);
+    CLONESETUP(clone, io);
 
     GetOpenFile(io, orig);
-    MakeOpenFile(obj, fptr);
+    MakeOpenFile(clone, fptr);
 
     if (orig->f2) {
 	fflush(orig->f2);
@@ -1847,10 +1849,10 @@ rb_io_clone(io)
 	fptr->f = rb_fdopen(fd, "w");
     }
     if (fptr->mode & FMODE_BINMODE) {
-	rb_io_binmode((VALUE)obj);
+	rb_io_binmode((VALUE)clone);
     }
 
-    return (VALUE)obj;
+    return (VALUE)clone;
 }
 
 static VALUE
@@ -3211,9 +3213,7 @@ Init_IO()
     rb_define_singleton_method(rb_cIO, "select", rb_f_select, -1);
     rb_define_singleton_method(rb_cIO, "pipe", rb_io_s_pipe, 0);
 
-    rb_fs = rb_output_fs = Qnil;
-    rb_define_hooked_variable("$;", &rb_fs, 0, rb_str_setter);
-    rb_define_hooked_variable("$-F", &rb_fs, 0, rb_str_setter);
+    rb_output_fs = Qnil;
     rb_define_hooked_variable("$,", &rb_output_fs, 0, rb_str_setter);
 
     rb_rs = rb_default_rs = rb_str_new2("\n"); rb_output_rs = Qnil;
@@ -3255,7 +3255,7 @@ Init_IO()
 
     rb_define_method(rb_cIO, "read",  io_read, -1);
     rb_define_method(rb_cIO, "write", io_write, 1);
-    rb_define_method(rb_cIO, "gets",  rb_io_gets_method, -1);
+    rb_define_method(rb_cIO, "gets",  rb_io_gets_m, -1);
     rb_define_method(rb_cIO, "readline",  rb_io_readline, -1);
     rb_define_method(rb_cIO, "getc",  rb_io_getc, 0);
     rb_define_method(rb_cIO, "readchar",  rb_io_readchar, 0);
@@ -3273,7 +3273,7 @@ Init_IO()
     rb_define_method(rb_cIO, "eof", rb_io_eof, 0);
     rb_define_method(rb_cIO, "eof?", rb_io_eof, 0);
 
-    rb_define_method(rb_cIO, "close", rb_io_close_method, 0);
+    rb_define_method(rb_cIO, "close", rb_io_close_m, 0);
     rb_define_method(rb_cIO, "closed?", rb_io_closed, 0);
     rb_define_method(rb_cIO, "close_read", rb_io_close_read, 0);
     rb_define_method(rb_cIO, "close_write", rb_io_close_write, 0);

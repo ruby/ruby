@@ -6,7 +6,7 @@
   $Date$
   created at: Fri Oct 15 10:39:26 JST 1993
 
-  Copyright (C) 1993-1999 Yukihiro Matsumoto
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -111,8 +111,6 @@ remove_sign_bits(str, base)
     return str;
 }
 
-double rb_big2dbl _((VALUE));
-
 #define FNONE  0
 #define FSHARP 1
 #define FMINUS 2
@@ -178,7 +176,7 @@ rb_f_sprintf(argc, argv)
 
     fmt = GETARG();
     if (OBJ_TAINTED(fmt)) tainted = 1;
-    p = str2cstr(fmt, &blen);
+    p = rb_str2cstr(fmt, &blen);
     end = p + blen;
     blen = 0;
     bsiz = 120;
@@ -397,22 +395,22 @@ rb_f_sprintf(argc, argv)
 
 	      bin_retry:
 		switch (TYPE(val)) {
-		  case T_FIXNUM:
-		    v = FIX2LONG(val);
-		    break;
 		  case T_FLOAT:
 		    val = rb_dbl2big(RFLOAT(val)->value);
 		    if (FIXNUM_P(val)) goto bin_retry;
 		    bignum = 1;
 		    break;
 		  case T_STRING:
-		    val = rb_str2inum(RSTRING(val)->ptr, 10);
+		    val = rb_str2inum(val, 0);
 		    goto bin_retry;
 		  case T_BIGNUM:
 		    bignum = 1;
 		    break;
 		  default:
-		    Check_Type(val, T_FIXNUM);
+		    v = NUM2LONG(val);
+		    break;
+		  case T_FIXNUM:
+		    v = FIX2LONG(val);
 		    break;
 		}
 
@@ -616,7 +614,7 @@ rb_f_sprintf(argc, argv)
 		    fval = strtod(RSTRING(val)->ptr, 0);
 		    break;
 		  default:
-		    Check_Type(val, T_FLOAT);
+		    fval = NUM2DBL(val);
 		    break;
 		}
 

@@ -4,9 +4,9 @@
 
   $Author$
   $Date$
-  created at: Tue Jan 26 02:40:41 1999
+  created at: Tue Jan 26 02:40:41 2000
 
-  Copyright (C) 1993-1999 Yukihiro Matsumoto
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
 
 *************************************************/
 

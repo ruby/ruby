@@ -6,7 +6,7 @@
   $Date$
   created at: Tue Aug 10 12:47:31 JST 1993
 
-  Copyright (C) 1993-1999 Yukihiro Matsumoto
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -79,6 +79,7 @@ usage(name)
 "-0[octal]       specify record separator (\\0, if no argument)",
 "-a              autosplit mode with -n or -p (splits $_ into $F)",
 "-c              check syntax only",
+"-Cdirectory     cd to directory, before executing your script",
 "-d              set debugging flags (set $DEBUG to true)",
 "-e 'command'    one line of script. Several -e's allowed. Omit [programfile]",
 "-Fpattern       split() pattern for autosplit (-a)",
@@ -95,7 +96,6 @@ usage(name)
 "-v              enables verbose mode",
 "-w              turn warnings on for compilation of your script",
 "-x[directory]   strip off text before #!ruby line and perhaps cd to directory",
-"-Xdirectory     cd to directory, before executing your script",
 "--copyright     print the copyright",
 "--version       print the version",
 "\n",
@@ -441,13 +441,17 @@ proc_options(argc, argv)
 	    }
 	    break;
 
+	  case 'C':
 	  case 'X':
 	    s++;
 	    if (!*s) {
 		s = argv[1];
 		argc--,argv++;
 	    }
-	    if (*s && chdir(s) < 0) {
+	    if (!s || !*s) {
+		rb_fatal("Can't chdir");
+	    }
+	    if (chdir(s) < 0) {
 		rb_fatal("Can't chdir to %s", s);
 	    }
 	    break;

@@ -317,7 +317,7 @@ signal_exec(sig)
 	  case SIGINT:
 	    rb_thread_interrupt();
 	    break;
-#ifndef NT
+#if !defined(NT) && !defined(__human68k__)
 	  case SIGHUP:
 #endif
 #ifdef SIGQUIT
@@ -498,7 +498,7 @@ trap(arg)
     if (func == SIG_DFL) {
 	switch (sig) {
 	  case SIGINT:
-#ifndef NT
+#if !defined(NT) && !defined(__human68k__)
 	  case SIGHUP:
 #endif
 #ifdef SIGQUIT

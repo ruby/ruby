@@ -186,7 +186,7 @@ $-v = false
   RELEASE_DATE = "$Date$"
 $-v = v
 
-  NEEDS_BINMODE = true if /WIN/ni === PLATFORM
+  NEEDS_BINMODE = true if /WIN/ni === RUBY_PLATFORM
   PATH_SEPARATOR = {'UNIX'=>'/', 'WINDOWS'=>'\\', 'MACINTOSH'=>':'}
 
   HTTP_STATUS = {

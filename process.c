@@ -6,7 +6,7 @@
   $Date$
   created at: Tue Aug 10 14:30:50 JST 1993
 
-  Copyright (C) 1993-1999 Yukihiro Matsumoto
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
 
 ************************************************/
 

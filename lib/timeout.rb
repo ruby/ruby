@@ -32,11 +32,11 @@ def timeout(sec)
     x = Thread.current
     y = Thread.start {
       sleep sec
-      x.raise TimeoutError, "execution expired" if x.status
+      x.raise TimeoutError, "execution expired" if x.alive?
     }
     yield sec
     return true
   ensure
-    Thread.kill y if y.status
+    Thread.kill y if y.alive?
   end
 end

@@ -14,7 +14,7 @@
 
 /* define RUBY_USE_EUC/SJIS for default kanji-code */
 #ifndef DEFAULT_KCODE
-#if defined(MSDOS) || defined(__CYGWIN32__) || defined(__human68k__) || defined(__MACOS__) || defined(__EMX__) || defined(OS2) || defined(NT)
+#if defined(MSDOS) || defined(__CYGWIN__) || defined(__human68k__) || defined(__MACOS__) || defined(__EMX__) || defined(OS2) || defined(NT)
 #define DEFAULT_KCODE KCODE_SJIS
 #else
 #define DEFAULT_KCODE KCODE_EUC
@@ -55,7 +55,7 @@
 #endif
 #define PATH_SEP_CHAR PATH_SEP[0]
 
-#if defined(__human68k__) || defined(__CYGWIN32__)
+#if defined(__human68k__) || defined(__CYGWIN__)
 #undef HAVE_RANDOM
 #undef HAVE_SETITIMER
 #endif

@@ -6,7 +6,7 @@
   $Date$
   created at: Mon Nov 22 18:51:18 JST 1993
 
-  Copyright (C) 1993-1999 Yukihiro Matsumoto
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -14,9 +14,6 @@
 #include "st.h"
 #include "util.h"
 #include "rubysig.h"
-
-#include <sys/types.h>
-#include <sys/stat.h>
 
 #ifndef HAVE_STRING_H
 char *strchr _((char*,char));
@@ -142,7 +139,7 @@ rb_hash_foreach_iter(key, value, arg)
     st_table *tbl = RHASH(arg->hash)->tbl;
     struct st_table_entry **bins = tbl->bins;
 
-    if (key == Qnil) return ST_CONTINUE;
+    if (key == Qundef) return ST_CONTINUE;
     status = (*arg->func)(key, value, arg->arg);
     if (RHASH(arg->hash)->tbl != tbl || RHASH(arg->hash)->tbl->bins != bins){
 	rb_raise(rb_eIndexError, "rehash occurred during iteration");
@@ -166,7 +163,7 @@ rb_hash_foreach_ensure(hash)
 
     if (RHASH(hash)->iter_lev == 0) {
 	if (FL_TEST(hash, HASH_DELETED)) {
-	    st_cleanup_safe(RHASH(hash)->tbl, Qnil);
+	    st_cleanup_safe(RHASH(hash)->tbl, Qundef);
 	    FL_UNSET(hash, HASH_DELETED);
 	}
     }
@@ -275,30 +272,31 @@ static VALUE
 rb_hash_clone(hash)
     VALUE hash;
 {
-    NEWOBJ(hash2, struct RHash);
-    CLONESETUP(hash2, hash);
+    NEWOBJ(clone, struct RHash);
+    CLONESETUP(clone, hash);
 
-    hash2->iter_lev = 0;
-    hash2->ifnone = RHASH(hash)->ifnone;
-    hash2->tbl = 0;		/* avoid GC crashing  */
-    hash2->tbl = (st_table*)st_copy(RHASH(hash)->tbl);
+    clone->iter_lev = 0;
+    clone->ifnone = RHASH(hash)->ifnone;
+    clone->tbl = 0;		/* avoid GC crashing  */
+    clone->tbl = (st_table*)st_copy(RHASH(hash)->tbl);
 
-    return (VALUE)hash2;
+    return (VALUE)clone;
 }
 
 static VALUE
 rb_hash_dup(hash)
     VALUE hash;
 {
-    NEWOBJ(hash2, struct RHash);
-    OBJSETUP(hash2, CLASS_OF(hash), T_HASH);
+    NEWOBJ(dup, struct RHash);
+    OBJSETUP(dup, CLASS_OF(hash), T_HASH);
 
-    hash2->iter_lev = 0;
-    hash2->ifnone = RHASH(hash)->ifnone;
-    hash2->tbl = 0;		/* avoid GC crashing  */
-    hash2->tbl = (st_table*)st_copy(RHASH(hash)->tbl);
+    dup->iter_lev = 0;
+    dup->ifnone = RHASH(hash)->ifnone;
+    dup->tbl = 0;		/* avoid GC crashing  */
+    dup->tbl = (st_table*)st_copy(RHASH(hash)->tbl);
 
-    return (VALUE)hash2;
+    if (OBJ_TAINTED(hash)) OBJ_TAINT(dup);
+    return (VALUE)dup;
 }
 
 static VALUE
@@ -313,9 +311,7 @@ rb_hash_rehash_i(key, value, tbl)
     VALUE key, value;
     st_table *tbl;
 {
-    if (key != Qnil) {
-	st_insert(tbl, key, value);
-    }
+    if (key != Qundef) st_insert(tbl, key, value);
     return ST_CONTINUE;
 }
 
@@ -405,7 +401,7 @@ rb_hash_index(hash, value)
     VALUE args[2];
 
     args[0] = value;
-    args[1] = Qnil;
+    args[1] = RHASH(hash)->ifnone;
 
     st_foreach(RHASH(hash)->tbl, index_i, args);
 
@@ -437,7 +433,7 @@ rb_hash_delete(hash, key)
 
     rb_hash_modify(hash);
     if (RHASH(hash)->iter_lev > 0 &&
-	st_delete_safe(RHASH(hash)->tbl, &key, &val, Qnil)) {
+	st_delete_safe(RHASH(hash)->tbl, &key, &val, Qundef)) {
 	FL_SET(hash, HASH_DELETED);
 	return val;
     }
@@ -446,7 +442,7 @@ rb_hash_delete(hash, key)
     if (rb_iterator_p()) {
 	return rb_yield(key);
     }
-    return Qnil;
+    return RHASH(hash)->ifnone;
 }
 
 struct shift_var {
@@ -460,7 +456,7 @@ shift_i(key, value, var)
     VALUE key, value;
     struct shift_var *var;
 {
-    if (key == Qnil) return ST_CONTINUE;
+    if (key == Qundef) return ST_CONTINUE;
     if (var->stop) return ST_STOP;
     var->stop = 1;
     var->key = key;
@@ -478,7 +474,7 @@ rb_hash_shift(hash)
     var.stop = 0;
     st_foreach(RHASH(hash)->tbl, shift_i, &var);
 
-    if (var.stop == 0) return Qnil;
+    if (var.stop == 0) return RHASH(hash)->ifnone;
     return rb_assoc_new(var.key, var.val);
 }
 
@@ -486,7 +482,7 @@ static int
 delete_if_i(key, value)
     VALUE key, value;
 {
-    if (key == Qnil) return ST_CONTINUE;
+    if (key == Qundef) return ST_CONTINUE;
     if (RTEST(rb_yield(rb_assoc_new(key, value))))
 	return ST_DELETE;
     return ST_CONTINUE;
@@ -572,7 +568,7 @@ static int
 each_value_i(key, value)
     VALUE key, value;
 {
-    if (key == Qnil) return ST_CONTINUE;
+    if (key == Qundef) return ST_CONTINUE;
     rb_yield(value);
     return ST_CONTINUE;
 }
@@ -589,7 +585,7 @@ static int
 each_key_i(key, value)
     VALUE key, value;
 {
-    if (key == Qnil) return ST_CONTINUE;
+    if (key == Qundef) return ST_CONTINUE;
     rb_yield(key);
     return ST_CONTINUE;
 }
@@ -606,7 +602,7 @@ static int
 each_pair_i(key, value)
     VALUE key, value;
 {
-    if (key == Qnil) return ST_CONTINUE;
+    if (key == Qundef) return ST_CONTINUE;
     rb_yield(rb_assoc_new(key, value));
     return ST_CONTINUE;
 }
@@ -623,7 +619,7 @@ static int
 to_a_i(key, value, ary)
     VALUE key, value, ary;
 {
-    if (key == Qnil) return ST_CONTINUE;
+    if (key == Qundef) return ST_CONTINUE;
     rb_ary_push(ary, rb_assoc_new(key, value));
     return ST_CONTINUE;
 }
@@ -636,6 +632,7 @@ rb_hash_to_a(hash)
 
     ary = rb_ary_new();
     st_foreach(RHASH(hash)->tbl, to_a_i, ary);
+    if (OBJ_TAINTED(hash)) OBJ_TAINT(ary);
 
     return ary;
 }
@@ -653,7 +650,7 @@ inspect_i(key, value, str)
 {
     VALUE str2;
 
-    if (key == Qnil) return ST_CONTINUE;
+    if (key == Qundef) return ST_CONTINUE;
     if (RSTRING(str)->len > 1) {
 	rb_str_cat(str, ", ", 2);
     }
@@ -689,23 +686,20 @@ rb_hash_inspect(hash)
 }
 
 static VALUE
-hash_to_s(hash)
+to_s_hash(hash)
     VALUE hash;
 {
-    VALUE str;
-
-    if (rb_inspecting_p(hash)) return rb_str_new2("{...}");
-    str = rb_ary_to_s(rb_hash_to_a(hash));
-    if (OBJ_TAINTED(hash)) OBJ_TAINT(str);
-    return hash;
+    return rb_ary_to_s(rb_hash_to_a(hash));
 }
 
 static VALUE
 rb_hash_to_s(hash)
     VALUE hash;
 {
+    VALUE str;
+
     if (rb_inspecting_p(hash)) return rb_str_new2("{...}");
-    return rb_protect_inspect(hash_to_s, hash, 0);
+    return rb_protect_inspect(to_s_hash, hash, 0);
 }
 
 static VALUE
@@ -719,7 +713,7 @@ static int
 keys_i(key, value, ary)
     VALUE key, value, ary;
 {
-    if (key == Qnil) return ST_CONTINUE;
+    if (key == Qundef) return ST_CONTINUE;
     rb_ary_push(ary, key);
     return ST_CONTINUE;
 }
@@ -740,7 +734,7 @@ static int
 values_i(key, value, ary)
     VALUE key, value, ary;
 {
-    if (key == Qnil) return ST_CONTINUE;
+    if (key == Qundef) return ST_CONTINUE;
     rb_ary_push(ary, value);
     return ST_CONTINUE;
 }
@@ -772,7 +766,7 @@ static int
 rb_hash_search_value(key, value, data)
     VALUE key, value, *data;
 {
-    if (key == Qnil) return ST_CONTINUE;
+    if (key == Qundef) return ST_CONTINUE;
     if (rb_equal(value, data[1])) {
 	data[0] = Qtrue;
 	return ST_STOP;
@@ -805,7 +799,7 @@ equal_i(key, val1, data)
 {
     VALUE val2;
 
-    if (key == Qnil) return ST_CONTINUE;
+    if (key == Qundef) return ST_CONTINUE;
     if (!st_lookup(data->tbl, key, &val2)) {
 	data->result = Qfalse;
 	return ST_STOP;
@@ -839,7 +833,7 @@ rb_hash_invert_i(key, value, hash)
     VALUE key, value;
     VALUE hash;
 {
-    if (key == Qnil) return ST_CONTINUE;
+    if (key == Qundef) return ST_CONTINUE;
     rb_hash_aset(hash, value, key);
     return ST_CONTINUE;
 }
@@ -859,7 +853,7 @@ rb_hash_update_i(key, value, hash)
     VALUE key, value;
     VALUE hash;
 {
-    if (key == Qnil) return ST_CONTINUE;
+    if (key == Qundef) return ST_CONTINUE;
     rb_hash_aset(hash, key, value);
     return ST_CONTINUE;
 }
@@ -888,23 +882,25 @@ env_delete(obj, name)
     char *nam, *val;
 
     rb_secure(4);
-    nam = str2cstr(name, &len);
+    nam = rb_str2cstr(name, &len);
     if (strlen(nam) != len) {
 	rb_raise(rb_eArgError, "bad environment variable name");
     }
     val = getenv(nam);
     if (val) {
+	VALUE value = rb_tainted_str_new2(val);
+
 	ruby_setenv(nam, 0);
 	if (strcmp(nam, "PATH") == 0 && !OBJ_TAINTED(name)) {
 	    path_tainted = 0;
 	}
-	return rb_tainted_str_new2(val);
+	return value;
     }
     return Qnil;
 }
 
 static VALUE
-env_delete_method(obj, name)
+env_delete_m(obj, name)
     VALUE obj, name;
 {
     VALUE val = env_delete(obj, name);
@@ -919,7 +915,7 @@ rb_f_getenv(obj, name)
     char *nam, *env;
     int len;
 
-    nam = str2cstr(name, &len);
+    nam = rb_str2cstr(name, &len);
     if (strlen(nam) != len) {
 	rb_raise(rb_eArgError, "bad environment variable name");
     }
@@ -930,54 +926,6 @@ rb_f_getenv(obj, name)
 	return rb_tainted_str_new2(env);
     }
     return Qnil;
-}
-
-static int
-path_check_1(path)
-    char *path;
-{
-    struct stat st;
-    char *p = 0;
-    char *s;
-
-    for (;;) {
-	if (stat(path, &st) == 0 && (st.st_mode & 002)) {
-	    return 0;
-	}
-	s = strrchr(path, '/');
-	if (p) *p = '/';
-	if (!s || s == path) return 1;
-	p = s;
-	*p = '\0';
-    }
-}
-
-int
-rb_path_check(path)
-    char *path;
-{
-    char *p, *pend;
-    const char sep = PATH_SEP_CHAR;
-
-    if (!path) return 1;
-
-    p = path;
-    pend = strchr(path, sep);
-    
-    for (;;) {
-	int safe;
-
-	if (pend) *pend = '\0';
-	safe = path_check_1(p);
-	if (!pend) break;
-	*pend = sep;
-	if (!safe) {
-	    return 0;
-	}
-	p = pend + 1;
-	pend = strchr(p, sep);
-    }
-    return 1;
 }
 
 static void
@@ -1153,8 +1101,8 @@ rb_f_setenv(obj, nm, val)
 	return Qnil;
     }
 
-    name = str2cstr(nm, &nlen);
-    value = str2cstr(val, &vlen);
+    name = rb_str2cstr(nm, &nlen);
+    value = rb_str2cstr(val, &vlen);
     if (strlen(name) != nlen)
 	rb_raise(rb_eArgError, "bad environment variable name");
     if (strlen(value) != vlen)
@@ -1371,7 +1319,7 @@ env_index(dmy, value)
 	char *s = strchr(*env, '=')+1;
 	if (s) {
 	    if (strncmp(s, RSTRING(value)->ptr, strlen(s)) == 0) {
-		return rb_tainted_str_new(*env, s-*env);
+		return rb_tainted_str_new(*env, s-*env-1);
 	    }
 	}
 	env++;
@@ -1497,7 +1445,7 @@ Init_Hash()
     rb_define_singleton_method(envtbl,"each_pair", env_each, 0);
     rb_define_singleton_method(envtbl,"each_key", env_each_key, 0);
     rb_define_singleton_method(envtbl,"each_value", env_each_value, 0);
-    rb_define_singleton_method(envtbl,"delete", env_delete_method, 1);
+    rb_define_singleton_method(envtbl,"delete", env_delete_m, 1);
     rb_define_singleton_method(envtbl,"delete_if", env_delete_if, 0);
     rb_define_singleton_method(envtbl,"reject!", env_delete_if, 0);
     rb_define_singleton_method(envtbl,"to_s", env_to_s, 0);

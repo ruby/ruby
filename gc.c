@@ -6,7 +6,7 @@
   $Date$
   created at: Tue Oct  5 09:44:46 JST 1993
 
-  Copyright (C) 1993-1999 Yukihiro Matsumoto
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -71,7 +71,7 @@ xmalloc(size)
     void *mem;
 
     if (size < 0) {
-	rb_raise(rb_eArgError, "negative allocation size (or too big)");
+	rb_raise(rb_eNoMemError, "negative allocation size (or too big)");
     }
     if (size == 0) size = 1;
     malloc_memories += size;
@@ -422,6 +422,7 @@ rb_gc_mark(ptr)
   Top:
     if (FIXNUM_P(obj)) return;	                /* fixnum not marked */
     if (rb_special_const_p((VALUE)obj)) return; /* special const not marked */
+    if ((VALUE)obj == Qundef) return;           /* special placeholder */
     if (obj->as.basic.flags == 0) return;       /* free cell */
     if (obj->as.basic.flags & FL_MARK) return;  /* already marked */
 
@@ -878,6 +879,9 @@ _rb_setjmp:
 	movem.l	d3-d7/a3-a5,(a0)
 	moveq.l	#0,d0
 	rts");
+#ifdef setjmp
+#undef setjmp
+#endif
 #else
 #if defined(DJGPP)
 typedef unsigned long rb_jmp_buf[6];

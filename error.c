@@ -6,7 +6,7 @@
   $Date$
   created at: Mon Aug  9 16:11:34 JST 1993
 
-  Copyright (C) 1993-1999 Yukihiro Matsumoto
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -279,7 +279,7 @@ rb_exc_new3(etype, str)
     char *s;
     int len;
 
-    s = str2cstr(str, &len);
+    s = rb_str2cstr(str, &len);
     return rb_exc_new(etype, s, len);
 }
 

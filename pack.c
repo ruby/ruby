@@ -6,7 +6,7 @@
   $Date$
   created at: Thu Feb 10 15:17:05 JST 1994
 
-  Copyright (C) 1993-1999 Yukihiro Matsumoto
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -329,7 +329,7 @@ pack_pack(ary, fmt)
     int natint;		/* native integer */
 #endif
     
-    p = str2cstr(fmt, &plen);
+    p = rb_str2cstr(fmt, &plen);
     pend = p + plen;
     res = rb_str_new(0, 0);
 
@@ -379,7 +379,7 @@ pack_pack(ary, fmt)
 		plen = 0;
 	    }
 	    else {
-		ptr = str2cstr(from, &plen);
+		ptr = rb_str2cstr(from, &plen);
 	    }
 
 	    if (p[-1] == '*')
@@ -813,7 +813,7 @@ pack_pack(ary, fmt)
 
 	  case 'u':
 	  case 'm':
-	    ptr = str2cstr(NEXTFROM, &plen);
+	    ptr = rb_str2cstr(NEXTFROM, &plen);
 
 	    if (len <= 1)
 		len = 45;
@@ -1030,9 +1030,9 @@ pack_unpack(str, fmt)
     int natint;			/* native integer */
 #endif
 
-    s = str2cstr(str, &len);
+    s = rb_str2cstr(str, &len);
     send = s + len;
-    p = str2cstr(fmt, &len);
+    p = rb_str2cstr(fmt, &len);
     pend = p + len;
 
     ary = rb_ary_new();

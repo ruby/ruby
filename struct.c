@@ -407,14 +407,14 @@ static VALUE
 rb_struct_clone(s)
     VALUE s;
 {
-    NEWOBJ(st, struct RStruct);
-    CLONESETUP(st, s);
-    st->len = 0;		/* avoid GC crashing  */
-    st->ptr = ALLOC_N(VALUE, RSTRUCT(s)->len);
-    st->len = RSTRUCT(s)->len;
-    MEMCPY(st->ptr, RSTRUCT(s)->ptr, VALUE, st->len);
+    NEWOBJ(clone, struct RStruct);
+    CLONESETUP(clone, s);
+    clone->len = 0;		/* avoid GC crashing  */
+    clone->ptr = ALLOC_N(VALUE, RSTRUCT(s)->len);
+    clone->len = RSTRUCT(s)->len;
+    MEMCPY(clone->ptr, RSTRUCT(s)->ptr, VALUE, clone->len);
 
-    return (VALUE)st;
+    return (VALUE)clone;
 }
 
 static VALUE

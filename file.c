@@ -6,7 +6,7 @@
   $Date$
   created at: Mon Nov 15 12:24:34 JST 1993
 
-  Copyright (C) 1993-1999 Yukihiro Matsumoto
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -17,6 +17,7 @@
 #include "ruby.h"
 #include "rubyio.h"
 #include "rubysig.h"
+#include "dln.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -1179,10 +1180,11 @@ rb_file_s_expand_path(argc, argv)
     VALUE fname, dname;
     char *s, *p;
     char buf[MAXPATHLEN+2];
-    int tainted = 0;
+    int tainted;
 
     rb_scan_args(argc, argv, "11", &fname, &dname);
 
+    tainted = OBJ_TAINTED(fname);
     s = STR2CSTR(fname);
     p = buf;
     if (s[0] == '~') {
@@ -1948,6 +1950,155 @@ rb_file_const(name, value)
 {
     rb_define_const(rb_cFile, name, value);
     rb_define_const(rb_mConst, name, value);
+}
+
+static int
+is_absolute_path(path)
+    const char *path;
+{
+    if (path[0] == '/') return 1;
+# if defined(MSDOS) || defined(NT) || defined(__human68k__) || defined(__EMX__)
+    if (path[0] == '\\') return 1;
+    if (strlen(path) > 2 && path[1] == ':') return 1;
+# endif
+    return 0;
+}
+
+static int
+path_check_1(path)
+    char *path;
+{
+    struct stat st;
+    char *p = 0;
+    char *s;
+
+    if (!is_absolute_path(path)) {
+	char buf[MAXPATHLEN+1];
+
+#ifdef HAVE_GETCWD
+	if (getcwd(path, sizeof(path)) == 0) return 0;
+#else
+	if (getwd(path) == 0) return 0;
+#endif
+	strncat(buf, path, MAXPATHLEN);
+	buf[MAXPATHLEN] = '\0';
+	return path_check_1(buf);
+    }
+    for (;;) {
+	if (stat(path, &st) == 0 && (st.st_mode & 002)) {
+	    return 0;
+	}
+	s = strrchr(path, '/');
+	if (p) *p = '/';
+	if (!s || s == path) return 1;
+	p = s;
+	*p = '\0';
+    }
+}
+
+int
+rb_path_check(path)
+    char *path;
+{
+    char *p, *pend;
+    const char sep = PATH_SEP_CHAR;
+
+    if (!path) return 1;
+
+    p = path;
+    pend = strchr(path, sep);
+    
+    for (;;) {
+	int safe;
+
+	if (pend) *pend = '\0';
+	safe = path_check_1(p);
+	if (!safe) return 0;
+	if (!pend) break;
+	*pend = sep;
+	p = pend + 1;
+	pend = strchr(p, sep);
+    }
+    return 1;
+}
+
+#ifdef __MACOS__
+static int
+is_macos_native_path(path)
+    const char *path;
+{
+    if (strchr(path, ':')) return 1;
+    return 0;
+}
+#endif
+
+char*
+rb_find_file(file)
+    char *file;
+{
+    extern VALUE rb_load_path;
+    volatile VALUE vpath;
+    VALUE fname;
+    char *path;
+
+#ifdef __MACOS__
+    if (is_macos_native_path(file)) {
+	FILE *f;
+
+	if (safe_level >= 2 && !rb_path_check(file)) {
+	    rb_raise(rb_eSecurityError, "loading from unsafe file %s", file);
+	}
+	f= fopen(file, "r");
+	if (f == NULL) return 0;
+	fclose(f);
+	return file;
+    }
+#endif
+
+    if (is_absolute_path(file)) {
+	FILE *f;
+
+	if (rb_safe_level() >= 2 && !rb_path_check(file)) {
+	    rb_raise(rb_eSecurityError, "loading from unsafe file %s", file);
+	}
+	f = fopen(file, "r");
+	if (f == NULL) return 0;
+	fclose(f);
+	return file;
+    }
+
+    if (file[0] == '~') {
+	fname = rb_str_new2(file);
+	fname = rb_file_s_expand_path(1, &fname);
+	if (rb_safe_level() >= 2 && OBJ_TAINTED(fname)) {
+	    rb_raise(rb_eSecurityError, "loading from unsafe file %s", file);
+	}
+	file = STR2CSTR(fname);
+    }
+
+    if (rb_load_path) {
+	int i;
+
+	Check_Type(rb_load_path, T_ARRAY);
+	vpath = rb_ary_new();
+	for (i=0;i<RARRAY(rb_load_path)->len;i++) {
+	    VALUE str = RARRAY(rb_load_path)->ptr[i];
+	    Check_SafeStr(str);
+	    if (RSTRING(str)->len > 0) {
+		rb_ary_push(vpath, str);
+	    }
+	}
+	vpath = rb_ary_join(vpath, rb_str_new2(PATH_SEP));
+	path = STR2CSTR(vpath);
+	if (rb_safe_level() >= 2 && !rb_path_check(path)) {
+	    rb_raise(rb_eSecurityError, "loading from unsafe path %s", path);
+	}
+    }
+    else {
+	path = 0;
+    }
+
+    return dln_find_file(file, path);
 }
 
 void

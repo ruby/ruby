@@ -1,4 +1,4 @@
-/* This is a general purpose hash table package written by Peter Moore @ UCB. */
+/* This is a public domain general purpose hash table package written by Peter Moore @ UCB. */
 
 static	char	sccsid[] = "@(#) st.c 5.1 89/12/14 Crucible";
 

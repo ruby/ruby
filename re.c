@@ -5,7 +5,7 @@
   $Author$
   created at: Mon Aug  9 18:24:49 JST 1993
 
-  Copyright (C) 1993-1999 Yukihiro Matsumoto
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -311,7 +311,7 @@ rb_reg_casefold_p(re)
 }
 
 static VALUE
-rb_reg_kcode_method(re)
+rb_reg_kcode_m(re)
     VALUE re;
 {
     char *kcode = "$KCODE";
@@ -382,21 +382,21 @@ match_alloc()
 }
 
 static VALUE
-match_clone(orig)
-    VALUE orig;
+match_clone(match)
+    VALUE match;
 {
-    NEWOBJ(match, struct RMatch);
-    OBJSETUP(match, rb_cMatch, T_MATCH);
+    NEWOBJ(clone, struct RMatch);
+    OBJSETUP(clone, rb_cMatch, T_MATCH);
 
-    match->str = RMATCH(orig)->str;
-    match->regs = 0;
+    clone->str = RMATCH(match)->str;
+    clone->regs = 0;
 
-    match->regs = ALLOC(struct re_registers);
-    match->regs->allocated = 0;
-    re_copy_registers(match->regs, RMATCH(orig)->regs);
-    CLONESETUP(match, orig);
+    clone->regs = ALLOC(struct re_registers);
+    clone->regs->allocated = 0;
+    re_copy_registers(clone->regs, RMATCH(match)->regs);
+    CLONESETUP(clone, match);
 
-    return (VALUE)match;
+    return (VALUE)clone;
 }
 
 static VALUE
@@ -587,6 +587,7 @@ rb_reg_search(reg, str, pos, reverse)
 		  "Stack overfow in regexp matcher", reg);
     }
     if (result < 0) {
+	FL_UNSET(match, FL_TAINT);
 	matchcache = match;
 	rb_backref_set(Qnil);
     }
@@ -595,6 +596,8 @@ rb_reg_search(reg, str, pos, reverse)
 	rb_backref_set(match);
     }
 
+    OBJ_INFECT(match, reg);
+    OBJ_INFECT(match, str);
     return result;
 }
 
@@ -616,6 +619,7 @@ rb_reg_nth_match(nth, match)
     int nth;
     VALUE match;
 {
+    VALUE str;
     int start, end, len;
 
     if (NIL_P(match)) return Qnil;
@@ -626,7 +630,9 @@ rb_reg_nth_match(nth, match)
     if (start == -1) return Qnil;
     end = RMATCH(match)->END(nth);
     len = end - start;
-    return rb_str_new(RSTRING(RMATCH(match)->str)->ptr + start, len);
+    str = rb_str_new(RSTRING(RMATCH(match)->str)->ptr + start, len);
+    if (OBJ_TAINTED(match)) OBJ_TAINT(str);
+    return str;
 }
 
 VALUE
@@ -745,6 +751,7 @@ match_to_s(match)
 
     if (NIL_P(str)) str = rb_str_new(0,0);
     if (OBJ_TAINTED(match)) OBJ_TAINT(str);
+    if (OBJ_TAINTED(RMATCH(match)->str)) OBJ_TAINT(str);
     return str;
 }
 
@@ -913,7 +920,7 @@ rb_reg_match2(re)
 }
 
 static VALUE
-rb_reg_match_method(re, str)
+rb_reg_match_m(re, str)
     VALUE re, str;
 {
     VALUE result = rb_reg_match(re, str);
@@ -967,7 +974,7 @@ rb_reg_s_new(argc, argv, self)
 	char *p;
 	int len;
 
-	p = str2cstr(src, &len);
+	p = rb_str2cstr(src, &len);
 	return rb_reg_new_1(self, p, len, flag);
     }
 }
@@ -989,7 +996,7 @@ rb_reg_s_quote(argc, argv)
 	curr_kcode = reg_kcode;
 	reg_kcode = kcode_saved;
     }
-    s = str2cstr(str, &len);
+    s = rb_str2cstr(str, &len);
     send = s + len;
     tmp = ALLOCA_N(char, len*2);
     t = tmp;
@@ -1072,15 +1079,15 @@ rb_reg_options(re)
 }
 
 static VALUE
-rb_reg_clone(orig)
-    VALUE orig;
-{
+rb_reg_clone(reg)
     VALUE reg;
+{
+    VALUE clone;
     
-    reg = rb_reg_new_1(CLASS_OF(orig), RREGEXP(orig)->str, RREGEXP(orig)->len,
-		       rb_reg_options(orig));
-    CLONESETUP(reg, orig);
-    return reg;
+    clone = rb_reg_new_1(CLASS_OF(reg), RREGEXP(reg)->str, RREGEXP(reg)->len,
+			 rb_reg_options(reg));
+    CLONESETUP(clone, reg);
+    return clone;
 }
 
 VALUE
@@ -1292,11 +1299,11 @@ Init_Regexp()
     rb_define_method(rb_cRegexp, "=~", rb_reg_match, 1);
     rb_define_method(rb_cRegexp, "===", rb_reg_match, 1);
     rb_define_method(rb_cRegexp, "~", rb_reg_match2, 0);
-    rb_define_method(rb_cRegexp, "match", rb_reg_match_method, 1);
+    rb_define_method(rb_cRegexp, "match", rb_reg_match_m, 1);
     rb_define_method(rb_cRegexp, "inspect", rb_reg_inspect, 0);
     rb_define_method(rb_cRegexp, "source", rb_reg_source, 0);
     rb_define_method(rb_cRegexp, "casefold?", rb_reg_casefold_p, 0);
-    rb_define_method(rb_cRegexp, "kcode", rb_reg_kcode_method, 0);
+    rb_define_method(rb_cRegexp, "kcode", rb_reg_kcode_m, 0);
 
     rb_define_const(rb_cRegexp, "IGNORECASE", INT2FIX(RE_OPTION_IGNORECASE));
     rb_define_const(rb_cRegexp, "EXTENDED", INT2FIX(RE_OPTION_EXTENDED));

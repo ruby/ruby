@@ -1,3 +1,147 @@
+Wed Jan  5 02:14:46 2000  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* parse.y: Fix SEGV on empty parens with UMINUS or UPLUS.
+
+Tue Jan  4 22:25:54 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (stmt): `() while cond' dumped core.
+
+Tue Jan  4 06:04:14 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* configure.in: modify for cross-compiling.
+	  use target_* instead of host_*. 
+	  use AC_CANONICAL_TARGET.
+
+	* Makefile.in: ditto.
+
+	* cygwin/GNUmakefile.in: ditto.
+
+Sat Jan  1 13:26:14 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_yield_0): force_recycle ruby_dyna_vars to performance
+	  gain.
+
+	* array.c (rb_ary_delete_at_m): takes same argument pattern with
+	  rb_ary_aref.
+
+Sat Jan  1 10:12:26 2000  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* ruby.h,util.c (rb_special_const_p): peep hole optimization.
+
+	* ruby.h,util.c (rb_test_false_or_nil): removed.
+
+	* ruby.h (RTEST, SPECIAL_CONST_P): peep hole optimization.
+
+	* ruby.h (FL_ABLE, FL_SET, FL_UNSET, FL_REVERSE): made expressions
+	  not statements.
+
+	* ruby.h (OBJ_INFECT): newly added which copies taint from `s' to
+	  `x'.
+
+Sat Jan  1 02:04:18 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_thread_safe_level): new method.
+
+	* eval.c (rb_yield_0): recycle dyna_var_map to reduce object
+	  allocation. 
+
+Fri Dec 31 00:52:48 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c: thread independent trace_func not needed.
+
+Thu Dec 30 14:47:31 1999  akira yamada  <akira@ruby-lang.org>
+
+	* configure.in: specifies -soname in LIBRUBY_DLDFLAGS on linux
+	  platforms.
+
+Thu Dec 30 10:51:27 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* array.c,io.c,hash,c,re.c,string.c: `_m' suffix instead of
+	  `_method' for wrapper functions to implement method,
+	  e.g. `rb_str_join_m()'.
+
+Thu Dec 30 02:08:02 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* bignum.c (rb_cstr2inum): non-numeric format check added.
+	  currently it works only with base == 0 (i.e. Integer()).
+
+	* bignum.c (rb_str2inum): now takes VALUE to 1st argument.  null
+	  byte check added.
+
+	* array.c (rb_ary_replace): unless replacement is an array,
+	  replacement shall be converted to array by `[replacement]', not
+	  by `replacement.to_a'.
+
+	* array.c (rb_ary_plus): right operand must be an array.
+
+	* array.c (rb_ary_concat): argument must be an array.
+
+Mon Dec 27 12:35:47 1999  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* ext/socket/socket.c (sock_finalize): mswin32: fix socket handle leak.
+
+	* win32/win32.c (myfdclose): ditto.
+
+Sun Dec 26 23:15:13 1999  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* win32/win32.c (mypopen): raise catchable error instead of rb_fatal.
+	* win32/win32.c (mypclose): fix process handle laek.
+
+Sun Dec 26 16:17:11 1999  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* ext/Win32API/Win32API.c (Win32API_initialize): use UINT2NUM
+	  instead of INT2NUM to set __dll__ and __proc__.
+
+Sat Dec 25 00:08:59 1999  KANEKO Naoshi  <wbs01621@mail.wbs.ne.jp>
+
+	* ext/Win32API/Win32API.c (Win32API_Call): remove 'dword ptr'
+	  from _asm.
+
+Fri Dec 24 10:26:47 1999  Koji Oda  <oda@bsd1.qnes.nec.co.jp>
+
+	* win32/win32.h: use "C++" linkage.
+
+Fri Dec 24 02:00:57 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (THREAD_ALLOC): should initialize th->trace.
+
+Fri Dec 24 00:43:39 1999  KANEKO Naoshi  <wbs01621@mail.wbs.ne.jp>
+
+	* io.c (pipe_open): check for `fptr->f == NULL'.
+	* win32/win32.c (mypopen): STDERR does not work during ` function.
+
+Tue Dec 21 17:21:28 1999  Koji Oda  <oda@bsd1.qnes.nec.co.jp>
+
+	* ext/socket/socket.c (sock_finalize): mswin32: fix FILE* leak.
+
+Sun Dec 19 22:56:31 1999  KANEKO Naoshi  <wbs01621@mail.wbs.ne.jp>
+
+	* lib/find.rb: support dosish root directory.
+	* win32/Makefile: ditto.
+	* win32/config.status: ditto.
+	* win32/win32.c (opendir): ditto.
+	* win32/win32.c (opendir): use CharPrev() to get last character
+	  of the directory name.
+
+Sat Dec 18 03:00:01 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* file.c (path_check_1): check should be done by absolute path. 
+
+	* marshal.c (r_ivar): should restore generic_ivar too.
+
+	* marshal.c (w_ivar): should dump generic_ivar too.
+
+Fri Dec 17 19:27:43 1999  IWAMURO Motonori  <iwa@mmp.fujitsu.co.jp>
+
+	* eval.c (rb_load): should initialize ruby_frame->last_class.
+
+Wed Dec 15 01:35:29 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ruby.c (proc_options): option to change directory changed to
+	  `-C' like tar.
+
+	* ruby.c (proc_options): argv boundary check for `-X'.
+
 Mon Dec 13 15:15:31 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* regex.c (re_adjust_startpos): separate startpos adjustment

@@ -18,6 +18,7 @@ link(const char *src, const char *dst)
     return symlink(src, dst);
 }
 
+#ifndef HAVE_GETTIMEOFDAY
 #include <time.h>
 #include <sys/time.h>
 
@@ -34,3 +35,4 @@ gettimeofday(struct timeval *tv, struct timezone *tz)
 
     return 0;
 }
+#endif

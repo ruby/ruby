@@ -17,7 +17,9 @@ module Find
 	  begin
 	    for f in d
 	      next if f =~ /^\.\.?$/
-	      if file == "/" then
+	      if File::ALT_SEPARATOR and file =~ /^([\/\\]|[A-Za-z]:[\/\\]?)$/ then
+		f = file + f
+	      elsif file == "/" then
 		f = "/" + f
 	      else
 		f = file + "/" + f

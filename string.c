@@ -6,7 +6,7 @@
   $Date$
   created at: Mon Aug  9 17:12:58 JST 1993
 
-  Copyright (C) 1993-1999 Yukihiro Matsumoto
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -22,16 +22,12 @@
 #include <unistd.h>
 #endif
 
-#ifndef atof
-double strtod();
-#endif
-
 VALUE rb_cString;
 
 #define STR_FREEZE FL_USER1
 #define STR_NO_ORIG FL_USER3
 
-extern VALUE rb_rs;
+VALUE rb_fs;
 
 VALUE
 rb_str_new(ptr, len)
@@ -167,19 +163,19 @@ rb_obj_as_string(obj)
 }
 
 static VALUE
-rb_str_clone(orig)
-    VALUE orig;
-{
+rb_str_clone(str)
     VALUE str;
+{
+    VALUE clone;
 
-    if (RSTRING(orig)->orig && !FL_TEST(orig, STR_NO_ORIG))
-	str = rb_str_new3(RSTRING(orig)->orig);
+    if (RSTRING(str)->orig && !FL_TEST(str, STR_NO_ORIG))
+	clone = rb_str_new3(RSTRING(str)->orig);
     else
-	str = rb_str_new(RSTRING(orig)->ptr, RSTRING(orig)->len);
-    if (RSTRING(orig)->orig && FL_TEST(orig, STR_NO_ORIG))
-	RSTRING(str)->orig = RSTRING(orig)->orig;
-    CLONESETUP(str, orig);
-    return str;
+	clone = rb_str_new(RSTRING(str)->ptr, RSTRING(str)->len);
+    if (RSTRING(str)->orig && FL_TEST(str, STR_NO_ORIG))
+	RSTRING(str)->orig = RSTRING(str)->orig;
+    CLONESETUP(clone, str);
+    return clone;
 }
 
 VALUE
@@ -454,7 +450,7 @@ rb_str_hash(str)
 }
 
 static VALUE
-rb_str_hash_method(str)
+rb_str_hash_m(str)
     VALUE str;
 {
     int key = rb_str_hash(str);
@@ -501,7 +497,7 @@ rb_str_equal(str1, str2)
 }
 
 static VALUE
-rb_str_cmp_method(str1, str2)
+rb_str_cmp_m(str1, str2)
     VALUE str1, str2;
 {
     int result;
@@ -570,7 +566,7 @@ rb_str_index(str, sub, offset)
 }
 
 static VALUE
-rb_str_index_method(argc, argv, str)
+rb_str_index_m(argc, argv, str)
     int argc;
     VALUE *argv;
     VALUE str;
@@ -782,7 +778,7 @@ rb_str_upto(beg, end, excl)
 }
 
 static VALUE
-rb_str_upto_method(beg, end)
+rb_str_upto_m(beg, end)
     VALUE beg, end;
 {
     return rb_str_upto(beg, end, 0);
@@ -835,7 +831,7 @@ rb_str_aref(str, indx)
 }
 
 static VALUE
-rb_str_aref_method(argc, argv, str)
+rb_str_aref_m(argc, argv, str)
     int argc;
     VALUE *argv;
     VALUE str;
@@ -936,7 +932,7 @@ rb_str_aset(str, indx, val)
 }
 
 static VALUE
-rb_str_aset_method(argc, argv, str)
+rb_str_aset_m(argc, argv, str)
     int argc;
     VALUE *argv;
     VALUE str;
@@ -1067,12 +1063,14 @@ rb_str_gsub_bang(argc, argv, str)
     int iter = 0;
     char *buf, *bp, *cp;
     int offset, blen, len;
+    int tainted = 0;
 
     if (argc == 1 && rb_iterator_p()) {
 	iter = 1;
     }
     else if (argc == 2) {
-	repl = rb_obj_as_string(argv[1]);;
+	repl = rb_obj_as_string(argv[1]);
+	if (OBJ_TAINTED(repl)) tainted = 1;
     }
     else {
 	rb_raise(rb_eArgError, "wrong # of arguments(%d for 2)", argc);
@@ -1101,6 +1099,7 @@ rb_str_gsub_bang(argc, argv, str)
 	else {
 	    val = rb_reg_regsub(repl, str, regs);
 	}
+	if (OBJ_TAINTED(val)) tainted = 1;
 	len = (bp - buf) + (beg - offset) + RSTRING(val)->len + 3;
 	if (blen < len) {
 	    while (blen < len) blen *= 2;
@@ -1146,6 +1145,7 @@ rb_str_gsub_bang(argc, argv, str)
     RSTRING(str)->ptr = buf;
     RSTRING(str)->len = len = bp - buf;
     RSTRING(str)->ptr[len] = '\0';
+    if (tainted) OBJ_TAINT(str);
 
     return str;
 }
@@ -1162,7 +1162,7 @@ rb_str_gsub(argc, argv, str)
 }
 
 static VALUE
-rb_str_replace_method(str, str2)
+rb_str_replace_m(str, str2)
     VALUE str, str2;
 {
     if (TYPE(str2) != T_STRING) str2 = rb_str_to_str(str2);
@@ -1299,7 +1299,7 @@ static VALUE
 rb_str_to_i(str)
     VALUE str;
 {
-    return rb_str2inum(RSTRING(str)->ptr, 10);
+    return rb_str2inum(str, 10);
 }
 
 static VALUE
@@ -1977,7 +1977,7 @@ rb_str_count(argc, argv, str)
 }
 
 static VALUE
-rb_str_split_method(argc, argv, str)
+rb_str_split_m(argc, argv, str)
     int argc;
     VALUE *argv;
     VALUE str;
@@ -2004,9 +2004,9 @@ rb_str_split_method(argc, argv, str)
 	char_sep = ' ';
     }
     else {
+      fs_set:
 	switch (TYPE(spat)) {
 	  case T_STRING:
-	  fs_set:
 	    if (RSTRING(spat)->len == 1) {
 		char_sep = (unsigned char)RSTRING(spat)->ptr[0];
 	    }
@@ -2123,7 +2123,7 @@ rb_str_split(str, sep0)
 
     if (TYPE(str) != T_STRING) str = rb_str_to_str(str);
     sep = rb_str_new2(sep0);
-    return rb_str_split_method(1, &sep, str);
+    return rb_str_split_m(1, &sep, str);
 }
 
 static VALUE
@@ -2131,7 +2131,7 @@ rb_f_split(argc, argv)
     int argc;
     VALUE *argv;
 {
-    return rb_str_split_method(argc, argv, uscore_get());
+    return rb_str_split_m(argc, argv, uscore_get());
 }
 
 static VALUE
@@ -2191,6 +2191,32 @@ rb_str_each_line(argc, argv, str)
     }
 
     return str;
+}
+
+#ifdef STR_TO_A_USE_EACH
+static VALUE
+to_a_push(str, ary)
+    VALUE str, ary;
+{
+    return rb_ary_push(ary, str);
+}
+#endif
+
+static VALUE
+rb_str_to_a(str)
+    VALUE str;
+{
+#ifdef STR_TO_A_USE_EACH
+    VALUE ary;
+
+    if (RSTRING(str)->len == 0) return rb_ary_new3(1, str);
+    ary = rb_ary_new();
+    rb_iterate(rb_each, str, to_a_push, ary);
+
+    return ary;
+#else
+    return rb_ary_new3(1, str);
+#endif
 }
 
 static VALUE
@@ -2431,7 +2457,7 @@ static VALUE
 rb_str_hex(str)
     VALUE str;
 {
-    return rb_str2inum(RSTRING(str)->ptr, 16);
+    return rb_str2inum(str, 16);
 }
 
 static VALUE
@@ -2452,7 +2478,7 @@ rb_str_oct(str)
 	    break;
 	}
     }
-    return rb_str2inum(RSTRING(str)->ptr, base);
+    return rb_str2inum(str, base);
 }
 
 static VALUE
@@ -2597,16 +2623,16 @@ Init_String()
     rb_define_singleton_method(rb_cString, "new", rb_str_s_new, 1);
     rb_define_method(rb_cString, "clone", rb_str_clone, 0);
     rb_define_method(rb_cString, "dup", rb_str_dup, 0);
-    rb_define_method(rb_cString, "<=>", rb_str_cmp_method, 1);
+    rb_define_method(rb_cString, "<=>", rb_str_cmp_m, 1);
     rb_define_method(rb_cString, "==", rb_str_equal, 1);
     rb_define_method(rb_cString, "===", rb_str_equal, 1);
     rb_define_method(rb_cString, "eql?", rb_str_equal, 1);
-    rb_define_method(rb_cString, "hash", rb_str_hash_method, 0);
+    rb_define_method(rb_cString, "hash", rb_str_hash_m, 0);
     rb_define_method(rb_cString, "+", rb_str_plus, 1);
     rb_define_method(rb_cString, "*", rb_str_times, 1);
     rb_define_method(rb_cString, "%", rb_str_format, 1);
-    rb_define_method(rb_cString, "[]", rb_str_aref_method, -1);
-    rb_define_method(rb_cString, "[]=", rb_str_aset_method, -1);
+    rb_define_method(rb_cString, "[]", rb_str_aref_m, -1);
+    rb_define_method(rb_cString, "[]=", rb_str_aset_m, -1);
     rb_define_method(rb_cString, "length", rb_str_length, 0);
     rb_define_method(rb_cString, "size", rb_str_length, 0);
     rb_define_method(rb_cString, "empty?", rb_str_empty, 0);
@@ -2616,16 +2642,17 @@ Init_String()
     rb_define_method(rb_cString, "succ!", rb_str_succ_bang, 0);
     rb_define_method(rb_cString, "next", rb_str_succ, 0);
     rb_define_method(rb_cString, "next!", rb_str_succ_bang, 0);
-    rb_define_method(rb_cString, "upto", rb_str_upto_method, 1);
-    rb_define_method(rb_cString, "index", rb_str_index_method, -1);
+    rb_define_method(rb_cString, "upto", rb_str_upto_m, 1);
+    rb_define_method(rb_cString, "index", rb_str_index_m, -1);
     rb_define_method(rb_cString, "rindex", rb_str_rindex, -1);
-    rb_define_method(rb_cString, "replace", rb_str_replace_method, 1);
+    rb_define_method(rb_cString, "replace", rb_str_replace_m, 1);
 
     rb_define_method(rb_cString, "freeze", rb_str_freeze, 0);
     rb_define_method(rb_cString, "frozen?", rb_str_frozen_p, 0);
 
     rb_define_method(rb_cString, "to_i", rb_str_to_i, 0);
     rb_define_method(rb_cString, "to_f", rb_str_to_f, 0);
+    rb_define_method(rb_cString, "to_a", rb_str_to_a, 0);
     rb_define_method(rb_cString, "to_s", rb_str_to_s, 0);
     rb_define_method(rb_cString, "to_str", rb_str_to_s, 0);
     rb_define_method(rb_cString, "inspect", rb_str_inspect, 0);
@@ -2643,7 +2670,7 @@ Init_String()
 
     rb_define_method(rb_cString, "hex", rb_str_hex, 0);
     rb_define_method(rb_cString, "oct", rb_str_oct, 0);
-    rb_define_method(rb_cString, "split", rb_str_split_method, -1);
+    rb_define_method(rb_cString, "split", rb_str_split_m, -1);
     rb_define_method(rb_cString, "reverse", rb_str_reverse, 0);
     rb_define_method(rb_cString, "reverse!", rb_str_reverse_bang, 0);
     rb_define_method(rb_cString, "concat", rb_str_concat, 1);
@@ -2703,4 +2730,8 @@ Init_String()
     rb_define_global_function("split", rb_f_split, -1);
 
     to_str = rb_intern("to_s");
+
+    rb_fs = Qnil;
+    rb_define_hooked_variable("$;", &rb_fs, 0, rb_str_setter);
+    rb_define_hooked_variable("$-F", &rb_fs, 0, rb_str_setter);
 }
