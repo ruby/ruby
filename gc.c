@@ -236,6 +236,8 @@ rb_gc_unregister_address(addr)
     }
 }
 
+#undef GC_DEBUG
+
 void
 rb_global_variable(var)
     VALUE *var;
@@ -266,6 +268,10 @@ typedef struct RVALUE {
 	struct RVarmap varmap; 
 	struct SCOPE   scope;
     } as;
+#ifdef GC_DEBUG
+    char *file;
+    int   line;
+#endif
 } RVALUE;
 
 static RVALUE *freelist = 0;
@@ -346,6 +352,10 @@ rb_newobj()
     obj = (VALUE)freelist;
     freelist = freelist->as.free.next;
     MEMZERO((void*)obj, RVALUE, 1);
+#ifdef GC_DEBUG
+    RANY(obj)->file = ruby_sourcefile;
+    RANY(obj)->line = ruby_sourceline;
+#endif
     return obj;
 }
 
