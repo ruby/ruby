@@ -1879,9 +1879,11 @@ module RDoc
 	  name = name_t2.name
 	when TkCONSTANT
           name = name_t2.name
+          prev_container = container
           container = container.find_module_named(name_t.name)
           if !container
-            error("Couldn't find module #{name_t.name}")
+            warn("Couldn't find #{name_t.name}. Assuming it's a module")
+            container = prev_container.add_module(NormalModule, name_t.name)
           end
 	else
 	  # warn("Unexpected token '#{name_t2.inspect}'")
