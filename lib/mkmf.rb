@@ -216,7 +216,7 @@ end
 def create_tmpsrc(src)
   src = yield(src) if block_given?
   src = src.sub(/[^\n]\z/, "\\&\n")
-  open(CONFTEST_C, "w") do |cfile|
+  open(CONFTEST_C, "wb") do |cfile|
     cfile.print src
   end
   src
