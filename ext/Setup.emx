@@ -24,3 +24,4 @@ strscan
 #syslog
 #tcltklib
 #tk
+#win32ole
