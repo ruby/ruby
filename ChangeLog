@@ -1,3 +1,9 @@
+Mon Aug  3 13:49:12 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/namespace.rb: bug fix
+
+	* ext/tk/lib/tkextlib/treectrl/tktreectrl.rb: add Tk::TreeCtrl.loupe
+
 Mon Aug  2 23:33:48 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* test/ruby/test_file.rb (test_fnmatch): added more tests.
