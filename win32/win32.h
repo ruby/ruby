@@ -186,6 +186,7 @@ extern pid_t waitpid (pid_t, int *, int);
 extern int do_spawn(int, char *);
 extern int do_aspawn(int, char *, char **);
 extern int kill(int, int);
+extern int fcntl(int, int, ...);
 extern pid_t rb_w32_getpid(void);
 
 #if !defined(__BORLANDC__) && !defined(_WIN32_WCE)
@@ -333,6 +334,9 @@ extern char *rb_w32_strerror(int);
 #define EDQUOT		WSAEDQUOT
 #define ESTALE		WSAESTALE
 #define EREMOTE		WSAEREMOTE
+
+#define F_SETFL 1
+#define O_NONBLOCK 1
 
 #ifdef accept
 #undef accept
