@@ -1,4 +1,7 @@
-Mon Dec 16 15:41:56 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+Mon Dec 16 15:53:20 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* parse.y (nextc): get rid of overrun.  (pointed out by akr
+	  [ruby-list:36773])
 
 	* eval.c (rb_eval): untangled ruby_dyna_vars.  [ruby-talk:59035]
 
