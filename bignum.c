@@ -945,10 +945,6 @@ rb_big_modulo(x, y)
       case T_BIGNUM:
 	break;
 
-      case T_FLOAT:
-	y = dbl2big(RFLOAT(y)->value);
-	break;
-
       default:
 	return rb_num_coerce_bin(x, y);
     }
@@ -971,10 +967,6 @@ rb_big_remainder(x, y)
       case T_BIGNUM:
 	break;
 
-      case T_FLOAT:
-	y = dbl2big(RFLOAT(y)->value);
-	break;
-
       default:
 	return rb_num_coerce_bin(x, y);
     }
@@ -992,10 +984,6 @@ rb_big_divmod(x, y)
     switch (TYPE(y)) {
       case T_FIXNUM:
 	y = rb_int2big(FIX2LONG(y));
-	break;
-
-      case T_FLOAT:
-	y = dbl2big(RFLOAT(y)->value);
 	break;
 
       case T_BIGNUM:

@@ -3432,6 +3432,9 @@ yylex()
 	    tokadd('@');
 	    c = nextc();
 	}
+	if (ISDIGIT(c)) {
+	    rb_compile_error("`@%c' is not a valid instance variable name", c);
+	}
 	if (!is_identchar(c)) {
 	    pushback(c);
 	    return '@';
@@ -3439,8 +3442,8 @@ yylex()
 	break;
 
       default:
-	if (c != '_' && !ISALPHA(c) && !ismbchar(c)) {
-	    rb_compile_error("Invalid char '%c' in expression", c);
+	if (!is_identchar(c) || ISDIGIT(c)) {
+	    rb_compile_error("Invalid char '%c'(%03o) in expression", c, c);
 	    goto retry;
 	}
 

@@ -1,3 +1,17 @@
+Tue Jul 11 16:54:17 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (yylex): `@<digit>' is no longer a valid instance
+	  variable name.
+
+Tue Jul 11 01:51:50 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* bignum.c (rb_big_divmod): should not use Integer(float) for
+	  the right operand.
+
+	* bignum.c (rb_big_remainder): ditto.
+
+	* bignum.c (rb_big_modulo): ditto.
+
 Mon Jul 10 15:27:16 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* io.c (pipe_finalize): should set rb_last_status when pclose().
