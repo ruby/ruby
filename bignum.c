@@ -24,7 +24,7 @@ VALUE rb_cBignum;
 typedef unsigned int BDIGIT;
 typedef unsigned LONG_LONG BDIGIT_DBL;
 typedef LONG_LONG BDIGIT_DBL_SIGNED;
-#elif SIZEOF_ING*2 <= SIZEOF_LONG
+#elif SIZEOF_INT*2 <= SIZEOF_LONG
 typedef unsigned int BDIGIT;
 typedef unsigned long BDIGIT_DBL;
 typedef long long BDIGIT_DBL_SIGNED;
