@@ -12,7 +12,7 @@ dlhandle_free(struct dl_handle *dlhandle)
 {
   if( dlhandle->ptr && dlhandle->open && dlhandle->enable_close ){
     dlclose(dlhandle->ptr);
-  };
+  }
 }
 
 VALUE
@@ -61,18 +61,18 @@ rb_dlhandle_initialize(int argc, VALUE argv[], VALUE self)
     break;
   default:
     rb_bug("rb_dlhandle_new");
-  };
+  }
 
   ptr = dlopen(clib, cflag);
 #if defined(HAVE_DLERROR)
   if( (err = dlerror()) ){
     rb_raise(rb_eRuntimeError, err);
-  };
+  }
 #else
   if( !ptr ){
     err = dlerror();
     rb_raise(rb_eRuntimeError, err);
-  };
+  }
 #endif
   Data_Get_Struct(self, struct dl_handle, dlhandle);
   if( dlhandle->ptr && dlhandle->open && dlhandle->enable_close ){
@@ -84,7 +84,7 @@ rb_dlhandle_initialize(int argc, VALUE argv[], VALUE self)
 
   if( rb_block_given_p() ){
     rb_ensure(rb_yield, self, rb_dlhandle_close, self);
-  };
+  }
 
   return Qnil;
 }
@@ -146,7 +146,7 @@ rb_dlhandle_sym(int argc, VALUE argv[], VALUE self)
   }
   else{
     stype = NULL;
-  };
+  }
 
   if( sym == Qnil ){
 #if defined(RTLD_NEXT)
@@ -157,7 +157,7 @@ rb_dlhandle_sym(int argc, VALUE argv[], VALUE self)
   }
   else{
     name = StringValuePtr(sym);
-  };
+  }
 
 
   Data_Get_Struct(self, struct dl_handle, dlhandle);
@@ -189,12 +189,12 @@ rb_dlhandle_sym(int argc, VALUE argv[], VALUE self)
 #endif
       {
 	rb_raise(rb_eRuntimeError, "Unknown symbol \"%sA\".", name);
-      };
+      }
     }
 #else
     rb_raise(rb_eRuntimeError, "Unknown symbol \"%s\".", name);
 #endif
-  };
+  }
   val = rb_dlsym_new(func, name, stype);
 
   return val;

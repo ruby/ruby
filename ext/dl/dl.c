@@ -175,7 +175,7 @@ dlsizeof(const char *cstr)
     }
     else{
       dlen = 0;
-    };
+    }
 
     switch( cstr[i] ){
     case 'I':
@@ -215,9 +215,9 @@ dlsizeof(const char *cstr)
     default:
       rb_raise(rb_eDLTypeError, "unexpected type '%c'", cstr[i]);
       break;
-    };
+    }
     i += dlen;
-  };
+  }
 
   return size;
 }
@@ -244,8 +244,8 @@ c_farray(VALUE v, long *size)
     default:
       rb_raise(rb_eDLTypeError, "unexpected type of the element #%d", i);
       break;
-    };
-  };
+    }
+  }
 
   return ary;
 }
@@ -272,8 +272,8 @@ c_darray(VALUE v, long *size)
     default:
       rb_raise(rb_eDLTypeError, "unexpected type of the element #%d", i);
       break;
-    };
-  };
+    }
+  }
 
   return ary;
 }
@@ -301,8 +301,8 @@ c_larray(VALUE v, long *size)
     default:
       rb_raise(rb_eDLTypeError, "unexpected type of the element #%d", i);
       break;
-    };
-  };
+    }
+  }
 
   return ary;
 }
@@ -330,8 +330,8 @@ c_iarray(VALUE v, long *size)
     default:
       rb_raise(rb_eDLTypeError, "unexpected type of the element #%d", i);
       break;
-    };
-  };
+    }
+  }
 
   return ary;
 }
@@ -359,8 +359,8 @@ c_harray(VALUE v, long *size)
     default:
       rb_raise(rb_eDLTypeError, "unexpected type of the element #%d", i);
       break;
-    };
-  };
+    }
+  }
 
   return ary;
 }
@@ -388,8 +388,8 @@ c_carray(VALUE v, long *size)
     default:
       rb_raise(rb_eDLTypeError, "unexpected type of the element #%d", i);
       break;
-    };
-  };
+    }
+  }
 
   return ary;
 }
@@ -413,7 +413,7 @@ c_parray(VALUE v, long *size)
 	src = RSTRING(e)->ptr;
 	str = dlstrdup(src);
 	ary[i] = (void*)str;
-      };
+      }
       break;
     case T_NIL:
       ary[i] = NULL;
@@ -426,13 +426,13 @@ c_parray(VALUE v, long *size)
       }
       else{
 	rb_raise(rb_eDLTypeError, "unexpected type of the element #%d", i);
-      };
+      }
       break;
     default:
       rb_raise(rb_eDLTypeError, "unexpected type of the element #%d", i);
       break;
-    };
-  };
+    }
+  }
 
   return ary;
 }
@@ -445,16 +445,16 @@ rb_ary2cary(char t, VALUE v, long *size)
 
   if( TYPE(v) != T_ARRAY ){
     rb_raise(rb_eDLTypeError, "an array is expected.");
-  };
+  }
 
   len = RARRAY(v)->len;
   if( len == 0 ){
     return NULL;
-  };
+  }
 
   if( !size ){
     size = ALLOCA_N(long,1);
-  };
+  }
 
   val0 = rb_ary_entry(v,0);
   switch( TYPE(val0) ){
@@ -471,7 +471,7 @@ rb_ary2cary(char t, VALUE v, long *size)
       return (void*)c_larray(v,size);
     default:
       rb_raise(rb_eDLTypeError, "type mismatch");
-    };
+    }
   case T_STRING:
     return (void*)c_parray(v,size);
   case T_FLOAT:
@@ -480,18 +480,18 @@ rb_ary2cary(char t, VALUE v, long *size)
       return (void*)c_farray(v,size);
     case 'D': case 'd': case 0:
       return (void*)c_darray(v,size);
-    };
+    }
     rb_raise(rb_eDLTypeError, "type mismatch");
   case T_DATA:
     if( rb_obj_is_kind_of(val0, rb_cDLPtrData) ){
       return (void*)c_parray(v,size);
-    };
+    }
     rb_raise(rb_eDLTypeError, "type mismatch");
   case T_NIL:
     return (void*)c_parray(v, size);
   default:
     rb_raise(rb_eDLTypeError, "unsupported type");
-  };
+  }
 }
 
 VALUE
@@ -521,7 +521,7 @@ rb_ary_to_ptr(int argc, VALUE argv[], VALUE self)
   case 0:
     ptr = rb_ary2cary(0, self, &size);
     break;
-  };
+  }
   return ptr ? rb_dlptr_new(ptr, size, dlfree) : Qnil;
 }
 
@@ -535,7 +535,7 @@ rb_io_to_ptr(VALUE self)
   fp = fptr->f;
 
   return fp ? rb_dlptr_new(fp, sizeof(FILE), 0) : Qnil;
-};
+}
 
 VALUE
 rb_dl_dlopen(int argc, VALUE argv[], VALUE self)
@@ -679,10 +679,6 @@ Init_dl()
   rb_define_const(rb_mDL, "ALIGN_DOUBLE",INT2NUM(ALIGN_DOUBLE));
   rb_define_const(rb_mDL, "ALIGN_VOIDP", INT2NUM(ALIGN_VOIDP));
 
-  rb_define_const(rb_mDL, "VERSION",     rb_tainted_str_new2(DL_VERSION));
-  rb_define_const(rb_mDL, "MAJOR_VERSION", INT2NUM(DL_MAJOR_VERSION));
-  rb_define_const(rb_mDL, "MINOR_VERSION", INT2NUM(DL_MINOR_VERSION));
-  rb_define_const(rb_mDL, "PATCH_VERSION", INT2NUM(DL_PATCH_VERSION));
   rb_define_const(rb_mDL, "MAX_ARG", INT2NUM(MAX_ARG));
   rb_define_const(rb_mDL, "DLSTACK", rb_tainted_str_new2(DLSTACK_METHOD));
 

@@ -8,11 +8,6 @@
 #include <ruby.h>
 #include <dlconfig.h>
 
-#define DL_VERSION     "1.2.0"
-#define DL_MAJOR_VERSION 1
-#define DL_MINOR_VERSION 2
-#define DL_PATCH_VERSION 0
-
 #if defined(HAVE_DLFCN_H)
 # include <dlfcn.h>
 # /* some stranger systems may not define all of these */

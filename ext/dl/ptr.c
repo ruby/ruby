@@ -36,7 +36,7 @@ rb_dlmem_aset(void *ptr, VALUE obj)
   }
   else{
     rb_hash_aset(DLMemoryTable, DLLONG2NUM(ptr), DLLONG2NUM(obj));
-  };
+  }
 }
 
 static VALUE
@@ -62,8 +62,8 @@ dlptr_free(struct ptr_data *data)
 	printf("dlptr_free(): 0x%x(data->ptr:0x%x)\n",data->free,data->ptr);
       });
       (*(data->free))(data->ptr);
-    };
-  };
+    }
+  }
   if( data->stype ) dlfree(data->stype);
   if( data->ssize ) dlfree(data->ssize);
   if( data->ids  ) dlfree(data->ids);
@@ -108,12 +108,12 @@ rb_dlptr_new2(VALUE klass, void *ptr, long size, freefunc_t func)
       if( func ){
 	Data_Get_Struct(val, struct ptr_data, data);
 	data->free = func;
-      };
-    };
+      }
+    }
   }
   else{
     val = Qnil;
-  };
+  }
 
   return val;
 }
@@ -149,7 +149,7 @@ rb_dlptr2cptr(VALUE val)
   }
   else{
     rb_raise(rb_eTypeError, "DL::PtrData was expected");
-  };
+  }
     
   return ptr;
 }
@@ -346,12 +346,12 @@ rb_dlptr_to_array(int argc, VALUE argv[], VALUE self)
       }
       else{
 	n = 0;
-      };
-    };
+      }
+    }
     break;
   default:
     rb_bug("rb_dlptr_to_array");
-  };
+  }
 
   ary = rb_ary_new();
 
@@ -382,8 +382,8 @@ rb_dlptr_to_array(int argc, VALUE argv[], VALUE self)
 	}
 	else{
 	  rb_ary_push(ary, Qnil);
-	};
-      };
+	}
+      }
       break;
     case 's':
       {
@@ -394,8 +394,8 @@ rb_dlptr_to_array(int argc, VALUE argv[], VALUE self)
 	}
 	else{
 	  rb_ary_push(ary, Qnil);
-	};
-      };
+	}
+      }
       break;
     case 'P':
       rb_ary_push(ary, rb_dlptr_new(((void**)(data->ptr))[i],0,0));
@@ -404,8 +404,8 @@ rb_dlptr_to_array(int argc, VALUE argv[], VALUE self)
       rb_ary_push(ary,
 		  rb_dlptr_new(((void**)(data->ptr))[i],0,dlfree));
       break;
-    };
-  };
+    }
+  }
 
   return ary;
 }
@@ -429,7 +429,7 @@ rb_dlptr_to_s(int argc, VALUE argv[], VALUE self)
     break;
   default:
     rb_bug("rb_dlptr_to_s");
-  };
+  }
 
   return val;
 }
@@ -452,7 +452,7 @@ rb_dlptr_to_str(int argc, VALUE argv[], VALUE self)
     break;
   default:
     rb_bug("rb_dlptr_to_str");
-  };
+  }
 
   return val;
 }
@@ -533,17 +533,17 @@ rb_dlptr_define_data_type(int argc, VALUE argv[], VALUE self)
       if( data->stype ){
 	dlfree(data->stype);
 	data->stype = NULL;
-      };
+      }
       if( data->ids ){
 	dlfree(data->ids);
 	data->ids = NULL;
-      };
+      }
       return Qnil;
     }
     else{
       rb_raise(rb_eArgError, "wrong arguments");
-    };
-  };
+    }
+  }
 
   t = NUM2INT(data_type);
   StringValue(type);
@@ -553,8 +553,8 @@ rb_dlptr_define_data_type(int argc, VALUE argv[], VALUE self)
     vid = rb_ary_entry(rest,i);
     if( !(TYPE(vid)==T_STRING || TYPE(vid)==T_SYMBOL) ){
       rb_raise(rb_eTypeError, "#%d must be a string or symbol", i + 2);
-    };
-  };
+    }
+  }
 
   data->ctype = t;
   data->slen = num;
@@ -583,12 +583,12 @@ rb_dlptr_define_data_type(int argc, VALUE argv[], VALUE self)
     }
     else{
       data->ssize[i] = 1;
-    };
-  };
+    }
+  }
 
   if( *ctype ){
     rb_raise(rb_eArgError, "too few/many arguments");
-  };
+  }
 
   if( !data->size )
     data->size = dlsizeof(RSTRING(type)->ptr);
@@ -607,7 +607,7 @@ rb_dlptr_define_struct(int argc, VALUE argv[], VALUE self)
   pass_argv[0] = INT2FIX(DLPTR_CTYPE_STRUCT);
   for( i=1; i<pass_argc; i++ ){
     pass_argv[i] = argv[i-1];
-  };
+  }
   return rb_dlptr_define_data_type(pass_argc, pass_argv, self);
 }
 
@@ -622,7 +622,7 @@ rb_dlptr_define_union(int argc, VALUE argv[], VALUE self)
   pass_argv[0] = INT2FIX(DLPTR_CTYPE_UNION);
   for( i=1; i<pass_argc; i++ ){
     pass_argv[i] = argv[i-1];
-  };
+  }
   return rb_dlptr_define_data_type(pass_argc, pass_argv, self);
 }
 
@@ -681,9 +681,9 @@ cary2ary(void *ptr, char t, int len)
       break;
     default:
       rb_raise(rb_eDLTypeError, "unsupported type '%c'", t);
-    };
+    }
     return elem;
-  };
+  }
 
   ary = rb_ary_new();
   for( i=0; i < len; i++ ){
@@ -718,9 +718,9 @@ cary2ary(void *ptr, char t, int len)
       break;
     default:
       rb_raise(rb_eDLTypeError, "unsupported type '%c'", t);
-    };
+    }
     rb_ary_push(ary, elem);
-  };
+  }
 
   return ary;
 }
@@ -737,17 +737,17 @@ rb_dlptr_aref(int argc, VALUE argv[], VALUE self)
 
   if( rb_scan_args(argc, argv, "11", &key, &num) == 1 ){
     num = INT2NUM(0);
-  };
+  }
 
   if( TYPE(key) == T_FIXNUM || TYPE(key) == T_BIGNUM ){
     VALUE pass[1];
     pass[0] = num;
     return rb_dlptr_to_str(1, pass, rb_dlptr_plus(self, key));
-  };
+  }
 
   if( ! (TYPE(key) == T_STRING || TYPE(key) == T_SYMBOL ) ){
     rb_raise(rb_eTypeError, "the key must be a string or symbol");
-  };
+  }
 
   id = rb_to_id(key);
   Data_Get_Struct(self, struct ptr_data, data);
@@ -779,9 +779,9 @@ rb_dlptr_aref(int argc, VALUE argv[], VALUE self)
 	  break;
 	default:
 	  rb_raise(rb_eDLTypeError, "unsupported type '%c'", data->stype[i]);
-	};
+	}
 	return cary2ary((char *)data->ptr + offset, data->stype[i], data->ssize[i]);
-      };
+      }
       switch( data->stype[i] ){
       case 'I':
 	offset += sizeof(int) * data->ssize[i];
@@ -806,17 +806,17 @@ rb_dlptr_aref(int argc, VALUE argv[], VALUE self)
 	break;
       default:
 	rb_raise(rb_eDLTypeError, "unsupported type '%c'", data->stype[i]);
-      };
-    };
+      }
+    }
     break;
   case DLPTR_CTYPE_UNION:
     for( i=0; i < data->ids_num; i++ ){
       if( data->ids[i] == id ){
 	return cary2ary((char *)data->ptr + offset, data->stype[i], data->ssize[i]);
-      };
-    };
+      }
+    }
     break;
-  }; /* end of switch */
+  } /* end of switch */
 
   rb_raise(rb_eNameError, "undefined key `%s' for %s",
 	   rb_id2name(id), rb_class2name(CLASS_OF(self)));
@@ -834,7 +834,7 @@ ary2cary(char t, VALUE val, long *size)
   }
   else{
     ptr = rb_ary2cary(t, rb_ary_new3(1, val), size);
-  };
+  }
   return ptr;
 }
 
@@ -854,7 +854,7 @@ rb_dlptr_aset(int argc, VALUE argv[], VALUE self)
     val = num;
     num = Qnil;
     break;
-  };
+  }
 
   if( TYPE(key) == T_FIXNUM || TYPE(key) == T_BIGNUM ){
     void *dst, *src;
@@ -872,13 +872,13 @@ rb_dlptr_aset(int argc, VALUE argv[], VALUE self)
       long n = NUM2INT(num);
       memcpy(dst, src, n < len ? n : len);
       if( n > len ) MEMZERO((char*)dst + len, char, n - len);
-    };
+    }
     return val;
-  };
+  }
 
   if( ! (TYPE(key) == T_STRING || TYPE(key) == T_SYMBOL ) ){
     rb_raise(rb_eTypeError, "the key must be a string or symbol");
-  };
+  }
 
   id = rb_to_id(key);
   Data_Get_Struct(self, struct ptr_data, data);
@@ -910,11 +910,11 @@ rb_dlptr_aset(int argc, VALUE argv[], VALUE self)
 	  break;
 	default:
 	  rb_raise(rb_eDLTypeError, "unsupported type '%c'", data->stype[i]);
-	};
+	}
 	memimg = ary2cary(data->stype[i], val, &memsize);
 	memcpy((char *)data->ptr + offset, memimg, memsize);
 	return val;
-      };
+      }
       switch( data->stype[i] ){
       case 'I':
       case 'i':
@@ -946,8 +946,8 @@ rb_dlptr_aset(int argc, VALUE argv[], VALUE self)
 	break;
       default:
 	rb_raise(rb_eDLTypeError, "unsupported type '%c'", data->stype[i]);
-      };
-    };
+      }
+    }
     return val;
     /* break; */
   case DLPTR_CTYPE_UNION:
@@ -977,14 +977,14 @@ rb_dlptr_aset(int argc, VALUE argv[], VALUE self)
 	  break;
 	default:
 	  rb_raise(rb_eDLTypeError, "unsupported type '%c'", data->stype[i]);
-	};
+	}
 	memimg = ary2cary(data->stype[i], val, NULL);
 	memcpy(data->ptr, memimg, memsize);
-      };
-    };
+      }
+    }
     return val;
     /* break; */
-  };
+  }
 
   rb_raise(rb_eNameError, "undefined key `%s' for %s",
 	   rb_id2name(id), rb_class2name(CLASS_OF(self)));
@@ -1003,7 +1003,7 @@ rb_dlptr_size(int argc, VALUE argv[], VALUE self)
   else{
     RDLPTR(self)->size = DLNUM2LONG(size);
     return size;
-  };
+  }
 }
 
 static VALUE

@@ -49,7 +49,7 @@ char2type(int ch)
     return "[]";
   case 'a':
     return "[]"; /* ?? */
-  };
+  }
   return NULL;
 }
 
@@ -61,13 +61,13 @@ dlsym_free(struct sym_data *data)
       printf("dlsym_free(): free(data->name:%s)\n",data->name);
     });
     free(data->name);
-  };
+  }
   if( data->type ){
     DEBUG_CODE({
       printf("dlsym_free(): free(data->type:%s)\n",data->type);
     });
     free(data->type);
-  };
+  }
 }
 
 VALUE
@@ -79,13 +79,13 @@ rb_dlsym_new(void (*func)(), const char *name, const char *type)
 
   if( !type || !type[0] ){
     return rb_dlptr_new((void*)func, 0, 0);
-  };
+  }
 
   for( ptype = type; *ptype; ptype ++ ){
     if( ! char2type(*ptype) ){
       rb_raise(rb_eDLTypeError, "unknown type specifier '%c'", *ptype);
-    };
-  };
+    }
+  }
 
   if( func ){
     val = Data_Make_Struct(rb_cDLSymbol, struct sym_data, 0, dlsym_free, data);
@@ -96,12 +96,12 @@ rb_dlsym_new(void (*func)(), const char *name, const char *type)
 #if !(defined(DLSTACK))
     if( data->len - 1 > MAX_ARG ){
       rb_raise(rb_eDLError, "maximum number of arguments is %d.", MAX_ARG);
-    };
+    }
 #endif
   }
   else{
     val = Qnil;
-  };
+  }
 
   return val;
 }
@@ -121,7 +121,7 @@ rb_dlsym2csym(VALUE val)
   }
   else{
     rb_raise(rb_eTypeError, "DL::Symbol was expected");
-  };
+  }
 
   return func;
 }
@@ -225,7 +225,7 @@ rb_dlsym_cproto(VALUE self)
     }
     else{
       rb_str_cat2(val, "(null)");
-    };
+    }
     rb_str_cat(val, "(", 1);
     
     while (*ptype) {
@@ -244,9 +244,9 @@ rb_dlsym_cproto(VALUE self)
     }
     else{
       rb_str_cat2(val, "(null)");
-    };
+    }
     rb_str_cat2(val, ")()");
-  };
+  }
 
   return val;
 }
@@ -336,7 +336,7 @@ rb_dlsym_call(int argc, VALUE argv[], VALUE self)
   });
   if( (sym->len - 1) != argc ){
     rb_raise(rb_eArgError, "%d arguments are needed", sym->len - 1);
-  };
+  }
 
   ftype = 0;
   dvals = Qnil;
@@ -368,12 +368,12 @@ rb_dlsym_call(int argc, VALUE argv[], VALUE self)
 	    pval = rb_funcall(argv[i], rb_intern("to_ptr"), 0);
 	    if( !rb_obj_is_kind_of(pval, rb_cDLPtrData) ){
 	      rb_raise(rb_eDLTypeError, "unexpected type of argument #%d", i);
-	    };
-	  };
+	    }
+	  }
 	  Data_Get_Struct(pval, struct ptr_data, data);
 	  ANY2P(args[i]) = DLVOIDP(data->ptr);
-	};
-      };
+	}
+      }
       PUSH_P(ftype);
       break;
     case 'a':
@@ -384,7 +384,7 @@ rb_dlsym_call(int argc, VALUE argv[], VALUE self)
       }
       else{
 	ANY2P(args[i]) = DLVOIDP(rb_ary2cary(0, argv[i], NULL));
-      };
+      }
       PUSH_P(ftype);
       break;
     case 'C':
@@ -458,15 +458,15 @@ rb_dlsym_call(int argc, VALUE argv[], VALUE self)
       else{
 	if( TYPE(argv[i]) != T_STRING ){
 	  rb_raise(rb_eDLError, "#%d must be a string",i);
-	};
+	}
 	ANY2S(args[i]) = DLSTR(RSTRING(argv[i])->ptr);
-      };
+      }
       PUSH_P(ftype);
       break;
     case 's':
       if( TYPE(argv[i]) != T_STRING ){
 	rb_raise(rb_eDLError, "#%d must be a string",i);
-      };
+      }
       ANY2S(args[i]) = DLSTR(dlmalloc(RSTRING(argv[i])->len + 1));
       memcpy((char*)(ANY2S(args[i])), RSTRING(argv[i])->ptr, RSTRING(argv[i])->len + 1);
       dtypes[i] = 's';
@@ -477,8 +477,8 @@ rb_dlsym_call(int argc, VALUE argv[], VALUE self)
       rb_raise(rb_eDLTypeError,
 	       "unknown type '%c' of the return value.",
 	       sym->type[i+1]);
-    };
-  };
+    }
+  }
 
   switch( sym->type[0] ){
   case '0':
@@ -521,7 +521,7 @@ rb_dlsym_call(int argc, VALUE argv[], VALUE self)
     rb_raise(rb_eDLTypeError,
 	     "unknown type `%c' of the return value.",
 	     sym->type[0]);
-  };
+  }
 
   func = sym->func;
 
@@ -601,7 +601,7 @@ rb_dlsym_call(int argc, VALUE argv[], VALUE self)
     case 's':
       DLSTACK_PUSH_P(ANY2S(args[i]));
       break;
-    };
+    }
   }
   DLSTACK_END(sym->type);
 
@@ -611,63 +611,63 @@ rb_dlsym_call(int argc, VALUE argv[], VALUE self)
       {
 	void (*f)(DLSTACK_PROTO) = func;
 	f(DLSTACK_ARGS);
-      };
+      }
       break;
     case 'P':
     case 'p':
       {
 	void * (*f)(DLSTACK_PROTO) = func;
 	ret.p = f(DLSTACK_ARGS);
-      };
+      }
       break;
     case 'C':
     case 'c':
       {
 	char (*f)(DLSTACK_PROTO) = func;
 	ret.c = f(DLSTACK_ARGS);
-      };
+      }
       break;
     case 'H':
     case 'h':
       {
 	short (*f)(DLSTACK_PROTO) = func;
 	ret.h = f(DLSTACK_ARGS);
-      };
+      }
       break;
     case 'I':
     case 'i':
       {
 	int (*f)(DLSTACK_PROTO) = func;
 	ret.i = f(DLSTACK_ARGS);
-      };
+      }
       break;
     case 'L':
     case 'l':
       {
 	long (*f)(DLSTACK_PROTO) = func;
 	ret.l = f(DLSTACK_ARGS);
-      };
+      }
       break;
     case 'F':
     case 'f':
       {
 	float (*f)(DLSTACK_PROTO) = func;
 	ret.f = f(DLSTACK_ARGS);
-      };
+      }
       break;
     case 'D':
     case 'd':
       {
 	double (*f)(DLSTACK_PROTO) = func;
 	ret.d = f(DLSTACK_ARGS);
-      };
+      }
       break;
     case 'S':
     case 's':
       {
 	char * (*f)(DLSTACK_PROTO) = func;
 	ret.s = f(DLSTACK_ARGS);
-      };
+      }
       break;
     default:
       FREE_ARGS;
@@ -681,7 +681,7 @@ rb_dlsym_call(int argc, VALUE argv[], VALUE self)
   default:
     FREE_ARGS;
     rb_raise(rb_eDLTypeError, "unsupported function type `%s'", sym->type);
-  };
+  }
 #endif /* defined(DLSTACK) */
 
   switch( sym->type[0] ){
@@ -724,7 +724,7 @@ rb_dlsym_call(int argc, VALUE argv[], VALUE self)
     }
     else{
       val = Qnil;
-    };
+    }
     break;
   case 's':
     if( ANY2S(ret) ){
@@ -736,12 +736,12 @@ rb_dlsym_call(int argc, VALUE argv[], VALUE self)
     }
     else{
       val = Qnil;
-    };
+    }
     break;
   default:
     FREE_ARGS;
     rb_raise(rb_eDLTypeError, "unknown type `%c'", sym->type[0]);
-  };
+  }
 
   dvals = rb_ary_new();
   for( i = 0; i <= sym->len - 2; i++ ){
@@ -783,18 +783,18 @@ rb_dlsym_call(int argc, VALUE argv[], VALUE self)
 	  char c = dtypes[i];
 	  FREE_ARGS;
 	  rb_raise(rb_eRuntimeError, "unknown argument type '%c'", i, c);
-	};
-      };
+	}
+      }
     }
     else{
       switch( sym->type[i+1] ){
       case 'A':
 	dlfree((void*)ANY2P(args[i]));
 	break;
-      };
+      }
       rb_ary_push(dvals, argv[i]);
-    };
-  };
+    }
+  }
 
 #undef FREE_ARGS
   return rb_assoc_new(val,dvals);

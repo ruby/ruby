@@ -32,10 +32,6 @@ def debug(*xs)
   end
 end
 
-print("VERSION       = #{DL::VERSION}\n")
-print("MAJOR_VERSION = #{DL::MAJOR_VERSION}\n")
-print("MINOR_VERSION = #{DL::MINOR_VERSION}\n")
-print("\n")
 print("DLSTACK   = #{DL::DLSTACK}\n")
 print("MAX_ARG   = #{DL::MAX_ARG}\n")
 print("\n")
@@ -289,6 +285,11 @@ assert("struct!", :must,
        ptr["i"] == 3 &&
        ptr["l"] == 4)
 
-GC.start
+ptr = DL::malloc(DL::sizeof("IP"))
+ptr.struct!("IP", "n", "ptr")
+ptr["n"] = 10
+ptr["ptr"] = nil
+assert("struct!", :must, ptr["n"] == 10 && ptr["ptr"] == nil)
 
+GC.start
 printf("fail/total = #{$FAIL}/#{$TOTAL}\n")

@@ -5,12 +5,6 @@ $:.unshift File.dirname(__FILE__)
 require 'type'
 require 'dlconfig'
 
-$int_eq_long = try_run(<<EOF)
-int main() {
-  return sizeof(int) == sizeof(long) ? 0 : 1;
-}
-EOF
-
 def output_arg(x,i)
   "args[#{i}].#{DLTYPE[x][:stmem]}"
 end
