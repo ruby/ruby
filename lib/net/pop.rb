@@ -390,7 +390,7 @@ module Net
 
   class POPError < ProtocolError; end
   class POPAuthenticationError < ProtoAuthError; end
-  class POPBadResponse < StandardError; end
+  class POPBadResponse < POPError; end
 
 
   class POP3 < Protocol
@@ -405,6 +405,7 @@ module Net
       110
     end
 
+    # obsolete
     def POP3.socket_type
       Net::InternetMessageIO
     end
@@ -421,7 +422,7 @@ module Net
                       account = nil, password = nil,
                       isapop = false, &block )
       start(address, port, account, password, isapop) {|pop|
-          pop.each_mail(&block)
+        pop.each_mail(&block)
       }
     end
 
@@ -429,7 +430,7 @@ module Net
                          account = nil, password = nil,
                          isapop = false, &block )
       start(address, port, account, password, isapop) {|pop|
-          pop.delete_all(&block)
+        pop.delete_all(&block)
       }
     end
 
@@ -442,7 +443,7 @@ module Net
     def auth_only( account, password )
       raise IOError, 'opening already opened POP session' if started?
       start(account, password) {
-          ;
+        ;
       }
     end
 
@@ -481,7 +482,7 @@ module Net
       "#<#{self.class} #{@address}:#{@port} open=#{@started}>"
     end
 
-    def set_debug_output( arg )   # :nodoc:
+    def set_debug_output( arg )
       @debug_output = arg
     end
 
@@ -500,7 +501,7 @@ module Net
       @started
     end
 
-    alias active? started?   # backward compatibility
+    alias active? started?   # obsolete
 
     def start( account, password )
       raise IOError, 'POP session already started' if @started
@@ -578,7 +579,7 @@ module Net
       end
 
       @mails = command().list.map {|num, size|
-          POPMail.new(num, size, self, command())
+        POPMail.new(num, size, self, command())
       }
       @mails.dup
     end
@@ -600,7 +601,7 @@ module Net
       command().rset
       mails().each do |m|
         m.instance_eval {
-            @deleted = false
+          @deleted = false
         }
       end
     end
@@ -612,9 +613,9 @@ module Net
       end
     end
 
-  end
+  end   # class POP3
 
-  # aliases
+  # class aliases
   POP = POP3
   POPSession  = POP3
   POP3Session = POP3
@@ -630,9 +631,9 @@ module Net
 
   class POPMail
 
-    def initialize( num, size, pop, cmd )
+    def initialize( num, len, pop, cmd )
       @number = num
-      @size = size
+      @length = len
       @pop = pop
       @command = cmd
       @deleted = false
@@ -640,23 +641,37 @@ module Net
     end
 
     attr_reader :number
-    attr_reader :size
+    attr_reader :length
+    alias size length
 
     def inspect
       "#<#{self.class} #{@number}#{@deleted ? ' deleted' : ''}>"
     end
 
     def pop( dest = '', &block )
-      @command.retr(@number, (block ? ReadAdapter.new(block) : dest))
+      if block_given?
+        @command.retr(@number, &block)
+        nil
+      else
+        @command.retr(@number) do |chunk|
+          dest << chunk
+        end
+        dest
+      end
     end
 
     alias all pop    # backward compatibility
     alias mail pop   # backward compatibility
 
+    # `dest' argument is obsolete
     def top( lines, dest = '' )
-      @command.top(@number, lines, dest)
+      @command.top(@number, lines) do |chunk|
+        dest << chunk
+      end
+      dest
     end
 
+    # `dest' argument is obsolete
     def header( dest = '' )
       top(0, dest)
     end
@@ -685,14 +700,14 @@ module Net
       @uid = uid
     end
 
-  end
+  end   # class POPMail
 
 
   class POP3Command
 
     def initialize( sock )
       @socket = sock
-      @in_critical_block = false
+      @error_occured = false
       res = check_response(critical { recv_response() })
       @apop_stamp = res.slice(/<.+>/)
     end
@@ -702,30 +717,32 @@ module Net
     end
 
     def auth( account, password )
-      check_response_auth(critical { get_response('USER ' + account) })
-      check_response_auth(critical { get_response('PASS ' + password) })
+      check_response_auth(critical {
+        check_response_auth(get_response('USER ' + account))
+        get_response('PASS ' + password)
+      })
     end
 
     def apop( account, password )
       raise POPAuthenticationError, 'not APOP server; cannot login' \
                                                       unless @apop_stamp
       check_response_auth(critical {
-          get_response('APOP %s %s',
-                       account,
-                       Digest::MD5.hexdigest(@apop_stamp + password))
+        get_response('APOP %s %s',
+                     account,
+                     Digest::MD5.hexdigest(@apop_stamp + password))
       })
     end
 
     def list
       critical {
-          getok 'LIST'
-          list = []
-          @socket.each_list_item do |line|
-            m = /\A(\d+)[ \t]+(\d+)/.match(line) or
-                    raise POPBadResponse, "bad response: #{line}"
-            list.push [m[1].to_i, m[2].to_i]
-          end
-          list
+        getok 'LIST'
+        list = []
+        @socket.each_list_item do |line|
+          m = /\A(\d+)[ \t]+(\d+)/.match(line) or
+                  raise POPBadResponse, "bad response: #{line}"
+          list.push  [m[1].to_i, m[2].to_i]
+        end
+        return list
       }
     end
 
@@ -740,17 +757,17 @@ module Net
       check_response(critical { get_response 'RSET' })
     end
 
-    def top( num, lines = 0, dest = '' )
+    def top( num, lines = 0, &block )
       critical {
-          getok('TOP %d %d', num, lines)
-          @socket.read_message_to(dest)
+        getok('TOP %d %d', num, lines)
+        @socket.each_message_chunk(&block)
       }
     end
 
-    def retr( num, dest = '' )
+    def retr( num, &block )
       critical {
-          getok('RETR %d', num)
-          @socket.read_message_to dest
+        getok('RETR %d', num)
+        @socket.each_message_chunk(&block)
       }
     end
     
@@ -761,16 +778,16 @@ module Net
     def uidl( num = nil )
       if num
         res = check_response(critical { get_response('UIDL %d', num) })
-        res.split(/ /)[1]
+        return res.split(/ /)[1]
       else
         critical {
-            getok('UIDL')
-            table = {}
-            @socket.each_list_item do |line|
-              num, uid = line.split
-              table[num.to_i] = uid
-            end
-            table
+          getok('UIDL')
+          table = {}
+          @socket.each_list_item do |line|
+            num, uid = line.split
+            table[num.to_i] = uid
+          end
+          return table
         }
       end
     end
@@ -781,13 +798,13 @@ module Net
 
     private
 
-    def getok( *reqs )
-      @socket.writeline sprintf(*reqs)
+    def getok( fmt, *fargs )
+      @socket.writeline sprintf(fmt, *fargs)
       check_response(recv_response())
     end
 
-    def get_response( *reqs )
-      @socket.writeline sprintf(*reqs)
+    def get_response( fmt, *fargs )
+      @socket.writeline sprintf(fmt, *fargs)
       recv_response()
     end
 
@@ -806,14 +823,15 @@ module Net
     end
 
     def critical
-      return if @in_critical_block
-      # Do not use ensure-block.
-      @in_critical_block = true
-      result = yield
-      @in_critical_block = false
-      result
+      return '+OK dummy ok response' if @error_occured
+      begin
+        return yield()
+      rescue Exception
+        @error_occured = true
+        raise
+      end
     end
 
-  end
+  end   # class POP3Command
 
 end   # module Net

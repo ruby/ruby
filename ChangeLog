@@ -1,3 +1,53 @@
+Wed Jul  2 11:39:50 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/smtp.rb: unify SMTP and SMTPCommand.
+
+	* lib/net/smtp.rb: new exception class SMTPError.
+
+	* lib/net/smtp.rb: new exception class SMTPAuthenticationError.
+
+	* lib/net/smtp.rb: new exception class SMTPServerBusy.
+
+	* lib/net/smtp.rb: new exception class SMTPSyntaxError.
+
+	* lib/net/smtp.rb: new exception class SMTPFatalError.
+
+	* lib/net/smtp.rb: new exception class SMTPUnknownError.
+
+	* lib/net/smtp.rb: change critical section protect algorithm.
+
+	* lib/net/smtp.rb (SMTP#do_start): check authentication args
+	  before all.
+
+	* lib/net/smtp.rb: new method send_message (alias send_mail).
+
+	* lib/net/smtp.rb: new method open_message_stream (alias ready).
+
+	* lib/net/pop.rb: POPBadResponse is a POPError.
+
+	* lib/net/pop.rb (POPMail#pop): ban ReadAdapter.
+
+	* lib/net/pop.rb (POPMail#top): ditto.
+
+	* lib/net/pop.rb (POP3Command): change critical section protect
+	  algorithm.
+
+	* lib/net/pop.rb (POP3Command#auth): USER and PASS should be one
+	  critical block.
+
+	* lib/net/pop.rb (POP3Command#retr): ban `dest' argument using
+	  iterator.
+
+	* lib/net/pop.rb (POP3Command#top): ditto.
+
+	* lib/net/protocol.rb: #read_message_to -> #each_message_chunk
+
+	* lib/net/protocol.rb: #D -> #LOG
+
+	* lib/net/protocol.rb: #D_off -> #LOG_off
+
+	* lib/net/protocol.rb: #D_on -> #LOG_on
+
 Wed Jul  2 11:10:47 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb: set old class aliases for backward

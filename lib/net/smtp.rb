@@ -249,7 +249,28 @@ require 'digest/md5'
 
 module Net
 
-  class SMTP < Protocol
+  module SMTPError
+    # This *class* is module for some reason.
+    # In ruby 1.9.x, this module becomes a class.
+  end
+  class SMTPAuthenticationError < ProtoAuthError
+    include SMTPError
+  end
+  class SMTPServerBusy < ProtoServerError
+    include SMTPError
+  end
+  class SMTPSyntaxError < ProtoSyntaxError
+    include SMTPError
+  end
+  class SMTPFatalError < ProtoFatalError
+    include SMTPError
+  end
+  class SMTPUnknownError < ProtoUnknownError
+    include SMTPError
+  end
+
+
+  class SMTP
 
     Revision = %q$Revision$.split[1]
 
@@ -259,21 +280,18 @@ module Net
 
     def initialize( address, port = nil )
       @address = address
-      @port = port || SMTP.default_port
-
+      @port = (port || SMTP.default_port)
       @esmtp = true
-
-      @command = nil
       @socket = nil
       @started = false
       @open_timeout = 30
       @read_timeout = 60
-
+      @error_occured = false
       @debug_output = nil
     end
 
     def inspect
-      "#<#{self.class} #{address}:#{@port} open=#{@started}>"
+      "#<#{self.class} #{@address}:#{@port} started=#{@started}>"
     end
 
     def esmtp?
@@ -318,7 +336,6 @@ module Net
 
     def start( helo = 'localhost.localdomain',
                user = nil, secret = nil, authtype = nil )
-      raise IOError, 'SMTP session already started' if @started
       if block_given?
         begin
           do_start(helo, user, secret, authtype)
@@ -332,98 +349,98 @@ module Net
       end
     end
 
-    def do_start( helo, user, secret, authtype )
+    def do_start( helodomain, user, secret, authtype )
+      raise IOError, 'SMTP session already started' if @started
+      check_auth_args user, secret, authtype if user or secret
+
       @socket = InternetMessageIO.open(@address, @port,
                                        @open_timeout, @read_timeout,
                                        @debug_output)
-      @command = SMTPCommand.new(@socket)
+      check_response(critical { recv_response() })
       begin
         if @esmtp
-          @command.ehlo helo
+          ehlo helodomain
         else
-          @command.helo helo
+          helo helodomain
         end
       rescue ProtocolError
         if @esmtp
           @esmtp = false
-          @command = SMTPCommand.new(@socket)
+          @error_occured = false
           retry
         end
         raise
       end
-
-      if user or secret
-        raise ArgumentError, 'both of account and password are required'\
-                        unless user and secret
-        mid = 'auth_' + (authtype || 'cram_md5').to_s
-        raise ArgumentError, "wrong auth type #{authtype}"\
-                        unless command().respond_to?(mid)
-        @command.__send__ mid, user, secret
-      end
+      authenticate user, secret, authtype if user
     end
     private :do_start
 
     def finish
       raise IOError, 'closing already closed SMTP session' unless @started
-      @command.quit if @command
-      @command = nil
+      quit if @socket and not @socket.closed? and not @error_occured
       @socket.close if @socket and not @socket.closed?
       @socket = nil
+      @error_occured = false
       @started = false
     end
 
     #
-    # SMTP wrapper
+    # message send
     #
 
-    def send_mail( mailsrc, from_addr, *to_addrs )
-      do_ready from_addr, to_addrs.flatten
-      command().write_mail mailsrc
+    public
+
+    def send_message( msgstr, from_addr, *to_addrs )
+      send0(from_addr, to_addrs.flatten) {
+        @socket.write_message msgstr
+      }
     end
 
-    alias sendmail send_mail   # backward compatibility
+    alias send_mail send_message
+    alias sendmail send_message   # obsolete
 
-    def ready( from_addr, *to_addrs, &block )
-      do_ready from_addr, to_addrs.flatten
-      command().through_mail(&block)
+    def open_message_stream( from_addr, *to_addrs, &block )
+      send0(from_addr, to_addrs.flatten) {
+        @socket.write_message_by_block(&block)
+      }
     end
+
+    alias ready open_message_stream   # obsolete
 
     private
 
-    def do_ready( from_addr, to_addrs )
+    def send0( from_addr, to_addrs )
+      raise IOError, "closed session" unless @socket
       raise ArgumentError, 'mail destination does not given' if to_addrs.empty?
-      command().mailfrom from_addr
-      command().rcpt to_addrs
+
+      mailfrom from_addr
+      to_addrs.each do |to|
+        rcptto to
+      end
+      res = critical {
+        check_response(get_response('DATA'), true)
+        yield
+        recv_response()
+      }
+      check_response(res)
     end
 
-    def command
-      raise IOError, "closed session" unless @command
-      @command
+    #
+    # auth
+    #
+
+    private
+
+    def check_auth_args( user, secret, authtype )
+      raise ArgumentError, 'both of user and secret are required'\
+                      unless user and secret
+      auth_method = "auth_#{authtype || 'cram_md5'}"
+      raise ArgumentError, "wrong auth type #{authtype}"\
+                      unless respond_to?(auth_method)
     end
 
-  end
-
-  SMTPSession = SMTP
-
-
-  class SMTPCommand
-
-    def initialize( sock )
-      @socket = sock
-      @in_critical_block = false
-      check_response(critical { recv_response() })
-    end
-
-    def inspect
-      "#<#{self.class} socket=#{@socket.inspect}>"
-    end
-
-    def helo( domain )
-      getok('HELO %s', domain)
-    end
-
-    def ehlo( domain )
-      getok('EHLO %s', domain)
+    def authenticate( user, secret, authtype )
+      __send__("auth_#{authtype || 'cram_md5'}", user, secret)
     end
 
     def auth_plain( user, secret )
@@ -434,9 +451,9 @@ module Net
 
     def auth_login( user, secret )
       res = critical {
-          check_response(get_response('AUTH LOGIN'), true)
-          check_response(get_response(base64_encode(user)), true)
-          get_response(base64_encode(secret))
+        check_response(get_response('AUTH LOGIN'), true)
+        check_response(get_response(base64_encode(user)), true)
+        get_response(base64_encode(secret))
       }
       raise SMTPAuthenticationError, res unless /\A2../ === res
     end
@@ -445,20 +462,20 @@ module Net
       # CRAM-MD5: [RFC2195]
       res = nil
       critical {
-          res = check_response(get_response('AUTH CRAM-MD5'), true)
-          challenge = res.split(/ /)[1].unpack('m')[0]
-          secret = Digest::MD5.digest(secret) if secret.size > 64
+        res = check_response(get_response('AUTH CRAM-MD5'), true)
+        challenge = res.split(/ /)[1].unpack('m')[0]
+        secret = Digest::MD5.digest(secret) if secret.size > 64
 
-          isecret = secret + "\0" * (64 - secret.size)
-          osecret = isecret.dup
-          0.upto(63) do |i|
-            isecret[i] ^= 0x36
-            osecret[i] ^= 0x5c
-          end
-          tmp = Digest::MD5.digest(isecret + challenge)
-          tmp = Digest::MD5.hexdigest(osecret + tmp)
+        isecret = secret + "\0" * (64 - secret.size)
+        osecret = isecret.dup
+        0.upto(63) do |i|
+          isecret[i] ^= 0x36
+          osecret[i] ^= 0x5c
+        end
+        tmp = Digest::MD5.digest(isecret + challenge)
+        tmp = Digest::MD5.hexdigest(osecret + tmp)
 
-          res = get_response(base64_encode(user + ' ' + tmp))
+        res = get_response(base64_encode(user + ' ' + tmp))
       }
       raise SMTPAuthenticationError, res unless /\A2../ === res
     end
@@ -467,45 +484,45 @@ module Net
       # expects "str" may not become too long
       [str].pack('m').gsub(/\s+/, '')
     end
-    private :base64_encode
+
+    #
+    # SMTP command dispatcher
+    #
+
+    private
+
+    def helo( domain )
+      getok('HELO %s', domain)
+    end
+
+    def ehlo( domain )
+      getok('EHLO %s', domain)
+    end
 
     def mailfrom( fromaddr )
       getok('MAIL FROM:<%s>', fromaddr)
     end
 
-    def rcpt( toaddrs )
-      toaddrs.each do |i|
-        getok('RCPT TO:<%s>', i)
-      end
-    end
-
-    def write_mail( src )
-      res = critical {
-          check_response(get_response('DATA'), true)
-          @socket.write_message src
-          recv_response()
-      }
-      check_response(res)
-    end
-
-    def through_mail( &block )
-      res = critical {
-          check_response(get_response('DATA'), true)
-          @socket.through_message(&block)
-          recv_response()
-      }
-      check_response(res)
+    def rcptto( to )
+      getok('RCPT TO:<%s>', to)
     end
 
     def quit
       getok('QUIT')
     end
 
+    #
+    # row level library
+    #
+
     private
 
     def getok( fmt, *args )
-      @socket.writeline sprintf(fmt, *args)
-      check_response(critical { recv_response() })
+      res = critical {
+        @socket.writeline sprintf(fmt, *args)
+        recv_response()
+      }
+      return check_response(res)
     end
 
     def get_response( fmt, *args )
@@ -524,29 +541,29 @@ module Net
     end
 
     def check_response( res, allow_continue = false )
-      etype = case res[0]
-              when ?2 then nil
-              when ?3 then allow_continue ? nil : ProtoUnknownError
-              when ?4 then ProtoServerError
-              when ?5 then
-                case res[1]
-                when ?0 then ProtoSyntaxError
-                when ?3 then ProtoAuthError
-                when ?5 then ProtoFatalError
-                end
-              end
-      raise etype, res if etype
-      res
+      return res if /\A2/ === res
+      return res if allow_continue and /\A354/ === res
+      err = case res
+            when /\A4/  then SMTPServerBusy
+            when /\A50/ then SMTPSyntaxError
+            when /\A55/ then SMTPFatalError
+            else SMTPUnknownError
+            end
+      raise err, res
     end
 
-    def critical
-      return if @in_critical_block
-      @in_critical_block = true
-      result = yield()
-      @in_critical_block = false
-      result
+    def critical( &block )
+      return '200 dummy reply code' if @error_occured
+      begin
+        return yield()
+      rescue Exception
+        @error_occured = true
+        raise
+      end
     end
 
-  end
+  end   # class SMTP
+
+  SMTPSession = SMTP
 
 end   # module Net
