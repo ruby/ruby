@@ -110,9 +110,9 @@ class ConditionVariable
   end
     
   def broadcast
-    waitors0 = nil
+    waiters0 = nil
     Thread.exclusive do
-      waiters0 = @waitors.dup
+      waiters0 = @waiters.dup
       @waiters.clear
     end
     for t in waiters0
