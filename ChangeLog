@@ -1,3 +1,7 @@
+Mon Mar 22 16:19:57 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+	
+	* ruby.1: add -width option to .Bl for old groff.
+
 Sun Mar 21 21:11:16 2004  Keiju Ishitsuka  <keiju@ishitsuka.com>
 
 	* lib/shell/*: bug fix for Shell#system(command_line_string).
