@@ -67,12 +67,12 @@ class RubyLex
   attr_reader :indent
 
   # io functions
-  def set_input(io, p = nil)
+  def set_input(io, p = nil, &block)
     @io = io
     if p.respond_to?(:call)
       @input = p
-    elsif iterator?
-      @input = Block.new
+    elsif block_given?
+      @input = block
     else
       @input = Block.new{@io.gets}
     end
@@ -183,7 +183,8 @@ class RubyLex
   end
   private :buf_input
 
-  def set_prompt(p = Block.new)
+  def set_prompt(p, &block)
+    p = block if block_given?
     if p.respond_to?(:call)
       @prompt = p
     else

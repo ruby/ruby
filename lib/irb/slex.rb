@@ -31,22 +31,22 @@ class SLex
     @head = Node.new("")
   end
   
-  def def_rule(token, preproc = nil, postproc = nil)
+  def def_rule(token, preproc = nil, postproc = nil, &block)
     #      print node.inspect, "\n" if SLex.debug?
-    postproc = Block.new if iterator?
+    postproc = block if block_given?
     node = create(token, preproc, postproc)
   end
   
-  def def_rules(*tokens)
-    if iterator?
-      p = Block.new
+  def def_rules(*tokens, &block)
+    if block_given?
+      p = block
     end
     for token in tokens
       def_rule(token, nil, p)
     end
   end
   
-  def preporc(token, proc)
+  def preproc(token, proc)
     node = search(token)
     node.preproc=proc
   end
