@@ -159,36 +159,44 @@ module OpenURI
     end
 
     uri_set = {}
-    begin
-      buf = Buffer.new
-      if proxy_uri = find_proxy.call(uri)
-        proxy_uri.proxy_open(buf, uri, options)
+    buf = nil
+    while true
+      redirect = catch(:open_uri_redirect) {
+        buf = Buffer.new
+        if proxy_uri = find_proxy.call(uri)
+          proxy_uri.proxy_open(buf, uri, options)
+        else
+          uri.direct_open(buf, options)
+        end
+        nil
+      }
+      if redirect
+        if redirect.relative?
+          # Although it violates RFC 2616, Location: field may have relative
+          # URI.  It is converted to absolute URI using uri.
+          redirect = uri + redirect
+        end
+        unless OpenURI.redirectable?(uri, redirect)
+          raise "redirection forbidden: #{uri} -> #{redirect}"
+        end
+        uri = redirect
+        raise "HTTP redirection loop: #{uri}" if uri_set.include? uri.to_s
+        uri_set[uri.to_s] = true 
       else
-        uri.direct_open(buf, options)
+        break
       end
-    rescue Redirect
-      loc = $!.uri
-      if loc.relative?
-        # Although it violates RFC 2616, Location: field may have relative URI.
-        # It is converted to absolute URI using uri.
-        loc = uri + loc
-      end
-      uri = loc
-      raise "HTTP redirection loop: #{uri}" if uri_set.include? uri.to_s
-      uri_set[uri.to_s] = true 
-      retry
     end
     io = buf.io
     io.base_uri = uri
     io
   end
 
-  class Redirect < StandardError # :nodoc:
-    def initialize(uri)
-      super("redirection to #{uri.to_s}")
-      @uri = uri
-    end
-    attr_reader :uri
+  def OpenURI.redirectable?(uri1, uri2) # :nodoc:
+    # This test is intended to forbid a redirection from http://... to
+    # file:///etc/passwd.
+    # However this is ad hoc.  It should be extensible/configurable.
+    uri1.scheme.downcase == uri2.scheme.downcase ||
+    (/\A(?:http|ftp)\z/i =~ uri1.scheme && /\A(?:http|ftp)\z/i =~ uri2.scheme)
   end
 
   class HTTPError < StandardError
@@ -502,7 +510,7 @@ module URI
            Net::HTTPFound, # 302
            Net::HTTPSeeOther, # 303
            Net::HTTPTemporaryRedirect # 307
-        raise OpenURI::Redirect.new(URI.parse(resp['location']))
+        throw :open_uri_redirect, URI.parse(resp['location'])
       else
         raise OpenURI::HTTPError.new(io.status.join(' '), io)
       end

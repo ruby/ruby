@@ -1,3 +1,9 @@
+Mon Nov 24 23:32:06 2003  Tanaka Akira  <akr@m17n.org>
+
+	* lib/open-uri.rb (OpenURI.open_loop, URI::HTTP#proxy_open): use
+	  catch/throw for redirection instead of exception.
+	  (OpenURI.open_loop, OpenURI.redirectable?): restrict redirection.
+
 Mon Nov 24 19:59:48 2003  Tanaka Akira  <akr@m17n.org>
 
 	* lib/open-uri.rb (URI::Generic#find_proxy): use CGI_HTTP_PROXY
