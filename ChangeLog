@@ -1,3 +1,7 @@
+Tue Oct 30 18:21:51 2001  Usaku Nakamura <usa@ruby-lang.org>
+
+	* win32/mkexports.rb: follow the change of rb_io_puts().
+
 Tue Oct 30 14:04:04 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_chomp_bang): do smart chomp if $/ == '\n'.

@@ -24,7 +24,7 @@ exports << "Description " + $description.dump if $description
 exports << "EXPORTS" << SYM.keys.sort
 
 if $output
-  open($output, 'w') {|f| f.puts exports}
+  open($output, 'w') {|f| f.puts exports.join("\n")}
 else
-  puts exports
+  puts exports.join("\n")
 end
