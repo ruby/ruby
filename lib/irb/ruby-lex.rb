@@ -368,8 +368,8 @@ class RubyLex
       if @lex_state != EXPR_END && @lex_state != EXPR_CLASS &&
 	  (@lex_state != EXPR_ARG || @space_seen)
 	c = peek(0)
-	if /\S/ =~ c && (/["'`]/ =~ c || /[\w_]/ =~ c)
-	  tk = identify_here_document;
+	if /\S/ =~ c && (/["'`]/ =~ c || /[\w_]/ =~ c || c == "-")
+	  tk = identify_here_document
 	end
       else
 	tk = 	Token(op)
@@ -752,7 +752,12 @@ class RubyLex
 
   def identify_here_document
     ch = getc
-    if lt = PERCENT_LTYPE[ch]
+    if ch == "-"
+      ch = getc
+      indent = true
+    end
+    if /['"`]/ =~ ch
+      lt = ch
       quoted = ""
       while (c = getc) && c != lt
 	quoted.concat c
@@ -778,7 +783,7 @@ class RubyLex
     end
 
     @here_header = false
-    while (l = gets.chomp) && l != quoted
+    while (l = gets.chomp) && (indent ? l.strip : l) != quoted
     end
 
     @here_header = true

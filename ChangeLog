@@ -4,6 +4,11 @@ Mon Jul 24 18:52:55 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* ruby.c (rubylib_mangle): support "/hoge;/foo"
 
+Mon Jul 24 10:28:55 2000  GOTO Kentaro  <gotoken@math.sci.hokudai.ac.jp>
+
+	* string.c (rb_str_count): raise exception if no argument is
+	  given.
+
 Sun Jul 23 12:55:04 2000  Dave Thomas  <Dave@Thomases.com>
 
 	* string.c (rb_str_rindex): Support negative end position.
