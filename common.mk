@@ -7,8 +7,8 @@ RBCONFIG      = ./.rbconfig.time
 DMYEXT	      = dmyext.$(OBJEXT)
 MAINOBJ	      = main.$(OBJEXT)
 
-OBJS	      = ascii.$(OBJEXT) \
-		array.$(OBJEXT) \
+OBJS	      = array.$(OBJEXT) \
+		ascii.$(OBJEXT) \
 		bignum.$(OBJEXT) \
 		class.$(OBJEXT) \
 		compar.$(OBJEXT) \
@@ -173,11 +173,11 @@ win32.$(OBJEXT): {$(VPATH)}win32.c
 
 ###
 
-ascii.$(OBJEXT): {$(VPATH)}ascii.c {$(VPATH)}regenc.h \
-  {$(VPATH)}oniguruma.h config.h
 array.$(OBJEXT): {$(VPATH)}array.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
   {$(VPATH)}util.h {$(VPATH)}st.h
+ascii.$(OBJEXT): {$(VPATH)}ascii.c {$(VPATH)}regenc.h \
+  {$(VPATH)}oniguruma.h config.h
 bignum.$(OBJEXT): {$(VPATH)}bignum.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
 class.$(OBJEXT): {$(VPATH)}class.c {$(VPATH)}ruby.h config.h \

@@ -1,3 +1,7 @@
+Tue Apr 13 02:56:29 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
+
+	* common.mk: changed the order of ascii.c alphabetically.
+
 Mon Apr 12 19:11:21 2004  Eric Hodel  <drbrain@segment7.net>
 
 	* gc.c (rb_gc_copy_finalizer): typo.  [ruby-core:02774]
