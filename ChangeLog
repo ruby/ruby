@@ -2,6 +2,9 @@ Tue Jan  8 15:54:02 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* eval.c (rb_add_method): clear replaced method from the cache.
 
+	* eval.c (rb_stack_check): should avoid stack length check during
+	  raising SystemStackError exception.
+
 Mon Jan  7 14:38:51 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c (convert_type): backport from 1.7 to avoid NameError
