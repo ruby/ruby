@@ -1,3 +1,7 @@
+Thu Dec 11 20:07:01 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* lib/ftools.rb (makedirs): sync with fileutils.
+
 Thu Dec 11 19:53:03 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (mkdir_p): catch all SystemCallErrors.

@@ -136,7 +136,11 @@ class << File
       makedirs parent unless FileTest.directory? parent
       $deferr.print "mkdir ", dir, "\n" if verbose
       if basename(dir) != ""
-	Dir.mkdir dir, mode
+        begin
+          Dir.mkdir dir, mode
+        rescue SystemCallError
+          raise unless File.directory? dir
+        end
       end
     end
   end
