@@ -1,3 +1,8 @@
+Thu May 17 07:11:35 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/sha1/extconf.rb, ext/sha1/sha1.c: use WORDS_BIGENDIAN to
+	detect the platform's endian.
+
 Thu May 17 06:31:30 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/md5/md5.txt: make wording fixes, and mention the newly added

@@ -12,7 +12,6 @@ A million repetitions of "a"
   34AA973C D4C4DAA4 F61EEB2B DBAD2731 6534016F
 */
 
-/* #define LITTLE_ENDIAN * This should be #define'd if true. */
 /* #define SHA1HANDSOFF * Copies data before messing with it. */
 
 #include "sha1.h"
@@ -21,11 +20,11 @@ A million repetitions of "a"
 
 /* blk0() and blk() perform the initial expand. */
 /* I got the idea of expanding during the round function from SSLeay */
-#ifdef LITTLE_ENDIAN
+#ifdef WORDS_BIGENDIAN
+#define blk0(i) block->l[i]
+#else /* LITTLE ENDIAN */
 #define blk0(i) (block->l[i] = (rol(block->l[i],24)&0xFF00FF00) \
     |(rol(block->l[i],8)&0x00FF00FF))
-#else
-#define blk0(i) block->l[i]
 #endif
 #define blk(i) (block->l[i&15] = rol(block->l[(i+13)&15]^block->l[(i+8)&15] \
     ^block->l[(i+2)&15]^block->l[i&15],1))
