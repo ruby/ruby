@@ -55,7 +55,8 @@ module Test
                 sub_suite = recursive_collect(e_name, already_gathered)
                 sub_suites << sub_suite unless(sub_suite.empty?)
               else
-                next unless %r(/test_.*\.rb\Z) =~ e_name
+                next if %r(/CVS|~\Z|#\.) =~ e_name
+                next unless /test_/ =~ e_name
                 (next unless(@pattern =~ e_name)) if(@pattern)
                 (next if(@exclude =~ e_name)) if(@exclude)
                 collect_file(e_name, sub_suites, already_gathered)
