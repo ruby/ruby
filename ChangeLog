@@ -1,3 +1,7 @@
+Sun Nov 24 20:36:53 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* dln.c: move the MAXPATHLEN definition in front.
+
 Fri Nov 22 22:55:01 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* sprintf.c (rb_f_sprintf): preceding ".." for negative
