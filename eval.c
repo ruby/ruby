@@ -5613,6 +5613,7 @@ rb_f_require(obj, fname)
 
     SafeStringValue(fname);
     ext = strrchr(RSTRING(fname)->ptr, '.');
+    if (ext && strchr(ext, '/')) ext = 0;
     if (ext) {
 	if (strcmp(".rb", ext) == 0) {
 	    feature = rb_str_dup(fname);

@@ -12,6 +12,12 @@ Tue Jan 14 21:47:56 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	  the suffix specifiched.  [ruby-dev:18702]
 	  http://moonrock.jp/~don/d/200211.html#d08_t1
 
+Tue Jan 14 18:36:41 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (enum_all): now works without block.
+
+	* enum.c (enum_any): ditto.
+
 Tue Jan 14 01:21:32 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* io.c (next_argv): not always set binmode.

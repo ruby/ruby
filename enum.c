@@ -287,11 +287,23 @@ enum_sort_by(obj)
 }
 
 static VALUE
-all_i(i, memo)
+all_iter_i(i, memo)
     VALUE i;
     NODE *memo;
 {
     if (!RTEST(rb_yield(i))) {
+	memo->u1.value = Qfalse;
+	rb_iter_break();
+    }
+    return Qnil;
+}
+
+static VALUE
+all_i(i, memo)
+    VALUE i;
+    NODE *memo;
+{
+    if (!RTEST(i)) {
 	memo->u1.value = Qfalse;
 	rb_iter_break();
     }
@@ -306,10 +318,22 @@ enum_all(obj)
     NODE *memo = rb_node_newnode(NODE_MEMO, Qnil, 0, 0);
 
     memo->u1.value = Qtrue;
-    rb_iterate(rb_each, obj, all_i, (VALUE)memo);
+    rb_iterate(rb_each, obj, rb_block_given_p() ? all_iter_i : all_i, (VALUE)memo);
     result = memo->u1.value;
     rb_gc_force_recycle((VALUE)memo);
     return result;
+}
+
+static VALUE
+any_iter_i(i, memo)
+    VALUE i;
+    NODE *memo;
+{
+    if (RTEST(rb_yield(i))) {
+	memo->u1.value = Qtrue;
+	rb_iter_break();
+    }
+    return Qnil;
 }
 
 static VALUE
@@ -317,7 +341,7 @@ any_i(i, memo)
     VALUE i;
     NODE *memo;
 {
-    if (RTEST(rb_yield(i))) {
+    if (RTEST(i)) {
 	memo->u1.value = Qtrue;
 	rb_iter_break();
     }
@@ -332,7 +356,7 @@ enum_any(obj)
     NODE *memo = rb_node_newnode(NODE_MEMO, Qnil, 0, 0);
 
     memo->u1.value = Qfalse;
-    rb_iterate(rb_each, obj, any_i, (VALUE)memo);
+    rb_iterate(rb_each, obj, rb_block_given_p() ? any_iter_i : any_i, (VALUE)memo);
     result = memo->u1.value;
     rb_gc_force_recycle((VALUE)memo);
     return result;
