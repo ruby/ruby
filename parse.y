@@ -1824,12 +1824,13 @@ read_escape()
 }
 
 static int
-parse_regx(term)
+parse_regx(term, paren)
     int term;
 {
     register int c;
     char kcode = 0;
     int once = 0;
+    int nest = 0;
     int casefold = 0;
     int in_brack = 0;
     int re_start = sourceline;
@@ -1837,7 +1838,7 @@ parse_regx(term)
 
     newtok();
     while ((c = nextc()) != -1) {
-	if (!in_brack && c == term) {
+	if ((!in_brack && c == term) || nest > 0) {
 	    goto regx_end;
 	}
 
@@ -1888,6 +1889,8 @@ parse_regx(term)
 		}
 		/* fall through */
 	      default:
+		if (c == paren) nest++;
+		if (c == term) nest--;
 		if (c == '\n') {
 		    sourceline++;
 		}
@@ -1961,23 +1964,24 @@ parse_regx(term)
     return 0;
 }
 
-static int parse_qstring();
+static int parse_qstring _((int,int));
 
 static int
-parse_string(func,term)
-    int func, term;
+parse_string(func, term, paren)
+    int func, term, paren;
 {
     int c;
     NODE *list = 0;
     int strstart;
+    int nest = 0;
 
     if (func == '\'') {
-	return parse_qstring(term);
+	return parse_qstring(term, paren);
     }
     strstart = sourceline;
     newtok();
 
-    while ((c = nextc()) != term) {
+    while ((c = nextc()) != term || nest > 0) {
 	if (c  == -1) {
 	  unterm_str:
 	    sourceline = strstart;
@@ -2011,6 +2015,8 @@ parse_string(func,term)
   	    }
 	    continue;
 	}
+	if (c == paren) nest++;
+	if (c == term) nest--;
 	tokadd(c);
     }
 
@@ -2037,15 +2043,16 @@ parse_string(func,term)
 }
 
 static int
-parse_qstring(term)
+parse_qstring(term, paren)
     int term;
 {
     int strstart;
     int c;
+    int nest = 0;
 
     strstart = sourceline;
     newtok();
-    while ((c = nextc()) != term) {
+    while ((c = nextc()) != term || nest > 0) {
 	if (c  == -1)  {
 	    sourceline = strstart;
 	    Error("unterminated string meets end of file");
@@ -2079,6 +2086,8 @@ parse_qstring(term)
 		tokadd('\\');
 	    }
 	}
+	if (c == paren) nest++;
+	if (c == term) nest--;
 	tokadd(c);
     }
 
@@ -2089,10 +2098,10 @@ parse_qstring(term)
 }
 
 static int
-parse_quotedword(term)
-    int term;
+parse_quotedword(term, paren)
+    int term, paren;
 {
-    if (parse_qstring(term) == 0) return 0;
+    if (parse_qstring(term, paren) == 0) return 0;
     yylval.node = NEW_CALL(NEW_STR(yylval.val), rb_intern("split"), 0);
     return tDSTRING;
 }
@@ -2406,13 +2415,13 @@ retry:
 	return '>';
 
       case '"':
-	return parse_string(c,c);
+	return parse_string(c,c,c);
       case '`':
 	if (lex_state == EXPR_FNAME) return c;
-	return parse_string(c,c);
+	return parse_string(c,c,c);
 
       case '\'':
-	return parse_qstring(c);
+	return parse_qstring(c,c);
 
       case '?':
 	if (lex_state == EXPR_END) {
@@ -2700,7 +2709,7 @@ retry:
 
       case '/':
 	if (lex_state == EXPR_BEG || lex_state == EXPR_MID) {
-	    return parse_regx('/');
+	    return parse_regx('/', '/');
 	}
 	if ((c = nextc()) == '=') {
 	    lex_state = EXPR_BEG;
@@ -2711,7 +2720,7 @@ retry:
 	    if (space_seen && !isspace(c)) {
 		pushback(c);
 		arg_ambiguous();
-		return parse_regx('/');
+		return parse_regx('/', '/');
 	    }
 	}
 	lex_state = EXPR_BEG;
@@ -2792,6 +2801,7 @@ retry:
       case '%':
 	if (lex_state == EXPR_BEG || lex_state == EXPR_MID) {
 	    int term;
+	    int paren;
 
 	    c = nextc();
 	  quotation:
@@ -2815,6 +2825,7 @@ retry:
 		Error("unterminated quoted string meets end of file");
 		return 0;
 	    }
+	    paren = term;
 	    if (term == '(') term = ')';
 	    else if (term == '[') term = ']';
 	    else if (term == '{') term = '}';
@@ -2822,19 +2833,19 @@ retry:
 
 	    switch (c) {
 	      case 'Q':
-		return parse_string('"', term);
+		return parse_string('"', term, paren);
 
 	      case 'q':
-		return parse_qstring(term);
+		return parse_qstring(term, paren);
 
 	      case 'w':
-		return parse_quotedword(term);
+		return parse_quotedword(term, paren);
 
 	      case 'x':
-		return parse_string('`', term);
+		return parse_string('`', term, paren);
 
 	      case 'r':
-		return parse_regx(term);
+		return parse_regx(term, paren);
 
 	      default:
 		yyerror("unknown type of %string");

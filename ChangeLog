@@ -1,3 +1,33 @@
+Thu Apr 16 01:38:02 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* array.c (ary_flatten): new method.
+
+	* eval.c (rb_longjmp): prints exception information with `-d'.
+
+	* object.c (any_to_s): remove class name restriction.
+
+	* file.c (thread_flock): do not block other threads.
+
+	* eval.c (thread_trap_eval): signals are now delivered to the
+ 	  current thread again.  In case that the current thread is dead,
+ 	  signals are forwarded to the main thread.
+
+	* string.c (str_new4): need not to duplicate frozen strings.
+
+Wed Apr 15 01:22:56 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (str_dup_frozen): do not duplicate frozen strings.
+
+	* parse.y (yylex): allow nested parenthesises.
+
+	* io.c (obj_displayln): prints newline after `display'ing the
+	  receiver.
+
+	* io.c (io_puts): avoid generating "\n" each time.  use RS_default
+ 	  instead.
+
+	* io.c (f_p): ditto.
+
 Tue Apr 14 11:34:50 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* experimental release 1.1b9_10.

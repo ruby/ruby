@@ -727,17 +727,8 @@ error_print()
     if (NIL_P(errinfo)) return;
 
     if (!NIL_P(errat)) {
-	VALUE mesg = Qnil;
+	VALUE mesg = RARRAY(errat)->ptr[0];
 
-	switch (TYPE(errat)) {
-	  case T_STRING:
-	    mesg = errat;
-	    errat = Qnil;
-	    break;
-	  case T_ARRAY:
-	    mesg = RARRAY(errat)->ptr[0];
-	    break;
-	}
 	if (NIL_P(mesg)) error_pos();
 	else {
 	    fwrite(RSTRING(mesg)->ptr, 1, RSTRING(mesg)->len, stderr);
@@ -2681,7 +2672,13 @@ rb_longjmp(tag, mesg, at)
     if (NIL_P(errinfo) && NIL_P(mesg)) {
 	errinfo = exc_new(eRuntimeError, 0, 0);
     }
-
+#if 1
+    if (debug) {
+	fprintf(stderr, "Exception `%s' occurred at %s:%d\n",
+		rb_class2name(CLASS_OF(errinfo)),
+		sourcefile, sourceline);
+    }
+#endif
     if (!NIL_P(at)) {
 	errat = check_errat(at);
     }
@@ -2698,6 +2695,11 @@ rb_longjmp(tag, mesg, at)
 	}
 	str_freeze(errinfo);
     }
+#if 0
+    if (debug) {
+	error_print();
+    }
+#endif
 
     trap_restore_mask();
     JUMP_TAG(tag);
@@ -5540,17 +5542,17 @@ thread_schedule()
 	curr = curr->prev;
     }
 
-    FOREACH_THREAD_FROM(curr,th) {
+    FOREACH_THREAD_FROM(curr, th) {
        if (th->status != THREAD_STOPPED && th->status != THREAD_KILLED) {
            next = th;
            break;
        }
     }
-    END_FOREACH_FROM(curr,th); 
+    END_FOREACH_FROM(curr, th); 
 
     if (num_waiting_on_join) {
-	FOREACH_THREAD_FROM(curr,th) {
-	    if ((th->wait_for & WAIT_JOIN) && thread_dead(th->join)) {
+	FOREACH_THREAD_FROM(curr, th) {
+	    if ((th->wait_for&WAIT_JOIN) && thread_dead(th->join)) {
 		th->join = 0;
 		th->wait_for &= ~WAIT_JOIN;
 		th->status = THREAD_RUNNABLE;
@@ -5558,7 +5560,7 @@ thread_schedule()
 		if (!next) next = th;
 	    }
 	}
-	END_FOREACH_FROM(curr,th);
+	END_FOREACH_FROM(curr, th);
     }
 
     if (num_waiting_on_fd > 0 || num_waiting_on_timer > 0) {
@@ -5572,19 +5574,19 @@ thread_schedule()
 	    max = 0;
 	    FD_ZERO(&readfds);
 	    if (num_waiting_on_fd > 0) {
-		FOREACH_THREAD_FROM(curr,th) {
+		FOREACH_THREAD_FROM(curr, th) {
 		    if (th->wait_for & WAIT_FD) {
 			FD_SET(th->fd, &readfds);
 			if (th->fd > max) max = th->fd;
 		    }
 		}
-		END_FOREACH_FROM(curr,th);
+		END_FOREACH_FROM(curr, th);
 	    }
 
 	    delay = DELAY_INFTY;
 	    if (num_waiting_on_timer > 0) {
 		now = timeofday();
-		FOREACH_THREAD_FROM(curr,th) {
+		FOREACH_THREAD_FROM(curr, th) {
 		    if (th->wait_for & WAIT_TIME) {
 			if (th->delay <= now) {
 			    th->delay = 0.0;
@@ -5597,7 +5599,7 @@ thread_schedule()
 			}
 		    }
 		}
-		END_FOREACH_FROM(curr,th);
+		END_FOREACH_FROM(curr, th);
 	    }
 	    /* Do the select if needed */
 	    if (num_waiting_on_fd > 0 || !next) {
@@ -5626,7 +5628,7 @@ thread_schedule()
 		if (n > 0) {
 		    /* Some descriptors are ready. 
 		       Make the corresponding threads runnable. */
-		    FOREACH_THREAD_FROM(curr,th) {
+		    FOREACH_THREAD_FROM(curr, th) {
 			if ((th->wait_for&WAIT_FD)
 			    && FD_ISSET(th->fd, &readfds)) {
 			    /* Wake up only one thread per fd. */
@@ -5638,7 +5640,7 @@ thread_schedule()
 			    if (!next) next = th; /* Found one. */
 			}
 		    }
-		    END_FOREACH_FROM(curr,th);
+		    END_FOREACH_FROM(curr, th);
 		}
 	    }
 	    /* The delays for some of the threads should have expired.
@@ -5649,12 +5651,12 @@ thread_schedule()
     if (!next) {
 	curr_thread->file = sourcefile;
 	curr_thread->line = sourceline;
-	FOREACH_THREAD_FROM(curr,th) {
+	FOREACH_THREAD_FROM(curr, th) {
 	    fprintf(stderr, "%s:%d:deadlock 0x%x: %d:%d %s\n", 
 		    th->file, th->line, th->thread, th->status,
 		    th->wait_for, th==main_thread?"(main)":"");
 	}
-	END_FOREACH_FROM(curr,th);
+	END_FOREACH_FROM(curr, th);
 	/* raise fatal error to main thread */
 	thread_deadlock();
     }
@@ -6272,11 +6274,12 @@ thread_trap_eval(cmd, sig)
     int sig;
 {
     thread_critical = 0;
-    thread_ready(main_thread);
-    if (curr_thread == main_thread) {
+    if (!thread_dead(curr_thread)) {
+	thread_ready(curr_thread);
 	rb_trap_eval(cmd, sig);
 	return;
     }
+    thread_ready(main_thread);
     thread_save_context(curr_thread);
     if (setjmp(curr_thread->context)) {
 	return;

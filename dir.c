@@ -413,7 +413,7 @@ dir_foreach(io, dirname)
 {
     VALUE dir;
 
-    dir = dir_s_open(cDir, dirname);
+    dir = rb_funcall(cDir, rb_intern("open"), 1, dirname);
     return rb_ensure(dir_each, dir, dir_close, dir);
 }
 

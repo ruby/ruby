@@ -477,9 +477,7 @@ load_file(fname, script)
 	    line = io_gets(f);
 	    line_start++;
 
-	    if (RSTRING(line)->len > 2
-		&& RSTRING(line)->ptr[0] == '!') {
-
+	    if (RSTRING(line)->len > 2 && RSTRING(line)->ptr[0] == '!') {
 		if ((p = strstr(RSTRING(line)->ptr, "ruby")) == 0) {
 		    /* not ruby script, kick the program */
 		    char **argv;

@@ -646,7 +646,7 @@ An end of a defun is found by moving forward from the beginning of one."
 	    "\\)[ \n\t()]")
 	   2)
      ;; variables
-     '("\\(^\\|[^_]\\)\\b\\(nil\\|self\\|true\\|false\\)\\b[^_]"
+     '("\\(^\\|[^_]\\)\\b\\(nil\\|self\\|true\\|false\\)\\b\\([^_]\\|$\\)"
        2 font-lock-variable-name-face)
      ;; variables
      '("\\[$@].\\([a-zA-Z0-9_]\\)"

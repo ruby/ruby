@@ -118,10 +118,12 @@ VALUE
 any_to_s(obj)
     VALUE obj;
 {
-    char buf[256];
+    char *s;
+    char *cname = rb_class2name(CLASS_OF(obj));
 
-    sprintf(buf, "#<%s:0x%x>", rb_class2name(CLASS_OF(obj)), obj);
-    return str_new2(buf);
+    s = ALLOCA_N(char, strlen(cname)+6+16+1); /* 6:tags 16:addr 1:eos */
+    sprintf(s, "#<%s:0x%x>", cname, obj);
+    return str_new2(s);
 }
 
 VALUE

@@ -450,7 +450,7 @@ hash_aset(hash, key, val)
 	return Qnil;
     }
     if (TYPE(key) == T_STRING) {
-	key = str_dup_freezed(key);
+	key = str_dup_frozen(key);
     }
     st_insert(RHASH(hash)->tbl, key, val);
     return val;

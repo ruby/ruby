@@ -189,7 +189,7 @@ file_tell(obj)
 
     GetOpenFile(obj, fptr);
     pos = ftell(fptr->f);
-    if (ferror(fptr->f) != 0) rb_sys_fail(0);
+    if (ferror(fptr->f) != 0) rb_sys_fail(fptr->path);
 
     return int2inum(pos);
 }
@@ -203,10 +203,10 @@ file_seek(obj, offset, ptrname)
 
     GetOpenFile(obj, fptr);
     pos = fseek(fptr->f, NUM2INT(offset), NUM2INT(ptrname));
-    if (pos != 0) rb_sys_fail(0);
+    if (pos != 0) rb_sys_fail(fptr->path);
     clearerr(fptr->f);
 
-    return obj;
+    return INT2FIX(0);
 }
 
 static VALUE
@@ -218,10 +218,10 @@ file_set_pos(obj, offset)
 
     GetOpenFile(obj, fptr);
     pos = fseek(fptr->f, NUM2INT(offset), 0);
-    if (pos != 0) rb_sys_fail(0);
+    if (pos != 0) rb_sys_fail(fptr->path);
     clearerr(fptr->f);
 
-    return obj;
+    return INT2NUM(pos);
 }
 
 static VALUE
@@ -231,10 +231,10 @@ file_rewind(obj)
     OpenFile *fptr;
 
     GetOpenFile(obj, fptr);
-    if (fseek(fptr->f, 0L, 0) != 0) rb_sys_fail(0);
+    if (fseek(fptr->f, 0L, 0) != 0) rb_sys_fail(fptr->path);
     clearerr(fptr->f);
 
-    return obj;
+    return INT2FIX(0);
 }
 
 static VALUE
@@ -1100,7 +1100,7 @@ file_s_symlink(obj, from, to)
 
     if (symlink(RSTRING(from)->ptr, RSTRING(to)->ptr) < 0)
 	rb_sys_fail(RSTRING(from)->ptr);
-    return TRUE;
+    return INT2FIX(0);
 #else
     rb_notimplement();
 #endif
@@ -1384,7 +1384,7 @@ file_s_truncate(obj, path, len)
     rb_notimplement();
 # endif
 #endif
-    return TRUE;
+    return INT2FIX(0);
 }
 
 static VALUE
@@ -1409,8 +1409,32 @@ file_truncate(obj, len)
     rb_notimplement();
 # endif
 #endif
-    return TRUE;
+    return INT2FIX(0);
 }
+
+#if defined(THREAD) && defined(EWOULDBLOCK)
+static int
+thread_flock(fd, op)
+    int fd, op;
+{
+    if (thread_alone() || (op & LOCK_NB)) {
+	return flock(fd, op);
+    }
+    op |= LOCK_NB;
+    while (flock(fd, op) < 0) {
+	switch (errno) {
+	  case EINTR:		/* can be happen? */
+	  case EWOULDBLOCK:
+	    thread_schedule();	/* busy wait */
+	    break;
+	  default:
+	    return -1;
+	}
+    }
+    return 0;
+}
+#define flock thread_flock
+#endif
 
 static VALUE
 file_flock(obj, operation)
@@ -1430,8 +1454,9 @@ file_flock(obj, operation)
 #endif
 	rb_sys_fail(fptr->path);
     }
-    return obj;
+    return INT2FIX(0);
 }
+#undef flock
 
 static void
 test_check(n, argc, argv)

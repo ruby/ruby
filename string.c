@@ -84,23 +84,25 @@ VALUE
 str_new4(orig)
     VALUE orig;
 {
-    NEWOBJ(str, struct RString);
-    OBJSETUP(str, cString, T_STRING);
-
-    str->len = RSTRING(orig)->len;
-    str->ptr = RSTRING(orig)->ptr;
     if (RSTRING(orig)->orig) {
-	str->orig = RSTRING(orig)->orig;
+	return str_freeze(RSTRING(orig)->orig);
+    }
+    else if (FL_TEST(orig, STR_FREEZE)) {
+	return orig;
     }
     else {
+	NEWOBJ(str, struct RString);
+	OBJSETUP(str, cString, T_STRING);
+
+	str->len = RSTRING(orig)->len;
+	str->ptr = RSTRING(orig)->ptr;
 	RSTRING(orig)->orig = (VALUE)str;
 	str->orig = 0;
+	if (rb_safe_level() >= 3) {
+	    FL_SET(str, STR_TAINT);
+	}
+	return (VALUE)str;
     }
-    if (rb_safe_level() >= 3) {
-	FL_SET(str, STR_TAINT);
-    }
-
-    return (VALUE)str;
 }
 
 static void
@@ -362,12 +364,15 @@ str_frozen_p(str)
 }
 
 VALUE
-str_dup_freezed(str)
+str_dup_frozen(str)
     VALUE str;
 {
-    str = str_dup(str);
-    str_freeze(str);
-    return str;
+    if (RSTRING(str)->orig) {
+	return str_freeze(RSTRING(str)->orig);
+    }
+    if (FL_TEST(str, STR_FREEZE))
+	return str;
+    return str_freeze(str_dup(str));
 }
 
 VALUE

@@ -455,7 +455,7 @@ io_gets_method(argc, argv, io)
 	if (c != EOF &&
 	    (!rslen ||
 	     RSTRING(str)->len < rslen ||
-	     memcmp(RSTRING(str)->ptr+RSTRING(str)->len-rslen, rsptr, rslen))) {
+	     memcmp(RSTRING(str)->ptr+RSTRING(str)->len-rslen,rsptr,rslen))) {
 	    append = 1;
 	    goto again;
 	}
@@ -820,7 +820,7 @@ io_binmode(io)
 
     fptr->mode |= FMODE_BINMODE;
 #endif
-    return io;
+    return INT2FIX(0);
 }
 
 int
@@ -1419,7 +1419,7 @@ io_puts(argc, argv, out)
 
     /* if no argument given, print newline. */
     if (argc == 0) {
-	io_write(out, str_new2("\n"));
+	io_write(out, RS_default);
 	return Qnil;
     }
     for (i=0; i<argc; i++) {
@@ -1439,7 +1439,7 @@ io_puts(argc, argv, out)
 	line = obj_as_string(line);
 	io_write(out, line);
 	if (RSTRING(line)->ptr[RSTRING(line)->len-1] != '\n') {
-	    io_write(out, str_new2("\n"));
+	    io_write(out, RS_default);
 	}
     }
 
@@ -1456,20 +1456,11 @@ f_puts(argc, argv)
 }
 
 static VALUE
-f_p(argc, argv, self)
-    int argc;
-    VALUE *argv;
-    VALUE self;
+f_p(self, obj)
+    VALUE self, obj;
 {
-    VALUE str;
-
-    if (argc > 0) {
-	rb_scan_args(argc, argv, "1", &self);
-    }
-    str = rb_inspect(self);
-    Check_Type(str, T_STRING);
-    io_write(rb_defout, str);
-    io_write(rb_defout, str_new2("\n"));
+    io_write(rb_defout, rb_inspect(obj));
+    io_write(rb_defout, RS_default);
 
     return Qnil;
 }
@@ -1478,7 +1469,7 @@ void
 rb_p(obj)			/* for debug print within C code */
     VALUE obj;
 {
-    f_p(0, 0, obj);
+    f_p(0, obj);
 }
 
 static VALUE
@@ -1496,6 +1487,26 @@ obj_display(argc, argv, self)
     }
 
     io_write(out, self);
+
+    return Qnil;
+}
+
+static VALUE
+obj_displayln(argc, argv, self)
+    int argc;
+    VALUE *argv;
+    VALUE self;
+{
+    VALUE out;
+    VALUE str;
+
+    rb_scan_args(argc, argv, "01", &out);
+    if (NIL_P(out)) {
+	out = rb_defout;
+    }
+
+    io_write(out, self);
+    io_write(rb_defout, RS_default);
 
     return Qnil;
 }
@@ -1546,15 +1557,15 @@ prep_stdio(f, mode, klass)
     VALUE klass;
 {
     OpenFile *fp;
-    NEWOBJ(obj, struct RFile);
-    OBJSETUP(obj, klass, T_FILE);
+    NEWOBJ(io, struct RFile);
+    OBJSETUP(io, klass, T_FILE);
 
-    MakeOpenFile(obj, fp);
+    MakeOpenFile(io, fp);
     fp->f = f;
     fp->mode = mode;
-    obj_call_init((VALUE)obj);
+    obj_call_init((VALUE)io);
 
-    return (VALUE)obj;
+    return (VALUE)io;
 }
 
 static VALUE
@@ -1735,8 +1746,8 @@ f_getc()
 }
 
 static VALUE
-f_ungetc(obj, c)
-    VALUE obj, c;
+f_ungetc(self, c)
+    VALUE self, c;
 {
     if (!next_argv()) {
 	ArgError("no stream to ungetc");
@@ -2423,8 +2434,9 @@ Init_IO()
     rb_define_global_function("`", f_backquote, 1);
     rb_define_global_function("pipe", io_s_pipe, 0);
 
-    rb_define_method(mKernel, "p", f_p, -1);
+    rb_define_global_function("p", f_p, 1);
     rb_define_method(mKernel, "display", obj_display, -1);
+    rb_define_method(mKernel, "displayln", obj_displayln, -1);
 
     cIO = rb_define_class("IO", cObject);
     rb_include_module(cIO, mEnumerable);
@@ -2442,6 +2454,7 @@ Init_IO()
 
     RS = RS_default = str_new2("\n"); ORS = Qnil;
     rb_global_variable(&RS_default);
+    str_freeze(RS_default);	/* avoid modifying RS_default */
     rb_define_hooked_variable("$/", &RS, 0, rb_str_setter);
     rb_define_hooked_variable("$-0", &RS, 0, rb_str_setter);
     rb_define_hooked_variable("$\\", &ORS, 0, rb_str_setter);

@@ -251,7 +251,7 @@ VALUE str_times _((VALUE, VALUE));
 VALUE str_substr _((VALUE, int, int));
 void str_modify _((VALUE));
 VALUE str_freeze _((VALUE));
-VALUE str_dup_freezed _((VALUE));
+VALUE str_dup_frozen _((VALUE));
 VALUE str_taint _((VALUE));
 VALUE str_tainted _((VALUE));
 VALUE str_resize _((VALUE, int));

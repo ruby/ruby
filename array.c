@@ -1234,6 +1234,44 @@ ary_nitems(ary)
     return INT2FIX(n);
 }
 
+static VALUE
+ary_flatten_bang(ary)
+    VALUE ary;
+{
+    int i;
+    int mod = 0;
+
+    ary_modify(ary);
+    for (;;) {
+	int lmod = 0;
+
+	for (i=0; i<RARRAY(ary)->len; i++) {
+	    if (TYPE(RARRAY(ary)->ptr[i]) == T_ARRAY) {
+		VALUE ary2 = RARRAY(ary)->ptr[i];
+
+		ary_replace(ary, i, RARRAY(ary2)->len, ary2);
+		i += RARRAY(ary2)->len - 1;
+		lmod++;
+	    }
+	}
+	if (lmod == 0) break;
+	mod = lmod;
+    }
+
+    if (mod == 0) return Qnil;
+    return ary;
+}
+
+static VALUE
+ary_flatten(ary)
+    VALUE ary;
+{
+    VALUE v = ary_flatten_bang(ary_clone(ary));
+
+    if (NIL_P(v)) return ary;
+    return v;
+}
+
 extern VALUE mEnumerable;
 
 void
@@ -1304,6 +1342,8 @@ Init_Array()
     rb_define_method(cArray, "uniq!", ary_uniq_bang, 0);
     rb_define_method(cArray, "compact", ary_compact, 0);
     rb_define_method(cArray, "compact!", ary_compact_bang, 0);
+    rb_define_method(cArray, "flatten", ary_flatten, 0);
+    rb_define_method(cArray, "flatten!", ary_flatten_bang, 0);
     rb_define_method(cArray, "nitems", ary_nitems, 0);
 
     cmp = rb_intern("<=>");

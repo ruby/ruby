@@ -271,6 +271,11 @@ posix_signal(signum, handler)
 }
 #endif
 
+#ifdef THREAD
+# define rb_interrupt thread_interrupt
+# define rb_trap_eval thread_trap_eval
+#endif
+
 static RETSIGTYPE
 sighandle(sig)
     int sig;
@@ -285,11 +290,7 @@ sighandle(sig)
     if (trap_immediate) {
 	trap_immediate = 0;
 	if (sig == SIGINT && !trap_list[SIGINT]) {
-#ifdef THREAD
-	    thread_interrupt();
-#else
 	    rb_interrupt();
-#endif
 	}
 	rb_trap_eval(trap_list[sig], sig);
 	trap_immediate = 1;
@@ -334,18 +335,10 @@ rb_trap_exec()
 	if (trap_pending_list[i]) {
 	    trap_pending_list[i] = 0;
 	    if (i == SIGINT && trap_list[SIGINT] == 0) {
-#ifdef THREAD
-		thread_interrupt();
-#else
 		rb_interrupt();
-#endif
 		return;
 	    }
-#ifdef THREAD
-	    thread_trap_eval(trap_list[i], i);
-#else
 	    rb_trap_eval(trap_list[i], i);
-#endif
 	}
     }
     trap_pending = 0;
