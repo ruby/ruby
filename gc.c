@@ -342,6 +342,7 @@ rb_data_object_alloc(klass, datap, dmark, dfree)
     RUBY_DATA_FUNC dfree;
 {
     NEWOBJ(data, struct RData);
+    Check_Type(klass, T_CLASS);
     OBJSETUP(data, klass, T_DATA);
     data->data = datap;
     data->dfree = dfree;

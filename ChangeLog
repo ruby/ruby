@@ -1,3 +1,8 @@
+Thu Aug 14 11:27:37 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* gc.c (rb_data_object_alloc): check type of 1st argument.
+	  [ruby-dev:21192]
+
 Wed Aug 13 23:31:00 2003  Shigeo Kobayashi  <shigek@ruby-lang.org>
 
 	* ext/bigdecimal.c .h .html: Ambiguity of BigDecimal::limit removed.
