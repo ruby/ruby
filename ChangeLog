@@ -1,3 +1,9 @@
+Thu Feb 21 02:49:12 2002  Koji Arai  <jca02266@nifty.ne.jp>
+
+	* pack.c (pack_pack): wrong # comment treatment.
+
+	* pack.c (pack_unpack): ditto.
+
 Wed Feb 20 15:15:03 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* intern.h: prototypes; rb_io_addstr(), rb_io_printf(),

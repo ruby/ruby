@@ -367,7 +367,7 @@ pack_pack(ary, fmt)
 	    while ((p < pend) && (*p != '\n')) {
 		p++;
 	    }
-	    break;
+	    continue;
 	}
         if (*p == '_' || *p == '!') {
 	    char *natstr = "sSiIlL";
@@ -1086,7 +1086,7 @@ pack_unpack(str, fmt)
 	    while ((p < pend) && (*p != '\n')) {
 		p++;
 	    }
-	    break;
+	    continue;
 	}
 	star = 0;
 	if (*p == '_' || *p == '!') {
