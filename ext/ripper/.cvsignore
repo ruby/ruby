@@ -2,3 +2,5 @@ Makefile
 eventids1.c
 ripper.c
 ripper.y
+ids1
+ids2
