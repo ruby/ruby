@@ -1,3 +1,21 @@
+Tue May 19 16:36:26 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* experimental release 1.1b9_22.
+
+Tue May 19 16:31:57 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (assignable): specification changed for in-block
+ 	  variable definition.
+
+	* eval.c (dyna_var_asgn): error in in-block variables' compile
+ 	  time definition.
+
+	* parse.y (str_extend): wrong nesting detection.
+
+Tue May 19 09:47:55 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* numeric.c (num2int): re-defined (extensions may use this).
+
 Mon May 18 16:40:50 1998  MAEDA shugo  <shugo@aianet.ne.jp>
 
 	* error.c (get_syserr): BeOS support.

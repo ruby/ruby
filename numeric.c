@@ -667,7 +667,7 @@ int
 num2int(val)
     VALUE val;
 {
-    long num = num2int(val);
+    long num = num2long(val);
 
     if (num < INT_MIN || INT_MAX < num) {
 	ArgError("integer %d too big to convert to `int'.", num);
@@ -685,6 +685,20 @@ fix2int(val)
 	ArgError("integer %d too big to convert to `int'.", num);
     }
     return (int)num;
+}
+#else
+int
+num2int(val)
+    VALUE val;
+{
+    return num2long(val);
+}
+
+int
+fix2int(val)
+    VALUE val;
+{
+    return FIX2INT(val);
 }
 #endif
 

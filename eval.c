@@ -460,14 +460,14 @@ new_dvar(id, value)
     vars->id = id;
     vars->val = value;
     vars->next = the_dyna_vars;
-    if (id == 0) {
-	vars->id = (ID)value;
-	vars->val = 0;
-	the_dyna_vars = vars;
-    }
-    else if (the_dyna_vars) {
+    if (the_dyna_vars) {
 	vars->next = the_dyna_vars->next;
 	the_dyna_vars->next = vars;
+    }
+    else {
+	vars->id = id;
+	vars->val = 0;
+	the_dyna_vars = vars;
     }
 
     return vars;
@@ -2252,7 +2252,7 @@ rb_eval(self, node)
 			list->nd_head = compile(list->nd_head->nd_lit,0);
 			rb_in_eval--;
 			if (nerrs > 0) {
-			    compile_error("string expand");
+			    compile_error("string expansion");
 			}
 		    }
 		    str2 = rb_eval(self, list->nd_head);
@@ -3818,6 +3818,8 @@ eval(self, src, scope, file, line)
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
 	eval_tree = 0;
+	sourcefile = file;
+	sourceline = line;
 	compile(src, file);
 	if (nerrs > 0) {
 	    compile_error(0);
@@ -3927,17 +3929,21 @@ static VALUE
 eval_under_i(args)
     VALUE *args;
 {
-    return eval(args[0], args[1], Qnil, 0, 0);
+    return eval(args[0], args[1], Qnil, (char*)args[2], (int)args[3]);
 }
 
 static VALUE
-eval_under(under, self, src)
+eval_under(under, self, src, file, line)
     VALUE under, self, src;
+    char *file;
+    int line;
 {
-    VALUE args[2];
+    VALUE args[4];
 
     args[0] = self;
     args[1] = src;
+    args[2] = (VALUE)file;
+    args[3] = (VALUE)line;
     return exec_under(eval_under_i, under, args);
 }
 
@@ -3961,13 +3967,18 @@ obj_instance_eval(argc, argv, self)
     VALUE *argv;
     VALUE self;
 {
+    char *file = 0;
+    int   line = 0;
+
     if (argc == 0) {
 	if (!iterator_p()) {
 	    ArgError("block not supplied");
 	}
     }
-    else if (argc == 1) {
+    else if (argc < 4) {
 	Check_SafeStr(argv[0]);
+	if (argc > 1) file = STR2CSTR(argv[1]);
+	if (argc > 2) line = NUM2INT(argv[2]);
     }
     else {
 	ArgError("Wrong # of arguments: %s(src) or %s{..}",
@@ -3979,7 +3990,7 @@ obj_instance_eval(argc, argv, self)
 	return yield_under(rb_singleton_class(self), self);
     }
     else {
-	return eval_under(rb_singleton_class(self), self, argv[0]);
+	return eval_under(rb_singleton_class(self), self, argv[0], file, line);
     }
 }
 
@@ -3989,13 +4000,18 @@ mod_module_eval(argc, argv, mod)
     VALUE *argv;
     VALUE mod;
 {
+    char *file = 0;
+    int   line = 0;
+
     if (argc == 0) {
 	if (!iterator_p()) {
 	    ArgError("block not supplied");
 	}
     }
-    else if (argc == 1) {
+    else if (argc < 4) {
 	Check_SafeStr(argv[0]);
+	if (argc > 1) file = STR2CSTR(argv[1]);
+	if (argc > 2) line = NUM2INT(argv[2]);
     }
     else {
 	ArgError("Wrong # of arguments: %s(src) or %s{..}",
@@ -4007,7 +4023,7 @@ mod_module_eval(argc, argv, mod)
 	return yield_under(mod, mod);
     }
     else {
-	return eval_under(mod, mod, argv[0]);
+	return eval_under(mod, mod, argv[0], file, line);
     }
 }
 

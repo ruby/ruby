@@ -1,8 +1,8 @@
 #
 #   e2mmap.rb - for ruby 1.1
 #   	$Release Version: 1.1$
-#   	$Revision: 1.4 $
-#   	$Date: 1997/08/18 07:12:12 $
+#   	$Revision: 1.7 $
+#   	$Date: 1998/05/19 04:38:33 $
 #   	by Keiju ISHITSUKA
 #
 # --
@@ -13,10 +13,10 @@ if VERSION < "1.1"
 else  
   
   module Exception2MessageMapper
-    RCS_ID='-$Header: /home/keiju/var/src/var.lib/ruby/RCS/e2mmap.rb,v 1.4 1997/08/18 07:12:12 keiju Exp keiju $-'
+    RCS_ID='-$Header: /home/keiju/var/src/var.lib/ruby/RCS/e2mmap.rb,v 1.7 1998/05/19 04:38:33 keiju Exp keiju $-'
     
     E2MM = Exception2MessageMapper
-    
+
     def E2MM.extend_object(cl)
       super
       cl.bind(self)
@@ -37,16 +37,16 @@ else
     
     def bind(cl)
       self.module_eval %q^
-	E2MM_ErrorMSG = {}
+	E2MM_ErrorMSG = {} unless self.const_defined?(:E2MM_ErrorMSG)
 	# fail(err, *rest)
 	#	err:	例外
 	#	rest:	メッセージに渡すパラメータ
 	#
 	def self.fail(err = nil, *rest)
-	  $@ = caller(0) if $@.nil?
-	  $@.shift
 	  if form = E2MM_ErrorMSG[err]
 	    $! = err.new(sprintf(form, *rest))
+	    $@ = caller(0) if $@.nil?
+	    $@.shift
 	    # e2mm_fail()
 	    raise()
 #	  elsif self == Exception2MessageMapper
@@ -72,13 +72,21 @@ else
 	# def_exception(c, m)
 	#	    n:  exception_name
 	#	    m:  message_form
-	#	    s:	例外スーパークラス(デフォルト: StandardError)
+	#	    s:	例外スーパークラス(デフォルト: Exception)
 	#	例外名``c''をもつ例外を定義し, そのメッセージをmとする.
 	#
 	#def def_exception(n, m)
-	def self.def_exception(n, m, s = StandardError)
+	def self.def_exception(n, m, s = nil)
 	  n = n.id2name if n.kind_of?(Fixnum)
+	  unless s
+	    if defined?(StandardError)
+	      s = StandardError
+	    else
+	      s = Exception
+	    end
+	  end
 	  e = Class.new(s)
+
 	  const_set(n, e)
 	  E2MM_ErrorMSG[e] = m
 	  #	const_get(:E2MM_ErrorMSG)[e] = m

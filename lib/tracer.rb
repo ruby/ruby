@@ -1,8 +1,9 @@
+#!/usr/local/bin/ruby
 #
 #   tracer.rb - 
 #   	$Release Version: 0.2$
-#   	$Revision: 1.1.1.1.4.1 $
-#   	$Date: 1998/02/03 10:02:57 $
+#   	$Revision: 1.8 $
+#   	$Date: 1998/05/19 03:42:49 $
 #   	by Keiju ISHITSUKA(Nippon Rational Inc.)
 #
 # --
@@ -14,9 +15,15 @@
 # tracer main class
 #
 class Tracer
-  RCS_ID='-$Id: tracer.rb,v 1.1.1.1.4.1 1998/02/03 10:02:57 matz Exp $-'
+  @RCS_ID='-$Id: tracer.rb,v 1.8 1998/05/19 03:42:49 keiju Exp keiju $-'
+
+  class << self
+    attr :verbose, TRUE
+    alias verbose? verbose
+  end
+  verbose = TRUE
   
-  MY_FILE_NAME = caller(0)[0].scan(/^(.*):[0-9]+$/)[0]
+  MY_FILE_NAME = caller(0)[0].scan(/^(.*):[0-9]+$/)[0][0]
   
   EVENT_SYMBOL = {
     "line" => "-",
@@ -33,7 +40,10 @@ class Tracer
       @threads[Thread.current.id] = 0
     end
 
-    @sources = Hash.new
+    @get_line_procs = {}
+    @sources = {}
+
+    @filters = []
   end
   
   def on
@@ -48,16 +58,28 @@ class Tracer
       set_trace_func proc{|event, file, line, id, binding|
 	trace_func event, file, line, id, binding
       }
-      print "Trace on\n"
+      print "Trace on\n" if Tracer.verbose?
     end
   end
   
   def off
     set_trace_func nil
-    print "Trace off\n"
+    print "Trace off\n" if Tracer.verbose?
+  end
+
+  def add_filter(p = proc)
+    @filters.push p
+  end
+
+  def set_get_line_procs(file, p = proc)
+    @get_line_procs[file] = p
   end
   
   def get_line(file, line)
+    if p = @get_line_procs[file]
+      return p.call line
+    end
+
     unless list = @sources[file]
 #      print file if $DEBUG
       begin
@@ -90,6 +112,10 @@ class Tracer
     return if file == MY_FILE_NAME
     #printf "Th: %s\n", Thread.current.inspect
     
+    for p in @filters
+      return unless p.call event, file, line, id, binding
+    end
+    
     Thread.critical = TRUE
     printf("#%d:%s:%d:%s: %s",
 	   get_thread_no,
@@ -102,11 +128,23 @@ class Tracer
 
   Single = new
   def Tracer.on
-    Single.on
+    if iterator?
+      Single.on{yield}
+    else
+      Single.on
+    end
   end
   
   def Tracer.off
     Single.off
+  end
+  
+  def Tracer.set_get_line_procs(file_name, p = proc)
+    Single.set_get_line_procs(file_name, p)
+  end
+
+  def Tracer.add_filter(p = proc)
+    Single.add_filter(p)
   end
   
 end

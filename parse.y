@@ -3031,7 +3031,8 @@ str_extend(list, term)
     NODE *list;
     char term;
 {
-    int c, brace;
+    int c;
+    int brace = -1;
     VALUE ss;
     NODE *node;
     int nest;
@@ -3134,7 +3135,6 @@ str_extend(list, term)
 		}
 		return (NODE*)-1;
 	      case '}':
-	      case ')':
 		if (c == brace) {
 		    if (nest == 0) break;
 		    nest--;
@@ -3146,7 +3146,7 @@ str_extend(list, term)
 		tokadd(c);
 		goto loop_again;
 	      case '{':
-		if (brace == c) nest++;
+		if (brace != -1) nest++;
 	      case '\"':
 	      case '/':
 	      case '`':
@@ -3434,7 +3434,7 @@ assignable(id, val)
 	}
 	else{
 	    if (!dyna_var_defined(id)) {
-		dyna_var_asgn(0, id);
+		dyna_var_asgn(id, 0);
 	    }
 	    lhs = NEW_DASGN(id, val);
 	}
