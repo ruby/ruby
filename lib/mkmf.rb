@@ -591,7 +591,7 @@ EOMF
   install_files(mfile, $INSTALLFILES, SITEINSTALL_DIRS, srcprefix)
 
   unless /mswin32/ =~ RUBY_PLATFORM
-    if /bccwin32/ =~ RUBY_PLAT_FORM
+    if /bccwin32/ =~ RUBY_PLATFORM
       src = '$(<:\\=/)'
     else
       src = '$<'
