@@ -1,7 +1,7 @@
 Fri Sep 11 22:06:14 2003   David Black <dblack@superlink.net>
 
-   * lib/scanf.rb: Took out useless @matched_item variable; some small
-     refactoring.
+	* lib/scanf.rb: Took out useless @matched_item variable; some small
+	  refactoring.
 
 Wed Sep 10 22:47:30 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
