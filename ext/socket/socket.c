@@ -295,6 +295,7 @@ bsock_setsockopt(sock, lev, optname, val)
 	break;
     }
 
+    GetOpenFile(sock, fptr);
     if (setsockopt(fileno(fptr->f), level, option, v, vlen) < 0)
 	rb_sys_fail(fptr->path);
 
