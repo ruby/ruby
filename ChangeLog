@@ -18,7 +18,7 @@ Wed Jul 28 01:04:44 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (rb_gc_mark_frame): need not to mark frame's argv
 
-	* gc.c (run_final): wrong order of data. [ruby-dev:23948]
+	* gc.c (run_final): wrong order of data. [ruby-dev:23984]
 
 Tue Jul 27 07:05:04 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
