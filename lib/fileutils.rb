@@ -633,15 +633,17 @@ module FileUtils
   #   FileUtils.install 'lib.rb', '/usr/local/lib/ruby/site_ruby', :verbose => true
   # 
   def install( src, dest, options = {} )
-    fu_check_options options, :mode, :noop, :verbose
-    fu_output_message "install -c#{options[:mode] ? (' -m 0%o' % options[:mode]) : ''} #{[src,dest].flatten.join ' '}" if options[:verbose]
+    fu_check_options options, :mode, :preserve, :noop, :verbose
+    fu_output_message "install -c#{options[:preserve] && ' -p'}#{options[:mode] ? (' -m 0%o' % options[:mode]) : ''} #{[src,dest].flatten.join ' '}" if options[:verbose]
     return if options[:noop]
 
     fu_each_src_dest(src, dest) do |s,d|
       unless FileTest.exist?(d) and compare_file(s,d)
-        remove_file d, true
-        copy_file s, d
-        File.chmod options[:mode], d if options[:mode]
+        fu_preserve_attr(options[:preserve], s, d) {
+	  remove_file d, true
+	  copy_file s, d
+	}
+	File.chmod options[:mode], d if options[:mode]
       end
     end
   end

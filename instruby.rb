@@ -55,12 +55,8 @@ include FileUtils::NoWrite if $dryrun
 @fileutils_label = ''
 
 def install(src, dest, options = {})
+  options[:preserve] = true
   super
-  return if options[:noop]
-  fu_each_src_dest(src, dest) do |s, d|
-    st = File.stat(s)
-    File.utime(st.atime, st.mtime, d)
-  end
 end
 
 $made_dirs = {}

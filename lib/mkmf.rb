@@ -662,10 +662,10 @@ arch = #{CONFIG['arch']}
 sitearch = #{CONFIG['sitearch']}
 ruby_version = #{Config::CONFIG['ruby_version']}
 RUBY = #{$ruby}
-RM = $(RUBY) -rftools -e "File::rm_f(*ARGV.map do|x|Dir[x]end.flatten.uniq)"
-MAKEDIRS = $(RUBY) -r ftools -e 'File::makedirs(*ARGV)'
-INSTALL_PROG = $(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0755, true)'
-INSTALL_DATA = $(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0644, true)'
+RM = $(RUBY) -run -e rm -- -f
+MAKEDIRS = $(RUBY) -run -e mkdir -- -p
+INSTALL_PROG = $(RUBY) -run -e install -- -vpm 0755
+INSTALL_DATA = $(RUBY) -run -e install -- -vpm 0644
 
 #### End of system configuration section. ####
 
