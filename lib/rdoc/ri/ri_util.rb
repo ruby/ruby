@@ -64,4 +64,11 @@ class NameDescriptor
       end
     end
   end
+
+  # Return the full class name (with '::' between the components)
+  # or "" if there's no class name
+
+  def full_class_name
+    @class_names.join("::")
+  end
 end

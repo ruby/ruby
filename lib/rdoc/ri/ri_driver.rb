@@ -52,18 +52,18 @@ class  RiDriver
   
   ######################################################################
   
-  def report_class_stuff(requested_class_name, namespaces)
+  def report_class_stuff(namespaces)
     if namespaces.size == 1
       klass = @ri_reader.get_class(namespaces[0])
       @display.display_class_info(klass, @ri_reader)
     else 
-      entries = namespaces.find_all {|m| m.full_name == requested_class_name}
-      if entries.size == 1
-        klass = @ri_reader.get_class(entries[0])
-        @display.display_class_info(klass, @ri_reader)
-      else
+#      entries = namespaces.find_all {|m| m.full_name == requested_class_name}
+#      if entries.size == 1
+#        klass = @ri_reader.get_class(entries[0])
+#        @display.display_class_info(klass, @ri_reader)
+#      else
         @display.display_class_list(namespaces)
-      end
+#      end
     end
   end
   
@@ -81,9 +81,16 @@ class  RiDriver
         raise RiError.new("Nothing known about #{arg}")
       end
     end
-    
+
+    # at this point, if we have multiple possible namespaces, but one
+    # is an exact match for our requested class, prune down to just it
+
+    full_class_name = desc.full_class_name
+    entries = namespaces.find_all {|m| m.full_name == full_class_name}
+    namespaces = entries if entries.size == 1
+
     if desc.method_name.nil?
-      report_class_stuff(desc.class_names.join('::'), namespaces)
+      report_class_stuff(namespaces)
     else
       methods = @ri_reader.find_methods(desc.method_name, 
                                         desc.is_class_method,
