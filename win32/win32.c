@@ -961,7 +961,7 @@ NtCmdGlob (NtCmdLineElement *patt)
     for (p = buf; *p; p = CharNext(p))
 	if (*p == '\\')
 	    *p = '/';
-    rb_glob(buf, insert, (VALUE)&listinfo);
+    rb_iglob(buf, insert, (VALUE)&listinfo);
     if (buf != buffer)
 	free(buf);
 

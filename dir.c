@@ -558,8 +558,9 @@ extract_elem(path)
 #endif
 
 void
-rb_glob(path, func, arg)
+rb_glob_helper(path, flag, func, arg)
     char *path;
+    int flag;
     void (*func)();
     VALUE arg;
 {
@@ -597,7 +598,7 @@ rb_glob(path, func, arg)
 		recursive = 1;
 		buf = ALLOC_N(char, strlen(base)+strlen(m)+3);
 		sprintf(buf, "%s%s%s", base, (*base)?"":".", m);
-		rb_glob(buf, func, arg);
+		rb_glob_helper(buf, flag, func, arg);
 		free(buf);
 	    }
 	    dirp = opendir(dir);
@@ -613,11 +614,11 @@ rb_glob(path, func, arg)
 			continue;
 		    buf = ALLOC_N(char, strlen(base)+NAMLEN(dp)+strlen(m)+6);
 		    sprintf(buf, "%s%s%s/**%s", base, (BASE)?"/":"", dp->d_name, m);
-		    rb_glob(buf, func, arg);
+		    rb_glob_helper(buf, flag, func, arg);
 		    free(buf);
 		    continue;
 		}
-		if (fnmatch(magic, dp->d_name, FNM_PERIOD|FNM_PATHNAME) == 0) {
+		if (fnmatch(magic, dp->d_name, flag) == 0) {
 		    buf = ALLOC_N(char, strlen(base)+NAMLEN(dp)+2);
 		    sprintf(buf, "%s%s%s", base, (BASE)?"/":"", dp->d_name);
 		    if (!m) {
@@ -642,7 +643,7 @@ rb_glob(path, func, arg)
 		    char *t = ALLOC_N(char, len+mlen+1);
 
 		    sprintf(t, "%s%s", link->path, m);
-		    rb_glob(t, func, arg);
+		    rb_glob_helper(t, flag, func, arg);
 		    free(t);
 		}
 		tmp = link;
@@ -653,6 +654,24 @@ rb_glob(path, func, arg)
 	}
 	p = m;
     }
+}
+
+void
+rb_glob(path, func, arg)
+    char *path;
+    void (*func)();
+    VALUE arg;
+{
+    rb_glob_helper(path, FNM_PERIOD|FNM_PATHNAME, func, arg);
+}
+
+void
+rb_iglob(path, func, arg)
+    char *path;
+    void (*func)();
+    VALUE arg;
+{
+    rb_glob_helper(path, FNM_PERIOD|FNM_PATHNAME|FNM_NOCASE, func, arg);
 }
 
 static void

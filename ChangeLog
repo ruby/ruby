@@ -1,3 +1,7 @@
+Mon Nov 20 10:20:21 2000  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* dir.c, win32/win32.c, ruby.h: add rb_iglob().
+
 Sat Nov 18 14:07:20 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/http.rb: Socket#readline() reads until "\n", not "\r\n"
