@@ -102,7 +102,7 @@ class Shell
       end
     end
 
-    # schedule a command
+    # jobのスケジュールの追加
     def add_schedule(command)
       @jobs_sync.synchronize(:EX) do
 	ProcessController.activate(self)
@@ -114,7 +114,7 @@ class Shell
       end
     end
 
-    # start a job
+    # job を開始する
     def start_job(command = nil)
       @jobs_sync.synchronize(:EX) do
 	if command
@@ -127,7 +127,7 @@ class Shell
 	@active_jobs.push command
 	command.start
 
-	# start all jobs that input from the job
+	# そのjobをinputとするjobも開始する
 	for job in @waiting_jobs
 	  start_job(job) if job.input == command
 	end
@@ -146,7 +146,7 @@ class Shell
       end
     end
 
-    # terminate a job
+    # jobの終了
     def terminate_job(command)
       @jobs_sync.synchronize(:EX) do
 	@active_jobs.delete command
@@ -157,7 +157,7 @@ class Shell
       end
     end
 
-    # kill a job
+    # jobの強制終了
     def kill_job(sig, command)
       @jobs_sync.synchronize(:SH) do
 	if @waiting_jobs.delete command
@@ -177,7 +177,7 @@ class Shell
       end
     end
 
-    # wait for all jobs to terminate
+    # すべてのjobの実行終了待ち
     def wait_all_jobs_execution
       @job_monitor.synchronize do
 	begin
@@ -190,7 +190,7 @@ class Shell
       end
     end
 
-    # simple fork
+    # 簡単なfork
     def sfork(command, &block)
       pipe_me_in, pipe_peer_out = IO.pipe
       pipe_peer_in, pipe_me_out = IO.pipe
@@ -237,7 +237,7 @@ class Shell
 	  command.notify "warn: job(%id) was done already waitipd."
 	  _pid = true
 	ensure
-	  # when the process ends, wait until the command termintes
+	  # プロセス終了時にコマンド実行が終わるまで待たせるため.
 	  if _pid
 	  else
 	    command.notify("notice: Process finishing...",

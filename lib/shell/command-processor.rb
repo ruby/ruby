@@ -65,14 +65,14 @@ class Shell
     # CommandProcessor#expand_path(path)
     #	  path:	  String
     #	  return: String
-    #	returns the absolute path for <path>
+    #	pwdからみた絶対パスを返す
     #
     def expand_path(path)
       @shell.expand_path(path)
     end
 
     #
-    # File related commands
+    # File関連コマンド
     # Shell#foreach
     # Shell#open
     # Shell#unlink
@@ -87,7 +87,7 @@ class Shell
     #	Same as:
     #	  File#foreach (when path is file)
     #	  Dir#foreach (when path is directory)
-    #	path is relative to pwd
+    #	pathはpwdからの相対パスになる
     #
     def foreach(path = nil, *rs)
       path = "." unless path
@@ -108,7 +108,7 @@ class Shell
     #	Same as:
     #	  File#open (when path is file)
     #	  Dir#open  (when path is directory)
-    #	mode has an effect only when path is a file
+    #	modeはpathがファイルの時だけ有効
     #
     def open(path, mode)
       path = expand_path(path)
@@ -181,7 +181,7 @@ class Shell
     alias [] test
 
     #
-    # Dir related methods
+    # Dir関連メソッド
     #
     # Shell#mkdir
     # Shell#rmdir
@@ -454,11 +454,18 @@ class Shell
     #
     # CommandProcessor.install_system_commands(pre)
     #	    pre: String - command name prefix
-    # defines every command which belongs in default_system_path via
-    # CommandProcessor.command().  It doesn't define already defined
-    # methods twice.  By default, "pre_" is prefixes to each method
-    # name.  Characters that may not be used in a method name are
-    # all converted to '_'.  Definition errors are just ignored.
+    #	define CommandProcessor.command() from all command of
+    #	default_system_path. If a method exists, and names of it and
+    #	the target command are the same, the method is not defined.  
+    #	Default action prefix "sys_" to the method name. The character
+    #	which is not forgiven as a method name (when the first char is
+    #	alphabet or char is alpha-numeric) converts into ``_''. A
+    #	definition error is ignored.
+    # (Meaning same in Japanese: default_system_path上にのるコマンドを定
+    # 	義する. すでに同名のメソッドが存在する時は, 定義を行なわない. デ
+    # 	フォルトでは, 全てのメソッドには接頭子"sys_"をつける. メソッド名
+    # 	として許されないキャラクタ(英数時以外とメソッド名の先頭が数値に
+    # 	なる場合)は, 強制的に``_''に変換する. 定義エラーは無視する.)
     #
     def self.install_system_commands(pre = "sys_")
       defined_meth = {}

@@ -1,304 +1,240 @@
- -- shell.rb
+shell.rbユーザガイド
 				$Release Version: 0.6.0 $
 			   	$Revision$
 			   	$Date$
 			   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
 
-=begin
+* What's shell.rb?
 
-= What's shell.rb?
+It realizes a wish to do execution of command and filtering like
+sh/csh. However, Control statement which include sh/csh just uses
+facility of ruby.
 
-It realizes a wish to do execution of commands with filters and pipes
-like sh/csh by using just native facilities of ruby.
+* Main classes
+** Shell
 
-= Main classes
+All shell objects have a each unique current directory. Any shell object
+execute a command on relative path from current directory.
 
-== Shell
++ Shell#cwd/dir/getwd/pwd current directory
++ Shell#system_path	  command path
++ Shell#umask		  umask
 
-Every shell object has its own current working directory, and executes
-each command as if it stands in the directory.
+** Filter
 
---- Shell#cwd
---- Shell#dir
---- Shell#getwd
---- Shell#pwd
+Any result of command exection is a Filter. Filter include Enumerable,
+therefore a Filter object can use all Enumerable facility.
 
-      Returns the current directory
+* Main methods
+** Command definition
 
---- Shell#system_path
+For executing a command on OS, you need to define it as a Shell
+method.  
 
-      Returns the command search path in an array
+notice) Also, there are a Shell#system alternatively to execute the
+command even if it is not defined.
 
---- Shell#umask
++ Shell.def_system_command(command, path = command)
+Register command as a Shell method 
 
-      Returns the umask
+++ Shell.def_system_command "ls"
+   define ls
+++ Shell.def_system_command "sys_sort", "sort"
+   define sys_sort as sort
 
-== Filter
++ Shell.install_system_commands(pre = "sys_")
 
-Any result of command exection is a Filter.  Filter include
-Enumerable, therefore a Filter object can use all Enumerable
-facilities.
+Define all command of default_system_path. Default action prefix
+"sys_" to the method name.
 
-= Main methods
+** 生成
 
-== Command definitions
++ Shell.new
+Shell creates a Shell object of which current directory is the process
+current directory.
 
-In order to execute a command on your OS, you need to define it as a
-Shell method.
++ Shell.cd(path)
+Shell creates a Shell object of which current directory is <path>.
 
-Alternatively, you can execute any command via Shell#system even if it
-is not defined.
+** Process management
 
---- Shell.def_system_command(command, path = command)
++ jobs
+The shell returns jobs list of scheduling.
 
-      Defines a command.  Registers <path> as a Shell method
-      <command>.
++ kill sig, job
+The shell kill <job>.
 
-      ex)
-      Shell.def_system_command "ls"
-        Defines ls.
+** Current directory operation
 
-      Shell.def_system_command "sys_sort", "sort"
-        Defines sys_sort as sort.
++ Shell#cd(path, &block)/chdir
+The current directory of the shell change to <path>. If it is called
+with an block, it changes current directory to the <path> while its
+block executes.
 
---- Shell.undef_system_command(command)
++ Shell#pushd(path = nil, &block)/pushdir
 
-      Undefines a commmand
+The shell push current directory to directory stack. it changes
+current directory to <path>. If the path is omitted, it exchange its
+current directory and the top of its directory stack. If it is called
+with an block, it do `pushd' the <path> while its block executes.
 
---- Shell.alias_command(ali, command, *opts) {...}
++ Shell#popd/popdir
+The shell pop a directory from directory stack, and its directory is
+changed to current directory.
 
-      Aliases a command.
+** ファイル/ディレクトリ操作
 
-      ex)
-        Shell.alias_command "lsC", "ls", "-CBF", "--show-control-chars"
-        Shell.alias_command("lsC", "ls"){|*opts| ["-CBF", "--show-control-chars", *opts]}
++ Shell#foreach(path = nil, &block)
+Same as:
+  File#foreach (when path is a file)
+  Dir#foreach (when path is a directory)
 
---- Shell.unalias_command(ali)
++ Shell#open(path, mode)
+Same as:
+ File#open(when path is a file)
+ Dir#open(when path is a directory)
 
-      Unaliases a command.
-
---- Shell.install_system_commands(pre = "sys_")
-
-      Defines all commands in the default_system_path as Shell method,
-      all with <pre> prefixed to their names.
-
-== Creation
-
---- Shell.new
-
-      Creates a Shell object which current directory is set to the
-      process current directory.
-
---- Shell.cd(path)
-
-      Creates a Shell object which current directory is set to
-      <path>.
-
-== Process management
-
---- Shell#jobs
-
-      Returns a list of scheduled jobs.
-
---- Shell#kill sig, job
-
-      Sends a signal <sig> to <job>.
-
-== Current directory operations
-
---- Shell#cd(path, &block)
---- Shell#chdir
-
-      Changes the current directory to <path>.  If a block is given,
-      it restores the current directory when the block ends.
-
---- Shell#pushd(path = nil, &block)
---- Shell#pushdir
-
-      Pushes the current directory to the directory stack, changing
-      the current directory to <path>.  If <path> is omitted, it
-      exchanges its current directory and the top of its directory
-      stack.  If a block is given, it restores the current directory
-      when the block ends.
-
---- Shell#popd
---- Shell#popdir
-
-      Pops a directory from the directory stack, and sets the current
-      directory to it.
-
-== File and directory operations
-
---- Shell#foreach(path = nil, &block)
-
-      Same as:
-        File#foreach (when path is a file)
-        Dir#foreach (when path is a directory)
-
---- Shell#open(path, mode)
-
-      Same as:
-        File#open (when path is a file)
-        Dir#open (when path is a directory)
-
---- Shell#unlink(path)
-
-      Same as:
-        Dir#open (when path is a file)
-        Dir#unlink (when path is a directory)
-
---- Shell#test(command, file1, file2)
---- Shell#[command, file1, file2]
-
-      Same as test().
-      ex)
-          sh[?e, "foo"]
-          sh[:e, "foo"]
-          sh["e", "foo"]
-          sh[:exists?, "foo"]
-          sh["exists?", "foo"]
-
---- Shell#mkdir(*path)
-
-      Same as Dir.mkdir (with multiple directories allowed)
-
---- Shell#rmdir(*path)
-
-      Same as Dir.rmdir (with multiple directories allowed)
-
-== Command execution
-
---- System#system(command, *opts)
-
-      Executes <command> with <opts>.
-
-      ex)
-        print sh.system("ls", "-l")
-        sh.system("ls", "-l") | sh.head > STDOUT
-
---- System#rehash
-
-      Does rehash.
-
---- Shell#transact &block
-
-      Executes a block as self.
-      ex)
-        sh.transact{system("ls", "-l") | head > STDOUT}
-
---- Shell#out(dev = STDOUT, &block)
-
-      Does transact, with redirecting the result output to <dev>.
-
-== Internal commands
-
---- Shell#echo(*strings)
---- Shell#cat(*files)
---- Shell#glob(patten)
---- Shell#tee(file)
-
-      Return Filter objects, which are results of their execution.
-
---- Filter#each &block
-
-      Iterates a block for each line of it.
-
---- Filter#<(src)
-
-      Inputs from <src>, which is either a string of a file name or an
-      IO.
-
---- Filter#>(to)
-
-      Outputs to <to>, which is either a string of a file name or an
-      IO.
-
---- Filter#>>(to)
-
-      Appends the ouput to <to>, which is either a string of a file
-      name or an IO.
-
---- Filter#|(filter)
-
-      Processes a pipeline.
-
---- Filter#+(filter)
-
-      (filter1 + filter2) outputs filter1, and then outputs filter2.
-
---- Filter#to_a
---- Filter#to_s
-
-== Built-in commands
-
---- Shell#atime(file)
---- Shell#basename(file, *opt)
---- Shell#chmod(mode, *files)
---- Shell#chown(owner, group, *file)
---- Shell#ctime(file)
---- Shell#delete(*file)
---- Shell#dirname(file)
---- Shell#ftype(file)
---- Shell#join(*file)
---- Shell#link(file_from, file_to)
---- Shell#lstat(file)
---- Shell#mtime(file)
---- Shell#readlink(file)
---- Shell#rename(file_from, file_to)
---- Shell#split(file)
---- Shell#stat(file)
---- Shell#symlink(file_from, file_to)
---- Shell#truncate(file, length)
---- Shell#utime(atime, mtime, *file)
-
-      Equivalent to the class methods of File with the same names.
-
---- Shell#blockdev?(file)
---- Shell#chardev?(file)
---- Shell#directory?(file)
---- Shell#executable?(file)
---- Shell#executable_real?(file)
---- Shell#exist?(file)/Shell#exists?(file)
---- Shell#file?(file)
---- Shell#grpowned?(file)
---- Shell#owned?(file)
---- Shell#pipe?(file)
---- Shell#readable?(file)
---- Shell#readable_real?(file)
---- Shell#setgid?(file)
---- Shell#setuid?(file)
---- Shell#size(file)/Shell#size?(file)
---- Shell#socket?(file)
---- Shell#sticky?(file)
---- Shell#symlink?(file)
---- Shell#writable?(file)
---- Shell#writable_real?(file)
---- Shell#zero?(file)
-
-      Equivalent to the class methods of FileTest with the same names.
-
---- Shell#syscopy(filename_from, filename_to)
---- Shell#copy(filename_from, filename_to)
---- Shell#move(filename_from, filename_to)
---- Shell#compare(filename_from, filename_to)
---- Shell#safe_unlink(*filenames)
---- Shell#makedirs(*filenames)
---- Shell#install(filename_from, filename_to, mode)
-
-      Equivalent to the class methods of FileTools with the same
-      names.
-
-      And also, there are some aliases for convenience:
-
---- Shell#cmp	<- Shell#compare
---- Shell#mv	<- Shell#move
---- Shell#cp	<- Shell#copy
---- Shell#rm_f	<- Shell#safe_unlink
---- Shell#mkpath	<- Shell#makedirs
-
-= Samples
-
-== ex1
++ Shell#unlink(path)
+Same as:
+ Dir#open(when path is a file)
+ Dir#unlink(when path is a directory)
+
++ Shell#test(command, file1, file2)/Shell#[command, file1, file]
+Same as file testing function test().
+ex)
+    sh[?e, "foo"]
+    sh[:e, "foo"]
+    sh["e", "foo"]
+    sh[:exists?, "foo"]
+    sh["exists?", "foo"]
+
++ Shell#mkdir(*path)
+Same as Dir.mkdir(its parameters is one or more)
+
++ Shell#rmdir(*path)
+Same as Dir.rmdir(its parameters is one or more)
+
+** Command execution
++ System#system(command, *opts)
+The shell execure <command>.
+ex)
+  print sh.system("ls", "-l")
+  sh.system("ls", "-l") | sh.head > STDOUT
+
++ System#rehash
+The shell do rehash.
+
++ Shell#transact &block
+The shell execute block as self.
+ex)
+  sh.transact{system("ls", "-l") | head > STDOUT}
+
++ Shell#out(dev = STDOUT, &block)
+The shell do transact, and its result output to dev.
+
+** Internal Command
++ Shell#echo(*strings)
++ Shell#cat(*files)
++ Shell#glob(patten)
++ Shell#tee(file)
+
+When these are executed, they return a filter object, which is a
+result of their execution.
+
++ Filter#each &block
+The shell iterate with each line of it.
+
++ Filter#<(src)
+The shell inputs from src. If src is a string, it inputs from a file
+of which name is the string. If src is a IO, it inputs its IO.
+
++ Filter#>(to)
+The shell outputs to <to>. If <to> is a string, it outputs to a file
+of which name is the string. If <to>c is a IO, it outoputs to its IO.
+
++ Filter#>>(to)
+The shell appends to <to>. If <to> is a string, it is append to a file
+of which name is the string. If <to>c is a IO, it is append to its IO.
+
++ Filter#|(filter)
+pipe combination
+
++ Filter#+(filter)
+filter1 + filter2 output filter1, and next output filter2.
+
++ Filter#to_a
++ Filter#to_s
+
+** Built-in command
+
++ Shell#atime(file)
++ Shell#basename(file, *opt)
++ Shell#chmod(mode, *files)
++ Shell#chown(owner, group, *file)
++ Shell#ctime(file)
++ Shell#delete(*file)
++ Shell#dirname(file)
++ Shell#ftype(file)
++ Shell#join(*file)
++ Shell#link(file_from, file_to)
++ Shell#lstat(file)
++ Shell#mtime(file)
++ Shell#readlink(file)
++ Shell#rename(file_from, file_to)
++ Shell#split(file)
++ Shell#stat(file)
++ Shell#symlink(file_from, file_to)
++ Shell#truncate(file, length)
++ Shell#utime(atime, mtime, *file)
+
+These have a same function as a class method which is in File with same name.
+
++ Shell#blockdev?(file)
++ Shell#chardev?(file)
++ Shell#directory?(file)
++ Shell#executable?(file)
++ Shell#executable_real?(file)
++ Shell#exist?(file)/Shell#exists?(file)
++ Shell#file?(file)
++ Shell#grpowned?(file)
++ Shell#owned?(file)
++ Shell#pipe?(file)
++ Shell#readable?(file)
++ Shell#readable_real?(file)
++ Shell#setgid?(file)
++ Shell#setuid?(file)
++ Shell#size(file)/Shell#size?(file)
++ Shell#socket?(file)
++ Shell#sticky?(file)
++ Shell#symlink?(file)
++ Shell#writable?(file)
++ Shell#writable_real?(file)
++ Shell#zero?(file)
+
+These have a same function as a class method which is in FileTest with
+same name. 
+
++ Shell#syscopy(filename_from, filename_to)
++ Shell#copy(filename_from, filename_to)
++ Shell#move(filename_from, filename_to)
++ Shell#compare(filename_from, filename_to)
++ Shell#safe_unlink(*filenames)
++ Shell#makedirs(*filenames)
++ Shell#install(filename_from, filename_to, mode)
+
+These have a same function as a class method which is in FileTools
+with same name.
+
+And also, alias:
+
++ Shell#cmp	<- Shell#compare
++ Shell#mv	<- Shell#move
++ Shell#cp	<- Shell#copy
++ Shell#rm_f	<- Shell#safe_unlink
++ Shell#mkpath	<- Shell#makedirs
+
+* Samples
+** ex1
 
   sh = Shell.cd("/tmp")
   sh.mkdir "shell-test-1" unless sh.exists?("shell-test-1")
@@ -315,7 +251,7 @@ is not defined.
     end
   end
 
-== ex2
+** ex2
 
   sh = Shell.cd("/tmp")
   sh.transact do
@@ -334,15 +270,14 @@ is not defined.
     end
   end
 
-== ex3
+** ex3
 
   sh.cat("/etc/printcap") | sh.tee("tee1") > "tee2"
   (sh.cat < "/etc/printcap") | sh.tee("tee11") > "tee12"
   sh.cat("/etc/printcap") | sh.tee("tee1") >> "tee2"
   (sh.cat < "/etc/printcap") | sh.tee("tee11") >> "tee12"
 
-== ex4
+** ex5
 
   print sh.cat("/etc/passwd").head.collect{|l| l =~ /keiju/}
 
-=end
