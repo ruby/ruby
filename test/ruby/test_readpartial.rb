@@ -17,12 +17,11 @@ class TestReadPartial < Test::Unit::TestCase
     make_pipe {|r, w|
       yield r, w
     }
+    return unless defined?(Fcntl::F_SETFL)
+    return unless defined?(Fcntl::F_GETFL)
+    return unless defined?(Fcntl::O_NONBLOCK)
     make_pipe {|r, w|
-      begin
-        r.fcntl(Fcntl::F_SETFL, r.fcntl(Fcntl::F_GETFL) | Fcntl::O_NONBLOCK)
-      rescue NotImplementedError
-        break
-      end
+      r.fcntl(Fcntl::F_SETFL, r.fcntl(Fcntl::F_GETFL) | Fcntl::O_NONBLOCK)
       yield r, w
     }
   end
