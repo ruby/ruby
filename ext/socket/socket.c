@@ -20,6 +20,10 @@
 #include <unistd.h>
 #endif
 
+#ifdef HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#endif
+
 #ifndef NT
 #if defined(__BEOS__)
 # include <net/socket.h>
@@ -681,6 +685,17 @@ ruby_socket(domain, type, proto)
 	}
     }
     return fd;
+}
+
+static void
+thread_read_select(fd)
+    int fd;
+{
+    fd_set fds;
+
+    FD_ZERO(&fds);
+    FD_SET(fd, &fds);
+    rb_thread_select(fd+1, &fds, 0, 0, 0);
 }
 
 static void
@@ -1382,6 +1397,161 @@ unix_recvfrom(argc, argv, sock)
 }
 
 static VALUE
+unix_send_io(sock, val)
+    VALUE sock, val;
+{
+#if defined(HAVE_ST_MSG_CONTROL) || defined(HAVE_ST_MSG_ACCRIGHTS)
+    int fd;
+    OpenFile *fptr;
+    struct msghdr msg;
+    struct iovec vec[1];
+    char buf[1];
+
+#if defined(HAVE_ST_MSG_CONTROL)
+    struct {
+	struct cmsghdr hdr;
+	int fd;
+    } cmsg;
+#endif
+
+    if (rb_obj_is_kind_of(val, rb_cIO)) {
+        OpenFile *valfptr;
+	GetOpenFile(val, valfptr);
+	fd = fileno(valfptr->f);
+    }
+    else if (FIXNUM_P(val)) {
+        fd = FIX2INT(val);
+    }
+    else {
+	rb_raise(rb_eTypeError, "IO nor file descriptor");
+    }
+
+    GetOpenFile(sock, fptr);
+
+    msg.msg_name = NULL;
+    msg.msg_namelen = 0;
+
+    /* Linux and Solaris doesn't work if msg_iov is NULL. */
+    buf[0] = '\0';
+    vec[0].iov_base = buf;
+    vec[0].iov_len = 1;
+    msg.msg_iov = vec;
+    msg.msg_iovlen = 1;
+
+#if defined(HAVE_ST_MSG_CONTROL)
+    msg.msg_control = (caddr_t)&cmsg;
+    msg.msg_controllen = sizeof(struct cmsghdr) + sizeof(int);
+    msg.msg_flags = 0;
+    cmsg.hdr.cmsg_len = sizeof(struct cmsghdr) + sizeof(int);
+    cmsg.hdr.cmsg_level = SOL_SOCKET;
+    cmsg.hdr.cmsg_type = SCM_RIGHTS;
+    cmsg.fd = fd;
+#else
+    msg.msg_accrights = (caddr_t)&fd;
+    msg.msg_accrightslen = sizeof(fd);
+#endif
+
+    if (sendmsg(fileno(fptr->f), &msg, 0) == -1)
+	rb_sys_fail("sendmsg(2)");
+
+    return Qnil;
+#else
+    rb_notimplement();
+#endif
+}
+
+static VALUE
+unix_recv_io(argc, argv, sock)
+    int argc;
+    VALUE *argv;
+    VALUE sock;
+{
+#if defined(HAVE_ST_MSG_CONTROL) || defined(HAVE_ST_MSG_ACCRIGHTS)
+    VALUE klass, mode;
+    OpenFile *fptr;
+    struct msghdr msg;
+    struct iovec vec[2];
+    char buf[1];
+
+    int fd;
+#if defined(HAVE_ST_MSG_CONTROL)
+    struct {
+	struct cmsghdr hdr;
+	int fd;
+    } cmsg;
+#endif
+
+    rb_scan_args(argc, argv, "02", &klass, &mode);
+    if (argc == 0)
+	klass = rb_cIO;
+    if (argc <= 1)
+	mode = Qnil;
+
+    GetOpenFile(sock, fptr);
+
+    thread_read_select(fileno(fptr->f));
+
+    msg.msg_name = NULL;
+    msg.msg_namelen = 0;
+
+    vec[0].iov_base = buf;
+    vec[0].iov_len = sizeof(buf);
+    msg.msg_iov = vec;
+    msg.msg_iovlen = 1;
+
+#if defined(HAVE_ST_MSG_CONTROL)
+    msg.msg_control = (caddr_t)&cmsg;
+    msg.msg_controllen = sizeof(struct cmsghdr) + sizeof(int);
+    msg.msg_flags = 0;
+    cmsg.hdr.cmsg_len = sizeof(struct cmsghdr) + sizeof(int);
+    cmsg.hdr.cmsg_level = SOL_SOCKET;
+    cmsg.hdr.cmsg_type = SCM_RIGHTS;
+    cmsg.fd = -1;
+#else
+    msg.msg_accrights = (caddr_t)&fd;
+    msg.msg_accrightslen = sizeof(fd);
+    fd = -1;
+#endif
+
+    if (recvmsg(fileno(fptr->f), &msg, 0) == -1)
+	rb_sys_fail("recvmsg(2)");
+
+    if (
+#if defined(HAVE_ST_MSG_CONTROL)
+	msg.msg_controllen != sizeof(struct cmsghdr) + sizeof(int) ||
+        cmsg.hdr.cmsg_len != sizeof(struct cmsghdr) + sizeof(int) ||
+	cmsg.hdr.cmsg_level != SOL_SOCKET ||
+	cmsg.hdr.cmsg_type != SCM_RIGHTS
+#else
+        msg.msg_accrightslen != sizeof(fd)
+#endif
+	) {
+	rb_raise(rb_eSocket, "File descriptor was not passed");
+    }
+
+#if defined(HAVE_ST_MSG_CONTROL)
+    fd = cmsg.fd;
+#endif
+
+    if (klass == Qnil)
+	return INT2FIX(fd);
+    else {
+	static ID for_fd = 0;
+	int ff_argc;
+	VALUE ff_argv[2];
+	if (!for_fd)
+	    for_fd = rb_intern("for_fd");
+	ff_argc = mode == Qnil ? 1 : 2;
+	ff_argv[0] = INT2FIX(fd);
+	ff_argv[1] = mode;
+        return rb_funcall2(klass, for_fd, ff_argc, ff_argv);
+    }
+#else
+    rb_notimplement();
+#endif
+}
+
+static VALUE
 unix_accept(sock)
     VALUE sock;
 {
@@ -1563,6 +1733,26 @@ sock_s_socketpair(klass, domain, type, protocol)
     rb_notimplement();
 #endif
 }
+
+#ifdef HAVE_SYS_UN_H
+static VALUE
+unix_s_socketpair(argc, argv, klass)
+    int argc;
+    VALUE *argv;
+    VALUE klass;
+{
+    VALUE domain, type, protocol;
+    domain = INT2FIX(PF_UNIX);
+
+    rb_scan_args(argc, argv, "02", &type, &protocol);
+    if (argc == 0)
+	type = INT2FIX(SOCK_STREAM);
+    if (argc <= 1)
+	protocol = INT2FIX(0);
+
+    return sock_s_socketpair(klass, domain, type, protocol);
+}
+#endif
 
 static VALUE
 sock_connect(sock, addr)
@@ -2177,6 +2367,10 @@ Init_socket()
     rb_define_method(rb_cUNIXSocket, "addr", unix_addr, 0);
     rb_define_method(rb_cUNIXSocket, "peeraddr", unix_peeraddr, 0);
     rb_define_method(rb_cUNIXSocket, "recvfrom", unix_recvfrom, -1);
+    rb_define_method(rb_cUNIXSocket, "send_io", unix_send_io, 1);
+    rb_define_method(rb_cUNIXSocket, "recv_io", unix_recv_io, -1);
+    rb_define_singleton_method(rb_cUNIXSocket, "socketpair", unix_s_socketpair, -1);
+    rb_define_singleton_method(rb_cUNIXSocket, "pair", unix_s_socketpair, -1);
 
     rb_cUNIXServer = rb_define_class("UNIXServer", rb_cUNIXSocket);
     rb_define_global_const("UNIXserver", rb_cUNIXServer);

@@ -2,6 +2,42 @@ require 'mkmf'
 
 $CPPFLAGS += " -Dss_family=__ss_family -Dss_len=__ss_len"
 
+def have_struct_member(type, member, header=nil)
+  printf "checking for %s.%s... ", type, member
+  STDOUT.flush
+
+  libs = $libs
+  src = 
+    if /mswin32|mingw/ =~ RUBY_PLATFORM
+      r = <<"SRC"
+#include <windows.h>
+#include <winsock.h>
+SRC
+    else
+      ""
+    end
+  unless header.nil?
+    header = [header] unless header.kind_of? Array
+    header.each {|h|
+      src << <<"SRC"
+#include <#{h}>
+SRC
+    }
+  end
+  src << <<"SRC"
+int main() { return 0; }
+int s = (char *)&((#{type}*)0)->#{member} - (char *)0;
+SRC
+  r = try_link(src, libs) # xxx try_compile is not available.
+  unless r
+    print "no\n"
+    return false
+  end
+  $defs.push(format("-DHAVE_ST_%s", member.upcase))
+  print "yes\n"
+  return true
+end
+
 case RUBY_PLATFORM
 when /mswin32|mingw/
   test_func = "WSACleanup"
@@ -176,6 +212,9 @@ end
 have_header("netinet/tcp.h") if not /cygwin/ === RUBY_PLATFORM # for cygwin 1.1.5
 have_header("netinet/udp.h")
 
+have_struct_member('struct msghdr', 'msg_control', header=['sys/types.h', 'sys/socket.h'])
+have_struct_member('struct msghdr', 'msg_accrights', header=['sys/types.h', 'sys/socket.h'])
+
 $getaddr_info_ok = false
 if not enable_config("wide-getaddrinfo", false) and try_run(<<EOF)
 #include <sys/types.h>
@@ -329,6 +368,7 @@ EOF
 end
 
 have_header("sys/un.h")
+have_header("sys/uio.h")
 
 if have_func(test_func)
   have_func("hsterror")
