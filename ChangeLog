@@ -1,3 +1,12 @@
+Tue Jul  3 18:35:49 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval_string_wrap): should push frame (and adjust
+	  cbase) before wrapped eval.
+
+	* eval.c (rb_eval_cmd): ditto.
+
+	* eval.c (eval): should update ruby_class always after all.
+
 Tue Jul  3 14:56:27 2001  Shugo Maeda <shugo@ruby-lang.org>
 
 	* eval.c (block_pass): do not change wrapper information.
