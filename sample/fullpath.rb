@@ -15,7 +15,7 @@ end
 while line = gets()
   case line
   when /:$/
-    path = $_.chop.chop + "/"
+    path = line.chop.chop + "/"
   when /^total/, /^d/
   when /^(.*\d )(.+)$/
     print($1, path, $2, "\n")
