@@ -1,3 +1,17 @@
+Fri Jan 25 17:16:23 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* class.c (rb_include_module): detect cyclic module inclusion.
+
+Fri Jan 25 02:17:56 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_thread_schedule): should check time only if BOTH
+	  WAIT_SELECT and WAIT_TIME.
+
+Thu Jan 24 05:42:01 2002  Koji Arai  <jca02266@nifty.ne.jp>
+
+	* string.c (rb_str_split_m): no need to consider KANJI
+	characters, if the length of separator is 1 (byte)
+
 Wed Jan 23 13:27:44 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* eval.c (rb_yield_0): restore source file/line after yield.

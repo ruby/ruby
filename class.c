@@ -324,6 +324,8 @@ rb_include_module(klass, module)
     }
 
     while (module) {
+	if (RCLASS(klass)->m_tbl == RCLASS(module)->m_tbl)
+	    rb_raise(rb_eArgError, "cyclic include detected");
 	/* ignore if the module included already in superclasses */
 	for (p = RCLASS(klass)->super; p; p = RCLASS(p)->super) {
 	    if (BUILTIN_TYPE(p) == T_ICLASS &&

@@ -26,6 +26,7 @@ SRC_EXT = ["c", "cc", "m", "cxx", "cpp", "C"]
 $extlist = []
 
 $includedir = "@includedir@".gsub(/\$\{prefix\}|\$\(prefix\)/,'@prefix@')
+$libdir = "@libdir@".gsub(/\$\{exec_prefix\}|\$\(exec_prefix\)/,'@exec_prefix@')
 
 $top_srcdir = "@top_srcdir@"
 if $top_srcdir !~ "^/"
@@ -68,7 +69,7 @@ if RUBY_PLATFORM == "m68k-human"
 else
   CFLAGS = "@CFLAGS@"
 end
-LINK = "@CC@ -o conftest -I#$topdir -I#$top_srcdir #{CFLAGS} -I#$includedir @LDFLAGS@ %s %s %s conftest.c %s %s @LIBS@"
+LINK = "@CC@ #{OUTFLAG}conftest -I#$topdir -I#$top_srcdir #{CFLAGS} -I#$includedir -L#$libdir @LDFLAGS@ %s %s %s conftest.c %s %s @LIBS@"
 CPP = "@CPP@ @CPPFLAGS@ -I#$topdir -I#$top_srcdir #{CFLAGS} -I#$includedir %s %s %s conftest.c"
 
 $log = open('extmk.log', 'w')
@@ -446,7 +447,7 @@ target_prefix = #{target_prefix}
 
 "
   mfile.printf "LOCAL_LIBS = %s %s\n", $LOCAL_LIBS, $local_flags
-  mfile.printf "LIBS = %s\n", $libs
+  mfile.printf "LIBS = -L%s %s\n", $libdir, $libs
   mfile.printf "OBJS = "
   if !$objs then
     $objs = []
