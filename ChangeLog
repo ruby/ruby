@@ -1,3 +1,8 @@
+Tue Aug 26 15:59:53 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
+
+    * implicit.c (syck_type_id_to_taguri): corrected detection of
+      x-private types.
+
 Sun Aug 24 01:02:48 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (file_expand_path): performance improvement.
