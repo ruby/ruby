@@ -1,7 +1,6 @@
 option nodynamic
 
 bigdecimal
-bigdecimal/lib
 curses
 dbm
 digest
@@ -14,7 +13,6 @@ etc
 fcntl
 gdbm
 iconv
-marshal
 nkf
 pty
 racc/parse
@@ -24,6 +22,6 @@ socket
 stringio
 strscan
 syslog
-#tk
 #tcltklib
-#gtk
+#tk
+zlib

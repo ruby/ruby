@@ -2,7 +2,6 @@ option nodynamic
 
 #Win32API
 bigdecimal
-bigdecimal/lib
 #curses
 dbm
 digest
@@ -27,3 +26,4 @@ strscan
 #tcltklib
 #tk
 #win32ole
+#zlib
