@@ -1,8 +1,25 @@
 class DEBUGGER__
+  begin
+    require 'readline'
+    def readline(prompt)
+      Readline::readline(prompt, true)
+    end
+  rescue LoadError
+    def readline(prompt)
+      STDOUT.print prompt
+      STDOUT.flush
+      line = STDIN.gets
+      line.chomp!
+      line
+    end
+    USE_READLINE = false
+  end
+
   trap("INT") {  DEBUGGER__::CONTEXT.interrupt }
   $DEBUG = true
   def initialize
     @break_points = []
+    @display = []
     @stop_next = 1
     @frames = [nil]
     @last_file = nil
@@ -42,10 +59,8 @@ class DEBUGGER__
 	line_at(binding_file, binding_line)
     end
     @frames[0] = binding
-    STDOUT.print "(rdb:-) "
-    STDOUT.flush
-    while input = STDIN.gets
-      input.chop!
+    display_expressions(binding)
+    while input = readline("(rdb:-) ")
       if input == ""
 	input = DEBUG_LAST_CMD[0]
       else
@@ -55,55 +70,98 @@ class DEBUGGER__
       case input
       when /^b(?:reak)?\s+((?:[^:\n]+:)?.+)/
 	pos = $1
-	if pos.index ":"
+	if pos.index(":")
 	  file, pos = pos.split(":")
 	end
 	file = File.basename(file)
 	if pos =~ /^\d+$/
 	  pname = pos
-	  pos = Integer(pos)
+	  pos = pos.to_i
 	else
 	  pname = pos = pos.intern.id2name
 	end
+	@break_points.push [true, 0, file, pos]
 	STDOUT.printf "Set breakpoint %d at %s:%s\n", @break_points.size, file,
 	  pname
-	@break_points.push [file, pos]
 
-      when /^b(?:reak)?$/, /^i(?:nfo) b(?:reak)?$/
-	n = 0
-	for f, p in @break_points
-	  STDOUT.printf "%d %s:%s\n", n, f, p
+      when /^wat(?:ch)?\s+((?:[^:\n]+:)?.+)$/
+	exp = $1
+	@break_points.push [true, 1, exp]
+	STDOUT.printf "Set watchpoint %d\n", @break_points.size, exp
+
+      when /^b(?:reak)?$/, /^info b(?:reak)?$/
+	n = 1
+	STDOUT.print "breakpoints:\n"
+	for b in @break_points
+	  if b[0] and (b[1] == 0)
+	    STDOUT.printf "  %d %s:%s\n", n, b[2], b[3] 
+	  end
 	  n += 1
 	end
+	n = 1
+	STDOUT.print "\n"
+	STDOUT.print "watchpoints:\n"
+	for b in @break_points
+	  if b[0] and (b[1] == 1)
+	    STDOUT.printf "  %d %s\n", n, b[2]
+	  end
+	  n += 1
+	end
+	STDOUT.print "\n"
 
       when /^del(?:ete)?(?:\s+(\d+))?$/
 	pos = $1
 	unless pos
 	  STDOUT.print "clear all breakpoints? (y/n) "
 	  STDOUT.flush
-	  input = STDIN.gets.chop!
+	  input = readline
 	  if input == "y"
-	    for n in @break_points.indexes
-	      @break_points[n] = nil
+	    for b in @break_points
+	      b[0] = false
 	    end
 	  end
 	else
-	  pos = Integer(pos)
-	  if @break_points[pos]
-	    bp = @break_points[pos]
-	    STDOUT.printf "Clear breakpoint %d at %s:%s\n", pos, bp[0], bp[1]
-	    @break_points[pos] = nil
+	  pos = pos.to_i
+	  if @break_points[pos-1]
+	    @break_points[pos-1][0] = false
 	  else
 	    STDOUT.printf "Breakpoint %d is not defined\n", pos
 	  end
 	end
 
-      when /^c(?:ont)?$/
+      when /^disp(?:lay)?\s+(.+)$/
+	exp = $1
+	@display.push.push [true, exp]
+	STDOUT.printf "  %d: %s = %s\n", @display.size, exp,
+	  debug_eval(exp, binding).to_s
+
+      when /^disp(?:lay)?$/, /^info disp(?:lay)?$/
+	display_expressions(binding)
+
+      when /^undisp(?:lay)?(?:\s+(\d+))?$/
+	pos = $1
+	unless pos
+	  input = readline("clear all expressions? (y/n) ")
+	  if input == "y"
+	    for d in @display
+	      d[0] = false
+	    end
+	  end
+	else
+	  pos = pos.to_i
+	  if @display[pos-1]
+	    @display[pos-1][0] = false
+	  else
+	    STDOUT.printf "display expression %d is not defined\n", pos
+	  end
+	end
+
+      when /^co(?:nt)?$/
 	return
 
       when /^s(?:tep)?\s*(\d+)?$/
 	if $1
-	  lev = Integer($1)
+	  lev = $1.to_i
 	else
 	  lev = 1
 	end
@@ -112,7 +170,7 @@ class DEBUGGER__
 
       when /^n(?:ext)?\s*(\d+)?$/
 	if $1
-	  lev = Integer($1)
+	  lev = $1.to_i
 	else
 	  lev = 1
 	end
@@ -122,8 +180,8 @@ class DEBUGGER__
 
       when /^w(?:here)?$/, /^f(?:rame)?$/
 	at = caller(0)
-	0.upto( @frames.size - 1 ) do |n|
-	  if ( frame_pos == n )
+	0.upto(@frames.size - 1) do |n|
+	  if frame_pos == n
 	    STDOUT.printf "--> #%d  %s\n", n, at[-(@frames.size - n)]
 	  else
 	    STDOUT.printf "    #%d  %s\n", n, at[-(@frames.size - n)]
@@ -131,7 +189,7 @@ class DEBUGGER__
 	end
 
       when /^l(?:ist)?(?:\s+(.+))?$/
-        if !$1
+        if not $1
           b = previus_line ? previus_line + 10 : binding_line - 5
           e = b + 9
         elsif $1 == '-'
@@ -140,10 +198,10 @@ class DEBUGGER__
         else
           b, e = $1.split(/[-,]/)
           if e
-            b = Integer(b)
-            e = Integer(e)
+            b = b.to_i
+            e = e.to_i
           else
-            b = Integer(b) - 5
+            b = b.to_i - 5
             e = b + 9
           end
         end
@@ -154,7 +212,7 @@ class DEBUGGER__
           n = 0
           b.upto(e) do |n|
             if n > 0 && lines[n-1]
-	      if ( n == binding_line )
+	      if n == binding_line
               	STDOUT.printf "=> %d  %s\n", n, lines[n-1].chomp
 	      else
               	STDOUT.printf "   %d  %s\n", n, lines[n-1].chomp
@@ -168,7 +226,7 @@ class DEBUGGER__
       when /^up\s*(\d+)?$/
 	previus_line = nil
         if $1
-          lev = Integer($1)
+          lev = $1.to_i
         else
           lev = 1
         end
@@ -184,7 +242,7 @@ class DEBUGGER__
       when /^down\s*(\d+)?$/
 	previus_line = nil
         if $1
-          lev = Integer($1)
+          lev = $1.to_i
         else
           lev = 1
         end
@@ -203,9 +261,7 @@ class DEBUGGER__
 	return
 
       when /^q(?:uit)?$/
-	STDOUT.print "really quit? (y/n) "
-	STDOUT.flush
-	input = STDIN.gets.chop!
+	input = readline("really quit? (y/n) ")
 	exit if input == "y"
 
       when /^p\s+/
@@ -213,16 +269,24 @@ class DEBUGGER__
 
       else
 	v = debug_eval(input, binding)
-	p v unless v == nil
+	p v unless (v == nil)
       end
-      STDOUT.print "(rdb:-) "
-      STDOUT.flush
     end
   end
   
+  def display_expressions(binding)
+    n = 1
+    for d in @display
+      if d[0]
+      	STDOUT.printf "%d: %s = %s\n", n, d[1], debug_eval(d[1], binding).to_s
+      end
+      n += 1
+    end
+  end
+
   def frame_info(pos = 0)
     info = caller(0)[-(@frames.size - pos)]
-    info.sub( /:in `.*'$/, '' ) =~ /^(.*):(\d+)$/ #`
+    info.sub(/:in `.*'$/, "") =~ /^(.*):(\d+)$/ #`
     [info, $1, $2.to_i]
   end
 
@@ -259,11 +323,20 @@ class DEBUGGER__
 
   def check_break_points(file, pos, binding, id)
     file = File.basename(file)
-    if @break_points.include? [file, pos]
-      index = @break_points.index([file, pos])
-      STDOUT.printf "Breakpoint %d, %s at %s:%s\n",
-	index, debug_funcname(id), file, pos
-      return true
+    n = 1
+    for b in @break_points
+      if b[0]
+	if b[1] == 0 and b[2] == file and b[3] == pos
+      	  STDOUT.printf "breakpoint %d, %s at %s:%s\n", n, debug_funcname(id),
+	    file, pos
+      	  return true
+	elsif b[1] == 1 and debug_eval(b[2], binding)
+      	  STDOUT.printf "watchpoint %d, %s at %s:%s\n", n, debug_funcname(id),
+	    file, pos
+      	  return true
+      	end
+      end
+      n += 1
     end
     return false
   end
