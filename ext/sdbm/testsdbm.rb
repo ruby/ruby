@@ -51,7 +51,7 @@ class TestSDBM < RUNIT::TestCase
   end
 
   def test_version
-    STDERR.print SDBM::VERSION
+    assert(! SDBM.const_defined?(:VERSION))
   end
 
   def test_s_new_has_no_block
@@ -219,11 +219,11 @@ class TestSDBM < RUNIT::TestCase
     assert_equals(values.reverse, @sdbm.indexes(*keys.reverse))
   end
 
-  def test_select
+  def test_values_at
     keys = %w(foo bar baz)
     values = %w(FOO BAR BAZ)
     @sdbm[keys[0]], @sdbm[keys[1]], @sdbm[keys[2]] = values
-    assert_equals(values.reverse, @sdbm.select(*keys.reverse))
+    assert_equals(values.reverse, @sdbm.values_at(*keys.reverse))
   end
 
   def test_select_with_block

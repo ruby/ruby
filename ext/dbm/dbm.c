@@ -254,9 +254,27 @@ fdbm_select(argc, argv, obj)
         }
     }
     else {
+	rb_warn("DBM#select(index..) is deprecated; use DBM#values_at");
+
         for (i=0; i<argc; i++) {
             rb_ary_push(new, fdbm_fetch(obj, argv[i], Qnil));
         }
+    }
+
+    return new;
+}
+
+static VALUE
+fdbm_values_at(argc, argv, obj)
+    int argc;
+    VALUE *argv;
+    VALUE obj;
+{
+    VALUE new = rb_ary_new2(argc);
+    int i;
+
+    for (i=0; i<argc; i++) {
+        rb_ary_push(new, fdbm_fetch(obj, argv[i], Qnil));
     }
 
     return new;
@@ -731,6 +749,7 @@ Init_dbm()
     rb_define_method(rb_cDBM, "indexes",  fdbm_indexes, -1);
     rb_define_method(rb_cDBM, "indices",  fdbm_indexes, -1);
     rb_define_method(rb_cDBM, "select",  fdbm_select, -1);
+    rb_define_method(rb_cDBM, "values_at", fdbm_values_at, -1);
     rb_define_method(rb_cDBM, "length", fdbm_length, 0);
     rb_define_method(rb_cDBM, "size", fdbm_length, 0);
     rb_define_method(rb_cDBM, "empty?", fdbm_empty_p, 0);
@@ -759,4 +778,8 @@ Init_dbm()
 
     rb_define_method(rb_cDBM, "to_a", fdbm_to_a, 0);
     rb_define_method(rb_cDBM, "to_hash", fdbm_to_hash, 0);
+
+#ifdef DB_VERSION_STRING
+    rb_define_const(rb_cDBM, "VERSION",  rb_str_new2(DB_VERSION_STRING));
+#endif
 }

@@ -32,9 +32,12 @@ class TestDBM < RUNIT::TestCase
     assert_instance_of(DBM, @dbm = DBM.new(@path))
 
     # prepare to make readonly DBM file
-    DBM.open("tmptest_dbm_rdonly", 0400) {|dbm|
+    DBM.open("tmptest_dbm_rdonly") {|dbm|
       dbm['foo'] = 'FOO'
     }
+    
+    File.chmod(0400, *Dir.glob("tmptest_dbm_rdonly.*"))
+
     assert_instance_of(DBM, @dbm_rdonly = DBM.new("tmptest_dbm_rdonly", nil))
   end
   def teardown
@@ -83,7 +86,7 @@ class TestDBM < RUNIT::TestCase
     }
     begin
       sleep 1
-      assert_exception(Errno::EWOULDBLOCK) {
+      assert_exception(Errno::EWOULDBLOCK, "NEVER MIND IF YOU USE Berkeley DB3") {
 	begin
 	  assert_instance_of(DBM, dbm2 = DBM.open("tmptest_dbm", 0644))
 	rescue Errno::EAGAIN, Errno::EACCES, Errno::EINVAL
@@ -154,7 +157,7 @@ class TestDBM < RUNIT::TestCase
 
   def test_s_open_error
     assert_instance_of(DBM, dbm = DBM.open("tmptest_dbm", 0))
-    assert_exception(Errno::EACCES) {
+    assert_exception(Errno::EACCES, "NEVER MIND IF YOU USE Berkeley DB3") {
       DBM.open("tmptest_dbm", 0)
     }
     dbm.close
@@ -245,11 +248,11 @@ class TestDBM < RUNIT::TestCase
     assert_equals(values.reverse, @dbm.indexes(*keys.reverse))
   end
 
-  def test_select
+  def test_values_at
     keys = %w(foo bar baz)
     values = %w(FOO BAR BAZ)
     @dbm[keys[0]], @dbm[keys[1]], @dbm[keys[2]] = values
-    assert_equals(values.reverse, @dbm.select(*keys.reverse))
+    assert_equals(values.reverse, @dbm.values_at(*keys.reverse))
   end
 
   def test_select_with_block

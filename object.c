@@ -904,13 +904,23 @@ rb_obj_methods(argc, argv, obj)
     VALUE *argv;
     VALUE obj;
 {
+  retry:
     if (argc == 0) {
 	VALUE args[1];
 
 	args[0] = Qtrue;
 	return rb_class_instance_methods(1, args, CLASS_OF(obj));
     }
-    return rb_class_instance_methods(argc, argv, CLASS_OF(obj));
+    else {
+	VALUE recur;
+
+	rb_scan_args(argc, argv, "1", &recur);
+	if (RTEST(recur)) {
+	    argc = 0;
+	    goto retry;
+	}
+	return rb_obj_singleton_methods(argc, argv, obj);
+    }
 }
 
 static VALUE

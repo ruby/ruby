@@ -352,9 +352,27 @@ fgdbm_select(argc, argv, obj)
         }
     }
     else {
+	rb_warn("GDBM#select(index..) is deprecated; use GDBM#values_at");
+
         for (i=0; i<argc; i++) {
             rb_ary_push(new, rb_gdbm_fetch3(obj, argv[i]));
         }
+    }
+
+    return new;
+}
+
+static VALUE
+fgdbm_values_at(argc, argv, obj)
+    int argc;
+    VALUE *argv;
+    VALUE obj;
+{
+    VALUE new = rb_ary_new2(argc);
+    int i;
+
+    for (i=0; i<argc; i++) {
+        rb_ary_push(new, rb_gdbm_fetch3(obj, argv[i]));
     }
 
     return new;
@@ -938,6 +956,7 @@ Init_gdbm()
     rb_define_method(rb_cGDBM, "indexes",  fgdbm_indexes, -1);
     rb_define_method(rb_cGDBM, "indices",  fgdbm_indexes, -1);
     rb_define_method(rb_cGDBM, "select",  fgdbm_select, -1);
+    rb_define_method(rb_cGDBM, "values_at",  fgdbm_values_at, -1);
     rb_define_method(rb_cGDBM, "length", fgdbm_length, 0);
     rb_define_method(rb_cGDBM, "size", fgdbm_length, 0);
     rb_define_method(rb_cGDBM, "empty?", fgdbm_empty_p, 0);

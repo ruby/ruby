@@ -541,6 +541,8 @@ rb_struct_values_at(argc, argv, s)
     for (i=0; i<argc; i++) {
 	rb_ary_push(result, rb_struct_aref(s, argv[i]));
     }
+
+    return result;
 }
 
 static VALUE

@@ -279,11 +279,11 @@ class TestGDBM < RUNIT::TestCase
     assert_equals(values.reverse, @gdbm.indexes(*keys.reverse))
   end
 
-  def test_select
+  def test_values_at
     keys = %w(foo bar baz)
     values = %w(FOO BAR BAZ)
     @gdbm[keys[0]], @gdbm[keys[1]], @gdbm[keys[2]] = values
-    assert_equals(values.reverse, @gdbm.select(*keys.reverse))
+    assert_equals(values.reverse, @gdbm.values_at(*keys.reverse))
   end
 
   def test_select_with_block

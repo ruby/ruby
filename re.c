@@ -990,6 +990,9 @@ match_select(argc, argv, match)
 	rb_warn("MatchData#select(index..) is deprecated; use MatchData#values_at");
 	return match_values_at(argc, argv, match);
     }
+    if (argc > 0) {
+	rb_raise(rb_eArgError, "wrong number arguments(%d for 0)", argc);
+    }
     else {
 	struct re_registers *regs = RMATCH(match)->regs;
 	VALUE target = RMATCH(match)->str;
@@ -1000,7 +1003,7 @@ match_select(argc, argv, match)
 	for (i=0; i<regs->num_regs; i++) {
 	    VALUE str = rb_str_substr(target, regs->beg[i], regs->end[i]-regs->beg[i]);
 	    if (taint) OBJ_TAINT(str);
-	    if (rb_yield(str)) {
+	    if (RTEST(rb_yield(str))) {
 		rb_ary_push(result, str);
 	    }
 	}

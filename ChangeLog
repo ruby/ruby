@@ -1,3 +1,31 @@
+Tue May  6 14:39:36 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_obj_methods): list singleton methods if recur
+	  argument is false;  list all methods otherwise.
+
+	* numeric.c (num_step): double epsilon to make "1.1.step(1.5,0.1)"
+	  to work.
+
+Mon May  5 21:19:25 2003  Koji Arai  <jca02266@nifty.ne.jp>
+
+	* ext/gdbm/gdbm.c (fgdbm_values_at): new method to replace
+	  select(index..).
+
+	* ext/sdbm/init.c (fsdbm_values_at): ditto.
+
+ 	* ext/dbm/dbm.c (fdbm_values_at): ditto.
+
+	* ext/dbm/dbm.c (DBM::VERSION): defined.
+
+	* ext/gdbm/testgdbm.rb: replace select with values_at.
+
+	* ext/sdbm/testsdbm.rb: ditto.
+
+ 	* ext/dbm/testdbm.rb: ditto.
+
+	* ext/dbm/testdbm.rb (setup): DBM.open(path, 0400) cause EACCESS
+	on Berkeley DB[234].
+
 Mon May  5 22:57:07 2003  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* sample/cal.rb: use values_at instead of select.
@@ -47,8 +75,6 @@ Sat May  3 11:00:12 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* class.c (rb_class_protected_instance_methods): now gives
 	  warnings to show migration path.  The default will be reversed
 	  on Jan 2004.
-
-	* numeric.c (num_step): "1.1.step(1.5,0.1)" to work.
 
 Sat May  3 00:58:53 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

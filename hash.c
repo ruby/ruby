@@ -533,13 +533,15 @@ rb_hash_select(argc, argv, hash)
     long i;
 
     if (!rb_block_given_p()) {
+#if RUBY_VERSION_CODE < 181
 	rb_warn("Hash#select(key..) is deprecated; use Hash#values_at");
+#endif
 	return rb_hash_values_at(argc, argv, hash);
     }
-    result = rb_ary_new();
     if (argc > 0) {
 	rb_raise(rb_eArgError, "wrong number arguments(%d for 0)", argc);
     }
+    result = rb_ary_new();
     rb_hash_foreach(hash, select_i, result);
     return result;
 }

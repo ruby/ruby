@@ -905,14 +905,14 @@ num_step(argc, argv, from)
 	}
     }
     else if (TYPE(from) == T_FLOAT || TYPE(to) == T_FLOAT || TYPE(step) == T_FLOAT) {
-	const double epsilon = DBL_EPSILON;
+	const double epsilon = DBL_EPSILON * 2;
 	double beg = NUM2DBL(from);
 	double end = NUM2DBL(to);
 	double unit = NUM2DBL(step);
 	double n = (end - beg)/unit;
 	long i;
 
-	n = floor(n + n*epsilon + 1);
+	n = floor(n + n*epsilon) + 1;
 	for (i=0; i<n; i++) {
 	    rb_yield(rb_float_new(i*unit+beg));
 	}
