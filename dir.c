@@ -145,12 +145,12 @@ fnmatch(pat, string, flags)
     int period = !(flags & FNM_DOTMATCH);
     int nocase = flags & FNM_CASEFOLD;
 
-    while (c = *pat++) {
+    while (c = *pat) {
 	switch (c) {
 	case '?':
 	    if (!*s || ISDIRSEP(*s) || PERIOD(s))
 		return FNM_NOMATCH;
-	    s++;
+	    s = CharNext(s);
 	    break;
 	case '*':
 	    while ((c = *pat++) == '*')
@@ -168,22 +168,21 @@ fnmatch(pat, string, flags)
 	    else if (ISDIRSEP(c)) {
 		s = rb_path_next(s);
 		if (*s) {
-                    s++;
+                    s = CharNext(s);
 		    break;
                 }
 		return FNM_NOMATCH;
 	    }
 
-	    test = escape && c == '\\' ? *pat : c;
+	    test = escape && c == '\\' ? pat[1] : c;
 	    test = downcase(test);
-	    pat--;
 	    while (*s) {
 		if ((c == '?' || c == '[' || downcase(*s) == test) &&
 		    !fnmatch(pat, s, flags | FNM_DOTMATCH))
 		    return 0;
 		else if (ISDIRSEP(*s))
 		    break;
-		s++;
+		s = CharNext(s);
 	    }
 	    return FNM_NOMATCH;
 
@@ -193,7 +192,7 @@ fnmatch(pat, string, flags)
 	    pat = range(pat, *s, flags);
 	    if (pat == NULL)
 		return FNM_NOMATCH;
-	    s++;
+	    s = CharNext(s);
 	    break;
 
 	case '\\':
@@ -206,7 +205,7 @@ fnmatch(pat, string, flags)
 		if (!c)
 		    c = '\\';
 		else
-		    pat++;
+		    pat = CharNext(pat);
 	    }
 	    /* FALLTHROUGH */
 
@@ -218,7 +217,7 @@ fnmatch(pat, string, flags)
 #endif
 	    if(downcase(c) != downcase(*s))
 		return FNM_NOMATCH;
-	    s++;
+	    s = CharNext(s);
 	    break;
 	}
     }
@@ -236,7 +235,11 @@ static void
 free_dir(dir)
     struct dir_data *dir;
 {
-    if (dir && dir->dir) closedir(dir->dir);
+    if (dir) {
+	if (dir->dir) closedir(dir->dir);
+	if (dir->path) free(dir->path);
+    }
+    free(dir);
 }
 
 static VALUE dir_close _((VALUE));
@@ -796,6 +799,7 @@ has_magic(s, send, flags)
 		return Qfalse;
 	}
 
+	p = CharNext(p-1);
 	if (send && p >= send) break;
     }
     return Qfalse;
@@ -841,16 +845,24 @@ static void
 remove_backslashes(p)
     char *p;
 {
-    char *pend = p + strlen(p);
     char *t = p;
+    char *s = p;
 
-    while (p < pend) {
+    while (*p) {
 	if (*p == '\\') {
-	    if (++p == pend) break;
+	    if (t != s)
+		memmove(t, s, p - s);
+	    t += p - s;
+	    s = ++p;
+	    if (!*p) break;
 	}
-	*t++ = *p++;
+	p = CharNext(p);
     }
-    *t = '\0';
+
+    while (*p++);
+
+    if (t != s)
+	memmove(t, s, p - s); /* move '\0' too */
 }
 
 #ifndef S_ISDIR
@@ -923,7 +935,7 @@ glob_helper(path, sub, flags, func, arg)
     }
 
     while (p && !status) {
-	if (*p == '/') p++;
+	if (*p == '/') p=CharNext(p);
 	m = strchr(p, '/');
 	if (has_magic(p, m, flags)) {
 	    char *dir, *base, *magic, *buf;
@@ -1135,7 +1147,7 @@ push_braces(ary, s, flags)
 	    lbrace = p;
 	    break;
 	}
-	p++;
+	p = CharNext(p);
     }
     while (*p) {
 	if (*p == '{') nest++;
@@ -1143,7 +1155,7 @@ push_braces(ary, s, flags)
 	    rbrace = p;
 	    break;
 	}
-	p++;
+	p = CharNext(p);
     }
 
     if (lbrace && rbrace) {
@@ -1154,9 +1166,9 @@ push_braces(ary, s, flags)
 	p = lbrace;
 	while (*p != '}') {
 	    t = p + 1;
-	    for (p = t; *p!='}' && *p!=','; p++) {
+	    for (p = t; *p!='}' && *p!=','; p=CharNext(p)) {
 		/* skip inner braces */
-		if (*p == '{') while (*p!='}') p++;
+		if (*p == '{') while (*p!='}') p=CharNext(p);
 	    }
 	    memcpy(b, t, p-t);
 	    strcpy(b+(p-t), rbrace+1);
@@ -1201,7 +1213,7 @@ rb_push_glob(str, flags)
     while (p < pend) {
 	t = buf;
 	nest = maxnest = 0;
-	while (p < pend && isdelim(*p)) p++;
+	while (p < pend && isdelim(*p)) p=CharNext(p);
 	while (p < pend && !isdelim(*p)) {
 	    if (*p == '{') nest++, maxnest++;
 	    if (*p == '}') nest--;
