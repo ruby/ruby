@@ -1,3 +1,8 @@
+Tue Feb 24 18:59:37  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* dir.c (glob_helper): '**/' should not match leading period 
+	  unless File::FNM_DOTMATCH is set. (like '*/')
+
 Tue Feb 24 13:22:21 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/rdoc.rb (RDoc::RDoc::normalized_file_list): Attempt to get better

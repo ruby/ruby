@@ -981,6 +981,8 @@ glob_helper(path, sub, flags, func, arg)
 		if (recursive) {
 		    if (strcmp(".", dp->d_name) == 0 || strcmp("..", dp->d_name) == 0)
 			continue;
+		    if (fnmatch("*", dp->d_name, flags) != 0)
+			continue;
 		    buf = ALLOC_N(char, strlen(base)+NAMLEN(dp)+strlen(m)+6);
 		    sprintf(buf, "%s%s%s", base, (BASE) ? "/" : "", dp->d_name);
 		    if (lstat(buf, &st) < 0) {
