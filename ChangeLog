@@ -2,6 +2,12 @@ Fri Sep 22 13:58:51 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* ext/extmk.rb.in: don't use default $:
 
+Fri Sep 22 13:42:50 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* regex.c (PUSH_FAILURE_COUNT): avoid casting warning on alpha.
+
+	* regex.c (PUSH_FAILURE_POINT): ditto.
+
 Fri Sep 22 10:16:21 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* win32/config.h.in: add HAVE_TELLDIR, HAVE_SEEKDIR

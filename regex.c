@@ -3366,7 +3366,7 @@ re_search(bufp, string, size, startpos, range, regs)
     int c;								\
     EXTRACT_NUMBER(c, ptr);						\
     ENSURE_FAIL_STACK(NUM_COUNT_ITEMS);					\
-    *stackp++ = (unsigned char*)c;					\
+    *stackp++ = (unsigned char*)(long)c;				\
     *stackp++ = (ptr);							\
     num_failure_counts++;						\
   } while (0)
@@ -3385,7 +3385,7 @@ re_search(bufp, string, size, startpos, range, regs)
         break;								\
 									\
     ENSURE_FAIL_STACK(NUM_FAILURE_ITEMS);				\
-    *stackp++ = (unsigned char*)num_failure_counts;			\
+    *stackp++ = (unsigned char*)(long)num_failure_counts;		\
     num_failure_counts = 0;						\
 									\
     /* Now push the info for each of those registers.  */		\
