@@ -2,20 +2,21 @@ require 'mkmf'
 
 dir_config("dbm")
 
-$db_hdr = "ndbm.h"
-$db_prefix = ""
 dblib = with_config("dbm-type", nil)
 
 def db_check(db)
-  if /^db2?$/ =~ db
+  $db_hdr = "ndbm.h"
+  $db_prefix = ""
+
+  case db
+  when /^db2?$/
     $db_prefix = "__db_n"
     $db_hdr = db+".h"
-  end
-  r = have_library(db, db_prefix("dbm_open"))
-  if db == "gdbm"
+  when "gdbm"
     $have_gdbm = true
   end
-  return r
+
+  have_func(db_prefix("dbm_open")) || have_library(db, db_prefix("dbm_open"))
 end
 
 def db_prefix(func)
