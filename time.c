@@ -235,11 +235,12 @@ time_arg(argc, argv, tm, usec)
 	v[4] = argv[1];
 	v[5] = argv[0];
 	*usec = 0;
-	tm->tm_isdst = RTEST(argv[9]) ? 1 : 0;
+	tm->tm_isdst = RTEST(argv[8]) ? 1 : 0;
     }
     else {
 	rb_scan_args(argc, argv, "16", &v[0],&v[1],&v[2],&v[3],&v[4],&v[5],&v[6]);
-	*usec = (argc == 7) ? NUM2INT(v[6]) : 0;
+	*usec = NIL_P(v[6]) ? 0 : obj2long(v[6]);
+	tm->tm_isdst = -1;
     }
 
     tm->tm_year = obj2long(v[0]);

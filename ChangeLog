@@ -1,7 +1,15 @@
+Wed Jul 31 14:11:43 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_undef): undef should be done for klass, not ruby_class.
+
 Tue Jul 30 15:24:07 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/tcltklib/stubs.c (ruby_tcltk_stubs): win32_getenv returns
 	  the same address always, so allocate string by ruby_strdup.
+
+Mon Jul 22 17:23:00 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (error_handle): should handle TAG_THROW as well.
 
 Fri Jul 12 00:51:09 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 

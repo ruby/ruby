@@ -1118,6 +1118,17 @@ error_handle(ex)
 	fprintf(stderr, ": retry outside of rescue clause\n");
 	ex = 1;
 	break;
+      case TAG_THROW:
+	if (prot_tag && prot_tag->frame && prot_tag->frame->file) {
+	    fprintf(stderr, "%s:%d: uncaught throw\n",
+		    prot_tag->frame->file, prot_tag->frame->line);
+	}
+	else {
+	    error_pos();
+	    fprintf(stderr, ": unexpected throw\n");
+	}
+	ex = 1;
+	break;
       case TAG_RAISE:
       case TAG_FATAL:
 	if (rb_obj_is_kind_of(ruby_errinfo, rb_eSystemExit)) {
@@ -1566,7 +1577,7 @@ rb_undef(klass, id)
 	rb_warn("undefining `%s' may cause serious problem",
 		rb_id2name(id));
     }
-    body = search_method(ruby_class, id, &origin);
+    body = search_method(klass, id, &origin);
     if (!body || !body->nd_body) {
 	char *s0 = " class";
 	VALUE c = klass;
