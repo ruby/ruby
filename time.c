@@ -43,6 +43,8 @@ struct time_object {
 #define GetTimeval(obj, tobj) \
     Data_Get_Struct(obj, struct time_object, tobj)
 
+static void time_free _((struct time_object *));
+
 static void
 time_free(tobj)
     struct time_object *tobj;

@@ -2506,6 +2506,7 @@ rb_w32_stat(const char *path, struct stat *st)
     char *buf2 = ALLOCA_N(char, MAXPATHLEN);
     char *s;
     int len;
+    int ret;
 
     for (p = path, s = buf1; *p; p++, s++) {
 	if (*p == '/')
@@ -2521,8 +2522,13 @@ rb_w32_stat(const char *path, struct stat *st)
 	    strcat(buf1, "\\");
     } else if (*p == '\\' || *p == ':')
 	strcat(buf1, ".");
-    if (_fullpath(buf2, buf1, MAXPATHLEN))
-	return stat(buf2, st);
+    if (_fullpath(buf2, buf1, MAXPATHLEN)) {
+	ret = stat(buf2, st);
+	if (ret == 0) {
+	    st->st_mode &= ~(S_IWGRP | S_IWOTH);
+	}
+	return ret;
+    }
     else
 	return -1;
 }
