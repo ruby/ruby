@@ -46,7 +46,7 @@ Wed Oct  2 10:59:29 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* gc.c (gc_sweep): free unused heap page to reduce process size if
 	  possible.
 
-	* object.c (rb_obj_type): depercated Object#type; use Object#class.
+	* object.c (rb_obj_type): deprecated Object#type; use Object#class.
 
 Tue Oct  1 23:48:32 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
