@@ -1,3 +1,8 @@
+Fri May 30 00:01:05 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
+
+    * ext/syck/token.c: preserve any indentation passed an explicit
+      indentation.
+
 Thu May 29 23:41:34 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
 
     * ext/syck/handler.c, ext/syck/syck.h: removed syck_fold_format().
