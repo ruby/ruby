@@ -1,3 +1,8 @@
+Sat Jul 19 11:27:25 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (thgroup_add): do not raise ThreadError on terminated
+	  thread addition for compatibility.  just warning.
+
 Sat Jul 19 04:50:56 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ext/iconv/charset_alias.rb, ext/iconv/extconf.rb: make wrapper
