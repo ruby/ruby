@@ -205,6 +205,7 @@ strio_initialize(argc, argv, self)
 {
     struct StringIO *ptr = check_strio(self);
     VALUE string, mode;
+    const char* m;
 
     if (!ptr) {
 	DATA_PTR(self) = ptr = strio_alloc();
@@ -214,12 +215,13 @@ strio_initialize(argc, argv, self)
       case 2:
 	StringValue(mode);
 	StringValue(string);
-	ptr->flags = rb_io_mode_flags(RSTRING(mode)->ptr);
+	if (!(m = RSTRING(mode)->ptr)) m = "";
+	ptr->flags = rb_io_mode_flags(m);
 	if (ptr->flags & FMODE_WRITABLE && OBJ_FROZEN(string)) {
 	    errno = EACCES;
 	    rb_sys_fail(0);
 	}
-	switch (*RSTRING(mode)->ptr) {
+	switch (*m) {
 	  case 'a':
 	    ptr->flags |= STRIO_APPEND;
 	    break;
@@ -543,14 +545,23 @@ strio_ungetc(self, ch)
 {
     struct StringIO *ptr = readable(StringIO(self));
     int cc = NUM2INT(ch);
+    long len, pos = ptr->pos;
 
-    if (cc != EOF && ptr->pos > 0) {
-	if ((unsigned char)RSTRING(ptr->string)->ptr[--ptr->pos] !=
+    if (cc != EOF && pos > 0) {
+	if ((len = RSTRING(ptr->string)->len) < pos ||
+	    (unsigned char)RSTRING(ptr->string)->ptr[pos - 1] !=
 	    (unsigned char)cc) {
 	    check_modifiable(ptr);
-	    rb_str_modify(ptr->string);
-	    RSTRING(ptr->string)->ptr[ptr->pos] = cc;
+	    if (len < pos) {
+		rb_str_resize(ptr->string, pos);
+		MEMZERO(RSTRING(ptr->string)->ptr + len, char, pos - len - 1);
+	    }
+	    else {
+		rb_str_modify(ptr->string);
+	    }
+	    RSTRING(ptr->string)->ptr[pos - 1] = cc;
 	}
+	--ptr->pos;
     }
     return Qnil;
 }
