@@ -58,6 +58,8 @@ class << Tk::Tile::Style
   end
 
   def theme_settings(name, cmd=nil, &b)
+    cmd = Proc.new(&b) if !cmd && b
+    tk_call('style', 'theme', 'settings', name, cmd)
   end
 
   def theme_names()

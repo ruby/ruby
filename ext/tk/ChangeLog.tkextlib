@@ -1,3 +1,7 @@
+2004-11-10  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* lib/tile/style.rb: bug fix
+
 2004-11-07  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tkextlib/iwidgets/scrolledcanvas.rb:
