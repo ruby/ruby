@@ -208,8 +208,10 @@ dlsizeof(const char *cstr)
       size += sizeof(short) * n;
       break;
     case 'P':
+    case 'S':
       DLALIGN(0,size,VOIDP_ALIGN);
     case 'p':
+    case 's':
       size += sizeof(void*) * n;
       break;
     default:
