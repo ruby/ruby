@@ -1,6 +1,11 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(ruby.h)
 
+dnl workaround for autoconf 2.53
+: '
+m4_pattern_allow([^[L]IBOBJS$])
+'
+
 rb_version=`grep RUBY_VERSION $srcdir/version.h`
 MAJOR=`expr "$rb_version" : '#define RUBY_VERSION "\([0-9][0-9]*\)\.[0-9][0-9]*\.[0-9][0-9]*"'`
 MINOR=`expr "$rb_version" : '#define RUBY_VERSION "[0-9][0-9]*\.\([0-9][0-9]*\)\.[0-9][0-9]*"'`
