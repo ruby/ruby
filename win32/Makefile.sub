@@ -1,7 +1,8 @@
 # -*- makefile -*-
 
 SHELL = $(COMSPEC)
-MAKEFILES = Makefile $(srcdir)/wince/Makefile.sub
+MKFILES = Makefile $(srcdir)/win32/Makefile.sub $(srcdir)/common.mk
+NULL = nul
 
 #### Start of system configuration section. ####
 
@@ -27,7 +28,7 @@ iconinc=-I$(icondirs: = -I)
 !endif
 ###############
 
-VPATH = $(srcdir):$(srcdir)/missing
+VPATH = $(srcdir);$(srcdir)/missing;$(srcdir)/win32
 .SUFFIXES: .y .def .lib
 
 !if !defined(CC)
@@ -42,6 +43,7 @@ YACC = byacc
 AR = lib -nologo
 PURIFY =
 AUTOCONF = autoconf
+RM = $(srcdir:/=\)\win32\rm.bat
 
 !if !defined(PROCESSOR_ARCHITECTURE)
 PROCESSOR_ARCHITECTURE = x86
@@ -103,6 +105,8 @@ TESTS =
 !ifndef RDOCTARGET
 RDOCTARGET = install-doc
 !endif
+
+OUTFLAG       = -Fe
 !if !defined(CFLAGS)
 CFLAGS = -MD $(DEBUGFLAGS) $(OPTFLAGS) $(PROCESSOR_FLAG)
 !endif
@@ -141,7 +145,6 @@ WPROGRAM=$(RUBYW_INSTALL_NAME)$(EXEEXT)
 RUBYDEF = $(RUBY_SO_NAME).def
 MINIRUBY = .\miniruby$(EXEEXT)
 RUNRUBY = .\ruby$(EXEEXT) "$(srcdir)/runruby.rb" --extout="$(EXTOUT)" --
-EXTCONF = extconf.rb
 
 !if !defined(STACK)
 STACK = 0x2000000
@@ -161,71 +164,16 @@ PREP          = miniruby$(EXEEXT)
 EXTSTATIC     = 
 !endif
 
+OBJEXT = obj
+
 EXTOBJS       = 
 DLDOBJS       = 
-DMYEXT        = dmyext.obj
 
-MAINOBJ       = main.obj
-WINMAINOBJ    = winmain.obj
+WINMAINOBJ    = winmain.$(OBJEXT)
 
-OBJS          = ascii.obj \
-		array.obj \
-		bignum.obj \
-		class.obj \
-		compar.obj \
-		dir.obj \
-		dln.obj \
-		enum.obj \
-		error.obj \
-		euc_jp.obj \
-		eval.obj \
-		file.obj \
-		gc.obj \
-		hash.obj \
-		inits.obj \
-		io.obj \
-		marshal.obj \
-		math.obj \
-		numeric.obj \
-		object.obj \
-		pack.obj \
-		parse.obj \
-		prec.obj \
-		process.obj \
-		random.obj \
-		range.obj \
-		re.obj \
-		regcomp.obj \
-		regenc.obj \
-		regerror.obj \
-		regexec.obj \
-		reggnu.obj \
-		regparse.obj \
-		ruby.obj \
-		signal.obj \
-		sjis.obj \
-		sprintf.obj \
-		st.obj \
-		string.obj \
-		struct.obj \
-		time.obj \
-		utf8.obj \
-		util.obj \
-		variable.obj \
-		version.obj \
-		$(MISSING)
+all:
 
-SCRIPT_ARGS   =	"--dest-dir=$(DESTDIR)" \
-		"--make=$(MAKE)" \
-		"--mflags=$(MFLAGS)" \
-		"--make-flags=$(MAKEFLAGS)"
-EXTMK_ARGS    =	$(SCRIPT_ARGS) --extout="$(EXTOUT)" --extension $(EXTS) --extstatic $(EXTSTATIC) --
-
-all:		ext rbconfig.rb $(LIBRUBY) $(MISCLIBS)
-		@$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS)
-
-ext:
-		@mkdir $@
+!include $(srcdir)/common.mk
 
 ruby: $(PROGRAM)
 rubyw: $(WPROGRAM)
@@ -323,7 +271,7 @@ config.h:
 #define RUBY_SITE_ARCHLIB "/lib/ruby/site_ruby/$(MAJOR).$(MINOR)/$(ARCH)-$(RT)"
 <<KEEP
 
-config.status: $(MAKEFILES)
+config.status: $(MKFILES)
 	@echo Creating <<$@
 # Generated automatically by Makefile.sub.
 s,@SHELL@,$$(COMSPEC),;t t
@@ -375,7 +323,7 @@ s,@LIBOBJS@, acosh.obj crypt.obj erf.obj win32.obj,;t t
 s,@ALLOCA@,$(ALLOCA),;t t
 s,@DEFAULT_KCODE@,$(DEFAULT_KCODE),;t t
 s,@EXEEXT@,.exe,;t t
-s,@OBJEXT@,obj,;t t
+s,@OBJEXT@,$(OBJEXT),;t t
 s,@XCFLAGS@,$(XCFLAGS),;t t
 s,@XLDFLAGS@,$(XLDFLAGS),;t t
 s,@DLDFLAGS@,$(DLDFLAGS) $$(LIBPATH) -def:$$(DEFFILE) -implib:$$(*F:.so=)-$$(arch).lib -pdb:$$(*F:.so=)-$$(arch).pdb,;t t
@@ -405,7 +353,7 @@ s,@LIBRUBYARG_SHARED@,$$(LIBRUBY),;t t
 s,@SOLIBS@,$(SOLIBS),;t t
 s,@DLDLIBS@,$(DLDLIBS),;t t
 s,@ENABLE_SHARED@,yes,;t t
-s,@OUTFLAG@,-Fe,;t t
+s,@OUTFLAG@,$(OUTFLAG),;t t
 s,@CPPOUTFILE@,-P,;t t
 s,@LIBPATHFLAG@, -libpath:"%s",;t t
 s,@RPATHFLAG@,,;t t
@@ -428,17 +376,17 @@ s,@srcdir@,$(srcdir),;t t
 s,@top_srcdir@,$(srcdir),;t t
 <<KEEP
 
-miniruby$(EXEEXT):	$(LIBRUBY_A) $(MAINOBJ)
+miniruby$(EXEEXT):
 		@echo. $(LIBS)
 		$(PURIFY) $(CC) $(MAINOBJ) $(LIBRUBY_A) $(LIBS) -Fe$@ $(LDFLAGS)
 
-$(PROGRAM):	$(MAINOBJ) $(LIBRUBY_SO) $*.res
+$(PROGRAM):	$*.res
 		$(PURIFY) $(CC) $(MAINOBJ) $*.res \
-			-Fe$@ $(LIBRUBYARG) $(LDFLAGS) $(XLDFLAGS)
+			$(OUTFLAG)$@ $(LIBRUBYARG) $(LDFLAGS) $(XLDFLAGS)
 
 $(WPROGRAM):	$(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_SO) $*.res
 		$(PURIFY) $(CC) $(MAINOBJ) $(WINMAINOBJ) $*.res \
-			-Fe$@ $(LIBRUBYARG) $(LDFLAGS) $(XLDFLAGS) -subsystem:Windows
+			$(OUTFLAG)$@ $(LIBRUBYARG) $(LDFLAGS) $(XLDFLAGS) -subsystem:Windows
 
 $(LIBRUBY_A):	$(OBJS) $(DMYEXT)
 		$(AR) $(ARFLAGS)$@ $(OBJS) $(DMYEXT)
@@ -448,7 +396,7 @@ $(LIBRUBY):	$(RUBYDEF)
 
 $(LIBRUBY_SO):	$(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $*.res
 		@echo. $(DLDOBJS)
-		$(LIBRUBY_LDSHARED) $(MAINOBJ) $(DLDOBJS) $(LIBRUBY_A) $*.res $(LIBS) \
+		$(LDSHARED) $(MAINOBJ) $(DLDOBJS) $(LIBRUBY_A) $*.res $(LIBS) \
 			-Fe$@ $(LDFLAGS) $(LIBRUBY_DLDFLAGS)
 
 $(RUBYDEF):	$(LIBRUBY_A) $(PREP)
@@ -457,97 +405,16 @@ $(RUBYDEF):	$(LIBRUBY_A) $(PREP)
 {$(srcdir)/win32}.def.lib:
 		$(AR) $(ARFLAGS)$@ -def:$<
 
-install:	install-nodoc $(RDOCTARGET)
-install-all:	install-nodoc install-doc
+clean-local::
+		@$(RM) ext\extinit.c ext\extinit.$(OBJEXT) ext\vc*.pdb
+		@$(RM) $(RUBY_INSTALL_NAME).res $(RUBYW_INSTALL_NAME).res $(RUBY_SO_NAME).res
 
-install-nodoc:	install-local install-ext
-install-local:	rbconfig.rb
-		$(MINIRUBY) $(srcdir)/instruby.rb $(SCRIPT_ARGS)
-install-ext:	rbconfig.rb
-		$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS) install
+distclean-local::
+		@$(RM) ext\config.cache
+		@$(RM) *.map *.pdb *.ilk *.exp $(RUBYDEF)
+		@$(RM) $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc
 
-what-where-all no-install-all:	no-install no-install-doc
-what-where no-install:		no-install-local no-install-ext
-what-where-local:	no-install-local
-no-install-local:	rbconfig.rb
-		$(MINIRUBY) $(srcdir)/instruby.rb -n $(SCRIPT_ARGS)
-what-where-ext:	no-install-ext
-no-install-ext:	rbconfig.rb
-		$(MINIRUBY) $(srcdir)/ext/extmk.rb -n $(EXTMK_ARGS) install
-
-install-doc:	$(PROGRAM)
-		@echo Generating RDoc documentation
-		$(RUNRUBY) "$(srcdir)/bin/rdoc" --all --ri --op "$(RIDATADIR)" "$(srcdir)"
-
-clean:		clean-ext clean-local
-
-clean-local:
-		@if exist $(LIBRUBY_A) del $(LIBRUBY_A)
-		@if exist $(MAINOBJ) del $(MAINOBJ)
-		@if exist rbconfig.rb del rbconfig.rb
-		@if exist ext\extinit.c del ext\extinit.c
-		@if exist ext\extinit.obj del ext\extinit.obj
-		@if exist ext\vc*.pdb del ext\vc*.pdb
-		@if exist *.obj del *.obj
-		@if exist *.res del *.res
-
-clean-ext:
-		@-$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS) clean
-
-distclean:	distclean-ext distclean-local
-
-distclean-local:	clean-local
-		@if exist Makefile del Makefile
-		@if exist config.h del config.h
-		@if exist ext\config.cache del ext\config.cache
-		@if exist config.cache del config.cache
-		@if exist config.log del config.log
-		@if exist config.status del config.status
-		@if exist *~ del *~
-		@if exist *.bak del *.bak
-		@if exist *.stackdump del *.stackdump
-		@if exist *.core del *.core
-		@if exist gmon.out del gmon.out
-		@if exist y.tab.c del y.tab.c
-		@if exist y.output del y.output
-		@if exist *.map del *.map
-		@if exist *.pdb del *.pdb
-		@if exist *.ilk del *.ilk
-		@if exist *.exp del *.exp
-		@if exist $(RUBYDEF) del $(RUBYDEF)
-		@if exist $(RUBY_INSTALL_NAME).rc del $(RUBY_INSTALL_NAME).rc
-		@if exist $(RUBYW_INSTALL_NAME).rc del $(RUBYW_INSTALL_NAME).rc
-		@if exist $(RUBY_SO_NAME).rc del $(RUBY_SO_NAME).rc
-		@if exist $(PROGRAM) del $(PROGRAM)
-		@if exist $(WPROGRAM) del $(WPROGRAM)
-		@if exist $(LIBRUBY_SO) del $(LIBRUBY_SO)
-		@if exist $(LIBRUBY) del $(LIBRUBY)
-		@if exist ext\nul if not exist ext\* rmdir ext
-		@if exist miniruby$(EXEEXT) del miniruby$(EXEEXT)
-
-distclean-ext:
-		@-$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS) distclean
-
-realclean:	distclean
-		@if exist parse.c del parse.c
-		@if exist lex.c del lex.c
-
-test:		miniruby$(EXEEXT) NUL
-		@miniruby$(EXEEXT) $(srcdir)/rubytest.rb
-
-test-all:
-		$(RUNRUBY) -C "$(srcdir)/test" runner.rb --runner=$(TESTUI) $(TESTS)
-
-extconf:
-		$(MINIRUBY) -run -e mkdir -- -p "$(EXTCONFDIR)"
-		$(RUNRUBY) -C "$(EXTCONFDIR)" $(EXTCONF) $(EXTCONFARGS)
-
-rbconfig.rb:	$(PREP) config.status
-		@$(MINIRUBY) $(srcdir)/mkconfig.rb -srcdir=$(srcdir) \
-			-install_name=$(RUBY_INSTALL_NAME) \
-			-so_name=$(RUBY_SO_NAME) rbconfig.rb
-
-$(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc: rbconfig.rb
+$(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc: $(RBCONFIG)
 		@$(MINIRUBY) $(srcdir)/win32/resource.rb \
 			-ruby_name=$(RUBY_INSTALL_NAME) \
 			-rubyw_name=$(RUBYW_INSTALL_NAME) \
@@ -555,13 +422,13 @@ $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc: rbconfig.rb
 			. $(icondirs) $(srcdir)/win32
 
 {$(srcdir)/missing}.c.obj:
-	$(CC) $(CFLAGS) $(XCFLAGS) -I. -I$(<D) $(CPPFLAGS) -c -Tc$(<:\=/)
+	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -c -Tc$(<:\=/)
 {$(srcdir)/win32}.c.obj:
-	$(CC) $(CFLAGS) $(XCFLAGS) -I. -I$(<D) $(CPPFLAGS) -c -Tc$(<:\=/)
+	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -c -Tc$(<:\=/)
 {$(srcdir)}.c.obj:
-	$(CC) $(CFLAGS) $(XCFLAGS) -I. -I$(<D) $(CPPFLAGS) -c -Tc$(<:\=/)
+	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -c -Tc$(<:\=/)
 .c.obj:
-	$(CC) $(CFLAGS) $(XCFLAGS) -I. $(CPPFLAGS) -c -Tc$(<:\=/)
+	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -c -Tc$(<:\=/)
 
 .rc.res:
 	$(RC) -I. -I$(<D) $(iconinc) -I$(srcdir)/win32 $(RFLAGS) -fo$@ $(<:\=/)
@@ -571,184 +438,6 @@ $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc: rbconfig.rb
 	sed -e "s!^ *extern char \*getenv();!/* & */!;s/^\(#.*\)y\.tab/\1parse/" y.tab.c > $@
 	@del y.tab.c
 
-{$(srcdir)}parse.c: parse.y
+$(OBJS): {$(srcdir)}win32/win32.h
 
-ext/extinit.obj: ext/extinit.c $(SETUP)
-	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -Fo$@ -c ext/extinit.c
-
-acosh.obj: {$(srcdir)}missing/acosh.c
-alloca.obj: {$(srcdir)}missing/alloca.c
-crypt.obj: {$(srcdir)}missing/crypt.c
-dup2.obj: {$(srcdir)}missing/dup2.c
-erf.obj: {$(srcdir)}missing/erf.c
-finite.obj: {$(srcdir)}missing/finite.c
-flock.obj: {$(srcdir)}missing/flock.c
-memcmp.obj: {$(srcdir)}missing/memcmp.c
-memmove.obj: {$(srcdir)}missing/memmove.c
-mkdir.obj: {$(srcdir)}missing/mkdir.c
-vsnprintf.obj: {$(srcdir)}missing/vsnprintf.c
-strcasecmp.obj: {$(srcdir)}missing/strcasecmp.c
-strncasecmp.obj: {$(srcdir)}missing/strncasecmp.c
-strchr.obj: {$(srcdir)}missing/strchr.c
-strdup.obj: {$(srcdir)}missing/strdup.c
-strerror.obj: {$(srcdir)}missing/strerror.c
-strftime.obj: {$(srcdir)}missing/strftime.c
-strstr.obj: {$(srcdir)}missing/strstr.c
-strtod.obj: {$(srcdir)}missing/strtod.c
-strtol.obj: {$(srcdir)}missing/strtol.c
-strtoul.obj: {$(srcdir)}missing/strtoul.c
-nt.obj: {$(srcdir)}missing/nt.c
-x68.obj: {$(srcdir)}missing/x68.c
-os2.obj: {$(srcdir)}missing/os2.c
-dl_os2.obj: {$(srcdir)}missing/dl_os2.c
-
-# when I use -I., there is confliction at "OpenFile" 
-# so, set . into environment varible "include"
-win32.obj: {$(srcdir)}win32/win32.c
-
-# Prevent GNU make v3 from overflowing arg limit on SysV.
-.NOEXPORT:
-###
-ascii.obj: {$(srcdir)}ascii.c {$(srcdir)}regenc.h {$(srcdir)}oniguruma.h \
-  config.h
-array.obj: {$(srcdir)}array.c {$(srcdir)}ruby.h config.h \
-  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}util.h {$(srcdir)}st.h {$(srcdir)}/win32/win32.h
-bignum.obj: {$(srcdir)}bignum.c {$(srcdir)}ruby.h config.h \
-  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}/win32/win32.h
-class.obj: {$(srcdir)}class.c {$(srcdir)}ruby.h config.h \
-  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}rubysig.h {$(srcdir)}node.h {$(srcdir)}st.h \
-  {$(srcdir)}/win32/win32.h
-compar.obj: {$(srcdir)}compar.c {$(srcdir)}ruby.h config.h \
-  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}/win32/win32.h
-dir.obj: {$(srcdir)}dir.c {$(srcdir)}ruby.h config.h \
-  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}util.h {$(srcdir)}/win32/win32.h {$(srcdir)}/win32/dir.h
-dln.obj: {$(srcdir)}dln.c {$(srcdir)}ruby.h config.h \
-  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}dln.h {$(srcdir)}/win32/win32.h
-dmyext.obj: {$(srcdir)}dmyext.c
-enum.obj: {$(srcdir)}enum.c {$(srcdir)}ruby.h config.h \
-  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}node.h {$(srcdir)}util.h {$(srcdir)}/win32/win32.h
-error.obj: {$(srcdir)}error.c {$(srcdir)}ruby.h config.h \
-  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}env.h {$(srcdir)}version.h {$(srcdir)}st.h \
-  {$(srcdir)}/win32/win32.h
-euc_jp.obj: {$(srcdir)}euc_jp.c {$(srcdir)}regenc.h {$(srcdir)}oniguruma.h \
-  config.h
-eval.obj: {$(srcdir)}eval.c {$(srcdir)}ruby.h config.h \
-  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}node.h {$(srcdir)}env.h {$(srcdir)}util.h \
-  {$(srcdir)}rubysig.h {$(srcdir)}st.h {$(srcdir)}dln.h \
-  {$(srcdir)}/win32/win32.h
-file.obj: {$(srcdir)}file.c {$(srcdir)}ruby.h config.h \
-  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}rubyio.h {$(srcdir)}rubysig.h {$(srcdir)}util.h \
-  {$(srcdir)}dln.h {$(srcdir)}/win32/win32.h
-gc.obj: {$(srcdir)}gc.c {$(srcdir)}ruby.h config.h \
-  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}rubysig.h {$(srcdir)}st.h {$(srcdir)}node.h \
-  {$(srcdir)}env.h {$(srcdir)}re.h {$(srcdir)}regex.h \
-  {$(srcdir)}/win32/win32.h
-hash.obj: {$(srcdir)}hash.c {$(srcdir)}ruby.h config.h \
-  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}st.h {$(srcdir)}util.h {$(srcdir)}rubysig.h \
-  {$(srcdir)}/win32/win32.h
-inits.obj: {$(srcdir)}inits.c {$(srcdir)}ruby.h config.h \
-  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}/win32/win32.h
-io.obj: {$(srcdir)}io.c {$(srcdir)}ruby.h config.h \
-  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}rubyio.h {$(srcdir)}rubysig.h {$(srcdir)}env.h \
-  {$(srcdir)}util.h {$(srcdir)}/win32/win32.h
-main.obj: {$(srcdir)}main.c {$(srcdir)}ruby.h config.h \
-  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}/win32/win32.h
-marshal.obj: {$(srcdir)}marshal.c {$(srcdir)}ruby.h config.h \
-  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}rubyio.h {$(srcdir)}st.h {$(srcdir)}util.h \
-  {$(srcdir)}/win32/win32.h
-math.obj: {$(srcdir)}math.c {$(srcdir)}ruby.h config.h \
-  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}/win32/win32.h
-numeric.obj: {$(srcdir)}numeric.c {$(srcdir)}ruby.h config.h \
-  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}/win32/win32.h
-object.obj: {$(srcdir)}object.c {$(srcdir)}ruby.h config.h \
-  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}st.h {$(srcdir)}util.h {$(srcdir)}/win32/win32.h
-pack.obj: {$(srcdir)}pack.c {$(srcdir)}ruby.h config.h \
-  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}/win32/win32.h
-parse.obj: {$(srcdir)}parse.c {$(srcdir)}ruby.h config.h \
-  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}env.h {$(srcdir)}node.h {$(srcdir)}st.h {$(srcdir)}regex.h \
-  {$(srcdir)}util.h {$(srcdir)}lex.c {$(srcdir)}/win32/win32.h
-prec.obj: {$(srcdir)}prec.c {$(srcdir)}ruby.h config.h \
-  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}/win32/win32.h
-process.obj: {$(srcdir)}process.c {$(srcdir)}ruby.h config.h \
-  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}rubysig.h {$(srcdir)}st.h {$(srcdir)}/win32/win32.h
-random.obj: {$(srcdir)}random.c {$(srcdir)}ruby.h config.h \
-  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}/win32/win32.h
-range.obj: {$(srcdir)}range.c {$(srcdir)}ruby.h config.h \
-  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}/win32/win32.h
-re.obj: {$(srcdir)}re.c {$(srcdir)}ruby.h config.h \
-  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}re.h {$(srcdir)}regex.h {$(srcdir)}/win32/win32.h
-regcomp.obj: {$(srcdir)}regcomp.c {$(srcdir)}oniguruma.h {$(srcdir)}regint.h \
-  {$(srcdir)}regparse.h {$(srcdir)}regenc.h {$(srcdir)}ruby.h config.h \
-  {$(srcdir)}/win32/win32.h
-regenc.obj: {$(srcdir)}regenc.c {$(srcdir)}regint.h {$(srcdir)}regenc.h \
-  {$(srcdir)}oniguruma.h  {$(srcdir)}ruby.h config.h {$(srcdir)}/win32/win32.h
-regerror.obj: {$(srcdir)}regerror.c {$(srcdir)}regint.h {$(srcdir)}regenc.h \
-  {$(srcdir)}oniguruma.h  {$(srcdir)}ruby.h config.h {$(srcdir)}/win32/win32.h
-regexec.obj: {$(srcdir)}regexec.c {$(srcdir)}regint.h {$(srcdir)}regenc.h \
-  {$(srcdir)}oniguruma.h  {$(srcdir)}ruby.h config.h {$(srcdir)}/win32/win32.h
-reggnu.obj: {$(srcdir)}reggnu.c {$(srcdir)}regint.h {$(srcdir)}regenc.h \
-  {$(srcdir)}oniguruma.h  {$(srcdir)}ruby.h config.h {$(srcdir)}oniggnu.h \
-  {$(srcdir)}/win32/win32.h
-regparse.obj: {$(srcdir)}regparse.c {$(srcdir)}oniguruma.h {$(srcdir)}regint.h \
-  {$(srcdir)}regparse.h {$(srcdir)}regenc.h {$(srcdir)}ruby.h config.h \
-  {$(srcdir)}/win32/win32.h
-ruby.obj: {$(srcdir)}ruby.c {$(srcdir)}ruby.h config.h \
-  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}dln.h {$(srcdir)}node.h {$(srcdir)}util.h \
-  {$(srcdir)}/win32/win32.h
-signal.obj: {$(srcdir)}signal.c {$(srcdir)}ruby.h config.h \
-  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}rubysig.h {$(srcdir)}/win32/win32.h
-sjis.obj: {$(srcdir)}sjis.c {$(srcdir)}regenc.h {$(srcdir)}oniguruma.h \
-  config.h
-sprintf.obj: {$(srcdir)}sprintf.c {$(srcdir)}ruby.h config.h \
-  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}/win32/win32.h
-st.obj: {$(srcdir)}st.c config.h {$(srcdir)}st.h
-string.obj: {$(srcdir)}string.c {$(srcdir)}ruby.h config.h \
-  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}re.h {$(srcdir)}regex.h {$(srcdir)}/win32/win32.h
-struct.obj: {$(srcdir)}struct.c {$(srcdir)}ruby.h config.h \
-  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}/win32/win32.h
-time.obj: {$(srcdir)}time.c {$(srcdir)}ruby.h config.h \
-  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}/win32/win32.h
-utf8.obj: {$(srcdir)}utf8.c {$(srcdir)}regenc.h {$(srcdir)}oniguruma.h \
-  config.h
-util.obj: {$(srcdir)}util.c {$(srcdir)}ruby.h config.h \
-  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}util.h {$(srcdir)}/win32/win32.h
-variable.obj: {$(srcdir)}variable.c {$(srcdir)}ruby.h config.h \
-  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}env.h {$(srcdir)}node.h {$(srcdir)}st.h {$(srcdir)}util.h \
-  {$(srcdir)}/win32/win32.h
-version.obj: {$(srcdir)}version.c {$(srcdir)}ruby.h config.h \
-  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}version.h {$(srcdir)}/win32/win32.h
+dir.$(OBJEXT): {$(srcdir)}win32/dir.h

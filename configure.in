@@ -1480,5 +1480,6 @@ else
 fi
 : > confdefs.h
 
-AC_CONFIG_FILES([$FIRSTMAKEFILE Makefile])
+AC_CONFIG_FILES($FIRSTMAKEFILE)
+AC_CONFIG_FILES(Makefile, [[sed 's/{\$([^(){}]*)[^{}]*}//g' ${srcdir}/common.mk >> Makefile]])
 AC_OUTPUT

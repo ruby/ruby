@@ -132,6 +132,17 @@ EOS
 $stdout.flush
 $stdout.reopen($orgout)
 config.close
-File.rename(rbconfig_rb_tmp, rbconfig_rb)
+if $timestamp and
+   File.exist?(rbconfig_rb) and
+   FileUtils.compare_file(rbconfig_rb, rbconfig_rb_tmp)
+  puts "#{rbconfig_rb} unchanged"
+  File.unlink(rbconfig_rb_tmp)
+else
+  puts "#{rbconfig_rb} updated"
+  File.rename(rbconfig_rb_tmp, rbconfig_rb)
+end
+if String === $timestamp
+  FileUtils.touch($timestamp)
+end
 
 # vi:set sw=2:

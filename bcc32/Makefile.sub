@@ -1,7 +1,7 @@
 # -*- makefile -*-
 
 SHELL = $(COMSPEC)
-MAKEFILES = Makefile $(srcdir)bcc32/Makefile.sub
+MKFILES = Makefile $(srcdir)bcc32/Makefile.sub $(srcdir)common.mk
 
 #### Start of system configuration section. ####
 OS = bccwin32
@@ -57,6 +57,7 @@ AR = tlib
 
 PURIFY =
 AUTOCONF = autoconf
+RM = $(srcdir:/=\)\win32\rm.bat
 
 !if !defined(PROCESSOR_ARCHITECTURE)
 PROCESSOR_ARCHITECTURE = x86
@@ -152,7 +153,6 @@ WPROGRAM=$(RUBYW_INSTALL_NAME)$(EXEEXT)
 RUBYDEF = $(RUBY_SO_NAME).def
 MINIRUBY = .\miniruby$(EXEEXT)
 RUNRUBY = .\ruby$(EXEEXT) "$(srcdir)runruby.rb" --extout="$(EXTOUT)" --
-EXTCONF = extconf.rb
 
 ORGLIBPATH = $(LIB)
 
@@ -165,68 +165,30 @@ LIBRUBYARG    = $(LIBRUBY)
 
 PREP          = miniruby$(EXEEXT)
 
-!ifndef EXTOBJS
-EXTOBJS       = dmyext.obj
-!endif
+DMYOBJS       = dmyext.obj
+OBJEXT        = obj
 
-MAINOBJ       = main.obj
-WINMAINOBJ    = winmain.obj
+WINMAINOBJ    = winmain.$(OBJEXT)
 
-OBJS          = ascii.obj \
-		array.obj \
-		bignum.obj \
-		class.obj \
-		compar.obj \
-		dir.obj \
-		dln.obj \
-		enum.obj \
-		error.obj \
-		euc_jp.obj \
-		eval.obj \
-		file.obj \
-		gc.obj \
-		hash.obj \
-		inits.obj \
-		io.obj \
-		marshal.obj \
-		math.obj \
-		numeric.obj \
-		object.obj \
-		pack.obj \
-		parse.obj \
-		prec.obj \
-		process.obj \
-		random.obj \
-		range.obj \
-		re.obj \
-		regcomp.obj \
-		regenc.obj \
-		regerror.obj \
-		regexec.obj \
-		reggnu.obj \
-		regparse.obj \
-		ruby.obj \
-		signal.obj \
-		sjis.obj \
-		sprintf.obj \
-		st.obj \
-		string.obj \
-		struct.obj \
-		time.obj \
-		utf8.obj \
-		util.obj \
-		variable.obj \
-		version.obj \
-		$(MISSING)
+.path.c = .;$(srcdir);$(srcdir)win32;$(srcdir)missing
+.path.h = .;$(srcdir);$(srcdir)win32;$(srcdir)missing
+.path.y = $(srcdir)
+.path. = $(srcdir)
 
-SCRIPT_ARGS   =	"--dest-dir=$(DESTDIR)" \
-		"--make=$(MAKE)" \
-		"--mflags=$(MFLAGS)" \
-		"--make-flags=$(MAKEFLAGS)"
-EXTMK_ARGS    =	$(SCRIPT_ARGS) --extout="$(EXTOUT)" --extension $(EXTS) --extstatic $(EXTSTATIC) --
+.c.obj:
+	$(CC) $(CFLAGS) $(XCFLAGS) -I. $(CPPFLAGS) -c $(<:/=\)
 
-all:		$(PREP) rbconfig.rb $(LIBRUBY) $(MISCLIBS)
-		@$(MINIRUBY) $(srcdir)ext/extmk.rb $(EXTMK_ARGS)
+.rc.res:
+	$(RC) $(RFLAGS) -I. -I$(<D). $(iconinc) -I$(srcdir)win32 $(RFLAGS) -fo$@ $(<:/=\)
+
+.y.c:
+	$(YACC) $(YFLAGS) $(<:\=/)
+	sed -e "s!^ *extern char \*getenv();!/* & */!;s/^\(#.*\)y\.tab/\1parse/" y.tab.c > $(@F)
+	@del y.tab.c
+
+all:
+
+!include $(srcdir)/common.mk
 
 ruby: $(PROGRAM)
 rubyw: $(WPROGRAM)
@@ -309,7 +271,7 @@ config.h:
 \#define RUBY_SITE_ARCHLIB "/lib/ruby/site_ruby/$(MAJOR).$(MINOR)/$(ARCH)-$(OS)"
 |
 
-config.status: $(MAKEFILES)
+config.status: $(MKFILES)
 	@echo Creating $@
 	@type > $@ &&|
 # Generated automatically by Makefile.sub.
@@ -415,7 +377,7 @@ s,@srcdir@,$(srcdir),;t t
 s,@top_srcdir@,$(srcdir),;t t
 |
 
-miniruby$(EXEEXT):	$(LIBRUBY_A) $(MAINOBJ)
+miniruby$(EXEEXT):
 		@echo $(LIBS)
 		$(LD) $(LDFLAGS) $(XLDFLAGS) $(MAINOBJ),$@,nul,$(LIBRUBY_A) $(LIBS)
 
@@ -432,210 +394,67 @@ $(LIBRUBY_A):	$(OBJS) dmyext.obj
 # $(LIBRUBY):	$(LIBRUBY_SO)
 #		implib $@ $(LIBRUBY_SO)
 
-$(LIBRUBY_SO) $(LIBRUBY): $(LIBRUBY_A) $(EXTOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
+$(LIBRUBY_SO): $(LIBRUBY_A) $(EXTOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
 		@echo $(EXTOBJS)
 		$(LIBRUBY_LDSHARED) $(LIBRUBY_DLDFLAGS) $(EXTOBJS:/=\),$(LIBRUBY_SO),nul,$(LIBRUBY_A) $(LIBS),$(RUBYDEF),$(RUBY_SO_NAME).res
 
+$(LIBRUBY): $(LIBRUBY_SO)
+
 $(RUBYDEF):	$(LIBRUBY_A) $(PREP)
-		$(MINIRUBY) $(srcdir)bcc32/mkexports.rb -output=$@ $(LIBRUBY_A)
+		$(MINIRUBY) $(srcdir)win32/mkexports.rb -output=$@ -base=$(RUBY_SO_NAME) $(LIBRUBY_A)
 
-install:	install-nodoc $(RDOCTARGET)
-install-all:	install-nodoc install-doc
+clean-local::
+		@$(RM) ext\extinit.c ext\extinit.$(OBJEXT) *.tds *.il?
+		@$(RM) $(RUBY_INSTALL_NAME).res $(RUBYW_INSTALL_NAME).res $(RUBY_SO_NAME).res
 
-install-nodoc:	install-local install-ext
-install-local:	rbconfig.rb
-		$(MINIRUBY) $(srcdir)instruby.rb $(SCRIPT_ARGS)
-install-ext:	rbconfig.rb
-		$(MINIRUBY) $(srcdir)ext/extmk.rb $(EXTMK_ARGS) install
+distclean-local::
+		@$(RM) ext\config.cache
+		@$(RM) *.map *.pdb *.ilk *.exp $(RUBYDEF)
+		@$(RM) $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc
 
-what-where-all no-install-all:	no-install no-install-doc
-what-where no-install:		no-install-local no-install-ext
-what-where-local:	no-install-local
-no-install-local:	rbconfig.rb
-		$(MINIRUBY) $(srcdir)instruby.rb -n $(SCRIPT_ARGS)
-what-where-ext:	no-install-ext
-no-install-ext:	rbconfig.rb
-		$(MINIRUBY) $(srcdir)ext/extmk.rb -n $(EXTMK_ARGS) install
-
-install-doc: $(PROGRAM)
-		@echo Generating RDoc documentation
-		$(RUNRUBY) "$(srcdir)bin/rdoc" --all --ri --op "$(RIDATADIR)" "$(srcdir)"
-
-clean:		clean-ext clean-local
-
-clean-local:
-		@if exist $(LIBRUBY_A) del $(LIBRUBY_A)
-		@if exist $(MAINOBJ) del $(MAINOBJ)
-		@if exist rbconfig.rb del rbconfig.rb
-		@if exist ext\extinit.c del ext\extinit.c
-		@if exist ext\extinit.obj del ext\extinit.obj
-		@if exist ext\vc*.pdb del ext\vc*.pdb
-		@if exist *.obj del *.obj
-		@if exist *.res del *.res
-		@if exist *.tds del *.tds
-		@if exist *.il? del *.il?
-
-clean-ext:
-		@-$(MINIRUBY) $(srcdir)ext/extmk.rb $(EXTMK_ARGS) clean
-
-distclean:	distclean-ext distclean-local
-
-distclean-local:	clean-local
-		@if exist Makefile del Makefile
-		@if exist config.h del config.h
-		@if exist ext\config.cache del ext\config.cache
-		@if exist config.cache del config.cache
-		@if exist config.log del config.log
-		@if exist config.status del config.status
-		@if exist *~ del *~
-		@if exist *.bak del *.bak
-		@if exist *.stackdump del *.stackdump
-		@if exist *.core del *.core
-		@if exist gmon.out del gmon.out
-		@if exist y.tab.c del y.tab.c
-		@if exist y.output del y.output
-		@if exist *.map del *.map
-		@if exist *.pdb del *.pdb
-		@if exist *.ilk del *.ilk
-		@if exist *.exp del *.exp
-		@if exist $(RUBYDEF) del $(RUBYDEF)
-		@if exist $(RUBY_INSTALL_NAME).rc del $(RUBY_INSTALL_NAME).rc
-		@if exist $(RUBYW_INSTALL_NAME).rc del $(RUBYW_INSTALL_NAME).rc
-		@if exist $(RUBY_SO_NAME).rc del $(RUBY_SO_NAME).rc
-		@if exist $(PROGRAM) del $(PROGRAM)
-		@if exist $(WPROGRAM) del $(WPROGRAM)
-		@if exist $(LIBRUBY_SO) del $(LIBRUBY_SO)
-		@if exist $(LIBRUBY) del $(LIBRUBY)
-		@if exist ext\nul if not exist ext\* rmdir ext
-		@if exist miniruby$(EXEEXT) del miniruby$(EXEEXT)
-
-distclean-ext:
-		@-$(MINIRUBY) $(srcdir)ext/extmk.rb $(EXTMK_ARGS) distclean
-
-realclean:	distclean
-		@if exist parse.c del parse.c
-		@if exist lex.c del lex.c
-
-test:		miniruby$(EXEEXT) NUL
-		@$(MINIRUBY) $(srcdir)rubytest.rb
-
-test-all:
-		$(RUNRUBY) -C "$(srcdir)test" runner.rb --runner=$(TESTUI) $(TESTS)
-
-extconf:
-		$(MINIRUBY) -run -e mkdir -- -p "$(EXTCONFDIR)"
-		$(RUNRUBY) -C "$(EXTCONFDIR)" $(EXTCONF) $(EXTCONFARGS)
-
-rbconfig.rb:	$(PREP) config.status
-		@$(MINIRUBY) $(srcdir)mkconfig.rb -srcdir=$(srcdir) \
-			-install_name=$(RUBY_INSTALL_NAME) \
-			-so_name=$(RUBY_SO_NAME) rbconfig.rb
-
-$(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc: rbconfig.rb
-		@$(MINIRUBY) $(srcdir)win32/resource.rb \
-			-ruby_name=$(RUBY_INSTALL_NAME) \
-			-rubyw_name=$(RUBYW_INSTALL_NAME) \
-			-so_name=$(RUBY_SO_NAME) \
-			. $(icondirs) $(srcdir)win32
-
-#config.status:	$(srcdir)configure
-#		$(SHELL) .config.status --recheck
-
-.path.c = .;$(srcdir);$(srcdir)win32;$(srcdir)missing
-.path.h = .;$(srcdir);$(srcdir)win32;$(srcdir)missing
-.path.y = $(srcdir)
-
-.c.obj:
-	$(CC) $(CFLAGS) $(XCFLAGS) -I. $(CPPFLAGS) -c $(<:/=\)
-
-.rc.res:
-	$(RC) $(RFLAGS) -I. -I$(<D). $(iconinc) -I$(srcdir)win32 $(RFLAGS) -fo$@ $(<:/=\)
-
-.y.c:
-	$(YACC) $(YFLAGS) $(<:\=/)
-	sed -e "s!^ *extern char \*getenv();!/* & */!;s/^\(#.*\)y\.tab/\1parse/" y.tab.c > $(@F)
-	@del y.tab.c
-
-parse.c: parse.y
-
-ext/extinit.obj: ext/extinit.c $(SETUP)
-	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -o$@ -c ext/extinit.c
-
-acosh.obj: acosh.c win32.h
-alloca.obj: alloca.c win32.h
-crypt.obj: crypt.c win32.h
-dup2.obj: dup2.c win32.h
-erf.obj: erf.c win32.h
-finite.obj: finite.c win32.h
-flock.obj: flock.c win32.h
-memcmp.obj: memcmp.c win32.h
-memmove.obj: memmove.c win32.h
-mkdir.obj: mkdir.c win32.h
-vsnprintf.obj: vsnprintf.c win32.h
-strcasecmp.obj: strcasecmp.c win32.h
-strncasecmp.obj: strncasecmp.c win32.h
-strchr.obj: strchr.c win32.h
-strdup.obj: strdup.c win32.h
-strerror.obj: strerror.c win32.h
-strftime.obj: strftime.c win32.h
-strstr.obj: strstr.c win32.h
-strtod.obj: strtod.c win32.h
-strtol.obj: strtol.c win32.h
-strtoul.obj: strtoul.c win32.h
-nt.obj: nt.c win32.h
-x68.obj: x68.c win32.h
-os2.obj: os2.c win32.h
-dl_os2.obj: dl_os2.c win32.h
-
-# when I use -I., there is confliction at "OpenFile" 
-# so, set . into environment varible "include"
-win32.obj: win32.c win32.h
-
-###
-ascii.obj: ascii.c regenc.h oniguruma.h config.h
-array.obj: array.c ruby.h config.h defines.h intern.h missing.h util.h st.h win32.h
-bignum.obj: bignum.c ruby.h config.h defines.h intern.h missing.h win32.h
-class.obj: class.c ruby.h config.h defines.h intern.h missing.h rubysig.h node.h st.h win32.h
-compar.obj: compar.c ruby.h config.h defines.h intern.h missing.h win32.h
-dir.obj: dir.c ruby.h config.h defines.h intern.h missing.h util.h win32.h
-dln.obj: dln.c ruby.h config.h defines.h intern.h missing.h dln.h win32.h
-dmyext.obj: dmyext.c
-enum.obj: enum.c ruby.h config.h defines.h intern.h missing.h node.h util.h win32.h
-error.obj: error.c ruby.h config.h defines.h intern.h missing.h env.h version.h st.h win32.h
-euc_jp.obj: euc_jp.c regenc.h oniguruma.h config.h
-eval.obj: eval.c ruby.h config.h defines.h intern.h missing.h node.h env.h util.h rubysig.h st.h dln.h win32.h
-file.obj: file.c ruby.h config.h defines.h intern.h missing.h rubyio.h rubysig.h util.h dln.h win32.h
-gc.obj: gc.c ruby.h config.h defines.h intern.h missing.h rubysig.h st.h node.h env.h re.h regex.h win32.h
-hash.obj: hash.c ruby.h config.h defines.h intern.h missing.h st.h util.h rubysig.h win32.h
-inits.obj: inits.c ruby.h config.h defines.h intern.h missing.h win32.h
-io.obj: io.c ruby.h config.h defines.h intern.h missing.h rubyio.h rubysig.h env.h util.h win32.h
-main.obj: main.c ruby.h config.h defines.h intern.h missing.h win32.h
-marshal.obj: marshal.c ruby.h config.h defines.h intern.h missing.h rubyio.h st.h util.h win32.h
-math.obj: math.c ruby.h config.h defines.h intern.h missing.h win32.h
-numeric.obj: numeric.c ruby.h config.h defines.h intern.h missing.h win32.h
-object.obj: object.c ruby.h config.h defines.h intern.h missing.h st.h util.h win32.h
-pack.obj: pack.c ruby.h config.h defines.h intern.h missing.h win32.h
-parse.obj: parse.c ruby.h config.h defines.h intern.h missing.h env.h node.h st.h regex.h util.h lex.c win32.h
-prec.obj: prec.c ruby.h config.h defines.h intern.h missing.h win32.h
-process.obj: process.c ruby.h config.h defines.h intern.h missing.h rubysig.h st.h win32.h
-random.obj: random.c ruby.h config.h defines.h intern.h missing.h win32.h
-range.obj: range.c ruby.h config.h defines.h intern.h missing.h win32.h
-re.obj: re.c ruby.h config.h defines.h intern.h missing.h re.h regex.h win32.h
-regcomp.obj: regcomp.c oniguruma.h regint.h regparse.h regenc.h config.h win32.h
-regenc.obj: regenc.c regint.h regenc.h oniguruma.h config.h win32.h
-regerror.obj: regerror.c regint.h regenc.h oniguruma.h config.h win32.h
-regexec.obj: regexec.c regint.h regenc.h oniguruma.h config.h win32.h
-reggnu.obj: reggnu.c regint.h regenc.h oniguruma.h config.h oniggnu.h win32.h
-regparse.obj: regparse.c oniguruma.h regint.h regparse.h regenc.h config.h win32.h
-ruby.obj: ruby.c ruby.h config.h defines.h intern.h missing.h dln.h node.h util.h win32.h
-signal.obj: signal.c ruby.h config.h defines.h intern.h missing.h rubysig.h win32.h
-sjis.obj: sjis.c regenc.h oniguruma.h config.h
-sprintf.obj: sprintf.c ruby.h config.h defines.h intern.h missing.h win32.h
-st.obj: st.c config.h st.h
-string.obj: string.c ruby.h config.h defines.h intern.h missing.h re.h regex.h win32.h
-struct.obj: struct.c ruby.h config.h defines.h intern.h missing.h win32.h
-time.obj: time.c ruby.h config.h defines.h intern.h missing.h win32.h
-utf8.obj: utf8.c regenc.h oniguruma.h config.h
-util.obj: util.c ruby.h config.h defines.h intern.h missing.h util.h win32.h
-variable.obj: variable.c ruby.h config.h defines.h intern.h missing.h env.h node.h st.h util.h win32.h
-version.obj: version.c ruby.h config.h defines.h intern.h missing.h version.h win32.h
+main.$(OBJEXT): win32.h
+ascii.$(OBJEXT): win32.h
+array.$(OBJEXT): win32.h
+bignum.$(OBJEXT): win32.h
+class.$(OBJEXT): win32.h
+compar.$(OBJEXT): win32.h
+dir.$(OBJEXT): dir.h win32.h
+dln.$(OBJEXT): win32.h
+enum.$(OBJEXT): win32.h
+error.$(OBJEXT): win32.h
+euc_jp.$(OBJEXT): win32.h
+eval.$(OBJEXT): win32.h
+file.$(OBJEXT): win32.h
+gc.$(OBJEXT): win32.h
+hash.$(OBJEXT): win32.h
+inits.$(OBJEXT): win32.h
+io.$(OBJEXT): win32.h
+marshal.$(OBJEXT): win32.h
+math.$(OBJEXT): win32.h
+numeric.$(OBJEXT): win32.h
+object.$(OBJEXT): win32.h
+pack.$(OBJEXT): win32.h
+parse.$(OBJEXT): win32.h
+process.$(OBJEXT): win32.h
+prec.$(OBJEXT): win32.h
+random.$(OBJEXT): win32.h
+range.$(OBJEXT): win32.h
+re.$(OBJEXT): win32.h
+regcomp.$(OBJEXT): win32.h
+regenc.$(OBJEXT): win32.h
+regerror.$(OBJEXT): win32.h
+regexec.$(OBJEXT): win32.h
+reggnu.$(OBJEXT): win32.h
+regparse.$(OBJEXT): win32.h
+ruby.$(OBJEXT): win32.h
+signal.$(OBJEXT): win32.h
+sjis.$(OBJEXT): win32.h
+sprintf.$(OBJEXT): win32.h
+st.$(OBJEXT): win32.h
+string.$(OBJEXT): win32.h
+struct.$(OBJEXT): win32.h
+time.$(OBJEXT): win32.h
+utf8.$(OBJEXT): win32.h
+util.$(OBJEXT): win32.h
+variable.$(OBJEXT): win32.h
+version.$(OBJEXT): win32.h

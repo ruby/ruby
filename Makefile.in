@@ -10,6 +10,7 @@ YACC = @YACC@
 PURIFY =
 AUTOCONF = autoconf
 @SET_MAKE@
+MKFILES = @MAKEFILES@
 
 prefix = @prefix@
 exec_prefix = @exec_prefix@
@@ -24,10 +25,12 @@ sitedir = @sitedir@
 
 TESTUI = console
 TESTS =
+RDOCTARGET = @RDOCTARGET@
 
 EXTOUT = .ext
 RIDATADIR = $(DESTDIR)$(datadir)/ri/$(MAJOR).$(MINOR)/system
 
+OUTFLAG = -o 
 CFLAGS = @CFLAGS@ @XCFLAGS@ @ARCH_FLAG@
 CPPFLAGS = -I. -I$(srcdir) @CPPFLAGS@
 LDFLAGS = @STATIC@ $(CFLAGS) @LDFLAGS@
@@ -48,7 +51,6 @@ PROGRAM=$(RUBY_INSTALL_NAME)$(EXEEXT)
 RUBY = $(RUBY_INSTALL_NAME)
 MINIRUBY = @MINIRUBY@
 RUNRUBY = @RUNRUBY@
-EXTCONF = extconf.rb
 
 #### End of system configuration section. ####
 
@@ -69,159 +71,51 @@ ARCHFILE      = @ARCHFILE@
 SETUP         =
 EXTSTATIC     = @EXTSTATIC@
 
+RM            = rm -f
+NM            = @NM@
+AR            = @AR@
+ARFLAGS       = rcu
+RANLIB        = @RANLIB@
+
+OBJEXT        = @OBJEXT@
+
 EXTOBJS	      = 
 DLDOBJS	      = $(DMYEXT)
-DMYEXT	      = dmyext.@OBJEXT@
 
-MAINOBJ	      = main.@OBJEXT@
-
-OBJS	      = ascii.@OBJEXT@ \
-		array.@OBJEXT@ \
-		bignum.@OBJEXT@ \
-		class.@OBJEXT@ \
-		compar.@OBJEXT@ \
-		dir.@OBJEXT@ \
-		dln.@OBJEXT@ \
-		enum.@OBJEXT@ \
-		error.@OBJEXT@ \
-		euc_jp.@OBJEXT@ \
-		eval.@OBJEXT@ \
-		file.@OBJEXT@ \
-		gc.@OBJEXT@ \
-		hash.@OBJEXT@ \
-		inits.@OBJEXT@ \
-		io.@OBJEXT@ \
-		marshal.@OBJEXT@ \
-		math.@OBJEXT@ \
-		numeric.@OBJEXT@ \
-		object.@OBJEXT@ \
-		pack.@OBJEXT@ \
-		parse.@OBJEXT@ \
-		process.@OBJEXT@ \
-		prec.@OBJEXT@ \
-		random.@OBJEXT@ \
-		range.@OBJEXT@ \
-		re.@OBJEXT@ \
-		regcomp.@OBJEXT@ \
-		regenc.@OBJEXT@ \
-		regerror.@OBJEXT@ \
-		regexec.@OBJEXT@ \
-		reggnu.@OBJEXT@ \
-		regparse.@OBJEXT@ \
-		ruby.@OBJEXT@ \
-		signal.@OBJEXT@ \
-		sjis.@OBJEXT@ \
-		sprintf.@OBJEXT@ \
-		st.@OBJEXT@ \
-		string.@OBJEXT@ \
-		struct.@OBJEXT@ \
-		time.@OBJEXT@ \
-		utf8.@OBJEXT@ \
-		util.@OBJEXT@ \
-		variable.@OBJEXT@ \
-		version.@OBJEXT@ \
-		$(MISSING)
+MAINOBJ	      = main.$(OBJEXT)
 
 MANTYPE	      = @MANTYPE@
 
-SCRIPT_ARGS   =	--dest-dir="$(DESTDIR)" \
-		--make="$(MAKE)" \
-		--mflags="$(MFLAGS)" \
-		--make-flags="$(MAKEFLAGS)"
-EXTMK_ARGS    =	$(SCRIPT_ARGS) --extout="$(EXTOUT)" --extension $(EXTS) --extstatic $(EXTSTATIC) --
+#### End of variables
 
-all:		@MAKEFILES@ $(PREP) rbconfig.rb $(LIBRUBY)
-		@$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS)
+all:
 
-miniruby$(EXEEXT):	config.status $(LIBRUBY_A) $(MAINOBJ) $(DMYEXT)
-		@rm -f $@
-		$(PURIFY) $(CC) $(LDFLAGS) $(MAINLIBS) $(MAINOBJ) $(LIBRUBY_A) $(LIBS) -o $@
+.DEFAULT: all
 
-$(PROGRAM):     $(LIBRUBY) $(MAINOBJ) $(EXTOBJS) $(SETUP) $(PREP)
-		@rm -f $@
-		$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINLIBS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(LIBS) -o $@
+# Prevent GNU make v3 from overflowing arg limit on SysV.
+.NOEXPORT:
 
-static-ruby:	$(MAINOBJ) $(EXTOBJS) $(LIBRUBY_A)
-		@rm -f $(STATICRUBY)
-		$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINLIBS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBY_A) $(LIBS) -o $(STATICRUBY)
+miniruby$(EXEEXT):
+		@$(RM) $@
+		$(PURIFY) $(CC) $(MAINOBJ) $(LIBRUBY_A) $(LIBS) $(OUTFLAG)$@ $(LDFLAGS) $(MAINLIBS)
+
+$(PROGRAM):
+		@$(RM) $@
+		$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINLIBS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(LIBS) $(OUTFLAG)$@
 
 # We must `rm' the library each time this rule is invoked because "updating" a
 # MAB library on Apple/NeXT (see --enable-fat-binary in configure) is not
 # supported.
-$(LIBRUBY_A):	$(OBJS) $(DMYEXT)
-		@rm -f $@
-		@AR@ rcu $@ $(OBJS) $(DMYEXT)
-		@-@RANLIB@ $@ 2> /dev/null || true
+$(LIBRUBY_A):
+		@$(RM) $@
+		$(AR) $(ARFLAGS) $@ $(OBJS) $(DMYEXT)
+		@-$(RANLIB) $@ 2> /dev/null || true
 
-$(LIBRUBY_SO):	$(OBJS) $(DLDOBJS) $(PREP) $(ARCHFILE)
-		$(LDSHARED) $(DLDFLAGS) $(OBJS) $(DLDOBJS) $(SOLIBS) -o $@
+$(LIBRUBY_SO):
+		$(LDSHARED) $(DLDFLAGS) $(OBJS) $(DLDOBJS) $(SOLIBS) $(OUTFLAG)$@
 		@-$(MINIRUBY) -e 'ARGV.each{|link| File.delete link if File.exist? link; \
 						  File.symlink "$(LIBRUBY_SO)", link}' \
 				$(LIBRUBY_ALIASES) || true
-
-ruby.imp:	$(LIBRUBY_A)
-		@@NM@ -Pgp $(LIBRUBY_A) | awk 'BEGIN{print "#!"}; $$2~/^[BD]$$/{print $$1}' | sort -u -o $@
-# $(MINIRUBY) $< $@
-
-install:	install-nodoc @RDOCTARGET@
-install-all:	install-nodoc install-doc
-
-install-nodoc:	install-local install-ext
-install-local:	rbconfig.rb
-		$(MINIRUBY) $(srcdir)/instruby.rb $(SCRIPT_ARGS) --mantype="$(MANTYPE)"
-install-ext:	rbconfig.rb
-		$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS) install
-
-what-where-all no-install-all:	no-install no-install-doc
-what-where no-install:	no-install-local no-install-ext
-what-where-local:	no-install-local
-no-install-local:	rbconfig.rb
-		$(MINIRUBY) $(srcdir)/instruby.rb -n $(SCRIPT_ARGS) --mantype="$(MANTYPE)"
-what-where-ext:	no-install-ext
-no-install-ext:	rbconfig.rb
-		$(MINIRUBY) $(srcdir)/ext/extmk.rb -n $(EXTMK_ARGS) install
-
-install-doc:	$(PROGRAM)
-		@echo Generating RDoc documentation
-		$(RUNRUBY) "$(srcdir)/bin/rdoc" --all --ri --op "$(RIDATADIR)" "$(srcdir)"
-
-clean-ext:
-		@-$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS) clean 2> /dev/null || true
-
-clean-local:
-		@rm -f $(OBJS) $(MAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY_ALIASES)
-		@rm -f ext/extinit.c ext/extinit.@OBJEXT@ dmyext.@OBJEXT@
-		@rm -f $(PROGRAM) miniruby$(EXEEXT)
-
-clean: clean-ext clean-local
-
-distclean-ext:
-		@-$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS) distclean 2> /dev/null || true
-
-distclean-local: clean-local
-		@rm -f @MAKEFILES@ config.h rbconfig.rb
-		@rm -f ext/config.cache config.cache config.log config.status
-		@rm -f *~ core *.core gmon.out y.tab.c y.output ruby.imp
-
-distclean: distclean-ext distclean-local
-
-realclean: 	distclean
-		@rm -f parse.c
-		@rm -f lex.c
-
-test:		miniruby$(EXEEXT) rbconfig.rb $(PROGRAM) PHONY
-		@./miniruby$(EXEEXT) $(srcdir)/rubytest.rb
-
-test-all:
-		$(RUNRUBY) -C "$(srcdir)/test" runner.rb --runner=$(TESTUI) $(TESTS)
-
-extconf:
-		$(MINIRUBY) -run -e mkdir -- -p "$(EXTCONFDIR)"
-		$(RUNRUBY) -C "$(EXTCONFDIR)" $(EXTCONF) $(EXTCONFARGS)
-
-rbconfig.rb:	$(srcdir)/mkconfig.rb config.status $(PREP)
-		@$(MINIRUBY) $(srcdir)/mkconfig.rb rbconfig.rb
-
 fake.rb:	Makefile
 		@echo ' \
 		class Object; \
@@ -241,13 +135,9 @@ fake.rb:	Makefile
 
 Makefile:	$(srcdir)/Makefile.in
 
-.PRECIOUS:	@MAKEFILES@
-
-.PHONY:		test install install-nodoc install-doc
-
 PHONY:
 
-@MAKEFILES@: config.status
+$(MKFILES): config.status $(srcdir)/common.mk
 		MAKE=$(MAKE) $(SHELL) ./config.status
 		@{ \
 		    echo "all:; -@rm -f conftest.mk"; \
@@ -263,166 +153,16 @@ config.status:	$(srcdir)/configure
 $(srcdir)/configure: $(srcdir)/configure.in
 		cd $(srcdir) && $(AUTOCONF)
 
-.c.@OBJEXT@:
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $<
-
 lex.c: keywords
-	@-rm -f $@
+	@-$(RM) $@
 	gperf -p -j1 -i 1 -g -o -t -N rb_reserved_word -k1,3,$$ $? > $@ || \
 	cp "$(srcdir)/$@" .
 
 .y.c:
-	$(YACC) $<
+	$(YACC) $(YFLAGS) $<
 	sed '/^#/s|y\.tab\.c|$@|' y.tab.c > $@
-	rm -f y.tab.c
+	$(RM) y.tab.c
 
-ext/extinit.@OBJEXT@: ext/extinit.c $(SETUP)
-	$(CC) $(CFLAGS) $(CPPFLAGS) @OUTFLAG@$@ -c ext/extinit.c
+.c.@OBJEXT@:
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $<
 
-acosh.@OBJEXT@: $(srcdir)/missing/acosh.c
-	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/acosh.c
-
-alloca.@OBJEXT@: $(srcdir)/missing/alloca.c
-	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/alloca.c
-
-crypt.@OBJEXT@: $(srcdir)/missing/crypt.c
-	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/crypt.c
-
-dup2.@OBJEXT@: $(srcdir)/missing/dup2.c
-	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/dup2.c
-
-fileblocks.@OBJEXT@: $(srcdir)/missing/fileblocks.c
-	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/fileblocks.c
-
-finite.@OBJEXT@: $(srcdir)/missing/finite.c
-	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/finite.c
-
-flock.@OBJEXT@: $(srcdir)/missing/flock.c
-	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/flock.c
-
-isinf.@OBJEXT@: $(srcdir)/missing/isinf.c
-	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/isinf.c
-
-isnan.@OBJEXT@: $(srcdir)/missing/isnan.c
-	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/isnan.c
-
-fnmatch.@OBJEXT@: $(srcdir)/missing/fnmatch.c
-	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/fnmatch.c
-
-memcmp.@OBJEXT@: $(srcdir)/missing/memcmp.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/memcmp.c
-
-memmove.@OBJEXT@: $(srcdir)/missing/memmove.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/memmove.c
-
-mkdir.@OBJEXT@: $(srcdir)/missing/mkdir.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/mkdir.c
-
-vsnprintf.@OBJEXT@: $(srcdir)/missing/vsnprintf.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/vsnprintf.c
-
-strcasecmp.@OBJEXT@: $(srcdir)/missing/strcasecmp.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/strcasecmp.c
-
-strncasecmp.@OBJEXT@: $(srcdir)/missing/strncasecmp.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/strncasecmp.c
-
-strchr.@OBJEXT@: $(srcdir)/missing/strchr.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/strchr.c
-
-strerror.@OBJEXT@: $(srcdir)/missing/strerror.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/strerror.c
-
-strftime.@OBJEXT@: $(srcdir)/missing/strftime.c
-	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/strftime.c
-
-strstr.@OBJEXT@: $(srcdir)/missing/strstr.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/strstr.c
-
-strtol.@OBJEXT@: $(srcdir)/missing/strtol.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/strtol.c
-
-strtoul.@OBJEXT@: $(srcdir)/missing/strtoul.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/strtoul.c
-
-x68.@OBJEXT@: $(srcdir)/missing/x68.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/x68.c
-
-os2.@OBJEXT@: $(srcdir)/missing/os2.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/os2.c
-
-dl_os2.@OBJEXT@: $(srcdir)/missing/dl_os2.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/dl_os2.c
-
-win32.@OBJEXT@: $(srcdir)/win32/win32.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(srcdir)/win32 -c $(srcdir)/win32/win32.c
-
-# Prevent GNU make v3 from overflowing arg limit on SysV.
-.NOEXPORT:
-###
-ascii.@OBJEXT@: ascii.c regenc.h oniguruma.h config.h
-array.@OBJEXT@: array.c ruby.h config.h defines.h intern.h missing.h \
-  util.h st.h
-bignum.@OBJEXT@: bignum.c ruby.h config.h defines.h intern.h missing.h
-class.@OBJEXT@: class.c ruby.h config.h defines.h intern.h missing.h \
-  rubysig.h node.h st.h
-compar.@OBJEXT@: compar.c ruby.h config.h defines.h intern.h missing.h
-dir.@OBJEXT@: dir.c ruby.h config.h defines.h intern.h missing.h util.h
-dln.@OBJEXT@: dln.c ruby.h config.h defines.h intern.h missing.h dln.h
-dmyext.@OBJEXT@: dmyext.c
-enum.@OBJEXT@: enum.c ruby.h config.h defines.h intern.h missing.h node.h \
-  util.h
-error.@OBJEXT@: error.c ruby.h config.h defines.h intern.h missing.h \
-  env.h version.h st.h
-euc_jp.@OBJEXT@: euc_jp.c regenc.h oniguruma.h config.h
-eval.@OBJEXT@: eval.c ruby.h config.h defines.h intern.h missing.h node.h \
-  env.h util.h rubysig.h st.h dln.h
-file.@OBJEXT@: file.c ruby.h config.h defines.h intern.h missing.h \
-  rubyio.h rubysig.h util.h dln.h
-gc.@OBJEXT@: gc.c ruby.h config.h defines.h intern.h missing.h rubysig.h \
-  st.h node.h env.h re.h regex.h
-hash.@OBJEXT@: hash.c ruby.h config.h defines.h intern.h missing.h st.h \
-  util.h rubysig.h
-inits.@OBJEXT@: inits.c ruby.h config.h defines.h intern.h missing.h
-io.@OBJEXT@: io.c ruby.h config.h defines.h intern.h missing.h rubyio.h \
-  rubysig.h env.h util.h
-main.@OBJEXT@: main.c ruby.h config.h defines.h intern.h missing.h
-marshal.@OBJEXT@: marshal.c ruby.h config.h defines.h intern.h missing.h \
-  rubyio.h st.h util.h
-math.@OBJEXT@: math.c ruby.h config.h defines.h intern.h missing.h
-numeric.@OBJEXT@: numeric.c ruby.h config.h defines.h intern.h missing.h
-object.@OBJEXT@: object.c ruby.h config.h defines.h intern.h missing.h \
-  st.h util.h
-pack.@OBJEXT@: pack.c ruby.h config.h defines.h intern.h missing.h
-parse.@OBJEXT@: parse.c ruby.h config.h defines.h intern.h missing.h \
-  env.h node.h st.h regex.h util.h lex.c
-prec.@OBJEXT@: prec.c ruby.h config.h defines.h intern.h missing.h
-process.@OBJEXT@: process.c ruby.h config.h defines.h intern.h missing.h \
-  rubysig.h st.h
-random.@OBJEXT@: random.c ruby.h config.h defines.h intern.h missing.h
-range.@OBJEXT@: range.c ruby.h config.h defines.h intern.h missing.h
-re.@OBJEXT@: re.c ruby.h config.h defines.h intern.h missing.h re.h \
-  regex.h
-regcomp.@OBJEXT@: regcomp.c oniguruma.h regint.h regparse.h regenc.h config.h
-regenc.@OBJEXT@: regenc.c regint.h regenc.h oniguruma.h config.h
-regerror.@OBJEXT@: regerror.c regint.h regenc.h oniguruma.h config.h
-regexec.@OBJEXT@: regexec.c regint.h regenc.h oniguruma.h config.h
-reggnu.@OBJEXT@: reggnu.c regint.h regenc.h oniguruma.h config.h oniggnu.h
-regparse.@OBJEXT@: regparse.c oniguruma.h regint.h regparse.h regenc.h config.h
-ruby.@OBJEXT@: ruby.c ruby.h config.h defines.h intern.h missing.h dln.h \
-  node.h util.h
-signal.@OBJEXT@: signal.c ruby.h config.h defines.h intern.h missing.h \
-  rubysig.h
-sjis.@OBJEXT@: sjis.c regenc.h oniguruma.h config.h
-sprintf.@OBJEXT@: sprintf.c ruby.h config.h defines.h intern.h missing.h
-st.@OBJEXT@: st.c config.h st.h
-string.@OBJEXT@: string.c ruby.h config.h defines.h intern.h missing.h \
-  re.h regex.h
-struct.@OBJEXT@: struct.c ruby.h config.h defines.h intern.h missing.h
-time.@OBJEXT@: time.c ruby.h config.h defines.h intern.h missing.h
-utf8.@OBJEXT@: utf8.c regenc.h oniguruma.h config.h
-util.@OBJEXT@: util.c ruby.h config.h defines.h intern.h missing.h util.h
-variable.@OBJEXT@: variable.c ruby.h config.h defines.h intern.h \
-  missing.h env.h node.h st.h util.h
-version.@OBJEXT@: version.c ruby.h config.h defines.h intern.h missing.h \
-  version.h

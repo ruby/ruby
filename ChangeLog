@@ -1,3 +1,18 @@
+Mon Mar 22 08:21:17 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in, */Makefile.sub, common.mk: extract common portions.
+
+	* Makefile.in, cygwin/GNUmakefile.in, */Makefile.sub (RBCONFIG):
+	  separated time stamp file for rbconfig.rb.
+
+	* configure.in: append common.mk to Makefile.
+
+	* mkconfig.rb: keep mtime of rbconfig.rb if unchanged.
+
+	* win32/rm.bat: remove multiple files.
+
+	* wince/mkconfig_wce.rb: use fake.rb instead.
+
 Sun Mar 21 22:17:35 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httpserver.rb (WEBrick::HTTPServer#virtual_host):
