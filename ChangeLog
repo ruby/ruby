@@ -1,3 +1,19 @@
+Mon Jan  3 07:27:46 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/httpauth/htpasswd.rb (WEBrick::Htpasswd#reload):
+	  raise NotImplementedError if password is encrypted by digest
+	  algorithms. This patch is contributed by sheepman. [ruby-list:40467]
+
+	* lib/webrick/httpauth/digestauth.rb
+	  (WEBrick::HTTPAuth::DigestAuth#_authenticate): fix digest calculation.
+	  This patch is contributed by sheepman. [ruby-list:40482]
+
+	* lib/webrick/{httpauth.rb,httpauth/basicauth.rb,httpproxy.rb}: use
+	  pack/unpack-template char "m" instead of lib/base64.rb to do base64
+	  encoding/decoding. fixed: [ruby-dev:25336]
+
+	* test/webrick/test_httpauth.rb: new file.
+
 Sun Jan  2 15:42:10 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/drb.rb: add lazy stop_service.
