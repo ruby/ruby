@@ -21,11 +21,15 @@ This module provides your program the functions to send internet
 mail via SMTP, Simple Mail Transfer Protocol. For details of
 SMTP itself, refer [RFC2821] ((<URL:http://www.ietf.org/rfc/rfc2821.txt>)).
 
-== What This Module is NOT?
+== What is NOT This Module?
 
-This module does NOT provide the functions to compose internet
-mail. You must create it by yourself. For details of internet mail
-format, see [RFC2822] ((<URL:http://www.ietf.org/rfc/rfc2822.txt>)).
+This module does NOT provide functions to compose internet mails.
+You must create it by yourself. If you want better mail support,
+try RubyMail or TMail. You can get both libraries from RAA.
+((<URL:http://www.ruby-lang.org/en/raa.html>))
+
+FYI: official documentation of internet mail is:
+[RFC2822] ((<URL:http://www.ietf.org/rfc/rfc2822.txt>)).
 
 == Examples
 
@@ -34,11 +38,11 @@ format, see [RFC2822] ((<URL:http://www.ietf.org/rfc/rfc2822.txt>)).
 You must open connection to SMTP server before sending mails.
 First argument is the address of SMTP server, and second argument
 is port number. Using SMTP.start with block is the most simple way
-to do it. SMTP Connection is closed automatically after block is
+to do it. SMTP connection is closed automatically after block is
 executed.
 
     require 'net/smtp'
-    Net::SMTP.start( 'your.smtp.server', 25 ) {|smtp|
+    Net::SMTP.start('your.smtp.server', 25) {|smtp|
         # use smtp object only in this block
     }
 
@@ -48,10 +52,7 @@ for you.
 
 Then you can send mail.
 
-    require 'net/smtp'
-
-    Net::SMTP.start( 'your.smtp.server', 25 ) {|smtp|
-        smtp.send_mail <<EndOfMail, 'your@mail.address', 'to@some.domain'
+    mail_text = <<END_OF_MAIL
     From: Your Name <your@mail.address>
     To: Dest Address <to@some.domain>
     Subject: test mail
@@ -59,7 +60,13 @@ Then you can send mail.
     Message-Id: <unique.message.id.string@some.domain>
 
     This is test mail.
-    EndOfMail
+    END_OF_MAIL
+
+    require 'net/smtp'
+    Net::SMTP.start('your.smtp.server', 25) {|smtp|
+        smtp.send_mail mail_text,
+                       'your@mail.address',
+                       'his_addess@example.com'
     }
 
 === Closing Session
@@ -70,24 +77,24 @@ closes session automatically. I strongly recommend later one. It is
 more beautiful and simple.
 
     # using SMTP#finish
-    smtp = Net::SMTP.start( 'your.smtp.server', 25 )
+    smtp = Net::SMTP.start('your.smtp.server', 25)
     smtp.send_mail mail_string, 'from@address', 'to@address'
     smtp.finish
 
     # using block form of SMTP.start
-    Net::SMTP.start( 'your.smtp.server', 25 ) {|smtp|
+    Net::SMTP.start('your.smtp.server', 25) {|smtp|
         smtp.send_mail mail_string, 'from@address', 'to@address'
     }
 
-=== Sending Mails from Any Sources
+=== Sending Mails From non-String Sources
 
-In an example above I sent mail from String (here document literal).
+In an example above I has sent mail from String (here document literal).
 SMTP#send_mail accepts any objects which has "each" method
 like File and Array.
 
     require 'net/smtp'
-    Net::SMTP.start( 'your.smtp.server', 25 ) {|smtp|
-        File.open( 'Mail/draft/1' ) {|f|
+    Net::SMTP.start('your.smtp.server', 25) {|smtp|
+        File.open('Mail/draft/1') {|f|
             smtp.send_mail f, 'your@mail.address', 'to@some.domain'
         }
     }
@@ -248,13 +255,13 @@ module Net
       conn_command
 
       begin
-        if @esmtp then
+        if @esmtp
           command().ehlo helo
         else
           command().helo helo
         end
       rescue ProtocolError
-        if @esmtp then
+        if @esmtp
           @esmtp = false
           command().error_ok
           retry
@@ -263,14 +270,12 @@ module Net
         end
       end
 
-      if user or secret then
-        (user and secret) or
-            raise ArgumentError, 'both of account and password are required'
-
+      if user or secret
+        raise ArgumentError, 'both of account and password are required'\
+                        unless user and secret
         mid = 'auth_' + (authtype || 'cram_md5').to_s
-        command().respond_to? mid or
-            raise ArgumentError, "wrong auth type #{authtype.to_s}"
-
+        raise ArgumentError, "wrong auth type #{authtype}"\
+                        unless command().respond_to?(mid)
         command().__send__ mid, user, secret
       end
     end
@@ -289,7 +294,7 @@ module Net
 
     def send_mail( mailsrc, from_addr, *to_addrs )
       do_ready from_addr, to_addrs.flatten
-      command().write_mail(mailsrc)
+      command().write_mail mailsrc
     end
 
     alias sendmail send_mail
@@ -304,7 +309,7 @@ module Net
     def do_ready( from_addr, to_addrs )
       raise ArgumentError, 'mail destination does not given' if to_addrs.empty?
       command().mailfrom from_addr
-      command().rcpt(to_addrs)
+      command().rcpt to_addrs
     end
 
   end
@@ -344,18 +349,18 @@ module Net
     # "CRAM-MD5" authentication [RFC2195]
     def auth_cram_md5( user, secret )
       atomic {
-          rep = getok( 'AUTH CRAM-MD5', ContinueCode )
-          challenge = rep.msg.split(' ')[1].unpack('m')[0]
+          rep = getok('AUTH CRAM-MD5', ContinueCode)
+          challenge = rep.msg.split(/ /)[1].unpack('m')[0]
           secret = Digest::MD5.digest(secret) if secret.size > 64
 
           isecret = secret + "\0" * (64 - secret.size)
           osecret = isecret.dup
-          0.upto( 63 ) do |i|
+          0.upto(63) do |i|
             isecret[i] ^= 0x36
             osecret[i] ^= 0x5c
           end
-          tmp = Digest::MD5.digest( isecret + challenge )
-          tmp = Digest::MD5.hexdigest( osecret + tmp )
+          tmp = Digest::MD5.digest(isecret + challenge)
+          tmp = Digest::MD5.hexdigest(osecret + tmp)
 
           getok [user + ' ' + tmp].pack('m').chomp
       }
@@ -416,14 +421,14 @@ module Net
               end
       klass ||= UnknownCode
 
-      Response.new( klass, stat, arr.join('') )
+      Response.new(klass, stat, arr.join(''))
     end
 
     def read_reply
       arr = []
-      while true do
+      while true
         str = @socket.readline
-        break unless str[3] == ?-   # ex: "210-..."
+        break unless str[3] == ?-   # "210-PIPELINING"
         arr.push str
       end
       arr.push str

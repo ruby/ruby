@@ -1,6 +1,14 @@
+Thu Nov 21 20:53:06 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/smtp.rb: changes coding style.
+
+	* lib/net/pop.rb: ditto.
+
+	* lib/net/protocol.rb: ditto.
+
 Thu Nov 21 20:17:08 2002  Minero Aoki  <aamine@loveruby.net>
 
-	* lib/net/http.rb: unify coding style.
+	* lib/net/http.rb: changes coding style.
 
 Thu Nov 21 20:04:06 2002  Minero Aoki  <aamine@loveruby.net>
 

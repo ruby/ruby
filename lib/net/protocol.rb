@@ -25,8 +25,8 @@ module Net
 
   class Protocol
 
-    Version = '1.2.3'
-    Revision = %q$Revision$.split(/\s+/)[1]
+    Version  = '1.2.3'
+    Revision = '$Revision$'.slice(/[\d\.]+/)
 
 
     class << self
@@ -38,11 +38,11 @@ module Net
       private
 
       def protocol_param( name, val )
-        module_eval <<-End, __FILE__, __LINE__ + 1
-            def self.#{name.id2name}
-              #{val}
-            end
-        End
+        module_eval <<-EOS, __FILE__, __LINE__ + 1
+          def self.#{name.id2name}
+            #{val}
+          end
+        EOS
       end
         
     end
@@ -65,9 +65,10 @@ module Net
 
     def Protocol.start( address, port = nil, *args )
       instance = new(address, port)
-
-      if block_given? then
-        instance.start(*args) { return yield(instance) }
+      if block_given?
+        instance.start(*args) {
+            return yield(instance)
+        }
       else
         instance.start(*args)
         instance
@@ -125,9 +126,9 @@ module Net
     def start( *args )
       @started and raise IOError, 'protocol has been opened already'
 
-      if block_given? then
+      if block_given?
         begin
-          do_start( *args )
+          do_start(*args)
           @started = true
           return yield(self)
         ensure
@@ -135,7 +136,7 @@ module Net
         end
       end
 
-      do_start( *args )
+      do_start(*args)
       @started = true
       self
     end
@@ -173,7 +174,7 @@ module Net
     public
 
     def finish
-      @started or raise IOError, 'closing already closed protocol'
+      raise IOError, 'closing already closed protocol' unless @started
       do_finish
       @started = false
       nil
@@ -189,9 +190,7 @@ module Net
     end
 
     def disconn_socket
-      if @socket and not @socket.closed? then
-        @socket.close
-      end
+      @socket.close if @socket and not @socket.closed?
       @socket = nil
     end
     
@@ -274,7 +273,9 @@ module Net
     end
 
     def ===( response )
-      response.code_type.parents.each {|c| c == self and return true }
+      response.code_type.parents.each do |c|
+        return true if c == self
+      end
       false
     end
 
@@ -284,17 +285,17 @@ module Net
   
   end
   
-  ReplyCode       = Code.new( [], ProtoUnknownError )
-  InformationCode = ReplyCode.mkchild( ProtoUnknownError )
-  SuccessCode     = ReplyCode.mkchild( ProtoUnknownError )
-  ContinueCode    = ReplyCode.mkchild( ProtoUnknownError )
-  ErrorCode       = ReplyCode.mkchild( ProtocolError )
-  SyntaxErrorCode = ErrorCode.mkchild( ProtoSyntaxError )
-  FatalErrorCode  = ErrorCode.mkchild( ProtoFatalError )
-  ServerErrorCode = ErrorCode.mkchild( ProtoServerError )
-  AuthErrorCode   = ErrorCode.mkchild( ProtoAuthError )
-  RetriableCode   = ReplyCode.mkchild( ProtoRetriableError )
-  UnknownCode     = ReplyCode.mkchild( ProtoUnknownError )
+  ReplyCode       = Code.new([], ProtoUnknownError)
+  InformationCode = ReplyCode.mkchild(ProtoUnknownError)
+  SuccessCode     = ReplyCode.mkchild(ProtoUnknownError)
+  ContinueCode    = ReplyCode.mkchild(ProtoUnknownError)
+  ErrorCode       = ReplyCode.mkchild(ProtocolError)
+  SyntaxErrorCode = ErrorCode.mkchild(ProtoSyntaxError)
+  FatalErrorCode  = ErrorCode.mkchild(ProtoFatalError)
+  ServerErrorCode = ErrorCode.mkchild(ProtoServerError)
+  AuthErrorCode   = ErrorCode.mkchild(ProtoAuthError)
+  RetriableCode   = ReplyCode.mkchild(ProtoRetriableError)
+  UnknownCode     = ReplyCode.mkchild(ProtoUnknownError)
 
 
   class Command
@@ -394,15 +395,15 @@ module Net
 
     def connect( otime )
       D "opening connection to #{@address}..."
-      timeout( otime ) {
-          @socket = TCPSocket.new( @address, @port )
+      timeout(otime) {
+          @socket = TCPsocket.new(@address, @port)
       }
       @rbuf = ''
     end
     private :connect
 
     def close
-      if @socket then
+      if @socket
         @socket.close
         D 'closed'
       else
@@ -438,7 +439,7 @@ module Net
 
       rsize = 0
       begin
-        while rsize + @rbuf.size < len do
+        while rsize + @rbuf.size < len
           rsize += rbuf_moveto(dest, @rbuf.size)
           rbuf_fill
         end
@@ -456,7 +457,7 @@ module Net
 
       rsize = 0
       begin
-        while true do
+        while true
           rsize += rbuf_moveto(dest, @rbuf.size)
           rbuf_fill
         end
@@ -471,9 +472,7 @@ module Net
     def readuntil( target, ignore = false )
       dest = ''
       begin
-        while true do
-          idx = @rbuf.index(target)
-          break if idx
+        until idx = @rbuf.index(target)
           rbuf_fill
         end
         rbuf_moveto dest, idx + target.size
@@ -495,7 +494,7 @@ module Net
     BLOCK_SIZE = 1024
 
     def rbuf_fill
-      until IO.select [@socket], nil, nil, @read_timeout do
+      until IO.select [@socket], nil, nil, @read_timeout
         on_read_timeout
       end
       @rbuf << @socket.sysread(BLOCK_SIZE)
@@ -521,7 +520,7 @@ module Net
       D_off 'reading text...'
 
       rsize = 0
-      while (str = readuntil("\r\n")) != ".\r\n" do
+      while (str = readuntil("\r\n")) != ".\r\n"
         rsize += str.size
         dest << str.sub(/\A\./, '')
       end
@@ -532,7 +531,7 @@ module Net
   
     # private use only (cannot handle 'break')
     def each_list_item
-      while (str = readuntil("\r\n")) != ".\r\n" do
+      while (str = readuntil("\r\n")) != ".\r\n"
         yield str.chop
       end
     end
@@ -610,7 +609,7 @@ module Net
     def wpend_in( src )
       line = nil
       pre = @writtensize
-      each_crlf_line( src ) do |line|
+      each_crlf_line(src) do |line|
         do_write '.' if line[0] == ?.
         do_write line
       end
@@ -624,13 +623,13 @@ module Net
 
           yield
 
-          if not @wbuf.empty? then       # unterminated last line
-            if @wbuf[-1] == ?\r then
+          if not @wbuf.empty?       # unterminated last line
+            if @wbuf[-1] == ?\r
               @wbuf.chop!
             end
             @wbuf.concat "\r\n"
             do_write @wbuf
-          elsif @writtensize == 0 then   # empty src
+          elsif @writtensize == 0   # empty src
             do_write "\r\n"
           end
           do_write ".\r\n"
@@ -642,12 +641,12 @@ module Net
     def each_crlf_line( src )
       str = m = beg = nil
 
-      adding( src ) do
+      adding(src) do
         beg = 0
         buf = @wbuf
-        while buf.index( /\n|\r\n|\r/, beg ) do
+        while buf.index(/\n|\r\n|\r/, beg)
           m = Regexp.last_match
-          if m.begin(0) == buf.size - 1 and buf[-1] == ?\r then
+          if m.begin(0) == buf.size - 1 and buf[-1] == ?\r
             # "...\r" : can follow "\n..."
             break
           end
@@ -661,30 +660,26 @@ module Net
     end
 
     def adding( src )
-      i = nil
+      i = s = nil
 
       case src
       when String
-        0.step( src.size - 1, 2048 ) do |i|
+        0.step(src.size - 1, 2048) do |i|
           @wbuf << src[i,2048]
           yield
         end
 
       when File
-        while true do
-          i = src.read(2048)
-          break unless i
-          i[0,0] = @wbuf
-          @wbuf = i
+        while s = src.read(2048)
+          s[0,0] = @wbuf
+          @wbuf = s
           yield
         end
 
       else
-        src.each do |i|
-          @wbuf << i
-          if @wbuf.size > 2048 then
-            yield
-          end
+        src.each do |s|
+          @wbuf << s
+          yield if @wbuf.size > 2048
         end
         yield unless @wbuf.empty?
       end
@@ -759,7 +754,7 @@ module Net
     end
 
     def <<( str )
-      call_block str, &@block if @block
+      call_block(str, &@block) if @block
     end
 
     private

@@ -341,33 +341,33 @@ module Net
     protocol_param :socket_type,       '::Net::InternetMessageIO'
 
 
-    def POP3.APOP( bool )
-      bool ? APOP : POP3
+    def POP3.APOP( isapop )
+      isapop ? APOP : POP3
     end
 
     def POP3.foreach( address, port = nil,
-                 account = nil, password = nil, &block )
-      start( address, port, account, password ) {|pop|
-          pop.each_mail( &block )
+                      account = nil, password = nil, &block )
+      start(address, port, account, password) {|pop|
+          pop.each_mail(&block)
       }
     end
 
     def POP3.delete_all( address, port = nil,
-                    account = nil, password = nil, &block )
-      start( address, port, account, password ) {|pop|
-          pop.delete_all( &block )
+                         account = nil, password = nil, &block )
+      start(address, port, account, password) {|pop|
+          pop.delete_all(&block)
       }
     end
 
     def POP3.auth_only( address, port = nil,
-                   account = nil, password = nil )
-      new( address, port ).auth_only account, password
+                        account = nil, password = nil )
+      new(address, port).auth_only account, password
     end
 
 
     def auth_only( account, password )
       raise IOError, 'opening already opened POP session' if active?
-      start( account, password ) {
+      start(account, password) {
           # none
       }
     end
@@ -387,8 +387,13 @@ module Net
 
     def do_start( account, password )
       conn_socket
-      @command = (@apop ? self.class.apop_command_type : self.class.command_type).new(socket())
+      conn_command
       @command.auth account, password
+    end
+
+    def conn_command
+      @command = (@apop ? self.class.apop_command_type :
+                          self.class.command_type).new(socket())
     end
 
     def do_finish
@@ -408,15 +413,15 @@ module Net
       return @mails if @mails
 
       mails = []
-      mtype = self.class.mail_type
+      mailclass = self.class.mail_type
       command().list.each_with_index do |size,idx|
-        mails.push mtype.new(idx, size, command()) if size
+        mails.push mailclass.new(idx, size, command()) if size
       end
       @mails = mails.freeze
     end
 
     def each_mail( &block )
-      mails().each( &block )
+      mails().each(&block)
     end
 
     alias each each_mail
@@ -479,7 +484,7 @@ module Net
     end
 
     def pop( dest = '', &block )
-      if block then
+      if block
         dest = ReadAdapter.new(block)
       end
       @command.retr @num, dest
@@ -540,7 +545,7 @@ module Net
           @socket.each_list_item do |line|
             m = /\A(\d+)[ \t]+(\d+)/.match(line) or
                     raise BadResponse, "illegal response: #{line}"
-            arr[ m[1].to_i ] = m[2].to_i
+            arr[m[1].to_i] = m[2].to_i
           end
       }
       arr
@@ -575,7 +580,7 @@ module Net
 
     def uidl( num )
       atomic {
-          getok( sprintf('UIDL %d', num) ).message.split(' ')[1]
+          getok(sprintf('UIDL %d', num)).message.split(/ /)[1]
       }
     end
 
@@ -598,10 +603,10 @@ module Net
     def get_reply
       str = @socket.readline
 
-      if /\A\+/ === str then
-        Response.new( SuccessCode, str[0,3], str[3, str.size - 3].strip )
+      if /\A\+/ === str
+        Response.new(SuccessCode, str[0,3], str[3, str.size - 3].strip)
       else
-        Response.new( ErrorCode, str[0,4], str[4, str.size - 4].strip )
+        Response.new(ErrorCode, str[0,4], str[4, str.size - 4].strip)
       end
     end
 
