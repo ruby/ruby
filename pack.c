@@ -1456,12 +1456,12 @@ pack_unpack(str, fmt)
 	    
 	  case 'U':
 	    if (len > send - s) len = send - s;
-	    while (len-- > 0 && s < send) {
-		int alen;
+	    while (len > 0 && s < send) {
+		int alen = len;
 		unsigned long l;
 
 		l = utf8_to_uv(s, &alen);
-		s += alen;
+		s += alen; len -= alen;
 		rb_ary_push(ary, rb_uint2inum(l));
 	    }
 	    break;
@@ -1757,6 +1757,7 @@ utf8_to_uv(p, lenp)
     else if (c < 0xfc) n = 5;
     else if (c < 0xfe) n = 6;
     else if (c == 0xfe) n = 7;
+    if (n > *lenp) return 0;
     *lenp = n--;
 
     uv = c;

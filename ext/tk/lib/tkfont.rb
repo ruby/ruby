@@ -691,10 +691,10 @@ class TkFont
   def metrics_core_tk8x(font, window, option=nil)
     if option
       if window
-	number(tk_call('font', 'metrics', font, "-#{option}"))
-      else
 	number(tk_call('font', 'metrics', font, 
 		       "-displayof", window, "-#{option}"))
+      else
+	number(tk_call('font', 'metrics', font, "-#{option}"))
       end
     else
       l = tk_split_list(if window

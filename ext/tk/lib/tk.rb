@@ -1563,31 +1563,6 @@ module TkXIM
   end
 end
 
-module TkXIM
-  include Tk
-  extend Tk
-
-  def TkXIM.useinputmethods(window=nil,value=nil)
-    if window
-      if value
-        tk_call 'tk', 'useinputmethods', '-displayof', window.path, value
-      else
-        tk_call 'tk', 'useinputmethods', '-displayof', window.path
-      end
-    else
-      if value
-        tk_call 'tk', 'useinputmethods', value
-      else
-        tk_call 'tk', 'useinputmethods'
-      end
-    end
-  end
-
-  def useinputmethods(value=nil)
-    TkXIM.useinputmethods(self,value)
-  end
-end
-
 module TkWinfo
   include Tk
   extend Tk

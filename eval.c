@@ -7573,6 +7573,9 @@ rb_thread_schedule()
 	if (n < 0) {
 	    if (rb_trap_pending) rb_trap_exec();
 	    if (errno == EINTR) goto again;
+#ifdef ERESTART
+	    if (erestart == ERESTART) goto again;
+#endif
 	    FOREACH_THREAD_FROM(curr, th) {
 		if (th->wait_for & WAIT_SELECT) {
 		    int v = 0;
@@ -7730,6 +7733,9 @@ rb_thread_wait_for(time)
 	    if (n < 0) {
 		switch (errno) {
 		  case EINTR:
+#ifdef ERESTART
+		  case ERESTART:
+#endif
 		    return;
 		  default:
 		    rb_sys_fail("sleep");
@@ -7801,14 +7807,21 @@ rb_thread_select(max, read, write, except, timeout)
 	    TRAP_BEG;
 	    n = select(max, read, write, except, tvp);
 	    TRAP_END;
-	    if (n < 0 && errno == EINTR) {
-		if (timeout) {
-		    double d = timeofday() - limit;
+		switch (errno) {
+		  case EINTR:
+#ifdef ERESTART
+		  case ERESTART:
+#endif
+		    if (timeout) {
+			double d = timeofday() - limit;
 
-		    tv.tv_sec = (unsigned int)d;
-		    tv.tv_usec = (long)((d-(double)tv.tv_sec)*1e6);
+			tv.tv_sec = (unsigned int)d;
+			tv.tv_usec = (long)((d-(double)tv.tv_sec)*1e6);
+		    }
+		    continue;
+		  default:
+		    break;
 		}
-		continue;
 	    }
 	    return n;
 	}
@@ -7817,8 +7830,14 @@ rb_thread_select(max, read, write, except, timeout)
 	    TRAP_BEG;
 	    n = select(max, read, write, except, timeout);
 	    TRAP_END;
-	    if (n < 0 && errno == EINTR) {
-		continue;
+	    if (n < 0) {
+		switch (errno) {
+		  case EINTR:
+#ifdef ERESTART
+		  case ERESTART:
+#endif
+		    continue;
+		}
 	    }
 	    return n;
 	}

@@ -629,7 +629,7 @@ def extmake(target)
       if $static_ext.size > 0 ||
 	!File.exist?("./Makefile") ||
 	older("./Makefile", "#{$top_srcdir}/ext/@setup@") ||
-	older("./Makefile", "../extmk.rb") ||
+	older("./Makefile", "#{$topdir}/ext/extmk.rb") ||
 	older("./Makefile", "#{$top_srcdir}/ext/#{target}/makefile.rb") ||
 	older("./Makefile", "#{$top_srcdir}/ext/#{target}/extconf.rb")
       then

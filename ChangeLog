@@ -3,12 +3,30 @@ Mon Nov 19 04:58:42 2001  Wakou Aoyama  <wakou@fsinet.or.jp>
 	* lib/cgi.rb (header): support for Apache. thanks to
 	  Shugo Maeda <shugo@ruby-lang.org>.
 
+Mon Nov 19 01:58:14 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (parse_regx): should raise error on untermitated
+	  expression interpolation.
+
 Sun Nov 18 19:37:55 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* parse.y: needless conditional.
 
 	* parse.y (parse_regx): parse error at unterminated regex /#{.
 	  (ruby-bugs-ja:PR#142)
+
+Sat Nov 17 12:37:39 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* pack.c (pack_unpack): should give length to utf8_to_uv().
+
+	* pack.c (utf8_to_uv): add length check.
+
+Sat Nov 17 01:41:52 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_thread_wait_for): select may cause ERESTART on
+	  Solaris.
+
+	* eval.c (rb_thread_select): ditto.
 
 Tue Nov 13 19:50:30 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
