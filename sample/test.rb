@@ -1056,7 +1056,7 @@ test_ok(m1{p 'test'})
 test_ok(!m1)
 
 def m
-  m0(block_given?,&proc{})
+  m0(block_given?,&Proc.new{})
 end
 test_ok(m1{p 'test'})
 test_ok(!m1)
@@ -1662,20 +1662,20 @@ test_ok(aaa(1, 2, 3, 4) == [1, 2, 3, 4])
 test_ok(aaa(1, *[2, 3, 4]) == [1, 2, 3, 4])
 
 test_check "proc"
-$proc = proc{|i| i}
+$proc = Proc.new{|i| i}
 test_ok($proc.call(2) == 2)
 test_ok($proc.call(3) == 3)
 
-$proc = proc{|i| i*2}
+$proc = Proc.new{|i| i*2}
 test_ok($proc.call(2) == 4)
 test_ok($proc.call(3) == 6)
 
-proc{
+Proc.new{
   iii=5				# nested local variable
-  $proc = proc{|i|
+  $proc = Proc.new{|i|
     iii = i
   }
-  $proc2 = proc {
+  $proc2 = Proc.new {
     $x = iii			# nested variables shared by procs
   }
   # scope of nested variables
@@ -1704,12 +1704,12 @@ if defined? Process.kill
   test_check "signal"
 
   $x = 0
-  trap "SIGINT", proc{|sig| $x = 2}
+  trap "SIGINT", Proc.new{|sig| $x = 2}
   Process.kill "SIGINT", $$
   sleep 0.1
   test_ok($x == 2)
 
-  trap "SIGINT", proc{raise "Interrupt"}
+  trap "SIGINT", Proc.new{raise "Interrupt"}
 
   x = false
   begin
@@ -1783,51 +1783,51 @@ rescue NameError		# must raise error
 end
 test_ok(!$bad)
 
-x = proc{}
+x = Proc.new{}
 eval "i4 = 1", x
 test_ok(eval("i4", x) == 1)
-x = proc{proc{}}.call
+x = Proc.new{Proc.new{}}.call
 eval "i4 = 22", x
 test_ok(eval("i4", x) == 22)
 $x = []
-x = proc{proc{}}.call
-eval "(0..9).each{|i5| $x[i5] = proc{i5*2}}", x
+x = Proc.new{Proc.new{}}.call
+eval "(0..9).each{|i5| $x[i5] = Proc.new{i5*2}}", x
 test_ok($x[4].call == 8)
 
 x = binding
 eval "i = 1", x
 test_ok(eval("i", x) == 1)
-x = proc{binding}.call
+x = Proc.new{binding}.call
 eval "i = 22", x
 test_ok(eval("i", x) == 22)
 $x = []
-x = proc{binding}.call
-eval "(0..9).each{|i5| $x[i5] = proc{i5*2}}", x
+x = Proc.new{binding}.call
+eval "(0..9).each{|i5| $x[i5] = Proc.new{i5*2}}", x
 test_ok($x[4].call == 8)
-x = proc{binding}.call
+x = Proc.new{binding}.call
 eval "for i6 in 1..1; j6=i6; end", x
 test_ok(eval("defined? i6", x))
 test_ok(eval("defined? j6", x))
 
-proc {
+Proc.new {
   p = binding
   eval "foo11 = 1", p
   foo22 = 5
-  proc{foo11=22}.call
-  proc{foo22=55}.call
+  Proc.new{foo11=22}.call
+  Proc.new{foo22=55}.call
   test_ok(eval("foo11", p) == eval("foo11"))
   test_ok(eval("foo11") == 1)
   test_ok(eval("foo22", p) == eval("foo22"))
   test_ok(eval("foo22") == 55)
 }.call
 
-p1 = proc{i7 = 0; proc{i7}}.call
+p1 = Proc.new{i7 = 0; Proc.new{i7}}.call
 test_ok(p1.call == 0)
 eval "i7=5", p1
 test_ok(p1.call == 5)
 test_ok(!defined?(i7))
 
-p1 = proc{i7 = 0; proc{i7}}.call
+p1 = Proc.new{i7 = 0; Proc.new{i7}}.call
 i7 = nil
 test_ok(p1.call == 0)
 eval "i7=1", p1
@@ -2076,7 +2076,7 @@ test_ok(atlas.ruler4 == "Cronus")
 test_check "trace"
 $x = 1234
 $y = 0
-trace_var :$x, proc{$y = $x}
+trace_var :$x, Proc.new{$y = $x}
 $x = 40414
 test_ok($y == $x)
 
@@ -2084,7 +2084,7 @@ untrace_var :$x
 $x = 19660208
 test_ok($y != $x)
 
-trace_var :$x, proc{$x *= 2}
+trace_var :$x, Proc.new{$x *= 2}
 $x = 5
 test_ok($x == 10)
 

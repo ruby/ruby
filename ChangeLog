@@ -1,3 +1,8 @@
+Mon Nov 15 00:46:03 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_yield_0): lambda{}.call(1) should raise exception.
+	  [ruby-talk:120253]
+
 Mon Nov 15 00:33:40 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_clear): avoid revealing NULL pointer.

@@ -4569,6 +4569,9 @@ break_jump(retval)
     localjump_error("unexpected break", retval, TAG_BREAK);
 }
 
+static VALUE bmcall _((VALUE, VALUE));
+static VALUE method_arity _((VALUE));
+
 static VALUE
 rb_yield_0(val, self, klass, flags, avalue)
     VALUE val, self, klass;	/* OK */
@@ -4686,7 +4689,9 @@ rb_yield_0(val, self, klass, flags, avalue)
 	POP_TAG();
 	if (state) goto pop_state;
     }
-    else if (lambda && RARRAY(val)->len != 0) {
+    else if (lambda && RARRAY(val)->len != 0 &&
+	     (!node || nd_type(node) != NODE_IFUNC ||
+	      node->nd_cfnc != bmcall)) {
 	rb_raise(rb_eArgError, "wrong number of arguments (%ld for 0)",
 		 RARRAY(val)->len);
     }
@@ -8216,9 +8221,6 @@ proc_call(proc, args)
 {
     return proc_invoke(proc, args, Qundef, 0);
 }
-
-static VALUE bmcall _((VALUE, VALUE));
-static VALUE method_arity _((VALUE));
 
 /*
  *  call-seq:
