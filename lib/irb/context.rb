@@ -40,7 +40,7 @@ module IRB
       self.math_mode = IRB.conf[:MATH_MODE] if IRB.conf[:MATH_MODE]
       self.use_tracer = IRB.conf[:USE_TRACER] if IRB.conf[:USE_TRASER]
       self.use_loader = IRB.conf[:USE_LOADER] if IRB.conf[:USE_LOADER]
-      self.eval_history = IRB.conf[:EVAL_HISTORY] if IRB.conf[:EVEL_HISTORY]
+      self.eval_history = IRB.conf[:EVAL_HISTORY] if IRB.conf[:EVAL_HISTORY]
 
       @ignore_sigint = IRB.conf[:IGNORE_SIGINT]
       @ignore_eof = IRB.conf[:IGNORE_EOF]
