@@ -1,6 +1,7 @@
 # -*- makefile -*-
 
 SHELL = $(COMSPEC)
+MAKEFILES = Makefile $(srcdir)/wince/Makefile.sub
 
 #### Start of system configuration section. ####
 
@@ -154,6 +155,8 @@ LIBRUBY_SO    = $(RUBY_SO_NAME).dll
 LIBRUBY       = $(RUBY_SO_NAME).lib
 LIBRUBYARG    = $(LIBRUBY)
 
+PREP          = miniruby$(EXEEXT)
+
 !if !defined(EXTSTATIC)
 EXTSTATIC     = 
 !endif
@@ -209,8 +212,7 @@ SCRIPT_ARGS   =	"--dest-dir=$(DESTDIR)" \
 		"--make-flags=$(MAKEFLAGS)"
 EXTMK_ARGS    =	$(SCRIPT_ARGS) --extout="$(EXTOUT)" --extension $(EXTS) --extstatic $(EXTSTATIC) --
 
-all:		ext miniruby$(EXEEXT) rbconfig.rb \
-		$(LIBRUBY) $(MISCLIBS)
+all:		ext rbconfig.rb $(LIBRUBY) $(MISCLIBS)
 		@$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS)
 
 ext:
@@ -312,7 +314,7 @@ config.h:
 #define RUBY_SITE_ARCHLIB "/lib/ruby/site_ruby/$(MAJOR).$(MINOR)/$(ARCH)-$(RT)"
 <<KEEP
 
-config.status: Makefile $(srcdir)/win32/Makefile.sub
+config.status: $(MAKEFILES)
 	@echo Creating <<$@
 # Generated automatically by Makefile.sub.
 s,@SHELL@,$$(COMSPEC),;t t
@@ -440,7 +442,7 @@ $(LIBRUBY_SO):	$(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $*.res
 		$(LIBRUBY_LDSHARED) $(MAINOBJ) $(DLDOBJS) $(LIBRUBY_A) $*.res $(LIBS) \
 			-Fe$@ $(LDFLAGS) $(LIBRUBY_DLDFLAGS)
 
-$(RUBYDEF):	$(LIBRUBY_A) miniruby$(EXEEXT)
+$(RUBYDEF):	$(LIBRUBY_A) $(PREP)
 		$(MINIRUBY) $(srcdir)/win32/mkexports.rb -output=$@ $(LIBRUBY_A)
 
 {$(srcdir)/win32}.def.lib:
@@ -531,7 +533,7 @@ extconf:
 		$(MINIRUBY) -run -e mkdir -- -p "$(EXTCONFDIR)"
 		$(RUNRUBY) -C "$(EXTCONFDIR)" $(EXTCONF) $(EXTCONFARGS)
 
-rbconfig.rb:	miniruby$(EXEEXT) config.status
+rbconfig.rb:	$(PREP) config.status
 		@$(MINIRUBY) $(srcdir)/mkconfig.rb -srcdir=$(srcdir) \
 			-install_name=$(RUBY_INSTALL_NAME) \
 			-so_name=$(RUBY_SO_NAME) rbconfig.rb

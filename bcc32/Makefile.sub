@@ -1,6 +1,7 @@
 # -*- makefile -*-
 
 SHELL = $(COMSPEC)
+MAKEFILES = Makefile $(srcdir)bcc32/Makefile.sub
 
 #### Start of system configuration section. ####
 OS = bccwin32
@@ -162,6 +163,8 @@ LIBRUBY_SO    = $(RUBY_SO_NAME).dll
 LIBRUBY       = $(RUBY_SO_NAME).lib
 LIBRUBYARG    = $(LIBRUBY)
 
+PREP          = miniruby$(EXEEXT)
+
 !ifndef EXTOBJS
 EXTOBJS       = dmyext.obj
 !endif
@@ -213,8 +216,7 @@ SCRIPT_ARGS   =	"--dest-dir=$(DESTDIR)" \
 		"--make-flags=$(MAKEFLAGS)"
 EXTMK_ARGS    =	$(SCRIPT_ARGS) --extout="$(EXTOUT)" --extension $(EXTS) --extstatic $(EXTSTATIC) --
 
-all:		miniruby$(EXEEXT) rbconfig.rb \
-		$(LIBRUBY) $(MISCLIBS)
+all:		$(PREP) rbconfig.rb $(LIBRUBY) $(MISCLIBS)
 		@$(MINIRUBY) $(srcdir)ext/extmk.rb $(EXTMK_ARGS)
 
 ruby: $(PROGRAM)
@@ -298,7 +300,7 @@ config.h:
 \#define RUBY_SITE_ARCHLIB "/lib/ruby/site_ruby/$(MAJOR).$(MINOR)/$(ARCH)-$(OS)"
 |
 
-config.status: Makefile $(srcdir)bcc32/Makefile.sub
+config.status: $(MAKEFILES)
 	@echo Creating $@
 	@type > $@ &&|
 # Generated automatically by Makefile.sub.
@@ -425,7 +427,7 @@ $(LIBRUBY_SO) $(LIBRUBY): $(LIBRUBY_A) $(EXTOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
 		@echo $(EXTOBJS)
 		$(LIBRUBY_LDSHARED) $(LIBRUBY_DLDFLAGS) $(EXTOBJS:/=\),$(LIBRUBY_SO),nul,$(LIBRUBY_A) $(LIBS),$(RUBYDEF),$(RUBY_SO_NAME).res
 
-$(RUBYDEF):	$(LIBRUBY_A) miniruby$(EXEEXT)
+$(RUBYDEF):	$(LIBRUBY_A) $(PREP)
 		$(MINIRUBY) $(srcdir)bcc32/mkexports.rb -output=$@ $(LIBRUBY_A)
 
 install:	install-nodoc $(RDOCTARGET)
@@ -515,7 +517,7 @@ extconf:
 		$(MINIRUBY) -run -e mkdir -- -p "$(EXTCONFDIR)"
 		$(RUNRUBY) -C "$(EXTCONFDIR)" $(EXTCONF) $(EXTCONFARGS)
 
-rbconfig.rb:	miniruby$(EXEEXT) config.status
+rbconfig.rb:	$(PREP) config.status
 		@$(MINIRUBY) $(srcdir)mkconfig.rb -srcdir=$(srcdir) \
 			-install_name=$(RUBY_INSTALL_NAME) \
 			-so_name=$(RUBY_SO_NAME) rbconfig.rb
