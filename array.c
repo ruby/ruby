@@ -1190,16 +1190,15 @@ static VALUE
 rb_ary_collect(ary)
     VALUE ary;
 {
-    long len, i;
+    long i;
     VALUE collect;
 
     if (!rb_block_given_p()) {
 	return rb_ary_new4(RARRAY(ary)->len, RARRAY(ary)->ptr);
     }
 
-    len = RARRAY(ary)->len;
-    collect = rb_ary_new2(len);
-    for (i=0; i<len; i++) {
+    collect = rb_ary_new2(RARRAY(ary)->len);
+    for (i = 0; i < RARRAY(ary)->len; i++) {
 	rb_ary_push(collect, rb_yield(RARRAY(ary)->ptr[i]));
     }
     return collect;

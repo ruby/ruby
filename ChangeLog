@@ -1,3 +1,9 @@
+Thu Jul 31 15:25:12 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* array.c (rb_ary_collect): must get length of array for each
+	  iteration. reported on [ruby-talk:77500], and fixed by
+	  K.Sasada <ko1@namikilab.tuat.ac.jp> on [ruby-talk:77504]
+
 Thu Jul 31 14:11:54 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/extconf.rb: move gmake specific features
