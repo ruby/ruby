@@ -595,6 +595,7 @@ rb_raise(exc, fmt, va_alist)
 
     va_init_list(args,fmt);
     vsnprintf(buf, BUFSIZ, fmt, args);
+    buf[BUFSIZ - 1] = '\0';
     va_end(args);
     rb_exc_raise(rb_exc_new2(exc, buf));
 }

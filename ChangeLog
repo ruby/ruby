@@ -1,3 +1,8 @@
+Fri Apr 18 15:26:50 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* error.c (rb_raise): workaround for some implementations of
+	  vsnprintf.
+
 Fri Apr 18 01:49:18 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* util.c (ruby_strtod): improved conversion accuracy.
