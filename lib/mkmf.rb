@@ -165,9 +165,8 @@ end
 def xsystem command
   Config.expand(command)
   Logging::open do
-    command = Shellwords.shellwords(command)
-    puts command.quote.join(' ')
-    system(*command)
+    puts command.quote
+    system(command)
   end
 end
 

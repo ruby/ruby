@@ -139,13 +139,18 @@ void xfree _((void*));
 static inline void
 flush_register_windows(void)
 {
-# if defined(__sparc_v9__) || defined(__arch64__)
-    asm volatile ("flushw" : :);
+    asm
+#ifdef __GNUC__
+	volatile
+#endif
+# if defined(__sparc_v9__) || defined(__sparcv9) || defined(__arch64__)
+	("flushw" : :)
 # elif defined(linux) || defined(__linux__)
-    asm volatile ("ta  0x83");
+	("ta  0x83")
 # else /* Solaris, OpenBSD, NetBSD, etc. */
-    asm volatile ("ta  0x03");
+	("ta  0x03")
 # endif /* trap always to flush register windows if we are on a Sparc system */
+	;
 }
 #  define FLUSH_REGISTER_WINDOWS flush_register_windows()
 #else

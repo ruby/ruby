@@ -1,3 +1,11 @@
+Fri Sep 26 09:52:44 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* defines.h (flush_register_windows): use volatile only for gcc on
+	  Solaris.  [ruby-dev:21403]
+
+	* lib/mkmf.rb (xsystem): use system directly to honor shell meta
+	  charaters.
+
 Mon Sep 26 00:10:13 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/README: updated.
