@@ -29,9 +29,9 @@ struct RMatch {
 #define RMATCH(obj)  (R_CAST(RMatch)(obj))
 
 VALUE rb_reg_regcomp _((VALUE));
-int rb_reg_search _((VALUE, VALUE, int, int));
+long rb_reg_search _((VALUE, VALUE, long, long));
 VALUE rb_reg_regsub _((VALUE, VALUE, struct re_registers *));
-int rb_reg_adjust_startpos _((VALUE, VALUE, int, int));
+long rb_reg_adjust_startpos _((VALUE, VALUE, long, long));
 void rb_match_busy _((VALUE));
 VALUE rb_reg_quote _((VALUE));
 

@@ -688,7 +688,7 @@ time_usec(time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    return INT2NUM(tobj->tv.tv_usec);
+    return LONG2NUM(tobj->tv.tv_usec);
 }
 
 static VALUE
@@ -783,7 +783,7 @@ time_hash(time)
 
     GetTimeval(time, tobj);
     hash = tobj->tv.tv_sec ^ tobj->tv.tv_usec;
-    return INT2FIX(hash);
+    return LONG2FIX(hash);
 }
 
 static VALUE
@@ -1276,9 +1276,8 @@ time_strftime(time, format)
 {
     struct time_object *tobj;
     char buffer[SMALLBUF];
-    char *fmt;
-    char *buf = buffer;
-    int len;
+    char *fmt, *buf = buffer;
+    long len;
     VALUE str;
 
     GetTimeval(time, tobj);

@@ -1415,7 +1415,8 @@ static void
 run_final(obj)
     VALUE obj;
 {
-    int i, status;
+    long i;
+    int status;
     VALUE args[2], table;
 
     args[1] = rb_ary_new3(1, rb_obj_id(obj)); /* make obj into id */

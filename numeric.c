@@ -701,7 +701,7 @@ flo_floor(num)
 	return rb_dbl2big(f);
     }
     val = f;
-    return INT2FIX(val);
+    return LONG2FIX(val);
 }
 
 static VALUE
@@ -715,7 +715,7 @@ flo_ceil(num)
 	return rb_dbl2big(f);
     }
     val = f;
-    return INT2FIX(val);
+    return LONG2FIX(val);
 }
 
 static VALUE
@@ -732,7 +732,7 @@ flo_round(num)
 	return rb_dbl2big(f);
     }
     val = f;
-    return INT2FIX(val);
+    return LONG2FIX(val);
 }
 
 static VALUE
@@ -749,7 +749,7 @@ flo_truncate(num)
 	return rb_dbl2big(f);
     }
     val = f;
-    return INT2FIX(val);
+    return LONG2FIX(val);
 }
 
 static VALUE
@@ -804,13 +804,13 @@ num_step(argc, argv, from)
 
 	if (diff > 0) {
 	    while (i <= end) {
-		rb_yield(INT2FIX(i));
+		rb_yield(LONG2FIX(i));
 		i += diff;
 	    }
 	}
 	else {
 	    while (i >= end) {
-		rb_yield(INT2FIX(i));
+		rb_yield(LONG2FIX(i));
 		i += diff;
 	    }
 	}
@@ -942,7 +942,7 @@ rb_num2fix(val)
     v = rb_num2long(val);
     if (!FIXABLE(v))
 	rb_raise(rb_eRangeError, "integer %ld out of range of fixnum", v);
-    return INT2FIX(v);
+    return LONG2FIX(v);
 }
 
 #if HAVE_LONG_LONG
@@ -1139,7 +1139,7 @@ fix_plus(x, y)
 	a = FIX2LONG(x);
 	b = FIX2LONG(y);
 	c = a + b;
-	r = INT2FIX(c);
+	r = LONG2FIX(c);
 
 	if (FIX2LONG(r) != c) {
 	    r = rb_big_plus(rb_int2big(a), rb_int2big(b));
@@ -1163,7 +1163,7 @@ fix_minus(x, y)
 	a = FIX2LONG(x);
 	b = FIX2LONG(y);
 	c = a - b;
-	r = INT2FIX(c);
+	r = LONG2FIX(c);
 
 	if (FIX2LONG(r) != c) {
 	    r = rb_big_minus(rb_int2big(a), rb_int2big(b));
@@ -1189,7 +1189,7 @@ fix_mul(x, y)
 
 	b = FIX2LONG(y);
 	c = a * b;
-	r = INT2FIX(c);
+	r = LONG2FIX(c);
 
 	if (FIX2LONG(r) != c || c/a != b) {
 	    r = rb_big_mul(rb_int2big(a), rb_int2big(b));
@@ -1239,7 +1239,7 @@ fix_div(x, y)
 	long div;
 
 	fixdivmod(FIX2LONG(x), FIX2LONG(y), &div, 0);
-	return INT2NUM(div);
+	return LONG2NUM(div);
     }
     return rb_num_coerce_bin(x, y);
 }
@@ -1252,7 +1252,7 @@ fix_mod(x, y)
 	long mod;
 
 	fixdivmod(FIX2LONG(x), FIX2LONG(y), 0, &mod);
-	return INT2NUM(mod);
+	return LONG2NUM(mod);
     }
     return rb_num_coerce_bin(x, y);
 }
@@ -1266,7 +1266,7 @@ fix_divmod(x, y)
 
 	fixdivmod(FIX2LONG(x), FIX2LONG(y), &div, &mod);
 
-	return rb_assoc_new(INT2NUM(div), INT2NUM(mod));
+	return rb_assoc_new(LONG2NUM(div), LONG2NUM(mod));
     }
     return rb_num_coerce_bin(x, y);
 }
@@ -1438,7 +1438,7 @@ fix_lshift(x, y)
     val = NUM2LONG(x);
     width = NUM2LONG(y);
     if (width < 0)
-	return fix_rshift(x, INT2FIX(-width));
+	return fix_rshift(x, LONG2FIX(-width));
     if (width > (sizeof(VALUE)*CHAR_BIT-1)
 	|| ((unsigned long)val)>>(sizeof(VALUE)*CHAR_BIT-1-width) > 0) {
 	return rb_big_lshift(rb_int2big(val), y);
@@ -1455,7 +1455,7 @@ fix_rshift(x, y)
 
     i = NUM2LONG(y);
     if (i < 0)
-	return fix_lshift(x, INT2FIX(-i));
+	return fix_lshift(x, LONG2FIX(-i));
     if (i == 0) return x;
     val = FIX2LONG(x);
     if (i >= sizeof(long)*CHAR_BIT-1) {
@@ -1463,7 +1463,7 @@ fix_rshift(x, y)
 	return INT2FIX(0);
     }
     val = RSHIFT(val, i);
-    return INT2FIX(val);
+    return LONG2FIX(val);
 }
 
 static VALUE
@@ -1540,7 +1540,7 @@ int_upto(from, to)
 
 	end = FIX2LONG(to);
 	for (i = FIX2LONG(from); i <= end; i++) {
-	    rb_yield(INT2FIX(i));
+	    rb_yield(LONG2FIX(i));
 	}
     }
     else {
@@ -1564,7 +1564,7 @@ int_downto(from, to)
 
 	end = FIX2LONG(to);
 	for (i=FIX2LONG(from); i >= end; i--) {
-	    rb_yield(INT2FIX(i));
+	    rb_yield(LONG2FIX(i));
 	}
     }
     else {
@@ -1588,7 +1588,7 @@ int_dotimes(num)
 
 	end = FIX2LONG(num);
 	for (i=0; i<end; i++) {
-	    rb_yield(INT2FIX(i));
+	    rb_yield(LONG2FIX(i));
 	}
     }
     else {

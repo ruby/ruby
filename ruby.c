@@ -338,7 +338,7 @@ static void
 process_sflag()
 {
     if (sflag) {
-	int n;
+	long n;
 	VALUE *args;
 
 	n = RARRAY(rb_argv)->len;
@@ -881,7 +881,7 @@ set_arg0(val, id)
     ID id;
 {
     char *s;
-    int i;
+    long i;
     static int len;
 
     if (origargv == 0) rb_raise(rb_eRuntimeError, "$0 not initialized");

@@ -820,7 +820,7 @@ r_object(arg)
     switch (type) {
       case TYPE_LINK:
 	id = r_long(arg);
-	v = rb_hash_aref(arg->data, INT2FIX(id));
+	v = rb_hash_aref(arg->data, LONG2FIX(id));
 	if (NIL_P(v)) {
 	    rb_raise(rb_eArgError, "dump format error (unlinked)");
 	}
@@ -864,7 +864,7 @@ r_object(arg)
       case TYPE_FIXNUM:
 	{
 	    long i = r_long(arg);
-	    v = INT2FIX(i);
+	    v = LONG2FIX(i);
 	}
 	break;
 
@@ -1004,7 +1004,7 @@ r_object(arg)
 			     rb_id2name(slot),
 			     rb_id2name(SYM2ID(RARRAY(mem)->ptr[i])));
 		}
-		rb_struct_aset(v, INT2FIX(i), r_object(arg));
+		rb_struct_aset(v, LONG2FIX(i), r_object(arg));
 	    }
 	}
 	break;

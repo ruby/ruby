@@ -954,7 +954,7 @@ arg		: lhs '=' arg
 			if ($2 && nd_type($2) == NODE_LIT && FIXNUM_P($2->nd_lit)) {
 			    long i = FIX2LONG($2->nd_lit);
 
-			    $2->nd_lit = INT2NUM(-i);
+			    $2->nd_lit = LONG2NUM(-i);
 			    $$ = $2;
 			}
 			else {
@@ -3020,7 +3020,7 @@ here_document(here)
 {
     int c, func, indent = 0;
     char *eos;
-    int len;
+    long len;
     VALUE str = 0, line;
 
     eos = RSTRING(here->nd_lit)->ptr;

@@ -338,9 +338,8 @@ pack_pack(ary, fmt)
     char *p, *pend;
     VALUE res, from, associates = 0;
     char type;
-    long items, len, idx;
+    long items, len, idx, plen;
     char *ptr;
-    int plen;
 #ifdef NATINT_PACK
     int natint;		/* native integer */
 #endif
@@ -1074,7 +1073,8 @@ pack_unpack(str, fmt)
     char *p, *pend;
     VALUE ary;
     char type;
-    int len, tmp, star;
+    long len;
+    int tmp, star;
 #ifdef NATINT_PACK
     int natint;			/* native integer */
 #endif
@@ -1493,7 +1493,7 @@ pack_unpack(str, fmt)
 	    {
 		VALUE buf = infected_str_new(0, (send - s)*3/4, str);
 		char *ptr = RSTRING(buf)->ptr;
-		int total = 0;
+		long total = 0;
 
 		while (s < send && *s > ' ' && *s < 'a') {
 		    long a,b,c,d;

@@ -672,7 +672,7 @@ io_read(argc, argv, io)
     VALUE io;
 {
     OpenFile *fptr;
-    int n, len;
+    long n, len;
     VALUE length, str;
 
     rb_scan_args(argc, argv, "01", &length);
@@ -683,7 +683,7 @@ io_read(argc, argv, io)
 	return read_all(fptr, remain_size(fptr));
     }
 
-    len = NUM2INT(length);
+    len = NUM2LONG(length);
     if (len < 0) {
 	rb_raise(rb_eArgError, "negative length %d given", len);
     }
@@ -859,7 +859,8 @@ rb_io_getline(rs, fptr)
     else {
 	int c, newline;
 	char *rsptr;
-	int rslen, rspara = 0;
+	long rslen;
+	int rspara = 0;
 
 	StringValue(rs);
 	rslen = RSTRING(rs)->len;
@@ -1346,7 +1347,7 @@ rb_io_syswrite(io, str)
 {
     OpenFile *fptr;
     FILE *f;
-    int n;
+    long n;
 
     rb_secure(4);
     if (TYPE(str) != T_STRING)
@@ -1366,7 +1367,7 @@ rb_io_syswrite(io, str)
 
     if (n == -1) rb_sys_fail(fptr->path);
 
-    return INT2FIX(n);
+    return LONG2FIX(n);
 }
 
 static VALUE
@@ -1374,10 +1375,10 @@ rb_io_sysread(io, len)
     VALUE io, len;
 {
     OpenFile *fptr;
-    int n, ilen;
+    long n, ilen;
     VALUE str;
 
-    ilen = NUM2INT(len);
+    ilen = NUM2LONG(len);
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
 
@@ -2396,7 +2397,7 @@ io_puts_ary(ary, out)
     VALUE ary, out;
 {
     VALUE tmp;
-    int i;
+    long i;
 
     for (i=0; i<RARRAY(ary)->len; i++) {
 	tmp = RARRAY(ary)->ptr[i];
@@ -2979,7 +2980,8 @@ rb_f_select(argc, argv, obj)
     fd_set *rp, *wp, *ep;
     struct timeval *tp, timerec;
     OpenFile *fptr;
-    int i, max = 0, n;
+    long i;
+    int max = 0, n;
     int interrupt_flag = 0;
     int pending = 0;
 
@@ -3140,7 +3142,7 @@ rb_io_ctl(io, req, arg, io_p)
 #if !defined(MSDOS) && !defined(__human68k__)
     int cmd = NUM2ULONG(req);
     OpenFile *fptr;
-    int len = 0;
+    long len = 0;
     long narg = 0;
     int retval;
 
@@ -3151,7 +3153,7 @@ rb_io_ctl(io, req, arg, io_p)
 	narg = 0;
     }
     else if (FIXNUM_P(arg)) {
-	narg = FIX2INT(arg);
+	narg = FIX2LONG(arg);
     }
     else if (arg == Qtrue) {
 	narg = 1;
@@ -3253,10 +3255,10 @@ rb_f_syscall(argc, argv)
     rb_secure(2);
     if (argc == 0)
 	rb_raise(rb_eArgError, "too few arguments for syscall");
-    arg[0] = NUM2INT(argv[0]); argv++;
+    arg[0] = NUM2LONG(argv[0]); argv++;
     while (items--) {
 	if (FIXNUM_P(*argv)) {
-	    arg[i] = (unsigned long)NUM2INT(*argv);
+	    arg[i] = (unsigned long)NUM2LONG(*argv);
 	}
 	else {
 	    VALUE v = *argv;
@@ -3529,9 +3531,9 @@ argf_read(argc, argv)
     VALUE *argv;
 {
     VALUE tmp, str;
-    int len = 0;
+    long len = 0;
 
-    if (argc == 1) len = NUM2INT(argv[0]);
+    if (argc == 1) len = NUM2LONG(argv[0]);
     str = Qnil;
 
   retry:
@@ -3556,7 +3558,7 @@ argf_read(argc, argv)
     }
     if (RSTRING(tmp)->len < len) {
 	len -= RSTRING(tmp)->len;
-	argv[0] = INT2FIX(len);
+	argv[0] = LONG2FIX(len);
 	goto retry;
     }
 

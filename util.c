@@ -166,7 +166,7 @@ ruby_add_suffix(str, suffix)
     int baselen;
     int extlen = strlen(suffix);
     char *s, *t, *p;
-    int slen;
+    long slen;
     char buf[1024];
 
     if (RSTRING(str)->len > 1000)

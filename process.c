@@ -1033,9 +1033,8 @@ proc_getpgid(obj, pid)
     VALUE obj, pid;
 {
 #if defined(HAVE_GETPGID) && !defined(__CHECKER__)
-    int i;
+    int i = getpgid(NUM2INT(pid));
 
-    i = getpgid(NUM2INT(pid));
     if (i < 0) rb_sys_fail(0);
     return INT2NUM(i);
 #else
@@ -1148,9 +1147,8 @@ static VALUE
 proc_setuid(obj, id)
     VALUE obj, id;
 {
-    int uid;
+    int uid = NUM2INT(id);
 
-    uid = NUM2INT(id);
 #if defined(HAVE_SETRESUID) &&  !defined(__CHECKER__)
     if (setresuid(uid, -1, -1) < 0) rb_sys_fail(0);
 #elif defined HAVE_SETREUID
@@ -1182,9 +1180,8 @@ static VALUE
 proc_setgid(obj, id)
     VALUE obj, id;
 {
-    int gid;
+    int gid = NUM2INT(id);
 
-    gid = NUM2INT(id);
 #if defined(HAVE_SETRESGID) && !defined(__CHECKER__)
     if (setresgid(gid, -1, -1) < 0) rb_sys_fail(0);
 #elif defined HAVE_SETREGID
@@ -1239,6 +1236,7 @@ proc_getegid(obj)
     VALUE obj;
 {
     int egid = getegid();
+
     return INT2FIX(egid);
 }
 

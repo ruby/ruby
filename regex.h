@@ -185,7 +185,6 @@ typedef struct
   regoff_t rm_eo;  /* Byte offset from string's start to substring's end.  */
 } regmatch_t;
 
-
 #ifdef __STDC__
 
 extern char *re_compile_pattern (const char *, int, struct re_pattern_buffer *);

@@ -261,7 +261,7 @@ double rb_num2dbl _((VALUE));
 #define NUM2DBL(x) rb_num2dbl((VALUE)(x))
 
 /* obsolete API - use StringValue() */
-char *rb_str2cstr _((VALUE,int*));
+char *rb_str2cstr _((VALUE,long*));
 /* obsolete API - use StringValuePtr() */
 #define STR2CSTR(x) rb_str2cstr((VALUE)(x),0)
 

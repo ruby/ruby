@@ -166,7 +166,7 @@ make_struct(name, member, klass)
 	}
 	nstr = rb_define_class_under(klass, cname, klass);
     }
-    rb_iv_set(nstr, "__size__", INT2NUM(RARRAY(member)->len));
+    rb_iv_set(nstr, "__size__", LONG2NUM(RARRAY(member)->len));
     rb_iv_set(nstr, "__member__", member);
 
     rb_define_singleton_method(nstr, "allocate", struct_alloc, 0);
@@ -576,7 +576,7 @@ static VALUE
 rb_struct_size(s)
     VALUE s;
 {
-    return INT2FIX(RSTRUCT(s)->len);
+    return LONG2FIX(RSTRUCT(s)->len);
 }
 
 void

@@ -108,9 +108,9 @@ bignorm(x)
 	    }
 	    if (num >= 0) {
 		if (RBIGNUM(x)->sign) {
-		    if (POSFIXABLE(num)) return INT2FIX(num);
+		    if (POSFIXABLE(num)) return LONG2FIX(num);
 		}
-		else if (NEGFIXABLE(-(long)num)) return INT2FIX(-(long)num);
+		else if (NEGFIXABLE(-(long)num)) return LONG2FIX(-(long)num);
 	    }
 	}
     }
@@ -133,7 +133,6 @@ rb_uint2big(n)
     BDIGIT *digits;
     VALUE big;
 
-    i = 0;
     big = bignew(DIGSPERLONG, 1);
     digits = BDIGITS(big);
     while (i < DIGSPERLONG) {
@@ -169,7 +168,7 @@ VALUE
 rb_uint2inum(n)
     unsigned long n;
 {
-    if (POSFIXABLE(n)) return INT2FIX(n);
+    if (POSFIXABLE(n)) return LONG2FIX(n);
     return rb_uint2big(n);
 }
 
@@ -177,7 +176,7 @@ VALUE
 rb_int2inum(n)
     long n;
 {
-    if (FIXABLE(n)) return INT2FIX(n);
+    if (FIXABLE(n)) return LONG2FIX(n);
     return rb_int2big(n);
 }
 
@@ -217,20 +216,20 @@ rb_quad_unpack(buf, sign)
 {
     unsigned LONG_LONG q;
     long neg = 0;
-    long i = 0;
+    long i;
     BDIGIT *digits;
     VALUE big;
 
     memcpy(&q, buf, SIZEOF_LONG_LONG);
     if (sign) {
-	if (FIXABLE((LONG_LONG)q)) return INT2FIX((LONG_LONG)q);
+	if (FIXABLE((LONG_LONG)q)) return LONG2FIX((LONG_LONG)q);
 	if ((LONG_LONG)q < 0) {
 	    q = -(LONG_LONG)q;
 	    neg = 1;
 	}
     }
     else {
-	if (POSFIXABLE(q)) return INT2FIX(q);
+	if (POSFIXABLE(q)) return LONG2FIX(q);
     }
 
     i = 0;
@@ -410,10 +409,10 @@ rb_cstr_to_inum(str, base, badcheck)
 	}
 
 	if (POSFIXABLE(val)) {
-	    if (sign) return INT2FIX(val);
+	    if (sign) return LONG2FIX(val);
 	    else {
 		long result = -(long)val;
-		return INT2FIX(result);
+		return LONG2FIX(result);
 	    }
 	}
 	else {
@@ -498,7 +497,7 @@ rb_str_to_inum(str, base, badcheck)
     int badcheck;
 {
     char *s;
-    int len;
+    long len;
 
     StringValue(str);
     s = RSTRING(str)->ptr;
@@ -527,7 +526,6 @@ rb_ull2big(n)
     BDIGIT *digits;
     VALUE big;
 
-    i = 0;
     big = bignew(DIGSPERLL, 1);
     digits = BDIGITS(big);
     while (i < DIGSPERLL) {
@@ -563,7 +561,7 @@ VALUE
 rb_ull2inum(n)
     unsigned LONG_LONG n;
 {
-    if (POSFIXABLE(n)) return INT2FIX(n);
+    if (POSFIXABLE(n)) return LONG2FIX(n);
     return rb_ull2big(n);
 }
 
@@ -571,7 +569,7 @@ VALUE
 rb_ll2inum(n)
     LONG_LONG n;
 {
-    if (FIXABLE(n)) return INT2FIX(n);
+    if (FIXABLE(n)) return LONG2FIX(n);
     return rb_ll2big(n);
 }
 
@@ -937,9 +935,8 @@ bigsub(x, y)
     VALUE z = 0;
     BDIGIT *zds;
     BDIGIT_DBL_SIGNED num;
-    long i;
-
-    i = RBIGNUM(x)->len;
+    long i = RBIGNUM(x)->len;
+    
     /* if x is larger than y, swap */
     if (RBIGNUM(x)->len < RBIGNUM(y)->len) {
 	z = x; x = y; y = z;	/* swap x y */
@@ -1585,12 +1582,11 @@ rb_big_rshift(x, y)
 {
     BDIGIT *xds, *zds;
     int shift = NUM2INT(y);
-    int s1 = shift/BITSPERDIG;
-    int s2 = shift%BITSPERDIG;
+    long s1 = shift/BITSPERDIG;
+    long s2 = shift%BITSPERDIG;
     VALUE z;
     BDIGIT_DBL num = 0;
-    long i = RBIGNUM(x)->len;
-    long j;
+    long i, j;
 
     if (shift < 0) return rb_big_lshift(x, INT2FIX(-shift));
 
@@ -1625,7 +1621,7 @@ rb_big_aref(x, y)
 {
     BDIGIT *xds;
     int shift;
-    int s1, s2;
+    long s1, s2;
 
     if (TYPE(y) == T_BIGNUM) {
 	if (!RBIGNUM(y)->sign || RBIGNUM(x)->sign)
@@ -1662,7 +1658,7 @@ rb_big_hash(x)
     for (i=0; i<len; i++) {
 	key ^= *digits++;
     }
-    return INT2FIX(key);
+    return LONG2FIX(key);
 }
 
 static VALUE
@@ -1697,9 +1693,8 @@ rb_big_rand(max, rand_buf)
     double *rand_buf;
 {
     VALUE v;
-    long len;
-
-    len = RBIGNUM(max)->len;
+    long len = RBIGNUM(max)->len;
+    
     if (len == 0 && BDIGITS(max)[0] == 0) {
 	return rb_float_new(rand_buf[0]);
     }
@@ -1715,7 +1710,7 @@ static VALUE
 rb_big_size(big)
     VALUE big;
 {
-    return INT2FIX(RBIGNUM(big)->len*SIZEOF_BDIGITS);
+    return LONG2FIX(RBIGNUM(big)->len*SIZEOF_BDIGITS);
 }
 
 void

@@ -256,7 +256,7 @@ rb_f_sprintf(argc, argv)
 	  case 's':
 	    {
 		VALUE arg = GETARG();
-		int len;
+		long len;
 
 		str = rb_obj_as_string(arg);
 		if (OBJ_TAINTED(str)) tainted = 1;

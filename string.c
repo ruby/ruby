@@ -359,7 +359,7 @@ static VALUE
 rb_str_length(str)
     VALUE str;
 {
-    return INT2NUM(RSTRING(str)->len);
+    return LONG2NUM(RSTRING(str)->len);
 }
 
 static VALUE
@@ -875,7 +875,7 @@ rb_str_index_m(argc, argv, str)
 	  char *p = RSTRING(str)->ptr;
 
 	  for (;pos<len;pos++) {
-	      if (p[pos] == c) return INT2NUM(pos);
+	      if (p[pos] == c) return LONG2NUM(pos);
 	  }
 	  return Qnil;
       }
@@ -886,7 +886,7 @@ rb_str_index_m(argc, argv, str)
     }
 
     if (pos == -1) return Qnil;
-    return INT2NUM(pos);
+    return LONG2NUM(pos);
 }
 
 static long
@@ -927,10 +927,10 @@ rb_str_rindex_m(argc, argv, str)
 {
     VALUE sub;
     VALUE position;
-    int pos;
+    long pos;
 
     if (rb_scan_args(argc, argv, "11", &sub, &position) == 2) {
-	pos = NUM2INT(position);
+	pos = NUM2LONG(position);
         if (pos < 0) {
 	    pos += RSTRING(str)->len;
 	    if (pos < 0) {
@@ -952,12 +952,12 @@ rb_str_rindex_m(argc, argv, str)
 	    pos = rb_reg_adjust_startpos(sub, str, pos, 1);
 	    pos = rb_reg_search(sub, str, pos, 1);
 	}
-	if (pos >= 0) return INT2NUM(pos);
+	if (pos >= 0) return LONG2NUM(pos);
 	break;
 
       case T_STRING:
 	pos = rb_str_rindex(str, sub, pos);
-	if (pos >= 0) return INT2NUM(pos);
+	if (pos >= 0) return LONG2NUM(pos);
 	break;
 
       case T_FIXNUM:
@@ -967,7 +967,7 @@ rb_str_rindex_m(argc, argv, str)
 	  char *pbeg = RSTRING(str)->ptr;
 
 	  while (pbeg <= p) {
-	      if (*p == c) return INT2NUM(p - RSTRING(str)->ptr);
+	      if (*p == c) return LONG2NUM(p - RSTRING(str)->ptr);
 	      p--;
 	  }
 	  return Qnil;
@@ -995,7 +995,7 @@ rb_str_match(x, y)
 	if (start == -1) {
 	    return Qnil;
 	}
-	return INT2NUM(start);
+	return LONG2NUM(start);
 
       default:
 	return rb_funcall(y, rb_intern("=~"), 1, x);
@@ -1197,7 +1197,7 @@ rb_str_aref_m(argc, argv, str)
 	if (TYPE(argv[0]) == T_REGEXP) {
 	    return rb_str_subpat(str, argv[0], NUM2INT(argv[1]));
 	}
-	return rb_str_substr(str, NUM2INT(argv[0]), NUM2INT(argv[1]));
+	return rb_str_substr(str, NUM2LONG(argv[0]), NUM2LONG(argv[1]));
     }
     if (argc != 1) {
 	rb_raise(rb_eArgError, "wrong number of arguments(%d for 1)", argc);
@@ -1208,8 +1208,7 @@ rb_str_aref_m(argc, argv, str)
 void
 rb_str_update(str, beg, len, val)
     VALUE str;
-    long beg;
-    long len;
+    long beg, len;
     VALUE val;
 {
     if (len < 0) rb_raise(rb_eIndexError, "negative length %ld", len);
@@ -1293,7 +1292,7 @@ rb_str_aset(str, indx, val)
     switch (TYPE(indx)) {
       case T_FIXNUM:
       num_index:
-	idx = NUM2INT(indx);
+	idx = NUM2LONG(indx);
 	if (RSTRING(str)->len <= idx) {
 	  out_of_range:
 	    rb_raise(rb_eIndexError, "index %ld out of string", idx);
@@ -1353,7 +1352,7 @@ rb_str_aset_m(argc, argv, str)
 	    rb_str_subpat_set(str, argv[0], NUM2INT(argv[1]), argv[2]);
 	}
 	else {
-	    rb_str_update(str, NUM2INT(argv[0]), NUM2INT(argv[1]), argv[2]);
+	    rb_str_update(str, NUM2LONG(argv[0]), NUM2LONG(argv[1]), argv[2]);
 	}
 	return argv[2];
     }
@@ -2615,10 +2614,9 @@ rb_str_each_line(argc, argv, str)
 {
     VALUE rs;
     int newline;
-    int rslen;
     char *p = RSTRING(str)->ptr, *pend = p + RSTRING(str)->len, *s;
     char *ptr = p;
-    long len = RSTRING(str)->len;
+    long len = RSTRING(str)->len, rslen;
     VALUE line;
 
     if (rb_scan_args(argc, argv, "01", &rs) == 0) {
@@ -2733,9 +2731,8 @@ rb_str_chomp_bang(argc, argv, str)
 {
     VALUE rs;
     int newline;
-    int rslen;
     char *p = RSTRING(str)->ptr;
-    long len = RSTRING(str)->len;
+    long len = RSTRING(str)->len, rslen;
 
     if (rb_scan_args(argc, argv, "01", &rs) == 0) {
 	if (len == 0) return Qnil;

@@ -949,7 +949,7 @@ error_print()
     VALUE errat = Qnil;		/* OK */
     volatile VALUE eclass;
     char *einfo;
-    int elen;
+    long elen;
 
     if (NIL_P(ruby_errinfo)) return;
 
@@ -1028,7 +1028,7 @@ error_print()
     }
 
     if (!NIL_P(errat)) {
-	int i;
+	long i;
 	struct RArray *ep = RARRAY(errat);
 
 #define TRACE_MAX (TRACE_HEAD+TRACE_TAIL+5)
@@ -2337,7 +2337,7 @@ rb_eval(self, n)
 		}
 		if (nd_type(tag->nd_head) == NODE_WHEN) {
 		    VALUE v = rb_eval(self, tag->nd_head->nd_head);
-		    int i;
+		    long i;
 
 		    if (TYPE(v) != T_ARRAY) v = rb_ary_to_ary(v);
 		    for (i=0; i<RARRAY(v)->len; i++) {
@@ -2380,7 +2380,7 @@ rb_eval(self, n)
 		    }
 		    if (nd_type(tag->nd_head) == NODE_WHEN) {
 			VALUE v = rb_eval(self, tag->nd_head->nd_head);
-			int i;
+			long i;
 
 			if (TYPE(v) != T_ARRAY) v = rb_ary_to_ary(v);
 			for (i=0; i<RARRAY(v)->len; i++) {
@@ -3070,7 +3070,7 @@ rb_eval(self, n)
       case NODE_ARRAY:
 	{
 	    VALUE ary;
-	    int i;
+	    long i;
 
 	    i = node->nd_alen;
 	    ary = rb_ary_new2(i);
@@ -3424,7 +3424,7 @@ module_setup(module, n)
     int state;
     struct FRAME frame;
     VALUE result;		/* OK */
-    NODE * cnode = ruby_current_node;
+    NODE * cnode = ruby_current_node; /* NOT IN USE, is it OK? */
     TMP_PROTECT;
 
     frame = *ruby_frame;
@@ -4764,7 +4764,7 @@ rb_apply(recv, mid, args)
     int argc;
     VALUE *argv;
 
-    argc = RARRAY(args)->len;
+    argc = RARRAY(args)->len; /* Assigns LONG, but argc is INT */
     argv = ALLOCA_N(VALUE, argc);
     MEMCPY(argv, RARRAY(args)->ptr, VALUE, argc);
     return rb_call(CLASS_OF(recv), recv, mid, argc, argv, 1);
@@ -4787,7 +4787,6 @@ rb_f_send(argc, argv, recv)
 
     return vid;
 }
-
 
 #ifdef HAVE_STDARG_PROTOTYPES
 #include <stdarg.h>
@@ -4812,7 +4811,7 @@ rb_funcall(recv, mid, n, va_alist)
     VALUE *argv;
 
     if (n > 0) {
-	int i;
+	long i;
 
 	argv = ALLOCA_N(VALUE, n);
 
@@ -4940,7 +4939,7 @@ rb_f_caller(argc, argv)
 void
 rb_backtrace()
 {
-    int i;
+    long i;
     VALUE ary;
 
     ary = backtrace(-1);
@@ -5446,7 +5445,7 @@ rb_feature_p(feature, wait)
 {
     VALUE v;
     char *f;
-    int i, len = strlen(feature);
+    long i, len = strlen(feature);
 
     for (i = 0; i < RARRAY(rb_features)->len; ++i) {
 	v = RARRAY(rb_features)->ptr[i];
@@ -5609,7 +5608,7 @@ rb_f_require(obj, fname)
 
 	    SCOPE_SET(SCOPE_PUBLIC);
 	    handle = dln_load(RSTRING(fname)->ptr);
-	    rb_ary_push(ruby_dln_librefs, INT2NUM((long)handle));
+	    rb_ary_push(ruby_dln_librefs, LONG2NUM((long)handle));
 	}
 	POP_TAG();
 	SCOPE_SET(old_vmode);

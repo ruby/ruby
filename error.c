@@ -378,7 +378,7 @@ static VALUE
 check_backtrace(bt)
     VALUE bt;
 {
-    int i;
+    long i;
     static char *err = "backtrace must be Array of String";
 
     if (!NIL_P(bt)) {

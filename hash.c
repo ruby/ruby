@@ -372,8 +372,6 @@ static VALUE
 rb_hash_default_proc(hash)
     VALUE hash;
 {
-    VALUE key;
-
     if (FL_TEST(hash, HASH_PROC_DEFAULT)) {
 	return RHASH(hash)->ifnone;
     }
@@ -1339,7 +1337,8 @@ env_reject_bang()
 {
     volatile VALUE keys;
     VALUE *ptr;
-    int len, del = 0;
+    long len;
+    int del = 0;
 
     rb_secure(4);
     keys = env_keys();

@@ -85,7 +85,7 @@ apply2files(func, vargs, arg)
     VALUE vargs;
     void *arg;
 {
-    int i;
+    long i;
     VALUE path;
     struct RArray *args = RARRAY(vargs);
 
@@ -2427,7 +2427,7 @@ rb_find_file_ext(filep, ext)
     char *path, *found;
     char *f = RSTRING(*filep)->ptr;
     VALUE fname;
-    int i, j;
+    long i, j;
 
     if (f[0] == '~') {
 	fname = rb_file_s_expand_path(1, filep);
@@ -2508,7 +2508,7 @@ rb_find_file(path)
     }
 
     if (rb_load_path) {
-	int i;
+	long i;
 
 	Check_Type(rb_load_path, T_ARRAY);
 	tmp = rb_ary_new();

@@ -68,7 +68,7 @@ rb_obj_id(obj)
     VALUE obj;
 {
     if (SPECIAL_CONST_P(obj)) {
-	return INT2NUM((long)obj);
+	return LONG2NUM((long)obj);
     }
     return (VALUE)((long)obj|FIXNUM_FLAG);
 }
@@ -472,7 +472,7 @@ sym_to_i(sym)
 {
     ID id = SYM2ID(sym);
 
-    return INT2FIX(id);
+    return LONG2FIX(id);
 }
 
 static VALUE
@@ -731,7 +731,7 @@ rb_to_id(name)
       case T_STRING:
 	return rb_intern(RSTRING(name)->ptr);
       case T_FIXNUM:
-	id = FIX2INT(name);
+	id = FIX2LONG(name);
 	if (!rb_id2name(id)) {
 	    rb_raise(rb_eArgError, "%d is not a symbol", id);
 	}
@@ -1050,7 +1050,7 @@ rb_str_to_dbl(str, badcheck)
     int badcheck;
 {
     char *s;
-    int len;
+    long len;
 
     StringValue(str);
     s = RSTRING(str)->ptr;
@@ -1133,7 +1133,7 @@ rb_num2dbl(val)
 char*
 rb_str2cstr(str, len)
     VALUE str;
-    int *len;
+    long *len;
 {
     StringValue(str);
     if (len) *len = RSTRING(str)->len;

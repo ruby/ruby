@@ -200,7 +200,7 @@ rb_f_srand(argc, argv, obj)
     }
     old = rand_init(seed);
 
-    return UINT2NUM(old);
+    return ULONG2NUM(old);
 }
 
 static VALUE

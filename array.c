@@ -250,7 +250,7 @@ rb_ary_initialize(argc, argv, ary)
 	    rb_raise(rb_eArgError, "wrong number of arguments");
 	}
 	for (i=0; i<len; i++) {
-	    RARRAY(ary)->ptr[i] = rb_yield(INT2NUM(i));
+	    RARRAY(ary)->ptr[i] = rb_yield(LONG2NUM(i));
 	    RARRAY(ary)->len = i + 1;
 	}
     }
@@ -595,7 +595,7 @@ rb_ary_rindex(ary, val)
 
     while (i--) {
 	if (rb_equal(RARRAY(ary)->ptr[i], val))
-	    return INT2NUM(i);
+	    return LONG2NUM(i);
     }
     return Qnil;
 }
@@ -762,7 +762,7 @@ rb_ary_each_index(ary)
     long i;
 
     for (i=0; i<RARRAY(ary)->len; i++) {
-	rb_yield(INT2NUM(i));
+	rb_yield(LONG2NUM(i));
     }
     return ary;
 }
@@ -783,7 +783,7 @@ static VALUE
 rb_ary_length(ary)
     VALUE ary;
 {
-    return INT2NUM(RARRAY(ary)->len);
+    return LONG2NUM(RARRAY(ary)->len);
 }
 
 static VALUE
@@ -1408,7 +1408,7 @@ rb_ary_fill(argc, argv, ary)
 
     if (block_p) {
 	while (p < pend) {
-	    *p++ = rb_yield(INT2NUM(beg++));
+	    *p++ = rb_yield(LONG2NUM(beg++));
 	}
     }
     else {
@@ -1767,7 +1767,7 @@ rb_ary_nitems(ary)
 	if (!NIL_P(*p)) n++;
 	p++;
     }
-    return INT2NUM(n);
+    return LONG2NUM(n);
 }
 
 static long

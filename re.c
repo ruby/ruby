@@ -66,7 +66,7 @@ static const char casetable[] = {
         '\370', '\371', '\372', '\373', '\374', '\375', '\376', '\377',
 };
 #else
->>> "You lose. You will need a translation table for your character set." <<<
+# error >>> "You lose. You will need a translation table for your character set." <<<
 #endif
 
 #define MIN(a,b) (((a)>(b))?(b):(a))
@@ -217,7 +217,7 @@ static void
 rb_reg_expr_str(str, s, len)
     VALUE str;
     const char *s;
-    int len;
+    long len;
 {
     const char *p, *pend;
     int need_escape = 0;
@@ -274,7 +274,7 @@ rb_reg_expr_str(str, s, len)
 static VALUE
 rb_reg_desc(s, len, re)
     const char *s;
-    int len;
+    long len;
     VALUE re;
 {
     VALUE str = rb_str_buf_new2("/");
@@ -425,7 +425,7 @@ rb_reg_to_s(re)
 static void
 rb_reg_raise(s, len, err, re)
     const char *s;
-    int len;
+    long len;
     const char *err;
     VALUE re;
 {
@@ -482,7 +482,8 @@ rb_reg_kcode_m(re)
 static Regexp*
 make_regexp(s, len, flags)
     const char *s;
-    int len, flags;
+    long len;
+    int flags;
 {
     Regexp *rp;
     char *err;
@@ -503,10 +504,10 @@ make_regexp(s, len, flags)
 	rp->options = flags;
     }
     err = re_compile_pattern(s, len, rp);
+
     if (err != NULL) {
 	rb_reg_raise(s, len, err, 0);
     }
-
     return rp;
 }
 
@@ -650,12 +651,12 @@ rb_reg_prepare_re(re)
     }
 }
 
-int
+long
 rb_reg_adjust_startpos(re, str, pos, reverse)
     VALUE re, str;
-    int pos, reverse;
+    long pos, reverse;
 {
-    int range;
+    long range;
 
     rb_reg_check(re);
     if (may_need_recompile) rb_reg_prepare_re(re);
@@ -676,15 +677,15 @@ rb_reg_adjust_startpos(re, str, pos, reverse)
 			      pos, range);
 }
 
-int
+long
 rb_reg_search(re, str, pos, reverse)
     VALUE re, str;
-    int pos, reverse;
+    long pos, reverse;
 {
-    int result;
+    long result;
     VALUE match;
     static struct re_registers regs;
-    int range;
+    long range;
 
     if (pos > RSTRING(str)->len || pos < 0) {
 	rb_backref_set(Qnil);
@@ -948,7 +949,7 @@ static void
 rb_reg_initialize(obj, s, len, options)
     VALUE obj;
     const char *s;
-    int len;
+    long len;
     int options;		/* CASEFOLD  = 1 */
 				/* EXTENDED  = 2 */
 				/* MULTILINE = 4 */

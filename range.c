@@ -247,7 +247,7 @@ range_step(argc, argv, range)
 
 	if (!EXCL(range)) end += 1;
 	for (i=FIX2LONG(b); i<end; i+=unit) {
-	    rb_yield(INT2NUM(i));
+	    rb_yield(LONG2NUM(i));
 	}
     }
     else if (rb_obj_is_kind_of(b, rb_cNumeric)) {
