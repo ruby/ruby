@@ -1,3 +1,8 @@
+Mon Mar 15 07:39:13 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_yield_0): should not re-submit TAG_BREAK if this
+	  yield is not break destination. [ruby-dev:23197]
+
 Sat Mar 13 14:28:16 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* test/drb/test_drbssl.rb: rescue LoadError. (Barkport from main
