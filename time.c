@@ -421,6 +421,23 @@ time_asctime(time)
     if (tobj->tm_got == 0) {
 	time_localtime(time);
     }
+    len = strftime(buf, 64, "%c", &(tobj->tm));
+
+    return str_new(buf, len);
+}
+
+static VALUE
+time_to_s(time)
+    VALUE time;
+{
+    struct time_object *tobj;
+    char buf[64];
+    int len;
+
+    GetTimeval(time, tobj);
+    if (tobj->tm_got == 0) {
+	time_localtime(time);
+    }
 #ifndef HAVE_TM_ZONE
     if (tobj->gmt == 1) {
 	len = strftime(buf, 64, "%a %b %d %H:%M:%S GMT %Y", &(tobj->tm));
@@ -774,8 +791,8 @@ Init_Time()
     rb_define_method(cTime, "gmtime", time_gmtime, 0);
     rb_define_method(cTime, "ctime", time_asctime, 0);
     rb_define_method(cTime, "asctime", time_asctime, 0);
-    rb_define_method(cTime, "to_s", time_asctime, 0);
-    rb_define_method(cTime, "inspect", time_asctime, 0);
+    rb_define_method(cTime, "to_s", time_to_s, 0);
+    rb_define_method(cTime, "inspect", time_to_s, 0);
     rb_define_method(cTime, "to_a", time_to_a, 0);
 
     rb_define_method(cTime, "+", time_plus, 1);

@@ -216,12 +216,13 @@ VALUE reg_match _((VALUE, VALUE));
 VALUE reg_match2 _((VALUE));
 void rb_set_kcode _((char *));
 /* ruby.c */
-void rb_require_modules _((void));
 void rb_load_file _((char *));
 void ruby_script _((char *));
 void ruby_prog_init _((void));
 void ruby_set_argv _((int, char **));
 void ruby_process_options _((int, char **));
+void ruby_require_modules _((void));
+void ruby_load_script _((void));
 /* signal.c */
 VALUE f_kill _((int, VALUE *));
 void gc_mark_trap_list _((void));

@@ -733,15 +733,13 @@ ruby_options(argc, argv)
 
     PUSH_TAG(PROT_NONE)
     if ((state = EXEC_TAG()) == 0) {
-	NODE *save;
 
 	ruby_process_options(argc, argv);
-	save = eval_tree;
-	eval_tree = 0;
 	Init_ext();
 	ext_init = 1;
-	rb_require_modules();
-	eval_tree = save;
+	ruby_require_modules();
+	eval_tree = 0;
+	ruby_load_script();
     }
     POP_TAG();
     if (state) {

@@ -1,7 +1,23 @@
+#!/usr/local/bin/ruby
+#
+#   tracer.rb - 
+#   	$Release Version: 0.2$
+#   	$Revision: 1.6 $
+#   	$Date: 1998/02/02 08:12:02 $
+#   	by Keiju ISHITSUKA(Nippon Rational Inc.)
+#
+# --
+#
+#   
+#
+
+#
+# tracer main class
+#
 class Tracer
-  MY_FILE_NAME_PATTERN = /^tracer\.(rb)?/
-  Threads = Hash.new
-  Sources = Hash.new
+  RCS_ID='-$Id: tracer.rb,v 1.6 1998/02/02 08:12:02 keiju Exp keiju $-'
+  
+  MY_FILE_NAME = caller(0)[0].scan(/^(.*):[0-9]+$/)[0]
   
   EVENT_SYMBOL = {
     "line" => "-",
@@ -10,11 +26,31 @@ class Tracer
     "class" => "C",
     "end" => "E"}
   
+  def initialize
+    @threads = Hash.new
+    if defined? Thread.main
+      @threads[Thread.main.id] = 0
+    else
+      @threads[Thread.current.id] = 0
+    end
+
+    @sources = Hash.new
+  end
+  
   def on
-    set_trace_func proc{|event, file, line, id, binding|
-      trace_func event, file, line, id, binding
-    }
-    print "Trace on\n"
+    if iterator?
+      on
+      begin
+	yield
+      ensure
+	off
+      end
+    else
+      set_trace_func proc{|event, file, line, id, binding|
+	trace_func event, file, line, id, binding
+      }
+      print "Trace on\n"
+    end
   end
   
   def off
@@ -22,27 +58,38 @@ class Tracer
     print "Trace off\n"
   end
   
-  def get_thread_no
-    unless no =  Threads[Thread.current.id]
-      Threads[Thread.current.id] = no = Threads.size
-    end
-    no
-  end
-  
   def get_line(file, line)
-    unless list = Sources[file]
-      f =open(file)
-      begin 
-	Sources[file] = list = f.readlines
-      ensure
-	f.close
+    unless list = @sources[file]
+#      print file if $DEBUG
+      begin
+	f = open(file)
+	begin 
+	  @sources[file] = list = f.readlines
+	ensure
+	  f.close
+	end
+      rescue
+	@sources[file] = list = []
       end
     end
-    list[line - 1]
+    if l = list[line - 1]
+      l
+    else
+      "-\n"
+    end
+  end
+  
+  def get_thread_no
+    if no = @threads[Thread.current.id]
+      no
+    else
+      @threads[Thread.current.id] = @threads.size
+    end
   end
   
   def trace_func(event, file, line, id, binding)
-    return if File.basename(file) =~ MY_FILE_NAME_PATTERN
+    return if file == MY_FILE_NAME
+    #printf "Th: %s\n", Thread.current.inspect
     
     Thread.critical = TRUE
     printf("#%d:%s:%d:%s: %s",
@@ -65,11 +112,15 @@ class Tracer
   
 end
 
-if File.basename($0) =~ Tracer::MY_FILE_NAME_PATTERN
-  $0 = ARGV.shift
-  
-  Tracer.on
-  load $0
-else
-  Tracer.on
+if caller(0).size == 1
+  if $0 == Tracer::MY_FILE_NAME
+    # direct call
+    
+    $0 = ARGV[0]
+    ARGV.shift
+    Tracer.on
+    require $0
+  else
+    Tracer.on
+  end
 end

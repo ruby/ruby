@@ -824,7 +824,7 @@ fix_rshift(x, y)
     long i, val;
 
     i = NUM2INT(y);
-    if (y < 32) {
+    if (i < sizeof(INT) * 8) {
 	val = RSHIFT(FIX2INT(x), i);
 	return INT2FIX(val);
     }

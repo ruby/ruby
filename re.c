@@ -570,7 +570,7 @@ match_to_a(match)
     int i;
 
     for (i=0; i<regs->num_regs; i++) {
-	if (regs->beg[0] == -1) ary_push(ary, Qnil);
+	if (regs->beg[i] == -1) ary_push(ary, Qnil);
 	else ary_push(ary, str_new(ptr+regs->beg[i],
 				   regs->end[i]-regs->beg[i]));
     }

@@ -1,3 +1,19 @@
+Tue Feb  3 12:24:07 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* re.c (match_to_a): non matching element should be nil.
+
+	* ruby.c (ruby_load_script): load script after all initialization.
+
+	* bignum.c (str2inum): need to interpret prefix `0' of `0x'.
+
+Tue Feb  3 10:00:18 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* numeric.c (fix_rshift): use `sizeof(INT)*8' instead of 32.
+
+Mon Feb  2 14:09:24 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ruby.c (set_arg0): grab environment region too.
+
 Thu Jan 29 18:36:25 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
 
 	* process.c (rb_proc_exec): check `sh' to be exist.

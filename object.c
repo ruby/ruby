@@ -100,8 +100,8 @@ obj_clone(obj)
     CLONESETUP(clone,obj);
     if (ROBJECT(obj)->iv_tbl) {
 	ROBJECT(clone)->iv_tbl = st_copy(ROBJECT(obj)->iv_tbl);
-    RBASIC(clone)->class = singleton_class_clone(RBASIC(obj)->class);
-    RBASIC(clone)->flags = RBASIC(obj)->flags;
+	RBASIC(clone)->class = singleton_class_clone(RBASIC(obj)->class);
+	RBASIC(clone)->flags = RBASIC(obj)->flags;
     }
 
     return clone;

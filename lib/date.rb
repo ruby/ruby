@@ -1,8 +1,8 @@
 #
 #               Date.rb - 
 #                       $Release Version: $
-#                       $Revision: 1.1.1.1.4.1 $
-#                       $Date: 1998/01/16 12:36:04 $
+#                       $Revision: 1.1.1.1.4.2 $
+#                       $Date: 1998/02/02 04:49:13 $
 #                       by Yasuo OHBA(SHL Japan Inc. Technology Dept.)
 #
 # --
@@ -32,10 +32,16 @@ class Date
   }
 
   def initialize(y = 1, m = 1, d = 1)
-    if y.kind_of?(String) && y.size == 8
-      @year = y[0,4].to_i
-      @month = y[4,2].to_i
-      @day = y[6,2].to_i
+    if y.kind_of?(String)
+      case y
+      when /(\d\d\d\d)-?(?:(\d\d)-?(\d\d)?)?/
+	@year = $1.to_i
+	@month = if $2 then $2.to_i else 1 end
+	@day = if $3 then $3.to_i else 1 end
+      else
+	require 'parsedate'
+	@year, @month, @day = ParseDate.parsedate(y)
+      end
     else
       if m.kind_of?(String)
         m = Monthtab[m.downcase]
@@ -66,18 +72,25 @@ class Date
   def period
     return Date.period!(@year, @month, @day)
   end
-  
+
+  def jd
+    return period + 1721423
+  end
+
+  def mjd
+    return jd - 2400000.5
+  end
+
+  def to_s
+    format("%.3s, %.3s %2d %4d", name_of_week, name_of_month, @day, @year)
+  end
+
+  def inspect
+    to_s
+  end
+
   def day_of_week
-    dl = Date.daylist(@year)
-    d = Date.jan1!(@year)
-    for m in 1..(@month - 1)
-      d += dl[m]
-    end
-    d += @day - 1
-    if @year == 1752 && @month == 9 && @day >= 14
-      d -= (14 - 3)
-    end
-    return (d % 7)
+    return (period + 5) % 7
   end
   
   def name_of_week
@@ -141,6 +154,9 @@ class Date
   end
 
   def _check_date
+    if @year == nil or @month == nil or @day == nil
+      raise ArgumentError, "argument contains nil"
+    end
     m = Date.daylist(@year)
     if @month < 1 || @month > 12
       raise ArgumentError, "argument(month) out of range."

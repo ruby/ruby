@@ -195,12 +195,16 @@ str2inum(str, base)
 	    base = 10;
 	}
     }
-    len = strlen(str);
     if (base == 8) {
-	len = 3*len*sizeof(char);
+	while (str[0] == '0') str++;
+	len = 3*strlen(str)*sizeof(char);
     }
     else {			/* base == 10 or 16 */
-	len = 4*len*sizeof(char);
+	if (base == 16 && str[0] == '0' && (str[1] == 'x'||str[1] == 'X')) {
+	    str += 2;
+	}
+	while (str[0] == '0') str++;
+	len = 4*strlen(str)*sizeof(char);
     }
 
     if (len <= (sizeof(VALUE)*CHAR_BIT)) {
