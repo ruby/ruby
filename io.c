@@ -801,8 +801,13 @@ static int
 io_getc(OpenFile *fptr)
 {
     int r;
-    if (fptr->fd == 0 && (fptr->mode & FMODE_TTY)) {
-        rb_io_flush(rb_stdout);
+    if (fptr->fd == 0 && (fptr->mode & FMODE_TTY) &&
+        TYPE(rb_stdout) == T_FILE) {
+        OpenFile *ofp;
+        GetOpenFile(rb_stdout, ofp);
+        if (ofp->mode & FMODE_TTY) {
+            rb_io_flush(rb_stdout);
+        }
     }
     if (fptr->rbuf == NULL) {
         fptr->rbuf_off = 0;
