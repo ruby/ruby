@@ -215,7 +215,7 @@ rand_init(vseed)
           rb_raise(rb_eTypeError, "failed to convert %s into Integer",
                    rb_obj_classname(vseed));
     }
-    len = ((len + 3) / 4); /* round up to 32bits */
+    len = (len + 3) / 4; /* number of 32bit words */
     buf = ALLOCA_N(long, len); /* allocate longs for init_by_array */
     memset(buf, 0, len * sizeof(long));
     if (FIXNUM_P(seed)) {
@@ -228,8 +228,8 @@ rand_init(vseed)
         int i, j;
         for (i = RBIGNUM(seed)->len-1; 0 <= i; i--) {
             j = i * SIZEOF_BDIGITS / 4;
-#if SIZEOF_BDIGITS < SIZEOF_LONG
-            buf[j] = buf[j] << (SIZEOF_BDIGITS * 8);
+#if SIZEOF_BDIGITS < 4
+            buf[j] <<= SIZEOF_BDIGITS * 8;
 #endif
             buf[j] |= ((BDIGIT *)RBIGNUM(seed)->digits)[i];
         }
@@ -259,22 +259,20 @@ random_seed()
     struct timeval tv;
     int fd;
     struct stat statbuf;
+
+    int seed_len;
     BDIGIT *digits;
     unsigned long *seed;
     NEWOBJ(big, struct RBignum);
     OBJSETUP(big, rb_cBignum, T_BIGNUM);
+
+    seed_len = 4 * sizeof(long);
     big->sign = 1;
-    big->len = sizeof(long) * 8 / SIZEOF_BDIGITS + 1;
+    big->len = seed_len / SIZEOF_BDIGITS + 1;
     digits = big->digits = ALLOC_N(BDIGIT, big->len);
     seed = (unsigned long *)big->digits;
 
     memset(digits, 0, big->len * SIZEOF_BDIGITS);
-
-    gettimeofday(&tv, 0);
-    seed[0] = tv.tv_usec;
-    seed[1] = tv.tv_sec;
-    seed[2] = getpid() ^ (n++ << 16);
-    seed[3] = (unsigned long)&seed;
 
 #ifdef S_ISCHR
     if ((fd = open("/dev/urandom", O_RDONLY|O_NONBLOCK
@@ -286,11 +284,17 @@ random_seed()
 #endif
             )) >= 0) {
         if (fstat(fd, &statbuf) == 0 && S_ISCHR(statbuf.st_mode)) {
-            read(fd, &seed[4], 4 * sizeof(*seed));
+            read(fd, seed, seed_len);
         }
         close(fd);
     }
 #endif
+
+    gettimeofday(&tv, 0);
+    seed[0] ^= tv.tv_usec;
+    seed[1] ^= tv.tv_sec;
+    seed[2] ^= getpid() ^ (n++ << 16);
+    seed[3] ^= (unsigned long)&seed;
 
     /* set leading-zero-guard if need. */
     digits[big->len-1] = digits[big->len-2] <= 1 ? 1 : 0;
@@ -374,11 +378,11 @@ limited_big_rand(struct RBignum *limit)
     val = (struct RBignum *)rb_big_clone((VALUE)limit);
     val->sign = 1;
 #if SIZEOF_BDIGITS == 2
-# define BIG_GET32(big,i) (((BDIGIT *)(big)->digits)[(i)/2] | \
-                           ((i)/2+1 < (big)->len ? (((BDIGIT *)(big)->digits)[(i)/2+1] << 16)
+# define BIG_GET32(big,i) (((BDIGIT *)(big)->digits)[(i)*2] | \
+                           ((i)*2+1 < (big)->len ? (((BDIGIT *)(big)->digits)[(i)*2+1] << 16) \
                                                  : 0))
-# define BIG_SET32(big,i,d) ((((BDIGIT *)(big)->digits)[(i)/2] = (d) & 0xffff), \
-                             ((i)/2+1 < (big)->len ? (((BDIGIT *)(big)->digits)[(i)/2+1] = (d) >> 16) \
+# define BIG_SET32(big,i,d) ((((BDIGIT *)(big)->digits)[(i)*2] = (d) & 0xffff), \
+                             ((i)*2+1 < (big)->len ? (((BDIGIT *)(big)->digits)[(i)*2+1] = (d) >> 16) \
                                                    : 0))
 #else
     /* SIZEOF_BDIGITS == 4 */
