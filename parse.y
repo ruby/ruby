@@ -2845,6 +2845,7 @@ yylex()
 	  case EXPR_BEG:
 	  case EXPR_FNAME:
 	  case EXPR_DOT:
+	  case EXPR_CLASS:
 	    goto retry;
 	  default:
 	    break;

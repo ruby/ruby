@@ -521,7 +521,7 @@ trap(arg)
 	    s += 3;
 	sig = signm2signo(s);
 	if (sig == 0 && strcmp(s, "EXIT") != 0)
-	    rb_raise(rb_eArgError, "invalid signal SIG%s", s);
+	    rb_raise(rb_eArgError, "unsupported signal SIG%s", s);
     }
 
     if (sig < 0 || sig > NSIG) {

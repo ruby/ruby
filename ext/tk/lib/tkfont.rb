@@ -776,7 +776,7 @@ class TkFont
 
   def call_font_configure(path, *args)
     args += hash_kv(args.pop.update(@fontslot))
-    tk_call *args
+    tk_call(*args)
     Tk_FontUseTBL[path] = self
     self
   end
