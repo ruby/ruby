@@ -212,9 +212,6 @@ strtol.@OBJEXT@: @srcdir@/missing/strtol.c
 strtoul.@OBJEXT@: @srcdir@/missing/strtoul.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/strtoul.c
 
-nt.@OBJEXT@: @srcdir@/missing/nt.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/nt.c
-
 x68.@OBJEXT@: @srcdir@/missing/x68.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/x68.c
 
@@ -223,6 +220,9 @@ os2.@OBJEXT@: @srcdir@/missing/os2.c
 
 dl_os2.@OBJEXT@: @srcdir@/missing/dl_os2.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/dl_os2.c
+
+win32.@OBJEXT@: @srcdir@/win32/win32.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/win32/win32.c
 
 # Prevent GNU make v3 from overflowing arg limit on SysV.
 .NOEXPORT:

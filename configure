@@ -4958,14 +4958,10 @@ if test "$enable_shared" = 'yes'; then
 	FIRSTMAKEFILE=GNUmakefile:cygwin/GNUmakefile.in
 	case "$target_os" in
 	cygwin*)
-	    LIBOBJS="$LIBOBJS strftime.o"
-	    CCDLFLAGS=-DUSEIMPORTLIB
-	    ;;
+	    CCDLFLAGS=-DUSEIMPORTLIB ;;
 	mingw*)
-	    LIBOBJS="$LIBOBJS win32.o"
-	    CFLAGS="-DNT -D__MSVCRT__ $CFLAGS"
 	    CCDLFLAGS=-DIMPORT
-	    ;;
+	    SOLIBS='-lwsock32 -lmsvcrt' ;;
 	esac
 	;;
     *)
@@ -4974,16 +4970,16 @@ if test "$enable_shared" = 'yes'; then
 fi
 
 case "$target_os" in
-	nextstep*)
+    nextstep*)
     	CFLAGS="$CFLAGS -pipe"
-		;;
-	openstep*)
+	;;
+    openstep*)
     	CFLAGS="$CFLAGS -pipe"
-		;;
-	rhasody*)
+	;;
+    rhasody*)
     	CFLAGS="$CFLAGS -pipe -no-precomp"
-		;;
-	osf*)
+	;;
+    osf*)
 	if test "$without_gcc" = "no" ; then
 	  CFLAGS="$CFLAGS -ansi"
 	else
@@ -5001,8 +4997,15 @@ case "$target_os" in
 	  CFLAGS="$CFLAGS -std"
 	fi
 		;;
-	*)
-		;;	
+    cygwin*)
+	LIBOBJS="$LIBOBJS strftime.o"
+	;;
+    mingw*)
+	LIBOBJS="$LIBOBJS win32.o"
+	CFLAGS="-DNT -D__MSVCRT__ $CFLAGS"
+	;;
+    *)
+	;;	
 esac
 
 
@@ -5100,7 +5103,7 @@ EOF
 fi
 
 echo "creating config.h"
-cat confdefs.h > config.h
+tr -d '\015' < confdefs.h > config.h
 
 trap '' 1 2 15
 cat > confcache <<\EOF

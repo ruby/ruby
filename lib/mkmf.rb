@@ -356,6 +356,7 @@ def create_makefile(target)
   $objs = $objs.join(" ")
 
   mfile = open("Makefile", "w")
+  mfile.binmode if /mingw/ =~ RUBY_PLATFORM
   mfile.print  <<EOMF
 SHELL = /bin/sh
 
