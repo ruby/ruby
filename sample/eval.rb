@@ -1,13 +1,13 @@
 line = ''
-indent=0
+indent = 0
 $stdout.sync = TRUE
 print "ruby> "
-while TRUE
+loop do
   l = gets
-  unless l
-    break if line == ''
+  if l.nil?
+    break if line.empty?
   else
-    line = line + l 
+    line += l
     if l =~ /,\s*$/
       print "ruby| "
       next
@@ -32,10 +32,9 @@ while TRUE
   begin
     print eval(line).inspect, "\n"
   rescue ScriptError, StandardError
-    $! = 'exception raised' unless $!
-    print "ERR: ", $!, "\n"
+    printf "ERR: %s\n", $! || 'exception raised'
   end
-  break if not l
+  break if l.nil?
   line = ''
   print "ruby> "
 end
