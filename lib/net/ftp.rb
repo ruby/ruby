@@ -276,7 +276,7 @@ module Net
     end
     
     def retrlines(cmd, callback = nil)
-      if iterator?
+      if block_given?
 	callback = Proc.new
       elsif not callback.is_a?(Proc)
 	callback = Proc.new {|line| print line, "\n"}
@@ -300,7 +300,7 @@ module Net
     end
     
     def storbinary(cmd, file, blocksize, rest_offset = nil, callback = nil)
-      if iterator?
+      if block_given?
 	callback = Proc.new
       end
       use_callback = callback.is_a?(Proc)
@@ -319,7 +319,7 @@ module Net
     end
     
     def storlines(cmd, file, callback = nil)
-      if iterator?
+      if block_given?
 	callback = Proc.new
       end
       use_callback = callback.is_a?(Proc)
@@ -342,7 +342,7 @@ module Net
     
     def getbinaryfile(remotefile, localfile,
 		      blocksize = DEFAULT_BLOCKSIZE, callback = nil)
-      if iterator?
+      if block_given?
 	callback = Proc.new
       end
       use_callback = callback.is_a?(Proc)
@@ -365,7 +365,7 @@ module Net
     end
     
     def gettextfile(remotefile, localfile, callback = nil)
-      if iterator?
+      if block_given?
 	callback = Proc.new
       end
       use_callback = callback.is_a?(Proc)
@@ -383,7 +383,7 @@ module Net
     
     def putbinaryfile(localfile, remotefile,
 		      blocksize = DEFAULT_BLOCKSIZE, callback = nil)
-      if iterator?
+      if block_given?
 	callback = Proc.new
       end
       use_callback = callback.is_a?(Proc)
@@ -404,7 +404,7 @@ module Net
     end
     
     def puttextfile(localfile, remotefile, callback = nil)
-      if iterator?
+      if block_given?
 	callback = Proc.new
       end
       use_callback = callback.is_a?(Proc)

@@ -46,7 +46,7 @@ Object
 
   '*args' are specified in subclasses.
 
-  When is called as iterator, gives Protocol object to block and
+  When is called with a block, gives Protocol object to block and
   close session when block finished.
 
 : finish
@@ -73,7 +73,7 @@ module Net
       def start( address = 'localhost', port = nil, *args )
         instance = new( address, port )
 
-        if iterator? then
+        if block_given? then
           instance.start( *args ) { yield instance }
         else
           instance.start( *args )
@@ -167,9 +167,9 @@ module Net
         connect
         do_start( *args )
         @active = true
-        yield self if iterator?
+        yield self if block_given?
       ensure
-        finish if iterator?
+        finish if block_given?
       end
     end
 
@@ -561,7 +561,7 @@ module Net
       while (str = readuntil( "\r\n" )) != ".\r\n" do
         str.chop!
         arr.push str
-        yield str if iterator?
+        yield str if block_given?
       end
 
       @pipe << "read #{arr.size} lines\n" if pipeon

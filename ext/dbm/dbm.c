@@ -15,6 +15,9 @@
 #ifdef HAVE_CDEFS_H
 # include <cdefs.h>
 #endif
+#ifdef HAVE_SYS_CDEFS_H
+# include <sys/cdefs.h>
+#endif
 #include <ndbm.h>
 #include <fcntl.h>
 #include <errno.h>

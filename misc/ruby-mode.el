@@ -544,18 +544,20 @@ The variable ruby-indent-level controls the amount of indentation.
 		      (or (not (eq ?| (char-after (point))))
 			  (save-excursion
 			    (or (eolp) (forward-char -1))
-			    (and (search-backward "|")
-				 (skip-chars-backward " \t\n")
-				 (and (not (eolp))
-				      (progn
-					(forward-char -1)
-					(not (looking-at "\\{")))
-				      (progn
-					(forward-word -1)
-					(not (looking-at "do\\>[^_]")))))))))
+			    (cond
+			     ((search-backward "|" nil t)
+			      (skip-chars-backward " \t\n")
+			      (and (not (eolp))
+				   (progn
+				     (forward-char -1)
+				     (not (looking-at "\\{")))
+				   (progn
+				     (forward-word -1)
+				     (not (looking-at "do\\>[^_]")))))
+			     (t t))))))
 	     (setq indent (+ indent ruby-indent-level)))))))
 	indent)))
- 
+
 (defun ruby-electric-brace (arg)
   (interactive "P")
   (self-insert-command (prefix-numeric-value arg))

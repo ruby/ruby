@@ -945,7 +945,7 @@ AC_DEFINE_UNQUOTED(RUBY_ARCHLIB, "${RUBY_LIB_PATH}/${arch}")
 AC_DEFINE_UNQUOTED(RUBY_SITE_ARCHLIB, "${RUBY_SITE_LIB_PATH2}/${arch}")
 
 AC_ARG_WITH(search-path,
-		[--with-search-path	  specify the additional search path],
+		[--with-search-path=DIR	  specify the additional search path],
 		[search_path=$withval])
 if test "$search_path" != ""; then
     AC_DEFINE_UNQUOTED(RUBY_SEARCH_PATH,"$search_path")

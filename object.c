@@ -990,8 +990,16 @@ VALUE
 rb_Array(val)
     VALUE val;
 {
+    ID to_ary;
+
     if (TYPE(val) == T_ARRAY) return val;
-    val = rb_funcall(val, rb_intern("to_a"), 0);
+    to_ary = rb_intern("to_ary");
+    if (rb_respond_to(val, to_ary)) {
+	val = rb_funcall(val, to_ary, 0);
+    }
+    else {
+	val = rb_funcall(val, rb_intern("to_a"), 0);
+    }
     if (TYPE(val) != T_ARRAY) {
 	rb_raise(rb_eTypeError, "`to_a' did not return Array");
     }

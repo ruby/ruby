@@ -31,7 +31,7 @@ Net::Protocol
 : start( account, password ) {|pop| .... }
   starts POP3 session.
 
-  When called as iterator, give a POP3 object to block and
+  When called with a block, give a POP3 object to block and
   close session after block call is finished.
 
 : each {|popmail| .... }
@@ -80,7 +80,7 @@ Object
     end
 
 : all {|str| .... }
-  You can use all/pop/mail as the iterator.
+  You can use all/pop/mail with a block.
   argument 'str' is a read string (a part of mail).
 
     # usage example
@@ -180,7 +180,7 @@ module Net
     end
 
     def all( dest = '' )
-      if iterator? then
+      if block_given? then
         dest = NetPrivate::ReadAdapter.new( Proc.new )
       end
       @command.retr( @num, dest )

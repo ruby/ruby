@@ -312,7 +312,7 @@ module Net
         end
       else
         message = "Trying " + @options["Host"] + "...\n"
-        yield(message) if iterator?
+        yield(message) if block_given?
         @log.write(message) if @options.has_key?("Output_log")
         @dumplog.log_dump('#', message) if @options.has_key?("Dump_log")
 
@@ -335,7 +335,7 @@ module Net
         @sock.binmode
 
         message = "Connected to " + @options["Host"] + ".\n"
-        yield(message) if iterator?
+        yield(message) if block_given?
         @log.write(message) if @options.has_key?("Output_log")
         @dumplog.log_dump('#', message) if @options.has_key?("Dump_log")
       end
@@ -489,11 +489,11 @@ module Net
           end
           @log.print(buf) if @options.has_key?("Output_log")
           line.concat(buf)
-          yield buf if iterator?
+          yield buf if block_given?
         rescue EOFError # End of file reached
           if line == ''
             line = nil
-            yield nil if iterator?
+            yield nil if block_given?
           end
           break
         end
@@ -554,7 +554,7 @@ module Net
       end
 
       self.puts(string)
-      if iterator?
+      if block_given?
         waitfor({"Prompt" => match, "Timeout" => time_out}){|c| yield c }
       else
         waitfor({"Prompt" => match, "Timeout" => time_out})
@@ -569,7 +569,7 @@ module Net
         username = options
       end
 
-      if iterator?
+      if block_given?
         line = waitfor(/login[: ]*\z/n){|c| yield c }
         if password
           line.concat( cmd({"String" => username,
@@ -706,7 +706,7 @@ end
 
 * 1999/04/11 - wakou
   * version 0.163
-  * STDOUT.write(message) --> yield(message) if iterator?
+  * STDOUT.write(message) --> yield(message) if block_given?
 
 * 1999/03/17 - wakou
   * version 0.162

@@ -355,7 +355,10 @@ rb_ary_unshift_m(argc, argv, ary)
     VALUE *argv;
     VALUE ary;
 {
-    if (argc > 0) {
+    if (argc == 0) {
+	rb_raise(rb_eArgError, "wrong # of arguments(at least 1)");
+    }
+    if (argc > 1) {
 	long len = RARRAY(ary)->len;
 
 	/* make rooms by setting the last item */
@@ -363,7 +366,6 @@ rb_ary_unshift_m(argc, argv, ary)
 
 	/* sliding items */
 	MEMMOVE(RARRAY(ary)->ptr + argc, RARRAY(ary)->ptr, VALUE, len);
-
 	MEMCPY(RARRAY(ary)->ptr, argv, VALUE, argc);
     }
     return ary;

@@ -439,7 +439,8 @@ rb_method_boundp(klass, id, ex)
     return Qfalse;
 }
 
-static ID init, eqq, each, aref, aset, match, missing, added, singleton_added;
+static ID init, eqq, each, aref, aset, match, to_ary;
+static ID missing, added, singleton_added;
 static ID __id__, __send__;
 
 void
@@ -3425,8 +3426,13 @@ rb_yield_0(val, self, klass, acheck)
 	if ((state = EXEC_TAG()) == 0) {
 	    if (nd_type(block->var) == NODE_MASGN)
 		massign(self, block->var, val, acheck);
-	    else
+	    else {
+		if (val != Qundef &&
+		    TYPE(val) == T_ARRAY && RARRAY(val)->len == 1) {
+		    val = RARRAY(val)->ptr[0];
+		}
 		assign(self, block->var, val, acheck);
+	    }
 	}
 	POP_TAG();
 	if (state) goto pop_state;
@@ -3524,7 +3530,17 @@ massign(self, node, val, check)
 	val = rb_ary_new2(0);
     }
     else if (TYPE(val) != T_ARRAY) {
-	val = rb_ary_new3(1, val);
+	if (rb_respond_to(val, to_ary)) {
+	    VALUE ary = rb_funcall(val, to_ary, 0);
+	    if (TYPE(ary) != T_ARRAY) {
+		rb_raise(rb_eTypeError, "%s#to_ary should return Array",
+			 rb_class2name(CLASS_OF(val)));
+	    }
+	    val = ary;
+	}
+	else {
+	    val = rb_ary_new3(1, val);
+	}
     }
     len = RARRAY(val)->len;
     list = node->nd_head;
@@ -3545,6 +3561,9 @@ massign(self, node, val, check)
 	else {
 	    assign(self, node->nd_args, rb_ary_new2(0), check);
 	}
+    }
+    else if (check && i < len) {
+	goto arg_error;
     }
 
     while (list) {
@@ -5567,6 +5586,7 @@ Init_eval()
     aref = rb_intern("[]");
     aset = rb_intern("[]=");
     match = rb_intern("=~");
+    to_ary = rb_intern("to_ary");
     missing = rb_intern("method_missing");
     added = rb_intern("method_added");
     singleton_added = rb_intern("singleton_method_added");
@@ -5961,8 +5981,6 @@ callargs(args)
       case 0:
 	return Qundef;
 	break;
-      case 1:
-	return RARRAY(args)->ptr[0];
       default:
 	return args;
     }

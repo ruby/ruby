@@ -190,7 +190,7 @@ static void top_local_setup();
 %type <node> aref_args opt_block_arg block_arg stmt_rhs
 %type <node> mrhs superclass generic_call block_call var_ref
 %type <node> f_arglist f_args f_optarg f_opt f_block_arg opt_f_block_arg
-%type <node> array assoc_list assocs assoc undef_list backref
+%type <node> assoc_list assocs assoc undef_list backref
 %type <node> block_var opt_block_var brace_block do_block lhs none
 %type <node> mlhs mlhs_head mlhs_basic mlhs_entry mlhs_item mlhs_node
 %type <id>   fitem variable sym symbol operation operation2 operation3
@@ -421,10 +421,6 @@ expr		: mlhs '=' mrhs
 			    yyerror("return appeared outside of method");
 			$$ = NEW_RETURN($2);
 		    }
-		| kYIELD ret_args
-		    {
-			$$ = NEW_YIELD($2);
-		    }
 		| command_call
 		| expr kAND expr
 		    {
@@ -469,6 +465,12 @@ command_call	: operation call_args
 			$$ = new_super($2);
 		        fixpos($$, $2);
 		    }
+		| kYIELD ret_args
+		    {
+			$$ = NEW_YIELD($2);
+		        fixpos($$, $2);
+		    }
+
 
 mlhs		: mlhs_basic
 		| tLPAREN mlhs_entry ')'
@@ -1025,9 +1027,6 @@ ret_args	: call_args
 			}
 		    }
 
-array		: none
-		| args trailer
-
 primary		: literal
 		    {
 			$$ = NEW_LIT($1);
@@ -1083,7 +1082,7 @@ primary		: literal
 			value_expr($1);
 			$$ = NEW_CALL($1, tAREF, $3);
 		    }
-		| tLBRACK array ']'
+		| tLBRACK aref_args ']'
 		    {
 			if ($2 == 0)
 			    $$ = NEW_ZARRAY(); /* zero length array*/

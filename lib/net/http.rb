@@ -33,7 +33,7 @@ the terms of the Ruby Distribute License.
 : start {|http| .... }
   creates a new Net::HTTP object and starts HTTP session.
 
-  When this method is called as iterator, gives HTTP object to block
+  When this method is called with a block, gives HTTP object to block
   and close HTTP session after block call finished.
 
 : get( path, header = nil, dest = '' )
@@ -46,7 +46,7 @@ the terms of the Ruby Distribute License.
     # example
     response, body = http.get( '/index.html' )
 
-  If called as iterator, give a part String of entity body.
+  If called with a block, give a part String of entity body.
 
   Note:
   If status is not 2xx(success), ProtocolError exception is
@@ -81,7 +81,7 @@ the terms of the Ruby Distribute License.
   "header" must be a Hash like { 'Accept' => '*/*', ... }.
   This method returns Net::HTTPResponse object and "dest".
 
-  If called as iterator, gives a part String of entity body.
+  If called with a block, gives a part String of entity body.
 
 : get2( path, header = nil ) {|adapter| .... }
   send GET request for "path".
@@ -165,7 +165,7 @@ All "key" is case-insensitive.
   entity body. A body is written to "dest" using "<<" method.
 
 : body {|str| ... }
-  get entity body by using iterator.
+  get entity body by using block.
   If this method is called twice, block is not called and
   returns first "dest".
 
@@ -350,11 +350,13 @@ module Net
         @socket.reopen
       end
 
-      resp = yield( u_header )
+      yield( u_header )
       if ublock then
         adapter = HTTPReadAdapter.new( @command )
         ublock.call adapter
         resp = adapter.off
+      else
+	resp = @command.get_response
       end
       
       unless keep_alive? u_header, resp then

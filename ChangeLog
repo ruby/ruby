@@ -1,12 +1,39 @@
+Tue Sep 12 14:36:49 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* stable version 1.6.0 released.
+
 Tue Sep 12 07:05:24 2000  Wakou Aoyama <wakou@fsinet.or.jp>
 
 	* lib/cgi.rb: version 2.0.0: require ruby1.5.4 or later.
 
 	* lib/net/telnet.rb: version 1.6.0
 
-Wed Sep  6 17:06:59 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Tue Sep 12 03:26:07 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* stable version 1.6.0 released.
+	* eval.c (massign): use to_ary to get an array if available.
+
+	* object.c (rb_Array): ditto.
+
+Mon Sep 11 14:24:47 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (ruby_setenv): should not free the element of
+	  origenvironment.
+
+	* parse.y (command_call): kYIELD moved to this rule to allow
+	  'a = yield b'. (ruby-bugs-ja:#PR15) 
+
+Mon Sep 11 01:27:54 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_yield_0): proc#call([]) should pass single value to
+	  the block.
+
+	* eval.c (callargs): reduce array allocation.
+
+	* eval.c (massign): precise check for argument number.
+
+Fri Sep  8 10:05:17 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (STR_NO_ORIG): should be FL_USER2.
 
 Thu Sep  7 14:17:51 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -163,7 +190,7 @@ Fri Aug 25 15:24:39 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* variable.c (rb_cvar_declare): ditto.
 
 	* variable.c (mod_av_set): second class variable assignment at the
-	  toplevel shoule not give warning.
+	  toplevel should not give warning.
 
 Fri Aug 25 01:18:36 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -720,7 +747,7 @@ Sat Jul  1 15:22:35 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 Sat Jul  1 15:22:35 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (rb_eval): the value from RTEST() is not valid Ruby
-	  objct.  result shoule be either true or false.
+	  objct.  result should be either true or false.
 
 Sat Jul  1 09:30:06 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
 
