@@ -7195,6 +7195,9 @@ rb_gc_mark_threads()
 {
     rb_thread_t th;
 
+    /* static global mark */
+    rb_gc_mark((VALUE)ruby_cref);
+
     if (!curr_thread) return;
     FOREACH_THREAD(th) {
 	rb_gc_mark(th->thread);

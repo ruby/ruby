@@ -233,6 +233,92 @@ range_each(range)
 }
 
 static VALUE
+r_step_str(args)
+    VALUE *args;
+{
+    return rb_str_upto(args[0], args[1], EXCL(args[2]));
+}
+
+static VALUE
+r_step_str_i(i, iter)
+    VALUE i;
+    long *iter;
+{
+    iter[0]--;
+    if (iter[0] == 0) {
+	rb_yield(i);
+	iter[0] = iter[1];
+    }
+    return Qnil;
+}
+
+static VALUE
+range_step(argc, argv, range)
+    int argc;
+    VALUE *argv;
+    VALUE range;
+{
+    VALUE b, e, step;
+
+    b = rb_ivar_get(range, id_beg);
+    e = rb_ivar_get(range, id_end);
+    rb_scan_args(argc, argv, "01", &step);
+
+    if (FIXNUM_P(b) && FIXNUM_P(e)) { /* fixnums are special */
+	long end = FIX2LONG(e);
+	long i, s = (argc == 0) ? 1 : NUM2LONG(step);
+
+	if (!EXCL(range)) end += 1;
+	for (i=FIX2LONG(b); i<end; i+=s) {
+	    rb_yield(INT2NUM(i));
+	}
+    }
+    else if (rb_obj_is_kind_of(b, rb_cNumeric)) {
+	b = rb_Integer(b);
+	e = rb_Integer(e);
+	step = rb_Integer(step);
+
+	if (!EXCL(range)) e = rb_funcall(e, '+', 1, INT2FIX(1));
+	while (RTEST(rb_funcall(b, '<', 1, e))) {
+	    rb_yield(b);
+	    b = rb_funcall(b, '+', 1, step);
+	}
+    }
+    else if (TYPE(b) == T_STRING) {
+	VALUE args[5];
+	long *iter;
+
+	args[0] = b; args[1] = e; args[2] = range;
+	iter[0] = 1; iter[1] = NUM2LONG(step);
+	rb_iterate(r_step_str, (VALUE)args, r_step_str_i, (VALUE)iter);
+    }
+    else {			/* generic each */
+	VALUE v = b;
+	long lim = NUM2INT(step);
+	long i;
+
+	if (EXCL(range)) {
+	    while (r_lt(v, e)) {
+		if (r_eq(v, e)) break;
+		rb_yield(v);
+		for (i=0; i<lim; i++) 
+		    v = rb_funcall(v, id_succ, 0, 0);
+	    }
+	}
+	else {
+	    while (r_le(v, e)) {
+		rb_yield(v);
+		if (r_eq(v, e)) break;
+		for (i=0; i<lim; i++) 
+		    v = rb_funcall(v, id_succ, 0, 0);
+	    }
+	}
+    }
+
+    return range;
+}
+
+static VALUE
 range_first(obj)
     VALUE obj;
 {
@@ -417,6 +503,7 @@ Init_Range()
     rb_define_method(rb_cRange, "==", range_eq, 1);
     rb_define_method(rb_cRange, "===", range_eqq, 1);
     rb_define_method(rb_cRange, "each", range_each, 0);
+    rb_define_method(rb_cRange, "step", range_step, -1);
     rb_define_method(rb_cRange, "first", range_first, 0);
     rb_define_method(rb_cRange, "last", range_last, 0);
     rb_define_method(rb_cRange, "begin", range_first, 0);

@@ -1,3 +1,15 @@
+Tue Aug 14 17:09:12 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* range.c (range_step): new method.
+
+Tue Aug 14 11:49:00 2001  TOYOFUKU Chikanobu  <toyofuku@juice.or.jp>
+
+	* string.c (rb_str_cmp): remove needless conditional.
+
+Tue Aug 14 03:23:25 2001  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* string.c (rb_str_lstrip_bang) `return Qnil' was missing.
+
 Mon Aug 13 14:16:46 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* bignum.c, marshal.c: Detypo: s/SIZEOF_ING/SIZEOF_INT/.
@@ -8,6 +20,17 @@ Sun Aug 12 15:01:58 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* string.c (rb_str_append): nothing to append actually when `str2'
 	  is empty.
+
+Sat Aug 11 14:43:47 2001  Tanaka Akira  <akr@m17n.org>
+
+	* array.c (rb_inspecting_p): initialize inspect_key if it is
+	not initialized yet.
+
+Fri Aug 10 22:14:37 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (cond0): operands of logical operators are not treated
+	  as conditional expresion anymore, but propagate conditional
+	  status if used in conditionals.
 
 Tue Aug  7 09:10:32 2001  Usaku Nakamura  <usa@ruby-lang.org>
 
@@ -20,6 +43,10 @@ Mon Aug  6 23:47:46 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* string.c (rb_str_associate): associates an Array at once, not
 	  but a String. realloc's when str_buf.
+
+Mon Aug  6 17:01:33 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_gc_mark_threads): should mark ruby_cref.
 
 Mon Aug  6 14:31:37 2001  Usaku Nakamura  <usa@ruby-lang.org>
 

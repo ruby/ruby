@@ -686,7 +686,6 @@ rb_str_cmp(str1, str2)
 	if (RSTRING(str1)->len > RSTRING(str2)->len) return 1;
 	return -1;
     }
-    if (retval == 0) return 0;
     if (retval > 0) return 1;
     return -1;
 }
@@ -2674,6 +2673,7 @@ rb_str_lstrip_bang(str)
 	RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
 	return str;
     }
+    return Qnil;
 }
 
 static VALUE
@@ -3065,7 +3065,6 @@ Init_String()
 
     rb_define_method(rb_cString, "sub!", rb_str_sub_bang, -1);
     rb_define_method(rb_cString, "gsub!", rb_str_gsub_bang, -1);
-    rb_define_method(rb_cString, "strip!", rb_str_strip_bang, 0);
     rb_define_method(rb_cString, "chop!", rb_str_chop_bang, 0);
     rb_define_method(rb_cString, "chomp!", rb_str_chomp_bang, -1);
     rb_define_method(rb_cString, "strip!", rb_str_strip_bang, 0);

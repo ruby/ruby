@@ -30,6 +30,7 @@ rb_class_boot(super)
     klass->m_tbl = 0;		/* safe GC */
     klass->m_tbl = st_init_numtable();
 
+    OBJ_INFECT(klass, super);
     return (VALUE)klass;
 }
 
@@ -280,6 +281,8 @@ include_class_new(module, super)
     else {
 	RBASIC(klass)->klass = module;
     }
+    OBJ_INFECT(klass, module);
+    OBJ_INFECT(klass, super);
 
     return (VALUE)klass;
 }
@@ -308,6 +311,7 @@ rb_include_module(klass, module)
 	Check_Type(module, T_MODULE);
     }
 
+    OBJ_INFECT(klass, module);
     while (module) {
 	/* ignore if the module included already in superclasses */
 	for (p = RCLASS(klass)->super; p; p = RCLASS(p)->super) {

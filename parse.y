@@ -4570,34 +4570,30 @@ warning_unless_e_option(str)
 static NODE *cond0();
 
 static NODE*
-range_op(node, logop)
+range_op(node)
     NODE *node;
-    int logop;
 {
     enum node_type type;
 
-    if (logop) return node;
     if (!e_option_supplied()) return node;
 
-    warn_unless_e_option("integer literal in condition");
     node = cond0(node);
     type = nd_type(node);
     if (type == NODE_NEWLINE) node = node->nd_next;
     if (type == NODE_LIT && FIXNUM_P(node->nd_lit)) {
+	warn_unless_e_option("integer literal in conditional range");
 	return call_op(node,tEQ,1,NEW_GVAR(rb_intern("$.")));
     }
     return node;
 }
 
 static NODE*
-cond0(node, logop)
+cond0(node)
     NODE *node;
-    int logop;
 {
     enum node_type type = nd_type(node);
 
     assign_in_cond(node);
-    if (logop) return node;
 
     switch (type) {
       case NODE_DSTR:
@@ -4612,10 +4608,16 @@ cond0(node, logop)
 	local_cnt('~');
 	return NEW_MATCH2(node, NEW_GVAR(rb_intern("$_")));
 
+      case NODE_AND:
+      case NODE_OR:
+	node->nd_1st = cond0(node->nd_1st);
+	node->nd_2nd = cond0(node->nd_2nd);
+	break;
+
       case NODE_DOT2:
       case NODE_DOT3:
-	node->nd_beg = range_op(node->nd_beg, logop);
-	node->nd_end = range_op(node->nd_end, logop);
+	node->nd_beg = range_op(node->nd_beg);
+	node->nd_end = range_op(node->nd_end);
 	if (type == NODE_DOT2) nd_set_type(node,NODE_FLIP2);
 	else if (type == NODE_DOT3) nd_set_type(node, NODE_FLIP3);
 	node->nd_cnt = local_append(0);
@@ -4624,33 +4626,28 @@ cond0(node, logop)
 
       case NODE_LIT:
 	if (TYPE(node->nd_lit) == T_REGEXP) {
-	    warning_unless_e_option("regex literal in condition");
+	    warn_unless_e_option("regex literal in condition");
 	    nd_set_type(node, NODE_MATCH);
 	    local_cnt('_');
 	    local_cnt('~');
+	}
+	else {
+	    rb_warning("literal in condition");
 	}
     }
     return node;
 }
 
 static NODE*
-cond1(node, logop)
-    NODE *node;
-    int logop;
-{
-    if (node == 0) return 0;
-    if (nd_type(node) == NODE_NEWLINE){
-	node->nd_next = cond0(node->nd_next, logop);
-	return node;
-    }
-    return cond0(node, logop);
-}
-
-static NODE*
 cond(node)
     NODE *node;
 {
-    return cond1(node, 0);
+    if (node == 0) return 0;
+    if (nd_type(node) == NODE_NEWLINE){
+	node->nd_next = cond0(node->nd_next);
+	return node;
+    }
+    return cond0(node);
 }
 
 static NODE*
@@ -4659,7 +4656,7 @@ logop(type, left, right)
     NODE *left, *right;
 {
     value_expr(left);
-    return rb_node_newnode(type, cond1(left, 1), cond1(right, 1), 0);
+    return rb_node_newnode(type, left, right, 0);
 }
 
 static NODE *

@@ -1,3 +1,7 @@
+: Range#step([step=1])
+
+  Added.
+
 : Regexp
 
   It is being obsoleted to regard /re/ as /re/ =~ $_ in a conditional
