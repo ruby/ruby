@@ -73,25 +73,18 @@ class TkFont
 	when 'unix'
 	  ltn = {'family'=>'Helvetica'.freeze, 
 	         'size'=>-12, 'weight'=>'bold'.freeze}
-	  #knj = 'k14'
-	  #knj = '-misc-fixed-medium-r-normal--14-*-*-*-c-*-jisx0208.1983-0'
-	  knj = '-*-fixed-bold-r-normal--12-*-*-*-c-*-jisx0208.1983-0'
 	when 'windows'
 	  ltn = {'family'=>'MS Sans Serif'.freeze, 'size'=>8}
-	  knj = 'mincho'
 	when 'macintosh'
 	  ltn = 'system'
-	  knj = 'mincho'
 	else # unknown
 	  ltn = 'Helvetica'
-	  knj = 'mincho'
 	end
       rescue
 	ltn = 'Helvetica'
-	knj = 'mincho'
       end
 
-      knj = ltn
+      knj = ltn.dup
     end
 
     DEFAULT_LATIN_FONT_NAME = ltn.freeze
@@ -202,54 +195,74 @@ class TkFont
     end
   end
 
-  def TkFont.init_widget_font(path, *args)
+  def TkFont.init_widget_font(pathname, *args)
+    win, tag, key = pathname.split(';')
+    key = 'font' unless key
+    path = [win, tag, key].join(';')
+
     case (Tk::TK_VERSION)
     when /^4\.*/
-      conf = tk_split_simplelist(tk_call(*args)).
-	find_all{|prop| prop[0..5]=='-font ' || prop[0..10]=='-kanjifont '}.
+      regexp = /^-(|kanji)#{key} /
+
+      conf_list = tk_split_simplelist(tk_call(*args)).
+	find_all{|prop| prop =~ regexp}.
 	collect{|prop| tk_split_simplelist(prop)}
-      if font_inf = conf.assoc('-font')
-	ltn = font_inf[4]
-	ltn = nil if ltn == []
-      else 
-	#ltn = nil
-	raise RuntimeError, "unknown option '-font'"
+
+      if conf_list.size == 0
+	raise RuntimeError, "the widget may not support 'font' option"
       end
-      if font_inf = conf.assoc('-kanjifont')
-	knj = font_inf[4]
-	knj = nil if knj == []
-      else
-	knj = nil
-      end
-      TkFont.new(ltn, knj).call_font_configure(path, *(args + [{}]))
+
+      args << {}
+
+      ltn_key = "-#{key}"
+      knj_key = "-kanji#{key}"
+
+      ltn_info = conf_list.find{|conf| conf[0] == ltn_key}
+      ltn = ltn_info[-1]
+      ltn = nil if ltn == [] || ltn == ""
+
+      knj_info = conf_list.find{|conf| conf[0] == knj_key}
+      knj = knj_info[-1]
+      knj = nil if knj == [] || knj == ""
+
+      TkFont.new(ltn, knj).call_font_configure([path, key], *args)
 
     when /^8\.*/
-      font_prop = tk_split_simplelist(tk_call(*args)).find{|prop| 
-	prop[0..5] == '-font '
-      }
-      unless font_prop
-	raise RuntimeError, "unknown option '-font'"
+      regexp = /^-#{key} /
+
+      conf_list = tk_split_simplelist(tk_call(*args)).
+	find_all{|prop| prop =~ regexp}.
+	collect{|prop| tk_split_simplelist(prop)}
+
+      if conf_list.size == 0
+	raise RuntimeError, "the widget may not support 'font' option"
       end
-      fnt = tk_split_simplelist(font_prop)[4]
-      if fnt == ""
-	TkFont.new(nil, nil).call_font_configure(path, *(args + [{}]))
+
+      args << {}
+
+      optkey = "-#{key}"
+
+      info = conf_list.find{|conf| conf[0] == optkey}
+      fnt = info[-1]
+      fnt = nil if fnt == [] || fnt == ""
+
+      unless fnt
+	TkFont.new(nil, nil).call_font_configure([path, key], *args)
       else
 	begin
 	  compound = tk_split_simplelist(
-            Hash[*tk_split_simplelist(tk_call('font', 'configure', 
-					       fnt))].collect{|key,value|
-              [key[1..-1], value]
-            }.assoc('compound')[1])
+              Hash[*tk_split_simplelist(tk_call('font', 'configure', 
+						fnt))].collect{|key,value|
+                [key[1..-1], value]
+              }.assoc('compound')[1])
 	rescue
 	  compound = []
 	end
 	if compound == []
-	  #TkFont.new(fnt, DEFAULT_KANJI_FONT_NAME) \
-	  #.call_font_configure(path, *(args + [{}]))
-	  TkFont.new(fnt).call_font_configure(path, *(args + [{}]))
+	  TkFont.new(fnt).call_font_configure([path, key], *args)
 	else
-	  TkFont.new(compound[0], compound[1]) \
-	  .call_font_configure(path, *(args + [{}]))
+	  TkFont.new(compound[0], 
+		     compound[1]).call_font_configure([path, key], *args)
 	end
       end
     end
@@ -854,15 +867,16 @@ class TkFont
       if self == fobj
 	begin
 	  if w.include?(';')
-	    win, tag = w.split(';')
+	    win, tag, optkey = w.split(';')
+	    optkey = 'font' unless optkey
 	    winobj = tk_tcl2ruby(win)
 #	    winobj.tagfont_configure(tag, {'font'=>@latinfont})
 	    if winobj.kind_of? TkText
-	      tk_call(win, 'tag', 'configure', tag, '-font', @latinfont)
+	      tk_call(win, 'tag', 'configure', tag, "-#{optkey}", @latinfont)
 	    elsif winobj.kind_of? TkCanvas
-	      tk_call(win, 'itemconfigure', tag, '-font', @latinfont)
+	      tk_call(win, 'itemconfigure', tag, "-#{optkey}", @latinfont)
 	    elsif winobj.kind_of? TkMenu
-	      tk_call(win, 'entryconfigure', tag, '-font', @latinfont)
+	      tk_call(win, 'entryconfigure', tag, "-#{optkey}", @latinfont)
 	    else
 	      raise RuntimeError, "unknown widget type"
 	    end
@@ -888,15 +902,16 @@ class TkFont
       if self == fobj
 	begin
 	  if w.include?(';')
-	    win, tag = w.split(';')
+	    win, tag, optkey = w.split(';')
+	    optkey = 'kanjifont' unless optkey
 	    winobj = tk_tcl2ruby(win)
 #	    winobj.tagfont_configure(tag, {'kanjifont'=>@kanjifont})
 	    if winobj.kind_of? TkText
-	      tk_call(win, 'tag', 'configure', tag, '-kanjifont', @kanjifont)
+	      tk_call(win, 'tag', 'configure', tag, "-#{optkey}", @kanjifont)
 	    elsif winobj.kind_of? TkCanvas
-	      tk_call(win, 'itemconfigure', tag, '-kanjifont', @kanjifont)
+	      tk_call(win, 'itemconfigure', tag, "-#{optkey}", @kanjifont)
 	    elsif winobj.kind_of? TkMenu
-	      tk_call(win, 'entryconfigure', tag, '-kanjifont', @latinfont)
+	      tk_call(win, 'entryconfigure', tag, "-#{optkey}", @latinfont)
 	    else
 	      raise RuntimeError, "unknown widget type"
 	    end
@@ -1128,36 +1143,77 @@ class TkFont
   end
 
   def call_font_configure(path, *args)
-    keys = args.pop.update(@fontslot)
+    if path.kind_of?(Array)
+      # [path, optkey]
+      win, tag = path[0].split(';')
+      optkey = path[1].to_s
+    else
+      win, tag, optkey = path.split(';')
+    end
+
+    fontslot = _symbolkey2str(@fontslot)
+    if optkey && optkey != ""
+      ltn = fontslot.delete('font')
+      knj = fontslot.delete('kanjifont')
+      fontslot[optkey] = ltn if ltn
+      fontslot["kanji#{optkey}"] = knj if knj
+    end
+
+    keys = _symbolkey2str(args.pop).update(fontslot)
     args.concat(hash_kv(keys))
     tk_call(*args)
-    Tk_FontUseTBL[path] = self
+    Tk_FontUseTBL[[win, tag, optkey].join(';')] = self
     self
   end
 
   def used
     ret = []
     Tk_FontUseTBL.each{|key,value|
+      next unless self == value
       if key.include?(';')
-	win, tag = key.split(';')
+	win, tag, optkey = key.split(';')
 	winobj = tk_tcl2ruby(win)
 	if winobj.kind_of? TkText
-	  ret.push([winobj, winobj.tagid2obj(tag)])
+	  if optkey
+	    ret.push([winobj, winobj.tagid2obj(tag), optkey])
+	  else
+	    ret.push([winobj, winobj.tagid2obj(tag)])
+	  end
 	elsif winobj.kind_of? TkCanvas
 	  if (tagobj = TkcTag.id2obj(winobj, tag)).kind_of? TkcTag
-	    ret.push([winobj, tagobj])
-	  elsif (tagobj = TkcItem.id2obj(tag)).kind_of? TkcItem
-	    ret.push([winobj, tagobj])
+	    if optkey
+	      ret.push([winobj, tagobj, optkey])
+	    else
+	      ret.push([winobj, tagobj])
+	    end
+	  elsif (tagobj = TkcItem.id2obj(winobj, tag)).kind_of? TkcItem
+	    if optkey
+	      ret.push([winobj, tagobj, optkey])
+	    else
+	      ret.push([winobj, tagobj])
+	    end
+	  else
+	    if optkey
+	      ret.push([winobj, tag, optkey])
+	    else
+	      ret.push([winobj, tag])
+	    end
+	  end
+	elsif winobj.kind_of? TkMenu
+	  if optkey
+	    ret.push([winobj, tag, optkey])
 	  else
 	    ret.push([winobj, tag])
 	  end
-	elsif winobj.kind_of? TkMenu
-	  ret.push([winobj, tag])
 	else
-	  ret.push([win, tag])
+	  if optkey
+	    ret.push([win, tag, optkey])
+	  else
+	    ret.push([win, tag])
+	  end
 	end
       else
-	ret.push(tk_tcl2ruby(key)) if value == self
+	ret.push(tk_tcl2ruby(key))
       end
     }
     ret

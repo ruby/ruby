@@ -204,6 +204,14 @@ class TkcTag<TkObject
     @id
   end
 
+  def exist?
+    if @c.find_withtag(@id)
+      true
+    else
+      false
+    end
+  end
+
   def delete
     @c.delete @id
     CTagID_TBL[@cpath].delete(@id) if CTagID_TBL[@cpath]

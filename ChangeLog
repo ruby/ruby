@@ -1,3 +1,9 @@
+Thu Jul  1 18:36:08 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tcltklib : bug fix
+
+	* ext/tk/lib/tk : bug fix and add Tcl/Tk extension support libraries
+
 Thu Jul  1 11:59:45 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/extconf.rb: check for EVP_CIPHER_CTX_copy, ENGINE_add,

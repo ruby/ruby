@@ -78,7 +78,7 @@ TkPanedwindow.new($paned2_demo, :orient=>:vertical){|f|
 	}
       }, 
 
-      TkFrame.new(f) {|paned2_bottom|
+      TkFrame.new(f, :height=>120) {|paned2_bottom|
 	# The bottom window is a text widget with scrollbar
 	paned2_xscr = TkScrollbar.new(paned2_bottom)
 	paned2_yscr = TkScrollbar.new(paned2_bottom)

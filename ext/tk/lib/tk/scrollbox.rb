@@ -14,10 +14,15 @@ class TkScrollbox<TkListbox
     scroll = TkScrollbar.new(@frame)
     @path = list.path
 
+=begin
     list.configure 'yscroll', scroll.path+" set"
     list.pack 'side'=>'left','fill'=>'both','expand'=>'yes'
     scroll.configure 'command', list.path+" yview"
     scroll.pack 'side'=>'right','fill'=>'y'
+=end
+    list.yscrollbar(scroll)
+    list.pack('side'=>'left','fill'=>'both','expand'=>'yes')
+    scroll.pack('side'=>'right','fill'=>'y')
 
     delegate('DEFAULT', list)
     delegate('foreground', list)

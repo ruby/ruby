@@ -2,24 +2,37 @@
 # tk/menu.rb : treat menu and menubutton
 #
 require 'tk'
+require 'tk/itemconfig'
 
-module TkTreatMenuEntryFont
-  include TkTreatItemFont
+module TkMenuEntryConfig
+  include TkItemConfigMethod
 
-  ItemCMD = ['entryconfigure'.freeze, TkComm::None].freeze
-  def __conf_cmd(idx)
-    ItemCMD[idx]
+  def __item_cget_cmd(id)
+    [self.path, 'entrycget', id]
   end
-  
-  def __item_pathname(tagOrId)
-    self.path + ';' + tagOrId.to_s
-  end
+  private :__item_cget_cmd
 
-  private :__conf_cmd, :__item_pathname
+  def __item_config_cmd(id)
+    [self.path, 'entryconfigure', id]
+  end
+  private :__item_config_cmd
+
+  def __item_listval_optkeys(id)
+    []
+  end
+  private :__item_listval_optkeys
+
+  alias entrycget itemcget
+  alias entryconfigure itemconfigure
+  alias entryconfiginfo itemconfiginfo
+  alias current_entryconfiginfo current_itemconfiginfo
+
+  private :itemcget, :itemconfigure
+  private :itemconfiginfo, :current_itemconfiginfo
 end
 
 class TkMenu<TkWindow
-  include TkTreatMenuEntryFont
+  include TkMenuEntryConfig
 
   TkCommandNames = ['menu'.freeze].freeze
   WidgetClassName = 'Menu'.freeze
@@ -33,6 +46,10 @@ class TkMenu<TkWindow
     end
   end
   private :create_self
+
+  def tagid(id)
+    id.to_s
+  end
 
   def activate(index)
     tk_send_without_enc('activate', _get_eval_enc_str(index))
@@ -116,6 +133,8 @@ class TkMenu<TkWindow
   def yposition(index)
     number(tk_send_without_enc('yposition', _get_eval_enc_str(index)))
   end
+
+=begin
   def entrycget(index, key)
     case key.to_s
     when 'text', 'label', 'show'
@@ -287,6 +306,7 @@ class TkMenu<TkWindow
       ret
     end
   end
+=end
 end
 
 

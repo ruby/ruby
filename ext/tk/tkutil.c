@@ -30,6 +30,7 @@ static ID ID_path;
 static ID ID_at_path;
 static ID ID_to_eval;
 static ID ID_to_s;
+static ID ID_downcase;
 static ID ID_install_cmd;
 static ID ID_merge_tklist;
 static ID ID_call;
@@ -219,10 +220,75 @@ tk_symbolkey2str(self, keys)
 
 static VALUE get_eval_string_core _((VALUE, VALUE, VALUE));
 static VALUE ary2list _((VALUE, VALUE));
+static VALUE ary2list2 _((VALUE, VALUE));
 static VALUE hash2list _((VALUE, VALUE));
+static VALUE hash2kv _((VALUE, VALUE, VALUE));
 
 static VALUE
 ary2list(ary, self)
+    VALUE ary;
+    VALUE self;
+{
+    int idx, idx2, size, size2;
+    volatile VALUE val, val2;
+    volatile VALUE dst;
+
+    /* size = RARRAY(ary)->len; */
+    size = 0;
+    for(idx = 0; idx < RARRAY(ary)->len; idx++) {
+	if (TYPE(RARRAY(ary)->ptr[idx]) == T_HASH) {
+	    size += 2 * RHASH(RARRAY(ary)->ptr[idx])->tbl->num_entries;
+	} else {
+	    size++;
+	}
+    }
+
+    dst = rb_ary_new2(size);
+    RARRAY(dst)->len = 0;
+    for(idx = 0; idx < RARRAY(ary)->len; idx++) {
+	val = RARRAY(ary)->ptr[idx];
+	switch(TYPE(val)) {
+	case T_ARRAY:
+	    RARRAY(dst)->ptr[RARRAY(dst)->len++] = ary2list(val, self);
+	    break;
+
+	case T_HASH:
+	    /* RARRAY(dst)->ptr[RARRAY(dst)->len++] = hash2list(val, self); */
+	    val = hash2kv(val, Qnil, self);
+	    size2 = RARRAY(val)->len;
+	    for(idx2 = 0; idx2 < size2; idx2++) {
+		val2 = RARRAY(val)->ptr[idx2];
+		switch(TYPE(val2)) {
+		case T_ARRAY:
+		    RARRAY(dst)->ptr[RARRAY(dst)->len++] 
+			= ary2list(val2, self);
+		    break;
+
+		case T_HASH:
+		    RARRAY(dst)->ptr[RARRAY(dst)->len++] 
+			= hash2list(val2, self);
+
+		default:
+		    if (val2 != TK_None) {
+			RARRAY(dst)->ptr[RARRAY(dst)->len++] 
+			    = get_eval_string_core(val2, Qnil, self);
+		    }
+		}
+	    }
+	    break;
+
+	default:
+	    if (val != TK_None) {
+		RARRAY(dst)->ptr[RARRAY(dst)->len++] 
+		    = get_eval_string_core(val, Qnil, self);
+	    }
+	}
+    }
+    return rb_apply(cTclTkLib, ID_merge_tklist, dst);
+}
+
+static VALUE
+ary2list2(ary, self)
     VALUE ary;
     VALUE self;
 {
@@ -233,7 +299,7 @@ ary2list(ary, self)
     size = RARRAY(ary)->len;
     dst = rb_ary_new2(size);
     RARRAY(dst)->len = 0;
-    for(idx = 0; idx < size; idx++) {
+    for(idx = 0; idx < RARRAY(ary)->len; idx++) {
 	val = RARRAY(ary)->ptr[idx];
 	switch(TYPE(val)) {
 	case T_ARRAY:
@@ -377,6 +443,7 @@ push_kv(key, val, ary)
     if (val != TK_None) rb_ary_push(ary, val);
 #endif
     RARRAY(ary)->ptr[RARRAY(ary)->len++] = key2keyname(key);
+
     if (val != TK_None) RARRAY(ary)->ptr[RARRAY(ary)->len++] = val;
 
     return ST_CONTINUE;
@@ -455,7 +522,7 @@ hash2list(hash, self)
     VALUE hash;
     VALUE self;
 {
-    return ary2list(hash2kv(hash, Qnil, self), self);
+    return ary2list2(hash2kv(hash, Qnil, self), self);
 }
 
 
@@ -464,7 +531,7 @@ hash2list_enc(hash, self)
     VALUE hash;
     VALUE self;
 {
-    return ary2list(hash2kv_enc(hash, Qnil, self), self);
+    return ary2list2(hash2kv_enc(hash, Qnil, self), self);
 }
 
 static VALUE
@@ -691,9 +758,12 @@ tcl2rb_bool(self, value)
 
     rb_check_type(value, T_STRING);
 
+    value = rb_funcall(value, ID_downcase, 0);
+
     if (RSTRING(value)->ptr[0] == '\0'
 	|| strcmp(RSTRING(value)->ptr, "0") == 0
 	|| strcmp(RSTRING(value)->ptr, "no") == 0
+	|| strcmp(RSTRING(value)->ptr, "off") == 0
 	|| strcmp(RSTRING(value)->ptr, "false") == 0) {
 	return Qfalse;
     } else {
@@ -1095,6 +1165,7 @@ Init_tkutil()
     ID_at_path = rb_intern("@path");
     ID_to_eval = rb_intern("to_eval");
     ID_to_s = rb_intern("to_s");
+    ID_downcase = rb_intern("downcase");
     ID_install_cmd = rb_intern("install_cmd");
     ID_merge_tklist = rb_intern("_merge_tklist");
     ID_call = rb_intern("call");

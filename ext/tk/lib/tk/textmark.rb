@@ -37,6 +37,14 @@ class TkTextMark<TkObject
     @id
   end
 
+  def exist?
+    if ( tk_split_simplelist(_fromUTF8(tk_call_without_enc(@t.path, 'mark', 'names'))).find{|id| id == @id } )
+      true
+    else
+      false
+    end
+  end
+
   def +(mod)
     @id + ' + ' + mod
   end

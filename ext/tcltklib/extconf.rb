@@ -5,6 +5,12 @@ require 'mkmf'
 is_win32 = (/mswin32|mingw|cygwin|bccwin32/ =~ RUBY_PLATFORM)
 is_macosx = (/darwin/ =~ RUBY_PLATFORM)
 
+mac_need_framework = 
+  is_macosx &&
+  enable_config("mac-tcltk-framework", false) &&
+  FileTest.directory?("/Library/Frameworks/Tcl.framework/") &&
+  FileTest.directory?("/Library/Frameworks/Tk.framework/")
+
 unless is_win32
   have_library("nsl", "t_open")
   have_library("socket", "socket")
@@ -210,7 +216,7 @@ EOF
   end
 end
 
-if is_macosx || 
+if mac_need_framework || 
    (have_header("tcl.h") && have_header("tk.h") &&
     (is_win32 || find_library("X11", "XOpenDisplay",
       "/usr/X11/lib", "/usr/lib/X11", "/usr/X11R6/lib", "/usr/openwin/lib")) &&
@@ -219,7 +225,7 @@ if is_macosx ||
   $CPPFLAGS += ' -DUSE_TCL_STUBS -DUSE_TK_STUBS' if stubs
   $CPPFLAGS += ' -D_WIN32' if /cygwin/ =~ RUBY_PLATFORM
 
-  if is_macosx
+  if mac_need_framework
     $CPPFLAGS += ' -I/Library/Frameworks/Tcl.framework/headers -I/Library/Frameworks/Tk.framework/Headers'
     $LDFLAGS += ' -framework Tk -framework Tcl'
   end

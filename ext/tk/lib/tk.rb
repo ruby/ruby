@@ -103,6 +103,8 @@ module TkComm
       gen_class_name = 'TkWidget_' + tk_class
       classname_def = "WidgetClassName = '#{tk_class}'.freeze"
     end
+
+=begin
     unless Object.const_defined? gen_class_name
       Object.class_eval "class #{gen_class_name}<#{ruby_class_name}
                            #{classname_def}
@@ -110,6 +112,21 @@ module TkComm
     end
     Object.class_eval "#{gen_class_name}.new('widgetname'=>'#{path}', 
                                              'without_creating'=>true)"
+=end
+    base = Object
+    gen_class_name.split('::').each{|klass|
+      next if klass == ''
+      if base.const_defined?(klass)
+	base = base.class_eval klass
+      else
+	base = base.class_eval "class #{klass}<#{ruby_class_name}
+                                  #{classname_def}
+                                end
+                                #{klass}"
+      end
+    }
+    base.class_eval "#{gen_class_name}.new('widgetname'=>'#{path}', 
+                                           'without_creating'=>true)"
   end
   private :_genobj_for_tkwidget
   module_function :_genobj_for_tkwidget
@@ -790,8 +807,8 @@ module TkComm
       }
     end
   end
-  private :install_bind, :tk_event_sequence, 
-          :_bind_core, :_bind, :_bind_append, :_bind_remove, :_bindinfo
+  private :tk_event_sequence
+  private :_bind_core, :_bind, :_bind_append, :_bind_remove, :_bindinfo
 
   def bind(tagOrClass, context, cmd=Proc.new, args=nil)
     _bind(["bind", tagOrClass], context, cmd, args)
@@ -1403,8 +1420,16 @@ module Tk
   TCL_VERSION = INTERP._invoke_without_enc("info", "tclversion").freeze
   TCL_PATCHLEVEL = INTERP._invoke_without_enc("info", "patchlevel").freeze
 
+  major, minor = TCL_VERSION.split('.')
+  TCL_MAJOR_VERSION = major.to_i
+  TCL_MINOR_VERSION = minor.to_i
+
   TK_VERSION  = INTERP._invoke_without_enc("set", "tk_version").freeze
   TK_PATCHLEVEL  = INTERP._invoke_without_enc("set", "tk_patchLevel").freeze
+
+  major, minor = TK_VERSION.split('.')
+  TK_MAJOR_VERSION = major.to_i
+  TK_MINOR_VERSION = minor.to_i
 
   JAPANIZED_TK = (INTERP._invoke_without_enc("info", "commands", 
 					     "kanji") != "").freeze
@@ -1888,156 +1913,6 @@ else
 end
 
 
-module TkTreatFont
-  def font_configinfo(name = nil)
-    ret = TkFont.used_on(self.path)
-    if ret == nil
-=begin
-      if name
-	ret = name
-      else
-	ret = TkFont.init_widget_font(self.path, self.path, 'configure')
-      end
-=end
-      ret = TkFont.init_widget_font(self.path, self.path, 'configure')
-    end
-    ret
-  end
-  alias fontobj font_configinfo
-
-  def font_configure(slot)
-    slot = _symbolkey2str(slot)
-
-    if slot.key?('font')
-      fnt = slot.delete('font')
-      if fnt.kind_of? TkFont
-	return fnt.call_font_configure(self.path, self.path,'configure',slot)
-      else
-	if fnt 
-	  if (slot.key?('kanjifont') || 
-	      slot.key?('latinfont') || 
-	      slot.key?('asciifont'))
-	    fnt = TkFont.new(fnt)
-
-	    lfnt = slot.delete('latinfont')
-	    lfnt = slot.delete('asciifont') if slot.key?('asciifont')
-	    kfnt = slot.delete('kanjifont')
-
-	    fnt.latin_replace(lfnt) if lfnt
-	    fnt.kanji_replace(kfnt) if kfnt
-	  else
-	    slot['font'] = fnt
-	    tk_call(self.path, 'configure', *hash_kv(slot))
-	  end
-	end
-	return self
-      end
-    end
-
-    lfnt = slot.delete('latinfont')
-    lfnt = slot.delete('asciifont') if slot.key?('asciifont')
-    kfnt = slot.delete('kanjifont')
-
-    if lfnt && kfnt
-      return TkFont.new(lfnt, kfnt).call_font_configure(self.path, self.path, 
-							'configure', slot)
-    end
-
-    latinfont_configure(lfnt) if lfnt
-    kanjifont_configure(kfnt) if kfnt
-      
-    tk_call(self.path, 'configure', *hash_kv(slot)) if slot != {}
-    self
-  end
-
-  def latinfont_configure(ltn, keys=nil)
-    if (fobj = TkFont.used_on(self.path))
-      fobj = TkFont.new(fobj) # create a new TkFont object
-    elsif Tk::JAPANIZED_TK
-      fobj = fontobj          # create a new TkFont object
-    else
-      tk_call(self.path, 'configure', '-font', ltn)
-      return self
-    end
-
-    if fobj.kind_of?(TkFont)
-      if ltn.kind_of? TkFont
-	conf = {}
-	ltn.latin_configinfo.each{|key,val| conf[key] = val}
-	if keys
-	  fobj.latin_configure(conf.update(keys))
-	else
-	  fobj.latin_configure(conf)
-	end
-      else
-	fobj.latin_replace(ltn)
-      end
-    end
-
-    return fobj.call_font_configure(self.path, self.path, 'configure', {})
-  end
-  alias asciifont_configure latinfont_configure
-
-  def kanjifont_configure(knj, keys=nil)
-    if (fobj = TkFont.used_on(self.path))
-      fobj = TkFont.new(fobj) # create a new TkFont object
-    elsif Tk::JAPANIZED_TK
-      fobj = fontobj          # create a new TkFont object
-    else
-      tk_call(self.path, 'configure', '-font', knj)
-      return self
-    end
-
-    if fobj.kind_of?(TkFont)
-      if knj.kind_of? TkFont
-	conf = {}
-	knj.kanji_configinfo.each{|key,val| conf[key] = val}
-	if keys
-	  fobj.kanji_configure(conf.update(keys))
-	else
-	  fobj.kanji_configure(conf)
-	end
-      else
-	fobj.kanji_replace(knj)
-      end
-    end
-
-    return fobj.call_font_configure(self.path, self.path, 'configure', {})
-  end
-
-  def font_copy(window, tag=nil)
-    if tag
-      fnt = window.tagfontobj(tag).dup
-    else
-      fnt = window.fontobj.dup
-    end
-    fnt.call_font_configure(self.path, self.path, 'configure', {})
-    self
-  end
-
-  def latinfont_copy(window, tag=nil)
-    fontobj.dup.call_font_configure(self.path, self.path, 'configure', {})
-    if tag
-      fontobj.latin_replace(window.tagfontobj(tag).latin_font_id)
-    else
-      fontobj.latin_replace(window.fontobj.latin_font_id)
-    end
-    self
-  end
-  alias asciifont_copy latinfont_copy
-
-  def kanjifont_copy(window, tag=nil)
-    fontobj.dup.call_font_configure(self.path, self.path, 'configure', {})
-    if tag
-      fontobj.kanji_replace(window.tagfontobj(tag).kanji_font_id)
-    else
-      fontobj.kanji_replace(window.fontobj.kanji_font_id)
-    end
-    self
-  end
-end
-
-
 module TkBindCore
   def bind(context, cmd=Proc.new, args=nil)
     Tk.bind(self, context, cmd, args)
@@ -2057,9 +1932,1057 @@ module TkBindCore
 end
 
 
+module TkTreatFont
+  def __font_optkeys
+    ['font']
+  end
+  private :__font_optkeys
+
+  def __pathname
+    self.path
+  end
+  private :__pathname
+
+  ################################
+
+  def font_configinfo(key = nil)
+    optkeys = __font_optkeys
+    if key && !optkeys.find{|opt| opt.to_s == key.to_s}
+      fail ArgumentError, "unknown font option name `#{key}'"
+    end
+
+    win, tag = __pathname.split(':')
+
+    if key
+      pathname = [win, tag, key].join(';')
+      TkFont.used_on(pathname) || 
+	TkFont.init_widget_font(pathname, *__config_cmd)
+    elsif optkeys.size == 1
+      pathname = [win, tag, optkeys[0]].join(';')
+      TkFont.used_on(pathname) || 
+	TkFont.init_widget_font(pathname, *__config_cmd)
+    else
+      fonts = {}
+      optkeys.each{|key|
+	key = key.to_s
+	pathname = [win, tag, key].join(';')
+	fonts[key] = 
+	  TkFont.used_on(pathname) || 
+	  TkFont.init_widget_font(pathname, *__config_cmd)
+      }
+      fonts
+    end
+  end
+  alias fontobj font_configinfo
+
+  def font_configure(slot)
+    pathname = __pathname
+
+    slot = _symbolkey2str(slot)
+
+    __font_optkeys.each{|optkey|
+      optkey = optkey.to_s
+      l_optkey = 'latin' << optkey
+      a_optkey = 'ascii' << optkey
+      k_optkey = 'kanji' << optkey
+
+      if slot.key?(optkey)
+	fnt = slot.delete(optkey)
+	if fnt.kind_of?(TkFont)
+	  slot.delete(l_optkey)
+	  slot.delete(a_optkey)
+	  slot.delete(k_optkey)
+
+	  fnt.call_font_configure([pathname, optkey], *(__config_cmd << {}))
+	  next
+	else
+	  if fnt
+	    if (slot.key?(l_optkey) || 
+		slot.key?(a_optkey) || 
+		slot.key?(k_optkey))
+	      fnt = TkFont.new(fnt)
+
+	      lfnt = slot.delete(l_optkey)
+	      lfnt = slot.delete(a_optkey) if slot.key?(a_optkey)
+	      kfnt = slot.delete(k_optkey)
+
+	      fnt.latin_replace(lfnt) if lfnt
+	      fnt.kanji_replace(kfnt) if kfnt
+
+	      fnt.call_font_configure([pathname, optkey], 
+				      *(__config_cmd << {}))
+	      next
+	    else
+	      tk_call(*(__config_cmd << "-#{optkey}" << fnt))
+	    end
+	  end
+	  next
+	end
+      end
+
+      lfnt = slot.delete(l_optkey)
+      lfnt = slot.delete(a_optkey) if slot.key?(a_optkey)
+      kfnt = slot.delete(k_optkey)
+
+      if lfnt && kfnt
+	TkFont.new(lfnt, kfnt).call_font_configure([pathname, optkey], 
+						   *(__config_cmd << {}))
+      elsif lfnt
+	latinfont_configure([lfnt, optkey])
+      elsif kfnt
+	kanjifont_configure([kfnt, optkey])
+      end
+    }
+
+    # configure other (without font) options
+    tk_call(*(__config_cmd.concat(hash_kv(slot)))) if slot != {}
+    self
+  end
+
+  def latinfont_configure(ltn, keys=nil)
+    if ltn.kind_of?(Array)
+      key = ltn[1]
+      ltn = ltn[0]
+    else
+      key = nil
+    end
+
+    optkeys = __font_optkeys
+    if key && !optkeys.find{|opt| opt.to_s == key.to_s}
+      fail ArgumentError, "unknown font option name `#{key}'"
+    end
+
+    win, tag = __pathname.split(':')
+
+    optkeys = [key] if key
+
+    optkeys.each{|optkey|
+      optkey = optkey.to_s
+
+      pathname = [win, tag, optkey].join(';')
+
+      if (fobj = TkFont.used_on(pathname))
+	fobj = TkFont.new(fobj) # create a new TkFont object
+      elsif Tk::JAPANIZED_TK
+	fobj = fontobj          # create a new TkFont object
+      else
+	tk_call(*(__config_cmd << "-#{optkey}" << ltn))
+	next
+      end
+
+      if fobj.kind_of?(TkFont)
+	if ltn.kind_of?(TkFont)
+	  conf = {}
+	  ltn.latin_configinfo.each{|key,val| conf[key] = val}
+	  if keys
+	    fobj.latin_configure(conf.update(keys))
+	  else
+	    fobj.latin_configure(conf)
+	  end
+	else
+	  fobj.latin_replace(ltn)
+	end
+      end
+
+      fobj.call_font_configure([pathname, optkey], *(__config_cmd << {}))
+    }
+    self
+  end
+  alias asciifont_configure latinfont_configure
+
+  def kanjifont_configure(knj, keys=nil)
+    if knj.kind_of?(Array)
+      key = knj[1]
+      knj = knj[0]
+    else
+      key = nil
+    end
+
+    optkeys = __font_optkeys
+    if key && !optkeys.find{|opt| opt.to_s == key.to_s}
+      fail ArgumentError, "unknown font option name `#{key}'"
+    end
+
+    win, tag = __pathname.split(':')
+
+    optkeys = [key] if key
+
+    optkeys.each{|optkey|
+      optkey = optkey.to_s
+
+      pathname = [win, tag, optkey].join(';')
+
+      if (fobj = TkFont.used_on(pathname))
+	fobj = TkFont.new(fobj) # create a new TkFont object
+      elsif Tk::JAPANIZED_TK
+	fobj = fontobj          # create a new TkFont object
+      else
+	tk_call(*(__config_cmd << "-#{optkey}" << knj))
+	next
+      end
+
+      if fobj.kind_of?(TkFont)
+	if knj.kind_of?(TkFont)
+	  conf = {}
+	  knj.kanji_configinfo.each{|key,val| conf[key] = val}
+	  if keys
+	    fobj.kanji_configure(conf.update(keys))
+	  else
+	    fobj.kanji_configure(conf)
+	  end
+	else
+	  fobj.kanji_replace(knj)
+	end
+      end
+
+      fobj.call_font_configure([pathname, optkey], *(__config_cmd << {}))
+    }
+    self
+  end
+
+  def font_copy(window, wintag=nil, winkey=nil, targetkey=nil)
+    if wintag
+      if winkey
+	fnt = window.tagfontobj(wintag, winkey).dup
+      else
+	fnt = window.tagfontobj(wintag).dup
+      end
+    else
+      if winkey
+	fnt = window.fontobj(winkey).dup
+      else
+	fnt = window.fontobj.dup
+      end
+    end
+
+    if targetkey
+      fnt.call_font_configure([__pathname, targetkey], *(__config_cmd << {}))
+    else
+      fnt.call_font_configure(__pathname, *(__config_cmd << {}))
+    end
+    self
+  end
+
+  def latinfont_copy(window, wintag=nil, winkey=nil, targetkey=nil)
+    if targetkey
+      fontobj(targetkey).dup.call_font_configure([__pathname, targetkey], 
+						 *(__config_cmd << {}))
+    else
+      fontobj.dup.call_font_configure(__pathname, *(__config_cmd << {}))
+    end
+
+    if wintag
+      if winkey
+	fontobj.latin_replace(window.tagfontobj(wintag, winkey).latin_font_id)
+      else
+	fontobj.latin_replace(window.tagfontobj(wintag).latin_font_id)
+      end
+    else
+      if winkey
+	fontobj.latin_replace(window.fontobj(winkey).latin_font_id)
+      else
+	fontobj.latin_replace(window.fontobj.latin_font_id)
+      end
+    end
+    self
+  end
+  alias asciifont_copy latinfont_copy
+
+  def kanjifont_copy(window, wintag=nil, winkey=nil, targetkey=nil)
+    if targetkey
+      fontobj(targetkey).dup.call_font_configure([__pathname, targetkey], 
+						 *(__config_cmd << {}))
+    else
+	fontobj.dup.call_font_configure(__pathname, *(__config_cmd << {}))
+    end
+
+    if wintag
+      if winkey
+	fontobj.kanji_replace(window.tagfontobj(wintag, winkey).kanji_font_id)
+      else
+	fontobj.kanji_replace(window.tagfontobj(wintag).kanji_font_id)
+      end
+    else
+      if winkey
+	fontobj.kanji_replace(window.fontobj(winkey).kanji_font_id)
+      else
+	fontobj.kanji_replace(window.fontobj.kanji_font_id)
+      end
+    end
+    self
+  end
+end
+
+
+module TkConfigMethod
+  include TkUtil
+  include TkTreatFont
+
+  def __cget_cmd
+    [self.path, 'cget']
+  end
+  private :__cget_cmd
+
+  def __config_cmd
+    [self.path, 'configure']
+  end
+  private :__config_cmd
+
+  def __configinfo_struct
+    {:key=>0, :alias=>1, :db_name=>1, :db_class=>2, 
+      :default_value=>3, :current_value=>4}
+  end
+  private :__configinfo_struct
+
+  def __numval_optkeys
+    []
+  end
+  private :__numval_optkeys
+
+  def __numstrval_optkeys
+    []
+  end
+  private :__numstrval_optkeys
+
+  def __boolval_optkeys
+    []
+  end
+  private :__boolval_optkeys
+
+  def __strval_optkeys
+    ['text', 'label', 'show', 'data', 'file']
+  end
+  private :__strval_optkeys
+
+  def __listval_optkeys
+    []
+  end
+  private :__listval_optkeys
+
+  def __numlistval_optkeys
+    []
+  end
+  private :__numlistval_optkeys
+
+  def __methodcall_optkeys  # { key=>method, ... }
+    {}
+  end
+  private :__methodcall_optkeys
+
+  def __keyonly_optkeys  # { def_key=>undef_key or nil, ... }
+    {}
+  end
+  private :__keyonly_optkeys
+
+  def __conv_keyonly_opts(keys)
+    return keys unless keys.kind_of?(Hash)
+    keyonly = __keyonly_optkeys
+    keys2 = {}
+    keys.each{|k, v|
+      optkey = keyonly.find{|kk,vv| kk.to_s == k.to_s}
+      if optkey
+	defkey, undefkey = optkey
+	if v
+	  keys2[defkey.to_s] = None
+	elsif undefkey
+	  keys2[undefkey.to_s] = None
+	else
+	  # remove key
+	end
+      else
+	keys2[k.to_s] = v
+      end
+    }
+    keys2
+  end
+
+  def config_hash_kv(keys, enc_mode = nil, conf = nil)
+    hash_kv(__conv_keyonly_opts(keys), enc_mode, conf)
+  end
+
+  ################################
+
+  def cget(slot)
+    slot = slot.to_s
+
+    if ( method = _symbolkey2str(__methodcall_optkeys)[slot] )
+      return self.__send__(method)
+    end
+
+    case slot
+    when /^(#{__numval_optkeys.join('|')})$/
+      begin
+	number(tk_call_without_enc(*(__cget_cmd << "-#{slot}")))
+      rescue
+	nil
+      end
+
+    when /^(#{__numstrval_optkeys.join('|')})$/
+      num_or_str(tk_call_without_enc(*(__cget_cmd << "-#{slot}")))
+
+    when /^(#{__boolval_optkeys.join('|')})$/
+      begin
+	bool(tk_call_without_enc(*(__cget_cmd << "-#{slot}")))
+      rescue
+	nil
+      end
+
+    when /^(#{__listval_optkeys.join('|')})$/
+      simplelist(tk_call_without_enc(*(__cget_cmd << "-#{slot}")))
+
+    when /^(#{__numlistval_optkeys.join('|')})$/
+      conf = tk_call_without_enc(*(__cget_cmd << "-#{slot}"))
+      if conf =~ /^[0-9+-]/
+	list(conf)
+      else
+	conf
+      end
+
+    when /^(#{__strval_optkeys.join('|')})$/
+      _fromUTF8(tk_call_without_enc(*(__cget_cmd << "-#{slot}")))
+
+    when /^(|latin|ascii|kanji)(#{__font_optkeys.join('|')})$/
+      fontcode = $1
+      fontkey  = $2
+      fnt = tk_tcl2ruby(tk_call_without_enc(*(__cget_cmd << "-#{fontkey}")), true)
+      unless fnt.kind_of?(TkFont)
+	fnt = fontobj(fontkey)
+      end
+      if fontcode == 'kanji' && JAPANIZED_TK && TK_VERSION =~ /^4\.*/
+	# obsolete; just for compatibility
+	fnt.kanji_font
+      else
+	fnt
+      end
+
+    else
+      tk_tcl2ruby(tk_call_without_enc(*(__cget_cmd << "-#{slot}")), true)
+    end
+  end
+
+  def configure(slot, value=None)
+    if slot.kind_of? Hash
+      slot = _symbolkey2str(slot)
+
+      __methodcall_optkeys.each{|key, method|
+	value = slot.delete(key.to_s)
+	self.__send__(method, value) if value
+      }
+
+      __keyonly_optkeys.each{|defkey, undefkey|
+	conf = slot.find{|kk, vv| kk == defkey.to_s}
+	if conf
+	  k, v = conf
+	  if v
+	    slot[k] = None
+	  else
+	    slot[undefkey.to_s] = None if undefkey
+	    slot.delete(k)
+	  end
+	end
+      }
+
+      if (slot.find{|k, v| k =~ /^(|latin|ascii|kanji)(#{__font_optkeys.join('|')})$/})
+	font_configure(slot)
+      elsif slot.size > 0
+	tk_call(*(__config_cmd.concat(hash_kv(slot))))
+      end
+
+    else
+      slot = slot.to_s
+      if ( conf = __keyonly_optkeys.find{|k, v| k.to_s == slot} )
+	defkey, undefkey = conf
+	if value
+	  tk_call(*(__config_cmd << "-#{defkey}"))
+	elsif undefkey
+	  tk_call(*(__config_cmd << "-#{undefkey}"))
+	end
+      elsif ( method = _symbolkey2str(__methodcall_optkeys)[slot] )
+	self.__send__(method, value)
+      elsif (slot =~ /^(|latin|ascii|kanji)(#{__font_optkeys.join('|')})$/)
+	if value == None
+	  fontobj($2)
+	else
+	  font_configure({slot=>value})
+	end
+      else
+	tk_call(*(__config_cmd << "-#{slot}" << value))
+      end
+    end
+    self
+  end
+
+  def configure_cmd(slot, value)
+    configure(slot, install_cmd(value))
+  end
+
+  def configinfo(slot = nil)
+    if TkComm::GET_CONFIGINFO_AS_ARRAY
+      if (slot.to_s =~ /^(|latin|ascii|kanji)(#{__font_optkeys.join('|')})$/)
+	fontkey  = $2
+	conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{fontkey}"))))
+	conf[__configinfo_struct[:key]] = 
+	  conf[__configinfo_struct[:key]][1..-1]
+	if ( ! __configinfo_struct[:alias] \
+	    || conf.size > __configinfo_struct[:alias] + 1 )
+	  conf[__configinfo_struct[:current_value]] = fontobj(fontkey)
+	elsif ( __configinfo_struct[:alias] \
+	       && conf.size == __configinfo_struct[:alias] + 1 \
+	       && conf[__configinfo_struct[:alias]][0] == ?- )
+	  conf[__configinfo_struct[:alias]] = 
+	    conf[__configinfo_struct[:alias]][1..-1]
+	end
+	conf
+      else
+	if slot
+	  slot = slot.to_s
+	  case slot
+	  when /^(#{__methodcall_optkeys.keys.join('|')})$/
+	    method = _symbolkey2str(__methodcall_optkeys)[slot]
+	    return [slot, '', '', '', self.__send__(method)]
+
+	  when /^(#{__numval_optkeys.join('|')})$/
+	    conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{slot}"))))
+
+	    if ( __configinfo_struct[:default_value] \
+		&& conf[__configinfo_struct[:default_value]])
+	      begin
+		conf[__configinfo_struct[:default_value]] = 
+		  number(conf[__configinfo_struct[:default_value]])
+	      rescue
+		conf[__configinfo_struct[:default_value]] = nil
+	      end
+	    end
+	    if ( conf[__configinfo_struct[:current_value]] )
+	      begin
+		conf[__configinfo_struct[:current_value]] = 
+		  number(conf[__configinfo_struct[:current_value]])
+	      rescue
+		conf[__configinfo_struct[:current_value]] = nil
+	      end
+	    end
+
+	  when /^(#{__numstrval_optkeys.join('|')})$/
+	    conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{slot}"))))
+
+	    if ( __configinfo_struct[:default_value] \
+		&& conf[__configinfo_struct[:default_value]])
+	      conf[__configinfo_struct[:default_value]] = 
+		num_or_str(conf[__configinfo_struct[:default_value]])
+	    end
+	    if ( conf[__configinfo_struct[:current_value]] )
+	      conf[__configinfo_struct[:current_value]] = 
+		num_or_str(conf[__configinfo_struct[:current_value]])
+	    end
+
+	  when /^(#{__boolval_optkeys.join('|')})$/
+	    conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{slot}"))))
+
+	    if ( __configinfo_struct[:default_value] \
+		&& conf[__configinfo_struct[:default_value]])
+	      begin
+		conf[__configinfo_struct[:default_value]] = 
+		  bool(conf[__configinfo_struct[:default_value]])
+	      rescue
+		conf[__configinfo_struct[:default_value]] = nil
+	      end
+	    end
+	    if ( conf[__configinfo_struct[:current_value]] )
+	      begin
+		conf[__configinfo_struct[:current_value]] = 
+		  bool(conf[__configinfo_struct[:current_value]])
+	      rescue
+		conf[__configinfo_struct[:current_value]] = nil
+	      end
+	    end
+
+	  when /^(#{__listval_optkeys.join('|')})$/
+	    conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{slot}"))))
+
+	    if ( __configinfo_struct[:default_value] \
+		&& conf[__configinfo_struct[:default_value]])
+	      conf[__configinfo_struct[:default_value]] = 
+		simplelist(conf[__configinfo_struct[:default_value]])
+	    end
+	    if ( conf[__configinfo_struct[:current_value]] )
+	      conf[__configinfo_struct[:current_value]] = 
+		simplelist(conf[__configinfo_struct[:current_value]])
+	    end
+
+	  when /^(#{__numlistval_optkeys.join('|')})$/
+	    conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{slot}"))))
+
+	    if ( __configinfo_struct[:default_value] \
+		&& conf[__configinfo_struct[:default_value]] \
+		&& conf[__configinfo_struct[:default_value]] =~ /^[0-9]/ )
+	      conf[__configinfo_struct[:default_value]] = 
+		list(conf[__configinfo_struct[:default_value]])
+	    end
+	    if ( conf[__configinfo_struct[:current_value]] \
+		&& conf[__configinfo_struct[:current_value]] =~ /^[0-9]/ )
+	      conf[__configinfo_struct[:current_value]] = 
+		list(conf[__configinfo_struct[:current_value]])
+	    end
+
+	  when /^(#{__strval_optkeys.join('|')})$/
+	    conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{slot}"))))
+	  else
+	    conf = tk_split_list(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{slot}"))))
+	  end
+	  conf[__configinfo_struct[:key]] = 
+	    conf[__configinfo_struct[:key]][1..-1]
+
+	  if ( __configinfo_struct[:alias] \
+	      && conf.size == __configinfo_struct[:alias] + 1 \
+	      && conf[__configinfo_struct[:alias]][0] == ?- )
+	    conf[__configinfo_struct[:alias]] = 
+	      conf[__configinfo_struct[:alias]][1..-1]
+	  end
+
+	  conf
+
+	else
+	  ret = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*__config_cmd))).collect{|conflist|
+	    conf = tk_split_simplelist(conflist)
+	    conf[__configinfo_struct[:key]] = 
+	      conf[__configinfo_struct[:key]][1..-1]
+
+	    case conf[__configinfo_struct[:key]]
+	    when /^(#{__strval_optkeys.join('|')})$/
+	      # do nothing
+
+	    when /^(#{__numval_optkeys.join('|')})$/
+	      if ( __configinfo_struct[:default_value] \
+		  && conf[__configinfo_struct[:default_value]] )
+		begin
+		  conf[__configinfo_struct[:default_value]] = 
+		    number(conf[__configinfo_struct[:default_value]])
+		rescue
+		  conf[__configinfo_struct[:default_value]] = nil
+		end
+	      end
+	      if ( conf[__configinfo_struct[:current_value]] )
+		begin
+		  conf[__configinfo_struct[:current_value]] = 
+		    number(conf[__configinfo_struct[:current_value]])
+		rescue
+		  conf[__configinfo_struct[:current_value]] = nil
+		end
+	      end
+
+	    when /^(#{__numstrval_optkeys.join('|')})$/
+	      if ( __configinfo_struct[:default_value] \
+		  && conf[__configinfo_struct[:default_value]] )
+		conf[__configinfo_struct[:default_value]] = 
+		  num_or_str(conf[__configinfo_struct[:default_value]])
+	      end
+	      if ( conf[__configinfo_struct[:current_value]] )
+		conf[__configinfo_struct[:current_value]] = 
+		  num_or_str(conf[__configinfo_struct[:current_value]])
+	      end
+
+	    when /^(#{__boolval_optkeys.join('|')})$/
+	      if ( __configinfo_struct[:default_value] \
+		  && conf[__configinfo_struct[:default_value]] )
+		begin
+		  conf[__configinfo_struct[:default_value]] = 
+		    bool(conf[__configinfo_struct[:default_value]])
+		rescue
+		  conf[__configinfo_struct[:default_value]] = nil
+		end
+	      end
+	      if ( conf[__configinfo_struct[:current_value]] )
+		begin
+		  conf[__configinfo_struct[:current_value]] = 
+		    bool(conf[__configinfo_struct[:current_value]])
+		rescue
+		  conf[__configinfo_struct[:current_value]] = nil
+		end
+	      end
+
+	    when /^(#{__listval_optkeys.join('|')})$/
+	      if ( __configinfo_struct[:default_value] \
+		  && conf[__configinfo_struct[:default_value]] )
+		conf[__configinfo_struct[:default_value]] = 
+		  simplelist(conf[__configinfo_struct[:default_value]])
+	      end
+	      if ( conf[__configinfo_struct[:current_value]] )
+		conf[__configinfo_struct[:current_value]] = 
+		  simplelist(conf[__configinfo_struct[:current_value]])
+	      end
+
+	    when /^(#{__numlistval_optkeys.join('|')})$/
+	      if ( __configinfo_struct[:default_value] \
+		  && conf[__configinfo_struct[:default_value]] \
+		  && conf[__configinfo_struct[:default_value]] =~ /^[0-9]/ )
+		conf[__configinfo_struct[:default_value]] = 
+		  list(conf[__configinfo_struct[:default_value]])
+	      end
+	      if ( conf[__configinfo_struct[:current_value]] \
+		  && conf[__configinfo_struct[:current_value]] =~ /^[0-9]/ )
+		conf[__configinfo_struct[:current_value]] = 
+		  list(conf[__configinfo_struct[:current_value]])
+	      end
+
+	    else
+	      if ( __configinfo_struct[:default_value] \
+		  && conf[__configinfo_struct[:default_value]] )
+		if conf[__configinfo_struct[:default_value]].index('{')
+		  conf[__configinfo_struct[:default_value]] = 
+		    tk_split_list(conf[__configinfo_struct[:default_value]]) 
+		else
+		  conf[__configinfo_struct[:default_value]] = 
+		    tk_tcl2ruby(conf[__configinfo_struct[:default_value]]) 
+		end
+	      end
+	      if conf[__configinfo_struct[:current_value]]
+		if conf[__configinfo_struct[:current_value]].index('{')
+		  conf[__configinfo_struct[:current_value]] = 
+		    tk_split_list(conf[__configinfo_struct[:current_value]]) 
+		else
+		  conf[__configinfo_struct[:current_value]] = 
+		    tk_tcl2ruby(conf[__configinfo_struct[:current_value]]) 
+		end
+	      end
+	    end
+
+	    if ( __configinfo_struct[:alias] \
+		&& conf.size == __configinfo_struct[:alias] + 1 \
+		&& conf[__configinfo_struct[:alias]][0] == ?- )
+	      conf[__configinfo_struct[:alias]] = 
+		conf[__configinfo_struct[:alias]][1..-1]
+	    end
+
+	    conf
+	  }
+
+	  __font_optkeys.each{|optkey|
+	    optkey = optkey.to_s
+	    fontconf = ret.assoc(optkey)
+	    if fontconf && fontconf.size > 2
+	      ret.delete_if{|inf| inf[0] =~ /^(|latin|ascii|kanji)#{optkey}$/}
+	      fontconf[__configinfo_struct[:current_value]] = fontobj(optkey)
+	      ret.push(fontconf)
+	    end
+	  }
+
+	  __methodcall_optkeys.each{|optkey, method|
+	    ret << [optkey.to_s, '', '', '', self.__send__(method)]
+	  }
+
+	  ret
+	end
+      end
+
+    else # ! TkComm::GET_CONFIGINFO_AS_ARRAY
+      if (slot.to_s =~ /^(|latin|ascii|kanji)(#{__font_optkeys.join('|')})$/)
+	fontkey  = $2
+	conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{fontkey}"))))
+	conf[__configinfo_struct[:key]] = 
+	  conf[__configinfo_struct[:key]][1..-1]
+
+	if ( ! __configinfo_struct[:alias] \
+	    || conf.size > __configinfo_struct[:alias] + 1 )
+	  conf[__configinfo_struct[:current_value]] = fontobj(fontkey)
+	  { conf.shift => conf }
+	elsif ( __configinfo_struct[:alias] \
+	       && conf.size == __configinfo_struct[:alias] + 1 )
+	  if conf[__configinfo_struct[:alias]][0] == ?-
+	    conf[__configinfo_struct[:alias]] = 
+	      conf[__configinfo_struct[:alias]][1..-1]
+	  end
+	  { conf[0] => conf[1] }
+	else
+	  { conf.shift => conf }
+	end
+      else
+	if slot
+	  slot = slot.to_s
+	  case slot
+	  when /^(#{__methodcall_optkeys.keys.join('|')})$/
+	    method = _symbolkey2str(__methodcall_optkeys)[slot]
+	    return {slot => ['', '', '', self.__send__(method)]}
+
+	  when /^(#{__numval_optkeys.join('|')})$/
+	    conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{slot}"))))
+
+	    if ( __configinfo_struct[:default_value] \
+		&& conf[__configinfo_struct[:default_value]] )
+	      begin
+		conf[__configinfo_struct[:default_value]] = 
+		  number(conf[__configinfo_struct[:default_value]])
+	      rescue
+		conf[__configinfo_struct[:default_value]] = nil
+	      end
+	    end
+	    if ( conf[__configinfo_struct[:current_value]] )
+	      begin
+		conf[__configinfo_struct[:current_value]] = 
+		  number(conf[__configinfo_struct[:current_value]])
+	      rescue
+		conf[__configinfo_struct[:current_value]] = nil
+	      end
+	    end
+
+	  when /^(#{__numstrval_optkeys.join('|')})$/
+	    conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{slot}"))))
+
+	    if ( __configinfo_struct[:default_value] \
+		&& conf[__configinfo_struct[:default_value]] )
+	      conf[__configinfo_struct[:default_value]] = 
+		num_or_str(conf[__configinfo_struct[:default_value]])
+	    end
+	    if ( conf[__configinfo_struct[:current_value]] )
+	      conf[__configinfo_struct[:current_value]] = 
+		num_or_str(conf[__configinfo_struct[:current_value]])
+	    end
+
+	  when /^(#{__boolval_optkeys.join('|')})$/
+	    conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{slot}"))))
+
+	    if ( __configinfo_struct[:default_value] \
+		&& conf[__configinfo_struct[:default_value]] )
+	      begin
+		conf[__configinfo_struct[:default_value]] = 
+		  bool(conf[__configinfo_struct[:default_value]])
+	      rescue
+		conf[__configinfo_struct[:default_value]] = nil
+	      end
+	    end
+	    if ( conf[__configinfo_struct[:current_value]] )
+	      begin
+		conf[__configinfo_struct[:current_value]] = 
+		  bool(conf[__configinfo_struct[:current_value]])
+	      rescue
+		conf[__configinfo_struct[:current_value]] = nil
+	      end
+	    end
+
+	  when /^(#{__listval_optkeys.join('|')})$/
+	    conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{slot}"))))
+
+	    if ( __configinfo_struct[:default_value] \
+		&& conf[__configinfo_struct[:default_value]] )
+	      conf[__configinfo_struct[:default_value]] = 
+		simplelist(conf[__configinfo_struct[:default_value]])
+	    end
+	    if ( conf[__configinfo_struct[:current_value]] )
+	      conf[__configinfo_struct[:current_value]] = 
+		simplelist(conf[__configinfo_struct[:current_value]])
+	    end
+
+	  when /^(#{__numlistval_optkeys.join('|')})$/
+	    conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{slot}"))))
+
+	    if ( __configinfo_struct[:default_value] \
+		&& conf[__configinfo_struct[:default_value]] \
+		&& conf[__configinfo_struct[:default_value]] =~ /^[0-9]/ )
+	      conf[__configinfo_struct[:default_value]] = 
+		list(conf[__configinfo_struct[:default_value]])
+	    end
+	    if ( conf[__configinfo_struct[:current_value]] \
+		&& conf[__configinfo_struct[:current_value]] =~ /^[0-9]/ )
+	      conf[__configinfo_struct[:current_value]] = 
+		list(conf[__configinfo_struct[:current_value]])
+	    end
+
+	  when /^(#{__strval_optkeys.join('|')})$/
+	    conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{slot}"))))
+	  else
+	    conf = tk_split_list(_fromUTF8(tk_send_without_enc(*(__config_cmd << "-#{slot}"))))
+	  end
+	  conf[__configinfo_struct[:key]] = 
+	    conf[__configinfo_struct[:key]][1..-1]
+
+	  if ( __configinfo_struct[:alias] \
+	      && conf.size == __configinfo_struct[:alias] + 1 )
+	    if conf[__configinfo_struct[:alias]][0] == ?-
+	      conf[__configinfo_struct[:alias]] = 
+		conf[__configinfo_struct[:alias]][1..-1]
+	    end
+	    { conf[0] => conf[1] }
+	  else
+	    { conf.shift => conf }
+	  end
+
+	else
+	  ret = {}
+	  tk_split_simplelist(_fromUTF8(tk_call_without_enc(*__config_cmd))).each{|conflist|
+	    conf = tk_split_simplelist(conflist)
+	    conf[__configinfo_struct[:key]] = 
+	      conf[__configinfo_struct[:key]][1..-1]
+
+	    case conf[__configinfo_struct[:key]]
+	    when /^(#{__strval_optkeys.join('|')})$/
+	      # do nothing
+
+	    when /^(#{__numval_optkeys.join('|')})$/
+	      if ( __configinfo_struct[:default_value] \
+		  && conf[__configinfo_struct[:default_value]] )
+		begin
+		  conf[__configinfo_struct[:default_value]] = 
+		    number(conf[__configinfo_struct[:default_value]])
+		rescue
+		  conf[__configinfo_struct[:default_value]] = nil
+		end
+	      end
+	      if ( conf[__configinfo_struct[:current_value]] )
+		begin
+		  conf[__configinfo_struct[:current_value]] = 
+		    number(conf[__configinfo_struct[:current_value]])
+		rescue
+		  conf[__configinfo_struct[:current_value]] = nil
+		end
+	      end
+
+	    when /^(#{__numstrval_optkeys.join('|')})$/
+	      if ( __configinfo_struct[:default_value] \
+		  && conf[__configinfo_struct[:default_value]] )
+		conf[__configinfo_struct[:default_value]] = 
+		  num_or_str(conf[__configinfo_struct[:default_value]])
+	      end
+	      if ( conf[__configinfo_struct[:current_value]] )
+		conf[__configinfo_struct[:current_value]] = 
+		  num_or_str(conf[__configinfo_struct[:current_value]])
+	      end
+
+	    when /^(#{__boolval_optkeys.join('|')})$/
+	      if ( __configinfo_struct[:default_value] \
+		  && conf[__configinfo_struct[:default_value]] )
+		begin
+		  conf[__configinfo_struct[:default_value]] = 
+		    bool(conf[__configinfo_struct[:default_value]])
+		rescue
+		  conf[__configinfo_struct[:default_value]] = nil
+		end
+	      end
+	      if ( conf[__configinfo_struct[:current_value]] )
+		begin
+		  conf[__configinfo_struct[:current_value]] = 
+		    bool(conf[__configinfo_struct[:current_value]])
+		rescue
+		  conf[__configinfo_struct[:current_value]] = nil
+		end
+	      end
+
+	    when /^(#{__listval_optkeys.join('|')})$/
+	      if ( __configinfo_struct[:default_value] \
+		  && conf[__configinfo_struct[:default_value]] )
+		conf[__configinfo_struct[:default_value]] = 
+		  simplelist(conf[__configinfo_struct[:default_value]])
+	      end
+	      if ( conf[__configinfo_struct[:current_value]] )
+		conf[__configinfo_struct[:current_value]] = 
+		  simplelist(conf[__configinfo_struct[:current_value]])
+	      end
+
+	    when /^(#{__numlistval_optkeys.join('|')})$/
+	      if ( __configinfo_struct[:default_value] \
+		  && conf[__configinfo_struct[:default_value]] \
+		  && conf[__configinfo_struct[:default_value]] =~ /^[0-9]/ )
+		conf[__configinfo_struct[:default_value]] = 
+		  list(conf[__configinfo_struct[:default_value]])
+	      end
+	      if ( conf[__configinfo_struct[:current_value]] \
+		  && conf[__configinfo_struct[:current_value]] =~ /^[0-9]/ )
+		conf[__configinfo_struct[:current_value]] = 
+		  list(conf[__configinfo_struct[:current_value]])
+	      end
+
+	    else
+	      if ( __configinfo_struct[:default_value] \
+		  && conf[__configinfo_struct[:default_value]] )
+		if conf[__configinfo_struct[:default_value]].index('{')
+		  conf[__configinfo_struct[:default_value]] = 
+		    tk_split_list(conf[__configinfo_struct[:default_value]]) 
+		else
+		  conf[__configinfo_struct[:default_value]] = 
+		    tk_tcl2ruby(conf[__configinfo_struct[:default_value]]) 
+		end
+	      end
+	      if conf[__configinfo_struct[:current_value]]
+		if conf[__configinfo_struct[:current_value]].index('{')
+		  conf[__configinfo_struct[:current_value]] = 
+		    tk_split_list(conf[__configinfo_struct[:current_value]]) 
+		else
+		  conf[__configinfo_struct[:current_value]] = 
+		    tk_tcl2ruby(conf[__configinfo_struct[:current_value]]) 
+		end
+	      end
+	    end
+
+	    if ( __configinfo_struct[:alias] \
+		&& conf.size == __configinfo_struct[:alias] + 1 )
+	      if conf[__configinfo_struct[:alias]][0] == ?-
+		conf[__configinfo_struct[:alias]] = 
+		  conf[__configinfo_struct[:alias]][1..-1]
+	      end
+	      ret[conf[0]] = conf[1]
+	    else
+	      ret[conf.shift] = conf
+	    end
+	  }
+
+	  __font_optkeys.each{|optkey|
+	    optkey = optkey.to_s
+	    fontconf = ret[optkey]
+	    if fontconf.kind_of?(Array)
+	      ret.delete(optkey)
+	      ret.delete('latin' << optkey)
+	      ret.delete('ascii' << optkey)
+	      ret.delete('kanji' << optkey)
+	      fontconf[__configinfo_struct[:current_value]] = fontobj(optkey)
+	      ret[optkey] = fontconf
+	    end
+	  }
+
+	  __methodcall_optkeys.each{|optkey, method|
+	    ret[optkey.to_s] = ['', '', '', self.__send__(method)]
+	  }
+
+	  ret
+	end
+      end
+    end
+  end
+
+  def current_configinfo(slot = nil)
+    if TkComm::GET_CONFIGINFO_AS_ARRAY
+      if slot
+	org_slot = slot
+	begin
+	  conf = configinfo(slot)
+	  if ( ! __configinfo_struct[:alias] \
+	      || conf.size > __configinfo_struct[:alias] + 1 )
+	    return {conf[0] => conf[-1]}
+	  end
+	  slot = conf[__configinfo_struct[:alias]]
+	end while(org_slot != slot)
+	fail RuntimeError, 
+	  "there is a configure alias loop about '#{org_slot}'"
+      else
+	ret = {}
+	configinfo().each{|conf|
+	  if ( ! __configinfo_struct[:alias] \
+	      || conf.size > __configinfo_struct[:alias] + 1 )
+	    ret[conf[0]] = conf[-1]
+	  end
+	}
+	ret
+      end
+    else # ! TkComm::GET_CONFIGINFO_AS_ARRAY
+      ret = {}
+      configinfo(slot).each{|key, conf|	
+	ret[key] = conf[-1] if conf.kind_of?(Array)
+      }
+      ret
+    end
+  end
+end
+
 class TkObject<TkKernel
   include Tk
-  include TkTreatFont
+  include TkConfigMethod
   include TkBindCore
 
 ### --> definition is moved to TkUtil module
@@ -2117,194 +3040,6 @@ class TkObject<TkKernel
     val
   end
 
-  def cget(slot)
-    case slot.to_s
-    when 'text', 'label', 'show', 'data', 'file'
-      #tk_call(path, 'cget', "-#{slot}")
-      _fromUTF8(tk_call_without_enc(path, 'cget', "-#{slot}"))
-    when 'font', 'kanjifont'
-      #fnt = tk_tcl2ruby(tk_call(path, 'cget', "-#{slot}"))
-      #fnt = tk_tcl2ruby(tk_call(path, 'cget', "-font"))
-      fnt = tk_tcl2ruby(tk_call_without_enc(path, 'cget', "-font"), true)
-      unless fnt.kind_of?(TkFont)
-	fnt = fontobj(fnt)
-      end
-      if slot == 'kanjifont' && JAPANIZED_TK && TK_VERSION =~ /^4\.*/
-	# obsolete; just for compatibility
-	fnt.kanji_font
-      else
-	fnt
-      end
-    else
-      tk_tcl2ruby(tk_call_without_enc(path, 'cget', "-#{slot}"), true)
-    end
-  end
-
-  def configure(slot, value=None)
-    if slot.kind_of? Hash
-      if (slot['font'] || slot[:font] || 
-          slot['kanjifont'] || slot[:kanjifont] || 
-	  slot['latinfont'] || slot[:latinfont] || 
-          slot['asciifont'] || slot[:asciifont] )
-	font_configure(slot)
-      elsif slot.size > 0
-	tk_call(path, 'configure', *hash_kv(slot))
-      end
-
-    else
-      if (slot == 'font' || slot == :font || 
-          slot == 'kanjifont' || slot == :kanjifont || 
-	  slot == 'latinfont' || slot == :latinfont || 
-          slot == 'asciifont' || slot == :asciifont )
-	if value == None
-	  fontobj
-	else
-	  font_configure({slot=>value})
-	end
-      else
-	tk_call(path, 'configure', "-#{slot}", value)
-      end
-    end
-    self
-  end
-
-  def configure_cmd(slot, value)
-    configure(slot, install_cmd(value))
-  end
-
-  def configinfo(slot = nil)
-    if TkComm::GET_CONFIGINFO_AS_ARRAY
-      if slot == 'font' || slot == :font || 
-	  slot == 'kanjifont' || slot == :kanjifont
-	conf = tk_split_simplelist(_fromUTF8(tk_send_without_enc('configure', "-#{slot}")))
-	conf[0] = conf[0][1..-1]
-	conf[4] = fontobj(conf[4])
-	conf
-      else
-	if slot
-	  case slot.to_s
-	  when 'text', 'label', 'show', 'data', 'file'
-	    conf = tk_split_simplelist(_fromUTF8(tk_send_without_enc('configure', "-#{slot}")))
-	  else
-	    conf = tk_split_list(_fromUTF8(tk_send_without_enc('configure', "-#{slot}")))
-	  end
-	  conf[0] = conf[0][1..-1]
-	  conf
-	else
-	  ret = tk_split_simplelist(_fromUTF8(tk_send_without_enc('configure'))).collect{|conflist|
-	    conf = tk_split_simplelist(conflist)
-	    conf[0] = conf[0][1..-1]
-	    case conf[0]
-	    when 'text', 'label', 'show', 'data', 'file'
-	    else
-	      if conf[3]
-		if conf[3].index('{')
-		  conf[3] = tk_split_list(conf[3]) 
-		else
-		  conf[3] = tk_tcl2ruby(conf[3]) 
-		end
-	      end
-	      if conf[4]
-		if conf[4].index('{')
-		  conf[4] = tk_split_list(conf[4]) 
-		else
-		  conf[4] = tk_tcl2ruby(conf[4]) 
-		end
-	      end
-	    end
-	    conf[1] = conf[1][1..-1] if conf.size == 2 # alias info
-	    conf
-	  }
-	  fontconf = ret.assoc('font')
-	  if fontconf
-	    ret.delete_if{|item| item[0] == 'font' || item[0] == 'kanjifont'}
-	    fontconf[4] = fontobj(fontconf[4])
-	    ret.push(fontconf)
-	  else
-	    ret
-	  end
-	end
-      end
-    else # ! TkComm::GET_CONFIGINFO_AS_ARRAY
-      if slot == 'font' || slot == :font || 
-	  slot == 'kanjifont' || slot == :kanjifont
-	conf = tk_split_simplelist(_fromUTF8(tk_send_without_enc('configure', "-#{slot}")))
-	key = conf.shift[1..-1]
-	conf[3] = fontobj(conf[3])
-	{ key => conf }
-      else
-	if slot
-	  case slot.to_s
-	  when 'text', 'label', 'show', 'data', 'file'
-	    conf = tk_split_simplelist(_fromUTF8(tk_send_without_enc('configure', "-#{slot}")))
-	  else
-	    conf = tk_split_list(_fromUTF8(tk_send_without_enc('configure', "-#{slot}")))
-	  end
-	  key = conf.shift[1..-1]
-	  { key => conf }
-	else
-	  ret = {}
-	  tk_split_simplelist(_fromUTF8(tk_send_without_enc('configure'))).each{|conflist|
-	    conf = tk_split_simplelist(conflist)
-	    key = conf.shift[1..-1]
-	    case key
-	    when 'text', 'label', 'show', 'data', 'file'
-	    else
-	      if conf[2]
-		if conf[2].index('{')
-		  conf[2] = tk_split_list(conf[2]) 
-		else
-		  conf[2] = tk_tcl2ruby(conf[2]) 
-		end
-	      end
-	      if conf[3]
-		if conf[3].index('{')
-		  conf[3] = tk_split_list(conf[3])
-		else
-		  conf[3] = tk_tcl2ruby(conf[3]) 
-		end
-	      end
-	    end
-	    if conf.size == 1
-	      ret[key] = conf[0][1..-1]  # alias info
-	    else
-	      ret[key] = conf
-	    end
-	  }
-	  fontconf = ret['font']
-	  if fontconf
-	    ret.delete('font')
-	    ret.delete('kanjifont')
-	    fontconf[3] = fontobj(fontconf[3])
-	    ret['font'] = fontconf
-	  end
-	  ret
-	end
-      end
-    end
-  end
-
-  def current_configinfo(slot = nil)
-    if TkComm::GET_CONFIGINFO_AS_ARRAY
-      if slot
-	conf = configinfo(slot)
-	{conf[0] => conf[4]}
-      else
-	ret = {}
-	configinfo().each{|conf|
-	  ret[conf[0]] = conf[4] if conf.size > 2
-	}
-	ret
-      end
-    else # ! TkComm::GET_CONFIGINFO_AS_ARRAY
-      ret = {}
-      configinfo(slot).each{|key, conf|	
-	ret[key] = conf[-1] if conf.kind_of?(Array)
-      }
-      ret
-    end
-  end
-
   def event_generate(context, keys=nil)
     if keys
       #tk_call('event', 'generate', path, 
@@ -2337,7 +3072,12 @@ class TkWindow<TkObject
   include TkWinfo
   extend TkBindCore
 
+  TkCommandNames = [].freeze
+  ## ==> If TkCommandNames[0] is a string (not a null string), 
+  ##     assume the string is a Tcl/Tk's create command of the widget class. 
   WidgetClassName = ''.freeze
+  # WidgetClassNames[WidgetClassName] = self  
+  ## ==> If self is a widget class, entry to the WidgetClassNames table.
   def self.to_eval
     self::WidgetClassName
   end
@@ -2375,22 +3115,56 @@ class TkWindow<TkObject
     else
       p 'create_self has args' if $DEBUG
       fontkeys = {}
+      methodkeys = {}
       if keys
-        ['font', 'kanjifont', 'latinfont', 'asciifont'].each{|key|
-          fontkeys[key] = keys.delete(key) if keys.key?(key)
-        }
+        #['font', 'kanjifont', 'latinfont', 'asciifont'].each{|key|
+        #  fontkeys[key] = keys.delete(key) if keys.key?(key)
+        #}
+	__font_optkeys.each{|key|
+	  fkey = key.to_s
+	  fontkeys[fkey] = keys.delete(fkey) if keys.key?(fkey)
+
+	  fkey = "kanji#{key}"
+	  fontkeys[fkey] = keys.delete(fkey) if keys.key?(fkey)
+
+	  fkey = "latin#{key}"
+	  fontkeys[fkey] = keys.delete(fkey) if keys.key?(fkey)
+
+	  fkey = "ascii#{key}"
+	  fontkeys[fkey] = keys.delete(fkey) if keys.key?(fkey)
+	}
+
+	__methodcall_optkeys.each{|key|
+	  key = key.to_s
+	  methodkeys[key] = keys.delete(key) if keys.key?(key)
+	}
       end
       if without_creating && keys
-        configure(keys)
+        #configure(keys)
+        configure(__conv_keyonly_opts(keys))
       else
-        create_self(keys)
+        #create_self(keys)
+        create_self(__conv_keyonly_opts(keys))
       end
       font_configure(fontkeys) unless fontkeys.empty?
+      configure(methodkeys) unless methodkeys.empty?
     end
   end
 
-  def create_self
-    fail RuntimeError, "TkWindow is an abstract class"
+  def create_self(keys)
+    # may need to override
+    begin
+      cmd = self.class::TkCommandNames[0]
+      fail unless (cmd.kind_of?(String) && cmd.length > 0)
+    rescue
+      fail RuntimeError, "class #{self.class} may be an abstract class"
+    end
+
+    if keys and keys != None
+      tk_call_without_enc(cmd, @path, *hash_kv(keys, true))
+    else
+      tk_call_without_enc(cmd, @path)
+    end
   end
   private :create_self
 
@@ -2911,4 +3685,12 @@ module Tk
   autoload :TCL_LIBRARY_PATH, 'tk/variable'
   autoload :LIBRARY_PATH,     'tk/variable'
   autoload :TCL_PRECISION,    'tk/variable'
+end
+
+
+# call setup script for Tk extension libraries (base configuration)
+begin
+  require 'tkextlib/setup.rb'
+rescue LoadError
+  # ignore
 end

@@ -1201,12 +1201,15 @@ ip_ruby_eval(clientData, interp, argc, argv)
 	rb_thread_critical = thr_crit_bup;
 
 	if (eclass == eTkCallbackReturn) {
+	    ip_set_exc_message(interp, res);
 	    return TCL_RETURN;
 
 	} else if (eclass == eTkCallbackBreak) {
+	    ip_set_exc_message(interp, res);
 	    return TCL_BREAK;
 
 	} else if (eclass == eTkCallbackContinue) {
+	    ip_set_exc_message(interp, res);
 	    return TCL_CONTINUE;
 
 	} else if (eclass == rb_eSystemExit) {
@@ -1239,12 +1242,15 @@ ip_ruby_eval(clientData, interp, argc, argv)
 	    }
 
 	    if (SYM2ID(reason) == ID_return) {
+		ip_set_exc_message(interp, res);
 		return TCL_RETURN;
 
 	    } else if (SYM2ID(reason) == ID_break) {
+		ip_set_exc_message(interp, res);
 		return TCL_BREAK;
 
 	    } else if (SYM2ID(reason) == ID_next) {
+		ip_set_exc_message(interp, res);
 		return TCL_CONTINUE;
 
 	    } else {
@@ -1572,12 +1578,15 @@ ip_ruby_cmd(clientData, interp, argc, argv)
 	rb_thread_critical = thr_crit_bup;
 
 	if (eclass == eTkCallbackReturn) {
+	    ip_set_exc_message(interp, res);
 	    return TCL_RETURN;
 
 	} else if (eclass == eTkCallbackBreak) {
+	    ip_set_exc_message(interp, res);
 	    return TCL_BREAK;
 
 	} else if (eclass == eTkCallbackContinue) {
+	    ip_set_exc_message(interp, res);
 	    return TCL_CONTINUE;
 
 	} else if (eclass == rb_eSystemExit) {
@@ -1609,12 +1618,15 @@ ip_ruby_cmd(clientData, interp, argc, argv)
 	    }
 
 	    if (SYM2ID(reason) == ID_return) {
+		ip_set_exc_message(interp, res);
 		return TCL_RETURN;
 
 	    } else if (SYM2ID(reason) == ID_break) {
+		ip_set_exc_message(interp, res);
 		return TCL_BREAK;
 
 	    } else if (SYM2ID(reason) == ID_next) {
+		ip_set_exc_message(interp, res);
 		return TCL_CONTINUE;
 
 	    } else {

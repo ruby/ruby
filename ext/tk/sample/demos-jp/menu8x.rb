@@ -173,7 +173,8 @@ TkMenu.new($menu8x_demo, 'tearoff'=>false) {|m|
   TkMenu.new(m, 'tearoff'=>false) {|icon_menu|
     m.add('cascade', 'label'=>'Icons', 'menu'=>icon_menu, 'underline'=>0)
     add('command', 
-	'bitmap'=>'@'+[$demo_dir,'images','pattern.bmp'].join(File::Separator),
+	'bitmap'=>'@'+[$demo_dir,'..',
+	                'images','pattern.xbm'].join(File::Separator),
 	'hidemargin'=>1, 
 	'command'=>proc{TkDialog.new('title'=>'Bitmap Menu Entry', 
 				     'text'=>'今あなたが選択したメニューの項目はテキストではなくビットマップを表示していました。それ以外の点では他のメニュー項目と変わりません。',

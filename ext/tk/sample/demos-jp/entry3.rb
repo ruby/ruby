@@ -64,7 +64,7 @@ TkFrame.new($entry3_demo){|f|
 # count -	Counter to control the number of times flashed
 def focusAndFlash(widget, fg, bg, count=5)
   return if count <= 0
-  TkTimer.new(200, count, 
+  TkTimer.new(100, count, 
 	      proc{widget.configure(:foreground=>bg, :background=>fg)}, 
 	      proc{widget.configure(:foreground=>fg, :background=>bg)}
 	      ).start
