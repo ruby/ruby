@@ -1,9 +1,7 @@
-require 'runit/testcase'
-require 'runit/cui/testrunner'
+require 'test/unit'
 require 'tempfile'
 
-#require '../lib/csv.rb'
-require 'csv'
+require '../../lib/csv'
 
 class CSV
   class StreamBuf
@@ -12,7 +10,7 @@ class CSV
   end
 end
 
-class TestCSV < RUNIT::TestCase
+class TestCSV < Test::Unit::TestCase
 
   class << self
     def d(data, is_null = false)
@@ -72,7 +70,7 @@ class TestCSV < RUNIT::TestCase
     [d('foo'), d('"'), d('baz')] => 'foo,"""",baz',
   }
 
-  @@tmpdir = 'tmp'
+  @@tmpdir = 'tmp'	# File.join(Dir.tmpdir, "ruby_test_csv_tmp_#{$$}"); Dir.mkdir(@@tmpdir)
   @@infile = File.join(@@tmpdir, 'in.csv')
   @@infiletsv = File.join(@@tmpdir, 'in.tsv')
   @@emptyfile = File.join(@@tmpdir, 'empty.csv')
@@ -289,13 +287,13 @@ public
 
     # Illegal format.
     reader = CSV::Reader.create("a,b\r\na,b,\"c\"\ra")
-    assert_exception(CSV::IllegalFormatError) do
+    assert_raises(CSV::IllegalFormatError) do
       reader.each do |row|
       end
     end
 
     reader = CSV::Reader.create("a,b\r\n\"")
-    assert_exception(CSV::IllegalFormatError) do
+    assert_raises(CSV::IllegalFormatError) do
       reader.each do |row|
       end
     end
@@ -323,13 +321,13 @@ public
 
     # Illegal format.
     reader = CSV::Reader.create("a,b\r\na,b,\"c\"\ra")
-    assert_exception(CSV::IllegalFormatError) do
+    assert_raises(CSV::IllegalFormatError) do
       reader.shift
       reader.shift
     end
 
     reader = CSV::Reader.create("a,b\r\na,b,\"c\"\ra")
-    assert_exception(CSV::IllegalFormatError) do
+    assert_raises(CSV::IllegalFormatError) do
       reader.shift
       reader.shift
     end
@@ -338,7 +336,7 @@ public
   def test_Reader_getRow
     if CSV::Reader.respond_to?(:allocate)
       obj = CSV::Reader.allocate
-      assert_exception(NotImplementedError) do
+      assert_raises(NotImplementedError) do
 	row = []
 	obj.shift
       end
@@ -368,7 +366,7 @@ public
   end
 
   def test_Reader_s_new
-    assert_exception(RuntimeError) do
+    assert_raises(RuntimeError) do
       CSV::Reader.new(nil)
     end
   end
@@ -422,12 +420,12 @@ public
     }
 
     # Illegal format.
-    assert_exception(CSV::IllegalFormatError) do
+    assert_raises(CSV::IllegalFormatError) do
       CSV::Reader.parse("a,b\r\na,b,\"c\"\ra") do |row|
       end
     end
 
-    assert_exception(CSV::IllegalFormatError) do
+    assert_raises(CSV::IllegalFormatError) do
       CSV::Reader.parse("a,b\r\na,b\"") do |row|
       end
     end
@@ -437,7 +435,7 @@ public
   #### CSV::Writer unit test
   
   def test_Writer_s_new
-    assert_exception(RuntimeError) do
+    assert_raises(RuntimeError) do
       CSV::Writer.new(nil)
     end
   end
@@ -529,11 +527,11 @@ public
   #### CSV unit test
 
   def test_s_open_reader
-    assert_exception(ArgumentError, 'Illegal mode') do
+    assert_raises(ArgumentError, 'Illegal mode') do
       CSV.open("temp", "a")
     end
 
-    assert_exception(ArgumentError, 'Illegal mode') do
+    assert_raises(ArgumentError, 'Illegal mode') do
       CSV.open("temp", "a", ?;)
     end
 
@@ -559,11 +557,11 @@ public
       break
     end
 
-    assert_exception(Errno::ENOENT) do
+    assert_raises(Errno::ENOENT) do
       CSV.open("NoSuchFileOrDirectory", "r")
     end
 
-    assert_exception(Errno::ENOENT) do
+    assert_raises(Errno::ENOENT) do
       CSV.open("NoSuchFileOrDirectory", "r", ?;)
     end
 
@@ -571,7 +569,7 @@ public
     File.open(@@outfile, "w") do |f|
       f << "a,b\r\na,b,\"c\"\ra"
     end
-    assert_exception(CSV::IllegalFormatError) do
+    assert_raises(CSV::IllegalFormatError) do
       CSV.open(@@outfile, "r") do |row|
       end
     end
@@ -579,7 +577,7 @@ public
     File.open(@@outfile, "w") do |f|
       f << "a,b\r\na,b\""
     end
-    assert_exception(CSV::IllegalFormatError) do
+    assert_raises(CSV::IllegalFormatError) do
       CSV.open(@@outfile, "r") do |row|
       end
     end
@@ -612,11 +610,11 @@ public
       break
     end
 
-    assert_exception(Errno::ENOENT) do
+    assert_raises(Errno::ENOENT) do
       CSV.parse("NoSuchFileOrDirectory")
     end
 
-    assert_exception(Errno::ENOENT) do
+    assert_raises(Errno::ENOENT) do
       CSV.parse("NoSuchFileOrDirectory", ?;)
     end
 
@@ -1221,12 +1219,12 @@ public
     dropped = s.drop(1)
     assert_equal(0, dropped)
 
-    assert_exception(TestCSV::ErrBuf::Error) do
+    assert_raises(TestCSV::ErrBuf::Error) do
       s = ErrBuf.new
       s[1024]
     end
 
-    assert_exception(TestCSV::ErrBuf::Error) do
+    assert_raises(TestCSV::ErrBuf::Error) do
       s = ErrBuf.new
       s.drop(1024)
     end
@@ -1423,7 +1421,7 @@ public
 
   def test_StreamBuf_s_new
     # NotImplementedError should be raised from StreamBuf#read.
-    assert_exception(NotImplementedError) do
+    assert_raises(NotImplementedError) do
       CSV::StreamBuf.new
     end
   end
@@ -1435,9 +1433,8 @@ public
 
     f = File.open(@@outfile, "rb")
     iobuf = CSV::IOBuf.new(f)
-    assert_no_exception do
-      iobuf.close
-    end
+    iobuf.close
+    assert(true)	# iobuf.close does not raise any exception.
   end
 
   def test_IOBuf_s_new
@@ -1494,17 +1491,4 @@ public
     end
     assert_equal(csvStrTerminated, buf)
   end
-end
-
-if $0 == __FILE__
-  testrunner = RUNIT::CUI::TestRunner.new
-  if ARGV.size == 0
-    suite = TestCSV.suite
-  else
-    suite = RUNIT::TestSuite.new
-    ARGV.each do |testmethod|
-      suite.add_test(TestCSV.new(testmethod))
-    end
-  end
-  testrunner.run(suite)
 end
