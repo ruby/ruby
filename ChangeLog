@@ -1,3 +1,8 @@
+Sat Jun 20 02:53:50 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (assignable): nesting local variables should have higher
+ 	  priority than normal local variables for assignment too.
+
 Fri Jun 19 18:28:19 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* experimental release 1.1b9_27.

@@ -739,14 +739,14 @@ end
 ok(!$bad)
 
 x = proc{}
-eval "i = 1", x
-ok(eval("i", x) == 1)
+eval "i4 = 1", x
+ok(eval("i4", x) == 1)
 x = proc{proc{}}.call
-eval "i = 22", x
-ok(eval("i", x) == 22)
+eval "i4 = 22", x
+ok(eval("i4", x) == 22)
 $x = []
 x = proc{proc{}}.call
-eval "(0..9).each{|i4| $x[i4] = proc{i4*2}}", x
+eval "(0..9).each{|i5| $x[i5] = proc{i5*2}}", x
 ok($x[4].call == 8)
 
 x = binding
@@ -757,7 +757,7 @@ eval "i = 22", x
 ok(eval("i", x) == 22)
 $x = []
 x = proc{binding}.call
-eval "(0..9).each{|i4| $x[i4] = proc{i4*2}}", x
+eval "(0..9).each{|i5| $x[i5] = proc{i5*2}}", x
 ok($x[4].call == 8)
 
 proc {
@@ -767,6 +767,21 @@ proc {
   ok(eval("foo11", p) == eval("foo11"))
   ok(eval("foo11") == 1)
 }.call
+
+p1 = proc{i6 = 0; proc{i6}}.call
+ok(p1.call == 0)
+eval "i6=5", p1
+ok(p1.call == 5)
+ok(!defined?(i6))
+
+p1 = proc{i6 = 0; proc{i6}}.call
+i6 = nil
+ok(p1.call == 0)
+eval "i6=1", p1
+ok(p1.call == 1)
+eval "i6=5", p1
+ok(p1.call == 5)
+ok(i6 == nil)
 
 check "system"
 ok(`echo foobar` == "foobar\n")

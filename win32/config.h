@@ -37,6 +37,7 @@
 /* #define HAVE_SETITIMER 1 */
 #define HAVE_GETGROUPS 1
 /* #define HAVE_SIGPROCMASK 1 */
+#define RSHIFT(x,y) ((x)>>y)
 #define FILE_COUNT _cnt
 #define DLEXT ".dll"
 #define RUBY_LIB ";/usr/local/lib/ruby;."

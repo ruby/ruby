@@ -2155,7 +2155,7 @@ here_document(term)
 	c = term;
 	term = '"';
 	if (!is_identchar(c)) {
-	    yyerror("illegal here document");
+	    Error("illegal here document");
 	    return 0;
 	}
 	while (is_identchar(c)) {
@@ -3436,17 +3436,15 @@ assignable(id, val)
 	yyerror("Can't assign to __LINE__");
     }
     else if (is_local_id(id)) {
-	if (local_id(id) || !dyna_in_block()) {
+	if (dyna_var_defined(id)) {
+	    lhs = NEW_DASGN(id, val);
+	}
+	else if (local_id(id) || !dyna_in_block()) {
 	    lhs = NEW_LASGN(id, val);
 	}
 	else{
-	    if (!dyna_var_defined(id)) {
-		dyna_var_push(id, 0);
-		lhs = NEW_DASGN_PUSH(id, val);
-	    }
-	    else {
-		lhs = NEW_DASGN(id, val);
-	    }
+	    dyna_var_push(id, 0);
+	    lhs = NEW_DASGN_PUSH(id, val);
 	}
     }
     else if (is_global_id(id)) {
@@ -3520,10 +3518,10 @@ backref_error(node)
 {
     switch (nd_type(node)) {
       case NODE_NTH_REF:
-	Error("Can't set variable $%d", node->nd_nth);
+	yyerror("Can't set variable $%d", node->nd_nth);
 	break;
       case NODE_BACK_REF:
-	Error("Can't set variable $%c", node->nd_nth);
+	yyerror("Can't set variable $%c", node->nd_nth);
 	break;
     }
 }
@@ -3575,7 +3573,7 @@ assign_in_cond(node)
 {
     switch (nd_type(node)) {
       case NODE_MASGN:
-	Error("multiple assignment in conditional");
+	yyerror("multiple assignment in conditional");
 	return 1;
 
       case NODE_LASGN:
@@ -4015,7 +4013,9 @@ rb_intern(name)
 		    break;
 		}
 	    }
-	    if (id == 0) NameError("Unknown operator `%s'", name);
+	    if (id == 0) {
+		NameError("Unknown operator `%s'", name);
+	    }
 	    break;
 	}
 
