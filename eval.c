@@ -7452,10 +7452,16 @@ Init_Proc()
     rb_define_method(rb_cMethod, "unbind", method_unbind, 0);
     rb_define_method(rb_mKernel, "method", rb_obj_method, 1);
 
-    rb_cUnboundMethod = rb_define_class("UnboundMethod", rb_cMethod);
+    rb_cUnboundMethod = rb_define_class("UnboundMethod", rb_cObject);
+    rb_undef_alloc_func(rb_cUnboundMethod);
+    rb_undef_method(CLASS_OF(rb_cUnboundMethod), "new");
+    rb_define_method(rb_cUnboundMethod, "==", method_eq, 1);
+    rb_define_method(rb_cUnboundMethod, "clone", method_clone, 0);
+    rb_define_method(rb_cUnboundMethod, "arity", method_arity, 0);
+    rb_define_method(rb_cUnboundMethod, "inspect", method_inspect, 0);
+    rb_define_method(rb_cUnboundMethod, "to_s", method_inspect, 0);
     rb_define_method(rb_cUnboundMethod, "to_proc", umethod_proc, 0);
     rb_define_method(rb_cUnboundMethod, "bind", umethod_bind, 1);
-    rb_define_method(rb_cUnboundMethod, "unbind", umethod_unbind, 0);
     rb_define_method(rb_cModule, "instance_method", rb_mod_method, 1);
 }
 

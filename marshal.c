@@ -589,19 +589,22 @@ marshal_dump(argc, argv)
     struct dump_arg arg;
     struct dump_call_arg c_arg;
 
-    port = 0;
+    port = Qnil;
     rb_scan_args(argc, argv, "12", &obj, &a1, &a2);
     if (argc == 3) {
 	if (!NIL_P(a2)) limit = NUM2INT(a2);
+	if (NIL_P(a1)) goto type_error;
 	port = a1;
     }
     else if (argc == 2) {
 	if (FIXNUM_P(a1)) limit = FIX2INT(a1);
+	else if (NIL_P(a1)) goto type_error;
 	else port = a1;
     }
     arg.dest = 0;
-    if (port) {
+    if (!NIL_P(port)) {
 	if (!rb_respond_to(port, s_write)) {
+	  type_error:
 	    rb_raise(rb_eTypeError, "instance of IO needed");
 	}
 	arg.str = rb_str_buf_new(0);

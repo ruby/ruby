@@ -1,3 +1,17 @@
+Tue Apr  8 11:49:31 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (Init_Proc): make Method and UnboundMethod independent.
+	  They are like instance and its class. [ruby-core:00941]
+
+	* parse.y (yylex): disallow global variables like "$1ve".
+	  [ruby-core:00945]
+
+	* marshal.c (marshal_dump): Marshal.dump(0, false) should cause an
+	  error. (ruby-bugs-ja PR#421)
+
+	* regex.c (re_compile_pattern): warn if '-' is the edge of
+	  character range.
+
 Mon Apr  7 15:49:09 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/socket/socket.c (sock_s_unpack_sockaddr_in): remove struct

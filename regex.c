@@ -1675,6 +1675,8 @@ re_compile_pattern(pattern, size, bufp)
 	  if (last > c)
 	    goto invalid_pattern;
 
+	  if (last == '-' || c == '-')
+	    re_warning("character class has `-' without escape");
 	  range = 0;
 	  if (had_mbchar == 0) {
 	    for (;last<=c;last++)

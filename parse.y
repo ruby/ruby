@@ -4246,8 +4246,6 @@ yylex()
 		tokadd(c);
 		c = nextc();
 	    } while (ISDIGIT(c));
-	    if (is_identchar(c))
-		break;
 	    pushback(c);
 	    tokfix();
 	    yylval.node = NEW_NTH_REF(atoi(tok()+1));
