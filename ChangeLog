@@ -1,3 +1,9 @@
+Sat Jan 11 01:44:16 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* configure.in (RUBY_CHECK_IO_NEED): added more tests.
+
+	* io.c (rb_io_check_readable): seek after synchronized write.
+
 Fri Jan 10 01:23:45 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* misc/ruby-mode.el (ruby-font-lock-syntactic-keywords): syntax

@@ -176,6 +176,8 @@ flush_before_seek(fptr)
 # define SEEK_END 2
 #endif
 
+#define FMODE_SYNCWRITE (FMODE_SYNC|FMODE_WRITABLE)
+
 void
 rb_io_check_readable(fptr)
     OpenFile *fptr;
@@ -184,7 +186,9 @@ rb_io_check_readable(fptr)
 	rb_raise(rb_eIOError, "not opened for reading");
     }
 #if NEED_IO_SEEK_BETWEEN_RW
-    if ((fptr->mode & FMODE_WBUF) && !fptr->f2) {
+    if (((fptr->mode & FMODE_WBUF) ||
+	 (fptr->mode & (FMODE_SYNCWRITE|FMODE_RBUF)) == FMODE_SYNCWRITE) &&
+	!fptr->f2) {
 	io_seek(fptr, 0, SEEK_CUR);
 	fptr->mode &= ~FMODE_WBUF;
     }

@@ -242,14 +242,10 @@ darwin*)	LIBS="-lobjc $LIBS";;
 human*)		ac_cv_func_getpgrp_void=yes;;
 beos*)		;;
 cygwin*)	rb_cv_have_daylight=no
-		rb_cv_need_io_seek_between_rw=no
-		rb_cv_need_io_flush_before_seek=no
 		ac_cv_var_tzname=no
 		ac_cv_func_setitimer=no
 		;;
 mingw*)		LIBS="-lwsock32 -lmsvcrt $LIBS"
-		rb_cv_need_io_seek_between_rw=yes
-		rb_cv_need_io_flush_before_seek=no
 		ac_cv_header_a_out_h=no
 		ac_cv_header_pwd_h=no
 		ac_cv_header_utime_h=no
@@ -477,6 +473,7 @@ AC_DEFUN(RUBY_CHECK_IO_NEED,
 char *fn = "conftest.dat";
 char *wombat = "wombat\n";
 char *koara = "koara\n";
+char *kangaroo = "kangaroo\n";
 
 int main()
 {
@@ -490,32 +487,36 @@ int main()
     if (!fgets(buf, BUFSIZ, f) || strcmp(buf, wombat)) goto fail;
     reset_rw(f);
     fputs(koara, f);
+    fputs(kangaroo, f);
     do_seek(f, SEEK_SET);
     if (!fgets(buf, BUFSIZ, f) || strcmp(buf, wombat)) goto fail;
     if (!fgets(buf, BUFSIZ, f) || strcmp(buf, koara)) goto fail;
+    if (!fgets(buf, BUFSIZ, f) || strcmp(buf, kangaroo)) goto fail;
+    do_seek(f, SEEK_SET);
+    if (!fgets(buf, BUFSIZ, f) || strcmp(buf, wombat)) goto fail;
+    reset_rw(f);
+    fputc('X', f);
+    reset_rw(f);
+    if (!fgets(buf, BUFSIZ, f) || strcmp(buf, koara+1)) goto fail;
+    if (!fgets(buf, BUFSIZ, f) || strcmp(buf, kangaroo)) goto fail;
+    do_seek(f, SEEK_SET);
+    if (!fgets(buf, BUFSIZ, f) || strcmp(buf, wombat)) goto fail;
+    if (!fgets(buf, BUFSIZ, f) || buf[0] != 'X' || strcmp(buf+1, koara+1)) goto fail;
+    if (!fgets(buf, BUFSIZ, f) || strcmp(buf, kangaroo)) goto fail;
     r = 0;
   fail:
     fclose(f);
     unlink(fn);
     return r;
 }
-], [$2]=no, [$2]=yes, [$2]=yes)])])
-RUBY_CHECK_IO_NEED(seek between R/W, rb_cv_need_io_seek_between_rw)
-RUBY_CHECK_IO_NEED(flush before seek, rb_cv_need_io_flush_before_seek)
-check_to_do_something_else=no
+], [$2]=no, [$2]=yes, [$2]=[$3])])])
+RUBY_CHECK_IO_NEED(seek between R/W, rb_cv_need_io_seek_between_rw, yes)
 if test "$rb_cv_need_io_seek_between_rw" = yes; then
   AC_DEFINE(NEED_IO_SEEK_BETWEEN_RW, 1)
-  check_to_do_something_else=yes
 fi
+RUBY_CHECK_IO_NEED(flush before seek, rb_cv_need_io_flush_before_seek, no)
 if test "$rb_cv_need_io_flush_before_seek" = yes; then
   AC_DEFINE(NEED_IO_FLUSH_BEFORE_SEEK, 1)
-  check_to_do_something_else=yes
-fi
-if test "$cross_compiling" = no -a "$check_to_do_something_else" = yes; then
-  RUBY_CHECK_IO_NEED(do something else, unexpected_stdio_behavior)
-  if test "$unexpected_stdio_behavior" = yes; then
-    AC_MSG_ERROR([unexpected stdio behavior])
-  fi
 fi
 
 dnl default value for $KANJI
