@@ -2371,7 +2371,7 @@ io_reopen(io, nfile)
 
     mode = rb_io_mode_string(fptr);
     fd = fileno(fptr->f);
-    if (fd == fileno(stdin) || fd == fileno(stdout) || fd == fileno(stderr)) {
+    if (fptr->f == stdin || fptr->f == stdout || fptr->f == stderr) {
 	clearerr(fptr->f);
 	/* need to keep stdio objects */
 	if (dup2(fileno(orig->f), fd) < 0)
