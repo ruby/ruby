@@ -129,7 +129,7 @@ lib/mutex_m.rb
 lib/net/ftp.rb
 lib/net/http.rb
 lib/net/pop.rb
-lib/net/session.rb
+lib/net/protocol.rb
 lib/net/smtp.rb
 lib/observer.rb
 lib/open3.rb
