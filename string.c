@@ -174,6 +174,16 @@ rb_str_associate(str, add)
     rb_ary_push(RSTRING(str)->orig, add);
 }
 
+VALUE
+rb_str_associated(str)
+    VALUE str;
+{
+    if (!FL_TEST(str, STR_NO_ORIG)) {
+	return Qfalse;
+    }
+    return RSTRING(str)->orig;
+}
+
 static ID to_str;
 
 VALUE

@@ -566,7 +566,7 @@ rb_f_sprintf(argc, argv)
 			break;
 		      case 8:
 			c = '7'; break;
-		      case '2':
+		      case 2:
 			c = '1'; break;
 		    }
 		    s = &buf[pos];

@@ -857,11 +857,11 @@ pack_pack(ary, fmt)
 	    while (len-- > 0) {
 		char *t;
 		from = NEXTFROM;
-		if (NIL_P(from)) t = "";
-		else {
-		    t = STR2CSTR(from);
-		    rb_str_associate(res, from);
+		if (NIL_P(from)) {
+		    from = rb_str_new(0, 0);
 		}
+		t = STR2CSTR(from);
+		rb_str_associate(res, from);
 		rb_str_cat(res, (char*)&t, sizeof(char*));
 	    }
 	    break;
@@ -1611,12 +1611,33 @@ pack_unpack(str, fmt)
 	  case 'P':
 	    if (sizeof(char *) <= send - s) {
 		char *t;
-		VALUE str = rb_str_new(0, 0);
+		VALUE a, tmp;
+
+		if (!(a = rb_str_associated(str))) {
+		    rb_raise(rb_eArgError, "no associated pointer");
+		}
 		memcpy(&t, s, sizeof(char *));
 		s += sizeof(char *);
-		if (t)
-		    rb_str_cat(str, t, len);
-		rb_ary_push(ary, str);
+
+		if (t) {
+		    VALUE *p, *pend;
+
+		    p = RARRAY(a)->ptr;
+		    pend = p + RARRAY(a)->len;
+		    while (p < pend) {
+			if (TYPE(*p) == T_STRING && RSTRING(*p)->ptr == t)
+			    break;
+			p++;
+		    }
+		    if (p == pend) {
+			rb_raise(rb_eArgError, "non associated pointer");
+		    }
+		    tmp = rb_str_new(t, len);
+		}
+		else {
+		    tmp = rb_str_new(0, 0);
+		}
+		rb_ary_push(ary, tmp);
 	    }
 	    break;
 

@@ -370,10 +370,9 @@ def create_makefile(target, srcdir = File.dirname($0))
   end
   $DLDFLAGS = CONFIG["DLDFLAGS"]
 
-  if $configure_args['--enable-shared'] or CONFIG['LIBRUBY'] != CONFIG['LIBRUBY_A']
-    $libs = CONFIG["LIBRUBYARG"] + " " + $libs
-    $LIBPATH |= ["$(topdir)", CONFIG["libdir"]]
-  end
+  $libs = CONFIG["LIBRUBYARG"] + " " + $libs
+  $configure_args['--enable-shared'] or $LIBPATH |= ["$(topdir)"]
+  $LIBPATH |= [CONFIG["libdir"]]
 
   defflag = ''
   if RUBY_PLATFORM =~ /cygwin|mingw/

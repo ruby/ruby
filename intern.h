@@ -325,6 +325,7 @@ VALUE rb_str_upto _((VALUE, VALUE, int));
 VALUE rb_str_inspect _((VALUE));
 VALUE rb_str_split _((VALUE, const char*));
 void rb_str_associate _((VALUE, VALUE));
+VALUE rb_str_associated _((VALUE));
 void rb_str_setter _((VALUE, ID, VALUE*));
 /* struct.c */
 VALUE rb_struct_new __((VALUE, ...));

@@ -108,9 +108,7 @@
 #define __const
 #endif /* People who don't like const sys_error */
 
-#if defined NT && !defined __MINGW32__
-typedef long size_t;
-#endif
+#include <stddef.h>
 
 #ifndef NULL
 #define	NULL	0
@@ -1094,8 +1092,6 @@ vsnprintf(str, n, fmt, ap)
 #if defined(LIBC_SCCS) && !defined(lint)
 static char sccsid[] = "@(#)snprintf.c	8.1 (Berkeley) 6/4/93";
 #endif /* LIBC_SCCS and not lint */
-
-#include <stddef.h>
 
 #if defined(__STDC__)
 # include <stdarg.h>

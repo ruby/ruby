@@ -727,19 +727,6 @@ last_match_getter()
 }
 
 static VALUE
-rb_reg_s_last_match(argc, argv)
-    int argc;
-    VALUE *argv;
-{
-    VALUE nth;
-
-    if (rb_scan_args(argc, argv, "01", &nth) == 1) {
-	rb_reg_nth_match(NUM2INT(nth), rb_backref_get());
-    }
-    return rb_reg_last_match(rb_backref_get());
-}
-
-static VALUE
 prematch_getter()
 {
     return rb_reg_match_pre(rb_backref_get());
@@ -1028,6 +1015,7 @@ rb_reg_initialize_m(argc, argv, self)
 	p = rb_str2cstr(src, &len);
 	rb_reg_initialize(self, p, len, flag);
     }
+    return self;
 }
 
 static VALUE
@@ -1331,6 +1319,19 @@ match_setter(val)
     rb_backref_set(val);
 }
 
+static VALUE
+rb_reg_s_last_match(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    VALUE nth;
+
+    if (rb_scan_args(argc, argv, "01", &nth) == 1) {
+	return rb_reg_nth_match(NUM2INT(nth), rb_backref_get());
+    }
+    return match_getter();
+}
+
 void
 Init_Regexp()
 {
@@ -1366,7 +1367,7 @@ Init_Regexp()
     rb_define_singleton_method(rb_cRegexp, "compile", rb_reg_s_new, -1);
     rb_define_singleton_method(rb_cRegexp, "quote", rb_reg_s_quote, -1);
     rb_define_singleton_method(rb_cRegexp, "escape", rb_reg_s_quote, -1);
-    rb_define_singleton_method(rb_cRegexp, "last_match", rb_reg_s_last_match, 0);
+    rb_define_singleton_method(rb_cRegexp, "last_match", rb_reg_s_last_match, -1);
 
     rb_define_method(rb_cRegexp, "initialize", rb_reg_initialize_m, -1);
     rb_define_method(rb_cRegexp, "clone", rb_reg_clone, 0);

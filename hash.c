@@ -381,8 +381,8 @@ rb_hash_indexes(argc, argv, hash)
     indexes = rb_ary_new2(argc);
     for (i=0; i<argc; i++) {
 	RARRAY(indexes)->ptr[i] = rb_hash_aref(hash, argv[i]);
+	RARRAY(indexes)->len++;
     }
-    RARRAY(indexes)->len = i;
     return indexes;
 }
 

@@ -6300,6 +6300,7 @@ block_pass(self, node)
     }
     POP_TAG();
     POP_ITER();
+    printf("state: %d(%d)\n", state, _block.tag->dst);
     if (_block.tag->dst == state) {
 	if (orphan) {
 	    state &= TAG_MASK;
