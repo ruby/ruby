@@ -12,17 +12,13 @@
 
 **********************************************************************/
 
-#if defined(__VMS)
-#define _XOPEN_SOURCE
-#define _POSIX_C_SOURCE 2
-#endif
-
 #include "ruby.h"
 #include "rubyio.h"
 #include "rubysig.h"
 #include "env.h"
 #include <ctype.h>
 #include <errno.h>
+
 
 #if defined(MSDOS) || defined(__BOW__) || defined(__CYGWIN__) || defined(_WIN32) || defined(__human68k__) || defined(__EMX__) || defined(__BEOS__)
 # define NO_SAFE_RENAME
@@ -115,6 +111,11 @@ static VALUE filename, current_file;
 static int gets_lineno;
 static int init_p = 0, next_p = 0;
 static VALUE lineno;
+
+#if defined(__VMS)
+#define fopen(file_spec, mode)  fopen(file_spec, mode, "rfm=stmlf")
+#define open(file_spec, flags, mode)  open(file_spec, flags, mode, "rfm=stmlf")
+#endif
 
 #ifdef _STDIO_USES_IOSTREAM  /* GNU libc */
 #  ifdef _IO_fpos_t

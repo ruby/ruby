@@ -1,3 +1,7 @@
+Thu Dec 26 10:42:00 2003  AKIYOSHI, Masamichi <masamichi.akiyoshi@hp.com>
+
+	* io.c: [VMS] "rfm=stmlf" is specified for open() and fopen().
+
 Thu Dec 25 22:29:53 2003  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* string.c (rb_str_update): don't return any value.
