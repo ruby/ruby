@@ -1,3 +1,8 @@
+Sun Dec  1 22:43:29 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* win32/win32.c (win32_stat): empty path is invalid, and return
+	  ENOENT rather than EBADF in such case.  [ruby-talk:57177]
+
 Wed Nov 27 17:42:56 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/syslog/syslog.c: Cut redundancy.

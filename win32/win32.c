@@ -2629,13 +2629,12 @@ win32_stat(const char *path, struct stat *st)
 	    *s = *p;
     }
     *s = '\0';
-    len = strlen(buf1);
-    p = CharPrev(buf1, buf1 + len);
-    if( '\"' == *(--s) )
-    {
-	errno = EBADF;
+    len = s - buf1;
+    if (!len || '\"' == *(--s)) {
+	errno = ENOENT;
 	return -1;
     }
+    p = CharPrev(buf1, buf1 + len);
 
     if (isUNCRoot(buf1)) {
 	if (*p != '\\')
