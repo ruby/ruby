@@ -1,3 +1,8 @@
+Tue Mar 26 14:00:17 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/bigfloat/bigfloat.c: Fix the initializer's function name
+	  according to the new library name. (pointed out by nobu)
+
 Tue Mar 26 11:12:01 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb: new file.
@@ -8,7 +13,7 @@ Tue Mar 26 03:23:50 2002  Tanaka Akira  <akr@m17n.org>
 
 Tue Mar 26 01:48:01 2002  Akinori MUSHA  <knu@iDaemons.org>
 
-	* ext/bigfloat/extconf.rb: Downcase the module name. (BigFloat.so
+	* ext/bigfloat/extconf.rb: Downcase the library name. (BigFloat.so
 	  -> bigfloat.so)
 
 	* ext/bigfloat/bigfloat.c (BigFloat_inspect): Alter the inspect

@@ -65,24 +65,6 @@ VALUE rb_cBigfloat;
  */
 #define USE_XFREE
 
-/* 
- *  To builtin BIGFLOAT into ruby
-#define BUILTIN_BIGFLOAT
- *  and modify inits.c to call Init_Bigfloat().
- *  Class name for builtin BIGFLOAT is "Bigfloat".
- *  Class name for ext. library is "BigFloat".
- */
-#ifdef BUILTIN_BIGFLOAT
-/* Builtin BIGFLOAT */
-#define BIGFLOAT_CLASS_NAME "Bigfloat"
-#define BIGFLOAT Init_Bigfloat
-#else
-/* In case of ext. library */
-#define BIGFLOAT_CLASS_NAME "BigFloat"
-#define BIGFLOAT Init_BigFloat
-#endif /* BUILTIN_BIGFLOAT */
-#define Initialize(x) x()
-
 /*
  * Uncomment if you need Float's Inf NaN instead of BigFloat's.
  *
@@ -219,7 +201,7 @@ do_coerce(x, y)
 }
 
 void
-Initialize(BIGFLOAT)
+Init_bigfloat()
 {
 
 	/* Initialize VP routines */
@@ -228,7 +210,7 @@ Initialize(BIGFLOAT)
 	coerce = rb_intern("coerce");
  
 	/* Class and method registration */
-	rb_cBigfloat = rb_define_class(BIGFLOAT_CLASS_NAME,rb_cNumeric);
+	rb_cBigfloat = rb_define_class("BigFloat", rb_cNumeric);
 
 	/* Class methods */
 	rb_define_singleton_method(rb_cBigfloat, "mode", BigFloat_mode, 2);
