@@ -840,7 +840,7 @@ module TkComm
   def _bindinfo(what, context=nil)
     if context
       tk_call_without_enc(*what+["<#{tk_event_sequence(context)}>"]) .collect {|cmdline|
-	if cmdline =~ /^rb_out\S* (c(_\d+_)?\d+)\s+(.*)$/
+	if cmdline =~ /^rb_out\S* (c(?:_\d+_)?\d+)\s+(.*)$/
 	  #[Tk_CMDTBL[$1], $2]
 	  [TkCore::INTERP.tk_cmd_tbl[$1], $2]
 	else
@@ -2124,6 +2124,7 @@ module TkTreatFont
 				      *(__config_cmd << {}))
 	      next
 	    else
+	      fnt = hash_kv(fnt) if fnt.kind_of?(Hash)
 	      tk_call(*(__config_cmd << "-#{optkey}" << fnt))
 	    end
 	  end
@@ -2177,6 +2178,7 @@ module TkTreatFont
       elsif Tk::JAPANIZED_TK
 	fobj = fontobj          # create a new TkFont object
       else
+	ltn = hash_kv(ltn) if ltn.kind_of?(Hash)
 	tk_call(*(__config_cmd << "-#{optkey}" << ltn))
 	next
       end
@@ -2228,6 +2230,7 @@ module TkTreatFont
       elsif Tk::JAPANIZED_TK
 	fobj = fontobj          # create a new TkFont object
       else
+	knj = hash_kv(knj) if knj.kind_of?(Hash)
 	tk_call(*(__config_cmd << "-#{optkey}" << knj))
 	next
       end

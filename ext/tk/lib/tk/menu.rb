@@ -340,7 +340,7 @@ module TkSystemMenu
     #  fail ArgumentError, "parent must be a TkMenu object"
     #end
     # @path = Kernel.format("%s.%s", parent.path, self.class::SYSMENU_NAME)
-    @path = parent_path + '.' + self.class::SYSMENU_NAME
+    @path = parent.path + '.' + self.class::SYSMENU_NAME
     #TkComm::Tk_WINDOWS[@path] = self
     TkCore::INTERP.tk_windows[@path] = self
     if self.method(:create_self).arity == 0
