@@ -5,7 +5,7 @@ $Date$
 
 net/telnet.rb
 
-Version 1.32
+Version 1.40
 
 Wakou Aoyama <wakou@fsinet.or.jp>
 
@@ -91,18 +91,18 @@ of cource, set sync=true or flush is necessary.
 	  # == host.write("string\n")
 
 
-=== TURN TELNET COMMAND INTERPRETATION
+=== TOGGLE TELNET COMMAND INTERPRETATION
 
-	host.telnetmode        # turn on/off
-	host.telnetmode(true)  # on
-	host.telnetmode(false) # off
+	host.telnetmode          # return the current status (true or false)
+	host.telnetmode = true   # do telnet command interpretation (default)
+	host.telnetmode = false  # don't telnet command interpretation
 
 
 === TOGGLE NEWLINE TRANSLATION
 
-	host.binmode        # turn true/false
-	host.binmode(true)  # no translate newline
-	host.binmode(false) # translate newline
+	host.binmode          # return the current status (true or false)
+	host.binmode = true   # no translate newline
+	host.binmode = false  # translate newline (default)
 
 
 === LOGIN
@@ -156,6 +156,13 @@ of cource, set sync=true or flush is necessary.
 
 
 == HISTORY
+
+=== Version 1.40
+
+2000/05/24 06:57:38
+
+- improve: binmode(), telnetmode() interface
+  thanks to Dave Thomas <Dave@thomases.com>
 
 === Version 1.32
 
@@ -450,19 +457,32 @@ module Net
     EOL  = CR + LF
   v = $-v
   $-v = false
-    VERSION = "1.32"
+    VERSION = "1.40"
     RELEASE_DATE = "$Date$"
   $-v = v
 
     def initialize(options)
       @options = options
-      @options["Binmode"]    = false         unless @options.has_key?("Binmode")
       @options["Host"]       = "localhost"   unless @options.has_key?("Host")
       @options["Port"]       = 23            unless @options.has_key?("Port")
       @options["Prompt"]     = /[$%#>] \z/n  unless @options.has_key?("Prompt")
-      @options["Telnetmode"] = true          unless @options.has_key?("Telnetmode")
       @options["Timeout"]    = 10            unless @options.has_key?("Timeout")
       @options["Waittime"]   = 0             unless @options.has_key?("Waittime")
+      unless @options.has_key?("Binmode")
+        @options["Binmode"]    = false         
+      else
+        unless (true == @options["Binmode"] or false == @options["Binmode"])
+          raise ArgumentError, "Binmode option required true or false"
+        end
+      end
+
+      unless @options.has_key?("Telnetmode")
+        @options["Telnetmode"] = true          
+      else
+        unless (true == @options["Telnetmode"] or false == @options["Telnetmode"])
+          raise ArgumentError, "Telnetmode option required true or false"
+        end
+      end
 
       @telnet_option = { "SGA" => false, "BINARY" => false }
 
@@ -542,19 +562,43 @@ module Net
 
     attr :sock
 
-    def telnetmode(mode = 'turn')
-      if 'turn' == mode
-        @options["Telnetmode"] = @options["Telnetmode"] ? false : true
+    def telnetmode(mode = nil)
+      if mode
+        if (true == mode or false == mode)
+          @options["Telnetmode"] = mode
+        else
+          raise ArgumentError, "required true or false"
+        end
       else
-        @options["Telnetmode"] = mode ? true : false
+        @options["Telnetmode"]
       end
     end
 
-    def binmode(mode = 'turn')
-      if 'turn' == mode
-        @options["Binmode"] = @options["Binmode"] ? false : true
+    def telnetmode=(mode)
+      if (true == mode or false == mode)
+        @options["Telnetmode"] = mode
       else
-        @options["Binmode"] = mode ? true : false
+        raise ArgumentError, "required true or false"
+      end
+    end
+
+    def binmode(mode = nil)
+      if mode
+        if (true == mode or false == mode)
+          @options["Binmode"] = mode
+        else
+          raise ArgumentError, "required true or false"
+        end
+      else
+        @options["Binmode"] 
+      end
+    end
+
+    def binmode=(mode)
+      if (true == mode or false == mode)
+        @options["Binmode"] = mode
+      else
+        raise ArgumentError, "required true or false"
       end
     end
 
