@@ -374,7 +374,7 @@ static unsigned int STACK_LEVEL_MAX = 655300;
 # endif
 # define STACK_END (stack_end)
 #endif
-#ifdef __sparc__
+#if defined(sparc) || defined(__sparc__)
 # define STACK_LENGTH  (rb_gc_stack_start - STACK_END + 0x80)
 #else
 # define STACK_LENGTH  ((STACK_END < rb_gc_stack_start) ? rb_gc_stack_start - STACK_END\

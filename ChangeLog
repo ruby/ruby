@@ -1,3 +1,13 @@
+Sun Jan  5 03:43:47 2003  Akinori MUSHA  <knu@iDaemons.org>
+
+	* defines.h (FLUSH_REGISTER_WINDOWS): Make the flushw call an
+	  inline function instead so it can be used as an expression.
+
+	* eval.c (EXEC_TAG, THREAD_SAVE_CONTEXT): Consistently call
+	  FLUSH_REGISTER_WINDOWS before calling setjmp(). (I suspect that
+	  every setjmp() implementation should take care of register
+	  windows, though)
+
 Sun Jan  5 03:12:32 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* file.c (utimbuf): use utimbuf instead of _utimbuf if defined _WIN32.

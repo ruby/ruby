@@ -825,7 +825,7 @@ static struct tag *prot_tag;
 #define PROT_FUNC   -1
 #define PROT_THREAD -2
 
-#define EXEC_TAG()    setjmp(prot_tag->buf)
+#define EXEC_TAG()    (FLUSH_REGISTER_WINDOWS, setjmp(prot_tag->buf))
 
 #define JUMP_TAG(st) do {		\
     ruby_frame = prot_tag->frame;	\
@@ -7753,7 +7753,8 @@ thread_switch(n)
 }
 
 #define THREAD_SAVE_CONTEXT(th) \
-    (rb_thread_save_context(th),thread_switch(setjmp((th)->context)))
+    (rb_thread_save_context(th),\
+     thread_switch((FLUSH_REGISTER_WINDOWS, setjmp((th)->context))))
 
 static void rb_thread_restore_context _((rb_thread_t,int));
 
