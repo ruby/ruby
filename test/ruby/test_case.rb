@@ -38,5 +38,14 @@ class TestCase < Test::Unit::TestCase
     else
       assert(false)
     end
+
+    case
+    when true
+      assert(true)
+    when false, nil
+      assert(false)
+    else
+      assert(false)
+    end
   end
 end

@@ -1,10 +1,16 @@
+Thu Oct 30 14:25:31 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (READ_DATA_BUFFERED): new macro to detect whether stdio
+	  buffer filled.
+
+	* io.c (rb_io_fptr_cleanup): move path deallocation to
+	  rb_io_fptr_finalize (finalizer called by GC).
+
 Thu Oct 30 13:23:39 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (logop): left may be NULL. [ruby-talk:84539]
 
 	* eval.c (rb_eval): NODE_CASE nd_head may be NULL.
-
-	* eval.c (rb_eval): remove never occurred NODE_WHEN branch.
 
 Thu Oct 30 10:14:51 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 

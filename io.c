@@ -140,6 +140,10 @@ static VALUE lineno;
 /* requires systems own version of the ReadDataPending() */
 extern int ReadDataPending();
 #  define READ_DATA_PENDING(fp) (!feof(fp))
+#  define READ_DATA_BUFFERED(fp) 0
+#endif
+#ifndef READ_DATA_BUFFERED
+#  define READ_DATA_BUFFERED(fp) READ_DATA_PENDING(fp)
 #endif
 
 #ifndef READ_DATA_PENDING_PTR
@@ -1366,11 +1370,6 @@ rb_io_fptr_cleanup(fptr, noraise)
     else {
 	fptr_finalize(fptr, noraise);
     }
-
-    if (fptr->path) {
-	free(fptr->path);
-	fptr->path = 0;
-    }
 }
 
 void
@@ -1378,6 +1377,9 @@ rb_io_fptr_finalize(fptr)
     OpenFile *fptr;
 {
     if (!fptr) return;
+    if (fptr->path) {
+	free(fptr->path);
+    }
     if (!fptr->f && !fptr->f2) return;
     if (fileno(fptr->f) < 3) return;
 
@@ -1510,7 +1512,7 @@ rb_io_sysseek(argc, argv, io)
     }
 
     GetOpenFile(io, fptr);
-    if ((fptr->mode & FMODE_READABLE) && READ_DATA_PENDING(fptr->f)) {
+    if ((fptr->mode & FMODE_READABLE) && READ_DATA_BUFFERED(fptr->f)) {
 	rb_raise(rb_eIOError, "sysseek for buffered IO");
     }
     if ((fptr->mode & FMODE_WRITABLE) && (fptr->mode & FMODE_WBUF)) {
@@ -1567,7 +1569,7 @@ rb_io_sysread(argc, argv, io)
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
 
-    if (READ_DATA_PENDING(fptr->f)) {
+    if (READ_DATA_BUFFERED(fptr->f)) {
 	rb_raise(rb_eIOError, "sysread for buffered IO");
     }
     if (NIL_P(str)) {
