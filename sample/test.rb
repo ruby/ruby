@@ -961,7 +961,7 @@ end
 m{p 'test'}
 
 def m
-  test_ok(block_given?,&proc)
+  test_ok(block_given?,&proc{})
 end
 m{p 'test'}
 
