@@ -159,6 +159,26 @@ ossl_x509req_to_pem(VALUE self)
     return str;
 }
 
+static VALUE
+ossl_x509req_to_der(VALUE self)
+{
+    X509_REQ *req;
+    VALUE str;
+    long len;
+    unsigned char *p;
+
+    GetX509Req(self, req);
+    if ((len = i2d_X509_REQ(req, NULL)) <= 0)
+	ossl_raise(eX509CertError, NULL);
+    str = rb_str_new(0, len);
+    p = RSTRING(str)->ptr;
+    if (i2d_X509_REQ(req, &p) <= 0)
+	ossl_raise(eX509ReqError, NULL);
+    ossl_str_adjust(str, p);
+
+    return str;
+}
+
 static VALUE 
 ossl_x509req_to_text(VALUE self)
 {
@@ -427,6 +447,7 @@ Init_ossl_x509req()
     rb_define_copy_func(cX509Req, ossl_x509req_copy);
 	
     rb_define_method(cX509Req, "to_pem", ossl_x509req_to_pem, 0);
+    rb_define_method(cX509Req, "to_der", ossl_x509req_to_der, 0);
     rb_define_alias(cX509Req, "to_s", "to_pem");
     rb_define_method(cX509Req, "to_text", ossl_x509req_to_text, 0);
     rb_define_method(cX509Req, "version", ossl_x509req_get_version, 0);

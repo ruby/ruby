@@ -1,3 +1,8 @@
+Thu Nov 13 16:45:53 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_x509req.c (ossl_x509req_to_der): add function for
+	  X509::Request#to_der.
+
 Thu Nov 13 11:31:14 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (OptionParser::Completion#complete): prior shorter
