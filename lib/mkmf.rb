@@ -155,7 +155,7 @@ def install_rb(mfile, dest, srcdir = nil)
     mfile.printf "\t@$(RUBY) -r ftools -e 'File::makedirs(*ARGV)' %s/%s\n", dest, f
   end
   for f in path
-    mfile.printf "\t@$(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0644, true)' lib/%s %s/%s\n", f, dest, f
+    mfile.printf "\t@$(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0644, true)' %s/%s %s\n", libdir, f, dest
   end
 end
 
@@ -473,7 +473,7 @@ $(archdir)/$(DLLIB): $(DLLIB)
 	@$(RUBY) -r ftools -e 'File::makedirs(*ARGV)' $(libdir) $(archdir)
 	@$(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0555, true)' $(DLLIB) $(archdir)/$(DLLIB)
 EOMF
-  install_rb(mfile, "$(libdir)")
+  install_rb(mfile, "$(libdir)", srcdir)
   mfile.printf "\n"
 
   mfile.printf <<EOMF
@@ -481,7 +481,7 @@ $(sitearchdir)/$(DLLIB): $(DLLIB)
 	@$(RUBY) -r ftools -e 'File::makedirs(*ARGV)' $(libdir) $(sitearchdir)
 	@$(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0555, true)' $(DLLIB) $(sitearchdir)/$(DLLIB)
 EOMF
-  install_rb(mfile, "$(sitelibdir)")
+  install_rb(mfile, "$(sitelibdir)", srcdir)
   mfile.printf "\n"
 
   if /mswin32/ !~ RUBY_PLATFORM

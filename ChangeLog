@@ -1,3 +1,9 @@
+Thu Feb  8 21:27:24 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* lib/mkmf.rb (install_rb): fix handling of relative path.
+
+	* lib/mkmf.rb (create_makefile): add srcdir.
+
 Wed Feb  7 16:05:22 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* parse.y (parse_quotedwords): %w should allow parenthesis escape.
