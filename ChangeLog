@@ -1,6 +1,6 @@
 Wed Jan  1 04:16:18 2003  Akinori MUSHA  <knu@iDaemons.org>
 
-	* node.h (struct RNode): Change argc from int to long.  Otherwize
+	* node.h (struct RNode): Change argc from int to long.  Otherwise
 	  NEW_CFUNC() sets argc to a wrong value on platforms where
 	  sizeof(int) != sizeof(long) and the byte order is big-endian.
 	  This fixes breakage on FreeBSD/sparc64.
@@ -80,7 +80,7 @@ Mon Dec 30 19:10:30 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ext/extmk.rb: split --make argument contains options, assume
 	  the first word of --make-flags is always options even unless
-	  preceeded by -, and ignore letter-case of options if nmake.
+	  preceded by -, and ignore letter-case of options if nmake.
 
 	* instruby.rb: extract -n option also from --make and
 	  --make-flags.
@@ -7451,8 +7451,8 @@ Wed Jul 25 12:15:32 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 Tue Jul 24 23:10:47 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
-	* file.c (strrdirsep): multi-byte pathname and DOSish separater
-	  supprot. originally comes from Patrick Cheng. [new]
+	* file.c (strrdirsep): multi-byte pathname and DOSish separator
+	  support. originally comes from Patrick Cheng. [new]
 
 	* file.c (rb_file_s_basename, rb_file_s_dirname): use
 	  strrdirsep(). comes from Patrick Cheng.
@@ -8828,7 +8828,7 @@ Mon Apr  2 01:32:38 2001  Akinori MUSHA  <knu@iDaemons.org>
 	* configure.in: Link libc_r against the ruby executable on
 	  FreeBSD, which is the first attempt to work around a certain
 	  problem regarding pthread on FreeBSD.  It should make ruby/libruby
-	  happy when it loads an extention to a library compiled and linked
+	  happy when it loads an extension to a library compiled and linked
 	  with -pthread.  Note, however, that libruby is _not_ linked with
 	  libc_r so as not to mess up pthread unfriendly stuff including
 	  apache+mod_ruby and vim6+ruby_interp.
@@ -8866,7 +8866,7 @@ Sat Mar 31 03:24:10 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Fri Mar 30 23:37:49 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* eval.c (rb_load): should not copy topleve local variables.  It
+	* eval.c (rb_load): should not copy toplevel local variables.  It
 	  cause variable/method ambiguity.  Thanks to L. Peter Deutsch.
 
 Fri Mar 30 22:56:56 2001  Shugo Maeda  <shugo@ruby-lang.org>
