@@ -1,3 +1,11 @@
+Sun Jul  2 03:37:02 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.25.
+
+	* lib/net/protocol.rb (each_crlf_line): beg = 0 is needed in adding{}
+
+	* lib/net/smtp.rb: allow String for to_addr of SMTP#sendmail
+
 Sat Jul  1 03:25:56 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* parse.y (call_args): command_call can be the last argument of
