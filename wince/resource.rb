@@ -55,9 +55,9 @@ end
     f.binmode if /mingw/ =~ RUBY_PLATFORM
 
     f.print <<EOF
-#ifndef __BORLANDC__
 #include <windows.h>
-#include <winver.h>
+#if _WIN32_WCE > 400
+  #include <winver.h>
 #endif
 
 #{icons}

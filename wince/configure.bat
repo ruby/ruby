@@ -19,6 +19,8 @@ if "%1" == "--program-name" goto :progname
 if "%1" == "CC" goto :define
 if "%1" == "EMBEDDED_TOOLS_DIR" goto :define
 if "%1" == "CE_TOOLS_DIR" goto :define
+if "%1" == "EMBEDDED_TOOLS4_DIR" goto :define
+if "%1" == "CE_TOOLS4_DIR" goto :define
   echo>> ~tmp~.mak 	"%1" \
   shift
 goto :loop

@@ -109,7 +109,7 @@ CC = $(CC) -nologo
 LD = $(CC)
 LDSHARED = $(LD) -LD
 XCFLAGS =
-LDFLAGS = -link -incremental:yes -pdb:none -MACHINE:$(MACHINE)
+LDFLAGS = -link -incremental:yes -pdb:none -MACHINE:$(MACHINE) -subsystem:$(SUBSYSTEM)
 DLDFLAGS = $(LDFLAGS) -dll
 XLDFLAGS = -stack:$(STACK)
 SOLIBS = 
@@ -409,11 +409,11 @@ minirubyce$(EXEEXT):	$(OBJS) $(MAINOBJ) $(WINMAINOBJ) dmyext.obj
 
 $(PROGRAM):	$(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_SO) $*.res
 		$(PURIFY) $(CC) $(MAINOBJ) $(WINMAINOBJ) $*.res \
-			-Fe$@ $(LIBRUBYARG) $(LDFLAGS) $(XLDFLAGS) -subsystem:"windowsce,3.0"
+			-Fe$@ $(LIBRUBYARG) $(LDFLAGS) $(XLDFLAGS)
 
 $(WPROGRAM):	$(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_SO) $*.res
 		$(PURIFY) $(CC) $(MAINOBJ) $(WINMAINOBJ) $*.res \
-			-Fe$@ $(LIBRUBYARG) $(LDFLAGS) $(XLDFLAGS) -subsystem:"windowsce,3.0"
+			-Fe$@ $(LIBRUBYARG) $(LDFLAGS) $(XLDFLAGS)
 
 $(LIBRUBY_A):	$(OBJS) dmyext.obj
 		$(AR) $(ARFLAGS)$@ $(OBJS) dmyext.obj

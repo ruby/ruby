@@ -7,13 +7,13 @@ IO.foreach("|dumpbin -symbols " + objs.join(' ')) do |l|
   next if /^[0-9A-F]+ 0+ UNDEF / =~ l
   next unless l.sub!(/.*\sExternal\s+\|\s+/, '')
   if ARGV[1]=="sh3"
-    if l.sub!(/^_/, '')                            # _ で始まるならtrue
-      next if /@.*@/ =~ l || /@[0-9a-f]{16}$/ =~ l #   かつ、@ とか混じったら next
-    elsif !l.sub!(/^(\S+) \([^@?\`\']*\)$/, '\1')  # _ ではじまっていなくて、@ とか混じっていたらnext
+    if l.sub!(/^_/, '')
+      next if /@.*@/ =~ l || /@[0-9a-f]{16}$/ =~ l
+    elsif !l.sub!(/^(\S+) \([^@?\`\']*\)$/, '\1')
       next
     end
   else
-    next if /@.*@/ =~ l || /@[0-9a-f]{16}$/ =~ l #   かつ、@ とか混じったら next
+    next if /@.*@/ =~ l || /@[0-9a-f]{16}$/ =~ l
   end
   SYM[l.strip] = true
 end

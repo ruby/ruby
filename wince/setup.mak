@@ -9,7 +9,7 @@ srcdir = $(WIN32DIR:/win32=)
 !else
 srcdir = $(WIN32DIR)/..
 !endif
-OS = mswin32
+OS = mswince
 RT = msvcrt
 INCLUDE = !include
 APPEND = echo>>$(MAKEFILE)
@@ -39,6 +39,7 @@ arm-hpcpro-wince: -prologue- -arm- -hpcpro- -epilogue-
 sh3-ppc-wince: -prologue- -sh3- -ppc- -epilogue-
 sh3-hpcpro-wince: -prologue- -sh3- -hpcpro2- -epilogue-
 sh4-hpcpro-wince: -prologue- -sh4- -hpcpro2- -epilogue-
+armv4-.net41-wince: -prologue- -armv4- -.net41- -epilogue-
 
 -prologue-: nul
 	@type << > $(MAKEFILE)
@@ -86,6 +87,11 @@ $(CPU) = $(PROCESSOR_LEVEL)
 	@$(APPEND) CC = cl$(@:-=)
 -sh3- -sh4-::
 	@$(APPEND) CC = shcl
+-armv4-::
+	@$(APPEND) CC = clarm
+	@$(APPEND) ARCHFOLDER = armv4
+	@$(APPEND) $(ARCH) = arm
+
 
 -arm-::
 	@$(APPEND) CECPUDEF = -DARM -D_ARM_
@@ -95,6 +101,9 @@ $(CPU) = $(PROCESSOR_LEVEL)
 	@$(APPEND) CECPUDEF = -DSHx -DSH3 -D_SH3_
 -sh4-::
 	@$(APPEND) CECPUDEF = -DSHx -DSH4 -D_SH4_
+-armv4-::
+	@$(APPEND) CECPUDEF = -DARM -D_ARM_ -DARMV4
+
 
 -hpc2k-: -hpc2000-
 -ppc-: "-MS Pocket PC-"
@@ -121,20 +130,36 @@ RT = $$(OS)
 SUBSYSTEM = windowsce
 <<
 
+-mswince4-:
+	@type << >>$(MAKEFILE)
+!ifdef CE_TOOLS4_DIR
+CE_TOOLS4_DIR = $(CE_TOOLS4_DIR)
+!endif
+!ifdef EMBEDDED_TOOLS4_DIR
+EMBEDDED_TOOLS4_DIR = $(EMBEDDED_TOOLS4_DIR)
+!endif
+
+OS = mswince
+RT = $$(OS)
+SUBSYSTEM = windowsce
+<<
+
+
 -mswince-3.00 -mswince-2.11: -mswince-
 	@type << >>$(MAKEFILE)
 SUBSYSVERSION = $(@:-mswince-=)
 PATH = $$(EMBEDDED_TOOLS_DIR)/common/evc/bin;$$(EMBEDDED_TOOLS_DIR)/EVC/WCE$$(SUBSYSVERSION:.=)/bin
 <<
 
+-mswince-4.10: -mswince4-
+	@type << >>$(MAKEFILE)
+SUBSYSVERSION = $(@:-mswince-=)
+PATH = $$(EMBEDDED_TOOLS4_DIR)/common/evc/bin;$$(EMBEDDED_TOOLS4_DIR)/EVC/WCE$$(SUBSYSVERSION:.=)/bin
+<<
+
 -hpc2000- "-MS Pocket PC-": -mswince-3.00
 "-MS HPC Pro-" "-MS HPC Pro--": -mswince-2.11
-
-#-hpc2000- -"MS Pocket PC"- "-MS HPC Pro-":
-#	@type << >>$(MAKEFILE)
-#INCLUDE = $$(CE_TOOLS_DIR)/wce$$(SUBSYSVERSION:.=)/$(@:-=)/include
-#LIB = $$(CE_TOOLS_DIR)/wce$$(SUBSYSVERSION:.=)/$(@:-=)/lib/$$(PROCESSOR_ARCHITECTURE)
-#<<
+-.net41-: -mswince-4.10
 
 -hpc2000-:
 	@type << >>$(MAKEFILE)
@@ -154,6 +179,15 @@ LIB = $$(CE_TOOLS_DIR)/wce$$(SUBSYSVERSION:.=)/MS Pocket PC/lib/$$(PROCESSOR_ARC
 INCLUDE = $$(CE_TOOLS_DIR)/wce$$(SUBSYSVERSION:.=)/$(@:-=)/include
 LIB = $$(CE_TOOLS_DIR)/wce$$(SUBSYSVERSION:.=)/$(@:-=)/lib
 <<
+
+-.net41-:
+	@type << >>$(MAKEFILE)
+INCLUDE = $$(CE_TOOLS4_DIR)/wce400/STANDARDSDK/include/$$(ARCHFOLDER)
+LIB = $$(CE_TOOLS4_DIR)/wce400/STANDARDSDK/lib/$$(ARCHFOLDER)
+#INCLUDE = $$(CE_TOOLS4_DIR)/wce400/STANDARDSDK/include/$$(PROCESSOR_ARCHITECTURE)
+#LIB = $$(CE_TOOLS4_DIR)/wce400/STANDARDSDK/lib/$$(PROCESSOR_ARCHITECTURE)
+<<
+
 
 -epilogue-: nul
 	@type << >>$(MAKEFILE)

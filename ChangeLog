@@ -1,3 +1,15 @@
+Sat May 24 18:19:51 2003  Takaaki Uematsu  <uema2x@jcom.home.ne.jp>
+
+	* wince/Makefile.sub: add eMbedded Visual C++ 4.0 support.
+
+	* wince/resource.rb: ditto.
+
+	* wince/setup.mak: ditto.
+
+	* wince/configure.bat: ditto.
+
+	* wince/mkexports.rb: delete japanese comments.
+
 Fri May 23 18:34:05 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (rb_longjmp): get rid of reentering while debug warning.
