@@ -6,7 +6,7 @@ module REXML
       array_utf8 = content.unpack('U*')
       array_enc = []
       array_utf8.each do |num|
-        if num <= 0xFF
+        if num <= 0x7F
           array_enc << num
         else
           # Numeric entity (&#nnnn;); shard by  Stefan Scholl
