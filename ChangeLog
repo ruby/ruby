@@ -1,3 +1,8 @@
+Wed Dec  8 00:25:07 2004  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rss/test_version.rb: added version check test.
+	  [ruby-dev:25053]
+
 Tue Dec  7 15:40:38 2004  Tanaka Akira  <akr@m17n.org>
 
 	* io.c (io_fwrite): avoid context switch before writing to stderr.
