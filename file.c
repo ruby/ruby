@@ -1129,7 +1129,7 @@ static VALUE
 rb_file_s_readlink(obj, path)
     VALUE obj, path;
 {
-#ifdef HAVE_READLINK_VOID
+#ifdef HAVE_READLINK
     char buf[MAXPATHLEN];
     int cc;
 
