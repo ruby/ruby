@@ -1,3 +1,7 @@
+Mon Jul  3 18:35:41 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* lib/mkmf.rb: use null device if it exists for cross-compiling.
+
 Mon Jul  3 18:19:51 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.26.

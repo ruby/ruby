@@ -33,11 +33,15 @@ if RUBY_PLATFORM == "m68k-human"
 elsif RUBY_PLATFORM =~ /-nextstep|-rhapsody/
   CFLAGS.gsub!( /-arch\s\w*/, '' )
 end
-if /win32|djgpp|mingw32|m68k-human|i386-os2_emx/i =~ RUBY_PLATFORM
-  $null = open("nul", "w")
+
+if FileTest.readable? 'nul'
+  $null = open('nul', 'w')
+elsif FileTest.readable? '/dev/null'
+  $null = open('/dev/null', 'w')
 else
-  $null = open("/dev/null", "w")
+  $null = open('test.log', 'w')
 end
+
 LINK = "#{CONFIG['CC']} -o conftest -I#{$hdrdir} #{CFLAGS} -I#{CONFIG['includedir']} %s #{CONFIG['LDFLAGS']} %s conftest.c %s %s #{CONFIG['LIBS']}"
 CPP = "#{CONFIG['CPP']} -E -I#{$hdrdir} #{CFLAGS} -I#{CONFIG['includedir']} %s %s conftest.c"
 
