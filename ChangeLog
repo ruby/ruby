@@ -5,40 +5,6 @@ Fri Feb 20 12:55:27 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* win32/win32.c (CreateChild): first argument to CreateProcess() must
 	  have path, not just basename.
 
-	diff -U2 io.c io.c
-	--- io.c	20 Feb 2004 01:02:56 -0000
-	+++ io.c	20 Feb 2004 02:56:08 -0000
-	@@ -2696,5 +2697,5 @@
-	 	    rb_thread_sleep(1);
-	 	    break;
-	-	  defined:
-	+	  default:
-	 	    rb_sys_fail(pname);
-	 	    break;
-	only in patch2:
-	--- win32/win32.c	19 Feb 2004 09:08:23 -0000	1.112
-	+++ win32/win32.c	20 Feb 2004 02:49:04 -0000
-	@@ -14,2 +14,3 @@
-	 #include "rubysig.h"
-	+#include "dln.h"
-	 #include <fcntl.h>
-	@@ -903,3 +904,14 @@
-	     if (prog) {
-	-	shell = prog;
-	+	char *p = dln_find_exe(prog, NULL);
-	+	if (!p) {
-	+	    shell = prog;
-	+	}
-	+	else {
-	+	    shell = p;
-	+	    while (*p) {
-	+		if ((unsigned char)*p == '/')
-	+		    *p = '\\';
-	+		p = CharNext(p);
-	+	    }
-	+	}
-	     }
-
 Thu Feb 19 23:24:16 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/generators/html_generator.rb (Generators::HtmlClass::build_attribute_list):
