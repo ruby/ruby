@@ -3,7 +3,7 @@ defs.h
 digest.c
 digest.h
 digest.txt
-digest.txt.jp
+digest.txt.ja
 extconf.rb
 lib/md5.rb
 lib/sha1.rb

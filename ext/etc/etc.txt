@@ -1,4 +1,4 @@
-.\" etc.doc -  -*- Indented-Text -*- created at: Fri Jul 14 00:47:15 JST 1995
+.\" etc.txt -  -*- Indented-Text -*- created at: Fri Jul 14 00:47:15 JST 1995
 
 ** Etc(Module)
 
