@@ -520,6 +520,7 @@ module FileUtils
         st = File.lstat(fname)
       rescue
         next if force
+        raise
       end
       if    st.symlink?   then remove_file fname, force
       elsif st.directory? then remove_dir fname, force

@@ -1,3 +1,8 @@
+Tue Apr 15 19:35:08 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/fileutils.rb: rm_r should raise Errno::ENOENT if file
+	  does not exist ([ruby-core:958]).  Thanks Johan Holmberg.
+
 Tue Apr 15 19:12:21 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* struct.c (rb_struct_hash): new methods Struct#hash, Struct#eql?.
