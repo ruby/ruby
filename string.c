@@ -6,7 +6,7 @@
   $Date$
   created at: Mon Aug  9 17:12:58 JST 1993
 
-  Copyright (C) 1993-2000 Yukihiro Matsumoto
+  Copyright (C) 1993-2001 Yukihiro Matsumoto
   Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
   Copyright (C) 2000  Information-technology Promotion Agency, Japan
 
@@ -377,7 +377,6 @@ str_independent(str)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify string");
     if (!RSTRING(str)->orig || FL_TEST(str, STR_NO_ORIG)) return 1;
     if (TYPE(RSTRING(str)->orig) != T_STRING) rb_bug("non string str->orig");
-    RSTRING(str)->orig = 0;
     return 0;
 }
 
@@ -394,6 +393,7 @@ rb_str_modify(str)
     }
     ptr[RSTRING(str)->len] = 0;
     RSTRING(str)->ptr = ptr;
+    RSTRING(str)->orig = 0;
 }
 
 VALUE
@@ -1294,11 +1294,11 @@ str_gsub(argc, argv, str, bang)
 	OBJSETUP(dup, rb_cString, T_STRING);
 	OBJ_INFECT(dup, str);
 	str = (VALUE)dup;
-	dup->orig = 0;
     }
     RSTRING(str)->ptr = buf;
     RSTRING(str)->len = len = bp - buf;
     RSTRING(str)->ptr[len] = '\0';
+    RSTRING(str)->orig = 0;
 
     if (tainted) OBJ_TAINT(str);
     return str;

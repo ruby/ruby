@@ -6,7 +6,7 @@
   $Date$
   created at: Tue Oct  5 09:44:46 JST 1993
 
-  Copyright (C) 1993-2000 Yukihiro Matsumoto
+  Copyright (C) 1993-2001 Yukihiro Matsumoto
   Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
   Copyright (C) 2000  Information-technology Promotion Agency, Japan
 
@@ -149,8 +149,8 @@ static int during_gc;
 static int need_call_final = 0;
 static st_table *finalizer_table = 0;
 
-static VALUE
-gc_enable()
+VALUE
+rb_gc_enable()
 {
     int old = dont_gc;
 
@@ -158,8 +158,8 @@ gc_enable()
     return old;
 }
 
-static VALUE
-gc_disable()
+VALUE
+rb_gc_disable()
 {
     int old = dont_gc;
 
@@ -996,8 +996,8 @@ rb_gc()
     gc_sweep();
 }
 
-static VALUE
-gc_start()
+VALUE
+rb_gc_start()
 {
     rb_gc();
     return Qnil;
@@ -1299,14 +1299,14 @@ Init_GC()
     VALUE rb_mObSpace;
 
     rb_mGC = rb_define_module("GC");
-    rb_define_singleton_method(rb_mGC, "start", gc_start, 0);
-    rb_define_singleton_method(rb_mGC, "enable", gc_enable, 0);
-    rb_define_singleton_method(rb_mGC, "disable", gc_disable, 0);
-    rb_define_method(rb_mGC, "garbage_collect", gc_start, 0);
+    rb_define_singleton_method(rb_mGC, "start", rb_gc_start, 0);
+    rb_define_singleton_method(rb_mGC, "enable", rb_gc_enable, 0);
+    rb_define_singleton_method(rb_mGC, "disable", rb_gc_disable, 0);
+    rb_define_method(rb_mGC, "garbage_collect", rb_gc_start, 0);
 
     rb_mObSpace = rb_define_module("ObjectSpace");
     rb_define_module_function(rb_mObSpace, "each_object", os_each_obj, -1);
-    rb_define_module_function(rb_mObSpace, "garbage_collect", gc_start, 0);
+    rb_define_module_function(rb_mObSpace, "garbage_collect", rb_gc_start, 0);
     rb_define_module_function(rb_mObSpace, "add_finalizer", add_final, 1);
     rb_define_module_function(rb_mObSpace, "remove_finalizer", rm_final, 1);
     rb_define_module_function(rb_mObSpace, "finalizers", finals, 0);

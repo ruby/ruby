@@ -6,7 +6,7 @@
   $Date$
   created at: Fri May 28 18:02:42 JST 1993
 
-  Copyright (C) 1993-2000 Yukihiro Matsumoto
+  Copyright (C) 1993-2001 Yukihiro Matsumoto
 
 **********************************************************************/
 
@@ -56,8 +56,16 @@ static enum lex_state {
     EXPR_CLASS,			/* immediate after `class', no here document. */
 } lex_state;
 
+#if SIZEOF_LONG_LONG > 0
+typedef unsigned long long stack_type;
+#elif SIZEOF___INT64 > 0
+typedef unsigned __int64 stack_type;
+#else
+typedef unsigned long stack_type;
+#endif
+
 static int cond_nest = 0;
-static unsigned long cond_stack = 0;
+static stack_type cond_stack = 0;
 #define COND_PUSH do {\
     cond_nest++;\
     cond_stack = (cond_stack<<1)|1;\
@@ -68,17 +76,14 @@ static unsigned long cond_stack = 0;
 } while (0)
 #define COND_P() (cond_nest > 0 && (cond_stack&1))
 
-static int cmdarg_nest = 0;
-static unsigned long cmdarg_stack = 0;
+static stack_type cmdarg_stack = 0;
 #define CMDARG_PUSH do {\
-    cmdarg_nest++;\
     cmdarg_stack = (cmdarg_stack<<1)|1;\
 } while(0)
 #define CMDARG_POP do {\
-    cmdarg_nest--;\
     cmdarg_stack >>= 1;\
 } while (0)
-#define CMDARG_P() (cmdarg_nest > 0 && (cmdarg_stack&1))
+#define CMDARG_P() (cmdarg_stack && (cmdarg_stack&1))
 
 static int class_nest = 0;
 static int in_single = 0;

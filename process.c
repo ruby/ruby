@@ -952,7 +952,7 @@ proc_setuid(obj, id)
     int uid;
 
     uid = NUM2INT(id);
-#if defined HAVE_SETRESUID
+#if defined(HAVE_SETRESUID) &&  !defined(__CHECKER__)
     setresuid(uid, -1, -1);
 #elif defined HAVE_SETREUID
     setreuid(uid, -1);
@@ -984,7 +984,7 @@ proc_setgid(obj, id)
     int gid;
 
     gid = NUM2INT(id);
-#if defined HAVE_SETRESGID
+#if defined(HAVE_SETRESGID) && !defined(__CHECKER__)
     setresgid(gid, -1, -1);
 #elif defined HAVE_SETREGID
     setregid(gid, -1);
@@ -1013,7 +1013,7 @@ static VALUE
 proc_seteuid(obj, euid)
     VALUE obj, euid;
 {
-#if defined HAVE_SETRESUID
+#if defined(HAVE_SETRESUID) && !defined(__CHECKER__)
     if (setresuid(-1, NUM2INT(euid), -1) < 0) rb_sys_fail(0);
 #elif defined HAVE_SETREUID
     if (setreuid(-1, NUM2INT(euid)) < 0) rb_sys_fail(0);
@@ -1042,7 +1042,7 @@ proc_setegid(obj, egid)
     VALUE obj, egid;
 {
     rb_secure(2);
-#if defined HAVE_SETRESGID
+#if defined(HAVE_SETRESGID) && !defined(__CHECKER__)
     if (setresgid(-1, NUM2INT(egid), -1) < 0) rb_sys_fail(0);
 #elif defined HAVE_SETREGID
     if (setregid(-1, NUM2INT(egid)) < 0) rb_sys_fail(0);

@@ -1,3 +1,8 @@
+Mon Jan 29 01:40:27 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (str_independent): should not clear str->orig here.
+	  it's too early.
+
 Fri Jan 26 01:42:40 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y: clarify do ambiguity, bit more complex but natural
