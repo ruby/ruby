@@ -429,6 +429,7 @@ proc_options(argc, argv)
     char *argv0 = argv[0];
     int do_search;
     char *s;
+    NODE *volatile script_node = 0;
 
     int version = 0;
     int copyright = 0;
@@ -751,6 +752,8 @@ proc_options(argc, argv)
 		    script = dln_find_file(argv[0], getenv(PATH_ENV));
 		}
 		if (!script) script = argv[0];
+		script = ruby_sourcefile = rb_source_filename(script);
+		script_node = NEW_NEWLINE(0);
 	    }
 #ifdef DOSISH
 	    translate_char(script, '\\', '/');

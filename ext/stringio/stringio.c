@@ -148,7 +148,6 @@ static VALUE strio_closed _((VALUE));
 static VALUE strio_closed_read _((VALUE));
 static VALUE strio_closed_write _((VALUE));
 static VALUE strio_eof _((VALUE));
-/* static VALUE strio_become _((VALUE, VALUE)); NOT USED */
 static VALUE strio_get_lineno _((VALUE));
 static VALUE strio_set_lineno _((VALUE, VALUE));
 static VALUE strio_get_pos _((VALUE));
@@ -156,7 +155,6 @@ static VALUE strio_set_pos _((VALUE, VALUE));
 static VALUE strio_rewind _((VALUE));
 static VALUE strio_seek _((int, VALUE *, VALUE));
 static VALUE strio_get_sync _((VALUE));
-/* static VALUE strio_set_sync _((VALUE, VALUE)); NOT USED */
 static VALUE strio_each_byte _((VALUE));
 static VALUE strio_getc _((VALUE));
 static VALUE strio_ungetc _((VALUE, VALUE));
@@ -167,8 +165,6 @@ static VALUE strio_readline _((int, VALUE *, VALUE));
 static VALUE strio_each _((int, VALUE *, VALUE));
 static VALUE strio_readlines _((int, VALUE *, VALUE));
 static VALUE strio_write _((VALUE, VALUE));
-/* static VALUE strio_print _((int, VALUE *, VALUE)); NOT USED */
-/* static VALUE strio_printf _((int, VALUE *, VALUE)); NOT USED */
 static VALUE strio_putc _((VALUE, VALUE));
 static VALUE strio_read _((int, VALUE *, VALUE));
 static VALUE strio_size _((VALUE));
@@ -317,6 +313,7 @@ strio_set_string(self, string)
 {
     struct StringIO *ptr = StringIO(self);
 
+    if (!OBJ_TAINTED(self)) rb_secure(4);
     ptr->flags &= ~FMODE_READWRITE;
     if (!NIL_P(string)) {
 	StringValue(string);
@@ -417,6 +414,7 @@ strio_copy(copy, orig)
 	strio_free(DATA_PTR(copy));
     }
     DATA_PTR(copy) = ptr;
+    OBJ_INFECT(copy, orig);
     ++ptr->count;
     return copy;
 }
@@ -450,7 +448,7 @@ strio_reopen(argc, argv, self)
     VALUE *argv;
     VALUE self;
 {
-    rb_secure(4);
+    if (!OBJ_TAINTED(self)) rb_secure(4);
     if (argc == 1 && TYPE(*argv) != T_STRING) {
 	return strio_copy(self, *argv);
     }
@@ -577,6 +575,7 @@ strio_ungetc(self, ch)
 		rb_str_modify(ptr->string);
 	    }
 	    RSTRING(ptr->string)->ptr[pos - 1] = cc;
+	    OBJ_INFECT(ptr->string, self);
 	}
 	--ptr->pos;
     }
@@ -783,6 +782,7 @@ strio_write(self, str)
 	}
 	rb_str_update(ptr->string, ptr->pos, len, str);
     }
+    OBJ_INFECT(ptr->string, self);
     ptr->pos += len;
     return LONG2NUM(len);
 }
@@ -811,6 +811,7 @@ strio_putc(self, ch)
 	rb_str_modify(ptr->string);
     }
     RSTRING(ptr->string)->ptr[ptr->pos++] = c;
+    OBJ_INFECT(ptr->string, self);
     return ch;
 }
 
@@ -862,7 +863,7 @@ strio_sysread(argc, argv, self)
 
 #define strio_syswrite strio_write
 
-#define strio_path rb_inspect
+#define strio_path strio_nil
 
 #define strio_isatty strio_false
 

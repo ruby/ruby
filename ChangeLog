@@ -1,3 +1,16 @@
+Thu Nov  6 10:17:51 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_set_string, strio_reopen): check
+	  tainted.
+
+	* ext/stringio/stringio.c (strio_copy, strio_ungetc, strio_write,
+	  strio_putc): add infection.
+
+	* ext/stringio/stringio.c (strio_path): just nil.  [ruby-dev:21846]
+
+	* ruby.c (proc_options): reserve searched script path in the
+	  source file name table.  [ruby-list:38765]
+
 Wed Nov  5 23:49:45 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* sample/openssl/gen_csr.rb: there (at least) is a CA which does not
@@ -5,15 +18,15 @@ Wed Nov  5 23:49:45 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 Wed Nov  5 22:55:16 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* configure.in, eval.c, signal.c: : add '--with-pthread-ext' 
+	* configure.in, eval.c, signal.c: : add '--with-pthread-ext'
 	  option to fix the pthread trouble on 'tcltklib'
 
 	* ext/tcltklib/README.1st: add the description of '--with-pthread-ext'
 
-	* ext/tk/lib/tktext.rb : add TkText#text_copy, text_cut, text_paste 
+	* ext/tk/lib/tktext.rb : add TkText#text_copy, text_cut, text_paste
 	  to support Tcl/Tk8.4's tk_textCopy, tk_textCut, tk_textPaste
 
-	* ext/tk/lib/tk.rb : add TkMenu#set_focus support Tcl/Tk's 
+	* ext/tk/lib/tk.rb : add TkMenu#set_focus support Tcl/Tk's
 	  tk_menuSetFocus
 
 Wed Nov  5 19:08:47 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
