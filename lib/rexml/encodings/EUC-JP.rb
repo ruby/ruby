@@ -18,11 +18,11 @@ rescue LoadError
 	module REXML
 		module Encoding
 			def from_euc_jp(str)
-				return Iconv::iconv("utf-8", "euc-jp", str)[0]
+				return Iconv::iconv("utf-8", "euc-jp", str).join
 			end
 
 			def to_euc_jp content
-				return Iconv::iconv("euc-jp", "utf-8", content)[0]
+				return Iconv::iconv("euc-jp", "utf-8", content).join
 			end
 		end
 	end

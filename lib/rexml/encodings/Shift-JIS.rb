@@ -18,11 +18,11 @@ rescue LoadError
 	module REXML
 		module Encoding
 			def from_shift_jis(str)
-				return Iconv::iconv("utf-8", "shift-jis", str)[0]
+				return Iconv::iconv("utf-8", "shift-jis", str).join
 			end
 
 			def to_shift_jis content
-				return Iconv::iconv("euc-jp", "shift-jis", content)[0]
+				return Iconv::iconv("shift-jis", "utf-8", content).join
 			end
 		end
 	end
