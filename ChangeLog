@@ -1,3 +1,7 @@
+Sun Sep 22 15:31:33 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* lib/mkmf.rb: some backports.
+
 Sun Sep 15 21:42:07 2002  KONISHI Hiromasa <konishih@fd6.so-net.ne.jp>
 
 	* win32/win32.c (opendir): Corresponds to the unjust path containing ".

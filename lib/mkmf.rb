@@ -63,6 +63,7 @@ else
   OUTFLAG = '-o '
 end
 LINK = "#{CONFIG['CC']} #{OUTFLAG}conftest -I#{$hdrdir} #{CFLAGS} %s %s #{CONFIG['LDFLAGS']} %s conftest.c %s %s #{CONFIG['LIBS']}"
+CC = "#{CONFIG['CC']} -c #{CONFIG['CPPFLAGS']} %s -I#{$hdrdir} #{CFLAGS} %s %s conftest.c"
 CPP = "#{CONFIG['CPP']} -E %s -I#{$hdrdir} #{CFLAGS} %s %s conftest.c"
 
 def rm_f(*files)
@@ -76,26 +77,56 @@ def rm_f(*files)
   end
 end
 
-$log = nil
+module Logging
+  @log = nil
+  @logfile = 'mkmf.log'
+  @orgerr = $stderr.dup
+  @orgout = $stdout.dup
 
-$orgerr = $stderr.dup
-$orgout = $stdout.dup
+  def self::open
+    @log ||= File::open(@logfile, 'w')
+    $stderr.reopen(@log)
+    $stdout.reopen(@log)
+    yield
+  ensure
+    $stderr.reopen(@orgerr)
+    $stdout.reopen(@orgout)
+  end
+
+  def self::message(*s)
+    @log ||= File::open(@logfile, 'w')
+    @log.printf(*s)
+  end
+
+  def self::logfile file
+    @logfile = file
+    if @log and not @log.closed?
+      @log.close
+      @log = nil
+    end
+  end
+end
+
 def xsystem command
   Config.expand(command)
-  if $DEBUG
+  Logging::open do
     puts command
     $stdout.flush
-    return system(command)
+    system(command)
   end
-  $log ||= open('mkmf.log', 'w')
-  $stderr.reopen($log) 
-  $stdout.reopen($log) 
-  puts command
-  $stdout.flush
-  r = system(command)
-  $stderr.reopen($orgerr)
-  $stdout.reopen($orgout)
-  return r
+end
+
+def xpopen command, *mode, &block
+  Config.expand(command)
+  Logging::open do
+    case mode[0]
+    when nil, /^r/
+      puts "#{command} |"
+    else
+      puts "| #{command}"
+    end
+    IO.popen(command, *mode, &block)
+  end
 end
 
 def try_link0(src, opt="")
@@ -125,6 +156,17 @@ def try_link(src, opt="")
   end
 end
 
+def try_compile(src, opt="")
+  cfile = open("conftest.c", "w")
+  cfile.print src
+  cfile.close
+  begin
+    xsystem(format(CC, $CPPFLAGS, $CFLAGS, opt))
+  ensure
+    rm_f "conftest*"
+  end
+end
+
 def try_cpp(src, opt="")
   cfile = open("conftest.c", "w")
   cfile.print src
@@ -141,7 +183,25 @@ def egrep_cpp(pat, src, opt="")
   cfile.print src
   cfile.close
   begin
-    xsystem(format(CPP+"|egrep #{pat}", $CPPFLAGS, $CFLAGS, opt))
+    xpopen(format(CPP, $CFLAGS, $CPPFLAGS, opt)) do |f|
+      if Regexp === pat
+	puts("    ruby -ne 'print if /#{pat.source}/'")
+	f.grep(pat) {|l|
+	  puts "#{f.lineno}: #{l}"
+	  return true
+	}
+	false
+      else
+	puts("    egrep '#{pat}'")
+	begin
+	  stdin = $stdin.dup
+	  $stdin.reopen(f)
+	  system("egrep", pat)
+	ensure
+	  $stdin.reopen(stdin)
+	end
+      end
+    end
   ensure
     rm_f "conftest*"
   end
@@ -290,7 +350,7 @@ SRC
   unless r
     r = try_link(src + <<"SRC", libs)
 int main() { return 0; }
-int t() { void ((*p)()); p = (void ((*)()))#{func}; return 0; }
+int t() { void ((*volatile p)()); p = (void ((*)()))#{func}; return 0; }
 SRC
   end
   unless r
@@ -399,7 +459,7 @@ def create_makefile(target, srcdir = $srcdir)
   $DLDFLAGS = CONFIG["DLDFLAGS"]
 
   $libs = CONFIG["LIBRUBYARG"] + " " + $libs + " " + CONFIG["LIBS"]
-  $configure_args['--enable-shared'] or $LIBPATH |= [$topdir]
+  $configure_args['--enable-shared'] or $LIBPATH |= ["$(topdir)"]
   $LIBPATH |= [CONFIG["libdir"]]
 
   srcdir ||= '.'
@@ -528,6 +588,7 @@ EOMF
   install_rb(mfile, "$(sitelibdir)$(target_prefix)", srcdir)
   mfile.printf "\n"
 
+  mfile.print ".SUFFIXES: .#{SRC_EXT.join(' .')} .#{$OBJEXT}\n"
   if /mswin32/ !~ RUBY_PLATFORM
     mfile.print "
 .c.#{$OBJEXT}:
@@ -564,8 +625,6 @@ EOMF
 "
   else
     mfile.print "
-.SUFFIXES: .#{$OBJEXT}
-
 .c.#{$OBJEXT}:
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(subst /,\\\\,$<)
 
