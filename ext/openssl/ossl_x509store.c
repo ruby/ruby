@@ -239,6 +239,17 @@ ossl_x509store_add_path(VALUE self, VALUE dir)
 }
 
 static VALUE
+ossl_x509store_set_default_paths(VALUE self)
+{
+    X509_STORE *store;
+
+    GetX509Store(self, store);
+    X509_STORE_set_default_paths(store);
+
+    return Qnil;
+}
+
+static VALUE
 ossl_x509store_add_cert(VALUE self, VALUE arg)
 {
     X509_STORE *store;
@@ -574,6 +585,7 @@ Init_ossl_x509store()
     rb_define_method(cX509Store, "time=",        ossl_x509store_set_time, 1);
     rb_define_method(cX509Store, "add_path",     ossl_x509store_add_path, 1);
     rb_define_method(cX509Store, "add_file",     ossl_x509store_add_file, 1);
+    rb_define_method(cX509Store, "set_default_paths", ossl_x509store_set_default_paths, 0);
     rb_define_method(cX509Store, "add_cert",     ossl_x509store_add_cert, 1);
     rb_define_method(cX509Store, "add_crl",      ossl_x509store_add_crl, 1);
     rb_define_method(cX509Store, "verify",       ossl_x509store_verify, -1);

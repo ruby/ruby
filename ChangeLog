@@ -1,3 +1,8 @@
+Fri Feb 11 17:37:50 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openss/ossl_x509store.c (ossl_x509store_set_default_paths):
+	  new method OpenSSL::X509::Store#set_default_paths.
+
 Fri Feb 11 11:33:53 2005  Tanaka Akira  <akr@m17n.org>
 
 	* lib/open-uri.rb (URI::HTTP#proxy_open): new option supported:
