@@ -91,20 +91,52 @@ class DEBUGGER__
       @finish_pos = 0
       @trace = false
       @catch = "StandardError"
+      @suspend_next = false
     end
 
     def stop_next(n=1)
       @stop_next = n
     end
 
+    def suspend
+      @suspend_next = true
+    end
+
+    def check_suspend
+      while (Thread.critical = true; @suspend_next)
+	waiting.push Thread.current
+	@suspend_next = false
+	Thread.stop
+      end
+      Thread.critical = false
+    end
+
+    def trace?
+      @trace
+    end
+
+    def set_trace(arg)
+      @trace = arg
+    end
+
     def stdout
       DEBUGGER__.stdout
     end
+
     def break_points
       DEBUGGER__.break_points
     end
+
     def display
       DEBUGGER__.display
+    end
+
+    def waiting
+      DEBUGGER__.waiting
+    end
+
+    def set_trace_all(arg)
+      DEBUGGER__.set_trace(arg)
     end
 
     def debug_eval(str, binding)
@@ -218,7 +250,8 @@ class DEBUGGER__
       end
       @frames[0] = [binding, file, line, id]
       display_expressions(binding)
-      while input = readline("(rdb:%d) "%thnum(), true)
+      prompt = true
+      while prompt and input = readline("(rdb:%d) "%thnum(), true)
 	catch(:debug_error) do
 	  if input == ""
 	    input = DEBUG_LAST_CMD[0]
@@ -228,18 +261,24 @@ class DEBUGGER__
 	  end
 
 	  case input
-	  when /^\s*tr(?:ace)?(?:\s+(on|off))?$/
-	    if defined?( $1 )
+	  when /^\s*tr(?:ace)?(?:\s+(on|off))?(?:\s+(all))?$/
+	    if defined?( $2 )
 	      if $1 == 'on'
-		@trace = true
+		set_trace_all true
 	      else
-		@trace = false
+		set_trace_all false
+	      end
+	    elsif defined?( $1 )
+	      if $1 == 'on'
+		set_trace true
+	      else
+		set_trace false
 	      end
 	    end
-	    if @trace
-	      stdout.print "Trace on\n"
+	    if trace?
+	      stdout.print "Trace on.\n"
 	    else
-	      stdout.print "Trace off\n"
+	      stdout.print "Trace off.\n"
 	    end
 
 	  when /^\s*b(?:reak)?\s+((?:.*?+:)?.+)$/
@@ -336,8 +375,7 @@ class DEBUGGER__
 	    end
 
 	  when /^\s*c(?:ont)?$/
-	    MUTEX.unlock
-	    return
+	    prompt = false
 
 	  when /^\s*s(?:tep)?(?:\s+(\d+))?$/
 	    if $1
@@ -346,7 +384,7 @@ class DEBUGGER__
 	      lev = 1
 	    end
 	    @stop_next = lev
-	    return
+	    prompt = false
 
 	  when /^\s*n(?:ext)?(?:\s+(\d+))?$/
 	    if $1
@@ -356,7 +394,7 @@ class DEBUGGER__
 	    end
 	    @stop_next = lev
 	    @no_step = @frames.size - frame_pos
-	    return
+	    prompt = false
 
 	  when /^\s*w(?:here)?$/, /^\s*f(?:rame)?$/
 	    display_frames(frame_pos)
@@ -417,8 +455,7 @@ class DEBUGGER__
 	    else
 	      @finish_pos = @frames.size - frame_pos
 	      frame_pos = 0
-	      MUTEX.unlock
-	      return
+	      prompt = false
 	    end
 
 	  when /^\s*cat(?:ch)?(?:\s+(.+))?$/
@@ -440,8 +477,10 @@ class DEBUGGER__
 	    end
 
 	  when /^\s*q(?:uit)?$/
-	    input = readline("really quit? (y/n) ", false)
-	    exit if input == "y"
+	    input = readline("Really quit? (y/n) ", false)
+	    if input == "y"
+	      exit!	# exit -> exit!: No graceful way to stop threads...
+	    end
 
 	  when /^\s*v(?:ar)?\s+/
 	    debug_variable_info($', binding)
@@ -451,8 +490,7 @@ class DEBUGGER__
 
 	  when /^\s*th(?:read)?\s+/
 	    if DEBUGGER__.debug_thread_info($', binding) == :cont
-	      MUTEX.unlock
-	      return
+	      prompt = false
 	    end
 
 	  when /^\s*p\s+/
@@ -467,6 +505,8 @@ class DEBUGGER__
 	  end
 	end
       end
+      MUTEX.unlock
+      DEBUGGER__.resume_all_thread
     end
 
     def debug_print_help
@@ -492,7 +532,8 @@ Commands
   up[ nn]                    move to higher frame
   down[ nn]                  move to lower frame
   fin[ish]                   return to outer frame
-  tr[ace][ (on|off)]         set trace mode
+  tr[ace] (on|off)           set trace mode of current thread
+  tr[ace] (on|off) all       set trace mode of all threads
   q[uit]                     exit from debugger
   v[ar] g[lobal]             show global variables
   v[ar] l[ocal]              show local variables
@@ -501,11 +542,10 @@ Commands
   m[ethod] i[nstance] <obj>  show methods of object
   m[ethod] <class|module>    show instance methods of class or module
   th[read] l[ist]            list all threads
-  th[read] c[ur[rent]]       show current threads
-  th[read] <nnn>             stop thread nnn
-  th[read] stop <nnn>        alias for th[read] <nnn>
-  th[read] c[ur[rent]] <nnn> alias for th[read] <nnn>
-  th[read] resume <nnn>      run thread nnn
+  th[read] c[ur[rent]]       show current thread
+  th[read] [sw[itch]] <nnn>  switch thread context to nnn
+  th[read] stop <nnn>        stop thread nnn
+  th[read] resume <nnn>      resume thread nnn
   p expression               evaluate expression and print its value
   h[elp]                     print this help
   <everything else>          evaluate
@@ -587,7 +627,7 @@ EOHELP
     end
 
     def check_break_points(file, pos, binding, id)
-      MUTEX.lock	# Stop all threads before 'line' and 'call'.
+      return false if break_points.empty?
       file = File.basename(file)
       n = 1
       for b in break_points
@@ -604,7 +644,6 @@ EOHELP
 	end
 	n += 1
       end
-      MUTEX.unlock
       return false
     end
 
@@ -616,7 +655,6 @@ EOHELP
       end
 
       if @catch and ($!.type.ancestors.find { |e| e.to_s == @catch })
-	MUTEX.lock
 	fs = @frames.size
 	tb = caller(0)[-fs..-1]
 	if tb
@@ -624,12 +662,14 @@ EOHELP
 	    stdout.printf "\tfrom %s\n", i
 	  end
 	end
+	DEBUGGER__.suspend_all_thread
 	debug_command(file, line, id, binding)
       end
     end
 
     def trace_func(event, file, line, id, binding, klass)
-      Tracer.trace_func(event, file, line, id, binding) if @trace
+      Tracer.trace_func(event, file, line, id, binding, klass) if trace?
+      DEBUGGER__.context(Thread.current).check_suspend
       @file = file
       @line = line
       case event
@@ -647,6 +687,7 @@ EOHELP
 	    @stop_next = 1
 	  else
 	    @no_step = nil
+	    DEBUGGER__.suspend_all_thread
 	    debug_command(file, line, id, binding)
 	    @last = [file, line]
 	  end
@@ -656,6 +697,7 @@ EOHELP
 	@frames.unshift [binding, file, line, id]
 	if check_break_points(file, id.id2name, binding, id) or
 	    check_break_points(klass.to_s, id.id2name, binding, id)
+	  DEBUGGER__.suspend_all_thread
 	  debug_command(file, line, id, binding)
 	end
 
@@ -682,19 +724,20 @@ EOHELP
     end
   end
 
-  trap("INT") {  DEBUGGER__.interrupt }
-#  $DEBUG = true
+  trap("INT") { DEBUGGER__.interrupt }
   @last_thread = Thread::main
   @max_thread = 1
   @thread_list = {Thread::main => 1}
   @break_points = []
   @display = []
+  @waiting = []
   @stdout = STDOUT
 
   class <<DEBUGGER__
     def stdout
       @stdout
     end
+
     def stdout=(s)
       @stdout = s
     end
@@ -707,8 +750,44 @@ EOHELP
       @break_points
     end
 
+    def waiting
+      @waiting
+    end
+
+    def set_trace( arg )
+      Thread.critical = true
+      make_thread_list
+      for th in @thread_list
+        context(th[0]).set_trace arg
+      end
+      Thread.critical = false
+    end
+
     def set_last_thread(th)
       @last_thread = th
+    end
+
+    def suspend_all_thread
+      Thread.critical = true
+      make_thread_list
+      for th in @thread_list
+	next if th[0] == Thread.current
+	context(th[0]).suspend
+      end
+      Thread.critical = false
+      # Schedule other threads to suspend as soon as possible.
+      Thread.pass
+    end
+
+    def resume_all_thread
+      Thread.critical = true
+      waiting.each do |th|
+	th.run
+      end
+      waiting.clear
+      Thread.critical = false
+      # Schedule other threads to restart as soon as possible.
+      Thread.pass
     end
 
     def context(thread=Thread.current)
@@ -726,7 +805,7 @@ EOHELP
     def get_thread(num)
       th = @thread_list.index(num)
       unless th
-	@stdout.print "no thread no.", num, "\n"
+	@stdout.print "No thread ##{num}\n"
 	throw :debug_error
       end
       th
@@ -773,31 +852,52 @@ EOHELP
 	make_thread_list
 	thread_list_all
 
-      when /^c(?:ur(?:rent)?)?\s+(\d+)/, /^stop\s+(\d+)/, /^(\d+)/
-	make_thread_list
-	th = get_thread($1.to_i)
-	thread_list(@thread_list[th])
-	context(th).stop_next
-	th.run
-	return :cont
-
       when /^c(?:ur(?:rent)?)?$/
 	make_thread_list
 	thread_list(@thread_list[Thread.current])
 
+      when /^(?:sw(?:itch)?\s+)?(\d+)/
+	make_thread_list
+	th = get_thread($1.to_i)
+	if th == Thread.current
+	  @stdout.print "It's the current thread.\n"
+	else
+	  thread_list(@thread_list[th])
+	  context(th).stop_next
+	  th.run
+	  return :cont
+	end
+
+      when /^stop\s+(\d+)/
+	make_thread_list
+	th = get_thread($1.to_i)
+	if th == Thread.current
+	  @stdout.print "It's the current thread.\n"
+	elsif th.stop?
+	  @stdout.print "Already stopped.\n"
+	else
+	  thread_list(@thread_list[th])
+	  context(th).suspend 
+	end
+
       when /^resume\s+(\d+)/
 	make_thread_list
 	th = get_thread($1.to_i)
-	thread_list(@thread_list[th])
-	th.run
-	return :cont
+	if th == Thread.current
+	  @stdout.print "It's the current thread.\n"
+	elsif !th.stop?
+	  @stdout.print "Already running."
+	else
+	  thread_list(@thread_list[th])
+	  th.run
+	end
       end
     end
   end
 
   stdout.printf "Debug.rb\n"
   stdout.printf "Emacs support available.\n\n"
-  set_trace_func proc{|event, file, line, id, binding,klass,*rest|
-    DEBUGGER__.context.trace_func event, file, line, id, binding,klass
+  set_trace_func proc { |event, file, line, id, binding, klass, *rest|
+    DEBUGGER__.context.trace_func event, file, line, id, binding, klass
   }
 end
