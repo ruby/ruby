@@ -130,7 +130,13 @@ module OpenURI
         uri.direct_open(buf, header)
       end
     rescue Redirect
-      uri = $!.uri
+      loc = $!.uri
+      if loc.relative?
+        # Although it violates RFC 2616, Location: field may have relative URI.
+        # It is converted to absolute URI using uri.
+        loc = uri + loc
+      end
+      uri = loc
       raise "HTTP redirection loop: #{uri}" if uri_set.include? uri.to_s
       uri_set[uri.to_s] = true 
       retry
