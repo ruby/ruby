@@ -102,6 +102,8 @@ rb_any_hash(a)
 static struct st_hash_type objhash = {
     rb_any_cmp,
     rb_any_hash,
+    st_nothing_key_free,
+    st_nothing_key_clone
 };
 
 struct foreach_safe_arg {

@@ -1,3 +1,10 @@
+Sat Jan 29 00:10:33 2005  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
+
+	* ascii.c, euc_jp.c, hash.c, oniggnu.h, oniguruma.h, regcomp.c,
+	regenc.c, regenc.h, regerror.c, regexec.c, reggnu.c, regint.h,
+	regparse.c, regparse.h, sjis.c, st.c, st.h, utf8.c: imported
+	Oni Guruma 3.5.4.
+
 Fri Jan 28 17:16:55 2005  Tanaka Akira  <akr@m17n.org>
 
 	* lib/resolv.rb (Resolv::DNS::Config.parse_resolv_conf):

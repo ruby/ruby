@@ -6,11 +6,28 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "st.h"
 
 #ifdef _WIN32
 #include <malloc.h>
 #endif
+
+#ifdef NOT_RUBY
+#include "regint.h"
+#else
+#ifdef RUBY_PLATFORM
+#define xmalloc ruby_xmalloc
+#define xcalloc ruby_xcalloc
+#define xrealloc ruby_xrealloc
+#define xfree ruby_xfree
+
+void *xmalloc(long);
+void *xcalloc(long, long);
+void *xrealloc(void *, long);
+void xfree(void *);
+#endif
+#endif
+
+#include "st.h"
 
 typedef struct st_table_entry st_table_entry;
 
@@ -33,11 +50,14 @@ struct st_table_entry {
      * allocated initially
      *
      */
+
 static int numcmp(long, long);
 static int numhash(long);
 static struct st_hash_type type_numhash = {
     numcmp,
     numhash,
+    st_nothing_key_free,
+    st_nothing_key_clone
 };
 
 /* extern int strcmp(const char *, const char *); */
@@ -45,19 +65,21 @@ static int strhash(const char *);
 static struct st_hash_type type_strhash = {
     strcmp,
     strhash,
+    st_nothing_key_free,
+    st_nothing_key_clone
 };
 
-#ifdef RUBY_PLATFORM
-#define xmalloc ruby_xmalloc
-#define xcalloc ruby_xcalloc
-#define xrealloc ruby_xrealloc
-#define xfree ruby_xfree
+static int strend_cmp(st_strend_key*, st_strend_key*);
+static int strend_hash(st_strend_key*);
+static int strend_key_free(st_data_t key);
+static st_data_t strend_key_clone(st_data_t x);
 
-void *xmalloc(long);
-void *xcalloc(long, long);
-void *xrealloc(void *, long);
-void xfree(void *);
-#endif
+static struct st_hash_type type_strend_hash = {
+    strend_cmp,
+    strend_hash,
+    strend_key_free,
+    strend_key_clone
+};
 
 static void rehash(st_table *);
 
@@ -125,7 +147,7 @@ new_size(size)
     int newsize;
 
     for (i = 0, newsize = MINSIZE;
-	 i < sizeof(primes)/sizeof(primes[0]);
+	 i < (int )(sizeof(primes)/sizeof(primes[0]));
 	 i++, newsize <<= 1)
     {
 	if (newsize > size) return primes[i];
@@ -206,6 +228,13 @@ st_init_strtable_with_size(size)
     return st_init_table_with_size(&type_strhash, size);
 }
 
+st_table*
+st_init_strend_table_with_size(size)
+    int size;
+{
+    return st_init_table_with_size(&type_strend_hash, size);
+}
+
 void
 st_free_table(table)
     st_table *table;
@@ -267,6 +296,21 @@ st_lookup(table, key, value)
     }
 }
 
+int
+st_lookup_strend(table, str_key, end_key, value)
+    st_table *table;
+    unsigned char* str_key;
+    unsigned char* end_key;
+    st_data_t *value;
+{
+  st_strend_key key;
+
+  key.s   = (unsigned char* )str_key;
+  key.end = (unsigned char* )end_key;
+
+  return st_lookup(table, (st_data_t )(&key), value);
+}
+
 #define ADD_DIRECT(table, key, value, hash_val, bin_pos)\
 do {\
     st_table_entry *entry;\
@@ -307,6 +351,22 @@ st_insert(table, key, value)
     }
 }
 
+int
+st_insert_strend(table, str_key, end_key, value)
+     st_table *table;
+     unsigned char* str_key;
+     unsigned char* end_key;
+     st_data_t value;
+{
+  st_strend_key* key;
+
+  key = alloc(st_strend_key);
+  key->s   = (unsigned char* )str_key;
+  key->end = (unsigned char* )end_key;
+
+  return st_insert(table, (st_data_t )key, value);
+}
+
 void
 st_add_direct(table, key, value)
     st_table *table;
@@ -318,6 +378,21 @@ st_add_direct(table, key, value)
     hash_val = do_hash(key, table);
     bin_pos = hash_val % table->num_bins;
     ADD_DIRECT(table, key, value, hash_val, bin_pos);
+}
+
+void
+st_add_direct_strend(table, str_key, end_key, value)
+    st_table *table;
+    unsigned char* str_key;
+    unsigned char* end_key;
+    st_data_t value;
+{
+  st_strend_key* key;
+
+  key = alloc(st_strend_key);
+  key->s   = (unsigned char* )str_key;
+  key->end = (unsigned char* )end_key;
+  st_add_direct(table, (st_data_t )key, value);
 }
 
 static void
@@ -379,6 +454,7 @@ st_copy(old_table)
 		return 0;
 	    }
 	    *entry = *ptr;
+            entry->key  = old_table->type->key_clone(ptr->key);
 	    entry->next = new_table->bins[i];
 	    new_table->bins[i] = entry;
 	    ptr = ptr->next;
@@ -522,6 +598,7 @@ st_foreach(table, func, arg)
 		    last->next = ptr->next;
 		}
 		ptr = ptr->next;
+                table->type->key_free(tmp->key);
 		free(tmp);
 		table->num_entries--;
 	    }
@@ -580,4 +657,60 @@ numhash(n)
     long n;
 {
     return n;
+}
+
+extern int
+st_nothing_key_free(st_data_t key) { return 0; }
+
+extern st_data_t
+st_nothing_key_clone(st_data_t x) { return x; } 
+
+static int strend_cmp(st_strend_key* x, st_strend_key* y)
+{
+  unsigned char *p, *q;
+  int c;
+
+  if ((x->end - x->s) != (y->end - y->s))
+    return 1;
+
+  p = x->s;
+  q = y->s;
+  while (p < x->end) {
+    c = (int )*p - (int )*q;
+    if (c != 0) return c;
+
+    p++; q++;
+  }
+
+  return 0;
+}
+
+static int strend_hash(st_strend_key* x)
+{
+  int val;
+  unsigned char *p;
+
+  val = 0;
+  p = x->s;
+  while (p < x->end) {
+    val = val * 997 + (int )*p++;
+  }
+
+  return val + (val >> 5);
+}
+
+static int strend_key_free(st_data_t x)
+{
+  xfree((void* )x);
+  return 0;
+}
+
+static st_data_t strend_key_clone(st_data_t x)
+{
+  st_strend_key* new_key;
+  st_strend_key* key = (st_strend_key* )x;
+
+  new_key = alloc(st_strend_key);
+  *new_key = *key;
+  return (st_data_t )new_key;
 }

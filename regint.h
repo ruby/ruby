@@ -4,7 +4,7 @@
   regint.h -  Oniguruma (regular expression library)
 **********************************************************************/
 /*-
- * Copyright (c) 2002-2004  K.Kosako  <kosako AT sofnec DOT co DOT jp>
+ * Copyright (c) 2002-2005  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -56,6 +56,7 @@
 
 /* config */
 /* spec. config */
+/* #define USE_UNICODE_FULL_RANGE_CTYPE */ /* --> move to regenc.h */
 #define USE_NAMED_GROUP
 #define USE_SUBEXP_CALL
 #define USE_INFINITE_REPEAT_MONOMANIAC_MEM_STATUS_CHECK /* /(?:()|())*\2/ */
@@ -65,6 +66,8 @@
 #define USE_RECYCLE_NODE
 #define USE_OP_PUSH_OR_JUMP_EXACT
 #define USE_QUALIFIER_PEEK_NEXT
+#define USE_ST_HASH_TABLE
+#define USE_SHARED_CCLASS_TABLE
 
 #define INIT_MATCH_STACK_SIZE                     160
 #define DEFAULT_MATCH_STACK_LIMIT_SIZE              0 /* unlimited */
@@ -76,17 +79,21 @@
 #define USE_VARIABLE_META_CHARS
 #define USE_WORD_BEGIN_END          /* "\<": word-begin, "\>": word-end */
 #define USE_POSIX_REGION_OPTION     /* needed for POSIX API support */
+/* #define USE_MULTI_THREAD_SYSTEM */
 #define THREAD_ATOMIC_START         /* depend on thread system */
 #define THREAD_ATOMIC_END           /* depend on thread system */
 #define THREAD_PASS                 /* depend on thread system */
 #define CHECK_INTERRUPT             /* depend on application */
 #define xmalloc     malloc
 #define xrealloc    realloc
+#define xcalloc     calloc
 #define xfree       free
 #else
 #include "ruby.h"
 #include "version.h"
 #include "rubysig.h"      /* for DEFER_INTS, ENABLE_INTS */
+
+#define USE_MULTI_THREAD_SYSTEM
 #define THREAD_ATOMIC_START          DEFER_INTS
 #define THREAD_ATOMIC_END            ENABLE_INTS
 #define THREAD_PASS                  rb_thread_schedule()
@@ -101,17 +108,9 @@
 #define DEFAULT_WARN_FUNCTION        rb_warn
 #define DEFAULT_VERB_WARN_FUNCTION   rb_warning
 
-#if defined(RUBY_VERSION_MAJOR)
-#if RUBY_VERSION_MAJOR > 1 || \
-(RUBY_VERSION_MAJOR == 1 && \
- defined(RUBY_VERSION_MINOR) && RUBY_VERSION_MINOR >= 8)
-#define USE_ST_HASH_TABLE
-#endif
-#endif
-
 #endif /* else NOT_RUBY */
 
-#define THREAD_PASS_LIMIT_COUNT    10
+#define THREAD_PASS_LIMIT_COUNT     8
 #define xmemset     memset
 #define xmemcpy     memcpy
 #define xmemmove    memmove
@@ -123,6 +122,69 @@
 #else
 #define xalloca     alloca
 #endif
+
+
+#ifdef USE_MULTI_THREAD_SYSTEM
+#define ONIG_STATE_INC(reg)    (reg)->state++
+#define ONIG_STATE_DEC(reg)    (reg)->state--
+#else
+#define ONIG_STATE_INC(reg)    /* Nothing */
+#define ONIG_STATE_DEC(reg)    /* Nothing */
+#endif /* USE_MULTI_THREAD_SYSTEM */
+
+
+#define onig_st_is_member              st_is_member
+
+#ifdef NOT_RUBY
+
+#define st_init_table                  onig_st_init_table
+#define st_init_table_with_size        onig_st_init_table_with_size
+#define st_init_numtable               onig_st_init_numtable
+#define st_init_numtable_with_size     onig_st_init_numtable_with_size
+#define st_init_strtable               onig_st_init_strtable
+#define st_init_strtable_with_size     onig_st_init_strtable_with_size
+#define st_init_strend_table_with_size onig_st_init_strend_table_with_size
+#define st_delete                      onig_st_delete
+#define st_delete_safe                 onig_st_delete_safe
+#define st_insert                      onig_st_insert
+#define st_insert_strend               onig_st_insert_strend
+#define st_lookup                      onig_st_lookup
+#define st_lookup_strend               onig_st_lookup_strend
+#define st_foreach                     onig_st_foreach
+#define st_add_direct                  onig_st_add_direct
+#define st_add_direct_strend           onig_st_add_direct_strend
+#define st_free_table                  onig_st_free_table
+#define st_cleanup_safe                onig_st_cleanup_safe
+#define st_copy                        onig_st_copy
+#define st_nothing_key_clone           onig_st_nothing_key_clone
+#define st_nothing_key_free            onig_st_nothing_key_free
+
+#else /* NOT_RUBY */
+
+#define onig_st_init_table                  st_init_table
+#define onig_st_init_table_with_size        st_init_table_with_size
+#define onig_st_init_numtable               st_init_numtable
+#define onig_st_init_numtable_with_size     st_init_numtable_with_size
+#define onig_st_init_strtable               st_init_strtable
+#define onig_st_init_strtable_with_size     st_init_strtable_with_size
+#define onig_st_init_strend_table_with_size st_init_strend_table_with_size
+#define onig_st_delete                      st_delete
+#define onig_st_delete_safe                 st_delete_safe
+#define onig_st_insert                      st_insert
+#define onig_st_insert_strend               st_insert_strend
+#define onig_st_lookup                      st_lookup
+#define onig_st_lookup_strend               st_lookup_strend
+#define onig_st_foreach                     st_foreach
+#define onig_st_add_direct                  st_add_direct
+#define onig_st_add_direct_strend           st_add_direct_strend
+#define onig_st_free_table                  st_free_table
+#define onig_st_cleanup_safe                st_cleanup_safe
+#define onig_st_copy                        st_copy
+#define onig_st_nothing_key_clone           st_nothing_key_clone
+#define onig_st_nothing_key_free            st_nothing_key_free
+
+#endif /* NOT_RUBY */
+
 
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
@@ -139,8 +201,10 @@
 #endif
 
 #include <ctype.h>
+#ifdef HAVE_SYS_TYPES_H
 #ifndef __BORLANDC__
 #include <sys/types.h>
+#endif
 #endif
 
 #ifdef ONIG_DEBUG
@@ -483,6 +547,7 @@ enum OpCode {
   OP_CCLASS_NOT,
   OP_CCLASS_MB_NOT,
   OP_CCLASS_MIX_NOT,
+  OP_CCLASS_NODE,       /* pointer to CClassNode node */
 
   OP_ANYCHAR,                 /* "."  */
   OP_ANYCHAR_ML,              /* "."  multi-line */
@@ -570,6 +635,7 @@ typedef int AbsAddrType;
 typedef int LengthType;
 typedef int RepeatNumType;
 typedef short int MemNumType;
+typedef void* PointerType;
 
 #define SIZE_OPCODE        1
 #define SIZE_RELADDR       sizeof(RelAddrType)
@@ -579,7 +645,7 @@ typedef short int MemNumType;
 #define SIZE_REPEATNUM     sizeof(RepeatNumType)
 #define SIZE_OPTION        sizeof(OnigOptionType)
 #define SIZE_CODE_POINT    sizeof(OnigCodePoint)
-
+#define SIZE_POINTER       sizeof(PointerType)
 
 
 #ifdef PLATFORM_UNALIGNED_WORD_ACCESS
@@ -604,6 +670,7 @@ typedef short int MemNumType;
 #define GET_MEMNUM_INC(num,p)      PLATFORM_GET_INC(num,    p, MemNumType)
 #define GET_REPEATNUM_INC(num,p)   PLATFORM_GET_INC(num,    p, RepeatNumType)
 #define GET_OPTION_INC(option,p)   PLATFORM_GET_INC(option, p, OnigOptionType)
+#define GET_POINTER_INC(ptr,p)     PLATFORM_GET_INC(ptr,    p, PointerType)
 
 /* code point's address must be aligned address. */
 #define GET_CODE_POINT(code,p)   code = *((OnigCodePoint* )(p))
@@ -679,6 +746,22 @@ typedef short int MemNumType;
     ONIG_SYN_CONTEXT_INVALID_REPEAT_OPS | ONIG_SYN_ALLOW_INVALID_INTERVAL | \
     ONIG_SYN_BACKSLASH_ESCAPE_IN_CC | ONIG_SYN_ALLOW_DOUBLE_RANGE_OP_IN_CC )
 
+/* cclass node */
+#define FLAG_CCLASS_NOT            1
+#define FLAG_CCLASS_SHARE         (1<<1)
+
+#define CCLASS_SET_NOT(cc)      (cc)->flags |= FLAG_CCLASS_NOT
+#define CCLASS_CLEAR_NOT(cc)    (cc)->flags &= ~FLAG_CCLASS_NOT
+#define CCLASS_SET_SHARE(cc)    (cc)->flags |= FLAG_CCLASS_SHARE
+#define IS_CCLASS_NOT(cc)     (((cc)->flags & FLAG_CCLASS_NOT) != 0)
+#define IS_CCLASS_SHARE(cc)   (((cc)->flags & FLAG_CCLASS_SHARE) != 0)
+
+typedef struct {
+  int    flags;
+  BitSet bs;
+  BBuf*  mbuf;     /* multi-byte info or NULL */
+} CClassNode;
+
 
 #ifdef ONIG_DEBUG
 
@@ -700,13 +783,11 @@ extern void onig_print_statistics P_((FILE* f));
 
 extern char* onig_error_code_to_format P_((int code));
 extern void  onig_snprintf_with_pattern PV_((char buf[], int bufsize, OnigEncoding enc, char* pat, char* pat_end, char *fmt, ...));
-extern UChar* onig_strdup P_((UChar* s, UChar* end));
 extern int  onig_bbuf_init P_((BBuf* buf, int size));
 extern int  onig_alloc_init P_((regex_t** reg, OnigOptionType option, OnigAmbigType ambig_flag, OnigEncoding enc, OnigSyntaxType* syntax));
 extern int  onig_compile P_((regex_t* reg, UChar* pattern, UChar* pattern_end, OnigErrorInfo* einfo));
 extern void onig_chain_reduce P_((regex_t* reg));
 extern void onig_chain_link_add P_((regex_t* to, regex_t* add));
 extern void onig_transfer P_((regex_t* to, regex_t* from));
-extern int  onig_is_in_code_range P_((UChar* p, OnigCodePoint code));
 
 #endif /* REGINT_H */

@@ -4,7 +4,7 @@
   oniguruma.h - Oniguruma (regular expression library)
 **********************************************************************/
 /*-
- * Copyright (c) 2002-2004  K.Kosako  <kosako AT sofnec DOT co DOT jp>
+ * Copyright (c) 2002-2005  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,8 +31,17 @@
 
 #define ONIGURUMA
 #define ONIGURUMA_VERSION_MAJOR   3
-#define ONIGURUMA_VERSION_MINOR   4
-#define ONIGURUMA_VERSION_TEENY   0
+#define ONIGURUMA_VERSION_MINOR   5
+#define ONIGURUMA_VERSION_TEENY   4
+
+#ifdef __cplusplus
+# ifndef  HAVE_PROTOTYPES
+#  define HAVE_PROTOTYPES 1
+# endif
+# ifndef  HAVE_STDARG_PROTOTYPES
+#  define HAVE_STDARG_PROTOTYPES 1
+# endif
+#endif
 
 #ifndef P_
 #if defined(__STDC__) || defined(_WIN32)
@@ -72,12 +81,6 @@ typedef unsigned int   OnigDistance;
 
 #define ONIG_INFINITE_DISTANCE  ~((OnigDistance )0)
 
-typedef struct {
-  OnigCodePoint from;
-  OnigCodePoint to;
-} OnigCodePointRange;
-
-
 /* ambiguous match flag */
 #define ONIGENC_AMBIGUOUS_MATCH_NONE                   0
 #define ONIGENC_AMBIGUOUS_MATCH_ASCII_CASE            (1<<0)
@@ -102,6 +105,11 @@ typedef unsigned int OnigAmbigType;
 
 #define ONIGENC_MAX_COMP_AMBIG_CODE_LEN       3
 #define ONIGENC_MAX_COMP_AMBIG_CODE_ITEM_NUM  4
+
+/* code range */
+#define ONIGENC_CODE_RANGE_NUM(range)     ((int )range[0])
+#define ONIGENC_CODE_RANGE_FROM(range,i)  range[((i)*2) + 1]
+#define ONIGENC_CODE_RANGE_TO(range,i)    range[((i)*2) + 2]
 
 typedef struct {
   int len;
@@ -152,7 +160,7 @@ typedef struct {
   int    (*get_all_pair_ambig_codes)(OnigAmbigType flag, OnigPairAmbigCodes** acs);
   int    (*get_all_comp_ambig_codes)(OnigAmbigType flag, OnigCompAmbigCodes** acs);
   int    (*is_code_ctype)(OnigCodePoint code, unsigned int ctype);
-  int    (*get_ctype_code_range)(int ctype, int* nsb, int* nmb, OnigCodePointRange* sbr[], OnigCodePointRange* mbr[]);
+  int    (*get_ctype_code_range)(int ctype, OnigCodePoint* sb_range[], OnigCodePoint* mb_range[]);
   UChar* (*left_adjust_char_head)(UChar* start, UChar* p);
   int    (*is_allowed_reverse_match)(UChar* p, UChar* end);
 } OnigEncodingType;
@@ -245,7 +253,6 @@ ONIG_EXTERN OnigEncodingType OnigEncodingBIG5;
 #define ONIGENC_CTYPE_ASCII    (1<<13)
 #define ONIGENC_CTYPE_ALNUM    (ONIGENC_CTYPE_ALPHA | ONIGENC_CTYPE_DIGIT)
 
-
 #define enc_len(enc,p)                ONIGENC_MBC_ENC_LEN(enc,p)
 
 #define ONIGENC_IS_UNDEF(enc)          ((enc) == ONIG_ENCODING_UNDEF)
@@ -275,7 +282,7 @@ ONIG_EXTERN OnigEncodingType OnigEncodingBIG5;
         onigenc_get_left_adjust_char_head(enc, start, s)
 #define ONIGENC_GET_ALL_PAIR_AMBIG_CODES(enc, ambig_flag, acs)    0
 #define ONIGENC_GET_ALL_COMP_AMBIG_CODES(enc, ambig_flag, acs)    0
-#define ONIGENC_GET_CTYPE_CODE_RANGE(enc,ctype,nsb,nmb,sbr,mbr) \
+#define ONIGENC_GET_CTYPE_CODE_RANGE(enc,ctype,sbr,mbr) \
         ONIG_NO_SUPPORT_CONFIG
 #define ONIGENC_MBC_ENC_LEN(enc,p)            m17n_mbclen(enc,(int )(*p))
 #define ONIGENC_MBC_MAXLEN(enc)               m17n_mbmaxlen(enc)
@@ -390,8 +397,8 @@ int onigenc_is_allowed_reverse_match P_((OnigEncoding enc, UChar* s, UChar* end)
 #define ONIGENC_IS_CODE_WORD(enc,code) \
         ONIGENC_IS_CODE_CTYPE(enc,code,ONIGENC_CTYPE_WORD)
 
-#define ONIGENC_GET_CTYPE_CODE_RANGE(enc,ctype,nsb,nmb,sbr,mbr) \
-        (enc)->get_ctype_code_range(ctype,nsb,nmb,sbr,mbr)
+#define ONIGENC_GET_CTYPE_CODE_RANGE(enc,ctype,sbr,mbr) \
+        (enc)->get_ctype_code_range(ctype,sbr,mbr)
 
 ONIG_EXTERN
 UChar* onigenc_step_back P_((OnigEncoding enc, UChar* start, UChar* s, int n));
@@ -600,7 +607,7 @@ ONIG_EXTERN OnigSyntaxType*   OnigDefaultSyntax;
 #define ONIGERR_END_PATTERN_AT_LEFT_BRACKET                  -101
 #define ONIGERR_EMPTY_CHAR_CLASS                             -102
 #define ONIGERR_PREMATURE_END_OF_CHAR_CLASS                  -103
-#define ONIGERR_END_PATTERN_AT_BACKSLASH                     -104
+#define ONIGERR_END_PATTERN_AT_ESCAPE                        -104
 #define ONIGERR_END_PATTERN_AT_META                          -105
 #define ONIGERR_END_PATTERN_AT_CONTROL                       -106
 #define ONIGERR_META_CODE_SYNTAX                             -108

@@ -4,7 +4,7 @@
   regparse.h -  Oniguruma (regular expression library)
 **********************************************************************/
 /*-
- * Copyright (c) 2002-2004  K.Kosako  <kosako AT sofnec DOT co DOT jp>
+ * Copyright (c) 2002-2005  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -95,8 +95,6 @@
 #define BACKREFS_P(br) \
   (IS_NOT_NULL((br)->back_dynamic) ? (br)->back_dynamic : (br)->back_static);
 
-#define CCLASS_SET_NOT(cc)      (cc)->not = 1
-
 #define NQ_TARGET_ISNOT_EMPTY     0
 #define NQ_TARGET_IS_EMPTY        1
 #define NQ_TARGET_IS_EMPTY_MEM    2
@@ -111,11 +109,14 @@ typedef struct {
   UChar  buf[NODE_STR_BUF_SIZE];
 } StrNode;
 
+/* move to regint.h */
+#if 0
 typedef struct {
-  int    not;
+  int    flags;
   BitSet bs;
   BBuf*  mbuf;     /* multi-byte info or NULL */
 } CClassNode;
+#endif
 
 typedef struct {
   int state;
@@ -279,6 +280,15 @@ typedef struct {
 #define IS_SYNTAX_OP(syn, opm)    (((syn)->op  & (opm)) != 0)
 #define IS_SYNTAX_OP2(syn, opm)   (((syn)->op2 & (opm)) != 0)
 #define IS_SYNTAX_BV(syn, bvm)    (((syn)->behavior & (bvm)) != 0)
+
+
+#ifdef USE_NAMED_GROUP
+typedef struct {
+  int new_val;
+} GroupNumRemap;
+
+extern int    onig_renumber_name_table P_((regex_t* reg, GroupNumRemap* map));
+#endif
 
 extern int    onig_is_code_in_cc P_((OnigEncoding enc, OnigCodePoint code, CClassNode* cc));
 extern int    onig_strncmp P_((UChar* s1, UChar* s2, int n));
