@@ -3421,6 +3421,7 @@ rb_w32_close(int fd)
 	UnlockFile((HANDLE)sock, 0, 0, LK_LEN, LK_LEN);
 	return _close(fd);
     }
+    _set_osfhnd(fd, (SOCKET)INVALID_HANDLE_VALUE);
     if (closesocket(sock) == SOCKET_ERROR) {
 	errno = map_errno(WSAGetLastError());
 	return -1;

@@ -1,3 +1,7 @@
+Tue Dec 14 17:08:15 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_close): need to reset osfhnd().
+
 Tue Dec 14 14:03:57 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl.c (ossl_raise): avoid buffer overrun.
