@@ -424,7 +424,7 @@ status:
       options["type"].concat( options.delete("charset") )
     end
 
-    options.delete("nph") if MOD_RUBY
+    options.delete("nph") if defined?(MOD_RUBY)
     if options.delete("nph") or /IIS/n.match(env_table['SERVER_SOFTWARE'])
       buf.concat( (env_table["SERVER_PROTOCOL"] or "HTTP/1.0")  + " " )
       buf.concat( (HTTP_STATUS[options["status"]] or
