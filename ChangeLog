@@ -1,3 +1,11 @@
+Tue Jul 30 17:21:13 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* misc/ruby-mode.el (ruby-accurate-end-of-block): incomplete block
+	  caused infinite loop.
+
+	* misc/ruby-mode.el (ruby-parse-partial): returns nil unless
+	  delimiters found.
+
 Tue Jul 30 15:24:07 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/tcltklib/stubs.c (ruby_tcltk_stubs): win32_getenv returns

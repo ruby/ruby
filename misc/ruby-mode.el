@@ -171,9 +171,10 @@ Also ignores spaces after parenthesis when 'space.")
 (defun ruby-imenu-create-index ()
   (nreverse (ruby-imenu-create-index-in-block nil (point-min) nil)))
 
-(defun ruby-accurate-end-of-block ()
+(defun ruby-accurate-end-of-block (&optional end)
   (let (state)
-    (while (>= (nth 2 (setq state (apply 'ruby-parse-partial end state))) 0))))
+    (while (and (setq state (apply 'ruby-parse-partial end state))
+		(>= (nth 2 state) 0)))))
 
 (defun ruby-mode-variables ()
   (set-syntax-table ruby-mode-syntax-table)
@@ -482,8 +483,8 @@ The variable ruby-indent-level controls the amount of indentation.
        (t
 	(error (format "bad string %s"
 		       (buffer-substring (point) pnt)
-		       ))))))
-  (list in-string nest depth pcol))
+		       )))))
+    (list in-string nest depth pcol)))
 
 (defun ruby-parse-region (start end)
   (let (state)
