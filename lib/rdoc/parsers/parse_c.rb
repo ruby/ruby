@@ -165,6 +165,7 @@ module RDoc
       do_classes
       do_methods
       do_includes
+      do_aliases
       @top_level
     end
 
@@ -317,6 +318,19 @@ module RDoc
         
         handle_method("method", "rb_mFileTest", meth_name, meth_body, param_count)
         handle_method("singleton_method", "rb_cFile", meth_name, meth_body, param_count)
+      end
+   end
+
+    ############################################################
+    
+    def do_aliases
+      @body.scan(%r{rb_define_alias\(\s*(\w+),\s*"([^"]+)",\s*"([^"]+)"\s*\)}m) do
+        |var_name, new_name, old_name|
+        @stats.num_methods += 1
+        class_name = @known_classes[var_name] || var_name
+        class_obj  = find_class(var_name, class_name)
+
+        class_obj.add_alias(Alias.new("", old_name, new_name, ""))
       end
    end
 
