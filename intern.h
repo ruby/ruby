@@ -101,7 +101,6 @@ void rb_undef _((VALUE, ID));
 void rb_define_protected_method _((VALUE, const char*, VALUE (*)(ANYARGS), int));
 void rb_define_private_method _((VALUE, const char*, VALUE (*)(ANYARGS), int));
 void rb_define_singleton_method _((VALUE,const char*,VALUE(*)(ANYARGS),int));
-void rb_define_private_method _((VALUE,const char*,VALUE(*)(ANYARGS),int));
 VALUE rb_singleton_class _((VALUE));
 /* enum.c */
 VALUE rb_enum_length _((VALUE));
