@@ -144,6 +144,22 @@ module Logging
       @log = nil
     end
   end
+  
+  def self::postpone
+    tmplog = "mkmftmp.log"
+    open do
+      log, *save = @log, @logfile, @orgout, @orgerr
+      @log, @logfile, @orgout, @orgerr = nil, tmplog, log, log
+      begin
+        log.print(open {yield})
+        @log.close
+        File::open(tmplog) {|t| FileUtils.copy_stream(t, log)}
+      ensure
+        @log, @logfile, @orgout, @orgerr = log, *save
+        rm_f tmplog
+      end
+    end
+  end
 end
 
 def xsystem command
@@ -184,7 +200,7 @@ def create_tmpsrc(src)
 end
 
 def try_do(src, command)
-  src += "\n" unless /\n\z/ =~ src
+  src = src.sub(/[^\n]\z/, "\\&\n")
   create_tmpsrc(src)
   xsystem(command)
 ensure
@@ -318,7 +334,7 @@ SRC
 end
 
 def egrep_cpp(pat, src, opt="")
-  src += "\n" unless /\n\z/ =~ src
+  src = src.sub(/[^\n]\z/, "\\&\n")
   create_tmpsrc(src)
   xpopen(cpp_command('', opt)) do |f|
     if Regexp === pat
@@ -345,6 +361,7 @@ ensure
 end
 
 def macro_defined?(macro, src, opt="")
+  src = src.sub(/[^\n]\z/, "\\&\n")
   try_cpp(src + <<"SRC", opt)
 #ifndef #{macro}
 # error
@@ -418,23 +435,30 @@ def checking_for(m)
   f = caller[0][/in `(.*)'$/, 1] and f << ": " #` for vim
   m = "checking for #{m}... "
   message "%s", m
-  Logging::message "%s%s--------------------\n", f, m
-  r = yield
-  message(a = r ? "yes\n" : "no\n")
-  Logging::message "-------------------- %s\n", a
+  a = r = nil
+  Logging::postpone do
+    r = yield
+    a = r ? "yes\n" : "no\n"
+    "#{f}#{m}-------------------- #{a}\n"
+  end
+  message(a)
+  Logging::message "--------------------\n\n"
   r
 end
 
 def have_library(lib, func="main")
-  checking_for "#{func}() in -l#{lib}" do
-    libs = append_library($libs, lib)
-    if func && func != "" && COMMON_LIBS.include?(lib)
-      true
-    elsif try_func(func, libs)
-      $libs = libs
+  func &&= ((m = "#{func}() in "; func) unless func.empty?)
+  checking_for "#{m}-l#{lib}" do
+    if COMMON_LIBS.include?(lib)
       true
     else
-      false
+      libs = append_library($libs, lib)
+      if !func || try_func(func, libs)
+        $libs = libs
+        true
+      else
+        false
+      end
     end
   end
 end
@@ -630,7 +654,7 @@ def pkg_config(pkg)
     libs = `#{$PKGCONFIG} --libs-only-l #{pkg}`.chomp
     $CFLAGS += " " << cflags
     $LDFLAGS += " " << ldflags
-    $LIBS += " " << libs
+    $libs += " " << libs
     Logging::message "package configuration for %s\n", pkg
     Logging::message "cflags: %s\nldflags: %s\nlibs: %s\n\n",
                      cflags, ldflags, libs

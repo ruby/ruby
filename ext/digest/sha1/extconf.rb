@@ -12,7 +12,6 @@ dir_config("openssl")
 if !with_config("bundled-sha1") &&
     have_library("crypto") && have_header("openssl/sha.h")
   $objs << "sha1ossl.#{$OBJEXT}"
-  $libs << " -lcrypto"
 else
   $objs << "sha1.#{$OBJEXT}" << "sha1hl.#{$OBJEXT}"
 end

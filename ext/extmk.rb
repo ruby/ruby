@@ -101,10 +101,12 @@ def extmake(target)
     if $static
       $extflags ||= ""
       $extlibs ||= ""
-      $extflags += " " + $DLDFLAGS if $DLDFLAGS
-      $extflags += " " + $LDFLAGS unless $LDFLAGS == ""
-      $extlibs += " " + $libs unless $libs == ""
-      $extlibs += " " + $LOCAL_LIBS unless $LOCAL_LIBS == ""
+      $extpath ||= []
+      $extflags += " " + $DLDFLAGS unless $DLDFLAGS.empty?
+      $extflags += " " + $LDFLAGS unless $LDFLAGS.empty?
+      libs = ($libs.split+$LOCAL_LIBS.split).uniq
+      $extlibs = [$extlibs, *libs].join(" ") unless libs.empty?
+      $extpath |= $LIBPATH
     end
   ensure
     Dir.chdir dir
@@ -212,7 +214,7 @@ File::makedirs('ext')
 Dir::chdir('ext')
 
 ext_prefix = "#{$top_srcdir}/ext"
-Dir.glob("#{ext_prefix}/**/MANIFEST") do |d|
+Dir.glob("#{ext_prefix}/*/**/MANIFEST") do |d|
   d = File.dirname(d)
   d.slice!(0, ext_prefix.length + 1)
   extmake(d) or exit(1)
@@ -229,12 +231,16 @@ if $extlist.size > 0
   for s,t,i in $extlist
     f = format("%s/%s.%s", s, i, $LIBEXT)
     if File.exist?(f)
-      $extinit += "\tInit_#{i}();\n\trb_provide(\"#{t}.so\");\n"
+      $extinit += "\tinit(Init_#{i}, \"#{t}.so\");\n"
       $extobjs += "ext/#{f} "
     end
   end
 
-  src = "void Init_ext() {\n#$extinit}\n"
+  src = <<SRC
+extern char *ruby_sourcefile, *rb_source_filename();
+#define init(func, name) (ruby_sourcefile = src = rb_source_filename(name), func(), rb_provide(src))
+void Init_ext() {\n\tchar* src;\n#$extinit}
+SRC
   if !modified?("extinit.c", MTIMES) || IO.read("extinit.c") != src
     open("extinit.c", "w") {|f| f.print src}
   end
@@ -243,6 +249,8 @@ if $extlist.size > 0
   if RUBY_PLATFORM =~ /m68k-human|beos/
     $extlibs.gsub!("-L/usr/local/lib", "") if $extlibs
   end
+  $extpath.delete("$(topdir)")
+  $extflags = libpathflag($extpath) << " " << $extflags.strip
   conf = [
     ['SETUP', $setup], ['EXTOBJS', $extobjs],
     ['EXTLIBS', $extlibs], ['EXTLDFLAGS', $extflags]

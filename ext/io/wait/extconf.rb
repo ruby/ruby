@@ -1,7 +1,7 @@
 require 'mkmf'
 target = "io/wait"
 
-unless /djgpp|mswin|mingw|human/ =~ RUBY_PLATFORM
+unless macro_defined?("DOSISH", "#include <ruby.h>")
   fionread = %w[sys/ioctl.h sys/filio.h].find do |h|
     checking_for("FIONREAD") {macro_defined?("FIONREAD", "#include <#{h}>\n")}
   end
