@@ -1,3 +1,8 @@
+Sat Oct 12 23:44:11 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* win32/win32.c (rb_w32_putc): wrong condition to fill or flush on
+	  bccwin32.  [ruby-win32:408]
+
 Fri Oct 11 06:05:30 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* win32/win32.c (rb_w32_fclose, rb_w32_close): use closesocket()
