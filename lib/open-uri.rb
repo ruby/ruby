@@ -163,6 +163,7 @@ module OpenURI
 
   class Redirect < StandardError # :nodoc:
     def initialize(uri)
+      super("redirection to #{uri.to_s}")
       @uri = uri
     end
     attr_reader :uri
@@ -271,10 +272,20 @@ module OpenURI
 
     # returns a charset parameter in Content-Type field.
     # It is downcased for canonicalization.
+    #
+    # If charset parameter is not given but a block is given,
+    # the block is called and its result is returned.
+    # It can be used to guess charset.
+    #
+    # If charset parameter and block is not given,
+    # nil is returned except text type in HTTP.
+    # In that case, "iso-8859-1" is returned as defined by RFC2616 3.7.1.
     def charset
       type, *parameters = content_type_parse
       if pair = parameters.assoc('charset')
         pair.last.downcase
+      elsif block_given?
+        yield
       elsif type && %r{\Atext/} =~ type &&
             @base_uri && @base_uri.scheme == 'http'
         "iso-8859-1" # RFC2616 3.7.1

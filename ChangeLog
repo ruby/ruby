@@ -1,3 +1,11 @@
+Thu May 15 18:44:31 2003  Tanaka Akira  <akr@m17n.org>
+
+        * lib/open-uri.rb (OpenURI::Redirect#initialize): call super to
+          initialize mesg.
+
+        * lib/open-uri.rb (OpenURI::Meta#charset): call block to guess charset
+          if block is given and charset is not given.
+
 Thu May 15 16:55:16 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c (rb_mod_le): returns nil if two classes/modules are not
