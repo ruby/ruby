@@ -197,8 +197,13 @@ TkCore::INTERP.add_tk_procs('rb_var', 'args', <<-'EOL')
     @id
   end
 
+  def ref(*idxs)
+    "#{@id}(#{idxs.collect{|idx| _get_eval_string(idx)}.join(',')})"
+  end
+
   def is_hash?
     #ITNERP._eval("global #{@id}; array exist #{@id}") == '1'
+    INTERP._invoke_without_enc('global', @id)
     INTERP._invoke_without_enc('array', 'exist', @id) == '1'
   end
 
@@ -211,6 +216,7 @@ TkCore::INTERP.add_tk_procs('rb_var', 'args', <<-'EOL')
       fail RuntimeError, 'cannot get keys from a scalar variable'
     end
     #tk_split_simplelist(INTERP._eval("global #{@id}; array get #{@id}"))
+    INTERP._invoke_without_enc('global', @id)
     tk_split_simplelist(INTERP._fromUTF8(INTERP._invoke_without_enc('array', 'names', @id)))
   end
 
@@ -242,6 +248,7 @@ if USE_TCLs_SET_VARIABLE_FUNCTIONS
 
   def value
     #if INTERP._eval("global #{@id}; array exist #{@id}") == '1'
+    INTERP._invoke_without_enc('global', @id)
     if INTERP._invoke('array', 'exist', @id) == '1'
       #Hash[*tk_split_simplelist(INTERP._eval("global #{@id}; array get #{@id}"))]
       Hash[*tk_split_simplelist(INTERP._invoke('array', 'get', @id))]
@@ -277,16 +284,21 @@ if USE_TCLs_SET_VARIABLE_FUNCTIONS
     end
   end
 
-  def [](index)
+  def [](*idxs)
+    index = idxs.collect{|idx| _get_eval_string(idx, true)}.join(',')
+    _fromUTF8(INTERP._get_global_var2(@id, index))
     #_fromUTF8(INTERP._get_global_var2(@id, _toUTF8(_get_eval_string(index))))
-    _fromUTF8(INTERP._get_global_var2(@id, _get_eval_string(index, true)))
+    #_fromUTF8(INTERP._get_global_var2(@id, _get_eval_string(index, true)))
   end
 
-  def []=(index,val)
+  def []=(*args)
+    val = args.pop
+    index = args.collect{|idx| _get_eval_string(idx, true)}.join(',')
+    _fromUTF8(INTERP._set_global_var2(@id, index, _get_eval_string(val, true)))
     #_fromUTF8(INTERP._set_global_var2(@id, _toUTF8(_get_eval_string(index)), 
     #				      _toUTF8(_get_eval_string(val))))
-    _fromUTF8(INTERP._set_global_var2(@id, _get_eval_string(index, true), 
-				      _get_eval_string(val, true)))
+    #_fromUTF8(INTERP._set_global_var2(@id, _get_eval_string(index, true), 
+    #				      _get_eval_string(val, true)))
   end
 
   def unset(elem=nil)
@@ -371,16 +383,22 @@ else
     end
   end
 
-  def [](index)
-    INTERP._eval(Kernel.format('global %s; set %s(%s)', 
-                               @id, @id, _get_eval_string(index)))
+  def [](*idxs)
+    index = idxs.collect{|idx| _get_eval_string(idx)}.join(',')
+    INTERP._eval(Kernel.format('global %s; set %s(%s)', @id, @id, index))
+    #INTERP._eval(Kernel.format('global %s; set %s(%s)', 
+    #                           @id, @id, _get_eval_string(index)))
     #INTERP._eval(Kernel.format('set %s(%s)', @id, _get_eval_string(index)))
     #INTERP._eval('set ' + @id + '(' + _get_eval_string(index) + ')')
   end
 
-  def []=(index,val)
+  def []=(*args)
+    val = args.pop
+    index = args.collect{|idx| _get_eval_string(idx)}.join(',')
     INTERP._eval(Kernel.format('global %s; set %s(%s) %s', @id, @id, 
-                              _get_eval_string(index), _get_eval_string(val)))
+                              index, _get_eval_string(val)))
+    #INTERP._eval(Kernel.format('global %s; set %s(%s) %s', @id, @id, 
+    #                          _get_eval_string(index), _get_eval_string(val)))
     #INTERP._eval(Kernel.format('set %s(%s) %s', @id, 
     #			       _get_eval_string(index), _get_eval_string(val)))
     #INTERP._eval('set ' + @id + '(' + _get_eval_string(index) + ') ' + 
@@ -869,6 +887,7 @@ class TkVarAccess<TkVariable
 
   def self.new_hash(name, *args)
     return TkVar_ID_TBL[name] if TkVar_ID_TBL[name]
+    INTERP._invoke_without_enc('global', name)
     if args.empty? && INTERP._invoke_without_enc('array', 'exist', name) == '0'
       self.new(name, {})  # force creating
     else

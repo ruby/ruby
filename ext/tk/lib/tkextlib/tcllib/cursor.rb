@@ -7,17 +7,24 @@
 #
 
 require 'tk'
-
-# call setup script for general 'tkextlib' libraries
-require 'tkextlib/setup.rb'
-
-# call setup script
-require File.join(File.dirname(File.expand_path(__FILE__)), 'setup.rb')
+require 'tkextlib/tcllib.rb'
 
 # TkPackage.require('cursor', '0.1')
 TkPackage.require('cursor')
 
 module Tk
+  module Tcllib
+    module Cursor
+      def self.package_version
+	begin
+	  TkPackage.require('ipentry')
+	rescue
+	  ''
+	end
+      end
+    end
+  end
+
   def self.cursor_display(parent=None)
     # Pops up a dialog with a listbox containing all the cursor names. 
     # Selecting a cursor name will display it in that dialog. 

@@ -5,16 +5,24 @@
 
 require 'tk'
 
+# call setup script for general 'tkextlib' libraries
+require 'tkextlib/setup.rb'
+
 # call setup script
-require File.join(File.dirname(File.expand_path(__FILE__)), 'setup.rb')
+require 'tkextlib/treectrl/setup.rb'
 
 # TkPackage.require('treectrl', '1.0')
-#TkPackage.require('treectrl')
+TkPackage.require('treectrl')
 
 module Tk
   class TreeCtrl_Widget < TkWindow
-    #VERSION =  TkPackage.require('treectrl', '1.0')
-    VERSION = TkPackage.require('treectrl')
+    def self.package_version
+      begin
+	TkPackage.require('treectrl')
+      rescue
+	''
+      end
+    end
 
     class NotifyEvent < TkUtil::CallbackSubst
     end
@@ -311,6 +319,12 @@ class Tk::TreeCtrl_Widget
   TkCommandNames = ['treectrl'.freeze].freeze
   WidgetClassName = ''.freeze
   WidgetClassNames[WidgetClassName] = self
+
+  def install_bind(cmd, *args)
+    install_bind_for_event_class(Tk::TreeCtrl_Widget::NotifyEvent, cmd, *args)
+  end
+
+  #########################
 
   def create_self(keys)
     if keys and keys != None

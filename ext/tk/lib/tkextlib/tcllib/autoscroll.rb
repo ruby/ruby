@@ -26,17 +26,24 @@
 
 require 'tk'
 require 'tk/scrollbar'
-
-# call setup script for general 'tkextlib' libraries
-require 'tkextlib/setup.rb'
-
-# call setup script
-require File.join(File.dirname(File.expand_path(__FILE__)), 'setup.rb')
+require 'tkextlib/tcllib.rb'
 
 # TkPackage.require('autoscroll', '1.0')
 TkPackage.require('autoscroll')
 
 module Tk
+  module Tcllib
+    module Autoscroll
+      def self.package_version
+	begin
+	  TkPackage.require('autoscroll')
+	rescue
+	  ''
+	end
+      end
+    end
+  end
+
   module Scrollable
     def autoscroll(mode = nil)
       case mode

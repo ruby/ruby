@@ -162,8 +162,11 @@ class TkDialog2 < TkWindow
     #	       @path+" "+@title+" {#{@message}} "+@bitmap+" "+
     #	       String(default_button)+" "+@buttons.join(' ')+']}')
     Tk.ip_eval(@config)
-    @val = Tk.ip_eval('tk_dialog ' + @path + ' ' + @title + 
-		      ' {' + @message + '} ' + @bitmap + ' ' + 
+    # @val = Tk.ip_eval('tk_dialog ' + @path + ' ' + @title + 
+    #		      ' {' + @message + '} ' + @bitmap + ' ' + 
+    #		      String(default_button) + ' ' + @buttons.join(' ')).to_i
+    @val = Tk.ip_eval(self.class::TkCommandNames[0] + ' ' + @path + ' ' + 
+		      @title + ' {' + @message + '} ' + @bitmap + ' ' + 
 		      String(default_button) + ' ' + @buttons.join(' ')).to_i
   end
 

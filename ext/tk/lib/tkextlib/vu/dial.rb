@@ -13,7 +13,7 @@ module Tk
 end
 
 # call setup script  --  <libdir>/tkextlib/vu.rb
-require(File.dirname(File.expand_path(__FILE__)) + '.rb')
+require 'tkextlib/vu.rb'
 
 # define module/class
 class Tk::Vu::Dial < TkWindow

@@ -7,18 +7,21 @@
 #
 
 require 'tk'
-
-# call setup script for general 'tkextlib' libraries
-require 'tkextlib/setup.rb'
-
-# call setup script
-require File.join(File.dirname(File.expand_path(__FILE__)), 'setup.rb')
+require 'tkextlib/tcllib.rb'
 
 # TkPackage.require('style', '0.1')
 TkPackage.require('style')
 
 module Tk
   module Style
+    def self.package_version
+      begin
+	TkPackage.require('style')
+      rescue
+	''
+      end
+    end
+
     def self.names
       tk_split_simplelist(tk_call('style::names'))
     end

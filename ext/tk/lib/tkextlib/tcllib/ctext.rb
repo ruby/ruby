@@ -8,12 +8,7 @@
 
 require 'tk'
 require 'tk/text'
-
-# call setup script for general 'tkextlib' libraries
-require 'tkextlib/setup.rb'
-
-# call setup script
-require File.join(File.dirname(File.expand_path(__FILE__)), 'setup.rb')
+require 'tkextlib/tcllib.rb'
 
 # TkPackage.require('ctext', '3.1')
 TkPackage.require('ctext')
@@ -21,6 +16,13 @@ TkPackage.require('ctext')
 module Tk
   module Tcllib
     class CText < TkText
+      def self.package_version
+	begin
+	  TkPackage.require('ctext')
+	rescue
+	  ''
+	end
+      end
     end
   end
 end

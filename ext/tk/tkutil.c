@@ -721,17 +721,30 @@ tk_conv_args(argc, argv, self)
     VALUE *argv;
     VALUE self;
 {
-    int idx;
+    int idx, size;
     volatile VALUE dst;
-    volatile VALUE head, enc_flag, rest;
 
     if (argc < 2) {
       rb_raise(rb_eArgError, "too few arguments");
     }
-    dst = rb_ary_new2(argc - 2);
+    for(size = 0, idx = 2; idx < argc; idx++) {
+	if (TYPE(argv[idx]) == T_HASH) {
+	    size += 2 * RHASH(argv[idx])->tbl->num_entries;
+	} else {
+	    size++;
+	}
+    }
+    /* dst = rb_ary_new2(argc - 2); */
+    dst = rb_ary_new2(size);
     RARRAY(dst)->len = 0;
     for(idx = 2; idx < argc; idx++) {
-	if (argv[idx] != TK_None) {
+	if (TYPE(argv[idx]) == T_HASH) {
+	    if (RTEST(argv[1])) {
+		hash2kv_enc(argv[idx], dst, self);
+	    } else {
+		hash2kv(argv[idx], dst, self);
+	    }
+	} else if (argv[idx] != TK_None) {
 	    RARRAY(dst)->ptr[RARRAY(dst)->len++] 
 		= get_eval_string_core(argv[idx], argv[1], self);
 	}
@@ -945,6 +958,16 @@ cbsubst_initialize(argc, argv, self)
     return self;
 }
 
+
+static VALUE
+cbsubst_ret_val(self, val)
+    VALUE self;
+    VALUE val;
+{
+    return val;
+}
+
+
 static VALUE
 cbsubst_get_subst_key(self, str)
     VALUE self;
@@ -1072,6 +1095,13 @@ cbsubst_table_setup(self, key_inf, proc_inf)
 }
 
 static VALUE
+cbsubst_get_extra_args_tbl(self)
+    VALUE self;
+{
+  return rb_ary_new();
+}
+
+static VALUE
 cbsubst_scan_args(self, arg_key, val_ary)
     VALUE self;
     VALUE arg_key;
@@ -1178,6 +1208,7 @@ Init_tkutil()
     rb_define_singleton_method(cSUBST_INFO, "inspect", substinfo_inspect, 0);
 
     ID_SUBST_INFO = rb_intern("SUBST_INFO");
+    rb_define_singleton_method(cCB_SUBST, "ret_val", cbsubst_ret_val, 1);
     rb_define_singleton_method(cCB_SUBST, "scan_args", cbsubst_scan_args, 2);
     rb_define_singleton_method(cCB_SUBST, "_get_subst_key", 
 			       cbsubst_get_subst_key,  1);
@@ -1185,6 +1216,8 @@ Init_tkutil()
 			       cbsubst_get_all_subst_keys,  0);
     rb_define_singleton_method(cCB_SUBST, "_setup_subst_table", 
 			       cbsubst_table_setup, 2);
+    rb_define_singleton_method(cCB_SUBST, "_get_extra_args_tbl", 
+			       cbsubst_get_extra_args_tbl,  0);
 
     rb_define_method(cCB_SUBST, "initialize", cbsubst_initialize, -1);
 

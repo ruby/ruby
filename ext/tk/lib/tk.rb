@@ -807,8 +807,39 @@ module TkComm
       }
     end
   end
+
+  def _bind_core_for_event_class(klass, mode, what, context, cmd, args=nil)
+    id = install_bind_for_event_class(klass, cmd, args) if cmd
+    begin
+      tk_call_without_enc(*(what + ["<#{tk_event_sequence(context)}>", 
+			      mode + id]))
+    rescue
+      uninstall_cmd(id) if cmd
+      fail
+    end
+  end
+
+  def _bind_for_event_class(klass, what, context, cmd, args=nil)
+    _bind_core_for_event_class(klass, '', what, context, cmd, args)
+  end
+
+  def _bind_append_for_event_class(klass, what, context, cmd, args=nil)
+    _bind_core_for_event_class(klass, '+', what, context, cmd, args)
+  end
+
+  def _bind_remove_for_event_class(klass, what, context)
+    _bind_remove(what, context)
+  end
+
+  def _bindinfo_for_event_class(klass, what, context=nil)
+    _bindinfo(what, context)
+  end
+
   private :tk_event_sequence
   private :_bind_core, :_bind, :_bind_append, :_bind_remove, :_bindinfo
+  private :_bind_core_for_event_class, :_bind_for_event_class, 
+          :_bind_append_for_event_class, :_bind_remove_for_event_class, 
+          :_bindinfo_for_event_class
 
   def bind(tagOrClass, context, cmd=Proc.new, args=nil)
     _bind(["bind", tagOrClass], context, cmd, args)
@@ -1437,28 +1468,34 @@ module Tk
   def Tk.const_missing(sym)
     case(sym)
     when :TCL_LIBRARY
+      INTERP._invoke_without_enc('global', 'tcl_library')
       INTERP._invoke("set", "tcl_library").freeze
 
     when :TK_LIBRARY
+      INTERP._invoke_without_enc('global', 'tk_library')
       INTERP._invoke("set", "tk_library").freeze
 
     when :LIBRARY
       INTERP._invoke("info", "library").freeze
 
     #when :PKG_PATH, :PACKAGE_PATH, :TCL_PACKAGE_PATH
+    #  INTERP._invoke_without_enc('global', 'tcl_pkgPath')
     #  tk_split_simplelist(INTERP._invoke('set', 'tcl_pkgPath'))
 
     #when :LIB_PATH, :LIBRARY_PATH, :TCL_LIBRARY_PATH
+    #  INTERP._invoke_without_enc('global', 'tcl_libPath')
     #  tk_split_simplelist(INTERP._invoke('set', 'tcl_libPath'))
 
     when :PLATFORM, :TCL_PLATFORM
       if $SAFE >= 4
 	fail SecurityError, "can't get #{sym} when $SAFE >= 4"
       end
+      INTERP._invoke_without_enc('global', 'tcl_platform')
       Hash[*tk_split_simplelist(INTERP._invoke_without_enc('array', 'get', 
 							   'tcl_platform'))]
 
     when :ENV
+      INTERP._invoke_without_enc('global', 'env')
       Hash[*tk_split_simplelist(INTERP._invoke('array', 'get', 'env'))]
 
     #when :AUTO_PATH   #<=== 
@@ -1468,6 +1505,7 @@ module Tk
     #  tk_split_simplelist(INTERP._invoke('set', 'auto_oldpath'))
 
     when :AUTO_INDEX
+      INTERP._invoke_without_enc('global', 'auto_index')
       Hash[*tk_split_simplelist(INTERP._invoke('array', 'get', 'auto_index'))]
 
     when :PRIV, :PRIVATE, :TK_PRIV
@@ -1477,6 +1515,7 @@ module Tk
       else
 	var_nam = 'tkPriv'
       end
+      INTERP._invoke_without_enc('global', var_nam)
       Hash[*tk_split_simplelist(INTERP._invoke('array', 'get', 
 					       var_nam))].each{|k,v|
 	k.freeze
@@ -2302,6 +2341,15 @@ module TkConfigMethod
 
   ################################
 
+  def [](id)
+    cget(id)
+  end
+
+  def []=(id, val)
+    configure(id, val)
+    val
+  end
+
   def cget(slot)
     slot = slot.to_s
 
@@ -3031,6 +3079,7 @@ class TkObject<TkKernel
     end
   end
 
+=begin
   def [](id)
     cget(id)
   end
@@ -3039,6 +3088,7 @@ class TkObject<TkKernel
     configure(id, val)
     val
   end
+=end
 
   def event_generate(context, keys=nil)
     if keys

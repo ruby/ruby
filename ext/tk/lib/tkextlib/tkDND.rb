@@ -7,19 +7,12 @@ require 'tk'
 # call setup script for general 'tkextlib' libraries
 require 'tkextlib/setup.rb'
 
-# library directory
-dir = File.expand_path(__FILE__).sub(/#{File.extname(__FILE__)}$/, '')
-
 # call setup script
-require File.join(dir, 'setup.rb')
+require 'tkextlib/tkDND/setup.rb'
 
 module Tk
   module TkDND
-    dir = File.expand_path(__FILE__).sub(/#{File.extname(__FILE__)}$/, '')
-
-    #autoload :DND,   'tkextlib/tkDND/tkdnd'
-    #autoload :Shape, 'tkextlib/tkDND/shape'
-    autoload :DND,   File.join(dir, 'tkdnd')
-    autoload :Shape, File.join(dir, 'shape')
+    autoload :DND,   'tkextlib/tkDND/tkdnd'
+    autoload :Shape, 'tkextlib/tkDND/shape'
   end
 end

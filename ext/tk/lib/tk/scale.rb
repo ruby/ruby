@@ -10,13 +10,16 @@ class TkScale<TkWindow
 
   def create_self(keys)
     if keys and keys != None
-      if keys.key?('command')
+      if keys.key?('command') && ! keys['command'].kind_of?(String)
 	cmd = keys.delete('command')
 	keys['command'] = proc{|val| cmd.call(val.to_f)}
       end
-      tk_call_without_enc('scale', @path, *hash_kv(keys, true))
+      #tk_call_without_enc('scale', @path, *hash_kv(keys, true))
+      tk_call_without_enc(self.class::TkCommandNames[0], @path, 
+			  *hash_kv(keys, true))
     else
-      tk_call_without_enc('scale', @path)
+      #tk_call_without_enc('scale', @path)
+      tk_call_without_enc(self.class::TkCommandNames[0], @path)
     end
   end
   private :create_self

@@ -158,14 +158,14 @@ class TkToplevel<TkWindow
     }
   end
 
-  def create_self(keys)
-    if keys and keys != None
-      tk_call_without_enc('toplevel', @path, *hash_kv(keys, true))
-    else
-      tk_call_without_enc('toplevel', @path)
-    end
-  end
-  private :create_self
+  #def create_self(keys)
+  #  if keys and keys != None
+  #    tk_call_without_enc('toplevel', @path, *hash_kv(keys, true))
+  #  else
+  #    tk_call_without_enc('toplevel', @path)
+  #  end
+  #end
+  #private :create_self
 
   def specific_class
     @classname

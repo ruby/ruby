@@ -6,7 +6,7 @@ require 'tk'
 require 'tk/canvas'
 
 # call setup script  --  <libdir>/tkextlib/vu.rb
-require(File.dirname(File.expand_path(__FILE__)) + '.rb')
+require 'tkextlib/vu.rb'
 
 module Tk
   module Vu

@@ -3,12 +3,14 @@
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
 #
 require 'tk'
+require 'tkextlib/tile.rb'
 
-# call setup script for general 'tkextlib' libraries
-require 'tkextlib/setup.rb'
-
-# call setup script  --  <libdir>/tkextlib/tile.rb
-require(File.dirname(File.expand_path(__FILE__)) + '.rb')
+module Tk
+  module Tile
+    class TButton < TkButton
+    end
+  end
+end
 
 class Tk::Tile::TButton < TkButton
   include Tk::Tile::TileWidget

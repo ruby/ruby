@@ -32,7 +32,7 @@ class TkFrame<TkWindow
 
   def initialize(parent=nil, keys=nil)
     my_class_name = nil
-    if self.class < WidgetClassNames[WidgetClassName]
+    if self.class < WidgetClassNames[self.class::WidgetClassName]
       my_class_name = self.class.name
       my_class_name = nil if my_class_name == ''
     end
@@ -68,14 +68,14 @@ class TkFrame<TkWindow
     super(keys)
   end
 
-  def create_self(keys)
-    if keys and keys != None
-      tk_call_without_enc('frame', @path, *hash_kv(keys))
-    else
-      tk_call_without_enc( 'frame', @path)
-    end
-  end
-  private :create_self
+  #def create_self(keys)
+  #  if keys and keys != None
+  #    tk_call_without_enc('frame', @path, *hash_kv(keys))
+  #  else
+  #    tk_call_without_enc( 'frame', @path)
+  #  end
+  #end
+  #private :create_self
 
   def database_classname
     @classname

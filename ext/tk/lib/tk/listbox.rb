@@ -23,17 +23,18 @@ class TkListbox<TkTextWin
   WidgetClassName = 'Listbox'.freeze
   WidgetClassNames[WidgetClassName] = self
 
-  def create_self(keys)
-    if keys and keys != None
-      tk_call_without_enc('listbox', @path, *hash_kv(keys, true))
-    else
-      tk_call_without_enc('listbox', @path)
-    end
-  end
-  private :create_self
+  #def create_self(keys)
+  #  if keys and keys != None
+  #    tk_call_without_enc('listbox', @path, *hash_kv(keys, true))
+  #  else
+  #    tk_call_without_enc('listbox', @path)
+  #  end
+  #end
+  #private :create_self
 
   def tagid(id)
-    id.to_s
+    #id.to_s
+    _get_eval_string(id)
   end
 
   def activate(y)

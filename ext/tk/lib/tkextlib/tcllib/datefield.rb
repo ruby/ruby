@@ -17,12 +17,7 @@
 
 require 'tk'
 require 'tk/entry'
-
-# call setup script for general 'tkextlib' libraries
-require 'tkextlib/setup.rb'
-
-# call setup script
-require File.join(File.dirname(File.expand_path(__FILE__)), 'setup.rb')
+require 'tkextlib/tcllib.rb'
 
 # TkPackage.require('datefield', '0.1')
 TkPackage.require('datefield')
@@ -30,6 +25,13 @@ TkPackage.require('datefield')
 module Tk
   module Tcllib
     class Datefield < TkEntry
+      def self.package_version
+	begin
+	  TkPackage.require('datefield')
+	rescue
+	  ''
+	end
+      end
     end
     DateField = Datefield
   end

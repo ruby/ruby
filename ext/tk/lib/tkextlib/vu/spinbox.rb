@@ -9,7 +9,7 @@
 if (Tk::TK_MAJOR_VERSION < 8 || 
     (Tk::TK_MAJOR_VERSION == 8 && Tk::TK_MINOR_VERSION < 4))
   # call setup script  --  <libdir>/tkextlib/vu.rb
-  require(File.dirname(File.expand_path(__FILE__)) + '.rb')
+  require 'tkextlib/vu.rb'
 
   Tk.tk_call('namespace', 'import', '::vu::spinbox')
 end

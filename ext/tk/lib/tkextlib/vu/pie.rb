@@ -18,7 +18,7 @@ module Tk
 end
 
 # call setup script  --  <libdir>/tkextlib/vu.rb
-require(File.dirname(File.expand_path(__FILE__)) + '.rb')
+require 'tkextlib/vu.rb'
 
 module Tk::Vu::PieSliceConfigMethod
   include TkItemConfigMethod
@@ -46,7 +46,8 @@ class Tk::Vu::Pie < TkWindow
     if tag.kind_of?(Tk::Vu::PieSlice)
       tag.id
     else
-      tag
+      # tag
+      _get_eval_string(tag)
     end
   end
 

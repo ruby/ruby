@@ -105,6 +105,13 @@ module TkItemConfigMethod
 
   ################################################
 
+  def tagid(tagOrId)
+    # maybe need to override
+    tagOrId
+  end
+
+  ################################################
+
   def itemcget(tagOrId, option)
     option = option.to_s
 

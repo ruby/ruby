@@ -9,12 +9,20 @@ require 'tk'
 require 'tkextlib/setup.rb'
 
 # call setup script
-require File.join(File.dirname(File.expand_path(__FILE__)), 'setup.rb')
+require 'tkextlib/tkDND/setup.rb'
 
 TkPackage.require('tkdnd')
 
 module Tk
   module TkDND
+    def self.package_version
+      begin
+	TkPackage.require('tkdnd')
+      rescue
+	''
+      end
+    end
+
     class DND_Subst < TkUtil::CallbackSubst
       KEY_TBL = [
 	[ ?a, ?l, :actions ], 
@@ -49,6 +57,14 @@ module Tk
     end
 
     module DND
+      def self.version
+	begin
+	  TkPackage.require('tkdnd')
+	rescue
+	  ''
+	end
+      end
+
       def dnd_bindtarget_info(type=nil, event=nil)
 	if event
 	  procedure(tk_call('dnd', 'bindtarget', @path, type, event))
