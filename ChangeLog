@@ -1,3 +1,7 @@
+Mon Mar  7 00:01:55 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tcltklib.c: fail to call TclTkLib.mainloop when $SAFE==4
+
 Sun Mar  6 13:04:10 2005  Dee Zsombor  <zsombor@ruby-lang.org>
 
 	* misc/ruby-electric.el: added.
