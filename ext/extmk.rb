@@ -114,7 +114,7 @@ getopts('', 'extstatic', 'make:', 'make-flags:')
 $force_static = $OPT['extstatic'] == 'static'
 $make = $OPT['make'] || $make
 $mflags = Shellwords.shellwords($OPT['make-flags'] || "")
-$mflags[0].sub!(/^[^-]/, '-\&') unless $mflags.empty?
+$mflags[0].sub!(/^\w+$/, '-\&') unless $mflags.empty?
 $make, *$mflags[0, 0] = Shellwords.shellwords($make)
 
 mflags = $mflags.grep(/^-([^-].*)/) {$1}.join
