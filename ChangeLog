@@ -1,3 +1,14 @@
+Sun Jan 23 12:38:01 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* lib/soap/wsdlDriver.rb: from 1.5.3-ruby1.8.2, operation which has
+	  capitalized name (such as KeywordSearchRequest in AWS) is defined as
+	  a method having uncapitalized name. (converted with
+	  GenSupport.safemethodname to handle operation name 'foo-bar').  it
+	  introduced serious incompatibility; in the past, it was defined as a
+	  capitalized.
+
+	  define capitalized method as well under that circumstance.
+
 Sun Jan 23 05:24:42 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_ocsp.c (ossl_ocspreq_to_der): should call
