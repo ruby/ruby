@@ -1031,6 +1031,7 @@ rb_cstr_to_dbl(p, badcheck)
     char *end;
     double d;
 
+    if (!p) return 0.0;
     q = p;
     if (badcheck) {
 	while (ISSPACE(*p)) p++;
@@ -1093,15 +1094,17 @@ rb_str_to_dbl(str, badcheck)
     StringValue(str);
     s = RSTRING(str)->ptr;
     len = RSTRING(str)->len;
-    if (s[len]) {		/* no sentinel somehow */
-	char *p = ALLOCA_N(char, len+1);
+    if (s) {
+	if (s[len]) {		/* no sentinel somehow */
+	    char *p = ALLOCA_N(char, len+1);
 
-	MEMCPY(p, s, char, len);
-	p[len] = '\0';
-	s = p;
-    }
-    if (badcheck && len != strlen(s)) {
-	rb_raise(rb_eArgError, "string for Float contains null byte");
+	    MEMCPY(p, s, char, len);
+	    p[len] = '\0';
+	    s = p;
+	}
+	if (badcheck && len != strlen(s)) {
+	    rb_raise(rb_eArgError, "string for Float contains null byte");
+	}
     }
     return rb_cstr_to_dbl(s, badcheck);
 }

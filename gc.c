@@ -991,7 +991,7 @@ gc_sweep()
 	    }
 	}
     }
-    for (i = j = 0; j < heaps_used; i++) {
+    for (i = j = 1; j < heaps_used; i++) {
 	if (heaps_limits[i] == 0) {
 	    free(heaps[i]);
 	    heaps_used--;

@@ -476,6 +476,11 @@ All arguments named KEY is case-insensitive.
 : self[ key ] = val
     sets the header field corresponding to the case-insensitive key.
 
+: fetch( key [,default] )
+
+    returns the header field corresponding to the case-insensitive key.
+    returns the default value if there's no header field named key.
+
 : key?( key )
     true if key exists.
     KEY is case insensitive.
@@ -921,6 +926,10 @@ module Net
 
     def delete( key )
       @header.delete key.downcase
+    end
+
+    def fetch(*args)
+      @header.fetch(*args)
     end
 
     def key?( key )

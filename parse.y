@@ -282,11 +282,12 @@ static void top_local_setup();
  *	precedence table
  */
 
-%left  kIF_MOD kUNLESS_MOD kWHILE_MOD kUNTIL_MOD kRESCUE_MOD
+%left  kIF_MOD kUNLESS_MOD kWHILE_MOD kUNTIL_MOD
 %left  kOR kAND
 %right kNOT
 %nonassoc kDEFINED
 %right '=' tOP_ASGN
+%left kRESCUE_MOD
 %right '?' ':'
 %nonassoc tDOT2 tDOT3
 %left  tOROP
@@ -422,10 +423,6 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			else {
 			    $$ = NEW_UNTIL(cond($3), $1, 1);
 			}
-		    }
-		| stmt kRESCUE_MOD stmt
-		    {
-			$$ = NEW_RESCUE($1, NEW_RESBODY(0,$3,0), 0);
 		    }
 		| klBEGIN
 		    {
@@ -1038,6 +1035,10 @@ arg		: lhs '=' arg
 		| arg tOROP arg
 		    {
 			$$ = logop(NODE_OR, $1, $3);
+		    }
+		| arg kRESCUE_MOD arg
+		    {
+			$$ = NEW_RESCUE($1, NEW_RESBODY(0,$3,0), 0);
 		    }
 		| kDEFINED opt_nl {in_defined = 1;} arg
 		    {

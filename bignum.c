@@ -319,6 +319,10 @@ rb_cstr_to_inum(str, base, badcheck)
     VALUE z;
     BDIGIT *zds;
 
+    if (!str) {
+	if (badcheck) goto bad;
+	return INT2FIX(0);
+    }
     if (badcheck) {
 	while (ISSPACE(*str)) str++;
     }
@@ -501,16 +505,18 @@ rb_str_to_inum(str, base, badcheck)
 
     StringValue(str);
     s = RSTRING(str)->ptr;
-    len = RSTRING(str)->len;
-    if (s[len]) {		/* no sentinel somehow */
-	char *p = ALLOCA_N(char, len+1);
+    if (s) {
+	len = RSTRING(str)->len;
+	if (s[len]) {		/* no sentinel somehow */
+	    char *p = ALLOCA_N(char, len+1);
 
-	MEMCPY(p, s, char, len);
-	p[len] = '\0';
-	s = p;
-    }
-    if (badcheck && len != strlen(s)) {
-	rb_raise(rb_eArgError, "string for Integer contains null byte");
+	    MEMCPY(p, s, char, len);
+	    p[len] = '\0';
+	    s = p;
+	}
+	if (badcheck && len != strlen(s)) {
+	    rb_raise(rb_eArgError, "string for Integer contains null byte");
+	}
     }
     return rb_cstr_to_inum(s, base, badcheck); 
 }

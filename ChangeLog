@@ -17,10 +17,27 @@ Wed Oct 16 13:36:29 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* variable.c (rb_alias_variable): ditto.
 
+Wed Oct 16 01:03:54 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_str_to_dbl): RString ptr might be NULL.
+
+	* object.c (rb_cstr_to_dbl): p pointer might be NULL.
+
+	* bignum.c (rb_str_to_inum): RString ptr might be NULL.
+
+	* bignum.c (rb_cstr_to_inum): str pointer might be NULL.
+
 Sat Oct 12 23:44:11 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* win32/win32.c (rb_w32_putc): wrong condition to fill or flush on
 	  bccwin32.  [ruby-win32:408]
+
+Fri Oct 11 15:58:06 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (arg): rescue modifier is now an operator with
+	  precedence right below assignments. i.e. "a = b rescue c" now
+	  parsed as "a = (b rescue c)", not as "(a = b) rescue c". [new]
+	  [experimental]
 
 Fri Oct 11 06:05:30 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
