@@ -1,3 +1,17 @@
+Mon Dec  6 17:15:17 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/socket/test_socket.rb (TestBasicSocket#test_setsockopt):
+	  BasicSocket#setsockopt dumps core.  [ruby-dev:25039]
+
+	* test/socket/test_tcp.rb (TestTCPSocket#test_recvfrom):
+	  TCPSocket#recvfrom dumps core.  [ruby-dev:24705]
+
+	* test/socket/test_udp.rb (TestUDPSocket#test_connect):
+	  UDPSocket#connect dumps core.  [ruby-dev:25045]
+
+	* test/socket/test_udp.rb (TestUDPSocket#test_bind):
+	  UDPSocket#bind dumps core.  [ruby-dev:25057]
+
 Mon Dec  6 01:32:31 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_pkey_rsa.c (ossl_rsa_public_encrypt,
