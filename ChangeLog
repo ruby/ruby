@@ -1,3 +1,11 @@
+Sat Dec 25 04:23:49 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb (mkdir, mkdir_p): should ensure directory
+	  permission. (backportted from HEAD, 1.47)
+
+	* lib/fileutils.rb (traverse, remove_dir): untaint trasted
+	  objects. (backportted from HEAD, 1.46)
+
 Fri Dec 24 23:51:48 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* bcc32/Makefile.sub: bcc32 should use RTL dll (backport from HEAD)

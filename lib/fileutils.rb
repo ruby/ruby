@@ -73,7 +73,6 @@
 # <tt>:verbose</tt> flags to methods in FileUtils.
 # 
 
-
 module FileUtils
 
   # All methods are module_function.
@@ -148,9 +147,8 @@ module FileUtils
     fu_output_message "mkdir #{options[:mode] ? ('-m %03o ' % options[:mode]) : ''}#{list.join ' '}" if options[:verbose]
     return if options[:noop]
 
-    mode = options[:mode] || (0777 & ~File.umask)
     list.each do |dir|
-      Dir.mkdir dir.sub(%r</\z>, ''), mode
+      fu_mkdir dir, options[:mode]
     end
   end
 
@@ -176,11 +174,10 @@ module FileUtils
     fu_output_message "mkdir -p #{options[:mode] ? ('-m %03o ' % options[:mode]) : ''}#{list.join ' '}" if options[:verbose]
     return *list if options[:noop]
 
-    mode = options[:mode] || (0777 & ~File.umask)
     list.map {|path| path.sub(%r</\z>, '') }.each do |path|
       # optimize for the most common case
       begin
-        Dir.mkdir path, mode
+        fu_mkdir path, options[:mode]
         next
       rescue SystemCallError
         next if File.directory?(path)
@@ -193,7 +190,7 @@ module FileUtils
       end
       stack.reverse_each do |path|
         begin
-          Dir.mkdir path, mode
+          fu_mkdir path, options[:mode]
         rescue SystemCallError => err
           raise unless File.directory?(path)
         end
@@ -205,6 +202,17 @@ module FileUtils
 
   alias mkpath    mkdir_p
   alias makedirs  mkdir_p
+
+  def fu_mkdir(path, mode)
+    path = path.sub(%r</\z>, '')
+    if mode
+      Dir.mkdir path, mode
+      File.chmod mode, path
+    else
+      Dir.mkdir path
+    end
+  end
+  private :fu_mkdir
 
 
   #
@@ -385,7 +393,7 @@ module FileUtils
       if st.directory? and (deref or not st.symlink?)
         stack.concat Dir.entries("#{prefix}/#{rel}")\
                          .reject {|ent| ent == '.' or ent == '..' }\
-                         .map {|ent| "#{rel}/#{ent}" }.reverse
+                         .map {|ent| "#{rel}/#{ent.untaint}" }.reverse
       end
       yield rel, deref, st
       deref = false
@@ -692,8 +700,8 @@ module FileUtils
 
   def remove_dir(dir, force = false) #:nodoc:
     Dir.foreach(dir) do |file|
-      next if /\A\.\.?\z/ === file
-      path = "#{dir}/#{file}"
+      next if /\A\.\.?\z/ =~ file
+      path = "#{dir}/#{file.untaint}"
       if File.symlink?(path)
         remove_file path, force
       elsif File.directory?(path)
