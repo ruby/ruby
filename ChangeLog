@@ -1,3 +1,11 @@
+Mon May 10 16:45:21 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (eval): warning during eval should not cause deadlock.
+	  [ruby-talk:98651]
+
+	* eval.c (rb_eval): raise TypeError exception for superclass
+	  mismatch.  [ruby-dev:39567]
+
 Mon May 10 12:11:37 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/generators/html_generator.rb: Hack to search parents

@@ -502,7 +502,7 @@ flo_to_s(flt)
 
     avalue = fabs(value);
     if (avalue < 1.0e-7 || avalue >= 1.0e15) {
-	fmt = "%.16e";
+	fmt = "%.15e";
     }    
     sprintf(buf, fmt, value);
     if (!(e = strchr(buf, 'e'))) {

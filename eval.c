@@ -3791,7 +3791,8 @@ rb_eval(self, n)
 		if (super) {
 		    tmp = rb_class_real(RCLASS(klass)->super);
 		    if (tmp != super) {
-			goto override_class;
+			rb_raise(rb_eTypeError, "superclass mismatch for class %s",
+				 rb_id2name(cname));
 		    }
 		    super = 0;
 		}
@@ -3800,7 +3801,6 @@ rb_eval(self, n)
 		}
 	    }
 	    else {
-	      override_class:
 		if (!super) super = rb_cObject;
 		klass = rb_define_class_id(cname, super);
 		rb_set_class_path(klass, cbase, rb_id2name(cname));
@@ -6011,6 +6011,7 @@ eval(self, src, scope, file, line)
     struct FRAME frame;
     NODE *nodesave = ruby_current_node;
     volatile int iter = ruby_frame->iter;
+    volatile int safe = ruby_safe_level;
     int state;
 
     if (!NIL_P(scope)) {
@@ -6064,6 +6065,7 @@ eval(self, src, scope, file, line)
     if ((state = EXEC_TAG()) == 0) {
 	NODE *node;
 
+	ruby_safe_level = 0;
 	result = ruby_errinfo;
 	ruby_errinfo = Qnil;
 	node = compile(src, file, line);
@@ -6076,6 +6078,7 @@ eval(self, src, scope, file, line)
     POP_TAG();
     POP_CLASS();
     ruby_in_eval--;
+    ruby_safe_level = safe;
     if (!NIL_P(scope)) {
 	int dont_recycle = ruby_scope->flags & SCOPE_DONT_RECYCLE;
 
@@ -6112,7 +6115,7 @@ eval(self, src, scope, file, line)
 
 		errat = get_backtrace(ruby_errinfo);
 		mesg  = rb_attr_get(ruby_errinfo, rb_intern("mesg"));
-               if (!NIL_P(errat) && TYPE(errat) == T_ARRAY) {
+		if (!NIL_P(errat) && TYPE(errat) == T_ARRAY) {
                  if (!NIL_P(mesg) && TYPE(mesg) == T_STRING) {
 		    rb_str_update(mesg, 0, 0, rb_str_new2(": "));
 		    rb_str_update(mesg, 0, 0, RARRAY(errat)->ptr[0]);
