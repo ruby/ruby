@@ -285,7 +285,7 @@ ins_methods_i(key, body, ary)
     NODE *body;
     VALUE ary;
 {
-    if (!body->nd_noex) {
+    if ((body->nd_noex&NOEX_PRIVATE) == 0) {
 	VALUE name = str_new2(rb_id2name(key));
 
 	if (!ary_includes(ary, name)) {
@@ -312,7 +312,7 @@ ins_methods_priv_i(key, body, ary)
 	ary_push(ary, Qnil);
 	ary_push(ary, str_new2(rb_id2name(key)));
     }
-    else if (body->nd_noex) {
+    else if (body->nd_noex & NOEX_PRIVATE) {
 	VALUE name = str_new2(rb_id2name(key));
 
 	if (!ary_includes(ary, name)) {
