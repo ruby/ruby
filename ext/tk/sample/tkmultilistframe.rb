@@ -50,14 +50,24 @@ class TkMultiListFrame < TkListbox
     @h_l_thick = 0
 
     # virtical scrollbar
+=begin
     @v_scroll = TkScrollbar.new(@frame, 'highlightthickness'=>@h_l_thick, 
 				'borderwidth'=>@scrbar_border, 
 				'orient'=>'vertical', 'width'=>@scrbar_width)
+=end
+    @v_scroll = TkYScrollbar.new(@frame, 'highlightthickness'=>@h_l_thick, 
+				 'borderwidth'=>@scrbar_border, 
+				 'width'=>@scrbar_width)
 
     # horizontal scrollbar
+=begin
     @h_scroll = TkScrollbar.new(@frame, 'highlightthickness'=>@h_l_thick, 
 				'borderwidth'=>@scrbar_border, 
 				'orient'=>'horizontal', 'width'=>@scrbar_width)
+=end
+    @h_scroll = TkXScrollbar.new(@frame, 'highlightthickness'=>@h_l_thick, 
+				 'borderwidth'=>@scrbar_border, 
+				 'width'=>@scrbar_width)
 
     # create base flames
     @c_title = TkCanvas.new(@frame, 'highlightthickness'=>@h_l_thick, 
@@ -118,18 +128,27 @@ class TkMultiListFrame < TkListbox
       # scrollbar field
       f = TkFrame.new(@f_hscr, 'width'=>width)
       base << f
+=begin
       @hscr_list << TkScrollbar.new(f, 'orient'=>'horizontal', 
 				    'width'=>@scrbar_width, 
 				    'borderwidth'=>@scrbar_border, 
 				    'highlightthickness'=>@h_l_thick
 				    ).pack('fill'=>'x', 'anchor'=>'w')
+=end
+      @hscr_list << TkXScrollbar.new(f, 'width'=>@scrbar_width, 
+				     'borderwidth'=>@scrbar_border, 
+				     'highlightthickness'=>@h_l_thick
+				    ).pack('fill'=>'x', 'anchor'=>'w')
       f.place('relx'=>@rel_list[idx], 'y'=>0, 'anchor'=>'nw', 'width'=>1, 
 	      'relwidth'=>@rel_list[idx+1] - @rel_list[idx])
 
+=begin
       @lbox_list[idx].xscrollcommand proc{|first, last| 
 	@hscr_list[idx].set first, last
       }
       @hscr_list[idx].command proc{|*args| @lbox_list[idx].xview *args}
+=end
+      @lbox_list[idx].xscrollbar(@hscr_list[idx])
 
       # add new base
       @base_list << base
@@ -163,14 +182,18 @@ class TkMultiListFrame < TkListbox
     @f_hscr.height hscr_height
 
     # set control procedure for virtical scroll
+=begin
     @lbox_list.each{|lbox|
       lbox.yscrollcommand proc{|first, last| 
 	@v_scroll.set first, last
       }
     }
     @v_scroll.command proc{|*args| @lbox_list.each{|lbox| lbox.yview *args} }
+=end
+    @v_scroll.assign(*@lbox_list)
 
     # set control procedure for horizoncal scroll
+=begin
     @c_title.xscrollcommand proc{|first, last| 
       @h_scroll.set first, last
     }
@@ -185,6 +208,8 @@ class TkMultiListFrame < TkListbox
       @c_lbox.xview *args
       @c_hscr.xview *args if @show_each_hscr
     }
+=end
+    @h_scroll.assign(@c_title, @c_lbox, @c_hscr)
 
     # binding for listboxes
     @mode = {}

@@ -5107,6 +5107,15 @@ class TkScrollbar<TkWindow
   WidgetClassNames[WidgetClassName] = self
 
   def create_self(keys)
+    @assigned = []
+    @scroll_proc = proc{|*args| 
+      if self.orient == 'horizontal'
+	@assigned.each{|w| w.xview(*args)}
+      else # 'vertical'
+	@assigned.each{|w| w.yview(*args)}
+      end
+    }
+
     if keys and keys != None
       tk_call 'scrollbar', @path, *hash_kv(keys)
     else
@@ -5114,6 +5123,32 @@ class TkScrollbar<TkWindow
     end
   end
   private :create_self
+
+  def assign(*wins)
+    begin
+      self.command(@scroll_proc) if self.cget('command').cmd != @scroll_proc
+    rescue Exception
+      self.command(@scroll_proc)
+    end
+    orient = self.orient
+    wins.each{|w|
+      @assigned << w unless @assigned.index(w)
+      if orient == 'horizontal'
+	w.xscrollcommand proc{|first, last| self.set(first, last)}
+      else # 'vertical'
+	w.yscrollcommand proc{|first, last| self.set(first, last)}
+      end
+    }
+    self
+  end
+
+  def assigned_list
+    begin
+      return @assigned.dup if self.cget('command').cmd == @scroll_proc
+    rescue Exception
+    end
+    fail RuntimeError, "not depend on the assigned_list"
+  end
 
   def delta(deltax=None, deltay=None)
     number(tk_send('delta', deltax, deltay))
@@ -5144,6 +5179,24 @@ class TkScrollbar<TkWindow
   def activate(element=None)
     tk_send('activate', element)
   end
+end
+
+class TkXScrollbar<TkScrollbar
+  def create_self(keys)
+    keys = {} unless keys
+    keys['orient'] = 'horizontal'
+    super(keys)
+  end
+  private :create_self
+end
+
+class TkYScrollbar<TkScrollbar
+  def create_self(keys)
+    keys = {} unless keys
+    keys['orient'] = 'vertical'
+    super(keys)
+  end
+  private :create_self
 end
 
 class TkTextWin<TkWindow
