@@ -6,8 +6,8 @@ module SOAP
 module Marshal
 
 
-Foo1 = Struct.new("Foo1", :m)
-Foo2 = Struct.new(:m)
+Foo1 = ::Struct.new("Foo1", :m)
+Foo2 = ::Struct.new(:m)
 class Foo3
   attr_accessor :m
 end
