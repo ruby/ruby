@@ -1535,7 +1535,7 @@ dln_load(file)
 	if (p1 = strrchr(fname,'/'))
 	    fname = p1 + 1;
 	if (p2 = strrchr(fname,'.'))
-	    *p2 = '(J\(B0';
+	    *p2 = '\0';
 
 	if ((handle = (void*)dlopen(fname, 0)) == NULL) {
 	    goto failed;
