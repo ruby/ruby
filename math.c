@@ -90,6 +90,30 @@ math_sqrt(obj, x)
     return float_new(sqrt(RFLOAT(x)->value));
 }
 
+static VALUE
+math_frexp(obj, x)
+    VALUE obj, x;
+{
+    double d;
+    int exp;
+
+    Need_Float(x);
+    d = frexp(RFLOAT(x)->value, &exp);
+
+    return assoc_new(float_new(d), INT2NUM(exp));
+}
+
+static VALUE
+math_ldexp(obj, x, n)
+    VALUE obj, x, n;
+{
+    double d;
+    int exp;
+
+    Need_Float(x);
+    return float_new(d = ldexp(RFLOAT(x)->value, NUM2INT(n)));
+}
+
 void
 Init_Math()
 {
@@ -115,5 +139,7 @@ Init_Math()
     rb_define_module_function(mMath, "exp", math_exp, 1);
     rb_define_module_function(mMath, "log", math_log, 1);
     rb_define_module_function(mMath, "log10", math_log10, 1);
-    rb_define_module_function(mMath, "sqrt", math_sqrt, 1);
+
+    rb_define_module_function(mMath, "frexp", math_frexp, 1);
+    rb_define_module_function(mMath, "ldexp", math_ldexp, 2);
 }

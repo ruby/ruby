@@ -1,3 +1,27 @@
+Tue Mar 17 18:23:06 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* math.c (math_frexp): newly added.
+
+	* math.c (math_ldexp): ditto.
+
+	* bignum.c (bigdivmod): calculates modulo.
+
+	* numeric.c (fix_remainder): returns reminder, formerly known as
+ 	  modulo.
+
+	* numeric.c (fix_modulo): calculates proper `modulo'.
+
+	* bignum.c (bigdivmod): wrong sign for reminder.
+
+Mon Mar 16 17:07:28 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* experimental release 1.1b9_03.
+
+Mon Mar 16 16:33:53 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* io.c (pipe_finalize): needed to add pipe_finalize to pipes on
+	  cygwin32.
+
 Mon Mar 16 14:11:06 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* class.c (ins_methods_i): needed to consider NOEX_UNDEF.

@@ -941,21 +941,23 @@ pipe_atexit()
     }
 }
 
-#if !defined (__CYGWIN32__)
 static void
 pipe_finalize(fptr)
     OpenFile *fptr;
 {
+#if !defined (__CYGWIN32__)
     if (fptr->f != NULL) {
 	pclose(fptr->f);
     }
     if (fptr->f2 != NULL) {
 	pclose(fptr->f2);
     }
+#else
+    fptr_finalize(fptr);
+#endif
     fptr->f = fptr->f2 = NULL;
     pipe_del_fptr(fptr);
 }
-#endif
 #endif
 
 void
@@ -1076,6 +1078,7 @@ pipe_open(pname, mode)
 		else fptr->f = f;
 	    }
 #if defined (__CYGWIN32__)
+	    fptr->finalize = pipe_finalize;
 	    pipe_add_fptr(fptr);
 #endif
 	    return (VALUE)port;

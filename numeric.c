@@ -275,8 +275,9 @@ flo_div(x, y)
 }
 
 static VALUE
-flo_mod(x, y)
+flo_modulo(x, y, modulo)
     VALUE x, y;
+    int modulo;
 {
     double value;
 
@@ -293,6 +294,7 @@ flo_mod(x, y)
       default:
 	return num_coerce_bin(x, y);
     }
+
 #ifdef HAVE_FMOD
     value = fmod(RFLOAT(x)->value, value);
 #else
@@ -304,8 +306,26 @@ flo_mod(x, y)
 	value = value1 - value2 * value;
     }
 #endif
-
+    if (modulo &&
+	(RFLOAT(x)->value < 0.0) != (RFLOAT(y)->value < 0.0) &&
+	value != 0.0) {
+	value += RFLOAT(y)->value;
+    }
     return float_new(value);
+}
+
+static VALUE
+flo_mod(x, y)
+    VALUE x, y;
+{
+    return flo_modulo(x,y,1);
+}
+
+static VALUE
+flo_remainder(x, y)
+    VALUE x, y;
+{
+    return flo_modulo(x,y,0);
 }
 
 VALUE
@@ -754,7 +774,7 @@ fix_div(x, y)
 }
 
 static VALUE
-fix_mod(x, y)
+fix_modulo(x, y, modulo)
     VALUE x, y;
 {
     INT i;
@@ -763,9 +783,28 @@ fix_mod(x, y)
 	i = FIX2INT(y);
 	if (i == 0) num_zerodiv();
 	i = FIX2INT(x)%i;
+	if (modulo &&
+	    (FIX2INT(x) < 0) != (FIX2INT(y) < 0) &&
+	    i != 0) {
+	    i += FIX2INT(y);
+	}
 	return INT2FIX(i);
     }
     return num_coerce_bin(x, y);
+}
+
+static VALUE
+fix_mod(x, y)
+    VALUE x, y;
+{
+    return fix_modulo(x, y, 1);
+}
+
+static VALUE
+fix_remainder(x, y)
+    VALUE x, y;
+{
+    return fix_modulo(x, y, 0);
 }
 
 static VALUE
@@ -1218,6 +1257,7 @@ Init_Numeric()
     rb_define_method(cFixnum, "*", fix_mul, 1);
     rb_define_method(cFixnum, "/", fix_div, 1);
     rb_define_method(cFixnum, "%", fix_mod, 1);
+    rb_define_method(cFixnum, "remainder", fix_remainder, 1);
     rb_define_method(cFixnum, "**", fix_pow, 1);
 
     rb_define_method(cFixnum, "abs", fix_abs, 0);
@@ -1262,6 +1302,7 @@ Init_Numeric()
     rb_define_method(cFloat, "*", flo_mul, 1);
     rb_define_method(cFloat, "/", flo_div, 1);
     rb_define_method(cFloat, "%", flo_mod, 1);
+    rb_define_method(cFloat, "remainder", flo_remainder, 1);
     rb_define_method(cFloat, "**", flo_pow, 1);
     rb_define_method(cFloat, "==", flo_eq, 1);
     rb_define_method(cFloat, "<=>", flo_cmp, 1);

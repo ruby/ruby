@@ -662,12 +662,13 @@ big_mul(x, y)
 }
 
 static void
-bigdivmod(x, y, div, mod)
+bigdivmod(x, y, div, mod, modulo)
     VALUE x, y;
     VALUE *div, *mod;
+    int modulo;
 {
     UINT nx = RBIGNUM(x)->len, ny = RBIGNUM(y)->len, i, j;
-    VALUE z;
+    VALUE yy, z;
     USHORT *xds, *yds, *zds, *tds;
     unsigned long t2;
     long num;
@@ -703,8 +704,8 @@ bigdivmod(x, y, div, mod)
     if (nx==ny) zds[nx+1] = 0;
     while (!yds[ny-1]) ny--;
     if ((dd = BIGRAD/(int)(yds[ny-1]+1)) != 1) {
-	y = big_clone(y);
-	tds = BDIGITS(y);
+	yy = big_clone(y);
+	tds = BDIGITS(yy);
 	j = 0;
 	num = 0;
 	while (j<ny) {
@@ -776,7 +777,16 @@ bigdivmod(x, y, div, mod)
 	    }
 	}
 	RBIGNUM(*mod)->len = ny;
-	RBIGNUM(*mod)->sign = RBIGNUM(y)->sign;
+	RBIGNUM(*mod)->sign = RBIGNUM(x)->sign;
+	if (modulo && RBIGNUM(x)->sign != RBIGNUM(y)->sign) {
+	    int len = ny;
+	    zds = BDIGITS(*mod);
+	    while (len-- && !zds[len]);
+	    if (len > 0) {
+		*mod = bigadd(*mod, y, 1);
+		return;
+	    }
+	}
 	*mod = bignorm(*mod);
     }
 }
@@ -801,14 +811,16 @@ big_div(x, y)
       default:
 	return num_coerce_bin(x, y);
     }
-    bigdivmod(x, y, &z, 0);
+    bigdivmod(x, y, &z, 0, 0);
 
     return z;
 }
 
+
 static VALUE
-big_mod(x, y)
+big_modulo(x, y, modulo)
     VALUE x, y;
+    int modulo;
 {
     VALUE z;
 
@@ -827,9 +839,23 @@ big_mod(x, y)
       default:
 	return num_coerce_bin(x, y);
     }
-    bigdivmod(x, y, 0, &z);
+    bigdivmod(x, y, 0, &z, modulo);
 
     return z;
+}
+
+static VALUE
+big_mod(x, y)
+    VALUE x, y;
+{
+    return big_modulo(x, y, 1);
+}
+
+static VALUE
+big_remainder(x, y)
+    VALUE x, y;
+{
+    return big_modulo(x, y, 0);
 }
 
 static VALUE
@@ -853,7 +879,7 @@ big_divmod(x, y)
       default:
 	return num_coerce_bin(x, y);
     }
-    bigdivmod(x, y, &div, &mod);
+    bigdivmod(x, y, &div, &mod, 1);
 
     return assoc_new(div, mod);;
 }
