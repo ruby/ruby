@@ -101,7 +101,7 @@ rb_dlsym_new(void (*func)(), const char *name, const char *type)
     data->name = name ? strdup(name) : NULL;
     data->type = type ? strdup(type) : NULL;
     data->len  = type ? strlen(type) : 0;
-#ifndef USE_INLINE_ASM
+#if !(defined(USE_INLINE_ASM) || defined(USE_DLSTACK))
     if( data->len - 1 > MAX_ARG ){
       rb_raise(rb_eDLError, "maximum number of arguments is %d.", MAX_ARG);
     };
@@ -268,6 +268,47 @@ rb_dlsym_inspect(VALUE self)
   return val;
 }
 
+static int
+stack_size(struct sym_data *sym)
+{
+  int i;
+  int size;
+
+  size = 0;
+  for( i=1; i < sym->len; i++ ){
+    switch(sym->type[i]){
+    case 'C':
+    case 'H':
+    case 'I':
+    case 'L':
+      size += sizeof(long);
+      break;
+    case 'F':
+      size += sizeof(float);
+      break;
+    case 'D':
+      size += sizeof(double);
+      break;
+    case 'c':
+    case 'h':
+    case 'i':
+    case 'l':
+    case 'f':
+    case 'd':
+    case 'p':
+    case 'P':
+    case 's':
+    case 'S':
+    case 'a':
+    case 'A':
+      size += sizeof(void*);
+      break;
+    default:
+      return -(sym->type[i]);
+    }
+  }
+  return size;
+}
 
 VALUE
 rb_dlsym_call(int argc, VALUE argv[], VALUE self)
@@ -478,9 +519,43 @@ rb_dlsym_call(int argc, VALUE argv[], VALUE self)
 
   func = sym->func;
 
-#ifdef USE_INLINE_ASM
-  ASM_START(sym->type);
-  for( i = sym->len - 2; i >= 0; i-- ){
+#if defined(USE_INLINE_ASM) || defined(USE_DLSTACK)
+  {
+#if defined(USE_DLSTACK)
+#define DLSTACK_PROTO long,long,long,long,long,\
+                      long,long,long,long,long,\
+                      long,long,long,long,long
+#define DLSTACK_ARGS  stack[0],stack[1],stack[2],stack[3],stack[4],\
+                      stack[5],stack[6],stack[7],stack[8],stack[9],\
+                      stack[10],stack[11],stack[12],stack[13],stack[14]
+  int  stk_size;
+  long *stack, *sp;
+
+  stk_size = stack_size(sym);
+  if( stk_size < 0 ){
+    FREE_ARGS;
+    rb_raise(rb_eDLTypeError, "unknown type '%c'.", -stk_size);
+  }
+  else if( stk_size > (int)(sizeof(long) * 15) ){
+    FREE_ARGS;
+    rb_raise(rb_eArgError, "too many arguments.");
+    stk_size = sizeof(long) * 15;
+  }
+  stack = (long*)alloca(stk_size);
+  sp = stack;
+#elif defined(USE_INLINE_ASM)
+#define DLSTACK_PROTO
+#define DLSTACK_ARGS
+#endif
+
+  ASM_START(sym);
+
+#if defined(USE_DLSTACK)
+  for( i = 0; i <= sym->len -2; i++ )
+#else
+  for( i = sym->len - 2; i >= 0; i-- )
+#endif
+  {
     switch( sym->type[i+1] ){
     case 'p':
     case 'P':
@@ -538,71 +613,72 @@ rb_dlsym_call(int argc, VALUE argv[], VALUE self)
     switch( sym->type[0] ){
     case '0':
       {
-	void (*f)() = func;
-	f();
+	void (*f)(DLSTACK_PROTO) = func;
+	f(DLSTACK_ARGS);
       };
       break;
     case 'P':
     case 'p':
       {
-	void * (*f)() = func;
-	ret.p = f();
+	void * (*f)(DLSTACK_PROTO) = func;
+	ret.p = f(DLSTACK_ARGS);
       };
       break;
     case 'C':
     case 'c':
       {
-	char (*f)() = func;
-	ret.c = f();
+	char (*f)(DLSTACK_PROTO) = func;
+	ret.c = f(DLSTACK_ARGS);
       };
       break;
     case 'H':
     case 'h':
       {
-	short (*f)() = func;
-	ret.h = f();
+	short (*f)(DLSTACK_PROTO) = func;
+	ret.h = f(DLSTACK_ARGS);
       };
       break;
     case 'I':
     case 'i':
       {
-	int (*f)() = func;
-	ret.i = f();
+	int (*f)(DLSTACK_PROTO) = func;
+	ret.i = f(DLSTACK_ARGS);
       };
       break;
     case 'L':
     case 'l':
       {
-	long (*f)() = func;
-	ret.l = f();
+	long (*f)(DLSTACK_PROTO) = func;
+	ret.l = f(DLSTACK_ARGS);
       };
       break;
     case 'F':
     case 'f':
       {
-	float (*f)() = func;
-	ret.f = f();
+	float (*f)(DLSTACK_PROTO) = func;
+	ret.f = f(DLSTACK_ARGS);
       };
       break;
     case 'D':
     case 'd':
       {
-	double (*f)() = func;
-	ret.d = f();
+	double (*f)(DLSTACK_PROTO) = func;
+	ret.d = f(DLSTACK_ARGS);
       };
       break;
     case 'S':
     case 's':
       {
-	char * (*f)() = func;
-	ret.s = f();
+	char * (*f)(DLSTACK_PROTO) = func;
+	ret.s = f(DLSTACK_ARGS);
       };
       break;
     default:
       FREE_ARGS;
       rb_raise(rb_eDLTypeError, "unknown type `%c'", sym->type[0]);
-    };
-  };
+    }
+  }
+  }
 #else
   switch(ftype){
 #include "call.func"

@@ -142,8 +142,8 @@
 
 #if defined(USE_INLINE_ASM)
 # if defined(__i386__) && defined(__GNUC__)
-#   define ASM_START(type)
-#   define ASM_END(type)
+#   define ASM_START(sym)
+#   define ASM_END(sym)
 #   define ASM_PUSH_C(x) asm volatile ("pushl %0" :: "g" (x));
 #   define ASM_PUSH_H(x) asm volatile ("pushl %0" :: "g" (x));
 #   define ASM_PUSH_I(x) asm volatile ("pushl %0" :: "g" (x));
@@ -158,15 +158,16 @@
 # else
 # error --with-asm is not supported on this machine
 # endif
-#else
-# define ASM_START(type)
-# define ASM_END(type)
-# define ASM_PUSH_C(x)
-# define ASM_PUSH_I(x)
-# define ASM_PUSH_L(x)
-# define ASM_PUSH_P(x)
-# define ASM_PUSH_F(x)
-# define ASM_PUSH_D(x)
+#elif defined(USE_DLSTACK)
+# define ASM_START(sym)
+# define ASM_END(sym)
+# define ASM_PUSH_C(x)  memcpy(sp,&x,1); sp++;
+# define ASM_PUSH_H(x)  memcpy(sp,&x,sizeof(short)); sp++;
+# define ASM_PUSH_I(x)  memcpy(sp,&x,sizeof(int)); sp++;
+# define ASM_PUSH_L(x)  memcpy(sp,&x,sizeof(long)); sp++;
+# define ASM_PUSH_P(x)  memcpy(sp,&x,sizeof(void*)); sp++;
+# define ASM_PUSH_F(x)  memcpy(sp,&x,sizeof(float)); sp+=sizeof(float)/sizeof(long);
+# define ASM_PUSH_D(x)  memcpy(sp,&x,sizeof(double)); sp+=sizeof(double)/sizeof(long);
 #endif
 
 extern VALUE rb_mDL;

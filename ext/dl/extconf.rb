@@ -13,6 +13,7 @@ if( ARGV.include?("--help") )
   --with-type-float  strictly use type 'float'
   --with-asm         use the embedded assembler for passing arguments.
                      (this option is available for i386 machine now.)
+  --with-dlstack     use a stack emulation for constructing function call. [experimental]
   --with-args=<max_arg>,<max_cbarg>,<max_cbent>
                      <max_arg>:   maximum number of arguments of the function
                      <max_cbarg>: maximum number of arguments of the callback
@@ -32,6 +33,7 @@ if (Config::CONFIG['CC'] =~ /gcc/) && (Config::CONFIG['arch'] =~ /i.86/)
 else
   $with_asm = false
 end
+$with_dlstack = false
 
 $with_type_int = try_run(<<EOF)
 int main(){ return sizeof(int) == sizeof(long); }
@@ -63,10 +65,11 @@ $with_type_short = enable_config("type-short", $with_type_short)
 $with_type_float = enable_config("type-float", $with_type_float)
 
 $with_asm        = enable_config("asm", $with_asm)
+$with_dlstack    = enable_config("dlstack", $with_dlstack)
 
 args = with_config("args")
 max_arg = max_cbarg = max_cbent = nil
-if( $with_asm )
+if( $with_asm || $with_dlstack )
   $with_type_char = true
   $with_type_short = true
   $with_type_float = true
@@ -106,8 +109,12 @@ def dlc_define(const)
                  "#endif\n"
 end
 
-if( $with_asm )
-  $dlconfig_h << "#define USE_INLINE_ASM\n"
+if( $with_dlstack )
+  $dlconfig_h << "#define USE_DLSTACK\n"
+else
+  if( $with_asm )
+    $dlconfig_h << "#define USE_INLINE_ASM\n"
+  end
 end
 if( $with_type_char )
   $dlconfig_h << "#define WITH_TYPE_CHAR\n"
