@@ -3354,6 +3354,9 @@ massign(self, node, val, check)
 	    assign(self, node->nd_args, rb_ary_new2(0), check);
 	}
     }
+    else if (check && i < len) {
+	goto arg_error;
+    }
 
     while (list) {
 	i++;

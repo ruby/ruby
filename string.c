@@ -403,10 +403,18 @@ rb_str_cat(str, ptr, len)
     long len;
 {
     if (len > 0) {
+	int poffset = -1;
+
 	rb_str_modify(str);
+	if (RSTRING(str)->ptr <= ptr &&
+	    ptr < RSTRING(str)->ptr + RSTRING(str)->len) {
+	    poffset = ptr - RSTRING(str)->ptr;
+	}
 	REALLOC_N(RSTRING(str)->ptr, char, RSTRING(str)->len + len + 1);
-	if (ptr)
+	if (ptr) {
+	    if (poffset >= 0) ptr = RSTRING(str)->ptr + poffset;
 	    memcpy(RSTRING(str)->ptr + RSTRING(str)->len, ptr, len);
+	}
 	RSTRING(str)->len += len;
 	RSTRING(str)->ptr[RSTRING(str)->len] = '\0'; /* sentinel */
     }

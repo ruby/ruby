@@ -1091,7 +1091,8 @@ ruby_setenv(name, value)
 	environ = tmpenv;		/* tell exec where it is now */
     }
     if (!value) {
-	free(environ[i]);
+	if (environ[i] != origenviron[i])
+	    free(environ[i]);
 	while (environ[i]) {
 	    environ[i] = environ[i+1];
 	    i++;
@@ -1103,7 +1104,8 @@ ruby_setenv(name, value)
 	environ[i+1] = 0;	/* make sure it's null terminated */
     }
     else {
-	free(environ[i]);
+	if (environ[i] != origenviron[i])
+	    free(environ[i]);
     }
     environ[i] = ALLOC_N(char, strlen(name) + strlen(value) + 2);
 #ifndef MSDOS

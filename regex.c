@@ -3063,6 +3063,7 @@ re_search(bufp, string, size, startpos, range, regs)
     if (range > 0 && (bufp->options & RE_OPTIMIZE_EXACTN)) {
       startpos += pos;
       range -= pos;
+      if (range < 0) return -1;
     }
   }
 

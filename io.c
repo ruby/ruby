@@ -2048,6 +2048,7 @@ rb_f_p(argc, argv)
     for (i=0; i<argc; i++) {
 	rb_p(argv[i]);
     }
+    fflush(stdout);
     return Qnil;
 }
 
