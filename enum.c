@@ -677,20 +677,6 @@ enum_min(obj)
     return result;
 }
 
-/*
- *  call-seq:
- *     enum.max                    => obj
- *     enum.max {| a,b | block }   => obj
- *  
- *  Returns the object in <i>enum</i> with the maximum value. The
- *  first form assumes all objects implement <code>Comparable</code>;
- *  the second uses the block to return <em>a <=> b</em>.
- *     
- *     a = %w(albatross dog horse)
- *     a.max                                  #=> "horse"
- *     a.max {|a,b| a.length <=> b.length }   #=> "albatross"
- */
-
 static VALUE
 max_i(i, memo)
     VALUE i;
@@ -752,6 +738,92 @@ enum_max(obj)
 
     rb_iterate(rb_each, obj, rb_block_given_p() ? max_ii : max_i, (VALUE)memo);
     result = memo->u1.value;
+    rb_gc_force_recycle((VALUE)memo);
+    return result;
+}
+
+static VALUE
+min_by_i(i, memo)
+    VALUE i;
+    NODE *memo;
+{
+    VALUE v;
+
+    v = rb_yield(i);
+    if (NIL_P(memo->u1.value)) {
+	memo->u1.value = v;
+	memo->u2.value = i;
+    }
+    else if (rb_cmpint(rb_funcall(v, id_cmp, 1, memo->u1.value), v, memo->u1.value) < 0) {
+	memo->u1.value = v;
+	memo->u2.value = i;
+    }
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.min_by {| obj| block }   => obj
+ *  
+ *  Returns the object in <i>enum</i> that gives the minimum
+ *  value from the given block.
+ *     
+ *     a = %w(albatross dog horse)
+ *     a.min_by {|x| x.length }   #=> "dog"
+ */
+
+static VALUE
+enum_min_by(obj)
+    VALUE obj;
+{
+    VALUE result;
+    NODE *memo = rb_node_newnode(NODE_MEMO, Qnil, 0, 0);
+
+    rb_iterate(rb_each, obj, min_by_i, (VALUE)memo);
+    result = memo->u2.value;
+    rb_gc_force_recycle((VALUE)memo);
+    return result;
+}
+
+static VALUE
+max_by_i(i, memo)
+    VALUE i;
+    NODE *memo;
+{
+    VALUE v;
+
+    v = rb_yield(i);
+    if (NIL_P(memo->u1.value)) {
+	memo->u1.value = v;
+	memo->u2.value = i;
+    }
+    else if (rb_cmpint(rb_funcall(v, id_cmp, 1, memo->u1.value), v, memo->u1.value) > 0) {
+	memo->u1.value = v;
+	memo->u2.value = i;
+    }
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.max_by {| obj| block }   => obj
+ *  
+ *  Returns the object in <i>enum</i> that gives the maximum
+ *  value from the given block.
+ *     
+ *     a = %w(albatross dog horse)
+ *     a.max_by {|x| x.length }   #=> "albatross"
+ */
+
+static VALUE
+enum_max_by(obj)
+    VALUE obj;
+{
+    VALUE result;
+    NODE *memo = rb_node_newnode(NODE_MEMO, Qnil, 0, 0);
+
+    rb_iterate(rb_each, obj, max_by_i, (VALUE)memo);
+    result = memo->u2.value;
     rb_gc_force_recycle((VALUE)memo);
     return result;
 }
@@ -933,6 +1005,8 @@ Init_Enumerable()
     rb_define_method(rb_mEnumerable,"any?", enum_any, 0);
     rb_define_method(rb_mEnumerable,"min", enum_min, 0);
     rb_define_method(rb_mEnumerable,"max", enum_max, 0);
+    rb_define_method(rb_mEnumerable,"min_by", enum_min_by, 0);
+    rb_define_method(rb_mEnumerable,"max_by", enum_max_by, 0);
     rb_define_method(rb_mEnumerable,"member?", enum_member, 1);
     rb_define_method(rb_mEnumerable,"include?", enum_member, 1);
     rb_define_method(rb_mEnumerable,"each_with_index", enum_each_with_index, 0);

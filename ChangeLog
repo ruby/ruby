@@ -1,3 +1,8 @@
+Wed Jul 14 23:49:30 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (enum_min_by): new method Enum#min_by.  added Enum#max_by
+	  as well.
+
 Wed Jul 14 18:05:21 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_asn1.c (ossl_asn1cons_to_der): fix type of

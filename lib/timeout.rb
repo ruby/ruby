@@ -35,6 +35,7 @@ module Timeout
 
   def timeout(sec, exception=Error)
     return yield if sec == nil or sec.zero?
+    raise ThreadError, "timeout within critical session" if Thread.critical
     begin
       x = Thread.current
       y = Thread.start {

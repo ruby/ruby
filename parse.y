@@ -5391,11 +5391,10 @@ static NODE*
 cond0(node)
     NODE *node;
 {
-    enum node_type type = nd_type(node);
-
+    if (node == 0) return 0;
     assign_in_cond(node);
 
-    switch (type) {
+    switch (nd_type(node)) {
       case NODE_DSTR:
       case NODE_EVSTR:
       case NODE_STR:
@@ -5419,8 +5418,8 @@ cond0(node)
       case NODE_DOT3:
 	node->nd_beg = range_op(node->nd_beg);
 	node->nd_end = range_op(node->nd_end);
-	if (type == NODE_DOT2) nd_set_type(node,NODE_FLIP2);
-	else if (type == NODE_DOT3) nd_set_type(node, NODE_FLIP3);
+	if (nd_type(node) == NODE_DOT2) nd_set_type(node,NODE_FLIP2);
+	else if (nd_type(node) == NODE_DOT3) nd_set_type(node, NODE_FLIP3);
 	node->nd_cnt = local_append(internal_id());
 	if (!e_option_supplied()) {
 	    int b = literal_node(node->nd_beg);

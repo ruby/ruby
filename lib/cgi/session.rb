@@ -365,7 +365,6 @@ class CGI
 	  raise ArgumentError, "session_id `%s' is invalid" % id
 	end
 	@path = dir+"/"+prefix+id
-	@path.untaint
 	unless File::exist? @path
 	  @hash = {}
 	end
@@ -413,7 +412,8 @@ class CGI
 
       # Close and delete the session's FileStore file.
       def delete
-	File::unlink @path
+        File::unlink @path
+      rescue Errno::ENOENT
       end
     end
 

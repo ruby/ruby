@@ -69,7 +69,7 @@ class Mutex
   # Returns +true+ if this lock is currently held by some thread.
   #
   def locked?
-    @locked
+    @locked && true
   end
 
   #
@@ -80,7 +80,7 @@ class Mutex
     result = false
     Thread.critical = true
     unless @locked
-      @locked = true
+      @locked = Thread.current
       result = true
     end
     Thread.critical = false
@@ -92,10 +92,13 @@ class Mutex
   #
   def lock
     while (Thread.critical = true; @locked)
+      if @locked == Thread.current
+        raise ThreadError, "deadlock; recursive locking"
+      end
       @waiting.push Thread.current
       Thread.stop
     end
-    @locked = true
+    @locked = Thread.current
     Thread.critical = false
     self
   end
