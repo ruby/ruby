@@ -82,19 +82,43 @@ class MultiTkIp
     return thread
   end
 
+  ######################################
+
+  def set_safe_level(safe)
+    @cmd_queue.enq([@system, 'set_safe_level', safe])
+    self
+  end
+  def self.set_safe_level(safe)
+    __getip.set_safe_level(safe)
+    self
+  end
+
   def _create_receiver_and_watchdog()
     # command-procedures receiver
     receiver = Thread.new{
       loop do
 	thread, cmd, *args = @cmd_queue.deq
-	begin
-	  ret = cmd.call(*args)
-	rescue Exception => e
-	  # raise exception
-	  _check_and_return(thread, e)
+	if thread == @system
+	  case cmd
+	  when 'set_safe_level'
+	    begin
+	      $SAFE = args[0]
+	    rescue Exception
+	      nil
+	    end
+	  else
+	    # ignore
+	  end
 	else
-	  # no exception
-	  _check_and_return(thread, MultiTkIp_OK.new(ret))
+	  begin
+	    ret = cmd.call(*args)
+	  rescue Exception => e
+	    # raise exception
+	    _check_and_return(thread, e)
+	  else
+	    # no exception
+	    _check_and_return(thread, MultiTkIp_OK.new(ret))
+	  end
 	end
       end
     }
@@ -154,6 +178,8 @@ class MultiTkIp
 
     @interp = TclTkIp.new(name, _keys2opts(keys))
     @ip_name = nil
+
+    @system = Object.new
 
     @threadgroup  = Thread.current.group
 
@@ -411,6 +437,8 @@ class MultiTkIp
       }.freeze
     end
 
+    @system = Object.new
+
     @threadgroup  = ThreadGroup.new
 
     @cmd_queue = Queue.new
@@ -494,18 +522,47 @@ class MultiTkIp
       true
     end
   end
+  def self.master?
+    __getip.master?
+  end
 
   def slave?
     not master?
   end
+  def self.slave?
+  end
 
   def alive?
-    return false unless @cmd_receiver.alive?
-    return false if @interp.deleted?
+    begin
+      return false unless @cmd_receiver.alive?
+      return false if @interp.deleted?
+      return false if @interp._invoke('interp', 'exists', '') == '0'
+    rescue Exception
+      return false
+    end
+    true
+  end
+  def self.alive?
+    __getip.alive?
   end
 
   def path
-    @ip_name
+    @ip_name || ''
+  end
+  def self.path
+    __getip.path
+  end
+  def ip_name
+    @ip_name || ''
+  end
+  def self.ip_name
+    __getip.ip_name
+  end
+  def to_eval
+    @ip_name || ''
+  end
+  def self.to_eval
+    __getip.to_eval
   end
 
   def slaves(all = false)
@@ -518,6 +575,9 @@ class MultiTkIp
 	nil
       end
     }.compact!
+  end
+  def self.slaves(all = false)
+    __getip.slaves(all)
   end
 end
 
@@ -782,6 +842,251 @@ class MultiTkIp
   end
 end
 
+
+# interp command support
+class MultiTkIp
+  def _lst2ary(str)
+    return [] if str == ""
+    idx = str.index('{')
+    while idx and idx > 0 and str[idx-1] == ?\\
+      idx = str.index('{', idx+1)
+    end
+    return str.split unless idx
+
+    list = str[0,idx].split
+    str = str[idx+1..-1]
+    i = -1
+    brace = 1
+    str.each_byte {|c|
+      i += 1
+      brace += 1 if c == ?{
+      brace -= 1 if c == ?}
+      break if brace == 0
+    }
+    if i == 0
+      list.push ''
+    elsif str[0, i] == ' '
+      list.push ' '
+    else
+      list.push str[0..i-1]
+    end
+    list += tk_split_simplelist(str[i+1..-1])
+    list
+  end
+  private :_lst2ary
+
+  def _slavearg(slave)
+    if slave.kind_of?(MultiTkIp)
+      slave.path
+    elsif slave.kind_of?(String)
+      slave
+    else
+      cmd_name.to_s
+    end
+  end
+  private :_slavearg
+
+  def alias_info(slave, cmd_name)
+    _lst2ary(@interp._invoke('interp', 'alias', _slavearg(slave), cmd_name))
+  end
+  def self.alias_info(slave, cmd_name)
+    __getip.alias_info(slave, cmd_name)
+  end
+
+  def alias_delete(slave, cmd_name)
+    @interp._invoke('interp', 'alias', _slavearg(slave), cmd_name, '')
+    self
+  end
+  def self.alias_delete(slave, cmd_name)
+    __getip.alias_delete(slave, cmd_name)
+    self
+  end
+
+  def def_alias(slave, new_cmd, org_cmd, *args)
+    ret = @interp._invoke('interp', 'alias', _slavearg(slave), new_cmd, 
+			  '', org_cmd, *args)
+    (ret == new_cmd)? self: nil
+  end
+  def self.def_alias(slave, new_cmd, org_cmd, *args)
+    ret = __getip.def_alias(slave, new_cmd, org_cmd, *args)
+    (ret == new_cmd)? self: nil
+  end
+
+  def aliases(slave = '')
+    _lst2ary(@interp._invoke('interp', 'aliases', _slavearg(slave)))
+  end
+  def self.aliases(slave = '')
+    __getip.aliases(slave)
+  end
+
+  def delete_slaves(*args)
+    slaves = args.collect{|s| _slavearg(s)}
+    @interp._invoke('interp', 'delete', *slaves) if slaves.size > 0
+    self
+  end
+  def self.delete_slaves(*args)
+    __getip.delete_slaves(*args)
+    self
+  end
+
+  def exist?(slave = '')
+    ret = @interp._invoke('interp', 'exists', _slavearg(slave))
+    (ret == '1')? true: false
+  end
+  def self.exist?(slave = '')
+    __getip.exist?(slave)
+  end
+
+  def delete_cmd(slave, cmd)
+    slave_invoke = @interp._invoke('list', 'rename', cmd, '')
+    @interp._invoke('interp', 'eval', _slavearg(slave), slave_invoke)
+    self
+  end
+  def self.delete_cmd(slave, cmd)
+    __getip.delete_cmd(slave, cmd)
+    self
+  end
+
+  def expose_cmd(slave, cmd, aliasname = nil)
+    if aliasname
+      @interp._invoke('interp', 'expose', _slavearg(slave), cmd, aliasname)
+    else
+      @interp._invoke('interp', 'expose', _slavearg(slave), cmd)
+    end
+    self
+  end
+  def self.expose_cmd(slave, cmd, aliasname = nil)
+    __getip.expose_cmd(slave, cmd, aliasname)
+    self
+  end
+
+  def hide_cmd(slave, cmd, aliasname = nil)
+    if aliasname
+      @interp._invoke('interp', 'hide', _slavearg(slave), cmd, aliasname)
+    else
+      @interp._invoke('interp', 'hide', _slavearg(slave), cmd)
+    end
+    self
+  end
+  def self.hide_cmd(slave, cmd, aliasname = nil)
+    __getip.hide_cmd(slave, cmd, aliasname)
+    self
+  end
+
+  def hidden_cmds(slave = '')
+    _lst2ary(@interp._invoke('interp', 'hidden', _slavearg(slave)))
+  end
+  def self.hidden_cmds(slave = '')
+    __getip.hidden_cmds(slave)
+  end
+
+  def invoke_hidden(slave, cmd, *args)
+    @interp._invoke('interp', 'invokehidden', _slavearg(slave), cmd, *args)
+  end
+  def self.invoke_hidden(slave, cmd, *args)
+    __getip.invoke_hidden(slave, cmd, *args)
+  end
+
+  def invoke_hidden_on_global(slave, cmd, *args)
+    @interp._invoke('interp', 'invokehidden', _slavearg(slave), 
+		    '-global', cmd, *args)
+  end
+  def self.invoke_hidden_on_global(slave, cmd, *args)
+    __getip.invoke_hidden_on_global(slave, cmd, *args)
+  end
+
+  def mark_trusted(slave = '')
+    @interp._invoke('interp', 'marktrusted', _slavearg(slave))
+    self
+  end
+  def self.mark_trusted(slave = '')
+    __getip.mark_trusted(slave)
+    self
+  end
+
+  def alias_target(aliascmd, slave = '')
+    @interp._invoke('interp', 'target', _slavearg(slave), aliascmd)
+  end
+  def self.alias_target(aliascmd, slave = '')
+    __getip.alias_target(aliascmd, slave)
+  end
+
+  def share_stdin(dist, src = '')
+    @interp._invoke('interp', 'share', src, 'stdin', dist)
+    self
+  end
+  def self.share_stdin(dist, src = '')
+    __getip.share_stdin(dist, src)
+    self
+  end
+
+  def share_stdout(dist, src = '')
+    @interp._invoke('interp', 'share', src, 'stdout', dist)
+    self
+  end
+  def self.share_stdout(dist, src = '')
+    __getip.share_stdout(dist, src)
+    self
+  end
+
+  def share_stderr(dist, src = '')
+    @interp._invoke('interp', 'share', src, 'stderr', dist)
+    self
+  end
+  def self.share_stderr(dist, src = '')
+    __getip.share_stderr(dist, src)
+    self
+  end
+
+  def transfer_stdin(dist, src = '')
+    @interp._invoke('interp', 'transfer', src, 'stdin', dist)
+    self
+  end
+  def self.transfer_stdin(dist, src = '')
+    __getip.transfer_stdin(dist, src)
+    self
+  end
+
+  def transfer_stdout(dist, src = '')
+    @interp._invoke('interp', 'transfer', src, 'stdout', dist)
+    self
+  end
+  def self.transfer_stdout(dist, src = '')
+    __getip.transfer_stdout(dist, src)
+    self
+  end
+
+  def transfer_stderr(dist, src = '')
+    @interp._invoke('interp', 'transfer', src, 'stderr', dist)
+    self
+  end
+  def self.transfer_stderr(dist, src = '')
+    __getip.transfer_stderr(dist, src)
+    self
+  end
+
+  def share_stdio(dist, src = '')
+    @interp._invoke('interp', 'share', src, 'stdin',  dist)
+    @interp._invoke('interp', 'share', src, 'stdout', dist)
+    @interp._invoke('interp', 'share', src, 'stderr', dist)
+    self
+  end
+  def self.share_stdio(dist, src = '')
+    __getip.share_stdio(dist, src)
+    self
+  end
+
+  def transfer_stdio(dist, src = '')
+    @interp._invoke('interp', 'transfer', src, 'stdin',  dist)
+    @interp._invoke('interp', 'transfer', src, 'stdout', dist)
+    @interp._invoke('interp', 'transfer', src, 'stderr', dist)
+    self
+  end
+  def self.transfer_stdio(dist, src = '')
+    __getip.transfer_stdio(dist, src)
+    self
+  end
+end
 
 # end of MultiTkIp definition
 

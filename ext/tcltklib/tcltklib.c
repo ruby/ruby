@@ -217,7 +217,7 @@ rb_evloop_abort_no_cmd_set(self, val)
 {
     rb_secure(4);
     event_loop_abort_no_cmd = (val == Qtrue)? 1: 0;
-    return rb_event_loop_abort_no_cmd();
+    return rb_evloop_abort_no_cmd();
 }
 
 VALUE
@@ -710,8 +710,7 @@ ip_create_slave(argc, argv, self)
     /* create slave-ip */
     if ((slave->ip = Tcl_CreateSlave(master->ip, StringValuePtr(name), safe)) 
 	== NULL) {
-	rb_ip_raise(self, rb_eRuntimeError, 
-		    "fail to create the new slave interpreter");
+	rb_raise(rb_eRuntimeError, "fail to create the new slave interpreter");
     }
     Tcl_Preserve((ClientData)slave->ip);
     slave->return_value = 0;
@@ -727,7 +726,7 @@ ip_make_safe(self)
     struct tcltkip *ptr = get_ip(self);
     
     if (Tcl_MakeSafe(ptr->ip) == TCL_ERROR) {
-	rb_ip_raise(self, rb_eRuntimeError, "%s", ptr->ip->result);
+	rb_raise(rb_eRuntimeError, "%s", ptr->ip->result);
     }
 
     return self;
