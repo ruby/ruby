@@ -35,8 +35,20 @@ class TkTextFrame < TkText
     hscroll(keys.delete('hscroll'){true})
 
     # set background of the text widget
+=begin
     color = keys.delete('textbackground')
     textbackground(color) if color
+=end
+    # please check the differences of the following definitions
+    option_methods(
+       [:scrollbarwidth, :get_scrollbarwidth], 
+       [:textbackground, nil, :textbg_info], 
+       :textborderwidth, 
+       :textrelief
+    )
+
+    # set receiver widgets for configure methods (with alias)
+    delegate_alias('scrollbarrelief', 'relief', @h_scroll, @v_scroll)
 
     # set receiver widgets for configure methods
     delegate('DEFAULT', @text)
@@ -61,6 +73,46 @@ class TkTextFrame < TkText
       @text.background
     end
   end
+
+  def textbg_info
+    info = @text.configinfo(:background)
+    if TkComm::GET_CONFIGINFO_AS_ARRAY
+      info[0] = 'textbackground'
+      info
+    else # ! TkComm::GET_CONFIGINFO_AS_ARRAY
+      {'textbackground' => info['background']}
+    end
+  end
+
+  # get/set borderwidth of text widget
+  def set_textborderwidth(width)
+    @text.borderwidth(width)
+  end
+  def get_textborderwidth
+    @text.borderwidth
+  end
+  def textborderwidth(width = nil)
+    if width
+      set_textborderwidth(width)
+    else
+      get_textborderwidth
+    end
+  end
+
+  # set relief of text widget
+  def textrelief(type)
+    @text.relief(type)
+  end
+
+  # get/set width of scrollbar
+  def get_scrollbarwidth
+    @v_scroll.width
+  end
+  def set_scrollbarwidth(width)
+    @v_scroll.width(width)
+    @h_scroll.width(width)
+  end
+  alias :scrollbarwidth :set_scrollbarwidth
 
   # vertical scrollbar : ON/OFF
   def vscroll(mode)
@@ -93,7 +145,11 @@ end
 ################################################
 if __FILE__ == $0
   f = TkFrame.new.pack('fill'=>'x')
-  t = TkTextFrame.new.pack
+  #t = TkTextFrame.new.pack
+  t = TkTextFrame.new(:textborderwidth=>3, 
+		      :textrelief=>:ridge, 
+		      :scrollbarrelief=>:ridge).pack
+  p t.configinfo
   TkButton.new(f, 'text'=>'vscr OFF', 
 	       'command'=>proc{t.vscroll(false)}).pack('side'=>'right')
   TkButton.new(f, 'text'=>'vscr ON', 
