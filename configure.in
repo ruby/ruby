@@ -300,6 +300,9 @@ mingw*)		LIBS="-lwsock32 $LIBS"
 		ac_cv_func_vsnprintf=yes
 		ac_cv_func_seekdir=yes
 		ac_cv_func_telldir=yes
+		ac_cv_func_isinf=yes
+		ac_cv_func_isnan=yes
+		ac_cv_func_finite=yes
 		ac_cv_lib_crypt_crypt=no
 		enable_pthread=no
 		;;

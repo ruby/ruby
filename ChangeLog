@@ -1,3 +1,7 @@
+Mon Dec 22 17:07:31 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in (mingw): set isnan, finite and isinf to yes.
+
 Mon Dec 22 13:40:19 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/soap/property.rb: passing block by reference.
