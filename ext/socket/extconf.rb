@@ -194,8 +194,10 @@ end
 have_header("netinet/tcp.h") if not /cygwin/ =~ RUBY_PLATFORM # for cygwin 1.1.5
 have_header("netinet/udp.h")
 
-have_struct_member('struct msghdr', 'msg_control', header=['sys/types.h', 'sys/socket.h'])
-have_struct_member('struct msghdr', 'msg_accrights', header=['sys/types.h', 'sys/socket.h'])
+if have_func("sendmsg") or have_func("recvmsg")
+  have_struct_member('struct msghdr', 'msg_control', header=['sys/types.h', 'sys/socket.h'])
+  have_struct_member('struct msghdr', 'msg_accrights', header=['sys/types.h', 'sys/socket.h'])
+end
 
 $getaddr_info_ok = false
 if !enable_config("wide-getaddrinfo", false) and try_run(<<EOF)

@@ -1,3 +1,19 @@
+Wed Jul 30 09:31:55 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* configure.in (os2-emx): renamed from os2_emx, add flags to
+	  CFLAGS and LDFLAGS, and remove lib prefix.  [ruby-dev:20993]
+
+	* file.c (rb_file_s_rename): retry with removing new file on
+	  DOSISH.  [ruby-dev:21007]
+
+	* ext/socket/extconf.rb (sendmsg, recvmsg): check functions.
+
+	* ext/socket/socket.c (unix_send_io, unix_recv_io): raise
+	  NotImplementedError unless system calls are available.
+
+	* ext/socket/socket.c (sock_initialize): rename from sock_init()
+	  to get rid of conflict with OS/2 socket library.
+
 Wed Jul 30 02:37:12 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* marshal.c (w_object): if object responds to 'marshal_dump',

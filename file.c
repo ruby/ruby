@@ -1333,13 +1333,27 @@ static VALUE
 rb_file_s_rename(klass, from, to)
     VALUE klass, from, to;
 {
+    const char *src, *dst;
     SafeStringValue(from);
     SafeStringValue(to);
 
-    if (rename(StringValueCStr(from), StringValueCStr(to)) < 0) {
+    src = StringValueCStr(from);
+    dst = StringValueCStr(to);
+    if (rename(src, dst) < 0) {
 #if defined __CYGWIN__
 	extern unsigned long __attribute__((stdcall)) GetLastError();
 	errno = GetLastError(); /* This is a Cygwin bug */
+#elif defined DOSISH && !defined _WIN32
+	if (errno == EEXIST
+#if defined (__EMX__)
+	    || errno == EACCES
+#endif
+	    ) {
+	    if (chmod(dst, 0666) == 0 &&
+		unlink(dst) == 0 &&
+		rename(src, dst) == 0)
+		return INT2FIX(0);
+	}
 #endif
 	sys_fail2(from, to);
     }

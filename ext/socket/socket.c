@@ -1508,7 +1508,7 @@ static VALUE
 unix_send_io(sock, val)
     VALUE sock, val;
 {
-#if defined(HAVE_ST_MSG_CONTROL) || defined(HAVE_ST_MSG_ACCRIGHTS)
+#if defined(HAVE_SENDMSG) && (defined(HAVE_ST_MSG_CONTROL) || defined(HAVE_ST_MSG_ACCRIGHTS))
     int fd;
     OpenFile *fptr;
     struct msghdr msg;
@@ -1574,7 +1574,7 @@ unix_recv_io(argc, argv, sock)
     VALUE *argv;
     VALUE sock;
 {
-#if defined(HAVE_ST_MSG_CONTROL) || defined(HAVE_ST_MSG_ACCRIGHTS)
+#if defined(HAVE_RECVMSG) && (defined(HAVE_ST_MSG_CONTROL) || defined(HAVE_ST_MSG_ACCRIGHTS))
     VALUE klass, mode;
     OpenFile *fptr;
     struct msghdr msg;
@@ -1817,7 +1817,7 @@ setup_domain_and_type(domain, dv, type, tv)
 }
 
 static VALUE
-sock_init(sock, domain, type, protocol)
+sock_initialize(sock, domain, type, protocol)
     VALUE sock, domain, type, protocol;
 {
     int fd;
@@ -2483,7 +2483,7 @@ Init_socket()
 
     rb_cSocket = rb_define_class("Socket", rb_cBasicSocket);
 
-    rb_define_method(rb_cSocket, "initialize", sock_init, 3);
+    rb_define_method(rb_cSocket, "initialize", sock_initialize, 3);
     rb_define_method(rb_cSocket, "connect", sock_connect, 1);
     rb_define_method(rb_cSocket, "bind", sock_bind, 1);
     rb_define_method(rb_cSocket, "listen", sock_listen, 1);
