@@ -149,7 +149,6 @@ rb_digest_base_become(copy, obj)
     void *pctx1, *pctx2;
     VALUE klass;
 
-    printf("Digest::Base::bacome\n");
     if (copy = obj) return copy;
     rb_check_frozen(copy);
     algo = get_digest_base_metadata(CLASS_OF(klass));
@@ -302,7 +301,6 @@ Init_digest()
 
     cDigest_Base = rb_define_class_under(mDigest, "Base", rb_cObject);
 
-    printf("Init_digest\n");
     rb_define_singleton_method(cDigest_Base, "allocate", rb_digest_base_alloc, 0);
     rb_define_singleton_method(cDigest_Base, "digest", rb_digest_base_s_digest, 1);
     rb_define_singleton_method(cDigest_Base, "hexdigest", rb_digest_base_s_hexdigest, 1);

@@ -26,6 +26,6 @@ Init_md5()
 
     cDigest_MD5 = rb_define_class_under(mDigest, "MD5", cDigest_Base);
 
-    rb_cvar_declare(cDigest_MD5, rb_intern("metadata"),
-		    Data_Wrap_Struct(rb_cObject, 0, 0, &md5));
+    rb_cvar_set(cDigest_MD5, rb_intern("metadata"),
+		Data_Wrap_Struct(rb_cObject, 0, 0, &md5), Qtrue);
 }

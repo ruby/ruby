@@ -94,8 +94,12 @@ static void
 copy_object(dest, obj)
     VALUE dest, obj;
 {
-    RBASIC(dest)->flags &= ~(T_MASK|FL_EXIVAR|FL_TAINT);
+    if (OBJ_FROZEN(dest)) {
+        rb_raise(rb_eTypeError, "[bug] frozen object (%s) allocated", rb_class2name(CLASS_OF(dest)));
+    }
+    RBASIC(dest)->flags &= ~(T_MASK|FL_EXIVAR);
     RBASIC(dest)->flags |= RBASIC(obj)->flags & (T_MASK|FL_EXIVAR|FL_TAINT);
+    rb_funcall(dest, become, 1, obj);
     if (FL_TEST(obj, FL_EXIVAR)) {
 	rb_copy_generic_ivar(dest, obj);
     }
@@ -123,10 +127,9 @@ rb_obj_clone(obj)
         rb_raise(rb_eTypeError, "can't clone %s", rb_class2name(CLASS_OF(obj)));
     }
     clone = rb_obj_alloc(rb_obj_class(obj));
-    RBASIC(clone)->klass = rb_singleton_class_clone(obj);
     copy_object(clone, obj);
-    rb_funcall(clone, become, 1, obj);
-    RBASIC(clone)->flags = RBASIC(obj)->flags;
+    RBASIC(clone)->klass = rb_singleton_class_clone(obj);
+    RBASIC(clone)->flags = RBASIC(obj)->flags | FL_TEST(clone, FL_TAINT);
 
     return clone;
 }
@@ -142,7 +145,6 @@ rb_obj_dup(obj)
     }
     dup = rb_obj_alloc(rb_obj_class(obj));
     copy_object(dup, obj);
-    rb_funcall(dup, become, 1, obj);
 
     return dup;
 }

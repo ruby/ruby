@@ -702,25 +702,18 @@ r_long(arg)
     return x;
 }
 
-#define r_bytes2(s, len, arg) do {	\
-    (len) = r_long(arg);		\
-    (s) = ALLOCA_N(char,(len)+1);	\
-    r_bytes0((s),(len),(arg));		\
-} while (0)
+#define r_bytes(arg) r_bytes0(r_long(arg), (arg))
 
-#define r_bytes(s, arg) do {		\
-    long r_bytes_len;			\
-    r_bytes2((s), r_bytes_len, (arg));	\
-} while (0)
-
-static void
-r_bytes0(s, len, arg)
-    char *s;
+static VALUE
+r_bytes0(len, arg)
     long len;
     struct load_arg *arg;
 {
+    VALUE str;
+
     if (arg->fp) {
-	if (rb_io_fread(s, len, arg->fp) != len) {
+	str = rb_str_new(0, len);
+	if (rb_io_fread(RSTRING(str)->ptr, len, arg->fp) != len) {
 	  too_short:
 	    rb_raise(rb_eArgError, "marshal data too short");
 	}
@@ -729,10 +722,10 @@ r_bytes0(s, len, arg)
 	if (arg->ptr + len > arg->end) {
 	    goto too_short;
 	}
-	memcpy(s, arg->ptr, len);
+	str = rb_str_new(arg->ptr, len);
 	arg->ptr += len;
     }
-    s[len] = '\0';
+    return str;
 }
 
 static ID
@@ -752,11 +745,9 @@ static ID
 r_symreal(arg)
     struct load_arg *arg;
 {
-    char *buf;
     ID id;
 
-    r_bytes(buf, arg);
-    id = rb_intern(buf);
+    id = rb_intern(RSTRING(r_bytes(arg))->ptr);
     st_insert(arg->symbol, arg->symbol->num_entries, id);
 
     return id;
@@ -783,11 +774,7 @@ static VALUE
 r_string(arg)
     struct load_arg *arg;
 {
-    char *buf;
-    long len;
-
-    r_bytes2(buf, len, arg);
-    return rb_str_new(buf, len);
+    return r_bytes(arg);
 }
 
 static VALUE
@@ -879,21 +866,20 @@ r_object0(arg, proc)
 
       case TYPE_FLOAT:
 	{
-	    char *buf;
 	    double d, t = 0.0;
+	    VALUE str = r_bytes(arg);
 
-	    r_bytes(buf, arg);
-	    if (strcmp(buf, "nan") == 0) {
+	    if (strcmp(RSTRING(str)->ptr, "nan") == 0) {
 		d = t / t;
 	    }
-	    else if (strcmp(buf, "inf") == 0) {
+	    else if (strcmp(RSTRING(str)->ptr, "inf") == 0) {
 		d = 1.0 / t;
 	    }
-	    else if (strcmp(buf, "-inf") == 0) {
+	    else if (strcmp(RSTRING(str)->ptr, "-inf") == 0) {
 		d = -1.0 / t;
 	    }
 	    else {
-		d = strtod(buf, 0);
+		d = strtod(RSTRING(str)->ptr, 0);
 	    }
 	    v = rb_float_new(d);
 	    r_regist(v, arg);
@@ -944,13 +930,9 @@ r_object0(arg, proc)
 
       case TYPE_REGEXP:
 	{
-	    char *buf;
-	    long len;
-	    int options;
-
-	    r_bytes2(buf, len, arg);
-	    options = r_byte(arg);
-	    v = r_regist(rb_reg_new(buf, len, options), arg);
+	    volatile VALUE str = r_bytes(arg);
+	    int options = r_byte(arg);
+	    v = r_regist(rb_reg_new(RSTRING(str)->ptr, RSTRING(str)->len, options), arg);
 	}
 	break;
 
@@ -1077,19 +1059,17 @@ r_object0(arg, proc)
 
       case TYPE_MODULE_OLD:
         {
-	    char *buf;
-	    r_bytes(buf, arg);
-	    v = r_regist(rb_path2class(buf), arg);
+	    volatile VALUE str = r_bytes(arg);
+	    v = r_regist(rb_path2class(RSTRING(str)->ptr), arg);
 	}
 	break;
 
       case TYPE_CLASS:
         {
-	    char *buf;
-	    r_bytes(buf, arg);
-	    v = rb_path2class(buf);
+	    volatile VALUE str = r_bytes(arg);
+	    v = rb_path2class(RSTRING(str)->ptr);
 	    if (TYPE(v) != T_CLASS) {
-		rb_raise(rb_eTypeError, "%s is not a class", buf);
+		rb_raise(rb_eTypeError, "%s is not a class", RSTRING(str)->ptr);
 	    }
 	    r_regist(v, arg);
 	}
@@ -1097,11 +1077,10 @@ r_object0(arg, proc)
 
       case TYPE_MODULE:
         {
-	    char *buf;
-	    r_bytes(buf, arg);
-	    v = rb_path2class(buf);
+	    volatile VALUE str = r_bytes(arg);
+	    v = rb_path2class(RSTRING(str)->ptr);
 	    if (TYPE(v) != T_MODULE) {
-		rb_raise(rb_eTypeError, "%s is not a module", buf);
+		rb_raise(rb_eTypeError, "%s is not a module", RSTRING(str)->ptr);
 	    }
 	    r_regist(v, arg);
 	}

@@ -149,6 +149,9 @@ rb_make_metaclass(obj, super)
     rb_singleton_class_attached(klass, obj);
     if (BUILTIN_TYPE(obj) == T_CLASS) {
 	RBASIC(klass)->klass = klass;
+	if (FL_TEST(obj, FL_SINGLETON)) {
+	    RCLASS(klass)->super = RBASIC(RCLASS(obj)->super)->klass;
+	}
     }
 
     return klass;

@@ -3345,23 +3345,29 @@ yylex()
 	}
 	if (ISSPACE(c)){
 	    if (!IS_ARG()){
-		int c = 0;
+		int c2 = 0;
 		switch (c) {
 		  case ' ':
-		    c = 's';
+		    c2 = 's';
 		    break;
 		  case '\n':
-		    c = 'n';
+		    c2 = 'n';
 		    break;
 		  case '\t':
-		    c = 't';
+		    c2 = 't';
 		    break;
 		  case '\v':
-		    c = 'v';
+		    c2 = 'v';
+		    break;
+		  case '\r':
+		    c2 = 'r';
+		    break;
+		  case '\f':
+		    c2 = 'f';
 		    break;
 		}
-		if (c) {
-		    rb_warn("invalid character syntax; use ?\\%c", c);
+		if (c2) {
+		    rb_warn("invalid character syntax; use ?\\%c", c2);
 		}
 	    }
 	  ternary:
