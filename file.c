@@ -1434,7 +1434,7 @@ nextdirsep(s)
     return (char *)s;
 }
 
-
+#if defined(DOSISH_UNC) || defined(DOSISH_DRIVE_LETTER) 
 static inline char *
 skipprefix(path)
     const char *path;
@@ -1450,9 +1450,11 @@ skipprefix(path)
     if (has_drive_letter(path))
 	return (char *)(path + 2);
 #endif
-    while (isdirsep(*path)) path++;
     return (char *)path;
 }
+#else
+#define skipprefix(path) (path)
+#endif
 
 static char *
 strrdirsep(path)

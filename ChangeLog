@@ -1,3 +1,10 @@
+Thu Feb 20 18:44:51 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* file.c (file_expand_path): fix wrong behavior for root file.
+	  expand_path("..", "//machine/share") => "//machine/share"
+	  expand_path("..", "c:/a") => "c:/"
+	  expand_path("..", "/a") => "/"
+
 Thu Feb 20 18:11:01 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* file.c (file_expand_path): should not upward beyond share name.
