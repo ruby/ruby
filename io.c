@@ -407,6 +407,24 @@ rb_io_fwrite(ptr, len, f)
 }
 
 static VALUE
+/*
+ *  call-seq:
+ *     ios.write(string)    => integer
+ *  
+ *  Writes the given string to <em>ios</em>. The stream must be opened
+ *  for writing. If the argument is not a string, it will be converted
+ *  to a string using <code>to_s</code>. Returns the number of bytes
+ *  written.
+ *     
+ *     count = $stdout.write( "This is a test\n" )
+ *     puts "That was #{count} bytes of data"
+ *     
+ *  <em>produces:</em>
+ *     
+ *     This is a test
+ *     That was 15 bytes of data
+ */
+
 io_write(io, str)
     VALUE io, str;
 {
@@ -448,6 +466,22 @@ rb_io_write(io, str)
 }
 
 VALUE
+/*
+ *  call-seq:
+ *     ios << obj     => ios
+ *  
+ *  String Output---Writes <i>obj</i> to <em>ios</em>.
+ *  <i>obj</i> will be converted to a string using
+ *  <code>to_s</code>.
+ *     
+ *     $stdout << "Hello " << "world!\n"
+ *     
+ *  <em>produces:</em>
+ *     
+ *     Hello world!
+ */
+
+
 rb_io_addstr(io, str)
     VALUE io, str;
 {
@@ -456,6 +490,22 @@ rb_io_addstr(io, str)
 }
 
 static VALUE
+/*
+ *  call-seq:
+ *     ios.flush    => ios
+ *  
+ *  Flushes any buffered data within <em>ios</em> to the underlying
+ *  operating system (note that this is Ruby internal buffering only;
+ *  the OS may buffer the data as well).
+ *     
+ *     $stdout.print "no newline"
+ *     $stdout.flush
+ *     
+ *  <em>produces:</em>
+ *     
+ *     no newline
+ */
+
 rb_io_flush(io)
     VALUE io;
 {
@@ -472,6 +522,20 @@ rb_io_flush(io)
 }
 
 static VALUE
+
+/*
+ *  call-seq:
+ *     ios.pos     => integer
+ *     ios.tell    => integer
+ *  
+ *  Returns the current offset (in bytes) of <em>ios</em>.
+ *     
+ *     f = File.new("testfile")
+ *     f.pos    #=> 0
+ *     f.gets   #=> "This is line one\n"
+ *     f.pos    #=> 17
+ */
+
 rb_io_tell(io)
      VALUE io;
 {
@@ -501,6 +565,27 @@ rb_io_seek(io, offset, whence)
 }
 
 static VALUE
+/*
+ *  call-seq:
+ *     ios.seek(amount, whence=SEEK_SET) -> 0
+ *  
+ *  Seeks to a given offset <i>anInteger</i> in the stream according to
+ *  the value of <i>whence</i>:
+ *
+ *    IO::SEEK_CUR  | Seeks to _amount_ plus current position
+ *    --------------+----------------------------------------------------
+ *    IO::SEEK_END  | Seeks to _amount_ plus end of stream (you probably 
+ *                  | want a negative value for _amount_)
+ *    --------------+----------------------------------------------------
+ *    IO::SEEK_SET  | Seeks to the absolute location given by _amount_
+ *
+ *  Example:
+ *     
+ *     f = File.new("testfile")
+ *     f.seek(-13, IO::SEEK_END)   #=> 0
+ *     f.readline                  #=> "And so on...\n"
+ */
+
 rb_io_seek_m(argc, argv, io)
     int argc;
     VALUE *argv;
@@ -517,6 +602,17 @@ rb_io_seek_m(argc, argv, io)
 }
 
 static VALUE
+/*
+ *  call-seq:
+ *     ios.pos = integer    => 0
+ *  
+ *  Seeks to the given position (in bytes) in <em>ios</em>.
+ *     
+ *     f = File.new("testfile")
+ *     f.pos = 17
+ *     f.gets   #=> "This is line two\n"
+ */
+
 rb_io_set_pos(io, offset)
      VALUE io, offset;
 {
@@ -532,6 +628,20 @@ rb_io_set_pos(io, offset)
 }
 
 static VALUE
+/*
+ *  call-seq:
+ *     ios.rewind    => 0
+ *  
+ *  Positions <em>ios</em> to the beginning of input, resetting
+ *  <code>lineno</code> to zero.
+ *     
+ *     f = File.new("testfile")
+ *     f.readline   #=> "This is line one\n"
+ *     f.rewind     #=> 0
+ *     f.lineno     #=> 0
+ *     f.readline   #=> "This is line one\n"
+ */
+
 rb_io_rewind(io)
     VALUE io;
 {
@@ -549,6 +659,19 @@ rb_io_rewind(io)
 }
 
 VALUE
+/*
+ *  call-seq:
+ *     ios.eof     => true or false
+ *     ios.eof?    => true or false
+ *  
+ *  Returns true if <em>ios</em> is at end of file. The stream must be
+ *  opened for reading or an <code>IOError</code> will be raised.
+ *     
+ *     f = File.new("testfile")
+ *     dummy = f.readlines
+ *     f.eof   #=> true
+ */
+
 rb_io_eof(io)
     VALUE io;
 {
@@ -574,6 +697,19 @@ rb_io_eof(io)
 }
 
 static VALUE
+/*
+ *  call-seq:
+ *     ios.sync    => true or false
+ *  
+ *  Returns the current ``sync mode'' of <em>ios</em>. When sync mode is
+ *  true, all output is immediately flushed to the underlying operating
+ *  system and is not buffered by Ruby internally. See also
+ *  <code>IO#fsync</code>.
+ *     
+ *     f = File.new("testfile")
+ *     f.sync   #=> false
+ */
+
 rb_io_sync(io)
     VALUE io;
 {
@@ -584,6 +720,21 @@ rb_io_sync(io)
 }
 
 static VALUE
+/*
+ *  call-seq:
+ *     ios.sync = boolean   => boolean
+ *  
+ *  Sets the ``sync mode'' to <code>true</code> or <code>false</code>.
+ *  When sync mode is true, all output is immediately flushed to the
+ *  underlying operating system and is not buffered internally. Returns
+ *  the new state. See also <code>IO#fsync</code>.
+ *     
+ *     f = File.new("testfile")
+ *     f.sync = true
+ *     
+ *  <em>(produces no output)</em>
+ */
+
 rb_io_set_sync(io, mode)
     VALUE io, mode;
 {
@@ -600,6 +751,18 @@ rb_io_set_sync(io, mode)
 }
 
 static VALUE
+/*
+ *  call-seq:
+ *     ios.fsync   => 0 or nil
+ *  
+ *  Immediately writes all buffered data in <em>ios</em> to disk.
+ *  Returns <code>nil</code> if the underlying operating system does not
+ *  support <em>fsync(2)</em>. Note that <code>fsync</code> differs from
+ *  using <code>IO#sync=</code>. The latter ensures that data is flushed
+ *  from Ruby's buffers, but doesn't not guarantee that the underlying
+ *  operating system actually writes it to disk.
+ */
+
 rb_io_fsync(io)
     VALUE io;
 {
@@ -622,6 +785,18 @@ rb_io_fsync(io)
 }
 
 static VALUE
+/*
+ *  call-seq:
+ *     ios.fileno    => fixnum
+ *     ios.to_i      => fixnum
+ *  
+ *  Returns an integer representing the numeric file descriptor for
+ *  <em>ios</em>.
+ *     
+ *     $stdin.fileno    #=> 0
+ *     $stdout.fileno   #=> 1
+ */
+
 rb_io_fileno(io)
     VALUE io;
 {
@@ -634,6 +809,27 @@ rb_io_fileno(io)
 }
 
 static VALUE
+
+/*
+ *  call-seq:
+ *     ios.pid    => fixnum
+ *  
+ *  Returns the process ID of a child process associated with
+ *  <em>ios</em>. This will be set by <code>IO::popen</code>.
+ *     
+ *     pipe = IO.popen("-")
+ *     if pipe
+ *       $stderr.puts "In parent, child pid is #{pipe.pid}"
+ *     else
+ *       $stderr.puts "In child, pid is #{$$}"
+ *     end
+ *     
+ *  <em>produces:</em>
+ *     
+ *     In child, pid is 26209
+ *     In parent, child pid is 26209
+ */
+
 rb_io_pid(io)
     VALUE io;
 {
@@ -646,6 +842,14 @@ rb_io_pid(io)
 }
 
 static VALUE
+
+/*
+ * call-seq:
+ *   ios.inspect   => string
+ *
+ * Return a string describing this IO object.
+ */
+
 rb_io_inspect(obj)
     VALUE obj;
 {
@@ -667,6 +871,13 @@ rb_io_inspect(obj)
 }
 
 static VALUE
+/*
+ *  call-seq:
+ *     ios.to_io -> ios
+ *  
+ *  Returns <em>ios</em>.
+ */
+
 rb_io_to_io(io)
     VALUE io;
 {
@@ -810,6 +1021,20 @@ read_all(fptr, siz, str)
 
 static VALUE
 io_read(argc, argv, io)
+/*
+ *  call-seq:
+ *     ios.read([integer [, buffer]])    => string, buffer, or nil
+ *  
+ *  Reads at most <i>integer</i> bytes from the I/O stream, or to the
+ *  end of file if <i>integer</i> is omitted or is <code>nil</code>.
+ *  If the optional <i>buffer</i> argument is present, it must reference
+ *  a String, which will receive the data. Returns <code>nil</code>
+ *  if called at end of file.
+ *     
+ *     f = File.new("testfile")
+ *     f.read(16)   #=> "This is line one"
+ */
+
     int argc;
     VALUE *argv;
     VALUE io;
@@ -1089,6 +1314,23 @@ rb_io_gets(io)
 static VALUE
 rb_io_gets_m(argc, argv, io)
     int argc;
+/*
+ *  call-seq:
+ *     ios.gets(sep_string=$/)   => string or nil
+ *  
+ *  Reads the next ``line'' from the I/O stream; lines are separated by
+ *  <i>sep_string</i>. A separator of <code>nil</code> reads the entire
+ *  contents, and a zero-length separator reads the input a paragraph at
+ *  a time (two successive newlines in the input separate paragraphs).
+ *  The stream must be opened for reading or an <code>IOerror</code>
+ *  will be raised. The line read in will be returned and also assigned
+ *  to <code>$_</code>. Returns <code>nil</code> if called at end of
+ *  file.
+ *     
+ *     File.new("testfile").gets   #=> "This is line one\n"
+ *     $_                          #=> "This is line one\n"
+ */
+
     VALUE *argv;
     VALUE io;
 {
@@ -1113,6 +1355,25 @@ rb_io_gets_m(argc, argv, io)
 static VALUE
 rb_io_lineno(io)
     VALUE io;
+/*
+ *  call-seq:
+ *     ios.lineno    => integer
+ *  
+ *  Returns the current line number in <em>ios</em>. The stream must be
+ *  opened for reading. <code>lineno</code> counts the number of times
+ *  <code>gets</code> is called, rather than the number of newlines
+ *  encountered. The two values will differ if <code>gets</code> is
+ *  called with a separator other than newline. See also the
+ *  <code>$.</code> variable.
+ *     
+ *     f = File.new("testfile")
+ *     f.lineno   #=> 0
+ *     f.gets     #=> "This is line one\n"
+ *     f.lineno   #=> 1
+ *     f.gets     #=> "This is line two\n"
+ *     f.lineno   #=> 2
+ */
+
 {
     OpenFile *fptr;
 
@@ -1124,6 +1385,23 @@ rb_io_lineno(io)
 static VALUE
 rb_io_set_lineno(io, lineno)
     VALUE io, lineno;
+/*
+ *  call-seq:
+ *     ios.lineno = integer    => integer
+ *  
+ *  Manually sets the current line number to the given value.
+ *  <code>$.</code> is updated only on the next read.
+ *     
+ *     f = File.new("testfile")
+ *     f.gets                     #=> "This is line one\n"
+ *     $.                         #=> 1
+ *     f.lineno = 1000
+ *     f.lineno                   #=> 1000
+ *     $. # lineno of last read   #=> 1
+ *     f.gets                     #=> "This is line two\n"
+ *     $. # lineno of last read   #=> 1001
+ */
+
 {
     OpenFile *fptr;
 
@@ -1161,6 +1439,14 @@ argf_lineno()
 static VALUE
 rb_io_readline(argc, argv, io)
     int argc;
+/*
+ *  call-seq:
+ *     ios.readline(sep_string=$/)   => string
+ *  
+ *  Reads a line as with <code>IO#gets</code>, but raises an
+ *  <code>EOFError</code> on end of file.
+ */
+
     VALUE *argv;
     VALUE io;
 {
@@ -1175,6 +1461,21 @@ rb_io_readline(argc, argv, io)
 static VALUE
 rb_io_readlines(argc, argv, io)
     int argc;
+/*
+ *  call-seq:
+ *     ios.readlines(sep_string=$/)  =>   array
+ *  
+ *  Reads all of the lines in <em>ios</em>, and returns them in
+ *  <i>anArray</i>. Lines are separated by the optional
+ *  <i>sep_string</i>. If <i>set_string</i> is <code>nil</code>, the
+ *  rest of the stream is returned as a single record.
+ *  The stream must be opened for reading or an
+ *  <code>IOerror</code> will be raised.
+ *     
+ *     f = File.new("testfile")
+ *     f.readlines[0]   #=> "This is line one\n"
+ */
+
     VALUE *argv;
     VALUE io;
 {
@@ -1199,6 +1500,26 @@ rb_io_readlines(argc, argv, io)
 static VALUE
 rb_io_each_line(argc, argv, io)
     int argc;
+/*
+ *  call-seq:
+ *     ios.each(sep_string=$/)      {|line| block }  => ios
+ *     ios.each_line(sep_string=$/) {|line| block }  => ios
+ *  
+ *  Executes the block for every line in <em>ios</em>, where lines are
+ *  separated by <i>sep_string</i>. <em>ios</em> must be opened for
+ *  reading or an <code>IOerror</code> will be raised.
+ *     
+ *     f = File.new("testfile")
+ *     f.each {|line| puts "#{f.lineno}: #{line}" }
+ *     
+ *  <em>produces:</em>
+ *     
+ *     1: This is line one
+ *     2: This is line two
+ *     3: This is line three
+ *     4: And so on...
+ */
+
     VALUE *argv;
     VALUE io;
 {
@@ -1222,6 +1543,20 @@ rb_io_each_line(argc, argv, io)
 static VALUE
 rb_io_each_byte(io)
     VALUE io;
+/*
+ *  call-seq:
+ *     ios.each_byte {|byte| block }  => nil
+ *  
+ *  Calls the given block once for each byte (0..255) in <em>ios</em>,
+ *  passing the byte as an argument. The stream must be opened for
+ *  reading or an <code>IOerror</code> will be raised.
+ *     
+ *     f = File.new("testfile")
+ *     checksum = 0
+ *     f.each_byte {|x| checksum ^= x }   #=> #<File:testfile>
+ *     checksum                           #=> 12
+ */
+
 {
     OpenFile *fptr;
     FILE *f;
@@ -1254,6 +1589,18 @@ rb_io_each_byte(io)
 VALUE
 rb_io_getc(io)
     VALUE io;
+/*
+ *  call-seq:
+ *     ios.getc   => fixnum or nil
+ *  
+ *  Gets the next 8-bit byte (0..255) from <em>ios</em>. Returns
+ *  <code>nil</code> if called at end of file.
+ *     
+ *     f = File.new("testfile")
+ *     f.getc   #=> 84
+ *     f.getc   #=> 104
+ */
+
 {
     OpenFile *fptr;
     FILE *f;
@@ -1300,6 +1647,14 @@ rb_getc(f)
 static VALUE
 rb_io_readchar(io)
     VALUE io;
+/*
+ *  call-seq:
+ *     ios.readchar   => fixnum
+ *  
+ *  Reads a character as with <code>IO#getc</code>, but raises an
+ *  <code>EOFError</code> on end of file.
+ */
+
 {
     VALUE c = rb_io_getc(io);
 
@@ -1312,6 +1667,22 @@ rb_io_readchar(io)
 VALUE
 rb_io_ungetc(io, c)
     VALUE io, c;
+/*
+ *  call-seq:
+ *     ios.ungetc(integer)   => nil
+ *  
+ *  Pushes back one character (passed as a parameter) onto <em>ios</em>,
+ *  such that a subsequent buffered read will return it. Only one character
+ *  may be pushed back before a subsequent read operation (that is,
+ *  you will be able to read only the last of several characters that have been pushed
+ *  back). Has no effect with unbuffered reads (such as <code>IO#sysread</code>).
+ *     
+ *     f = File.new("testfile")   #=> #<File:testfile>
+ *     c = f.getc                 #=> 84
+ *     f.ungetc(c)                #=> nil
+ *     f.getc                     #=> 84
+ */
+
 {
     OpenFile *fptr;
     int cc = NUM2INT(c);
@@ -1329,6 +1700,18 @@ rb_io_ungetc(io, c)
 static VALUE
 rb_io_isatty(io)
     VALUE io;
+/*
+ *  call-seq:
+ *     ios.isatty   => true or false
+ *     ios.tty?     => true or false
+ *  
+ *  Returns <code>true</code> if <em>ios</em> is associated with a
+ *  terminal device (tty), <code>false</code> otherwise.
+ *     
+ *     File.new("testfile").isatty   #=> false
+ *     File.new("/dev/tty").isatty   #=> true
+ */
+
 {
     OpenFile *fptr;
 
@@ -1434,6 +1817,17 @@ rb_io_close(io)
 static VALUE
 rb_io_close_m(io)
     VALUE io;
+/*
+ *  call-seq:
+ *     ios.close   => nil
+ *  
+ *  Closes <em>ios</em> and flushes any pending writes to the operating
+ *  system. The stream is unavailable for any further data operations;
+ *  an <code>IOError</code> is raised if such an attempt is made. I/O
+ *  streams are automatically closed when they are claimed by the
+ *  garbage collector.
+ */
+
 {
     if (rb_safe_level() >= 4 && !OBJ_TAINTED(io)) {
 	rb_raise(rb_eSecurityError, "Insecure: can't close");
@@ -1453,6 +1847,25 @@ io_close(io)
 static VALUE
 rb_io_closed(io)
     VALUE io;
+/*
+ *  call-seq:
+ *     ios.closed?    => true or false
+ *  
+ *  Returns <code>true</code> if <em>ios</em> is completely closed (for
+ *  duplex streams, both reader and writer), <code>false</code>
+ *  otherwise.
+ *     
+ *     f = File.new("testfile")
+ *     f.close         #=> nil
+ *     f.closed?       #=> true
+ *     f = IO.popen("/bin/sh","r+")
+ *     f.close_write   #=> nil
+ *     f.closed?       #=> false
+ *     f.close_read    #=> nil
+ *     f.closed?       #=> true
+ */
+
+
 {
     OpenFile *fptr;
 
@@ -1463,6 +1876,24 @@ rb_io_closed(io)
 static VALUE
 rb_io_close_read(io)
     VALUE io;
+/*
+ *  call-seq:
+ *     ios.close_read    => nil
+ *  
+ *  Closes the read end of a duplex I/O stream (i.e., one that contains
+ *  both a read and a write stream, such as a pipe). Will raise an
+ *  <code>IOError</code> if the stream is not duplexed.
+ *     
+ *     f = IO.popen("/bin/sh","r+")
+ *     f.close_read
+ *     f.readlines
+ *     
+ *  <em>produces:</em>
+ *     
+ *     prog.rb:3:in `readlines': not opened for reading (IOError)
+ *     	from prog.rb:3
+ */
+
 {
     OpenFile *fptr;
     int n;
@@ -1489,6 +1920,25 @@ rb_io_close_read(io)
 static VALUE
 rb_io_close_write(io)
     VALUE io;
+/*
+ *  call-seq:
+ *     ios.close_write   => nil
+ *  
+ *  Closes the write end of a duplex I/O stream (i.e., one that contains
+ *  both a read and a write stream, such as a pipe). Will raise an
+ *  <code>IOError</code> if the stream is not duplexed.
+ *     
+ *     f = IO.popen("/bin/sh","r+")
+ *     f.close_write
+ *     f.print "nowhere"
+ *     
+ *  <em>produces:</em>
+ *     
+ *     prog.rb:3:in `write': not opened for writing (IOError)
+ *     	from prog.rb:3:in `print'
+ *     	from prog.rb:3
+ */
+
 {
     OpenFile *fptr;
     int n;
@@ -1514,6 +1964,19 @@ rb_io_close_write(io)
 static VALUE
 rb_io_sysseek(argc, argv, io)
     int argc;
+/*
+ *  call-seq:
+ *     ios.sysseek(offset, whence=SEEK_SET)   => integer
+ *  
+ *  Seeks to a given <i>offset</i> in the stream according to the value
+ *  of <i>whence</i> (see <code>IO#seek</code> for values of
+ *  <i>whence</i>). Returns the new offset into the file.
+ *     
+ *     f = File.new("testfile")
+ *     f.sysseek(-13, IO::SEEK_END)   #=> 53
+ *     f.sysread(10)                  #=> "And so on."
+ */
+
     VALUE *argv;
     VALUE io;
 {
@@ -1543,6 +2006,19 @@ rb_io_sysseek(argc, argv, io)
 static VALUE
 rb_io_syswrite(io, str)
     VALUE io, str;
+/*
+ *  call-seq:
+ *     ios.syswrite(string )   => integer
+ *  
+ *  Writes the given string to <em>ios</em> using a low-level write.
+ *  Returns the number of bytes written. Do not mix with other methods
+ *  that write to <em>ios</em> or you may get unpredictable results.
+ *  Raises <code>SystemCallError</code> on error.
+ *     
+ *     f = File.new("out", "w")
+ *     f.syswrite("ABCDEF")   #=> 6
+ */
+
 {
     OpenFile *fptr;
     FILE *f;
@@ -1572,6 +2048,20 @@ rb_io_syswrite(io, str)
 static VALUE
 rb_io_sysread(argc, argv, io)
     int argc;
+/*
+ *  call-seq:
+ *     ios.sysread(integer )    => string
+ *  
+ *  Reads <i>integer</i> bytes from <em>ios</em> using a low-level
+ *  read and returns them as a string. Do not mix with other methods
+ *  that read from <em>ios</em> or you may get unpredictable results.
+ *  Raises <code>SystemCallError</code> on error and
+ *  <code>EOFError</code> at end of file.
+ *     
+ *     f = File.new("testfile")
+ *     f.sysread(16)   #=> "This is line one"
+ */
+
     VALUE *argv;
     VALUE io;
 {
@@ -1622,6 +2112,15 @@ rb_io_sysread(argc, argv, io)
 VALUE
 rb_io_binmode(io)
     VALUE io;
+/*
+ *  call-seq:
+ *     ios.binmode    => ios
+ *  
+ *  Puts <em>ios</em> into binary mode. This is useful only in
+ *  MS-DOS/Windows environments. Once a stream is in binary mode, it
+ *  cannot be reset to nonbinary mode.
+ */
+
 {
 #if defined(_WIN32) || defined(DJGPP) || defined(__CYGWIN__) || defined(__human68k__) || defined(__EMX__)
     OpenFile *fptr;
@@ -2231,6 +2730,47 @@ rb_io_popen(str, argc, argv, klass)
 static VALUE
 rb_io_s_popen(argc, argv, klass)
     int argc;
+/*
+ *  call-seq:
+ *     IO.popen(cmd_string, mode="r" )               => io
+ *     IO.popen(cmd_string, mode="r" ) {|io| block } => obj
+ *  
+ *  Runs the specified command string as a subprocess; the subprocess's
+ *  standard input and output will be connected to the returned
+ *  <code>IO</code> object. If <i>cmd_string</i> starts with a
+ *  ``<code>-</code>'', then a new instance of Ruby is started as the
+ *  subprocess. The default mode for the new file object is ``r'', but
+ *  <i>mode</i> may be set to any of the modes listed in the description
+ *  for class IO.
+ *     
+ *  If a block is given, Ruby will run the command as a child connected
+ *  to Ruby with a pipe. Ruby's end of the pipe will be passed as a
+ *  parameter to the block. In this case <code>IO::popen</code> returns
+ *  the value of the block.
+ *     
+ *  If a block is given with a <i>cmd_string</i> of ``<code>-</code>'',
+ *  the block will be run in two separate processes: once in the parent,
+ *  and once in a child. The parent process will be passed the pipe
+ *  object as a parameter to the block, the child version of the block
+ *  will be passed <code>nil</code>, and the child's standard in and
+ *  standard out will be connected to the parent through the pipe. Not
+ *  available on all platforms.
+ *     
+ *     f = IO.popen("uname")
+ *     p f.readlines
+ *     puts "Parent is #{Process.pid}"
+ *     IO.popen ("date") { |f| puts f.gets }
+ *     IO.popen("-") {|f| $stderr.puts "#{Process.pid} is here, f is #{f}"}
+ *     
+ *  <em>produces:</em>
+ *     
+ *     ["Linux\n"]
+ *     Parent is 26166
+ *     Wed Apr  9 08:53:52 CDT 2003
+ *     26169 is here, f is
+ *     26166 is here, f is #<IO:0x401b3d44>
+ */
+
     VALUE *argv;
     VALUE klass;
 {
@@ -2278,6 +2818,19 @@ rb_open_file(argc, argv, io)
 static VALUE
 rb_io_s_open(argc, argv, klass)
     int argc;
+/*
+ *  call-seq:
+ *     IO.open(fd, mode_string="r" )               => io
+ *     IO.open(fd, mode_string="r" ) {|io| block } => obj
+ *  
+ *  With no associated block, <code>open</code> is a synonym for
+ *  <code>IO::new</code>. If the optional code block is given, it will
+ *  be passed <i>io</i> as an argument, and the IO object will
+ *  automatically be closed when the block terminates. In this instance,
+ *  <code>IO::open</code> returns the value of the block.
+ *     
+ */
+
     VALUE *argv;
     VALUE klass;
 {
@@ -2293,6 +2846,17 @@ rb_io_s_open(argc, argv, klass)
 static VALUE
 rb_io_s_sysopen(argc, argv)
     int argc;
+/*
+ *  call-seq:
+ *     IO.sysopen(path, [mode, [perm]])  => fixnum
+ *  
+ *  Opens the given path, returning the underlying file descriptor as a
+ *  <code>Fixnum</code>.
+ *     
+ *     IO.sysopen("testfile")   #=> 3
+ *     
+ */
+
     VALUE *argv;
 {
     VALUE fname, vmode, perm;
@@ -2452,6 +3016,22 @@ io_reopen(io, nfile)
 static VALUE
 rb_io_reopen(argc, argv, file)
     int argc;
+/*
+ *  call-seq:
+ *     ios.reopen(other_IO)         => ios 
+ *     ios.reopen(path, mode_str)   => ios
+ *  
+ *  Reassociates <em>ios</em> with the I/O stream given in
+ *  <i>other_IO</i> or to a new stream opened on <i>path</i>. This may
+ *  dynamically change the actual class of this stream.
+ *     
+ *     f1 = File.new("testfile")
+ *     f2 = File.new("testfile")
+ *     f2.readlines[0]   #=> "This is line one\n"
+ *     f2.reopen(f1)     #=> #<File:testfile>
+ *     f2.readlines[0]   #=> "This is line one\n"
+ */
+
     VALUE *argv;
     VALUE file;
 {
@@ -2576,6 +3156,15 @@ rb_io_init_copy(dest, io)
 VALUE
 rb_io_printf(argc, argv, out)
     int argc;
+/*
+ *  call-seq:
+ *     ios.printf(format_string [, obj, ...] )   => nil
+ *  
+ *  Formats and writes to <em>ios</em>, converting parameters under
+ *  control of the format string. See <code>Kernel#sprintf</code>
+ *  for details.
+ */
+
     VALUE argv[];
     VALUE out;
 {
@@ -2607,6 +3196,26 @@ rb_f_printf(argc, argv)
 VALUE
 rb_io_print(argc, argv, out)
     int argc;
+/*
+ *  call-seq:
+ *     ios.print()             => nil
+ *     ios.print(obj, ...)     => nil
+ *  
+ *  Writes the given object(s) to <em>ios</em>. The stream must be
+ *  opened for writing. If the output record separator (<code>$\</code>)
+ *  is not <code>nil</code>, it will be appended to the output. If no
+ *  arguments are given, prints <code>$_</code>. Objects that aren't
+ *  strings will be converted by calling their <code>to_s</code> method.
+ *  With no argument, prints the contents of the variable <code>$_</code>.
+ *  Returns <code>nil</code>.
+ *     
+ *     $stdout.print("This is ", 100, " percent.\n")
+ *     
+ *  <em>produces:</em>
+ *     
+ *     This is 100 percent.
+ */
+
     VALUE *argv;
     VALUE out;
 {
@@ -2651,6 +3260,22 @@ rb_f_print(argc, argv)
 static VALUE
 rb_io_putc(io, ch)
     VALUE io, ch;
+/*
+ *  call-seq:
+ *     ios.putc(obj)    => obj
+ *  
+ *  If <i>obj</i> is <code>Numeric</code>, write the character whose
+ *  code is <i>obj</i>, otherwise write the first character of the
+ *  string representation of  <i>obj</i> to <em>ios</em>.
+ *     
+ *     $stdout.putc "A"
+ *     $stdout.putc 65
+ *     
+ *  <em>produces:</em>
+ *     
+ *     AA
+ */
+
 {
     char c = NUM2CHR(ch);
 
@@ -2685,6 +3310,26 @@ io_puts_ary(ary, out)
 VALUE
 rb_io_puts(argc, argv, out)
     int argc;
+/*
+ *  call-seq:
+ *     ios.puts(obj, ...)    => nil
+ *  
+ *  Writes the given objects to <em>ios</em> as with
+ *  <code>IO#print</code>. Writes a record separator (typically a
+ *  newline) after any that do not already end with a newline sequence.
+ *  If called with an array argument, writes each element on a new line.
+ *  If called without arguments, outputs a single record separator.
+ *     
+ *     $stdout.puts("this", "is", "a", "test")
+ *     
+ *  <em>produces:</em>
+ *     
+ *     this
+ *     is
+ *     a
+ *     test
+ */
+
     VALUE *argv;
     VALUE out;
 {
@@ -2863,6 +3508,24 @@ prep_path(io, path)
 static VALUE
 rb_io_initialize(argc, argv, io)
     int argc;
+/*
+ *  call-seq:
+ *     IO.new(fd, mode)   => io
+ *  
+ *  Returns a new <code>IO</code> object (a stream) for the given
+ *  integer file descriptor and mode string. See also
+ *  <code>IO#fileno</code> and <code>IO::for_fd</code>.
+ *     
+ *     a = IO.new(2,"w")      # '2' is standard error
+ *     $stderr.puts "Hello"
+ *     a.puts "World"
+ *     
+ *  <em>produces:</em>
+ *     
+ *     Hello
+ *     World
+ */
+
     VALUE *argv;
     VALUE io;
 {
@@ -2924,6 +3587,24 @@ rb_file_initialize(argc, argv, io)
 static VALUE
 rb_io_s_new(argc, argv, klass)
     int argc;
+/*
+ *  call-seq:
+ *     IO.new(fd, mode_string)   => io
+ *  
+ *  Returns a new <code>IO</code> object (a stream) for the given
+ *  integer file descriptor and mode string. See also
+ *  <code>IO#fileno</code> and <code>IO::for_fd</code>.
+ *     
+ *     a = IO.new(2,"w")      # '2' is standard error
+ *     $stderr.puts "Hello"
+ *     a.puts "World"
+ *     
+ *  <em>produces:</em>
+ *     
+ *     Hello
+ *     World
+ */
+
     VALUE *argv;
     VALUE klass;
 {
@@ -2939,6 +3620,15 @@ rb_io_s_new(argc, argv, klass)
 static VALUE
 rb_io_s_for_fd(argc, argv, klass)
     int argc;
+
+/*
+ *  call-seq:
+ *     IO.for_fd(fd, mode)    => io
+ *  
+ *  Synonym for <code>IO::new</code>.
+ *     
+ */
+
     VALUE *argv;
     VALUE klass;
 {
@@ -3242,6 +3932,16 @@ rb_f_select(argc, argv, obj)
     int argc;
     VALUE *argv;
     VALUE obj;
+/*
+ *  call-seq:
+ *     IO.select(read_array 
+ *               [, write_array 
+ *               [, error_array 
+ *               [, timeout]]] ) =>  array  or  nil
+ *  
+ *  See <code>Kernel#select</code>.
+ */
+
 {
     VALUE read, write, except, timeout, res, list;
     fd_set rset, wset, eset, pset;
@@ -3479,6 +4179,19 @@ rb_io_ioctl(argc, argv, io)
     int argc;
     VALUE *argv;
     VALUE io;
+
+/*
+ *  call-seq:
+ *     ios.ioctl(integer_cmd, arg)    => integer
+ *  
+ *  Provides a mechanism for issuing low-level commands to control or
+ *  query I/O devices. Arguments and results are platform dependent. If
+ *  <i>arg</i> is a number, its value is passed directly. If it is a
+ *  string, it is interpreted as a binary sequence of bytes. On Unix
+ *  platforms, see <code>ioctl(2)</code> for details. Not implemented on
+ *  all platforms.
+ */
+
 {
     VALUE req, arg;
 
@@ -3491,6 +4204,19 @@ rb_io_fcntl(argc, argv, io)
     int argc;
     VALUE *argv;
     VALUE io;
+/*
+ *  call-seq:
+ *     ios.fcntl(integer_cmd, arg)    => integer
+ *  
+ *  Provides a mechanism for issuing low-level commands to control or
+ *  query file-oriented I/O streams. Arguments and results are platform
+ *  dependent. If <i>arg</i> is a number, its value is passed
+ *  directly. If it is a string, it is interpreted as a binary sequence
+ *  of bytes (<code>Array#pack</code> might be a useful way to build this
+ *  string). On Unix platforms, see <code>fcntl(2)</code> for details.
+ *  Not implemented on all platforms.
+ */
+
 {
 #ifdef HAVE_FCNTL
     VALUE req, arg;
@@ -3617,6 +4343,42 @@ rb_io_s_pipe(klass)
     VALUE klass;
 {
 #ifndef __human68k__
+/*
+ *  call-seq:
+ *     IO.pipe -> array
+ *  
+ *  Creates a pair of pipe endpoints (connected to each other) and
+ *  returns them as a two-element array of <code>IO</code> objects:
+ *  <code>[</code> <i>read_file</i>, <i>write_file</i> <code>]</code>. Not
+ *  available on all platforms.
+ *     
+ *  In the example below, the two processes close the ends of the pipe
+ *  that they are not using. This is not just a cosmetic nicety. The
+ *  read end of a pipe will not generate an end of file condition if
+ *  there are any writers with the pipe still open. In the case of the
+ *  parent process, the <code>rd.read</code> will never return if it
+ *  does not first issue a <code>wr.close</code>.
+ *     
+ *     rd, wr = IO.pipe
+ *     
+ *     if fork
+ *       wr.close
+ *       puts "Parent got: <#{rd.read}>"
+ *       rd.close
+ *       Process.wait
+ *     else
+ *       rd.close
+ *       puts "Sending message to parent"
+ *       wr.write "Hi Dad"
+ *       wr.close
+ *     end
+ *     
+ *  <em>produces:</em>
+ *     
+ *     Sending message to parent
+ *     Parent got: <Hi Dad>
+ */
+
     int pipes[2], state;
     VALUE r, w, args[3];
 
@@ -3677,6 +4439,23 @@ rb_io_s_foreach(argc, argv)
     int argc;
     VALUE *argv;
 {
+/*
+ *  call-seq:
+ *     IO.foreach(name, sep_string=$/) {|line| block }   => nil
+ *  
+ *  Executes the block for every line in the named I/O port, where lines
+ *  are separated by <em>sep_string</em>.
+ *     
+ *     IO.foreach("testfile") {|x| print "GOT ", x }
+ *     
+ *  <em>produces:</em>
+ *     
+ *     GOT This is line one
+ *     GOT This is line two
+ *     GOT This is line three
+ *     GOT And so on...
+ */     
+
     VALUE fname, io;
     OpenFile *fptr;
     struct foreach_arg arg;
@@ -3707,6 +4486,19 @@ rb_io_s_readlines(argc, argv, io)
     int argc;
     VALUE *argv;
     VALUE io;
+/*
+ *  call-seq:
+ *     IO.readlines(name, sep_string=$/)   => array
+ *  
+ *  Reads the entire file specified by <i>name</i> as individual
+ *  lines, and returns those lines in an array. Lines are separated by
+ *  <i>sep_string</i>.
+ *     
+ *     a = IO.readlines("testfile")
+ *     a[0]   #=> "This is line one\n"
+ *     
+ */
+
 {
     VALUE fname;
     struct foreach_arg arg;
@@ -3732,6 +4524,19 @@ rb_io_s_read(argc, argv, io)
     int argc;
     VALUE *argv;
     VALUE io;
+/*
+ *  call-seq:
+ *     IO.read(rane, [length [, offset]] )   => string
+ *  
+ *  Opens the file, optionally seeks to the given offset, then returns
+ *  <i>length</i> bytes (defaulting to the rest of the file).
+ *  <code>read</code> ensures the file is closed before returning.
+ *     
+ *     IO.read("testfile")           #=> "This is line one\nThis is line two\nThis is line three\nAnd so on...\n"
+ *     IO.read("testfile", 20)       #=> "This is line one\nThi"
+ *     IO.read("testfile", 20, 10)   #=> "ne one\nThis is line "
+ */
+
 {
     VALUE fname, offset;
     struct foreach_arg arg;
@@ -4059,8 +4864,14 @@ opt_i_set(val)
  *  platform-specific separator character.
  *     
  *  I/O ports may be opened in any one of several different modes, which
- *  are shown in this section as <em>mode_string</em>. This mode string
- *  must be one of the values listed in the following table.
+ *  are shown in this section as <em>mode</em>. The mode may
+ *  either be a Fixnum or a String. If numeric, it should be
+ *  one of the operating system specific constants (O_RDONLY,
+ *  O_WRONLY, O_RDWR, O_APPEND and so on). See man open(2) for
+ *  more information.
+ *
+ *  If the mode is given as a String, it must be one of the
+ *  values listed in the following table.
  *
  *    Mode |  Meaning
  *    -----+--------------------------------------------------------
@@ -4084,6 +4895,12 @@ opt_i_set(val)
  *     "b" |  (DOS/Windows only) Binary file mode (may appear with 
  *         |  any of the key letters listed above).
  *
+ *
+ *  The global constant ARGF (also accessible as $<) provides an
+ *  IO-like stream which allows access to all files mentioned on the
+ *  command line (or STDIN if no files are mentioned). ARGF provides
+ *  the methods <code>#path</code> and <code>#filename</code> to access
+ *  the name of the file currently being read.
  */
 
 void
