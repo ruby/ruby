@@ -808,7 +808,7 @@ nil_to_a(obj)
 
 /*
  *  call-seq:
- *    nil.to_s  => "nil"
+ *    nil.inspect  => "nil"
  *
  *  Always returns the string "nil".
  */
