@@ -9498,51 +9498,7 @@ static int thread_init = 0;
 # define ruby_signal(x,y) signal((x), (y))
 #endif
 
-#if defined(PTHREAD_TIMER)
-static pthread_t time_thread;
-
-static void
-catch_timer(sig)
-    int sig;
-{
-#if !defined(POSIX_SIGNAL) && !defined(BSD_SIGNAL)
-    signal(sig, catch_timer);
-#endif
-    rb_thread_schedule();
-}
-
-static void*
-thread_timer(dummy)
-    void *dummy;
-{
-    struct timespec req, rem;
-
-    for (;;) {
-	if (!rb_thread_critical) {
-	    if (rb_trap_immediate) {
-		pthread_kill(ruby_thid, SIGVTALRM);
-	    }
-	    else {
-		rb_thread_pending = 1;
-	    }
-	    req.tv_sec = 0;
-	    req.tv_nsec = 10000000;
-	    nanosleep(&req, &rem);
-	}
-    }
-}
-
-void
-rb_thread_start_timer()
-{
-}
-
-void
-rb_thread_stop_timer()
-{
-}
-#elif defined(HAVE_SETITIMER)
-
+#if defined(PTHREAD_TIMER) || defined(HAVE_SETITIMER)
 static void
 catch_timer(sig)
     int sig;
@@ -9558,6 +9514,33 @@ catch_timer(sig)
     }
 }
 
+#ifdef PTHREAD_TIMER
+static pthread_t time_thread;
+
+static void*
+thread_timer(dummy)
+    void *dummy;
+{
+    struct timespec req, rem;
+
+    for (;;) {
+	req.tv_sec = 0;
+	req.tv_nsec = 10000000;
+	nanosleep(&req, &rem);
+	pthread_kill(ruby_thid, SIGVTALRM);
+    }
+}
+
+void
+rb_thread_start_timer()
+{
+}
+
+void
+rb_thread_stop_timer()
+{
+}
+#else  /* HAVE_SETITIMER */
 void
 rb_thread_start_timer()
 {
@@ -9581,7 +9564,8 @@ rb_thread_stop_timer()
     tval.it_value = tval.it_interval;
     setitimer(ITIMER_VIRTUAL, &tval, NULL);
 }
-#else
+#endif
+#else  /* !(PTHREAD_TIMER || HAVE_SETITIMER) */
 int rb_thread_tick = THREAD_TICK;
 #endif
 

@@ -1,3 +1,12 @@
+Tue Dec 16 01:14:44 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (catch_timer): check rb_thread_crtical in main native
+	  thread.
+
+	* eval.c (thread_timer): just sends signals periodically, to
+	  prevent main native thread from receiving them in critical
+	  section.  [ruby-core:01959]
+
 Mon Dec 15 13:32:22 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (check_dirname): check string safety and remove extraneous
