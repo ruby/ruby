@@ -1,3 +1,28 @@
+Tue Oct 31 17:27:17 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c: change digit size to `long|int' if long long is
+	  available.
+
+	* marshal.c (w_object): support `long|int' digits.
+
+	* marshal.c (r_object): ditto.
+
+Sat Oct 28 23:54:22 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (yylex): allow =end at the end of file (without a
+	  newline at the end).
+
+Fri Oct 27 10:00:27 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_cstr2inum): should ignore trailing white spaces.
+
+	* bignum.c (rb_str2inum): string may not have sentinel NUL.
+
+Fri Oct 27 02:37:22 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_cstr2inum): wrongly assigned base to c before
+	  badcheck check.
+
 Thu Oct 26 02:42:50 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/protocol.rb: Command#critical_ok

@@ -80,7 +80,7 @@ ruby_xmalloc(size)
 	mem = malloc(size);
 	if (!mem) {
 	    if (size >= 10 * 1024 * 1024) {
-		rb_raise(rb_eNoMemError, "tryed to allocate too big memory");
+		rb_raise(rb_eNoMemError, "tried to allocate too big memory");
 	    }
 	    mem_error("failed to allocate memory");
 	}
@@ -120,7 +120,7 @@ ruby_xrealloc(ptr, size)
 	mem = realloc(ptr, size);
 	if (!mem)
 	    if (size >= 50 * 1024 * 1024) {
-		rb_raise(rb_eNoMemError, "tryed to re-allocate too big memory");
+		rb_raise(rb_eNoMemError, "tried to re-allocate too big memory");
 	    }
 	    mem_error("failed to allocate memory(realloc)");
     }

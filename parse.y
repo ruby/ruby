@@ -2863,7 +2863,8 @@ yylex()
 			return 0;
 		    }
 		    if (c != '=') continue;
-		    if (strncmp(lex_p, "end", 3) == 0 && ISSPACE(lex_p[3])) {
+		    if (strncmp(lex_p, "end", 3) == 0 &&
+			(lex_p + 3 == lex_pend || ISSPACE(lex_p[3]))) {
 			break;
 		    }
 		}

@@ -1586,7 +1586,7 @@ rb_ary_flatten_bang(ary)
 		}
 		id = rb_obj_id(ary2);
 		if (rb_ary_includes(flattening, id)) {
-		    rb_raise(rb_eArgError, "tryed to flatten recursive array");
+		    rb_raise(rb_eArgError, "tried to flatten recursive array");
 		}
 		rb_ary_push(flattening, id);
 	    }

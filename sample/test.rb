@@ -385,6 +385,18 @@ $z = [1,2]
 $y[$z] = 256
 test_ok($y[$z] == 256)
 
+$x = [1,2,3]
+$x[1,0] = $x
+test_ok($x == [1,1,2,3,2,3])
+
+$x = [1,2,3]
+$x[-1,0] = $x
+test_ok($x == [1,2,1,2,3,3])
+
+$x = [1,2,3]
+$x.concat($x)
+test_ok($x == [1,2,3,1,2,3])
+
 test_check "iterator"
 
 test_ok(!iterator?)
@@ -571,7 +583,6 @@ def fact(n)
   end
   return f
 end
-fact(3)
 $x = fact(40)
 test_ok($x == $x)
 test_ok($x == fact(40))
@@ -613,6 +624,7 @@ $good = true;
 for i in 4000..4096
   n1 = 1 << i;
   if (n1**2-1) / (n1+1) != (n1-1)
+    p i
     $good = false
   end
 end

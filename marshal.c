@@ -18,6 +18,42 @@
 double strtod();
 #endif
 
+#if SIZEOF_LONG*2 <= SIZEOF_LONG_LONG
+typedef unsigned long BDIGIT;
+#define SIZEOF_BDIGITS SIZEOF_LONG
+#elif SIZEOF_INT*2 <= SIZEOF_LONG_LONG
+typedef unsigned int BDIGIT;
+#define SIZEOF_BDIGITS SIZEOF_INT
+#else
+typedef unsigned short BDIGIT;
+#define SIZEOF_BDIGITS SIZEOF_SHORT
+#endif
+
+#define BITSPERSHORT (sizeof(short)*CHAR_BIT)
+#define SHORTMASK ((1<<BITSPERSHORT)-1)
+#define SHORTDN(x) RSHIFT(x,BITSPERSHORT)
+
+#if SIZEOF_SHORT == SIZEOF_BDIGITS
+#define SHORTLEN(x) (x)
+#else
+static int
+shortlen(len, ds)
+    long len;
+    BDIGIT *ds;
+{
+    BDIGIT num;
+    int offset = 0;
+
+    num = ds[len-1];
+    while (num) {
+	num = SHORTDN(num);
+	offset++;
+    }
+    return len*sizeof(BDIGIT)/sizeof(short) - offset;
+}
+#define SHORTLEN(x) shortlen((x),d)
+#endif
+
 #define MARSHAL_MAJOR   4
 #define MARSHAL_MINOR   4
 
@@ -318,12 +354,23 @@ w_object(obj, arg, limit)
 	    {
 		char sign = RBIGNUM(obj)->sign?'+':'-';
 		int len = RBIGNUM(obj)->len;
-		unsigned short *d = RBIGNUM(obj)->digits;
+		BDIGIT *d = RBIGNUM(obj)->digits;
 
 		w_byte(sign, arg);
-		w_long(len, arg);
+		w_long(SHORTLEN(len), arg);
 		while (len--) {
+#if SIZEOF_BDIGITS > SIZEOF_SHORT
+		    BDIGIT num = *d;
+		    int i;
+
+		    for (i=0; i<SIZEOF_BDIGITS; i+=sizeof(short)) {
+			w_short(num & SHORTMASK, arg);
+			num = SHORTDN(num);
+			if (num == 0) break;
+		    }
+#else
 		    w_short(*d, arg);
+#endif
 		    d++;
 		}
 	    }
@@ -752,15 +799,31 @@ r_object(arg)
       case TYPE_BIGNUM:
 	{
 	    int len;
-	    unsigned short *digits;
+	    BDIGIT *digits;
 
 	    NEWOBJ(big, struct RBignum);
 	    OBJSETUP(big, rb_cBignum, T_BIGNUM);
 	    big->sign = (r_byte(arg) == '+');
-	    big->len = len = r_long(arg);
-	    big->digits = digits = ALLOC_N(unsigned short, len);
-	    while (len--) {
+	    len = r_long(arg);
+	    big->len = (len + 1) * sizeof(short) / sizeof(BDIGIT);
+	    big->digits = digits = ALLOC_N(BDIGIT, big->len);
+	    while (len > 0) {
+#if SIZEOF_BDIGITS > SIZEOF_SHORT
+		BDIGIT num = 0;
+		int shift = 0;
+		int i;
+
+		for (i=0; i<SIZEOF_BDIGITS; i+=sizeof(short)) {
+		    int j = r_short(arg);
+		    num |= j << shift;
+		    shift += BITSPERSHORT;
+		    if (--len == 0) break;
+		}
+		*digits++ = num;
+#else
 		*digits++ = r_short(arg);
+		len--;
+#endif
 	    }
 	    big = RBIGNUM(rb_big_norm((VALUE)big));
 	    if (TYPE(big) == T_BIGNUM) {

@@ -1724,26 +1724,30 @@ myfdclose(FILE *fp)
 
 #undef strerror
 
-char * 
-mystrerror(int e) 
+char *
+mystrerror(int e)
 {
     static char buffer[512];
 #if !defined __MINGW32__
     extern int sys_nerr;
 #endif
     DWORD source = 0;
+    char *p;
 
     if (e < 0 || e > sys_nerr) {
 	if (e < 0)
 	    e = GetLastError();
 	if (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, &source, e, 0,
 			  buffer, 512, NULL) == 0) {
-	    strcpy (buffer, "Unknown Error");
+	    strcpy(buffer, "Unknown Error");
+	}
+	for (p = buffer + strlen(buffer) - 1; buffer <= p; p--) {
+	    if (*p != '\r' && *p != '\n') break;
+	    *p = 0;
 	}
 	return buffer;
     }
     return strerror(e);
-	
 }
 
 //
