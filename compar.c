@@ -22,7 +22,7 @@ cmp_equal(x, y)
 {
     VALUE c = rb_funcall(x, cmp, 1, y);
 
-    if (NIL_P(c)) return Qnil;
+    if (NIL_P(c)) return Qfalse;
     if (NUM2LONG(c) == 0) return Qtrue;
     return Qfalse;
 }

@@ -1275,7 +1275,7 @@ rb_ary_slice_bang(argc, argv, ary)
     if (rb_scan_args(argc, argv, "11", &arg1, &arg2) == 2) {
 	pos = NUM2LONG(arg1);
 	len = NUM2LONG(arg2);
-delete_pos_len:
+      delete_pos_len:
 	if (pos < 0) {
 	    pos = RARRAY(ary)->len + pos;
 	}
@@ -1288,9 +1288,7 @@ delete_pos_len:
 	goto delete_pos_len;
     }
 
-    rb_ary_delete_at(ary, NUM2LONG(arg1));
-
-    return arg2;
+    return rb_ary_delete_at(ary, NUM2LONG(arg1));
 }
 
 static VALUE
