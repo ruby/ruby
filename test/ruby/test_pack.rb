@@ -18,4 +18,16 @@ class TestPack < Test::Unit::TestCase
     $x = [-1073741825]
     assert_equal($x, $x.pack("q").unpack("q"))
   end
+
+  def test_pack_N
+    assert_equal "\000\000\000\000", [0].pack('N')
+    assert_equal "\000\000\000\001", [1].pack('N')
+    assert_equal "\000\000\000\002", [2].pack('N')
+    assert_equal "\000\000\000\003", [3].pack('N')
+    assert_equal "\377\377\377\376", [4294967294].pack('N')
+    assert_equal "\377\377\377\377", [4294967295].pack('N')
+
+    assert_equal "\000\000\000\001\000\000\000\001", [1,1].pack('N*')
+    assert_equal "\000\000\000\001\000\000\000\001\000\000\000\001", [1,1,1].pack('N*')
+  end
 end
