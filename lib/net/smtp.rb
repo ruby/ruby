@@ -1,12 +1,16 @@
 =begin
 
-= net/smtp.rb version 1.1.28
+= net/smtp.rb version 1.1.29
 
 written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 
 This program is free software.
 You can distribute/modify this program under
 the terms of the Ruby Distribute License.
+
+Japanese version of this document is in "net" full package.
+You can get it from RAA
+(Ruby Application Archive: http://www.ruby-lang.org/en/raa.html).
 
 
 == Net::SMTP
@@ -33,7 +37,7 @@ Net::Protocol
   opens TCP connection and starts SMTP session.
   If protocol had been started, do nothing and return false.
 
-  When this methods is called with a block, give a SMTP object to block and
+  When this methods is called with block, give a SMTP object to block and
   close session after block call finished.
 
   If account and password are given, is trying to get authentication
@@ -42,7 +46,7 @@ Net::Protocol
 : send_mail( mailsrc, from_addr, *to_addrs )
 : sendmail( mailsrc, from_addr, *to_addrs )
   This method sends 'mailsrc' as mail. SMTP read strings
-  from 'mailsrc' by calling 'each' method, and convert them
+  from 'mailsrc' by calling 'each' iterator, and convert them
   into "\r\n" terminated string when write.
 
   from_addr must be String.
@@ -62,8 +66,7 @@ Net::Protocol
 
 : ready( from_addr, to_addrs ) {|adapter| .... }
   This method stands by the SMTP object for sending mail.
-  In the block of this method, you can call ONLY 'write' method
-  for 'adapter'.
+  "adapter" object accepts only "write" method.
 
     # usage example
 

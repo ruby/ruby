@@ -1,12 +1,16 @@
 =begin
 
-= net/protocol.rb version 1.1.28
+= net/protocol.rb version 1.1.29
 
 written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 
 This program is free software.
 You can distribute/modify this program under
 the terms of the Ruby Distribute License.
+
+Japanese version of this document is in "net" full package.
+You can get it from RAA
+(Ruby Application Archive: http://www.ruby-lang.org/en/raa.html).
 
 
 == Net::Protocol
@@ -46,7 +50,7 @@ Object
 
   '*args' are specified in subclasses.
 
-  When is called with a block, gives Protocol object to block and
+  When is called with block, gives Protocol object to block and
   close session when block finished.
 
 : finish
@@ -65,7 +69,7 @@ module Net
 
   class Protocol
 
-    Version = '1.1.28'
+    Version = '1.1.29'
 
 
     class << self

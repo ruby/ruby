@@ -1,6 +1,6 @@
 =begin
 
-= net/http.rb version 1.1.28
+= net/http.rb version 1.1.29
 
 maintained by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 This file is derived from "http-access.rb".
@@ -8,6 +8,10 @@ This file is derived from "http-access.rb".
 This program is free software.
 You can distribute/modify this program under
 the terms of the Ruby Distribute License.
+
+Japanese version of this document is in "net" full package.
+You can get it from RAA
+(Ruby Application Archive: http://www.ruby-lang.org/en/raa.html).
 
 
 = class HTTP
@@ -33,7 +37,7 @@ the terms of the Ruby Distribute License.
 : start {|http| .... }
   creates a new Net::HTTP object and starts HTTP session.
 
-  When this method is called with a block, gives HTTP object to block
+  When this method is called with block, gives HTTP object to block
   and close HTTP session after block call finished.
 
 : get( path, header = nil, dest = '' )
@@ -46,21 +50,20 @@ the terms of the Ruby Distribute License.
     # example
     response, body = http.get( '/index.html' )
 
-  If called with a block, give a part String of entity body.
+  If called with block, give a part String of entity body.
 
   Note:
   If status is not 2xx(success), ProtocolError exception is
-  raised. At that time, you can get Response object from 
+  raised. At that time, you can get HTTPResponse object from 
   execption object. (same in head/post)
 
     # example
     begin
-      response, body = http.get(...)
+      response, body = http.get( '/index.html' )
     rescue Net::ProtoRetriableError
       response = $!.data
       ...
     end
-
 
 : head( path, header = nil )
   get only header from "path" on connecting host.
@@ -81,44 +84,74 @@ the terms of the Ruby Distribute License.
   "header" must be a Hash like { 'Accept' => '*/*', ... }.
   This method returns Net::HTTPResponse object and "dest".
 
-  If called with a block, gives a part String of entity body.
+  If called with block, gives a part String of entity body.
 
-: get2( path, header = nil ) {|adapter| .... }
+: get2( path, header = nil )
+: get2( path, header = nil ) {|recv| .... }
   send GET request for "path".
   "header" must be a Hash like { 'Accept' => '*/*', ... }.
-  This method gives HTTPReadAdapter object to block.
+  If this method is called with block, one gives
+  a HTTPResponseReceiver object to block.
 
-    ex.
-    
-    http.get2( '/index.html' ) do |f|
-      # f is a HTTPReadAdapter object
-      f.header
-      f.body
+    # example
+    http.get2( '/index.html' ) do |recv|
+      # "recv" is a HTTPResponseReceiver object
+      recv.header
+      recv.body
+    end
+
+    # another way
+    response = http.get2( '/index.html' )
+    response['content-type']
+    response.body
+
+    # this is wrong
+    http.get2( '/index.html' ) do |recv|
+      print recv.header.body   # body is not read yet!!!
+    end
+
+    # but this is ok
+    http.get2( '/index.html' ) do |recv|
+      recv.body                # read body and set recv.header.body
+      print recv.header.body   # ref
     end
 
 : head2( path, header = nil )
+: head2( path, header = nil ) {|recv| .... }
   send HEAD request for "path".
   "header" must be a Hash like { 'Accept' => '*/*', ... }.
   The difference between "head" method is that
   "head2" does not raise exceptions.
 
-    ex.
-    
-    http.head2( '/index.html' ) do |f|
-      f.header
+  If this method is called with block, one gives
+  a HTTPResponseReceiver object to block.
+
+    # example
+    response = http.head2( '/index.html' )
+
+    # another way
+    http.head2( '/index.html' ) do |recv|
+      recv.response
     end
 
-: post2( path, data, header = nil ) {|adapter| .... }
+: post2( path, data, header = nil )
+: post2( path, data, header = nil ) {|recv| .... }
   post "data"(must be String now) to "path".
   "header" must be a Hash like { 'Accept' => '*/*', ... }.
-  This method gives HTTPReadAdapter object to block.
+  If this method is called with block, one gives
+  a HTTPResponseReceiver object to block.
 
-    ex.
-    
-    http.post2( '/index.html', 'data data data...' ) do |adapter|
-      adapter.header
-      adapter.body
+    # example
+    http.post2( '/anycgi.rb', 'data data data...' ) do |recv|
+      # "recv" is a HTTPResponseReceiver object
+      recv.header
+      recv.body
     end
+
+    # another way
+    response = http.post2( '/anycgi.rb', 'important data' )
+    response['content-type']
+    response.body
 
 
 = class HTTPResponse
@@ -152,7 +185,8 @@ All "key" is case-insensitive.
 : message
   HTTP result message. For example, 'Not Found'
 
-= class HTTPReadAdapter
+
+= class HTTPResponseReceiver
 
 == Methods
 
@@ -165,8 +199,8 @@ All "key" is case-insensitive.
   entity body. A body is written to "dest" using "<<" method.
 
 : body {|str| ... }
-  get entity body by using block.
-  If this method is called twice, block is not called and
+  gets entity body with block.
+  If this method is called twice, block is not executed and
   returns first "dest".
 
 
@@ -283,8 +317,9 @@ module Net
     end
 
     def get2( path, u_header = nil, &block )
-      connecting( u_header, block ) {|uh|
+      connecting( u_header ) {|uh|
         @command.get edit_path(path), uh
+        receive true, block
       }
     end
 
@@ -295,10 +330,10 @@ module Net
       resp
     end
 
-    def head2( path, u_header = nil )
-      connecting( u_header, nil ) {|uh|
+    def head2( path, u_header = nil, &block )
+      connecting( u_header ) {|uh|
         @command.head edit_path(path), uh
-        @command.get_response_no_body
+        receive false, block
       }
     end
 
@@ -311,8 +346,9 @@ module Net
     end
 
     def post2( path, data, u_header = nil, &block )
-      connecting( u_header, block ) {|uh|
+      connecting( u_header ) {|uh|
         @command.post edit_path(path), uh, data
+        receive true, block
       }
     end
 
@@ -325,8 +361,9 @@ module Net
     end
 
     def put2( path, src, u_header = nil, &block )
-      connecting( u_header, block ) {|uh|
+      connecting( u_header ) {|uh|
         @command.put path, uh, src
+        receive true, block
       }
     end
 
@@ -334,14 +371,7 @@ module Net
     private
 
 
-    # called when connecting
-    def do_finish
-      unless @socket.closed? then
-        head2 '/', { 'Connection' => 'close' }
-      end
-    end
-
-    def connecting( u_header, ublock )
+    def connecting( u_header )
       u_header = procheader( u_header )
       if not @socket then
         u_header['Connection'] = 'close'
@@ -351,12 +381,7 @@ module Net
       end
 
       resp = yield( u_header )
-      if ublock then
-        adapter = HTTPReadAdapter.new( @command )
-        ublock.call adapter
-        resp = adapter.off
-      end
-      
+
       unless keep_alive? u_header, resp then
         @socket.close
       end
@@ -396,22 +421,37 @@ module Net
       end
     end
 
+
+    def receive( body_exist, block )
+      recv = HTTPResponseReceiver.new( @command, body_exist )
+      block.call recv if block
+      recv.terminate
+      recv.header
+    end
+
+
+    # called when connecting
+    def do_finish
+      unless @socket.closed? then
+        head2 '/', { 'Connection' => 'close' }
+      end
+    end
+
     
     def edit_path( path )
       path
     end
 
-    class << self
-      def Proxy( p_addr, p_port )
-        klass = super
-        klass.module_eval %-
-          def edit_path( path )
-            'http://' + address +
-              (@port == #{self.port} ? '' : ':' + @port.to_s) + path
-          end
-        -
-        klass
-      end
+    def HTTP.Proxy( p_addr, p_port = nil )
+      klass = super
+      klass.module_eval %-
+        def edit_path( path )
+          'http://' + address +
+              (@port == HTTP.port ? '' : ":#{@port}") +
+              path
+        end
+      -
+      klass
     end
 
   end
@@ -521,10 +561,11 @@ module Net
   HTTPVersionNotSupported           = HTTPFatalErrorCode.mkchild
 
 
-  class HTTPReadAdapter
+  class HTTPResponseReceiver
 
-    def initialize( command )
+    def initialize( command, body_exist )
       @command = command
+      @body_exist = body_exist
       @header = @body = nil
     end
 
@@ -534,7 +575,9 @@ module Net
 
     def header
       unless @header then
-        @header = @command.get_response
+        stream_check
+        @header = @body_exist ? @command.get_response :
+                                @command.get_response_no_body
       end
       @header
     end
@@ -543,19 +586,30 @@ module Net
     def body( dest = nil, &block )
       dest, ret = HTTP.procdest( dest, block )
       unless @body then
-        @body = @command.get_body( response, dest )
+        stream_check
+        @body = @command.get_body( header, dest )
       end
       @body
     end
     alias entity body
 
-    def off
-      body
+    def terminate
+      header
+      body if @body_exist
       @command = nil
-      @header
+    end
+
+    private
+
+    def stream_check
+      unless @command then
+        raise IOError, 'receiver was used out of block'
+      end
     end
   
   end
+
+  HTTPReadAdapter = HTTPResponseReceiver
 
 
 
@@ -570,11 +624,8 @@ module Net
       @http_version = HTTPVersion
 
       @in_header = {}
-      if sock.port == HTTP.port
-        @in_header[ 'Host' ] = sock.addr
-      else
-        @in_header[ 'Host' ] = sock.addr + ':' + sock.port
-      end
+      @in_header[ 'Host' ] = sock.addr +
+                             ((sock.port == HTTP.port) ? '' : ":#{sock.port}")
       @in_header[ 'Connection' ] = 'Keep-Alive'
       @in_header[ 'Accept' ]     = '*/*'
 

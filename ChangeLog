@@ -1,3 +1,11 @@
+Thu Sep 21 15:59:23 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.28.
+
+	* lib/net/http.rb: HTTPReadAdapter -> HTTPResponseReceiver
+
+	* lib/net/http.rb (connecting): response is got in receive()
+
 Wed Sep 20 23:21:38 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ruby.c (load_file): two Ctrl-D was required to stop ruby at the

@@ -1,12 +1,16 @@
 =begin
 
-= net/pop.rb version 1.1.28
+= net/pop.rb version 1.1.29
 
 written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 
 This program is free software.
 You can distribute/modify this program under
 the terms of the Ruby Distribute License.
+
+Japanese version of this document is in "net" full package.
+You can get it from RAA
+(Ruby Application Archive: http://www.ruby-lang.org/en/raa.html).
 
 
 == Net::POP3
@@ -31,7 +35,7 @@ Net::Protocol
 : start( account, password ) {|pop| .... }
   starts POP3 session.
 
-  When called with a block, give a POP3 object to block and
+  When called with block, give a POP3 object to block and
   close session after block call is finished.
 
 : each {|popmail| .... }
@@ -80,7 +84,7 @@ Object
     end
 
 : all {|str| .... }
-  You can use all/pop/mail with a block.
+  You can call all/pop/mail with block.
   argument 'str' is a read string (a part of mail).
 
     # usage example
