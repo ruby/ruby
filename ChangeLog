@@ -7,13 +7,13 @@ Sat Feb  8 03:34:28 2003  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ruby.h (NORETURN_STYLE_NEW): Ditto.
 
-Fri Feb 07 15:35:21 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+Fri Feb  7 15:35:21 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* intern.h, re.c (rb_memsearch): returns long.
 
 	* string.c (rb_str_index): should return offset position.
 
-Fri Feb 07 15:30:15 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+Fri Feb  7 15:30:15 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (proc_invoke): should propagate self to super
 	  methods.  [ruby-dev:19510]
@@ -466,7 +466,7 @@ Thu Jan  9 23:28:01 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* configure.in: AC_MSG_FAILURE is a new macro in 2.54b or later.
 
-Thu Jan 09 17:05:24 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+Thu Jan  9 17:05:24 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* configure.in (RUBY_CHECK_IO_NEED): check whether fseek() and
 	  fflush() are needed.
@@ -502,7 +502,7 @@ Thu Jan  9 02:10:44 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* eval.c (rb_eval): reduce recursive rb_eval() call by using sort
 	  of continuation passing style.
 
-Wed Jan 08 17:10:32 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+Wed Jan  8 17:10:32 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* ext/Win32API/lib/win32/registry.rb: added. [new]
 
@@ -591,7 +591,7 @@ Mon Jan  6 13:26:35 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* process.c (proc_spawn_v, rb_f_system): follow above change.
 
-Mon Jan 06 05:11:15 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+Mon Jan  6 05:11:15 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ext/extmk.rb: make $0 normal variable.
 
@@ -724,7 +724,7 @@ Thu Jan  2 13:55:08 2003  Mathieu Bouchard  <matju@sympatico.ca>
 	* io.c (io_read): should resize supplied string if it's shorter
 	  than expected.
 
-Thu Jan 02 11:01:20 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+Thu Jan  2 11:01:20 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (bmcall): arguments should be an array.
 
@@ -5843,7 +5843,7 @@ Fri Feb  8 01:27:33 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  within singleton class statement should work like ones defined
 	  by sington def statements.
 
-Thu Feb 07 13:44:08 2002  akira yamada  <akira@arika.org>
+Thu Feb  7 13:44:08 2002  akira yamada  <akira@arika.org>
 
 	* uri/common.rb (URI::join): new method.
 
@@ -12833,7 +12833,7 @@ Fri Jun  2 00:42:31 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* eval.c (rb_thread_cleanup): should clear priority for thread
 	  termination.
 
-Thu Jun 01 22:39:41 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+Thu Jun  1 22:39:41 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.20.
 
@@ -14727,7 +14727,7 @@ Mon Oct  4 00:08:34 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* pack.c (OFF16): need to adjust pointer address to pack/unpack on
 	  64bit machines.
 
-Sun Oct 03 03:05:59 1999  WATANABE Hirofumi  <eban@os.rim.or.jp>
+Sun Oct  3 03:05:59 1999  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* time.c (time_arg): mktime y2k problem.
 
