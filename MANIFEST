@@ -13,10 +13,7 @@ bignum.c
 class.c
 compar.c
 configure
-configure.bat
 configure.in
-config_h.dj
-config_s.dj
 config.guess
 config.sub
 defines.h
@@ -75,6 +72,11 @@ util.c
 variable.c
 version.c
 version.h
+djgpp/README.djgpp
+djgpp/config.hin
+djgpp/config.status
+djgpp/configure.bat
+djgpp/mkver.sed
 cygwin/GNUmakefile.in
 ext/Setup
 ext/Setup.dj

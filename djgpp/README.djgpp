@@ -1,0 +1,21 @@
+* How to compile and install on djgpp
+
+This is what you need to do to compile and install Ruby:
+
+  1. Run configure.bat, which will generate config.h and Makefile
+     and ext/extmk.rb(GNU sed required).
+     Message like this is normal:
+       sed.exe: can't read 123456789: No such file or directory (ENOENT)
+
+  2. Edit defines.h if you need.  Probably this step will not need.
+
+  3. Remove comment mark(#) before the module names from ext/Setup.dj (or
+     add module names if not present).
+
+  4. Run make.
+
+  5. Optionally, run 'make test' to check whether the compiled Ruby
+     interpreter works well.  If you see the message "test succeeded",
+     your ruby works as it should (hopefully).
+
+  6. Run 'make install'
