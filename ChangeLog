@@ -1,3 +1,9 @@
+Mon Mar  7 01:22:14 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tkutil.c: remove the some codes which depend on the
+	  defference between Ruby1.8 and 1.9, because st.c on Ruby1.9 
+	  was changed. 
+
 Mon Mar  7 00:01:04 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c: fail to call TclTkLib.mainloop when $SAFE==4
