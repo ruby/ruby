@@ -1,3 +1,17 @@
+Fri Mar 29 16:36:52 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* lib/mkmf.rb (arg_config): should use Shellwords::shellwords like
+	  ext/extmk.rb.in.
+
+	* lib/mkmf.rb (enable_config): default had priority over command
+	  line options and configure_args.
+
+	* lib/mkmf.rb: support autoconf 2.53 style variables from
+	  environment.
+
+	* lib/mkmf.rb: add directory options.
+
+
 Fri Mar 29 15:49:29 2002  Usaku Nakamura <usa@ruby-lang.org>
 
 	* win32/README.win32: follow recent changes.
