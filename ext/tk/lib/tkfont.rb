@@ -13,6 +13,14 @@ class TkFont
   Tk_FontNameTBL = {}
   Tk_FontUseTBL = {}
 
+  TkComm::INITIALIZE_TARGETS << self
+
+  def self.__init_tables__
+    Tk_FontNameTBL.clear
+    Tk_FontUseTBL.clear
+    Tk_FontID[0] = 0
+  end
+
   # set default font
   case Tk::TK_VERSION
   when /^4\.*/
@@ -879,6 +887,7 @@ class TkFont
 
   def configure(slot, value=None)
     configure_core(@compoundfont, slot, value)
+    self
   end
 
   def configinfo(slot=nil)
@@ -895,6 +904,7 @@ class TkFont
     else
       configure(slot, value)
     end
+    self
   end
 
   def latin_configinfo(slot=nil)
@@ -914,6 +924,7 @@ class TkFont
       #""
       configure(slot, value)
     end
+    self
   end
 
   def kanji_configinfo(slot=nil)
@@ -935,11 +946,13 @@ class TkFont
   def latin_replace(ltn)
     latin_replace_core(ltn)
     reset_pointadjust
+    self
   end
 
   def kanji_replace(knj)
     kanji_replace_core(knj)
     reset_pointadjust
+    self
   end
 
   def measure(text)
@@ -1019,27 +1032,33 @@ module TkTreatTagFont
 
   def font_configure(slot)
     @parent.tagfont_configure(@id, slot)
+    self
   end
 
   def latinfont_configure(ltn, keys=nil)
     @parent.latintagfont_configure(@id, ltn, keys)
+    self
   end
   alias asciifont_configure latinfont_configure
 
   def kanjifont_configure(knj, keys=nil)
     @parent.kanjitagfont_configure(@id, ltn, keys)
+    self
   end
 
   def font_copy(window, wintag=nil)
     @parent.tagfont_copy(@id, window, wintag)
+    self
   end
 
   def latinfont_copy(window, wintag=nil)
     @parent.latintagfont_copy(@id, window, wintag)
+    self
   end
   alias asciifont_copy latinfont_copy
 
   def kanjifont_copy(window, wintag=nil)
     @parent.kanjitagfont_copy(@id, window, wintag)
+    self
   end
 end

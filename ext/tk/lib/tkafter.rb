@@ -12,7 +12,15 @@ class TkAfter
   Tk_CBID = [0]
   Tk_CBTBL = {}
 
-  INTERP._invoke("proc", "rb_after", "id", "ruby [format \"TkAfter.callback %%Q!%s!\" $id]")
+  TkComm::INITIALIZE_TARGETS << self
+
+  def self.__init_tables__
+    # cannot clear
+    # Tcl interpreter may keep callbacks
+  end
+
+  INTERP._invoke("proc", "rb_after", "id", 
+                 "ruby [format \"TkAfter.callback %%Q!%s!\" $id]")
 
   ###############################
   # class methods
@@ -310,3 +318,5 @@ class TkAfter
     end
   end
 end
+
+TkTimer = TkAfter

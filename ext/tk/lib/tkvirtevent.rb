@@ -10,6 +10,13 @@ class TkVirtualEvent<TkObject
   TkVirtualEventID = [0]
   TkVirtualEventTBL = {}
 
+  TkComm::INITIALIZE_TARGETS << self
+
+  def self.__init_tables__
+    TkVirtualEventTBL.clear
+    TkVirtualEventID[0] = 0
+  end
+
   class PreDefVirtEvent<self
     def initialize(event)
       @path = @id = event

@@ -10,14 +10,39 @@ class TkEntry<TkLabel
 
   WidgetClassName = 'Entry'.freeze
   WidgetClassNames[WidgetClassName] = self
-  def self.to_eval
-    WidgetClassName
-  end
 
   class ValidateCmd
     include TkComm
 
     class ValidateArgs
+      VARG_KEY  = 'disvPSVW'
+      VARG_TYPE = 'nnsssssw'
+
+      def self.scan_args(arg_str, arg_val)
+	arg_cnv = []
+	arg_str.strip.split(/\s+/).each_with_index{|kwd,idx|
+	  if kwd =~ /^%(.)$/
+	    if num = VARG_KEY.index($1)
+	      case VARG_TYPE[num]
+	      when ?n
+		arg_cnv << TkComm::number(arg_val[idx])
+	      when ?s
+		arg_cnv << TkComm::string(arg_val[idx])
+	      when ?w
+		arg_cnv << TkComm::window(arg_val[idx])
+	      else
+		arg_cnv << arg_val[idx]
+	      end
+	    else
+	      arg_cnv << arg_val[idx]
+	    end
+	  else
+	    arg_cnv << arg_val[idx]
+	  end
+	}
+	arg_cnv
+      end
+
       def initialize(d,i,s,v,pp,ss,vv,ww)
 	@action = d
 	@index = i
@@ -40,13 +65,19 @@ class TkEntry<TkLabel
 
     def initialize(cmd = Proc.new, args=nil)
       if args
-	@id = install_cmd(proc{|*arg|
-			    TkUtil.eval_cmd cmd, *arg
-			  }) + " " + args
+	@id = 
+	  install_cmd(proc{|*arg|
+			TkUtil.eval_cmd(cmd, ValidateArgs.scan_args(args, arg))
+		      }) + " " + args
       else
-	@id = install_cmd(proc{|arg|
-			    TkUtil.eval_cmd cmd, ValidateArgs.new(*arg)
-			  }) + ' %d %i %s %v %P %S %V %W'
+	args = ' %d %i %s %v %P %S %V %W'
+	@id = 
+	  install_cmd(proc{|*arg|
+	    TkUtil.eval_cmd(
+		cmd, 
+		ValidateArgs.new(ValidateArgs.scan_args(args, arg))
+	    )
+	  }) + args
       end
     end
 
@@ -61,14 +92,6 @@ class TkEntry<TkLabel
     else
       tk_call 'entry', @path
     end
-  end
-
-  def bbox(index)
-    tk_send 'bbox', index
-  end
-
-  def delete(s, e=None)
-    tk_send 'delete', s, e
   end
 
   def configure(slot, value=None)
@@ -113,54 +136,60 @@ class TkEntry<TkLabel
       end
       super(slot, value)
     end
+    self
   end
 
   def cursor
-    tk_send 'index', 'insert'
+    number(tk_send('index', 'insert'))
   end
   def cursor=(index)
     tk_send 'icursor', index
+    self
   end
   def index(index)
     number(tk_send('index', index))
   end
   def insert(pos,text)
     tk_send 'insert', pos, text
+    self
   end
   def mark(pos)
     tk_send 'scan', 'mark', pos
+    self
   end
   def dragto(pos)
     tk_send 'scan', 'dragto', pos
+    self
   end
   def selection_adjust(index)
     tk_send 'selection', 'adjust', index
+    self
   end
   def selection_clear
     tk_send 'selection', 'clear'
+    self
   end
   def selection_from(index)
     tk_send 'selection', 'from', index
+    self
   end
   def selection_present()
     bool(tk_send('selection', 'present'))
   end
   def selection_range(s, e)
     tk_send 'selection', 'range', s, e
+    self
   end
   def selection_to(index)
     tk_send 'selection', 'to', index
+    self
   end
 
   def validate(mode = nil)
     if mode
       configure 'validate', mode
     else
-      if tk_send('validate') == '0'
-	false
-      else 
-	true
-      end
+      bool(tk_send('validate'))
     end
   end
 
@@ -194,9 +223,6 @@ end
 class TkSpinbox<TkEntry
   WidgetClassName = 'Spinbox'.freeze
   WidgetClassNames[WidgetClassName] = self
-  def self.to_eval
-    WidgetClassName
-  end
 
   def create_self(keys)
     if keys and keys != None
@@ -212,10 +238,12 @@ class TkSpinbox<TkEntry
 
   def spinup
     tk_send 'invoke', 'spinup'
+    self
   end
 
   def spindown
     tk_send 'invoke', 'spindown'
+    self
   end
 
   def set(str)

@@ -93,9 +93,11 @@ class TclTkInterpreter
     # ruby_fmt command format arguments by `format' and call `ruby' command
     # (notice ruby command receives only one argument)
     if $DEBUG
-      @ip._eval("proc ruby_fmt {fmt args} { puts \"ruby_fmt: $fmt $args\" ; ruby [format $fmt $args] }")
+      @ip._eval("proc ruby_fmt {fmt args} { puts \"ruby_fmt: $fmt
+$args\" ; set cmd [list ruby [format $fmt $args]] ; uplevel $cmd }")
     else
-      @ip._eval("proc ruby_fmt {fmt args} { ruby [format $fmt $args] }")
+      @ip._eval("proc ruby_fmt {fmt args} { set cmd [list ruby [format
+$fmt $args]] ; uplevel $cmd }")
     end
 
     # @ip._get_eval_string(*args): generate string to evaluate in tcl interpreter

@@ -31,10 +31,6 @@ class TkText<TkTextWin
   WidgetClassName = 'Text'.freeze
   WidgetClassNames[WidgetClassName] = self
 
-  def self.to_eval
-    WidgetClassName
-  end
-
   def self.new(*args, &block)
     obj = super(*args){}
     obj.init_instance_variable
@@ -85,13 +81,13 @@ class TkText<TkTextWin
   end
 
   def tag_names(index=None)
-    tk_split_list(tk_send('tag', 'names', index)).collect{|elt|
+    tk_split_simplelist(tk_send('tag', 'names', index)).collect{|elt|
       tagid2obj(elt)
     }
   end
 
   def mark_names
-    tk_split_list(tk_send('mark', 'names')).collect{|elt|
+    tk_split_simplelist(tk_send('mark', 'names')).collect{|elt|
       tagid2obj(elt)
     }
   end
@@ -104,28 +100,93 @@ class TkText<TkTextWin
     tagid2obj(tk_send('mark', 'previous', index))
   end
 
-  def window_names
-    tk_send('window', 'names').collect{|elt|
-      tagid2obj(elt)
-    }
+  def image_cget(index, slot)
+    case slot.to_s
+    when 'text', 'label', 'show', 'data', 'file'
+      tk_send('image', 'cget', index, "-#{slot}")
+    else
+      tk_tcl2ruby(tk_send('image', 'cget', index, "-#{slot}"))
+    end
+  end
+
+  def image_configure(index, slot, value=None)
+    if slot.kind_of? Hash
+      tk_send('image', 'configure', index, *hash_kv(slot))
+    else
+      tk_send('image', 'configure', index, "-#{slot}", value)
+    end
+    self
+  end
+
+  def image_configinfo(index, slot = nil)
+    if slot
+      case slot.to_s
+      when 'text', 'label', 'show', 'data', 'file'
+	conf = tk_split_simplelist(tk_send('image', 'configure', 
+					   index, "-#{slot}"))
+      else
+	conf = tk_split_list(tk_send('image', 'configure', 
+				     index, "-#{slot}"))
+      end
+      conf[0] = conf[0][1..-1]
+      conf
+    else
+      tk_split_simplelist(tk_send('image', 'configure', 
+				  index)).collect{|conflist|
+	conf = tk_split_simplelist(conflist)
+	conf[0] = conf[0][1..-1]
+	case conf[0]
+	when 'text', 'label', 'show', 'data', 'file'
+	else
+	  if conf[3]
+	    if conf[3].index('{')
+	      conf[3] = tk_split_list(conf[3]) 
+	    else
+	      conf[3] = tk_tcl2ruby(conf[3]) 
+	    end
+	  end
+	  if conf[4]
+	    if conf[4].index('{')
+	      conf[4] = tk_split_list(conf[4]) 
+	    else
+	      conf[4] = tk_tcl2ruby(conf[4]) 
+	    end
+	  end
+	end
+	conf
+      }
+    end
   end
 
   def image_names
-    tk_send('image', 'names').collect{|elt|
+    tk_split_simplelist(tk_send('image', 'names')).collect{|elt|
       tagid2obj(elt)
     }
   end
 
   def set_insert(index)
     tk_send 'mark', 'set', 'insert', index
+    self
   end
 
   def set_current(index)
     tk_send 'mark', 'set', 'current', index
+    self
   end
 
   def insert(index, chars, *tags)
-    super index, chars, tags.collect{|x|_get_eval_string(x)}.join(' ')
+    if tags[0].kind_of? Array
+      # multiple chars-taglist argument
+      args = [chars]
+      while tags.size > 0
+	tags.shift.collect{|x|_get_eval_string(x)}.join(' ')  # taglist
+	args << tags.shift if tags.size > 0                   # chars
+      end
+      super index, *args
+    else
+      # single chars-taglist argument
+      super index, chars, tags.collect{|x|_get_eval_string(x)}.join(' ')
+    end
   end
 
   def destroy
@@ -149,47 +210,87 @@ class TkText<TkTextWin
   end
   def debug=(boolean)
     tk_send 'debug', boolean
+    self
+  end
+  def bbox(index)
+    list(tk_send('bbox', index))
   end
 
-  def bbox(index)
-    inf = tk_send('bbox', index)
-    (inf == "")?  [0,0,0,0]: inf
-  end
   def dlineinfo(index)
-    inf = tk_send('dlineinfo', index)
-    (inf == "")?  [0,0,0,0,0]: inf
+    list(tk_send('dlineinfo', index))
+  end
+
+  def modified?
+    bool(tk_send('edit', 'modified'))
+  end
+  def modified(mode)
+    tk_send('edit', 'modified', mode)
+    self
+  end
+  def edit_redo
+    tk_send('edit', 'redo')
+    self
+  end
+  def edit_reset
+    tk_send('edit', 'reset')
+    self
+  end
+  def edit_separator
+    tk_send('edit', 'separator')
+    self
+  end
+  def edit_undo
+    tk_send('edit', 'undo')
+    self
   end
 
   def yview_pickplace(*what)
     tk_send 'yview', '-pickplace', *what
+    self
   end
 
   def xview_pickplace(*what)
     tk_send 'xview', '-pickplace', *what
+    self
   end
 
   def tag_add(tag, index1, index2=None)
     tk_send 'tag', 'add', tag, index1, index2
+    self
   end
+  alias addtag tag_add
+
+  def tag_delete(*tags)
+    tk_send 'tag', 'delete', *tags
+    self
+  end
+  alias deltag tag_delete
 
   def tag_bind(tag, seq, cmd=Proc.new, args=nil)
-    _bind(['tag', 'bind', tag], seq, cmd, args)
+    _bind([@path, 'tag', 'bind', tag], seq, cmd, args)
+    self
   end
 
   def tag_bind_append(tag, seq, cmd=Proc.new, args=nil)
-    _bind_append(['tag', 'bind', tag], seq, cmd, args)
+    _bind_append([@path, 'tag', 'bind', tag], seq, cmd, args)
+    self
+  end
+
+  def tag_bind_remove(tag, seq)
+    _bind_remove([@path, 'tag', 'bind', tag], seq)
+    self
   end
 
   def tag_bindinfo(tag, context=nil)
-    _bindinfo(['tag', 'bind', tag], context)
+    _bindinfo([@path, 'tag', 'bind', tag], context)
   end
 
   def tag_cget(tag, key)
     case key.to_s
     when 'text', 'label', 'show', 'data', 'file'
-      tk_call @path, 'tag', 'cget', tag, "-#{key}"
+      tk_call(@path, 'tag', 'cget', tag, "-#{key}")
     else
-      tk_tcl2ruby tk_call(@path, 'tag', 'cget', tag, "-#{key}")
+      tk_tcl2ruby(tk_call(@path, 'tag', 'cget', tag, "-#{key}"))
     end
   end
 
@@ -213,6 +314,7 @@ class TkText<TkTextWin
 	tk_send 'tag', 'configure', tag, "-#{key}", val
       end
     end
+    self
   end
 
   def tag_configinfo(tag, key=nil)
@@ -254,14 +356,17 @@ class TkText<TkTextWin
 
   def tag_raise(tag, above=None)
     tk_send 'tag', 'raise', tag, above
+    self
   end
 
   def tag_lower(tag, below=None)
     tk_send 'tag', 'lower', tag, below
+    self
   end
 
   def tag_remove(tag, *index)
     tk_send 'tag', 'remove', tag, *index
+    self
   end
 
   def tag_ranges(tag)
@@ -274,11 +379,79 @@ class TkText<TkTextWin
   end
 
   def tag_nextrange(tag, first, last=None)
-    tk_split_simplelist(tk_send('tag', 'nextrange', tag, first, last))
+    tk_split_list(tk_send('tag', 'nextrange', tag, first, last))
   end
 
   def tag_prevrange(tag, first, last=None)
-    tk_split_simplelist(tk_send('tag', 'prevrange', tag, first, last))
+    tk_split_list(tk_send('tag', 'prevrange', tag, first, last))
+  end
+
+  def window_cget(index, slot)
+    case slot.to_s
+    when 'text', 'label', 'show', 'data', 'file'
+      tk_send('window', 'cget', index, "-#{slot}")
+    else
+      tk_tcl2ruby(tk_send('window', 'cget', index, "-#{slot}"))
+    end
+  end
+
+  def window_configure(index, slot, value=None)
+    if index.kind_of? TkTextWindow
+      index.configure(slot, value)
+    else
+      if slot.kind_of? Hash
+	tk_send('window', 'configure', index, *hash_kv(slot))
+      else
+	tk_send('window', 'configure', index, "-#{slot}", value)
+      end
+    end
+    self
+  end
+
+  def window_configinfo(win, slot = nil)
+    if slot
+      case slot.to_s
+      when 'text', 'label', 'show', 'data', 'file'
+	conf = tk_split_simplelist(tk_send('window', 'configure', 
+					   win, "-#{slot}"))
+      else
+	conf = tk_split_list(tk_send('window', 'configure', 
+				     win, "-#{slot}"))
+      end
+      conf[0] = conf[0][1..-1]
+      conf
+    else
+      tk_split_simplelist(tk_send('window', 'configure', 
+				  win)).collect{|conflist|
+	conf = tk_split_simplelist(conflist)
+	conf[0] = conf[0][1..-1]
+	case conf[0]
+	when 'text', 'label', 'show', 'data', 'file'
+	else
+	  if conf[3]
+	    if conf[3].index('{')
+	      conf[3] = tk_split_list(conf[3]) 
+	    else
+	      conf[3] = tk_tcl2ruby(conf[3]) 
+	    end
+	  end
+	  if conf[4]
+	    if conf[4].index('{')
+	      conf[4] = tk_split_list(conf[4]) 
+	    else
+	      conf[4] = tk_tcl2ruby(conf[4]) 
+	    end
+	  end
+	end
+	conf
+      }
+    end
+  end
+
+  def window_names
+    tk_split_simplelist(tk_send('window', 'names')).collect{|elt|
+      tagid2obj(elt)
+    }
   end
 
   def _ktext_length(txt)
@@ -468,7 +641,7 @@ class TkText<TkTextWin
 	    result.push tk_tcl2ruby(val)
 	  end
 	when 'tagoff'
-	    result.push tk_tcl2ruby(sel)
+	    result.push tk_tcl2ruby(val)
 	when 'window'
 	  result.push tk_tcl2ruby(val)
 	end
@@ -555,6 +728,13 @@ class TkTextTag<TkObject
   TTagID_TBL = {}
   Tk_TextTag_ID = ['tag0000']
 
+  TkComm::INITIALIZE_TARGETS << self
+
+  def self.__init_tables__
+    TTagID_TBL.clear
+    Tk_TextTag_ID[0] = 'tag0000'
+  end
+
   def TkTextTag.id2obj(text, id)
     tpath = text.path
     return id unless TTagID_TBL[tpath]
@@ -587,7 +767,7 @@ class TkTextTag<TkObject
   end
 
   def id
-    return @id
+    @id
   end
 
   def first
@@ -600,10 +780,12 @@ class TkTextTag<TkObject
 
   def add(*index)
     tk_call @t.path, 'tag', 'add', @id, *index
+    self
   end
 
   def remove(*index)
     tk_call @t.path, 'tag', 'remove', @id, *index
+    self
   end
 
   def ranges
@@ -616,11 +798,11 @@ class TkTextTag<TkObject
   end
 
   def nextrange(first, last=None)
-    tk_split_simplelist(tk_call(@t.path, 'tag', 'nextrange', @id, first, last))
+    tk_split_list(tk_call(@t.path, 'tag', 'nextrange', @id, first, last))
   end
 
   def prevrange(first, last=None)
-    tk_split_simplelist(tk_call(@t.path, 'tag', 'prevrange', @id, first, last))
+    tk_split_list(tk_call(@t.path, 'tag', 'prevrange', @id, first, last))
   end
 
   def [](key)
@@ -665,10 +847,17 @@ class TkTextTag<TkObject
 
   def bind(seq, cmd=Proc.new, args=nil)
     _bind([@t.path, 'tag', 'bind', @id], seq, cmd, args)
+    self
   end
 
   def bind_append(seq, cmd=Proc.new, args=nil)
     _bind_append([@t.path, 'tag', 'bind', @id], seq, cmd, args)
+    self
+  end
+
+  def bind_remove(seq)
+    _bind_remove([@t.path, 'tag', 'bind', @id], seq)
+    self
   end
 
   def bindinfo(context=nil)
@@ -677,15 +866,18 @@ class TkTextTag<TkObject
 
   def raise(above=None)
     tk_call @t.path, 'tag', 'raise', @id, above
+    self
   end
 
   def lower(below=None)
     tk_call @t.path, 'tag', 'lower', @id, below
+    self
   end
 
   def destroy
     tk_call @t.path, 'tag', 'delete', @id
     TTagID_TBL[@tpath].delete(@id) if CTagID_TBL[@tpath]
+    self
   end
 end
 
@@ -707,9 +899,20 @@ class TkTextNamedTag<TkTextTag
     @path = @id = name
     TTagID_TBL[@tpath] = {} unless TTagID_TBL[@tpath]
     TTagID_TBL[@tpath][@id] = self
-    if mode
-      tk_call @t.path, "addtag", @id, *args
+    #if mode
+    #  tk_call @t.path, "addtag", @id, *args
+    #end
+    if args != [] then
+      keys = args.pop
+      if keys.kind_of? Hash then
+	add(*args) if args != []
+	configure(keys)
+      else
+	args.push keys
+	add(*args)
+      end
     end
+    @t._addtag id, self
   end
 end
 
@@ -738,16 +941,26 @@ class TkTextMark<TkObject
     tk_call @t.path, 'mark', 'set', @id, index
     @t._addtag id, self
   end
+
   def id
-    return @id
+    @id
+  end
+
+  def +(mod)
+    @id + ' + ' + mod
+  end
+  def -(mod)
+    @id + ' - ' + mod
   end
 
   def set(where)
     tk_call @t.path, 'mark', 'set', @id, where
+    self
   end
 
   def unset
     tk_call @t.path, 'mark', 'unset', @id
+    self
   end
   alias destroy unset
 
@@ -757,6 +970,7 @@ class TkTextMark<TkObject
 
   def gravity=(direction)
     tk_call @t.path, 'mark', 'gravity', @id, direction
+    self
   end
 
   def next(index = nil)
@@ -850,12 +1064,7 @@ class TkTextWindow<TkObject
   end
 
   def cget(slot)
-    case slot.to_s
-    when 'text', 'label', 'show', 'data', 'file'
-      tk_call @t.path, 'window', 'cget', @index, "-#{slot}"
-    else
-      tk_tcl2ruby tk_call(@t.path, 'window', 'cget', @index, "-#{slot}")
-    end
+    @t.window_cget(@index, slot)
   end
 
   def configure(slot, value=None)
@@ -867,16 +1076,21 @@ class TkTextWindow<TkObject
 	slot['create']=nil
       end
       if slot.size > 0
-	tk_call @t.path, 'window', 'configure', @index, *hash_kv(slot)
+	tk_call(@t.path, 'window', 'configure', @index, *hash_kv(slot))
       end
     else
       @id = value if slot == 'window' || slot == :window
       if slot == 'create' || slot == :create
 	self.create=value
       else
-	tk_call @t.path, 'window', 'configure', @index, "-#{slot}", value
+	tk_call(@t.path, 'window', 'configure', @index, "-#{slot}", value)
       end
     end
+    self
+  end
+
+  def configinfo(slot = nil)
+    @t.window_configinfo(@index, slot)
   end
 
   def window
@@ -899,47 +1113,6 @@ class TkTextWindow<TkObject
     end
     tk_call @t.path, 'window', 'configure', @index, '-create', value
   end
-
-  def configinfo(slot = nil)
-    if slot
-      case slot.to_s
-      when 'text', 'label', 'show', 'data', 'file'
-	conf = tk_split_simplelist(tk_call(@t.path, 'window', 'configure', 
-					   @index, "-#{slot}"))
-      else
-	conf = tk_split_list(tk_call(@t.path, 'window', 'configure', 
-				     @index, "-#{slot}"))
-      end
-      conf[0] = conf[0][1..-1]
-      conf
-    else
-      tk_split_simplelist(tk_call(@t.path, 'window', 'configure', 
-				  @index)).collect{|conflist|
-	conf = tk_split_simplelist(conflist)
-	conf[0] = conf[0][1..-1]
-	case conf[0]
-	when 'text', 'label', 'show', 'data', 'file'
-	else
-	  if conf[3]
-	    if conf[3].index('{')
-	      conf[3] = tk_split_list(conf[3]) 
-	    else
-	      conf[3] = tk_tcl2ruby(conf[3]) 
-	    end
-	  end
-	  if conf[4]
-	    if conf[4].index('{')
-	      conf[4] = tk_split_list(conf[4]) 
-	    else
-	      conf[4] = tk_tcl2ruby(conf[4]) 
-	    end
-	  end
-	end
-	conf
-      }
-    end
-  end
-
 end
 
 class TkTextImage<TkObject
@@ -972,70 +1145,28 @@ class TkTextImage<TkObject
   end
 
   def cget(slot)
-    case slot.to_s
-    when 'text', 'label', 'show', 'data', 'file'
-      tk_call @t.path, 'image', 'cget', @index, "-#{slot}"
-    else
-      tk_tcl2ruby tk_call(@t.path, 'image', 'cget', @index, "-#{slot}")
-    end
+    @t.image_cget(@index, slot)
   end
 
   def configure(slot, value=None)
-    if slot.kind_of? Hash
-      tk_call @t.path, 'image', 'configure', @index, *hash_kv(slot)
-    else
-      tk_call @t.path, 'image', 'configure', @index, "-#{slot}", value
-    end
+    @t.image_configure(@index, slot, value)
+    self
   end
 #  def configure(slot, value)
 #    tk_call @t.path, 'image', 'configure', @index, "-#{slot}", value
 #  end
 
+  def configinfo(slot = nil)
+    @t.image_configinfo(@index, slot)
+  end
+
   def image
-    tk_call @t.path, 'image', 'configure', @index, '-image'
+    img = tk_call(@t.path, 'image', 'configure', @index, '-image')
+    TkImage::Tk_IMGTBL[img]? TkImage::Tk_IMGTBL[img] : img
   end
 
   def image=(value)
     tk_call @t.path, 'image', 'configure', @index, '-image', value
-  end
-
-  def configinfo(slot = nil)
-    if slot
-      case slot.to_s
-      when 'text', 'label', 'show', 'data', 'file'
-	conf = tk_split_simplelist(tk_call(@t.path, 'image', 'configure', 
-					   @index, "-#{slot}"))
-      else
-	conf = tk_split_list(tk_call(@t.path, 'image', 'configure', 
-				     @index, "-#{slot}"))
-      end
-      conf[0] = conf[0][1..-1]
-      conf
-    else
-      tk_split_simplelist(tk_call(@t.path, 'image', 'configure', 
-				  @index)).collect{|conflist|
-	conf = tk_split_simplelist(conflist)
-	conf[0] = conf[0][1..-1]
-	case conf[0]
-	when 'text', 'label', 'show', 'data', 'file'
-	else
-	  if conf[3]
-	    if conf[3].index('{')
-	      conf[3] = tk_split_list(conf[3]) 
-	    else
-	      conf[3] = tk_tcl2ruby(conf[3]) 
-	    end
-	  end
-	  if conf[4]
-	    if conf[4].index('{')
-	      conf[4] = tk_split_list(conf[4]) 
-	    else
-	      conf[4] = tk_tcl2ruby(conf[4]) 
-	    end
-	  end
-	end
-	conf
-      }
-    end
+    self
   end
 end

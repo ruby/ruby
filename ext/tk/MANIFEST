@@ -8,6 +8,7 @@ lib/tkafter.rb
 lib/tkbgerror.rb
 lib/tkcanvas.rb
 lib/tkclass.rb
+lib/tkconsole.rb
 lib/tkdialog.rb
 lib/tkentry.rb
 lib/tkfont.rb

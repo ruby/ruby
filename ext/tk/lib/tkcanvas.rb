@@ -31,9 +31,6 @@ class TkCanvas<TkWindow
 
   WidgetClassName = 'Canvas'.freeze
   WidgetClassNames[WidgetClassName] = self
-  def self.to_eval
-    WidgetClassName
-  end
 
   def create_self(keys)
     if keys and keys != None
@@ -54,6 +51,7 @@ class TkCanvas<TkWindow
 
   def addtag(tag, mode, *args)
     tk_send 'addtag', tagid(tag), mode, *args
+    self
   end
   def addtag_above(tagOrId, target)
     addtag(tagOrId, 'above', tagid(target))
@@ -83,10 +81,17 @@ class TkCanvas<TkWindow
 
   def itembind(tag, context, cmd=Proc.new, args=nil)
     _bind([path, "bind", tagid(tag)], context, cmd, args)
+    self
   end
 
   def itembind_append(tag, context, cmd=Proc.new, args=nil)
     _bind_append([path, "bind", tagid(tag)], context, cmd, args)
+    self
+  end
+
+  def itembind_remove(tag, context)
+    _bind_remove([path, "bind", tagid(tag)], context)
+    self
   end
 
   def itembindinfo(tag, context=nil)
@@ -104,21 +109,24 @@ class TkCanvas<TkWindow
     if args == []
       tk_split_list(tk_send('coords', tagid(tag)))
     else
-      tk_send('coords', tagid(tag), *args)
+      tk_send('coords', tagid(tag), *(args.flatten))
     end
   end
 
   def dchars(tag, first, last=None)
     tk_send 'dchars', tagid(tag), first, last
+    self
   end
 
   def delete(*args)
     tk_send 'delete', *args.collect{|t| tagid(t)}
+    self
   end
   alias remove delete
 
   def dtag(tag, tag_to_del=None)
     tk_send 'dtag', tagid(tag), tag_to_del
+    self
   end
 
   def find(mode, *args)
@@ -151,6 +159,7 @@ class TkCanvas<TkWindow
   def itemfocus(tagOrId=nil)
     if tagOrId
       tk_send 'focus', tagid(tagOrId)
+      self
     else
       ret = tk_send('focus')
       if ret == ""
@@ -169,14 +178,16 @@ class TkCanvas<TkWindow
 
   def icursor(tagOrId, index)
     tk_send 'icursor', tagid(tagOrId), index
+    self
   end
 
   def index(tagOrId, index)
-    tk_send 'index', tagid(tagOrId), index
+    number(tk_send('index', tagid(tagOrId), index))
   end
 
   def insert(tagOrId, index, string)
     tk_send 'insert', tagid(tagOrId), index, string
+    self
   end
 
   def itemcget(tagOrId, option)
@@ -215,6 +226,7 @@ class TkCanvas<TkWindow
 	tk_send 'itemconfigure', tagid(tagOrId), "-#{key}", value
       end
     end
+    self
   end
 #  def itemconfigure(tagOrId, key, value=None)
 #    if key.kind_of? Hash
@@ -285,10 +297,12 @@ class TkCanvas<TkWindow
 
   def lower(tag, below=None)
     tk_send 'lower', tagid(tag), tagid(below)
+    self
   end
 
   def move(tag, x, y)
     tk_send 'move', tagid(tag), x, y
+    self
   end
 
   def postscript(keys)
@@ -297,21 +311,26 @@ class TkCanvas<TkWindow
 
   def raise(tag, above=None)
     tk_send 'raise', tagid(tag), tagid(above)
+    self
   end
 
   def scale(tag, x, y, xs, ys)
     tk_send 'scale', tagid(tag), x, y, xs, ys
+    self
   end
 
   def scan_mark(x, y)
     tk_send 'scan', 'mark', x, y
+    self
   end
   def scan_dragto(x, y)
     tk_send 'scan', 'dragto', x, y
+    self
   end
 
   def select(mode, *args)
-    tk_send 'select', mode, *args
+    r = tk_send('select', mode, *args)
+    (mode == 'item')? TkcItem.id2obj(self, r): self
   end
   def select_adjust(tagOrId, index)
     select('adjust', tagid(tagOrId), index)
@@ -340,6 +359,7 @@ module TkcTagAccess
 
   def addtag(tag)
     @c.addtag(tag, 'with', @id)
+    self
   end
 
   def bbox
@@ -348,6 +368,17 @@ module TkcTagAccess
 
   def bind(seq, cmd=Proc.new, args=nil)
     @c.itembind @id, seq, cmd, args
+    self
+  end
+
+  def bind_append(seq, cmd=Proc.new, args=nil)
+    @c.itembind_append @id, seq, cmd, args
+    self
+  end
+
+  def bind_remove(seq)
+    @c.itembind_remove @id, seq
+    self
   end
 
   def bindinfo(seq=nil)
@@ -360,6 +391,7 @@ module TkcTagAccess
 
   def configure(key, value=None)
     @c.itemconfigure @id, key, value
+    self
   end
 #  def configure(keys)
 #    @c.itemconfigure @id, keys
@@ -375,10 +407,12 @@ module TkcTagAccess
 
   def dchars(first, last=None)
     @c.dchars @id, first, last
+    self
   end
 
   def dtag(tag_to_del=None)
     @c.dtag @id, tag_to_del
+    self
   end
 
   def find
@@ -396,6 +430,7 @@ module TkcTagAccess
 
   def icursor(index)
     @c.icursor @id, index
+    self
   end
 
   def index(index)
@@ -404,32 +439,40 @@ module TkcTagAccess
 
   def insert(beforethis, string)
     @c.insert @id, beforethis, string
+    self
   end
 
   def lower(belowthis=None)
     @c.lower @id, belowthis
+    self
   end
 
   def move(xamount, yamount)
     @c.move @id, xamount, yamount
+    self
   end
 
   def raise(abovethis=None)
     @c.raise @id, abovethis
+    self
   end
 
   def scale(xorigin, yorigin, xscale, yscale)
     @c.scale @id, xorigin, yorigin, xscale, yscale
+    self
   end
 
   def select_adjust(index)
     @c.select('adjust', @id, index)
+    self
   end
   def select_from(index)
     @c.select('from', @id, index)
+    self
   end
   def select_to(index)
     @c.select('to', @id, index)
+    self
   end
 
   def itemtype
@@ -478,6 +521,13 @@ class TkcTag<TkObject
   CTagID_TBL = {}
   Tk_CanvasTag_ID = ['ctag0000']
 
+  TkComm::INITIALIZE_TARGETS << self
+
+  def self.__init_tables__
+    CTagID_TBL.clear
+    Tk_CanvasTag_ID[0] = 'ctag0000'
+  end
+
   def TkcTag.id2obj(canvas, id)
     cpath = canvas.path
     return id unless CTagID_TBL[cpath]
@@ -499,48 +549,56 @@ class TkcTag<TkObject
     end
   end
   def id
-    return @id
+    @id
   end
 
   def delete
     @c.delete @id
     CTagID_TBL[@cpath].delete(@id) if CTagID_TBL[@cpath]
+    self
   end
   alias remove  delete
   alias destroy delete
 
   def set_to_above(target)
     @c.addtag_above(@id, target)
+    self
   end
   alias above set_to_above
 
   def set_to_all
     @c.addtag_all(@id)
+    self
   end
   alias all set_to_all
 
   def set_to_below(target)
     @c.addtag_below(@id, target)
+    self
   end
   alias below set_to_below
 
   def set_to_closest(x, y, halo=None, start=None)
     @c.addtag_closest(@id, x, y, halo, start)
+    self
   end
   alias closest set_to_closest
 
   def set_to_enclosed(x1, y1, x2, y2)
     @c.addtag_enclosed(@id, x1, y1, x2, y2)
+    self
   end
   alias enclosed set_to_enclosed
 
   def set_to_overlapping(x1, y1, x2, y2)
     @c.addtag_overlapping(@id, x1, y1, x2, y2)
+    self
   end
   alias overlapping set_to_overlapping
 
   def set_to_withtag(target)
     @c.addtag_withtag(@id, target)
+    self
   end
   alias withtag set_to_withtag
 end
@@ -615,12 +673,14 @@ class TkcGroup<TkcTag
     for i in tags
       i.addtag @id
     end
+    self
   end
 
   def exclude(*tags)
     for i in tags
       i.delete @id
     end
+    self
   end
 end
 
@@ -629,6 +689,12 @@ class TkcItem<TkObject
 
   CItemTypeToClass = {}
   CItemID_TBL = {}
+
+  TkComm::INITIALIZE_TARGETS << self
+
+  def self.__init_tables__
+    CItemID_TBL.clear
+  end
 
   def TkcItem.type2class(type)
     CItemTypeToClass[type]
@@ -683,12 +749,13 @@ class TkcItem<TkObject
   def create_self(*args); end
   private :create_self
   def id
-    return @id
+    @id
   end
 
   def delete
     @c.delete @id
     CItemID_TBL[@path].delete(@id) if CItemID_TBL[@path]
+    self
   end
   alias remove  delete
   alias destroy delete
@@ -753,8 +820,15 @@ class TkImage<TkObject
   include Tk
 
   Tk_IMGTBL = {}
-
   Tk_Image_ID = ['i00000']
+
+  TkComm::INITIALIZE_TARGETS << self
+
+  def self.__init_tables__
+    Tk_IMGTBL.clear
+    Tk_Image_ID[0] = 'i00000'
+  end
+
   def initialize(keys=nil)
     @path = Tk_Image_ID[0]
     Tk_Image_ID[0] = Tk_Image_ID[0].succ
@@ -765,6 +839,7 @@ class TkImage<TkObject
   def delete
     Tk_IMGTBL.delete(@id) if @id
     tk_call('image', 'delete', @path)
+    self
   end
   def height
     number(tk_call('image', 'height', @path))
@@ -805,6 +880,7 @@ class TkPhotoImage<TkImage
 
   def blank
     tk_send 'blank'
+    self
   end
 
   def cget(option)
@@ -826,14 +902,16 @@ class TkPhotoImage<TkImage
     }.flatten
 
     tk_send 'copy', source, *args
+
+    self
   end
 
   def data(keys=nil)
-    tk_send 'data', *hash_kv(keys)
+    tk_send('data', *hash_kv(keys))
   end
 
   def get(x, y)
-    tk_send 'get', x, y
+    tk_send('get', x, y).split.collect{|n| n.to_i}
   end
 
   def put(data, *to)
@@ -842,6 +920,7 @@ class TkPhotoImage<TkImage
     else
       tk_send 'put', data, '-to', *to
     end
+    self
   end
 
   def read(file, *opts)
@@ -854,10 +933,21 @@ class TkPhotoImage<TkImage
     }.flatten
   
     tk_send 'read', file, *args
+
+    self
   end
 
   def redither
     tk_send 'redither'
+    self
+  end
+
+  def get_transparency(x, y)
+    bool(tk_send('transparency', 'get', x, y))
+  end
+  def set_transparency(x, y, st)
+    tk_send('transparency', 'set', x, y, st)
+    self
   end
 
   def write(file, *opts)
@@ -870,5 +960,7 @@ class TkPhotoImage<TkImage
     }.flatten
   
     tk_send 'write', file, *args
+
+    self
   end
 end

@@ -4,6 +4,7 @@ tkafter.rb	handles Tcl after
 tkbgerror.rb	Tk error module
 tkcanvas.rb	Tk canvas interface
 tkclass.rb	provides generic names for Tk classes
+tkconsole.rb	console command support
 tkdialog.rb	Tk dialog class
 tkentry.rb	Tk entry class
 tkfont.rb	Tk font support
