@@ -702,7 +702,7 @@ end
 # end
 
 if $0 == __FILE__
-  eval DATA.read
+  eval DATA.read, nil, $0, __LINE__+4
 end
 
 __END__
