@@ -1318,9 +1318,9 @@ rb_io_isatty(io)
 }
 
 static void
-fptr_finalize(fptr, fin)
+fptr_finalize(fptr, noraise)
     OpenFile *fptr;
-    int fin;
+    int noraise;
 {
     int n1 = 0, n2 = 0, e = 0, f1, f2 = -1;
 
@@ -1341,28 +1341,26 @@ fptr_finalize(fptr, fin)
 	    if (!rb_io_wait_writable(f1)) break;
 	}
 	fptr->f = 0;
-	if (n1 < 0 && errno == EBADF) {
-	    if (f1 == f2 || !(fptr->mode & FMODE_WBUF)) {
-		n1 = 0;
-	    }
+	if (n1 < 0 && errno == EBADF && f1 == f2) {
+	    n1 = 0;
 	}
     }
-    if (!fin && (n1 < 0 || n2 < 0)) {
+    if (!noraise && (n1 < 0 || n2 < 0)) {
 	if (n1 == 0) errno = e;
 	rb_sys_fail(fptr->path);
     }
 }
 
 static void
-rb_io_fptr_cleanup(fptr, fin)
+rb_io_fptr_cleanup(fptr, noraise)
     OpenFile *fptr;
-    int fin;
+    int noraise;
 {
     if (fptr->finalize) {
-	(*fptr->finalize)(fptr);
+	(*fptr->finalize)(fptr, noraise);
     }
     else {
-	fptr_finalize(fptr, fin);
+	fptr_finalize(fptr, noraise);
     }
 
     if (fptr->path) {
@@ -1937,11 +1935,12 @@ pipe_atexit _((void))
 }
 #endif
 
-static void pipe_finalize _((OpenFile *fptr));
+static void pipe_finalize _((OpenFile *fptr,int));
 
 static void
-pipe_finalize(fptr)
+pipe_finalize(fptr, noraise)
     OpenFile *fptr;
+    int noraise;
 {
 #if !defined (__CYGWIN__) && !defined(_WIN32)
     extern VALUE rb_last_status;
@@ -1958,7 +1957,7 @@ pipe_finalize(fptr)
 #endif
     rb_last_status = INT2FIX(status);
 #else
-    fptr_finalize(fptr, Qtrue);
+    fptr_finalize(fptr, noraise);
 #endif
     pipe_del_fptr(fptr);
 }
@@ -3988,9 +3987,9 @@ Init_IO()
     rb_output_rs = Qnil;
     rb_global_variable(&rb_default_rs);
     OBJ_FREEZE(rb_default_rs);	/* avoid modifying RS_default */
-    rb_define_variable("$/", &rb_rs);
-    rb_define_variable("$-0", &rb_rs);
-    rb_define_variable("$\\", &rb_output_rs);
+    rb_define_hooked_variable("$/", &rb_rs, 0, rb_str_setter);
+    rb_define_hooked_variable("$-0", &rb_rs, 0, rb_str_setter);
+    rb_define_hooked_variable("$\\", &rb_output_rs, 0, rb_str_setter);
 
     rb_define_hooked_variable("$.", &lineno, 0, lineno_setter);
     rb_define_virtual_variable("$_", rb_lastline_get, rb_lastline_set);

@@ -2613,7 +2613,7 @@ rb_str_split_m(argc, argv, str)
 	    if (!NIL_P(limit) && lim <= ++i) break;
 	}
     }
-    if (!NIL_P(limit) || RSTRING(str)->len > beg || lim < 0) {
+    if (RSTRING(str)->len > 0 && (!NIL_P(limit) || RSTRING(str)->len > beg || lim < 0)) {
 	if (RSTRING(str)->len == beg)
 	    tmp = rb_str_new5(str, 0, 0);
 	else

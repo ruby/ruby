@@ -93,11 +93,11 @@ static VALUE
 coerce_rescue(x)
     VALUE *x;
 {
-    volatile VALUE v;
+    volatile VALUE v = rb_inspect(x[1]);
 
     rb_raise(rb_eTypeError, "%s can't be coerced into %s",
 	     rb_special_const_p(x[1])?
-	     RSTRING(v = rb_inspect(x[1]))->ptr:
+	     RSTRING(v)->ptr:
 	     rb_obj_classname(x[1]),
 	     rb_obj_classname(x[0]));
     return Qnil;		/* dummy */

@@ -1,3 +1,16 @@
+Mon Apr 14 03:22:33 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* rubyio.h (struct OpenFile): add error raise flag to finalizer.
+
+	* io.c (Init_IO): define $/, $-0, and $\ as string-only
+	  variables.
+
+	* string.c (rb_str_split_m): does not generate empty string if
+	  there's no match in the receiver.
+
+	* io.c (fptr_finalize): should raise error on EBADF for readable
+	  IOs as well.
+
 Mon Apr 14 15:54:18 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* bignum.c (rb_cstr_to_inum, rb_big2str): allow 2-36 as radix.
@@ -21,6 +34,10 @@ Sat Apr 12 20:59:40 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* misc/ruby-mode.el (ruby-forward-sexp, ruby-backward-sexp):
 	  support special char literal, and negative arguments.
+
+Sat Apr 12 17:52:47 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* file.c (rb_stat): use rb_check_convert_type() to retrieve IO.
 
 Fri Apr 11 19:00:14 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 

@@ -346,11 +346,14 @@ rb_stat(file, st)
     VALUE file;
     struct stat *st;
 {
-    if (TYPE(file) == T_FILE) {
+    VALUE tmp;
+
+    tmp = rb_check_convert_type(file, T_FILE, "IO", "to_io");
+    if (!NIL_P(tmp)) {
 	OpenFile *fptr;
 
 	rb_secure(2);
-	GetOpenFile(file, fptr);
+	GetOpenFile(tmp, fptr);
 	return fstat(fileno(fptr->f), st);
     }
     SafeStringValue(file);
