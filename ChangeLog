@@ -1,3 +1,8 @@
+Wed Jan  5 12:49:39 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_thread_initialize): Thread objects cannot be initialized
+	  again.  fixed: [ruby-core:04067]
+
 Wed Jan  5 10:48:16 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* dir.c (dir_s_mkdir): win32 special processing doesn't need any
