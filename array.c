@@ -943,26 +943,19 @@ rb_ary_delete_at(ary, at)
     VALUE ary;
     VALUE at;
 {
-    long i1, i2, pos;
+    long i, pos = NUM2LONG(at), len = RARRAY(ary)->len;
     VALUE del = Qnil;
 
+    rb_ary_modify(ary);
     if (pos >= len) return Qnil;
     if (pos < 0) pos += len;
     if (pos < 0) return Qnil;
 
-    rb_ary_modify(ary);
-    pos = NUM2LONG(at);
-    for (i1 = i2 = 0; i1 < RARRAY(ary)->len; i1++) {
-	if (i1 == pos) {
-	    del = RARRAY(ary)->ptr[i1];
-	    continue;
-	}
-	if (i1 != i2) {
-	    RARRAY(ary)->ptr[i2] = RARRAY(ary)->ptr[i1];
-	}
-	i2++;
+    del = RARRAY(ary)->ptr[pos];
+    for (i = pos + 1; i < len; i++, pos++) {
+	RARRAY(ary)->ptr[pos] = RARRAY(ary)->ptr[i];
     }
-    RARRAY(ary)->len = i2;
+    RARRAY(ary)->len = pos;
 
     return del;
 }
