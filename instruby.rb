@@ -86,13 +86,30 @@ for src in Dir["bin/*"]
   File.install src, dest, 0755, true
 
   open(dest, "r+") { |f|
-    shebang = f.gets
-    body = f.readlines
+    shebang = f.gets.sub(/ruby/, ruby_install_name)
+    body = f.read
 
     f.rewind
-
-    f.print shebang.sub(/ruby/, ruby_install_name), *body
+    f.print shebang, body
     f.truncate(f.pos)
+    f.close
+
+    if RUBY_PLATFORM =~ /mswin32|mingw|bccwin32/
+      open(dest + ".bat", "w") { |b|
+	b.print <<EOH, shebang, body, <<EOF
+@echo off
+if "%OS%" == "Windows_NT" goto WinNT
+ruby -Sx "%0" %1 %2 %3 %4 %5 %6 %7 %8 %9
+goto endofruby
+:WinNT
+ruby -Sx "%~nx0" %*
+goto endofruby
+EOH
+__END__
+:endofruby
+EOF
+      }
+    end
   }
 end
 

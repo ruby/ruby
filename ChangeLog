@@ -1,3 +1,7 @@
+Fri Nov 22 19:30:17 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* instruby.rb: Install batch files on Windows. [Submitted by usa]
+
 Thu Nov 21 20:56:35 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb: should not overwrite Host: header.
