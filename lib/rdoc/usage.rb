@@ -1,7 +1,7 @@
 # = Synopsis
 #
 # This library allows command-line tools to encapsulate their usage
-# as a comment at the top of the main file. Calling <tt>RDoc::show_usage</tt>
+# as a comment at the top of the main file. Calling <tt>RDoc::usage</tt>
 # then displays some or all of that comment, and optionally exits
 # the program with an exit status. We always look for the comment
 # in the main program file, so it is safe to call this method
@@ -190,7 +190,6 @@ module RDoc
   #####
   # Report the fact that no doc comment count be found
   def RDoc.no_comment
-fail "xxx"
     $stderr.puts "No usage information available for this program"
     nil
   end

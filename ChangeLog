@@ -1,3 +1,8 @@
+Thu Aug 26 04:38:29 2004  Dave Thomas  <dave@pragprog.com>
+
+	* eval.c (return_jump): Minor typo in error message. Now reads
+	  "return can't jump across threads".
+
 Tue Aug 24 17:30:00 2004  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/cgi/session.rb (CGI::Session::FileStore#initialize): do not
