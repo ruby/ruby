@@ -109,9 +109,10 @@ Net::Protocol
     def do_start( helodom = nil,
                   user = nil, secret = nil, authtype = nil )
       unless helodom then
-        helodom = ENV['HOSTNAME'] || ENV['HOST']
+        helodom = ::Socket.gethostname
         unless helodom then
-          raise ArgumentError, "cannot get hostname"
+          raise ArgumentError,
+            "cannot get localhost name; try 'smtp.start(local_host_name)'"
         end
       end
 

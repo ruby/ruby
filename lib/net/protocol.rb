@@ -15,8 +15,6 @@ require 'socket'
 
 module Net
 
-  Version = '1.1.17'
-
 =begin
 
 == Net::Protocol
@@ -68,7 +66,7 @@ Object
 
   class Protocol
 
-    Version = ::Net::Version
+    Version = '1.1.18'
 
     class << self
 
@@ -165,7 +163,7 @@ Object
         connect
         do_start *args
         @active = true
-        yield if iterator?
+        yield self if iterator?
       ensure
         finish if iterator?
       end
@@ -591,7 +589,7 @@ Object
       do_write_do D_CRLF
       wsize = do_write_fin
 
-      @pipe << "wrote #{wsize} bytes text" if pipeon
+      @pipe << "wrote #{wsize} bytes text\n" if pipeon
       wsize
     end
 
