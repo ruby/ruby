@@ -1080,7 +1080,7 @@ site-install-rb: install-rb
 	  rule = /^[$\w][^#]*:/ =~ line unless cont
 	  cont = /(?:^|[^\\])(?:\\\\)*\\$/ =~ line
 	  if rule
-	    line.gsub!(%r"(?<=\s)(?!\.)(?=[^\s\/]+\.(?:#{(SRC_EXT + ['h']).join('|')})(?\s|\z))"o, '{.;$(VPATH)}')
+	    line.gsub!(%r"(?<=\s)(?!\.)(?=[^\s\/]+\.(?:#{(SRC_EXT + ['h']).join('|')})(?:\s|\z))"o, '{.;$(VPATH)}')
 	  else
 	    line.sub!(/^(\.\w+)(\.\w+)(?=\s*:)/, '{.;$(VPATH)}\1{}\2')
 	  end
