@@ -1,3 +1,7 @@
+Sun Mar  7 16:22:26 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* Makefile.in (lex.c): use $? instead of $<.
+
 Fri Mar  5 00:54:14 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/test/unit.rb: MOve RDoc documentation so that you can 
