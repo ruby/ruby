@@ -2,12 +2,15 @@ require 'test/unit'
 require 'drb/drb'
 require 'drb/extservm'
 require 'timeout'
-$:.unshift(File.expand_path("../../ruby", __FILE__))
-require 'envutil'
+require 'rbconfig'
 
 class DRbService
   @@manager = DRb::ExtServManager.new
-  @@ruby = EnvUtil.rubybin
+  @@ruby = File.join(
+    Config::CONFIG["bindir"],
+    Config::CONFIG["ruby_install_name"] + Config::CONFIG["EXEEXT"]
+  )
+  @@ruby += " -d" if $DEBUG
   @@dir = File.dirname(File.expand_path(__FILE__))
 
   %w(ut_drb.rb ut_array.rb ut_port.rb ut_large.rb ut_safe1.rb ut_eval.rb).each do |nm|

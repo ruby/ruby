@@ -1,3 +1,8 @@
+Wed Oct 29 22:02:04 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/drb/drbtest.rb: use rbconfig.rb to make the path of ruby
+	  interpreter to exec, instead of test/ruby/envutil.rb,
+
 Wed Oct 29 19:58:59 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* ext/tcltklib/tcltklib.c (CONST84): define CONST84 when it is not
