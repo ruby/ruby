@@ -1,3 +1,16 @@
+Tue Jun  4 00:45:50 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* ext/socket/addrinfo.h: typo.
+
+	* ext/socket/getaddrinfo.c (gai_strerror): get rid of warning.
+
+	* ext/socket/socket.c (init_inetsock): ensures resources are
+	  freed at exceptions.
+
+	* ext/socket/socket.c (init_unixsock): ditto.
+
+	* ext/socket/socket.c (udp_connect): ditto.
+
 Mon Jun  3 07:07:07 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* parse.y (here_document): check if identifier is terminated.

@@ -153,7 +153,7 @@ extern int getnameinfo __P((
 	int flags));
 
 extern void freehostent __P((struct hostent *));
-extern void freeaddrent __P((struct addrinfo *));
+extern void freeaddrinfo __P((struct addrinfo *));
 #if defined __UCLIBC__
 const
 #endif
