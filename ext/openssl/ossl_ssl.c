@@ -434,7 +434,7 @@ ossl_ssl_setup(VALUE self)
 }
 
 #ifdef _WIN32
-#define ssl_get_error(ssl, ret) (errno = GetLastError(), SSL_get_error(ssl, ret))
+#define ssl_get_error(ssl, ret) (errno = WSAGetLastError(), SSL_get_error(ssl, ret))
 #else
 #define ssl_get_error(ssl, ret) SSL_get_error(ssl, ret)
 #endif
