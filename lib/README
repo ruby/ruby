@@ -89,7 +89,7 @@ uri/ldap.rb	ldap scheme support
 uri/mailto.rb	mailto scheme support
 weakref.rb	weak reference class
 webrick.rb	WEB server toolkit
-wsdl		WSDL 1.2 implementation
+wsdl		WSDL 1.1 implementation
 xmlrpc		XML-RPC implementation
 xsd		XML Schema Datatypes implementation
 yaml.rb		YAML implementation
