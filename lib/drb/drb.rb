@@ -498,6 +498,31 @@ module DRb
     end
   end
 
+  class DRbArray
+    def initialize(ary)
+      @ary = ary.collect { |obj| 
+	if obj.kind_of? DRbUndumped
+	  DRbObject.new(obj)
+	else
+	  begin
+	    Marshal.dump(obj)
+	    obj
+	  rescue
+	    DRbObject.new(obj)
+	  end
+	end
+      }
+    end
+
+    def self._load(s)
+      Marshal::load(s)
+    end
+
+    def _dump(lv)
+      Marshal.dump(@ary)
+    end
+  end
+
   # Handler for sending and receiving drb messages.
   #
   # This takes care of the low-level marshalling and unmarshalling
@@ -1344,6 +1369,9 @@ module DRb
           @result = perform_without_block
         end
 	@succ = true
+	if @msg_id == :to_ary && @result.class == Array
+	  @result = DRbArray.new(@result) 
+	end
 	return @succ, @result
       rescue StandardError, ScriptError, Interrupt
 	@result = $!

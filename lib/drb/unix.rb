@@ -2,6 +2,8 @@ require 'socket'
 require 'drb/drb'
 require 'tmpdir'
 
+raise(LoadError, "UNIXServer is required") unless defined?(UNIXServer)
+
 module DRb
 
   class DRbUNIXSocket < DRbTCPSocket

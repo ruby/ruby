@@ -4,6 +4,9 @@ module DRb
   class DRbServer
     module InvokeMethod18Mixin
       def block_yield(x)
+	if x.size == 1 && x[0].class == Array
+	  x[0] = DRbArray.new(x[0])
+	end
         block_value = @block.call(*x)
       end
       
