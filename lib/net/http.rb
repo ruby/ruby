@@ -597,8 +597,8 @@ S
         key = canonical(k)
         if tmp.key? key then
           $stderr.puts "WARNING: duplicated HTTP header: #{k}" if $VERBOSE
-          tmp[ key ] = v.strip
         end
+        tmp[ key ] = v.strip
       end
       @u_header.update tmp
     end

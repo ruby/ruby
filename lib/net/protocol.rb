@@ -504,9 +504,13 @@ module Net
       @pipe << "reading #{len} bytes...\n" if @pipe; pipeoff
 
       rsize = 0
-      while rsize + @buffer.size < len do
-        rsize += writeinto( dest, @buffer.size )
-        fill_rbuf
+      begin
+        while rsize + @buffer.size < len do
+          rsize += writeinto( dest, @buffer.size )
+          fill_rbuf
+        end
+      rescue EOFError
+        len = rsize
       end
       writeinto( dest, len - rsize )
 
@@ -534,14 +538,17 @@ module Net
 
 
     def readuntil( target )
-      while true do
-        idx = @buffer.index( target )
-        break if idx
-        fill_rbuf
-      end
-
       dest = ''
-      writeinto( dest, idx + target.size )
+      begin
+        while true do
+          idx = @buffer.index( target )
+          break if idx
+          fill_rbuf
+        end
+        writeinto( dest, idx + target.size )
+      rescue EOFError
+        writeinto( dest, @buffer.size )
+      end
       dest
     end
 

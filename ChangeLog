@@ -1,3 +1,9 @@
+Tue Jan 16 17:00:50 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/protocol.rb: ignore EOFError for read.
+
+	* lib/net/http.rb: user specified header was not used.
+
 Mon Jan 15 16:00:07 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* pack.c (pack_unpack): should check associated pointer packed by
