@@ -263,7 +263,7 @@ hdrdir = #{$hdrdir}
 CC = #{CONFIG["CC"]}
 
 prefix = #{CONFIG["prefix"]}
-CFLAGS   = #{CONFIG["CCDLFLAGS"]} -I#{$hdrdir} -I#{CONFIG["includedir"]} #{CFLAGS} #{$CFLAGS} #{$defs.join(" ")}
+CFLAGS   = #{CONFIG["CCDLFLAGS"]} -I$(hdrdir) -I#{CONFIG["includedir"]} #{CFLAGS} #{$CFLAGS} #{$defs.join(" ")}
 DLDFLAGS = #{$DLDFLAGS} #{$LDFLAGS}
 LDSHARED = #{CONFIG["LDSHARED"]}
 

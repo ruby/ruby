@@ -981,27 +981,27 @@ ruby_run()
 
       case TAG_RETURN:
 	error_pos();
-	fprintf(stderr, "unexpected return\n");
+	fprintf(stderr, ": unexpected return\n");
 	exit(1);
 	break;
       case TAG_NEXT:
 	error_pos();
-	fprintf(stderr, "unexpected next\n");
+	fprintf(stderr, ": unexpected next\n");
 	exit(1);
 	break;
       case TAG_BREAK:
 	error_pos();
-	fprintf(stderr, "unexpected break\n");
+	fprintf(stderr, ": unexpected break\n");
 	exit(1);
 	break;
       case TAG_REDO:
 	error_pos();
-	fprintf(stderr, "unexpected redo\n");
+	fprintf(stderr, ": unexpected redo\n");
 	exit(1);
 	break;
       case TAG_RETRY:
 	error_pos();
-	fprintf(stderr, "retry outside of rescue clause\n");
+	fprintf(stderr, ": retry outside of rescue clause\n");
 	exit(1);
 	break;
       case TAG_RAISE:
@@ -2340,6 +2340,9 @@ rb_eval(self, node)
 	    VALUE origin;
 	    int noex;
 
+	    if (the_class == cObject && node->nd_mid == init) {
+		Warn("re-defining Object#initialize may cause infinite loop");
+	    }
 	    body = search_method(the_class, node->nd_mid, &origin);
 	    if (body) {
 		if (origin == the_class) {
@@ -2844,7 +2847,7 @@ rb_yield_0(val, self)
     int state;
     static unsigned serial = 1;
 
-    if (!iterator_p()) {
+    if (!iterator_p() || !the_block) {
 	Raise(eLocalJumpError, "yield called out of iterator");
     }
 
@@ -6220,12 +6223,12 @@ thread_create(fn, arg)
 	tval.it_interval.tv_usec = 100000;
 	tval.it_value = tval.it_interval;
 	setitimer(ITIMER_VIRTUAL, &tval, NULL);
-
+#if 1
 	tval.it_interval.tv_sec =  2; /* unblock system calls */
 	tval.it_interval.tv_usec = 0;
 	tval.it_value = tval.it_interval;
 	setitimer(ITIMER_REAL, &tval, NULL);
-
+#endif
 	init = 1;
     }
 #endif

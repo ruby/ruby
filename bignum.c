@@ -20,7 +20,7 @@ typedef unsigned short USHORT;
 #define BIGRAD (1L << BITSPERDIG)
 #define DIGSPERINT ((unsigned int)(sizeof(long)/sizeof(short)))
 #define BIGUP(x) ((unsigned int)(x) << BITSPERDIG)
-#define BIGDN(x) RSHIFT((x),BITSPERDIG)
+#define BIGDN(x) (((x)<0) ? ~((~(x))>>BITSPERDIG) : (x)>>BITSPERDIG)
 #define BIGLO(x) ((x) & (BIGRAD-1))
 
 static VALUE
@@ -61,7 +61,7 @@ big_2comp(x)			/* get 2's complement */
     while (i--) ds[i] = ~ds[i];
     i = 0; num = 1;
     do {
-	num += (long)ds[i];
+	num += ds[i];
 	ds[i++] = BIGLO(num);
 	num = BIGDN(num);
     } while (i < RBIGNUM(x)->len);
@@ -441,7 +441,7 @@ big_cmp(x, y)
 
     switch (TYPE(y)) {
       case T_FIXNUM:
-	y = int2big(FIX2INT(y));
+	y = int2big(FIX2LONG(y));
 	break;
 
       case T_BIGNUM:
@@ -585,7 +585,7 @@ bigadd(x, y, sign)
 
     len = RBIGNUM(x)->len;
     for (i = 0, num = 0; i < len; i++) {
-	num += (long)(BDIGITS(x)[i] + BDIGITS(y)[i]);
+	num += BDIGITS(x)[i] + BDIGITS(y)[i];
 	BDIGITS(z)[i] = BIGLO(num);
 	num = BIGDN(num);
     }
@@ -610,7 +610,7 @@ big_plus(x, y)
 {
     switch (TYPE(y)) {
       case T_FIXNUM:
-	y = int2big(FIX2INT(y));
+	y = int2big(FIX2LONG(y));
 	/* fall through */
       case T_BIGNUM:
 	return bigadd(x, y, 1);
@@ -629,7 +629,7 @@ big_minus(x, y)
 {
     switch (TYPE(y)) {
       case T_FIXNUM:
-	y = int2big(FIX2INT(y));
+	y = int2big(FIX2LONG(y));
 	/* fall through */
       case T_BIGNUM:
 	return bigadd(x, y, 0);
@@ -651,10 +651,10 @@ big_mul(x, y)
     VALUE z;
     USHORT *zds;
 
-    if (FIXNUM_P(x)) x = int2big(FIX2INT(x));
+    if (FIXNUM_P(x)) x = int2big(FIX2LONG(x));
     switch (TYPE(y)) {
       case T_FIXNUM:
-	y = int2big(FIX2INT(y));
+	y = int2big(FIX2LONG(y));
 	break;
 
       case T_BIGNUM:
@@ -737,7 +737,7 @@ bigdivmod(x, y, div, mod, modulo)
 	j = 0;
 	num = 0;
 	while (j<ny) {
-	    num += (unsigned long)yds[j]*dd;
+	    num += (long)yds[j]*dd;
 	    tds[j++] = BIGLO(num);
 	    num = BIGDN(num);
 	}
@@ -745,7 +745,7 @@ bigdivmod(x, y, div, mod, modulo)
 	j = 0;
 	num = 0;
 	while (j<nx) {
-	    num += (unsigned long)xds[j]*dd;
+	    num += (long)xds[j]*dd;
 	    zds[j++] = BIGLO(num);
 	    num = BIGDN(num);
 	}
@@ -764,7 +764,7 @@ bigdivmod(x, y, div, mod, modulo)
 	    i = 0; num = 0; t2 = 0;
 	    do {			/* multiply and subtract */
 		int ee;
-		t2 += (unsigned long)yds[i] * q;
+		t2 += (long)yds[i] * q;
 		ee = num - BIGLO(t2);
 		num = zds[j - ny + i] + ee;
 		if (ee) zds[j - ny + i] = BIGLO(num);
@@ -827,7 +827,7 @@ big_div(x, y)
 
     switch (TYPE(y)) {
       case T_FIXNUM:
-	y = int2big(FIX2INT(y));
+	y = int2big(FIX2LONG(y));
 	break;
 
       case T_BIGNUM:
@@ -854,7 +854,7 @@ big_modulo(x, y, modulo)
 
     switch (TYPE(y)) {
       case T_FIXNUM:
-	y = int2big(FIX2INT(y));
+	y = int2big(FIX2LONG(y));
 	break;
 
       case T_BIGNUM:
@@ -894,7 +894,7 @@ big_divmod(x, y)
 
     switch (TYPE(y)) {
       case T_FIXNUM:
-	y = int2big(FIX2INT(y));
+	y = int2big(FIX2LONG(y));
 	break;
 
       case T_FLOAT:
@@ -931,8 +931,8 @@ big_pow(x, y)
 	break;
 
       case T_FIXNUM:
-	if (FIX2INT(y) > 0) goto pos_big;
-	d = (double)FIX2INT(y);
+	if (FIX2LONG(y) > 0) goto pos_big;
+	d = (double)FIX2LONG(y);
 	break;
 
       default:
@@ -964,7 +964,7 @@ big_and(x, y)
     char sign;
 
     if (FIXNUM_P(y)) {
-	y = int2big(FIX2INT(y));
+	y = int2big(FIX2LONG(y));
     }
     else {
 	Check_Type(y, T_BIGNUM);
@@ -1015,7 +1015,7 @@ big_or(x, y)
     char sign;
 
     if (FIXNUM_P(y)) {
-	y = int2big(FIX2INT(y));
+	y = int2big(FIX2LONG(y));
     }
     else {
 	Check_Type(y, T_BIGNUM);
@@ -1067,7 +1067,7 @@ big_xor(x, y)
     char sign;
 
     if (FIXNUM_P(y)) {
-	y = int2big(FIX2INT(y));
+	y = int2big(FIX2LONG(y));
     }
     else {
 	Check_Type(y, T_BIGNUM);
@@ -1219,7 +1219,7 @@ big_coerce(x, y)
     VALUE x, y;
 {
     if (FIXNUM_P(y)) {
-	return assoc_new(int2big(FIX2INT(y)), x);
+	return assoc_new(int2big(FIX2LONG(y)), x);
     }
     else {
 	TypeError("can't coerce %s to Bignum", rb_class2name(CLASS_OF(y)));

@@ -1,6 +1,6 @@
 #
 #   tkafter.rb : methods for Tcl/Tk after command
-#                     1998/06/23 by Hidetoshi Nagai <nagai@ai.kyutech.ac.jp>
+#                     1998/07/02 by Hidetoshi Nagai <nagai@ai.kyutech.ac.jp>
 #
 require 'tk'
 
@@ -20,10 +20,9 @@ class TkAfter
     @after_id = nil
     arg = Array(tk_split_list(arg))
     obj_id = arg.shift
-    return nil if Tk_CBTBL[obj_id] == nil; # canceled
-    ret = _get_eval_string(Tk_CBTBL[obj_id].do_callback(*arg))
-    Tk_CBTBL[obj_id].set_next_callback(*arg)
-    ret
+    ex_obj = Tk_CBTBL[obj_id]
+    return nil if ex_obj == nil; # canceled
+    _get_eval_string(ex_obj.do_callback(*arg))
   end
 
   def TkAfter.info
@@ -37,7 +36,15 @@ class TkAfter
   # instance methods
   ###############################
   def do_callback(*args)
-    @current_proc.call(*args)
+    @in_callback = true
+    ret = @current_proc.call(*args)
+    if @set_next
+      set_next_callback(*args)
+    else
+      @set_next = true
+    end
+    @in_callback = false
+    ret
   end
 
   def set_callback(sleep, args=nil)
@@ -49,6 +56,7 @@ class TkAfter
   def set_next_callback(*args)
     if @running == false || @proc_max == 0 || @do_loop == 0
       Tk_CBTBL[@id] = nil ;# for GC
+      @running = false
       return
     end
     if @current_pos >= @proc_max
@@ -56,6 +64,7 @@ class TkAfter
 	@current_pos = 0
       else
 	Tk_CBTBL[@id] = nil ;# for GC
+	@running = false
 	return
       end
     end
@@ -88,9 +97,11 @@ class TkAfter
     @id = format("a%.4d", Tk_CBID[0])
     Tk_CBID[0] += 1
 
-    @init_sleep=0
-    @init_proc=nil
-    @init_args=[]
+    @set_next = true
+
+    @init_sleep = 0
+    @init_proc = nil
+    @init_args = []
 
     @current_script = []
     @current_proc = nil
@@ -188,37 +199,56 @@ class TkAfter
     self
   end
 
-  def start(sleep=0, init_proc=nil, *init_args)
+  def set_start_proc(sleep, init_proc, *init_args)
+    if !sleep == 'idle' && !sleep.kind_of?(Integer)
+      fail format("%s need to be Integer", sleep.inspect)
+    end
+    @init_proc = init_proc
+    @init_args = init_args
+    self
+  end
+
+  def start(*init_args)
     return nil if @running
 
     Tk_CBTBL[@id] = self
     @do_loop = @loop_exec
     @current_pos = 0
 
-    if !sleep == 'idle' && !sleep.kind_of?(Integer)
-      fail format("%s need to be Integer", sleep.inspect)
-    end
-
-    @init_proc = init_proc
-    @init_args = init_args
-    @current_sleep = @init_sleep = sleep
-    @running = true
-    if init_proc
-      if not init_proc.kind_of? Proc
-	fail format("%s need to be Proc", init_proc.inspect)
+    argc = init_args.size
+    if argc > 0
+      sleep = init_args.shift
+      if !sleep == 'idle' && !sleep.kind_of?(Integer)
+	fail format("%s need to be Integer", sleep.inspect)
       end
-      @current_proc = init_proc
-      set_callback(sleep, init_args)
+      @init_sleep = sleep
+    end
+    @init_proc = init_args.shift if argc > 1
+    @init_args = init_args if argc > 0
+
+    @current_sleep = @init_sleep
+    @running = true
+    if @init_proc
+      if not @init_proc.kind_of? Proc
+	fail format("%s need to be Proc", @init_proc.inspect)
+      end
+      @current_proc = @init_proc
+      set_callback(sleep, @init_args)
+      @set_next = false if @in_callback
     else
-      set_next_callback(*init_args)
+      set_next_callback(*@init_args)
     end
 
     self
   end
 
-  def restart
+  def restart(*restart_args)
     cancel if @running
-    start(@init_sleep, @init_proc, @init_args)
+    if restart_args == []
+      start(@init_sleep, @init_proc, *@init_args)
+    else
+      start(*restart_args)
+    end
   end
 
   def cancel

@@ -103,7 +103,7 @@ any_hash(a, mod)
 	    hval = rb_funcall(hval, '%', 1, INT2FIX(65439));
 	}
 	ENABLE_INTS;
-	hval = FIX2INT(hval);
+	hval = FIX2LONG(hval);
     }
     return  hval % mod;
 }

@@ -221,7 +221,7 @@ extern char *mystrerror(int);
 #define EWOULDBLOCK 10035 /* EBASEERR + 35 (winsock.h) */
 #endif
 
-#define O_BINMODE 0x8000
+#define O_BINARY 0x8000
 
 #ifdef popen
 #undef popen

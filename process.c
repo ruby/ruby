@@ -809,12 +809,12 @@ proc_getpgrp(argc, argv)
     return INT2FIX(pgrp);
 }
 
-#ifdef HAVE_SETPGRP
 static VALUE
 proc_setpgrp(argc, argv)
     int argc;
     VALUE *argv;
 {
+#ifdef HAVE_SETPGRP
 #ifdef BSD_SETPGRP
     VALUE pid, pgrp;
     int ipid, ipgrp;
@@ -829,14 +829,16 @@ proc_setpgrp(argc, argv)
     if (setpgrp() < 0) rb_sys_fail(0);
 #endif
     return Qnil;
-}
+#else
+    rb_notimplement();
 #endif
+}
 
-#ifdef HAVE_SETPGID
 static VALUE
 proc_setpgid(obj, pid, pgrp)
     VALUE obj, pid, pgrp;
 {
+#ifdef HAVE_SETPGID
     int ipid, ipgrp;
 
     ipid = NUM2INT(pid);
@@ -844,8 +846,23 @@ proc_setpgid(obj, pid, pgrp)
 
     if (setpgid(ipid, ipgrp) < 0) rb_sys_fail(0);
     return Qnil;
-}
+#else
+    rb_notimplement();
 #endif
+}
+
+static VALUE
+proc_setsid()
+{
+#ifdef HAVE_SETSID
+    int pid = setsid();
+
+    if (pid < 0) rb_sys_fail(0);
+    return NUM2INT(pid);
+#else
+    rb_notimplement();
+#endif
+}
 
 static VALUE
 proc_getpriority(obj, which, who)
@@ -1062,17 +1079,15 @@ Init_process()
 
 #if !defined(NT) && !defined(DJGPP) && !defined(__human68k__) && !defined(USE_CWGUSI)
     rb_define_module_function(mProcess, "getpgrp", proc_getpgrp, -1);
-#ifdef HAVE_SETPGRP
     rb_define_module_function(mProcess, "setpgrp", proc_setpgrp, -1);
-#endif
-#ifdef HAVE_SETPGID
     rb_define_module_function(mProcess, "setpgid", proc_setpgid, 2);
-#endif
 
-#ifdef HAVE_GETPRIORITY
+    rb_define_module_function(mProcess, "setsid", proc_setsid, 0);
+
     rb_define_module_function(mProcess, "getpriority", proc_getpriority, 2);
     rb_define_module_function(mProcess, "setpriority", proc_setpriority, 3);
 
+#ifdef PRIO_PROCESS
     rb_define_const(mProcess, "PRIO_PROCESS", INT2FIX(PRIO_PROCESS));
     rb_define_const(mProcess, "PRIO_PGRP", INT2FIX(PRIO_PGRP));
     rb_define_const(mProcess, "PRIO_USER", INT2FIX(PRIO_USER));

@@ -517,7 +517,12 @@ ok($good)
 $good = true;
 for i in 4000..4096
   n1 = 1 << i;
-  $good = false if ((n1**2-1) / (n1+1) != (n1-1))
+  if (n1**2-1) / (n1+1) != (n1-1)
+    p i
+    p (n1**2-1)/(n1+1)
+    p (n1-1)
+    $good = false
+  end
 end
 ok($good)
 
@@ -896,6 +901,13 @@ begin
 rescue
   ok true
 end
+
+check "marshal"
+$x = [1,2,3,[4,5,"foo"],{1=>"bar"},2.5,fact(30)]
+$y = Marshal.dump($x)
+p $x
+p Marshal.load($y)
+ok($x == Marshal.load($y))
 
 check "pack"
 

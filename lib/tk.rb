@@ -284,29 +284,6 @@ module TkComm
     TkGrid.configure *args
   end
 
-  def after(ms, cmd=Proc.new)
-      myid = _curr_cmd_id
-      INTERP._eval('after '+ms+' '+_get_eval_string(install_cmd(proc{
-		      TkUtil.eval_cmd cmd
-		      uninstall_cmd myid
-		    })))
-    return
-    if false #defined? Thread
-      Thread.start do
-	ms = Float(ms)/1000
-	ms = 10 if ms == 0
-	sleep ms/1000
-	cmd.call
-      end
-    else
-      myid = _curr_cmd_id
-      INTERP._eval('after '+ms+' '+_get_eval_string(install_cmd(proc{
-		      TkUtil.eval_cmd cmd
-		      uninstall_cmd myid
-		    })))
-    end
-  end
-
   def update(idle=nil)
     if idle
       tk_call 'update', 'idletasks'
@@ -323,6 +300,24 @@ module TkCore
 
   INTERP = TclTkIp.new
   INTERP._invoke("proc", "rb_out", "args", "ruby [format \"TkCore.callback %%Q!%s!\" $args]")
+
+  def after(ms, cmd=Proc.new)
+    myid = _curr_cmd_id
+    cmdid = install_cmd(cmd)
+    tk_call("after",ms,cmdid)
+    return
+    if false #defined? Thread
+      Thread.start do
+	ms = Float(ms)/1000
+	ms = 10 if ms == 0
+	sleep ms/1000
+	cmd.call
+      end
+    else
+      cmdid = install_cmd(cmd)
+      tk_call("after",ms,cmdid)
+    end
+  end
 
   def TkCore.callback(arg)
     arg = Array(tk_split_list(arg))
@@ -1029,13 +1024,12 @@ class TkObject<TkKernel
     tk_tcl2ruby tk_call path, 'cget', "-#{slot}"
   end
 
-  def configure(slot, value)
-    if value == FALSE
-      value = "0"
-    elsif value.kind_of? Proc
-      value = install_cmd(value)
-    end
-    tk_call path, 'configure', "-#{slot}", value
+ def configure(slot, value=None)
+   if slot.kind_of? Hash
+     tk_call path, 'configure', *hash_kv(slot)
+   else
+     tk_call path, 'configure', "-#{slot}", value
+   end
   end
 
   def configure_cmd(slot, value)
@@ -1500,19 +1494,23 @@ module TkComposite
     end
   end
 
-  def configure(slot, value)
-    if @delegates and @delegates[slot]
-      for i in @delegates[slot]
-	if not i
-	  i = @delegates['DEFALUT']
-	  redo
-	else
-	  last = i.configure(slot, value)
-	end
-      end
-      last
+  def configure(slot, value=None)
+    if slot.kind_of? Hash
+      slot.each{|slot,value| configure slot, value}
     else
-      super
+      if @delegates and @delegates[slot]
+	for i in @delegates[slot]
+	  if not i
+	    i = @delegates['DEFALUT']
+	    redo
+	  else
+	    last = i.configure(slot, value)
+	  end
+	end
+	last
+      else
+	super
+      end
     end
   end
 end
@@ -1550,3 +1548,5 @@ autoload :TkEntry, 'tkentry'
 autoload :TkText, 'tktext'
 autoload :TkDialog, 'tkdialog'
 autoload :TkMenubar, 'tkmenubar'
+autoload :TkAfter, 'tkafter'
+autoload :TkPalette, 'tkpalette'

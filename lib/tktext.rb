@@ -15,19 +15,19 @@ class TkText<TkTextWin
     tk_send 'index', index
   end
   def value
-    tk_send 'get', "1.0", "end"
+    tk_send 'get', "1.0", "end - 1 char"
   end
   def value= (val)
     tk_send 'delete', "1.0", 'end'
     tk_send 'insert', "1.0", val
   end
   def _addcmd(cmd)
-    @cmdtbl.push id
+    @cmdtbl.push cmd
   end
   def _addtag(name, obj)
     @tags[name] = obj
   end
-  def tag_names(index=nil)
+  def tag_names(index=None)
     tk_split_list(tk_send('tag', 'names', index)).collect{|elt|
       if not @tags[elt]
 	elt
@@ -110,6 +110,168 @@ class TkText<TkTextWin
   def xview_pickplace(*what)
     tk_send 'xview', '-pickplace', *what
   end
+
+  def tag_add(tag,index1,index2=None)
+    tk_send 'tag', 'add', tag, index1, index2
+  end
+
+  def tag_bind(tag, seq, cmd=Proc.new, args=nil)
+    seq = context.join("><") if seq.kind_of? Array
+    if /,/ =~ seq
+      seq = seq.split(/\s*,\s*/).join("><")
+    end
+    id = install_bind(cmd, args)
+    tk_send 'tag', 'bind', tag, "<#{seq}>", id
+    # _addcmd cmd
+  end
+
+  def tag_bindinfo(tag)
+    tk_split_list(tk_send('tag', 'bind', tag)).filter{|seq|
+      seq.tr('<>','  ').strip.gsub(/\s+/,',')
+    }
+  end
+
+  def tag_cget(tag, key)
+    tk_call @t.path, 'tag', 'cget', tag, "-#{key}"
+  end
+
+  def tag_configure(tag, key, val=None)
+    if key.kind_of? Hash
+      tk_send 'tag', 'configure', tag, *hash_kv(key)
+    else
+      tk_send 'tag', 'configure', tag, "-#{key}", val
+    end
+  end
+
+  def configinfo(tag, key=nil)
+    if key
+      conf = tk_split_list(tk_send('tag','configure',tag,"-#{key}"))
+      conf[0] = conf[0][1..-1]
+      conf
+    else
+      tk_split_list(tk_send('tag', 'configure', tag)).collect{|conf|
+	conf[0] = conf[0][1..-1]
+	conf
+      }
+    end
+  end
+
+  def tag_raise(tag, above=None)
+    tk_send 'tag', 'raise', tag, above
+  end
+
+  def tag_lower(tag, below=None)
+    tk_send 'tag', 'lower', tag, below
+  end
+
+  def tag_remove(tag, *index)
+    tk_send 'tag', 'remove', tag, *index
+  end
+
+  def tag_ranges(tag)
+    l = tk_split_list(tk_send('tag', 'ranges', tag))
+    r = []
+    while key=l.shift
+      r.push [key, l.shift]
+    end
+    r
+  end
+
+  def tag_nextrange(tag, first, last=None)
+    tk_split_list(tk_send('tag', 'nextrange', tag, first, last))
+  end
+
+  def tag_prevrange(tag, first, last=None)
+    tk_split_list(tk_send('tag', 'prevrange', tag, first, last))
+  end
+
+  def search_with_length(pat,start,stop=None)
+    pat = pat.char if pat.kind_of? Integer
+    if stop != None
+      return ["", 0] if compare(start,'>=',stop)
+      txt = get(start,stop)
+      if (pos = txt.index(pat))
+	pos = txt[0..(pos-1)].split('').length if pos > 0
+	if pat.kind_of? String
+	  return [index(start + " + #{pos} chars"), pat.split('').length]
+	else
+	  return [index(start + " + #{pos} chars"), $&.split('').length]
+	end
+      else
+	return ["", 0]
+      end
+    else
+      txt = get(start,'end - 1 char')
+      if (pos = txt.index(pat))
+	pos = txt[0..(pos-1)].split('').length if pos > 0
+	if pat.kind_of? String
+	  return [index(start + " + #{pos} chars"), pat.split('').length]
+	else
+	  return [index(start + " + #{pos} chars"), $&.split('').length]
+	end
+      else
+	txt = get('1.0','end - 1 char')
+	if (pos = txt.index(pat))
+	  pos = txt[0..(pos-1)].split('').length if pos > 0
+	  if pat.kind_of? String
+	    return [index("1.0 + #{pos} chars"), pat.split('').length]
+	  else
+	    return [index("1.0 + #{pos} chars"), $&.split('').length]
+	  end
+	else
+	  return ["", 0]
+	end
+      end
+    end
+  end
+
+  def search(pat,start,stop=None)
+    search_with_length(pat,start,stop)[0]
+  end
+
+  def rsearch_with_length(pat,start,stop=None)
+    pat = pat.char if pat.kind_of? Integer
+    if stop != None
+      return ["", 0] if compare(start,'<=',stop)
+      txt = get(stop,start)
+      if (pos = txt.rindex(pat))
+	pos = txt[0..(pos-1)].split('').length if pos > 0
+	if pat.kind_of? String
+	  return [index(stop + " + #{pos} chars"), pat.split('').length]
+	else
+	  return [index(stop + " + #{pos} chars"), $&.split('').length]
+	end
+      else
+	return ["", 0]
+      end
+    else
+      txt = get('1.0',start)
+      if (pos = txt.rindex(pat))
+	pos = txt[0..(pos-1)].split('').length if pos > 0
+	if pat.kind_of? String
+	  return [index("1.0 + #{pos} chars"), pat.split('').length]
+	else
+	  return [index("1.0 + #{pos} chars"), $&.split('').length]
+	end
+      else
+	txt = get('1.0','end - 1 char')
+	if (pos = txt.rindex(pat))
+	  pos = txt[0..(pos-1)].split('').length if pos > 0
+	  if pat.kind_of? String
+	    return [index("1.0 + #{pos} chars"), pat.split('').length]
+	  else
+	    return [index("1.0 + #{pos} chars"), $&.split('').length]
+	  end
+	else
+	  return ["", 0]
+	end
+      end
+    end
+  end
+
+  def rsearch(pat,start,stop=None)
+    rsearch_with_length(pat,start,stop)[0]
+  end
 end
 
 class TkTextTag<TkObject
@@ -145,13 +307,12 @@ class TkTextTag<TkObject
     r
   end
 
-  def nextrange(first, last=nil)
+  def nextrange(first, last=None)
     tk_split_list(tk_call(@t.path, 'tag', 'nextrange', @id, first, last))
   end
 
-  def prevrange(first, last=nil)
+  def prevrange(first, last=None)
     tk_split_list(tk_call(@t.path, 'tag', 'prevrange', @id, first, last))
-    l = tk_split_list(tk_call(@t.path, 'tag', 'prevrange', @id, first, last))
   end
 
   def [](key)
@@ -166,22 +327,49 @@ class TkTextTag<TkObject
     tk_call @t.path, 'tag', 'cget', @id, "-#{key}"
   end
 
-  def configure(key, val=nil)
+  def configure(key, val=None)
     if key.kind_of? Hash
       tk_call @t.path, 'tag', 'configure', @id, *hash_kv(key)
     else
       tk_call @t.path, 'tag', 'configure', @id, "-#{key}", val
     end
   end
+#  def configure(key, value)
+#    if value == FALSE
+#      value = "0"
+#    elsif value.kind_of? Proc
+#      value = install_cmd(value)
+#    end
+#    tk_call @t.path, 'tag', 'configure', @id, "-#{key}", value
+#  end
 
-  def configinfo
-    tk_split_list(tk_call(@t.path, 'tag', 'configure', @id))
+  def configinfo(key=nil)
+    if key
+      conf = tk_split_list(tk_call(@t.path, 'tag','configure',@id,"-#{key}"))
+      conf[0] = conf[0][1..-1]
+      conf
+    else
+      tk_split_list(tk_call(@t.path, 'tag', 'configure', @id)).collect{|conf|
+	conf[0] = conf[0][1..-1]
+	conf
+      }
+    end
   end
 
   def bind(seq, cmd=Proc.new, args=nil)
+    seq = context.join("><") if seq.kind_of? Array
+    if /,/ =~ seq
+      seq = seq.split(/\s*,\s*/).join("><")
+    end
     id = install_bind(cmd, args)
     tk_call @t.path, 'tag', 'bind', @id, "<#{seq}>", id
-    @t._addcmd cmd
+    # @t._addcmd cmd
+  end
+
+  def bindinfo
+    tk_split_list(tk_call(@t.path, 'tag', 'bind', @id)).filter{|seq|
+      seq.tr('<>','  ').strip.gsub(/\s+/,',')
+    }
   end
 
   def raise(above=None)
@@ -307,12 +495,23 @@ class TkTextWindow<TkObject
     tk_call @t.path, 'window', 'cget', @index, "-#{slot}"
   end
 
-  def configure(slot, value)
-    @id = value if slot == 'window'
-    if slot == 'create'
-      self.create=value
+  def configure(slot, value=None)
+    if slot.kind_of? Hash
+      @id = slot['window'] if slot['window']
+      if slot['create']
+	self.create=value
+	slot['create']=nil
+      end
+      if slot.size > 0
+	tk_call @t.path, 'window', 'configure', @index, *hash_kv(slot)
+      end
     else
-      tk_call @t.path, 'window', 'configure', @index, "-#{slot}", value
+      @id = value if slot == 'window'
+      if slot == 'create'
+	self.create=value
+      else
+	tk_call @t.path, 'window', 'configure', @index, "-#{slot}", value
+      end
     end
   end
 
@@ -386,9 +585,16 @@ class TkTextImage<TkObject
     tk_call @t.path, 'image', 'cget', @index, "-#{slot}"
   end
 
-  def configure(slot, value)
-    tk_call @t.path, 'image', 'configure', @index, "-#{slot}", value
+  def configure(slot, value=None)
+    if slot.kind_of? Hash
+      tk_call @t.path, 'image', 'configure', @index, *hash_kv(slot)
+    else
+      tk_call @t.path, 'image', 'configure', @index, "-#{slot}", value
+    end
   end
+#  def configure(slot, value)
+#    tk_call @t.path, 'image', 'configure', @index, "-#{slot}", value
+#  end
 
   def image
     tk_call @t.path, 'image', 'configure', @index, '-image'

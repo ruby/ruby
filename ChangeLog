@@ -1,3 +1,40 @@
+Fri Jul  3 16:05:11 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* experimental release 1.1b9_29.
+
+Fri Jul  3 11:20:46 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* marshal.c (r_byte): byte should not extend sign bit.
+
+	* numeric.c (fix_mul): use FIX2LONG() instead of FIX2INT() for
+	  64bit architectures.
+
+	* marshal.c (r_bytes): use weird casting bwetween pointer and int.
+
+	* process.c (proc_setsid): new method Process#setsid().
+
+Thu Jul  2 12:49:21 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* marshal.c (w_object): remove `write_bignum' label for 64bit
+ 	  architectures.
+
+	* marshal.c (r_bytes): needs int, not long.
+
+Wed Jul  1 14:21:06 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* numeric.c (flo_plus): should not allow addition with strings.
+
+Wed Jul  1 13:09:01 1998  Keiju ISHITSUKA  <keiju@rational.com>
+
+	* numeric.c (num_uminus): wrong coerce direction.
+
+Tue Jun 30 10:13:44 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (f_p): accepts arbitrary number of arguments.
+
+	* eval.c (rb_yield_0): there's some case that iterator_p() returns 
+	  true even if the_block was not set.  check added.
+
 Tue Jun 30 01:05:20 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (BEGIN_CALLARGS): adjust the_block before evaluating the

@@ -207,10 +207,6 @@ w_object(obj, arg, limit)
     if (limit == 0) {
 	Fail("exceed depth limit");
     }
-    limit--;
-    c_arg.limit = limit;
-    c_arg.arg = arg;
-
     if (obj == Qnil) {
 	w_byte(TYPE_NIL, arg);
     }
@@ -225,18 +221,22 @@ w_object(obj, arg, limit)
 	w_byte(TYPE_FIXNUM, arg);
 	w_long(FIX2INT(obj), arg);
 #else
-	if (RSHIFT(obj, 32) == 0 || RSHIFT(obj, 32) == -1) {
+	if (RSHIFT((long)obj, 32) == 0 || RSHIFT((long)obj, 32) == -1) {
 	    w_byte(TYPE_FIXNUM, arg);
-	    w_long(FIX2INT(obj), arg);
+	    w_long(FIX2LONG(obj), arg);
 	}
 	else {
-	    obj = int2big(FIX2INT(obj));
-	    goto write_bignum;
+	    w_object(int2big(FIX2LONG(obj)), arg, limit);
+	    return;
 	}
 #endif
     }
     else {
 	int num;
+
+	limit--;
+	c_arg.limit = limit;
+	c_arg.arg = arg;
 
 	if (st_lookup(arg->data, obj, &num)) {
 	    w_byte(TYPE_LINK, arg);
@@ -339,7 +339,7 @@ w_object(obj, arg, limit)
 		    Fatal("non-initialized struct");
 		}
 		for (i=0; i<len; i++) {
-		    w_symbol(FIX2INT(RARRAY(mem)->ptr[i]), arg);
+		    w_symbol(FIX2LONG(RARRAY(mem)->ptr[i]), arg);
 		    w_object(RSTRUCT(obj)->ptr[i], arg, limit);
 		}
 	    }
@@ -456,7 +456,7 @@ r_byte(arg)
     struct load_arg *arg;
 {
     if (arg->fp) return getc(arg->fp);
-    if (arg->ptr < arg->end) return *arg->ptr++;
+    if (arg->ptr < arg->end) return *(unsigned char*)arg->ptr++;
     return EOF;
 }
 
@@ -511,8 +511,9 @@ r_long(arg)
     return x;
 }
 
+static long blen;		/* hidden length register */
 #define r_bytes(s, arg) \
-  (s = (char*)r_long(arg), r_bytes0(&s,ALLOCA_N(char,(long)s),(long)s,arg))
+  (blen = r_long(arg), r_bytes0(&s,ALLOCA_N(char,blen),blen,arg))
 
 static int
 r_bytes0(sp, s, len, arg)

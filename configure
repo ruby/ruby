@@ -2694,7 +2694,7 @@ for ac_func in fmod killpg drand48 random wait4 waitpid syscall getcwd\
 	      truncate chsize times utimes fcntl lockf setitimer\
 	      setruid seteuid setreuid setrgid setegid setregid\
 	      setpgrp2 getpgid getgroups getpriority\
-	      dlopen sigprocmask sigaction _setjmp setpgrp
+	      dlopen sigprocmask sigaction _setjmp setpgrp setsid
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
 echo "configure:2701: checking for $ac_func" >&5
@@ -3181,7 +3181,7 @@ else
 int
 main()
 {
-  if (-1==((-1)>>1))
+  if (-1==(-1>>1))
     return 0;
   return 1;
 }

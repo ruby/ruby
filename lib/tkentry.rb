@@ -35,23 +35,23 @@ class TkEntry<TkLabel
   def dragto(pos)
     tk_send 'scan', 'dragto', pos
   end
-  def select_adjust(index)
-    tk_send 'select', 'adjust', index
+  def selection_adjust(index)
+    tk_send 'selection', 'adjust', index
   end
-  def select_clear
-    tk_send 'select', 'clear', 'end'
+  def selection_clear
+    tk_send 'selection', 'clear', 'end'
   end
-  def select_from(index)
-    tk_send 'select', 'from', index
+  def selection_from(index)
+    tk_send 'selection', 'from', index
   end
-  def select_present()
-    tk_send('select', 'present') == 1
+  def selection_present()
+    tk_send('selection', 'present') == 1
   end
-  def select_range(s, e)
-    tk_send 'select', 'range', s, e
+  def selection_range(s, e)
+    tk_send 'selection', 'range', s, e
   end
-  def select_to(index)
-    tk_send 'select', 'to', index
+  def selection_to(index)
+    tk_send 'selection', 'to', index
   end
   def xview(*index)
     tk_send 'xview', *index

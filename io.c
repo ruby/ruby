@@ -512,7 +512,10 @@ io_gets_method(argc, argv, io)
 		TRAP_BEG;
 		c = getc(f);
 		TRAP_END;
-		if (c == EOF) break;
+		if (c == EOF) {
+		    if (errno == EINTR) continue;
+		    break;
+		}
 		if ((*bp++ = c) == newline) break;
 		if (bp == bpe) break;
 	    }
@@ -599,7 +602,10 @@ io_gets(io)
 	TRAP_BEG;
 	c = getc(f);
 	TRAP_END;
-	if (c == EOF) break;
+	if (c == EOF) {
+	    if (errno == EINTR) continue;
+	    break;
+	}
 	if ((*bp++ = c) == '\n') break;
 	if (bp == bpe) break;
     }
@@ -1599,21 +1605,25 @@ f_puts(argc, argv)
     return Qnil;
 }
 
-static VALUE
-f_p(self, obj)
-    VALUE self, obj;
-{
-    io_write(rb_defout, rb_inspect(obj));
-    io_write(rb_defout, RS_default);
-
-    return Qnil;
-}
-
 void
 rb_p(obj)			/* for debug print within C code */
     VALUE obj;
 {
-    f_p(0, obj);
+    io_write(rb_defout, rb_inspect(obj));
+    io_write(rb_defout, RS_default);
+}
+
+static VALUE
+f_p(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    int i;
+
+    for (i=0; i<argc; i++) {
+	rb_p(argv[i]);
+    }
+    return Qnil;
 }
 
 static VALUE
@@ -2607,7 +2617,7 @@ Init_IO()
     rb_define_global_function("`", f_backquote, 1);
     rb_define_global_function("pipe", io_s_pipe, 0);
 
-    rb_define_global_function("p", f_p, 1);
+    rb_define_global_function("p", f_p, -1);
     rb_define_method(mKernel, "display", obj_display, -1);
 
     cIO = rb_define_class("IO", cObject);

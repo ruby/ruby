@@ -1367,7 +1367,7 @@ sock_s_gethostbyaddr(argc, argv)
     int alen;
     struct hostent *h;
 
-    rb_scan_args(argc, argv, "11", &addr, &vtype);
+    rb_scan_args(argc, argv, "11", &vaddr, &vtype);
     addr = str2cstr(vaddr, &alen);
     if (!NIL_P(vtype)) {
 	type = NUM2INT(vtype);

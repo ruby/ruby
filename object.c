@@ -798,7 +798,7 @@ f_float(obj, arg)
 {
     switch (TYPE(arg)) {
       case T_FIXNUM:
-	return float_new((double)FIX2INT(arg));
+	return float_new((double)FIX2LONG(arg));
 
       case T_FLOAT:
 	return arg;

@@ -311,13 +311,14 @@ f_sprintf(argc, argv)
 	    {
 		volatile VALUE val = GETARG();
 		char fbuf[32], nbuf[64], *s, *t;
-		int v, base, bignum = 0;
+		long v;
+		int base, bignum = 0;
 		int len, slen, pos;
 
 	      bin_retry:
 		switch (TYPE(val)) {
 		  case T_FIXNUM:
-		    v = FIX2INT(val);
+		    v = FIX2LONG(val);
 		    break;
 		  case T_FLOAT:
 		    val = dbl2big(RFLOAT(val)->value);
@@ -471,7 +472,7 @@ f_sprintf(argc, argv)
 	      int_retry:
 		switch (TYPE(val)) {
 		  case T_FIXNUM:
-		    v = FIX2INT(val);
+		    v = FIX2LONG(val);
 		    break;
 		  case T_FLOAT:
 		    v = RFLOAT(val)->value;
@@ -567,7 +568,7 @@ f_sprintf(argc, argv)
 
 		switch (TYPE(val)) {
 		  case T_FIXNUM:
-		    fval = FIX2INT(val);
+		    fval = (double)FIX2LONG(val);
 		    break;
 		  case T_FLOAT:
 		    fval = RFLOAT(val)->value;
