@@ -72,7 +72,7 @@ int rb_io_wait_readable _((int));
 int rb_io_wait_writable _((int));
 
 VALUE rb_io_taint_check _((VALUE));
-void rb_eof_error _((void));
+NORETURN(void rb_eof_error _((void)));
 
 void rb_read_check _((FILE*));
 int rb_read_pending _((FILE*));

@@ -1165,11 +1165,12 @@ make_cmdvector(const char *cmd, char ***vec)
 		    if (!quote)
 			quote = *ptr;
 		    else if (quote == *ptr) {
-			if (quote == '"' && ptr[1] == '"') ptr++;
+			if (quote == '"' && quote == ptr[1])
+			    ptr++;
 			quote = '\0';
 		    }
-		    escape++;
 		}
+		escape++;
 		slashes = 0;
 		break;
 
@@ -1207,37 +1208,27 @@ make_cmdvector(const char *cmd, char ***vec)
 
 		  case '\'':
 		  case '"':
+		    if (!(slashes & 1) && quote && quote != c) {
+			p++;
+			slashes = 0;
+			break;
+		    }
+		    memcpy(p - ((slashes + 1) >> 1), p + (~slashes & 1),
+			   base + len - p);
+		    len -= ((slashes + 1) >> 1) + (~slashes & 1);
+		    p -= (slashes + 1) >> 1;
 		    if (!(slashes & 1)) {
-			if (!quote) {
-			    quote = c;
-			    c = '\0';
-			}
-			else if (quote == c) {
+			if (quote) {
+			    if (quote == '"' && quote == *p)
+				p++;
 			    quote = '\0';
 			}
-			else {
-			    p++;
-			    slashes = 0;
-			    break;
-			}
+			else
+			    quote = c;
 		    }
-		    if (base + slashes == p) {
-			base += slashes >> 1;
-			len -= slashes >> 1;
-			slashes &= 1;
-		    }
-		    if (base == p) {
-			base = ++p;
-			--len;
-		    }
-		    else {
-			memcpy(p - ((slashes + 1) >> 1), p + (~slashes & 1), base + len - p);
-			slashes >>= 1;
-			p -= slashes;
-			len -= slashes + 1;
-			slashes = 0;
-			if (c == '"' && *p == c) p++;
-		    }
+		    else
+			p++;
+		    slashes = 0;
 		    break;
 
 		  default:
