@@ -3,7 +3,6 @@
                                                 $Revision$
                                                 $Date$
 
-=begin
 = Forwardable
 
 クラスに対しメソッドの委譲機能を定義します.
@@ -78,4 +77,3 @@
 --- SingleForwardable#def_delegator(accessor, method, ali = method)
 
       ((|SingleForwardable#def_singleton_delegator|))の別名です.
-=end

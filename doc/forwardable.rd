@@ -5,7 +5,7 @@
                                                 $Date$
 						Original version by Tosh
 
-=begin
+==begin
 
 = Forwardable
 
@@ -81,4 +81,4 @@ Using through extending the object.
 --- SingleForwardable#def_delegator(accessor, method, ali = method)
 
       the alias of ((|SingleForwardable#def_instance_delegator|)).
-=end
+==end
