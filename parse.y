@@ -2251,7 +2251,10 @@ retry:
 	}
 	/* fall through */
       case '\n':
-	if (lex_state == EXPR_BEG || lex_state == EXPR_FNAME) {
+	switch (lex_state) {
+	  case EXPR_BEG:
+	  case EXPR_FNAME:
+	  case EXPR_DOT:
 	    sourceline++;
 	    goto retry;
 	}

@@ -127,20 +127,22 @@ extern VALUE cObject;
 VALUE rb_class_of _((VALUE));
 #define CLASS_OF(v) rb_class_of((VALUE)(v))
 
-#define T_NIL    0x00
-#define T_OBJECT 0x01
-#define T_CLASS  0x02
-#define T_ICLASS 0x03
-#define T_MODULE 0x04
-#define T_FLOAT  0x05
-#define T_STRING 0x06
-#define T_REGEXP 0x07
-#define T_ARRAY  0x08
-#define T_FIXNUM 0x09
-#define T_HASH   0x0a
-#define T_STRUCT 0x0b
-#define T_BIGNUM 0x0c
-#define T_FILE   0x0d
+#define T_NONE   0x00
+
+#define T_NIL    0x01
+#define T_OBJECT 0x02
+#define T_CLASS  0x03
+#define T_ICLASS 0x04
+#define T_MODULE 0x05
+#define T_FLOAT  0x06
+#define T_STRING 0x07
+#define T_REGEXP 0x08
+#define T_ARRAY  0x09
+#define T_FIXNUM 0x0a
+#define T_HASH   0x0b
+#define T_STRUCT 0x0c
+#define T_BIGNUM 0x0d
+#define T_FILE   0x0e
 
 #define T_TRUE   0x20
 #define T_FALSE  0x21
@@ -295,7 +297,6 @@ struct RBignum {
 #define RFILE(obj)   (R_CAST(RFile)(obj))
 
 #define FL_SINGLETON FL_USER0
-#define FL_PRIMITIVE FL_USER1
 #define FL_MARK      (1<<8)
 #define FL_FINALIZE  (1<<9)
 
@@ -317,6 +318,8 @@ struct RBignum {
 #define FL_SET(x,f) if (FL_ABLE(x)) {RBASIC(x)->flags |= (f);}
 #define FL_UNSET(x,f) if(FL_ABLE(x)){RBASIC(x)->flags &= ~(f);}
 #define FL_REVERSE(x,f) if(FL_ABLE(x)){RBASIC(x)->flags ^= f;}
+
+#define FL_PRIMITIVE FL_USER1
 
 #if defined(__GNUC__) && __GNUC__ >= 2 && !defined(RUBY_NO_INLINE)
 extern __inline__ int

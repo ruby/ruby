@@ -99,15 +99,27 @@ curses_stdscr()
 static VALUE
 curses_close_screen()
 {
-    endwin();
+#ifdef HAVE_ISENDWIN
+    if (!isendwin())
+#endif
+	endwin();
     return Qnil;
+}
+
+static void
+curses_finalize()
+{
+#ifdef HAVE_ISENDWIN
+    if (!isendwin())
+#endif
+	endwin();
 }
 
 /* def closed? */
 static VALUE
 curses_closed()
 {
-#ifdef HAVE_ENDWIN
+#ifdef HAVE_ISENDWIN
     if (isendwin()) {
 	return TRUE;
     }
@@ -313,7 +325,7 @@ curses_addstr(obj, str)
     VALUE obj;
     VALUE str;
 {
-    addstr(RSTRING(str)->ptr);
+    addstr(STR2CSTR(str));
     return Qnil;
 }
 
@@ -659,7 +671,7 @@ window_addstr(obj, str)
     struct windata *winp;
     
     GetWINDOW(obj, winp);
-    waddstr(winp->window, RSTRING(str)->ptr);
+    waddstr(winp->window, STR2CSTR(str));
     
     return Qnil;
 }
@@ -787,4 +799,6 @@ Init_curses()
     rb_define_method(cWindow, "getstr", window_getstr, 0);
     rb_define_method(cWindow, "delch", window_delch, 0);
     rb_define_method(cWindow, "deleteln", window_deleteln, 0);
+
+    rb_set_end_proc(curses_finalize, 0);
 }

@@ -1,4 +1,17 @@
+Fri Mar  6 17:23:07 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* object.c (obj_alloc): check for allocating instance for the
+	  primitive classes (mostly perfect).
+
+	* ext/curses/curses.c (curses_finalize): restore original state at 
+	  interpreter temination.
+
+	* ext/curses/curses.c (curses_addstr): forgot to check argument
+	  type (caused SEGV).  now uses STR2CSTR() macro.
+
 Thu Mar  5 13:47:39 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (block_pass): accepts method object as block args.
 
 	* eval.c (f_missing): use any_to_s() for stringify.
 

@@ -44,6 +44,8 @@ static VALUE f_binding _((VALUE));
 static void f_END _((void));
 static VALUE f_iterator_p _((void));
 static VALUE block_pass _((VALUE,NODE*));
+static VALUE cMethod;
+static VALUE method_proc _((VALUE));
 
 #define SCOPE_PRIVATE  FL_USER4
 #define SCOPE_MODFUNC  FL_USER5
@@ -4618,7 +4620,10 @@ block_pass(self, node)
     volatile int orphan;
     volatile int safe = safe_level;
 
-    if (TYPE(block) != T_DATA
+    if (obj_is_kind_of(block, cMethod)) {
+	block = method_proc(block);
+    }
+    else if (TYPE(block) != T_DATA
 	|| RDATA(block)->dfree != blk_free
 	|| !obj_is_kind_of(block, cProc)) {
 	TypeError("wrong argument type %s (expected Proc)",
@@ -4679,8 +4684,6 @@ block_pass(self, node)
     }
     return result;
 }
-
-static VALUE cMethod;
 
 struct METHOD {
     VALUE klass, oklass;
@@ -4774,6 +4777,38 @@ method_inspect(method)
     return str;
 }
 
+static VALUE
+mproc()
+{
+    VALUE proc;
+
+    /* emulate ruby's method call */
+    PUSH_ITER(ITER_CUR);
+    PUSH_FRAME();
+    proc = f_lambda();
+    POP_FRAME();
+    POP_ITER();
+
+    return proc;
+}
+
+static VALUE
+mcall(args, method)
+    VALUE args, method;
+{
+    if (TYPE(args) == T_ARRAY) {
+	return method_call(RARRAY(args)->len, RARRAY(args)->ptr, method);
+    }
+    return method_call(1, &args, method);
+}
+
+static VALUE
+method_proc(method)
+    VALUE method;
+{
+    return rb_iterate(mproc, 0, mcall, method);
+}
+
 void
 Init_Proc()
 {
@@ -4793,6 +4828,7 @@ Init_Proc()
     rb_define_method(cMethod, "call", method_call, -1);
     rb_define_method(cMethod, "inspect", method_inspect, 0);
     rb_define_method(cMethod, "to_s", method_inspect, 0);
+    rb_define_method(cMethod, "to_proc", method_proc, 0);
     rb_define_method(mKernel, "method", obj_method, 1);
 }
 
