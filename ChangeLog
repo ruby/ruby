@@ -1,3 +1,9 @@
+Mon Dec 13 00:58:02 2004  Tanaka Akira  <akr@m17n.org>
+
+	* lib/pathname.rb (cleanpath_aggressive): make it private.
+	  (cleanpath_conservative): ditto.
+	  Suggested by Daniel Berger.  [ruby-core:3914]
+
 Sun Dec 12 20:06:38 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/drb.rb: backported from CVS HEAD.
