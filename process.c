@@ -505,6 +505,7 @@ rb_f_exec(argc, argv)
 	proc_exec_n(argc, argv, prog);
     }
     rb_sys_fail(RSTRING(argv[0])->ptr);
+    return Qnil;		/* dummy */
 }
 
 static VALUE

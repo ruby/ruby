@@ -242,8 +242,8 @@ add_heap()
 	/* Realloc heaps */
 	heaps_length += HEAPS_INCREMENT;
 	heaps = (heaps_used>0)?
-	    (RVALUE**)realloc(heaps, heaps_length*sizeof(RVALUE)):
-	    (RVALUE**)malloc(heaps_length*sizeof(RVALUE));
+	    (RVALUE**)realloc(heaps, heaps_length*sizeof(RVALUE*)):
+	    (RVALUE**)malloc(heaps_length*sizeof(RVALUE*));
 	if (heaps == 0) rb_fatal("can't alloc memory");
     }
 

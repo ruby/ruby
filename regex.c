@@ -396,6 +396,7 @@ re_set_syntax(syntax)
   long syntax;
 {
     /* obsolete */
+    return 0;
 }
 
 
@@ -2272,9 +2273,9 @@ re_compile_pattern(pattern, size, bufp)
     }
     if (!(bufp->options & RE_OPTIMIZE_NO_BM)) {
       bufp->must_skip = (int *) xmalloc((1 << BYTEWIDTH)*sizeof(int));
-      bm_init_skip(bufp->must_skip, bufp->must+1,
+      bm_init_skip(bufp->must_skip, (unsigned char*)bufp->must+1,
 		   (unsigned char)bufp->must[0],
-		   MAY_TRANSLATE()?translate:0);
+		   (unsigned char*)(MAY_TRANSLATE()?translate:0));
     }
   }
 
@@ -2626,6 +2627,7 @@ re_compile_fastmap(bufp)
 	    fastmap[translate[p[2]]] = 2;
 	  else
 	    fastmap[p[2]] = 2;
+	  bufp->options |= RE_OPTIMIZE_BMATCH;
 	}
 	else if (TRANSLATE_P())
 	  fastmap[translate[p[1]]] = 1;
@@ -2828,8 +2830,10 @@ re_compile_fastmap(bufp)
 	    while (beg <= end) {
 	      /* NOTE: Charset for multi-byte chars might contain
 		 single-byte chars.  We must reject them. */
-	      if (c < 0x100)
+	      if (c < 0x100) {
 		fastmap[beg] = 2;
+		bufp->options |= RE_OPTIMIZE_BMATCH;
+	      }
 	      else if (ismbchar(beg))
 		fastmap[beg] = 1;
 	      beg++;
@@ -2948,6 +2952,33 @@ re_search(bufp, string, size, startpos, range, regs)
   /* Update the fastmap now if not correct already.  */
   if (fastmap && !bufp->fastmap_accurate) {
     re_compile_fastmap(bufp);
+  }
+
+  /* Adjust startpos for mbc string */
+  if (current_mbctype && startpos>0 && !(bufp->options&RE_OPTIMIZE_BMATCH)) {
+    int i = 0;
+
+    if (range > 0) {
+      while (i<size) {
+	i += mbclen(string[i]);
+	if (startpos <= i) {
+	  startpos = i;
+	  break;
+	}
+      }
+    }
+    else {
+      int w;
+
+      while (i<size) {
+	w = mbclen(string[i]);
+	if (startpos < i + w) {
+	  startpos = i;
+	  break;
+	}
+	i += w;
+      }
+    }
   }
 
   /* If the search isn't to be a backwards one, don't waste time in a

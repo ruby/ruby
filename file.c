@@ -1176,12 +1176,14 @@ rb_file_s_expand_path(argc, argv)
     VALUE fname, dname;
     char *s, *p;
     char buf[MAXPATHLEN+2];
+    int tainted = 0;
 
     rb_scan_args(argc, argv, "11", &fname, &dname);
 
     s = STR2CSTR(fname);
     p = buf;
     if (s[0] == '~') {
+	tainted = 1;
 	if (isdirsep(s[1]) || s[1] == '\0') {
 	    char *dir = getenv("HOME");
 
@@ -1224,9 +1226,11 @@ rb_file_s_expand_path(argc, argv)
     else if (!isdirsep(*s)) {
 	if (argc == 2) {
 	    dname = rb_file_s_expand_path(1, &dname);
+	    if (OBJ_TAINTED(dname)) tainted = 1;
 	    strcpy(buf, RSTRING(dname)->ptr);
 	}
 	else {
+	    tainted = 1;
 #ifdef HAVE_GETCWD
 	    getcwd(buf, MAXPATHLEN);
 #else
@@ -1286,7 +1290,9 @@ rb_file_s_expand_path(argc, argv)
     if (p == buf || !isdirsep(*p)) p++;
     *p = '\0';
 
-    return rb_tainted_str_new2(buf);
+    fname = rb_str_new2(buf);
+    if (tainted) OBJ_TAINT(fname);
+    return fname;
 }
 
 static int
@@ -1758,18 +1764,18 @@ static VALUE
 rb_stat_r(obj)
     VALUE obj;
 {
-    mode_t mode = get_stat(obj)->st_mode;
+    struct stat *st = get_stat(obj);
 
 #ifdef S_IRUSR
     if (rb_stat_owned(obj))
-	return mode & S_IRUSR ? Qtrue : Qfalse;
+	return st->st_mode & S_IRUSR ? Qtrue : Qfalse;
 #endif
 #ifdef S_IRGRP
     if (rb_stat_grpowned(obj))
-	return mode & S_IRGRP ? Qtrue : Qfalse;
+	return st->st_mode & S_IRGRP ? Qtrue : Qfalse;
 #endif
 #ifdef S_IROTH
-    if (!(mode & S_IROTH)) return Qfalse;
+    if (!(st->st_mode & S_IROTH)) return Qfalse;
 #endif
     return Qtrue;
 }
@@ -1778,18 +1784,18 @@ static VALUE
 rb_stat_R(obj)
     VALUE obj;
 {
-    mode_t mode = get_stat(obj)->st_mode;
+    struct stat *st = get_stat(obj);
 
 #ifdef S_IRUSR
     if (rb_stat_rowned(obj))
-	return mode & S_IRUSR ? Qtrue : Qfalse;
+	return st->st_mode & S_IRUSR ? Qtrue : Qfalse;
 #endif
 #ifdef S_IRGRP
     if (group_member(get_stat(obj)->st_gid))
-	return mode & S_IRGRP ? Qtrue : Qfalse;
+	return st->st_mode & S_IRGRP ? Qtrue : Qfalse;
 #endif
 #ifdef S_IROTH
-    if (!(mode & S_IROTH)) return Qfalse;
+    if (!(st->st_mode & S_IROTH)) return Qfalse;
 #endif
     return Qtrue;
 }
@@ -1798,18 +1804,18 @@ static VALUE
 rb_stat_w(obj)
     VALUE obj;
 {
-    mode_t mode = get_stat(obj)->st_mode;
+    struct stat *st = get_stat(obj);
 
-#ifdef S_IRUSR
+#ifdef S_IWUSR
     if (rb_stat_owned(obj))
-	return mode & S_IWUSR ? Qtrue : Qfalse;
+	return st->st_mode & S_IWUSR ? Qtrue : Qfalse;
 #endif
-#ifdef S_IRGRP
+#ifdef S_IWGRP
     if (rb_stat_grpowned(obj))
-	return mode & S_IWGRP ? Qtrue : Qfalse;
+	return st->st_mode & S_IWGRP ? Qtrue : Qfalse;
 #endif
-#ifdef S_IROTH
-    if (!(mode & S_IWOTH)) return Qfalse;
+#ifdef S_IWOTH
+    if (!(st->st_mode & S_IWOTH)) return Qfalse;
 #endif
     return Qtrue;
 }
@@ -1818,18 +1824,18 @@ static VALUE
 rb_stat_W(obj)
     VALUE obj;
 {
-    mode_t mode = get_stat(obj)->st_mode;
+    struct stat *st = get_stat(obj);
 
-#ifdef S_IRUSR
+#ifdef S_IWUSR
     if (rb_stat_rowned(obj))
-	return mode & S_IWUSR ? Qtrue : Qfalse;
+	return st->st_mode & S_IWUSR ? Qtrue : Qfalse;
 #endif
-#ifdef S_IRGRP
+#ifdef S_IWGRP
     if (group_member(get_stat(obj)->st_gid))
-	return mode & S_IWGRP ? Qtrue : Qfalse;
+	return st->st_mode & S_IWGRP ? Qtrue : Qfalse;
 #endif
-#ifdef S_IROTH
-    if (!(mode & S_IWOTH)) return Qfalse;
+#ifdef S_IWOTH
+    if (!(st->st_mode & S_IWOTH)) return Qfalse;
 #endif
     return Qtrue;
 }
@@ -1838,18 +1844,18 @@ static VALUE
 rb_stat_x(obj)
     VALUE obj;
 {
-    mode_t mode = get_stat(obj)->st_mode;
+    struct stat *st = get_stat(obj);
 
-#ifdef S_IRUSR
+#ifdef S_IXUSR
     if (rb_stat_owned(obj))
-	return mode & S_IXUSR ? Qtrue : Qfalse;
+	return st->st_mode & S_IXUSR ? Qtrue : Qfalse;
 #endif
-#ifdef S_IRGRP
+#ifdef S_IXGRP
     if (rb_stat_grpowned(obj))
-	return mode & S_IXGRP ? Qtrue : Qfalse;
+	return st->st_mode & S_IXGRP ? Qtrue : Qfalse;
 #endif
-#ifdef S_IROTH
-    if (!(mode & S_IXOTH)) return Qfalse;
+#ifdef S_IXOTH
+    if (!(st->st_mode & S_IXOTH)) return Qfalse;
 #endif
     return Qtrue;
 }
@@ -1858,18 +1864,18 @@ static VALUE
 rb_stat_X(obj)
     VALUE obj;
 {
-    mode_t mode = get_stat(obj)->st_mode;
+    struct stat *st = get_stat(obj);
 
-#ifdef S_IRUSR
+#ifdef S_IXUSR
     if (rb_stat_rowned(obj))
-	return mode & S_IXUSR ? Qtrue : Qfalse;
+	return st->st_mode & S_IXUSR ? Qtrue : Qfalse;
 #endif
-#ifdef S_IRGRP
+#ifdef S_IXGRP
     if (group_member(get_stat(obj)->st_gid))
-	return mode & S_IXGRP ? Qtrue : Qfalse;
+	return st->st_mode & S_IXGRP ? Qtrue : Qfalse;
 #endif
-#ifdef S_IROTH
-    if (!(mode & S_IXOTH)) return Qfalse;
+#ifdef S_IXOTH
+    if (!(st->st_mode & S_IXOTH)) return Qfalse;
 #endif
     return Qtrue;
 }

@@ -4,7 +4,7 @@
 require 'rbconfig'
 require 'find'
 
-include Config
+CONFIG = Config::MAKEFILE_CONFIG
 
 SRC_EXT = ["c", "cc", "m", "cxx", "cpp", "C"]
 

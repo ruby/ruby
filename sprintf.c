@@ -172,10 +172,12 @@ rb_f_sprintf(argc, argv)
 
     int width, prec, flags = FNONE;
     int nextarg = 0;
+    int tainted = 0;
     VALUE tmp;
     VALUE str;
 
     fmt = GETARG();
+    if (OBJ_TAINTED(fmt)) tainted = 1;
     p = str2cstr(fmt, &blen);
     end = p + blen;
     blen = 0;
@@ -318,6 +320,7 @@ rb_f_sprintf(argc, argv)
 		int len;
 
 		str = rb_obj_as_string(arg);
+		if (OBJ_TAINTED(str)) tainted = 1;
 		len = RSTRING(str)->len;
 		if (flags&FPREC) {
 		    if (prec < len) {
@@ -651,6 +654,7 @@ rb_f_sprintf(argc, argv)
     result = rb_str_new(buf, blen);
     free(buf);
 
+    if (tainted) OBJ_TAINT(result);
     return result;
 }
 

@@ -128,7 +128,7 @@ rb_str_to_str(str)
 }
 
 static void
-rb_str_assign(str, str2)
+rb_str_become(str, str2)
     VALUE str, str2;
 {
     if (str == str2) return;
@@ -422,7 +422,9 @@ rb_str_concat(str1, str2)
 	}
     }
     if (TYPE(str2) != T_STRING) str2 = rb_str_to_str(str2);
-    return rb_str_cat(str1, RSTRING(str2)->ptr, RSTRING(str2)->len);
+    str1 = rb_str_cat(str1, RSTRING(str2)->ptr, RSTRING(str2)->len);
+    if (OBJ_TAINTED(str2)) OBJ_TAINT(str1);
+    return str1;
 }
 
 int
@@ -746,7 +748,7 @@ rb_str_succ_bang(str)
     VALUE str;
 {
     rb_str_modify(str);
-    rb_str_assign(str, rb_str_succ(str));
+    rb_str_become(str, rb_str_succ(str));
 
     return str;
 }

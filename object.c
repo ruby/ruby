@@ -598,6 +598,7 @@ static VALUE
 rb_class_s_inherited()
 {
     rb_raise(rb_eTypeError, "can't make subclass of Class");
+    return Qnil;		/* dummy */
 }
 
 static VALUE

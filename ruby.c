@@ -289,6 +289,7 @@ process_sflag()
 	    rb_ary_shift(rb_argv);
 	}
     }
+    sflag = 0;
 }
 
 static void proc_options _((int argc, char **argv));
@@ -303,8 +304,10 @@ moreswitches(s)
     argc = 2; argv[0] = argv[2] = 0;
     while (*s && !ISSPACE(*s))
 	s++;
-    argv[1] = ALLOCA_N(char, s - p + 2);
-    sprintf(argv[1], "-%s", p);
+    argv[1] = ALLOCA_N(char, s-p+2);
+    argv[1][0] = '-';
+    strncpy(argv[1]+1, p, s-p);
+    argv[1][s-p+1] = '\0';
     proc_options(argc, argv);
     while (*s && ISSPACE(*s))
 	s++;
@@ -450,13 +453,16 @@ proc_options(argc, argv)
 	    break;
 
 	  case 'F':
-	    rb_fs = rb_str_new2(s+1);
+	    if (*++s) {
+		rb_fs = rb_str_new2(s);
+	    }
 	    break;
 
 	  case 'K':
-	    s++;
-	    rb_set_kcode(s);
-	    s++;
+	    if (*++s) {
+		rb_set_kcode(s);
+		s++;
+	    }
 	    goto reswitch;
 
 	  case 'T':
@@ -634,7 +640,6 @@ proc_options(argc, argv)
     }
 
     process_sflag();
-    sflag = 0;
     xflag = 0;
 }
 

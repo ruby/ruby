@@ -77,6 +77,7 @@
 #define RE_OPTIMIZE_ANCHOR   (RE_MAY_IGNORECASE<<1)
 #define RE_OPTIMIZE_EXACTN   (RE_OPTIMIZE_ANCHOR<<1)
 #define RE_OPTIMIZE_NO_BM    (RE_OPTIMIZE_EXACTN<<1)
+#define RE_OPTIMIZE_BMATCH   (RE_OPTIMIZE_NO_BM<<1)
 
 /* For multi-byte char support */
 #define MBCTYPE_ASCII 0

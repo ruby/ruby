@@ -30,6 +30,7 @@ static VALUE
 range_failed()
 {
     rb_raise(rb_eArgError, "bad value for range");
+    return Qnil;		/* dummy */
 }
 
 static VALUE

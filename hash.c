@@ -895,7 +895,7 @@ env_delete(obj, name)
 	if (strcmp(nam, "PATH") == 0 && !OBJ_TAINTED(name)) {
 	    path_tainted = 0;
 	}
-	return rb_str_new2(val);
+	return rb_tainted_str_new2(val);
     }
     return Qnil;
 }
