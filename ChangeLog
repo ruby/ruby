@@ -1,3 +1,16 @@
+Tue Jul 27 07:05:04 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): copy on write for argument local variable
+	  assignment.
+
+	* eval.c (assign): ditto.
+
+	* eval.c (rb_call0): update ruby_frame->argv with the default
+	  value used for the optional arguments.
+
+	* object.c (Init_Object): "===" calls rb_obj_equal() directly.
+	  [ruby-list:39937]
+
 Mon Jul 26 11:22:55 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httputils.rb (WEBrick::HTTPUtils.escape): should

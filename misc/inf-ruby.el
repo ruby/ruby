@@ -21,7 +21,7 @@
 ;;;    (setq interpreter-mode-alist (append '(("ruby" . ruby-mode))
 ;;;    				     interpreter-mode-alist))
 ;;;    
-;;; (2) set to road inf-ruby and set inf-ruby key definition in ruby-mode.
+;;; (2) set to load inf-ruby and set inf-ruby key definition in ruby-mode.
 ;;;
 ;;;    (autoload 'run-ruby "inf-ruby"
 ;;;      "Run an inferior Ruby process")
@@ -35,16 +35,28 @@
 ;;; HISTORY
 ;;; senda -  8 Apr 1998: Created.
 ;;;	 $Log$
+;;;	 Revision 1.7  2004/07/27 08:11:36  matz
+;;;	 * eval.c (rb_eval): copy on write for argument local variable
+;;;	   assignment.
+;;;
+;;;	 * eval.c (assign): ditto.
+;;;
+;;;	 * eval.c (rb_call0): update ruby_frame->argv with the default
+;;;	   value used for the optional arguments.
+;;;
+;;;	 * object.c (Init_Object): "===" calls rb_obj_equal() directly.
+;;;	   [ruby-list:39937]
+;;;
 ;;;	 Revision 1.6  2002/09/07 14:35:46  nobu
 ;;;	 * misc/inf-ruby.el (inferior-ruby-error-regexp-alist): regexp
 ;;;	   alist for error message from ruby.
-;;;
+;;;	
 ;;;	 * misc/inf-ruby.el (inferior-ruby-mode): fixed for Emacs.
-;;;
+;;;	
 ;;;	 * misc/inf-ruby.el (ruby-send-region): compilation-parse-errors
 ;;;	   doesn't parse first line, so insert separators before each
 ;;;	   evaluations.
-;;;
+;;;	
 ;;;	 Revision 1.5  2002/08/19 10:05:47  nobu
 ;;;	 * misc/inf-ruby.el (inf-ruby-keys): ruby-send-definition
 ;;;	   conflicted with ruby-insert-end.

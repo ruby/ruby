@@ -1246,8 +1246,6 @@ ruby_init()
     Init_stack((void*)&state);
     Init_heap();
     PUSH_SCOPE();
-    ruby_scope->local_vars = 0;
-    ruby_scope->local_tbl  = 0;
     top_scope = ruby_scope;
     /* default visibility is private at toplevel */
     SCOPE_SET(SCOPE_PRIVATE);
@@ -3392,6 +3390,7 @@ rb_eval(self, n)
 	if (ruby_scope->local_vars == 0)
 	    rb_bug("unexpected local variable assignment");
 	result = rb_eval(self, node->nd_value);
+	if (node->nd_cnt < ruby_frame->argc + 2) scope_dup(ruby_scope);
 	ruby_scope->local_vars[node->nd_cnt] = result;
 	break;
 
@@ -4954,6 +4953,7 @@ assign(self, lhs, val, pcall)
       case NODE_LASGN:
 	if (ruby_scope->local_vars == 0)
 	    rb_bug("unexpected local variable assignment");
+	if (lhs->nd_cnt < ruby_frame->argc + 2) scope_dup(ruby_scope);
 	ruby_scope->local_vars[lhs->nd_cnt] = val;
 	break;
 
@@ -5617,7 +5617,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 		    if (local_vars) {
 			if (i > 0) {
 			    /* +2 for $_ and $~ */
-			    MEMCPY(local_vars+2, argv, VALUE, i);
+			    MEMCPY(local_vars+2, argv, VALUE, ruby_frame->argc);
 			}
 			argv += i; argc -= i;
 			if (node->nd_opt) {

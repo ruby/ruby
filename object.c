@@ -2611,6 +2611,7 @@ Init_Object()
     rb_define_method(rb_cSymbol, "to_s", sym_to_s, 0);
     rb_define_method(rb_cSymbol, "id2name", sym_to_s, 0);
     rb_define_method(rb_cSymbol, "to_sym", sym_to_sym, 0);
+    rb_define_method(rb_cSymbol, "===", rb_obj_equal, 1); 
 
     rb_define_method(rb_cModule, "freeze", rb_mod_freeze, 0);
     rb_define_method(rb_cModule, "===", rb_mod_eqq, 1);
