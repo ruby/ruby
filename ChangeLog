@@ -1,3 +1,37 @@
+Fri Oct 29 16:57:30 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ext/nkf/lib/kconv.rb: new String methods (kconv, tojis, toeuc,
+	  tosjis).
+
+	* time.c (time_s_at): now accepts optional second argument to
+	  specify micro second.
+
+Thu Oct 28 13:35:40 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (rb_str_split_method): should be mbchar aware with
+	  single char separators.
+
+Wed Oct 27 12:57:21 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* random.c (rb_f_srand): random seed should be unsigned.
+
+Tue Oct 26 23:58:15 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* array.c (rb_ary_collect): collect for better performance.
+
+Tue Oct 26 19:20:54 1999  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* marshal.c (r_object): should register class/module objects.
+
+Sat Oct 23 15:59:39 1999  Takaaki Tateishi  <ttate@jaist.ac.jp>
+
+	* process.c (rb_f_system): should require at least one argument.
+
+Sat Oct 23 12:42:44 1999  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* enum.c (enum_collect): collect without block will collect
+	  elements in enumerable.
+
 Thu Oct 21 16:14:19 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* ruby.c (moreswitches): function to process string option;

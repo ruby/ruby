@@ -152,13 +152,21 @@ rb_time_timeval(time)
 }
 
 static VALUE
-time_s_at(klass, time)
-    VALUE klass, time;
+time_s_at(argc, argv, klass)
+    int argc;
+    VALUE *argv;
+    VALUE klass;
 {
     struct timeval tv;
-    VALUE t;
+    VALUE time, t;
 
-    tv = rb_time_timeval(time);
+    if (rb_scan_args(argc, argv, "11", &time, &t) == 2) {
+	tv.tv_sec = NUM2INT(time);
+	tv.tv_usec = NUM2INT(t);
+    }
+    else {
+	tv = rb_time_timeval(time);
+    }
     t = time_new_internal(klass, tv.tv_sec, tv.tv_usec);
     if (TYPE(time) == T_DATA) {
 	struct time_object *tobj, *tobj2;
@@ -978,7 +986,7 @@ Init_Time()
 
     rb_define_singleton_method(rb_cTime, "now", time_s_now, 0);
     rb_define_singleton_method(rb_cTime, "new", time_s_now, 0);
-    rb_define_singleton_method(rb_cTime, "at", time_s_at, 1);
+    rb_define_singleton_method(rb_cTime, "at", time_s_at, -1);
     rb_define_singleton_method(rb_cTime, "gm", time_s_timegm, -1);
     rb_define_singleton_method(rb_cTime, "local", time_s_timelocal, -1);
     rb_define_singleton_method(rb_cTime, "mktime", time_s_timelocal, -1);

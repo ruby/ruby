@@ -2,6 +2,8 @@ Language Spec.
 
 - def foo; .. rescue .. end
 - compile time string concatenation, "hello" "world" => "helloworld"
+* objectify symbols
+* objectify characters
 * ../... outside condition invokes operator method too.
 * %w(a\ b\ c abc) => ["a b c", "abc"]
 * package or access control for global variables
@@ -46,6 +48,7 @@ Extension Libraries
 
 - FastCGI ruby
 * ptk.rb pTk wrapper that is compatible to tk.rb
+* Berkeley DB extension
 
 Ruby Libraries
 
@@ -54,7 +57,7 @@ Ruby Libraries
 
 Tools
 
-* extension library maker like XS or SWIG
+- extension library maker like XS or SWIG
 * freeze or undump to bundle everything
 
 Misc

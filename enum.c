@@ -153,18 +153,6 @@ collect_i(i, tmp)
 }
 
 static VALUE
-enum_collect(obj)
-    VALUE obj;
-{
-    VALUE tmp;
-
-    tmp = rb_ary_new();
-    rb_iterate(rb_each, obj, collect_i, tmp);
-
-    return tmp;
-}
-
-static VALUE
 enum_all(i, ary)
     VALUE i, ary;
 {
@@ -182,6 +170,18 @@ enum_to_a(obj)
     rb_iterate(rb_each, obj, enum_all, ary);
 
     return ary;
+}
+
+static VALUE
+enum_collect(obj)
+    VALUE obj;
+{
+    VALUE tmp;
+
+    tmp = rb_ary_new();
+    rb_iterate(rb_each, obj, rb_iterator_p() ? collect_i : enum_all, tmp);
+
+    return tmp;
 }
 
 static VALUE

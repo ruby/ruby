@@ -4093,7 +4093,7 @@ echo "configure:4028: checking whether OS depend dynamic link works" >&5
 					rb_cv_dlopen=yes ;;
 			esac ;;
 	bsdi*)		LDSHARED="ld -shared"
-			LDFLAGS="-rdynamic -Wl,-rpath,/usr/local/lib/ruby/1.4/i386-bsdi4.0"
+			LDFLAGS='-rdynamic -Wl,-rpath,$(prefix)/lib/ruby/$(MAJOR).$(MINOR)/i386-bsdi4.0'
 			rb_cv_dlopen=yes ;;
 	nextstep*)	LDSHARED='cc -r -nostdlib'
 			LDFLAGS="-u libsys_s"

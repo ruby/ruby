@@ -934,6 +934,25 @@ rb_ary_sort(ary)
     return ary;
 }
 
+static VALUE
+rb_ary_collect(ary)
+    VALUE ary;
+{
+    long len, i;
+    VALUE collect;
+
+    if (!rb_iterator_p()) {
+	return rb_ary_dup(ary);
+    }
+
+    len = RARRAY(ary)->len;
+    collect = rb_ary_new2(len);
+    for (i=0; i<len; i++) {
+	rb_ary_push(collect, rb_yield(RARRAY(ary)->ptr[i]));
+    }
+    return collect;
+}
+
 VALUE
 rb_ary_delete(ary, item)
     VALUE ary;
@@ -1494,6 +1513,7 @@ Init_Array()
     rb_define_method(rb_cArray, "reverse!", rb_ary_reverse, 0);
     rb_define_method(rb_cArray, "sort", rb_ary_sort, 0);
     rb_define_method(rb_cArray, "sort!", rb_ary_sort_bang, 0);
+    rb_define_method(rb_cArray, "collect", rb_ary_collect, 0);
     rb_define_method(rb_cArray, "delete", rb_ary_delete, 1);
     rb_define_method(rb_cArray, "delete_at", rb_ary_delete_at, 1);
     rb_define_method(rb_cArray, "delete_if", rb_ary_delete_if, 0);

@@ -56,3 +56,18 @@ module Kconv
   end
   module_function :guess
 end
+
+class String
+  def kconv(out_code, in_code=Kconv::AUTO)
+    Kconv::kconv(self, out_code, in_code)
+  end
+  def tojis
+    NKF::nkf('-j', self)
+  end
+  def toeuc
+    NKF::nkf('-e', self)
+  end
+  def tosjis
+    NKF::nkf('-s', self)
+  end
+end
