@@ -2848,6 +2848,11 @@ ip_init(argc, argv, self)
     int with_tk = 1;
     Tk_Window mainWin;
 
+    /* security check */
+    if (ruby_safe_level >= 4) {
+	rb_raise(rb_eSecurityError, "Cannot create a TclTkIp object at level %d", ruby_safe_level);
+    }
+
     /* create object */
     Data_Get_Struct(self, struct tcltkip, ptr);
     ptr = ALLOC(struct tcltkip);

@@ -77,6 +77,26 @@ class TkListbox<TkTextWin
     tk_send_without_enc('index', index).to_i
   end
 
+  def value
+    get('0', 'end')
+  end
+
+  def value= (vals)
+    unless vals.kind_of?(Array)
+      fail ArgumentError, 'an Array is expected'
+    end
+    tk_send_without_enc('delete', '0', 'end')
+    tk_send_without_enc('insert', '0', 
+                        *(vals.collect{|v| _get_eval_enc_str(v)}))
+    vals
+  end
+
+  def clear
+    tk_send_without_enc('delete', '0', 'end')
+    self
+  end
+  alias erase clear
+
 =begin
   def itemcget(index, key)
     case key.to_s
