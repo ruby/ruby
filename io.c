@@ -1120,7 +1120,7 @@ remain_size(fptr)
     OpenFile *fptr;
 {
     struct stat st;
-    off_t siz = BUFSIZ;
+    off_t siz = READ_DATA_PENDING_COUNT(fptr);
     off_t pos;
 
     if (fstat(fptr->fd, &st) == 0  && S_ISREG(st.st_mode)
@@ -1129,13 +1129,17 @@ remain_size(fptr)
 #endif
 	)
     {
-	pos = io_tell(fptr);
+	io_fflush(fptr);
+	pos = lseek(fptr->fd, 0, SEEK_CUR);
 	if (st.st_size >= pos && pos >= 0) {
-	    siz = st.st_size - pos + 1;
+	    siz += st.st_size - pos + 1;
 	    if (siz > LONG_MAX) {
 		rb_raise(rb_eIOError, "file too big for single read");
 	    }
 	}
+    }
+    else {
+	siz += BUFSIZ;
     }
     return (long)siz;
 }

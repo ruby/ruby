@@ -1,3 +1,8 @@
+Tue Jan 11 20:58:52 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (remain_size): use buffered data instead of unreading to avoid
+	  inconsistency of text mode.  fixed: [ruby-dev:25446]
+
 Tue Jan 11 09:37:53 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* numeric.c (Init_Numeric): turn off floating point exceptions
