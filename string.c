@@ -131,7 +131,7 @@ rb_str_become(str, str2)
 	RSTRING(str)->orig = 0;
 	return;
     }
-    if ((!RSTRING(str)->orig||FL_TEST(str, STR_NO_ORIG))&&RSTRING(str)->ptr)
+    if ((!RSTRING(str)->orig||FL_TEST(str,STR_NO_ORIG))&&RSTRING(str)->ptr)
 	free(RSTRING(str)->ptr);
     RSTRING(str)->ptr = RSTRING(str2)->ptr;
     RSTRING(str)->len = RSTRING(str2)->len;
@@ -159,26 +159,17 @@ rb_obj_as_string(obj)
     return str;
 }
 
-static VALUE
-str_dup(str)
-    VALUE str;
-{
-    VALUE s;
-
-    if (TYPE(str) != T_STRING) str = rb_str_to_str(str);
-    s = rb_str_new(RSTRING(str)->ptr, RSTRING(str)->len);
-    if (OBJ_TAINTED(str)) OBJ_TAINT(s);
-
-    return s;
-}
-
 VALUE
 rb_str_dup(str)
     VALUE str;
 {
     if (TYPE(str) != T_STRING) str = rb_str_to_str(str);
     if (OBJ_FROZEN(str)) return rb_str_new3(str);
-    if (FL_TEST(str, STR_NO_ORIG)) return str_dup(str);
+    if (FL_TEST(str, STR_NO_ORIG)) {
+	VALUE s = rb_str_new(RSTRING(str)->ptr, RSTRING(str)->len);
+	OBJ_INFECT(s, str);
+	return s;
+    }
     if (RSTRING(str)->orig) return rb_str_new3(RSTRING(str)->orig);
     else {
 	VALUE shadow;
@@ -343,12 +334,12 @@ rb_str_modify(str)
     if (!OBJ_TAINTED(str) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify string");
     if (!RSTRING(str)->orig || FL_TEST(str, STR_NO_ORIG)) return;
-    ptr = RSTRING(str)->ptr;
-    RSTRING(str)->ptr = ALLOC_N(char, RSTRING(str)->len+1);
+    ptr = ALLOC_N(char, RSTRING(str)->len+1);
     if (RSTRING(str)->ptr) {
-	memcpy(RSTRING(str)->ptr, ptr, RSTRING(str)->len);
-	RSTRING(str)->ptr[RSTRING(str)->len] = 0;
+	memcpy(ptr, RSTRING(str)->ptr, RSTRING(str)->len);
     }
+    ptr[RSTRING(str)->len] = 0;
+    RSTRING(str)->ptr = ptr;
     RSTRING(str)->orig = 0;
 }
 
@@ -1221,6 +1212,7 @@ str_gsub(argc, argv, str, bang)
     else {
 	NEWOBJ(dup, struct RString);
 	OBJSETUP(dup, rb_cString, T_STRING);
+	OBJ_INFECT(dup, str);
 	str = (VALUE)dup;
     }
     RSTRING(str)->ptr = buf;
@@ -2362,6 +2354,7 @@ rb_str_chomp_bang(argc, argv, str)
 	    len--;
 	}
 	if (len < RSTRING(str)->len) {
+	    rb_str_modify(str);
 	    RSTRING(str)->len = len;
 	    RSTRING(str)->ptr[len] = '\0';
 	    return str;
@@ -2374,6 +2367,7 @@ rb_str_chomp_bang(argc, argv, str)
     if (p[len-1] == newline &&
 	(rslen <= 1 ||
 	 memcmp(RSTRING(rs)->ptr, p+len-rslen, rslen) == 0)) {
+	rb_str_modify(str);
 	RSTRING(str)->len -= rslen;
 	RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
 	return str;

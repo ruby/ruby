@@ -1,3 +1,7 @@
+Wed Mar 15 13:12:39 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (rb_str_chomp_bang): forgot to call rb_str_modify().
+
 Mon Mar 13 16:12:13 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (block_pass): distinguish real orphan block and still

@@ -4933,6 +4933,25 @@ case "$target_os" in
 	rhasody*)
     	CFLAGS="$CFLAGS -pipe -no-precomp"
 		;;
+	osf*)
+	if  $without_gcc = "yes" ; then
+	  CFLAGS="$CFLAGS -ansi"
+	else
+	  # compile something small: taint.c is fine for this.
+	  # the main point is the '-v' flag of 'cc'.
+	  case "`cc -v -I. -c main.c -o /tmp/main.o 2>&1`" in
+	  */gemc_cc*)   # we have the new DEC GEM CC
+                        CFLAGS="$CFLAGS -frpm d -ieee"
+                        ;;
+          *)            # we have the old MIPS CC
+                        CFLAGS="$CFLAGS -oldc"
+                        ;;
+          esac
+	  # cleanup
+	  rm -f /tmp/main.o
+	  CFLAGS="$CFLAGS -std"
+	fi
+		;;
 	*)
 		;;	
 esac
