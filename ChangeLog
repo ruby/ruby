@@ -1,3 +1,7 @@
+Thu Feb 19 21:28:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
+
+	* ext/strscan/strscan.c: improved documentation
+
 Thu Feb 19 03:10:52 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/strscan/strscan.c: synchronized with main trunk (rev 1.11).
