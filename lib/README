@@ -42,6 +42,8 @@ ostruct.rb	python style object
 parsearg.rb	argument parser using getopts
 parsedate.rb	parses date string
 ping.rb		checks whether host is up, using TCP echo.
+pp.rb		pretty print objects
+prettyprint.rb	pretty printing algorithm
 profile.rb	ruby profiler
 pstore.rb	persistent object strage using marshal
 rational.rb	rational number support
@@ -54,6 +56,7 @@ singleton.rb	singleton design pattern library
 sync.rb		2 phase lock
 telnet.rb	obsolete - use net/telnet
 tempfile.rb	temporary file with automatic removal
+time.rb		RFC2822, RFC2616, ISO8601 style time formatting/parsing
 thread.rb	thread support
 thwait.rb	thread syncronization class
 timeout.rb	provides timeout
