@@ -184,7 +184,7 @@ end
 $ruby << " -I$(topdir) -I$(hdrdir)/lib"
 $config_h = '$(topdir)/config.h'
 
-MTIMES = [File.mtime(__FILE__)]
+MTIMES = [__FILE__, srcdir+'/lib/mkmf.rb'].collect {|f| File.mtime(f)}
 
 # get static-link modules
 $static_ext = {}

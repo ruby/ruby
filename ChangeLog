@@ -1,3 +1,9 @@
+Wed Dec  3 11:36:42 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (MTIMES): let makefiles depend to mkmf.rb.
+
+	* lib/mkmf.rb (configuration): DLDFLAGS was duplicated.
+
 Tue Dec  2 23:18:12 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb: wrote the warning about HTTP_PROXY environment

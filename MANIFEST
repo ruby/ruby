@@ -84,6 +84,7 @@ bcc32/setup.mak
 bin/erb
 bin/irb
 bin/rdoc
+bin/testrb
 cygwin/GNUmakefile.in
 djgpp/GNUmakefile.in
 djgpp/README.djgpp
