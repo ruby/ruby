@@ -127,6 +127,9 @@ static VALUE lineno = INT2FIX(0);
 #    define READ_DATA_PENDING_COUNT(fp) ((fp)->_egptr - (fp)->_gptr)
 #    define READ_DATA_PENDING_PTR(fp) ((fp)->_gptr)
 #  endif
+#elif defined(HAVE___FPENDING)
+#  define READ_DATA_PENDING(fp) (__fpending(fp) > 0)
+#  define READ_DATA_PENDING_COUNT(fp) (__fpending(fp))
 #elif defined(FILE_COUNT)
 #  define READ_DATA_PENDING(fp) ((fp)->FILE_COUNT > 0)
 #  define READ_DATA_PENDING_COUNT(fp) ((fp)->FILE_COUNT)
