@@ -196,19 +196,9 @@ module Net
     # Class Parameters
     #
 
-    # The default port for POP3 connections, port 110.
+    # The default port for POP3 connections, port 110
     def POP3.default_port
-      pop3_default_port()
-    end
-
-    # The default port for POP3 connections, port 110.
-    def POP3.pop3_default_port
       110
-    end
-
-    # The default port for POP3s connections, port 995.
-    def POP3.pop3s_default_port
-      995
     end
 
     def POP3.socket_type   #:nodoc: obsolete
@@ -355,8 +345,6 @@ module Net
       @mails = nil
       @n_mails = nil
       @n_bytes = nil
-
-      @use_ssl = false
     end
 
     # Does this instance use APOP authentication?
@@ -414,12 +402,6 @@ module Net
 
     alias active? started?   #:nodoc: obsolete
 
-    # Sets wheather we use SSL or not.
-    # You MUST require 'net/pops' before setting use_ssl=true.
-    def use_ssl?
-      false   # redefined in net/pops
-    end
-
     # Starts a POP3 session.
     #
     # When called with block, gives a POP3 object to the block and
@@ -443,11 +425,9 @@ module Net
     end
 
     def do_start( account, password )
-      s = timeout(@open_timeout) { TCPSocket.open(@address, @port) }
-      if use_ssl?
-        s = OpenSSL::SSL::SSLSocket.open(s, @ssl_context)
-      end
-      @socket = InternetMessageIO.new(s)
+      @socket = InternetMessageIO.new(timeout(@open_timeout) {
+                  TCPSocket.open(@address, @port)
+                })
       logging "POP session started: #{@address}:#{@port} (#{@apop ? 'APOP' : 'POP'})"
       @socket.read_timeout = @read_timeout
       @socket.debug_output = @debug_output
@@ -768,8 +748,8 @@ module Net
 
     def auth( account, password )
       check_response_auth(critical {
-        check_response_auth(get_response('USER %s', account))
-        get_response('PASS %s', password)
+        check_response_auth(get_response('USER ' + account))
+        get_response('PASS ' + password)
       })
     end
 
