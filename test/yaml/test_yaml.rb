@@ -443,7 +443,7 @@ hexadecimal: 0xC
 EOY
 		)
 		assert_parse_only(
-            { 'canonical' => 685230, 'decimal' => 685230, 'octal' => '02472256'.oct, 'hexadecimal' => '0x0A74AE'.hex, 'sexagesimal' => 685230 }, <<EOY
+            { 'canonical' => 685230, 'decimal' => 685230, 'octal' => 02472256, 'hexadecimal' => 0x0A74AE, 'sexagesimal' => 685230 }, <<EOY)
 canonical: 685230
 decimal: +685,230
 octal: 02472256
@@ -455,17 +455,15 @@ EOY
 	def test_spec_type_float
 		assert_parse_only(
 			{ 'canonical' => 1230.15, 'exponential' => 1230.15, 'fixed' => 1230.15,
-			  'negative infinity' => -1.0/0.0 }, <<EOY
+			  'negative infinity' => -1.0/0.0 }, <<EOY)
 canonical: 1.23015e+3
 exponential: 12.3015e+02
 fixed: 1,230.15
 negative infinity: -.inf
 EOY
-		)
-		nan = YAML::load( <<EOY
+		nan = YAML::load( <<EOY )
 not a number: .NaN
 EOY
-		)
 		assert( nan['not a number'].nan? )
 	end
 
