@@ -1,3 +1,7 @@
+Tue Aug 31 12:30:36 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tcltklib/tcltklib.c (del_root): fix SEGV
+
 Mon Aug 30 23:11:06 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/ri/ri_driver.rb (and others): ri now merges documentation
