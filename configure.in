@@ -306,6 +306,11 @@ mingw*)		LIBS="-lshell32 -lwsock32 $LIBS"
 		ac_cv_func_finite=yes
 		ac_cv_func_link=yes
 		ac_cv_lib_crypt_crypt=no
+		ac_cv_func_getpgrp_void=no
+		ac_cv_func_setpgrp_void=yes
+		ac_cv_func_memcmp_working=yes
+		rb_cv_binary_elf=no
+		rb_cv_negative_time_t=no
 		enable_pthread=no
 		;;
 os2-emx*)	LIBS="-lm $LIBS"
