@@ -858,7 +858,7 @@ BigDecimal_mult2(VALUE self, VALUE b, VALUE n)
     ENTER(2);
     Real *cv;
     U_LONG mx = (U_LONG)GetPositiveInt(n);
-    if(mx==0) BigDecimal_mult(self,b);
+    if(mx==0) return BigDecimal_mult(self,b);
     else {
        U_LONG pl = VpSetPrecLimit(0);
        VALUE   c = BigDecimal_mult(self,b);
