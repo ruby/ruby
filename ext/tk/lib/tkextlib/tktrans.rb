@@ -11,4 +11,4 @@ require 'tkextlib/setup.rb'
 require 'tkextlib/tktrans/setup.rb'
 
 # load library
-require 'tkextlib/tktrans/tktrans')
+require 'tkextlib/tktrans/tktrans'
