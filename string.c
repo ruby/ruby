@@ -1499,9 +1499,7 @@ VALUE
 rb_str_inspect(str)
     VALUE str;
 {
-    long len;
     char *p, *pend;
-    char *q, *qend;
     VALUE result = rb_str_new2("\"");
     char s[5];
 

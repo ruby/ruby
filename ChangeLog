@@ -1,3 +1,8 @@
+Tue Nov 20 01:07:13 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (str_extend): should not terminate string interpolation
+	  with newlines in here-docs and newline terminated strings.
+
 Mon Nov 19 14:14:58 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (str_extend): term can be any character.

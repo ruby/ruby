@@ -3854,6 +3854,7 @@ str_extend(list, term)
 		    newtok();
 		    return list;
 		}
+	      case '\n':
 		tokadd(c);
 		break;
 	    }
