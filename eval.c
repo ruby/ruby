@@ -721,6 +721,24 @@ dvar_asgn_curr(id, value)
     dvar_asgn_internal(id, value, 1);
 }
 
+VALUE *
+rb_svar(cnt)
+    int cnt;
+{
+    struct RVarmap *vars = ruby_dyna_vars;
+    ID id;
+
+    if (!ruby_scope->local_tbl) return NULL;
+    if (cnt >= ruby_scope->local_tbl[0]) return NULL;
+    id = ruby_scope->local_tbl[cnt+1];
+    while (vars) {
+	if (vars->id == id) return &vars->val;
+	vars = vars->next;
+    }
+    if (ruby_scope->local_vars == 0) return NULL;
+    return &ruby_scope->local_vars[cnt];
+}
+
 struct iter {
     int iter;
     struct iter *prev;
@@ -2536,40 +2554,41 @@ rb_eval(self, n)
 	break;
 
       case NODE_FLIP2:		/* like AWK */
-	if (ruby_scope->local_vars == 0) {
-	    rb_bug("unexpected local variable");
-	}
-	if (!RTEST(ruby_scope->local_vars[node->nd_cnt])) {
-	    if (RTEST(rb_eval(self, node->nd_beg))) {
-		ruby_scope->local_vars[node->nd_cnt] = 
-		    RTEST(rb_eval(self, node->nd_end))?Qfalse:Qtrue;
-		result = Qtrue;
+	{
+	    VALUE *flip = rb_svar(node->nd_cnt);
+	    if (!flip) rb_bug("unexpected local variable");
+	    if (!RTEST(*flip)) {
+		if (RTEST(rb_eval(self, node->nd_beg))) {
+		    *flip = RTEST(rb_eval(self, node->nd_end))?Qfalse:Qtrue;
+		    result = Qtrue;
+		}
+		else {
+		    result = Qfalse;
+		}
 	    }
 	    else {
-		result = Qfalse;
+		if (RTEST(rb_eval(self, node->nd_end))) {
+		    *flip = Qfalse;
+		}
+		result = Qtrue;
 	    }
-	}
-	else {
-	    if (RTEST(rb_eval(self, node->nd_end))) {
-		ruby_scope->local_vars[node->nd_cnt] = Qfalse;
-	    }
-	    result = Qtrue;
 	}
 	break;
 
       case NODE_FLIP3:		/* like SED */
-	if (ruby_scope->local_vars == 0) {
-	    rb_bug("unexpected local variable");
-	}
-	if (!RTEST(ruby_scope->local_vars[node->nd_cnt])) {
-	    result = RTEST(rb_eval(self, node->nd_beg)) ? Qtrue : Qfalse;
-	    ruby_scope->local_vars[node->nd_cnt] = result;
-	}
-	else {
-	    if (RTEST(rb_eval(self, node->nd_end))) {
-		ruby_scope->local_vars[node->nd_cnt] = Qfalse;
+	{
+	    VALUE *flip = rb_svar(node->nd_cnt);
+	    if (!flip) rb_bug("unexpected local variable");
+	    if (!RTEST(*flip)) {
+		result = RTEST(rb_eval(self, node->nd_beg)) ? Qtrue : Qfalse;
+		*flip = result;
 	    }
-	    result = Qtrue;
+	    else {
+		if (RTEST(rb_eval(self, node->nd_end))) {
+		    *flip = Qfalse;
+		}
+		result = Qtrue;
+	    }
 	}
 	break;
 
@@ -5852,7 +5871,7 @@ rb_f_local_variables()
     if (tbl) {
 	n = *tbl++;
 	for (i=2; i<n; i++) {	/* skip first 2 ($_ and $~) */
-	    if (tbl[i] == 0) continue;  /* skip flip states */
+	    if (!rb_is_local_id(tbl[i])) continue; /* skip flip states */
 	    rb_ary_push(ary, rb_str_new2(rb_id2name(tbl[i])));
 	}
     }
@@ -6414,6 +6433,7 @@ proc_invoke(proc, args, pcall)
     volatile int orphan;
     volatile int safe = ruby_safe_level;
     volatile VALUE old_wrapper = ruby_wrapper;
+    struct RVarmap * volatile old_dvars = ruby_dyna_vars;
 
     if (rb_block_given_p() && ruby_frame->last_func) {
 	rb_warning("block for %s#%s is useless",
@@ -6425,6 +6445,7 @@ proc_invoke(proc, args, pcall)
     orphan = blk_orphan(data);
 
     ruby_wrapper = data->wrapper;
+    ruby_dyna_vars = data->dyna_vars;
     /* PUSH BLOCK from data */
     old_block = ruby_block;
     _block = *data;
@@ -6450,6 +6471,7 @@ proc_invoke(proc, args, pcall)
     }
     ruby_block = old_block;
     ruby_wrapper = old_wrapper;
+    ruby_dyna_vars = old_dvars;
     ruby_safe_level = safe;
 
     switch (state) {
@@ -8254,8 +8276,6 @@ catch_timer(sig)
 int rb_thread_tick = THREAD_TICK;
 #endif
 
-#define SCOPE_SHARED  FL_USER1
-
 #if defined(HAVE_SETITIMER)
 static int thread_init = 0;
 
@@ -8321,7 +8341,6 @@ rb_thread_start_0(fn, arg, th_arg)
 	saved_block = ruby_block = dummy.prev;
     }
     scope_dup(ruby_scope);
-    FL_SET(ruby_scope, SCOPE_SHARED);
 
     if (!th->next) {
 	/* merge in thread list */
@@ -8397,18 +8416,28 @@ rb_thread_create(fn, arg)
     return rb_thread_start_0(fn, arg, rb_thread_alloc(rb_cThread));
 }
 
-int
-rb_thread_scope_shared_p()
-{
-    return FL_TEST(ruby_scope, SCOPE_SHARED);
-}
-
 static VALUE
 rb_thread_yield(arg, th) 
     VALUE arg;
     rb_thread_t th;
 {
+    const ID *tbl;
+
     scope_dup(ruby_block->scope);
+
+    tbl = ruby_scope->local_tbl;
+    if (tbl) {
+	int n = *tbl++;
+	for (tbl += 2, n -= 2; n > 0; --n) { /* skip first 2 ($_ and $~) */
+	    ID id = *tbl++;
+	    if (id != 0 && !rb_is_local_id(id))  /* push flip states */
+		rb_dvar_push(id, Qfalse);
+	}
+    }
+    rb_dvar_push('_', Qnil);
+    rb_dvar_push('~', Qnil);
+    ruby_block->dyna_vars = ruby_dyna_vars;
+
     return rb_yield_0(mvalue_to_svalue(arg), 0, 0, Qtrue);
 }
 

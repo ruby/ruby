@@ -645,12 +645,7 @@ rb_reg_search(re, str, pos, reverse)
 	return result;
     }
 
-    if (rb_thread_scope_shared_p()) {
-	match = Qnil;
-    }
-    else {
-	match = rb_backref_get();
-    }
+    match = rb_backref_get();
     if (NIL_P(match) || FL_TEST(match, MATCH_BUSY)) {
 	match = match_alloc();
     }

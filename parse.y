@@ -30,6 +30,7 @@
 #define ID_CONST    0x05
 #define ID_CLASS    0x06
 #define ID_JUNK     0x07
+#define ID_INTERNAL ID_JUNK
 
 #define is_notop_id(id) ((id)>LAST_TOKEN)
 #define is_local_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_LOCAL)
@@ -138,6 +139,7 @@ static int  local_append();
 static int  local_cnt();
 static int  local_id();
 static ID  *local_tbl();
+static ID   internal_id();
 
 static struct RVarmap *dyna_push();
 static void dyna_pop();
@@ -4626,7 +4628,7 @@ cond0(node)
 	node->nd_end = range_op(node->nd_end);
 	if (type == NODE_DOT2) nd_set_type(node,NODE_FLIP2);
 	else if (type == NODE_DOT3) nd_set_type(node, NODE_FLIP3);
-	node->nd_cnt = local_append(0);
+	node->nd_cnt = local_append(internal_id());
 	warning_unless_e_option("range literal in condition");
 	break;
 
@@ -5003,11 +5005,18 @@ Init_sym()
     rb_global_variable((VALUE*)&lex_lastline);
 }
 
+static ID last_id = LAST_TOKEN;
+
+static ID
+internal_id()
+{
+    return ID_INTERNAL | (++last_id << ID_SCOPE_SHIFT);
+}
+
 ID
 rb_intern(name)
     const char *name;
 {
-    static ID last_id = LAST_TOKEN;
     const char *m = name;
     ID id;
     int last;
@@ -5162,6 +5171,14 @@ rb_is_instance_id(id)
     return Qfalse;
 }
 
+int
+rb_is_local_id(id)
+    ID id;
+{
+    if (is_local_id(id)) return Qtrue;
+    return Qfalse;
+}
+
 static void
 special_local_set(c, val)
     char c;
@@ -5175,11 +5192,14 @@ special_local_set(c, val)
     ruby_scope->local_vars[cnt] = val;
 }
 
+VALUE *rb_svar _((int cnt));
+
 VALUE
 rb_backref_get()
 {
-    if (ruby_scope->local_vars) {
-	return ruby_scope->local_vars[1];
+    VALUE *var = rb_svar(1);
+    if (var) {
+	return *var;
     }
     return Qnil;
 }
@@ -5188,8 +5208,9 @@ void
 rb_backref_set(val)
     VALUE val;
 {
-    if (ruby_scope->local_vars) {
-	ruby_scope->local_vars[1] = val;
+    VALUE *var = rb_svar(1);
+    if (var) {
+	*var = val;
     }
     else {
 	special_local_set('~', val);
@@ -5199,8 +5220,9 @@ rb_backref_set(val)
 VALUE
 rb_lastline_get()
 {
-    if (ruby_scope->local_vars) {
-	return ruby_scope->local_vars[0];
+    VALUE *var = rb_svar(0);
+    if (var) {
+	return *var;
     }
     return Qnil;
 }
@@ -5209,8 +5231,9 @@ void
 rb_lastline_set(val)
     VALUE val;
 {
-    if (ruby_scope->local_vars) {
-	ruby_scope->local_vars[0] = val;
+    VALUE *var = rb_svar(0);
+    if (var) {
+	*var = val;
     }
     else {
 	special_local_set('_', val);
