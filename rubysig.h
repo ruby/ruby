@@ -57,7 +57,7 @@ EXTERN int rb_prohibit_interrupt;
 #define ALLOW_INTS {rb_prohibit_interrupt--; CHECK_INTS;}
 #define ENABLE_INTS {rb_prohibit_interrupt--;}
 
-VALUE rb_with_disable_interrupt _((VALUE(*)(),VALUE));
+VALUE rb_with_disable_interrupt _((VALUE(*)(ANYARGS),VALUE));
 
 EXTERN rb_atomic_t rb_trap_pending;
 void rb_trap_restore_mask _((void));

@@ -1,3 +1,7 @@
+Wed Feb 27 13:49:24 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* stable version 1.6.6 released.
+
 Wed Feb 27 13:18:49 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* io.c (READ_DATA_PENDING): uClibc support.
@@ -18,6 +22,11 @@ Wed Feb 27 07:08:16 2002  Akinori MUSHA  <knu@iDaemons.org>
 Tue Feb 26 21:36:01 2002  Usaku Nakamura <usa@ruby-lang.org>
 
 	* bignum.c (rb_big_2comp): void function cannot return any value.
+
+Tue Feb 26 16:52:12 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_f_missing): NoMethod error messages for true, false,
+	  nil must respond visibility like for other objects.
 
 Tue Feb 26 11:25:50 2002  akira yamada  <akira@arika.org>
 

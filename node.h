@@ -131,7 +131,7 @@ typedef struct RNode {
 	struct RNode *node;
 	ID id;
 	VALUE value;
-	VALUE (*cfunc)();
+	VALUE (*cfunc)(ANYARGS);
 	ID *tbl;
     } u1;
     union {
@@ -340,7 +340,7 @@ NODE *rb_compile_string _((const char*, VALUE, int));
 NODE *rb_compile_file _((const char*, VALUE, int));
 
 void rb_add_method _((VALUE, ID, NODE *, int));
-NODE *rb_node_newnode();
+NODE *rb_node_newnode(ANYARGS);
 
 struct global_entry *rb_global_entry _((ID));
 VALUE rb_gvar_get _((struct global_entry *));

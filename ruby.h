@@ -74,6 +74,12 @@ extern "C" {
 # define __(args) ()
 #endif
 
+#ifdef __cplusplus
+#define ANYARGS ...
+#else
+#define ANYARGS
+#endif
+ 
 #ifdef HAVE_ATTR_NORETURN
 # define NORETURN __attribute__ ((noreturn))
 #else
@@ -408,8 +414,8 @@ void xfree _((void*));
 #define MEMMOVE(p1,p2,type,n) memmove((p1), (p2), sizeof(type)*(n))
 #define MEMCMP(p1,p2,type,n) memcmp((p1), (p2), sizeof(type)*(n))
 
-void rb_glob _((char*,void(*)(),VALUE));
-void rb_globi _((char*,void(*)(),VALUE));
+void rb_glob _((char*,void(*)(const char*,VALUE),VALUE));
+void rb_iglob _((char*,void(*)(const char*,VALUE),VALUE));
 
 VALUE rb_define_class _((const char*,VALUE));
 VALUE rb_define_module _((const char*));
@@ -420,16 +426,16 @@ void rb_include_module _((VALUE,VALUE));
 void rb_extend_object _((VALUE,VALUE));
 
 void rb_define_variable _((const char*,VALUE*));
-void rb_define_virtual_variable _((const char*,VALUE(*)(),void(*)()));
-void rb_define_hooked_variable _((const char*,VALUE*,VALUE(*)(),void(*)()));
+void rb_define_virtual_variable _((const char*,VALUE(*)(ANYARGS),void(*)(ANYARGS)));
+void rb_define_hooked_variable _((const char*,VALUE*,VALUE(*)(ANYARGS),void(*)(ANYARGS)));
 void rb_define_readonly_variable _((const char*,VALUE*));
 void rb_define_const _((VALUE,const char*,VALUE));
 void rb_define_global_const _((const char*,VALUE));
 
-#define RUBY_METHOD_FUNC(func) ((VALUE (*)__((...)))func)
-void rb_define_method _((VALUE,const char*,VALUE(*)(),int));
-void rb_define_module_function _((VALUE,const char*,VALUE(*)(),int));
-void rb_define_global_function _((const char*,VALUE(*)(),int));
+#define RUBY_METHOD_FUNC(func) ((VALUE (*)(ANYARGS))func)
+void rb_define_method _((VALUE,const char*,VALUE(*)(ANYARGS),int));
+void rb_define_module_function _((VALUE,const char*,VALUE(*)(ANYARGS),int));
+void rb_define_global_function _((const char*,VALUE(*)(ANYARGS),int));
 
 void rb_undef_method _((VALUE,const char*));
 void rb_define_alias _((VALUE,const char*,const char*));
@@ -479,11 +485,11 @@ void rb_warning __((const char*, ...));		/* reports if `-w' specified */
 VALUE rb_each _((VALUE));
 VALUE rb_yield _((VALUE));
 int rb_block_given_p _((void));
-VALUE rb_iterate _((VALUE(*)(),VALUE,VALUE(*)(),VALUE));
-VALUE rb_rescue _((VALUE(*)(),VALUE,VALUE(*)(),VALUE));
-VALUE rb_rescue2 __((VALUE(*)(),VALUE,VALUE(*)(),VALUE,...));
-VALUE rb_ensure _((VALUE(*)(),VALUE,VALUE(*)(),VALUE));
-VALUE rb_catch _((const char*,VALUE(*)(),VALUE));
+VALUE rb_iterate _((VALUE(*)(ANYARGS),VALUE,VALUE(*)(ANYARGS),VALUE));
+VALUE rb_rescue _((VALUE(*)(ANYARGS),VALUE,VALUE(*)(ANYARGS),VALUE));
+VALUE rb_rescue2 __((VALUE(*)(ANYARGS),VALUE,VALUE(*)(ANYARGS),VALUE,...));
+VALUE rb_ensure _((VALUE(*)(ANYARGS),VALUE,VALUE(*)(ANYARGS),VALUE));
+VALUE rb_catch _((const char*,VALUE(*)(ANYARGS),VALUE));
 void rb_throw _((const char*,VALUE)) NORETURN;
 
 VALUE rb_require _((const char*));
