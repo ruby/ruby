@@ -8712,12 +8712,6 @@ umethod_bind(method, recv)
 	if (FL_TEST(data->rklass, FL_SINGLETON)) {
 	    rb_raise(rb_eTypeError, "singleton method called for a different object");
 	}
-#if 0
-	if (FL_TEST(CLASS_OF(recv), FL_SINGLETON) &&
-	    st_lookup(RCLASS(CLASS_OF(recv))->m_tbl, data->oid, 0)) {
-	    rb_raise(rb_eTypeError, "method `%s' overridden", rb_id2name(data->oid));
-	}
-#endif
 	if(!rb_obj_is_kind_of(recv, data->rklass)) {
 	    rb_raise(rb_eTypeError, "bind argument must be an instance of %s",
 		     rb_class2name(data->rklass));
