@@ -1314,8 +1314,9 @@ rb_io_ungetc(io, c)
     int cc = NUM2INT(c);
 
     GetOpenFile(io, fptr);
+    if (!(fptr->mode & FMODE_RBUF))
+	rb_raise(rb_eIOError, "unread stream");
     rb_io_check_readable(fptr);
-    flush_before_seek(fptr);
 
     if (ungetc(cc, fptr->f) == EOF && cc != EOF)
 	rb_sys_fail(fptr->path);
@@ -3456,7 +3457,7 @@ rb_io_ctl(io, req, arg, io_p)
 	rb_raise(rb_eArgError, "return value overflowed string");
     }
 
-   if (fptr->f2 && fileno(fptr->f) != fileno(fptr->f2)) {
+    if (fptr->f2 && fileno(fptr->f) != fileno(fptr->f2)) {
 	/* call on f2 too; ignore result */
 	io_cntl(fileno(fptr->f2), cmd, narg, io_p);
     }

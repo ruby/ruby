@@ -54,15 +54,11 @@ class TestSystem < Test::Unit::TestCase
 
     File.unlink "script_tmp" or `/bin/rm -f "script_tmp"`
     File.unlink "script_tmp.bak" or `/bin/rm -f "script_tmp.bak"`
+  end
 
-    if (dir = File.dirname(File.dirname($0))) == '.'
-      dir = ""
-    else
-      dir << "/"
-    end
-
+  def test_syntax
     assert_nothing_raised(Exception) do
-      for script in Dir["#{dir}{lib,sample,ext}/**/*.rb"]
+      for script in Dir[File.expand_path("../../../{lib,sample,ext}/**/*.rb", __FILE__)]
         valid_syntax? IO::read(script), script
       end
     end

@@ -1,3 +1,11 @@
+Tue Dec 23 19:42:59 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_ungetc): raise an exception at unread stream to
+	  avoid unspecified behavior.  [ruby-dev:22330]
+
+	* test/ruby/test_system.rb (test_syntax): glob relatively from
+	  __FILE__.
+
 Tue Dec 23 18:09:40 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* pack.c (pack_pack): remove unnecessary negative value check.
@@ -27,7 +35,7 @@ Tue Dec 23 14:13:51 2003  akira yamada  <akira@ruby-lang.org>
 
 	* test/uri/test_generic.rb (TestGeneric::test_set_component):
 	  added tets.
-	
+
 Tue Dec 23 11:08:34 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/xsd/test_noencoding.rb: rescue Errno::EINVAL and do not test.
