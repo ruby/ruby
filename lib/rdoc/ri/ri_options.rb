@@ -5,7 +5,8 @@ module RI
 
   require 'rdoc/ri/ri_display'
 
-  VERSION_STRING = "alpha 0.1"
+  VERSION_STRING = "beta1"
+  CVS_ID         = "$Id";
 
   class Options
     
@@ -64,7 +65,11 @@ module RI
         ],
 
         [ "--width",         "-w",   "output width",
-        "set the width of the output" ],
+        "Set the width of the output" ],
+
+        [ "--version",       "-v",   nil,
+         "Display the version of ri"
+        ],
 
       ]
 
@@ -163,6 +168,14 @@ module RI
       end
     end
 
+    # Show the version and exit
+    def show_version
+      cvs_info = CVS_ID.split
+      puts "ri #{VERSION_STRING} (#{cvs_info[2]} #{cvs_info[3]})"
+      exit(0)
+    end
+
+
     # Parse command line options.
 
     def parse
@@ -186,6 +199,7 @@ module RI
         go.each do |opt, arg|
           case opt
           when "--help"       then OptionList.usage
+          when "--version"    then show_version
           when "--list-names" then @list_names = true
           when "--no-pager"   then @use_stdout = true
           when "--classes"    then @list_classes = true

@@ -1,3 +1,8 @@
+Thu Mar 25 23:15:24 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/ri/ri_options.rb (RI::Options::show_version): 
+	  Add --version option
+
 Thu Mar 25 21:45:00 2004  Shigeo Kobayashi <shigek@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c: Bug in + and - reported by Bret Jolly
@@ -10,7 +15,6 @@ Thu Mar 25 21:01:32 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/resource.rb: ditto.
 
->>>>>>> 1.3093
 Thu Mar 25 19:37:35 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/resource.rb: default rubyw icon to ruby.ico, and let DLL also
