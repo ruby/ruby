@@ -553,7 +553,7 @@ dir.obj: dir.c ruby.h config.h defines.h intern.h missing.h util.h win32.h
 dln.obj: dln.c ruby.h config.h defines.h intern.h missing.h dln.h win32.h
 dmyext.obj: dmyext.c
 enum.obj: enum.c ruby.h config.h defines.h intern.h missing.h node.h util.h win32.h
-error.obj: error.c ruby.h config.h defines.h intern.h missing.h env.h version.h st.h win32.h
+error.obj: error.c ruby.h config.h defines.h intern.h missing.h env.h st.h win32.h
 eval.obj: eval.c ruby.h config.h defines.h intern.h missing.h node.h env.h util.h rubysig.h st.h dln.h win32.h
 file.obj: file.c ruby.h config.h defines.h intern.h missing.h rubyio.h rubysig.h util.h dln.h win32.h
 gc.obj: gc.c ruby.h config.h defines.h intern.h missing.h rubysig.h st.h node.h env.h re.h regex.h win32.h

@@ -620,8 +620,7 @@ enum.obj: {$(srcdir)}enum.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}node.h {$(srcdir)}util.h {$(srcdir)}/win32/win32.h
 error.obj: {$(srcdir)}error.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}env.h {$(srcdir)}version.h {$(srcdir)}st.h \
-  {$(srcdir)}/win32/win32.h
+  {$(srcdir)}env.h {$(srcdir)}st.h {$(srcdir)}/win32/win32.h
 eval.obj: {$(srcdir)}eval.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
   {$(srcdir)}node.h {$(srcdir)}env.h {$(srcdir)}util.h \

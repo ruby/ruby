@@ -333,7 +333,7 @@ dmyext.@OBJEXT@: dmyext.c
 enum.@OBJEXT@: enum.c ruby.h config.h defines.h intern.h missing.h node.h \
   util.h
 error.@OBJEXT@: error.c ruby.h config.h defines.h intern.h missing.h \
-  env.h version.h st.h
+  env.h st.h
 eval.@OBJEXT@: eval.c ruby.h config.h defines.h intern.h missing.h node.h \
   env.h util.h rubysig.h st.h dln.h
 file.@OBJEXT@: file.c ruby.h config.h defines.h intern.h missing.h \
