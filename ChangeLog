@@ -1,3 +1,7 @@
+Wed May  6 15:48:03 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* experimental release 1.1b9_17.
+
 Wed May  6 01:37:39 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c: remove global variable `errat'.
@@ -53,6 +57,10 @@ Thu Apr 30 01:08:35 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* error.c (exc_new): need to check whether invalid class (not a
 	  subclass of String) is specified.
+
+Wed Apr 29 21:05:44 1998  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* ruby.c (proc_options): option '-e' via tempfile.
 
 Tue Apr 28 15:27:58 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

@@ -433,7 +433,7 @@ Init_Exception()
     rb_define_method(eException, "message", exc_to_s, 0);
     rb_define_method(eException, "inspect", exc_inspect, 0);
     rb_define_method(eException, "backtrace", exc_backtrace, 0);
-    rb_define_private_method(eException, "set_backtrace", exc_set_backtrace, 1);
+    rb_define_method(eException, "set_backtrace", exc_set_backtrace, 1);
 
     eSystemExit  = rb_define_class("SystemExit", eException);
     eFatal  	 = rb_define_class("fatal", eException);
