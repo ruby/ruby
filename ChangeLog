@@ -1,3 +1,8 @@
+Mon May 19 18:54:30 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
+
+    * lib/token.c, lib/implicit.c: expanded character set to allow UTF-8,
+      other Ruby encodings.
+
 Mon May 19 16:47:00 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
 
     * lib/syck.c, lib/syck.h, lib/token.c, lib/gram.c: count line numbers
