@@ -16,6 +16,16 @@ module TestEOF
     }
   end
 
+  def test_eof_0_rw
+    return unless respond_to? :open_file_rw
+    open_file_rw("") {|f|
+      assert_equal("", f.read)
+      assert_equal(nil, f.read)
+      assert_equal(0, f.syswrite(""))
+      assert_equal(nil, f.read)
+    }
+  end
+
   def test_eof_1
     open_file("a") {|f|
       assert_equal("", f.read(0))

@@ -40,4 +40,5 @@ class TestFile < Test::Unit::TestCase
     f.rewind
     yield f
   end
+  alias open_file_rw open_file
 end
