@@ -37,6 +37,7 @@ parse.c
 parse.y.try
 pitest.rb
 ppack
+preview
 rbconfig.rb
 rename2.h
 repack
