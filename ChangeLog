@@ -1,3 +1,8 @@
+Mon Jan  3 11:37:42 2005  Tanaka Akira  <akr@m17n.org>
+
+	* random.c (random_seed): use /dev/urandom if available.
+	  [ruby-dev:25392]
+
 Mon Jan  3 11:03:37 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* test/drb/test_drb.rb: move TestDRbReusePort to new file. 
