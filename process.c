@@ -72,7 +72,7 @@ static VALUE S_Tms;
 #define WSTOPSIG        WEXITSTATUS
 #endif
 
-#if defined(__APPLE__) && defined(__MACH__) && !defined(__MacOS_X__)
+#if defined(__APPLE__) && ( defined(__MACH__) || defined(__DARWIN__) ) && !defined(__MacOS_X__)
 #define __MacOS_X__ 1
 #endif
 
