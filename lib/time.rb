@@ -400,6 +400,9 @@ if __FILE__ == $0
                    Time.rfc2822("Mon, 24 Nov 1997 14:22:01 -0800"))
       begin
         Time.at(-1)
+      rescue ArgumentError
+        # ignore
+      else
         assert_equal(Time.utc(1969, 2, 13, 23, 32, 54) + 3 * 3600 + 30 * 60,
                      Time.rfc2822("Thu, 13 Feb 1969 23:32:54 -0330"))
         assert_equal(Time.utc(1969, 2, 13, 23, 32, 0) + 3 * 3600 + 30 * 60,
@@ -409,7 +412,6 @@ if __FILE__ == $0
             1969
         23:32
                  -0330 (Newfoundland Time)"))
-      rescue ArgumentError
       end
       assert_equal(Time.utc(1997, 11, 21, 9, 55, 6),
                    Time.rfc2822("21 Nov 97 09:55:06 GMT"))
@@ -464,10 +466,13 @@ if __FILE__ == $0
       assert_equal(t, Time.iso8601(s))
 
       begin
+        Time.at(-1)
+      rescue ArgumentError
+        # ignore
+      else
         t = Time.utc(1937, 1, 1, 11, 40, 27, 870000)
         s = "1937-01-01T12:00:27.87+00:20"
         assert_equal(t, Time.iso8601(s))
-      rescue ArgumentError
       end
     end
 
@@ -523,9 +528,12 @@ if __FILE__ == $0
       assert_equal("2001-04-17T19:23:17.1Z", t.xmlschema(1))
 
       begin
+        Time.at(-1)
+      rescue ArgumentError
+        # ignore
+      else
         t = Time.utc(1960, 12, 31, 23, 0, 0, 123456)
         assert_equal("1960-12-31T23:00:00.123456Z", t.xmlschema(6))
-      rescue ArgumentError
       end
     end
 
