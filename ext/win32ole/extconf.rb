@@ -11,7 +11,7 @@ def create_win32ole_makefile
      have_library("uuid") and 
      have_library("user32") and
      have_library("advapi32") and
-     have_header("windows")
+     have_header("windows.h")
     create_makefile("win32ole")
   end
 end
