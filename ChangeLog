@@ -1,3 +1,9 @@
+Tue Aug 29 16:29:15 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (assignable): remove NODE_CVASGN3.
+
+	* parse.y (gettable): remove NODE_CVAR3.
+
 Tue Aug 29 02:02:14 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): handles create_makefile("a/b").

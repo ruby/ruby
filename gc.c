@@ -484,7 +484,6 @@ rb_gc_mark(ptr)
 	  case NODE_CDECL:
 	  case NODE_CVDECL:
 	  case NODE_CVASGN2:
-	  case NODE_CVASGN3:
 	  case NODE_MODULE:
 	  case NODE_COLON3:
 	  case NODE_OPT_N:
@@ -521,7 +520,6 @@ rb_gc_mark(ptr)
 	  case NODE_IVAR:
 	  case NODE_CVAR:
 	  case NODE_CVAR2:
-	  case NODE_CVAR3:
 	  case NODE_NTH_REF:
 	  case NODE_BACK_REF:
 	  case NODE_ALIAS:

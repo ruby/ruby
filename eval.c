@@ -1720,7 +1720,6 @@ is_defined(self, node, buf)
       case NODE_CDECL:
       case NODE_CVDECL:
       case NODE_CVASGN2:
-      case NODE_CVASGN3:
 	return "assignment";
 
       case NODE_LVAR:
@@ -1753,12 +1752,6 @@ is_defined(self, node, buf)
 	break;
 
       case NODE_CVAR2:
-	if (rb_cvar_defined(CLASS_OF(self), node->nd_vid)) {
-	    return "class variable";
-	}
-	break;
-
-      case NODE_CVAR3:
 	if (rb_cvar_defined_singleton(self, node->nd_vid)) {
 	    return "class variable";
 	}
@@ -2584,11 +2577,6 @@ rb_eval(self, n)
 
       case NODE_CVASGN2:
 	result = rb_eval(self, node->nd_value);
-	rb_cvar_set(CLASS_OF(self), node->nd_vid, result);
-	break;
-
-      case NODE_CVASGN3:
-	result = rb_eval(self, node->nd_value);
 	rb_cvar_set_singleton(self, node->nd_vid, result);
 	break;
 
@@ -2628,10 +2616,6 @@ rb_eval(self, n)
 	break;
 
       case NODE_CVAR2:
-	result = rb_cvar_get(CLASS_OF(self), node->nd_vid);
-	break;
-
-      case NODE_CVAR3:
 	result = rb_cvar_get_singleton(self, node->nd_vid);
 	break;
 

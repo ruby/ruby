@@ -3944,8 +3944,7 @@ gettable(id)
 	return NEW_CONST(id);
     }
     else if (is_class_id(id)) {
-	if (in_single) return NEW_CVAR3(id);
-	if (cur_mid) return NEW_CVAR2(id);
+	if (in_single) return NEW_CVAR2(id);
 	return NEW_CVAR(id);
     }
     rb_bug("invalid id for gettable");
@@ -4003,8 +4002,7 @@ assignable(id, val)
 	return NEW_CDECL(id, val);
     }
     else if (is_class_id(id)) {
-	if (in_single) return NEW_CVASGN3(id, val);
-	if (cur_mid) return NEW_CVASGN2(id, val);
+	if (in_single) return NEW_CVASGN2(id, val);
 	return NEW_CVDECL(id, val);
     }
     else {
