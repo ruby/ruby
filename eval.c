@@ -95,7 +95,7 @@ char *strrchr _((const char*,const char));
 
 VALUE rb_cBlock, rb_cProc;
 static VALUE rb_cBinding;
-static VALUE block_invoke _((VALUE,VALUE,VALUE,VALUE));
+static VALUE proc_invoke _((VALUE,VALUE,VALUE,VALUE));
 static VALUE rb_f_binding _((VALUE));
 static void rb_f_END _((void));
 static VALUE rb_f_block_given_p _((void));
@@ -635,7 +635,7 @@ struct BLOCK {
 #define BLOCK_D_SCOPE 1
 #define BLOCK_DYNAMIC 2
 #define BLOCK_ORPHAN  4
-#define BLOCK_PROC    8
+#define BLOCK_LAMBDA  8
 
 static struct BLOCK *ruby_block;
 
@@ -2258,12 +2258,12 @@ call_trace_func(event, node, self, id, klass)
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
 	srcfile = rb_str_new2(ruby_sourcefile?ruby_sourcefile:"(ruby)");
-	block_invoke(trace_func, rb_ary_new3(6, rb_str_new2(event),
-					     srcfile,
-					     INT2FIX(ruby_sourceline),
-					     id?ID2SYM(id):Qnil,
-					     self?rb_f_binding(self):Qnil,
-					     klass),
+	proc_invoke(trace_func, rb_ary_new3(6, rb_str_new2(event),
+					    srcfile,
+					    INT2FIX(ruby_sourceline),
+					    id?ID2SYM(id):Qnil,
+					    self?rb_f_binding(self):Qnil,
+					    klass),
 		    Qundef, 0);
     }
     POP_TMPTAG();		/* do not propagate retval */
@@ -3232,7 +3232,7 @@ rb_eval(self, n)
 	if (ruby_scope->local_vars == 0)
 	    rb_bug("unexpected block argument");
 	if (rb_block_given_p()) {
-	    result = rb_block_new();
+	    result = rb_block_proc();
 	    ruby_scope->local_vars[node->nd_cnt] = result;
 	}
 	else {
@@ -4895,7 +4895,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 	break;
 
       case NODE_BMETHOD:
-	result = block_invoke(body->nd_cval, rb_ary_new4(argc, argv), recv, klass);
+	result = proc_invoke(body->nd_cval, rb_ary_new4(argc, argv), recv, klass);
 	break;
 
       case NODE_SCOPE:
@@ -6379,7 +6379,7 @@ call_end_proc(data)
     ruby_frame->self = ruby_frame->prev->self;
     ruby_frame->last_func = 0;
     ruby_frame->last_class = 0;
-    block_invoke(data, rb_ary_new2(0), Qundef, 0);
+    proc_invoke(data, rb_ary_new2(0), Qundef, 0);
     POP_FRAME();
     POP_ITER();
 }
@@ -6389,7 +6389,7 @@ rb_f_END()
 {
     PUSH_FRAME();
     ruby_frame->argc = 0;
-    rb_set_end_proc(call_end_proc, rb_block_new());
+    rb_set_end_proc(call_end_proc, rb_block_proc());
     POP_FRAME();
 }
 
@@ -6398,8 +6398,7 @@ rb_f_at_exit()
 {
     VALUE proc;
 
-    proc = rb_f_lambda();
-
+    proc = rb_block_proc();
     rb_set_end_proc(call_end_proc, proc);
     return proc;
 }
@@ -6711,7 +6710,7 @@ frame_dup(frame)
 }
 
 static VALUE
-block_clone(self)
+proc_clone(self)
     VALUE self;
 {
     struct BLOCK *orig, *data;
@@ -6775,26 +6774,26 @@ rb_f_binding(self)
     return bind;
 }
 
-#define BLOCK_T3    FL_USER1
-#define BLOCK_T4    FL_USER2
-#define BLOCK_TMAX  (FL_USER1|FL_USER2)
-#define BLOCK_TMASK (FL_USER1|FL_USER2)
+#define PROC_T3    FL_USER1
+#define PROC_T4    FL_USER2
+#define PROC_TMAX  (FL_USER1|FL_USER2)
+#define PROC_TMASK (FL_USER1|FL_USER2)
 
 static void
-block_save_safe_level(data)
+proc_save_safe_level(data)
     VALUE data;
 {
     if (OBJ_TAINTED(data)) {
 	switch (ruby_safe_level) {
 	  case 3:
-	    FL_SET(data, BLOCK_T3);
+	    FL_SET(data, PROC_T3);
 	    break;
 	  case 4:
-	    FL_SET(data, BLOCK_T4);
+	    FL_SET(data, PROC_T4);
 	    break;
 	  default:
 	    if (ruby_safe_level > 4) {
-		FL_SET(data, BLOCK_TMAX);
+		FL_SET(data, PROC_TMAX);
 	    }
 	    break;
 	}
@@ -6802,16 +6801,16 @@ block_save_safe_level(data)
 }
 
 static int
-block_get_safe_level(data)
+proc_get_safe_level(data)
     VALUE data;
 {
     if (OBJ_TAINTED(data)) {
-	switch (RBASIC(data)->flags & BLOCK_TMASK) {
-	  case BLOCK_T3:
+	switch (RBASIC(data)->flags & PROC_TMASK) {
+	  case PROC_T3:
 	    return 3;
-	  case BLOCK_T4:
+	  case PROC_T4:
 	    return 4;
-	  case BLOCK_TMAX:
+	  case PROC_TMAX:
 	    return 5;
 	}
 	return 3;
@@ -6820,16 +6819,16 @@ block_get_safe_level(data)
 }
 
 static void
-block_set_safe_level(data)
+proc_set_safe_level(data)
     VALUE data;
 {
     if (OBJ_TAINTED(data)) {
-	ruby_safe_level = block_get_safe_level(data);
+	ruby_safe_level = proc_get_safe_level(data);
     }
 }
 
 static VALUE
-block_alloc(klass, proc)
+proc_alloc(klass, proc)
     VALUE klass;
     int proc;
 {
@@ -6871,9 +6870,9 @@ block_alloc(klass, proc)
 	}
     }
     scope_dup(data->scope);
-    block_save_safe_level(block);
+    proc_save_safe_level(block);
     if (proc) {
-	data->flags |= BLOCK_PROC;
+	data->flags |= BLOCK_LAMBDA;
     }
     else {
 	ruby_block->block_obj = block;
@@ -6883,39 +6882,34 @@ block_alloc(klass, proc)
 }
 
 static VALUE
-block_s_new(argc, argv, klass)
-    int argc;
-    VALUE *argv;
-    VALUE klass;
-{
-    VALUE block = block_alloc(klass, Qfalse);
-
-    rb_obj_call_init(block, argc, argv);
-    return block;
-}
-
-VALUE
-rb_block_new()
-{
-    return block_alloc(rb_cBlock, Qfalse);
-}
-
-static VALUE
 proc_s_new(argc, argv, klass)
     int argc;
     VALUE *argv;
     VALUE klass;
 {
-    VALUE block = block_alloc(klass, Qtrue);
+    VALUE block = proc_alloc(klass, Qfalse);
 
     rb_obj_call_init(block, argc, argv);
     return block;
 }
 
 VALUE
+rb_block_proc()
+{
+    return proc_alloc(rb_cProc, Qfalse);
+}
+
+VALUE
 rb_f_lambda()
 {
-    return block_alloc(rb_cProc, Qtrue);
+    rb_warn("rb_f_lambda() is deprecated; use rb_block_proc() instead");
+    return proc_alloc(rb_cProc, Qtrue);
+}
+
+static VALUE
+proc_lambda()
+{
+    return proc_alloc(rb_cProc, Qtrue);
 }
 
 static int
@@ -6933,8 +6927,8 @@ block_orphan(data)
 }
 
 static VALUE
-block_invoke(block, args, self, klass)
-    VALUE block, args;		/* OK */
+proc_invoke(proc, args, self, klass)
+    VALUE proc, args;		/* OK */
     VALUE self, klass;
 {
     struct BLOCK * volatile old_block;
@@ -6950,13 +6944,13 @@ block_invoke(block, args, self, klass)
 
     if (rb_block_given_p() && ruby_frame->last_func) {
 	rb_warning("block for %s#%s is useless",
-		   rb_obj_classname(block),
+		   rb_obj_classname(proc),
 		   rb_id2name(ruby_frame->last_func));
     }
 
-    Data_Get_Struct(block, struct BLOCK, data);
+    Data_Get_Struct(proc, struct BLOCK, data);
     orphan = block_orphan(data);
-    pcall = data->flags & BLOCK_PROC;
+    pcall = data->flags & BLOCK_LAMBDA;
 
     ruby_wrapper = data->wrapper;
     ruby_dyna_vars = data->dyna_vars;
@@ -6972,7 +6966,7 @@ block_invoke(block, args, self, klass)
     PUSH_TAG(PROT_NONE);
     state = EXEC_TAG();
     if (state == 0) {
-	block_set_safe_level(block);
+	proc_set_safe_level(proc);
 	result = rb_yield_0(args, self, self!=Qundef?CLASS_OF(self):0, pcall, Qtrue);
     }
     POP_TAG();
@@ -6996,22 +6990,20 @@ block_invoke(block, args, self, klass)
 	}
 	/* fall through */
       case TAG_BREAK:
+      case TAG_RETURN:
 	if (pcall) {
 	    result = prot_tag->retval;
 	}
-	else if (orphan) {
-	    localjump_error("break from block-closure", prot_tag->retval, state);
+	else if (orphan) {	/* orphan block */
+	    localjump_error("%s from block-closure",
+			    state == TAG_BREAK ? "break" : "return", 
+			    prot_tag->retval, state);
 	}
 	else {
 	    ruby_block->tag->dst = incoming_state;
 	    JUMP_TAG(incoming_state);
 	}
 	break;
-      case TAG_RETURN:
-	if (orphan) {	/* orphan block */
-	    localjump_error("return from block-closure", prot_tag->retval, state);
-	}
-	/* fall through */
       default:
 	JUMP_TAG(state);
     }
@@ -7019,24 +7011,24 @@ block_invoke(block, args, self, klass)
 }
 
 static VALUE
-block_call(block, args)
-    VALUE block, args;		/* OK */
+proc_call(proc, args)
+    VALUE proc, args;		/* OK */
 {
-    return block_invoke(block, args, Qundef, 0);
+    return proc_invoke(proc, args, Qundef, 0);
 }
 
 static VALUE bmcall _((VALUE, VALUE));
 static VALUE method_arity _((VALUE));
 
 static VALUE
-block_arity(block)
-    VALUE block;
+proc_arity(proc)
+    VALUE proc;
 {
     struct BLOCK *data;
     NODE *list;
     int n;
 
-    Data_Get_Struct(block, struct BLOCK, data);
+    Data_Get_Struct(proc, struct BLOCK, data);
     if (data->var == 0) {
 	if (data->body && nd_type(data->body) == NODE_IFUNC &&
 	    data->body->nd_cfnc == bmcall) {
@@ -7062,7 +7054,7 @@ block_arity(block)
 }
 
 static VALUE
-block_eq(self, other)
+proc_eq(self, other)
     VALUE self, other;
 {
     struct BLOCK *data, *data2;
@@ -7078,7 +7070,7 @@ block_eq(self, other)
 }
 
 static VALUE
-block_to_s(self, other)
+proc_to_s(self, other)
     VALUE self, other;
 {
     struct BLOCK *data;
@@ -7106,20 +7098,20 @@ block_to_s(self, other)
 }
 
 static VALUE
-block_to_self(self)
+proc_to_self(self)
     VALUE self;
 {
     return self;
 }
 
 static VALUE
-block_binding(block)
-    VALUE block;
+proc_binding(proc)
+    VALUE proc;
 {
     struct BLOCK *orig, *data;
     VALUE bind;
 
-    Data_Get_Struct(block, struct BLOCK, orig);
+    Data_Get_Struct(proc, struct BLOCK, orig);
     bind = Data_Make_Struct(rb_cBinding,struct BLOCK,blk_mark,blk_free,data);
     MEMCPY(data, orig, struct BLOCK, 1);
     frame_dup(&data->frame);
@@ -7156,7 +7148,7 @@ block_pass(self, node)
 	return result;
     }
     if (!rb_obj_is_block(block)) {
-	b = rb_check_convert_type(block, T_DATA, "Block", "to_block");
+	b = rb_check_convert_type(block, T_DATA, "Block", "to_proc");
 	if (!rb_obj_is_block(b)) {
 	    rb_raise(rb_eTypeError, "wrong argument type %s (expected Block)",
 		     rb_obj_classname(block));
@@ -7165,7 +7157,7 @@ block_pass(self, node)
     }
 
     if (ruby_safe_level >= 1 && OBJ_TAINTED(block)) {
-	if (ruby_safe_level > block_get_safe_level(block)) {
+	if (ruby_safe_level > proc_get_safe_level(block)) {
 	    rb_raise(rb_eSecurityError, "Insecure: tainted block value");
 	}
     }
@@ -7185,7 +7177,7 @@ block_pass(self, node)
     PUSH_TAG(PROT_NONE);
     state = EXEC_TAG();
     if (state == 0) {
-	block_set_safe_level(block);
+	proc_set_safe_level(block);
 	if (safe > ruby_safe_level)
 	    ruby_safe_level = safe;
 	result = rb_eval(self, node->nd_iter);
@@ -7446,7 +7438,7 @@ method_arity(method)
 	return INT2FIX(0);
       case NODE_BMETHOD:
       case NODE_DMETHOD:
-       return block_arity(method);
+       return proc_arity(method);
       default:
 	body = body->nd_next;	/* skip NODE_SCOPE */
 	if (nd_type(body) == NODE_BLOCK)
@@ -7508,7 +7500,7 @@ method_inspect(method)
 }
 
 static VALUE
-mblock(method)
+mproc(method)
     VALUE method;
 {
     VALUE proc;
@@ -7516,7 +7508,7 @@ mblock(method)
     /* emulate ruby's method call */
     PUSH_ITER(ITER_CUR);
     PUSH_FRAME();
-    proc = rb_block_new();
+    proc = rb_block_proc();
     POP_FRAME();
     POP_ITER();
 
@@ -7548,22 +7540,14 @@ rb_proc_new(func, val)
     VALUE (*func)(ANYARGS);	/* VALUE yieldarg[, VALUE procarg] */
     VALUE val;
 {
-    return rb_iterate((VALUE(*)_((VALUE)))mblock, 0, func, val);
-}
-
-static VALUE
-method_block(method)
-    VALUE method;
-{
-    return rb_iterate((VALUE(*)_((VALUE)))mblock, method, bmcall, method);
+    return rb_iterate((VALUE(*)_((VALUE)))mproc, 0, func, val);
 }
 
 static VALUE
 method_proc(method)
     VALUE method;
 {
-    rb_warn("Method#to_proc is deprecated; use Method#to_block");
-    return method_block(method);
+    return rb_iterate((VALUE(*)_((VALUE)))mproc, method, bmcall, method);
 }
 
 static VALUE
@@ -7589,7 +7573,7 @@ rb_mod_define_method(argc, argv, mod)
 
     if (argc == 1) {
 	id = rb_to_id(argv[0]);
-	body = rb_f_lambda();
+	body = proc_lambda();
     }
     else if (argc == 2) {
 	id = rb_to_id(argv[0]);
@@ -7608,7 +7592,7 @@ rb_mod_define_method(argc, argv, mod)
     else if (RDATA(body)->dmark == (RUBY_DATA_FUNC)blk_mark) {
 	struct BLOCK *block;
 
-	body = block_clone(body);
+	body = proc_clone(body);
 	Data_Get_Struct(body, struct BLOCK, block);
 	block->frame.last_func = id;
 	block->frame.orig_func = id;
@@ -7647,28 +7631,27 @@ Init_Proc()
     sysstack_error = rb_exc_new2(rb_eSysStackError, "stack level too deep");
     rb_global_variable(&sysstack_error);
 
-    rb_cBlock = rb_define_class("Block", rb_cObject);
-    rb_undef_alloc_func(rb_cBlock);
-    rb_define_singleton_method(rb_cBlock, "new", block_s_new, -1);
-
-    rb_define_method(rb_cBlock, "clone", block_clone, 0);
-    rb_define_method(rb_cBlock, "call", block_call, -2);
-    rb_define_method(rb_cBlock, "arity", block_arity, 0);
-    rb_define_method(rb_cBlock, "[]", block_call, -2);
-    rb_define_method(rb_cBlock, "==", block_eq, 1);
-    rb_define_method(rb_cBlock, "to_s", block_to_s, 0);
-    rb_define_method(rb_cBlock, "to_block", block_to_self, 0);
-    rb_define_method(rb_cBlock, "binding", block_binding, 0);
-
-    rb_cProc = rb_define_class("Proc", rb_cBlock);
+    rb_cProc = rb_define_class("Proc", rb_cObject);
+    rb_cBlock = rb_cProc;
+    rb_undef_alloc_func(rb_cProc);
     rb_define_singleton_method(rb_cProc, "new", proc_s_new, -1);
-    rb_define_global_function("proc", rb_f_lambda, 0);
-    rb_define_global_function("lambda", rb_f_lambda, 0);
+
+    rb_define_method(rb_cProc, "clone", proc_clone, 0);
+    rb_define_method(rb_cProc, "call", proc_call, -2);
+    rb_define_method(rb_cProc, "arity", proc_arity, 0);
+    rb_define_method(rb_cProc, "[]", proc_call, -2);
+    rb_define_method(rb_cProc, "==", proc_eq, 1);
+    rb_define_method(rb_cProc, "to_s", proc_to_s, 0);
+    rb_define_method(rb_cProc, "to_proc", proc_to_self, 0);
+    rb_define_method(rb_cProc, "binding", proc_binding, 0);
+
+    rb_define_global_function("proc", proc_lambda, 0);
+    rb_define_global_function("lambda", proc_lambda, 0);
 
     rb_cBinding = rb_define_class("Binding", rb_cObject);
     rb_undef_alloc_func(rb_cBinding);
     rb_undef_method(CLASS_OF(rb_cBinding), "new");
-    rb_define_method(rb_cBinding, "clone", block_clone, 0);
+    rb_define_method(rb_cBinding, "clone", proc_clone, 0);
     rb_define_global_function("binding", rb_f_binding, 0);
 
     rb_cMethod = rb_define_class("Method", rb_cObject);
@@ -7681,7 +7664,6 @@ Init_Proc()
     rb_define_method(rb_cMethod, "arity", method_arity, 0);
     rb_define_method(rb_cMethod, "inspect", method_inspect, 0);
     rb_define_method(rb_cMethod, "to_s", method_inspect, 0);
-    rb_define_method(rb_cMethod, "to_block", method_block, 0);
     rb_define_method(rb_cMethod, "to_proc", method_proc, 0);
     rb_define_method(rb_cMethod, "unbind", method_unbind, 0);
     rb_define_method(rb_mKernel, "method", rb_obj_method, 1);

@@ -176,7 +176,7 @@ void rb_provide _((const char*));
 VALUE rb_f_require _((VALUE, VALUE));
 void rb_obj_call_init _((VALUE, int, VALUE*));
 VALUE rb_class_new_instance _((int, VALUE*, VALUE));
-VALUE rb_block_new _((void));
+VALUE rb_block_proc _((void));
 VALUE rb_f_lambda _((void));
 VALUE rb_proc_new _((VALUE (*)(ANYARGS/* VALUE yieldarg[, VALUE procarg] */), VALUE));
 VALUE rb_protect _((VALUE (*)(VALUE), VALUE, int*));

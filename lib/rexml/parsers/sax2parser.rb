@@ -185,7 +185,7 @@ module REXML
 			end
 
 			def add( pair )
-				if pair[-1].kind_of? Proc or (defined? Block and pair[-1].kind_of? Block)
+				if pair[-1].respond_to? :call
 					@procs << pair unless @procs.include? pair
 				else
 					@listeners << pair unless @listeners.include? pair

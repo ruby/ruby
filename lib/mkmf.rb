@@ -833,7 +833,7 @@ Config::CONFIG["topdir"] = CONFIG["topdir"] =
 $configure_args["--topdir"] ||= $curdir
 $ruby = arg_config("--ruby", CONFIG["ruby_install_name"])
 
-split = Shellwords.method(:shellwords).to_block
+split = Shellwords.method(:shellwords).to_proc
 
 EXPORT_PREFIX = config_string('EXPORT_PREFIX') {|s| s.strip}
 

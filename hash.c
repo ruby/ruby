@@ -209,7 +209,7 @@ rb_hash_initialize(argc, argv, hash)
 	if (argc > 0) {
 	    rb_raise(rb_eArgError, "wrong number of arguments");
 	}
-	RHASH(hash)->ifnone = rb_block_new();
+	RHASH(hash)->ifnone = rb_block_proc();
 	FL_SET(hash, HASH_PROC_DEFAULT);
     }
     else {

@@ -74,7 +74,7 @@ class RubyLex
     elsif block_given?
       @input = block
     else
-      @input = Block.new{@io.gets}
+      @input = Proc.new{@io.gets}
     end
   end
 
@@ -188,7 +188,7 @@ class RubyLex
     if p.respond_to?(:call)
       @prompt = p
     else
-      @prompt = Block.new{print p}
+      @prompt = Proc.new{print p}
     end
   end
 

@@ -650,7 +650,7 @@ sig_trap(argc, argv)
 
     arg.sig = argv[0];
     if (argc == 1) {
-	arg.cmd = rb_block_new();
+	arg.cmd = rb_block_proc();
     }
     else if (argc == 2) {
 	arg.cmd = argv[1];

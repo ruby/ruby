@@ -167,7 +167,7 @@ Individual switch class.
 =end #'#"#`#
     def initialize(pattern = nil, conv = nil,
 		   short = nil, long = nil, arg = nil,
-		   desc = ([] if short or long), block = Block.new)
+		   desc = ([] if short or long), block = Proc.new)
       @pattern, @conv, @short, @long, @arg, @desc, @block =
 	pattern, conv, short, long, arg, desc, block
     end
@@ -414,7 +414,7 @@ summary feature.
 	pat = t if t.respond_to?(:match)
       end
       unless block
-	block = pat.method(:convert).to_block if pat.respond_to?(:convert)
+	block = pat.method(:convert).to_proc if pat.respond_to?(:convert)
       end
       @atype[t] = [pat, block]
     end
@@ -482,7 +482,7 @@ summary feature.
         searching list.
       : ((|k|))
         searching key.
-      : (({Block}))
+      : (({block}))
         yielded with the found value when succeeded.
 =end #'#"#`#
     def search(id, key)
@@ -503,7 +503,7 @@ summary feature.
         searching key.
       : ((|*pat|))
         optional pattern for completion.
-      : (({Block}))
+      : (({block}))
         yielded with the found value when succeeded.
 =end #'#"#`#
     def complete(id, opt, *pat, &block)
@@ -634,7 +634,7 @@ Default options, which never appear in option summary.
         summary width.
       : ((|indent|))
         summary indent.
-      : (({Block}))
+      : (({block}))
         to be evaluated in the new instance context.
 =end #'#"#`#
   def self.with(*args, &block)
@@ -670,7 +670,7 @@ Default options, which never appear in option summary.
         summary width.
       : ((|indent|))
         summary indent.
-      : (({Block}))
+      : (({block}))
         to be evaluated in the new instance context.
 =end #'#"#`#
   def initialize(banner = nil, width = 32, indent = ' ' * 4)
@@ -709,7 +709,7 @@ Default options, which never appear in option summary.
         argument class specifier, any object including Class.
       : ((|pat|))
         pattern for argument, defaulted to ((|t|)) if it respond to (({match})).
-      : (({Block}))
+      : (({block}))
         receives argument string and should be convert to desired class.
 =end #'#"#`#
   def accept(*args, &blk) top.accept(*args, &blk) end
@@ -842,7 +842,7 @@ Default options, which never appear in option summary.
         maximum length allowed for left side. Defaulted to (({((|width|)) - 1}))
       : ((|indent|))
         indentation. Defaulted to ((|@summary_indent|))
-      : (({Block}))
+      : (({block}))
         yields with each line if called as iterator.
 =end #'#"#`#
   def summarize(to = [], width = @summary_width, max = width - 1, indent = @summary_indent, &blk)
@@ -898,7 +898,7 @@ Default options, which never appear in option summary.
           argument style and description.
         : "description", ...
           ((*description*)) for this option.
-      : (({Block}))
+      : (({block}))
         ((*handler*)) to convert option argument to arbitrary (({Class})).
 =end #'#"#`#
 =begin private
@@ -949,7 +949,7 @@ Default options, which never appear in option summary.
       # directly specified pattern(any object possible to match)
       if !(String === o) and o.respond_to?(:match)
 	pattern = notwice(o, pattern, 'pattern')
-	conv = (pattern.method(:convert).to_block if pattern.respond_to?(:convert))
+	conv = (pattern.method(:convert).to_proc if pattern.respond_to?(:convert))
 	next
       end
 
@@ -962,7 +962,7 @@ Default options, which never appear in option summary.
 	when CompletingHash
 	when nil
 	  pattern = CompletingHash.new
-	  conv = (pattern.method(:convert).to_block if pattern.respond_to?(:convert))
+	  conv = (pattern.method(:convert).to_proc if pattern.respond_to?(:convert))
 	else
 	  raise ArgumentError, "argument pattern given twice"
 	end
@@ -1107,7 +1107,7 @@ Default options, which never appear in option summary.
     :Parameters:
       : ((|argv|))
         command line arguments to be parsed.
-      : (({Block}))
+      : (({block}))
         called with each non-option argument.
 =end #'#"#`#
   def order(*argv, &block) order!(argv, &block) end
@@ -1233,7 +1233,7 @@ Default options, which never appear in option summary.
         called method in each elements of (({stack}))s.
       : ((|*args|))
         passed to ((|id|)).
-      : (({Block}))
+      : (({block}))
         passed to ((|id|)).
 =end #'#"#`#
   def visit(id, *args, &block)
@@ -1254,7 +1254,7 @@ Default options, which never appear in option summary.
         searching table.
       : ((|k|))
         searching key.
-      : (({Block}))
+      : (({block}))
         yielded with the found value when succeeded.
 =end #'#"#`#
   def search(id, k)
@@ -1276,7 +1276,7 @@ Default options, which never appear in option summary.
         searching key.
       : ((|*pat|))
         optional pattern for completion.
-      : (({Block}))
+      : (({block}))
         yielded with the found value when succeeded.
 =end #'#"#`#
   def complete(typ, opt, *pat)

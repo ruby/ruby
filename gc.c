@@ -1469,7 +1469,7 @@ define_final(argc, argv, os)
 
     rb_scan_args(argc, argv, "11", &obj, &block);
     if (argc == 1) {
-	block = rb_block_new();
+	block = rb_block_proc();
     }
     else if (!rb_respond_to(block, rb_intern("call"))) {
 	rb_raise(rb_eArgError, "wrong type argument %s (should be callable)",

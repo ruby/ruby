@@ -263,7 +263,7 @@ Object
       If this mailbox exists, an array containing objects of
       ((<Net::IMAP::MailboxACLItem>)) will be returned.
 
-: add_response_handler(handler = Block.new)
+: add_response_handler(handler = Proc.new)
       Adds a response handler.
 
       ex).
@@ -1047,7 +1047,7 @@ module Net
       return sort_internal("UID SORT", sort_keys, search_keys, charset)
     end
 
-    def add_response_handler(handler = Block.new)
+    def add_response_handler(handler = Proc.new)
       @response_handlers.push(handler)
     end
 

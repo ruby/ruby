@@ -879,7 +879,7 @@ rb_scan_args(argc, argv, fmt, va_alist)
     if (*p == '&') {
 	var = va_arg(vargs, VALUE*);
 	if (rb_block_given_p()) {
-	    *var = rb_block_new();
+	    *var = rb_block_proc();
 	}
 	else {
 	    *var = Qnil;

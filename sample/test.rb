@@ -928,9 +928,9 @@ class IterTest
     a
   end
 end
-test_ok(IterTest.new(nil).method(:f).to_block.call([1]) == [1])
+test_ok(IterTest.new(nil).method(:f).to_proc.call([1]) == [1])
 m = /\w+/.match("abc")
-test_ok(IterTest.new(nil).method(:f).to_block.call([m]) == [m])
+test_ok(IterTest.new(nil).method(:f).to_proc.call([m]) == [m])
 
 IterTest.new([0]).each0 {|x| test_ok(x == 0)}
 IterTest.new([1]).each1 {|x| test_ok(x == 1)}
@@ -977,9 +977,7 @@ end
 
 test_ok(C.new.collect{|n| n} == [1,2,3])
 
-test_ok(Proc < Block)
 test_ok(Proc == lambda{}.class)
-test_ok(Proc == proc{}.class)
 test_ok(Proc == Proc.new{}.class)
 lambda{|a|test_ok(a==1)}.call(1)
 def block_test(klass, &block)
@@ -987,7 +985,7 @@ def block_test(klass, &block)
 end
 
 block_test(NilClass)
-block_test(Block){}
+block_test(Proc){}
 
 def argument_test(state, proc, *args)
   x = state
@@ -1009,7 +1007,7 @@ def get_block(&block)
   block
 end
 
-test_ok(Block == get_block{}.class)
+test_ok(Proc == get_block{}.class)
 argument_test(true, get_block{||})
 argument_test(true, get_block{||}, 1)
 argument_test(true, get_block{|a,|}, 1)
@@ -1022,19 +1020,19 @@ argument_test(true, get_block(&lambda{|a,|}),1)
 argument_test(false, get_block(&lambda{|a,|}),1,2)
 
 block = get_block{11}
-proc = lambda{44}
-test_ok(block.class == Block)
-test_ok(proc.class == Proc)
-test_ok(block.to_block.class == Block)
-test_ok(proc.to_block.class == Proc)
+test_ok(block.class == Proc)
+test_ok(block.to_proc.class == Proc)
 test_ok(block.clone.call == 11)
-test_ok(proc.clone.call == 44)
+test_ok(get_block(&block).class == Proc)
 
-test_ok(get_block(&block).class == Block)
-test_ok(get_block(&proc).class == Block)
+lambda = lambda{44}
+test_ok(lambda.class == Proc)
+test_ok(lambda.to_proc.class == Proc)
+test_ok(lambda.clone.call == 44)
+test_ok(get_block(&lambda).class == Proc)
 
-test_ok(Block.new{|a,| a}.call(1,2,3) == 1)
-argument_test(false, Proc.new{|a,| p a}, 1,2)
+test_ok(Proc.new{|a,| a}.call(1,2,3) == 1)
+argument_test(true, Proc.new{|a,|}, 1,2)
 
 def ljump_test(state, proc, *args)
   x = state
@@ -1050,7 +1048,7 @@ ljump_test(false, get_block{break})
 ljump_test(true, lambda{break})
 
 test_ok(block.arity == -1)
-test_ok(proc.arity == -1)
+test_ok(lambda.arity == -1)
 test_ok(lambda{||}.arity == 0)
 test_ok(lambda{|a|}.arity == 1)
 test_ok(lambda{|a,|}.arity == 1)
@@ -1058,7 +1056,7 @@ test_ok(lambda{|a,b|}.arity == 2)
 
 def marity_test(m)
   method = method(m)
-  test_ok(method.arity == method.to_block.arity)
+  test_ok(method.arity == method.to_proc.arity)
 end
 marity_test(:test_ok)
 marity_test(:marity_test)

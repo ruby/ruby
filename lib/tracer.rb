@@ -62,7 +62,7 @@ class Tracer
 	off
       end
     else
-      set_trace_func method(:trace_func).to_block
+      set_trace_func method(:trace_func).to_proc
       stdout.print "Trace on\n" if Tracer.verbose?
     end
   end
