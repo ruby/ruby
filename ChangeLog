@@ -1,3 +1,11 @@
+Sat Mar  5 17:48:31 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* dir.c (rb_glob): fixed mismatch of argument.
+
+	* dir.c (fnmatch): removed unnecessary code. (by string.c 1.219)
+
+	* win32/win32.c (NtInitialize): ditto. (by numeric.c 1.117)
+
 Sat Mar  5 16:50:00 2005  NARUSE, Yui  <naruse@ruby-lang.org>
 
         * ext/nkf/nkf-utf8/nkf.c: follow nkf 1.65

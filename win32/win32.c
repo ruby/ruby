@@ -421,10 +421,6 @@ NtInitialize(int *argc, char ***argv)
     WORD version;
     int ret;
 
-#ifdef __BORLANDC__
-    _controlfp(0x5, 0x5);
-#endif
-
     //
     // Now set up the correct time stuff
     //

@@ -303,8 +303,6 @@ fnmatch(p, s, flags)
     const char *ptmp = 0;
     const char *stmp = 0;
 
-    if (!p) p = "";
-    if (!s) s = "";
     if (pathname) {
 	while (1) {
 	    if (p[0] == '*' && p[1] == '*' && p[2] == '/') {
@@ -1407,7 +1405,7 @@ rb_glob(path, func, arg)
 
     args.func = func;
     args.arg = arg;
-    status = rb_glob2(rb_str_new2(path), 0, rb_glob_caller, &args);
+    status = rb_glob2(rb_str_new2(path), 0, 0, rb_glob_caller, &args);
 
     if (status) rb_jump_tag(status);
 }
@@ -1573,10 +1571,6 @@ dir_s_aref(obj, str)
  *     Dir.glob("*.{rb,h}")                #=> ["main.rb", "config.h"]
  *     Dir.glob("*")                       #=> ["config.h", "main.rb"]
  *     Dir.glob("*", File::FNM_DOTMATCH)   #=> [".", "..", "config.h", "main.rb"]
- *
- *     Dir.glob("*", File::FNM_DOTMATCH)   #=> [".", "..", "config.h",
- *                                              "main.rb"]
- *     Dir.glob("**.rb")                   #=> []
  *
  *     rbfiles = File.join("**", "*.rb")
  *     Dir.glob(rbfiles)                   #=> ["main.rb",
