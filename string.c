@@ -1174,9 +1174,11 @@ rb_str_upto(beg, end, excl)
 {
     VALUE current, after_end;
     ID succ = rb_intern("succ");
+    int n;
 
     StringValue(end);
-    if (rb_str_cmp(beg, end) > 0) return beg;
+    n = rb_str_cmp(beg, end);
+    if (n > 0 || (excl && n == 0)) return beg;
     after_end = rb_funcall(end, succ, 0, 0);
     current = beg;
     while (!rb_str_equal(current, after_end)) {
