@@ -168,6 +168,8 @@ lib/profile.rb
 lib/pstore.rb
 lib/rational.rb
 lib/readbytes.rb
+lib/resolv-replace.rb
+lib/resolv.rb
 lib/shell.rb
 lib/shell/builtin-command.rb
 lib/shell/command-processor.rb
