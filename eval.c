@@ -3,7 +3,7 @@
   eval.c -
 
   $Author: matz $
-  $Date: 1994/10/14 10:00:53 $
+  $Date: 1994/11/01 08:27:55 $
   created at: Thu Jun 10 14:22:17 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -1051,7 +1051,7 @@ rb_eval(node)
 	    VALUE str, str2;
 	    NODE *list = node->nd_next;
 
-	    str = node->nd_lit;
+	    str = str_new3(node->nd_lit);
 	    while (list) {
 		if (list->nd_head->type == NODE_STR) {
 		    str2 = list->nd_head->nd_lit;
@@ -1618,16 +1618,22 @@ rb_ensure(b_proc, data1, e_proc, data2)
 struct st_table *new_idhash();
 
 static void
-rb_undefined(obj, id)
+rb_undefined(obj, id, noex)
     VALUE obj;
     ID    id;
+    int noex;
 {
     VALUE desc = obj_as_string(obj);
+    char *format;
 
     if (RSTRING(desc)->len > 160) {
 	desc = Fkrn_to_s(obj);
     }
-    Fail("undefined method `%s' for \"%s\"(%s)",
+    if (noex)
+	format = "method `%s' not available for \"%s\"(%s)";
+    else
+	format = "undefined method `%s' for \"%s\"(%s)";
+    Fail(format,
 	 rb_id2name(id),
 	 RSTRING(desc)->ptr,
 	 rb_class2name(CLASS_OF(obj)));
@@ -1646,17 +1652,10 @@ rb_call(class, recv, mid, argc, argv, func)
     VALUE  result;
     struct cache_entry *ent;
 
-    PUSH_ENV();
-    Qself = recv;
-    the_env->last_func = mid;
-    the_env->argc = argc;
-    the_env->argv = argv;
-    iter_level--;
-
     /* is it in the method cache? */
     ent = cache + EXPR1(class, mid);
     if (ent->class == class && ent->mid == mid) {
-	if (ent->method == Qnil) rb_undefined(recv, mid);
+	if (ent->method == Qnil) rb_undefined(recv, mid, 0);
 	class = ent->origin;
 	mid   = ent->mid;
 	body  = ent->method->nd_head;
@@ -1666,12 +1665,20 @@ rb_call(class, recv, mid, argc, argv, func)
 	ID id = mid;
 
 	if ((body = rb_get_method_body(&class, &id, &noex)) == Qnil) {
-	    rb_undefined(recv, mid);
+	    rb_undefined(recv, mid, 0);
 	}
 	mid = id;
     }
 
-    if (!func && noex) rb_undefined(recv, mid);
+    if (!func && noex) rb_undefined(recv, mid, 1);
+
+    PUSH_ENV();
+    Qself = recv;
+    the_env->last_func = mid;
+    the_env->argc = argc;
+    the_env->argv = argv;
+    iter_level--;
+
     the_env->last_class = class;
 
     if (body->type == NODE_CFUNC) {

@@ -111,7 +111,7 @@ glob_new0(class, str)
 
 VALUE
 glob_new(str)
-    char *str;
+    struct RString *str;
 {
     return glob_new0(C_Glob, str);
 }

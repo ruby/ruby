@@ -3,7 +3,7 @@
   io.c -
 
   $Author: matz $
-  $Date: 1994/10/14 10:00:55 $
+  $Date: 1994/11/01 08:28:01 $
   created at: Fri Oct 15 18:08:59 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -883,13 +883,21 @@ rb_xstring(str)
 
 struct timeval *time_timeval();
 
-#ifdef __linux__
-#   define READ_PENDING(fp) ((fp)->_gptr < (fp)->_egptr > 0)
-#else
+#ifdef STDSTDIO
+# define READ_PENDING(fp) ((fp)->_cnt != 0)
+#else 
 # ifdef __SLBF
-#   define READ_PENDING(fp) ((fp)->_r > 0)
+#  define READ_PENDING(fp) ((fp)->_r > 0)
 # else
-#   define READ_PENDING(fp) ((fp)->_cnt != 0)
+#  ifdef __linux__
+#   ifdef _other_gbase 
+#    define READ_PENDING(fp) ((fp)->_IO_read_ptr < (fp)->_IO_read_end)
+#   else
+#    define READ_PENDING(fp) ((fp)->_gptr < (fp)->_egptr)
+#   endif
+#  else
+--------------> You Lose <--------------
+#  endif
 # endif
 #endif
 

@@ -1,5 +1,6 @@
 home = getenv("HOME")
-print(home.sub("m", "&&"), home, "\n")
+home.sub("m", "&&")
+print(home, "\n")
 print(home.reverse, "\n")
 
 if File.s("io.rb")

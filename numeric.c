@@ -3,7 +3,7 @@
   numeric.c -
 
   $Author: matz $
-  $Date: 1994/10/14 06:19:31 $
+  $Date: 1994/11/01 08:28:06 $
   created at: Fri Aug 13 18:33:09 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto

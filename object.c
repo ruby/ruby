@@ -3,7 +3,7 @@
   object.c -
 
   $Author: matz $
-  $Date: 1994/10/14 10:00:56 $
+  $Date: 1994/11/01 08:28:07 $
   created at: Thu Jul 15 12:01:24 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto

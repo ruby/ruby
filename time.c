@@ -3,7 +3,7 @@
   time.c -
 
   $Author: matz $
-  $Date: 1994/08/12 11:06:46 $
+  $Date: 1994/11/01 08:28:40 $
   created at: Tue Dec 28 14:31:59 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto

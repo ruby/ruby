@@ -3,7 +3,7 @@
   random.c -
 
   $Author: matz $
-  $Date: 1994/10/14 10:00:59 $
+  $Date: 1994/11/01 08:28:18 $
   created at: Fri Dec 24 16:39:21 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto

@@ -172,6 +172,9 @@ dln_find_1(fname, path, exe_flag)
 #ifndef N_COMM
 # define N_COMM 0x12
 #endif
+#ifndef N_MAGIC
+# define N_MAGIC(x) (x).a_magic
+#endif
 
 #define INVALID_OBJECT(h) (N_MAGIC(h) != OMAGIC)
 

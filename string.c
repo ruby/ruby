@@ -3,7 +3,7 @@
   string.c -
 
   $Author: matz $
-  $Date: 1994/10/14 10:01:01 $
+  $Date: 1994/11/01 08:28:38 $
   created at: Mon Aug  9 17:12:58 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -29,12 +29,12 @@ str_new(ptr, len)
     OBJSETUP(str, C_String, T_STRING);
 
     str->len = len;
+    str->orig = Qnil;
     str->ptr = ALLOC_N(char,len+1);
     if (ptr) {
 	memcpy(str->ptr, ptr, len);
     }
     str->ptr[len] = '\0';
-    str->orig = Qnil;
     return (VALUE)str;
 }
 
@@ -691,7 +691,7 @@ str_sub(str, pat, val, once)
 	if (once) break;
     }
     if (n == 0) return Qnil;
-    return INT2FIX(n);
+    return (VALUE)str;
 }
 
 static VALUE
@@ -785,8 +785,6 @@ Fstr_sub_internal(str, pat, val, once)
     VALUE str, pat, val;
     int once;
 {
-    VALUE reg, result;
-
     Check_Type(val, T_STRING);
     str_modify(str);
 
@@ -795,9 +793,7 @@ Fstr_sub_internal(str, pat, val, once)
 	return str_sub(str, pat, val, once);
 
       case T_STRING:
-	reg = re_regcomp(pat);
-	result =  str_sub(str, reg, val, once);
-	return result;
+	return str_sub(str, re_regcomp(pat), val, once);
 
       default:
 	/* type failed */
@@ -959,15 +955,14 @@ Fstr_inspect(str)
 }
 
 static VALUE
-Fstr_toupper(str)
+Fstr_upcase(str)
     struct RString *str;
 {
-    char *s;
-    int i;
+    char *s, *send;
 
     str_modify(str);
-    s = str->ptr;
-    for (i=0; i < str->len; i++) {
+    s = str->ptr; send = s + str->len;
+    while (s < send) {
 	if (islower(*s)) {
 	    *s = toupper(*s);
 	}
@@ -978,15 +973,14 @@ Fstr_toupper(str)
 }
 
 static VALUE
-Fstr_tolower(str)
+Fstr_downcase(str)
     struct RString *str;
 {
-    char *s;
-    int i;
+    char *s, *send;
 
     str_modify(str);
-    s = str->ptr;
-    for (i=0; i < str->len; i++) {
+    s = str->ptr; send = s + str->len;
+    while (s < send) {
 	if (isupper(*s)) {
 	    *s = tolower(*s);
 	}
@@ -997,30 +991,20 @@ Fstr_tolower(str)
 }
 
 static VALUE
-Fstr_ucfirst(str)
+Fstr_capitalize(str)
     struct RString *str;
 {
     char *s, *send;
-    int i;
 
     str_modify(str);
     s = str->ptr; send = s + str->len;
     if (islower(*s))
 	*s = toupper(*s);
-    return (VALUE)str;
-}
-
-static VALUE
-Fstr_lcfirst(str)
-    struct RString *str;
-{
-    char *s, *send;
-    int i;
-
-    str_modify(str);
-    s = str->ptr; send = s + str->len;
-    if (isupper(*s))
-	*s = tolower(*s);
+    while (++s < send) {
+	if (isupper(*s)) {
+	    *s = tolower(*s);
+	}
+    }
     return (VALUE)str;
 }
 
@@ -1028,12 +1012,11 @@ static VALUE
 Fstr_swapcase(str)
     struct RString *str;
 {
-    char *s;
-    int i;
+    char *s, *send;
 
     str_modify(str);
-    s = str->ptr;
-    for (i=0; i < str->len; i++) {
+    s = str->ptr; send = s + str->len;
+    while (s < send) {
 	if (isupper(*s)) {
 	    *s = tolower(*s);
 	}
@@ -1044,6 +1027,20 @@ Fstr_swapcase(str)
     }
 
     return (VALUE)str;
+}
+
+static VALUE
+Fstr_toupper(str)
+    struct RString *str;
+{
+    return Fstr_upcase(str_new(str_new(str->ptr, str->len)));
+}
+
+static VALUE
+Fstr_tolower(str)
+    struct RString *str;
+{
+    return Fstr_downcase(str_new(str_new(str->ptr, str->len)));
 }
 
 struct tr {
@@ -1474,8 +1471,18 @@ Fstr_strip(str)
     t++;
 
     if (s > str->ptr || t < e) {
-	str_modify(str);
-	return str_new(s, t-s);
+	char *p = str->ptr;
+	int len = t-s;
+
+	str->ptr = ALLOC_N(char, len+1);
+	memcpy(str->ptr, p, len);
+	str->ptr[len] = '\0';
+	if (str->orig) {
+	    str->orig = Qnil;
+	}
+	else {
+	    free(p);
+	}
     }
     return (VALUE)str;
 }
@@ -1649,13 +1656,11 @@ Init_String()
     rb_define_method(C_String, "_inspect", Fstr_inspect, 0);
 
     rb_define_method(C_String, "toupper", Fstr_toupper, 0);
-    rb_define_alias(C_String, "upcase", "toupper");
-    rb_define_alias(C_String, "uc", "toupper");
     rb_define_method(C_String, "tolower", Fstr_tolower, 0);
-    rb_define_alias(C_String, "downcase", "tolower");
-    rb_define_alias(C_String, "lc", "tolower");
-    rb_define_method(C_String, "ucfirst", Fstr_ucfirst, 0);
-    rb_define_method(C_String, "lcfirst", Fstr_lcfirst, 0);
+
+    rb_define_method(C_String, "upcase", Fstr_upcase, 0);
+    rb_define_method(C_String, "downcase", Fstr_downcase, 0);
+    rb_define_method(C_String, "capitalize", Fstr_capitalize, 0);
     rb_define_method(C_String, "swapcase", Fstr_swapcase, 0);
 
     rb_define_method(C_String, "hex", Fstr_hex, 0);

@@ -4,7 +4,7 @@
   file.c -
 
   $Author: matz $
-  $Date: 1994/10/14 06:19:20 $
+  $Date: 1994/11/01 08:27:57 $
   created at: Mon Nov 15 12:24:34 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -54,6 +54,51 @@ file_open(fname, mode)
 
     return port;
 }
+
+static int
+apply2files0(func, args, arg, gl)
+    void (*func)();
+    struct RArray *args;
+    void *arg;
+    int gl;
+{
+    int i, n;
+    VALUE path;
+
+    for (i=n=0; i<args->len; i++) {
+	path = args->ptr[i];
+	if (TYPE(path) == T_STRING) {
+	    if (gl) {
+		char *p;
+		p = RSTRING(path)->ptr;
+		while (*p) {
+		    switch (*p++) {
+		      case '*': case '?':
+		      case '[': case ']':
+		      case '{': case '}':
+			path = glob_new(path);
+			goto glob;
+		    }
+		}
+	    }
+	    (*func)(path, arg);
+	    n++;
+	}
+	else {
+	    extern VALUE C_Glob;
+
+	    if (!obj_is_kind_of(path, C_Glob)) {
+		WrongType(path, T_STRING);
+	    }
+	  glob:
+	    n += apply2files0(func, rb_to_a(path), arg, 0);
+	}
+    }
+
+    return n;
+}
+
+#define apply2files(func,args,arg) apply2files0(func,args,arg,1)
 
 static VALUE
 Ffile_tell(obj)
@@ -772,27 +817,29 @@ Ffile_ctime2(obj)
     return time_new(st.st_ctime, 0);
 }
 
+static void
+chmod_internal(path, mode)
+    struct RString *path;
+    int mode;
+{
+    if (chmod(path->ptr, mode) == -1)
+	rb_sys_fail(RSTRING(path)->ptr);
+}
+
 static VALUE
 Ffile_chmod(obj, args)
     VALUE obj, args;
 {
     VALUE vmode;
     VALUE rest;
-    int mode, i, len;
+    int mode, n;
     VALUE path;
 
     rb_scan_args(args, "1*", &vmode, &rest);
     mode = NUM2INT(vmode);
 
-    len = RARRAY(rest)->len;
-    for (i=0; i<len; i++) {
-	path = RARRAY(rest)->ptr[i];
-	Check_Type(path, T_STRING);
-	if (chmod(RSTRING(path)->ptr, mode) == -1)
-	    rb_sys_fail(RSTRING(path)->ptr);
-    }
-
-    return INT2FIX(i);
+    n = apply2files(chmod_internal, rest, mode);
+    return INT2FIX(n);
 }
 
 static VALUE
@@ -811,39 +858,43 @@ Ffile_chmod2(obj, vmode)
     return INT2FIX(0);
 }
 
+struct chown_args {
+    int owner, group;
+};
+
+static void
+chown_internal(path, args)
+    struct RString *path;
+    struct chown_args *args;
+{
+    if (chown(path->ptr, args->owner, args->group) < 0)
+	rb_sys_fail(path->ptr);
+}
+
 static VALUE
 Ffile_chown(obj, args)
     VALUE obj, args;
 {
     VALUE o, g, rest;
-    int owner, group;
-    int i, len;
+    struct chown_args arg;
+    int n;
 
-    len = rb_scan_args(args, "2*", &o, &g, &rest);
+    rb_scan_args(args, "2*", &o, &g, &rest);
     if (o == Qnil) {
-	owner = -1;
+	arg.owner = -1;
     }
     else {
-	owner = NUM2INT(o);
+	arg.owner = NUM2INT(o);
     }
     if (g == Qnil) {
-	group = -1;
+	arg.group = -1;
     }
     else {
-	group = NUM2INT(g);
+	arg.group = NUM2INT(g);
     }
 
-    len -= 2;
-    for (i=0; i<len; i++) {
-	Check_Type(RARRAY(rest)->ptr[i], T_STRING);
-    }
-
-    for (i=0; i<len; i++) {
-	if (chown(RSTRING(RARRAY(rest)->ptr[i])->ptr, owner, group) < 0)
-	    rb_sys_fail(RSTRING(RARRAY(rest)->ptr[i])->ptr);
-    }
-
-    return INT2FIX(i);
+    n = apply2files(chown_internal, rest, &arg);
+    return INT2FIX(n);
 }
 
 Ffile_chown2(obj, owner, group)
@@ -861,30 +912,30 @@ Ffile_chown2(obj, owner, group)
 
 struct timeval *time_timeval();
 
+static void
+utime_internal(path, tvp)
+    struct RString *path;
+    struct timeval tvp[];
+{
+    if (utimes(path->ptr, tvp) < 0)
+	rb_sys_fail(path->ptr);
+}
+
 static VALUE
 Ffile_utime(obj, args)
     VALUE obj, args;
 {
     VALUE atime, mtime, rest;
     struct timeval tvp[2];
-    int i, len;
+    int n;
 
-    len = rb_scan_args(args, "2*", &atime, &mtime, &rest);
+    rb_scan_args(args, "2*", &atime, &mtime, &rest);
 
     tvp[0] = *time_timeval(atime);
     tvp[1] = *time_timeval(mtime);
 
-    len -= 2;
-    for (i=0; i<len; i++) {
-	Check_Type(RARRAY(rest)->ptr[i], T_STRING);
-    }
-
-    for (i=0; i<len; i++) {
-	if (utimes(RSTRING(RARRAY(rest)->ptr[i])->ptr, tvp) < 0)
-	    rb_sys_fail(RSTRING(RARRAY(rest)->ptr[i])->ptr);
-    }
-
-    return INT2FIX(i);
+    n = apply2files(utime_internal, rest, tvp);
+    return INT2FIX(n);
 }
 
 static VALUE
@@ -928,23 +979,23 @@ Ffile_readlink(obj, path)
     return str_new(buf, cc);
 }
 
+static void
+unlink_internal(path)
+    struct RString *path;
+{
+    if (unlink(path->ptr) < 0)
+	rb_sys_fail(path->ptr);
+}
+
 static VALUE
 Ffile_unlink(obj, args)
     VALUE obj;
     struct RArray *args;
 {
-    int i, len;
+    int n;
 
-    len = args->len;
-    for (i=0; i<len; i++) {
-	Check_Type(args->ptr[i], T_STRING);
-    }
-    for (i=0; i<len; i++) {
-	if (unlink(RSTRING(args->ptr[i])->ptr) < 0)
-	    rb_sys_fail(RSTRING(args->ptr[i])->ptr);
-    }
-
-    return INT2FIX(i);
+    n = apply2files(unlink_internal, args, Qnil);
+    return INT2FIX(n);
 }
 
 static VALUE

@@ -3,7 +3,7 @@
   re.c -
 
   $Author: matz $
-  $Date: 1994/10/14 06:19:40 $
+  $Date: 1994/11/01 08:28:21 $
   created at: Mon Aug  9 18:24:49 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto

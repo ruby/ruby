@@ -86,7 +86,7 @@ extern void bcopy ();
 #  endif /* !RISC6000 */
 #endif /* USG */
 
-#if defined(sparc) && !defined(__GNUC__)
+#if defined(HAVE_ALLOCA_H) && !defined(__GNUC__)
 #include <alloca.h>
 #else
 char *alloca ();

@@ -3,7 +3,7 @@
   process.c -
 
   $Author: matz $
-  $Date: 1994/10/14 10:00:58 $
+  $Date: 1994/11/01 08:28:14 $
   created at: Tue Aug 10 14:30:50 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto

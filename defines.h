@@ -19,7 +19,7 @@
 /* define USE_DLN to load object file(.o). */
 #ifdef HAVE_A_OUT_H
 
-#undef  USE_DLN
+#define USE_DLN
 #ifdef USE_DLN
 #define LIBC_NAME "libc.a"
 #define DLN_DEFAULT_PATH "/lib:/usr/lib:."

@@ -97,7 +97,7 @@ ruby \- オブジェクト指向スクリプト言語
 	% echo matz > /tmp/junk
 	% cat /tmp/junk
 	matz
-	% ruby -p -i.bak -e '$_.toupper' /tmp/junk
+	% ruby -p -i.bak -e '$_.upcase' /tmp/junk
 	% cat /tmp/junk
 	MATZ
 	% cat /tmp/junk.bak
@@ -158,7 +158,7 @@ ruby \- オブジェクト指向スクリプト言語
 
 	#! /usr/local/bin/ruby \-s
 	# \-xyzオプションが与えられると"true"を表示する.
-	if $xyz then print("true\\n") end
+	print "true\n" if $xyz
 
 .fi
 .TP 5
