@@ -19,12 +19,12 @@
 class Delegator
 
   def initialize(obj)
-    preserved = ::Kernel.public_instance_methods
+    preserved = ::Kernel.public_instance_methods(false)
     preserved -= ["to_s","to_a","inspect","==","=~","==="]
     for t in self.class.ancestors
-      preserved |= t.public_instance_methods
-      preserved |= t.private_instance_methods
-      preserved |= t.protected_instance_methods
+      preserved |= t.public_instance_methods(false)
+      preserved |= t.private_instance_methods(false)
+      preserved |= t.protected_instance_methods(false)
       break if t == Delegator
     end
     for method in obj.methods

@@ -1,3 +1,11 @@
+Sat May  3 00:58:53 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* class.c (rb_class_protected_instance_methods): now gives
+	  warnings to show migration path.
+
+	* lib/delegate.rb (Delegator::initialize): instance_methods
+	  etc. now recurse by default.  need to specify false.
+
 Sat May  3 00:22:00 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/protocol.rb: reintroduce Protocol.protocol_param.

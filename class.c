@@ -563,7 +563,10 @@ rb_class_instance_methods(argc, argv, mod)
     VALUE recur;
 
     rb_scan_args(argc, argv, "01", &recur);
-    if (argc == 0) recur = Qtrue;
+    if (argc == 0) {
+	rb_warn("instance_methods() default to true; specify false explicitly");
+	recur = Qtrue;
+    }
     return method_list(mod, RTEST(recur), ins_methods_i);
 }
 
@@ -576,6 +579,10 @@ rb_class_protected_instance_methods(argc, argv, mod)
     VALUE recur;
 
     rb_scan_args(argc, argv, "01", &recur);
+    if (argc == 0) {
+	rb_warn("protected_instance_methods() default to true; specify false explicitly");
+	recur = Qtrue;
+    }
     if (argc == 0) recur = Qtrue;
     return method_list(mod, RTEST(recur), ins_methods_prot_i);
 }
@@ -589,6 +596,10 @@ rb_class_private_instance_methods(argc, argv, mod)
     VALUE recur;
 
     rb_scan_args(argc, argv, "01", &recur);
+    if (argc == 0) {
+	rb_warn("private_instance_methods() default to true; specify false explicitly");
+	recur = Qtrue;
+    }
     if (argc == 0) recur = Qtrue;
     return method_list(mod, RTEST(recur), ins_methods_priv_i);
 }
@@ -602,6 +613,10 @@ rb_class_public_instance_methods(argc, argv, mod)
     VALUE recur;
 
     rb_scan_args(argc, argv, "01", &recur);
+    if (argc == 0) {
+	rb_warn("public_instance_methods() default to true; specify false explicitly");
+	recur = Qtrue;
+    }
     if (argc == 0) recur = Qtrue;
     return method_list(mod, RTEST(recur), ins_methods_pub_i);
 }
@@ -616,7 +631,10 @@ rb_obj_singleton_methods(argc, argv, obj)
     st_table *list;
 
     rb_scan_args(argc, argv, "01", &all);
-    if (argc == 0) all = Qtrue;
+    if (argc == 0) {
+	rb_warn("singleton_methods() default to true; specify false explicitly");
+	all = Qtrue;
+    }
     klass = CLASS_OF(obj);
     list = st_init_numtable();
     while (klass && FL_TEST(klass, FL_SINGLETON)) {
