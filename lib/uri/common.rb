@@ -49,9 +49,9 @@ module URI
       FRAGMENT = "#{URIC}*"
 
       # domainlabel   = alphanum | alphanum *( alphanum | "-" ) alphanum
-      DOMLABEL = "(?:[#{ALNUM}](?:[-#{ALNUM}]*[#{ALNUM}])?)"
+      DOMLABEL = "(?:[#{ALNUM}](?:[\\-#{ALNUM}]*[#{ALNUM}])?)"
       # toplabel      = alpha | alpha *( alphanum | "-" ) alphanum
-      TOPLABEL = "(?:[#{ALPHA}](?:[-#{ALNUM}]*[#{ALNUM}])?)"
+      TOPLABEL = "(?:[#{ALPHA}](?:[\\-#{ALNUM}]*[#{ALNUM}])?)"
       # hostname      = *( domainlabel "." ) toplabel [ "." ]
       HOSTNAME = "(?:#{DOMLABEL}\\.)*#{TOPLABEL}\\.?"
 
@@ -119,7 +119,7 @@ module URI
       REL_SEGMENT = "(?:[#{UNRESERVED};@&=+$,]|#{ESCAPED})+"
 
       # scheme        = alpha *( alpha | digit | "+" | "-" | "." )
-      SCHEME = "[#{ALPHA}][-+.#{ALPHA}\\d]*"
+      SCHEME = "[#{ALPHA}][\\-+.#{ALPHA}\\d]*"
 
       # abs_path      = "/"  path_segments
       ABS_PATH = "/#{PATH_SEGMENTS}"

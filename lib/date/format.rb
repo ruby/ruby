@@ -332,7 +332,7 @@ class Date
       mday = $4.to_i
 
     # vms
-    elsif str.sub!(/(-?\d+)-(#{PARSE_MONTHPAT})[^-]*-(-?\d+)/ino, ' ')
+    elsif str.sub!(/(-?\d+)-(#{PARSE_MONTHPAT})[^\-]*-(-?\d+)/ino, ' ')
       mday = $1.to_i
       mon = ABBR_MONTHS[$2.downcase]
       year = $3.to_i
