@@ -84,6 +84,14 @@ enum map_part {
     map_value
 };
 
+enum scalar_style {
+    scalar_none,
+    scalar_plain,
+    scalar_1quote,
+    scalar_2quote,
+    scalar_block
+};
+
 /*
  * Node metadata struct
  */
@@ -112,6 +120,7 @@ struct _syck_node {
         } *list;
         /* Storage for string data */
         struct SyckStr {
+            enum scalar_style style;
             char *ptr;
             long len;
         } *str;
@@ -367,8 +376,8 @@ SyckNode *syck_alloc_seq();
 SyckNode *syck_alloc_str();
 void syck_free_node( SyckNode * );
 void syck_free_members( SyckNode * );
-SyckNode *syck_new_str( char * );
-SyckNode *syck_new_str2( char *, long );
+SyckNode *syck_new_str( char *, enum scalar_style );
+SyckNode *syck_new_str2( char *, long, enum scalar_style );
 void syck_str_blow_away_commas( SyckNode * );
 char *syck_str_read( SyckNode * );
 SyckNode *syck_new_map( SYMID, SYMID );

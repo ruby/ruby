@@ -1,4 +1,5 @@
 MANIFEST
+depend
 extconf.rb
 bytecode.c
 emitter.c

@@ -83,6 +83,7 @@ syck_alloc_str()
     s = S_ALLOC( struct SyckStr );
     s->len = 0;
     s->ptr = NULL;
+    s->style = scalar_none;
 
     n = syck_alloc_node( syck_str_kind );
     n->data.str = s;
@@ -91,19 +92,20 @@ syck_alloc_str()
 }
 
 SyckNode *
-syck_new_str( char *str )
+syck_new_str( char *str, enum scalar_style style )
 {
-    return syck_new_str2( str, strlen( str ) );
+    return syck_new_str2( str, strlen( str ), style );
 }
 
 SyckNode *
-syck_new_str2( char *str, long len )
+syck_new_str2( char *str, long len, enum scalar_style style )
 {
     SyckNode *n;
 
     n = syck_alloc_str();
     n->data.str->ptr = S_ALLOC_N( char, len + 1 );
     n->data.str->len = len;
+    n->data.str->style = style;
     memcpy( n->data.str->ptr, str, len );
     n->data.str->ptr[len] = '\0';
 

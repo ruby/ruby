@@ -33,6 +33,10 @@ class YAML_Unit_Tests < Test::Unit::TestCase
 		assert_equal( obj, YAML::parse( yaml ).transform )
 	end
 
+    def assert_cycle( obj )
+        assert_equal( obj, YAML::load( obj.to_yaml ) )
+    end
+
     def assert_path_segments( path, segments )
         YAML::YPath.each_path( path ) { |choice|
             assert_equal( choice.segments, segments.shift )
@@ -71,10 +75,14 @@ EOY
 
 	def test_basic_strings
 		# Common string types
+		assert_cycle("x")
+		assert_cycle(":x")
+		assert_cycle(":")
 		assert_parse_only(
 			{ 1 => 'simple string', 2 => 42, 3 => '1 Single Quoted String',
 			  4 => 'YAML\'s Double "Quoted" String', 5 => "A block\n  with several\n    lines.\n",
-			  6 => "A \"chomped\" block", 7 => "A folded\n string\n" }, <<EOY
+			  6 => "A \"chomped\" block", 7 => "A folded\n string\n", 8 => ": started string" },
+			  <<EOY
 1: simple string
 2: 42
 3: '1 Single Quoted String'
@@ -89,6 +97,7 @@ EOY
   A
   folded
    string
+8: ": started string"
 EOY
 		)
 	end
@@ -380,7 +389,7 @@ EOY
 		assert_parse_only(
 			[ "Mark McGwire's year was crippled by a knee injury.\n" ], <<EOY
 - >
-    Mark McGwire's
+    Mark McGwire\'s
     year was crippled
     by a knee injury.
 EOY
@@ -442,22 +451,28 @@ octal: 014
 hexadecimal: 0xC
 EOY
 		)
+		assert_parse_only(
+            { 'canonical' => 685230, 'decimal' => 685230, 'octal' => 02472256, 'hexadecimal' => 0x0A74AE, 'sexagesimal' => 685230 }, <<EOY)
+canonical: 685230
+decimal: +685,230
+octal: 02472256
+hexadecimal: 0x0A,74,AE
+sexagesimal: 190:20:30
+EOY
 	end
 
 	def test_spec_type_float
 		assert_parse_only(
 			{ 'canonical' => 1230.15, 'exponential' => 1230.15, 'fixed' => 1230.15,
-			  'negative infinity' => -1.0/0.0 }, <<EOY
+			  'negative infinity' => -1.0/0.0 }, <<EOY)
 canonical: 1.23015e+3
 exponential: 12.3015e+02
 fixed: 1,230.15
 negative infinity: -.inf
 EOY
-		)
-		nan = YAML::load( <<EOY
+		nan = YAML::load( <<EOY )
 not a number: .NaN
 EOY
-		)
 		assert( nan['not a number'].nan? )
 	end
 
@@ -903,7 +918,7 @@ literal: |
  single line break, but does
  not start with one.
 
-is equal to: "The \\ \' \\" characters may \\
+is equal to: "The \\ ' \\" characters may \\
  be\\nfreely used. Leading white\\n   space \\
  is significant.\\n\\nLine breaks are \\
  significant.\\nThus this value contains \\
@@ -1025,7 +1040,7 @@ EOY
 	def test_ruby_regexp
 		# Test Ruby regular expressions
 		assert_to_yaml( 
-			{ 'simple' => /a.b/, 'complex' => /\A"((?:[^"]|\")+)"/,
+			{ 'simple' => /a.b/, 'complex' => %r'\A"((?:[^"]|\")+)"',
 			  'case-insensitive' => /George McFly/i }, <<EOY
 case-insensitive: !ruby/regexp "/George McFly/i"
 complex: !ruby/regexp "/\\\\A\\"((?:[^\\"]|\\\\\\")+)\\"/"
@@ -1039,11 +1054,33 @@ EOY
 		assert_parse_only(
 			[ /bozo$/i ], <<EOY
 - !perl/regexp:
-  REGEXP: bozo$
-  MODIFIERS: i
+  regexp: bozo$
+  mods: i
 EOY
 		)
 	end
+
+    #
+    # Test of Ranges
+    #
+    def test_ranges
+
+        # Simple numeric
+        assert_to_yaml( 1..3, <<EOY )
+--- !ruby/range 1..3
+EOY
+
+        # Simple alphabetic
+        assert_to_yaml( 'a'..'z', <<EOY )
+--- !ruby/range a..z
+EOY
+
+        # Float
+        assert_to_yaml( 10.5...30.3, <<EOY )
+--- !ruby/range 10.5...30.3
+EOY
+
+    end
 
 	def test_ruby_struct
 		# Ruby structures
@@ -1151,6 +1188,42 @@ EOY
         # a = []; 1000.times { a << {"a"=>"b", "c"=>"d"} }
         # YAML::load( a.to_yaml )
 
+    end
+
+    #
+    # Test Time.now cycle
+    #
+    def test_time_now_cycle
+        #
+        # From Minero Aoki [ruby-core:2305]
+        #
+        require 'yaml'
+        t = Time.now
+        5.times do
+            assert_cycle(t)
+        end
+    end
+
+    #
+    # Test Range cycle
+    #
+    def test_range_cycle
+      #
+      # From Minero Aoki [ruby-core:02306]
+      #
+      assert_cycle("a".."z")
+
+      #
+      # From Nobu Nakada [ruby-core:02311]
+      #
+      assert_cycle(0..1)
+      assert_cycle(1.0e20 .. 2.0e20)
+      assert_cycle("0".."1")
+      assert_cycle(".."..."...")
+      assert_cycle(".rb"..".pl")
+      assert_cycle(".rb"...".pl")
+      assert_cycle('"'...".")
+      assert_cycle("'"...".")
     end
 
     #

@@ -15,33 +15,25 @@
 
 typedef struct RVALUE {
     union {
+#if 0
 	struct {
 	    unsigned long flags;	/* always 0 for freed obj */
 	    struct RVALUE *next;
 	} free;
+#endif
 	struct RBasic  basic;
 	struct RObject object;
 	struct RClass  klass;
-	struct RFloat  flonum;
-	struct RString string;
+	/*struct RFloat  flonum;*/
+	/*struct RString string;*/
 	struct RArray  array;
-	struct RRegexp regexp;
+	/*struct RRegexp regexp;*/
 	struct RHash   hash;
-	struct RData   data;
+	/*struct RData   data;*/
 	struct RStruct rstruct;
-	struct RBignum bignum;
-	struct RFile   file;
-#if 0
-	struct RNode   node;
-	struct RMatch  match;
-	struct RVarmap varmap; 
-	struct SCOPE   scope;
-#endif
+	/*struct RBignum bignum;*/
+	/*struct RFile   file;*/
     } as;
-#ifdef GC_DEBUG
-    char *file;
-    int   line;
-#endif
 } RVALUE;
 
 typedef struct {
@@ -558,7 +550,9 @@ yaml_org_handler( n, ref )
 			{
 				obj = rb_funcall( cDefaultKey, s_new, 0 );
 			}
-            else if ( strncmp( n->data.str->ptr, ":", 1 ) == 0 )
+            else if ( n->data.str->style == scalar_plain &&
+                      n->data.str->len > 1 && 
+                      strncmp( n->data.str->ptr, ":", 1 ) == 0 )
             {
                 obj = rb_funcall( oDefaultLoader, s_transfer, 2, 
                                   rb_str_new2( "ruby/sym" ), 
