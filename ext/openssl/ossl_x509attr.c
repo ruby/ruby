@@ -158,21 +158,55 @@ ossl_x509attr_get_oid(VALUE self)
 static VALUE
 ossl_x509attr_set_value(VALUE self, VALUE value)
 {
-   /*
-    * It has not been work fine and temporarily disabled.
-    * It may be reimplemented with ASN.1 support.
-    */
+    X509_ATTRIBUTE *attr;
+    ASN1_TYPE *a1type;
+
+    GetX509Attr(self, attr);
+    if(!(a1type = ossl_asn1_get_asn1type(value)))
+	ossl_raise(eASN1Error, "could not get ASN1_TYPE");
+    if(ASN1_TYPE_get(a1type) == V_ASN1_SEQUENCE){
+	ASN1_TYPE_free(a1type);
+	ossl_raise(eASN1Error, "couldn't set SEQUENCE for attribute value.");
+    }
+    if(attr->value.set){
+	if(OSSL_X509ATTR_IS_SINGLE(attr)) ASN1_TYPE_free(attr->value.single);
+	else sk_ASN1_TYPE_free(attr->value.set);
+    }
+    OSSL_X509ATTR_SET_SINGLE(attr);
+    attr->value.single = a1type;
+
     return value;
 }
 
 static VALUE
 ossl_x509attr_get_value(VALUE self)
 {
-   /*
-    * It has not been work fine and temporarily disabled.
-    * It may be reimplemented with ASN.1 support.
-    */
-    return Qnil;
+    X509_ATTRIBUTE *attr;
+    VALUE str, asn1;
+    long length;
+    unsigned char *p;
+
+    GetX509Attr(self, attr);
+    if(attr->value.ptr == NULL) return Qnil;
+    if(OSSL_X509ATTR_IS_SINGLE(attr)){
+	length = i2d_ASN1_TYPE(attr->value.single, NULL);
+	str = rb_str_new(0, length);
+	p = RSTRING(str)->ptr;
+	i2d_ASN1_TYPE(attr->value.single, &p);
+	ossl_str_adjust(str, p);
+    }
+    else{
+	length = i2d_ASN1_SET_OF_ASN1_TYPE(attr->value.set, NULL,
+			i2d_ASN1_TYPE, V_ASN1_SET, V_ASN1_UNIVERSAL, 0);
+	str = rb_str_new(0, length);
+	p = RSTRING(str)->ptr;
+	i2d_ASN1_SET_OF_ASN1_TYPE(attr->value.set, &p,
+			i2d_ASN1_TYPE, V_ASN1_SET, V_ASN1_UNIVERSAL, 0);
+	ossl_str_adjust(str, p);
+    }
+    asn1 = rb_funcall(mASN1, rb_intern("decode"), 1, str);
+
+    return asn1;
 }
 
 static VALUE

@@ -1,3 +1,21 @@
+Fri Oct  3 16:13:19 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_asn1.c: add DER encoder and decoder.
+
+	* ext/openssl/ossl_asn1.h: add OpenSSL::ASN1 module.
+
+	* ext/openssl/ossl.c (Init_openssl): call Init_ossl_asn1.
+
+	* ext/openssl/ossl.h: include ossl_asn1.h.
+
+	* ext/openssl/extconf.rb: check if X509_ATTRIBUTE has field "single".
+
+	* ext/openssl/ossl_x509attr.c (ossl_x509attr_set_value): accept
+	  DER encoded data argument.
+
+	* ext/openssl/ossl_x509attr.c (ossl_x509attr_get_value): return
+	  DER encoded data in OpenSSL::ASN1 types.
+
 Fri Oct  3 13:02:00 2003  Nathaniel Talbott <ntalbott@ruby-lang.org>
 
 	* lib/test/unit.rb: refactored to use optparse.

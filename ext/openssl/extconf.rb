@@ -88,6 +88,7 @@ if have_header("openssl/engine.h")
 end
 have_header("openssl/ocsp.h")
 have_struct_member("EVP_CIPHER_CTX", "flags", "openssl/evp.h")
+have_struct_member("X509_ATTRIBUTE", "single", "openssl/x509.h")
 
 message "=== Checking done. ===\n"
 $distcleanfiles << "GNUmakefile" << "dep"
