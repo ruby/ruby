@@ -560,7 +560,9 @@ remove_trace(entry)
 	    trace->next = next->next;
 	    free(next);
 	}
-	trace = next;
+	else {
+	    trace = next;
+	}
     }
     entry->trace = t.next;
 }
@@ -592,7 +594,6 @@ rb_f_untrace_var(argc, argv)
 	    trace->removed = 1;
 	    trace = next;
 	}
-	entry->trace = 0;
 
 	if (!entry->block_trace) remove_trace(entry);
 	return ary;

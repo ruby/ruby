@@ -1,3 +1,9 @@
+Fri Oct 19 23:40:37 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* variable.c (remove_trace): should not access already freed area.
+
+	* variable.c (rb_f_untrace_var): fix memory leak.
+
 Tue Oct 16 21:38:15 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* eval.c (rb_f_missing): check stack level with rb_stack_check().
