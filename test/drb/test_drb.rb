@@ -44,6 +44,11 @@ class TestDRbYield < Test::Unit::TestCase
     @there.echo_yield_2(3, nil) {|one, two|}
     assert_equal(3, one)
     assert_equal(nil, two)
+
+    one = two = nil
+    @there.echo_yield_1([:key, :value]) {|one, two|}
+    assert_equal(:key, one)
+    assert_equal(:value, two)
   end
 
   def test_03_many
