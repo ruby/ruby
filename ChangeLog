@@ -1,3 +1,7 @@
+Mon Jun  4 17:57:56 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* stable version 1.6.4 released.
+
 Mon Jun  4 04:14:53 2001  Wakou Aoyama  <wakou@fsinet.or.jp>
 
 	* lib/shellwords.rb: don't destroy argument.
