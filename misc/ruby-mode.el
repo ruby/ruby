@@ -79,11 +79,12 @@
   (define-key ruby-mode-map "}" 'ruby-electric-brace)
   (define-key ruby-mode-map "\e\C-a" 'ruby-beginning-of-defun)
   (define-key ruby-mode-map "\e\C-e" 'ruby-end-of-defun)
-  (define-key ruby-mode-map "\e\C-b" 'ruby-beginning-of-block)
-  (define-key ruby-mode-map "\e\C-f" 'ruby-end-of-block)
+  (define-key ruby-mode-map "\e\C-b" 'ruby-backward-sexp)
+  (define-key ruby-mode-map "\e\C-f" 'ruby-forward-sexp)
   (define-key ruby-mode-map "\e\C-p" 'ruby-beginning-of-block)
   (define-key ruby-mode-map "\e\C-n" 'ruby-end-of-block)
   (define-key ruby-mode-map "\e\C-h" 'ruby-mark-defun)
+  (define-key ruby-mode-map "\e\C-q" 'ruby-indent-exp)
   (define-key ruby-mode-map "\t" 'ruby-indent-command)
   (define-key ruby-mode-map "\C-c\C-e" 'ruby-insert-end)
   (define-key ruby-mode-map "\C-j" 'ruby-reindent-then-newline-and-indent)
@@ -123,12 +124,31 @@
   (modify-syntax-entry ?\] ")[" ruby-mode-syntax-table)
   )
 
-(defvar ruby-indent-level 2
-  "*Indentation of ruby statements.")
+(defcustom ruby-indent-tabs-mode nil
+  "*Indentation can insert tabs in ruby mode if this is non-nil."
+  :type 'boolean :group 'ruby)
 
-(defvar ruby-deep-arglist t
-  "*Deep indent argument lists when non-nil.
-Also ignores spaces after parenthesis when 'space.")
+(defcustom ruby-indent-level 2
+  "*Indentation of ruby statements."
+  :type 'integer :group 'ruby)
+
+(defcustom ruby-comment-column 32
+  "*Indentation column of comments."
+  :type 'integer :group 'ruby)
+
+(defcustom ruby-deep-arglist t
+  "*Deep indent lists in parenthesis when non-nil.
+Also ignores spaces after parenthesis when 'space."
+  :group 'ruby)
+
+(defcustom ruby-deep-indent-paren '(?\( ?\[ t)
+  "*Deep indent lists in parenthesis when non-nil. t means continuous line.
+Also ignores spaces after parenthesis when 'space."
+  :group 'ruby)
+
+(defcustom ruby-deep-indent-paren-style 'space
+  "Default deep indent style."
+  :options '(t nil space) :group 'ruby)
 
 (eval-when-compile (require 'cl))
 (defun ruby-imenu-create-index-in-block (prefix beg end)
@@ -189,9 +209,10 @@ Also ignores spaces after parenthesis when 'space.")
   (make-variable-buffer-local 'comment-end)
   (setq comment-end "")
   (make-variable-buffer-local 'comment-column)
-  (setq comment-column 32)
+  (setq comment-column ruby-comment-column)
   (make-variable-buffer-local 'comment-start-skip)
   (setq comment-start-skip "\\(^\\|\\s-\\);?#+ *")
+  (setq indent-tabs-mode ruby-indent-tabs-mode)
   (make-local-variable 'parse-sexp-ignore-comments)
   (setq parse-sexp-ignore-comments t)
   (make-local-variable 'paragraph-start)
@@ -266,12 +287,13 @@ The variable ruby-indent-level controls the amount of indentation.
     (let ((space (skip-chars-backward " \t")))
       (cond
        ((bolp) t)
-       ((looking-at "\\?")
-	(or (bolp) (forward-char -1))
-	(not (looking-at "\\sw")))
-       (t
-	(forward-char -1)
-	(or (looking-at ruby-operator-re)
+       ((let (c)
+	  (forward-char -1)
+	  (and (looking-at "\\?")
+	       (setq c (char-before (point)))
+	       (or (eq c ?$) (eq c ??) (eq (char-syntax c) ?w))))
+	nil)
+       ((or (looking-at ruby-operator-re)
 	    (looking-at "[\\[({,;]")
 	    (and (or (not (eq option 'heredoc))
 		     (< space 0))
@@ -307,6 +329,16 @@ The variable ruby-indent-level controls the amount of indentation.
     (cond ((zerop n))
 	  (no-error nil)
 	  ((error "unterminated string")))))
+
+(defun ruby-deep-indent-paren-p (c)
+  (cond ((listp ruby-deep-indent-paren)
+	 (let ((deep (assoc c ruby-deep-indent-paren)))
+	   (cond (deep
+		  (or (cdr deep) ruby-deep-indent-paren-style))
+		 ((memq c ruby-deep-indent-paren)
+		  ruby-deep-indent-paren-style))))
+	((eq c ruby-deep-indent-paren) ruby-deep-indent-paren-style)
+	((eq c ?\( ) ruby-deep-arglist)))
 
 (defun ruby-parse-partial (&optional end in-string nest depth pcol indent)
   (or depth (setq depth 0))
@@ -384,27 +416,24 @@ The variable ruby-indent-level controls the amount of indentation.
 	(forward-line 1)
 	(goto-char (point))
 	)
-       ((and (looking-at "(") ruby-deep-arglist)
-	(and (eq ruby-deep-arglist 'space) (looking-at ".\\s +")
-	     (setq pnt (match-end 0)))
-	(setq nest (cons (cons (char-after (point)) pnt) nest))
-	(setq pcol (cons (cons pnt depth) pcol))
-	(setq depth 0)
-	(goto-char pnt)
-	)
        ((looking-at "[\\[{(]")
-	(setq nest (cons (cons (char-after (point)) pnt) nest))
-	(setq depth (1+ depth))
+	(let ((deep (ruby-deep-indent-paren-p (char-after))))
+	  (if deep
+	      (progn
+		(and (eq deep 'space) (looking-at ".\\s +")
+		     (setq pnt (match-end 0)))
+		(setq nest (cons (cons (char-after (point)) pnt) nest))
+		(setq pcol (cons (cons pnt depth) pcol))
+		(setq depth 0))
+	    (setq nest (cons (cons (char-after (point)) pnt) nest))
+	    (setq depth (1+ depth))))
 	(goto-char pnt)
 	)
-       ((and (looking-at ")") ruby-deep-arglist)
-	(setq nest (cdr nest))
-	(setq depth (cdr (car pcol)))
-	(setq pcol (cdr pcol))
-	(goto-char pnt))
        ((looking-at "[])}]")
+	(if (ruby-deep-indent-paren-p (matching-paren (char-after)))
+	    (setq depth (cdr (car pcol)) pcol (cdr pcol))
+	  (setq depth (1- depth)))
 	(setq nest (cdr nest))
-	(setq depth (1- depth))
 	(goto-char pnt))
        ((looking-at ruby-block-end-re)
 	(if (or (and (not (bolp))
@@ -516,6 +545,8 @@ The variable ruby-indent-level controls the amount of indentation.
     (let ((indent-point (point))
 	    (case-fold-search nil)
 	    state bol eol
+	    (paren (progn (skip-syntax-forward " ")
+			  (and (char-after) (matching-paren (char-after)))))
 	    (indent 0))
 	(if parse-start
 	    (goto-char parse-start)
@@ -529,9 +560,8 @@ The variable ruby-indent-level controls the amount of indentation.
 	  (setq indent nil))		;  do nothing
 	 ((car (nth 1 state))		; in paren
 	  (goto-char (cdr (nth 1 state)))
-	  (if (and (eq (car (nth 1 state)) ?\( ) ruby-deep-arglist)
-	      (let ((column (current-column))
-		    (s (ruby-parse-region (point) indent-point)))
+	  (if (ruby-deep-indent-paren-p (car (nth 1 state)))
+	      (let ((s (ruby-parse-region (point) indent-point)))
 		(cond
 		 ((and (nth 2 s) (> (nth 2 s) 0))
 		  (goto-char (cdr (nth 1 s)))
@@ -639,15 +669,30 @@ The variable ruby-indent-level controls the amount of indentation.
 				     (forward-word -1)
 				     (not (looking-at "do\\>[^_]")))))
 			     (t t))))))
-	     (setq indent (+ indent ruby-indent-level)))))))
+	     (setq indent
+		   (if (and (ruby-deep-indent-paren-p t) (not (bobp)))
+		       (progn (ruby-backward-sexp) (current-column))
+		     (+ indent ruby-indent-level))))))))
 	indent)))
 
 (defun ruby-electric-brace (arg)
   (interactive "P")
-  (self-insert-command (prefix-numeric-value arg))
-  (ruby-indent-line t))
+  (insert-char last-command-char 1)
+  (ruby-indent-line t)
+  (delete-char -1)
+  (self-insert-command (prefix-numeric-value arg)))
 
-(defun ruby-beginning-of-defun (&optional arg)
+(eval-when-compile
+  (defmacro defun-region-command (func args &rest body)
+    (let ((intr (car body)))
+      (when (featurep 'xemacs)
+	(if (stringp intr) (setq intr (cadr body)))
+	(and (eq (car intr) 'interactive)
+	     (setq intr (cdr intr))
+	     (setcar intr (concat "_" (car intr)))))
+      (cons 'defun (cons func (cons args body))))))
+
+(defun-region-command ruby-beginning-of-defun (&optional arg)
   "Move backward to next beginning-of-defun.
 With argument, do this that many times.
 Returns t unless search stops due to end of buffer."
@@ -663,7 +708,7 @@ Returns t unless search stops due to end of buffer."
 	 (beginning-of-line)
 	 t)))
 
-(defun ruby-end-of-defun (&optional arg)
+(defun-region-command ruby-end-of-defun (&optional arg)
   "Move forward to next end of defun.
 An end of a defun is found by moving forward from the beginning of one."
   (interactive "p")
@@ -701,15 +746,78 @@ An end of a defun is found by moving forward from the beginning of one."
 		(setq done nil))))))
   (back-to-indentation))
 
-(defun ruby-beginning-of-block ()
+(defun-region-command ruby-beginning-of-block (&optional arg)
   "Move backward to next beginning-of-block"
-  (interactive)
-  (ruby-move-to-block -1))
+  (interactive "p")
+  (ruby-move-to-block (- (or arg 1))))
 
-(defun ruby-end-of-block ()
+(defun-region-command ruby-end-of-block (&optional arg)
   "Move forward to next beginning-of-block"
-  (interactive)
-  (ruby-move-to-block 1))
+  (interactive "p")
+  (ruby-move-to-block (or arg 1)))
+
+(defun-region-command ruby-forward-sexp (&optional cnt)
+  (interactive "p")
+  (if (and (numberp cnt) (< cnt 0))
+      (ruby-backward-sexp (- cnt))
+    (dotimes (i (or cnt 1))
+      (skip-chars-forward " \t\n,.:;|&^~=!?\\+\\-\\*")
+      (cond ((looking-at "\\s(")
+	     (goto-char (scan-sexps (point) 1)))
+	    ((looking-at ruby-block-beg-re)
+	     (ruby-end-of-block)
+	     (forward-word 1))
+	    ((looking-at "\\(\\$\\|@@?\\)?\\sw")
+	     (while (progn
+		      (while (progn (forward-word 1) (looking-at "_")))
+		      (cond ((looking-at "::") (forward-char 2) t)
+			    ((> (skip-chars-forward ".") 0))
+			    ((looking-at "\\?\\|!\\(=[~=>]\\|[^~=]\\)")
+			     (forward-char 1) nil)))))
+	    ((let (state expr)
+	       (while
+		   (progn
+		     (setq expr (or expr (ruby-expr-beg)
+				    (looking-at "%\\sw?\\Sw\\|[\"'`/]")))
+		     (nth 1 (setq state (apply 'ruby-parse-partial nil state))))
+		 (setq expr t)
+		 (skip-chars-forward "<"))
+	       (not expr)))))))
+
+(defun-region-command ruby-backward-sexp (&optional cnt)
+  (interactive "p")
+  (dotimes (i (or cnt 1))
+    (skip-chars-backward " \t\n,.:;|&^~=!?\\+\\-\\*")
+    (forward-char -1)
+    (cond ((looking-at "\\s)")
+	   (goto-char (scan-sexps (1+ (point)) -1))
+	   (case (char-before)
+	     (?% (forward-char -1))
+	     ('(?q ?Q ?w ?W ?r ?x)
+	      (if (eq (char-before (1- (point))) ?%) (forward-char -2))))
+	   nil)
+	  ((looking-at "\\s\"\\|\\\\\\S_")
+	   (let ((c (char-to-string (char-before (match-end 0)))))
+	     (while (and (search-backward c)
+			 (oddp (skip-chars-backward "\\")))))
+	   nil)
+	  ((looking-at "\\s.\\|\\s\\"))
+	  ((looking-at "\\s(") nil)
+	  (t
+	   (forward-char 1)
+	   (while (progn (forward-word -1)
+			 (case (char-before)
+			   (?_ t)
+			   (?. (forward-char -1) t)
+			   ((?$ ?@)
+			    (forward-char -1)
+			    (and (eq (char-before) (char-after)) (forward-char -1)))
+			   (?:
+			    (forward-char -1)
+			    (eq (char-before) :)))))
+	   (if (looking-at ruby-block-end-re)
+	       (ruby-beginning-of-block))
+	   nil))))
 
 (defun ruby-reindent-then-newline-and-indent ()
   (interactive "*")
@@ -745,6 +853,29 @@ An end of a defun is found by moving forward from the beginning of one."
   (push-mark (point) nil t)
   (ruby-beginning-of-defun)
   (re-search-backward "^\n" (- (point) 1) t))
+
+(defun ruby-indent-exp (&optional shutup-p)
+  "Indent each line in the balanced expression following point syntactically.
+If optional SHUTUP-P is non-nil, no errors are signalled if no
+balanced expression is found."
+  (interactive "*P")
+  (let ((here (point-marker)) start top column (nest t))
+    (set-marker-insertion-type here t)
+    (unwind-protect
+	(progn
+	  (beginning-of-line)
+	  (setq start (point) top (current-indentation))
+	  (while (and (not (eobp))
+		      (progn
+			(setq column (ruby-calculate-indent start))
+			(cond ((> column top)
+			       (setq nest t))
+			      ((and (= column top) nest)
+			       (setq nest nil) t))))
+	    (ruby-indent-to column)
+	    (beginning-of-line 2)))
+      (goto-char here)
+      (set-marker here nil))))
 
 (defun ruby-add-log-current-method ()
   "Return current method string."

@@ -1,3 +1,25 @@
+Tue Feb 18 00:13:50 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* misc/ruby-mode.el (ruby-comment-column): customize comment
+	  column.  [new]
+
+	* misc/ruby-mode.el (ruby-deep-indent-paren): deep indentation
+	  parentheses.  [new]
+
+	* misc/ruby-mode.el (ruby-expr-beg): fix for / after $?.
+
+	* misc/ruby-mode.el (ruby-parse-partial, ruby-calculate-indent):
+	  deep indentation support.
+
+	* misc/ruby-mode.el (ruby-forward-sexp, ruby-backward-sexp):
+	  move forward/backward across one balanced expression.  [new]
+
+	* misc/ruby-mode.el (ruby-indent-exp): indent balanced
+	  expression.  [new]
+
+	* misc/ruby-mode.el (ruby-electric-brace): indent before
+	  show matching parenthesis.  (contributed by NABEYA Kenichi)
+
 Mon Feb 17 14:36:56 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* win32/win32.c (rb_w32_opendir, rb_w32_utime): need parens.
