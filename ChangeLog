@@ -1,3 +1,7 @@
+Wed Dec 11 23:35:43 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/extmk.rb (create_makefile): -no-undefined -> --no-undefined.
+
 Wed Dec 11 17:54:59 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (io_read): takes optional second argument to specify a

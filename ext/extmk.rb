@@ -42,7 +42,7 @@ def extmake(target)
   init_mkmf
 
   if /linux/ =~ RUBY_PLATFORM and $configure_args['--enable-shared'] and CONFIG["GNU_LD"] == "yes"
-    $DLDFLAGS << " -Wl,-no-undefined"
+    $DLDFLAGS << " -Wl,--no-undefined"
   end
 
   begin
