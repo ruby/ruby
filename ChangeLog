@@ -1,3 +1,7 @@
+Tue Oct 19 08:54:26 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* intern.h, object.c (rb_class_inherited_p): export.
+
 Tue Oct 19 08:46:57 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_upto): method result must be checked.  [ruby-dev:24504]

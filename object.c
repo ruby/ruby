@@ -1308,8 +1308,8 @@ rb_mod_eqq(mod, arg)
  *
  */
 
-static VALUE
-rb_mod_le(mod, arg)
+VALUE
+rb_class_inherited_p(mod, arg)
     VALUE mod, arg;
 {
     VALUE start = mod;
@@ -1358,7 +1358,7 @@ rb_mod_lt(mod, arg)
     VALUE mod, arg;
 {
     if (mod == arg) return Qfalse;
-    return rb_mod_le(mod, arg);
+    return rb_class_inherited_p(mod, arg);
 }
 
 
@@ -1386,7 +1386,7 @@ rb_mod_ge(mod, arg)
 	rb_raise(rb_eTypeError, "compared with non class/module");
     }
 
-    return rb_mod_le(arg, mod);
+    return rb_class_inherited_p(arg, mod);
 }
 
 /*
@@ -1434,7 +1434,7 @@ rb_mod_cmp(mod, arg)
 	return Qnil;
     }
 
-    cmp = rb_mod_le(mod, arg);
+    cmp = rb_class_inherited_p(mod, arg);
     if (NIL_P(cmp)) return Qnil;
     if (cmp) {
 	return INT2FIX(-1);
@@ -2616,7 +2616,7 @@ Init_Object()
     rb_define_method(rb_cModule, "==", rb_obj_equal, 1);
     rb_define_method(rb_cModule, "<=>",  rb_mod_cmp, 1);
     rb_define_method(rb_cModule, "<",  rb_mod_lt, 1);
-    rb_define_method(rb_cModule, "<=", rb_mod_le, 1);
+    rb_define_method(rb_cModule, "<=", rb_class_inherited_p, 1);
     rb_define_method(rb_cModule, ">",  rb_mod_gt, 1);
     rb_define_method(rb_cModule, ">=", rb_mod_ge, 1);
     rb_define_method(rb_cModule, "initialize_copy", rb_mod_init_copy, 1);
