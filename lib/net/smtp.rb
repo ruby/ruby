@@ -38,10 +38,14 @@ Net::Protocol
   If account and password are given, is trying to get authentication
   by using AUTH command. "authtype" is :plain (symbol) or :cram_md5.
 
+: send_mail( mailsrc, from_addr, to_addrs )
 : sendmail( mailsrc, from_addr, to_addrs )
   This method sends 'mailsrc' as mail. SMTPSession read strings
   from 'mailsrc' by calling 'each' iterator, and convert them
   into "\r\n" terminated string when write.
+
+  from_addr must be String.
+  to_addrs must be Array of String, or String.
 
   Exceptions which SMTP raises are:
   * Net::ProtoSyntaxError: syntax error (errno.500)
@@ -91,13 +95,14 @@ module Net
 
     attr :esmtp
 
-    def sendmail( mailsrc, fromaddr, toaddrs )
-      do_ready fromaddr, toaddrs
+    def send_mail( mailsrc, from_addr, to_addrs )
+      do_ready from_addr, to_addrs
       @command.write_mail mailsrc, nil
     end
+    alias sendmail send_mail
 
-    def ready( fromaddr, toaddrs, &block )
-      do_ready fromaddr, toaddrs
+    def ready( from_addr, to_addrs, &block )
+      do_ready from_addr, to_addrs
       @command.write_mail nil, block
     end
 
@@ -105,9 +110,10 @@ module Net
     private
 
 
-    def do_ready( fromaddr, toaddrs )
-      @command.mailfrom fromaddr
-      @command.rcpt toaddrs
+    def do_ready( from_addr, to_addrs )
+      to_addrs = [to_addrs] if String === to_addrs
+      @command.mailfrom from_addr
+      @command.rcpt to_addrs
       @command.data
     end
 
