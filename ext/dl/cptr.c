@@ -360,7 +360,7 @@ rb_dlptr_aref(int argc, VALUE argv[], VALUE self)
     defualt:
 	rb_bug("rb_dlptr_aset()");
     }
-    return rb_tainted_str_new(RPTR_DATA(self)->ptr + offset, len);
+    return rb_tainted_str_new((char *)RPTR_DATA(self)->ptr + offset, len);
 }
 
 VALUE
@@ -392,7 +392,7 @@ rb_dlptr_aset(int argc, VALUE argv[], VALUE self)
     defualt:
 	rb_bug("rb_dlptr_aset()");
     }
-    memcpy(RPTR_DATA(self)->ptr + offset, mem, len);
+    memcpy((char *)RPTR_DATA(self)->ptr + offset, mem, len);
     return Qnil;
 }
 

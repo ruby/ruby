@@ -111,18 +111,17 @@ for calltype in CALLTYPES
       for n in 0..(MAX_CALLBACK-1)
         $out << (<<-EOS)
 
-PRE_DECL_#{calltype.upcase} static #{DLTYPE[ty][:type]}
+PRE_DECL_#{calltype.upcase} static #{DLTYPE[ty][:type]} MIDST_DECL_#{calltype.upcase}
 #{func_name(ty,argc,n,calltype)}(#{(0...argc).collect{|i| "DLSTACK_TYPE stack" + i.to_s}.join(", ")}) POST_DECL_#{calltype.upcase}
 {
-    VALUE args[#{argc}];
-    VALUE ret, cb;
+    VALUE ret, cb#{argc > 0 ? ", args[#{argc}]" : ""};
 #{
       (0...argc).collect{|i|
 	"    args[%d] = LONG2NUM(stack%d);" % [i,i]
       }.join("\n")
 }
     cb = rb_ary_entry(rb_ary_entry(#{proc_entry}, #{ty}), #{(n * DLSTACK_SIZE) + argc});
-    ret = rb_funcall2(cb, cb_call, #{argc}, args);
+    ret = rb_funcall2(cb, cb_call, #{argc}, #{argc > 0 ? 'args' : 'NULL'});
     return #{DLTYPE[ty][:conv] ? DLTYPE[ty][:conv] % "ret" : ""};
 }
 

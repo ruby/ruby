@@ -58,6 +58,15 @@ rb_dl_value2ptr(VALUE self, VALUE val)
 #if defined(__GNUC__)
 # define PRE_DECL_CDECL     __attribute__((cdecl))
 # define PRE_DECL_STDCALL   __attribute__((stdcall))
+# define MIDST_DECL_CDECL
+# define MIDST_DECL_STDCALL
+# define POST_DECL_CDECL
+# define POST_DECL_STDCALL
+#elif defined(_MSC_VER)
+# define PRE_DECL_CDECL
+# define PRE_DECL_STDCALL
+# define MIDST_DECL_CDECL     __cdecl
+# define MIDST_DECL_STDCALL   __stdcall
 # define POST_DECL_CDECL
 # define POST_DECL_STDCALL
 #else

@@ -225,6 +225,8 @@ rb_dlcfunc_inspect(VALUE self)
 #if defined(__GNUC__)
 # define DECL_FUNC(f,ret,args,calltype)  ret (__attribute__((calltype)) *f)(args)
 /* # define DECL_FUNC(f,ret,args,calltype)  ret (*f)(args) */
+#elif defined(_MSC_VER)
+# define DECL_FUNC(f,ret,args,calltype)  ret (__##calltype *f)(args)
 #else
 # error "unsupported compiler."
 #endif
@@ -331,7 +333,7 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
 #if HAVE_LONG_LONG  /* used in ruby.h */
 	case DLTYPE_LONG_LONG:
 #define CASE(n) case n: { \
-	    DECL_FUNC(f,long long,DLSTACK_PROTO,cdecl) = cfunc->ptr; \
+	    DECL_FUNC(f,LONG_LONG,DLSTACK_PROTO,cdecl) = cfunc->ptr; \
 	    LONG_LONG ret; \
 	    ret = f(DLSTACK_ARGS(stack)); \
 	    result = LL2NUM(ret); \
@@ -429,7 +431,7 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
 #if HAVE_LONG_LONG  /* used in ruby.h */
 	case DLTYPE_LONG_LONG:
 #define CASE(n) case n: { \
-	    DECL_FUNC(f,long long,DLSTACK_PROTO,stdcall) = cfunc->ptr; \
+	    DECL_FUNC(f,LONG_LONG,DLSTACK_PROTO,stdcall) = cfunc->ptr; \
 	    LONG_LONG ret; \
 	    ret = f(DLSTACK_ARGS(stack)); \
 	    result = LL2NUM(ret); \
