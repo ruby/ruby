@@ -340,6 +340,7 @@ lib/test/unit/testsuite.rb
 lib/test/unit/ui/console/testrunner.rb
 lib/test/unit/ui/fox/testrunner.rb
 lib/test/unit/ui/gtk/testrunner.rb
+lib/test/unit/ui/gtk2/testrunner.rb
 lib/test/unit/ui/testrunnermediator.rb
 lib/test/unit/ui/testrunnerutilities.rb
 lib/test/unit/ui/tk/testrunner.rb
