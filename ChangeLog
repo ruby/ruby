@@ -1,3 +1,8 @@
+Thu Jul 22 00:02:21 2004  Masahiro Kitajima  <katonbo@katontech.com>
+
+	* process.c (rb_f_system): not need to call last_status_set() any
+	  longer on _WIN32.
+
 Tue Jul 20 09:15:17 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* test/fileutils/test_fileutils.rb: File.link raises EINVAL on BeOS.

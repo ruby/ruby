@@ -1427,9 +1427,7 @@ rb_f_system(argc, argv)
     else {
 	status = proc_spawn_n(argc, argv, prog);
     }
-#if defined(_WIN32)
-    last_status_set(status, 0);
-#else
+#if !defined(_WIN32)
     last_status_set(status == -1 ? 127 : status, 0);
 #endif
 #elif defined(__VMS)
