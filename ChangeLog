@@ -1,3 +1,7 @@
+Sat Feb 21 11:12:08 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* missing/os2.c, missing/x68.c: typo fix.  pointed out by greentea.
+
 Fri Feb 20 19:11:20 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/ostruct.rb (OpenStruct#initialize_copy): should not share
