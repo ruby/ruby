@@ -4669,6 +4669,9 @@ rb_call(klass, recv, mid, argc, argv, scope)
 
 	/* self must be kind of a specified form for private method */
 	if ((noex & NOEX_PROTECTED)) {
+	    if (TYPE(klass) == T_ICLASS) {
+		klass = RBASIC(klass)->klass;
+	    }
 	    if (!rb_obj_is_kind_of(ruby_frame->self, rb_class_real(klass)))
 		return rb_undefined(recv, mid, argc, argv, CSTAT_PROT);
 	}
@@ -6757,7 +6760,7 @@ method_unbind(obj)
     Data_Get_Struct(obj, struct METHOD, orig);
     method = Data_Make_Struct(rb_cUnboundMethod, struct METHOD, bm_mark, free, data);
     data->klass = orig->klass;
-    data->recv = 0;
+    data->recv = Qundef;
     data->id = orig->id;
     data->body = orig->body;
     data->rklass = orig->rklass;
@@ -6787,7 +6790,7 @@ rb_mod_method(mod, vid)
     VALUE mod;
     VALUE vid;
 {
-    return mnew(mod, 0, rb_to_id(vid), rb_cUnboundMethod);
+    return mnew(mod, Qundef, rb_to_id(vid), rb_cUnboundMethod);
 }
 
 static VALUE
@@ -6913,18 +6916,35 @@ method_inspect(method)
     struct METHOD *data;
     VALUE str;
     const char *s;
+    char *sharp = "#";
 
     Data_Get_Struct(method, struct METHOD, data);
     str = rb_str_buf_new2("#<");
     s = rb_class2name(CLASS_OF(method));
     rb_str_buf_cat2(str, s);
     rb_str_buf_cat2(str, ": ");
-    s = rb_class2name(data->rklass);
-    rb_str_buf_cat2(str, s);
-    rb_str_buf_cat2(str, "(");
-    s = rb_class2name(data->klass);
-    rb_str_buf_cat2(str, s);
-    rb_str_buf_cat2(str, ")#");
+
+    if (FL_TEST(data->klass, FL_SINGLETON)) {
+	VALUE v;
+
+	rb_str_buf_append(str, rb_inspect(data->recv));
+	v = rb_iv_get(data->klass, "__attached__");
+	if (data->recv != v) {
+	    rb_str_buf_cat2(str, "(");
+	    rb_str_buf_append(str, rb_inspect(v));
+	    rb_str_buf_cat2(str, ").");
+	}
+	else {
+	    rb_str_buf_cat2(str, ".");
+	}
+    }
+    else {
+	rb_str_buf_cat2(str, rb_class2name(data->rklass));
+	rb_str_buf_cat2(str, "(");
+	s = rb_class2name(data->klass);
+	rb_str_buf_cat2(str, s);
+	rb_str_buf_cat2(str, ")#");
+    }
     s = rb_id2name(data->oid);
     rb_str_buf_cat2(str, s);
     rb_str_buf_cat2(str, ">");

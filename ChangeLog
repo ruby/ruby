@@ -1,3 +1,10 @@
+Tue Feb  5 16:17:20 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (fptr_finalize): should raise error when fclose fails.
+
+	* eval.c (method_inspect): proper output format to distinguish
+	  methods and singleton methods.
+
 Mon Feb  4 22:44:58 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* file.c (rb_file_s_expand_path): should terminate.
@@ -7,6 +14,8 @@ Mon Feb  4 15:38:29 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* object.c (rb_class_real): should not follow ICLASS link
 
 	* variable.c (classname): should follow ICLASS link explicitly.
+
+	* eval.c (rb_call): ditto.
 
 Fri Feb  1 19:10:04 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 

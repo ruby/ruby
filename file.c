@@ -1459,8 +1459,9 @@ rb_file_s_expand_path(argc, argv)
 	if (!NIL_P(dname)) {
 	    dname = rb_file_s_expand_path(1, &dname);
 	    if (OBJ_TAINTED(dname)) tainted = 1;
-	    BUFCHECK (strlen(RSTRING(dname)->ptr) > buflen);
-	    strcpy(buf, RSTRING(dname)->ptr);
+	    BUFCHECK (RSTRING(dname)->len > buflen);
+	    memcpy(buf, RSTRING(dname)->ptr, RSTRING(dname)->len);
+	    p += RSTRING(dname)->len;
 	}
 	else {
 	    char *dir = my_getcwd();
@@ -1468,8 +1469,8 @@ rb_file_s_expand_path(argc, argv)
 	    tainted = 1;
 	    BUFCHECK (strlen(dir) > buflen);
 	    strcpy(buf, dir);
+	    p = &buf[strlen(buf)];
 	}
-	p = &buf[strlen(buf)];
 	while (p > buf && *(p - 1) == '/') p--;
     }
     else {
@@ -1539,9 +1540,6 @@ rb_file_s_expand_path(argc, argv)
 	memcpy(++p, b, s-b);
 	p += s-b;
     }
-    else if (p == buf) {
-	p++;
-    }
 #if defined(DOSISH)
     else if (ISALPHA(buf[0]) && (buf[1] == ':') && isdirsep(buf[2])) {
 	/* root directory needs a trailing backslash,
@@ -1554,8 +1552,8 @@ rb_file_s_expand_path(argc, argv)
 #endif
 
     if (tainted) OBJ_TAINT(result);
-    *p = '\0';
     RSTRING(result)->len = p - buf;
+    *p = '\0';
     return result;
 }
 
@@ -2308,7 +2306,7 @@ path_check_1(path)
     for (;;) {
 	if (stat(p0, &st) == 0 && (st.st_mode & 002)) {
 	    if (p) *p = '/';
-	    rb_warn("Bad mode 0%o on %s", st.st_mode, p0);
+	    rb_warn("Unsecure world writeable dir %s , mode 0%o", p0, st.st_mode);
 	    return 0;
 	}
 	s = strrdirsep(p0);

@@ -1072,26 +1072,34 @@ rb_io_isatty(io)
 }
 
 static void
-fptr_finalize(fptr)
+fptr_finalize(fptr, fin)
     OpenFile *fptr;
 {
+    int n1 = 0, n2 = 0, e = 0;
+
     if (fptr->f) {
-	fclose(fptr->f);
+	n1 = fclose(fptr->f);
+	if (n1 < 0) e = errno;
     }
     if (fptr->f2) {
-	fclose(fptr->f2);
+	n2 = fclose(fptr->f2);
+    }
+    if (!fin && (n1 < 0 || n2 < 0)) {
+	if (n2 == 0) errno = e;
+	rb_sys_fail(fptr->path);
     }
 }
 
 static void
-rb_io_fptr_cleanup(fptr)
+rb_io_fptr_cleanup(fptr, fin)
     OpenFile *fptr;
+    int fin;
 {
     if (fptr->finalize) {
 	(*fptr->finalize)(fptr);
     }
     else {
-	fptr_finalize(fptr);
+	fptr_finalize(fptr, fin);
     }
     fptr->f = fptr->f2 = 0;
 
@@ -1109,21 +1117,7 @@ rb_io_fptr_finalize(fptr)
     if (!fptr->f && !fptr->f2) return;
     if (fileno(fptr->f) < 3) return;
 
-    rb_io_fptr_cleanup(fptr);
-}
-
-static void
-rb_io_fptr_close(fptr)
-    OpenFile *fptr;
-{
-    int fd;
-
-    if (!fptr) return;
-    if (!fptr->f && !fptr->f2) return;
-
-    fd = fileno(fptr->f);
-    rb_io_fptr_cleanup(fptr);
-    rb_thread_fd_close(fd);
+    rb_io_fptr_cleanup(fptr, Qtrue);
 }
 
 VALUE
@@ -1131,9 +1125,16 @@ rb_io_close(io)
     VALUE io;
 {
     OpenFile *fptr;
+    int fd;
 
     fptr = RFILE(io)->fptr;
-    rb_io_fptr_close(fptr);
+    if (!fptr) return;
+    if (!fptr->f && !fptr->f2) return;
+
+    fd = fileno(fptr->f);
+    rb_io_fptr_cleanup(fptr, Qfalse);
+    rb_thread_fd_close(fd);
+
     if (fptr->pid) {
 	rb_syswait(fptr->pid);
 	fptr->pid = 0;
@@ -2492,6 +2493,14 @@ rb_file_initialize(argc, argv, io)
 	rb_io_close_m(io);
 	free(RFILE(io)->fptr);
 	RFILE(io)->fptr = 0;
+    }
+    if (0 < argc && argc < 3) {
+	VALUE fd = rb_check_convert_type(argv[0], T_FIXNUM, "Fixnum", "to_int");
+
+	if (!NIL_P(fd)) {
+	    argv[0] = fd;
+	    return rb_io_initialize(argc, argv, io);
+	}
     }
     rb_open_file(argc, argv, io);
 

@@ -192,6 +192,13 @@ init_sock(sock, fd)
 }
 
 static VALUE
+bsock_s_for_fd(klass, fd)
+    VALUE klass, fd;
+{
+    return init_sock(rb_obj_alloc(klass), NUM2INT(fd));
+}
+
+static VALUE
 bsock_shutdown(argc, argv, sock)
     int argc;
     VALUE *argv;
@@ -1534,13 +1541,6 @@ sock_init(sock, domain, type, protocol)
 }
 
 static VALUE
-sock_s_for_fd(klass, fd)
-    VALUE klass, fd;
-{
-    return init_sock(rb_obj_alloc(klass), NUM2INT(fd));
-}
-
-static VALUE
 sock_s_socketpair(klass, domain, type, protocol)
     VALUE klass, domain, type, protocol;
 {
@@ -2123,6 +2123,7 @@ Init_socket()
 			       bsock_do_not_rev_lookup, 0);
     rb_define_singleton_method(rb_cBasicSocket, "do_not_reverse_lookup=",
 			       bsock_do_not_rev_lookup_set, 1);
+    rb_define_singleton_method(rb_cBasicSocket, "for_fd", bsock_s_for_fd, 1);
 
     rb_define_method(rb_cBasicSocket, "close_read", bsock_close_read, 0);
     rb_define_method(rb_cBasicSocket, "close_write", bsock_close_write, 0);
@@ -2185,7 +2186,6 @@ Init_socket()
 #endif
 
     rb_cSocket = rb_define_class("Socket", rb_cBasicSocket);
-    rb_define_singleton_method(rb_cSocket, "for_fd", sock_s_for_fd, 1);
 
     rb_define_method(rb_cSocket, "initialize", sock_init, 3);
     rb_define_method(rb_cSocket, "connect", sock_connect, 1);
