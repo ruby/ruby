@@ -1,3 +1,8 @@
+Sat Feb 19 13:52:02 2005  Tanaka Akira  <akr@m17n.org>
+
+	* lib/open-uri.rb: call OpenSSL::SSL::SSLSocket#post_connection_check
+	  after connection is made.
+
 Sat Feb 19 13:31:28 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (extract_makefile): remove no longer existing installed
