@@ -1,3 +1,7 @@
+Tue Mar  9 01:09:46 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
+
+	* Makefile.in: replaced regex.c entry with Oniguruma files.
+
 Mon Mar  8 23:16:07 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb: HTTPHeader did not initialized correctly.

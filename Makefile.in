@@ -75,7 +75,8 @@ DMYEXT	      = dmyext.@OBJEXT@
 
 MAINOBJ	      = main.@OBJEXT@
 
-OBJS	      = array.@OBJEXT@ \
+OBJS	      = ascii.@OBJEXT@ \
+		array.@OBJEXT@ \
 		bignum.@OBJEXT@ \
 		class.@OBJEXT@ \
 		compar.@OBJEXT@ \
@@ -83,6 +84,7 @@ OBJS	      = array.@OBJEXT@ \
 		dln.@OBJEXT@ \
 		enum.@OBJEXT@ \
 		error.@OBJEXT@ \
+		euc_jp.@OBJEXT@ \
 		eval.@OBJEXT@ \
 		file.@OBJEXT@ \
 		gc.@OBJEXT@ \
@@ -100,14 +102,21 @@ OBJS	      = array.@OBJEXT@ \
 		random.@OBJEXT@ \
 		range.@OBJEXT@ \
 		re.@OBJEXT@ \
-		regex.@OBJEXT@ \
+		regcomp.@OBJEXT@ \
+		regenc.@OBJEXT@ \
+		regerror.@OBJEXT@ \
+		regexec.@OBJEXT@ \
+		reggnu.@OBJEXT@ \
+		regparse.@OBJEXT@ \
 		ruby.@OBJEXT@ \
 		signal.@OBJEXT@ \
+		sjis.@OBJEXT@ \
 		sprintf.@OBJEXT@ \
 		st.@OBJEXT@ \
 		string.@OBJEXT@ \
 		struct.@OBJEXT@ \
 		time.@OBJEXT@ \
+		utf8.@OBJEXT@ \
 		util.@OBJEXT@ \
 		variable.@OBJEXT@ \
 		version.@OBJEXT@ \
@@ -351,6 +360,7 @@ win32.@OBJEXT@: $(srcdir)/win32/win32.c
 # Prevent GNU make v3 from overflowing arg limit on SysV.
 .NOEXPORT:
 ###
+ascii.@OBJEXT@: ascii.c regenc.h oniguruma.h config.h
 array.@OBJEXT@: array.c ruby.h config.h defines.h intern.h missing.h \
   util.h st.h
 bignum.@OBJEXT@: bignum.c ruby.h config.h defines.h intern.h missing.h
@@ -364,6 +374,7 @@ enum.@OBJEXT@: enum.c ruby.h config.h defines.h intern.h missing.h node.h \
   util.h
 error.@OBJEXT@: error.c ruby.h config.h defines.h intern.h missing.h \
   env.h version.h st.h
+euc_jp.@OBJEXT@: euc_jp.c regenc.h oniguruma.h config.h
 eval.@OBJEXT@: eval.c ruby.h config.h defines.h intern.h missing.h node.h \
   env.h util.h rubysig.h st.h dln.h
 file.@OBJEXT@: file.c ruby.h config.h defines.h intern.h missing.h \
@@ -392,17 +403,24 @@ random.@OBJEXT@: random.c ruby.h config.h defines.h intern.h missing.h
 range.@OBJEXT@: range.c ruby.h config.h defines.h intern.h missing.h
 re.@OBJEXT@: re.c ruby.h config.h defines.h intern.h missing.h re.h \
   regex.h
-regex.@OBJEXT@: regex.c config.h regex.h
+regcomp.@OBJEXT@: regcomp.c oniguruma.h regint.h regparse.h regenc.h config.h
+regenc.@OBJEXT@: regenc.c regint.h regenc.h oniguruma.h config.h
+regerror.@OBJEXT@: regerror.c regint.h regenc.h oniguruma.h config.h
+regexec.@OBJEXT@: regexec.c regint.h regenc.h oniguruma.h config.h
+reggnu.@OBJEXT@: reggnu.c regint.h regenc.h oniguruma.h config.h oniggnu.h
+regparse.@OBJEXT@: regparse.c oniguruma.h regint.h regparse.h regenc.h config.h
 ruby.@OBJEXT@: ruby.c ruby.h config.h defines.h intern.h missing.h dln.h \
   node.h util.h
 signal.@OBJEXT@: signal.c ruby.h config.h defines.h intern.h missing.h \
   rubysig.h
+sjis.@OBJEXT@: sjis.c regenc.h oniguruma.h config.h
 sprintf.@OBJEXT@: sprintf.c ruby.h config.h defines.h intern.h missing.h
 st.@OBJEXT@: st.c config.h st.h
 string.@OBJEXT@: string.c ruby.h config.h defines.h intern.h missing.h \
   re.h regex.h
 struct.@OBJEXT@: struct.c ruby.h config.h defines.h intern.h missing.h
 time.@OBJEXT@: time.c ruby.h config.h defines.h intern.h missing.h
+utf8.@OBJEXT@: utf8.c regenc.h oniguruma.h config.h
 util.@OBJEXT@: util.c ruby.h config.h defines.h intern.h missing.h util.h
 variable.@OBJEXT@: variable.c ruby.h config.h defines.h intern.h \
   missing.h env.h node.h st.h util.h
