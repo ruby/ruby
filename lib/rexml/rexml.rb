@@ -21,7 +21,7 @@
 # online[http://www.germane-software.com/software/rexml/docs/tutorial.html]
 module REXML
 	Copyright = "Copyright © 2001, 2002, 2003, 2004 Sean Russell <ser@germane-software.com>"
-	Date = "+2004/162"
-	Version = "3.1.1"
+	Date = "+2004/186"
+	Version = "3.1.2"
 
 end

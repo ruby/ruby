@@ -74,10 +74,9 @@ module REXML
         rv << " "
         attr.write( rv, 0 )
       end
-      rv << ">"
 
       if children.size > 0
-        rv << " ... </>"
+        rv << "> ... </>"
       else
         rv << "/>"
       end
@@ -974,6 +973,10 @@ module REXML
 			attr = get_attribute(name)
 			return attr.value unless attr.nil?
 			return nil
+		end
+
+		def to_a
+			values.flatten
 		end
 
 		# Returns the number of attributes the owning Element contains.

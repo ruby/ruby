@@ -151,13 +151,14 @@ module REXML
             end
           end
         when :any
+					#puts "ANY"
           for element in nodeset
             if element.node_type == :element
-              attr = element.attributes
+              new_nodeset += element.attributes.to_a
             end
           end
         end
-        #puts "RETURNING #{new_nodeset.collect{|n|n.to_s}.inspect}"
+				#puts "RETURNING #{new_nodeset.collect{|n|n.to_s}.inspect}"
         return new_nodeset
 
       when :parent
@@ -182,7 +183,7 @@ module REXML
             new_nodeset << node
             while ( node.parent )
               node = node.parent
-              new_nodeset << node unless new_nodeset.includes? node
+              new_nodeset << node unless new_nodeset.include? node
             end
           end
         end
@@ -429,10 +430,9 @@ module REXML
     end
 
     def equality_relational_compare( set1, op, set2 )
-      #puts "EQ_REL_COMP: #{set1.to_s}, #{op}, #{set2.to_s}"
-      #puts "#{set1.class.name} #{op} #{set2.class.name}"
+			#puts "#"*80
       if set1.kind_of? Array and set2.kind_of? Array
-        #puts "#{set1.size} & #{set2.size}"
+				#puts "#{set1.size} & #{set2.size}"
         if set1.size == 1 and set2.size == 1
           set1 = set1[0]
           set2 = set2[0]
@@ -450,6 +450,7 @@ module REXML
           return false
         end
       end
+			#puts "EQ_REL_COMP: #{set1.class.name} #{set1.inspect}, #{op}, #{set2.class.name} #{set2.inspect}"
       #puts "COMPARING VALUES"
       # If one is nodeset and other is number, compare number to each item
       # in nodeset s.t. number op number(string(item))
@@ -458,7 +459,7 @@ module REXML
       # If one is nodeset and other is boolean, compare boolean to each item
       # in nodeset s.t. boolean op boolean(item)
       if set1.kind_of? Array or set2.kind_of? Array
-        #puts "ISA ARRAY"
+				#puts "ISA ARRAY"
         if set1.kind_of? Array
           a = set1
           b = set2.to_s
@@ -485,8 +486,10 @@ module REXML
             return true if compare( v, op, b )
           end
         else
+					#puts "Functions::string( #{b}(#{b.class.name}) ) = #{Functions::string(b)}"
           b = Functions::string( b )
           for v in a
+						#puts "v = #{v.class.name} #{v.inspect}"
             v = Functions::string(v)
             return true if compare( v, op, b )
           end
@@ -529,7 +532,7 @@ module REXML
     end
 
     def compare a, op, b
-      #puts "COMPARE #{a.to_s} #{op} #{b.to_s}"
+			#puts "COMPARE #{a.to_s}(#{a.class.name}) #{op} #{b.to_s}(#{a.class.name})"
       case op
       when :eq
         a == b

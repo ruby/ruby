@@ -1,3 +1,5 @@
+require 'rexml/validation/validationexception'
+
 module REXML
   module Parsers
     class TreeParser
