@@ -150,7 +150,7 @@ rubylib_mangle(s, l)
 	    }
 	    newl = strlen(newp);
 	    if (newl == 0 || oldl == 0 || newl > STATIC_FILE_LENGTH) {
-		Fatal("malformed RUBYLIB_PREFIX");
+		rb_fatal("malformed RUBYLIB_PREFIX");
 	    }
 	    strcpy(ret, newp);
 	    s = ret;
@@ -172,7 +172,7 @@ rubylib_mangle(s, l)
 	return s;
     }
     if (l + newl - oldl > STATIC_FILE_LENGTH || newl > STATIC_FILE_LENGTH) {
-	Fatal("malformed RUBYLIB_PREFIX");
+	rb_fatal("malformed RUBYLIB_PREFIX");
     }
     strcpy(ret + newl, s + oldl);
     return ret;

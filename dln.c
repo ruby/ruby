@@ -1573,8 +1573,8 @@ dln_find_file(fname, path)
 #if defined(__CYGWIN32__)
 const char *
 conv_to_posix_path(win32, posix)
-    const char *win32;
-    const char *posix;
+    char *win32;
+    char *posix;
 {
     char *first = win32;
     char *p = win32;

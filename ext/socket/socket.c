@@ -48,6 +48,17 @@ extern int rb_thread_select(int, fd_set*, fd_set*, fd_set*, struct timeval*); /*
 # include "addrinfo.h"
 #endif
 
+#ifdef SOCKADDR_STORAGE
+# define ss_falily __ss_family
+# define SS_LEN(ss) (ss)->__ss_len
+#else
+# define SOCKADDR_STORAGE sockaddr
+# define ss_family sa_family
+# ifdef SA_LEN
+#  define SS_LEN(ss) SA_LEN(ss)
+# endif
+#endif
+
 VALUE rb_cBasicSocket;
 VALUE rb_cIPSocket;
 VALUE rb_cTCPSocket;
@@ -468,27 +479,6 @@ ipaddr(sockaddr)
 }
 
 
-#ifndef HAVE_INET_ATON
-static unsigned long
-inet_aton(host, inp)
-    char *host;
-    struct in_addr *inp;
-{
-    int d1, d2, d3, d4;
-    char ch;
-
-    if (sscanf(host, "%d.%d.%d.%d%c", &d1, &d2, &d3, &d4, &ch) == 4 &&
-	0 <= d1 && d1 <= 255 && 0 <= d2 && d2 <= 255 &&
-	0 <= d3 && d3 <= 255 && 0 <= d4 && d4 <= 255) {
-	inp->s_addr = htonl(
-	    ((long) d1 << 24) | ((long) d2 << 16) |
-	    ((long) d3 << 8) | ((long) d4 << 0));
-	return 1;
-    }
-    return 0;
-}
-#endif
-
 static void
 setipaddr(name, addr)
     char *name;
@@ -713,7 +703,7 @@ static VALUE
 tcp_s_gethostbyname(obj, host)
     VALUE obj, host;
 {
-    struct sockaddr_storage addr;
+    struct SOCKADDR_STORAGE addr;
     struct hostent *h;
     char **pch;
     VALUE ary, names;
@@ -756,9 +746,9 @@ tcp_s_gethostbyname(obj, host)
     }
 
     if (h == NULL) {
-#ifdef HAVE_HSTRERROR
+#ifdef HAVE_HSTERROR
 	extern int h_errno;
-	rb_raise(rb_eSocket, (char *)hstrerror(h_errno));
+	rb_raise(rb_eSocket, (char *)hsterror(h_errno));
 #else
 	rb_raise(rb_eSocket, "host not found");
 #endif
@@ -862,7 +852,7 @@ tcp_accept(sock)
     VALUE sock;
 {
     OpenFile *fptr;
-    struct sockaddr_storage from;
+    struct SOCKADDR_STORAGE from;
     int fromlen;
 
     GetOpenFile(sock, fptr);
@@ -928,7 +918,7 @@ ip_addr(sock)
     VALUE sock;
 {
     OpenFile *fptr;
-    struct sockaddr_storage addr;
+    struct SOCKADDR_STORAGE addr;
     int len = sizeof addr;
 
     GetOpenFile(sock, fptr);
@@ -943,7 +933,7 @@ ip_peeraddr(sock)
     VALUE sock;
 {
     OpenFile *fptr;
-    struct sockaddr_storage addr;
+    struct SOCKADDR_STORAGE addr;
     int len = sizeof addr;
 
     GetOpenFile(sock, fptr);
@@ -957,7 +947,7 @@ static VALUE
 ip_s_getaddress(obj, host)
     VALUE obj, host;
 {
-    struct sockaddr_storage addr;
+    struct SOCKADDR_STORAGE addr;
 
     if (rb_obj_is_kind_of(host, rb_cInteger)) {
 	int i = NUM2INT(host);
@@ -1081,7 +1071,7 @@ static VALUE
 udp_bind(sock, host, port)
     VALUE sock, host, port;
 {
-    struct sockaddr_storage addr;
+    struct SOCKADDR_STORAGE addr;
     OpenFile *fptr;
     struct addrinfo *res0, *res;
 
@@ -1551,7 +1541,7 @@ static VALUE
 sock_s_gethostbyname(obj, host)
     VALUE obj, host;
 {
-    struct sockaddr_storage addr;
+    struct SOCKADDR_STORAGE addr;
     struct hostent *h;
 
     if (rb_obj_is_kind_of(host, rb_cInteger)) {
@@ -1722,7 +1712,7 @@ sock_s_getnameinfo(argc, argv)
     int fl;
     struct addrinfo hints, *res = NULL;
     int error;
-    struct sockaddr_storage ss;
+    struct SOCKADDR_STORAGE ss;
     struct sockaddr *sap;
 
     sa = flags = Qnil;
@@ -1733,9 +1723,11 @@ sock_s_getnameinfo(argc, argv)
 	    rb_raise(rb_eTypeError, "sockaddr length too big");
 	}
 	memcpy(&ss, RSTRING(sa)->ptr, RSTRING(sa)->len);
-	if (RSTRING(sa)->len != ss.ss_len) {
+#ifdef SS_LEN
+	if (RSTRING(sa)->len != SS_LEN(&ss)) {
 	    rb_raise(rb_eTypeError, "sockaddr size differs - should not happen");
 	}
+#endif
 	sap = (struct sockaddr *)&ss;
     }
     else if (TYPE(sa) == T_ARRAY) {

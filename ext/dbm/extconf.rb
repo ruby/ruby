@@ -1,5 +1,8 @@
 require 'mkmf'
 $LDFLAGS = "-L/usr/local/lib"
+if dir = with_config("dbm-include")
+  $CFLAGS = "-I#{dir}"
+end
 have_library("gdbm", "dbm_open") or
   have_library("db", "dbm_open") or
   have_library("dbm", "dbm_open")

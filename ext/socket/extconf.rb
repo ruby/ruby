@@ -1,7 +1,6 @@
 require 'mkmf'
 $LDFLAGS = "-L/usr/local/lib" if File.directory?("/usr/local/lib")
 $CFLAGS ||= ""
-$CFLAGS+=" -Dss_family=__ss_family -Dss_len=__ss_len"
 
 case PLATFORM
 when /mswin32/
@@ -28,7 +27,6 @@ if enable_config("ipv6", "yes")
 #include <sys/socket.h>
 main()
 {
-  exit(0);
  if (socket(AF_INET6, SOCK_STREAM, 0) < 0)
    exit(1);
  else
@@ -236,17 +234,47 @@ end
 
 $objs = ["socket.o"]
     
-if $getaddr_info_ok
-  have_func("getaddrinfo")
-  have_func("getnameinfo")
+if $getaddr_info_ok or not $ipv6
+  if have_func("getaddrinfo") and
+     have_func("getnameinfo")
+    have_getaddrinfo = true
+  end
+end
+
+if have_getaddrinfo
+  if try_link(<<EOF)
+#include <sys/types.h>
+#include <netdb.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+int
+main()
+{
+   struct sockaddr_storage storage;
+   struct sockaddr_storage *addr;
+
+   addr = &storage;
+   return 0;
+}
+EOF
+    sockaddr_storage=true
+  end
 else
+  sockaddr_storage=true
+  $CFLAGS="-I. "+$CFLAGS
   $objs += "getaddrinfo.o"
   $objs += "getnameinfo.o"
 end
 
+if sockaddr_storage
+  $CFLAGS="-DSOCKADDR_STORAGE "+$CFLAGS
+end
+
+p $ipv6
+
 have_header("sys/un.h")
 if have_func(test_func)
-  have_func("inet_aton")
   have_func("hsterror")
   unless have_func("gethostname")
     have_func("uname")

@@ -13,7 +13,8 @@ AUTOCONF = autoconf
 
 prefix = @prefix@
 CFLAGS = @CFLAGS@ -I. -I@srcdir@ -I@includedir@
-LDFLAGS = @STATIC@ $(CFLAGS) @LDFLAGS@ @XLDFLAGS@
+LDFLAGS = @STATIC@ $(CFLAGS) @LDFLAGS@
+XLDFLAGS = @XLDFLAGS@
 EXTLIBS = 
 LIBS = @LIBS@ $(EXTLIBS)
 MISSING = @LIBOBJS@ @ALLOCA@
@@ -89,7 +90,7 @@ miniruby$(binsuffix):	config.status $(LIBRUBY_A) $(MAINOBJ) dmyext.o
 
 $(PROGRAM):     $(LIBRUBY) $(MAINOBJ) $(EXTOBJS) 
 		@rm -f $@
-		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(LIBS) -o $@
+		$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(LIBS) -o $@
 
 $(LIBRUBY_A):	$(OBJS) dmyext.o
 		@AR@ rcu $@ $(OBJS) dmyext.o

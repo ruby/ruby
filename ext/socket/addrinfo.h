@@ -48,6 +48,16 @@
 #undef AI_PASSIVE
 #undef AI_CANONNAME
 #undef AI_NUMERICHOST
+#undef AI_ALL
+#undef AI_ADDRCONFIG
+#undef AI_V4MAPPED
+#undef AI_DEFAULT
+
+#undef NI_NOFQDN
+#undef NI_NUMERICHOST
+#undef NI_NAMEREQD
+#undef NI_NUMERICSERV
+#undef NI_DGRAM
 
 #define addrinfo addrinfo__compat
 #define getaddrinfo getaddrinfo__compat

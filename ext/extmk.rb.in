@@ -101,7 +101,11 @@ def try_link(src, opt="")
   cfile = open("conftest.c", "w")
   cfile.print src
   cfile.close
-  xsystem(format(LINK, $CFLAGS, $LDFLAGS, opt))
+  begin
+    xsystem(format(LINK, $CFLAGS, $LDFLAGS, opt))
+  ensure
+    system "rm -f conftest*"
+  end
 end
 
 def try_cpp(src, opt=$CFLAGS)

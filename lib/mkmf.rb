@@ -71,9 +71,8 @@ def xsystem command
     print command, "\n"
     return system(command)
   end
-p command
-#  $stderr.reopen($null) 
-#  $stdout.reopen($null) 
+  $stderr.reopen($null) 
+  $stdout.reopen($null) 
   r = system(command)
   $stderr.reopen($orgerr)
   $stdout.reopen($orgout)
@@ -84,7 +83,11 @@ def try_link(src, opt="")
   cfile = open("conftest.c", "w")
   cfile.print src
   cfile.close
-  xsystem(format(LINK, $CFLAGS, $LDFLAGS, opt))
+  begin
+    xsystem(format(LINK, $CFLAGS, $LDFLAGS, opt))
+  ensure
+    system "rm -f conftest*"
+  end
 end
 
 def try_cpp(src, opt=$CFLAGS)

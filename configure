@@ -3829,7 +3829,7 @@ echo "$ac_t""$rb_cv_binary_elf" 1>&6
     with_dln_a_out=yes
     host_os=${host_os}-a_out
   else
-    XLDFLAGS="-rdynamic"
+    LDFLAGS="-rdynamic"
   fi;;
 esac
 
@@ -3863,11 +3863,11 @@ echo "configure:3844: checking whether OS depend dynamic link works" >&5
   case "$host_os" in
 	hpux*)		DLDFLAGS="-E"
 			LDSHARED='ld -b'
-			XLDFLAGS="-Wl,-E"
+			LDFLAGS="-Wl,-E"
 			rb_cv_dlopen=yes;;
 	solaris*) 	if test "$GCC" = yes; then
 			   LDSHARED='gcc -Wl,-G'
-			   `$CC --print-prog-name=ld` -v 2>&1 | grep "GNU ld" > /dev/null && XLDFLAGS="-Wl,-E"
+			   `$CC --print-prog-name=ld` -v 2>&1 | grep "GNU ld" > /dev/null && LDFLAGS="-Wl,-E"
 			else
 			   LDSHARED='ld -G'
 			fi
@@ -3887,7 +3887,7 @@ echo "configure:3844: checking whether OS depend dynamic link works" >&5
 	freebsd*)       LDSHARED="gcc -shared"
 			if test -x /usr/bin/objformat && \
 			   test `/usr/bin/objformat` = "elf" ; then
-			    XLDFLAGS="-rdynamic"
+			    LDFLAGS="-rdynamic"
 			    DLDFLAGS='-Wl,-soname,$(.TARGET)'
 			    rb_cv_freebsd_elf=yes
 			else
@@ -3897,7 +3897,7 @@ echo "configure:3844: checking whether OS depend dynamic link works" >&5
 	netbsd*) 	LDSHARED="ld -Bshareable"
 			case "$host_cpu" in
 			alpha|mips)
-				XLDFLAGS="-export-dynamic" ;;
+				LDFLAGS="-export-dynamic" ;;
 			*)
 				;;
 			esac
