@@ -1,3 +1,8 @@
+Mon Dec  6 23:07:57 2004  Tanaka Akira  <akr@m17n.org>
+
+	* configure.in: check -lsocket for socketpair and shutdown.
+	  reported by Ville Mattila.  [ruby-core:03903]
+
 Mon Dec  6 23:00:45 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in (ac_cv_sizeof_rlim_t): setup for DJGPP.
