@@ -1,9 +1,9 @@
 irb -- interactive ruby
-				$Release Version: 0.9 $
-			   	$Revision$
-			   	$Date$
-			   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
-				translate from japanese by gotoken-san
+		$Release Version: 0.9 $
+		$Revision$
+		$Date$
+		by Keiju ISHITSUKA(keiju@ishitsuka.com)
+		by gotoken-san who is original translater from japanese version
 
 =begin
 = What is irb?
@@ -13,13 +13,7 @@ ruby expressions read from stdin.
 
 = Invoking
 
-  % ruby -r irb -e0
   % irb
-
-Either of the aboves. In the former style, options can be specified
-as follows:
-
-  % ruby -r irb -e0 -- -v
 
 = Usage
 
