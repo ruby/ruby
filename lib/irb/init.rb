@@ -180,17 +180,20 @@ module IRB
     end
   end
 
+  # enumerate possible rc files
+  def IRB.rc_files(rc)
+    yield File.expand_path("~/.irb#{rc}") if ENV.key?("HOME")
+    yield ".irb#{rc}"
+    yield "irb#{rc.sub(/\A_?/, '.')}"
+    yield "_irb#{rc}"
+    yield "$irb#{rc}"
+  end
+
   # running config
   def IRB.run_config
     if @CONF[:RC]
-      rcs = []
-      rcs.push File.expand_path("~/.irbrc") if ENV.key?("HOME")
-      rcs.push ".irbrc"
-      rcs.push "irb.rc"
-      rcs.push "_irbrc"
-      rcs.push "$irbrc"
       catch(:EXIT) do
-	for rc in rcs
+	rc_files("rc") do |rc|
 	  begin
 	    load rc
 	    throw :EXIT

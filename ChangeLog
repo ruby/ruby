@@ -1,6 +1,13 @@
+Sat Feb  7 19:56:11 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/irb/init.rb (IRB.rc_files): yield possible rc file names.
+
+	* lib/irb/input-method.rb (IRB::ReadlineInputMethod::initialize):
+	  load and save history automatically.  [ruby-core:02352]
+
 Fri Feb  6 22:48:16 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/rdoc/generators/html_generator.rb (gen_url): Support 
+	* lib/rdoc/generators/html_generator.rb (gen_url): Support
 	  https in RDoc hyperlinks
 
 Fri Feb  6 22:41:22 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
