@@ -956,10 +956,6 @@ module TkCore
     tk_call 'tk_getSaveFile', *hash_kv(keys)
   end
 
-  def chooseDirectory(keys = nil)
-    tk_call 'tk_chooseDirectory', *hash_kv(keys)
-  end
-
   def chooseColor(keys = nil)
     tk_call 'tk_chooseColor', *hash_kv(keys)
   end

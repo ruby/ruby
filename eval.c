@@ -4635,7 +4635,7 @@ static int last_call_status;
 #define CSTAT_SUPER 8
 
 static VALUE
-rb_f_missing(argc, argv, obj)
+rb_method_missing(argc, argv, obj)
     int argc;
     VALUE *argv;
     VALUE obj;
@@ -4697,8 +4697,6 @@ rb_f_missing(argc, argv, obj)
     }
 
     ruby_current_node = cnode;
-    PUSH_FRAME();		/* fake frame */
-    *ruby_frame = *_frame.prev->prev;
     {
 	char buf[BUFSIZ];
 	int noclass = (!desc || desc[0]=='#');
@@ -4714,9 +4712,9 @@ rb_f_missing(argc, argv, obj)
 	    args[n++] = rb_ary_new4(argc-1, argv+1);
 	}
 	exc = rb_class_new_instance(n, args, exc);
+	ruby_frame = ruby_frame->prev; /* pop frame for "method_missing" */
 	rb_exc_raise(exc);
     }
-    POP_FRAME();
 
     return Qnil;		/* not reached */
 }
@@ -4735,7 +4733,7 @@ method_missing(obj, id, argc, argv, call_status)
 
     if (id == missing) {
 	PUSH_FRAME();
-	rb_f_missing(argc, argv, obj);
+	rb_method_missing(argc, argv, obj);
 	POP_FRAME();
     }
     else if (id == ID_ALLOCATOR) {
@@ -6523,7 +6521,7 @@ Init_eval()
     rb_define_global_function("eval", rb_f_eval, -1);
     rb_define_global_function("iterator?", rb_f_block_given_p, 0);
     rb_define_global_function("block_given?", rb_f_block_given_p, 0);
-    rb_define_global_function("method_missing", rb_f_missing, -1);
+    rb_define_global_function("method_missing", rb_method_missing, -1);
     rb_define_global_function("loop", rb_f_loop, 0);
 
     rb_define_method(rb_mKernel, "respond_to?", rb_obj_respond_to, -1);

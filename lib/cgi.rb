@@ -959,6 +959,9 @@ convert string charset, and set language to "ja".
       def to_a
         @params
       end
+      def to_ary                # to be rhs of multiple assignment
+        @params
+      end
     end
 
     def [](key)

@@ -331,7 +331,7 @@ VALUE rb_f_exec _((int,VALUE*));
 int rb_waitpid _((int,int*,int));
 void rb_syswait _((int));
 VALUE rb_proc_times _((VALUE));
-VALUE rb_proc_detach _((int));
+VALUE rb_detach_process _((int));
 /* range.c */
 VALUE rb_range_new _((VALUE, VALUE, int));
 VALUE rb_range_beg_len _((VALUE, long*, long*, long, int));

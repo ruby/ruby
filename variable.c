@@ -1128,6 +1128,7 @@ VALUE
 rb_mod_const_missing(klass, name)
     VALUE klass, name;
 {
+    ruby_frame = ruby_frame->prev; /* pop frame for "const_missing" */
     uninitialized_constant(klass, rb_to_id(name));
     return Qnil;		/* not reached */
 }
