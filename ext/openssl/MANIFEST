@@ -52,15 +52,3 @@ ossl_x509req.c
 ossl_x509revoked.c
 ossl_x509store.c
 ruby_missing.h
-sample/c_rehash.rb
-sample/cipher.rb
-sample/echo_cli.rb
-sample/echo_svr.rb
-sample/gen_csr.rb
-sample/smime_read.rb
-sample/smime_write.rb
-sample/wget.rb
-sample/cert2text.rb
-sample/cert_store_view.rb
-sample/certstore.rb
-sample/crlstore.rb
