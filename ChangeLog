@@ -1,3 +1,7 @@
+Sat May 26 07:05:45 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
+
+	* MANIFEST: add win32/dir.h .
+
 Fri May 25 05:39:03 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/sha1/sha1-ruby.c (sha1_hexdigest): fix buffer overflow.  The
