@@ -1,3 +1,9 @@
+Sun Dec 17 00:01:48 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_proc_arity, rb_node_arity, rb_mod_method_arity,
+	  rb_obj_method_arity): new functions to obtain method arity.
+	  [ruby-dev:25143]
+
 Thu Dec 16 23:31:13 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): create RUBYARCHDIR also when no extension
