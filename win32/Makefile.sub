@@ -161,11 +161,92 @@ dll: $(LIBRUBY_SO)
 
 config: config.h config.status
 
-config.h: $(srcdir)/win32/$$@.in
-	@echo Creating config.h
-	@type $(srcdir:/=\)\win32\$@.in > $@
-	@echo #undef RUBY_PLATFORM >> $@
-	@echo #define RUBY_PLATFORM "$(ARCH)-$(OS)" >> $@
+config.h: Makefile $(srcdir)/win32/Makefile.sub
+	@echo Creating <<$@
+#define STDC_HEADERS 1
+#define HAVE_SYS_TYPES_H 1
+#define HAVE_SYS_STAT_H 1
+#define HAVE_STDLIB_H 1
+#define HAVE_STRING_H 1
+#define HAVE_MEMORY_H 1
+#define HAVE_OFF_T 1
+#define SIZEOF_INT 4
+#define SIZEOF_SHORT 2
+#define SIZEOF_LONG 4
+#define SIZEOF_LONG_LONG 0
+#define SIZEOF___INT64 8
+#define SIZEOF_OFF_T 4
+#define SIZEOF_VOIDP 4
+#define SIZEOF_FLOAT 4
+#define SIZEOF_DOUBLE 8
+#define HAVE_PROTOTYPES 1
+#define TOKEN_PASTE(x,y) x##y
+#define HAVE_STDARG_PROTOTYPES 1
+#define NORETURN(x) __declspec(noreturn) x
+#define HAVE_DECL_SYS_NERR 1
+#define STDC_HEADERS 1
+#define HAVE_STDLIB_H 1
+#define HAVE_STRING_H 1
+#define HAVE_LIMITS_H 1
+#define HAVE_FCNTL_H 1
+#define HAVE_SYS_UTIME_H 1
+#define HAVE_MEMORY_H 1
+#define uid_t int
+#define gid_t int
+#define HAVE_STRUCT_STAT_ST_RDEV 1
+#define HAVE_ST_RDEV 1
+#define GETGROUPS_T int
+#define RETSIGTYPE void
+#define HAVE_ALLOCA 1
+#define HAVE_DUP2 1
+#define HAVE_MEMCMP 1
+#define HAVE_MEMMOVE 1
+#define HAVE_MKDIR 1
+#define HAVE_STRCASECMP 1
+#define HAVE_STRNCASECMP 1
+#define HAVE_STRERROR 1
+#define HAVE_STRFTIME 1
+#define HAVE_STRCHR 1
+#define HAVE_STRSTR 1
+#define HAVE_STRTOD 1
+#define HAVE_STRTOL 1
+#define HAVE_STRTOUL 1
+#define HAVE_FLOCK 1
+#define HAVE_VSNPRINTF 1
+#define HAVE_FINITE 1
+#define HAVE_FMOD 1
+#define HAVE_FREXP 1
+#define HAVE_HYPOT 1
+#define HAVE_MODF 1
+#define HAVE_WAITPID 1
+#define HAVE_CHSIZE 1
+#define HAVE_TIMES 1
+#define HAVE__SETJMP 1
+#define HAVE_TELLDIR 1
+#define HAVE_SEEKDIR 1
+#define HAVE_MKTIME 1
+#define HAVE_COSH 1
+#define HAVE_SINH 1
+#define HAVE_TANH 1
+#define HAVE_EXECVE 1
+#define HAVE_TZNAME 1
+#define HAVE_DAYLIGHT 1
+#define SETPGRP_VOID 1
+#define inline __inline
+#define RSHIFT(x,y) ((x)>>(int)y)
+#define FILE_COUNT _cnt
+#define FILE_READPTR _ptr
+#define DEFAULT_KCODE KCODE_NONE
+#define DLEXT ".so"
+#define DLEXT2 ".dll"
+#define NT 1
+#define RUBY_LIB "/lib/ruby/1.7"
+#define RUBY_SITE_LIB "/lib/ruby/site_ruby"
+#define RUBY_SITE_LIB2 "/lib/ruby/site_ruby/1.7"
+#define RUBY_PLATFORM "$(ARCH)-$(OS)"
+#define RUBY_ARCHLIB "/lib/ruby/1.7/$(ARCH)-$(OS)"
+#define RUBY_SITE_ARCHLIB "/lib/ruby/site_ruby/1.7/$(ARCH)-$(OS)"
+<<KEEP
 
 config.status: Makefile $(srcdir)/win32/Makefile.sub $(MINIRUBY)
 	@echo Creating config.status
@@ -384,77 +465,157 @@ $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(LIBRUBY_SO).rc: rbconfig.rb
 
 {$(srcdir)}parse.c: parse.y
 
-acosh.obj: $(srcdir)/missing/acosh.c
-alloca.obj: $(srcdir)/missing/alloca.c
-crypt.obj: $(srcdir)/missing/crypt.c
-dup2.obj: $(srcdir)/missing/dup2.c
-finite.obj: $(srcdir)/missing/finite.c
-flock.obj: $(srcdir)/missing/flock.c
-isinf.obj: $(srcdir)/missing/isinf.c
-isnan.obj: $(srcdir)/missing/isnan.c
-memcmp.obj: $(srcdir)/missing/memcmp.c
-memmove.obj: $(srcdir)/missing/memmove.c
-mkdir.obj: $(srcdir)/missing/mkdir.c
-vsnprintf.obj: $(srcdir)/missing/vsnprintf.c
-strcasecmp.obj: $(srcdir)/missing/strcasecmp.c
-strncasecmp.obj: $(srcdir)/missing/strncasecmp.c
-strchr.obj: $(srcdir)/missing/strchr.c
-strdup.obj: $(srcdir)/missing/strdup.c
-strerror.obj: $(srcdir)/missing/strerror.c
-strftime.obj: $(srcdir)/missing/strftime.c
-strstr.obj: $(srcdir)/missing/strstr.c
-strtod.obj: $(srcdir)/missing/strtod.c
-strtol.obj: $(srcdir)/missing/strtol.c
-strtoul.obj: $(srcdir)/missing/strtoul.c
-nt.obj: $(srcdir)/missing/nt.c
-x68.obj: $(srcdir)/missing/x68.c
-os2.obj: $(srcdir)/missing/os2.c
-dl_os2.obj: $(srcdir)/missing/dl_os2.c
+acosh.obj: {$(srcdir)}missing/acosh.c
+alloca.obj: {$(srcdir)}missing/alloca.c
+crypt.obj: {$(srcdir)}missing/crypt.c
+dup2.obj: {$(srcdir)}missing/dup2.c
+finite.obj: {$(srcdir)}missing/finite.c
+flock.obj: {$(srcdir)}missing/flock.c
+isinf.obj: {$(srcdir)}missing/isinf.c
+isnan.obj: {$(srcdir)}missing/isnan.c
+memcmp.obj: {$(srcdir)}missing/memcmp.c
+memmove.obj: {$(srcdir)}missing/memmove.c
+mkdir.obj: {$(srcdir)}missing/mkdir.c
+vsnprintf.obj: {$(srcdir)}missing/vsnprintf.c
+strcasecmp.obj: {$(srcdir)}missing/strcasecmp.c
+strncasecmp.obj: {$(srcdir)}missing/strncasecmp.c
+strchr.obj: {$(srcdir)}missing/strchr.c
+strdup.obj: {$(srcdir)}missing/strdup.c
+strerror.obj: {$(srcdir)}missing/strerror.c
+strftime.obj: {$(srcdir)}missing/strftime.c
+strstr.obj: {$(srcdir)}missing/strstr.c
+strtod.obj: {$(srcdir)}missing/strtod.c
+strtol.obj: {$(srcdir)}missing/strtol.c
+strtoul.obj: {$(srcdir)}missing/strtoul.c
+nt.obj: {$(srcdir)}missing/nt.c
+x68.obj: {$(srcdir)}missing/x68.c
+os2.obj: {$(srcdir)}missing/os2.c
+dl_os2.obj: {$(srcdir)}missing/dl_os2.c
 
 # when I use -I., there is confliction at "OpenFile" 
 # so, set . into environment varible "include"
-win32.obj: $(srcdir)/win32/win32.c
+win32.obj: {$(srcdir)}win32/win32.c
 
 # Prevent GNU make v3 from overflowing arg limit on SysV.
 .NOEXPORT:
 ###
-parse.obj: {$(srcdir)}parse.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h $(srcdir)/env.h $(srcdir)/node.h $(srcdir)/st.h $(srcdir)/regex.h $(srcdir)/util.h $(srcdir)/lex.c
-###
-array.obj: $(srcdir)/array.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h
-bignum.obj: $(srcdir)/bignum.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h
-class.obj: $(srcdir)/class.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h $(srcdir)/node.h $(srcdir)/st.h
-compar.obj: $(srcdir)/compar.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h
-dir.obj: $(srcdir)/dir.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h
-dln.obj: $(srcdir)/dln.c config.h $(srcdir)/defines.h $(srcdir)/dln.h
-dmyext.obj: $(srcdir)/dmyext.c
-enum.obj: $(srcdir)/enum.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h
-error.obj: $(srcdir)/error.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h $(srcdir)/env.h
-eval.obj: $(srcdir)/eval.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h $(srcdir)/node.h $(srcdir)/env.h $(srcdir)/rubysig.h $(srcdir)/st.h $(srcdir)/dln.h
-file.obj: $(srcdir)/file.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h $(srcdir)/rubyio.h $(srcdir)/rubysig.h
-gc.obj: $(srcdir)/gc.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h $(srcdir)/rubysig.h $(srcdir)/st.h $(srcdir)/node.h $(srcdir)/env.h $(srcdir)/re.h $(srcdir)/regex.h
-hash.obj: $(srcdir)/hash.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h $(srcdir)/st.h $(srcdir)/rubysig.h $(srcdir)/util.h
-inits.obj: $(srcdir)/inits.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h
-io.obj: $(srcdir)/io.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h $(srcdir)/rubyio.h $(srcdir)/rubysig.h $(srcdir)/env.h
-main.obj: $(srcdir)/main.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h
-marshal.obj: $(srcdir)/marshal.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h $(srcdir)/rubyio.h $(srcdir)/st.h
-prec.obj: $(srcdir)/prec.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h
-math.obj: $(srcdir)/math.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h
-numeric.obj: $(srcdir)/numeric.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h
-object.obj: $(srcdir)/object.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h $(srcdir)/st.h
-pack.obj: $(srcdir)/pack.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h
-process.obj: $(srcdir)/process.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h $(srcdir)/rubysig.h $(srcdir)/st.h
-random.obj: $(srcdir)/random.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h
-range.obj: $(srcdir)/range.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h
-re.obj: $(srcdir)/re.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h $(srcdir)/re.h $(srcdir)/regex.h
-regex.obj: $(srcdir)/regex.c config.h $(srcdir)/regex.h $(srcdir)/util.h
-ruby.obj: $(srcdir)/ruby.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h $(srcdir)/dln.h $(srcdir)/util.h
-signal.obj: $(srcdir)/signal.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h $(srcdir)/rubysig.h
-sprintf.obj: $(srcdir)/sprintf.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h
-st.obj: $(srcdir)/st.c config.h $(srcdir)/st.h
-string.obj: $(srcdir)/string.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h $(srcdir)/re.h $(srcdir)/regex.h
-struct.obj: $(srcdir)/struct.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h
-time.obj: $(srcdir)/time.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h
-util.obj: $(srcdir)/util.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h $(srcdir)/util.h
-variable.obj: $(srcdir)/variable.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h $(srcdir)/env.h $(srcdir)/node.h $(srcdir)/st.h
-version.obj: $(srcdir)/version.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h $(srcdir)/version.h
-$(OBJS) $(MAINOBJ) $(WINMAINOBJ): $(srcdir)/win32/win32.h
+array.obj: {$(srcdir)}array.c {$(srcdir)}ruby.h config.h \
+  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
+  {$(srcdir)}util.h {$(srcdir)}st.h {$(srcdir)}/win32/win32.h
+bignum.obj: {$(srcdir)}bignum.c {$(srcdir)}ruby.h config.h \
+  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
+  {$(srcdir)}/win32/win32.h
+class.obj: {$(srcdir)}class.c {$(srcdir)}ruby.h config.h \
+  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
+  {$(srcdir)}rubysig.h {$(srcdir)}node.h {$(srcdir)}st.h \
+  {$(srcdir)}/win32/win32.h
+compar.obj: {$(srcdir)}compar.c {$(srcdir)}ruby.h config.h \
+  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
+  {$(srcdir)}/win32/win32.h
+dir.obj: {$(srcdir)}dir.c {$(srcdir)}ruby.h config.h \
+  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
+  {$(srcdir)}util.h {$(srcdir)}/win32/win32.h
+dln.obj: {$(srcdir)}dln.c config.h {$(srcdir)}defines.h \
+  {$(srcdir)}dln.h {$(srcdir)}/win32/win32.h
+dmyext.obj: {$(srcdir)}dmyext.c
+enum.obj: {$(srcdir)}enum.c {$(srcdir)}ruby.h config.h \
+  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
+  {$(srcdir)}node.h {$(srcdir)}util.h {$(srcdir)}/win32/win32.h
+error.obj: {$(srcdir)}error.c {$(srcdir)}ruby.h config.h \
+  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
+  {$(srcdir)}env.h {$(srcdir)}version.h {$(srcdir)}/win32/win32.h
+eval.obj: {$(srcdir)}eval.c {$(srcdir)}ruby.h config.h \
+  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
+  {$(srcdir)}node.h {$(srcdir)}env.h {$(srcdir)}util.h \
+  {$(srcdir)}rubysig.h {$(srcdir)}st.h {$(srcdir)}dln.h \
+  {$(srcdir)}/win32/win32.h
+file.obj: {$(srcdir)}file.c {$(srcdir)}ruby.h config.h \
+  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
+  {$(srcdir)}rubyio.h {$(srcdir)}rubysig.h {$(srcdir)}util.h \
+  {$(srcdir)}dln.h {$(srcdir)}/win32/win32.h
+gc.obj: {$(srcdir)}gc.c {$(srcdir)}ruby.h config.h \
+  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
+  {$(srcdir)}rubysig.h {$(srcdir)}st.h {$(srcdir)}node.h \
+  {$(srcdir)}env.h {$(srcdir)}re.h {$(srcdir)}regex.h \
+  {$(srcdir)}/win32/win32.h
+hash.obj: {$(srcdir)}hash.c {$(srcdir)}ruby.h config.h \
+  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
+  {$(srcdir)}st.h {$(srcdir)}util.h {$(srcdir)}rubysig.h \
+  {$(srcdir)}/win32/win32.h
+inits.obj: {$(srcdir)}inits.c {$(srcdir)}ruby.h config.h \
+  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
+  {$(srcdir)}/win32/win32.h
+io.obj: {$(srcdir)}io.c {$(srcdir)}ruby.h config.h \
+  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
+  {$(srcdir)}rubyio.h {$(srcdir)}rubysig.h {$(srcdir)}env.h \
+  {$(srcdir)}util.h {$(srcdir)}/win32/win32.h
+main.obj: {$(srcdir)}main.c {$(srcdir)}ruby.h config.h \
+  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
+  {$(srcdir)}/win32/win32.h
+marshal.obj: {$(srcdir)}marshal.c {$(srcdir)}ruby.h config.h \
+  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
+  {$(srcdir)}rubyio.h {$(srcdir)}st.h {$(srcdir)}/win32/win32.h
+math.obj: {$(srcdir)}math.c {$(srcdir)}ruby.h config.h \
+  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
+  {$(srcdir)}/win32/win32.h
+numeric.obj: {$(srcdir)}numeric.c {$(srcdir)}ruby.h config.h \
+  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
+  {$(srcdir)}/win32/win32.h
+object.obj: {$(srcdir)}object.c {$(srcdir)}ruby.h config.h \
+  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
+  {$(srcdir)}st.h {$(srcdir)}/win32/win32.h
+pack.obj: {$(srcdir)}pack.c {$(srcdir)}ruby.h config.h \
+  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
+  {$(srcdir)}/win32/win32.h
+parse.obj: {$(srcdir)}parse.c {$(srcdir)}ruby.h config.h \
+  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
+  {$(srcdir)}env.h {$(srcdir)}node.h {$(srcdir)}st.h {$(srcdir)}regex.h \
+  {$(srcdir)}util.h {$(srcdir)}lex.c
+prec.obj: {$(srcdir)}prec.c {$(srcdir)}ruby.h config.h \
+  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
+  {$(srcdir)}/win32/win32.h
+process.obj: {$(srcdir)}process.c {$(srcdir)}ruby.h config.h \
+  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
+  {$(srcdir)}rubysig.h {$(srcdir)}st.h {$(srcdir)}/win32/win32.h
+random.obj: {$(srcdir)}random.c {$(srcdir)}ruby.h config.h \
+  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
+  {$(srcdir)}/win32/win32.h
+range.obj: {$(srcdir)}range.c {$(srcdir)}ruby.h config.h \
+  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
+  {$(srcdir)}/win32/win32.h
+re.obj: {$(srcdir)}re.c {$(srcdir)}ruby.h config.h \
+  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
+  {$(srcdir)}re.h {$(srcdir)}regex.h {$(srcdir)}/win32/win32.h
+regex.obj: {$(srcdir)}regex.c config.h {$(srcdir)}regex.h \
+  {$(srcdir)}/win32/win32.h
+ruby.obj: {$(srcdir)}ruby.c {$(srcdir)}ruby.h config.h \
+  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
+  {$(srcdir)}dln.h {$(srcdir)}node.h {$(srcdir)}util.h \
+  {$(srcdir)}/win32/win32.h
+signal.obj: {$(srcdir)}signal.c {$(srcdir)}ruby.h config.h \
+  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
+  {$(srcdir)}rubysig.h {$(srcdir)}/win32/win32.h
+sprintf.obj: {$(srcdir)}sprintf.c {$(srcdir)}ruby.h config.h \
+  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
+  {$(srcdir)}/win32/win32.h
+st.obj: {$(srcdir)}st.c config.h {$(srcdir)}st.h \
+  {$(srcdir)}/win32/win32.h
+string.obj: {$(srcdir)}string.c {$(srcdir)}ruby.h config.h \
+  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
+  {$(srcdir)}re.h {$(srcdir)}regex.h {$(srcdir)}/win32/win32.h
+struct.obj: {$(srcdir)}struct.c {$(srcdir)}ruby.h config.h \
+  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
+  {$(srcdir)}/win32/win32.h
+time.obj: {$(srcdir)}time.c {$(srcdir)}ruby.h config.h \
+  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
+  {$(srcdir)}/win32/win32.h
+util.obj: {$(srcdir)}util.c {$(srcdir)}ruby.h config.h \
+  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
+  {$(srcdir)}util.h {$(srcdir)}/win32/win32.h
+variable.obj: {$(srcdir)}variable.c {$(srcdir)}ruby.h config.h \
+  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
+  {$(srcdir)}env.h {$(srcdir)}node.h {$(srcdir)}st.h {$(srcdir)}util.h \
+  {$(srcdir)}/win32/win32.h
+version.obj: {$(srcdir)}version.c {$(srcdir)}ruby.h config.h \
+  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
+  {$(srcdir)}version.h {$(srcdir)}/win32/win32.h

@@ -1,3 +1,10 @@
+Tue May 14 18:17:44 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* win32/Makefile.sub: config.h inlined.  and catch up with the
+	  latest change.
+
+	* win32/config.h.in: no longer used.
+
 Tue May 14 14:49:05 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* gc.c (is_pointer_to_heap): avoid GCC 3.1 warnings.
