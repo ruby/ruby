@@ -18,7 +18,6 @@
      * cl
      * lib
      * dumpbin
-     * rm
 
 == How to compile and install
 
@@ -31,9 +30,11 @@
 
 (3) Run `((%nmake%))'
 
-(4) Run `((%nmake test%))'
+(4) If you want to make rubyw.exe, run `((%nmake rubyw.exe%))'
 
-(5) Run `((%nmake DESTDIR=<install_directory> install%))'
+(5) Run `((%nmake test%))'
+
+(6) Run `((%nmake DESTDIR=<install_directory> install%))'
 
     This command will create following directories and install files onto them.
       * <install_directory>\bin
@@ -46,7 +47,7 @@
       * <install_directory>\lib\ruby\site_ruby\<MAJOR>.<MINOR>\<PLATFORM>
       * <install_directory>\man\man1
     If Ruby's version is `x.y.z', the ((|<MAJOR>|)) is `x' and the ((|<MINOR>|)) is `y'.
-    The ((|<PLATFORM>|)) is usually `(({i586-mswin32}))'.
+    The ((|<PLATFORM>|)) is `(({i386-mswin32}))'.
 
 == Icons
 

@@ -1,3 +1,7 @@
+Fri Mar 29 15:49:29 2002  Usaku Nakamura <usa@ruby-lang.org>
+
+	* win32/README.win32: follow recent changes.
+
 Thu Mar 28 18:58:13 2002  Usaku Nakamura <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (config.status): reflect user defined $CC in
