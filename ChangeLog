@@ -1,3 +1,11 @@
+Tue Dec  9 19:53:02 2003  akira yamada  <akira@ruby-lang.org>
+
+	* lib/uri/generic.rb (URI::Generic#route_from0): make case insensitive
+	  for host-part.
+
+	* test/uri/test_generic.rb (test_route): added tests for the above
+	  change.
+
 Tue Dec  9 14:10:48 2003  Tanaka Akira  <akr@m17n.org>
 
 	* io.c (rb_io_check_readable): don't call io_seek if EOF flag is set,
