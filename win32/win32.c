@@ -2488,14 +2488,14 @@ mytimes(struct tms *tmbuf)
     if (GetProcessTimes(GetCurrentProcess(),&create, &exit, &kernel, &user)) {
 	tmbuf->tms_utime = filetime_to_clock(&user);
 	tmbuf->tms_stime = filetime_to_clock(&kernel);
-	tmbuf->cutime = 0;
-	tmbuf->cstime = 0;
+	tmbuf->tms_cutime = 0;
+	tmbuf->tms_cstime = 0;
     }
     else {
-	tmbuf->utime = clock();
-	tmbuf->stime = 0;
-	tmbuf->cutime = 0;
-	tmbuf->cstime = 0;
+	tmbuf->tms_utime = clock();
+	tmbuf->tms_stime = 0;
+	tmbuf->tms_cutime = 0;
+	tmbuf->tms_cstime = 0;
     }
     return 0;
 }

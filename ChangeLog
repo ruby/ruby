@@ -1,3 +1,9 @@
+Tue Aug 15 16:08:40 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* configure.in: add ac_cv_func_times=yes for mingw32.
+
+	* win32/win32.c (mytimes): typo.
+
 Tue Aug 15 01:45:28 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (argf_eof): should return true at the end of ARGF without
