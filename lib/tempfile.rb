@@ -86,7 +86,7 @@ class Tempfile < SimpleDelegator
   # If you don't explicitly unlink the temporary file, the removal
   # will be delayed until the object is finalized.
   def close(unlink=false)
-    if real
+    if unlink
       close!
     else
       _close
