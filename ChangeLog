@@ -1,3 +1,11 @@
+Thu Nov  8 20:20:37 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* eval.c (rb_trap_eval): avoid annoying warning with signal.
+	  [ruby-talk:23225]
+
+	* eval.c (rb_call0): adjust caller source file/line while
+	  evaluating optional arguments.
+
 Thu Nov  8 18:21:02 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* file.c (path_check_1): forgot to initialize 'p'.
