@@ -542,7 +542,7 @@ rb_io_to_ptr(VALUE self)
   FILE     *fp;
 
   GetOpenFile(self, fptr);
-  fp = fptr->f;
+  fp = rb_io_stdio_file(fptr);
 
   return fp ? rb_dlptr_new(fp, sizeof(FILE), 0) : Qnil;
 }

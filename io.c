@@ -179,7 +179,7 @@ rb_io_check_closed(fptr)
     OpenFile *fptr;
 {
     rb_io_check_initialized(fptr);
-    if (fptr->fd < 0 || !fptr->f) {
+    if (fptr->fd < 0) {
 	rb_raise(rb_eIOError, "closed stream");
     }
 }
@@ -484,7 +484,7 @@ io_fwrite(str, fptr)
             return len;
         /* avoid context switch between "a" and "\n" in STDERR.puts "a".
            [ruby-dev:25080] */
-	if (fptr->f != stderr && !rb_thread_fd_writable(fptr->fd)) {
+	if (fptr->stdio_file != stderr && !rb_thread_fd_writable(fptr->fd)) {
 	    rb_io_check_closed(fptr);
 	}
       retry:
@@ -524,7 +524,7 @@ rb_io_fwrite(ptr, len, f)
     OpenFile of;
 
     of.fd = fileno(f);
-    of.f = f;
+    of.stdio_file = f;
     of.mode = FMODE_WRITABLE;
     of.path = NULL;
     return io_fwrite(rb_str_new(ptr, len), &of);
@@ -1005,7 +1005,7 @@ rb_io_inspect(obj)
     if (!fptr || !fptr->path) return rb_any_to_s(obj);
     cname = rb_obj_classname(obj);
     len = strlen(cname) + strlen(fptr->path) + 5;
-    if (!fptr->f) {
+    if (fptr->fd < 0) {
 	st = " (closed)";
 	len += 9;
     }
@@ -1083,7 +1083,7 @@ rb_io_fread(ptr, len, f)
     long n;
 
     of.fd = fileno(f);
-    of.f = f;
+    of.stdio_file = f;
     of.mode = FMODE_READABLE;
     str = rb_str_new(ptr, len);
     n = io_fread(str, 0, &of);
@@ -1322,7 +1322,7 @@ io_read(argc, argv, io)
     }
     n = io_fread(str, 0, fptr);
     if (n == 0) {
-	if (!fptr->f) return Qnil;
+	if (fptr->fd < 0) return Qnil;
         rb_str_resize(str, 0);
         return Qnil;
     }
@@ -1774,14 +1774,12 @@ rb_io_each_byte(io)
     VALUE io;
 {
     OpenFile *fptr;
-    FILE *f;
     int c;
 
     GetOpenFile(io, fptr);
 
     for (;;) {
 	rb_io_check_readable(fptr);
-	f = fptr->f;
 	READ_CHECK(fptr);
 	c = io_getc(fptr);
 	if (c < 0) {
@@ -1809,12 +1807,10 @@ rb_io_getc(io)
     VALUE io;
 {
     OpenFile *fptr;
-    FILE *f;
     int c;
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
-    f = fptr->f;
 
     READ_CHECK(fptr);
     c = io_getc(fptr);
@@ -1928,14 +1924,26 @@ fptr_finalize(fptr, noraise)
     if (fptr->wbuf_len) {
         io_fflush(fptr);
     }
-    if (fptr->f == stdin || fptr->f == stdout || fptr->f == stderr || fptr->fd <= 2) {
+    if (fptr->stdio_file == stdin ||
+        fptr->stdio_file == stdout ||
+        fptr->stdio_file == stderr ||
+        fptr->fd <= 2) {
 	return;
     }
-    if (fptr->f && fclose(fptr->f) < 0 && !noraise) {
-	rb_sys_fail(fptr->path);
+    if (fptr->stdio_file) {
+        if (fclose(fptr->stdio_file) < 0 && !noraise) { /* fptr->stdio_file is freed anyway */
+            fptr->stdio_file = 0;
+            fptr->fd = -1;
+            rb_sys_fail(fptr->path);
+        }
+    }
+    else if (0 <= fptr->fd) {
+        if (close(fptr->fd) < 0 && !noraise) { /* fptr->fd is still not closed */
+            rb_sys_fail(fptr->path);
+        }
     }
     fptr->fd = -1;
-    fptr->f = 0;
+    fptr->stdio_file = 0;
     fptr->mode &= ~(FMODE_READABLE|FMODE_WRITABLE);
 }
 
@@ -1962,7 +1970,7 @@ rb_io_fptr_finalize(fptr)
 	free(fptr->path);
 	fptr->path = 0;
     }
-    if (fptr->f)
+    if (0 <= fptr->fd)
 	rb_io_fptr_cleanup(fptr, Qtrue);
     if (fptr->rbuf) {
         free(fptr->rbuf);
@@ -1985,7 +1993,7 @@ rb_io_close(io)
 
     fptr = RFILE(io)->fptr;
     if (!fptr) return Qnil;
-    if (!fptr->f) return Qnil;
+    if (fptr->fd < 0) return Qnil;
 
     fd = fptr->fd;
     rb_io_fptr_cleanup(fptr, Qfalse);
@@ -2056,7 +2064,7 @@ rb_io_closed(io)
 
     fptr = RFILE(io)->fptr;
     rb_io_check_initialized(fptr);
-    return fptr->f ? Qfalse : Qtrue;
+    return 0 <= fptr->fd ? Qfalse : Qtrue;
 }
 
 /*
@@ -2088,7 +2096,10 @@ rb_io_close_read(io)
     }
     GetOpenFile(io, fptr);
     if (is_socket(fptr->fd, fptr->path)) {
-        if (shutdown(fptr->fd, 0) < 0)
+#ifndef SHUT_RD
+# define SHUT_RD 0
+#endif
+        if (shutdown(fptr->fd, SHUT_RD) < 0)
             rb_sys_fail(fptr->path);
         fptr->mode &= ~FMODE_READABLE;
         if (!(fptr->mode & FMODE_WRITABLE))
@@ -2131,7 +2142,10 @@ rb_io_close_write(io)
     }
     GetOpenFile(io, fptr);
     if (is_socket(fptr->fd, fptr->path)) {
-        if (shutdown(fptr->fd, 1) < 0)
+#ifndef SHUT_WR
+# define SHUT_WR 1
+#endif
+        if (shutdown(fptr->fd, SHUT_WR) < 0)
             rb_sys_fail(fptr->path);
         fptr->mode &= ~FMODE_WRITABLE;
         if (!(fptr->mode & FMODE_READABLE))
@@ -2316,13 +2330,8 @@ rb_io_binmode(io)
     if (!(fptr->mode & FMODE_BINMODE) && READ_DATA_BUFFERED(fptr)) {
 	rb_raise(rb_eIOError, "buffer already filled with text-mode content");
     }
-#ifdef __human68k__
-    if (fptr->f)
-	fmode(fptr->f, _IOBIN);
-#else
-    if (fptr->f && setmode(fptr->fd, O_BINARY) == -1)
+    if (0 <= fptr->fd && setmode(fptr->fd, O_BINARY) == -1)
 	rb_sys_fail(fptr->path);
-#endif
 
     fptr->mode |= FMODE_BINMODE;
 #endif
@@ -2599,7 +2608,6 @@ rb_file_open_internal(io, fname, mode)
     fptr->mode = rb_io_mode_flags(mode);
     fptr->path = strdup(fname);
     fptr->fd = rb_sysopen(fptr->path, rb_io_mode_modenum(rb_io_flags_mode(fptr->mode)), 0666);
-    fptr->f = rb_fdopen(fptr->fd, rb_io_flags_mode(fptr->mode));
     if ((fptr->mode & FMODE_WRITABLE) && isatty(fptr->fd))
         fptr->mode |= FMODE_LINEBUF;
 
@@ -2620,15 +2628,12 @@ rb_file_sysopen_internal(io, fname, flags, mode)
     int flags, mode;
 {
     OpenFile *fptr;
-    char *m;
 
     MakeOpenFile(io, fptr);
 
     fptr->path = strdup(fname);
-    m = rb_io_modenum_mode(flags);
     fptr->mode = rb_io_modenum_flags(flags);
     fptr->fd = rb_sysopen(fptr->path, flags, mode);
-    fptr->f = rb_fdopen(fptr->fd, m);
     if ((fptr->mode & FMODE_WRITABLE) && isatty(fptr->fd))
         fptr->mode |= FMODE_LINEBUF;
 
@@ -2708,11 +2713,11 @@ pipe_finalize(fptr, noraise)
 #if !defined(HAVE_FORK) && !defined(_WIN32)
     extern VALUE rb_last_status;
     int status;
-    if (fptr->f) {
-	status = pclose(fptr->f);
+    if (fptr->stdio_file) {
+	status = pclose(fptr->stdio_file);
     }
     fptr->fd = -1;
-    fptr->f = 0;
+    fptr->stdio_file = 0;
 #if defined DJGPP
     status <<= 8;
 #endif
@@ -2805,12 +2810,12 @@ pipe_open(argc, argv, mode)
     struct popen_arg arg;
     volatile int doexec;
 #elif defined(_WIN32)
-    int fd;
     int openmode = rb_io_mode_modenum(mode);
     char *exename = NULL;
 #endif
     char *cmd;
-    FILE *fp;
+    FILE *fp = 0;
+    int fd = -1;
 
     prog = rb_check_argv(argc, argv);
     if (!prog) {
@@ -2869,15 +2874,15 @@ pipe_open(argc, argv, mode)
     }
     if ((modef & FMODE_READABLE) && (modef & FMODE_WRITABLE)) {
         close(arg.pair[1]);
-	fp = rb_fdopen(arg.pair[0], "r+");
+        fd = arg.pair[0];
     }
     else if (modef & FMODE_READABLE) {
         close(arg.pair[1]);
-	fp = rb_fdopen(arg.pair[0], "r");
+        fd = arg.pair[0];
     }
     else {
         close(arg.pair[0]);
-	fp = rb_fdopen(arg.pair[1], "w");
+        fd = arg.pair[1];
     }
 #elif defined(_WIN32)
     if (argc) {
@@ -2909,26 +2914,17 @@ pipe_open(argc, argv, mode)
 	    break;
 	}
     }
-    if ((modef & FMODE_READABLE) && (modef & FMODE_WRITABLE)) {
-	fp = rb_fdopen(fd, "r+");
-    }
-    else if (modef & FMODE_READABLE) {
-	fp = rb_fdopen(fd, "r");
-    }
-    else {
-	fp = rb_fdopen(fd, "w");
-    }
 #else
     prog = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
     fp = popen(StringValueCStr(prog), mode);
-
     if (!fp) rb_sys_fail(RSTRING(prog)->ptr);
+    fd = fileno(fp);
 #endif
 
     port = io_alloc(rb_cIO);
     MakeOpenFile(port, fptr);
-    fptr->f = fp;
-    fptr->fd = fileno(fp);
+    fptr->fd = fd;
+    fptr->stdio_file = fp;
     fptr->mode = modef | FMODE_SYNC;
     fptr->pid = pid;
 
@@ -3258,27 +3254,11 @@ rb_io_open(fname, mode)
     }
 }
 
-static char*
-rb_io_mode_string(fptr)
-    OpenFile *fptr;
-{
-    switch (fptr->mode & FMODE_READWRITE) {
-      case FMODE_READABLE:
-      default:
-	return "r";
-      case FMODE_WRITABLE:
-	return "w";
-      case FMODE_READWRITE:
-	return "r+";
-    }
-}
-
 static VALUE
 io_reopen(io, nfile)
     VALUE io, nfile;
 {
     OpenFile *fptr, *orig;
-    char *mode;
     int fd, fd2;
     off_t pos = 0;
 
@@ -3309,22 +3289,28 @@ io_reopen(io, nfile)
     else fptr->path = 0;
     fptr->finalize = orig->finalize;
 
-    mode = rb_io_mode_string(fptr);
     fd = fptr->fd;
     fd2 = orig->fd;
     if (fd != fd2) {
 #if !defined __CYGWIN__
-	if (fptr->f == stdin || fptr->f == stdout || fptr->f == stderr) {
+	if (fptr->stdio_file == stdin ||
+            fptr->stdio_file == stdout ||
+            fptr->stdio_file == stderr) {
 	    /* need to keep stdio objects */
 	    if (dup2(fd2, fd) < 0)
 		rb_sys_fail(orig->path);
 	}
 	else {
 #endif
-	    fclose(fptr->f);
+            if (fptr->stdio_file)
+                fclose(fptr->stdio_file);
+            else
+                close(fptr->fd);
+            fptr->stdio_file = 0;
+            fptr->fd = -1;
 	    if (dup2(fd2, fd) < 0)
 		rb_sys_fail(orig->path);
-	    fptr->f = rb_fdopen(fd, mode);
+            fptr->fd = fd;
 #if !defined __CYGWIN__
 	}
 #endif
@@ -3400,19 +3386,28 @@ rb_io_reopen(argc, argv, file)
 
     fptr->path = strdup(RSTRING(fname)->ptr);
     mode = rb_io_flags_mode(fptr->mode);
-    if (!fptr->f) {
+    if (fptr->fd < 0) {
         fptr->fd = rb_sysopen(fptr->path, rb_io_mode_modenum(mode), 0666);
-	fptr->f = rb_fdopen(fptr->fd, mode);
+	fptr->stdio_file = 0;
 	return file;
     }
 
-    if (freopen(RSTRING(fname)->ptr, mode, fptr->f) == 0) {
-	rb_sys_fail(fptr->path);
-    }
+    if (fptr->stdio_file) {
+        if (freopen(RSTRING(fname)->ptr, mode, fptr->stdio_file) == 0) {
+            rb_sys_fail(fptr->path);
+        }
+        fptr->fd = fileno(fptr->stdio_file);
 #ifdef USE_SETVBUF
-    if (setvbuf(fptr->f, NULL, _IOFBF, 0) != 0)
-	rb_warn("setvbuf() can't be honoured for %s", RSTRING(fname)->ptr);
+        if (setvbuf(fptr->stdio_file, NULL, _IOFBF, 0) != 0)
+            rb_warn("setvbuf() can't be honoured for %s", RSTRING(fname)->ptr);
 #endif
+    }
+    else {
+        if (close(fptr->fd) < 0)
+            rb_sys_fail(fptr->path);
+        fptr->fd = -1;
+        fptr->fd = rb_sysopen(fptr->path, rb_io_mode_modenum(mode), 0666);
+    }
 
     return file;
 }
@@ -3424,7 +3419,6 @@ rb_io_init_copy(dest, io)
 {
     OpenFile *fptr, *orig;
     int fd;
-    char *mode;
 
     io = rb_io_get_io(io);
     if (dest == io) return dest;
@@ -3440,18 +3434,8 @@ rb_io_init_copy(dest, io)
     if (orig->path) fptr->path = strdup(orig->path);
     fptr->finalize = orig->finalize;
 
-    switch (fptr->mode & FMODE_READWRITE) {
-      case FMODE_READABLE:
-      default:
-	mode = "r"; break;
-      case FMODE_WRITABLE:
-	mode = "w"; break;
-      case FMODE_READWRITE:
-	mode = "r+"; break;
-    }
     fd = ruby_dup(orig->fd);
     fptr->fd = fd;
-    fptr->f = rb_fdopen(fd, mode);
     io_seek(fptr, io_tell(orig), SEEK_SET);
     if (fptr->mode & FMODE_BINMODE) {
 	rb_io_binmode(dest);
@@ -3888,7 +3872,7 @@ prep_stdio(f, mode, klass)
 	setmode(fp->fd, O_BINARY);
     }
 #endif
-    fp->f = f;
+    fp->stdio_file = f;
     fp->mode = mode;
     if (fp->mode & FMODE_WRITABLE) {
         if (fp->fd == 2) { /* stderr must be unbuffered */
@@ -3912,6 +3896,14 @@ prep_path(io, path)
     GetOpenFile(io, fptr);
     if (fptr->path) rb_bug("illegal prep_path() call");
     fptr->path = strdup(path);
+}
+
+FILE *rb_io_stdio_file(OpenFile *fptr)
+{
+    if (!fptr->stdio_file) {
+        fptr->stdio_file = rb_fdopen(fptr->fd, rb_io_flags_mode(fptr->mode));
+    }
+    return fptr->stdio_file;
 }
 
 /*
@@ -3970,7 +3962,6 @@ rb_io_initialize(argc, argv, io)
 	MakeOpenFile(io, fp);
         fp->fd = fd;
 	fp->mode = rb_io_modenum_flags(flags);
-	fp->f = rb_fdopen(fd, rb_io_modenum_mode(flags));
         if ((fp->mode & FMODE_WRITABLE) && isatty(fp->fd))
             fp->mode |= FMODE_LINEBUF;
     }

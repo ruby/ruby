@@ -1,3 +1,11 @@
+Wed Dec  8 22:10:02 2004  Tanaka Akira  <akr@m17n.org>
+
+	* rubyio.h, io.c, ext/dl/dl.c, ext/pty/pty.c, ext/socket/socket.c:
+	  create FILE object only when required: popen(3) and DL's IO#to_ptr.
+	  [ruby-dev:25122]
+
+	* io.c (rb_io_binmode): use setmode for Human68k.  [ruby-dev:25121]
+
 Wed Dec  8 20:13:06 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* process.c (rb_spawn): support for DJGPP.

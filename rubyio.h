@@ -21,19 +21,19 @@
 #endif
 
 typedef struct OpenFile {
-    int fd;
-    FILE *f;			/* stdio ptr for read/write */
+    int fd;                     /* file descriptor */
+    FILE *stdio_file;		/* stdio ptr for read/write if available */
     int mode;			/* mode flags */
     int pid;			/* child's pid (for pipes) */
     int lineno;			/* number of lines read */
     char *path;			/* pathname for file */
     void (*finalize) _((struct OpenFile*,int)); /* finalize proc */
     long refcnt;
-    char *wbuf;
+    char *wbuf;                 /* wbuf_off + wbuf_len <= wbuf_capa */
     int wbuf_off;
     int wbuf_len;
     int wbuf_capa;
-    char *rbuf;
+    char *rbuf;                 /* rbuf_off + rbuf_len <= rbuf_capa */
     int rbuf_off;
     int rbuf_len;
     int rbuf_capa;
@@ -60,7 +60,7 @@ typedef struct OpenFile {
     fp = 0;\
     fp = RFILE(obj)->fptr = ALLOC(OpenFile);\
     fp->fd = -1;\
-    fp->f = NULL;\
+    fp->stdio_file = NULL;\
     fp->mode = 0;\
     fp->pid = 0;\
     fp->lineno = 0;\
@@ -77,8 +77,7 @@ typedef struct OpenFile {
     fp->rbuf_capa = 0;\
 } while (0)
 
-#define GetReadFile(fptr) ((fptr)->f)
-#define GetWriteFile(fptr) ((fptr)->f)
+FILE *rb_io_stdio_file(OpenFile *fptr);
 
 FILE *rb_fopen _((const char*, const char*));
 FILE *rb_fdopen _((int, const char*));

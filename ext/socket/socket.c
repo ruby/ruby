@@ -183,7 +183,6 @@ init_sock(sock, fd)
 
     MakeOpenFile(sock, fp);
     fp->fd = fd;
-    fp->f = rb_fdopen(fd, "r+");
     fp->mode = FMODE_READWRITE;
     if (do_not_reverse_lookup) {
 	fp->mode |= FMODE_NOREVLOOKUP;

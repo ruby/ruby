@@ -428,12 +428,10 @@ pty_getpty(argc, argv, self)
 
     rfptr->mode = rb_io_mode_flags("r");
     rfptr->fd = info.fd;
-    rfptr->f = rb_fdopen(info.fd, "r");
     rfptr->path = strdup(SlaveName);
 
     wfptr->mode = rb_io_mode_flags("w") | FMODE_SYNC;
     wfptr->fd = dup(info.fd);
-    wfptr->f = rb_fdopen(wfptr->fd, "w");
     wfptr->path = strdup(SlaveName);
 
     res = rb_ary_new2(3);
