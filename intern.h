@@ -102,6 +102,7 @@ VALUE rb_class_init_copy _((VALUE, VALUE));
 VALUE rb_singleton_class_clone _((VALUE));
 void rb_singleton_class_attached _((VALUE,VALUE));
 VALUE rb_make_metaclass _((VALUE, VALUE));
+void rb_check_inheritable _((VALUE));
 VALUE rb_class_inherited _((VALUE, VALUE));
 VALUE rb_define_class_id _((ID, VALUE));
 VALUE rb_module_new _((void));

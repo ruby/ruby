@@ -1699,13 +1699,7 @@ superclass(self, node)
 	}
 	JUMP_TAG(state);
     }
-    if (TYPE(val) != T_CLASS) {
-	rb_raise(rb_eTypeError, "superclass must be a Class (%s given)",
-		 rb_obj_classname(val));
-    }
-    if (FL_TEST(val, FL_SINGLETON)) {
-	rb_raise(rb_eTypeError, "can't make subclass of virtual class");
-    }
+    rb_check_inheritable(val);
 
     return val;
 }

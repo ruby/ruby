@@ -1,3 +1,13 @@
+Sun Dec 21 17:29:00 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (rb_check_inheritable): new function.  [ruby-dev:22316]
+
+	* intern.h: add prototype.
+
+	* eval.c (superclass): use rb_check_inheritable().
+
+	* object.c (rb_class_initialize): check argument validity.
+
 Sun Dec 21 16:25:10 2003  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pathname.rb (Pathname#+): re-implemented to resolve ".." in

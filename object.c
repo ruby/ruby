@@ -776,6 +776,9 @@ rb_class_initialize(argc, argv, klass)
     if (rb_scan_args(argc, argv, "01", &super) == 0) {
 	super = rb_cObject;
     }
+    else {
+	rb_check_inheritable(super);
+    }
     RCLASS(klass)->super = super;
     rb_make_metaclass(klass, RBASIC(super)->klass);
     rb_mod_initialize(klass);

@@ -178,6 +178,19 @@ rb_define_class_id(id, super)
     return klass;
 }
 
+void
+rb_check_inheritable(super)
+    VALUE super;
+{
+    if (TYPE(super) != T_CLASS) {
+	rb_raise(rb_eTypeError, "superclass must be a Class (%s given)",
+		 rb_obj_classname(super));
+    }
+    if (RBASIC(super)->flags & FL_SINGLETON) {
+	rb_raise(rb_eTypeError, "can't make subclass of virtual class");
+    }
+}
+
 VALUE
 rb_class_inherited(super, klass)
     VALUE super, klass;
