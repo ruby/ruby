@@ -211,7 +211,7 @@ module Generators
                             :CROSSREF)
 
         # external hyperlinks
-        @markup.add_special(/((link:|http:|mailto:|ftp:|www\.)\S+\w)/, :HYPERLINK)
+        @markup.add_special(/((link:|https?:|mailto:|ftp:|www\.)\S+\w)/, :HYPERLINK)
 
         # and links of the form  <text>[<url>]
         @markup.add_special(/\b(\S+?\[\S+?\.\S+?\])/, :TIDYLINK)
