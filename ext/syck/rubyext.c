@@ -482,6 +482,31 @@ yaml_org_handler( n, ref )
                 syck_str_blow_away_commas( n );
                 obj = rb_cstr2inum( n->data.str->ptr, 10 );
             }
+            else if ( strcmp( type_id, "float#base60" ) == 0 )
+            {
+                char *ptr, *end;
+                long sixty = 1;
+                double total = 0.0;
+                syck_str_blow_away_commas( n );
+                ptr = n->data.str->ptr;
+                end = n->data.str->ptr + n->data.str->len;
+                while ( end > ptr )
+                {
+                    double bnum = 0;
+                    char *colon = end - 1;
+                    while ( colon >= ptr && *colon != ':' )
+                    {
+                        colon--;
+                    }
+                    if ( *colon == ':' ) *colon = '\0';
+
+                    bnum = strtod( colon + 1, NULL );
+                    total += bnum * sixty;
+                    sixty *= 60;
+                    end = colon;
+                }
+                obj = rb_float_new( total );
+            }
             else if ( strcmp( type_id, "float#nan" ) == 0 )
             {
                 obj = rb_float_new( S_nan() );

@@ -13,7 +13,7 @@
 #define SYCK_YAML_MAJOR 1
 #define SYCK_YAML_MINOR 0
 
-#define SYCK_VERSION    "0.44"
+#define SYCK_VERSION    "0.45"
 #define YAML_DOMAIN     "yaml.org,2002"
 
 #include <stdio.h>
