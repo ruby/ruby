@@ -55,7 +55,7 @@ class Tempfile < SimpleDelegator
     @clean_files = Tempfile.callback(tmpname, @protect)
     ObjectSpace.define_finalizer(self, @clean_files)
 
-    @tmpfile = File.open(tmpname, File::RDWR|File::CREAT|File::EXCL)
+    @tmpfile = File.open(tmpname, File::RDWR|File::CREAT|File::EXCL, 0600)
     @protect[0] = @tmpfile
     @tmpname = tmpname
     super(@tmpfile)
