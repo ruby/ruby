@@ -239,13 +239,13 @@ unsigned long rb_num2ulong _((VALUE));
 #define NUM2LONG(x) (FIXNUM_P(x)?FIX2LONG(x):rb_num2long((VALUE)x))
 #define NUM2ULONG(x) rb_num2ulong((VALUE)x)
 #if SIZEOF_INT < SIZEOF_LONG
-int rb_num2int _((VALUE));
+long rb_num2int _((VALUE));
 #define NUM2INT(x) (FIXNUM_P(x)?FIX2INT(x):rb_num2int((VALUE)x))
-int rb_fix2int _((VALUE));
+long rb_fix2int _((VALUE));
 #define FIX2INT(x) rb_fix2int((VALUE)x)
-unsigned int rb_num2uint _((VALUE));
+unsigned long rb_num2uint _((VALUE));
 #define NUM2UINT(x) rb_num2uint(x)
-unsigned int rb_fix2uint _((VALUE));
+unsigned long rb_fix2uint _((VALUE));
 #define FIX2UINT(x) rb_fix2uint(x)
 #else
 #define NUM2INT(x) ((int)NUM2LONG(x))

@@ -1029,54 +1029,62 @@ check_uint(num)
     }
 }
 
-int
+long
 rb_num2int(val)
     VALUE val;
 {
     long num = rb_num2long(val);
 
     check_int(num);
-    return (int)num;
+    return num;
 }
 
-int
+long
 rb_fix2int(val)
     VALUE val;
 {
     long num = FIXNUM_P(val)?FIX2LONG(val):rb_num2long(val);
 
     check_int(num);
-    return (int)num;
+    return num;
 }
 
-unsigned int
+unsigned long
 rb_num2uint(val)
     VALUE val;
 {
     unsigned long num = rb_num2ulong(val);
 
-    check_uint(num);
-    return (int)num;
+    if (RTEST(rb_funcall(INT2FIX(0), '<', 1, val))) {
+	check_uint(num);
+    }
+    return num;
 }
 
-unsigned int
+unsigned long
 rb_fix2uint(val)
     VALUE val;
 {
-    unsigned long num = FIXNUM_P(val)?FIX2LONG(val):rb_num2ulong(val);
+    unsigned long num;
 
-    check_uint(num);
-    return (int)num;
+    if (!FIXNUM_P(val)) {
+        return rb_num2uint(val);
+    }
+    num = FIX2ULONG(val);
+    if (FIX2LONG(val) > 0) {
+	check_uint(num);
+    }
+    return num;
 }
 #else
-int
+long
 rb_num2int(val)
     VALUE val;
 {
     return rb_num2long(val);
 }
 
-int
+long
 rb_fix2int(val)
     VALUE val;
 {

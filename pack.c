@@ -31,10 +31,18 @@
 #   define OFF16(p) OFF16B(p)
 #   define OFF32(p) OFF32B(p)
 # endif
+# define NATINT_HTOVS(x) (natint?htovs(x):htov16(x))
+# define NATINT_HTOVL(x) (natint?htovl(x):htov32(x))
+# define NATINT_HTONS(x) (natint?htons(x):hton16(x))
+# define NATINT_HTONL(x) (natint?htonl(x):hton32(x))
 #else
 # define NATINT_I32(x) NUM2I32(x)
 # define NATINT_U32(x) NUM2U32(x)
 # define NATINT_LEN(type,len) sizeof(type)
+# define NATINT_HTOVS(x) htovs(x)
+# define NATINT_HTOVL(x) htovl(x)
+# define NATINT_HTONS(x) htons(x)
+# define NATINT_HTONL(x) htonl(x)
 #endif
 
 #ifndef OFF16
@@ -70,8 +78,9 @@ TOKEN_PASTE(swap,x)(z)			\
     return r;				\
 }
 
+#define swap16(x)	((((x)&0xFF)<<8) | (((x)>>8)&0xFF))
 #if SIZEOF_SHORT == 2
-#define swaps(x)	((((x)&0xFF)<<8) | (((x)>>8)&0xFF))
+#define swaps(x)	swap16(x)
 #else
 #if SIZEOF_SHORT == 4
 #define swaps(x)	((((x)&0xFF)<<24)	\
@@ -83,11 +92,12 @@ define_swapx(s,short);
 #endif
 #endif
 
-#if SIZEOF_LONG == 4
-#define swapl(x)	((((x)&0xFF)<<24)	\
+#define swap32(x)	((((x)&0xFF)<<24)	\
 			|(((x)>>24)&0xFF)	\
 			|(((x)&0x0000FF00)<<8)	\
 			|(((x)&0x00FF0000)>>8)	)
+#if SIZEOF_LONG == 4
+#define swapl(x)	swap32(x)
 #else
 #if SIZEOF_LONG == 8
 #define swapl(x)        ((((x)&0x00000000000000FF)<<56)	\
@@ -206,6 +216,12 @@ endian()
 #define vtohl(x) (endian()?swapl(x):(x))
 #define vtohf(x) (endian()?swapf(x):(x))
 #define vtohd(x) (endian()?swapd(x):(x))
+# ifdef NATINT_PACK
+#define htov16(x) (endian()?swap16(x):(x))
+#define htov32(x) (endian()?swap32(x):(x))
+#define hton16(x) (endian()?(x):swap16(x))
+#define hton32(x) (endian()?(x):swap32(x))
+# endif
 #else
 #ifdef WORDS_BIGENDIAN
 #ifndef ntohs
@@ -226,6 +242,12 @@ endian()
 #define vtohl(x) swapl(x)
 #define vtohf(x) swapf(x)
 #define vtohd(x) swapd(x)
+# ifdef NATINT_PACK
+#define htov16(x) swap16(x)
+#define htov32(x) swap32(x)
+#define hton16(x) (x)
+#define hton32(x) (x)
+# endif
 #else /* LITTLE ENDIAN */
 #ifndef ntohs
 #undef ntohs
@@ -249,6 +271,12 @@ endian()
 #define vtohl(x) (x)
 #define vtohf(x) (x)
 #define vtohd(x) (x)
+# ifdef NATINT_PACK
+#define htov16(x) (x)
+#define htov32(x) (x)
+#define hton16(x) swap16(x)
+#define hton32(x) swap32(x)
+# endif
 #endif
 #endif
 
@@ -459,9 +487,9 @@ pack_pack(ary, fmt)
 		len = plen;
 
 	    switch (type) {
-	      case 'a':
-	      case 'A':
-	      case 'Z':
+	      case 'a':		/* arbitrary binary string (null padded)  */
+	      case 'A':		/* ASCII string (space padded) */
+	      case 'Z':		/* null terminated ASCII string  */
 		if (plen >= len)
 		    rb_str_buf_cat(res, ptr, len);
 		else {
@@ -475,7 +503,7 @@ pack_pack(ary, fmt)
 		}
 		break;
 
-	      case 'b':
+	      case 'b':		/* bit string (ascending) */
 		{
 		    int byte = 0;
 		    long i, j = 0;
@@ -506,7 +534,7 @@ pack_pack(ary, fmt)
 		}
 		break;
 
-	      case 'B':
+	      case 'B':		/* bit string (descending) */
 		{
 		    int byte = 0;
 		    long i, j = 0;
@@ -536,7 +564,7 @@ pack_pack(ary, fmt)
 		}
 		break;
 
-	      case 'h':
+	      case 'h':		/* hex string (low nibble first) */
 		{
 		    int byte = 0;
 		    long i, j = 0;
@@ -567,7 +595,7 @@ pack_pack(ary, fmt)
 		}
 		break;
 
-	      case 'H':
+	      case 'H':		/* hex string (high nibble first) */
 		{
 		    int byte = 0;
 		    long i, j = 0;
@@ -600,8 +628,8 @@ pack_pack(ary, fmt)
 	    }
 	    break;
 
-	  case 'c':
-	  case 'C':
+	  case 'c':		/* signed char */
+	  case 'C':		/* unsigned char */
 	    while (len-- > 0) {
 		char c;
 
@@ -614,8 +642,8 @@ pack_pack(ary, fmt)
 	    }
 	    break;
 
-	  case 's':
-	  case 'S':
+	  case 's':		/* signed short */
+	  case 'S':		/* unsigned short */
 	    while (len-- > 0) {
 		short s;
 
@@ -628,22 +656,22 @@ pack_pack(ary, fmt)
 	    }
 	    break;
 
-	  case 'i':
-	  case 'I':
+	  case 'i':		/* signed int */
+	  case 'I':		/* unsigned int */
 	    while (len-- > 0) {
-		int i;
+		long i;
 
 		from = NEXTFROM;
 		if (NIL_P(from)) i = 0;
 		else {
-		    i = NUM2UINT(from);
+		    i = NATINT_I32(from);
 		}
-		rb_str_buf_cat(res, (char*)&i, sizeof(int));
+		rb_str_buf_cat(res, OFF32(&i), NATINT_LEN(int,4));
 	    }
 	    break;
 
-	  case 'l':
-	  case 'L':
+	  case 'l':		/* signed long */
+	  case 'L':		/* unsigned long */
 	    while (len-- > 0) {
 		long l;
 
@@ -656,8 +684,8 @@ pack_pack(ary, fmt)
 	    }
 	    break;
 
-	  case 'q':
-	  case 'Q':
+	  case 'q':		/* signed quad (64bit) int */
+	  case 'Q':		/* unsigned quad (64bit) int */
 	    while (len-- > 0) {
 		char tmp[QUAD_SIZE];
 
@@ -668,7 +696,7 @@ pack_pack(ary, fmt)
 	    }
 	    break;
 
-	  case 'n':
+	  case 'n':		/* unsigned short (network byte-order)  */
 	    while (len-- > 0) {
 		unsigned short s;
 
@@ -677,12 +705,12 @@ pack_pack(ary, fmt)
 		else {
 		    s = NUM2INT(from);
 		}
-		s = htons(s);
+		s = NATINT_HTONS(s);
 		rb_str_buf_cat(res, OFF16B(&s), NATINT_LEN(short,2));
 	    }
 	    break;
 
-	  case 'N':
+	  case 'N':		/* unsigned long (network byte-order) */
 	    while (len-- > 0) {
 		unsigned long l;
 
@@ -691,12 +719,12 @@ pack_pack(ary, fmt)
 		else {
 		    l = NATINT_U32(from);
 		}
-		l = htonl(l);
+		l = NATINT_HTONL(l);
 		rb_str_buf_cat(res, OFF32B(&l), NATINT_LEN(long,4));
 	    }
 	    break;
 
-	  case 'v':
+	  case 'v':		/* unsigned short (VAX byte-order) */
 	    while (len-- > 0) {
 		unsigned short s;
 
@@ -705,12 +733,12 @@ pack_pack(ary, fmt)
 		else {
 		    s = NUM2INT(from);
 		}
-		s = htovs(s);
+		s = NATINT_HTOVS(s);
 		rb_str_buf_cat(res, OFF16(&s), NATINT_LEN(short,2));
 	    }
 	    break;
 
-	  case 'V':
+	  case 'V':		/* unsigned long (VAX byte-order) */
 	    while (len-- > 0) {
 		unsigned long l;
 
@@ -719,13 +747,13 @@ pack_pack(ary, fmt)
 		else {
 		    l = NATINT_U32(from);
 		}
-		l = htovl(l);
+		l = NATINT_HTOVL(l);
 		rb_str_buf_cat(res, OFF32(&l), NATINT_LEN(long,4));
 	    }
 	    break;
 
-	  case 'f':
-	  case 'F':
+	  case 'f':		/* single precision float in native format */
+	  case 'F':		/* ditto */
 	    while (len-- > 0) {
 		float f;
 
@@ -735,7 +763,7 @@ pack_pack(ary, fmt)
 	    }
 	    break;
 
-	  case 'e':
+	  case 'e':		/* single precision float in VAX byte-order */
 	    while (len-- > 0) {
 		float f;
 		FLOAT_CONVWITH(ftmp);
@@ -747,7 +775,7 @@ pack_pack(ary, fmt)
 	    }
 	    break;
 
-	  case 'E':
+	  case 'E':		/* double precision float in VAX byte-order */
 	    while (len-- > 0) {
 		double d;
 		DOUBLE_CONVWITH(dtmp);
@@ -759,8 +787,8 @@ pack_pack(ary, fmt)
 	    }
 	    break;
 
-	  case 'd':
-	  case 'D':
+	  case 'd':		/* double precision float in native format */
+	  case 'D':		/* ditto */
 	    while (len-- > 0) {
 		double d;
 
@@ -770,7 +798,7 @@ pack_pack(ary, fmt)
 	    }
 	    break;
 
-	  case 'g':
+	  case 'g':		/* single precision float in network byte-order */
 	    while (len-- > 0) {
 		float f;
 		FLOAT_CONVWITH(ftmp);
@@ -782,7 +810,7 @@ pack_pack(ary, fmt)
 	    }
 	    break;
 
-	  case 'G':
+	  case 'G':		/* double precision float in network byte-order */
 	    while (len-- > 0) {
 		double d;
 		DOUBLE_CONVWITH(dtmp);
@@ -794,7 +822,7 @@ pack_pack(ary, fmt)
 	    }
 	    break;
 
-	  case 'x':
+	  case 'x':		/* null byte */
 	  grow:
 	    while (len >= 10) {
 		rb_str_buf_cat(res, nul10, 10);
@@ -803,7 +831,7 @@ pack_pack(ary, fmt)
 	    rb_str_buf_cat(res, nul10, len);
 	    break;
 
-	  case 'X':
+	  case 'X':		/* back up byte */
 	  shrink:
 	    plen = RSTRING(res)->len;
 	    if (plen < len)
@@ -812,7 +840,7 @@ pack_pack(ary, fmt)
 	    RSTRING(res)->ptr[plen - len] = '\0';
 	    break;
 
-	  case '@':
+	  case '@':		/* null fill to absolute position */
 	    len -= RSTRING(res)->len;
 	    if (len > 0) goto grow;
 	    len = -len;
@@ -823,7 +851,7 @@ pack_pack(ary, fmt)
 	    rb_raise(rb_eArgError, "%% is not supported");
 	    break;
 
-	  case 'U':
+	  case 'U':		/* Unicode character */
 	    while (len-- > 0) {
 		long l;
 		char buf[8];
@@ -842,8 +870,8 @@ pack_pack(ary, fmt)
 	    }
 	    break;
 
-	  case 'u':
-	  case 'm':
+	  case 'u':		/* uuencoded string */
+	  case 'm':		/* base64 encoded string */
 	    from = NEXTFROM;
 	    StringValue(from);
 	    ptr = RSTRING(from)->ptr;
@@ -866,14 +894,14 @@ pack_pack(ary, fmt)
 	    }
 	    break;
 
-	  case 'M':
+	  case 'M':		/* quoted-printable encoded string */
 	    from = rb_obj_as_string(NEXTFROM);
 	    if (len <= 1)
 		len = 72;
 	    qpencode(res, from, len);
 	    break;
 
-	  case 'P':
+	  case 'P':		/* pointer to packed byte string */
 	    from = THISFROM;
 	    if (!NIL_P(from)) {
 		StringValue(from);
@@ -884,7 +912,7 @@ pack_pack(ary, fmt)
 	    }
 	    len = 1;
 	    /* FALL THROUGH */
-	  case 'p':
+	  case 'p':		/* pointer to string */
 	    while (len-- > 0) {
 		char *t;
 		from = NEXTFROM;
@@ -902,7 +930,7 @@ pack_pack(ary, fmt)
 	    }
 	    break;
 
-	  case 'w':
+	  case 'w':		/* BER compressed integer  */
 	    while (len-- > 0) {
 		unsigned long ul;
 		VALUE buf = rb_str_new(0, 0);
