@@ -418,14 +418,7 @@ class Set
   def pretty_print(pp)	# :nodoc:
     pp.text sprintf('#<%s: {', self.class.name)
     pp.nest(1) {
-      first = true
-      each { |o|
-	if first
-	  first = false
-	else
-	  pp.text ","
-	  pp.breakable
-	end
+      pp.seplist(self) { |o|
 	pp.pp o
       }
     }

@@ -159,6 +159,19 @@ class PrettyPrint
     @group_stack.last
   end
 
+  def seplist(list, sep=nil, iter_method=:each)
+    sep ||= lambda { comma_breakable }
+    first = true
+    list.__send__(iter_method) {|*v|
+      if first
+        first = false
+      else
+        sep.call
+      end
+      yield(*v)
+    }
+  end
+
   def first?
     current_group.first?
   end

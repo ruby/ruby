@@ -1,3 +1,15 @@
+Thu Feb  5 23:56:55 2004  Tanaka Akira  <akr@m17n.org>
+
+	* lib/prettyprint.rb (PrettyPrint#seplist): added.
+
+	* lib/pp.rb (PPMethods#pp_object): use seplist.
+	  (PPMethods#pp_hash): ditto.
+	  (Array#pretty_print): ditto.
+	  (Struct#pretty_print): ditto.
+	  (MatchData#pretty_print): ditto.
+
+	* lib/set.rb (Set#pretty_print): use seplist.
+
 Wed Feb  4 22:39:46 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_stat_mode): should not sign-expand, so backout.

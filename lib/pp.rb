@@ -203,10 +203,9 @@ class PP < PrettyPrint
 
     def pp_object(obj)
       object_address_group(obj) {
-        obj.pretty_print_instance_variables.each {|v|
-          v = v.to_s if Symbol === v
-          text ',' unless first?
+        seplist(obj.pretty_print_instance_variables, lambda { text ',' }) {|v|
           breakable
+          v = v.to_s if Symbol === v
           text v
           text '='
           group(1) {
@@ -219,8 +218,7 @@ class PP < PrettyPrint
 
     def pp_hash(obj)
       group(1, '{', '}') {
-        obj.each {|k, v|
-          comma_breakable unless first?
+        seplist(obj, nil, :each_pair) {|k, v|
           group {
             pp k
             text '=>'
@@ -279,8 +277,7 @@ end
 class Array
   def pretty_print(q)
     q.group(1, '[', ']') {
-      self.each {|v|
-        q.comma_breakable unless q.first?
+      q.seplist(self) {|v|
         q.pp v
       }
     }
@@ -310,8 +307,7 @@ end
 class Struct
   def pretty_print(q)
     q.group(1, '#<struct ' + self.class.name, '>') {
-      self.members.each {|member|
-        q.text "," unless q.first?
+      q.seplist(self.members, lambda { q.text "," }) {|member|
         q.breakable
         q.text member.to_s
         q.text '='
@@ -420,8 +416,7 @@ class MatchData
   def pretty_print(q)
     q.object_group(self) {
       q.breakable
-      1.upto(self.size) {|i|
-        q.breakable unless q.first?
+      q.seplist(1..self.size, lambda { q.breakable }) {|i|
         q.pp self[i-1]
       }
     }
