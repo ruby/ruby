@@ -1256,6 +1256,7 @@ module Net
       def media_subtype
 	$stderr.printf("warning: media_subtype is obsolete.\n")
 	$stderr.printf("         use subtype instead.\n")
+	return subtype
       end
     end
 
@@ -1272,6 +1273,7 @@ module Net
       def media_subtype
 	$stderr.printf("warning: media_subtype is obsolete.\n")
 	$stderr.printf("         use subtype instead.\n")
+	return subtype
       end
     end
 
@@ -1288,6 +1290,7 @@ module Net
       def media_subtype
 	$stderr.printf("warning: media_subtype is obsolete.\n")
 	$stderr.printf("         use subtype instead.\n")
+	return subtype
       end
     end
 
@@ -1302,6 +1305,7 @@ module Net
       def media_subtype
 	$stderr.printf("warning: media_subtype is obsolete.\n")
 	$stderr.printf("         use subtype instead.\n")
+	return subtype
       end
     end
 
