@@ -587,6 +587,7 @@ struct tag {
     struct iter *iter;
     ID tag;
     VALUE retval;
+    struct SCOPE *scope;
     int dst;
     struct tag *prev;
 };
@@ -599,6 +600,7 @@ static struct tag *prot_tag;
     _tag.iter = ruby_iter;		\
     _tag.prev = prot_tag;		\
     _tag.retval = Qnil;			\
+    _tag.scope = ruby_scope;		\
     _tag.tag = ptag;			\
     _tag.dst = 0;			\
     prot_tag = &_tag;
@@ -634,8 +636,8 @@ static struct tag *prot_tag;
 VALUE ruby_class;
 static VALUE ruby_wrapper;	/* security wrapper */
 
-#define PUSH_CLASS() {		\
-    VALUE _class = ruby_class;	\
+#define PUSH_CLASS() {			\
+    VALUE _class = ruby_class;		\
 
 #define POP_CLASS() ruby_class = _class; }
 
@@ -4487,7 +4489,6 @@ rb_load(fname, wrap)
     }
 
     PUSH_VARS();
-    PUSH_TAG(PROT_NONE);
     PUSH_CLASS();
     if (!wrap) {
 	rb_secure(4);		/* should alter global state */
@@ -4517,6 +4518,7 @@ rb_load(fname, wrap)
     /* default visibility is private at loading toplevel */
     SCOPE_SET(SCOPE_PRIVATE);
 
+    PUSH_TAG(PROT_NONE);
     state = EXEC_TAG();
     last_func = ruby_frame->last_func;
     if (state == 0) {
@@ -4532,10 +4534,10 @@ rb_load(fname, wrap)
 	if (ruby_scope->local_tbl) /* toplevel was empty */
 	    free(ruby_scope->local_tbl);
     }
+    POP_TAG();
     POP_SCOPE();
     POP_FRAME();
     POP_CLASS();
-    POP_TAG();
     POP_VARS();
     ruby_wrapper = 0;
     if (ruby_nerrs > 0) {
@@ -7110,12 +7112,16 @@ rb_callcc(self)
 {
     volatile VALUE cont;
     thread_t th;
+    struct tag *tag;
 
     THREAD_ALLOC(th);
     th->thread = cont = Data_Wrap_Struct(rb_cContinuation, thread_mark,
 					 thread_free, th);
 
     FL_SET(ruby_scope, SCOPE_DONT_RECYCLE);
+    for (tag=prot_tag; tag; tag=tag->prev) {
+	scope_dup(tag->scope);
+    }
     rb_thread_save_context(th);
     if (setjmp(th->context)) {
 	return th->result;
