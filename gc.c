@@ -1220,12 +1220,12 @@ run_final(obj)
     args[1] = rb_ary_new3(1, rb_obj_id(obj)); /* make obj into id */
     for (i=0; i<RARRAY(finalizers)->len; i++) {
 	args[0] = RARRAY(finalizers)->ptr[i];
-	rb_protect(run_single_final, (VALUE)args, &status);
+	rb_protect((VALUE(*)_((VALUE)))run_single_final, (VALUE)args, &status);
     }
     if (finalizer_table && st_delete(finalizer_table, &obj, &table)) {
 	for (i=0; i<RARRAY(table)->len; i++) {
 	    args[0] = RARRAY(table)->ptr[i];
-	    rb_protect(run_single_final, (VALUE)args, &status);
+	    rb_protect((VALUE(*)_((VALUE)))run_single_final, (VALUE)args, &status);
 	}
     }
 }

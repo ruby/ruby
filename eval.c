@@ -1847,14 +1847,14 @@ is_defined(self, node, buf)
 	break;
 
       case NODE_NTH_REF:
-	if (rb_reg_nth_defined(node->nd_nth, MATCH_DATA)) {
+	if (RTEST(rb_reg_nth_defined(node->nd_nth, MATCH_DATA))) {
 	    sprintf(buf, "$%d", node->nd_nth);
 	    return buf;
 	}
 	break;
 
       case NODE_BACK_REF:
-	if (rb_reg_nth_defined(0, MATCH_DATA)) {
+	if (RTEST(rb_reg_nth_defined(0, MATCH_DATA))) {
 	    sprintf(buf, "$%c", node->nd_nth);
 	    return buf;
 	}
@@ -2637,10 +2637,12 @@ rb_eval(self, n)
 	goto again;
 
       case NODE_OP_ASGN_OR:
-	result = rb_eval(self, node->nd_head);
-	if (RTEST(result)) break;
-	node = node->nd_value;
-	goto again;
+	if ((node->nd_aid && !rb_ivar_defined(self, node->nd_aid)) ||
+	    !RTEST(result = rb_eval(self, node->nd_head))) {
+	    node = node->nd_value;
+	    goto again;
+	}
+	break;
 
       case NODE_MASGN:
 	result = massign(self, node, rb_eval(self, node->nd_value),0);
@@ -4737,6 +4739,7 @@ eval(self, src, scope, file, line)
     struct SCOPE * volatile old_scope;
     struct BLOCK * volatile old_block;
     struct RVarmap * volatile old_dyna_vars;
+    VALUE volatile old_cref;
     int volatile old_vmode;
     struct FRAME frame;
     char *filesave = ruby_sourcefile;
@@ -4767,6 +4770,8 @@ eval(self, src, scope, file, line)
 	ruby_dyna_vars = data->dyna_vars;
 	old_vmode = scope_vmode;
 	scope_vmode = data->vmode;
+	old_cref = (VALUE)ruby_cref;
+	ruby_cref = (NODE*)ruby_frame->cbase;
 
 	self = data->self;
 	ruby_frame->iter = data->iter;
@@ -4802,6 +4807,7 @@ eval(self, src, scope, file, line)
     if (!NIL_P(scope)) {
 	int dont_recycle = ruby_scope->flags & SCOPE_DONT_RECYCLE;
 
+	ruby_cref  = (NODE*)old_cref;
 	ruby_frame = frame.tmp;
 	ruby_scope = old_scope;
 	ruby_block = old_block;
@@ -5023,17 +5029,16 @@ specific_eval(argc, argv, klass, self)
     else {
 	char *file = "(eval)";
 	int   line = 1;
-	VALUE src = argv[0];
 
 	if (argc == 0) {
 	    rb_raise(rb_eArgError, "block not supplied");
 	}
 	else {
 	    if (ruby_safe_level >= 4) {
-		StringValue(src);
+		StringValue(argv[0]);
 	    }
 	    else {
-		SafeStringValue(src);
+		SafeStringValue(argv[0]);
 	    }
 	    if (argc > 3) {
 		rb_raise(rb_eArgError, "wrong # of arguments: %s(src) or %s{..}",
@@ -5041,8 +5046,7 @@ specific_eval(argc, argv, klass, self)
 			 rb_id2name(ruby_frame->last_func));
 	    }
 	    if (argc > 1) {
-		src = argv[1];
-		file = StringValuePtr(src);
+		file = StringValuePtr(argv[1]);
 	    }
 	    if (argc > 2) line = NUM2INT(argv[2]);
 	}

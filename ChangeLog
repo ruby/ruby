@@ -1,7 +1,25 @@
+Mon May  7 15:58:45 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (arg): "||=" should not warn for uninitialized instance
+	  variables.
+
+	* eval.c (rb_eval): ditto.
+
+	* eval.c (eval): preserve and restore ruby_cref as well.
+
 Mon May  7 15:45:48 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/ftools.rb (syscopy): chmod destination file only if
 	  it does not exist.
+
+Mon May  7 14:35:57 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_obj_is_instance_of): takes only class/module as an
+	  argument.
+
+Sun May  6 16:27:29 2001  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* eval.c (is_defined): rb_reg_nth_defined() may return Qnil.
 
 Thu May  3 03:15:06 2001  SHIROYAMA Takayuki <psi@fortune.nest.or.jp>
 

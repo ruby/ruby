@@ -220,17 +220,6 @@ rb_obj_is_instance_of(obj, c)
       case T_CLASS:
       case T_ICLASS:
 	break;
-
-      case T_NIL:
-	if (NIL_P(obj)) return Qtrue;
-	return Qfalse;
-
-      case T_FALSE:
-	return RTEST(obj) ? Qfalse : Qtrue;
-
-      case T_TRUE:
-	return RTEST(obj) ? Qtrue : Qfalse;
-
       default:
 	rb_raise(rb_eTypeError, "class or module required");
     }

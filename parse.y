@@ -411,15 +411,15 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    {
 			$$ = node_assign($1, $3);
 		    }
-		| expr
-
-expr		: mlhs '=' mrhs
+		| mlhs '=' mrhs
 		    {
 			value_expr($3);
 			$1->nd_value = $3;
 			$$ = $1;
 		    }
-		| kRETURN ret_args
+		| expr
+
+expr		: kRETURN ret_args
 		    {
 			if (!compile_for_eval && !in_def && !in_single)
 			    yyerror("return appeared outside of method");
@@ -671,6 +671,9 @@ arg		: lhs '=' arg
 			if ($2 == tOROP) {
 			    $<node>3->nd_value = $4;
 			    $$ = NEW_OP_ASGN_OR(gettable($1), $<node>3);
+			    if (is_instance_id($1)) {
+				$$->nd_aid = $1;
+			    }
 			}
 			else if ($2 == tANDOP) {
 			    $<node>3->nd_value = $4;
@@ -903,13 +906,9 @@ arg		: lhs '=' arg
 		    }
 
 aref_args	: none
-		| command_call opt_nl
+		| command opt_nl
 		    {
 			$$ = NEW_LIST($1);
-		    }
-		| args ',' command_call opt_nl
-		    {
-			$$ = list_append($1, $3);
 		    }
 		| args trailer
 		    {
@@ -953,10 +952,6 @@ opt_paren_args	: none
 call_args	: command
 		    {
 			$$ = NEW_LIST($1);
-		    }
-		| args ',' command
-		    {
-			$$ = list_append($1, $3);
 		    }
 		| args opt_block_arg
 		    {

@@ -202,10 +202,7 @@ class Date
 	  alias_method :__#{id.to_i}__, :#{id.id2name}
 	  private :__#{id.to_i}__
 	  def #{id.id2name}(*args, &block)
-	    unless defined? @__#{id.to_i}__
-	      @__#{id.to_i}__ = __#{id.to_i}__(*args, &block)
-	    end
-	    @__#{id.to_i}__
+	    (@__#{id.to_i}__ ||= [__#{id.to_i}__(*args, &block)])[0]
 	  end
 	end;
       end

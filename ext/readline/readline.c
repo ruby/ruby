@@ -18,6 +18,7 @@ static VALUE mReadline;
 #ifndef READLINE_42_OR_LATER
 # define rl_filename_completion_function filename_completion_function
 # define rl_username_completion_function username_completion_function
+# define rl_completion_matches completion_matches
 #endif
 
 static int
@@ -327,8 +328,8 @@ filename_completion_proc_call(self, str)
     char **matches;
     int i;
 
-    matches = completion_matches(StringValuePtr(str),
-				 rl_filename_completion_function);
+    matches = rl_completion_matches(StringValuePtr(str),
+				    rl_filename_completion_function);
     if (matches) {
 	result = rb_ary_new();
 	for (i = 0; matches[i]; i++) {
@@ -354,8 +355,8 @@ username_completion_proc_call(self, str)
     char **matches;
     int i;
 
-    matches = completion_matches(StringValuePtr(str),
-				 rl_username_completion_function);
+    matches = rl_completion_matches(StringValuePtr(str),
+				    rl_username_completion_function);
     if (matches) {
 	result = rb_ary_new();
 	for (i = 0; matches[i]; i++) {
