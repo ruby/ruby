@@ -36,6 +36,14 @@ def sysquote(x)
   @quote ? x.quote : x
 end
 
+def relative_from(path, base)
+  if File.expand_path(path) == File.expand_path(path, base)
+    path
+  else
+    File.join(base, path)
+  end
+end
+
 def extmake(target)
   print "#{$message} #{target}\n"
   $stdout.flush
@@ -58,9 +66,7 @@ def extmake(target)
     top_srcdir = $top_srcdir
     topdir = $topdir
     prefix = "../" * (target.count("/")+1)
-    if File.expand_path(top_srcdir) != File.expand_path(top_srcdir, dir)
-      $hdrdir = $top_srcdir = prefix + top_srcdir
-    end
+    $hdrdir = $top_srcdir = relative_from(top_srcdir, prefix)
     $topdir = prefix + $topdir
     $target = target
     $mdir = target
@@ -228,10 +234,7 @@ dir = Dir.pwd
 FileUtils::makedirs('ext')
 Dir::chdir('ext')
 
-if File.expand_path(srcdir) != File.expand_path(srcdir, dir)
-  $hdrdir = $top_srcdir = "../" + srcdir
-end
-$topdir = ".."
+$hdrdir = $top_srcdir = relative_from(srcdir, $topdir = "..")
 ext_prefix = "#{$top_srcdir}/ext"
 Dir.glob("#{ext_prefix}/*/**/extconf.rb") do |d|
   d = File.dirname(d)
@@ -295,7 +298,7 @@ SRC
 end
 rubies = []
 %w[RUBY RUBYW].each {|r|
-  config_string(r+"_INSTALL_NAME") {|r| rubies << r+EXEEXT}
+  config_string(r+"_INSTALL_NAME", Config::CONFIG) {|r| rubies << r+EXEEXT}
 }
 
 Dir.chdir ".."

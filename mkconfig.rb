@@ -1,16 +1,19 @@
 #!./miniruby -s
 
 # avoid warnings with -d.
-$srcdir ||= nil
 $install_name ||= nil
 $so_name ||= nil
 
-require File.dirname($0)+"/lib/ftools"
+srcdir = File.dirname(__FILE__)
+$:.replace [srcdir+"/lib", "."]
+
+require "fileutils"
 mkconfig = File.basename($0)
 
 rbconfig_rb = ARGV[0] || 'rbconfig.rb'
-srcdir = $srcdir || '.'
-File.makedirs(File.dirname(rbconfig_rb), true)
+unless File.directory?(dir = File.dirname(rbconfig_rb))
+  FileUtils.makedirs(dir, :verbose => true)
+end
 
 version = RUBY_VERSION
 rbconfig_rb_tmp = rbconfig_rb + '.tmp'
@@ -52,16 +55,11 @@ File.foreach "config.status" do |line|
       v_others << v
     end
     has_version = true if name == "MAJOR"
-  elsif /^(?:ac_given_)?srcdir=(.*)/ =~ line
-    srcdir = $1.strip
   elsif /^ac_given_INSTALL=(.*)/ =~ line
     v_fast << "  CONFIG[\"INSTALL\"] = " + $1 + "\n"
   end
 #  break if /^CEOF/
 end
-
-srcdir = File.expand_path(srcdir)
-v_fast.unshift("  CONFIG[\"srcdir\"] = \"" + srcdir + "\"\n")
 
 v_fast.collect! do |x|
   if /"prefix"/ === x
@@ -111,7 +109,7 @@ print <<EOS
   CONFIG["archdir"] = "$(rubylibdir)/$(arch)"
   CONFIG["sitelibdir"] = "$(sitedir)/$(ruby_version)"
   CONFIG["sitearchdir"] = "$(sitelibdir)/$(sitearch)"
-  CONFIG["compile_dir"] = "#{Dir.pwd}"
+  CONFIG["topdir"] = File.dirname(__FILE__)
   MAKEFILE_CONFIG = {}
   CONFIG.each{|k,v| MAKEFILE_CONFIG[k] = v.dup}
   def Config::expand(val, config = CONFIG)
@@ -137,6 +135,17 @@ EOS
 $stdout.flush
 $stdout.reopen($orgout)
 config.close
-File.rename(rbconfig_rb_tmp, rbconfig_rb)
+if $timestamp and
+   File.exist?(rbconfig_rb) and
+   FileUtils.compare_file(rbconfig_rb, rbconfig_rb_tmp)
+  puts "#{rbconfig_rb} unchanged"
+  File.unlink(rbconfig_rb_tmp)
+else
+  puts "#{rbconfig_rb} updated"
+  File.rename(rbconfig_rb_tmp, rbconfig_rb)
+end
+if String === $timestamp
+  FileUtils.touch($timestamp)
+end
 
 # vi:set sw=2:
