@@ -618,6 +618,7 @@ ossl_ssl_get_peer_cert_chain(VALUE self)
 	return Qnil;
     }
     chain = SSL_get_peer_cert_chain(ssl);
+    if(!chain) return Qnil;
     num = sk_num(chain);
     ary = rb_ary_new2(num);
     for (i = 0; i < num; i++){

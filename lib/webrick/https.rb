@@ -24,6 +24,7 @@ module WEBrick
       if socket && socket.is_a?(OpenSSL::SSL::SSLSocket)
         @server_cert = @config[:SSLCertificate]
         @client_cert = socket.peer_cert
+        @client_cert_chain = socket.peer_cert_chain
         @cipher      = socket.cipher
       end
       orig_parse(socket)
@@ -46,6 +47,11 @@ module WEBrick
         meta["HTTPS"] = "on"
         meta["SSL_SERVER_CERT"] = @server_cert.to_pem
         meta["SSL_CLIENT_CERT"] = @client_cert ? @client_cert.to_pem : ""
+        if @client_cert_chain
+          @client_cert_chain.each_with_index{|cert, i|
+            meta["SSL_CLIENT_CERT_CHAIN_#{i}"] = cert.to_pem
+          }
+        end
         meta["SSL_CIPHER"] = @cipher[0]
       end
       meta
