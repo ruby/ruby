@@ -2507,6 +2507,7 @@ class TkObject<TkKernel
 	tk_call path, 'configure', "-#{slot}", value
       end
     end
+    self
   end
 
   def configure_cmd(slot, value)
