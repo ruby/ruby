@@ -1,3 +1,9 @@
+Tue Jan  6 11:29:43 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* test/inlinetest.rb, test/{test_generator.rb,test_ipaddr.rb,
+	  test_pathname.rb,test_pp.rb,test_prettyprint.rb,test_set.rb,
+	  test_time.rb,test_tsort.rb: added.
+
 Tue Jan  6 09:38:27 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* import soap4r/1.5.2;

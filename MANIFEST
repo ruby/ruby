@@ -693,6 +693,7 @@ test/drb/ut_timerholder.rb
 test/fileutils/fileasserts.rb
 test/fileutils/test_fileutils.rb
 test/fileutils/test_nowrite.rb
+test/inlinetest.rb
 test/logger/test_logger.rb
 test/monitor/test_monitor.rb
 test/optparse/test_noarg.rb
@@ -775,6 +776,14 @@ test/testunit/test_testsuite.rb
 test/testunit/util/test_backtracefilter.rb
 test/testunit/util/test_observable.rb
 test/testunit/util/test_procwrapper.rb
+test/test_generator.rb
+test/test_ipaddr.rb
+test/test_pathname.rb
+test/test_pp.rb
+test/test_prettyprint.rb
+test/test_set.rb
+test/test_time.rb
+test/test_tsort.rb
 test/uri/test_common.rb
 test/uri/test_ftp.rb
 test/uri/test_generic.rb
