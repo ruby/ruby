@@ -1,7 +1,11 @@
+Sat Feb 12 15:07:23 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (rand_init): suppress warning.
+
 Sat Feb 12 14:10:24 2005  Tanaka Akira  <akr@m17n.org>
 
 	* lib/open-uri.rb (OpenURI.open_http): reject userinfo explicitly.
-	
+
 Sat Feb 12 13:54:03 2005  Tanaka Akira  <akr@m17n.org>
 
 	* lib/open-uri.rb: support https if the platform provides CA
