@@ -10,6 +10,36 @@ Mon Dec 25 04:43:02 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/http.rb: does not send HEAD on closing socket.
 
+Mon Dec 25 00:44:48 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (rb_any_cmp): should use rb_str_cmp() if TYPE == T_STRING
+	  and CLASS_OF == rb_cString.
+
+	* string.c (rb_str_new4): should copy class of original too.
+
+Mon Dec 25 00:04:54 2000  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* eval.c (rb_thread_schedule): initial value of `max' changed to -1.
+
+Fri Dec 22 17:59:30 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* stable version 1.6.2 released.
+
+Mon Dec 25 00:16:14 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_replace_m): copy-on-write replace.
+
+	* parse.y (yylex): should handle => after identifier as well as ==
+	  and =~.
+
+Sat Dec 23 23:55:57 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_cstr2inum): Integer("") should not return 0.
+
+Sat Dec 23 11:55:57 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_and): Array#& should preverve original order.
+
 Sat Dec 23 03:44:16 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/protocol.rb: set @closed false in Socket#reopen.
@@ -22,9 +52,9 @@ Sat Dec 23 03:44:16 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/http.rb: refactoring.
 
-Fri Dec 22 17:59:30 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Fri Dec 22 23:11:12 2000  Ueno Katsuhiro  <unnie@blue.sky.or.jp>
 
-	* stable version 1.6.2 released.
+	* eval.c (rb_feature_p): ext might be null.
 
 Fri Dec 22 17:04:12 2000  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 

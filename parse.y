@@ -3244,9 +3244,11 @@ yylex()
 		    tokadd(c);
 		    seen_e++;
 		    is_float++;
-		    if ((c = nextc()) == '-' || c == '+')
+		    while ((c = nextc()) == '_')
+			seen_uc = 1;
+		    if (c == '-' || c == '+')
 			tokadd(c);
-		    else
+		    else 
 			continue;
 		    break;
 
@@ -3628,7 +3630,12 @@ yylex()
 	    }
 	    else {
 		if (lex_state == EXPR_FNAME) {
-		    if ((c = nextc()) == '=' && !peek('=') && !peek('~')) {
+#if 0
+		    if ((c = nextc()) == '=' && !peek('=') && !peek('~') && !peek('>')) {
+#else
+		    if ((c = nextc()) == '=' && !peek('~') && !peek('>') &&
+			(!peek('=') || lex_p + 1 < lex_pend && lex_p[1] == '>')) {
+#endif
 			result = tIDENTIFIER;
 			tokadd(c);
 		    }

@@ -663,13 +663,14 @@ An end of a defun is found by moving forward from the beginning of one."
   (or (boundp 'font-lock-variable-name-face)
       (setq font-lock-variable-name-face font-lock-type-face))
 
+
   (add-hook 'ruby-mode-hook
 	    '(lambda ()
 	       (make-local-variable 'font-lock-syntactic-keywords)
 	       (setq font-lock-syntactic-keywords
 		     '(("\\$\\([#\"'`$\\]\\)" 1 (1 . nil))
 		       ("\\(#\\)[{$@]" 1 (1 . nil))
-		       ("\\(/\\)\\([^/]\\|\\\\/\\)*\\(/\\)"
+		       ("\\(/\\)\\([^/\n]\\|\\\\/\\)*\\(/\\)"
 			(1 (7 . ?'))
 			(3 (7 . ?')))))
 	       (make-local-variable 'font-lock-defaults)

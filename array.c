@@ -1463,9 +1463,6 @@ rb_ary_and(ary1, ary2)
     long i;
 
     ary2 = to_ary(ary2);
-    if (RARRAY(ary1)->len < RARRAY(ary2)->len) { /* swap */
-	VALUE tmp = ary1; ary1 = ary2; ary2 = tmp;
-    }
     hash = ary_make_hash(ary2, 0);
 
     for (i=0; i<RARRAY(ary1)->len; i++) {

@@ -44,7 +44,7 @@ else
 end
 
 LINK = "#{CONFIG['CC']} -o conftest -I#{$hdrdir} #{CFLAGS} -I#{CONFIG['includedir']} %s #{CONFIG['LDFLAGS']} %s conftest.c %s %s #{CONFIG['LIBS']}"
-CPP = "#{CONFIG['CPP']} -E -I#{$hdrdir} #{CFLAGS} -I#{CONFIG['includedir']} %s %s conftest.c"
+CPP = "#{CONFIG['CPP']} -E %s -I#{$hdrdir} #{CFLAGS} -I#{CONFIG['includedir']} %s %s conftest.c"
 
 def rm_f(*files)
   targets = []
@@ -104,7 +104,7 @@ def try_cpp(src, opt="")
   cfile.print src
   cfile.close
   begin
-    xsystem(format(CPP, $CFLAGS, opt))
+    xsystem(format(CPP, $CPPFLAGS, $CFLAGS, opt))
   ensure
     rm_f "conftest*"
   end
@@ -115,7 +115,7 @@ def egrep_cpp(pat, src, opt="")
   cfile.print src
   cfile.close
   begin
-    xsystem(format(CPP+"|egrep #{pat}", $CFLAGS, opt))
+    xsystem(format(CPP+"|egrep #{pat}", $CPPFLAGS, $CFLAGS, opt))
   ensure
     rm_f "conftest*"
   end

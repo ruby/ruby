@@ -219,11 +219,7 @@ rb_cstr2inum(str, base)
 	    }
 	    else {
 		base = 8;
-		if (!str[1]) return INT2FIX(0);
 	    }
-	}
-	else if (str[0] == 0) {
-	    return INT2FIX(0);
 	}
 	else {
 	    base = 10;
@@ -256,7 +252,7 @@ rb_cstr2inum(str, base)
 	    while (*end && ISSPACE(*end)) end++;
 	    if (*end) {		      /* trailing garbage */
 	      bad:
-		rb_raise(rb_eArgError, "invalid literal for Integer: %s", s);
+		rb_raise(rb_eArgError, "invalid value for Integer: \"%s\"", s);
 	    }
 	}
 
@@ -282,28 +278,28 @@ rb_cstr2inum(str, base)
     for (i=len;i--;) zds[i]=0;
     while (c = *str++) {
 	switch (c) {
+	  case '8': case '9':
+	    if (base == 8) {
+		c = base;
+		break;
+	    }
 	  case '0': case '1': case '2': case '3': case '4':
-	  case '5': case '6': case '7': case '8': case '9':
+	  case '5': case '6': case '7': 
 	    c = c - '0';
 	    break;
 	  case 'a': case 'b': case 'c':
 	  case 'd': case 'e': case 'f':
-	    c = c - 'a' + 10;
+	    if (base != 16) c = base;
+	    else c = c - 'a' + 10;
 	    break;
 	  case 'A': case 'B': case 'C':
 	  case 'D': case 'E': case 'F':
-	    c = c - 'A' + 10;
+	    if (base != 16) c = base;
+	    else c = c - 'A' + 10;
 	    break;
 	  case '_':
 	    continue;
 	  default:
-	    if (badcheck) {
-		if (ISSPACE(c)) {
-		    while (*str && ISSPACE(*str)) str++;
-		    if (!*str) break;
-		}
-		rb_raise(rb_eArgError, "invalid literal for Integer: %s", s);
-	    }
 	    c = base;
 	    break;
 	}
@@ -323,7 +319,14 @@ rb_cstr2inum(str, base)
 	    break;
 	}
     }
-    if (badcheck && s+2 < str && str[-2] == '_') goto bad;
+    if (badcheck) {
+	str--;
+	if (s+1 < str && str[-1] == '_') goto bad;
+	if (ISSPACE(c)) {
+	    while (*str && ISSPACE(*str)) str++;
+	}
+	if (*str) goto bad;
+    }
 
     return bignorm(z);
 }

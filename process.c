@@ -531,21 +531,6 @@ rb_f_exec(argc, argv)
 }
 
 static VALUE
-fork_rescue(data, errinfo)
-    VALUE data, errinfo;
-{
-    int status = 1;
-
-    if (rb_obj_is_kind_of(errinfo, rb_eSystemExit)) {
-	VALUE st = rb_iv_get(errinfo, "status");
-
-	status = NUM2INT(st);
-    }
-    ruby_finalize();
-    _exit(status);
-}
-
-static VALUE
 rb_f_fork(obj)
     VALUE obj;
 {
@@ -560,15 +545,10 @@ rb_f_fork(obj)
 #endif
 	rb_thread_atfork();
 	if (rb_block_given_p()) {
-#if 0
-	    rb_rescue2(rb_yield, Qnil, fork_rescue, 0, rb_eException, 0);
-	    _exit(0);
-#else
 	    int status;
 
 	    rb_protect(rb_yield, Qnil, &status);
 	    ruby_stop(status);
-#endif
 	}
 	return Qnil;
 

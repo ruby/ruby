@@ -59,11 +59,15 @@ rb_any_cmp(a, b)
     VALUE a, b;
 {
     VALUE args[2];
-    if (FIXNUM_P(a)) {
-	if (FIXNUM_P(b)) return a != b;
+    if (FIXNUM_P(a) && FIXNUM_P(b)) {
+	return a != b;
     }
-    else if (TYPE(a) == T_STRING) {
-	if (TYPE(b) == T_STRING) return rb_str_cmp(a, b);
+    if (TYPE(a) == T_STRING && RBASIC(a)->klass == rb_cString &&
+	TYPE(b) == T_STRING && RBASIC(b)->klass == rb_cString) {
+	return rb_str_cmp(a, b);
+    }
+    if (SYMBOL_P(a) && SYMBOL_P(b)) {
+	return a != b;
     }
 
     args[0] = a;
@@ -79,6 +83,7 @@ rb_any_hash(a)
 
     switch (TYPE(a)) {
       case T_FIXNUM:
+      case T_SYMBOL:
 	hval = a;
 	break;
 

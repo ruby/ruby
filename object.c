@@ -15,6 +15,7 @@
 #include "ruby.h"
 #include "st.h"
 #include <stdio.h>
+#include <errno.h>
 
 VALUE rb_mKernel;
 VALUE rb_cObject;
@@ -945,6 +946,48 @@ rb_Float(val)
 
       case T_BIGNUM:
 	return rb_float_new(rb_big2dbl(val));
+
+      case T_STRING:
+        {
+	    char *q, *p, *end;
+	    double d;
+
+	    q = p = STR2CSTR(val);
+	    while (*p && ISSPACE(*p)) p++;
+	  again:
+	    d = strtod(p, &end);
+	    if (p == end) {
+	      bad:
+		rb_raise(rb_eArgError, "invalid value for Float: \"%s\"", q);
+	    }
+	    if (*end) {
+		if (*end == '_') {
+		    char *buf = ALLOCA_N(char, strlen(p));
+		    char *n = buf, *last;
+
+		    while (*p) {
+			if (*p == '_') {
+			    last = ++p;
+			    continue;
+			}
+			*n++ = *p++;
+		    }
+		    while (*last && (*last == '_' || ISSPACE(*last)))
+			last++;
+		    if (!*last) goto bad;
+		    *n = '\0';
+		    p = buf;
+		    goto again;
+		}
+		while (*end && ISSPACE(*end)) end++;
+		if (*end) goto bad;
+	    }
+	    if (errno == ERANGE) {
+		errno = 0;
+		rb_raise(rb_eArgError, "Float %s out of range", p);
+	    }
+	    return rb_float_new(d);
+	}
 
       case T_NIL:
 	return rb_float_new(0.0);

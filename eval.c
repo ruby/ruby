@@ -5162,7 +5162,7 @@ rb_feature_p(feature, wait)
   load_wait:
     if (loading_tbl) {
 	char *ext = strrchr(f, '.');
-	if (strcmp(ext, ".rb") == 0) {
+	if (ext && strcmp(ext, ".rb") == 0) {
 	    rb_thread_t th;
 
 	    while (st_lookup(loading_tbl, f, &th)) {
@@ -7177,7 +7177,7 @@ rb_thread_schedule()
     }
 
   again:
-    max = 0;
+    max = -1;
     FD_ZERO(&readfds);
     FD_ZERO(&writefds);
     FD_ZERO(&exceptfds);
@@ -8332,6 +8332,7 @@ rb_thread_inspect(thread)
 void
 rb_thread_atfork()
 {
+#if 0				/* enable on 1.7 */
     rb_thread_t th;
 
     if (rb_thread_alone()) return;
@@ -8344,6 +8345,7 @@ rb_thread_atfork()
     main_thread = curr_thread;
     curr_thread->next = curr_thread;
     curr_thread->prev = curr_thread;
+#endif
 }
 
 static VALUE rb_cCont;

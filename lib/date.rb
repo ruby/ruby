@@ -202,6 +202,7 @@ class Date
       for id in ids
 	module_eval <<-"end;"
 	  alias_method :__#{id.to_i}__, :#{id.id2name}
+	  private :__#{id.to_i}__
 	  def #{id.id2name}(*args, &block)
 	    (@__#{id.to_i}__ ||= [__#{id.to_i}__(*args, &block)])[0]
 	  end

@@ -97,19 +97,29 @@ VALUE
 rb_str_new4(orig)
     VALUE orig;
 {
-    if (OBJ_FROZEN(orig)) return orig;
+    VALUE klass;
+
+    klass = CLASS_OF(orig);
+    while (TYPE(klass) == T_ICLASS || FL_TEST(klass, FL_SINGLETON)) {
+	klass = (VALUE)RCLASS(klass)->super;
+    }
+
     if (RSTRING(orig)->orig) {
+	VALUE str;
+
 	if (FL_TEST(orig, STR_NO_ORIG)) {
-	    orig = rb_str_new(RSTRING(orig)->ptr, RSTRING(orig)->len);
-	    OBJ_FREEZE(orig);
-	    return orig;
+	    str = rb_str_new(RSTRING(orig)->ptr, RSTRING(orig)->len);
 	}
-	OBJ_FREEZE(RSTRING(orig)->orig);
-	return RSTRING(orig)->orig;
+	else {
+	    str = rb_str_new3(RSTRING(orig)->orig);
+	}
+	OBJ_FREEZE(str);
+	RBASIC(str)->klass = klass;
+	return str;
     }
     else {
 	NEWOBJ(str, struct RString);
-	OBJSETUP(str, rb_cString, T_STRING);
+	OBJSETUP(str, klass, T_STRING);
 
 	str->len = RSTRING(orig)->len;
 	str->ptr = RSTRING(orig)->ptr;
@@ -203,14 +213,7 @@ rb_str_dup(str)
 	str2 = rb_str_new3(RSTRING(str)->orig);
     }
     else {
-	NEWOBJ(dup, struct RString);
-	OBJSETUP(dup, klass, T_STRING);
-
-	str2 = rb_str_new4(str);
-	dup->len = RSTRING(str2)->len;
-	dup->ptr = RSTRING(str2)->ptr;
-	dup->orig = str2;
-	str2 = (VALUE)dup;
+	str2 = rb_str_new3(rb_str_new4(str));
     }
     OBJ_INFECT(str2, str);
     RBASIC(str2)->klass = klass;
@@ -1315,10 +1318,18 @@ rb_str_replace_m(str, str2)
 {
     if (TYPE(str2) != T_STRING) str2 = rb_str_to_str(str2);
     rb_str_modify(str);
-    rb_str_resize(str, RSTRING(str2)->len);
-    memcpy(RSTRING(str)->ptr, RSTRING(str2)->ptr, RSTRING(str2)->len);
-    if (OBJ_TAINTED(str2)) OBJ_TAINT(str);
 
+    if (RSTRING(str2)->orig && FL_TEST(str2, STR_NO_ORIG)) {
+	RSTRING(str)->len = RSTRING(str2)->len;
+	RSTRING(str)->ptr = RSTRING(str2)->ptr;
+	RSTRING(str)->orig = RSTRING(str2)->orig;
+    }
+    else {
+	rb_str_resize(str, RSTRING(str2)->len);
+	memcpy(RSTRING(str)->ptr, RSTRING(str2)->ptr, RSTRING(str2)->len);
+    }
+
+    if (OBJ_TAINTED(str2)) OBJ_TAINT(str);
     return str;
 }
 
