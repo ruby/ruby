@@ -1,3 +1,8 @@
+Fri Nov  7 04:08:05 2003  UENO Katsuhiro  <katsu@blue.sky.or.jp>
+
+	* ext/zlib/zlib.c (Init_zlib): define Zlib::GzipReader#each_line as
+	an alias of Zlib::GzipReader#each.
+
 Fri Nov  7 01:03:16 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_load): save and restore rb_prohibit_interrupt.

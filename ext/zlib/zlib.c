@@ -2749,6 +2749,7 @@ void Init_zlib()
     rb_define_method(cGzipReader, "gets", rb_gzreader_gets, -1);
     rb_define_method(cGzipReader, "readline", rb_gzreader_readline, -1);
     rb_define_method(cGzipReader, "each", rb_gzreader_each, -1);
+    rb_define_method(cGzipReader, "each_line", rb_gzreader_each, -1);
     rb_define_method(cGzipReader, "readlines", rb_gzreader_readlines, -1);
 
     rb_define_const(mZlib, "OS_CODE", INT2FIX(OS_CODE));
