@@ -1,3 +1,8 @@
+Thu Jul 12 15:11:48 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/socket/socket.c (ruby_connect): workaround for the setup of
+	  Cygwin socket(EALREADY).
+
 Mon Jul  9 16:49:30 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/extmk.rb.in: modify RM macro.
