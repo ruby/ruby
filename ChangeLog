@@ -1,3 +1,7 @@
+Fri Jun  1 11:21:04 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in: use waitpid on mingw32.
+
 Thu May 31 13:30:25 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* mkconfig.rb, ext/configsub.rb: VERSION -> RUBY_VERSION.
