@@ -1,3 +1,7 @@
+Wed Mar  5 12:13:21 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in: better YACC support on HP-UX.
+
 Tue Mar 04 23:12:07 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* configure.in, bcc32/Makefile.sub, win32/Makefile.sub: define

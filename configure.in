@@ -262,7 +262,8 @@ nextstep*)	;;
 openstep*)	;;
 rhapsody*)	;;
 darwin*)	LIBS="-lobjc $LIBS";;
-hpux*)		ac_cv_c_inline=no;;
+hpux*)		LIBS="-lm $LIBS"
+		ac_cv_c_inline=no;;
 human*)		ac_cv_func_getpgrp_void=yes;;
 beos*)		;;
 cygwin*)	rb_cv_have_daylight=no
@@ -1192,6 +1193,14 @@ case "$target_os" in
 	LIBRUBY_ALIASES=''
 	FIRSTMAKEFILE=GNUmakefile:cygwin/GNUmakefile.in
 	SOLIBS='$(LIBS)'
+	;;
+    hpux*)
+	case "$YACC" in
+	  *yacc*)
+	    XCFLAGS="$XCFLAGS -DYYMAXDEPTH=300"
+	    YACC="$YACC -Nl40000 -Nm40000"
+	    ;;
+	esac
 	;;
     *)
 	;;
