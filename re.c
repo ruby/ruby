@@ -1327,7 +1327,7 @@ rb_reg_options(re)
 
 static VALUE
 rb_reg_become(copy, re)
-    VALUE re;
+    VALUE copy, re;
 {
     if (copy == re) return copy;
     rb_check_frozen(copy);

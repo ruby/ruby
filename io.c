@@ -2329,7 +2329,7 @@ rb_io_reopen(argc, argv, file)
 
 static VALUE
 rb_io_become(clone, io)
-    VALUE io;
+    VALUE clone, io;
 {
     OpenFile *fptr, *orig;
     int fd;
