@@ -1,3 +1,10 @@
+Fri Dec 20 17:40:59 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (Init_Object): should not remove Class#allocate.
+
+	* lib/profiler.rb: separate profiling functions, without
+	  trace_func and at_exit setting.
+
 Fri Dec 20 16:20:04 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (do_block): split "do" block and tLBRACE_ARG block.
