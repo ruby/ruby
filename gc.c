@@ -347,7 +347,7 @@ rb_data_object_alloc(klass, datap, dmark, dfree)
 extern st_table *rb_class_tbl;
 VALUE *rb_gc_stack_start = 0;
 
-#ifdef DJGPP
+#if defined(DJGPP) || defined(_WIN32_WCE)
 static unsigned int STACK_LEVEL_MAX = 65535;
 #else
 #ifdef __human68k__

@@ -1,3 +1,7 @@
+Fri Apr 25 18:46:00 2003  Takaaki Uematsu  <uema2x@jcom.home.ne.jp>
+
+	* gc.c: STACK_LEVEL_MAX=65535 on mswince.
+
 Fri Apr 25 18:40:07 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (argf_read): read should not span two files. [ruby-dev:20073]
