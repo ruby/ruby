@@ -1,3 +1,8 @@
+Tue Apr 27 14:43:32 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk: LIBURUBY_A is needed for extconf.rb even when
+	  cross-compiling.
+
 Tue Apr 27 08:15:13 2004  why the lucky stiff  <why@ruby-lang.org>
 
 	* lib/yaml/rubytypes.rb: passing Range tests.
