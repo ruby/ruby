@@ -103,8 +103,6 @@ def try_link(src, opt="")
   cfile.close
   begin
     xsystem(format(LINK, $CFLAGS, $LDFLAGS, opt))
-  ensure
-    system "rm -f conftest*"
   end
 end
 
@@ -133,8 +131,6 @@ def try_run(src, opt="")
     else
       nil
     end
-  ensure
-    system "rm -f conftest*"
   end
 end
 
@@ -171,22 +167,18 @@ def have_library(lib, func="main")
   end
 
   if func && func != ""
-    begin
-      if $libs
-	libs = "-l" + lib + " " + $libs 
-      else
-	libs = "-l" + lib
-      end
-      unless try_link(<<"SRC", libs)
+    if $libs
+      libs = "-l" + lib + " " + $libs 
+    else
+      libs = "-l" + lib
+    end
+    unless try_link(<<"SRC", libs)
 int main() { return 0; }
 int t() { #{func}(); return 0; }
 SRC
-	$lib_cache[lib] = 'no'
-	$cache_mod = TRUE
-	return FALSE
-      end
-    ensure
-      system "rm -f conftest*"
+      $lib_cache[lib] = 'no'
+      $cache_mod = TRUE
+      return FALSE
     end
   else
     if $libs
@@ -215,18 +207,14 @@ def have_func(func)
   libs = $libs
   libs = "" if libs == nil
 
-  begin
-      unless try_link(<<"SRC", libs)
+  unless try_link(<<"SRC", libs)
 char #{func}();
 int main() { return 0; }
 int t() { #{func}(); return 0; }
 SRC
-      $func_cache[func] = 'no'
-      $cache_mod = TRUE
-      return FALSE
-    end
-  ensure
-    system "rm -f conftest*"
+    $func_cache[func] = 'no'
+    $cache_mod = TRUE
+    return FALSE
   end
   $defs.push(format("-DHAVE_%s", func.upcase))
   $func_cache[func] = 'yes'
@@ -245,16 +233,12 @@ def have_header(header)
     end
   end
 
-  begin
-    unless try_cpp(<<"SRC")
+  unless try_cpp(<<"SRC")
 #include <#{header}>
 SRC
-      $hdr_cache[header] = 'no'
-      $cache_mod = TRUE
-      return FALSE
-    end
-  ensure
-    system "rm -f conftest*"
+    $hdr_cache[header] = 'no'
+    $cache_mod = TRUE
+    return FALSE
   end
   $hdr_cache[header] = 'yes'
   header.tr!("a-z./\055", "A-Z___")
@@ -515,6 +499,7 @@ def extmake(target)
       $extlibs += " " + $local_libs unless $local_libs == ""
     end
   ensure
+    system "rm -f conftest*"
     Dir.chdir ".."
   end
 end

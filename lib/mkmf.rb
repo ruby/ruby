@@ -86,7 +86,7 @@ def try_link(src, opt="")
   begin
     xsystem(format(LINK, $CFLAGS, $LDFLAGS, opt))
   ensure
-    system "rm -f conftest*"
+    system "rm -f conftest.*"
   end
 end
 

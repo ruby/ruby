@@ -21,12 +21,13 @@ else
 end
 
 $ipv6 = false
-if enable_config("ipv6", "yes")
+if enable_config("ipv6", true)
   if try_run(<<EOF)
 #include <sys/types.h>
 #include <sys/socket.h>
 main()
 {
+ exit(0);
  if (socket(AF_INET6, SOCK_STREAM, 0) < 0)
    exit(1);
  else
@@ -37,6 +38,7 @@ EOF
     $ipv6 = true
   end
 end
+
 
 $ipv6type = nil
 $ipv6lib = nil
@@ -252,9 +254,10 @@ int
 main()
 {
    struct sockaddr_storage storage;
-   struct sockaddr_storage *addr;
+   struct sockaddr_storage *addr = 0;
 
-   addr = &storage;
+   addr->_ss_family = &storage.__ss_family;
+   addr->_ss_len = &storage.__ss_len;
    return 0;
 }
 EOF
@@ -268,10 +271,8 @@ else
 end
 
 if sockaddr_storage
-  $CFLAGS="-DSOCKADDR_STORAGE "+$CFLAGS
+  $CFLAGS="-DSOCKADDR_STORAGE=sockaddr_storage "+$CFLAGS
 end
-
-p $ipv6
 
 have_header("sys/un.h")
 if have_func(test_func)

@@ -49,7 +49,7 @@ extern int rb_thread_select(int, fd_set*, fd_set*, fd_set*, struct timeval*); /*
 #endif
 
 #ifdef SOCKADDR_STORAGE
-# define ss_falily __ss_family
+# define ss_family __ss_family
 # define SS_LEN(ss) (ss)->__ss_len
 #else
 # define SOCKADDR_STORAGE sockaddr
