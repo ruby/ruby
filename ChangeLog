@@ -1,3 +1,7 @@
+Sat Jan  6 00:17:18 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* pack.c (pack_pack): avoid infinite loop(pack 'm2').
+
 Sat Dec 30 03:14:22 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_iterate): NODE_CFUNC does not protect its data

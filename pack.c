@@ -826,7 +826,7 @@ pack_pack(ary, fmt)
 	  case 'm':
 	    ptr = rb_str2cstr(NEXTFROM, &plen);
 
-	    if (len <= 1)
+	    if (len <= 2)
 		len = 45;
 	    else
 		len = len / 3 * 3;
