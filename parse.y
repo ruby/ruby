@@ -425,7 +425,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    }
 		| lhs '=' mrhs_basic
 		    {
-			$$ = node_assign($1, $3);
+			$$ = node_assign($1, ret_args($3));
 		    }
 		| mlhs '=' mrhs
 		    {
@@ -1146,7 +1146,7 @@ mrhs_basic	: args ',' arg
 		| tSTAR arg
 		    {
 			value_expr($2);
-			$$ = $2;
+			$$ = NEW_RESTARGS($2);
 		    }
 
 primary		: literal
@@ -4670,6 +4670,9 @@ ret_args(node)
 	else if (nd_type(node) == NODE_BLOCK_PASS) {
 	    rb_compile_error("block argument should not be given");
 	}
+    }
+    if (nd_type(node) == NODE_RESTARGS) {
+	nd_set_type(node, NODE_REXPAND);
     }
     return node;
 }

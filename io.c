@@ -1253,8 +1253,9 @@ rb_io_mode_flags(mode)
     const char *mode;
 {
     int flags = 0;
+    const char *m = mode;
 
-    switch (mode[0]) {
+    switch (*m++) {
       case 'r':
 	flags |= FMODE_READABLE;
 	break;
@@ -1269,22 +1270,22 @@ rb_io_mode_flags(mode)
 	rb_raise(rb_eArgError, "illegal access mode %s", mode);
     }
 
-    if (mode[1] == 'b') {
+    if (*m == 'b') {
 	flags |= FMODE_BINMODE;
-	mode++;
+	m++;
     }
 
-    if (mode[1] == '+') {
+    if (*m == '+') {
 	flags |= FMODE_READWRITE;
-	if (mode[2] != 0) goto error;
+	if (m[1] != 0) goto error;
     }
-    else if (mode[1] != 0) goto error;
+    else if (*m != 0) goto error;
 
     return flags;
 }
 
 static int
-rb_io_mode_flags2(mode)
+rb_io_binmode_flags(mode)
     int mode;
 {
     int flags;
@@ -1310,8 +1311,46 @@ rb_io_mode_flags2(mode)
     return flags;
 }
 
+int
+rb_io_mode_binmode(mode)
+    const char *mode;
+{
+    int flags = 0;
+    const char *m = mode;
+
+    switch (*m++) {
+      case 'r':
+	flags |= O_RDONLY;
+	break;
+      case 'w':
+	flags |= O_WRONLY | O_CREAT | O_TRUNC;
+	break;
+      case 'a':
+	flags |= O_WRONLY | O_CREAT | O_APPEND;
+	break;
+      default:
+      error:
+	rb_raise(rb_eArgError, "illegal access mode %s", mode);
+    }
+
+    if (*m == 'b') {
+#ifdef O_BINARY
+	flags |= O_BINARY;
+#endif
+	m++;
+    }
+
+    if (*m == '+') {
+	flags |= O_RDWR;
+	if (m[1] != 0) goto error;
+    }
+    else if (*m != 0) goto error;
+
+    return flags;
+}
+
 static char*
-rb_io_flags_mode(flags)
+rb_io_modestr(flags)
     int flags;
 {
     static char mode[4];
@@ -1454,8 +1493,8 @@ rb_file_sysopen_internal(io, fname, flags, mode)
     MakeOpenFile(io, fptr);
 
     fd = rb_sysopen(fname, flags, mode);
-    m = rb_io_flags_mode(flags);
-    fptr->mode = rb_io_mode_flags2(flags);
+    m = rb_io_modestr(flags);
+    fptr->mode = rb_io_binmode_flags(flags);
     fptr->f = rb_fdopen(fd, m);
     fptr->path = strdup(fname);
 
@@ -1734,37 +1773,48 @@ rb_io_s_popen(argc, argv, klass)
 }
 
 static VALUE
+rb_open_file(argc, argv, io)
+    int argc;
+    VALUE *argv;
+    VALUE io;
+{
+    VALUE fname, vmode, file, perm;
+    char *path, *mode;
+    int flags, fmode;
+
+    rb_scan_args(argc, argv, "12", &fname, &vmode, &perm);
+    SafeStringValue(fname);
+    path = RSTRING(fname)->ptr;
+
+    if (FIXNUM_P(vmode) || !NIL_P(perm)) {
+	flags = FIXNUM_P(vmode) ? NUM2INT(vmode) : rb_io_mode_binmode(StringValuePtr(vmode));
+	fmode = NIL_P(perm) ? 0666 :  NUM2INT(perm);
+	
+	file = rb_file_sysopen_internal(io, path, flags, fmode);
+    }
+    else {
+	mode = NIL_P(vmode) ? "r" : StringValuePtr(vmode);
+	file = rb_file_open_internal(io, RSTRING(fname)->ptr, mode);
+    }
+    return io;
+}
+
+static VALUE
 rb_file_s_open(argc, argv, klass)
     int argc;
     VALUE *argv;
     VALUE klass;
 {
-    VALUE fname, vmode, file, perm;
-    char *path, *mode;
-
     NEWOBJ(io, struct RFile);
     OBJSETUP(io, klass, T_FILE);
-    rb_scan_args(argc, argv, "12", &fname, &vmode, &perm);
-    SafeStringValue(fname);
-    path = RSTRING(fname)->ptr;
-
     RFILE(io)->fptr = 0;
-    if (FIXNUM_P(vmode)) {
-	int flags = NUM2INT(vmode);
-	int fmode = NIL_P(perm) ? 0666 : NUM2INT(perm);
 
-	file = rb_file_sysopen_internal((VALUE)io, path, flags, fmode);
-    }
-    else {
-	mode = NIL_P(vmode) ? "r" : StringValuePtr(vmode);
-	file = rb_file_open_internal((VALUE)io, RSTRING(fname)->ptr, mode);
-    }
-
+    rb_open_file(argc, argv, (VALUE)io);
     if (rb_block_given_p()) {
-	return rb_ensure(rb_yield, file, rb_io_close, file);
+	return rb_ensure(rb_yield, (VALUE)io, rb_io_close, (VALUE)io);
     }
 
-    return file;
+    return (VALUE)io;
 }
 
 static VALUE
@@ -2395,38 +2445,17 @@ rb_file_initialize(argc, argv, io)
     VALUE *argv;
     VALUE io;
 {
-    VALUE fname, vmode, file, perm;
-    char *path, *mode;
-
-    rb_scan_args(argc, argv, "12", &fname, &vmode, &perm);
-    SafeStringValue(fname);
-    path = RSTRING(fname)->ptr;
-
     if (RFILE(io)->fptr) {
 	rb_io_close_m(io);
 	free(RFILE(io)->fptr);
 	RFILE(io)->fptr = 0;
     }
-    if (FIXNUM_P(vmode)) {
-	int flags = NUM2INT(vmode);
-	int fmode = NIL_P(perm) ? 0666 : NUM2INT(perm);
-
-	file = rb_file_sysopen_internal(io, path, flags, fmode);
-    }
-    else {
-	if (NIL_P(vmode)) {
-	    mode = "r";
-	}
-	else {
-	    mode = StringValuePtr(vmode);
-	}
-	file = rb_file_open_internal(io, RSTRING(fname)->ptr, mode);
-    }
+    rb_open_file(argc, argv, io);
     if (rb_block_given_p()) {
 	rb_warn("File::new() does not take block; use File::open() instead");
     }
 
-    return file;
+    return io;
 }
 
 static VALUE
@@ -2852,7 +2881,7 @@ rb_f_select(argc, argv, obj)
 
 #if !defined(MSDOS) && !defined(__human68k__)
 static int
-io_cntl(fd,cmd,narg,io_p)
+io_cntl(fd, cmd, narg, io_p)
     int fd, cmd, io_p;
     long narg;
 {
@@ -2901,6 +2930,9 @@ rb_io_ctl(io, req, arg, io_p)
     }
     else if (arg == Qtrue) {
 	narg = 1;
+    }
+    else if (rb_obj_is_kind_of(arg, rb_cInteger)) {
+	narg = NUM2LONG(arg);
     }
     else {
 	StringValue(arg);

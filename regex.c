@@ -543,7 +543,7 @@ print_mbc(c)
    reset the pointers that pointed into the old allocation to point to
    the correct places in the new allocation.  If extending the buffer
    results in it being larger than 1 << 16, then flag memory exhausted.  */
-#define EXTEND_BUFFER							\
+#define EXTEND_BUFFER						\
   do { char *old_buffer = bufp->buffer;					\
     if (bufp->allocated == (1L<<16)) goto too_big;			\
     bufp->allocated *= 2;						\
@@ -1260,7 +1260,6 @@ re_compile_pattern(pattern, size, bufp)
   int had_char_class = 0;
 
   int options = bufp->options;
-  int old_options = 0;
 
   bufp->fastmap_accurate = 0;
   bufp->must = 0;
@@ -1683,167 +1682,182 @@ re_compile_pattern(pattern, size, bufp)
       break;
 
     case '(':
-      old_options = options;
-      PATFETCH(c);
-      if (c == '?') {
-	int negative = 0;
+      {
+	int old_options = options;
 	int push_option = 0;
-	PATFETCH_RAW(c);
+	int casefold = 0;
+
+	PATFETCH(c);
+	if (c == '?') {
+	  int negative = 0;
+
+	  PATFETCH_RAW(c);
+	  switch (c) {
+	  case 'x': case 'p': case 'm': case 'i': case '-':
+	    for (;;) {
+	      switch (c) {
+	      case '-':
+		negative = 1;
+		break;
+
+	      case ':':
+	      case ')':
+		break;
+
+	      case 'x':
+		if (negative)
+		  options &= ~RE_OPTION_EXTENDED;
+		else
+		  options |= RE_OPTION_EXTENDED;
+		break;
+
+	      case 'p':
+		if (negative) {
+		  if ((options&RE_OPTION_POSIXLINE) == RE_OPTION_POSIXLINE) {
+		    options &= ~RE_OPTION_POSIXLINE;
+		  }
+		}
+		else if ((options&RE_OPTION_POSIXLINE) != RE_OPTION_POSIXLINE) {
+		  options |= RE_OPTION_POSIXLINE;
+		}
+		push_option = 1;
+		break;
+
+	      case 'm':
+		if (negative) {
+		  if (options&RE_OPTION_MULTILINE) {
+		    options &= ~RE_OPTION_MULTILINE;
+		  }
+		}
+		else if (!(options&RE_OPTION_MULTILINE)) {
+		  options |= RE_OPTION_MULTILINE;
+		}
+		push_option = 1;
+		break;
+
+	      case 'i':
+		if (negative) {
+		  if (options&RE_OPTION_IGNORECASE) {
+		    options &= ~RE_OPTION_IGNORECASE;
+		  }
+		}
+		else if (!(options&RE_OPTION_IGNORECASE)) {
+		  options |= RE_OPTION_IGNORECASE;
+		}
+		casefold = 1;
+		break;
+
+	      default:
+		FREE_AND_RETURN(stackb, "undefined (?...) inline option");
+	      }
+	      if (c == ')') {
+		c = '#';	/* read whole in-line options */
+		break;
+	      }
+	      if (c == ':') break;
+	      PATFETCH_RAW(c);
+	    }
+	    break;
+
+	  case '#':
+	    for (;;) {
+	      PATFETCH(c);
+	      if (c == ')') break;
+	    }
+	    c = '#';
+	    break;
+
+	  case ':':
+	  case '=':
+	  case '!':
+	  case '>':
+	    break;
+
+	  default:
+	    FREE_AND_RETURN(stackb, "undefined (?...) sequence");
+	  }
+	}
+	else {
+	  PATUNFETCH;
+	  c = '(';
+	}
+	if (c == '#') {
+	  if (push_option) {
+	    BUFPUSH(option_set);
+	    BUFPUSH(options);
+	  }
+	  if (casefold) {
+	    if (options & RE_OPTION_IGNORECASE)
+	      BUFPUSH(casefold_on);
+	    else
+	      BUFPUSH(casefold_off);
+	  }
+	  break;
+	}
+	if (stackp+8 >= stacke) {
+	  DOUBLE_STACK(int);
+	}
+
+	/* Laststart should point to the start_memory that we are about
+	   to push (unless the pattern has RE_NREGS or more ('s).  */
+	/* obsolete: now RE_NREGS is just a default register size. */
+	*stackp++ = b - bufp->buffer;    
+	*stackp++ = fixup_alt_jump ? fixup_alt_jump - bufp->buffer + 1 : 0;
+	*stackp++ = begalt - bufp->buffer;
 	switch (c) {
-	case 'x': case 'p': case 'm': case 'i': case '-':
-	  for (;;) {
-	    switch (c) {
-	    case '-':
-	      negative = 1;
-	      break;
-
-	    case ':':
-	    case ')':
-	      break;
-
-	    case 'x':
-	      if (negative)
-		options &= ~RE_OPTION_EXTENDED;
-	      else
-		options |= RE_OPTION_EXTENDED;
-	      break;
-
-	    case 'p':
-	      if (negative) {
-		if ((options&RE_OPTION_POSIXLINE) == RE_OPTION_POSIXLINE) {
-		  options &= ~RE_OPTION_POSIXLINE;
-		}
-	      }
-	      else if ((options&RE_OPTION_POSIXLINE) != RE_OPTION_POSIXLINE) {
-		options |= RE_OPTION_POSIXLINE;
-	      }
-	      push_option = 1;
-	      break;
-
-	    case 'm':
-	      if (negative) {
-		if (options&RE_OPTION_MULTILINE) {
-		  options &= ~RE_OPTION_MULTILINE;
-		}
-	      }
-	      else if (!(options&RE_OPTION_MULTILINE)) {
-		options |= RE_OPTION_MULTILINE;
-	      }
-	      push_option = 1;
-	      break;
-
-	    case 'i':
-	      if (negative) {
-		if (options&RE_OPTION_IGNORECASE) {
-		  options &= ~RE_OPTION_IGNORECASE;
-		  BUFPUSH(casefold_off);
-		}
-	      }
-	      else if (!(options&RE_OPTION_IGNORECASE)) {
-		options |= RE_OPTION_IGNORECASE;
-		BUFPUSH(casefold_on);
-	      }
-	      break;
-
-	    default:
-	      FREE_AND_RETURN(stackb, "undefined (?...) inline option");
-	    }
-	    if (c == ')') {
-	      c = '#';	/* read whole in-line options */
-	      break;
-	    }
-	    if (c == ':') break;
-	    PATFETCH_RAW(c);
-	  }
+	case '(':
+	  BUFPUSH(start_memory);
+	  BUFPUSH(regnum);
+	  *stackp++ = regnum++;
+	  *stackp++ = b - bufp->buffer;
+	  BUFPUSH(0);
+	  /* too many ()'s to fit in a byte. (max 254) */
+	  if (regnum >= RE_REG_MAX) goto too_big;
 	  break;
 
-	case '#':
-	  for (;;) {
-	    PATFETCH(c);
-	    if (c == ')') break;
-	  }
-	  c = '#';
-	  break;
-
-	case ':':
 	case '=':
 	case '!':
 	case '>':
+	  BUFPUSH(start_nowidth);
+	  *stackp++ = b - bufp->buffer;
+	  BUFPUSH(0);	/* temporary value */
+	  BUFPUSH(0);
+	  if (c != '!') break;
+
+	  BUFPUSH(on_failure_jump);
+	  *stackp++ = b - bufp->buffer;
+	  BUFPUSH(0);	/* temporary value */
+	  BUFPUSH(0);
 	  break;
 
+	case ':':
+	  BUFPUSH(start_paren);
+	  pending_exact = 0;
 	default:
-	  FREE_AND_RETURN(stackb, "undefined (?...) sequence");
+	  break;
 	}
 	if (push_option) {
 	  BUFPUSH(option_set);
 	  BUFPUSH(options);
 	}
+	if (casefold) {
+	  if (options & RE_OPTION_IGNORECASE)
+	    BUFPUSH(casefold_on);
+	  else
+	    BUFPUSH(casefold_off);
+	}
+	*stackp++ = c;
+	*stackp++ = old_options;
+	fixup_alt_jump = 0;
+	laststart = 0;
+	begalt = b;
       }
-      else {
-	PATUNFETCH;
-	c = '(';
-      }
-      if (c == '#') break;
-      if (stackp+8 >= stacke) {
-	DOUBLE_STACK(int);
-      }
-
-      /* Laststart should point to the start_memory that we are about
-	 to push (unless the pattern has RE_NREGS or more ('s).  */
-      /* obsolete: now RE_NREGS is just a default register size. */
-      *stackp++ = b - bufp->buffer;    
-      *stackp++ = fixup_alt_jump ? fixup_alt_jump - bufp->buffer + 1 : 0;
-      *stackp++ = begalt - bufp->buffer;
-      switch (c) {
-      case '(':
-	BUFPUSH(start_memory);
-	BUFPUSH(regnum);
-	*stackp++ = regnum++;
-	*stackp++ = b - bufp->buffer;
-	BUFPUSH(0);
-	/* too many ()'s to fit in a byte. (max 254) */
-	if (regnum >= RE_REG_MAX) goto too_big;
-	break;
-
-      case '=':
-      case '!':
-      case '>':
-	BUFPUSH(start_nowidth);
-	*stackp++ = b - bufp->buffer;
-	BUFPUSH(0);	/* temporary value */
-	BUFPUSH(0);
-	if (c != '!') break;
-
-	BUFPUSH(on_failure_jump);
-	*stackp++ = b - bufp->buffer;
-	BUFPUSH(0);	/* temporary value */
-	BUFPUSH(0);
-	break;
-
-      case ':':
-	BUFPUSH(start_paren);
-	pending_exact = 0;
-      default:
-	break;
-      }
-      *stackp++ = c;
-      *stackp++ = old_options;
-      fixup_alt_jump = 0;
-      laststart = 0;
-      begalt = b;
       break;
 
     case ')':
       if (stackp == stackb) 
 	FREE_AND_RETURN(stackb, "unmatched )");
 
-      if (options != stackp[-1]) {
-	if ((options ^ stackp[-1]) & RE_OPTION_IGNORECASE) {
-	  BUFPUSH((options&RE_OPTION_IGNORECASE)?casefold_off:casefold_on);
-	}
-	BUFPUSH(option_set);
-	BUFPUSH(stackp[-1]);
-      }
       pending_exact = 0;
       if (fixup_alt_jump) {
 	/* Push a dummy failure point at the end of the
@@ -1855,6 +1869,13 @@ re_compile_pattern(pattern, size, bufp)
 	/* We allocated space for this jump when we assigned
 	   to `fixup_alt_jump', in the `handle_alt' case below.  */
 	store_jump(fixup_alt_jump, jump, b);
+      }
+      if (options != stackp[-1]) {
+	if ((options ^ stackp[-1]) & RE_OPTION_IGNORECASE) {
+	  BUFPUSH((options&RE_OPTION_IGNORECASE)?casefold_off:casefold_on);
+	}
+	BUFPUSH(option_set);
+	BUFPUSH(stackp[-1]);
       }
       p0 = b;
       options = *--stackp;

@@ -1092,21 +1092,6 @@ rb_const_get(klass, id)
     return Qnil;		/* not reached */
 }
 
-static int
-sv_i(key, value, ary)
-    ID key;
-    VALUE value;
-    VALUE ary;
-{
-    if (rb_is_const_id(key)) {
-	VALUE kval = rb_str_new2(rb_id2name(key));
-	if (!rb_ary_includes(ary, kval)) {
-	    rb_ary_push(ary, kval);
-	}
-    }
-    return ST_CONTINUE;
-}
-
 VALUE
 rb_mod_remove_const(mod, name)
     VALUE mod, name;
@@ -1134,44 +1119,85 @@ rb_mod_remove_const(mod, name)
 }
 
 static int
-autoload_i(key, name, ary)
+sv_i(key, value, tbl)
     ID key;
-    const char *name;
-    VALUE ary;
+    VALUE value;
+    st_table *tbl;
 {
-    VALUE kval = rb_str_new2(rb_id2name(key));
-    if (!rb_ary_includes(ary, kval)) {
-	rb_ary_push(ary, kval);
+    if (rb_is_const_id(key)) {
+	if (!st_lookup(tbl, key, 0)) {
+	    st_insert(tbl, key, key);
+	}
     }
     return ST_CONTINUE;
 }
 
-VALUE
-rb_mod_const_at(mod, ary)
-    VALUE mod, ary;
+static int
+autoload_i(key, name, tbl)
+    ID key;
+    const char *name;
+    st_table *tbl;
 {
-    if (RCLASS(mod)->iv_tbl) {
-	st_foreach(RCLASS(mod)->iv_tbl, sv_i, ary);
+    if (!st_lookup(tbl, key, 0)) {
+	st_insert(tbl, key, key);
     }
-    if ((VALUE)mod == rb_cObject) {
-	st_foreach(rb_class_tbl, sv_i, ary);
-	if (autoload_tbl) {
-	    st_foreach(autoload_tbl, autoload_i, ary);
-	}
-    }
-    return ary;
+    return ST_CONTINUE;
 }
 
-VALUE
-rb_mod_const_of(mod, ary)
+void*
+rb_mod_const_at(mod, data)
     VALUE mod;
-    VALUE ary;
+    void *data;
+{
+    st_table *tbl = data;
+    if (!tbl) {
+	tbl = st_init_numtable();
+    }
+    if (RCLASS(mod)->iv_tbl) {
+	st_foreach(RCLASS(mod)->iv_tbl, sv_i, tbl);
+    }
+    if ((VALUE)mod == rb_cObject) {
+	st_foreach(rb_class_tbl, sv_i, tbl);
+	if (autoload_tbl) {
+	    st_foreach(autoload_tbl, autoload_i, tbl);
+	}
+    }
+    return tbl;
+}
+
+void*
+rb_mod_const_of(mod, data)
+    VALUE mod;
+    void *data;
 {
     for (;;) {
-	rb_mod_const_at(mod, ary);
+	data = rb_mod_const_at(mod, data);
 	mod = RCLASS(mod)->super;
 	if (!mod) break;
     }
+    return data;
+}
+
+static int
+list_i(key, value, ary)
+    ID key, value;
+    VALUE ary;
+{
+    rb_ary_push(ary, rb_str_new2(rb_id2name(key)));
+    return ST_CONTINUE;
+}
+
+VALUE
+rb_const_list(data)
+    void *data;
+{
+    st_table *tbl = data;
+    VALUE ary;
+
+    if (!tbl) return rb_ary_new2(0);
+    ary = rb_ary_new2(tbl->num_entries);
+    st_foreach(tbl, list_i, ary);
+
     return ary;
 }
 
@@ -1179,7 +1205,7 @@ VALUE
 rb_mod_constants(mod)
     VALUE mod;
 {
-    return rb_mod_const_of(mod, rb_ary_new());
+    return rb_const_list(rb_mod_const_of(mod, 0));
 }
 
 int

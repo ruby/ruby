@@ -228,10 +228,7 @@ rb_add_method(klass, mid, node, noex)
     NODE *body;
 
     if (NIL_P(klass)) klass = rb_cObject;
-    if (klass == rb_cObject) {
-	rb_secure(4);
-    }
-    if (rb_safe_level() >= 4 && !OBJ_TAINTED(klass)) {
+    if (rb_safe_level() >= 4 && (klass == rb_cObject || !OBJ_TAINTED(klass))) {
 	rb_raise(rb_eSecurityError, "Insecure: can't define method");
     }
     if (OBJ_FROZEN(klass)) rb_error_frozen("class/module");
@@ -1474,15 +1471,19 @@ static VALUE
 rb_mod_s_constants()
 {
     NODE *cbase = RNODE(ruby_frame->cbase);
-    VALUE ary = rb_ary_new();
+    void *data = 0;
 
     while (cbase) {
-	if (!NIL_P(cbase->nd_clss)) rb_mod_const_at(cbase->nd_clss, ary);
+	if (!NIL_P(cbase->nd_clss)) {
+	    data = rb_mod_const_at(cbase->nd_clss, data);
+	}
 	cbase = cbase->nd_next;
     }
 
-    if (!NIL_P(ruby_cbase)) rb_mod_const_of(ruby_cbase, ary);
-    return ary;
+    if (!NIL_P(ruby_cbase)) {
+	data = rb_mod_const_of(ruby_cbase, data);
+    }
+    return rb_const_list(data);
 }
 
 void
@@ -2349,12 +2350,19 @@ rb_eval(self, n)
 	}
 	break;
 
+      case NODE_REXPAND:
+	result = rb_eval(self, node->nd_head);
+	if (TYPE(result) != T_ARRAY) {
+	    result = rb_Array(result);
+	}
+	if (RARRAY(result)->len == 1) {
+	    result = RARRAY(result)->ptr[0];
+	}
+	break;
+
       case NODE_YIELD:
 	if (node->nd_stts) {
 	    result = rb_eval(self, node->nd_stts);
-	    if (nd_type(node->nd_stts) == NODE_RESTARGS && RARRAY(result)->len == 1) {
-		result = RARRAY(result)->ptr[0];
-	    }
 	}
 	else {
 	    result = Qnil;
@@ -8602,6 +8610,28 @@ rb_thread_key_p(thread, id)
     return Qfalse;
 }
 
+static int
+thread_keys_i(key, value, ary)
+    ID key;
+    VALUE value, ary;
+{
+    rb_ary_push(ary, ID2SYM(key));
+    return ST_CONTINUE;
+}
+
+static VALUE
+rb_thread_keys(thread)
+    VALUE thread;
+{
+    rb_thread_t th = rb_thread_check(thread);
+    VALUE ary = rb_ary_new();
+
+    if (th->locals) {
+	st_foreach(th->locals, thread_keys_i, ary);
+    }
+    return ary;
+}
+
 static VALUE
 rb_thread_inspect(thread)
     VALUE thread;
@@ -8823,6 +8853,7 @@ Init_Thread()
     rb_define_method(rb_cThread, "[]", rb_thread_aref, 1);
     rb_define_method(rb_cThread, "[]=", rb_thread_aset, 2);
     rb_define_method(rb_cThread, "key?", rb_thread_key_p, 1);
+    rb_define_method(rb_cThread, "keys", rb_thread_keys, 0);
 
     rb_define_method(rb_cThread, "inspect", rb_thread_inspect, 0);
 

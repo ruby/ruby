@@ -1,10 +1,57 @@
+Tue Jun  5 16:15:58 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* variable.c (rb_mod_const_at): use hash table as internal
+	  data. [new]
+
+	* variable.c (rb_mod_const_of): ditto.
+
+	* variable.c (rb_const_list): new function to convert internal
+	  data (hash table) to array of strings.
+
+	* eval.c (rb_mod_s_constants): data handling scheme has changed.
+
+Tue Jun  5 15:16:06 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_add_method): should not call rb_secure(), for
+	  last_func may not be set.
+
+	* io.c (rb_io_ctl): ioctl should accept any integer within C long
+	  range.
+
 Tue Jun  5 13:41:13 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/etc/extconf.rb: use egrep_cpp.
 
+Tue Jun  5 12:44:59 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (r_object): wrong type check for modules.
+
+	* marshal.c (w_object): should not dump anonymous classes/modules.
+
+Tue Jun  5 01:19:34 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_open_file): use rb_file_sysopen_internal() if the 3rd
+	  argument (permission flags) is given. [new, should be backported?]
+
+	* io.c (rb_io_mode_binmode): mode string (e.g. "r+") to flags to
+	  open(2).
+
+Mon Jun  4 23:55:54 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): NODE_REXPAND expand an array of 1 element as
+	  the element itself. [new, should be backported?]
+
+	* parse.y (ret_args): should treat "*[a]" in rhs expression as
+	  "a", not "[a]".
+
 Mon Jun  4 04:14:53 2001  Wakou Aoyama  <wakou@fsinet.or.jp>
 
 	* lib/shellwords.rb: don't destroy argument.
+
+Sat Jun  2 23:23:05 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* regex.c (re_compile_pattern): should push option modifier at the
+	  right place.
 
 Sat Jun  2 23:05:20 2001  Shugo Maeda <shugo@ruby-lang.org>
 
