@@ -413,6 +413,23 @@ end
 tt{|i| break if i == 5}
 ok(i == 5)
 
+def tt2(dummy)
+  yield 1
+end
+
+def tt3(&block)
+  tt2(raise(ArgumentError,""),&block)
+end
+
+$x = false
+begin
+  tt3{}
+rescue ArgumentError
+  $x = true
+rescue Exception
+end
+ok($x)
+
 # iterator break/redo/next/retry
 done = true
 loop{
@@ -592,6 +609,10 @@ check "string & char"
 ok("abcd" == "abcd")
 ok("abcd" =~ "abcd")
 ok("abcd" === "abcd")
+# compile time string concatenation
+ok("ab" "cd" == "abcd")
+ok("#{22}aa" "cd#{44}" == "22aacd44")
+ok("#{22}aa" "cd#{44}" "55" "#{66}" == "22aacd445566")
 ok("abc" !~ /^$/)
 ok("abc\n" !~ /^$/)
 ok("abc" !~ /^d*$/)
@@ -604,10 +625,6 @@ ok("abcabc" =~ /.*c/ && $& == "abcabc")
 ok("abcabc" =~ /.*?a/ && $& == "a")
 ok("abcabc" =~ /.*?c/ && $& == "abc")
 ok(/(.|\n)*?\n(b|\n)/ =~ "a\nb\n\n" && $& == "a\nb")
-$x = <<END;
-ABCD
-ABCD
-END
 
 ok(/^(ab+)+b/ =~ "ababb" && $& == "ababb")
 ok(/^(?:ab+)+b/ =~ "ababb" && $& == "ababb")
@@ -617,6 +634,10 @@ ok(/^(?:ab+)+/ =~ "ababb" && $& == "ababb")
 ok(/(\s+\d+){2}/ =~ " 1 2" && $& == " 1 2")
 ok(/(?:\s+\d+){2}/ =~ " 1 2" && $& == " 1 2")
 
+$x = <<END;
+ABCD
+ABCD
+END
 $x.gsub!(/((.|\n)*?)B((.|\n)*?)D/){$1+$3}
 ok($x == "AC\nAC\n")
 

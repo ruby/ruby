@@ -40,7 +40,6 @@ class Tracer
     end
 
     @get_line_procs = {}
-    @sources = {}
 
     @filters = []
   end
@@ -79,17 +78,17 @@ class Tracer
       return p.call line
     end
 
-    unless list = @sources[file]
+    unless list = LINES__[file]
 #      print file if $DEBUG
       begin
 	f = open(file)
 	begin 
-	  @sources[file] = list = f.readlines
+	  LINES__[file] = list = f.readlines
 	ensure
 	  f.close
 	end
       rescue
-	@sources[file] = list = []
+	LINES__[file] = list = []
       end
     end
     if l = list[line - 1]
@@ -147,6 +146,8 @@ class Tracer
   end
   
 end
+
+LINES__ = {} unless defined? LINES__
 
 if caller(0).size == 1
   if $0 == Tracer::MY_FILE_NAME

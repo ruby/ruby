@@ -1,3 +1,25 @@
+Fri Oct 15 01:32:31 1999  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* ext/Win32API/Win32API.c (Win32API_Call): need to use NUM2ULONG,
+	  not NUM2INT.
+
+Fri Oct 15 00:22:30 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* re.c (Init_Regexp): super class of the MatchingData, which was
+	  Data, to be Object.
+
+	* eval.c (ruby_run): evaluate required libraries before load &
+	  compiling the script.
+
+	* parse.y (lex_getline): retrieve a line from the stream, saving
+	  lines in the table in debug mode.
+
+	* eval.c (call_trace_func): treat the case ruby_sourcefile is null.
+
+Thu Oct 14 02:00:10 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (string): compile time string concatenation.
+
 Wed Oct 13 02:17:05 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (block_pass): should copy block to prevent modifications.
@@ -44,6 +66,10 @@ Mon Oct 11 07:27:05 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	  case the exceptions are handled by the `rescue' clause.
 
 	* signal.c (Init_signal): ignore SIGPIPE by default.
+
+Wed Oct  6 17:13:19 1999  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* ruby.c (addpath): rubylib_mangled_path() modified.
 
 Mon Oct  4 12:42:32 1999  Kazuhiko Izawa  <izawa@erec.che.tohoku.ac.jp>
 

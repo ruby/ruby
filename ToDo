@@ -1,7 +1,7 @@
 Language Spec.
 
 - def foo; .. rescue .. end
-* compile time string concatenation, "hello" "world" => "helloworld"
+- compile time string concatenation, "hello" "world" => "helloworld"
 * ../... outside condition invokes operator method too.
 * %w(a\ b\ c abc) => ["a b c", "abc"]
 * package or access control for global variables
@@ -17,7 +17,7 @@ Language Spec.
 Hacking Interpreter
 
 * RUBYOPT environment variable
-* non-blocking open (e.g. named pipe) for thread
+* non-blocking open (e.g. for named pipe) for thread
 * avoid blocking with gethostbyname/gethostbyaddr
 * objectify interpreters
 * remove rb_eval() recursions
@@ -28,6 +28,7 @@ Hacking Interpreter
 Standard Libraries
 
 - hash[key] = nil may not remove entry; hashes may have nil as the value.
+- hash.fetch(key) raises exception if key is not found.
 - Array#{first,last,at}
 - Dir.glob(pat){|f|...}
 * Struct::new([name,]member,...) ??

@@ -112,9 +112,10 @@ rb_str_new4(orig)
 	str->ptr = RSTRING(orig)->ptr;
 	RSTRING(orig)->orig = (VALUE)str;
 	str->orig = 0;
-	if (FL_TEST(str, FL_TAINT)) {
+	if (FL_TEST(orig, FL_TAINT)) {
 	    FL_SET(str, FL_TAINT);
 	}
+	FL_SET(str, STR_FREEZE);
 	return (VALUE)str;
     }
 }

@@ -120,8 +120,7 @@ NULL
 
 extern VALUE rb_load_path;
 
-static FILE *e_fp;
-static char *e_tmpname;
+static VALUE e_script;
 
 #define STATIC_FILE_LENGTH 255
 
@@ -176,8 +175,11 @@ rubylib_mangle(s, l)
     strcpy(ret + newl, s + oldl);
     return ret;
 }
+#define rubylib_mangled_path(s, l) rb_str_new2(rubylib_mangle((s), (l)))
+#define rubylib_mangled_path2(s) rb_str_new2(rubylib_mangle((s), 0))
 #else
-#define rubylib_mangle(s, l) (s)
+#define rubylib_mangled_path(s, l) rb_str_new((s), (l))
+#define rubylib_mangled_path2(s) rb_str_new2(s)
 #endif
 
 static void
@@ -202,18 +204,18 @@ addpath(path)
 	while (*p) {
 	    while (*p == sep) p++;
 	    if (s = strchr(p, sep)) {
-		rb_ary_push(ary, rb_str_new(rubylib_mangle(p, (int)(s-p)), (int)(s-p)));
+		rb_ary_push(ary, rubylib_mangled_path(p, (int)(s-p)));
 		p = s + 1;
 	    }
 	    else {
-		rb_ary_push(ary, rb_str_new2(rubylib_mangle(p, 0)));
+		rb_ary_push(ary, rubylib_mangled_path2(p));
 		break;
 	    }
 	}
 	rb_load_path = rb_ary_plus(ary, rb_load_path);
     }
     else {
-	rb_ary_unshift(rb_load_path, rb_str_new2(rubylib_mangle(path, 0)));
+	rb_ary_unshift(rb_load_path, rubylib_mangled_path2(path));
     }
 }
 
@@ -237,11 +239,15 @@ add_modules(mod)
 }
 
 void
-ruby_require_libraries()
+require_libraries()
 {
+    extern NODE *ruby_eval_tree;
+    NODE *save;
     struct req_list *list = req_list_head.next;
     struct req_list *tmp;
 
+    ruby_sourcefile = 0;
+    save = ruby_eval_tree;
     req_list_last = 0;
     while (list) {
 	rb_require(list->name);
@@ -249,26 +255,57 @@ ruby_require_libraries()
 	free(list);
 	list = tmp;
     }
+    ruby_eval_tree = save;
 }
 
 extern void Init_ext _((void));
 
 static void
-proc_options(argcp, argvp)
-    int *argcp;
-    char ***argvp;
+process_sflag()
 {
-    int argc = *argcp;
-    char **argv = *argvp;
-    int script_given, do_search;
+    if (sflag) {
+	int n;
+	VALUE *args;
+
+	n = RARRAY(rb_argv)->len;
+	args = RARRAY(rb_argv)->ptr;
+	while (n--) {
+	    char *s = STR2CSTR(*args);
+	    char *p;
+
+	    if (s[0] != '-') continue;
+	    if (s[1] == '-' && s[2] == '\0') break;
+
+	    s[0] = '$';
+	    if (p = strchr(s, '=')) {
+		*p++ = '\0';
+		rb_gvar_set2(s, rb_str_new2(p));
+	    }
+	    else {
+		rb_gvar_set2(s, Qtrue);
+	    }
+	    s[0] = '-';
+	}
+	n = RARRAY(rb_argv)->len - n;
+	while (n--) {
+	    rb_ary_shift(rb_argv);
+	}
+    }
+}
+
+static void
+proc_options(argc, argv)
+    int argc;
+    char **argv;
+{
+    char *argv0 = argv[0];
+    int do_search;
     char *s;
 
     if (argc == 0) return;
 
     version = Qfalse;
     do_search = Qfalse;
-    script_given = 0;
-    e_tmpname = NULL;
 
     for (argc--,argv++; argc > 0; argc--,argv++) {
 	if (argv[0][0] != '-' || !argv[0][1]) break;
@@ -345,17 +382,12 @@ proc_options(argcp, argvp)
 		fprintf(stderr, "%s: no code specified for -e\n", origargv[0]);
 		exit(2);
 	    }
-	    if (!e_fp) {
-		e_tmpname = ruby_mktemp();
-		if (!e_tmpname) rb_fatal("Can't mktemp");
-		e_fp = fopen(e_tmpname, "w");
-		if (!e_fp) {
-		    rb_fatal("Cannot open temporary file: %s", e_tmpname);
-		}
-		if (script == 0) script = e_tmpname;
+	    if (!e_script) {
+		e_script = rb_str_new(0,0);
+		if (script == 0) script = "-e";
 	    }
-	    fputs(s, e_fp);
-	    putc('\n', e_fp);
+	    rb_str_cat(e_script, s, strlen(s));
+	    rb_str_cat(e_script, "\n", 1);
 	    break;
 
 	  case 'r':
@@ -489,14 +521,11 @@ proc_options(argcp, argvp)
     }
 
   switch_end:
-    if (*argvp[0] == 0) return;
+    if (argv0 == 0) return;
 
-    if (e_fp) {
-	if (fflush(e_fp) || ferror(e_fp) || fclose(e_fp))
-	    rb_fatal("Cannot write to temp file for -e");
-	e_fp = NULL;
+    if (e_script) {
 	argc++, argv--;
-	argv[0] = e_tmpname;
+	argv[0] = script;
     }
 
     if (version) {
@@ -507,66 +536,55 @@ proc_options(argcp, argvp)
 	ruby_show_copyright();
     }
 
-    Init_ext();		/* should be called here for some reason :-( */
-    if (script_given == Qfalse) {
-	if (argc == 0) {	/* no more args */
-	    if (ruby_verbose == 3) exit(0);
-	    script = "-";
-	    load_stdin();
-	}
-	else {
-	    script = argv[0];
-	    if (script[0] == '\0') {
-		script = "-";
-		load_stdin();
-	    }
-	    else {
-		if (do_search) {
-		    char *path = getenv("RUBYPATH");
-
-		    script = 0;
-		    if (path) {
-			script = dln_find_file(argv[0], path);
-		    }
-		    if (!script) {
-			script = dln_find_file(argv[0], getenv("PATH"));
-		    }
-		    if (!script) script = argv[0];
-		}
-		load_file(script, 1);
-	    }
-	    argc--; argv++;
-	}
-    }
     if (ruby_verbose) ruby_verbose = Qtrue;
     if (ruby_debug) ruby_debug = Qtrue;
 
-    xflag = Qfalse;
-    *argvp = argv;
-    *argcp = argc;
-
-    if (sflag) {
-	char *s;
-
-	argc = *argcp; argv = *argvp;
-	for (; argc > 0 && argv[0][0] == '-'; argc--,argv++) {
-	    if (argv[0][1] == '-') {
-		argc--,argv++;
-		break;
-	    }
-	    argv[0][0] = '$';
-	    if (s = strchr(argv[0], '=')) {
-		*s++ = '\0';
-		rb_gvar_set2(argv[0], rb_str_new2(s));
-	    }
-	    else {
-		rb_gvar_set2(argv[0], Qtrue);
-	    }
-	    argv[0][0] = '-';
+    if (!e_script && argc == 0) { /* no more args */
+	if (ruby_verbose == 3) exit(0);
+	script = "-";
+    }
+    else {
+	script = argv[0];
+	if (script[0] == '\0') {
+	    script = "-";
 	}
-	*argcp = argc; *argvp = argv;
+	else {
+	    if (do_search) {
+		char *path = getenv("RUBYPATH");
+
+		script = 0;
+		if (path) {
+		    script = dln_find_file(argv[0], path);
+		}
+		if (!script) {
+		    script = dln_find_file(argv[0], getenv("PATH"));
+		}
+		if (!script) script = argv[0];
+	    }
+	}
+	argc--; argv++;
     }
 
+    process_sflag();
+    ruby_script(script);
+    ruby_set_argv(argc, argv);
+
+    Init_ext();		/* should be called here for some reason :-( */
+    require_libraries();
+
+    if (e_script) {
+	rb_compile_string(script, e_script, 1);
+    }
+    else if (strlen(script) == 1 && script[0] == '-') {
+	load_stdin();
+    }
+    else {
+	load_file(script, 1);
+    }
+
+    process_sflag();
+    sflag = Qfalse;
+    xflag = Qfalse;
 }
 
 extern int ruby__end__seen;
@@ -669,7 +687,7 @@ load_file(fname, script)
 			    s++;
 			*s = '\0';
 			argv[1] = p;
-			proc_options(&argc, &argvp);
+			proc_options(argc, argv);
 			p = ++s;
 			while (*p && ISSPACE(*p))
 			    p++;
@@ -930,9 +948,7 @@ ruby_process_options(argc, argv)
 #if defined(USE_DLN_A_OUT)
     dln_argv0 = argv[0];
 #endif
-    proc_options(&argc, &argv);
-    ruby_script(script);
-    ruby_set_argv(argc, argv);
+    proc_options(argc, argv);
 
     if (do_check && ruby_nerrs == 0) {
 	printf("Syntax OK\n");
@@ -943,13 +959,5 @@ ruby_process_options(argc, argv)
     }
     if (do_loop) {
 	rb_parser_while_loop(do_line, do_split);
-    }
-    if (e_fp) {
-	fclose(e_fp);
-	e_fp = NULL;
-    }
-    if (e_tmpname) {
-	unlink(e_tmpname);
-	e_tmpname = NULL;
     }
 }

@@ -167,7 +167,7 @@ static void top_local_setup();
 %token <val>  tINTEGER tFLOAT tSTRING tXSTRING tREGEXP
 %token <node> tDSTRING tDXSTRING tDREGEXP tNTH_REF tBACK_REF
 
-%type <node> singleton
+%type <node> singleton string
 %type <val>  literal numeric
 %type <node> compstmt stmts stmt expr arg primary command_call method_call
 %type <node> if_tail opt_else case_body cases rescue ensure
@@ -963,11 +963,7 @@ primary		: literal
 		    {
 			$$ = NEW_COLON3($2);
 		    }
-		| tSTRING
-		    {
-			$$ = NEW_STR($1);
-		    }
-		| tDSTRING
+		| string
 		| tXSTRING
 		    {
 			$$ = NEW_XSTR($1);
@@ -1432,6 +1428,34 @@ literal		: numeric
 		    }
 		| tREGEXP
 
+string		: tSTRING
+		    {
+			$$ = NEW_STR($1);
+		    }
+		| tDSTRING
+		| string tSTRING
+		    {
+		        if (nd_type($1) == NODE_DSTR) {
+			    list_append($1, NEW_STR($2));
+			}
+			else {
+			    rb_str_concat($1->nd_lit, $2);
+			}
+			$$ = $1;
+		    }
+		| string tDSTRING
+		    {
+		        if (nd_type($1) == NODE_STR) {
+			    $$ = NEW_DSTR($1->nd_lit);
+			}
+			else {
+			    $$ = $1;
+			}
+			$2->nd_head = NEW_STR($2->nd_lit);
+			nd_set_type($2, NODE_ARRAY);
+			list_concat($$, $2);
+		    }
+
 symbol		: tSYMBEG sym
 		    {
 		        lex_state = EXPR_END;
@@ -1690,7 +1714,7 @@ char *strdup();
 static char *tokenbuf = NULL;
 static int   tokidx, toksiz = 0;
 
-static NODE *rb_str_extend();
+static NODE *str_extend();
 
 #define LEAVE_BS 1
 
@@ -1749,11 +1773,28 @@ static int heredoc_end;
 int ruby_in_compile = 0;
 int ruby__end__seen;
 
+static VALUE ruby_debug_lines;
+
 static NODE*
 yycompile(f)
     char *f;
 {
     int n;
+
+    if (!ruby_in_eval && rb_safe_level() == 0 &&
+	rb_const_defined(rb_cObject, rb_intern("LINES__"))) {
+	VALUE hash, fname;
+
+	hash = rb_const_get(rb_cObject, rb_intern("LINES__"));
+	if (TYPE(hash) == T_HASH) {
+	    fname = rb_str_new2(f);
+	    ruby_debug_lines = rb_hash_aref(hash, fname);
+	    if (NIL_P(ruby_debug_lines)) {
+		ruby_debug_lines = rb_ary_new();
+		rb_hash_aset(hash, fname, ruby_debug_lines);
+	    }
+	}
+    }
 
     ruby__end__seen = 0;
     ruby_eval_tree = 0;
@@ -1761,6 +1802,7 @@ yycompile(f)
     ruby_sourcefile = f;
     ruby_in_compile = 1;
     n = yyparse();
+    ruby_debug_lines = 0;
     compile_for_eval = 0;
     ruby_in_compile = 0;
     cond_nest = 0;
@@ -1792,6 +1834,16 @@ lex_get_str(s)
     }
     lex_gets_ptr = end - RSTRING(s)->ptr;
     return rb_str_new(beg, end - beg);
+}
+
+static VALUE
+lex_getline()
+{
+    VALUE line = (*lex_gets)(lex_input);
+    if (ruby_debug_lines && !NIL_P(line)) {
+	rb_ary_push(ruby_debug_lines, line);
+    }
+    return line;
 }
 
 NODE*
@@ -1842,7 +1894,7 @@ nextc()
 
     if (lex_p == lex_pend) {
 	if (lex_input) {
-	    VALUE v = (*lex_gets)(lex_input);
+	    VALUE v = lex_getline();
 
 	    if (NIL_P(v)) return -1;
 	    if (heredoc_end > 0) {
@@ -2057,7 +2109,7 @@ parse_regx(term, paren)
 	    break;
 
 	  case '#':
-	    list = rb_str_extend(list, term);
+	    list = str_extend(list, term);
 	    if (list == (NODE*)-1) return 0;
 	    continue;
 
@@ -2219,7 +2271,7 @@ parse_string(func, term, paren)
 	    }
 	}
 	else if (c == '#') {
-	    list = rb_str_extend(list, term);
+	    list = str_extend(list, term);
 	    if (list == (NODE*)-1) goto unterm_str;
 	    continue;
 	}
@@ -2382,7 +2434,7 @@ here_document(term, indent)
 
     str = rb_str_new(0,0);
     for (;;) {
-	lex_lastline = line = (*lex_gets)(lex_input);
+	lex_lastline = line = lex_getline();
 	if (NIL_P(line)) {
 	  error:
 	    ruby_sourceline = linesave;
@@ -3271,7 +3323,7 @@ yylex()
 }
 
 static NODE*
-rb_str_extend(list, term)
+str_extend(list, term)
     NODE *list;
     char term;
 {

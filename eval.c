@@ -966,8 +966,6 @@ ruby_init()
     ruby_scope = top_scope;
 }
 
-static int ext_init = 0;
-
 void
 ruby_options(argc, argv)
     int argc;
@@ -978,7 +976,6 @@ ruby_options(argc, argv)
     PUSH_TAG(PROT_NONE)
     if ((state = EXEC_TAG()) == 0) {
 	ruby_process_options(argc, argv);
-	ext_init = 1;	/* Init_ext() called in ruby_process_options */
     }
     POP_TAG();
     if (state) {
@@ -1014,18 +1011,6 @@ static void rb_thread_wait_other_threads _((void));
 
 static int exit_status;
 
-static void
-call_required_libraries()
-{
-    NODE *save;
-
-    ruby_sourcefile = 0;
-    if (!ext_init) Init_ext();
-    save = ruby_eval_tree;
-    ruby_require_libraries();
-    ruby_eval_tree = save;
-}
-
 void
 ruby_run()
 {
@@ -1039,7 +1024,6 @@ ruby_run()
     PUSH_TAG(PROT_NONE);
     PUSH_ITER(ITER_NOT);
     if ((state = EXEC_TAG()) == 0) {
-	call_required_libraries();
 	eval_node(ruby_top_self);
     }
     POP_ITER();
@@ -1698,6 +1682,7 @@ call_trace_func(event, file, line, self, id, klass)
     struct FRAME *prev;
     char *file_save = ruby_sourcefile;
     int line_save = ruby_sourceline;
+    VALUE srcfile;
 
     if (!trace_func) return;
 
@@ -1721,8 +1706,9 @@ call_trace_func(event, file, line, self, id, klass)
     }
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
+	srcfile = rb_str_new2(ruby_sourcefile?ruby_sourcefile:"(ruby)");
 	proc_call(trace, rb_ary_new3(6, rb_str_new2(event),
-				     rb_str_new2(ruby_sourcefile),
+				     srcfile,
 				     INT2FIX(ruby_sourceline),
 				     INT2FIX(id),
 				     self?rb_f_binding(self):Qnil,

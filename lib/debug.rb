@@ -1,3 +1,5 @@
+LINES__ = {} unless defined? LINES__
+
 class DEBUGGER__
   begin
     require 'readline'
@@ -24,7 +26,6 @@ class DEBUGGER__
     @frames = [nil]
     @last_file = nil
     @last = [nil, nil]
-    @scripts = {}
   end
 
   DEBUG_LAST_CMD = []
@@ -206,7 +207,7 @@ class DEBUGGER__
         previus_line = b
         STDOUT.printf "[%d, %d] in %s\n", b, e, binding_file
         line_at(binding_file, binding_line)
-        if lines = @scripts[binding_file] and lines != true
+        if lines = LINES__[binding_file] and lines != true
           n = 0
           b.upto(e) do |n|
             if n > 0 && lines[n-1]
@@ -289,26 +290,14 @@ class DEBUGGER__
   end
 
   def line_at(file, line)
-    lines = @scripts[file]
+    lines = LINES__[file]
     if lines
       return "\n" if lines == true
       line = lines[line-1]
       return "\n" unless line
       return line
     end
-    save = $DEBUG
-    begin
-      $DEBUG = false
-      f = open(file)
-      lines = @scripts[file] = f.readlines
-    rescue
-      $DEBUG = save
-      @scripts[file] = true
-      return "\n"
-    end
-    line = lines[line-1]
-    return "\n" unless line
-    return line
+    return "\n"
   end
 
   def debug_funcname(id)
@@ -396,8 +385,9 @@ class DEBUGGER__
   end
 
   CONTEXT = new
-end
 
-set_trace_func proc{|event, file, line, id, binding,*rest|
-  DEBUGGER__::CONTEXT.trace_func event, file, line, id, binding
-}
+
+  set_trace_func proc{|event, file, line, id, binding,*rest|
+    DEBUGGER__::CONTEXT.trace_func event, file, line, id, binding
+  }
+end
