@@ -359,6 +359,7 @@ lib/rss/syndication.rb
 lib/rss/taxonomy.rb
 lib/rss/trackback.rb
 lib/rss/utils.rb
+lib/rss/xml-stylesheet.rb
 lib/rss/xmlparser.rb
 lib/rss/xmlscanner.rb
 lib/rubyunit.rb
@@ -803,8 +804,8 @@ test/optparse/test_placearg.rb
 test/optparse/test_reqarg.rb
 test/ostruct/test_ostruct.rb
 test/rinda/test_rinda.rb
-test/rss/common.rb
-test/rss/my-assertions.rb
+test/rss/rss-assertions.rb
+test/rss/rss-testcase.rb
 test/rss/test_1.0.rb
 test/rss/test_accessor.rb
 test/rss/test_content.rb
@@ -812,6 +813,7 @@ test/rss/test_dublincore.rb
 test/rss/test_parser.rb
 test/rss/test_syndication.rb
 test/rss/test_trackback.rb
+test/rss/test_xml-stylesheet.rb
 test/ruby/beginmainend.rb
 test/ruby/endblockwarn.rb
 test/ruby/envutil.rb
