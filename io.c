@@ -1195,7 +1195,9 @@ rb_io_fptr_cleanup(fptr, fin)
     int fin;
 {
     if (fptr->mode & FMODE_FDOPEN) {
-	io_fflush(GetWriteFile(fptr), fptr);
+	if (fptr->mode & FMODE_WRITABLE) {
+	    io_fflush(GetWriteFile(fptr), fptr);
+	}
 	return;
     }
     if (fptr->finalize) {

@@ -1,3 +1,11 @@
+Tue Apr  2 15:17:54 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* Makefile.in (CPPFLAGS): remove @includedir@.
+
+	* lib/mkmf.rb (create_makefile): ditto.
+
+	* ext/extmk.rb.in (create_makefile): ditto.
+
 Tue Apr  2 15:09:05 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/socket/socket.c (sock_addrinfo): should clear addrinfo hints.
