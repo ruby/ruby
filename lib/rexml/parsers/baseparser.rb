@@ -166,7 +166,7 @@ module REXML
 					return [ :end_element, x ]
 				end
 				return @stack.shift if @stack.size > 0
-				@source.read if @source.buffer.size==0
+				@source.read if @source.buffer.size<2
 				if @document_status == nil
 					@source.consume( /^\s*/um )
 					word = @source.match( /(<[^>]*)>/um )
@@ -199,7 +199,7 @@ module REXML
 						args = [ :start_doctype, name, pub_sys, long_name, uri ]
 						if close == ">"
 							@document_status = :after_doctype
-							@source.read if @source.buffer.size==0
+							@source.read if @source.buffer.size<2
 							md = @source.match(/^\s*/um, true)
 							@stack << [ :end_doctype ]
 						else
@@ -208,7 +208,7 @@ module REXML
 						return args
 					else
 						@document_status = :after_doctype
-						@source.read if @source.buffer.size==0
+						@source.read if @source.buffer.size<2
 						md = @source.match(/\s*/um, true)
 					end
 				end

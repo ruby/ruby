@@ -54,6 +54,10 @@ module REXML
 			indent( output, indent )
 			output << START
 			output << @string
+      if indent>-1
+        output << "\n"
+        indent( output, indent )
+      end
 			output << STOP
 		end
 
