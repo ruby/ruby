@@ -1,3 +1,8 @@
+Tue Feb 17 23:40:34 2004  Guy Decoux  <ts@moulon.inra.fr>
+
+	* sprintf.c (rb_f_sprintf): preserve original val for
+	  format_integer. [ruby-talk:92975]
+
 Tue Feb 17 23:28:45 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* test/soap/marshal/test_marshal.rb, test/ruby/test_marshal.rb: do $:

@@ -5,6 +5,7 @@
 *~
 .ccmalloc
 .ppack
+.ext
 COPYING.LIB
 ChangeLog.pre-alpha
 ChangeLog.pre1_1
@@ -22,7 +23,6 @@ config.h.in
 config.log
 config.status
 configure
-foo.rb
 libruby.so.*
 miniruby
 miniruby.elhash
@@ -30,7 +30,6 @@ miniruby.elhash2
 miniruby.orig2
 miniruby.plhash
 miniruby.plhash2
-modex.rb
 newdate.rb
 newver.rb
 parse.c

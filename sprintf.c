@@ -444,6 +444,7 @@ rb_f_sprintf(argc, argv)
 		long v = 0;
 		int base, bignum = 0;
 		int len, pos;
+		VALUE tmp;
 
 		switch (*p) {
 		  case 'd':
@@ -571,8 +572,8 @@ rb_f_sprintf(argc, argv)
 		}
 
 		if (sign) {
-		    val = rb_big2str(val, base);
-		    s = RSTRING(val)->ptr;
+		    tmp = rb_big2str(val, base);
+		    s = RSTRING(tmp)->ptr;
 		    if (s[0] == '-') {
 			s++;
 			sc = '-';
@@ -592,8 +593,8 @@ rb_f_sprintf(argc, argv)
 		    val = rb_big_clone(val);
 		    rb_big_2comp(val);
 		}
-		val = rb_big2str(val, base);
-		s = RSTRING(val)->ptr;
+		tmp = rb_big2str(val, base);
+		s = RSTRING(tmp)->ptr;
 		if (*s == '-') {
 		    if (base == 10) {
 			rb_warning("negative number for %%u specifier");
@@ -601,8 +602,8 @@ rb_f_sprintf(argc, argv)
 		    }
 		    else {
 			remove_sign_bits(++s, base);
-			val = rb_str_new(0, 3+strlen(s));
-			t = RSTRING(val)->ptr;
+			tmp = rb_str_new(0, 3+strlen(s));
+			t = RSTRING(tmp)->ptr;
 			if (!(flags&FPREC)) {
 			    strcpy(t, "..");
 			    t += 2;
@@ -619,7 +620,7 @@ rb_f_sprintf(argc, argv)
 			bignum = 2;
 		    }
 		}
-		s  = RSTRING(val)->ptr;
+		s  = RSTRING(tmp)->ptr;
 
 	      format_integer:
 		pos = -1;
