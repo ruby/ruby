@@ -21,6 +21,16 @@ module RI
       result
     end
 
+    def find_class_by_name(full_name)
+      names = full_name.split(/::/)
+      ns = @cache.toplevel
+      for name in names
+        ns = ns.contained_class_named(name)
+        return nil if ns.nil?
+      end
+      get_class(ns)
+    end
+
     def find_methods(name, is_class_method, namespaces)
       result = []
       namespaces.each do |ns|

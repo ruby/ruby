@@ -42,6 +42,8 @@ require 'rdoc/markup/simple_markup'
 require 'rdoc/markup/simple_markup/to_flow'
 require 'cgi'
 
+require 'rdoc/ri/ri_cache'
+require 'rdoc/ri/ri_reader'
 require 'rdoc/ri/ri_writer'
 require 'rdoc/ri/ri_descriptions'
 
@@ -121,8 +123,7 @@ module Generators
         RI::MethodSummary.new(m.name)
       end
 
-      @ri_writer.remove_class(cls_desc)
-      @ri_writer.add_class(cls_desc)
+      update_or_replace(cls_desc)
 
       class_methods.each do |m|
         generate_method_info(cls_desc, m)
@@ -219,5 +220,39 @@ module Generators
       @markup.convert(content, @to_flow)
     end
 
+
+    # By default we replace existing classes with the
+    # same name. If the --merge option was given, we instead
+    # merge this definition into an existing class. We add
+    # our methods, aliases, etc to that class, but do not
+    # change the class's description.
+
+    def update_or_replace(cls_desc)
+      old_cls = nil
+
+      if @options.merge
+        rdr = RI::RiReader.new(RI::RiCache.new(@options.op_dir))
+
+        namespace = rdr.top_level_namespace
+        namespace = rdr.lookup_namespace_in(cls_desc.name, namespace)
+        if namespace.empty?
+          raise RiError.new("Nothing known about #{arg}")
+        else
+          old_cls = namespace[0]
+        end
+      end
+
+      if old_cls.nil?
+        # no merge: simply overwrite
+        @ri_writer.remove_class(cls_desc)
+        @ri_writer.add_class(cls_desc)
+      else
+        # existing class: merge in
+        old_desc = rdr.get_class(old_cls)
+
+        old_desc.merge_in(cls_desc)
+        @ri_writer.add_class(old_desc)
+      end
+    end
   end
 end

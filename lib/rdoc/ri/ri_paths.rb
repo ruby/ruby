@@ -15,8 +15,8 @@ module RI
   #
   # There's contention about all this, but for now:
   #
-  # system:: $prefix/lib/ruby/<version>/doc/rdoc
-  # site::   $prefix/lib/ruby/site_dir/<version>/doc/rdoc
+  # system:: $datadir/ri/<ver>/system/...
+  # site::   $datadir/ri/<ver>/site/...
   # user::   ~/.rdoc
 
   module Paths
@@ -26,8 +26,11 @@ module RI
     
     DOC_DIR  = "doc/rdoc"
 
-    SYSDIR   = File.join(Config::CONFIG['rubylibdir'], DOC_DIR)
-    SITEDIR  = File.join(Config::CONFIG['sitelibdir'], DOC_DIR)
+    version = Config::CONFIG['ruby_version']
+
+    base    = File.join(Config::CONFIG['datadir'], "ri", version)
+    SYSDIR  = File.join(base, "system")
+    SITEDIR = File.join(base, "site")
     homedir = ENV['HOME'] || ENV['USERPROFILE'] || ENV['HOMEPATH']
 
     if homedir
@@ -36,6 +39,7 @@ module RI
       HOMEDIR = nil
     end
 
+    # This is the search path for 'ri'
     PATH = [ SYSDIR, SITEDIR, HOMEDIR ].find_all {|p| p && File.directory?(p)}
   end
 end

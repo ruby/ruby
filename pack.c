@@ -408,6 +408,71 @@ static void qpencode _((VALUE,VALUE,long));
 static int uv_to_utf8 _((char*,unsigned long));
 static unsigned long utf8_to_uv _((char*,long*));
 
+/*
+ *  call-seq:
+ *     arr.pack ( aTemplateString ) -> aBinaryString
+ *  
+ *  Packs the contents of <i>arr</i> into a binary sequence according to
+ *  the directives in <i>aTemplateString</i> (see the table below)
+ *  Directives ``A,'' ``a,'' and ``Z'' may be followed by a count,
+ *  which gives the width of the resulting field. The remaining
+ *  directives also may take a count, indicating the number of array
+ *  elements to convert. If the count is an asterisk
+ *  (``<code>*</code>''), all remaining array elements will be
+ *  converted. Any of the directives ``<code>sSiIlL</code>'' may be
+ *  followed by an underscore (``<code>_</code>'') to use the underlying
+ *  platform's native size for the specified type; otherwise, they use a
+ *  platform-independent size. Spaces are ignored in the template
+ *  string. See also <code>String#unpack</code>.
+ *     
+ *     a = [ "a", "b", "c" ]
+ *     n = [ 65, 66, 67 ]
+ *     a.pack("A3A3A3")   #=> "a  b  c  "
+ *     a.pack("a3a3a3")   #=> "a\000\000b\000\000c\000\000"
+ *     n.pack("ccc")      #=> "ABC"
+ *     
+ * Directives for +pack+.
+ *
+ *   Directive    Meaning
+ *   ---------------------------------------------------------------
+ *       @     |  Moves to absolute position
+ *       A     |  ASCII string (space padded, count is width)
+ *       a     |  ASCII string (null padded, count is width)
+ *       B     |  Bit string (descending bit order)
+ *       b     |  Bit string (ascending bit order)
+ *       C     |  Unsigned char
+ *       c     |  Char
+ *       D, d  |  Double-precision float, native format
+ *       E     |  Double-precision float, little-endian byte order
+ *       e     |  Single-precision float, little-endian byte order
+ *       F, f  |  Single-precision float, native format
+ *       G     |  Double-precision float, network (big-endian) byte order
+ *       g     |  Single-precision float, network (big-endian) byte order
+ *       H     |  Hex string (high nibble first)
+ *       h     |  Hex string (low nibble first)
+ *       I     |  Unsigned integer
+ *       i     |  Integer
+ *       L     |  Unsigned long
+ *       l     |  Long
+ *       M     |  Quoted printable, MIME encoding (see RFC2045)
+ *       m     |  Base64 encoded string
+ *       N     |  Long, network (big-endian) byte order
+ *       n     |  Short, network (big-endian) byte-order
+ *       P     |  Pointer to a structure (fixed-length string)
+ *       p     |  Pointer to a null-terminated string
+ *       Q, q  |  64-bit number
+ *       S     |  Unsigned short
+ *       s     |  Short
+ *       U     |  UTF-8
+ *       u     |  UU-encoded string
+ *       V     |  Long, little-endian byte order
+ *       v     |  Short, little-endian byte order
+ *       w     |  BER-compressed integer\fnm
+ *       X     |  Back up a byte
+ *       x     |  Null byte
+ *       Z     |  Same as ``A''
+ */
+
 static VALUE
 pack_pack(ary, fmt)
     VALUE ary, fmt;
@@ -1153,6 +1218,142 @@ infected_str_new(ptr, len, str)
     return s;
 }
     
+/*
+ *  call-seq:
+ *     str.unpack(format)   => anArray
+ *  
+ *  Decodes <i>str</i> (which may contain binary data) according to the
+ *  format string, returning an array of each value extracted. The
+ *  format string consists of a sequence of single-character directives,
+ *  summarized in the table at the end of this entry.
+ *  Each directive may be followed
+ *  by a number, indicating the number of times to repeat with this
+ *  directive. An asterisk (``<code>*</code>'') will use up all
+ *  remaining elements. The directives <code>sSiIlL</code> may each be
+ *  followed by an underscore (``<code>_</code>'') to use the underlying
+ *  platform's native size for the specified type; otherwise, it uses a
+ *  platform-independent consistent size. Spaces are ignored in the
+ *  format string. See also <code>Array#pack</code>.
+ *     
+ *     "abc \0\0abc \0\0".unpack('A6Z6')   #=> ["abc", "abc "]
+ *     "abc \0\0".unpack('a3a3')           #=> ["abc", " \000\000"]
+ *     "aa".unpack('b8B8')                 #=> ["10000110", "01100001"]
+ *     "aaa".unpack('h2H2c')               #=> ["16", "61", 97]
+ *     "\xfe\xff\xfe\xff".unpack('sS')     #=> [-2, 65534]
+ *     "now=20is".unpack('M*')             #=> ["now is"]
+ *     "whole".unpack('xax2aX2aX1aX2a')    #=> ["h", "e", "l", "l", "o"]
+ *
+ *  This table summarizes the various formats and the Ruby classes
+ *  returned by each.
+ *     
+ *     Format | Returns | Function
+ *     -------+---------+-----------------------------------------
+ *       A    | String  | with trailing nulls and spaces removed
+ *     -------+---------+-----------------------------------------
+ *       a    | String  | string
+ *     -------+---------+-----------------------------------------
+ *       B    | String  | extract bits from each character (msb first)
+ *     -------+---------+-----------------------------------------
+ *       b    | String  | extract bits from each character (lsb first)
+ *     -------+---------+-----------------------------------------
+ *       C    | Fixnum  | extract a character as an unsigned integer
+ *     -------+---------+-----------------------------------------
+ *       c    | Fixnum  | extract a character as an integer
+ *     -------+---------+-----------------------------------------
+ *       d,D  | Float   | treat sizeof(double) characters as
+ *            |         | a native double
+ *     -------+---------+-----------------------------------------
+ *       E    | Float   | treat sizeof(double) characters as
+ *            |         | a double in little-endian byte order
+ *     -------+---------+-----------------------------------------
+ *       e    | Float   | treat sizeof(float) characters as
+ *            |         | a float in little-endian byte order
+ *     -------+---------+-----------------------------------------
+ *       f,F  | Float   | treat sizeof(float) characters as
+ *            |         | a native float
+ *     -------+---------+-----------------------------------------
+ *       G    | Float   | treat sizeof(double) characters as
+ *            |         | a double in network byte order
+ *     -------+---------+-----------------------------------------
+ *       g    | Float   | treat sizeof(float) characters as a
+ *            |         | float in network byte order
+ *     -------+---------+-----------------------------------------
+ *       H    | String  | extract hex nibbles from each character
+ *            |         | (most significant first)
+ *     -------+---------+-----------------------------------------
+ *       h    | String  | extract hex nibbles from each character
+ *            |         | (least significant first)
+ *     -------+---------+-----------------------------------------
+ *       I    | Integer | treat sizeof(int) (modified by _)
+ *            |         | successive characters as an unsigned
+ *            |         | native integer
+ *     -------+---------+-----------------------------------------
+ *       i    | Integer | treat sizeof(int) (modified by _)
+ *            |         | successive characters as a signed
+ *            |         | native integer
+ *     -------+---------+-----------------------------------------
+ *       L    | Integer | treat four (modified by _) successive
+ *            |         | characters as an unsigned native
+ *            |         | long integer
+ *     -------+---------+-----------------------------------------
+ *       l    | Integer | treat four (modified by _) successive
+ *            |         | characters as a signed native
+ *            |         | long integer
+ *     -------+---------+-----------------------------------------
+ *       M    | String  | quoted-printable
+ *     -------+---------+-----------------------------------------
+ *       m    | String  | base64-encoded
+ *     -------+---------+-----------------------------------------
+ *       N    | Integer | treat four characters as an unsigned
+ *            |         | long in network byte order
+ *     -------+---------+-----------------------------------------
+ *       n    | Fixnum  | treat two characters as an unsigned
+ *            |         | short in network byte order
+ *     -------+---------+-----------------------------------------
+ *       P    | String  | treat sizeof(char *) characters as a
+ *            |         | pointer, and  return \emph{len} characters
+ *            |         | from the referenced location
+ *     -------+---------+-----------------------------------------
+ *       p    | String  | treat sizeof(char *) characters as a
+ *            |         | pointer to a  null-terminated string
+ *     -------+---------+-----------------------------------------
+ *       Q    | Integer | treat 8 characters as an unsigned 
+ *            |         | quad word (64 bits)
+ *     -------+---------+-----------------------------------------
+ *       q    | Integer | treat 8 characters as a signed 
+ *            |         | quad word (64 bits)
+ *     -------+---------+-----------------------------------------
+ *       S    | Fixnum  | treat two (different if _ used)
+ *            |         | successive characters as an unsigned
+ *            |         | short in native byte order
+ *     -------+---------+-----------------------------------------
+ *       s    | Fixnum  | Treat two (different if _ used) 
+ *            |         | successive characters as a signed short
+ *            |         | in native byte order
+ *     -------+---------+-----------------------------------------
+ *       U    | Integer | UTF-8 characters as unsigned integers
+ *     -------+---------+-----------------------------------------
+ *       u    | String  | UU-encoded
+ *     -------+---------+-----------------------------------------
+ *       V    | Fixnum  | treat four characters as an unsigned
+ *            |         | long in little-endian byte order
+ *     -------+---------+-----------------------------------------
+ *       v    | Fixnum  | treat two characters as an unsigned
+ *            |         | short in little-endian byte order
+ *     -------+---------+-----------------------------------------
+ *       w    | Integer | BER-compressed integer (see Array.pack)
+ *     -------+---------+-----------------------------------------
+ *       X    | ---     | skip backward one character
+ *     -------+---------+-----------------------------------------
+ *       x    | ---     | skip forward one character
+ *     -------+---------+-----------------------------------------
+ *       Z    | String  | with trailing nulls removed
+ *     -------+---------+-----------------------------------------
+ *       @    | ---     | skip to the offset given by the 
+ *            |         | length argument
+ *     -------+---------+-----------------------------------------
+ */
+
 static VALUE
 pack_unpack(str, fmt)
     VALUE str, fmt;

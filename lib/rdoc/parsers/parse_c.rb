@@ -140,6 +140,7 @@ module RDoc
       remove_commented_out_lines
       do_classes
       do_methods
+      do_includes
       @top_level
     end
 
@@ -237,7 +238,8 @@ module RDoc
         next if meth_name == "initialize_copy"
 
         class_name = @known_classes[var_name] || var_name
-        class_obj  = @classes[var_name]
+        class_obj  = find_class(var_name, class_name)
+        
         if class_obj
           if meth_name == "initialize"
             meth_name = "new"
@@ -297,7 +299,18 @@ module RDoc
         
       end
     end
-    
+
+    # Look for includes of the form
+    #     rb_include_module(rb_cArray, rb_mEnumerable);
+    def do_includes
+      @body.scan(/rb_include_module\(\s*(\w+?),\s*(\w+?)\s*\)/) do |c,m|
+        if cls = @classes[c]
+          m = KNOWN_CLASSES[m] || m
+          cls.add_include(Include.new(m, ""))
+        end
+      end
+    end
+
     # Remove the /*'s and leading asterisks from C comments
     
     def mangle_comment(comment)
@@ -306,7 +319,17 @@ module RDoc
       comment.gsub!(/^[ \t]*\*/m) { " " * $&.length }
       comment
     end
-    
+
+    def find_class(raw_name, name)
+      unless @classes[name]
+        if raw_name =~ /^rb_m/ 
+          @classes[name] = @top_level.add_module(NormalModule, name)
+        else
+          @classes[name] = @top_level.add_class(NormalClass, name, nil)
+        end
+      end
+      @classes[name]
+    end
   end
   
 end

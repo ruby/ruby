@@ -28,6 +28,9 @@ class Options
   # the first file we encounter is used)
   attr_accessor :main_page
 
+  # merge into classes of the name name when generating ri
+  attr_reader :merge
+
   # Don't display progress as we process the files
   attr_reader :quiet
 
@@ -159,6 +162,10 @@ class Options
 
       [ "--main",          "-m",   "name",
         "'name' will be the initial page displayed" ],
+
+      [ "--merge",         "-M",   nil,
+        "when creating ri output, merge processed classes\n" +
+        "into previously documented classes of the name name"],
 
       [ "--one-file",      "-1",   nil,
         "put all the output into a single file" ],
@@ -332,6 +339,7 @@ class Options
       @op_name = nil
       @show_all = false
       @main_page = nil
+      @marge     = false
       @exclude   = nil
       @quiet = false
       @generator_name = 'html'
@@ -376,6 +384,7 @@ class Options
         when "--inline-source" then @inline_source = true
         when "--line-numbers"  then @include_line_numbers = true
         when "--main"          then @main_page     = arg
+        when "--merge"         then @merge         = true
         when "--one-file"      then @all_one_file  = true
         when "--op"            then @op_dir        = arg
         when "--opname"        then @op_name       = arg

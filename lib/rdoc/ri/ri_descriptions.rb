@@ -46,6 +46,14 @@ module RI
     attr_accessor :superclass
     attr_accessor :includes
 
+    # merge in another class desscription into this one
+    def merge_in(old)
+      @class_methods.concat(old.class_methods).sort!
+      @instance_methods.concat(old.instance_methods).sort!
+      @attributes.concat(old.attributes).sort!
+      @constants.concat(old.constants).sort!
+      @includes.concat(old.includes).sort!
+    end
   end
   
   class MethodDescription < Description

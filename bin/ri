@@ -66,7 +66,7 @@ class  RiDisplay
     STDOUT.reopen(@save_stdout)
     @save_stdout = nil
     paged = false
-    for pager in [ ENV['pager'], "less", "more <" ].compact.uniq
+    for pager in [ ENV['PAGER'], "less", "more <", 'pager' ].compact.uniq
       if system("#{pager} #{path}")
         paged = true
         break
@@ -128,6 +128,24 @@ def display_class_info(class_entry)
   @formatter.draw_line("Class: " + klass.full_name)
   display_flow(klass.comment)
   @formatter.draw_line
+
+  unless klass.includes.empty?
+    @formatter.blankline
+    @formatter.wrap("Includes:", "")
+    incs = []
+    klass.includes.each do |inc|
+      inc_desc = @ri_reader.find_class_by_name(inc.name)
+      if inc_desc
+        str = inc.name + "("
+        str << inc_desc.instance_methods.map{|m| m.name}.join(", ")
+        str << ")"
+        incs << str
+      else
+        incs << inc.name
+      end
+    end
+    @formatter.wrap(incs.sort.join(', '))
+  end
 
   unless klass.constants.empty?
     @formatter.blankline

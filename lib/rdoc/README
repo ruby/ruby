@@ -166,6 +166,11 @@ Options are:
 [<tt>--main</tt> _name_]
     set the class, module, or file to appear on the index page
 
+[<tt>--merge</tt>]
+    when generating _ri_ output, if classes being processed already
+    exist in the destination directory, merge in the current details
+    rather than overwrite them.
+
 [<tt>--one-file</tt>]
     place all the output into a single file
 
@@ -190,6 +195,13 @@ Options are:
 
 [<tt>--quiet</tt>]
     do not display progress messages
+
+[<tt>--ri</tt> _and_ <tt>--ri-site</tt>]
+    generate output than can be read by the _ri_ command-line tool.
+    By default --ri places its output in ~/.rdoc, and --ri-site in
+    $datadir/ri/<ver>/site. Both can be overridden with a subsequent
+    --op option. Both default directories are in ri's default search
+    path.
 
 [<tt>--show-hash</tt>]
     A name of the form #name in a comment is a possible hyperlink to

@@ -31,7 +31,7 @@ module RI
         if name =~ /^(.*?)-(c|i).yaml$/
           external_name = $1
           is_class_method = $2 == "c"
-          internal_name = external_name
+          internal_name = RiWriter.external_to_internal(external_name)
           list = is_class_method ? @class_methods : @instance_methods
           path = File.join(dir, name)
           list << MethodEntry.new(path, internal_name, is_class_method, self)
@@ -53,6 +53,11 @@ module RI
       @inferior_classes.find_all {|c| c.name[name]}
     end
 
+    # Return an exact match to a particular name
+    def contained_class_named(name)
+      @inferior_classes.find {|c| c.name == name}
+    end
+
     # return the list of local methods matching name
     # We're split into two because we need distinct behavior
     # when called from the toplevel
@@ -72,7 +77,7 @@ module RI
 
 
     # Return our full name
-    def full_name
+    def full_namep
       res = @in_class.full_name
       res << "::" unless res.empty?
       res << @name
@@ -93,7 +98,7 @@ module RI
              else fail "Unknown is_class_method"
              end
 
-      list.find_all {|m| m.name[name]}
+      list.find_all {|m| m.name;  m.name[name]}
     end
   end
 
@@ -108,6 +113,11 @@ module RI
     def full_name
       ""
     end
+
+    def module_named(name)
+      
+    end
+
   end
 
   class MethodEntry
