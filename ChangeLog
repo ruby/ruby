@@ -1,3 +1,10 @@
+Fri Sep  5 10:42:58 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/runner.rb: added.  gets testcases from command line and runs it.
+
+	* test/ruby/test_gc.rb: remove useless part which was for dumping test
+	  result.
+
 Fri Sep  5 09:28:59 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/ruby/test_gc.rb: added.  splitter.rb which I made to split

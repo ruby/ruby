@@ -31,11 +31,5 @@ class TestGc < Test::Unit::TestCase
     }
     GC.start
     assert true   # reach here or dumps core
-    
-    if $failed > 0
-      printf "test: %d failed %d\n", $ntest, $failed
-    else
-      printf "end of test(test: %d)\n", $ntest
-    end
   end
 end
