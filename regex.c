@@ -1059,6 +1059,7 @@ re_compile_pattern(pattern, size, bufp)
     int options = bufp->options;
 
     bufp->fastmap_accurate = 0;
+    bufp->must = 0;
 
     /* Initialize the syntax table.  */
     init_syntax_once();
@@ -2222,8 +2223,7 @@ must_instr(little, llen, big, blen, translate)
 
   c = *little;
   if (c == 0xff) {
-    c = *++little;
-    llen--;
+    c = little[1];
     fescape = 1;
   }
   else if (translate && !ismbchar(c)) {
@@ -4199,7 +4199,7 @@ static const unsigned char mbctab_euc[] = { /* 0xA1-0xFE */
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,
   0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,

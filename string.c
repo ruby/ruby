@@ -1466,7 +1466,7 @@ str_inspect(str)
 	else {
 	    CHECK(4);
 	    *b++ = '\\';
-	    sprintf(b, "%03o", c);
+	    sprintf(b, "%03o", c & 0377);
 	    b += 3;
 	}
     }
