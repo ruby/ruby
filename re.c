@@ -91,6 +91,7 @@ rb_str_cicmp(str1, str2)
 #define REG_IGNORECASE FL_USER1
 #define REG_EXTENDED   FL_USER2
 #define REG_POSIXLINE  FL_USER3
+#define REG_MULTILINE  FL_USER3
 
 #define KCODE_NONE  0
 #define KCODE_EUC   FL_USER4
@@ -249,8 +250,8 @@ rb_reg_desc(s, len, re)
 	    rb_str_cat2(str, "i");
 	if (FL_TEST(re, REG_EXTENDED))
 	    rb_str_cat2(str, "x");
-	if (FL_TEST(re, REG_POSIXLINE))
-	    rb_str_cat2(str, "p");
+	if (FL_TEST(re, REG_MULTILINE))
+	    rb_str_cat2(str, "m");
 	if (FL_TEST(re, KCODE_FIXED)) {
 	    switch ((RBASIC(re)->flags & KCODE_MASK)) {
 	      case KCODE_NONE:
@@ -757,7 +758,7 @@ rb_reg_new_1(klass, s, len, options)
     int len;
     int options;		/* CASEFOLD  = 1 */
 				/* EXTENDED  = 2 */
-				/* POSIXLINE = 4 */
+				/* MULTILINE = 4 */
 				/* CODE_NONE = 8 */
 				/* CODE_EUC  = 16 */
 				/* CODE_SJIS = 24 */
@@ -774,8 +775,8 @@ rb_reg_new_1(klass, s, len, options)
     if (options & RE_OPTION_EXTENDED) {
 	FL_SET(re, REG_EXTENDED);
     }
-    if (options & RE_OPTION_POSIXLINE) {
-	FL_SET(re, REG_POSIXLINE);
+    if (options & RE_OPTION_MULTILINE) {
+	FL_SET(re, REG_MULTILINE);
     }
     switch (options & ~0x7) {
       case 0:
@@ -1297,6 +1298,7 @@ Init_Regexp()
     rb_define_const(rb_cRegexp, "IGNORECASE", INT2FIX(RE_OPTION_IGNORECASE));
     rb_define_const(rb_cRegexp, "EXTENDED", INT2FIX(RE_OPTION_EXTENDED));
     rb_define_const(rb_cRegexp, "POSIXLINE", INT2FIX(RE_OPTION_POSIXLINE));
+    rb_define_const(rb_cRegexp, "MULTILINE", INT2FIX(RE_OPTION_MULTILINE));
 
     rb_global_variable(&reg_cache);
 

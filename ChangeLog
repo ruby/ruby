@@ -1,3 +1,7 @@
+Wed May 17 14:14:23 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* re.c (rb_reg_new_1): use /m instead of /p.
+
 Wed May 17 02:22:03 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (rb_thread_polling): wait 0.06 second to let other

@@ -621,17 +621,6 @@ ipaddr(sockaddr)
     return ary;
 }
 
-static void
-thread_write_select(fd)
-    int fd;
-{
-    fd_set fds;
-
-    FD_ZERO(&fds);
-    FD_SET(fd, &fds);
-    rb_thread_select(fd+1, 0, &fds, 0, 0);
-}
-
 static int
 ruby_socket(domain, type, proto)
     int domain, type, proto;
@@ -692,7 +681,7 @@ ruby_connect(fd, sockaddr, len, socks)
 #ifdef EINPROGRESS
 	      case EINPROGRESS:
 #endif
-		thread_write_select(fd);
+		rb_thread_fd_writable(fd);
 		continue;
 
 #ifdef EISCONN

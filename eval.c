@@ -6736,9 +6736,9 @@ rb_thread_schedule()
 	    copy_fds(&readfds, &th->readfds, th->fd);
 	    copy_fds(&writefds, &th->writefds, th->fd);
 	    copy_fds(&exceptfds, &th->exceptfds, th->fd);
-	    th->fd = 0;
 	    if (max < th->fd) max = th->fd;
 	    need_select = 1;
+	    th->fd = 0;
 	}
 	if (th->wait_for & WAIT_TIME) {
 	    if (th->delay <= now) {
@@ -6885,8 +6885,9 @@ rb_thread_fd_writable(fd)
     curr_thread->status = THREAD_STOPPED;
     FD_ZERO(&curr_thread->readfds);
     FD_ZERO(&curr_thread->writefds);
-    FD_ZERO(&curr_thread->exceptfds);
     FD_SET(fd, &curr_thread->writefds);
+    FD_ZERO(&curr_thread->exceptfds);
+    curr_thread->fd = fd+1;
     curr_thread->wait_for = WAIT_SELECT;
     rb_thread_schedule();
 }
@@ -7011,7 +7012,7 @@ rb_thread_select(max, read, write, except, timeout)
     if (timeout) {
 	curr_thread->delay = timeofday() +
 	    (double)timeout->tv_sec + (double)timeout->tv_usec*1e-6;
-	curr_thread->wait_for = WAIT_TIME;
+	curr_thread->wait_for |= WAIT_TIME;
     }
     rb_thread_schedule();
     if (read) *read = curr_thread->readfds;

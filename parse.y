@@ -2256,8 +2256,9 @@ parse_regx(term, paren)
 		  case 'x':
 		    options |= RE_OPTION_EXTENDED;
 		    break;
-		  case 'p':
-		    options |= RE_OPTION_POSIXLINE;
+		  case 'p':	/* /p is obsolete, works as /m */
+		  case 'm':
+		    options |= RE_OPTION_MULTILINE;
 		    break;
 		  case 'o':
 		    once = 1;

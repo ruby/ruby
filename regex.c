@@ -352,6 +352,8 @@ enum regexpcode
     casefold_off,  /* Turn off casefold flag. */
     posix_on,      /* Turn on POSIXified line match (match with newlines). */
     posix_off,     /* Turn off POSIXified line match. */
+    mline_on,      /* Turn on multi line match (match with newlines). */
+    mline_off,     /* Turn off multi line match. */
     start_nowidth, /* Save string point to the stack. */
     stop_nowidth,  /* Restore string place at the point start_nowidth. */
     pop_and_fail,  /* Fail after popping nowidth entry from stack. */
@@ -772,6 +774,14 @@ print_partial_compiled_pattern(start, end)
       printf("/posix_off");
       break;
 
+    case mline_on:
+      printf("/mline_on");
+      break;
+
+    case mline_off:
+      printf("/mline_off");
+      break;
+
     case start_nowidth:
       EXTRACT_NUMBER_AND_INCR (mcnt, p);
       printf("/start_nowidth//%d", mcnt);
@@ -1027,6 +1037,8 @@ calculate_must_string(start, end)
     case stop_paren:
     case posix_on:
     case posix_off:
+    case mline_on:
+    case mline_off:
       break;
 
     case charset:
@@ -1689,6 +1701,18 @@ re_compile_pattern(pattern, size, bufp)
 		BUFPUSH(posix_on);
 	      }
 	      break;
+	    case 'm':
+	      if (negative) {
+		if (options&RE_OPTION_MULTILINE) {
+		  options &= ~RE_OPTION_MULTILINE;
+		  BUFPUSH(mline_off);
+		}
+	      }
+	      else if (!(options&RE_OPTION_MULTILINE)) {
+		options |= RE_OPTION_MULTILINE;
+		BUFPUSH(mline_on);
+	      }
+	      break;
 	    case 'i':
 	      if (negative) {
 		if (options&RE_OPTION_IGNORECASE) {
@@ -1801,6 +1825,9 @@ re_compile_pattern(pattern, size, bufp)
       }
       if ((options ^ stackp[-1]) & RE_OPTION_POSIXLINE) {
 	BUFPUSH((options&RE_OPTION_POSIXLINE)?posix_off:posix_on);
+      }
+      if ((options ^ stackp[-1]) & RE_OPTION_MULTILINE) {
+	BUFPUSH((options&RE_OPTION_POSIXLINE)?mline_off:mline_on);
       }
       pending_exact = 0;
       if (fixup_alt_jump) {
@@ -2763,6 +2790,11 @@ re_compile_fastmap(bufp)
       case posix_on:
       case posix_off:
 	options ^= RE_OPTION_POSIXLINE;
+	continue;
+
+      case mline_on:
+      case mline_off:
+	options ^= RE_OPTION_MULTILINE;
 	continue;
 
       case endline:
@@ -4103,6 +4135,14 @@ re_match(bufp, string_arg, size, pos, regs)
 
       case posix_off:
 	options &= ~RE_OPTION_POSIXLINE;
+	continue;
+
+      case mline_on:
+	options |= RE_OPTION_MULTILINE;
+	continue;
+
+      case mline_off:
+	options &= ~RE_OPTION_MULTILINE;
 	continue;
 
       case wordbound:
