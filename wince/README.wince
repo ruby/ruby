@@ -1,0 +1,62 @@
+=begin
+
+= How to build ruby using eMbedded Visual C++
+
+== Requirement
+
+(1) eMbedded Visual C++ 3.0 or later.
+
+== How to compile and install
+
+(1) Move to ruby\wince directory.
+
+(2) if you changed install directories of eMVC and SDK from default
+    settings, please modify .\configure.bat in order to set 
+    environment valuables such as "PATH", "INCLUDE", and "LIB".
+
+(2) Execute .\configure.bat on "ruby\wince" directory.
+    You can specify the target platform as an argument.
+    For example, run:
+      [CPU]      [OS ver.]
+      StrongARM  HPC2000    : `configure ARM HPC2K'
+      MIPS       PocketPC   : `configure MIPS PPC'
+      SH3        PocketPC   : `configure SH3 PPC'
+      SH4        HPCPro     : `configure SH4 HPCPRO'
+      (caution: "HPCPro" is not supported yet.)
+
+(3) Execute `.\make.bat'.
+
+(4) Copy mswince-ruby17.dll, ruby.exe, and irb.exe to your WinCE machine.
+
+== Icons
+
+Any icon files(*.ico) in the build directory, directories specified with
+((|icondirs|)) make variable and (({win32})) directory under the ruby
+source directory will be included in DLL or executable files, according
+to their base names.
+    $(RUBY_INSTALL_NAME).ico or ruby.ico   --> $(RUBY_INSTALL_NAME).exe
+    $(RUBYW_INSTALL_NAME).ico or rubyw.ico --> $(RUBYW_INSTALL_NAME).exe
+    the others                             --> $(RUBY_SO_NAME).dll
+
+Although no icons are distributed with the ruby source or in the official 
+site, you can use anything you like. For example, followings are written 
+in Japanese, but you can download at least.
+
+* ((<URL:http://member.nifty.ne.jp/ueivu/rubyico.html>)) or
+  ((<zipped icons|URL:http://member.nifty.ne.jp/ueivu/Ruby_ico.zip>))
+* ((<URL:http://homepage1.nifty.com/a_nakata/ruby/>)) or
+  ((<icon itself|URL:http://homepage1.nifty.com/a_nakata/ruby/RubyIcon.ico>))
+
+== Build examples
+
+  ex.)
+    current directory:      C:\
+    ruby source directory:  C:\ruby
+    target CPU:             StrongARM
+    target OS version:      PocketPC
+
+    cd \ruby\wince
+    .\configure ARM PPC
+    .\make.bat
+
+=end

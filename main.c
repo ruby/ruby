@@ -38,7 +38,7 @@ main(argc, argv, envp)
     int argc;
     char **argv, **envp;
 {
-#if defined(NT)
+#if defined(NT) || defined(_WIN32_WCE)
     NtInitialize(&argc, &argv);
 #endif
 #if defined(__MACOS__) && defined(__MWERKS__)

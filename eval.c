@@ -7328,7 +7328,7 @@ win32_set_exception_list(p)
 # endif
 }
 
-#ifndef SAVE_WIN32_EXCEPTION_LIST
+#if !defined SAVE_WIN32_EXCEPTION_LIST && !defined _WIN32_WCE
 # error unsupported platform
 #endif
 #endif

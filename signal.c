@@ -369,7 +369,7 @@ static RETSIGTYPE
 sighandler(sig)
     int sig;
 {
-#ifdef NT
+#if defined(NT) || defined(_WIN32_WCE)
 #define IN_MAIN_CONTEXT(f, a) (rb_w32_main_context(a, f) ? (void)0 : f(a))
 #else
 #define IN_MAIN_CONTEXT(f, a) f(a)
@@ -453,7 +453,7 @@ rb_trap_exec()
 }
 
 struct trap_arg {
-#if !defined(NT)
+#if !defined(NT) && !defined(_WIN32_WCE)
 # ifdef HAVE_SIGPROCMASK
     sigset_t mask;
 # else
@@ -594,7 +594,7 @@ trap(arg)
 
     trap_list[sig] = command;
     /* enable at least specified signal. */
-#if !defined(NT)
+#if !defined(NT) && !defined(_WIN32_WCE)
 #ifdef HAVE_SIGPROCMASK
     sigdelset(&arg->mask, sig);
 #else
@@ -604,7 +604,7 @@ trap(arg)
     return old;
 }
 
-#if !defined(NT)
+#if !defined(NT) && !defined(_WIN32_WCE)
 static VALUE
 trap_ensure(arg)
     struct trap_arg *arg;
@@ -623,7 +623,7 @@ trap_ensure(arg)
 void
 rb_trap_restore_mask()
 {
-#if !defined(NT)
+#if !defined(NT) && !defined(_WIN32_WCE)
 # ifdef HAVE_SIGPROCMASK
     sigprocmask(SIG_SETMASK, &trap_last_mask, NULL);
 # else
@@ -655,7 +655,7 @@ sig_trap(argc, argv)
     if (OBJ_TAINTED(arg.cmd)) {
 	rb_raise(rb_eSecurityError, "Insecure: tainted signal trap");
     }
-#if !defined(NT)
+#if !defined(NT) && !defined(_WIN32_WCE)
     /* disable interrupt */
 # ifdef HAVE_SIGPROCMASK
     sigfillset(&arg.mask);

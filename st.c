@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include "st.h"
 
-#ifdef NT
+#if defined(NT) || defined(_WIN32_WCE)
 #include <malloc.h>
 #endif
 

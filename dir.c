@@ -21,10 +21,10 @@
 #include <unistd.h>
 #endif
 
-#if defined HAVE_DIRENT_H && !defined NT
+#if defined HAVE_DIRENT_H && !defined NT && !defined _WIN32_WCE
 # include <dirent.h>
 # define NAMLEN(dirent) strlen((dirent)->d_name)
-#elif defined HAVE_DIRECT_H && !defined NT
+#elif defined HAVE_DIRECT_H && !defined NT && !defined _WIN32_WCE
 # include <direct.h>
 # define NAMLEN(dirent) strlen((dirent)->d_name)
 #else
@@ -39,7 +39,7 @@
 # if HAVE_NDIR_H
 #  include <ndir.h>
 # endif
-# if defined(NT)
+# if defined(NT) || defined(_WIN32_WCE)
 #  include "win32/dir.h"
 # endif
 #endif
@@ -78,6 +78,10 @@ char *strchr _((char*,char));
 # else
 #   define CharNext(p) ((p) + 1)
 # endif
+#endif
+#ifdef _WIN32_WCE
+#undef CharNext
+#define CharNext CharNextA
 #endif
 #if defined DOSISH
 #define isdirsep(c) ((c) == '/' || (c) == '\\')
@@ -534,7 +538,7 @@ dir_s_mkdir(argc, argv, obj)
 
     SafeStringValue(path);
     rb_secure(2);
-#if !defined(NT)
+#if !defined(NT) && !defined(_WIN32_WCE)
     if (mkdir(RSTRING(path)->ptr, mode) == -1)
 	rb_sys_fail(RSTRING(path)->ptr);
 #else

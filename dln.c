@@ -48,7 +48,7 @@ void *xrealloc();
 #endif
 
 #include <stdio.h>
-#if defined(NT) || defined(__VMS)
+#if defined(NT) || defined(__VMS) ||  defined(_WIN32_WCE)
 #include "missing/file.h"
 #endif
 #include <sys/types.h>
@@ -69,7 +69,7 @@ void *xrealloc();
 # include <unistd.h>
 #endif
 
-#ifndef NT
+#if !defined(NT) && !defined(_WIN32_WCE)
 char *getenv();
 #endif
 
@@ -1149,6 +1149,15 @@ dln_sym(name)
 #include <windows.h>
 #endif
 
+#ifdef _WIN32_WCE
+#undef FormatMessage
+#define FormatMessage FormatMessageA
+#undef LoadLibrary
+#define LoadLibrary LoadLibraryA
+#undef GetProcAddress
+#define GetProcAddress GetProcAddressA
+#endif
+
 static const char *
 dln_strerror()
 {
@@ -1589,7 +1598,7 @@ dln_find_exe(fname, path)
     }
 
     if (!path) {
-#if defined(MSDOS) || defined(NT) || defined(__human68k__) || defined(__MACOS__)
+#if defined(MSDOS) || defined(NT) || defined(__human68k__) || defined(__MACOS__) || defined(_WIN32_WCE)
 	path = "/usr/local/bin;/usr/ucb;/usr/bin;/bin;.";
 #else
 	path = "/usr/local/bin:/usr/ucb:/usr/bin:/bin:.";
@@ -1660,7 +1669,7 @@ dln_find_1(fname, path, exe_flag)
     if (strncmp("./", fname, 2) == 0 || strncmp("../", fname, 3) == 0)
       return fname;
     if (exe_flag && strchr(fname, '/')) return fname;
-#if defined(MSDOS) || defined(NT) || defined(__human68k__) || defined(__EMX__)
+#if defined(MSDOS) || defined(NT) || defined(__human68k__) || defined(__EMX__) || defined(_WIN32_WCE)
     if (fname[0] == '\\') return fname;
     if (strlen(fname) > 2 && fname[1] == ':') return fname;
     if (strncmp(".\\", fname, 2) == 0 || strncmp("..\\", fname, 3) == 0)
@@ -1692,7 +1701,7 @@ dln_find_1(fname, path, exe_flag)
 	    */
 
 	    if (*dp == '~' && (l == 1 ||
-#if defined(MSDOS) || defined(NT) || defined(__human68k__) || defined(__EMX__)
+#if defined(MSDOS) || defined(NT) || defined(__human68k__) || defined(__EMX__) || defined(_WIN32_WCE)
 			       dp[1] == '\\' || 
 #endif
 			       dp[1] == '/')) {
@@ -1750,7 +1759,7 @@ dln_find_1(fname, path, exe_flag)
 	    }
 	}
 #endif
-#if defined(MSDOS) || defined(NT) || defined(__human68k__) || defined(__EMX__)
+#if defined(MSDOS) || defined(NT) || defined(__human68k__) || defined(__EMX__) || defined(_WIN32_WCE)
 	if (exe_flag) {
 	    static const char *extension[] = {
 #if defined(MSDOS)
@@ -1758,9 +1767,9 @@ dln_find_1(fname, path, exe_flag)
 #if defined(DJGPP)
 		".btm", ".sh", ".ksh", ".pl", ".sed",
 #endif
-#elif defined(__EMX__) || defined(NT)
+#elif defined(__EMX__) || defined(NT) || defined(_WIN32_WCE)
 		".exe", ".com", ".cmd", ".bat",
-/* end of __EMX__ or NT*/
+/* end of __EMX__ or NT or WINCE */
 #else
 		".r", ".R", ".x", ".X", ".bat", ".BAT",
 /* __human68k__ */

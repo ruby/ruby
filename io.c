@@ -24,7 +24,7 @@
 #include <ctype.h>
 #include <errno.h>
 
-#if defined(MSDOS) || defined(__BOW__) || defined(__CYGWIN__) || defined(NT) || defined(__human68k__) || defined(__EMX__) || defined(__BEOS__)
+#if defined(MSDOS) || defined(__BOW__) || defined(__CYGWIN__) || defined(NT) || defined(__human68k__) || defined(__EMX__) || defined(__BEOS__) || defined(_WIN32_WCE)
 # define NO_SAFE_RENAME
 #endif
 
@@ -41,10 +41,10 @@
 #endif
 
 #include <sys/types.h>
-#if !defined(DJGPP) && !defined(NT) && !defined(__human68k__)
+#if !defined(DJGPP) && !defined(NT) && !defined(__human68k__) && !defined(_WIN32_WCE)
 #include <sys/ioctl.h>
 #endif
-#if defined(HAVE_FCNTL_H) || defined(NT)
+#if defined(HAVE_FCNTL_H) || defined(NT) || defined(_WIN32_WCE)
 #include <fcntl.h>
 #elif defined(HAVE_SYS_FCNTL_H)
 #include <sys/fcntl.h>
@@ -1536,7 +1536,7 @@ VALUE
 rb_io_binmode(io)
     VALUE io;
 {
-#if defined(NT) || defined(DJGPP) || defined(__CYGWIN__) || defined(__human68k__) || defined(__EMX__)
+#if defined(NT) || defined(DJGPP) || defined(__CYGWIN__) || defined(__human68k__) || defined(__EMX__) || defined(_WIN32_WCE)
     OpenFile *fptr;
 
     GetOpenFile(io, fptr);
@@ -1825,7 +1825,7 @@ rb_file_sysopen(fname, flags, mode)
     return rb_file_sysopen_internal(io, fname, flags, mode);
 }
 
-#if defined (NT) || defined(DJGPP) || defined(__CYGWIN__) || defined(__human68k__) || defined(__VMS)
+#if defined (NT) || defined(DJGPP) || defined(__CYGWIN__) || defined(__human68k__) || defined(__VMS) || defined(_WIN32_WCE)
 static struct pipe_list {
     OpenFile *fptr;
     struct pipe_list *next;
@@ -1867,7 +1867,7 @@ pipe_del_fptr(fptr)
     }
 }
 
-#if defined (NT) || defined(DJGPP) || defined(__CYGWIN__) || defined(__human68k__) || defined(__VMS)
+#if defined (NT) || defined(DJGPP) || defined(__CYGWIN__) || defined(__human68k__) || defined(__VMS) || defined(_WIN32_WCE)
 static void
 pipe_atexit _((void))
 {
@@ -1888,7 +1888,7 @@ static void
 pipe_finalize(fptr)
     OpenFile *fptr;
 {
-#if !defined (__CYGWIN__) && !defined(NT)
+#if !defined (__CYGWIN__) && !defined(NT) && !defined(_WIN32_WCE)
     extern VALUE rb_last_status;
     int status;
     if (fptr->f) {
@@ -1951,7 +1951,7 @@ pipe_open(pname, mode)
 	return (VALUE)port;
     }
 #else
-#if defined(NT)
+#if defined(NT) || defined(_WIN32_WCE)
     int pid;
     FILE *fpr, *fpw;
 
@@ -3469,7 +3469,7 @@ rb_io_s_pipe()
     int pipes[2];
     VALUE r, w;
 
-#ifdef NT
+#if defined(NT) || defined(_WIN32_WCE)
     if (_pipe(pipes, 1024, O_BINARY) == -1)
 #else
     if (pipe(pipes) == -1)

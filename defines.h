@@ -88,7 +88,7 @@ void xfree _((void*));
 
 /* define RUBY_USE_EUC/SJIS for default kanji-code */
 #ifndef DEFAULT_KCODE
-#if defined(MSDOS) || defined(__CYGWIN__) || defined(__human68k__) || defined(__MACOS__) || defined(__EMX__) || defined(OS2) || defined(NT)
+#if defined(MSDOS) || defined(__CYGWIN__) || defined(__human68k__) || defined(__MACOS__) || defined(__EMX__) || defined(OS2) || defined(NT) || defined(_WIN32_WCE)
 #define DEFAULT_KCODE KCODE_SJIS
 #else
 #define DEFAULT_KCODE KCODE_EUC
@@ -106,7 +106,7 @@ void xfree _((void*));
 #define HAVE_SYS_WAIT_H         /* configure fails to find this */
 #endif /* NeXT */
 
-#ifdef NT
+#if defined(NT) || defined(_WIN32_WCE)
 #include "win32/win32.h"
 #endif
 
@@ -141,7 +141,7 @@ void xfree _((void*));
 #define DOSISH 1
 #endif
 
-#if defined(MSDOS) || defined(NT) || defined(__human68k__) || defined(OS2)
+#if defined(MSDOS) || defined(NT) || defined(__human68k__) || defined(OS2) || defined(_WIN32_WCE)
 #define PATH_SEP ";"
 #elif defined(riscos)
 #define PATH_SEP ","

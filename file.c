@@ -12,7 +12,7 @@
 
 **********************************************************************/
 
-#ifdef NT
+#if defined NT || defined _WIN32_WCE
 #include "missing/file.h"
 #endif
 
@@ -43,12 +43,12 @@ int flock _((int, int));
 #ifdef HAVE_SYS_TIME_H
 # include <sys/time.h>
 #else
-#ifndef NT
+#if !defined(NT) && !defined(_WIN32_WCE)
 struct timeval {
         long    tv_sec;         /* seconds */
         long    tv_usec;        /* and microseconds */
 };
-#endif /* NT */
+#endif /* NT, WINCE */
 #endif
 
 VALUE rb_time_new _((time_t, time_t));
@@ -74,6 +74,11 @@ char *strrchr _((const char*,const char));
 
 #ifndef HAVE_LSTAT
 #define lstat(path,st) stat(path,st)
+#endif
+
+#ifdef _WIN32_WCE
+#undef CharNext
+#define CharNext CharNextA
 #endif
 
 VALUE rb_cFile;
@@ -110,7 +115,7 @@ rb_file_path(obj)
     return rb_str_new2(fptr->path);
 }
 
-#ifdef NT
+#if defined NT || defined _WIN32_WCE
 #include "missing/file.h"
 #endif
 
@@ -440,7 +445,7 @@ static int
 group_member(gid)
     GETGROUPS_T gid;
 {
-#if !defined(NT)
+#if !defined(NT) && !defined(_WIN32_WCE)
     if (getgid() ==  gid)
 	return Qtrue;
 
@@ -780,7 +785,7 @@ static VALUE
 test_grpowned(obj, fname)
     VALUE obj, fname;
 {
-#ifndef NT
+#if !defined(NT) && !defined(_WIN32_WCE)
     struct stat st;
 
     if (rb_stat(fname, &st) < 0) return Qfalse;
@@ -1115,7 +1120,7 @@ rb_file_chown(obj, owner, group)
 
     rb_secure(2);
     GetOpenFile(obj, fptr);
-#if defined(DJGPP) || defined(__CYGWIN32__) || defined(NT) || defined(__EMX__)
+#if defined(DJGPP) || defined(__CYGWIN32__) || defined(NT) || defined(__EMX__) || defined(_WIN32_WCE)
     if (!fptr->path) return Qnil;
     if (chown(fptr->path, NUM2INT(owner), NUM2INT(group)) == -1)
 	rb_sys_fail(fptr->path);
@@ -1208,7 +1213,7 @@ rb_file_s_utime(argc, argv)
 #else
 
 #ifndef HAVE_UTIME_H
-# ifdef NT
+# if defined NT || defined _WIN32_WCE
 #   if defined(__BORLANDC__)
 #     include <utime.h>
 #   else
@@ -1711,7 +1716,7 @@ rb_file_s_truncate(klass, path, len)
     {
 	int tmpfd;
 
-#  if defined(NT)
+#  if defined(NT) || defined(_WIN32_WCE)
 	if ((tmpfd = open(RSTRING(path)->ptr, O_RDWR)) < 0) {
 	    rb_sys_fail(RSTRING(path)->ptr);
 	}
@@ -2136,7 +2141,7 @@ static VALUE
 rb_stat_grpowned(obj)
     VALUE obj;
 {
-#ifndef NT
+#if !defined(NT) && !defined(_WIN32_WCE)
     if (get_stat(obj)->st_gid == getegid()) return Qtrue;
 #endif
     return Qfalse;

@@ -42,7 +42,7 @@ struct timeval rb_time_interval _((VALUE));
 #include <sys/times.h>
 #endif
 
-#if defined(HAVE_TIMES) || defined(NT)
+#if defined(HAVE_TIMES) || defined(NT) || defined(_WIN32_WCE)
 static VALUE S_Tms;
 #endif
 
@@ -74,7 +74,7 @@ get_pid()
 static VALUE
 get_ppid()
 {
-#ifdef NT
+#if defined(NT) || defined(_WIN32_WCE)
     return INT2FIX(0);
 #else
     return INT2FIX(getppid());
@@ -703,7 +703,7 @@ static VALUE
 rb_f_fork(obj)
     VALUE obj;
 {
-#if !defined(__human68k__) && !defined(NT) && !defined(__MACOS__) && !defined(__EMX__) && !defined(__VMS)
+#if !defined(__human68k__) && !defined(NT) && !defined(__MACOS__) && !defined(__EMX__) && !defined(__VMS) && !defined(_WIN32_WCE)
     int pid;
 
     rb_secure(2);
@@ -796,7 +796,7 @@ rb_f_system(argc, argv)
     int argc;
     VALUE *argv;
 {
-#if defined(NT) || defined(__EMX__)
+#if defined(NT) || defined(__EMX__) || defined(_WIN32_WCE)
     VALUE cmd;
     int status;
 
@@ -1286,7 +1286,7 @@ Init_process()
 
     rb_mProcess = rb_define_module("Process");
 
-#if !defined(NT) && !defined(DJGPP)
+#if !defined(NT) && !defined(DJGPP) && !defined(_WIN32_WCE)
 #ifdef WNOHANG
     rb_define_const(rb_mProcess, "WNOHANG", INT2FIX(WNOHANG));
 #else
@@ -1358,7 +1358,7 @@ Init_process()
 
     rb_define_module_function(rb_mProcess, "times", rb_proc_times, 0);
 
-#if defined(HAVE_TIMES) || defined(NT)
+#if defined(HAVE_TIMES) || defined(NT) || defined(_WIN32_WCE)
     S_Tms = rb_struct_define("Tms", "utime", "stime", "cutime", "cstime", 0);
 #endif
 }

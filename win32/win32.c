@@ -29,6 +29,9 @@
 #endif
 #include "win32.h"
 #include "win32/dir.h"
+#ifdef _WIN32_WCE
+#include "wince.h"
+#endif
 #ifndef index
 #define index(x, y) strchr((x), (y))
 #endif
@@ -49,7 +52,7 @@
 # undef  WIN95
 #endif
 
-#ifdef __BORLANDC__
+#if defined __BORLANDC__ || defined _WIN32_WCE
 #  define _filbuf _fgetc
 #  define _flsbuf _fputc
 #  define enough_to_get(n) (--(n) >= 0)
@@ -91,7 +94,7 @@ static int valid_filename(char *s);
 static void StartSockets ();
 static char *str_grow(struct RString *str, size_t new_size);
 static DWORD wait_events(HANDLE event, DWORD timeout);
-#ifndef __BORLANDC__
+#if !defined(__BORLANDC__) && !defined(_WIN32_WCE)
 static int rb_w32_open_osfhandle(long osfhandle, int flags);
 #else
 #define rb_w32_open_osfhandle(osfhandle, flags) _open_osfhandle(osfhandle, flags)
@@ -287,6 +290,11 @@ NtInitialize(int *argc, char ***argv)
 
     // Initialize Winsock
     StartSockets();
+
+#ifdef _WIN32_WCE
+	// free commandline buffer
+	wce_FreeCommandLine();
+#endif
 }
 
 char *getlogin()
@@ -1387,7 +1395,7 @@ typedef struct	{
 #define _CRTIMP __declspec(dllimport)
 #endif
 
-#ifndef __BORLANDC__
+#if !defined(__BORLANDC__) && !defined(_WIN32_WCE)
 EXTERN_C _CRTIMP ioinfo * __pioinfo[];
 
 #define IOINFO_L2E			5
@@ -2707,7 +2715,9 @@ static void setup_call(CONTEXT* ctx, struct handler_arg_t *harg)
     ctx->Esp = (DWORD)esp;
     ctx->Eip = (DWORD)rb_w32_call_handler;
 #else
+#ifndef _WIN32_WCE
 #error unsupported processor
+#endif
 #endif
 }
 
@@ -2792,13 +2802,16 @@ static void catch_interrupt(void)
 int rb_w32_getc(FILE* stream)
 {
     int c, trap_immediate = rb_trap_immediate;
+#ifndef _WIN32_WCE
     if (enough_to_get(stream->FILE_COUNT)) {
 	c = (unsigned char)*stream->FILE_READPTR++;
 	rb_trap_immediate = trap_immediate;
     }
-    else {
+    else 
+#endif
+	{
 	c = _filbuf(stream);
-#ifdef __BORLANDC__
+#if defined __BORLANDC__ || defined _WIN32_WCE
         if( ( c == EOF )&&( errno == EPIPE ) )
         {
           clearerr(stream);
@@ -2814,11 +2827,14 @@ int rb_w32_getc(FILE* stream)
 int rb_w32_putc(int c, FILE* stream)
 {
     int trap_immediate = rb_trap_immediate;
+#ifndef _WIN32_WCE
     if (enough_to_put(stream->FILE_COUNT)) {
 	c = (unsigned char)(*stream->FILE_READPTR++ = (char)c);
 	rb_trap_immediate = trap_immediate;
     }
-    else {
+    else 
+#endif
+	{
 	c = _flsbuf(c, stream);
 	rb_trap_immediate = trap_immediate;
 	catch_interrupt();

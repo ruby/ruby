@@ -39,7 +39,7 @@ unsigned long scan_oct _((const char*, int, int*));
 #define scan_hex ruby_scan_hex
 unsigned long scan_hex _((const char*, int, int*));
 
-#if defined(MSDOS) || defined(__CYGWIN32__) || defined(NT)
+#if defined(MSDOS) || defined(__CYGWIN32__) || defined(NT) || defined(_WIN32_WCE)
 void ruby_add_suffix();
 #define add_suffix ruby_add_suffix
 #endif
