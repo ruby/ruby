@@ -5,6 +5,7 @@
 #
 
 require 'delegate'
+require 'tmpdir'
 
 # A class for managing temporary files.  This library is written to be
 # thread safe.
@@ -17,11 +18,10 @@ class Tempfile < SimpleDelegator
   # object works just like a File object.
   #
   # If tmpdir is omitted, the temporary directory is determined by
-  # ENV['TMPDIR'], ENV['TMP'] and and ENV['TEMP'] in the order named.
-  # If none of them is available, or when $SAFE > 0 and the given
-  # tmpdir is tainted, it uses /tmp. (Note that ENV values are
-  # tainted by default)
-  def initialize(basename, tmpdir=ENV['TMPDIR']||ENV['TMP']||ENV['TEMP']||'/tmp')
+  # Dir::TMPDIR provided by 'tmpdir.rb'.
+  # When $SAFE > 0 and the given tmpdir is tainted, it uses
+  # /tmp. (Note that ENV values are tainted by default)
+  def initialize(basename, tmpdir=Dir::TMPDIR)
     if $SAFE > 0 and tmpdir.tainted?
       tmpdir = '/tmp'
     end

@@ -1,5 +1,6 @@
 require 'socket'
 require 'drb/drb'
+require 'tmpdir'
 
 module DRb
 
@@ -52,8 +53,7 @@ module DRb
     Max_try = 10
     private
     def self.temp_server
-      tmpdir = ENV['TMPDIR'] || ENV['TMP'] || ENV['TEMP'] || '/tmp'
-      tmpdir = '/tmp' if $SAFE > 0 and tmpdir.tainted?
+      tmpdir = Dir::TMPDIR
       n = 0
       while true
 	begin

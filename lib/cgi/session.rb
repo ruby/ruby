@@ -3,6 +3,7 @@
 # Copyright (C) 2000  Information-technology Promotion Agency, Japan
 
 require 'cgi'
+require 'tmpdir'
 
 class CGI
   class Session
@@ -109,7 +110,7 @@ class CGI
       end
 
       def initialize(session, option={})
-	dir = option['tmpdir'] || ENV['TMP'] || '/tmp'
+	dir = option['tmpdir'] || Dir::TMPDIR
 	prefix = option['prefix'] || ''
 	id = session.session_id
 	unless check_id(id)
