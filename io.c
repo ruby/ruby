@@ -1491,26 +1491,6 @@ obj_display(argc, argv, self)
     return Qnil;
 }
 
-static VALUE
-obj_displayln(argc, argv, self)
-    int argc;
-    VALUE *argv;
-    VALUE self;
-{
-    VALUE out;
-    VALUE str;
-
-    rb_scan_args(argc, argv, "01", &out);
-    if (NIL_P(out)) {
-	out = rb_defout;
-    }
-
-    io_write(out, self);
-    io_write(rb_defout, RS_default);
-
-    return Qnil;
-}
-
 static void
 io_defset(val, id)
     VALUE val;
@@ -2436,7 +2416,6 @@ Init_IO()
 
     rb_define_global_function("p", f_p, 1);
     rb_define_method(mKernel, "display", obj_display, -1);
-    rb_define_method(mKernel, "displayln", obj_displayln, -1);
 
     cIO = rb_define_class("IO", cObject);
     rb_include_module(cIO, mEnumerable);

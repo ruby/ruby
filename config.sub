@@ -662,10 +662,6 @@ case $basic_machine in
 	orion105)
 		basic_machine=clipper-highlevel
 		;;
-        human)
-		basic_machine=m68k-sharp
-		os=-human
-                ;;
 	*)
 		echo Invalid configuration \`$1\': machine \`$basic_machine\' not recognized 1>&2
 		exit 1
@@ -679,6 +675,10 @@ case $basic_machine in
 		;;
 	*-commodore*)
 		basic_machine=`echo $basic_machine | sed 's/commodore.*/cbm/'`
+		;;
+	human)
+		basic_machine=m68k-sharp
+		os=-human
 		;;
 	*)
 		;;
@@ -780,6 +780,8 @@ case $os in
 		;;
 	-xenix)
 		os=-xenix
+		;;
+	-human)
 		;;
 	-none)
 		;;

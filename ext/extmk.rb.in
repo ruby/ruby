@@ -483,6 +483,9 @@ if $extlist.size > 0
   end
 
   $extobjs = "ext/extinit.o " + $extobjs
+  if PLATFORM == "m68k-human"
+    $extlibs.gsub!("-L/usr/local/lib", "") if $extlibs
+  end
   system format('make ruby@binsuffix@ EXTOBJS="%s" EXTLIBS="%s"', $extobjs, $extlibs)
 else
   Dir.chdir ".."

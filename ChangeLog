@@ -1,5 +1,7 @@
 Thu Apr 16 16:52:01 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
+	* experimental release 1.1b9_11.
+
 	* lib/tk.rb: thread support (experimental - maybe slow).
 
 	* eval.c (rb_longjmp): trace event on exception in raising
@@ -25,13 +27,13 @@ Thu Apr 16 01:38:02 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* string.c (str_new4): need not to duplicate frozen strings.
 
-Wed Apr 15 12:24:32 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
-
-	* config.sub: x68 condition restored.
-
 Wed Apr 15 08:33:47 1998  Tadayoshi Funaba  <tadf@kt.rim.or.jp>
 
 	* struct.c (struct_inspect): remove restriction for struct names.
+
+Wed Apr 15 02:55:02 1998  Kazuya 'Sharl' Masuda  <sharl@www.ufo.co.jp>
+
+	* x68 patches to config.sub, ext/extmk.rb.in
 
 Wed Apr 15 01:22:56 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
