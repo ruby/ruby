@@ -1,3 +1,7 @@
+Thu Oct  2 18:20:27 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* time.c (Init_Time): define initialize.  [ruby-dev:21469]
+
 Thu Oct  2 17:39:38 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_engine.c: add a new module OpenSSL::Engine.

@@ -1446,6 +1446,7 @@ Init_Time()
     rb_define_method(rb_cTime, "<=>", time_cmp, 1);
     rb_define_method(rb_cTime, "eql?", time_eql, 1);
     rb_define_method(rb_cTime, "hash", time_hash, 0);
+    rb_define_method(rb_cTime, "initialize", time_init, 0);
     rb_define_method(rb_cTime, "initialize_copy", time_init_copy, 1);
 
     rb_define_method(rb_cTime, "localtime", time_localtime, 0);
