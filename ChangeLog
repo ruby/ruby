@@ -1,3 +1,7 @@
+Sat Sep  7 08:41:39 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* parse.y (rb_gc_mark_parser): ruby_eval_tree is marked in eval.c.
+
 Fri Sep  6 20:01:38 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* lib/mkmf.rb ($CC): command to compile C source.
