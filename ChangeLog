@@ -1,3 +1,7 @@
+Mon Dec 22 23:00:05 2003  akira yamada  <akira@ruby-lang.org>
+
+	* lib/uri/generic.rb (URI::Generic::check_opaque): fixed typo.
+
 Mon Dec 22 21:59:24 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv/iconv.c (map_charset): always ensure code is a String.

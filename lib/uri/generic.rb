@@ -617,7 +617,7 @@ Object
       # raise if both hier and opaque are not nil, because:
       # absoluteURI   = scheme ":" ( hier_part | opaque_part )
       # hier_part     = ( net_path | abs_path ) [ "?" query ]
-      if @host || @port || @usr || @path  # userinfo = @user + ':' + @password
+      if @host || @port || @user || @path  # userinfo = @user + ':' + @password
 	raise InvalidURIError, 
 	  "can not set opaque with host, port, userinfo or path"
       elsif v && OPAQUE !~ v
