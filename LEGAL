@@ -156,7 +156,7 @@ missing/strtoul.c:
 
 missing/vsnprintf.c:
 
-  This file is under the old-style BSD licence.  Note that the
+  This file is under the old-style BSD license.  Note that the
   paragraph 3 below is now null and void.
 
     Copyright (c) 1990, 1993
@@ -242,7 +242,7 @@ ext/socket/addrinfo.h:
 ext/socket/getaddrinfo.c:
 ext/socket/getnameinfo.c:
 
-  These files are under the BSD licence.
+  These files are under the BSD license.
 
     Copyright (C) 1995, 1996, 1997, 1998, and 1999 WIDE Project.
     All rights reserved.
