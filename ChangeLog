@@ -1,3 +1,8 @@
+Thu Nov 11 16:47:21 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_file.rb (test_truncate_wbuf): we want to test
+	  only File#truncate, not behaviour of seek(2).
+
 Thu Nov 11 09:41:01 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* dir.c (push_braces): was confusing VALUE and char*.
