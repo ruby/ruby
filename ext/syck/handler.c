@@ -39,7 +39,7 @@ syck_hdlr_add_alias( SyckParser *p, char *a )
 {
     SyckNode *n;
 
-    if ( st_lookup( p->anchors, (st_data_t)a, &n ) )
+    if ( st_lookup( p->anchors, (st_data_t)a, (st_data_t *)&n ) )
     {
         return n;
     }
