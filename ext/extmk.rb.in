@@ -74,7 +74,7 @@ if /mswin32/ =~ RUBY_PLATFORM
 else
   OUTFLAG = '-o '
 end
-LINK = "@CC@ #{OUTFLAG}conftest -I#$topdir -I#$top_srcdir #{CFLAGS} -I#$includedir -L#$libdir @LDFLAGS@ %s %s %s conftest.c %s %s @LIBS@"
+LINK = "@CC@ #{OUTFLAG}conftest -I#$topdir -I#$top_srcdir #{CFLAGS} -I#$includedir @LDFLAGS@ %s %s %s conftest.c %s %s @LIBS@"
 CPP = "@CPP@ @CPPFLAGS@ -I#$topdir -I#$top_srcdir #{CFLAGS} -I#$includedir %s %s %s conftest.c"
 
 $log = open('extmk.log', 'w')
@@ -444,7 +444,7 @@ target_prefix = #{target_prefix}
 
 "
   mfile.printf "LOCAL_LIBS = %s %s\n", $LOCAL_LIBS, $local_flags
-  mfile.printf "LIBS = -L%s %s\n", $libdir, $libs
+  mfile.printf "LIBS = %s\n", $libs
   mfile.printf "OBJS = "
   if !$objs then
     $objs = []
@@ -617,7 +617,7 @@ def extmake(target)
   $CFLAGS = ""
   $CPPFLAGS = ""
   $LDFLAGS = ""
-  $LIBPATH = []
+  $LIBPATH = [$libdir]
 
   dir_config("opt")
 

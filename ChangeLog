@@ -1,3 +1,12 @@
+Tue Mar  5 03:39:27 2002  Usaku Nakamura <usa@ruby-lang.org>
+
+	* ext/extmk.rb.in (create_makefile): remove unnecessary -L option from
+	  LIBS macro.
+
+	* ext/extmk.rb.in (extmake): default $LIBPATH to $libdir.
+
+	* win32/win32.c (NtCmdGlob): avoid VC++ warning.
+
 Mon Mar  4 13:23:16 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/extmk.rb.in (dir_config): Sync with mkmf.rb: Fix a bug where
