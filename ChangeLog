@@ -1,3 +1,12 @@
+Thu Aug 28 17:30:24 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* variable.c (rb_const_get_0): should check constants defined in
+	  included modules, if klass is Object. [ruby-talk:79302]
+
+	* numeric.c (check_uint): check should be done using UINT_MAX, not
+	  INT_MAX. this fix is submitted by <lyle@knology.net> in
+	  [ruby-core:01486]
+
 Thu Aug 28 05:02:52 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (singleton): typo fixed (ruby-bugs-ja PR#562)

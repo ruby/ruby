@@ -1024,8 +1024,8 @@ static void
 check_uint(num)
     unsigned long num;
 {
-    if (num > INT_MAX) {
-	rb_raise(rb_eRangeError, "integer %lu too big to convert to `int'", num);
+    if (num > UINT_MAX) {
+	rb_raise(rb_eRangeError, "integer %lu too big to convert to `unsigned int'", num);
     }
 }
 

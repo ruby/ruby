@@ -1264,28 +1264,12 @@ rb_autoload_p(mod, id)
     return autoload_file(mod, id);
 }
 
-VALUE
-rb_const_get_at(klass, id)
-    VALUE klass;
-    ID id;
-{
-    VALUE value;
-
-    while (RCLASS(klass)->iv_tbl && st_lookup(RCLASS(klass)->iv_tbl, id, &value)) {
-	if (value == Qundef) {
-	    rb_autoload_load(klass, id);
-	    continue;
-	}
-	return value;
-    }
-    return const_missing(klass, id);
-}
-
 static VALUE
-rb_const_get_0(klass, id, exclude)
+rb_const_get_0(klass, id, exclude, recurse)
     VALUE klass;
     ID id;
     int exclude;
+    int recurse;
 {
     VALUE value, tmp;
     int mod_retry = 0;
@@ -1304,6 +1288,7 @@ rb_const_get_0(klass, id, exclude)
 	    }
 	    return value;
 	}
+	if (!recurse && klass != rb_cObject) break;
 	tmp = RCLASS(tmp)->super;
     }
     if (!mod_retry && BUILTIN_TYPE(klass) == T_MODULE) {
@@ -1320,7 +1305,7 @@ rb_const_get_from(klass, id)
     VALUE klass;
     ID id;
 {
-    return rb_const_get_0(klass, id, Qtrue);
+    return rb_const_get_0(klass, id, Qtrue, Qtrue);
 }
 
 VALUE
@@ -1328,7 +1313,15 @@ rb_const_get(klass, id)
     VALUE klass;
     ID id;
 {
-    return rb_const_get_0(klass, id, Qfalse);
+    return rb_const_get_0(klass, id, Qfalse, Qtrue);
+}
+
+VALUE
+rb_const_get_at(klass, id)
+    VALUE klass;
+    ID id;
+{
+    return rb_const_get_0(klass, id, Qfalse, Qfalse);
 }
 
 VALUE
