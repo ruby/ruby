@@ -1,3 +1,8 @@
+Wed Nov 26 15:38:47 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* test/fileutils/test_fileutils.rb: should take the existing symbolic
+	  link for OpenBSD.
+
 Wed Nov 26 04:48:42 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
 
 	* ext/syck/token.c: removed YYTOKTMP references which
