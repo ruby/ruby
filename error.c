@@ -254,7 +254,7 @@ exc_inspect(exc)
 
     klass = CLASS_OF(exc);
     if (RSTRING(exc)->len == 0) {
-	return rb_class_path(klass);
+	return str_dup(rb_class_path(klass));
     }
 
     str = str_new2("#<");

@@ -386,7 +386,7 @@ static VALUE
 mod_to_s(class)
     VALUE class;
 {
-    return rb_class_path(class);
+    return str_dup(rb_class_path(class));
 }
 
 static VALUE

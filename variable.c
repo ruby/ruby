@@ -131,12 +131,6 @@ classname(klass)
     }
     path = rb_iv_get(klass, "__classpath__");
     if (NIL_P(path)) {
-	path = rb_iv_get(klass, "__classid__");
-	if (!NIL_P(path)) {
-	    path = str_new2(rb_id2name(FIX2INT(path)));
-	}
-    }
-    if (NIL_P(path)) {
 	path = find_class_path(klass);
 	if (NIL_P(path)) {
 	    return 0;
@@ -153,7 +147,7 @@ mod_name(mod)
 {
     VALUE path = classname(mod);
 
-    if (path) return path;
+    if (path) return str_dup(path);
     return str_new(0,0);
 }
 
@@ -209,12 +203,7 @@ rb_name_class(klass, id)
 {
     extern VALUE cString;
 
-    if (cString) {
-	rb_iv_set(klass, "__classpath__", str_new2(rb_id2name(id)));
-    }
-    else {
-	rb_iv_set(klass, "__classid__", INT2FIX(id));
-    }
+    rb_iv_set(klass, "__classpath__", str_new2(rb_id2name(id)));
 }
 
 static st_table *autoload_tbl = 0;
