@@ -1,3 +1,7 @@
+Thu Mar 18 17:46:35 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/drb.rb: do not undef :to_a.
+
 Thu Mar 18 15:27:25 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c: remove specialized version of rb_Array().  use simple
