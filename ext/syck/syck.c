@@ -11,10 +11,6 @@
 
 #include "syck.h"
 
-#define SYCK_YAML_MAJOR 1
-#define SYCK_YAML_MINOR 0
-#define SYCK_BUFFERSIZE 262144
-
 void syck_parser_pop_level( SyckParser * );
 
 /*
@@ -30,6 +26,9 @@ syck_assert( char *file_name, unsigned line_num )
     abort();
 }
 
+/*
+ * Allocates and copies a string
+ */
 char *
 syck_strndup( char *buf, long len )
 {
@@ -40,7 +39,7 @@ syck_strndup( char *buf, long len )
 }
 
 /*
- * Default IO functions
+ * Default FILE IO function
  */
 long
 syck_io_file_read( char *buf, SyckIoFile *file, long max_size, long skip )
@@ -52,18 +51,15 @@ syck_io_file_read( char *buf, SyckIoFile *file, long max_size, long skip )
 
     max_size -= skip;
     len = fread( buf + skip, max_size, sizeof( char ), file->ptr );
-#if REDEBUG
-    printf( "LEN: %d\n", len );
-#endif
     len += skip;
     buf[len] = '\0';
-#if REDEBUG
-    printf( "POS: %d\n", len );
-    printf( "BUFFER: %s\n", buf );
-#endif
+
     return len;
 }
 
+/*
+ * Default string IO function
+ */
 long
 syck_io_str_read( char *buf, SyckIoStr *str, long max_size, long skip )
 {
@@ -95,15 +91,9 @@ syck_io_str_read( char *buf, SyckIoStr *str, long max_size, long skip )
         len = str->ptr - beg;
         S_MEMCPY( buf + skip, beg, char, len );
     }
-#if REDEBUG
-    printf( "LEN: %d\n", len );
-#endif
     len += skip;
     buf[len] = '\0';
-#if REDEBUG
-    printf( "POS: %d\n", len );
-    printf( "BUFFER: %s\n", buf );
-#endif
+
     return len;
 }
 
@@ -150,6 +140,9 @@ syck_parser_reset_cursor( SyckParser *p )
     p->force_token = 0;
 }
 
+/*
+ * Value to return on a parse error
+ */
 void
 syck_parser_set_root_on_error( SyckParser *p, SYMID roer )
 {
@@ -212,7 +205,7 @@ syck_st_free( SyckParser *p )
 {
     /*
      * Free the adhoc symbol table
-     */ 
+     */
     if ( p->syms != NULL )
     {
         st_free_table( p->syms );
@@ -409,10 +402,6 @@ syck_move_tokens( SyckParser *p )
     skip = p->limit - p->token;
     if ( skip < 1 )
         return 0;
-
-#if REDEBUG
-    printf( "DIFF: %d\n", skip );
-#endif
 
     if ( ( count = p->token - p->buffer ) )
     {

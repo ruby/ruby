@@ -40,7 +40,7 @@ typedef struct RVALUE {
 static ID s_new, s_utc, s_at, s_to_f, s_read, s_binmode, s_call, s_transfer, s_update, s_dup, s_match;
 static VALUE sym_model, sym_generic;
 static VALUE sym_scalar, sym_seq, sym_map;
-VALUE cDate, cParser, cLoader, cNode, cPrivateType, cDomainType, cBadAlias, cMergeKey;
+VALUE cDate, cParser, cLoader, cNode, cPrivateType, cDomainType, cBadAlias, cMergeKey, cEmitter;
 VALUE oDefaultLoader;
 
 /*
@@ -57,6 +57,7 @@ SYMID rb_syck_parse_handler _((SyckParser *, SyckNode *));
 SYMID rb_syck_load_handler _((SyckParser *, SyckNode *));
 void rb_syck_err_handler _((SyckParser *, char *));
 SyckNode * rb_syck_bad_anchor_handler _((SyckParser *, char *));
+void rb_syck_output_handler _((SyckEmitter *, char *, long));
 
 struct parser_xtra {
     VALUE data;  /* Borrowed this idea from marshal.c to fix [ruby-core:8067] problem */
@@ -1016,6 +1017,162 @@ syck_node_transform( self )
 }
 
 /*
+ * Handle output from the emitter
+ */
+void 
+rb_syck_output_handler( emitter, str, len )
+    SyckEmitter *emitter;
+    char *str;
+    long len;
+{
+    rb_str_cat( (VALUE)emitter->bonus, str, len );
+}
+
+/*
+ * Mark emitter values.
+ */
+static void
+syck_mark_emitter(emitter)
+    SyckEmitter *emitter;
+{
+    rb_gc_mark(emitter->ignore_id);
+}
+
+/*
+ * YAML::Syck::Emitter.new
+ */
+VALUE 
+syck_emitter_new(argc, argv, class)
+    int argc;
+    VALUE *argv;
+	VALUE class;
+{
+	VALUE pobj, options, init_argv[1];
+    SyckEmitter *emitter = syck_new_emitter();
+    syck_emitter_ignore_id( emitter, Qnil );
+    syck_emitter_handler( emitter, rb_syck_output_handler );
+
+    emitter->bonus = (void *)rb_str_new2( "" );
+
+    rb_scan_args(argc, argv, "01", &options);
+	pobj = Data_Wrap_Struct( class, syck_mark_emitter, syck_free_emitter, emitter );
+
+    if ( ! rb_obj_is_instance_of( options, rb_cHash ) )
+    {
+        options = rb_hash_new();
+    }
+	init_argv[0] = options;
+	rb_obj_call_init(pobj, 1, init_argv);
+	return pobj;
+}
+
+/*
+ * YAML::Syck::Emitter.initialize( options )
+ */
+static VALUE
+syck_emitter_initialize( self, options )
+    VALUE self, options;
+{
+	rb_iv_set(self, "@options", options);
+	return self;
+}
+
+/*
+ * YAML::Syck::Emitter.level
+ */
+VALUE
+syck_emitter_level_m( self )
+    VALUE self;
+{
+    SyckEmitter *emitter;
+
+	Data_Get_Struct(self, SyckEmitter, emitter);
+    return LONG2NUM( emitter->level );
+}
+
+/*
+ * YAML::Syck::Emitter.flush
+ */
+VALUE
+syck_emitter_flush_m( self )
+    VALUE self;
+{
+    SyckEmitter *emitter;
+
+	Data_Get_Struct(self, SyckEmitter, emitter);
+    syck_emitter_flush( emitter );
+    return self;
+}
+
+/*
+ * YAML::Syck::Emitter.write( str )
+ */
+VALUE
+syck_emitter_write_m( self, str )
+    VALUE str;
+{
+    SyckEmitter *emitter;
+
+	Data_Get_Struct(self, SyckEmitter, emitter);
+    syck_emitter_write( emitter, RSTRING(str)->ptr, RSTRING(str)->len );
+    return self;
+}
+
+/*
+ * YAML::Syck::Emitter.simple( str )
+ */
+VALUE
+syck_emitter_simple_write( self, str )
+    VALUE str;
+{
+    SyckEmitter *emitter;
+
+	Data_Get_Struct(self, SyckEmitter, emitter);
+    syck_emitter_simple( emitter, RSTRING(str)->ptr, RSTRING(str)->len );
+    return self;
+}
+
+/*
+ * YAML::Syck::Emitter.start_object( object_id )
+ */
+VALUE
+syck_emitter_start_object( self, oid )
+    VALUE self, oid;
+{
+    char *anchor_name;
+    SyckEmitter *emitter;
+
+	Data_Get_Struct(self, SyckEmitter, emitter);
+    anchor_name = syck_emitter_start_obj( emitter, oid );
+
+    if ( anchor_name == NULL )
+    {
+        return Qnil;
+    }
+
+    return rb_str_new2( anchor_name );
+}
+
+/*
+ * YAML::Syck::Emitter.end_object( object_id )
+ */
+VALUE
+syck_emitter_end_object( self, oid )
+    VALUE self, oid;
+{
+    SyckEmitter *emitter;
+
+	Data_Get_Struct(self, SyckEmitter, emitter);
+    syck_emitter_end_obj( emitter );
+
+    if ( emitter->level < 0 )
+    {
+        syck_emitter_flush( emitter );
+    }
+    return (VALUE)emitter->bonus;
+}
+
+/*
  * Initialize Syck extension
  */
 void
@@ -1118,5 +1275,19 @@ Init_syck()
 	 * Define YAML::Syck::MergeKey class
 	 */
 	cMergeKey = rb_define_class_under( rb_syck, "MergeKey", rb_cObject );
+
+    /*
+     * Define YAML::Syck::Emitter class
+     */
+    cEmitter = rb_define_class_under( rb_syck, "Emitter", rb_cObject );
+	rb_define_singleton_method( cEmitter, "new", syck_emitter_new, -1 );
+    rb_define_method( cEmitter, "initialize", syck_emitter_initialize, 1 );
+    rb_define_method( cEmitter, "level", syck_emitter_level_m, 0 );
+    rb_define_method( cEmitter, "write", syck_emitter_write_m, 1 );
+    rb_define_method( cEmitter, "<<", syck_emitter_write_m, 1 );
+    rb_define_method( cEmitter, "simple", syck_emitter_simple_write, 1 );
+    rb_define_method( cEmitter, "flush", syck_emitter_flush_m, 0 );
+    rb_define_method( cEmitter, "start_object", syck_emitter_start_object, 1 );
+    rb_define_method( cEmitter, "end_object", syck_emitter_end_object, 0 );
 }
 

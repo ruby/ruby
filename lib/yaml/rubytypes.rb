@@ -53,14 +53,14 @@ class Hash
 		opts[:DocType] = self.class if Hash === opts
 		YAML::quick_emit( self.object_id, opts ) { |out|
             hash_type = to_yaml_type
-            if not out.options[:ExplicitTypes] and hash_type == "!map"
+            if not out.options(:ExplicitTypes) and hash_type == "!map"
                 hash_type = ""
             end
             out.map( hash_type ) { |map|
 				#
 				# Sort the hash
 				#
-                if out.options[:SortKeys]
+                if out.options(:SortKeys)
 				    map.concat( self.sort )
                 else
                     map.concat( self.to_a )
@@ -213,7 +213,7 @@ class Array
 		opts[:DocType] = self.class if Hash === opts
 		YAML::quick_emit( self.object_id, opts ) { |out|
             array_type = to_yaml_type 
-            if not out.options[:ExplicitTypes] and array_type == "!seq"
+            if not out.options(:ExplicitTypes) and array_type == "!seq"
                 array_type = ""
             end
 			
@@ -302,7 +302,7 @@ class String
                 end
             end
             if not complex
-                ostr = 	if out.options[:KeepValue]
+                ostr = 	if out.options(:KeepValue)
                             self
                         elsif empty?
                             "''"

@@ -1,3 +1,19 @@
+Sat Jul 12 04:43:57 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
+
+    * ext/syck/emitter.c: new emitter code.
+
+    * ext/syck/rubyext.c: Emitter class.
+
+    * lib/yaml.rb: Load Syck emitter, if available.
+
+    * lib/yaml/stream.rb: ditto.
+
+    * lib/yaml/baseemitter.rb: underlying class for all emitters.
+
+    * lib/yaml/rubytypes.rb: use BaseEmitter abstraction.
+
+    * lib/yaml/emitter.rb: ditto.
+
 Sat Jul 12 01:21:54 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (avalue_to_svalue): typo.

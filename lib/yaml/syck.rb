@@ -4,6 +4,7 @@
 #
 require 'syck'
 require 'yaml/basenode'
+require 'yaml/baseemitter'
 
 module YAML
     module Syck
@@ -13,6 +14,13 @@ module YAML
         #
         class Node
             include YAML::BaseNode
+        end
+
+        #
+        # Mixin BaseEmitter functionality
+        #
+        class Emitter
+            include YAML::BaseEmitter
         end
 
     end

@@ -12,14 +12,25 @@ module YAML
         require 'yaml/syck'
         @@parser = YAML::Syck::Parser
         @@loader = YAML::Syck::DefaultLoader
+        @@emitter = YAML::Syck::Emitter
     rescue LoadError
         require 'yaml/parser'
         @@parser = YAML::Parser
         @@loader = YAML::DefaultLoader
+        require 'yaml/emitter'
+        @@emitter = YAML::Emitter
     end
-    require 'yaml/emitter'
     require 'yaml/loader'
     require 'yaml/stream'
+
+	#
+	# Load a single document from the current stream
+	#
+	def YAML.dump( obj, io = nil )
+        io ||= ""
+        io << obj.to_yaml
+        io
+	end
 
 	#
 	# Load a single document from the current stream
@@ -158,6 +169,30 @@ module YAML
         end
     end
 
+	#
+	# Allocate an Emitter if needed
+	#
+	def YAML.quick_emit( oid, opts = {}, &e )
+		old_opt = nil
+		if opts[:Emitter].is_a? @@emitter
+			out = opts.delete( :Emitter )
+			old_opt = out.options.dup
+			out.options.update( opts )
+		else
+			out = @@emitter.new( opts )
+		end
+        aidx = out.start_object( oid )
+        if aidx
+            out.simple( "*#{ aidx }" )
+        else
+            e.call( out )
+        end
+		if old_opt.is_a? Hash
+			out.options = old_opt
+		end 
+		out.end_object
+	end
+	
 end
 
 require 'yaml/rubytypes'

@@ -28,7 +28,7 @@ module YAML
             opts = @options.dup
 			opts[:UseHeader] = true if @documents.length > 1
 			ct = 0
-            out = Emitter.new( opts )
+            out = YAML::Syck::Emitter.new( opts )
             @documents.each { |v|
                 if ct > 0
                     out << "\n--- " 
