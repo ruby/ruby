@@ -770,7 +770,7 @@ DISTCLEANFILES = #{distcleanfiles.join(' ')}
       mfile.printf "###\n"
       while line = dfile.gets()
 	line.gsub!(/\.o\b/, ".#{$OBJEXT}")
-	line.gsub!(/(\s)([^\s\/]+\.[ch])/, '\1{$(srcdir)}\2') if $nmake
+	line.gsub!(/(\s)([^\s\/]+\.[ch])/, '\1{$(srcdir)}\2') if $nmake||$bccwin
 	line.gsub!(/\$\(hdrdir\)\/config.h/, $config_h) if $config_h
 	mfile.print line
       end
