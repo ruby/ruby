@@ -20,7 +20,6 @@ module MarshalTestLib
   end
 
   def marshaltest(o1)
-    #o1.instance_eval { remove_instance_variable '@v' if defined? @v }
     str = encode(o1)
     print str, "\n" if $DEBUG
     o2 = decode(str)
@@ -174,6 +173,22 @@ module MarshalTestLib
     marshal_equal(0x3fff_ffff)
   end
 
+  def test_fixnum_ivar
+    o1 = 1
+    o1.instance_eval { @iv = 2 }
+    marshal_equal(o1) {|o| o.instance_eval { @iv }}
+  ensure
+    1.instance_eval { remove_instance_variable("@iv") }
+  end
+
+  def test_fixnum_ivar_self
+    o1 = 1
+    o1.instance_eval { @iv = 1 }
+    marshal_equal(o1) {|o| o.instance_eval { @iv }}
+  ensure
+    1.instance_eval { remove_instance_variable("@iv") }
+  end
+
   def test_float
     marshal_equal(-1.0)
     marshal_equal(0.0)
@@ -190,6 +205,12 @@ module MarshalTestLib
   def test_float_ivar
     o1 = 1.23
     o1.instance_eval { @iv = 1 }
+    marshal_equal(o1) {|o| o.instance_eval { @iv }}
+  end
+
+  def test_float_ivar_self
+    o1 = 5.5
+    o1.instance_eval { @iv = o1 }
     marshal_equal(o1) {|o| o.instance_eval { @iv }}
   end
 

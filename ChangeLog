@@ -1,3 +1,17 @@
+Sat Nov  1 01:49:03 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/soap/mapping/factory.rb: mark marshalled basetype objects when
+	  @allow_original_mapping is true.  multi-referencing basetype node is
+	  prohibited in SOAP/1.1 encoding but soap4r's original ruby object
+	  mapping requires basetype to be marked to detect self referencing
+	  loop.  e.g. o = 1; o.instance_eval { @iv = o }  soap4r's original
+	  mapping is only used through soap/marshal API.
+
+	* test/soap/marshal/test_marshal.rb: add tests for self referencing
+	  immutable objects.
+
+	* test/soap/calc/test_calc_cgi.rb: fix test name.
+
 Fri Oct 31 22:26:29 2003  Takaaki Uematsu  <uema2x@jcom.home.ne.jp>
 
 	* wince/string_wce.c (strrchr): should decrement pointer.

@@ -57,7 +57,7 @@ class TestCalcCGI < Test::Unit::TestCase
     @calc.reset_stream
   end
 
-  def test_calc
+  def test_calc_cgi
     assert_equal(3, @calc.add(1, 2))
     assert_equal(-1.1, @calc.sub(1.1, 2.2))
     assert_equal(2.42, @calc.multi(1.1, 2.2))

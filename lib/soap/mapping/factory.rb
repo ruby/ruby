@@ -136,7 +136,10 @@ class BasetypeFactory_ < Factory
     rescue XSD::ValueSpaceError
       return nil
     end
-    # Basetype except String should not be multiref-ed in SOAP/1.1.
+    if @allow_original_mapping
+      # Basetype except String should not be multiref-ed in SOAP/1.1.
+      mark_marshalled_obj(obj, soap_obj)
+    end
     soap_obj
   end
 
