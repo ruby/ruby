@@ -54,9 +54,9 @@ if ARGV.length == 0
   if ENV['MAIL']
     ARGV[0] = ENV['MAIL']
   elsif ENV['USER']
-    ARGV[0] = '/usr/spool/mail/' + ENV['USER']
+    ARGV[0] = '/var/spool/mail/' + ENV['USER']
   elsif ENV['LOGNAME']
-    ARGV[0] = '/usr/spool/mail/' + ENV['LOGNAME']
+    ARGV[0] = '/var/spool/mail/' + ENV['LOGNAME']
   end
 end
 
@@ -64,7 +64,7 @@ require "tk"
 list = scroll = nil
 TkFrame.new{|f|
   list = TkListbox.new(f) {
-    yscroll proc{|idx|
+    yscroll proc{|*idx|
 	scroll.set *idx
     }
     relief 'raised'
@@ -94,7 +94,7 @@ root.bind "space", proc{exit}
 
 $outcount = 0;
 for file in ARGV
-  next if File.exist?(file)
+  next unless File.exist?(file)
   atime = File.atime(file)
   mtime = File.mtime(file)
   f = open(file, "r")

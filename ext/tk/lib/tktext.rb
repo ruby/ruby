@@ -40,7 +40,7 @@ class TkText<TkTextWin
   end
 
   def init_instance_variable
-    @cmdtbl = {}
+    @cmdtbl = []
     @tags = {}
   end
 

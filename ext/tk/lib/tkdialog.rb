@@ -74,6 +74,7 @@ class TkDialog2 < TkWindow
       @title   = keys['title'] if keys.key? 'title'
       @message = keys['message'] if keys.key? 'message'
       @bitmap  = keys['bitmap'] if keys.key? 'bitmap'
+      @bitmap  = '{}' if @bitmap == nil || @bitmap == ""
       @default_button = keys['default'] if keys.key? 'default'
       @buttons = keys['buttons'] if keys.key? 'buttons'
 

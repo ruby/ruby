@@ -191,6 +191,7 @@ module TkComm
     conf
   end
   private :hash_kv
+  module_function :hash_kv
 
   def array2tk_list(ary)
     ary.collect{|e|
@@ -205,6 +206,7 @@ module TkComm
     }.join(" ")
   end
   private :array2tk_list
+  module_function :array2tk_list
 
   def bool(val)
     case val
@@ -307,15 +309,16 @@ module TkComm
 
   def _curr_cmd_id
     #id = format("c%.4d", Tk_IDs[0])
-    id = "c" + Tk_IDs[0]
+    id = "c" + TkComm::Tk_IDs[0]
   end
   def _next_cmd_id
     id = _curr_cmd_id
     #Tk_IDs[0] += 1
-    Tk_IDs[0].succ!
+    TkComm::Tk_IDs[0].succ!
     id
   end
   private :_curr_cmd_id, :_next_cmd_id
+  module_function :_curr_cmd_id, :_next_cmd_id
 
   def install_cmd(cmd)
     return '' if cmd == ''
@@ -332,6 +335,7 @@ module TkComm
     TkCore::INTERP.tk_cmd_tbl.delete(id)
   end
   private :install_cmd, :uninstall_cmd
+  module_function :install_cmd
 
   def install_win(ppath,name=nil)
     if !name or name == ''
@@ -1213,8 +1217,8 @@ module Tk
       if bar
 	@xscrollbar = bar
 	@xscrollbar.orient 'horizontal'
-	self.xscrollcommand {|arg| @xscrollbar.set(*arg)}
-	@xscrollbar.command {|arg| self.xview(*arg)}
+	self.xscrollcommand {|*arg| @xscrollbar.set(*arg)}
+	@xscrollbar.command {|*arg| self.xview(*arg)}
       end
       @xscrollbar
     end
@@ -1222,8 +1226,8 @@ module Tk
       if bar
 	@yscrollbar = bar
 	@yscrollbar.orient 'vertical'
-	self.yscrollcommand {|arg| @yscrollbar.set(*arg)}
-	@yscrollbar.command {|arg| self.yview(*arg)}
+	self.yscrollcommand {|*arg| @yscrollbar.set(*arg)}
+	@yscrollbar.command {|*arg| self.yview(*arg)}
       end
       @yscrollbar
     end
