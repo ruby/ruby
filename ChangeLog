@@ -1,3 +1,8 @@
+Wed Mar 14 16:41:45 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_thread_schedule): raise FATAL just once to
+	  THREAD_TO_KILL.
+
 Wed Mar 14 10:41:34 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_yield_0): 0 (= Qfalse) is a valid value, so that

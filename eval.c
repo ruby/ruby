@@ -6886,7 +6886,9 @@ struct thread {
     VALUE thread;
 };
 
-#define THREAD_RAISED 0x200
+#define THREAD_RAISED 0x200	 /* temporary flag */
+#define THREAD_TERMINATING 0x400 /* persistent flag */
+#define THREAD_FLAGS_MASK  0x400 /* mask for persistent flags */
 
 #define FOREACH_THREAD_FROM(f,x) x = f; do { x = x->next;
 #define END_FOREACH_FROM(f,x) } while (x != f)
@@ -7038,7 +7040,8 @@ rb_thread_save_context(th)
     th->wrapper = ruby_wrapper;
     th->dyna_vars = ruby_dyna_vars;
     th->block = ruby_block;
-    th->flags = scope_vmode | (rb_trap_immediate<<8);
+    th->flags &= THREAD_FLAGS_MASK;
+    th->flags |= (rb_trap_immediate<<8) | scope_vmode;
     th->iter = ruby_iter;
     th->tag = prot_tag;
     th->tracing = tracing;
@@ -7464,8 +7467,11 @@ rb_thread_schedule()
 
     curr_thread = next;
     if (next->status == THREAD_TO_KILL) {
-	/* execute ensure-clause if any */
-	rb_thread_restore_context(next, RESTORE_FATAL);
+	if (!(next->flags & THREAD_TERMINATING)) {
+	    next->flags |= THREAD_TERMINATING;
+	    /* terminate; execute ensure-clause if any */
+	    rb_thread_restore_context(next, RESTORE_FATAL);
+	}
     }
     rb_thread_restore_context(next, RESTORE_NORMAL);
 }
