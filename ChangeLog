@@ -1,3 +1,7 @@
+Fri Feb 27 00:53:49 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/drb.rb, test/drb/drbtest.rb: require drb/eq.rb by default
+
 Thu Feb 26 12:15:02 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (make_cmdvector): adjust successive double-quote

@@ -140,10 +140,6 @@ module DRbCore
     a = @there.to_a[0]
     b = @there.to_a[0]
     assert(a.object_id != b.object_id)
-    assert(a != b)
-    assert(a.hash != b.hash)
-    assert(! a.eql?(b))
-    require 'drb/eq'
     assert(a == b)
     assert_equal(a, b)
     assert(a == @there)
