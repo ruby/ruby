@@ -1,3 +1,8 @@
+Thu Feb 26 12:15:02 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (make_cmdvector): adjust successive double-quote
+	  handling.
+
 Thu Feb 26 02:35:10 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (rb_f_exec): get rid of SEGV when exec failed for command

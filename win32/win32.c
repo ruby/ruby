@@ -1167,8 +1167,10 @@ make_cmdvector(const char *cmd, char ***vec)
 		if (!(slashes & 1)) {
 		    if (!quote)
 			quote = *ptr;
-		    else if (quote == *ptr)
+		    else if (quote == *ptr) {
+			if (quote == '"' && ptr[1] == '"') ptr++;
 			quote = '\0';
+		    }
 		    escape++;
 		}
 		slashes = 0;
@@ -1197,10 +1199,10 @@ make_cmdvector(const char *cmd, char ***vec)
 	//
 
 	if (escape) {
-	    char *p = base;
+	    char *p = base, c;
 	    slashes = quote = 0;
 	    while (p < base + len) {
-		switch (*p) {
+		switch (c = *p) {
 		  case '\\':
 		    p++;
 		    slashes++;
@@ -1209,10 +1211,13 @@ make_cmdvector(const char *cmd, char ***vec)
 		  case '\'':
 		  case '"':
 		    if (!(slashes & 1)) {
-			if (!quote)
-			    quote = *p;
-			else if (quote == *p)
+			if (!quote) {
+			    quote = c;
+			    c = '\0';
+			}
+			else if (quote == c) {
 			    quote = '\0';
+			}
 			else {
 			    p++;
 			    slashes = 0;
@@ -1234,6 +1239,7 @@ make_cmdvector(const char *cmd, char ***vec)
 			p -= slashes;
 			len -= slashes + 1;
 			slashes = 0;
+			if (c == '"' && *p == c) p++;
 		    }
 		    break;
 
