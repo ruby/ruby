@@ -46,8 +46,15 @@ rescue OptionParser::ParseError
 end
 
 if argv.empty?
-  argv = Dir.glob(File.join(File.dirname(__FILE__), "**", "test_*.rb")).sort
+  argv = [File.dirname(__FILE__)]
 end
+argv.collect! do |arg|
+  if File.directory?(arg)
+    Dir.glob(File.join(arg, "**", "test_*.rb")).sort
+  else
+    arg
+  end
+end.flatten!
 
 argv.each do |tc_name|
   require tc_name

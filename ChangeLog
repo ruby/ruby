@@ -1,3 +1,7 @@
+Tue Sep 30 09:31:56 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/runner.rb: glob for directories.
+
 Tue Sep 30 09:11:43 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_eval): while/until should not capture break unless
@@ -79,9 +83,9 @@ Sun Sep 28 11:14:19 2003  Koji Arai  <jca02266@nifty.ne.jp>
 
 	* ext/digest/digest.c (Init_digest): `copy_object' was deprecated.
 	  `initialize_copy' should be defined.
- 
+
 	* ext/stringio/stringio.c (Init_stringio): ditto.
- 
+
 Mon Sep 27 15:58:50 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/soap/rpc/cgistub.rb: make logging severity threshold higher.
