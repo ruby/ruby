@@ -86,155 +86,155 @@ class TestAssignment < Test::Unit::TestCase
   end
 
   def test_yield
-    def f; yield nil; end; f {|a| assert_nil(a)}
-    def f; yield 1; end; f {|a| assert_equal(1, a)}
-    def f; yield []; end; f {|a| assert_equal([], a)}
-    def f; yield [1]; end; f {|a| assert_equal([1], a)}
-    def f; yield [nil]; end; f {|a| assert_equal([nil], a)}
-    def f; yield [[]]; end; f {|a| assert_equal([[]], a)}
-    def f; yield [*[]]; end; f {|a| assert_equal([], a)}
-    def f; yield [*[1]]; end; f {|a| assert_equal([1], a)}
-    def f; yield [*[1,2]]; end; f {|a| assert_equal([1,2], a)}
+    def f; yield(nil); end; f {|a| assert_nil(a)}; undef f
+    def f; yield(1); end; f {|a| assert_equal(1, a)}; undef f
+    def f; yield([]); end; f {|a| assert_equal([], a)}; undef f
+    def f; yield([1]); end; f {|a| assert_equal([1], a)}; undef f
+    def f; yield([nil]); end; f {|a| assert_equal([nil], a)}; undef f
+    def f; yield([[]]); end; f {|a| assert_equal([[]], a)}; undef f
+    def f; yield([*[]]); end; f {|a| assert_equal([], a)}; undef f
+    def f; yield([*[1]]); end; f {|a| assert_equal([1], a)}; undef f
+    def f; yield([*[1,2]]); end; f {|a| assert_equal([1,2], a)}; undef f
 
-    def f; yield *nil; end; f {|a| assert_nil(a)}
-    def f; yield *1; end; f {|a| assert_equal(1, a)}
-    def f; yield *[1]; end; f {|a| assert_equal(1, a)}
-    def f; yield *[nil]; end; f {|a| assert_nil(a)}
-    def f; yield *[[]]; end; f {|a| assert_equal([], a)}
-    def f; yield *[*[1]]; end; f {|a| assert_equal(1, a)}
+    def f; yield(*nil); end; f {|a| assert_nil(a)}; undef f
+    def f; yield(*1); end; f {|a| assert_equal(1, a)}; undef f
+    def f; yield(*[1]); end; f {|a| assert_equal(1, a)}; undef f
+    def f; yield(*[nil]); end; f {|a| assert_nil(a)}; undef f
+    def f; yield(*[[]]); end; f {|a| assert_equal([], a)}; undef f
+    def f; yield(*[*[1]]); end; f {|a| assert_equal(1, a)}; undef f
 
-    def f; yield; end; f {|*a| assert_equal([], a)}
-    def f; yield nil; end; f {|*a| assert_equal([nil], a)}
-    def f; yield 1; end; f {|*a| assert_equal([1], a)}
-    def f; yield []; end; f {|*a| assert_equal([[]], a)}
-    def f; yield [1]; end; f {|*a| assert_equal([[1]], a)}
-    def f; yield [nil]; end; f {|*a| assert_equal([[nil]], a)}
-    def f; yield [[]]; end; f {|*a| assert_equal([[[]]], a)}
-    def f; yield [1,2]; end; f {|*a| assert_equal([[1,2]], a)}
-    def f; yield [*[]]; end; f {|*a| assert_equal([[]], a)}
-    def f; yield [*[1]]; end; f {|*a| assert_equal([[1]], a)}
-    def f; yield [*[1,2]]; end; f {|*a| assert_equal([[1,2]], a)}
+    def f; yield; end; f {|*a| assert_equal([], a)}; undef f
+    def f; yield(nil); end; f {|*a| assert_equal([nil], a)}; undef f
+    def f; yield(1); end; f {|*a| assert_equal([1], a)}; undef f
+    def f; yield([]); end; f {|*a| assert_equal([[]], a)}; undef f
+    def f; yield([1]); end; f {|*a| assert_equal([[1]], a)}; undef f
+    def f; yield([nil]); end; f {|*a| assert_equal([[nil]], a)}; undef f
+    def f; yield([[]]); end; f {|*a| assert_equal([[[]]], a)}; undef f
+    def f; yield([1,2]); end; f {|*a| assert_equal([[1,2]], a)}; undef f
+    def f; yield([*[]]); end; f {|*a| assert_equal([[]], a)}; undef f
+    def f; yield([*[1]]); end; f {|*a| assert_equal([[1]], a)}; undef f
+    def f; yield([*[1,2]]); end; f {|*a| assert_equal([[1,2]], a)}; undef f
 
-    def f; yield *nil; end; f {|*a| assert_equal([nil], a)}
-    def f; yield *1; end; f {|*a| assert_equal([1], a)}
-    def f; yield *[]; end; f {|*a| assert_equal([], a)}
-    def f; yield *[1]; end; f {|*a| assert_equal([1], a)}
-    def f; yield *[nil]; end; f {|*a| assert_equal([nil], a)}
-    def f; yield *[[]]; end; f {|*a| assert_equal([[]], a)}
-    def f; yield *[*[]]; end; f {|*a| assert_equal([], a)}
-    def f; yield *[*[1]]; end; f {|*a| assert_equal([1], a)}
-    def f; yield *[*[1,2]]; end; f {|*a| assert_equal([1,2], a)}
+    def f; yield(*nil); end; f {|*a| assert_equal([nil], a)}; undef f
+    def f; yield(*1); end; f {|*a| assert_equal([1], a)}; undef f
+    def f; yield(*[]); end; f {|*a| assert_equal([], a)}; undef f
+    def f; yield(*[1]); end; f {|*a| assert_equal([1], a)}; undef f
+    def f; yield(*[nil]); end; f {|*a| assert_equal([nil], a)}; undef f
+    def f; yield(*[[]]); end; f {|*a| assert_equal([[]], a)}; undef f
+    def f; yield(*[*[]]); end; f {|*a| assert_equal([], a)}; undef f
+    def f; yield(*[*[1]]); end; f {|*a| assert_equal([1], a)}; undef f
+    def f; yield(*[*[1,2]]); end; f {|*a| assert_equal([1,2], a)}; undef f
 
-    def f; yield; end; f {|a,b,*c| assert_equal([nil,nil,[]], [a,b,c])}
-    def f; yield nil; end; f {|a,b,*c| assert_equal([nil,nil,[]], [a,b,c])}
-    def f; yield 1; end; f {|a,b,*c| assert_equal([1,nil,[]], [a,b,c])}
-    def f; yield []; end; f {|a,b,*c| assert_equal([nil,nil,[]], [a,b,c])}
-    def f; yield [1]; end; f {|a,b,*c| assert_equal([1,nil,[]], [a,b,c])}
-    def f; yield [nil]; end; f {|a,b,*c| assert_equal([nil,nil,[]], [a,b,c])}
-    def f; yield [[]]; end; f {|a,b,*c| assert_equal([[],nil,[]], [a,b,c])}
-    def f; yield [*[]]; end; f {|a,b,*c| assert_equal([nil,nil,[]], [a,b,c])}
-    def f; yield [*[1]]; end; f {|a,b,*c| assert_equal([1,nil,[]], [a,b,c])}
-    def f; yield [*[1,2]]; end; f {|a,b,*c| assert_equal([1,2,[]], [a,b,c])}
+    def f; yield; end; f {|a,b,*c| assert_equal([nil,nil,[]], [a,b,c])}; undef f
+    def f; yield(nil); end; f {|a,b,*c| assert_equal([nil,nil,[]], [a,b,c])}; undef f
+    def f; yield(1); end; f {|a,b,*c| assert_equal([1,nil,[]], [a,b,c])}; undef f
+    def f; yield([]); end; f {|a,b,*c| assert_equal([nil,nil,[]], [a,b,c])}; undef f
+    def f; yield([1]); end; f {|a,b,*c| assert_equal([1,nil,[]], [a,b,c])}; undef f
+    def f; yield([nil]); end; f {|a,b,*c| assert_equal([nil,nil,[]], [a,b,c])}; undef f
+    def f; yield([[]]); end; f {|a,b,*c| assert_equal([[],nil,[]], [a,b,c])}; undef f
+    def f; yield([*[]]); end; f {|a,b,*c| assert_equal([nil,nil,[]], [a,b,c])}; undef f
+    def f; yield([*[1]]); end; f {|a,b,*c| assert_equal([1,nil,[]], [a,b,c])}; undef f
+    def f; yield([*[1,2]]); end; f {|a,b,*c| assert_equal([1,2,[]], [a,b,c])}; undef f
 
-    def f; yield *nil; end; f {|a,b,*c| assert_equal([nil,nil,[]], [a,b,c])}
-    def f; yield *1; end; f {|a,b,*c| assert_equal([1,nil,[]], [a,b,c])}
-    def f; yield *[]; end; f {|a,b,*c| assert_equal([nil,nil,[]], [a,b,c])}
-    def f; yield *[1]; end; f {|a,b,*c| assert_equal([1,nil,[]], [a,b,c])}
-    def f; yield *[nil]; end; f {|a,b,*c| assert_equal([nil,nil,[]], [a,b,c])}
-    def f; yield *[[]]; end; f {|a,b,*c| assert_equal([[],nil,[]], [a,b,c])}
-    def f; yield *[*[]]; end; f {|a,b,*c| assert_equal([nil,nil,[]], [a,b,c])}
-    def f; yield *[*[1]]; end; f {|a,b,*c| assert_equal([1,nil,[]], [a,b,c])}
-    def f; yield *[*[1,2]]; end; f {|a,b,*c| assert_equal([1,2,[]], [a,b,c])}
+    def f; yield(*nil); end; f {|a,b,*c| assert_equal([nil,nil,[]], [a,b,c])}; undef f
+    def f; yield(*1); end; f {|a,b,*c| assert_equal([1,nil,[]], [a,b,c])}; undef f
+    def f; yield(*[]); end; f {|a,b,*c| assert_equal([nil,nil,[]], [a,b,c])}; undef f
+    def f; yield(*[1]); end; f {|a,b,*c| assert_equal([1,nil,[]], [a,b,c])}; undef f
+    def f; yield(*[nil]); end; f {|a,b,*c| assert_equal([nil,nil,[]], [a,b,c])}; undef f
+    def f; yield(*[[]]); end; f {|a,b,*c| assert_equal([[],nil,[]], [a,b,c])}; undef f
+    def f; yield(*[*[]]); end; f {|a,b,*c| assert_equal([nil,nil,[]], [a,b,c])}; undef f
+    def f; yield(*[*[1]]); end; f {|a,b,*c| assert_equal([1,nil,[]], [a,b,c])}; undef f
+    def f; yield(*[*[1,2]]); end; f {|a,b,*c| assert_equal([1,2,[]], [a,b,c])}; undef f
   end
 
   def test_return
-    def r; return; end; a = r(); assert_nil(a)
-    def r; return nil; end; a = r(); assert_nil(a)
-    def r; return 1; end; a = r(); assert_equal(1, a)
-    def r; return []; end; a = r(); assert_equal([], a)
-    def r; return [1]; end; a = r(); assert_equal([1], a)
-    def r; return [nil]; end; a = r(); assert_equal([nil], a)
-    def r; return [[]]; end; a = r(); assert_equal([[]], a)
-    def r; return [*[]]; end; a = r(); assert_equal([], a)
-    def r; return [*[1]]; end; a = r(); assert_equal([1], a)
-    def r; return [*[1,2]]; end; a = r(); assert_equal([1,2], a)
+    def r; return; end; a = r(); assert_nil(a); undef r
+    def r; return nil; end; a = r(); assert_nil(a); undef r
+    def r; return 1; end; a = r(); assert_equal(1, a); undef r
+    def r; return []; end; a = r(); assert_equal([], a); undef r
+    def r; return [1]; end; a = r(); assert_equal([1], a); undef r
+    def r; return [nil]; end; a = r(); assert_equal([nil], a); undef r
+    def r; return [[]]; end; a = r(); assert_equal([[]], a); undef r
+    def r; return [*[]]; end; a = r(); assert_equal([], a); undef r
+    def r; return [*[1]]; end; a = r(); assert_equal([1], a); undef r
+    def r; return [*[1,2]]; end; a = r(); assert_equal([1,2], a); undef r
 
-    def r; return *nil; end; a = r(); assert_nil(a)
-    def r; return *1; end; a = r(); assert_equal(1, a)
-    def r; return *[]; end; a = r(); assert_nil(a)
-    def r; return *[1]; end; a = r(); assert_equal(1, a)
-    def r; return *[nil]; end; a = r(); assert_nil(a)
-    def r; return *[[]]; end; a = r(); assert_equal([], a)
-    def r; return *[*[]]; end; a = r(); assert_nil(a)
-    def r; return *[*[1]]; end; a = r(); assert_equal(1, a)
-    def r; return *[*[1,2]]; end; a = r(); assert_equal([1,2], a)
+    def r; return *nil; end; a = r(); assert_nil(a); undef r
+    def r; return *1; end; a = r(); assert_equal(1, a); undef r
+    def r; return *[]; end; a = r(); assert_nil(a); undef r
+    def r; return *[1]; end; a = r(); assert_equal(1, a); undef r
+    def r; return *[nil]; end; a = r(); assert_nil(a); undef r
+    def r; return *[[]]; end; a = r(); assert_equal([], a); undef r
+    def r; return *[*[]]; end; a = r(); assert_nil(a); undef r
+    def r; return *[*[1]]; end; a = r(); assert_equal(1, a); undef r
+    def r; return *[*[1,2]]; end; a = r(); assert_equal([1,2], a); undef r
 
-    def r; return *nil; end; a = *r(); assert_nil(a)
-    def r; return *1; end; a = *r(); assert_equal(1, a)
-    def r; return *[]; end; a = *r(); assert_nil(a)
-    def r; return *[1]; end; a = *r(); assert_equal(1, a)
-    def r; return *[nil]; end; a = *r(); assert_nil(a)
-    def r; return *[[]]; end; a = *r(); assert_nil(a)
-    def r; return *[*[]]; end; a = *r(); assert_nil(a)
-    def r; return *[*[1]]; end; a = *r(); assert_equal(1, a)
-    def r; return *[*[1,2]]; end; a = *r(); assert_equal([1,2], a)
+    def r; return *nil; end; a = *r(); assert_nil(a); undef r
+    def r; return *1; end; a = *r(); assert_equal(1, a); undef r
+    def r; return *[]; end; a = *r(); assert_nil(a); undef r
+    def r; return *[1]; end; a = *r(); assert_equal(1, a); undef r
+    def r; return *[nil]; end; a = *r(); assert_nil(a); undef r
+    def r; return *[[]]; end; a = *r(); assert_nil(a); undef r
+    def r; return *[*[]]; end; a = *r(); assert_nil(a); undef r
+    def r; return *[*[1]]; end; a = *r(); assert_equal(1, a); undef r
+    def r; return *[*[1,2]]; end; a = *r(); assert_equal([1,2], a); undef r
 
-    def r; return; end; *a = r(); assert_equal([nil], a)
-    def r; return nil; end; *a = r(); assert_equal([nil], a)
-    def r; return 1; end; *a = r(); assert_equal([1], a)
-    def r; return []; end; *a = r(); assert_equal([[]], a)
-    def r; return [1]; end; *a = r(); assert_equal([[1]], a)
-    def r; return [nil]; end; *a = r(); assert_equal([[nil]], a)
-    def r; return [[]]; end; *a = r(); assert_equal([[[]]], a)
-    def r; return [1,2]; end; *a = r(); assert_equal([[1,2]], a)
-    def r; return [*[]]; end; *a = r(); assert_equal([[]], a)
-    def r; return [*[1]]; end; *a = r(); assert_equal([[1]], a)
-    def r; return [*[1,2]]; end; *a = r(); assert_equal([[1,2]], a)
+    def r; return; end; *a = r(); assert_equal([nil], a); undef r
+    def r; return nil; end; *a = r(); assert_equal([nil], a); undef r
+    def r; return 1; end; *a = r(); assert_equal([1], a); undef r
+    def r; return []; end; *a = r(); assert_equal([[]], a); undef r
+    def r; return [1]; end; *a = r(); assert_equal([[1]], a); undef r
+    def r; return [nil]; end; *a = r(); assert_equal([[nil]], a); undef r
+    def r; return [[]]; end; *a = r(); assert_equal([[[]]], a); undef r
+    def r; return [1,2]; end; *a = r(); assert_equal([[1,2]], a); undef r
+    def r; return [*[]]; end; *a = r(); assert_equal([[]], a); undef r
+    def r; return [*[1]]; end; *a = r(); assert_equal([[1]], a); undef r
+    def r; return [*[1,2]]; end; *a = r(); assert_equal([[1,2]], a); undef r
 
-    def r; return *nil; end; *a = r(); assert_equal([nil], a)
-    def r; return *1; end; *a = r(); assert_equal([1], a)
-    def r; return *[]; end; *a = r(); assert_equal([nil], a)
-    def r; return *[1]; end; *a = r(); assert_equal([1], a)
-    def r; return *[nil]; end; *a = r(); assert_equal([nil], a)
-    def r; return *[[]]; end; *a = r(); assert_equal([[]], a)
-    def r; return *[1,2]; end; *a = r(); assert_equal([[1,2]], a)
-    def r; return *[*[]]; end; *a = r(); assert_equal([nil], a)
-    def r; return *[*[1]]; end; *a = r(); assert_equal([1], a)
-    def r; return *[*[1,2]]; end; *a = r(); assert_equal([[1,2]], a)
+    def r; return *nil; end; *a = r(); assert_equal([nil], a); undef r
+    def r; return *1; end; *a = r(); assert_equal([1], a); undef r
+    def r; return *[]; end; *a = r(); assert_equal([nil], a); undef r
+    def r; return *[1]; end; *a = r(); assert_equal([1], a); undef r
+    def r; return *[nil]; end; *a = r(); assert_equal([nil], a); undef r
+    def r; return *[[]]; end; *a = r(); assert_equal([[]], a); undef r
+    def r; return *[1,2]; end; *a = r(); assert_equal([[1,2]], a); undef r
+    def r; return *[*[]]; end; *a = r(); assert_equal([nil], a); undef r
+    def r; return *[*[1]]; end; *a = r(); assert_equal([1], a); undef r
+    def r; return *[*[1,2]]; end; *a = r(); assert_equal([[1,2]], a); undef r
 
-    def r; return *nil; end; *a = *r(); assert_equal([nil], a)
-    def r; return *1; end; *a = *r(); assert_equal([1], a)
-    def r; return *[]; end; *a = *r(); assert_equal([nil], a)
-    def r; return *[1]; end; *a = *r(); assert_equal([1], a)
-    def r; return *[nil]; end; *a = *r(); assert_equal([nil], a)
-    def r; return *[[]]; end; *a = *r(); assert_equal([], a)
-    def r; return *[1,2]; end; *a = *r(); assert_equal([1,2], a)
-    def r; return *[*[]]; end; *a = *r(); assert_equal([nil], a)
-    def r; return *[*[1]]; end; *a = *r(); assert_equal([1], a)
-    def r; return *[*[1,2]]; end; *a = *r(); assert_equal([1,2], a)
+    def r; return *nil; end; *a = *r(); assert_equal([nil], a); undef r
+    def r; return *1; end; *a = *r(); assert_equal([1], a); undef r
+    def r; return *[]; end; *a = *r(); assert_equal([nil], a); undef r
+    def r; return *[1]; end; *a = *r(); assert_equal([1], a); undef r
+    def r; return *[nil]; end; *a = *r(); assert_equal([nil], a); undef r
+    def r; return *[[]]; end; *a = *r(); assert_equal([], a); undef r
+    def r; return *[1,2]; end; *a = *r(); assert_equal([1,2], a); undef r
+    def r; return *[*[]]; end; *a = *r(); assert_equal([nil], a); undef r
+    def r; return *[*[1]]; end; *a = *r(); assert_equal([1], a); undef r
+    def r; return *[*[1,2]]; end; *a = *r(); assert_equal([1,2], a); undef r
 
-    def r; return; end; a,b,*c = r(); assert_equal([nil,nil,[]], [a,b,c])
-    def r; return nil; end; a,b,*c = r(); assert_equal([nil,nil,[]], [a,b,c])
-    def r; return 1; end; a,b,*c = r(); assert_equal([1,nil,[]], [a,b,c])
-    def r; return []; end; a,b,*c = r(); assert_equal([nil,nil,[]], [a,b,c])
-    def r; return [1]; end; a,b,*c = r(); assert_equal([1,nil,[]], [a,b,c])
-    def r; return [nil]; end; a,b,*c = r(); assert_equal([nil,nil,[]], [a,b,c])
-    def r; return [[]]; end; a,b,*c = r(); assert_equal([[],nil,[]], [a,b,c])
-    def r; return [1,2]; end; a,b,*c = r(); assert_equal([1,2,[]], [a,b,c])
-    def r; return [*[]]; end; a,b,*c = r(); assert_equal([nil,nil,[]], [a,b,c])
-    def r; return [*[1]]; end; a,b,*c = r(); assert_equal([1,nil,[]], [a,b,c])
-    def r; return [*[1,2]]; end; a,b,*c = r(); assert_equal([1,2,[]], [a,b,c])
+    def r; return; end; a,b,*c = r(); assert_equal([nil,nil,[]], [a,b,c]); undef r
+    def r; return nil; end; a,b,*c = r(); assert_equal([nil,nil,[]], [a,b,c]); undef r
+    def r; return 1; end; a,b,*c = r(); assert_equal([1,nil,[]], [a,b,c]); undef r
+    def r; return []; end; a,b,*c = r(); assert_equal([nil,nil,[]], [a,b,c]); undef r
+    def r; return [1]; end; a,b,*c = r(); assert_equal([1,nil,[]], [a,b,c]); undef r
+    def r; return [nil]; end; a,b,*c = r(); assert_equal([nil,nil,[]], [a,b,c]); undef r
+    def r; return [[]]; end; a,b,*c = r(); assert_equal([[],nil,[]], [a,b,c]); undef r
+    def r; return [1,2]; end; a,b,*c = r(); assert_equal([1,2,[]], [a,b,c]); undef r
+    def r; return [*[]]; end; a,b,*c = r(); assert_equal([nil,nil,[]], [a,b,c]); undef r
+    def r; return [*[1]]; end; a,b,*c = r(); assert_equal([1,nil,[]], [a,b,c]); undef r
+    def r; return [*[1,2]]; end; a,b,*c = r(); assert_equal([1,2,[]], [a,b,c]); undef r
 
-    def r; return *nil; end; a,b,*c = r(); assert_equal([nil,nil,[]], [a,b,c])
-    def r; return *1; end; a,b,*c = r(); assert_equal([1,nil,[]], [a,b,c])
-    def r; return *[]; end; a,b,*c = r(); assert_equal([nil,nil,[]], [a,b,c])
-    def r; return *[1]; end; a,b,*c = r(); assert_equal([1,nil,[]], [a,b,c])
-    def r; return *[nil]; end; a,b,*c = r(); assert_equal([nil,nil,[]], [a,b,c])
-    def r; return *[[]]; end; a,b,*c = r(); assert_equal([nil,nil,[]], [a,b,c])
-    def r; return *[1,2]; end; a,b,*c = r(); assert_equal([1,2,[]], [a,b,c])
-    def r; return *[*[]]; end; a,b,*c = r(); assert_equal([nil,nil,[]], [a,b,c])
-    def r; return *[*[1]]; end; a,b,*c = r(); assert_equal([1,nil,[]], [a,b,c])
-    def r; return *[*[1,2]]; end; a,b,*c = r(); assert_equal([1,2,[]], [a,b,c])
+    def r; return *nil; end; a,b,*c = r(); assert_equal([nil,nil,[]], [a,b,c]); undef r
+    def r; return *1; end; a,b,*c = r(); assert_equal([1,nil,[]], [a,b,c]); undef r
+    def r; return *[]; end; a,b,*c = r(); assert_equal([nil,nil,[]], [a,b,c]); undef r
+    def r; return *[1]; end; a,b,*c = r(); assert_equal([1,nil,[]], [a,b,c]); undef r
+    def r; return *[nil]; end; a,b,*c = r(); assert_equal([nil,nil,[]], [a,b,c]); undef r
+    def r; return *[[]]; end; a,b,*c = r(); assert_equal([nil,nil,[]], [a,b,c]); undef r
+    def r; return *[1,2]; end; a,b,*c = r(); assert_equal([1,2,[]], [a,b,c]); undef r
+    def r; return *[*[]]; end; a,b,*c = r(); assert_equal([nil,nil,[]], [a,b,c]); undef r
+    def r; return *[*[1]]; end; a,b,*c = r(); assert_equal([1,nil,[]], [a,b,c]); undef r
+    def r; return *[*[1,2]]; end; a,b,*c = r(); assert_equal([1,2,[]], [a,b,c]); undef r
   end
 
   def test_lambda
@@ -382,6 +382,7 @@ class TestAssignment < Test::Unit::TestCase
     r(nil){next *[*[]]}
     r(1){next *[*[1]]}
     r([1,2]){next *[*[1,2]]}
+    undef r
 
     def r(val); *a = yield(); assert_equal(val, a); end
     r([nil]){next}
@@ -395,6 +396,7 @@ class TestAssignment < Test::Unit::TestCase
     r([[]]){next [*[]]}
     r([[1]]){next [*[1]]}
     r([[1,2]]){next [*[1,2]]}
+    undef r
 
     def r(val); *a = *yield(); assert_equal(val, a); end
     r([nil]){next *nil}
@@ -407,6 +409,7 @@ class TestAssignment < Test::Unit::TestCase
     r([nil]){next *[*[]]}
     r([1]){next *[*[1]]}
     r([1,2]){next *[*[1,2]]}
+    undef r
 
     def r(val); a,b,*c = yield(); assert_equal(val, [a,b,c]); end
     r([nil,nil,[]]){next}
@@ -420,6 +423,7 @@ class TestAssignment < Test::Unit::TestCase
     r([nil,nil,[]]){next [*[]]}
     r([1,nil,[]]){next [*[1]]}
     r([1,2,[]]){next [*[1,2]]}
+    undef r
 
     def r(val); a,b,*c = *yield(); assert_equal(val, [a,b,c]); end
     r([nil,nil,[]]){next *nil}
@@ -432,6 +436,7 @@ class TestAssignment < Test::Unit::TestCase
     r([nil,nil,[]]){next *[*[]]}
     r([1,nil,[]]){next *[*[1]]}
     r([1,2,[]]){next *[*[1,2]]}
+    undef r
   end
 
   def test_assign2

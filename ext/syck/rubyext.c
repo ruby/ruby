@@ -50,6 +50,7 @@ typedef struct {
  * symbols and constants
  */
 static ID s_new, s_utc, s_at, s_to_f, s_to_i, s_read, s_binmode, s_call, s_transfer, s_update, s_dup, s_match, s_keys, s_to_str, s_unpack, s_tr_bang, s_anchors, s_default_set;
+static ID s_anchors, s_domain, s_families, s_kind, s_name, s_options, s_private_types, s_type_id, s_value;
 static VALUE sym_model, sym_generic, sym_input, sym_bytecode;
 static VALUE sym_scalar, sym_seq, sym_map;
 VALUE cDate, cParser, cLoader, cNode, cPrivateType, cDomainType, cBadAlias, cDefaultKey, cMergeKey, cEmitter;
@@ -296,18 +297,18 @@ rb_syck_parse_handler(p, n)
     if ( n->type_id != NULL )
     {
         t = rb_str_new2(n->type_id);
-        rb_iv_set(obj, "@type_id", t);
+        rb_ivar_set(obj, s_type_id, t);
     }
 
     switch (n->kind)
     {
         case syck_str_kind:
-            rb_iv_set(obj, "@kind", sym_scalar);
+            rb_ivar_set(obj, s_kind, sym_scalar);
             v = rb_str_new( n->data.str->ptr, n->data.str->len );
         break;
 
         case syck_seq_kind:
-            rb_iv_set(obj, "@kind", sym_seq);
+            rb_ivar_set(obj, s_kind, sym_seq);
             v = rb_ary_new2( n->data.list->idx );
             for ( i = 0; i < n->data.list->idx; i++ )
             {
@@ -316,7 +317,7 @@ rb_syck_parse_handler(p, n)
         break;
 
         case syck_map_kind:
-            rb_iv_set(obj, "@kind", sym_map);
+            rb_ivar_set(obj, s_kind, sym_map);
             v = rb_hash_new();
             for ( i = 0; i < n->data.pairs->idx; i++ )
             {
@@ -334,7 +335,7 @@ rb_syck_parse_handler(p, n)
     if ( bonus->taint)      OBJ_TAINT( obj );
     if ( bonus->proc != 0 ) rb_funcall(bonus->proc, s_call, 1, v);
 
-    rb_iv_set(obj, "@value", v);
+    rb_ivar_set(obj, s_value, v);
     rb_hash_aset(bonus->data, INT2FIX(RHASH(bonus->data)->tbl->num_entries), obj);
     return obj;
 }
@@ -781,7 +782,7 @@ static VALUE
 syck_parser_initialize( self, options )
     VALUE self, options;
 {
-    rb_iv_set(self, "@options", options);
+    rb_ivar_set(self, s_options, options);
     return self;
 }
 
@@ -831,8 +832,8 @@ syck_parser_load(argc, argv, self)
     rb_scan_args(argc, argv, "11", &port, &proc);
     Data_Get_Struct(self, SyckParser, parser);
 
-    input = rb_hash_aref( rb_iv_get( self, "@options" ), sym_input );
-    model = rb_hash_aref( rb_iv_get( self, "@options" ), sym_model );
+    input = rb_hash_aref( rb_attr_get( self, s_options ), sym_input );
+    model = rb_hash_aref( rb_attr_get( self, s_options ), sym_model );
     syck_set_model( parser, input, model );
 
     bonus.taint = syck_parser_assign_io(parser, port);
@@ -862,8 +863,8 @@ syck_parser_load_documents(argc, argv, self)
     rb_scan_args(argc, argv, "1&", &port, &proc);
     Data_Get_Struct(self, SyckParser, parser);
 
-    input = rb_hash_aref( rb_iv_get( self, "@options" ), sym_input );
-    model = rb_hash_aref( rb_iv_get( self, "@options" ), sym_model );
+    input = rb_hash_aref( rb_attr_get( self, s_options ), sym_input );
+    model = rb_hash_aref( rb_attr_get( self, s_options ), sym_model );
     syck_set_model( parser, input, model );
     
     bonus.taint = syck_parser_assign_io(parser, port);
@@ -897,10 +898,10 @@ syck_loader_initialize( self )
 {
     VALUE families;
 
-    rb_iv_set(self, "@families", rb_hash_new() );
-    rb_iv_set(self, "@private_types", rb_hash_new() );
-    rb_iv_set(self, "@anchors", rb_hash_new() );
-    families = rb_iv_get(self, "@families");
+    families = rb_hash_new();
+    rb_ivar_set(self, s_families, families);
+    rb_ivar_set(self, s_private_types, rb_hash_new());
+    rb_ivar_set(self, s_anchors, rb_hash_new());
 
     rb_hash_aset(families, rb_str_new2( YAML_DOMAIN ), rb_hash_new());
     rb_hash_aset(families, rb_str_new2( RUBY_DOMAIN ), rb_hash_new());
@@ -917,7 +918,7 @@ syck_loader_add_type_family( self, domain, type_re, proc )
 {
     VALUE families, domain_types;
 
-    families = rb_iv_get(self, "@families");
+    families = rb_attr_get(self, s_families);
     domain_types = syck_get_hash_aref(families, domain);
     rb_hash_aset( domain_types, type_re, proc );
     return Qnil;
@@ -985,7 +986,7 @@ syck_loader_add_private_type( argc, argv, self )
 
     rb_scan_args(argc, argv, "1&", &type_re, &proc);
 
-    priv_types = rb_iv_get(self, "@private_types");
+    priv_types = rb_attr_get(self, s_private_types);
     rb_hash_aset( priv_types, type_re, proc );
     return Qnil;
 }
@@ -1070,13 +1071,13 @@ syck_loader_transfer( self, type, val )
         if ( rb_str_cmp( scheme, str_xprivate ) == 0 )
         {
             name = rb_ary_join( parts, rb_str_new2( ":" ) );
-            type_hash = rb_iv_get(self, "@private_types");
+            type_hash = rb_attr_get(self, s_private_types);
         }
         else if ( rb_str_cmp( scheme, str_taguri ) == 0 )
         {
             domain = rb_ary_shift( parts );
             name = rb_ary_join( parts, rb_str_new2( ":" ) );
-            type_hash = rb_iv_get(self, "@families");
+            type_hash = rb_attr_get(self, s_families);
             type_hash = rb_hash_aref(type_hash, domain);
 
             /*
@@ -1141,7 +1142,7 @@ VALUE
 syck_badalias_initialize( self, val )
     VALUE self, val;
 {
-    rb_iv_set( self, "@name", val );
+    rb_ivar_set( self, s_name, val );
     return self;
 }
 
@@ -1152,9 +1153,9 @@ VALUE
 syck_domaintype_initialize( self, domain, type_id, val )
     VALUE self, type_id, val;
 {
-    rb_iv_set( self, "@domain", domain );
-    rb_iv_set( self, "@type_id", type_id );
-    rb_iv_set( self, "@value", val );
+    rb_ivar_set( self, s_domain, domain );
+    rb_ivar_set( self, s_type_id, type_id );
+    rb_ivar_set( self, s_value, val );
     return self;
 }
 
@@ -1165,8 +1166,8 @@ VALUE
 syck_privatetype_initialize( self, type_id, val )
     VALUE self, type_id, val;
 {
-    rb_iv_set( self, "@type_id", type_id );
-    rb_iv_set( self, "@value", val );
+    rb_ivar_set( self, s_type_id, type_id );
+    rb_ivar_set( self, s_value, val );
     return self;
 }
 
@@ -1177,8 +1178,8 @@ VALUE
 syck_node_initialize( self, type_id, val )
     VALUE self, type_id, val;
 {
-    rb_iv_set( self, "@type_id", type_id );
-    rb_iv_set( self, "@value", val );
+    rb_ivar_set( self, s_type_id, type_id );
+    rb_ivar_set( self, s_value, val );
     return self;
 }
 
@@ -1210,8 +1211,8 @@ syck_node_transform( self )
     VALUE self;
 {
     VALUE t = Qnil;
-    VALUE type_id = rb_iv_get( self, "@type_id" );
-    VALUE val = rb_iv_get( self, "@value" );
+    VALUE type_id = rb_attr_get( self, s_type_id );
+    VALUE val = rb_attr_get( self, s_value );
     if ( rb_obj_is_instance_of( val, rb_cHash ) )
     {
         t = rb_hash_new();
@@ -1295,7 +1296,7 @@ static VALUE
 syck_emitter_initialize( self, options )
     VALUE self, options;
 {
-    rb_iv_set(self, "@options", options);
+    rb_ivar_set(self, s_options, options);
     return self;
 }
 
@@ -1426,6 +1427,16 @@ Init_syck()
     s_to_str = rb_intern("to_str");
     s_tr_bang = rb_intern("tr!");
     s_unpack = rb_intern("unpack");
+
+    s_anchors = rb_intern("@anchors");
+    s_domain = rb_intern("@domain");
+    s_families = rb_intern("@families");
+    s_kind = rb_intern("@kind");
+    s_name = rb_intern("@name");
+    s_options = rb_intern("@options");
+    s_private_types = rb_intern("@private_types");
+    s_type_id = rb_intern("@type_id");
+    s_value = rb_intern("@value");
 
     sym_model = ID2SYM(rb_intern("Model"));
     sym_generic = ID2SYM(rb_intern("Generic"));

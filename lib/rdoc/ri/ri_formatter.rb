@@ -57,7 +57,7 @@ module RI
         end
       end
       res << work if work.length.nonzero?
-      puts (prefix +  res.join("\n" + next_prefix))
+      puts(prefix + res.join("\n" + next_prefix))
     end
 
     ######################################################################

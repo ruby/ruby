@@ -19,9 +19,9 @@ module RSS
 	end
 		
 	module TaxonomyModel
-		attr_writer *%w(title description creator subject publisher
+		attr_writer(*%w(title description creator subject publisher
 		                contributor date format identifier source
-		                language relation coverage rights).collect{|x| "#{TAXO_PREFIX}_#{x}"}
+		                language relation coverage rights).collect{|x| "#{TAXO_PREFIX}_#{x}"})
 	end
 	
 	class Channel; extend TaxonomyModel;	end
