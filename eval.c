@@ -7124,8 +7124,10 @@ proc_invoke(proc, args, self, klass)
     volatile int pcall, avalue = Qtrue;
 
     if (rb_block_given_p() && ruby_frame->last_func) {
+	if (klass != ruby_frame->last_class)
+	    klass = rb_obj_class(proc);
 	rb_warning("block for %s#%s is useless",
-		   rb_obj_classname(proc),
+		   rb_class2name(klass),
 		   rb_id2name(ruby_frame->last_func));
     }
 

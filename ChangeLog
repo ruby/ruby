@@ -1,3 +1,8 @@
+Fri Dec 12 06:06:09 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (proc_invoke): fix class name in warning message for
+	  define_method.  [ruby-dev:22235]
+
 Thu Dec 11 21:24:43 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_pkcs12.[ch]: new files. add OpenSSL::PKCS12.
