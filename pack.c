@@ -253,11 +253,11 @@ endian()
 #undef ntohl
 #undef htons
 #undef htonl
+#endif
 #define ntohs(x) swaps(x)
 #define ntohl(x) swapl(x)
 #define htons(x) swaps(x)
 #define htonl(x) swapl(x)
-#endif
 #define ntohf(x) swapf(x)
 #define ntohd(x) swapd(x)
 #define htonf(x) swapf(x)
@@ -732,12 +732,20 @@ pack_pack(ary, fmt)
 	    break;
 
 	  case 'l':		/* signed long */
-	  case 'L':		/* unsigned long */
 	    while (len-- > 0) {
 		long l;
 
 		from = NEXTFROM;
 		l = NUM2I32(from);
+		rb_str_buf_cat(res, OFF32(&l), NATINT_LEN(long,4));
+	    }
+	    break;
+	  case 'L':		/* unsigned long */
+	    while (len-- > 0) {
+		long l;
+
+		from = NEXTFROM;
+		l = NUM2U32(from);
 		rb_str_buf_cat(res, OFF32(&l), NATINT_LEN(long,4));
 	    }
 	    break;
@@ -769,7 +777,7 @@ pack_pack(ary, fmt)
 		unsigned long l;
 
 		from = NEXTFROM;
-		l = NUM2I32(from);
+		l = NUM2U32(from);
 		l = NATINT_HTONL(l);
 		rb_str_buf_cat(res, OFF32(&l), NATINT_LEN(long,4));
 	    }
@@ -791,7 +799,7 @@ pack_pack(ary, fmt)
 		unsigned long l;
 
 		from = NEXTFROM;
-		l = NUM2I32(from);
+		l = NUM2U32(from);
 		l = NATINT_HTOVL(l);
 		rb_str_buf_cat(res, OFF32(&l), NATINT_LEN(long,4));
 	    }
@@ -904,7 +912,7 @@ pack_pack(ary, fmt)
 
 		from = NEXTFROM;
 		from = rb_to_int(from);
-		l = NUM2INT(from);
+		l = NUM2UINT(from);
 		if (l < 0) {
 		    rb_raise(rb_eRangeError, "pack(U): value out of range");
 		}
