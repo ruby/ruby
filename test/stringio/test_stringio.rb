@@ -11,4 +11,5 @@ class TestStringIO < Test::Unit::TestCase
     f = StringIO.new(content)
     yield f
   end
+  alias open_file_rw open_file
 end
