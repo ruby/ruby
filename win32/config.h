@@ -1,6 +1,3 @@
-#define SIZEOF_INT 4
-#define SIZEOF_LONG 4
-#define SIZEOF_VOIDP 4
 #define HAVE_PROTOTYPES 1
 #define HAVE_STDARG_PROTOTYPES 1
 /* #define HAVE_ATTR_NORETURN 1 */

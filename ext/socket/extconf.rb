@@ -9,6 +9,9 @@ when /cygwin32/
 when /beos/
   test_func = "socket"
   have_library("net", "socket")
+when /i386-os2_emx/
+  test_func = "socket"
+  have_library("socket", "socket")
 else
   test_func = "socket"
   have_library("nsl", "t_open")

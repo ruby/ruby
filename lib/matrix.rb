@@ -221,7 +221,6 @@ class Matrix
       row[j] = values[j]
       row
     }
-    self
     rows(rows, FALSE)
   end
   
@@ -875,7 +874,7 @@ class Vector
   
   # ARITHMETIC
   
-  def *(x) "is matrix or number"
+  def *(x) # is matrix or number
     case x
     when Numeric
       els = @elements.collect{|e| e * x}

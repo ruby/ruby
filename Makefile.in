@@ -208,6 +208,12 @@ nt.o: @srcdir@/missing/nt.c
 x68.o: @srcdir@/missing/x68.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/x68.c
 
+os2.o: @srcdir@/missing/os2.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/os2.c
+
+dl_os2.o: @srcdir@/missing/dl_os2.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/dl_os2.c
+
 # Prevent GNU make v3 from overflowing arg limit on SysV.
 .NOEXPORT:
 ###

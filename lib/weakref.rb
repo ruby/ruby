@@ -16,8 +16,8 @@ class WeakRef<Delegator
   class RefError<StandardError
   end
 
-  ID_MAP =  {}
-  ID_REV_MAP =  {}
+  ID_MAP =  {}		    # obj -> [ref,...]
+  ID_REV_MAP =  {}          # ref -> obj
   ObjectSpace.add_finalizer(lambda{|id|
 			      rids = ID_MAP[id]
 			      if rids
@@ -29,10 +29,11 @@ class WeakRef<Delegator
 			      rid = ID_REV_MAP[id]
 			      if rid
 				ID_REV_MAP[id] = nil
-				ID_MAP[rid] = nil
+				ID_MAP[rid].delete(id)
+      				ID_MAP[rid] = nil if ID_MAP[rid].empty?
 			      end
 			    })
-			    
+
   def initialize(orig)
     super
     @__id = orig.__id__

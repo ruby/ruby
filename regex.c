@@ -3396,7 +3396,7 @@ re_match(bufp, string_arg, size, pos, regs)
 #ifdef SWITCH_ENUM_BUG
     switch ((int)((enum regexpcode)*p++))
 #else
-      switch ((enum regexpcode)*p++)
+    switch ((enum regexpcode)*p++)
 #endif
 	{
 
@@ -4019,7 +4019,7 @@ re_match(bufp, string_arg, size, pos, regs)
 
 	/* If this failure point is from a dummy_failure_point, just
 	   skip it.  */
-	if (stackp[-3] == 0) {
+	if (stackp[-3] == 0 || (best_regs_set && stackp[-1] == 1)) {
 	  POP_FAILURE_POINT();
 	  goto fail;
 	}

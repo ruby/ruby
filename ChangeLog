@@ -1,4 +1,58 @@
+Fri Apr  9 17:45:11 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_match): should pop non-greedy stack items on
+	  failure, after best_regs are fixed.
+
+Thu Apr  8 17:30:40 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* pack.c (PACK_LENGTH_ADJUST): need to adjust for `*' length.
+
+Tue Apr  6 23:28:44 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (void_check): add void context checks.
+
+Mon Apr  5 12:23:42 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* time.c (time_s_at): should copy gmt-mode.
+
+	* eval.c (eval_node): preserve ruby_eval_tree.
+
+Fri Apr  2 14:00:34 1999  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* lib/debug.rb: wrong command interpreting.
+
+Fri Apr  2 11:46:22 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version 1.3.2
+
+Fri Apr  2 10:40:04 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (rb_io_s_pipe): forgot to define IO::pipe.
+
+Thu Apr  1 14:40:46 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (assign): modified for rhs change.
+
+	* parse.y (stmt): unparenthesisized method calls can be right hand
+	  side expression of the assignment.
+
+Sat Mar 27 22:42:47 1999  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* ext/nkf/nkf.c (rb_nkf_kconv): check size output_ctr before
+	  decrement.
+
+Thu Mar 25 09:11:03 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* time.c (time_s_at): preserve gmt-mode for result.
+
+	* parse.y (rb_compile_string): do not use cur_mid, use
+	  compile_for_eval instead.
+
+	* st.c (PTR_NOT_EQUAL): wrong logical condition.
+
 Wed Mar 24 13:06:43 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (yycompile): should clear cur_mid after compilation.
 
 	* io.c (next_argv): need to check type for ARGV.shift.
 

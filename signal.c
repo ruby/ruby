@@ -310,8 +310,10 @@ signal_exec(sig)
 	  case SIGINT:
 	    rb_thread_interrupt();
 	    break;
+#ifndef NT
 	  case SIGHUP:
 	  case SIGTERM:
+#endif
 #ifdef SIGPIPE
 	  case SIGPIPE:
 #endif
@@ -493,8 +495,10 @@ trap(arg)
     if (func == SIG_DFL) {
 	switch (sig) {
 	  case SIGINT:
+#ifndef NT
 	  case SIGHUP:
 	  case SIGTERM:
+#endif
 #ifdef SIGQUIT
 	  case SIGQUIT:
 #endif
@@ -609,8 +613,10 @@ Init_signal()
 #ifndef MACOS_UNUSE_SIGNAL
     rb_define_global_function("trap", rb_f_trap, -1);
     ruby_signal(SIGINT, sighandle);
+#ifndef NT
     ruby_signal(SIGHUP, sighandle);
     ruby_signal(SIGTERM, sighandle);
+#endif
 #ifdef SIGPIPE
     ruby_signal(SIGPIPE, sighandle);
 #endif

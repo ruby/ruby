@@ -1585,7 +1585,7 @@ dln_find_1(fname, path, exe_flag)
     if (strncmp("./", fname, 2) == 0 || strncmp("../", fname, 3) == 0)
       return fname;
     if (exe_flag && strchr(fname, '/')) return fname;
-#if defined(MSDOS) || defined(NT) || defined(__human68k__)
+#if defined(MSDOS) || defined(NT) || defined(__human68k__) || defined(__EMX__)
     if (fname[0] == '\\') return fname;
     if (strlen(fname) > 2 && fname[1] == ':') return fname;
     if (strncmp(".\\", fname, 2) == 0 || strncmp("..\\", fname, 3) == 0)
@@ -1617,7 +1617,7 @@ dln_find_1(fname, path, exe_flag)
 	    */
 
 	    if (*dp == '~' && (l == 1 ||
-#if defined(MSDOS) || defined(NT) || defined(__human68k__)
+#if defined(MSDOS) || defined(NT) || defined(__human68k__) || defined(__EMX__)
 			       dp[1] == '\\' || 
 #endif
 			       dp[1] == '/')) {
@@ -1671,7 +1671,7 @@ dln_find_1(fname, path, exe_flag)
 	    if (eaccess(mac_fullpath, X_OK) == 0) return mac_fullpath;
 	}
 #endif
-#if defined(MSDOS) || defined(NT) || defined(__human68k__)
+#if defined(MSDOS) || defined(NT) || defined(__human68k__) || defined(__EMX__)
 	if (exe_flag) {
 	    static const char *extension[] = {
 #if defined(MSDOS)
@@ -1680,7 +1680,10 @@ dln_find_1(fname, path, exe_flag)
 		".btm", ".sh", ".ksh", ".pl", ".sed",
 #endif
 #else
+#if defined(__EMX__)
+		".exe", ".com", ".cmd", ".bat",
 		".r", ".R", ".x", ".X", ".bat", ".BAT",
+#endif /*__EMX__*/
 #endif
 		(char *) NULL
 	    };
@@ -1703,7 +1706,7 @@ dln_find_1(fname, path, exe_flag)
 #endif
 	    }
 	}
-#endif /* MSDOS or NT or __human68k__ */
+#endif /* MSDOS or NT or __human68k__ or __EMX__ */
 	/* if not, and no other alternatives, life is bleak */
 	if (*ep == '\0') {
 	    return NULL;

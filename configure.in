@@ -293,7 +293,13 @@ fi
 if test "$rb_cv_fcnt" = ""; then
     AC_TRY_COMPILE([#include <stdio.h>],
 	[FILE *f = stdin; f->readCount = 0;],
-	rb_cv_fcnt="readCount", rb_cv_fcnt="not found")
+	rb_cv_fcnt="readCount", )
+fi
+dnl for emx0.9c
+if test "$rb_cv_fcnt" = ""; then
+    AC_TRY_COMPILE([#include <stdio.h>],
+	[FILE *f = stdin; f->_rcount = 0;],
+	rb_cv_fcnt="_rcount", rb_cv_fcnt="not found")
 fi])
 if test "$rb_cv_fcnt" = "not found"; then
   AC_MSG_RESULT([not found(OK if using GNU libc)])
@@ -493,6 +499,8 @@ else
 	 	AC_DEFINE(DLEXT, ".bundle");;
     cygwin*)	DLEXT=dll
 	 	AC_DEFINE(DLEXT, ".dll");;
+    os2_emx)	DLEXT=o
+	 	AC_DEFINE(DLEXT, ".o");;
     *)		DLEXT=so
     		AC_DEFINE(DLEXT, ".so");;
   esac
@@ -573,6 +581,12 @@ rb_cv_missing_fconvert=yes, rb_cv_missing_fconvert=no, rb_cv_missing_fconvert=no
     binsuffix=.x
     setup=Setup.x68
     ;;
+  dnl OS/2 environment w/ Autoconf 2.1x for EMX
+  os2_emx)
+    LIBOBJS="$LIBOBJS os2.o"
+    binsuffix=.exe
+    setup=Setup.emx
+    ;;
   cygwin*)
     binsuffix=.exe
     setup=Setup
@@ -622,6 +636,9 @@ fi
 
 LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR).$(TEENY)'
 LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so'
+AC_ARG_ENABLE(enable-shared,
+       [--enable-shared           build a shared library for Ruby. ],
+       [enable_shared=$enableval])
 if test "$enable_shared" = 'yes'; then
   LIBRUBY='$(LIBRUBY_SO)'
   LIBRUBYARG='-L./ -l$(RUBY_INSTALL_NAME)'

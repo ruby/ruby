@@ -78,7 +78,7 @@ rb_nkf_kconv(obj, opt, src)
   } 
 
   kanji_convert(NULL);
-  output_ctr--;
+  if (output_ctr > 0) output_ctr--;
   if (output[output_ctr] == '\0') {
 /*
 printf("([%c][%d])\n", output[output_ctr], output_ctr);

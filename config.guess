@@ -62,6 +62,9 @@ trap 'rm -f dummy.c dummy.o dummy; exit 1' 1 2 15
 # Note: order is significant - the case branches are not exclusive.
 
 case "${UNAME_MACHINE}:${UNAME_SYSTEM}:${UNAME_RELEASE}:${UNAME_VERSION}" in
+    *:OS/2:*:*)
+	echo "i386-pc-os2_emx"
+	exit 0;;
     alpha:OSF1:*:*)
 	if test $UNAME_RELEASE = "V4.0"; then
 		UNAME_RELEASE=`/usr/sbin/sizer -v | awk '{print $3}'`

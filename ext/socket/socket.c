@@ -19,6 +19,9 @@
 #include <netdb.h>
 #endif
 #include <errno.h>
+#ifdef __EMX__
+#undef HAVE_SYS_UN_H
+#endif
 #ifdef HAVE_SYS_UN_H
 #include <sys/un.h>
 #endif
@@ -1244,7 +1247,7 @@ static VALUE
 sock_s_socketpair(class, domain, type, protocol)
     VALUE class, domain, type, protocol;
 {
-#if !defined(NT) && !defined(__BEOS__)
+#if !defined(NT) && !defined(__BEOS__) && !defined(__EMX__)
     int d, t, sp[2];
 
     setup_domain_and_type(domain, &d, type, &t);

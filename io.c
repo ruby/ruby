@@ -40,7 +40,8 @@ struct timeval {
 
 #include <sys/stat.h>
 
-#ifdef HAVE_SYS_PARAM_H
+/* EMX has sys/parm.h, but.. */
+#if defined(HAVE_SYS_PARAM_H) && !defined(__EMX__)
 # include <sys/param.h>
 #else
 # define NOFILE 64
@@ -185,7 +186,7 @@ io_write(io, str)
 	rb_sys_fail(fptr->path);
 #else
     n = fwrite(RSTRING(str)->ptr, 1, RSTRING(str)->len, f);
-    if (n == 0 || ferror(f)) {
+    if (ferror(f)) {
 	rb_sys_fail(fptr->path);
     }
 #endif
@@ -236,7 +237,7 @@ rb_io_tell(io)
 
     GetOpenFile(io, fptr);
     pos = ftell(fptr->f);
-    if (ferror(fptr->f) != 0) rb_sys_fail(fptr->path);
+    if (ferror(fptr->f)) rb_sys_fail(fptr->path);
 
     return rb_int2inum(pos);
 }
@@ -701,6 +702,20 @@ lineno_setter(val, id, var)
 }
 
 static VALUE
+arg_set_lineno(argf, val)
+    VALUE argf, val;
+{
+    gets_lineno = NUM2INT(val);
+    lineno = INT2FIX(gets_lineno);
+}
+
+static VALUE
+arg_lineno()
+{
+    return lineno;
+}
+
+static VALUE
 rb_io_readline(argc, argv, io)
     int argc;
     VALUE *argv;
@@ -763,7 +778,7 @@ rb_io_each_byte(io)
 	if (c == EOF) break;
 	rb_yield(INT2FIX(c & 0xff));
     }
-    if (ferror(f) != 0) rb_sys_fail(fptr->path);
+    if (ferror(f)) rb_sys_fail(fptr->path);
     return Qnil;
 }
 
@@ -785,7 +800,7 @@ rb_io_getc(io)
     TRAP_END;
 
     if (c == EOF) {
-	if (ferror(f) != 0) rb_sys_fail(fptr->path);
+	if (ferror(f)) rb_sys_fail(fptr->path);
 	return Qnil;
     }
     return INT2FIX(c & 0xff);
@@ -1012,7 +1027,8 @@ VALUE
 rb_io_binmode(io)
     VALUE io;
 {
-#if defined(NT) || defined(DJGPP) || defined(__CYGWIN32__) || defined(__human68k__) || defined(USE_CWGUSI)
+#if defined(NT) || defined(DJGPP) || defined(__CYGWIN32__)\
+    || defined(__human68k__) || defined(USE_CWGUSI) || defined(__EMX__)
     OpenFile *fptr;
 
     GetOpenFile(io, fptr);
@@ -1837,7 +1853,7 @@ rb_io_putc(io, ch)
     rb_io_check_writable(fptr);
     f = GetWriteFile(fptr);
 
-    if (fputc(c, f) == EOF || ferror(f))
+    if (fputc(c, f) == EOF)
 	rb_sys_fail(fptr->path);
     if (fptr->mode & FMODE_SYNC)
 	fflush(f);
@@ -2079,7 +2095,7 @@ next_argv()
 			rb_str_cat(str, ruby_inplace_mode,
 				   strlen(ruby_inplace_mode));
 #endif
-#if defined(MSDOS) || defined(__BOW__) || defined(__CYGWIN32__) || defined(NT) || defined(__human68k__)
+#if defined(MSDOS) || defined(__BOW__) || defined(__CYGWIN32__) || defined(NT) || defined(__human68k__) || defined(__EMX__)
 			(void)fclose(fr);
 			(void)unlink(RSTRING(str)->ptr);
 			(void)rename(fn, RSTRING(str)->ptr);
@@ -2106,7 +2122,7 @@ next_argv()
 #endif
 		    }
 		    fw = rb_fopen(fn, "w");
-#if !defined(MSDOS) && !defined(__CYGWIN32__) && !(NT) && !defined(__human68k__) && !defined(USE_CWGUSI) && !defined(__BEOS__)
+#if !defined(MSDOS) && !defined(__CYGWIN32__) && !(NT) && !defined(__human68k__) && !defined(USE_CWGUSI) && !defined(__BEOS__) && !defined(__EMX__)
 		    fstat(fileno(fw), &st2);
 		    fchmod(fileno(fw), st.st_mode);
 		    if (st.st_uid!=st2.st_uid || st.st_gid!=st2.st_gid) {
@@ -2947,6 +2963,7 @@ Init_IO()
     rb_define_singleton_method(rb_cIO, "foreach", rb_io_s_foreach, -1);
     rb_define_singleton_method(rb_cIO, "readlines", rb_io_s_readlines, -1);
     rb_define_singleton_method(rb_cIO, "select", rb_f_select, -1);
+    rb_define_singleton_method(rb_cIO, "pipe", rb_io_s_pipe, 0);
 
     rb_fs = rb_output_fs = Qnil;
     rb_define_hooked_variable("$;", &rb_fs, 0, rb_str_setter);
@@ -3070,10 +3087,13 @@ Init_IO()
     rb_define_singleton_method(argf, "close", arg_close, 0);
     rb_define_singleton_method(argf, "closed?", arg_closed, 0);
 
-    filename = rb_str_new2("-");
-    rb_define_readonly_variable("$FILENAME", &filename);
+    rb_define_singleton_method(argf, "lineno",   arg_lineno, 0);
+    rb_define_singleton_method(argf, "lineno=",  arg_set_lineno, 1);
+
     file = rb_stdin;
     rb_global_variable(&file);
+    filename = rb_str_new2("-");
+    rb_define_readonly_variable("$FILENAME", &filename);
 
     rb_define_virtual_variable("$-i", opt_i_get, opt_i_set);
 

@@ -37,7 +37,13 @@ if $topdir !~ "^/"
   $topdir = Dir.pwd
   Dir.chdir save
 end
-$dots = if "@INSTALL@" =~ /^\// then "" else "#{$topdir}/ext/" end
+
+## drive letter
+if PLATFORM == "i386-os2_emx" then
+  $dots = ""
+else
+  $dots = if "@INSTALL@" =~ /^\// then "" else "#{$topdir}/ext/" end
+end
 
 if File.exist?("config.cache") then
   f = open("config.cache", "r")
@@ -75,7 +81,7 @@ end
 LINK = "@CC@ -o conftest -I#$topdir -I#$top_srcdir -I@includedir@ #{CFLAGS} %s @LDFLAGS@ %s conftest.c @LIBS@ %s"
 CPP = "@CPP@ @CPPFLAGS@ -I#$topdir -I#$top_srcdir -I@includedir@ #{CFLAGS} %s conftest.c"
 
-if /cygwin|mswin32|djgpp|mingw32|m68k-human/i =~ PLATFORM
+if /cygwin|mswin32|djgpp|mingw32|m68k-human|i386-os2_emx/i =~ PLATFORM
   $null = open("nul", "w")
 else
   $null = open("/dev/null", "w")

@@ -548,6 +548,12 @@ load_file(fname, script)
 	    xflag = Qfalse;
 	    while (!NIL_P(line = rb_io_gets(f))) {
 		line_start++;
+#if defined(__EMX__) || defined(OS2)
+/*
+		if (p = strstr(RSTRING(line)->ptr, "extproc"))
+		    line = io_gets(f);
+*/
+#endif /* __EMX__ */
 		if (RSTRING(line)->len > 2
 		    && RSTRING(line)->ptr[0] == '#'
 		    && RSTRING(line)->ptr[1] == '!') {

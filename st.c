@@ -186,7 +186,7 @@ st_free_table(table)
 }
 
 #define PTR_NOT_EQUAL(table, ptr, hash_val, key) \
-((ptr) != 0 && ptr->hash != (hash_val) && !EQUAL((table), (key), (ptr)->key))
+((ptr) != 0 && (ptr->hash != (hash_val) || !EQUAL((table), (key), (ptr)->key)))
 
 #define FIND_ENTRY(table, ptr, hash_val, bin_pos) \
 bin_pos = hash_val%(table)->num_bins;\

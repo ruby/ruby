@@ -240,11 +240,15 @@ proc_exec_v(argv, prog)
 	    return -1;
 	}
     }
-#if (defined(MSDOS) && !defined(DJGPP)) || defined(__human68k__)
+#if (defined(MSDOS) && !defined(DJGPP)) || defined(__human68k__) || defined(__EMX__) || defined(OS2)
     {
 #if defined(__human68k__)
 #define COMMAND "command.x"
-#else
+#endif
+#if defined(__EMX__) || defined(OS2) /* OS/2 emx */
+#define COMMAND "cmd.exe"
+#endif
+#if (defined(MSDOS) && !defined(DJGPP))
 #define COMMAND "command.com"
 #endif
 	char *extension;
@@ -272,7 +276,7 @@ proc_exec_v(argv, prog)
 	    }
 	}
     }
-#endif /* MSDOS or __human68k__ */
+#endif /* MSDOS or __human68k__ or __EMX__ */
     before_exec();
     execv(prog, argv);
     after_exec();
@@ -326,7 +330,7 @@ rb_proc_exec(str)
 	    if (state != -1)
 		exit(state);
 #else
-#if defined(__human68k__) || defined(__CYGWIN32__)
+#if defined(__human68k__) || defined(__CYGWIN32__) || defined(__EMX__)
 	    char *shell = dln_find_exe("sh", 0);
 	    int state = -1;
 	    before_exec();
@@ -510,7 +514,7 @@ static VALUE
 rb_f_fork(obj)
     VALUE obj;
 {
-#if !defined(__human68k__) && !defined(__MACOS__)
+#if !defined(__human68k__) && !defined(NT) && !defined(__MACOS__) && !defined(__EMX__)
     int pid;
 
     rb_secure(2);
@@ -1005,9 +1009,7 @@ Init_process()
 #ifndef USE_CWGUSI
     rb_define_global_function("exec", rb_f_exec, -1);
 #endif
-#if !defined(NT)
     rb_define_global_function("fork", rb_f_fork, 0);
-#endif
     rb_define_global_function("exit!", rb_f_exit_bang, 1);
     rb_define_global_function("system", rb_f_system, -1);
     rb_define_global_function("sleep", rb_f_sleep, -1);

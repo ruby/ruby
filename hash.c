@@ -984,8 +984,8 @@ char *nam;
 
 void
 ruby_setenv(name, value)
-    char *name;
-    char *value;
+    const char *name;
+    const char *value;
 {
 #if defined(WIN32) && !defined(__CYGWIN32__)
 #ifdef USE_WIN32_RTL_ENV
@@ -1092,7 +1092,7 @@ ruby_setenv(name, value)
 
 void
 ruby_unsetenv(name)
-    char *name;
+    const char *name;
 {
     ruby_setenv(name, 0);
 }

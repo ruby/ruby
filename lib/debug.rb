@@ -92,16 +92,16 @@ class DEBUGGER__
       when /^c(ont)?$/
 	return
       when /^s(tep)?\s*(\d+)?$/
-	if $1
-	  lev = Integer($1)
+	if $2
+	  lev = Integer($2)
 	else
 	  lev = 1
 	end
 	@stop_next = lev
 	return
       when /^n(ext)?\s*(\d+)?$/
-	if $1
-	  lev = Integer($1)
+	if $2
+	  lev = Integer($2)
 	else
 	  lev = 1
 	end

@@ -940,22 +940,19 @@ static VALUE
 eval_node(self)
     VALUE self;
 {
-    VALUE result = Qnil;
-    NODE *tree;
+    NODE *beg_tree, *tree;
 
-    if (ruby_eval_tree_begin) {
-	tree = ruby_eval_tree_begin;
+    beg_tree = ruby_eval_tree_begin;
+    tree = ruby_eval_tree;
+    if (beg_tree) {
 	ruby_eval_tree_begin = 0;
-	rb_eval(self, tree);
+	rb_eval(self, beg_tree);
     }
 
-    if (!ruby_eval_tree) return Qnil;
-
-    tree = ruby_eval_tree;
+    if (!tree) return Qnil;
     ruby_eval_tree = 0;
 
-    result = rb_eval(self, tree);
-    return result;
+    return rb_eval(self, tree);
 }
 
 int ruby_in_eval;
@@ -3258,7 +3255,7 @@ assign(self, lhs, val)
 	{
 	    VALUE recv;
 	    recv = rb_eval(self, lhs->nd_recv);
-	    if (!lhs->nd_args->nd_head) {
+	    if (!lhs->nd_args) {
 		/* attr set */
 		rb_call(CLASS_OF(recv), recv, lhs->nd_mid, 1, &val, 0);
 	    }
@@ -3267,7 +3264,7 @@ assign(self, lhs, val)
 		VALUE args;
 
 		args = rb_eval(self, lhs->nd_args);
-		RARRAY(args)->ptr[RARRAY(args)->len-1] = val;
+		rb_ary_push(args, val);
 		rb_call(CLASS_OF(recv), recv, lhs->nd_mid,
 			RARRAY(args)->len, RARRAY(args)->ptr, 0);
 	    }
@@ -4095,7 +4092,7 @@ compile(src)
     NODE *node;
 
     Check_Type(src, T_STRING);
-    node = rb_compile_string(ruby_sourcefile, src);
+    node = rb_compile_string("(eval)", src);
 
     if (ruby_nerrs == 0) return node;
     return 0;
@@ -4165,7 +4162,7 @@ eval(self, src, scope, file, line)
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
 	ruby_sourcefile = file;
-	ruby_sourceline = line;
+	ruby_sourceline = line - 1;
 	compile(src);
 	if (ruby_nerrs > 0) {
 	    compile_error(0);
@@ -4380,7 +4377,7 @@ is_absolute_path(path)
     const char *path;
 {
     if (path[0] == '/') return 1;
-# if defined(MSDOS) || defined(NT) || defined(__human68k__)
+# if defined(MSDOS) || defined(NT) || defined(__human68k__) || defined(__EMX__)
     if (path[0] == '\\') return 1;
     if (strlen(path) > 2 && path[1] == ':') return 1;
 # endif

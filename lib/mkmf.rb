@@ -55,7 +55,7 @@ CFLAGS = CONFIG["CFLAGS"]
 if PLATFORM == "m68k-human"
   CFLAGS.gsub!(/-c..-stack=[0-9]+ */, '')
 end
-if /win32|djgpp|mingw32|m68k-human/i =~ PLATFORM
+if /win32|djgpp|mingw32|m68k-human|i386-os2_emx/i =~ PLATFORM
   $null = open("nul", "w")
 else
   $null = open("/dev/null", "w")

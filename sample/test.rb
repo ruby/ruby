@@ -417,7 +417,7 @@ ok(i == 5)
 done = true
 loop{
   break
-  done = false
+  done = false			# should not reach here
 }
 ok(done)
 
@@ -427,7 +427,7 @@ loop {
   break if done
   done = true
   next
-  $bad = true
+  $bad = true			# should not reach here
 }
 ok(!$bad)
 
@@ -437,7 +437,7 @@ loop {
   break if done
   done = true
   redo
-  $bad = true
+  $bad = true			# should not reach here
 }
 ok(!$bad)
 

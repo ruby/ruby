@@ -13,11 +13,16 @@
 #define UTIL_H
 
 #ifndef _
-# ifdef __STDC__
-#  define _(args) args
-# else
-#  define _(args) ()
-# endif
+#ifdef HAVE_PROTOTYPES
+# define _(args) args
+#else
+# define _(args) ()
+#endif
+#ifdef HAVE_STDARG_PROTOTYPES
+# define __(args) args
+#else
+# define __(args) ()
+#endif
 #endif
 
 #define scan_oct ruby_scan_oct
@@ -35,8 +40,8 @@ char *ruby_mktemp _((void));
 void ruby_qsort _((void*, int, int, int (*)()));
 #define qsort(b,n,s,c) ruby_qsort(b,n,s,c)
 
-void ruby_setenv _((char*, char*));
-void ruby_unsetenv _((char*));
+void ruby_setenv _((const char*, const char*));
+void ruby_unsetenv _((const char*));
 #undef setenv
 #undef unsetenv
 #define setenv(name,val) ruby_setenv((name),(val))

@@ -487,12 +487,10 @@ struct dbmdata {
 obj = Data_Make_Struct(class,struct dbmdata,0,free_dbm,dbmp);
 --
 
-ここではdbmstruct構造体へのポインタをDataにカプセル化してい
-ます．DBM*を直接カプセル化しないのはclose()した時の処理を考
-えてのことです．
+This code wraps dbmdata structure into Ruby object.  We avoid wrapping
+DBM* directly, because we want to cache size information.
 
-Dataオブジェクトからdbmstruct構造体のポインタを取り出すため
-に以下のマクロを使っています．
+To retrieve dbmdata structure from Ruby object, we define the macro below:
 
 --
 #define GetDBM(obj, dbmp) {\
@@ -501,14 +499,11 @@ Dataオブジェクトからdbmstruct構造体のポインタを取り出すため
 }
 --
 
-ちょっと複雑なマクロですが，要するにdbmdata構造体のポインタ
-の取り出しと，closeされているかどうかのチェックをまとめてい
-るだけです．
+This sort of complicated macro do the retrieving and close check for
+the DBM.
 
-DBMクラスにはたくさんメソッドがありますが，分類すると3種類の
-引数の受け方があります．ひとつは引数の数が固定のもので，例と
-してはdeleteメソッドがあります．deleteメソッドを実装している
-fdbm_delete()はこのようになっています．
+There are three kind of way to receiving method arguments.  First, the
+methods with fixed number of arguments receives arguments like this:
 
 --
 static VALUE
@@ -519,13 +514,11 @@ fdbm_delete(obj, keystr)
 }
 --
 
-引数の数が固定のタイプは第1引数がself，第2引数以降がメソッド
-の引数となります．
+The first argument of the C function is the self, the rest are the
+arguments to the method.
 
-引数の数が不定のものはCの配列で受けるものとRubyの配列で受け
-るものとがあります．dbmモジュールの中で，Cの配列で受けるもの
-はDBMのクラスメソッドであるopen()です．これを実装している関
-数fdbm_s_open()はこうなっています．
+Second, the methods with arbtrary number of arguments receives
+arguments like this:
 
 --
 static VALUE
@@ -542,22 +535,16 @@ fdbm_s_open(argc, argv, class)
 }
 --
 
-このタイプの関数は第1引数が与えられた引数の数，第2引数が与え
-られた引数の入っている配列になります．selfは第3引数として与
-えられます．
+The first argument is the number of method arguments.  the second
+argument is the C array of the method arguments.  And the third
+argument is the receiver of the method.
 
-この配列で与えられた引数を解析するための関数がopen()でも使わ
-れているrb_scan_args()です．第3引数に指定したフォーマットに
-従い，第4変数以降に指定した変数に値を代入してくれます．この
-フォーマットは，第1文字目が省略できない引数の数，第2文字目が
-省略できる引数の数，第3文字目が対応する相手が無いあまりの引
-数があるかどうかを示す"*"です．2文字目と3文字目は省略できま
-す．dbm.cの例では，フォーマットは"11"ですから，引数は最低1つ
-で，2つまで許されるという意味になります．省略されている時の
-変数の値はnil(C言語のレベルではQnil)になります．
+You can use the function rb_scan_args() to check and retrieve the
+arguments.  For exapmle "11" means, the method requires at least one
+argument, and at most receives two arguments.
 
-Rubyの配列で引数を受け取るものはindexesがあります．実装はこ
-うです．
+The methods with arbtrary number of arguments can receives arguments
+by Ruby's array, like this:
 
 --
 static VALUE
@@ -709,16 +696,13 @@ class library
 
 Appendix B. Ruby extension API reference
 
-C言語からRubyの機能を利用するAPIは以下の通りである．
-
-** 型
+** Types
 
  VALUE
 
-Rubyオブジェクトを表現する型．必要に応じてキャストして用いる．
-組み込み型を表現するCの型はruby.hに記述してあるRで始まる構造
-体である．VALUE型をこれらにキャストするためにRで始まる構造体
-名を全て大文字にした名前のマクロが用意されている．
+The type for Ruby object.  Actual structures are defined in ruby.h,
+such as struct RString, etc.  To refer the values in structures, use
+casting macros like RSTRING(obj).
 
 ** Variables and constants
 
@@ -738,11 +722,10 @@ const: false object
 
  Data_Wrap_Struct(VALUE class, void (*mark)(), void (*free)(), void *sval)
 
-Cの任意のポインタをカプセル化したRubyオブジェクトを返す．こ
-のポインタがRubyからアクセスされなくなった時，freeで指定した
-関数が呼ばれる．また，このポインタの指すデータが他のRubyオブ
-ジェクトを指している場合，markに指定する関数でマークする必要
-がある．
+Wrap C pointer into Ruby object.  If object has references to other
+Ruby object, they should be marked by using mark function during GC
+process.  Otherwise, mark should be 0.  When this object is no longer
+referred by anywhere, the pointer will be discarded by free function.
 
  Data_Make_Struct(class, type, mark, free, sval)
 
@@ -857,15 +840,13 @@ rb_define_method().
 
 Defines a singleton method.  Arguments are same as rb_define_method().
 
- rb_scan_args(int atgc, VALUE *argv, char *fmt, ...)
+ rb_scan_args(int argc, VALUE *argv, char *fmt, ...)
 
-argc,argv形式で与えられた引数を分解する．fmtは必須引数の数, 
-付加引数の数, 残りの引数があるかを指定する文字列で, "数字数
-字*"という形式である． 2 番目の数字と"*"はそれぞれ省略可能で
-ある．必須引数が一つもない場合は0を指定する．第3引数以降は変
-数へのポインタで, 該当する要素がその変数に格納される．付加引
-数に対応する引数が与えられていない場合は変数にQnilが代入され
-る．
+Retrieve argument from argc, argv.  The fmt is the format string for
+the arguments, such as "12" for 1 non-optinal argument, 2 optinal
+aruguments.  If `*' appears at the end of fmt, it means the rest of
+the arguments are assigned to corresponding variable, packed in
+array.
 
 ** Invoking Ruby method
 

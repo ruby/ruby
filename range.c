@@ -191,7 +191,11 @@ rb_range_beg_len(range, begp, lenp, len, err)
 	beg += len;
 	if (beg < 0) goto out_of_range;
     }
-    if (err == 2 && beg > len) goto out_of_range;
+    if (err == 2) {
+	if (beg > len) goto out_of_range;
+	if (end > len || (!EXCL(range) && end == len))
+	    goto out_of_range;
+    }
     if (end < 0) {
 	end += len;
 	if (end < 0) {

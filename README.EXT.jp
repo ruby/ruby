@@ -989,7 +989,7 @@ privateメソッドを定義する．引数はrb_define_method()と同じ．
 
 特異メソッドを定義する．引数はrb_define_method()と同じ．
 
- rb_scan_args(int atgc, VALUE *argv, char *fmt, ...)
+ rb_scan_args(int argc, VALUE *argv, char *fmt, ...)
 
 argc,argv形式で与えられた引数を分解する．fmtは必須引数の数, 
 付加引数の数, 残りの引数があるかを指定する文字列で, "数字数

@@ -64,7 +64,7 @@ class Point
   end
 end
 
-# global variables are start with `$'.
+# global variable name starts with `$'.
 $list1 = MyList.new
 $list1.add_to_list(10)
 $list1.add_to_list(20)

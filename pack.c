@@ -916,9 +916,11 @@ hex2num(c)
 
 #define PACK_LENGTH_ADJUST(type) do {		\
     tmp = 0;					\
-    if (len > (send - s)/sizeof(type)) {	\
-	tmp = len - (send - s) / sizeof(type);	\
-	len = (send - s) / sizeof(type);	\
+    if (len > (send-s)/sizeof(type)) {		\
+        if (!star) {				\
+	    tmp = len - (send-s)/sizeof(type);	\
+        }					\
+	len = (send-s)/sizeof(type);		\
     }						\
 } while (0)
 
@@ -933,7 +935,7 @@ pack_unpack(str, fmt)
     char *p, *pend;
     VALUE ary;
     char type;
-    int len, tmp;
+    int len, tmp, star;
 
     s = rb_str2cstr(str, &len);
     send = s + len;
@@ -942,8 +944,10 @@ pack_unpack(str, fmt)
 
     ary = rb_ary_new();
     while (p < pend) {
+	star = 0;
 	type = *p++;
 	if (*p == '*') {
+	    star = 1;
 	    len = send - s;
 	    p++;
 	}

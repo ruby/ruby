@@ -293,11 +293,7 @@ class FTP
 	buf = file.gets
 	break if buf == nil
 	if buf[-2, 2] != CRLF
-	  if buf[-1] == ?\r or
-	      buf[-1] == ?\n
-	    buf = buf[0 .. -2]
-	  end
-	  buf = buf + CRLF
+	  buf = buf.chop + CRLF
 	end
 	conn.write(buf)
 	callback.call(buf) if use_callback

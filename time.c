@@ -147,9 +147,18 @@ time_s_at(klass, time)
     VALUE klass, time;
 {
     struct timeval tv;
+    VALUE t;
 
     tv = rb_time_timeval(time);
-    return time_new_internal(klass, tv.tv_sec, tv.tv_usec);
+    t = time_new_internal(klass, tv.tv_sec, tv.tv_usec);
+    if (TYPE(time) == T_DATA) {
+	struct time_object *tobj, *tobj2;
+
+	GetTimeval(time, tobj);
+	GetTimeval(t, tobj2);
+	tobj2->gmt = tobj->gmt;
+    }
+    return t;
 }
 
 static char *months [12] = {

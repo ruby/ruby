@@ -64,6 +64,10 @@ char *strrchr _((const char*,const char));
  char* strdup(char*);
 #endif
 
+#ifdef __EMX__
+#define lstat stat
+#endif
+ 
 VALUE rb_cFile;
 VALUE rb_mFileTest;
 static VALUE sStat;
@@ -190,7 +194,7 @@ static VALUE
 rb_file_s_lstat(obj, fname)
     VALUE obj, fname;
 {
-#if !defined(MSDOS) && !defined(NT)
+#if !defined(MSDOS) && !defined(NT) && !defined(__EMX__)
     struct stat st;
 
     Check_SafeStr(fname);
@@ -208,7 +212,7 @@ static VALUE
 rb_file_lstat(obj)
     VALUE obj;
 {
-#if !defined(MSDOS) && !defined(NT) 
+#if !defined(MSDOS) && !defined(NT)
     OpenFile *fptr;
     struct stat st;
 
@@ -779,7 +783,7 @@ rb_file_chmod(obj, vmode)
     mode = NUM2INT(vmode);
 
     GetOpenFile(obj, fptr);
-#if defined(DJGPP) || defined(NT) || defined(USE_CWGUSI) || defined(__BEOS__)
+#if defined(DJGPP) || defined(NT) || defined(USE_CWGUSI) || defined(__BEOS__) || defined(__EMX__)
     if (chmod(fptr->path, mode) == -1)
 	rb_sys_fail(fptr->path);
 #else
@@ -838,7 +842,7 @@ rb_file_chown(obj, owner, group)
 
     rb_secure(4);
     GetOpenFile(obj, fptr);
-#if defined(DJGPP) || defined(__CYGWIN32__) || defined(NT) || defined(USE_CWGUSI)
+#if defined(DJGPP) || defined(__CYGWIN32__) || defined(NT) || defined(USE_CWGUSI) || defined(__EMX__)
     if (chown(fptr->path, NUM2INT(owner), NUM2INT(group)) == -1)
 	rb_sys_fail(fptr->path);
 #else
@@ -952,7 +956,7 @@ static VALUE
 rb_file_s_symlink(obj, from, to)
     VALUE obj, from, to;
 {
-#if !defined(MSDOS) && !defined(NT)
+#if !defined(MSDOS) && !defined(NT) && !defined(__EMX__)
     Check_SafeStr(from);
     Check_SafeStr(to);
 
@@ -969,7 +973,7 @@ static VALUE
 rb_file_s_readlink(obj, path)
     VALUE obj, path;
 {
-#if !defined(MSDOS) && !defined(NT)
+#if !defined(MSDOS) && !defined(NT) && !defined(__EMX__)
     char buf[MAXPATHLEN];
     int cc;
 
@@ -1585,8 +1589,11 @@ Init_File()
 
     separator = rb_str_new2("/");
     rb_define_const(rb_cFile, "Separator", separator);
+    rb_define_const(rb_cFile, "SEPARATOR", separator);
     rb_define_singleton_method(rb_cFile, "split",  rb_file_s_split, 1);
     rb_define_singleton_method(rb_cFile, "join",   rb_file_s_join, -2);
+
+    rb_define_const(rb_cFile, "PATH_SEPARATOR", rb_str_new2(RUBY_PATH_SEP));
 
     rb_define_method(rb_cIO, "stat",  rb_io_stat, 0); /* this is IO's method */
     rb_define_method(rb_cFile, "lstat",  rb_file_lstat, 0);
