@@ -978,10 +978,13 @@ rb_big_eq(x, y)
       case T_BIGNUM:
 	break;
       case T_FLOAT:
-	if (rb_big2dbl(x) == RFLOAT(y)->value)
-	    return Qtrue;
-	else
-	    return Qfalse;
+        {
+	    double a, b;
+
+	    a = RFLOAT(y)->value;
+	    b = rb_big2dbl(x);
+	    return (a == b)?Qtrue:Qfalse;
+	}
       default:
 	return rb_equal(y, x);
     }

@@ -1,7 +1,19 @@
+Fri Apr  2 17:27:17 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (top_include): include in the wrapped load is done for
+	  the wrapper, not for a singleton class for wrapped main.
+	  [ruby-dev:23305]
+
+Fri Apr  2 15:13:44 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_big_eq): use temporary double variable to save the
+	  result (internal float register may be bigger than 64 bits, for
+	  example, 80 bits on x86).  [ruby-dev:23311]
+
 Fri Apr  2 14:35:26 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* eval.c (block_pass): should increment unique identifier of the
-	  block.  [ruby-talk:96363]
+	* eval.c (block_pass): should generate unique identifier of the
+	  pushing block.  [ruby-talk:96363]
 
 Fri Apr  2 11:36:20 2004  Minero Aoki  <aamine@loveruby.net>
 

@@ -7222,12 +7222,10 @@ top_include(argc, argv, self)
 {
     rb_secure(4);
     if (ruby_wrapper) {
-	rb_warn("main#include in the wrapped load is effective only for toplevel");
-	return rb_obj_extend(argc, argv, self);
+	rb_warning("main#include in the wrapped load is effective only in wrapper module");
+	return rb_mod_include(argc, argv, ruby_wrapper);
     }
-    else {
-	return rb_mod_include(argc, argv, rb_cObject);
-    }
+    return rb_mod_include(argc, argv, rb_cObject);
 }
 
 VALUE rb_f_trace_var();
