@@ -809,6 +809,19 @@ b = 14269972710765292560
 test_ok(a % b == 0)
 test_ok(-a % b == 0)
 
+def shift_test(a)
+  b = a / (2 ** 32)
+  c = a >> 32
+  test_ok(b == c)
+
+  b = a * (2 ** 32)
+  c = a << 32
+  test_ok(b == c)
+end
+
+shift_test(-4518325415524767873)
+shift_test(-0xfffffffffffffffff)
+
 test_check "string & char"
 
 test_ok("abcd" == "abcd")

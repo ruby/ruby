@@ -258,7 +258,6 @@ typedef struct RVALUE {
 	struct RVarmap varmap; 
 	struct SCOPE   scope;
     } as;
-    int type;
 } RVALUE;
 
 static RVALUE *freelist = 0;

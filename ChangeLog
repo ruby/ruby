@@ -1,3 +1,8 @@
+Fri Feb 15 13:36:58 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_big_rshift): should properly convert the nagative
+	  value to 2's compliment.
+
 Thu Feb 14 17:38:35 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* parse.y: avoid SEGV at OP_ASIGN to pseudo variable.

@@ -1468,11 +1468,16 @@ rb_big_rshift(x, y)
     long j;
 
     if (shift < 0) return rb_big_lshift(x, INT2FIX(-shift));
+
     if (s1 > RBIGNUM(x)->len) {
 	if (RBIGNUM(x)->sign)
 	    return INT2FIX(0);
 	else
 	    return INT2FIX(-1);
+    }
+    if (!RBIGNUM(x)->sign) {
+	x = rb_big_clone(x);
+	rb_big_2comp(x);
     }
     xds = BDIGITS(x);
     i = RBIGNUM(x)->len; j = i - s1;
@@ -1482,6 +1487,9 @@ rb_big_rshift(x, y)
 	num = (num | xds[i]) >> s2;
 	zds[j] = BIGLO(num);
 	num = BIGUP(xds[i]);
+    }
+    if (!RBIGNUM(x)->sign) {
+	rb_big_2comp(z);
     }
     return bignorm(z);
 }
