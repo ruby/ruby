@@ -1,3 +1,7 @@
+Fri Feb 16 01:44:56 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (set_outfile): f should be the FILE* from the assigning value.
+
 Thu Feb 15 11:33:49 2001  Shugo Maeda <shugo@ruby-lang.org>
 
 	* lib/cgi/session.rb (close): fixed reversed condition.
@@ -5,6 +9,13 @@ Thu Feb 15 11:33:49 2001  Shugo Maeda <shugo@ruby-lang.org>
 Wed Feb 14 17:28:24 2001  Shugo Maeda <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb: supports unknown resp_text_code.
+
+Wed Feb 14 00:44:17 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dir.c (dir_s_glob): call rb_yield directly (via push_pattern) if
+	  block is given to the method.
+
+	* dir.c (push_pattern): do not call rb_ary_push; yield directly.
 
 Tue Feb 13 23:05:38 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 

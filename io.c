@@ -2240,8 +2240,6 @@ set_outfile(val, var, orig, stdf)
 
     GetOpenFile(val, fptr);
     rb_io_check_writable(fptr);
-
-    GetOpenFile(*var, fptr);
     f = GetWriteFile(fptr);
     dup2(fileno(f), fileno(stdf));
 
