@@ -1,3 +1,8 @@
+Tue Feb 12 01:21:34 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (assignable): should emit CVASGN within the method
+	  body.
+
 Sun Feb 10 16:52:53 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* ruby.c (load_file): avoid SEGV on '#' only input.

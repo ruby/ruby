@@ -611,7 +611,6 @@ rb_reg_search(re, str, pos, reverse)
     else {
 	range = RSTRING(str)->len - pos;
     }
-    regs.allocated = 0;
     result = re_search(RREGEXP(re)->ptr,RSTRING(str)->ptr,RSTRING(str)->len,
 		       pos, range, &regs);
 

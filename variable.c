@@ -1357,20 +1357,6 @@ rb_define_global_const(name, val)
     rb_define_const(rb_cObject, name, val);
 }
 
-VALUE
-rb_cvar_singleton(obj)
-    VALUE obj;
-{
-    switch (TYPE(obj)) {
-      case T_MODULE:
-      case T_CLASS:
-	return obj;
-      default:
-	break;
-    }
-    return CLASS_OF(obj);
-}
-
 void
 rb_cvar_set(klass, id, val)
     VALUE klass;
@@ -1508,10 +1494,6 @@ rb_mod_class_variables(obj)
     VALUE obj;
 {
     VALUE ary = rb_ary_new();
-
-    if (FL_TEST(obj, FL_SINGLETON)) {
-	obj = rb_cvar_singleton(rb_iv_get(obj, "__attached__"));
-    }
 
     for (;;) {
 	if (RCLASS(obj)->iv_tbl) {

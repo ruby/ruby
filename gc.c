@@ -560,7 +560,6 @@ rb_gc_mark(ptr)
 	  case NODE_DVAR:
 	  case NODE_IVAR:
 	  case NODE_CVAR:
-	  case NODE_CVAR2:
 	  case NODE_NTH_REF:
 	  case NODE_BACK_REF:
 	  case NODE_ALIAS:

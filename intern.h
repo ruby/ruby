@@ -388,7 +388,6 @@ void rb_cvar_declare _((VALUE, ID, VALUE));
 VALUE rb_cvar_defined _((VALUE, ID));
 void rb_cvar_set _((VALUE, ID, VALUE));
 VALUE rb_cvar_get _((VALUE, ID));
-VALUE rb_cvar_singleton _((VALUE));
 void rb_cv_set _((VALUE, const char *, VALUE));
 VALUE rb_cv_get _((VALUE, const char *));
 void rb_define_class_variable _((VALUE, const char *, VALUE));
