@@ -17,11 +17,9 @@ Net::IMAP supports multiple commands. For example,
   imap = Net::IMAP.new("imap.foo.net", "imap2")
   imap.authenticate("cram-md5", "bar", "password")
   imap.select("inbox")
-  t = Thread.start {
-    p imap.fetch(1..-1, "UID")
-  }
-  p imap.search(["BODY", "hello"])
-  t.join
+  fetch_thread = Thread.start { imap.fetch(1..-1, "UID") }
+  search_result = imap.search(["BODY", "hello"])
+  fetch_result = fetch_thread.value
   imap.disconnect
 
 This script invokes the FETCH command and the SEARCH command concurrently.
@@ -123,7 +121,7 @@ Object
         imap.create("foo/bar")
         imap.create("foo/baz")
         p imap.list("", "foo/%")
-        #=> [#<Net::IMAP::MailboxList attr=[:NoSelect], delim="/", name="foo/">, #<Net::IMAP::MailboxList attr=[:NoInferiors, :Marked], delim="/", name="foo/bar">, #<Net::IMAP::MailboxList attr=[:NoInferiors], delim="/", name="foo/baz">]
+        #=> [#<Net::IMAP::MailboxList attr=[:Noselect], delim="/", name="foo/">, #<Net::IMAP::MailboxList attr=[:Noinferiors, :Marked], delim="/", name="foo/bar">, #<Net::IMAP::MailboxList attr=[:Noinferiors], delim="/", name="foo/baz">]
 
 : lsub(refname, mailbox)
       Sends a LSUB command, and returns a subset of names from the set
@@ -384,7 +382,8 @@ Struct
 === Methods
 
 : attr
-      Returns the name attributes.
+      Returns the name attributes. Each name attribute is a symbol
+      capitalized by String#capitalize, such as :Noselect (not :NoSelect).
 
 : delim
       Returns the hierarchy delimiter
@@ -441,7 +440,8 @@ Object
           A ((<Net::IMAP::Envelope>)) object that describes the envelope
           structure of a message.
       : FLAGS
-          A array of flag symbols that are set for this message.
+          A array of flag symbols that are set for this message. flag symbols
+          are capitalized by String#capitalize.
       : INTERNALDATE
           A string representing the internal date of the message.
       : RFC822
@@ -690,6 +690,18 @@ module Net
     include MonitorMixin
 
     attr_reader :greeting, :responses, :response_handlers
+
+    SEEN = :Seen
+    ANSWERED = :Answered
+    FLAGGED = :Flagged
+    DELETED = :Deleted
+    DRAFT = :Draft
+    RECENT = :Recent
+
+    NOINFERIORS = :Noinferiors
+    NOSELECT = :Noselect
+    MARKED = :Marked
+    UNMARKED = :Unmarked
 
     def self.debug
       return @@debug
@@ -2135,7 +2147,7 @@ module Net
 	if @str.index(/\(([^)]*)\)/ni, @pos)
 	  @pos = $~.end(0)
 	  return $1.scan(FLAG_REGEXP).collect { |flag, atom|
-	    atom || flag.intern
+	    atom || flag.capitalize.intern
 	  }
 	else
 	  parse_error("invalid flag list")
@@ -2531,22 +2543,36 @@ EOF
       break unless cmd
       begin
 	case cmd
-	when "list", "ls"
+	when "list"
 	  for mbox in imap.list("", args[0] || "*")
-	    puts mbox.name
+	    if mbox.attr.include?(Net::IMAP::NOSELECT)
+	      prefix = "!"
+	    elsif mbox.attr.include?(Net::IMAP::MARKED)
+	      prefix = "*"
+	    else
+	      prefix = " "
+	    end
+	    print prefix, mbox.name, "\n"
 	  end
-	when "select", "cd"
+	when "select"
 	  imap.select(args[0] || "inbox")
 	  print "ok\n"
+	when "close"
+	  imap.close
+	  print "ok\n"
 	when "summary"
-	  if imap.responses["EXISTS"][-1] > 0
+	  unless messages = imap.responses["EXISTS"][-1]
+	    puts "not selected"
+	    next
+	  end
+	  if messages > 0
 	    for data in imap.fetch(1..-1, ["ENVELOPE"])
-	      print data.seqno, " ", data.attr["ENVELOPE"].subject, "\n"
+	      print data.seqno, ": ", data.attr["ENVELOPE"].subject, "\n"
 	    end
 	  else
 	    puts "no message"
 	  end
-	when "show", "cat"
+	when "fetch"
 	  if args[0]
 	    data = imap.fetch(args[0].to_i, ["RFC822.HEADER", "RFC822.TEXT"])[0]
 	    puts data.attr["RFC822.HEADER"]
@@ -2554,15 +2580,17 @@ EOF
 	  else
 	    puts "missing argument"
 	  end
-	when "exit", "quit", "logout"
+	when "logout", "exit", "quit"
 	  break
 	when "help", "?"
 	  print <<EOF
-list [pattern], ls [pattern]		list mailboxes
-select [mailbox], cd [mailbox]		select mailbox
-summary					display summary
-show [msgno], cat [msgno]		display message
-help, ?					display help message
+list [pattern]			list mailboxes
+select [mailbox]		select mailbox
+close				close mailbox
+summary				display summary
+fetch [msgno]			display message
+logout				logout
+help, ?				display help message
 EOF
 	else
 	  print "unknown command: ", cmd, "\n"

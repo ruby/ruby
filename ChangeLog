@@ -1,3 +1,7 @@
+Mon Apr  2 12:01:15 2001  Shugo Maeda <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (flag_list): capitalize flags.
+
 Mon Apr  2 01:32:38 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* Makefile.in: Introduce MAINLIBS.
