@@ -86,6 +86,18 @@ module XMLRPC
 
     end # class XMLParser
 
+    Classes = [Simple, XMLParser]
+
+    # yields an instance of each installed XML writer
+    def self.each_installed_writer
+      XMLRPC::XMLWriter::Classes.each do |klass|
+        begin
+          yield klass.new
+        rescue LoadError
+        end
+      end
+    end
+
   end # module XMLWriter
 
   class Create
@@ -248,7 +260,10 @@ module XMLRPC
           if Config::ENABLE_MARSHALLING and param.class.included_modules.include? XMLRPC::Marshallable
             # convert Ruby object into Hash
             ret = {"___class___" => param.class.name}
-            param.__get_instance_variables.each {|name, val| 
+            param.instance_variables.each {|v| 
+              name = v[1..-1]
+              val = param.instance_variable_get(v)
+
               if val.nil?
                 ret[name] = val if Config::ENABLE_NIL_CREATE
               else

@@ -112,31 +112,13 @@ module XMLRPC
         begin
           mod = Module
           klass.split("::").each {|const| mod = mod.const_get(const.strip)}
+
+          obj = mod.allocate
           
-          Thread.critical = true
-          # let initialize take 0 parameters
-          mod.module_eval %{
-            begin
-              alias __initialize initialize
-            rescue NameError
-            end
-            def initialize; end
-          }
-
-          obj = mod.new
-
-          # restore old initialize
-          mod.module_eval %{
-            undef initialize
-            begin
-              alias initialize __initialize
-            rescue NameError
-            end
-          }
-          Thread.critical = false
-
           hash.delete "___class___"
-          hash.each {|k,v| obj.__set_instance_variable(k, v) } 
+          hash.each {|key, value| 
+            obj.instance_variable_set("@#{ key }", value) if key =~ /^([\w_][\w_0-9]*)$/
+          }
           obj
         rescue
           hash
@@ -800,6 +782,16 @@ module XMLRPC
     Classes = [XMLStreamParser, XMLTreeParser, 
                NQXMLStreamParser, NQXMLTreeParser, 
                REXMLStreamParser, XMLScanStreamParser]
+
+    # yields an instance of each installed parser
+    def self.each_installed_parser
+      XMLRPC::XMLParser::Classes.each do |klass|
+        begin
+          yield klass.new
+        rescue LoadError
+        end
+      end
+    end
 
   end # module XMLParser
 
