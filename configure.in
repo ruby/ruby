@@ -3,6 +3,35 @@ AC_INIT()
 
 AC_PREREQ(2.50)
 
+AC_DEFUN(RUBY_MINGW32,
+[case "$host_os" in
+cygwin*)
+AC_CACHE_CHECK(for mingw32 environment, rb_cv_mingw32,
+[AC_TRY_CPP([
+#ifndef __MINGW32__
+# error
+#endif
+], rb_cv_mingw32=yes,rb_cv_mingw32=no)
+rm -f conftest*])
+test "$rb_cv_mingw32" = yes && target_os="mingw32"
+  ;;
+esac])
+
+AC_DEFUN(RUBY_CPPOUTFILE,
+[AC_CACHE_CHECK(whether ${CPP} accepts -o, rb_cv_cppoutfile,
+[cppflags=$CPPFLAGS
+CPPFLAGS='-o conftest.i'
+AC_TRY_CPP([], rb_cv_cppoutfile=yes, rb_cv_cppoutfile=no)
+if test "$rb_cv_cppoutfile" = yes; then
+  CPPOUTFILE=$CPPFLAGS
+else
+  CPPOUTFILE='> conftest.i'
+fi
+CPPFLAGS=$cppflags
+AC_SUBST(CPPOUTFILE)
+rm -f conftest*])
+])
+
 rb_version=`grep RUBY_VERSION $srcdir/version.h`
 MAJOR=`expr "$rb_version" : '#define RUBY_VERSION "\([0-9][0-9]*\)\.[0-9][0-9]*\.[0-9][0-9]*"'`
 MINOR=`expr "$rb_version" : '#define RUBY_VERSION "[0-9][0-9]*\.\([0-9][0-9]*\)\.[0-9][0-9]*"'`
@@ -98,15 +127,12 @@ fi
 AC_PROG_CC
 AC_PROG_GCC_TRADITIONAL
 
-echo 'foo(){}' > conftest.c
-if ${CPP} -o conftest.i conftest.c >/dev/null 2>&1; then
-  CPPOUTFILE='-o conftest.i'
-else
-  CPPOUTFILE='> conftest.i'
-fi
-AC_SUBST(CPPOUTFILE)
+RUBY_CPPOUTFILE
+
 OUTFLAG='-o '
 AC_SUBST(OUTFLAG)
+
+RUBY_MINGW32
 
 AC_PROG_YACC
 AC_CHECK_TOOL(RANLIB, ranlib, :)

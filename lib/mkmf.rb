@@ -44,6 +44,12 @@ $sitelibdir = CONFIG["sitelibdir"]
 $sitearchdir = CONFIG["sitearchdir"]
 
 $extmk = /extmk\.rb/ =~ $0
+$mswin = /mswin/ =~ RUBY_PLATFORM
+$bccwin = /bccwin/ =~ RUBY_PLATFORM
+$mingw = /mingw/ =~ RUBY_PLATFORM
+$cygwin = /cygwin/ =~ RUBY_PLATFORM
+$human = /human/ =~ RUBY_PLATFORM
+$netbsd = /netbsd/ =~ RUBY_PLATFORM
 
 def dir_re(dir)
   Regexp.new('\$(?:\('+dir+'\)|\{'+dir+'\})(?:\$\(target_prefix\)|\{target_prefix\})?')
@@ -73,7 +79,7 @@ end
 $topdir = $hdrdir
 
 CFLAGS = CONFIG["CFLAGS"]
-if RUBY_PLATFORM == "m68k-human"
+if $human
   CFLAGS.gsub!(/-c..-stack=[0-9]+ */, '')
 elsif RUBY_PLATFORM =~ /-nextstep|-rhapsody|-darwin/
   CFLAGS.gsub!( /-arch\s\w*/, '' )
@@ -82,12 +88,10 @@ end
 OUTFLAG = CONFIG['OUTFLAG']
 CPPOUTFILE = CONFIG['CPPOUTFILE']
 
-$LINK = "#{CONFIG['CC']} #{OUTFLAG}conftest %s -I#{$hdrdir} %s #{CFLAGS} %s #{CONFIG['LDFLAGS']} %s conftest.c %s %s #{CONFIG['LIBS']}"
-$CC = "#{CONFIG['CC']} -c #{CONFIG['CPPFLAGS']} %s -I#{$hdrdir} %s #{CFLAGS} %s %s conftest.c"
-$CPP = "#{CONFIG['CPP']} #{CONFIG['CPPFLAGS']} %s -I#{$hdrdir} %s #{CFLAGS} %s %s %s conftest.c"
+LIBPATHFLAG = $mswin ? ' -libpath:' : ' -L'
+CONFTEST_C = "conftest.c"
 
-
-$INSTALLFILES = nil unless defined? $INSTALLFILES
+$INSTALLFILES ||= nil
 
 def rm_f(*files)
   targets = []
@@ -164,109 +168,109 @@ def xpopen command, *mode, &block
   end
 end
 
-def try_link0(src, opt="")
-  src = "/* begin */\n#{src}/* end */\n"
-  cfile = open("conftest.c", "w")
-  cfile.print src
-  cfile.close
-  ldflags = $LDFLAGS
-  if /mswin32|bccwin32/ =~ RUBY_PLATFORM and !$LIBPATH.empty?
-    ENV['LIB'] = ($LIBPATH + [ORIG_LIBPATH]).compact.join(';')
-  else
-    $LDFLAGS = ldflags.dup
-    $LIBPATH.each {|d| $LDFLAGS << " -L" + d}
-  end
-  begin
-    xsystem(format($LINK, $INCFLAGS, $CPPFLAGS, $CFLAGS, $LDFLAGS, opt, $LOCAL_LIBS))
-  ensure
-    $LDFLAGS = ldflags
-    ENV['LIB'] = ORIG_LIBPATH if /mswin32|bccwin32/ =~ RUBY_PLATFORM
-    Logging::message <<"EOM"
+def log_src(src)
+  Logging::message <<"EOM"
 checked program was:
-#{src}
+/* begin */
+#{src}/* end */
+
 EOM
+end
+
+def create_tmpsrc(src)
+  open(CONFTEST_C, "w") do |cfile|
+    cfile.print src
+  end
+end
+
+def try_do(src, command)
+  src += "\n" unless /\n\z/ =~ src
+  create_tmpsrc(src)
+  xsystem(command)
+ensure
+  log_src(src)
+end
+
+def link_command(ldflags, opt="")
+#  ldflags = "-link " + ldflags if $mswin
+  "$(CC) #{OUTFLAG}conftest #$INCFLAGS -I#{$hdrdir} " \
+  "#$CPPFLAGS $(CFLAGS) #$CFLAGS #{CONFTEST_C} #{opt} " \
+  "#$LOCAL_LIBS $(LIBS) #{ldflags} $(LDFLAGS) #$LDFLAGS"
+end
+
+def cc_command(opt="")
+  "$(CC) -c $(CPPFLAGS) #$INCFLAGS -I#{$hdrdir} " \
+  "#$CPPFLAGS $(CFLAGS) #$CFLAGS #{opt} #{CONFTEST_C}"
+end
+
+def cpp_command(outfile, opt="")
+  "$(CPP) $(CPPFLAGS) #$INCFLAGS -I#{$hdrdir} " \
+  "#$CPPFLAGS $(CFLAGS) #$CFLAGS #{outfile} #{opt} #{CONFTEST_C}"
+end
+
+def libpathflag
+  if $mswin
+    ENV['LIB'] = ($LIBPATH + [ORIG_LIBPATH]).join(';')
+    yield ""
+    ENV['LIB'] = ORIG_LIBPATH
+  else
+    yield $LIBPATH.map{|x| %Q[#{LIBPATHFLAG}"#{x}"]}.join
+  end
+end
+
+def try_link0(src, opt="")
+  libpathflag do |flag|
+    try_do(src, link_command(flag, opt))
   end
 end
 
 def try_link(src, opt="")
-  begin
-    try_link0(src, opt)
-  ensure
-    rm_f "conftest*"
-    if /bccwin32/ =~ RUBY_PLATFORM
-      rm_f "c0x32*"
-    end
-  end
+  try_link0(src, opt)
+ensure
+  rm_f "conftest*", "c0x32*"
 end
 
 def try_compile(src, opt="")
-  src = "/* begin */\n#{src}/* end */\n"
-  cfile = open("conftest.c", "w")
-  cfile.print src
-  cfile.close
-  begin
-    xsystem(format($CC, $INCFLAGS, $CPPFLAGS, $CFLAGS, opt))
-  ensure
-    rm_f "conftest*"
-    Logging::message <<"EOM"
-checked program was:
-#{src}
-EOM
-  end
+  try_do(src, cc_command(opt))
+ensure
+  rm_f "conftest*"
 end
 
 def try_cpp(src, opt="")
-  src = "/* begin */\n#{src}/* end */\n"
-  cfile = open("conftest.c", "w")
-  cfile.print src
-  cfile.close
-  begin
-    xsystem(format($CPP, $INCFLAGS, $CPPFLAGS, $CFLAGS, CPPOUTFILE, opt))
-  ensure
-    rm_f "conftest*"
-    Logging::message <<"EOM"
-checked program was:
-#{src}
-EOM
-  end
+  try_do(src, cpp_command(CPPOUTFILE, opt))
+ensure
+  rm_f "conftest*"
 end
 
 def egrep_cpp(pat, src, opt="")
-  src = "/* begin */\n#{src}/* end */\n"
-  cfile = open("conftest.c", "w")
-  cfile.print src
-  cfile.close
-  begin
-    xpopen(format($CPP, $INCFLAGS, $CPPFLAGS, $CFLAGS, '', opt)) do |f|
-      if Regexp === pat
-	puts("    ruby -ne 'print if /#{pat.source}/'")
-	f.grep(pat) {|l|
-	  puts "#{f.lineno}: #{l}"
-	  return true
-	}
-	false
-      else
-	puts("    egrep '#{pat}'")
-	begin
-	  stdin = $stdin.dup
-	  $stdin.reopen(f)
-	  system("egrep", pat)
-	ensure
-	  $stdin.reopen(stdin)
-	end
+  src += "\n" unless /\n\z/ =~ src
+  create_tmpsrc(src)
+  xpopen(cpp_command('', opt)) do |f|
+    if Regexp === pat
+      puts("    ruby -ne 'print if /#{pat.source}/'")
+      f.grep(pat) {|l|
+	puts "#{f.lineno}: #{l}"
+	return true
+      }
+      false
+    else
+      puts("    egrep '#{pat}'")
+      begin
+	stdin = $stdin.dup
+	$stdin.reopen(f)
+	system("egrep", pat)
+      ensure
+	$stdin.reopen(stdin)
       end
     end
-  ensure
-    rm_f "conftest*"
-    Logging::message <<"EOM"
-checked program was:
-#{src}
-EOM
   end
+ensure
+  rm_f "conftest*"
+  log_src(src)
 end
 
 def macro_defined?(macro, src, opt="")
-  try_cpp(src + <<SRC, opt)
+  try_cpp(src + <<"SRC", opt)
 #ifndef #{macro}
 # error
 #endif
@@ -274,19 +278,13 @@ SRC
 end
 
 def try_run(src, opt="")
-  begin
-    if try_link0(src, opt)
-      if xsystem("./conftest")
-	true
-      else
-	false
-      end
-    else
-      nil
-    end
-  ensure
-    rm_f "conftest*"
+  if try_link0(src, opt)
+    xsystem("./conftest")
+  else
+    nil
   end
+ensure
+  rm_f "conftest*"
 end
 
 def install_files(mfile, ifiles, map = INSTALL_DIRS, srcprefix = nil)
@@ -347,7 +345,7 @@ end
 
 def have_library(lib, func="main")
   message "checking for #{func}() in -l#{lib}... "
-  Logging::message"checking for #{func}() in -l#{lib}\n"
+  Logging::message"have_library: checking for #{func}() in -l#{lib}\n"
 
   if func && func != ""
     libs = append_library($libs, lib)
@@ -393,7 +391,7 @@ end
 
 def find_library(lib, func, *paths)
   message "checking for #{func}() in -l#{lib}... "
-  Logging::message"checking for #{func}() in -l#{lib}\n"
+  Logging::message"find_library: checking for #{func}() in -l#{lib}\n"
 
   libpath = $LIBPATH
   libs = append_library($libs, lib)
@@ -415,7 +413,7 @@ end
 
 def have_func(func, header=nil)
   message "checking for #{func}()... "
-  Logging::message"checking for #{func}()\n"
+  Logging::message"have_func: checking for #{func}()\n"
 
   libs = $libs
   src = 
@@ -454,7 +452,7 @@ end
 
 def have_header(header)
   message "checking for #{header}... "
-  Logging::message"checking for #{header}\n"
+  Logging::message"have_header: checking for #{header}\n"
 
   unless try_cpp(<<"SRC")
 #include <#{header}>
@@ -469,7 +467,7 @@ end
 
 def have_struct_member(type, member, header=nil)
   message "checking for #{type}.#{member}... "
-  Logging::message "checking for #{type}.#{member}\n"
+  Logging::message "have_struct_member: checking for #{type}.#{member}\n"
 
   src = 
     if /mswin32|bccwin32|mingw/ =~ RUBY_PLATFORM
@@ -505,7 +503,7 @@ end
 
 def find_executable(bin, path = nil)
   message "checking for #{bin}... "
-  Logging::message "checking for #{bin}\n"
+  Logging::message "find_executable: checking for #{bin}\n"
 
   if path.nil?
     path = ENV['PATH'].split(Config::CONFIG['PATH_SEPARATOR'])
