@@ -1,3 +1,9 @@
+Wed Mar  9 15:46:35 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/server.rb (WEBrick::GenericServer#start): should
+	  restore @token if accept failure. suggested by Dominique Brezinski.
+	  [ruby-core:04518]
+
 Wed Mar  9 13:37:57 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/sample/tktextio.rb: fix bug of handling 'end' position.
@@ -25,10 +31,6 @@ Tue Mar  8 01:27:00 2005  NARUSE, Yui  <naruse@ruby-lang.org>
           fixed: [ruby-dev:25828]
 
 Mon Mar  7 21:35:02 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
-
-	* lib/webrick/server.rb (WEBrick::GenericServer#start): should
-	  restore @token if accept failure. suggested by Dominique Brezinski.
-	  [ruby-core:04518]
 
 	* sample/webrick/httpsd.rb: fix typo in comment. suggested by
 	  Kazuhiko Shiozaki.
