@@ -1,3 +1,10 @@
+Thu May  3 03:41:01 2001  SHIROYAMA Takayuki <psi@fortune.nest.or.jp>
+
+	* configure.in: get --enable-shared to work on MacOS X.
+
+	* Makefile.in: make $(LIBRUBY_SO) depend on miniruby properly.
+	Now `make -jN' should work without a problem.
+
 Wed May  2 20:39:35 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* dir.c (rb_glob, rb_iglob): remove unnecessary FNM_PATHNAME.

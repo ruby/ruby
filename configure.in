@@ -501,7 +501,7 @@ if test "$with_dln_a_out" != yes; then
     nextstep*)	;;
     openstep*)	;;
     rhapsody*)	;;
-    darwin*)	;;
+    darwin*)	CCDLFLAGS=-fno-common;;
     human*)	;;
     bsdi*)	;;
     beos*)	;;
@@ -862,6 +862,12 @@ if test "$enable_shared" = 'yes'; then
 	    LIBRUBY_DLDFLAGS='-f ruby.exp -lnet -lbe -lroot glue-noinit.a init_term_dyn.o start_dyn.o'
 	    ;;
 	esac
+	;;
+    darwin*)
+	LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).$(MAJOR).$(MINOR).$(TEENY).dylib'
+	LIBRUBY_LDSHARED='cc -dynamiclib -undefined suppress'
+	LIBRUBY_DLDFLAGS='-install_name lib$(RUBY_INSTALL_NAME).dylib -current_version $(MAJOR).$(MINOR).$(TEENY) -compatibility_version $(MAJOR).$(MINOR)'
+	LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).$(MAJOR).$(MINOR).dylib lib$(RUBY_INSTALL_NAME).dylib'
 	;;
     *)
 	;;
