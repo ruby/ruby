@@ -76,6 +76,7 @@ module Kernel
       open_uri_original_open(name, *rest, &block)
     end
   end
+  module_function :open
 end
 
 module OpenURI

@@ -1,3 +1,7 @@
+Wed Feb 26 17:38:16 2003  Tanaka Akira  <akr@m17n.org>
+
+	* lib/open-uri.rb: replace Kernel.open as well.
+
 Tue Feb 25 23:03:08 2003  NAKAMURA Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/debug.rb (DEBUGGER__::Context#debug_command): bp filename must
