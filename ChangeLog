@@ -1,3 +1,10 @@
+Wed Jul 30 10:31:37 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* ext/iconv/iconv.c (iconv_convert): append unchanged portion
+	  after overflow.  [ruby-dev:21006]
+
+	* ext/iconv/extconf.rb: check if iconv() 2nd argument is const.
+
 Wed Jul 30 09:31:55 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* configure.in (os2-emx): renamed from os2_emx, add flags to

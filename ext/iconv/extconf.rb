@@ -6,6 +6,20 @@ conf = File.exist?(File.join($srcdir, "config.charset"))
 conf = with_config("config-charset", enable_config("config-charset", conf))
 
 if have_header("iconv.h")
+  if !try_compile("", "-Werror") or checking_for("iconv() 2nd argument is const") do
+      !try_compile('
+#include <iconv.h>
+size_t
+test(iconv_t cd, char **inptr, size_t *inlen, char **outptr, size_t *outlen)
+{
+    return iconv(cd, inptr, inlen, outptr, outlen);
+}
+', "-Werror")
+    end
+    $defs.push('-DICONV_INPTR_CAST=""')
+  else
+    $defs.push('-DICONV_INPTR_CAST="(char **)"')
+  end
   have_library("iconv")
   if conf
     prefix = '$(srcdir)'

@@ -209,7 +209,7 @@ iconv_try
     size_t *outlen;
 #endif /* HAVE_PROTOTYPES */
 {
-    if (iconv(cd, (char **)inptr, inlen, outptr, outlen) == (size_t)-1) {
+    if (iconv(cd, ICONV_INPTR_CAST inptr, inlen, outptr, outlen) == (size_t)-1) {
 	if (!*inlen)
 	    return Qfalse;
 	switch (errno) {
@@ -401,6 +401,8 @@ iconv_convert
 
     if (!ret)
 	ret = rb_str_derive(str, instart, inptr - instart);
+    else if (inptr > instart)
+	rb_str_cat(ret, instart, inptr - instart);
     return ret;
 }
 
