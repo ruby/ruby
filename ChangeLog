@@ -1,3 +1,13 @@
+Tue Feb 17 23:28:45 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* test/ruby/marshaltestlib.rb: common marshal testcase added.
+
+	* test/ruby/test_marshal.rb: use above testsuite.
+
+	* test/soap/marshal/test_marshal.rb: ditto.
+
+	* test/soap/marshal/cmarshal.rb: removed (not used).
+
 Tue Feb 17 10:51:23 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/syck/rubyext.c (syck_emitter_end_object): takes only one arg.
