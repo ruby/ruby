@@ -1,3 +1,9 @@
+Wed Jan  1 18:18:45 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in: better DJGPP support. add GNUmakefile.
+
+	* djgpp/GNUmakefile: new.
+
 Wed Jan  1 04:16:18 2003  Akinori MUSHA  <knu@iDaemons.org>
 
 	* node.h (struct RNode): Change argc from int to long.  Otherwise
@@ -157,7 +163,8 @@ Sat Dec 28 00:34:03 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* instruby.rb: use getopts.rb.
 
-	* ext/dbm/extconf.rb: substitute ' with ".
+	* ext/dbm/extconf.rb (-DDBM_HDR): substitute ' with " to avoid
+	  a error on Win32.
 
 	* ext/gdbm/gdbm.c: add prototypes to avoid VC++ warnings.
 
