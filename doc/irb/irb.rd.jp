@@ -57,7 +57,7 @@ irbの使い方は, Rubyさえ知っていればいたって簡単です. 基本的には irb と
   --prompt prompt-mode
   --prompt-mode prompt-mode
 		    プロンプトモードを切替えます. 現在定義されているプ
-		    ロンプトモードは, defalut, simple, xmp, inf-rubyが
+		    ロンプトモードは, default, simple, xmp, inf-rubyが
 		    用意されています. デフォルトはdefaultプロンプトモー
 		    ドになっています.
 			    

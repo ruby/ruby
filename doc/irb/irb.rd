@@ -56,7 +56,7 @@ is the standard default action if Readline is installed.
   --prompt prompt-mode
   --prompt-mode prompt-mode
 		    switches prompt mode. Pre-defined prompt modes are
-		    `defalut', `simple', `xmp' and `inf-ruby'
+		    `default', `simple', `xmp' and `inf-ruby'
 			    
   --inf-ruby-mode   uses prompt appreciate for inf-ruby-mode on emacs. 
 		    Suppresses --readline. 

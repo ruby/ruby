@@ -1,3 +1,7 @@
+Sat Jun  2 00:02:22 2001  Keiju Ishitsuka <keiju@ishitsuka.com>
+
+	* irb messages: fix typos.
+
 Fri Jun  1 17:26:24 2001  K.Kosako  <kosako@sofnec.co.jp>
 
 	* hash.c (replace_i): ignore when key == Qundef.
