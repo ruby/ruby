@@ -1,3 +1,8 @@
+Sun May  5 06:53:45 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/mkmf.rb: exclude topdir from the system configuration
+	  section and prevent it from being overridden.
+
 Fri May  3 20:19:00 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in: add #include <errno.h> in AC_CHECK_DECLS().

@@ -499,12 +499,12 @@ EOMF
   if destdir = CONFIG["prefix"].scan(drive)[0] and !destdir.empty?
     mfile.print "\nDESTDIR = ", destdir, "\n"
   end
-  CONFIG.select do |key, var|
-    next if /prefix$/ !~ key
+  CONFIG.each do |key, var|
+    next unless /prefix$/ =~ key
     mfile.print key, " = ", with_destdir(var.sub(drive, '')), "\n"
   end
-  CONFIG.select do |key, var|
-    next if key == "srcdir" or /dir$/ !~ key
+  CONFIG.each do |key, var|
+    next unless /^(?:src|top|(.*))dir$/ =~ key and $1
     mfile.print key, " = ", with_destdir(var.sub(drive, '')), "\n"
   end
   mfile.print  <<EOMF
