@@ -1512,10 +1512,15 @@ module Net
 	if @str.index(ADDRESS_REGEXP, @pos)
 	  # address does not include literal.
 	  @pos = $~.end(0)
-	  name = $1 ? $1.gsub(/\\(["\\])/n, "\\1") : nil
-	  route = $2 ? $2.gsub(/\\(["\\])/n, "\\1") : nil
-	  mailbox = $3 ? $3.gsub(/\\(["\\])/n, "\\1") : nil
-	  host = $4 ? $4.gsub(/\\(["\\])/n, "\\1") : nil
+	  name = $1
+	  route = $2
+	  mailbox = $3
+	  host = $4
+	  for s in [name, route, mailbox, host]
+	    if s
+	      s.gsub!(/\\(["\\])/n, "\\1")
+	    end
+	  end
 	else
 	  name = nstring
 	  match(T_SPACE)
