@@ -718,30 +718,38 @@ class OptionParser
   DefaultList.long[''] = Switch::NoArgument.new {throw :terminate}
 
   #
-  # Default options, which never appear in option summary.
+  # OptionParser::Officious
+  # Default options for ARGV, which never appear in option summary.
+  #
+  Officious = {}
+
   #   --help
   #   Shows option summary.
+  Officious['help'] = proc do |parser|
+    Switch::NoArgument.new do
+      puts parser.help
+      exit
+    end
+  end
+
   #   --version
   #   Shows version string if (({::Version})) is defined.
-  #
-  DefaultList.long['help'] = Switch::NoArgument.new do
-    puts ARGV.options
-    exit
-  end
-  DefaultList.long['version'] = Switch::OptionalArgument.new do |pkg|
-    if pkg
-      begin
-        require 'optparse/version'
-      rescue LoadError
-        pkg = nil
-      else
-        show_version(*pkg.split(/,/))
+  Officious['version'] = proc do |parser|
+    Switch::OptionalArgument.new do |pkg|
+      if pkg
+        begin
+          require 'optparse/version'
+        rescue LoadError
+        else
+          show_version(*pkg.split(/,/)) or
+            abort("#{parser.program_name}: no version found in package #{pkg}")
+          exit
+        end
       end
+      v = parser.ver or abort("#{parser.program_name}: version unknown")
+      puts v
+      exit
     end
-    unless pkg
-      v = ARGV.options.ver and puts v
-    end
-    exit
   end
 
   # :startdoc:
@@ -809,7 +817,16 @@ class OptionParser
     @banner = banner
     @summary_width = width
     @summary_indent = indent
+    add_officious
     yield self if block_given?
+  end
+
+  # :nodoc:
+  def add_officious
+    list = base()
+    Officious.each_pair do |opt, block|
+      list.long[opt] ||= block.call(self)
+    end
   end
 
 =begin
@@ -907,7 +924,7 @@ class OptionParser
   attr_writer :version, :release
 
   def version
-    @version || (defined?(::Version) && ::Version) || (defined?(::VERSION) && ::VERSION)
+    @version || (defined?(::Version) && ::Version)
   end
 
   def release
@@ -1562,6 +1579,21 @@ class OptionParser
     s
   end
 
+=begin
+: Regexp
+  Regular expression with option.
+=end
+  accept(Regexp, %r"\A/((?:\\.|[^\\])*)/([[:alpha:]]+)?\z|.*") do |all, s, o|
+    f = 0
+    if o
+      f |= Regexp::IGNORECASE if /i/ =~ o
+      f |= Regexp::MULTILINE if /m/ =~ o
+      f |= Regexp::EXTENDED if /x/ =~ o
+      k = o.delete("^imx")
+    end
+    Regexp.new(s || all, f, k)
+  end
+
 
 =begin
 = Exceptions
@@ -1644,7 +1676,7 @@ argument.
 ((<OptionParser::ParseError>))
 =end #'#"#`#
   class NeedlessArgument < ParseError
-    const_set(:Reason, 'needles argument'.freeze)
+    const_set(:Reason, 'needless argument'.freeze)
   end
 
 =begin

@@ -3,45 +3,47 @@
 class << OptionParser
   def show_version(*pkg)
     progname = ARGV.options.program_name
-    show = proc do |klass, version|
-      version = version.join(".") if Array === version
+    result = false
+    show = proc do |klass, cname, version|
       str = "#{progname}"
-      str << ": #{klass}" unless klass == Object
-      str << " version #{version}"
-      case
-      when klass.const_defined?(:Release)
-        str << " (#{klass.const_get(:Release)})"
-      when klass.const_defined?(:RELEASE)
-        str << " (#{klass.const_get(:Release)})"
+      unless klass == ::Object and cname == :VERSION
+        version = version.join(".") if Array === version
+        str << ": #{klass}" unless klass == Object
+        str << " version #{version}"
+      end
+      [:Release, :RELEASE].find do |rel|
+        if klass.const_defined?(rel)
+          str << " (#{klass.const_get(rel)})"
+        end
       end
       puts str
+      result = true
     end
     if pkg.size == 1 and pkg[0] == "all"
       self.search_const(::Object, /\AV(?:ERSION|ersion)\z/) do |klass, cname, version|
         unless cname[1] == ?e and klass.const_defined?(:Version)
-          show.call(klass, version)
+          show.call(klass, cname.intern, version)
         end
       end
     else
       pkg.each do |pkg|
-        /\A[A-Z]\w*((::|\/)[A-Z]\w*)*\z/ni =~ pkg or next
         begin
-          pkg = eval(pkg)
+          pkg = pkg.split(/::|\//).inject(::Object) {|m, c| m.const_get(c)}
           v = case
               when pkg.const_defined?(:Version)
-                pkg.const_get(:Version)
+                pkg.const_get(n = :Version)
               when pkg.const_defined?(:VERSION)
-                pkg.const_get(:VERSION)
+                pkg.const_get(n = :VERSION)
               else
+                n = nil
                 "unknown"
               end
-          show.call(pkg, v)
+          show.call(pkg, n, v)
         rescue NameError
-          puts "#{progname}: #$!"
         end
       end
     end
-    exit
+    result
   end
 
   def each_const(path, klass = ::Object)

@@ -1,3 +1,7 @@
+Tue Nov  9 14:27:18 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (OptionParser::Officious): moved from DefaultList.
+
 Tue Nov  9 00:50:06 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/rdoc.rb: Change version numbering of RDoc and ri
@@ -46,11 +50,11 @@ Sat Nov  6 11:18:59 2004  Tadayoshi Funaba  <tadf@dotrb.org>
 
 Fri Nov  5 19:07:16 2004  NARUSE, Yui  <naruse@ruby-lang.org>
 
-        * ext/nkf: follow CVS Head of original nkf.
+	* ext/nkf: follow CVS Head of original nkf.
 
 Fri Nov  5 18:12:42 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tk/scrollable.rb: divide Scrollable module into 
+	* ext/tk/lib/tk/scrollable.rb: divide Scrollable module into
 	  X_Scrollable and Y_Scrollable
 
 	* ext/tk/lib/tk/entry.rb: include X_Scrollable instead of Scrollable
@@ -100,8 +104,8 @@ Thu Nov  4 21:25:38 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Thu Nov  4 21:13:48 2004  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c(typelib_file_from_typelib): search "win16" 
-	  entry to get library path. 
+	* ext/win32ole/win32ole.c(typelib_file_from_typelib): search "win16"
+	  entry to get library path.
 
 	* ext/win32ole/win32ole.c(oletypelib_path): ditto.
 
@@ -140,12 +144,12 @@ Wed Nov  3 17:19:59 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Wed Nov  3 17:02:48 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tk.rb: support to use different Tcl commands between 
+	* ext/tk/lib/tk.rb: support to use different Tcl commands between
 	  configure and configinfo
 
 	* ext/tk/lib/font.rb: ditto.
 
-	* ext/tk/lib/itemconfig.rb: support to use different Tcl commands 
+	* ext/tk/lib/itemconfig.rb: support to use different Tcl commands
 	  between item_configure and item_configinfo
 
 	* ext/tk/lib/itemfont.rb: ditto.
@@ -159,7 +163,7 @@ Wed Nov  3 15:38:28 2004  Kouhei Sutou  <kou@cozmixng.org>
 	* test/rss/*.rb: removed tab width configuration headers.
 
 	* test/rss/test_maker_{0.9,1.0}.rb: sort -> do_sort.
-	
+
 	* lib/rss/maker/*.rb: changed API to RSS version independence.
 
 	* lib/rss/maker/base.rb
@@ -276,7 +280,7 @@ Sun Oct 31 14:18:56 2004  Minero Aoki  <aamine@loveruby.net>
 
 Sat Oct 30 15:24:41 2004  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c: add WIN32OLE_TYPELIB class. add 
+	* ext/win32ole/win32ole.c: add WIN32OLE_TYPELIB class. add
 	  WIN32OLE#ole_typelib method.
 
 	* ext/win32ole/tests/testOLETYPELIB.rb: add WIN32OLE_TYPELIB class.
