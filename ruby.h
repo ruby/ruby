@@ -316,7 +316,7 @@ struct RString {
     long len;
     char *ptr;
     union {
-	int capa;
+	long capa;
 	VALUE shared;
     } aux;
 };
@@ -325,7 +325,7 @@ struct RArray {
     struct RBasic basic;
     long len;
     union {
-	int capa;
+	long capa;
 	VALUE shared;
     } aux;
     VALUE *ptr;
