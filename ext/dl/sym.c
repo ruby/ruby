@@ -7,14 +7,6 @@
 
 VALUE rb_cDLSymbol;
 
-#ifndef HAVE_RB_STR_CAT2
-static VALUE
-rb_str_cat2(VALUE str, const char *s)
-{
-  return rb_str_cat(str, s, strlen(s));
-}
-#endif
-
 static const char *
 char2type(int ch)
 {

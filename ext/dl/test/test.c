@@ -148,30 +148,32 @@ test_append(char *ary[], int len, char *astr)
   };
 };
 
-void
+int
 test_init(int *argc, char **argv[])
 {
   int i;
-  printf("test_init(0x%x,0x%x)\n",argc,argv);
-  printf("\t*(0x%x) => %d\n",argc,*argc);
+  char s[256];
+
   for( i=0; i < (*argc); i++ ){
-    printf("\t(*(0x%x)[%d]) => %s\n", argv, i, (*argv)[i]);
-  };
-};
+    sprintf(s, "arg%d", i);
+    if( strcmp((*argv)[i], s) != 0 ){
+      return 1;
+    }
+  }
+  return 0;
+}
 
 FILE *
 test_open(const char *filename, const char *mode)
 {
   FILE *file;
   file = fopen(filename,mode);
-  printf("test_open(%s,%s):0x%x\n",filename,mode,file);
   return file;
 };
 
 void
 test_close(FILE *file)
 {
-  printf("test_close(0x%x)\n",file);
   fclose(file);
 };
 
@@ -182,26 +184,29 @@ test_gets(char *s, int size, FILE *f)
 };
 
 typedef int callback1_t(int, char *);
+#define CALLBACK_MSG "callback message"
 
 int
 test_callback1(int err, const char *msg)
 {
-  printf("internal callback function (err = %d, msg = '%s')\n",
-	 err, msg ? msg : "(null)");
-  return 1;
-};
+  if( strcmp(msg, CALLBACK_MSG) == 0 ){
+    return 1;
+  }
+  else{
+    return 0;
+  }
+}
 
 int
 test_call_func1(callback1_t *func)
 {
   if( func ){
-    return (*func)(0, "this is test_call_func1.");
+    return (*func)(0, CALLBACK_MSG);
   }
   else{
-    printf("test_call_func1(func = 0)\n");
-    return -1;
+    return 0;
   }
-};
+}
 
 struct test_data *
 test_data_init()
@@ -225,16 +230,6 @@ test_data_add(struct test_data *list, const char *name)
   strncpy(data->name, name, 1024);
   data->next = list->next;
   list->next = data;
-};
-
-void
-test_data_print(struct test_data *list)
-{
-  struct test_data *data;
-
-  for( data = list->next; data; data = data->next ){
-    printf("name = %s\n", data->name);
-  };
 };
 
 struct test_data *

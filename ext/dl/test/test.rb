@@ -3,11 +3,16 @@
 require 'dl'
 require 'dl/import'
 
+$FAIL = 0
+$TOTAL = 0
+
 def assert(label, ty, *conds)
+  $TOTAL += 1
   cond = !conds.include?(false)
   if( cond )
     printf("succeed in `#{label}'\n")
   else
+    $FAIL += 1
     case ty
     when :may
       printf("fail in `#{label}' ... expected\n")
@@ -158,12 +163,12 @@ DL.dlopen($LIB){|h|
   debug r,rs
   assert("strcat", :must, rs[0].to_s == "abcx")
 
-  init = h["test_init","0iP"]
+  init = h["test_init","IiP"]
   debug init
   argc = 3
   argv = ["arg0","arg1","arg2"].to_ptr
   r,rs = init[argc, argv.ref]
-  debug r,rs
+  assert("init", :must, r == 0)
 }
 
 
@@ -203,9 +208,11 @@ assert("callback1", :must, r == 1)
 callback2 = DL.set_callback("LLP", 0){|arg1,arg2|
   ptr = arg2 # DL::PtrData.new(arg2)
   msg = ptr.to_s
-  print("user defined callback function",
-	"(err = #{arg1}, msg = '#{msg}')\n")
-  2
+  if( msg == "callback message" )
+    2
+  else
+    0
+  end
 }
 debug callback2
 r,rs = h["test_call_func1", "IP"][callback2]
@@ -249,14 +256,12 @@ assert("set value", :must, ptr[:l] == lval) unless (Fixnum === :-)
 
 data_init = h["test_data_init", "P"]
 data_add  = h["test_data_add", "0PS"]
-data_print = h["test_data_print", "0P"]
 data_aref = h["test_data_aref", "PPI"]
 r,rs = data_init[]
 ptr = r
 data_add[ptr, "name1"]
 data_add[ptr, "name2"]
 data_add[ptr, "name3"]
-data_print[ptr]
 
 r,rs = data_aref[ptr, 1]
 ptr = r
@@ -288,3 +293,5 @@ assert("struct!", :must,
        ptr["l"] == 4)
 
 GC.start
+
+printf("fail/total = #{$FAIL}/#{$TOTAL}\n")

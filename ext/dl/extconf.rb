@@ -17,7 +17,7 @@ if( ARGV.include?("--help") )
                      <max_cbent>: maximum number of callback entries
   --enable-asm       use the embedded assembler for passing arguments.
                      (this option is available for i386 machine now.)
-  --enable-dlstack   use a stack emulation for constructing function call. [experimental]
+  --enable-dlstack   use a stack emulation for constructing function call.
 EOF
   exit(0)
 end
@@ -33,7 +33,7 @@ if (Config::CONFIG['CC'] =~ /gcc/) && (Config::CONFIG['arch'] =~ /i.86/)
 else
   $with_asm = false
 end
-$with_dlstack = false
+$with_dlstack = ! $with_asm
 
 $with_type_int = try_run(<<EOF)
 int main(){ return sizeof(int) == sizeof(long); }
@@ -163,11 +163,6 @@ elsif( have_header("windows.h") )
   have_func("GetProcAddress")
 else
   exit(0)
-end
-
-method(:have_func).arity == 1 or have_func("rb_str_cat2", "ruby.h")
-if method(:have_func).arity == 1 or !have_func("rb_block_given_p", "ruby.h")
-    $dlconfig_h << "#define rb_block_given_p rb_iterator_p\n"
 end
 
 def File.update(file, str)
