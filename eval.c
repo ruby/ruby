@@ -776,7 +776,6 @@ static struct tag *prot_tag;
     _tag.frame = ruby_frame;		\
     _tag.iter = ruby_iter;		\
     _tag.prev = prot_tag;		\
-    _tag.retval = Qnil;			\
     _tag.scope = ruby_scope;		\
     _tag.tag = ptag;			\
     _tag.dst = 0;			\
@@ -6337,7 +6336,7 @@ proc_eq(self, other)
     struct BLOCK *data, *data2;
 
     if (TYPE(other) != T_DATA) return Qfalse;
-    if (RDATA(other)->dmark != blk_mark) Qfalse;
+    if (RDATA(other)->dmark != (RUBY_DATA_FUNC)blk_mark) Qfalse;
     Data_Get_Struct(self, struct BLOCK, data);
     Data_Get_Struct(other, struct BLOCK, data2);
     if (data->tag == data2->tag) return Qtrue;
