@@ -1,6 +1,12 @@
+Mon Jan 27 03:29:17 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* error.c (get_syserror): use snprintf() instead of sprintf(). pointed
+	  out by knu.
+
 Mon Jan 27 02:07:27 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
-	* error.c (get_syserror): some Windows' errno have 5 digits.
+	* error.c (get_syserror): some Windows' errno have 5 digits. pointed
+	  out by znz.
 
 Sun Jan 19 23:12:21 2003  Akinori MUSHA  <knu@iDaemons.org>
 
