@@ -83,7 +83,6 @@ fdbm_s_open(argc, argv, klass)
     }
 
     if (!dbm) {
-	printf("mode: %o\n", mode);
 	if (mode == -1) return Qnil;
 	rb_sys_fail(RSTRING(file)->ptr);
     }
