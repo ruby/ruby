@@ -1,5 +1,47 @@
 Summary of the changes since 1.6.4:
 
+: require
+
+  Fixed with handling of a `~' to allow an extention to be omitted.
+  [ruby-dev:13756)
+
+    $ echo p __FILE__ > ~/a.rb
+    $ ruby17 -v -r~/a -e0
+    ruby 1.7.1 (2001-07-03) [i686-linux]
+    0: No such file to load -- ~/a (LoadError)
+    $ ruby16 -v -r~/a -e0
+    ruby 1.6.4 (2001-07-02) [i686-linux]
+    0: No such file to load -- ~/a (LoadError)
+    $ ruby14 -v -r~/a -e0
+    ruby 1.4.6 (2000-08-16) [i686-linux]
+    "/home/nobu/a.rb"
+
+: String#each_line
+
+  Fixed to properly propagate taintness. [ruby-dev:13755]
+
+: NKF::nkf
+
+  Fixed to properly propagate taintness. [ruby-dev:13754]
+
+: ruby -x
+
+  Fixed a bug that when a `-x' is specified the interpreter might exit
+  without running a script. [ruby-dev:13752]
+
+: attr_*
+
+  Fixed to raise an error when unwanted parameters are given.
+  [ruby-dev:13748]
+
+    class C
+      def initialize
+	@message = 'ok'
+      end
+      attr_reader :message
+    end
+    puts C.new.message(1,2,3) # raises ArgumentError
+
 : Readline::completion_append_characte
 : Readline::completion_append_character=
 
