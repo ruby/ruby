@@ -678,7 +678,6 @@ sample/rss/rss_recent.rb
 sample/rss/sampleRss.xml
 sample/rss/slashdot.rdf
 sample/rss/slashdotorg.rdf
-sample/rss/tdiary_plugin
 sample/rss/tdiary_plugin/rss-recent.rb
 sample/rss/w3c.rdf
 sample/rss/wiliki.rss
