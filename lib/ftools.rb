@@ -4,12 +4,7 @@ class << File
 
   def catname from, to
     if FileTest.directory? to
-      to +
-	if to =~ /\\/
-	  if to[-1,1] != '\\' then '\\' end + basename(from)
-	else
-	  if to[-1,1] != '/' then '/' end + basename(from)
-	end
+      File.join to.sub(%r([/\\]$), ''), basename(from)
     else
       to
     end

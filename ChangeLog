@@ -1,3 +1,7 @@
+Tue Oct  2 19:12:47 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* lib/ftools.rb (catname): allow trailing '/' for the destination.
+
 Tue Oct  2 08:04:52 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* marshal.c (r_object): TYPE_UCLASS check should be inversed.
