@@ -28,6 +28,8 @@ File.foreach "config.status" do |$_|
   if /^s%@program_transform_name@%s,(.*)%g$/
     ptn = $1.sub(/\$\$/, '$').split(/,/)	#'
     v_fast << "  CONFIG[\"ruby_install_name\"] = \"" + "ruby".sub(ptn[0],ptn[1]) + "\"\n"
+  elsif /^s%@DLDFLAGS@%(.*)%g$/
+    v_fast << "  CONFIG[\"DLDFLAGS\"] = \"" + $1 + "\"\n"
   elsif /^s%@(\w+)@%(.*)%g/
     name = $1
     val = $2 || ""

@@ -1,5 +1,11 @@
 Mon Apr 26 16:46:59 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
+	* ext/extmk.rb.in: AIX shared library support modified.
+
+	* ext/aix_mksym.rb: ditto.
+
+	* configure.in: ditto.
+
 	* sprintf.c (rb_f_sprintf): should allocate proper sized buffer
 	  for float numbers.
 

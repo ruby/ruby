@@ -30,9 +30,9 @@ if $topdir !~ "^/"
   # get absolute path
   $topdir = File.expand_path($topdir)
 end
-$ruby_inc = "@top_srcdir@"
+$ruby_inc = $top_srcdir
 
-load '@top_srcdir@/lib/find.rb'
+load "#{$top_srcdir}/lib/find.rb"
 
 ## drive letter
 if PLATFORM == "i386-os2_emx" then
@@ -497,8 +497,8 @@ for d in Dir["#{$top_srcdir}/ext/*"]
     print "cleaning ", d, "\n"
   else
     print "compiling ", d, "\n"
-    if PLATFORM =~ /ibm-aix/
-      load './aix_mksym.rb'
+    if PLATFORM =~ /-aix/ and older("../ruby.imp", "../miniruby")
+      load "#{$top_srcdir}/ext/aix_mksym.rb"
     end
   end
   extmake(d)

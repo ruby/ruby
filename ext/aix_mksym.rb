@@ -30,6 +30,4 @@ def extract(nm, out)
   exp.close
   nm.close
 end
-if older("../ruby.imp", "../miniruby")
-  extract(open("|/usr/ccs/bin/nm -p ../*.o"), "../ruby.imp")
-end
+extract(open("|/usr/ccs/bin/nm -p ../*.o"), "../ruby.imp")

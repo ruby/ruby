@@ -13,8 +13,7 @@ AUTOCONF = autoconf
 
 prefix = @prefix@
 CFLAGS = @CFLAGS@ -I. -I@srcdir@ -I@includedir@
-LDFLAGS = @STATIC@ $(CFLAGS) @LDFLAGS@
-XLDFLAGS = @XLDFLAGS@
+LDFLAGS = @STATIC@ $(CFLAGS) @LDFLAGS@ @XLDFLAGS@
 EXTLIBS = 
 LIBS = @LIBS@ $(EXTLIBS)
 MISSING = @LIBOBJS@ @ALLOCA@
@@ -86,7 +85,7 @@ all:		miniruby$(binsuffix) rbconfig.rb
 
 miniruby$(binsuffix):	config.status $(LIBRUBY_A) $(MAINOBJ) dmyext.o
 		@rm -f $@
-		$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINOBJ) dmyext.o $(LIBRUBY_A) $(LIBS) -o $@
+		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) dmyext.o $(LIBRUBY_A) $(LIBS) -o $@
 
 $(PROGRAM):     $(LIBRUBY) $(MAINOBJ) $(EXTOBJS) 
 		@rm -f $@
@@ -112,10 +111,11 @@ clean:;		@rm -f $(OBJS) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY_ALIASES) $(MAINOBJ)
 distclean:	clean
 		@rm -f Makefile ext/extmk.rb config.h
 		@rm -f ext/config.cache config.cache config.log config.status
-		@rm -f parse.c *~ core *.core gmon.out y.tab.c y.output
+		@rm -f *~ core *.core gmon.out y.tab.c y.output ruby.imp
 		@rm -f $(PROGRAM) miniruby$(binsuffix)
 
 realclean:	distclean
+		@rm -f parse.c
 		@rm -f lex.c
 
 test:		miniruby$(binsuffix)
