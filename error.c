@@ -695,6 +695,13 @@ rb_sys_fail(mesg)
 }
 
 void
+rb_load_fail(path)
+    char *path;
+{
+    rb_loaderror("%s -- %s", strerror(errno), path);
+}
+
+void
 rb_error_frozen(what)
     char *what;
 {

@@ -172,7 +172,7 @@ class TkCanvas<TkWindow
   end
 
   def bbox(tagOrId, *tags)
-    list(tk_send('bbox', tagid(tagOrId), *tags))
+    list(tk_send('bbox', tagid(tagOrId), *tags.collect{|t| tagid(t)}))
   end
 
   def itembind(tag, context, cmd=Proc.new, args=nil)
@@ -207,7 +207,7 @@ class TkCanvas<TkWindow
   end
 
   def delete(*args)
-    tk_send 'delete', *args
+    tk_send 'delete', *args.collect{|t| tagid(t)}
   end
   alias remove delete
 
@@ -375,7 +375,7 @@ class TkCanvas<TkWindow
   end
 
   def lower(tag, below=None)
-    tk_send 'lower', tagid(tag), below
+    tk_send 'lower', tagid(tag), tagid(below)
   end
 
   def move(tag, x, y)
@@ -387,7 +387,7 @@ class TkCanvas<TkWindow
   end
 
   def raise(tag, above=None)
-    tk_send 'raise', tagid(tag), above
+    tk_send 'raise', tagid(tag), tagid(above)
   end
 
   def scale(tag, x, y, xs, ys)

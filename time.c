@@ -324,11 +324,6 @@ make_time_t(tptr, utc_or_local)
     if (guess < 0) goto out_of_range;
 
     if (!utc_or_local) {	/* localtime zone adjust */
-#if defined(HAVE_TM_ZONE)
-	tm = localtime(&guess);
-	if (!tm) goto error;
-	guess -= tm->tm_gmtoff;
-#else
 	struct tm gt, lt;
 	long tzsec;
 
@@ -357,10 +352,14 @@ make_time_t(tptr, utc_or_local)
 	}
 	tm = localtime(&guess);
 	if (!tm) goto error;
-	if (lt.tm_isdst != tm->tm_isdst) {
-	    guess -= 3600;
+	if (lt.tm_isdst != tm->tm_isdst || tptr->tm_hour != tm->tm_hour) {
+	    oguess = guess - 3600;
+	    tm = localtime(&oguess);
+	    if (!tm) goto error;
+	    if (tptr->tm_hour == tm->tm_hour) {
+		guess = oguess;
+	    }
 	}
-#endif
 	if (guess < 0) {
 	    goto out_of_range;
 	}
@@ -891,7 +890,7 @@ rb_strftime(buf, format, time)
 	return 0;
     }
     len = strftime(*buf, SMALLBUF, format, time);
-    if (len != 0) return len;
+    if (len != 0 || **buf == '\0') return len;
     for (size=1024; ; size*=2) {
 	*buf = xmalloc(size);
 	(*buf)[0] = '\0';

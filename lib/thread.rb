@@ -185,7 +185,7 @@ class Queue
     end
   end
   def shift(non_block=false)
-    pop(non_block=false)
+    pop(non_block)
   end
   alias deq shift
 

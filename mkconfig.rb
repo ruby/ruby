@@ -28,11 +28,11 @@ has_srcdir = false
 has_version = false
 File.foreach "config.status" do |$_|
   next if /^#/
-  if /^s%@program_transform_name@%s,(.*)%g$/
+  if /^s[%,]@program_transform_name@[%,]s,(.*)[%,]/
     next if $install_name
     ptn = $1.sub(/\$\$/, '$').split(/,/)	#'
     v_fast << "  CONFIG[\"ruby_install_name\"] = \"" + "ruby".sub(ptn[0],ptn[1]) + "\"\n"
-  elsif /^s%@(\w+)@%(.*)%g/
+  elsif /^s[%,]@(\w+)@[%,](.*)[%,]/
     name = $1
     val = $2 || ""
     next if name =~ /^(INSTALL|DEFS|configure_input|srcdir|top_srcdir)$/
@@ -48,19 +48,6 @@ File.foreach "config.status" do |$_|
       v_others << v
     end
     has_version = true if name == "MAJOR"
-    if /DEFS/
-      val.split(/\s*-D/).each do |i|
-	if i =~ /(.*)=(\\")?([^\\]*)(\\")?/
-	  key, val = $1, $3
-	  if val == '1'
-	    val = "TRUE"
-	  else
-	    val.sub! /^\s*(.*)\s*$/, '"\1"'
-	  end
-	  print "  CONFIG[\"#{key}\"] = #{val}\n"
-	end
-      end
-    end
   elsif /^ac_given_srcdir=(.*)/
     v_fast << "  CONFIG[\"srcdir\"] = \"" + File.expand_path($1) + "\"\n"
     has_srcdir = true

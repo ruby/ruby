@@ -30,7 +30,7 @@ AUTOCONF = autoconf
 
 
 prefix = /usr
-CFLAGS = -nologo -DNT=1 -Zi -MD -O2b2x -G5
+CFLAGS = -nologo -DNT=1 -Zi -MD -O2b2xg- -G5
 CPPFLAGS = -I$(srcdir) -I$(srcdir)/missing
 LDFLAGS = $(CFLAGS) -Fm
 XLDFLAGS = 

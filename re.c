@@ -288,11 +288,11 @@ rb_reg_desc(s, len, re)
     rb_str_cat2(str, "/");
     if (re) {
 	rb_reg_check(re);
-	if (RREGEXP(re)->ptr->options & RE_OPTION_MULTILINE)
-	    rb_str_cat2(str, "m");
 	/* /p is obsolete; to be removed */
 	if ((RREGEXP(re)->ptr->options & RE_OPTION_POSIXLINE) == RE_OPTION_POSIXLINE)
 	    rb_str_cat2(str, "p");
+	else if (RREGEXP(re)->ptr->options & RE_OPTION_MULTILINE)
+	    rb_str_cat2(str, "m");
 	if (RREGEXP(re)->ptr->options & RE_OPTION_IGNORECASE)
 	    rb_str_cat2(str, "i");
 	if (RREGEXP(re)->ptr->options & RE_OPTION_EXTENDED)
@@ -915,8 +915,7 @@ rb_reg_equal(re1, re2)
     if (min > RREGEXP(re2)->len) min = RREGEXP(re2)->len;
     if (memcmp(RREGEXP(re1)->str, RREGEXP(re2)->str, min) == 0 &&
 	rb_reg_cur_kcode(re1) == rb_reg_cur_kcode(re2) &&
-	!((RREGEXP(re1)->ptr->options & RE_OPTION_IGNORECASE) ^
-	  (RREGEXP(re2)->ptr->options & RE_OPTION_IGNORECASE))) {
+	RREGEXP(re1)->ptr->options == RREGEXP(re2)->ptr->options) {
 	return Qtrue;
     }
     return Qfalse;
@@ -1015,6 +1014,7 @@ rb_reg_initialize_m(argc, argv, self)
 	p = rb_str2cstr(src, &len);
 	rb_reg_initialize(self, p, len, flag);
     }
+    return self;
 }
 
 static VALUE
@@ -1123,6 +1123,12 @@ rb_reg_options(re)
     rb_reg_check(re);
     if (RREGEXP(re)->ptr->options & RE_OPTION_IGNORECASE)
 	options |= RE_OPTION_IGNORECASE;
+    if ((RREGEXP(re)->ptr->options & RE_OPTION_POSIXLINE) == RE_OPTION_POSIXLINE)
+	options |= RE_OPTION_POSIXLINE;
+    else if (RREGEXP(re)->ptr->options & RE_OPTION_MULTILINE)
+	options |= RE_OPTION_MULTILINE;
+    if (RREGEXP(re)->ptr->options & RE_OPTION_EXTENDED)
+	options |= RE_OPTION_EXTENDED;
     if (FL_TEST(re, KCODE_FIXED)) {
 	options |= rb_reg_get_kcode(re);
     }

@@ -1,6 +1,55 @@
 #include "config.h"
 
-#if defined(HAVE_LOCKF)
+#if defined HAVE_FCNTL && defined HAVE_FCNTL_H
+
+/* These are the flock() constants.  Since this sytems doesn't have
+   flock(), the values of the constants are probably not available.
+*/
+# ifndef LOCK_SH
+#  define LOCK_SH 1
+# endif
+# ifndef LOCK_EX
+#  define LOCK_EX 2
+# endif
+# ifndef LOCK_NB
+#  define LOCK_NB 4
+# endif
+# ifndef LOCK_UN
+#  define LOCK_UN 8
+# endif
+
+#include <fcntl.h>
+#include <unistd.h>
+#include <errno.h>
+
+int
+flock(fd, operation)
+    int fd;
+    int operation;
+{
+    struct flock lock;
+ 
+    switch (operation & ~LOCK_NB) {
+    case LOCK_SH:
+	lock.l_type = F_RDLCK;
+	break;
+    case LOCK_EX:
+	lock.l_type = F_WRLCK;
+	break;
+    case LOCK_UN:
+	lock.l_type = F_UNLCK;
+	break;
+    default:
+	errno = EINVAL;
+	return -1;
+    }
+    lock.l_whence = SEEK_SET;
+    lock.l_start = lock.l_len = 0L;
+ 
+    return fcntl(fd, (operation & LOCK_NB) ? F_SETLK : F_SETLKW, &lock);
+}
+
+#elif defined(HAVE_LOCKF)
 
 #include <unistd.h>
 #include <errno.h>
@@ -50,6 +99,8 @@ flock(fd, operation)
 
 	/* LOCK_SH - get a shared lock */
       case LOCK_SH:
+        rb_notimplement();
+        return -1;
 	/* LOCK_EX - get an exclusive lock */
       case LOCK_EX:
 	i = lockf (fd, F_LOCK, 0);
@@ -57,6 +108,8 @@ flock(fd, operation)
 
 	/* LOCK_SH|LOCK_NB - get a non-blocking shared lock */
       case LOCK_SH|LOCK_NB:
+        rb_notimplement();
+        return -1;
 	/* LOCK_EX|LOCK_NB - get a non-blocking exclusive lock */
       case LOCK_EX|LOCK_NB:
 	i = lockf (fd, F_TLOCK, 0);
@@ -77,54 +130,6 @@ flock(fd, operation)
 	break;
     }
     return i;
-}
-#elif defined HAVE_FCNTL && defined HAVE_FCNTL_H
-
-/* These are the flock() constants.  Since this sytems doesn't have
-   flock(), the values of the constants are probably not available.
-*/
-# ifndef LOCK_SH
-#  define LOCK_SH 1
-# endif
-# ifndef LOCK_EX
-#  define LOCK_EX 2
-# endif
-# ifndef LOCK_NB
-#  define LOCK_NB 4
-# endif
-# ifndef LOCK_UN
-#  define LOCK_UN 8
-# endif
-
-#include <fcntl.h>
-#include <unistd.h>
-#include <errno.h>
-
-int
-flock(fd, operation)
-    int fd;
-    int operation;
-{
-    struct flock lock;
- 
-    switch (operation & ~LOCK_NB) {
-    case LOCK_SH:
-	lock.l_type = F_RDLCK;
-	break;
-    case LOCK_EX:
-	lock.l_type = F_WRLCK;
-	break;
-    case LOCK_UN:
-	lock.l_type = F_UNLCK;
-	break;
-    default:
-	errno = EINVAL;
-	return -1;
-    }
-    lock.l_whence = SEEK_SET;
-    lock.l_start = lock.l_len = 0L;
- 
-    return fcntl(fd, (operation & LOCK_NB) ? F_SETLK : F_SETLKW, &lock);
 }
 #elif !defined NT
 int

@@ -1064,10 +1064,11 @@ rb_const_get(klass, id)
     VALUE klass;
     ID id;
 {
-    VALUE value;
-    VALUE tmp;
+    VALUE value, tmp;
+    int mod_retry = 0;
 
     tmp = klass;
+  retry:
     while (tmp) {
 	if (RCLASS(tmp)->iv_tbl && st_lookup(RCLASS(tmp)->iv_tbl,id,&value)) {
 	    return value;
@@ -1075,8 +1076,10 @@ rb_const_get(klass, id)
 	if (tmp == rb_cObject && top_const_get(id, &value)) return value;
 	tmp = RCLASS(tmp)->super;
     }
-    if (BUILTIN_TYPE(klass) == T_MODULE) {
-	return rb_const_get(rb_cObject, id);
+    if (!mod_retry && BUILTIN_TYPE(klass) == T_MODULE) {
+	mod_retry = 1;
+	tmp = rb_cObject;
+	goto retry;
     }
 
     /* Uninitialized constant */

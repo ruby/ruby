@@ -608,7 +608,7 @@ class RubyLex
 	identify_quotation
       elsif peek(0) == '='
 	getc
-	Token(OP_ASGIN, "%")
+	Token(TkOPASGN, :%)
       elsif @lex_state == EXPR_ARG and @space_seen and peek(0) !~ /\s/
 	identify_quotation
       else
