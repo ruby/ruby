@@ -2,12 +2,12 @@ English.rb	lets Perl'ish global variables have English names
 Env.rb		loads importenv.rb
 README		this file
 base64.rb	encodes/decodes base64 (obsolete)
-cgi-lib.rb	simple CGI support library
+cgi-lib.rb	simple CGI support library (old style)
 cgi.rb		CGI support library
 cgi/session	CGI session class
 complex.rb	complex number suppor
 date.rb		date object
-date2.rb	date object (compatible)
+date2.rb	date object (obsolete; use date)
 debug.rb	ruby debugger
 delegate.rb	delegates messages to other object
 e2mmap.rb	exception utilities
@@ -15,11 +15,11 @@ eregex.rb	extended regular expression (just a proof of concept)
 final.rb	adds finalizer to the object (simple)
 finalize.rb	adds finalizer to the object
 find.rb		traverses directory tree
-forwardable.rb	delegation support module
+forwardable.rb	explicit delegation library
 ftools.rb	file tools
 ftplib.rb	obsolete - use net/ftp
 getoptlong.rb	GNU getoptlong compatible
-getopts.rb	parses command line options
+getopts.rb	parses command line options (use getoptlong)
 importenv.rb	imports environment variables as global variables
 irb.rb		interactive ruby
 jcode.rb	Japanese text handling (replace String methods)
@@ -29,7 +29,13 @@ matrix.rb	matrix calculation library
 mkmf.rb		Makefile maker
 monitor.rb	exclusive region monitor for thread
 mutex_m.rb	mutex mixin
-net/*		net libraries
+net/ftp.rb	ftp access
+net/http.rb	HTTP access
+net/imap.rb	IMAP4 access
+net/pop.rb	POP3 access
+net/protocol.rb	abstract class for net library
+net/smtp.rb	SMTP access
+net/telnet.rb	telnet library
 observer.rb	observer desing pattern library (provides Observable)
 open3.rb	opens subprocess connection stdin/stdout/stderr
 ostruct.rb	python style object
