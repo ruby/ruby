@@ -1,2 +1,0 @@
-gtk.o: gtk.c $(hdrdir)/ruby.h $(hdrdir)/config.h $(hdrdir)/defines.h \
- $(hdrdir)/intern.h $(hdrdir)/sig.h
