@@ -1,3 +1,7 @@
+Sat Sep 11 16:09:46 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/parsers/parse_rb.rb: Fix up cross-file class merging.
+
 Fri Sep 10 20:18:05 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/tcltklib/tcltklib.c (lib_merge_tklist): fix suspicious
