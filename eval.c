@@ -99,7 +99,7 @@ struct timeval {
 
 VALUE rb_cProc;
 static VALUE rb_cBinding;
-static VALUE proc_call _((VALUE,VALUE));
+static VALUE proc_invoke _((VALUE,VALUE,int,VALUE));
 static VALUE rb_f_binding _((VALUE));
 static void rb_f_END _((void));
 static VALUE rb_f_block_given_p _((void));
@@ -1546,11 +1546,13 @@ rb_undef(klass, id)
     }
     if (rb_safe_level() >= 4 && !OBJ_TAINTED(klass)) {
 	rb_raise(rb_eSecurityError, "Insecure: can't undef");
+	if (id == __id__ || id == __send__ || id == init) {
+	    rb_name_error(id, "undefining `%s' prohibited", rb_id2name(id));
+	}
     }
     rb_frozen_class_p(klass);
-    if (id == __id__ || id == __send__) {
-	rb_warn("undefining `%s' may cause serious problem",
-		rb_id2name(id));
+    if (id == __id__ || id == __send__ || id == init) {
+	rb_warn("undefining `%s' may cause serious problem", rb_id2name(id));
     }
     body = search_method(ruby_class, id, &origin);
     if (!body || !body->nd_body) {
@@ -2010,12 +2012,13 @@ call_trace_func(event, file, line, self, id, klass)
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
 	srcfile = rb_str_new2(ruby_sourcefile?ruby_sourcefile:"(ruby)");
-	proc_call(trace_func, rb_ary_new3(6, rb_str_new2(event),
-					  srcfile,
-					  INT2FIX(ruby_sourceline),
-					  id?ID2SYM(id):Qnil,
-					  self?rb_f_binding(self):Qnil,
-					  klass));
+	proc_invoke(trace_func, rb_ary_new3(6, rb_str_new2(event),
+					    srcfile,
+					    INT2FIX(ruby_sourceline),
+					    id?ID2SYM(id):Qnil,
+					    self?rb_f_binding(self):Qnil,
+					    klass),
+		    Qtrue, 0);
     }
     POP_TMPTAG();		/* do not propagate retval */
     POP_FRAME();
@@ -4467,7 +4470,7 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
 	break;
 
       case NODE_BMETHOD:
-	result = proc_call(body->nd_cval, rb_ary_new4(argc, argv));
+	result = proc_invoke(body->nd_cval, rb_ary_new4(argc, argv), Qtrue, recv);
 	break;
 
       case NODE_SCOPE:
@@ -5928,7 +5931,7 @@ call_end_proc(data)
     ruby_frame->self = ruby_frame->prev->self;
     ruby_frame->last_func = 0;
     ruby_frame->last_class = 0;
-    proc_call(data, rb_ary_new2(0));
+    proc_invoke(data, rb_ary_new2(0), Qfalse, 0);
     POP_FRAME();
     POP_ITER();
 }
@@ -6407,9 +6410,10 @@ blk_orphan(data)
 }
 
 static VALUE
-proc_invoke(proc, args, pcall)
+proc_invoke(proc, args, pcall, self)
     VALUE proc, args;		/* OK */
     int pcall;
+    VALUE self;
 {
     struct BLOCK * volatile old_block;
     struct BLOCK _block;
@@ -6447,7 +6451,7 @@ proc_invoke(proc, args, pcall)
     state = EXEC_TAG();
     if (state == 0) {
 	proc_set_safe_level(proc);
-	result = rb_yield_0(args, 0, 0, pcall);
+	result = rb_yield_0(args, self, self?self:ruby_block->self, pcall);
     }
     POP_TAG();
 
@@ -6484,14 +6488,14 @@ static VALUE
 proc_call(proc, args)
     VALUE proc, args;		/* OK */
 {
-    return proc_invoke(proc, args, Qtrue);
+    return proc_invoke(proc, args, Qtrue, 0);
 }
 
 static VALUE
 proc_yield(proc, args)
     VALUE proc, args;		/* OK */
 {
-    return proc_invoke(proc, args, Qfalse);
+    return proc_invoke(proc, args, Qfalse, 0);
 }
 
 static VALUE

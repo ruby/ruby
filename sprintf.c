@@ -352,6 +352,7 @@ rb_f_sprintf(argc, argv)
 	  case 'x':
 	  case 'X':
 	  case 'b':
+	  case 'B':
 	  case 'u':
 	    {
 		volatile VALUE val = GETARG();
@@ -371,6 +372,7 @@ rb_f_sprintf(argc, argv)
 		  case 'x':
 		  case 'X':
 		  case 'b':
+		  case 'B':
 		  case 'u':
 		  default:
 		    if (flags&(FPLUS|FSPACE)) sign = 1;
@@ -381,6 +383,7 @@ rb_f_sprintf(argc, argv)
 		    else if (*p == 'x') prefix = "0x";
 		    else if (*p == 'X') prefix = "0X";
 		    else if (*p == 'b') prefix = "0b";
+		    else if (*p == 'B') prefix = "0B";
 		    if (prefix) {
 			width -= strlen(prefix);
 		    }
@@ -410,7 +413,7 @@ rb_f_sprintf(argc, argv)
 		if (*p == 'u' || *p == 'd' || *p == 'i') base = 10;
 		else if (*p == 'x' || *p == 'X') base = 16;
 		else if (*p == 'o') base = 8;
-		else if (*p == 'b') base = 2;
+		else if (*p == 'b' || *p == 'B') base = 2;
 		if (!bignum) {
 		    if (base == 2) {
 			val = rb_int2big(v);

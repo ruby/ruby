@@ -1192,6 +1192,9 @@ $x = [1,2,3,[4,5,"foo"],{1=>"bar"},2.5,fact(30)]
 $y = Marshal.dump($x)
 test_ok($x == Marshal.load($y))
 
+StrClone=String.clone;
+test_ok(Marshal.load(Marshal.dump(StrClone.new("abc"))).type == StrClone)
+
 test_check "pack"
 
 $format = "c2x5CCxsdils_l_a6";

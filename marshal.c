@@ -247,7 +247,7 @@ w_uclass(obj, klass, arg)
     VALUE obj, klass;
     struct dump_arg *arg;
 {
-    if (rb_class_real(CLASS_OF(obj)) != klass) {
+    if (rb_obj_class(obj) != klass) {
 	w_byte(TYPE_UCLASS, arg);
 	w_unique(rb_class2name(CLASS_OF(obj)), arg);
     }
@@ -799,20 +799,17 @@ r_object(arg)
       case TYPE_UCLASS:
 	{
 	    VALUE c = rb_path2class(r_unique(arg));
-	    VALUE tmp;
 
 	    v = r_object(arg);
-	    if (rb_special_const_p(v) ||
-		TYPE(v) == T_OBJECT || TYPE(v) == T_CLASS || TYPE(v) == T_MODULE || 
-		!RTEST(rb_funcall(c, '<', 1, RBASIC(v)->klass))) {
+	    if (rb_special_const_p(v) || TYPE(v) == T_OBJECT || TYPE(v) == T_CLASS) {
+	      format_error:
 		rb_raise(rb_eArgError, "dump format error (user class)");
 	    }
-#if 0
-	    tmp = rb_obj_alloc(c);
-	    if (TYPE(v) != TYPE(tmp)) {
-		rb_raise(rb_eArgError, "dump format error (user class)");
+	    if (TYPE(v) == T_MODULE || !RTEST(rb_funcall(c, '<', 1, RBASIC(v)->klass))) {
+		VALUE tmp = rb_obj_alloc(c);
+
+		if (TYPE(v) != TYPE(tmp)) goto format_error;
 	    }
-#endif
 	    RBASIC(v)->klass = c;
 	    return v;
 	}

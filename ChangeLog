@@ -1,3 +1,8 @@
+Mon Oct 22 15:21:55 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* class.c (rb_mod_clone): should not copy class name, since clone
+	  should remain anonymous.
+
 Fri Oct 19 23:40:37 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* variable.c (remove_trace): should not access already freed area.
@@ -25,6 +30,14 @@ Wed Oct 17 14:12:50 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* variable.c (rb_gvar_defined): refer the original entry of an alias.
 
+Tue Oct 16 23:29:26 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_call0): self in a block given to define_method now be
+	  switched to the receiver of the method.
+
+	* eval.c (proc_invoke): added new parameter to allow self
+	  switching.
+
 Tue Oct 16 21:38:15 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* eval.c (rb_f_missing): check stack level with rb_stack_check().
@@ -38,15 +51,20 @@ Tue Oct 16 13:18:47 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 	* object.c (rb_mod_initialize): optional block with
 	  Module.new. [new] (from 2001-10-10)
 
+>>>>>>> 1.591
 Tue Oct 16 00:07:06 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* parse.y (yylex): disallow alpha-numeric and mbchar for
 	  terminator of %string.
 
-Mond Oct 15 18:00:05 2001  Pit Capitain  <pit@capitain.de>
+Mon Oct 15 18:00:05 2001  Pit Capitain  <pit@capitain.de>
 
 	* string.c (rb_str_index): wrong increment for non alphanumeric
 	  string.
+
+Mon Oct 15 05:23:02 2001  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* sprintf.c (rb_f_sprintf): support "%B".
 
 Wed Oct 10 03:11:47 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

@@ -28,7 +28,6 @@
 #   Complex::conjugate
 #   Complex::<=>
 #   Complex::==
-#   Complex::to_i
 #   Complex::to_f
 #   Complex::to_r
 #   Complex::to_s
@@ -243,18 +242,6 @@ class Complex < Numeric
     end
   end
 
-  def to_i
-    Complex(@real.to_i, @image.to_i)
-  end
-  
-  def to_f
-    Complex(@real.to_f, @image.to_f)
-  end
-  
-  def to_r
-    Complex(@real.to_r, @image.to_r)
-  end
-  
   def denominator
     @real.denominator.lcm(@image.denominator)
   end
