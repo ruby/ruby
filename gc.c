@@ -1215,7 +1215,6 @@ run_final(obj)
     }
     if (finalizer_table && st_delete(finalizer_table, &obj, &table)) {
 	for (i=0; i<RARRAY(table)->len; i++) {
-	    printf("n finals=>%d\n", finalizer_table->num_entries);
 	    args[0] = RARRAY(table)->ptr[i];
 	    rb_protect(run_single_final, (VALUE)args, &status);
 	}
@@ -1244,7 +1243,6 @@ rb_gc_call_finalizer_at_exit()
 		if (FL_TEST(p, FL_FINALIZE)) {
 		    FL_UNSET(p, FL_FINALIZE);
 		    p->as.basic.klass = 0;
-		    printf("%p\n", p);
 		    run_final((VALUE)p);
 		}
 		p++;

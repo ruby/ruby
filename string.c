@@ -1662,7 +1662,7 @@ rb_str_upcase_bang(str)
 	if (ismbchar(*s)) {
 	    s+=mbclen(*s) - 1;
 	}
-	else if (islower(*s)) {
+	else if (ISLOWER(*s)) {
 	    *s = toupper(*s);
 	    modify = 1;
 	}

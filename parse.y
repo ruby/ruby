@@ -2545,13 +2545,12 @@ parse_qstring(term, paren)
 		c = '\\';
 		break;
 
-	      case '\'':
-		if (term == '\'') {
-		    c = '\'';
-		    break;
-		}
-		/* fall through */
 	      default:
+		/* fall through */
+		if (c == term || (paren && c == paren)) {
+		    tokadd(c);
+		    continue;
+		}
 		tokadd('\\');
 	    }
 	}
@@ -2606,7 +2605,7 @@ parse_quotedwords(term, paren)
 		c = '\\';
 		break;
 	      default:
-		if (c == term) {
+		if (c == term || (paren && c == paren)) {
 		    tokadd(c);
 		    continue;
 		}
@@ -4436,12 +4435,26 @@ assign_in_cond(node)
     return 1;
 }
 
+static int
+e_option_supplied()
+{
+    if (strcmp(ruby_sourcefile, "-e") == 0)
+	return Qtrue;
+    return Qfalse;
+}
+
 static void
 warn_unless_e_option(str)
     const char *str;
 {
-    if (strcmp(ruby_sourcefile, "-e") != 0)
-	rb_warning(str);
+    if (e_option_supplied()) rb_warn(str);
+}
+
+static void
+warning_unless_e_option(str)
+    const char *str;
+{
+    if (e_option_supplied()) rb_warning(str);
 }
 
 static NODE*
@@ -4456,12 +4469,15 @@ cond0(node, logop)
       case NODE_DSTR:
 	if (logop) break;
 	nd_set_type(node, NODE_DREGX);
-	/* fall through */
+	warn_unless_e_option("string literal in condition");
+	goto dregex;
+
       case NODE_DREGX:
       case NODE_DREGX_ONCE:
+	warning_unless_e_option("regex literal in condition");
+      dregex:
 	local_cnt('_');
 	local_cnt('~');
-	warn_unless_e_option("string/regex literal in condition");
 	return NEW_MATCH2(node, NEW_GVAR(rb_intern("$_")));
 
       case NODE_DOT2:
@@ -4477,20 +4493,22 @@ cond0(node, logop)
       case NODE_STR:
 	if (logop) break;
 	node->nd_lit = rb_reg_new(RSTRING(node->nd_lit)->ptr,RSTRING(node->nd_lit)->len,0);
+	warn_unless_e_option("string literal in condition");
 	goto regexp;
 
       case NODE_LIT:
 	switch (TYPE(node->nd_lit)) {
 	  case T_REGEXP:
+	    warning_unless_e_option("regex literal in condition");
 	  regexp:
 	    nd_set_type(node, NODE_MATCH);
 	    local_cnt('_');
 	    local_cnt('~');
-	    warn_unless_e_option("string/regex literal in condition");
 	    break;
 
 	  case T_FIXNUM:
 	    if (logop) break;
+	    if (!e_option_supplied()) break;
 	    warn_unless_e_option("integer literal in condition");
 	    return call_op(node,tEQ,1,NEW_GVAR(rb_intern("$.")));
 	}

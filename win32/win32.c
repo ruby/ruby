@@ -779,7 +779,7 @@ char *cmd;
     strcpy(cmd2, cmd);
     a = argv;
     for (s = cmd2; *s;) {
-	while (*s && isspace(*s)) s++;
+	while (*s && ISSPACE(*s)) s++;
 	if (*s == '"') {
 	    quote = *s;
 	    *(a++) = s++;
@@ -797,7 +797,7 @@ char *cmd;
 	}
 	else if (*s) {
 	    *(a++) = s;
-	    while (*s && !isspace(*s)) s++;
+	    while (*s && !ISSPACE(*s)) s++;
 	}
 	if (*s)
 	    *s++ = '\0';
@@ -1083,7 +1083,7 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
     //
 
     ptr = cmdline+(cmdlen - 1);
-    while(ptr >= cmdline && isspace(*ptr))
+    while(ptr >= cmdline && ISSPACE(*ptr))
         --ptr;
     *++ptr = '\0';
 
@@ -1103,7 +1103,7 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
 	// zap any leading whitespace
 	//
 
-	while(isspace(*ptr))
+	while(ISSPACE(*ptr))
 	    ptr++;
 	base = ptr;
 
@@ -1340,7 +1340,7 @@ opendir(char *filename)
 
     if ((stat (filename, &sbuf) < 0 ||
 	sbuf.st_mode & _S_IFDIR == 0) &&
-	(!isalpha(filename[0]) || filename[1] != ':' || filename[2] != '\0' ||
+	(!ISALPHA(filename[0]) || filename[1] != ':' || filename[2] != '\0' ||
 	((1 << (filename[0] & 0x5f) - 'A') & GetLogicalDrives()) == 0)) {
 	return NULL;
     }

@@ -1,5 +1,6 @@
 Language Spec.
 
+- %q!\!! => "!" (not "\\!")
 * operator !! for rescue. ???
 * objectify characters
 * ../... outside condition invokes operator method too.
@@ -72,6 +73,8 @@ Standard Libraries
 * way to specify immortal (fork endurance) thread;
 * or raise ForkException to every thread but fork caller.
 * Hash::new{default} or recommend Hash#fetch?
+* new user-defined marshal scheme. _dump(dumper), _load(restorer)
+* lchown, lchmod, etc.
 
 Extension Libraries
 

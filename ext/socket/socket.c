@@ -776,18 +776,17 @@ ruby_connect(fd, sockaddr, len, socks)
 }
 
 static VALUE
-open_inet(class, h, serv, type)
-    VALUE class, h, serv;
+load_addr_info(h, serv, type, res)
+    VALUE h, serv;
     int type;
+    struct addrinfo **res;
 {
-    struct addrinfo hints, *res, *res0;
-    int fd, status;
-    char *syscall;
-    char pbuf[1024], *portp;
     char *host;
+    char pbuf[1024], *portp;
+    struct addrinfo hints;
     int error;
 
-    if (h) {
+    if (!NIL_P(h)) {
 	Check_SafeStr(h);
 	host = RSTRING(h)->ptr;
     }
@@ -811,13 +810,32 @@ open_inet(class, h, serv, type)
     if (type == INET_SERVER) {
 	hints.ai_flags = AI_PASSIVE;
     }
-    error = getaddrinfo(host, portp, &hints, &res0);
+    error = getaddrinfo(host, portp, &hints, res);
     if (error) {
 	rb_raise(rb_eSocket, "getaddrinfo: %s", gai_strerror(error));
     }
 
+}
+static VALUE
+open_inet(class, remote_host, remote_serv, local_host, local_serv, type)
+    VALUE class, remote_host, remote_serv, local_host, local_serv;
+    int type;
+{
+    struct addrinfo hints, *res, *res_remote, *res_local = NULL;
+    int fd, status;
+    char *syscall;
+
+    load_addr_info(remote_host, remote_serv, type, &res_remote);
+
+    /*
+     * Maybe also accept a local address
+     */
+
+    if (type != INET_SERVER && (!NIL_P(local_host) || !NIL_P(local_serv)))
+      load_addr_info(local_host, local_serv, type, &res_local);
+      
     fd = -1;
-    for (res = res0; res; res = res->ai_next) {
+    for (res = res_remote; res; res = res->ai_next) {
 	status = ruby_socket(res->ai_family,res->ai_socktype,res->ai_protocol);
 	syscall = "socket(2)";
 	fd = status;
@@ -832,9 +850,16 @@ open_inet(class, h, serv, type)
 	    syscall = "bind(2)";
 	}
 	else {
-	    status = ruby_connect(fd, res->ai_addr, res->ai_addrlen,
-				  (type == INET_SOCKS));
-	    syscall = "connect(2)";
+	    if (res_local) {
+		status = bind(fd, res_local->ai_addr, res_local->ai_addrlen);
+		syscall = "bind(2)";
+	    }
+
+	    if (status >= 0) {
+		status = ruby_connect(fd, res->ai_addr, res->ai_addrlen,
+				      (type == INET_SOCKS));
+		syscall = "connect(2)";
+	    }
 	}
 
 	if (status < 0) {
@@ -855,7 +880,10 @@ open_inet(class, h, serv, type)
 #else
 	    close(fd);
 #endif
-	freeaddrinfo(res0);
+	freeaddrinfo(res_remote);
+        if (res_local) {
+	    freeaddrinfo(res_local);
+	}
 	rb_sys_fail(syscall);
     }
 
@@ -863,16 +891,38 @@ open_inet(class, h, serv, type)
 	listen(fd, 5);
 
     /* create new instance */
-    freeaddrinfo(res0);
+    if (res_local)
+      freeaddrinfo(res_local);
+    freeaddrinfo(res_remote);
     return sock_new(class, fd);
 }
 
 static VALUE
-tcp_s_open(class, host, serv)
-    VALUE class, host, serv;
+tcp_s_open(argc, argv, class)
+     int argc;
+     VALUE *argv;
+     VALUE class;
 {
-    Check_SafeStr(host);
-    return open_inet(class, host, serv, INET_CLIENT);
+    VALUE remote_host, remote_serv;
+    VALUE local_host, local_serv;
+  
+    int pcount = rb_scan_args(argc, argv, "22",
+			      &remote_host, &remote_serv,
+			      &local_host, &local_serv);
+
+    Check_SafeStr(remote_host);
+
+  
+    if (!NIL_P(local_host)) {
+	Check_SafeStr(local_host);
+    }
+
+    if (NIL_P(local_serv)) {
+	local_serv = INT2NUM(0);
+    }
+      
+    return open_inet(class, remote_host, remote_serv,
+		     local_host, local_serv, INET_CLIENT);
 }
 
 #ifdef SOCKS
@@ -888,7 +938,7 @@ socks_s_open(class, host, serv)
     }
 	
     Check_SafeStr(host);
-    return open_inet(class, host, serv, INET_SOCKS);
+    return open_inet(class, host, serv, Qnil, Qnil, INET_SOCKS);
 }
 
 #ifdef SOCKS5
@@ -1031,9 +1081,9 @@ tcp_svr_s_open(argc, argv, class)
     VALUE arg1, arg2;
 
     if (rb_scan_args(argc, argv, "11", &arg1, &arg2) == 2)
-	return open_inet(class, arg1, arg2, INET_SERVER);
+	return open_inet(class, arg1, arg2, NULL, Qnil, INET_SERVER);
     else
-	return open_inet(class, 0, arg1, INET_SERVER);
+	return open_inet(class, Qnil, arg1, NULL, Qnil, INET_SERVER);
 }
 
 static VALUE
@@ -2053,8 +2103,8 @@ Init_socket()
 
     rb_cTCPSocket = rb_define_class("TCPSocket", rb_cIPSocket);
     rb_define_global_const("TCPsocket", rb_cTCPSocket);
-    rb_define_singleton_method(rb_cTCPSocket, "open", tcp_s_open, 2);
-    rb_define_singleton_method(rb_cTCPSocket, "new", tcp_s_open, 2);
+    rb_define_singleton_method(rb_cTCPSocket, "open", tcp_s_open, -1);
+    rb_define_singleton_method(rb_cTCPSocket, "new", tcp_s_open, -1);
     rb_define_singleton_method(rb_cTCPSocket, "gethostbyname", tcp_s_gethostbyname, 1);
 
 #ifdef SOCKS

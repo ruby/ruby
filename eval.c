@@ -4473,7 +4473,7 @@ rb_call(klass, recv, mid, argc, argv, scope)
     struct cache_entry *ent;
 
     if (!klass) {
-	rb_raise(rb_eNotImpError, "method call on terminated obejct");
+	rb_raise(rb_eNotImpError, "method call on terminated object");
     }
     /* is it in the method cache? */
     ent = cache + EXPR1(klass, mid);
@@ -5998,9 +5998,10 @@ blk_copy_prev(block)
     while (block->prev) {
 	tmp = ALLOC_N(struct BLOCK, 1);
 	MEMCPY(tmp, block->prev, struct BLOCK, 1);
-	if (tmp->frame.argc > 0) {
+	if (tmp->frame.argc > 0 && !(tmp->frame.flags & FRAME_MALLOC)) {
 	    tmp->frame.argv = ALLOC_N(VALUE, tmp->frame.argc);
 	    MEMCPY(tmp->frame.argv, block->prev->frame.argv, VALUE, tmp->frame.argc);
+	    tmp->frame.flags |= FRAME_MALLOC;
 	}
 	scope_dup(tmp->scope);
 	tmp->tag->flags |= BLOCK_DYNAMIC;
@@ -6017,7 +6018,7 @@ frame_dup(frame)
     struct FRAME *tmp;
 
     for (;;) {
-	if (frame->argc > 0) {
+	if (frame->argc > 0 && !(frame->flags & FRAME_MALLOC)) {
 	    argv = ALLOC_N(VALUE, frame->argc);
 	    MEMCPY(argv, frame->argv, VALUE, frame->argc);
 	    frame->argv = argv;

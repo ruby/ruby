@@ -518,7 +518,7 @@ static VALUE
 fgdbm_has_key(obj, keystr)
     VALUE obj, keystr;
 {
-    datum key, val;
+    datum key;
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
 
@@ -528,8 +528,8 @@ fgdbm_has_key(obj, keystr)
 
     GetDBM(obj, dbmp);
     dbm = dbmp->di_dbm;
-    val = gdbm_fetch(dbm, key);
-    if (val.dptr) return Qtrue;
+    if (gdbm_exists(dbm, key))
+        return Qtrue;
     return Qfalse;
 }
 

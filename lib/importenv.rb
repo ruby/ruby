@@ -9,11 +9,12 @@
 
 for k,v in ENV
   next unless /^[a-zA-Z][_a-zA-Z0-9]*/ =~ k
+  v = v.gsub(/\\/) {|s| '\\'+s}
   eval <<EOS
-  $#{k} = %q!#{v}!
+  $#{k} = %q\0#{v}\0
   trace_var "$#{k}", proc{|v|
-    ENV[%q!#{k}!] = v; 
-    $#{k} = %q!#{v}!
+    ENV[%q!#{k}!] = v
+    $#{k} = v
     if v == nil
       untrace_var "$#{k}"
     end

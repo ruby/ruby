@@ -62,6 +62,7 @@ shortlen(len, ds)
 #define TYPE_UCLASS	'C'
 #define TYPE_OBJECT	'o'
 #define TYPE_USERDEF	'u'
+#define TYPE_USRMARHAL	'U'
 #define TYPE_FLOAT	'f'
 #define TYPE_BIGNUM	'l'
 #define TYPE_STRING	'"'

@@ -364,6 +364,14 @@ rb_reg_casefold_p(re)
 }
 
 static VALUE
+rb_reg_options_m(re)
+    VALUE re;
+{
+    rb_reg_check(re);
+    return INT2NUM(RREGEXP(re)->ptr->options);
+}
+
+static VALUE
 rb_reg_kcode_m(re)
     VALUE re;
 {
@@ -915,8 +923,7 @@ rb_reg_equal(re1, re2)
     if (min > RREGEXP(re2)->len) min = RREGEXP(re2)->len;
     if (memcmp(RREGEXP(re1)->str, RREGEXP(re2)->str, min) == 0 &&
 	rb_reg_cur_kcode(re1) == rb_reg_cur_kcode(re2) &&
-	!((RREGEXP(re1)->ptr->options & RE_OPTION_IGNORECASE) ^
-	  (RREGEXP(re2)->ptr->options & RE_OPTION_IGNORECASE))) {
+	RREGEXP(re1)->ptr->options == RREGEXP(re2)->ptr->options) {
 	return Qtrue;
     }
     return Qfalse;
@@ -1379,6 +1386,7 @@ Init_Regexp()
     rb_define_method(rb_cRegexp, "inspect", rb_reg_inspect, 0);
     rb_define_method(rb_cRegexp, "source", rb_reg_source, 0);
     rb_define_method(rb_cRegexp, "casefold?", rb_reg_casefold_p, 0);
+    rb_define_method(rb_cRegexp, "options", rb_reg_options_m, 0);
     rb_define_method(rb_cRegexp, "kcode", rb_reg_kcode_m, 0);
 
     rb_define_const(rb_cRegexp, "IGNORECASE", INT2FIX(RE_OPTION_IGNORECASE));
