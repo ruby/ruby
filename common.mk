@@ -38,7 +38,6 @@ OBJS	      = array.$(OBJEXT) \
 		regenc.$(OBJEXT) \
 		regerror.$(OBJEXT) \
 		regexec.$(OBJEXT) \
-		reggnu.$(OBJEXT) \
 		regparse.$(OBJEXT) \
 		ruby.$(OBJEXT) \
 		signal.$(OBJEXT) \
@@ -260,9 +259,6 @@ regerror.$(OBJEXT): {$(VPATH)}regerror.c {$(VPATH)}regint.h \
   {$(VPATH)}regenc.h {$(VPATH)}oniguruma.h config.h
 regexec.$(OBJEXT): {$(VPATH)}regexec.c {$(VPATH)}regint.h \
   {$(VPATH)}regenc.h {$(VPATH)}oniguruma.h config.h
-reggnu.$(OBJEXT): {$(VPATH)}reggnu.c {$(VPATH)}regint.h \
-  {$(VPATH)}regenc.h {$(VPATH)}oniguruma.h {$(VPATH)}oniggnu.h \
-  config.h
 regparse.$(OBJEXT): {$(VPATH)}regparse.c {$(VPATH)}oniguruma.h \
   {$(VPATH)}regint.h {$(VPATH)}regparse.h {$(VPATH)}regenc.h config.h
 ruby.$(OBJEXT): {$(VPATH)}ruby.c {$(VPATH)}ruby.h config.h \

@@ -52,7 +52,6 @@ extern unsigned long __libc_ia64_register_backing_store_base;
 #include <windows.h>
 #endif
 
-void re_free_registers _((struct re_registers*));
 int rb_io_fptr_finalize _((struct OpenFile*));
 
 #if !defined(setjmp) && defined(HAVE__SETJMP)
@@ -1166,7 +1165,7 @@ obj_free(obj)
 	break;
       case T_REGEXP:
 	if (RANY(obj)->as.regexp.ptr) {
-	    re_free_pattern(RANY(obj)->as.regexp.ptr);
+	    onig_free(RANY(obj)->as.regexp.ptr);
 	}
 	if (RANY(obj)->as.regexp.str) {
 	    RUBY_CRITICAL(free(RANY(obj)->as.regexp.str));
@@ -1184,7 +1183,7 @@ obj_free(obj)
 	break;
       case T_MATCH:
 	if (RANY(obj)->as.match.regs) {
-	    re_free_registers(RANY(obj)->as.match.regs);
+	    onig_region_free(RANY(obj)->as.match.regs, 0);
 	    RUBY_CRITICAL(free(RANY(obj)->as.match.regs));
 	}
 	break;

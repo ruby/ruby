@@ -208,16 +208,16 @@ kcode_set_option(re)
     if (reg_kcode == curr_kcode) return;
     switch (curr_kcode) {
       case KCODE_NONE:
-	re_mbcinit(MBCTYPE_ASCII);
+	onigenc_set_default_encoding(ONIG_ENCODING_ASCII);
 	break;
       case KCODE_EUC:
-	re_mbcinit(MBCTYPE_EUC);
+	onigenc_set_default_encoding(ONIG_ENCODING_EUC_JP);
 	break;
       case KCODE_SJIS:
-	re_mbcinit(MBCTYPE_SJIS);
+	onigenc_set_default_encoding(ONIG_ENCODING_SJIS);
 	break;
       case KCODE_UTF8:
-	re_mbcinit(MBCTYPE_UTF8);
+	onigenc_set_default_encoding(ONIG_ENCODING_UTF8);
 	break;
     }
 }
@@ -228,16 +228,16 @@ kcode_reset_option()
     if (reg_kcode == curr_kcode) return;
     switch (reg_kcode) {
       case KCODE_NONE:
-	re_mbcinit(MBCTYPE_ASCII);
+	onigenc_set_default_encoding(ONIG_ENCODING_ASCII);
 	break;
       case KCODE_EUC:
-	re_mbcinit(MBCTYPE_EUC);
+	onigenc_set_default_encoding(ONIG_ENCODING_EUC_JP);
 	break;
       case KCODE_SJIS:
-	re_mbcinit(MBCTYPE_SJIS);
+	onigenc_set_default_encoding(ONIG_ENCODING_SJIS);
 	break;
       case KCODE_UTF8:
-	re_mbcinit(MBCTYPE_UTF8);
+	onigenc_set_default_encoding(ONIG_ENCODING_UTF8);
 	break;
     }
 }
@@ -335,11 +335,11 @@ rb_reg_desc(s, len, re)
     rb_str_buf_cat2(str, "/");
     if (re) {
 	rb_reg_check(re);
-	if (RREGEXP(re)->ptr->options & RE_OPTION_MULTILINE)
+	if (RREGEXP(re)->ptr->options & ONIG_OPTION_MULTILINE)
 	    rb_str_buf_cat2(str, "m");
-	if (RREGEXP(re)->ptr->options & RE_OPTION_IGNORECASE)
+	if (RREGEXP(re)->ptr->options & ONIG_OPTION_IGNORECASE)
 	    rb_str_buf_cat2(str, "i");
-	if (RREGEXP(re)->ptr->options & RE_OPTION_EXTENDED)
+	if (RREGEXP(re)->ptr->options & ONIG_OPTION_EXTEND)
 	    rb_str_buf_cat2(str, "x");
 
 	if (FL_TEST(re, KCODE_FIXED)) {
@@ -430,7 +430,7 @@ rb_reg_to_s(re)
     VALUE re;
 {
     int options;
-    const int embeddable = RE_OPTION_MULTILINE|RE_OPTION_IGNORECASE|RE_OPTION_EXTENDED;
+    const int embeddable = ONIG_OPTION_MULTILINE|ONIG_OPTION_IGNORECASE|ONIG_OPTION_EXTEND;
     long len;
     const char* ptr;
     VALUE str = rb_str_buf_new2("(?");
@@ -447,13 +447,13 @@ rb_reg_to_s(re)
 	if ((len -= 2) > 0) {
 	    do {
 		if (*ptr == 'm') {
-		    options |= RE_OPTION_MULTILINE;
+		    options |= ONIG_OPTION_MULTILINE;
 		}
 		else if (*ptr == 'i') {
-		    options |= RE_OPTION_IGNORECASE;
+		    options |= ONIG_OPTION_IGNORECASE;
 		}
 		else if (*ptr == 'x') {
-		    options |= RE_OPTION_EXTENDED;
+		    options |= ONIG_OPTION_EXTEND;
 		}
 		else break;
 		++ptr;
@@ -464,13 +464,13 @@ rb_reg_to_s(re)
 	    --len;
 	    do {
 		if (*ptr == 'm') {
-		    options &= ~RE_OPTION_MULTILINE;
+		    options &= ~ONIG_OPTION_MULTILINE;
 		}
 		else if (*ptr == 'i') {
-		    options &= ~RE_OPTION_IGNORECASE;
+		    options &= ~ONIG_OPTION_IGNORECASE;
 		}
 		else if (*ptr == 'x') {
-		    options &= ~RE_OPTION_EXTENDED;
+		    options &= ~ONIG_OPTION_EXTEND;
 		}
 		else break;
 		++ptr;
@@ -485,12 +485,17 @@ rb_reg_to_s(re)
 	    int r;
 	    Regexp *rp;
 	    kcode_set_option(re);
-	    r = re_alloc_pattern(&rp);
+            r = onig_alloc_init(&rp, ONIG_OPTION_DEFAULT,
+                                ONIGENC_AMBIGUOUS_MATCH_DEFAULT,
+                                onigenc_get_default_encoding(),
+                                OnigDefaultSyntax);
 	    if (r == 0) {
-		err = (re_compile_pattern(++ptr, len -= 2, rp, NULL) != 0);
+		 ++ptr;
+ 		 len -= 2;
+		 err = (onig_compile(rp, ptr, ptr + len, NULL) != 0);
 	    }
 	    kcode_reset_option();
-	    re_free_pattern(rp);
+	    onig_free(rp);
 	}
 	if (err) {
 	    options = RREGEXP(re)->ptr->options;
@@ -499,15 +504,15 @@ rb_reg_to_s(re)
 	}
     }
 
-    if (options & RE_OPTION_MULTILINE) rb_str_buf_cat2(str, "m");
-    if (options & RE_OPTION_IGNORECASE) rb_str_buf_cat2(str, "i");
-    if (options & RE_OPTION_EXTENDED) rb_str_buf_cat2(str, "x");
+    if (options & ONIG_OPTION_MULTILINE) rb_str_buf_cat2(str, "m");
+    if (options & ONIG_OPTION_IGNORECASE) rb_str_buf_cat2(str, "i");
+    if (options & ONIG_OPTION_EXTEND) rb_str_buf_cat2(str, "x");
 
     if ((options & embeddable) != embeddable) {
 	rb_str_buf_cat2(str, "-");
-	if (!(options & RE_OPTION_MULTILINE)) rb_str_buf_cat2(str, "m");
-	if (!(options & RE_OPTION_IGNORECASE)) rb_str_buf_cat2(str, "i");
-	if (!(options & RE_OPTION_EXTENDED)) rb_str_buf_cat2(str, "x");
+	if (!(options & ONIG_OPTION_MULTILINE)) rb_str_buf_cat2(str, "m");
+	if (!(options & ONIG_OPTION_IGNORECASE)) rb_str_buf_cat2(str, "i");
+	if (!(options & ONIG_OPTION_EXTEND)) rb_str_buf_cat2(str, "x");
     }
 
     rb_str_buf_cat2(str, ":");
@@ -547,7 +552,7 @@ rb_reg_casefold_p(re)
     VALUE re;
 {
     rb_reg_check(re);
-    if (RREGEXP(re)->ptr->options & RE_OPTION_IGNORECASE) return Qtrue;
+    if (RREGEXP(re)->ptr->options & ONIG_OPTION_IGNORECASE) return Qtrue;
     return Qfalse;
 }
 
@@ -626,6 +631,7 @@ make_regexp(s, len, flags, ce)
     Regexp *rp;
     char err[ONIG_MAX_ERROR_MESSAGE_LEN];
     int r;
+    OnigErrorInfo einfo;
 
     /* Handle escaped characters first. */
 
@@ -634,18 +640,19 @@ make_regexp(s, len, flags, ce)
        from that.
     */
 
-    r = re_alloc_pattern(&rp);
+    r = onig_alloc_init(&rp, flags,
+                        ONIGENC_AMBIGUOUS_MATCH_DEFAULT,
+                        onigenc_get_default_encoding(),
+                        OnigDefaultSyntax);
     if (r) {
-	re_error_code_to_str((UChar* )err, r);
+	onig_error_code_to_str((UChar* )err, r);
 	rb_reg_raise(s, len, err, 0, ce);
     }
 
-    if (flags) {
-	rp->options = flags;
-    }
-    r = re_compile_pattern(s, len, rp, err);
+    r = onig_compile(rp, (UChar* )s, (UChar* )(s + len), &einfo);
 
     if (r != 0) {
+	(void )onig_error_code_to_str((UChar* )err, r, &einfo);
 	rb_reg_raise(s, len, err, 0, ce);
     }
     return rp;
@@ -694,9 +701,9 @@ match_init_copy(obj, orig)
 	rb_raise(rb_eTypeError, "wrong argument class");
     }
     RMATCH(obj)->str = RMATCH(orig)->str;
-    re_free_registers(RMATCH(obj)->regs);
+    onig_region_free(RMATCH(obj)->regs, 0);
     RMATCH(obj)->regs->allocated = 0;
-    re_copy_registers(RMATCH(obj)->regs, RMATCH(orig)->regs);
+    onig_region_copy(RMATCH(obj)->regs, RMATCH(orig)->regs);
 
     return obj;
 }
@@ -830,12 +837,12 @@ rb_reg_prepare_re(re)
     /* ignorecase status */
     if (ruby_ignorecase && !state) {
 	FL_SET(re, REG_CASESTATE);
-	RREGEXP(re)->ptr->options |= RE_OPTION_IGNORECASE;
+	RREGEXP(re)->ptr->options |= ONIG_OPTION_IGNORECASE;
 	need_recompile = 1;
     }
     if (!ruby_ignorecase && state) {
 	FL_UNSET(re, REG_CASESTATE);
-	RREGEXP(re)->ptr->options &= ~RE_OPTION_IGNORECASE;
+	RREGEXP(re)->ptr->options &= ~ONIG_OPTION_IGNORECASE;
 	need_recompile = 1;
     }
 
@@ -849,13 +856,22 @@ rb_reg_prepare_re(re)
     if (need_recompile) {
 	char err[ONIG_MAX_ERROR_MESSAGE_LEN];
 	int r;
+	OnigErrorInfo einfo;
+	regex_t *reg;
+	UChar *pattern;
 
 	if (FL_TEST(re, KCODE_FIXED))
 	    kcode_set_option(re);
 	rb_reg_check(re);
-	r = re_recompile_pattern(RREGEXP(re)->str, RREGEXP(re)->len, RREGEXP(re)->ptr, err);
+	reg = RREGEXP(re)->ptr;
+	pattern = ((UChar* )RREGEXP(re)->str);
+	r = onig_recompile(reg, pattern, pattern + RREGEXP(re)->len,
+			   reg->options, onigenc_get_default_encoding(),
+			   OnigDefaultSyntax, &einfo);
+
 	if (r != 0) {
-	    rb_reg_raise(RREGEXP(re)->str, RREGEXP(re)->len, err, re, Qfalse);
+	     (void )onig_error_code_to_str((UChar* )err, r, &einfo);
+	     rb_reg_raise(pattern, RREGEXP(re)->len, err, re, Qfalse);
 	}
     }
 }
@@ -866,6 +882,8 @@ rb_reg_adjust_startpos(re, str, pos, reverse)
     long pos, reverse;
 {
     long range;
+    OnigEncoding enc;
+    UChar *p, *string;
 
     rb_reg_check(re);
     if (may_need_recompile) rb_reg_prepare_re(re);
@@ -881,9 +899,22 @@ rb_reg_adjust_startpos(re, str, pos, reverse)
     else {
 	range = RSTRING(str)->len - pos;
     }
-    return re_adjust_startpos(RREGEXP(re)->ptr,
-			      RSTRING(str)->ptr, RSTRING(str)->len,
-			      pos, range);
+
+    enc = (RREGEXP(re)->ptr)->enc;
+
+    if (pos > 0 && ONIGENC_MBC_MAXLEN(enc) != 1 && pos < RSTRING(str)->len) {
+	 string = (UChar* )RSTRING(str)->ptr;
+
+	 if (range > 0) {
+	      p = onigenc_get_right_adjust_char_head(enc, string, string + pos);
+	 }
+	 else {
+	      p = ONIGENC_LEFT_ADJUST_CHAR_HEAD(enc, string, string + pos);
+	 }
+	 return p - string;
+    }
+
+    return pos;
 }
 
 long
@@ -915,8 +946,13 @@ rb_reg_search(re, str, pos, reverse)
     else {
 	range = RSTRING(str)->len - pos;
     }
-    result = re_search(RREGEXP(re)->ptr,RSTRING(str)->ptr,RSTRING(str)->len,
-		       pos, range, &regs);
+
+    result = onig_search(RREGEXP(re)->ptr,
+			 (UChar* )(RSTRING(str)->ptr),
+			 ((UChar* )(RSTRING(str)->ptr) + RSTRING(str)->len),
+			 ((UChar* )(RSTRING(str)->ptr) + pos),
+			 ((UChar* )(RSTRING(str)->ptr) + pos + range),
+			 &regs, ONIG_OPTION_NONE);
 
     if (FL_TEST(re, KCODE_FIXED))
 	kcode_reset_option();
@@ -928,7 +964,7 @@ rb_reg_search(re, str, pos, reverse)
 	}
 	else {
 	    char err[ONIG_MAX_ERROR_MESSAGE_LEN];
-	    re_error_code_to_str((UChar* )err, result);
+	    onig_error_code_to_str((UChar* )err, result);
 	    rb_reg_raise(RREGEXP(re)->str, RREGEXP(re)->len, err, 0, Qfalse);
 	}
     }
@@ -944,7 +980,7 @@ rb_reg_search(re, str, pos, reverse)
 	    FL_UNSET(match, FL_TAINT);
     }
 
-    re_copy_registers(RMATCH(match)->regs, &regs);
+    onig_region_copy(RMATCH(match)->regs, &regs);
     RMATCH(match)->str = rb_str_new4(str);
     rb_backref_set(match);
 
@@ -1338,7 +1374,7 @@ rb_reg_initialize(obj, s, len, options, ce)
 {
     struct RRegexp *re = RREGEXP(obj);
 
-    if (re->ptr) re_free_pattern(re->ptr);
+    if (re->ptr) onig_free(re->ptr);
     if (re->str) free(re->str);
     re->ptr = 0;
     re->str = 0;
@@ -1366,7 +1402,7 @@ rb_reg_initialize(obj, s, len, options, ce)
 	kcode_set_option((VALUE)re);
     }
     if (ruby_ignorecase) {
-	options |= RE_OPTION_IGNORECASE;
+	options |= ONIG_OPTION_IGNORECASE;
 	FL_SET(re, REG_CASESTATE);
     }
     re->ptr = make_regexp(s, len, options & 0xf, ce);
@@ -1734,7 +1770,7 @@ rb_reg_initialize_m(argc, argv, self)
     else {
 	if (argc >= 2) {
 	    if (FIXNUM_P(argv[1])) flags = FIX2INT(argv[1]);
-	    else if (RTEST(argv[1])) flags = RE_OPTION_IGNORECASE;
+	    else if (RTEST(argv[1])) flags = ONIG_OPTION_IGNORECASE;
 	}
 	if (argc == 3 && !NIL_P(argv[2])) {
 	    char *kcode = StringValuePtr(argv[2]);
@@ -1924,7 +1960,7 @@ rb_reg_options(re)
 
     rb_reg_check(re);
     options = RREGEXP(re)->ptr->options &
-	(RE_OPTION_IGNORECASE|RE_OPTION_MULTILINE|RE_OPTION_EXTENDED);
+	(ONIG_OPTION_IGNORECASE|ONIG_OPTION_MULTILINE|ONIG_OPTION_EXTEND);
     if (FL_TEST(re, KCODE_FIXED)) {
 	options |= rb_reg_get_kcode(re);
     }
@@ -2157,17 +2193,17 @@ rb_set_kcode(code)
       case 'E':
       case 'e':
 	reg_kcode = KCODE_EUC;
-	re_mbcinit(MBCTYPE_EUC);
+	onigenc_set_default_encoding(ONIG_ENCODING_EUC_JP);
 	break;
       case 'S':
       case 's':
 	reg_kcode = KCODE_SJIS;
-	re_mbcinit(MBCTYPE_SJIS);
+	onigenc_set_default_encoding(ONIG_ENCODING_SJIS);
 	break;
       case 'U':
       case 'u':
 	reg_kcode = KCODE_UTF8;
-	re_mbcinit(MBCTYPE_UTF8);
+	onigenc_set_default_encoding(ONIG_ENCODING_UTF8);
 	break;
       default:
       case 'N':
@@ -2176,7 +2212,7 @@ rb_set_kcode(code)
       case 'a':
       set_no_conversion:
 	reg_kcode = KCODE_NONE;
-	re_mbcinit(MBCTYPE_ASCII);
+	onigenc_set_default_encoding(ONIG_ENCODING_ASCII);
 	break;
     }
 }
@@ -2271,17 +2307,17 @@ Init_Regexp()
 {
     rb_eRegexpError = rb_define_class("RegexpError", rb_eStandardError);
 
-    re_set_casetable(casetable);
+    onigenc_set_default_caseconv_table((UChar* )casetable);
 #if DEFAULT_KCODE == KCODE_EUC
-    re_mbcinit(MBCTYPE_EUC);
+    onigenc_set_default_encoding(ONIG_ENCODING_EUC_JP);
 #else
 #if DEFAULT_KCODE == KCODE_SJIS
-    re_mbcinit(MBCTYPE_SJIS);
+    onigenc_set_default_encoding(ONIG_ENCODING_SJIS);
 #else
 #if DEFAULT_KCODE == KCODE_UTF8
-    re_mbcinit(MBCTYPE_UTF8);
+    onigenc_set_default_encoding(ONIG_ENCODING_UTF8);
 #else
-    re_mbcinit(MBCTYPE_ASCII);
+    onigenc_set_default_encoding(ONIG_ENCODING_ASCII);
 #endif
 #endif
 #endif
@@ -2320,9 +2356,9 @@ Init_Regexp()
     rb_define_method(rb_cRegexp, "options", rb_reg_options_m, 0);
     rb_define_method(rb_cRegexp, "kcode", rb_reg_kcode_m, 0);
 
-    rb_define_const(rb_cRegexp, "IGNORECASE", INT2FIX(RE_OPTION_IGNORECASE));
-    rb_define_const(rb_cRegexp, "EXTENDED", INT2FIX(RE_OPTION_EXTENDED));
-    rb_define_const(rb_cRegexp, "MULTILINE", INT2FIX(RE_OPTION_MULTILINE));
+    rb_define_const(rb_cRegexp, "IGNORECASE", INT2FIX(ONIG_OPTION_IGNORECASE));
+    rb_define_const(rb_cRegexp, "EXTENDED", INT2FIX(ONIG_OPTION_EXTEND));
+    rb_define_const(rb_cRegexp, "MULTILINE", INT2FIX(ONIG_OPTION_MULTILINE));
 
     rb_global_variable(&reg_cache);
 

@@ -1,3 +1,16 @@
+Thu Feb 17 22:15:34 2005  K.Kosako <sndgk@ybb.ne.jp>
+
+	* ext/strscan/strscan.c: calls Oniguruma API directly.
+
+Thu Feb 17 21:53:12 2005  K.Kosako <sndgk@ybb.ne.jp>
+
+	* common.mk, LEGAL: remove reggnu.c.
+
+Thu Feb 17 21:53:12 2005  Kazuo Saito <ksaito@uranus.dti.ne.jp>
+
+	* gc.c, re.c: now ruby calls Oniguruma API directly, bypassing
+	  GNU compatible APIs.
+
 Thu Feb 17 20:09:23 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* lib/drb/drb.rb (DRbServer.default_safe_level): fix typo.

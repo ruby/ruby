@@ -171,7 +171,7 @@ static void
 strscan_free(p)
     struct strscanner *p;
 {
-    re_free_registers(&(p->regs));
+    onig_region_free(&(p->regs), 0);
     memset(p, sizeof(struct strscanner), 0);
     free(p);
 }
@@ -440,17 +440,15 @@ strscan_do_scan(self, regex, succptr, getstr, headonly)
     }
     strscan_prepare_re(regex);
     if (headonly) {
-        ret = re_match(RREGEXP(regex)->ptr,
-                       CURPTR(p), S_RESTLEN(p),
-                       0,
-                       &(p->regs));
+        ret = onig_match(RREGEXP(regex)->ptr, (UChar* )CURPTR(p),
+                         (UChar* )(CURPTR(p) + S_RESTLEN(p)),
+                         (UChar* )CURPTR(p), &(p->regs), ONIG_OPTION_NONE);
     }
     else {
-        ret = re_search(RREGEXP(regex)->ptr,
-                        CURPTR(p), S_RESTLEN(p),
-                        0,
-                        S_RESTLEN(p),
-                        &(p->regs));
+        ret = onig_search(RREGEXP(regex)->ptr,
+                          (UChar* )CURPTR(p), (UChar* )(CURPTR(p) + S_RESTLEN(p)),
+                          (UChar* )CURPTR(p), (UChar* )(CURPTR(p) + S_RESTLEN(p)),
+                          &(p->regs), ONIG_OPTION_NONE);
     }
 
     if (ret == -2) rb_raise(ScanError, "regexp buffer overflow");

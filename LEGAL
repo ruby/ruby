@@ -12,7 +12,6 @@ regenc.[ch]:
 regerror.c:
 regex.c:
 regexec.c:
-reggnu.c:
 regint.h:
 regparse.[ch]:
 ascii.c:
@@ -20,11 +19,11 @@ euc_jp.c:
 sjis.c:
 utf8.c:
 
-Oniguruma  ----   (C) K.Kosako <kosako@sofnec.co.jp>
+Oniguruma  ----   (C) K.Kosako <sndgk393 AT ybb DOT ne DOT jp>
 
 http://www.ruby-lang.org/cgi-bin/cvsweb.cgi/oniguruma/
 http://www.freebsd.org/cgi/cvsweb.cgi/ports/devel/oniguruma/
-http://www.geocities.jp/kosako1/oniguruma/
+http://www.geocities.jp/kosako3/oniguruma/
 
    When this software is partly used or it is distributed with Ruby, 
    this of Ruby follows the license of Ruby.
