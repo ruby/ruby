@@ -177,6 +177,7 @@ module IRB
       @inspect_mode
     end
 
+    undef use_readline=
     def use_readline=(opt)
       @use_readline = opt
       print "use readline module\n" if @use_readline

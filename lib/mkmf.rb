@@ -8,6 +8,7 @@ CONFIG = Config::MAKEFILE_CONFIG
 ORIG_LIBPATH = ENV['LIB']
 
 SRC_EXT = ["c", "cc", "m", "cxx", "cpp", "C"]
+$static = $config_h = nil
 
 unless defined? $configure_args
   $configure_args = {}

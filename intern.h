@@ -56,6 +56,7 @@ VALUE rb_ary_cmp _((VALUE, VALUE));
 VALUE rb_protect_inspect _((VALUE(*)(ANYARGS),VALUE,VALUE));
 VALUE rb_inspecting_p _((VALUE));
 VALUE rb_check_array_value _((VALUE));
+VALUE rb_values_at _((VALUE, long, int, VALUE*, VALUE(*) _((VALUE,long))));
 /* bignum.c */
 VALUE rb_big_clone _((VALUE));
 void rb_big_2comp _((VALUE));

@@ -1387,10 +1387,12 @@ rb_mod_const_of(mod, data)
     VALUE mod;
     void *data;
 {
+    VALUE tmp = mod;
     for (;;) {
-	data = rb_mod_const_at(mod, data);
-	mod = RCLASS(mod)->super;
-	if (!mod) break;
+	data = rb_mod_const_at(tmp, data);
+	tmp = RCLASS(tmp)->super;
+	if (!tmp) break;
+	if (tmp == rb_cObject && mod != rb_cObject) break;
     }
     return data;
 }

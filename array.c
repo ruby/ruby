@@ -1218,29 +1218,37 @@ rb_ary_collect_bang(ary)
     return ary;
 }
 
-static void
-push_values_at(result, ary, arg)
-    VALUE result, ary, arg;
+VALUE
+rb_values_at(obj, olen, argc, argv, func)
+    VALUE obj;
+    long olen;
+    int argc;
+    VALUE *argv;
+    VALUE (*func) _((VALUE,long));
 {
-    long beg, len, i;
+    VALUE result = rb_ary_new2(argc);
+    long beg, len, i, j;
 
-    if (FIXNUM_P(arg)) {
-	rb_ary_push(result, rb_ary_entry(ary, FIX2LONG(arg)));
-	return;
-    }
-    /* check if idx is Range */
-    switch (rb_range_beg_len(arg, &beg, &len, RARRAY(ary)->len, 0)) {
-      case Qfalse:
-	break;
-      case Qnil:
-	return;
-      default:
-	for (i=0; i<len; i++) {
-	    rb_ary_push(result, rb_ary_entry(ary, i+beg));
+    for (i=0; i<argc; i++) {
+	if (FIXNUM_P(argv[i])) {
+	    rb_ary_push(result, (*func)(obj, FIX2LONG(argv[i])));
+	    continue;
 	}
-	return;
+	/* check if idx is Range */
+	switch (rb_range_beg_len(argv[i], &beg, &len, olen, 0)) {
+	  case Qfalse:
+	    break;
+	  case Qnil:
+	    continue;
+	  default:
+	    for (j=0; j<len; j++) {
+		rb_ary_push(result, (*func)(obj, j+beg));
+	    }
+	    continue;
+	}
+	rb_ary_push(result, (*func)(obj, NUM2LONG(argv[i])));
     }
-    rb_ary_push(result, rb_ary_entry(ary, NUM2LONG(arg)));
+    return result;
 }
 
 static VALUE
@@ -1249,13 +1257,7 @@ rb_ary_values_at(argc, argv, ary)
     VALUE *argv;
     VALUE ary;
 {
-    VALUE result = rb_ary_new2(argc);
-    long i;
-
-    for (i=0; i<argc; i++) {
-	push_values_at(result, ary, argv[i]);
-    }
-    return result;
+    return rb_values_at(ary, RARRAY(ary)->len, argc, argv, rb_ary_entry);
 }
 
 static VALUE

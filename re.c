@@ -914,8 +914,9 @@ last_paren_match_getter()
 }
 
 static VALUE
-match_to_a(match)
+match_array(match, start)
     VALUE match;
+    int start;
 {
     struct re_registers *regs = RMATCH(match)->regs;
     VALUE ary = rb_ary_new2(regs->num_regs);
@@ -923,7 +924,7 @@ match_to_a(match)
     int i;
     int taint = OBJ_TAINTED(match);
     
-    for (i=0; i<regs->num_regs; i++) {
+    for (i=start; i<regs->num_regs; i++) {
 	if (regs->beg[i] == -1) {
 	    rb_ary_push(ary, Qnil);
 	}
@@ -934,6 +935,20 @@ match_to_a(match)
 	}
     }
     return ary;
+}
+
+static VALUE
+match_to_a(match)
+    VALUE match;
+{
+    return match_array(match, 0);
+}
+
+static VALUE
+match_groups(match)
+    VALUE match;
+{
+    return match_array(match, 1);
 }
 
 static VALUE
@@ -953,31 +968,20 @@ match_aref(argc, argv, match)
 }
 
 static VALUE
+match_entry(match, n)
+    VALUE match;
+    long n;
+{
+    return rb_reg_nth_match(n, match);
+}
+
+static VALUE
 match_values_at(argc, argv, match)
     int argc;
     VALUE *argv;
     VALUE match;
 {
-    struct re_registers *regs = RMATCH(match)->regs;
-    VALUE target = RMATCH(match)->str;
-    VALUE result = rb_ary_new();
-    int i;
-    long idx;
-    int taint = OBJ_TAINTED(match);
-
-    for (i=0; i<argc; i++) {
-	idx = NUM2LONG(argv[i]);
-	if (idx < 0) idx += regs->num_regs;
-	if (idx < 0 || regs->num_regs <= idx) {
-	    rb_ary_push(result, Qnil);
-	}
-	else {
-	    VALUE str = rb_str_substr(target, regs->beg[idx], regs->end[idx]-regs->beg[idx]);
-	    if (taint) OBJ_TAINT(str);
-	    rb_ary_push(result, str);
-	}
-    }
-    return result;
+    return rb_values_at(match, RMATCH(match)->regs->num_regs, argc, argv, match_entry);
 }
 
 static VALUE
@@ -1766,6 +1770,7 @@ Init_Regexp()
     rb_define_method(rb_cMatch, "end", match_end, 1);
     rb_define_method(rb_cMatch, "to_a", match_to_a, 0);
     rb_define_method(rb_cMatch, "[]", match_aref, -1);
+    rb_define_method(rb_cMatch, "groups", match_groups, 0);
     rb_define_method(rb_cMatch, "select", match_select, -1);
     rb_define_method(rb_cMatch, "values_at", match_values_at, -1);
     rb_define_method(rb_cMatch, "pre_match", rb_reg_match_pre, 0);

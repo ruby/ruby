@@ -291,10 +291,12 @@ rb_f_sprintf(argc, argv)
 	    break;
 
 	  case 's':
+	  case 'p':
 	    {
 		VALUE arg = GETARG();
 		long len;
 
+		if (*p == 'p') arg = rb_inspect(arg);
 		str = rb_obj_as_string(arg);
 		if (OBJ_TAINTED(str)) tainted = 1;
 		len = RSTRING(str)->len;

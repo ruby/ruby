@@ -352,18 +352,6 @@ rb_struct_each_pair(s)
 }
 
 static VALUE
-rb_struct_to_s(s)
-    VALUE s;
-{
-    char *cname = rb_class2name(rb_obj_class(s));
-    VALUE str = rb_str_new(0, strlen(cname) + 4);
-
-    sprintf(RSTRING(str)->ptr, "#<%s>", cname);
-    RSTRING(str)->len = strlen(RSTRING(str)->ptr);
-    return str;
-}
-
-static VALUE
 inspect_struct(s)
     VALUE s;
 {
@@ -376,7 +364,7 @@ inspect_struct(s)
 	rb_bug("non-initialized struct");
     }
 
-    str = rb_str_buf_new2("#<");
+    str = rb_str_buf_new2("#<struct ");
     rb_str_cat2(str, cname);
     rb_str_cat2(str, " ");
     for (i=0; i<RSTRUCT(s)->len; i++) {
@@ -405,9 +393,9 @@ rb_struct_inspect(s)
 {
     if (rb_inspecting_p(s)) {
 	char *cname = rb_class2name(rb_obj_class(s));
-	VALUE str = rb_str_new(0, strlen(cname) + 8);
+	VALUE str = rb_str_new(0, strlen(cname) + 15);
 
-	sprintf(RSTRING(str)->ptr, "#<%s:...>", cname);
+	sprintf(RSTRING(str)->ptr, "#<struct %s:...>", cname);
 	RSTRING(str)->len = strlen(RSTRING(str)->ptr);
 	return str;
     }
@@ -530,19 +518,20 @@ rb_struct_aset(s, idx, val)
 }
 
 static VALUE
+struct_entry(s, n)
+    VALUE s;
+    long n;
+{
+    return rb_struct_aref(s, LONG2NUM(n));
+}
+
+static VALUE
 rb_struct_values_at(argc, argv, s)
     int argc;
     VALUE *argv;
     VALUE s;
 {
-    VALUE result = rb_ary_new();
-    long i;
-
-    for (i=0; i<argc; i++) {
-	rb_ary_push(result, rb_struct_aref(s, argv[i]));
-    }
-
-    return result;
+    return rb_values_at(s, RSTRUCT(s)->len, argc, argv, struct_entry);
 }
 
 static VALUE
@@ -648,7 +637,7 @@ Init_Struct()
     rb_define_method(rb_cStruct, "eql?", rb_struct_eql, 1);
     rb_define_method(rb_cStruct, "hash", rb_struct_hash, 0);
 
-    rb_define_method(rb_cStruct, "to_s", rb_struct_to_s, 0);
+    rb_define_method(rb_cStruct, "to_s", rb_struct_inspect, 0);
     rb_define_method(rb_cStruct, "inspect", rb_struct_inspect, 0);
     rb_define_method(rb_cStruct, "to_a", rb_struct_to_a, 0);
     rb_define_method(rb_cStruct, "values", rb_struct_to_a, 0);

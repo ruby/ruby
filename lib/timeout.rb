@@ -23,25 +23,38 @@
 #
 #    The time in seconds to wait for block teminatation.   
 #
+#  : [exception]
+#
+#    The exception classs to be raised on timeout.
+#
 #=end
 
-class TimeoutError<Interrupt
+module Timeout
+  class Error<Interrupt
+  end
+
+  def timeout(sec, exception=Error)
+    return yield if sec == nil
+    begin
+      x = Thread.current
+      y = Thread.start {
+        sleep sec
+        x.raise exception, "execution expired" if x.alive?
+      }
+      yield sec
+      #    return true
+    ensure
+      y.kill if y and y.alive?
+    end
+  end
+  module_function :timeout
 end
 
-def timeout(sec, exception=TimeoutError)
-  return yield if sec == nil
-  begin
-    x = Thread.current
-    y = Thread.start {
-      sleep sec
-      x.raise exception, "execution expired" if x.alive?
-    }
-    yield sec
-#    return true
-  ensure
-    y.kill if y and y.alive?
-  end
+# compatible
+def timeout(n, &block)
+  Timeout::timeout(n, &block)
 end
+TimeoutError = Timeout::Error
 
 if __FILE__ == $0
   p timeout(5) {

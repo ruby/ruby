@@ -1,9 +1,42 @@
+Thu Jul  3 14:22:46 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_values_at): extract common procedure from
+	  rb_ary_values_at.  follow DRY principle.
+
+	* re.c (match_values_at): values_at should understand ranges.
+
+	* struct.c (rb_struct_values_at): ditto.
+
+	* struct.c (inspect_struct): inspect format changed; add "struct "
+	  at the top.
+
+	* sprintf.c (rb_f_sprintf): "%p" specifier for inspect output.
+	  (RCR#68)
+
+	* eval.c (rb_mod_undef_method): allow "undef_method" to accept
+	  multiple arguments. (RCR#146)
+
+	* lib/timeout.rb: put timeout in Timeout module. (RCR#121)
+	  [ruby-talk:61028]
+
+	* re.c (match_groups): new method added. (RCR#139)
+
+	* variable.c (rb_mod_const_of): should exclude constant defined
+	  in Object, unless retrieving constants of Object.
+
 Thu Jul  3 12:13:05 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/mkmf.rb (VPATH): convert from Windows form to Unix form on 
 	  MinGW.  This fixes the build with GNU make 3.80-1 for Cygwin.
 
+Wed Jul  2 23:27:34 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_new4): do not allocate new string if original
+	  is frozen or already have copy-on-write entry. [ruby-talk:74940]
+
 Wed Jul  2 13:22:39 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_new4): 
 
 	* string.c (rb_str_shared_replace): clear flags before copy.
 

@@ -157,14 +157,17 @@ rb_str_new4(orig)
 {
     VALUE klass, str;
 
+    if (OBJ_FROZEN(orig)) return orig;
     klass = rb_obj_class(orig);
     if (FL_TEST(orig, ELTS_SHARED) && RSTRING(orig)->aux.shared) {
 	long ofs;
 	str = RSTRING(orig)->aux.shared;
 	ofs = RSTRING(str)->len - RSTRING(orig)->len;
-	str = str_new3(klass, str);
-	RSTRING(str)->ptr += ofs;
-	RSTRING(str)->len -= ofs;
+	if (ofs > 0) {
+	    str = str_new3(klass, str);
+	    RSTRING(str)->ptr += ofs;
+	    RSTRING(str)->len -= ofs;
+	}
     }
     else if (FL_TEST(orig, STR_ASSOC)) {
 	str = str_new(klass, RSTRING(orig)->ptr, RSTRING(orig)->len);

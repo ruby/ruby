@@ -362,6 +362,7 @@ rb_get_method_body(klassp, idp, noexp)
 	    body = ent->method = body->nd_head;
 	}
 	else {
+	    if (BUILTIN_TYPE(origin) == T_ICLASS) origin = RBASIC(origin)->klass;
 	    *klassp = origin;
 	    ent->origin = origin;
 	    ent->mid = ent->mid0 = id;
@@ -1824,10 +1825,16 @@ rb_undef(klass, id)
 }
 
 static VALUE
-rb_mod_undef_method(mod, name)
-    VALUE mod, name;
+rb_mod_undef_method(argc, argv, mod)
+    int argc;
+    VALUE *argv;
+    VALUE mod;
 {
-    rb_undef(mod, rb_to_id(name));
+    int i;
+
+    for (i=0; i<argc; i++) {
+	rb_undef(mod, rb_to_id(argv[i]));
+    }
     return mod;
 }
 
@@ -6521,7 +6528,7 @@ Init_eval()
     rb_undef_method(rb_cClass, "module_function");
 
     rb_define_private_method(rb_cModule, "remove_method", rb_mod_remove_method, 1);
-    rb_define_private_method(rb_cModule, "undef_method", rb_mod_undef_method, 1);
+    rb_define_private_method(rb_cModule, "undef_method", rb_mod_undef_method, -1);
     rb_define_private_method(rb_cModule, "alias_method", rb_mod_alias_method, 2);
     rb_define_private_method(rb_cModule, "define_method", rb_mod_define_method, -1);
 
