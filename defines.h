@@ -12,6 +12,49 @@
 
 #define RUBY
 
+#if !defined(__STDC__) && !defined(_MSC_VER)
+# define volatile
+#endif
+
+#ifdef __cplusplus
+# ifndef  HAVE_PROTOTYPES
+#  define HAVE_PROTOTYPES 1
+# endif
+# ifndef  HAVE_STDARG_PROTOTYPES
+#  define HAVE_STDARG_PROTOTYPES 1
+# endif
+#endif
+
+#undef _
+#ifdef HAVE_PROTOTYPES
+# define _(args) args
+#else
+# define _(args) ()
+#endif
+
+#undef __
+#ifdef HAVE_STDARG_PROTOTYPES
+# define __(args) args
+#else
+# define __(args) ()
+#endif
+
+#ifdef __cplusplus
+#define ANYARGS ...
+#else
+#define ANYARGS
+#endif
+
+#define xmalloc ruby_xmalloc
+#define xcalloc ruby_xcalloc
+#define xrealloc ruby_xrealloc
+#define xfree ruby_xfree
+
+void *xmalloc _((long));
+void *xcalloc _((long,long));
+void *xrealloc _((void*,long));
+void xfree _((void*));
+
 #if SIZEOF_LONG_LONG > 0
 # define HAVE_LONG_LONG
 # define LONG_LONG long long

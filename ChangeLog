@@ -3,6 +3,33 @@ Mon Feb 18 14:06:28 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 	* misc/ruby-mode.el (ruby-block-hanging-re): rescue block was too
 	  indented.
 
+Mon Feb 18 13:56:44 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (expr_value, arg_value, primary_value): value_expr()
+	  check in place.
+
+	* eval.c (block_pass): "&nil" should clear block given.
+
+Mon Feb 18 02:05:56 2002  Wolfgang Jahrling <wolfgang@pro-linux.de>
+
+	* dir.c (push_braces): remove MAXPATHLEN dependency.
+
+	* dir.c (dir_s_globd): ditto.
+
+	* dln.c (init_funcname): ditto.
+
+	* dln.c (load_1): ditto.
+
+	* dln.c (dln_load): ditto.
+
+	* configure.in: add GNU/Hurd switches.
+
+Fri Feb 15 17:44:26 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* pack.c (pack_pack): allows comment in template strings.
+
+	* pack.c (pack_unpack): ditto.
+
 Sun Feb 17 23:41:37 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* mkconfig.rb (Config::expand): expand ${} too.
@@ -36,6 +63,7 @@ Thu Feb 16 02:11:08 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 	* misc/ruby-mode.el (ruby-font-lock-keywords): fontify
 	  instance/class/global variables start with '_'.
 
+>>>>>>> 1.742
 Fri Feb 15 14:40:38 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_eval): replace rb_cvar_declare() by rb_cvar_set().

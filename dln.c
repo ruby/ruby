@@ -14,6 +14,10 @@
 #include "defines.h"
 #include "dln.h"
 
+#ifdef HAVE_STDLIB_H
+# include <stdlib.h>
+#endif
+
 #ifdef __CHECKER__
 #undef HAVE_DLOPEN
 #undef USE_DLN_A_OUT
@@ -96,7 +100,7 @@ int eaccess();
 
 static void
 init_funcname(buf, file)
-    char *buf;
+    char **buf;
     char *file;
 {
     char *p, *slash;
@@ -109,8 +113,15 @@ init_funcname(buf, file)
 	if (*p == '/') slash = p;
 #endif
 
-    snprintf(buf, MAXPATHLEN, FUNCNAME_PATTERN, slash + 1);
-    for (p = buf; *p; p++) {         /* Delete suffix if it exists */
+/* This assumes that systems without length limitation for file names
+   provide asprintf(). This shouldn't be too unlikely. */
+#ifdef MAXPATHLEN
+    *buf = xmalloc(MAXPATHLEN);
+    snprintf(*buf, MAXPATHLEN, FUNCNAME_PATTERN, slash + 1);
+#else
+    asprintf(buf, FUNCNAME_PATTERN, slash + 1);
+#endif
+    for (p = *buf; *p; p++) {         /* Delete suffix if it exists */
 	if (*p == '.') {
 	    *p = '\0'; break;
 	}
@@ -622,7 +633,6 @@ load_1(fd, disp, need_init)
     struct nlist *sym;
     struct nlist *end;
     int init_p = 0;
-    char buf[MAXPATHLEN];
 
     if (load_header(fd, &hdr, disp) == -1) return -1;
     if (INVALID_OBJECT(hdr)) {
@@ -835,12 +845,13 @@ load_1(fd, disp, need_init)
     if (need_init) {
 	int len;
 	char **libs_to_be_linked = 0;
+	char *buf;
 
 	if (undef_tbl->num_entries > 0) {
 	    if (load_lib(libc) == -1) goto err_exit;
 	}
 
-	init_funcname(buf, need_init);
+	init_funcname(&buf, need_init);
 	len = strlen(buf);
 
 	for (sym = syms; sym<end; sym++) {
@@ -855,6 +866,7 @@ load_1(fd, disp, need_init)
 		}
 	    }
 	}
+	free (buf);
 	if (libs_to_be_linked && undef_tbl->num_entries > 0) {
 	    while (*libs_to_be_linked) {
 		load_lib(*libs_to_be_linked);
@@ -1226,12 +1238,12 @@ dln_load(file)
     HINSTANCE handle;
     char winfile[MAXPATHLEN];
     void (*init_fct)();
-    char buf[MAXPATHLEN];
+    char *buf;
 
     if (strlen(file) >= MAXPATHLEN) rb_loaderror("filename too long");
 
     /* Load the file as an object one */
-    init_funcname(buf, file);
+    init_funcname(&buf, file);
 
     strcpy(winfile, file);
 
@@ -1244,6 +1256,8 @@ dln_load(file)
     if ((init_fct = (void(*)())GetProcAddress(handle, buf)) == NULL) {
 	rb_loaderror("%s - %s\n%s", dln_strerror(), buf, file);
     }
+    free(buf);
+
     /* Call the init code */
     (*init_fct)();
     return handle;
@@ -1255,9 +1269,9 @@ dln_load(file)
     return 0;
 #else
 
-    char buf[MAXPATHLEN];
+    char *buf;
     /* Load the file as an object one */
-    init_funcname(buf, file);
+    init_funcname(&buf, file);
 
 #ifdef USE_DLN_DLOPEN
 #define DLN_DEFINED
@@ -1277,12 +1291,15 @@ dln_load(file)
 	    goto failed;
 	}
 
-	if ((init_fct = (void(*)())dlsym(handle, buf)) == NULL) {
+	init_fct = (void(*)())dlsym(handle, buf);
+	free(buf);
+	if (init_fct == NULL) {
 	    dlclose(handle);
 	    goto failed;
 	}
 	/* Call the init code */
 	(*init_fct)();
+
 	return handle;
     }
 #endif /* USE_DLN_DLOPEN */
@@ -1301,6 +1318,7 @@ dln_load(file)
 	    rb_loaderror("%s - %s", strerror(errno), file);
 	}
 	shl_findsym(&lib, buf, TYPE_PROCEDURE, (void*)&init_fct);
+	free(buf)
 	if (init_fct == NULL) {
 	    shl_findsym(&lib, buf, TYPE_UNDEFINED, (void*)&init_fct);
 	    if (init_fct == NULL) {
@@ -1359,6 +1377,7 @@ dln_load(file)
 	if(rld_lookup(NULL, buf, &init_address) == 0) {
 	    rb_loaderror("Failed to lookup Init function %.200s", file);
 	}
+	free(buf);
 
 	 /* Cannot call *init_address directory, so copy this value to
 	    funtion pointer */
@@ -1372,7 +1391,7 @@ dln_load(file)
 	int dyld_result;
 	NSObjectFileImage obj_file; /* handle, but not use it */
 	/* "file" is module file name .
-	   "buf" is initial function name with "_" . */
+	   "buf" is pointer to initial function name with "_" . */
 
 	void (*init_fct)();
 
@@ -1393,6 +1412,7 @@ dln_load(file)
 
 	/* NSLookupAndBindSymbol require function name with "_" !! */
 	init_fct = NSAddressOfSymbol(NSLookupAndBindSymbol(buf));
+	free(buf);
 	(*init_fct)();
 
 	return (void*)init_fct;
@@ -1433,14 +1453,17 @@ dln_load(file)
 
       if ((B_BAD_IMAGE_ID == err_stat) || (B_BAD_INDEX == err_stat)) {
 	unload_add_on(img_id);
+	free(buf);
 	rb_loaderror("Failed to lookup Init function %.200s", file);
       }
       else if (B_NO_ERROR != err_stat) {
 	char errmsg[] = "Internal of BeOS version. %.200s (symbol_name = %s)";
 	unload_add_on(img_id);
+	free(buf);
 	rb_loaderror(errmsg, strerror(err_stat), buf);
       }
 
+      free(buf);
       /* call module initialize function. */
       (*init_fct)();
       return (void*)img_id;
@@ -1485,10 +1508,10 @@ dln_load(file)
       /* Locate the address of the correct init function */
       c2pstr(buf);
       err = FindSymbol(connID, buf, &symAddr, &class);
+      free(buf);
       if (err) {
 	  rb_loaderror("Unresolved symbols - %s" , file);
       }
-	
       init_fct = (void (*)())symAddr;
       (*init_fct)();
       return (void*)init_fct;

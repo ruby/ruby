@@ -1,3 +1,11 @@
+: Array#pack, String#unpack
+
+  allows comment in template strings.
+
+: Array#pack, String#unpack
+
+  new templates 'q' and 'Q' for 64bit integer (signed and unsigned respectively).
+
 : Array#fill
 
   takes block to get the values to fill.

@@ -48,39 +48,6 @@ extern "C" {
 #define ISXDIGIT(c) (ISASCII(c) && isxdigit((unsigned char)(c)))
 #endif
 
-#if !defined(__STDC__) && !defined(_MSC_VER)
-# define volatile
-#endif
-
-#ifdef __cplusplus
-# ifndef  HAVE_PROTOTYPES
-#  define HAVE_PROTOTYPES 1
-# endif
-# ifndef  HAVE_STDARG_PROTOTYPES
-#  define HAVE_STDARG_PROTOTYPES 1
-# endif
-#endif
-
-#undef _
-#ifdef HAVE_PROTOTYPES
-# define _(args) args
-#else
-# define _(args) ()
-#endif
-
-#undef __
-#ifdef HAVE_STDARG_PROTOTYPES
-# define __(args) args
-#else
-# define __(args) ()
-#endif
-
-#ifdef __cplusplus
-#define ANYARGS ...
-#else
-#define ANYARGS
-#endif
-
 #ifndef NORETURN
 # define NORETURN(x) x
 #endif
@@ -419,16 +386,6 @@ struct RBignum {
 
 #define OBJ_FROZEN(x) FL_TEST((x), FL_FREEZE)
 #define OBJ_FREEZE(x) FL_SET((x), FL_FREEZE)
-
-#define xmalloc ruby_xmalloc
-#define xcalloc ruby_xcalloc
-#define xrealloc ruby_xrealloc
-#define xfree ruby_xfree
-
-void *xmalloc _((long));
-void *xcalloc _((long,long));
-void *xrealloc _((void*,long));
-void xfree _((void*));
 
 #define ALLOC_N(type,n) (type*)xmalloc(sizeof(type)*(n))
 #define ALLOC(type) (type*)xmalloc(sizeof(type))

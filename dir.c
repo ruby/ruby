@@ -841,7 +841,7 @@ push_braces(ary, s)
     VALUE ary;
     char *s;
 {
-    char buffer[MAXPATHLEN], *buf = buffer;
+    char *buf;
     char *p, *t, *b;
     char *lbrace, *rbrace;
     int nest = 0;
@@ -866,8 +866,7 @@ push_braces(ary, s)
 
     if (lbrace) {
 	int len = strlen(s);
-	if (len >= MAXPATHLEN)
-	    buf = xmalloc(len + 1);
+	buf = xmalloc(len + 1);
 	memcpy(buf, s, lbrace-s);
 	b = buf + (lbrace-s);
 	p = lbrace;
@@ -881,8 +880,7 @@ push_braces(ary, s)
 	    strcpy(b+(p-t), rbrace+1);
 	    push_braces(ary, buf);
 	}
-	if (buf != buffer)
-	    free(buf);
+	free(buf);
     }
     else {
 	push_globs(ary, s);
@@ -896,7 +894,7 @@ dir_s_glob(dir, str)
     VALUE dir, str;
 {
     char *p, *pend;
-    char buffer[MAXPATHLEN], *buf;
+    char *buf;
     char *t;
     int nest;
     VALUE ary = 0;
@@ -905,11 +903,7 @@ dir_s_glob(dir, str)
     if (!rb_block_given_p()) {
 	ary = rb_ary_new();
     }
-    if (RSTRING(str)->len >= MAXPATHLEN) {
-	buf = xmalloc(RSTRING(str)->len + 1);
-    } else {
-	buf = buffer;
-    }
+    buf = xmalloc(RSTRING(str)->len + 1);
 
     p = RSTRING(str)->ptr;
     pend = p + RSTRING(str)->len;
@@ -936,8 +930,7 @@ dir_s_glob(dir, str)
 	}
 	/* else unmatched braces */
     }
-    if (buf != buffer)
-	free(buf);
+    free(buf);
     if (ary) {
 	return ary;
     }

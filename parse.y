@@ -213,6 +213,7 @@ static void top_local_setup();
 %type <node> singleton string
 %type <val>  literal numeric
 %type <node> compstmt stmts stmt expr arg primary command command_call method_call
+%type <node> expr_value arg_value primary_value block_call_value
 %type <node> if_tail opt_else case_body cases rescue exc_list exc_var ensure
 %type <node> args when_args call_args call_args2 open_args paren_args opt_paren_args
 %type <node> command_args aref_args opt_block_arg block_arg var_ref var_lhs
@@ -356,21 +357,18 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			    yyerror("undef within method");
 			$$ = $2;
 		    }
-		| stmt kIF_MOD expr
+		| stmt kIF_MOD expr_value
 		    {
-			value_expr($3);
 			$$ = NEW_IF(cond($3), $1, 0);
 		        fixpos($$, $3);
 		    }
-		| stmt kUNLESS_MOD expr
+		| stmt kUNLESS_MOD expr_value
 		    {
-			value_expr($3);
 			$$ = NEW_UNLESS(cond($3), $1, 0);
 		        fixpos($$, $3);
 		    }
-		| stmt kWHILE_MOD expr
+		| stmt kWHILE_MOD expr_value
 		    {
-			value_expr($3);
 			if ($1 && nd_type($1) == NODE_BEGIN) {
 			    $$ = NEW_WHILE(cond($3), $1->nd_body, 0);
 			}
@@ -378,9 +376,8 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			    $$ = NEW_WHILE(cond($3), $1, 1);
 			}
 		    }
-		| stmt kUNTIL_MOD expr
+		| stmt kUNTIL_MOD expr_value
 		    {
-			value_expr($3);
 			if ($1 && nd_type($1) == NODE_BEGIN) {
 			    $$ = NEW_UNTIL(cond($3), $1->nd_body, 0);
 			}
@@ -450,7 +447,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			    $$ = 0;
 			}
 		    }
-		| primary '[' aref_args ']' tOP_ASGN command_call
+		| primary_value '[' aref_args ']' tOP_ASGN command_call
 		    {
                         NODE *tmp, *args = NEW_LIST($6);
 
@@ -465,7 +462,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			$$ = NEW_OP_ASGN1($1, $5, args);
 		        fixpos($$, $1);
 		    }
-		| primary '.' tIDENTIFIER tOP_ASGN command_call
+		| primary_value '.' tIDENTIFIER tOP_ASGN command_call
 		    {
 			if ($4 == tOROP) {
 			    $4 = 0;
@@ -476,7 +473,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			$$ = NEW_OP_ASGN2($1, $3, $4, $5);
 		        fixpos($$, $1);
 		    }
-		| primary '.' tCONSTANT tOP_ASGN command_call
+		| primary_value '.' tCONSTANT tOP_ASGN command_call
 		    {
 			if ($4 == tOROP) {
 			    $4 = 0;
@@ -487,7 +484,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			$$ = NEW_OP_ASGN2($1, $3, $4, $5);
 		        fixpos($$, $1);
 		    }
-		| primary tCOLON2 tIDENTIFIER tOP_ASGN command_call
+		| primary_value tCOLON2 tIDENTIFIER tOP_ASGN command_call
 		    {
 			if ($4 == tOROP) {
 			    $4 = 0;
@@ -509,7 +506,6 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    }
 		| mlhs '=' mrhs
 		    {
-			value_expr($3);
 			$1->nd_value = $3;
 			$$ = $1;
 		    }
@@ -540,7 +536,6 @@ expr		: kRETURN call_args
 		    }
 		| kNOT expr
 		    {
-			value_expr($2);
 			$$ = NEW_NOT(cond($2));
 		    }
 		| '!' command_call
@@ -549,18 +544,22 @@ expr		: kRETURN call_args
 		    }
 		| arg
 
+expr_value	: expr
+		    {
+			value_expr($$);
+			$$ = $1;
+		    }
+
 command_call	: command
 		| block_command
 
 block_command	: block_call
-		| block_call '.' operation2 command_args
+		| block_call_value '.' operation2 command_args
 		    {
-			value_expr($1);
 			$$ = new_call($1, $3, $4);
 		    }
-		| block_call tCOLON2 operation2 command_args
+		| block_call_value tCOLON2 operation2 command_args
 		    {
-			value_expr($1);
 			$$ = new_call($1, $3, $4);
 		    }
 
@@ -569,15 +568,13 @@ command		: operation command_args
 			$$ = new_fcall($1, $2);
 		        fixpos($$, $2);
 		   }
-		| primary '.' operation2 command_args
+		| primary_value '.' operation2 command_args
 		    {
-			value_expr($1);
 			$$ = new_call($1, $3, $4);
 		        fixpos($$, $1);
 		    }
-		| primary tCOLON2 operation2 command_args
+		| primary_value tCOLON2 operation2 command_args
 		    {
-			value_expr($1);
 			$$ = new_call($1, $3, $4);
 		        fixpos($$, $1);
 		    }
@@ -650,19 +647,19 @@ mlhs_node	: variable
 		    {
 			$$ = assignable($1, 0);
 		    }
-		| primary '[' aref_args ']'
+		| primary_value '[' aref_args ']'
 		    {
 			$$ = aryset($1, $3);
 		    }
-		| primary '.' tIDENTIFIER
+		| primary_value '.' tIDENTIFIER
 		    {
 			$$ = attrset($1, $3);
 		    }
-		| primary tCOLON2 tIDENTIFIER
+		| primary_value tCOLON2 tIDENTIFIER
 		    {
 			$$ = attrset($1, $3);
 		    }
-		| primary '.' tCONSTANT
+		| primary_value '.' tCONSTANT
 		    {
 			$$ = attrset($1, $3);
 		    }
@@ -676,19 +673,19 @@ lhs		: variable
 		    {
 			$$ = assignable($1, 0);
 		    }
-		| primary '[' aref_args ']'
+		| primary_value '[' aref_args ']'
 		    {
 			$$ = aryset($1, $3);
 		    }
-		| primary '.' tIDENTIFIER
+		| primary_value '.' tIDENTIFIER
 		    {
 			$$ = attrset($1, $3);
 		    }
-		| primary tCOLON2 tIDENTIFIER
+		| primary_value tCOLON2 tIDENTIFIER
 		    {
 			$$ = attrset($1, $3);
 		    }
-		| primary '.' tCONSTANT
+		| primary_value '.' tCONSTANT
 		    {
 			$$ = attrset($1, $3);
 		    }
@@ -795,7 +792,7 @@ arg		: lhs '=' arg
 			    $$ = 0;
 			}
 		    }
-		| primary '[' aref_args ']' tOP_ASGN arg
+		| primary_value '[' aref_args ']' tOP_ASGN arg
 		    {
                         NODE *tmp, *args = NEW_LIST($6);
 
@@ -810,7 +807,7 @@ arg		: lhs '=' arg
 			$$ = NEW_OP_ASGN1($1, $5, args);
 		        fixpos($$, $1);
 		    }
-		| primary '.' tIDENTIFIER tOP_ASGN arg
+		| primary_value '.' tIDENTIFIER tOP_ASGN arg
 		    {
 			if ($4 == tOROP) {
 			    $4 = 0;
@@ -821,7 +818,7 @@ arg		: lhs '=' arg
 			$$ = NEW_OP_ASGN2($1, $3, $4, $5);
 		        fixpos($$, $1);
 		    }
-		| primary '.' tCONSTANT tOP_ASGN arg
+		| primary_value '.' tCONSTANT tOP_ASGN arg
 		    {
 			if ($4 == tOROP) {
 			    $4 = 0;
@@ -832,7 +829,7 @@ arg		: lhs '=' arg
 			$$ = NEW_OP_ASGN2($1, $3, $4, $5);
 		        fixpos($$, $1);
 		    }
-		| primary tCOLON2 tIDENTIFIER tOP_ASGN arg
+		| primary_value tCOLON2 tIDENTIFIER tOP_ASGN arg
 		    {
 			if ($4 == tOROP) {
 			    $4 = 0;
@@ -1003,12 +1000,17 @@ arg		: lhs '=' arg
 		    }
 		| arg '?' arg ':' arg
 		    {
-			value_expr($1);
 			$$ = NEW_IF(cond($1), $3, $5);
 		        fixpos($$, $1);
 		    }
 		| primary
 		    {
+			$$ = $1;
+		    }
+
+arg_value	: arg
+		    {
+			value_expr($1);
 			$$ = $1;
 		    }
 
@@ -1064,9 +1066,8 @@ call_args	: command
 		    {
 			$$ = arg_blk_pass($1, $2);
 		    }
-		| args ',' tSTAR arg opt_block_arg
+		| args ',' tSTAR arg_value opt_block_arg
 		    {
-			value_expr($4);
 			$$ = arg_concat($1, $4);
 			$$ = arg_blk_pass($$, $5);
 		    }
@@ -1075,9 +1076,8 @@ call_args	: command
 			$$ = NEW_LIST(NEW_HASH($1));
 			$$ = arg_blk_pass($$, $2);
 		    }
-		| assocs ',' tSTAR arg opt_block_arg
+		| assocs ',' tSTAR arg_value opt_block_arg
 		    {
-			value_expr($4);
 			$$ = arg_concat(NEW_LIST(NEW_HASH($1)), $4);
 			$$ = arg_blk_pass($$, $5);
 		    }
@@ -1092,32 +1092,27 @@ call_args	: command
 			$$ = arg_concat(list_append($1, NEW_HASH($3)), $6);
 			$$ = arg_blk_pass($$, $7);
 		    }
-		| tSTAR arg opt_block_arg
+		| tSTAR arg_value opt_block_arg
 		    {
-			value_expr($2);
 			$$ = arg_blk_pass(NEW_RESTARGS($2), $3);
 		    }
 		| block_arg
 
-call_args2	: arg ',' args opt_block_arg
+call_args2	: arg_value ',' args opt_block_arg
 		    {
 			$$ = arg_blk_pass(list_concat(NEW_LIST($1),$3), $4);
 		    }
-		| arg ',' block_arg
+		| arg_value ',' block_arg
 		    {
                         $$ = arg_blk_pass($1, $3);
                     }
-		| arg ',' tSTAR arg opt_block_arg
+		| arg_value ',' tSTAR arg_value opt_block_arg
 		    {
-			value_expr($1);
-			value_expr($4);
 			$$ = arg_concat(NEW_LIST($1), $4);
 			$$ = arg_blk_pass($$, $5);
 		    }
-		| arg ',' args ',' tSTAR arg opt_block_arg
+		| arg_value ',' args ',' tSTAR arg_value opt_block_arg
 		    {
-			value_expr($1);
-			value_expr($6);
 			$$ = arg_concat(list_concat($1,$3), $6);
 			$$ = arg_blk_pass($$, $7);
 		    }
@@ -1126,41 +1121,33 @@ call_args2	: arg ',' args opt_block_arg
 			$$ = NEW_LIST(NEW_HASH($1));
 			$$ = arg_blk_pass($$, $2);
 		    }
-		| assocs ',' tSTAR arg opt_block_arg
+		| assocs ',' tSTAR arg_value opt_block_arg
 		    {
-			value_expr($4);
 			$$ = arg_concat(NEW_LIST(NEW_HASH($1)), $4);
 			$$ = arg_blk_pass($$, $5);
 		    }
-		| arg ',' assocs opt_block_arg
+		| arg_value ',' assocs opt_block_arg
 		    {
 			$$ = list_append(NEW_LIST($1), NEW_HASH($3));
 			$$ = arg_blk_pass($$, $4);
 		    }
-		| arg ',' args ',' assocs opt_block_arg
+		| arg_value ',' args ',' assocs opt_block_arg
 		    {
-			value_expr($1);
-			value_expr($6);
 			$$ = list_append(list_concat(NEW_LIST($1),$3), NEW_HASH($5));
 			$$ = arg_blk_pass($$, $6);
 		    }
-		| arg ',' assocs ',' tSTAR arg opt_block_arg
+		| arg_value ',' assocs ',' tSTAR arg_value opt_block_arg
 		    {
-			value_expr($1);
-			value_expr($6);
 			$$ = arg_concat(list_append(NEW_LIST($1), NEW_HASH($3)), $6);
 			$$ = arg_blk_pass($$, $7);
 		    }
-		| arg ',' args ',' assocs ',' tSTAR arg opt_block_arg
+		| arg_value ',' args ',' assocs ',' tSTAR arg_value opt_block_arg
 		    {
-			value_expr($1);
-			value_expr($8);
 			$$ = arg_concat(list_append(list_concat(NEW_LIST($1), $3), NEW_HASH($5)), $8);
 			$$ = arg_blk_pass($$, $9);
 		    }
-		| tSTAR arg opt_block_arg
+		| tSTAR arg_value opt_block_arg
 		    {
-			value_expr($2);
 			$$ = arg_blk_pass(NEW_RESTARGS($2), $3);
 		    }
 		| block_arg
@@ -1190,9 +1177,8 @@ open_args	: call_args
 			$$ = $2;
 		    }
 
-block_arg	: tAMPER arg
+block_arg	: tAMPER arg_value
 		    {
-			value_expr($2);
 			$$ = NEW_BLOCK_PASS($2);
 		    }
 
@@ -1202,20 +1188,17 @@ opt_block_arg	: ',' block_arg
 		    }
 		| none
 
-args 		: arg
+args 		: arg_value
 		    {
-			value_expr($1);
 			$$ = NEW_LIST($1);
 		    }
-		| args ',' arg
+		| args ',' arg_value
 		    {
-			value_expr($3);
 			$$ = list_append($1, $3);
 		    }
 
-mrhs		: arg
+mrhs		: arg_value
 		    {
-			value_expr($1);
 			$$ = $1;
 		    }
 		| mrhs_basic
@@ -1223,19 +1206,16 @@ mrhs		: arg
 			$$ = NEW_REXPAND($1);
 		    }
 
-mrhs_basic	: args ',' arg
+mrhs_basic	: args ',' arg_value
 		    {
-			value_expr($3);
 			$$ = list_append($1, $3);
 		    }
-		| args ',' tSTAR arg
+		| args ',' tSTAR arg_value
 		    {
-			value_expr($4);
 			$$ = arg_concat($1, $4);
 		    }
-		| tSTAR arg
+		| tSTAR arg_value
 		    {
-			value_expr($2);
 			$$ = $2;
 		    }
 
@@ -1286,18 +1266,16 @@ primary		: literal
 		    {
 			$$ = $2;
 		    }
-		| primary tCOLON2 tCONSTANT
+		| primary_value tCOLON2 tCONSTANT
 		    {
-			value_expr($1);
 			$$ = NEW_COLON2($1, $3);
 		    }
 		| tCOLON3 cname
 		    {
 			$$ = NEW_COLON3($2);
 		    }
-		| primary '[' aref_args ']'
+		| primary_value '[' aref_args ']'
 		    {
-			value_expr($1);
 			$$ = NEW_CALL($1, tAREF, $3);
 		    }
 		| tLBRACK aref_args ']'
@@ -1321,7 +1299,6 @@ primary		: literal
 		    }
 		| kYIELD '(' call_args ')'
 		    {
-			value_expr($3);
 			$$ = NEW_YIELD(ret_args($3));
 		    }
 		| kYIELD '(' ')'
@@ -1352,45 +1329,40 @@ primary		: literal
 			$$ = $2;
 		        fixpos($$, $1);
 		    }
-		| kIF expr then
+		| kIF expr_value then
 		  compstmt
 		  if_tail
 		  kEND
 		    {
-			value_expr($2);
 			$$ = NEW_IF(cond($2), $4, $5);
 		        fixpos($$, $2);
 		    }
-		| kUNLESS expr then
+		| kUNLESS expr_value then
 		  compstmt
 		  opt_else
 		  kEND
 		    {
-			value_expr($2);
 			$$ = NEW_UNLESS(cond($2), $4, $5);
 		        fixpos($$, $2);
 		    }
-		| kWHILE {COND_PUSH(1);} expr do {COND_POP();}
+		| kWHILE {COND_PUSH(1);} expr_value do {COND_POP();}
 		  compstmt
 		  kEND
 		    {
-			value_expr($3);
 			$$ = NEW_WHILE(cond($3), $6, 1);
 		        fixpos($$, $3);
 		    }
-		| kUNTIL {COND_PUSH(1);} expr do {COND_POP();} 
+		| kUNTIL {COND_PUSH(1);} expr_value do {COND_POP();} 
 		  compstmt
 		  kEND
 		    {
-			value_expr($3);
 			$$ = NEW_UNTIL(cond($3), $6, 1);
 		        fixpos($$, $3);
 		    }
-		| kCASE expr opt_terms
+		| kCASE expr_value opt_terms
 		  case_body
 		  kEND
 		    {
-			value_expr($2);
 			$$ = NEW_CASE($2, $4);
 		        fixpos($$, $2);
 		    }
@@ -1398,11 +1370,10 @@ primary		: literal
 		    {
 			$$ = $3;
 		    }
-		| kFOR block_var kIN {COND_PUSH(1);} expr do {COND_POP();}
+		| kFOR block_var kIN {COND_PUSH(1);} expr_value do {COND_POP();}
 		  compstmt
 		  kEND
 		    {
-			value_expr($5);
 			$$ = NEW_FOR($2, $5, $8);
 		        fixpos($$, $2);
 		    }
@@ -1493,7 +1464,6 @@ primary		: literal
 		    }
 		| kDEF singleton dot_or_colon {lex_state = EXPR_FNAME;} fname
 		    {
-			value_expr($2);
 			in_single++;
 			local_push();
 		        lex_state = EXPR_END; /* force for args */
@@ -1534,6 +1504,12 @@ primary		: literal
 			$$ = NEW_RETRY();
 		    }
 
+primary_value 	: primary
+		    {
+			value_expr($1);
+			$$ = $1;
+		    }
+
 then		: term
 		| kTHEN
 		| term kTHEN
@@ -1542,11 +1518,10 @@ do		: term
 		| kDO_COND
 
 if_tail		: opt_else
-		| kELSIF expr then
+		| kELSIF expr_value then
 		  compstmt
 		  if_tail
 		    {
-			value_expr($2);
 			$$ = NEW_IF(cond($2), $4, $5);
 		        fixpos($$, $2);
 		    }
@@ -1606,15 +1581,19 @@ block_call	: command do_block
 			$$ = $2;
 		        fixpos($$, $2);
 		    }
-		| block_call '.' operation2 opt_paren_args
+		| block_call_value '.' operation2 opt_paren_args
 		    {
-			value_expr($1);
 			$$ = new_call($1, $3, $4);
 		    }
-		| block_call tCOLON2 operation2 opt_paren_args
+		| block_call_value tCOLON2 operation2 opt_paren_args
 		    {
-			value_expr($1);
 			$$ = new_call($1, $3, $4);
+		    }
+
+block_call_value : block_call
+		    {
+			value_expr($$);
+			$$ = $1;
 		    }
 
 method_call	: operation paren_args
@@ -1622,21 +1601,18 @@ method_call	: operation paren_args
 			$$ = new_fcall($1, $2);
 		        fixpos($$, $2);
 		    }
-		| primary '.' operation2 opt_paren_args
+		| primary_value '.' operation2 opt_paren_args
 		    {
-			value_expr($1);
 			$$ = new_call($1, $3, $4);
 		        fixpos($$, $1);
 		    }
-		| primary tCOLON2 operation2 paren_args
+		| primary_value tCOLON2 operation2 paren_args
 		    {
-			value_expr($1);
 			$$ = new_call($1, $3, $4);
 		        fixpos($$, $1);
 		    }
-		| primary tCOLON2 operation3
+		| primary_value tCOLON2 operation3
 		    {
-			value_expr($1);
 			$$ = new_call($1, $3, 0);
 		    }
 		| kSUPER paren_args
@@ -1685,14 +1661,12 @@ case_body	: kWHEN when_args then
 		    }
 
 when_args	: args
-		| args ',' tSTAR arg
+		| args ',' tSTAR arg_value
 		    {
-			value_expr($4);
 			$$ = list_append($1, NEW_WHEN($4, 0, 0));
 		    }
-		| tSTAR arg
+		| tSTAR arg_value
 		    {
-			value_expr($2);
 			$$ = NEW_LIST(NEW_WHEN($2, 0, 0));
 		    }
 
@@ -1813,7 +1787,7 @@ superclass	: term
 		    {
 			lex_state = EXPR_BEG;
 		    }
-		  expr term
+		  expr_value term
 		    {
 			$$ = $3;
 		    }
@@ -1898,7 +1872,7 @@ f_arg		: f_norm_arg
 			$$ += 1;
 		    }
 
-f_opt		: tIDENTIFIER '=' arg
+f_opt		: tIDENTIFIER '=' arg_value
 		    {
 			if (!is_local_id($1))
 			    yyerror("formal argument must be local variable");
@@ -1952,6 +1926,7 @@ singleton	: var_ref
 			}
 			else {
 			    $$ = $1;
+		            value_expr($$);
 			}
 		    }
 		| '(' {lex_state = EXPR_BEG;} expr opt_nl ')'
@@ -1967,6 +1942,7 @@ singleton	: var_ref
 			  case NODE_ZARRAY:
 			    yyerror("can't define single method for literals.");
 			  default:
+		            value_expr($3);
 			    break;
 			}
 			$$ = $3;
@@ -1991,7 +1967,7 @@ assocs		: assoc
 			$$ = list_concat($1, $3);
 		    }
 
-assoc		: arg tASSOC arg
+assoc		: arg_value tASSOC arg_value
 		    {
 			$$ = list_append(NEW_LIST($1), $3);
 		    }

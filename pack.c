@@ -363,6 +363,13 @@ pack_pack(ary, fmt)
 #endif
 
 	if (ISSPACE(type)) continue;
+	if (type == '#') {
+	    while (p < pend) {
+		if (*p == '\n') continue;
+		p++;
+	    }
+	    break;
+	}
         if (*p == '_' || *p == '!') {
 	    char *natstr = "sSiIlL";
 
@@ -1070,11 +1077,20 @@ pack_unpack(str, fmt)
 
     ary = rb_ary_new();
     while (p < pend) {
+	type = *p++;
 #ifdef NATINT_PACK
 	natint = 0;
 #endif
+
+	if (ISSPACE(type)) continue;
+	if (type == '#') {
+	    while (p < pend) {
+		if (*p == '\n') continue;
+		p++;
+	    }
+	    break;
+	}
 	star = 0;
-	type = *p++;
 	if (*p == '_' || *p == '!') {
 	    char *natstr = "sSiIlL";
 

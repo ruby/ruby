@@ -2323,17 +2323,18 @@ rb_eval(self, n)
 
       case NODE_WHILE:
 	PUSH_TAG(PROT_NONE);
+	result = Qnil;
 	switch (state = EXEC_TAG()) {
 	  case 0:
 	    ruby_sourceline = nd_line(node);
-	    if (node->nd_state && !RTEST(result = rb_eval(self, node->nd_cond)))
+	    if (node->nd_state && !RTEST(rb_eval(self, node->nd_cond)))
 		goto while_out;
 	    do {
 	      while_redo:
 		rb_eval(self, node->nd_body);
 	      while_next:
 		;
-	    } while (RTEST(result = rb_eval(self, node->nd_cond)));
+	    } while (RTEST(rb_eval(self, node->nd_cond)));
 	    break;
 
 	  case TAG_REDO:
@@ -2355,16 +2356,17 @@ rb_eval(self, n)
 
       case NODE_UNTIL:
 	PUSH_TAG(PROT_NONE);
+	result = Qnil;
 	switch (state = EXEC_TAG()) {
 	  case 0:
-	    if (node->nd_state && RTEST(result = rb_eval(self, node->nd_cond)))
+	    if (node->nd_state && RTEST(rb_eval(self, node->nd_cond)))
 		goto until_out;
 	    do {
 	      until_redo:
 		rb_eval(self, node->nd_body);
 	      until_next:
 		;
-	    } while (!RTEST(result = rb_eval(self, node->nd_cond)));
+	    } while (!RTEST(rb_eval(self, node->nd_cond)));
 	    break;
 
 	  case TAG_REDO:
@@ -6598,7 +6600,10 @@ block_pass(self, node)
     volatile int safe = ruby_safe_level;
 
     if (NIL_P(block)) {
-	return rb_eval(self, node->nd_iter);
+	PUSH_ITER(ITER_NOT);
+	result = rb_eval(self, node->nd_iter);
+	POP_ITER();
+	return result;
     }
     if (rb_obj_is_kind_of(block, rb_cMethod)) {
 	block = method_proc(block);
