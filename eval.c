@@ -229,7 +229,8 @@ rb_add_method(klass, mid, node, noex)
     }
     if (OBJ_FROZEN(klass)) rb_error_frozen("class/module");
     body = NEW_METHOD(node, noex);
-    st_insert(RCLASS(klass)->m_tbl, mid, body);
+    if (st_insert(RCLASS(klass)->m_tbl, mid, body))
+	rb_clear_cache_by_id(mid);
 }
 
 static NODE*

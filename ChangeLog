@@ -1,3 +1,7 @@
+Tue Jan  8 15:54:02 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* eval.c (rb_add_method): clear replaced method from the cache.
+
 Mon Jan  7 12:38:47 2002  Tanaka Akira  <akr@m17n.org>
 
 	* lib/time.rb (Time#xmlschema): new optional argument
