@@ -119,9 +119,12 @@ static NODE *logop();
 static NODE *newline_node();
 static void fixpos();
 
-static int value_expr();
-static void void_expr();
+static int value_expr0();
+static void void_expr0();
 static void void_stmts();
+static NODE *remove_begin();
+#define value_expr(node) value_expr0((node) = remove_begin(node))
+#define void_expr(node) void_expr0((node) = remove_begin(node))
 
 static NODE *block_append();
 static NODE *list_append();
@@ -4697,9 +4700,11 @@ node_assign(lhs, rhs)
 }
 
 static int
-value_expr(node)
+value_expr0(node)
     NODE *node;
 {
+    int cond = 0;
+
     while (node) {
 	switch (nd_type(node)) {
 	  case NODE_CLASS:
@@ -4714,7 +4719,7 @@ value_expr(node)
 	  case NODE_NEXT:
 	  case NODE_REDO:
 	  case NODE_RETRY:
-	    yyerror("void value expression");
+	    if (!cond) yyerror("void value expression");
 	    /* or "control never reach"? */
 	    return Qfalse;
 
@@ -4736,6 +4741,7 @@ value_expr(node)
 
 	  case NODE_AND:
 	  case NODE_OR:
+	    cond = 1;
 	    node = node->nd_2nd;
 	    break;
 
@@ -4752,7 +4758,7 @@ value_expr(node)
 }
 
 static void
-void_expr(node)
+void_expr0(node)
     NODE *node;
 {
     char *useless = 0;
@@ -4860,6 +4866,25 @@ void_stmts(node)
 	void_expr(node->nd_head);
 	node = node->nd_next;
     }
+}
+
+static NODE *
+remove_begin(node)
+    NODE *node;
+{
+    NODE **n = &node;
+    while (*n) {
+	switch (nd_type(*n)) {
+	  case NODE_NEWLINE:
+	    n = &(*n)->nd_next;
+	    continue;
+	  case NODE_BEGIN:
+	    *n = (*n)->nd_body;
+	  default:
+	    return node;
+	}
+    }
+    return node;
 }
 
 static int
