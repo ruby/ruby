@@ -119,6 +119,7 @@ doc/irb/irb.rd
 doc/irb/irb.rd.ja
 doc/shell.rd
 doc/shell.rd.ja
+ext/.document
 ext/Setup
 ext/Setup.atheos
 ext/Setup.dj
