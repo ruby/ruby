@@ -8215,6 +8215,7 @@ proc_eq(self, other)
     if (data->body != data2->body) return Qfalse;
     if (data->var != data2->var) return Qfalse;
     if (data->frame.uniq != data2->frame.uniq) return Qfalse;
+    if (data->dyna_vars != data2->dyna_vars) return Qfalse;
     return Qtrue;
 }
 
