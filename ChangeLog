@@ -1,3 +1,7 @@
+Wed Oct 15 17:24:45 2003  URABE Shyouhei  <root@mput.dip.jp>
+
+	* lib/cgi.rb (CGI::Cookie): tiny typo fix.
+
 Wed Oct 15 15:00:54 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (ruby_run): just return FAILURE instead of parse error
