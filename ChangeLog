@@ -1,6 +1,8 @@
-Mon Mar 25 10:04:59 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+Mon Mar 25 11:06:19 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
-	* regex.c (mbc_startpos_func): shoud be static.
+	* dln.c (dln_argv0): unused unless USE_DLN_A_OUT.
+
+	* regex.c (mbc_startpos_func): should be static.
 
 Sun Mar 24 00:46:05 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
