@@ -36,8 +36,8 @@ int gettimeofday(struct timeval*, struct timezone*);
 int strcasecmp(char*, char*);
 #endif
 
-#if 0
-#include <math.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
 #endif
 
 VALUE rb_cTime;
@@ -469,9 +469,10 @@ time_localtime(time)
 {
     struct time_object *tobj;
     struct tm *tm_tmp;
-    time_t t = tobj->tv.tv_sec;
+    time_t t;
 
     GetTimeval(time, tobj);
+    t = tobj->tv.tv_sec;
     tm_tmp = localtime(&t);
     tobj->tm = *tm_tmp;
     tobj->tm_got = 1;
@@ -485,9 +486,10 @@ time_gmtime(time)
 {
     struct time_object *tobj;
     struct tm *tm_tmp;
-    time_t t = tobj->tv.tv_sec;
+    time_t t;
 
     GetTimeval(time, tobj);
+    t = tobj->tv.tv_sec;
     tm_tmp = gmtime(&t);
     tobj->tm = *tm_tmp;
     tobj->tm_got = 1;
@@ -535,12 +537,12 @@ time_to_s(time)
     }
 #ifndef HAVE_TM_ZONE
     if (tobj->gmt == 1) {
-	len = strftime(buf, 128, "%a %b %d %H:%M:%S GMT %Y", &(tobj->tm));
+	len = strftime(buf, 128, "%a %b %d %H:%M:%S GMT %Y", &tobj->tm);
     }
     else
 #endif
     {
-	len = strftime(buf, 128, "%a %b %d %H:%M:%S %Z %Y", &(tobj->tm));
+	len = strftime(buf, 128, "%a %b %d %H:%M:%S %Z %Y", &tobj->tm);
     }
     return rb_str_new(buf, len);
 }
@@ -742,7 +744,7 @@ time_zone(time)
 	time_get_tm(time, tobj->gmt);
     }
 
-    len = strftime(buf, 64, "%Z", &(tobj->tm));
+    len = strftime(buf, 64, "%Z", &tobj->tm);
     return rb_str_new(buf, len);
 }
 
@@ -828,7 +830,7 @@ time_strftime(time, format)
 
 	str = rb_str_new(0, 0);
 	while (p < pe) {
-	    len = rb_strftime(&buf, p, &(tobj->tm));
+	    len = rb_strftime(&buf, p, &tobj->tm);
 	    rb_str_cat(str, buf, len);
 	    p += strlen(p) + 1;
 	    if (p <= pe)
@@ -837,7 +839,7 @@ time_strftime(time, format)
 	}
 	return str;
     }
-    len = rb_strftime(&buf, RSTRING(format)->ptr, &(tobj->tm));
+    len = rb_strftime(&buf, RSTRING(format)->ptr, &tobj->tm);
     str = rb_str_new(buf, len);
     if (buf != buffer) free(buf);
     return str;
@@ -888,12 +890,13 @@ time_dump(argc, argv, time)
     struct tm *tm;
     unsigned long p, s;
     unsigned char buf[8];
-    time_t t = tobj->tv.tv_sec;
+    time_t t;
     int i;
 
     rb_scan_args(argc, argv, "01", &dummy);
     GetTimeval(time, tobj);
 
+    t = tobj->tv.tv_sec;
     tm = gmtime(&t);
 
     p = 0x1          << 31 | /*  1 */
