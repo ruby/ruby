@@ -29,6 +29,11 @@ VALUE rb_cString;
 
 #define STR_ASSOC   FL_USER3
 
+#define RESIZE_CAPA(str,capacity) do {\
+    REALLOC_N(RSTRING(str)->ptr, char, (capacity)+1);\
+    RSTRING(str)->aux.capa = (capacity);\
+} while (0)
+
 VALUE rb_fs;
 
 static VALUE
@@ -238,7 +243,7 @@ rb_str_associate(str, add)
 	else if (RSTRING(str)->aux.shared) {
 	    /* str_buf */
 	    if (RSTRING(str)->aux.capa != RSTRING(str)->len) {
-		REALLOC_N(RSTRING(str)->ptr, char, RSTRING(str)->len + 1);
+		RESIZE_CAPA(str, RSTRING(str)->len);
 	    }
 	}
 	RSTRING(str)->aux.shared = add;
@@ -521,7 +526,7 @@ rb_str_resize(str, len)
 
 	if (len >= 0) {
 	    if (RSTRING(str)->len < len || RSTRING(str)->len - len > 1024) {
-		REALLOC_N(RSTRING(str)->ptr, char, len + 1);
+		RESIZE_CAPA(str, len);
 	    }
 	    RSTRING(str)->len = len;
 	    RSTRING(str)->ptr[len] = '\0';	/* sentinel */
@@ -547,8 +552,7 @@ rb_str_buf_cat(str, ptr, len)
 	while (total > capa) {
 	    capa = (capa + 1) * 2;
 	}
-	REALLOC_N(RSTRING(str)->ptr, char, capa+1);
-	RSTRING(str)->aux.capa = capa;
+	RESIZE_CAPA(str, capa);
     }
     memcpy(RSTRING(str)->ptr + RSTRING(str)->len, ptr, len);
     RSTRING(str)->len = total;
@@ -578,7 +582,7 @@ rb_str_cat(str, ptr, len)
 	if (!FL_TEST(str, ELTS_SHARED) && !FL_TEST(str, STR_ASSOC)) {
 	    return rb_str_buf_cat(str, ptr, len);
 	}
-	REALLOC_N(RSTRING(str)->ptr, char, RSTRING(str)->len+len+1);
+	RESIZE_CAPA(str, RSTRING(str)->len + len);
 	if (ptr) {
 	    memcpy(RSTRING(str)->ptr + RSTRING(str)->len, ptr, len);
 	}
@@ -616,8 +620,7 @@ rb_str_buf_append(str, str2)
 	while (len > capa) {
 	    capa = (capa + 1) * 2;
 	}
-	REALLOC_N(RSTRING(str)->ptr, char, capa+1);
-	RSTRING(str)->aux.capa = capa;
+	RESIZE_CAPA(str, capa);
     }
     memcpy(RSTRING(str)->ptr + RSTRING(str)->len,
 	   RSTRING(str2)->ptr, RSTRING(str2)->len);
@@ -642,7 +645,7 @@ rb_str_append(str, str2)
 	    OBJ_INFECT(str, str2);
 	    return str;
 	}
-	REALLOC_N(RSTRING(str)->ptr, char, len+1);
+	RESIZE_CAPA(str, len);
 	memcpy(RSTRING(str)->ptr + RSTRING(str)->len,
 	       RSTRING(str2)->ptr, RSTRING(str2)->len);
 	RSTRING(str)->len += RSTRING(str2)->len;
@@ -1046,7 +1049,7 @@ rb_str_succ(orig)
 	}
     }
     if (s < sbeg) {
-	REALLOC_N(RSTRING(str)->ptr, char, RSTRING(str)->len + 2);
+	RESIZE_CAPA(str, RSTRING(str)->len + 1);
 	s = RSTRING(str)->ptr + n;
 	memmove(s+1, s, RSTRING(str)->len - n);
 	*s = c;
@@ -1197,7 +1200,7 @@ rb_str_update(str, beg, len, val)
     StringValue(val);
     if (len < RSTRING(val)->len) {
 	/* expand string */
-	REALLOC_N(RSTRING(str)->ptr, char, RSTRING(str)->len+RSTRING(val)->len-len+1);
+	RESIZE_CAPA(str, RSTRING(str)->len + RSTRING(val)->len - len);
     }
 
     if (RSTRING(val)->len != len) {
@@ -1272,7 +1275,7 @@ rb_str_aset(str, indx, val)
 	if (FIXNUM_P(val)) {
 	    if (RSTRING(str)->len == idx) {
 		RSTRING(str)->len += 1;
-		REALLOC_N(RSTRING(str)->ptr, char, RSTRING(str)->len);
+		RESIZE_CAPA(str, RSTRING(str)->len);
 	    }
 	    RSTRING(str)->ptr[idx] = NUM2INT(val) & 0xff;
 	}
@@ -1427,8 +1430,7 @@ rb_str_sub_bang(argc, argv, str)
 	if (OBJ_TAINTED(repl)) tainted = 1;
 	plen = END(0) - BEG(0);
 	if (RSTRING(repl)->len > plen) {
-	    REALLOC_N(RSTRING(str)->ptr, char,
-		      RSTRING(str)->len + RSTRING(repl)->len - plen + 1);
+	    RESIZE_CAPA(str, RSTRING(str)->len + RSTRING(repl)->len - plen);
 	}
 	if (RSTRING(repl)->len != plen) {
 	    memmove(RSTRING(str)->ptr + BEG(0) + RSTRING(repl)->len,

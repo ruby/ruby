@@ -512,11 +512,16 @@ io_fread(ptr, len, f)
 	if (c == EOF) {
 	  eof:
 	    if (ferror(f)) {
-		if (errno == EINTR) continue;
-		if (errno == EAGAIN) return len - n;
+		switch (errno) {
+		  case EINTR:
+		    continue;
+
+		  case EAGAIN:
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
-		if (errno == EWOULDBLOCK) return len - n;
+		  case EWOULDBLOCK:
 #endif
+		    return len - n;
+		}
 		rb_sys_fail(0);
 	    }
 	    *ptr = '\0';

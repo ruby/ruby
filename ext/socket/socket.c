@@ -385,12 +385,6 @@ bsock_send(argc, argv, sock)
 	  case EINTR:
 	    rb_thread_schedule();
 	    goto retry;
-	  case EWOULDBLOCK:
-#if EAGAIN != EWOULDBLOCK
-	  case EAGAIN:
-#endif
-	    rb_thread_fd_writable(fd);
-	    goto retry;
 	}
 	rb_sys_fail("send(2)");
     }
@@ -447,12 +441,6 @@ s_recvfrom(sock, argc, argv, from)
 	switch (errno) {
 	  case EINTR:
 	    rb_thread_schedule();
-	    goto retry;
-
-	  case EWOULDBLOCK:
-#if EAGAIN != EWOULDBLOCK
-	  case EAGAIN:
-#endif
 	    goto retry;
 	}
 	rb_sys_fail("recvfrom(2)");
@@ -1119,12 +1107,6 @@ s_accept(class, fd, sockaddr, len)
 	  case EINTR:
 	    rb_thread_schedule();
 	    goto retry;
-
-	  case EWOULDBLOCK:
-#if EAGAIN != EWOULDBLOCK
-	  case EAGAIN:
-#endif
-	    goto retry;
 	}
 	rb_sys_fail(0);
     }
@@ -1344,13 +1326,6 @@ udp_send(argc, argv, sock)
 	switch (errno) {
 	  case EINTR:
 	    rb_thread_schedule();
-	    goto retry;
-
-	  case EWOULDBLOCK:
-#if EAGAIN != EWOULDBLOCK
-	  case EAGAIN:
-#endif
-	    rb_thread_fd_writable(fileno(f));
 	    goto retry;
 	}
     }
@@ -2188,6 +2163,7 @@ Init_socket()
     rb_define_singleton_method(rb_cTCPServer, "open", tcp_svr_s_open, -1);
     rb_define_singleton_method(rb_cTCPServer, "new", tcp_svr_s_open, -1);
     rb_define_method(rb_cTCPServer, "accept", tcp_accept, 0);
+    rb_define_method(rb_cTCPServer, "listen", sock_listen, 1);
 
     rb_cUDPSocket = rb_define_class("UDPSocket", rb_cIPSocket);
     rb_define_global_const("UDPsocket", rb_cUDPSocket);
@@ -2212,6 +2188,7 @@ Init_socket()
     rb_define_singleton_method(rb_cUNIXServer, "open", unix_svr_s_open, 1);
     rb_define_singleton_method(rb_cUNIXServer, "new", unix_svr_s_open, 1);
     rb_define_method(rb_cUNIXServer, "accept", unix_accept, 0);
+    rb_define_method(rb_cUNIXServer, "listen", sock_listen, 1);
 #endif
 
     rb_cSocket = rb_define_class("Socket", rb_cBasicSocket);
