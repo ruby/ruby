@@ -1,6 +1,6 @@
 Mon Mar 24 00:09:02 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
-	* parse.y (block_append): warn unused lteral.
+	* parse.y (block_append): warn unused literal.
 
 Sun Mar 23 22:22:04 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
@@ -21,8 +21,8 @@ Sat Mar 22 13:26:33 2003  Tanaka Akira  <akr@m17n.org>
 
 Sat Mar 22 12:44:15 2003  Tanaka Akira  <akr@m17n.org>
 
-        * lib/date/format.rb, lib/uri/common.rb: `[', `]', `-' in chracter
-          class in regexp to avoid warning.
+        * lib/date/format.rb, lib/uri/common.rb: escape `[', `]', `-' in
+          character class in regexp to avoid warning.
 
 Sat Mar 22 07:39:32 2003  Ulf Betlehem  <flu@iki.fi>
 
@@ -35,7 +35,7 @@ Fri Mar 21 23:40:41 2003  Tanaka Akira  <akr@m17n.org>
         * instruby.rb, ext/extmk.rb, ext/tk/lib/tk.rb, lib/benchmark.rb,
           lib/cgi.rb, lib/debug.rb, lib/getoptlong.rb, lib/jcode.rb,
           lib/optparse.rb, lib/time.rb, lib/date/format.rb,
-          lib/irb/ruby-lex.rb: escape `[', `]', `-' in chracter class in
+          lib/irb/ruby-lex.rb: escape `[', `]', `-' in character class in
           regexp to avoid warning.
 
 Fri Mar 21 23:23:45 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -186,7 +186,7 @@ Sun Mar  9 17:09:40 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 Sat Mar 08 11:30:59 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
-	* eval.c (massign): fix a bug not to expand in assigment to sole
+	* eval.c (massign): fix a bug not to expand in assignment to sole
 	  lhs.  [ruby-dev:19766]
 
 Fri Mar  7 21:57:25 2003  Tanaka Akira  <akr@m17n.org>
@@ -378,7 +378,7 @@ Mon Feb 24 08:06:29 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Sun Feb 23 17:57:06 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
-	* lib/fileutils (fu_stream_blksize): wrong logial condition.
+	* lib/fileutils (fu_stream_blksize): wrong logical condition.
 	  (and -> or).
 
 Sat Feb 22 03:12:56 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -492,7 +492,7 @@ Thu Feb 20 01:23:59 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 Wed Feb 19 18:27:42 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* node.h (nd_cpath): nested class/module declaration.
-	  [EXPREIMENTAL]
+	  [EXPERIMENTAL]
 
 	* eval.c (rb_eval): ditto.
 
@@ -868,7 +868,7 @@ Mon Jan 27 02:06:38 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 Sun Jan 26 19:23:10 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
-	* instruby.rb ($mflags.set?): Check $make instead of $nmake, sinse
+	* instruby.rb ($mflags.set?): Check $make instead of $nmake, since
 	  there is no such a variable.
 
 	* instruby.rb ($mflags.set?), ext/extmk.rb ($mflags.set?): Return
@@ -1065,7 +1065,7 @@ Mon Jan 20 04:14:17 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	* lib/mkmf.rb (dir_config): prior configured directories to
 	  defaults.
 
-	* lib/mkmf.rb (dir_config): extract first word to determin
+	* lib/mkmf.rb (dir_config): extract first word to determine
 	  make command type.
 
 Mon Jan 20 02:15:53 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
@@ -1116,7 +1116,7 @@ Wed Jan 15 15:18:38 2003  moumar  <moumar@netcourrier.com>
 Tue Jan 14 21:47:56 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (rb_f_require): do not search adding .rb/.so suffixes if
-	  the suffix specifiched.  [ruby-dev:18702]
+	  the suffix specified.  [ruby-dev:18702]
 	  http://moonrock.jp/~don/d/200211.html#d08_t1
 
 Tue Jan 14 18:36:41 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -1139,7 +1139,7 @@ Mon Jan 13 20:45:19 2003  Guy Decoux  <ts@moulon.inra.fr>
 
 Mon Jan 13 02:22:11 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
-	* ext/dl/lib/dl/win32.rb: elimitate unnecessary "A" adding.
+	* ext/dl/lib/dl/win32.rb: eliminate unnecessary "A" adding.
 
 Sun Jan 12 16:07:17 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
@@ -1187,7 +1187,7 @@ Thu Jan  9 16:31:51 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Thu Jan  9 15:12:30 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* parse.y (stmt): NODE_NOT elimitation for if/unless/while/until node.
+	* parse.y (stmt): NODE_NOT elimination for if/unless/while/until node.
 
 	* parse.y (primary): ditto.
 
@@ -1303,7 +1303,7 @@ Sun Jan  5 14:46:46 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/extmk.rb (sysquote): do not need to quote on mswin/bccwin/mingw.
 
-	* ext/extm.rb ($mflags): uniq items and remove '-' and '--'.
+	* ext/extmk.rb ($mflags): uniq items and remove '-' and '--'.
 	  move options to the lead.
 
 	* lib/fileutils.rb (install): model on the real install
@@ -1828,7 +1828,7 @@ Thu Dec 19 01:00:09 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* numeric.c (rb_num_coerce_cmp): new coercing function for "<=>",
 	  which does not raise TypeError.
 
-	* numeric.c (do_coerce): can be supress exception now.
+	* numeric.c (do_coerce): can be suppress exception now.
 
 	* object.c (rb_mod_cmp): should return nil for non class/module
 	  objects.
@@ -2320,7 +2320,7 @@ Sun Nov 10 03:46:18 2002  Akinori MUSHA  <knu@iDaemons.org>
 	  [obtained from: Jason Voegele's set.rb]
 
 	* lib/set.rb: define several aliases: union() for |(),
-	  difference() for -(), ande intersection() for &().
+	  difference() for -(), and intersection() for &().
 	  [obtained from: Jason Voegele's set.rb]
 
 	* lib/set.rb: deal with a s/id/object_id/ leftover.
@@ -2530,7 +2530,7 @@ Thu Oct 24 03:38:07 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* configure.in (LIBPATHFLAG): should escape $.  [ruby-dev:18572]
 
-	* mkconfig.rb: never substute escaped $$.
+	* mkconfig.rb: never substitute escaped $$.
 
 	* instruby.rb: not install LIBRUBY_SO unless enable-shared.
 	  [ruby-dev:18569]
@@ -2599,7 +2599,7 @@ Tue Oct 22 00:59:59 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 Mon Oct 21 22:53:02 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
-	* configure.in (XCFLAGS): CFLAGS to comile ruby itself.
+	* configure.in (XCFLAGS): CFLAGS to compile ruby itself.
 
 	* configure.in (LIBEXT): suffix for static libraries.
 
@@ -2618,7 +2618,7 @@ Mon Oct 21 22:53:02 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	  libraries, macros and headers used in common.
 
 	* configure.in (RUBYW_INSTALL_NAME, rubyw_install_name): GUI mode
-	  excutable name.
+	  executable name.
 
 	* Makefile.in (CFLAGS): append XCFLAGS.
 
@@ -2643,11 +2643,11 @@ Mon Oct 21 22:53:02 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	* lib/mkmf.rb (older): accept multiple file names and Time
 	  objects.
 
-	* lib/mkmf.rb (xsystem): split and qoute.
+	* lib/mkmf.rb (xsystem): split and quote.
 
 	* lib/mkmf.rb (cpp_include): make include directives.
 
-	* lib/mkmf.rb (try_func): try wheather specified function is
+	* lib/mkmf.rb (try_func): try whether specified function is
 	  available.
 
 	* lib/mkmf.rb (install_files): default to site-install.
@@ -2767,7 +2767,7 @@ Thu Oct 10 15:20:18 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* lib/weakref.rb (WeakRef::@@final): use Hash#delete.
 
-	* lib/weakref.rb (WeakRef::__getobj__): examin if alive or not by
+	* lib/weakref.rb (WeakRef::__getobj__): examine if alive or not by
 	  ID_REV_MAP to deal with recycled object.  [ruby-dev:18472]
 
 	* lib/weakref.rb (WeakRef::weakref_alive?): ditto.
@@ -3026,7 +3026,8 @@ Wed Sep 25 23:51:29 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 Wed Sep 25 17:46:46 2002  NAKAMURA Usaku <usa@ruby-lang.org>
 
-	* lib/mkmf.rb (libpathflag): restore ENV['LIB'] when some error occured.
+	* lib/mkmf.rb (libpathflag): restore ENV['LIB'] when some error
+          occurred.
 
 Wed Sep 25 16:14:51 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -3035,7 +3036,7 @@ Wed Sep 25 16:14:51 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Mon Sep 23 23:22:43 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (rb_call0): must not clear ruby_current_node, or
-	  backtrace cannot be genetated.
+	  backtrace cannot be generated.
 
 	* intern.h (ruby_yyparse): rather than yyparse().
 
@@ -3050,7 +3051,7 @@ Mon Sep 23 23:22:43 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 Mon Sep 23 19:57:52 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in (RUBY_MINGW32): new macro. check for the MinGW
-	  compiler envionment.
+	  compiler environment.
 
 	* lib/mkmf.rb: refactoring.
 
@@ -3105,7 +3106,7 @@ Fri Sep 20 23:02:01 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* parse.y (block_append): eliminate unused literal nodes.
 
-	* parse.y (literal_concat): refined literal concatination.
+	* parse.y (literal_concat): refined literal concatenation.
 
 Fri Sep 20 19:43:40 2002  Akinori MUSHA  <knu@iDaemons.org>
 
@@ -3438,7 +3439,7 @@ Fri Sep  6 12:11:22 2002  Minero Aoki  <aamine@loveruby.net>
 Fri Sep  6 01:15:23 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (ruby_xmalloc): remove MALLOC_LIMIT to avoid frequent
-	  garabage collection.
+	  garbage collection.
 
 Fri Sep  6 11:47:37 2002  Minero Aoki  <aamine@loveruby.net>
 
@@ -3548,7 +3549,7 @@ Mon Sep  2 21:21:46 2002  Minero Aoki  <aamine@loveruby.net>
 Mon Sep  2 18:45:07 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* variable.c (rb_copy_generic_ivar): remove old generic instance
-	  variable table if it existes.
+	  variable table if it exists.
 
 Sun Sep  1 15:54:33 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
@@ -3693,7 +3694,7 @@ Wed Aug 28 11:37:35 2002  NAKAMURA Usaku <usa@ruby-lang.org>
 
 Tue Aug 27 19:50:27 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
-	* ruby.c (require_libraries): prevent ruby_sorcefile from GC.
+	* ruby.c (require_libraries): prevent ruby_sourcefile from GC.
 
 Tue Aug 27 15:03:35 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -3730,7 +3731,7 @@ Sat Aug 24 15:32:16 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 Sat Aug 24 14:59:02 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* marshal.c (w_class): integrate singleton check into a funciton
+	* marshal.c (w_class): integrate singleton check into a function
 	  to follow DRY principle.
 
 	* marshal.c (w_uclass): should check singleton method.
@@ -3936,7 +3937,7 @@ Tue Aug 13 00:37:11 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_aref): no need for Bignum check.
 
-	* array.c (rb_ary_aset): explicit Bignum check removd.
+	* array.c (rb_ary_aset): explicit Bignum check removed.
 
 	* numeric.c (fix_aref): normalize bignum before bit-op.
 
@@ -4109,7 +4110,7 @@ Mon Jul 29 16:00:54 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 Sat Jul 27 23:07:52 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* numeric.c (num_to_int): default to_int implementaion for every
+	* numeric.c (num_to_int): default to_int implementation for every
 	  numeric class.
 
 Sat Jul 27 08:09:03 2002  Booker C. Bense  <bbense@slac.stanford.edu>
@@ -4232,7 +4233,7 @@ Thu Jul 11 17:59:20 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* re.c (rb_reg_quote): avoid unnecessary string allocation.
 
-	* string.c (get_pat): quote metachracters before compiling a
+	* string.c (get_pat): quote metacharacters before compiling a
 	  string into a regex.
 
 	* string.c (rb_str_split_m): special treatment of strings of size
@@ -4424,7 +4425,7 @@ Mon Jun 24 16:32:31 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	* parse.y (here_document): splitted into three phases.
 
 	* parse.y (literall_append, literal_concat): added.
-	  append/concatinate string literals.
+	  append/concatenate string literals.
 
 	* sample/test.rb (valid_syntax): adjust line number for BEGIN.
 
@@ -4473,7 +4474,7 @@ Wed Jun 19 01:01:13 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Wed Jun 19 00:50:50 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
-	* parse.y (yylex): ? followed by successive word charaters is
+	* parse.y (yylex): ? followed by successive word characters is
 	  ternary operator not numeric literal.
 
 	* parse.y (yylex): commands after break/next/rescue can take
@@ -4526,7 +4527,7 @@ Fri Jun 14 21:01:48 2002  KONISHI Hiromasa <konishih@fd6.so-net.ne.jp>
 
 	* bcc32/mkexports.rb: insert sleep(1) for win9x.
 
-	* bcc32/configure.bat: change return code LF -> CRLF fo win9x.
+	* bcc32/configure.bat: change return code LF -> CRLF for win9x.
 
 	* win32/win32.c: fix rb_w32_open_osfhandle()
 
@@ -4851,7 +4852,7 @@ Tue May 21 04:48:37 2002  Sean Chittenden <sean@chittenden.org>
 
 Tue May 21 01:16:46 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
-	* parse.y (bodystmt): ensure clause was excuted on else clause
+	* parse.y (bodystmt): ensure clause was executed on else clause
 	  without rescue clause.
 
 Tue May 21 00:20:25 2002  Takaaki Tateishi <ttate@kt.jaist.ac.jp>
@@ -4890,7 +4891,7 @@ Sat May 18 02:16:41 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Fri May 17 16:16:19 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
-	* sampl/test.rb: use eval instead of './miniruby -c',
+	* sample/test.rb: use eval instead of './miniruby -c',
 	  in order to check a syntax error.
 
 Thu May 16 14:46:34 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
@@ -5031,14 +5032,14 @@ Tue Apr 30 09:23:05 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Tue Apr 30 05:59:42 2002  Michal Rokos  <m.rokos@sh.cvut.cz>
 
 	* range.c (range_step): step (for Range#step method) <= 0 makes no
-	  sence, thus ArgError will be raised.
+	  sense, thus ArgError will be raised.
 
 	* range.c (range_each): Range#each method is special case for
 	  Range#step(1)
 
 Mon Apr 29 18:46:42 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* file.c (rb_find_file): load must be done from an abolute path if
+	* file.c (rb_find_file): load must be done from an absolute path if
 	  $SAFE >= 4.
 
 Sun Apr 28 17:01:56 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
@@ -5209,7 +5210,7 @@ Wed Apr 17 08:16:41 2002  Michal Rokos  <m.rokos@sh.cvut.cz>
 
 Wed Apr 17 00:01:59 2002  Michal Rokos  <m.rokos@sh.cvut.cz>
 
-	* dir.c: wrap multi-statment macro by do { } while (0)
+	* dir.c: wrap multi-statement macro by do { } while (0)
 
 	* eval.c, numeric,c, sprintf.c, util.c: ditto.
 
@@ -5619,7 +5620,7 @@ Mon Mar 25 23:39:25 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* io.c (remain_size): separated from read_all().
 
-	* io.c (read_all): argument chagend.
+	* io.c (read_all): argument changed.
 
 	* io.c (appendline): new.  get a line and append to string.
 
@@ -6157,7 +6158,7 @@ Tue Feb 26 15:41:30 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Tue Feb 26 11:25:50 2002  akira yamada  <akira@arika.org>
 
-	* lib/uri/generic.rb: merge0 shuld return [oth, oth] if oth is
+	* lib/uri/generic.rb: merge0 should return [oth, oth] if oth is
 	  absolute URI. 
 
 	* lib/uri/generic.rb: registry part must not be allowed for any
@@ -6315,7 +6316,7 @@ Tue Feb 19 21:43:32 2002  Minero Aoki  <aamine@loveruby.net>
 	* lib/net/http.rb: HTTPResponse class does not inherit from
 	  Net::Response.
 
-	* lib/net/http.rb: devide HTTP#connecting into
+	* lib/net/http.rb: divide HTTP#connecting into
 	  {begin,end}_transport.
 
 	* lib/net/http.rb: unused class Accumulator removed.
@@ -6453,7 +6454,7 @@ Fri Feb 15 14:40:38 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Fri Feb 15 13:36:58 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* bignum.c (rb_big_rshift): should properly convert the nagative
+	* bignum.c (rb_big_rshift): should properly convert the negative
 	  value to 2's compliment.
 
 Thu Feb 14 17:38:35 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
@@ -6511,7 +6512,7 @@ Sun Feb 10 16:52:53 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 Fri Feb  8 23:07:23 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* eval.c (rb_eval): singleton chech should be moved from yycompile
+	* eval.c (rb_eval): singleton check should be moved from yycompile
 	  to here.
 
 	* eval.c (is_defined): check should be added here too.
@@ -6530,7 +6531,7 @@ Fri Feb  8 01:27:33 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_eval): class variables from singleton methods defined
 	  within singleton class statement should work like ones defined
-	  by sington def statements.
+	  by singleton def statements.
 
 Thu Feb  7 13:44:08 2002  akira yamada  <akira@arika.org>
 
@@ -6604,7 +6605,7 @@ Fri Feb  1 19:10:04 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* bignum.c (rb_str_to_inum): ditto.
 
-	* bignum.c (rb_cstr2inum): wapper of rb_cstr_to_inum() now.
+	* bignum.c (rb_cstr2inum): wrapper of rb_cstr_to_inum() now.
 
 	* bignum.c (rb_str2inum): ditto.
 
@@ -6788,7 +6789,7 @@ Mon Jan 21 08:25:30 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Sat Jan 19 02:31:45 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* eval.c (rb_eval): need not to clar method cache for NODE_CLASS,
+	* eval.c (rb_eval): need not to clear method cache for NODE_CLASS,
 	  NODE_SCLASS.
 
 	* gc.c (obj_free): need not to clear method cache on class/module
@@ -7087,7 +7088,7 @@ Tue Dec 25 02:37:49 2001  Tanaka Akira  <akr@m17n.org>
 
 Tue Dec 25 02:11:17 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* object.c (rb_convert_type): check method responce check before
+	* object.c (rb_convert_type): check method response check before
 	  invoking rb_rescue().
 
 	* object.c (rb_check_convert_type): ditto.
@@ -7289,7 +7290,7 @@ Fri Dec 14 04:23:36 2001  Minero Aoki  <aamine@loveruby.net>
 Fri Dec 14 00:16:06 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* class.c (rb_define_class): should return the existing class if
-	  the class is already defined and its superclass is ideintical to
+	  the class is already defined and its superclass is identical to
 	  the specified superclass.
 
 	* class.c (rb_define_class_under): ditto.
@@ -7367,7 +7368,7 @@ Sun Dec  9 18:06:26 2001  Minero Aoki  <aamine@loveruby.net>
 
 Sat Dec  8 23:27:44 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* io.c (rb_io_puts): old behavoir restored.  rationale: a) if you
+	* io.c (rb_io_puts): old behavior restored.  rationale: a) if you
 	  want to call to_s for arrays, you can just call print a, "\n".
 	  b) to_s wastes memory if array (and sum of its contents) is
 	  huge.  c) now any object that has to_ary is treated as an array,
@@ -7379,10 +7380,10 @@ Sat Dec  8 22:40:38 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  the default value. [new]
 
 	* hash.c (rb_hash_aref): call "default" method to get the value
-	  corrensponding to the non existing key.  
+	  corresponding to the non existing key.  
 
 	* hash.c (rb_hash_default): get the default value based on the
-	  block given to 'new'.  Now it takes an optinal "key" argument.
+	  block given to 'new'.  Now it takes an optional "key" argument.
 	  "default" became the method to get the value for non existing
 	  key.  Users may override "default" method to change the hash
 	  behavior.
@@ -7620,7 +7621,7 @@ Thu Nov 22 20:15:28 2001  TAMURA Takashi  <sheepman@tcn.zaq.ne.jp>
 
 	* gc.c (gc_mark_rest): should call gc_mark_children(), not gc_mark().
 
-	* gc.c (rb_gc_mark): may cause infinite looop.
+	* gc.c (rb_gc_mark): may cause infinite loop.
 
 Thu Nov 22 00:28:13 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -7723,7 +7724,7 @@ Thu Nov 15 03:37:17 2001  Usaku Nakamura  <usa@ruby-lang.org>
 Thu Nov 15 00:07:12 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_to_s): if rb_output_fs is nil, insert newlines
-	  between array elements (use rb_default_rs as newline litral)
+	  between array elements (use rb_default_rs as newline literal)
 	  [experimental].
 
 Wed Nov 14 15:16:23 2001  K.Kosako  <kosako@sofnec.co.jp>
@@ -8218,7 +8219,7 @@ Thu Oct  4 14:11:03 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 Wed Oct  3 20:11:06 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
-	* re.c (rb_reg_s_alloc): avoid inifinte recursion.
+	* re.c (rb_reg_s_alloc): avoid infinite recursion.
 
 Wed Oct  3 16:49:49 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
@@ -8521,7 +8522,7 @@ Tue Aug 28 00:40:48 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Fri Aug 24 15:17:40 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* array.c (rb_ary_equal): check identiry equality first.
+	* array.c (rb_ary_equal): check identity equality first.
 
 	* string.c (rb_str_equal): ditto.
 
@@ -8559,7 +8560,7 @@ Thu Aug 23 10:10:59 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Wed Aug 22 23:20:03 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* hash.c (rb_hash_equal): check identiry equality first.
+	* hash.c (rb_hash_equal): check identity equality first.
 
 Wed Aug 22 19:58:59 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
@@ -8716,7 +8717,7 @@ Sat Aug 11 14:43:47 2001  Tanaka Akira  <akr@m17n.org>
 Fri Aug 10 22:14:37 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (cond0): operands of logical operators are not treated
-	  as conditional expresion anymore, but propagate conditional
+	  as conditional expression anymore, but propagate conditional
 	  status if used in conditionals.
 
 Tue Aug  7 09:10:32 2001  Usaku Nakamura  <usa@ruby-lang.org>
@@ -9576,7 +9577,7 @@ Mon May 28 23:20:43 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in: remove unnecessary AC_CANONICAL_BUILD
 
-	* defins.h: #define HAVE_SETITIMER on Cygwin(bug fixed).
+	* defines.h: #define HAVE_SETITIMER on Cygwin(bug fixed).
 
 	* ruby.c: use relative path from LIBRUBY_SO.
 
@@ -10169,7 +10170,7 @@ Mon Apr  9 15:20:21 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Mon Apr  9 12:05:44 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* file.c (Init_File): should redifine "new" class method.
+	* file.c (Init_File): should redefine "new" class method.
 
 Mon Apr  9 11:56:52 2001  Shugo Maeda <shugo@ruby-lang.org>
 
@@ -10208,9 +10209,9 @@ Thu Apr  5 02:19:03 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Wed Apr  4 03:47:03 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* eval.c (proc_eq): class check aded.
+	* eval.c (proc_eq): class check added.
 
-	* eval.c (proc_eq): typo fixed ("return" was ommitted).
+	* eval.c (proc_eq): typo fixed ("return" was omitted).
 
 	* error.c (Init_Exception): move NameError under StandardError.
 
@@ -10239,7 +10240,7 @@ Tue Apr  3 00:05:07 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Mon Apr  2 16:52:48 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* process.c (proc_waitall): should push Process::Status instead of
-	  Finuxm status.  
+	  Fixnum status.  
 
 	* process.c (waitall_each): should add all entries in pid_tbl.
 	  these changes are inspired by Koji Arai.  Thanks.
@@ -10466,7 +10467,7 @@ Tue Mar 20 23:09:33 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 Tue Mar 20 15:10:00 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* dir.c (glob_helper): breaks loop after calling recusive
+	* dir.c (glob_helper): breaks loop after calling recursive
 	  glob_helper; all wild cards should be consumed; no need for
 	  further match.
 
@@ -10583,7 +10584,7 @@ Sun Mar 11 18:13:34 2001  Masahiro Tanaka  <masa@stars.gsfc.nasa.gov>
 
 	* math.c: add acos, asin, atan, conh, sinh, tanh and hypot to Math.
 
-	* configure.in: check hypot availablility.
+	* configure.in: check hypot availability.
 
 	* missing/hypot.c: public domain rewrite of hypot.
 
@@ -10899,7 +10900,7 @@ Tue Feb 13 08:43:10 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Tue Feb 13 01:13:43 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* eval.c (rb_load): raise LocaJumpError if unexpected local jumps
+	* eval.c (rb_load): raise LocalJumpError if unexpected local jumps
 	  appear during load.
 
 	* ext/socket/socket.c (bsock_close_read): don't call rb_thread_fd_close();
@@ -11344,7 +11345,7 @@ Tue Dec 26 16:53:55 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Tue Dec 26 15:45:35 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* string.c (rb_str_inspect): should treat multibyte chracters
+	* string.c (rb_str_inspect): should treat multibyte characters
 	  properly.
 
 Mon Dec 25 17:49:08 2000  K.Kosako  <kosako@sofnec.co.jp>
@@ -11397,7 +11398,7 @@ Sat Dec 23 23:55:57 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Sat Dec 23 11:55:57 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* array.c (rb_ary_and): Array#& should preverve original order.
+	* array.c (rb_ary_and): Array#& should preserve original order.
 
 Sat Dec 23 03:44:16 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
@@ -11431,7 +11432,7 @@ Wed Dec 20 12:00:15 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (rb_big_lshift): should cast up to BDIGIT_DBL.
 
-	* parse.y (yylex): disallow trailing '_' for numeric litrals.
+	* parse.y (yylex): disallow trailing '_' for numeric literals.
 
 	* bignum.c (rb_cstr2inum): allow `_' within converting string.
 
@@ -11472,7 +11473,7 @@ Sat Dec 16 02:58:26 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 Thu Dec 14 13:06:18 2000  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
-	* class.c (rb_include_module): prohibit fronzen class/module.
+	* class.c (rb_include_module): prohibit frozen class/module.
 
 	* eval.c (rb_frozen_class_p): make external.
 
@@ -11655,7 +11656,7 @@ Sat Nov 25 23:12:22 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Fri Nov 24 22:03:48 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* range.c (EXCL): exclusive infomation is now stored in an
+	* range.c (EXCL): exclusive information is now stored in an
 	  instance variable.  this enables proper marshal dump.
 
 	* process.c (proc_waitpid): should clear rb_last_status ($?) if
@@ -11682,7 +11683,7 @@ Tue Nov 21 23:24:14 2000  Mitsuteru S Nakao  <nakao@kuicr.kyoto-u.ac.jp>
 Tue Nov 21 03:39:41 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* marshal.c (marshal_load): marshal format compatibility check
-	  revised.   greater minor revision is UPWARD compatibile;
+	  revised.   greater minor revision is UPWARD compatible;
 	  downward compatibility is not assured.
 
 	* eval.c (is_defined): clarify class variable behavior for
@@ -12262,7 +12263,7 @@ Wed Sep 20 14:01:45 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_callcc): ditto.
 
-	* eval.c (THREAD_ALLOC): fiil dyna_vars field by ruby_dyna_vars.
+	* eval.c (THREAD_ALLOC): fill dyna_vars field by ruby_dyna_vars.
 
 Tue Sep 19 17:47:03 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -13352,7 +13353,7 @@ Fri Jun 16 01:57:31 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 Thu Jun 15 10:46:36 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
-	* string.c (rb_str_sub_bang): should probagate taintness from
+	* string.c (rb_str_sub_bang): should propagate taintness from
 	  replacement string.
 
 Wed Jun 14 17:01:41 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
@@ -20180,7 +20181,7 @@ Mon Nov 10 11:24:51 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 Fri Nov  7 16:58:24 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
-	* regex.c (re_compile_pattern): perl5 regxp \A and \Z available.
+	* regex.c (re_compile_pattern): perl5 regexp \A and \Z available.
 
 	* regex.c (re_compile_pattern): can expand compile stack dynamically.
 
