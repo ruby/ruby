@@ -1,3 +1,8 @@
+Tue May  1 03:24:05 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/irb/completion.rb, lib/irb/frame.rb, lib/irb/xmp.rb,
+	doc/irb/irb-tools.rd.jp: Merge from irb-tools 0.7.1.
+
 Tue May  1 03:07:17 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* sample/irb.rb, lib/irb.rb, lib/irb/*, doc/irb/*: Merge from irb
