@@ -111,26 +111,9 @@ makedirs [bindir, libdir, rubylibdir, archlibdir, sitelibdir, sitearchlibdir]
 install?(:bin) do
 ruby_bin = File.join(bindir, ruby_install_name)
 
-major = CONFIG["MAJOR"]
-minor = CONFIG["MINOR"]
-teeny = CONFIG["TEENY"]
-os = CONFIG["target_os"]
-suffixes = %W[#{major}#{minor} #{major}#{minor}#{teeny}
-#{major}#{minor}-#{os} #{major}#{minor}#{teeny}-#{os}
--#{major}.#{minor} -#{major}.#{minor}.#{teeny}
-]
-def suffixes.link(bin)
-  each do |suf|
-    ln(bin+exeext, bin+suf+exeext, force: true)
-  end
-rescue NotImplementedError
-end
-
 install ruby_install_name+exeext, ruby_bin+exeext, :mode => 0755
-suffixes.link(ruby_bin)
 if rubyw_install_name and !rubyw_install_name.empty?
   install rubyw_install_name+exeext, bindir, :mode => 0755
-  suffixes.link(File.join(bindir, rubyw_install_name))
 end
 install dll, bindir, :mode => 0755 if enable_shared and dll != lib
 install lib, libdir, :mode => 0755 unless lib == arc
