@@ -1,3 +1,7 @@
+Thu Mar  3 11:49:51 2005  Kouhei Sutou  <kou@cozmixng.org>
+
+	* sample/rss/tdiary_plugin/rss-recent.rb: added site information.
+
 Wed Mar  2 19:53:44 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (parse_args): return false if nothing matched.
