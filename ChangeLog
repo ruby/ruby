@@ -6,6 +6,8 @@ Sat Jan  1 16:21:29 2005  Minero Aoki  <aamine@loveruby.net>
 	* lib/fileutils.rb (copy_stream): does NOT support nonblocking IO.
 	  [ruby-dev:25370]
 
+	* lib/fileutils.rb (copy_entry): could not copy symlink.
+
 	* test/fileutils/test_fileutils.rb: test copy_entry, copy_file,
 	  copy_stream.
 
