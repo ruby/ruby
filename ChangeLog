@@ -1,3 +1,7 @@
+Mon Jun  4 04:14:53 2001  Wakou Aoyama  <wakou@fsinet.or.jp>
+
+	* lib/shellwords.rb: don't destroy argument.
+
 Sat Jun  2 23:05:20 2001  Shugo Maeda <shugo@ruby-lang.org>
 
 	* lib/cgi/session.rb: don't use module_function for Class.
