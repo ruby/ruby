@@ -12,8 +12,8 @@ Sat Aug  2 03:30:25 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Fri Aug  2 03:20:00 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
 
-    * lib/yaml/store.rb (YAML::Store#initialize): filename is first
-      argument.  Thanks Kent Dahl.
+	* lib/yaml/store.rb (YAML::Store#initialize): filename is first
+	  argument.  Thanks Kent Dahl.
 
 Sat Aug  2 00:49:31 2003  Minero Aoki  <aamine@loveruby.net>
 
@@ -133,8 +133,8 @@ Thu Jul 31 00:17:19 2003  Shugo Maeda  <shugo@ruby-lang.org>
 	* lib/net/ftp.rb (return_code): obsolete.
 
 	* lib/net/ftp.rb (last_response_code): new method. lastresp is now
-	alias to last_response_code.
-	
+	  alias to last_response_code.
+
 	* lib/net/ftp.rb (last_response): new method.
 
 Wed Jul 30 23:55:44 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -190,7 +190,7 @@ Wed Jul 30 15:10:02 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 Wed Jul 30 10:54:10 2003  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (get): fix wrong argument name. Thanks to William
-	Webber.
+	  Webber.
 
 Wed Jul 30 10:31:37 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
@@ -711,7 +711,7 @@ Mon Jul 21 01:53:43 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Sun Jul 20 11:03:25 2003  UENO Katsuhiro  <katsu@blue.sky.or.jp>
 
 	* ext/zlib/zlib.c (gzfile_read_header): gz->z.input may be nil after
-	finishing reading a gzip header.
+	  finishing reading a gzip header.
 
 Sat Jul 19 22:25:47 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -787,7 +787,7 @@ Fri Jul 18 13:04:36 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* eval.c (rb_f_missing): VCALL is called only for LOCAL_ID.  no
 	  check required.
 
-	* parse.y (primary): pritmary:tFID generates NODE_FCALL.
+	* parse.y (primary): primary:tFID generates NODE_FCALL.
 	  [ruby-dev:20641]
 
 Thu Jul 17 18:50:26 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -1333,8 +1333,8 @@ Wed Jun 18 23:59:11 2003  Guy Decoux  <ts@moulon.inra.fr>
 Wed Jun 18 23:41:27 2003  Marc Cartright  <marc@isri.unlv.edu>
 
 	* ext/zlib/zlib.c (zstream_run): In a particular situation,
-	deflate/inflate will return Z_BUF_ERROR, even though another call
-	is required by the zlib library.
+	  deflate/inflate will return Z_BUF_ERROR, even though another call
+	  is required by the zlib library.
 
 Wed Jun 18 13:50:06 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -2934,7 +2934,7 @@ Mon Apr  7 01:33:31 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Sun Apr  6 18:29:21 2003  UENO Katsuhiro  <katsu@blue.sky.or.jp>
 
 	* ext/zlib/zlib.c: the return value of GzipReader#getc must be
-	unsigned.
+	  unsigned.
 
 Sun Apr  6 00:35:37 2003  Tanaka Akira  <akr@m17n.org>
 
