@@ -113,7 +113,7 @@ module SM
     end
 
     def accept_heading(am, fragment)
-      @res << Flow::H.new(fragment.head_level, am.flow(fragment.txt))
+      @res << Flow::H.new(fragment.head_level, convert_flow(am.flow(fragment.txt)))
     end
 
 

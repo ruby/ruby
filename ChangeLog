@@ -1,3 +1,8 @@
+Fri Dec 31 14:10:43 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/ri/ri_formatter.rb (RI::TextFormatter::display_flow_item): Fix problem
+	  if heading contains formatting.
+
 Thu Dec 30 00:41:42 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (svalue_to_avalue): [ruby-dev:25366]
