@@ -651,8 +651,8 @@ strio_gets_internal(argc, argv, ptr)
 	str = rb_str_substr(ptr->string, ptr->pos, e - s);
     }
     else {
-	if (n < s - e) {
-	    if (s - e < 1024) {
+	if (n < e - s) {
+	    if (e - s < 1024) {
 		for (p = s; p + n <= e; ++p) {
 		    if (MEMCMP(p, RSTRING(str)->ptr, char, n) == 0) {
 			e = p + n;
