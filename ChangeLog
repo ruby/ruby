@@ -1,3 +1,9 @@
+Thu Nov 13 06:08:54 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: stop freezing some classes
+
+	* ext/tk/lib/multi-tk.rb: ditto.
+
 Wed Nov 12 17:32:49 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit/assertions.rb (assert_throws, assert_nothing_thrown):

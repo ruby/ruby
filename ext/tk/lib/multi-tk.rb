@@ -1352,8 +1352,8 @@ end
 # end of MultiTkIp definition
 
 # defend against modification
-MultiTkIp.freeze
-TclTkLib.freeze
+#MultiTkIp.freeze
+#TclTkLib.freeze
 
 ########################################
 #  start Tk which depends on MultiTkIp

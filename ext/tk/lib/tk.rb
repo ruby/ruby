@@ -5819,14 +5819,14 @@ TkBindTag::ALL.bind(TkVirtualEvent.new('Destroy'), proc{|xpath|
 		    }, 'x%W')
 
 # freeze core modules
-TclTkLib.freeze
-TclTkIp.freeze
-TkUtil.freeze
-TkKernel.freeze
-TkComm.freeze
-TkComm::Event.freeze
-TkCore.freeze
-Tk.freeze
+#TclTkLib.freeze
+#TclTkIp.freeze
+#TkUtil.freeze
+#TkKernel.freeze
+#TkComm.freeze
+#TkComm::Event.freeze
+#TkCore.freeze
+#Tk.freeze
 
 # autoload
 autoload :TkCanvas, 'tkcanvas'
