@@ -145,6 +145,7 @@ LIBRUBY       = $(RUBY_SO_NAME).lib
 LIBRUBYARG    = $(LIBRUBY)
 
 EXTOBJS       = 
+DLDOBJS       = 
 
 MAINOBJ       = main.obj
 WINMAINOBJ    = winmain.obj
@@ -420,9 +421,9 @@ $(LIBRUBY_A):	$(OBJS) dmyext.obj
 $(LIBRUBY):	$(RUBYDEF)
 		$(AR) $(ARFLAGS)$@ -def:$(RUBYDEF)
 
-$(LIBRUBY_SO):	$(LIBRUBY_A) $(EXTOBJS) $(RUBYDEF) $*.res
-		@echo. $(EXTOBJS)
-		$(LIBRUBY_LDSHARED) $(MAINOBJ) $(EXTOBJS) $(LIBRUBY_A) $*.res $(LIBS) \
+$(LIBRUBY_SO):	$(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $*.res
+		@echo. $(DLDOBJS)
+		$(LIBRUBY_LDSHARED) $(MAINOBJ) $(DLDOBJS) $(LIBRUBY_A) $*.res $(LIBS) \
 			-Fe$@ $(LDFLAGS) $(LIBRUBY_DLDFLAGS)
 
 $(RUBYDEF):	$(LIBRUBY_A) miniruby$(EXEEXT)
