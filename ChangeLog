@@ -1,3 +1,7 @@
+Sat Oct 18 23:01:32 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* missing/acosh.c (DBL_MANT_DIG): typo fix(ifdef -> ifndef).
+
 Sat Oct 18 05:48:59 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
 
 	* ext/syck/rubyext.c: YAML::Syck::compile method.
