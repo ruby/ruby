@@ -1,5 +1,14 @@
 Summary of the changes since 1.6.4:
 
+: String#rindex
+
+  Fixed with a bug when a regex is given. [ruby-dev:13843]
+
+    "foobar".index("b")  #=> 3
+    "foobar".index(/b/)  #=> 3
+    "foobar".rindex("b") #=> 3
+    "foobar".rindex(/b/) #=> nil  <- ???
+
 : require
 
   Fixed with handling of a `~' to allow an extention to be omitted.
@@ -26,7 +35,7 @@ Summary of the changes since 1.6.4:
 
 : ruby -x
 
-  Fixed a bug that when a `-x' is specified the interpreter might exit
+  Fixed with a bug that when a `-x' is specified the interpreter might exit
   without running a script. [ruby-dev:13752]
 
 : attr_*
@@ -71,7 +80,7 @@ Summary of the changes since 1.6.4:
 
 : $SAFE / load
 
-  Fixed a bug that a file with a tainted filename can be loaded when
+  Fixed with a bug that a file with a tainted filename can be loaded when
   1 <= $SAFE <= 3 and the second argument is true.  [ruby-dev:13481]
 
     $SAFE = 1
@@ -282,11 +291,11 @@ Summary of the changes since 1.6.3:
 
 : Fixnum#[]
 
-  Fixed a bug on the platforms which sizeof(long) > sizeof(int).
+  Fixed with a bug on the platforms which sizeof(long) > sizeof(int).
 
 : Regular Expression
 
-  Fixed a couple of minor bugs. ((<ruby-talk:13658>)), ((<ruby-talk:13744>))
+  Fixed with a couple of minor bugs. ((<ruby-talk:13658>)), ((<ruby-talk:13744>))
 
 : retry
 
