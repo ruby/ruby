@@ -29,11 +29,23 @@ for dll in Dir['*.dll']
   File.install dll, "#{destdir}#{bindir}/#{dll}", 0755, true
 end
 File.makedirs "#{destdir}#{libdir}", true
-for lib in ["libruby.so", "libruby.so.LIB"]
+for lib in ["libruby.so.LIB", CONFIG["LIBRUBY_SO"]]
   if File.exist? lib
     File.install lib, "#{destdir}#{libdir}", 0644, true
   end
 end
+pwd = Dir.pwd
+Dir.chdir libdir
+if File.exist? CONFIG["LIBRUBY_SO"]
+  for link in CONFIG["LIBRUBY_ALIASES"].split
+    if File.exist? link
+       File.delete link
+    end
+    File.symlink CONFIG["LIBRUBY_SO"], link
+    print "link #{CONFIG['LIBRUBY_SO']} -> #{link}\n"
+  end
+end
+Dir.chdir pwd
 File.makedirs "#{destdir}#{pkglibdir}", true
 File.makedirs "#{destdir}#{archdir}", true
 Dir.chdir "ext"
@@ -47,7 +59,7 @@ File.makedirs(archdir,true)
 for f in Dir["*.h"]
   File.install f, "#{destdir}#{archdir}", 0644, true
 end
-File.install "libruby.a", "#{destdir}#{archdir}", 0644, true
+File.install pwd+'/'+CONFIG['LIBRUBY_A'], "#{destdir}#{archdir}", 0644, true
 
 File.makedirs "#{destdir}#{mandir}", true
 File.install "ruby.1", "#{destdir}#{mandir}", 0644, true

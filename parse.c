@@ -4645,6 +4645,10 @@ normalize_newline(line)
 	RSTRING(line)->ptr[RSTRING(line)->len-2] = '\n';
 	RSTRING(line)->len--;
     }
+#ifdef __MACOS__
+    else if (RSTRING(line)->ptr[RSTRING(line)->len-1] == '\r')
+	RSTRING(line)->ptr[RSTRING(line)->len-1] = '\n';
+#endif
 }
 
 static int

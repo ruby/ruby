@@ -6,7 +6,7 @@
   $Date$
   created at: Tue Aug 10 15:05:44 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -365,6 +365,8 @@ method_list(mod, option, func)
     VALUE klass;
     VALUE *p, *q, *pend;
 
+    if (rb_safe_level() >= 4 && !FL_TEST(mod, FL_TAINT))
+	rb_raise(rb_eSecurityError, "Insecure: can't get metainfo");
     ary = rb_ary_new();
     for (klass = mod; klass; klass = RCLASS(klass)->super) {
 	st_foreach(RCLASS(klass)->m_tbl, func, ary);
@@ -426,6 +428,8 @@ rb_obj_singleton_methods(obj)
     VALUE klass;
     VALUE *p, *q, *pend;
 
+    if (rb_safe_level() >= 4 && !FL_TEST(obj, FL_TAINT))
+	rb_raise(rb_eSecurityError, "Insecure: can't get metainfo");
     ary = rb_ary_new();
     klass = CLASS_OF(obj);
     while (klass && FL_TEST(klass, FL_SINGLETON)) {
@@ -596,7 +600,7 @@ rb_scan_args(argc, argv, fmt, va_alist)
     if (ISDIGIT(*p)) {
 	n = *p - '0';
 	if (n > argc)
-	    rb_raise(rb_eArgError, "Wrong # of arguments (%d for %d)", argc, n);
+	    rb_raise(rb_eArgError, "wrong # of arguments (%d for %d)", argc, n);
 	for (i=0; i<n; i++) {
 	    var = va_arg(vargs, VALUE*);
 	    *var = argv[i];

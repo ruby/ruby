@@ -6,7 +6,7 @@
   $Date$
   created at: Thu Jun 10 14:22:17 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -36,6 +36,10 @@ char *strrchr _((char*,char));
 #include <sys/stat.h>
 #include <sys/errno.h>
 #include <compat.h>
+#endif
+
+#ifdef __MACOS__
+#include "macruby_private.h"
 #endif
 
 #ifndef setjmp
@@ -203,9 +207,9 @@ rb_alias(klass, name, def)
     }
     body = orig->nd_body;
     if (nd_type(body) == NODE_FBODY) { /* was alias */
-	body = body->nd_head;
 	def = body->nd_mid;
 	origin = body->nd_orig;
+	body = body->nd_head;
     }
 
     st_insert(RCLASS(klass)->m_tbl, name,
@@ -629,22 +633,33 @@ static VALUE ruby_wrapper;	/* security wrapper */
     ruby_scope = _scope;		\
     scope_vmode = SCOPE_PUBLIC;
 
+#ifdef USE_THREAD
 #define SCOPE_DONT_RECYCLE FL_USER2
-
-static void scope_dup(struct SCOPE *);
-
 #define POP_SCOPE() \
-    if (ruby_scope->flag == SCOPE_ALLOCA) {\
-	if (FL_TEST(ruby_scope, SCOPE_DONT_RECYCLE)) {\
-	    scope_dup(ruby_scope);\
-	    FL_SET(_old, SCOPE_DONT_RECYCLE);\
-	}\
-	else {\
+    if (FL_TEST(ruby_scope, SCOPE_DONT_RECYCLE)) {\
+	FL_SET(_old, SCOPE_DONT_RECYCLE);\
+    }\
+    else {\
+	if (ruby_scope->flag == SCOPE_ALLOCA) {\
 	    ruby_scope->local_vars = 0;\
 	    ruby_scope->local_tbl  = 0;\
 	    if (ruby_scope != top_scope)\
 		rb_gc_force_recycle((VALUE)ruby_scope);\
 	}\
+	else {\
+	    ruby_scope->flag |= SCOPE_NOSTACK;\
+	}\
+    }\
+    ruby_scope = _old;\
+    scope_vmode = _vmode;\
+}
+#else /* not USE_THREAD */
+#define POP_SCOPE() \
+    if (ruby_scope->flag == SCOPE_ALLOCA) {\
+	ruby_scope->local_vars = 0;\
+	ruby_scope->local_tbl  = 0;\
+	if (ruby_scope != top_scope)\
+	    rb_gc_force_recycle((VALUE)ruby_scope);\
     }\
     else {\
 	ruby_scope->flag |= SCOPE_NOSTACK;\
@@ -652,6 +667,7 @@ static void scope_dup(struct SCOPE *);
     ruby_scope = _old;\
     scope_vmode = _vmode;\
 }
+#endif /* USE_THREAD */
 
 static VALUE rb_eval _((VALUE,NODE*));
 static VALUE eval _((VALUE,VALUE,VALUE,char*,int));
@@ -886,6 +902,9 @@ ruby_init()
 	ruby_frame->self = ruby_top_self;
 	ruby_frame->cbase = (VALUE)rb_node_newnode(NODE_CREF,rb_cObject,0,0);
 	rb_define_global_const("TOPLEVEL_BINDING", rb_f_binding(ruby_top_self));
+#ifdef __MACOS__
+	_macruby_init();
+#endif
 	ruby_prog_init();
     }
     POP_TAG();
@@ -1121,6 +1140,10 @@ rb_eval_cmd(cmd, arg)
 	val = eval(ruby_top_self, cmd, Qnil, 0, 0);
     }
 
+#ifdef USE_THREAD
+    if (FL_TEST(ruby_scope, SCOPE_DONT_RECYCLE))
+	FL_SET(saved_scope, SCOPE_DONT_RECYCLE);
+#endif
     ruby_scope = saved_scope;
     safe_level = safe;
     POP_TAG();
@@ -3028,32 +3051,34 @@ rb_f_raise(argc, argv)
     int argc;
     VALUE *argv;
 {
-    VALUE arg1, arg2, arg3;
     VALUE mesg;
     int n;
 
     mesg = Qnil;
-    switch (n = rb_scan_args(argc, argv, "03", &arg1, &arg2, &arg3)) {
+    switch (argc) {
+      case 0:
+	mesg = Qnil;
+	break;
       case 1:
-	mesg = arg1;
+	if (NIL_P(argv[0])) break;
+	if (TYPE(argv[0]) == T_STRING) {
+	    mesg = rb_exc_new3(rb_eRuntimeError, argv[0]);
+	    break;
+	}
+	mesg = rb_funcall(argv[0], rb_intern("exception"), 0, 0);
 	break;
       case 3:
       case 2:
-	mesg = arg2;
+	mesg = rb_funcall(argv[0], rb_intern("exception"), 1, argv[1]);
+	break;
+      default:
+	rb_raise(rb_eArgError, "wrong # of arguments");
 	break;
     }
-
     if (!NIL_P(mesg)) {
-	if (n == 1 && TYPE(mesg) == T_STRING) {
-	    mesg = rb_exc_new3(rb_eRuntimeError, mesg);
-	}
-	else {
-	    mesg = rb_funcall(arg1, rb_intern("new"), 1, mesg);
-	}
-	if (!rb_obj_is_kind_of(mesg, rb_eException)) {
+	if (!rb_obj_is_kind_of(mesg, rb_eException))
 	    rb_raise(rb_eTypeError, "exception object expected");
-	}
-	set_backtrace(mesg, arg3);
+	set_backtrace(mesg, (argc>2)?argv[2]:Qnil);
     }
 
     PUSH_FRAME();		/* fake frame */
@@ -3159,8 +3184,10 @@ rb_yield_0(val, self, klass)
     POP_VARS();
     ruby_block = block;
     ruby_frame = ruby_frame->prev;
+#ifdef USE_THREAD
     if (FL_TEST(ruby_scope, SCOPE_DONT_RECYCLE))
 	FL_SET(old_scope, SCOPE_DONT_RECYCLE);
+#endif
     ruby_scope = old_scope;
     if (state) JUMP_TAG(state);
     return result;
@@ -3681,7 +3708,6 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
 	    rb_raise(rb_eSysStackError, "stack level too deep");
 	}
     }
-
     PUSH_ITER(itr);
     PUSH_FRAME();
 
@@ -4171,8 +4197,10 @@ eval(self, src, scope, file, line)
     rb_in_eval--;
     if (!NIL_P(scope)) {
 	ruby_frame = ruby_frame->prev;
+#ifdef USE_THREAD
 	if (FL_TEST(ruby_scope, SCOPE_DONT_RECYCLE))
 	    FL_SET(old_scope, SCOPE_DONT_RECYCLE);
+#endif
 	ruby_scope = old_scope;
 	ruby_block = old_block;
 	ruby_calling_block = old_call_block;
@@ -4303,7 +4331,8 @@ static VALUE
 yield_under(under, self)
     VALUE under, self;
 {
-    rb_secure(4);
+    if (rb_safe_level() >= 4 && !FL_TEST(self, FL_TAINT))
+	rb_raise(rb_eSecurityError, "Insecure: can't eval");
     return exec_under(yield_under_i, under, self);
 }
 
@@ -4394,6 +4423,16 @@ is_absolute_path(path)
     return 0;
 }
 
+#ifdef __MACOS__
+static int
+is_macos_native_path(path)
+    char *path;
+{
+    if (strchr(path, ':')) return 1;
+    return 0;
+}
+#endif
+
 static char*
 find_file(file)
     char *file;
@@ -4401,6 +4440,16 @@ find_file(file)
     extern VALUE rb_load_path;
     volatile VALUE vpath;
     char *path;
+
+#ifdef __MACOS__
+    if (is_macos_native_path(file)) {
+	FILE *f = fopen(file, "r");
+
+	if (f == NULL) return 0;
+	fclose(f);
+	return file;
+    }
+#endif
 
     if (is_absolute_path(file)) {
 	FILE *f = fopen(file, "r");
@@ -4447,11 +4496,9 @@ rb_load(fname, wrap)
     else {
 	Check_SafeStr(fname);
     }
-#ifndef __MACOS__
     if (RSTRING(fname)->ptr[0] == '~') {
 	fname = rb_file_s_expand_path(1, &fname);
     }
-#endif
     file = find_file(RSTRING(fname)->ptr);
     if (!file) {
 	rb_raise(rb_eLoadError, "No such file to load -- %s", RSTRING(fname)->ptr);
@@ -4609,7 +4656,7 @@ rb_f_require(obj, fname)
 	if (strcmp(".rb", ext) == 0) {
 	    feature = file = RSTRING(fname)->ptr;
 	    file = find_file(file);
-	    if (file) goto rb_load;
+	    if (file) goto load_rb;
 	}
 	else if (strcmp(".so", ext) == 0 || strcmp(".o", ext) == 0) {
 	    file = feature = RSTRING(fname)->ptr;
@@ -4621,12 +4668,12 @@ rb_f_require(obj, fname)
 		file = feature = buf;
 	    }
 	    file = find_file(file);
-	    if (file) goto dyna_load;
+	    if (file) goto load_dyna;
 	}
 	else if (strcmp(DLEXT, ext) == 0) {
 	    feature = RSTRING(fname)->ptr;
 	    file = find_file(feature);
-	    if (file) goto dyna_load;
+	    if (file) goto load_dyna;
 	}
     }
     buf = ALLOCA_N(char, strlen(RSTRING(fname)->ptr) + 5);
@@ -4636,19 +4683,19 @@ rb_f_require(obj, fname)
     if (file) {
 	fname = rb_str_new2(file);
 	feature = buf;
-	goto rb_load;
+	goto load_rb;
     }
     strcpy(buf, RSTRING(fname)->ptr);
     strcat(buf, DLEXT);
     file = find_file(buf);
     if (file) {
 	feature = buf;
-	goto dyna_load;
+	goto load_dyna;
     }
     rb_raise(rb_eLoadError, "No such file to load -- %s",
 	     RSTRING(fname)->ptr);
 
-  dyna_load:
+  load_dyna:
 #ifdef USE_THREAD
     if (rb_thread_loading(feature)) return Qfalse;
     else {
@@ -4669,7 +4716,7 @@ rb_f_require(obj, fname)
 #endif
     return Qtrue;
 
-  rb_load:
+  load_rb:
 #ifdef USE_THREAD
     if (rb_thread_loading(feature)) return Qfalse;
     else {
@@ -6545,41 +6592,42 @@ rb_thread_abort_exc_set(thread, val)
     return val;
 }
 
+#define THREAD_ALLOC(th) {\
+    th = ALLOC(struct thread);\
+\
+    th->status = 0;\
+    th->result = 0;\
+    th->rb_errinfo = Qnil;\
+\
+    th->stk_ptr = 0;\
+    th->stk_len = 0;\
+    th->stk_max = 0;\
+    th->wait_for = 0;\
+    th->fd = 0;\
+    th->delay = 0.0;\
+    th->join = 0;\
+\
+    th->frame = 0;\
+    th->scope = 0;\
+    th->klass = 0;\
+    th->dyna_vars = 0;\
+    th->block = 0;\
+    th->iter = 0;\
+    th->tag = 0;\
+    th->rb_errinfo = 0;\
+    th->last_status = 0;\
+    th->last_line = 0;\
+    th->last_match = 0;\
+    th->abort = 0;\
+}
+
 static thread_t
 rb_thread_alloc(klass)
     VALUE klass;
 {
     thread_t th;
 
-    th = ALLOC(struct thread);
-    th->status = THREAD_RUNNABLE;
-
-    th->status = 0;
-    th->result = 0;
-    th->rb_errinfo = Qnil;
-
-    th->stk_ptr = 0;
-    th->stk_len = 0;
-    th->stk_max = 0;
-    th->wait_for = 0;
-    th->fd = 0;
-    th->delay = 0.0;
-    th->join = 0;
-
-    th->frame = 0;
-    th->scope = 0;
-    th->klass = 0;
-    th->wrapper = 0;
-    th->dyna_vars = 0;
-    th->block = 0;
-    th->iter = 0;
-    th->tag = 0;
-    th->rb_errinfo = 0;
-    th->last_status = 0;
-    th->last_line = 0;
-    th->last_match = 0;
-    th->abort = 0;
-
+    THREAD_ALLOC(th);
     th->thread = Data_Wrap_Struct(klass, thread_mark, thread_free, th);
 
     if (curr_thread) {
@@ -7002,35 +7050,9 @@ rb_callcc(self)
     VALUE self;
 {
     volatile VALUE cont;
-    thread_t th = ALLOC(struct thread);
+    thread_t th;
 
-    th->status = THREAD_RUNNABLE;
-
-    th->status = 0;
-    th->result = 0;
-    th->rb_errinfo = Qnil;
-
-    th->stk_ptr = 0;
-    th->stk_len = 0;
-    th->stk_max = 0;
-    th->wait_for = 0;
-    th->fd = 0;
-    th->delay = 0.0;
-    th->join = 0;
-
-    th->frame = 0;
-    th->scope = 0;
-    th->klass = 0;
-    th->dyna_vars = 0;
-    th->block = 0;
-    th->iter = 0;
-    th->tag = 0;
-    th->rb_errinfo = 0;
-    th->last_status = 0;
-    th->last_line = 0;
-    th->last_match = 0;
-    th->abort = 0;
-
+    THREAD_ALLOC(th);
     th->thread = cont = Data_Wrap_Struct(rb_cContinuation, thread_mark,
 					 thread_free, th);
 
