@@ -4254,7 +4254,7 @@ VALUE
 rb_yield_splat(values)
     VALUE values;
 {
-    if (RARRAY(value)->len == 0) {
+    if (RARRAY(values)->len == 0) {
 	return rb_yield_0(Qundef, 0, 0, Qfalse, Qfalse);
     }
     return rb_yield_0(values, 0, 0, Qfalse, Qtrue);
