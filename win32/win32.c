@@ -33,6 +33,8 @@
 #define bool int
 #endif
 
+#define TO_SOCKET(x)	_get_osfhandle(x)
+
 bool NtSyncProcess = TRUE;
 #if 0  // declared in header file
 extern char **environ;
@@ -299,6 +301,14 @@ isInternalCmd(char *cmd)
 	SafeFree (vec, vecc);
 
 	return fRet;
+}
+
+
+SOCKET
+myget_osfhandle(int fh)
+{
+    return _get_osfhandle(fh);
+
 }
 
 
@@ -1582,18 +1592,79 @@ valid_filename(char *s)
 // if we can prevent perl from trying to do stdio on sockets.
 //
 
+EXTERN_C int __cdecl _alloc_osfhnd(void);
+EXTERN_C int __cdecl _set_osfhnd(int fh, long value);
+EXTERN_C void __cdecl _lock_fhandle(int);
+EXTERN_C void __cdecl _unlock_fhandle(int);
+EXTERN_C void __cdecl _unlock(int);
+
+typedef struct	{
+    long osfhnd;    /* underlying OS file HANDLE */
+    char osfile;    /* attributes of file (e.g., open in text mode?) */
+    char pipech;    /* one char buffer for handles opened on pipes */
+#if defined (_MT) && !defined (DLL_FOR_WIN32S)
+    int lockinitflag;
+    CRITICAL_SECTION lock;
+#endif  /* defined (_MT) && !defined (DLL_FOR_WIN32S) */
+}	ioinfo;
+
+EXTERN_C ioinfo * __pioinfo[];
+
+#define IOINFO_L2E			5
+#define IOINFO_ARRAY_ELTS	(1 << IOINFO_L2E)
+#define _pioinfo(i)	(__pioinfo[i >> IOINFO_L2E] + (i & (IOINFO_ARRAY_ELTS - 1)))
+#define _osfile(i)	(_pioinfo(i)->osfile)
+
+#define FOPEN			0x01	/* file handle open */
+#define FAPPEND			0x20	/* file handle opened O_APPEND */
+#define FDEV			0x40	/* file handle refers to device */
+#define FTEXT			0x80	/* file handle is in text mode */
+
+static int
+my_open_osfhandle(long osfhandle, int flags)
+{
+    int fh;
+    char fileflags;		/* _osfile flags */
+
+    /* copy relevant flags from second parameter */
+    fileflags = FDEV;
+
+    if (flags & O_APPEND)
+	fileflags |= FAPPEND;
+
+    if (flags & O_TEXT)
+	fileflags |= FTEXT;
+
+    /* attempt to allocate a C Runtime file handle */
+    if ((fh = _alloc_osfhnd()) == -1) {
+	errno = EMFILE;		/* too many open files */
+	_doserrno = 0L;		/* not an OS error */
+	return -1;		/* return error to caller */
+    }
+
+    /* the file is open. now, set the info in _osfhnd array */
+    _set_osfhnd(fh, osfhandle);
+
+    fileflags |= FOPEN;		/* mark as open */
+
+    _osfile(fh) = fileflags;	/* set osfile entry */
+//    _unlock_fhandle(fh);
+
+    return fh;			/* return handle */
+}
+
 FILE *
 myfdopen (int fd, const char *mode)
 {
-    FILE *fp;
     char sockbuf[80];
     int optlen;
     int retval;
+    int fh;
     extern int errno;
 
     //fprintf(stderr, "myfdopen()\n");
 
-    optlen = sizeof(sockbuf);
+	optlen = sizeof(sockbuf);
     retval = getsockopt((SOCKET)fd, SOL_SOCKET, SO_TYPE, sockbuf, &optlen);
     if (retval == SOCKET_ERROR) {
 	int iRet;
@@ -1606,17 +1677,16 @@ myfdopen (int fd, const char *mode)
     //
     // If we get here, then fd is actually a socket.
     //
-    fp = xcalloc(sizeof(FILE), 1);
-#if _MSC_VER < 800
-    fileno(fp) = fd;
-#else
-    fp->_file = fd;
-#endif
-    if (*mode == 'r')
-	fp->_flag = _IOREAD;
-    else
-	fp->_flag = _IOWRT;
-    return fp;
+
+	fh = my_open_osfhandle((SOCKET)fd, O_RDWR|O_BINARY);
+    return _fdopen(fh, mode);		// return file pointer
+}
+
+
+void
+myfdclose(FILE *fp)
+{
+	fclose(fp);
 }
 
 
@@ -1738,6 +1808,7 @@ StartSockets () {
     WORD version;
     WSADATA retdata;
     int ret;
+	int iSockOpt;
     
     //
     // initalize the winsock interface and insure that it\'s
@@ -1753,6 +1824,13 @@ StartSockets () {
         rb_fatal("could not find version 1 of winsock dll\n");
 
     atexit((void (*)(void)) WSACleanup);
+
+	iSockOpt = SO_SYNCHRONOUS_NONALERT;
+    /*
+     * Enable the use of sockets as filehandles
+     */
+    setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE,
+		(char *)&iSockOpt, sizeof(iSockOpt));
 }
 
 #undef accept
@@ -1765,7 +1843,7 @@ myaccept (SOCKET s, struct sockaddr *addr, int *addrlen)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if ((r = accept (s, addr, addrlen)) == INVALID_SOCKET)
+    if ((r = accept (TO_SOCKET(s), addr, addrlen)) == INVALID_SOCKET)
 	errno = WSAGetLastError();
     return r;
 }
@@ -1809,7 +1887,7 @@ mygetpeername (SOCKET s, struct sockaddr *addr, int *addrlen)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if ((r = getpeername (s, addr, addrlen)) == SOCKET_ERROR)
+    if ((r = getpeername (TO_SOCKET(s), addr, addrlen)) == SOCKET_ERROR)
 	errno = WSAGetLastError();
     return r;
 }
@@ -1823,7 +1901,7 @@ mygetsockname (SOCKET s, struct sockaddr *addr, int *addrlen)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if ((r = getsockname (s, addr, addrlen)) == SOCKET_ERROR)
+    if ((r = getsockname (TO_SOCKET(s), addr, addrlen)) == SOCKET_ERROR)
 	errno = WSAGetLastError();
     return r;
 }
@@ -1851,7 +1929,7 @@ myioctlsocket (SOCKET s, long cmd, u_long *argp)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if ((r = ioctlsocket (s, cmd, argp)) == SOCKET_ERROR)
+    if ((r = ioctlsocket (TO_SOCKET(s), cmd, argp)) == SOCKET_ERROR)
 	errno = WSAGetLastError();
     return r;
 }
@@ -1879,7 +1957,7 @@ myrecv (SOCKET s, char *buf, int len, int flags)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if ((r = recv (s, buf, len, flags)) == SOCKET_ERROR)
+    if ((r = recv (TO_SOCKET(s), buf, len, flags)) == SOCKET_ERROR)
 	errno = WSAGetLastError();
     return r;
 }
@@ -1894,7 +1972,7 @@ myrecvfrom (SOCKET s, char *buf, int len, int flags,
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if ((r = recvfrom (s, buf, len, flags, from, fromlen)) == SOCKET_ERROR)
+    if ((r = recvfrom (TO_SOCKET(s), buf, len, flags, from, fromlen)) == SOCKET_ERROR)
 	errno =  WSAGetLastError();
     return r;
 }
@@ -1908,7 +1986,7 @@ mysend (SOCKET s, char *buf, int len, int flags)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if ((r = send (s, buf, len, flags)) == SOCKET_ERROR)
+    if ((r = send (TO_SOCKET(s), buf, len, flags)) == SOCKET_ERROR)
 	errno = WSAGetLastError();
     return r;
 }
@@ -1923,7 +2001,7 @@ mysendto (SOCKET s, char *buf, int len, int flags,
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if ((r = sendto (s, buf, len, flags, to, tolen)) == SOCKET_ERROR)
+    if ((r = sendto (TO_SOCKET(s), buf, len, flags, to, tolen)) == SOCKET_ERROR)
 	errno = WSAGetLastError();
     return r;
 }
@@ -1937,7 +2015,8 @@ mysetsockopt (SOCKET s, int level, int optname, char *optval, int optlen)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if ((r = setsockopt (s, level, optname, optval, optlen)) == SOCKET_ERROR)
+    if ((r = setsockopt (s, level, optname, optval, optlen))
+    		 == SOCKET_ERROR)
 	errno = WSAGetLastError();
     return r;
 }
@@ -1951,7 +2030,7 @@ myshutdown (SOCKET s, int how)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if ((r = shutdown (s, how)) == SOCKET_ERROR)
+    if ((r = shutdown (TO_SOCKET(s), how)) == SOCKET_ERROR)
 	errno = WSAGetLastError();
     return r;
 }
@@ -2121,7 +2200,7 @@ waitpid (pid_t pid, int *stat_loc, int options)
 
 #include <sys/timeb.h>
 
-void _cdecl
+int _cdecl
 gettimeofday(struct timeval *tv, struct timezone *tz)
 {                                
     struct timeb tb;
@@ -2129,6 +2208,8 @@ gettimeofday(struct timeval *tv, struct timezone *tz)
     ftime(&tb);
     tv->tv_sec = tb.time;
     tv->tv_usec = tb.millitm * 1000;
+
+	return 0;
 }
 
 char *
@@ -2171,16 +2252,17 @@ str_grow(struct RString *str, size_t new_size)
 }
 
 int
-chown(char *path, int owner, int group)
+chown(const char *path, int owner, int group)
 {
 	return 0;
 }
 
+#include <signal.h>
 int
 kill(int pid, int sig)
 {
 #if 1
-	if (pid == GetCurrentProcessId())
+	if ((unsigned int)pid == GetCurrentProcessId())
 		return raise(sig);
 
 	if (sig == 2 && pid > 0)

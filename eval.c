@@ -411,6 +411,7 @@ struct BLOCK {
     struct tag *tag;
     int iter;
     int vmode;
+    int d_scope;
     struct RVarmap *d_vars;
     VALUE orig_thread;
     struct BLOCK *prev;
@@ -428,10 +429,11 @@ static struct BLOCK *ruby_block;
     _block.frame.file = ruby_sourcefile;\
     _block.frame.line = ruby_sourceline;\
     _block.scope = ruby_scope;		\
-    _block.d_vars = ruby_dyna_vars;	\
     _block.prev = ruby_block;		\
     _block.iter = ruby_iter->iter;	\
     _block.vmode = scope_vmode;		\
+    _block.d_scope = Qtrue;		\
+    _block.d_vars = ruby_dyna_vars;	\
     ruby_block = &_block;
 
 #define POP_BLOCK() 			\
@@ -440,7 +442,6 @@ static struct BLOCK *ruby_block;
 
 #define PUSH_BLOCK2(b) {		\
     struct BLOCK * volatile _old;	\
-    struct BLOCK * volatile _old_call;	\
     _old = ruby_block;			\
     ruby_block = b;
 
@@ -459,25 +460,18 @@ struct RVarmap *ruby_dyna_vars;
 }
 
 static struct RVarmap*
-new_dvar(id, value)
+new_dvar(id, value, prev)
     ID id;
     VALUE value;
+    struct RVarmap *prev;
 {
     NEWOBJ(vars, struct RVarmap);
     OBJSETUP(vars, 0, T_VARMAP);
     vars->id = id;
     vars->val = value;
-    vars->next = ruby_dyna_vars;
+    vars->next = prev;
 
     return vars;
-}
-
-static void
-mark_dvar(vars)
-    struct RVarmap *vars;
-{
-    ruby_dyna_vars = new_dvar(0, 0);
-    ruby_dyna_vars->next = vars;
 }
 
 VALUE
@@ -513,7 +507,7 @@ rb_dvar_push(id, value)
     ID id;
     VALUE value;
 {
-    ruby_dyna_vars = new_dvar(id, value);
+    ruby_dyna_vars = new_dvar(id, value, ruby_dyna_vars);
 }
 
 static void
@@ -942,13 +936,8 @@ ruby_options(argc, argv)
 
     PUSH_TAG(PROT_NONE)
     if ((state = EXEC_TAG()) == 0) {
-	NODE *save;
-
 	ruby_process_options(argc, argv);
 	ext_init = 1;	/* Init_ext() called in ruby_process_options */
-	save = ruby_eval_tree;
-	ruby_require_modules();
-	ruby_eval_tree = save;
     }
     POP_TAG();
     if (state) {
@@ -999,7 +988,12 @@ ruby_run()
     PUSH_TAG(PROT_NONE);
     PUSH_ITER(ITER_NOT);
     if ((state = EXEC_TAG()) == 0) {
+	NODE *save;
+
 	if (!ext_init) Init_ext();
+	save = ruby_eval_tree;
+	ruby_require_libraries();
+	ruby_eval_tree = save;
 	eval_node(ruby_top_self);
     }
     POP_ITER();
@@ -1940,6 +1934,7 @@ rb_eval(self, node)
 		    char *file = ruby_sourcefile;
 		    int line = ruby_sourceline;
 
+		    _block.d_scope = Qfalse;
 		    recv = rb_eval(self, node->nd_iter);
 		    PUSH_ITER(ITER_PRE);
 		    ruby_sourcefile = file;
@@ -3157,7 +3152,14 @@ rb_yield_0(val, self, klass)
     old_scope = ruby_scope;
     ruby_scope = block->scope;
     ruby_block = block->prev;
-    mark_dvar(block->d_vars);
+    if (block->d_scope) {
+	/* put place holder for dynamic (in-block) local variables */
+	ruby_dyna_vars = new_dvar(0, 0, block->d_vars);
+    }
+    else {
+	/* FOR does not introduce new scope */
+	ruby_dyna_vars = block->d_vars;
+    }
     ruby_class = klass?klass:block->klass;
     if (!self) self = block->self;
     node = block->body;
@@ -6195,7 +6197,8 @@ rb_thread_fd_close(fd)
 	    th_raise_file = ruby_sourcefile;
 	    th_raise_line = ruby_sourceline;
 	    curr_thread = th;
-	    rb_thread_restore_context(main_thread, RESTORE_RAISE);
+	    rb_thread_ready(th);
+	    rb_thread_restore_context(curr_thread, RESTORE_RAISE);
 	}
     }
     END_FOREACH(th);
@@ -6265,7 +6268,7 @@ rb_thread_schedule()
     }
 
     if (num_waiting_on_fd > 0 || num_waiting_on_timer > 0) {
-	fd_set readfds;
+	fd_set readfds, writefds, exceptfds;
 	struct timeval delay_tv, *delay_ptr;
 	double delay, now;	/* OK */
 
@@ -7008,8 +7011,8 @@ rb_thread_cleanup()
 
     FOREACH_THREAD(th) {
 	if (th != curr_thread && th->status != THREAD_KILLED) {
+	    rb_thread_ready(th);
 	    th->status = THREAD_TO_KILL;
-	    th->wait_for = 0;
 	}
     }
     END_FOREACH(th);

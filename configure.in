@@ -652,6 +652,8 @@ if test "$host_os" = "beos"; then
   esac
 fi
 
+LIBRUBY_LDSHARED=$LDSHARED
+LIBRUBY_DLDFLAGS=$DLDFLAGS
 LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR).$(TEENY)'
 LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so'
 AC_ARG_ENABLE(enable-shared,
@@ -676,6 +678,17 @@ if test "$enable_shared" = 'yes'; then
 	LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).sl.$(MAJOR).$(MINOR).$(TEENY)'
 	LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).sl.$(MAJOR).$(MINOR) lib$(RUBY_INSTALL_NAME).sl'
 	;;
+    aix*)
+	if test "$GCC" = yes; then
+	    LIBRUBY_LDSHARED='$(CC) -shared'
+	    LIBRUBY_DLDFLAGS='-Wl,-bE:ruby.imp'
+	else
+	    LIBRUBY_LDSHARED='/usr/ccs/bin/ld'
+	    LIBRUBY_DLDFLAGS='-bE:ruby.imp -bM:SRE -bnoentry'
+	fi
+	LIBRUBYARG='-L./ -Wl,lib$(RUBY_INSTALL_NAME).so'
+	SOLIBS='-lm -lc'
+	;;
     *)
 	;;
   esac
@@ -695,6 +708,8 @@ case "$host_os" in
 		;;	
 esac
 
+AC_SUBST(LIBRUBY_LDSHARED)
+AC_SUBST(LIBRUBY_DLDFLAGS)
 AC_SUBST(RUBY_INSTALL_NAME)
 AC_SUBST(LIBRUBY_A)
 AC_SUBST(LIBRUBY_SO)

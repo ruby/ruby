@@ -250,10 +250,14 @@ rb_struct_initialize(self, values)
 
     size = iv_get(klass, "__size__");
     n = FIX2INT(size);
-    if (n != RARRAY(values)->len) {
+    if (n < RARRAY(values)->len) {
 	rb_raise(rb_eArgError, "struct size differs");
     }
     MEMCPY(RSTRUCT(self)->ptr, RARRAY(values)->ptr, VALUE, RARRAY(values)->len);
+    if (n > RARRAY(values)->len) {
+	rb_mem_clear(RSTRUCT(self)->ptr+RARRAY(values)->len,
+		     n-RARRAY(values)->len);
+    }
     return Qnil;
 }
 

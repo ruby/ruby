@@ -30,4 +30,4 @@ def extract(nm, out)
   exp.close
   nm.close
 end
-extract(open("|/usr/ccs/bin/nm -p ../*.o"), "../ruby.imp")
+extract(open("|/usr/ccs/bin/nm -p ../libruby.a"), "../ruby.imp")

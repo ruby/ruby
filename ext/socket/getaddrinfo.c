@@ -39,22 +39,28 @@
  */
 
 #include <sys/types.h>
+#ifndef NT
 #include <sys/param.h>
+#endif
 #ifdef HAVE_SYSCTL_H
 #include <sys/sysctl.h>
 #endif
+#ifndef NT
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <arpa/nameser.h>
 #include <netdb.h>
 #include <resolv.h>
+#include <unistd.h>
+#else
+#include <winsock2.h>
+#endif
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
 #include <ctype.h>
-#include <unistd.h>
 
 #include "config.h"
 #include "addrinfo.h"
@@ -355,7 +361,7 @@ getaddrinfo(hostname, servname, hints, res)
 				pai->ai_socktype = SOCK_DGRAM;
 				pai->ai_protocol = IPPROTO_UDP;
 			}
-			port = htons(atoi(servname));
+			port = htons((unsigned short)atoi(servname));
 		} else {
 			struct servent *sp;
 			char *proto;
@@ -561,7 +567,9 @@ get_addr(hostname, af, res, pai, port0)
 	int i, error = 0, h_error;
 	char *ap;
 #ifndef INET6
+#ifndef NT
 	extern int h_errno;
+#endif
 #endif
 
 	top = NULL;

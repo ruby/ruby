@@ -85,6 +85,11 @@
 #undef except
 #undef finally
 #undef leave
+
+#if defined(__cplusplus)
+}
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -94,6 +99,12 @@
 #include <math.h>
 #include <sys/types.h>
 #include <sys/utime.h>
+#include <io.h>
+#include <malloc.h>
+
+#if defined(__cplusplus)
+extern "C" {
+#endif
 
 #define UIDTYPE int
 #define GIDTYPE int
@@ -150,16 +161,17 @@
 #define pclose     _pclose
 #define strcasecmp _stricmp
 #define strncasecmp _strnicmp
-
 /* these are defined in nt.c */
 
 extern int NtMakeCmdVector(char *, char ***, int);
-/* extern void NtInitialize(int *, char ***); */
+extern void NtInitialize(int *, char ***);
 extern char *NtGetLib(void);
 extern char *NtGetBin(void);
 extern FILE *mypopen(char *, char *);
+extern int   mypclose(FILE *);
 extern int  flock(int fd, int oper);
-extern FILE *  myfdopen(int, char*);
+extern FILE *  myfdopen(int, const char *);
+extern void  myfdclose(FILE *);
 extern SOCKET  myaccept(SOCKET, struct sockaddr *, int *);
 extern int  mybind(SOCKET, struct sockaddr *, int);
 extern int  myconnect(SOCKET, struct sockaddr *, int);
@@ -175,6 +187,7 @@ extern int  mysendto(SOCKET, char *, int, int, struct sockaddr *, int);
 extern int  mysetsockopt(SOCKET, int, int, char *, int);
 extern int  myshutdown(SOCKET, int);
 extern SOCKET  mysocket(int, int, int);
+extern SOCKET  myget_osfhandle(int);
 extern struct hostent *  mygethostbyaddr(char *, int, int);
 extern struct hostent *  mygethostbyname(char *);
 extern int  mygethostname(char *, int);
@@ -182,6 +195,16 @@ extern struct protoent *  mygetprotobyname(char *);
 extern struct protoent *  mygetprotobynumber(int);
 extern struct servent *  mygetservbyname(char *, char *);
 extern struct servent * mygetservbyport(int, char *);
+
+extern int chown(const char *, int, int);
+extern int link(char *, char *);
+extern int gettimeofday(struct timeval *, struct timezone *);
+extern pid_t waitpid (pid_t, int *, int);
+extern int do_spawn(char *);
+extern int kill(int, int);
+extern int isinf(double);
+extern int isnan(double);
+
 
 //
 // define this so we can do inplace editing
@@ -345,4 +368,9 @@ extern char *mystrerror(int);
 #undef getservbyport
 #endif
 #define getservbyport mygetservbyport
+
+#ifdef get_osfhandle
+#undef get_osfhandle
+#endif
+#define get_osfhandle myget_osfhandle
 #endif

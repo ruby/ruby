@@ -55,8 +55,12 @@ struct timeval {
  #include <sys/errno.h>
  #include <unix.mac.h>
  #include <compat.h>
- extern char* strdup(const char*);
 #endif
+
+#ifndef strdup
+char *strdup();
+#endif
+
 extern void Init_File _((void));
 
 #ifdef __BEOS__
@@ -866,9 +870,11 @@ static void
 rb_io_fptr_close(fptr)
     OpenFile *fptr;
 {
-    if (fptr->f == NULL && fptr->f2 == NULL) return;
-    rb_thread_fd_close(fileno(fptr->f));
+    int fd;
 
+    if (fptr->f == NULL && fptr->f2 == NULL) return;
+
+    fd = fileno(fptr->f);
     if (fptr->finalize) {
 	(*fptr->finalize)(fptr);
     }
@@ -876,6 +882,7 @@ rb_io_fptr_close(fptr)
 	fptr_finalize(fptr);
     }
     fptr->f = fptr->f2 = NULL;
+    rb_thread_fd_close(fd);
 }
 
 void

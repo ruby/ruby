@@ -50,6 +50,10 @@ static void run_final();
 static unsigned long malloc_memories = 0;
 static unsigned long alloc_objects = 0;
 
+static int malloc_called = 0;
+static int free_called = 0;
+
+#ifndef xmalloc
 void *
 xmalloc(size)
     size_t size;
@@ -64,6 +68,7 @@ xmalloc(size)
     if (malloc_memories > GC_MALLOC_LIMIT && alloc_objects > GC_NEWOBJ_LIMIT) {
 	rb_gc();
     }
+    malloc_called++;
     mem = malloc(size);
     if (!mem) {
 	rb_gc();
@@ -110,6 +115,15 @@ xrealloc(ptr, size)
 
     return mem;
 }
+
+static void
+xfree(x)
+    void *x;
+{
+    free_called++;
+    free(x);
+}
+#endif
 
 /* The way of garbage collecting which allows use of the cstack is due to */
 /* Scheme In One Defun, but in C this time.
@@ -661,7 +675,7 @@ gc_sweep()
 		if (p->as.basic.flags) {
 		    obj_free((VALUE)p);
 		}
-		if (need_call_final && FL_TEST(p, FL_FINALIZE)) {
+	if (need_call_final && FL_TEST(p, FL_FINALIZE)) {
 		    p->as.free.flag = FL_MARK; /* remain marked */
 		    p->as.free.next = final_list;
 		    final_list = p;
@@ -1118,6 +1132,10 @@ rb_gc_call_finalizer_at_exit()
 		DATA_PTR(p) &&
 		RANY(p)->as.data.dfree)
 		(*RANY(p)->as.data.dfree)(DATA_PTR(p));
+#if 0
+	    else if (BUILTIN_TYPE(p))
+		obj_free((VALUE)p);
+#endif
 	    p++;
 	}
     }

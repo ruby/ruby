@@ -35,12 +35,20 @@
  */
 
 #include <sys/types.h>
+#ifndef NT
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <arpa/nameser.h>
 #include <netdb.h>
 #include <resolv.h>
+#endif
+#ifdef NT
+#include <winsock2.h>
+#include <stdio.h>
+#define snprintf _snprintf
+#endif
+
 #include <string.h>
 #include <stddef.h>
 
@@ -125,7 +133,9 @@ getnameinfo(sa, salen, host, hostlen, serv, servlen, flags)
 	int h_error;
 	char numserv[512];
 	char numaddr[512];
+#ifndef NT
 	extern int h_errno;
+#endif
 
 	if (sa == NULL)
 		return ENI_NOSOCKET;

@@ -84,12 +84,16 @@ sock_finalize(fptr)
     OpenFile *fptr;
 {
     SOCKET s;
+	extern int errno;
 
     if (!fptr->f) return;
-    s = fileno(fptr->f);
-    free(fptr->f);
-    if (fptr->f2) free(fptr->f2);
+
+	myfdclose(fptr->f);
+	if(fptr->f2)  myfdclose(fptr->f);
+/*
+	s = get_osfhandle(fileno(fptr->f));
     closesocket(s);
+*/
 }
 #endif
 
@@ -423,19 +427,110 @@ bsock_recv(argc, argv, sock)
     return s_recv(sock, argc, argv, RECV_RECV);
 }
 
+static void
+mkipaddr0(addr, buf, len)
+    struct sockaddr *addr;
+    char *buf;
+    size_t len;
+{
+    int error;
+
+    error = getnameinfo(addr, SA_LEN(addr), buf, len, NULL, 0,
+			NI_NUMERICHOST);
+    if (error) {
+	rb_raise(rb_eSocket, "%s", gai_strerror(error));
+    }
+}
+
 static VALUE
 mkipaddr(addr)
     struct sockaddr *addr;
 {
     char buf[1024];
-    int error;
 
-    error = getnameinfo(addr, SA_LEN(addr), buf, sizeof(buf), NULL, 0,
-			NI_NUMERICHOST);
+    mkipaddr0(addr, buf, sizeof(buf));
+    return rb_str_new2(buf);
+}
+
+static void
+mkinetaddr(host, buf, len)
+    long host;
+    char *buf;
+    size_t len;
+{
+    struct sockaddr_in sin;
+
+    MEMZERO(&sin, struct sockaddr_in, 1);
+    sin.sin_family = AF_INET;
+    SET_SIN_LEN(&sin, sizeof(sin));
+    sin.sin_addr.s_addr = host;
+    mkipaddr0((struct sockaddr *)&sin, buf, len);
+}
+
+static struct addrinfo*
+ip_addrsetup(host, port)
+    VALUE host, port;
+{
+    struct addrinfo hints, *res;
+    char *hostp, *portp;
+    int error;
+    char hbuf[1024], pbuf[16];
+
+    if (NIL_P(host)) {
+	hostp = NULL;
+    }
+    else if (rb_obj_is_kind_of(host, rb_cInteger)) {
+	struct sockaddr_in sin;
+	long i = NUM2LONG(host);
+
+	mkinetaddr(htonl(i), hbuf, sizeof(hbuf));
+    }
+    else {
+	char *name = STR2CSTR(host);
+
+	if (*name == 0) {
+	    mkinetaddr(INADDR_ANY, hbuf, sizeof(hbuf));
+	}
+	if (name[0] == '<' && strcmp(name, "<broadcast>") == 0) {
+	    mkinetaddr(INADDR_BROADCAST, hbuf, sizeof(hbuf));
+	}
+	else {
+	    strcpy(hbuf, name);
+	}
+    }
+    hostp = hbuf;
+    if (NIL_P(port)) {
+	portp = 0;
+    }
+    else if (FIXNUM_P(port)) {
+	snprintf(pbuf, sizeof(pbuf), "%d", FIX2INT(port));
+	portp = pbuf;
+    }
+    else {
+	portp = STR2CSTR(port);
+    }
+
+    MEMZERO(&hints, struct addrinfo, 1);
+    hints.ai_family = PF_UNSPEC;
+    hints.ai_socktype = SOCK_DGRAM;
+    error = getaddrinfo(hostp, portp, &hints, &res);
     if (error) {
 	rb_raise(rb_eSocket, "%s", gai_strerror(error));
     }
-    return rb_str_new2(buf);
+
+    return res;
+}
+
+static void
+setipaddr(name, addr)
+    VALUE name;
+    struct sockaddr *addr;
+{
+    struct addrinfo *res = ip_addrsetup(name, Qnil);
+
+    /* just take the first one */
+    memcpy(addr, res->ai_addr, res->ai_addrlen);
+    freeaddrinfo(res);
 }
 
 static VALUE
@@ -477,40 +572,6 @@ ipaddr(sockaddr)
     ary = rb_ary_new3(4, family, port, addr1, addr2);
 
     return ary;
-}
-
-static void
-setipaddr(name, addr)
-    char *name;
-    struct sockaddr *addr;
-{
-    struct addrinfo hints, *res;
-    struct sockaddr_in *sin;
-    int error;
-
-    sin = (struct sockaddr_in *)addr;
-    if (name[0] == 0) {
-	MEMZERO(sin, struct sockaddr_in, 1);
-	sin->sin_family = AF_INET;
-	SET_SIN_LEN(sin, sizeof(*sin));
-	sin->sin_addr.s_addr = INADDR_ANY;
-    }
-    else if (name[0] == '<' && strcmp(name, "<broadcast>") == 0) {
-	sin->sin_family = AF_INET;
-	SET_SIN_LEN(sin, sizeof(*sin));
-	sin->sin_addr.s_addr = INADDR_BROADCAST;
-    }
-    else {
-	MEMZERO(&hints, struct addrinfo, 1);
-	hints.ai_family = PF_UNSPEC;
-	error = getaddrinfo(name, NULL, &hints, &res);
-	if (error) {
-	    rb_raise(rb_eSocket, "%s", gai_strerror(error));
-	}
-	/* just take the first one */
-	memcpy(addr, res->ai_addr, res->ai_addrlen);
-	freeaddrinfo(res);
-    }
 }
 
 static void
@@ -632,8 +693,8 @@ open_inet(class, h, serv, type)
 	    continue;
 	if (type == INET_SERVER) {
 	    status = 1;
-	    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char*)&status,
-		sizeof(status));
+	    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR,
+		       (char*)&status, sizeof(status));
 	    status = bind(fd, res->ai_addr, res->ai_addrlen);
 	    syscall = "bind(2)";
 	}
@@ -713,7 +774,7 @@ tcp_s_gethostbyname(obj, host)
 	sin->sin_addr.s_addr = htonl(i);
     }
     else {
-	setipaddr(STR2CSTR(host), (struct sockaddr *)&addr);
+	setipaddr(host, &addr);
     }
     switch (addr.ss_family) {
     case AF_INET:
@@ -947,19 +1008,7 @@ ip_s_getaddress(obj, host)
 {
     struct sockaddr_storage addr;
 
-    if (rb_obj_is_kind_of(host, rb_cInteger)) {
-	long i = NUM2LONG(host);
-	struct sockaddr_in *sin;
-	sin = (struct sockaddr_in *)&addr;
-	MEMZERO(sin, struct sockaddr_in, 1);
-	sin->sin_family = AF_INET;
-	SET_SIN_LEN(sin, sizeof(*sin));
-	sin->sin_addr.s_addr = htonl(i);
-    }
-    else {
-	setipaddr(STR2CSTR(host), (struct sockaddr *)&addr);
-    }
-
+    setipaddr(host, &addr);
     return mkipaddr((struct sockaddr *)&addr);
 }
 
@@ -978,56 +1027,6 @@ udp_s_open(argc, argv, class)
     return sock_new(class, socket(socktype, SOCK_DGRAM, 0));
 }
 
-static struct addrinfo *
-udp_addrsetup(fptr, host, port)
-    OpenFile *fptr;	/* use for AF check? */
-    VALUE host, port;
-{
-    struct addrinfo hints, *res;
-    int error;
-    char *hostp, *portp;
-    char hbuf[1024], pbuf[1024];
-
-    if (NIL_P(host)) {
-	hostp = NULL;
-    }
-    else if (rb_obj_is_kind_of(host, rb_cInteger)) {
-	struct sockaddr_in sin;
-	long i = NUM2LONG(host);
-	MEMZERO(&sin, struct sockaddr_in, 1);
-	sin.sin_family = AF_INET;
-	SET_SIN_LEN(&sin, sizeof(sin));
-	sin.sin_addr.s_addr = htonl(i);
-	error = getnameinfo((struct sockaddr *)&sin, SIN_LEN(&sin),
-			    hbuf, sizeof(hbuf), NULL, 0, NI_NUMERICHOST);
-	if (error) {
-	    rb_raise(rb_eSocket, "%s", gai_strerror(error));
-	}
-	hostp = hbuf;
-    }
-    else {
-	strcpy(hbuf, STR2CSTR(host));
-	hostp = hbuf;
-    }
-    if (FIXNUM_P(port)) {
-	snprintf(pbuf, sizeof(pbuf), "%d", FIX2INT(port));
-	portp = pbuf;
-    }
-    else {
-	portp = STR2CSTR(port);
-    }
-
-    MEMZERO(&hints, struct addrinfo, 1);
-    hints.ai_family = PF_UNSPEC;
-    hints.ai_socktype = SOCK_DGRAM;
-    error = getaddrinfo(hostp, portp, &hints, &res);
-    if (error) {
-	rb_raise(rb_eSocket, "%s", gai_strerror(error));
-    }
-
-    return res;
-}
-
 static VALUE
 udp_connect(sock, host, port)
     VALUE sock, host, port;
@@ -1038,7 +1037,7 @@ udp_connect(sock, host, port)
 
     GetOpenFile(sock, fptr);
     fd = fileno(fptr->f);
-    res0 = udp_addrsetup(fptr, host, port);
+    res0 = ip_addrsetup(host, port);
     for (res = res0; res; res = res->ai_next) {
 	if (ruby_connect(fd, res->ai_addr, res->ai_addrlen, 0) >= 0) {
 	    freeaddrinfo(res0);
@@ -1059,7 +1058,7 @@ udp_bind(sock, host, port)
     struct addrinfo *res0, *res;
 
     GetOpenFile(sock, fptr);
-    res0 = udp_addrsetup(fptr, host, port);
+    res0 = ip_addrsetup(host, port);
     for (res = res0; res; res = res->ai_next) {
 	if (bind(fileno(fptr->f), res->ai_addr, res->ai_addrlen) < 0) {
 	    continue;
@@ -1092,7 +1091,7 @@ udp_send(argc, argv, sock)
     rb_scan_args(argc, argv, "4", &mesg, &flags, &host, &port);
 
     GetOpenFile(sock, fptr);
-    res0 = udp_addrsetup(fptr, host, port);
+    res0 = ip_addrsetup(host, port);
     f = GetWriteFile(fptr);
     m = rb_str2cstr(mesg, &mlen);
     for (res = res0; res; res = res->ai_next) {
@@ -1532,7 +1531,7 @@ sock_s_gethostbyname(obj, host)
 	sin->sin_addr.s_addr = htonl(i);
     }
     else {
-	setipaddr(STR2CSTR(host), (struct sockaddr *)&addr);
+	setipaddr(host, (struct sockaddr *)&addr);
     }
     switch (addr.ss_family) {
     case AF_INET:

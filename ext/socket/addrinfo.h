@@ -125,6 +125,11 @@
 #define	NI_NUMERICSERV	0x00000008
 #define	NI_DGRAM	0x00000010
 
+#ifdef NT
+#define IN_EXPERIMENTAL(x) 0
+#define IN_LOOPBACKNET 0
+#endif
+
 struct addrinfo {
 	int	ai_flags;	/* AI_PASSIVE, AI_CANONNAME */
 	int	ai_family;	/* PF_xxx */

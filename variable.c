@@ -13,8 +13,8 @@
 #include "node.h"
 #include "st.h"
 
-#ifdef USE_CWGUSI
-char* strdup(const char*);
+#ifndef strdup
+char *strdup();
 #endif
 
 static st_table *rb_global_tbl;

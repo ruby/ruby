@@ -272,7 +272,7 @@ class TkText<TkTextWin
   end
 
   def tag_cget(tag, key)
-    tk_tcl2ruby tk_call @t.path, 'tag', 'cget', tag, "-#{key}"
+    tk_tcl2ruby tk_call @path, 'tag', 'cget', tag, "-#{key}"
   end
 
   def tag_configure(tag, key, val=None)
@@ -289,7 +289,7 @@ class TkText<TkTextWin
 	  || key == 'latinfont' || key == 'asciifont' )
 	tagfont_configure({key=>val})
       else
-	tk_call 'tag', 'configure', tag, "-#{key}", val
+	tk_send 'tag', 'configure', tag, "-#{key}", val
       end
     end
   end

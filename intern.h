@@ -245,7 +245,7 @@ void ruby_script _((char*));
 void ruby_prog_init _((void));
 void ruby_set_argv _((int, char**));
 void ruby_process_options _((int, char**));
-void ruby_require_modules _((void));
+void ruby_require_libraries _((void));
 void ruby_load_script _((void));
 /* signal.c */
 VALUE rb_f_kill _((int, VALUE*));

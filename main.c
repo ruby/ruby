@@ -11,7 +11,7 @@
 #include "ruby.h"
 
 #ifdef DJGPP
-unsigned int _stklen = 0x100000;
+unsigned int _stklen = 0x180000;
 #endif
 
 #ifdef __human68k__

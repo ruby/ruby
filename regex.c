@@ -57,11 +57,6 @@
 
 #ifndef __STDC__
 # define volatile
-# ifdef __GNUC__
-#  define const __const__
-# else
-#  define const
-# endif
 #endif
 
 #ifdef HAVE_PROTOTYPES
@@ -70,10 +65,12 @@
 # define _(args) ()
 #endif
 
+#ifndef xmalloc
 void *xmalloc _((unsigned long));
 void *xcalloc _((unsigned long,unsigned long));
 void *xrealloc _((void*,unsigned long));
 void free _((void*));
+#endif
 
 /* #define	NO_ALLOCA */	/* try it out for now */
 #ifndef NO_ALLOCA
@@ -3764,7 +3761,7 @@ re_match(bufp, string_arg, size, pos, regs)
       case jump:
       nofinalize:
         EXTRACT_NUMBER_AND_INCR(mcnt, p);
-        if (mcnt < 0 && stackp[-2] == d) /* avoid infinit loop */
+        if (mcnt < 0 && stackp > stackb && stackp[-2] == d) /* avoid infinit loop */
 	   goto fail;
         p += mcnt;
         continue;

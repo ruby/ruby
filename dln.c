@@ -30,9 +30,11 @@ char *dln_argv0;
 # include <strings.h>
 #endif
 
+#ifndef xmalloc
 void *xmalloc();
 void *xcalloc();
 void *xrealloc();
+#endif
 
 #include <stdio.h>
 #ifndef NT

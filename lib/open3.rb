@@ -10,9 +10,9 @@
 module Open3
   #[stdin, stdout, stderr] = popen3(command);
   def popen3(cmd)
-    pw = pipe   # pipe[0] for read, pipe[1] for write
-    pr = pipe
-    pe = pipe
+    pw = IO::pipe   # pipe[0] for read, pipe[1] for write
+    pr = IO::pipe
+    pe = IO::pipe
 
     pid = fork
     if pid == nil then # child

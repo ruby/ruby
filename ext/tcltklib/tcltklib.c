@@ -27,8 +27,8 @@ fprintf(stderr, ARG1, ARG2); fprintf(stderr, "\n"); }
 */
 
 /* for callback break & continue */
-VALUE eTkCallbackBreak;
-VALUE eTkCallbackContinue;
+static VALUE eTkCallbackBreak;
+static VALUE eTkCallbackContinue;
 
 /* from tkAppInit.c */
 
@@ -49,15 +49,18 @@ typedef struct {
 } Tk_TimerData;
 
 /* timer callback */
-void _timer_for_tcl(clientData)
+static void
+_timer_for_tcl(clientData)
     ClientData clientData;
 {
     Tk_TimerData *timer = (Tk_TimerData*)clientData;
 
     timer->flag = 0;
     CHECK_INTS;
-    if (!rb_thread_critical) rb_thread_schedule();
 
+    if (timer->flag) {
+      Tk_DeleteTimerHandler(timer->token);
+    }
     timer->token = Tk_CreateTimerHandler(200, _timer_for_tcl, 
 					 (ClientData)timer);
     timer->flag = 1;
@@ -70,7 +73,7 @@ lib_mainloop(self)
 {
     Tk_TimerData *timer;
 
-    timer = (Tk_TimerData *) ckalloc(sizeof(Tk_TimerData));
+    timer = (Tk_TimerData *)ALLOC(Tk_TimerData);
     timer->flag = 0;
     timer->token = Tk_CreateTimerHandler(200, _timer_for_tcl, 
 					 (ClientData)timer);
@@ -79,12 +82,14 @@ lib_mainloop(self)
     DUMP1("start Tk_Mainloop");
     while (Tk_GetNumMainWindows() > 0) {
         Tcl_DoOneEvent(0);
+	CHECK_INTS;
     }
     DUMP1("stop Tk_Mainloop");
 
     if (timer->flag) {
-      Tk_DeleteTimerHandler(timer->token);
+	Tk_DeleteTimerHandler(timer->token);
     }
+    free(timer);
 
     return Qnil;
 }
@@ -150,11 +155,11 @@ ip_ruby(clientData, interp, argc, argv)
         VALUE eclass = CLASS_OF(failed);
 	Tcl_AppendResult(interp, STR2CSTR(failed), (char*)NULL);
         if (eclass == eTkCallbackBreak) {
-	  return TCL_BREAK;
+	    return TCL_BREAK;
 	} else if (eclass == eTkCallbackContinue) {
-	  return TCL_CONTINUE;
+	    return TCL_CONTINUE;
 	} else {
-	  return TCL_ERROR;
+	    return TCL_ERROR;
 	}
     }
 
@@ -245,7 +250,7 @@ ip_eval(self, str)
     DUMP2("Tcl_Eval(%s)", buf);
     ptr->return_value = Tcl_Eval(ptr->ip, buf);
     if (ptr->return_value == TCL_ERROR) {
-	rb_raise(rb_eRuntimeError, ptr->ip->result);
+	rb_raise(rb_eRuntimeError, "%s", ptr->ip->result);
     }
     DUMP2("(TCL_Eval result) %d", ptr->return_value);
 
@@ -260,33 +265,29 @@ ip_toUTF8(self, str, encodename)
     VALUE str;
     VALUE encodename;
 {
-#ifndef TCL_UTF_MAX
-  return str;
-#else
-  Tcl_Interp *interp;
-  Tcl_Encoding encoding;
-  Tcl_DString dstr;
-  struct tcltkip *ptr;
-  char *buff1,*buff2;
+#ifdef TCL_UTF_MAX
+    Tcl_Interp *interp;
+    Tcl_Encoding encoding;
+    Tcl_DString dstr;
+    struct tcltkip *ptr;
+    char *buf;
 
-  Data_Get_Struct(self,struct tcltkip, ptr);
-  interp = ptr->ip;
+    Data_Get_Struct(self,struct tcltkip, ptr);
+    interp = ptr->ip;
 
-  encoding = Tcl_GetEncoding(interp,STR2CSTR(encodename));
-  buff1 = ALLOCA_N(char,strlen(STR2CSTR(str))+1);
-  strcpy(buff1,STR2CSTR(str));
+    encoding = Tcl_GetEncoding(interp,STR2CSTR(encodename));
+    buf = ALLOCA_N(char,strlen(STR2CSTR(str))+1);
+    strcpy(buf,STR2CSTR(str));
 
-  Tcl_DStringInit(&dstr);
-  Tcl_DStringFree(&dstr);
-  Tcl_ExternalToUtfDString(encoding,buff1,strlen(buff1),&dstr);
-  buff2 = ALLOCA_N(char,Tcl_DStringLength(&dstr)+1);
-  strcpy(buff2,Tcl_DStringValue(&dstr));
+    Tcl_DStringInit(&dstr);
+    Tcl_DStringFree(&dstr);
+    Tcl_ExternalToUtfDString(encoding,buf,strlen(buf),&dstr);
+    str = rb_str_new2(Tcl_DStringValue(&dstr));
 
-  Tcl_FreeEncoding(encoding);
-  Tcl_DStringFree(&dstr);
-
-  return rb_str_new2(buff2);
+    Tcl_FreeEncoding(encoding);
+    Tcl_DStringFree(&dstr);
 #endif
+    return str;
 }
 
 static VALUE
@@ -295,33 +296,30 @@ ip_fromUTF8(self, str, encodename)
     VALUE str;
     VALUE encodename;
 {
-#ifndef TCL_UTF_MAX
-  return str;
-#else
-  Tcl_Interp *interp;
-  Tcl_Encoding encoding;
-  Tcl_DString dstr;
-  struct tcltkip *ptr;
-  char *buff1,*buff2;
+#ifdef TCL_UTF_MAX
+    Tcl_Interp *interp;
+    Tcl_Encoding encoding;
+    Tcl_DString dstr;
+    struct tcltkip *ptr;
+    char *buf;
 
-  Data_Get_Struct(self,struct tcltkip, ptr);
-  interp = ptr->ip;
+    Data_Get_Struct(self,struct tcltkip, ptr);
+    interp = ptr->ip;
 
-  encoding = Tcl_GetEncoding(interp,STR2CSTR(encodename));
-  buff1 = ALLOCA_N(char,strlen(STR2CSTR(str))+1);
-  strcpy(buff1,STR2CSTR(str));
+    encoding = Tcl_GetEncoding(interp,STR2CSTR(encodename));
+    buf = ALLOCA_N(char,strlen(STR2CSTR(str))+1);
+    strcpy(buf,STR2CSTR(str));
 
-  Tcl_DStringInit(&dstr);
-  Tcl_DStringFree(&dstr);
-  Tcl_UtfToExternalDString(encoding,buff1,strlen(buff1),&dstr);
-  buff2 = ALLOCA_N(char,Tcl_DStringLength(&dstr)+1);
-  strcpy(buff2,Tcl_DStringValue(&dstr));
+    Tcl_DStringInit(&dstr);
+    Tcl_DStringFree(&dstr);
+    Tcl_UtfToExternalDString(encoding,buf,strlen(buf),&dstr);
+    str = rb_str_new2(Tcl_DStringValue(&dstr));
 
-  Tcl_FreeEncoding(encoding);
-  Tcl_DStringFree(&dstr);
+    Tcl_FreeEncoding(encoding);
+    Tcl_DStringFree(&dstr);
 
-  return rb_str_new2(buff2);
 #endif
+    return str;
 }
 
 
@@ -359,24 +357,25 @@ ip_invoke(argc, argv, obj)
     /* memory allocation for arguments of this command */
     if (object) {
 #if TCL_MAJOR_VERSION >= 8
-      /* object interface */
-      ov = (Tcl_Obj **)ALLOCA_N(Tcl_Obj *, argc+1);
-      for (i = 0; i < argc; ++i) {
-	char *s = STR2CSTR(argv[i]);
-        ov[i] = Tcl_NewStringObj(s, strlen(s));
-      }
-      ov[argc] = (Tcl_Obj *)NULL;
+	/* object interface */
+	ov = (Tcl_Obj **)ALLOCA_N(Tcl_Obj *, argc+1);
+	for (i = 0; i < argc; ++i) {
+	    char *s = STR2CSTR(argv[i]);
+	    ov[i] = Tcl_NewStringObj(s, strlen(s));
+	    Tcl_IncrRefCount(ov[i]);
+	}
+	ov[argc] = (Tcl_Obj *)NULL;
 #endif
     } else {
       /* string interface */
-      av = (char **)ALLOCA_N(char *, argc+1);
-      for (i = 0; i < argc; ++i) {
-	char *s = STR2CSTR(argv[i]);
+	av = (char **)ALLOCA_N(char *, argc+1);
+	for (i = 0; i < argc; ++i) {
+	    char *s = STR2CSTR(argv[i]);
 
-        av[i] = ALLOCA_N(char, strlen(s)+1);
-	strcpy(av[i], s);
-      }
-      av[argc] = (char *)NULL;
+	    av[i] = ALLOCA_N(char, strlen(s)+1);
+	    strcpy(av[i], s);
+	}
+	av[argc] = (char *)NULL;
     }
 
     Tcl_ResetResult(ptr->ip);
@@ -384,26 +383,31 @@ ip_invoke(argc, argv, obj)
     /* Invoke the C procedure */
     if (object) {
 #if TCL_MAJOR_VERSION >= 8
-      int dummy;
-      ptr->return_value = (*info.objProc)(info.objClientData,
-					  ptr->ip, argc, ov);
+	int dummy;
+	ptr->return_value = (*info.objProc)(info.objClientData,
+					    ptr->ip, argc, ov);
 
-      /* get the string value from the result object */
-      resultPtr = Tcl_GetObjResult(ptr->ip);
-      Tcl_SetResult(ptr->ip, Tcl_GetStringFromObj(resultPtr, &dummy),
-		    TCL_VOLATILE);
+	/* get the string value from the result object */
+	resultPtr = Tcl_GetObjResult(ptr->ip);
+	Tcl_SetResult(ptr->ip, Tcl_GetStringFromObj(resultPtr, &dummy),
+		      TCL_VOLATILE);
+
+	for (i=0; i<argc; i++) {
+	    Tcl_DecrRefCount(ov[i]);
+	}
 #endif
-    } else {
-      ptr->return_value = (*info.proc)(info.clientData,
-				       ptr->ip, argc, av);
+    }
+    else {
+	ptr->return_value = (*info.proc)(info.clientData,
+					 ptr->ip, argc, av);
     }
 
     if (ptr->return_value == TCL_ERROR) {
-	rb_raise(rb_eRuntimeError, ptr->ip->result);
+	rb_raise(rb_eRuntimeError, "%s", ptr->ip->result);
     }
 
     /* pass back the result (as string) */
-    return(rb_str_new2(ptr->ip->result));
+    return rb_str_new2(ptr->ip->result);
 }
 
 /* get return code from Tcl_Eval() */
@@ -423,13 +427,14 @@ ip_retval(self)
 static void
 _macinit()
 {
-  tcl_macQdPtr = &qd; /* setup QuickDraw globals */
-  Tcl_MacSetEventProc(TkMacConvertEvent); /* setup event handler */
+    tcl_macQdPtr = &qd; /* setup QuickDraw globals */
+    Tcl_MacSetEventProc(TkMacConvertEvent); /* setup event handler */
 }
 #endif
 
 /*---- initialization ----*/
-void Init_tcltklib()
+void
+Init_tcltklib()
 {
     extern VALUE rb_argv0;	/* the argv[0] */
 

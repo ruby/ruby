@@ -1,6 +1,5 @@
 #option nodynamic
 
-interbase
 #GD
 #curses
 #dbm

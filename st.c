@@ -45,9 +45,11 @@ static struct st_hash_type type_strhash = {
     strhash,
 };
 
+#ifndef xmalloc
 void *xmalloc();
 void *xcalloc();
 void *xrealloc();
+#endif
 static void rehash();
 
 #define alloc(type) (type*)xmalloc((unsigned)sizeof(type))
@@ -220,19 +222,19 @@ st_lookup(table, key, value)
 
 #define ADD_DIRECT(table, key, value, hash_val, bin_pos)\
 {\
-    st_table_entry *tbl;\
+    st_table_entry *entry;\
     if (table->num_entries/table->num_bins > ST_DEFAULT_MAX_DENSITY) {\
 	rehash(table);\
         bin_pos = hash_val % table->num_bins;\
     }\
     \
-    tbl = alloc(st_table_entry);\
+    entry = alloc(st_table_entry);\
     \
-    tbl->hash = hash_val;\
-    tbl->key = key;\
-    tbl->record = value;\
-    tbl->next = table->bins[bin_pos];\
-    table->bins[bin_pos] = tbl;\
+    entry->hash = hash_val;\
+    entry->key = key;\
+    entry->record = value;\
+    entry->next = table->bins[bin_pos];\
+    table->bins[bin_pos] = entry;\
     table->num_entries++;\
 }
 
@@ -301,7 +303,7 @@ st_copy(old_table)
     st_table *old_table;
 {
     st_table *new_table;
-    st_table_entry *ptr, *tbl;
+    st_table_entry *ptr, *entry;
     int i, num_bins = old_table->num_bins;
 
     new_table = alloc(st_table);
@@ -322,15 +324,15 @@ st_copy(old_table)
 	new_table->bins[i] = 0;
 	ptr = old_table->bins[i];
 	while (ptr != 0) {
-	    tbl = alloc(st_table_entry);
-	    if (tbl == 0) {
+	    entry = alloc(st_table_entry);
+	    if (entry == 0) {
 		free(new_table->bins);
 		free(new_table);
 		return 0;
 	    }
-	    *tbl = *ptr;
-	    tbl->next = new_table->bins[i];
-	    new_table->bins[i] = tbl;
+	    *entry = *ptr;
+	    entry->next = new_table->bins[i];
+	    new_table->bins[i] = entry;
 	    ptr = ptr->next;
 	}
     }

@@ -848,6 +848,10 @@ $x = []
 x = proc{binding}.call
 eval "(0..9).each{|i5| $x[i5] = proc{i5*2}}", x
 ok($x[4].call == 8)
+x = proc{binding}.call
+eval "for i6 in 1..1; j6=i6; end", x
+ok(eval("defined? i6", x))
+ok(eval("defined? j6", x))
 
 proc {
   p = binding
@@ -861,20 +865,20 @@ proc {
   ok(eval("foo22") == 55)
 }.call
 
-p1 = proc{i6 = 0; proc{i6}}.call
+p1 = proc{i7 = 0; proc{i7}}.call
 ok(p1.call == 0)
-eval "i6=5", p1
+eval "i7=5", p1
 ok(p1.call == 5)
-ok(!defined?(i6))
+ok(!defined?(i7))
 
-p1 = proc{i6 = 0; proc{i6}}.call
-i6 = nil
+p1 = proc{i7 = 0; proc{i7}}.call
+i7 = nil
 ok(p1.call == 0)
-eval "i6=1", p1
+eval "i7=1", p1
 ok(p1.call == 1)
-eval "i6=5", p1
+eval "i7=5", p1
 ok(p1.call == 5)
-ok(i6 == nil)
+ok(i7 == nil)
 
 check "system"
 ok(`echo foobar` == "foobar\n")

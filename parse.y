@@ -1624,6 +1624,9 @@ none		: /* none */
 #include <sys/types.h>
 #include "regex.h"
 #include "util.h"
+#ifndef strdup
+char *strdup();
+#endif
 
 #define is_identchar(c) (((int)(c))!=-1&&(ISALNUM(c) || (c) == '_' || ismbchar(c)))
 
@@ -1767,7 +1770,6 @@ rb_compile_file(f, file, start)
 
     return yycompile(strdup(f));
 }
-
 
 static int
 nextc()
@@ -4183,7 +4185,7 @@ top_local_setup()
     int i;
 
     if (len > 0) {
-	i = lvtbl->tbl[0];
+	i = ruby_scope->local_tbl?ruby_scope->local_tbl[0]:0;
 
 	if (i < len) {
 	    if (i == 0 || ruby_scope->flag == SCOPE_ALLOCA) {

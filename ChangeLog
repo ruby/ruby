@@ -1,3 +1,51 @@
+Mon May 31 16:06:28 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version 1.3.4 - preliminary release for 1.4
+
+Mon May 31 15:57:41 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (rb_io_fptr_close): close on IO which main_thread is
+	  waiting cause serious exception, that vanishes the actual fd
+	  closing.  Invocation of rb_thread_fd_close() is deferred
+	  a little.
+
+Sat May 29 18:27:13 1999  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* regex.c (re_match): stack boundary check needed.
+
+Sat May 29 12:27:00 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ext/tcltklib/tcltklib.c (ip_invoke): proper ref count management
+	  to avoid leak.
+
+	* eval.c (ruby_run): moved ruby_require_libraries() to handle `-r'
+	  from ruby_options() to avoid stack corruption for threads
+	  created in libraries.
+
+Sat May 29 02:22:12 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_yield_0): when `for' appeared in blocks, it
+	  introduced new scope for local variables.
+
+Fri May 28 17:16:49 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (rb_str_squeeze_bang): squeeze AND of the arguments.
+	  UNDOCUMENTED.
+
+	* string.c (rb_str_count): new UNDOCUMENTED method.
+
+	* string.c (rb_str_delete_bang): delete AND of the arg ranges.
+	  UNDOCUMENTED FEATURE for 1.3.x.
+
+	* ext/socket/socket.c (setipaddr): re-wrote using ip_addrsetup().
+
+	* ext/sockt/socket.c (ip_addrsetup): decode symbolic address
+	  <broadcast>.
+
+Thu May 27 12:27:42 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (tr_trans): should handle NUL (\0) within strings.
+
 Tue May 25 16:45:11 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* io.c (rb_f_syscall): syscall may return values other than zero
@@ -223,6 +271,8 @@ Mon May  3 09:37:22 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* regex.c (re_search): a bug in anchor condition.
 
 Fri Apr 30 18:57:41 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version 1.3.3
 
 	* string.c (rb_str_rindex): position should be END point, not
 	  START point.
