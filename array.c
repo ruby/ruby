@@ -893,7 +893,7 @@ ary_replace_method(ary, ary2)
     VALUE ary, ary2;
 {
     ary2 = to_ary(ary2);
-    ary_replace(ary, 0, RARRAY(ary2)->len, ary2);
+    ary_replace(ary, 0, RARRAY(ary)->len, ary2);
     return ary;
 }
 

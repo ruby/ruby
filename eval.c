@@ -754,11 +754,20 @@ error_print()
 {
     VALUE errat;
     VALUE eclass;
-    VALUE einfo;
+    char *einfo;
+    int elen;
 
     if (NIL_P(errinfo)) return;
 
-    errat = get_backtrace(errinfo);
+    PUSH_TAG(PROT_NONE);
+    if (EXEC_TAG() == 0) {
+	errat = get_backtrace(errinfo);
+    }
+    else {
+	errat = Qnil;
+    }
+    POP_TAG();
+    
     if (!NIL_P(errat)) {
 	VALUE mesg = RARRAY(errat)->ptr[0];
 
@@ -769,37 +778,45 @@ error_print()
     }
 
     eclass = CLASS_OF(errinfo);
-    einfo = obj_as_string(errinfo);
-    if (eclass == eRuntimeError && RSTRING(einfo)->len == 0) {
+    PUSH_TAG(PROT_NONE);
+    if (EXEC_TAG() == 0) {
+	einfo = str2cstr(obj_as_string(errinfo), &elen);
+    }
+    else {
+	einfo = "";
+	elen = 0;
+    }
+    POP_TAG();
+    if (eclass == eRuntimeError && elen == 0) {
 	fprintf(stderr, ": unhandled exception\n");
     }
     else {
 	VALUE epath;
 
 	epath = rb_class_path(eclass);
-	if (RSTRING(einfo)->len == 0) {
+	if (elen == 0) {
 	    fprintf(stderr, ": ");
 	    fwrite(RSTRING(epath)->ptr, 1, RSTRING(epath)->len, stderr);
 	    putc('\n', stderr);
 	}
 	else {
 	    char *tail  = 0;
-	    int len = RSTRING(einfo)->len;
+	    int len = elen;
 
 	    if (RSTRING(epath)->ptr[0] == '#') epath = 0;
-	    if (tail = strchr(RSTRING(einfo)->ptr, '\n')) {
-		len = tail - RSTRING(einfo)->ptr;
+	    if (tail = strchr(einfo, '\n')) {
+		len = tail - einfo;
 		tail++;		/* skip newline */
 	    }
 	    fprintf(stderr, ": ");
-	    fwrite(RSTRING(einfo)->ptr, 1, len, stderr);
+	    fwrite(einfo, 1, elen, stderr);
 	    if (epath) {
 		fprintf(stderr, " (");
 		fwrite(RSTRING(epath)->ptr, 1, RSTRING(epath)->len, stderr);
 		fprintf(stderr, ")\n");
 	    }
 	    if (tail) {
-		fwrite(tail, 1, RSTRING(einfo)->len-len-1, stderr);
+		fwrite(tail, 1, elen-len-1, stderr);
 		putc('\n', stderr);
 	    }
 	}
@@ -1016,6 +1033,7 @@ ruby_run()
 }
 
 static void
+	    exec_end_proc();
 compile_error(at)
     char *at;
 {
@@ -1079,7 +1097,6 @@ rb_eval_cmd(cmd, arg)
     }
 
     the_scope = saved_scope;
-    safe_level = safe;
     POP_TAG();
     POP_CLASS();
 
@@ -1850,7 +1867,7 @@ rb_eval(self, node)
 	break;
 
       case NODE_YIELD:
-	result = rb_yield_0(rb_eval(self, node->nd_stts), 0);
+	result = rb_yield_0(rb_eval(self, node->nd_stts), 0, 0);
 	break;
 
       case NODE_RESCUE:
@@ -2322,6 +2339,7 @@ rb_eval(self, node)
 			str2 = list->nd_head->nd_lit;
 			break;
 		      case NODE_EVSTR:
+			sourceline = nd_line(node);
 			rb_in_eval++;
 			list->nd_head = compile(list->nd_head->nd_lit,0);
 			eval_tree = 0;
@@ -2723,6 +2741,7 @@ rb_exit(status)
 	exit_status = status;
 	rb_raise(exc_new(eSystemExit, 0, 0));
     }
+    exec_end_proc();
     exit(status);
 }
 
@@ -2876,9 +2895,9 @@ f_iterator_p()
 }
 
 VALUE
-rb_yield_0(val, self)
+rb_yield_0(val, self, klass)
     VALUE val;
-    volatile VALUE self;
+    volatile VALUE self, klass;
 {
     NODE *node;
     volatile VALUE result = Qnil;
@@ -2902,7 +2921,7 @@ rb_yield_0(val, self)
     the_scope = block->scope;
     the_block = block->prev;
     mark_dvar(block->d_vars);
-    the_class = block->klass;
+    the_class = klass?klass:block->klass;
     if (!self) self = block->self;
     node = block->body;
     if (block->var) {
@@ -2959,7 +2978,7 @@ VALUE
 rb_yield(val)
     VALUE val;
 {
-    return rb_yield_0(val, 0);
+    return rb_yield_0(val, 0, 0);
 }
 
 static VALUE
@@ -4041,7 +4060,7 @@ static VALUE
 yield_under_i(self)
     VALUE self;
 {
-    return rb_yield_0(self, self);
+    return rb_yield_0(self, self, the_class);
 }
 
 static VALUE

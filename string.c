@@ -574,11 +574,15 @@ str_index(str, sub, offset)
     char *s, *e, *p;
     int len;
 
+    if (offset < 0) {
+	offset += RSTRING(str)->len;
+	if (offset < 0) return -1;
+    }
     if (RSTRING(str)->len - offset < RSTRING(sub)->len) return -1;
     s = RSTRING(str)->ptr+offset;
     p = RSTRING(sub)->ptr;
     len = RSTRING(sub)->len;
-    e = s + RSTRING(str)->len - len + 1;
+    e = RSTRING(str)->ptr + RSTRING(str)->len - len + 1;
     while (s < e) {
 	if (*s == *(RSTRING(sub)->ptr) && memcmp(s, p, len) == 0) {
 	    return (s-(RSTRING(str)->ptr));
@@ -1474,7 +1478,7 @@ str_inspect(str)
     return str_new(buf, b - buf);
 }
 
-VALUE
+static VALUE
 str_dump(str)
     VALUE str;
 {
@@ -1488,7 +1492,7 @@ str_dump(str)
     while (p < pend) {
 	char c = *p++;
 	switch (c) {
-	  case '"':  case '\'':
+	  case '"':  case '\\':
 	  case '\n': case '\r':
 	  case '\t': case '\f':
 	  case '\013': case '\007': case '\033': 
@@ -1537,7 +1541,7 @@ str_dump(str)
 	    *q++ = '\\';
 	    *q++ = 'f';
 	}
-	else if (c == '\13') {
+	else if (c == '\013') {
 	    *q++ = '\\';
 	    *q++ = 'v';
 	}
@@ -1545,7 +1549,7 @@ str_dump(str)
 	    *q++ = '\\';
 	    *q++ = 'a';
 	}
-	else if (c == 033) {
+	else if (c == '\033') {
 	    *q++ = '\\';
 	    *q++ = 'e';
 	}

@@ -585,7 +585,7 @@ f_sprintf(argc, argv)
     }
 
   sprint_exit:
-    if (RTEST(verbose) && argc > 1) {
+    if (RTEST(verbose) && argc > 0) {
 	ArgError("too many argument for format string");
     }
     result = str_new(buf, blen);

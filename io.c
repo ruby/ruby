@@ -58,6 +58,9 @@ struct timeval {
 #endif
 
 #ifdef __BEOS__
+# ifdef _X86_
+#  define NOFILE (OPEN_MAX)
+# endif
 #include <net/socket.h>
 #endif
 
@@ -2010,9 +2013,7 @@ f_select(argc, argv, obj)
 	rp = &rset;
 	FD_ZERO(rp);
 	for (i=0; i<RARRAY(read)->len; i++) {
-	    VALUE io = io_get_io(RARRAY(read)->ptr[i]);
-
-	    GetOpenFile(io, fptr);
+	    GetOpenFile(io_get_io(RARRAY(read)->ptr[i]), fptr);
 	    FD_SET(fileno(fptr->f), rp);
 	    if (READ_DATA_PENDING(fptr->f)) { /* check for buffered data */
 		pending++;
@@ -2033,9 +2034,7 @@ f_select(argc, argv, obj)
 	wp = &wset;
 	FD_ZERO(wp);
 	for (i=0; i<RARRAY(write)->len; i++) {
-	    VALUE io = io_get_io(RARRAY(write)->ptr[i]);
-
-	    GetOpenFile(io, fptr);
+	    GetOpenFile(io_get_io(RARRAY(write)->ptr[i]), fptr);
 	    FD_SET(fileno(fptr->f), wp);
 	    if (max < fileno(fptr->f)) max = fileno(fptr->f);
 	    if (fptr->f2) {
@@ -2052,9 +2051,7 @@ f_select(argc, argv, obj)
 	ep = &eset;
 	FD_ZERO(ep);
 	for (i=0; i<RARRAY(except)->len; i++) {
-	    VALUE io = io_get_io(RARRAY(except)->ptr[i]);
-
-	    GetOpenFile(io, fptr);
+	    GetOpenFile(io_get_io(RARRAY(except)->ptr[i]), fptr);
 	    FD_SET(fileno(fptr->f), ep);
 	    if (max < fileno(fptr->f)) max = fileno(fptr->f);
 	    if (fptr->f2) {
@@ -2097,7 +2094,7 @@ f_select(argc, argv, obj)
 	if (rp) {
 	    list = RARRAY(res)->ptr[0];
 	    for (i=0; i< RARRAY(read)->len; i++) {
-		GetOpenFile(RARRAY(read)->ptr[i], fptr);
+		GetOpenFile(io_get_io(RARRAY(read)->ptr[i]), fptr);
 		if (FD_ISSET(fileno(fptr->f), rp)
 		    || FD_ISSET(fileno(fptr->f), &pset)) {
 		    ary_push(list, RARRAY(read)->ptr[i]);
@@ -2108,7 +2105,7 @@ f_select(argc, argv, obj)
 	if (wp) {
 	    list = RARRAY(res)->ptr[1];
 	    for (i=0; i< RARRAY(write)->len; i++) {
-		GetOpenFile(RARRAY(write)->ptr[i], fptr);
+		GetOpenFile(io_get_io(RARRAY(write)->ptr[i]), fptr);
 		if (FD_ISSET(fileno(fptr->f), wp)) {
 		    ary_push(list, RARRAY(write)->ptr[i]);
 		}
@@ -2121,7 +2118,7 @@ f_select(argc, argv, obj)
 	if (ep) {
 	    list = RARRAY(res)->ptr[2];
 	    for (i=0; i< RARRAY(except)->len; i++) {
-		GetOpenFile(RARRAY(except)->ptr[i], fptr);
+		GetOpenFile(io_get_io(RARRAY(except)->ptr[i]), fptr);
 		if (FD_ISSET(fileno(fptr->f), ep)) {
 		    ary_push(list, RARRAY(except)->ptr[i]);
 		}

@@ -397,6 +397,21 @@ time_hash(time)
 }
 
 static VALUE
+time_clone(time)
+    VALUE time;
+{
+    VALUE obj;
+    struct time_object *tobj, *newtobj;
+
+    GetTimeval(time, tobj);
+    obj = Data_Make_Struct(0, struct time_object, 0, free, newtobj);
+    CLONESETUP(obj, time);
+    MEMCPY(newtobj, tobj, struct time_object, 1);
+
+    return obj;
+}
+
+static VALUE
 time_localtime(time)
     VALUE time;
 {

@@ -1100,26 +1100,10 @@ re_compile_pattern(pattern, size, bufp)
 		else
 		  break;
 	      }
-	    /* $ means succeed if at end of line, but only in special contexts.
-	      If validly in the middle of a pattern, it is a normal character. */
-
-	    if (p0 == pend || *p0 == '\n'
-		|| *p0 == ')'
-		|| *p0 == '|')
-	      {
-		BUFPUSH(endline);
-		break;
-	      }
-	    goto normal_char;
+	    BUFPUSH(endline);
+	    break;
           }
 	case '^':
-	  /* ^ means succeed if at beg of line, but only if no preceding 
-             pattern.  */
-
-          if (laststart)
-            goto invalid_pattern;
-          if (laststart && p - 2 >= pattern && p[-2] != '\n')
-	    goto normal_char;
 	  BUFPUSH(begline);
 	  break;
 
@@ -2857,12 +2841,6 @@ re_search(bufp, string, size, startpos, range, regs)
 
       if (startpos > size) return -1;
       if (anchor && size > 0 && startpos == size) return -1;
-      if (fastmap && startpos == size && range >= 0
-	  && (bufp->can_be_null == 0 ||
-	      (bufp->can_be_null && size > 0
-	       && string[startpos-1] == '\n')))
-	return -1;
-
       val = re_match(bufp, string, size, startpos, regs);
       if (val >= 0)
 	return startpos;
@@ -3262,8 +3240,11 @@ re_match(bufp, string_arg, size, pos, regs)
 	  /* If not end of string, try backtracking.  Otherwise done.  */
           if (d != dend)
 	    {
-	      while (stackp != stackb && (int)stackp[-1] == 1)
+	      while (stackp != stackb && (int)stackp[-1] == 1) {
+		if (best_regs_set)
+		    goto restore_best_regs;
 		POP_FAILURE_POINT();
+	      }
               if (stackp != stackb)
                 {
 		  /* More failure points to try.  */
@@ -3548,15 +3529,18 @@ re_match(bufp, string_arg, size, pos, regs)
 	  }
 
 	case begline:
-          if (size == 0
-	      || AT_STRINGS_BEG(d)
-              || (d && d[-1] == '\n'))
-            break;
-          else
-            goto fail;
+          if (size == 0 || AT_STRINGS_BEG(d))
+	    break;
+	  if (d[-1] == '\n' && !AT_STRINGS_END(d))
+	    break;
+	  goto fail;
 
 	case endline:
-	  if (AT_STRINGS_END(d) || *d == '\n')
+	  if (AT_STRINGS_END(d)) {
+	    if (size == 0 || d[-1] != '\n')
+	      break;
+	  }
+	  else if (*d == '\n')
 	    break;
 	  goto fail;
 

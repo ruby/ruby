@@ -560,10 +560,10 @@ load_file(fname, script)
 		if (RSTRING(line)->ptr[RSTRING(line)->len-2] == '\r')
 		    RSTRING(line)->ptr[RSTRING(line)->len-2] = '\0';
 		if (p = strstr(p, " -")) {
-		    int argc; char *argv[2]; char **argvp = argv;
+		    int argc; char *argv[3]; char **argvp = argv;
 		    char *s = ++p;
 
-		    argc = 2; argv[0] = 0;
+		    argc = 2; argv[0] = argv[2] = 0;
 		    while (*p == '-') {
 			while (*s && !ISSPACE(*s))
 			    s++;

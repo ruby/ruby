@@ -30,7 +30,7 @@ tk_s_new(argc, argv, class)
     VALUE obj = obj_alloc(class);
 
     rb_funcall2(obj, rb_intern("initialize"), argc, argv);
-    if (iterator_p()) rb_yield_0(obj, obj);
+    if (iterator_p()) rb_yield_0(obj, obj, 0);
     return obj;
 }
 

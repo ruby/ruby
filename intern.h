@@ -111,7 +111,7 @@ void rb_raise _((VALUE));
 void rb_fatal _((VALUE));
 void rb_interrupt _((void));
 int iterator_p _((void));
-VALUE rb_yield_0 _((VALUE, volatile VALUE));
+VALUE rb_yield_0 _((VALUE, volatile VALUE, volatile VALUE));
 VALUE rb_apply _((VALUE, ID, VALUE));
 VALUE rb_funcall2 _((VALUE, ID, int, VALUE*));
 void rb_backtrace _((void));

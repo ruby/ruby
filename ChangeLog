@@ -1,3 +1,63 @@
+Fri Mar 12 12:27:55 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (str_index): negative offset.
+
+	* regex.c (re_match): begline should not match at the point
+	  between a newline and end-of-string.  endline neither.
+
+	* regex.c (re_compile_pattern): context_indep_anchors.
+
+	* parse.y (parse_regx): need not to push backslashes before
+	  escaped characters.
+
+Sun Mar  7 14:21:32 1999  IKARASHI Akira <ikarashi@itlb.te.noda.sut.ac.jp>
+
+	* string.c (rb_str_index): wrong end point calculation.
+
+Thu Mar  4 14:23:11 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* array.c (ary_replace_method): should replace original array
+
+Fri Mar 19 11:26:45 1999  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* eval.c (ruby_run): needed to eval END{} on exit.
+
+	* eval.c (rb_exit): ditto.
+
+Thu Mar 18 15:47:18 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* bignum.c (rb_big_and): bug in sign calculation.
+
+	* bignum.c (rb_big_or): ditto.
+
+	* io.c (rb_f_select): forgot to use to_io to retrieve IO, after
+	  calling select(2).
+
+Tue Mar 16 10:23:05 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* time.c (time_clone): Time object can be cloned.
+
+Tue Mar 16 03:13:10 1999  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* ruby.c (load_file): argv[argc] should be NULL.
+
+Mon Mar 15 22:12:08 1999  Tadayoshi Funaba  <tadf@kt.rim.or.jp>
+
+	* sprintf.c (rb_f_sprintf): type in arg_num check at exit.
+
+Wed Feb 17 01:12:22 1999  Hirotaka Ichikawa  <hirotaka.ichikawa@tosmec.toshiba.co.jp>
+
+	* configure.in: BeOS patch.
+
+Wed Feb 17 01:25:26 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (error_print): exception in rb_obj_as_string() caused
+	  SEGV. protect it by PUSH_TAG/POP_TAG.
+
+Tue Feb 16 23:42:51 1999  Yasuhiro Fukuma  <yasuf@big.or.jp>
+
+	* configure.in: FreeBSD objformat patch
+
 Tue Feb 16 12:40:55 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* version 1.2.3 (stable) released.

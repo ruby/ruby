@@ -1411,14 +1411,14 @@ dln_load(file)
 	  /* strcat(init_fct_symname, "__Fv"); */  /* parameter nothing. */
 	  /* "__Fv" dont need! The Be Book Bug ? */
       err_stat = get_image_symbol(img_id, buf,
-				  B_SYMBOL_TYPE_TEXT, &init_fct);
+				  B_SYMBOL_TYPE_TEXT, (void **)&init_fct);
 
       if (err_stat != B_NO_ERROR) {
 	    char real_name[1024];
 	    strcpy(real_name, buf);
 	    strcat(real_name, "__Fv");
         err_stat = get_image_symbol(img_id, real_name,
-				  B_SYMBOL_TYPE_TEXT, &init_fct);
+				  B_SYMBOL_TYPE_TEXT, (void **)&init_fct);
       }
 
       if ((B_BAD_IMAGE_ID == err_stat) || (B_BAD_INDEX == err_stat)) {

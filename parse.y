@@ -1708,7 +1708,9 @@ nextc()
 	    }
 	    while (RSTRING(v)->len >= 2 &&
 		   RSTRING(v)->ptr[RSTRING(v)->len-1] == '\n' &&
-		   RSTRING(v)->ptr[RSTRING(v)->len-2] == '\\') {
+		   RSTRING(v)->ptr[RSTRING(v)->len-2] == '\\' &&
+		   (RSTRING(v)->len == 2 ||
+		   RSTRING(v)->ptr[RSTRING(v)->len-2] != '\\')) {
 		VALUE v2 = io_gets(lex_input);
 
 		if (!NIL_P(v2)) {
@@ -1964,9 +1966,17 @@ parse_regx(term, paren)
 		    tokadd(c);
 		}
 		else {
+		    int c1;
+
 		    pushback(c);
-		    tokadd('\\');
-		    tokadd(read_escape());
+		    c1 = read_escape();
+		    if (c1 != c) {
+			tokadd(c1);
+		    }
+		    else {
+			tokadd('\\');
+			tokadd(c);
+		    }
 		}
 	    }
 	    continue;
@@ -2013,6 +2023,7 @@ parse_regx(term, paren)
 	    tokfix();
 	    lex_state = EXPR_END;
 	    if (list) {
+		nd_set_line(list, re_start);
 		if (toklen() > 0) {
 		    VALUE ss = str_new(tok(), toklen());
 		    list_append(list, NEW_STR(ss));
@@ -2091,6 +2102,7 @@ parse_string(func, term, paren)
     tokfix();
     lex_state = EXPR_END;
     if (list) {
+	nd_set_line(list, strstart);
 	if (toklen() > 0) {
 	    VALUE ss = str_new(tok(), toklen());
 	    list_append(list, NEW_STR(ss));
@@ -2229,14 +2241,15 @@ here_document(term)
 	    return 0;
 	}
 	sourceline++;
-	if (strncmp(eos, RSTRING(line)->ptr, len) == 0 &&
-	    (RSTRING(line)->ptr[len] == '\n' ||
-	     RSTRING(line)->ptr[len] == '\r')) {
-	    break;
-	}
 
 	lex_pbeg = lex_p = RSTRING(line)->ptr;
 	lex_pend = lex_p + RSTRING(line)->len;
+      retry:
+	if (strncmp(eos, lex_p, len) == 0 &&
+	    (lex_p[len] == '\n' || lex_p[len] == '\r')) {
+	    break;
+	}
+
 	switch (parse_string(term, '\n', '\n')) {
 	  case tSTRING:
 	  case tXSTRING:
@@ -2261,6 +2274,9 @@ here_document(term)
 	  case 0:
 	    goto error;
 	}
+	if (lex_p != lex_pend) {
+	    goto retry;
+	}
     }
     free(eos);
     lex_lastline = lastline_save;
@@ -2273,6 +2289,7 @@ here_document(term)
     sourceline = linesave;
 
     if (list) {
+	nd_set_line(list, linesave+1);
 	yylval.node = list;
     }
     switch (term) {
@@ -3230,6 +3247,8 @@ str_extend(list, term)
 		    newtok();
 		    return list;
 		}
+	      case '\n':
+		sourceline++;
 	      default:
 		tokadd(c);
 		break;
@@ -3550,6 +3569,9 @@ aryset(recv, idx, val)
 	else {
 	    idx = arg_add(idx, val);
 	}
+    }
+    else {
+	idx = val;
     }
     return NEW_CALL(recv, tASET, idx);
 }

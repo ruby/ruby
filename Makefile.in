@@ -20,7 +20,9 @@ LDSHARED = @LDSHARED@
 DLDFLAGS = @DLDFLAGS@
 SOLIBS = @SOLIBS@
 
+RUBY_INSTALL_NAME = @RUBY_INSTALL_NAME@
 binsuffix = @binsuffix@
+PROGRAM = $(RUBY_INSTALL_NAME)$(binsuffix)
 
 #### End of system configuration section. ####
 
@@ -78,7 +80,7 @@ miniruby$(binsuffix):	libruby.a $(MAINOBJ) dmyext.o
 		@rm -f $@
 		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) dmyext.o libruby.a $(LIBS) -o $@
 
-ruby$(binsuffix):     	$(LIBRUBY) $(MAINOBJ) $(EXTOBJS) 
+$(PROGRAM):     $(LIBRUBY) $(MAINOBJ) $(EXTOBJS) 
 		@rm -f $@
 		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(LIBS) -o $@
 

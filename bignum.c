@@ -983,7 +983,7 @@ big_and(x, y)
 	ds2 = BDIGITS(y);
 	sign = RBIGNUM(x)->sign;
     }
-    z = bignew(l2, RBIGNUM(x)->sign && RBIGNUM(y)->sign);
+    z = bignew(l2, RBIGNUM(x)->sign || RBIGNUM(y)->sign);
     zds = BDIGITS(z);
 
     for (i=0; i<l1; i++) {
@@ -1034,7 +1034,7 @@ big_or(x, y)
 	ds2 = BDIGITS(y);
 	sign = RBIGNUM(x)->sign;
     }
-    z = bignew(l2, RBIGNUM(x)->sign || RBIGNUM(y)->sign);
+    z = bignew(l2, RBIGNUM(x)->sign && RBIGNUM(y)->sign);
     zds = BDIGITS(z);
 
     for (i=0; i<l1; i++) {
