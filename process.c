@@ -1997,7 +1997,7 @@ p_gid_exchange(obj)
 static VALUE
 p_uid_have_saved_id()
 {
-#if defined(HAVE_SETRESUID) || defined(HAVE_SETEUID) || _POSIX_SAVED_IDS
+#if defined(HAVE_SETRESUID) || defined(HAVE_SETEUID) || defined(_POSIX_SAVED_IDS)
     return Qtrue;
 #else
     return Qfalse;
@@ -2014,7 +2014,7 @@ p_uid_switch(obj)
     uid = getuid();
     euid = geteuid();
 
-#if defined(HAVE_SETRESUID) || defined(HAVE_SETEUID) || _POSIX_SAVED_IDS
+#if defined(HAVE_SETRESUID) || defined(HAVE_SETEUID) || defined(_POSIX_SAVED_IDS)
     if (uid != euid) {
 	proc_seteuid(obj, INT2FIX(uid));
 	if (rb_block_given_p()) {
@@ -2050,7 +2050,7 @@ p_uid_switch(obj)
 static VALUE
 p_gid_have_saved_id()
 {
-#if defined(HAVE_SETRESGID) || defined(HAVE_SETEGID) || _POSIX_SAVED_IDS
+#if defined(HAVE_SETRESGID) || defined(HAVE_SETEGID) || defined(_POSIX_SAVED_IDS)
     return Qtrue;
 #else
     return Qfalse;
@@ -2067,7 +2067,7 @@ p_gid_switch(obj)
     gid = getgid();
     egid = getegid();
 
-#if defined(HAVE_SETRESGID) || defined(HAVE_SETEGID) || _POSIX_SAVED_IDS
+#if defined(HAVE_SETRESGID) || defined(HAVE_SETEGID) || defined(_POSIX_SAVED_IDS)
     if (gid != egid) {
 	proc_setegid(obj, INT2FIX(gid));
 	if (rb_block_given_p()) {
