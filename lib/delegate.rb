@@ -8,7 +8,7 @@
 # Usage:
 #   foo = Object.new
 #   foo2 = SimpleDelegator.new(foo)
-#   foo.hash == foo2.hash # => true
+#   foo.hash == foo2.hash # => false
 #
 #   Foo = DelegateClass(Array)
 #

@@ -703,6 +703,8 @@ rb_alias_variable(name1, name2)
 {
     struct global_entry *entry1, *entry2;
 
+    if (rb_safe_level() >= 4)
+	rb_raise(rb_eSecurityError, "Insecure: can't alias global variable");
     entry1 = rb_global_entry(name1);
     entry2 = rb_global_entry(name2);
 
@@ -1064,10 +1066,11 @@ rb_const_get(klass, id)
     VALUE klass;
     ID id;
 {
-    VALUE value;
-    VALUE tmp;
+    VALUE value, tmp;
+    int mod_retry = 0;
 
     tmp = klass;
+  retry:
     while (tmp) {
 	if (RCLASS(tmp)->iv_tbl && st_lookup(RCLASS(tmp)->iv_tbl,id,&value)) {
 	    return value;
@@ -1075,15 +1078,17 @@ rb_const_get(klass, id)
 	if (tmp == rb_cObject && top_const_get(id, &value)) return value;
 	tmp = RCLASS(tmp)->super;
     }
-    if (BUILTIN_TYPE(klass) == T_MODULE) {
-	return rb_const_get(rb_cObject, id);
+    if (!mod_retry && BUILTIN_TYPE(klass) == T_MODULE) {
+	mod_retry = 1;
+	tmp = rb_cObject;
+	goto retry;
     }
 
     /* Uninitialized constant */
     if (klass && klass != rb_cObject)
-	rb_raise(rb_eNameError, "uninitialized constant %s::%s",
-		 RSTRING(rb_class_path(klass))->ptr,
-		 rb_id2name(id));
+	rb_raise(rb_eNameError, "uninitialized constant %s at %s",
+		 rb_id2name(id),
+		 RSTRING(rb_class_path(klass))->ptr);
     else {
 	rb_raise(rb_eNameError, "uninitialized constant %s",rb_id2name(id));
     }

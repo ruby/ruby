@@ -27,6 +27,10 @@
 # define NO_LONG_FNAME
 #endif
 
+#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(sun)
+# define USE_SETVBUF
+#endif
+
 #include <sys/types.h>
 #if !defined(DJGPP) && !defined(NT) && !defined(__human68k__)
 #include <sys/ioctl.h>
@@ -1362,6 +1366,10 @@ rb_fopen(fname, mode)
 	    rb_sys_fail(fname);
 	}
     }
+#ifdef USE_SETVBUF
+    if (setvbuf(file, NULL, _IOFBF, 0) != 0)
+	rb_warn("setvbuf() can't be honered for %s", fname);
+#endif
 #ifdef __human68k__
     fmode(file, _IOTEXT);
 #endif
@@ -1385,6 +1393,11 @@ rb_fdopen(fd, mode)
 	    rb_sys_fail(0);
 	}
     }
+#ifdef USE_SETVBUF
+    if (setvbuf(file, NULL, _IOFBF, 0) != 0)
+	rb_warn("setvbuf() can't be honered (fd=%d)", fd);
+#endif
+
     return file;
 }
 
@@ -1902,12 +1915,18 @@ rb_io_reopen(argc, argv, file)
 	    fclose(fptr->f2);
 	    fptr->f2 = 0;
 	}
+
 	return file;
     }
 
     if (freopen(RSTRING(fname)->ptr, mode, fptr->f) == 0) {
 	rb_sys_fail(fptr->path);
     }
+#ifdef USE_SETVBUF
+    if (setvbuf(fptr->f, NULL, _IOFBF, 0) != 0)
+	rb_warn("setvbuf() can't be honered for %s", RSTRING(fname)->ptr);
+#endif
+
     if (fptr->f2) {
 	if (freopen(RSTRING(fname)->ptr, "w", fptr->f2) == 0) {
 	    rb_sys_fail(fptr->path);
@@ -2156,7 +2175,9 @@ rb_f_p(argc, argv)
     for (i=0; i<argc; i++) {
 	rb_p(argv[i]);
     }
+    if (TYPE(rb_defout) == T_FILE) {
     rb_io_flush(rb_defout);
+    }
     return Qnil;
 }
 
@@ -2238,8 +2259,6 @@ set_outfile(val, var, orig, stdf)
 
     GetOpenFile(val, fptr);
     rb_io_check_writable(fptr);
-
-    GetOpenFile(*var, fptr);
     f = GetWriteFile(fptr);
     dup2(fileno(f), fileno(stdf));
 
@@ -2281,7 +2300,7 @@ prep_stdio(f, mode, klass)
     return (VALUE)io;
 }
 
-static VALUE
+static void
 prep_path(io, path)
     VALUE io;
     char *path;
@@ -2771,6 +2790,7 @@ rb_f_select(argc, argv, obj)
     return res;			/* returns an empty array on interrupt */
 }
 
+#if !defined(MSDOS) && !defined(__human68k__)
 static int
 io_cntl(fd,cmd,narg,io_p)
     int fd, cmd, io_p;
@@ -2796,6 +2816,7 @@ io_cntl(fd,cmd,narg,io_p)
 #endif
     return retval;
 }
+#endif
 
 static VALUE
 rb_io_ctl(io, req, arg, io_p)
@@ -3095,8 +3116,9 @@ argf_tell()
 }
 
 static VALUE
-argf_seek(self, offset, ptrname)
-     VALUE self, offset, ptrname;
+argf_seek(argc, argv)
+    int argc;
+    VALUE *argv;
 {
     if (!next_argv()) {
 	rb_raise(rb_eArgError, "no stream to seek");
@@ -3105,7 +3127,7 @@ argf_seek(self, offset, ptrname)
     if (TYPE(current_file) != T_FILE) {
 	return argf_forward();
     }
-    return rb_io_seek(current_file, offset, ptrname);
+    return rb_io_seek(argc, argv, current_file);
 }
 
 static VALUE
@@ -3321,11 +3343,12 @@ static void
 opt_i_set(val)
     VALUE val;
 {
+    if (ruby_inplace_mode) free(ruby_inplace_mode);
     if (!RTEST(val)) {
 	ruby_inplace_mode = 0;
 	return;
     }
-    ruby_inplace_mode = STR2CSTR(val);
+    ruby_inplace_mode = strdup(STR2CSTR(val));
 }
 
 void
@@ -3474,7 +3497,7 @@ Init_IO()
     rb_define_singleton_method(argf, "getc", argf_getc, 0);
     rb_define_singleton_method(argf, "readchar", argf_readchar, 0);
     rb_define_singleton_method(argf, "tell", argf_tell, 0);
-    rb_define_singleton_method(argf, "seek", argf_seek, 2);
+    rb_define_singleton_method(argf, "seek", argf_seek, -1);
     rb_define_singleton_method(argf, "rewind", argf_rewind, 0);
     rb_define_singleton_method(argf, "pos", argf_tell, 0);
     rb_define_singleton_method(argf, "pos=", argf_set_pos, 1);

@@ -1,9 +1,9 @@
 #
-#   multi-irb.rb - multiple irb module
-#   	$Release Version: 0.6$
+#   irb/multi-irb.rb - multiple irb module
+#   	$Release Version: 0.7.3$
 #   	$Revision$
 #   	$Date$
-#   	by Keiju ISHITSUKA(Nippon Rational Inc.)
+#   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
 #
 # --
 #
@@ -23,7 +23,7 @@ module IRB
       @current_job = nil
     end
 
-    attr :current_job, true
+    attr_accessor :current_job
 
     def n_jobs
       @jobs.size
@@ -31,7 +31,7 @@ module IRB
 
     def thread(key)
       th, irb = search(key)
-      irb
+      th
     end
 
     def irb(key)
@@ -74,7 +74,7 @@ module IRB
       when Integer
 	@jobs[key]
       when Irb
-	@jobs.find{|k, v| v.equal?(irb)}
+	@jobs.find{|k, v| v.equal?(key)}
       when Thread
 	@jobs.assoc(key)
       else
@@ -140,20 +140,15 @@ module IRB
     @JobManager
   end
 
-  # invoke multiple irb 
+  # invoke multi-irb 
   def IRB.irb(file = nil, *main)
-    workspace = IRB.workspace_binding(*main)
-    if main.empty?
-      main = eval("self", workspace)
-    else
-      main = main[0]
-    end
+    workspace = WorkSpace.new(*main)
     parent_thread = Thread.current
     Thread.start do
       begin
-	irb = Irb.new(main, workspace, file)
+	irb = Irb.new(workspace, file)
       rescue 
-	print "Subirb can't start with context(self): ", main.inspect, "\n"
+	print "Subirb can't start with context(self): ", workspace.main.inspect, "\n"
 	print "return to main irb\n"
 	Thread.pass
 	Thread.main.wakeup
@@ -161,6 +156,7 @@ module IRB
       end
       @CONF[:IRB_RC].call(irb.context) if @CONF[:IRB_RC]
       @JobManager.insert(irb)
+      @JobManager.current_job = irb
       begin
 	system_exit = false
 	catch(:IRB_EXIT) do
@@ -190,7 +186,7 @@ module IRB
   class Context
     def _=(value)
       @_ = value
-      eval "_ = IRB.JobManager.irb(Thread.current).context._", @bind
+      @workspace.evaluate "_ = IRB.JobManager.irb(Thread.current).context._"
     end
   end
 
@@ -198,15 +194,39 @@ module IRB
     def irb_context
       IRB.JobManager.irb(Thread.current).context
     end
-    alias conf irb_context
+#    alias conf irb_context
   end
 
   @CONF[:SINGLE_IRB_MODE] = false
   @JobManager.insert(@CONF[:MAIN_CONTEXT].irb)
   @JobManager.current_job = @CONF[:MAIN_CONTEXT].irb
 
+  class Irb
+    def signal_handle
+      unless @context.ignore_sigint?
+	print "\nabort!!\n" if @context.verbose?
+	exit
+      end
+
+      case @signal_status
+      when :IN_INPUT
+	print "^C\n"
+	IRB.JobManager.thread(self).raise RubyLex::TerminateLineInput
+      when :IN_EVAL
+	IRB.irb_abort(self)
+      when :IN_LOAD
+	IRB.irb_abort(self, LoadAbort)
+      when :IN_IRB
+	# ignore
+      else
+	# ignore 
+      end
+    end
+  end
+
   trap("SIGINT") do
     @JobManager.current_job.signal_handle
+    Thread.stop
   end
 
 end

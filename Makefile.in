@@ -22,6 +22,7 @@ MISSING = @LIBOBJS@ @ALLOCA@
 LDSHARED = @LIBRUBY_LDSHARED@
 DLDFLAGS = @LIBRUBY_DLDFLAGS@
 SOLIBS = @SOLIBS@
+MAINLIBS = @MAINLIBS@
 
 RUBY_INSTALL_NAME=@RUBY_INSTALL_NAME@
 RUBY_SO_NAME=@RUBY_SO_NAME@
@@ -91,13 +92,13 @@ miniruby$(EXEEXT):	config.status $(LIBRUBY_A) $(MAINOBJ) dmyext.@OBJEXT@
 
 $(PROGRAM):     $(LIBRUBY) $(MAINOBJ) $(EXTOBJS) 
 		@rm -f $@
-		$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(LIBS) -o $@
+		$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINLIBS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(LIBS) -o $@
 
 $(LIBRUBY_A):	$(OBJS) dmyext.@OBJEXT@
 		@AR@ rcu $@ $(OBJS) dmyext.@OBJEXT@
 		@-@RANLIB@ $@ 2> /dev/null || true
 
-$(LIBRUBY_SO):	$(OBJS) dmyext.@OBJEXT@
+$(LIBRUBY_SO):	$(OBJS) dmyext.@OBJEXT@ miniruby$(EXEEXT)
 		$(LDSHARED) $(DLDFLAGS) $(OBJS) dmyext.@OBJEXT@ $(SOLIBS) -o $@
 		@-@MINIRUBY@ -e 'ARGV.each{|link| File.delete link if File.exist? link; \
 						  File.symlink "$(LIBRUBY_SO)", link}' \
@@ -123,7 +124,7 @@ realclean:	distclean
 test:		miniruby$(EXEEXT)
 		@./miniruby$(EXEEXT) $(srcdir)/rubytest.rb
 
-rbconfig.rb:	miniruby$(EXEEXT)
+rbconfig.rb:	miniruby$(EXEEXT) $(srcdir)/mkconfig.rb config.status
 		@@MINIRUBY@ $(srcdir)/mkconfig.rb rbconfig.rb
 
 fake.rb:	miniruby$(EXEEXT)
@@ -230,7 +231,7 @@ dl_os2.@OBJEXT@: $(srcdir)/missing/dl_os2.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/dl_os2.c
 
 win32.@OBJEXT@: $(srcdir)/win32/win32.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/win32/win32.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(srcdir)/missing -c $(srcdir)/win32/win32.c
 
 # Prevent GNU make v3 from overflowing arg limit on SysV.
 .NOEXPORT:

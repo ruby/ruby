@@ -1,9 +1,9 @@
 #
-#   input-method.rb - input methods using irb
-#   	$Release Version: 0.6$
+#   irb/input-method.rb - input methods using irb
+#   	$Release Version: 0.7.3$
 #   	$Revision$
 #   	$Date$
-#   	by Keiju ISHITSUKA(Nippon Rational Inc.)
+#   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
 #
 # --
 #
@@ -23,9 +23,9 @@ module IRB
     def initialize(file = STDIN_FILE_NAME)
       @file_name = file
     end
-    attr :file_name
+    attr_reader :file_name
 
-    attr :prompt, true
+    attr_accessor :prompt
     
     def gets
       IRB.fail NotImplementError, "gets"
@@ -67,7 +67,7 @@ module IRB
       super
       @io = open(file)
     end
-    attr :file_name
+    attr_reader :file_name
 
     def eof?
       @io.eof?

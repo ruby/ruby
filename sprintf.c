@@ -18,7 +18,7 @@
 
 #define BIT_DIGITS(N)   (((N)*146)/485 + 1)  /* log2(10) =~ 146/485 */
 
-#ifndef atof
+#if !defined(atof) && !defined(HAVE_STDLIB_H)
 double strtod();
 #endif
 
@@ -573,7 +573,7 @@ rb_f_sprintf(argc, argv)
 			break;
 		      case 8:
 			c = '7'; break;
-		      case '2':
+		      case 2:
 			c = '1'; break;
 		    }
 		    s = &buf[pos];
