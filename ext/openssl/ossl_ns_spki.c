@@ -155,8 +155,8 @@ ossl_spki_set_challenge(VALUE self, VALUE str)
 {
     NETSCAPE_SPKI *spki;
 
-    GetSPKI(self, spki);
     StringValue(str);
+    GetSPKI(self, spki);
     if (!ASN1_STRING_set(spki->spkac->challenge, RSTRING(str)->ptr,
 			 RSTRING(str)->len)) {
 	ossl_raise(eSPKIError, NULL);

@@ -1,3 +1,8 @@
+Sat Jan  1 04:20:23 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_ns_spki.c (ossl_spki_set_challenge): should call
+	  StringValue before GetSPKI. fixed: [ruby-dev:25359].
+
 Sat Jan  1 01:13:28 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* variable.c (rb_autoload): [ruby-dev:25373]
