@@ -246,6 +246,7 @@ config.h:
 \#define HAVE_TIMES 1
 /* \#define HAVE_UTIMES 1    */
 /* \#define HAVE_FCNTL 1     */
+\#define HAVE_LINK 1
 /* \#define HAVE_SETITIMER 1 */
 /* \#define HAVE_GETGROUPS 1 */
 /* \#define HAVE_SIGPROCMASK 1 */

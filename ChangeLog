@@ -1,3 +1,11 @@
+Thu Jan 22 00:33:52 2004  Siena.  <siena@faculty.chiba-u.jp>
+
+	* configure.in: check availability of link(). [ruby-dev:22237]
+	* file.c (rb_file_s_link): raise an exception when link() is unavailable.
+	* missing/os2.c (link): removed. File#link isn't supported.
+	* bcc32/Makefile.sub: define HAVE_LINK to enable link(). [ruby-dev:22241]
+	* win32/Makefile.sub: ditto.
+
 Thu Jan 22 00:26:25 2004  Siena.  <siena@faculty.chiba-u.jp>
 
 	* ChangeLog: typo: RUBY_MBCHAR_MAX was RUBY_MBCHAR_MAXSIZE.

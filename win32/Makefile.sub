@@ -270,6 +270,7 @@ config.h:
 #define HAVE_FSYNC 1
 #define HAVE_CHSIZE 1
 #define HAVE_TIMES 1
+#define HAVE_LINK 1
 #define HAVE__SETJMP 1
 #define HAVE_TELLDIR 1
 #define HAVE_SEEKDIR 1

@@ -1925,6 +1925,7 @@ static VALUE
 rb_file_s_link(klass, from, to)
     VALUE klass, from, to;
 {
+#ifdef HAVE_LINK
     SafeStringValue(from);
     SafeStringValue(to);
 
@@ -1932,6 +1933,10 @@ rb_file_s_link(klass, from, to)
 	sys_fail2(from, to);
     }
     return INT2FIX(0);
+#else
+    rb_notimplement();
+    return Qnil;		/* not reached */
+#endif
 }
 
 /*

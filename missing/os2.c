@@ -17,11 +17,13 @@ chown(char *path, int owner, int group)
 	return 0;
 }
 
+#if 0
 int
 link(char *from, char *to)
 {
 	return -1;
 }
+#endif
 
 typedef char* CHARP;
 
