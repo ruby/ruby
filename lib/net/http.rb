@@ -1,4 +1,6 @@
+#
 # = net/http.rb
+#
 #--
 # Copyright (c) 1999-2003 Yukihiro Matsumoto
 # Copyright (c) 1999-2003 Minero Aoki
@@ -15,6 +17,7 @@
 # 
 # $Id$
 #++ 
+#
 # == What Is This Library?
 # 
 # This library provides your program functions to access WWW
@@ -87,7 +90,7 @@
 #     proxy_user, proxy_pass = uri.userinfo.split(/:/) if uri.userinfo
 #     Net::HTTP::Proxy(proxy_host, proxy_port,
 #                      proxy_user, proxy_pass).start('www.example.com') {|http|
-#         # always connect to your.proxy.addr:8080 using specified username and password
+#       # always connect to your.proxy.addr:8080 using specified username and password
 #             :
 #     }
 #     
@@ -122,10 +125,10 @@
 #     require 'net/http'
 # 
 #     Net::HTTP.start('www.example.com') {|http|
-#         req = Net::HTTP::Get.new('/secret-page.html')
-#         req.basic_auth 'account', 'password'
-#         response = http.request(req)
-#         print response.body
+#       req = Net::HTTP::Get.new('/secret-page.html')
+#       req.basic_auth 'account', 'password'
+#       response = http.request(req)
+#       print response.body
 #     }
 # 
 # === HTTP Response Classes
@@ -145,7 +148,8 @@
 #     Net::HTTP.version_1_2
 #     Net::HTTP.start {|http3| ...(http3 has 1.2 features)... }
 # 
-# This function is not multithread-safe.
+# This function is NOT multithread-safe.
+#
 
 require 'net/protocol'
 require 'uri'
@@ -174,19 +178,42 @@ module Net
 
     @@newimpl = true
 
+    # Turns on net/http 1.2 (ruby 1.8) features.
+    # Defaults to ON in ruby 1.8.
+    #
+    # I strongly recommend to call this method always.
+    #
+    #   require 'net/http'
+    #   Net::HTTP.version_1_2
+    #
     def HTTP.version_1_2
       @@newimpl = true
     end
 
+    # Turns on net/http 1.2 (ruby 1.8) features.
+    # Defaults to OFF in ruby 1.8.
     def HTTP.version_1_1
       @@newimpl = false
     end
 
-    def HTTP.is_version_1_2?
+    # true if net/http is in version 1.2 mode.
+    # Defaults to true.
+    def HTTP.version_1_2?
       @@newimpl
     end
 
-    def HTTP.setimplversion( obj )
+    # true if net/http is in version 1.1 compatible mode.
+    # Defaults to true.
+    def HTTP.version_1_1?
+      not @@newimpl
+    end
+
+    class << HTTP
+      alias is_version_1_1? version_1_1?   #:nodoc:
+      alias is_version_1_2? version_1_2?   #:nodoc:
+    end
+
+    def HTTP.setimplversion( obj )   #:nodoc:
       f = @@newimpl
       obj.instance_eval { @newimpl = f }
     end
@@ -217,7 +244,7 @@ module Net
         port = uri.port
       end
       new(addr, port || HTTP.default_port).start {|http|
-          http.get path, nil, $stdout
+        http.get path, nil, $stdout
       }
       nil
     end
@@ -256,18 +283,18 @@ module Net
       end
     end
 
-    def HTTP.get_by_path( addr, path, port = nil )
+    def HTTP.get_by_path( addr, path, port = nil )   #:nodoc:
       new(addr, port || HTTP.default_port).start {|http|
-          return http.request(Get.new(path))
+        return http.request(Get.new(path))
       }
     end
     private_class_method :get_by_path
 
-    def HTTP.get_by_uri( uri )
+    def HTTP.get_by_uri( uri )   #:nodoc:
       # Should we allow this?
       # uri = URI.parse(uri) unless uri.respond_to?(:host)
       new(uri.host, uri.port).start {|http|
-          return http.request(Get.new(uri.request_uri))
+        return http.request(Get.new(uri.request_uri))
       }
     end
     private_class_method :get_by_uri
@@ -276,18 +303,12 @@ module Net
     # HTTP session management
     #
 
-    #
     # The default port to use for HTTP requests; defaults to 80.
-    #
     def HTTP.default_port
       80
     end
 
-    #
-    # The type of socket to use for HTTP connections. 
-    # Defaults to +InternetMessageIO+
-    #
-    def HTTP.socket_type
+    def HTTP.socket_type   #:nodoc:
       InternetMessageIO
     end
 
@@ -299,7 +320,7 @@ module Net
       # is the return value of the block.  If no block is given, the
       # return value of this method is the newly created Net::HTTP object
       # itself, and the caller is responsible for closing it upon completion.
-      def start( address, port = nil, p_addr = nil, p_port = nil, p_user = nil, p_pass = nil, &block ) # :yield: +HTTP+ object
+      def start( address, port = nil, p_addr = nil, p_port = nil, p_user = nil, p_pass = nil, &block ) # :yield: +http+
         new(address, port, p_addr, p_port, p_user, p_pass).start(&block)
       end
 
@@ -334,7 +355,7 @@ module Net
     end
 
     def inspect
-      "#<#{self.class} #{@address}:#{@port} open=#{active?}>"
+      "#<#{self.class} #{@address}:#{@port} open=#{started?}>"
     end
 
     def set_debug_output( arg )   # :nodoc:
@@ -343,6 +364,7 @@ module Net
 
     # The host name to connect to.
     attr_reader :address
+
     # The port number to connect to.
     attr_reader :port
 
@@ -351,7 +373,7 @@ module Net
     # it raises a TimeoutError exception.
     attr_accessor :open_timeout
 
-    # Seconds to wait until reading one block (by one read(1) call).
+    # Seconds to wait until reading one block (by one read(2) call).
     # If the HTTP object cannot open a conection in this many seconds,
     # it raises a TimeoutError exception.
     attr_reader :read_timeout
@@ -367,7 +389,7 @@ module Net
       @started
     end
 
-    alias active? started?
+    alias active? started?   #:nodoc:
 
     attr_accessor :close_on_empty_response
 
@@ -380,7 +402,7 @@ module Net
     # When called with a block, returns the return value of the
     # block; otherwise, returns self.
     #
-    def start  # :yield: Net::HTTP object
+    def start  # :yield: +http+
       raise IOError, 'HTTP session already opened' if @started
       if block_given?
         begin
@@ -441,7 +463,7 @@ module Net
     #     proxy_class = Net::HTTP::Proxy('proxy.example.com', 8080)
     #                     :
     #     proxy_class.start('www.ruby-lang.org') {|http|
-    #         # connecting proxy.foo.org:8080
+    #       # connecting proxy.foo.org:8080
     #                     :
     #     }
     # 
@@ -451,13 +473,13 @@ module Net
       delta = ProxyDelta
       proxyclass = Class.new(self)
       proxyclass.module_eval {
-          include delta
-          # with proxy
-          @is_proxy_class = true
-          @proxy_address = p_addr
-          @proxy_port    = p_port || default_port()
-          @proxy_user    = p_user
-          @proxy_pass    = p_pass
+        include delta
+        # with proxy
+        @is_proxy_class = true
+        @proxy_address = p_addr
+        @proxy_port    = p_port || default_port()
+        @proxy_user    = p_user
+        @proxy_pass    = p_pass
       }
       proxyclass
     end
@@ -499,8 +521,8 @@ module Net
       self.class.proxy_pass
     end
 
-    alias proxyaddr proxy_address
-    alias proxyport proxy_port
+    alias proxyaddr proxy_address   #:nodoc:
+    alias proxyport proxy_port      #:nodoc:
 
     private
 
@@ -518,7 +540,7 @@ module Net
       path
     end
 
-    module ProxyDelta
+    module ProxyDelta   #:nodoc:
       private
 
       # with proxy
@@ -545,9 +567,9 @@ module Net
     # Gets data from +path+ on the connected-to host.
     # +header+ must be a Hash like { 'Accept' => '*/*', ... }.
     #
-    # In version 1.1, this method returns a pair of objects,
+    # In version 1.1 (ruby 1.6), this method returns a pair of objects,
     # a Net::HTTPResponse object and the entity body string.
-    # In version 1.2, this method returns a Net::HTTPResponse
+    # In version 1.2 (ruby 1.8), this method returns a Net::HTTPResponse
     # object.
     #
     # If called with a block, yields each fragment of the
@@ -555,14 +577,8 @@ module Net
     # the socket.  Note that in this case, the returned response
     # object will *not* contain a (meaningful) body.
     #
-    # +dest+ is an alternative method of collecting the body.  It
-    # must be an object responding to the "<<" operator (such as
-    # a String or an Array).  Each fragment of the entity body
-    # will be "<<"-ed in turn onto +dest+ if provided, and it will
-    # also become the body of the returned response object.
-    #
-    # You must *not* provide both +dest+ and a block; doing so
-    # will result in an ArgumentError.
+    # +dest+ argument is obsolete.
+    # It still works but you must not use it.
     #
     # In version 1.1, this method might raise an exception for 
     # 3xx (redirect). In this case you can get a HTTPResponse object
@@ -573,20 +589,21 @@ module Net
     #     # version 1.1 (bundled with Ruby 1.6)
     #     response, body = http.get('/index.html')
     #
-    #     # version 1.2 (bundled with Ruby 1.7 or later)
+    #     # version 1.2 (bundled with Ruby 1.8 or later)
     #     response = http.get('/index.html')
     #     
     #     # using block
     #     File.open('result.txt', 'w') {|f|
-    #         http.get('/~foo/') do |str|
-    #           f.write str
-    #         end
+    #       http.get('/~foo/') do |str|
+    #         f.write str
+    #       end
     #     }
+    #
     def get( path, initheader = nil, dest = nil, &block ) # :yield: +body_segment+
       res = nil
       request(Get.new(path, initheader)) {|r|
-          r.read_body dest, &block
-          res = r
+        r.read_body dest, &block
+        res = r
       }
       unless @newimpl
         res.value
@@ -608,22 +625,22 @@ module Net
     # 
     #     response = nil
     #     Net::HTTP.start('some.www.server', 80) {|http|
-    #         response = http.head('/index.html')
+    #       response = http.head('/index.html')
     #     }
     #     p response['content-type']
     #
     def head( path, initheader = nil ) 
       res = request(Head.new(path, initheader))
-      @newimpl or res.value
+      res.value unless @newimpl
       res
     end
 
     # Posts +data+ (must be a String) to +path+. +header+ must be a Hash
     # like { 'Accept' => '*/*', ... }.
     # 
-    # In version 1.1, this method returns a pair of objects, a
+    # In version 1.1 (ruby 1.6), this method returns a pair of objects, a
     # Net::HTTPResponse object and an entity body string.
-    # In version 1.2, this method returns a Net::HTTPReponse object.
+    # In version 1.2 (ruby 1.8), this method returns a Net::HTTPReponse object.
     # 
     # If called with a block, yields each fragment of the
     # entity body in turn as a string as it are read from
@@ -652,15 +669,15 @@ module Net
     # 
     #     # using block
     #     File.open('result.txt', 'w') {|f|
-    #         http.post('/cgi-bin/search.rb', 'query=foo') do |str|
-    #           f.write str
-    #         end
+    #       http.post('/cgi-bin/search.rb', 'query=foo') do |str|
+    #         f.write str
+    #       end
     #     }
-    def post( path, data, initheader = nil, dest = nil, &block ) # :yield: +body+
+    def post( path, data, initheader = nil, dest = nil, &block ) # :yield: +body_segment+
       res = nil
       request(Post.new(path, initheader), data) {|r|
-          r.read_body dest, &block
-          res = r
+        r.read_body dest, &block
+        res = r
       }
       unless @newimpl
         res.value
@@ -670,7 +687,7 @@ module Net
       res
     end
 
-    def put( path, data, initheader = nil ) # :yield: +response+
+    def put( path, data, initheader = nil ) #:nodoc:
       res = request(Put.new(path, initheader), data)
       @newimpl or res.value
       res
@@ -695,10 +712,10 @@ module Net
     # 
     #     # using block
     #     http.request_get('/index.html') {|response|
-    #         p response['content-type']
-    #         response.read_body do |str|   # read body now
-    #           print str
-    #         end
+    #       p response['content-type']
+    #       response.read_body do |str|   # read body now
+    #         print str
+    #       end
     #     }
     #
     def request_get( path, initheader = nil, &block ) # :yield: +response+
@@ -738,17 +755,17 @@ module Net
     # 
     #     # using block
     #     http.request_post('/cgi-bin/nice.rb', 'datadatadata...') {|response|
-    #         p response.status
-    #         p response['content-type']
-    #         response.read_body do |str|   # read body now
-    #           print str
-    #         end
+    #       p response.status
+    #       p response['content-type']
+    #       response.read_body do |str|   # read body now
+    #         print str
+    #       end
     #     }
     def request_post( path, data, initheader = nil, &block ) # :yield: +response+
       request Post.new(path, initheader), data, &block
     end
 
-    def request_put( path, data, initheader = nil, &block )
+    def request_put( path, data, initheader = nil, &block )   #:nodoc:
       request Put.new(path, initheader), data, &block
     end
 
@@ -788,8 +805,8 @@ module Net
     def request( req, body = nil, &block )  # :yield: +response+
       unless started?
         start {
-            req['connection'] = 'close'
-            return request(req, body, &block)
+          req['connection'] = 'close'
+          return request(req, body, &block)
         }
       end
       if proxy_user()
@@ -802,7 +819,7 @@ module Net
             res = HTTPResponse.read_new(@socket)
           end while HTTPContinue === res
           res.reading_body(@socket, req.response_body_permitted?) {
-              yield res if block_given?
+            yield res if block_given?
           }
       end_transport req, res
 
@@ -887,11 +904,11 @@ module Net
   #
   module HTTPHeader
 
-    def size
+    def size   #:nodoc:
       @header.size
     end
 
-    alias length size
+    alias length size   #:nodoc:
 
     # Returns the header field corresponding to the case-insensitive key.
     # For example, a key of "Content-Type" might return "text/html"
@@ -911,29 +928,34 @@ module Net
       @header.fetch(key.downcase, *args, &block)
     end
 
-    # See Hash#each
+    # Iterates for each header names and values.
     def each_header( &block ) # :yield: +key+, +value+
       @header.each(&block)
     end
 
     alias each each_header
 
-    def each_key( &block )
+    # Iterates for each header names.
+    def each_key( &block ) # :yield: +key+
       @header.each_key(&block)
     end
 
-    def each_value( &block )
+    # Iterates for each header values.
+    def each_value( &block ) # :yield: +value+
       @header.each_value(&block)
     end
 
+    # Removes a header field.
     def delete( key )
       @header.delete(key.downcase)
     end
 
+    # true if +key+ header exists.
     def key?( key )
       @header.key?(key.downcase)
     end
 
+    # Returns a Hash consist of header names and values.
     def to_hash
       @header.dup
     end
@@ -956,16 +978,16 @@ module Net
     def range
       s = @header['range'] or return nil
       s.split(/,/).map {|spec|
-          m = /bytes\s*=\s*(\d+)?\s*-\s*(\d+)?/i.match(spec) or
-                  raise HTTPHeaderSyntaxError, "wrong Range: #{spec}"
-          d1 = m[1].to_i
-          d2 = m[2].to_i
-          if    m[1] and m[2] then  d1..d2
-          elsif m[1]          then  d1..-1
-          elsif          m[2] then -d2..-1
-          else
-            raise HTTPHeaderSyntaxError, 'range is not specified'
-          end
+        m = /bytes\s*=\s*(\d+)?\s*-\s*(\d+)?/i.match(spec) or
+                raise HTTPHeaderSyntaxError, "wrong Range: #{spec}"
+        d1 = m[1].to_i
+        d2 = m[2].to_i
+        if    m[1] and m[2] then  d1..d2
+        elsif m[1]          then  d1..-1
+        elsif          m[2] then -d2..-1
+        else
+          raise HTTPHeaderSyntaxError, 'range is not specified'
+        end
       }
     end
 
@@ -1030,6 +1052,7 @@ module Net
       m[1].to_i .. m[2].to_i + 1
     end
 
+    # The length of the range represented in Range: header.
     def range_length
       r = self.content_range
       r and (r.end - r.begin)
@@ -1100,7 +1123,7 @@ module Net
     #
 
     # internal use only
-    def exec( sock, ver, path, body )
+    def exec( sock, ver, path, body )   #:nodoc:
       if body
         check_body_permitted
         send_request_with_body sock, ver, path, body
@@ -1117,7 +1140,7 @@ module Net
     end
 
     def send_request_with_body( sock, ver, path, body )
-      @header['content-length'] = body.size.to_s
+      @header['content-length'] = body.length.to_s
       @header.delete 'transfer-encoding'
 
       unless @header['content-type']
@@ -1190,8 +1213,10 @@ module Net
   ### Response
   ###
 
+  # HTTP exception class.
+  # You must use its subclasses.
   module HTTPExceptions
-    def initialize( msg, res )
+    def initialize( msg, res )   #:nodoc:
       super msg
       @response = res
     end
@@ -1274,17 +1299,17 @@ module Net
   #       505        HTTPVersionNotSupported
   # 
   #     xxx        HTTPUnknownResponse
+  #
   class HTTPResponse
-    # predefine HTTPResponse class to allow inheritance
-
-    def self.body_permitted?
+    # true if the reponse has body.
+    def HTTPResponse.body_permitted?
       self::HAS_BODY
     end
 
-    def self.exception_type
+    def HTTPResponse.exception_type   # :nodoc:
       self::EXCEPTION_TYPE
     end
-  end
+  end   # redefined after
 
   class HTTPUnknownResponse < HTTPResponse
     HAS_BODY = true
@@ -1499,7 +1524,7 @@ module Net
 
     class << self
 
-      def read_new( sock )
+      def read_new( sock )   #:nodoc:
         httpv, code, msg = read_status_line(sock)
         res = response_class(code).new(httpv, code, msg)
         each_response_header(sock) do |k,v|
@@ -1546,7 +1571,7 @@ module Net
 
     include HTTPHeader
 
-    def initialize( httpv, code, msg )
+    def initialize( httpv, code, msg )   #:nodoc:
       @http_version = httpv
       @code         = code
       @message      = msg
@@ -1556,6 +1581,7 @@ module Net
       @read = false
     end
 
+    # The HTTP version supported by the server.
     attr_reader :http_version
 
     # HTTP result code string. For example, '302'.  You can also
@@ -1565,7 +1591,7 @@ module Net
 
     # HTTP result message. For example, 'Not Found'.
     attr_reader :message
-    alias msg message       # for backward compatibility
+    alias msg message   # :nodoc:
 
     def inspect
       "#<#{self.class} #{@code} readbody=#{@read}>"
@@ -1585,19 +1611,19 @@ module Net
     # response <-> exception relationship
     #
 
-    def code_type
+    def code_type   #:nodoc:
       self.class
     end
 
-    def error!
+    def error!   #:nodoc:
       raise error_type().new(@code + ' ' + @message.dump, self)
     end
 
-    def error_type
+    def error_type   #:nodoc:
       self.class::EXCEPTION_TYPE
     end
 
-    def value
+    def value   #:nodoc:
       error! unless HTTPSuccess === self
     end
 
@@ -1605,12 +1631,12 @@ module Net
     # header (for backward compatibility only; DO NOT USE)
     #
 
-    def response
+    def response   #:nodoc:
       self
     end
 
-    alias header response
-    alias read_header response
+    alias header response        #:nodoc:
+    alias read_header response   #:nodoc:
 
     #
     # body
@@ -1627,15 +1653,28 @@ module Net
       end
     end
 
-    # Gets entity body and either writes it into +dest+ using "<<" method.
-    # or yields it to +block+.  +dest+ and +block+ cannot both be provided;
-    # doing so results in an ArgumentError being raised.  If neither is
-    # provided, the body is read into a String and this is returned.
+    # Gets entity body.  If the block given, yields it to +block+.
     # The body is provided in fragments, as it is read in from the socket.
     #
     # Calling this method a second or subsequent time will return the
-    # original +dest+, +block+ (non-usefully), or String the body was
-    # read into.
+    # already read string.
+    #
+    #   http.request_get('/index.html') {|res|
+    #     puts res.read_body
+    #   }
+    #
+    #   http.request_get('/index.html') {|res|
+    #     p res.read_body.object_id   # 538149362
+    #     p res.read_body.object_id   # 538149362
+    #   }
+    #
+    #   # using iterator
+    #   http.request_get('/index.html') {|res|
+    #     res.read_body do |segment|
+    #       print segment
+    #     end
+    #   }
+    #
     def read_body( dest = nil, &block )
       if @read
         raise IOError, "#{self.class}\#read_body called twice" if dest or block
@@ -1655,8 +1694,25 @@ module Net
       @body
     end
 
-    alias body read_body
-    alias entity read_body
+    # Returns the entity body.
+    #
+    # Calling this method a second or subsequent time will return the
+    # already read string.
+    #
+    #   http.request_get('/index.html') {|res|
+    #     puts res.body
+    #   }
+    #
+    #   http.request_get('/index.html') {|res|
+    #     p res.body.object_id   # 538149362
+    #     p res.body.object_id   # 538149362
+    #   }
+    #
+    def body
+      read_body()
+    end
+
+    alias entity body   #:nodoc:
 
     private
 
@@ -1718,7 +1774,7 @@ module Net
   class HTTP
     ProxyMod = ProxyDelta
   end
-  module NetPrivate
+  module NetPrivate #:nodoc:
     HTTPRequest = ::Net::HTTPRequest
   end
 
