@@ -1,9 +1,9 @@
 #
-#   ruby-lex.rb - ruby lexcal analizer
-#   	$Release Version: 0.6$
+#   irb/ruby-lex.rb - ruby lexcal analizer
+#   	$Release Version: 0.7.3$
 #   	$Revision$
 #   	$Date$
-#   	by Keiju ISHITSUKA(Nippon Rational Inc.)
+#   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
 #
 # --
 #
@@ -202,8 +202,8 @@ class RubyLex
     @space_seen = false
     @here_header = false
     
-    prompt
     @continue = false
+    prompt
 
     @line = ""
     @exp_line_no = @line_no
@@ -239,8 +239,8 @@ class RubyLex
     until (((tk = token).kind_of?(TkNL) || tk.kind_of?(TkEND_OF_SCRIPT)) &&
 	     !@continue or
 	     tk.nil?)
-      #	p tk
-      #	p self
+      #p tk
+      #p self
     end
     line = get_readed
     #      print self.inspect
@@ -333,7 +333,7 @@ class RubyLex
       until peek_equal?("=end") && peek(4) =~ /\s/
 	until getc == "\n"; end
       end
-      getc; getc; getc; getc
+      gets
       @ltype = nil
       Token(TkRD_COMMENT)
     end
@@ -459,6 +459,7 @@ class RubyLex
 	identify_number
       else
 	# for obj.if
+	# (JP: obj.if などの対応)
 	@lex_state = EXPR_DOT
 	Token(TkDOT)
       end
@@ -691,7 +692,8 @@ class RubyLex
     if ch == "!" or ch == "?"
       token.concat getc
     end
-    # fix token
+    # almost fix token
+    # (JP: 大体fix token)
 
     case token
     when /^\$/
@@ -707,11 +709,13 @@ class RubyLex
       token_c, *trans = TkReading2Token[token]
       if token_c
 	# reserved word?
+	# (JP: 予約語かどうか?)
 
 	if (@lex_state != EXPR_BEG &&
 	    @lex_state != EXPR_FNAME &&
 	    trans[1])
 	  # modifiers
+	  # (JP: 修飾子)
 	  token_c = TkSymbol2Token[trans[1]]
 	  @lex_state = trans[0]
 	else
@@ -752,6 +756,7 @@ class RubyLex
 
   def identify_here_document
     ch = getc
+#    if lt = PERCENT_LTYPE[ch]
     if ch == "-"
       ch = getc
       indent = true
@@ -954,7 +959,8 @@ class RubyLex
 	read_escape(chrs)
       end
     else
-      # other characters
+      # other characters 
+      #(JP:その他の文字)
     end
   end
 end
