@@ -1,6 +1,6 @@
 =begin
 
-= net/http.rb version 1.1.29
+= net/http.rb version 1.1.30
 
 maintained by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 This file is derived from "http-access.rb".
@@ -670,6 +670,12 @@ SRC
     end
 
 
+    ###
+    ### request
+    ###
+
+    public
+
     def get( path, u_header )
       return unless begin_critical
       request sprintf('GET %s HTTP/%s', path, HTTPVersion), u_header
@@ -703,9 +709,39 @@ SRC
     end
 
 
+    private
+
+    def request( req, u_header )
+      @socket.writeline req
+      if u_header then
+        header = @in_header.dup.update( u_header )
+      else
+        header = @in_header
+      end
+      header.each do |n,v|
+        @socket.writeline n + ': ' + v
+      end
+      @socket.writeline ''
+    end
+
+
+    ###
+    ### response line & header
+    ###
+
+    public
+
     def get_response
+      resp = get_resp0
+      resp = get_resp0 while ContinueCode === resp
+      resp
+    end
+
+
+    private
+
+    def get_resp0
       resp = get_reply
-      resp = get_reply while ContinueCode === resp
 
       while true do
         line = @socket.readline
@@ -727,55 +763,21 @@ SRC
       resp
     end
 
-
-    def get_body( resp, dest )
-      if chunked? resp then
-        read_chunked( dest, resp )
-      else
-        clen = content_length( resp )
-        if clen then
-          @socket.read clen, dest
-        else
-          clen = range_length( resp )
-          if clen then
-            @socket.read clen, dest
-          else
-            tmp = resp['connection']
-            if tmp and /close/i === tmp then
-              @socket.read_all dest
-            else
-              tmp = resp['proxy-connection']
-              if tmp and /close/i === tmp then
-                @socket.read_all dest
-              end
-            end
-          end
-        end
+    def get_reply
+      str = @socket.readline
+      m = /\AHTTP\/(\d+\.\d+)?\s+(\d\d\d)\s*(.*)\z/i.match( str )
+      unless m then
+        raise HTTPBadResponse, "wrong status line: #{str}"
       end
-      end_critical
+      @http_version = m[1]
+      status  = m[2]
+      discrip = m[3]
+      
+      code = HTTPCODE_TO_OBJ[status] ||
+             HTTPCODE_CLASS_TO_OBJ[status[0,1]] ||
+             UnknownCode
+      HTTPResponse.new( code, status, discrip )
     end
-
-    def no_body
-      end_critical
-    end
-
-
-    private
-
-
-    def request( req, u_header )
-      @socket.writeline req
-      if u_header then
-        header = @in_header.dup.update( u_header )
-      else
-        header = @in_header
-      end
-      header.each do |n,v|
-        @socket.writeline n + ': ' + v
-      end
-      @socket.writeline ''
-    end
-
 
     HTTPCODE_CLASS_TO_OBJ = {
       '1' => HTTPInformationCode,
@@ -829,21 +831,46 @@ SRC
       '505' => HTTPVersionNotSupported
     }
 
-    def get_reply
-      str = @socket.readline
-      m = /\AHTTP\/(\d+\.\d+)?\s+(\d\d\d)\s*(.*)\z/i.match( str )
-      unless m then
-        raise HTTPBadResponse, "wrong status line: #{str}"
+
+    ###
+    ### body
+    ###
+
+    public
+
+    def get_body( resp, dest )
+      if chunked? resp then
+        read_chunked( dest, resp )
+      else
+        clen = content_length( resp )
+        if clen then
+          @socket.read clen, dest
+        else
+          clen = range_length( resp )
+          if clen then
+            @socket.read clen, dest
+          else
+            tmp = resp['connection']
+            if tmp and /close/i === tmp then
+              @socket.read_all dest
+            else
+              tmp = resp['proxy-connection']
+              if tmp and /close/i === tmp then
+                @socket.read_all dest
+              end
+            end
+          end
+        end
       end
-      @http_version = m[1]
-      status  = m[2]
-      discrip = m[3]
-      
-      code = HTTPCODE_TO_OBJ[status] ||
-             HTTPCODE_CLASS_TO_OBJ[status[0,1]] ||
-             UnknownCode
-      HTTPResponse.new( code, status, discrip )
+      end_critical
     end
+
+    def no_body
+      end_critical
+    end
+
+
+    private
 
     def read_chunked( ret, header )
       len = nil
@@ -865,7 +892,6 @@ SRC
       end
     end
 
-    
     def content_length( header )
       if header.key? 'content-length' then
         m = /\d+/.match( header['content-length'] )

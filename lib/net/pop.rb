@@ -1,6 +1,6 @@
 =begin
 
-= net/pop.rb version 1.1.29
+= net/pop.rb version 1.1.30
 
 written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 

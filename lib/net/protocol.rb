@@ -1,6 +1,6 @@
 =begin
 
-= net/protocol.rb version 1.1.29
+= net/protocol.rb version 1.1.30
 
 written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 
@@ -69,7 +69,7 @@ module Net
 
   class Protocol
 
-    Version = '1.1.29'
+    Version = '1.1.30'
 
 
     class << self
@@ -421,10 +421,10 @@ module Net
       @critical = false
     end
 
-    def critical_ok
+    def error_ok
       @critical = false
     end
-    public :critical_ok
+    public :error_ok
 
   end
 

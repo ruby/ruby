@@ -1,6 +1,6 @@
 =begin
 
-= net/smtp.rb version 1.1.29
+= net/smtp.rb version 1.1.30
 
 written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 
@@ -146,7 +146,7 @@ module Net
       rescue ProtocolError
         if @esmtp then
           @esmtp = false
-          @command.critical_ok
+          @command.error_ok
           retry
         else
           raise

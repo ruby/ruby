@@ -1,3 +1,11 @@
+Tue Nov  7 20:29:56 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.30
+
+	* lib/net/protocol.rb, smtp.rb: Command#critical_ok -> error_ok
+
+	* lib/net/http.rb: read header when also "100 Continue"
+
 Thu Nov  2 18:01:16 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* random.c (rb_f_rand): half-baked float support fixed.  This fix
