@@ -2079,6 +2079,17 @@ sock_s_pack_sockaddr_in(self, port, host)
 }
 
 static VALUE
+sock_s_unpack_sockaddr_in(self, addr)
+    VALUE self, addr;
+{
+    struct sockaddr_in * sockaddr;
+
+    sockaddr = (struct sockaddr_in*)StringValuePtr(addr);
+    return rb_assoc_new(INT2NUM(ntohs(sockaddr->sin_port)), mkipaddr(sockaddr));
+}
+
+#ifdef HAVE_SYS_UN_H
+static VALUE
 sock_s_pack_sockaddr_un(self, path)
     VALUE self, path;
 {
@@ -2095,16 +2106,6 @@ sock_s_pack_sockaddr_un(self, path)
 }
 
 static VALUE
-sock_s_unpack_sockaddr_in(self, addr)
-    VALUE self, addr;
-{
-    struct sockaddr_in * sockaddr;
-
-    sockaddr = (struct sockaddr_in*)StringValuePtr(addr);
-    return rb_assoc_new(INT2NUM(ntohs(sockaddr->sin_port)), mkipaddr(sockaddr));
-}
-
-static VALUE
 sock_s_unpack_sockaddr_un(self, addr)
     VALUE self, addr;
 {
@@ -2114,6 +2115,7 @@ sock_s_unpack_sockaddr_un(self, addr)
     /* xxx: should I check against sun_path size? */
     return rb_tainted_str_new2(sockaddr->sun_path);
 }
+#endif
 
 static VALUE mConst;
 
@@ -2225,11 +2227,13 @@ Init_socket()
     rb_define_singleton_method(rb_cSocket, "getaddrinfo", sock_s_getaddrinfo, -1);
     rb_define_singleton_method(rb_cSocket, "getnameinfo", sock_s_getnameinfo, -1);
     rb_define_singleton_method(rb_cSocket, "sockaddr_in", sock_s_pack_sockaddr_in, 2);
-    rb_define_singleton_method(rb_cSocket, "sockaddr_un", sock_s_pack_sockaddr_un, 1);
     rb_define_singleton_method(rb_cSocket, "pack_sockaddr_in", sock_s_pack_sockaddr_in, 2);
-    rb_define_singleton_method(rb_cSocket, "pack_sockaddr_un", sock_s_pack_sockaddr_un, 1);
     rb_define_singleton_method(rb_cSocket, "unpack_sockaddr_in", sock_s_unpack_sockaddr_in, 1);
+#ifdef HAVE_SYS_UN_H
+    rb_define_singleton_method(rb_cSocket, "sockaddr_un", sock_s_pack_sockaddr_un, 1);
+    rb_define_singleton_method(rb_cSocket, "pack_sockaddr_un", sock_s_pack_sockaddr_un, 1);
     rb_define_singleton_method(rb_cSocket, "unpack_sockaddr_un", sock_s_unpack_sockaddr_un, 1);
+#endif
 
     /* constants */
     mConst = rb_define_module_under(rb_cSocket, "Constants");
