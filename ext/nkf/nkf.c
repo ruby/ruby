@@ -49,6 +49,7 @@ rb_nkf_kconv(obj, opt, src)
 {
   int i;
   char *opt_ptr, *opt_end;
+  volatile VALUE v;
 
   reinit();
   opt_ptr = str2cstr(opt, &i);
@@ -64,7 +65,8 @@ rb_nkf_kconv(obj, opt, src)
 
   input_ctr = 0; 
   input     = str2cstr(src, &i_len);
-  dst = rb_str_new(0, i_len*3 + 10); /* large enough? */
+  dst = rb_str_new(0, i_len*3 + 10);
+  v = dst;
 
   output_ctr = 0;
   output     = RSTRING(dst)->ptr;

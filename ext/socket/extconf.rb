@@ -148,7 +148,6 @@ EOF
     $CFLAGS="-DHAVE_SA_LEN "+$CFLAGS
 end
 
-have_header("sys/sysctl.h")
 have_header("netinet/tcp.h")
 have_header("netinet/udp.h")
 

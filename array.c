@@ -930,8 +930,8 @@ rb_ary_sort(ary)
     VALUE ary;
 {
     ary = rb_ary_dup(ary);
-    if (RARRAY(ary)->len == 0) return ary;
-    return rb_ary_sort_bang(ary);
+    rb_ary_sort_bang(ary);
+    return ary;
 }
 
 VALUE
@@ -1365,10 +1365,9 @@ static VALUE
 rb_ary_uniq(ary)
     VALUE ary;
 {
-    VALUE v = rb_ary_uniq_bang(rb_ary_dup(ary));
-
-    if (NIL_P(v)) return ary;
-    return v;
+    ary = rb_ary_dup(ary);
+    rb_ary_uniq_bang(ary);
+    return ary;
 }
 
 static VALUE
@@ -1397,10 +1396,9 @@ static VALUE
 rb_ary_compact(ary)
     VALUE ary;
 {
-    VALUE v = rb_ary_compact_bang(rb_ary_dup(ary));
-
-    if (NIL_P(v)) return ary;
-    return v;
+    ary = rb_ary_dup(ary);
+    rb_ary_compact_bang(ary);
+    return ary;
 }
 
 static VALUE
@@ -1442,10 +1440,9 @@ static VALUE
 rb_ary_flatten(ary)
     VALUE ary;
 {
-    VALUE v = rb_ary_flatten_bang(rb_ary_dup(ary));
-
-    if (NIL_P(v)) return ary;
-    return v;
+    ary = rb_ary_dup(ary);
+    rb_ary_flatten_bang(ary);
+    return ary;
 }
 
 void

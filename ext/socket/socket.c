@@ -16,10 +16,10 @@
 #ifndef NT
 #include <sys/socket.h>
 #include <netinet/in.h>
-#ifdef NETINET_TCP
+#ifdef HAVE_NETINET_TCP_H
 # include <netinet/tcp.h>
 #endif
-#ifdef NETINET_UDP
+#ifdef HAVE_NETINET_UDP_H
 # include <netinet/udp.h>
 #endif
 #include <netdb.h>

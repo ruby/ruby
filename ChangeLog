@@ -1,3 +1,8 @@
+Wed Oct 20 15:14:24 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* marshal.c (marshal_load): should protect the generated object
+	  table (arg->data) from GC.
+
 Mon Oct 18 16:15:52 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* ext/nkf/nkf.c (rb_nkf_kconv): output should be NUL terminated.
@@ -5,6 +10,10 @@ Mon Oct 18 16:15:52 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 Sun Oct 17 03:35:33 1999  Masaki Fukushima  <fukusima@goto.info.waseda.ac.jp>
 
 	* array.c (rb_ary_pop): forgot some freeze checks.
+
+Sat Oct 16 12:57:53 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* array.c (rb_ary_sort): always returns the copied array.
 
 Fri Oct 15 22:50:41 1999  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
