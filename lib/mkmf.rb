@@ -1096,11 +1096,11 @@ site-install-rb: install-rb
 	    impconv[]
 	  end
 	end
-	if /\A\.(\w+)\.(\w+)(?:\s*:)/ =~ line
-	  implicit = [[$1, $2], [$']]
+	if m = /\A\.(\w+)\.(\w+)(?:\s*:)/.match(line)
+	  implicit = [[m[1], m[2]], [m.post_match]]
 	  next
 	elsif RULE_SUBST and /\A[$\w][^#]*:/ =~ line
-	  line.gsub!(%r"(?<=\A|\s)(?!\.)([^$(){}+=:\s\/\\,]+)(?=\s|\z)") {|*m| RULE_SUBST % m}
+	  line.gsub!(%r"(?<=\s)(?!\.)([^$(){}+=:\s\/\\,]+)(?=\s|\z)") {|*m| RULE_SUBST % m}
 	end
 	mfile.print line
       end

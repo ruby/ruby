@@ -4633,6 +4633,7 @@ break_jump(retval)
 static VALUE bmcall _((VALUE, VALUE));
 static int method_arity _((VALUE));
 
+/*:nodoc:*/
 static VALUE
 rb_yield_0(val, self, klass, flags, avalue)
     VALUE val, self, klass;	/* OK */

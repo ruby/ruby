@@ -194,7 +194,7 @@ BANG = !
 !include config.h
 !endif
 
-$(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub
+$(CONFIG_H): $(MKFILES) $(srcdir)/wince/Makefile.sub
 	@echo Creating config.h
 	@$(srcdir:/=\)\win32\ifchange.bat config.h <<
 #define STDC_HEADERS 1

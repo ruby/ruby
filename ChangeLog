@@ -1,3 +1,8 @@
+Sat Mar  5 12:52:08 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (create_makefile): allow putting spaces between target
+	  and colon in depend file.
+
 Sat Mar  5 02:41:00 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* file.c (eaccess): workaround for VC++8 runtime.
