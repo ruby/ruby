@@ -1,3 +1,9 @@
+Sat Jun 28 12:28:46 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* gc.c (rb_gc_mark_locations): remove margin.  [ruby-dev:20462]
+
+	* gc.c (Init_stack): add safety margin.
+
 Fri May 30 11:25:58 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/irb/xmp.rb: sync with 1.8 ("irb/irb" -> "irb").

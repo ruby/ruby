@@ -434,7 +434,7 @@ rb_gc_mark_locations(start, end)
 	start = end;
 	end = tmp;
     }
-    n = end - start + 1;
+    n = end - start;
     mark_locations_array(start,n);
 }
 
@@ -1106,11 +1106,11 @@ Init_stack(addr)
     if (!addr) addr = (VALUE *)&addr;
     if (rb_gc_stack_start) {
 	if (stack_growup_p(addr)) {
-	    if (rb_gc_stack_start > addr)
+	    if (rb_gc_stack_start > --addr)
 		rb_gc_stack_start = addr;
 	}
 	else {
-	    if (rb_gc_stack_start < addr)
+	    if (rb_gc_stack_start < ++addr)
 		rb_gc_stack_start = addr;
 	}
 	return;
