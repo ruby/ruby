@@ -269,9 +269,12 @@ module Win32
       HKEY_CLASSES_ROOT = 0x80000000
       HKEY_CURRENT_USER = 0x80000001
       HKEY_LOCAL_MACHINE = 0x80000002
-      HKEY_PERFORMANCE_DATA = 0x80000003
-      HKEY_CURRENT_CONFIG = 0x80000004
-      HKEY_DYN_DATA = 0x80000005
+      HKEY_USERS = 0x80000003
+      HKEY_PERFORMANCE_DATA = 0x80000004
+      HKEY_PERFORMANCE_TEXT = 0x80000050
+      HKEY_PERFORMANCE_NLSTEXT = 0x80000060
+      HKEY_CURRENT_CONFIG = 0x80000005
+      HKEY_DYN_DATA = 0x80000006
       
       REG_NONE = 0
       REG_SZ = 1
@@ -330,11 +333,10 @@ module Win32
     #
     # Error
     #
-    class Error < ::SystemCallError
+    class Error < ::StandardError
       FormatMessageA = Win32API.new('kernel32.dll', 'FormatMessageA', 'LPLLPLP', 'L')
       def initialize(code)
         @code = code
-        
         msg = "\0" * 1024
         len = FormatMessageA.call(0x1200, 0, code, 0, msg, 1024, 0)
         super msg[0, len].tr("\r", '').chomp
@@ -364,7 +366,7 @@ module Win32
       end
       
       # Make all
-      Constants.constants.select { |c| /^HKEY_/ =~ c }.each do |c|
+      Constants.constants.grep(/^HKEY_/) do |c|
         Registry.const_set c, new(Constants.const_get(c), c)
       end
     end
@@ -400,6 +402,7 @@ module Win32
       end
       
       def unpackdw(dw)
+        dw += [0].pack('V')
         dw.unpack('V')[0]
       end
       
@@ -723,17 +726,17 @@ module Win32
     def write(name, type, data)
       case type
       when REG_SZ, REG_EXPAND_SZ
-        data += "\0"
+        data = data.to_s + "\0"
       when REG_MULTI_SZ
-        data = data.join("\0") + "\0\0"
+        data = data.to_a.join("\0") + "\0\0"
       when REG_BINARY
-        #
+        data = data.to_s
       when REG_DWORD
-        data = API.packdw(data)
+        data = API.packdw(data.to_i)
       when REG_DWORD_BIG_ENDIAN
-        data = [data].pack('N')
+        data = [data.to_i].pack('N')
       when REG_QWORD
-        data = API.packqw(data)
+        data = API.packqw(data.to_i)
       else
         raise TypeError, "Unsupported type #{type}"
       end
@@ -746,9 +749,9 @@ module Win32
       else
         case value = rtype
         when Integer
-          write name, REG_DWORD, value.to_i
+          write name, REG_DWORD, value
         when String
-          write name, REG_SZ, value.to_s
+          write name, REG_SZ, value
         when Array
           write name, REG_MULTI_SZ, value
         else
