@@ -1,3 +1,7 @@
+Thu Nov 21 20:17:08 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb: unify coding style.
+
 Thu Nov 21 20:04:06 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb: should not overwrite Host: header.
