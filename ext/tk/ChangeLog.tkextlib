@@ -1,3 +1,7 @@
+2004-10-24  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/sample/tkextlib/bwidget/tree.rb: bug fix
+
 2004-10-16  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* tcllib/ico.rb: new library (Tk::Tcllib:ICO)
