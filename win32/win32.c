@@ -2811,7 +2811,7 @@ isUNCRoot(const char *path)
 {
     if (path[0] == '\\' && path[1] == '\\') {
 	const char *p;
-	for (p = path + 3; *p; p = CharNext(p)) {
+	for (p = path + 2; *p; p = CharNext(p)) {
 	    if (*p == '\\')
 		break;
 	}
@@ -2820,7 +2820,7 @@ isUNCRoot(const char *path)
 		if (*p == '\\')
 		    break;
 	    }
-	    if (!p[0] || !p[1] || (p[0] == '\\' && p[1] == '.'))
+	    if (!p[0] || !p[1] || (p[1] == '.' && !p[2]))
 		return 1;
 	}
     }

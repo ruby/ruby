@@ -1,3 +1,10 @@
+Mon Oct 25 18:35:39 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* win32/win32.c (isUNCRoot): should check NUL after '.'.
+	  [ruby-dev:24590]
+
+	* win32/win32.c (isUNCRoot): fixed buffer overrun.
+
 Mon Oct 25 08:03:26 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (get_backtrace): ignore illegal backtrace.  [ruby-dev:24587]
