@@ -1438,6 +1438,12 @@ rb_file_s_expand_path(argc, argv)
 			}
 			b = ++s;
 		    }
+		    else {
+			p = CharNext(p);
+			*p++ = '.';
+			*p = '.';
+			if (p >= bend) goto toolong;
+		    }
 		    break;
 		  case '/':
 #if defined DOSISH

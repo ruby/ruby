@@ -1071,7 +1071,7 @@ marshal_load(argc, argv)
 \tformat version %d.%d required; %d.%d given",
 		 MARSHAL_MAJOR, MARSHAL_MINOR, major, minor);
     }
-    if (ruby_verbose && minor != MARSHAL_MINOR) {
+    if (RTEST(ruby_verbose) && minor != MARSHAL_MINOR) {
 	rb_warn("incompatible marshal file format (can be read)\n\
 \tformat version %d.%d required; %d.%d given",
 		MARSHAL_MAJOR, MARSHAL_MINOR, major, minor);
@@ -1096,6 +1096,9 @@ Init_marshal()
     rb_define_module_function(rb_mMarshal, "dump", marshal_dump, -1);
     rb_define_module_function(rb_mMarshal, "load", marshal_load, -1);
     rb_define_module_function(rb_mMarshal, "restore", marshal_load, -1);
+
+    rb_define_const(rb_mMarshal, "MAJOR_VERSION", INT2FIX(MAJOR_VERSION));
+    rb_define_const(rb_mMarshal, "MINOR_VERSION", INT2FIX(MINOR_VERSION));
 }
 
 VALUE

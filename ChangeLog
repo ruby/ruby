@@ -1,13 +1,42 @@
+Tue Jul 31 12:11:42 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (Init_marshal): new constant Marshal::MAJOR_VERSION
+	  and Marshal::MINOR_VERSION.
+
 Tue Jul 31 07:18:04 2001  Nobuyoshi Nakada <nobu.nokada@softhome.net>
 
 	* file.c (rb_file_s_expand_path): scans per path element not per
 	  byte/character, including fix of [ruby-talk:18152] and
 	  multi-byte pathname support.
 
+Tue Jul 31 11:52:10 2001  akira yamada  <akira@ruby-lang.org>
+
+	* marshal.c (marshal_load): ruby_verbose test should be wrapped by
+	  RTEST().
+
+Mon Jul 30 17:54:23 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (rb_hash_index): should return nil (not the default
+	  value) if value is not in the hash.
+
+Mon Jul 30 12:55:47 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (num_div): new method added.  alias to '/' which
+	  should be preserved even if '/' is redefined (e.g. by
+	  mathn). [new]
+
 Mon Jul 30 11:12:14 2001  Amos Gouaux <amos+ruby@utdallas.edu>
 
 	* lib/net/imap.rb: added new commands for managing folder quotas
 	  and folder ACLs.
+
+Mon Jul 30 03:19:53 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_cstr2inum): "0 ff".hex should return 0, not 255.
+
+Fri Jul 27 22:29:41 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* file.c (rb_file_s_expand_path): fixed using CharNext().
 
 Fri Jul 27 18:07:27 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

@@ -239,10 +239,14 @@ rb_cstr2inum(str, base)
 	if (base == 16 && str[0] == '0' && (str[1] == 'x'||str[1] == 'X')) {
 	    str += 2;
 	}
-	if (base == 2 && str[0] == '0' && (str[1] == 'b'||str[1] == 'B')) {
+	else if (base == 2 && str[0] == '0' && (str[1] == 'b'||str[1] == 'B')) {
 	    str += 2;
 	}
 	while (*str && *str == '0') str++;
+	if (ISSPACE(*str)) {
+	    if (badcheck) goto bad;
+	    return INT2FIX(0);
+	}
 	if (!*str) str--;
 	len = 4*strlen(str)*sizeof(char);
     }

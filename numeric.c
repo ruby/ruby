@@ -116,6 +116,13 @@ num_uminus(num)
 }
 
 static VALUE
+num_div(x, y)
+    VALUE x, y;
+{
+    return rb_funcall(x, '/', 1, y);
+}
+
+static VALUE
 num_divmod(x, y)
     VALUE x, y;
 {
@@ -1543,6 +1550,7 @@ Init_Numeric()
     rb_define_method(rb_cNumeric, "-@", num_uminus, 0);
     rb_define_method(rb_cNumeric, "===", num_equal, 1);
     rb_define_method(rb_cNumeric, "eql?", num_eql, 1);
+    rb_define_method(rb_cNumeric, "div", num_div, 1);
     rb_define_method(rb_cNumeric, "divmod", num_divmod, 1);
     rb_define_method(rb_cNumeric, "modulo", num_modulo, 1);
     rb_define_method(rb_cNumeric, "remainder", num_remainder, 1);
@@ -1591,6 +1599,7 @@ Init_Numeric()
     rb_define_method(rb_cFixnum, "-", fix_minus, 1);
     rb_define_method(rb_cFixnum, "*", fix_mul, 1);
     rb_define_method(rb_cFixnum, "/", fix_div, 1);
+    rb_define_method(rb_cFixnum, "div", fix_div, 1);
     rb_define_method(rb_cFixnum, "%", fix_mod, 1);
     rb_define_method(rb_cFixnum, "modulo", fix_mod, 1);
     rb_define_method(rb_cFixnum, "divmod", fix_divmod, 1);

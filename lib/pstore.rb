@@ -79,7 +79,7 @@ class PStore
     throw :pstore_abort_transaction
   end
 
-  def transaction
+  def transaction(read_only=false)
     raise PStore::Error, "nested transaction" if @transaction
     begin
       @transaction = true
@@ -89,10 +89,13 @@ class PStore
 	file = File::open(@filename, "r+")
 	orig = true
       rescue Errno::ENOENT
+	raise if read_only
 	file = File::open(@filename, "w+")
       end
-      file.flock(File::LOCK_EX)
-      if orig
+      file.flock(read_only ? File::LOCK_SH : File::LOCK_EX)
+      if read_only
+	@table = Marshal::load(file)
+      elsif orig
 	content = file.read
 	@table = Marshal::load(content)
 	size = content.size
@@ -109,7 +112,7 @@ class PStore
 	@abort = true
 	raise
       ensure
-	unless @abort
+	if !read_only && !@abort
 	  file.rewind
 	  content = Marshal::dump(@table)
 	  if !md5 || size != content.size || md5 != MD5.new(content).digest
@@ -150,7 +153,7 @@ if __FILE__ == $0
     end
   end
 
-  db.transaction do
+  db.transaction(true) do
     p db["root"]
   end
 end

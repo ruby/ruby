@@ -16,12 +16,18 @@ module Singleton
     klass.instance_eval %{
       @__instance__ = nil
       def instance
-	unless @__instance__
+	if defined? @__allocating__
+	  until @__instance__
+	    sleep 0.5
+	  end
+	elsif ! @__instance__
 	  Thread.critical = true
+	  @__allocating__ = true
+	  Thread.critical = false
 	  begin
-	    @__instance__ ||= new
+	    @__instance__ = new
 	  ensure
-	    Thread.critical = false
+	    remove_instance_variable(:@__allocating__)
 	  end
 	end
 	return @__instance__
