@@ -582,7 +582,7 @@ Thu Oct  9 16:33:23 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Thu Oct  9 15:45:27 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* pack.c (uv_to_utf8): change message to "out of range", since
-	  negative values are not "too big". [ruby-dev21567]
+	  negative values are not "too big". [ruby-dev:21567]
 
 Thu Oct  9 14:05:38 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
