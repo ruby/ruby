@@ -1426,7 +1426,7 @@ primary		: literal
 			$$ = NEW_BEGIN($3);
 			nd_set_line($$, $<num>1);
 		    }
-		| tLPAREN_ARG expr {lex_state = EXPR_ENDARG;} ')'
+		| tLPAREN_ARG expr {lex_state = EXPR_ENDARG;} opt_nl ')'
 		    {
 		        rb_warning("(...) interpreted as grouped expression");
 			$$ = $2;

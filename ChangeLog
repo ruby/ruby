@@ -1,3 +1,8 @@
+Tue Nov 25 07:31:16 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (primary): allow newlines just before right argument
+	  parenthesis.  (ruby-bugs:PR#1221)
+
 Mon Nov 24 23:32:06 2003  Tanaka Akira  <akr@m17n.org>
 
 	* lib/open-uri.rb (OpenURI.open_loop, URI::HTTP#proxy_open): use
@@ -99,7 +104,7 @@ Fri Nov 21 01:40:00 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* configure.in: check <pthread.h>
 
-	* ruby.h: include pthread.h if existence. 
+	* ruby.h: include pthread.h if existence.
 	  define is_ruby_native() macro when not HAVE_NATIVETHREAD
 
 	* eval.c: undef is_ruby_native() function when not HAVE_NATIVETHREAD
@@ -135,7 +140,7 @@ Thu Nov 20 17:50:58 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 Thu Nov 20 13:37:34 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ruby.h: define is_ruby_native_thread() for no native thread 
+	* ruby.h: define is_ruby_native_thread() for no native thread
 	  environment
 
 	* eval.c: ditto
