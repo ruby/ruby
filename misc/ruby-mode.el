@@ -1085,8 +1085,8 @@ balanced expression is found."
 	      (setq beg (point)))))
       (if (and beg
 	       (let ((end-match (ruby-here-doc-end-match)))
-                 (not (re-search-backward end-match beg t))
-                 (re-search-forward end-match nil t)))
+                 (and (not (re-search-backward end-match beg t))
+		      (re-search-forward end-match nil t))))
 	  (progn
 	    (set-match-data (list beg (point)))
 	    t)

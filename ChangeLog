@@ -1,3 +1,8 @@
+Fri Sep  5 15:32:04 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-font-lock-maybe-here-docs): should not
+	  search delimiter forward if found in backward.
+
 Fri Sep  5 13:32:48 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/runner.rb: arguments should be keys.
