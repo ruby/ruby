@@ -1076,7 +1076,7 @@ module Net # :nodoc:
     end
 
     def basic_encode(account, password)
-      'Basic ' + ["#{account}:#{password}"].pack('m').strip
+      'Basic ' + ["#{account}:#{password}"].pack('m').delete("\r\n")
     end
     private :basic_encode
 
