@@ -465,6 +465,9 @@ sample/time.rb
 sample/trojan.rb
 sample/tsvr.rb
 sample/uumerge.rb
+test/csv/test_csv.rb
+test/csv/bom.csv
+test/csv/tmp/.keep_me
 vms/config.h_in
 vms/vms.h
 win32/Makefile.sub
