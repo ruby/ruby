@@ -39,12 +39,8 @@
  */
 #define __libc_ia64_register_backing_store_base (4ULL<<61)
 #else
-#ifdef HAVE_UNWIND_H
-#include <unwind.h>
-#else
 #pragma weak __libc_ia64_register_backing_store_base
 extern unsigned long __libc_ia64_register_backing_store_base;
-#endif
 #endif
 #endif
 
@@ -1362,21 +1358,14 @@ garbage_collect()
     {
 	ucontext_t ctx;
 	VALUE *top, *bot;
-#ifdef HAVE_UNWIND_H
-	_Unwind_Context *unwctx = _UNW_createContextForSelf();
-#endif
-
 	getcontext(&ctx);
 	mark_locations_array((VALUE*)&ctx.uc_mcontext,
 			     ((size_t)(sizeof(VALUE)-1 + sizeof ctx.uc_mcontext)/sizeof(VALUE)));
-#ifdef HAVE_UNWIND_H
-	_UNW_currentContext(unwctx);
-	bot = (VALUE*)(long)_UNW_getAR(unwctx, _UNW_AR_BSP);
-	top = (VALUE*)(long)_UNW_getAR(unwctx, _UNW_AR_BSPSTORE);
-	_UNW_destroyContext(unwctx);
-#else
 	bot = (VALUE*)__libc_ia64_register_backing_store_base;
-	top = (VALUE*)ctx.uc_mcontext.IA64_BSPSTORE;
+#if defined(__FreeBSD__)
+	top = (VALUE*)ctx.uc_mcontext.mc_special.bspstore;
+#else
+	top = (VALUE*)ctx.uc_mcontext.sc_ar_bsp;
 #endif
 	rb_gc_mark_locations(bot, top);
     }
