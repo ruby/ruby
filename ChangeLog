@@ -1,3 +1,7 @@
+Sun Aug 31 22:27:10 2003    <nagai@dumbo.ai.kyutech.ac.jp>
+
+	* process.c (p_gid_sw_ensure): lack of function type
+
 Sun Aug 31 12:25:06 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* lib/optparse.rb: --version takes an optional argument; "all" or

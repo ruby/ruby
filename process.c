@@ -2231,6 +2231,7 @@ p_gid_switch(obj)
 	rb_sys_fail(0);
     }
 #else
+static VALUE
 p_gid_sw_ensure(obj)
     VALUE obj;
 {
