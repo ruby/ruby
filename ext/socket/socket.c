@@ -275,7 +275,6 @@ bsock_setsockopt(sock, lev, optname, val)
     rb_secure(2);
     level = NUM2INT(lev);
     option = NUM2INT(optname);
-    GetOpenFile(sock, fptr);
 
     switch (TYPE(val)) {
       case T_FIXNUM:
@@ -316,6 +315,7 @@ bsock_getsockopt(sock, lev, optname)
     option = NUM2INT(optname);
     len = 256;
     buf = ALLOCA_N(char,len);
+    GetOpenFile(sock, fptr);
 
     GetOpenFile(sock, fptr);
     if (getsockopt(fileno(fptr->f), level, option, buf, &len) < 0)
@@ -370,14 +370,14 @@ bsock_send(argc, argv, sock)
     rb_secure(4);
     rb_scan_args(argc, argv, "21", &mesg, &flags, &to);
 
+    StringValue(mesg);
+    if (!NIL_P(to)) StringValue(to);
     GetOpenFile(sock, fptr);
     f = GetWriteFile(fptr);
     fd = fileno(f);
     rb_thread_fd_writable(fd);
-    StringValue(mesg);
   retry:
     if (!NIL_P(to)) {
-	StringValue(to);
 	n = sendto(fd, RSTRING(mesg)->ptr, RSTRING(mesg)->len, NUM2INT(flags),
 		   (struct sockaddr*)RSTRING(to)->ptr, RSTRING(to)->len);
     }
@@ -425,6 +425,7 @@ s_recvfrom(sock, argc, argv, from)
 
     if (flg == Qnil) flags = 0;
     else             flags = NUM2INT(flg);
+    buflen = NUM2INT(len);
 
     GetOpenFile(sock, fptr);
     if (rb_read_pending(fptr->f)) {
@@ -432,7 +433,6 @@ s_recvfrom(sock, argc, argv, from)
     }
     fd = fileno(fptr->f);
 
-    buflen = NUM2INT(len);
     str = rb_tainted_str_new(0, buflen);
 
   retry:
@@ -1381,8 +1381,8 @@ udp_connect(sock, host, port)
     VALUE ret;
 
     rb_secure(3);
-    GetOpenFile(sock, fptr);
     arg.res = sock_addrinfo(host, port, SOCK_DGRAM, 0);
+    GetOpenFile(sock, fptr);
     arg.fd = fileno(fptr->f);
     ret = rb_ensure(udp_connect_internal, (VALUE)&arg,
 		    RUBY_METHOD_FUNC(freeaddrinfo), (VALUE)arg.res);
@@ -1398,8 +1398,8 @@ udp_bind(sock, host, port)
     struct addrinfo *res0, *res;
 
     rb_secure(3);
-    GetOpenFile(sock, fptr);
     res0 = sock_addrinfo(host, port, SOCK_DGRAM, 0);
+    GetOpenFile(sock, fptr);
     for (res = res0; res; res = res->ai_next) {
 	if (bind(fileno(fptr->f), res->ai_addr, res->ai_addrlen) < 0) {
 	    continue;
@@ -1430,10 +1430,10 @@ udp_send(argc, argv, sock)
     rb_secure(4);
     rb_scan_args(argc, argv, "4", &mesg, &flags, &host, &port);
 
-    GetOpenFile(sock, fptr);
-    res0 = sock_addrinfo(host, port, SOCK_DGRAM, 0);
-    f = GetWriteFile(fptr);
     StringValue(mesg);
+    res0 = sock_addrinfo(host, port, SOCK_DGRAM, 0);
+    GetOpenFile(sock, fptr);
+    f = GetWriteFile(fptr);
     for (res = res0; res; res = res->ai_next) {
       retry:
 	n = sendto(fileno(f), RSTRING(mesg)->ptr, RSTRING(mesg)->len, NUM2INT(flags),
@@ -1903,6 +1903,7 @@ sock_connect(sock, addr)
     int fd;
 
     StringValue(addr);
+    addr = rb_str_new4(addr);
     GetOpenFile(sock, fptr);
     fd = fileno(fptr->f);
     if (ruby_connect(fd, (struct sockaddr*)RSTRING(addr)->ptr, RSTRING(addr)->len, 0) < 0) {

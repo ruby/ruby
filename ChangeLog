@@ -1,3 +1,11 @@
+Tue Dec  7 00:27:37 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* process.c (proc_setgroups): [ruby-dev:25081]
+
+Mon Dec  6 18:08:10 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_eqq): document fix.  [ruby-talk:122541]
+
 Mon Dec  6 17:19:13 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* rubysig.h (TRAP_BEG, TRAP_END): safe errno around CHECK_INTS.
@@ -7,6 +15,11 @@ Mon Dec  6 10:18:17 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::look_for_directives_in):
 	  Oops - 1.8 doesn't have String#clear
+
+Mon Dec  6 09:59:23 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (sock_connect): use rb_str_new4().
+	  [ruby-dev:25052]
 
 Mon Dec  6 01:42:08 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
@@ -28,6 +41,38 @@ Sun Dec  5 19:39:17 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (OptionParser#order!): ignore case only for long
 	  option.  [ruby-dev:25048]
+
+Sat Dec  4 22:54:15 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (io_write): remove rb_str_locktmp().  [ruby-dev:25050]
+
+	* io.c (io_fwrite): takes VALUE string as an argument.
+	  [ruby-dev:25050]
+
+	* ext/socket/socket.c (sock_connect): remove rb_str_locktmp().
+	  [ruby-dev:25050]
+
+	* ext/socket/socket.c (udp_connect): [ruby-dev:25045]
+
+	* ext/socket/socket.c (udp_bind): ditto.
+
+	* ext/socket/socket.c (udp_send): ditto.
+
+	* ext/socket/socket.c (bsock_send): ditto.
+
+	* ext/socket/socket.c (s_recvfrom): ditto.
+
+	* hash.c (rb_hash_hash): should provide "hash" method where "eql?"
+	  is redefined.  [ruby-talk:122482]
+
+Sat Dec  4 00:35:08 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (bsock_setsockopt): [ruby-dev:25039]
+
+Sat Dec  4 22:54:15 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (rb_hash_hash): should provide "hash" method where "eql?"
+	  is redefined.  [ruby-talk:122482]
 
 Sat Dec  4 14:54:52 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
@@ -62,6 +107,10 @@ Fri Dec  4 02:24:00 2004  NARUSE, Yui  <naruse@ruby-lang.org>
 	* ext/nkf/test.rb(mime_out2): add --no-cp932
 
 	* ext/nkf/nkf-utf8/nkf.c: original nkf2 revision 1.47
+
+Sat Dec  4 00:35:08 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (bsock_setsockopt): [ruby-dev:25039]
 
 Fri Dec  3 18:57:03 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
