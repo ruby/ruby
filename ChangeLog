@@ -1,7 +1,15 @@
+Wed Aug 30 14:19:07 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (node_assign): should support NODE_CVASGN2 too.
+
 Wed Aug 30 11:31:47 2000  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* ext/Win32API/Win32API.c (Win32API_initialize): add the
 	  arguments checking.
+
+Wed Aug 30 10:29:40 2000  Masahiro Tomita  <tommy@tmtm.org>
+
+	* io.c (rb_f_p): flush output buffer.
 
 Tue Aug 29 16:29:15 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

@@ -4092,6 +4092,7 @@ node_assign(lhs, rhs)
       case NODE_MASGN:
       case NODE_CDECL:
       case NODE_CVDECL:
+      case NODE_CVASGN2:
 	lhs->nd_value = rhs;
 	break;
 
