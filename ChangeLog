@@ -1,3 +1,8 @@
+Mon Nov 29 16:06:04 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_write): insufficiently filled string
+	  being extended when overwriting.  [ruby-core:03836]
+
 Mon Nov 29 15:22:28 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/io/nonblock/test_flush.rb: abandon tests when io/nonblock is
