@@ -1564,9 +1564,9 @@ rmext(p, e)
 {
     int l1, l2;
 
-    l1 = strlen(p);
     if (!e) return 0;
 
+    l1 = strlen(p);
     l2 = strlen(e);
     if (l2 == 2 && e[1] == '*') {
 	e = strrchr(p, *e);
@@ -1628,8 +1628,30 @@ rb_file_s_dirname(klass, fname)
     if (p == name)
 	p++;
     dirname = rb_str_new(name, p - name);
-    if (OBJ_TAINTED(fname)) OBJ_TAINT(dirname);
+    OBJ_INFECT(dirname, fname);
     return dirname;
+}
+
+static VALUE
+rb_file_s_extname(klass, fname)
+    VALUE klass, fname;
+{
+    char *name, *p, *e;
+    VALUE extname;
+
+    name = StringValuePtr(fname);
+    p = strrdirsep(name);	/* get the last path component */
+    if (!p)
+ 	p = name;
+    else
+ 	p++;
+ 
+     e = strrchr(p, '.');	/* get the last dot of the last component */
+     if (!e || e == p)		/* no dot, or the only dot is first? */
+	 return rb_str_new2("");
+     extname = rb_str_new2(e);	/* keep the dot, too! */
+     OBJ_INFECT(extname, fname);
+     return extname;
 }
 
 static VALUE
@@ -2559,6 +2581,7 @@ Init_File()
     rb_define_singleton_method(rb_cFile, "expand_path", rb_file_s_expand_path, -1);
     rb_define_singleton_method(rb_cFile, "basename", rb_file_s_basename, -1);
     rb_define_singleton_method(rb_cFile, "dirname", rb_file_s_dirname, 1);
+    rb_define_singleton_method(rb_cFile, "extname", rb_file_s_extname, 1);
 
     separator = rb_obj_freeze(rb_str_new2("/"));
     rb_define_const(rb_cFile, "Separator", separator);

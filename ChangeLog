@@ -1,3 +1,12 @@
+<<<<<<< ChangeLog
+Wed Apr 10 17:30:19 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* variable.c (rb_obj_remove_instance_variable): raise NameError if
+	  specified instance variable is not defined.
+
+	* variable.c (generic_ivar_remove): modified to check ivar
+	  existence.
+
 Wed Apr 10 14:16:45 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* misc/ruby-mode.el (ruby-font-lock-keywords): fontify symbols for
@@ -29,6 +38,11 @@ Tue Apr  9 05:17:48 2002  Akinori MUSHA  <knu@iDaemons.org>
 	* re.c (match_select): fix index references and make
 	  MatchData#select actually work.
 
+Tue Apr  9 00:20:52 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* file.c (rb_file_s_extname): new method based on the proposal
+	  (and patch) from Mike Hall. [new]
+
 Mon Apr  8 04:50:51 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* eval.c (error_handle): default to 1 unless status is set.
@@ -36,6 +50,27 @@ Mon Apr  8 04:50:51 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 	* eval.c (ruby_options): guard error_handle() with PROT_NONE.
 
 	* eval.c (ruby_stop): ditto.
+
+Mon Apr  8 01:22:24 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* math.c (math_acosh): added. [new]
+
+	* math.c (math_asinh): ditto.
+
+	* math.c (math_atanh): ditto.
+
+	* struct.c (rb_struct_each_pair): method added. [new]
+
+Sat Apr  6 02:04:49 2002  Guy Decoux  <ts@moulon.inra.fr>
+
+	* class.c (rb_singleton_class): wrong condition; was creating
+	  unnecessary singleton class.
+
+Sat Apr  6 01:09:41 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* sprintf.c (remove_sign_bits): simplifies the condition.
+
+	* bignum.c (get2comp): calculate proper carry over.
 
 Fri Apr  5 05:07:28 2002  Takaaki Tateishi <ttate@kt.jaist.ac.jp>
 
@@ -46,15 +81,19 @@ Thu Apr  4 14:08:52 2002  Takaaki Tateishi <ttate@kt.jaist.ac.jp>
 	* ext/dl/lib/dl/import.rb: Get rid of ineffective
 	  encoding/decoding procedures.
 
-Wed Apr  3 15:37:24 2002  Takaaki Tateishi <ttate@kt.jaist.ac.jp>
+Thu Apr  4 01:08:23 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* ext/dl: Add dl/types.rb.
+	* numeric.c (int_step): step may be a float less than 1.
 
 Wed Apr  3 20:42:34 2002  Takaaki Tateishi <ttate@kt.jaist.ac.jp>
 
 	* ext/dl: Merge Nakada's patch.
 
 	* ext/dl/dl.h: define StringValuePtr for ruby-1.6.
+
+Wed Apr  3 15:37:24 2002  Takaaki Tateishi <ttate@kt.jaist.ac.jp>
+
+	* ext/dl: Add dl/types.rb.
 
 Wed Apr  3 01:54:10 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 

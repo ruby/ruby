@@ -113,6 +113,30 @@ math_tanh(obj, x)
 }
 
 static VALUE
+math_acosh(obj, x)
+    VALUE obj, x;
+{
+    Need_Float(x);
+    return rb_float_new(acosh(RFLOAT(x)->value));
+}
+
+static VALUE
+math_asinh(obj, x)
+    VALUE obj, x;
+{
+    Need_Float(x);
+    return rb_float_new(asinh(RFLOAT(x)->value));
+}
+
+static VALUE
+math_atanh(obj, x)
+    VALUE obj, x;
+{
+    Need_Float(x);
+    return rb_float_new(atanh(RFLOAT(x)->value));
+}
+
+static VALUE
 math_exp(obj, x)
     VALUE obj, x;
 {
@@ -211,6 +235,10 @@ Init_Math()
     rb_define_module_function(rb_mMath, "cosh", math_cosh, 1);
     rb_define_module_function(rb_mMath, "sinh", math_sinh, 1);
     rb_define_module_function(rb_mMath, "tanh", math_tanh, 1);
+
+    rb_define_module_function(rb_mMath, "acosh", math_acosh, 1);
+    rb_define_module_function(rb_mMath, "asinh", math_asinh, 1);
+    rb_define_module_function(rb_mMath, "atanh", math_atanh, 1);
 
     rb_define_module_function(rb_mMath, "exp", math_exp, 1);
     rb_define_module_function(rb_mMath, "log", math_log, 1);

@@ -334,6 +334,23 @@ rb_struct_each(s)
 }
 
 static VALUE
+rb_struct_each_pair(s)
+    VALUE s;
+{
+    VALUE member;
+    long i;
+
+    member = rb_struct_iv_get(rb_obj_class(s), "__member__");
+    if (NIL_P(member)) {
+	rb_bug("non-initialized struct");
+    }
+    for (i=0; i<RSTRUCT(s)->len; i++) {
+	rb_yield(rb_assoc_new(RARRAY(member)->ptr[i], RSTRUCT(s)->ptr[i]));
+    }
+    return s;
+}
+
+static VALUE
 rb_struct_to_s(s)
     VALUE s;
 {
@@ -584,6 +601,7 @@ Init_Struct()
     rb_define_method(rb_cStruct, "length", rb_struct_size, 0);
 
     rb_define_method(rb_cStruct, "each", rb_struct_each, 0);
+    rb_define_method(rb_cStruct, "each_pair", rb_struct_each_pair, 0);
     rb_define_method(rb_cStruct, "[]", rb_struct_aref, 1);
     rb_define_method(rb_cStruct, "[]=", rb_struct_aset, 2);
     rb_define_method(rb_cStruct, "select", rb_struct_select, -1);

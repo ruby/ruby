@@ -137,6 +137,7 @@ class CGI
       end
 
       def update
+	return unless @hash
 	@f.rewind
 	for k,v in @hash
 	  @f.printf "%s=%s\n", CGI::escape(k), CGI::escape(String(v))

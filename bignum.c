@@ -20,26 +20,12 @@ VALUE rb_cBignum;
 #define USHORT _USHORT
 #endif
 
-#if SIZEOF_INT*2 <= SIZEOF_LONG_LONG
-typedef unsigned int BDIGIT;
-typedef unsigned LONG_LONG BDIGIT_DBL;
-typedef LONG_LONG BDIGIT_DBL_SIGNED;
-#elif SIZEOF_INT*2 <= SIZEOF_LONG
-typedef unsigned int BDIGIT;
-typedef unsigned long BDIGIT_DBL;
-typedef LONG_LONG BDIGIT_DBL_SIGNED;
-#else
-typedef unsigned short BDIGIT;
-typedef unsigned long BDIGIT_DBL;
-typedef long BDIGIT_DBL_SIGNED;
-#endif
-
 #define BDIGITS(x) ((BDIGIT*)RBIGNUM(x)->digits)
-#define BITSPERDIG (sizeof(BDIGIT)*CHAR_BIT)
+#define BITSPERDIG (SIZEOF_BDIGITS*CHAR_BIT)
 #define BIGRAD ((BDIGIT_DBL)1 << BITSPERDIG)
-#define DIGSPERLONG ((unsigned int)(sizeof(long)/sizeof(BDIGIT)))
+#define DIGSPERLONG ((unsigned int)(SIZEOF_LONG/SIZEOF_BDIGITS))
 #if HAVE_LONG_LONG
-# define DIGSPERLL ((unsigned int)(sizeof(LONG_LONG)/sizeof(BDIGIT)))
+# define DIGSPERLL ((unsigned int)(SIZEOF_LONG_LONG/SIZEOF_BDIGITS))
 #endif
 #define BIGUP(x) ((BDIGIT_DBL)(x) << BITSPERDIG)
 #define BIGDN(x) RSHIFT(x,BITSPERDIG)
@@ -89,14 +75,10 @@ get2comp(x, carry)		/* get 2's complement */
 	num = BIGDN(num);
     } while (i < RBIGNUM(x)->len);
     if (!carry) return;
-    if (ds[0] == 1 || ds[0] == 0) {
-	if (RBIGNUM(x)->len == 1) return;
-	for (i=1; i<RBIGNUM(x)->len; i++) {
-	    if (ds[i] != 0) return;
-	}
+    if ((ds[RBIGNUM(x)->len-1] & (1<<(BITSPERDIG-1))) == 0) {
 	REALLOC_N(RBIGNUM(x)->digits, BDIGIT, RBIGNUM(x)->len++);
 	ds = BDIGITS(x);
-	ds[RBIGNUM(x)->len-1] = 1;
+	ds[RBIGNUM(x)->len-1] = ~0;
     }
 }
 
@@ -118,7 +100,7 @@ bignorm(x)
 	while (len-- && !ds[len]) ;
 	RBIGNUM(x)->len = ++len;
 
-	if (len*sizeof(BDIGIT) <= sizeof(VALUE)) {
+	if (len*SIZEOF_BDIGITS <= sizeof(VALUE)) {
 	    long num = 0;
 	    while (len--) {
 		num = BIGUP(num) + ds[len];
@@ -200,7 +182,7 @@ rb_int2inum(n)
 
 #ifdef HAVE_LONG_LONG
 
-#define DIGSPERLONGLONG ((unsigned int)(sizeof(LONG_LONG)/sizeof(BDIGIT)))
+#define DIGSPERLONGLONG ((unsigned int)(SIZEOF_LONG_LONG/SIZEOF_BDIGITS))
 
 void
 rb_quad_pack(buf, val)
@@ -224,7 +206,7 @@ rb_quad_pack(buf, val)
 	    q += ds[len];
 	}
     }
-    memcpy(buf, (char*)&q, sizeof(LONG_LONG));
+    memcpy(buf, (char*)&q, SIZEOF_LONG_LONG);
 }
 
 VALUE
@@ -238,7 +220,7 @@ rb_quad_unpack(buf, sign)
     BDIGIT *digits;
     VALUE big;
 
-    memcpy(&q, buf, sizeof(LONG_LONG));
+    memcpy(&q, buf, SIZEOF_LONG_LONG);
     if (sign) {
 	if (FIXABLE((LONG_LONG)q)) return INT2FIX((LONG_LONG)q);
 	if ((LONG_LONG)q < 0) {
@@ -284,7 +266,7 @@ rb_quad_pack(buf, val)
     if (FIXNUM_P(val)) {
 	val = rb_int2big(FIX2LONG(val));
     }
-    len = RBIGNUM(val)->len * sizeof(BDIGIT);
+    len = RBIGNUM(val)->len * SIZEOF_BDIGITS;
     if (len > QUAD_SIZE) len = QUAD_SIZE;
     memcpy(buf, (char*)BDIGITS(val), len);
     if (!RBIGNUM(val)->sign) {
@@ -296,14 +278,14 @@ rb_quad_pack(buf, val)
     }
 }
 
-#define BNEG(b) (RSHIFT(((BDIGIT*)b)[QUAD_SIZE/sizeof(BDIGIT)-1],BITSPERDIG-1) != 0)
+#define BNEG(b) (RSHIFT(((BDIGIT*)b)[QUAD_SIZE/SIZEOF_BDIGITS-1],BITSPERDIG-1) != 0)
 
 VALUE
 rb_quad_unpack(buf, sign)
     const char *buf;
     int sign;
 {
-    VALUE big = bignew(QUAD_SIZE/sizeof(BDIGIT), 1);
+    VALUE big = bignew(QUAD_SIZE/SIZEOF_BDIGITS, 1);
 
     memcpy((char*)BDIGITS(big), buf, QUAD_SIZE);
     if (sign && BNEG(buf)) {
@@ -607,19 +589,19 @@ rb_big2str(x, base)
     i = RBIGNUM(x)->len;
     if (i == 0) return rb_str_new2("0");
     if (base == 10) {
-	j = (sizeof(BDIGIT)/sizeof(char)*CHAR_BIT*i*241L)/800+2;
+	j = (SIZEOF_BDIGITS/sizeof(char)*CHAR_BIT*i*241L)/800+2;
 	hbase = 10000;
     }
     else if (base == 16) {
-	j = (sizeof(BDIGIT)/sizeof(char)*CHAR_BIT*i)/4+2;
+	j = (SIZEOF_BDIGITS/sizeof(char)*CHAR_BIT*i)/4+2;
 	hbase = 0x10000;
     }
     else if (base == 8) {
-	j = (sizeof(BDIGIT)/sizeof(char)*CHAR_BIT*i)+2;
+	j = (SIZEOF_BDIGITS/sizeof(char)*CHAR_BIT*i)+2;
 	hbase = 010000;
     }
     else if (base == 2) {
-	j = (sizeof(BDIGIT)*CHAR_BIT*i)+2;
+	j = (SIZEOF_BDIGITS*CHAR_BIT*i)+2;
 	hbase = 020;
     }
     else {
@@ -682,7 +664,7 @@ big2ulong(x, type)
     BDIGIT_DBL num;
     BDIGIT *ds;
 
-    if (len > sizeof(long)/sizeof(BDIGIT))
+    if (len > SIZEOF_LONG/SIZEOF_BDIGITS)
 	rb_raise(rb_eRangeError, "bignum too big to convert into `%s'", type);
     ds = BDIGITS(x);
     num = 0;
@@ -727,7 +709,7 @@ big2ull(x, type)
     BDIGIT_DBL num;
     BDIGIT *ds;
 
-    if (len > sizeof(LONG_LONG)/sizeof(BDIGIT))
+    if (len > SIZEOF_LONG_LONG/SIZEOF_BDIGITS)
 	rb_raise(rb_eRangeError, "bignum too big to convert into `%s'", type);
     ds = BDIGITS(x);
     num = 0;
@@ -1715,7 +1697,7 @@ static VALUE
 rb_big_size(big)
     VALUE big;
 {
-    return INT2FIX(RBIGNUM(big)->len*sizeof(BDIGIT));
+    return INT2FIX(RBIGNUM(big)->len*SIZEOF_BDIGITS);
 }
 
 static VALUE

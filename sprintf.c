@@ -26,78 +26,26 @@ remove_sign_bits(str, base)
     int base;
 {
     char *s, *t, *end;
+    int len;
     
     s = t = str;
-    end = str + strlen(str);
+    len = strlen(str);
+    end = str + len;
 
     if (base == 16) {
-      x_retry:
-	switch (*t) {
-	  case 'c': case 'C':
-	    *t = '4';
-	    break;
-	  case 'd': case 'D':
-	    *t = '5';
-	    break;
-	  case 'e': case 'E':
-	    *t = '2';
-	    break;
-	  case 'f': case 'F':
-	    if (t[1] > '8') {
-		t++;
-		goto x_retry;
-	    }
-	    *t = '1';
-	    break;
-	  case '1':
-	  case '3':
-	  case '7':
-	    if (t[1] > '8') {
-		t++;
-		goto x_retry;
-	    }
-	    break;
-	}
-	switch (*t) {
-	  case '1': *t = 'f'; break;
-	  case '2': *t = 'e'; break;
-	  case '3': *t = 'f'; break;
-	  case '4': *t = 'c'; break;
-	  case '5': *t = 'd'; break;
-	  case '6': *t = 'e'; break;
-	  case '7': *t = 'f'; break;
+	while (t<end && *t == 'f') {
+	    t++;
 	}
     }
     else if (base == 8) {
-      o_retry:
-	switch (*t) {
-	  case '6':
-	    *t = '2';
-	    break;
-	  case '7':
-	    if (t[1] > '3') {
-		t++;
-		goto o_retry;
-	    }
-	    *t = '1';
-	    break;
-	  case '1':
-	  case '3':
-	    if (t[1] > '3') {
-		t++;
-		goto o_retry;
-	    }
-	    break;
-	}
-	switch (*t) {
-	  case '1': *t = '7'; break;
-	  case '2': *t = '6'; break;
-	  case '3': *t = '7'; break;
+	while (t<end && *t == '7') {
+	    t++;
 	}
     }
     else if (base == 2) {
-	while (t<end && *t == '1') t++;
-	t--;
+	while (t<end && *t == '1') {
+	    t++;
+	}
     }
     while (*t) *s++ = *t++;
     *s = '\0';
@@ -398,11 +346,11 @@ rb_f_sprintf(argc, argv)
 		  case T_BIGNUM:
 		    bignum = 1;
 		    break;
-		  default:
-		    v = NUM2LONG(val);
-		    break;
 		  case T_FIXNUM:
 		    v = FIX2LONG(val);
+		    break;
+		  default:
+		    v = NUM2LONG(val);
 		    break;
 		}
 
@@ -454,8 +402,7 @@ rb_f_sprintf(argc, argv)
 			remove_sign_bits(s, base);
 			switch (base) {
 			  case 16:
-			    d = 'f'; 
-			    break;
+			    d = 'f'; break;
 			  case 8:
 			    d = '7'; break;
 			}
@@ -493,24 +440,27 @@ rb_f_sprintf(argc, argv)
 		val = rb_big2str(val, base);
 		s = RSTRING(val)->ptr;
 		if (*s == '-') {
-		    remove_sign_bits(++s, base);
-		    val = rb_str_new(0, 3+strlen(s));
-		    t = RSTRING(val)->ptr;
 		    if (base == 10) {
 			rb_warning("negative number for %%u specifier");
+			s++;
 		    }
 		    else {
+			remove_sign_bits(++s, base);
+			val = rb_str_new(0, 3+strlen(s));
+			t = RSTRING(val)->ptr;
                         strcpy(t, "..");
                         t += 2;
-                    }
-		    switch (base) {
-		      case 16:
-			if (s[0] != 'f') strcpy(t++, "f"); break;
-		      case 8:
-			if (s[0] != '7') strcpy(t++, "7"); break;
+			switch (base) {
+			  case 16:
+			    if (s[0] != 'f') strcpy(t++, "f"); break;
+			  case 8:
+			    if (s[0] != '7') strcpy(t++, "7"); break;
+			  case 2:
+			    if (s[0] != '1') strcpy(t++, "1"); break;
+			}
+			strcpy(t, s);
+			bignum = 2;
 		    }
-		    strcpy(t, s);
-		    bignum = 2;
 		}
 		s  = RSTRING(val)->ptr;
 

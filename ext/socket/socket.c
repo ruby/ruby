@@ -770,7 +770,7 @@ ruby_connect(fd, sockaddr, len, socks)
 	      case EAGAIN:
 #ifdef EINPROGRESS
 	      case EINPROGRESS:
-#if defined __CYGWIN__
+#ifdef __CYGWIN__
 	      case EALREADY:
 		wait_in_progress = 10;
 #endif
@@ -2224,6 +2224,10 @@ sock_s_unpack_sockaddr_in(self, addr)
     struct sockaddr_in * sockaddr;
 
     sockaddr = (struct sockaddr_in*)StringValuePtr(addr);
+    if (RSTRING(addr)->len != sizeof(struct sockaddr_in)) {
+	rb_raise(rb_eTypeError, "sockaddr_in size differs - %d required; %d given",
+		 RSTRING(addr)->len, sizeof(struct sockaddr_in));
+    }
     return rb_assoc_new(INT2NUM(ntohs(sockaddr->sin_port)), mkipaddr(sockaddr));
 }
 
@@ -2251,6 +2255,10 @@ sock_s_unpack_sockaddr_un(self, addr)
     struct sockaddr_un * sockaddr;
 
     sockaddr = (struct sockaddr_un*)StringValuePtr(addr);
+    if (RSTRING(addr)->len != sizeof(struct sockaddr_un)) {
+	rb_raise(rb_eTypeError, "sockaddr_un size differs - %d required; %d given",
+		 RSTRING(addr)->len, sizeof(struct sockaddr_un));
+    }
     /* xxx: should I check against sun_path size? */
     return rb_tainted_str_new2(sockaddr->sun_path);
 }

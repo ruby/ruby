@@ -64,6 +64,23 @@ void xfree _((void*));
 # define SIZEOF_LONG_LONG SIZEOF___INT64
 #endif
 
+#if SIZEOF_INT*2 <= SIZEOF_LONG_LONG
+# define BDIGIT unsigned int
+# define SIZEOF_BDIGITS SIZEOF_INT
+# define BDIGIT_DBL unsigned LONG_LONG
+# define BDIGIT_DBL_SIGNED LONG_LONG
+#elif SIZEOF_INT*2 <= SIZEOF_LONG
+# define BDIGIT unsigned int
+# define SIZEOF_BDIGITS SIZEOF_INT
+# define BDIGIT_DBL unsigned long
+# define BDIGIT_DBL_SIGNED long
+#else
+# define BDIGIT unsigned short
+# define SIZEOF_BDIGITS SIZEOF_SHORT
+# define BDIGIT_DBL unsigned long
+# define BDIGIT_DBL_SIGNED long
+#endif
+
 /* define RUBY_USE_EUC/SJIS for default kanji-code */
 #ifndef DEFAULT_KCODE
 #if defined(MSDOS) || defined(__CYGWIN__) || defined(__human68k__) || defined(__MACOS__) || defined(__EMX__) || defined(OS2) || defined(NT)

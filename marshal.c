@@ -20,14 +20,6 @@
 double strtod();
 #endif
 
-#if SIZEOF_INT*2 <= SIZEOF_LONG_LONG || SIZEOF_INT*2 <= SIZEOF_LONG
-typedef unsigned int BDIGIT;
-#define SIZEOF_BDIGITS SIZEOF_INT
-#else
-typedef unsigned short BDIGIT;
-#define SIZEOF_BDIGITS SIZEOF_SHORT
-#endif
-
 #define BITSPERSHORT (2*CHAR_BIT)
 #define SHORTMASK ((1<<BITSPERSHORT)-1)
 #define SHORTDN(x) RSHIFT(x,BITSPERSHORT)
