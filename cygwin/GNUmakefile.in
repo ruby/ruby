@@ -2,9 +2,7 @@ include Makefile
 
 ENABLE_SHARED=@ENABLE_SHARED@
 
-ifeq ($(ENABLE_SHARED),yes)
-  CPPFLAGS += -DLIBRUBY_SO=\"$(LIBRUBY_SO)\"
-else
+ifneq ($(ENABLE_SHARED),yes)
   RUBY_EXP = $(RUBY_INSTALL_NAME).exp
   EXTOBJS = $(RUBY_EXP)
   LIBRUBYARG = $(LIBRUBY_A)

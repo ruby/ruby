@@ -81,7 +81,7 @@ DESTDIR = $(prefix)
 CFLAGS = -MD $(DEBUGFLAGS) $(OPTFLAGS) $(PROCESSOR_FLAG)
 !endif
 !if !defined(CPPFLAGS)
-CPPFLAGS = -I. -I$(srcdir) -I$(srcdir)/missing -DLIBRUBY_SO=\"$(LIBRUBY_SO)\"
+CPPFLAGS = -I. -I$(srcdir) -I$(srcdir)/missing
 !endif
 !if !defined(XLDFLAGS)
 XLDFLAGS = 
@@ -183,7 +183,7 @@ dll: $(LIBRUBY_SO)
 
 config: config.h config.status
 
-config.h: Makefile $(srcdir)/win32/Makefile.sub
+config.h:
 	@echo Creating <<$@
 #define STDC_HEADERS 1
 #define HAVE_SYS_TYPES_H 1

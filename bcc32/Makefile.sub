@@ -90,7 +90,7 @@ DESTDIR = $(prefix)
 CFLAGS = -q $(DEBUGFLAGS) $(OPTFLAGS) $(PROCESSOR_FLAG) -w-
 !endif
 !ifndef CPPFLAGS
-CPPFLAGS = -I. -I$(srcdir) -I$(srcdir)missing -DLIBRUBY_SO=\"$(LIBRUBY_SO)\"
+CPPFLAGS = -I. -I$(srcdir) -I$(srcdir)missing
 !endif
 !ifndef LDFLAGS
 LDFLAGS = -S:$(STACK)
@@ -193,7 +193,7 @@ dll: $(LIBRUBY_SO)
 
 config: config.h config.status
 
-config.h: Makefile $(srcdir)bcc32/Makefile.sub
+config.h:
 	@echo Creating $(@:.\=)
 	@type > $@ &&|
 \#define HAVE_PROTOTYPES 1

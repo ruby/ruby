@@ -1,3 +1,15 @@
+Sun Jan  5 09:36:46 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* ruby.c (ruby_init_loadpath): under Windows, get the module
+	  path from an internal address instead of hard coded library
+	  name.
+
+	* cygwin/GNUmakefile.in, bcc32/Makefile.sub,
+	  win32/Makefile.sub (CPPFLAGS): removed LIBRUBY_SO macro.
+
+	* bcc32/Makefile.sub, win32/Makefile.sub (config.h): no longer
+	  depends on makefiles.
+
 Sun Jan  5 03:43:47 2003  Akinori MUSHA  <knu@iDaemons.org>
 
 	* defines.h (FLUSH_REGISTER_WINDOWS): Make the flushw call an
