@@ -489,7 +489,7 @@ $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc: rbconfig.rb
 	$(CC) $(CFLAGS) $(XCFLAGS) -I. $(CPPFLAGS) -c $(<:/=\)
 
 .rc.res:
-	$(RC) $(RFLAGS) -I. -I$(<D) $(iconinc) -I$(srcdir)win32 $(RFLAGS) -fo$@ $(<:/=\)
+	$(RC) $(RFLAGS) -I. -I$(<D). $(iconinc) -I$(srcdir)win32 $(RFLAGS) -fo$@ $(<:/=\)
 
 .y.c:
 	$(YACC) $(YFLAGS) $(<:\=/)
