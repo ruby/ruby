@@ -40,7 +40,7 @@
  */
 
 /* $OrigId: md5.h,v 1.2 2001/03/26 08:57:14 matz Exp $ */
-/* $RoughId: md5.h,v 1.2 2001/07/13 19:48:41 knu Exp $ */
+/* $RoughId: md5.h,v 1.3 2002/02/24 08:14:31 knu Exp $ */
 /* $Id$ */
 
 #ifndef MD5_INCLUDED
@@ -61,6 +61,14 @@ typedef struct md5_state_s {
     uint32_t state[4];	/* digest buffer */
     uint8_t buffer[64];	/* accumulate block */
 } MD5_CTX;
+
+#ifdef RUBY
+#define MD5_Init	rb_Digest_MD5_Init
+#define MD5_Update	rb_Digest_MD5_Update
+#define MD5_Final	rb_Digest_MD5_Final
+#define MD5_End		rb_Digest_MD5_End
+#define MD5_Equal	rb_Digest_MD5_Equal
+#endif
 
 void	MD5_Init _((MD5_CTX *pms));
 void	MD5_Update _((MD5_CTX *pms, const uint8_t *data, size_t nbytes));

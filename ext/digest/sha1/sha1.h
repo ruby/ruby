@@ -1,5 +1,5 @@
 /*	$NetBSD: sha1.h,v 1.2 1998/05/29 22:55:44 thorpej Exp $	*/
-/*	$RoughId: sha1.h,v 1.2 2001/07/13 19:49:10 knu Exp $	*/
+/*	$RoughId: sha1.h,v 1.3 2002/02/24 08:14:32 knu Exp $	*/
 /*	$Id$	*/
 
 /*
@@ -18,6 +18,19 @@ typedef struct {
 	uint32_t count[2];  
 	uint8_t buffer[64];
 } SHA1_CTX;
+
+#ifdef RUBY
+#define SHA1_Transform	rb_Digest_SHA1_Transform
+#define SHA1_Init	rb_Digest_SHA1_Init
+#define SHA1_Update	rb_Digest_SHA1_Update
+#define SHA1_Final	rb_Digest_SHA1_Final
+#define SHA1_Equal	rb_Digest_SHA1_Equal
+#ifndef _KERNEL
+#define SHA1_End	rb_Digest_SHA1_End
+#define SHA1_File	rb_Digest_SHA1_File
+#define SHA1_Data	rb_Digest_SHA1_Data
+#endif /* _KERNEL */
+#endif
 
 void	SHA1_Transform _((uint32_t state[5], const uint8_t buffer[64]));
 void	SHA1_Init _((SHA1_CTX *context));
