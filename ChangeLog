@@ -1,3 +1,8 @@
+Mon Feb  2 18:45:50 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* dln.c (dln_load): don't specify RTLD_GLOBAL on Interix,
+	  because it caused SEGV when running runner.rb.
+
 Mon Feb  2 01:54:00 2004  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pp.rb (Struct#pretty_print): make it 1.8 style.

@@ -1313,6 +1313,9 @@ dln_load(file)
 #ifndef RTLD_LAZY
 # define RTLD_LAZY 1
 #endif
+#ifdef __INTERIX
+# undef RTLD_GLOBAL
+#endif
 #ifndef RTLD_GLOBAL
 # define RTLD_GLOBAL 0
 #endif
