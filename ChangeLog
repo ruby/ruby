@@ -1,3 +1,11 @@
+Thu Nov  7 09:51:37 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* eval.c (rb_yield_0): should enable trace for non-cfunc nodes.
+	  [ruby-dev:18645]
+
+	* eval.c (blk_orphan): a block created in a different thread is
+	  orphan.  [ruby-dev:17471]
+
 Tue Nov  5 00:46:04 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/extmk.rb: Properly pass the given target to

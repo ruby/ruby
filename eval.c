@@ -3794,6 +3794,7 @@ rb_yield_0(val, self, klass, pcall)
     int pcall;
 {
     NODE *node;
+    volatile int old_tracing = tracing;
     volatile VALUE result = Qnil;
     volatile VALUE old_cref;
     volatile VALUE old_wrapper;
@@ -3876,6 +3877,7 @@ rb_yield_0(val, self, klass, pcall)
 	    result = (*node->nd_cfnc)(val, node->nd_tval, self);
 	}
 	else {
+	    ENABLE_TRACE();
 	    result = rb_eval(self, node);
 	}
     }
@@ -3901,6 +3903,7 @@ rb_yield_0(val, self, klass, pcall)
     }
     POP_TAG();
     POP_ITER();
+    tracing = old_tracing;
   pop_state:
     POP_CLASS();
     if (ruby_dyna_vars && (block->flags & BLOCK_D_SCOPE) &&
@@ -6544,10 +6547,8 @@ static int
 blk_orphan(data)
     struct BLOCK *data;
 {
-    if (!(data->scope->flags & SCOPE_NOSTACK)) {
-	return 0;
-    }
-    if ((data->tag->flags & BLOCK_ORPHAN)) {
+    if ((data->tag->flags & BLOCK_ORPHAN) &&
+	(data->scope->flags & SCOPE_NOSTACK)) {
 	return 1;
     }
     if (data->orig_thread != rb_thread_current()) {
