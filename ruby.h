@@ -49,6 +49,15 @@ extern "C" {
 # define volatile
 #endif
 
+#ifdef __cplusplus
+# ifndef  HAVE_PROTOTYPES
+#  define HAVE_PROTOTYPES 1
+# endif
+# ifndef  HAVE_STDARG_PROTOTYPES
+#  define HAVE_STDARG_PROTOTYPES 1
+# endif
+#endif
+
 #undef _
 #ifdef HAVE_PROTOTYPES
 # define _(args) args
@@ -545,7 +554,7 @@ EXTERN VALUE rb_eLoadError;
 EXTERN VALUE rb_defout, rb_stdin, rb_stdout, rb_stderr, ruby_errinfo;
 
 static inline VALUE
-#if defined(__cplusplus)
+#if defined(HAVE_PROTOTYPES)
 rb_class_of(VALUE obj)
 #else
 rb_class_of(obj)
@@ -562,7 +571,7 @@ rb_class_of(obj)
 }
 
 static inline int
-#if defined(__cplusplus)
+#if defined(HAVE_PROTOTYPES)
 rb_type(VALUE obj)
 #else
 rb_type(obj)
@@ -579,7 +588,7 @@ rb_type(obj)
 }
 
 static inline int
-#if defined(__cplusplus)
+#if defined(HAVE_PROTOTYPES)
 rb_special_const_p(VALUE obj)
 #else
 rb_special_const_p(obj)

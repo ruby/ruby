@@ -1,3 +1,7 @@
+Fri Dec 21 16:18:17 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* dln.h, ruby.h, util.h: enable prototypes in C++.
+
 Fri Dec 21 03:15:52 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* eval.c (rb_mod_define_method): must not convert Method to Proc.
