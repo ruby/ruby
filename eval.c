@@ -1844,14 +1844,14 @@ is_defined(self, node, buf)
 	break;
 
       case NODE_NTH_REF:
-	if (rb_reg_nth_defined(node->nd_nth, MATCH_DATA)) {
+	if (RTEST(rb_reg_nth_defined(node->nd_nth, MATCH_DATA))) {
 	    sprintf(buf, "$%d", node->nd_nth);
 	    return buf;
 	}
 	break;
 
       case NODE_BACK_REF:
-	if (rb_reg_nth_defined(0, MATCH_DATA)) {
+	if (RTEST(rb_reg_nth_defined(0, MATCH_DATA))) {
 	    sprintf(buf, "$%c", node->nd_nth);
 	    return buf;
 	}

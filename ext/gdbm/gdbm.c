@@ -186,6 +186,18 @@ rb_gdbm_fetch2(dbm, keystr)
 }
 
 static VALUE
+rb_gdbm_fetch3(obj, keystr)
+    VALUE obj, keystr;
+{
+    struct dbmdata *dbmp;
+    GDBM_FILE dbm;
+
+    GetDBM(obj, dbmp);
+    dbm = dbmp->di_dbm;
+    return rb_gdbm_fetch2(dbm, keystr);
+}
+
+static VALUE
 rb_gdbm_firstkey(dbm)
     GDBM_FILE dbm;
 {
@@ -260,7 +272,7 @@ static VALUE
 fgdbm_aref(obj, keystr)
     VALUE obj, keystr;
 {
-    return fgdbm_fetch(obj, keystr, Qnil);
+    return rb_gdbm_fetch3(obj, keystr);
 }
 
 static VALUE
@@ -315,7 +327,7 @@ fgdbm_indexes(argc, argv, obj)
 
     new = rb_ary_new2(argc);
     for (i=0; i<argc; i++) {
-	rb_ary_push(new, fgdbm_fetch(obj, argv[i]));
+	rb_ary_push(new, rb_gdbm_fetch3(obj, argv[i]));
     }
 
     return new;
@@ -579,7 +591,7 @@ static VALUE
 fgdbm_empty_p(obj)
     VALUE obj;
 {
-    datum key;
+    datum key, nextkey;
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
 
