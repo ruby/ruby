@@ -1,3 +1,7 @@
+Sun Mar  7 16:22:26 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* Makefile.in (lex.c): use $? instead of $<.
+
 Sun Mar  7 05:34:42 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb: HTTPHeader keeps its header fields as an array.
