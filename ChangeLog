@@ -1,3 +1,8 @@
+Wed Aug 20 16:44:49 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/socket.c (ruby_connect): many systems seem to have
+	  a problem in select() after EINPROGRESS.  [ruby-list:38080]
+
 Wed Aug 20 01:31:17 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
 
     * ext/syck/syck.h: Parser definition problems on HP-UX. [ruby-talk:79389]

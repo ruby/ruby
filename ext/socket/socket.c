@@ -731,6 +731,14 @@ thread_write_select(fd)
 #ifdef __APPLE__
 #define WAIT_IN_PROGRESS 10
 #endif
+#ifdef __linux__
+/* returns correct error */
+#define WAIT_IN_PROGRESS 0
+#endif
+#ifndef WAIT_IN_PROGRESS
+/* BSD origin code apparently has a problem */
+#define WAIT_IN_PROGRESS 1
+#endif
 
 static int
 ruby_connect(fd, sockaddr, len, socks)
@@ -741,8 +749,9 @@ ruby_connect(fd, sockaddr, len, socks)
 {
     int status;
     int mode;
-#ifdef WAIT_IN_PROGRESS
+#if WAIT_IN_PROGRESS > 0
     int wait_in_progress = -1;
+    int sockerr, sockerrlen;
 #endif
 
 #if defined(HAVE_FCNTL)
@@ -779,25 +788,34 @@ ruby_connect(fd, sockaddr, len, socks)
 #ifdef EINPROGRESS
 	      case EINPROGRESS:
 #endif
+#if WAIT_IN_PROGRESS > 0
+		sockerrlen = sizeof(sockerr);
+		status = getsockopt(fd, SOL_SOCKET, SO_ERROR, &sockerr, &sockerrlen);
+		if (status) break;
+		if (sockerr) {
+		    status = -1;
+		    errno = sockerr;
+		    break;
+		}
+#endif
 #ifdef EALREADY
 	      case EALREADY:
 #endif
-#ifdef WAIT_IN_PROGRESS
+#if WAIT_IN_PROGRESS > 0
 		wait_in_progress = WAIT_IN_PROGRESS;
 #endif
 		thread_write_select(fd);
 		continue;
 
-#ifdef WAIT_IN_PROGRESS
+#if WAIT_IN_PROGRESS > 0
 	      case EINVAL:
 		if (wait_in_progress-- > 0) {
-		    int sockerr, sockerrlen = sizeof(sockerr);
-
 		    /*
 		     * connect() after EINPROGRESS returns EINVAL on
 		     * some platforms, need to check true error
 		     * status.
 		     */
+		    sockerrlen = sizeof(sockerr);
 		    status = getsockopt(fd, SOL_SOCKET, SO_ERROR, &sockerr, &sockerrlen);
 		    if (!status && !sockerr) {
 			struct timeval tv = {0, 100000};
