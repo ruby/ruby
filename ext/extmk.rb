@@ -77,7 +77,7 @@ def extmake(target)
     unless $ignore
       if !(t = modified?(makefile, MTIMES)) ||
 	 %W<#{$srcdir}/makefile.rb #{$srcdir}/extconf.rb
-	    #{$srcdir}/depend #{$srcdir}/MANIFEST>.any? {|f| modified?(f, [t])}
+	    #{$srcdir}/depend>.any? {|f| modified?(f, [t])}
       then
 	$defs = []
 	Logging::logfile 'mkmf.log'
@@ -313,8 +313,7 @@ end unless $extstatic
 ext_prefix = "#{$top_srcdir}/ext"
 exts = $static_ext.sort_by {|t, i| i}.collect {|t, i| t}
 exts |= $extension if $extension
-exts.delete_if {|t| !File.exist?("#{ext_prefix}/#{t}/MANIFEST")}
-exts |= Dir.glob("#{ext_prefix}/*/**/MANIFEST").collect {|d|
+exts |= Dir.glob("#{ext_prefix}/*/**/extconf.rb").collect {|d|
   d = File.dirname(d)
   d.slice!(0, ext_prefix.length + 1)
   d
