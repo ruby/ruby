@@ -23,9 +23,9 @@
 #
 # The value of this class is to manipulate file path information in a neater
 # way than standard Ruby provides.  The examples below demonstrate the
-# difference.  *All* functionality from File, FileTest, +ftools+ and FileUtils
-# is included, in an unsurprising way.  It is essentially a facade for all of
-# these, and more.
+# difference.  *All* functionality from File, FileTest, and some from Dir and
+# FileUtils is included, in an unsurprising way.  It is essentially a facade for
+# all of these, and more.
 #
 # == Examples
 #
@@ -33,7 +33,7 @@
 #
 #   require 'pathname'
 #   p = Pathname.new("/usr/bin/ruby")
-#   size = p.size              # XXX
+#   size = p.size              # 27662
 #   isdir = p.directory?       # false
 #   dir  = p.dirname           # Pathname:/usr/bin
 #   base = p.basename          # Pathname:ruby
@@ -45,7 +45,7 @@
 # === Example 2: Using standard Ruby
 #
 #   p = "/usr/bin/ruby"
-#   size = File.size(p)        # XXX
+#   size = File.size(p)        # 27662
 #   isdir = File.directory?(p) # false
 #   dir  = File.dirname(p)     # "/usr/bin"
 #   base = File.basename(p)    # "ruby"
@@ -73,41 +73,42 @@
 # === Core methods
 #
 # These methods are effectively manipulating a String, because that's all a path
-# is.  They (mostly) don't access the filesystem.
+# is.  Except for #mountpoint?, #children, and #realpath, they don't access the
+# filesystem.
 #
-# - #cleanpath
-# - #realpath (accesses filesystem)
+# - +
+# - #join
 # - #parent
-# - #mountpoint?
 # - #root?
 # - #absolute?
 # - #relative?
-# - #each_filename
-# - #+
-# - #join
-# - #children
 # - #relative_path_from
+# - #each_filename
+# - #cleanpath
+# - #realpath
+# - #children
+# - #mountpoint?
 #
 # === File status predicate methods
 #
 # These methods are a facade for FileTest:
 # - #blockdev?
 # - #chardev?
+# - #directory?
 # - #executable?
 # - #executable_real?
 # - #exist?
-# - #grpowned?
-# - #directory?
 # - #file?
-# - #pipe?
-# - #socket?
+# - #grpowned?
 # - #owned?
+# - #pipe?
 # - #readable?
 # - #readable_real?
-# - #setuid?
 # - #setgid?
+# - #setuid?
 # - #size
 # - #size?
+# - #socket?
 # - #sticky?
 # - #symlink?
 # - #writable?
@@ -169,10 +170,19 @@
 # - #rmtree
 # - #unlink / #delete
 #
+#
+# == Method documentation
+#
+# As the above section shows, most of the methods in Pathname are facades.  The
+# documentation for these methods generally just says, for instance, "See
+# FileTest.writable?", as you should be familiar with the original method
+# anyway, and its documentation (e.g. through +ri+) will contain more
+# information.  In some cases, a brief description will follow.
+#
 class Pathname
   #
   # Create a Pathname object from the given String (or String-like object).
-  # If +path+ contains a NUL character ("\0"), an ArgumentError is raised.
+  # If +path+ contains a NUL character (<tt>\0</tt>), an ArgumentError is raised.
   #
   def initialize(path)
     @path = path.to_str.dup
@@ -185,8 +195,8 @@ class Pathname
 
   #
   # Compare this pathname with +other+.  The comparison is string-based.
-  # Be aware that two different paths ("foo.txt" and "./foo.txt") can refer to
-  # the same file.
+  # Be aware that two different paths (<tt>foo.txt</tt> and <tt>./foo.txt</tt>)
+  # can refer to the same file.
   #
   def ==(other)
     return false unless Pathname === other
@@ -195,33 +205,37 @@ class Pathname
   alias === ==
   alias eql? ==
 
+  # Provides for comparing pathnames, case-sensitively.
   def <=>(other)
     return nil unless Pathname === other
     @path.tr('/', "\0") <=> other.to_s.tr('/', "\0")
   end
 
-  def hash
+  def hash # :nodoc:
     @path.hash
   end
 
+  # Return the path as a String.
   def to_s
     @path.dup
   end
 
-  # to_str is implemented for Pathname object usable with File.open, etc.
+  # to_str is implemented so Pathname objects are usable with File.open, etc.
   alias to_str to_s
 
-  def inspect
+  def inspect # :nodoc:
     "#<#{self.class}:#{@path}>"
   end
 
-  # cleanpath returns clean pathname of self which is without consecutive
-  # slashes and useless dots.
   #
-  # If true is given as the optional argument consider_symlink,
-  # symbolic links are considered.  It makes more dots are retained.
+  # Returns clean pathname of +self+ with consecutive slashes and useless dots
+  # removed.  The filesystem is not accessed.
   #
-  # cleanpath doesn't access actual filesystem.
+  # If +consider_symlink+ is +true+, then a more conservative algorithm is used
+  # to avoid breaking symbolic linkages.  This may retain more <tt>..</tt>
+  # entries than absolutely necessary, but without accessing the filesystem,
+  # this can't be avoided.  See #realpath.
+  #
   def cleanpath(consider_symlink=false)
     if consider_symlink
       cleanpath_conservative
@@ -230,6 +244,10 @@ class Pathname
     end
   end
 
+  #
+  # Clean the path simply by resolving and removing excess "." and ".." entries.
+  # Nothing more, nothing less.
+  #
   def cleanpath_aggressive # :nodoc:
     # cleanpath_aggressive assumes:
     # * no symlink
@@ -276,10 +294,12 @@ class Pathname
     Pathname.new(path)
   end
 
-  # realpath returns a real pathname of self in actual filesystem.
-  # The real pathname doesn't contain a symlink and useless dots.
   #
-  # It returns absolute pathname.
+  # Returns a real (absolute) pathname of +self+ in the actual filesystem.
+  # The real pathname doesn't contain symlinks or useless dots.
+  #
+  # No arguments should be given; the old behaviour is *obsoleted*. 
+  #
   def realpath(*args)
     unless args.empty?
       warn "The argument for Pathname#realpath is obsoleted."
@@ -341,57 +361,67 @@ class Pathname
     end
   end
 
-  # parent method returns parent directory.
+  # #parent returns the parent directory.
   #
-  # This is same as self + '..'.
+  # This is same as <tt>self + '..'</tt>.
   def parent
     self + '..'
   end
 
-  # mountpoint? method returns true if self points a mountpoint.
+  # #mountpoint? returns +true+ if <tt>self</tt> points to a mountpoint.
   def mountpoint?
     begin
       stat1 = self.lstat
       stat2 = self.parent.lstat
       stat1.dev == stat2.dev && stat1.ino == stat2.ino ||
-      stat1.dev != stat2.dev
+        stat1.dev != stat2.dev
     rescue Errno::ENOENT
       false
     end
   end
 
-  # root? method is a predicate for root directory.
-  # I.e. it returns true if the pathname consists of consecutive slashes.
   #
-  # It doesn't access actual filesystem.
-  # So it may return false for some pathnames
-  # which points root such as "/usr/..".
+  # #root? is a predicate for root directories.  I.e. it returns +true+ if the
+  # pathname consists of consecutive slashes.
+  #
+  # It doesn't access actual filesystem.  So it may return +false+ for some
+  # pathnames which points to roots such as <tt>/usr/..</tt>.
+  #
   def root?
     %r{\A/+\z} =~ @path ? true : false
   end
 
-  # absolute? method is a predicate for absolute pathname.
-  # It returns true if self is beginning with a slash.
+  # Predicate method for testing whether a path is absolute.
+  # It returns +true+ if the pathname begins with a slash.
   def absolute?
     %r{\A/} =~ @path ? true : false
   end
 
-  # relative? method is a predicate for relative pathname.
-  # It returns true unless self is beginning with a slash.
+  # The opposite of #absolute?
   def relative?
     !absolute?
   end
 
-  # each_filename iterates over self for each filename components.
-  def each_filename
+  #
+  # Iterates over each component of the path.
+  #
+  #   Pathname.new("/usr/bin/ruby").each_filename
+  #     # yields "usr", "bin", and "ruby".
+  #
+  def each_filename # :yield: s
     @path.scan(%r{[^/]+}) { yield $& }
   end
 
-  # Pathname#+ concatenates self and an argument.
-  # I.e. a result is basically same as the argument but the base directory 
-  # is changed to self if the argument is relative.
   #
-  # Pathname#+ doesn't access actual filesystem.
+  # Pathname#+ appends a pathname fragment to this one to produce a new Pathname
+  # object.
+  #
+  #   p1 = Pathname.new("/usr")      # Pathname:/usr
+  #   p2 = p1 + "bin/ruby"           # Pathname:/usr/bin/ruby
+  #   p3 = p1 + "/etc/passwd"        # Pathname:/etc/passwd
+  #
+  # This method doesn't access the file system; it is pure string manipulation. 
+  #
   def +(other)
     other = Pathname.new(other) unless Pathname === other
 
@@ -421,9 +451,12 @@ class Pathname
     end
   end
 
+  #
   # Pathname#join joins pathnames.
   #
-  # path0.join(path1, ... pathN) is same as path0 + path1 + ... + pathN.
+  # <tt>path0.join(path1, ..., pathN)</tt> is the same as
+  # <tt>path0 + path1 + ... + pathN</tt>.
+  #
   def join(*args)
     args.unshift self
     result = args.pop
@@ -437,22 +470,27 @@ class Pathname
     result
   end
 
-  # Pathname#children returns the children of the directory as an array of
-  # pathnames.  
   #
-  # By default, the returned pathname can be used to access the corresponding
-  # file in the directory.
-  # This is because the pathname contains self as a prefix unless self is `.'.
+  # Returns the children of the directory (files and subdirectories, not
+  # recursive) as an array of Pathname objects.  By default, the returned
+  # pathnames will have enough information to access the files.  If you set
+  # +with_directory+ to +false+, then the returned pathnames will contain the
+  # filename only.
   #
-  # If false is given for the optional argument `with_directory',
-  # just filenames of children is returned.
-  # In this case, the returned pathname cannot be used directly to access the
-  # corresponding file when self doesn't point working directory.
+  # For example:
+  #   p = Pathname("/usr/lib/ruby/1.8")
+  #   p.children
+  #       # -> [ Pathname:/usr/lib/ruby/1.8/English.rb,
+  #              Pathname:/usr/lib/ruby/1.8/Env.rb,
+  #              Pathname:/usr/lib/ruby/1.8/abbrev.rb, ... ]
+  #   p.children(false)
+  #       # -> [ Pathname:English.rb, Pathname:Env.rb, Pathname:abbrev.rb, ... ]
   #
-  # Note that the result never contain the entry `.' and `..' in the directory
-  # because they are not child.
+  # Note that the result never contain the entries <tt>.</tt> and <tt>..</tt> in
+  # the directory because they are not children.
   #
-  # This method is exist since 1.8.1.
+  # This method has existed since 1.8.1.
+  #
   def children(with_directory=true)
     with_directory = false if @path == '.'
     result = []
@@ -467,17 +505,17 @@ class Pathname
     result
   end
 
-  # Pathname#relative_path_from returns a relative path from the argument to
-  # self.
-  # If self is absolute, the argument must be absolute too.
-  # If self is relative, the argument must be relative too.
   #
-  # relative_path_from doesn't access actual filesystem.
-  # It assumes no symlinks.
+  # #relative_path_from returns a relative path from the argument to the
+  # receiver.  If +self+ is absolute, the argument must be absolute too.  If
+  # +self+ is relative, the argument must be relative too.
+  #
+  # #relative_path_from doesn't access the filesystem.  It assumes no symlinks.
   #
   # ArgumentError is raised when it cannot find a relative path.
   #
-  # This method is exist since 1.8.1.
+  # This method has existed since 1.8.1.
+  #
   def relative_path_from(base_directory)
     if self.absolute? != base_directory.absolute?
       raise ArgumentError,
@@ -518,59 +556,121 @@ end
 
 
 class Pathname    # * IO *
-  # Pathname#each_line iterates over lines of the file.
-  # It's yields a String object for each line.
   #
-  # This method is exist since 1.8.1.
-  def each_line(*args, &block) IO.foreach(@path, *args, &block) end
+  # #each_line iterates over the line in the file.  It yields a String object
+  # for each line.
+  #
+  # This method has existed since 1.8.1.
+  #
+  def each_line(*args, &block) # :yield: line
+    IO.foreach(@path, *args, &block)
+  end
 
-  # Pathname#foreachline is obsoleted at 1.8.1.
-  #
-  def foreachline(*args, &block) # compatibility to 1.8.0.  obsoleted.
+  # Pathname#foreachline is *obsoleted* at 1.8.1.  Use #each_line.
+  def foreachline(*args, &block)
     warn "Pathname#foreachline is obsoleted.  Use Pathname#each_line."
     each_line(*args, &block)
   end
 
+  # See <tt>IO.read</tt>.  Returns all the bytes from the file, or the first +N+
+  # if specified.
   def read(*args) IO.read(@path, *args) end
+
+  # See <tt>IO.readlines</tt>.  Returns all the lines from the file.
   def readlines(*args) IO.readlines(@path, *args) end
+
+  # See <tt>IO.sysopen</tt>.
   def sysopen(*args) IO.sysopen(@path, *args) end
 end
 
 
 class Pathname    # * File *
+
+  # See <tt>File.atime</tt>.  Returns last access time.
   def atime() File.atime(@path) end
+
+  # See <tt>File.ctime</tt>.  Returns last (directory entry, not file) change time.
   def ctime() File.ctime(@path) end
+
+  # See <tt>File.mtime</tt>.  Returns last modification time.
   def mtime() File.mtime(@path) end
+
+  # See <tt>File.chmod</tt>.  Changes permissions.
   def chmod(mode) File.chmod(mode, @path) end
+
+  # See <tt>File.chmod</tt>.
   def lchmod(mode) File.chmod(mode, @path) end
+
+  # See <tt>File.chown</tt>.  Change owner and group of file.
   def chown(owner, group) File.chown(owner, group, @path) end
+
+  # See <tt>File.lchown</tt>.
   def lchown(owner, group) File.lchown(owner, group, @path) end
+
+  # See <tt>File.fnmatch</tt>.  Return +true+ if the receiver matches the given
+  # pattern.
   def fnmatch(pattern, *args) File.fnmatch(pattern, @path, *args) end
+
+  # See <tt>File.fnmatch?</tt> (same as #fnmatch).
   def fnmatch?(pattern, *args) File.fnmatch?(pattern, @path, *args) end
+
+  # See <tt>File.ftype</tt>.  Returns "type" of file ("file", "directory",
+  # etc).
   def ftype() File.ftype(@path) end
+
+  # See <tt>File.link</tt>.  Creates a hard link.
   def make_link(old) File.link(old, @path) end
-  def open(*args, &block) File.open(@path, *args, &block) end
+
+  # See <tt>File.open</tt>.  Opens the file for reading or writing.
+  def open(*args, &block) # :yield: file
+    File.open(@path, *args, &block)
+  end
+
+  # See <tt>File.readlink</tt>.  Read symbolic link.
   def readlink() Pathname.new(File.readlink(@path)) end
+
+  # See <tt>File.rename</tt>.  Rename the file.
   def rename(to) File.rename(@path, to) end
+
+  # See <tt>File.stat</tt>.  Returns a <tt>File::Stat</tt> object.
   def stat() File.stat(@path) end
+
+  # See <tt>File.lstat</tt>.
   def lstat() File.lstat(@path) end
+
+  # See <tt>File.symlink</tt>.  Creates a symbolic link.
   def make_symlink(old) File.symlink(old, @path) end
+
+  # See <tt>File.truncate</tt>.  Truncate the file to +length+ bytes.
   def truncate(length) File.truncate(@path, length) end
+
+  # See <tt>File.utime</tt>.  Update the access and modification times.
   def utime(atime, mtime) File.utime(atime, mtime, @path) end
+
+  # See <tt>File.basename</tt>.  Returns the last component of the path.
   def basename(*args) Pathname.new(File.basename(@path, *args)) end
+
+  # See <tt>File.dirname</tt>.  Returns all but the last component of the path.
   def dirname() Pathname.new(File.dirname(@path)) end
+
+  # See <tt>File.extname</tt>.  Returns the file's extension.
   def extname() File.extname(@path) end
+
+  # See <tt>File.expand_path</tt>.
   def expand_path(*args) Pathname.new(File.expand_path(@path, *args)) end
+
+  # See <tt>File.split</tt>.  Returns the #dirname and the #basename in an
+  # Array.
   def split() File.split(@path).map {|f| Pathname.new(f) } end
 
-  # Pathname#link is confusing and obsoleted because the receiver/argument
+  # Pathname#link is confusing and *obsoleted* because the receiver/argument
   # order is inverted to corresponding system call.
   def link(old)
     warn 'Pathname#link is obsoleted.  Use Pathname#make_link.'
     File.link(old, @path)
   end
 
-  # Pathname#symlink is confusing and obsoleted because the receiver/argument
+  # Pathname#symlink is confusing and *obsoleted* because the receiver/argument
   # order is inverted to corresponding system call.
   def symlink(old)
     warn 'Pathname#symlink is obsoleted.  Use Pathname#make_symlink.'
@@ -580,33 +680,78 @@ end
 
 
 class Pathname    # * FileTest *
+
+  # See <tt>FileTest.blockdev?</tt>.
   def blockdev?() FileTest.blockdev?(@path) end
+
+  # See <tt>FileTest.chardev?</tt>.
   def chardev?() FileTest.chardev?(@path) end
+
+  # See <tt>FileTest.executable?</tt>.
   def executable?() FileTest.executable?(@path) end
+
+  # See <tt>FileTest.executable_real?</tt>.
   def executable_real?() FileTest.executable_real?(@path) end
+
+  # See <tt>FileTest.exist?</tt>.
   def exist?() FileTest.exist?(@path) end
+
+  # See <tt>FileTest.grpowned?</tt>.
   def grpowned?() FileTest.grpowned?(@path) end
+
+  # See <tt>FileTest.directory?</tt>.
   def directory?() FileTest.directory?(@path) end
+
+  # See <tt>FileTest.file?</tt>.
   def file?() FileTest.file?(@path) end
+
+  # See <tt>FileTest.pipe?</tt>.
   def pipe?() FileTest.pipe?(@path) end
+
+  # See <tt>FileTest.socket?</tt>.
   def socket?() FileTest.socket?(@path) end
+
+  # See <tt>FileTest.owned?</tt>.
   def owned?() FileTest.owned?(@path) end
+
+  # See <tt>FileTest.readable?</tt>.
   def readable?() FileTest.readable?(@path) end
+
+  # See <tt>FileTest.readable_real?</tt>.
   def readable_real?() FileTest.readable_real?(@path) end
+
+  # See <tt>FileTest.setuid?</tt>.
   def setuid?() FileTest.setuid?(@path) end
+
+  # See <tt>FileTest.setgid?</tt>.
   def setgid?() FileTest.setgid?(@path) end
+
+  # See <tt>FileTest.size</tt>.
   def size() FileTest.size(@path) end
+
+  # See <tt>FileTest.size?</tt>.
   def size?() FileTest.size?(@path) end
+
+  # See <tt>FileTest.sticky?</tt>.
   def sticky?() FileTest.sticky?(@path) end
+
+  # See <tt>FileTest.symlink?</tt>.
   def symlink?() FileTest.symlink?(@path) end
+
+  # See <tt>FileTest.writable?</tt>.
   def writable?() FileTest.writable?(@path) end
+
+  # See <tt>FileTest.writable_real?</tt>.
   def writable_real?() FileTest.writable_real?(@path) end
+
+  # See <tt>FileTest.zero?</tt>.
   def zero?() FileTest.zero?(@path) end
 end
 
 
 class Pathname    # * Dir *
-  def Pathname.glob(*args)
+  # See <tt>Dir.glob</tt>.  Returns or yields Pathname objects.
+  def Pathname.glob(*args) # :yield: p
     if block_given?
       Dir.glob(*args) {|f| yield Pathname.new(f) }
     else
@@ -614,55 +759,65 @@ class Pathname    # * Dir *
     end
   end
 
+  # See <tt>Dir.getwd</tt>.  Returns the current working directory as a Pathname.
   def Pathname.getwd() Pathname.new(Dir.getwd) end
   class << self; alias pwd getwd end
 
-  # Pathname#chdir is obsoleted at 1.8.1.
-  #
-  def chdir(&block) # compatibility to 1.8.0.
+  # Pathname#chdir is *obsoleted* at 1.8.1.
+  def chdir(&block)
     warn "Pathname#chdir is obsoleted.  Use Dir.chdir."
     Dir.chdir(@path, &block)
   end
 
-  # Pathname#chroot is obsoleted at 1.8.1.
-  #
-  def chroot # compatibility to 1.8.0.
+  # Pathname#chroot is *obsoleted* at 1.8.1.
+  def chroot
     warn "Pathname#chroot is obsoleted.  Use Dir.chroot."
     Dir.chroot(@path)
   end
 
-  def rmdir() Dir.rmdir(@path) end
+  # Return the entries (files and subdirectories) in the directory, each as a
+  # Pathname object.
   def entries() Dir.entries(@path).map {|f| Pathname.new(f) } end
 
-  # Pathname#each_entry iterates over entries of the directory.
-  # It's yields Pathname objects for each entry.
+  # Iterates over the entries (files and subdirectories) in the directory.  It
+  # yields a Pathname object for each entry.
   #
-  # This method is exist since 1.8.1.
-  def each_entry(&block) Dir.foreach(@path) {|f| yield Pathname.new(f) } end
+  # This method has existed since 1.8.1.
+  def each_entry(&block) # :yield: p
+    Dir.foreach(@path) {|f| yield Pathname.new(f) }
+  end
 
-  # Pathname#dir_foreach is obsoleted at 1.8.1.
-  #
-  def dir_foreach(*args, &block) # compatibility to 1.8.0.  obsoleted.
+  # Pathname#dir_foreach is *obsoleted* at 1.8.1.
+  def dir_foreach(*args, &block)
     warn "Pathname#dir_foreach is obsoleted.  Use Pathname#each_entry."
     each_entry(*args, &block)
   end
 
+  # See <tt>Dir.mkdir</tt>.  Create the referenced directory.
   def mkdir(*args) Dir.mkdir(@path, *args) end
-  def opendir(&block) Dir.open(@path, &block) end
+
+  # See <tt>Dir.rmdir</tt>.  Remove the referenced directory.
+  def rmdir() Dir.rmdir(@path) end
+
+  # See <tt>Dir.open</tt>.
+  def opendir(&block) # :yield: dir
+    Dir.open(@path, &block)
+  end
 end
 
 
 class Pathname    # * Find *
-  # Pathname#find is a iterator to traverse directory tree in depth first
-  # manner.  It yields a pathname for each file under the directory which
-  # is pointed by self.
   #
-  # Since it is implemented by find.rb, Find.prune can be used to control the
-  # traverse.
+  # Pathname#find is an iterator to traverse a directory tree in a depth first
+  # manner.  It yields a Pathname for each file under "this" directory.
   #
-  # If self is `.', yielded pathnames begin with a filename in the current
-  # directory, not `./'.
-  def find(&block)
+  # Since it is implemented by <tt>find.rb</tt>, <tt>Find.prune</tt> can be used
+  # to control the traverse.
+  #
+  # If +self+ is <tt>.</tt>, yielded pathnames begin with a filename in the
+  # current directory, not <tt>./</tt>.
+  #
+  def find(&block) # :yield: p
     require 'find'
     if @path == '.'
       Find.find(@path) {|f| yield Pathname.new(f.sub(%r{\A\./}, '')) }
@@ -674,12 +829,15 @@ end
 
 
 class Pathname    # * FileUtils *
+  # See <tt>FileUtils.mkpath</tt>.  Creates a full path, including any
+  # intermediate directories that don't yet exist.
   def mkpath
     require 'fileutils'
     FileUtils.mkpath(@path)
     nil
   end
 
+  # See <tt>FileUtils.rm_r</tt>.  Deletes a directory and all beneath it.
   def rmtree
     # The name "rmtree" is borrowed from File::Path of Perl.
     # File::Path provides "mkpath" and "rmtree".
@@ -691,6 +849,8 @@ end
 
 
 class Pathname    # * mixed *
+  # Removes a file or directory, using <tt>File.unlink</tt> or
+  # <tt>Dir.unlink</tt> as necessary.
   def unlink()
     if FileTest.directory? @path
       Dir.unlink @path
@@ -700,9 +860,8 @@ class Pathname    # * mixed *
   end
   alias delete unlink
 
-  # This method is obsoleted at 1.8.1.
-  #
-  def foreach(*args, &block) # compatibility to 1.8.0.  obsoleted.
+  # This method is *obsoleted* at 1.8.1.  Use #each_line or #each_entry.
+  def foreach(*args, &block)
     warn "Pathname#foreach is obsoleted.  Use each_line or each_entry."
     if FileTest.directory? @path
       # For polymorphism between Dir.foreach and IO.foreach,
