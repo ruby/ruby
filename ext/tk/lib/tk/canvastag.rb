@@ -189,9 +189,9 @@ class TkcTag<TkObject
   end
 
   def initialize(parent, mode=nil, *args)
-    unless parent.kind_of?(TkCanvas)
-      fail ArguemntError, "expect TkCanvas for 1st argument"
-    end
+    #unless parent.kind_of?(TkCanvas)
+    #  fail ArguemntError, "expect TkCanvas for 1st argument"
+    #end
     @c = parent
     @cpath = parent.path
     # @path = @id = Tk_CanvasTag_ID.join('')
@@ -276,9 +276,9 @@ class TkcTagString<TkcTag
   end
 
   def initialize(parent, name, mode=nil, *args)
-    unless parent.kind_of?(TkCanvas)
-      fail ArguemntError, "expect TkCanvas for 1st argument"
-    end
+    #unless parent.kind_of?(TkCanvas)
+    #  fail ArguemntError, "expect TkCanvas for 1st argument"
+    #end
     @c = parent
     @cpath = parent.path
     @path = @id = name
@@ -293,9 +293,9 @@ TkcNamedTag = TkcTagString
 
 class TkcTagAll<TkcTag
   def initialize(parent)
-    unless parent.kind_of?(TkCanvas)
-      fail ArguemntError, "expect TkCanvas for 1st argument"
-    end
+    #unless parent.kind_of?(TkCanvas)
+    #  fail ArguemntError, "expect TkCanvas for 1st argument"
+    #end
     @c = parent
     @cpath = parent.path
     @path = @id = 'all'
@@ -306,9 +306,9 @@ end
 
 class TkcTagCurrent<TkcTag
   def initialize(parent)
-    unless parent.kind_of?(TkCanvas)
-      fail ArguemntError, "expect TkCanvas for 1st argument"
-    end
+    #unless parent.kind_of?(TkCanvas)
+    #  fail ArguemntError, "expect TkCanvas for 1st argument"
+    #end
     @c = parent
     @cpath = parent.path
     @path = @id = 'current'
@@ -321,9 +321,9 @@ class TkcGroup<TkcTag
   Tk_cGroup_ID = ['tkcg'.freeze, '00000'.taint].freeze
   #def create_self(parent, *args)
   def initialize(parent, *args)
-    unless parent.kind_of?(TkCanvas)
-      fail ArguemntError, "expect TkCanvas for 1st argument"
-    end
+    #unless parent.kind_of?(TkCanvas)
+    #  fail ArguemntError, "expect TkCanvas for 1st argument"
+    #end
     @c = parent
     @cpath = parent.path
     # @path = @id = Tk_cGroup_ID.join('')

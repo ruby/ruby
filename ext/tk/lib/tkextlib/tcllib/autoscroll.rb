@@ -38,12 +38,21 @@ module Tk
 	  ''
 	end
       end
+
+      def self.not_available
+	fail RuntimeError, "'tkextlib/tcllib/autoscroll' extension is not available on your current environment."
+      end
+
+      def self.autoscroll(win)
+	Tk::Tcllib::Autoscroll.not_available
+      end
+
+      def self.unautoscroll(win)
+	Tk::Tcllib::Autoscroll.not_available
+      end
     end
   end
 end
-
-# TkPackage.require('autoscroll', '1.0')
-TkPackage.require('autoscroll')
 
 module Tk
   module Scrollable
@@ -51,18 +60,18 @@ module Tk
       case mode
       when :x, 'x'
 	if @xscrollbar
-	  tk_send_without_enc('::autoscroll::autoscroll', @xscrollbar)
+	  Tk::Tcllib::Autoscroll.autoscroll(@xscrollbar)
 	end
       when :y, 'y'
 	if @yscrollbar
-	  tk_send_without_enc('::autoscroll::autoscroll', @yscrollbar)
+	  Tk::Tcllib::Autoscroll.autoscroll(@yscrollbar)
 	end
       when nil, :both, 'both'
 	if @xscrollbar
-	  tk_send_without_enc('::autoscroll::autoscroll', @xscrollbar)
+	  Tk::Tcllib::Autoscroll.autoscroll(@xscrollbar)
 	end
 	if @yscrollbar
-	  tk_send_without_enc('::autoscroll::autoscroll', @yscrollbar)
+	  Tk::Tcllib::Autoscroll.autoscroll(@yscrollbar)
 	end
       else
 	fail ArgumentError, "'x', 'y' or 'both' (String or Symbol) is expected"
@@ -73,18 +82,18 @@ module Tk
       case mode
       when :x, 'x'
 	if @xscrollbar
-	  tk_send_without_enc('::autoscroll::unautoscroll', @xscrollbar)
+	  Tk::Tcllib::Autoscroll.unautoscroll(@xscrollbar)
 	end
       when :y, 'y'
 	if @yscrollbar
-	  tk_send_without_enc('::autoscroll::unautoscroll', @yscrollbar)
+	  Tk::Tcllib::Autoscroll.unautoscroll(@yscrollbar)
 	end
       when nil, :both, 'both'
 	if @xscrollbar
-	  tk_send_without_enc('::autoscroll::unautoscroll', @xscrollbar)
+	  Tk::Tcllib::Autoscroll.unautoscroll(@xscrollbar)
 	end
 	if @yscrollbar
-	  tk_send_without_enc('::autoscroll::unautoscroll', @yscrollbar)
+	  Tk::Tcllib::Autoscroll.unautoscroll(@yscrollbar)
 	end
       else
 	fail ArgumentError, "'x', 'y' or 'both' (String or Symbol) is expected"
@@ -98,12 +107,36 @@ class TkScrollbar
   def autoscroll
     # Arranges for the already existing scrollbar to be mapped 
     # and unmapped as needed.
-    tk_send_without_enc('::autoscroll::autoscroll', @path)
+    #tk_call_without_enc('::autoscroll::autoscroll', @path)
+    Tk::Tcllib::Autoscroll.autoscroll(self)
     self
   end
   def unautoscroll
     #     Returns the scrollbar to its original static state. 
-    tk_send_without_enc('::autoscroll::unautoscroll', @path)
+    #tk_call_without_enc('::autoscroll::unautoscroll', @path)
+    Tk::Tcllib::Autoscroll.unautoscroll(self)
     self
   end
 end
+
+# TkPackage.require('autoscroll', '1.0')
+TkPackage.require('autoscroll')
+
+module Tk
+  module Tcllib
+    class << Autoscroll
+      undef not_available
+    end
+
+    module Autoscroll
+      def self.autoscroll(win)
+	tk_call_without_enc('::autoscroll::autoscroll', win.path)
+      end
+
+      def self.unautoscroll(win)
+	tk_call_without_enc('::autoscroll::unautoscroll', win.path)
+      end
+    end
+  end
+end
+

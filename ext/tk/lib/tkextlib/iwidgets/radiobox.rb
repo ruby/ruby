@@ -56,7 +56,9 @@ class Tk::Iwidgets::Radiobox
       keys = tag
       tag = nil
     end
-    unless tag
+    if tag
+      tag = Tk::Itk::Component.new(self, tagid(tag))
+    else
       tag = Tk::Itk::Component.new(self)
     end
     tk_call(@path, 'add', tagid(tag), *hash_kv(keys))
@@ -93,7 +95,9 @@ class Tk::Iwidgets::Radiobox
       keys = tag
       tag = nil
     end
-    unless tag
+    if tag
+      tag = Tk::Itk::Component.new(self, tagid(tag))
+    else
       tag = Tk::Itk::Component.new(self)
     end
     tk_call(@path, 'insert', index(idx), tagid(tag), *hash_kv(keys))

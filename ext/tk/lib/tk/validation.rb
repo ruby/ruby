@@ -183,6 +183,7 @@ end
 
 class TkValidateCommand
   include TkComm
+  extend  TkComm
 
   class ValidateArgs < TkUtil::CallbackSubst
     KEY_TBL = [
@@ -227,14 +228,19 @@ class TkValidateCommand
 
     _setup_subst_table(KEY_TBL, PROC_TBL);
 
-    def self.ret_val(val)
-      (val)? '1': '0'
-    end
+    #
+    # NOTE: The order of parameters which passed to callback procedure is 
+    #        <extra_arg>, <extra_arg>, ... , <subst_arg>, <subst_arg>, ...
+    #
 
     #def self._get_extra_args_tbl
     #  # return an array of convert procs
     #  []
     #end
+
+    def self.ret_val(val)
+      (val)? '1': '0'
+    end
   end
 
   ###############################################
@@ -257,7 +263,7 @@ class TkValidateCommand
       else
 	@id = install_cmd(proc{|*arg|
 	     ex_args = []
-	     extra_args_tbl.reverse_each{|conv| ex_args << conv.call(args.pop)}
+	     extra_args_tbl.reverse_each{|conv| ex_args << conv.call(arg.pop)}
 	     klass.ret_val(cmd.call(
                *(ex_args.concat(klass.scan_args(keys, arg)))
              ))
@@ -272,9 +278,9 @@ class TkValidateCommand
       else
 	@id = install_cmd(proc{|*arg|
 	     ex_args = []
-	     extra_args_tbl.reverse_each{|conv| ex_args << conv.call(args.pop)}
+	     extra_args_tbl.reverse_each{|conv| ex_args << conv.call(arg.pop)}
 	     klass.ret_val(cmd.call(
-               *(ex_args << klass.new(*klass.scan_args(keys,arg)))
+               *(ex_args << klass.new(*klass.scan_args(keys, arg)))
 	     ))
 	}) + ' ' + args
       end

@@ -27,6 +27,7 @@ module Tk
 	end
       end
     end
+    IPEntry = IP_Entry
   end
 end
 

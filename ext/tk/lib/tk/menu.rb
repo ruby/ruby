@@ -320,9 +320,9 @@ class TkMenuClone<TkMenu
       widgetname = keys.delete('widgetname')
       type = keys.delete('type'); type = None unless type
     end
-    unless parent.kind_of?(TkMenu)
-      fail ArgumentError, "parent must be TkMenu"
-    end
+    #unless parent.kind_of?(TkMenu)
+    #  fail ArgumentError, "parent must be TkMenu"
+    #end
     @parent = parent
     install_win(@parent.path, widgetname)
     tk_call_without_enc(@parent.path, 'clone', @path, type)
@@ -336,9 +336,9 @@ module TkSystemMenu
       keys = _symbolkey2str(parent)
       parent = keys.delete('parent')
     end
-    unless parent.kind_of? TkMenu
-      fail ArgumentError, "parent must be a TkMenu object"
-    end
+    #unless parent.kind_of? TkMenu
+    #  fail ArgumentError, "parent must be a TkMenu object"
+    #end
     # @path = Kernel.format("%s.%s", parent.path, self.class::SYSMENU_NAME)
     @path = parent_path + '.' + self.class::SYSMENU_NAME
     #TkComm::Tk_WINDOWS[@path] = self

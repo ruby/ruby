@@ -1,3 +1,28 @@
+Thu Jul 15 10:15:04 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/, ext/tcltklib/: bug fix
+
+	* ext/tk/lib/tk.rb: better operation for SIGINT when processing 
+	  callbacks.
+	* ext/tk/lib/tk/msgcat.rb: ditto.
+	* ext/tk/lib/tk/variable.rb: ditto.
+	* ext/tk/lib/tk/timer.rb: ditto.
+
+	* ext/tk/lib/tk/validation.rb: add Tk::ValidateConfigure.__def_validcmd
+	  to define validatecommand methods easier
+
+	* ext/tk/lib/tk.rb (_genobj_for_tkwidget): support autoload Tk ext 
+	  classes
+
+	* ext/tk/lib/tk/canvas.rb and so on: remove the parent widget type 
+	  check for items (e.g. canvas items; depends on the class) to
+	  avoid some troubles on Tk extension widget class definition.
+
+	* ext/tk/lib/tkextlib/: add Iwidget and TkTable extension support
+
+	* ext/tk/sample/tkextlib/: add samples of Iwidget and TkTable
+
+
 Wed Jul 14 23:49:30 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* enum.c (enum_min_by): new method Enum#min_by.  added Enum#max_by

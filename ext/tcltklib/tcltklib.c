@@ -4401,20 +4401,21 @@ ip_get_variable2(self, varname_arg, index_arg, flag_arg)
 
 	ret = Tcl_ObjGetVar2(ptr->ip, nameobj, idxobj, FIX2INT(flag));
 
-	Tcl_IncrRefCount(ret);
 	Tcl_DecrRefCount(nameobj);
 	Tcl_DecrRefCount(idxobj);
 
 	rb_thread_critical = thr_crit_bup;
 
 	if (ret == (Tcl_Obj*)NULL) {
-	    Tcl_DecrRefCount(ret);
 #if TCL_MAJOR_VERSION >= 8
 	    rb_raise(rb_eRuntimeError, "%s", Tcl_GetStringResult(ptr->ip));
 #else /* TCL_MAJOR_VERSION < 8 */
 	    rb_raise(rb_eRuntimeError, "%s", ptr->ip->result);
 #endif
 	}
+
+	Tcl_IncrRefCount(ret);
+
 # if TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION == 0
 	s = Tcl_GetStringFromObj(ret, &len);
 	strval = rb_tainted_str_new(s, len);

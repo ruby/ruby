@@ -18,8 +18,10 @@ class TkTree < TkCanvas
     args = [@path]
     if keys.kind_of?(Hash)
       font = keys.delete('itemfont')
+#      font = hash_kv(font) if font.kind_of?(Hash)
       keys['font'] = font if font
-      args.concat(hash_kv(keys))
+#      args.concat(hash_kv(keys))
+      args << keys
     end
     begin
       tk_call('::tktree::treecreate', *args)
@@ -33,8 +35,10 @@ class TkTree < TkCanvas
     if keys.kind_of?(Hash)
       keys = _symbolkey2str(keys)
       font = keys.delete('itemfont')
+#      font = hash_kv(font) if font.kind_of?(Hash)
       keys['font'] = font if font
-      tk_call('::tktree::newitem', @path, itempath, *hash_kv(keys))
+#      tk_call('::tktree::newitem', @path, itempath, *hash_kv(keys))
+      tk_call('::tktree::newitem', @path, itempath, keys)
     else
       tk_call('::tktree::newitem', @path, itempath)
     end
@@ -80,7 +84,7 @@ EOL
   }
 
   f = TkFrame.new.pack(:expand=>true, :fill=>:both)
-  tr2 = TkTree.new(f, :bg=>'black', :itemfont=>{:family=>'Times', :size=>14}, 
+  tr2 = TkTree.new(f, :bg=>'black', #:itemfont=>{:family=>'Times', :size=>14}, 
 		   :textcolor=>'red', :bd=>4, :relief=>:ridge, 
 		   :selectbackground=>'darkBlue', :selectforeground=>'yellow', 
 		   :selectborderwidth=>3, :linecolor=>'yellow') {

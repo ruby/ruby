@@ -203,7 +203,7 @@ class Tk::BWidget::Tree::Node
   include TkTreatTagFont
 
   TreeNode_TBL = TkCore::INTERP.create_table
-  TreeNode_ID = ['node:'.freeze, '00000'.taint].freeze
+  TreeNode_ID = ['bw:node'.freeze, '00000'.taint].freeze
 
   TkCore::INTERP.init_ip_env{ TreeNode_TBL.clear }
 

@@ -602,9 +602,9 @@ class TkcItem<TkObject
   ########################################
 
   def initialize(parent, *args)
-    unless parent.kind_of?(TkCanvas)
-      fail ArguemntError, "expect TkCanvas for 1st argument"
-    end
+    #unless parent.kind_of?(TkCanvas)
+    #  fail ArguemntError, "expect TkCanvas for 1st argument"
+    #end
     @parent = @c = parent
     @path = parent.path
 

@@ -17,6 +17,8 @@ TkPackage.require('BWidget')
 
 module Tk
   module BWidget
+    TkComm::TkExtlibAutoloadModule.unshift(self)
+
     extend TkCore
 
     LIBRARY = tk_call('set', '::BWIDGET::LIBRARY')

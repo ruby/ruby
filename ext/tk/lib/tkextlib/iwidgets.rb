@@ -19,6 +19,8 @@ TkPackage.require('Iwidgets')
 
 module Tk
   module Iwidgets
+    TkComm::TkExtlibAutoloadModule.unshift(self)
+
     extend TkCore
 
     def self.package_version
@@ -55,11 +57,30 @@ module Tk
     autoload :Labeledframe,          'tkextlib/iwidgets/labeledframe'
     autoload :Labeledwidget,         'tkextlib/iwidgets/labeledwidget'
     autoload :Mainwindow,            'tkextlib/iwidgets/mainwindow'
+    autoload :Menubar,               'tkextlib/iwidgets/menubar'
     autoload :Messagebox,            'tkextlib/iwidgets/messagebox'
     autoload :Messagedialog,         'tkextlib/iwidgets/messagedialog'
+    autoload :Notebook,              'tkextlib/iwidgets/notebook'
+    autoload :Optionmenu,            'tkextlib/iwidgets/optionmenu'
+    autoload :Panedwindow,           'tkextlib/iwidgets/panedwindow'
+    autoload :Pushbutton,            'tkextlib/iwidgets/pushbutton'
+    autoload :Promptdialog,          'tkextlib/iwidgets/promptdialog'
     autoload :Radiobox,              'tkextlib/iwidgets/radiobox'
+    autoload :Scrolledcanvas,        'tkextlib/iwidgets/scrolledcanvas'
+    autoload :Scrolledframe,         'tkextlib/iwidgets/scrolledframe'
+    autoload :Scrolledhtml,          'tkextlib/iwidgets/scrolledhtml'
+    autoload :Scrolledlistbox,       'tkextlib/iwidgets/scrolledlistbox'
+    autoload :Scrolledtext,          'tkextlib/iwidgets/scrolledtext'
     autoload :Scrolledwidget,        'tkextlib/iwidgets/scrolledwidget'
+    autoload :Selectionbox,          'tkextlib/iwidgets/selectionbox'
+    autoload :Selectiondialog,       'tkextlib/iwidgets/selectiondialog'
     autoload :Shell,                 'tkextlib/iwidgets/shell'
+    autoload :Spindate,              'tkextlib/iwidgets/spindate'
+    autoload :Spinint,               'tkextlib/iwidgets/spinint'
+    autoload :Spinner,               'tkextlib/iwidgets/spinner'
+    autoload :Spintime,              'tkextlib/iwidgets/spintime'
+    autoload :Tabnotebook,           'tkextlib/iwidgets/tabnotebook'
+    autoload :Tabset,                'tkextlib/iwidgets/tabset'
     autoload :Timeentry,             'tkextlib/iwidgets/timeentry'
     autoload :Timefield,             'tkextlib/iwidgets/timefield'
     autoload :Toolbar,               'tkextlib/iwidgets/toolbar'

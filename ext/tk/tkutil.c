@@ -436,11 +436,13 @@ assoc2kv_enc(assoc, ary, self)
 }
 
 static int
-push_kv(key, val, ary)
+push_kv(key, val, args)
     VALUE key;
     VALUE val;
-    VALUE ary;
+    VALUE args;
 {
+    volatile VALUE ary = RARRAY(args)->ptr[0];
+
     if (key == Qundef) return ST_CONTINUE;
 #if 0
     rb_ary_push(ary, key2keyname(key));
@@ -448,7 +450,10 @@ push_kv(key, val, ary)
 #endif
     RARRAY(ary)->ptr[RARRAY(ary)->len++] = key2keyname(key);
 
-    if (val != TK_None) RARRAY(ary)->ptr[RARRAY(ary)->len++] = val;
+    if (val == TK_None) return ST_CONTINUE;
+
+    RARRAY(ary)->ptr[RARRAY(ary)->len++]
+	= get_eval_string_core(val, Qnil, RARRAY(args)->ptr[1]);
 
     return ST_CONTINUE;
 }
@@ -459,16 +464,20 @@ hash2kv(hash, ary, self)
     VALUE ary;
     VALUE self;
 {
+    volatile VALUE args = rb_ary_new2(2);
     volatile VALUE dst = rb_ary_new2(2 * RHASH(hash)->tbl->num_entries);
 
     RARRAY(dst)->len = 0;
 
-    st_foreach(RHASH(hash)->tbl, push_kv, dst);
+    RARRAY(args)->ptr[0] = dst;
+    RARRAY(args)->ptr[1] = self;
+    RARRAY(args)->len = 2;
+    st_foreach(RHASH(hash)->tbl, push_kv, args);
 
     if (NIL_P(ary)) {
 	return dst;
     } else {
-	return rb_ary_plus(ary, dst);
+	return rb_ary_concat(ary, dst);
     }
 }
 
@@ -517,7 +526,7 @@ hash2kv_enc(hash, ary, self)
     if (NIL_P(ary)) {
 	return dst;
     } else {
-	return rb_ary_plus(ary, dst);
+	return rb_ary_concat(ary, dst);
     }
 }
 
@@ -771,6 +780,10 @@ tcl2rb_bool(self, value)
 	} else {
 	    return Qtrue;
 	}
+    }
+
+    if (TYPE(value) == T_TRUE || TYPE(value) == T_FALSE) {
+	return value;
     }
 
     rb_check_type(value, T_STRING);
@@ -1040,6 +1053,7 @@ cbsubst_table_setup(self, key_inf, proc_inf)
     struct cbsubst_info *subst_inf;
     int idx;
     int len = RARRAY(key_inf)->len;
+    int real_len = 0;
     char *key = ALLOC_N(char, len + 1);
     char *type = ALLOC_N(char, len + 1);
     ID *ivar = ALLOC_N(ID, len + 1);
@@ -1048,7 +1062,7 @@ cbsubst_table_setup(self, key_inf, proc_inf)
 
     /* init */
     subst_inf = ALLOC(struct cbsubst_info);
-    subst_inf->size = len;
+    /* subst_inf->size = len; */
     subst_inf->key  = key;
     subst_inf->type = type;
     subst_inf->ivar = ivar;
@@ -1063,10 +1077,10 @@ cbsubst_table_setup(self, key_inf, proc_inf)
     for(idx = 0; idx < len; idx++) {
 	inf = RARRAY(key_inf)->ptr[idx];
 	if (TYPE(inf) != T_ARRAY) continue;
-	*(key  + idx) = (char)NUM2INT(RARRAY(inf)->ptr[0]);
-	*(type + idx) = (char)NUM2INT(RARRAY(inf)->ptr[1]);
+	*(key  + real_len) = (char)NUM2INT(RARRAY(inf)->ptr[0]);
+	*(type + real_len) = (char)NUM2INT(RARRAY(inf)->ptr[1]);
 
-	*(ivar + idx) 
+	*(ivar + real_len) 
 	    = rb_intern(
 		RSTRING(
 		  rb_str_cat2(rb_str_new2("@"), 
@@ -1075,9 +1089,11 @@ cbsubst_table_setup(self, key_inf, proc_inf)
 	      );
 
 	rb_attr(self, SYM2ID(RARRAY(inf)->ptr[2]), 1, 0, Qtrue);
+	real_len++;
     }
-    *(key + len) = '\0';
-    *(type + len) = '\0';
+    *(key + real_len) = '\0';
+    *(type + real_len) = '\0';
+    subst_inf->size = real_len;
 
     /*
      * procs : array of [type, proc]

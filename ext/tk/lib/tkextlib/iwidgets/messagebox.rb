@@ -41,10 +41,10 @@ class Tk::Iwidgets::Messagebox
     end
   end
 
-  alias type_cget itemcget
-  alias type_configure itemconfigure
-  alias type_configinfo itemconfiginfo
-  alias current_type_configinfo current_itemconfiginfo
+  alias typecget itemcget
+  alias typeconfigure itemconfigure
+  alias typeconfiginfo itemconfiginfo
+  alias current_typeconfiginfo current_itemconfiginfo
 
   private :itemcget, :itemconfigure
   private :itemconfiginfo, :current_itemconfiginfo

@@ -1,6 +1,9 @@
 #
 #  basic demo  ---  called from demo.rb
 #
+unless Object.const_defined?('DemoVar')
+  fail RuntimeError, "This is NOT a stand alone script. This script is called from 'demo.rb'. "
+end
 
 module DemoBasic
   @@var   = TkVariable.new_hash
