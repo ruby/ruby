@@ -41,6 +41,9 @@ module WEBrick
           meta = req.meta_vars
           meta["SCRIPT_FILENAME"] = @script_filename
           meta["PATH"] = @config[:CGIPathEnv]
+          if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
+            meta["SystemRoot"] = ENV["SystemRoot"]
+          end
           dump = Marshal.dump(meta)
 
           cgi_in.write("%8d" % cgi_out.path.size)
@@ -56,7 +59,7 @@ module WEBrick
         ensure
           cgi_in.close
           status = $?.exitstatus
-          sleep 0.1 if /mswin/ =~ RUBY_PLATFORM
+          sleep 0.1 if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
           data = cgi_out.read
           cgi_out.close(true)
           if errmsg = cgi_err.read

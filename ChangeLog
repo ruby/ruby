@@ -1,3 +1,9 @@
+Mon Jul 19 00:53:46 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/httpservlet/cgihandler.rb
+	  (WEBrick::HTTPServlet::CGIhandler#do_GET): set SystemRoot environment
+	  variable to CGI process on Windows native platforms. [ruby-dev:23936]
+
 Sun Jul 18 16:14:29 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/msgcat.rb (TkMsgCatalog.callback): bug fix
