@@ -481,35 +481,62 @@ int SafeFree(char **vec, int vecc)
 }
 
 
+/*
+  ruby -lne 'BEGIN{$cmds = Hash.new(0); $mask = 1}'
+   -e '$cmds[$_.downcase] |= $mask' -e '$mask <<= 1 if ARGF.eof'
+   -e 'END{$cmds.sort.each{|n,f|puts "    \"\\#{f.to_s(8)}\" #{n.dump} + 1,"}}'
+   98cmd ntcmd
+ */
 static char *szInternalCmds[] = {
-  "append",
-  "break",
-  "call",
-  "cd",
-  "chdir",
-  "cls",
-  "copy",
-  "date",
-  "del",
-  "dir",
-  "echo",
-  "erase",
-  "label",
-  "md",
-  "mkdir",
-  "path",
-  "pause",
-  "rd",
-  "rem",
-  "ren",
-  "rename",
-  "rmdir",
-  "set",
-  "start",
-  "time",
-  "type",
-  "ver",
-  "vol",
+    "\2" "assoc" + 1,
+    "\3" "break" + 1,
+    "\3" "call" + 1,
+    "\3" "cd" + 1,
+    "\1" "chcp" + 1,
+    "\3" "chdir" + 1,
+    "\3" "cls" + 1,
+    "\2" "color" + 1,
+    "\3" "copy" + 1,
+    "\1" "ctty" + 1,
+    "\3" "date" + 1,
+    "\3" "del" + 1,
+    "\3" "dir" + 1,
+    "\3" "echo" + 1,
+    "\2" "endlocal" + 1,
+    "\3" "erase" + 1,
+    "\3" "exit" + 1,
+    "\3" "for" + 1,
+    "\2" "ftype" + 1,
+    "\3" "goto" + 1,
+    "\3" "if" + 1,
+    "\1" "lfnfor" + 1,
+    "\1" "lh" + 1,
+    "\1" "lock" + 1,
+    "\3" "md" + 1,
+    "\3" "mkdir" + 1,
+    "\2" "move" + 1,
+    "\3" "path" + 1,
+    "\3" "pause" + 1,
+    "\2" "popd" + 1,
+    "\3" "prompt" + 1,
+    "\2" "pushd" + 1,
+    "\3" "rd" + 1,
+    "\3" "rem" + 1,
+    "\3" "ren" + 1,
+    "\3" "rename" + 1,
+    "\3" "rmdir" + 1,
+    "\3" "set" + 1,
+    "\2" "setlocal" + 1,
+    "\3" "shift" + 1,
+    "\2" "start" + 1,
+    "\3" "time" + 1,
+    "\2" "title" + 1,
+    "\1" "truename" + 1,
+    "\3" "type" + 1,
+    "\1" "unlock" + 1,
+    "\3" "ver" + 1,
+    "\3" "verify" + 1,
+    "\3" "vol" + 1,
 };
 
 static int
@@ -519,11 +546,16 @@ internal_match(const void *key, const void *elem)
 }
 
 static int
-isInternalCmd(const char *cmd)
+isInternalCmd(const char *cmd, const char *interp)
 {
-    int i;
-    char cmdname[8], *b = cmdname, c;
+    int i, nt = 1;
+    char cmdname[9], *b = cmdname, c, **nm;
 
+    i = strlen(interp) - 11;
+    if ((i == 0 || i > 0 && isdirsep(interp[i])) &&
+	strcasecmp(interp+i, "command.com") == 0) {
+	nt = 0;
+    }
     do {
 	if (!(c = *cmd++)) return 0;
     } while (isspace(c));
@@ -542,10 +574,11 @@ isInternalCmd(const char *cmd)
 	return 0;
     }
     *b = 0;
-    if (!bsearch(cmdname, szInternalCmds,
+    nm = bsearch(cmdname, szInternalCmds,
 		 sizeof(szInternalCmds) / sizeof(*szInternalCmds),
 		 sizeof(*szInternalCmds),
-		 internal_match))
+		 internal_match);
+    if (!nm || !(nm[0][-1] & (nt ? 2 : 1)))
 	return 0;
     return 1;
 }
@@ -877,26 +910,22 @@ CreateChild(char *cmd, char *prog, SECURITY_ATTRIBUTES *psa, HANDLE hInput, HAND
 
     dwCreationFlags = (NORMAL_PRIORITY_CLASS);
 
+    shell = NULL;
     if (prog) {
 	shell = prog;
     }
-    else {
-	int redir = -1;
-	if ((shell = getenv("RUBYSHELL")) && (redir = has_redirection(cmd))) {
+    else if (has_redirection(cmd)) {
+	if (shell = getenv("RUBYSHELL")) {
 	    char *tmp = ALLOCA_N(char, strlen(shell) + strlen(cmd) +
 				 sizeof (" -c "));
 	    sprintf(tmp, "%s -c %s", shell, cmd);
 	    cmd = tmp;
 	}
-	else if ((shell = getenv("COMSPEC")) &&
-		 ((redir < 0 ? has_redirection(cmd) : redir) || isInternalCmd(cmd))) {
+	else if ((shell = getenv("COMSPEC")) && isInternalCmd(cmd, shell)) {
 	    char *tmp = ALLOCA_N(char, strlen(shell) + strlen(cmd) +
 				 sizeof (" /c "));
 	    sprintf(tmp, "%s /c %s", shell, cmd);
 	    cmd = tmp;
-	}
-	else {
-	    shell = NULL;
 	}
     }
 
@@ -1116,7 +1145,6 @@ make_cmdvector(const char *cmd, char ***vec)
 
 		if (quote != '\'')
 		    globbing++;
-		ptr++;
 		slashes = 0;
 		break;
 

@@ -1,3 +1,16 @@
+Sat Sep  6 00:00:20 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (have_library, find_library): configure by library
+	  name.
+
+Sat Sep  6 00:00:20 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (isInternalCmd): distinguish command.com and
+	  cmd.exe.
+
+	* win32/win32.c (make_cmdvector): a character just after wildcard
+	  was ignored.  [ruby-core:01518]
+
 Fri Sep  5 20:27:08 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/ruby/test_*.rb: replace 'assert(a == b)' with assert_equal(a, b)'

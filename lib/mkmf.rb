@@ -456,7 +456,8 @@ end
 
 def have_library(lib, func = nil, &b)
   func = "main" if !func or func.empty?
-  checking_for "#{func}() in -l#{lib}" do
+  lib = with_config(lib+'lib', lib)
+  checking_for "#{func}() in #{LIBARG%lib}" do
     if COMMON_LIBS.include?(lib)
       true
     else
@@ -472,7 +473,9 @@ def have_library(lib, func = nil, &b)
 end
 
 def find_library(lib, func, *paths, &b)
-  checking_for "#{func}() in -l#{lib}" do
+  func = "main" if !func or func.empty?
+  lib = with_config(lib+'lib', lib)
+  checking_for "#{func}() in #{LIBARG%lib}" do
     libpath = $LIBPATH
     libs = append_library($libs, lib)
     begin
