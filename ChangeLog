@@ -1145,11 +1145,6 @@ Sat Nov  6 14:58:44 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	  ruby 1.9 feature)
 
 Sat Nov  6 11:31:04 2004  Tadayoshi Funaba  <tadf@dotrb.org>
-Sat Nov  6 00:46:27 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
-
-	* string.c (rb_str_locktmp): check STR_TMPLOCK flag before
-	  locking.  [ruby-dev:24727]
-
 
 	* lib/date.rb (_parse): checks whether zone was given.
 
