@@ -53,7 +53,9 @@ static void
 strio_mark(ptr)
     struct StringIO *ptr;
 {
-    rb_gc_mark(ptr->string);
+    if (ptr) {
+	rb_gc_mark(ptr->string);
+    }
 }
 
 static void
@@ -181,7 +183,6 @@ static VALUE
 strio_s_allocate(klass)
     VALUE klass;
 {
-    struct StringIO *ptr;
     return Data_Wrap_Struct(klass, strio_mark, strio_free, 0);
 }
 
