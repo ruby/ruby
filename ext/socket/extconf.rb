@@ -124,7 +124,7 @@ end
 #ifdef _WIN32
 # include <windows.h>
 # include <winsock.h>
-#endif
+#else
 # include <sys/types.h>
 # include <netdb.h>
 # include <string.h>
@@ -147,7 +147,7 @@ end
 #ifdef _WIN32
 # include <windows.h>
 # include <winsock.h>
-#endif
+#else
 # include <sys/types.h>
 # include <netdb.h>
 # include <string.h>
