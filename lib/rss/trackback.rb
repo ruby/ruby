@@ -11,14 +11,6 @@ module RSS
 
   module TrackBackUtils
     private
-    def new_with_value_if_need(klass, value)
-      if value.is_a?(klass)
-        value
-      else
-        klass.new(value)
-      end
-    end
-          
     def trackback_validate(tags)
       counter = {}
       %w(ping about).each do |x|
@@ -60,7 +52,7 @@ module RSS
 
             remove_method :#{var_name}=
             def #{var_name}=(value)
-              @#{var_name} = new_with_value_if_need(#{klass_name}, value)
+              @#{var_name} = Utils.new_with_value_if_need(#{klass_name}, value)
             end
           EOC
         end
@@ -88,16 +80,16 @@ module RSS
             remove_method :set_#{var_name}
             def #{var_name}=(*args)
               if args.size == 1
-                item = new_with_value_if_need(#{klass_name}, args[0])
+                item = Utils.new_with_value_if_need(#{klass_name}, args[0])
                 @#{var_name}.push(item)
               else
                 new_val = args.last
                 if new_val.is_a?(Array)
                   new_val = new_value.collect do |val|
-                    new_with_value_if_need(#{klass_name}, val)
+                    Utils.new_with_value_if_need(#{klass_name}, val)
                   end
                 else
-                  new_val = new_with_value_if_need(#{klass_name}, new_val)
+                  new_val = Utils.new_with_value_if_need(#{klass_name}, new_val)
                 end
                 @#{var_name}.send("[]=", *(args[0..-2] + [new_val]))
               end

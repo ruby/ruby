@@ -54,26 +54,35 @@ EOR
     end
   
     def test_parser
-
       assert_nothing_raised do
         Parser.parse(@rss_source)
       end
     
       @elems.each do |tag, value|
-        assert_too_much_tag(tag.to_s, "channel") do
-          Parser.parse(make_RDF(<<-EOR, {@prefix => @uri}))
+        rss = nil
+        assert_nothing_raised do
+          rss = Parser.parse(make_RDF(<<-EOR, {@prefix => @uri}))
 #{make_channel(("<" + @prefix + ":" + tag.to_s + ">" +
   value.to_s +
   "</" + @prefix + ":" + tag.to_s + ">") * 2)}
 #{make_item}
 EOR
         end
+        plural_reader = "dc_#{tag}" + (tag == :rights ? "es" : "s")
+        values = rss.channel.__send__(plural_reader).collect do |x|
+          val = x.value
+          if val.kind_of?(String)
+            CGI.escapeHTML(val)
+          else
+            val
+          end
+        end
+        assert_equal([value, value], values)
       end
 
     end
-  
-    def test_accessor
-    
+
+    def test_singular_accessor
       new_value = "hoge"
 
       @elems.each do |name, value|
@@ -101,15 +110,58 @@ EOR
           end
         end
       end
+    end
 
+    def test_plural_accessor
+      new_value = "hoge"
+      
+      @elems.each do |name, value|
+        @parents.each do |parent|
+          parsed_value = @rss.send(parent).send("dc_#{name}")
+          if parsed_value.kind_of?(String)
+            parsed_value = CGI.escapeHTML(parsed_value)
+          end
+          assert_equal(value, parsed_value)
+
+          plural_reader = "dc_#{name}" + (name == :rights ? "es" : "s")
+          klass_name = "DublinCore#{Utils.to_class_name(name.to_s)}"
+          klass = DublinCoreModel.const_get(klass_name)
+          if name == :date
+            t = Time.iso8601("2003-01-01T02:30:23+09:00")
+            class << t
+              alias_method(:to_s, :iso8601)
+            end
+            elems = @rss.send(parent).send(plural_reader)
+            elems << klass.new(t.iso8601)
+            values = @rss.send(parent).send(plural_reader).collect{|x| x.value}
+            assert_equal([@rss.send(parent).send("dc_#{name}"), t],
+                         values)
+          else
+            elems = @rss.send(parent).send(plural_reader)
+            elems << klass.new(new_value)
+            values = @rss.send(parent).send(plural_reader).collect{|x| x.value}
+            assert_equal([@rss.send(parent).send("dc_#{name}"), new_value],
+                         values)
+          end
+        end
+      end
     end
 
     def test_to_s
-      
       @elems.each do |name, value|
         excepted = "<#{@prefix}:#{name}>#{value}</#{@prefix}:#{name}>"
         @parents.each do |parent|
-          assert_equal(excepted, @rss.send(parent).send("dc_#{name}_element"))
+          assert_equal(excepted, @rss.send(parent).send("dc_#{name}_elements"))
+        end
+        
+        excepted = Array.new(2, excepted).join("\n")
+        @parents.each do |parent|
+          reader = "dc_#{name}" + (name == :rights ? "es" : "s")
+          elems = @rss.send(parent).send(reader)
+          klass_name = "DublinCore#{Utils.to_class_name(name.to_s)}"
+          klass = DublinCoreModel.const_get(klass_name)
+          elems << klass.new(@rss.send(parent).send("dc_#{name}"))
+          assert_equal(excepted, @rss.send(parent).send("dc_#{name}_elements"))
         end
       end
       
@@ -117,12 +169,12 @@ EOR
         if @parents.include?(parent.name)
           parent.each_element do |elem|
             if elem.namespace == @uri
-              assert_equal(CGI.escapeHTML(elem.text), @elems[elem.name.intern].to_s)
+              assert_equal(CGI.escapeHTML(elem.text),
+                           @elems[elem.name.intern].to_s)
             end
           end
         end
       end
-      
     end
 
   end

@@ -51,6 +51,14 @@ module Enumerable
   end
 end
 
+class Hash
+  unless instance_methods.include?("merge")
+    def merge(other)
+      dup.update(other)
+    end
+  end
+end
+
 require "English"
 require "rss/utils"
 require "rss/converter"
@@ -222,38 +230,7 @@ EOC
 
       # accessor
       convert_attr_reader name
-      module_eval(<<-EOC, *get_file_and_line_from_caller(2))
-      def #{name}=(new_value)
-        if new_value.kind_of?(Time)
-          @#{name} = new_value
-        else
-          if @do_validate
-            begin
-              @#{name} = Time.send('#{type}', new_value)
-            rescue ArgumentError
-              raise NotAvailableValueError.new('#{disp_name}', new_value)
-            end
-          else
-            @#{name} = nil
-            if /\\A\\s*\\z/ !~ new_value.to_s
-              begin
-                @#{name} = Time.parse(new_value)
-              rescue ArgumentError
-              end
-            end
-          end
-        end
-
-        # Is it need?
-        if @#{name}
-          class << @#{name}
-            undef_method(:to_s)
-            alias_method(:to_s, :#{type})
-          end
-        end
-
-      end
-EOC
+      date_writer(name, type, disp_name)
       
       install_element(name) do |n, elem_name|
         <<-EOC
@@ -299,6 +276,41 @@ EOC
         end
 EOC
       end
+    end
+
+    def date_writer(name, type, disp_name=name)
+      module_eval(<<-EOC, *get_file_and_line_from_caller(2))
+      def #{name}=(new_value)
+        if new_value.nil? or new_value.kind_of?(Time)
+          @#{name} = new_value
+        else
+          if @do_validate
+            begin
+              @#{name} = Time.send('#{type}', new_value)
+            rescue ArgumentError
+              raise NotAvailableValueError.new('#{disp_name}', new_value)
+            end
+          else
+            @#{name} = nil
+            if /\\A\\s*\\z/ !~ new_value.to_s
+              begin
+                @#{name} = Time.parse(new_value)
+              rescue ArgumentError
+              end
+            end
+          end
+        end
+
+        # Is it need?
+        if @#{name}
+          class << @#{name}
+            undef_method(:to_s)
+            alias_method(:to_s, :#{type})
+          end
+        end
+
+      end
+EOC
     end
 
     def def_children_accessor(accessor_name, plural_name)
@@ -660,8 +672,9 @@ EOC
       klass = next_element.class
       prefix = ""
       prefix << "#{klass.required_prefix}_" if klass.required_prefix
-      if self.class.plural_forms.has_key?(tag_name)
-        ary = __send__("#{prefix}#{self.class.plural_forms[tag_name]}")
+      key = "#{prefix}#{tag_name}"
+      if self.class.plural_forms.has_key?(key)
+        ary = __send__("#{self.class.plural_forms[key]}")
         ary << next_element
       else
         __send__("#{prefix}#{tag_name}=", next_element)

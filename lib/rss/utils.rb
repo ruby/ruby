@@ -19,6 +19,13 @@ module RSS
     end
     alias h html_escape
     
+    def new_with_value_if_need(klass, value)
+      if value.is_a?(klass)
+        value
+      else
+        klass.new(value)
+      end
+    end
   end
 
 end

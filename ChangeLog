@@ -1,3 +1,43 @@
+Tue Apr  5 15:15:26 2005  Kouhei Sutou  <kou@kono.cis.iwate-u.ac.jp>
+
+	* lib/rss/dublincore.rb: supported multiple DublinCore items.
+
+	* lib/rss/parser.rb: added class name registry for complex model
+	  elements. (ex. have childlen elements, have some attributes and
+	  a child element and so on.)
+
+	* lib/rss/maker/base.rb: added default current_element implementation.
+
+	* lib/rss/maker/dublincore.rb: supported multiple DublinCore items.
+
+	* lib/rss/maker/image.rb: supproted new DublinCore API.
+
+
+	* lib/rss/trackback.rb (RSS::TrackBackUtils.new_with_value_if_need):
+	  moved to RSS::Utils.
+	
+	* lib/rss/utils.rb (RSS::Utils.new_with_value_if_need):
+	  moved from RSS::TrackBackUtils.
+	
+
+	* lib/rss/maker/image.rb: fixed invalid argument of
+	  add_need_initialize_variable bug.
+	
+	* lib/rss/maker/trackback.rb: ditto.
+
+
+	* lib/rss/rss.rb (Hash#merge): added for ruby 1.6.
+	
+	* lib/rss/rss.rb (RSS::BaseModel.date_writer): changed to accept nil
+	  for date value.
+
+
+	* test/test_dublincore.rb: added tests for plural accessor and
+	  multiple DublinCore items.
+
+	* test/test_setup_maker_1.0.rb: fixed swapped actual and expected
+	  values.
+
 Mon Apr  4 23:17:52 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb (TkComm#array2tk_list): accept enc-mode argument to

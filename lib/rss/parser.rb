@@ -125,6 +125,7 @@ module RSS
 
       @@setters = {}
       @@registered_uris = {}
+      @@class_names = {}
 
       def install_setter(uri, tag_name, setter)
         @@setters[uri] ||= {}
@@ -146,14 +147,27 @@ module RSS
           []
         end
       end
-          
+      
       def register_uri(uri, name)
         @@registered_uris[name] ||= {}
         @@registered_uris[name][uri] = nil
       end
-
+      
       def uri_registered?(uri, name)
         @@registered_uris[name].has_key?(uri)
+      end
+
+      def install_class_name(uri, tag_name, class_name)
+        @@class_names[uri] ||= {}
+        @@class_names[uri][tag_name] = class_name
+      end
+
+      def class_name(uri, tag_name)
+        begin
+          @@class_names[uri][tag_name]
+        rescue NameError
+          tag_name[0,1].upcase + tag_name[1..-1]
+        end
       end
 
       def install_get_text_element(uri, name, setter)
@@ -275,13 +289,11 @@ module RSS
     end
 
     def start_else_element(local, prefix, attrs, ns)
-      class_name = local[0,1].upcase << local[1..-1]
+      class_name = self.class.class_name(ns[prefix], local)
       current_class = @last_element.class
-#			begin
       if current_class.constants.include?(class_name)
         next_class = current_class.const_get(class_name)
         start_have_something_element(local, prefix, attrs, ns, next_class)
-#			rescue NameError
       else
         if @ignore_unknown_element
           @proc_stack.push(nil)

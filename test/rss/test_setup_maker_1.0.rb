@@ -84,11 +84,11 @@ module RSS
       assert_nil(channel.textinput)
 
       @dc_elems.each do |var, value|
-        assert_equal(channel.__send__("dc_#{var}"), value)
+        assert_equal(value, channel.__send__("dc_#{var}"))
       end
       
       @sy_elems.each do |var, value|
-        assert_equal(channel.__send__("sy_#{var}"), value)
+        assert_equal(value, channel.__send__("sy_#{var}"))
       end
       
     end

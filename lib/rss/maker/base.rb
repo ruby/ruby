@@ -81,6 +81,10 @@ module RSS
         end
       end
 
+      def current_element(rss)
+        rss
+      end
+      
       def setup_values(target)
         set = false
         if have_required_values?
