@@ -765,7 +765,7 @@ rb_num2long(val)
     VALUE val;
 {
     if (NIL_P(val)) {
-	rb_raise(rb_eTypeError, "no implicit conversion from nil");
+	rb_raise(rb_eTypeError, "no implicit conversion to integer from nil");
     }
 
     if (FIXNUM_P(val)) return FIX2LONG(val);
@@ -782,19 +782,19 @@ rb_num2long(val)
 
 	    sprintf(buf, "%-.10g", RFLOAT(val)->value);
 	    if (s = strchr(buf, ' ')) *s = '\0';
-	    rb_raise(rb_eRangeError, "float %s out of rang of integer", buf);
+	    rb_raise(rb_eRangeError, "float %s out of range of integer", buf);
 	}
 
       case T_BIGNUM:
 	return rb_big2long(val);
 
       case T_STRING:
-	rb_raise(rb_eTypeError, "no implicit conversion from string");
+	rb_raise(rb_eTypeError, "no implicit conversion to integer from string");
 	return Qnil;		/* not reached */
 
       case T_TRUE:
       case T_FALSE:
-	rb_raise(rb_eTypeError, "no implicit conversion from boolean");
+	rb_raise(rb_eTypeError, "no implicit conversion to integer from boolean");
 	return Qnil;		/* not reached */
 
       default:

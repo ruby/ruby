@@ -33,12 +33,13 @@ VALUE rb_cString;
 VALUE rb_fs;
 
 VALUE
-rb_str_new(ptr, len)
+rb_str_new0(klass, ptr, len)
+    VALUE klass;
     const char *ptr;
     long len;
 {
     NEWOBJ(str, struct RString);
-    OBJSETUP(str, rb_cString, T_STRING);
+    OBJSETUP(str, klass, T_STRING);
 
     str->ptr = 0;
     str->len = len;
@@ -49,6 +50,14 @@ rb_str_new(ptr, len)
     }
     str->ptr[len] = '\0';
     return (VALUE)str;
+}
+
+VALUE
+rb_str_new(ptr, len)
+    const char *ptr;
+    long len;
+{
+    return rb_str_new0(rb_cString, ptr, len);
 }
 
 VALUE
@@ -127,6 +136,15 @@ rb_str_new4(orig)
 
 	return (VALUE)str;
     }
+}
+
+VALUE
+rb_str_new5(obj, ptr, len)
+    VALUE obj;
+    const char *ptr;
+    long len;
+{
+    return rb_str_new0(rb_obj_class(obj), ptr, len);
 }
 
 #define STR_BUF_MIN_SIZE 128
@@ -276,7 +294,6 @@ rb_str_dup(str)
     return str2;
 }
 
-
 static VALUE
 rb_str_clone(str)
     VALUE str;
@@ -295,8 +312,7 @@ rb_str_s_new(argc, argv, klass)
     VALUE *argv;
     VALUE klass;
 {
-    VALUE str = rb_str_new(0, 0);
-    OBJSETUP(str, klass, T_STRING);
+    VALUE str = rb_str_new0(klass, 0, 0);
 
     rb_obj_call_init(str, argc, argv);
     return str;
@@ -360,7 +376,7 @@ rb_str_times(str, times)
     long i, len;
 
     len = NUM2LONG(times);
-    if (len == 0) return rb_str_new(0,0);
+    if (len == 0) return rb_str_new5(str,0,0);
     if (len < 0) {
 	rb_raise(rb_eArgError, "negative argument");
     }
@@ -368,16 +384,14 @@ rb_str_times(str, times)
 	rb_raise(rb_eArgError, "argument too big");
     }
 
-    str2 = rb_str_new(0, RSTRING(str)->len*len);
+    str2 = rb_str_new5(str,0, RSTRING(str)->len*len);
     for (i=0; i<len; i++) {
 	memcpy(RSTRING(str2)->ptr+(i*RSTRING(str)->len),
 	       RSTRING(str)->ptr, RSTRING(str)->len);
     }
     RSTRING(str2)->ptr[RSTRING(str2)->len] = '\0';
 
-    if (OBJ_TAINTED(str)) {
-	OBJ_TAINT(str2);
-    }
+    OBJ_INFECT(str2, str);
 
     return str2;
 }
@@ -420,10 +434,10 @@ rb_str_substr(str, beg, len)
     if (len < 0) {
 	len = 0;
     }
-    if (len == 0) return rb_str_new(0,0);
+    if (len == 0) return rb_str_new5(str,0,0);
 
-    str2 = rb_str_new(RSTRING(str)->ptr+beg, len);
-    if (OBJ_TAINTED(str)) OBJ_TAINT(str2);
+    str2 = rb_str_new5(str,RSTRING(str)->ptr+beg, len);
+    OBJ_INFECT(str2, str);
 
     return str2;
 }
@@ -984,7 +998,7 @@ rb_str_succ(orig)
     int c = -1;
     int n = 0;
 
-    str = rb_str_new(RSTRING(orig)->ptr, RSTRING(orig)->len);
+    str = rb_str_new5(orig,RSTRING(orig)->ptr, RSTRING(orig)->len);
     OBJ_INFECT(str, orig);
     if (RSTRING(str)->len == 0) return str;
 
@@ -1057,6 +1071,17 @@ rb_str_upto_m(beg, end)
 }
 
 static VALUE
+rb_str_subpat(str, re, offset)
+    VALUE str, re;
+    int offset;
+{
+    if (rb_reg_search(re, str, 0, 0) >= 0) {
+	return rb_reg_nth_match(offset, rb_backref_get());
+    }
+    return Qnil;
+}
+    
+static VALUE
 rb_str_aref(str, indx)
     VALUE str;
     VALUE indx;
@@ -1077,9 +1102,7 @@ rb_str_aref(str, indx)
 	return INT2FIX(RSTRING(str)->ptr[idx] & 0xff);
 
       case T_REGEXP:
-	if (rb_reg_search(indx, str, 0, 0) >= 0)
-	    return rb_reg_last_match(rb_backref_get());
-	return Qnil;
+	return rb_str_subpat(str, indx, 0);
 
       case T_STRING:
 	if (rb_str_index(str, indx, 0) != -1) return indx;
@@ -1111,6 +1134,9 @@ rb_str_aref_m(argc, argv, str)
     VALUE str;
 {
     if (argc == 2) {
+	if (TYPE(argv[0]) == T_REGEXP) {
+	    return rb_str_subpat(str, argv[0], NUM2INT(argv[1]));
+	}
 	return rb_str_substr(str, NUM2INT(argv[0]), NUM2INT(argv[1]));
     }
     if (argc != 1) {
@@ -1162,7 +1188,31 @@ rb_str_update(str, beg, len, val)
     OBJ_INFECT(str, val);
 }
 
-static VALUE rb_str_sub_bang _((int, VALUE*, VALUE));
+static void
+rb_str_subpat_set(str, re, offset, val)
+    VALUE str, re;
+    int offset;
+    VALUE val;
+{
+    VALUE match;
+    int start, end, len;
+
+    if (rb_reg_search(re, str, 0, 0) < 0) {
+	rb_raise(rb_eIndexError, "regexp not matched");
+    }
+    match = rb_backref_get();
+    if (offset >= RMATCH(match)->regs->num_regs) {
+	rb_raise(rb_eIndexError, "index %d out of regexp", offset);
+    }
+
+    start = RMATCH(match)->BEG(offset);
+    if (start == -1) {
+	rb_raise(rb_eIndexError, "regexp group %d not matched", offset);
+    }
+    end = RMATCH(match)->END(offset);
+    len = end - start;
+    rb_str_update(str, start, len, val);
+}
 
 static VALUE
 rb_str_aset(str, indx, val)
@@ -1194,12 +1244,7 @@ rb_str_aset(str, indx, val)
 	return val;
 
       case T_REGEXP:
-        {
-	    VALUE args[2];
-	    args[0] = indx;
-	    args[1] = val;
-	    rb_str_sub_bang(2, args, str);
-	}
+	rb_str_subpat_set(str, indx, 0, val);
 	return val;
 
       case T_STRING:
@@ -1231,11 +1276,12 @@ rb_str_aset_m(argc, argv, str)
 {
     rb_str_modify(str);
     if (argc == 3) {
-	long beg, len;
-
-	beg = NUM2INT(argv[0]);
-	len = NUM2INT(argv[1]);
-	rb_str_update(str, beg, len, argv[2]);
+	if (TYPE(argv[0]) == T_REGEXP) {
+	    rb_str_subpat_set(str, argv[0], NUM2INT(argv[1]), argv[2]);
+	}
+	else {
+	    rb_str_update(str, NUM2INT(argv[0]), NUM2INT(argv[1]), argv[2]);
+	}
 	return argv[2];
     }
     if (argc != 2) {
@@ -1479,6 +1525,7 @@ str_gsub(argc, argv, str, bang)
 	NEWOBJ(dup, struct RString);
 	OBJSETUP(dup, rb_cString, T_STRING);
 	OBJ_INFECT(dup, str);
+	RBASIC(dup)->klass = rb_obj_class(str);
 	str = (VALUE)dup;
 	dup->orig = 0;
     }
@@ -1529,7 +1576,7 @@ rb_str_replace(str, str2)
 	memcpy(RSTRING(str)->ptr, RSTRING(str2)->ptr, RSTRING(str2)->len);
     }
 
-    if (OBJ_TAINTED(str2)) OBJ_TAINT(str);
+    OBJ_INFECT(str2, str);
     return str;
 }
 
@@ -1616,13 +1663,14 @@ rb_str_reverse(str)
 
     if (RSTRING(str)->len <= 1) return rb_str_dup(str);
 
-    obj = rb_str_new(0, RSTRING(str)->len);
+    obj = rb_str_new5(str, 0, RSTRING(str)->len);
     s = RSTRING(str)->ptr; e = s + RSTRING(str)->len - 1;
     p = RSTRING(obj)->ptr;
 
     while (e >= s) {
 	*p++ = *e--;
     }
+    OBJ_INFECT(obj, str);
 
     return obj;
 }
@@ -1771,7 +1819,7 @@ rb_str_dump(str)
 	}
     }
 
-    result = rb_str_new(0, len);
+    result = rb_str_new5(str, 0, len);
     p = RSTRING(str)->ptr; pend = p + RSTRING(str)->len;
     q = RSTRING(result)->ptr; qend = q + len;
 
@@ -2432,7 +2480,7 @@ rb_str_split_m(argc, argv, str)
 	    for (idx=1; idx < regs->num_regs; idx++) {
 		if (BEG(idx) == -1) continue;
 		if (BEG(idx) == END(idx))
-		    tmp = rb_str_new(0, 0);
+		    tmp = rb_str_new5(str, 0, 0);
 		else
 		    tmp = rb_str_substr(str, BEG(idx), END(idx)-BEG(idx));
 		rb_ary_push(result, tmp);
@@ -2442,7 +2490,7 @@ rb_str_split_m(argc, argv, str)
     }
     if (!NIL_P(limit) || RSTRING(str)->len > beg || lim < 0) {
 	if (RSTRING(str)->len == beg)
-	    tmp = rb_str_new(0, 0);
+	    tmp = rb_str_new5(str, 0, 0);
 	else
 	    tmp = rb_str_substr(str, beg, RSTRING(str)->len-beg);
 	rb_ary_push(result, tmp);
@@ -2515,7 +2563,7 @@ rb_str_each_line(argc, argv, str)
 	if (p[-1] == newline &&
 	    (rslen <= 1 ||
 	     rb_memcmp(RSTRING(rs)->ptr, p-rslen, rslen) == 0)) {
-	    line = rb_str_new(s, p - s);
+	    line = rb_str_new5(str, s, p - s);
 	    rb_yield(line);
 	    if (RSTRING(str)->ptr != ptr || RSTRING(str)->len != len)
 		rb_raise(rb_eArgError, "string modified");
@@ -2525,7 +2573,7 @@ rb_str_each_line(argc, argv, str)
 
     if (s != pend) {
         if (p > pend) p = pend;
-	line = rb_str_new(s, p - s);
+	line = rb_str_new5(str, s, p - s);
 	OBJ_INFECT(line, str);
 	rb_yield(line);
     }
@@ -2932,7 +2980,7 @@ rb_str_ljust(str, w)
     char *p, *pend;
 
     if (width < 0 || RSTRING(str)->len >= width) return str;
-    res = rb_str_new(0, width);
+    res = rb_str_new5(str, 0, width);
     memcpy(RSTRING(res)->ptr, RSTRING(str)->ptr, RSTRING(str)->len);
     p = RSTRING(res)->ptr + RSTRING(str)->len; pend = RSTRING(res)->ptr + width;
     while (p < pend) {
@@ -2952,7 +3000,7 @@ rb_str_rjust(str, w)
     char *p, *pend;
 
     if (width < 0 || RSTRING(str)->len >= width) return str;
-    res = rb_str_new(0, width);
+    res = rb_str_new5(str, 0, width);
     p = RSTRING(res)->ptr; pend = p + width - RSTRING(str)->len;
     while (p < pend) {
 	*p++ = ' ';
@@ -2973,7 +3021,7 @@ rb_str_center(str, w)
     long n;
 
     if (width < 0 || RSTRING(str)->len >= width) return str;
-    res = rb_str_new(0, width);
+    res = rb_str_new5(str, 0, width);
     n = (width - RSTRING(str)->len)/2;
     p = RSTRING(res)->ptr; pend = p + n;
     while (p < pend) {

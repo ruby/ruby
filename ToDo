@@ -29,6 +29,7 @@ Language Spec.
 * resumable Exception via Exception#resume.
 * method combination, e.g. before, after, around, etc.
 * .. or something like defadvice in Emacs.
+* Class#allocate - basicNew
 
 Hacking Interpreter
 
@@ -105,6 +106,7 @@ Ruby Libraries
 Tools
 
 * freeze or undump to bundle everything
+* bundle using zlib
 
 Misc
 

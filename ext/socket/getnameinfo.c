@@ -180,14 +180,14 @@ getnameinfo(sa, salen, host, hostlen, serv, servlen, flags)
 		/* what we should do? */
 	} else if (flags & NI_NUMERICSERV) {
 		snprintf(numserv, sizeof(numserv), "%d", ntohs(port));
-		if (strlen(numserv) > servlen)
+		if (strlen(numserv) + 1 > servlen)
 			return ENI_MEMORY;
 		strcpy(serv, numserv);
 	} else {
 #if defined(HAVE_GETSERVBYPORT)
 		sp = getservbyport(port, (flags & NI_DGRAM) ? "udp" : "tcp");
 		if (sp) {
-			if (strlen(sp->s_name) > servlen)
+			if (strlen(sp->s_name) + 1 > servlen)
 				return ENI_MEMORY;
 			strcpy(serv, sp->s_name);
 		} else
@@ -199,11 +199,11 @@ getnameinfo(sa, salen, host, hostlen, serv, servlen, flags)
 
 	switch (sa->sa_family) {
 	case AF_INET:
-		v4a = ((struct sockaddr_in *)sa)->sin_addr.s_addr;
+		v4a = ntohl(((struct sockaddr_in *)sa)->sin_addr.s_addr);
 		if (IN_MULTICAST(v4a) || IN_EXPERIMENTAL(v4a))
 			flags |= NI_NUMERICHOST;
 		v4a >>= IN_CLASSA_NSHIFT;
-		if (v4a == 0 || v4a == IN_LOOPBACKNET)
+		if (v4a == 0)
 			flags |= NI_NUMERICHOST;			
 		break;
 #ifdef INET6
@@ -236,7 +236,7 @@ getnameinfo(sa, salen, host, hostlen, serv, servlen, flags)
 				p = strchr(hp->h_name, '.');
 				if (p) *p = '\0';
 			}
-			if (strlen(hp->h_name) > hostlen) {
+			if (strlen(hp->h_name) + 1 > hostlen) {
 #ifdef INET6
 				freehostent(hp);
 #endif

@@ -179,6 +179,22 @@ rb_ary_s_new(argc, argv, klass)
 }
 
 static VALUE
+to_ary(ary)
+    VALUE ary;
+{
+    return rb_convert_type(ary, T_ARRAY, "Array", "to_ary");
+}
+
+static VALUE
+to_ary_failed(failed)
+    int *failed;
+{
+    *failed = Qtrue;
+}
+
+static VALUE rb_ary_replace _((VALUE, VALUE));
+
+static VALUE
 rb_ary_initialize(argc, argv, ary)
     int argc;
     VALUE *argv;
@@ -187,11 +203,17 @@ rb_ary_initialize(argc, argv, ary)
     long len;
     VALUE size, val;
 
+    rb_ary_modify(ary);
     if (rb_scan_args(argc, argv, "02", &size, &val) == 0) {
+	RARRAY(ary)->len = 0;
 	return ary;
     }
 
-    rb_ary_modify(ary);
+    if (argc == 1 && !FIXNUM_P(size) && rb_respond_to(size, rb_intern("to_ary"))) {
+	rb_ary_replace(ary, rb_convert_type(size, T_ARRAY, "Array", "to_ary"));
+	return ary;
+    }
+
     len = NUM2LONG(size);
     if (len < 0) {
 	rb_raise(rb_eArgError, "negative array size");
@@ -409,6 +431,7 @@ rb_ary_subseq(ary, beg, len)
     ary2 = rb_ary_new2(len);
     MEMCPY(RARRAY(ary2)->ptr, RARRAY(ary)->ptr+beg, VALUE, len);
     RARRAY(ary2)->len = len;
+    RBASIC(ary2)->klass = rb_obj_class(ary);
 
     return ary2;
 }
@@ -544,6 +567,20 @@ rb_ary_indexes(argc, argv, ary)
     return new_ary;
 }
 
+VALUE
+rb_ary_to_ary(obj)
+    VALUE obj;
+{
+    if (NIL_P(obj)) return rb_ary_new2(0);
+    if (TYPE(obj) == T_ARRAY) {
+	return obj;
+    }
+    if (rb_respond_to(obj, rb_intern("to_ary"))) {
+	return rb_convert_type(obj, T_ARRAY, "Array", "to_ary");
+    }
+    return rb_ary_new3(1, obj);
+}
+
 static void
 rb_ary_update(ary, beg, len, rpl)
     VALUE ary;
@@ -552,12 +589,7 @@ rb_ary_update(ary, beg, len, rpl)
 {
     long rlen;
 
-    if (NIL_P(rpl)) {
-	rpl = rb_ary_new2(0);
-    }
-    else if (TYPE(rpl) != T_ARRAY) {
-	rpl = rb_ary_new3(1, rpl);
-    }
+    rpl = rb_ary_to_ary(rpl);
     rlen = RARRAY(rpl)->len;
 
     if (len < 0) rb_raise(rb_eIndexError, "negative length %d", len);
@@ -737,27 +769,6 @@ rb_ary_dup(ary)
     RARRAY(dup)->len = RARRAY(ary)->len;
     OBJ_INFECT(dup, ary);
     return dup;
-}
-
-static VALUE
-to_ary(ary)
-    VALUE ary;
-{
-    return rb_convert_type(ary, T_ARRAY, "Array", "to_ary");
-}
-
-VALUE
-rb_ary_to_ary(obj)
-    VALUE obj;
-{
-    if (NIL_P(obj)) return rb_ary_new2(0);
-    if (TYPE(obj) == T_ARRAY) {
-	return obj;
-    }
-    if (rb_respond_to(obj, rb_intern("to_ary"))) {
-	return rb_convert_type(obj, T_ARRAY, "Array", "to_ary");
-    }
-    return rb_ary_new3(1, obj);
 }
 
 extern VALUE rb_output_fs;
@@ -1342,6 +1353,8 @@ rb_ary_times(ary, times)
     for (i=0; i<len; i+=RARRAY(ary)->len) {
 	MEMCPY(RARRAY(ary2)->ptr+i, RARRAY(ary)->ptr, VALUE, RARRAY(ary)->len);
     }
+    OBJ_INFECT(ary2, ary);
+    RBASIC(ary2)->klass = rb_obj_class(ary);
 
     return ary2;
 }

@@ -585,15 +585,11 @@ new_blktag()
     _block.wrapper = ruby_wrapper;	\
     ruby_block = &_block;
 
-#define POP_BLOCK_TAG(tag) do {		\
-   if ((tag)->flags & BLOCK_DYNAMIC)	\
-       (tag)->flags |= BLOCK_ORPHAN;	\
-   else					\
-       rb_gc_force_recycle((VALUE)tag); \
-} while (0)
-
 #define POP_BLOCK() 			\
-   POP_BLOCK_TAG(_block.tag);		\
+   if (_block.tag->flags & (BLOCK_DYNAMIC)) \
+       _block.tag->flags |= BLOCK_ORPHAN; \
+   else	if (!(_block.scope->flags & SCOPE_DONT_RECYCLE)) \
+       rb_gc_force_recycle((VALUE)_block.tag); \
    ruby_block = _block.prev; 		\
 }
 
@@ -4631,7 +4627,8 @@ rb_call(klass, recv, mid, argc, argv, scope)
     struct cache_entry *ent;
 
     if (!klass) {
-	rb_raise(rb_eNotImpError, "method call on terminated object");
+	rb_raise(rb_eNotImpError, "method `%s' called on terminated object (0x%x)",
+		 rb_id2name(mid), recv);
     }
     /* is it in the method cache? */
     ent = cache + EXPR1(klass, mid);
@@ -4909,10 +4906,6 @@ eval(self, src, scope, file, line)
     volatile int iter = ruby_frame->iter;
     int state;
 
-    if (file == 0) {
-	file = ruby_sourcefile;
-	line = ruby_sourceline;
-    }
     if (!NIL_P(scope)) {
 	if (!rb_obj_is_block(scope)) {
 	    rb_raise(rb_eTypeError, "wrong argument type %s (expected Proc/Binding)",
@@ -4936,6 +4929,11 @@ eval(self, src, scope, file, line)
 	ruby_cref = (NODE*)ruby_frame->cbase;
 	old_wrapper = ruby_wrapper;
 	ruby_wrapper = data->wrapper;
+	if ((file == 0 || (line == 1 && strcmp(file, "(eval)") == 0)) &&
+	    data->body && data->body->nd_file) {
+	    file = data->body->nd_file;
+	    line = nd_line(data->body);
+	}
 
 	self = data->self;
 	ruby_frame->iter = data->iter;
@@ -4944,6 +4942,10 @@ eval(self, src, scope, file, line)
 	if (ruby_frame->prev) {
 	    ruby_frame->iter = ruby_frame->prev->iter;
 	}
+    }
+    if (file == 0) {
+	file = ruby_sourcefile;
+	line = ruby_sourceline;
     }
     PUSH_CLASS();
     ruby_class = ruby_cbase;
@@ -7520,24 +7522,26 @@ match_fds(dst, src, max)
     return Qfalse;
 }
 
-static void
+static int
 intersect_fds(src, dst, max)
     fd_set *src, *dst;
     int max;
 {
-    int i;
+    int i, n = 0;
 
     for (i=0; i<=max; i++) {
 	if (FD_ISSET(i, dst)) {
 	    if (FD_ISSET(i, src)) {
 		/* Wake up only one thread per fd. */
 		FD_CLR(i, src);
+		++n;
 	    }
 	    else {
 		FD_CLR(i, dst);
 	    }
 	}
     }
+    return n;
 }
 
 static int
@@ -7693,9 +7697,9 @@ rb_thread_schedule()
 		    /* Wake up only one thread per fd. */
 		    th->status = THREAD_RUNNABLE;
 		    th->wait_for = 0;
-		    intersect_fds(&readfds, &th->readfds, max);
-		    intersect_fds(&writefds, &th->writefds, max);
-		    intersect_fds(&exceptfds, &th->exceptfds, max);
+		    n = intersect_fds(&readfds, &th->readfds, max) +
+			intersect_fds(&writefds, &th->writefds, max) +
+			intersect_fds(&exceptfds, &th->exceptfds, max);
 		    th->select_value = n;
 		    found = 1;
 		}

@@ -83,7 +83,6 @@ class DEBUGGER__
 	@stop_next = 0
       end
       @last_file = nil
-      @last = [nil, nil]
       @file = nil
       @line = nil
       @no_step = nil
@@ -701,14 +700,9 @@ EOHELP
 	  # nothing to do. skipped.
 	end
 	if @stop_next == 0 or check_break_points(file, line, binding, id)
-	  if [file, line] == @last
-	    @stop_next = 1
-	  else
-	    @no_step = nil
-	    suspend_all
-	    debug_command(file, line, id, binding)
-	    @last = [file, line]
-	  end
+	  @no_step = nil
+	  suspend_all
+	  debug_command(file, line, id, binding)
 	end
 
       when 'call'

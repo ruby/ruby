@@ -354,13 +354,6 @@ nil_inspect(obj)
     return rb_str_new2("nil");
 }
 
-static VALUE
-nil_type(obj)
-    VALUE obj;
-{
-    return rb_cNilClass;
-}
-
 #ifdef NIL_PLUS
 static VALUE
 nil_plus(x, y)
@@ -398,13 +391,6 @@ true_to_s(obj)
 }
 
 static VALUE
-true_type(obj)
-    VALUE obj;
-{
-    return rb_cTrueClass;
-}
-
-static VALUE
 true_and(obj, obj2)
     VALUE obj, obj2;
 {
@@ -430,13 +416,6 @@ false_to_s(obj)
     VALUE obj;
 {
     return rb_str_new2("false");
-}
-
-static VALUE
-false_type(obj)
-    VALUE obj;
-{
-    return rb_cFalseClass;
 }
 
 static VALUE
@@ -482,13 +461,6 @@ rb_obj_alloc(klass)
     OBJSETUP(obj, klass, T_OBJECT);
 
     return (VALUE)obj;
-}
-
-static VALUE
-sym_type(sym)
-    VALUE sym;
-{
-    return rb_cSymbol;
 }
 
 static VALUE
@@ -1011,11 +983,11 @@ rb_num2dbl(val)
 	return RFLOAT(val)->value;
 
       case T_STRING:
-	rb_raise(rb_eTypeError, "no implicit conversion from String");
+	rb_raise(rb_eTypeError, "no implicit conversion to float from string");
 	break;
 
       case T_NIL:
-	rb_raise(rb_eTypeError, "no implicit conversion from nil");
+	rb_raise(rb_eTypeError, "no implicit conversion to float from nil");
 	break;
 
       default:
@@ -1197,7 +1169,6 @@ Init_Object()
     rb_define_global_function("Array", rb_f_array, 1);
 
     rb_cNilClass = rb_define_class("NilClass", rb_cObject);
-    rb_define_method(rb_cNilClass, "type", nil_type, 0);
     rb_define_method(rb_cNilClass, "to_i", nil_to_i, 0);
     rb_define_method(rb_cNilClass, "to_s", nil_to_s, 0);
     rb_define_method(rb_cNilClass, "to_a", nil_to_a, 0);
@@ -1214,7 +1185,6 @@ Init_Object()
     rb_undef_method(CLASS_OF(rb_cSymbol), "new");
     rb_define_singleton_method(rb_cSymbol, "all_symbols", rb_sym_all_symbols, 0);
 
-    rb_define_method(rb_cSymbol, "type", sym_type, 0);
     rb_define_method(rb_cSymbol, "to_i", sym_to_i, 0);
     rb_define_method(rb_cSymbol, "to_int", sym_to_i, 0);
     rb_define_method(rb_cSymbol, "inspect", sym_inspect, 0);
@@ -1271,7 +1241,6 @@ Init_Object()
 
     rb_cTrueClass = rb_define_class("TrueClass", rb_cObject);
     rb_define_method(rb_cTrueClass, "to_s", true_to_s, 0);
-    rb_define_method(rb_cTrueClass, "type", true_type, 0);
     rb_define_method(rb_cTrueClass, "&", true_and, 1);
     rb_define_method(rb_cTrueClass, "|", true_or, 1);
     rb_define_method(rb_cTrueClass, "^", true_xor, 1);
@@ -1280,7 +1249,6 @@ Init_Object()
 
     rb_cFalseClass = rb_define_class("FalseClass", rb_cObject);
     rb_define_method(rb_cFalseClass, "to_s", false_to_s, 0);
-    rb_define_method(rb_cFalseClass, "type", false_type, 0);
     rb_define_method(rb_cFalseClass, "&", false_and, 1);
     rb_define_method(rb_cFalseClass, "|", false_or, 1);
     rb_define_method(rb_cFalseClass, "^", false_xor, 1);

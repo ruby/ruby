@@ -865,7 +865,7 @@ time_minus(time1, time2)
 	sec--;
 	usec += 1000000;
     }
-    time2 = rb_time_new(sec, usec);
+    time2 = time_new_internal(rb_obj_class(time1), sec, usec);
     if (tobj->gmt) {
 	GetTimeval(time2, tobj);
 	tobj->gmt = 1;

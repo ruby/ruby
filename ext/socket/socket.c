@@ -1434,6 +1434,8 @@ unix_addr(sock)
 
     if (getsockname(fileno(fptr->f), (struct sockaddr*)&addr, &len) < 0)
 	rb_sys_fail("getsockname(2)");
+    if (len == 0)
+        addr.sun_path[0] = '\0';
     return unixaddr(&addr);
 }
 
@@ -1449,6 +1451,8 @@ unix_peeraddr(sock)
 
     if (getpeername(fileno(fptr->f), (struct sockaddr*)&addr, &len) < 0)
 	rb_sys_fail("getsockname(2)");
+    if (len == 0)
+        addr.sun_path[0] = '\0';
     return unixaddr(&addr);
 }
 #endif

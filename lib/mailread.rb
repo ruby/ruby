@@ -14,7 +14,7 @@ class Mail
 	next if /^From /=~line	# skip From-line
 	break if /^$/=~line	# end of header
 
-	if /^(\S+):\s*(.*)/=~line
+	if /^(\S+?):\s*(.*)/=~line
 	  (attr = $1).capitalize!
 	  @header[attr] = $2
 	elsif attr
