@@ -1,3 +1,7 @@
+Sun Jul 19 06:01:12 2001  Minero Aoki  <aamine@loveruby.net>
+
+	* doc/net/smtp.rd.ja, pop.rd.ja, http.rd.ja: new files.
+
 Tue Jul 17 11:22:01 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* regex.c (NUM_FAILURE_ITEMS): was confusing NUM_REG_ITEMS and

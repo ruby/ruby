@@ -1,6 +1,6 @@
 =begin
 
-= net/http.rb version 1.2.3
+= net/http.rb version 1.1.36
 
 == このライブラリについて
 
@@ -339,53 +339,6 @@ Ruby 1.6 に入っているのが http.rb 1.1 で 1.7 以降が 1.2 ですが、
           end
         }
 
-: request( request [, data] )
-: request( request [, data] ) {|response| .... }
-    リクエストオブジェクト request を送信します。POST の時は data も
-    与えられます。(POST 以外で data を与えると ArgumentError を発生します)
-
-    ブロックとともに呼びだされたときはボディを読みこまずに HTTPResponse
-    オブジェクトをブロックに与えます。
-
-== class Net::HTTP::Get, Head, Post
-
-HTTP リクエストを抽象化するクラス。key はすべて大文字小文字を
-区別しません。
-
-=== クラスメソッド
-
-: new
-    HTTP リクエストオブジェクトを生成します。
-
-=== メソッド
-
-: self[ key ]
-    key ヘッダフィールドの文字列。
-    key は大文字小文字を区別しません。
-
-: self[ key ] = val
-    key ヘッダフィールドに val をセットします。
-    key は大文字小文字を区別しません。
-
-: each {|name, val| .... }
-    ヘッダ名とその値に対するくりかえし。ヘッダ名は小文字で統一されます。
-
-: basic_auth( account, password )
-    Authrization: ヘッダを basic auth 用にセットします。
-
-: range
-    Range: ヘッダの示す範囲を Range オブジェクトで返します。
-
-: range = r
-: set_range( i, len )
-    範囲を指定してエンティティを取得するためのヘッダ Range: をセットします。
-    r は Range オブジェクト、i, len は始点と長さです。
-
-: content_length
-    Content-Length: ヘッダの値 (整数)。
-
-: content_range
-    Content-Range: ヘッダの値 (Range)。
 
 == class Net::HTTPResponse
 
