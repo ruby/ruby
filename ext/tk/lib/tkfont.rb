@@ -996,7 +996,7 @@ module TkTreatTagFont
   def font_configinfo
     @parent.tagfont_configinfo(@id)
   end
-  alias font font_configinfo
+#  alias font font_configinfo
 
   def font_configure(slot)
     @parent.tagfont_configure(@id, slot)

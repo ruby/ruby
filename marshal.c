@@ -822,6 +822,7 @@ r_object(arg)
 
       case TYPE_FALSE:
 	v = Qfalse;
+	break;
 
       case TYPE_FIXNUM:
 	{

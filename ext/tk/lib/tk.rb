@@ -2174,6 +2174,123 @@ module TkTreatFont
   end
 end
 
+module TkTreatItemFont
+  def __conf_cmd(idx)
+    raise NotImplementError, "need to define `__conf_cmd'"
+  end
+  def __item_pathname(tagOrId)
+    raise NotImplementError, "need to define `__item_pathname'"
+  end
+  private :__conf_cmd, :__item_pathname
+
+  def tagfont_configinfo(tagOrId)
+    pathname = __item_pathname(tagOrId)
+    ret = TkFont.used_on(pathname)
+    if ret == nil
+      ret = TkFont.init_widget_font(pathname, self.path, 
+				    __conf_cmd(0), __conf_cmd(1), tagOrId)
+    end
+    ret
+  end
+  alias tagfontobj tagfont_configinfo
+
+  def tagfont_configure(tagOrId, slot)
+    pathname = __item_pathname(tagOrId)
+    if (fnt = slot.delete('font'))
+      if fnt.kind_of? TkFont
+	return fnt.call_font_configure(pathname, self.path, 
+				       __conf_cmd(0), __conf_cmd(1), 
+				       tagOrId, slot)
+      else
+	latintagfont_configure(tagOrId, fnt) if fnt
+      end
+    end
+    if (ltn = slot.delete('latinfont'))
+      latintagfont_configure(tagOrId, ltn) if ltn
+    end
+    if (ltn = slot.delete('asciifont'))
+      latintagfont_configure(tagOrId, ltn) if ltn
+    end
+    if (knj = slot.delete('kanjifont'))
+      kanjitagfont_configure(tagOrId, knj) if knj
+    end
+
+    tk_call(self.path, __conf_cmd(0), __conf_cmd(1), 
+	    tagOrId, *hash_kv(slot)) if slot != {}
+    self
+  end
+
+  def latintagfont_configure(tagOrId, ltn, keys=nil)
+    fobj = tagfontobj(tagOrId)
+    if ltn.kind_of? TkFont
+      conf = {}
+      ltn.latin_configinfo.each{|key,val| conf[key] = val if val != []}
+      if conf == {}
+	fobj.latin_replace(ltn)
+	fobj.latin_configure(keys) if keys
+      elsif keys
+	fobj.latin_configure(conf.update(keys))
+      else
+	fobj.latin_configure(conf)
+      end
+    else
+      fobj.latin_replace(ltn)
+    end
+  end
+  alias asciitagfont_configure latintagfont_configure
+
+  def kanjitagfont_configure(tagOrId, knj, keys=nil)
+    fobj = tagfontobj(tagOrId)
+    if knj.kind_of? TkFont
+      conf = {}
+      knj.kanji_configinfo.each{|key,val| conf[key] = val if val != []}
+      if conf == {}
+	fobj.kanji_replace(knj)
+	fobj.kanji_configure(keys) if keys
+      elsif keys
+	fobj.kanji_configure(conf.update(keys))
+      else
+	fobj.kanji_configure(conf)
+      end
+    else
+      fobj.kanji_replace(knj)
+    end
+  end
+
+  def tagfont_copy(tagOrId, window, wintag=nil)
+    if wintag
+      window.tagfontobj(wintag).configinfo.each{|key,value|
+	tagfontobj(tagOrId).configure(key,value)
+      }
+      tagfontobj(tagOrId).replace(window.tagfontobj(wintag).latin_font, 
+				window.tagfontobj(wintag).kanji_font)
+    else
+      window.tagfont(wintag).configinfo.each{|key,value|
+	tagfontobj(tagOrId).configure(key,value)
+      }
+      tagfontobj(tagOrId).replace(window.fontobj.latin_font, 
+				window.fontobj.kanji_font)
+    end
+  end
+
+  def latintagfont_copy(tagOrId, window, wintag=nil)
+    if wintag
+      tagfontobj(tagOrId).latin_replace(window.tagfontobj(wintag).latin_font)
+    else
+      tagfontobj(tagOrId).latin_replace(window.fontobj.latin_font)
+    end
+  end
+  alias asciitagfont_copy latintagfont_copy
+
+  def kanjitagfont_copy(tagOrId, window, wintag=nil)
+    if wintag
+      tagfontobj(tagOrId).kanji_replace(window.tagfontobj(wintag).kanji_font)
+    else
+      tagfontobj(tagOrId).kanji_replace(window.fontobj.kanji_font)
+    end
+  end
+end
+
 class TkObject<TkKernel
   include Tk
   include TkTreatFont
@@ -2332,10 +2449,24 @@ class TkWindow<TkObject
 
   def initialize(parent=nil, keys=nil)
     install_win(if parent then parent.path end)
-    create_self
-    if keys
-      # tk_call @path, 'configure', *hash_kv(keys)
-      configure(keys)
+    if self.method(:create_self).arity == 0
+      p 'create_self has no arg' if $DEBUG
+      create_self
+      if keys
+	# tk_call @path, 'configure', *hash_kv(keys)
+	configure(keys)
+      end
+    else
+      p 'create_self has an arg' if $DEBUG
+      fontkeys = {}
+      if keys
+	keys = keys.dup
+	['font', 'kanjifont', 'latinfont', 'asciifont'].each{|key|
+	  fontkeys[key] = keys.delete(key) if keys.key?(key)
+	}
+      end
+      create_self(keys)
+      font_configure(fontkeys) unless fontkeys.empty?
     end
   end
 
@@ -2407,11 +2538,11 @@ class TkWindow<TkObject
   end
 
   def grid_columnconfig(index, keys)
-    tk_call('grid', 'columnconfigure', epath, index, hash_kv(keys))
+    tk_call('grid', 'columnconfigure', epath, index, *hash_kv(keys))
   end
 
   def grid_rowconfig(index, keys)
-    tk_call('grid', 'rowconfigure', epath, index, hash_kv(keys))
+    tk_call('grid', 'rowconfigure', epath, index, *hash_kv(keys))
   end
 
   def grid_columnconfiginfo(index, slot=nil)
@@ -2640,34 +2771,66 @@ class TkToplevel<TkWindow
     WidgetClassName
   end
 
+################# old version
+#  def initialize(parent=nil, screen=nil, classname=nil, keys=nil)
+#    if screen.kind_of? Hash
+#      keys = screen.dup
+#    else
+#      @screen = screen
+#    end
+#    @classname = classname
+#    if keys.kind_of? Hash
+#      keys = keys.dup
+#      @classname = keys.delete('classname') if keys.key?('classname')
+#      @colormap  = keys.delete('colormap')  if keys.key?('colormap')
+#      @container = keys.delete('container') if keys.key?('container')
+#      @screen    = keys.delete('screen')    if keys.key?('screen')
+#      @use       = keys.delete('use')       if keys.key?('use')
+#      @visual    = keys.delete('visual')    if keys.key?('visual')
+#    end
+#    super(parent, keys)
+#  end
+#
+#  def create_self
+#    s = []
+#    s << "-class"     << @classname if @classname
+#    s << "-colormap"  << @colormap  if @colormap
+#    s << "-container" << @container if @container
+#    s << "-screen"    << @screen    if @screen 
+#    s << "-use"       << @use       if @use
+#    s << "-visual"    << @visual    if @visual
+#    tk_call 'toplevel', @path, *s
+#  end
+#################
+
   def initialize(parent=nil, screen=nil, classname=nil, keys=nil)
     if screen.kind_of? Hash
-      keys = screen.dup
+      keys = screen
     else
       @screen = screen
     end
     @classname = classname
     if keys.kind_of? Hash
-      keys = keys.dup
-      @classname = keys.delete('classname') if keys.key?('classname')
-      @colormap  = keys.delete('colormap')  if keys.key?('colormap')
-      @container = keys.delete('container') if keys.key?('container')
-      @screen    = keys.delete('screen')    if keys.key?('screen')
-      @use       = keys.delete('use')       if keys.key?('use')
-      @visual    = keys.delete('visual')    if keys.key?('visual')
+      if keys.key?('classname')
+	keys = keys.dup
+	keys['class'] = keys.delete('classname')
+      end
+      @classname = keys['class']
+      @colormap  = keys['colormap']
+      @container = keys['container']
+      @screen    = keys['screen']
+      @use       = keys['use']
+      @visual    = keys['visual']
     end
     super(parent, keys)
   end
 
-  def create_self
-    s = []
-    s << "-class"     << @classname if @classname
-    s << "-colormap"  << @colormap  if @colormap
-    s << "-container" << @container if @container
-    s << "-screen"    << @screen    if @screen 
-    s << "-use"       << @use       if @use
-    s << "-visual"    << @visual    if @visual
-    tk_call 'toplevel', @path, *s
+  def create_self(keys)
+    if keys and keys != None
+      tk_call 'toplevel', @path, *hash_kv(keys)
+    else
+      tk_call 'toplevel', @path
+    end
   end
 
   def specific_class
@@ -2682,24 +2845,48 @@ class TkFrame<TkWindow
     WidgetClassName
   end
 
+################# old version
+#  def initialize(parent=nil, keys=nil)
+#    if keys.kind_of? Hash
+#      keys = keys.dup
+#      @classname = keys.delete('classname') if keys.key?('classname')
+#      @colormap  = keys.delete('colormap')  if keys.key?('colormap')
+#      @container = keys.delete('container') if keys.key?('container')
+#      @visual    = keys.delete('visual')    if keys.key?('visual')
+#    end
+#    super(parent, keys)
+#  end
+#
+#  def create_self
+#    s = []
+#    s << "-class"     << @classname if @classname
+#    s << "-colormap"  << @colormap  if @colormap
+#    s << "-container" << @container if @container
+#    s << "-visual"    << @visual    if @visual
+#    tk_call 'frame', @path, *s
+#  end
+#################
+
   def initialize(parent=nil, keys=nil)
     if keys.kind_of? Hash
-      keys = keys.dup
-      @classname = keys.delete('classname') if keys.key?('classname')
-      @colormap  = keys.delete('colormap')  if keys.key?('colormap')
-      @container = keys.delete('container') if keys.key?('container')
-      @visual    = keys.delete('visual')    if keys.key?('visual')
+      if keys.key?('classname')
+	keys = keys.dup
+	keys['class'] = keys.delete('classname')
+      end
+      @classname = keys['class']
+      @colormap  = keys['colormap']
+      @container = keys['container']
+      @visual    = keys['visual']
     end
     super(parent, keys)
   end
 
-  def create_self
-    s = []
-    s << "-class"     << @classname if @classname
-    s << "-colormap"  << @colormap  if @colormap
-    s << "-container" << @container if @container
-    s << "-visual"    << @visual    if @visual
-    tk_call 'frame', @path, *s
+  def create_self(keys)
+    if keys and keys != None
+      tk_call 'frame', @path, *hash_kv(keys)
+    else
+      tk_call 'frame', @path
+    end
   end
 end
 
@@ -2709,8 +2896,12 @@ class TkLabel<TkWindow
   def self.to_eval
     WidgetClassName
   end
-  def create_self
-    tk_call 'label', @path
+  def create_self(keys)
+    if keys and keys != None
+      tk_call 'label', @path, *hash_kv(keys)
+    else
+      tk_call 'label', @path
+    end
   end
   def textvariable(v)
     configure 'textvariable', tk_trace_variable(v)
@@ -2722,8 +2913,12 @@ class TkButton<TkLabel
   def TkButton.to_eval
     'Button'
   end
-  def create_self
-    tk_call 'button', @path
+  def create_self(keys)
+    if keys and keys != None
+      tk_call 'button', @path, *hash_kv(keys)
+    else
+      tk_call 'button', @path
+    end
   end
   def invoke
     tk_send 'invoke'
@@ -2738,8 +2933,12 @@ class TkRadioButton<TkButton
   def TkRadioButton.to_eval
     'Radiobutton'
   end
-  def create_self
-    tk_call 'radiobutton', @path
+  def create_self(keys)
+    if keys and keys != None
+      tk_call 'radiobutton', @path, *hash_kv(keys)
+    else
+      tk_call 'radiobutton', @path
+    end
   end
   def deselect
     tk_send 'deselect'
@@ -2758,8 +2957,12 @@ class TkCheckButton<TkRadioButton
   def TkCheckButton.to_eval
     'Checkbutton'
   end
-  def create_self
-    tk_call 'checkbutton', @path
+  def create_self(keys)
+    if keys and keys != None
+      tk_call 'checkbutton', @path, *hash_kv(keys)
+    else
+      tk_call 'checkbutton', @path
+    end
   end
   def toggle
     tk_send 'toggle'
@@ -2772,8 +2975,12 @@ class TkMessage<TkLabel
   def TkMessage.to_eval
     'Message'
   end
-  def create_self
-    tk_call 'message', @path
+  def create_self(keys)
+    if keys and keys != None
+      tk_call 'message', @path, *hash_kv(keys)
+    else
+      tk_call 'message', @path
+    end
   end
 end
 
@@ -2784,8 +2991,12 @@ class TkScale<TkWindow
     WidgetClassName
   end
 
-  def create_self
-    tk_call 'scale', path
+  def create_self(keys)
+    if keys and keys != None
+      tk_call 'scale', @path, *hash_kv(keys)
+    else
+      tk_call 'scale', @path
+    end
   end
 
   def get(x=None, y=None)
@@ -2820,8 +3031,12 @@ class TkScrollbar<TkWindow
     WidgetClassName
   end
 
-  def create_self
-    tk_call 'scrollbar', path
+  def create_self(keys)
+    if keys and keys != None
+      tk_call 'scrollbar', @path, *hash_kv(keys)
+    else
+      tk_call 'scrollbar', @path
+    end
   end
 
   def delta(deltax=None, deltay=None)
@@ -2885,15 +3100,33 @@ class TkTextWin<TkWindow
   end
 end
 
+module TkTreatListItemFont
+  include TkTreatItemFont
+
+  ItemCMD = ['itemconfigure', TkComm::None]
+  def __conf_cmd(idx)
+    ItemCMD[idx]
+  end
+
+  def __item_pathname(tagOrId)
+    self.path + ';' + tagOrId.to_s
+  end
+end
+
 class TkListbox<TkTextWin
+  include TkTreatListItemFont
   include Scrollable
 
   WidgetClassNames['Listbox'] = self
   def TkListbox.to_eval
     'Listbox'
   end
-  def create_self
-    tk_call 'listbox', path
+  def create_self(keys)
+    if keys and keys != None
+      tk_call 'listbox', @path, *hash_kv(keys)
+    else
+      tk_call 'listbox', @path
+    end
   end
 
   def activate(y)
@@ -2949,7 +3182,7 @@ class TkListbox<TkTextWin
     else
       if (key == 'font' || key == 'kanjifont' ||
 	  key == 'latinfont' || key == 'asciifont' )
-	tagfont_configure({key=>val})
+	tagfont_configure(index, {key=>val})
       else
 	tk_call 'itemconfigure', index, "-#{key}", val
       end
@@ -2995,109 +3228,15 @@ class TkListbox<TkTextWin
 end
 
 module TkTreatMenuEntryFont
-  def tagfont_configinfo(index)
-    pathname = self.path + ';' + index
-    ret = TkFont.used_on(pathname)
-    if ret == nil
-      ret = TkFont.init_widget_font(pathname, 
-				    self.path, 'entryconfigure', index)
-    end
-    ret
-  end
-  alias tagfontobj tagfont_configinfo
+  include TkTreatItemFont
 
-  def tagfont_configure(index, slot)
-    pathname = self.path + ';' + index
-    if (fnt = slot.delete('font'))
-      if fnt.kind_of? TkFont
-	return fnt.call_font_configure(pathname, 
-				       self.path,'entryconfigure',index,slot)
-      else
-	latintagfont_configure(index, fnt) if fnt
-      end
-    end
-    if (ltn = slot.delete('latinfont'))
-      latintagfont_configure(index, ltn) if ltn
-    end
-    if (ltn = slot.delete('asciifont'))
-      latintagfont_configure(index, ltn) if ltn
-    end
-    if (knj = slot.delete('kanjifont'))
-      kanjitagfont_configure(index, knj) if knj
-    end
-
-    tk_call(self.path, 'entryconfigure', index, *hash_kv(slot)) if slot != {}
-    self
+  ItemCMD = ['entryconfigure', TkComm::None]
+  def __conf_cmd(idx)
+    ItemCMD[idx]
   end
 
-  def latintagfont_configure(index, ltn, keys=nil)
-    fobj = tagfontobj(index)
-    if ltn.kind_of? TkFont
-      conf = {}
-      ltn.latin_configinfo.each{|key,val| conf[key] = val if val != []}
-      if conf == {}
-	fobj.latin_replace(ltn)
-	fobj.latin_configure(keys) if keys
-      elsif keys
-	fobj.latin_configure(conf.update(keys))
-      else
-	fobj.latin_configure(conf)
-      end
-    else
-      fobj.latin_replace(ltn)
-    end
-  end
-  alias asciitagfont_configure latintagfont_configure
-
-  def kanjitagfont_configure(index, knj, keys=nil)
-    fobj = tagfontobj(index)
-    if knj.kind_of? TkFont
-      conf = {}
-      knj.kanji_configinfo.each{|key,val| conf[key] = val if val != []}
-      if conf == {}
-	fobj.kanji_replace(knj)
-	fobj.kanji_configure(keys) if keys
-      elsif keys
-	fobj.kanji_configure(conf.update(keys))
-      else
-	fobj.kanji_configure(conf)
-      end
-    else
-      fobj.kanji_replace(knj)
-    end
-  end
-
-  def tagfont_copy(index, window, wintag=nil)
-    if wintag
-      window.tagfontobj(wintag).configinfo.each{|key,value|
-	tagfontobj(index).configure(key,value)
-      }
-      tagfontobj(index).replace(window.tagfontobj(wintag).latin_font, 
-			      window.tagfontobj(wintag).kanji_font)
-    else
-      window.tagfont(wintag).configinfo.each{|key,value|
-	tagfontobj(index).configure(key,value)
-      }
-      tagfontobj(index).replace(window.fontobj.latin_font, 
-			      window.fontobj.kanji_font)
-    end
-  end
-
-  def latintagfont_copy(index, window, wintag=nil)
-    if wintag
-      tagfontobj(index).latin_replace(window.tagfontobj(wintag).latin_font)
-    else
-      tagfontobj(index).latin_replace(window.fontobj.latin_font)
-    end
-  end
-  alias asciitagfont_copy latintagfont_copy
-
-  def kanjitagfont_copy(index, window, wintag=nil)
-    if wintag
-      tagfontobj(index).kanji_replace(window.tagfontobj(wintag).kanji_font)
-    else
-      tagfontobj(index).kanji_replace(window.fontobj.kanji_font)
-    end
+  def __item_pathname(tagOrId)
+    self.path + ';' + tagOrId.to_s
   end
 end
 
@@ -3109,8 +3248,12 @@ class TkMenu<TkWindow
   def self.to_eval
     WidgetClassName
   end
-  def create_self
-    tk_call 'menu', path
+  def create_self(keys)
+    if keys and keys != None
+      tk_call 'menu', @path, *hash_kv(keys)
+    else
+      tk_call 'menu', @path
+    end
   end
   def activate(index)
     tk_send 'activate', index
@@ -3174,7 +3317,7 @@ class TkMenu<TkWindow
     else
       if (key == 'font' || key == 'kanjifont' ||
 	  key == 'latinfont' || key == 'asciifont' )
-	tagfont_configure({key=>val})
+	tagfont_configure(index, {key=>val})
       else
 	tk_call 'entryconfigure', index, "-#{key}", val
       end
@@ -3235,8 +3378,14 @@ module TkSystemMenu
     fail unless parent.kind_of? TkMenu
     @path = format("%s.%s", parent.path, self.type::SYSMENU_NAME)
     TkComm::Tk_WINDOWS[@path] = self
-    create_self
-    configure(keys) if keys
+    if self.method(:create_self).arity == 0
+      p 'create_self has no arg' if $DEBUG
+      create_self
+      configure(keys) if keys
+    else
+      p 'create_self has an arg' if $DEBUG
+      create_self(keys)
+    end
   end
 end
 
@@ -3263,8 +3412,12 @@ class TkMenubutton<TkLabel
   def TkMenubutton.to_eval
     'Menubutton'
   end
-  def create_self
-    tk_call 'menubutton', path
+  def create_self(keys)
+    if keys and keys != None
+      tk_call 'menubutton', @path, *hash_kv(keys)
+    else
+      tk_call 'menubutton', @path
+    end
   end
 end
 

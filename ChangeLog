@@ -1,6 +1,13 @@
-Wed Feb 27 13:49:24 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Wed Feb 27 16:31:38 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* stable version 1.6.6 released.
+	* stable version 1.6.7 released.
+
+Wed Feb 27 16:30:50 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* st.c (st_init_table_with_size): num_bins should be prime numbers
+	  (no decrement).
+
+	* st.c (rehash): ditto.
 
 Wed Feb 27 13:18:49 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 

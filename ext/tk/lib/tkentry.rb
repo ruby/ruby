@@ -55,8 +55,12 @@ class TkEntry<TkLabel
     end
   end
 
-  def create_self
-    tk_call 'entry', @path
+  def create_self(keys)
+    if keys and keys != None
+      tk_call 'entry', @path, *hash_kv(keys)
+    else
+      tk_call 'entry', @path
+    end
   end
 
   def bbox(index)
@@ -191,8 +195,12 @@ class TkSpinbox<TkEntry
     WidgetClassName
   end
 
-  def create_self
-    tk_call 'spinbox', @path
+  def create_self(keys)
+    if keys and keys != None
+      tk_call 'spinbox', @path, *hash_kv(keys)
+    else
+      tk_call 'spinbox', @path
+    end
   end
 
   def identify(x, y)
