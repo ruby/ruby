@@ -228,7 +228,7 @@ end
 
 def cpp_command(outfile, opt="")
   "$(CPP) #$INCFLAGS -I#{$hdrdir} " \
-  "#$CPPFLAGS #$CFLAGS #{outfile} #{opt} #{CONFTEST_C}"
+  "#$CPPFLAGS #$CFLAGS #{opt} #{CONFTEST_C} #{outfile}"
 end
 
 def libpathflag(libpath=$LIBPATH)

@@ -145,6 +145,48 @@ pst_pid(st)
 }
 
 static VALUE
+pst_inspect(st)
+    VALUE st;
+{
+    VALUE pid;
+    int status;
+    VALUE str;
+    char buf[256];
+
+    pid = pst_pid(st);
+    status = NUM2INT(st);
+
+    snprintf(buf, sizeof(buf), "#<%s: pid=%ld", rb_class2name(CLASS_OF(st)), NUM2LONG(pid));
+    str = rb_str_new2(buf);
+    if (WIFSTOPPED(status)) {
+	snprintf(buf, sizeof(buf), ",stopped(%d)", WSTOPSIG(status));
+	rb_str_cat2(str, buf);
+    }
+    if (WIFSIGNALED(status)) {
+	int termsig = WTERMSIG(status);
+	char *signame = ruby_signal_name(termsig);
+	if (signame) {
+	    snprintf(buf, sizeof(buf), ",signaled(SIG%s=%d)", signame, termsig);
+	}
+	else {
+	    snprintf(buf, sizeof(buf), ",signaled(%d)", termsig);
+	}
+	rb_str_cat2(str, buf);
+    }
+    if (WIFEXITED(status)) {
+	snprintf(buf, sizeof(buf), ",exited(%d)", WEXITSTATUS(status));
+	rb_str_cat2(str, buf);
+    }
+#ifdef WCOREDUMP
+    if (WCOREDUMP(status)) {
+	rb_str_cat2(str, ",coredumped");
+    }
+#endif
+    rb_str_cat2(str, ">");
+    return str;
+}
+
+static VALUE
 pst_equal(st1, st2)
     VALUE st1, st2;
 {
@@ -2347,7 +2389,7 @@ Init_process()
     rb_define_method(rb_cProcStatus, "to_i", pst_to_i, 0);
     rb_define_method(rb_cProcStatus, "to_int", pst_to_i, 0);
     rb_define_method(rb_cProcStatus, "to_s", pst_to_s, 0);
-    rb_define_method(rb_cProcStatus, "inspect", pst_to_s, 0);
+    rb_define_method(rb_cProcStatus, "inspect", pst_inspect, 0);
 
     rb_define_method(rb_cProcStatus, "pid", pst_pid, 0);
 

@@ -303,7 +303,7 @@ Init_digest()
     rb_define_singleton_method(cDigest_Base, "hexdigest", rb_digest_base_s_hexdigest, 1);
 
     rb_define_method(cDigest_Base, "initialize", rb_digest_base_init, -1);
-    rb_define_method(cDigest_Base, "copy_object",  rb_digest_base_copy, 1);
+    rb_define_method(cDigest_Base, "initialize_copy",  rb_digest_base_copy, 1);
     rb_define_method(cDigest_Base, "update", rb_digest_base_update, 1);
     rb_define_method(cDigest_Base, "<<", rb_digest_base_update, 1);
     rb_define_method(cDigest_Base, "digest", rb_digest_base_digest, 0);

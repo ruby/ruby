@@ -191,6 +191,13 @@ signo2signm(no)
     return 0;
 }
 
+char *
+ruby_signal_name(no)
+    int no;
+{
+    return signo2signm(no);
+}
+
 VALUE
 rb_f_kill(argc, argv)
     int argc;

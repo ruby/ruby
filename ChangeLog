@@ -1,3 +1,10 @@
+Mon Sep 29 11:16:55 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_thread_atfork): wrong format specifier.
+	  [ruby-dev:21428]
+
+	* process.c (pst_inspect): better description.
+
 Mon Sep 29 02:31:44 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/utils.rb (Utils::su): use setgid and setuid to
@@ -11,6 +18,13 @@ Mon Sep 27 18:25:13 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/xsd/test_xsd.rb: add tests for above fix.
 
+Sun Sep 28 11:14:19 2003  Koji Arai  <jca02266@nifty.ne.jp>
+
+	* ext/digest/digest.c (Init_digest): `copy_object' was deprecated.
+	  `initialize_copy' should be defined.
+ 
+	* ext/stringio/stringio.c (Init_stringio): ditto.
+ 
 Mon Sep 27 15:58:50 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/soap/rpc/cgistub.rb: make logging severity threshold higher.
