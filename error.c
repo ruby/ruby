@@ -436,7 +436,7 @@ set_syserr(n, name)
 
 static VALUE
 get_syserr(n)
-    int n
+    int n;
 {
     VALUE error;
 
