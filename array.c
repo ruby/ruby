@@ -1436,49 +1436,45 @@ rb_ary_diff(ary1, ary2)
     return ary3;
 }
 
-static st_table*
+static VALUE
 ary_make_hash(ary1, ary2, func)
     VALUE ary1, ary2;
     int (*func)();
 {
-    st_table *tbl = st_init_numtable();
+    VALUE hash = rb_hash_new();
     int i, n;
 
     for (i=0; i<RARRAY(ary1)->len; i++) {
-	if (!st_lookup(tbl, RARRAY(ary1)->ptr[i], &n)) {
-	    st_add_direct(tbl, RARRAY(ary1)->ptr[i], 0);
-	}
+	rb_hash_aset(hash, RARRAY(ary1)->ptr[i], Qtrue);
     }
     if (ary2) {
 	for (i=0; i<RARRAY(ary2)->len; i++) {
-	    if (st_lookup(tbl, RARRAY(ary2)->ptr[i], &n)) {
-		st_insert(tbl, RARRAY(ary2)->ptr[i], 2);
-	    }
-	    else {
-		st_add_direct(tbl, RARRAY(ary2)->ptr[i], 1);
-	    }
+	    rb_hash_aset(hash, RARRAY(ary2)->ptr[i], Qtrue);
 	}
     }
-    return tbl;
+    return hash;
 }
 
 static VALUE
 rb_ary_and(ary1, ary2)
     VALUE ary1, ary2;
 {
-    st_table *tbl = ary_make_hash(ary1, to_ary(ary2));
+    VALUE hash;
     VALUE ary3 = rb_ary_new();
-    VALUE v;
     long i;
-    int n;
+
+    ary2 = to_ary(ary2);
+    if (RARRAY(ary1)->len < RARRAY(ary2)->len) { /* swap */
+	VALUE tmp = ary1; ary1 = ary2; ary2 = tmp;
+    }
+    hash = ary_make_hash(ary2, 0);
 
     for (i=0; i<RARRAY(ary1)->len; i++) {
-	v = RARRAY(ary1)->ptr[i];
-	if (st_delete(tbl, &v, &n)) {
-	    if (n == 2) rb_ary_push(ary3, v);
+	VALUE v = RARRAY(ary1)->ptr[i];
+	if (st_delete(RHASH(hash)->tbl, &v, 0)) {
+	    rb_ary_push(ary3, v);
 	}
     }
-    st_free_table(tbl);
 
     return ary3;
 }
@@ -1487,27 +1483,26 @@ static VALUE
 rb_ary_or(ary1, ary2)
     VALUE ary1, ary2;
 {
-    st_table *tbl;
+    VALUE hash;
     VALUE ary3 = rb_ary_new();
     VALUE v;
     long i;
 
     ary2 = to_ary(ary2);
-    tbl = ary_make_hash(ary1, ary2);
+    hash = ary_make_hash(ary1, ary2);
 
     for (i=0; i<RARRAY(ary1)->len; i++) {
 	v = RARRAY(ary1)->ptr[i];
-	if (st_delete(tbl, &v, 0)) {
+	if (st_delete(RHASH(hash)->tbl, &v, 0)) {
 	    rb_ary_push(ary3, v);
 	}
     }
     for (i=0; i<RARRAY(ary2)->len; i++) {
 	v = RARRAY(ary2)->ptr[i];
-	if (st_delete(tbl, &v, 0)) {
+	if (st_delete(RHASH(hash)->tbl, &v, 0)) {
 	    rb_ary_push(ary3, v);
 	}
     }
-    st_free_table(tbl);
 
     return ary3;
 }
@@ -1516,21 +1511,19 @@ static VALUE
 rb_ary_uniq_bang(ary)
     VALUE ary;
 {
-    st_table *tbl = ary_make_hash(ary, 0);
+    VALUE hash = ary_make_hash(ary, 0);
     VALUE *p, *q, *end;
-    VALUE v;
 
-    if (RARRAY(ary)->len == tbl->num_entries) {
-	st_free_table(tbl);
+    if (RARRAY(ary)->len == RHASH(hash)->tbl->num_entries) {
 	return Qnil;
     }
-    rb_ary_modify(ary);
 
+    rb_ary_modify(ary);
     p = q = RARRAY(ary)->ptr;
     end = p + RARRAY(ary)->len;
     while (p < end) {
-	v = *p++;
-	if (st_delete(tbl, &v, 0)) {
+	VALUE v = *p++;
+	if (st_delete(RHASH(hash)->tbl, &v, 0)) {
 	    *q++ = v;
 	}
     }

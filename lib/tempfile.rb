@@ -29,6 +29,9 @@ class Tempfile < SimpleDelegator
   end
 
   def initialize(basename, tmpdir=ENV['TMPDIR']||ENV['TMP']||ENV['TEMP']||'/tmp')
+    if $SAFE > 0 and tmpdir.tainted?
+      tmpdir = '/tmp'
+    end
     umask = File.umask(0177)
     begin
       n = 0

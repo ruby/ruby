@@ -371,11 +371,12 @@ void rb_const_assign _((VALUE, ID, VALUE));
 VALUE rb_mod_constants _((VALUE));
 void rb_autoload_load _((ID));
 void rb_cvar_declare _((VALUE, ID, VALUE));
-int rb_cvar_defined _((VALUE, ID));
+VALUE rb_cvar_defined _((VALUE, ID));
 void rb_cvar_set _((VALUE, ID, VALUE));
 VALUE rb_cvar_get _((VALUE, ID));
 VALUE rb_cvar_singleton _((VALUE));
 VALUE rb_mod_class_variables _((VALUE));
+VALUE rb_mod_remove_cvar _((VALUE, VALUE));
 /* version.c */
 void ruby_show_version _((void));
 void ruby_show_copyright _((void));

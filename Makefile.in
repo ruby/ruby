@@ -237,7 +237,7 @@ win32.@OBJEXT@: $(srcdir)/win32/win32.c
 ###
 parse.@OBJEXT@: parse.y ruby.h config.h defines.h intern.h env.h node.h st.h regex.h util.h lex.c
 ###
-array.@OBJEXT@: array.c ruby.h config.h defines.h intern.h
+array.@OBJEXT@: array.c ruby.h config.h defines.h intern.h st.h
 bignum.@OBJEXT@: bignum.c ruby.h config.h defines.h intern.h
 class.@OBJEXT@: class.c ruby.h config.h defines.h intern.h node.h st.h
 compar.@OBJEXT@: compar.c ruby.h config.h defines.h intern.h

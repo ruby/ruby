@@ -1,3 +1,8 @@
+Fri Dec  8 10:44:05 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* variable.c (rb_mod_remove_cvar): Module#remove_class_variable
+	  added.
+
 Thu Dec  7 17:35:51 2000  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* eval.c (stack_length): don't use __builtin_frame_address() on alpha.
@@ -7,6 +12,17 @@ Wed Dec  6 18:07:13 2000  WATANABE Hirofumi  <eban@ruby-lang.org>
 	* djgpp/config.sed, win32/Makefile.sub: typo.
 
 	* eval.c (rb_mod_define_method): avoid VC4.0 warnings.
+
+Wed Dec  6 13:38:08 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_and): tuning, make hash from shorter operand.
+
+Wed Dec  6 01:28:50 2000  SHIROYAMA Takayuki  <psi@fortune.nest.or.jp>
+
+	* gc.c (rb_gc): __builtin_frame_address() should not be used on
+	  MacOS X.
+
+	* gc.c (Init_stack): ditto.
 
 Mon Dec  4 13:44:01 2000  WATANABE Hirofumi  <eban@ruby-lang.org>
 

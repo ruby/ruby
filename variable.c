@@ -1225,33 +1225,34 @@ rb_const_defined(klass, id)
 }
 
 static void
-mod_av_set(klass, id, val, dest, once)
+mod_av_set(klass, id, val, isconst)
     VALUE klass;
     ID id;
     VALUE val;
-    char *dest;
-    int once;
+    int isconst;
 {
+    char *dest = isconst ? "constant" : "class variable";
+
     if (!OBJ_TAINTED(klass) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't set %s", dest);
     if (OBJ_FROZEN(klass)) rb_error_frozen("class/module");
     if (!RCLASS(klass)->iv_tbl) {
 	RCLASS(klass)->iv_tbl = st_init_numtable();
     }
-    else if (once && st_lookup(RCLASS(klass)->iv_tbl, id, 0)) {
+    else if (isconst && st_lookup(RCLASS(klass)->iv_tbl, id, 0)) {
 	rb_warn("already initialized %s %s", dest, rb_id2name(id));
     }
 
     st_insert(RCLASS(klass)->iv_tbl, id, val);
 }
-    
+
 void
 rb_const_set(klass, id, val)
     VALUE klass;
     ID id;
     VALUE val;
 {
-    mod_av_set(klass, id, val, "constant", Qtrue);
+    mod_av_set(klass, id, val, Qtrue);
 }
 
 void
@@ -1377,7 +1378,7 @@ rb_cvar_declare(klass, id, val)
 	tmp = RCLASS(tmp)->super;
     }
 
-    mod_av_set(klass, id, val, "class variable", Qfalse);
+    mod_av_set(klass, id, val, Qfalse);
 }
 
 VALUE
@@ -1401,7 +1402,7 @@ rb_cvar_get(klass, id)
     return Qnil;		/* not reached */
 }
 
-int
+VALUE
 rb_cvar_defined(klass, id)
     VALUE klass;
     ID id;
@@ -1483,6 +1484,32 @@ rb_mod_class_variables(obj)
 	if (!obj) break;
     }
     return ary;
+}
+
+VALUE
+rb_mod_remove_cvar(mod, name)
+    VALUE mod, name;
+{
+    ID id = rb_to_id(name);
+    VALUE val;
+
+    if (!rb_is_class_id(id)) {
+	rb_raise(rb_eNameError, "wrong class variable name %s", name);
+    }
+    if (!OBJ_TAINTED(mod) && rb_safe_level() >= 4)
+	rb_raise(rb_eSecurityError, "Insecure: can't remove class variable");
+    if (OBJ_FROZEN(mod)) rb_error_frozen("class/module");
+
+    if (RCLASS(mod)->iv_tbl && st_delete(ROBJECT(mod)->iv_tbl, &id, &val)) {
+	return val;
+    }
+    if (rb_cvar_defined(mod, id)) {
+	rb_raise(rb_eNameError, "cannot remove %s for %s", 
+		 rb_id2name(id), rb_class2name(mod));
+    }
+    rb_raise(rb_eNameError, "class variable %s not defined for %s",
+	     rb_id2name(id), rb_class2name(mod));
+    return Qnil;		/* not reached */
 }
 
 VALUE

@@ -94,7 +94,11 @@ Standard Libraries
 * Process::waitall [ruby-talk:4557]
 * synchronized method - synchronized{...}, synchronized :foo, :bar
 * move Time::times to Process.
-* Module#define_method which takes a name and a body (block, proc or method).
+- Module#define_method which takes a name and a body (block, proc or method).
+* IO#for_fd in general
+* Array#&, Array#| to allow duplication. ???
+- fork_and_kill_other_threads.
+* way to specify immortal (fork endurance) thread.
 
 Extension Libraries
 

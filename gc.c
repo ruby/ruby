@@ -925,7 +925,7 @@ rb_gc()
     alloca(0);
 # define STACK_END (&stack_end)
 #else
-# if defined(__GNUC__) && !defined(__alpha__)
+# if defined(__GNUC__) && !defined(__alpha__) && !defined(__APPLE__)
     VALUE *stack_end = __builtin_frame_address(0);
 # else
     VALUE *stack_end = alloca(1);
@@ -1005,7 +1005,7 @@ Init_stack(addr)
 #if defined(__human68k__)
     extern void *_SEND;
     rb_gc_stack_start = _SEND;
-#elif defined(__GNUC__) && !defined(__alpha__)
+#elif defined(__GNUC__) && !defined(__alpha__) && !defined(__APPLE__)
     rb_gc_stack_start = __builtin_frame_address(2);
 #else
     VALUE start;

@@ -1767,7 +1767,7 @@ myfddup (int fd)
 void
 myfdclose(FILE *fp)
 {
-#if !defined __MINGW32__
+#if !defined MSVCRT_THREADS
     _free_osfhnd(fileno(fp));
 #endif
     fclose(fp);
