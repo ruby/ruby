@@ -1,3 +1,10 @@
+Mon Aug 11 17:33:07 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_call_super): do not use rb_block_given_p() for
+	  check. [ruby-talk:78656]
+
+	* eval.c (BEGIN_CALLARGS): push ITER_NOT only when ITER_PRE.
+
 Sun Aug 10 10:43:05 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/lib/openssl/buffering.rb: increase BLOCK_SIZE

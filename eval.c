@@ -1961,10 +1961,12 @@ copy_node_scope(node, rval)
 
 #define BEGIN_CALLARGS do {\
     struct BLOCK *tmp_block = ruby_block;\
-    if (ruby_iter->iter == ITER_PRE) {\
+    int tmp_iter = ruby_iter->iter;\
+    if (tmp_iter == ITER_PRE) {\
 	ruby_block = ruby_block->outer;\
+        tmp_iter = ITER_NOT;\
     }\
-    PUSH_ITER(ITER_NOT)
+    PUSH_ITER(tmp_iter)
 
 #define END_CALLARGS \
     ruby_block = tmp_block;\
@@ -5239,7 +5241,7 @@ rb_call_super(argc, argv)
 	klass = k;
     }
 
-    PUSH_ITER(ruby_iter->iter || rb_block_given_p() ? ITER_PRE : ITER_NOT);
+    PUSH_ITER(ruby_iter->iter ? ITER_PRE : ITER_NOT);
     result = rb_call(RCLASS(klass)->super, self, ruby_frame->orig_func, argc, argv, 3);
     POP_ITER();
 
