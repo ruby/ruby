@@ -253,6 +253,21 @@ The variable ruby-indent-level controls the amount of indentation.
 		 (and (not (eq option 'expr-arg))
 		      (looking-at "[a-zA-Z][a-zA-z0-9_]* +/[^ \t]"))))))))))
 
+(defun ruby-forward-string (term &optional end no-error expand)
+  (let ((n 1) (c (string-to-char term))
+	(re (if expand
+		(concat "[^\\]\\(\\\\\\\\\\)*\\([" term "]\\|\\(#{\\)\\)")
+	      (concat "[^\\]\\(\\\\\\\\\\)*[" term "]"))))
+    (while (and (re-search-forward re end no-error)
+		(if (match-beginning 3)
+		    (ruby-forward-string "}{" end no-error nil)
+		  (> (setq n (if (eq (char-before (point)) c)
+				     (1- n) (1+ n))) 0)))
+      (forward-char -1))
+    (cond ((zerop n))
+	  (no-error nil)
+	  (error "unterminated string"))))
+
 (defun ruby-parse-region (start end)
   (let ((indent-point end)
 	  (indent 0)
@@ -270,16 +285,22 @@ The variable ruby-indent-level controls the amount of indentation.
 	  (while (and (> indent-point (point))
 		      (re-search-forward ruby-delimiter indent-point t))
 	    (or depth (setq depth 0))
-	    (let ((pnt (point)) w)
+	    (let ((pnt (point)) w re expand)
 	      (goto-char (match-beginning 0))
 	      (cond
 	       ((or (looking-at "\"")	;skip string
-		    (looking-at "'")
 		    (looking-at "`"))
-		(setq w (char-after (point)))
 		(cond
 		 ((and (not (eobp))
-		       (re-search-forward (format "[^\\]\\(\\\\\\\\\\)*%c" w) indent-point t))
+		       (ruby-forward-string (buffer-substring (point) (1+ (point))) indent-point t t))
+		  nil)
+		 (t
+		  (setq in-string (point))
+		  (goto-char indent-point))))
+	       ((looking-at "'")
+		(cond
+		 ((and (not (eobp))
+		       (re-search-forward "[^\\]\\(\\\\\\\\\\)*'" indent-point t))
 		  nil)
 		 (t
 		  (setq in-string (point))
@@ -287,7 +308,7 @@ The variable ruby-indent-level controls the amount of indentation.
 	       ((looking-at "/")
 		(cond
 		 ((and (not (eobp)) (ruby-expr-beg))
-		  (if (re-search-forward "[^\\]\\(\\\\\\\\\\)*/" indent-point t)
+		  (if (ruby-forward-string "/" indent-point t t)
 		      nil
 		    (setq in-string (point))
 		    (goto-char indent-point)))
@@ -299,21 +320,24 @@ The variable ruby-indent-level controls the amount of indentation.
 		       (not (looking-at "%="))
 		       (looking-at "%[Qqrxw]?\\(.\\)"))
 		  (goto-char (match-beginning 1))
+		  (setq expand (not (eq (char-before) ?q)))
 		  (setq w (buffer-substring (match-beginning 1)
 					    (match-end 1)))
 		  (cond
-		   ((string= w "[") (setq w "\\]"))
-		   ((string= w "{") (setq w "}"))
-		   ((string= w "(") (setq w ")"))
-		   ((string= w "<") (setq w ">"))
-		   ((member w '("*" "." "+" "?" "^" "$"))
+		   ((string= w "[") (setq re "]["))
+		   ((string= w "{") (setq re "}{"))
+		   ((string= w "(") (setq re ")("))
+		   ((string= w "<") (setq re "><"))
+		   ((or (and expand (string= w "\\"))
+			(member w '("*" "." "+" "?" "^" "$")))
 		    (setq w (concat "\\" w))))
-		  (if (re-search-forward
-		       (if (string= w "\\")
-			   "\\\\[^\\]*\\\\"
-			 (concat "[^\\]\\(\\\\\\\\\\)*" w))
-		       indent-point t)
-		      nil
+		  (unless (cond (re (ruby-forward-string re indent-point t expand))
+				(expand (ruby-forward-string w indent-point t t))
+				(t (re-search-forward
+				    (if (string= w "\\")
+					"\\\\[^\\]*\\\\"
+				      (concat "[^\\]\\(\\\\\\\\\\)*" w))
+				    indent-point t)))
 		    (setq in-string (point))
 		    (goto-char indent-point)))
 		 (t
@@ -452,7 +476,7 @@ The variable ruby-indent-level controls the amount of indentation.
 		  (goto-char (cdr (nth 1 s)))
 		  (forward-word -1)
 		  (setq indent (ruby-indent-size (current-column) (nth 2 state))))
-		 (t 
+		 (t
 		  (setq indent (current-column)))))
 	    (cond
 	     ((nth 3 state)
@@ -462,7 +486,7 @@ The variable ruby-indent-level controls the amount of indentation.
 	      (goto-char parse-start)
 	      (back-to-indentation)
 	      (setq indent (ruby-indent-size (current-column) (nth 2 state)))))
-	    ))	  
+	    ))
 	 ((and (nth 2 state)(> (nth 2 state) 0)) ; in nest
 	  (if (null (cdr (nth 1 state)))
 	      (error "invalid nest"))
@@ -490,7 +514,7 @@ The variable ruby-indent-level controls the amount of indentation.
 	  (end-of-line)
 	  (setq eol (point))
 	  (beginning-of-line)
-	  (cond 
+	  (cond
 	   ((re-search-forward ruby-negative eol t)
 	    (and (not (eq ?_ (char-after (match-end 0))))
 		 (setq indent (- indent ruby-indent-level))))
@@ -518,18 +542,11 @@ The variable ruby-indent-level controls the amount of indentation.
 	    (end-of-line)
 	    (skip-chars-backward " \t")
 	    (let ((pos (point)))
-	      (and 
-	       (re-search-backward "#" (save-excursion
-					 (beginning-of-line)
-					 (point)) t)
-	       (save-excursion
-		 (forward-char -1)
-		 (not (looking-at "\\?")))
-	       (skip-chars-backward " \t")
-	       (if (save-excursion
-		     (forward-char -1)
-		     (looking-at "\\?"))
-		   (skip-chars-forward " \t"))
+	      (while (and (re-search-backward "#" bol t)
+			  (= (char-before) ??))
+		(forward-char -1))
+	      (skip-chars-backward " \t")
+	      (and
 	       (setq state (ruby-parse-region parse-start (point)))
 	       (nth 0 state)
 	       (goto-char pos)))
@@ -670,45 +687,45 @@ An end of a defun is found by moving forward from the beginning of one."
   (or (boundp 'font-lock-variable-name-face)
       (setq font-lock-variable-name-face font-lock-type-face))
 
+  (setq ruby-font-lock-syntactic-keywords
+	'(
+	  ;; #{ }, #$hoge, #@foo are not comments
+	  ("\\(#\\)[{$@]" 1 (1 . nil))
+	  ;; the last $' in the string ,'...$' is not variable
+	  ;; the last ?' in the string ,'...?' is not ascii code
+	  ("\\(^\\|[[\\s <+(,=]\\)\\('\\)[^'\n\\\\]*\\(\\\\.[^'\n\\\\]*\\)*[?$]\\('\\)"
+	   (2 (7 . nil))
+	   (4 (7 . nil)))
+	  ;; the last $` in the string ,`...$` is not variable
+	  ;; the last ?` in the string ,`...?` is not ascii code
+	  ("\\(^\\|[[\\s <+(,=]\\)\\(`\\)[^`\n\\\\]*\\(\\\\.[^`\n\\\\]*\\)*[?$]\\(`\\)"
+	   (2 (7 . nil))
+	   (4 (7 . nil)))
+	  ;; the last $" in the string ,"...$" is not variable
+	  ;; the last ?" in the string ,"...?" is not ascii code
+	  ("\\(^\\|[[\\s <+(,=]\\)\\(\"\\)[^\"\n\\\\]*\\(\\\\.[^\"\n\\\\]*\\)*[?$]\\(\"\\)"
+	   (2 (7 . nil))
+	   (4 (7 . nil)))
+	  ;; $' $" $` .... are variables
+	  ;; ?' ?" ?` are ascii codes
+	  ("[?$][#\"'`]" 0 (1 . nil))
+	  ;; regexps
+	  ("\\(^\\|[=(,~?:;]\\|\\(^\\|\\s \\)\\(if\\|elsif\\|unless\\|while\\|until\\|when\\|and\\|or\\|&&\\|||\\)\\|g?sub!?\\|scan\\|split!?\\)\\s *\\(/\\)[^/\n\\\\]*\\(\\\\.[^/\n\\\\]*\\)*\\(/\\)"
+	   (4 (7 . ?/))
+	   (6 (7 . ?/)))
+	  ;; %Q!...!
+	  ("\\(^\\|[[\\s <+(,=]\\)%[xrqQ]?\\([^a-zA-Z0-9 \n]\\)[^\n\\\\]*\\(\\\\.[^\n\\\\]*\\)*\\(\\2\\)"
+	   (2 (7 . nil))
+	   (4 (7 . nil)))
+	  ("^\\(=\\)begin\\(\\s \\|$\\)" 1 (7 . nil))
+	  ("^\\(=\\)end\\(\\s \\|$\\)" 1 (7 . nil))))
 
-  (add-hook 'ruby-mode-hook
-	    '(lambda ()
-	       (make-local-variable 'ruby-font-lock-syntactic-keywords)
-	       (setq ruby-font-lock-syntactic-keywords
-		     '(
-		       ;; #{ }, #$hoge, #@foo are not comments
-		       ("\\(#\\)[{$@]" 1 (1 . nil))
-		       ;; the last $' in the string ,'...$' is not variable 
-		       ;; the last ?' in the string ,'...?' is not ascii code 
-		       ("\\(^\\|[[\\s <+(,=]\\)\\('\\)[^'\n\\\\]*\\(\\\\.[^'\n\\\\]*\\)*[?$]\\('\\)"
-			(2 (7 . nil))
-			(4 (7 . nil)))	
-		       ;; the last $` in the string ,`...$` is not variable
-		       ;; the last ?` in the string ,`...?` is not ascii code
-		       ("\\(^\\|[[\\s <+(,=]\\)\\(`\\)[^`\n\\\\]*\\(\\\\.[^`\n\\\\]*\\)*[?$]\\(`\\)"
-			(2 (7 . nil))
-			(4 (7 . nil)))
-		       ;; the last $" in the string ,"...$" is not variable
-		       ;; the last ?" in the string ,"...?" is not ascii code
-		       ("\\(^\\|[[\\s <+(,=]\\)\\(\"\\)[^\"\n\\\\]*\\(\\\\.[^\"\n\\\\]*\\)*[?$]\\(\"\\)"
-			(2 (7 . nil))
-			(4 (7 . nil)))
-		       ;; $' $" $` .... are variables
-		       ;; ?' ?" ?` are ascii codes
-		       ("[?$][#\"'`]" 0 (1 . nil))
-		       ;; regexps 
-		       ("\\(^\\|[=(,~?:;]\\|\\(^\\|\\s \\)\\(if\\|elsif\\|unless\\|while\\|until\\|when\\|and\\|or\\|&&\\|||\\)\\|g?sub!?\\|scan\\|split!?\\)\\s *\\(/\\)[^/\n\\\\]*\\(\\\\.[^/\n\\\\]*\\)*\\(/\\)"
-			(4 (7 . ?/))
-			(6 (7 . ?/)))
-		       ;; %Q!...! 
-		       ("\\(^\\|[[\\s <+(,=]\\)%[xrqQ]?\\([^a-zA-Z0-9 \n]\\)[^\n\\\\]*\\(\\\\.[^\n\\\\]*\\)*\\(\\2\\)" 
-			(2 (7 . nil))
-			(4 (7 . nil)))		       
-		       ("^\\(=\\)begin\\(\\s \\|$\\)" 1 (7 . nil))
-		       ("^\\(=\\)end\\(\\s \\|$\\)" 1 (7 . nil))))
-	       (make-local-variable 'font-lock-defaults)
-	       (setq font-lock-defaults '((ruby-font-lock-keywords) nil nil))
-	       (setq font-lock-keywords ruby-font-lock-keywords)))
+  (put 'ruby-mode 'font-lock-defaults
+       '((ruby-font-lock-keywords)
+         nil nil nil
+         beginning-of-line
+         (font-lock-syntactic-keywords
+          . ruby-font-lock-syntactic-keywords)))
 
   (defun ruby-font-lock-docs (limit)
     (if (re-search-forward "^=begin\\(\\s \\|$\\)" limit t)
@@ -786,7 +803,7 @@ An end of a defun is found by moving forward from the beginning of one."
        2 font-lock-variable-name-face)
      ;; variables
      '("\\(\\$\\([^a-zA-Z0-9 \n]\\|[0-9]\\)\\)\\W"
-       1 font-lock-variable-name-face)     
+       1 font-lock-variable-name-face)
      '("\\(\\$\\|@\\|@@\\)\\(\\w\\(\\w\\|_\\)*\\|#{\\)"
        0 font-lock-variable-name-face)
      ;; embedded document

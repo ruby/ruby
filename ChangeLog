@@ -2,6 +2,15 @@ Sat Jan  5 00:19:12 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* parse.y (yycompile): strdup()'ed twice.
 
+Fri Jan  4 17:23:49 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* misc/ruby-mode.el (ruby-forward-string): forward a string. [new]
+
+	* misc/ruby-mode.el (ruby-parse-region): handle nested parentheses
+	  in a string and terminators in #{}.
+
+	* misc/ruby-mode.el (ruby-calculate-indent): ditto.
+
 Wed Jan  2 23:34:25 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): add -I. to CPPFLAGS.
@@ -60,6 +69,11 @@ Tue Dec 25 23:28:47 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Tue Dec 25 18:32:16 2001  K.Kosako  <kosako@sofnec.co.jp>
 
 	* re.c (rb_reg_search): initialize taint status of match object.
+
+Mon Dec 24 02:37:40 2001  Le Wang  <lewang@bigfoot.com>
+
+	* misc/ruby-mode.el (ruby-font-lock-syntactic-keywords):
+	  fix font-lock problem [ruby-talk:29296].
 
 Fri Dec 21 20:33:34 2001  K.Kosako  <kosako@sofnec.co.jp>
 
