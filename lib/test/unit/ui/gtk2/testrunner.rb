@@ -406,7 +406,6 @@ module Test
             rescue @restart_signal
               retry
             rescue
-              puts $!, $@
             end
           end # def start_ui
           private :start_ui
