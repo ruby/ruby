@@ -73,6 +73,10 @@ module Generators
     def AllReferences.[](name)
       @@refs[name]
     end
+
+    def AllReferences.keys
+      @@refs.keys
+    end
   end
 
 
@@ -376,6 +380,10 @@ module Generators
       res = []
       array.each do |i|
         ref = AllReferences[i.name] 
+        if !ref && @context.parent
+          name = @context.parent.name + "::" + i.name
+          ref = AllReferences[name] 
+        end
         if !ref && block_given?
           possibles = yield(i.name)
           while !ref and !possibles.empty?

@@ -1,3 +1,13 @@
+Mon May 10 12:11:37 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/generators/html_generator.rb: Hack to search parents
+	  for unqualified constant names.
+
+Mon May 10 12:11:37 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/generators/html_generator.rb: Hack to search parents
+	  for unqualified constant names.
+
 Sun May  9 22:37:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
 
 	* lib/net/ftp.rb: improved documentation
