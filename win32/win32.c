@@ -735,6 +735,7 @@ int mode;
 char *cmd;
 {
     struct ChildRecord *child;
+    DWORD exitcode;
 
     switch (mode) {
       case P_WAIT:
@@ -759,7 +760,9 @@ char *cmd;
 	return child->pid;
       case P_OVERLAY:
 	WaitForSingleObject(child->hProcess, INFINITE);
-	exit(0);
+	GetExitCodeProcess(child->hProcess, &exitcode);
+	CloseChildHandle(child);
+	_exit(exitcode);
       default:
 	return -1;	/* not reached */
     }
@@ -774,6 +777,7 @@ char **argv;
     char *cmd, *p, *q, *s, **t;
     int len, n, bs, quote;
     struct ChildRecord *child;
+    DWORD exitcode;
 
     switch (mode) {
       case P_WAIT:
@@ -850,7 +854,9 @@ char **argv;
 	return child->pid;
       case P_OVERLAY:
 	WaitForSingleObject(child->hProcess, INFINITE);
-	exit(0);
+	GetExitCodeProcess(child->hProcess, &exitcode);
+	CloseChildHandle(child);
+	_exit(exitcode);
       default:
 	return -1;	/* not reached */
     }

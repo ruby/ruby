@@ -3,6 +3,9 @@ Tue Oct 21 15:08:53 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 	* win32/win32.c (do_spawn, do_aspawn): should wait child process even
 	  if callded with P_OVERLAY.
 
+	* win32/win32.c (do_spawn, do_aspawn): should return child's exit
+	  status to parent.
+
 Tue Oct 21 00:35:02 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/soap/calc/*, test/soap/helloworld/*: catch the exception from
