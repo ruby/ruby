@@ -1,3 +1,8 @@
+Wed Sep 29 10:58:07 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enum.c (sort_by_i): internally used object must not be changed
+	  outside.  [ruby-dev:24368]
+
 Wed Sep 22 13:38:12 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* hash.c (rb_hash_rehash): add iteration check.  [ruby-dev:24301]
@@ -98,7 +103,7 @@ Fri Sep 17 15:01:57 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/multi-tk.rb: support calling 'mainloop' on slave
 	  interpreters (however, the 'real' eventloop must be run on the
-	  Default Master IP) 
+	  Default Master IP)
 
 	* ext/tk/lib/remote-tk.rb: follow the changes of ext/tk/lib/multi-tk.rb
 
@@ -179,7 +184,7 @@ Sun Sep 12 23:46:23 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 Sun Sep 12 02:41:58 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tcltklib/tcltklib.c: add TclTkIp#allow_ruby_exit? and 
+	* ext/tcltklib/tcltklib.c: add TclTkIp#allow_ruby_exit? and
 	  allow_ruby_exit=
 
 
@@ -215,7 +220,7 @@ Fri Sep 10 02:43:54 2004  Dave Thomas  <dave@pragprog.com>
 
 Thu Sep  9 13:58:56 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tcltklib/tcltklib.c (ip_init): change flag value for setting 
+	* ext/tcltklib/tcltklib.c (ip_init): change flag value for setting
 	  'argv' and 'argv0' variable
 
 	* ext/tk/lib/remote-tk.rb: follow changes of multi-tk.rb

@@ -393,6 +393,7 @@ sort_by_i(i, ary)
 
     v = rb_yield(i);
     e = rb_assoc_new(v, i);
+    OBJ_FREEZE(e);
     rb_ary_push(ary, e);
     return Qnil;
 }
