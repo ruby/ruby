@@ -4,7 +4,8 @@ Mon Sep 18 17:46:11 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Tue Sep 19 14:01:01 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
-	* configure.in: include version number in RUBY_SO_NAME.
+	* configure.in, win32/setup.mak: include version number
+	  in RUBY_SO_NAME.
 
 Tue Sep 19 01:14:56 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
