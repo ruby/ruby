@@ -1,3 +1,10 @@
+Wed Jan 30 02:25:38 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* regex.c (re_adjust_startpos): search start of multibyte
+	  backward.
+
+	* regex.c (mbc_startpos): ditto.
+
 Tue Jan 29 17:59:20 2002  Tanaka Akira  <akr@m17n.org>
 
 	* file.c: `major' and `minor' macro needs sys/mkdev.h on SunOS 5.x.
