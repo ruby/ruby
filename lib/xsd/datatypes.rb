@@ -268,8 +268,11 @@ end
 
 module FloatConstants
   NaN = 0.0/0.0
-  POSITIVE_INF = 1.0/0.0
+  POSITIVE_INF = +1.0/0.0
   NEGATIVE_INF = -1.0/0.0
+  POSITIVE_ZERO = +1.0/POSITIVE_INF
+  NEGATIVE_ZERO = -1.0/POSITIVE_INF
+  MIN_POSITIVE_SINGLE = 2 ** -149
 end
 
 class XSDFloat < XSDAnySimpleType
@@ -320,7 +323,7 @@ private
     elsif @data.infinite? == -1
       '-INF'
     else
-      sign = (1 / @data > 0.0) ? '+' : '-'
+      sign = XSDFloat.positive?(@data) ? '+' : '-'
       sign + sprintf("%.10g", @data.abs).sub(/[eE]([+-])?0+/) { 'e' + $1 }
     end
   end
@@ -329,10 +332,15 @@ private
   def narrow32bit(f)
     if f.nan? || f.infinite?
       f
+    elsif f.abs < MIN_POSITIVE_SINGLE
+      XSDFloat.positive?(f) ? POSITIVE_ZERO : NEGATIVE_ZERO
     else
-      packed = [f].pack("f")
-      (/\A\0*\z/ =~ packed)? 0.0 : f
+      f
     end
+  end
+
+  def self.positive?(value)
+    (1 / value) > 0.0
   end
 end
 
