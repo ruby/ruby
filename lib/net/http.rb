@@ -248,30 +248,23 @@ module Net
 
       undef head
       alias head head2
-      undef head2
 
-      alias old_get2 get2
-      undef get2
       undef get
 
       def get( path, u_header = nil, dest = nil, &block )
-        old_get2( path, u_header ) {|f| f.body( dest, &block ) }
+        get2( path, u_header ) {|f| f.body( dest, &block ) }
       end
 
-      alias old_post2 post2
-      undef post2
       undef post
 
       def post( path, data, u_header = nil, dest = nil, &block )
-        old_post2( path, data, u_header ) {|f| f.body( dest, &block ) }
+        post2( path, data, u_header ) {|f| f.body( dest, &block ) }
       end
 
-      alias old_put2 put2
-      undef put2
       undef put
 
       def put( path, src, u_header = nil )
-        old_put2( path, src, u_header ) {|f| f.body }
+        put2( path, src, u_header ) {|f| f.body }
       end
 
       ^
