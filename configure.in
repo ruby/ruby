@@ -619,8 +619,8 @@ if test "$with_dln_a_out" != yes; then
 			esac
 			rb_cv_dlopen=yes ;;
 	cygwin*|mingw*)	: ${LDSHARED="${DLLWRAP} --target=${target_os} --as=${AS} --dlltool-name=${DLLTOOL} --driver-name=${CC} --export-all -s"}
-			rb_cv_dlopen=yes ;;
 			LDFLAGS='-Wl,--stack,0x02000000'
+			rb_cv_dlopen=yes ;;
 	*) 		LDSHARED='ld' ;;
   esac
   AC_MSG_RESULT($rb_cv_dlopen)
