@@ -1011,31 +1011,23 @@ rb_obj_remove_instance_variable(obj, name)
     return val;
 }
 
-static VALUE
-top_const_get(klass, id)
-    VALUE klass;
+static int
+top_const_get(id, klassp)
     ID id;
+    VALUE *klassp;
 {
     VALUE value;
 
     /* pre-defined class */
-    if (st_lookup(rb_class_tbl, id, &value)) return value;
+    if (st_lookup(rb_class_tbl, id, klassp)) return Qtrue;
 
     /* autoload */
     if (autoload_tbl && st_lookup(autoload_tbl, id, 0)) {
 	rb_autoload_load(id);
-	return rb_const_get(klass, id);
+	*klassp = rb_const_get(rb_cObject, id);
+	return Qtrue;
     }
-
-    /* Uninitialized constant */
-    if (klass && klass != rb_cObject)
-	rb_raise(rb_eNameError, "uninitialized constant %s::%s",
-		 RSTRING(rb_class_path(klass))->ptr,
-		 rb_id2name(id));
-    else {
-	rb_raise(rb_eNameError, "uninitialized constant %s",rb_id2name(id));
-    }
-    return Qnil;		/* not reached */
+    return Qfalse;
 }
 
 VALUE
@@ -1048,8 +1040,8 @@ rb_const_get_at(klass, id)
     if (RCLASS(klass)->iv_tbl && st_lookup(RCLASS(klass)->iv_tbl, id, &value)) {
 	return value;
     }
-    if (klass == rb_cObject) {
-	return top_const_get(klass, id);
+    if (klass == rb_cObject && top_const_get(id, &value)) {
+	return value;
     }
     rb_raise(rb_eNameError, "uninitialized constant %s::%s",
 	     RSTRING(rb_class_path(klass))->ptr,
@@ -1084,12 +1076,22 @@ rb_const_get(klass, id)
 	if (RCLASS(tmp)->iv_tbl && st_lookup(RCLASS(tmp)->iv_tbl,id,&value)) {
 	    return value;
 	}
+	if (tmp == rb_cObject && top_const_get(id, &value)) return value;
 	tmp = RCLASS(tmp)->super;
     }
     if (BUILTIN_TYPE(klass) == T_MODULE) {
 	return rb_const_get(rb_cObject, id);
     }
-    return top_const_get(klass, id);
+
+    /* Uninitialized constant */
+    if (klass && klass != rb_cObject)
+	rb_raise(rb_eNameError, "uninitialized constant %s::%s",
+		 RSTRING(rb_class_path(klass))->ptr,
+		 rb_id2name(id));
+    else {
+	rb_raise(rb_eNameError, "uninitialized constant %s",rb_id2name(id));
+    }
+    return Qnil;		/* not reached */
 }
 
 static int

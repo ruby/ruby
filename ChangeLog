@@ -1,5 +1,9 @@
 Wed Jul 12 15:32:57 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
+	* variable.c (rb_const_get): constants for builtin classes must
+	  have higher priority than constants from included modules at
+	  Object class.
+
 	* bignum.c (bigdivrem): small embarrassing typo.
 
 Wed Jul 12 15:06:28 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
