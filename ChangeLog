@@ -1,3 +1,11 @@
+Wed Aug 21 16:53:00 2002  Michal Rokos  <michal@ruby-lang.org>
+
+	* *.c: int, long types cleanup.
+
+	* parse.y: ditto.
+
+	* re.h, regex.h, ruby.h: ditto.
+
 Wed Aug 21 16:43:19 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_thread_cleanup): should not modify the global
