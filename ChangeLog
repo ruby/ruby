@@ -1,3 +1,7 @@
+Mon Sep 22 19:22:26 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* configure.in (AC_CHECK_FUNCS): add setuid and setgid.
+
 Sun Sep 21 04:12:36 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_ocsp.c (ossl_ocspreq_initialize): the argument
