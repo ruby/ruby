@@ -1,3 +1,7 @@
+Sun Feb 13 01:33:19 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/erb.rb (ERB::Util.h, u): make it module_function.
+
 Sat Feb 12 22:17:11 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (TAG_THREAD): to start a new thread.
