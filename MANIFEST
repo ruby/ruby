@@ -236,6 +236,7 @@ lib/rdoc/generators/template/html/hefss.rb
 lib/rdoc/generators/template/html/html.rb
 lib/rdoc/generators/template/html/kilmer.rb
 lib/rdoc/generators/template/html/old_html.rb
+lib/rdoc/generators/template/html/one_page_html.rb
 lib/rdoc/generators/template/xml/rdf.rb
 lib/rdoc/generators/template/xml/xml.rb
 lib/rdoc/generators/xml_generator.rb
