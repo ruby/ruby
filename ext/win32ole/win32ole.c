@@ -66,7 +66,6 @@
             (x) = 0;\
         }\
     }\
-    ole_msg_loop();\
     CoFreeUnusedLibraries();\
 }
 
@@ -79,7 +78,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.5.4"
+#define WIN32OLE_VERSION "0.5.5"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -463,7 +462,6 @@ static void
 ole_initialize() 
 {
     HRESULT hr;
-    int rc;
     
     if(gOLEInitialized == Qfalse) {
         hr = OleInitialize(NULL);
@@ -471,7 +469,12 @@ ole_initialize()
             ole_raise(hr, rb_eRuntimeError, "Fail : OLE initialize");
         }
         gOLEInitialized = Qtrue;
-        rc = atexit((void (*)(void))ole_uninitialize);
+	/*
+	 * In some situation, OleUninitialize does not work fine. ;-<
+	 */
+	/*
+        atexit((void (*)(void))ole_uninitialize);
+	*/
     }
 }
 
@@ -5088,7 +5091,6 @@ ole_event_free(poleev)
             pcp->lpVtbl->Unadvise(pcp, poleev->pEvent->m_dwCookie);
             OLE_RELEASE(pcp);
         }
-        ole_msg_loop();
         CoFreeUnusedLibraries();
     }
 }

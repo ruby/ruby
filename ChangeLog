@@ -1,3 +1,13 @@
+Thu Aug 14 20:03:34 2003  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (OLE_FREE): should not call 
+	  ole_message_loop.
+
+	* ext/win32ole/win32ole.c (ole_event_free): ditto.
+
+	* ext/win32ole/win32ole.c (ole_initialize): stop calling 
+	  OleUninitialize at exit.
+	
 Thu Aug 14 11:27:37 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* gc.c (rb_data_object_alloc): check type of 1st argument.
