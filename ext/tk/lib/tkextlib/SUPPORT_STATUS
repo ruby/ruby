@@ -83,6 +83,10 @@ Tile        http://tktable.sourceforge.net/tile/        ==> tile
 
 ===< possibly available (not tested; alpha quality) >=========================
 
+BLT         http://sourceforge.net/projects/blt
+                * see tcltk-ext library on RAA (http://raa.ruby-lang.org/)
+               ==> blt
+
 winico      http://tktable.sourceforge.net
                ==> winico (win32 only)
 
@@ -94,9 +98,6 @@ TkDND       http://sourceforge.net/projects/tkdnd       ==> tkDND
 
 
 ===< plan to support (alpha quality libraries may be included) >==============
-
-BLT         http://sourceforge.net/projects/blt
-                * see tcltk-ext library on RAA (http://raa.ruby-lang.org/)
 
 GraphViz    http://www.graphviz.org/
 
@@ -167,7 +168,6 @@ Memchan     http://memchan.sourceforge.net/
 ===< tool (may not supprt) >==================================================
 
 tbcload/tclcompiler http://www.tcl.tk/software/tclpro/
-
 
 
 (End of List)
