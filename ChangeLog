@@ -1,3 +1,8 @@
+Mon Dec 20 00:16:54 2004  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/encodings/SHIFT_JIS.rb: fixed LoadError bug.
+	  [ruby-core:3958]
+
 Sun Dec 19 17:24:59 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (enable_rpath): use rpath flag to embed the library
