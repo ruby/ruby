@@ -106,7 +106,7 @@ range_eq(range, obj)
 }
 
 static int
-r_eq(a,b)
+r_eq(a, b)
     VALUE a, b;
 {
     VALUE r;
@@ -119,22 +119,22 @@ r_eq(a,b)
 }
 
 static int
-r_lt(a,b)
+r_lt(a, b)
     VALUE a, b;
 {
     VALUE r = rb_funcall(a, id_cmp, 1, b);
 
-    if (NUM2LONG(r) < 0) return Qtrue;
+    if (rb_cmpint(r) < 0) return Qtrue;
     return Qfalse;
 }
 
 static int
-r_le(a,b)
+r_le(a, b)
     VALUE a, b;
 {
     VALUE r = rb_funcall(a, id_cmp, 1, b);
 
-    if (NUM2LONG(r) <= 0) return Qtrue;
+    if (rb_cmpint(r) <= 0) return Qtrue;
     return Qfalse;
 }
 
@@ -144,7 +144,7 @@ r_gt(a,b)
 {
     VALUE r = rb_funcall(a, id_cmp, 1, b);
 
-    if (NUM2LONG(r) > 0) return Qtrue;
+    if (rb_cmpint(r) > 0) return Qtrue;
     return Qfalse;
 }
 
