@@ -805,11 +805,13 @@ BigDecimal_div2(int argc, VALUE *argv, VALUE self)
        U_LONG ix = (U_LONG)GetPositiveInt(n);
        U_LONG mx = (ix+VpBaseFig()*2);
        U_LONG pl = VpSetPrecLimit(0);
+
        GUARD_OBJ(cv,VpCreateRbObject(mx,"0"));
        GUARD_OBJ(av,GetVpValue(self,1));
        GUARD_OBJ(bv,GetVpValue(b,1));
-       mx = cv->MaxPrec+1;
-       GUARD_OBJ(res,VpCreateRbObject((mx * 2 + 2)*VpBaseFig(), "#0"));
+       mx = av->Prec + bv->Prec + 2;
+       if(mx <= cv->MaxPrec) mx = cv->MaxPrec+1;
+       GUARD_OBJ(res,VpCreateRbObject((mx * 2  + 2)*VpBaseFig(), "#0"));
        VpDivd(cv,res,av,bv);
        VpSetPrecLimit(pl);
        VpLeftRound(cv,VpGetRoundMode(),ix);
@@ -1418,7 +1420,7 @@ Init_bigdecimal(void)
  *
  */
 #ifdef _DEBUG
-static int gfDebug = 0;         /* Debug switch */
+static int gfDebug = 1;         /* Debug switch */
 static int gfCheckVal = 1;      /* Value checking flag in VpNmlz()  */
 #endif /* _DEBUG */
 
