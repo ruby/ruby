@@ -5,7 +5,7 @@ Tue Jan  6 22:13:34 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Tue Jan  6 21:55:02 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* io.c (fptr_finalize): should save errno just after failure.w
+	* io.c (fptr_finalize): should save errno just after failure.
 	  [ruby-dev:22492]
 
 Tue Jan  6 14:53:14 2004  Dave Thomas  <dave@pragprog.com>
