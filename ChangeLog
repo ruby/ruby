@@ -1,3 +1,7 @@
+Fri Sep 26 18:35:40 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/resolv-replace.rb: 1.8 compliance.  [ruby-talk:82946]
+
 Mon Sep 26 17:39:27 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/ruby/test_marshal.rb: add test for ruby's objects.

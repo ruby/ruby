@@ -144,7 +144,7 @@ flush_register_windows(void)
 	volatile
 #endif
 # if defined(__sparc_v9__) || defined(__sparcv9) || defined(__arch64__)
-	("flushw" : :)
+	("flushw")
 # elif defined(linux) || defined(__linux__)
 	("ta  0x83")
 # else /* Solaris, OpenBSD, NetBSD, etc. */
