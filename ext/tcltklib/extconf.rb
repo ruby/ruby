@@ -43,7 +43,8 @@ search_header("X11/Xlib.h",
 	      "/usr/include",
 	      "/usr/X11*/include",
 	      "/usr/include",
-	      "/usr/X11*/include")
+	      "/usr/X11*/include",
+	      "/usr/openwin/include")
 
 $CFLAGS = "-Wall " + $includes.collect{|path| "-I" + path}.join(" ")
 
@@ -74,7 +75,7 @@ end
 
 if have_header("tcl.h") && have_header("tk.h") &&
     search_lib("libX11.{a,so}", "XOpenDisplay",
-	       "/usr/lib", "/usr/X11*/lib") &&
+	       "/usr/lib", "/usr/X11*/lib", "/usr/openwin/lib") &&
     search_lib("libtcl{,7*,8*}.{a,so}", "Tcl_FindExecutable",
 	       "/usr/lib", "/usr/local/lib") &&
     search_lib("libtk{,4*,8*}.{a,so}", "Tk_Init",

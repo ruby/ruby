@@ -816,6 +816,11 @@ reg_s_quote(re, str)
   t = tmp;
 
   for (; s != send; s++) {
+      if (ismbchar(*s)) {
+	  *t++ = *s++;
+	  *t++ = *s;
+	  continue;
+      }
       if (*s == '[' || *s == ']'
 	  || *s == '{' || *s == '}'
 	  || *s == '(' || *s == ')'

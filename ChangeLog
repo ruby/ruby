@@ -1,3 +1,13 @@
+Mon Feb 23 12:11:51 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* re.c (reg_s_quote): needed to be mbchar aware.
+
+	* eval.c (proc_s_new): wrong iter mark.
+
+Sat Feb 21 22:59:30 1998  MAEDA shugo  <shugo@po.aianet.ne.jp>
+
+	* io.c (f_syscall): no argument check.
+
 Fri Feb 20 10:17:51 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* version 1.1b8 released.
@@ -32,6 +42,7 @@ Wed Feb 18 00:41:31 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* string.c (str_sub_s): needed to be mbchar aware to increment one
  	  character.
+
 	* regex.c (re_match): \Z matches newline just before the end of
 	  the string.
 

@@ -212,7 +212,7 @@ obj_is_instance_of(obj, c)
     }
 
     cl = CLASS_OF(obj);
-    while (FL_TEST(cl, FL_SINGLETON)) {
+    while (FL_TEST(cl, FL_SINGLETON) || TYPE(cl) == T_ICLASS) {
 	cl = RCLASS(cl)->super;
     }
     if (c == cl) return TRUE;

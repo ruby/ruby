@@ -4442,7 +4442,7 @@ proc_s_new(klass)
 #ifdef THREAD
     data->orig_thread = thread_current();
 #endif
-    data->iter = f_iterator_p();
+    data->iter = data->prev?TRUE:FALSE;
     data->frame.argv = ALLOC_N(VALUE, data->frame.argc);
     MEMCPY(data->frame.argv, the_block->frame.argv, VALUE, data->frame.argc);
     if (data->iter) {

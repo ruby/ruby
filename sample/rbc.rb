@@ -849,7 +849,7 @@ module BC_APPLICATION__
 	  return true
 	end
       when /\.(so|o|sl)$/
-	require_org(file_name)
+	rbc_require_org(file_name)
       end
       
       if load_sub(f = file_name + ".rb")

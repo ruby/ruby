@@ -1955,6 +1955,8 @@ f_syscall(argc, argv)
      */
 
     rb_secure(2);
+    if (argc == 0)
+	ArgError("too few arguments for syscall");
     arg[0] = NUM2INT(argv[0]); argv++;
     while (items--) {
 	if (FIXNUM_P(*argv)) {
@@ -1968,8 +1970,6 @@ f_syscall(argc, argv)
 	i++;
     }
     switch (argc) {
-      case 0:
-	ArgError("Too few args to syscall");
       case 1:
 	retval = syscall(arg[0]);
 	break;
