@@ -1,3 +1,7 @@
+Mon Mar 28 16:23:26 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ext/tk/lib/tkextlib/iwidgets/notebook.rb: fixed typo.
+
 Mon Mar 28 08:39:49 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv/iconv.c (iconv_create): Iconv::Failure requires 3
@@ -47,7 +51,7 @@ Sat Mar 26 22:51:33 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/lib/tkextlib/treectrl/tktreectrl.rb: bug fix and add methods
 	  to call TreeCtrl commands for bindings.
 
-	* ext/tk/sample/tkextlib/blt/*: new sample scritps.
+	* ext/tk/sample/tkextlib/blt/*: new sample scripts.
 
 	* ext/tk/sample/tkextlib/treectrl/*: ditto.
 
