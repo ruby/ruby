@@ -1,6 +1,7 @@
 # -*- ruby -*-
 
 require 'dl'
+require 'dl/types'
 
 module DL
   module Importable
@@ -153,74 +154,7 @@ module DL
       end
       
       def init_type
-	@TYDEFS = [
-	  # for Windows
-	  ["DWORD",  "unsigned long", nil, nil],
-	  ["PDWORD", "unsigned long *", nil, nil],
-	  ["WORD",   "unsigned int", nil, nil],
-	  ["PWORD",  "unsigned int *", nil, nil],
-	  ["BOOL",   "ibool", nil, nil],
-	  ["ATOM",   "int", nil, nil],
-	  ["BYTE",   "unsigned char", nil, nil],
-	  ["PBYTE",  "unsigned char *", nil, nil],
-	  ["UINT",   "unsigned int", nil, nil],
-	  ["ULONG",  "unsigned long", nil, nil],
-	  ["UCHAR",  "unsigned char", nil, nil],
-	  ["HANDLE", "unsigned long", nil, nil],
-	  ["PHANDLE","void*", nil, nil],
-	  ["PVOID",  "void*", nil, nil],
-	  ["LPCSTR", "char*", nil, nil],
-
-	  # Others
-	  ["uint",   "unsigned int", nil, nil],
-	  ["u_int",  "unsigned int", nil, nil],
-	  ["ulong",  "unsigned long", nil, nil],
-	  ["u_long", "unsigned long", nil, nil],
-
-	  # DL::Importable primitive types
-	  ["ibool",   "I",
-	    proc{|v| v ? 1 : 0},
-	    proc{|v| (v != 0) ? true : false}],
-	  ["cbool",   "C",
-	    proc{|v| v ? 1 : 0},
-	    proc{|v| (v != 0) ? true : false}],
-	  ["lbool",   "L",
-	    proc{|v| v ? 1 : 0},
-	    proc{|v| (v != 0) ? true : false}],
-	  ["unsigned char", "I",
-	    proc{|v| [v].pack("C").unpack("c")[0]},
-	    proc{|v| [v].pack("c").unpack("C")[0]}],
-	  ["unsigned int", "I",
-	    proc{|v| [v].pack("I").unpack("i")[0]},
-	    proc{|v| [v].pack("i").unpack("I")[0]}],
-	  ["unsigned long", "L",
-	    proc{|v| [v].pack("L").unpack("l")[0]},
-	    proc{|v| [v].pack("l").unpack("L")[0]}],
-	  ["unsigned char ref", "i",
-	    proc{|v| [v].pack("C").unpack("c")[0]},
-	    proc{|v| [v].pack("c").unpack("C")[0]}],
-	  ["unsigned int ref", "i",
-	    proc{|v| [v].pack("I").unpack("i")[0]},
-	    proc{|v| [v].pack("i").unpack("I")[0]}],
-	  ["unsigned long ref", "l",
-	    proc{|v| [v].pack("L").unpack("l")[0]},
-	    proc{|v| [v].pack("l").unpack("L")[0]}],
-	  ["char ref",  "c", nil, nil],
-	  ["short ref", "h", nil, nil],
-	  ["int ref",   "i", nil, nil],
-	  ["long ref",  "l", nil, nil],
-	  ["float ref", "f", nil, nil],
-	  ["double ref","d", nil, nil],
-	  ["char",   "C", nil, nil],
-	  ["short",  "H", nil, nil],
-	  ["int",    "I", nil, nil],
-	  ["long",   "L", nil, nil],
-	  ["float",  "F", nil, nil],
-	  ["double", "D", nil, nil],
-	  [/.+\*/,   "P", nil, nil],
-	  [/.+\[\]/, "a", nil, nil],
-	  ["void",   "0", nil, nil],
-	]
+	@TYDEFS = TYPES.collect{|ty| ty[0..3]}
       end
     end # end of Internal
     include Internal
