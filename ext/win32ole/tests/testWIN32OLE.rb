@@ -223,6 +223,14 @@ class TestWin32OLE < RUNIT::TestCase
     book = workbooks.invoke( 'add' )
     assert_instance_of(WIN32OLE, book)
   end
+  def test_ole_type
+    tobj = @excel.ole_type
+    assert_equal('_Application', tobj.name)
+  end
+  def test_ole_obj_help
+    tobj = @excel.ole_type
+    assert_equal('_Application', tobj.name)
+  end
   def test_ole_methods
     methods = @excel.ole_methods
     method_names = methods.collect{|m| m.name}

@@ -1,3 +1,10 @@
+Sat Nov  6 20:40:16 2004  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c: rename WIN32OLE#ole_obj_help to
+	  WIN32OLE#ole_type. alias ole_obj_help to ole_type.
+
+	* ext/win32ole/tests/testWIN32OLE.rb: ditto.
+
 Sat Nov  6 11:18:59 2004  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb (_parse): checks whether zone was given.

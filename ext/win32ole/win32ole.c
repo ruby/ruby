@@ -79,7 +79,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.6.2"
+#define WIN32OLE_VERSION "0.6.3"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -1739,7 +1739,7 @@ ole_show_help(helpfile, helpcontext)
  *  object or WIN32OLE_METHOD object or helpfile.
  *
  *     excel = WIN32OLE.new('Excel.Application')
- *     typeobj = excel.ole_obj_help
+ *     typeobj = excel.ole_type
  *     WIN32OLE.ole_show_help(typeobj)
  */
 static VALUE
@@ -2945,15 +2945,15 @@ fole_func_methods( self )
 
 /*
  *   call-seq:
- *      WIN32OLE#ole_obj_help
+ *      WIN32OLE#ole_type
  * 
  *   Returns WIN32OLE_TYPE object.
  *
  *      excel = WIN32OLE.new('Excel.Application')
- *      tobj = excel.ole_obj_help
+ *      tobj = excel.ole_type
  */
 static VALUE
-fole_obj_help( self )
+fole_type( self )
     VALUE self;
 {
     unsigned int index;
@@ -6600,7 +6600,8 @@ Init_win32ole()
 
     rb_define_method(cWIN32OLE, "ole_method", fole_method_help, 1);
     rb_define_alias(cWIN32OLE, "ole_method_help", "ole_method");
-    rb_define_method(cWIN32OLE, "ole_obj_help", fole_obj_help, 0);
+    rb_define_method(cWIN32OLE, "ole_type", fole_type, 0);
+    rb_define_alias(cWIN32OLE, "ole_obj_help", "ole_type");
     rb_define_method(cWIN32OLE, "ole_typelib", fole_typelib, 0);
 
     rb_define_const(cWIN32OLE, "VERSION", rb_str_new2(WIN32OLE_VERSION));
