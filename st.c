@@ -85,9 +85,23 @@ st_init_numtable()
 }
 
 st_table*
+st_init_numtable_with_size(size)
+    int size;
+{
+    return st_init_table_with_size(&type_numhash, size);
+}
+
+st_table*
 st_init_strtable()
 {
     return st_init_table(&type_strhash);
+}
+
+st_table*
+st_init_strtable_with_size(size)
+    int size;
+{
+    return st_init_table_with_size(&type_strhash, size);
 }
 
 void

@@ -18,8 +18,13 @@ extern "C" {
 #endif
 
 #include "config.h"
-
 #include "defines.h"
+
+#if 0
+#ifndef RUBY_RENAME
+#include "rename2.h"
+#endif
+#endif
 
 #ifdef HAVE_STDLIB_H
 # include <stdlib.h>
@@ -89,11 +94,6 @@ extern "C" {
 #if SIZEOF_LONG != SIZEOF_VOIDP
 ---->> ruby requires sizeof(void*) == sizeof(long) to be compiled. <<----
 # endif
-/* INT, UINT, UCHAR are obsolete macro, do not use them. */
-typedef long INT;
-typedef unsigned long UINT;
-typedef unsigned char UCHAR;
-
 typedef unsigned long VALUE;
 typedef unsigned int ID;
 
@@ -121,8 +121,8 @@ typedef unsigned int ID;
 
 #define FIXNUM_FLAG 0x01
 #define INT2FIX(i) (VALUE)(((long)(i))<<1 | FIXNUM_FLAG)
-VALUE int2inum _((long));
-#define INT2NUM(v) int2inum(v)
+VALUE rb_int2inum _((long));
+#define INT2NUM(v) rb_int2inum(v)
 
 #define FIX2LONG(x) RSHIFT((long)x,1)
 #define FIX2ULONG(x) (((unsigned long)(x))>>1)
@@ -132,13 +132,6 @@ VALUE int2inum _((long));
 #define FIXABLE(f) (POSFIXABLE(f) && NEGFIXABLE(f))
 
 /* special contants - i.e. non-zero and non-fixnum constants */
-#ifndef MACRUBY_PUBLIC_INTERFACE
-# undef FALSE 
-# undef TRUE
-# define FALSE  0
-# define TRUE   2
-# define NIL    4
-#endif
 #define Qfalse 0
 #define Qtrue  2
 #define Qnil   4
@@ -146,7 +139,6 @@ VALUE int2inum _((long));
 # define RTEST(v) rb_test_false_or_nil((VALUE)(v))
 #define NIL_P(v) ((VALUE)(v) == Qnil)
 
-VALUE rb_class_of _((VALUE));
 #define CLASS_OF(v) rb_class_of((VALUE)(v))
 
 #define T_NONE   0x00
@@ -187,15 +179,15 @@ void rb_check_safe_str _((VALUE));
 #define Check_SafeStr(v) rb_check_safe_str((VALUE)(v))
 void rb_secure _((int));
 
-long num2long _((VALUE));
-unsigned long num2ulong _((VALUE));
-#define NUM2LONG(x) (FIXNUM_P(x)?FIX2INT(x):num2long((VALUE)x))
-#define NUM2ULONG(x) num2ulong((VALUE)x)
+long rb_num2long _((VALUE));
+unsigned long rb_num2ulong _((VALUE));
+#define NUM2LONG(x) (FIXNUM_P(x)?FIX2INT(x):rb_num2long((VALUE)x))
+#define NUM2ULONG(x) rb_num2ulong((VALUE)x)
 #if SIZEOF_INT < SIZEOF_LONG
-int num2int _((VALUE));
-#define NUM2INT(x) (FIXNUM_P(x)?FIX2INT(x):num2int((VALUE)x))
-int fix2int _((VALUE));
-#define FIX2INT(x) fix2int((VALUE)x)
+int rb_num2int _((VALUE));
+#define NUM2INT(x) (FIXNUM_P(x)?FIX2INT(x):rb_num2int((VALUE)x))
+int rb_fix2int _((VALUE));
+#define FIX2INT(x) rb_fix2int((VALUE)x)
 #define NUM2UINT(x) ((unsigned int)NUM2ULONG(x))
 #define FIX2UINT(x) ((unsigned int)FIX2ULONG(x))
 #else
@@ -205,11 +197,12 @@ int fix2int _((VALUE));
 #define FIX2UINT(x) FIX2ULONG(x)
 #endif
 
-double num2dbl _((VALUE));
-#define NUM2DBL(x) num2dbl((VALUE)(x))
+double rb_num2dbl _((VALUE));
+#define NUM2DBL(x) rb_num2dbl((VALUE)(x))
 
-char *str2cstr _((VALUE,int*));
-#define STR2CSTR(x) str2cstr((VALUE)(x),0)
+char *rb_str2cstr _((VALUE,int*));
+#define str2cstr(x,l) rb_str2cstr((VALUE)(x),(l))
+#define STR2CSTR(x) rb_str2cstr((VALUE)(x),0)
 
 #define NUM2CHR(x) (((TYPE(x) == T_STRING)&&(RSTRING(x)->len>=1))?\
                      RSTRING(x)->ptr[0]:(char)NUM2INT(x))
@@ -222,8 +215,8 @@ VALUE rb_newobj _((void));
     RBASIC(obj)->flags = (t);\
 }
 #define CLONESETUP(clone,obj) {\
-    OBJSETUP(clone,singleton_class_clone(RBASIC(obj)->klass),RBASIC(obj)->flags);\
-    singleton_class_attached(RBASIC(clone)->klass, (VALUE)clone);\
+    OBJSETUP(clone,rb_singleton_class_clone(RBASIC(obj)->klass),RBASIC(obj)->flags);\
+    rb_singleton_class_attached(RBASIC(clone)->klass, (VALUE)clone);\
 }
 
 struct RBasic {
@@ -272,7 +265,7 @@ struct RHash {
     struct RBasic basic;
     struct st_table *tbl;
     int iter_lev;
-    long status;
+    VALUE ifnone;
 };
 
 struct RFile {
@@ -287,19 +280,19 @@ struct RData {
     void *data;
 };
 
-extern VALUE cData;
+extern VALUE rb_cData;
 
 #define DATA_PTR(dta) (RDATA(dta)->data)
 
-VALUE data_object_alloc _((VALUE,void*,void (*)(),void (*)()));
+VALUE rb_data_object_alloc _((VALUE,void*,void (*)(),void (*)()));
 #define Data_Make_Struct(klass,type,mark,free,sval) (\
     sval = ALLOC(type),\
     memset(sval, 0, sizeof(type)),\
-    data_object_alloc(klass,sval,mark,free)\
+    rb_data_object_alloc(klass,sval,mark,free)\
 )
 
 #define Data_Wrap_Struct(klass,mark,free,sval) (\
-    data_object_alloc(klass,sval,mark,free)\
+    rb_data_object_alloc(klass,sval,mark,free)\
 )
 
 #define Data_Get_Struct(obj,type,sval) {\
@@ -358,49 +351,6 @@ struct RBignum {
 #define FL_UNSET(x,f) if(FL_ABLE(x)){RBASIC(x)->flags &= ~(f);}
 #define FL_REVERSE(x,f) if(FL_ABLE(x)){RBASIC(x)->flags ^= f;}
 
-#if defined(__GNUC__) && __GNUC__ >= 2 && !defined(RUBY_NO_INLINE)
-extern __inline__ int
-rb_type(VALUE obj)
-{
-    if (FIXNUM_P(obj)) return T_FIXNUM;
-    if (obj == Qnil) return T_NIL;
-#ifdef MACRUBY_PUBLIC_INTERFACE
-    if (obj == RubyFALSE) return T_FALSE;
-    if (obj == RubyTRUE) return T_TRUE;
-#else
-    if (obj == FALSE) return T_FALSE;
-    if (obj == TRUE) return T_TRUE;
-#endif
-    return BUILTIN_TYPE(obj);
-}
-
-extern __inline__ int
-rb_special_const_p(VALUE obj)
-{
-#ifdef MACRUBY_PUBLIC_INTERFACE
-    return (FIXNUM_P(obj)||obj == Qnil||obj == RubyFALSE||obj == RubyTRUE)?RubyTRUE:RubyFALSE;
-#else
-    return (FIXNUM_P(obj)||obj == Qnil||obj == FALSE||obj == TRUE)?TRUE:FALSE;
-#endif
-}
-
-extern __inline__ int
-rb_test_false_or_nil(VALUE v)
-{
-#ifdef MACRUBY_PUBLIC_INTERFACE
-    return (v != Qnil) && (v != RubyFALSE);
-    return (v != Qnil) && (v != RubyFALSE);
-#else
-    return (v != Qnil) && (v != FALSE);
-    return (v != Qnil) && (v != FALSE);
-#endif
-}
-#else
-int rb_type _((VALUE));
-int rb_special_const_p _((VALUE));
-int rb_test_false_or_nil _((VALUE));
-#endif
-
 void *xmalloc _((int));
 void *xcalloc _((int,int));
 void *xrealloc _((void*,int));
@@ -458,89 +408,142 @@ void rb_const_set _((VALUE, ID, VALUE));
 
 VALUE rb_equal _((VALUE,VALUE));
 
-extern VALUE verbose, debug;
+extern VALUE rb_verbose, rb_debug;
 
 int rb_safe_level _((void));
 void rb_set_safe_level _((int));
 
-void Raise __((VALUE, char*, ...)) NORETURN;
-void Fail __((char*, ...)) NORETURN;
-void Fatal __((char*, ...)) NORETURN;
-void Bug __((char*, ...)) NORETURN;
+void rb_raise __((VALUE, char*, ...)) NORETURN;
+void rb_fatal __((char*, ...)) NORETURN;
+void rb_bug __((char*, ...)) NORETURN;
 void rb_sys_fail _((char*)) NORETURN;
 void rb_iter_break _((void)) NORETURN;
 void rb_exit _((int)) NORETURN;
-void rb_raise _((VALUE)) NORETURN;
-void rb_fatal _((VALUE)) NORETURN;
 void rb_notimplement _((void)) NORETURN;
 
-void Error __((char*, ...));
-void Warn __((char*, ...));
-void Warning __((char*, ...));		/* reports if `-w' specified */
+void rb_warn __((char*, ...));
+void rb_warning __((char*, ...));		/* reports if `-w' specified */
 
 VALUE rb_each _((VALUE));
 VALUE rb_yield _((VALUE));
-int iterator_p _((void));
+int rb_iterator_p _((void));
 VALUE rb_iterate _((VALUE(*)(),VALUE,VALUE(*)(),VALUE));
 VALUE rb_rescue _((VALUE(*)(),VALUE,VALUE(*)(),VALUE));
 VALUE rb_ensure _((VALUE(*)(),VALUE,VALUE(*)(),VALUE));
 VALUE rb_catch _((char*,VALUE(*)(),VALUE));
 void rb_throw _((char*,VALUE)) NORETURN;
 
-extern VALUE mKernel;
-extern VALUE mComparable;
-extern VALUE mEnumerable;
-extern VALUE mErrno;
-extern VALUE mFileTest;
-extern VALUE mGC;
-extern VALUE mMath;
-extern VALUE mProcess;
+void ruby_init _((void));
+void ruby_options _((int, char**));
+void ruby_run _((void));
 
-#ifdef __MACOS__ /* name conflict, AERegistory.h */
-extern VALUE cRubyObject;
+extern VALUE rb_mKernel;
+extern VALUE rb_mComparable;
+extern VALUE rb_mEnumerable;
+extern VALUE rb_mErrno;
+extern VALUE rb_mFileTest;
+extern VALUE rb_mGC;
+extern VALUE rb_mMath;
+extern VALUE rb_mProcess;
+
+extern VALUE rb_cObject;
+extern VALUE rb_cArray;
+extern VALUE rb_cBignum;
+extern VALUE rb_cClass;
+extern VALUE rb_cDir;
+extern VALUE rb_cData;
+extern VALUE rb_cFalseClass;
+extern VALUE rb_cFile;
+extern VALUE rb_cFixnum;
+extern VALUE rb_cFloat;
+extern VALUE rb_cHash;
+extern VALUE rb_cInteger;
+extern VALUE rb_cIO;
+extern VALUE rb_cModule;
+extern VALUE rb_cNilClass;
+extern VALUE rb_cNumeric;
+extern VALUE rb_cProc;
+extern VALUE rb_cRange;
+extern VALUE rb_cRegexp;
+extern VALUE rb_cString;
+extern VALUE rb_cThread;
+extern VALUE rb_cTime;
+extern VALUE rb_cTrueClass;
+extern VALUE rb_cStruct;
+
+extern VALUE rb_eException;
+extern VALUE rb_eStandardError;
+extern VALUE rb_eSystemExit, rb_eInterrupt, rb_eFatal;
+extern VALUE rb_eArgError;
+extern VALUE rb_eEOFError;
+extern VALUE rb_eIndexError;
+extern VALUE rb_eIOError;
+extern VALUE rb_eLoadError;
+extern VALUE rb_eNameError;
+extern VALUE rb_eRuntimeError;
+extern VALUE rb_eSecurityError;
+extern VALUE rb_eSyntaxError;
+extern VALUE rb_eSystemCallError;
+extern VALUE rb_eTypeError;
+extern VALUE rb_eZeroDiv;
+extern VALUE rb_eNotImpError;
+
+#if defined(__GNUC__) && __GNUC__ >= 2 && !defined(RUBY_NO_INLINE)
+extern __inline__ VALUE rb_class_of _((VALUE));
+extern __inline__ int rb_type _((VALUE));
+extern __inline__ int rb_special_const_p _((VALUE));
+extern __inline__ int rb_test_false_or_nil _((VALUE));
+
+extern __inline__ VALUE
+rb_class_of(VALUE obj)
+{
+    if (FIXNUM_P(obj)) return rb_cFixnum;
+    if (obj == Qnil) return rb_cNilClass;
+    if (obj == Qfalse) return rb_cFalseClass;
+    if (obj == Qtrue) return rb_cTrueClass;
+
+    return RBASIC(obj)->klass;
+}
+
+extern __inline__ int
+rb_type(VALUE obj)
+{
+    if (FIXNUM_P(obj)) return T_FIXNUM;
+    if (obj == Qnil) return T_NIL;
+    if (obj == Qfalse) return T_FALSE;
+    if (obj == Qtrue) return T_TRUE;
+    return BUILTIN_TYPE(obj);
+}
+
+extern __inline__ int
+rb_special_const_p(VALUE obj)
+{
+    return (FIXNUM_P(obj)||obj == Qnil||obj == Qfalse||obj == Qtrue)?Qtrue:Qfalse;
+}
+
+extern __inline__ int
+rb_test_false_or_nil(VALUE v)
+{
+#ifdef MACRUBY_PUBLIC_INTERFACE
+    return (v != Qnil) && (v != RubyFALSE);
+    return (v != Qnil) && (v != RubyFALSE);
 #else
-extern VALUE cObject;
+    return (v != Qnil) && (v != Qfalse);
+    return (v != Qnil) && (v != Qfalse);
 #endif
-extern VALUE cArray;
-extern VALUE cBignum;
-extern VALUE cClass;
-extern VALUE cData;
-extern VALUE cFile;
-extern VALUE cFixnum;
-extern VALUE cFloat;
-extern VALUE cHash;
-extern VALUE cInteger;
-extern VALUE cIO;
-extern VALUE cModule;
-extern VALUE cNumeric;
-extern VALUE cProc;
-extern VALUE cRegexp;
-extern VALUE cString;
-extern VALUE cThread;
-extern VALUE cStruct;
-
-extern VALUE eException;
-extern VALUE eStandardError;
-extern VALUE eSystemExit, eInterrupt, eFatal;
-extern VALUE eArgError;
-extern VALUE eEOFError;
-extern VALUE eIndexError;
-extern VALUE eIOError;
-extern VALUE eLoadError;
-extern VALUE eNameError;
-extern VALUE eRuntimeError;
-extern VALUE eSecurityError;
-extern VALUE eSyntaxError;
-extern VALUE eSystemCallError;
-extern VALUE eTypeError;
-extern VALUE eZeroDiv;
-extern VALUE eNotImpError;
+}
+#else
+VALUE rb_class_of _((VALUE));
+int rb_type _((VALUE));
+int rb_special_const_p _((VALUE));
+int rb_test_false_or_nil _((VALUE));
+#endif
 
 #include "intern.h"
 
 #if defined(EXTLIB) && defined(USE_DLN_A_OUT)
 /* hook for external modules */
-static char *libs_to_be_linked[] = { EXTLIB, 0 };
+static char *dln_libs_to_be_linked[] = { EXTLIB, 0 };
 #endif
 
 #if defined(__cplusplus)

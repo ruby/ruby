@@ -15,7 +15,7 @@
 #include <signal.h>
 
 extern VALUE rb_argv, rb_argv0;
-extern VALUE cData;
+extern VALUE rb_cData;
 
 static VALUE mGtk;
 
@@ -100,7 +100,7 @@ static VALUE gAcceleratorTable;
 static VALUE gStyle;
 static VALUE gPreviewInfo;
 static VALUE gAllocation;
-static VALUE gRequisiton;
+static VALUE gRequisition;
 
 static VALUE mRC;
 
@@ -163,14 +163,14 @@ get_gobject(obj)
     Check_Type(obj, T_OBJECT);
     data = RDATA(rb_ivar_get(obj, id_gtkdata));
     if (NIL_P(data) || data->dmark != gobj_mark) {
-	TypeError("not a Gtk object");
+	rb_raise(rb_eTypeError, "not a Gtk object");
     }
     Data_Get_Struct(data, GtkObject, gtkp);
     if (!gtkp) {
-	ArgError("destroyed GtkObject");
+	rb_raise(rb_eArgError, "destroyed GtkObject");
     }
     if (!GTK_IS_OBJECT(gtkp)) {
-	TypeError("not a GtkObject");
+	rb_raise(rb_eTypeError, "not a GtkObject");
     }
 
     return gtkp;
@@ -206,10 +206,10 @@ add_relative(obj, relative)
     VALUE ary = rb_ivar_get(obj, id_relatives);
 
     if (NIL_P(ary) || TYPE(ary) != T_ARRAY) {
-	ary = ary_new();
+	ary = rb_ary_new();
 	rb_ivar_set(obj, id_relatives, ary);
     }
-    ary_push(ary, relative);
+    rb_ary_push(ary, relative);
 }
 
 static VALUE gtk_object_list;
@@ -228,7 +228,7 @@ delete_gobject(gtkobj, obj)
 {
     struct RData *data;
 
-    ary_delete(gtk_object_list, obj);
+    rb_ary_delete(gtk_object_list, obj);
     data = RDATA(rb_ivar_get(obj, id_gtkdata));
     data->dfree = 0;
     data->data = 0;
@@ -241,13 +241,13 @@ set_gobject(obj, gtkobj)
 {
     VALUE data;
 
-    data = Data_Wrap_Struct(cData, gobj_mark, 0, gtkobj);
+    data = Data_Wrap_Struct(rb_cData, gobj_mark, 0, gtkobj);
     gtk_object_set_user_data(gtkobj, (gpointer)obj);
 
     rb_ivar_set(obj, id_gtkdata, data);
     gtk_signal_connect(gtkobj, "destroy",
 		       (GtkSignalFunc)delete_gobject, (gpointer)obj);
-    ary_push(gtk_object_list, obj);
+    rb_ary_push(gtk_object_list, obj);
 }
 
 static VALUE
@@ -255,7 +255,7 @@ make_gobject(klass, gtkobj)
     VALUE klass;
     GtkObject *gtkobj;
 {
-    VALUE obj = obj_alloc(klass);
+    VALUE obj = rb_obj_alloc(klass);
 
     set_gobject(obj, gtkobj);
     return obj;
@@ -294,8 +294,8 @@ get_gstyle(style)
     GtkStyle *gstyle;
 
     if (NIL_P(style)) return NULL;
-    if (!obj_is_instance_of(style, gStyle)) {
-	TypeError("not a GtkStyle");
+    if (!rb_obj_is_instance_of(style, gStyle)) {
+	rb_raise(rb_eTypeError, "not a GtkStyle");
     }
     Data_Get_Struct(style, GtkStyle, gstyle);
 
@@ -321,8 +321,8 @@ get_gtkacceltbl(value)
 
     if (NIL_P(value)) return NULL;
 
-    if (!obj_is_instance_of(value, gAcceleratorTable)) {
-	TypeError("not an AcceleratorTable");
+    if (!rb_obj_is_instance_of(value, gAcceleratorTable)) {
+	rb_raise(rb_eTypeError, "not an AcceleratorTable");
     }
     Data_Get_Struct(value, GtkAcceleratorTable, tbl);
 
@@ -344,8 +344,8 @@ get_gtkprevinfo(value)
 
     if (NIL_P(value)) return NULL;
 
-    if (!obj_is_instance_of(value, gPreviewInfo)) {
-	TypeError("not a PreviewInfo");
+    if (!rb_obj_is_instance_of(value, gPreviewInfo)) {
+	rb_raise(rb_eTypeError, "not a PreviewInfo");
     }
     Data_Get_Struct(value, GtkPreviewInfo, info);
 
@@ -372,8 +372,8 @@ get_gdkfont(font)
 
     if (NIL_P(font)) return NULL;
 
-    if (!obj_is_instance_of(font, gdkFont)) {
-	TypeError("not a GdkFont");
+    if (!rb_obj_is_instance_of(font, gdkFont)) {
+	rb_raise(rb_eTypeError, "not a GdkFont");
     }
     Data_Get_Struct(font, GdkFont, gfont);
 
@@ -381,12 +381,62 @@ get_gdkfont(font)
 }
 
 static VALUE
+gdkfnt_load_font(self, name)
+    VALUE self, name;
+{
+    GdkFont *font;
+
+    font = gdk_font_load(STR2CSTR(name));
+    return Data_Wrap_Struct(gdkFont, 0, gdk_font_unref, font);
+	/*    return make_gdkfont(new); */ 
+}
+static VALUE
+gdkfnt_load_fontset(self, name)
+    VALUE self, name;
+{
+    GdkFont *new;
+
+    new = gdk_fontset_load(STR2CSTR(name));
+    return make_gdkfont(new);
+}
+static VALUE
+gdkfnt_new(self, name)
+    VALUE self, name;
+{
+  char *cname = STR2CSTR(name);
+  return (strchr(cname, ',') == NULL)
+	? gdkfnt_load_font(self, name)
+	: gdkfnt_load_fontset(self, name);
+}
+static VALUE
+gdkfnt_string_width(self, str)
+    VALUE self, str;
+{
+  int w;
+
+  w = gdk_string_width(get_gdkfont(self), STR2CSTR(str));
+  return INT2NUM(w);
+}
+static VALUE
+gdkfnt_ascent(self)
+    VALUE self;
+{
+  return INT2NUM(get_gdkfont(self)->ascent);
+}
+static VALUE
+gdkfnt_descent(self)
+    VALUE self;
+{
+  return INT2NUM(get_gdkfont(self)->descent);
+}
+
+static VALUE
 gdkfnt_equal(fn1, fn2)
     VALUE fn1, fn2;
 {
     if (gdk_font_equal(get_gdkfont(fn1), get_gdkfont(fn2)))
-	return TRUE;
-    return FALSE;
+	return Qtrue;
+    return Qfalse;
 }
 
 static VALUE
@@ -413,8 +463,8 @@ get_tobj(obj, klass)
 
     if (NIL_P(obj)) return NULL;
 
-    if (!obj_is_instance_of(obj, klass)) {
-	TypeError("not a %s", rb_class2name(klass));
+    if (!rb_obj_is_instance_of(obj, klass)) {
+	rb_raise(rb_eTypeError, "not a %s", rb_class2name(klass));
     }
     Data_Get_Struct(obj, void, ptr);
 
@@ -436,8 +486,8 @@ get_tobj(obj, klass)
 #define make_gallocation(c) make_tobj(c, gAllocation, sizeof(GtkAllocation))
 #define get_gallocation(c) ((GtkAllocation*)get_tobj(c, gAllocation))
 
-#define make_grequisiton(c) make_tobj(c, gRequisiton, sizeof(GtkRequisition))
-#define get_grequisiton(c) ((GtkRequisition*)get_tobj(c, gRequisiton))
+#define make_grequisition(c) make_tobj(c, gRequisition, sizeof(GtkRequisition))
+#define get_grequisition(c) ((GtkRequisition*)get_tobj(c, gRequisition))
 
 #define make_gdkrectangle(r) make_tobj(r, gdkRectangle, sizeof(GdkRectangle))
 #define get_gdkrectangle(r) ((GdkRectangle*)get_tobj(r, gdkRectangle))
@@ -458,8 +508,8 @@ get_gdkcmap(cmap)
 
     if (NIL_P(cmap)) return NULL;
 
-    if (!obj_is_kind_of(cmap, gdkColormap)) {
-	TypeError("not a GdkColormap");
+    if (!rb_obj_is_kind_of(cmap, gdkColormap)) {
+	rb_raise(rb_eTypeError, "not a GdkColormap");
     }
     Data_Get_Struct(cmap, GdkColormap, gcmap);
 
@@ -482,8 +532,8 @@ get_gdkvisual(visual)
 
     if (NIL_P(visual)) return NULL;
 
-    if (!obj_is_kind_of(visual, gdkVisual)) {
-	TypeError("not a GdkVisual");
+    if (!rb_obj_is_kind_of(visual, gdkVisual)) {
+	rb_raise(rb_eTypeError, "not a GdkVisual");
     }
     Data_Get_Struct(visual, GdkVisual, gvisual);
 
@@ -517,8 +567,8 @@ get_gdkdraw(draw, klass, kname)
 
     if (NIL_P(draw)) return NULL;
 
-    if (!obj_is_kind_of(draw, klass)) {
-	TypeError("not a %s", kname);
+    if (!rb_obj_is_kind_of(draw, klass)) {
+	rb_raise(rb_eTypeError, "not a %s", kname);
     }
     Data_Get_Struct(draw, GdkDrawable, d);
 
@@ -538,7 +588,7 @@ gdkdraw_get_geometry(self)
 
     gdk_window_get_geometry(get_gdkdrawable(self),
 			    &x, &y, &width, &height, &depth);
-    return ary_new3(5, INT2NUM(x), INT2NUM(y),
+    return rb_ary_new3(5, INT2NUM(x), INT2NUM(y),
 		    INT2NUM(width), INT2NUM(height), INT2NUM(depth));
 }
 
@@ -582,9 +632,9 @@ gdkpmap_create_from_xpm(self, win, tcolor, fname)
 				     get_gdkcolor(tcolor),
 				     STR2CSTR(fname));
     if (!new) {
-	ArgError("Pixmap not created from %s", STR2CSTR(fname));
+	rb_raise(rb_eArgError, "Pixmap not created from %s", STR2CSTR(fname));
     }
-    return assoc_new(make_gdkpixmap2(self,new),
+    return rb_assoc_new(make_gdkpixmap2(self,new),
 		     make_gdkbitmap(mask));
 }
 
@@ -608,7 +658,7 @@ gdkpmap_create_from_xpm_d(self, win, tcolor, data)
 				       get_gdkcolor(tcolor),
 				       buf);
 
-    return assoc_new(make_gdkpixmap2(self,new),
+    return rb_assoc_new(make_gdkpixmap2(self,new),
 		     make_gdkbitmap(mask));
 }
 
@@ -652,12 +702,12 @@ get_gdkimage(image)
 
     if (NIL_P(image)) return NULL;
 
-    if (!obj_is_instance_of(image, gdkImage)) {
-	TypeError("not a GdkImage");
+    if (!rb_obj_is_instance_of(image, gdkImage)) {
+	rb_raise(rb_eTypeError, "not a GdkImage");
     }
     Data_Get_Struct(image, GdkImage, gimage);
     if (gimage == 0) {
-	ArgError("destroyed GdkImage");
+	rb_raise(rb_eArgError, "destroyed GdkImage");
     }
 
     return gimage;
@@ -671,7 +721,7 @@ gdkimage_s_newbmap(klass, visual, data, w, h)
 
     Check_Type(data, T_STRING);
     if (RSTRING(data)->len < w * h) {
-	ArgError("data too short");
+	rb_raise(rb_eArgError, "data too short");
     }
     return make_gdkimage(gdk_image_new_bitmap(get_gdkvisual(visual),
 					      RSTRING(data)->ptr,
@@ -735,7 +785,7 @@ gdkwin_get_pointer(self)
   int x, y;
   GdkModifierType state;
   gdk_window_get_pointer(get_gdkwindow(self), &x, &y, &state);
-  return ary_new3(3, INT2FIX(x), INT2FIX(y), INT2FIX((int)state));
+  return rb_ary_new3(3, INT2FIX(x), INT2FIX(y), INT2FIX((int)state));
 
 }
 
@@ -776,6 +826,49 @@ gdkwin_root_window(self)
   return INT2NUM(GDK_ROOT_WINDOW() );
 }
 
+static VALUE
+gdkwin_clear(self)
+     VALUE self;
+{
+  gdk_window_clear(get_gdkwindow(self));
+  return self;
+}
+static VALUE
+gdkwin_clear_area(self, x,y,w,h)
+     VALUE self,x,y,w,h;
+{
+  gdk_window_clear_area(get_gdkwindow(self),
+						NUM2INT(x), NUM2INT(y), NUM2INT(w), NUM2INT(h));
+  return self;
+}
+static VALUE
+gdkwin_clear_area_e(self, x,y,w,h)
+     VALUE self,x,y,w,h;
+{
+  gdk_window_clear_area_e(get_gdkwindow(self),
+						  NUM2INT(x), NUM2INT(y), NUM2INT(w), NUM2INT(h));
+  return self;
+}
+
+static VALUE
+gdkwin_set_background(self, c)
+    VALUE self, c;
+{
+  GdkColor color;
+  color.pixel = NUM2INT(c);
+  gdk_window_set_background(get_gdkwindow(self), &color);
+  return self;
+}
+
+static VALUE
+gdkwin_set_back_pixmap(self, pixmap, parent_relative)
+    VALUE self, pixmap, parent_relative;
+{
+  gdk_window_set_back_pixmap(get_gdkwindow(self), get_gdkpixmap(pixmap),
+							 NUM2INT(parent_relative));
+  return self;
+}
+
 
 static VALUE
 make_gdkevent(event)
@@ -808,8 +901,8 @@ get_gdkevent(event)
 
     if (NIL_P(event)) return NULL;
 
-    if (!obj_is_kind_of(event, gdkEvent)) {
-	TypeError("not a GdkEvent... ");
+    if (!rb_obj_is_instance_of(event, gdkEvent)) {
+	rb_raise(rb_eTypeError, "not a GdkEvent");
     }
     Data_Get_Struct(event, GdkEvent, gevent);
 
@@ -832,12 +925,12 @@ get_gdkgc(gc)
 
     if (NIL_P(gc)) return NULL;
 
-    if (!obj_is_instance_of(gc, gdkGC)) {
-	TypeError("not a GdkGC");
+    if (!rb_obj_is_instance_of(gc, gdkGC)) {
+	rb_raise(rb_eTypeError, "not a GdkGC");
     }
     Data_Get_Struct(gc, GdkGC, ggc);
     if (ggc == 0) {
-	ArgError("destroyed GdkGC");
+	rb_raise(rb_eArgError, "destroyed GdkGC");
     }
 
     return ggc;
@@ -868,13 +961,75 @@ gdkgc_destroy(self)
 }
 
 static VALUE
+gdkgc_set_function(self, func)
+    VALUE func;
+{
+  GdkFunction f;
+  f = (GdkFunction) NUM2INT(func);
+  if (f != GDK_COPY && f != GDK_INVERT && f != GDK_XOR)
+	ArgError("function out of range");
+  
+  gdk_gc_set_function(get_gdkgc(self), f);
+  return func;
+}
+
+static VALUE
+gdkgc_set_foreground(self, pix)
+    VALUE pix;
+{
+  GdkColor c;
+  c.pixel = NUM2INT(pix);
+  gdk_gc_set_foreground(get_gdkgc(self), &c);
+  return pix;
+}
+static VALUE
+gdkgc_set_background(self, pix)
+    VALUE pix;
+{
+  GdkColor c;
+  c.pixel = NUM2INT(pix);
+  gdk_gc_set_background(get_gdkgc(self), &c);
+  return pix;
+}
+static VALUE
+gdkgc_set_clip_mask(self, mask)
+    VALUE mask;
+{
+  gdk_gc_set_clip_mask(get_gdkgc(self), get_gdkbitmap(mask));
+  return mask;
+}
+static VALUE
+gdkgc_set_clip_origin(self, x, y)
+    VALUE x, y;
+{
+  gdk_gc_set_clip_origin(get_gdkgc(self), NUM2INT(x), NUM2INT(y));
+  return self;
+}
+static VALUE
+gdkgc_set_clip_rectangle(self, rectangle)
+	 VALUE rectangle;
+{
+  gdk_gc_set_clip_rectangle(get_gdkgc(self), get_gdkrectangle(rectangle));
+  return rectangle;
+}
+/*
+static VALUE
+gdkgc_set_clip_region(self, region)
+	 VALUE region;
+{
+  gdk_gc_set_clip_region(get_gdkgc(self), get_gdkregion(region));
+  return region;
+}
+*/
+
+static VALUE
 glist2ary(list)
     GList *list; 
 {
-    VALUE ary = ary_new();
+    VALUE ary = rb_ary_new();
 
     while (list) {
-	ary_push(ary, get_value_from_gobject(GTK_OBJECT(list->data)));
+	rb_ary_push(ary, get_value_from_gobject(GTK_OBJECT(list->data)));
 	list = list->next;
     }
 
@@ -916,10 +1071,10 @@ static VALUE
 gslist2ary(list)
     GSList *list; 
 {
-    VALUE ary = ary_new();
+    VALUE ary = rb_ary_new();
 
     while (list) {
-	ary_push(ary, get_value_from_gobject(GTK_OBJECT(list->data)));
+	rb_ary_push(ary, get_value_from_gobject(GTK_OBJECT(list->data)));
 	list = list->next;
     }
 
@@ -953,11 +1108,11 @@ arg_to_value(arg)
 	break;
 
       case GTK_TYPE_FLOAT:
-	return float_new(GTK_VALUE_FLOAT(*arg));
+	return rb_float_new(GTK_VALUE_FLOAT(*arg));
 	break;
 
       case GTK_TYPE_STRING:
-	return str_new2(GTK_VALUE_STRING(*arg));
+	return rb_str_new2(GTK_VALUE_STRING(*arg));
 	break;
 
       case GTK_TYPE_OBJECT:
@@ -1023,7 +1178,7 @@ arg_to_value(arg)
       case GTK_TYPE_C_CALLBACK:
       unsupported:
       default:
-	TypeError("unsupported arg type %s (fundamental type %s)",
+	rb_raise(rb_eTypeError, "unsupported arg type %s (fundamental type %s)",
 		  gtk_type_name(arg->type),
 		  gtk_type_name(GTK_FUNDAMENTAL_TYPE(arg->type)));
 	break;
@@ -1041,58 +1196,54 @@ signal_setup_args(obj, sig, argc, params, args)
     int i;
     char *signame = rb_id2name(sig);
 
-    if (obj_is_kind_of(obj, gWidget)) {
+    if (rb_obj_is_kind_of(obj, gWidget)) {
 	if (strcmp(signame, "draw") == 0) {
-	    ary_push(args, make_gdkrectangle(GTK_VALUE_POINTER(params[0])));
+	    rb_ary_push(args, make_gdkrectangle(GTK_VALUE_POINTER(params[0])));
 	    return;
 	}
 	if (strcmp(signame, "size_request") == 0) {
-	    ary_push(args, make_grequisiton(GTK_VALUE_POINTER(params[0])));
+	    rb_ary_push(args, make_grequisition(GTK_VALUE_POINTER(params[0])));
 	    return;
 	}
 	if (strcmp(signame, "size_allocate") == 0) {
-	    ary_push(args, make_gallocation(GTK_VALUE_POINTER(params[0])));
+	    rb_ary_push(args, make_gallocation(GTK_VALUE_POINTER(params[0])));
 	    return;
 	}
     }
-    else if (obj_is_kind_of(obj, gWindow)) {
+    if (rb_obj_is_kind_of(obj, gWindow)) {
 	if (strcmp(signame, "move_resize") == 0) {
-	    ary_push(args, NUM2INT(*GTK_RETLOC_INT(params[0])));
-	    ary_push(args, NUM2INT(*GTK_RETLOC_INT(params[1])));
-	    ary_push(args, NUM2INT(GTK_VALUE_INT(params[3])));
-	    ary_push(args, NUM2INT(GTK_VALUE_INT(params[4])));
+	    rb_ary_push(args, INT2NUM(*GTK_RETLOC_INT(params[0])));
+	    rb_ary_push(args, INT2NUM(*GTK_RETLOC_INT(params[1])));
+	    rb_ary_push(args, INT2NUM(GTK_VALUE_INT(params[3])));
+	    rb_ary_push(args, INT2NUM(GTK_VALUE_INT(params[4])));
 	    return;
 	}
 	if (strcmp(signame, "set_focus") == 0) {
-	    ary_push(args, get_value_from_gobject(GTK_VALUE_POINTER(params[0])));
+	    rb_ary_push(args, get_value_from_gobject(GTK_VALUE_POINTER(params[0])));
 	    return;
 	}
     }
-    else if (obj_is_kind_of(obj, gEntry)) {
+    if (rb_obj_is_kind_of(obj, gEntry)) {
 	if (strcmp(signame, "insert_position") == 0) {
-	    ary_push(args, NUM2INT(*GTK_RETLOC_INT(params[0])));
+	    rb_ary_push(args, INT2NUM(*GTK_RETLOC_INT(params[0])));
 	    return;
 	}
     }
-    else if (obj_is_kind_of(obj, gCList)) {
-	if (strcmp(signame, "select_row") == 0) {
-	    if (GTK_VALUE_POINTER(params[0]))
-		ary_push(args, make_gdkevent(GTK_VALUE_POINTER(params[0])));
+    if (rb_obj_is_kind_of(obj, gCList)) {
+	if (strcmp(signame, "select_row") == 0 ||
+	    strcmp(signame, "unselect_row") == 0) {
+	    rb_ary_push(args, INT2NUM(GTK_VALUE_INT(params[0])));
+	    rb_ary_push(args, INT2NUM(GTK_VALUE_INT(params[1])));
+	    if (GTK_VALUE_POINTER(params[2]))
+		rb_ary_push(args, make_gdkevent(GTK_VALUE_POINTER(params[2])));
 	    else
-		ary_push(args, Qnil);
-	    return;
-	}
-	if (strcmp(signame, "unselect_row") == 0) {
-	    if (GTK_VALUE_POINTER(params[0]))
-		ary_push(args, make_gdkevent(GTK_VALUE_POINTER(params[0])));
-	    else
-		ary_push(args, Qnil);
+		rb_ary_push(args, Qnil);
 	    return;
 	}
     }
 
     for (i=0; i<argc; i++) {
-	ary_push(args, arg_to_value(params));
+	rb_ary_push(args, arg_to_value(params));
 	params++;
     }
 }
@@ -1186,7 +1337,7 @@ arg_set_value(arg, value)
       case GTK_TYPE_SIGNAL:
       case GTK_TYPE_C_CALLBACK:
       default:
-	TypeError("unsupported return type %s (fundamental type %s)",
+	rb_raise(rb_eTypeError, "unsupported return type %s (fundamental type %s)",
 		  gtk_type_name(arg->type),
 		  gtk_type_name(GTK_FUNDAMENTAL_TYPE(arg->type)));
 	break;
@@ -1205,12 +1356,12 @@ signal_callback(widget, data, nparams, params)
     VALUE a = RARRAY(data)->ptr[2];
     ID id = NUM2INT(RARRAY(data)->ptr[1]);
     VALUE result = Qnil;
-    VALUE args = ary_new2(nparams+1+RARRAY(a)->len);
+    VALUE args = rb_ary_new2(nparams+1+RARRAY(a)->len);
     int i;
 
     signal_setup_args(self, id, nparams, params, args);
     for (i=0; i<RARRAY(a)->len; i++) {
-	ary_push(args, RARRAY(a)->ptr[i]);
+	rb_ary_push(args, RARRAY(a)->ptr[i]);
     }
     if (NIL_P(proc)) {
 	if (rb_respond_to(self, id)) {
@@ -1218,7 +1369,7 @@ signal_callback(widget, data, nparams, params)
 	}
     }
     else {
-	ary_unshift(args, self);
+	rb_ary_unshift(args, self);
 	result = rb_apply(proc, id_call, args);
     }
     arg_set_value(params+nparams, result);
@@ -1238,7 +1389,7 @@ gobj_initialize(argc, argv, self)
     VALUE *argv;
     VALUE self;
 {
-    Fail("can't instantiate class %s", rb_class2name(self));
+    rb_raise(rb_eRuntimeError, "can't instantiate class %s", rb_class2name(self));
 }
 
 static VALUE
@@ -1249,7 +1400,7 @@ gobj_smethod_added(self, id)
     char *name = rb_id2name(NUM2INT(id));
     
     if (gtk_signal_lookup(name, GTK_OBJECT_TYPE(obj))) {
-	VALUE data = ary_new3(3, Qnil, id, ary_new2(0));
+	VALUE data = rb_ary_new3(3, Qnil, id, rb_ary_new2(0));
 
 	add_relative(self, data);
 	gtk_signal_connect_interp(obj, name,
@@ -1273,12 +1424,12 @@ try_get_gobject(self)
 }
 
 static VALUE
-gobj_equal(self, other)
+grb_obj_equal(self, other)
     VALUE self, other;
 {
-    if (self == other) return TRUE;
-    if (get_gobject(self) == try_get_gobject(other)) return TRUE;
-    return FALSE;
+    if (self == other) return Qtrue;
+    if (get_gobject(self) == try_get_gobject(other)) return Qtrue;
+    return Qfalse;
 }
 
 static VALUE
@@ -1296,7 +1447,7 @@ gobj_inspect(self)
     else {
 	sprintf(s, "#<%s: id=0x%x>", cname, get_gobject(self));
     }
-    return str_new2(s);
+    return rb_str_new2(s);
 }
 
 static VALUE
@@ -1344,7 +1495,7 @@ gobj_sig_connect(argc, argv, self)
 
     rb_scan_args(argc, argv, "1*", &sig, &args);
     id = rb_intern(STR2CSTR(sig));
-    data = ary_new3(3, f_lambda(), INT2NUM(id), args);
+    data = rb_ary_new3(3, rb_f_lambda(), INT2NUM(id), args);
     add_relative(self, data);
     i = gtk_signal_connect_interp(GTK_OBJECT(get_widget(self)),
 				  STR2CSTR(sig),
@@ -1366,7 +1517,7 @@ gobj_sig_connect_after(argc, argv, self)
 
     rb_scan_args(argc, argv, "1*", &sig, &args);
      id = rb_intern(STR2CSTR(sig));
-    data = ary_new3(3, f_lambda(), INT2NUM(id), args);
+    data = rb_ary_new3(3, rb_f_lambda(), INT2NUM(id), args);
     add_relative(self, data);
      i = gtk_signal_connect_interp(GTK_OBJECT(get_widget(self)),
 				  STR2CSTR(sig),
@@ -1443,7 +1594,7 @@ cont_foreach(argc, argv, self)
 
     rb_scan_args(argc, argv, "01", &callback);
     if (NIL_P(callback)) {
-	callback = f_lambda();
+	callback = rb_f_lambda();
     }
     gtk_container_foreach(GTK_CONTAINER(get_widget(self)), 
 			  exec_callback, (gpointer)callback);
@@ -1482,14 +1633,14 @@ cont_children_callback(widget, data)
 {
     VALUE ary = (VALUE)data;
 
-    ary_push(ary, get_value_from_gobject(GTK_OBJECT(widget)));
+    rb_ary_push(ary, get_value_from_gobject(GTK_OBJECT(widget)));
 }
 
 static VALUE
 cont_children(self, direction)
     VALUE self, direction;
 {
-    VALUE ary = ary_new();
+    VALUE ary = rb_ary_new();
 
     gtk_container_foreach(GTK_CONTAINER(get_widget(self)),
 			  cont_children_callback,
@@ -1534,6 +1685,31 @@ misc_set_padding(self, xpad, ypad)
     gtk_misc_set_padding(GTK_MISC(get_widget(self)),
 			 NUM2DBL(xpad), NUM2DBL(ypad));
     return self;
+}
+
+static VALUE
+misc_get_xalign(self)
+    VALUE self;
+{
+    return float_new(GTK_MISC(get_widget(self))->xalign);
+}
+static VALUE
+misc_get_yalign(self)
+    VALUE self;
+{
+    return float_new(GTK_MISC(get_widget(self))->yalign);
+}
+static VALUE
+misc_get_xpad(self)
+    VALUE self;
+{
+    return INT2NUM(GTK_MISC(get_widget(self))->xpad);
+}
+static VALUE
+misc_get_ypad(self)
+    VALUE self;
+{
+    return INT2NUM(GTK_MISC(get_widget(self))->ypad);
 }
 
 static VALUE
@@ -1707,9 +1883,14 @@ widget_queue_resize(self)
 }
 
 static VALUE
-widget_draw(self, rect)
-    VALUE self, rect;
+widget_draw(argc, argv, self)
+    int argc;
+    VALUE *argv;
+    VALUE self;
 {
+    VALUE rect;
+
+    rb_scan_args(argc, argv, "01", &rect);
     gtk_widget_draw(get_widget(self), get_gdkrectangle(rect));
     return self;
 }
@@ -1742,7 +1923,7 @@ static VALUE
 widget_size_request(self, req)
     VALUE self, req;
 {
-    gtk_widget_size_request(get_widget(self), get_grequisiton(req));
+    gtk_widget_size_request(get_widget(self), get_grequisition(req));
     return self;
 }
 
@@ -1813,8 +1994,8 @@ widget_visible(self)
     VALUE self;
 {
     if (GTK_WIDGET_VISIBLE(get_widget(self)))
-	return TRUE;
-    return FALSE;
+	return Qtrue;
+    return Qfalse;
 }
 
 static VALUE
@@ -1823,6 +2004,14 @@ widget_reparent(self, parent)
 {
     gtk_widget_reparent(get_widget(self), get_widget(parent));
     return self;
+}
+static VALUE
+widget_mapped(self)
+    VALUE self;
+{
+    if (GTK_WIDGET_MAPPED(get_widget(self)))
+	return TRUE;
+    return FALSE;
 }
 
 static VALUE
@@ -1890,7 +2079,7 @@ widget_get_name(self)
 {
     char *name = gtk_widget_get_name(get_widget(self));
     
-    return str_new2(name);
+    return rb_str_new2(name);
 }
 
 static VALUE
@@ -1962,7 +2151,7 @@ widget_get_ancestor(self, type)
 {
     GtkWidget *widget = get_widget(self);
 #if 0
-    if (obj_is_kind_of(type, cClass)) {
+    if (rb_obj_is_kind_of(type, rb_cClass)) {
     }
 #endif
     widget = gtk_widget_get_ancestor(widget, NUM2INT(type));
@@ -2004,7 +2193,7 @@ widget_get_pointer(self)
     int x, y;
 
     gtk_widget_get_pointer(get_widget(self), &x, &y);
-    return assoc_new(INT2FIX(x), INT2FIX(y));
+    return rb_assoc_new(INT2FIX(x), INT2FIX(y));
 }
 
 static VALUE
@@ -2012,9 +2201,9 @@ widget_is_ancestor(self, ancestor)
     VALUE self, ancestor;
 {
     if (gtk_widget_is_ancestor(get_widget(self), get_widget(ancestor))) {
-	return TRUE;
+	return Qtrue;
     }
-    return FALSE;
+    return Qfalse;
 }
 
 static VALUE
@@ -2022,9 +2211,9 @@ widget_is_child(self, child)
     VALUE self, child;
 {
     if (gtk_widget_is_child(get_widget(self), get_widget(child))) {
-	return TRUE;
+	return Qtrue;
     }
-    return FALSE;
+    return Qfalse;
 }
 
 static VALUE
@@ -2169,6 +2358,23 @@ widget_get_alloc(self)
 }
 
 static VALUE
+widget_get_requisition(self)
+	VALUE self;
+{
+	return make_grequisition(&(get_widget(self)->requisition));
+}
+
+static VALUE
+widget_set_requisition(self, w,h)
+	VALUE self,w,h;
+{
+  GtkRequisition *r = &(get_widget(self)->requisition);
+  r->width  = NUM2INT(w);
+  r->height = NUM2INT(h);
+  return self;
+}
+
+static VALUE
 widget_state(self)
 	VALUE self;
 {
@@ -2183,7 +2389,7 @@ bbox_get_child_size_default(self)
 
     gtk_button_box_get_child_size_default(&min_width, &max_width);
 
-    return assoc_new(INT2FIX(min_width), INT2FIX(max_width));
+    return rb_assoc_new(INT2FIX(min_width), INT2FIX(max_width));
 }
 
 static VALUE
@@ -2193,7 +2399,7 @@ bbox_get_child_ipadding_default(self)
     int ipad_x, ipad_y;
 
     gtk_button_box_get_child_ipadding_default(&ipad_x, &ipad_y);
-    return assoc_new(INT2FIX(ipad_x), INT2FIX(ipad_y));
+    return rb_assoc_new(INT2FIX(ipad_x), INT2FIX(ipad_y));
 }
 
 static VALUE
@@ -2240,7 +2446,7 @@ bbox_get_child_size(self)
 
     gtk_button_box_get_child_size(GTK_BUTTON_BOX(get_widget(self)),
 				  &min_width, &max_width);
-    return assoc_new(INT2FIX(min_width), INT2FIX(max_width));
+    return rb_assoc_new(INT2FIX(min_width), INT2FIX(max_width));
 }
 
 static VALUE
@@ -2251,7 +2457,7 @@ bbox_get_child_ipadding(self)
 
     gtk_button_box_get_child_ipadding(GTK_BUTTON_BOX(get_widget(self)),
 				      &ipad_x, &ipad_y);
-    return assoc_new(INT2FIX(ipad_x), INT2FIX(ipad_y));
+    return rb_assoc_new(INT2FIX(ipad_x), INT2FIX(ipad_y));
 }
 
 static VALUE
@@ -2541,7 +2747,7 @@ clist_append(self, text)
     Check_Type(text, T_ARRAY);
     len = GTK_CLIST(get_widget(self))->columns;
     if (len > RARRAY(text)->len) {
-	ArgError("text too short");
+	rb_raise(rb_eArgError, "text too short");
     }
     buf = ALLOCA_N(char*, len);
     for (i=0; i<len; i++) {
@@ -2561,7 +2767,7 @@ clist_insert(self, row, text)
     Check_Type(text, T_ARRAY);
     len = GTK_CLIST(get_widget(self))->columns;
     if (len > RARRAY(text)->len) {
-	ArgError("text too short");
+	rb_raise(rb_eArgError, "text too short");
     }
     buf = ALLOCA_N(char*, len);
     for (i=0; i<len; i++) {
@@ -2763,7 +2969,7 @@ fsel_get_fname(self)
 
     fname = gtk_file_selection_get_filename(GTK_FILE_SELECTION(get_widget(self)));
 
-    return str_new2(fname);
+    return rb_str_new2(fname);
 }
 
 static VALUE
@@ -2818,6 +3024,21 @@ label_initialize(self, label)
     set_widget(self, gtk_label_new(STR2CSTR(label)));
     return Qnil;
 }
+static VALUE
+label_get_jtype(self)
+    VALUE self;
+{
+  return(INT2FIX(GTK_LABEL(get_widget(self))->jtype));
+}
+static VALUE
+label_set_jtype(self, jtype)
+    VALUE self, jtype;
+{
+  GtkJustification j;
+  j = (GtkJustification) NUM2INT(jtype);
+  gtk_label_set_justify(GTK_LABEL(get_widget(self)), j);
+  return self;
+}
 
 static VALUE
 label_get(self)
@@ -2825,7 +3046,7 @@ label_get(self)
 {
   gchar** str;
   gtk_label_get(GTK_LABEL(get_widget(self)), str);
-  return str_new2(*str);
+  return rb_str_new2(*str);
 }
 
 static VALUE
@@ -3237,7 +3458,7 @@ mitem_accelerator_text(self)
     char buf[1024];		/* enough? */
 
     gtk_menu_item_accelerator_text(GTK_MENU_ITEM(get_widget(self)), buf);
-    return str_new2(buf);
+    return rb_str_new2(buf);
 }
 
 static VALUE
@@ -3345,7 +3566,7 @@ rmitem_initialize(argc, argv, self)
 	if (!NIL_P(arg2)) {
 	    label = STR2CSTR(arg2);
 	}
-	if (obj_is_kind_of(arg1, gRMenuItem)) {
+	if (rb_obj_is_kind_of(arg1, gRMenuItem)) {
 	    GtkWidget *b = get_widget(arg1);
 	    list = GTK_RADIO_MENU_ITEM(b)->group;
 	}
@@ -3475,7 +3696,7 @@ static VALUE
 note_show_tabs(self)
     VALUE self;
 {
-    return GTK_NOTEBOOK(get_widget(self))->show_tabs?TRUE:FALSE;
+    return GTK_NOTEBOOK(get_widget(self))->show_tabs?Qtrue:Qfalse;
 }
 
 static VALUE
@@ -3490,7 +3711,7 @@ static VALUE
 note_show_border(self)
     VALUE self;
 {
-    return GTK_NOTEBOOK(get_widget(self))->show_border?TRUE:FALSE;
+    return GTK_NOTEBOOK(get_widget(self))->show_border?Qtrue:Qfalse;
 }
 
 static VALUE
@@ -3562,7 +3783,7 @@ image_get(self)
 
     gtk_image_get(GTK_IMAGE(get_widget(self)), &val, &mask);
 
-    return assoc_new(make_gdkimage(self, val),
+    return rb_assoc_new(make_gdkimage(self, val),
 		     make_gdkpixmap(mask));
 }
 
@@ -3606,13 +3827,13 @@ preview_put_row(self, src, dst, x, y, w)
     }
     Check_Type(src, T_STRING);
     if (RSTRING(src)->len < dlen) {
-	ArgError("src too short");
+	rb_raise(rb_eArgError, "src too short");
     }
     Check_Type(dst, T_STRING);
     if (RSTRING(dst)->len < dlen) {
-	ArgError("dst too short");
+	rb_raise(rb_eArgError, "dst too short");
     }
-    str_modify(dst);
+    rb_str_modify(dst);
     gtk_preview_put_row(GTK_PREVIEW(get_widget(self)),
 			RSTRING(src)->ptr, RSTRING(dst)->ptr,
 			NUM2INT(x), NUM2INT(y), width);
@@ -3631,7 +3852,7 @@ preview_draw_row(self, data, x, y, w)
     }
     Check_Type(data, T_STRING);
     if (RSTRING(data)->len < dlen) {
-	ArgError("data too short");
+	rb_raise(rb_eArgError, "data too short");
     }
 
     gtk_preview_draw_row(GTK_PREVIEW(get_widget(self)), RSTRING(data)->ptr,
@@ -3960,7 +4181,7 @@ tbar_append_item(self, text, ttext, ptext, icon, func)
     VALUE self, text, ttext, ptext, icon, func;
 {
     if (NIL_P(func)) {
-	func = f_lambda();
+	func = rb_f_lambda();
     }
     gtk_toolbar_append_item(GTK_TOOLBAR(get_widget(self)),
 			    NIL_P(text)?NULL:STR2CSTR(text),
@@ -3977,7 +4198,7 @@ tbar_prepend_item(self, text, ttext, ptext, icon, func)
     VALUE self, text, ttext, ptext, icon, func;
 {
     if (NIL_P(func)) {
-	func = f_lambda();
+	func = rb_f_lambda();
     }
     gtk_toolbar_prepend_item(GTK_TOOLBAR(get_widget(self)),
 			     NIL_P(text)?NULL:STR2CSTR(text),
@@ -3994,7 +4215,7 @@ tbar_insert_item(self, text, ttext, ptext, icon, func, pos)
     VALUE self, text, ttext, ptext, icon, func, pos;
 {
     if (NIL_P(func)) {
-	func = f_lambda();
+	func = rb_f_lambda();
     }
     gtk_toolbar_insert_item(GTK_TOOLBAR(get_widget(self)),
 			    NIL_P(text)?NULL:STR2CSTR(text),
@@ -4389,8 +4610,8 @@ tbtn_active(self)
     VALUE self;
 {
     if (GTK_TOGGLE_BUTTON(get_widget(self))->active)
-	return TRUE;
-    return FALSE;
+	return Qtrue;
+    return Qfalse;
 }
 
 static VALUE
@@ -4430,7 +4651,7 @@ rbtn_initialize(argc, argv, self)
 	if (!NIL_P(arg2)) {
 	    label = STR2CSTR(arg2);
 	}
-	if (obj_is_kind_of(arg1, gRButton)) {
+	if (rb_obj_is_kind_of(arg1, gRButton)) {
 	    GtkWidget *b = get_widget(arg1);
 	    list = GTK_RADIO_BUTTON(b)->group;
 	}
@@ -4468,7 +4689,7 @@ box_pack_start_or_end(argc, argv, self, start)
     gint expand, fill, padding;
     GtkWidget *widget, *child;
 
-    expand = fill = TRUE; padding = 0;
+    expand = fill = Qtrue; padding = 0;
     switch (rb_scan_args(argc, argv, "13", &arg0, &arg1, &arg2, &arg3)) {
       case 4:
 	padding = NUM2INT(arg3);
@@ -4556,7 +4777,7 @@ colorsel_set_color(self, color)
 
     Check_Type(color, T_ARRAY);
     if (RARRAY(color)->len < 3) {
-	ArgError("color array too small");
+	rb_raise(rb_eArgError, "color array too small");
     }
     buf[0] = NUM2DBL(RARRAY(color)->ptr[0]);
     buf[1] = NUM2DBL(RARRAY(color)->ptr[1]);
@@ -4574,10 +4795,10 @@ colorsel_get_color(self)
     VALUE ary;
 
     gtk_color_selection_get_color(GTK_COLOR_SELECTION(get_widget(self)), buf);
-    ary = ary_new2(3);
-    ary_push(ary, NUM2DBL(buf[0]));
-    ary_push(ary, NUM2DBL(buf[1]));
-    ary_push(ary, NUM2DBL(buf[2]));
+    ary = rb_ary_new2(3);
+    rb_ary_push(ary, NUM2DBL(buf[0]));
+    rb_ary_push(ary, NUM2DBL(buf[1]));
+    rb_ary_push(ary, NUM2DBL(buf[2]));
     return ary;
 }
 
@@ -4616,7 +4837,7 @@ pixmap_get(self)
 
     gtk_pixmap_get(GTK_PIXMAP(get_widget(self)), &val, &mask);
 
-    return assoc_new(make_gdkpixmap(val),
+    return rb_assoc_new(make_gdkpixmap(val),
 		     make_gdkbitmap(mask));
 }
 
@@ -4677,7 +4898,7 @@ edit_get_chars(self, start, end)
 
     s = gtk_editable_get_chars(GTK_EDITABLE(get_widget(self)),
 			       NUM2INT(start), NUM2INT(end));
-    return str_new2(s);
+    return rb_str_new2(s);
 }
 
 static VALUE
@@ -4776,7 +4997,7 @@ entry_get_text(self)
 {
     gchar* text;
     text = gtk_entry_get_text(GTK_ENTRY(get_widget(self)));
-    return str_new2(text);
+    return rb_str_new2(text);
 }
 
 static VALUE
@@ -4847,7 +5068,7 @@ static VALUE
 gamma_gamma(self)
     VALUE self;
 {
-    return float_new(GTK_GAMMA_CURVE(get_widget(self))->gamma);
+    return rb_float_new(GTK_GAMMA_CURVE(get_widget(self))->gamma);
 }
 
 static VALUE
@@ -5492,6 +5713,13 @@ style_s_new(klass)
 }
 
 static VALUE
+style_copy(self)
+    VALUE self;
+{
+  return make_gstyle(gtk_style_copy(get_gstyle(self)));
+}
+
+static VALUE
 style_attach(self, win)
     VALUE self, win;
 {
@@ -5506,7 +5734,7 @@ style_detach(self)
 }
 
 static VALUE
-style_set_bg(self, win, state_type)
+style_set_background(self, win, state_type)
     VALUE self, win, state_type;
 {
     gtk_style_set_background(get_gstyle(self), get_gdkwindow(win),
@@ -5520,7 +5748,7 @@ style_fg(self, idx)
 {
     int i = NUM2INT(idx);
 
-    if (i < 0 || 5 < i) ArgError("state out of range");
+    if (i < 0 || 5 < i) rb_raise(rb_eArgError, "state out of range");
     return make_gdkcolor(get_gstyle(self)->fg[i]);
 }
 
@@ -5530,7 +5758,7 @@ style_bg(self, idx)
 {
     int i = NUM2INT(idx);
 
-    if (i < 0 || 5 < i) ArgError("state out of range");
+    if (i < 0 || 5 < i) rb_raise(rb_eArgError, "state out of range");
     return make_gdkcolor(get_gstyle(self)->bg[i]);
 }
 
@@ -5540,7 +5768,7 @@ style_light(self, idx)
 {
     int i = NUM2INT(idx);
 
-    if (i < 0 || 5 < i) ArgError("state out of range");
+    if (i < 0 || 5 < i) rb_raise(rb_eArgError, "state out of range");
     return make_gdkcolor(get_gstyle(self)->light[i]);
 }
 
@@ -5550,7 +5778,7 @@ style_dark(self, idx)
 {
     int i = NUM2INT(idx);
 
-    if (i < 0 || 5 < i) ArgError("state out of range");
+    if (i < 0 || 5 < i) rb_raise(rb_eArgError, "state out of range");
     return make_gdkcolor(get_gstyle(self)->dark[i]);
 }
 
@@ -5560,7 +5788,7 @@ style_mid(self, idx)
 {
     int i = NUM2INT(idx);
 
-    if (i < 0 || 5 < i) ArgError("state out of range");
+    if (i < 0 || 5 < i) rb_raise(rb_eArgError, "state out of range");
     return make_gdkcolor(get_gstyle(self)->mid[i]);
 }
 
@@ -5570,7 +5798,7 @@ style_text(self, idx)
 {
     int i = NUM2INT(idx);
 
-    if (i < 0 || 5 < i) ArgError("state out of range");
+    if (i < 0 || 5 < i) rb_raise(rb_eArgError, "state out of range");
     return make_gdkcolor(get_gstyle(self)->text[i]);
 }
 
@@ -5580,9 +5808,36 @@ style_base(self, idx)
 {
     int i = NUM2INT(idx);
 
-    if (i < 0 || 5 < i) ArgError("state out of range");
+    if (i < 0 || 5 < i) rb_raise(rb_eArgError, "state out of range");
     return make_gdkcolor(get_gstyle(self)->base[i]);
 }
+
+#define DEFINE_STYLE_SET_COLOR(FUNC, TYPE) \
+static VALUE \
+FUNC(self, idx, r, g, b) \
+    VALUE self, idx, r, g, b; \
+{ \
+  GtkStyle *style; \
+  GdkColor *color; \
+  int i = NUM2INT(idx); \
+ \
+  if (i < 0 || 5 < i) ArgError("state out of range"); \
+  style = get_gstyle(self); \
+  if (style->fg_gc[0] != NULL) ArgError("you must not change widget style."); \
+  color =  &(style-> TYPE [i]); \
+  color->red   = NUM2INT(r); \
+  color->green = NUM2INT(g); \
+  color->blue  = NUM2INT(b); \
+  return(make_gdkcolor(*color)); \
+} \
+
+DEFINE_STYLE_SET_COLOR(style_set_fg, fg)
+DEFINE_STYLE_SET_COLOR(style_set_bg, bg)
+DEFINE_STYLE_SET_COLOR(style_set_light, light)
+DEFINE_STYLE_SET_COLOR(style_set_dark, dark)
+DEFINE_STYLE_SET_COLOR(style_set_mid, mid)
+DEFINE_STYLE_SET_COLOR(style_set_text, text)
+DEFINE_STYLE_SET_COLOR(style_set_base, base)
 
 static VALUE
 style_black(self)
@@ -5603,12 +5858,29 @@ style_font(self)
 }
 
 static VALUE
+style_set_font(self, f)
+	 VALUE f;
+{
+  GdkFont *font = get_gdkfont(f);
+  GtkStyle *style = get_gstyle(self);
+
+  if (style->fg_gc[0] != NULL) ArgError("you must not change widget style.");
+  if (style->font != NULL)
+	gdk_font_unref(style->font);
+
+  gdk_font_ref(font);
+  style->font = font;
+
+  return self;
+}
+
+static VALUE
 style_fg_gc(self, idx)
     VALUE self, idx;
 {
     int i = NUM2INT(idx);
 
-    if (i < 0 || 5 < i) ArgError("state out of range");
+    if (i < 0 || 5 < i) rb_raise(rb_eArgError, "state out of range");
     return make_gdkgc(get_gstyle(self)->fg_gc[i]);
 }
 
@@ -5618,7 +5890,7 @@ style_bg_gc(self, idx)
 {
     int i = NUM2INT(idx);
 
-    if (i < 0 || 5 < i) ArgError("state out of range");
+    if (i < 0 || 5 < i) rb_raise(rb_eArgError, "state out of range");
     return make_gdkgc(get_gstyle(self)->bg_gc[i]);
 }
 
@@ -5628,7 +5900,7 @@ style_light_gc(self, idx)
 {
     int i = NUM2INT(idx);
 
-    if (i < 0 || 5 < i) ArgError("state out of range");
+    if (i < 0 || 5 < i) rb_raise(rb_eArgError, "state out of range");
     return make_gdkgc(get_gstyle(self)->light_gc[i]);
 }
 
@@ -5638,7 +5910,7 @@ style_dark_gc(self, idx)
 {
     int i = NUM2INT(idx);
 
-    if (i < 0 || 5 < i) ArgError("state out of range");
+    if (i < 0 || 5 < i) rb_raise(rb_eArgError, "state out of range");
     return make_gdkgc(get_gstyle(self)->dark_gc[i]);
 }
 
@@ -5648,7 +5920,7 @@ style_mid_gc(self, idx)
 {
     int i = NUM2INT(idx);
 
-    if (i < 0 || 5 < i) ArgError("state out of range");
+    if (i < 0 || 5 < i) rb_raise(rb_eArgError, "state out of range");
     return make_gdkgc(get_gstyle(self)->mid_gc[i]);
 }
 
@@ -5658,7 +5930,7 @@ style_text_gc(self, idx)
 {
     int i = NUM2INT(idx);
 
-    if (i < 0 || 5 < i) ArgError("state out of range");
+    if (i < 0 || 5 < i) rb_raise(rb_eArgError, "state out of range");
     return make_gdkgc(get_gstyle(self)->text_gc[i]);
 }
 
@@ -5668,7 +5940,7 @@ style_base_gc(self, idx)
 {
     int i = NUM2INT(idx);
 
-    if (i < 0 || 5 < i) ArgError("state out of range");
+    if (i < 0 || 5 < i) rb_raise(rb_eArgError, "state out of range");
     return make_gdkgc(get_gstyle(self)->base_gc[i]);
 }
 
@@ -5690,7 +5962,7 @@ style_bg_pixmap(self, idx)
 {
     int i = NUM2INT(idx);
 
-    if (i < 0 || 5 < i) ArgError("state out of range");
+    if (i < 0 || 5 < i) rb_raise(rb_eArgError, "state out of range");
     return make_gdkpixmap(get_gstyle(self)->bg_pixmap[i]);
 }
 
@@ -5740,7 +6012,7 @@ style_draw_polygon(self,win,state_type,shadow_type,pnts,fill)
     for (i=0; i<RARRAY(pnts)->len; i++) {
 	Check_Type(RARRAY(pnts)->ptr[i], T_ARRAY);
 	if (RARRAY(RARRAY(pnts)->ptr[i])->len < 2) {
-	    ArgError("point %d should be array of size 2", i);
+	    rb_raise(rb_eArgError, "point %d should be array of size 2", i);
 	}
 	points[i].x = NUM2INT(RARRAY(RARRAY(pnts)->ptr[i])->ptr[0]);
 	points[i].y = NUM2INT(RARRAY(RARRAY(pnts)->ptr[i])->ptr[1]);
@@ -5805,6 +6077,32 @@ gallocation_h(self)
 	return INT2NUM(get_gallocation(self)->height);
 }
 
+static VALUE
+grequisition_w(self)
+{
+	return INT2NUM(get_grequisition(self)->width);
+}
+static VALUE
+grequisition_h(self)
+{
+	return INT2NUM(get_grequisition(self)->height);
+}
+/*
+static VALUE
+grequisition_set_w(self, w)
+	 VALUE self, w;
+{
+  get_grequisition(self)->width = NUM2INT(w);
+  return self;
+}
+static VALUE
+grequisition_set_h(self, h)
+	 VALUE self, h;
+{
+  get_grequisition(self)->height = NUM2INT(h);
+  return self;
+}
+*/
 
 static VALUE
 gtk_m_main(self)
@@ -5908,7 +6206,7 @@ gdkdraw_draw_poly(self, gc, filled, pnts)
     for (i=0; i<RARRAY(pnts)->len; i++) {
 	Check_Type(RARRAY(pnts)->ptr[i], T_ARRAY);
 	if (RARRAY(RARRAY(pnts)->ptr[i])->len < 2) {
-	    ArgError("point %d should be array of size 2", i);
+	    rb_raise(rb_eArgError, "point %d should be array of size 2", i);
 	}
 	points[i].x = NUM2INT(RARRAY(RARRAY(pnts)->ptr[i])->ptr[0]);
 	points[i].y = NUM2INT(RARRAY(RARRAY(pnts)->ptr[i])->ptr[1]);
@@ -5980,7 +6278,7 @@ gdkdraw_draw_pnts(self, gc, pnts)
     for (i=0; i<RARRAY(pnts)->len; i++) {
 	Check_Type(RARRAY(pnts)->ptr[i], T_ARRAY);
 	if (RARRAY(RARRAY(pnts)->ptr[i])->len < 2) {
-	    ArgError("point %d should be array of size 2", i);
+	    rb_raise(rb_eArgError, "point %d should be array of size 2", i);
 	}
 	points[i].x = NUM2INT(RARRAY(RARRAY(pnts)->ptr[i])->ptr[0]);
 	points[i].y = NUM2INT(RARRAY(RARRAY(pnts)->ptr[i])->ptr[1]);
@@ -6003,7 +6301,7 @@ gdkdraw_draw_segs(self, gc, segs)
     for (i=0; i<RARRAY(segs)->len; i++) {
 	Check_Type(RARRAY(segs)->ptr[i], T_ARRAY);
 	if (RARRAY(RARRAY(segs)->ptr[i])->len < 4) {
-	    ArgError("segment %d should be array of size 4", i);
+	    rb_raise(rb_eArgError, "segment %d should be array of size 4", i);
 	}
 	segments[i].x1 = NUM2INT(RARRAY(RARRAY(segs)->ptr[i])->ptr[0]);
 	segments[i].y1 = NUM2INT(RARRAY(RARRAY(segs)->ptr[i])->ptr[1]);
@@ -6119,9 +6417,9 @@ idle()
 {
     CHECK_INTS;
 #ifdef THREAD
-    if (!thread_critical) thread_schedule();
+    if (!rb_thread_critical) rb_thread_schedule();
 #endif
-    return TRUE;
+    return Qtrue;
 }
 
 static void
@@ -6138,7 +6436,7 @@ timeout_add(self, interval)
     int id;
 
     id = gtk_timeout_add_interp(NUM2INT(interval), exec_interval,
-				(gpointer)f_lambda(), 0);
+				(gpointer)rb_f_lambda(), 0);
     return INT2FIX(id);
 }
 
@@ -6156,7 +6454,7 @@ idle_add(self)
 {
     int id;
 
-    id = gtk_idle_add_interp(exec_interval, (gpointer)f_lambda(), 0);
+    id = gtk_idle_add_interp(exec_interval, (gpointer)rb_f_lambda(), 0);
     return INT2FIX(id);
 }
 
@@ -6176,21 +6474,21 @@ static void
 gtkwarn(mesg)
     char *mesg;
 {
-    rb_funcall(warn_handler, id_call, 1, str_new2(mesg));
+    rb_funcall(warn_handler, id_call, 1, rb_str_new2(mesg));
 }
 
 static void
 gtkmesg(mesg)
     char *mesg;
 {
-    rb_funcall(mesg_handler, id_call, 1, str_new2(mesg));
+    rb_funcall(mesg_handler, id_call, 1, rb_str_new2(mesg));
 }
 
 static void
 gtkprint(mesg)
     char *mesg;
 {
-    rb_funcall(print_handler, id_call, 1, str_new2(mesg));
+    rb_funcall(print_handler, id_call, 1, rb_str_new2(mesg));
 }
 
 static VALUE
@@ -6203,7 +6501,7 @@ set_warning_handler(argc, argv, self)
 
     rb_scan_args(argc, argv, "01", &handler);
     if (NIL_P(handler)) {
-	handler = f_lambda();
+	handler = rb_f_lambda();
     }
     g_set_warning_handler(gtkwarn);
     return handler;
@@ -6219,7 +6517,7 @@ set_message_handler(argc, argv, self)
 
     rb_scan_args(argc, argv, "01", &handler);
     if (NIL_P(handler)) {
-	handler = f_lambda();
+	handler = rb_f_lambda();
     }
     g_set_message_handler(gtkmesg);
     return handler;
@@ -6235,7 +6533,7 @@ set_print_handler(argc, argv, self)
 
     rb_scan_args(argc, argv, "01", &handler);
     if (NIL_P(handler)) {
-	handler = f_lambda();
+	handler = rb_f_lambda();
     }
     g_set_print_handler(gtkprint);
     return handler;
@@ -6245,7 +6543,7 @@ static void
 gtkerr(mesg)
     char *mesg;
 {
-    Fail("%s", mesg);
+    rb_raise(rb_eRuntimeError, "%s", mesg);
 }
 
 void
@@ -6255,12 +6553,12 @@ Init_gtk()
     char **argv;
 
     gtk_set_locale();
-    gtk_object_list = ary_new();
+    gtk_object_list = rb_ary_new();
     rb_global_variable(&gtk_object_list);
 
     mGtk = rb_define_module("Gtk");
 
-    gObject = rb_define_class_under(mGtk, "Object", cObject);
+    gObject = rb_define_class_under(mGtk, "Object", rb_cObject);
     gWidget = rb_define_class_under(mGtk, "Widget", gObject);
     gContainer = rb_define_class_under(mGtk, "Container", gWidget);
     gBin = rb_define_class_under(mGtk, "Bin", gContainer);
@@ -6332,38 +6630,38 @@ Init_gtk()
     gTable = rb_define_class_under(mGtk, "Table", gContainer);
     gText = rb_define_class_under(mGtk, "Text", gEditable);
     gToolbar = rb_define_class_under(mGtk, "Toolbar", gContainer);
-    gTooltips = rb_define_class_under(mGtk, "Tooltips", cData);
+    gTooltips = rb_define_class_under(mGtk, "Tooltips", rb_cData);
     gTree = rb_define_class_under(mGtk, "Tree", gContainer);
     gTreeItem = rb_define_class_under(mGtk, "TreeItem", gItem);
     gViewPort = rb_define_class_under(mGtk, "ViewPort", gBin);
 
-    gAcceleratorTable = rb_define_class_under(mGtk, "AcceleratorTable", cData);
-    gStyle = rb_define_class_under(mGtk, "Style", cData);
-    gPreviewInfo = rb_define_class_under(mGtk, "PreviewInfo", cData);
-    gRequisiton = rb_define_class_under(mGtk, "Requisiton", cData);
-    gAllocation = rb_define_class_under(mGtk, "Allocation", cData);
+    gAcceleratorTable = rb_define_class_under(mGtk, "AcceleratorTable", rb_cData);
+    gStyle = rb_define_class_under(mGtk, "Style", rb_cData);
+    gPreviewInfo = rb_define_class_under(mGtk, "PreviewInfo", rb_cData);
+    gRequisition = rb_define_class_under(mGtk, "Requisition", rb_cData);
+    gAllocation = rb_define_class_under(mGtk, "Allocation", rb_cData);
 
     mRC = rb_define_module_under(mGtk, "RC");
 
     mGdk = rb_define_module("Gdk");
 
-    gdkFont = rb_define_class_under(mGdk, "Font", cData);
-    gdkColor = rb_define_class_under(mGdk, "Color", cData);
-    gdkDrawable = rb_define_class_under(mGdk, "Drawable", cData);
+    gdkFont = rb_define_class_under(mGdk, "Font", rb_cData);
+    gdkColor = rb_define_class_under(mGdk, "Color", rb_cData);
+    gdkDrawable = rb_define_class_under(mGdk, "Drawable", rb_cData);
     gdkPixmap = rb_define_class_under(mGdk, "Pixmap", gdkDrawable);
     gdkBitmap = rb_define_class_under(mGdk, "Bitmap", gdkPixmap);
     gdkWindow = rb_define_class_under(mGdk, "Window", gdkDrawable);
-    gdkImage = rb_define_class_under(mGdk, "Image", cData);
-    gdkVisual = rb_define_class_under(mGdk, "Visual", cData);
-    gdkGC = rb_define_class_under(mGdk, "GC", cData);
-    gdkGCValues = rb_define_class_under(mGdk, "GCValues", cData);
-    gdkRectangle = rb_define_class_under(mGdk, "Rectangle", cData);
-    gdkSegment = rb_define_class_under(mGdk, "Segment", cData);
-    gdkWindowAttr = rb_define_class_under(mGdk, "WindowAttr", cData);
-    gdkCursor = rb_define_class_under(mGdk, "Cursor", cData);
-    gdkAtom = rb_define_class_under(mGdk, "Atom", cData);
-    gdkColorContext = rb_define_class_under(mGdk, "ColorContext", cData);
-    gdkEvent = rb_define_class_under(mGdk, "gdkEvent", cData);
+    gdkImage = rb_define_class_under(mGdk, "Image", rb_cData);
+    gdkVisual = rb_define_class_under(mGdk, "Visual", rb_cData);
+    gdkGC = rb_define_class_under(mGdk, "GC", rb_cData);
+    gdkGCValues = rb_define_class_under(mGdk, "GCValues", rb_cData);
+    gdkRectangle = rb_define_class_under(mGdk, "Rectangle", rb_cData);
+    gdkSegment = rb_define_class_under(mGdk, "Segment", rb_cData);
+    gdkWindowAttr = rb_define_class_under(mGdk, "WindowAttr", rb_cData);
+    gdkCursor = rb_define_class_under(mGdk, "Cursor", rb_cData);
+    gdkAtom = rb_define_class_under(mGdk, "Atom", rb_cData);
+    gdkColorContext = rb_define_class_under(mGdk, "ColotContext", rb_cData);
+    gdkEvent = rb_define_class_under(mGdk, "gdkEvent", rb_cData);
 
     gdkEventType = rb_define_class_under(mGdk, "gdkEventType", gdkEvent);
     gdkEventAny = rb_define_class_under(mGdk, "gdkEventAny", gdkEvent);
@@ -6396,7 +6694,7 @@ Init_gtk()
     rb_define_method(gObject, "signal_connect", gobj_sig_connect, -1);
     rb_define_method(gObject, "signal_connect_after", gobj_sig_connect_after, -1);
     rb_define_method(gObject, "singleton_method_added", gobj_smethod_added, 1);
-    rb_define_method(gObject, "==", gobj_equal, 1);
+    rb_define_method(gObject, "==", grb_obj_equal, 1);
     rb_define_method(gObject, "inspect", gobj_inspect, 0);
 
     /* Widget */
@@ -6410,7 +6708,7 @@ Init_gtk()
     rb_define_method(gWidget, "unrealize", widget_unrealize, 0);
     rb_define_method(gWidget, "queue_draw", widget_queue_draw, 0);
     rb_define_method(gWidget, "queue_resize", widget_queue_resize, 0);
-    rb_define_method(gWidget, "draw", widget_draw, 1);
+    rb_define_method(gWidget, "draw", widget_draw, -1);
     rb_define_method(gWidget, "draw_focus", widget_draw_focus, 0);
     rb_define_method(gWidget, "draw_default", widget_draw_default, 0);
     rb_define_method(gWidget, "draw_children", widget_draw_children, 0);
@@ -6424,6 +6722,7 @@ Init_gtk()
     rb_define_method(gWidget, "grab_default", widget_grab_default, 0);
     rb_define_method(gWidget, "set_state", widget_set_state, 1);
     rb_define_method(gWidget, "visible?", widget_visible, 0);
+    rb_define_method(gWidget, "mapped?", widget_mapped, 0);
     rb_define_method(gWidget, "reparent", widget_reparent, 1);
     rb_define_method(gWidget, "popup", widget_popup, 2);
     rb_define_method(gWidget, "intersect", widget_intersect, 2);
@@ -6439,6 +6738,8 @@ Init_gtk()
     rb_define_method(gWidget, "set_extension_events", widget_set_eevents, 1);
     rb_define_method(gWidget, "unparent", widget_unparent, 0);
     rb_define_method(gWidget, "allocation", widget_get_alloc, 0);
+    rb_define_method(gWidget, "requisition", widget_get_requisition, 0);
+    rb_define_method(gWidget, "set_requisition", widget_set_requisition, 2);
     rb_define_method(gWidget, "state", widget_state, 0);
     rb_define_method(gWidget, "get_toplevel", widget_get_toplevel, 0);
     rb_define_method(gWidget, "get_ancestor", widget_get_ancestor, 1);
@@ -6509,6 +6810,10 @@ Init_gtk()
     /* Misc */
     rb_define_method(gMisc, "set_alignment", misc_set_align, 2);
     rb_define_method(gMisc, "set_padding", misc_set_padding, 2);
+    rb_define_method(gMisc, "xalign", misc_get_xalign, 0);
+    rb_define_method(gMisc, "yalign", misc_get_yalign, 0);
+    rb_define_method(gMisc, "xpad", misc_get_xpad, 0);
+    rb_define_method(gMisc, "ypad", misc_get_ypad, 0);
     
     /* Arrow */
     rb_define_method(gArrow, "initialize", arrow_initialize, 2);
@@ -6818,6 +7123,8 @@ Init_gtk()
     rb_define_method(gLabel, "initialize", label_initialize, 1);
     rb_define_method(gLabel, "get", label_get, 0);
     rb_define_method(gLabel, "set", label_set, 1);
+    rb_define_method(gLabel, "jtype", label_get_jtype, 0);
+    rb_define_method(gLabel, "jtype=", label_set_jtype, 1);
 
     /* List */
     rb_define_method(gList, "initialize", list_initialize, 0);
@@ -7011,9 +7318,12 @@ Init_gtk()
     /* AcceleratorTable */
     /* Style */
     rb_define_singleton_method(gStyle, "new", style_s_new, 0);
+    rb_define_method(gStyle, "copy", style_copy, 0);
+    rb_define_method(gStyle, "clone", style_copy, 0);
+    rb_define_method(gStyle, "dup", style_copy, 0);
     rb_define_method(gStyle, "attach", style_attach, 1);
     rb_define_method(gStyle, "detach", style_detach, 0);
-    rb_define_method(gStyle, "set_background", style_set_bg, 0);
+    rb_define_method(gStyle, "set_background", style_set_background, 1);
     rb_define_method(gStyle, "fg", style_fg, 1);
     rb_define_method(gStyle, "bg", style_bg, 1);
     rb_define_method(gStyle, "light", style_light, 1);
@@ -7021,9 +7331,18 @@ Init_gtk()
     rb_define_method(gStyle, "mid", style_mid, 1);
     rb_define_method(gStyle, "text", style_text, 1);
     rb_define_method(gStyle, "base", style_base, 1);
+    rb_define_method(gStyle, "set_fg", style_set_fg, 4);
+    rb_define_method(gStyle, "set_bg", style_set_bg, 4);
+    rb_define_method(gStyle, "set_light", style_set_light, 4);
+    rb_define_method(gStyle, "set_dark", style_set_dark, 4);
+    rb_define_method(gStyle, "set_mid", style_set_mid, 4);
+    rb_define_method(gStyle, "set_text", style_set_text, 4);
+    rb_define_method(gStyle, "set_base", style_set_base, 4);
+
     rb_define_method(gStyle, "black", style_black, 0);
     rb_define_method(gStyle, "white", style_white, 0);
     rb_define_method(gStyle, "font", style_font, 0);
+    rb_define_method(gStyle, "set_font", style_set_font, 1);
     rb_define_method(gStyle, "fg_gc", style_fg_gc, 1);
     rb_define_method(gStyle, "bg_gc", style_bg_gc, 1);
     rb_define_method(gStyle, "light_gc", style_light_gc, 1);
@@ -7050,6 +7369,13 @@ Init_gtk()
     rb_define_method(gAllocation, "width", gallocation_w, 0);
     rb_define_method(gAllocation, "height", gallocation_h, 0);
 
+    rb_define_method(gRequisition, "width", grequisition_w, 0);
+    rb_define_method(gRequisition, "height", grequisition_h, 0);
+	/*
+    rb_define_method(gRequisition, "width=", grequisition_set_w, 1);
+    rb_define_method(gRequisition, "height=", grequisition_set_h, 1);
+	*/
+
     /* Gtk module */
     rb_define_module_function(mGtk, "main", gtk_m_main, 0);
     rb_define_module_function(mGtk, "timeout_add", timeout_add, 1);
@@ -7075,6 +7401,12 @@ Init_gtk()
 
     /* Gdk module */
     /* GdkFont */
+    rb_define_singleton_method(gdkFont, "load_font", gdkfnt_load_font, 1);
+    rb_define_singleton_method(gdkFont, "new", gdkfnt_new, 1);
+    rb_define_singleton_method(gdkFont, "load_fontset", gdkfnt_load_fontset, 1);
+    rb_define_method(gdkFont, "string_width", gdkfnt_string_width, 1);
+    rb_define_method(gdkFont, "ascent", gdkfnt_ascent, 0);
+    rb_define_method(gdkFont, "descent", gdkfnt_descent, 0);
     rb_define_method(gdkFont, "==", gdkfnt_equal, 1);
 
     /* GdkDrawable */
@@ -7112,11 +7444,23 @@ Init_gtk()
     rb_define_method(gdkWindow, "pointer_ungrab", gdkwin_pointer_ungrab, 1);
     rb_define_singleton_method(gdkWindow, "foreign_new", gdkwin_foreign_new, 1);
     rb_define_singleton_method(gdkWindow, "root_window", gdkwin_root_window, 0);
+    rb_define_method(gdkWindow, "clear", gdkwin_clear, 0);
+    rb_define_method(gdkWindow, "clear_area", gdkwin_clear_area, 4);
+    rb_define_method(gdkWindow, "clear_area_e", gdkwin_clear, 4);
+    rb_define_method(gdkWindow, "set_background", gdkwin_set_background, 1);
+    rb_define_method(gdkWindow, "set_back_pixmap", gdkwin_set_back_pixmap, 2);
 
     /* GdkGC */
     rb_define_singleton_method(gdkGC, "new", gdkgc_s_new, 1);
     rb_define_method(gdkGC, "copy", gdkgc_copy, 1);
     rb_define_method(gdkGC, "destroy", gdkgc_destroy, 0);
+    rb_define_method(gdkGC, "set_function", gdkgc_set_function, 1);
+    rb_define_method(gdkGC, "set_foreground", gdkgc_set_foreground, 1);
+    rb_define_method(gdkGC, "set_background", gdkgc_set_background, 1);
+    rb_define_method(gdkGC, "set_clip_mask", gdkgc_set_clip_mask, 1);
+    rb_define_method(gdkGC, "set_clip_origin", gdkgc_set_clip_origin, 2);
+    rb_define_method(gdkGC, "set_clip_rectangle", gdkgc_set_clip_rectangle, 1);
+	/* rb_define_method(gdkGC, "set_clip_region", gdkgc_set_clip_region, 1); */
 
     /* GdkImage */
     rb_define_singleton_method(gdkImage, "new_bitmap", gdkimage_s_newbmap, 4);
@@ -7185,6 +7529,12 @@ Init_gtk()
     rb_define_const(mGtk, "POLICY_ALWAYS", INT2FIX(GTK_POLICY_ALWAYS));
     rb_define_const(mGtk, "POLICY_AUTOMATIC", INT2FIX(GTK_POLICY_AUTOMATIC));
 
+    /* GtkJustification */
+    rb_define_const(mGtk, "JUSTIFY_LEFT", INT2FIX(GTK_JUSTIFY_LEFT));
+    rb_define_const(mGtk, "JUSTIFY_RIGHT", INT2FIX(GTK_JUSTIFY_RIGHT));
+    rb_define_const(mGtk, "JUSTIFY_CENTER", INT2FIX(GTK_JUSTIFY_CENTER));
+    rb_define_const(mGtk, "JUSTIFY_FILL", INT2FIX(GTK_JUSTIFY_FILL));
+
     /* GtkSelectionMode */
     rb_define_const(mGtk, "SELECTION_SINGLE", INT2FIX(GTK_SELECTION_SINGLE));
     rb_define_const(mGtk, "SELECTION_BROWSE", INT2FIX(GTK_SELECTION_BROWSE));
@@ -7247,6 +7597,11 @@ Init_gtk()
     /* GtkOrientation */
     rb_define_const(mGtk, "ORIENTATION_HORIZONTAL", INT2FIX(GTK_ORIENTATION_HORIZONTAL));
     rb_define_const(mGtk, "ORIENTATION_VERTICAL", INT2FIX(GTK_ORIENTATION_VERTICAL));
+
+    /* GdkMiscMode */
+    rb_define_const(mGdk, "FUNCTION_COPY", INT2FIX(GDK_COPY));
+    rb_define_const(mGdk, "FUNCTION_INVERT", INT2FIX(GDK_INVERT));
+    rb_define_const(mGdk, "FUNCTION_XOR", INT2FIX(GDK_XOR));
 
     /* GdkExtensionMode */
     rb_define_const(mGdk, "EXTENSION_EVENTS_NONE", INT2FIX(GDK_EXTENSION_EVENTS_NONE));
@@ -7336,7 +7691,7 @@ Init_gtk()
     }
 
     for (i=1;i<argc;i++) {
-	RARRAY(rb_argv)->ptr[i] = str_taint(str_new2(argv[i]));
+	RARRAY(rb_argv)->ptr[i-1] = rb_str_taint(rb_str_new2(argv[i]));
     }
     RARRAY(rb_argv)->len = argc-1;
 

@@ -41,7 +41,7 @@ struct windata {
 static void
 no_window()
 {
-    Fail("already closed window");
+    rb_raise(rb_eRuntimeError, "already closed window");
 }
 
 #define GetWINDOW(obj, winp) {\
@@ -69,7 +69,7 @@ prep_window(class, window)
     struct windata *winp;
 
     if (window == NULL) {
-	Fail("failed to create window");
+	rb_raise(rb_eRuntimeError, "failed to create window");
     }
 
     obj = Data_Make_Struct(class, struct windata, 0, free_window, winp);
@@ -86,7 +86,7 @@ curses_init_screen()
 {
     initscr();
     if (stdscr == 0) {
-	Fail("cannot initialize curses");
+	rb_raise(rb_eRuntimeError, "cannot initialize curses");
     }
     clear();
     rb_stdscr = prep_window(cWindow, stdscr);
@@ -129,9 +129,9 @@ curses_closed()
 {
 #ifdef HAVE_ISENDWIN
     if (isendwin()) {
-	return TRUE;
+	return Qtrue;
     }
-    return FALSE;
+    return Qfalse;
 #else
     rb_notimplement();
 #endif
@@ -354,7 +354,7 @@ curses_getstr(obj)
 {
     char rtn[1024]; /* This should be big enough.. I hope */
     getstr(rtn);
-    return str_taint(str_new2(rtn));
+    return rb_str_taint(rb_str_new2(rtn));
 }
 
 /* def delch */
@@ -404,7 +404,7 @@ window_s_new(class, lines, cols, top, left)
     window = newwin(NUM2INT(lines), NUM2INT(cols), NUM2INT(top), NUM2INT(left));
     wclear(window);
     w = prep_window(class, window);
-    obj_call_init(w);
+    rb_obj_call_init(w);
 
     return w;
 }
@@ -723,7 +723,7 @@ window_getstr(obj)
     
     GetWINDOW(obj, winp);
     wgetstr(winp->window, rtn);
-    return str_taint(str_new2(rtn));
+    return rb_str_taint(rb_str_new2(rtn));
 }
 
 /* def delch */
@@ -789,7 +789,7 @@ Init_curses()
     rb_define_module_function(mCurses, "lines", curses_lines, 0);
     rb_define_module_function(mCurses, "cols", curses_cols, 0);
     
-    cWindow = rb_define_class_under(mCurses, "Window", cObject);
+    cWindow = rb_define_class_under(mCurses, "Window", rb_cObject);
     rb_define_singleton_method(cWindow, "new", window_s_new, 4);
     rb_define_method(cWindow, "subwin", window_subwin, 4);
     rb_define_method(cWindow, "close", window_close, 0);

@@ -30,7 +30,7 @@ class << File
     to.binmode
 
     begin
-      while TRUE
+      while true
 	r = from.sysread(fsize)
 	rsize = r.size
         w = 0
@@ -40,9 +40,9 @@ class << File
 	end
       end
     rescue EOFError
-      ret = TRUE
+      ret = true
     rescue
-      ret = FALSE
+      ret = false
     ensure
       to.close
       from.close
@@ -50,7 +50,7 @@ class << File
     ret
   end
 
-  def copy from, to, verbose = FALSE
+  def copy from, to, verbose = false
     $stderr.print from, " -> ", catname(from, to), "\n" if verbose
     syscopy from, to
   end
@@ -59,7 +59,7 @@ class << File
 
 # move file
 
-  def move from, to, verbose = FALSE
+  def move from, to, verbose = false
     to = catname(from, to)
     $stderr.print from, " -> ", to, "\n" if verbose
 
@@ -76,10 +76,10 @@ class << File
   alias mv move
 
 #  compare two files
-#   TRUE:  identical
-#   FALSE: not identical
+#   true:  identical
+#   false: not identical
 
-  def compare from, to, verbose = FALSE
+  def compare from, to, verbose = false
     $stderr.print from, " <=> ", to, "\n" if verbose
     fsize = size(from)
     fsize = 1024 if fsize < 512
@@ -90,7 +90,7 @@ class << File
     to = open(to, "r")
     to.binmode
 
-    ret = FALSE
+    ret = false
     fr = tr = ''
 
     begin
@@ -103,7 +103,7 @@ class << File
 	end
       end
     rescue
-      ret = FALSE
+      ret = false
     ensure
       to.close
       from.close
@@ -116,7 +116,7 @@ class << File
 #  unlink files safely
 
   def safe_unlink(*files)
-    verbose = if files[-1].is_a? String then FALSE else files.pop end
+    verbose = if files[-1].is_a? String then false else files.pop end
     begin
       $stderr.print files.join(" "), "\n" if verbose
       chmod 0777, *files
@@ -129,7 +129,7 @@ class << File
   alias rm_f safe_unlink
 
   def makedirs(*dirs)
-    verbose = if dirs[-1].is_a? String then FALSE else dirs.pop end
+    verbose = if dirs[-1].is_a? String then false else dirs.pop end
 #    mode = if dirs[-1].is_a? Fixnum then dirs.pop else 0755 end
     mode = 0755
     for dir in dirs
@@ -146,12 +146,12 @@ class << File
   alias o_chmod chmod
 
   def chmod(mode, *files)
-    verbose = if files[-1].is_a? String then FALSE else files.pop end
+    verbose = if files[-1].is_a? String then false else files.pop end
     $stderr.printf "chmod %04o %s\n", mode, files.join(" ") if verbose
     o_chmod mode, *files
   end
 
-  def install(from, to, mode, verbose)
+  def install(from, to, mode = nil, verbose = false)
     to = catname(from, to)
     unless FileTest.exist? to and cmp from, to
       cp from, to, verbose

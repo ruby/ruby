@@ -2239,6 +2239,7 @@ slow_match(little, lend, big, bend, translate)
     if (c == 0xff)
       c = *little++;
     if (!trans_eq(*big++, c, translate)) break;
+    little++;
   }
   if (little == lend) return 1;
   return 0;

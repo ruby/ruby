@@ -56,29 +56,29 @@ char *strrchr _((char*,char));
  extern int utimes();
 #endif
 
-VALUE cFile;
-VALUE mFileTest;
+VALUE rb_cFile;
+VALUE rb_mFileTest;
 static VALUE sStat;
 
 VALUE
-file_open(fname, mode)
+rb_file_open(fname, mode)
     char *fname, *mode;
 {
     OpenFile *fptr;
     NEWOBJ(port, struct RFile);
-    OBJSETUP(port, cFile, T_FILE);
+    OBJSETUP(port, rb_cFile, T_FILE);
     MakeOpenFile(port, fptr);
 
-    fptr->mode = io_mode_flags(mode);
+    fptr->mode = rb_io_mode_flags(mode);
     fptr->f = rb_fopen(fname, mode);
     fptr->path = strdup(fname);
-    obj_call_init((VALUE)port);
+    rb_obj_call_init((VALUE)port);
 
     return (VALUE)port;
 }
 
 static VALUE
-file_s_open(argc, argv, klass)
+rb_file_s_open(argc, argv, klass)
     int argc;
     VALUE *argv;
     VALUE klass;
@@ -94,19 +94,19 @@ file_s_open(argc, argv, klass)
     else {
 	mode = "r";
     }
-    file = file_open(RSTRING(fname)->ptr, mode);
+    file = rb_file_open(RSTRING(fname)->ptr, mode);
 
     RBASIC(file)->klass = klass;
-    obj_call_init(file);
-    if (iterator_p()) {
-	return rb_ensure(rb_yield, file, io_close, file);
+    rb_obj_call_init(file);
+    if (rb_iterator_p()) {
+	return rb_ensure(rb_yield, file, rb_io_close, file);
     }
 
     return file;
 }
 
 static VALUE
-file_reopen(argc, argv, file)
+rb_file_reopen(argc, argv, file)
     int argc;
     VALUE *argv;
     VALUE file;
@@ -117,7 +117,7 @@ file_reopen(argc, argv, file)
 
     if (rb_scan_args(argc, argv, "11", &fname, &nmode) == 1) {
 	if (TYPE(fname) == T_FILE) { /* fname must be IO */
-	    return io_reopen(file, fname);
+	    return rb_io_reopen(file, fname);
 	}
     }
 
@@ -132,7 +132,7 @@ file_reopen(argc, argv, file)
     GetOpenFile(file, fptr);
     if (fptr->path) free(fptr->path);
     fptr->path = strdup(RSTRING(fname)->ptr);
-    fptr->mode = io_mode_flags(mode);
+    fptr->mode = rb_io_mode_flags(mode);
     if (!fptr->f) {
 	fptr->f = rb_fopen(RSTRING(fname)->ptr, mode);
 	if (fptr->f2) {
@@ -178,14 +178,14 @@ apply2files(func, vargs, arg)
 }
 
 static VALUE
-file_path(obj)
+rb_file_path(obj)
     VALUE obj;
 {
     OpenFile *fptr;
 
     GetOpenFile(obj, fptr);
     if (fptr->path == NULL) return Qnil;
-    return str_new2(fptr->path);
+    return rb_str_new2(fptr->path);
 }
 
 #ifndef NT
@@ -200,33 +200,33 @@ static VALUE
 stat_new(st)
     struct stat *st;
 {
-    if (!st) Bug("stat_new() called with bad value");
-    return struct_new(sStat,
-		      INT2FIX((int)st->st_dev),
-		      INT2FIX((int)st->st_ino),
-		      INT2FIX((int)st->st_mode),
-		      INT2FIX((int)st->st_nlink),
-		      INT2FIX((int)st->st_uid),
-		      INT2FIX((int)st->st_gid),
+    if (!st) rb_bug("stat_new() called with bad value");
+    return rb_struct_new(sStat,
+			 INT2FIX((int)st->st_dev),
+			 INT2FIX((int)st->st_ino),
+			 INT2FIX((int)st->st_mode),
+			 INT2FIX((int)st->st_nlink),
+			 INT2FIX((int)st->st_uid),
+			 INT2FIX((int)st->st_gid),
 #ifdef HAVE_ST_RDEV
-		      INT2FIX((int)st->st_rdev),
+			 INT2FIX((int)st->st_rdev),
 #else
-		      INT2FIX(0),
+			 INT2FIX(0),
 #endif
-		      INT2FIX((int)st->st_size),
+			 INT2FIX((int)st->st_size),
 #ifdef HAVE_ST_BLKSIZE
-		      INT2FIX((int)st->st_blksize),
+			 INT2FIX((int)st->st_blksize),
 #else
-		      INT2FIX(0),
+			 INT2FIX(0),
 #endif
 #ifdef HAVE_ST_BLOCKS
-		      INT2FIX((int)st->st_blocks),
+			 INT2FIX((int)st->st_blocks),
 #else
-		      INT2FIX(0),
+			 INT2FIX(0),
 #endif
-		      time_new(st->st_atime, 0),
-		      time_new(st->st_mtime, 0),
-		      time_new(st->st_ctime, 0));
+			 rb_time_new(st->st_atime, 0),
+			 rb_time_new(st->st_mtime, 0),
+			 rb_time_new(st->st_ctime, 0));
 }
 
 static int
@@ -245,7 +245,7 @@ rb_stat(file, st)
 }
 
 static VALUE
-file_s_stat(obj, fname)
+rb_file_s_stat(obj, fname)
     VALUE obj, fname;
 {
     struct stat st;
@@ -258,7 +258,7 @@ file_s_stat(obj, fname)
 }
 
 static VALUE
-io_stat(obj)
+rb_io_stat(obj)
     VALUE obj;
 {
     OpenFile *fptr;
@@ -272,7 +272,7 @@ io_stat(obj)
 }
 
 static VALUE
-file_s_lstat(obj, fname)
+rb_file_s_lstat(obj, fname)
     VALUE obj, fname;
 {
 #if !defined(MSDOS) && !defined(NT)
@@ -289,7 +289,7 @@ file_s_lstat(obj, fname)
 }
 
 static VALUE
-file_lstat(obj)
+rb_file_lstat(obj)
     VALUE obj;
 {
 #if !defined(MSDOS) && !defined(NT) 
@@ -312,7 +312,7 @@ group_member(gid)
 {
 #if !defined(NT) && !defined(USE_CWGUSI)
     if (getgid() ==  gid || getegid() == gid)
-	return TRUE;
+	return Qtrue;
 
 # ifdef HAVE_GETGROUPS
 #  ifndef NGROUPS
@@ -325,11 +325,11 @@ group_member(gid)
 	anum = getgroups(NGROUPS, gary);
 	while (--anum >= 0)
 	    if (gary[anum] == gid)
-		return TRUE;
+		return Qtrue;
     }
 # endif
 #endif
-    return FALSE;
+    return Qfalse;
 }
 
 #ifndef S_IXUGO
@@ -385,9 +385,9 @@ test_d(obj, fname)
 
     struct stat st;
 
-    if (rb_stat(fname, &st) < 0) return FALSE;
-    if (S_ISDIR(st.st_mode)) return TRUE;
-    return FALSE;
+    if (rb_stat(fname, &st) < 0) return Qfalse;
+    if (S_ISDIR(st.st_mode)) return Qtrue;
+    return Qfalse;
 }
 
 static VALUE
@@ -401,11 +401,11 @@ test_p(obj, fname)
 
     struct stat st;
 
-    if (rb_stat(fname, &st) < 0) return FALSE;
-    if (S_ISFIFO(st.st_mode)) return TRUE;
+    if (rb_stat(fname, &st) < 0) return Qfalse;
+    if (S_ISFIFO(st.st_mode)) return Qtrue;
 
 #endif
-    return FALSE;
+    return Qfalse;
 }
 
 static VALUE
@@ -430,11 +430,11 @@ test_l(obj, fname)
     struct stat st;
 
     Check_SafeStr(fname);
-    if (lstat(RSTRING(fname)->ptr, &st) < 0) return FALSE;
-    if (S_ISLNK(st.st_mode)) return TRUE;
+    if (lstat(RSTRING(fname)->ptr, &st) < 0) return Qfalse;
+    if (S_ISLNK(st.st_mode)) return Qtrue;
 
 #endif
-    return FALSE;
+    return Qfalse;
 }
 
 static VALUE
@@ -458,11 +458,11 @@ test_S(obj, fname)
 #ifdef S_ISSOCK
     struct stat st;
 
-    if (rb_stat(fname, &st) < 0) return FALSE;
-    if (S_ISSOCK(st.st_mode)) return TRUE;
+    if (rb_stat(fname, &st) < 0) return Qfalse;
+    if (S_ISSOCK(st.st_mode)) return Qtrue;
 
 #endif
-    return FALSE;
+    return Qfalse;
 }
 
 static VALUE
@@ -480,11 +480,11 @@ test_b(obj, fname)
 #ifdef S_ISBLK
     struct stat st;
 
-    if (rb_stat(fname, &st) < 0) return FALSE;
-    if (S_ISBLK(st.st_mode)) return TRUE;
+    if (rb_stat(fname, &st) < 0) return Qfalse;
+    if (S_ISBLK(st.st_mode)) return Qtrue;
 
 #endif
-    return FALSE;
+    return Qfalse;
 }
 
 static VALUE
@@ -497,10 +497,10 @@ test_c(obj, fname)
 
     struct stat st;
 
-    if (rb_stat(fname, &st) < 0) return FALSE;
-    if (S_ISBLK(st.st_mode)) return TRUE;
+    if (rb_stat(fname, &st) < 0) return Qfalse;
+    if (S_ISBLK(st.st_mode)) return Qtrue;
 
-    return FALSE;
+    return Qfalse;
 }
 
 static VALUE
@@ -509,8 +509,8 @@ test_e(obj, fname)
 {
     struct stat st;
 
-    if (rb_stat(fname, &st) < 0) return FALSE;
-    return TRUE;
+    if (rb_stat(fname, &st) < 0) return Qfalse;
+    return Qtrue;
 }
 
 static VALUE
@@ -518,8 +518,8 @@ test_r(obj, fname)
     VALUE obj, fname;
 {
     Check_SafeStr(fname);
-    if (eaccess(RSTRING(fname)->ptr, R_OK) < 0) return FALSE;
-    return TRUE;
+    if (eaccess(RSTRING(fname)->ptr, R_OK) < 0) return Qfalse;
+    return Qtrue;
 }
 
 static VALUE
@@ -527,8 +527,8 @@ test_R(obj, fname)
     VALUE obj, fname;
 {
     Check_SafeStr(fname);
-    if (access(RSTRING(fname)->ptr, R_OK) < 0) return FALSE;
-    return TRUE;
+    if (access(RSTRING(fname)->ptr, R_OK) < 0) return Qfalse;
+    return Qtrue;
 }
 
 static VALUE
@@ -536,8 +536,8 @@ test_w(obj, fname)
     VALUE obj, fname;
 {
     Check_SafeStr(fname);
-    if (eaccess(RSTRING(fname)->ptr, W_OK) < 0) return FALSE;
-    return TRUE;
+    if (eaccess(RSTRING(fname)->ptr, W_OK) < 0) return Qfalse;
+    return Qtrue;
 }
 
 static VALUE
@@ -545,8 +545,8 @@ test_W(obj, fname)
     VALUE obj, fname;
 {
     Check_SafeStr(fname);
-    if (access(RSTRING(fname)->ptr, W_OK) < 0) return FALSE;
-    return TRUE;
+    if (access(RSTRING(fname)->ptr, W_OK) < 0) return Qfalse;
+    return Qtrue;
 }
 
 static VALUE
@@ -554,8 +554,8 @@ test_x(obj, fname)
     VALUE obj, fname;
 {
     Check_SafeStr(fname);
-    if (eaccess(RSTRING(fname)->ptr, X_OK) < 0) return FALSE;
-    return TRUE;
+    if (eaccess(RSTRING(fname)->ptr, X_OK) < 0) return Qfalse;
+    return Qtrue;
 }
 
 static VALUE
@@ -563,8 +563,8 @@ test_X(obj, fname)
     VALUE obj, fname;
 {
     Check_SafeStr(fname);
-    if (access(RSTRING(fname)->ptr, X_OK) < 0) return FALSE;
-    return TRUE;
+    if (access(RSTRING(fname)->ptr, X_OK) < 0) return Qfalse;
+    return Qtrue;
 }
 
 #ifndef S_ISREG
@@ -577,9 +577,9 @@ test_f(obj, fname)
 {
     struct stat st;
 
-    if (rb_stat(fname, &st) < 0) return FALSE;
-    if (S_ISREG(st.st_mode)) return TRUE;
-    return FALSE;
+    if (rb_stat(fname, &st) < 0) return Qfalse;
+    if (S_ISREG(st.st_mode)) return Qtrue;
+    return Qfalse;
 }
 
 static VALUE
@@ -588,9 +588,9 @@ test_z(obj, fname)
 {
     struct stat st;
 
-    if (rb_stat(fname, &st) < 0) return FALSE;
-    if (st.st_size == 0) return TRUE;
-    return FALSE;
+    if (rb_stat(fname, &st) < 0) return Qfalse;
+    if (st.st_size == 0) return Qtrue;
+    return Qfalse;
 }
 
 static VALUE
@@ -599,9 +599,9 @@ test_s(obj, fname)
 {
     struct stat st;
 
-    if (rb_stat(fname, &st) < 0) return FALSE;
-    if (st.st_size == 0) return FALSE;
-    return int2inum(st.st_size);
+    if (rb_stat(fname, &st) < 0) return Qfalse;
+    if (st.st_size == 0) return Qfalse;
+    return rb_int2inum(st.st_size);
 }
 
 static VALUE
@@ -610,9 +610,9 @@ test_owned(obj, fname)
 {
     struct stat st;
 
-    if (rb_stat(fname, &st) < 0) return FALSE;
-    if (st.st_uid == geteuid()) return TRUE;
-    return FALSE;
+    if (rb_stat(fname, &st) < 0) return Qfalse;
+    if (st.st_uid == geteuid()) return Qtrue;
+    return Qfalse;
 }
 
 static VALUE
@@ -621,9 +621,9 @@ test_rowned(obj, fname)
 {
     struct stat st;
 
-    if (rb_stat(fname, &st) < 0) return FALSE;
-    if (st.st_uid == getuid()) return TRUE;
-    return FALSE;
+    if (rb_stat(fname, &st) < 0) return Qfalse;
+    if (st.st_uid == getuid()) return Qtrue;
+    return Qfalse;
 }
 
 static VALUE
@@ -633,10 +633,10 @@ test_grpowned(obj, fname)
 #ifndef NT
     struct stat st;
 
-    if (rb_stat(fname, &st) < 0) return FALSE;
-    if (st.st_gid == getegid()) return TRUE;
+    if (rb_stat(fname, &st) < 0) return Qfalse;
+    if (st.st_gid == getegid()) return Qtrue;
 #endif
-    return FALSE;
+    return Qfalse;
 }
 
 #if defined(S_ISUID) || defined(S_ISGID) || defined(S_ISVTX)
@@ -647,9 +647,9 @@ check3rdbyte(file, mode)
 {
     struct stat st;
 
-    if (stat(file, &st) < 0) return FALSE;
-    if (st.st_mode & mode) return TRUE;
-    return FALSE;
+    if (stat(file, &st) < 0) return Qfalse;
+    if (st.st_mode & mode) return Qtrue;
+    return Qfalse;
 }
 #endif
 
@@ -661,7 +661,7 @@ test_suid(obj, fname)
     Check_SafeStr(fname);
     return check3rdbyte(RSTRING(fname)->ptr, S_ISUID);
 #else
-    return FALSE;
+    return Qfalse;
 #endif
 }
 
@@ -673,7 +673,7 @@ test_sgid(obj, fname)
     Check_SafeStr(fname);
     return check3rdbyte(RSTRING(fname)->ptr, S_ISGID);
 #else
-    return FALSE;
+    return Qfalse;
 #endif
 }
 
@@ -684,23 +684,23 @@ test_sticky(obj, fname)
 #ifdef S_ISVTX
     return check3rdbyte(STR2CSTR(fname), S_ISVTX);
 #else
-    return FALSE;
+    return Qfalse;
 #endif
 }
 
 static VALUE
-file_s_size(obj, fname)
+rb_file_s_size(obj, fname)
     VALUE obj, fname;
 {
     struct stat st;
 
     if (rb_stat(fname, &st) < 0)
 	rb_sys_fail(RSTRING(fname)->ptr);
-    return int2inum(st.st_size);
+    return rb_int2inum(st.st_size);
 }
 
 static VALUE
-file_s_ftype(obj, fname)
+rb_file_s_ftype(obj, fname)
     VALUE obj, fname;
 {
     struct stat st;
@@ -747,22 +747,22 @@ file_s_ftype(obj, fname)
 	t = "unknown";
     }
 
-    return str_new2(t);
+    return rb_str_new2(t);
 }
 
 static VALUE
-file_s_atime(obj, fname)
+rb_file_s_atime(obj, fname)
     VALUE obj, fname;
 {
     struct stat st;
 
     if (rb_stat(fname, &st) < 0)
 	rb_sys_fail(RSTRING(fname)->ptr);
-    return time_new(st.st_atime, 0);
+    return rb_time_new(st.st_atime, 0);
 }
 
 static VALUE
-file_atime(obj)
+rb_file_atime(obj)
     VALUE obj;
 {
     OpenFile *fptr;
@@ -772,22 +772,22 @@ file_atime(obj)
     if (fstat(fileno(fptr->f), &st) == -1) {
 	rb_sys_fail(fptr->path);
     }
-    return time_new(st.st_atime, 0);
+    return rb_time_new(st.st_atime, 0);
 }
 
 static VALUE
-file_s_mtime(obj, fname)
+rb_file_s_mtime(obj, fname)
     VALUE obj, fname;
 {
     struct stat st;
 
     if (rb_stat(fname, &st) < 0)
 	rb_sys_fail(RSTRING(fname)->ptr);
-    return time_new(st.st_mtime, 0);
+    return rb_time_new(st.st_mtime, 0);
 }
 
 static VALUE
-file_mtime(obj)
+rb_file_mtime(obj)
     VALUE obj;
 {
     OpenFile *fptr;
@@ -797,22 +797,22 @@ file_mtime(obj)
     if (fstat(fileno(fptr->f), &st) == -1) {
 	rb_sys_fail(fptr->path);
     }
-    return time_new(st.st_mtime, 0);
+    return rb_time_new(st.st_mtime, 0);
 }
 
 static VALUE
-file_s_ctime(obj, fname)
+rb_file_s_ctime(obj, fname)
     VALUE obj, fname;
 {
     struct stat st;
 
     if (rb_stat(fname, &st) < 0)
 	rb_sys_fail(RSTRING(fname)->ptr);
-    return time_new(st.st_ctime, 0);
+    return rb_time_new(st.st_ctime, 0);
 }
 
 static VALUE
-file_ctime(obj)
+rb_file_ctime(obj)
     VALUE obj;
 {
     OpenFile *fptr;
@@ -822,7 +822,7 @@ file_ctime(obj)
     if (fstat(fileno(fptr->f), &st) == -1) {
 	rb_sys_fail(fptr->path);
     }
-    return time_new(st.st_ctime, 0);
+    return rb_time_new(st.st_ctime, 0);
 }
 
 static void
@@ -835,7 +835,7 @@ chmod_internal(path, mode)
 }
 
 static VALUE
-file_s_chmod(argc, argv)
+rb_file_s_chmod(argc, argv)
     int argc;
     VALUE *argv;
 {
@@ -851,7 +851,7 @@ file_s_chmod(argc, argv)
 }
 
 static VALUE
-file_chmod(obj, vmode)
+rb_file_chmod(obj, vmode)
     VALUE obj, vmode;
 {
     OpenFile *fptr;
@@ -886,7 +886,7 @@ chown_internal(path, args)
 }
 
 static VALUE
-file_s_chown(argc, argv)
+rb_file_s_chown(argc, argv)
     int argc;
     VALUE *argv;
 {
@@ -913,7 +913,7 @@ file_s_chown(argc, argv)
 }
 
 static VALUE
-file_chown(obj, owner, group)
+rb_file_chown(obj, owner, group)
     VALUE obj, owner, group;
 {
     OpenFile *fptr;
@@ -931,7 +931,7 @@ file_chown(obj, owner, group)
     return INT2FIX(0);
 }
 
-struct timeval time_timeval();
+struct timeval rb_time_timeval();
 
 #ifdef HAVE_UTIMES
 
@@ -945,7 +945,7 @@ utime_internal(path, tvp)
 }
 
 static VALUE
-file_s_utime(argc, argv)
+rb_file_s_utime(argc, argv)
     int argc;
     VALUE *argv;
 {
@@ -955,8 +955,8 @@ file_s_utime(argc, argv)
 
     rb_scan_args(argc, argv, "2*", &atime, &mtime, &rest);
 
-    tvp[0] = time_timeval(atime);
-    tvp[1] = time_timeval(mtime);
+    tvp[0] = rb_time_timeval(atime);
+    tvp[1] = rb_time_timeval(mtime);
 
     n = apply2files(utime_internal, rest, tvp);
     return INT2FIX(n);
@@ -992,7 +992,7 @@ utime_internal(path, utp)
 }
 
 static VALUE
-file_s_utime(argc, argv)
+rb_file_s_utime(argc, argv)
     int argc;
     VALUE *argv;
 {
@@ -1003,9 +1003,9 @@ file_s_utime(argc, argv)
 
     rb_scan_args(argc, argv, "2*", &atime, &mtime, &rest);
 
-    tv = time_timeval(atime);
+    tv = rb_time_timeval(atime);
     utbuf.actime = tv.tv_sec;
-    tv = time_timeval(mtime);
+    tv = rb_time_timeval(mtime);
     utbuf.modtime = tv.tv_sec;
 
     n = apply2files(utime_internal, rest, &utbuf);
@@ -1015,7 +1015,7 @@ file_s_utime(argc, argv)
 #endif
 
 static VALUE
-file_s_link(obj, from, to)
+rb_file_s_link(obj, from, to)
     VALUE obj, from, to;
 {
 #if defined(USE_CWGUSI)
@@ -1031,7 +1031,7 @@ file_s_link(obj, from, to)
 }
 
 static VALUE
-file_s_symlink(obj, from, to)
+rb_file_s_symlink(obj, from, to)
     VALUE obj, from, to;
 {
 #if !defined(MSDOS) && !defined(NT)
@@ -1047,7 +1047,7 @@ file_s_symlink(obj, from, to)
 }
 
 static VALUE
-file_s_readlink(obj, path)
+rb_file_s_readlink(obj, path)
     VALUE obj, path;
 {
 #if !defined(MSDOS) && !defined(NT)
@@ -1059,7 +1059,7 @@ file_s_readlink(obj, path)
     if ((cc = readlink(RSTRING(path)->ptr, buf, MAXPATHLEN)) < 0)
 	rb_sys_fail(RSTRING(path)->ptr);
 
-    return str_new(buf, cc);
+    return rb_str_new(buf, cc);
 #else
     rb_notimplement();
 #endif
@@ -1074,7 +1074,7 @@ unlink_internal(path)
 }
 
 static VALUE
-file_s_unlink(obj, args)
+rb_file_s_unlink(obj, args)
     VALUE obj, args;
 {
     int n;
@@ -1084,7 +1084,7 @@ file_s_unlink(obj, args)
 }
 
 static VALUE
-file_s_rename(obj, from, to)
+rb_file_s_rename(obj, from, to)
     VALUE obj, from, to;
 {
     Check_SafeStr(from);
@@ -1097,7 +1097,7 @@ file_s_rename(obj, from, to)
 }
 
 static VALUE
-file_s_umask(argc, argv)
+rb_file_s_umask(argc, argv)
     int argc;
     VALUE *argv;
 {
@@ -1114,14 +1114,14 @@ file_s_umask(argc, argv)
 	omask = umask(NUM2INT(argv[0]));
     }
     else {
-	ArgError("wrong # of argument");
+	rb_raise(rb_eArgError, "wrong # of argument");
     }
     return INT2FIX(omask);
 #endif /* USE_CWGUSI */
 }
 
 VALUE
-file_s_expand_path(argc, argv)
+rb_file_s_expand_path(argc, argv)
     int argc;
     VALUE *argv;
 {
@@ -1142,7 +1142,7 @@ file_s_expand_path(argc, argv)
 	    char *dir = getenv("HOME");
 
 	    if (!dir) {
-		Fail("couldn't find HOME environment -- expanding `%s'", s);
+		rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding `%s'", s);
 	    }
 	    strcpy(buf, dir);
 	    p = &buf[strlen(buf)];
@@ -1161,7 +1161,7 @@ file_s_expand_path(argc, argv)
 	    pwPtr = getpwnam(buf);
 	    if (!pwPtr) {
 		endpwent();
-		Fail("user %s doesn't exist", buf);
+		rb_raise(rb_eArgError, "user %s doesn't exist", buf);
 	    }
 	    strcpy(buf, pwPtr->pw_dir);
 	    p = &buf[strlen(buf)];
@@ -1171,7 +1171,7 @@ file_s_expand_path(argc, argv)
     }
     else if (s[0] != '/') {
 	if (argc == 2) {
-	    dname = file_s_expand_path(1, &dname);
+	    dname = rb_file_s_expand_path(1, &dname);
 	    strcpy(buf, RSTRING(dname)->ptr);
 	}
 	else {
@@ -1221,7 +1221,7 @@ file_s_expand_path(argc, argv)
     if (p == buf || *p != '/') p++;
     *p = '\0';
 
-    return str_taint(str_new2(buf));
+    return rb_str_taint(rb_str_new2(buf));
 }
 
 static int
@@ -1248,7 +1248,7 @@ rmext(p, e)
 }
 
 static VALUE
-file_s_basename(argc, argv)
+rb_file_s_basename(argc, argv)
     int argc;
     VALUE *argv;
 {
@@ -1264,20 +1264,20 @@ file_s_basename(argc, argv)
     if (!p) {
 	if (!NIL_P(fext)) {
 	    f = rmext(name, ext);
-	    if (f) return str_new(name, f);
+	    if (f) return rb_str_new(name, f);
 	}
 	return fname;
     }
     p++;			/* skip last `/' */
     if (!NIL_P(fext)) {
 	f = rmext(p, ext);
-	if (f) return str_new(p, f);
+	if (f) return rb_str_new(p, f);
     }
-    return str_taint(str_new2(p));
+    return rb_str_taint(rb_str_new2(p));
 }
 
 static VALUE
-file_s_dirname(obj, fname)
+rb_file_s_dirname(obj, fname)
     VALUE obj, fname;
 {
     char *name, *p;
@@ -1285,31 +1285,31 @@ file_s_dirname(obj, fname)
     name = STR2CSTR(fname);
     p = strrchr(name, '/');
     if (!p) {
-	return str_new2(".");
+	return rb_str_new2(".");
     }
     if (p == name)
 	p++;
-    return str_taint(str_new(name, p - name));
+    return rb_str_taint(rb_str_new(name, p - name));
 }
 
 static VALUE
-file_s_split(obj, path)
+rb_file_s_split(obj, path)
     VALUE obj, path;
 {
-    return assoc_new(file_s_dirname(Qnil, path), file_s_basename(1,&path));
+    return rb_assoc_new(rb_file_s_dirname(Qnil, path), rb_file_s_basename(1,&path));
 }
 
 static VALUE separator;
 
 static VALUE
-file_s_join(obj, args)
+rb_file_s_join(obj, args)
     VALUE obj, args;
 {
-    return ary_join(args, separator);
+    return rb_ary_join(args, separator);
 }
 
 static VALUE
-file_s_truncate(obj, path, len)
+rb_file_s_truncate(obj, path, len)
     VALUE obj, path, len;
 {
     Check_SafeStr(path);
@@ -1345,7 +1345,7 @@ file_s_truncate(obj, path, len)
 }
 
 static VALUE
-file_truncate(obj, len)
+rb_file_truncate(obj, len)
     VALUE obj, len;
 {
     OpenFile *fptr;
@@ -1353,7 +1353,7 @@ file_truncate(obj, len)
     rb_secure(2);
     GetOpenFile(obj, fptr);
     if (!(fptr->mode & FMODE_WRITABLE)) {
-	Fail("not opened for writing");
+	rb_raise(rb_eIOError, "not opened for writing");
     }
 #ifdef HAVE_TRUNCATE
     if (ftruncate(fileno(fptr->f), NUM2INT(len)) < 0)
@@ -1384,10 +1384,10 @@ file_truncate(obj, len)
 
 #if defined(THREAD) && defined(EWOULDBLOCK)
 static int
-thread_flock(fd, op)
+rb_thread_flock(fd, op)
     int fd, op;
 {
-    if (thread_alone() || (op & LOCK_NB)) {
+    if (rb_thread_alone() || (op & LOCK_NB)) {
 	return flock(fd, op);
     }
     op |= LOCK_NB;
@@ -1395,7 +1395,7 @@ thread_flock(fd, op)
 	switch (errno) {
 	  case EINTR:		/* can be happen? */
 	  case EWOULDBLOCK:
-	    thread_schedule();	/* busy wait */
+	    rb_thread_schedule();	/* busy wait */
 	    break;
 	  default:
 	    return -1;
@@ -1403,11 +1403,11 @@ thread_flock(fd, op)
     }
     return 0;
 }
-#define flock thread_flock
+#define flock rb_thread_flock
 #endif
 
 static VALUE
-file_flock(obj, operation)
+rb_file_flock(obj, operation)
     VALUE obj;
     VALUE operation;
 {
@@ -1422,7 +1422,7 @@ file_flock(obj, operation)
     if (flock(fileno(fptr->f), NUM2INT(operation)) < 0) {
 #ifdef EWOULDBLOCK
 	if (errno == EWOULDBLOCK) {
-	    return FALSE;
+	    return Qfalse;
 	}
 #endif
 	rb_sys_fail(fptr->path);
@@ -1440,7 +1440,7 @@ test_check(n, argc, argv)
     int i;
 
     n+=1;
-    if (n < argc) ArgError("Wrong # of arguments(%d for %d)", argc, n);
+    if (n < argc) rb_raise(rb_eArgError, "Wrong # of arguments(%d for %d)", argc, n);
     for (i=1; i<n; i++) {
 	switch (TYPE(argv[i])) {
 	  case T_STRING:
@@ -1458,15 +1458,15 @@ test_check(n, argc, argv)
 #define CHECK(n) test_check((n), argc, argv)
 
 static VALUE
-f_test(argc, argv)
+rb_f_test(argc, argv)
     int argc;
     VALUE *argv;
 {
     int cmd;
 
-    if (argc == 0) ArgError("Wrong # of arguments");
+    if (argc == 0) rb_raise(rb_eArgError, "Wrong # of arguments");
     cmd = NUM2CHR(argv[0]);
-    if (cmd == 0) return FALSE;
+    if (cmd == 0) return Qfalse;
     if (strchr("bcdefgGkloOprRsSuwWxXz", cmd)) {
 	CHECK(1);
 	switch (cmd) {
@@ -1549,11 +1549,11 @@ f_test(argc, argv)
 
 	switch (cmd) {
 	  case 'A':
-	    return time_new(st.st_atime, 0);
+	    return rb_time_new(st.st_atime, 0);
 	  case 'M':
-	    return time_new(st.st_mtime, 0);
+	    return rb_time_new(st.st_mtime, 0);
 	  case 'C':
-	    return time_new(st.st_ctime, 0);
+	    return rb_time_new(st.st_ctime, 0);
 	}
     }
 
@@ -1561,136 +1561,136 @@ f_test(argc, argv)
 	struct stat st1, st2;
 
 	CHECK(2);
-	if (rb_stat(argv[1], &st1) < 0) return FALSE;
-	if (rb_stat(argv[2], &st2) < 0) return FALSE;
+	if (rb_stat(argv[1], &st1) < 0) return Qfalse;
+	if (rb_stat(argv[2], &st2) < 0) return Qfalse;
 
 	switch (cmd) {
 	  case '-':
 	    if (st1.st_dev == st2.st_dev && st1.st_ino == st2.st_ino)
-		return TRUE;
+		return Qtrue;
 	    break;
 
 	  case '=':
-	    if (st1.st_mtime == st2.st_mtime) return TRUE;
+	    if (st1.st_mtime == st2.st_mtime) return Qtrue;
 	    break;
 
 	  case '>':
-	    if (st1.st_mtime > st2.st_mtime) return TRUE;
+	    if (st1.st_mtime > st2.st_mtime) return Qtrue;
 	    break;
 
 	  case '<':
-	    if (st1.st_mtime < st2.st_mtime) return TRUE;
+	    if (st1.st_mtime < st2.st_mtime) return Qtrue;
 	    break;
 	}
     }
     /* unknown command */
-    ArgError("unknow command ?%c", cmd);
+    rb_raise(rb_eArgError, "unknow command ?%c", cmd);
     return Qnil;		/* not reached */
 }
 
 void
 Init_File()
 {
-    VALUE mConst;
+    VALUE rb_mConst;
 
-    mFileTest = rb_define_module("FileTest");
+    rb_mFileTest = rb_define_module("FileTest");
 
-    rb_define_module_function(mFileTest, "directory?",  test_d, 1);
-    rb_define_module_function(mFileTest, "exist?",  test_e, 1);
-    rb_define_module_function(mFileTest, "exists?",  test_e, 1); /* temporary */
-    rb_define_module_function(mFileTest, "readable?",  test_r, 1);
-    rb_define_module_function(mFileTest, "readable_real?",  test_R, 1);
-    rb_define_module_function(mFileTest, "writable?",  test_w, 1);
-    rb_define_module_function(mFileTest, "writable_real?",  test_W, 1);
-    rb_define_module_function(mFileTest, "executable?",  test_x, 1);
-    rb_define_module_function(mFileTest, "executable_real?",  test_X, 1);
-    rb_define_module_function(mFileTest, "file?",  test_f, 1);
-    rb_define_module_function(mFileTest, "zero?",  test_z, 1);
-    rb_define_module_function(mFileTest, "size?",  test_s, 1);
-    rb_define_module_function(mFileTest, "size",   test_s, 1);
-    rb_define_module_function(mFileTest, "owned?",  test_owned, 1);
-    rb_define_module_function(mFileTest, "grpowned?",  test_grpowned, 1);
+    rb_define_module_function(rb_mFileTest, "directory?",  test_d, 1);
+    rb_define_module_function(rb_mFileTest, "exist?",  test_e, 1);
+    rb_define_module_function(rb_mFileTest, "exists?",  test_e, 1); /* temporary */
+    rb_define_module_function(rb_mFileTest, "readable?",  test_r, 1);
+    rb_define_module_function(rb_mFileTest, "readable_real?",  test_R, 1);
+    rb_define_module_function(rb_mFileTest, "writable?",  test_w, 1);
+    rb_define_module_function(rb_mFileTest, "writable_real?",  test_W, 1);
+    rb_define_module_function(rb_mFileTest, "executable?",  test_x, 1);
+    rb_define_module_function(rb_mFileTest, "executable_real?",  test_X, 1);
+    rb_define_module_function(rb_mFileTest, "file?",  test_f, 1);
+    rb_define_module_function(rb_mFileTest, "zero?",  test_z, 1);
+    rb_define_module_function(rb_mFileTest, "size?",  test_s, 1);
+    rb_define_module_function(rb_mFileTest, "size",   test_s, 1);
+    rb_define_module_function(rb_mFileTest, "owned?",  test_owned, 1);
+    rb_define_module_function(rb_mFileTest, "grpowned?",  test_grpowned, 1);
 
-    rb_define_module_function(mFileTest, "pipe?",  test_p, 1);
-    rb_define_module_function(mFileTest, "symlink?",  test_l, 1);
-    rb_define_module_function(mFileTest, "socket?",  test_S, 1);
+    rb_define_module_function(rb_mFileTest, "pipe?",  test_p, 1);
+    rb_define_module_function(rb_mFileTest, "symlink?",  test_l, 1);
+    rb_define_module_function(rb_mFileTest, "socket?",  test_S, 1);
 
-    rb_define_module_function(mFileTest, "blockdev?",  test_b, 1);
-    rb_define_module_function(mFileTest, "chardev?",  test_c, 1);
+    rb_define_module_function(rb_mFileTest, "blockdev?",  test_b, 1);
+    rb_define_module_function(rb_mFileTest, "chardev?",  test_c, 1);
 
-    rb_define_module_function(mFileTest, "setuid?",  test_suid, 1);
-    rb_define_module_function(mFileTest, "setgid?",  test_sgid, 1);
-    rb_define_module_function(mFileTest, "sticky?",  test_sticky, 1);
+    rb_define_module_function(rb_mFileTest, "setuid?",  test_suid, 1);
+    rb_define_module_function(rb_mFileTest, "setgid?",  test_sgid, 1);
+    rb_define_module_function(rb_mFileTest, "sticky?",  test_sticky, 1);
 
-    cFile = rb_define_class("File", cIO);
-    rb_extend_object(cFile, CLASS_OF(mFileTest));
+    rb_cFile = rb_define_class("File", rb_cIO);
+    rb_extend_object(rb_cFile, CLASS_OF(rb_mFileTest));
 
-    rb_define_singleton_method(cFile, "new",  file_s_open, -1);
-    rb_define_singleton_method(cFile, "open",  file_s_open, -1);
+    rb_define_singleton_method(rb_cFile, "new",  rb_file_s_open, -1);
+    rb_define_singleton_method(rb_cFile, "open",  rb_file_s_open, -1);
 
-    rb_define_singleton_method(cFile, "stat",  file_s_stat, 1);
-    rb_define_singleton_method(cFile, "lstat", file_s_lstat, 1);
-    rb_define_singleton_method(cFile, "ftype", file_s_ftype, 1);
+    rb_define_singleton_method(rb_cFile, "stat",  rb_file_s_stat, 1);
+    rb_define_singleton_method(rb_cFile, "lstat", rb_file_s_lstat, 1);
+    rb_define_singleton_method(rb_cFile, "ftype", rb_file_s_ftype, 1);
 
-    rb_define_singleton_method(cFile, "atime", file_s_atime, 1);
-    rb_define_singleton_method(cFile, "mtime", file_s_mtime, 1);
-    rb_define_singleton_method(cFile, "ctime", file_s_ctime, 1);
-    rb_define_singleton_method(cFile, "size",  file_s_size, 1);
+    rb_define_singleton_method(rb_cFile, "atime", rb_file_s_atime, 1);
+    rb_define_singleton_method(rb_cFile, "mtime", rb_file_s_mtime, 1);
+    rb_define_singleton_method(rb_cFile, "ctime", rb_file_s_ctime, 1);
+    rb_define_singleton_method(rb_cFile, "size",  rb_file_s_size, 1);
 
-    rb_define_singleton_method(cFile, "utime", file_s_utime, -1);
-    rb_define_singleton_method(cFile, "chmod", file_s_chmod, -1);
-    rb_define_singleton_method(cFile, "chown", file_s_chown, -1);
+    rb_define_singleton_method(rb_cFile, "utime", rb_file_s_utime, -1);
+    rb_define_singleton_method(rb_cFile, "chmod", rb_file_s_chmod, -1);
+    rb_define_singleton_method(rb_cFile, "chown", rb_file_s_chown, -1);
 
-    rb_define_singleton_method(cFile, "link", file_s_link, 2);
-    rb_define_singleton_method(cFile, "symlink", file_s_symlink, 2);
-    rb_define_singleton_method(cFile, "readlink", file_s_readlink, 1);
+    rb_define_singleton_method(rb_cFile, "link", rb_file_s_link, 2);
+    rb_define_singleton_method(rb_cFile, "symlink", rb_file_s_symlink, 2);
+    rb_define_singleton_method(rb_cFile, "readlink", rb_file_s_readlink, 1);
 
-    rb_define_singleton_method(cFile, "unlink", file_s_unlink, -2);
-    rb_define_singleton_method(cFile, "delete", file_s_unlink, -2);
-    rb_define_singleton_method(cFile, "rename", file_s_rename, 2);
-    rb_define_singleton_method(cFile, "umask", file_s_umask, -1);
-    rb_define_singleton_method(cFile, "truncate", file_s_truncate, 2);
-    rb_define_singleton_method(cFile, "expand_path", file_s_expand_path, -1);
-    rb_define_singleton_method(cFile, "basename", file_s_basename, -1);
-    rb_define_singleton_method(cFile, "dirname", file_s_dirname, 1);
+    rb_define_singleton_method(rb_cFile, "unlink", rb_file_s_unlink, -2);
+    rb_define_singleton_method(rb_cFile, "delete", rb_file_s_unlink, -2);
+    rb_define_singleton_method(rb_cFile, "rename", rb_file_s_rename, 2);
+    rb_define_singleton_method(rb_cFile, "umask", rb_file_s_umask, -1);
+    rb_define_singleton_method(rb_cFile, "truncate", rb_file_s_truncate, 2);
+    rb_define_singleton_method(rb_cFile, "expand_path", rb_file_s_expand_path, -1);
+    rb_define_singleton_method(rb_cFile, "basename", rb_file_s_basename, -1);
+    rb_define_singleton_method(rb_cFile, "dirname", rb_file_s_dirname, 1);
 
-    separator = str_new2("/");
-    rb_define_const(cFile, "Separator", separator);
-    rb_define_singleton_method(cFile, "split",  file_s_split, 1);
-    rb_define_singleton_method(cFile, "join",   file_s_join, -2);
+    separator = rb_str_new2("/");
+    rb_define_const(rb_cFile, "Separator", separator);
+    rb_define_singleton_method(rb_cFile, "split",  rb_file_s_split, 1);
+    rb_define_singleton_method(rb_cFile, "join",   rb_file_s_join, -2);
 
-    rb_define_method(cFile, "reopen",  file_reopen, -1);
+    rb_define_method(rb_cFile, "reopen",  rb_file_reopen, -1);
 
-    rb_define_method(cIO, "stat",  io_stat, 0); /* this is IO's method */
-    rb_define_method(cFile, "lstat",  file_lstat, 0);
+    rb_define_method(rb_cIO, "stat",  rb_io_stat, 0); /* this is IO's method */
+    rb_define_method(rb_cFile, "lstat",  rb_file_lstat, 0);
 
-    rb_define_method(cFile, "atime", file_atime, 0);
-    rb_define_method(cFile, "mtime", file_mtime, 0);
-    rb_define_method(cFile, "ctime", file_ctime, 0);
+    rb_define_method(rb_cFile, "atime", rb_file_atime, 0);
+    rb_define_method(rb_cFile, "mtime", rb_file_mtime, 0);
+    rb_define_method(rb_cFile, "ctime", rb_file_ctime, 0);
 
-    rb_define_method(cFile, "chmod", file_chmod, 1);
-    rb_define_method(cFile, "chown", file_chown, 2);
-    rb_define_method(cFile, "truncate", file_truncate, 1);
+    rb_define_method(rb_cFile, "chmod", rb_file_chmod, 1);
+    rb_define_method(rb_cFile, "chown", rb_file_chown, 2);
+    rb_define_method(rb_cFile, "truncate", rb_file_truncate, 1);
 
-    rb_define_method(cFile, "flock", file_flock, 1);
+    rb_define_method(rb_cFile, "flock", rb_file_flock, 1);
 
-    mConst = rb_define_module_under(cFile, "Constants");
-    rb_define_const(cFile, "LOCK_SH", INT2FIX(LOCK_SH));
-    rb_define_const(cFile, "LOCK_EX", INT2FIX(LOCK_EX));
-    rb_define_const(cFile, "LOCK_UN", INT2FIX(LOCK_UN));
-    rb_define_const(cFile, "LOCK_NB", INT2FIX(LOCK_NB));
+    rb_mConst = rb_define_module_under(rb_cFile, "Constants");
+    rb_define_const(rb_cFile, "LOCK_SH", INT2FIX(LOCK_SH));
+    rb_define_const(rb_cFile, "LOCK_EX", INT2FIX(LOCK_EX));
+    rb_define_const(rb_cFile, "LOCK_UN", INT2FIX(LOCK_UN));
+    rb_define_const(rb_cFile, "LOCK_NB", INT2FIX(LOCK_NB));
 
-    rb_define_const(mConst, "LOCK_SH", INT2FIX(LOCK_SH));
-    rb_define_const(mConst, "LOCK_EX", INT2FIX(LOCK_EX));
-    rb_define_const(mConst, "LOCK_UN", INT2FIX(LOCK_UN));
-    rb_define_const(mConst, "LOCK_NB", INT2FIX(LOCK_NB));
+    rb_define_const(rb_mConst, "LOCK_SH", INT2FIX(LOCK_SH));
+    rb_define_const(rb_mConst, "LOCK_EX", INT2FIX(LOCK_EX));
+    rb_define_const(rb_mConst, "LOCK_UN", INT2FIX(LOCK_UN));
+    rb_define_const(rb_mConst, "LOCK_NB", INT2FIX(LOCK_NB));
 
-    rb_define_method(cFile, "path",  file_path, 0);
+    rb_define_method(rb_cFile, "path",  rb_file_path, 0);
 
-    rb_define_global_function("test", f_test, -1);
+    rb_define_global_function("test", rb_f_test, -1);
 
-    sStat = struct_define("Stat", "dev", "ino", "mode",
-			  "nlink", "uid", "gid", "rdev",
-			  "size", "blksize", "blocks", 
-			  "atime", "mtime", "ctime", 0);
+    sStat = rb_struct_define("Stat", "dev", "ino", "mode",
+			     "nlink", "uid", "gid", "rdev",
+			     "size", "blksize", "blocks", 
+			     "atime", "mtime", "ctime", 0);
 }

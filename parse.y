@@ -39,16 +39,11 @@
 #define is_attrset_id(id) (is_id_notop(id)&&((id)&ID_SCOPE_MASK)==ID_ATTRSET)
 #define is_const_id(id) (is_id_notop(id)&&((id)&ID_SCOPE_MASK)==ID_CONST)
 
-struct op_tbl {
-    ID token;
-    char *name;
-};
+NODE *ruby_eval_tree_begin = 0;
+NODE *ruby_eval_tree = 0;
 
-NODE *eval_tree_begin = 0;
-NODE *eval_tree = 0;
-
-char *sourcefile;		/* current source file */
-int   sourceline;		/* current line no. */
+char *ruby_sourcefile;		/* current source file */
+int   ruby_sourceline;		/* current line no. */
 
 static int yylex();
 static int yyerror();
@@ -89,7 +84,7 @@ static NODE *gettable();
 static NODE *assignable();
 static NODE *aryset();
 static NODE *attrset();
-static void backref_error();
+static void rb_backref_error();
 
 static NODE *match_gen();
 static void local_push();
@@ -102,11 +97,8 @@ static struct RVarmap *dyna_push();
 static void dyna_pop();
 static int dyna_in_block();
 
-VALUE dyna_var_asgn();
-VALUE dyna_var_defined();
-
-#define cref_push() NEW_CREF()
-static void cref_pop();
+#define crerb_f_push() NEW_CREF()
+static void crerb_f_pop();
 static NODE *cur_cref;
 
 static void top_local_init();
@@ -236,20 +228,20 @@ static void top_local_setup();
 
 %%
 program		:  {
-		        $<vars>$ = the_dyna_vars;
+		        $<vars>$ = ruby_dyna_vars;
 			lex_state = EXPR_BEG;
                         top_local_init();
 			NEW_CREF0(); /* initialize constant c-ref */
-			if ((VALUE)the_class == cObject) class_nest = 0;
+			if ((VALUE)ruby_class == rb_cObject) class_nest = 0;
 			else class_nest = 1;
 		    }
 		  compstmt
 		    {
-			eval_tree = block_append(eval_tree, $2);
+			ruby_eval_tree = block_append(ruby_eval_tree, $2);
                         top_local_setup();
 			cur_cref = 0;
 			class_nest = 0;
-		        the_dyna_vars = $<vars>1;
+		        ruby_dyna_vars = $<vars>1;
 		    }
 
 compstmt	: stmts opt_terms
@@ -274,7 +266,7 @@ stmts		: /* none */
 stmt		: iterator iter_do_block
 		    {
 			if ($1 && nd_type($1) == NODE_BLOCK_PASS) {
-			    Error("both block arg and actual block given");
+			    rb_compile_error("both block arg and actual block given");
 			}
 			$2->nd_iter = $1;
 			$$ = $2;
@@ -354,7 +346,7 @@ stmt		: iterator iter_do_block
 		    }
 		  '{' compstmt '}'
 		    {
-			eval_tree_begin = block_append(eval_tree_begin,
+			ruby_eval_tree_begin = block_append(ruby_eval_tree_begin,
 						       NEW_PREEXE($4));
 		        local_pop();
 		        $$ = 0;
@@ -499,7 +491,7 @@ lhs		: variable
 		    }
 		| backref
 		    {
-		        backref_error($1);
+		        rb_backref_error($1);
 			$$ = 0;
 		    }
 
@@ -586,7 +578,7 @@ arg		: variable '=' arg
 		| backref '=' arg
 		    {
 			value_expr($3);
-		        backref_error($1);
+		        rb_backref_error($1);
 			$$ = 0;
 		    }
 		| variable tOP_ASGN arg
@@ -595,8 +587,8 @@ arg		: variable '=' arg
 			    if (local_id($1)||!dyna_in_block()) {
 				local_cnt($1);
 			    }
-			    else if (!dyna_var_defined($1)) {
-				dyna_var_asgn($1, TRUE);
+			    else if (!rb_dvar_defined($1)) {
+				rb_dvar_asgn($1, Qtrue);
 			    }
 			}
 			if ($2 == tOROP) {
@@ -651,7 +643,7 @@ arg		: variable '=' arg
 		    }
 		| backref tOP_ASGN arg
 		    {
-		        backref_error($1);
+		        rb_backref_error($1);
 			$$ = 0;
 		    }
 		| arg tDOT2 arg
@@ -790,7 +782,7 @@ arg		: variable '=' arg
 aref_args	: opt_call_args
 		    {
 			if ($1 && nd_type($1) == NODE_BLOCK_PASS) {
-			    Error("block argument should not be given");
+			    rb_compile_error("block argument should not be given");
 			}
 			$$ = $1;
 		    }
@@ -905,7 +897,7 @@ ret_args	: call_args
 				$$ = $1->nd_head;
 			    }
 			    else if (nd_type($1) == NODE_BLOCK_PASS) {
-				Error("block argument should not be given");
+				rb_compile_error("block argument should not be given");
 			    }
 			}
 		    }
@@ -1009,7 +1001,7 @@ primary		: literal
 		| method_call iter_block
 		    {
 			if ($1 && nd_type($1) == NODE_BLOCK_PASS) {
-			    Error("both block arg and actual block given");
+			    rb_compile_error("both block arg and actual block given");
 			}
 			$2->nd_iter = $1;
 			$$ = $2;
@@ -1090,7 +1082,7 @@ primary		: literal
 			    yyerror("class definition in method body");
 
 			class_nest++;
-			cref_push();
+			crerb_f_push();
 			local_push();
 		    }
 		  compstmt
@@ -1099,13 +1091,13 @@ primary		: literal
 		        $$ = NEW_CLASS($2, $5, $3);
 		        fixpos($$, $3);
 		        local_pop();
-			cref_pop();
+			crerb_f_pop();
 			class_nest--;
 		    }
 		| kCLASS tLSHFT expr term
 		    {
 			class_nest++;
-			cref_push();
+			crerb_f_push();
 			local_push();
 		    }
 		  compstmt
@@ -1114,7 +1106,7 @@ primary		: literal
 		        $$ = NEW_SCLASS($3, $6);
 		        fixpos($$, $3);
 		        local_pop();
-			cref_pop();
+			crerb_f_pop();
 			class_nest--;
 		    }
 		| kMODULE cname
@@ -1122,7 +1114,7 @@ primary		: literal
 			if (cur_mid || in_single)
 			    yyerror("module definition in method body");
 			class_nest++;
-			cref_push();
+			crerb_f_push();
 			local_push();
 		    }
 		  compstmt
@@ -1131,7 +1123,7 @@ primary		: literal
 		        $$ = NEW_MODULE($2, $4);
 		        fixpos($$, $4);
 		        local_pop();
-			cref_pop();
+			crerb_f_pop();
 			class_nest--;
 		    }
 		| kDEF fname
@@ -1579,7 +1571,7 @@ VALUE newfloat();
 VALUE newinteger();
 char *strdup();
 
-static NODE *str_extend();
+static NODE *rb_str_extend();
 
 #define LEAVE_BS 1
 
@@ -1595,9 +1587,8 @@ yyerror(msg)
 {
     char *p, *pe, *buf;
     int len, i;
-    void Error_Append();
 
-    Error("%s", msg);
+    rb_compile_error("%s", msg);
     p = lex_p;
     while (lex_pbeg <= p) {
 	if (*p == '\n') break;
@@ -1616,7 +1607,7 @@ yyerror(msg)
 	buf = ALLOCA_N(char, len+2);
 	MEMCPY(buf, p, char, len);
 	buf[len] = '\0';
-	Error_Append("%s", buf);
+	rb_compile_error_append("%s", buf);
 
 	i = lex_p - p;
 	p = buf; pe = p + len;
@@ -1627,7 +1618,7 @@ yyerror(msg)
 	}
 	buf[i] = '^';
 	buf[i+1] = '\0';
-	Error_Append("%s", buf);
+	rb_compile_error_append("%s", buf);
     }
 
     return 0;
@@ -1644,40 +1635,40 @@ yycompile(f)
 {
     int n;
 
-    eval_tree = 0;
+    ruby_eval_tree = 0;
     newline_seen = 0;
-    sourcefile = strdup(f);
+    ruby_sourcefile = strdup(f);
     rb_in_compile = 1;
     n = yyparse();
     rb_in_compile = 0;
-    if (n == 0) return eval_tree;
+    if (n == 0) return ruby_eval_tree;
 
     return 0;
 }
 
 NODE*
-compile_string(f, s, len)
+rb_compile_string(f, s, len)
     char *f, *s;
     int len;
 {
     lex_pbeg = lex_p = s;
     lex_pend = s + len;
     lex_input = 0;
-    if (!sourcefile || strcmp(f, sourcefile))	/* not in eval() */
-	sourceline = 1;
+    if (!ruby_sourcefile || strcmp(f, ruby_sourcefile))	/* not in eval() */
+	ruby_sourceline = 1;
 
     return yycompile(f);
 }
 
 NODE*
-compile_file(f, file, start)
+rb_compile_file(f, file, start)
     char *f;
     VALUE file;
     int start;
 {
     lex_input = file;
     lex_pbeg = lex_p = lex_pend = 0;
-    sourceline = start;
+    ruby_sourceline = start;
 
     return yycompile(f);
 }
@@ -1689,20 +1680,20 @@ nextc()
 
     if (lex_p == lex_pend) {
 	if (lex_input) {
-	    VALUE v = io_gets(lex_input);
+	    VALUE v = rb_io_gets(lex_input);
 
 	    if (NIL_P(v)) return -1;
 	    if (heredoc_end > 0) {
-		sourceline = heredoc_end+1;
+		ruby_sourceline = heredoc_end+1;
 		heredoc_end = 0;
 	    }
 	    while (RSTRING(v)->len >= 2 &&
 		   RSTRING(v)->ptr[RSTRING(v)->len-1] == '\n' &&
 		   RSTRING(v)->ptr[RSTRING(v)->len-2] == '\\') {
-		VALUE v2 = io_gets(lex_input);
+		VALUE v2 = rb_io_gets(lex_input);
 
 		if (!NIL_P(v2)) {
-		    str_cat(v, RSTRING(v2)->ptr, RSTRING(v2)->len);
+		    rb_str_cat(v, RSTRING(v2)->ptr, RSTRING(v2)->len);
 		}
 	    }
 	    lex_pbeg = lex_p = RSTRING(v)->ptr;
@@ -1724,7 +1715,7 @@ nextc()
     return c;
 }
 
-void
+static void
 pushback(c)
     int c;
 {
@@ -1886,7 +1877,7 @@ parse_regx(term, paren)
     int nest = 0;
     int options = 0;
     int in_brack = 0;
-    int re_start = sourceline;
+    int re_start = ruby_sourceline;
     NODE *list = 0;
 
     newtok();
@@ -1904,19 +1895,19 @@ parse_regx(term, paren)
 	    break;
 
 	  case '#':
-	    list = str_extend(list, term);
+	    list = rb_str_extend(list, term);
 	    if (list == (NODE*)-1) return 0;
 	    continue;
 
 	  case '\\':
 	    switch (c = nextc()) {
 	      case -1:
-		sourceline = re_start;
-		Error("unterminated regexp meets end of file"); /*  */
+		ruby_sourceline = re_start;
+		rb_compile_error("unterminated regexp meets end of file");
 		return 0;
 
 	      case '\n':
-		sourceline++;
+		ruby_sourceline++;
 		break;
 
 	      case '\\':
@@ -1945,7 +1936,7 @@ parse_regx(term, paren)
 		if (c == paren) nest++;
 		if (c == term) nest--;
 		if (c == '\n') {
-		    sourceline++;
+		    ruby_sourceline++;
 		}
 		else if (c == term) {
 		    tokadd(c);
@@ -1959,7 +1950,7 @@ parse_regx(term, paren)
 	    continue;
 
 	  case -1:
-	    Error("unterminated regexp");
+	    rb_compile_error("unterminated regexp");
 	    return 0;
 
 	  default:
@@ -2001,7 +1992,7 @@ parse_regx(term, paren)
 	    lex_state = EXPR_END;
 	    if (list) {
 		if (toklen() > 0) {
-		    VALUE ss = str_new(tok(), toklen());
+		    VALUE ss = rb_str_new(tok(), toklen());
 		    list_append(list, NEW_STR(ss));
 		}
 		nd_set_type(list, once?NODE_DREGX_ONCE:NODE_DREGX);
@@ -2010,13 +2001,13 @@ parse_regx(term, paren)
 		return tDREGEXP;
 	    }
 	    else {
-		yylval.val = reg_new(tok(), toklen(), options | kcode);
+		yylval.val = rb_reg_new(tok(), toklen(), options | kcode);
 		return tREGEXP;
 	    }
 	}
 	tokadd(c);
     }
-    Error("unterminated regexp");
+    rb_compile_error("unterminated regexp");
     return 0;
 }
 
@@ -2034,13 +2025,13 @@ parse_string(func, term, paren)
     if (func == '\'') {
 	return parse_qstring(term, paren);
     }
-    strstart = sourceline;
+    strstart = ruby_sourceline;
     newtok();
     while ((c = nextc()) != term || nest > 0) {
 	if (c == -1) {
 	  unterm_str:
-	    sourceline = strstart;
-	    Error("unterminated string meets end of file");
+	    ruby_sourceline = strstart;
+	    rb_compile_error("unterminated string meets end of file");
 	    return 0;
 	}
 	if (ismbchar(c)) {
@@ -2048,17 +2039,17 @@ parse_string(func, term, paren)
 	    c = nextc();
 	}
 	else if (c == '\n') {
-	    sourceline++;
+	    ruby_sourceline++;
 	}
 	else if (c == '#') {
-	    list = str_extend(list, term);
+	    list = rb_str_extend(list, term);
 	    if (list == (NODE*)-1) goto unterm_str;
 	    continue;
 	}
 	else if (c == '\\') {
 	    c = nextc();
 	    if (c == '\n') {
-		sourceline++;
+		ruby_sourceline++;
 	    }
 	    else if (c == term) {
 		tokadd(c);
@@ -2079,7 +2070,7 @@ parse_string(func, term, paren)
     lex_state = EXPR_END;
     if (list) {
 	if (toklen() > 0) {
-	    VALUE ss = str_new(tok(), toklen());
+	    VALUE ss = rb_str_new(tok(), toklen());
 	    list_append(list, NEW_STR(ss));
 	}
 	yylval.node = list;
@@ -2092,7 +2083,7 @@ parse_string(func, term, paren)
 	}
     }
     else {
-	yylval.val = str_new(tok(), toklen());
+	yylval.val = rb_str_new(tok(), toklen());
 	return (func == '`') ? tXSTRING : tSTRING;
     }
 }
@@ -2105,12 +2096,12 @@ parse_qstring(term, paren)
     int c;
     int nest = 0;
 
-    strstart = sourceline;
+    strstart = ruby_sourceline;
     newtok();
     while ((c = nextc()) != term || nest > 0) {
 	if (c == -1) {
-	    sourceline = strstart;
-	    Error("unterminated string meets end of file");
+	    ruby_sourceline = strstart;
+	    rb_compile_error("unterminated string meets end of file");
 	    return 0;
 	}
 	if (ismbchar(c)) {
@@ -2118,13 +2109,13 @@ parse_qstring(term, paren)
 	    c = nextc();
 	}
 	else if (c == '\n') {
-	    sourceline++;
+	    ruby_sourceline++;
 	}
 	else if (c == '\\') {
 	    c = nextc();
 	    switch (c) {
 	      case '\n':
-		sourceline++;
+		ruby_sourceline++;
 		continue;
 
 	      case '\\':
@@ -2147,7 +2138,7 @@ parse_qstring(term, paren)
     }
 
     tokfix();
-    yylval.val = str_new(tok(), toklen());
+    yylval.val = rb_str_new(tok(), toklen());
     lex_state = EXPR_END;
     return tSTRING;
 }
@@ -2173,7 +2164,7 @@ here_document(term)
     VALUE str, line;
     char *save_beg, *save_end, *save_lexp;
     NODE *list = 0;
-    int linesave = sourceline;
+    int linesave = ruby_sourceline;
 
     newtok();
     switch (term) {
@@ -2189,7 +2180,7 @@ here_document(term)
 	c = term;
 	term = '"';
 	if (!is_identchar(c)) {
-	    Error("illegal here document");
+	    rb_compile_error("illegal here document");
 	    return 0;
 	}
 	while (is_identchar(c)) {
@@ -2206,16 +2197,16 @@ here_document(term)
     eos = strdup(tok());
     len = strlen(eos);
 
-    str = str_new(0,0);
+    str = rb_str_new(0,0);
     for (;;) {
-	line = io_gets(lex_input);
+	line = rb_io_gets(lex_input);
 	if (NIL_P(line)) {
 	  error:
-	    Error("unterminated string meets end of file");
+	    rb_compile_error("unterminated string meets end of file");
 	    free(eos);
 	    return 0;
 	}
-	sourceline++;
+	ruby_sourceline++;
 	if (strncmp(eos, RSTRING(line)->ptr, len) == 0 &&
 	    (RSTRING(line)->ptr[len] == '\n' ||
 	     RSTRING(line)->ptr[len] == '\r')) {
@@ -2227,9 +2218,9 @@ here_document(term)
 	switch (parse_string(term, '\n', '\n')) {
 	  case tSTRING:
 	  case tXSTRING:
-	    str_cat(yylval.val, "\n", 1);
+	    rb_str_cat(yylval.val, "\n", 1);
 	    if (!list) {
-	        str_cat(str, RSTRING(yylval.val)->ptr, RSTRING(yylval.val)->len);
+	        rb_str_cat(str, RSTRING(yylval.val)->ptr, RSTRING(yylval.val)->len);
 	    }
 	    else {
 		list_append(list, NEW_STR(yylval.val));
@@ -2237,7 +2228,7 @@ here_document(term)
 	    break;
 	  case tDSTRING:
 	  case tDXSTRING:
-	    list_append(yylval.node, NEW_STR(str_new2("\n")));
+	    list_append(yylval.node, NEW_STR(rb_str_new2("\n")));
 	    nd_set_type(yylval.node, NODE_STR);
 	    if (!list) list = NEW_DSTR(str);
 	    yylval.node = NEW_LIST(yylval.node);
@@ -2254,8 +2245,8 @@ here_document(term)
     lex_pbeg = save_beg;
     lex_pend = save_end;
     lex_state = EXPR_END;
-    heredoc_end = sourceline;
-    sourceline = linesave;
+    heredoc_end = ruby_sourceline;
+    ruby_sourceline = linesave;
 
     if (list) {
 	yylval.node = list;
@@ -2278,7 +2269,7 @@ here_document(term)
 static void
 arg_ambiguous()
 {
-    Warning("ambiguous first argument; make sure");
+    rb_warning("ambiguous first argument; make sure");
 }
 
 #ifndef atof
@@ -2293,7 +2284,7 @@ yylex()
     struct kwtable *kw;
 
     if (newline_seen) {
-	sourceline+=newline_seen;
+	ruby_sourceline += newline_seen;
 	newline_seen = 0;
     }
 
@@ -2317,12 +2308,12 @@ retry:
 		return 0;
 	    if (c == '\\') {	/* skip a char */
 		c = nextc();
-		if (c == '\n') sourceline++;
+		if (c == '\n') ruby_sourceline++;
 	    }
 	    if (ismbchar(c)) {
 		c = nextc();
 		if (c == '\n') {
-		    sourceline++;
+		    ruby_sourceline++;
 		    break;
 		}
 	    }
@@ -2333,7 +2324,7 @@ retry:
 	  case EXPR_BEG:
 	  case EXPR_FNAME:
 	  case EXPR_DOT:
-	    sourceline++;
+	    ruby_sourceline++;
 	    goto retry;
 	  default:
 	    break;
@@ -2386,11 +2377,11 @@ retry:
 	    /* skip embedded rd document */
 	    if (strncmp(lex_p, "begin", 5) == 0 && ISSPACE(lex_p[5])) {
 		for (;;) {
-		    sourceline++;
+		    ruby_sourceline++;
 		    lex_p = lex_pend;
 		    c = nextc();
 		    if (c == -1) {
-			Error("embedded document meets end of file");
+			rb_compile_error("embedded document meets end of file");
 			return 0;
 		    }
 		    if (c != '=') continue;
@@ -2398,7 +2389,7 @@ retry:
 			break;
 		    }
 		}
-		sourceline++;
+		ruby_sourceline++;
 		lex_p = lex_pend;
 		goto retry;
 	    }
@@ -2429,7 +2420,7 @@ retry:
  	    int c2 = nextc();
 	    if (!ISSPACE(c2) && (strchr("\"'`", c2) || is_identchar(c2))) {
 		if (!lex_input) {
-		    ArgError("here document not available");
+		    rb_raise(rb_eArgError, "here document not available");
 		}
 		return here_document(c2);
 	    }
@@ -2481,7 +2472,7 @@ retry:
 
       case '?':
 	if (lex_state == EXPR_END) {
-	    Warning("a?b:c is undocumented feature ^^;;;");
+	    rb_warning("a?b:c is undocumented feature ^^;;;");
 	    lex_state = EXPR_BEG;
 	    return '?';
 	}
@@ -2490,7 +2481,7 @@ retry:
 	    pushback(c);
 	    arg_ambiguous();
 	    lex_state = EXPR_BEG;
-	    Warning("a?b:c is undocumented feature ^^;;;");
+	    rb_warning("a?b:c is undocumented feature ^^;;;");
 	    return '?';
 	}
 	if (c == '\\') {
@@ -2641,7 +2632,7 @@ retry:
 		    }
 		    pushback(c);
 		    tokfix();
-		    yylval.val = str2inum(tok(), 16);
+		    yylval.val = rb_str2inum(tok(), 16);
 		    return tINTEGER;
 		}
 		else if (c >= '0' && c <= '7') {
@@ -2653,7 +2644,7 @@ retry:
 		    } while (c >= '0' && c <= '9');
 		    pushback(c);
 		    tokfix();
-		    yylval.val = str2inum(tok(), 8);
+		    yylval.val = rb_str2inum(tok(), 8);
 		    return tINTEGER;
 		}
 		else if (c > '7' && c <= '9') {
@@ -2721,10 +2712,10 @@ retry:
 	    pushback(c);
 	    tokfix();
 	    if (is_float) {
-		yylval.val = float_new(atof(tok()));
+		yylval.val = rb_float_new(atof(tok()));
 		return tFLOAT;
 	    }
-	    yylval.val = str2inum(tok(), 10);
+	    yylval.val = rb_str2inum(tok(), 10);
 	    return tINTEGER;
 	}
 
@@ -2841,7 +2832,7 @@ retry:
       case '\\':
 	c = nextc();
 	if (c == '\n') {
-	    sourceline++;
+	    ruby_sourceline++;
 	    space_seen = 1;
 	    goto retry; /* skip \\n */
 	}
@@ -2872,7 +2863,7 @@ retry:
 		term = nextc();
 	    }
 	    if (c == -1 || term == -1) {
-		Error("unterminated quoted string meets end of file");
+		rb_compile_error("unterminated quoted string meets end of file");
 		return 0;
 	    }
 	    paren = term;
@@ -2997,7 +2988,7 @@ retry:
 
       default:
 	if (c != '_' && !ISALPHA(c) && !ismbchar(c)) {
-	    Error("Invalid char '%c' in expression", c);
+	    rb_compile_error("Invalid char '%c' in expression", c);
 	    goto retry;
 	}
 
@@ -3080,7 +3071,7 @@ retry:
 }
 
 static NODE*
-str_extend(list, term)
+rb_str_extend(list, term)
     NODE *list;
     char term;
 {
@@ -3102,7 +3093,7 @@ str_extend(list, term)
 	return list;
     }
 
-    ss = str_new(tok(), toklen());
+    ss = rb_str_new(tok(), toklen());
     if (list == 0) {
 	list = NEW_DSTR(ss);
     }
@@ -3139,7 +3130,7 @@ str_extend(list, term)
 
           default:
 	    if (c == term) {
-		list_append(list, NEW_STR(str_new2("#$")));
+		list_append(list, NEW_STR(rb_str_new2("#$")));
 		pushback(c);
 		newtok();
 		return list;
@@ -3205,10 +3196,10 @@ str_extend(list, term)
 	      case '`':
 		if (c == term) {
 		    pushback(c);
-		    list_append(list, NEW_STR(str_new2("#")));
-		    Warning("bad substitution in string");
+		    list_append(list, NEW_STR(rb_str_new2("#")));
+		    rb_warning("bad substitution in string");
 		    tokfix();
-		    list_append(list, NEW_STR(str_new(tok(), toklen())));
+		    list_append(list, NEW_STR(rb_str_new(tok(), toklen())));
 		    newtok();
 		    return list;
 		}
@@ -3229,7 +3220,7 @@ str_extend(list, term)
 }
 
 NODE*
-node_newnode(type, a0, a1, a2)
+rb_node_newnode(type, a0, a1, a2)
     enum node_type type;
     NODE *a0, *a1, *a2;
 {
@@ -3237,8 +3228,8 @@ node_newnode(type, a0, a1, a2)
 
     n->flags |= T_NODE;
     nd_set_type(n, type);
-    nd_set_line(n, sourceline);
-    n->nd_file = sourcefile;
+    nd_set_line(n, ruby_sourceline);
+    n->nd_file = ruby_sourcefile;
 
     n->u1.node = a0;
     n->u2.node = a1;
@@ -3247,14 +3238,14 @@ node_newnode(type, a0, a1, a2)
     return n;
 }
 
-enum node_type
+static enum node_type
 nodetype(node)			/* for debug */
     NODE *node;
 {
     return (enum node_type)nd_type(node);
 }
 
-int
+static int
 nodeline(node)
     NODE *node;
 {
@@ -3303,7 +3294,7 @@ block_append(head, tail)
 	end = head->nd_end;
     }
 
-    if (RTEST(verbose)) {
+    if (RTEST(rb_verbose)) {
 	NODE *nd = end->nd_head;
       newline:
 	switch (nd_type(nd)) {
@@ -3312,7 +3303,7 @@ block_append(head, tail)
 	  case NODE_NEXT:
 	  case NODE_REDO:
 	  case NODE_RETRY:
-	    Warning("statement not reached");
+	    rb_warning("statement not reached");
 	    break;
 
 	case NODE_NEWLINE:
@@ -3432,13 +3423,13 @@ gettable(id)
 	return NEW_FALSE();
     }
     else if (id == k__FILE__) {
-	return NEW_STR(str_new2(sourcefile));
+	return NEW_STR(rb_str_new2(ruby_sourcefile));
     }
     else if (id == k__LINE__) {
-	return NEW_LIT(INT2FIX(sourceline));
+	return NEW_LIT(INT2FIX(ruby_sourceline));
     }
     else if (is_local_id(id)) {
-	if (dyna_in_block() && dyna_var_defined(id)) return NEW_DVAR(id);
+	if (dyna_in_block() && rb_dvar_defined(id)) return NEW_DVAR(id);
 	if (local_id(id)) return NEW_LVAR(id);
 	/* method call without arguments */
 	return NEW_VCALL(id);
@@ -3452,7 +3443,7 @@ gettable(id)
     else if (is_const_id(id)) {
 	return NEW_CVAR(id);
     }
-    Bug("invalid id for gettable");
+    rb_bug("invalid id for gettable");
     return 0;
 }
 
@@ -3483,14 +3474,14 @@ assignable(id, val)
 	yyerror("Can't assign to __LINE__");
     }
     else if (is_local_id(id)) {
-	if (dyna_var_defined(id)) {
+	if (rb_dvar_defined(id)) {
 	    lhs = NEW_DASGN(id, val);
 	}
 	else if (local_id(id) || !dyna_in_block()) {
 	    lhs = NEW_LASGN(id, val);
 	}
 	else{
-	    dyna_var_push(id, 0);
+	    rb_dvar_push(id, 0);
 	    lhs = NEW_DASGN_PUSH(id, val);
 	}
     }
@@ -3506,7 +3497,7 @@ assignable(id, val)
 	lhs = NEW_CASGN(id, val);
     }
     else {
-	Bug("bad id for variable");
+	rb_bug("bad id for variable");
     }
     return lhs;
 }
@@ -3537,7 +3528,7 @@ aryset(recv, idx, val)
 }
 
 ID
-id_attrset(id)
+rb_id_attrset(id)
     ID id;
 {
     id &= ~ID_SCOPE_MASK;
@@ -3560,7 +3551,7 @@ attrset(recv, id, val)
 }
 
 static void
-backref_error(node)
+rb_backref_error(node)
     NODE *node;
 {
     switch (nd_type(node)) {
@@ -3577,7 +3568,7 @@ static int
 value_expr(node)
     NODE *node;
 {
-    if (node == 0) return TRUE;
+    if (node == 0) return Qtrue;
 
     switch (nd_type(node)) {
       case NODE_RETURN:
@@ -3592,7 +3583,7 @@ value_expr(node)
       case NODE_DEFN:
       case NODE_DEFS:
 	yyerror("void value expression");
-	return FALSE;
+	return Qfalse;
 	break;
 
       case NODE_BLOCK:
@@ -3608,13 +3599,13 @@ value_expr(node)
 	return value_expr(node->nd_next);
 
       default:
-	return TRUE;
+	return Qtrue;
     }
 }
 
 static NODE *cond2();
 
-int
+static int
 assign_in_cond(node)
     NODE *node;
 {
@@ -3647,14 +3638,14 @@ assign_in_cond(node)
       case NODE_TRUE:
       case NODE_FALSE:
 	/* reports always */
-	Warn("found = in conditional, should be ==");
+	rb_warn("found = in conditional, should be ==");
 	return 1;
 
       default:
 	break;
     }
     if (assign_in_cond(node->nd_value) == 0) {
-	Warning("assignment in condition");
+	rb_warning("assignment in condition");
     }
     return 1;
 }
@@ -3690,7 +3681,7 @@ cond0(node)
 	if (TYPE(node->nd_lit) == T_STRING) {
 	    local_cnt('_');
 	    local_cnt('~');
-	    return NEW_MATCH(reg_new(RSTRING(node)->ptr,RSTRING(node)->len,0));
+	    return NEW_MATCH(rb_reg_new(RSTRING(node)->ptr,RSTRING(node)->len,0));
 	}
       default:
 	return node;
@@ -3730,7 +3721,7 @@ logop(type, left, right)
     NODE *left, *right;
 {
     value_expr(left);
-    return node_newnode(type, cond(left), cond(right));
+    return rb_node_newnode(type, cond(left), cond(right));
 }
 
 static NODE *
@@ -3769,8 +3760,6 @@ new_fcall(m,a)
     }
     return NEW_FCALL(m,a);
 }
-
-st_table *new_idhash();
 
 static struct local_vars {
     ID *tbl;
@@ -3849,26 +3838,26 @@ local_id(id)
 {
     int i, max;
 
-    if (lvtbl == 0) return FALSE;
+    if (lvtbl == 0) return Qfalse;
     for (i=3, max=lvtbl->cnt+1; i<max; i++) {
-	if (lvtbl->tbl[i] == id) return TRUE;
+	if (lvtbl->tbl[i] == id) return Qtrue;
     }
-    return FALSE;
+    return Qfalse;
 }
 
 static void
 top_local_init()
 {
     local_push();
-    lvtbl->cnt = the_scope->local_tbl?the_scope->local_tbl[0]:0;
+    lvtbl->cnt = ruby_scope->local_tbl?ruby_scope->local_tbl[0]:0;
     if (lvtbl->cnt > 0) {
 	lvtbl->tbl = ALLOC_N(ID, lvtbl->cnt+3);
-	MEMCPY(lvtbl->tbl, the_scope->local_tbl, ID, lvtbl->cnt+1);
+	MEMCPY(lvtbl->tbl, ruby_scope->local_tbl, ID, lvtbl->cnt+1);
     }
     else {
 	lvtbl->tbl = 0;
     }
-    if (the_dyna_vars)
+    if (ruby_dyna_vars)
 	lvtbl->dlev = 1;
     else
 	lvtbl->dlev = 0;
@@ -3884,31 +3873,31 @@ top_local_setup()
 	i = lvtbl->tbl[0];
 
 	if (i < len) {
-	    if (i == 0 || the_scope->flag == SCOPE_ALLOCA) {
+	    if (i == 0 || ruby_scope->flag == SCOPE_ALLOCA) {
 		VALUE *vars = ALLOC_N(VALUE, len+1);
-		if (the_scope->local_vars) {
-		    *vars++ = the_scope->local_vars[-1];
-		    MEMCPY(vars, the_scope->local_vars, VALUE, i);
-		    memclear(vars+i, len-i);
+		if (ruby_scope->local_vars) {
+		    *vars++ = ruby_scope->local_vars[-1];
+		    MEMCPY(vars, ruby_scope->local_vars, VALUE, i);
+		    rb_mem_clear(vars+i, len-i);
 		}
 		else {
 		    *vars++ = 0;
-		    memclear(vars, len);
+		    rb_mem_clear(vars, len);
 		}
-		the_scope->local_vars = vars;
-		the_scope->flag |= SCOPE_MALLOC;
+		ruby_scope->local_vars = vars;
+		ruby_scope->flag |= SCOPE_MALLOC;
 	    }
 	    else {
-		VALUE *vars = the_scope->local_vars-1;
+		VALUE *vars = ruby_scope->local_vars-1;
 		REALLOC_N(vars, VALUE, len+1);
-		the_scope->local_vars = vars+1;
-		memclear(the_scope->local_vars+i, len-i);
+		ruby_scope->local_vars = vars+1;
+		rb_mem_clear(ruby_scope->local_vars+i, len-i);
 	    }
-	    if (the_scope->local_tbl && the_scope->local_vars[-1] == 0) {
-		free(the_scope->local_tbl);
+	    if (ruby_scope->local_tbl && ruby_scope->local_vars[-1] == 0) {
+		free(ruby_scope->local_tbl);
 	    }
-	    the_scope->local_vars[-1] = 0;
-	    the_scope->local_tbl = local_tbl();
+	    ruby_scope->local_vars[-1] = 0;
+	    ruby_scope->local_tbl = local_tbl();
 	}
     }
     local_pop();
@@ -3918,7 +3907,7 @@ static struct RVarmap*
 dyna_push()
 {
     lvtbl->dlev++;
-    return the_dyna_vars;
+    return ruby_dyna_vars;
 }
 
 static void
@@ -3926,7 +3915,7 @@ dyna_pop(vars)
     struct RVarmap* vars;
 {
     lvtbl->dlev--;
-    the_dyna_vars = vars;
+    ruby_dyna_vars = vars;
 }
 
 static int
@@ -3936,40 +3925,43 @@ dyna_in_block()
 }
 
 static void
-cref_pop()
+crerb_f_pop()
 {
     cur_cref = cur_cref->nd_next;
 }
 
 void
-yyappend_print()
+rb_parser_append_print()
 {
-    eval_tree =
-	block_append(eval_tree,
+    ruby_eval_tree =
+	block_append(ruby_eval_tree,
 		     NEW_FCALL(rb_intern("print"),
 			       NEW_ARRAY(NEW_GVAR(rb_intern("$_")))));
 }
 
 void
-yywhile_loop(chop, split)
+rb_parser_while_loop(chop, split)
     int chop, split;
 {
     if (split) {
-	eval_tree =
+	ruby_eval_tree =
 	    block_append(NEW_GASGN(rb_intern("$F"),
 				   NEW_CALL(NEW_GVAR(rb_intern("$_")),
 					    rb_intern("split"), 0)),
-				   eval_tree);
+				   ruby_eval_tree);
     }
     if (chop) {
-	eval_tree =
+	ruby_eval_tree =
 	    block_append(NEW_CALL(NEW_GVAR(rb_intern("$_")),
-				  rb_intern("chop!"), 0), eval_tree);
+				  rb_intern("chop!"), 0), ruby_eval_tree);
     }
-    eval_tree = NEW_OPT_N(eval_tree);
+    ruby_eval_tree = NEW_OPT_N(ruby_eval_tree);
 }
 
-static struct op_tbl rb_op_tbl[] = {
+static struct {
+    ID token;
+    char *name;
+} op_tbl[] = {
     tDOT2,	"..",
     '+',	"+",
     '-',	"-",
@@ -4015,14 +4007,14 @@ static struct op_tbl rb_op_tbl[] = {
 char *rb_id2name();
 char *rb_class2name();
 
-static st_table *rb_symbol_tbl;
-
-#define sym_tbl rb_symbol_tbl
+static st_table *sym_tbl;
+static st_table *sym_rev_tbl;
 
 void
 Init_sym()
 {
-    sym_tbl = st_init_strtable();
+    sym_tbl = st_init_strtable_with_size(900);
+    sym_rev_tbl = st_init_numtable_with_size(900);
     rb_global_variable((VALUE*)&cur_cref);
     rb_global_variable((VALUE*)&lex_lastline);
 }
@@ -4053,16 +4045,16 @@ rb_intern(name)
 	    int i;
 
 	    id = 0;
-	    for (i=0; rb_op_tbl[i].token; i++) {
-		if (*rb_op_tbl[i].name == *name &&
-		    strcmp(rb_op_tbl[i].name, name) == 0) {
-		    id = rb_op_tbl[i].token;
+	    for (i=0; op_tbl[i].token; i++) {
+		if (*op_tbl[i].name == *name &&
+		    strcmp(op_tbl[i].name, name) == 0) {
+		    id = op_tbl[i].token;
 		    break;
 		}
 	    }
 	    if (id == 0) {
-		NameError("Unknown operator `%s'", name);
-	    }
+		rb_raise(rb_eNameError, "Unknown operator `%s'", name);
+	    }	
 	    break;
 	}
 
@@ -4085,47 +4077,31 @@ rb_intern(name)
 	}
 	break;
     }
-    st_add_direct(sym_tbl, strdup(name), id);
+    name = strdup(name);
+    st_add_direct(sym_tbl, name, id);
+    st_add_direct(sym_rev_tbl, id, name);
     return id;
-}
-
-struct find_ok {
-    ID id;
-    char *name;
-};
-
-static int
-id_find(name, id1, ok)
-    char *name;
-    ID id1;
-    struct find_ok *ok;
-{
-    if (id1 == ok->id) {
-	ok->name = name;
-	return ST_STOP;
-    }
-    return ST_CONTINUE;
 }
 
 char *
 rb_id2name(id)
     ID id;
 {
-    struct find_ok ok;
+    char *name;
 
     if (id < LAST_TOKEN) {
 	int i = 0;
 
-	for (i=0; rb_op_tbl[i].token; i++) {
-	    if (rb_op_tbl[i].token == id)
-		return rb_op_tbl[i].name;
+	for (i=0; op_tbl[i].token; i++) {
+	    if (op_tbl[i].token == id)
+		return op_tbl[i].name;
 	}
     }
 
-    ok.name = 0;
-    ok.id = id;
-    st_foreach(sym_tbl, id_find, &ok);
-    if (!ok.name && is_attrset_id(id)) {
+    if (st_lookup(sym_rev_tbl, id, &name))
+	return name;
+
+    if (is_attrset_id(id)) {
 	char *res;
 	ID id2;
 
@@ -4133,7 +4109,7 @@ rb_id2name(id)
 	res = rb_id2name(id2);
 
 	if (res) {
-	    char *buf = ALLOCA_N(char,strlen(res)+2);
+	    char *buf = ALLOCA_N(char, strlen(res)+2);
 
 	    strcpy(buf, res);
 	    strcat(buf, "=");
@@ -4141,40 +4117,23 @@ rb_id2name(id)
 	    return rb_id2name(id);
 	}
     }
-    return ok.name;
+    return 0;
 }
 
 int
 rb_is_const_id(id)
     ID id;
 {
-    if (is_const_id(id)) return TRUE;
-    return FALSE;
+    if (is_const_id(id)) return Qtrue;
+    return Qfalse;
 }
 
 int
 rb_is_instance_id(id)
     ID id;
 {
-    if (is_instance_id(id)) return TRUE;
-    return FALSE;
-}
-
-void
-local_var_append(id)
-    ID id;
-{
-    struct local_vars tmp;
-    struct local_vars *save = lvtbl;
-
-    if (the_scope->local_tbl) {
-	tmp.cnt = the_scope->local_tbl[0];
-	tmp.tbl = the_scope->local_tbl;
-	lvtbl->dlev = 0;
-    }
-    lvtbl = &tmp;
-    local_cnt(id);
-    lvtbl = save;
+    if (is_instance_id(id)) return Qtrue;
+    return Qfalse;
 }
 
 static void
@@ -4187,24 +4146,24 @@ special_local_set(c, val)
     top_local_init();
     cnt = local_cnt(c);
     top_local_setup();
-    the_scope->local_vars[cnt] = val;
+    ruby_scope->local_vars[cnt] = val;
 }
 
 VALUE
-backref_get()
+rb_backref_get()
 {
-    if (the_scope->local_vars) {
-	return the_scope->local_vars[1];
+    if (ruby_scope->local_vars) {
+	return ruby_scope->local_vars[1];
     }
     return Qnil;
 }
 
 void
-backref_set(val)
+rb_backref_set(val)
     VALUE val;
 {
-    if (the_scope->local_vars) {
-	the_scope->local_vars[1] = val;
+    if (ruby_scope->local_vars) {
+	ruby_scope->local_vars[1] = val;
     }
     else {
 	special_local_set('~', val);
@@ -4212,20 +4171,20 @@ backref_set(val)
 }
 
 VALUE
-lastline_get()
+rb_lastline_get()
 {
-    if (the_scope->local_vars) {
-	return the_scope->local_vars[0];
+    if (ruby_scope->local_vars) {
+	return ruby_scope->local_vars[0];
     }
     return Qnil;
 }
 
 void
-lastline_set(val)
+rb_lastline_set(val)
     VALUE val;
 {
-    if (the_scope->local_vars) {
-	the_scope->local_vars[0] = val;
+    if (ruby_scope->local_vars) {
+	ruby_scope->local_vars[0] = val;
     }
     else {
 	special_local_set('_', val);

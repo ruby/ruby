@@ -22,25 +22,25 @@
 extern st_table *rb_class_tbl;
 
 VALUE
-class_new(super)
+rb_class_new(super)
     VALUE super;
 {
     NEWOBJ(klass, struct RClass);
-    OBJSETUP(klass, cClass, T_CLASS);
+    OBJSETUP(klass, rb_cClass, T_CLASS);
 
     klass->super = super;
     klass->iv_tbl = 0;
     klass->m_tbl = 0;		/* safe GC */
-    klass->m_tbl = new_idhash();
+    klass->m_tbl = st_init_numtable();
 
     return (VALUE)klass;
 }
 
 VALUE
-singleton_class_new(super)
+rb_singleton_class_new(super)
     VALUE super;
 {
-    VALUE klass = class_new(super);
+    VALUE klass = rb_class_new(super);
 
     FL_SET(klass, FL_SINGLETON);
     return klass;
@@ -57,7 +57,7 @@ clone_method(mid, body, tbl)
 }
 
 VALUE
-singleton_class_clone(klass)
+rb_singleton_class_clone(klass)
     VALUE klass;
 {
     if (!FL_TEST(klass, FL_SINGLETON))
@@ -70,7 +70,7 @@ singleton_class_clone(klass)
 	clone->super = RCLASS(klass)->super;
 	clone->iv_tbl = 0;
 	clone->m_tbl = 0;
-	clone->m_tbl = new_idhash();
+	clone->m_tbl = st_init_numtable();
 	st_foreach(RCLASS(klass)->m_tbl, clone_method, clone->m_tbl);
 	FL_SET(clone, FL_SINGLETON);
 	return (VALUE)clone;
@@ -78,7 +78,7 @@ singleton_class_clone(klass)
 }
 
 void
-singleton_class_attached(klass, obj)
+rb_singleton_class_attached(klass, obj)
     VALUE klass, obj;
 {
     if (FL_TEST(klass, FL_SINGLETON))
@@ -92,12 +92,12 @@ rb_define_class_id(id, super)
 {
     VALUE klass;
 
-    if (!super) super = cObject;
-    klass = class_new(super);
+    if (!super) super = rb_cObject;
+    klass = rb_class_new(super);
     rb_name_class(klass, id);
     /* make metaclass */
-    RBASIC(klass)->klass = singleton_class_new(RBASIC(super)->klass);
-    singleton_class_attached(RBASIC(klass)->klass, klass);
+    RBASIC(klass)->klass = rb_singleton_class_new(RBASIC(super)->klass);
+    rb_singleton_class_attached(RBASIC(klass)->klass, klass);
     rb_funcall(super, rb_intern("inherited"), 1, klass);
 
     return klass;
@@ -136,15 +136,15 @@ rb_define_class_under(outer, name, super)
 }
 
 VALUE
-module_new()
+rb_module_new()
 {
     NEWOBJ(mdl, struct RClass);
-    OBJSETUP(mdl, cModule, T_MODULE);
+    OBJSETUP(mdl, rb_cModule, T_MODULE);
 
     mdl->super = 0;
     mdl->iv_tbl = 0;
     mdl->m_tbl = 0;
-    mdl->m_tbl = new_idhash();
+    mdl->m_tbl = st_init_numtable();
 
     return (VALUE)mdl;
 }
@@ -154,7 +154,7 @@ rb_define_module_id(id)
     ID id;
 {
     extern st_table *rb_class_tbl;
-    VALUE mdl = module_new();
+    VALUE mdl = rb_module_new();
 
     rb_name_class(mdl, id);
 
@@ -192,11 +192,11 @@ rb_define_module_under(outer, name)
 }
 
 static VALUE
-include_class_new(module, super)
+include_rb_class_new(module, super)
     VALUE module, super;
 {
     NEWOBJ(klass, struct RClass);
-    OBJSETUP(klass, cClass, T_ICLASS);
+    OBJSETUP(klass, rb_cClass, T_ICLASS);
 
     klass->m_tbl = RCLASS(module)->m_tbl;
     klass->iv_tbl = RCLASS(module)->iv_tbl;
@@ -241,7 +241,7 @@ rb_include_module(klass, module)
 	    }
 	}
 	RCLASS(klass)->super =
-	    include_class_new(module, RCLASS(klass)->super);
+	    include_rb_class_new(module, RCLASS(klass)->super);
 	klass = RCLASS(klass)->super;
 	module = RCLASS(module)->super;
     }
@@ -249,35 +249,35 @@ rb_include_module(klass, module)
 }
 
 VALUE
-mod_included_modules(mod)
+rb_mod_included_modules(mod)
     VALUE mod;
 {
-    VALUE ary = ary_new();
+    VALUE ary = rb_ary_new();
     VALUE p;
 
     for (p = RCLASS(mod)->super; p; p = RCLASS(p)->super) {
 	if (BUILTIN_TYPE(p) == T_ICLASS) {
-	    ary_push(ary, RBASIC(p)->klass);
+	    rb_ary_push(ary, RBASIC(p)->klass);
 	}
     }
     return ary;
 }
 
 VALUE
-mod_ancestors(mod)
+rb_mod_ancestors(mod)
     VALUE mod;
 {
-    VALUE ary = ary_new();
+    VALUE ary = rb_ary_new();
     VALUE p;
 
     for (p = mod; p; p = RCLASS(p)->super) {
 	if (FL_TEST(p, FL_SINGLETON))
 	    continue;
 	if (BUILTIN_TYPE(p) == T_ICLASS) {
-	    ary_push(ary, RBASIC(p)->klass);
+	    rb_ary_push(ary, RBASIC(p)->klass);
 	}
 	else {
-	    ary_push(ary, p);
+	    rb_ary_push(ary, p);
 	}
     }
     return ary;
@@ -290,18 +290,18 @@ ins_methods_i(key, body, ary)
     VALUE ary;
 {
     if ((body->nd_noex&(NOEX_PRIVATE|NOEX_PROTECTED)) == 0) {
-	VALUE name = str_new2(rb_id2name(key));
+	VALUE name = rb_str_new2(rb_id2name(key));
 
-	if (!ary_includes(ary, name)) {
+	if (!rb_ary_includes(ary, name)) {
 	    if (!body->nd_body) {
-		ary_push(ary, Qnil);
+		rb_ary_push(ary, Qnil);
 	    }
-	    ary_push(ary, name);
+	    rb_ary_push(ary, name);
 	}
     }
     else if (body->nd_body && nd_type(body->nd_body) == NODE_ZSUPER) {
-	ary_push(ary, Qnil);
-	ary_push(ary, str_new2(rb_id2name(key)));
+	rb_ary_push(ary, Qnil);
+	rb_ary_push(ary, rb_str_new2(rb_id2name(key)));
     }
     return ST_CONTINUE;
 }
@@ -313,19 +313,19 @@ ins_methods_prot_i(key, body, ary)
     VALUE ary;
 {
     if (!body->nd_body) {
-	ary_push(ary, Qnil);
-	ary_push(ary, str_new2(rb_id2name(key)));
+	rb_ary_push(ary, Qnil);
+	rb_ary_push(ary, rb_str_new2(rb_id2name(key)));
     }
     else if (body->nd_noex & NOEX_PROTECTED) {
-	VALUE name = str_new2(rb_id2name(key));
+	VALUE name = rb_str_new2(rb_id2name(key));
 
-	if (!ary_includes(ary, name)) {
-	    ary_push(ary, name);
+	if (!rb_ary_includes(ary, name)) {
+	    rb_ary_push(ary, name);
 	}
     }
     else if (nd_type(body->nd_body) == NODE_ZSUPER) {
-	ary_push(ary, Qnil);
-	ary_push(ary, str_new2(rb_id2name(key)));
+	rb_ary_push(ary, Qnil);
+	rb_ary_push(ary, rb_str_new2(rb_id2name(key)));
     }
     return ST_CONTINUE;
 }
@@ -337,19 +337,19 @@ ins_methods_priv_i(key, body, ary)
     VALUE ary;
 {
     if (!body->nd_body) {
-	ary_push(ary, Qnil);
-	ary_push(ary, str_new2(rb_id2name(key)));
+	rb_ary_push(ary, Qnil);
+	rb_ary_push(ary, rb_str_new2(rb_id2name(key)));
     }
     else if (body->nd_noex & NOEX_PRIVATE) {
-	VALUE name = str_new2(rb_id2name(key));
+	VALUE name = rb_str_new2(rb_id2name(key));
 
-	if (!ary_includes(ary, name)) {
-	    ary_push(ary, name);
+	if (!rb_ary_includes(ary, name)) {
+	    rb_ary_push(ary, name);
 	}
     }
     else if (nd_type(body->nd_body) == NODE_ZSUPER) {
-	ary_push(ary, Qnil);
-	ary_push(ary, str_new2(rb_id2name(key)));
+	rb_ary_push(ary, Qnil);
+	rb_ary_push(ary, rb_str_new2(rb_id2name(key)));
     }
     return ST_CONTINUE;
 }
@@ -364,7 +364,7 @@ method_list(mod, option, func)
     VALUE klass;
     VALUE *p, *q, *pend;
 
-    ary = ary_new();
+    ary = rb_ary_new();
     for (klass = mod; klass; klass = RCLASS(klass)->super) {
 	st_foreach(RCLASS(klass)->m_tbl, func, ary);
 	if (!option) break;
@@ -382,7 +382,7 @@ method_list(mod, option, func)
 }
 
 VALUE
-class_instance_methods(argc, argv, mod)
+rb_class_instance_methods(argc, argv, mod)
     int argc;
     VALUE *argv;
     VALUE mod;
@@ -394,7 +394,7 @@ class_instance_methods(argc, argv, mod)
 }
 
 VALUE
-class_protected_instance_methods(argc, argv, mod)
+rb_class_protected_instance_methods(argc, argv, mod)
     int argc;
     VALUE *argv;
     VALUE mod;
@@ -406,7 +406,7 @@ class_protected_instance_methods(argc, argv, mod)
 }
 
 VALUE
-class_private_instance_methods(argc, argv, mod)
+rb_class_private_instance_methods(argc, argv, mod)
     int argc;
     VALUE *argv;
     VALUE mod;
@@ -418,14 +418,14 @@ class_private_instance_methods(argc, argv, mod)
 }
 
 VALUE
-obj_singleton_methods(obj)
+rb_obj_singleton_methods(obj)
     VALUE obj;
 {
     VALUE ary;
     VALUE klass;
     VALUE *p, *q, *pend;
 
-    ary = ary_new();
+    ary = rb_ary_new();
     klass = CLASS_OF(obj);
     while (klass && FL_TEST(klass, FL_SINGLETON)) {
 	st_foreach(RCLASS(klass)->m_tbl, ins_methods_i, ary);
@@ -503,13 +503,13 @@ rb_singleton_class(obj)
     VALUE obj;
 {
     if (rb_special_const_p(obj)) {
-	TypeError("cannot define singleton");
+	rb_raise(rb_eTypeError, "cannot define singleton");
     }
     if (FL_TEST(RBASIC(obj)->klass, FL_SINGLETON)) {
 	return RBASIC(obj)->klass;
     }
-    RBASIC(obj)->klass = singleton_class_new(RBASIC(obj)->klass);
-    singleton_class_attached(RBASIC(obj)->klass, obj);
+    RBASIC(obj)->klass = rb_singleton_class_new(RBASIC(obj)->klass);
+    rb_singleton_class_attached(RBASIC(obj)->klass, obj);
     return RBASIC(obj)->klass;
 }
 
@@ -540,7 +540,7 @@ rb_define_global_function(name, func, argc)
     VALUE (*func)();
     int argc;
 {
-    rb_define_private_method(mKernel, name, func, argc);
+    rb_define_private_method(rb_mKernel, name, func, argc);
 }
 
 void
@@ -557,7 +557,7 @@ rb_define_attr(klass, name, read, write)
     char *name;
     int read, write;
 {
-    rb_attr(klass, rb_intern(name), read, write, FALSE);
+    rb_attr(klass, rb_intern(name), read, write, Qfalse);
 }
 
 #ifdef HAVE_STDARG_PROTOTYPES
@@ -588,14 +588,14 @@ rb_scan_args(argc, argv, fmt, va_alist)
 
     if (*p == '*') {
 	var = va_arg(vargs, VALUE*);
-	*var = ary_new4(argc, argv);
+	*var = rb_ary_new4(argc, argv);
 	return argc;
     }
 
     if (ISDIGIT(*p)) {
 	n = *p - '0';
 	if (n > argc)
-	    ArgError("Wrong # of arguments (%d for %d)", argc, n);
+	    rb_raise(rb_eArgError, "Wrong # of arguments (%d for %d)", argc, n);
 	for (i=0; i<n; i++) {
 	    var = va_arg(vargs, VALUE*);
 	    *var = argv[i];
@@ -623,15 +623,15 @@ rb_scan_args(argc, argv, fmt, va_alist)
     if(*p == '*') {
 	var = va_arg(vargs, VALUE*);
 	if (argc > i) {
-	    *var = ary_new4(argc-i, argv+i);
+	    *var = rb_ary_new4(argc-i, argv+i);
 	}
 	else {
-	    *var = ary_new();
+	    *var = rb_ary_new();
 	}
     }
     else if (*p == '\0') {
 	if (argc > i) {
-	    ArgError("Wrong # of arguments(%d for %d)", argc, i);
+	    rb_raise(rb_eArgError, "Wrong # of arguments(%d for %d)", argc, i);
 	}
     }
     else {
@@ -642,6 +642,6 @@ rb_scan_args(argc, argv, fmt, va_alist)
     return argc;
 
   error:
-    Fatal("bad scan arg format: %s", fmt);
+    rb_fatal("bad scan arg format: %s", fmt);
     return 0;
 }

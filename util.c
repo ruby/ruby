@@ -19,14 +19,26 @@
 #include "missing/file.h"
 #endif
 
+VALUE
+rb_class_of(obj)
+    VALUE obj;
+{
+    if (FIXNUM_P(obj)) return rb_cFixnum;
+    if (obj == Qnil) return rb_cNilClass;
+    if (obj == Qfalse) return rb_cFalseClass;
+    if (obj == Qtrue) return rb_cTrueClass;
+
+    return RBASIC(obj)->klass;
+}
+
 int
 rb_type(obj)
     VALUE obj;
 {
     if (FIXNUM_P(obj)) return T_FIXNUM;
     if (obj == Qnil) return T_NIL;
-    if (obj == FALSE) return T_FALSE;
-    if (obj == TRUE) return T_TRUE;
+    if (obj == Qfalse) return T_FALSE;
+    if (obj == Qtrue) return T_TRUE;
 
     return BUILTIN_TYPE(obj);
 }
@@ -35,19 +47,19 @@ int
 rb_special_const_p(obj)
     VALUE obj;
 {
-    if (FIXNUM_P(obj)) return TRUE;
-    if (obj == Qnil) return TRUE;
-    if (obj == FALSE) return TRUE;
-    if (obj == TRUE) return TRUE;
+    if (FIXNUM_P(obj)) return Qtrue;
+    if (obj == Qnil) return Qtrue;
+    if (obj == Qfalse) return Qtrue;
+    if (obj == Qtrue) return Qtrue;
 
-    return FALSE;
+    return Qfalse;
 }
 
 int
 rb_test_false_or_nil(v)
     VALUE v;
 {
-    return (v != Qnil) && (v != FALSE);
+    return (v != Qnil) && (v != Qfalse);
 }
 
 #include "util.h"
@@ -229,12 +241,13 @@ add_suffix(VALUE str, char *suffix)
     char buf[1024];
 
     if (RSTRING(str)->len > 1000)
-        Fatal("Cannot do inplace edit on long filename (%d characters)", RSTRING(str)->len);
+        rb_fatal("Cannot do inplace edit on long filename (%d characters)",
+		 RSTRING(str)->len);
 
 #if defined(DJGPP) || defined(__CYGWIN32__) || defined(NT)
     /* Style 0 */
     slen = RSTRING(str)->len;
-    str_cat(str, suffix, extlen);
+    rb_str_cat(str, suffix, extlen);
 #if defined(DJGPP)
     if (_USE_LFN) return;
 #else
@@ -277,7 +290,7 @@ add_suffix(VALUE str, char *suffix)
 fallback:
 	(void)memcpy(p, strEQ(ext, suffix1) ? suffix2 : suffix1, 5);
     }
-    str_resize(str, strlen(buf));
+    rb_str_resize(str, strlen(buf));
     memcpy(RSTRING(str)->ptr, buf, RSTRING(str)->len);
 }
 

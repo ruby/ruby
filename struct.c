@@ -14,7 +14,7 @@
 #include <stdio.h>
 #endif
 
-VALUE cStruct;
+VALUE rb_cStruct;
 
 static VALUE
 class_of(obj)
@@ -27,7 +27,7 @@ class_of(obj)
 }
 
 static VALUE
-struct_s_members(obj)
+rb_struct_s_members(obj)
     VALUE obj;
 {
     VALUE member, ary;
@@ -35,12 +35,12 @@ struct_s_members(obj)
 
     member = rb_iv_get(obj, "__member__");
     if (NIL_P(member)) {
-	Bug("non-initialized struct");
+	rb_bug("non-initialized struct");
     }
-    ary = ary_new2(RARRAY(member)->len);
+    ary = rb_ary_new2(RARRAY(member)->len);
     p = RARRAY(member)->ptr; pend = p + RARRAY(member)->len;
     while (p < pend) {
-	ary_push(ary, str_new2(rb_id2name(FIX2INT(*p))));
+	rb_ary_push(ary, rb_str_new2(rb_id2name(FIX2INT(*p))));
 	p++;
     }
 
@@ -48,14 +48,14 @@ struct_s_members(obj)
 }
 
 static VALUE
-struct_members(obj)
+rb_struct_members(obj)
     VALUE obj;
 {
-    return struct_s_members(class_of(obj));
+    return rb_struct_s_members(class_of(obj));
 }
 
 VALUE
-struct_getmember(obj, id)
+rb_struct_getmember(obj, id)
     VALUE obj;
     ID id;
 {
@@ -64,7 +64,7 @@ struct_getmember(obj, id)
 
     member = rb_iv_get(class_of(obj), "__member__");
     if (NIL_P(member)) {
-	Bug("non-initialized struct");
+	rb_bug("non-initialized struct");
     }
     slot = INT2FIX(id);
     for (i=0; i<RARRAY(member)->len; i++) {
@@ -72,43 +72,43 @@ struct_getmember(obj, id)
 	    return RSTRUCT(obj)->ptr[i];
 	}
     }
-    NameError("%s is not struct member", rb_id2name(id));
+    rb_raise(rb_eNameError, "%s is not struct member", rb_id2name(id));
     /* not reached */
 }
 
 static VALUE
-struct_ref(obj)
+rb_struct_ref(obj)
     VALUE obj;
 {
-    return struct_getmember(obj, rb_frame_last_func());
+    return rb_struct_getmember(obj, rb_frame_last_func());
 }
 
-static VALUE struct_ref0(obj) VALUE obj; {return RSTRUCT(obj)->ptr[0];}
-static VALUE struct_ref1(obj) VALUE obj; {return RSTRUCT(obj)->ptr[1];}
-static VALUE struct_ref2(obj) VALUE obj; {return RSTRUCT(obj)->ptr[2];}
-static VALUE struct_ref3(obj) VALUE obj; {return RSTRUCT(obj)->ptr[3];}
-static VALUE struct_ref4(obj) VALUE obj; {return RSTRUCT(obj)->ptr[4];}
-static VALUE struct_ref5(obj) VALUE obj; {return RSTRUCT(obj)->ptr[5];}
-static VALUE struct_ref6(obj) VALUE obj; {return RSTRUCT(obj)->ptr[6];}
-static VALUE struct_ref7(obj) VALUE obj; {return RSTRUCT(obj)->ptr[7];}
-static VALUE struct_ref8(obj) VALUE obj; {return RSTRUCT(obj)->ptr[8];}
-static VALUE struct_ref9(obj) VALUE obj; {return RSTRUCT(obj)->ptr[9];}
+static VALUE rb_struct_ref0(obj) VALUE obj; {return RSTRUCT(obj)->ptr[0];}
+static VALUE rb_struct_ref1(obj) VALUE obj; {return RSTRUCT(obj)->ptr[1];}
+static VALUE rb_struct_ref2(obj) VALUE obj; {return RSTRUCT(obj)->ptr[2];}
+static VALUE rb_struct_ref3(obj) VALUE obj; {return RSTRUCT(obj)->ptr[3];}
+static VALUE rb_struct_ref4(obj) VALUE obj; {return RSTRUCT(obj)->ptr[4];}
+static VALUE rb_struct_ref5(obj) VALUE obj; {return RSTRUCT(obj)->ptr[5];}
+static VALUE rb_struct_ref6(obj) VALUE obj; {return RSTRUCT(obj)->ptr[6];}
+static VALUE rb_struct_ref7(obj) VALUE obj; {return RSTRUCT(obj)->ptr[7];}
+static VALUE rb_struct_ref8(obj) VALUE obj; {return RSTRUCT(obj)->ptr[8];}
+static VALUE rb_struct_ref9(obj) VALUE obj; {return RSTRUCT(obj)->ptr[9];}
 
 VALUE (*ref_func[10])() = {
-    struct_ref0,
-    struct_ref1,
-    struct_ref2,
-    struct_ref3,
-    struct_ref4,
-    struct_ref5,
-    struct_ref6,
-    struct_ref7,
-    struct_ref8,
-    struct_ref9,
+    rb_struct_ref0,
+    rb_struct_ref1,
+    rb_struct_ref2,
+    rb_struct_ref3,
+    rb_struct_ref4,
+    rb_struct_ref5,
+    rb_struct_ref6,
+    rb_struct_ref7,
+    rb_struct_ref8,
+    rb_struct_ref9,
 };
 
 static VALUE
-struct_set(obj, val)
+rb_struct_set(obj, val)
     VALUE obj, val;
 {
     VALUE member, slot;
@@ -116,15 +116,15 @@ struct_set(obj, val)
 
     member = rb_iv_get(class_of(obj), "__member__");
     if (NIL_P(member)) {
-	Fatal("non-initialized struct");
+	rb_bug("non-initialized struct");
     }
     for (i=0; i<RARRAY(member)->len; i++) {
 	slot = RARRAY(member)->ptr[i];
-	if (id_attrset(FIX2INT(slot)) == rb_frame_last_func()) {
+	if (rb_id_attrset(FIX2INT(slot)) == rb_frame_last_func()) {
 	    return RSTRUCT(obj)->ptr[i] = val;
 	}
     }
-    NameError("not struct member");
+    rb_raise(rb_eNameError, "not struct member");
     /* not reached */
 }
 
@@ -137,31 +137,31 @@ make_struct(name, member, klass)
     int i;
 
     if (NIL_P(name)) {
-	nstr = class_new(klass);
+	nstr = rb_class_new(klass);
     }
     else {
 	char *cname = STR2CSTR(name);
 	id = rb_intern(cname);
 	if (!rb_is_const_id(id)) {
-	    NameError("identifier %s needs to be constant", cname);
+	    rb_raise(rb_eNameError, "identifier %s needs to be constant", cname);
 	}
 	nstr = rb_define_class_under(klass, cname, klass);
     }
     rb_iv_set(nstr, "__size__", INT2FIX(RARRAY(member)->len));
     rb_iv_set(nstr, "__member__", member);
 
-    rb_define_singleton_method(nstr, "new", struct_alloc, -2);
-    rb_define_singleton_method(nstr, "[]", struct_alloc, -2);
-    rb_define_singleton_method(nstr, "members", struct_s_members, 0);
+    rb_define_singleton_method(nstr, "new", rb_struct_alloc, -2);
+    rb_define_singleton_method(nstr, "[]", rb_struct_alloc, -2);
+    rb_define_singleton_method(nstr, "members", rb_struct_s_members, 0);
     for (i=0; i< RARRAY(member)->len; i++) {
 	ID id = FIX2INT(RARRAY(member)->ptr[i]);
 	if (i<10) {
 	    rb_define_method_id(nstr, id, ref_func[i], 0);
 	}
 	else {
-	    rb_define_method_id(nstr, id, struct_ref, 0);
+	    rb_define_method_id(nstr, id, rb_struct_ref, 0);
 	}
-	rb_define_method_id(nstr, id_attrset(id), struct_set, 1);
+	rb_define_method_id(nstr, rb_id_attrset(id), rb_struct_set, 1);
     }
 
     return nstr;
@@ -177,9 +177,9 @@ make_struct(name, member, klass)
 
 VALUE
 #ifdef HAVE_STDARG_PROTOTYPES
-struct_define(char *name, ...)
+rb_struct_define(char *name, ...)
 #else
-struct_define(name, va_alist)
+rb_struct_define(name, va_alist)
     char *name;
     va_dcl
 #endif
@@ -188,21 +188,21 @@ struct_define(name, va_alist)
     VALUE nm, ary;
     char *mem;
 
-    nm = str_new2(name);
-    ary = ary_new();
+    nm = rb_str_new2(name);
+    ary = rb_ary_new();
 
     va_init_list(ar, name);
     while (mem = va_arg(ar, char*)) {
 	ID slot = rb_intern(mem);
-	ary_push(ary, INT2FIX(slot));
+	rb_ary_push(ary, INT2FIX(slot));
     }
     va_end(ar);
 
-    return make_struct(nm, ary, cStruct);
+    return make_struct(nm, ary, rb_cStruct);
 }
 
 static VALUE
-struct_s_def(argc, argv, klass)
+rb_struct_s_def(argc, argv, klass)
     int argc;
     VALUE *argv;
 {
@@ -216,13 +216,13 @@ struct_s_def(argc, argv, klass)
 	RARRAY(rest)->ptr[i] = INT2FIX(id);
     }
     st = make_struct(name, rest, klass);
-    obj_call_init(st);
+    rb_obj_call_init(st);
 
     return st;
 }
 
 VALUE
-struct_alloc(klass, values)
+rb_struct_alloc(klass, values)
     VALUE klass, values;
 {
     VALUE size;
@@ -230,8 +230,8 @@ struct_alloc(klass, values)
 
     size = rb_iv_get(klass, "__size__");
     n = FIX2INT(size);
-    if (n < RARRAY(values)->len) {
-	ArgError("struct size differs");
+    if (n != RARRAY(values)->len) {
+	rb_raise(rb_eArgError, "struct size differs");
     }
     else {
 	NEWOBJ(st, struct RStruct);
@@ -240,8 +240,7 @@ struct_alloc(klass, values)
 	st->ptr = ALLOC_N(VALUE, n);
 	st->len = n;
 	MEMCPY(st->ptr, RARRAY(values)->ptr, VALUE, RARRAY(values)->len);
-	memclear(st->ptr+RARRAY(values)->len, n-RARRAY(values)->len);
-	obj_call_init((VALUE)st);
+	rb_obj_call_init((VALUE)st);
 
 	return (VALUE)st;
     }
@@ -250,32 +249,32 @@ struct_alloc(klass, values)
 
 VALUE
 #ifdef HAVE_STDARG_PROTOTYPES
-struct_new(VALUE klass, ...)
+rb_struct_new(VALUE klass, ...)
 #else
-struct_new(klass, va_alist)
+rb_struct_new(klass, va_alist)
     VALUE klass;
     va_dcl
 #endif
 {
     VALUE val, mem;
-    int size;
+    int size, i;
     va_list args;
 
     val = rb_iv_get(klass, "__size__");
     size = FIX2INT(val); 
-    mem = ary_new();
+    mem = rb_ary_new2(size);
     va_init_list(args, klass);
-    while (size--) {
+    for (i=0; i<size; i++) {
 	val = va_arg(args, VALUE);
-	ary_push(mem, val);
+	rb_ary_store(mem, i, val);
     }
     va_end(args);
 
-    return struct_alloc(klass, mem);
+    return rb_struct_alloc(klass, mem);
 }
 
 static VALUE
-struct_each(s)
+rb_struct_each(s)
     VALUE s;
 {
     int i;
@@ -287,19 +286,14 @@ struct_each(s)
 }
 
 static VALUE
-struct_to_s(s)
+rb_struct_to_s(s)
     VALUE s;
 {
-    char *name, *buf;
-
-    name = rb_class2name(CLASS_OF(s));
-    buf = ALLOCA_N(char, strlen(name)+1);
-    sprintf(buf, "%s", name);
-    return str_new2(buf);
+    return rb_str_new2(rb_class2name(CLASS_OF(s)));
 }
 
 static VALUE
-struct_inspect(s)
+rb_struct_inspect(s)
     VALUE s;
 {
     char *name = rb_class2name(CLASS_OF(s));
@@ -308,40 +302,40 @@ struct_inspect(s)
 
     member = rb_iv_get(CLASS_OF(s), "__member__");
     if (NIL_P(member)) {
-	Fatal("non-initialized struct");
+	rb_bug("non-initialized struct");
     }
 
-    str = str_new2("#<");
-    str_cat(str, name, strlen(name));
-    str_cat(str, " ", 1);
+    str = rb_str_new2("#<");
+    rb_str_cat(str, name, strlen(name));
+    rb_str_cat(str, " ", 1);
     for (i=0; i<RSTRUCT(s)->len; i++) {
 	VALUE str2, slot;
 	char *p;
 
 	if (i > 0) {
-	    str_cat(str, ", ", 2);
+	    rb_str_cat(str, ", ", 2);
 	}
 	slot = RARRAY(member)->ptr[i];
 	p = rb_id2name(FIX2INT(slot));
-	str_cat(str, p, strlen(p));
-	str_cat(str, "=", 1);
+	rb_str_cat(str, p, strlen(p));
+	rb_str_cat(str, "=", 1);
 	str2 = rb_inspect(RSTRUCT(s)->ptr[i]);
-	str_cat(str, RSTRING(str2)->ptr, RSTRING(str2)->len);
+	rb_str_cat(str, RSTRING(str2)->ptr, RSTRING(str2)->len);
     }
-    str_cat(str, ">", 1);
+    rb_str_cat(str, ">", 1);
 
     return str;
 }
 
 static VALUE
-struct_to_a(s)
+rb_struct_to_a(s)
     VALUE s;
 {
-    return ary_new4(RSTRUCT(s)->len, RSTRUCT(s)->ptr);
+    return rb_ary_new4(RSTRUCT(s)->len, RSTRUCT(s)->ptr);
 }
 
 static VALUE
-struct_clone(s)
+rb_struct_clone(s)
     VALUE s;
 {
     NEWOBJ(st, struct RStruct);
@@ -355,7 +349,7 @@ struct_clone(s)
 }
 
 static VALUE
-struct_aref_id(s, id)
+rb_struct_aref_id(s, id)
     VALUE s;
     ID id;
 {
@@ -364,7 +358,7 @@ struct_aref_id(s, id)
 
     member = rb_iv_get(CLASS_OF(s), "__member__");
     if (NIL_P(member)) {
-	Bug("non-initialized struct");
+	rb_bug("non-initialized struct");
     }
 
     len = RARRAY(member)->len;
@@ -373,30 +367,32 @@ struct_aref_id(s, id)
 	    return RSTRUCT(s)->ptr[i];
 	}
     }
-    NameError("no member '%s' in struct", rb_id2name(id));
+    rb_raise(rb_eNameError, "no member '%s' in struct", rb_id2name(id));
 }
 
 VALUE
-struct_aref(s, idx)
+rb_struct_aref(s, idx)
     VALUE s, idx;
 {
     int i;
 
     if (TYPE(idx) == T_STRING) {
-	return struct_aref_id(s, rb_to_id(idx));
+	return rb_struct_aref_id(s, rb_to_id(idx));
     }
 
     i = NUM2INT(idx);
     if (i < 0) i = RSTRUCT(s)->len + i;
     if (i < 0)
-        IndexError("offset %d too small for struct(size:%d)", i, RSTRUCT(s)->len);
+        rb_raise(rb_eIndexError, "offset %d too small for struct(size:%d)",
+		 i, RSTRUCT(s)->len);
     if (RSTRUCT(s)->len <= i)
-        IndexError("offset %d too large for struct(size:%d)", i, RSTRUCT(s)->len);
+        rb_raise(rb_eIndexError, "offset %d too large for struct(size:%d)",
+		 i, RSTRUCT(s)->len);
     return RSTRUCT(s)->ptr[i];
 }
 
 static VALUE
-struct_aset_id(s, id, val)
+rb_struct_aset_id(s, id, val)
     VALUE s, val;
     ID id;
 {
@@ -405,7 +401,7 @@ struct_aset_id(s, id, val)
 
     member = rb_iv_get(CLASS_OF(s), "__member__");
     if (NIL_P(member)) {
-	Bug("non-initialized struct");
+	rb_bug("non-initialized struct");
     }
 
     len = RARRAY(member)->len;
@@ -415,66 +411,68 @@ struct_aset_id(s, id, val)
 	    return val;
 	}
     }
-    NameError("no member '%s' in struct", rb_id2name(id));
+    rb_raise(rb_eNameError, "no member '%s' in struct", rb_id2name(id));
 }
 
 VALUE
-struct_aset(s, idx, val)
+rb_struct_aset(s, idx, val)
     VALUE s, idx, val;
 {
     int i;
 
     if (TYPE(idx) == T_STRING) {
-	return struct_aset_id(s, rb_to_id(idx), val);
+	return rb_struct_aset_id(s, rb_to_id(idx), val);
     }
 
     i = NUM2INT(idx);
     if (i < 0) i = RSTRUCT(s)->len + i;
     if (i < 0)
-        IndexError("offset %d too small for struct(size:%d)", i, RSTRUCT(s)->len);
+        rb_raise(rb_eIndexError, "offset %d too small for struct(size:%d)",
+		 i, RSTRUCT(s)->len);
     if (RSTRUCT(s)->len <= i)
-        IndexError("offset %d too large for struct(size:%d)", i, RSTRUCT(s)->len);
+        rb_raise(rb_eIndexError, "offset %d too large for struct(size:%d)",
+		 i, RSTRUCT(s)->len);
     return RSTRUCT(s)->ptr[i] = val;
 }
 
 static VALUE
-struct_equal(s, s2)
+rb_struct_equal(s, s2)
     VALUE s, s2;
 {
     int i;
 
-    if (TYPE(s2) != T_STRUCT) return FALSE;
-    if (CLASS_OF(s) != CLASS_OF(s2)) return FALSE;
+    if (TYPE(s2) != T_STRUCT) return Qfalse;
+    if (CLASS_OF(s) != CLASS_OF(s2)) return Qfalse;
     if (RSTRUCT(s)->len != RSTRUCT(s2)->len) {
-	Bug("inconsistent struct"); /* should never happen */
+	rb_bug("inconsistent struct"); /* should never happen */
     }
 
     for (i=0; i<RSTRUCT(s)->len; i++) {
-	if (!rb_equal(RSTRUCT(s)->ptr[i], RSTRUCT(s2)->ptr[i])) return FALSE;
+	if (!rb_equal(RSTRUCT(s)->ptr[i], RSTRUCT(s2)->ptr[i])) return Qfalse;
     }
-    return TRUE;
+    return Qtrue;
 }
 
 static VALUE
-struct_eql(s, s2)
+rb_struct_eql(s, s2)
     VALUE s, s2;
 {
     int i;
 
-    if (TYPE(s2) != T_STRUCT) return FALSE;
-    if (CLASS_OF(s) != CLASS_OF(s2)) return FALSE;
+    if (TYPE(s2) != T_STRUCT) return Qfalse;
+    if (CLASS_OF(s) != CLASS_OF(s2)) return Qfalse;
     if (RSTRUCT(s)->len != RSTRUCT(s2)->len) {
-	Bug("inconsistent struct"); /* should never happen */
+	rb_bug("inconsistent struct"); /* should never happen */
     }
 
     for (i=0; i<RSTRUCT(s)->len; i++) {
-	if (!rb_eql(RSTRUCT(s)->ptr[i], RSTRUCT(s2)->ptr[i])) return FALSE;
+	if (!rb_eql(RSTRUCT(s)->ptr[i], RSTRUCT(s2)->ptr[i])) return Qfalse;
     }
-    return TRUE;
+    return Qtrue;
 }
 
 static VALUE
-struct_hash(s)
+rb_struct_hash(s)
     VALUE s;
 {
     int i, h;
@@ -489,25 +487,25 @@ struct_hash(s)
 void
 Init_Struct()
 {
-    cStruct = rb_define_class("Struct", cObject);
-    rb_include_module(cStruct, mEnumerable);
+    rb_cStruct = rb_define_class("Struct", rb_cObject);
+    rb_include_module(rb_cStruct, rb_mEnumerable);
 
-    rb_define_singleton_method(cStruct, "new", struct_s_def, -1);
+    rb_define_singleton_method(rb_cStruct, "new", rb_struct_s_def, -1);
 
-    rb_define_method(cStruct, "clone", struct_clone, 0);
+    rb_define_method(rb_cStruct, "clone", rb_struct_clone, 0);
 
-    rb_define_method(cStruct, "==", struct_equal, 1);
-    rb_define_method(cStruct, "eql?", struct_eql, 1);
-    rb_define_method(cStruct, "hash", struct_hash, 0);
+    rb_define_method(rb_cStruct, "==", rb_struct_equal, 1);
+    rb_define_method(rb_cStruct, "eql?", rb_struct_eql, 1);
+    rb_define_method(rb_cStruct, "hash", rb_struct_hash, 0);
 
-    rb_define_method(cStruct, "to_s", struct_to_s, 0);
-    rb_define_method(cStruct, "inspect", struct_inspect, 0);
-    rb_define_method(cStruct, "to_a", struct_to_a, 0);
-    rb_define_method(cStruct, "values", struct_to_a, 0);
+    rb_define_method(rb_cStruct, "to_s", rb_struct_to_s, 0);
+    rb_define_method(rb_cStruct, "inspect", rb_struct_inspect, 0);
+    rb_define_method(rb_cStruct, "to_a", rb_struct_to_a, 0);
+    rb_define_method(rb_cStruct, "values", rb_struct_to_a, 0);
 
-    rb_define_method(cStruct, "each", struct_each, 0);
-    rb_define_method(cStruct, "[]", struct_aref, 1);
-    rb_define_method(cStruct, "[]=", struct_aset, 2);
+    rb_define_method(rb_cStruct, "each", rb_struct_each, 0);
+    rb_define_method(rb_cStruct, "[]", rb_struct_aref, 1);
+    rb_define_method(rb_cStruct, "[]=", rb_struct_aset, 2);
 
-    rb_define_method(cStruct, "members", struct_members, 0);
+    rb_define_method(rb_cStruct, "members", rb_struct_members, 0);
 }

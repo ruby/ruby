@@ -1833,7 +1833,7 @@ kconv_kconv(argc, argv)
 	if (in_code == _NOCONV) return (VALUE)src;
     }
 
-    dst = str_new(0, RSTRING(src)->len*3+10); /* large enough? */
+    dst = rb_str_new(0, RSTRING(src)->len*3+10); /* large enough? */
     RSTRING(dst)->len = do_kconv(RSTRING(src)->ptr, RSTRING(dst)->ptr, RSTRING(dst)->len, out_code, in_code);
 
     return dst;
@@ -1847,7 +1847,7 @@ kconv_tojis(obj, src)
 
     Check_Type(src, T_STRING);
 
-    dst = str_new(0, RSTRING(src)->len*3+10); /* large enough? */
+    dst = rb_str_new(0, RSTRING(src)->len*3+10); /* large enough? */
     RSTRING(dst)->len = do_kconv(RSTRING(src)->ptr, RSTRING(dst)->ptr, RSTRING(dst)->len, _JIS, _AUTO);
 
     return dst;
@@ -1861,7 +1861,7 @@ kconv_toeuc(obj, src)
 
     Check_Type(src, T_STRING);
 
-    dst = str_new(0, RSTRING(src)->len*3+10); /* large enough? */
+    dst = rb_str_new(0, RSTRING(src)->len*3+10); /* large enough? */
     RSTRING(dst)->len = do_kconv(RSTRING(src)->ptr, RSTRING(dst)->ptr, RSTRING(dst)->len, _EUC, _AUTO);
 
     return (VALUE)dst;
@@ -1875,7 +1875,7 @@ kconv_tosjis(obj, src)
 
     Check_Type(src, T_STRING);
 
-    dst = str_new(0, RSTRING(src)->len*3+10); /* large enough? */
+    dst = rb_str_new(0, RSTRING(src)->len*3+10); /* large enough? */
     RSTRING(dst)->len = do_kconv(RSTRING(src)->ptr, RSTRING(dst)->ptr, RSTRING(dst)->len, _SJIS, _AUTO);
 
     return dst;

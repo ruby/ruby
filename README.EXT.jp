@@ -171,43 +171,43 @@ Rubyが用意している関数を用いてください．
 
  文字列に対する関数
 
-  str_new(char *ptr, int len)
+  rb_str_new(char *ptr, int len)
 
     新しいRubyの文字列を生成する．
 
-  str_new2(char *ptr)
+  rb_str_new2(char *ptr)
 
     Cの文字列からRubyの文字列を生成する．この関数の機能は
-    str_new(ptr, strlen(ptr))と同等である．
+    rb_str_new(ptr, strlen(ptr))と同等である．
 
-  str_cat(VALUE str, char *ptr, int len)
+  rb_str_cat(VALUE str, char *ptr, int len)
 
     Rubyの文字列strにlenバイトの文字列ptrを追加する．
 
  配列に対する関数
 
-  ary_new()
+  rb_ary_new()
 
     要素が0の配列を生成する．
 
-  ary_new2(int len)
+  rb_ary_new2(int len)
 
     要素が0の配列を生成する．len要素分の領域をあらかじめ割り
     当てておく．
 
-  ary_new3(int n, ...)
+  rb_ary_new3(int n, ...)
 
     引数で指定したn要素を含む配列を生成する．
 
-  ary_new4(int n, VALUE *elts)
+  rb_ary_new4(int n, VALUE *elts)
 
     配列で与えたn要素の配列を生成する．
 
-  ary_push(VALUE ary, VALUE val)
-  ary_pop(VALUE ary)
-  ary_shift(VALUE ary)
-  ary_unshift(VALUE ary, VALUE val)
-  ary_entry(VALUE ary, int idx)
+  rb_ary_push(VALUE ary, VALUE val)
+  rb_ary_pop(VALUE ary)
+  rb_ary_shift(VALUE ary)
+  rb_ary_unshift(VALUE ary, VALUE val)
+  rb_ary_entry(VALUE ary, int idx)
 
     Arrayの同名のメソッドと同じ働きをする関数．第1引数は必ず
     配列でなければならない．
@@ -403,10 +403,10 @@ C言語とRubyの間で情報を共有する方法について解説します．
 
 以下のRubyの定数はCのレベルから参照できる．
 
-  TRUE
-  FALSE
+  Qtrue
+  Qfalse
 
-真偽値．FALSEはC言語でも偽とみなされる(つまり0)．
+真偽値．QfalseはC言語でも偽とみなされる(つまり0)．
 
   Qnil
 
@@ -557,9 +557,9 @@ Rubyは拡張モジュールをロードする時に「Init_モジュール名」と
 Init_dbm()
 {
     /* DBMクラスを定義する */
-    cDBM = rb_define_class("DBM", cObject);
+    cDBM = rb_define_class("DBM", rb_cObject);
     /* DBMはEnumerateモジュールをインクルードする */
-    rb_include_module(cDBM, mEnumerable);
+    rb_include_module(cDBM, rb_mEnumerable);
 
     /* DBMクラスのクラスメソッドopen(): 引数はCの配列で受ける */
     rb_define_singleton_method(cDBM, "open", fdbm_s_open, -1);
@@ -855,11 +855,11 @@ Rubyオブジェクトを表現する型．必要に応じてキャストして用いる．
 
 定数: nilオブジェクト
 
- TRUE
+ Qtrue
 
 定数: trueオブジェクト(真のデフォルト値)
 
- FALSE
+ Qfalse
 
 定数: falseオブジェクト
 
@@ -897,9 +897,9 @@ dataからtype型のポインタを取り出し変数svalに代入するマクロ．
  NUM2INT(value)
  INT2NUM(i)
  NUM2DBL(value)
- float_new(f)
+ rb_float_new(f)
  STR2CSTR(value)
- str_new2(s)
+ rb_str_new2(s)
 
 ** クラス/モジュール定義
 
@@ -1071,25 +1071,25 @@ valを値としてイテレータブロックを呼び出す．
 
 ** 例外・エラー
 
- void Warning(char *fmt, ...)
+ void rb_warning(char *fmt, ...)
 
-verbose時に標準エラー出力に警告情報を表示する．引数はprintf()と同じ．
+rb_verbose時に標準エラー出力に警告情報を表示する．引数はprintf()と同じ．
 
- void Fail(char *fmt, ...)
+ void rb_raise(rb_eRuntimeError, char *fmt, ...)
 
 RuntimeError例外を発生させる．引数はprintf()と同じ．
 
- void Raise(VALUE exception, char *fmt, ...)
+ void rb_raise(VALUE exception, char *fmt, ...)
 
 exceptionで指定した例外を発生させる．fmt以下の引数はprintf()と同じ．
 
- void Fatal(char *fmt, ...)
+ void rb_fatal(char *fmt, ...)
 
 致命的例外を発生させる．通常の例外処理は行なわれず, インター
 プリタが終了する(ただしensureで指定されたコードは終了前に実
 行される)．
 
- void Bug(char *fmt, ...)
+ void rb_bug(char *fmt, ...)
 
 インタープリタなどプログラムのバグでしか発生するはずのない状
 況の時呼ぶ．インタープリタはコアダンプし直ちに終了する．例外
@@ -1121,7 +1121,7 @@ extconf.rbの中では利用可能なコンパイル条件チェックの関数は以
  have_library(lib, func)
 
 関数funcを定義しているライブラリlibの存在をチェックする．ラ
-イブラリが存在する時，TRUEを返す．
+イブラリが存在する時，Qtrueを返す．
 
  have_func(func)
 

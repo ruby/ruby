@@ -159,43 +159,43 @@ Rubyが用意している関数を用いてください．
 
  String funtions
 
-  str_new(char *ptr, int len)
+  rb_str_new(char *ptr, int len)
 
     Creates a new Ruby string.
 
-  str_new2(char *ptr)
+  rb_str_new2(char *ptr)
 
     Creates a new Ruby string from C string.  This is equivalent to
-    str_new(ptr, strlen(ptr)).
+    rb_str_new(ptr, strlen(ptr)).
 
-  str_cat(VALUE str, char *ptr, int len)
+  rb_str_cat(VALUE str, char *ptr, int len)
 
     Appends len bytes data from ptr to the Ruby string.
 
  Array functions
 
-  ary_new()
+  rb_ary_new()
 
     Creates an array with no element.
 
-  ary_new2(int len)
+  rb_ary_new2(int len)
 
     Creates an array with no element, with allocating internal buffer
     for len elements.
 
-  ary_new3(int n, ...)
+  rb_ary_new3(int n, ...)
 
     Creates an n-elements array from arguments.
 
-  ary_new4(int n, VALUE *elts)
+  rb_ary_new4(int n, VALUE *elts)
 
     Creates an n-elements array from C array.
 
-  ary_push(VALUE ary, VALUE val)
-  ary_pop(VALUE ary)
-  ary_shift(VALUE ary)
-  ary_unshift(VALUE ary, VALUE val)
-  ary_entry(VALUE ary, int idx)
+  rb_ary_push(VALUE ary, VALUE val)
+  rb_ary_pop(VALUE ary)
+  rb_ary_shift(VALUE ary)
+  rb_ary_unshift(VALUE ary, VALUE val)
+  rb_ary_entry(VALUE ary, int idx)
 
     Array operations.  The first argument to each functions must be an 
     array.  They may dump core if other types given.
@@ -376,10 +376,10 @@ C言語とRubyの間で情報を共有する方法について解説します．
 
 Following Ruby constants can be referred from C.
 
-  TRUE
-  FALSE
+  Qtrue
+  Qfalse
 
-Boolean values.  FALSE is false in the C also (i.e. 0).
+Boolean values.  Qfalse is false in the C also (i.e. 0).
 
   Qnil
 
@@ -526,9 +526,9 @@ Rubyは拡張モジュールをロードする時に「Init_モジュール名」と
 Init_dbm()
 {
     /* DBMクラスを定義する */
-    cDBM = rb_define_class("DBM", cObject);
+    cDBM = rb_define_class("DBM", rb_cObject);
     /* DBMはEnumerateモジュールをインクルードする */
-    rb_include_module(cDBM, mEnumerable);
+    rb_include_module(cDBM, rb_mEnumerable);
 
     /* DBMクラスのクラスメソッドopen(): 引数はCの配列で受ける */
     rb_define_singleton_method(cDBM, "open", fdbm_s_open, -1);
@@ -704,9 +704,9 @@ Rubyのディレクトリでmakeを実行するとMakefileを生成からmake，
 してくれます．extconf.rbを書き換えるなどしてMakefileの再生成
 が必要な時はまたRubyディレクトリでmakeしてください．
 
-(9) debug
+(9) rb_debug
 
-You may need to debug the module.  The modules can be linked 
+You may need to rb_debug the module.  The modules can be linked 
 statically by adding directory name in the ext/Setup file,
 so that you can inspect the module by the debugger.
 
@@ -792,13 +792,13 @@ Rubyオブジェクトを表現する型．必要に応じてキャストして用いる．
 
 const: nil object
 
- TRUE
+ Qtrue
 
-const: TRUE object(default true value)
+const: Qtrue object(default true value)
 
- FALSE
+ Qfalse
 
-const: FALSE object
+const: Qfalse object
 
 ** Cデータのカプセル化
 
@@ -988,21 +988,21 @@ valを値としてイテレータブロックを呼び出す．
 
 ** 例外・エラー
 
- void Warning(char *fmt, ...)
+ void rb_warning(char *fmt, ...)
 
-verbose時に標準エラー出力に警告情報を表示する．引数はprintf()と同じ．
+rb_verbose時に標準エラー出力に警告情報を表示する．引数はprintf()と同じ．
 
- void Fail(char *fmt, ...)
+ void rb_raise(rb_eRuntimeError, char *fmt, ...)
 
 例外を発生させる．引数はprintf()と同じ．
 
- void Fatal(char *fmt, ...)
+ void rb_fatal(char *fmt, ...)
 
 致命的例外を発生させる．通常の例外処理は行なわれず, インター
 プリタが終了する(ただしensureで指定されたコードは終了前に実
 行される)．
 
- void Bug(char *fmt, ...)
+ void rb_bug(char *fmt, ...)
 
 インタープリタなどプログラムのバグでしか発生するはずのない状
 況の時呼ぶ．インタープリタはコアダンプし直ちに終了する．例外
@@ -1034,7 +1034,7 @@ extconf.rbの中では利用可能なコンパイル条件チェックの関数は以
  have_library(lib, func)
 
 関数funcを定義しているライブラリlibの存在をチェックする．ラ
-イブラリが存在する時，TRUEを返す．
+イブラリが存在する時，Qtrueを返す．
 
  have_func(func)
 

@@ -16,10 +16,10 @@
 # include <Quickdraw.h>
 #endif
 
-/* for debug */
+/* for rb_debug */
 
-#define DUMP1(ARG1) if (debug) { fprintf(stderr, "tcltklib: %s\n", ARG1);}
-#define DUMP2(ARG1, ARG2) if (debug) { fprintf(stderr, "tcltklib: ");\
+#define DUMP1(ARG1) if (rb_debug) { fprintf(stderr, "tcltklib: %s\n", ARG1);}
+#define DUMP2(ARG1, ARG2) if (rb_debug) { fprintf(stderr, "tcltklib: ");\
 fprintf(stderr, ARG1, ARG2); fprintf(stderr, "\n"); }
 /*
 #define DUMP1(ARG1)
@@ -56,7 +56,7 @@ void _timer_for_tcl (ClientData clientData)
     timer->flag = 0;
     CHECK_INTS;
 #ifdef THREAD 
-    if (!thread_critical) thread_schedule();
+    if (!rb_thread_critical) rb_thread_schedule();
 #endif
 
     timer->token = Tk_CreateTimerHandler(200, _timer_for_tcl, 
@@ -121,7 +121,7 @@ ip_ruby(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
 
     /* ruby command has 1 arg. */
     if (argc != 2) {
-	ArgError("wrong # of arguments (%d for 1)", argc);
+	rb_raise(rb_eArgError, "wrong # of arguments (%d for 1)", argc);
     }
 
     /* get C string from Tcl object */
@@ -133,10 +133,10 @@ ip_ruby(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
 
     /* evaluate the argument string by ruby */
     DUMP2("rb_eval_string(%s)", arg);
-    old_trapflg = trap_immediate;
-    trap_immediate = 0;
+    old_trapflg = rb_trap_immediate;
+    rb_trap_immediate = 0;
     res = rb_rescue(rb_eval_string, (VALUE)arg, ip_eval_rescue, (VALUE)&failed);
-    trap_immediate = old_trapflg;
+    rb_trap_immediate = old_trapflg;
 
     Tcl_ResetResult(interp);
     if (failed) {
@@ -192,11 +192,11 @@ ip_new(VALUE self)
     /* from Tcl_AppInit() */
     DUMP1("Tcl_Init");
     if (Tcl_Init(ptr->ip) == TCL_ERROR) {
-	Fail("Tcl_Init");
+	rb_raise(rb_eRuntimeError, "Tcl_Init");
     }
     DUMP1("Tk_Init");
     if (Tk_Init(ptr->ip) == TCL_ERROR) {
-	Fail("Tk_Init");
+	rb_raise(rb_eRuntimeError, "Tk_Init");
     }
     DUMP1("Tcl_StaticPackage(\"Tk\")");
     Tcl_StaticPackage(ptr->ip, "Tk", Tk_Init,
@@ -234,12 +234,12 @@ ip_eval(VALUE self, VALUE str)
     DUMP2("Tcl_Eval(%s)", buf);
     ptr->return_value = Tcl_Eval(ptr->ip, buf);
     if (ptr->return_value == TCL_ERROR) {
-	Fail(ptr->ip->result);
+	rb_raise(rb_eRuntimeError, ptr->ip->result);
     }
     DUMP2("(TCL_Eval result) %d", ptr->return_value);
 
     /* pass back the result (as string) */
-    return(str_new2(ptr->ip->result));
+    return(rb_str_new2(ptr->ip->result));
 }
 
 
@@ -271,7 +271,7 @@ ip_toUTF8(VALUE self, VALUE str, VALUE encodename)
   Tcl_FreeEncoding(encoding);
   Tcl_DStringFree(&dstr);
 
-  return str_new2(buff2);
+  return rb_str_new2(buff2);
 #endif
 }
 
@@ -303,7 +303,7 @@ ip_fromUTF8(VALUE self, VALUE str, VALUE encodename)
   Tcl_FreeEncoding(encoding);
   Tcl_DStringFree(&dstr);
 
-  return str_new2(buff2);
+  return rb_str_new2(buff2);
 #endif
 }
 
@@ -330,7 +330,7 @@ ip_invoke(int argc, VALUE *argv, VALUE obj)
 
     /* map from the command name to a C procedure */
     if (!Tcl_GetCommandInfo(ptr->ip, cmd, &info)) {
-	NameError("invalid command name `%s'", cmd);
+	rb_raise(rb_eNameError, "invalid command name `%s'", cmd);
     }
 #if TCL_MAJOR_VERSION >= 8
     object = info.isNativeObjectProc;
@@ -379,11 +379,11 @@ ip_invoke(int argc, VALUE *argv, VALUE obj)
     }
 
     if (ptr->return_value == TCL_ERROR) {
-	Fail(ptr->ip->result);
+	rb_raise(rb_eRuntimeError, ptr->ip->result);
     }
 
     /* pass back the result (as string) */
-    return(str_new2(ptr->ip->result));
+    return(rb_str_new2(ptr->ip->result));
 }
 
 /* get return code from Tcl_Eval() */
@@ -413,10 +413,10 @@ void Init_tcltklib()
     extern VALUE rb_argv0;	/* the argv[0] */
 
     VALUE lib = rb_define_module("TclTkLib");
-    VALUE ip = rb_define_class("TclTkIp", cObject);
+    VALUE ip = rb_define_class("TclTkIp", rb_cObject);
 
-    eTkCallbackBreak = rb_define_class("TkCallbackBreak", eStandardError);
-    eTkCallbackContinue = rb_define_class("TkCallbackContinue",eStandardError);
+    eTkCallbackBreak = rb_define_class("TkCallbackBreak", rb_eStandardError);
+    eTkCallbackContinue = rb_define_class("TkCallbackContinue",rb_eStandardError);
 
     rb_define_module_function(lib, "mainloop", lib_mainloop, 0);
 

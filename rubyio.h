@@ -33,7 +33,7 @@ typedef struct OpenFile {
 #define FMODE_BINMODE   4
 #define FMODE_SYNC      8
 
-#define GetOpenFile(obj,fp) io_check_closed((fp) = RFILE(obj)->fptr)
+#define GetOpenFile(obj,fp) rb_io_check_closed((fp) = RFILE(obj)->fptr)
 
 #define MakeOpenFile(obj, fp) do {\
     fp = RFILE(obj)->fptr = ALLOC(OpenFile);\
@@ -49,10 +49,11 @@ typedef struct OpenFile {
 
 FILE *rb_fopen _((char *, char *));
 FILE *rb_fdopen _((int, char *));
-void io_writable _((OpenFile *));
-void io_readable _((OpenFile *));
-void io_fptr_finalize _((OpenFile *));
-void io_unbuffered _((OpenFile *));
-void io_check_closed _((OpenFile *));
+void rb_io_check_writable _((OpenFile *));
+void rb_io_check_readable _((OpenFile *));
+void rb_io_fptr_finalize _((OpenFile *));
+void rb_io_unbuffered _((OpenFile *));
+void rb_io_check_closed _((OpenFile *));
+void rb_eof_error _((void));
 
 #endif

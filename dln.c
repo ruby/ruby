@@ -423,7 +423,7 @@ load_text_data(fd, hdrp, bss, disp)
 }
 
 static int
-undef_print(key, value)
+underb_f_print(key, value)
     char *key, *value;
 {
     fprintf(stderr, "  %s\n", key);
@@ -434,7 +434,7 @@ static void
 dln_print_undef()
 {
     fprintf(stderr, " Undefined symbols:\n");
-    st_foreach(undef_tbl, undef_print, NULL);
+    st_foreach(undef_tbl, underb_f_print, NULL);
 }
 
 static void
@@ -830,7 +830,7 @@ load_1(fd, disp, need_init)
 	for (sym = syms; sym<end; sym++) {
 	    char *name = sym->n_un.n_name;
 	    if (name[0] == '_' && sym->n_value >= block) {
-		if (strcmp(name+1, "libs_to_be_linked") == 0) {
+		if (strcmp(name+1, "dln_libs_to_be_linked") == 0) {
 		    libs_to_be_linked = (char**)sym->n_value;
 		}
 		else if (strcmp(name+1, buf) == 0) {
@@ -885,11 +885,11 @@ search_undef(key, value, lib_tbl)
 }
 
 struct symdef {
-    int str_index;
+    int rb_str_index;
     int lib_offset;
 };
 
-char *dln_library_path = DLN_DEFAULT_LIB_PATH;
+char *dln_librrb_ary_path = DLN_DEFAULT_LIB_PATH;
 
 static int
 load_lib(lib)
@@ -920,10 +920,10 @@ load_lib(lib)
 
     /* library search path: */
     /* look for environment variable DLN_LIBRARY_PATH first. */
-    /* then variable dln_library_path. */
+    /* then variable dln_librrb_ary_path. */
     /* if path is still NULL, use "." for path. */
     path = getenv("DLN_LIBRARY_PATH");
-    if (path == NULL) path = dln_library_path;
+    if (path == NULL) path = dln_librrb_ary_path;
 
     file = dln_find_file(lib, path);
     fd = open(file, O_RDONLY);
@@ -952,7 +952,7 @@ load_lib(lib)
 	base = (struct symdef*)(data + 1);
 	name_base = (char*)(base + nsym) + sizeof(int);
 	while (nsym > 0) {
-	    char *name = name_base + base->str_index;
+	    char *name = name_base + base->rb_str_index;
 
 	    st_insert(lib_tbl, name, base->lib_offset + sizeof(ahdr));
 	    nsym--;
@@ -1186,7 +1186,7 @@ aix_loaderror(char *pathname)
 	ERRBUF_APPEND("\n");
     }
     errbuf[strlen(errbuf)-1] = '\0';	/* trim off last newline */
-    LoadError(errbuf);
+    rb_loaderror(errbuf);
     return;
 }
 #endif
@@ -1281,14 +1281,14 @@ dln_load(file)
 	lib = shl_load(file, flags, 0);
 	if (lib == NULL) {
 	    extern int errno;
-	    LoadError("%s - %s", strerror(errno), file);
+	    rb_loaderror("%s - %s", strerror(errno), file);
 	}
 	shl_findsym(&lib, buf, TYPE_PROCEDURE, (void*)&init_fct);
 	if (init_fct == NULL) {
 	    shl_findsym(&lib, buf, TYPE_UNDEFINED, (void*)&init_fct);
 	    if (init_fct == NULL) {
 		errno = ENOSYM;
-		LoadError("%s - %s", strerror(ENOSYM), file);
+		rb_loaderror("%s - %s", strerror(ENOSYM), file);
 	    }
 	}
 	(*init_fct)();
@@ -1331,12 +1331,12 @@ dln_load(file)
 	
 	/* Load object file, if return value ==0 ,  load failed*/
 	if(rld_load(NULL, NULL, object_files, NULL) == 0) {
-	    LoadError("Failed to load %.200s", file);
+	    rb_loaderror("Failed to load %.200s", file);
 	}
 
 	/* lookup the initial function */
 	if(rld_lookup(NULL, buf, &init_address) == 0) {
-	    LoadError("Failed to lookup Init function %.200s",file);
+	    rb_loaderror("Failed to lookup Init function %.200s", file);
 	}
 
 	 /* Cannot call *init_address directory, so copy this value to
@@ -1363,7 +1363,7 @@ dln_load(file)
 	    LoadError("Failed to load %.200s", file);
     }
 
-    NSLinkModule(obj_file, file, TRUE);
+    NSLinkModule(obj_file, file, Qtrue);
 
 
 	/* lookup the initial function */
@@ -1394,7 +1394,7 @@ dln_load(file)
       /* load extention module */
       img_id = load_add_on(file);
       if (img_id <= 0) {
-	LoadError("Failed to load %.200s", file);
+	rb_loaderror("Failed to load %.200s", file);
       }
       
       /* find symbol for module initialize function. */
@@ -1416,12 +1416,12 @@ dln_load(file)
 
       if ((B_BAD_IMAGE_ID == err_stat) || (B_BAD_INDEX == err_stat)) {
 	unload_add_on(img_id);
-	LoadError("Failed to lookup Init function %.200s", file);
+	rb_loaderror("Failed to lookup Init function %.200s", file);
       }
       else if (B_NO_ERROR != err_stat) {
 	char errmsg[] = "Internal of BeOS version. %.200s (symbol_name = %s)";
 	unload_add_on(img_id);
-	LoadError(errmsg, strerror(err_stat), buf);
+	rb_loaderror(errmsg, strerror(err_stat), buf);
       }
 
       /* call module initialize function. */
@@ -1444,7 +1444,6 @@ dln_load(file)
       CFragSymbolClass class;
       void (*init_fct)();
       char fullpath[MAXPATHLEN];
-      extern LoadError();
 
       strcpy(fullpath, file);
 
@@ -1453,7 +1452,7 @@ dln_load(file)
       (void)FSMakeFSSpec(0, 0, fullpath, &libspec);
       err = ResolveAliasFile(&libspec, 1, &isfolder, &didsomething);
       if ( err ) {
-	LoadError("Unresolved Alias - %s", file);
+	rb_loaderror("Unresolved Alias - %s", file);
       }
 
       /* Load the fragment (or return the connID if it is already loaded */
@@ -1463,14 +1462,14 @@ dln_load(file)
 			    errMessage);
       if ( err ) {
 	p2cstr(errMessage);
-	LoadError("%s - %s",errMessage , file);
+	rb_loaderror("%s - %s",errMessage , file);
       }
 
       /* Locate the address of the correct init function */
       c2pstr(buf);
       err = FindSymbol(connID, buf, &symAddr, &class);
       if ( err ) {
-	LoadError("Unresolved symbols - %s" , file);
+	rb_loaderror("Unresolved symbols - %s" , file);
       }
 	
       init_fct = (void (*)())symAddr;
@@ -1487,7 +1486,7 @@ dln_load(file)
 #endif
 #if !defined(_AIX) && !defined(NeXT)
   failed:
-    LoadError("%s - %s", dln_strerror(), file);
+    rb_loaderror("%s - %s", dln_strerror(), file);
 #endif
 }
 
