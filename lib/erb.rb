@@ -34,6 +34,8 @@ class ERB
     end
 
     class TrimScanner < Scanner
+      TrimSplitRegexp = /(<%%)|(%%>)|(<%=)|(<%#)|(<%)|(%>\n)|(%>)|(\n)/
+
       def initialize(src, trim_mode, percent)
 	super(src)
 	@trim_mode = trim_mode
@@ -83,17 +85,21 @@ class ERB
       def trim_line(line)
 	head = nil
 	last = nil
-	line.split(SplitRegexp).each do |token|
+	line.split(TrimSplitRegexp).each do |token|
 	  next if token.empty?
 	  head = token unless head
-	  if token == "\n" && last == '%>'
-	    next if @trim_mode == '>' 
-	    next if @trim_mode == '<>' && is_erb_stag?(head)
-	    yield("\n")
+	  if token == "%>\n"
+	    yield('%>')
+	    if @trim_mode == '>' 
+	      yield(:cr)
+	    elsif  @trim_mode == '<>' && is_erb_stag?(head)
+	      yield(:cr)
+	    else
+	      yield("\n")
+	    end
 	    break
 	  end
 	  yield(token)
-	  last = token
 	end
       end
 
@@ -158,6 +164,8 @@ class ERB
 	    content = ''
             out.push(token.to_s)
             out.cr
+	  when :cr
+	    out.cr
 	  when '<%', '<%=', '<%#'
 	    scanner.stag = token
 	    out.push("#{@put_cmd} #{content.dump}") if content.size > 0
