@@ -26,9 +26,8 @@ module Shellwords
 	  snippet.gsub!(/\\(.)/, '\1')
 	elsif line =~ /\A"/ then #"
 	  raise ArgumentError, "Unmatched double quote: #{line}"
-        elsif line.sub!(/\A'(([^'\\]|\\.)*)'/, '') then #'
+	elsif line.sub!(/\A'([^']*)'/, '') then #'
 	  snippet = $1
-	  snippet.gsub!(/\\(.)/, '\1')
 	elsif line =~ /\A'/ then #'
 	  raise ArgumentError, "Unmatched single quote: #{line}"
 	elsif line.sub!(/\A\\(.)/, '') then

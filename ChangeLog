@@ -1,3 +1,9 @@
+Sun Jan 19 23:12:21 2003  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/shellwords.rb (shellwords): A backslash ('\') in single
+	  quotes should not be regarded as meta character.  This bug or
+	  maybe feature was inherited from Perl's shellwords.pl.
+
 Fri Jan 17 03:33:42 2003  Akinori MUSHA  <knu@iDaemons.org>
 
 	* sprintf.c (rb_f_sprintf): Fix a bug caused by an uninitialized
