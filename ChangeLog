@@ -1,3 +1,7 @@
+Thu Jul 15 20:44:46  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* class.c: rdoc patch
+
 Thu Jul 15 14:12:34 2004  why the lucky stiff  <why@topi.cc>
 
 	* lib/yaml.rb (YAML::load_file, YAML::parse_file): added.

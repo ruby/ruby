@@ -632,7 +632,7 @@ class_instance_method_list(argc, argv, mod, func)
 
 /*
  *  call-seq:
- *     mod.instance_methods(include_super=false)   => array
+ *     mod.instance_methods(include_super=true)   => array
  *  
  *  Returns an array containing the names of public instance methods in
  *  the receiver. For a module, these are the public methods; for a
@@ -668,7 +668,7 @@ rb_class_instance_methods(argc, argv, mod)
 
 /*
  *  call-seq:
- *     mod.protected_instance_methods(include_super=false)   => array
+ *     mod.protected_instance_methods(include_super=true)   => array
  *  
  *  Returns a list of the protected instance methods defined in
  *  <i>mod</i>. If the optional parameter is not <code>false</code>, the
@@ -686,7 +686,7 @@ rb_class_protected_instance_methods(argc, argv, mod)
 
 /*
  *  call-seq:
- *     mod.private_instance_methods(include_super=false)    => array
+ *     mod.private_instance_methods(include_super=true)    => array
  *  
  *  Returns a list of the private instance methods defined in
  *  <i>mod</i>. If the optional parameter is not <code>false</code>, the
@@ -712,7 +712,7 @@ rb_class_private_instance_methods(argc, argv, mod)
 
 /*
  *  call-seq:
- *     mod.public_instance_methods(include_super=false)   => array
+ *     mod.public_instance_methods(include_super=true)   => array
  *  
  *  Returns a list of the public instance methods defined in <i>mod</i>.
  *  If the optional parameter is not <code>false</code>, the methods of
@@ -730,7 +730,7 @@ rb_class_public_instance_methods(argc, argv, mod)
 
 /*
  *  call-seq:
- *     obj.singleton_methods(all=false)    => array
+ *     obj.singleton_methods(all=true)    => array
  *  
  *  Returns an array of the names of singleton methods for <i>obj</i>.
  *  If the optional <i>all</i> parameter is true, the list will include
