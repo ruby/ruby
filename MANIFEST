@@ -116,6 +116,7 @@ lib/pstore.rb
 lib/rational.rb
 lib/shellwords.rb
 lib/sync.rb
+lib/telnet.rb
 lib/tempfile.rb
 lib/thread.rb
 lib/thwait.rb
