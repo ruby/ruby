@@ -42,6 +42,20 @@ class TkTreeCtrl_demo
     make_source_window()
     make_menubar()
     make_main_window()
+
+    if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+      begin
+        @tree2[:backgroundimage]
+        @has_bgimg = true
+      rescue
+        @has_bgimg = false
+      end
+    else
+      @has_bgimg = false
+    end
+
+    ####################
+
     make_list_popup()
     make_header_popup()
 
@@ -328,7 +342,8 @@ class TkTreeCtrl_demo
       [ 'Expand',   [], nil, '', {:menu_config=>{:tearoff=>false}} ]
     ]
 
-    if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+    # if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+    if @has_bgimg
       menuspec << \
       [ 'Background Image', 
         [
@@ -528,7 +543,8 @@ class TkTreeCtrl_demo
     [:data, :display, :enable].each{|k|
       @popup[:debug][k].value = w.debug_cget(k)
     }
-    if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+    # if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+    if @has_bgimg
       @popup[:bgimg].value = @images.key(w[:backgroundimage])
     end
     @popup[:bgmode].value = w[:backgroundmode]
@@ -667,6 +683,8 @@ class TkTreeCtrl_demo
 
     master = self
 
+    has_bgimg = @has_bgimg
+
     scriptDir = @ScriptDir
 
     thisPlatform = @thisPlatform
@@ -686,6 +704,8 @@ class TkTreeCtrl_demo
 
     @demo_scripts.instance_eval{
       @master = master
+
+      @has_bgimg = has_bgimg
 
       @display_styles_in_item = proc_disp_styles_in_item
 
@@ -712,7 +732,25 @@ class TkTreeCtrl_demo
       private :_get_binding
 
       def load_demo(file)
-        eval(IO.readlines(file).join, _get_binding())
+        puts "load \"#{file}\"" if $DEBUG
+        begin
+          eval(IO.readlines(file).join, _get_binding())
+        rescue Exception => e
+          bt = e.backtrace
+
+          if bt[0] =~ /^([^:]+):(\d+):/
+            errline = $2.to_i
+          else
+            raise e
+          end
+
+          if bt[1] =~ /^([^:]+):(\d+):/
+            bt.unshift("#{file}:#{errline - $2.to_i + 1}")
+            raise e
+          else
+            raise e
+          end
+        end
       end
 
       def init_pics(*args)
@@ -1063,7 +1101,8 @@ class TkTreeCtrl_demo
     end
 
     # Restore some happy defaults to the demo list
-    if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+    # if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+    if @has_bgimg
       @tree2.configure(:orient=>:vertical, :wrap=>'', 
                        :xscrollincrement=>0, :yscrollincrement=>0, 
                        :itemheight=>0, :showheader=>true, 

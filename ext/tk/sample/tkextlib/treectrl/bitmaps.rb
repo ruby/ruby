@@ -2,7 +2,8 @@
 # Demo: Bitmaps
 #
 def demoBitmaps(t)
-  if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+  #if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+  if @has_bgimg
     t.configure(:showroot=>false, :showbuttons=>false, :showlines=>false, 
                 :selectmode=>:browse, :orient=>:horizontal, :wrap=>'5 items', 
                 :showheader=>false, :backgroundimage=>@images['sky'])

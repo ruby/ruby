@@ -6,7 +6,7 @@ def get_files(file)
   dir = (file.empty?)? ENV['HOME'] : TkComm._fromUTF8(file)
   Dir.chdir(dir) rescue return ''
   Dir['*'].sort.collect{|f|
-    TkCore::INTERP._merge_tklist(TkComm._toUTF8(File.join(dir, f)))
+    [TkComm._toUTF8(File.join(dir, f)), TkComm._toUTF8(f)]
   }
 end
 
