@@ -1916,6 +1916,13 @@ rb_big_aref(x, y)
     return INT2FIX(0);
 }
 
+/*
+ * call-seq:
+ *   big.hash   => fixnum
+ *
+ * Compute a hash based on the value of _big_.
+ */
+
 static VALUE
 rb_big_hash(x)
     VALUE x;
