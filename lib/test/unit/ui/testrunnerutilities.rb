@@ -24,6 +24,11 @@ module Test
 
       module TestRunnerUtilities
 
+        # Creates a new TestRunner and runs the suite.
+        def run(suite, output_level=NORMAL)
+          return new(suite, output_level).start
+        end
+
         # Takes care of the ARGV parsing and suite
         # determination necessary for running one of the
         # TestRunners from the command line.

@@ -1,3 +1,8 @@
+Tue Jan 13 14:26:59 2004  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* lib/test/unit/ui/testrunnerutilities.rb (TestRunnerUtilities):
+	  moved run method which allows output level.  [ruby-dev:22554]
+
 Tue Jan 13 13:04:24 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* test/test_*.rb: Pathname#parent -> Pathname#dirname.

@@ -457,10 +457,6 @@ module Test
             @viewer.join rescue nil # wait deadlock to handshake
           end # def initialize(suite)
 
-          def self.run(suite)
-            new(suite).start
-          end # def self.run(suite)
-
         end # class TestRunner
 
       end # module GTK2
