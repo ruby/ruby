@@ -1097,8 +1097,8 @@ Init_marshal()
     rb_define_module_function(rb_mMarshal, "load", marshal_load, -1);
     rb_define_module_function(rb_mMarshal, "restore", marshal_load, -1);
 
-    rb_define_const(rb_mMarshal, "MAJOR_VERSION", INT2FIX(MAJOR_VERSION));
-    rb_define_const(rb_mMarshal, "MINOR_VERSION", INT2FIX(MINOR_VERSION));
+    rb_define_const(rb_mMarshal, "MAJOR_VERSION", INT2FIX(MARSHAL_MAJOR));
+    rb_define_const(rb_mMarshal, "MINOR_VERSION", INT2FIX(MARSHAL_MINOR));
 }
 
 VALUE
