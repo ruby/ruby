@@ -132,7 +132,9 @@ module MonitorMixin
 
       begin
 	Thread.stop
+        return true
       rescue Timeout
+        return false
       ensure
 	Thread.critical = true
 	if timeout && timeout_thread.alive?

@@ -1,3 +1,8 @@
+Mon Nov 10 11:40:29 2003  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/monitor.rb (wait): return true on signal/broadcastfalse and
+	false on timeout. Thanks Gennady Bystritsky.
+
 Mon Nov 10 00:07:10 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (primary): primary_value may be 0 when syntax error.
