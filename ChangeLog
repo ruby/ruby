@@ -1,3 +1,7 @@
+Sat Dec 25 11:11:48 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* stable version 1.8.2 released.
+
 Sat Dec 25 04:23:49 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (mkdir, mkdir_p): should ensure directory
@@ -5,6 +9,14 @@ Sat Dec 25 04:23:49 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (traverse, remove_dir): untaint trasted
 	  objects. (backportted from HEAD, 1.46)
+
+Sat Dec 25 01:28:23 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c: cancel io_reopen() change on Dec. 24th.
+
+	* dln.c: use <dlfcn.h> for NetBSD.  [ruby-dev:25313]
+
+	* io.c (rb_f_select): [ruby-dev:25312]
 
 Fri Dec 24 23:51:48 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
