@@ -115,6 +115,7 @@ rb_file_reopen(argc, argv, file)
     char *mode;
     OpenFile *fptr;
 
+    rb_secure(2);
     if (rb_scan_args(argc, argv, "11", &fname, &nmode) == 1) {
 	if (TYPE(fname) == T_FILE) { /* fname must be IO */
 	    return rb_io_reopen(file, fname);
@@ -234,9 +235,10 @@ rb_stat(file, st)
     VALUE file;
     struct stat *st;
 {
-    OpenFile *fptr;
-
     if (TYPE(file) == T_FILE) {
+	OpenFile *fptr;
+
+	rb_secure(2);
 	GetOpenFile(file, fptr);
 	return fstat(fileno(fptr->f), st);
     }
@@ -296,6 +298,7 @@ rb_file_lstat(obj)
     OpenFile *fptr;
     struct stat st;
 
+    rb_secure(2);
     GetOpenFile(obj, fptr);
     if (lstat(fptr->path, &st) == -1) {
 	rb_sys_fail(fptr->path);
@@ -1106,6 +1109,7 @@ rb_file_s_umask(argc, argv)
 #else
     int omask = 0;
 
+    rb_secure(2);
     if (argc == 0) {
 	omask = umask(0);
 	umask(omask);
@@ -1382,7 +1386,7 @@ rb_file_truncate(obj, len)
 #  define LOCK_UN 8
 # endif
 
-#if defined(THREAD) && defined(EWOULDBLOCK)
+#if defined(USE_THREAD) && defined(EWOULDBLOCK)
 static int
 rb_thread_flock(fd, op)
     int fd, op;

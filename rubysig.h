@@ -22,7 +22,7 @@ extern int rb_prohibit_interrupt;
 extern int rb_trap_pending;
 void rb_trap_restore_mask _((void));
 
-#ifdef THREAD
+#ifdef USE_THREAD
 extern int rb_thread_critical;
 void rb_thread_schedule _((void));
 #if defined(HAVE_SETITIMER) && !defined(__BOW__)

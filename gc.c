@@ -10,6 +10,7 @@
 
 ************************************************/
 
+#define RUBY_NO_INLINE
 #include "ruby.h"
 #include "rubysig.h"
 #include "st.h"
@@ -302,8 +303,8 @@ looks_pointerp(ptr)
 
 static void
 mark_locations_array(x, n)
-    VALUE *x;
-    long n;
+    register VALUE *x;
+    register long n;
 {
     while (n--) {
 	if (looks_pointerp(*x)) {
@@ -399,6 +400,9 @@ rb_gc_mark(ptr)
 	  case NODE_FOR:
 	  case NODE_ITER:
 	  case NODE_CREF:
+	  case NODE_WHEN:
+	  case NODE_MASGN:
+	  case NODE_RESBODY:
 	    rb_gc_mark(obj->as.node.u2.node);
 	    /* fall through */
 	  case NODE_BLOCK:	/* 1,3 */
@@ -409,7 +413,10 @@ rb_gc_mark(ptr)
 	  case NODE_DREGX:
 	  case NODE_DREGX_ONCE:
 	  case NODE_FBODY:
+	  case NODE_ENSURE:
 	  case NODE_CALL:
+	  case NODE_DEFS:
+	  case NODE_OP_ASGN1:
 #ifdef C_ALLOCA
 	  case NODE_ALLOCA:
 #endif
@@ -417,23 +424,41 @@ rb_gc_mark(ptr)
 	    /* fall through */
 	  case NODE_SUPER:	/* 3 */
 	  case NODE_FCALL:
+	  case NODE_DEFN:
 	  case NODE_NEWLINE:
 	    obj = RANY(obj->as.node.u3.node);
 	    goto Top;
 
 	  case NODE_WHILE:	/* 1,2 */
 	  case NODE_UNTIL:
+	  case NODE_AND:
+	  case NODE_OR:
+	  case NODE_CASE:
+	  case NODE_RESCUE:
+	  case NODE_ARGS:
+	  case NODE_DOT2:
+	  case NODE_DOT3:
+	  case NODE_FLIP2:
+	  case NODE_FLIP3:
 	  case NODE_MATCH2:
 	  case NODE_MATCH3:
+	  case NODE_SCLASS:
 	    rb_gc_mark(obj->as.node.u1.node);
 	    /* fall through */
 	  case NODE_METHOD:	/* 2 */
+	  case NODE_MODULE:
 	  case NODE_NOT:
 	  case NODE_GASGN:
 	  case NODE_LASGN:
 	  case NODE_DASGN:
+	  case NODE_DASGN_PUSH:
 	  case NODE_IASGN:
 	  case NODE_CASGN:
+	  case NODE_OP_ASGN_OR:
+	  case NODE_OP_ASGN_AND:
+	  case NODE_COLON3:
+	  case NODE_OPT_N:
+	  case NODE_BLOCK_PASS:
 	    obj = RANY(obj->as.node.u2.node);
 	    goto Top;
 
@@ -443,15 +468,20 @@ rb_gc_mark(ptr)
 	  case NODE_XSTR:
 	  case NODE_DEFINED:
 	  case NODE_MATCH:
+	  case NODE_RETURN:
+	  case NODE_YIELD:
+	  case NODE_COLON2:
 	    obj = RANY(obj->as.node.u1.node);
 	    goto Top;
 
 	  case NODE_SCOPE:	/* 2,3 */
+	  case NODE_CLASS:
 	    rb_gc_mark(obj->as.node.u3.node);
 	    obj = RANY(obj->as.node.u2.node);
 	    goto Top;
 
 	  case NODE_ZARRAY:	/* - */
+	  case NODE_ZSUPER:
 	  case NODE_CFUNC:
 	  case NODE_VCALL:
 	  case NODE_GVAR:
@@ -463,9 +493,17 @@ rb_gc_mark(ptr)
 	  case NODE_BACK_REF:
 	  case NODE_ALIAS:
 	  case NODE_VALIAS:
+	  case NODE_BREAK:
+	  case NODE_NEXT:
+	  case NODE_REDO:
+	  case NODE_RETRY:
 	  case NODE_UNDEF:
 	  case NODE_SELF:
 	  case NODE_NIL:
+	  case NODE_TRUE:
+	  case NODE_FALSE:
+	  case NODE_ATTRSET:
+	  case NODE_BLOCK_ARG:
 	  case NODE_POSTEXE:
 	    break;
 
@@ -487,11 +525,6 @@ rb_gc_mark(ptr)
     rb_gc_mark(obj->as.basic.klass);
     switch (obj->as.basic.flags & T_MASK) {
       case T_ICLASS:
-	rb_gc_mark(obj->as.klass.super);
-	mark_tbl(obj->as.klass.iv_tbl);
-	mark_tbl(obj->as.klass.m_tbl);
-	break;
-
       case T_CLASS:
       case T_MODULE:
 	rb_gc_mark(obj->as.klass.super);
@@ -691,11 +724,8 @@ obj_free(obj)
 	    if ((long)RANY(obj)->as.data.dfree == -1) {
 		free(DATA_PTR(obj));
 	    }
-	    if (RANY(obj)->as.data.dfree) {
+	    else if (RANY(obj)->as.data.dfree) {
 		(*RANY(obj)->as.data.dfree)(DATA_PTR(obj));
-	    }
-	    else {
-		free(DATA_PTR(obj));
 	    }
 	}
 	break;
@@ -753,13 +783,7 @@ void
 rb_gc_mark_frame(frame)
     struct FRAME *frame;
 {
-    int n = frame->argc;
-    VALUE *tbl = frame->argv;
-
-    while (n--) {
-	rb_gc_mark_maybe(*tbl);
-	tbl++;
-    }
+    mark_locations_array(frame->argv, frame->argc);
     rb_gc_mark(frame->cbase);
 }
 
@@ -835,7 +859,7 @@ rb_gc()
 		   (VALUE*)((char*)&stack_end + 2));
 #endif
 
-#ifdef THREAD
+#ifdef USE_THREAD
     rb_gc_mark_threads();
 #endif
 

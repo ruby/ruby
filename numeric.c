@@ -87,6 +87,14 @@ rb_num_coerce_bin(x, y)
 }
 
 static VALUE
+num_clone(x)
+    VALUE x;
+{
+    /* Numerics are immutable values, which need not to copy */
+    return x;
+}
+
+static VALUE
 num_uplus(num)
     VALUE num;
 {
@@ -1354,6 +1362,7 @@ Init_Numeric()
 
     rb_include_module(rb_cNumeric, rb_mComparable);
     rb_define_method(rb_cNumeric, "coerce", num_coerce, 1);
+    rb_define_method(rb_cNumeric, "clone", num_clone, 0);
 
     rb_define_method(rb_cNumeric, "+@", num_uplus, 0);
     rb_define_method(rb_cNumeric, "-@", num_uminus, 0);

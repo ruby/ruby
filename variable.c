@@ -722,9 +722,6 @@ rb_ivar_set(obj, id, val)
     ID id;
     VALUE val;
 {
-    if (rb_safe_level() >= 5) {
-	rb_raise(rb_eSecurityError, "cannot change object status");
-    }
     switch (TYPE(obj)) {
       case T_OBJECT:
       case T_CLASS:
@@ -1037,6 +1034,10 @@ rb_define_const(klass, name, val)
     VALUE val;
 {
     ID id = rb_intern(name);
+
+    if (klass == rb_cObject) {
+	rb_secure(4);
+    }
     if (!rb_is_const_id(id)) {
 	rb_raise(rb_eNameError, "wrong constant name %s", name);
     }

@@ -391,6 +391,8 @@ dump_ensure(arg)
     return 0;
 }
 
+static st_table *cache[2];
+
 static VALUE
 marshal_dump(argc, argv)
     int argc;

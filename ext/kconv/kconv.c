@@ -1891,9 +1891,14 @@ static VALUE
 kconv_guess(obj, src)
     VALUE obj, src;
 {
-    unsigned char *p = RSTRING(src)->ptr;
-    unsigned char *pend = p + RSTRING(src)->len;
+    unsigned char *p;
+    unsigned char *pend;
     int sequence_counter = 0;
+
+    Check_Type(src, T_STRING);
+
+    p = RSTRING(src)->ptr;
+    pend = p + RSTRING(src)->len;
 
 #define INCR do {\
     p++;\

@@ -24,7 +24,7 @@ AC_ARG_ENABLE(thread, [--disable-thread          never use user-level thread], [
 	rb_thread=$enableval
 ])
 if test $rb_thread = yes; then
-  AC_DEFINE(THREAD)
+  AC_DEFINE(USE_THREAD)
 fi
 
 AC_CANONICAL_HOST
@@ -72,6 +72,7 @@ AC_PROG_YACC
 AC_PROG_RANLIB
 AC_SUBST(AR)
 AC_CHECK_PROGS(AR, ar aal, ar)
+AC_PROG_INSTALL
 AC_PROG_MAKE_SET
 
 # checks for UNIX variants that set C preprocessor variables
@@ -133,6 +134,7 @@ esac
 AC_CHECK_LIB(crypt, crypt)
 AC_CHECK_LIB(dl, dlopen)	# Dynamic linking for SunOS/Solaris and SYSV
 AC_CHECK_LIB(dld, shl_load)	# Dynamic linking for HP-UX
+AC_CHECK_LIB(xpg4, setlocale)	# FreeBSD needs this
 
 dnl Checks for header files.
 AC_HEADER_DIRENT
@@ -273,18 +275,6 @@ else
   AC_DEFINE_UNQUOTED(FILE_COUNT, $rb_cv_fcnt)
 fi
 
-if test "$ac_cv_func_getpwent" = yes; then
-  AC_MSG_CHECKING(struct passwd)
-  AC_EGREP_HEADER(pw_gecos, pwd.h, AC_DEFINE(PW_GECOS))
-  AC_EGREP_HEADER(pw_change, pwd.h, AC_DEFINE(PW_CHANGE))
-  AC_EGREP_HEADER(pw_quota, pwd.h, AC_DEFINE(PW_QUOTA))
-  AC_EGREP_HEADER(pw_age, pwd.h, AC_DEFINE(PW_AGE))
-  AC_EGREP_HEADER(pw_class, pwd.h, AC_DEFINE(PW_CLASS))
-  AC_EGREP_HEADER(pw_comment, pwd.h, AC_DEFINE(PW_COMMENT))
-  AC_EGREP_HEADER(pw_expire, pwd.h, AC_DEFINE(PW_EXPIRE))
-  AC_MSG_RESULT(done)
-fi
-
 dnl wheather use dln_a_out ot not
 AC_ARG_WITH(dln-a-out, [--with-dln-a-out          use dln_a_out if possible], [
 	case $withval in
@@ -343,6 +333,7 @@ if test "$with_dln_a_out" != yes; then
     openstep*)	;;
     rhapsody*)	;;
     human*)	;;
+    cygwin32*)	CCDLFLAGS=-DDLLIMPORT;;
     *) CCDLFLAGS=-fpic;;
     esac
   else
@@ -405,6 +396,7 @@ if test "$with_dln_a_out" != yes; then
 			    ;;
 			esac
 			rb_cv_dlopen=yes ;;
+	cygwin32*)	LDSHARED='../../miniruby ../cygwin32_ld.rb' ;;
 	*) 		LDSHARED='ld' ;;
   esac
   AC_MSG_RESULT($rb_cv_dlopen)
@@ -450,6 +442,8 @@ else
 	 	AC_DEFINE(DLEXT, ".bundle");;
     rhapsody*)	DLEXT=bundle
 	 	AC_DEFINE(DLEXT, ".bundle");;
+    cygwin32*)	DLEXT=dll
+	 	AC_DEFINE(DLEXT, ".dll");;
     *)		DLEXT=so
     		AC_DEFINE(DLEXT, ".so");;
   esac
@@ -531,6 +525,10 @@ rb_cv_missing_fconvert=yes, rb_cv_missing_fconvert=no)])
     CFLAGS="$CFLAGS -fansi-only -cc1-stack=196608 -cpp-stack=2694144"
     binsuffix=.x
     setup=Setup.x68
+    ;;
+  cygwin32*)
+    binsuffix=.exe
+    setup=Setup
     ;;
   *)
     binsuffix=

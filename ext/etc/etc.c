@@ -239,7 +239,10 @@ Init_etc()
 
     sPasswd =  rb_struct_define("Passwd",
 				"name", "passwd", "uid", "gid",
-				"gecos", "dir", "shell",
+#ifdef PW_GECOS
+				"gecos",
+#endif
+				"dir", "shell",
 #ifdef PW_CHANGE
 				"change",
 #endif

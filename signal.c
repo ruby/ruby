@@ -286,7 +286,7 @@ posix_signal(signum, handler)
 }
 #endif
 
-#ifdef THREAD
+#ifdef USE_THREAD
 # define rb_interrupt rb_thread_interrupt
 # define rb_trap_eval rb_thread_trap_eval
 #endif
@@ -445,7 +445,7 @@ trap(arg)
     if (sig < 0 || sig > NSIG) {
 	rb_raise(rb_eArgError, "Invalid signal no %d", sig);
     }
-#if defined(THREAD) && defined(HAVE_SETITIMER) && !defined(__BOW__)
+#if defined(USE_THREAD) && defined(HAVE_SETITIMER) && !defined(__BOW__)
     if (sig == SIGVTALRM) {
 	rb_raise(rb_eArgError, "SIGVTALRM reserved for Thread; cannot set handler");
     }

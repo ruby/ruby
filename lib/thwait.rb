@@ -99,7 +99,7 @@ class ThreadsWait
     @threads.concat threads
     for th in threads
       Thread.start do
-	th = Thread.join(th)
+	th = th.join
 	@wait_queue.push th
       end
     end

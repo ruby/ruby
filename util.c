@@ -232,7 +232,9 @@ static char suffix2[] = ".~~~";
 #define strEQ(s1,s2) (strcmp(s1,s2) == 0)
 
 void
-add_suffix(VALUE str, char *suffix)
+add_suffix(str, suffix)
+    VALUE str;
+    char *suffix;
 {
     int baselen;
     int extlen = strlen(suffix);
@@ -560,7 +562,7 @@ static int mmkind, mmsize, high, low;
 #define C ((int*)c)
 #define D ((int*)d)
 
-static void mmprepare( void *base, int size )
+static void mmprepare(base, size) void *base; int size;
 {
 #ifdef DEBUG
  if (sizeof(int) != 4) die("sizeof(int) != 4");
@@ -577,7 +579,7 @@ static void mmprepare( void *base, int size )
  low  = (size & 0x0C );
 }
 
-static void mmswap( register char *a, register char *b )
+static void mmswap(a, b) register char *a, *b;
 {
  register int s;
  if (a == b) return;
@@ -600,7 +602,7 @@ static void mmswap( register char *a, register char *b )
  }
 }
 
-static void mmswapblock( register char *a, register char *b, int size )
+static void mmswapblock(a, b, size) register char *a, *b; int size;
 {
  register int s;
  if (mmkind >= 0) {
@@ -622,7 +624,7 @@ static void mmswapblock( register char *a, register char *b, int size )
  }
 }
 
-static void mmrot3( register char *a, register char *b, register char *c )
+static void mmrot3(a, b, c) register char *a, *b, *c;
 {
  register int s;
  if (mmkind >= 0) {
@@ -661,14 +663,14 @@ typedef struct { char *LL, *RR; } stack_node; /* Stack structure for L,l,R,r */
                        ((*cmp)(b,c)<0 ? b : ((*cmp)(a,c)<0 ? c : a)) : \
                        ((*cmp)(b,c)>0 ? b : ((*cmp)(a,c)<0 ? a : c)) )
 
-void qsort (base, nel, size, cmp) void* base; size_t nel; size_t size; int (*cmp)();
+void ruby_qsort (base, nel, size, cmp) void* base; int nel; int size; int (*cmp)();
 {
- register char *l, *r, *m;          /*l,r:左右の集団の端   m:配列の中央の位置*/
- register int  t, eq_l, eq_r;       /*eq_l:左の集団が全てｓに等しいことを示す*/
- char *L = base;                    /*現在分割している区間の左端の要素の先頭 */
- char *R = base + size * (nel - 1); /*現在分割している区間の右端の要素の先頭 */
- int  chklim = 63;                           /*昇(降)順検査をする要素数の下限*/
- stack_node stack[32], *top = stack;         /* 32 ３２ビットマシンでは３２で十分*/
+ register char *l, *r, *m;          	/* l,r:left,right group   m:median point */
+ register int  t, eq_l, eq_r;       	/* eq_l: all items in left group are equal to S */
+ char *L = base;                    	/* left end of curren region */
+ char *R = (char*)base + size*(nel-1); 	/* right end of current region */
+ int  chklim = 63;                      /* threshold of ordering element check */
+ stack_node stack[32], *top = stack;    /* 32 is enough for 32bit CPU */
 
  if (nel <= 1) return;        /* need not to sort */
  mmprepare( base, size );

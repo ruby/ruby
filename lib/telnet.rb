@@ -1,7 +1,11 @@
 #
 # telnet.rb
-# ver0.14 1998/09/01
+# ver0.141 1998/09/22
 # Wakou Aoyama <wakou@fsinet.or.jp>
+#
+# ver0.141 1998/09/22
+# change default prompt
+# /[$%#>] $/ --> /[$%#>] \Z/
 #
 # ver0.14 1998/09/01
 # IAC WILL SGA             send EOL --> CR+NULL
@@ -34,7 +38,7 @@
 #                    "Output_log" => "output_log",   default: not output
 #                    "Dump_log" => "dump_log",       default: not output
 #                    "Port" => 23,                   default: 23
-#                    "Prompt" => /[$%#>] $/,         default: /[$%#>] $/
+#                    "Prompt" => /[$%#>] \Z/,        default: /[$%#>] \Z/
 #                    "Telnetmode" => TRUE,           default: TRUE
 #                    "Timeout" => 10,                default: 10
 #                    "Waittime" => 0})               default: 0
@@ -60,13 +64,13 @@
 # == send string and wait prompt
 # line = host.cmd("string")
 # line = host.cmd({"String" => "string",
-#                  "Prompt" => /[$%#>] $//,
+#                  "Prompt" => /[$%#>] \Z/,
 #                  "Timeout" => 10})
 #
 # realtime output. of cource, set sync=TRUE or flush is necessary.
 # host.cmd("string"){|c| print c }
 # host.cmd({"String" => "string",
-#           "Prompt" => /[$%#>] $//,
+#           "Prompt" => /[$%#>] \Z/,
 #           "Timeout" => 10}){|c| print c }
 #
 # == send string
@@ -76,14 +80,14 @@
 # host.login("username", "password")
 # host.login({"Name" => "username",
 #             "Password" => "password",
-#             "Prompt" => /[$%#>] $/,
+#             "Prompt" => /[$%#>] \Z/,
 #             "Timeout" => 10})
 #
 # realtime output. of cource, set sync=TRUE or flush is necessary.
 # host.login("username", "password"){|c| print c }
 # host.login({"Name" => "username",
 #             "Password" => "password",
-#             "Prompt" => /[$%#>] $/,
+#             "Prompt" => /[$%#>] \Z/,
 #             "Timeout" => 10}){|c| print c }
 #
 # and Telnet object has socket class methods
@@ -91,7 +95,7 @@
 # == sample
 # localhost = Telnet.new({"Host" => "localhost",
 #                         "Timeout" => 10,
-#                         "Prompt" => /[$%#>] $/})
+#                         "Prompt" => /[$%#>] \Z/})
 # localhost.login("username", "password"){|c| print c }
 # localhost.cmd("command"){|c| print c }
 # localhost.close
@@ -208,13 +212,13 @@ class Telnet < SimpleDelegator
 
   def initialize(options)
     @options = options
-    @options["Binmode"]    = TRUE        if not @options.include?("Binmode")
-    @options["Host"]       = "localhost" if not @options.include?("Host")
-    @options["Port"]       = 23          if not @options.include?("Port")
-    @options["Prompt"]     = /[$%#>] $/  if not @options.include?("Prompt")
-    @options["Telnetmode"] = TRUE        if not @options.include?("Telnetmode")
-    @options["Timeout"]    = 10          if not @options.include?("Timeout")
-    @options["Waittime"]   = 0           if not @options.include?("Waittime")
+    @options["Binmode"]    = TRUE         if not @options.include?("Binmode")
+    @options["Host"]       = "localhost"  if not @options.include?("Host")
+    @options["Port"]       = 23           if not @options.include?("Port")
+    @options["Prompt"]     = /[$%#>] \Z/  if not @options.include?("Prompt")
+    @options["Telnetmode"] = TRUE         if not @options.include?("Telnetmode")
+    @options["Timeout"]    = 10           if not @options.include?("Timeout")
+    @options["Waittime"]   = 0            if not @options.include?("Waittime")
 
     @telnet_option = { "SGA" => FALSE, "BINARY" => FALSE }
 
@@ -378,14 +382,14 @@ class Telnet < SimpleDelegator
     end
 
     if iterator?
-      line = waitfor(/login[: ]*$/){|c| yield c }
+      line = waitfor(/login[: ]*\Z/){|c| yield c }
       line.concat( cmd({"String" => username,
-                        "Match" => /Password[: ]*$/}){|c| yield c } )
+                        "Match" => /Password[: ]*\Z/}){|c| yield c } )
       line.concat( cmd(password){|c| yield c } )
     else
-      line = waitfor(/login[: ]*$/)
+      line = waitfor(/login[: ]*\Z/)
       line.concat( cmd({"String" => username,
-                        "Match" => /Password[: ]*$/}) )
+                        "Match" => /Password[: ]*\Z/}) )
       line.concat( cmd(password) )
     end
     line

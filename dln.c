@@ -72,7 +72,7 @@ char *getenv();
 
 int eaccess();
 
-#if defined(HAVE_DLOPEN) && !defined(USE_DLN_A_OUT)
+#if defined(HAVE_DLOPEN) && !defined(USE_DLN_A_OUT) && !defined(__CYGWIN32__) && !defined(_AIX)
 /* dynamic load with dlopen() */
 # define USE_DLN_DLOPEN
 #endif
@@ -1081,7 +1081,7 @@ dln_sym(name)
 #include "dl.h"
 #endif
 
-#ifdef _AIX
+#if defined(_AIX)
 #include <ctype.h>	/* for isdigit()	*/
 #include <errno.h>	/* for global errno	*/
 #include <sys/ldr.h>
@@ -1143,7 +1143,7 @@ dln_strerror()
 }
 
 
-#ifdef _AIX
+#if defined(_AIX)
 static void
 aix_loaderror(char *pathname)
 {
@@ -1257,7 +1257,7 @@ dln_load(file)
 # endif
 
 	/* Load file */
-	if ((handle = dlopen(file, RTLD_LAZY|RTLD_GLOBAL)) == NULL) {
+	if ((handle = (void*)dlopen(file, RTLD_LAZY|RTLD_GLOBAL)) == NULL) {
 	    goto failed;
 	}
 
@@ -1296,7 +1296,7 @@ dln_load(file)
     }
 #endif /* hpux */
 
-#ifdef _AIX
+#if defined(_AIX)
 #define DLN_DEFINED
     {
 	void (*init_fct)();

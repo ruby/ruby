@@ -104,7 +104,7 @@ extern int ReadDataPending();
 #  define READ_DATA_PENDING(fp) ReadDataPending(fp)
 #endif
 
-#ifndef THREAD
+#ifndef USE_THREAD
 # define READ_CHECK(fp) 0
 #else
 # define READ_CHECK(fp) do {\
@@ -165,7 +165,6 @@ rb_io_write(io, str)
     rb_secure(4);
     GetOpenFile(io, fptr);
     rb_io_check_writable(fptr);
-
     f = GetWriteFile(fptr);
 
 #ifdef __human68k__
@@ -436,8 +435,8 @@ rb_io_read(argc, argv, io)
     return rb_str_taint(str);
 }
 
-VALUE
-rb_io_gets_method(argc, argv, io)
+static VALUE
+rb_io_gets_internal(argc, argv, io)
     int argc;
     VALUE *argv;
     VALUE io;
@@ -571,7 +570,6 @@ rb_io_gets_method(argc, argv, io)
 	lineno = INT2FIX(fptr->lineno);
 	rb_str_taint(str);
     }
-    rb_lastline_set(str);
 
     return str;
 }
@@ -630,8 +628,21 @@ rb_io_gets(io)
 	lineno = INT2FIX(fptr->lineno);
 	rb_str_taint(str);
     }
-    rb_lastline_set(str);
 
+    return str;
+}
+
+static VALUE
+rb_io_gets_method(argc, argv, io)
+    int argc;
+    VALUE *argv;
+    VALUE io;
+{
+    VALUE str = rb_io_gets_internal(argc, argv, io);
+
+    if (!NIL_P(str)) {
+	rb_lastline_set(str);
+    }
     return str;
 }
 
@@ -690,7 +701,7 @@ rb_io_readlines(argc, argv, io)
     VALUE line, ary;
 
     ary = rb_ary_new();
-    while (!NIL_P(line = rb_io_gets_method(argc, argv, io))) {
+    while (!NIL_P(line = rb_io_gets_internal(argc, argv, io))) {
 	rb_ary_push(ary, line);
     }
     return ary;
@@ -704,7 +715,7 @@ rb_io_each_line(argc, argv, io)
 {
     VALUE str;
 
-    while (!NIL_P(str = rb_io_gets_method(argc, argv, io))) {
+    while (!NIL_P(str = rb_io_gets_internal(argc, argv, io))) {
 	rb_yield(str);
     }
     return Qnil;
@@ -845,10 +856,18 @@ rb_io_close(io)
 {
     OpenFile *fptr;
 
-    rb_secure(4);
     GetOpenFile(io, fptr);
     rb_io_fptr_close(fptr);
 
+    return Qnil;
+}
+
+static VALUE
+rb_io_close_method(io)
+    VALUE io;
+{
+    rb_secure(4);
+    rb_io_close(io);
     return Qnil;
 }
 
@@ -860,6 +879,51 @@ rb_io_closed(io)
 
     fptr = RFILE(io)->fptr;
     return (fptr->f || fptr->f2)?Qfalse:Qtrue;
+}
+
+VALUE
+rb_io_close_read(io)
+    VALUE io;
+{
+    OpenFile *fptr;
+    FILE *save;
+
+    rb_secure(4);
+    GetOpenFile(io, fptr);
+    if (fptr->f2 == 0 && (fptr->mode & FMODE_WRITABLE)) {
+	rb_raise(rb_eIOError, "closing non-duplex IO for reading");
+    }
+    if (fptr->f2 == 0) {
+	return rb_io_close(io);
+    }
+    fclose(fptr->f);
+    fptr->mode &= ~FMODE_READABLE;
+    fptr->f = fptr->f2;
+    fptr->f2 = 0;
+
+    return Qnil;
+}
+
+static VALUE
+rb_io_close_write(io)
+    VALUE io;
+{
+    OpenFile *fptr;
+    FILE *save = 0;
+
+    rb_secure(4);
+    GetOpenFile(io, fptr);
+    if (fptr->f2 == 0 && (fptr->mode & FMODE_READABLE)) {
+	rb_raise(rb_eIOError, "closing non-duplex IO for writing");
+    }
+    if (fptr->f2 == 0) {
+	return rb_io_close(io);
+    }
+    fclose(fptr->f2);
+    fptr->f2 = 0;
+    fptr->mode &= ~FMODE_WRITABLE;
+
+    return Qnil;
 }
 
 static VALUE
@@ -878,7 +942,7 @@ rb_io_syswrite(io, str)
     rb_io_check_writable(fptr);
     f = GetWriteFile(fptr);
 
-#ifdef THREAD
+#ifdef USE_THREAD
     rb_thread_fd_writable(fileno(f));
 #endif
     n = write(fileno(f), RSTRING(str)->ptr, RSTRING(str)->len);
@@ -902,7 +966,7 @@ rb_io_sysread(io, len)
 
     str = rb_str_new(0, ilen);
 
-#ifdef THREAD
+#ifdef USE_THREAD
     rb_thread_wait_fd(fileno(fptr->f));
 #endif
     TRAP_BEG;
@@ -1086,10 +1150,10 @@ pipe_finalize(fptr)
     if (fptr->f2 != NULL) {
 	pclose(fptr->f2);
     }
+    fptr->f = fptr->f2 = NULL;
 #else
     fptr_finalize(fptr);
 #endif
-    fptr->f = fptr->f2 = NULL;
     pipe_del_fptr(fptr);
 }
 #endif
@@ -1181,7 +1245,7 @@ pipe_open(pname, mode)
 
       case -1:			/* fork failed */
 	if (errno == EAGAIN) {
-#ifdef THREAD
+#ifdef USE_THREAD
 	    rb_thread_sleep(1);
 #else
 	    sleep(1);
@@ -1346,12 +1410,15 @@ rb_io_reopen(io, nfile)
 
     mode = rb_io_mode_string(fptr);
     fd = fileno(fptr->f);
-    if (fileno(fptr->f) < 3) {
+    if (fd < 3) {
 	/* need to keep stdio */
-	dup2(fileno(orig->f), fd);
+	if (dup2(fileno(orig->f), fd) < 0)
+	    rb_sys_fail(orig->path);
     }
     else {
 	fclose(fptr->f);
+	if (dup2(fileno(orig->f), fd) < 0)
+	    rb_sys_fail(orig->path);
 	fptr->f = rb_fdopen(fd, mode);
     }
 
@@ -1359,7 +1426,8 @@ rb_io_reopen(io, nfile)
 	fd = fileno(fptr->f2);
 	fclose(fptr->f2);
 	if (orig->f2) {
-	    dup2(fileno(orig->f2), fd);
+	    if (dup2(fileno(orig->f2), fd) < 0)
+		rb_sys_fail(orig->path);
 	    fptr->f2 = rb_fdopen(fd, "w");
 	}
 	else {
@@ -1525,7 +1593,6 @@ rb_io_putc(io, ch)
     rb_secure(4);
     GetOpenFile(io, fptr);
     rb_io_check_writable(fptr);
-
     f = GetWriteFile(fptr);
 
     if (fputc(c, f) == EOF || ferror(f))
@@ -1800,7 +1867,7 @@ next_argv()
 }
 
 static VALUE
-rb_f_gets_method(argc, argv)
+rb_f_gets_internal(argc, argv)
     int argc;
     VALUE *argv;
 {
@@ -1808,26 +1875,7 @@ rb_f_gets_method(argc, argv)
 
   retry:
     if (!next_argv()) return Qnil;
-    line = rb_io_gets_method(argc, argv, file);
-    if (NIL_P(line) && next_p != -1) {
-	rb_io_close(file);
-	next_p = 1;
-	goto retry;
-    }
-    gets_lineno++;
-    lineno = INT2FIX(gets_lineno);
-
-    return line;
-}
-
-VALUE
-rb_f_gets()
-{
-    VALUE line;
-
-  retry:
-    if (!next_argv()) return Qnil;
-    line = rb_io_gets(file);
+    line = rb_io_gets_internal(argc, argv, file);
     if (NIL_P(line) && next_p != -1) {
 	rb_io_close(file);
 	next_p = 1;
@@ -1840,11 +1888,44 @@ rb_f_gets()
 }
 
 static VALUE
+rb_f_gets(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    VALUE line = rb_f_gets_internal(argc, argv);
+
+    if (!NIL_P(line)) rb_lastline_set(line);
+    return line;
+}
+
+VALUE
+rb_gets()
+{
+    VALUE line;
+
+  retry:
+    if (!next_argv()) return Qnil;
+    line = rb_io_gets(file);
+    if (NIL_P(line) && next_p != -1) {
+	rb_io_close(file);
+	next_p = 1;
+	goto retry;
+    }
+    if (!NIL_P(line)) {
+	rb_lastline_set(line);
+	gets_lineno++;
+	lineno = INT2FIX(gets_lineno);
+    }
+
+    return line;
+}
+
+static VALUE
 rb_f_readline(argc, argv)
     int argc;
     VALUE *argv;
 {
-    VALUE line = rb_f_gets_method(argc, argv);
+    VALUE line = rb_f_gets(argc, argv);
 
     if (NIL_P(line)) {
 	rb_eof_error();
@@ -1935,7 +2016,7 @@ rb_f_readlines(argc, argv)
     VALUE line, ary;
 
     ary = rb_ary_new();
-    while (!NIL_P(line = rb_f_gets_method(argc, argv))) {
+    while (!NIL_P(line = rb_f_gets_internal(argc, argv))) {
 	rb_ary_push(ary, line);
     }
 
@@ -2065,7 +2146,7 @@ rb_f_select(argc, argv, obj)
 
     max++;
 
-#ifdef THREAD
+#ifdef USE_THREAD
     n = rb_thread_select(max, rp, wp, ep, tp);
     if (n < 0) {
 	rb_sys_fail(0);
@@ -2372,7 +2453,7 @@ rb_io_foreach_line(arg)
 {
     VALUE str;
 
-    while (!NIL_P(str = rb_io_gets_method(arg->argc, &arg->sep, arg->io))) {
+    while (!NIL_P(str = rb_io_gets_internal(arg->argc, &arg->sep, arg->io))) {
 	rb_yield(str);
     }
     return Qnil;
@@ -2402,7 +2483,7 @@ rb_io_readline_line(arg)
     VALUE line, ary;
 
     ary = rb_ary_new();
-    while (!NIL_P(line = rb_io_gets_method(arg->argc, &arg->sep, arg->io))) {
+    while (!NIL_P(line = rb_io_gets_internal(arg->argc, &arg->sep, arg->io))) {
 	rb_ary_push(ary, line);
     }
 
@@ -2507,7 +2588,7 @@ arg_each_line(argc, argv)
 {
     VALUE str;
 
-    while (RTEST(str = rb_f_gets_method(argc, argv))) {
+    while (RTEST(str = rb_f_gets_internal(argc, argv))) {
 	rb_yield(str);
     }
     return Qnil;
@@ -2596,7 +2677,7 @@ Init_IO()
     rb_define_global_function("print", rb_f_print, -1);
     rb_define_global_function("putc", rb_f_putc, 1);
     rb_define_global_function("puts", rb_f_puts, -1);
-    rb_define_global_function("gets", rb_f_gets_method, -1);
+    rb_define_global_function("gets", rb_f_gets, -1);
     rb_define_global_function("readline", rb_f_readline, -1);
     rb_define_global_function("tell", rb_f_tell, 0);
     rb_define_global_function("seek", rb_f_seek, 2);
@@ -2684,8 +2765,10 @@ Init_IO()
     rb_define_method(rb_cIO, "eof", rb_io_eof, 0);
     rb_define_method(rb_cIO, "eof?", rb_io_eof, 0);
 
-    rb_define_method(rb_cIO, "close", rb_io_close, 0);
+    rb_define_method(rb_cIO, "close", rb_io_close_method, 0);
     rb_define_method(rb_cIO, "closed?", rb_io_closed, 0);
+    rb_define_method(rb_cIO, "close_read", rb_io_close_read, 0);
+    rb_define_method(rb_cIO, "close_write", rb_io_close_write, 0);
 
     rb_define_method(rb_cIO, "isatty", rb_io_isatty, 0);
     rb_define_method(rb_cIO, "tty?", rb_io_isatty, 0);
@@ -2723,7 +2806,7 @@ Init_IO()
     rb_define_singleton_method(argf, "read",  arg_read, -1);
     rb_define_singleton_method(argf, "readlines", rb_f_readlines, -1);
     rb_define_singleton_method(argf, "to_a", rb_f_readlines, -1);
-    rb_define_singleton_method(argf, "gets", rb_f_gets_method, -1);
+    rb_define_singleton_method(argf, "gets", rb_f_gets, -1);
     rb_define_singleton_method(argf, "readline", rb_f_readline, -1);
     rb_define_singleton_method(argf, "getc", arg_getc, 0);
     rb_define_singleton_method(argf, "readchar", arg_readchar, 0);

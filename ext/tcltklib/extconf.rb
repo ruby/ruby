@@ -11,9 +11,10 @@ $includes = []
 def search_header(include, *path)
   pwd = Dir.getwd
   begin
-    for i in path.reverse!
+    for i in path.sort!.reverse!
       dir = Dir[i]
       for path in dir
+	next unless File.directory? path
 	Dir.chdir path
 	files = Dir[include]
 	if files.size > 0
@@ -30,14 +31,14 @@ def search_header(include, *path)
 end
 
 search_header("tcl.h",
-	      "/usr/include/tcl*",
+	      "/usr/include/tcl{,8*,7*}",
 	      "/usr/include",
-	      "/usr/local/include/tcl*",
+	      "/usr/local/include/tcl{,8*,7*}",
 	      "/usr/local/include")
 search_header("tk.h",
-	      "/usr/include/tk*",
+	      "/usr/include/tk{,8*,4*}",
 	      "/usr/include",
-	      "/usr/local/include/tk*",
+	      "/usr/local/include/tk{,8*,4*}",
 	      "/usr/local/include")
 search_header("X11/Xlib.h",
 	      "/usr/include/X11*",

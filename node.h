@@ -66,8 +66,6 @@ enum node_type {
     NODE_CVAR,
     NODE_NTH_REF,
     NODE_BACK_REF,
-    NODE_MATCH_REF,
-    NODE_LASTLINE,
     NODE_MATCH,
     NODE_MATCH2,
     NODE_MATCH3,
@@ -104,7 +102,6 @@ enum node_type {
     NODE_TRUE,
     NODE_FALSE,
     NODE_DEFINED,
-    NODE_TAG,
     NODE_NEWLINE,
     NODE_POSTEXE,
 #ifdef C_ALLOCA
@@ -242,7 +239,7 @@ typedef struct RNode {
 #define NEW_RESCUE(b,res) rb_node_newnode(NODE_RESCUE,b,res,0)
 #define NEW_RESBODY(a,ex,n) rb_node_newnode(NODE_RESBODY,n,ex,a)
 #define NEW_ENSURE(b,en) rb_node_newnode(NODE_ENSURE,b,0,en)
-#define NEW_RET(s)   rb_node_newnode(NODE_RETURN,s,0,0)
+#define NEW_RETURN(s) rb_node_newnode(NODE_RETURN,s,0,0)
 #define NEW_YIELD(a) rb_node_newnode(NODE_YIELD,a,0,0)
 #define NEW_LIST(a)  NEW_ARRAY(a)
 #define NEW_ARRAY(a) rb_node_newnode(NODE_ARRAY,a,1,0)

@@ -11,6 +11,7 @@
 ************************************************/
 
 #include "ruby.h"
+#include "util.h"
 
 VALUE rb_cArray;
 
@@ -44,7 +45,6 @@ static void
 rb_ary_modify(ary)
     VALUE ary;
 {
-    rb_secure(5);
     if (FL_TEST(ary, ARY_FREEZE|ARY_TMPLOCK)) {
 	rb_raise(rb_eTypeError, "can't modify frozen array");
     }

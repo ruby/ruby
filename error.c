@@ -239,7 +239,7 @@ VALUE
 rb_exc_new(etype, ptr, len)
     VALUE etype;
     char *ptr;
-    unsigned len;
+    int len;
 {
     VALUE exc = rb_obj_alloc(etype);
 

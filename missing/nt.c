@@ -184,8 +184,8 @@ NtInitialize(int *argc, char ***argv) {
 
     tzset();
 
-	// Initialize Winsock
-	StartSockets();
+    // Initialize Winsock
+    StartSockets();
 }
 
 

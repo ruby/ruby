@@ -54,7 +54,7 @@ rb_call_inits()
     Init_eval();
     Init_String();
     Init_Exception();
-#ifdef THREAD
+#ifdef USE_THREAD
     Init_Thread();
 #endif
     Init_Numeric();

@@ -21,8 +21,6 @@
 
 VALUE cDBM;
 
-extern VALUE rb_mEnumerable;
-
 struct dbmdata {
     int  di_size;
     DBM *di_dbm;
@@ -48,10 +46,10 @@ free_dbm(dbmp)
 }
 
 static VALUE
-fdbm_s_open(argc, argv, class)
+fdbm_s_open(argc, argv, klass)
     int argc;
     VALUE *argv;
-    VALUE class;
+    VALUE klass;
 {
     VALUE file, vmode;
     DBM *dbm;
@@ -83,7 +81,7 @@ fdbm_s_open(argc, argv, class)
 	rb_sys_fail(RSTRING(file)->ptr);
     }
 
-    obj = Data_Make_Struct(class,struct dbmdata,0,free_dbm,dbmp);
+    obj = Data_Make_Struct(klass,struct dbmdata,0,free_dbm,dbmp);
     dbmp->di_dbm = dbm;
     dbmp->di_size = -1;
     rb_obj_call_init(obj);
@@ -546,6 +544,7 @@ fdbm_to_a(obj)
     return ary;
 }
 
+void
 Init_dbm()
 {
     cDBM = rb_define_class("DBM", rb_cObject);

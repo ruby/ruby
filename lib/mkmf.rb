@@ -2,6 +2,7 @@
 # invoke like: ruby -r mkmf extconf.rb
 
 require 'rbconfig'
+require 'find'
 
 include Config
 
@@ -81,6 +82,24 @@ end
 
 def try_cpp
   xsystem(format(CPP, $CFLAGS))
+end
+
+def install_rb(mfile)
+  path = []
+  dir = []
+  Find.find("lib") do |f|
+    next unless /\.rb$/ =~ f
+    f = f[4..-1]
+    path.push f
+    dir |= File.dirname(f)
+  end
+  for f in dir
+    next if f == "."
+    mfile.printf "\t@test -d $(libdir)/%s || mkdir $(libdir)/%s\n", f, f
+  end
+  for f in path
+    mfile.printf "\t$(INSTALL_DATA) lib/%s $(libdir)/%s\n", f, f
+  end
 end
 
 def have_library(lib, func)
@@ -299,9 +318,7 @@ $(libdir)/$(TARGET): $(TARGET)
 	@test -d $(libdir) || mkdir $(libdir)
 	$(INSTALL) $(TARGET) $(libdir)/$(TARGET)
 EOMF
-  for rb in Dir["lib/*.rb"]
-    mfile.printf "\t$(INSTALL_DATA) %s %s\n", rb, $libdir
-  end
+  install_rb(mfile)
   mfile.printf "\n"
 
   if CONFIG["DLEXT"] != "o"

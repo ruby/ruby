@@ -733,14 +733,11 @@ class TkImage<TkObject
     Tk_IMGTBL[@id] = nil if @id
     tk_call('image', 'delete', @path)
   end
-  def height
-    number(tk_call('image', 'height', @path))
-  end
   def itemtype
     tk_call('image', 'type', @path)
   end
   def width
-    number(tk_call('image', 'height', @path))
+    number(tk_call('image', 'width', @path))
   end
 
   def TkImage.names
@@ -823,7 +820,7 @@ class TkPhotoImage<TkImage
 	term
       end
     }.flatten
-  
+
     tk_send 'write', file, *args
   end
 end

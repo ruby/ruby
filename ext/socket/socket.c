@@ -30,7 +30,7 @@ extern int rb_thread_select(int, fd_set*, fd_set*, fd_set*, struct timeval*); /*
 # include <GUSI.h>
 #endif
 
-#if defined(THREAD) && defined(HAVE_FCNTL)
+#if defined(USE_THREAD) && defined(HAVE_FCNTL)
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif
@@ -72,9 +72,12 @@ static void
 sock_finalize(fptr)
     OpenFile *fptr;
 {
-    SOCKET s = fileno(fptr->f);
+    SOCKET s;
+
+    if (!fptr->f) return;
+    s = fileno(fptr->f);
     free(fptr->f);
-    free(fptr->f2);
+    if (fptr->f2) free(fptr->f2);
     closesocket(s);
 }
 #endif
@@ -127,6 +130,55 @@ bsock_shutdown(argc, argv, sock)
 	rb_sys_fail(0);
 
     return INT2FIX(0);
+}
+
+static VALUE
+bsock_close_read(sock)
+    VALUE sock;
+{
+    OpenFile *fptr;
+
+    rb_secure(4);
+    GetOpenFile(sock, fptr);
+    if (fptr->f2 == 0) {
+	return rb_io_close(sock);
+    }
+    if (shutdown(fileno(fptr->f), 0) == -1)
+	rb_sys_fail(0);
+    fptr->mode &= ~FMODE_READABLE;
+#ifdef NT
+    free(fptr->f);
+#else
+    fclose(fptr->f);
+#endif
+    fptr->f = fptr->f2;
+    fptr->f2 = 0;
+
+    return Qnil;
+}
+
+static VALUE
+bsock_close_write(sock)
+    VALUE sock;
+{
+    OpenFile *fptr;
+
+    rb_secure(4);
+    GetOpenFile(sock, fptr);
+    if (fptr->f2 == 0) {
+	return rb_io_close(sock);
+    }
+    if (shutdown(fileno(fptr->f), 1) == -1)
+	rb_sys_fail(0);
+    fptr->mode &= ~FMODE_WRITABLE;
+#ifdef NT
+    free(fptr->f2);
+#else
+    fclose(fptr->f2);
+#endif
+    fptr->f2 = 0;
+
+    return Qnil;
 }
 
 static VALUE
@@ -235,10 +287,10 @@ bsock_send(argc, argv, sock)
     rb_scan_args(argc, argv, "21", &msg, &flags, &to);
 
     GetOpenFile(sock, fptr);
-    f = fptr->f2?fptr->f2:fptr->f;
+    f = GetWriteFile(fptr);
     fd = fileno(f);
   retry:
-#ifdef THREAD
+#ifdef USE_THREAD
     rb_thread_fd_writable(fd);
 #endif
     m = rb_str2cstr(msg, &mlen);
@@ -257,7 +309,7 @@ bsock_send(argc, argv, sock)
 #if EAGAIN != EWOULDBLOCK
 	  case EAGAIN:
 #endif
-#ifdef THREAD
+#ifdef USE_THREAD
 	    rb_thread_schedule();
 #endif
 	    goto retry;
@@ -303,7 +355,7 @@ s_recv(sock, argc, argv, from)
 
     GetOpenFile(sock, fptr);
     fd = fileno(fptr->f);
-#ifdef THREAD
+#ifdef USE_THREAD
     rb_thread_wait_fd(fd);
 #endif
     TRAP_BEG;
@@ -319,7 +371,7 @@ s_recv(sock, argc, argv, from)
 #if EAGAIN != EWOULDBLOCK
 	  case EAGAIN:
 #endif
-#ifdef THREAD
+#ifdef USE_THREAD
 	    rb_thread_schedule();
 #endif
 	    goto retry;
@@ -449,7 +501,7 @@ setipaddr(name, addr)
     }
 }
 
-#if defined(THREAD) && defined(HAVE_FCNTL)
+#if defined(USE_THREAD) && defined(HAVE_FCNTL)
 static int
 thread_connect(fd, sockaddr, len, type)
     int fd;
@@ -607,7 +659,7 @@ open_inet(class, h, serv, type)
 	syscall = "bind(2)";
     }
     else {
-#if defined(THREAD) && defined(HAVE_FCNTL)
+#if defined(USE_THREAD) && defined(HAVE_FCNTL)
         status = thread_connect(fd, (struct sockaddr*)&sockaddr,
 			       sizeof(sockaddr), type);
 #else
@@ -726,7 +778,7 @@ s_accept(class, fd, sockaddr, len)
     int fd2;
 
   retry:
-#ifdef THREAD
+#ifdef USE_THREAD
     rb_thread_wait_fd(fd);
 #endif
     TRAP_BEG;
@@ -739,7 +791,7 @@ s_accept(class, fd, sockaddr, len)
 #if EAGAIN != EWOULDBLOCK
 	  case EAGAIN:
 #endif
-#ifdef THREAD
+#ifdef USE_THREAD
 	    rb_thread_schedule();
 #endif
 	    goto retry;
@@ -927,7 +979,7 @@ udp_connect(sock, host, port)
 #if EAGAIN != EWOULDBLOCK
 	  case EAGAIN:
 #endif
-#ifdef THREAD
+#ifdef USE_THREAD
 	    rb_thread_schedule();
 #endif
 	    goto retry;
@@ -974,7 +1026,7 @@ udp_send(argc, argv, sock)
 
     udp_addrsetup(host, port, &addr);
     GetOpenFile(sock, fptr);
-    f = fptr->f2?fptr->f2:fptr->f;
+    f = GetWriteFile(fptr);
     m = rb_str2cstr(mesg, &mlen);
   retry:
     n = sendto(fileno(f), m, mlen, NUM2INT(flags),
@@ -986,7 +1038,7 @@ udp_send(argc, argv, sock)
 #if EAGAIN != EWOULDBLOCK
 	  case EAGAIN:
 #endif
-#ifdef THREAD
+#ifdef USE_THREAD
 	    rb_thread_schedule();
 #endif
 	    goto retry;
@@ -1239,7 +1291,7 @@ sock_connect(sock, addr)
 #if EAGAIN != EWOULDBLOCK
 	  case EAGAIN:
 #endif
-#ifdef THREAD
+#ifdef USE_THREAD
 	    rb_thread_schedule();
 #endif
 	    goto retry;
@@ -1469,6 +1521,8 @@ Init_socket()
     rb_cBasicSocket = rb_define_class("BasicSocket", rb_cIO);
     rb_undef_method(CLASS_OF(rb_cBasicSocket), "new");
     rb_undef_method(CLASS_OF(rb_cBasicSocket), "open");
+    rb_define_method(rb_cBasicSocket, "close_read", bsock_close_read, 0);
+    rb_define_method(rb_cBasicSocket, "close_write", bsock_close_write, 0);
     rb_define_method(rb_cBasicSocket, "shutdown", bsock_shutdown, -1);
     rb_define_method(rb_cBasicSocket, "setsockopt", bsock_setsockopt, 3);
     rb_define_method(rb_cBasicSocket, "getsockopt", bsock_getsockopt, 2);

@@ -121,10 +121,13 @@ if __FILE__ == $0
   db.transaction do
     p db.roots
     ary = db["root"] = [1,2,3,4]
-    ary[0] = [1,1.5]
+    ary[1] = [1,1.5]
   end
 
-  db.transaction do
-    p db["root"]
+  1000.times do
+    db.transaction do
+      db["root"][0] += 1
+      p db["root"][0]
+    end
   end
 end

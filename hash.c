@@ -28,7 +28,6 @@ static void
 rb_hash_modify(hash)
     VALUE hash;
 {
-    rb_secure(5);
     if (FL_TEST(hash, HASH_FREEZE)) {
 	rb_raise(rb_eTypeError, "can't modify frozen hash");
     }
@@ -899,8 +898,8 @@ path_check_1(path)
     }
 }
 
-static void
-path_check(path)
+void
+rb_path_check(path)
     char *path;
 {
     char *p = path;
@@ -934,7 +933,7 @@ int
 rb_env_path_tainted()
 {
     if (path_tainted < 0) {
-	path_check(getenv("PATH"));
+	rb_path_check(getenv("PATH"));
     }
     return path_tainted;
 }
@@ -967,7 +966,7 @@ rb_f_setenv(obj, name, value)
 	    return Qtrue;
 	}
 
-	path_check(RSTRING(name)->ptr);
+	rb_path_check(RSTRING(name)->ptr);
     }
     return Qtrue;
 }

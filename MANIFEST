@@ -109,14 +109,15 @@ lib/mkmf.rb
 lib/monitor.rb
 lib/mutex_m.rb
 lib/observer.rb
+lib/open3.rb
 lib/ostruct.rb
 lib/parsearg.rb
 lib/parsedate.rb
 lib/ping.rb
+lib/profile.rb
 lib/pstore.rb
 lib/rational.rb
 lib/readbytes.rb
-lib/shell.rb
 lib/shellwords.rb
 lib/singleton.rb
 lib/sync.rb

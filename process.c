@@ -79,7 +79,7 @@ rb_waitpid(pid, flags, st)
 {
     int result;
 #ifndef NO_WAITPID
-#if defined(THREAD)
+#if defined(USE_THREAD)
     int oflags = flags;
     if (!rb_thread_alone()) {	/* there're other threads to run */
 	flags |= WNOHANG;
@@ -94,14 +94,14 @@ rb_waitpid(pid, flags, st)
 #endif
     if (result < 0) {
 	if (errno == EINTR) {
-#ifdef THREAD
+#ifdef USE_THREAD
 	    rb_thread_schedule();
 #endif
 	    goto retry;
 	}
 	return -1;
     }
-#ifdef THREAD
+#ifdef USE_THREAD
     if (result == 0) {
 	if (oflags & WNOHANG) return 0;
 	rb_thread_schedule();
@@ -124,7 +124,7 @@ rb_waitpid(pid, flags, st)
 	result = wait(st);
 	if (result < 0) {
 	    if (errno == EINTR) {
-#ifdef THREAD
+#ifdef USE_THREAD
 		rb_thread_schedule();
 #endif
 		continue;
@@ -137,7 +137,7 @@ rb_waitpid(pid, flags, st)
 	if (!pid_tbl)
 	    pid_tbl = st_init_numtable();
 	st_insert(pid_tbl, pid, st);
-#ifdef THREAD
+#ifdef USE_THREAD
 	if (!thread_alone()) rb_thread_schedule();
 #endif
     }
@@ -181,7 +181,7 @@ rb_f_wait()
 
     while ((pid = wait(&state)) < 0) {
         if (errno == EINTR) {
-#ifdef THREAD
+#ifdef USE_THREAD
             rb_thread_schedule();
 #endif
             continue;
@@ -212,7 +212,7 @@ rb_f_waitpid(obj, vpid, vflags)
 
 char *strtok();
 
-#if defined(THREAD) && defined(HAVE_SETITIMER)
+#if defined(USE_THREAD) && defined(HAVE_SETITIMER)
 static void
 before_exec()
 {
@@ -725,7 +725,7 @@ rb_f_system(argc, argv)
 
       case -1:
 	if (errno == EAGAIN) {
-#ifdef THREAD
+#ifdef USE_THREAD
 	    rb_thread_sleep(1);
 #else
 	    sleep(1);
@@ -754,7 +754,7 @@ rb_f_sleep(argc, argv)
     int beg, end;
 
     beg = time(0);
-#ifdef THREAD
+#ifdef USE_THREAD
     if (argc == 0) {
 	rb_thread_sleep_forever();
     }
@@ -917,11 +917,11 @@ proc_setuid(obj, id)
     int uid;
 
     uid = NUM2INT(id);
-#ifdef HAVE_SETRUID
-    setruid(uid);
-#else
 #ifdef HAVE_SETREUID
     setreuid(uid, -1);
+#else
+#ifdef HAVE_SETRUID
+    setruid(uid);
 #else
     {
 	if (geteuid() == uid)

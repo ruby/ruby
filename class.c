@@ -153,9 +153,9 @@ VALUE
 rb_define_module_id(id)
     ID id;
 {
-    extern st_table *rb_class_tbl;
-    VALUE mdl = rb_module_new();
+    VALUE mdl;
 
+    mdl = rb_module_new();
     rb_name_class(mdl, id);
 
     return mdl;
@@ -192,7 +192,7 @@ rb_define_module_under(outer, name)
 }
 
 static VALUE
-include_rb_class_new(module, super)
+include_class_new(module, super)
     VALUE module, super;
 {
     NEWOBJ(klass, struct RClass);
@@ -241,7 +241,7 @@ rb_include_module(klass, module)
 	    }
 	}
 	RCLASS(klass)->super =
-	    include_rb_class_new(module, RCLASS(klass)->super);
+	    include_class_new(module, RCLASS(klass)->super);
 	klass = RCLASS(klass)->super;
 	module = RCLASS(module)->super;
     }

@@ -1,6 +1,7 @@
 #! /usr/local/bin/ruby
 
 $".push 'mkmf.rb' #"
+load '../lib/find.rb'
 
 if ARGV[0] == 'static'
   $force_static = TRUE
@@ -91,6 +92,24 @@ end
 
 def try_cpp
   xsystem(format(CPP, $CFLAGS))
+end
+
+def install_rb(mfile)
+  path = []
+  dir = []
+  Find.find("lib") do |f|
+    next unless /\.rb$/ =~ f
+    f = f[4..-1]
+    path.push f
+    dir |= File.dirname(f)
+  end
+  for f in dir
+    next if f == "."
+    mfile.printf "\t@test -d $(libdir)/%s || mkdir $(libdir)/%s\n", f, f
+  end
+  for f in path
+    mfile.printf "\t$(INSTALL_DATA) lib/%s $(libdir)/%s\n", f, f
+  end
 end
 
 def have_library(lib, func)
@@ -263,7 +282,8 @@ RUBY_INSTALL_NAME = `t='$(program_transform_name)'; echo ruby | sed $$t`
 
 prefix = @prefix@
 exec_prefix = @exec_prefix@
-libdir = @libdir@/$(RUBY_INSTALL_NAME)/@arch@
+libdir = @libdir@/$(RUBY_INSTALL_NAME)
+archdir = $(libdir)/@arch@
 @SET_MAKE@
 
 #### End of system configuration section. ####
@@ -299,24 +319,29 @@ clean:;		@rm -f *.o *.so *.sl
 
 realclean:	clean
 ", target,
-    if $static then "o" else "@DLEXT@" end, $dots, $dots
+    if $static then "a" else "@DLEXT@" end, $dots, $dots
 
   mfile.printf "\
 
 install:
+	@test -d $(libdir) || mkdir $(libdir)
+	@test -d $(archdir) || mkdir $(archdir)
 "
   if !$static
     mfile.printf "\
-	@test -d $(libdir) || mkdir $(libdir)
-	$(INSTALL) $(TARGET) $(libdir)/$(TARGET)
+	$(INSTALL) $(TARGET) $(archdir)/$(TARGET)
 "
   end
-  for rb in Dir["lib/*.rb"]
-    mfile.printf "\t$(INSTALL_DATA) %s @libdir@/$(RUBY_INSTALL_NAME)\n", rb
-  end
+  install_rb(mfile)
   mfile.printf "\n"
 
-  if !$static && "@DLEXT@" != "o"
+  if $static
+      mfile.printf "\
+$(TARGET): $(OBJS)
+	@AR@ cru $(TARGET) $(OBJS)
+	@-@RANLIB@ $(LIBRUBY) 2> /dev/null || true
+"
+  elsif "@DLEXT@" != "o"
     mfile.printf "\
 $(TARGET): $(OBJS)
 	$(LDSHARED) $(DLDFLAGS) -o $(TARGET) $(OBJS) $(LOCAL_LIBS) $(LIBS)
@@ -327,25 +352,10 @@ $(TARGET): $(OBJS)
 $(TARGET): $(OBJS)
 	ar cru $(TARGET) $(OBJS)
 "
-    elsif PLATFORM =~ "-nextstep"
+    elsif PLATFORM =~ "-nextstep" || PLATFORM =~ "-openstep" || PLATFORM =~ "-rhapsody"
       mfile.printf "\
 $(TARGET): $(OBJS)
 	cc -r $(CFLAGS) -o $(TARGET) $(OBJS)
-"
-    elsif PLATFORM =~ "-openstep"
-      mfile.printf "\
-$(TARGET): $(OBJS)
-	cc -r $(CFLAGS) -o $(TARGET) $(OBJS)
-"
-    elsif PLATFORM =~ "-rhapsody"
-      mfile.printf "\
-$(TARGET): $(OBJS)
-	cc -r $(CFLAGS) -o $(TARGET) $(OBJS)
-"
-    elsif $static
-      mfile.printf "\
-$(TARGET): $(OBJS)
-	ld -r -o $(TARGET) $(OBJS)
 "
     else
       mfile.printf "\
@@ -486,7 +496,7 @@ exit if $install or $clean
 $extinit = "" unless $extinit
 if $extlist.size > 0
   for s,t in $extlist
-    f = format("%s/%s.o", s, t)
+    f = format("%s/%s.a", s, t)
     if File.exist?(f)
       $extinit += format("\
 \tInit_%s();\n\

@@ -159,7 +159,7 @@ class Shell
 	@dir_stack.push @cwd
 	chdir pop
       else
-	Shell.fail DirStackEmpty
+	Shell.Fail DirStackEmpty
       end
     end
   end
@@ -169,7 +169,7 @@ class Shell
     if pop = @dir_stack.pop
       @cwd = pop
     else
-      Shell.fail DirStackEmpty
+      Shell.Fail DirStackEmpty
     end
   end
   alias popd popdir
@@ -350,10 +350,10 @@ class Shell
       if sh.exists?(path)
 	return path
       else
-	Shell.fail CommandNotFound, command
+	Shell.Fail CommandNotFound, command
       end
     when FALSE
-      Shell.fail CommandNotFound, command
+      Shell.Fail CommandNotFound, command
     end
 
     for p in @system_path
@@ -364,7 +364,8 @@ class Shell
       end
     end
     @system_commands[command] = FALSE
-    Shell.fail CommandNotFound, command
+#    Shell.fail CommandNotFound, command
+    raise CommandNotFound, command
   end
 
   #
@@ -380,7 +381,7 @@ class Shell
       eval d
     rescue
       print "Can't define self.#{command} path: #{path}\n" if debug? or verbose?
-      Shell.fail CanNotDefine, comamnd, path
+      Shell.Fail CanNotDefine, comamnd, path
     end
     if debug?
       print d
@@ -402,7 +403,7 @@ class Shell
       eval d
     rescue
       print "Can't define #{command} path: #{path}\n" if debug? or verbose?
-      Shell.fail CanNotDefine, comamnd, path
+      Shell.Fail CanNotDefine, comamnd, path
     end
     if debug?
       print d
@@ -474,7 +475,7 @@ class Shell
 	@input = src
 	self
       else
-	Filter.fail CanNotMethodApply, "<", to.type
+	Filter.Fail CanNotMethodApply, "<", to.type
       end
     end
 
@@ -490,7 +491,7 @@ class Shell
       when IO
 	each(){|l| to << l}
       else
-	Filter.fail CanNotMethodApply, ">", to.type
+	Filter.Fail CanNotMethodApply, ">", to.type
       end
       self
     end
@@ -507,7 +508,7 @@ class Shell
       when IO
 	each(){|l| to << l}
       else
-	Filter.fail CanNotMethodApply, ">>", to.type
+	Filter.Fail CanNotMethodApply, ">>", to.type
       end
       self
     end

@@ -380,9 +380,8 @@ void rb_define_const _((VALUE,char*,VALUE));
 void rb_define_global_const _((char*,VALUE));
 
 void rb_define_method _((VALUE,char*,VALUE(*)(),int));
-void rb_define_function _((VALUE,char*,VALUE(*)(),int));
 void rb_define_module_function _((VALUE,char*,VALUE(*)(),int));
-void rb_define_global_function _((char *, VALUE (*)(), int));
+void rb_define_global_function _((char*,VALUE(*)(),int));
 
 void rb_undef_method _((VALUE,char*));
 void rb_define_alias _((VALUE,char*,char*));
@@ -524,13 +523,7 @@ rb_special_const_p(VALUE obj)
 extern __inline__ int
 rb_test_false_or_nil(VALUE v)
 {
-#ifdef MACRUBY_PUBLIC_INTERFACE
-    return (v != Qnil) && (v != RubyFALSE);
-    return (v != Qnil) && (v != RubyFALSE);
-#else
     return (v != Qnil) && (v != Qfalse);
-    return (v != Qnil) && (v != Qfalse);
-#endif
 }
 #else
 VALUE rb_class_of _((VALUE));

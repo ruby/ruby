@@ -48,7 +48,7 @@ static int version, copyright;
 
 VALUE rb_debug = Qfalse;
 VALUE rb_verbose = Qfalse;
-int tainting = Qfalse;
+int rb_tainting = Qfalse;
 static int sflag = Qfalse;
 
 char *ruby_inplace_mode = Qfalse;
@@ -309,7 +309,7 @@ proc_options(argcp, argvp)
 		    if (numlen == 0) v = 1;
 		}
 		rb_set_safe_level(v);
-		tainting = Qtrue;
+		rb_tainting = Qtrue;
 	    }
 	    break;
 

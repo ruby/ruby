@@ -1,5 +1,5 @@
 # Usage:
-#	require "find.rb"
+#	require "find"
 #
 #	Find.find('/foo','/bar') {|f| ...}
 #  or
