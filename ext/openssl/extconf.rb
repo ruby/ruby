@@ -102,7 +102,7 @@ test-link: $(OBJS)
 	@echo "Done."
 
 dep:
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $^ -MM | \\
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(SRCS) -MM | \\
 	$(RUBY) -p -e 'BEGIN{S = []' \\
 		-e 'while !ARGV.empty? and /^(\\w+)=(.*)/ =~ ARGV[0]' \\
 		  -e 'S << [/\#{Regexp.quote($$2)}\\//, "$$(\#{$$1})/"]' \\
