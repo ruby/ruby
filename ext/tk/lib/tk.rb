@@ -1668,6 +1668,11 @@ module Tk
   def Tk.update_idletasks
     update(true)
   end
+  def update(idle=nil)
+    # only for backward compatibility (This never be recommended to use)
+    Tk.update(idle)
+    self
+  end
 
 =begin
   #  See tcltklib.c for the reason of why the following methods are disabled. 
