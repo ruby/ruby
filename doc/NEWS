@@ -117,21 +117,9 @@
     => -:7:in `open': No such file or directory - "foo" (Errno::ENOENT)
        ruby 1.7.0 (2001-05-02) [i586-linux]
 
-: syslog module
-
-  Imported. UNIX syslog interface.
-
-: forwardable module
-
-  Imported. Method delegation library.
-
 : pp module
 
   Imported. Prity Printing library.
-
-: uri module
-
-  Imported. URI library.
 
 : open
 
