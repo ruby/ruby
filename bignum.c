@@ -392,8 +392,10 @@ rb_cstr_to_inum(str, base, badcheck)
 	}
 	break;
     }
-    while (*str == '0') str++;	/* squeeze preceeding 0s */
-    
+    if (*str == '0') {		/* squeeze preceeding 0s */
+	while (*++str == '0');
+	--str;
+    }
     len *= strlen(str)*sizeof(char);
 
     if (len <= (sizeof(VALUE)*CHAR_BIT)) {

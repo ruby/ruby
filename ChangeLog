@@ -1,3 +1,8 @@
+Sat Jan 18 14:53:49 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* bignum.c (rb_cstr_to_inum): should not erase all 0s, but
+	  squeeze into one.  [ruby-dev:19377]
+
 Fri Jan 17 03:33:42 2003  Akinori MUSHA  <knu@iDaemons.org>
 
 	* sprintf.c (rb_f_sprintf): Fix a bug caused by an uninitialized
