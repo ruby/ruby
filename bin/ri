@@ -48,7 +48,7 @@ class  RiDisplay
       exit 1                   
     end
     @ri_reader = RI::RiReader.new(RI::RiCache.new(paths))
-    @formatter = RI::RiFormatter.new(@options.width, "     ")
+    @formatter = RI::TextFormatter.create(@options, "     ")
   end    
   
   
@@ -127,7 +127,7 @@ end
 
 def display_class_info(class_entry)
   klass = @ri_reader.get_class(class_entry)
-  @formatter.draw_line("Class: " + klass.full_name)
+  @formatter.draw_line(klass.display_name + ": " + klass.full_name)
   display_flow(klass.comment)
   @formatter.draw_line
 
@@ -190,12 +190,15 @@ end
 def report_method_stuff(requested_method_name, methods)
   if methods.size == 1
     display_method_info(methods[0])
-  elsif (entry = methods.find {|m| m.name == requested_method_name})
-    display_method_info(entry)
   else
-    puts "More than one method matched your request. You can refine"
-    puts "your search by asking for information on one of:\n\n"
-    @formatter.wrap(methods.map {|m| m.full_name} .join(", "))
+    entries = methods.find_all {|m| m.name == requested_method_name}
+    if entries.size == 1
+      display_method_info(entries[0])
+    else
+      puts "More than one method matched your request. You can refine"
+      puts "your search by asking for information on one of:\n\n"
+      @formatter.wrap(methods.map {|m| m.full_name} .join(", "))
+    end
   end
 end
 
@@ -204,12 +207,15 @@ end
 def report_class_stuff(requested_class_name, namespaces)
   if namespaces.size == 1
     display_class_info(namespaces[0])
-  elsif (entry = namespaces.find {|m| m.name == requested_class_name})
-    display_class_info(entry)
-  else
-    puts "More than one class or module matched your request. You can refine"
-    puts "your search by asking for information on one of:\n\n"
-    @formatter.wrap(namespaces.map {|m| m.full_name}.join(", "))
+  else 
+    entries = namespaces.find_all {|m| m.name == requested_class_name}
+    if entries.size == 1
+      display_class_info(entries[0])
+    else
+      puts "More than one class or module matched your request. You can refine"
+      puts "your search by asking for information on one of:\n\n"
+      @formatter.wrap(namespaces.map {|m| m.full_name}.join(", "))
+    end
   end
 end
 

@@ -96,10 +96,14 @@ module Generators
     end
 
     def generate_class_info(cls)
-      cls_desc = RI::ClassDescription.new
+      if cls === RDoc::NormalModule
+        cls_desc = RI::ClassDescription.new
+        cls_desc.superclass  = cls.superclass
+      else
+        cls_desc = RI::ModuleDescription.new
+      end
       cls_desc.name        = cls.name
       cls_desc.full_name   = cls.full_name
-      cls_desc.superclass  = cls.superclass
       cls_desc.comment     = markup(cls.comment)
 
       cls_desc.attributes =cls.attributes.sort.map do |a|

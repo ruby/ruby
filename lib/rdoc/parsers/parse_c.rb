@@ -156,7 +156,6 @@ module RDoc
     end
     
     def handle_class_module(var_name, class_mod, class_name, parent, in_module)
-      @known_classes[var_name] = class_name
       parent_name = @known_classes[parent] || parent
 
       if in_module
@@ -176,8 +175,10 @@ module RDoc
         cm = enclosure.add_module(NormalModule, class_name)
       end
       cm.record_location(enclosure.toplevel)
-      find_class_comment(class_name, cm)
+
+      find_class_comment(cm.full_name, cm)
       @classes[var_name] = cm
+      @known_classes[var_name] = cm.full_name
     end
     
     
@@ -186,8 +187,8 @@ module RDoc
       if @body =~ %r{((?>/\*.*?\*/\s+))
                      (static\s+)?void\s+Init_#{class_name}\s*\(\)}xm
         comment = $1
-      elsif @body =~ %r{Document-class:\s#{class_name}.*?\n((?>.*?\*/))}m
-        comment = $1
+      elsif @body =~ %r{Document-(class|module):\s#{class_name}.*?\n((?>.*?\*/))}m
+        comment = $2
       end
       class_meth.comment = mangle_comment(comment) if comment
     end
@@ -196,16 +197,6 @@ module RDoc
       @body.scan(/(\w+)\s* = \s*rb_define_module\(\s*"(\w+)"\s*\)/mx) do 
         |var_name, class_name|
         handle_class_module(var_name, "module", class_name, nil, nil)
-      end
-      
-      @body.scan(/(\w+)\s* = \s*rb_define_module_under
-                \( 
-                   \s*(\w+),
-                   \s*"(\w+)"
-                \)/mx) do 
-        
-        |var_name, in_module, class_name|
-        handle_class_module(var_name, "module", class_name, nil, in_module)
       end
       
       @body.scan(/(\w+)\s* = \s*rb_define_class
@@ -224,6 +215,16 @@ module RDoc
         handle_class_module(var_name, "class", class_name, parent, nil)
       end
 
+      @body.scan(/(\w+)\s* = \s*rb_define_module_under
+                \( 
+                   \s*(\w+),
+                   \s*"(\w+)"
+                \)/mx) do 
+        
+        |var_name, in_module, class_name|
+        handle_class_module(var_name, "module", class_name, nil, in_module)
+      end
+      
       @body.scan(/(\w+)\s* = \s*rb_define_class_under
                 \( 
                    \s*(\w+),
@@ -247,32 +248,56 @@ module RDoc
         
         next if meth_name == "initialize_copy"
 
-        class_name = @known_classes[var_name] || var_name
-        class_obj  = find_class(var_name, class_name)
+        handle_method(type, var_name, meth_name, meth_body, param_count)
+      end
+
+      @body.scan(/rb_define_global_function\(
+                               \s*"([^"]+)",
+                               \s*(?:RUBY_METHOD_FUNC\(|VALUEFUNC\()?(\w+)\)?,
+                               \s*(-?\w+)\s*\)/xm) do  #"
+        |meth_name, meth_body, param_count|
         
-        if class_obj
-          if meth_name == "initialize"
-            meth_name = "new"
-            type = "singleton_method"
-          end
-          meth_obj = AnyMethod.new("", meth_name)
-          meth_obj.singleton = type == "singleton_method" 
-          
-          p_count = (Integer(param_count) rescue -1)
-          
-          if p_count < 0
-            meth_obj.params = "(...)"
-          elsif p_count == 0
-            meth_obj.params = "()"
-          else
-            meth_obj.params = "(" +
-              (1..p_count).map{|i| "p#{i}"}.join(", ") + 
-              ")"
-          end
-          
-          find_body(meth_body, meth_obj)
-          class_obj.add_method(meth_obj)
+        handle_method("method", "rb_mKernel", meth_name, meth_body, param_count)
+      end
+  
+      @body.scan(/define_filetest_function\(
+                               \s*"([^"]+)",
+                               \s*(?:RUBY_METHOD_FUNC\(|VALUEFUNC\()?(\w+)\)?,
+                               \s*(-?\w+)\s*\)/xm) do  #"
+        |meth_name, meth_body, param_count|
+        
+        handle_method("method", "rb_mFileTest", meth_name, meth_body, param_count)
+        handle_method("singleton_method", "rb_cFile", meth_name, meth_body, param_count)
+      end
+   end
+
+
+    def handle_method(type, var_name, meth_name, meth_body, param_count)
+      class_name = @known_classes[var_name] || var_name
+      class_obj  = find_class(var_name, class_name)
+      
+      if class_obj
+        if meth_name == "initialize"
+          meth_name = "new"
+          type = "singleton_method"
         end
+        meth_obj = AnyMethod.new("", meth_name)
+        meth_obj.singleton = type == "singleton_method" 
+        
+        p_count = (Integer(param_count) rescue -1)
+        
+        if p_count < 0
+          meth_obj.params = "(...)"
+        elsif p_count == 0
+          meth_obj.params = "()"
+        else
+          meth_obj.params = "(" +
+                            (1..p_count).map{|i| "p#{i}"}.join(", ") + 
+                                                ")"
+        end
+        
+        find_body(meth_body, meth_obj)
+        class_obj.add_method(meth_obj)
       end
     end
     
@@ -331,14 +356,14 @@ module RDoc
     end
 
     def find_class(raw_name, name)
-      unless @classes[name]
+      unless @classes[raw_name]
         if raw_name =~ /^rb_m/ 
-          @classes[name] = @top_level.add_module(NormalModule, name)
+          @classes[raw_name] = @top_level.add_module(NormalModule, name)
         else
-          @classes[name] = @top_level.add_class(NormalClass, name, nil)
+          @classes[raw_name] = @top_level.add_class(NormalClass, name, nil)
         end
       end
-      @classes[name]
+      @classes[raw_name]
     end
   end
   

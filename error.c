@@ -318,6 +318,14 @@ rb_exc_new3(etype, str)
     return rb_exc_new(etype, RSTRING(str)->ptr, RSTRING(str)->len);
 }
 
+/*
+ * call-seq:
+ *    Exception.new(msg = nil)   =>  exception
+ *
+ *  Construct a new Exception object, optionally passing in 
+ *  a message.
+ */
+
 static VALUE
 exc_initialize(argc, argv, exc)
     int argc;
@@ -336,6 +344,17 @@ exc_initialize(argc, argv, exc)
     return exc;
 }
 
+/*
+ *  call-seq:
+ *     exc.exception(string) -> an_exception or exc
+ *  
+ *  With no argument, or if the argument is the same as the receiver,
+ *  return the receiver. Otherwise, create a new
+ *  exception object of the same class as the receiver, but with a
+ *  message equal to <code>string.to_str</code>.
+ *     
+ */
+
 static VALUE
 exc_exception(argc, argv, self)
     int argc;
@@ -352,6 +371,14 @@ exc_exception(argc, argv, self)
     return exc;
 }
 
+/*
+ * call-seq:
+ *   exception.to_s   =>  string
+ *
+ * Returns exception's message (or the name of the exception if
+ * no message is set).
+ */
+
 static VALUE
 exc_to_s(exc)
     VALUE exc;
@@ -363,12 +390,30 @@ exc_to_s(exc)
     return mesg;
 }
 
+/*
+ * call-seq:
+ *   exception.message   =>  string
+ *   exception.to_str    =>  string
+ *
+ * Returns the result of invoking <code>exception.to_s</code>.
+ * Normally this returns the exception's message or name. By
+ * supplying a to_str method, exceptions are agreeing to
+ * be used where Strings are expected.
+ */
+
 static VALUE
 exc_to_str(exc)
     VALUE exc;
 {
     return rb_funcall(exc, rb_intern("to_s"), 0, 0);
 }
+
+/*
+ * call-seq:
+ *   exception.inspect   => string
+ *
+ * Return this exception's class name an message
+ */
 
 static VALUE
 exc_inspect(exc)
@@ -391,6 +436,35 @@ exc_inspect(exc)
 
     return str;
 }
+
+/*
+ *  call-seq:
+ *     exception.backtrace    => array
+ *  
+ *  Returns any backtrace associated with the exception. The backtrace
+ *  is an array of strings, each containing either ``filename:lineNo: in
+ *  `method''' or ``filename:lineNo.''
+ *     
+ *     def a
+ *       raise "boom"
+ *     end
+ *     
+ *     def b
+ *       a()
+ *     end
+ *     
+ *     begin
+ *       b()
+ *     rescue => detail
+ *       print detail.backtrace.join("\n")
+ *     end
+ *     
+ *  <em>produces:</em>
+ *     
+ *     prog.rb:2:in `a'
+ *     prog.rb:6:in `b'
+ *     prog.rb:10
+*/
 
 static VALUE
 exc_backtrace(exc)
@@ -424,6 +498,16 @@ check_backtrace(bt)
     }
     return bt;
 }
+
+/*
+ *  call-seq:
+ *     exc.set_backtrace(array_   =>  array
+ *  
+ *  Sets the backtrace information associated with <i>exc</i>. The
+ *  argument must be an array of <code>String</code> objects in the
+ *  format described in <code>Exception#backtrace</code>.
+ *     
+ */
 
 static VALUE
 exc_set_backtrace(exc, bt)
@@ -528,6 +612,37 @@ rb_invalid_str(str, type)
 
     rb_raise(rb_eArgError, "invalid value for %s: %s", type, RSTRING(s)->ptr);
 }
+
+/* 
+ *  Document-module: Errno
+ *
+ *  Ruby exception objects are subclasses of <code>Exception</code>.
+ *  However, operating systems typically report errors using plain
+ *  integers. Module <code>Errno</code> is created dynamically to map
+ *  these operating system errors to Ruby classes, with each error
+ *  number generating its own subclass of <code>SystemCallError</code>.
+ *  As the subclass is created in module <code>Errno</code>, its name
+ *  will start <code>Errno::</code>.
+ *     
+ *  The names of the <code>Errno::</code> classes depend on
+ *  the environment in which Ruby runs. On a typical Unix or Windows
+ *  platform, there are <code>Errno</code> classes such as
+ *  <code>Errno::EACCES</code>, <code>Errno::EAGAIN</code>,
+ *  <code>Errno::EINTR</code>, and so on.
+ *     
+ *  The integer operating system error number corresponding to a
+ *  particular error is available as the class constant
+ *  <code>Errno::</code><em>error</em><code>::Errno</code>.
+ *     
+ *     Errno::EACCES::Errno   #=> 13
+ *     Errno::EAGAIN::Errno   #=> 11
+ *     Errno::EINTR::Errno    #=> 4
+ *     
+ *  The full list of operating system errors on your particular platform
+ *  are available as the constants of <code>Errno</code>.
+ *
+ *     Errno.constants   #=> E2BIG, EACCES, EADDRINUSE, EADDRNOTAVAIL, ...
+ */
 
 static st_table *syserr_tbl;
 
@@ -641,6 +756,16 @@ syserr_eqq(self, exc)
 	return Qtrue;
     return Qfalse;
 }
+
+/*
+ *  Descendents of class <code>Exception</code> are used to communicate
+ *  between <code>raise</code> methods and <code>rescue</code>
+ *  statements in <code>begin/end</code> blocks. <code>Exception</code>
+ *  objects carry information about the exception---its type (the
+ *  exception's class name), an optional descriptive string, and
+ *  optional traceback information. Programs may subclass 
+ *  <code>Exception</code> to add additional information.
+ */
 
 void
 Init_Exception()

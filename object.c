@@ -476,12 +476,39 @@ true_xor(obj, obj2)
     return RTEST(obj2)?Qfalse:Qtrue;
 }
 
+
+/*
+ *  Document-class: FalseClass
+ *
+ *  The global value <code>false</code> is the only instance of class
+ *  <code>FalseClass</code> and represents a logically false value in
+ *  boolean expressions. The class provides operators allowing
+ *  <code>false</code> to participate correctly in logical expressions.
+ *     
+ */
+
+/*
+ * call-seq:
+ *   false.to_s   =>  "false"
+ *
+ * 'nuf said...
+ */
+
 static VALUE
 false_to_s(obj)
     VALUE obj;
 {
     return rb_str_new2("false");
 }
+
+/*
+ *  call-seq:
+ *     false & obj   => false
+ *  
+ *  And---Returns <code>false</code>. <i>obj</i> is always
+ *  evaluated as it is the argument to a method call---there is no
+ *  short-circuit evaluation in this case.
+ */
 
 static VALUE
 false_and(obj, obj2)
@@ -490,12 +517,33 @@ false_and(obj, obj2)
     return Qfalse;
 }
 
+
+/*
+ *  call-seq:
+ *     false | obj   =>   true or false
+ *  
+ *  Or---Returns <code>false</code> if <i>obj</i> is
+ *  <code>nil</code> or <code>false</code>; <code>true</code> otherwise.
+ */
+
 static VALUE
 false_or(obj, obj2)
     VALUE obj, obj2;
 {
     return RTEST(obj2)?Qtrue:Qfalse;
 }
+
+
+
+/*
+ *  call-seq:
+ *     false ^ obj    => true or false
+ *  
+ *  Exclusive Or---If <i>obj</i> is <code>nil</code> or
+ *  <code>false</code>, returns <code>false</code>; otherwise, returns
+ *  <code>true</code>.
+ *     
+ */
 
 static VALUE
 false_xor(obj, obj2)

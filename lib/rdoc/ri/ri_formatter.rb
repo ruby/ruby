@@ -1,11 +1,16 @@
 module RI
-  class RiFormatter
+  class TextFormatter
+
+    def TextFormatter.create(options, indent)
+      new(options, indent)
+    end
 
     attr_reader :indent
     
-    def initialize(width, indent)
-      @width = width
-      @indent = indent
+    def initialize(options, indent)
+      @options = options
+      @width   = options.width
+      @indent  = indent
     end
     
     
@@ -23,7 +28,7 @@ module RI
     
     def wrap(txt,  prefix=@indent, linelen=@width)
       return unless txt && !txt.empty?
-      work = txt.dup
+      work = conv_markup(txt)
       textLen = linelen - prefix.length
       patt = Regexp.new("^(.{0,#{textLen}})[ \n]")
       next_prefix = prefix.tr("^ ", " ")
@@ -53,14 +58,20 @@ module RI
     # convert HTML entities back to ASCII
     def conv_html(txt)
       txt.
-          gsub(%r{<tt>(.*?)</tt>}) { "+#$1+" } .
-          gsub(%r{<b>(.*?)</b>}) { "*#$1*" } .
-          gsub(%r{<em>(.*?)</em>}) { "_#$1_" } .
           gsub(/&gt;/, '>').
           gsub(/&lt;/, '<').
           gsub(/&quot;/, '"').
           gsub(/&amp;/, '&')
           
+    end
+
+    # convert markup into display form
+    def conv_markup(txt)
+      txt.
+          gsub(%r{<tt>(.*?)</tt>}) { "+#$1+" } .
+          gsub(%r{<code>(.*?)</code>}) { "+#$1+" } .
+          gsub(%r{<b>(.*?)</b>}) { "*#$1*" } .
+          gsub(%r{<em>(.*?)</em>}) { "_#$1_" }
     end
 
     ######################################################################
@@ -167,4 +178,7 @@ module RI
       end
     end
   end
+
 end
+
+

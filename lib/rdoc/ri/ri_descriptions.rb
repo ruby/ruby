@@ -76,13 +76,12 @@ module RI
     end
   end
   
-  class ClassDescription < Description
+  class ModuleDescription < Description
     
     attr_accessor :class_methods
     attr_accessor :instance_methods
     attr_accessor :attributes
     attr_accessor :constants
-    attr_accessor :superclass
     attr_accessor :includes
 
     # merge in another class desscription into this one
@@ -92,6 +91,13 @@ module RI
       merge(@attributes, old.attributes)
       merge(@constants, old.constants)
       merge(@includes, old.includes)
+      if @comment.nil? || @comment.empty?
+        @comment = old.comment
+      end
+    end
+
+    def display_name
+      "Module"
     end
 
     private
@@ -104,6 +110,15 @@ module RI
     end
   end
   
+  class ClassDescription < ModuleDescription
+    attr_accessor :superclass
+
+    def display_name
+      "Class"
+    end
+  end
+
+
   class MethodDescription < Description
     
     attr_accessor :is_class_method
