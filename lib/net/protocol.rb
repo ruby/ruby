@@ -1,6 +1,6 @@
 =begin
 
-= net/session.rb
+= net/protocol.rb
 
 written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 
@@ -15,7 +15,7 @@ require 'socket'
 
 module Net
 
-  Version = '1.1.4'
+  Version = '1.1.5'
 
 =begin
 
@@ -27,21 +27,15 @@ the abstruct class for Internet protocol
 
 Object
 
-=== Constants
-
-: Version
-  The version of Session class. It is a string like "1.1.4".
-
-
 === Class Methods
 
 : new( address = 'localhost', port = nil )
-  This method Creates a new Session object.
+  This method Creates a new protocol object.
 
 : start( address = 'localhost', port = nil, *args )
-: start( address = 'localhost', port = nil, *args ){|session| .... }
-  This method creates a new Session object and start session.
-  If you call this method with block, Session object give itself
+: start( address = 'localhost', port = nil, *args ){|proto| .... }
+  This method creates a new Protocol object and start session.
+  If you call this method with block, Protocol object give itself
   to block and finish session when block returns.
 
 : Proxy( address, port )
@@ -73,6 +67,8 @@ Object
 =end
 
   class Protocol
+
+    Version = ::Net::Version
 
     class << self
 
@@ -144,7 +140,7 @@ Object
 
     protocol_param :port,         'nil'
     protocol_param :command_type, 'nil'
-    protocol_param :socket_type,  '::Net::ProtocolSocket'
+    protocol_param :socket_type,  '::Net::Socket'
 
 
     def initialize( addr = nil, port = nil )
@@ -443,7 +439,35 @@ Object
 
 =end
 
-  class ProtocolSocket
+
+  class WriteAdapter
+
+    def initialize( sock, mid )
+      @sock = sock
+      @mid = mid
+    end
+
+    def write( str )
+      @sock.__send__ @mid, str
+    end
+    alias << write
+  
+  end
+
+  class ReadAdapter
+
+    def initialize( block )
+      @block = block
+    end
+
+    def <<( str )
+      @block.call str
+    end
+  
+  end
+
+
+  class Socket
 
     def initialize( addr, port, pipe = nil )
       @addr = addr
@@ -613,24 +637,6 @@ Object
     public
 
 
-    def write( src )
-      do_write_beg
-      each_crlf_line( src ) do |line|
-        do_write_do line
-      end
-      do_write_fin
-    end
-
-
-    def writebin( src )
-      do_write_beg
-      src.each do |bin|
-        do_write_do bin
-      end
-      do_write_fin
-    end
-
-
     def writeline( str )
       do_write_beg
       do_write_do str
@@ -639,14 +645,41 @@ Object
     end
 
 
+    def writebin( src )
+      do_write_beg
+      if iterator? then
+        yield WriteAdapter.new( self, :do_write_do )
+      else
+        src.each do |bin|
+          do_write_do bin
+        end
+      end
+      do_write_fin
+    end
+
+
+    def write( src )
+      do_write_beg
+      if iterator? then
+        yield WriteAdapter.new( self, :write_inner )
+      else
+        write_inner src
+      end
+      each_crlf_line2( :i_w )
+      do_write_fin
+    end
+
+
     def write_pendstr( src )
-      @pipe << "writing text from #{src.type}" if pre = @pipe ; @pipe = nil
+      @pipe << "writing text from #{src.type}\n" if pre = @pipe ; @pipe = nil
 
       do_write_beg
-      each_crlf_line( src ) do |line|
-        do_write_do '.' if line[0] == ?.
-        do_write_do line
+      if iterator? then
+        yield WriteAdapter.new( self, :write_pendstr_inner )
+      else
+        write_pendstr_inner src
       end
+      each_crlf_line2( :i_w_pend )
       do_write_do D_CRLF
       wsize = do_write_fin
 
@@ -658,30 +691,72 @@ Object
     private
 
 
-    def each_crlf_line( src )
-      buf = ''
+    def write_inner( src )
+      each_crlf_line( src, :do_write_do )
+    end
+
+
+    def write_pendstr_inner( src )
+      each_crlf_line src, :i_w_pend
+    end
+
+    def i_w_pend( line )
+      do_write_do '.' if line[0] == ?.
+      do_write_do line
+    end
+
+
+    def each_crlf_line( src, mid )
       beg = 0
-      pos = s = bin = nil
+      buf = pos = s = bin = nil
 
-      src.each do |bin|
-        buf << bin
-
+      adding( src ) do
         beg = 0
+        buf = @wbuf
         while pos = buf.index( TERMEXP, beg ) do
           s = $&.size
           break if pos + s == buf.size - 1 and buf[-1] == ?\r
 
-          yield buf[ beg, pos - beg ] << CRLF
+          send mid, buf[ beg, pos - beg ] << CRLF
           beg = pos + s
         end
-        buf = buf[ beg, buf.size - beg ] if beg != 0
+        @wbuf = buf[ beg, buf.size - beg ] if beg != 0
       end
+    end
+
+    def adding( src )
+      i = nil
+
+      case src
+      when String
+        0.step( src.size, 512 ) do |i|
+          @wbuf << src[ i, 512 ]
+          yield
+        end
+
+      when File
+        while i = src.read( 512 ) do
+          @wbuf << i
+          yield
+        end
+
+      else
+        src.each do |bin|
+          @wbuf << bin
+          yield if @wbuf.size > 512
+        end
+      end
+    end
+
+    def each_crlf_line2( mid )
+      buf = @wbuf
+      beg = pos = nil
 
       buf << "\n" unless /\n|\r/o === buf[-1,1]
 
       beg = 0
       while pos = buf.index( TERMEXP, beg ) do
-        yield buf[ beg, pos - beg ] << CRLF
+        send mid, buf[ beg, pos - beg ] << CRLF
         beg = pos + $&.size
       end
     end
@@ -690,6 +765,7 @@ Object
     def do_write_beg
       @writtensize = 0
       @sending = ''
+      @wbuf = ''
     end
 
     def do_write_do( arg )
