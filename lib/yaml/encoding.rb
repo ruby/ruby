@@ -7,8 +7,12 @@ module YAML
 	#
 	# Escape the string, condensing common escapes
 	#
-	def YAML.escape( value )
-		value.gsub( /\\/, "\\\\\\" ).gsub( /"/, "\\\"" ).gsub( /([\x00-\x1f])/ ) { |x| ESCAPES[ x.unpack("C")[0] ] }
+	def YAML.escape( value, skip = "" )
+		value.gsub( /\\/, "\\\\\\" ).
+              gsub( /"/, "\\\"" ).
+              gsub( /([\x00-\x1f])/ ) do |x|
+                 skip[x] || ESCAPES[ x.unpack("C")[0] ]
+             end
 	end
 
 	#

@@ -1,5 +1,6 @@
 # -*- mode: ruby; ruby-indent-level: 4; tab-width: 4 -*- vim: sw=4 ts=4
 require 'date'
+require 'yaml/compat'
 #
 # Type conversions
 #
@@ -315,25 +316,24 @@ class String
                     }
                 elsif self.is_binary_data?
                     out.binary_base64( self )
-                # elsif self =~ /^ |#{YAML::ESCAPE_CHAR}| $/
-                #     complex = false
+                elsif self =~ /#{YAML::ESCAPE_CHAR}/
+                    out.node_text( self, '"' )
                 else
                     out.node_text( self, to_yaml_fold )
                 end
-            end
-            if not complex
+            else
                 ostr = 	if out.options(:KeepValue)
                             self
                         elsif empty?
                             "''"
                         elsif self =~ /^[^#{YAML::WORD_CHAR}\/]| \#|#{YAML::ESCAPE_CHAR}|[#{YAML::SPACE_INDICATORS}]( |$)| $|\n|\'/
-                            "\"#{YAML.escape( self )}\"" 
+                            out.node_text( self, '"' ); nil
                         elsif YAML.detect_implicit( self ) != 'str'
-                            "\"#{YAML.escape( self )}\"" 
+                            out.node_text( self, '"' ); nil
                         else
                             self
                         end
-                out.simple( ostr )
+                out.simple( ostr ) unless ostr.nil?
             end
 		}
 	end

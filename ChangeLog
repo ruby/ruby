@@ -1,3 +1,12 @@
+Thu Aug 19 03:07:00 2004  why the lucky stiff  <why@ruby-lang.org>
+
+	* lib/yaml/baseemitter.rb: folding now handles double-quoted strings,
+	  fixed problem with extra line feeds at end of folding, whitespace
+	  opening scalar blocks.
+
+	* lib/yaml/rubytypes.rb: subtelties in handling strings with
+	  non-printable characters and odd whitespace patterns.
+
 Wed Aug 18 23:44:20 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/protocol.rb (rbuf_fill): OpenSSL::SSLSocket has its own
