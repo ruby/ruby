@@ -16,6 +16,8 @@ def rd_order
    n = gets().chomp.to_i
 end
 
+BigDecimal::limit(100)
+
 zero = BigDecimal::new("0.0")
 one  = BigDecimal::new("1.0")
 
