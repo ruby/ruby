@@ -64,7 +64,7 @@ module Net
 
   class Protocol
 
-    Version = '1.1.24'
+    Version = '1.1.25'
 
 
     class << self
@@ -664,10 +664,10 @@ module Net
     end
 
     def each_crlf_line( src )
-      str = m = nil
-      beg = 0
+      str = m = beg = nil
 
       adding( src ) do
+        beg = 0
         buf = @wbuf
         while buf.index( /\n|\r\n|\r/, beg ) do
           m = $~
