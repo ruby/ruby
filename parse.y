@@ -924,9 +924,10 @@ op		: '|'		{ $$ = '|'; }
 reswords	: k__LINE__ | k__FILE__  | klBEGIN | klEND
 		| kALIAS | kAND | kBEGIN | kBREAK | kCASE | kCLASS | kDEF
 		| kDEFINED | kDO | kELSE | kELSIF | kEND | kENSURE | kFALSE
-		| kFOR | kIF_MOD | kIN | kMODULE | kNEXT | kNIL | kNOT
+		| kFOR | kIN | kMODULE | kNEXT | kNIL | kNOT
 		| kOR | kREDO | kRESCUE | kRETRY | kRETURN | kSELF | kSUPER
 		| kTHEN | kTRUE | kUNDEF | kWHEN | kYIELD
+		| kIF_MOD | kUNLESS_MOD | kWHILE_MOD | kUNTIL_MOD | kRESCUE_MOD
 		;
 
 arg		: lhs '=' arg
@@ -2095,13 +2096,16 @@ dsym		: tSYMBEG xstring_contents tSTRING_END
 			}
 			else {
 			    switch (nd_type($$)) {
-			      case NODE_STR:
-				$$->nd_lit = ID2SYM(rb_intern(RSTRING($$->nd_lit)->ptr));
-				nd_set_type($$, NODE_LIT);
-				break;
 			      case NODE_DSTR:
 				nd_set_type($$, NODE_DSYM);
 				break;
+			      case NODE_STR:
+				if (strlen(RSTRING($$->nd_lit)->ptr) == RSTRING($$->nd_lit)->len) {
+				    $$->nd_lit = ID2SYM(rb_intern(RSTRING($$->nd_lit)->ptr));
+				    nd_set_type($$, NODE_LIT);
+				    break;
+				}
+				/* fall through */
 			      default:
 				$$ = rb_node_newnode(NODE_DSYM, rb_str_new(0, 0),
 						     1, NEW_LIST($$));

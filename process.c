@@ -411,6 +411,33 @@ proc_waitall()
     return result;
 }
 
+static VALUE
+detach_process_watcer(pid_p)
+    int *pid_p;
+{
+    int cpid, status;
+
+    for (;;) {
+	cpid = rb_waitpid(*pid_p, &status, WNOHANG);
+	if (cpid == -1) return Qnil;
+	rb_thread_sleep(1);
+    }
+}
+
+void
+rb_detach_process(pid)
+    int pid;
+{
+    rb_thread_create(detach_process_watcer, (void*)&pid);
+}
+
+static VALUE
+proc_detach(obj, pid)
+    VALUE pid;
+{
+    rb_detach_process(NUM2INT(pid));
+}
+
 #ifndef HAVE_STRING_H
 char *strtok();
 #endif
@@ -1319,6 +1346,7 @@ Init_process()
     rb_define_module_function(rb_mProcess, "waitpid", proc_wait, -1);
     rb_define_module_function(rb_mProcess, "waitpid2", proc_wait2, -1);
     rb_define_module_function(rb_mProcess, "waitall", proc_waitall, 0);
+    rb_define_module_function(rb_mProcess, "detach", proc_detach, 1);
 
     rb_cProcStatus = rb_define_class_under(rb_mProcess, "Status", rb_cObject);
     rb_undef_method(CLASS_OF(rb_cProcStatus), "new");

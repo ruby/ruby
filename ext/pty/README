@@ -33,43 +33,15 @@ following module fungtions:
       the array is passed to the block as block parameters, and the
       function itself returns nil.
 
-      While the process spawned by this function is active, SIGCHLD
-      is captured to handle the change of the child process. When the
-      child process is suspended or finished, an exception is raised.
-      As all SIGCHLD signal is captured and processed by PTY module,
-      you can't use other function or method which spawns subprosesses
-      (including signal() and IO.popen()) while the PTY subprocesses
-      are active. Otherwise, unexpected exception will occur. To avoid
-      this problem, see protect_signal() below.
-
-      If this function is called with an iterator block, SIGCHLD signal
-      is captured only within the block. Therefore, it is risky to use
-      File objects for PTY subprocess outside the iterator block.
-
+      When the child process is suspended or finished, an exception is
+      raised.  If this function is called with an iterator block,
+      exception is raised only within the block.  Child process
+      monitor is terminated on block exit.
 
    protect_signal
+   reset_signal
 
-      This function takes an iterator block. Within the iterator block,
-      no exception is raised even if any subprocess is terminated.
-      This function is used to enable functions like system() or IO.popen()
-      while PTY subprocess is active. For example,
-
-        PTY.spawn("command_foo") do |r,w|
-          ...
-          ...
-          PTY.protect_signal do
-            system "some other commands"
-          end
-          ...
-        end
-
-      disables to send exception when "some other commands" is 
-      terminated. 
-
-    reset_signal
-
-      Disables to handle SIGCHLD while PTY subprocess is active.
-
+      These functions are obsolete in this version of pty.
 
 4. License
 

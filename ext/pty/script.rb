@@ -10,8 +10,7 @@ logfile = File.open(ofile,"a")
 
 system "stty -echo raw lnext ^_"
 
-PTY.spawn("/bin/csh") do
-  |r_pty,w_pty,pid|
+PTY.spawn("/bin/csh") do |r_pty,w_pty,pid|
 
   Thread.new do
     while true

@@ -614,12 +614,7 @@ rb_str_cat(str, ptr, len)
     if (FL_TEST(str, STR_ASSOC)) {
 	rb_str_modify(str);
 	REALLOC_N(RSTRING(str)->ptr, char, RSTRING(str)->len+len);
-	if (ptr) {
-	    memcpy(RSTRING(str)->ptr + RSTRING(str)->len, ptr, len);
-	}
-	else {
-	    MEMZERO(RSTRING(str)->ptr + RSTRING(str)->len, char, len);
-	}
+	memcpy(RSTRING(str)->ptr + RSTRING(str)->len, ptr, len);
 	RSTRING(str)->len += len;
 	RSTRING(str)->ptr[RSTRING(str)->len] = '\0'; /* sentinel */
 	return str;
@@ -3076,7 +3071,7 @@ rb_str_intern(str)
 	rb_raise(rb_eArgError, "interning empty string");
     }
     if (strlen(RSTRING(str)->ptr) != RSTRING(str)->len)
-	rb_raise(rb_eArgError, "string contains `\\0'");
+	rb_raise(rb_eArgError, "symbol string may not contain `\\0'");
     id = rb_intern(RSTRING(str)->ptr);
     return ID2SYM(id);
 }

@@ -4024,17 +4024,19 @@ massign(self, node, val, pcall)
     int pcall;
 {
     NODE *list;
+    VALUE tmp;
     long i = 0, len;
 
     len = RARRAY(val)->len;
     list = node->nd_head;
-    if (len == 1 && list) {
+    if (len == 1 && list && (list->nd_next || node->nd_args)) {
 	VALUE v = RARRAY(val)->ptr[0];
-	VALUE tmp = rb_check_array_type(v);
+	tmp = rb_check_array_type(v);
 
 	if (NIL_P(tmp)) {
 	    assign(self, list->nd_head, v, pcall);
 	    list = list->nd_next;
+	    i = 1;
 	}
 	else {
 	    len = RARRAY(tmp)->len;
@@ -4043,13 +4045,13 @@ massign(self, node, val, pcall)
 		list = list->nd_next;
 	    }
 	}
-	i = 1;
     }
     else {
 	for (; list && i<len; i++) {
 	    assign(self, list->nd_head, RARRAY(val)->ptr[i], pcall);
 	    list = list->nd_next;
 	}
+	tmp = val;
     }
     if (pcall && list) goto arg_error;
     if (node->nd_args) {
@@ -4057,7 +4059,7 @@ massign(self, node, val, pcall)
 	    /* no check for mere `*' */
 	}
 	else if (!list && i<len) {
-	    assign(self, node->nd_args, rb_ary_new4(len-i, RARRAY(val)->ptr+i), pcall);
+	    assign(self, node->nd_args, rb_ary_new4(len-i, RARRAY(tmp)->ptr+i), pcall);
 	}
 	else {
 	    assign(self, node->nd_args, rb_ary_new2(0), pcall);
@@ -8640,7 +8642,7 @@ rb_thread_run(thread)
     return thread;
 }
 
-static VALUE
+VALUE
 rb_thread_kill(thread)
     VALUE thread;
 {

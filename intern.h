@@ -199,6 +199,7 @@ void rb_thread_sleep_forever _((void));
 VALUE rb_thread_stop _((void));
 VALUE rb_thread_wakeup _((VALUE));
 VALUE rb_thread_run _((VALUE));
+VALUE rb_thread_kill _((VALUE));
 VALUE rb_thread_create _((VALUE (*)(ANYARGS), void*));
 void rb_thread_interrupt _((void));
 void rb_thread_trap_eval _((VALUE, int));

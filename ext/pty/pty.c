@@ -133,44 +133,50 @@ struct pty_info {
     VALUE thread;
 };
 
+static void
+raise_from_wait(state, info)
+    struct pty_info *info;
+    char *state;
+{
+    extern VALUE rb_last_status;
+    char buf[1024];
+    VALUE exc;
+
+    snprintf(buf, sizeof(buf), "pty - %s: %d", state, info->child_pid);
+    exc = rb_exc_new2(eChildExited, buf);
+    rb_iv_set(exc, "status", rb_last_status);
+    rb_funcall(info->thread, rb_intern("raise"), 1, exc);
+}
+
 static VALUE
 pty_syswait(info)
     struct pty_info *info;
 {
-    extern VALUE rb_last_status;
     int cpid, status;
-    char buf[1024];
-    VALUE exc, st;
-    char *state = "changed";
 
-    cpid = rb_waitpid(info->child_pid, &status, WUNTRACED);
-    st = rb_last_status;
-    
-    if (cpid == 0 || cpid == -1)
-	return Qnil;
+    for (;;) {
+	cpid = rb_waitpid(info->child_pid, &status, WUNTRACED);
+	if (cpid == -1) return Qnil;
 
-#ifdef IF_STOPPED
-    if (IF_STOPPED(status)) { /* suspend */
-	state = "stopped";
-    }
-#else
-#ifdef WIFSTOPPED
-    if (WIFSTOPPED(status)) { /* suspend */
-	state = "stopped";
-    }
+#if defined(IF_STOPPED)
+	if (IF_STOPPED(status)) { /* suspend */
+	    raise_from_wait("stopped", info);
+	}
+#elif defined(WIFSTOPPED)
+	if (WIFSTOPPED(status)) { /* suspend */
+	    raise_from_wait("stopped", info);
+	}
 #else
 ---->> Either IF_STOPPED or WIFSTOPPED is needed <<----
-#endif /* WIFSTOPPED */
-#endif /* IF_STOPPED */
-    if (WIFEXITED(status)) {
-	state = "exit";
+#endif /* WIFSTOPPED | IF_STOPPED */
+	else if (kill(info->child_pid, 0) == 0) {
+	    raise_from_wait("changed", info);
+	}
+	else {
+	    raise_from_wait("exited", info);
+	    return Qnil;
+	}
     }
-    
-    snprintf(buf, sizeof(buf), "pty - %s: %d", state, cpid);
-    exc = rb_exc_new2(eChildExited, buf);
-    rb_iv_set(exc, "status", st);
-    rb_funcall(info->thread, rb_intern("raise"), 1, exc);
-    return Qnil;
 }
 
 static void getDevice _((int*, int*));
@@ -290,26 +296,13 @@ establishShell(argc, argv, info)
 }
 
 static VALUE
-pty_kill_child(info)
+pty_finalize_syswait(info)
     struct pty_info *info;
 {
-    if (rb_funcall(info->thread, rb_intern("alive?"), 0, 0) == Qtrue &&
-	kill(info->child_pid, 0) == 0) {
-	rb_thread_schedule();
-	if (kill(info->child_pid, SIGTERM) == 0) {
-	    rb_thread_schedule();
-	    if (kill(info->child_pid, 0) == 0) {
-		kill(info->child_pid, SIGINT);
-		rb_thread_schedule();
-		if (kill(info->child_pid, 0) == 0)
-		    kill(info->child_pid, SIGKILL);
-	    }
-	}
-    }
-    rb_funcall(info->thread, rb_intern("join"), 0, 0);
+    rb_thread_kill(info->thread);
+    rb_detach_process(info->child_pid);
     return Qnil;
 }
-
 
 #ifdef HAVE_OPENPTY
 /*
@@ -447,7 +440,7 @@ pty_getpty(argc, argv, self)
     thinfo.child_pid = info.child_pid;
 
     if (rb_block_given_p()) {
-	rb_ensure(rb_yield, res, pty_kill_child, (VALUE)&thinfo);
+	rb_ensure(rb_yield, res, pty_finalize_syswait, (VALUE)&thinfo);
 	return Qnil;
     }
     return res;

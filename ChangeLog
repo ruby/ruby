@@ -1,12 +1,37 @@
+Fri Mar  7 03:31:36 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (dsym): :"symbol string" style should not contain `\0'.
+
+	* process.c (proc_detach): new method Proc#detach(pid) which
+	  create background watcher thread to issue waitpid. [new]
+
+	* process.c (rb_detach_process): utility function to detach
+	  process from C code.
+
+	* ext/pty/pty.c (pty_finalize_syswait): terminate watcher thread,
+	  and detach child process (by creating new idle waitpid watcher
+	  thread).
+
+	* ext/pty/pty.c (pty_syswait): may lost signal stopped child.
+
 Fri Mar  7 00:30:33 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/Win32API/Win32API.c: no longer use inline-asms.
 
 	* ext/Win32API/extconf.rb: no need to add gcc options.
 
+Thu Mar  6 13:02:10 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (reswords): fix reswords list.
+
 Wed Mar  5 12:13:21 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in: better YACC support on HP-UX.
+
+Wed Mar  5 05:55:20 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_cat): remove ptr NULL check and MEMZERO(). ptr
+	  must be non NULL.
 
 Tue Mar 04 23:12:07 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
@@ -21,10 +46,10 @@ Tue Mar 04 23:12:07 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 Tue Mar  4 17:54:30 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* array.c (rb_ary_aref): give warning if index is a symbol.
+	* array.c (rb_ary_aref): raise TypeError if index is a symbol.
 	  [ruby-list:37217]
 
-	* array.c (rb_ary_aset): raise TypeError if index is a symbol.
+	* array.c (rb_ary_aset): ditto.
 
 Tue Nov 13 14:39:11 2001  WATANABE Tetsuya  <tetsu@jpn.hp.com>
 
