@@ -6,7 +6,7 @@
   $Date$
   created at: Fri May 28 18:02:42 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -1745,6 +1745,10 @@ normalize_newline(line)
 	RSTRING(line)->ptr[RSTRING(line)->len-2] = '\n';
 	RSTRING(line)->len--;
     }
+#ifdef __MACOS__
+    else if (RSTRING(line)->ptr[RSTRING(line)->len-1] == '\r')
+	RSTRING(line)->ptr[RSTRING(line)->len-1] = '\n';
+#endif
 }
 
 static int

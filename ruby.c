@@ -6,7 +6,7 @@
   $Date$
   created at: Tue Aug 10 12:47:31 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -742,9 +742,6 @@ ruby_prog_init()
     addpath(RUBY_LIB);
 #if defined(_WIN32) || defined(DJGPP)
     addpath(ruby_libpath());
-#endif
-#ifdef __MACOS__
-    setup_macruby_libpath();
 #endif
 
 #ifdef RUBY_ARCHLIB

@@ -1022,7 +1022,7 @@ calculate_must_string(start, end)
 char *
 re_compile_pattern(pattern, size, bufp)
      char *pattern;
-     size_t size;
+     int size;
      struct re_pattern_buffer *bufp;
 {
     register char *b = bufp->buffer;
@@ -1084,10 +1084,10 @@ re_compile_pattern(pattern, size, bufp)
        Fourth, the value of regnum.
        Fifth, the type of the paren. */
 
-    size_t *stackb = RE_TALLOC(40, size_t);
-    size_t *stackp = stackb;
-    size_t *stacke = stackb + 40;
-    size_t *stackt;
+    int *stackb = RE_TALLOC(40, int);
+    int *stackp = stackb;
+    int *stacke = stackb + 40;
+    int *stackt;
 
     /* Counts ('s as they are encountered.  Remembered for the matching ),
        where it becomes the register number to put in the stop_memory
@@ -2754,7 +2754,7 @@ int
 re_search(bufp, string, size, startpos, range, regs)
      struct re_pattern_buffer *bufp;
      char *string;
-     size_t size, startpos, range;
+     int size, startpos, range;
      struct re_registers *regs;
 {
   register char *fastmap = bufp->fastmap;
@@ -3145,7 +3145,7 @@ int
 re_match(bufp, string_arg, size, pos, regs)
      struct re_pattern_buffer *bufp;
      char *string_arg;
-     size_t size, pos;
+     int size, pos;
      struct re_registers *regs;
 {
   register unsigned char *p = (unsigned char*)bufp->buffer;

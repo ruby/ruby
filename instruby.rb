@@ -29,11 +29,22 @@ for dll in Dir['*.dll']
   File.install dll, "#{destdir}#{bindir}/#{dll}", 0755, true
 end
 File.makedirs "#{destdir}#{libdir}", true
-for lib in ["libruby.so", "libruby.so.LIB"]
+for lib in ["libruby.so.LIB", CONFIG["LIBRUBY_SO"]]
   if File.exist? lib
     File.install lib, "#{destdir}#{libdir}", 0644, true
   end
 end
+pwd = Dir.pwd
+Dir.chdir libdir
+if File.exist? CONFIG["LIBRUBY_SO"]
+  for alias in [CONFIG["LIBRUBY_SO"]]
+    if File.exist? alias
+       File.delete alias
+    end
+    File.symlink CONFIG["LIBRUBY_SO"], alias
+    print "link #{CONFIG['LIBRUBY_SO']} -> #{alias}\n"
+end
+Dir.chdir pwd
 File.makedirs "#{destdir}#{pkglibdir}", true
 File.makedirs "#{destdir}#{archdir}", true
 Dir.chdir "ext"

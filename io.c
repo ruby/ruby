@@ -6,7 +6,7 @@
   $Date$
   created at: Fri Oct 15 18:08:59 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -54,6 +54,7 @@ struct timeval {
  #include <sys/errno.h>
  #include <unix.mac.h>
  #include <compat.h>
+ extern char* strdup(const char*);
 #endif
 extern void Init_File _((void));
 
@@ -99,7 +100,7 @@ static VALUE lineno;
 #elif defined(__BEOS__)
 #  define ReadDataPending(fp) (fp->_state._eof == 0)
 #elif defined(USE_CWGUSI)
-#  define ReadDataPending(fp) (fp->state.eof == 0)
+#  define READ_DATA_PENDING(fp) (fp->state.eof == 0)
 #else
 /* requires systems own version of the ReadDataPending() */
 extern int ReadDataPending();
@@ -1014,9 +1015,9 @@ rb_io_binmode(io)
 	rb_sys_fail(fptr->path);
 # else  /* USE_CWGUSI */
 	if (fptr->f)
-		fptr->f->mode.binrb_ary_io = 1;
+		fptr->f->mode.binary_io = 1;
 	if (fptr->f2)
-		fptr->f2->mode.binrb_ary_io = 1;
+		fptr->f2->mode.binary_io = 1;
 # endif /* USE_CWGUSI */
 #endif
 
@@ -2550,7 +2551,7 @@ arg_read(argc, argv)
     VALUE *argv;
 {
     VALUE tmp, str;
-    size_t len;
+    int len;
 
     if (argc == 1) len = NUM2INT(argv[0]);
     str = Qnil;

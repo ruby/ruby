@@ -288,7 +288,7 @@ CC = @CC@
 
 prefix = @prefix@
 CFLAGS   = %s -I#{$topdir} -I#{$top_srcdir} -I@includedir@ #{CFLAGS} #$CFLAGS %s
-DLDFLAGS = #$DLDFLAGS @LDFLAGS@ #$LDFLAGS
+DLDFLAGS = #$DLDFLAGS #$LDFLAGS
 LDSHARED = @LDSHARED@
 ", if $static then "" else "@CCDLFLAGS@" end, $defs.join(" ")
 

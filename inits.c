@@ -6,7 +6,7 @@
   $Date$
   created at: Tue Dec 28 16:01:58 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -31,6 +31,7 @@ void Init_marshal _((void));
 void Init_Numeric _((void));
 void Init_Object _((void));
 void Init_pack _((void));
+void Init_Precision _((void));
 void Init_sym _((void));
 void Init_process _((void));
 void Init_Random _((void));
@@ -51,6 +52,7 @@ rb_call_inits()
     Init_Object();
     Init_Comparable();
     Init_Enumerable();
+    Init_Precision();
     Init_eval();
     Init_String();
     Init_Exception();

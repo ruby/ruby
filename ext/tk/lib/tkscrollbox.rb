@@ -8,7 +8,7 @@ require 'tk.rb'
 
 class TkScrollbox<TkListbox
   include TkComposite
-  def initialize_composite
+  def initialize_composite(keys=nil)
     list = TkListbox.new(@frame)
     scroll = TkScrollbar.new(@frame)
     @path = list.path
@@ -23,5 +23,7 @@ class TkScrollbox<TkListbox
     delegate('background', list, scroll)
     delegate('borderwidth', @frame)
     delegate('relief', @frame)
+
+    configure keys if keys
   end
 end

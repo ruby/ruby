@@ -6,7 +6,7 @@
   $Date$
   created at: Thu Jun 10 14:22:17 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -36,6 +36,10 @@ char *strrchr _((char*,char));
 #include <sys/stat.h>
 #include <sys/errno.h>
 #include <compat.h>
+#endif
+
+#ifdef __MACOS__
+#include "macruby_private.h"
 #endif
 
 #ifndef setjmp
@@ -886,6 +890,9 @@ ruby_init()
 	ruby_frame->self = ruby_top_self;
 	ruby_frame->cbase = (VALUE)rb_node_newnode(NODE_CREF,rb_cObject,0,0);
 	rb_define_global_const("TOPLEVEL_BINDING", rb_f_binding(ruby_top_self));
+#ifdef __MACOS__
+	_macruby_init();
+#endif
 	ruby_prog_init();
     }
     POP_TAG();
@@ -3028,32 +3035,34 @@ rb_f_raise(argc, argv)
     int argc;
     VALUE *argv;
 {
-    VALUE arg1, arg2, arg3;
     VALUE mesg;
     int n;
 
     mesg = Qnil;
-    switch (n = rb_scan_args(argc, argv, "03", &arg1, &arg2, &arg3)) {
+    switch (argc) {
+      case 0:
+	mesg = Qnil;
+	break;
       case 1:
-	mesg = arg1;
+	if (NIL_P(argv[0])) break;
+	if (TYPE(argv[0]) == T_STRING) {
+	    mesg = rb_exc_new3(rb_eRuntimeError, argv[0]);
+	    break;
+	}
+	mesg = rb_funcall(argv[0], rb_intern("exception"), 0, 0);
 	break;
       case 3:
       case 2:
-	mesg = arg2;
+	mesg = rb_funcall(argv[0], rb_intern("exception"), 1, argv[1]);
+	break;
+      default:
+	rb_raise(rb_eArgError, "wrong # of arguments");
 	break;
     }
-
     if (!NIL_P(mesg)) {
-	if (n == 1 && TYPE(mesg) == T_STRING) {
-	    mesg = rb_exc_new3(rb_eRuntimeError, mesg);
-	}
-	else {
-	    mesg = rb_funcall(arg1, rb_intern("new"), 1, mesg);
-	}
-	if (!rb_obj_is_kind_of(mesg, rb_eException)) {
+	if (!rb_obj_is_kind_of(mesg, rb_eException))
 	    rb_raise(rb_eTypeError, "exception object expected");
-	}
-	set_backtrace(mesg, arg3);
+	set_backtrace(mesg, (argc>2)?argv[2]:Qnil);
     }
 
     PUSH_FRAME();		/* fake frame */
@@ -3675,13 +3684,14 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
 	break;
     }
 
+#if 0
     if ((++tick & 0x3ff) == 0) {
 	CHECK_INTS;		/* better than nothing */
 	if (stack_length() > STACK_LEVEL_MAX) {
 	    rb_raise(rb_eSysStackError, "stack level too deep");
 	}
     }
-
+#endif
     PUSH_ITER(itr);
     PUSH_FRAME();
 
@@ -4394,6 +4404,16 @@ is_absolute_path(path)
     return 0;
 }
 
+#ifdef __MACOS__
+static int
+is_macos_native_path(path)
+    char *path;
+{
+    if (strchr(path, ':')) return 1;
+    return 0;
+}
+#endif
+
 static char*
 find_file(file)
     char *file;
@@ -4401,6 +4421,16 @@ find_file(file)
     extern VALUE rb_load_path;
     volatile VALUE vpath;
     char *path;
+
+#ifdef __MACOS__
+    if (is_macos_native_path(file)) {
+	FILE *f = fopen(file, "r");
+
+	if (f == NULL) return 0;
+	fclose(f);
+	return file;
+    }
+#endif
 
     if (is_absolute_path(file)) {
 	FILE *f = fopen(file, "r");
@@ -4447,11 +4477,9 @@ rb_load(fname, wrap)
     else {
 	Check_SafeStr(fname);
     }
-#ifndef __MACOS__
     if (RSTRING(fname)->ptr[0] == '~') {
 	fname = rb_file_s_expand_path(1, &fname);
     }
-#endif
     file = find_file(RSTRING(fname)->ptr);
     if (!file) {
 	rb_raise(rb_eLoadError, "No such file to load -- %s", RSTRING(fname)->ptr);
@@ -4609,7 +4637,7 @@ rb_f_require(obj, fname)
 	if (strcmp(".rb", ext) == 0) {
 	    feature = file = RSTRING(fname)->ptr;
 	    file = find_file(file);
-	    if (file) goto rb_load;
+	    if (file) goto load_rb;
 	}
 	else if (strcmp(".so", ext) == 0 || strcmp(".o", ext) == 0) {
 	    file = feature = RSTRING(fname)->ptr;
@@ -4621,12 +4649,12 @@ rb_f_require(obj, fname)
 		file = feature = buf;
 	    }
 	    file = find_file(file);
-	    if (file) goto dyna_load;
+	    if (file) goto load_dyna;
 	}
 	else if (strcmp(DLEXT, ext) == 0) {
 	    feature = RSTRING(fname)->ptr;
 	    file = find_file(feature);
-	    if (file) goto dyna_load;
+	    if (file) goto load_dyna;
 	}
     }
     buf = ALLOCA_N(char, strlen(RSTRING(fname)->ptr) + 5);
@@ -4636,19 +4664,19 @@ rb_f_require(obj, fname)
     if (file) {
 	fname = rb_str_new2(file);
 	feature = buf;
-	goto rb_load;
+	goto load_rb;
     }
     strcpy(buf, RSTRING(fname)->ptr);
     strcat(buf, DLEXT);
     file = find_file(buf);
     if (file) {
 	feature = buf;
-	goto dyna_load;
+	goto load_dyna;
     }
     rb_raise(rb_eLoadError, "No such file to load -- %s",
 	     RSTRING(fname)->ptr);
 
-  dyna_load:
+  load_dyna:
 #ifdef USE_THREAD
     if (rb_thread_loading(feature)) return Qfalse;
     else {
@@ -4669,7 +4697,7 @@ rb_f_require(obj, fname)
 #endif
     return Qtrue;
 
-  rb_load:
+  load_rb:
 #ifdef USE_THREAD
     if (rb_thread_loading(feature)) return Qfalse;
     else {
