@@ -1,3 +1,8 @@
+Sun Jul 18 16:14:29 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/msgcat.rb (TkMsgCatalog.callback): bug fix
+	  ( wrong number of argument )
+
 Sun Jul 18 08:13:58 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (rb_f_sprintf): remove extra sign digit.

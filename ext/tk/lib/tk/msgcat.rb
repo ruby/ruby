@@ -50,7 +50,8 @@ class TkMsgCatalog < TkObject
     }
   EOL
 
-  def self.callback(namespace, locale, src_str)
+  def self.callback(namespace, locale, src_str, *args)
+    src_str = sprintf(src_str, *args) unless args.empty?
     cmd_tbl = TkMsgCatalog::UNKNOWN_CBTBL[TkCore::INTERP.__getip]
     cmd = cmd_tbl[namespace]
     cmd = cmd_tbl['::'] unless cmd  # use global scope as interp default
