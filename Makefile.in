@@ -70,11 +70,11 @@ all:		miniruby$(binsuffix) rbconfig.rb
 
 miniruby$(binsuffix):	$(OBJS) $(MAINOBJ) dmyext.o
 		@rm -f $@
-		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(OBJS) dmyext.o $(LIBS) -o miniruby
+		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(OBJS) dmyext.o $(LIBS) -o $@
 
 ruby$(binsuffix):     	$(LIBRUBY) $(MAINOBJ) $(EXTOBJS) 
 		@rm -f $@
-		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBY) $(LIBS) -o ruby
+		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBY) $(LIBS) -o $@
 
 $(LIBRUBY):	$(OBJS) dmyext.o
 		@AR@ rcu $(LIBRUBY) $(OBJS) dmyext.o
@@ -85,7 +85,10 @@ install:	rbconfig.rb
 
 clean:;		@rm -f $(OBJS) $(LIBRUBY) $(MAINOBJ) rbconfig.rb
 		@rm -f ext/extinit.c ext/extinit.o dmyext.o
-		@if test -f ./miniruby; then cd ext; ../miniruby ./extmk.rb clean; fi
+		@if test -f ./miniruby$(binsuffix); then \
+			cd ext; \
+			../miniruby$(binsuffix) ./extmk.rb clean; \
+		fi
 
 realclean:	clean
 		@rm -f Makefile ext/extmk.rb ext/config.cache

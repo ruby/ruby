@@ -471,7 +471,7 @@ else
   Dir.chdir ".."
   if older("ruby@binsuffix@", "miniruby@binsuffix@")
     `rm -f ruby@binsuffix@`
-    `cp miniruby@binsuffix@ ruby@binsuffix@`
+    system("make ruby@binsuffix@")
   end
 end
 

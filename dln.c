@@ -1350,7 +1350,7 @@ dln_find_exe(fname, path)
     if (!path)
 	path = getenv("path");
     if (!path)
-	path = "/usr/local/bin;/usr/usb;/usr/bin;/bin;.";
+	path = "/usr/local/bin;/usr/ucb;/usr/bin;/bin;.";
 #else
     if (!path) path = getenv("PATH");
     if (!path) path = "/usr/local/bin:/usr/ucb:/usr/bin:/bin:.";

@@ -123,7 +123,7 @@ static VALUE
 etc_passwd(obj)
     VALUE obj;
 {
-#if defined(HAVE_GETPWENT) && !defined(__CYGWIN32__)
+#if defined(HAVE_GETPWENT)
     struct passwd *pw;
 
     if (iterator_p()) {

@@ -929,7 +929,7 @@ file_chmod(obj, vmode)
     mode = NUM2INT(vmode);
 
     GetOpenFile(obj, fptr);
-#if defined(DJGPP) || defined(__CYGWIN32__) || defined(NT)
+#if defined(DJGPP) || defined(NT)
     if (chmod(fptr->path, mode) == -1)
 	rb_sys_fail(fptr->path);
 #else
@@ -1162,7 +1162,7 @@ file_s_umask(argc, argv)
     int omask = 0;
 
     if (argc == 0) {
-	int omask = umask(0);
+	omask = umask(0);
 	umask(omask);
     }
     else if (argc == 1) {

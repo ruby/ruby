@@ -215,7 +215,7 @@ static VALUE
 dir_s_chroot(dir, path)
     VALUE dir, path;
 {
-#if !defined(DJGPP) && !defined(__CYGWIN32__)  && !defined(NT) && !defined(__human68k__)
+#if !defined(DJGPP) && !defined(NT) && !defined(__human68k__)
     rb_secure(2);
     Check_SafeStr(path);
 

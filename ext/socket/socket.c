@@ -1137,7 +1137,7 @@ static VALUE
 sock_s_socketpair(class, domain, type, protocol)
     VALUE class, domain, type, protocol;
 {
-#if !defined(__CYGWIN32__) && !defined(NT)
+#if !defined(NT)
     int fd;
     int d, t, sp[2];
 

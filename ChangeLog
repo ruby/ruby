@@ -1,3 +1,11 @@
+Mon Mar 30 14:07:07 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (str_intern): typo in error message.
+
+Mon Mar 30 14:06:19 1998  Tadayoshi Funaba  <tadf@kt.rim.or.jp>
+
+	* string.c (str_capitalize_bang): did not check string modification.
+
 Sat Mar 28 20:40:12 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* experimental release 1.1b9_06.

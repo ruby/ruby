@@ -1610,8 +1610,10 @@ str_capitalize_bang(str)
 
     str_modify(str);
     s = RSTRING(str)->ptr; send = s + RSTRING(str)->len;
-    if (islower(*s))
+    if (islower(*s)) {
 	*s = toupper(*s);
+	modify = 1;
+    }
     while (++s < send) {
 	if (ismbchar(*s)) {
 	    s++;
@@ -1867,10 +1869,10 @@ str_delete_bang(str1, str2)
     s = t = RSTRING(str1)->ptr;
     send = s + RSTRING(str1)->len;
     while (s < send) {
-	if (!squeez[*s & 0xff]) {
-	    *t++ = *s;
+	if (squeez[*s & 0xff])
 	    modify = 1;
-	}
+	else
+	    *t++ = *s;
 	s++;
     }
     *t = '\0';
@@ -2469,7 +2471,7 @@ str_intern(str)
     ID id;
 
     if (strlen(RSTRING(str)->ptr) != RSTRING(str)->len)
-	ArgError("string contains `\0'");
+	ArgError("string contains `\\0'");
     id = rb_intern(RSTRING(str)->ptr);
     return INT2FIX(id);
 }

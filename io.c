@@ -160,7 +160,7 @@ io_write(io, str)
 #ifdef __human68k__
     {
 	register UCHAR *ptr = RSTRING(str)->ptr;
-	n = (int) RSTRING(str)->len;
+	n = (int)RSTRING(str)->len;
 	while (--n >= 0)
 	    if (fputc(*ptr++, f) == EOF)
 		rb_sys_fail(fptr->path);
@@ -809,7 +809,7 @@ io_binmode(io)
 #ifdef __human68k__
     if (fptr->f)
 	fmode(fptr->f, _IOBIN);
-    if (fptr->f2);
+    if (fptr->f2)
 	fmode(fptr->f2, _IOBIN);
 #else
     if (fptr->f && setmode(fileno(fptr->f), O_BINARY) == -1)

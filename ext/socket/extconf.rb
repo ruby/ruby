@@ -4,7 +4,7 @@ when /mswin32/
   test_func = "WSACleanup"
   have_library("wsock32", "WSACleanup")
 when /cygwin32/
-  test_func = "cygwin32_socket"
+  test_func = "socket"
 else
   test_func = "socket"
   have_library("socket", "socket")

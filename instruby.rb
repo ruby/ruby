@@ -20,6 +20,7 @@ mandir = CONFIG["mandir"] + "/man1"
 
 File.install "ruby#{binsuffix}",
   "#{bindir}/#{ruby_install_name}#{binsuffix}", 0755, TRUE
+File.install "rubygw32.dll", "#{bindir}/rubygw32.dll", 0755, TRUE
 File.makedirs libdir, TRUE
 Dir.chdir "ext"
 system "../miniruby#{binsuffix} extmk.rb install"
