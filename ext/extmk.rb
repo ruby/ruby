@@ -101,12 +101,11 @@ def extmake(target)
     end
     if $static
       $extflags ||= ""
-      $extlibs ||= ""
+      $extlibs ||= []
       $extpath ||= []
       $extflags += " " + $DLDFLAGS unless $DLDFLAGS.empty?
       $extflags += " " + $LDFLAGS unless $LDFLAGS.empty?
-      libs = ($libs.split+$LOCAL_LIBS.split).uniq
-      $extlibs = [$extlibs, *libs].join(" ") unless libs.empty?
+      $extlibs |= $libs.split | $LOCAL_LIBS.split
       $extpath |= $LIBPATH
     end
   ensure
@@ -254,13 +253,13 @@ SRC
 
   $extobjs = "ext/extinit.#{$OBJEXT} " + $extobjs
   if RUBY_PLATFORM =~ /m68k-human|beos/
-    $extlibs.gsub!("-L/usr/local/lib", "") if $extlibs
+    $extflags.delete("-L/usr/local/lib")
   end
   $extpath.delete("$(topdir)")
   $extflags = libpathflag($extpath) << " " << $extflags.strip
   conf = [
     ['SETUP', $setup], [$enable_shared ? 'DLDOBJS' : 'EXTOBJS', $extobjs],
-    ['EXTLIBS', $extlibs], ['EXTLDFLAGS', $extflags]
+    ['EXTLIBS', $extlibs.join(' ')], ['EXTLDFLAGS', $extflags]
   ].map {|n, v|
     "#{n}=#{v}" if v and !(v = v.strip).empty?
   }.compact
@@ -270,7 +269,7 @@ SRC
 end
 rubies = []
 %w[RUBY RUBYW].each {|r|
-  r = CONFIG[r+"_INSTALL_NAME"] and !r.empty? and rubies << r+EXEEXT
+  config_string(r+"_INSTALL_NAME") {|r| l << r+EXEEXT}
 }
 
 Dir.chdir ".."

@@ -1,9 +1,11 @@
-Tue Aug 12 11:12:42 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Aug 12 16:55:11 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in: static link libraries to LIBRUBY_SO with static linked
 	  ext.  [ruby-dev:21157]
 
 	* ext/extmk.rb (extmake): sort extension library initialization order.
+
+	* ext/extmk.rb (extmake): compact $extlibs.
 
 Tue Aug 12 02:48:56 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
