@@ -9,7 +9,7 @@ $dbm_conf_headers = {
   "db1" => ["db1/ndbm.h", "db1.h", "ndbm.h"],
   "db2" => ["db2/db.h", "db2.h", "db.h"],
   "dbm" => ["ndbm.h"],
-  "gdbm" => ["gdbm-ndbm.h", "gdbm.h"],
+  "gdbm" => ["gdbm-ndbm.h", "ndbm.h"],
 }
 
 def db_check(db)
