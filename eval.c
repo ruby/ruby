@@ -6993,6 +6993,7 @@ proc_invoke(proc, args, self, klass)
       case TAG_RETURN:
 	if (pcall) {
 	    result = prot_tag->retval;
+	    break;
 	}
 	else if (orphan) {	/* orphan block */
 	    char mesg[32];
