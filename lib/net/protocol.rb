@@ -1,6 +1,6 @@
 =begin
 
-= net/protocol.rb version 1.2.2
+= net/protocol.rb version 1.2.3
 
 Copyright (c) 1999-2001 Yukihiro Matsumoto
 
@@ -32,7 +32,7 @@ module Net
 
   class Protocol
 
-    Version = '1.2.2'
+    Version = '1.2.3'
 
     class << self
 
@@ -532,7 +532,7 @@ module Net
 
     CRLF = "\r\n"
 
-    def read( len, dest = '', ignerr = false )
+    def read( len, dest = '', igneof = false )
       D_off "reading #{len} bytes..."
 
       rsize = 0

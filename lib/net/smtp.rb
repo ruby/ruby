@@ -1,6 +1,6 @@
 =begin
 
-= net/smtp.rb version 1.2.2
+= net/smtp.rb version 1.2.3
 
 Copyright (c) 1999-2001 Yukihiro Matsumoto
 

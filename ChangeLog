@@ -1,3 +1,9 @@
+Sun Jul  8 16:04:35 2001  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb: rename HTTP#request_by_name to send_request.
+
+	* lib/net/protocol.rb (ProtoSocket#read): modify typo.
+
 Fri Jul  6 02:15:06 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/tempfile.rb: a tempfile must be created with mode 0600.

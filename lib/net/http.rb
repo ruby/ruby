@@ -1,6 +1,6 @@
 =begin
 
-= net/http.rb version 1.2.2
+= net/http.rb version 1.2.3
 
 Copyright (c) 1999-2001 Yukihiro Matsumoto
 
@@ -266,10 +266,7 @@ Yes, this is not thread-safe.
         Net::HTTP.start( 'some.www.server', 80 ) {|http|
           response = http.head( '/index.html' )
         }
-        response['content-length']   #-> '2554'
-        response['content-type']     #-> 'text/html'
-        response['Content-Type']     #-> 'text/html'
-        response['CoNtEnT-tYpe']     #-> 'text/html'
+        p response['content-type']
 
 : post( path, data, header = nil, dest = '' )
 : post( path, data, header = nil ) {|str| .... }
@@ -286,32 +283,74 @@ Yes, this is not thread-safe.
     by "anException.response".
 
         # version 1.1
-        response, body = http.post( '/index.html', 'querytype=subject&target=ruby' )
+        response, body = http.post( '/cgi-bin/search.rb', 'querytype=subject&target=ruby' )
         # version 1.2
-        response = http.post( '/index.html', 'querytype=subject&target=ruby' )
+        response = http.post( '/cgi-bin/search.rb', 'querytype=subject&target=ruby' )
         # compatible for both version
-        response , = http.post( '/index.html', 'querytype=subject&target=ruby' )
+        response , = http.post( '/cgi-bin/search.rb', 'querytype=subject&target=ruby' )
 
         # using block
         File.open( 'save.html', 'w' ) {|f|
-          http.post( '/index.html', 'querytype=subject&target=ruby' ) do |str|
+          http.post( '/cgi-bin/search.rb', 'querytype=subject&target=ruby' ) do |str|
             f.write str
           end
         }
         # same effect
         File.open( 'save.html', 'w' ) {|f|
-          http.post '/index.html', 'querytype=subject&target=ruby', nil, f
+          http.post '/cgi-bin/search.rb', 'querytype=subject&target=ruby', nil, f
+        }
+
+: get2( path, header = nil )
+: get2( path, header = nil ) {|response| .... }
+    gets entity from PATH. This method returns a HTTPResponse object.
+
+    When called with block, keep connection while block is executed
+    and gives a HTTPResponse object to the block.
+
+    This method never raise any ProtocolErrors.
+
+        # example
+        response = http.get2( '/index.html' )
+        p response['content-type']
+        puts response.body          # body is already read
+
+        # using block
+        http.get2( '/index.html' ) {|response|
+          p response['content-type']
+          response.read_body do |str|   # read body now
+            print str
+          end
+        }
+
+: post2( path, header = nil )
+: post2( path, header = nil ) {|response| .... }
+    posts data to PATH. This method returns a HTTPResponse object.
+
+    When called with block, gives a HTTPResponse object to the block
+    before reading entity body, with keeping connection.
+
+        # example
+        response = http.post2( '/cgi-bin/nice.rb', 'datadatadata...' )
+        p response.status
+        puts response.body          # body is already read
+
+        # using block
+        http.post2( '/cgi-bin/nice.rb', 'datadatadata...' ) {|response|
+          p response.status
+          p response['content-type']
+          response.read_body do |str|   # read body now
+            print str
+          end
         }
 
 : request( request [, data] )
 : request( request [, data] ) {|response| .... }
-    sends a HTTPRequest object REQUEST to (remote) http server.
-    This method also writes string from DATA string if REQUEST is
-    a post/put request. Giving DATA for get/head request causes
-    ArgumentError.
+    sends a HTTPRequest object REQUEST to the (remote) http server.
+    This method also writes DATA string if REQUEST is a post/put request.
+    Giving DATA for get/head request causes ArgumentError.
 
-    If called with block, gives a HTTPResponse object to the block
-    with connecting server.
+    If called with block, passes a HTTPResponse object to the block
+    before reading entity body.
 
 == class Net::HTTP::Get, Head, Post
 
@@ -396,7 +435,6 @@ All arguments named KEY is case-insensitive.
 : body
     response body. If #read_body has been called, this method returns
     arg of #read_body DEST. Else gets body as String and returns it.
-
 
 =end
 
@@ -610,7 +648,7 @@ module Net
       req.response
     end
 
-    def request_by_name( name, path, body = nil, header = nil )
+    def send_request( name, path, body = nil, header = nil )
       r = ::Net::NetPrivate::HTTPGenericRequest.new(
               name, (body ? true : false), true,
               path, header )
