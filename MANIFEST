@@ -273,6 +273,9 @@ lib/rexml/xmldecl.rb
 lib/rexml/xmltokens.rb
 lib/rexml/xpath.rb
 lib/rexml/xpath_parser.rb
+lib/rinda/rinda.rb
+lib/rinda/ring.rb
+lib/rinda/tuplespace.rb
 lib/rubyunit.rb
 lib/runit/assert.rb
 lib/runit/cui/testrunner.rb
