@@ -1,3 +1,13 @@
+Tue Feb  6 20:19:10 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/http.rb: add HTTP#request.
+
+	* lib/net/http.rb: take HTTP 1.0 server into account (incomplete).
+
+	* lib/net/protocol.rb: timeout for open/read.
+
+	* lib/net/protocol.rb: add Protocol#on_connect,on_disconnect.
+
 Fri Feb  2 16:14:51 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_sort_bang): returns self, even if its length is

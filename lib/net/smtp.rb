@@ -30,10 +30,8 @@ Net::Protocol
 
 === Methods
 
-: start( helo_domain = Socket.gethostname, \
-         account = nil, password = nil, authtype = nil )
-: start( helo_domain = Socket.gethostname, \
-         account = nil, password = nil, authtype = nil ) {|smtp| .... }
+: start( helo_domain = Socket.gethostname, account = nil, password = nil, authtype = nil )
+: start( helo_domain = Socket.gethostname, account = nil, password = nil, authtype = nil ) {|smtp| .... }
   opens TCP connection and starts SMTP session.
   If protocol had been started, do nothing and return false.
 
@@ -53,10 +51,10 @@ Net::Protocol
   to_addrs must be a String(s) or an Array of String.
 
   Exceptions which SMTP raises are:
-  * Net::ProtoSyntaxError: syntax error (errno.500)
-  * Net::ProtoFatalError: fatal error (errno.550)
-  * Net::ProtoUnknownError: unknown error
-  * Net::ProtoServerBusy: temporary error (errno.420/450)
+      * Net::ProtoSyntaxError: syntax error (errno.500)
+      * Net::ProtoFatalError: fatal error (errno.550)
+      * Net::ProtoUnknownError: unknown error
+      * Net::ProtoServerBusy: temporary error (errno.420/450)
 
     # usage example
 

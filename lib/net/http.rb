@@ -14,7 +14,7 @@
   (Ruby Application Archive: http://www.ruby-lang.org/en/raa.html).
 
 
-= class HTTP
+= class Net::HTTP
 
 == Class Methods
 
@@ -49,7 +49,7 @@
   HTTP default port (80).
 
 
-== Methods
+== Instance Methods
 
 : start
 : start {|http| .... }
@@ -100,46 +100,31 @@
 
   If called with block, gives a part of entity body string.
 
-: new_get( path, header = nil ) {|req| .... }
-  creates a new GET request object and gives it to the block.
-  see also for Get class reference.
 
-    # example
-    http.new_get( '/~foo/bar.html' ) do |req|
-      req['accept'] = 'text/html'
-      response = req.dispatch
-      p response['Content-Type']
-      puts response.read_header
-    end
+: request( request, [src] )
+: request( request, [src] ) {|response| .... }
+  sends REQUEST to (remote) http server. This method also writes
+  string from SRC before it if REQUEST is a post/put request.
+  (giving SRC for get/head request causes ArgumentError.)
 
-: new_head( path, header = nil ) {|req| .... }
-  creates a new HEAD request object and gives it to the block.
-  see also Head class reference.
-
-: new_post( path, header = nil ) {|req| .... }
-  creates a new POST request object and gives it to the block.
-  see also Post class reference.
+  If called with block, gives a HTTP response object to the block.
 
 
-= class Get, Head, Post
+= class Net::HTTP::Get, Head, Post
 
-HTTP request class. This class wraps request header and entity path.
-All "key" is case-insensitive.
+HTTP request classes. These classes wraps request header and
+entity path. All "key" is case-insensitive.
 
 == Methods
 
 : self[ key ]
   returns header field for "key".
 
-: dispatch   [only Get, Head]
-  dispatches request.
-  This method returns HTTPResponse object.
+: self[ key ] = val
+  set header to "val".
 
-: dispatch( data = '' )        [only Post]
-: dispatch {|adapter| .... }   [only Post]
-  dispatches request. "data" is 
 
-= class HTTPResponse
+= class Net::HTTPResponse
 
 HTTP response class. This class wraps response header and entity.
 All "key" is case-insensitive.
@@ -209,13 +194,31 @@ module Net
 
   class HTTP < Protocol
 
-    protocol_param :port,         '80'
-
     HTTPVersion = '1.1'
 
+    ###
+    ### connection
+    ###
 
-    def addr_port
-      address + (port == HTTP.port ? '' : ":#{port}")
+    protocol_param :port, '80'
+
+
+    def initialize( addr = nil, port = nil )
+      super
+
+      @proxy_address = nil
+      @proxy_port = nil
+
+      @curr_http_version = HTTPVersion
+      @seems_1_0_server = false
+    end
+
+    private
+
+    def conn_command( sock )
+    end
+
+    def do_finish
     end
 
 
@@ -223,11 +226,13 @@ module Net
     ### proxy
     ###
 
+    public
+
+
     class << self
 
       def Proxy( p_addr, p_port = nil )
-        ::Net::NetPrivate::HTTPProxy.create_proxy_class(
-            p_addr, p_port || self.port )
+        ProxyMod.create_proxy_class( p_addr, p_port || self.port )
       end
 
       alias orig_new new
@@ -274,9 +279,65 @@ module Net
     end
 
 
-    ###
-    ### for compatibility
-    ###
+    module ProxyMod
+
+      class << self
+
+        def create_proxy_class( p_addr, p_port )
+          klass = Class.new( HTTP )
+          klass.module_eval {
+            include HTTPProxy
+            @proxy_address = p_addr
+            @proxy_port    = p_port
+          }
+          def klass.proxy_class?
+            true
+          end
+
+          def klass.proxy_address
+            @proxy_address
+          end
+
+          def klass.proxy_port
+            @proxy_port
+          end
+
+          klass
+        end
+
+      end
+
+      def initialize( addr, port )
+        super
+        @proxy_address = type.proxy_address
+        @proxy_port    = type.proxy_port
+      end
+    
+      attr_reader :proxy_address, :proxy_port
+
+      alias proxyaddr proxy_address
+      alias proxyport proxy_port
+
+      def proxy?
+        true
+      end
+    
+      private
+    
+      def conn_socket( addr, port )
+        super @proxy_address, @proxy_port
+      end
+
+      def edit_path( path )
+        'http://' + addr_port + path
+      end
+    
+    end   # module ProxyMod
+
+
+    #
+    # for backward compatibility
+    #
 
     @@newimpl = true
 
@@ -300,23 +361,26 @@ module Net
     end
 
 
-    ###
-    ### http operations
-    ###
+    #
+    # http operations
+    #
 
-    def self.defrequest( nm, hasdest, hasdata )
+    public
+
+    def self.def_http_method( nm, hasdest, hasdata )
       name = nm.id2name.downcase
       cname = nm.id2name
       lineno = __LINE__ + 2
-      src = <<S
+      src = <<"      ----"
 
         def #{name}( path, #{hasdata ? 'data,' : ''}
                      u_header = nil #{hasdest ? ',dest = nil, &block' : ''} )
-          resp = #{name}2( path,
-                           #{hasdata ? 'data,' : ''}
-                           u_header ) {|resp|
+          resp = nil
+          request(
+              #{cname}.new( path, u_header ) #{hasdata ? ',data' : ''}
+          ) do |resp|
             resp.read_body( #{hasdest ? 'dest, &block' : ''} )
-          }
+          end
           if @newimpl then
             resp
           else
@@ -326,78 +390,63 @@ module Net
         end
 
         def #{name}2( path, #{hasdata ? 'data,' : ''}
-                      u_header = nil )
-          new_#{name}( path, u_header ) do |req|
-            resp = req.dispatch#{hasdata ? '(data)' : ''}
-            yield resp if block_given?
-          end
+                      u_header = nil, &block )
+          request( #{cname}.new(path, u_header),
+                   #{hasdata ? 'data,' : ''} &block )
         end
-
-        def new_#{name}( path, u_header = nil, &block )
-          common_oper ::Net::NetPrivate::#{cname}, path, u_header, &block
-        end
-S
-      # puts src
+      ----
+#puts src
       module_eval src, __FILE__, lineno
     end
 
+    def_http_method :Get,  true,  false
+    def_http_method :Head, false, false
+    def_http_method :Post, true,  true
+    def_http_method :Put,  false, true
 
-    defrequest :Get,  true,  false
-    defrequest :Head, false, false
-    defrequest :Post, true,  true
-    defrequest :Put,  false, true
+    def request( req, *args )
+      common_oper( req ) {
+        req.__send__( :exec,
+                      @socket, @curr_http_version,
+                      edit_path(req.path),
+                      header_defaults, *args )
+        yield req.response if block_given?
+      }
+      req.response
+    end
 
 
     private
 
 
-    def initialize( addr = nil, port = nil )
-      super
-      @command = ::Net::NetPrivate::Switch.new
-      @curr_http_version = HTTPVersion
-    end
-
-    def connect( addr = @address, port = @port )
-      @socket = type.socket_type.open( addr, port, @pipe )
-    end
-
-    def disconnect
-      if @socket and not @socket.closed? then
-        @socket.close
-      end
-      @socket = nil
-    end
-
-    def do_finish
-    end
-
-
-    def common_oper( reqc, path, u_header )
-      req = nil
-
-      @command.on
+    def common_oper( req )
       if not @socket then
         start
+        req['connection'] = 'close'
       elsif @socket.closed? then
         @socket.reopen
       end
+      if @seems_1_0_server then
+        req['connection'] = 'close'
+      end
 
-      req = reqc.new( @curr_http_version,
-                      @socket, inihead,
-                      edit_path(path), u_header )
-      yield req if block_given?
-      req.terminate
+      yield req
+      req.response.__send__ :terminate
       @curr_http_version = req.http_version
 
-      unless keep_alive? req, req.response then
+      if keep_alive? req, req.response then
+        if @socket.closed? then
+          @seems_1_0_server = true
+          @socket.close
+        end
+      else
         @socket.close
       end
-      @command.off
 
       req.response
     end
 
-    def inihead
+    def header_defaults
       h = {}
       h['Host']       = addr_port
       h['Connection'] = 'Keep-Alive'
@@ -427,87 +476,14 @@ S
       false
     end
 
+    def addr_port
+      address + (port == HTTP.port ? '' : ":#{port}")
+    end
+
   end
 
   HTTPSession = HTTP
 
-
-
-  module NetPrivate
-
-  class Switch
-    def initialize
-      @critical = false
-    end
-
-    def critical?
-      @critical
-    end
-
-    def on
-      @critical = true
-    end
-
-    def off
-      @critical = false
-    end
-  end
-
-  module HTTPProxy
-
-    class << self
-
-      def create_proxy_class( p_addr, p_port )
-        klass = Class.new( HTTP )
-        klass.module_eval {
-          include HTTPProxy
-          @proxy_address = p_addr
-          @proxy_port    = p_port
-        }
-        def klass.proxy_class?
-          true
-        end
-
-        def klass.proxy_address
-          @proxy_address
-        end
-
-        def klass.proxy_port
-          @proxy_port
-        end
-
-        klass
-      end
-
-    end
-
-
-    def initialize( addr, port )
-      super
-      @proxy_address = type.proxy_address
-      @proxy_port    = type.proxy_port
-    end
-
-    attr_reader :proxy_address, :proxy_port
-
-    alias proxyaddr proxy_address
-    alias proxyport proxy_port
-
-    def proxy?
-      true
-    end
-  
-    def connect( addr = nil, port = nil )
-      super @proxy_address, @proxy_port
-    end
-
-    def edit_path( path )
-      'http://' + addr_port + path
-    end
-  
-  end
-
-  end   # net private
 
 
   class Code
@@ -575,8 +551,7 @@ S
 
 
 
-  module NetPrivate
-
+  class HTTP
 
   ###
   ### request
@@ -584,15 +559,10 @@ S
 
   class HTTPRequest
 
-    def initialize( httpver, sock, inith, path, uhead )
-      @http_version = httpver
-      @socket = sock
+    def initialize( path, uhead = nil )
       @path = path
-      @response = nil
-
-      @u_header = inith
+      @u_header = tmp = {}
       return unless uhead
-      tmp = {}
       uhead.each do |k,v|
         key = canonical(k)
         if tmp.key? key then
@@ -600,13 +570,17 @@ S
         end
         tmp[ key ] = v.strip
       end
-      @u_header.update tmp
+
+      @socket = nil
+      @response = nil
+      @http_version = nil
     end
 
-    attr_reader :http_version
+  public
 
     attr_reader :path
     attr_reader :response
+    attr_reader :http_version
 
     def inspect
       "\#<#{type}>"
@@ -640,38 +614,42 @@ S
       @u_header.each_value( &block )
     end
 
-
-    def terminate
-      @response.terminate
-    end
-
-
-    private
+  private
 
     def canonical( k )
       k.split('-').collect {|i| i.capitalize }.join('-')
     end
 
+    #
+    # write
+    #
 
-    # write request & header
-
-    def do_dispatch
-      if @response then
-        raise IOError, "#{type}\#dispatch called twice"
-      end
-      yield
-      @response = read_response
+    def exec( sock, ver, path, ihead )
+      ready( sock, ihead ) {|header|
+        request ver, path, header
+      }
     end
 
-    def request( req )
-      @socket.writeline req
-      @u_header.each do |n,v|
+    def ready( sock, ihead )
+      @response = nil
+      @socket = sock
+      ihead.update @u_header
+      yield ihead
+      @response = read_response
+      @sock = nil
+    end
+
+    def request( ver, path, header )
+      @socket.writeline sprintf('%s %s HTTP/%s', type::METHOD, path, ver)
+      header.each do |n,v|
         @socket.writeline n + ': ' + v
       end
       @socket.writeline ''
     end
 
-    # read response & header
+    #
+    # read
+    #
 
     def read_response
       resp = rdresp0
@@ -683,13 +661,12 @@ S
       resp = get_resline
 
       while true do
-        line = @socket.readline
+        line = @socket.readuntil( "\n", true )   # ignore EOF
+        line.sub!( /\s+\z/, '' )                 # don't use chop!
         break if line.empty?
 
         m = /\A([^:]+):\s*/.match( line )
-        unless m then
-          raise HTTPBadResponse, 'wrong header line format'
-        end
+        m or raise HTTPBadResponse, 'wrong header line format'
         nm = m[1]
         line = m.post_match
         if resp.key? nm then
@@ -704,7 +681,7 @@ S
 
     def get_resline
       str = @socket.readline
-      m = /\AHTTP\/(\d+\.\d+)?\s+(\d\d\d)\s*(.*)\z/i.match( str )
+      m = /\AHTTP(?:\/(\d+\.\d+))?\s+(\d\d\d)\s*(.*)\z/i.match( str )
       unless m then
         raise HTTPBadResponse, "wrong status line: #{str}"
       end
@@ -712,52 +689,32 @@ S
       status  = m[2]
       discrip = m[3]
       
-      HTTPResponse.new( status, discrip, @socket, type::HAS_BODY )
+      ::Net::NetPrivate::HTTPResponse.new(
+              status, discrip, @socket, type::HAS_BODY )
     end
 
   end
 
-  class Get < HTTPRequest
-
-    HAS_BODY = true
-
-    def dispatch
-      do_dispatch {
-        request sprintf('GET %s HTTP/%s', @path, @http_version)
-      }
-    end
-
-  end
-
-  class Head < HTTPRequest
-
-    HAS_BODY = false
-
-    def dispatch
-      do_dispatch {
-        request sprintf('HEAD %s HTTP/%s', @path, @http_version)
-      }
-    end
-  
-  end
 
   class HTTPRequestWithData < HTTPRequest
+  
+  private
 
-    def dispatch( str = nil )
+    def exec( sock, ver, path, ihead, str = nil )
       check_arg str, block_given?
 
       if block_given? then
         ac = Accumulator.new
-        yield ac              # must be yield, not block.call
+        yield ac              # must be yield, DO NOT USE block.call
         data = ac.terminate
       else
         data = str
       end
 
-      do_dispatch {
-        @u_header['Content-Length'] = data.size.to_s
-        @u_header.delete 'Transfer-Encoding'
-        request sprintf('%s %s HTTP/%s', type::METHOD, @path, @http_version)
+      ready( sock, ihead ) {|header|
+        header['Content-Length'] = data.size.to_s
+        header.delete 'Transfer-Encoding'
+        request ver, path, header
         @socket.write data
       }
     end
@@ -773,21 +730,6 @@ S
   
   end
 
-  class Post < HTTPRequestWithData
-
-    HAS_BODY = true
-
-    METHOD = 'POST'
-  
-  end
-
-  class Put < HTTPRequestWithData
-
-    HAS_BODY = true
-
-    METHOD = 'PUT'
-  
-  end
 
   class Accumulator
   
@@ -810,6 +752,31 @@ S
   end
 
 
+  class Get < HTTPRequest
+    HAS_BODY = true
+    METHOD = 'GET'
+  end
+
+  class Head < HTTPRequest
+    HAS_BODY = false
+    METHOD = 'HEAD'
+  end
+
+  class Post < HTTPRequestWithData
+    HAS_BODY = true
+    METHOD = 'POST'
+  end
+
+  class Put < HTTPRequestWithData
+    HAS_BODY = true
+    METHOD = 'PUT'
+  end
+
+  end   # HTTP::
+
+
+
+  module NetPrivate
 
   ###
   ### response
@@ -926,7 +893,9 @@ S
     end
 
 
+    #
     # header (for backward compatibility)
+    #
 
     def read_header
       self
@@ -935,8 +904,9 @@ S
     alias header read_header
     alias response read_header
 
-
+    #
     # body
+    #
 
     def read_body( dest = nil, &block )
       if @read and (dest or block) then
@@ -963,14 +933,12 @@ S
     alias entity read_body
 
 
-    # internal use only
+    private
+
+
     def terminate
       read_body
     end
-
-
-    private
-
 
     def read_body_0( dest )
       if chunked? then
@@ -978,7 +946,7 @@ S
       else
         clen = content_length
         if clen then
-          @socket.read clen, dest
+          @socket.read clen, dest, true   # ignore EOF
         else
           clen = range_length
           if clen then
@@ -1061,6 +1029,18 @@ S
       else
         dest or ''
       end
+    end
+
+  end
+
+
+  class Dummy
+
+    def initialize( *args )
+    end
+
+    def critical?
+      false
     end
 
   end

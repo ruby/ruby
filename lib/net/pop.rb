@@ -65,7 +65,7 @@ Net::Protocol
       m.pop file
     end
   
-=== Methods
+=== Instance Methods
 
 : start( account, password )
 : start( account, password ) {|pop| .... }
