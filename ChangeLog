@@ -1,3 +1,18 @@
+Wed Dec 15 17:47:17 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/server.rb (WEBrick::GenericServer#start_thread):
+	  should log about all accepted socket. [ruby-core:03962]
+
+	* lib/webrick/accesslog.rb (WEBrick::AccessLog#setup_params):
+	  "%%" and "%u" are supported. [webricken:135]
+
+	* lib/webrick/httpservlet/filehandler.rb
+	  (WEBrick::HTTPServlet::FileHandler#check_filename):
+	  :NondisclosureName is acceptable if it is Enumerable.
+
+	* lib/webrick/config.rb (WEBrick::Config::FileHandler):
+	  default value of :NondisclosureName is [".ht*", "*~"].
+
 Wed Dec 15 15:31:02 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/set.rb (Set#==): [ruby-dev:25206]

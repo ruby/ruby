@@ -147,8 +147,13 @@ module WEBrick
       Thread.start{
         begin
           Thread.current[:WEBrickSocket] = sock
-          addr = sock.peeraddr
-          @logger.debug "accept: #{addr[3]}:#{addr[1]}"
+          begin
+            addr = sock.peeraddr
+            @logger.debug "accept: #{addr[3]}:#{addr[1]}"
+          rescue SocketError
+            @logger.debug "accept: <address unknown>"
+            raise
+          end
           call_callback(:AcceptCallback, sock)
           block ? block.call(sock) : run(sock)
         rescue Errno::ENOTCONN

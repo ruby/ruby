@@ -65,7 +65,7 @@ module WEBrick
     )
 
     FileHandler = {
-      :NondisclosureName => ".ht*",
+      :NondisclosureName => [".ht*", "*~"],
       :FancyIndexing     => false,
       :HandlerTable      => {},
       :HandlerCallback   => nil,
