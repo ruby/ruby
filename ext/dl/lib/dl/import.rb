@@ -49,6 +49,10 @@ module DL
 	  ret = ret.split(/\s+/)
 	  args = args.split(/\s*,\s*/)
 	  func = ret.pop
+	  if( func =~ /^\*/ )
+	    func.gsub!(/^\*+/,"")
+	    ret.push("*")
+	  end
 	  ret  = ret.join(" ")
 	  return import(func, ret, args)
 	else
