@@ -3428,6 +3428,10 @@ yylex()
 	    }
 	    else {
 		term = nextc();
+		if (ISALNUM(term) || ismbchar(term)) {
+		    yyerror("unknown type of %string");
+		    return 0;
+		}
 	    }
 	    if (c == -1 || term == -1) {
 		rb_compile_error("unterminated quoted string meets end of file");

@@ -1,3 +1,8 @@
+Tue Oct 16 00:07:06 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* parse.y (yylex): disallow alpha-numeric and mbchar for
+	  terminator of %string.
+
 Wed Oct 10 03:11:47 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (parse_quotedwords): %w(...) is not a string.
