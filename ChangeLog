@@ -1,3 +1,8 @@
+Wed Dec 15 18:48:42 2004  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* ext/curses/curses.c (window_subwin): call NUM2INT() before
+	GetWINDOW(). (backported from CVS HEAD)
+
 Wed Dec 15 17:03:50 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.[ch] (rb_w32_isatty): new function to replace MSVCRT's
