@@ -402,6 +402,7 @@ if test "$with_dln_a_out" != yes; then
 			LDFLAGS="-Wl,-E"
 			rb_cv_dlopen=yes;;
 	solaris*) 	LDSHARED='ld -G'
+			LDFLAGS="-Wl,-E"
 			rb_cv_dlopen=yes;;
 	sunos*) 	LDSHARED='ld -assert nodefinitions'
 			rb_cv_dlopen=yes;;
@@ -414,8 +415,8 @@ if test "$with_dln_a_out" != yes; then
 	linux*) 	LDSHARED="gcc -shared"
 			rb_cv_dlopen=yes ;;
 	freebsd*)       LDSHARED="gcc -shared"
-			if test -x /usr/bin/objformat -a \
-				`/usr/bin/objformat` = "elf" ; then
+			if test -x /usr/bin/objformat && \
+				test `/ust/bin/objformat` = "elf" ; then
 			    LDFLAGS="-rdynamic"
 			    DLDFLAGS='-Wl,-soname,$(.TARGET)'
 			    rb_cv_freebsd_elf=yes
@@ -685,7 +686,8 @@ test "$program_suffix" != NONE &&
   ri_suffix=$program_suffix
 
 RUBY_INSTALL_NAME="${ri_prefix}ruby${ri_suffix}"
-RUBY_LIB_PATH="${prefix}/lib/${RUBY_INSTALL_NAME}/${MAJOR}.${MINOR}"
+#RUBY_LIB_PATH="${prefix}/lib/${RUBY_INSTALL_NAME}/${MAJOR}.${MINOR}"
+RUBY_LIB_PATH="${prefix}/lib/ruby/${MAJOR}.${MINOR}"
 AC_DEFINE_UNQUOTED(RUBY_LIB, "${RUBY_LIB_PATH}")
 AC_DEFINE_UNQUOTED(RUBY_SITE_LIB, "${RUBY_LIB_PATH}/site_ruby")
 AC_SUBST(arch)dnl

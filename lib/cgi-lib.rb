@@ -38,6 +38,11 @@
 #           CGI.tag("HR")
 #         }
 #       }
+#
+# print HTTP header and strings to STDOUT
+# CGI.print{ "string" } # add HTTP header "Content-Type: text/html"
+# CGI.print("Content-Type: text/plain"){ "string" }
+# CGI.print("HTTP/1.0 200 OK", "Content-Type: text/html"){ "string" }
 
 
 # if running on Windows(IIS or PWS) then change cwd.
@@ -150,25 +155,33 @@ class CGI < SimpleDelegator
     (iterator? ? yield.to_s + "</" + escapeHTML(element) + ">" : "")
   end
 
-  def CGI.message(msg, title = "", header = ["Content-Type: text/html"])
-    print CGI.header(*header)
-    print "<html><head><title>"
-    print title
-    print "</title></head><body>\n"
-    print msg
-    print "</body></html>\n"
+  def CGI.print(*header)
+    header.push("Content-Type: text/html") if header.empty?
+    STDOUT.print CGI.header(*header) + yield.to_s
+  end
+
+  def CGI.message(message, title = "", header = ["Content-Type: text/html"])
+    if message.kind_of?(Hash)
+      title   = message['title']
+      header  = message['header']
+      message = message['body']
+    end
+    CGI.print(*header){
+      CGI.tag("HTML"){
+        CGI.tag("HEAD"){ CGI.tag("TITLE"){ title } } +
+        CGI.tag("BODY"){ message }
+      }
+    }
     TRUE
   end
 
   def CGI.error
-    m = $!.to_s.dup
-    m.gsub!(/&/, '&amp;')
-    m.gsub!(/</, '&lt;')
-    m.gsub!(/>/, '&gt;')
-    msgs = ["<pre>ERROR: <strong>#{m}</strong>"]
-    msgs << $@
-    msgs << "</pre>"
-    CGI.message(msgs.join("\n"), "ERROR")
+    CGI.message({'title'=>'ERROR', 'body'=>
+      CGI.tag("PRE"){
+        "ERROR: " + CGI.tag("STRONG"){ escapeHTML($!.to_s) } + "\n" +
+        escapeHTML($@.join("\n"))
+      }
+    })
     exit
   end
 end

@@ -13,6 +13,9 @@
 #include "ruby.h"
 #include <math.h>
 #include <stdio.h>
+#ifdef __FreeBSD__
+#include <floatingpoint.h>
+#endif
 
 static ID coerce;
 static ID to_i;
@@ -985,14 +988,12 @@ fix_pow(x, y)
 
 	b = FIX2LONG(y);
 	if (b == 0) return INT2FIX(1);
+	if (b == 1) return x;
 	a = FIX2LONG(x);
 	if (b > 0) {
 	    return rb_big_pow(rb_int2big(a), y);
 	}
 	return rb_float_new(pow((double)a, (double)b));
-    }
-    else if (NIL_P(y)) {
-	return INT2FIX(1);
     }
     return rb_num_coerce_bin(x, y);
 }
@@ -1402,6 +1403,10 @@ fix_zero_p(num)
 void
 Init_Numeric()
 {
+#ifdef __FreeBSD__
+    /* allow divide by zero -- Inf */
+    fpsetmask(fpgetmask() & ~(FP_X_DZ|FP_X_INV));
+#endif
     coerce = rb_intern("coerce");
     to_i = rb_intern("to_i");
 

@@ -2069,7 +2069,16 @@ re_compile_pattern(pattern, size, bufp)
       laststart++;
       EXTRACT_NUMBER_AND_INCR(mcnt, laststart);
       if (mcnt == 4 && *laststart == anychar) {
-	bufp->options |= RE_OPTIMIZE_ANCHOR;
+	switch ((enum regexpcode)laststart[4]) {
+	  case jump_n:
+	  case finalize_jump:
+	  case maybe_finalize_jump:
+	  case jump:
+	  case jump_past_alt:
+	  case dummy_failure_jump:
+	    bufp->options |= RE_OPTIMIZE_ANCHOR;
+	    break;
+	}
       }
       else if (*laststart == charset || *laststart == charset_not) {
 	p0 = laststart;
@@ -3692,8 +3701,13 @@ re_match(bufp, string_arg, size, pos, regs)
            because didn't fail.  Also remove the register information
            put on by the on_failure_jump.  */
         case finalize_jump:
-          POP_FAILURE_POINT();
-        /* Note fall through.  */
+	  if (stackp[-2] == d) {
+	    p = stackp[-3];
+	    POP_FAILURE_POINT();
+	    continue;
+	  }
+          POP_FAILURE_POINT(); 
+	  /* Note fall through.  */
 
 	/* Jump without taking off any failure points.  */
         case jump:

@@ -2,12 +2,6 @@ SHELL = /bin/sh
 
 #### Start of system configuration section. ####
 
-MAJOR=	@MAJOR@
-MINOR=	@MINOR@
-TEENY=	@TEENY@
-
-RUBY_INSTALL_NAME=@RUBY_INSTALL_NAME@
-
 srcdir = @srcdir@
 VPATH = @srcdir@:@srcdir@/missing
 
@@ -27,9 +21,15 @@ LDSHARED = @LDSHARED@
 DLDFLAGS = @DLDFLAGS@
 SOLIBS = @SOLIBS@
 
+RUBY_INSTALL_NAME=@RUBY_INSTALL_NAME@
 binsuffix = @binsuffix@
+PROGRAM=$(RUBY_INSTALL_NAME)$(binsuffix)
 
 #### End of system configuration section. ####
+
+MAJOR=	@MAJOR@
+MINOR=	@MINOR@
+TEENY=	@TEENY@
 
 LIBRUBY_A     = @LIBRUBY_A@
 LIBRUBY_SO    = @LIBRUBY_SO@
@@ -58,13 +58,13 @@ OBJS	      = array.o \
 		inits.o \
 		io.o \
 		marshal.o \
-		prec.o \
 		math.o \
 		numeric.o \
 		object.o \
 		pack.o \
 		parse.o \
 		process.o \
+		prec.o \
 		random.o \
 		range.o \
 		re.o \
@@ -84,11 +84,11 @@ OBJS	      = array.o \
 all:		miniruby$(binsuffix) rbconfig.rb
 		@./miniruby$(binsuffix) -Xext extmk.rb @EXTSTATIC@
 
-miniruby$(binsuffix):	$(LIBRUBY_A) $(MAINOBJ) dmyext.o
+miniruby$(binsuffix):	config.status $(LIBRUBY_A) $(MAINOBJ) dmyext.o
 		@rm -f $@
 		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) dmyext.o $(LIBRUBY_A) $(LIBS) -o $@
 
-ruby$(binsuffix):     	$(LIBRUBY) $(MAINOBJ) $(EXTOBJS) 
+$(PROGRAM):     	$(LIBRUBY) $(MAINOBJ) $(EXTOBJS) 
 		@rm -f $@
 		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(LIBS) -o $@
 
@@ -98,26 +98,22 @@ $(LIBRUBY_A):	$(OBJS) dmyext.o
 
 $(LIBRUBY_SO):	$(OBJS) dmyext.o
 		$(LDSHARED) $(DLDFLAGS) $(SOLIBS) $(OBJS) dmyext.o -o $@
-		@for alias in $(LIBRUBY_ALIASES); do \
-		  rm -f $$alias \
-		   && @LN_S@ $(LIBRUBY_SO) $$alias \
-		     && echo ln @LN_S@ $(LIBRUBY_SO) $$alias; \
-		done
+		@-./miniruby -e 'ARGV.each{|link| File.delete link if File.exist? link; \
+						  File.symlink "$(LIBRUBY_SO)", link}' \
+				$(LIBRUBY_ALIASES) || true
 
 install:	rbconfig.rb
 		./miniruby$(binsuffix) $(srcdir)/instruby.rb $(DESTDIR)
 
 clean:;		@rm -f $(OBJS) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY_ALIASES) $(MAINOBJ) rbconfig.rb
 		@rm -f ext/extinit.c ext/extinit.o dmyext.o
-		@if test -f ./miniruby$(binsuffix); then \
-			./miniruby$(binsuffix) -Xext extmk.rb clean; \
-		fi
+		@-./miniruby$(binsuffix) -Xext extmk.rb clean 2> /dev/null || true
 
 distclean:	clean
 		@rm -f Makefile ext/extmk.rb config.h
 		@rm -f ext/config.cache config.cache config.log config.status
 		@rm -f parse.c *~ core *.core gmon.out y.tab.c y.output
-		@rm -f ruby$(binsuffix) miniruby$(binsuffix)
+		@rm -f $(PROGRAM) miniruby$(binsuffix)
 
 realclean:	distclean
 		@rm -f lex.c
@@ -125,7 +121,7 @@ realclean:	distclean
 test:		miniruby$(binsuffix)
 		@./miniruby$(binsuffix) $(srcdir)/rubytest.rb
 
-rbconfig.rb:	config.status miniruby$(binsuffix)
+rbconfig.rb:	miniruby$(binsuffix)
 		@./miniruby$(binsuffix) $(srcdir)/mkconfig.rb rbconfig.rb
 
 config.status:	$(srcdir)/configure

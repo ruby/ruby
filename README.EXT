@@ -113,7 +113,7 @@ To convert C data to the values of Ruby:
 
   * FIXNUM
 
-    right shift 1 bit, and turn on LSB.
+    left shift 1 bit, and turn on LSB.
 
   * Other pointer values
 
@@ -726,11 +726,11 @@ const: nil object
 
  Qtrue
 
-const: Qtrue object(default true value)
+const: true object(default true value)
 
  Qfalse
 
-const: Qfalse object
+const: false object
 
 ** C pointer wrapping
 
@@ -744,12 +744,13 @@ Cの任意のポインタをカプセル化したRubyオブジェクトを返す．こ
 
  Data_Make_Struct(class, type, mark, free, sval)
 
-type型のメモリをmallocし，変数svalに代入した後，それをカプセ
-ル化したデータを返すマクロ．
+This macro allocates memory using malloc(), assigns it to the variable
+sval, and returns the DATA encapsulating the pointer to memory region.
 
  Data_Get_Struct(data, type, sval)
 
-dataからtype型のポインタを取り出し変数svalに代入するマクロ．
+This macro retrieves the pointer value from DATA, and assigns it to
+the variable sval. 
 
 ** defining class/module
 
@@ -905,48 +906,54 @@ Sets the value of the instance variable.
 
  VALUE rb_iterate(VALUE (*func1)(), void *arg1, VALUE (*func2)(), void *arg2)
 
-func2をブロックとして設定し, func1をイテレータとして呼ぶ． 
-func1には arg1が引数として渡され, func2には第1引数にイテレー
-タから与えられた値, 第2引数にarg2が渡される．
+Calls the function func1, supplying func2 as the block.  func1 will be
+called with the argument arg1.  func2 receives the value from yield as
+the first argument, arg2 as the second argument.
+
  
  VALUE rb_yield(VALUE val)
 
-valを値としてイテレータブロックを呼び出す．
+Evaluates the block with value val.
 
  VALUE rb_rescue(VALUE (*func1)(), void *arg1, VALUE (*func2)(), void *arg2)
 
-関数func1をarg1を引数に呼び出す．func1の実行中に例外が発生し
-た時には func2をarg2を引数として呼ぶ．戻り値は例外が発生しな
-かった時はfunc1の戻り値, 例外が発生した時にはfunc2の戻り値で
-ある．
+Calls the function func1, with arg1 as the argument.  If exception
+occurs during func1, it calls func2 with arg2 as the argument.  The
+return value of rb_rescue() is the return value from func1 if no
+exception occurs, from func2 otherwise.
 
  VALUE rb_ensure(VALUE (*func1)(), void *arg1, void (*func2)(), void *arg2)
 
-関数func1をarg1を引数として実行し, 実行終了後(たとえ例外が発
-生しても) func2をarg2を引数として実行する．戻り値はfunc1の戻
-り値である(例外が発生した時は戻らない)．
+Calls the function func1 with arg1 as the argument, then calls func2
+with arg2, whenever execution terminated.  The return value from
+rb_ensure() is that of func1.
 
-** 例外・エラー
+** Exceptions and Errors
+
+ void rb_warn(char *fmt, ...)
+
+Prints warning message according to the printf-like format.
 
  void rb_warning(char *fmt, ...)
 
-rb_verbose時に標準エラー出力に警告情報を表示する．引数はprintf()と同じ．
+Prints warning message according to the printf-like format, if
+$VERBOSE is true.
 
- void rb_raise(rb_eRuntimeError, char *fmt, ...)
+ void rb_raise(VALUE exception, char *fmt, ...)
 
-例外を発生させる．引数はprintf()と同じ．
+Raises an exception of class exception.  The fmt is the format string
+just like printf().
 
  void rb_fatal(char *fmt, ...)
 
-致命的例外を発生させる．通常の例外処理は行なわれず, インター
-プリタが終了する(ただしensureで指定されたコードは終了前に実
-行される)．
+Raises fatal error, terminates the interpreter.  No exception handling
+will be done for fatal error, but ensure blocks will be executed.
 
  void rb_bug(char *fmt, ...)
 
-インタープリタなどプログラムのバグでしか発生するはずのない状
-況の時呼ぶ．インタープリタはコアダンプし直ちに終了する．例外
-処理は一切行なわれない．
+Termintates the interpreter immediately.  This function should be
+called under the situation caused by the bug in the interpreter.  No
+exception handling nor ensure execution will be done.
 
 ** Initialize and Starts the Interpreter
 
@@ -966,8 +973,7 @@ Specifies the name of the script ($0).
 
 Appendix B. Functions Available in extconf.rb
 
-extconf.rbの中では利用可能なコンパイル条件チェックの関数は以
-下の通りである．
+These functions are available in extconf.rb:
 
  have_library(lib, func)
 

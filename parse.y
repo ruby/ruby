@@ -2808,7 +2808,7 @@ retry:
 		    yylval.val = rb_str2inum(tok(), 2);
 		    return tINTEGER;
 		}
-		else if (c >= '0' && c <= '7' || c == '_') {
+		if (c >= '0' && c <= '7' || c == '_') {
 		    /* octal */
 	            do {
 			if (c  == '_') continue;
@@ -2820,7 +2820,7 @@ retry:
 		    yylval.val = rb_str2inum(tok(), 8);
 		    return tINTEGER;
 		}
-		else if (c > '7' && c <= '9') {
+		if (c > '7' && c <= '9') {
 		    yyerror("Illegal octal digit");
 		}
 		else if (c == '.') {

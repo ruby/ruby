@@ -1,11 +1,11 @@
-# date.rb: Written by Tadayoshi Funaba 1998
-# $Id: date.rb,v 1.4 1998/06/01 12:52:33 tadf Exp $
+# date.rb: Written by Tadayoshi Funaba 1998, 1999
+# $Id: date.rb,v 1.5 1999/02/06 08:51:56 tadf Exp $
 
 class Date
 
   include Comparable
 
-  MONTHNAMES = [ '', 'January', 'February', 'March', 'April', 'May', 'June',
+  MONTHNAMES = [ nil, 'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December' ]
 
   DAYNAMES = [ 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday',
@@ -162,26 +162,24 @@ class Date
   end
 
   def + (other)
-    if other.kind_of? Numeric then
-      return Date.new(@jd + other, @gs)
+    case other
+    when Numeric; return Date.new(@jd + other, @gs)
     end
     fail TypeError, 'expected numeric'
   end
 
   def - (other)
-    if other.kind_of? Numeric then
-      return Date.new(@jd - other, @gs)
-    elsif other.kind_of? Date then
-      return @jd - other.jd
+    case other
+    when Numeric; return Date.new(@jd - other, @gs)
+    when Date;    return @jd - other.jd
     end
     fail TypeError, 'expected numeric or date'
   end
 
   def <=> (other)
-    if other.kind_of? Numeric then
-      return @jd <=> other
-    elsif other.kind_of? Date then
-      return @jd <=> other.jd
+    case other
+    when Numeric; return @jd <=> other
+    when Date;    return @jd <=> other.jd
     end
     fail TypeError, 'expected numeric or date'
   end

@@ -1088,6 +1088,39 @@ rb_io_mode_flags2(mode)
     return flags;
 }
 
+static char*
+rb_io_flags_mode(flags)
+    int flags;
+{
+    static char mode[4];
+    char *p = mode;
+
+    switch (flags & (O_RDONLY|O_WRONLY|O_RDWR)) {
+      case O_RDONLY:	
+	*p++ = 'r';
+	break;
+      case O_WRONLY:
+	*p++ = 'w';
+	break;
+      case O_RDWR:
+	*p++ = 'w';
+	*p++ = '+';
+	break;
+    }
+    *p++ = '\0';
+#ifdef O_BINARY
+    if (flags & O_BINARY) {
+	if (mode[1] == '+') {
+	    mode[1] = 'b'; mode[2] = '+'; mode[3] = '\0';
+	}
+	else {
+	    mode[1] = 'b'; mode[2] = '\0';
+	}
+    }
+#endif
+    return mode;
+}
+
 static int
 rb_open(fname, flag, mode)
     char *fname;
@@ -1171,6 +1204,12 @@ rb_file_sysopen(fname, flags, mode)
     char *fname;
     int flags, mode;
 {
+#ifdef USE_CWGUSI
+    if (mode != 0666) {
+	rb_warn("can't specify file mode on this platform");
+    }
+    return rb_file_open(fname, rb_io_flags_mode(flags));
+#else
     OpenFile *fptr;
     int fd;
     char *m;
@@ -1185,6 +1224,7 @@ rb_file_sysopen(fname, flags, mode)
     rb_obj_call_init((VALUE)port);
 
     return (VALUE)port;
+#endif
 }
 
 #if defined (NT) || defined(DJGPP) || defined(__CYGWIN32__) || defined(__human68k__)
@@ -1476,33 +1516,7 @@ rb_f_open(argc, argv)
 	mode = "r";
     }
     else if (FIXNUM_P(pmode)) {
-	int flags = FIX2INT(pmode);
-	char *p;
-
-	mode = p = ALLOCA_N(char, 4);
-	switch (flags & (O_RDONLY|O_WRONLY|O_RDWR)) {
-	  case O_RDONLY:	
-	    *p++ = 'r';
-	    break;
-	  case O_WRONLY:
-	    *p++ = 'w';
-	    break;
-	  case O_RDWR:
-	    *p++ = 'w';
-	    *p++ = '+';
-	    break;
-	}
-	*p++ = '\0';
-#ifdef O_BINARY
-	if (flags & O_BINARY) {
-	    if (mode[1] == '+') {
-		mode[1] = 'b'; mode[2] = '+'; mode[3] = '\0';
-	    }
-	    else {
-		mode[1] = 'b'; mode[2] = '\0';
-	    }
-	}
-#endif
+	mode = rb_io_flags_mode(FIX2INT(pmode));
     }
     else {
 	int len;
@@ -1513,7 +1527,7 @@ rb_f_open(argc, argv)
 	    rb_raise(rb_eArgError, "illegal access mode %s", mode);
     }
 
-    port = pipe_open(RSTRING(pname)->ptr, mode);
+    port = pipe_open(RSTRING(pname)->ptr+1, mode);
     if (rb_iterator_p()) {
 	return rb_ensure(rb_yield, port, rb_io_close, port);
     }

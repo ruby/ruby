@@ -1,4 +1,4 @@
-#!/usr/local/bin/ruby
+#!/usr/bin/env ruby
 
 if ARGV[0] == "-c"
   out_stdout = 1
@@ -18,7 +18,7 @@ while gets()
       out = open($file, "w") if $file != ""
     end
     out.binmode
-    next
+    break
   end
 end
 

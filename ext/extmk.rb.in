@@ -294,13 +294,14 @@ LDSHARED = @LDSHARED@
 
   mfile.printf "\
 
-program_transform_name = -e @program_transform_name@
-RUBY_INSTALL_NAME = `t='$(program_transform_name)'; echo @RUBY_INSTALL_NAME@ | sed $$t`
+#program_transform_name = -e @program_transform_name@
+#RUBY_INSTALL_NAME = `t='$(program_transform_name)'; echo @RUBY_INSTALL_NAME@ | sed $$t`
 
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 libdir = @libdir@
-pkglibdir = $(libdir)/$(RUBY_INSTALL_NAME)/@MAJOR@.@MINOR@
+#pkglibdir = $(libdir)/$(RUBY_INSTALL_NAME)/@MAJOR@.@MINOR@
+pkglibdir = $(libdir)/ruby/@MAJOR@.@MINOR@
 archdir = $(pkglibdir)/@arch@
 @SET_MAKE@
 
@@ -560,9 +561,9 @@ if $extlist.size > 0
   system format('make ruby@binsuffix@ EXTOBJS="%s" EXTLIBS="%s"', $extobjs, $extlibs)
 else
   Dir.chdir ".."
-  if older("ruby@binsuffix@", "miniruby@binsuffix@")
-    `rm -f ruby@binsuffix@`
-    system("make ruby@binsuffix@")
+  if older("@RUBY_INSTALL_NAME@@binsuffix@", "miniruby@binsuffix@")
+    `rm -f @RUBY_INSTALL_NAME@@binsuffix@`
+    system("make @RUBY_INSTALL_NAME@@binsuffix@")
   end
 end
 

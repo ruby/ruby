@@ -943,6 +943,7 @@ rb_big_pow(x, y)
 		}
 		z = rb_big_mul(z, x);
 	    }
+	    if (!FIXNUM_P(z)) z = bignorm(z);
 	    return z;
 	}
 	d = (double)yy;

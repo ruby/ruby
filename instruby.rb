@@ -17,7 +17,8 @@ end
 ruby_install_name = CONFIG["ruby_install_name"]
 bindir = destdir+CONFIG["bindir"]
 libdir = destdir+CONFIG["libdir"]
-pkglibdir = libdir + "/" + ruby_install_name+"/"+CONFIG["MAJOR"]+"."+CONFIG["MINOR"]
+#pkglibdir = libdir + "/" + ruby_install_name+"/"+CONFIG["MAJOR"]+"."+CONFIG["MINOR"]
+pkglibdir = libdir + "/ruby/"+CONFIG["MAJOR"]+"."+CONFIG["MINOR"]
 archdir = pkglibdir + "/" + CONFIG["arch"]
 mandir = destdir+CONFIG["mandir"] + "/man1"
 wdir = Dir.getwd
