@@ -6343,7 +6343,6 @@ proc_call(proc, args)
     old_block = ruby_block;
     _block = *data;
     ruby_block = &_block;
-    ruby_block->frame.iter = ITER_NOT;
 
     PUSH_ITER(ITER_CUR);
     ruby_frame->iter = ITER_CUR;

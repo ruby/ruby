@@ -12,7 +12,7 @@
    Library General Public License for more details.
 
    You should have received a copy of the GNU Library General Public
-   License along with the GNU C Library; see the file LGPL.  If not,
+   License along with the GNU C Library; see the file COPYING.LIB.  If not,
    write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
    Boston, MA 02111-1307, USA.  */
 /* Multi-byte extension added May, 1993 by t^2 (Takahiro Tanimoto)
@@ -3264,7 +3264,7 @@ re_search(bufp, string, size, startpos, range, regs)
     }
 
     if (startpos > size) return -1;
-    if ((anchor || !bufp->can_be_null) && size > 0 && startpos == size)
+    if ((anchor || !bufp->can_be_null) && range > 0 && size > 0 && startpos == size)
       return -1;
     val = re_match(bufp, string, size, startpos, regs);
     if (val >= 0) return startpos;

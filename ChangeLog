@@ -1,3 +1,12 @@
+Mon Jul 16 12:58:07 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (proc_invoke): should preserve iter status for embedded
+	  frame in the block.
+
+Mon Jul 16 00:04:39 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* file.c (rb_file_s_expand_path): may overrun buffer on stack.
+
 Sat Jul 14 06:25:00 2001  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb: HTTP#proxy? did not worked.
@@ -10,6 +19,10 @@ Sat Jul 14 02:56:19 2001  Akinori MUSHA  <knu@iDaemons.org>
 Sat Jul 14 02:55:02 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/.cvsignore: let cvs ignore extinit.c.
+
+Fri Jul 13 23:47:35 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* regex.c (re_search): should consider reverse search.
 
 Fri Jul 13 23:18:19 2001  Akinori MUSHA  <knu@iDaemons.org>
 
