@@ -1,3 +1,8 @@
+Mon Jan 19 23:56:20 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (name_err_mesg_to_str): inverted condition for result of
+	  inspection.  [ruby-dev:22628]
+
 Mon Jan 19 22:24:28 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* sample/exyacc.rb: escape '}' to avoid warning.

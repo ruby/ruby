@@ -720,7 +720,7 @@ name_err_mesg_to_str(obj)
 	    break;
 	  default:
 	    d = rb_protect(rb_inspect, obj, 0);
-	    if (!NIL_P(d) || RSTRING(d)->len > 65) {
+	    if (NIL_P(d) || RSTRING(d)->len > 65) {
 		d = rb_any_to_s(obj);
 	    }
 	    desc = RSTRING(d)->ptr;
