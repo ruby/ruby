@@ -38,7 +38,7 @@ module REXML
 		end
 
 		def write writer, indent=-1, transitive=false, ie_hack=false
-      return "" unless @writethis or writer.kind_of? Output
+      return nil unless @writethis or writer.kind_of? Output
 			indent( writer, indent )
 			writer << START.sub(/\\/u, '')
       if writer.kind_of? Output

@@ -159,9 +159,10 @@ module REXML
 		def write( output=$stdout, indent=-1, transitive=false, ie_hack=false )
 			output = Output.new( output, xml_decl.encoding ) if xml_decl.encoding != "UTF-8" && !output.kind_of?(Output)
 			@children.each { |node|
-				indent( output, indent) if node.node_type == :element
-				node.write( output, indent, transitive, ie_hack )
-				output << "\n" unless indent<0 or node == @children[-1]
+				indent( output, indent ) if node.node_type == :element
+				if node.write( output, indent, transitive, ie_hack )
+          output << "\n" unless indent<0 or node == @children[-1]
+        end
 			}
 		end
 
