@@ -33,8 +33,8 @@ rb_struct_iv_get(c, name)
     }
 }
 
-static VALUE
-struct_s_members(klass)
+VALUE
+rb_struct_s_members(klass)
     VALUE klass;
 {
     VALUE members = rb_struct_iv_get(klass, "__members__");
@@ -45,15 +45,12 @@ struct_s_members(klass)
     return members;
 }
 
-static VALUE
-struct_members(s)
+VALUE
+rb_struct_members(s)
     VALUE s;
 {
-    VALUE members = struct_s_members(rb_obj_class(s));
+    VALUE members = rb_struct_s_members(rb_obj_class(s));
 
-    if (NIL_P(members)) {
-	rb_bug("non-initialized struct");
-    }
     if (RSTRUCT(s)->len != RARRAY(members)->len) {
 	rb_raise(rb_eTypeError, "struct size differs (%d required %d given)",
 		 RARRAY(members)->len, RSTRUCT(s)->len);
@@ -62,13 +59,13 @@ struct_members(s)
 }
 
 static VALUE
-rb_struct_s_members(klass)
+rb_struct_s_members_m(klass)
     VALUE klass;
 {
     VALUE members, ary;
     VALUE *p, *pend;
 
-    members = struct_s_members(klass);
+    members = rb_struct_s_members(klass);
     ary = rb_ary_new2(RARRAY(members)->len);
     p = RARRAY(members)->ptr; pend = p + RARRAY(members)->len;
     while (p < pend) {
@@ -92,10 +89,10 @@ rb_struct_s_members(klass)
  */
 
 static VALUE
-rb_struct_members(obj)
+rb_struct_members_m(obj)
     VALUE obj;
 {
-    return rb_struct_s_members(rb_obj_class(obj));
+    return rb_struct_s_members_m(rb_obj_class(obj));
 }
 
 VALUE
@@ -106,7 +103,7 @@ rb_struct_getmember(obj, id)
     VALUE members, slot;
     long i;
 
-    members = struct_members(obj);
+    members = rb_struct_members(obj);
     slot = ID2SYM(id);
     for (i=0; i<RARRAY(members)->len; i++) {
 	if (RARRAY(members)->ptr[i] == slot) {
@@ -164,7 +161,7 @@ rb_struct_set(obj, val)
     VALUE members, slot;
     long i;
 
-    members = struct_members(obj);
+    members = rb_struct_members(obj);
     rb_struct_modify(obj);
     for (i=0; i<RARRAY(members)->len; i++) {
 	slot = RARRAY(members)->ptr[i];
@@ -209,7 +206,7 @@ make_struct(name, members, klass)
     rb_define_alloc_func(nstr, struct_alloc);
     rb_define_singleton_method(nstr, "new", rb_class_new_instance, -1);
     rb_define_singleton_method(nstr, "[]", rb_class_new_instance, -1);
-    rb_define_singleton_method(nstr, "members", rb_struct_s_members, 0);
+    rb_define_singleton_method(nstr, "members", rb_struct_s_members_m, 0);
     for (i=0; i< RARRAY(members)->len; i++) {
 	ID id = SYM2ID(RARRAY(members)->ptr[i]);
 	if (i<10) {
@@ -457,7 +454,7 @@ rb_struct_each_pair(s)
     VALUE members;
     long i;
 
-    members = struct_members(s);
+    members = rb_struct_members(s);
     for (i=0; i<RSTRUCT(s)->len; i++) {
 	rb_yield_values(2, rb_ary_entry(members, i), RSTRUCT(s)->ptr[i]);
     }
@@ -472,7 +469,7 @@ inspect_struct(s)
     VALUE str, members;
     long i;
 
-    members = struct_members(s);
+    members = rb_struct_members(s);
     str = rb_str_buf_new2("#<struct ");
     rb_str_cat2(str, cname);
     rb_str_cat2(str, " ");
@@ -563,7 +560,7 @@ rb_struct_aref_id(s, id)
     VALUE members;
     long i, len;
 
-    members = struct_members(s);
+    members = rb_struct_members(s);
     len = RARRAY(members)->len;
     for (i=0; i<len; i++) {
 	if (SYM2ID(RARRAY(members)->ptr[i]) == id) {
@@ -622,7 +619,7 @@ rb_struct_aset_id(s, id, val)
     VALUE members;
     long i, len;
 
-    members = struct_members(s);
+    members = rb_struct_members(s);
     rb_struct_modify(s);
     len = RARRAY(members)->len;
     if (RSTRUCT(s)->len != RARRAY(members)->len) {
@@ -909,5 +906,5 @@ Init_Struct()
     rb_define_method(rb_cStruct, "select", rb_struct_select, -1);
     rb_define_method(rb_cStruct, "values_at", rb_struct_values_at, -1);
 
-    rb_define_method(rb_cStruct, "members", rb_struct_members, 0);
+    rb_define_method(rb_cStruct, "members", rb_struct_members_m, 0);
 }

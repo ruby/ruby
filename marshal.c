@@ -635,10 +635,7 @@ w_object(obj, arg, limit)
 		long i;
 
 		w_long(len, arg);
-		mem = rb_struct_iv_get(rb_obj_class(obj), "__member__");
-		if (mem == Qnil) {
-		    rb_raise(rb_eTypeError, "uninitialized struct");
-		}
+		mem = rb_struct_members(obj);
 		for (i=0; i<len; i++) {
 		    w_symbol(SYM2ID(RARRAY(mem)->ptr[i]), arg);
 		    w_object(RSTRUCT(obj)->ptr[i], arg, limit);
@@ -1196,7 +1193,7 @@ r_object0(arg, proc, ivp, extmod)
 	    ID slot;
 
 	    klass = path2class(r_unique(arg));
-	    mem = rb_struct_iv_get(klass, "__member__");
+	    mem = rb_struct_s_members(klass);
 	    if (mem == Qnil) {
 		rb_raise(rb_eTypeError, "uninitialized struct");
 	    }

@@ -444,6 +444,8 @@ VALUE rb_struct_aref _((VALUE, VALUE));
 VALUE rb_struct_aset _((VALUE, VALUE, VALUE));
 VALUE rb_struct_getmember _((VALUE, ID));
 VALUE rb_struct_iv_get _((VALUE, char*));
+VALUE rb_struct_s_members _((VALUE));
+VALUE rb_struct_members _((VALUE));
 /* time.c */
 VALUE rb_time_new _((time_t, time_t));
 /* variable.c */
