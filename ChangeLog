@@ -1,3 +1,7 @@
+Wed Nov 10 19:47:55 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (glob_helper): path is a string object now.
+
 Wed Nov 10 12:31:21 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* README.EXT (Example): extconf.rb is indispensable now.

@@ -1233,7 +1233,7 @@ glob_helper(path, dirsep, exist, isdir, beg, end, flags, func, arg)
 
     if (RSTRING(path)->len > 0) {
 	if (match_all && exist == UNKNOWN) {
-	    if (do_lstat(path, &st) == 0) {
+	    if (do_lstat(RSTRING(path)->ptr, &st) == 0) {
 		exist = YES;
 		isdir = S_ISDIR(st.st_mode) ? YES : S_ISLNK(st.st_mode) ? UNKNOWN : NO;
 	    }
@@ -1244,7 +1244,7 @@ glob_helper(path, dirsep, exist, isdir, beg, end, flags, func, arg)
 	}
 
 	if (match_dir && isdir == UNKNOWN) {
-	    if (do_stat(path, &st) == 0) {
+	    if (do_stat(RSTRING(path)->ptr, &st) == 0) {
 		exist = YES;
 		isdir = S_ISDIR(st.st_mode) ? YES : NO;
 	    }
