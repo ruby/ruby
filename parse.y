@@ -2067,10 +2067,14 @@ string_content	: tSTRING_CONTENT
 			$<node>$ = lex_strterm;
 			lex_strterm = 0;
 			lex_state = EXPR_BEG;
+			COND_PUSH(0);
+			CMDARG_PUSH(0);
 		    }
 		  compstmt '}'
 		    {
 			lex_strterm = $<node>2;
+			COND_LEXPOP();
+			CMDARG_LEXPOP();
 			$$ = new_evstr($3);
 		    }
 		;

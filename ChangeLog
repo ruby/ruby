@@ -1,3 +1,8 @@
+Thu Jan 22 16:21:02 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (string_content): reset lexical states at the beginning of
+	  string contents.  [ruby-list:39061]
+
 Thu Jan 22 01:46:32 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (newline_node): do not use NODE_NEWLINE node anymore,
@@ -47,7 +52,7 @@ Wed Jan 21 17:57:56 2004  Shugo Maeda  <shugo@ruby-lang.org>
 	* lib/net/imap.rb (body): ditto.
 	* lib/net/imap.rb (number): ditto.
 	* lib/net/imap.rb (ensure_nz_number): show a detailed error
-	message.
+	  message.
 
 Wed Jan 21 16:44:15 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
