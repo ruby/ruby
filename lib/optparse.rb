@@ -1022,35 +1022,35 @@ Default options, which never appear in option summary.
 
     cf. ((<OptionParser#switch>)).
 =end #'#"#`#
-  def new(*opts, &block)
+  def define(*opts, &block)
     top.append(*(sw = make_switch(*opts, &block)))
     sw[0]
   end
   def on(*opts, &block)
-    new(*opts, &block)
+    define(*opts, &block)
     self
   end
-  alias def_option new
+  alias def_option define
 
-  def new_head(*opts, &block)
+  def define_head(*opts, &block)
     top.prepend(*(sw = make_switch(*opts, &block)))
     sw[0]
   end
   def on_head(*opts, &block)
-    new_head(*opts, &block)
+    define_head(*opts, &block)
     self
   end
-  alias def_head_option new_head
+  alias def_head_option define_head
 
-  def new_tail(*opts, &block)
+  def define_tail(*opts, &block)
     base.append(*(sw = make_switch(*opts, &block)))
     sw[0]
   end
   def on_tail(*opts, &block)
-    new_tail(*opts, &block)
+    define_tail(*opts, &block)
     self
   end
-  alias def_tail_option new_tail
+  alias def_tail_option define_tail
 
   def separator(string)
     top.append(string, nil, nil)
