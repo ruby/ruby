@@ -4748,6 +4748,7 @@ eval(self, src, scope, file, line)
     struct SCOPE * volatile old_scope;
     struct BLOCK * volatile old_block;
     struct RVarmap * volatile old_dyna_vars;
+    VALUE volatile old_cref;
     int volatile old_vmode;
     struct FRAME frame;
     char *filesave = ruby_sourcefile;
@@ -4778,6 +4779,8 @@ eval(self, src, scope, file, line)
 	ruby_dyna_vars = data->dyna_vars;
 	old_vmode = scope_vmode;
 	scope_vmode = data->vmode;
+	old_cref = (VALUE)ruby_cref;
+	ruby_cref = (NODE*)ruby_frame->cbase;
 
 	self = data->self;
 	ruby_frame->iter = data->iter;
@@ -4813,6 +4816,7 @@ eval(self, src, scope, file, line)
     if (!NIL_P(scope)) {
 	int dont_recycle = ruby_scope->flag & SCOPE_DONT_RECYCLE;
 
+	ruby_cref  = (NODE*)old_cref;
 	ruby_frame = frame.tmp;
 	ruby_scope = old_scope;
 	ruby_block = old_block;

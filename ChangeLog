@@ -1,3 +1,7 @@
+Mon May  7 15:58:45 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (eval): preserve and restore ruby_cref as well.
+
 Mon May  7 15:45:48 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/ftools.rb (syscopy): chmod destination file only if
