@@ -44,7 +44,7 @@ File.foreach "config.status" do |line|
   elsif /^s[%,]@(\w+)@[%,](.*)[%,]/ =~ line
     name = $1
     val = $2 || ""
-    next if /^(INSTALL|DEFS|configure_input|srcdir|top_srcdir)$/ =~ name
+    next if /^(?:ac_.*|DEFS|configure_input|.*(?:src|build)dir)$/ =~ name
     next if $install_name and /^RUBY_INSTALL_NAME$/ =~ name
     next if $so_name and /^RUBY_SO_NAME$/ =~  name
     v = "  CONFIG[\"" + name + "\"] = " +

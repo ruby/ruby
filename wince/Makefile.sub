@@ -389,7 +389,8 @@ s,@LIBARG@,%s.lib,;t t
 s,@LINK_SO@,$$(LDSHARED) -Fe$$(@) $$(OBJS) $$(LIBS) $$(LOCAL_LIBS) $$(DLDFLAGS),;t t
 s,@COMPILE_C@,$$(CC) $$(CFLAGS) $$(CPPFLAGS) -c -Tc$$(<:\=/),;t t
 s,@COMPILE_CXX@,$$(CXX) $$(CXXFLAGS) $$(CPPFLAGS) -c -Tp$$(<:\=/),;t t
-s,@COMPILE_RULES@,{$$(srcdir)}.%s{}.%s: .%s.%s:,;t t
+s,@COMPILE_RULES@,{$$(srcdir)}.%s{}.%s: {$$(topdir)}.%s{}.%s: {$$(hdrdir)}.%s{}.%s: .%s.%s:,;t t
+s,@RULE_SUBST@,{.;$$(srcdir);$$(topdir);$$(hdrdir)}%s,;t t
 s,@TRY_LINK@,$$(CC) -Feconftest $$(INCFLAGS) -I$$(hdrdir) $$(CPPFLAGS) $$(CFLAGS) $$(src) $$(LOCAL_LIBS) $$(LIBS) -link $$(LDFLAGS) $$(LIBPATH) $$(XLDFLAGS),;t t
 s,@COMMON_LIBS@,coredll winsock,;t t
 s,@COMMON_MACROS@,WIN32_LEAN_AND_MEAN;t t

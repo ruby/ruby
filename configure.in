@@ -188,6 +188,13 @@ AC_AIX
 AC_MINIX
 
 AC_SUBST(RM, ['rm -f'])
+AC_SUBST(CP, ['cp -v'])
+AC_SUBST(INSTALL, ['install -vp'])
+if $as_mkdir_p; then
+  AC_SUBST(MAKEDIRS, ['mkdir -p'])
+else
+  AC_SUBST(MAKEDIRS, ['install -d'])
+fi
 
 dnl check for large file stuff
 AC_SYS_LARGEFILE

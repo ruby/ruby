@@ -877,10 +877,11 @@ ruby_version = #{Config::CONFIG['ruby_version']}
 ruby = #{$ruby}
 RUBY = #{($nmake && !$extmk && !$configure_args.has_key?('--ruby')) ? '$(ruby:/=\)' : '$(ruby)'}
 RM = #{config_string('RM') || '$(RUBY) -run -e rm -- -f'}
-MAKEDIRS = $(RUBY) -run -e mkdir -- -p
-INSTALL_PROG = $(RUBY) -run -e install -- -vpm 0755
-INSTALL_DATA = $(RUBY) -run -e install -- -vpm 0644
-COPY = $(RUBY) -run -e cp -- -v
+MAKEDIRS = #{config_string('MAKEDIRS') || '$(RUBY) -run -e mkdir -- -p'}
+INSTALL = #{config_string('INSTALL') || '$(RUBY) -run -e install -- -vp'}
+INSTALL_PROG = $(INSTALL) -m 0755
+INSTALL_DATA = $(INSTALL) -m 0644
+COPY = #{config_string('COPY') || '$(RUBY) -run -e cp -- -v'}
 
 #### End of system configuration section. ####
 
@@ -1078,28 +1079,56 @@ site-install-rb: install-rb
   end
 
   depend = File.join(srcdir, "depend")
-  cont = rule = false
   if File.exist?(depend)
     open(depend, "r") do |dfile|
       mfile.printf "###\n"
-      while line = dfile.gets()
-	line.gsub!(/\.o\b/, ".#{$OBJEXT}")
-	line.gsub!(/\$\(hdrdir\)\/config.h/, $config_h) if $config_h
-	if $nmake
-	  rule = /^[$\w][^#]*:/ =~ line unless cont
-	  cont = /(?:^|[^\\])(?:\\\\)*\\$/ =~ line
-	  if rule
-	    line.gsub!(%r"(?<=\s)(?!\.)(?=[^\s\/]+\.(?:#{(SRC_EXT + ['h']).join('|')})(?:\s|\z))"o, '{.;$(VPATH)}')
+      cont = implicit = nil
+      impconv = proc do
+	COMPILE_RULES.each {|rule| mfile.print(rule % implicit[0], implicit[1])}
+	implicit = nil
+      end
+      ruleconv = proc do |line|
+	if implicit
+	  if /\A\t/ =~ line
+	    implicit[1] << line
+	    next
 	  else
-	    line.sub!(/^(\.\w+)(\.\w+)(?=\s*:)/, '{.;$(VPATH)}\1{}\2')
+	    impconv[]
 	  end
+	end
+	if /\A\.(\w+)\.(\w+)(?:\s*:)/ =~ line
+	  implicit = [[$1, $2], [$']]
+	  next
+	elsif RULE_SUBST and /\A[$\w][^#]*:/ =~ line
+	  line.gsub!(%r"(?<=\A|\s)(?!\.)([^$(){}+=:\s\/\\,]+)(?=\s|\z)") {|*m| RULE_SUBST % m}
 	end
 	mfile.print line
       end
+      while line = dfile.gets()
+	line.gsub!(/\.o\b/, ".#{$OBJEXT}")
+	line.gsub!(/\$\(hdrdir\)\/config.h/, $config_h) if $config_h
+	if /(?:^|[^\\])(?:\\\\)*\\$/ =~ line
+	  (cont ||= []) << line
+	  next
+	elsif cont
+	  line = (cont << line).join
+	  cont = nil
+	end
+	ruleconv.call(line)
+      end
+      if cont
+	ruleconv.call(cont.join)
+      elsif implicit
+	impconv.call
+      end
     end
   else
-    vpath = ($nmake ? "{$(hdrdir)}" : "")
-    mfile.print "$(OBJS): #{vpath}ruby.h #{vpath}defines.h #{$config_h}\n"
+    headers = %w[ruby.h defines.h]
+    if RULE_SUBST
+      headers.each {|h| h.sub!(/.*/) {|*m| RULE_SUBST % m}}
+    end
+    headers << $config_h if $config_h
+    mfile.print "$(OBJS): ", headers.join(' '), "\n"
   end
 
   $makefile_created = true
@@ -1202,6 +1231,7 @@ COMMON_HEADERS = (hdr.join("\n") unless hdr.empty?)
 COMMON_LIBS = config_string('COMMON_LIBS', &split) || []
 
 COMPILE_RULES = config_string('COMPILE_RULES', &split) || %w[.%s.%s:]
+RULE_SUBST = config_string('RULE_SUBST')
 COMPILE_C = config_string('COMPILE_C') || '$(CC) $(CFLAGS) $(CPPFLAGS) -c $<'
 COMPILE_CXX = config_string('COMPILE_CXX') || '$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $<'
 TRY_LINK = config_string('TRY_LINK') ||

@@ -1,3 +1,15 @@
+Tue Feb 22 23:52:45 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in, lib/mkmf.rb: use simple commands if available.
+
+	* mkconfig.rb: remove autoconf internal variables from rbconfig.rb.
+
+	* lib/mkmf.rb (create_makefile): substitute implicit rules in depend
+	  file.
+
+	* {bcc32,win32,wince}/Makefile.sub (COMPILE_RULES, RULE_SUBST):
+	  include $(topdir) and $(hdrdir) to search path.
+
 Tue Feb 22 23:51:45 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/syck/rubyext.c: get rid of warnings caused by a bug of VC.
