@@ -724,11 +724,12 @@ rb_w32_pipe_exec(const char *cmd, const char *prog, int mode, int *pipe)
 				 &hDupFile, 0, FALSE,
 				 DUPLICATE_SAME_ACCESS)) {
 		errno = map_errno(GetLastError());
-		CloseHandle((HANDLE)pair[0]);
-		CloseHandle((HANDLE)pair[1]);
+		closesocket(pair[0]);
+		closesocket(pair[1]);
 		CloseHandle(hCurProc);
 		break;
 	    }
+	    closesocket(pair[1]);
 	    hOrg = hIn = hOut = (HANDLE)pair[0];
 	}
 	else if (reading) {
@@ -779,13 +780,14 @@ rb_w32_pipe_exec(const char *cmd, const char *prog, int mode, int *pipe)
 
 	/* associate handle to file descritor */
 	*pipe = rb_w32_open_osfhandle((long)hDupFile, pipemode);
-	if (!(reading && writing))
-	    CloseHandle(hOrg);
 	if (*pipe == -1) {
+	    CloseHandle(hOrg);
 	    CloseHandle(hDupFile);
 	    CloseChildHandle(child);
 	    break;
 	}
+	if (!(reading && writing))
+	    CloseHandle(hOrg);
 
 	ret = child->pid;
     } while (0));
@@ -3405,8 +3407,6 @@ rb_w32_fclose(FILE *fp)
     }
     _set_osfhnd(fd, (SOCKET)INVALID_HANDLE_VALUE);
     fclose(fp);
-    shutdown(sock, 0);
-    shutdown(sock, 1);
     if (closesocket(sock) == SOCKET_ERROR) {
 	errno = map_errno(WSAGetLastError());
 	return -1;
@@ -3423,8 +3423,6 @@ rb_w32_close(int fd)
 	UnlockFile((HANDLE)sock, 0, 0, LK_LEN, LK_LEN);
 	return _close(fd);
     }
-    shutdown(sock, 0);
-    shutdown(sock, 1);
     if (closesocket(sock) == SOCKET_ERROR) {
 	errno = map_errno(WSAGetLastError());
 	return -1;
