@@ -178,7 +178,13 @@ fake.rb:	miniruby$(EXEEXT) Makefile
 		  remove_const :RUBY_VERSION; \
 		  RUBY_PLATFORM = "@arch@"; \
 		  RUBY_VERSION = "@MAJOR@.@MINOR@.@TEENY@"; \
-		end \
+		end; \
+		if RUBY_PLATFORM =~ /mswin|bccwin|mingw/; \
+		  class File; \
+		    remove_const :ALT_SEPARATOR; \
+		    ALT_SEPARATOR = "\\"; \
+		  end; \
+		end; \
 		' > $@
 
 Makefile:	$(srcdir)/Makefile.in

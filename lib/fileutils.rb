@@ -140,7 +140,7 @@ module FileUtils
     return if noop
 
     list.each do |dir|
-      Dir.mkdir dir
+      Dir.mkdir dir, 0755
     end
   end
 
@@ -173,7 +173,7 @@ module FileUtils
         dir = File.dirname(dir)
       end
       stack.reverse_each do |n|
-        Dir.mkdir n
+        Dir.mkdir n, 0755
       end
     end
 

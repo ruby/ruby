@@ -1,3 +1,9 @@
+Sun Mar  9 17:09:40 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* lib/fileutils.rb (mkdir, mkdir_p): set mode to 0755.
+
+	* Makefile.in (fake.rb): set ALT_SEPARATOR to the default value.
+
 Sat Mar 08 11:30:59 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (massign): fix a bug not to expand in assigment to sole
