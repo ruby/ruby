@@ -1,3 +1,9 @@
+Fri Oct 17 11:15:22 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* test/ruby/test_range.rb: added.
+
+	* MANIFEST: add test/ruby/test_range.rb.
+
 Fri Oct 17 00:12:41 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: (bug fix) instance variable @frame was used

@@ -653,6 +653,7 @@ test/ruby/test_math.rb
 test/ruby/test_pack.rb
 test/ruby/test_path.rb
 test/ruby/test_proc.rb
+test/ruby/test_range.rb
 test/ruby/test_signal.rb
 test/ruby/test_stringchar.rb
 test/ruby/test_struct.rb
