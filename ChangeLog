@@ -1,3 +1,8 @@
+Sat Mar  9 08:45:58 2002  Tanaka Akira  <akr@m17n.org>
+
+	* ext/socket/extconf.rb (have_struct_member): don't print checked
+	result.
+
 Fri Mar  8 12:19:15 2002  Tanaka Akira  <akr@m17n.org>
 
 	* lib/resolv.rb: use its own thread group for background threads.

@@ -3,8 +3,8 @@ require 'mkmf'
 $CPPFLAGS += " -Dss_family=__ss_family -Dss_len=__ss_len"
 
 def have_struct_member(type, member, header=nil)
-  printf "checking for %s.%s... ", type, member
-  STDOUT.flush
+  #printf "checking for %s.%s... ", type, member
+  #STDOUT.flush
 
   libs = $libs
   src = 
@@ -30,11 +30,11 @@ int s = (char *)&((#{type}*)0)->#{member} - (char *)0;
 SRC
   r = try_link(src, libs) # xxx try_compile is not available.
   unless r
-    print "no\n"
+    #print "no\n"
     return false
   end
   $defs.push(format("-DHAVE_ST_%s", member.upcase))
-  print "yes\n"
+  #print "yes\n"
   return true
 end
 
