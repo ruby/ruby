@@ -1,3 +1,7 @@
+Fri Jun 23 01:11:27 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (new_super): should tweak block_pass node for super too.
+
 Wed Jun 21 22:20:34 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* configure.in: support for gcc version 2.95.2 19991024 (release-2)

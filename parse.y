@@ -81,6 +81,7 @@ static int in_defined = 0;
 static NODE *arg_blk_pass();
 static NODE *new_call();
 static NODE *new_fcall();
+static NODE *new_super();
 
 static NODE *gettable();
 static NODE *assignable();
@@ -444,7 +445,7 @@ command_call	: operation call_args
 		    {
 			if (!compile_for_eval && !cur_mid && !in_single)
 			    yyerror("super called outside of method");
-			$$ = NEW_SUPER($2);
+			$$ = new_super($2);
 		        fixpos($$, $2);
 		    }
 
@@ -1393,7 +1394,7 @@ method_call	: operation '(' opt_call_args close_paren
 			if (!compile_for_eval && !cur_mid &&
 		            !in_single && !in_defined)
 			    yyerror("super called outside of method");
-			$$ = NEW_SUPER($3);
+			$$ = new_super($3);
 		    }
 		| kSUPER
 		    {
@@ -4198,6 +4199,17 @@ new_fcall(m,a)
 	return a;
     }
     return NEW_FCALL(m,a);
+}
+
+static NODE*
+new_super(a)
+    NODE *a;
+{
+    if (a && nd_type(a) == NODE_BLOCK_PASS) {
+	a->nd_iter = NEW_SUPER(a->nd_head);
+	return a;
+    }
+    return NEW_SUPER(a);
 }
 
 static struct local_vars {

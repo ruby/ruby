@@ -882,13 +882,8 @@ bigdivmod(x, y, div, mod, modulo)
 	RBIGNUM(*mod)->len = ny;
 	RBIGNUM(*mod)->sign = RBIGNUM(x)->sign;
 	if (modulo && RBIGNUM(x)->sign != RBIGNUM(y)->sign) {
-	    long len = ny;
-	    zds = BDIGITS(*mod);
-	    while (len && !zds[len]) len--;
-	    if (len > 0) {
-		*mod = bigadd(*mod, y, 1);
-		return;
-	    }
+	    *mod = bigadd(*mod, y, 1);
+	    return;
 	}
 	*mod = bignorm(*mod);
     }

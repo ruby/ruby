@@ -4739,7 +4739,7 @@ rb_load(fname, wrap)
     PUSH_FRAME();
     ruby_frame->last_func = 0;
     ruby_frame->last_class = 0;
-    ruby_frame->self = ruby_top_self;
+    ruby_frame->self = self;
     ruby_frame->cbase = (VALUE)rb_node_newnode(NODE_CREF,ruby_class,0,0);
     PUSH_SCOPE();
     if (ruby_class == rb_cObject && top_scope->local_tbl) {

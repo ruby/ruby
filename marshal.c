@@ -958,7 +958,7 @@ Init_marshal()
     s_load = rb_intern("_load");
     rb_define_module_function(rb_mMarshal, "dump", marshal_dump, -1);
     rb_define_module_function(rb_mMarshal, "load", marshal_load, -1);
-    rb_define_module_function(rb_mMarshal, "restore", marshal_load, 1);
+    rb_define_module_function(rb_mMarshal, "restore", marshal_load, -1);
 
     rb_provide("marshal.so");	/* for backward compatibility */
 }
