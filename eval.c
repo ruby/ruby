@@ -5832,32 +5832,6 @@ rb_f_send(argc, argv, recv)
     return vid;
 }
 
-static VALUE
-vafuncall(recv, mid, n, ar)
-    VALUE recv;
-    ID mid;
-    int n;
-    va_list *ar;
-{
-    VALUE *argv;
-
-    if (n > 0) {
-	long i;
-
-	argv = ALLOCA_N(VALUE, n);
-
-	for (i=0;i<n;i++) {
-	    argv[i] = va_arg(*ar, VALUE);
-	}
-	va_end(*ar);
-    }
-    else {
-	argv = 0;
-    }
-
-    return rb_call(CLASS_OF(recv), recv, mid, n, argv, 1);
-}
-
 VALUE
 #ifdef HAVE_STDARG_PROTOTYPES
 rb_funcall(VALUE recv, ID mid, int n, ...)
@@ -5869,42 +5843,25 @@ rb_funcall(recv, mid, n, va_alist)
     va_dcl
 #endif
 {
+    VALUE *argv;
     va_list ar;
     va_init_list(ar, n);
 
-    return vafuncall(recv, mid, n, &ar);
-}
+    if (n > 0) {
+	long i;
 
-VALUE
-#ifdef HAVE_STDARG_PROTOTYPES
-rb_funcall_rescue(VALUE recv, ID mid, int n, ...)
-#else
-rb_funcall_rescue(recv, mid, n, va_alist)
-    VALUE recv;
-    ID mid;
-    int n;
-    va_dcl
-#endif
-{
-    VALUE result = Qnil;	/* OK */
-    int status;
-    va_list ar;
+	argv = ALLOCA_N(VALUE, n);
 
-    va_init_list(ar, n);
-
-    PUSH_TAG(PROT_NONE);
-    if ((status = EXEC_TAG()) == 0) {
-	result = vafuncall(recv, mid, n, &ar);
+	for (i=0;i<n;i++) {
+	    argv[i] = va_arg(ar, VALUE);
+	}
+	va_end(ar);
     }
-    POP_TAG();
-    switch (status) {
-      case 0:
-	return result;
-      case TAG_RAISE:
-	return Qundef;
-      default:
-	JUMP_TAG(status);
+    else {
+	argv = 0;
     }
+
+    return rb_call(CLASS_OF(recv), recv, mid, n, argv, 1);
 }
 
 VALUE
@@ -7610,6 +7567,7 @@ Init_eval()
     __send__ = rb_intern("__send__");
 
     rb_global_variable((VALUE*)&top_scope);
+    rb_global_variable((VALUE*)&ruby_eval_tree);
     rb_global_variable((VALUE*)&ruby_dyna_vars);
 
     rb_define_virtual_variable("$@", errat_getter, errat_setter);

@@ -1,3 +1,7 @@
+Tue Dec 14 08:47:45 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (Init_eval): should mark ruby_eval_tree.  [ruby-dev:25189]
+
 Mon Dec 13 18:13:52 2004  Tanaka Akira  <akr@m17n.org>
 
 	* gc.c (set_stack_end): new function to obtain stack end address.
