@@ -503,7 +503,7 @@ rb_obj_is_kind_of(obj, c)
 
 
 /*
- * Document-method: singleton-method-added
+ * Document-method: singleton_method_added
  *
  *  call-seq:
  *     singleton_method_added(symbol)
@@ -529,7 +529,7 @@ rb_obj_is_kind_of(obj, c)
  */
 
 /*
- * Document-method: singleton-method-removed
+ * Document-method: singleton_method_removed
  *
  *  call-seq:
  *     singleton_method_removed(symbol)
@@ -557,7 +557,7 @@ rb_obj_is_kind_of(obj, c)
  */
 
 /*
- * Document-method: singleton-method-undefined
+ * Document-method: singleton_method_undefined
  *
  *  call-seq:
  *     singleton_method_undefined(symbol)
@@ -581,6 +581,31 @@ rb_obj_is_kind_of(obj, c)
  */
 
 
+/*
+ * Document-method: included
+ *
+ * call-seq:
+ *    included( othermod )
+ *
+ * Callback invoked whenever the receiver is included in another
+ * module or class. This should be used in preference to
+ * <tt>Module.append_features</tt> if your code wants to perform some
+ * action when a module is included in another.
+ *
+ *        module A
+ *          def A.included(mod)
+ *            puts "#{self} included in #{mod}"
+ *          end
+ *        end
+ *        module Enumerable
+ *          include A
+ *        end
+ */
+
+
+/*
+ * Not documented
+ */
 
 static VALUE
 rb_obj_dummy()
