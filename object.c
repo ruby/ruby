@@ -1951,6 +1951,63 @@ rb_obj_ivar_set(obj, iv, val)
     return rb_ivar_set(obj, id, val);
 }
 
+/*
+ *  call-seq:
+ *     mod.class_variable_get(symbol)    => obj
+ *  
+ *  Returns the value of the given class variable (or throws a
+ *  <code>NameError</code> exception). The <code>@@</code> part of the
+ *  variable name should be included for regular class variables
+ *     
+ *     class Fred
+ *       @@foo = 99
+ *     end
+ *     Fred.class_variable_get(:@foo)     #=> 99
+ */
+
+static VALUE
+rb_mod_cvar_get(obj, iv)
+    VALUE obj, iv;
+{
+    ID id = rb_to_id(iv);
+
+    if (!rb_is_class_id(id)) {
+	rb_name_error(id, "`%s' is not allowed as an class variable name", rb_id2name(id));
+    }
+    return rb_cvar_get(obj, id);
+}
+
+
+/*
+ *  call-seq:
+ *     obj.class_variable_set(symbol, obj)    => obj
+ *  
+ *  Sets the class variable names by <i>symbol</i> to
+ *  <i>object</i>.
+ *     
+ *     class Fred
+ *       @@foo = 99
+ *       def foo
+ *         @@foo
+ *       end
+ *     end
+ *     Fred.class_variable_set(:@foo, 101)      #=> 101
+ *     Fred.new.foo                             #=> 101
+ */
+
+static VALUE
+rb_mod_cvar_set(obj, iv, val)
+    VALUE obj, iv, val;
+{
+    ID id = rb_to_id(iv);
+
+    if (!rb_is_class_id(id)) {
+	rb_name_error(id, "`%s' is not allowed as an class variable name", rb_id2name(id));
+    }
+    rb_cvar_set(obj, id, val, Qfalse);
+    return val;
+}
+
 static VALUE
 convert_type(val, tname, method, raise)
     VALUE val;
@@ -2578,6 +2635,8 @@ Init_Object()
 		     rb_mod_class_variables, 0); /* in variable.c */
     rb_define_private_method(rb_cModule, "remove_class_variable", 
 			     rb_mod_remove_cvar, 1); /* in variable.c */
+    rb_define_private_method(rb_cModule, "class_variable_get", rb_mod_cvar_get, 1);
+    rb_define_private_method(rb_cModule, "class_variable_set", rb_mod_cvar_set, 2);
 
     rb_define_method(rb_cClass, "allocate", rb_obj_alloc, 0);
     rb_define_method(rb_cClass, "new", rb_class_new_instance, -1);

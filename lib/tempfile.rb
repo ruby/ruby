@@ -77,7 +77,8 @@ class Tempfile < SimpleDelegator
   def _close	# :nodoc:
     @tmpfile.close if @tmpfile
     @data[1] = @tmpfile = nil
-  end    
+    @data = @tmpname = nil
+  end
   protected :_close
 
   # Closes the file.  If the optional flag is true, unlinks the file

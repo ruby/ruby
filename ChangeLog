@@ -1,3 +1,14 @@
+Wed Mar 24 04:12:44 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_mod_cvar_get): new method Module#class_variable_get.
+
+	* object.c (rb_mod_cvar_set): ditto (Module#class_variable_set).
+
+Tue Mar 23 17:45:22 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_thread_atfork): 1.9 warns no more for thread
+	  termination.  [ruby-dev:23212]
+
 Tue Mar 23 14:46:10 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in, */Makefile.sub, common.mk (clean-local, distclean-local):
