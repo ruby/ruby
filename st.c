@@ -42,7 +42,6 @@ void *xrealloc();
 static void rehash();
 
 #define max(a,b) ((a) > (b) ? (a) : (b))
-#define nil(type) ((type*)0)
 #define alloc(type) (type*)xmalloc((unsigned)sizeof(type))
 #define Calloc(n,s) (char*)xcalloc((n),(s))
 
@@ -100,18 +99,18 @@ st_free_table(table)
 
     for(i = 0; i < table->num_bins ; i++) {
 	ptr = table->bins[i];
-	while (ptr != nil(st_table_entry)) {
+	while (ptr != 0) {
 	    next = ptr->next;
-	    free((char*)ptr);
+	    free(ptr);
 	    ptr = next;
 	}
     }
-    free((char*)table->bins);
-    free((char*)table);
+    free(table->bins);
+    free(table);
 }
 
 #define PTR_NOT_EQUAL(table, ptr, key) \
-(ptr != nil(st_table_entry) && !EQUAL(table, key, (ptr)->key))
+(ptr != 0 && !EQUAL(table, key, (ptr)->key))
 
 #define FIND_ENTRY(table, ptr, hash_val) \
 ptr = (table)->bins[hash_val];\
@@ -135,10 +134,10 @@ st_lookup(table, key, value)
 
     FIND_ENTRY(table, ptr, hash_val);
 
-    if (ptr == nil(st_table_entry)) {
+    if (ptr == 0) {
 	return 0;
     } else {
-	if (value != nil(char*))  *value = ptr->record;
+	if (value != 0)  *value = ptr->record;
 	return 1;
     }
 }
@@ -173,7 +172,7 @@ st_insert(table, key, value)
 
     FIND_ENTRY(table, ptr, hash_val);
 
-    if (ptr == nil(st_table_entry)) {
+    if (ptr == 0) {
 	ADD_DIRECT(table,key,value,hash_val,tbl);
 	return 0;
     } else {
@@ -208,12 +207,12 @@ st_find_or_add(table, key, slot)
 
     FIND_ENTRY(table, ptr, hash_val);
 
-    if (ptr == nil(st_table_entry)) {
+    if (ptr == 0) {
 	ADD_DIRECT(table, key, (char*)0, hash_val, tbl)
-	if (slot != nil(char**)) *slot = &tbl->record;
+	if (slot != 0) *slot = &tbl->record;
 	return 0;
     } else {
-	if (slot != nil(char**)) *slot = &ptr->record;
+	if (slot != 0) *slot = &ptr->record;
 	return 1;
     }
 }
@@ -222,7 +221,7 @@ static void
 rehash(table)
     register st_table *table;
 {
-    register st_table_entry *ptr, *next, **old_bins = table->bins;
+    register st_table_entry *ptr, *next, **new_bins;
     int i, old_num_bins = table->num_bins, new_num_bins, hash_val;
 
     new_num_bins = 1.79*old_num_bins;
@@ -231,24 +230,22 @@ rehash(table)
 	new_num_bins += 1;
     }
 
-    table->num_bins = 0;
-    table->num_entries = 0;
-    table->bins = (st_table_entry **)
+    new_bins = (st_table_entry **)
 	Calloc((unsigned)new_num_bins, sizeof(st_table_entry*));
 
     for(i = 0; i < old_num_bins ; i++) {
-	ptr = old_bins[i];
-	while (ptr != nil(st_table_entry)) {
+	ptr = table->bins[i];
+	while (ptr != 0) {
 	    next = ptr->next;
 	    hash_val = do_hash2(ptr->key, table, new_num_bins);
-	    ptr->next = table->bins[hash_val];
-	    table->bins[hash_val] = ptr;
-	    table->num_entries++;
+	    ptr->next = new_bins[hash_val];
+	    new_bins[hash_val] = ptr;
 	    ptr = next;
 	}
     }
+    free(table->bins);
     table->num_bins = new_num_bins;
-    free((char*)old_bins);
+    table->bins = new_bins;
 }
 
 st_table*
@@ -260,28 +257,28 @@ st_copy(old_table)
     int i, num_bins = old_table->num_bins;
 
     new_table = alloc(st_table);
-    if (new_table == nil(st_table)) {
-	return nil(st_table);
+    if (new_table == 0) {
+	return 0;
     }
 
     *new_table = *old_table;
     new_table->bins = (st_table_entry**)
 	Calloc((unsigned)num_bins, sizeof(st_table_entry*));
 
-    if (new_table->bins == nil(st_table_entry*)) {
-	free((char*)new_table);
-	return nil(st_table);
+    if (new_table->bins == 0) {
+	free(new_table);
+	return 0;
     }
 
     for(i = 0; i < num_bins ; i++) {
-	new_table->bins[i] = nil(st_table_entry);
+	new_table->bins[i] = 0;
 	ptr = old_table->bins[i];
-	while (ptr != nil(st_table_entry)) {
+	while (ptr != 0) {
 	    tbl = alloc(st_table_entry);
-	    if (tbl == nil(st_table_entry)) {
-		free((char*)new_table->bins);
-		free((char*)new_table);
-		return nil(st_table);
+	    if (tbl == 0) {
+		free(new_table->bins);
+		free(new_table);
+		return 0;
 	    }
 	    *tbl = *ptr;
 	    tbl->next = new_table->bins[i];
@@ -306,28 +303,28 @@ st_delete(table, key, value)
 
     ptr = table->bins[hash_val];
 
-    if (ptr == nil(st_table_entry)) {
-	if (value != nil(char*)) *value = nil(char);
+    if (ptr == 0) {
+	if (value != 0) *value = 0;
 	return 0;
     }
 
     if (EQUAL(table, *key, ptr->key)) {
 	table->bins[hash_val] = ptr->next;
 	table->num_entries--;
-	if (value != nil(char*)) *value = ptr->record;
+	if (value != 0) *value = ptr->record;
 	*key = ptr->key;
-	free((char*)ptr);
+	free(ptr);
 	return 1;
     }
 
-    for(; ptr->next != nil(st_table_entry); ptr = ptr->next) {
+    for(; ptr->next != 0; ptr = ptr->next) {
 	if (EQUAL(table, ptr->next->key, *key)) {
 	    tmp = ptr->next;
 	    ptr->next = ptr->next->next;
 	    table->num_entries--;
-	    if (value != nil(char*)) *value = tmp->record;
+	    if (value != 0) *value = tmp->record;
 	    *key = tmp->key;
-	    free((char*)tmp);
+	    free(tmp);
 	    return 1;
 	}
     }
@@ -349,24 +346,24 @@ st_delete_safe(table, key, value, never)
 
     ptr = table->bins[hash_val];
 
-    if (ptr == nil(st_table_entry)) {
-	if (value != nil(char*)) *value = nil(char);
+    if (ptr == 0) {
+	if (value != 0) *value = 0;
 	return 0;
     }
 
     if (EQUAL(table, *key, ptr->key)) {
 	table->num_entries--;
 	*key = ptr->key;
-	if (value != nil(char*)) *value = ptr->record;
+	if (value != 0) *value = ptr->record;
 	ptr->key = ptr->record = never;
 	return 1;
     }
 
-    for(; ptr->next != nil(st_table_entry); ptr = ptr->next) {
+    for(; ptr->next != 0; ptr = ptr->next) {
 	if (EQUAL(table, ptr->next->key, *key)) {
 	    table->num_entries--;
 	    *key = ptr->key;
-	    if (value != nil(char*)) *value = ptr->record;
+	    if (value != 0) *value = ptr->record;
 	    ptr->key = ptr->record = never;
 	    return 1;
 	}
@@ -386,8 +383,8 @@ st_foreach(table, func, arg)
     int i;
 
     for(i = 0; i < table->num_bins; i++) {
-	last = nil(st_table_entry);
-	for(ptr = table->bins[i]; ptr != nil(st_table_entry);) {
+	last = 0;
+	for(ptr = table->bins[i]; ptr != 0;) {
 	    retval = (*func)(ptr->key, ptr->record, arg);
 	    switch (retval) {
 	    case ST_CONTINUE:
@@ -398,13 +395,13 @@ st_foreach(table, func, arg)
 		return;
 	    case ST_DELETE:
 		tmp = ptr;
-		if (last == nil(st_table_entry)) {
+		if (last == 0) {
 		    table->bins[i] = ptr->next;
 		} else {
 		    last->next = ptr->next;
 		}
 		ptr = ptr->next;
-		free((char*)tmp);
+		free(tmp);
 		table->num_entries--;
 	    }
 	}

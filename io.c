@@ -2598,8 +2598,6 @@ Init_IO()
     rb_define_global_function("tell", f_tell, 0);
     rb_define_global_function("seek", f_seek, 2);
     rb_define_global_function("rewind", f_rewind, 0);
-    rb_define_global_function("pos", f_tell, 0);
-    rb_define_global_function("pos=", f_set_pos, 1);
     rb_define_global_function("eof", f_eof, 0);
     rb_define_global_function("eof?", f_eof, 0);
     rb_define_global_function("getc", f_getc, 0);

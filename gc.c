@@ -255,7 +255,7 @@ rb_newobj()
 	alloc_objects++;
 	return obj;
     }
-    if (dont_gc) add_heap();
+    if (dont_gc || prohibit_interrupt) add_heap();
     else gc_gc();
 
     goto retry;

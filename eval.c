@@ -5474,6 +5474,7 @@ gc_mark_threads()
 {
     thread_t th;
 
+    if (!curr_thread) return;
     FOREACH_THREAD(th) {
 	thread_mark(th);
     } END_FOREACH(th);

@@ -920,8 +920,6 @@ end
 check "marshal"
 $x = [1,2,3,[4,5,"foo"],{1=>"bar"},2.5,fact(30)]
 $y = Marshal.dump($x)
-p $x
-p Marshal.load($y)
 ok($x == Marshal.load($y))
 
 check "pack"

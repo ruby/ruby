@@ -1,4 +1,10 @@
+Wed Jul 22 11:59:59 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* st.c (rehash): still had a GC problem.  fixed.
+
 Tue Jul 21 13:19:30 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (gc_mark_threads): crashed on GC before thread allocation.
 
 	* st.c (rehash): GC during rehash caused SEGV.
 
