@@ -39,9 +39,9 @@ File.foreach "config.status" do |line|
     next if $install_name and /^RUBY_INSTALL_NAME$/ =~ name
     next if $so_name and /^RUBY_SO_NAME$/ =~  name
     v = "  CONFIG[\"" + name + "\"] = " +
-      val.sub(/^\s*(.*)\s*$/, '"\1"').gsub(/\$\{?(\w+)\}?/) {
+      val.sub(/^\s*(.*)\s*$/, '\1').gsub(/\$\{?(\w+)\}?/) {
       "$(#{$1})"
-    } + "\n"
+    }.dump + "\n"
     if fast[name]
       v_fast << v
     else

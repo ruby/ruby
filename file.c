@@ -2237,7 +2237,7 @@ path_check_1(path)
 {
     struct stat st;
     char *p0 = RSTRING(path)->ptr;
-    char *p, *s;
+    char *p = 0, *s;
 
     if (!is_absolute_path(p0)) {
 	char *buf = my_getcwd();
@@ -2281,8 +2281,8 @@ rb_path_check(path)
 	if (!path_check_1(rb_str_new(p0, p - p0))) {
 	    return 0;		/* not safe */
 	}
-	if (p0 > pend) break;
 	p0 = p + 1;
+	if (p0 > pend) break;
 	p = strchr(p0, sep);
 	if (!p) p = pend;
     }

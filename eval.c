@@ -594,17 +594,15 @@ new_blktag()
 }
 
 struct RVarmap *ruby_dyna_vars;
-#define PUSH_VARS() { \
-    struct RVarmap * volatile _old; \
-    _old = ruby_dyna_vars; \
+#define PUSH_VARS() {			\
+    struct RVarmap * volatile _old;	\
+    _old = ruby_dyna_vars;		\
     ruby_dyna_vars = 0;
 
-#define POP_VARS() \
-   if (_old && (ruby_scope->flags & SCOPE_DONT_RECYCLE)) {\
-       if (RBASIC(_old)->flags) /* unless it's already recycled */ \
-           FL_SET(_old, DVAR_DONT_RECYCLE); \
-    }\
-    ruby_dyna_vars = _old; \
+#define POP_VARS()			\
+   if (_old && (ruby_scope->flags & SCOPE_DONT_RECYCLE)) \
+       FL_SET(_old, DVAR_DONT_RECYCLE); \
+    ruby_dyna_vars = _old;		\
 }
 
 #define DVAR_DONT_RECYCLE FL_USER2
@@ -1351,10 +1349,8 @@ rb_eval_cmd(cmd, arg)
     volatile int safe = ruby_safe_level;
 
     if (TYPE(cmd) != T_STRING) {
-	PUSH_ITER(ITER_NOT);
-	val = rb_funcall2(cmd, rb_intern("call"), RARRAY(arg)->len, RARRAY(arg)->ptr);
-	POP_ITER();
-	return val;
+	return rb_funcall2(cmd, rb_intern("call"),
+			   RARRAY(arg)->len, RARRAY(arg)->ptr);
     }
 
     saved_scope = ruby_scope;
@@ -2740,7 +2736,7 @@ rb_eval(self, n)
 		val = rb_funcall(val, node->nd_mid, 1, rb_eval(self, rval));
 	    }
 	    argv[argc-1] = val;
-	    rb_funcall2(recv, aset, argc, argv);
+	    val = rb_funcall2(recv, aset, argc, argv);
 	    result = val;
 	}
 	break;
@@ -3645,8 +3641,8 @@ rb_yield_0(val, self, klass, pcall)
     int state;
     static unsigned serial = 1;
 
-    if (!rb_block_given_p()) {
-	rb_raise(rb_eLocalJumpError, "no block given");
+    if (!(rb_block_given_p() || rb_f_block_given_p())) {
+	rb_raise(rb_eLocalJumpError, "yield called out of block");
     }
 
     PUSH_VARS();
@@ -3925,7 +3921,7 @@ assign(self, lhs, val, pcall)
 
 VALUE
 rb_iterate(it_proc, data1, bl_proc, data2)
-    VALUE (*it_proc) _((VALUE)), (*bl_proc)(ANYARGS);
+    VALUE (*it_proc)(), (*bl_proc)();
     VALUE data1, data2;
 {
     int state;
@@ -3999,10 +3995,10 @@ handle_rescue(self, node)
 
 VALUE
 #ifdef HAVE_STDARG_PROTOTYPES
-rb_rescue2(VALUE (*b_proc)(ANYARGS), VALUE data1, VALUE (*r_proc)(ANYARGS), VALUE data2, ...)
+rb_rescue2(VALUE (*b_proc)(), VALUE data1, VALUE (*r_proc)(), VALUE data2, ...)
 #else
 rb_rescue2(b_proc, data1, r_proc, data2, va_alist)
-    VALUE (*b_proc)(ANYARGS), (*r_proc)(ANYARGS);
+    VALUE (*b_proc)(), (*r_proc)();
     VALUE data1, data2;
     va_dcl
 #endif
@@ -4093,9 +4089,8 @@ rb_protect(proc, data, state)
 VALUE
 rb_ensure(b_proc, data1, e_proc, data2)
     VALUE (*b_proc)();
-    VALUE data1;
     VALUE (*e_proc)();
-    VALUE data2;
+    VALUE data1, data2;
 {
     int state;
     volatile VALUE result = Qnil;
@@ -5054,9 +5049,6 @@ rb_f_eval(argc, argv, self)
     rb_scan_args(argc, argv, "13", &src, &scope, &vfile, &vline);
     if (ruby_safe_level >= 4) {
 	StringValue(src);
-	if (!NIL_P(scope) && !OBJ_TAINTED(scope)) {
-	    rb_raise(rb_eSecurityError, "Insecure: can't modify trusted binding");
-	}
     }
     else {
 	SafeStringValue(src);
@@ -5098,7 +5090,6 @@ exec_under(func, under, args)
     PUSH_CLASS();
     ruby_class = under;
     PUSH_FRAME();
-    ruby_frame->self = _frame.prev->self;
     ruby_frame->last_func = _frame.prev->last_func;
     ruby_frame->last_class = _frame.prev->last_class;
     ruby_frame->argc = _frame.prev->argc;
@@ -5194,7 +5185,7 @@ yield_under(under, self)
     return exec_under(yield_under_i, under, self);
 }
 
-static VALUE
+VALUE
 specific_eval(argc, argv, klass, self)
     int argc;
     VALUE *argv;
@@ -5968,19 +5959,11 @@ rb_f_at_exit()
 void
 rb_exec_end_proc()
 {
-    struct end_proc_data *link, *save;
+    struct end_proc_data *link;
     int status;
 
-    save = link = end_procs;
-    while (link) {
-	rb_protect((VALUE(*)_((VALUE)))link->func, link->data, &status);
-	if (status) {
-	    error_handle(status);
-	}
-	link = link->next;
-    }
     link = end_procs;
-    while (link != save) {
+    while (link) {
 	rb_protect((VALUE(*)_((VALUE)))link->func, link->data, &status);
 	if (status) {
 	    error_handle(status);
@@ -6954,14 +6937,14 @@ static VALUE
 method_proc(method)
     VALUE method;
 {
-    return rb_iterate((VALUE(*)_((VALUE)))mproc, 0, bmcall, method);
+    return rb_iterate(mproc, 0, bmcall, method);
 }
 
 static VALUE
 umethod_proc(method)
     VALUE method;
 {
-    return rb_iterate((VALUE(*)_((VALUE)))mproc, 0, umcall, method);
+    return rb_iterate(mproc, 0, umcall, method);
 }
 
 static VALUE
@@ -9080,7 +9063,7 @@ rb_catch(tag, proc, data)
     VALUE (*proc)();
     VALUE data;
 {
-    return rb_iterate((VALUE(*)_((VALUE)))catch_i, rb_intern(tag), proc, data);
+    return rb_iterate(catch_i, rb_intern(tag), proc, data);
 }
 
 static VALUE

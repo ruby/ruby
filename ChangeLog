@@ -1,3 +1,17 @@
+Thu Nov  8 18:21:02 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* file.c (path_check_1): forgot to initialize 'p'.
+
+Thu Nov  8 14:52:15 2001  Tanaka Akira  <akr@m17n.org>
+
+	* mkconfig.rb: use String#dump to generate Ruby string literal.
+
+Thu Nov  8 15:46:54 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* range.c (range_eql): should override 'eql?'
+
+	* array.c (rb_ary_hash): should override 'hash' too.
+
 Tue Nov  6 14:38:48 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* process.c (security): always give warning for insecure PATH.
