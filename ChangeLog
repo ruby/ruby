@@ -1,3 +1,18 @@
+Fri Sep 19 11:39:00 2003  Nathaniel Talbott <ntalbott@ruby-lang.org>
+
+	* test/testunit/*: Added.
+
+	* lib/test/unit.rb: Documentation update.
+
+	* lib/test/unit/ui/console/testrunner.rb (TestRunner#initialize):
+	  Ditto.
+
+	* lib/test/unit.rb: Factored out an ObjectSpace collector.
+
+	* lib/test/unit/collector/objectspace.rb: Ditto.
+
+	* sample/testunit/*: Added.
+
 Fri Sep 19 01:00:48 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/log.rb (BasicLog#log): get rid of as ineffectual

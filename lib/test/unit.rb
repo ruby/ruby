@@ -1,4 +1,119 @@
-# :include: ../../../../README
+# = Test::Unit - Ruby Unit Testing Framework
+# 
+# == Introduction
+# 
+# Unit testing is making waves all over the place, largely due to the
+# fact that it is a core practice of XP. While XP is great, unit testing
+# has been around for a long time and has always been a good idea. One
+# of the keys to good unit testing, though, is not just writing tests,
+# but having tests. What's the difference? Well, if you just _write_ a
+# test and throw it away, you have no guarantee that something won't
+# change later which breaks your code. If, on the other hand, you _have_
+# tests (obviously you have to write them first), and run them as often
+# as possible, you slowly build up a wall of things that cannot break
+# without you immediately knowing about it. This is when unit testing
+# hits its peak usefulness.
+# 
+# Enter Test::Unit, a framework for unit testing in Ruby, helping you to
+# design, debug and evaluate your code by making it easy to write and
+# have tests for it.
+# 
+# 
+# == Installation
+# 
+# Run:
+# * ruby setup.rb config
+# * ruby setup.rb setup
+# * ruby setup.rb install
+# 
+# Note that the runit compatibility layer will *not* be installed if you
+# already have RubyUnit installed.
+# 
+# Mac OS X users should also note that setup.rb will fail unless they
+# execute 'unlimit stacksize' before running it.
+# 
+# 
+# == Notes
+# 
+# Test::Unit has grown out of and superceded Lapidary.
+# 
+# 
+# == Feedback
+# 
+# I like (and do my best to practice) XP, so I value early releases,
+# user feedback, and clean, simple, expressive code. There is always
+# room for improvement in everything I do, and Test::Unit is no
+# exception. Please, let me know what you think of Test::Unit as it
+# stands, and what you'd like to see expanded/changed/improved/etc. If
+# you find a bug, let me know ASAP; one good way to let me know what the
+# bug is is to submit a new test that catches it :-) Also, I'd love to
+# hear about any successes you have with Test::Unit, and any
+# documentation you might add will be greatly appreciated. My contact
+# info is below.
+# 
+# 
+# == Contact Information
+# 
+# A lot of discussion happens about Ruby in general on the ruby-talk
+# mailing list (http://www.ruby-lang.org/en/ml.html), and you can ask
+# any questions you might have there. I monitor the list, as do many
+# other helpful Rubyists, and you're sure to get a quick answer. Of
+# course, you're also welcome to email me (Nathaniel Talbott) directly
+# at mailto:testunit@talbott.ws, and I'll do my best to help you out.
+# 
+# 
+# == Credits
+# 
+# I'd like to thank...
+# 
+# Matz, for a great language!
+# 
+# Masaki Suketa, for his work on RubyUnit, which filled a vital need in
+# the Ruby world for a very long time. I'm also grateful for his help in
+# polishing Test::Unit and getting the RubyUnit compatibility layer
+# right. His graciousness in allowing Test::Unit to supercede RubyUnit
+# continues to be a challenge to me to be more willing to defer my own
+# rights.
+# 
+# Ken McKinlay, for his interest and work on unit testing, and for his
+# willingness to dialog about it. He was also a great help in pointing
+# out some of the holes in the RubyUnit compatibility layer.
+# 
+# Dave Thomas, for the original idea that led to the extremely simple
+# "require 'test/unit'", plus his code to improve it even more by
+# allowing the selection of tests from the command-line. Also, without
+# RDoc, the documentation for Test::Unit would stink a lot more than it
+# does now.
+# 
+# Everyone who's helped out with bug reports, feature ideas,
+# encouragement to continue, etc. It's a real privilege to be a part of
+# the Ruby community.
+# 
+# The guys at RoleModel Software, for putting up with me repeating, "But
+# this would be so much easier in Ruby!" whenever we're coding in Java.
+# 
+# My Creator, for giving me life, and giving it more abundantly.
+# 
+# 
+# == License
+# 
+# Test::Unit is copyright (c) 2000-2003 Nathaniel Talbott. It is free
+# software, and is distributed under the Ruby license. See the COPYING
+# file in the standard Ruby distribution for details.
+# 
+# 
+# == Warranty
+# 
+# This software is provided "as is" and without any express or
+# implied warranties, including, without limitation, the implied
+# warranties of merchantibility and fitness for a particular
+# purpose.
+# 
+# 
+# == Author
+# 
+# Nathaniel Talbott.
+# Copyright (c) 2000-2003, Nathaniel Talbott
 #
 # ----
 #
@@ -158,20 +273,13 @@
 
 require 'test/unit/testcase'
 require 'test/unit/ui/testrunnermediator'
+require 'test/unit/collector/objectspace'
 
 at_exit {
   # We can't debug tests run with at_exit unless we add the following:
   set_trace_func DEBUGGER__.context.method(:trace_func).to_proc if (defined? DEBUGGER__)
 
   if (!Test::Unit::UI::TestRunnerMediator.run?)
-    suite_name = $0.sub(/\.rb$/, '')
-    suite = Test::Unit::TestSuite.new(suite_name)
-    test_classes = []
-    ObjectSpace.each_object(Class) {
-      | klass |
-      test_classes << klass if (Test::Unit::TestCase > klass)
-    }
-
     runners = {
       '--console' => proc do |suite|
         require 'test/unit/ui/console/testrunner'
@@ -194,22 +302,26 @@ at_exit {
     end
     runner = runners['--console'] if (runner.nil?)
 
-    if ARGV.empty?
-      test_classes.each { |klass| suite << klass.suite }
-    else
-      tests = test_classes.map { |klass| klass.suite.tests }.flatten
+    collector = Test::Unit::Collector::ObjectSpace::new
+
+    unless ARGV.empty?
       criteria = ARGV.map { |arg| (arg =~ %r{^/(.*)/$}) ? Regexp.new($1) : arg }
-      criteria.each {
+      filters = []
+      criteria.each do
         | criterion |
-        if (criterion.instance_of?(Regexp))
-          tests.each { |test| suite << test if (criterion =~ test.name) }
-        elsif (/^A-Z/ =~ criterion)
-          tests.each { |test| suite << test if (criterion == test.class.name) }
-        else
-          tests.each { |test| suite << test if (criterion == test.method_name) }
+        case criterion
+          when Regexp
+            filters << proc{|test| criterion =~ test.name}
+          when /^A-Z/
+            filters << proc{|test| criterion == test.class.name}
+          else
+            filters << proc{|test| criterion == test.method_name}
         end
-      }
+      end
+      collector.filter = filters
     end
-    runner.call(suite)
+    
+    suite_name = $0.sub(/\.rb$/, '')
+    runner.call(collector.collect(suite_name))
   end
 }

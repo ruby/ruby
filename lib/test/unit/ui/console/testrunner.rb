@@ -1,7 +1,7 @@
 # :nodoc:
 #
 # Author:: Nathaniel Talbott.
-# Copyright:: Copyright (c) 2000-2002 Nathaniel Talbott. All rights reserved.
+# Copyright:: Copyright (c) 2000-2003 Nathaniel Talbott. All rights reserved.
 # License:: Ruby license.
 
 require 'test/unit/ui/testrunnermediator'
@@ -31,7 +31,7 @@ module Test
           # running is limited to progress dots, errors and
           # failures, and the final result. io specifies
           # where runner output should go to; defaults to
-          # STDERR.
+          # STDOUT.
           def initialize(suite, output_level=NORMAL, io=STDOUT)
             if (suite.respond_to?(:suite))
               @suite = suite.suite
