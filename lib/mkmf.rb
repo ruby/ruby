@@ -134,7 +134,7 @@ def install_rb(mfile, dest, srcdir = nil)
       next unless /\.rb$/ =~ f
       f = f[libdir.length+1..-1]
       path.push f
-      dir |= File.dirname(f)
+      dir |= [File.dirname(f)]
     end
   end
   for f in dir
