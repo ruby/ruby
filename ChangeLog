@@ -26,7 +26,7 @@ Fri Mar  7 03:31:36 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (dsym): :"symbol string" style should not contain `\0'.
 
-	* process.c (proc_detach): new method Proc#detach(pid) which
+	* process.c (proc_detach): new method Process.detach(pid) which
 	  create background watcher thread to issue waitpid. [new]
 
 	* process.c (rb_detach_process): utility function to detach
