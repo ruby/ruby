@@ -1978,9 +1978,9 @@ rb_io_clone(io)
     }
     fd = rb_dup(fileno(orig->f));
     fptr->f = rb_fdopen(fd, mode);
-    if (fptr->f2) {
+    if (orig->f2) {
 	fd = rb_dup(fileno(orig->f2));
-	fptr->f = rb_fdopen(fd, "w");
+	fptr->f2 = rb_fdopen(fd, "w");
     }
     if (fptr->mode & FMODE_BINMODE) {
 	rb_io_binmode((VALUE)clone);

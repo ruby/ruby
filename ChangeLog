@@ -1,3 +1,7 @@
+Mon May 20 13:28:52 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* io.c (rb_io_clone): writing stream was not copied properly.
+
 Fri May 17 16:16:19 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* sampl/test.rb: use eval instead of './miniruby -c',
