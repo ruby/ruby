@@ -1,3 +1,8 @@
+Mon Aug 23 12:43:32 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/resolv.rb (Config.default_config_hash): when multiple domains
+	  are set, Win32::Resolv.get_resolv_info returns Array.
+
 Sun Aug 22 16:27:38 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_ssl.c (ossl_ssl_read):
