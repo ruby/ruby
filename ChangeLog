@@ -1,3 +1,13 @@
+Fri Nov  5 18:12:42 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/scrollable.rb: divide Scrollable module into 
+	  X_Scrollable and Y_Scrollable
+
+	* ext/tk/lib/tk/entry.rb: include X_Scrollable instead of Scrollable
+
+	* ext/tk/lib/tk/autoload.rb: define autoload for X_Scrollable and
+	  Y_Scrollable
+
 Fri Nov  5 16:05:32 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: TkComm._at() supprts both of "@x,y" and "@x"

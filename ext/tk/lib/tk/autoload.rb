@@ -173,6 +173,8 @@ autoload :TkXIM,              'tk/xim'
 module Tk
   autoload :Clock,            'tk/clock'
   autoload :OptionObj,        'tk/optionobj'
+  autoload :X_Scrollable,     'tk/scrollable'
+  autoload :Y_Scrollable,     'tk/scrollable'
   autoload :Scrollable,       'tk/scrollable'
   autoload :Wm,               'tk/wm'
 
