@@ -21,8 +21,8 @@ arch = @arch@
 sitearch = @sitearch@
 sitedir = @sitedir@
 
-CFLAGS = @CFLAGS@ @XCFLAGS@
-CPPFLAGS = -I. -I$(srcdir)
+CFLAGS = @CFLAGS@ @XCFLAGS@ @ARCH_FLAG@
+CPPFLAGS = -I. -I$(srcdir) @CPPFLAGS@
 LDFLAGS = @STATIC@ $(CFLAGS) @LDFLAGS@
 EXTLDFLAGS = 
 XLDFLAGS = @XLDFLAGS@ $(EXTLDFLAGS)
