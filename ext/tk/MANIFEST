@@ -1,6 +1,7 @@
 MANIFEST
-tkutil.c
+extconf.rb
 depend
+tkutil.c
 lib/tk.rb
 lib/tkafter.rb
 lib/tkbgerror.rb

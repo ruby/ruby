@@ -60,7 +60,7 @@ time_s_now(klass)
     VALUE obj;
     struct time_object *tobj;
 
-    obj = Data_Make_Struct(klass, struct time_object, 0, 0, tobj);
+    obj = Data_Make_Struct(klass, struct time_object, 0, free, tobj);
     tobj->tm_got=0;
 
     if (gettimeofday(&(tobj->tv), 0) == -1) {
@@ -79,7 +79,7 @@ time_new_internal(klass, sec, usec)
     VALUE obj;
     struct time_object *tobj;
 
-    obj = Data_Make_Struct(klass, struct time_object, 0, 0, tobj);
+    obj = Data_Make_Struct(klass, struct time_object, 0, free, tobj);
     tobj->tm_got = 0;
     tobj->tv.tv_sec = sec;
     tobj->tv.tv_usec = usec;

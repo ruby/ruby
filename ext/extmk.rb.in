@@ -304,7 +304,7 @@ archdir = $(pkglibdir)/@arch@
   mfile.printf "OBJS = "
   if !$objs then
     $objs = []
-    for f in Dir["#{$top_srcdir}/ext/#{target}/*.{c,cc}"]
+    for f in Dir["#{$top_srcdir}/ext/#{$mdir}/*.{c,cc}"]
       f = File.basename(f)
       f.sub!(/\.(c|cc)$/, ".o")
       $objs.push f
@@ -323,7 +323,7 @@ binsuffix = @binsuffix@
 
 all:		$(TARGET)
 
-clean:;		@rm -f *.o *.so *.sl
+clean:;		@rm -f *.o *.a *.so *.sl
 		@rm -f Makefile extconf.h conftest.*
 		@rm -f core ruby$(binsuffix) *~
 
@@ -350,7 +350,7 @@ install:
       mfile.printf "\
 $(TARGET): $(OBJS)
 	@AR@ cru $(TARGET) $(OBJS)
-	@-@RANLIB@ $(LIBRUBY) 2> /dev/null || true
+	@-@RANLIB@ $(TARGET) 2> /dev/null || true
 "
   elsif "@DLEXT@" != "o"
     mfile.printf "\
@@ -416,8 +416,9 @@ def extmake(target)
   $LDFLAGS = nil
 
   begin
-    system "mkdir " + target unless File.directory?(target)
+    system "mkdir", target unless File.directory?(target)
     Dir.chdir target
+    $mdir = target
     if $static_ext.size > 0 ||
       !File.exist?("./Makefile") ||
       older("./Makefile", "#{$top_srcdir}/ext/@setup@") ||
@@ -541,7 +542,11 @@ if $extlist.size > 0
     `rm -f ruby@binsuffix@`
   end
 
-  $extobjs = "ext/extinit.o " + $extobjs
+  if $extobjs
+    $extobjs = "ext/extinit.o " + $extobjs
+  else
+    $extobjs = "ext/extinit.o "
+  end
   if PLATFORM =~ /m68k-human|beos/
     $extlibs.gsub!("-L/usr/local/lib", "") if $extlibs
   end

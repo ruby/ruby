@@ -251,6 +251,9 @@ int SafeFree(char **vec, int vecc)
 
 
 static char *szInternalCmds[] = {
+  "append",
+  "break",
+  "call",
   "cd",
   "chdir",
   "cls",
@@ -264,6 +267,7 @@ static char *szInternalCmds[] = {
   "md",
   "mkdir",
   "path",
+  "pause",
   "rd",
   "rem",
   "ren",
@@ -280,13 +284,18 @@ static char *szInternalCmds[] = {
 int
 isInternalCmd(char *cmd)
 {
-	int fRet;
+	int i, fRet;
 	char **vec;
-	int vecc = NtMakeCmdVector(cmd, &vec, FALSE);
-
+        for( i = 0; szInternalCmds[i] ; i++){
+	    if(!strcmp(szInternalCmds[i], vec[0])){
+		fRet = 1;
+		break;
+	    }
+        }
+ 
 	SafeFree (vec, vecc);
 
-	return 0;
+	return fRet;
 }
 
 

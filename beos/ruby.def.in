@@ -134,7 +134,6 @@ io_write
 iterator_p
 lastline_get
 lastline_set
-local_var_append
 memclear
 mod_constants
 module_new
@@ -264,7 +263,6 @@ rb_type
 rb_undef_method
 rb_yield
 rb_yield_0
-reg_free
 reg_last_match
 reg_match
 reg_match2

@@ -370,7 +370,6 @@ read_all(port)
     GetOpenFile(port, fptr);
     io_readable(fptr);
 
-    str = str_new(0, siz);
     if (fstat(fileno(fptr->f), &st) == 0  && S_ISREG(st.st_mode)
 #ifdef __BEOS__
 	&& (st.st_dev > 3)
@@ -385,6 +384,7 @@ read_all(port)
 	    }
 	}
     }
+    str = str_new(0, siz);
     for (;;) {
 	READ_CHECK(fptr->f);
 	TRAP_BEG;
@@ -2455,12 +2455,12 @@ arg_read(argc, argv)
   retry:
     if (!next_argv()) return str;
     tmp = io_read(argc, argv, file);
-    if (NIL_P(tmp) && next_p != -1) {
+    if ((NIL_P(tmp)  || RSTRING(tmp)->len == 0) && next_p != -1) {
 	io_close(file);
 	next_p = 1;
 	goto retry;
     }
-    if (NIL_P(tmp)) return str;
+    if (NIL_P(tmp) || RSTRING(tmp)->len == 0) return str;
     else if (NIL_P(str)) str = tmp;
     else str_cat(str, RSTRING(tmp)->ptr, RSTRING(tmp)->len);
     if (argc == 0) {

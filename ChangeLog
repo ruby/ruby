@@ -1,3 +1,19 @@
+Wed Nov 25 13:07:12 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (yycompile): reduce known memory leak (hard to remove).
+
+Sat Nov 21 18:44:06 1998  Masaki Fukushima  <fukusima@goto.info.waseda.ac.jp>
+
+	* time.c (time_s_now): had memory leak.
+
+	* ext/md5/md5init.c (md5_new): had memory leak.
+
+	* ext/md5/md5init.c (md5_clone): ditto.
+
+Wed Nov 18 10:48:09 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (read_all): SEGV on large files.
+
 Tue Nov 17 18:11:20 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* version 1.1c8 released.

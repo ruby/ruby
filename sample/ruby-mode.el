@@ -142,7 +142,7 @@ The variable ruby-indent-level controls the amount of indentation.
   (interactive)
   (kill-all-local-variables)
   (use-local-map ruby-mode-map)
-  (setq mode-name "ruby")
+  (setq mode-name "Ruby")
   (setq major-mode 'ruby-mode)
   (ruby-mode-variables)
   (run-hooks 'ruby-mode-hook))
@@ -209,7 +209,7 @@ The variable ruby-indent-level controls the amount of indentation.
 			 (looking-at ruby-block-mid-re))
 		     (progn
 		       (goto-char (match-end 0))
-		       (looking-at "[^_]")))))))))
+		       (looking-at "\\>")))))))))
 
 (defun ruby-parse-region (start end)
   (let ((indent-point end)
@@ -464,6 +464,12 @@ The variable ruby-indent-level controls the amount of indentation.
 	    (setq bol (point))
 	    (end-of-line)
 	    (skip-chars-backward " \t")
+	    (and (re-search-backward "#" (save-excursion
+					   (beginning-of-line)
+					   (point)) t)
+		 (setq state (ruby-parse-region parse-start (point)))
+		 (nth 0 state)
+		 (goto-char (nth 0 state)))
 	    (or (bobp) (forward-char -1))
 	    (and
 	     (or (and (looking-at ruby-symbol-re)
@@ -473,7 +479,7 @@ The variable ruby-indent-level controls the amount of indentation.
 			(goto-char (match-end 0))
 			(not (looking-at "[a-z_]"))))
 		 (and (looking-at ruby-operator-re)
-		      (or (not (or (eq ?/ (char-after (point)))))
+		      (or (not (eq ?/ (char-after (point))))
 			  (null (nth 0 (ruby-parse-region parse-start (point)))))
 		      (not (eq (char-after (1- (point))) ?$))
 		      (or (not (eq ?| (char-after (point))))

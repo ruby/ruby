@@ -1653,7 +1653,7 @@ yycompile(f)
 
     eval_tree = 0;
     newline_seen = 0;
-    sourcefile = strdup(f);
+    sourcefile = f;
     rb_in_compile = 1;
     n = yyparse();
     rb_in_compile = 0;
@@ -1686,7 +1686,7 @@ compile_file(f, file, start)
     lex_pbeg = lex_p = lex_pend = 0;
     sourceline = start;
 
-    return yycompile(f);
+    return yycompile(strdup(f));
 }
 
 static int

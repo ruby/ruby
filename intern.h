@@ -200,7 +200,6 @@ void yyappend_print _((void));
 void yywhile_loop _((int, int));
 int rb_is_const_id _((ID));
 int rb_is_instance_id _((ID));
-void local_var_append _((ID));
 VALUE backref_get _((void));
 void backref_set _((VALUE));
 VALUE lastline_get _((void));
