@@ -1,3 +1,9 @@
+Tue Apr  6 13:11:48 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/socket.c (raise_socket_error): never return.
+
+	* ext/socket/socket.c (make_hostent): must return value.
+
 Tue Apr  6 00:14:43 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* error.c (Init_Exception): remove Exception#to_str. [Ruby2]
