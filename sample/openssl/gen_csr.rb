@@ -35,7 +35,7 @@ else
   end
 end
 
-puts "Generating CSR for #{name_ary.inspect}"
+puts "Generating CSR for #{name_str}"
 
 req = X509::Request.new
 req.version = 0
