@@ -1,14 +1,22 @@
-Thu Feb 17 11:54:00 2005  Nathaniel Talbott  <ntalbott@ruby-lang.org>
-  * lib/test/unit/collector.rb (collect_file): now deletes paths added
-    to $LOAD_PATH instead of restoring it verbatim.
+Thu Feb 17 20:11:18 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
-  * lib/test/unit/autorunner.rb (AutoRunner.run): fixed so that
-    'ruby -rtest/unit -rtest1 -rtest2 -e0' will use the objectspace
-    collector again. Also tried to simplify the calling convention.
-    
-  * test/runner.rb: adjusted for new AutoRunner semantics.
-  
-  * lib/test/unit.rb: ditto.
+	* lib/drb/drb.rb (DRbServer.default_safe_level): fix typo.
+
+	* test/digest/test_digest.rb: separate test case for each algorithms.
+	  (Thanks nobu) [ruby-dev:25412]
+
+Thu Feb 17 11:54:00 2005  Nathaniel Talbott  <ntalbott@ruby-lang.org>
+
+	* lib/test/unit/collector.rb (collect_file): now deletes paths added
+	  to $LOAD_PATH instead of restoring it verbatim.
+
+	* lib/test/unit/autorunner.rb (AutoRunner.run): fixed so that
+	  'ruby -rtest/unit -rtest1 -rtest2 -e0' will use the objectspace
+	  collector again. Also tried to simplify the calling convention.
+
+	* test/runner.rb: adjusted for new AutoRunner semantics.
+
+	* lib/test/unit.rb: ditto.
 
 Thu Feb 17 00:09:45 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
@@ -55,7 +63,7 @@ Mon Feb 14 13:12:38 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 Mon Feb 14 00:40:49 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
-	* lib/ddrb/drb.rb (InvokeMethod.perform): pass DRb info to sub thread.
+	* lib/drb/drb.rb (InvokeMethod.perform): pass DRb info to sub thread.
 
 	* test/drb/test_drb.rb (test_01_safe1_safe4_eval): fix test case.
 
@@ -107,7 +115,7 @@ Sat Feb 12 06:18:28 2005  URABE Shyouhei  <shyouhei@ice.uec.ac.jp>
 
 Fri Feb 11 17:40:42 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
-	* ext/openss/ossl_x509store.c (ossl_x509store_set_default_paths):
+	* ext/openssl/ossl_x509store.c (ossl_x509store_set_default_paths):
 	  new method OpenSSL::X509::Store#set_default_paths.
 
 Fri Feb 11 11:33:53 2005  Tanaka Akira  <akr@m17n.org>
@@ -338,7 +346,7 @@ Tue Jan 25 17:11:51 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 Tue Jan 25 14:05:52 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c: fix SEGV bug; trouble on canceling remained
-	  after scripts [ruby-dev:25479]: NULL current namespce when deleting
+	  after scripts [ruby-dev:25479]: NULL current namespace when deleting
 	    Tk interpreter [ruby-talk:126225]
 
 	* ext/tcltklib/extconf.rb: bug fix; TCL_ENABLE_THREAD flag is inverted
