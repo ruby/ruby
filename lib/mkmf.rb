@@ -336,21 +336,27 @@ def dir_config(target, idefault=nil, ldefault=nil)
     idefault = default + "/include"
     ldefault = default + "/lib"
   end
-  dir = with_config("%s-dir"%target, default)
-  if dir
-    idir = " -I"+dir+"/include"
-    ldir = dir+"/lib"
-  end
-  unless idir
-    dir = with_config("%s-include"%target, idefault)
-    idir = " -I"+dir if dir
-  end
-  unless ldir
-    ldir = with_config("%s-lib"%target, ldefault)
+
+  dir = with_config(target + "-dir", default)
+
+  idir, ldir = if dir then [
+      dir + "/include",
+      dir + "/lib"
+    ] else [
+      with_config(target + "-include", idefault),
+      with_config(target + "-lib", ldefault)
+    ] end
+
+  if idir
+    idircflag = "-I" + idir
+    $CPPFLAGS += " " + idircflag unless $CPPFLAGS.split.include?(idircflag)
   end
 
-  $CPPFLAGS += idir if idir
-  $LIBPATH |= [ldir] if ldir
+  if ldir
+    $LIBPATH << ldir unless $LIBPATH.include?(ldir)
+  end
+
+  [idir, ldir]
 end
 
 def create_makefile(target, srcdir = File.dirname($0))
@@ -581,20 +587,10 @@ $LOCAL_LIBS = ""
 $defs = []
 
 $make = with_config("make-prog", ENV["MAKE"] || "make")
-dir = with_config("opt-dir")
-if dir
-  idir = "-I"+dir+"/include"
-  ldir = dir+"/lib"
-end
-unless idir
-  dir = with_config("opt-include")
-  idir = "-I"+dir if dir
-end
-unless ldir
-  ldir = with_config("opt-lib")
-end
 
 $CFLAGS = with_config("cflags", "")
-$CPPFLAGS = [with_config("cppflags", ""), idir].compact.join(" ")
+$CPPFLAGS = with_config("cppflags", "")
 $LDFLAGS = with_config("ldflags", "")
-$LIBPATH = [ldir].compact
+$LIBPATH = []
+
+dir_config("opt")

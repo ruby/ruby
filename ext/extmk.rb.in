@@ -332,21 +332,27 @@ def dir_config(target, idefault=nil, ldefault=nil)
     idefault = default + "/include"
     ldefault = default + "/lib"
   end
-  dir = with_config("%s-dir"%target, default)
-  if dir
-    idir = " -I"+dir+"/include"
-    ldir = dir+"/lib"
-  end
-  unless idir
-    dir = with_config("%s-include"%target, idefault)
-    idir = " -I"+dir if dir
-  end
-  unless ldir
-    ldir = with_config("%s-lib"%target, ldefault)
+
+  dir = with_config(target + "-dir", default)
+
+  idir, ldir = if dir then [
+      dir + "/include",
+      dir + "/lib"
+    ] else [
+      with_config(target + "-include", idefault),
+      with_config(target + "-lib", ldefault)
+    ] end
+
+  if idir
+    idircflag = "-I" + idir
+    $CPPFLAGS += " " + idircflag unless $CPPFLAGS.split.include?(idircflag)
   end
 
-  $CPPFLAGS += idir if idir
-  $LIBPATH |= [ldir] if ldir
+  if ldir
+    $LIBPATH << ldir unless $LIBPATH.include?(ldir)
+  end
+
+  [idir, ldir]
 end
 
 def create_makefile(target)
@@ -603,23 +609,12 @@ def extmake(target)
     $local_flags = "-link /INCREMENTAL:no /EXPORT:Init_$(TARGET)"
   end
   $LOCAL_LIBS = ""		# to be assigned in extconf.rb
-  dir = with_config("opt-dir")
-  if dir
-    idir = "-I"+dir+"/include"
-    ldir = dir+"/lib"
-  end
-  unless idir
-    dir = with_config("opt-include")
-    idir = "-I"+dir if dir
-  end
-  unless ldir
-    ldir = with_config("opt-lib")
-  end
-
   $CFLAGS = ""
-  $CPPFLAGS = idir || ""
+  $CPPFLAGS = ""
   $LDFLAGS = ""
-  $LIBPATH = [ldir].compact
+  $LIBPATH = []
+
+  dir_config("opt")
 
   begin
     Dir.mkdir target unless File.directory?(target)

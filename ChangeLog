@@ -1,3 +1,11 @@
+Tue Apr 24 15:57:45 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/extmk.rb.in, lib/mkmf.rb: (dir_config) do not add the
+	specified include directory if already included in $CPPFLAGS.
+
+	* ext/extmk.rb.in, lib/mkmf.rb: (dir_config) return a more useful
+	value, [include_dir, lib_dir].
+
 Tue Apr 24 15:35:32 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ruby.c (set_arg0): wrong predicate when new $0 value is bigger
