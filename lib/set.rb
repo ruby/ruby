@@ -178,6 +178,7 @@ class Set
   # the element as parameter.
   def each
     @hash.each_key { |o| yield(o) }
+    self
   end
 
   # Adds the given object to the set and returns self.
