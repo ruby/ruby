@@ -1,3 +1,11 @@
+Sat Apr  3 08:28:47 2004  why the lucky stiff  <why@ruby-lang.org>
+
+	* ext/syck/lib/gram.c: allow root-level inline collections.
+	  [ruby-talk:94922]
+
+	* lib/yaml/rubytypes.rb (Symbol#to_yaml): emit symbols as implicits.
+	  [ruby-talk:94930]
+
 Fri Apr  2 19:28:48 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bcc32/Makefile.sub (OUTFLAG): needed for static-linked-ext.
