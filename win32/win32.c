@@ -2371,3 +2371,51 @@ win32_getenv(const char *name)
 
     return curitem;
 }
+
+int
+myrename(const char *oldpath, const char *newpath)
+{
+    int res = 0;
+    int oldatts;
+    int newatts;
+
+    oldatts = GetFileAttributes(oldpath);
+    newatts = GetFileAttributes(newpath);
+
+    if (oldatts == -1) {
+	printf("file to move doesn't exist");
+	return -1;
+    }
+
+    if (newatts != -1 && newatts & FILE_ATTRIBUTE_READONLY)
+	SetFileAttributesA(newpath, newatts & ~ FILE_ATTRIBUTE_READONLY);
+
+    if (!MoveFile(oldpath, newpath))
+	res = -1;
+
+    if (res == 0 || (GetLastError() != ERROR_ALREADY_EXISTS
+		  && GetLastError() != ERROR_FILE_EXISTS))
+	goto done;
+
+    if (IsWinNT()) {
+	if (MoveFileEx(oldpath, newpath, MOVEFILE_REPLACE_EXISTING))
+	    res = 0;
+    } else {
+	for (;;) {
+	    if (!DeleteFile(newpath) && GetLastError() != ERROR_FILE_NOT_FOUND)
+		break;
+	    else if (MoveFile(oldpath, newpath)) {
+		  res = 0;
+		  break;
+	    }
+	}
+    }
+
+done:
+    if (res)
+	errno = GetLastError();
+    else
+	SetFileAttributes(newpath, oldatts);
+
+    return res;
+}

@@ -1,3 +1,7 @@
+Wed Aug  9 13:24:25 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* win32/win32.[ch]: emulate rename(2).
+
 Mon Aug  7 13:59:12 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* regex.c (re_match): check for stack depth was needed.
