@@ -21,7 +21,7 @@
   ghost@aladdin.com
 
  */
-/*$Id$ */
+
 /*
   Independent implementation of MD5 (RFC 1321).
 
@@ -40,6 +40,10 @@
   1999-10-18 lpd Fixed typo in header comment (ansi2knr rather than md5).
   1999-05-03 lpd Original version.
  */
+
+/*$OrigId: md5c.c,v 1.2 2001/03/26 08:57:14 matz Exp $ */
+/*$RoughId: md5.c,v 1.2 2001/07/13 19:48:41 knu Exp $ */
+/*$Id$ */
 
 #include "md5.h"
 
@@ -65,14 +69,14 @@ main()
     int i;
 
     for (i = 0; i < 7*2; i += 2) {
-	md5_state_t state;
-	md5_byte_t digest[16];
+	MD5_CTX state;
+	uint8_t digest[16];
 	char hex_output[16*2 + 1];
 	int di;
 
-	md5_init(&state);
-	md5_append(&state, (const md5_byte_t *)test[i], strlen(test[i]));
-	md5_finish(&state, digest);
+	MD5_Init(&state);
+	MD5_Update(&state, (const uint8_t *)test[i], strlen(test[i]));
+	MD5_Final(digest, &state);
 	printf("MD5 (\"%s\") = ", test[i]);
 	for (di = 0; di < 16; ++di)
 	    sprintf(hex_output + di * 2, "%02x", digest[di]);
@@ -113,7 +117,10 @@ main()
 /*
  * End of T computation program.
  */
-#define T_MASK ((md5_word_t)~0)
+#ifdef T_MASK
+#undef T_MASK
+#endif
+#define T_MASK ((uint32_t)~0)
 #define T1 /* 0xd76aa478 */ (T_MASK ^ 0x28955b87)
 #define T2 /* 0xe8c7b756 */ (T_MASK ^ 0x173848a9)
 #define T3    0x242070db
@@ -181,41 +188,38 @@ main()
 
 
 static void
-md5_process(md5_state_t *pms, const md5_byte_t *data /*[64]*/)
+md5_process(MD5_CTX *pms, const uint8_t *data /*[64]*/)
 {
-    md5_word_t
-	a = pms->abcd[0], b = pms->abcd[1],
-	c = pms->abcd[2], d = pms->abcd[3];
-    md5_word_t t;
+    uint32_t
+	a = pms->state[0], b = pms->state[1],
+	c = pms->state[2], d = pms->state[3];
+    uint32_t t;
 
-#ifndef ARCH_IS_BIG_ENDIAN
-# define ARCH_IS_BIG_ENDIAN 1	/* slower, default implementation */
-#endif
-#if ARCH_IS_BIG_ENDIAN
+#ifdef WORDS_BIGENDIAN
 
     /*
      * On big-endian machines, we must arrange the bytes in the right
      * order.  (This also works on machines of unknown byte order.)
      */
-    md5_word_t X[16];
-    const md5_byte_t *xp = data;
+    uint32_t X[16];
+    const uint8_t *xp = data;
     int i;
 
     for (i = 0; i < 16; ++i, xp += 4)
 	X[i] = xp[0] + (xp[1] << 8) + (xp[2] << 16) + (xp[3] << 24);
 
-#else  /* !ARCH_IS_BIG_ENDIAN */
+#else
 
     /*
      * On little-endian machines, we can process properly aligned data
      * without copying it.
      */
-    md5_word_t xbuf[16];
-    const md5_word_t *X;
+    uint32_t xbuf[16];
+    const uint32_t *X;
 
-    if (!((data - (const md5_byte_t *)0) & 3)) {
+    if (!((data - (const uint8_t *)0) & 3)) {
 	/* data are properly aligned */
-	X = (const md5_word_t *)data;
+	X = (const uint32_t *)data;
     } else {
 	/* not aligned */
 	memcpy(xbuf, data, 64);
@@ -332,29 +336,29 @@ md5_process(md5_state_t *pms, const md5_byte_t *data /*[64]*/)
      /* Then perform the following additions. (That is increment each
         of the four registers by the value it had before this block
         was started.) */
-    pms->abcd[0] += a;
-    pms->abcd[1] += b;
-    pms->abcd[2] += c;
-    pms->abcd[3] += d;
+    pms->state[0] += a;
+    pms->state[1] += b;
+    pms->state[2] += c;
+    pms->state[3] += d;
 }
 
 void
-md5_init(md5_state_t *pms)
+MD5_Init(MD5_CTX *pms)
 {
     pms->count[0] = pms->count[1] = 0;
-    pms->abcd[0] = 0x67452301;
-    pms->abcd[1] = /*0xefcdab89*/ T_MASK ^ 0x10325476;
-    pms->abcd[2] = /*0x98badcfe*/ T_MASK ^ 0x67452301;
-    pms->abcd[3] = 0x10325476;
+    pms->state[0] = 0x67452301;
+    pms->state[1] = /*0xefcdab89*/ T_MASK ^ 0x10325476;
+    pms->state[2] = /*0x98badcfe*/ T_MASK ^ 0x67452301;
+    pms->state[3] = 0x10325476;
 }
 
 void
-md5_append(md5_state_t *pms, const md5_byte_t *data, int nbytes)
+MD5_Update(MD5_CTX *pms, const uint8_t *data, size_t nbytes)
 {
-    const md5_byte_t *p = data;
-    int left = nbytes;
-    int offset = (pms->count[0] >> 3) & 63;
-    md5_word_t nbits = (md5_word_t)(nbytes << 3);
+    const uint8_t *p = data;
+    size_t left = nbytes;
+    size_t offset = (pms->count[0] >> 3) & 63;
+    uint32_t nbits = (uint32_t)(nbytes << 3);
 
     if (nbytes <= 0)
 	return;
@@ -367,14 +371,14 @@ md5_append(md5_state_t *pms, const md5_byte_t *data, int nbytes)
 
     /* Process an initial partial block. */
     if (offset) {
-	int copy = (offset + nbytes > 64 ? 64 - offset : nbytes);
+	size_t copy = (offset + nbytes > 64 ? 64 - offset : nbytes);
 
-	memcpy(pms->buf + offset, p, copy);
+	memcpy(pms->buffer + offset, p, copy);
 	if (offset + copy < 64)
 	    return;
 	p += copy;
 	left -= copy;
-	md5_process(pms, pms->buf);
+	md5_process(pms, pms->buffer);
     }
 
     /* Process full blocks. */
@@ -383,28 +387,46 @@ md5_append(md5_state_t *pms, const md5_byte_t *data, int nbytes)
 
     /* Process a final partial block. */
     if (left)
-	memcpy(pms->buf, p, left);
+	memcpy(pms->buffer, p, left);
 }
 
 void
-md5_finish(md5_state_t *pms, md5_byte_t digest[16])
+MD5_Final(uint8_t *digest, MD5_CTX *pms)
 {
-    static const md5_byte_t pad[64] = {
+    static const uint8_t pad[64] = {
 	0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     };
-    md5_byte_t data[8];
-    int i;
+    uint8_t data[8];
+    size_t i;
 
     /* Save the length before padding. */
     for (i = 0; i < 8; ++i)
-	data[i] = (md5_byte_t)(pms->count[i >> 2] >> ((i & 3) << 3));
+	data[i] = (uint8_t)(pms->count[i >> 2] >> ((i & 3) << 3));
     /* Pad to 56 bytes mod 64. */
-    md5_append(pms, pad, ((55 - (pms->count[0] >> 3)) & 63) + 1);
+    MD5_Update(pms, pad, ((55 - (pms->count[0] >> 3)) & 63) + 1);
     /* Append the length. */
-    md5_append(pms, data, 8);
+    MD5_Update(pms, data, 8);
     for (i = 0; i < 16; ++i)
-	digest[i] = (md5_byte_t)(pms->abcd[i >> 2] >> ((i & 3) << 3));
+	digest[i] = (uint8_t)(pms->state[i >> 2] >> ((i & 3) << 3));
+}
+
+void
+MD5_End(MD5_CTX *pctx, uint8_t *hexdigest)
+{
+    unsigned char digest[16];
+    size_t i;
+
+    MD5_Final(digest, pctx);
+
+    for (i = 0; i < 16; i++)
+        sprintf(hexdigest + i * 2, "%02x", digest[i]);
+}
+
+int MD5_Equal(MD5_CTX* pctx1, MD5_CTX* pctx2) {
+	return memcmp(pctx1->count, pctx2->count, sizeof(pctx1->count)) == 0
+		&& memcmp(pctx1->state, pctx2->state, sizeof(pctx1->state)) == 0
+		&& memcmp(pctx1->buffer, pctx2->buffer, sizeof(pctx1->buffer)) == 0;
 }
