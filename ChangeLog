@@ -1,3 +1,8 @@
+Wed Dec 31 01:33:05 2003  Dave Thomas  <dave@pragprog.com>
+
+	* array.c, error.c, eval.c, io.c, prec.c, range.c, re.c,
+          string.c, time.c: Add RDoc for Kernel functions, and tidy.
+
 Tue Dec 30 12:30:30 2003  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/code_objects.rb (RDoc::Context::find_symbol): If a

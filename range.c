@@ -195,6 +195,15 @@ range_eql(range, obj)
     return Qtrue;
 }
 
+/*
+ * call-seq:
+ *   rng.hash    => fixnum
+ *
+ * Generate a hash value such that two ranges with the same start and
+ * end points, and the same value for the "exclude end" flag, generate
+ * the same hash value.
+ */
+
 static VALUE
 range_hash(range)
     VALUE range;
@@ -361,7 +370,9 @@ each_i(v, arg)
  *     rng.each {| i | block } => rng
  *  
  *  Iterates over the elements <i>rng</i>, passing each in turn to the
- *  block.
+ *  block. You can only iterate if the start object of the range
+ *  supports the +succ+ method (which means that you can't iterate over
+ *  ranges of +Float+ objects).
  *     
  *     (10..15).each do |n|
  *        print n, ' '
@@ -484,6 +495,13 @@ rb_range_beg_len(range, begp, lenp, len, err)
     return Qnil;
 }
 
+/*
+ * call-seq:
+ *   rng.to_s   => string
+ *
+ * Convert this range object to a printable form.
+ */
+
 static VALUE
 range_to_s(range)
     VALUE range;
@@ -499,6 +517,16 @@ range_to_s(range)
 
     return str;
 }
+
+/*
+ * call-seq:
+ *   rng.inspect  => string
+ *
+ * Convert this range object to a printable form (using 
+ * <code>inspect</code> to convert the start and end
+ * objects).
+ */
+
 
 static VALUE
 range_inspect(range)
@@ -525,6 +553,14 @@ member_i(v, args)
 	args[1] = Qtrue;
     }
 }
+
+/*
+ * call-seq:
+ *   rng.member?(val)   =>  true or false
+ *
+ * Return +true+ if _val_ is one of the values in _rng_ (that is if
+ * <code>Range#each</code> would return _val_ at some point).
+ */
 
 static VALUE
 range_member(range, val)

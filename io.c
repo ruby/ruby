@@ -2879,6 +2879,88 @@ rb_io_s_sysopen(argc, argv)
     return INT2NUM(fd);
 }
 
+/*
+ *  call-seq:
+ *     open(path [, mode [, perm]] )                => io or nil
+ *     open(path [, mode [. perm]] ) {|io| block }  => nil
+ *  
+ *  Creates an <code>IO</code> object connected to the given stream,
+ *  file, or subprocess.
+ *     
+ *  If <i>path</i> does not start with a pipe character
+ *  (``<code>|</code>''), treat it as the name of a file to open using
+ *  the specified mode (defaulting to ``<code>r</code>''). (See the table
+ *  of valid modes on page 331.) If a file is being created, its initial
+ *  permissions may be set using the integer third parameter.
+ *     
+ *  If a block is specified, it will be invoked with the
+ *  <code>File</code> object as a parameter, and the file will be
+ *  automatically closed when the block terminates. The call always
+ *  returns <code>nil</code> in this case.
+ *     
+ *  If <i>path</i> starts with a pipe character, a subprocess is
+ *  created, connected to the caller by a pair of pipes. The returned
+ *  <code>IO</code> object may be used to write to the standard input
+ *  and read from the standard output of this subprocess. If the command
+ *  following the ``<code>|</code>'' is a single minus sign, Ruby forks,
+ *  and this subprocess is connected to the parent. In the subprocess,
+ *  the <code>open</code> call returns <code>nil</code>. If the command
+ *  is not ``<code>-</code>'', the subprocess runs the command. If a
+ *  block is associated with an <code>open("|-")</code> call, that block
+ *  will be run twice---once in the parent and once in the child. The
+ *  block parameter will be an <code>IO</code> object in the parent and
+ *  <code>nil</code> in the child. The parent's <code>IO</code> object
+ *  will be connected to the child's <code>$stdin</code> and
+ *  <code>$stdout</code>. The subprocess will be terminated at the end
+ *  of the block.
+ *     
+ *     open("testfile") do |f|
+ *       print f.gets
+ *     end
+ *     
+ *  <em>produces:</em>
+ *     
+ *     This is line one
+ *     
+ *  Open a subprocess and read its output:
+ *     
+ *     cmd = open("|date")
+ *     print cmd.gets
+ *     cmd.close
+ *     
+ *  <em>produces:</em>
+ *     
+ *     Wed Apr  9 08:56:31 CDT 2003
+ *     
+ *  Open a subprocess running the same Ruby program:
+ *     
+ *     f = open("|-", "w+")
+ *     if f == nil
+ *       puts "in Child"
+ *       exit
+ *     else
+ *       puts "Got: #{f.gets}"
+ *     end
+ *     
+ *  <em>produces:</em>
+ *     
+ *     Got: in Child
+ *     
+ *  Open a subprocess using a block to receive the I/O object:
+ *     
+ *     open("|-") do |f|
+ *       if f == nil
+ *         puts "in Child"
+ *       else
+ *         puts "Got: #{f.gets}"
+ *       end
+ *     end
+ *     
+ *  <em>produces:</em>
+ *     
+ *     Got: in Child
+ */
+
 static VALUE
 rb_f_open(argc, argv)
     int argc;
@@ -3173,6 +3255,17 @@ rb_io_printf(argc, argv, out)
     return Qnil;
 }
 
+/*
+ *  call-seq:
+ *     printf(io, string [, obj ... ] )    => nil
+ *     printf(string [, obj ... ] )        => nil
+ *  
+ *  Equivalent to:
+ *     io.write(sprintf(string, obj, ...)
+ *  or
+ *     $defout.write(sprintf(string, obj, ...)
+ */
+
 static VALUE
 rb_f_printf(argc, argv)
     int argc;
@@ -3249,6 +3342,29 @@ rb_io_print(argc, argv, out)
     return Qnil;
 }
 
+/*
+ *  call-seq:
+ *     print(obj, ...)    => nil
+ *  
+ *  Prints each object in turn to <code>$defout</code>. If the output
+ *  field separator (<code>$,</code>) is not +nil+, its
+ *  contents will appear between each field. If the output record
+ *  separator (<code>$\</code>) is not +nil+, it will be
+ *  appended to the output. If no arguments are given, prints
+ *  <code>$_</code>. Objects that aren't strings will be converted by
+ *  calling their <code>to_s</code> method.
+ *     
+ *     print "cat", [1,2,3], 99, "\n"
+ *     $, = ", "
+ *     $\ = "\n"
+ *     print "cat", [1,2,3], 99
+ *     
+ *  <em>produces:</em>
+ *     
+ *     cat12399
+ *     cat, 1, 2, 3, 99
+ */
+
 static VALUE
 rb_f_print(argc, argv)
     int argc;
@@ -3283,6 +3399,15 @@ rb_io_putc(io, ch)
     rb_io_write(io, rb_str_new(&c, 1));
     return ch;
 }
+
+/*
+ *  call-seq:
+ *     putc(int)   => int
+ *  
+ *  Equivalent to:
+ *
+ *    $defout.putc(int)
+ */
 
 static VALUE
 rb_f_putc(recv, ch)
@@ -3364,6 +3489,15 @@ rb_io_puts(argc, argv, out)
     return Qnil;
 }
 
+/*
+ *  call-seq:
+ *     puts(obj, ...)    => nil
+ *  
+ *  Equivalent to 
+ *
+ *      $defout.puts(obj, ...)
+ */
+
 static VALUE
 rb_f_puts(argc, argv)
     int argc;
@@ -3381,6 +3515,24 @@ rb_p(obj)			/* for debug print within C code */
     rb_io_write(rb_stdout, rb_default_rs);
 }
 
+/*
+ *  call-seq:
+ *     p(obj, ...)    => nil
+ *  
+ *  For each object, directly writes
+ *  _obj_.+inspect+ followed by the current output
+ *  record separator to the program's standard output. +p+
+ *  bypasses the Ruby I/O libraries.
+ *     
+ *     S = Struct.new(:name, :state)
+ *     s = S['dave', 'TX']
+ *     p s
+ *     
+ *  <em>produces:</em>
+ *     
+ *     #<S name="dave", state="TX">
+ */
+
 static VALUE
 rb_f_p(argc, argv)
     int argc;
@@ -3396,6 +3548,29 @@ rb_f_p(argc, argv)
     }
     return Qnil;
 }
+
+/*
+ *  call-seq:
+ *     obj.display(port=$>)    => nil
+ *  
+ *  Prints <i>obj</i> on the given port (default <code>$></code>).
+ *  Equivalent to:
+ *     
+ *     def display(port=$>)
+ *       port.write self
+ *     end
+ *     
+ *  For example:
+ *     
+ *     1.display
+ *     "cat".display
+ *     [ 4, 5, 6 ].display
+ *     puts
+ *     
+ *  <em>produces:</em>
+ *     
+ *     1cat456
+ */
 
 static VALUE
 rb_obj_display(argc, argv, self)
@@ -3560,6 +3735,28 @@ rb_io_initialize(argc, argv, io)
 
     return io;
 }
+
+
+/*
+ *  call-seq:
+ *     File.new(filename, mode="r")            => file
+ *     File.new(filename [, mode [, perm]])    => file
+ *  
+
+ *  Opens the file named by _filename_ according to
+ *  _mode_ (default is ``r'') and returns a new
+ *  <code>File</code> object. See the description of class +IO+ for
+ *  a description of _mode_. The file mode may optionally be
+ *  specified as a +Fixnum+ by _or_-ing together the
+ *  flags (O_RDONLY etc, again described under +IO+). Optional
+ *  permission bits may be given in _perm_. These mode and permission
+ *  bits are platform dependent; on Unix systems, see
+ *  <code>open(2)</code> for details.
+ *
+ *     f = File.new("testfile", "r")
+ *     f = File.new("newfile",  "w+")
+ *     f = File.new("newfile", File::CREAT|File::TRUNC|File::RDWR, 0644)
+ */
 
 static VALUE
 rb_file_initialize(argc, argv, io)
@@ -3820,6 +4017,35 @@ argf_getline(argc, argv)
     return line;
 }
 
+/*
+ *  call-seq:
+ *     gets(separator=$/)    => string or nil
+ *  
+ *  Returns (and assigns to <code>$_</code>) the next line from the list
+ *  of files in +ARGV+ (or <code>$*</code>), or from standard
+ *  input if no files are present on the command line. Returns
+ *  +nil+ at end of file. The optional argument specifies the
+ *  record separator. The separator is included with the contents of
+ *  each record. A separator of +nil+ reads the entire
+ *  contents, and a zero-length separator reads the input one paragraph
+ *  at a time, where paragraphs are divided by two consecutive newlines.
+ *  If multiple filenames are present in +ARGV+,
+ *  +gets(nil)+ will read the contents one file at a time.
+ *     
+ *     ARGV << "testfile"
+ *     print while gets
+ *     
+ *  <em>produces:</em>
+ *     
+ *     This is line one
+ *     This is line two
+ *     This is line three
+ *     And so on...
+ *     
+ *  The style of programming using <code>$_</code> as an implicit
+ *  parameter is gradually losing favor in the Ruby community.
+ */
+
 static VALUE
 rb_f_gets(argc, argv)
     int argc;
@@ -3864,6 +4090,14 @@ rb_gets()
     return line;
 }
 
+/*
+ *  call-seq:
+ *     readline(separator=$/    => string
+ *  
+ *  Equivalent to <code>Kernel::gets</code>, except
+ *  +readline+ raises +EOFError+ at end of file.
+ */
+
 static VALUE
 rb_f_readline(argc, argv)
     int argc;
@@ -3880,6 +4114,9 @@ rb_f_readline(argc, argv)
     return line;
 }
 
+/*
+ * obsolete
+ */
 static VALUE
 rb_f_getc()
 {
@@ -3889,6 +4126,14 @@ rb_f_getc()
     }
     return rb_io_getc(rb_stdin);
 }
+
+/*
+ *  call-seq:
+ *     readlines(separator=$/)    => array
+ *  
+ *  Returns an array containing the lines returned by calling
+ *  <code>Kernel.gets(<i>aString</i>)</code> until the end of file.
+ */
 
 static VALUE
 rb_f_readlines(argc, argv)
@@ -3905,6 +4150,20 @@ rb_f_readlines(argc, argv)
 
     return ary;
 }
+
+/*
+ *  call-seq:
+ *     `cmd`    => string
+ *  
+ *  Returns the standard output of running _cmd_ in a subshell.
+ *  The built-in syntax <code>%x{...}</code> uses
+ *  this method. Sets <code>$?</code> to the process status.
+ *     
+ *     `date`                   #=> "Wed Apr  9 08:56:30 CDT 2003\n"
+ *     `ls testdir`.split[1]    #=> "main.rb"
+ *     `echo oops && exit 99`   #=> "oops\n"
+ *     $?.exitstatus            #=> 99
+ */
 
 static VALUE
 rb_f_backquote(obj, str)
@@ -4229,6 +4488,25 @@ rb_io_fcntl(argc, argv, io)
     return Qnil;		/* not reached */
 #endif
 }
+
+/*
+ *  call-seq:
+ *     syscall(fixnum [, args...])   => integer
+ *  
+ *  Calls the operating system function identified by _fixnum_,
+ *  passing in the arguments, which must be either +String+
+ *  objects, or +Integer+ objects that ultimately fit within
+ *  a native +long+. Up to nine parameters may be passed (14
+ *  on the Atari-ST). The function identified by _fixnum_ is system
+ *  dependent. On some Unix systems, the numbers may be obtained from a
+ *  header file called <code>syscall.h</code>.
+ *     
+ *     syscall 4, 1, "hello\n", 6   # '4' is write(2) on our box
+ *     
+ *  <em>produces:</em>
+ *     
+ *     hello
+ */
 
 static VALUE
 rb_f_syscall(argc, argv)

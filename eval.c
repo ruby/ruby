@@ -11367,6 +11367,24 @@ rb_thread_yield(arg, th)
     return rb_yield_0(arg, 0, 0, Qtrue, Qtrue);
 }
 
+/*
+ *  call-seq:
+ *     Thread.new([arg]*) {|args| block }   => thread
+ *  
+ *  Creates and runs a new thread to execute the instructions given in
+ *  <i>block</i>. Any arguments passed to <code>Thread::new</code> are passed
+ *  into the block.
+ *     
+ *     x = Thread.new { sleep 0.1; print "x"; print "y"; print "z" }
+ *     a = Thread.new { print "a"; print "b"; sleep 0.2; print "c" }
+ *     x.join # Let the threads finish before
+ *     a.join # main thread exits...
+ *     
+ *  <em>produces:</em>
+ *     
+ *     abxyzc
+ */
+
 static VALUE
 rb_thread_s_new(argc, argv, klass)
     int argc;
@@ -11900,6 +11918,13 @@ rb_thread_keys(thread)
     return ary;
 }
 
+/*
+ * call-seq:
+ *   thr.inspect   => string
+ *
+ * Dump the name, id, and status of _thr_ to a string.
+ */
+
 static VALUE
 rb_thread_inspect(thread)
     VALUE thread;
@@ -12253,13 +12278,12 @@ thgroup_add(group, thread)
 
 
 /*
- *  <code>Thread</code> encapsulates the behavior of a thread of
+ *  +Thread+ encapsulates the behavior of a thread of
  *  execution, including the main thread of the Ruby script.
  *     
- *  In the descriptions of the methods in this class, the parameter <i>sym</i>
- *  refers to a symbol, which is either a quoted string or a <code>Symbol</code>
- *  (such as <code>:name</code>).
- *     
+ *  In the descriptions of the methods in this class, the parameter _sym_
+ *  refers to a symbol, which is either a quoted string or a 
+ *  +Symbol+ (such as <code>:name</code>).
  */
 
 void
