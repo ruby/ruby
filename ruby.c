@@ -314,7 +314,6 @@ require_libraries()
     struct req_list *tmp;
 
     Init_ext();		/* should be called here for some reason :-( */
-    ruby_sourcefile = 0;
     save[0] = ruby_eval_tree;
     save[1] = ruby_eval_tree_begin;
     ruby_eval_tree = ruby_eval_tree_begin = 0;

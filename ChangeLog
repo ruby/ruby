@@ -1,3 +1,14 @@
+Thu Sep  5 13:09:22 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* eval.c (rb_eval): overriding false constant with class/module
+	  definition should be error.  (PR#327)
+
+	* eval.c (rb_call0): preset source file/line to pass correct ones
+	  to trace_func at end of empty method.  [ruby-dev:18035]
+
+	* ruby.c (require_libraries): not clear source file.
+	  [ruby-dev:18074]
+
 Tue Sep  3 00:22:43 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* gc.c (gc_sweep): does reclaim nodes in also compile time, if we
