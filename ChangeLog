@@ -18,9 +18,6 @@ Thu Apr  8 20:25:19 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* test/ruby/envutil.rb: give priority to RUBY environment variable to
 	  use just compiled binary and libraries.
 
-	* test/drb/drbtest.rb, test/soap/calc/test_calc_cgi.rb: restore $:
-	  after require.
-
 Thu Apr  8 19:03:33 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_binmode): inverted condition.  [ruby-dev:23349]
