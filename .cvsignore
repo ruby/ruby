@@ -13,6 +13,7 @@ README.fat-patch
 README.v6
 a.rb
 archive
+autom4te*.cache
 automake
 beos
 config.cache
