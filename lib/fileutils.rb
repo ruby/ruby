@@ -180,7 +180,7 @@ module FileUtils
     list.map {|path| path.sub(%r</\z>, '') }.each do |path|
       # optimize for the most common case
       begin
-        Dir.mkdir path
+        Dir.mkdir path, mode
         next
       rescue SystemCallError
         next if File.directory?(path)

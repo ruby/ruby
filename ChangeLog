@@ -1,3 +1,7 @@
+Fri Sep 17 20:20:27 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb (mkdir_p): backport from CVS HEAD 1.45. [ruby-core:03420]
+
 Fri Sep 17 16:07:09 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/multi-tk.rb: improve exit operation
