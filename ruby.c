@@ -347,12 +347,11 @@ require_libraries()
     struct req_list *tmp;
 
     save[0] = ruby_eval_tree;
-    save[1] = ruby_eval_tree_begin;
-    save[2] = NEW_BEGIN(0);
-    ruby_eval_tree = ruby_eval_tree_begin = 0;
+    save[1] = NEW_BEGIN(0);
+    ruby_eval_tree = 0;
     ruby_current_node = 0;
     Init_ext();		/* should be called here for some reason :-( */
-    ruby_current_node = save[2];
+    ruby_current_node = save[1];
     ruby_set_current_source();
     req_list_last = 0;
     while (list) {
@@ -362,13 +361,12 @@ require_libraries()
 	free(list->name);
 	free(list);
 	list = tmp;
-	ruby_current_node = save[2];
+	ruby_current_node = save[1];
 	ruby_set_current_source();
     }
     req_list_head.next = 0;
     ruby_eval_tree = save[0];
-    ruby_eval_tree_begin = save[1];
-    rb_gc_force_recycle((VALUE)save[2]);
+    rb_gc_force_recycle((VALUE)save[1]);
     ruby_current_node = 0;
 }
 
@@ -429,6 +427,8 @@ moreswitches(s)
 	s++;
     return s;
 }
+
+NODE *ruby_eval_tree;
 
 static void
 proc_options(argc, argv)
@@ -779,7 +779,7 @@ proc_options(argc, argv)
     ruby_sourcefile = rb_source_filename(argv0);
     if (e_script) {
 	require_libraries();
-	rb_compile_string(script, e_script, 1);
+	ruby_eval_tree = rb_compile_string(script, e_script, 1);
     }
     else if (strlen(script) == 1 && script[0] == '-') {
 	load_stdin();
@@ -909,7 +909,7 @@ load_file(fname, script)
 	require_libraries();	/* Why here? unnatural */
 	if (NIL_P(c)) return;
     }
-    rb_compile_file(fname, f, line_start);
+    ruby_eval_tree = rb_compile_file(fname, f, line_start);
     if (script && ruby__end__seen) {
 	rb_define_global_const("DATA", f);
     }
@@ -1122,6 +1122,9 @@ ruby_set_argv(argc, argv)
     }
 }
 
+NODE *rb_parser_append_print _((NODE*));
+NODE *rb_parser_while_loop _((NODE*, int, int));
+
 void
 ruby_process_options(argc, argv)
     int argc;
@@ -1141,9 +1144,9 @@ ruby_process_options(argc, argv)
 	exit(0);
     }
     if (do_print) {
-	rb_parser_append_print();
+	ruby_eval_tree = rb_parser_append_print(ruby_eval_tree);
     }
     if (do_loop) {
-	rb_parser_while_loop(do_line, do_split);
+	ruby_eval_tree = rb_parser_while_loop(ruby_eval_tree, do_line, do_split);
     }
 }

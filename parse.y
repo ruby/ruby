@@ -49,9 +49,6 @@
 	 ((id)&ID_SCOPE_MASK) == ID_CLASS))
 
 #ifndef RIPPER
-NODE *ruby_eval_tree_begin = 0;
-NODE *ruby_eval_tree = 0;
-
 char *ruby_sourcefile;		/* current source file */
 int   ruby_sourceline;		/* current line no. */
 #endif
@@ -116,6 +113,10 @@ struct parser_params {
     union tmpyystype *parser_yylval;   /* YYSTYPE not defined yet */
     VALUE eofp;
 
+#ifndef RIPPER
+    NODE *parser_eval_tree_begin;
+    NODE *parser_eval_tree;
+#endif
     NODE *parser_lex_strterm;
     enum lex_state_e parser_lex_state;
     stack_type parser_cond_stack;
@@ -158,6 +159,8 @@ static int parser_yyerror _((struct parser_params*, const char*));
 #define YYLEX_PARAM parser_v
 #define parser ((struct parser_params*)parser_v)
 
+#define ruby_eval_tree		(parser->parser_eval_tree)
+#define ruby_eval_tree_begin	(parser->parser_eval_tree_begin)
 #define lex_strterm		(parser->parser_lex_strterm)
 #define lex_state		(parser->parser_lex_state)
 #define cond_stack		(parser->parser_cond_stack)
@@ -4332,23 +4335,12 @@ yycompile(parser, f, line)
 	}
     }
 
-    ruby__end__seen = 0;
-    ruby_eval_tree = 0;
-    heredoc_end = 0;
-    lex_strterm = 0;
     ruby_current_node = 0;
     ruby_sourcefile = rb_source_filename(f);
     n = yyparse((void*)parser);
     ruby_debug_lines = 0;
     compile_for_eval = 0;
     ruby_in_compile = 0;
-    cond_stack = 0;
-    cmdarg_stack = 0;
-    command_start = 1;		  
-    class_nest = 0;
-    in_single = 0;
-    in_def = 0;
-    cur_mid = 0;
 
     vp = ruby_dyna_vars;
     ruby_dyna_vars = vars;
@@ -4358,6 +4350,13 @@ yycompile(parser, f, line)
 	vp = vp->next;
 	rb_gc_force_recycle((VALUE)tmp);
     }
+    if (ruby_eval_tree_begin) {
+	return NEW_PRELUDE(ruby_eval_tree_begin, ruby_eval_tree);
+    }
+    else {
+	return ruby_eval_tree;
+    }
+
     if (n == 0) node = ruby_eval_tree;
     else ruby_eval_tree_begin = 0;
     return node;
@@ -7750,32 +7749,31 @@ rb_gc_mark_parser()
     rb_gc_mark(ruby_debug_lines);
 }
 
-void
-rb_parser_append_print()
+NODE*
+rb_parser_append_print(node)
+    NODE *node;
 {
-    ruby_eval_tree =
-	block_append(ruby_eval_tree,
-		     NEW_FCALL(rb_intern("print"),
-			       NEW_ARRAY(NEW_GVAR(rb_intern("$_")))));
+    return block_append(node,
+			NEW_FCALL(rb_intern("print"),
+				  NEW_ARRAY(NEW_GVAR(rb_intern("$_")))));
 }
 
-void
-rb_parser_while_loop(chop, split)
+NODE *
+rb_parser_while_loop(node, chop, split)
+    NODE *node;
     int chop, split;
 {
     if (split) {
-	ruby_eval_tree =
-	    block_append(NEW_GASGN(rb_intern("$F"),
-				   NEW_CALL(NEW_GVAR(rb_intern("$_")),
-					    rb_intern("split"), 0)),
-				   ruby_eval_tree);
+	node = block_append(NEW_GASGN(rb_intern("$F"),
+				      NEW_CALL(NEW_GVAR(rb_intern("$_")),
+					       rb_intern("split"), 0)),
+			    node);
     }
     if (chop) {
-	ruby_eval_tree =
-	    block_append(NEW_CALL(NEW_GVAR(rb_intern("$_")),
-				  rb_intern("chop!"), 0), ruby_eval_tree);
+	node = block_append(NEW_CALL(NEW_GVAR(rb_intern("$_")),
+				     rb_intern("chop!"), 0), node);
     }
-    ruby_eval_tree = NEW_OPT_N(ruby_eval_tree);
+    return NEW_OPT_N(node);
 }
 
 static struct {
@@ -8100,6 +8098,10 @@ parser_initialize(parser)
     parser->toplevel_p = Qtrue;
     parser->parsing_thread = Qnil;
 
+#ifndef RIPPER
+    parser->parser_eval_tree_begin = 0;
+    parser->parser_eval_tree = 0;
+#endif
     parser->parser_lex_strterm = 0;
     parser->parser_cond_stack = 0;
     parser->parser_cmdarg_stack = 0;
@@ -8124,7 +8126,7 @@ parser_initialize(parser)
 }
 
 static void
-ripper_mark(ptr)
+parser_mark(ptr)
     void *ptr;
 {
     struct parser_params *p = (struct parser_params*)ptr;
@@ -8138,11 +8140,14 @@ ripper_mark(ptr)
 #ifdef RIPPER
     rb_gc_mark(p->parser_ruby_sourcefile);
     rb_gc_mark(p->delayed);
+#else
+    rb_gc_mark((VALUE)p->parser_eval_tree_begin) ;
+    rb_gc_mark((VALUE)p->parser_eval_tree) ;
 #endif
 }
 
 static void
-ripper_free(ptr)
+parser_free(ptr)
     void *ptr;
 {
     struct parser_params *p = (struct parser_params*)ptr;
@@ -8161,7 +8166,7 @@ parser_new()
 
     p = ALLOC_N(struct parser_params, 1);
     MEMZERO(p, struct parser_params, 1);
-    p->value = Data_Wrap_Struct(rb_cData, ripper_mark, ripper_free, p);
+    p->value = Data_Wrap_Struct(rb_cData, parser_mark, parser_free, p);
     parser_initialize(p);
     return p;
 }
@@ -8458,7 +8463,7 @@ ripper_s_allocate(klass)
 
     p = ALLOC_N(struct parser_params, 1);
     MEMZERO(p, struct parser_params, 1);
-    self = Data_Wrap_Struct(klass, ripper_mark, ripper_free, p);
+    self = Data_Wrap_Struct(klass, parser_mark, parser_free, p);
     p->value = self;
     return self;
 }

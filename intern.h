@@ -326,8 +326,6 @@ double rb_str_to_dbl _((VALUE, int));
 RUBY_EXTERN int   ruby_sourceline;
 RUBY_EXTERN char *ruby_sourcefile;
 ID rb_id_attrset _((ID));
-void rb_parser_append_print _((void));
-void rb_parser_while_loop _((int, int));
 int ruby_parser_stack_on_heap _((void));
 void rb_gc_mark_parser _((void));
 int rb_is_const_id _((ID));

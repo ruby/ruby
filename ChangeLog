@@ -1,6 +1,23 @@
+Wed Sep 22 09:04:41 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y: remove global variables ruby_eval_tree and
+	  ruby_eval_tree_begin.
+
+	* array.c (rb_ary_collect_bang): element size might change during
+	  comparison.  [ruby-dev:24300]
+
+	* array.c (rb_ary_reject_bang): ditto. [ruby-dev:24300]
+
+	* array.c (rb_ary_eql): ditto. [ruby-dev:24300]
+
 Wed Sep 22 00:11:12 2004  Dave Thomas  <dave@pragprog.com>
 
 	* process.c: Add documentation for fork()
+
+Tue Sep 21 18:29:49 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_uniq_bang): element size might change during
+	  comparison.  [ruby-dev:24298]
 
 Mon Sep 20 17:46:51 2004  Minero Aoki  <aamine@loveruby.net>
 

@@ -645,8 +645,6 @@ rb_attr(klass, id, read, write, ex)
 extern int ruby_in_compile;
 
 VALUE ruby_errinfo = Qnil;
-extern NODE *ruby_eval_tree_begin;
-extern NODE *ruby_eval_tree;
 extern int ruby_nerrs;
 
 static VALUE rb_eLocalJumpError;
@@ -949,6 +947,7 @@ static struct tag *prot_tag;
 #define TAG_RAISE	0x6
 #define TAG_THROW	0x7
 #define TAG_FATAL	0x8
+#define TAG_CONT	0x9
 #define TAG_MASK	0xf
 
 VALUE ruby_class;
@@ -1278,13 +1277,11 @@ eval_node(self, node)
     VALUE self;
     NODE *node;
 {
-    NODE *beg_tree = ruby_eval_tree_begin;
-
-    ruby_eval_tree_begin = 0;
-    if (beg_tree) {
-	rb_eval(self, beg_tree);
+    if (!node) return Qnil;
+    if (nd_type(node) == NODE_PRELUDE) {
+	rb_eval(self, node->nd_head);
+	node = node->nd_body;
     }
-
     if (!node) return Qnil;
     return rb_eval(self, node);
 }
@@ -1442,6 +1439,8 @@ ruby_cleanup(ex)
     }
     return ex;
 }
+
+extern NODE *ruby_eval_tree;
 
 int
 ruby_exec()
@@ -7508,9 +7507,6 @@ Init_eval()
     __send__ = rb_intern("__send__");
 
     rb_global_variable((VALUE*)&top_scope);
-    rb_global_variable((VALUE*)&ruby_eval_tree_begin);
-
-    rb_global_variable((VALUE*)&ruby_eval_tree);
     rb_global_variable((VALUE*)&ruby_dyna_vars);
 
     rb_define_virtual_variable("$@", errat_getter, errat_setter);

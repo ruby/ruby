@@ -133,7 +133,7 @@ rb_hash_foreach_iter(key, value, arg)
     status = (*arg->func)(key, value, arg->arg);
     if (RHASH(arg->hash)->tbl != tbl ||
 	RHASH(arg->hash)->tbl->bins != bins) {
-	rb_raise(rb_eIndexError, "rehash occurred during iteration");
+	rb_raise(rb_eArgError, "rehash occurred during iteration");
     }
     if (RHASH(arg->hash)->iter_lev == 0) {
 	rb_raise(rb_eArgError, "block re-entered");
