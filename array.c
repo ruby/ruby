@@ -76,7 +76,7 @@ rb_ary_s_alloc(klass)
     VALUE klass;
 {
     NEWOBJ(ary, struct RArray);
-    OBJSETUP(ary, rb_cArray, T_ARRAY);
+    OBJSETUP(ary, klass, T_ARRAY);
 
     ary->len = 0;
     ary->capa = 0;

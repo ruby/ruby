@@ -883,17 +883,28 @@ rb_reg_initialize(obj, s, len, options)
     }
 }
 
+static VALUE
+rb_reg_s_alloc(klass)
+    VALUE klass;
+{
+    NEWOBJ(re, struct RRegexp);
+    OBJSETUP(re, klass, T_REGEXP);
+
+    re->ptr = 0;
+    re->len = 0;
+    re->str = 0;
+
+    return (VALUE)re;
+}
+
 VALUE
 rb_reg_new(s, len, options)
     const char *s;
     long len;
     int options;
 {
-    
-    NEWOBJ(re, struct RRegexp);
-    OBJSETUP(re, rb_cRegexp, T_REGEXP);
+    VALUE re = rb_reg_s_alloc(rb_cRegexp);
 
-    re->ptr = 0; re->len = 0; re->str = 0;
     rb_reg_initialize(re, s, len, options);
     return (VALUE)re;
 }
@@ -1039,20 +1050,6 @@ rb_reg_initialize_m(argc, argv, self)
 	rb_reg_initialize(self, RSTRING(src)->ptr, RSTRING(src)->len, flags);
     }
     return self;
-}
-
-static VALUE
-rb_reg_s_alloc(klass)
-    VALUE klass;
-{
-    NEWOBJ(re, struct RRegexp);
-    OBJSETUP(re, klass, T_REGEXP);
-
-    re->ptr = 0;
-    re->len = 0;
-    re->str = 0;
-
-    return (VALUE)re;
 }
 
 static VALUE

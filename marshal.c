@@ -213,6 +213,9 @@ w_unique(s, arg)
     char *s;
     struct dump_arg *arg;
 {
+    if (s[0] == '#') {
+	rb_raise(rb_eArgError, "can't dump anonymous class %s", s);
+    }
     w_symbol(rb_intern(s), arg);
 }
 
