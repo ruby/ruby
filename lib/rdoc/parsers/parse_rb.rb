@@ -1374,8 +1374,9 @@ module RDoc
     parse_files_matching(/\.rbw?$/)
 
 
-    def initialize(top_level, file_name, content, options)
+    def initialize(top_level, file_name, content, options, stats)
       @options = options
+      @stats   = stats
       @size = 0
       @token_listeners = nil
       @input_file_name = file_name
@@ -1710,6 +1711,8 @@ module RDoc
     def parse_class(container, single, tk, comment, &block)
       progress("c")
 
+      @stats.num_classes += 1
+
       container, name_t = get_class_or_module(container)
 
       case name_t
@@ -1762,6 +1765,7 @@ module RDoc
 
     def parse_module(container, single, tk, comment)
       progress("m")
+      @stats.num_modules += 1
       container, name_t  = get_class_or_module(container)
 #      skip_tkspace
       name = name_t.name
@@ -1853,6 +1857,7 @@ module RDoc
 
     def parse_method(container, single, tk, comment)
       progress(".")
+      @stats.num_methods += 1
       line_no = tk.line_no
       column  = tk.char_no
 

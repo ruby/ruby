@@ -127,13 +127,14 @@ module RDoc
     @@known_bodies = {}
 
     # prepare to parse a C file
-    def initialize(top_level, file_name, body, options)
+    def initialize(top_level, file_name, body, options, stats)
       @known_classes = KNOWN_CLASSES.dup
       @body = body
       @options = options
+      @stats   = stats
       @top_level = top_level
       @classes = Hash.new
-	  @file_dir = File.dirname(file_name)
+      @file_dir = File.dirname(file_name)
     end
 
     # Extract the classes/modules and methods from a C file
@@ -173,8 +174,10 @@ module RDoc
       
       if class_mod == "class" 
         cm = enclosure.add_class(NormalClass, class_name, parent_name)
+        @stats.num_classes += 1
       else
         cm = enclosure.add_module(NormalModule, class_name)
+        @stats.num_modules += 1
       end
       cm.record_location(enclosure.toplevel)
 
@@ -302,6 +305,8 @@ module RDoc
 
     def handle_method(type, var_name, meth_name, 
                       meth_body, param_count, source_file = nil)
+      
+      @stats.num_methods += 1
 
       class_name = @known_classes[var_name] || var_name
       class_obj  = find_class(var_name, class_name)

@@ -1,0 +1,4 @@
+# We only run RDoc on the top-level files in here: we skip
+# all the helper stuff in sub-directories
+
+*.rb

@@ -16,6 +16,9 @@ module RI
     # can't find a pager
     attr_accessor :use_stdout
 
+    # should we just display a class list and exit
+    attr_reader :list_classes
+
     # The width of the output line
     attr_reader :width
 
@@ -28,6 +31,10 @@ module RI
         [ "--help",          "-h",   nil,
          "you're looking at it" ],
 
+        [ "--classes",      "-c",   nil,
+          "Display the names of classes and modules we\n" +
+          "know about"],
+                                                           
         [ "--format",       "-f",   "<name>",
          "Format to use when displaying output:\n" +
          "   " + RI::TextFormatter.list + "\n" +
@@ -112,8 +119,8 @@ module RI
       EOT
 
       if short_form
-        class_list
-        puts "For help, type 'ri -h'"
+        puts "For help on options, type 'ri -h'"
+        puts "For a list of classes I know about, type 'ri -c'"
       else
         puts "Options:\n\n"
         OPTION_LIST.each do |long, short, arg, desc|
@@ -136,30 +143,16 @@ module RI
       end
     end
 
-    def OptionList.class_list
-      paths = RI::Paths::PATH
-      if paths.empty?
-        puts "Before using ri, you need to generate documentation"
-        puts "using 'rdoc' with the --ri option"
-      else
-        @ri_reader = RI::RiReader.new(RI::RiCache.new(paths))
-        puts
-        puts "Classes and modules I know about:"
-        puts
-        puts @ri_reader.class_names.sort.join(", ")
-        puts
-      end
-    end
-
   end
 
     # Parse command line options.
 
     def parse
 
-      @use_stdout = !STDOUT.tty?
-      @width = 72
-      @formatter = RI::TextFormatter.for("plain") 
+      @use_stdout   = !STDOUT.tty?
+      @width        = 72
+      @formatter    = RI::TextFormatter.for("plain") 
+      @list_classes = false
 
       begin
         
@@ -170,6 +163,8 @@ module RI
           case opt
           when "--help"      then OptionList.usage
           when "--no-pager"  then @use_stdout = true
+          when "--classes"   then @list_classes = true
+
           when "--format"
             @formatter = RI::TextFormatter.for(arg)
             unless @formatter

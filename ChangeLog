@@ -1,3 +1,16 @@
+Fri Jan  2 14:54:11 2004  Dave Thomas  <dave@pragprog.com>
+	
+	* bin/ri: Add new --classes option, and arrange for
+	  help messages to be paged too.
+
+	* bin/rdoc: Add statistics.
+
+	* process.c: (MG) Added Process documentation
+
+	* lib/rdoc/ri/ri_formatter.rb (RI::AttributeFormatter::wrap): 
+	  Fix problem with labels not displaying in RI labeled
+	  lists using BS and ANSI modes.
+
 Thu Jan  1 09:03:20 2004  Dave Thomas  <dave@pragprog.com>
 
 	* bin/ri (report_class_stuff): Fix problem with ambiguous nested

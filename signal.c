@@ -198,6 +198,30 @@ ruby_signal_name(no)
     return signo2signm(no);
 }
 
+/*
+ *  call-seq:
+ *     Process.kill(signal, pid, ...)    => fixnum
+ *  
+ *  Sends the given signal to the specified process id(s), or to the
+ *  current process if _pid_ is zero. _signal_ may be an
+ *  integer signal number or a POSIX signal name (either with or without
+ *  a +SIG+ prefix). If _signal_ is negative (or starts
+ *  with a minus sign), kills process groups instead of
+ *  processes. Not all signals are available on all platforms.
+ *     
+ *     pid = fork do
+ *        Signal.trap("HUP") { puts "Ouch!"; exit }
+ *        # ... do some work ...
+ *     end
+ *     # ...
+ *     Process.kill("HUP", pid)
+ *     Process.wait
+ *     
+ *  <em>produces:</em>
+ *     
+ *     Ouch!
+ */
+
 VALUE
 rb_f_kill(argc, argv)
     int argc;

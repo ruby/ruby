@@ -1,3 +1,4 @@
+.document
 COPYING
 COPYING.ja
 ChangeLog
@@ -109,6 +110,7 @@ ext/Setup.emx
 ext/Setup.nt
 ext/Setup.x68
 ext/extmk.rb
+lib/.document
 lib/English.rb
 lib/Env.rb
 lib/README
