@@ -129,7 +129,7 @@ module WEBrick
       field = nil
       raw.each{|line|
         case line
-        when /^([A-Za-z0-9_\-]+):\s*(.*?)\s*\z/om
+        when /^([A-Za-z0-9!\#$%&'*+\-.^_`|~]+):\s*(.*?)\s*\z/om
           field, value = $1, $2
           field.downcase!
           header[field] = [] unless header.has_key?(field)

@@ -1,3 +1,8 @@
+Tue Jan 27 02:26:31 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/httputils.rb (WEBrick:HTTPUtils::parse_header):
+	  refine regex for header-name.
+
 Tue Jan 27 00:30:11 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub: rollback.
