@@ -1,3 +1,10 @@
+Fri Sep 27 01:23:39 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/md5: Use OpenSSL's MD5 engine if available.  It is
+	  much faster than what we have now (md5.[ch]).  Add a knob
+	  (--with-bundled-md5) to extconf.rb which makes it use the
+	  bundled one anyway.
+
 Thu Sep 26 22:44:21 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/digest.c (rb_digest_base_s_digest): Fix a double

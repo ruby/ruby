@@ -5,10 +5,18 @@ require "mkmf"
 
 $CFLAGS << " -DHAVE_CONFIG_H -I#{File.dirname(__FILE__)}/.."
 
-$objs = [
-  "md5.#{$OBJEXT}",
-  "md5init.#{$OBJEXT}",
-]
+$objs = [ "md5init.#{$OBJEXT}" ]
+
+dir_config("openssl")
+
+if !with_config("bundled-md5") &&
+    have_library("crypto") && have_header("openssl/md5.h")
+  $objs << "md5ossl.#{$OBJEXT}"
+
+  $libs << " -lcrypto"
+else
+  $objs << "md5.#{$OBJEXT}"
+end
 
 have_header("sys/cdefs.h")
 

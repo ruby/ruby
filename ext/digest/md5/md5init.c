@@ -2,7 +2,11 @@
 /* $Id$ */
 
 #include "digest.h"
+#if defined(HAVE_OPENSSL_MD5_H)
+#include "md5ossl.h"
+#else
 #include "md5.h"
+#endif
 
 static algo_t md5 = {
     MD5_DIGEST_LENGTH,
