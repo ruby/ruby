@@ -200,6 +200,10 @@ module OpenURI
       raise "Non-HTTP proxy URI: #{proxy}" if proxy.class != URI::HTTP
     end
 
+    if target.userinfo
+      raise "userinfo not supported.  [RFC3986]"
+    end
+
     require 'net/http'
     klass = Net::HTTP
     if URI::HTTP === target
