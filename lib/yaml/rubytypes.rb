@@ -271,7 +271,7 @@ end
 
 YAML.add_ruby_type( /^exception/ ) { |type, val|
     type, obj_class = YAML.read_type_class( type, Exception )
-    o = YAML.object_maker( obj_class, { 'mesg' => val.delete( 'message' ) }, true )
+    o = YAML.object_maker( obj_class, { 'mesg' => val.delete( 'message' ) } )
     val.each_pair { |k,v|
 		o.instance_variable_set("@#{k}", v)
 	}
