@@ -22,6 +22,10 @@
 
     Dir.glob("makefile", File::FNM_CASEFOLD) #=> ['Makefile', 'makefile']
 
+: racc runtime module
+
+  Imported. Racc runtime library (Racc is a parser generator for ruby).
+
 : tsort module
 
   Imported.  Topological sorting library.
@@ -29,6 +33,10 @@
 : stringio module
 
   Imported.  Pseudo (({IO})) class from/to (({String})).
+
+: strscan module
+
+  Imported.  Fast string scanner library.
 
 : Array#pack, String#unpack
 
