@@ -132,7 +132,7 @@ Also ignores spaces after parenthesis when 'space.")
 
 (eval-when-compile (require 'cl))
 (defun ruby-imenu-create-index-in-block (prefix beg end)
-  (let ((index-alist '()) (nest '()) (case-fold-search nil)
+  (let ((index-alist '()) (case-fold-search nil)
 	name next pos decl sing)
     (goto-char beg)
     (while (re-search-forward "^\\s *\\(\\(class\\>\\(\\s *<<\\)?\\|module\\>\\)\\s *\\([^\(<\n ]+\\)\\|\\(def\\|alias\\)\\>\\s *\\([^\(\n ]+\\)\\)" end t)
@@ -306,7 +306,7 @@ The variable ruby-indent-level controls the amount of indentation.
       (forward-char -1))
     (cond ((zerop n))
 	  (no-error nil)
-	  (error "unterminated string"))))
+	  ((error "unterminated string")))))
 
 (defun ruby-parse-partial (&optional end in-string nest depth pcol indent)
   (or depth (setq depth 0))
@@ -508,7 +508,7 @@ The variable ruby-indent-level controls the amount of indentation.
 	  )))
 
 (defun ruby-indent-size (pos nest)
-  (+ pos (* (if nest nest 1) ruby-indent-level)))
+  (+ pos (* (or nest 1) ruby-indent-level)))
 
 (defun ruby-calculate-indent (&optional parse-start)
   (save-excursion
@@ -860,7 +860,7 @@ An end of a defun is found by moving forward from the beginning of one."
   (defvar ruby-font-lock-keywords
     (list
      ;; functions
-     '("^\\s *def\\s +\\([^( ]+\\)"
+     '("^\\s *def\\s +\\([^( \t\n]+\\)"
        1 font-lock-function-name-face)
      ;; keywords
      (cons (concat

@@ -1,3 +1,11 @@
+Sat Feb 08 18:35:30 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* misc/ruby-mode.el (ruby-forward-string): fixed void variable
+	  error.
+
+	* misc/ruby-mode.el (ruby-font-lock-keywords): method name can
+	  be delimited by tab.
+
 Sat Feb  8 03:57:32 2003  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/irb/workspace.rb, lib/irb/ext/math-mode.rb,
