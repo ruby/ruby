@@ -526,7 +526,7 @@ rb_mod_ge(mod, arg)
 	rb_raise(rb_eTypeError, "compared with non class/module");
     }
 
-    return rb_mod_lt(arg, mod);
+    return rb_mod_le(arg, mod);
 }
 
 static VALUE
