@@ -1,3 +1,11 @@
+Fri Oct  1 11:25:20 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/grid.rb: revive TkGrid.grid
+
+	* ext/tk/lib/tk/pack.rb: revive TkPack.pack
+
+	* ext/tk/lib/tk/place.rb: revive TkPlace.place
+
 Thu Sep 30 00:50:44 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c (ip_init): bug fix
