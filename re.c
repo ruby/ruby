@@ -1612,25 +1612,27 @@ rb_reg_match_m(re, str)
 /*
  * Document-method: compile
  *
- * call-seq:
+ * Synonym for <code>Regexp.new</code>
+ */
+
+/*
+ *  call-seq:
  *     Regexp.new(string [, options [, lang]])       => regexp
  *     Regexp.new(regexp)                            => regexp
- *	   Regexp.compile(string [, options [, lang]])   => regexp
+ *     Regexp.compile(string [, options [, lang]])   => regexp
  *     Regexp.compile(regexp)                        => regexp
- *
- * Synonym for <code>Regexp.new</code>
  *  
- * Constructs a new regular expression from <i>pattern</i>, which can be either
- * a <code>String</code> or a <code>Regexp</code> (in which case that regexp's
- * options are propagated, and new options may not be specified (a change as of
- * Ruby 1.8). If <i>options</i> is a <code>Fixnum</code>, it should be one or
- * more of the constants <code>Regexp::EXTENDED</code>,
- * <code>Regexp::IGNORECASE</code>, and <code>Regexp::POSIXLINE</code>,
- * <em>or</em>-ed together. Otherwise, if <i>options</i> is not
- * <code>nil</code>, the regexp will be case insensitive. The <i>lang</i>
- * parameter enables multibyte support for the regexp: `n', `N' = none, `e',
- * `E' = EUC, `s', `S' = SJIS, `u', `U' = UTF-8.
- *     
+ *  Constructs a new regular expression from <i>pattern</i>, which can be either
+ *  a <code>String</code> or a <code>Regexp</code> (in which case that regexp's
+ *  options are propagated, and new options may not be specified (a change as of
+ *  Ruby 1.8). If <i>options</i> is a <code>Fixnum</code>, it should be one or
+ *  more of the constants <code>Regexp::EXTENDED</code>,
+ *  <code>Regexp::IGNORECASE</code>, and <code>Regexp::POSIXLINE</code>,
+ *  <em>or</em>-ed together. Otherwise, if <i>options</i> is not
+ *  <code>nil</code>, the regexp will be case insensitive. The <i>lang</i>
+ *  parameter enables multibyte support for the regexp: `n', `N' = none, `e',
+ *  `E' = EUC, `s', `S' = SJIS, `u', `U' = UTF-8.
+ * 
  *     r1 = Regexp.new('^a-z+:\\s+\w+')           #=> /^a-z+:\s+\w+/
  *     r2 = Regexp.new('cat', true)               #=> /cat/i
  *     r3 = Regexp.new('dog', Regexp::EXTENDED)   #=> /dog/x
