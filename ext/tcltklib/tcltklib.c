@@ -2781,8 +2781,13 @@ ip_thread_tkwait(self, mode, target)
 VALUE del_root(ip)
     Tcl_Interp *ip;
 {
+    Tk_Window main_win;
+
     Tcl_Preserve(ip);
-    Tk_DestroyWindow(Tk_MainWindow(ip));
+    main_win = Tk_MainWindow(ip);
+    if (main_win != (Tk_Window)NULL) {
+	Tk_DestroyWindow(main_win);
+    }
     Tcl_Release(ip);
     return Qnil;
 }

@@ -1,3 +1,7 @@
+Tue Aug 31 12:30:36 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tcltklib/tcltklib.c (del_root): fix SEGV
+
 Mon Aug 30 21:50:14 2004  Dave Thomas  <dave@pragprog.com>
 
 	* object.c: Add RDoc for Module.included.
