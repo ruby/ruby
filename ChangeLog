@@ -1,3 +1,7 @@
+Wed Jun  5 18:53:06 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* math.c (Init_Math): backport asin, acos, atan.
+
 Tue Jun  4 00:45:50 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ext/socket/addrinfo.h: typo.
