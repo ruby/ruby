@@ -24,7 +24,7 @@ class Test1
     c = ip.commands()
     # 使用するコマンドに対応するオブジェクトは変数に入れておく.
     append, bind, button, destroy, incr, info, label, place, set, wm =
-      c.indexes(
+      c.values_at(
       "append", "bind", "button", "destroy", "incr", "info", "label", "place",
       "set", "wm")
 
@@ -136,7 +136,7 @@ class Test1
 
   # サンプルのためのウィジェットを生成する.
   def sample(ip, parent)
-    bind, button, destroy, grid, toplevel, wm = ip.commands().indexes(
+    bind, button, destroy, grid, toplevel, wm = ip.commands().values_at(
       "bind", "button", "destroy", "grid", "toplevel", "wm")
 
     ## toplevel
@@ -207,7 +207,7 @@ class Test1
   #   parent: 親ウィジェット
   #   title: toplevel ウィジェットのウインドウのタイトル
   def inittoplevel(ip, parent, title)
-    bind, button, destroy, toplevel, wm = ip.commands().indexes(
+    bind, button, destroy, toplevel, wm = ip.commands().values_at(
       "bind", "button", "destroy", "toplevel", "wm")
 
     # 新しいウインドウを開くには, toplevel を使う.
@@ -229,7 +229,7 @@ class Test1
 
   # label のサンプル.
   def test_label(ip, parent)
-    button, global, label, pack = ip.commands().indexes(
+    button, global, label, pack = ip.commands().values_at(
       "button", "global", "label", "pack")
     t1, b1, cb = inittoplevel(ip, parent, "label")
 
@@ -272,7 +272,7 @@ class Test1
 
   # button のサンプル.
   def test_button(ip, parent)
-    button, pack = ip.commands().indexes("button", "pack")
+    button, pack = ip.commands().values_at("button", "pack")
     t1, b1, cb = inittoplevel(ip, parent, "button")
 
     ## button
@@ -290,7 +290,7 @@ class Test1
 
   # checkbutton のサンプル.
   def test_checkbutton(ip, parent)
-    checkbutton, global, pack = ip.commands().indexes(
+    checkbutton, global, pack = ip.commands().values_at(
       "checkbutton", "global", "pack")
     t1, b1, cb = inittoplevel(ip, parent, "checkbutton")
 
@@ -306,7 +306,7 @@ class Test1
 
   # radiobutton のサンプル.
   def test_radiobutton(ip, parent)
-    global, label, pack, radiobutton = ip.commands().indexes(
+    global, label, pack, radiobutton = ip.commands().values_at(
       "global", "label", "pack", "radiobutton")
     t1, b1, cb = inittoplevel(ip, parent, "radiobutton")
 
@@ -330,7 +330,7 @@ class Test1
 
   # scale のサンプル.
   def test_scale(ip, parent)
-    global, pack, scale = ip.commands().indexes(
+    global, pack, scale = ip.commands().values_at(
       "global", "pack", "scale")
     t1, b1, cb = inittoplevel(ip, parent, "scale")
 
@@ -350,7 +350,7 @@ class Test1
 
   # entry のサンプル.
   def test_entry(ip, parent)
-    button, entry, global, pack = ip.commands().indexes(
+    button, entry, global, pack = ip.commands().values_at(
       "button", "entry", "global", "pack")
     t1, b1, cb = inittoplevel(ip, parent, "entry")
 
@@ -369,7 +369,7 @@ class Test1
 
   # text のサンプル.
   def test_text(ip, parent)
-    button, pack, text = ip.commands().indexes(
+    button, pack, text = ip.commands().values_at(
       "button", "pack", "text")
     t1, b1, cb = inittoplevel(ip, parent, "text")
 
@@ -385,7 +385,7 @@ class Test1
 
   # raise/lower のサンプル.
   def test_raise(ip, parent)
-    button, frame, lower, pack, raise = ip.commands().indexes(
+    button, frame, lower, pack, raise = ip.commands().values_at(
       "button", "frame", "lower", "pack", "raise")
     t1, b1, cb = inittoplevel(ip, parent, "raise/lower")
 
@@ -408,7 +408,7 @@ class Test1
   # modal なウィジェットのサンプル.
   def test_modal(ip, parent)
     button, frame, message, pack, tk_chooseColor, tk_getOpenFile,
-      tk_messageBox = ip.commands().indexes(
+      tk_messageBox = ip.commands().values_at(
       "button", "frame", "message", "pack", "tk_chooseColor",
       "tk_getOpenFile", "tk_messageBox")
     # 最初に load されていないライブラリは ip.commands() に存在しないので,
@@ -451,7 +451,7 @@ class Test1
 
   # menu のサンプル.
   def test_menu(ip, parent)
-    global, menu, menubutton, pack = ip.commands().indexes(
+    global, menu, menubutton, pack = ip.commands().values_at(
       "global", "menu", "menubutton", "pack")
     tk_optionMenu = TclTkLibCommand.new(ip, "tk_optionMenu")
     t1, b1, cb = inittoplevel(ip, parent, "menu")
@@ -498,7 +498,7 @@ class Test1
   # listbox のサンプル.
   def test_listbox(ip, parent)
     clipboard, frame, grid, listbox, lower, menu, menubutton, pack, scrollbar,
-      selection = ip.commands().indexes(
+      selection = ip.commands().values_at(
       "clipboard", "frame", "grid", "listbox", "lower", "menu", "menubutton",
       "pack", "scrollbar", "selection")
     t1, b1, cb = inittoplevel(ip, parent, "listbox")
@@ -559,7 +559,7 @@ class Test1
 
   # canvas のサンプル.
   def test_canvas(ip, parent)
-    canvas, lower, pack = ip.commands().indexes("canvas", "lower", "pack")
+    canvas, lower, pack = ip.commands().values_at("canvas", "lower", "pack")
     t1, b1, cb = inittoplevel(ip, parent, "canvas")
 
     ## canvas

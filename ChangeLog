@@ -1,3 +1,8 @@
+Wed Dec 29 11:07:07 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/generators/template/html/kilmer.rb: Update to use new
+	  sections.
+
 Tue Dec 28 22:31:46 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_justify): create buffer string after argument type
@@ -57,6 +62,7 @@ Mon Dec 27 15:21:07 2004  Minero Aoki  <aamine@loveruby.net>
 	  (backport from HEAD 1.48)
 
 	* lib/fileutils.rb (mv): wrongly did not overwrite file on Win32
+>>>>>>> 1.3892
 	  platforms. (backport from HEAD 1.48)
 
 Sat Dec 25 11:11:48 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
