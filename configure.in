@@ -766,6 +766,9 @@ if test "$enable_shared" = 'yes'; then
   LIBRUBYARG='-L. -l$(RUBY_INSTALL_NAME)'
   CFLAGS="$CFLAGS $CCDLFLAGS"
   ENABLE_SHARED=yes
+  if test "$rb_cv_binary_elf" = yes; then
+    SOLIBS='$(LIBS)'
+  fi
   case "$target_os" in
     sunos4*)
 	LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_INSTALL_NAME).so'
@@ -775,6 +778,7 @@ if test "$enable_shared" = 'yes'; then
 	LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_INSTALL_NAME).so'
 	;;
     freebsd*)
+	SOLIBS='$(LIBS)'
 	LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).so.$(MAJOR)$(MINOR)'
 	if test "$rb_cv_binary_elf" != "yes" ; then
 	    LIBRUBY_SO="$LIBRUBY_SO.\$(TEENY)"
@@ -782,12 +786,16 @@ if test "$enable_shared" = 'yes'; then
 	fi
 	;;
     netbsd*)
+	SOLIBS='$(LIBS)'
 	LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR)'
 	if test "$rb_cv_binary_elf" = yes; then # ELF platforms
 	   LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so.$(MAJOR) lib$(RUBY_INSTALL_NAME).so'
 	else
 	   LIBRUBY_ALIASES=  # a.out platforms
 	fi
+ 	;;
+    openbsd*)
+	SOLIBS='$(LIBS)'
  	;;
     solaris*)
 	XLDFLAGS='-R${prefix}/lib'

@@ -1,3 +1,9 @@
+Fri Mar 16 17:21:25 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* configure.in: Set SOLIBS properly for all ELF and
+	  FreeBSD/NetBSD/OpenBSD a.out platforms so that the shlib
+	  dependencies are recorded in the libruby shlib.
+
 Wed Mar 14 16:41:45 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_thread_schedule): raise FATAL just once to
