@@ -12,7 +12,6 @@ dir_config("openssl")
 if !with_config("bundled-rmd160") &&
     have_library("crypto") && have_header("openssl/ripemd.h")
   $objs << "rmd160ossl.#{$OBJEXT}"
-  $libs << " -lcrypto"
 else
   $objs << "rmd160.#{$OBJEXT}" << "rmd160hl.#{$OBJEXT}"
 end
