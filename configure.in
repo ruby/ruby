@@ -951,7 +951,6 @@ if test "$with_dln_a_out" != yes; then
 	hiuxmpp)	: ${LDSHARED='ld -r'} ;;
 	atheos*) 	: ${LDSHARED="$CC -shared"}
 			rb_cv_dlopen=yes ;;
-AC_SUBST(TRY_LINK)
 	os2-emx*)	LDFLAGS="$LDFLAGS -Zbsd-signals"
 			;;
 	*) 		: ${LDSHARED='ld'} ;;
@@ -962,6 +961,7 @@ AC_SUBST(LINK_SO)
 AC_SUBST(LIBPATHFLAG)
 AC_SUBST(RPATHFLAG)
 AC_SUBST(LIBPATHENV, "${LIBPATHENV-LD_LIBRARY_PATH}")
+AC_SUBST(TRY_LINK)
 
 dln_a_out_works=no
 if test "$ac_cv_header_a_out_h" = yes; then
