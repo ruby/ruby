@@ -112,6 +112,12 @@ static VALUE iconv_iconv _((int argc, VALUE *argv, VALUE self));
 
 static VALUE charset_map;
 
+/*
+ * Document-method: charset_map
+ * call-seq: Iconv.charset_map
+ *
+ * Returns the map from canonical name to system dependent name.
+ */
 static VALUE charset_map_get _((void))
 {
     return charset_map;
@@ -510,8 +516,8 @@ iconv_s_allocate
  * === Exceptions
  *
  * TypeError::       if +to+ or +from+ aren't String
- * ArgumentError::   if designated converter couldn't find out
- * SystemCallError:: if <tt>iconv_open3</tt> fails
+ * InvalidEncoding:: if designated converter couldn't find out
+ * SystemCallError:: if <tt>iconv_open(3)</tt> fails
  */
 static VALUE
 iconv_initialize
@@ -602,7 +608,7 @@ iconv_s_convert
  * === Exceptions
  *
  * Exceptions thrown by Iconv.new, Iconv.open and Iconv#iconv.
-*/
+ */
 static VALUE
 iconv_s_iconv
 #ifdef HAVE_PROTOTYPES
@@ -633,7 +639,7 @@ iconv_s_iconv
  *
  * Shorthand for
  *   Iconv.iconv(to, from, str).join
- * See Iconv.iconv ???
+ * See Iconv.iconv.
  */
 static VALUE
 iconv_s_conv
@@ -740,8 +746,8 @@ iconv_s_list _((void))
  * multiple calls of #close are guaranteed to end successfully.
  *
  * Returns a string containing the byte sequence to change the output buffer to
- * its initial shift state.  <i>???</i>
-*/
+ * its initial shift state.
+ */
 static VALUE
 iconv_init_state
 #ifdef HAVE_PROTOTYPES
@@ -797,7 +803,7 @@ iconv_finish
  * === Examples
  *
  * See the Iconv documentation.
-*/
+ */
 static VALUE
 iconv_iconv
 #ifdef HAVE_PROTOTYPES
@@ -825,22 +831,16 @@ iconv_iconv
  * Document-class: Iconv::Failure
  *
  * Base attributes for Iconv exceptions.
- * 
- * === Iconv::Failure#success
+ */
+
+/*
+ * Document-method: success
+ * call-seq: success
  *
  * Returns string(s) translated successfully until the exception occurred.
  * * In the case of failure occurred within Iconv.iconv, returned
  *   value is an array of strings translated successfully preceding
  *   failure and the last element is string on the way.
- *
- * === Iconv::Failure#failed
- * 
- * Returns substring of the original string passed to Iconv that starts at the
- * character caused the exception. 
- *
- * === Iconv::Failure#inspect
- *
- * Returns inspected string like as: #<_class_: _success_, _failed_>
  */
 static VALUE
 iconv_failure_success
@@ -855,7 +855,11 @@ iconv_failure_success
 }
 
 /*
- * Comment!
+ * Document-method: failed
+ * call-seq: failed
+ *
+ * Returns substring of the original string passed to Iconv that starts at the
+ * character caused the exception. 
  */
 static VALUE
 iconv_failure_failed
@@ -869,6 +873,12 @@ iconv_failure_failed
     return rb_attr_get(self, rb_failed);
 }
 
+/*
+ * Document-method: inspect
+ * call-seq: inspect
+ *
+ * Returns inspected string like as: #<_class_: _success_, _failed_>
+ */
 static VALUE
 iconv_failure_inspect
 #ifdef HAVE_PROTOTYPES
@@ -890,19 +900,17 @@ iconv_failure_inspect
 }
 
 /*
+ * Document-class: Iconv::InvalidEncoding
+ * 
+ * Requested coding-system is not available on this system.
+ */
+
+/*
  * Document-class: Iconv::IllegalSequence
  * 
  * Input conversion stopped due to an input byte that does not belong to
  * the input codeset, or the output codeset does not contain the
  * character.
- * 
- * === Superclass
- * 
- * ArgumentError
- * 
- * === Included Modules
- * 
- * Iconv::Failure
  */
 
 /*
@@ -910,28 +918,12 @@ iconv_failure_inspect
  * 
  * Input conversion stopped due to an incomplete character or shift
  * sequence at the end of the input buffer.
- * 
- * === Superclass
- * 
- * ArgumentError
- * 
- * === Included Modules
- * 
- * Iconv::Failure
  */
 
 /*
  * Document-class: Iconv::OutOfRange
  * 
  * Iconv library internal error.  Must not occur.
- * 
- * === Superclass
- * 
- * RuntimeError
- * 
- * === Included Modules
- * 
- * Iconv::Failure
  */
 
 void
@@ -958,6 +950,7 @@ Init_iconv _((void))
     rb_eIconvIllegalSeq = rb_define_class_under(rb_cIconv, "IllegalSequence", rb_eArgError);
     rb_eIconvInvalidChar = rb_define_class_under(rb_cIconv, "InvalidCharacter", rb_eArgError);
     rb_eIconvOutOfRange = rb_define_class_under(rb_cIconv, "OutOfRange", rb_eRuntimeError);
+    rb_include_module(rb_eIconvInvalidEncoding, rb_eIconvFailure);
     rb_include_module(rb_eIconvIllegalSeq, rb_eIconvFailure);
     rb_include_module(rb_eIconvInvalidChar, rb_eIconvFailure);
     rb_include_module(rb_eIconvOutOfRange, rb_eIconvFailure);

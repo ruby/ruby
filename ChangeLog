@@ -1,3 +1,8 @@
+Tue Mar 15 23:49:19 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/iconv/iconv.c (Init_iconv): InvalidEncoding also should include
+	  Iconv::Failure.
+
 Tue Mar 15 23:12:36 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (recursive_check, recursive_push): more restrictive check.
