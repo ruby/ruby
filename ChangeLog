@@ -1,3 +1,9 @@
+Tue Feb  6 21:30:44 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/http.rb: call on_connect() on re-opening socket.
+
+	* lib/net/pop.rb: also POP3 can use APOP auth.
+
 Tue Feb  6 20:19:10 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/http.rb: add HTTP#request.

@@ -425,6 +425,7 @@ module Net
         req['connection'] = 'close'
       elsif @socket.closed? then
         @socket.reopen
+        on_connect
       end
       if @seems_1_0_server then
         req['connection'] = 'close'
