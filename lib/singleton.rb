@@ -25,8 +25,8 @@
 #
 #
 # This achieved by marking
-# *  Klass.new and Klass.allocate - as private and
-# *  Klass.inherited(sub_klass)     - modifying to ensure
+# *  Klass.new and Klass.allocate - as private and modifying 
+# *  Klass.inherited(sub_klass)     - to ensure
 #     that the Singleton pattern is properly inherited.
 #
 # In addition Klass is provided with the class methods
@@ -39,7 +39,7 @@
 # The sole instance method of Singleton is
 # *  _dump(depth) - returning the empty string
 #    The default Marshalling strategy is to strip all state information - i.e.
-#    instance variables from ``the instance''.  Providing costume
+#    instance variables from ``the instance''.  Providing custom
 #    _dump(depth) and _load(str) method allows the (partial) resurrection
 #    of a previous state of ``the instance'' - see third example.
 #
@@ -53,12 +53,12 @@ module Singleton
                 # * nil    - before (and after a failed) creation
                 # * false - during creation
                 # * sub_class instance - after a successful creation
-                @__instance__ = nil
+                sub_klass.instance_eval { @__instance__ = nil }
                 def sub_klass.instance
                     unless @__instance__.nil?
                         # is the extra flexiblity having the hook method
                         # _wait() around ever useful?
-                        _wait() while false.equal?(@__instance__)
+                        _wait() 
                         # check for instance creation
                         return @__instance__ if @__instance__
                     end
@@ -86,7 +86,7 @@ module Singleton
                 instance
             end
             def _wait
-                sleep(0.05)
+                sleep(0.05)  while false.equal?(@__instance__)
             end
             private  :new, :allocate
             # hook methods are also marked private
@@ -115,55 +115,63 @@ rescue  NoMethodError => mes
     puts mes
 end
 
-# threaded example with exception
-Thread.abort_on_exception = true
-class Ups < SomeSingletonClass
-    @__threads__=  []
-    @__flip__ = nil
-    @@__index__ = nil
+# threaded example with exception and customized hook #_wait method
+Thread.abort_on_exception = false
+def num_of_instances(mod)
+    "#{ObjectSpace.each_object(mod){}} #{mod} instance"
+end 
 
+class Ups < SomeSingletonClass
     def initialize
-        sleep(rand(0.1)/10.0)
-        Thread.current[:index] = @@__index__
+        type.__sleep
+        puts "initialize called by thread ##{Thread.current[:i]}"
     end
     class << self
+        def _wait
+            @enter.push Thread.current[:i]
+            sleep 0.02 while false.equal?(@__instance__)
+            @leave.push Thread.current[:i]
+        end
+        def __sleep
+            sleep (rand(0.1))
+        end 
         def allocate
-            unless @__flip__
-                @__flip__ = true
-                raise "boom - allocation in thread ##{@@__index__} aborted"
-            end
-            super()
+            __sleep
+            def self.allocate; __sleep; super() end
+            raise  "allocation in thread ##{Thread.current[:i]} aborted"
         end
         def instanciate_all
-            1.upto(5) do |@@__index__|
-                sleep(rand(0.1)/10.0)
-                    @__threads__.push Thread.new {
-                        begin
-                            instance
-                        rescue RuntimeError => mes
-                            puts mes
-                        end
-                    }
+            @enter = []
+            @leave = []
+            1.upto(9) do |i|  
+                Thread.new do 
+                    begin
+                        Thread.current[:i] = i
+                        __sleep
+                        instance
+                    rescue RuntimeError => mes
+                        puts mes
+                    end
                 end
             end
-        def join
-            @__threads__.each do |t|
-                t.join
-                puts "initialize called by thread ##{t[:index]}" if
-t[:index]
-            end
+            puts "Before there were #{num_of_instances(Ups)}s"
+            sleep 3
+            puts "Now there is #{num_of_instances(Ups)}"
+            puts "#{@enter.join "; "} was the order of threads entering the waiting loop"
+            puts "#{@leave.join "; "} was the order of threads leaving the waiting loop"
         end
     end
 end
 
-
-puts "There is(are) #{ObjectSpace.each_object(Ups) {}} Ups instance(s)"
-    # => The is(are) 0 Ups instance(s)
 Ups.instanciate_all
-Ups.join # => initialize called by thread # i - where  i = 2 ... 5
-p Marshal.load(Marshal.dump(Ups.instance))  == Ups.instance # => true
-puts "There is(are) #{ObjectSpace.each_object(Ups) {}} Ups instance(s)"
-   # => The is(are) 1 Ups instance(s)
+#  results in message like
+#  Before there were 0 Ups instances
+#  boom - allocation in thread #8 aborted
+#  initialize called by thread #3
+#  Now there is 1 Ups instance
+#  2; 3; 6; 1; 7; 5; 9; 4 was the order of threads entering the waiting loop
+#  3; 2; 1; 7; 6; 5; 4; 9 was the order of threads leaving the waiting loop
+
 
 # Customized marshalling
 class A

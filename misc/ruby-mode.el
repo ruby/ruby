@@ -522,7 +522,14 @@ The variable ruby-indent-level controls the amount of indentation.
 	       (re-search-backward "#" (save-excursion
 					 (beginning-of-line)
 					 (point)) t)
+	       (save-excursion
+		 (forward-char -1)
+		 (not (looking-at "\\?")))
 	       (skip-chars-backward " \t")
+	       (if (save-excursion
+		     (forward-char -1)
+		     (looking-at "\\?"))
+		   (skip-chars-forward " \t"))
 	       (setq state (ruby-parse-region parse-start (point)))
 	       (nth 0 state)
 	       (goto-char pos)))
