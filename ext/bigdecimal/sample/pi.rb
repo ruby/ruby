@@ -1,14 +1,15 @@
 #!/usr/local/bin/ruby
 
 #
-# pai.rb
+# pi.rb
 #
 
 require "bigdecimal"
 #
-# Calculates 3.1415.... using J. Machin's formula.
+# Calculates 3.1415.... (the number of times that a circle's diameter
+# will fit around the circle) using J. Machin's formula.
 #
-def pai(sig) # sig: Number of significant figures
+def big_pi(sig) # sig: Number of significant figures
   exp    = -sig
   pi     = BigDecimal::new("0")
   two    = BigDecimal::new("2")
@@ -41,9 +42,9 @@ end
 
 if $0 == __FILE__
   if ARGV.size == 1
-    print "PAI("+ARGV[0]+"):\n"
-    p pai(ARGV[0].to_i)
+    print "PI("+ARGV[0]+"):\n"
+    p big_pi(ARGV[0].to_i)
   else
-    print "TRY: ruby pai.rb 1000 \n"
+    print "TRY: ruby pi.rb 1000 \n"
   end
 end
