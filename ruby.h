@@ -165,6 +165,9 @@ int   num2int _((VALUE));
 double num2dbl _((VALUE));
 #define NUM2DBL(x) num2dbl((VALUE)(x))
 
+char *str2cstr _((VALUE));
+#define STR2CSTR(x) str2cstr((VALUE)(x))
+
 VALUE rb_newobj _((void));
 #define NEWOBJ(obj,type) type *obj = (type*)rb_newobj()
 #define OBJSETUP(obj,c,t) {\

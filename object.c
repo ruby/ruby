@@ -721,6 +721,15 @@ f_string(obj, arg)
     return rb_funcall(arg, rb_intern("to_s"), 0);
 }
 
+char*
+str2cstr(str)
+    VALUE str;
+{
+    if (NIL_P(str)) return NULL;
+    Check_Type(str, T_STRING);
+    return RSTRING(str)->ptr;
+}
+
 VALUE
 rb_String(val)
     VALUE val;

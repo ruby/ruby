@@ -1,5 +1,7 @@
 Thu Jan 22 00:37:47 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
+	* ruby.h (STR2CSTR): new macro to retrieve char*.
+
 	* class.c (rb_define_method): `initialize' should always be
 	  private, even if it defined by C extensions.
 
