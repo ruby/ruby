@@ -89,7 +89,7 @@
   (modify-syntax-entry ?# "<" ruby-mode-syntax-table)
   (modify-syntax-entry ?\n ">" ruby-mode-syntax-table)
   (modify-syntax-entry ?\\ "\\" ruby-mode-syntax-table)
-  (modify-syntax-entry ?$ "/" ruby-mode-syntax-table)
+  (modify-syntax-entry ?$ "." ruby-mode-syntax-table)
   (modify-syntax-entry ?? "_" ruby-mode-syntax-table)
   (modify-syntax-entry ?_ "_" ruby-mode-syntax-table)
   (modify-syntax-entry ?< "." ruby-mode-syntax-table)
@@ -194,7 +194,7 @@ The variable ruby-indent-level controls the amount of indentation.
 	  (indent-to x)
 	  (move-to-column (+ x shift))))))
 
-(defun ruby-expr-beg (&optional modifier pnt)
+(defun ruby-expr-beg (&optional modifier)
   (save-excursion
     (if (looking-at "\\?")
 	(progn
@@ -216,7 +216,8 @@ The variable ruby-indent-level controls the amount of indentation.
 			 (looking-at ruby-block-mid-re))
 		     (progn
 		       (goto-char (match-end 0))
-		       (looking-at "\\>")))))))))
+		       (looking-at "\\>"))
+		   (looking-at "[a-zA-Z][a-zA-z0-9_]* /[^ \t]"))))))))
 
 (defun ruby-parse-region (start end)
   (let ((indent-point end)
@@ -249,6 +250,7 @@ The variable ruby-indent-level controls the amount of indentation.
 		  (setq in-string (point))
 		  (goto-char indent-point))))
 	       ((looking-at "/")
+		(echo "here %s" (ruby-expr-beg))
 		(cond
 		 ((and (not (eobp)) (ruby-expr-beg))
 		  (if (re-search-forward "[^\\]/" indent-point t)
@@ -689,9 +691,13 @@ An end of a defun is found by moving forward from the beginning of one."
       (add-hook
        'ruby-mode-hook
        (lambda ()
+        (make-local-variable 'font-lock-syntactic-keywords)
+	(setq font-lock-syntactic-keywords
+	      '(("\\$\\([#\"'$\\]\\)" 1 (1 . nil))
+                ("\\(#\\)[{$@]" 1 (1 . nil))))
         (make-local-variable 'font-lock-defaults)
         (setq font-lock-defaults 
-              '((ruby-font-lock-keywords) nil nil ((?\_ . "w"))))))
+              '((ruby-font-lock-keywords) nil nil ((?\_ . "w") (?$ . "/"))))))
     (add-hook 'ruby-mode-hook
              (lambda ()
                (setq font-lock-keywords ruby-font-lock-keywords))))))

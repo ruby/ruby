@@ -1,6 +1,13 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(ruby.h)
 
+rb_version=`grep RUBY_VERSION $srcdir/version.h`
+MAJOR=`expr "$rb_version" : '#define RUBY_VERSION "\([0-9][0-9]*\)\.[0-9][0-9]*\.[0-9][0-9]*"'`
+MINOR=`expr "$rb_version" : '#define RUBY_VERSION "[0-9][0-9]*\.\([0-9][0-9]*\)\.[0-9][0-9]*"'`
+TEENY=`expr "$rb_version" : '#define RUBY_VERSION "[0-9][0-9]*\.[0-9][0-9]*\.\([0-9][0-9]*\)"'`
+AC_SUBST(MAJOR)
+AC_SUBST(MINOR)
+AC_SUBST(TEENY)
 dnl checks for alternative programs
 AC_ARG_WITH(gcc, [--without-gcc             never use gcc], [
 	case $withval in
@@ -31,12 +38,12 @@ AC_CANONICAL_HOST
 
 dnl checks for fat-binary
 fat_binary=no
-AC_ARG_ENABLE( fat-binary,
+AC_ARG_ENABLE(fat-binary,
        [--enable-fat-binary       build a NeXT/Apple Multi Architecture Binary. ],
-       [ fat_binary=$enableval ] )
+       [fat_binary=$enableval])
  if test "$fat_binary" = yes ; then
 
-    AC_MSG_CHECKING( target architecture )
+    AC_MSG_CHECKING(target architecture)
 
     case "$host_os" in
     rhapsody*)
@@ -85,27 +92,39 @@ AC_PROG_RANLIB
 AC_SUBST(AR)
 AC_CHECK_PROGS(AR, ar aal, ar)
 AC_PROG_INSTALL
+AC_PROG_LN_S
 AC_PROG_MAKE_SET
 
 # checks for UNIX variants that set C preprocessor variables
 AC_MINIX
 
 AC_CHECK_SIZEOF(int)
+AC_CHECK_SIZEOF(short)
 AC_CHECK_SIZEOF(long)
 AC_CHECK_SIZEOF(void*)
+AC_CHECK_SIZEOF(float)
+AC_CHECK_SIZEOF(double)
 
-AC_MSG_CHECKING(for prototypes)
-AC_CACHE_VAL(rb_cv_have_prototypes,
+AC_CACHE_CHECK(for prototypes, rb_cv_have_prototypes,
   [AC_TRY_COMPILE([int foo(int x) { return 0; }], [return foo(10);],
 	rb_cv_have_prototypes=yes,
 	rb_cv_have_prototypes=no)])
-AC_MSG_RESULT($rb_cv_have_prototypes)
 if test "$rb_cv_have_prototypes" = yes; then
   AC_DEFINE(HAVE_PROTOTYPES)
 fi
 
-AC_MSG_CHECKING(for variable length prototypes and stdarg.h)
-AC_CACHE_VAL(rb_cv_stdarg,
+AC_CACHE_CHECK(token paste string, rb_cv_tokenpaste,
+  [AC_TRY_COMPILE([#define paste(a,b) a##b],
+		  [int xy = 1; return paste(x,y);],
+		  rb_cv_tokenpaste=ansi,
+		  rb_cv_tokenpaste=knr)])
+if test "$rb_cv_tokenpaste" = ansi; then
+  AC_DEFINE(TOKEN_PASTE(x,y),[x##y])
+else
+  AC_DEFINE(TOKEN_PASTE(x,y),[x/**/y])
+fi
+
+AC_CACHE_CHECK(for variable length prototypes and stdarg.h, rb_cv_stdarg,
   [AC_TRY_COMPILE([
 #include <stdarg.h>
 int foo(int x, ...) {
@@ -119,17 +138,14 @@ int foo(int x, ...) {
 ], [return foo(10, "", 3.14);],
 	rb_cv_stdarg=yes,
 	rb_cv_stdarg=no)])
-AC_MSG_RESULT($rb_cv_stdarg)
 if test "$rb_cv_stdarg" = yes; then
   AC_DEFINE(HAVE_STDARG_PROTOTYPES)
 fi
 
-AC_MSG_CHECKING(for gcc attribute noreturn)
-AC_CACHE_VAL(rb_cv_have_attr_noreturn,
+AC_CACHE_CHECK(for gcc attribute noreturn, rb_cv_have_attr_noreturn,
   [AC_TRY_COMPILE([void exit(int x) __attribute__ ((noreturn));], [],
 	rb_cv_have_attr_noreturn=yes,
 	rb_cv_have_attr_noreturn=no)])
-AC_MSG_RESULT($rb_cv_have_attr_noreturn)
 if test "$rb_cv_have_attr_noreturn" = yes; then
   AC_DEFINE(HAVE_ATTR_NORETURN)
 fi
@@ -171,12 +187,13 @@ AC_FUNC_ALLOCA
 AC_FUNC_VFORK
 AC_FUNC_MEMCMP
 AC_REPLACE_FUNCS(dup2 memmove mkdir strcasecmp strerror strftime\
-		 strchr strstr strtoul strdup crypt flock vsnprintf)
+		 strchr strstr strtoul strdup crypt flock vsnprintf\
+		 fnmatch isinf isnan finite)
 AC_CHECK_FUNCS(fmod killpg drand48 random wait4 waitpid syscall getcwd\
 	      truncate chsize times utimes fcntl lockf setitimer\
 	      setruid seteuid setreuid setrgid setegid setregid\
-	      setpgrp2 getpgid setpgid getgroups getpriority\
-	      dlopen sigprocmask sigaction _setjmp setpgrp setsid)
+	      getpgrp setpgrp getpgid setpgid getgroups getpriority\
+	      dlopen sigprocmask sigaction _setjmp setsid)
 if test "$ac_cv_func_strftime" = no; then
     AC_STRUCT_TIMEZONE
     AC_TRY_LINK([],
@@ -186,8 +203,7 @@ fi
 if test "$ac_cv_func_sigprocmask" = yes && test "$ac_cv_func_sigaction" = yes; then
    AC_DEFINE(POSIX_SIGNAL)
 else
-  AC_MSG_CHECKING(for BSD signal semantics)
-  AC_CACHE_VAL(rb_cv_bsd_signal,
+  AC_CACHE_CHECK(for BSD signal semantics, rb_cv_bsd_signal,
     [AC_TRY_RUN([
 #include <stdio.h>
 #include <signal.h>
@@ -208,43 +224,50 @@ main()
 }
 ],
 	rb_cv_bsd_signal=yes,
+	rb_cv_bsd_signal=no,
 	rb_cv_bsd_signal=no)])
-  AC_MSG_RESULT($rb_cv_bsd_signal)
   if test "$rb_cv_bsd_signal" = yes; then
     AC_DEFINE(BSD_SIGNAL)
   fi
 fi
 
-if test "$ac_cv_func_setpgrp2" = yes; then
-  AC_DEFINE(BSD_GETPGRP, getpgrp2)
-  AC_DEFINE(BSD_SETPGRP, setpgrp2)
-else
-  AC_MSG_CHECKING(whether getpgrp() has arg)
-  AC_CACHE_VAL(rb_cv_bsdgetpgrp,
-    [AC_TRY_COMPILE([#include <unistd.h>], [getpgrp(0);],
-      rb_cv_bsdgetpgrp=yes,
-      rb_cv_bsdgetpgrp=no)])
-  AC_MSG_RESULT($rb_cv_bsdgetpgrp)
-  if test "$rb_cv_bsdgetpgrp" = yes; then
-    AC_DEFINE(BSD_GETPGRP, getpgrp)
-  fi
+AC_FUNC_GETPGRP
+AC_FUNC_SETPGRP  
 
-  AC_MSG_CHECKING(whether setpgrp() has args)
-  AC_CACHE_VAL(rb_cv_bsdsetpgrp,
-    [AC_TRY_COMPILE([#include <unistd.h>], [setpgrp(1, 1);],
-	rb_cv_bsdsetpgrp=yes,
-	rb_cv_bsdsetpgrp=no)])
-  AC_MSG_RESULT($rb_cv_bsdsetpgrp)
-  if test "$rb_cv_bsdsetpgrp" = yes; then
-    AC_DEFINE(BSD_SETPGRP, setpgrp)
-  fi
-fi
+AC_CACHE_CHECK(for working strtod, rb_cv_func_strtod,
+[AC_TRY_RUN([
+double strtod ();
+int
+main()
+{
+  {
+    /* Some versions of Linux strtod mis-parse strings with leading '+'.  */
+    char *string = " +69";
+    char *term;
+    double value;
+    value = strtod(string, &term);
+    if (value != 69 || term != (string + 4))
+      exit(1);
+  }
+
+  {
+    /* Under Solaris 2.4, strtod returns the wrong value for the
+       terminating character under some conditions.  */
+    char *string = "NaN";
+    char *term;
+    strtod(string, &term);
+    if (term != string && *(term - 1) == 0)
+      exit(1);
+  }
+  exit(0);
+}
+], rb_cv_func_strtod=yes, rb_cv_func_strtod=no, rb_cv_func_strtod=no)])
+test $rb_cv_func_strtod = no && LIBOBJS="$LIBOBJS strtod.o"
 
 AC_C_BIGENDIAN
 AC_CHAR_UNSIGNED
 
-AC_MSG_CHECKING(whether right shift preserve sign bit)
-AC_CACHE_VAL(rb_cv_rshift_sign,
+AC_CACHE_CHECK(whether right shift preserve sign bit, rb_cv_rshift_sign,
     [AC_TRY_RUN([
 int
 main()
@@ -255,15 +278,15 @@ main()
 }
 ],
 	rb_cv_rshift_sign=yes,
-	rb_cv_rshift_sign=no)])
-  AC_MSG_RESULT($rb_cv_rshift_sign)
+	rb_cv_rshift_sign=no,
+	rb_cv_rshift_sign=yes)])
 if test "$rb_cv_rshift_sign" = yes; then
   AC_DEFINE(RSHIFT(x,y), ((x)>>y))
 else
   AC_DEFINE(RSHIFT(x,y), (((x)<0) ? ~((~(x))>>y) : (x)>>y))
 fi
 
-AC_MSG_CHECKING([count field in FILE structures])
+AC_MSG_CHECKING(count field in FILE structures)
 AC_CACHE_VAL(rb_cv_fcnt,
 [AC_TRY_COMPILE([#include <stdio.h>],
 	[FILE *f = stdin; f->_cnt = 0;], rb_cv_fcnt="_cnt", )
@@ -296,8 +319,7 @@ AC_ARG_WITH(dln-a-out, [--with-dln-a-out          use dln_a_out if possible], [
 
 case "$host_os" in
     linux*)
-  AC_MSG_CHECKING(whether ELF binaries are produced)
-  AC_CACHE_VAL(rb_cv_linux_elf,
+  AC_CACHE_CHECK(whether ELF binaries are produced, rb_cv_binary_elf,
   [AC_TRY_RUN([
 /* Test for whether ELF binaries are produced */
 #include <fcntl.h>
@@ -315,13 +337,12 @@ main() {
 	exit(0); /* succeed (yes, it's ELF) */
 }
 ],
-	rb_cv_linux_elf=yes,
-	rb_cv_linux_elf=no,
-	[:])])
-  AC_MSG_RESULT($rb_cv_linux_elf)
-  if test "$rb_cv_linux_elf" = no; then
+	rb_cv_binary_elf=yes,
+	rb_cv_binary_elf=no,
+	rb_cv_binary_elf=yes)])
+  if test "$rb_cv_binary_elf" = no; then
     with_dln_a_out=yes
-    host_os=linux-a.out
+    host_os=${host_os}-a_out
   else
     LDFLAGS="-rdynamic"
   fi;;
@@ -346,14 +367,14 @@ if test "$with_dln_a_out" != yes; then
     rhapsody*)	;;
     human*)	;;
     cygwin*)	CCDLFLAGS=-DDLLIMPORT;;
-    *) CCDLFLAGS=-fpic;;
+    *) CCDLFLAGS=-fPIC;;
     esac
   else
     case "$host_os" in
 	hpux*)		CCDLFLAGS='+z';;
-	solaris*|irix*)	CCDLFLAGS='-K pic' ;;
-	sunos*)		CCDLFLAGS='-pic' ;;
-	esix*|uxpds*)   CCDLFLAGS='-Kpic' ;;
+	solaris*|irix*)	CCDLFLAGS='-K PIC' ;;
+	sunos*)		CCDLFLAGS='-PIC' ;;
+	esix*|uxpds*)   CCDLFLAGS='-KPIC' ;;
 	*)		CCDLFLAGS='' ;;
     esac
   fi
@@ -364,6 +385,7 @@ if test "$with_dln_a_out" != yes; then
 			LDFLAGS="-Wl,-E"
 			rb_cv_dlopen=yes;;
 	solaris*) 	LDSHARED='ld -G'
+			test "$GCC" = yes && `$CC --print-prog-name=ld` -v 2>&1 | grep "GNU ld" > /dev/null && LDFLAGS="-Wl,-E"
 			rb_cv_dlopen=yes;;
 	sunos*) 	LDSHARED='ld -assert nodefinitions'
 			rb_cv_dlopen=yes;;
@@ -375,15 +397,25 @@ if test "$with_dln_a_out" != yes; then
 			rb_cv_dlopen=yes ;;
 	linux*) 	LDSHARED="gcc -shared"
 			rb_cv_dlopen=yes ;;
-	freebsd3*)      LDSHARED="ld -Bshareable"   
-			LDFLAGS="-rdynamic"
-			rb_cv_dlopen=yes ;;
-	freebsd*) 	LDSHARED="ld -Bshareable"
+	freebsd*)       LDSHARED="gcc -shared"
+			if test -x /usr/bin/objformat && \
+			   test `/usr/bin/objformat` = "elf" ; then
+			    LDFLAGS="-rdynamic"
+			    DLDFLAGS='-Wl,-soname,$(.TARGET)'
+			    rb_cv_freebsd_elf=yes
+			else
+			  test "$GCC" = yes && `$CC --print-prog-name=ld` -v 2>&1 | grep "GNU ld" > /dev/null || LDSHARED="ld -Bshareable"
+			fi
 			rb_cv_dlopen=yes ;;
 	netbsd*) 	LDSHARED="ld -Bshareable"
+			case "$host_cpu" in
+			alpha|mips)
+				LDFLAGS="-export-dynamic" ;;
+			*)
+				;;
+			esac
 			rb_cv_dlopen=yes ;;
 	openbsd*) 	LDSHARED="ld -Bforcearchive -Bshareable"
-			CCDLFLAGS=-fPIC
 			rb_cv_dlopen=yes ;;
 	nextstep*)	LDSHARED='cc -r'
 			LDFLAGS="-u libsys_s"
@@ -402,11 +434,15 @@ if test "$with_dln_a_out" != yes; then
 	human*)		DLDFLAGS=''
 			LDSHARED=''
 			LDFLAGS='' ;;
-	beos*) 		LDSHARED="ld -xms"
-			case "$host_cpu" in
+	beos*) 		case "$host_cpu" in
 			  powerpc*)
+			    LDSHARED="ld -xms"
 			    DLDFLAGS="-f ruby.exp -lbe -lroot glue-noinit.a init_term_dyn.o start_dyn.o"
                             ;;
+			  i586*)
+			    LDSHARED="ld -shared"
+			    DLDFLAGS="-L/boot/develop/lib/x86 -lbe -lroot"
+			    ;;
 			  *)
 			    DLDFLAGS="ruby.def -lbe -lroot glue-noinit.a init_term_dyn.o start_dyn.o"
 			    ;;
@@ -421,9 +457,8 @@ fi
 dln_a_out_works=no
 if test "$ac_cv_header_a_out_h" = yes; then
   if test "$with_dln_a_out" = yes || test "$rb_cv_dlopen" = unknown; then
-    AC_MSG_CHECKING(whether matz's dln works)
     cat confdefs.h > config.h
-    AC_CACHE_VAL(rb_cv_dln_a_out,
+    AC_CACHE_CHECK(whether matz's dln works, rb_cv_dln_a_out,
     [AC_TRY_COMPILE([
 #define USE_DLN_A_OUT
 #include "dln.c"
@@ -431,7 +466,6 @@ if test "$ac_cv_header_a_out_h" = yes; then
 	[], 
 	rb_cv_dln_a_out=yes,
 	rb_cv_dln_a_out=no)])
-    AC_MSG_RESULT($rb_cv_dln_a_out)
     if test "$rb_cv_dln_a_out" = yes; then
       dln_a_out_works=yes
       AC_DEFINE(USE_DLN_A_OUT)
@@ -498,8 +532,8 @@ case "$host_os" in
     AC_CHECK_LIB(signal, _harderr)
     AC_CHECK_LIB(hmem, hmemset)
     AC_CHECK_FUNCS(select)
-    AC_MSG_CHECKING(whether PD libc _dtos18 fail to convert big number)
-    AC_CACHE_VAL(rb_cv_missing__dtos18,
+    AC_CACHE_CHECK(whether PD libc _dtos18 fail to convert big number,
+		   rb_cv_missing__dtos18,
     [AC_TRY_RUN(
 changequote(<<, >>)dnl
 <<
@@ -512,13 +546,12 @@ main ()
 }
 >>,
 changequote([, ])dnl
-rb_cv_missing__dtos18=yes, rb_cv_missing__dtos18=no)])
-    AC_MSG_RESULT($rb_cv_missing__dtos18)
+rb_cv_missing__dtos18=yes, rb_cv_missing__dtos18=no, rb_cv_missing__dtos18=no)])
     if test "$rb_cv_missing__dtos18" = yes; then
       AC_DEFINE(MISSING__DTOS18)
     fi
-    AC_MSG_CHECKING(whether PD libc fconvert fail to round)
-    AC_CACHE_VAL(rb_cv_missing_fconvert,
+    AC_CACHE_CHECK(whether PD libc fconvert fail to round,
+		   rb_cv_missing_fconvert,
     [AC_TRY_RUN(
 changequote(<<, >>)dnl
 <<
@@ -532,8 +565,7 @@ main ()
 }
 >>,
 changequote([, ])dnl
-rb_cv_missing_fconvert=yes, rb_cv_missing_fconvert=no)])
-    AC_MSG_RESULT($rb_cv_missing_fconvert)
+rb_cv_missing_fconvert=yes, rb_cv_missing_fconvert=no, rb_cv_missing_fconvert=no)])
     if test "$rb_cv_missing_fconvert" = yes; then
       AC_DEFINE(MISSING_FCONVERT)
     fi
@@ -565,18 +597,22 @@ if test "$fat_binary" = yes ; then
   CFLAGS="$CFLAGS $ARCH_FLAG"
 fi
 
-LIBRUBY='libruby.a'
-LIBRUBYARG='libruby.a'
+LIBRUBY_A='lib$(RUBY_INSTALL_NAME).a'
+LIBRUBY='$(LIBRUBY_A)'
+LIBRUBYARG='$(LIBRUBY_A)'
 SOLIBS=
 if test "$host_os" = "beos"; then
-  CFLAGS="$CFLAGS -relax_pointers"
-  LIBRUBY='libruby.so'
-  LIBRUBYARG='-lruby'
+  LIBRUBY='$(LIBRUBY_SO)'
+  LIBRUBYARG='-l$(RUBY_INSTALL_NAME)'
   SOLIBS='-lnet'
   echo creating ruby.def
   case "$host_cpu" in
     powerpc*)
       cp beos/ruby.def.in ruby.exp
+      CFLAGS="$CFLAGS -relax_pointers"
+      ;;
+    i586*)
+      LDFLAGS="$LDFLAGS -L."
       ;;
     *)
       echo EXPORTS > ruby.def
@@ -585,9 +621,30 @@ if test "$host_os" = "beos"; then
   esac
 fi
 
+LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR).$(TEENY)'
+LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so'
 if test "$enable_shared" = 'yes'; then
-  LIBRUBY='libruby.so'
-  LIBRUBYARG='-L./ -lruby'
+  LIBRUBY='$(LIBRUBY_SO)'
+  LIBRUBYARG='-L./ -l$(RUBY_INSTALL_NAME)'
+  CFLAGS="$CFLAGS $CCDLFLAGS"
+  case "$host_os" in
+    sunos4*|linux*)
+	LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_INSTALL_NAME).so'
+	;;
+    freebsd*)
+	LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).so.$(MAJOR)$(MINOR)'
+	if test "$rb_cv_freebsd_elf" != "yes" ; then
+	    LIBRUBY_SO="$LIBRUBY_SO.\$(TEENY)"
+	    LIBRUBY_ALIASES=''
+	fi
+	;;
+    hpux*)
+	LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).sl.$(MAJOR).$(MINOR).$(TEENY)'
+	LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).sl.$(MAJOR).$(MINOR) lib$(RUBY_INSTALL_NAME).sl'
+	;;
+    *)
+	;;
+  esac
 fi
 
 case "$host_os" in
@@ -604,7 +661,10 @@ case "$host_os" in
 		;;	
 esac
 
-
+AC_SUBST(RUBY_INSTALL_NAME)
+AC_SUBST(LIBRUBY_A)
+AC_SUBST(LIBRUBY_SO)
+AC_SUBST(LIBRUBY_ALIASES)
 AC_SUBST(LIBRUBY)
 AC_SUBST(LIBRUBYARG)
 AC_SUBST(SOLIBS)
@@ -618,28 +678,26 @@ test "$program_suffix" != NONE &&
   ri_suffix=$program_suffix
 
 RUBY_INSTALL_NAME="${ri_prefix}ruby${ri_suffix}"
-AC_DEFINE_UNQUOTED(RUBY_LIB, "${prefix}/lib/${RUBY_INSTALL_NAME}")
-AC_DEFINE_UNQUOTED(RUBY_SITE_LIB, "${prefix}/lib/${RUBY_INSTALL_NAME}/site_ruby")
+#RUBY_LIB_PATH="${prefix}/lib/${RUBY_INSTALL_NAME}/${MAJOR}.${MINOR}"
+RUBY_LIB_PATH="${prefix}/lib/ruby/${MAJOR}.${MINOR}"
+AC_DEFINE_UNQUOTED(RUBY_LIB, "${RUBY_LIB_PATH}")
+AC_DEFINE_UNQUOTED(RUBY_SITE_LIB, "${RUBY_LIB_PATH}/site_ruby")
 AC_SUBST(arch)dnl
 
 if test "$fat_binary" = yes ; then
     arch="fat-${host_os}"
 
     AC_DEFINE_UNQUOTED(RUBY_THIN_ARCHLIB,
-                 "${prefix}/lib/${RUBY_INSTALL_NAME}/" __ARCHITECTURE__ "-${host_os}" )
+                 "${RUBY_LIB_PATH}/" __ARCHITECTURE__ "-${host_os}" )
 
     AC_DEFINE_UNQUOTED(RUBY_SITE_THIN_ARCHLIB,
-                 "${prefix}/lib/${RUBY_INSTALL_NAME}/" __ARCHITECTURE__ "-${host_os}" )
-
-    AC_DEFINE_UNQUOTED(RUBY_ARCHLIB, "${prefix}/lib/${RUBY_INSTALL_NAME}/${arch}")
-    AC_DEFINE_UNQUOTED(RUBY_SITE_ARCHLIB, "${prefix}/lib/${RUBY_INSTALL_NAME}/site_ruby/${arch}")
-    AC_DEFINE_UNQUOTED(RUBY_PLATFORM,  __ARCHITECTURE__ "-${host_os}" )
+                 "${RUBY_LIB_PATH}/" __ARCHITECTURE__ "-${host_os}" )
 else
     arch="${host_cpu}-${host_os}"
-    AC_DEFINE_UNQUOTED(RUBY_ARCHLIB, "${prefix}/lib/${RUBY_INSTALL_NAME}/${arch}")
-    AC_DEFINE_UNQUOTED(RUBY_SITE_ARCHLIB, "${prefix}/lib/${RUBY_INSTALL_NAME}/site_ruby/${arch}")
-    AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "${arch}")
 fi
+AC_DEFINE_UNQUOTED(RUBY_ARCHLIB, "${RUBY_LIB_PATH}/${arch}")
+AC_DEFINE_UNQUOTED(RUBY_SITE_ARCHLIB, "${RUBY_LIB_PATH}/site_ruby/${arch}")
+AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "${arch}")
 
 echo "creating config.h"
 cat confdefs.h > config.h

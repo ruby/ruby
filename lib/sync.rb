@@ -1,5 +1,5 @@
 #
-#   sync.rb - カウント付2-フェーズロッククラス
+#   sync.rb - 2 phase lock with counter
 #   	$Release Version: 0.2$
 #   	$Revision$
 #   	$Date$
@@ -54,7 +54,7 @@ module Sync_m
   SH = :SH
   EX = :EX
   
-  # 例外定義
+  # exceptions
   class Err < StandardError
     def Err.Fail(*opt)
       fail self, sprintf(self::Message, *opt)
@@ -97,7 +97,7 @@ module Sync_m
       dummy = cl.new
       Sync_m.extendable_module(dummy)
     rescue NameError
-      # newが定義されていない時は, DATAとみなす.
+      # if new is not defined, cl must be Data.
       For_primitive_object
     end
   end
@@ -105,8 +105,8 @@ module Sync_m
   def Sync_m.extend_class(cl)
     return super if cl.instance_of?(Module)
     
-    # モジュールの時は何もしない. クラスの場合, 適切なモジュールの決定
-    # とaliasを行う.  
+    # do nothing for Modules
+    # make aliases and include the proper module.
     real = includable_module(cl)
     cl.module_eval %q{
       include real
@@ -267,7 +267,7 @@ module Sync_m
 	sync_sh_locker[Thread.current] = count + 1
 	ret = TRUE
       when EX
-	# 既に, モードがEXである時は, 必ずEXロックとなる.
+	# in EX mode, lock will upgrade to EX lock
 	if sync_ex_locker == Thread.current
 	  self.sync_ex_count = sync_ex_count + 1
 	  ret = TRUE
@@ -342,7 +342,7 @@ module Sync_m
     
     def For_primitive_object.sync_finalize(id)
       wait = Sync_Locked.delete(id)
-      # waiting == [] ときだけ GCされるので, 待ち行列の解放は意味がない.
+      # need not to free waiting
     end
     
     def sync_mode

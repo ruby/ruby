@@ -12,8 +12,12 @@
 #include "rubyio.h"
 #include "st.h"
 
+#ifndef atof
+double strtod();
+#endif
+
 #define MARSHAL_MAJOR   4
-#define MARSHAL_MINOR   0
+#define MARSHAL_MINOR   1
 
 #define TYPE_NIL	'0'
 #define TYPE_TRUE	'T'
@@ -164,7 +168,7 @@ w_unique(s, arg)
 static void w_object _((VALUE,struct dump_arg*,int));
 
 static int
-rb_hash_each(key, value, arg)
+hash_each(key, value, arg)
     VALUE key, value;
     struct dump_call_arg *arg;
 {
@@ -174,7 +178,7 @@ rb_hash_each(key, value, arg)
 }
 
 static int
-rb_obj_each(id, value, arg)
+obj_each(id, value, arg)
     ID id;
     VALUE value;
     struct dump_call_arg *arg;
@@ -249,7 +253,7 @@ w_object(obj, arg, limit)
 
 	    w_byte(TYPE_USERDEF, arg);
 	    w_unique(rb_class2name(CLASS_OF(obj)), arg);
-	    v = rb_funcall(obj, s_dump, 1, limit);
+	    v = rb_funcall(obj, s_dump, 1, INT2NUM(limit));
 	    if (TYPE(v) != T_STRING) {
 		rb_raise(rb_eTypeError, "_dump_to must return String");
 	    }
@@ -320,7 +324,7 @@ w_object(obj, arg, limit)
 	    w_uclass(obj, rb_cHash, arg);
 	    w_byte(TYPE_HASH, arg);
 	    w_long(RHASH(obj)->tbl->num_entries, arg);
-	    st_foreach(RHASH(obj)->tbl, rb_hash_each, &c_arg);
+	    st_foreach(RHASH(obj)->tbl, hash_each, &c_arg);
 	    break;
 
 	  case T_STRUCT:
@@ -357,7 +361,7 @@ w_object(obj, arg, limit)
 		w_unique(path, arg);
 		if (ROBJECT(obj)->iv_tbl) {
 		    w_long(ROBJECT(obj)->iv_tbl->num_entries, arg);
-		    st_foreach(ROBJECT(obj)->iv_tbl, rb_obj_each, &c_arg);
+		    st_foreach(ROBJECT(obj)->iv_tbl, obj_each, &c_arg);
 		}
 		else {
 		    w_long(0, arg);
@@ -641,13 +645,10 @@ r_object(arg)
 
       case TYPE_FLOAT:
 	{
-#ifndef atof
-	    double atof();
-#endif
 	    char *buf;
 
 	    r_bytes(buf, arg);
-	    v = rb_float_new(atof(buf));
+	    v = rb_float_new(strtod(buf, 0));
 	    return r_regist(v, arg);
 	}
 
@@ -754,7 +755,7 @@ r_object(arg)
 		v = rb_funcall(klass, s_load, 1, r_string(arg));
 		return r_regist(v, arg);
 	    }
-	    rb_raise(rb_eTypeError, "class %s needs to have method `_load_from'",
+	    rb_raise(rb_eTypeError, "class %s needs to have method `_load'",
 		     rb_class2name(klass));
 	}
         break;

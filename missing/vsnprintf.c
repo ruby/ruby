@@ -58,9 +58,6 @@
 */
 
 #include <sys/types.h>
-#ifdef NT
-typedef unsigned int size_t;
-#endif
 #define u_long unsigned long
 #define u_short unsigned short
 #define u_int unsigned int
@@ -104,6 +101,9 @@ typedef unsigned int size_t;
 #define __const
 #endif /* People who don't like const sys_error */
 
+#ifdef NT
+typedef long size_t;
+#endif
 
 #ifndef NULL
 #define	NULL	0
@@ -179,32 +179,6 @@ typedef	struct __sFILE {
 #define	EOF	(-1)
 
 
-/*
- * The __sfoo macros are here so that we can 
- * define function versions in the C library.
- */
-#define	__sgetc(p) (--(p)->_r < 0 ? __srget(p) : (int)(*(p)->_p++))
-#if defined(__GNUC__) && defined(__STDC__)
-static __inline int __sputc(int _c, FILE *_p) {
-	if (--_p->_w >= 0 || (_p->_w >= _p->_lbfsize && (char)_c != '\n'))
-		return (*_p->_p++ = _c);
-	else
-		return (__swbuf(_c, _p));
-}
-#else
-/*
- * This has been tuned to generate reasonable code on the vax using pcc.
- */
-#define	__sputc(c, p) \
-	(--(p)->_w < 0 ? \
-		(p)->_w >= (p)->_lbfsize ? \
-			(*(p)->_p = (c)), *(p)->_p != '\n' ? \
-				(int)*(p)->_p++ : \
-				__swbuf('\n', p) : \
-			__swbuf((int)(c), p) : \
-		(*(p)->_p = (c), (int)*(p)->_p++))
-#endif
-
 #define	__sfeof(p)	(((p)->_flags & __SEOF) != 0)
 #define	__sferror(p)	(((p)->_flags & __SERR) != 0)
 #define	__sclearerr(p)	((void)((p)->_flags &= ~(__SERR|__SEOF)))
@@ -217,11 +191,6 @@ static __inline int __sputc(int _c, FILE *_p) {
 #ifndef _ANSI_SOURCE
 #define	fileno(p)	__sfileno(p)
 #endif
-
-#ifndef lint
-#define	getc(fp)	__sgetc(fp)
-#define putc(x, fp)	__sputc(x, fp)
-#endif /* lint */
 
 
 #if defined(__hpux) && !defined(__GNUC__)
@@ -447,7 +416,15 @@ BSD__ultoa(val, endp, base, octzero, xdigs)
 
 #ifdef FLOATING_POINT
 #include <math.h>
-#include "floatio.h"
+/* #include "floatio.h" */
+
+#ifndef MAXEXP
+# define MAXEXP 1024
+#endif
+
+#ifndef MAXFRACT
+# define MAXFRACT 64
+#endif
 
 #define	BUF		(MAXEXP+MAXFRACT+1)	/* + decimal point */
 #define	DEFPREC		6

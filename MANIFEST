@@ -1,4 +1,5 @@
 COPYING
+COPYING.LIB
 ChangeLog
 MANIFEST
 Makefile.in
@@ -28,8 +29,6 @@ env.h
 error.c
 eval.c
 file.c
-fnmatch.c
-fnmatch.h
 gc.c
 glob.c
 hash.c
@@ -50,6 +49,7 @@ object.c
 pack.c
 parse.c
 parse.y
+prec.c
 process.c
 random.c
 range.c
@@ -142,7 +142,12 @@ missing/crypt.c
 missing/dir.h
 missing/dup2.c
 missing/file.h
+missing/finite.c
 missing/flock.c
+missing/fnmatch.c
+missing/fnmatch.h
+missing/isinf.c
+missing/isnan.c
 missing/memcmp.c
 missing/memmove.c
 missing/mkdir.c
@@ -152,6 +157,7 @@ missing/strdup.c
 missing/strerror.c
 missing/strftime.c
 missing/strstr.c
+missing/strtod.c
 missing/strtol.c
 missing/strtoul.c
 missing/vsnprintf.c

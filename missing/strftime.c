@@ -92,21 +92,23 @@
 
 #ifndef __STDC__
 #define const	/**/
-extern void *malloc();
-extern void *realloc();
 extern void tzset();
-extern char *strchr();
-extern char *getenv();
 static int weeknumber();
 adddecl(static int iso8601wknum();)
 #else
-extern void *malloc(unsigned count);
-extern void *realloc(void *ptr, unsigned count);
 extern void tzset(void);
-extern char *strchr(const char *str, int ch);
-extern char *getenv(const char *v);
 static int weeknumber(const struct tm *timeptr, int firstweekday);
 adddecl(static int iso8601wknum(const struct tm *timeptr);)
+#endif
+
+#ifdef STDC_HEADERS
+#include <stdlib.h>
+#include <string.h>
+#else
+extern void *malloc();
+extern void *realloc();
+extern char *getenv();
+extern char *strchr();
 #endif
 
 #ifdef __GNUC__
@@ -348,8 +350,8 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 				strcpy(tbuf, ampm[1]);
 			break;
 
-		case 'S':	/* second, 00 - 61 */
-			i = range(0, timeptr->tm_sec, 61);
+		case 'S':	/* second, 00 - 60 */
+			i = range(0, timeptr->tm_sec, 60);
 			sprintf(tbuf, "%02d", i);
 			break;
 
@@ -504,7 +506,7 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 
 #ifdef VMS_EXT
 		case 'v':	/* date as dd-bbb-YYYY */
-			sprintf(tbuf, "%02d-%3.3s-%4d",
+			sprintf(tbuf, "%2d-%3.3s-%4d",
 				range(1, timeptr->tm_mday, 31),
 				months_a[range(0, timeptr->tm_mon, 11)],
 				timeptr->tm_year + 1900);
@@ -562,7 +564,7 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 			else
 				sprintf(tbuf, "%02d", y % 100);
 			break;
-#endif ISO_DATE_EXT
+#endif /* ISO_DATE_EXT */
 		default:
 			tbuf[0] = '%';
 			tbuf[1] = *format;
@@ -826,7 +828,7 @@ static char *array[] =
 	"(%%M)                                       minute (00..59)  %M",
 	"(%%O)                           Locale extensions (ignored)  %O",
 	"(%%R)                                 time, 24-hour (%%H:%%M)  %R",
-	"(%%S)                                       second (00..61)  %S",
+	"(%%S)                                       second (00..60)  %S",
 	"(%%T)                              time, 24-hour (%%H:%%M:%%S)  %T",
 	"(%%U)    week of year, Sunday as first day of week (00..53)  %U",
 	"(%%V)                    week of year according to ISO 8601  %V",

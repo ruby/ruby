@@ -6,7 +6,7 @@
   $Date$
   created at: Fri May 28 18:02:42 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -18,6 +18,8 @@
 #include "node.h"
 #include "st.h"
 #include <stdio.h>
+#include <string.h>
+#include <errno.h>
 
 /* hack for bison */
 #ifdef const
@@ -801,6 +803,10 @@ call_args	: command_call
 			value_expr($1);
 			$$ = NEW_LIST($1);
 		    }
+		| args ','
+		    {
+			$$ = $1;
+		    }
 		| args opt_block_arg
 		    {
 			$$ = arg_blk_pass($1, $2);
@@ -809,6 +815,10 @@ call_args	: command_call
 		    {
 			$$ = arg_add($1, $4);
 			$$ = arg_blk_pass($$, $5);
+		    }
+		| assocs ','
+		    {
+			$$ = NEW_LIST(NEW_HASH($1));
 		    }
 		| assocs opt_block_arg
 		    {
@@ -824,6 +834,10 @@ call_args	: command_call
 		    {
 			$$ = list_append($1, NEW_HASH($3));
 			$$ = arg_blk_pass($$, $4);
+		    }
+		| args ',' assocs ','
+		    {
+			$$ = list_append($1, NEW_HASH($3));
 		    }
 		| args ',' assocs ',' tSTAR arg opt_block_arg
 		    {
@@ -1665,6 +1679,7 @@ yycompile(f)
     ruby__end__seen = 0;
     ruby_eval_tree = 0;
     newline_seen = 0;
+    heredoc_end = 0;
     ruby_sourcefile = f;
     ruby_in_compile = 1;
     n = yyparse();
@@ -1745,6 +1760,10 @@ normalize_newline(line)
 	RSTRING(line)->ptr[RSTRING(line)->len-2] = '\n';
 	RSTRING(line)->len--;
     }
+#ifdef __MACOS__
+    else if (RSTRING(line)->ptr[RSTRING(line)->len-1] == '\r')
+	RSTRING(line)->ptr[RSTRING(line)->len-1] = '\n';
+#endif
 }
 
 static int
@@ -2011,8 +2030,10 @@ parse_regx(term, paren)
 		}
 		/* fall through */
 	      default:
-		if (c == paren) nest++;
-		if (c == term) nest--;
+		if (paren)  {
+		    if (c == paren) nest++;
+		    if (c == term) nest--;
+		}
 		if (c == '\n') {
 		    ruby_sourceline++;
 		}
@@ -2156,10 +2177,12 @@ parse_string(func, term, paren)
   	    }
 	    continue;
 	}
-	if (c == paren) nest++;
-	if (c == term) {
-	    nest--;
-	    if (nest == 0) break;
+	if (paren) {
+	    if (c == paren) nest++;
+	    if (c == term) {
+		nest--;
+		if (nest == 0) break;
+	    }
 	}
 	tokadd(c);
     }
@@ -2234,10 +2257,12 @@ parse_qstring(term, paren)
 		tokadd('\\');
 	    }
 	}
-	if (c == paren) nest++;
-	if (c == term) {
-	    nest--;
-	    if (nest == 0) break;
+	if (paren) {
+	    if (c == paren) nest++;
+	    if (c == term) {
+		nest--;
+		if (nest == 0) break;
+	    }
 	}
 	tokadd(c);
     }
@@ -2268,7 +2293,7 @@ here_document(term, indent)
     char *eos, *p;
     int len;
     VALUE str;
-    volatile VALUE line;
+    volatile VALUE line = 0;
     VALUE lastline_save;
     int offset_save;
     NODE *list = 0;
@@ -2307,15 +2332,15 @@ here_document(term, indent)
 
     str = rb_str_new(0,0);
     for (;;) {
-	line = (*lex_gets)(lex_input);
+	lex_lastline = line = (*lex_gets)(lex_input);
 	if (NIL_P(line)) {
 	  error:
 	    ruby_sourceline = linesave;
 	    rb_compile_error("can't find string \"%s\" anywhere before EOF", eos);
-	    free(eos);
-	    return 0;
+		free(eos);
+		return 0;
 	}
-        normalize_newline(line);
+	normalize_newline(line);
 	ruby_sourceline++;
 	p = RSTRING(line)->ptr;
 	if (indent) {
@@ -2336,6 +2361,7 @@ here_document(term, indent)
 	    }
 	}
 #endif
+      retry:
 	switch (parse_string(term, '\n', '\n')) {
 	  case tSTRING:
 	  case tXSTRING:
@@ -2359,6 +2385,10 @@ here_document(term, indent)
 
 	  case 0:
 	    goto error;
+	}
+	if (lex_lastline != line) {
+	    line = lex_lastline;
+	    goto retry;
 	}
     }
     free(eos);
@@ -2396,8 +2426,8 @@ arg_ambiguous()
     rb_warning("ambiguous first argument; make sure");
 }
 
-#ifndef atof
-double atof();
+#ifndef strtod
+double strtod ();
 #endif
 
 static int
@@ -2440,9 +2470,14 @@ retry:
 		for (i = 0; i < len; i++) {
 		    c = nextc();
 		    if (c == '\n') {
-			ruby_sourceline++;
+			pushback(c);
 			break;
 		    }
+		}
+	    }
+	    else if (c >= 0x80) {
+		if ((c = nextc()) != '\\') {
+		    pushback(c);
 		}
 	    }
 	}
@@ -2598,7 +2633,7 @@ retry:
 	return parse_string(c,c,c);
 
       case '\'':
-	return parse_qstring(c,c);
+	return parse_qstring(c,0);
 
       case '?':
 	if (lex_state == EXPR_END) {
@@ -2753,29 +2788,49 @@ retry:
 		c = nextc();
 		if (c == 'x' || c == 'X') {
 		    /* hexadecimal */
-		    while (c = nextc()) {
+		    c = nextc();
+		    if (!ISXDIGIT(c)) {
+			yyerror("hexadecimal number without hex-digits");
+		    }
+		    do {
 			if (c == '_') continue;
 			if (!ISXDIGIT(c)) break;
 			tokadd(c);
-		    }
+		    } while (c = nextc());
 		    pushback(c);
 		    tokfix();
 		    yylval.val = rb_str2inum(tok(), 16);
 		    return tINTEGER;
 		}
-		else if (c >= '0' && c <= '7') {
-		    /* octal */
+		if (c == 'b' || c == 'B') {
+		    /* binary */
+		    c = nextc();
+		    if (c != '0' && c != '1') {
+			yyerror("numeric constant with no digits");
+		    }
 		    do {
+			if (c == '_') continue;
+			if (c != '0'&& c != '1') break;
 			tokadd(c);
-			while ((c = nextc()) == '_')
-			    ;
-		    } while (c >= '0' && c <= '9');
+		    } while (c = nextc());
+		    pushback(c);
+		    tokfix();
+		    yylval.val = rb_str2inum(tok(), 2);
+		    return tINTEGER;
+		}
+		if (c >= '0' && c <= '7' || c == '_') {
+		    /* octal */
+	            do {
+			if (c  == '_') continue;
+			if (c < '0' || c > '7') break;
+			tokadd(c);
+		    } while (c = nextc());
 		    pushback(c);
 		    tokfix();
 		    yylval.val = rb_str2inum(tok(), 8);
 		    return tINTEGER;
 		}
-		else if (c > '7' && c <= '9') {
+		if (c > '7' && c <= '9') {
 		    yyerror("Illegal octal digit");
 		}
 		else if (c == '.') {
@@ -2840,7 +2895,12 @@ retry:
 	    pushback(c);
 	    tokfix();
 	    if (is_float) {
-		yylval.val = rb_float_new(atof(tok()));
+		double d = strtod(tok(), 0);
+		if (errno == ERANGE) {
+		    rb_warn("Float %s out of range", tok());
+		    errno = 0;
+		}
+		yylval.val = rb_float_new(d);
 		return tFLOAT;
 	    }
 	    yylval.val = rb_str2inum(tok(), 10);
@@ -2985,7 +3045,7 @@ retry:
 		rb_compile_error("unterminated quoted string meets end of file");
 		return 0;
 	    }
-	    paren = term;
+	    paren = 0;
 	    if (term == '(') term = ')';
 	    else if (term == '[') term = ']';
 	    else if (term == '{') term = '}';
@@ -3130,6 +3190,13 @@ retry:
     }
     if ((c == '!' || c == '?') && is_identchar(tok()[0])) {
 	tokadd(c);
+	if (c == '!') {
+	    c = nextc();
+	    if (c == '=') {
+		rb_warn("identifier! immediately followed by `='");
+	    }
+	    pushback(c);
+	}
     }
     else {
 	pushback(c);
@@ -3423,7 +3490,7 @@ block_append(head, tail)
 	end = head->nd_end;
     }
 
-    if (RTEST(rb_verbose)) {
+    if (RTEST(ruby_verbose)) {
 	NODE *nd = end->nd_head;
       newline:
 	switch (nd_type(nd)) {

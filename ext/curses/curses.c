@@ -11,6 +11,9 @@
 # ifdef HAVE_NCURSES_CURSES_H
 #  include <ncurses/curses.h>
 # else
+#ifdef __hpux
+#include <curses_colr/curses.h>
+#else
 #  include <curses.h>
 #  if (defined(__bsdi__) || defined(__NetBSD__)) && !defined(_maxx)
 #   define _maxx maxx
@@ -25,6 +28,7 @@
 #   define _begy begy
 #  endif
 # endif
+#endif
 #endif
 
 #include "ruby.h"

@@ -6,7 +6,7 @@
   $Date$
   created at: Fri Mar 10 17:22:34 JST 1995
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -18,6 +18,10 @@
 
 #define RUBY_NO_INLINE
 #include "ruby.h"
+
+#ifdef USE_CWGUSI
+extern char* mktemp(char*);
+#endif
 
 VALUE
 rb_class_of(obj)
@@ -757,7 +761,7 @@ void ruby_qsort (base, nel, size, cmp) void* base; int nel; int size; int (*cmp)
      if (t < 0)                 {mmswap(L,l); l = L; goto loopB;}  /*535-5*/
    }
    
-   loopA: eq_l = 1; eq_r = 1;  /* splitting type A */ /* left <= median < right±¦*/
+   loopA: eq_l = 1; eq_r = 1;  /* splitting type A */ /* left <= median < right */
    for (;;) {
      for (;;) {
        if ((l += size) == r)
@@ -805,3 +809,4 @@ void ruby_qsort (base, nel, size, cmp) void* base; int nel; int size; int (*cmp)
    else goto nxt;                         /* need not to sort both sides */
  }
 }
+
