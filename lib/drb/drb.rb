@@ -461,7 +461,7 @@ module DRb
     # when the unmarshalling failed.  It is used to determine the
     # name of the unmarshalled object.
     def initialize(err, buf)
-      case err
+      case err.to_s
       when /uninitialized constant (\S+)/
 	@name = $1
       when /undefined class\/module (\S+)/
@@ -573,7 +573,7 @@ module DRb
       rescue
         raise(DRbConnError, $!.message, $!.backtrace)
       end
-      raise(DRbConnError, 'connection closed') if sz.nil?
+      raise(DRbConnError, 'connection closed') if str.nil?
       raise(DRbConnError, 'premature marshal format(can\'t read)') if str.size < sz
       begin
 	Marshal::load(str)

@@ -1,3 +1,7 @@
+Sun Dec 12 20:06:38 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/drb.rb: backported from CVS HEAD.
+
 Sun Dec 12 10:35:10 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/generators/template/html/html.rb (RDoc::Page): Don't
