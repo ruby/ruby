@@ -4945,8 +4945,9 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 	    if (body->nd_rval) {
 		saved_cref = ruby_cref;
 		ruby_cref = (NODE*)body->nd_rval;
-		ruby_class = ruby_cbase;
 	    }
+	    PUSH_CLASS();
+	    ruby_class = ruby_cbase;
 	    if (body->nd_tbl) {
 		local_vars = TMP_ALLOC(body->nd_tbl[0]+1);
 		*local_vars++ = (VALUE)body;
@@ -5043,6 +5044,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 	    }
 	    POP_TAG();
 	    POP_VARS();
+	    POP_CLASS();
 	    POP_SCOPE();
 	    ruby_cref = saved_cref;
 	    if (trace_func) {

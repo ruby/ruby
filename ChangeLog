@@ -1,5 +1,7 @@
 Thu Aug  7 06:46:06 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
+	* eval.c (rb_call0): forgot to pop ruby_class.
+
 	* eval.c (rb_call0): update ruby_class as well as ruby_cref.
 	  (ruby-bugs-ja PR#540)
 
