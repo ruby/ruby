@@ -1,3 +1,12 @@
+2004-11-07  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tkextlib/iwidgets/scrolledcanvas.rb:
+	  bind-event methods accept multi substitution arguments.
+
+	* ext/tk/lib/tkextlib/tktable/tktable.rb: ditto.
+
+	* ext/tk/lib/tkextlib/treectrl/tktreectrl.rb: ditto
+
 2004-11-03  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* SUPPORT_STATUS: BLT moves to 'plan to support' from 'not determined'

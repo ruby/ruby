@@ -818,8 +818,8 @@ module TkComm
     end
   end
 
-  def _bind_core(mode, what, context, cmd, args=nil)
-    id = install_bind(cmd, args) if cmd
+  def _bind_core(mode, what, context, cmd, *args)
+    id = install_bind(cmd, *args) if cmd
     begin
       tk_call_without_enc(*(what + ["<#{tk_event_sequence(context)}>", 
                               mode + id]))
@@ -829,12 +829,12 @@ module TkComm
     end
   end
 
-  def _bind(what, context, cmd, args=nil)
-    _bind_core('', what, context, cmd, args)
+  def _bind(what, context, cmd, *args)
+    _bind_core('', what, context, cmd, *args)
   end
 
-  def _bind_append(what, context, cmd, args=nil)
-    _bind_core('+', what, context, cmd, args)
+  def _bind_append(what, context, cmd, *args)
+    _bind_core('+', what, context, cmd, *args)
   end
 
   def _bind_remove(what, context)
@@ -868,8 +868,8 @@ module TkComm
     end
   end
 
-  def _bind_core_for_event_class(klass, mode, what, context, cmd, args=nil)
-    id = install_bind_for_event_class(klass, cmd, args) if cmd
+  def _bind_core_for_event_class(klass, mode, what, context, cmd, *args)
+    id = install_bind_for_event_class(klass, cmd, *args) if cmd
     begin
       tk_call_without_enc(*(what + ["<#{tk_event_sequence(context)}>", 
                               mode + id]))
@@ -879,12 +879,12 @@ module TkComm
     end
   end
 
-  def _bind_for_event_class(klass, what, context, cmd, args=nil)
-    _bind_core_for_event_class(klass, '', what, context, cmd, args)
+  def _bind_for_event_class(klass, what, context, cmd, *args)
+    _bind_core_for_event_class(klass, '', what, context, cmd, *args)
   end
 
-  def _bind_append_for_event_class(klass, what, context, cmd, args=nil)
-    _bind_core_for_event_class(klass, '+', what, context, cmd, args)
+  def _bind_append_for_event_class(klass, what, context, cmd, *args)
+    _bind_core_for_event_class(klass, '+', what, context, cmd, *args)
   end
 
   def _bind_remove_for_event_class(klass, what, context)
@@ -901,13 +901,13 @@ module TkComm
           :_bind_append_for_event_class, :_bind_remove_for_event_class, 
           :_bindinfo_for_event_class
 
-  def bind(tagOrClass, context, cmd=Proc.new, args=nil)
-    _bind(["bind", tagOrClass], context, cmd, args)
+  def bind(tagOrClass, context, cmd=Proc.new, *args)
+    _bind(["bind", tagOrClass], context, cmd, *args)
     tagOrClass
   end
 
-  def bind_append(tagOrClass, context, cmd=Proc.new, args=nil)
-    _bind_append(["bind", tagOrClass], context, cmd, args)
+  def bind_append(tagOrClass, context, cmd=Proc.new, *args)
+    _bind_append(["bind", tagOrClass], context, cmd, *args)
     tagOrClass
   end
 
@@ -920,13 +920,13 @@ module TkComm
     _bindinfo(['bind', tagOrClass], context)
   end
 
-  def bind_all(context, cmd=Proc.new, args=nil)
-    _bind(['bind', 'all'], context, cmd, args)
+  def bind_all(context, cmd=Proc.new, *args)
+    _bind(['bind', 'all'], context, cmd, *args)
     TkBindTag::ALL
   end
 
-  def bind_append_all(context, cmd=Proc.new, args=nil)
-    _bind_append(['bind', 'all'], context, cmd, args)
+  def bind_append_all(context, cmd=Proc.new, *args)
+    _bind_append(['bind', 'all'], context, cmd, *args)
     TkBindTag::ALL
   end
 
@@ -2060,12 +2060,12 @@ end
 
 
 module TkBindCore
-  def bind(context, cmd=Proc.new, args=nil)
-    Tk.bind(self, context, cmd, args)
+  def bind(context, cmd=Proc.new, *args)
+    Tk.bind(self, context, cmd, *args)
   end
 
-  def bind_append(context, cmd=Proc.new, args=nil)
-    Tk.bind_append(self, context, cmd, args)
+  def bind_append(context, cmd=Proc.new, *args)
+    Tk.bind_append(self, context, cmd, *args)
   end
 
   def bind_remove(context)

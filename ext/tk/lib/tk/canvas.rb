@@ -94,13 +94,13 @@ class TkCanvas<TkWindow
                              *tags.collect{|t| tagid(t)}))
   end
 
-  def itembind(tag, context, cmd=Proc.new, args=nil)
-    _bind([path, "bind", tagid(tag)], context, cmd, args)
+  def itembind(tag, context, cmd=Proc.new, *args)
+    _bind([path, "bind", tagid(tag)], context, cmd, *args)
     self
   end
 
-  def itembind_append(tag, context, cmd=Proc.new, args=nil)
-    _bind_append([path, "bind", tagid(tag)], context, cmd, args)
+  def itembind_append(tag, context, cmd=Proc.new, *args)
+    _bind_append([path, "bind", tagid(tag)], context, cmd, *args)
     self
   end
 

@@ -61,10 +61,10 @@ module Tk::TkTable::ConfigMethod
     itemconfigure(['tag', tagid(tagOrId)], slot, value)
   end
   def tag_configinfo(tagOrId, slot=nil)
-    itemconfigure(['tag', tagid(tagOrId)], slot)
+    itemconfiginfo(['tag', tagid(tagOrId)], slot)
   end
   def current_tag_configinfo(tagOrId, slot=nil)
-    itemconfigure(['tag', tagid(tagOrId)], slot)
+    current_itemconfiginfo(['tag', tagid(tagOrId)], slot)
   end
 
   def window_cget(tagOrId, option)
@@ -74,10 +74,10 @@ module Tk::TkTable::ConfigMethod
     itemconfigure(['window', tagid(tagOrId)], slot, value)
   end
   def window_configinfo(tagOrId, slot=nil)
-    itemconfigure(['window', tagid(tagOrId)], slot)
+    itemconfiginfo(['window', tagid(tagOrId)], slot)
   end
   def current_window_configinfo(tagOrId, slot=nil)
-    itemconfigure(['window', tagid(tagOrId)], slot)
+    current_itemconfiginfo(['window', tagid(tagOrId)], slot)
   end
 
   private :itemcget, :itemconfigure

@@ -21,31 +21,31 @@ module TkcTagAccess
     @c.bbox(@id)
   end
 
-  def bind(seq, cmd=Proc.new, args=nil)
-    @c.itembind @id, seq, cmd, args
+  def bind(seq, cmd=Proc.new, *args)
+    @c.itembind(@id, seq, cmd, *args)
     self
   end
 
-  def bind_append(seq, cmd=Proc.new, args=nil)
-    @c.itembind_append @id, seq, cmd, args
+  def bind_append(seq, cmd=Proc.new, *args)
+    @c.itembind_append(@id, seq, cmd, *args)
     self
   end
 
   def bind_remove(seq)
-    @c.itembind_remove @id, seq
+    @c.itembind_remove(@id, seq)
     self
   end
 
   def bindinfo(seq=nil)
-    @c.itembindinfo @id, seq
+    @c.itembindinfo(@id, seq)
   end
 
   def cget(option)
-    @c.itemcget @id, option
+    @c.itemcget(@id, option)
   end
 
   def configure(key, value=None)
-    @c.itemconfigure @id, key, value
+    @c.itemconfigure(@id, key, value)
     self
   end
 #  def configure(keys)
@@ -53,71 +53,71 @@ module TkcTagAccess
 #  end
 
   def configinfo(key=nil)
-    @c.itemconfiginfo @id, key
+    @c.itemconfiginfo(@id, key)
   end
 
   def current_configinfo(key=nil)
-    @c.current_itemconfiginfo @id, key
+    @c.current_itemconfiginfo(@id, key)
   end
 
   def coords(*args)
-    @c.coords @id, *args
+    @c.coords(@id, *args)
   end
 
   def dchars(first, last=None)
-    @c.dchars @id, first, last
+    @c.dchars(@id, first, last)
     self
   end
 
   def dtag(tag_to_del=None)
-    @c.dtag @id, tag_to_del
+    @c.dtag(@id, tag_to_del)
     self
   end
 
   def find
-    @c.find 'withtag', @id
+    @c.find('withtag', @id)
   end
   alias list find
 
   def focus
-    @c.itemfocus @id
+    @c.itemfocus(@id)
   end
 
   def gettags
-    @c.gettags @id
+    @c.gettags(@id)
   end
 
   def icursor(index)
-    @c.icursor @id, index
+    @c.icursor(@id, index)
     self
   end
 
   def index(index)
-    @c.index @id, index
+    @c.index(@id, index)
   end
 
   def insert(beforethis, string)
-    @c.insert @id, beforethis, string
+    @c.insert(@id, beforethis, string)
     self
   end
 
   def lower(belowthis=None)
-    @c.lower @id, belowthis
+    @c.lower(@id, belowthis)
     self
   end
 
   def move(xamount, yamount)
-    @c.move @id, xamount, yamount
+    @c.move(@id, xamount, yamount)
     self
   end
 
   def raise(abovethis=None)
-    @c.raise @id, abovethis
+    @c.raise(@id, abovethis)
     self
   end
 
   def scale(xorigin, yorigin, xscale, yscale)
-    @c.scale @id, xorigin, yorigin, xscale, yscale
+    @c.scale(@id, xorigin, yorigin, xscale, yscale)
     self
   end
 
@@ -135,7 +135,7 @@ module TkcTagAccess
   end
 
   def itemtype
-    @c.itemtype @id
+    @c.itemtype(@id)
   end
 
   # Following operators support logical expressions of canvas tags
@@ -337,14 +337,14 @@ class TkcGroup<TkcTag
   
   def include(*tags)
     for i in tags
-      i.addtag @id
+      i.addtag(@id)
     end
     self
   end
 
   def exclude(*tags)
     for i in tags
-      i.delete @id
+      i.delete(@id)
     end
     self
   end
