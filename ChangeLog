@@ -1,3 +1,8 @@
+Wed Mar 24 11:11:26 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/generators/html_generator.rb (Generators::HTMLGenerator::load_html_template): 
+	  Allow non-RDoc templates by putting a slash in the template name
+
 Wed Mar 24 10:05:22 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/tempfile.rb (Tempfile::_close): should not clear @tmpname
@@ -91,6 +96,7 @@ Sat Mar 20 21:21:03 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/extmk.rb: rm -rf $extout, not extout.
 
+>>>>>>> 1.3082
 Sat Mar 20 15:25:36 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/generators/template/html/html.rb (RDoc::Page): Force
