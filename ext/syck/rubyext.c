@@ -1376,7 +1376,7 @@ syck_emitter_start_object( self, oid )
 }
 
 /*
- * YAML::Syck::Emitter.end_object( object_id )
+ * YAML::Syck::Emitter.end_object
  */
 VALUE
 syck_emitter_end_object( self )
