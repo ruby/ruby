@@ -302,9 +302,12 @@ class Pathname
   # This method is exist since 1.8.1.
   def each_line(*args, &block) IO.foreach(@path, *args, &block) end
 
-  # This method is obsoleted at 1.8.1.
+  # Pathname#foreachline is obsoleted at 1.8.1.
   #
-  alias foreachline each_line # compatibility to 1.8.0.  obsoleted.
+  def foreachline(*args, &block) # compatibility to 1.8.0.  obsoleted.
+    warn "Pathname#foreachline is obsoleted.  Use Pathname#each_line."
+    each_line(*args, &block)
+  end
 
   def read(*args) IO.read(@path, *args) end
   def readlines(*args) IO.readlines(@path, *args) end
@@ -402,9 +405,12 @@ class Pathname
   # This method is exist since 1.8.1.
   def each_entry(&block) Dir.foreach(@path) {|f| yield Pathname.new(f) } end
 
-  # This method is obsoleted at 1.8.1.
+  # Pathname#dir_foreach is obsoleted at 1.8.1.
   #
-  alias dir_foreach each_entry # compatibility to 1.8.0.  obsoleted.
+  def dir_foreach(*args, &block) # compatibility to 1.8.0.  obsoleted.
+    warn "Pathname#dir_foreach is obsoleted.  Use Pathname#each_entry."
+    each_entry(*args, &block)
+  end
 
   def mkdir(*args) Dir.mkdir(@path, *args) end
   def opendir(&block) Dir.open(@path, &block) end
@@ -531,11 +537,6 @@ if $0 == __FILE__
       assert_equal(true, Pathname.new("///").root?)
       assert_equal(false, Pathname.new("").root?)
       assert_equal(false, Pathname.new("a").root?)
-      #assert_equal(true, Pathname.new(".").working_directory?)
-      #assert_equal(true, Pathname.new("./").working_directory?)
-      #assert_equal(true, Pathname.new(".//").working_directory?)
-      #assert_equal(false, Pathname.new("").working_directory?)
-      #assert_equal(false, Pathname.new("a").working_directory?)
     end
 
     def test_cleanpath

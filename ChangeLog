@@ -1,3 +1,7 @@
+Sun Oct 19 13:12:30 2003  Tanaka Akira  <akr@m17n.org>
+
+	* lib/pathname.rb (foreachline, dir_foreach): add obsolete warning.
+
 Sun Oct 19 00:14:22 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/soap/calc/*, test/soap/helloworkd/*: changed port# of test
