@@ -23,6 +23,7 @@ typedef LONG rb_atomic_t;
 
 /* Windows doesn't allow interrupt while system calls */
 # define TRAP_BEG do {\
+    int saved_errno = 0;\
     extern int errno;\
     rb_atomic_t trap_immediate = ATOMIC_SET(rb_trap_immediate, 1)
 # define TRAP_END\
