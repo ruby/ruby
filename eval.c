@@ -7876,12 +7876,17 @@ rb_f_binding(self)
 
 #define PROC_TSHIFT (FL_USHIFT+1)
 #define PROC_TMASK  (FL_USER1|FL_USER2|FL_USER3)
+#define PROC_TMAX   (PROC_TMASK >> PROC_TSHIFT)
+
+#define SAFE_LEVEL_MAX PROC_TMASK
 
 static void
 proc_save_safe_level(data)
     VALUE data;
 {
-    FL_SET(data, (ruby_safe_level << PROC_TSHIFT) & PROC_TMASK);
+    int safe = ruby_safe_level;
+    if (safe > PROC_TMAX) safe = PROC_TMAX;
+    FL_SET(data, (safe << PROC_TSHIFT) & PROC_TMASK);
 }
 
 static int
@@ -9582,6 +9587,7 @@ rb_set_safe_level(level)
     int level;
 {
     if (level > ruby_safe_level) {
+	if (level > SAFE_LEVEL_MAX) level = SAFE_LEVEL_MAX;
 	ruby_safe_level = level;
 	curr_thread->safe = level;
     }
@@ -9603,6 +9609,7 @@ safe_setter(val)
 	rb_raise(rb_eSecurityError, "tried to downgrade safe level from %d to %d",
 		 ruby_safe_level, level);
     }
+    if (level > SAFE_LEVEL_MAX) level = SAFE_LEVEL_MAX;
     ruby_safe_level = level;
     curr_thread->safe = level;
 }
