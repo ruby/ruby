@@ -1352,6 +1352,7 @@ rb_file_s_umask(argc, argv)
 }
 
 #if defined DOSISH
+#define DOSISH_UNC
 #define isdirsep(x) ((x) == '/' || (x) == '\\')
 #else
 #define isdirsep(x) ((x) == '/')
@@ -1364,10 +1365,16 @@ rb_file_s_umask(argc, argv)
 # endif
 #endif
 
-#if defined(DOSISH_DRIVE_LETTER) || defined(__CYGWIN__)
+#ifdef __CYGWIN__
+#undef DOSISH
+#define DOSISH_UNC
+#define DOSISH_DRIVE_LETTER
+#endif
+
+#ifdef DOSISH_DRIVE_LETTER
 static inline int
 has_drive_letter(buf)
-    char *buf;
+    const char *buf;
 {
     if (ISALPHA(buf[0]) && buf[1] == ':') {
 	return 1;
@@ -1406,20 +1413,51 @@ getcwdofdrv(drv, buf, len)
 }
 #endif
 
+static inline char *
+skiproot(path)
+    const char *path;
+{
+#ifdef DOSISH_DRIVE_LETTER
+    if (has_drive_letter(path)) path += 2;
+#endif
+    while (isdirsep(*path)) path++;
+    return (char *)path;
+}
+
 static char *
 strrdirsep(path)
-    char *path;
+    const char *path;
 {
     char *last = NULL;
     while (*path) {
 	if (isdirsep(*path)) {
-	    last = path++;
+	    const char *tmp = path++;
+	    while (isdirsep(*path)) path++;
+	    if (!*path) break;
+	    last = (char *)tmp;
 	}
 	else {
 	    path = CharNext(path);
 	}
     }
     return last;
+}
+
+static char *
+chompdirsep(path)
+    const char *path;
+{
+    while (*path) {
+	if (isdirsep(*path)) {
+	    const char *last = path++;
+	    while (isdirsep(*path)) path++;
+	    if (!*path) return (char *)last;
+	}
+	else {
+	    path = CharNext(path);
+	}
+    }
+    return (char *)path;
 }
 
 #define BUFCHECK(cond) while (cond) {\
@@ -1437,21 +1475,17 @@ strrdirsep(path)
 
 static int is_absolute_path _((const char*));
 
-VALUE
-rb_file_s_expand_path(argc, argv)
-    int argc;
-    VALUE *argv;
-{
+static VALUE
+file_expand_path(fname, dname, result)
     VALUE fname, dname, result;
+{
     char *s, *buf, *b, *p, *pend;
-    long buflen = MAXPATHLEN;
+    long buflen;
     int tainted;
-
-    rb_scan_args(argc, argv, "11", &fname, &dname);
-    result = rb_str_new(0, buflen + 2);
 
     s = StringValuePtr(fname);
     p = buf = RSTRING(result)->ptr;
+    buflen = RSTRING(result)->len - 2;
     pend = p + buflen;
     tainted = OBJ_TAINTED(fname);
 
@@ -1502,7 +1536,7 @@ rb_file_s_expand_path(argc, argv)
 #endif
 	}
     }
-#if defined DOSISH_DRIVE_LETTER || defined __CYGWIN__
+#ifdef DOSISH_DRIVE_LETTER
     /* skip drive letter */
     else if (has_drive_letter(s)) {
 	if (isdirsep(s[2])) {
@@ -1520,31 +1554,23 @@ rb_file_s_expand_path(argc, argv)
 	    /* specified drive, but not full path */
 	    int same = 0;
 	    if (!NIL_P(dname)) {
-		dname = rb_file_s_expand_path(1, &dname);
+		dname = file_expand_path(dname, Qnil, result);
 		if (has_drive_letter(RSTRING(dname)->ptr) &&
 		    TOLOWER(*RSTRING(dname)->ptr) == TOLOWER(s[0])) {
 		    /* ok, same drive */
 		    same = 1;
 		}
 	    }
-	    if (same) {
-		if (OBJ_TAINTED(dname)) tainted = 1;
-		BUFCHECK (strlen(RSTRING(dname)->ptr) >= buflen);
-		strcpy(buf, RSTRING(dname)->ptr);
-		p = &buf[strlen(buf)];
-		s += 2;
-	    }
-	    else {
+	    if (!same) {
 		getcwdofdrv(*s, buf, MAXPATHLEN);
-		s += 2;
 		tainted = 1;
-		p = &buf[strlen(buf)];
-		if (strrdirsep(buf) == p - 1 && *s) p--;	/* drop `/' */
 	    }
+	    p = chompdirsep(skiproot(buf));
+	    s += 2;
 	}
     }
 #endif
-#if defined DOSISH && ! defined(__CYGWIN__)
+#ifdef DOSISH
     else if (isdirsep(*s) && !is_absolute_path(s)) {
 	/* specified full path, but not drive letter */
 	/* we need to get the drive letter */
@@ -1562,11 +1588,7 @@ rb_file_s_expand_path(argc, argv)
 #endif
     else if (!is_absolute_path(s)) {
 	if (!NIL_P(dname)) {
-	    dname = rb_file_s_expand_path(1, &dname);
-	    if (OBJ_TAINTED(dname)) tainted = 1;
-	    BUFCHECK(RSTRING(dname)->len > buflen);
-	    memcpy(buf, RSTRING(dname)->ptr, RSTRING(dname)->len);
-	    p += RSTRING(dname)->len;
+	    file_expand_path(dname, Qnil, result);
 	}
 	else {
 	    char *dir = my_getcwd();
@@ -1575,9 +1597,8 @@ rb_file_s_expand_path(argc, argv)
 	    BUFCHECK(strlen(dir) > buflen);
 	    strcpy(buf, dir);
 	    free(dir);
-	    p = &buf[strlen(buf)];
 	}
-	while (p > buf && strrdirsep(buf) == p - 1) p--;
+	p = chompdirsep(skiproot(buf));
     }
     else {
 	while (*s && isdirsep(*s)) {
@@ -1646,7 +1667,7 @@ rb_file_s_expand_path(argc, argv)
 	memcpy(++p, b, s-b);
 	p += s-b;
     }
-#if defined DOSISH_DRIVE_LETTER || defined __CYGWIN__
+#ifdef DOSISH_DRIVE_LETTER
     else if (ISALPHA(buf[0]) && (buf[1] == ':') && isdirsep(buf[2])) {
 	/* root directory needs a trailing backslash,
 	   otherwise it mean the current directory of the drive */
@@ -1663,6 +1684,17 @@ rb_file_s_expand_path(argc, argv)
     return result;
 }
 
+VALUE
+rb_file_s_expand_path(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    VALUE fname, dname;
+    rb_scan_args(argc, argv, "11", &fname, &dname);
+
+    return file_expand_path(fname, dname, rb_str_new(0, MAXPATHLEN + 2));
+}
+
 static int
 rmext(p, e)
     const char *p, *e;
@@ -1671,7 +1703,7 @@ rmext(p, e)
 
     if (!e) return 0;
 
-    l1 = strlen(p);
+    l1 = chompdirsep(p) - p;
     l2 = strlen(e);
     if (l2 == 2 && e[1] == '*') {
 	e = strrchr(p, *e);
@@ -1680,7 +1712,7 @@ rmext(p, e)
     }
     if (l1 < l2) return l1;
 
-    if (strcmp(p+l1-l2, e) == 0) {
+    if (strncmp(p+l1-l2, e, l2) == 0) {
 	return l1-l2;
     }
     return 0;
@@ -1698,34 +1730,33 @@ rb_file_s_basename(argc, argv)
     if (rb_scan_args(argc, argv, "11", &fname, &fext) == 2) {
 	ext = StringValuePtr(fext);
     }
-    name = StringValuePtr(fname);
-    p = strrdirsep(name);
-    if (!p) {
-#if defined(DOSISH_DRIVE_LETTER)
-	if (has_drive_letter(name)) {
-	    name += 2;
-	    if (NIL_P(fext)) {
-		f = strlen(name);
-	    }
-	    else {
-		f = rmext(name, ext);
-	   }
+    StringValue(fname);
+    if (RSTRING(fname)->len == 0 || !*(name = RSTRING(fname)->ptr))
+	return fname;
+    if (!*(name = skiproot(name))) {
+	p = name - 1;
+	f = 1;
+#ifdef DOSISH_DRIVE_LETTER
+	if (*p == ':') {
+	    p++;
+	    f = 0;
 	}
-	else
 #endif
-	if (NIL_P(fext) || !(f = rmext(name, ext)))
-	    return fname;
-	basename = rb_str_new(name, f);
+    }
+    else if (!(p = strrdirsep(name))) {
+	if (NIL_P(fext) || !(f = rmext(name, ext))) {
+	    f = chompdirsep(name) - name;
+	    if (f == RSTRING(fname)->len) return fname;
+	}
+	p = name;
     }
     else {
-	p++;			/* skip last / */
+	while (isdirsep(*p)) p++; /* skip last / */
 	if (NIL_P(fext) || !(f = rmext(p, ext))) {
-	    basename = rb_str_new2(p);
-	}
-	else {
-	    basename = rb_str_new(p, f);
+	    f = chompdirsep(p) - p;
 	}
     }
+    basename = rb_str_new(p, f);
     OBJ_INFECT(basename, fname);
     return basename;
 }
@@ -1734,32 +1765,24 @@ static VALUE
 rb_file_s_dirname(klass, fname)
     VALUE klass, fname;
 {
-    char *name, *p;
+    char *name, *root, *p;
     VALUE dirname;
 
     name = StringValuePtr(fname);
-    p = strrdirsep(name);
-    if (!p) {
-#if defined(DOSISH_DRIVE_LETTER)
-	if (has_drive_letter(name)) {
-	    dirname = rb_str_new(name, 2);
-	    dirname = rb_str_cat2(dirname, ".");
-	    OBJ_INFECT(dirname, fname);
-	    return dirname;
-	}
+    root = skiproot(name);
+#ifdef DOSISH_UNC
+    if (root > name + 2 && isdirsep(*name))
+	name = root - 2;
+#else
+    if (root > name + 1)
+	name = root - 1;
 #endif
-	return rb_str_new2(".");
+    p = strrdirsep(root);
+    if (!p) {
+	p = root;
     }
     if (p == name)
-	p++;
-#ifdef DOSISH_DRIVE_LETTER
-    if (has_drive_letter(name) && p == &name[2])
-	p++;
-#endif
-#ifdef DOSISH
-    if (isdirsep(name[0]) && isdirsep(name[1]) && p == &name[1])
-	p++;
-#endif
+	return rb_str_new2(".");
     dirname = rb_str_new(name, p - name);
     OBJ_INFECT(dirname, fname);
     return dirname;
@@ -1782,7 +1805,7 @@ rb_file_s_extname(klass, fname)
      e = strrchr(p, '.');	/* get the last dot of the last component */
      if (!e || e == p)		/* no dot, or the only dot is first? */
 	 return rb_str_new2("");
-     extname = rb_str_new2(e);	/* keep the dot, too! */
+     extname = rb_str_new(e, chompdirsep(e) - e);	/* keep the dot, too! */
      OBJ_INFECT(extname, fname);
      return extname;
 }
@@ -1791,6 +1814,7 @@ static VALUE
 rb_file_s_split(klass, path)
     VALUE klass, path;
 {
+    StringValue(path);		/* get rid of converting twice */
     return rb_assoc_new(rb_file_s_dirname(Qnil, path), rb_file_s_basename(1,&path));
 }
 
@@ -1853,7 +1877,7 @@ rb_file_join(ary, sep)
 	    tmp = rb_obj_as_string(tmp);
 	}
 	name = StringValuePtr(result);
-	if (i > 0 && !NIL_P(sep) && strrdirsep(name) != &name[strlen(name) - 1])
+	if (i > 0 && !NIL_P(sep) && !*chompdirsep(name))
 	    rb_str_buf_append(result, sep);
 	rb_str_buf_append(result, tmp);
 	if (OBJ_TAINTED(tmp)) taint = 1;
@@ -2507,10 +2531,10 @@ static int
 is_absolute_path(path)
     const char *path;
 {
-#if defined DOSISH_DRIVE_LETTER || defined __CYGWIN__
+#ifdef DOSISH_DRIVE_LETTER
     if (ISALPHA(path[0]) && path[1] == ':' && isdirsep(path[2])) return 1;
 #endif
-#if defined DOSISH || defined __CYGWIN__
+#ifdef DOSISH_UNC
     if (isdirsep(path[0]) && isdirsep(path[1])) return 1;
 #endif
 #ifndef DOSISH
@@ -2817,7 +2841,7 @@ Init_File()
     rb_define_singleton_method(rb_cFile, "split",  rb_file_s_split, 1);
     rb_define_singleton_method(rb_cFile, "join",   rb_file_s_join, -2);
 
-#if defined DOSISH && !defined __CYGWIN__
+#ifdef DOSISH
     rb_define_const(rb_cFile, "ALT_SEPARATOR", rb_obj_freeze(rb_str_new2("\\")));
 #else
     rb_define_const(rb_cFile, "ALT_SEPARATOR", Qnil);
