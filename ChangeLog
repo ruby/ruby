@@ -1,3 +1,8 @@
+Mon May 10 21:44:42 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/generators/html_generator.rb: Change scheme for
+	  looking up symbols in  HTML generator.
+
 Mon May 10 12:11:37 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/generators/html_generator.rb: Hack to search parents
