@@ -1,3 +1,7 @@
+Wed Nov 12 12:59:44 2003  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* test/monitor/test_monitor.rb: added.
+
 Wed Nov 12 10:14:28 2003  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/monitor.rb: refactored. Thanks, Gennady Bystritsky.
