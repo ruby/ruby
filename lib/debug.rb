@@ -507,7 +507,7 @@ class Context
 	  end
 
 	when /^\s*pp\s+/
-	  PP.pp(debug_eval($', binding), 79, stdout)
+	  PP.pp(debug_eval($', binding), stdout)
 
 	when /^\s*p\s+/
 	  stdout.printf "%s\n", debug_eval($', binding).inspect

@@ -69,9 +69,14 @@ PP#pp to print the object.
 ((<PrettyPrint>))
 
 == class methods
---- PP.pp(obj[, width[, out]])
+--- PP.pp(obj[, out[, width]])
     outputs ((|obj|)) to ((|out|)) in pretty printed format of
     ((|width|)) columns in width.
+
+    If ((|out|)) is ommitted, (({$>})) is assumed.
+    If ((|width|)) is ommitted, 79 is assumed.
+
+    PP.pp returns ((|out|)).
 
 --- PP.sharing_detection
     returns the sharing detection flag as boolean value.
@@ -116,8 +121,7 @@ PP#pp to print the object.
     detected as part of a cycle.
 
 --- pretty_print_instance_variables
-    is a method to list instance variables used by the default implementation
-    of (({pretty_print})).
+    returns a sorted array of instance variable names.
 
     This method should return an array of names of instance variables as symbols or strings as:
     (({[:@a, :@b]})).
@@ -136,7 +140,7 @@ module Kernel
 end
 
 class PP < PrettyPrint
-  def PP.pp(obj, width=79, out=$>)
+  def PP.pp(obj, out=$>, width=79)
     pp = PP.new(out, width)
     pp.guard_inspect_key {pp.pp obj}
     pp.flush
@@ -434,6 +438,12 @@ class File
   end
 end
 
+class << ARGF
+  def pretty_print(pp)
+    pp.text self.to_s
+  end
+end
+
 class Object
   include PP::ObjectMixin
 end
@@ -450,11 +460,11 @@ if __FILE__ == $0
 
   class PPTest < RUNIT::TestCase
     def test_list0123_12
-      assert_equal("[0, 1, 2, 3]\n", PP.pp([0,1,2,3], 12, ''))
+      assert_equal("[0, 1, 2, 3]\n", PP.pp([0,1,2,3], '', 12))
     end
 
     def test_list0123_11
-      assert_equal("[0,\n 1,\n 2,\n 3]\n", PP.pp([0,1,2,3], 11, ''))
+      assert_equal("[0,\n 1,\n 2,\n 3]\n", PP.pp([0,1,2,3], '', 11))
     end
   end
 
@@ -499,17 +509,17 @@ if __FILE__ == $0
   class PPInspectTest < RUNIT::TestCase
     def test_hasinspect
       a = HasInspect.new(1)
-      assert_equal("<inspect:1>\n", PP.pp(a, 79, ''))
+      assert_equal("<inspect:1>\n", PP.pp(a, ''))
     end
 
     def test_hasprettyprint
       a = HasPrettyPrint.new(1)
-      assert_equal("<pretty_print:1>\n", PP.pp(a, 79, ''))
+      assert_equal("<pretty_print:1>\n", PP.pp(a, ''))
     end
 
     def test_hasboth
       a = HasBoth.new(1)
-      assert_equal("<pretty_print:1>\n", PP.pp(a, 79, ''))
+      assert_equal("<pretty_print:1>\n", PP.pp(a, ''))
     end
   end
 
@@ -517,32 +527,32 @@ if __FILE__ == $0
     def test_array
       a = []
       a << a
-      assert_equal("[[...]]\n", PP.pp(a, 79, ''))
+      assert_equal("[[...]]\n", PP.pp(a, ''))
     end
 
     def test_hash
       a = {}
       a[0] = a
-      assert_equal("{0=>{...}}\n", PP.pp(a, 79, ''))
+      assert_equal("{0=>{...}}\n", PP.pp(a, ''))
     end
 
     S = Struct.new("S", :a, :b)
     def test_struct
       a = S.new(1,2)
       a.b = a
-      assert_equal("#<Struct::S a=1, b=#<Struct::S:...>>\n", PP.pp(a, 79, ''))
+      assert_equal("#<Struct::S a=1, b=#<Struct::S:...>>\n", PP.pp(a, ''))
     end
 
     def test_object
       a = Object.new
       a.instance_eval {@a = a}
-      assert_equal(a.inspect + "\n", PP.pp(a, 79, ''))
+      assert_equal(a.inspect + "\n", PP.pp(a, ''))
     end
 
     def test_withinspect
       a = []
       a << HasInspect.new(a)
-      assert_equal("[<inspect:[...]>]\n", PP.pp(a, 79, ''))
+      assert_equal("[<inspect:[...]>]\n", PP.pp(a, ''))
     end
   end
 

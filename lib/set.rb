@@ -421,7 +421,7 @@ class Set
     pp.text "}>"
   end
 
-  def pretty_print_cycled(pp)
+  def pretty_print_cycle(pp)
     pp.text sprintf('#<%s: {%s}>', type.name, empty? ? '' : '...')
   end
 end
@@ -820,7 +820,7 @@ class TC_Set < Test::Unit::TestCase
   # def test_pretty_print
   # end
 
-  # def test_pretty_print_cycled
+  # def test_pretty_print_cycle
   # end
 end
 

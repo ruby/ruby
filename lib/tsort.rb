@@ -78,8 +78,12 @@ TSort uses Hash internally.
 --- tsort_each_node {|node| ...}
     should be implemented by a extended class.
 
+    (({tsort_each_node})) is used to iterate for all nodes over a graph.
+
 --- tsort_each_child(node) {|child| ...}
     should be implemented by a extended class.
+
+    (({tsort_each_child})) is used to iterate for child nodes of ((|node|)).
 
 == More Realistic Example
 Very simple `make' like tool can be implemented as follows:
