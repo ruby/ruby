@@ -6,7 +6,6 @@ Tue Mar 13 14:54:39 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/protocol.rb: WriteAdapter#<< returns self.
 
-<<<<<<< ChangeLog
 Tue Mar 13 14:41:16 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (argf_seek_m): wrong calling sequence of rb_io_seek().
