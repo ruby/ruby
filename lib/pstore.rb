@@ -41,11 +41,10 @@ class PStore
 
   def [](name)
     in_transaction
-    value = @table[name]
-    if value == nil
+    if @table.key? name
       raise PStore::Error, format("undefined root name `%s'", name)
     end
-    value
+    @table[name]
   end
   def []=(name, value)
     in_transaction

@@ -1439,8 +1439,7 @@ re_compile_pattern(pattern, size, bufp)
 	}
       range_retry:
 	if (range && had_char_class) {
-	  FREE_AND_RETURN(stackb, "invalid regular expression; can't use character class as a end value of range");
-	  goto invalid_pattern;
+	  FREE_AND_RETURN(stackb, "invalid regular expression; can't use character class as an end value of range");
 	}
 	PATFETCH(c);
 
@@ -1463,6 +1462,7 @@ re_compile_pattern(pattern, size, bufp)
 	  PATFETCH_MBC(c);
 	  had_mbchar++;
 	}
+	had_char_class = 0;
 
 	/* \ escapes characters when inside [...].  */
 	if (c == '\\') {
