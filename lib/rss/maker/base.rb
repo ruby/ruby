@@ -370,15 +370,16 @@ EOC
 
       def_array_element("items")
       
-      attr_accessor :do_sort
+      attr_accessor :do_sort, :max_size
       
       def initialize(maker)
         super
         @do_sort = false
+        @max_size = -1
       end
       
       def normalize
-        sort_if_need
+        sort_if_need[0..@max_size]
       end
       
       def current_element(rss)

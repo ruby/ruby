@@ -274,6 +274,14 @@ module RSS
         ]
       end
       
+      def maker_target(maker)
+        maker.channel
+      end
+      
+      def setup_maker_attributes(channel)
+        channel.about = self.about
+      end
+
       class Image < Element
         
         include RSS10
@@ -469,6 +477,10 @@ module RSS
           ["#{PREFIX}:about", true, "about"]
         ]
       end
+
+      def maker_target(maker)
+        maker.image
+      end
     end
 
     class Item < Element
@@ -534,6 +546,10 @@ module RSS
         [
           ["#{PREFIX}:about", true, "about"]
         ]
+      end
+
+      def maker_target(maker)
+        maker.items.new_item
       end
     end
 
@@ -603,6 +619,10 @@ module RSS
         [
           ["#{PREFIX}:about", true, "about"]
         ]
+      end
+
+      def maker_target(maker)
+        maker.textinput
       end
     end
 

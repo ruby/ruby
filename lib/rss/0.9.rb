@@ -203,6 +203,26 @@ module RSS
         rv
       end
 
+      def maker_target(maker)
+        maker.channel
+      end
+
+      def setup_maker_elements(channel)
+        super
+        [
+          [skipDays, "day"],
+          [skipHours, "hour"],
+        ].each do |skip, key|
+          if skip
+            skip.__send__("#{key}s").each do |val|
+              target_skips = channel.__send__("skip#{key.capitalize}s")
+              new_target = target_skips.__send__("new_#{key}")
+              new_target.content = val.content
+            end
+          end
+        end
+      end
+
       class SkipDays < Element
         include RSS09
 
@@ -323,7 +343,7 @@ module RSS
               other_element(false, next_indent),
             ]
           end
-       		rv = @converter.convert(rv) if convert and @converter
+          rv = @converter.convert(rv) if convert and @converter
     	    rv
         end
 
@@ -334,6 +354,10 @@ module RSS
           end.collect do |elem|
             [nil, elem]
           end
+        end
+
+        def maker_target(maker)
+          maker.image
         end
       end
 
@@ -440,6 +464,16 @@ module RSS
           rv
         end
 
+        def maker_target(maker)
+          maker.items.new_item
+        end
+
+        def setup_maker_element(item)
+          super
+          @enclosure.setup_maker(item) if @enclosure
+          @source.setup_maker(item) if @source
+        end
+        
         class Source < Element
 
           include RSS09
@@ -469,6 +503,15 @@ module RSS
             ]
           end
 
+
+          def maker_target(item)
+            item.source
+          end
+
+          def setup_maker_attributes(source)
+            source.url = url
+            source.content = content
+          end
         end
 
         class Enclosure < Element
@@ -505,6 +548,15 @@ module RSS
             ]
           end
 
+          def maker_target(item)
+            item.enclosure
+          end
+
+          def setup_maker_attributes(enclosure)
+            enclosure.url = url
+            enclosure.length = length
+            enclosure.type = type
+          end
         end
 
         class Category < Element
@@ -532,6 +584,15 @@ module RSS
             ]
           end
 
+          def maker_target(item)
+            item.new_category
+          end
+
+          def setup_maker_attributes(category)
+            category.domain = domain
+            category.content = content
+          end
+          
         end
 
       end
@@ -555,7 +616,7 @@ module RSS
               other_element(false, next_indent),
             ]
           end
-          rv = @converter.convert(rv) if convert and @converter
+       		rv = @converter.convert(rv) if convert and @converter
     	    rv
         end
 
@@ -566,6 +627,10 @@ module RSS
           end.collect do |elem|
             [nil, elem]
           end
+        end
+
+        def maker_target(maker)
+          maker.textinput
         end
       end
       

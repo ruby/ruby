@@ -165,8 +165,9 @@ EOC
     alias_method(:install_have_attribute_element, :install_have_child_element)
 
     def install_have_children_element(name, plural_name=nil)
-      add_have_children_element(name)
-
+      plural_name ||= "#{name}s"
+      add_have_children_element(name, plural_name)
+      
       def_children_accessor(name, plural_name)
       install_element(name, "s") do |n, elem_name|
         <<-EOC
@@ -289,8 +290,7 @@ EOC
       end
     end
 
-    def def_children_accessor(accessor_name, plural_name=nil)
-      plural_name ||= "#{accessor_name}s"
+    def def_children_accessor(accessor_name, plural_name)
       module_eval(<<-EOC, *get_file_and_line_from_caller(2))
       def #{plural_name}
         @#{accessor_name}
@@ -405,8 +405,8 @@ EOC
           @@have_children_elements
         end
 
-        def self.add_have_children_element(variable_name)
-          @@have_children_elements << variable_name
+        def self.add_have_children_element(variable_name, plural_name)
+          @@have_children_elements << [variable_name, plural_name]
         end
         
         @@need_initialize_variables = []
@@ -484,6 +484,15 @@ EOC
       __validate(tags, false)
     end
 
+    def setup_maker(maker)
+      target = maker_target(maker)
+      unless target.nil?
+        setup_maker_attributes(target)
+        setup_maker_element(target)
+        setup_maker_elements(target)
+      end
+    end
+    
     private
     def initialize_variables
       self.class.need_initialize_variables.each do |variable_name|
@@ -494,7 +503,7 @@ EOC
     end
 
     def initialize_have_children_elements
-      self.class.have_children_elements.each do |variable_name|
+      self.class.have_children_elements.each do |variable_name, plural_name|
         instance_eval("@#{variable_name} = []")
       end
     end
@@ -557,6 +566,34 @@ EOC
     
     def calc_indent
       INDENT * (self.class.indent_size)
+    end
+
+    def maker_target(maker)
+      nil
+    end
+    
+    def setup_maker_attributes(target)
+    end
+    
+    def setup_maker_element(target)
+      self.class.need_initialize_variables.each do |var|
+        setter = "#{var}="
+        if target.respond_to?(setter)
+          target.__send__(setter, __send__(var))
+        end
+      end
+    end
+    
+    def setup_maker_elements(parent)
+      self.class.have_children_elements.each do |name, plural_name|
+        real_name = name.sub(/^[^_]+_/, '')
+        if parent.respond_to?(plural_name)
+          target = parent.__send__(plural_name)
+          __send__(plural_name).each do |elem|
+            elem.__send__("setup_maker", target)
+          end
+        end
+      end
     end
     
     # not String class children.
@@ -735,6 +772,18 @@ EOC
       self.converter = Converter.new(@output_encoding, @encoding)
     end
 
+    def setup_maker(maker)
+      maker.version = version
+      maker.encoding = encoding
+      maker.standalone = standalone
+
+      xml_stylesheets.each do |xss|
+        xss.setup_maker(maker)
+      end
+
+      setup_maker_elements(maker)
+    end
+    
     private
     def tag(indent, attrs)
       rv = xmldecl + xml_stylesheet_pi
@@ -759,6 +808,14 @@ EOC
       end
     end
     
+    def setup_maker_elements(maker)
+      channel.setup_maker(maker) if channel
+      image.setup_maker(maker) if image
+      textinput.setup_maker(maker) if textinput
+      items.each do |item|
+        item.setup_maker(maker)
+      end
+    end
   end
 
 end

@@ -65,9 +65,9 @@ module RSS
           EOC
         end
         
-        [%w(about s)].each do |x, postfix|
-          var_name = "#{TRACKBACK_PREFIX}_#{x}"
-          klass_name = x.capitalize
+        [%w(about s)].each do |name, postfix|
+          var_name = "#{TRACKBACK_PREFIX}_#{name}"
+          klass_name = name.capitalize
           klass.install_have_children_element(var_name)
           klass.module_eval(<<-EOC, __FILE__, __LINE__)
             undef #{var_name}
@@ -207,6 +207,14 @@ module RSS
         ]
       end
 
+      def maker_target(abouts)
+        abouts.new_about
+      end
+
+      def setup_maker_attributes(about)
+        about.resource = self.resource
+      end
+      
     end
   end
 

@@ -113,6 +113,12 @@ EOT
           end + _tags09
         end
 
+        alias _setup_maker_element setup_maker_element
+        def setup_maker_element(item)
+          _setup_maker_element(item)
+          @guid.setup_maker(item) if @guid
+        end
+        
         class Guid < Element
           
           include RSS09
@@ -138,6 +144,14 @@ EOT
             ]
           end
 
+          def maker_target(item)
+            item.guid
+          end
+
+          def setup_maker_attributes(guid)
+            guid.isPermaLink = isPermaLink
+            guid.content = content
+          end
         end
 
       end

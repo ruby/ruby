@@ -1,3 +1,15 @@
+Sat Nov 27 17:43:21 2004  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/{0.9,1.0,2.0,trackback,xml-stylesheet}.rb: added
+	  #setup_maker.
+	
+	* test/rss/test_setup_maker_*.rb: added tests for #setup_maker.
+
+	* lib/rss/maker/base.rb(RSS::Maker::Items#max_size=): supported
+	  output item size limitation.
+	
+	* sample/rss/blend.rb: added sample for RSS Maker.
+
 Sat Nov 27 17:41:35 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/maker/0.9.rb: supported RSS::Maker.make("0.91"). Now,

@@ -84,6 +84,13 @@ module RSS
       @alternate
     end
 
+    def setup_maker(maker)
+      xss = maker.xml_stylesheets.new_xml_stylesheet
+      ATTRIBUTES.each do |attr|
+        xss.__send__("#{attr}=", __send__(attr))
+      end
+    end
+    
     private
     def guess_type(filename)
       /\.([^.]+)$/ =~ filename
