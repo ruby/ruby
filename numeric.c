@@ -785,7 +785,7 @@ rb_num2long(val)
 	return Qnil;		/* not reached */
 
       default:
-	val = rb_Integer(val);
+	val = rb_to_int(val);
 	return NUM2LONG(val);
     }
 }

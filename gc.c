@@ -74,10 +74,10 @@ ruby_xmalloc(size)
     if (malloc_memories > GC_MALLOC_LIMIT) {
 	rb_gc();
     }
-    mem = malloc(size);
+    RUBY_CRITICAL(mem = malloc(size));
     if (!mem) {
 	rb_gc();
-	mem = malloc(size);
+	RUBY_CRITICAL(mem = malloc(size));
 	if (!mem) {
 	    if (size >= 10 * 1024 * 1024) {
 		rb_raise(rb_eNoMemError, "tried to allocate too big memory");
@@ -114,10 +114,10 @@ ruby_xrealloc(ptr, size)
     if (!ptr) return xmalloc(size);
     if (size == 0) size = 1;
     malloc_memories += size;
-    mem = realloc(ptr, size);
+    RUBY_CRITICAL(mem = realloc(ptr, size));
     if (!mem) {
 	rb_gc();
-	mem = realloc(ptr, size);
+	RUBY_CRITICAL(mem = realloc(ptr, size));
 	if (!mem)
 	    if (size >= 50 * 1024 * 1024) {
 		rb_raise(rb_eNoMemError, "tried to re-allocate too big memory");
@@ -132,7 +132,8 @@ void
 ruby_xfree(x)
     void *x;
 {
-    if (x) free(x);
+    if (x)
+	RUBY_CRITICAL(free(x));
 }
 
 extern int ruby_in_compile;
@@ -186,7 +187,7 @@ rb_gc_unregister_address(addr)
 
     if (tmp->varptr == addr) {
 	Global_List = tmp->next;
-	free(tmp);
+	RUBY_CRITICAL(free(tmp));
 	return;
     }
     while (tmp->next) {
@@ -194,7 +195,7 @@ rb_gc_unregister_address(addr)
 	    struct gc_list *t = tmp->next;
 
 	    tmp->next = tmp->next->next;
-	    free(t);
+	    RUBY_CRITICAL(free(t));
 	    break;
 	}
 	tmp = tmp->next;
@@ -253,13 +254,13 @@ add_heap()
     if (heaps_used == heaps_length) {
 	/* Realloc heaps */
 	heaps_length += HEAPS_INCREMENT;
-	heaps = (heaps_used>0)?
-	    (RVALUE**)realloc(heaps, heaps_length*sizeof(RVALUE*)):
-	    (RVALUE**)malloc(heaps_length*sizeof(RVALUE*));
+	RUBY_CRITICAL(heaps = (heaps_used>0)?
+			(RVALUE**)realloc(heaps, heaps_length*sizeof(RVALUE*)):
+			(RVALUE**)malloc(heaps_length*sizeof(RVALUE*)));
 	if (heaps == 0) mem_error("heaps: can't alloc memory");
     }
 
-    p = heaps[heaps_used++] = (RVALUE*)malloc(sizeof(RVALUE)*HEAP_SLOTS);
+    RUBY_CRITICAL(p = heaps[heaps_used++] = (RVALUE*)malloc(sizeof(RVALUE)*HEAP_SLOTS));
     if (p == 0) mem_error("add_heap: can't alloc memory");
     pend = p + HEAP_SLOTS;
     if (lomem == 0 || lomem > p) lomem = p;
@@ -754,12 +755,12 @@ obj_free(obj)
       case T_STRING:
 #define STR_NO_ORIG FL_USER2	/* copied from string.c */
 	if (!RANY(obj)->as.string.orig || FL_TEST(obj, STR_NO_ORIG)) {
-	    free(RANY(obj)->as.string.ptr);
+	    RUBY_CRITICAL(free(RANY(obj)->as.string.ptr));
 	}
 	break;
       case T_ARRAY:
 	if (RANY(obj)->as.array.ptr) {
-	    free(RANY(obj)->as.array.ptr);
+	    RUBY_CRITICAL(free(RANY(obj)->as.array.ptr));
 	}
 	break;
       case T_HASH:
@@ -772,13 +773,13 @@ obj_free(obj)
 	    re_free_pattern(RANY(obj)->as.regexp.ptr);
 	}
 	if (RANY(obj)->as.regexp.str) {
-	    free(RANY(obj)->as.regexp.str);
+	    RUBY_CRITICAL(free(RANY(obj)->as.regexp.str));
 	}
 	break;
       case T_DATA:
 	if (DATA_PTR(obj)) {
 	    if ((long)RANY(obj)->as.data.dfree == -1) {
-		free(DATA_PTR(obj));
+		RUBY_CRITICAL(free(DATA_PTR(obj)));
 	    }
 	    else if (RANY(obj)->as.data.dfree) {
 		(*RANY(obj)->as.data.dfree)(DATA_PTR(obj));
@@ -788,13 +789,13 @@ obj_free(obj)
       case T_MATCH:
 	if (RANY(obj)->as.match.regs) {
 	    re_free_registers(RANY(obj)->as.match.regs);
-	    free(RANY(obj)->as.match.regs);
+	    RUBY_CRITICAL(free(RANY(obj)->as.match.regs));
 	}
 	break;
       case T_FILE:
 	if (RANY(obj)->as.file.fptr) {
 	    rb_io_fptr_finalize(RANY(obj)->as.file.fptr);
-	    free(RANY(obj)->as.file.fptr);
+	    RUBY_CRITICAL(free(RANY(obj)->as.file.fptr));
 	}
 	break;
       case T_ICLASS:
@@ -807,19 +808,19 @@ obj_free(obj)
 
       case T_BIGNUM:
 	if (RANY(obj)->as.bignum.digits) {
-	    free(RANY(obj)->as.bignum.digits);
+	    RUBY_CRITICAL(free(RANY(obj)->as.bignum.digits));
 	}
 	break;
       case T_NODE:
 	switch (nd_type(obj)) {
 	  case NODE_SCOPE:
 	    if (RANY(obj)->as.node.u1.tbl) {
-		free(RANY(obj)->as.node.u1.tbl);
+		RUBY_CRITICAL(free(RANY(obj)->as.node.u1.tbl));
 	    }
 	    break;
 #ifdef C_ALLOCA
 	  case NODE_ALLOCA:
-	    free(RANY(obj)->as.node.u1.value);
+	    RUBY_CRITICAL(free(RANY(obj)->as.node.u1.value));
 	    break;
 #endif
 	}
@@ -830,15 +831,15 @@ obj_free(obj)
             RANY(obj)->as.scope.flag != SCOPE_ALLOCA) {
 	    VALUE *vars = RANY(obj)->as.scope.local_vars-1;
 	    if (vars[0] == 0)
-		free(RANY(obj)->as.scope.local_tbl);
+		RUBY_CRITICAL(free(RANY(obj)->as.scope.local_tbl));
 	    if (RANY(obj)->as.scope.flag&SCOPE_MALLOC)
-		free(vars);
+		RUBY_CRITICAL(free(vars));
 	}
 	break;
 
       case T_STRUCT:
 	if (RANY(obj)->as.rstruct.ptr) {
-	    free(RANY(obj)->as.rstruct.ptr);
+	    RUBY_CRITICAL(free(RANY(obj)->as.rstruct.ptr));
 	}
 	break;
 

@@ -13,14 +13,40 @@
 #ifndef SIG_H
 #define SIG_H
 
-EXTERN int rb_trap_immediate;
 #ifdef NT
-#define TRAP_BEG (rb_trap_immediate=1, SetEvent(rb_InterruptEvent))
-#define TRAP_END (rb_trap_immediate=0, ResetEvent(rb_InterruptEvent))
+typedef LONG rb_atomic_t;
+
+# define ATOMIC_TEST(var) InterlockedExchange(&(var), 0)
+# define ATOMIC_SET(var, val) InterlockedExchange(&(var), (val))
+# define ATOMIC_INC(var) InterlockedIncrement(&(var))
+# define ATOMIC_DEC(var) InterlockedDecrement(&(var))
+
+/* Windows doesn't allow interrupt while system calls */
+# define TRAP_BEG win32_enter_syscall()
+# define TRAP_END win32_leave_syscall()
+# define RUBY_CRITICAL(statements) do {\
+    win32_disable_interrupt();\
+    statements;\
+    win32_enable_interrupt();\
+} while (0)
 #else
-#define TRAP_BEG (rb_trap_immediate=1)
-#define TRAP_END (rb_trap_immediate=0)
+typedef int rb_atomic_t;
+
+# define ATOMIC_TEST(var) ((var) ? ((var) = 0, 1) : 0)
+# define ATOMIC_SET(var, val) ((var) = (val))
+# define ATOMIC_INC(var) (++(var))
+# define ATOMIC_DEC(var) (--(var))
+
+# define TRAP_BEG (rb_trap_immediate=1)
+# define TRAP_END (rb_trap_immediate=0)
+# define RUBY_CRITICAL(statements) do {\
+    int trap_immediate = rb_trap_immediate;\
+    rb_trap_immediate = 0;\
+    statements;\
+    rb_trap_immediate = trap_immediate;\
+} while (0)
 #endif
+EXTERN rb_atomic_t rb_trap_immediate;
 
 EXTERN int rb_prohibit_interrupt;
 #define DEFER_INTS {rb_prohibit_interrupt++;}
@@ -29,7 +55,7 @@ EXTERN int rb_prohibit_interrupt;
 
 VALUE rb_with_disable_interrupt _((VALUE(*)(),VALUE));
 
-EXTERN int rb_trap_pending;
+EXTERN rb_atomic_t rb_trap_pending;
 void rb_trap_restore_mask _((void));
 
 EXTERN int rb_thread_critical;

@@ -34,6 +34,32 @@
 #define bool int
 #endif
 
+#if USE_INTERRUPT_WINSOCK
+
+# if defined(_MSC_VER) && _MSC_VER <= 1000
+/* VC++4.0 doesn't have this. */
+extern DWORD WSAWaitForMultipleEvents(DWORD nevent, const HANDLE *events,
+				      BOOL waitall, DWORD timeout,
+				      BOOL alertable);
+# endif
+
+# define WaitForMultipleEvents WSAWaitForMultipleEvents
+# define CreateSignal() (HANDLE)WSACreateEvent()
+# define SetSignal(ev) WSASetEvent(ev)
+# define ResetSignal(ev) WSAResetEvent(ev)
+#else  /* USE_INTERRUPT_WINSOCK */
+# define WaitForMultipleEvents WaitForMultipleObjectsEx
+# define CreateSignal() CreateEvent(NULL, FALSE, FALSE, NULL);
+# define SetSignal(ev) SetEvent(ev)
+# define ResetSignal(ev) (void)0
+#endif /* USE_INTERRUPT_WINSOCK */
+
+#ifdef WIN32_DEBUG
+#define Debug(something) something
+#else
+#define Debug(something) /* nothing */
+#endif
+
 #define TO_SOCKET(x)	_get_osfhandle(x)
 
 bool NtSyncProcess = TRUE;
@@ -46,6 +72,7 @@ static bool NtHasRedirection (char *);
 static int valid_filename(char *s);
 static void StartSockets ();
 static char *str_grow(struct RString *str, size_t new_size);
+static DWORD wait_events(HANDLE event, DWORD timeout);
 
 char *NTLoginName;
 
@@ -76,17 +103,23 @@ IsWinNT(void) {
 }
 
 /* main thread constants */
-HANDLE rb_CurrentProcessHandle;
-HANDLE rb_MainThreadHandle;
-DWORD rb_MainThreadId;
-HANDLE rb_InterruptEvent;
+static struct {
+    HANDLE handle;
+    DWORD id;
+} main_thread;
+
+/* interrupt stuff */
+static HANDLE interrupted_event;
 
 HANDLE GetCurrentThreadHandle(void)
 {
+    static HANDLE current_process_handle = NULL;
     HANDLE h;
-    HANDLE proc = rb_CurrentProcessHandle;
 
-    if (!DuplicateHandle(proc, GetCurrentThread(), proc, &h,
+    if (!current_process_handle)
+	current_process_handle = GetCurrentProcess();
+    if (!DuplicateHandle(current_process_handle, GetCurrentThread(),
+			 current_process_handle, &h,
 			 0, FALSE, DUPLICATE_SAME_ACCESS))
 	return NULL;
     return h;
@@ -98,68 +131,78 @@ HANDLE GetCurrentThreadHandle(void)
 #define LK_ERR(f,i) ((f) ? (i = 0) : (errno = GetLastError()))
 #define LK_LEN      0xffff0000
 
-int
-flock(int fd, int oper)
+static VALUE
+flock_winnt(VALUE self, int argc, VALUE* argv)
 {
     OVERLAPPED o;
     int i = -1;
-    HANDLE fh;
+    const HANDLE fh = (HANDLE)self;
+    const int oper = argc;
 
-    fh = (HANDLE)_get_osfhandle(fd);
     memset(&o, 0, sizeof(o));
 
-    if(IsWinNT()) {
-        switch(oper) {
-        case LOCK_SH:       /* shared lock */
-            LK_ERR(LockFileEx(fh, 0, 0, LK_LEN, 0, &o),i);
-            break;
-        case LOCK_EX:       /* exclusive lock */
-            LK_ERR(LockFileEx(fh, LOCKFILE_EXCLUSIVE_LOCK, 0, LK_LEN, 0, &o),i);
-            break;
-        case LOCK_SH|LOCK_NB:   /* non-blocking shared lock */
-            LK_ERR(LockFileEx(fh, LOCKFILE_FAIL_IMMEDIATELY, 0, LK_LEN, 0, &o),i);
-            break;
-        case LOCK_EX|LOCK_NB:   /* non-blocking exclusive lock */
-            LK_ERR(LockFileEx(fh,
-                   LOCKFILE_EXCLUSIVE_LOCK|LOCKFILE_FAIL_IMMEDIATELY,
-                   0, LK_LEN, 0, &o),i);
-	    if(errno == EDOM) errno = EWOULDBLOCK;
-            break;
-        case LOCK_UN:       /* unlock lock */
-	    if (UnlockFileEx(fh, 0, LK_LEN, 0, &o)) {
-		i = 0;
-	    }
-	    else {
-		/* GetLastError() must returns `ERROR_NOT_LOCKED' */
+    switch(oper) {
+      case LOCK_SH:		/* shared lock */
+	LK_ERR(LockFileEx(fh, 0, 0, LK_LEN, 0, &o), i);
+	break;
+      case LOCK_EX:		/* exclusive lock */
+	LK_ERR(LockFileEx(fh, LOCKFILE_EXCLUSIVE_LOCK, 0, LK_LEN, 0, &o), i);
+	break;
+      case LOCK_SH|LOCK_NB:	/* non-blocking shared lock */
+	LK_ERR(LockFileEx(fh, LOCKFILE_FAIL_IMMEDIATELY, 0, LK_LEN, 0, &o), i);
+	break;
+      case LOCK_EX|LOCK_NB:	/* non-blocking exclusive lock */
+	LK_ERR(LockFileEx(fh,
+			  LOCKFILE_EXCLUSIVE_LOCK|LOCKFILE_FAIL_IMMEDIATELY,
+			  0, LK_LEN, 0, &o), i);
+	if (errno == EDOM)
+	    errno = EWOULDBLOCK;
+	break;
+      case LOCK_UN:		/* unlock lock */
+	if (UnlockFileEx(fh, 0, LK_LEN, 0, &o)) {
+	    i = 0;
+	    if (errno == EDOM)
 		errno = EWOULDBLOCK;
-	    }
-	    if(errno == EDOM) errno = EWOULDBLOCK;
-            break;
-        default:            /* unknown */
-            errno = EINVAL;
-            break;
-        }
+	}
+	else {
+	    /* GetLastError() must returns `ERROR_NOT_LOCKED' */
+	    errno = EWOULDBLOCK;
+	}
+	break;
+      default:            /* unknown */
+	errno = EINVAL;
+	break;
     }
-    else if(IsWin95()) {
-        switch(oper) {
-        case LOCK_EX:
-	    while(i == -1) {
-	        LK_ERR(LockFile(fh, 0, 0, LK_LEN, 0), i);
-		if(errno != EDOM && i == -1) break;
-	    }
-	    break;
-	case LOCK_EX | LOCK_NB:
+    return i;
+}
+
+static VALUE
+flock_win95(VALUE self, int argc, VALUE* argv)
+{
+    int i = -1;
+    const HANDLE fh = (HANDLE)self;
+    const int oper = argc;
+
+    switch(oper) {
+      case LOCK_EX:
+	while(i == -1) {
 	    LK_ERR(LockFile(fh, 0, 0, LK_LEN, 0), i);
-	    if(errno == EDOM) errno = EWOULDBLOCK;
-            break;
-        case LOCK_UN:
-            LK_ERR(UnlockFile(fh, 0, 0, LK_LEN, 0), i);
-	    if(errno == EDOM) errno = EWOULDBLOCK;
-            break;
-        default:
-            errno = EINVAL;
-            break;
-        }
+	    if (errno != EDOM && i == -1) break;
+	}
+	break;
+      case LOCK_EX | LOCK_NB:
+	LK_ERR(LockFile(fh, 0, 0, LK_LEN, 0), i);
+	if (errno == EDOM)
+	    errno = EWOULDBLOCK;
+	break;
+      case LOCK_UN:
+	LK_ERR(UnlockFile(fh, 0, 0, LK_LEN, 0), i);
+	if (errno == EDOM)
+	    errno = EWOULDBLOCK;
+	break;
+      default:
+	errno = EINVAL;
+	break;
     }
     return i;
 }
@@ -167,6 +210,22 @@ flock(int fd, int oper)
 #undef LK_ERR
 #undef LK_LEN
 
+int
+flock(int fd, int oper)
+{
+    static asynchronous_func_t locker = NULL;
+
+    if (!locker) {
+	if (IsWinNT())
+	    locker = flock_winnt;
+	else
+	    locker = flock_win95;
+    }
+
+    return win32_asynchronize(locker,
+			      (VALUE)_get_osfhandle(fd), oper, NULL,
+			      (DWORD)-1);
+}
 
 //#undef const
 //FILE *fdopen(int, const char *);
@@ -1908,8 +1967,10 @@ myselect (int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
     long r;
     fd_set file_rd;
     fd_set file_wr;
+#ifdef USE_INTERRUPT_WINSOCK
+    fd_set trap;
+#endif /* USE_INTERRUPT_WINSOCK */
     int file_nfds;
-    int trap_immediate = rb_trap_immediate;
 
     if (!NtSocketsInitialized++) {
 	StartSockets();
@@ -1928,18 +1989,26 @@ myselect (int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 	if (wr) *wr = file_wr;
 	return file_nfds;
     }
-    if (trap_immediate)
-	TRAP_END;
+
+#if USE_INTERRUPT_WINSOCK
+    if (ex)
+	trap = *ex;
+    else
+	trap.fd_count = 0;
+    if (trap.fd_count < FD_SETSIZE)
+	trap.fd_array[trap.fd_count++] = (SOCKET)interrupted_event;
+    // else unable to catch interrupt.
+    ex = &trap;
+#endif /* USE_INTERRUPT_WINSOCK */
+
     if ((r = select (nfds, rd, wr, ex, timeout)) == SOCKET_ERROR) {
 	errno = WSAGetLastError();
 	switch (errno) {
-	case WSAEINTR:
+	  case WSAEINTR:
 	    errno = EINTR;
 	    break;
 	}
     }
-    if (trap_immediate)
-	TRAP_BEG;
     return r;
 }
 
@@ -1957,31 +2026,33 @@ StartSockets ()
     //
     version = MAKEWORD(1, 1);
     if (ret = WSAStartup(version, &retdata))
-        rb_fatal ("Unable to locate winsock library!\n");
+	rb_fatal ("Unable to locate winsock library!\n");
     if (LOBYTE(retdata.wVersion) != 1)
-        rb_fatal("could not find version 1 of winsock dll\n");
+	rb_fatal("could not find version 1 of winsock dll\n");
 
     if (HIBYTE(retdata.wVersion) != 1)
-        rb_fatal("could not find version 1 of winsock dll\n");
+	rb_fatal("could not find version 1 of winsock dll\n");
 
     atexit((void (*)(void)) WSACleanup);
 
-	iSockOpt = SO_SYNCHRONOUS_NONALERT;
+    iSockOpt = SO_SYNCHRONOUS_NONALERT;
     /*
      * Enable the use of sockets as filehandles
      */
     setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE,
-		(char *)&iSockOpt, sizeof(iSockOpt));
+	       (char *)&iSockOpt, sizeof(iSockOpt));
 
-    rb_CurrentProcessHandle = GetCurrentProcess();
-    rb_MainThreadHandle = GetCurrentThreadHandle();
-    rb_MainThreadId = GetCurrentThreadId();
-    rb_InterruptEvent = CreateEvent(NULL, FALSE, TRUE, NULL);
+    main_thread.handle = GetCurrentThreadHandle();
+    main_thread.id = GetCurrentThreadId();
+
+    interrupted_event = CreateSignal();
+    if (!interrupted_event)
+	rb_fatal("Unable to create interrupt event!\n");
 }
 
 #undef accept
 
-SOCKET 
+SOCKET
 myaccept (SOCKET s, struct sockaddr *addr, int *addrlen)
 {
     SOCKET r;
@@ -1990,12 +2061,8 @@ myaccept (SOCKET s, struct sockaddr *addr, int *addrlen)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if (trap_immediate)
-	TRAP_END;
     if ((r = accept (TO_SOCKET(s), addr, addrlen)) == INVALID_SOCKET)
 	errno = WSAGetLastError();
-    if (trap_immediate)
-	TRAP_BEG;
     return r;
 }
 
@@ -2342,7 +2409,7 @@ waitpid (pid_t pid, int *stat_loc, int options)
     } else {
 	timeout = INFINITE;
     }
-    if (WaitForSingleObject((HANDLE) pid, timeout) == WAIT_OBJECT_0) {
+    if (wait_events((HANDLE)pid, timeout) == WAIT_OBJECT_0) {
 	pid = _cwait(stat_loc, pid, 0);
 #if !defined __BORLANDC__
 	*stat_loc <<= 8;
@@ -2487,25 +2554,26 @@ myrename(const char *oldpath, const char *newpath)
     if (!MoveFile(oldpath, newpath))
 	res = -1;
 
-    if (res == 0 || (GetLastError() != ERROR_ALREADY_EXISTS
-		  && GetLastError() != ERROR_FILE_EXISTS))
-	goto done;
-
-    if (IsWinNT()) {
-	if (MoveFileEx(oldpath, newpath, MOVEFILE_REPLACE_EXISTING))
-	    res = 0;
-    } else {
-	for (;;) {
-	    if (!DeleteFile(newpath) && GetLastError() != ERROR_FILE_NOT_FOUND)
-		break;
-	    else if (MoveFile(oldpath, newpath)) {
-		  res = 0;
-		  break;
+    if (res) {
+	switch (GetLastError()) {
+	  case ERROR_ALREADY_EXISTS:
+	  case ERROR_FILE_EXISTS:
+	    if (IsWinNT()) {
+		if (MoveFileEx(oldpath, newpath, MOVEFILE_REPLACE_EXISTING))
+		    res = 0;
+	    } else {
+		for (;;) {
+		    if (!DeleteFile(newpath) && GetLastError() != ERROR_FILE_NOT_FOUND)
+			break;
+		    else if (MoveFile(oldpath, newpath)) {
+			res = 0;
+			break;
+		    }
+		}
 	    }
 	}
     }
 
-done:
     if (res)
 	errno = GetLastError();
     else
@@ -2545,88 +2613,288 @@ mytimes(struct tms *tmbuf)
 }
 
 
-static int win32_thread_exclusive(void)
-{
-    if (GetCurrentThreadId() == rb_MainThreadId) return FALSE;
+#undef Sleep
+#define yield_once() Sleep(0)
+#define yield_until(condition) do yield_once(); while (!(condition))
 
-    SuspendThread(rb_MainThreadHandle);
-    return TRUE;
+static DWORD wait_events(HANDLE event, DWORD timeout)
+{
+    HANDLE events[2];
+    int count = 0;
+    DWORD ret;
+
+    if (event) {
+	events[count++] = event;
+    }
+    events[count++] = interrupted_event;
+
+    ret = WaitForMultipleEvents(count, events, FALSE, timeout, TRUE);
+
+    if (ret == WAIT_OBJECT_0 + count - 1) {
+	ResetSignal(interrupted_event);
+	errno = EINTR;
+    }
+
+    return ret;
 }
 
-void win32_thread_resume_main(void)
+static CRITICAL_SECTION* system_state(void)
 {
-    if (GetCurrentThreadId() != rb_MainThreadId)
-	ResumeThread(rb_MainThreadHandle);
+    static int initialized = 0;
+    static CRITICAL_SECTION syssect;
+
+    if (!initialized) {
+	InitializeCriticalSection(&syssect);
+	initialized = 1;
+    }
+    return &syssect;
 }
 
-static void win32_suspend_self(void)
+static LONG flag_interrupt = -1;
+static volatile DWORD tlsi_interrupt = TLS_OUT_OF_INDEXES;
+
+void win32_disable_interrupt(void)
 {
-    SuspendThread(GetCurrentThread());
+    if (IsWinNT()) {
+	EnterCriticalSection(system_state());
+	return;
+    }
+
+    if (tlsi_interrupt == TLS_OUT_OF_INDEXES) {
+	tlsi_interrupt = TlsAlloc();
+    }
+
+    {
+	DWORD ti = (DWORD)TlsGetValue(tlsi_interrupt);
+	while (InterlockedIncrement(&flag_interrupt) > 0 && !ti) {
+	    InterlockedDecrement(&flag_interrupt);
+	    Sleep(1);
+	}
+	TlsSetValue(tlsi_interrupt, (PVOID)++ti);
+    }
 }
 
-static void win32_call_handler(int arg, void (*handler)(int), CONTEXT ctx)
+void win32_enable_interrupt(void)
 {
-    handler(arg);
-    ctx.ContextFlags = CONTEXT_FULL | CONTEXT_FLOATING_POINT;
-    SetThreadContext(rb_MainThreadHandle, &ctx);
+    if (IsWinNT()) {
+	LeaveCriticalSection(system_state());
+	return;
+    }
+
+    InterlockedDecrement(&flag_interrupt);
+    TlsSetValue(tlsi_interrupt, (PVOID)((DWORD)TlsGetValue(tlsi_interrupt) - 1));
 }
 
-static int catch_interrupt(unsigned long msec)
+struct handler_arg_t {
+    void (*handler)(int);
+    int arg;
+    int status;
+    int userstate;
+    HANDLE handshake;
+};
+
+static void win32_call_handler(struct handler_arg_t* h)
 {
-    return !WaitForSingleObject(rb_InterruptEvent, msec);
+    int status;
+    RUBY_CRITICAL(rb_protect((VALUE (*)())h->handler, (VALUE)h->arg, &h->status);
+		  status = h->status;
+		  SetEvent(h->handshake));
+    if (status) {
+	rb_jump_tag(status);
+    }
+    h->userstate = 1;		/* never syscall after here */
+    for (;;);			/* wait here in user state */
 }
 
-int win32_interruptible(void)
+static struct handler_arg_t* setup_handler(struct handler_arg_t *harg,
+					   int arg,
+					   void (*handler)(int),
+					   HANDLE handshake)
 {
-    if (catch_interrupt(0)) return TRUE;
-    SetEvent(rb_InterruptEvent);
-    return FALSE;
+    harg->handler = handler;
+    harg->arg = arg;
+    harg->status = 0;
+    harg->userstate = 0;
+    harg->handshake = handshake;
+    return harg;
+}
+
+static void setup_call(CONTEXT* ctx, struct handler_arg_t *harg)
+{
+#ifdef _M_IX86
+    DWORD *esp = (DWORD *)ctx->Esp;
+    *--esp = (DWORD)harg;
+    *--esp = ctx->Eip;
+    ctx->Esp = (DWORD)esp;
+    ctx->Eip = (DWORD)win32_call_handler;
+#else
+#error unsupported processor
+#endif
 }
 
 int win32_main_context(int arg, void (*handler)(int))
 {
-    if (!win32_thread_exclusive()) return FALSE;
+    static HANDLE interrupt_done = NULL;
+    struct handler_arg_t harg;
+    CONTEXT ctx_orig;
+    HANDLE current_thread = GetCurrentThread();
+    int old_priority = GetThreadPriority(current_thread);
 
-    if (!catch_interrupt(0)) {
-	SetEvent(rb_InterruptEvent);
-	return FALSE;
-    }
+    if (GetCurrentThreadId() == main_thread.id) return FALSE;
 
-    {
+    SetSignal(interrupted_event);
+
+    RUBY_CRITICAL({		/* the main thread must be in user state */
 	CONTEXT ctx;
+
+	SuspendThread(main_thread.handle);
+	SetThreadPriority(current_thread, GetThreadPriority(main_thread.handle));
 
 	ZeroMemory(&ctx, sizeof(CONTEXT));
 	ctx.ContextFlags = CONTEXT_FULL | CONTEXT_FLOATING_POINT;
-	GetThreadContext(rb_MainThreadHandle, &ctx);
-#ifdef _M_IX86
-	{
-	    DWORD *esp = (DWORD *)(ctx.Esp - sizeof(CONTEXT));
-	    *(CONTEXT *)esp = ctx;
-	    *--esp = (DWORD)handler;
-	    *--esp = arg;
-	    *--esp = ctx.Eip;
-	    ctx.Esp = (DWORD)esp;
+	GetThreadContext(main_thread.handle, &ctx);
+	ctx_orig = ctx;
+
+	/* handler context setup */
+	if (!interrupt_done) {
+	    interrupt_done = CreateEvent(NULL, FALSE, FALSE, NULL);
+	    /* anonymous one-shot event */
 	}
-	ctx.Eip = (DWORD)win32_call_handler;
-#else
-#error
-#endif
+	else {
+	    ResetEvent(interrupt_done);
+	}
+	setup_call(&ctx, setup_handler(&harg, arg, handler, interrupt_done));
 
 	ctx.ContextFlags = CONTEXT_CONTROL;
-	SetThreadContext(rb_MainThreadHandle, &ctx);
+	SetThreadContext(main_thread.handle, &ctx);
+	ResumeThread(main_thread.handle);
+    });
+
+    /* give a chance to the main thread */
+    yield_once();
+    WaitForSingleObject(interrupt_done, INFINITE); /* handshaking */
+
+    if (!harg.status) {
+	/* no exceptions raised, restore old context. */
+	RUBY_CRITICAL({
+	    /* ensure the main thread is in user state. */
+	    yield_until(harg.userstate);
+
+	    SuspendThread(main_thread.handle);
+	    ctx_orig.ContextFlags = CONTEXT_FULL | CONTEXT_FLOATING_POINT;
+	    SetThreadContext(main_thread.handle, &ctx_orig);
+	    ResumeThread(main_thread.handle);
+	});
     }
-    ResumeThread(rb_MainThreadHandle);
+    /* otherwise leave the main thread raised */
+
+    SetThreadPriority(current_thread, old_priority);
 
     return TRUE;
 }
 
-void win32_sleep(unsigned long msec)
+int win32_sleep(unsigned long msec)
 {
-    int trap_immediate = rb_trap_immediate;
+    return wait_events(NULL, msec) != WAIT_TIMEOUT;
+}
 
-    if (trap_immediate)
-	TRAP_END;
-    catch_interrupt(msec);
-    if (trap_immediate)
-	TRAP_BEG;
+static void catch_interrupt(void)
+{
+    yield_once();
+    win32_sleep(0);
+    CHECK_INTS;
+}
+
+void win32_enter_syscall(void)
+{
+    InterlockedExchange(&rb_trap_immediate, 1);
+    catch_interrupt();
+    win32_disable_interrupt();
+}
+
+void win32_leave_syscall(void)
+{
+    win32_enable_interrupt();
+    catch_interrupt();
+    InterlockedExchange(&rb_trap_immediate, 0);
+}
+
+struct asynchronous_arg_t {
+    /* output field */
+    void* stackaddr;
+
+    /* input field */
+    VALUE (*func)(VALUE self, int argc, VALUE* argv);
+    VALUE self;
+    int argc;
+    VALUE* argv;
+};
+
+static DWORD WINAPI
+call_asynchronous(PVOID argp)
+{
+    struct asynchronous_arg_t *arg = argp;
+    arg->stackaddr = &argp;
+    return (DWORD)arg->func(arg->self, arg->argc, arg->argv);
+}
+
+VALUE win32_asynchronize(asynchronous_func_t func,
+			 VALUE self, int argc, VALUE* argv, VALUE intrval)
+{
+    DWORD val;
+    BOOL interrupted = FALSE;
+    HANDLE thr;
+
+    RUBY_CRITICAL({
+	struct asynchronous_arg_t arg;
+
+	arg.stackaddr = NULL;
+	arg.func = func;
+	arg.self = self;
+	arg.argc = argc;
+	arg.argv = argv;
+
+	thr = CreateThread(NULL, 0, call_asynchronous, &arg, 0, &val);
+
+	if (thr) {
+	    yield_until(arg.stackaddr);
+
+	    if (wait_events(thr, INFINITE) != WAIT_OBJECT_0) {
+		interrupted = TRUE;
+
+		if (TerminateThread(thr, intrval)) {
+		    yield_once();
+		}
+	    }
+
+	    GetExitCodeThread(thr, &val);
+	    CloseHandle(thr);
+
+	    if (interrupted) {
+		/* must release stack of killed thread, why doesn't Windows? */
+		MEMORY_BASIC_INFORMATION m;
+
+		memset(&m, 0, sizeof(m));
+		if (!VirtualQuery(arg.stackaddr, &m, sizeof(m))) {
+		    Debug(fprintf(stderr, "couldn't get stack base:%p:%d\n",
+				  arg.stackaddr, GetLastError()));
+		}
+		else if (!VirtualFree(m.AllocationBase, 0, MEM_RELEASE)) {
+		    Debug(fprintf(stderr, "couldn't release stack:%p:%d\n",
+				  m.AllocationBase, GetLastError()));
+		}
+	    }
+	}
+    });
+
+    if (!thr) {
+	rb_fatal("failed to launch waiter thread:%d", GetLastError());
+    }
+
+    if (interrupted) {
+	errno = EINTR;
+	CHECK_INTS;
+    }
+
+    return val;
 }

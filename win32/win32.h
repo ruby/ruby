@@ -427,17 +427,23 @@ struct tms {
 #define times mytimes
 
 /* thread stuff */
-/* initialized by NtInitialize() */
-HANDLE rb_CurrentProcessHandle;
-HANDLE rb_MainThreadHandle;
-HANDLE rb_InterruptEvent;
-DWORD rb_MainThreadId;
-
 HANDLE GetCurrentThreadHandle(void);
 int win32_main_context(int arg, void (*handler)(int));
-int win32_interruptible(void);
-void win32_thread_resume_main(void);
-void win32_sleep(unsigned long msec);
-#define Sleep(msec) win32_sleep(msec)
+int win32_sleep(unsigned long msec);
+void win32_enter_syscall(void);
+void win32_leave_syscall(void);
+void win32_disable_interrupt(void);
+void win32_enable_interrupt(void);
+#define Sleep(msec) (void)win32_sleep(msec)
+
+/*
+== ***CAUTION***
+Since this function is very dangerous, ((*NEVER*))
+* lock any HANDLEs(i.e. Mutex, Semaphore, CriticalSection and so on) or,
+* use anything like TRAP_BEG...TRAP_END block structure,
+in asynchronous_func_t.
+*/
+typedef DWORD (*asynchronous_func_t)(DWORD self, int argc, DWORD* argv);
+DWORD win32_asynchronize(asynchronous_func_t func, DWORD self, int argc, DWORD* argv, DWORD intrval);
 
 #endif

@@ -1,3 +1,7 @@
+Mon Nov 13 22:44:52 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* error.c (rb_bug): print version to stderr.
+
 Mon Nov 13 19:02:08 2000  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* win32/win32.c, io.c, process.c: the exit status of program must be

@@ -885,8 +885,8 @@ rb_to_integer(val, method)
     val = rb_rescue2(to_type, (VALUE)&arg1, fail_to_type, (VALUE)&arg2,
 		     rb_eStandardError, rb_eNameError, 0);
     if (!rb_obj_is_kind_of(val, rb_cInteger)) {
-	rb_raise(rb_eTypeError, "%s#%s_i should return Integer",
-		 method, rb_class2name(CLASS_OF(arg1.val)));
+	rb_raise(rb_eTypeError, "%s#%s should return Integer",
+		 rb_class2name(CLASS_OF(arg1.val)), method);
     }
     return val;
 }
@@ -1166,6 +1166,7 @@ Init_Object()
     rb_undef_method(CLASS_OF(rb_cSymbol), "new");
     rb_define_method(rb_cSymbol, "type", sym_type, 0);
     rb_define_method(rb_cSymbol, "to_i", sym_to_i, 0);
+    rb_define_method(rb_cSymbol, "to_int", sym_to_i, 0);
     rb_define_method(rb_cSymbol, "inspect", sym_inspect, 0);
     rb_define_method(rb_cSymbol, "to_s", sym_to_s, 0);
     rb_define_method(rb_cSymbol, "id2name", sym_to_s, 0);

@@ -245,7 +245,7 @@ dir.@OBJEXT@: dir.c ruby.h config.h defines.h intern.h
 dln.@OBJEXT@: dln.c config.h defines.h dln.h
 dmyext.@OBJEXT@: dmyext.c
 enum.@OBJEXT@: enum.c ruby.h config.h defines.h intern.h
-error.@OBJEXT@: error.c ruby.h config.h defines.h intern.h env.h
+error.@OBJEXT@: error.c ruby.h config.h defines.h intern.h env.h version.h
 eval.@OBJEXT@: eval.c ruby.h config.h defines.h intern.h node.h env.h rubysig.h st.h dln.h
 file.@OBJEXT@: file.c ruby.h config.h defines.h intern.h rubyio.h rubysig.h
 gc.@OBJEXT@: gc.c ruby.h config.h defines.h intern.h rubysig.h st.h node.h env.h re.h regex.h

@@ -114,6 +114,7 @@ rb_f_srand(argc, argv, obj)
     VALUE a;
     unsigned int seed, old;
 
+    rb_secure(4);
     if (rb_scan_args(argc, argv, "01", &a) == 0) {
 	static int n = 0;
 	struct timeval tv;

@@ -260,9 +260,9 @@ rb_f_kill(argc, argv)
 }
 
 static VALUE trap_list[NSIG];
-static int trap_pending_list[NSIG];
-int rb_trap_pending;
-int rb_trap_immediate;
+static rb_atomic_t trap_pending_list[NSIG];
+rb_atomic_t rb_trap_pending;
+rb_atomic_t rb_trap_immediate;
 int rb_prohibit_interrupt;
 
 void
@@ -303,6 +303,7 @@ posix_signal(signum, handler)
 #define ruby_signal(sig,handle) signal((sig),(handle))
 #endif
 
+static void signal_exec _((int sig));
 static void
 signal_exec(sig)
     int sig;
@@ -342,11 +343,9 @@ sighandle(sig)
     int sig;
 {
 #ifdef NT
-#define end_interrupt() win32_thread_resume_main()
-    if (win32_main_context(sig, sighandle)) return;
-
+#define IN_MAIN_CONTEXT(f, a) (win32_main_context(a, f) ? (void)0 : f(a))
 #else
-#define end_interrupt() (void)0
+#define IN_MAIN_CONTEXT(f, a) f(a)
 #endif
 
     if (sig >= NSIG) {
@@ -357,16 +356,14 @@ sighandle(sig)
     ruby_signal(sig, sighandle);
 #endif
 
-    if (rb_trap_immediate) {
-	rb_trap_immediate = 0;
-	signal_exec(sig);
-	rb_trap_immediate = 1;
+    if (ATOMIC_TEST(rb_trap_immediate)) {
+	IN_MAIN_CONTEXT(signal_exec, sig);
+	ATOMIC_SET(rb_trap_immediate, 1);
     }
     else {
-	rb_trap_pending++;
-	trap_pending_list[sig]++;
+	ATOMIC_INC(rb_trap_pending);
+	ATOMIC_INC(trap_pending_list[sig]);
     }
-    end_interrupt();
 }
 
 #ifdef SIGBUS

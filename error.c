@@ -12,6 +12,8 @@
 
 #include "ruby.h"
 #include "env.h"
+#include "version.h"
+
 #include <stdio.h>
 #ifdef HAVE_STDARG_PROTOTYPES
 #include <stdarg.h>
@@ -172,7 +174,7 @@ rb_bug(fmt, va_alist)
     va_init_list(args, fmt);
     warn_print(buf, args);
     va_end(args);
-    ruby_show_version();
+    fprintf(stderr, "ruby %s (%s) [%s]\n", RUBY_VERSION, RUBY_RELEASE_DATE, RUBY_PLATFORM);
     abort();
 }
 
