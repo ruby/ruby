@@ -18,7 +18,11 @@ class TestReadPartial < Test::Unit::TestCase
       yield r, w
     }
     make_pipe {|r, w|
-      r.fcntl(Fcntl::F_SETFL, r.fcntl(Fcntl::F_GETFL) | Fcntl::O_NONBLOCK)
+      begin
+        r.fcntl(Fcntl::F_SETFL, r.fcntl(Fcntl::F_GETFL) | Fcntl::O_NONBLOCK)
+      rescue NotImplementedError
+        break
+      end
       yield r, w
     }
   end
