@@ -78,6 +78,16 @@ class PStore
     begin
       @transaction = true
       value = file = nil
+      lock = @filename + ".lock"
+      loop do
+	begin
+	  File::symlink("pstore::#$$", lock)
+	  break
+	rescue Errno::EEXIST
+	rescue
+	  sleep 1
+	end
+      end
       begin
 	File::open(@filename, "r") do |file|
 	  @table = Marshal.load(file)
@@ -112,6 +122,7 @@ class PStore
     ensure
       @table = nil
       @transaction = false
+      File::unlink(lock)
     end
     value
   end

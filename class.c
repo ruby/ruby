@@ -130,7 +130,7 @@ rb_define_class_under(outer, name, super)
 
     id = rb_intern(name);
     klass = rb_define_class_id(id, super);
-    rb_const_set(outer, id, klass);
+    rb_shvar_set(outer, id, klass);
     rb_set_class_path(klass, outer, name);
 
     return klass;
@@ -186,7 +186,7 @@ rb_define_module_under(outer, name)
 
     id = rb_intern(name);
     module = rb_define_module_id(id);
-    rb_const_set(outer, id, module);
+    rb_shvar_set(outer, id, module);
     rb_set_class_path(module, outer, name);
 
     return module;

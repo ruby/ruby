@@ -1300,7 +1300,7 @@ superclass(self, node)
 }
 
 static VALUE
-ev_const_defined(cref, id)
+ev_shvar_defined(cref, id)
     NODE *cref;
     ID id;
 {
@@ -1315,11 +1315,11 @@ ev_const_defined(cref, id)
 	}
 	cbase = cbase->nd_next;
     }
-    return rb_const_defined(cref->nd_clss, id);
+    return rb_shvar_defined(cref->nd_clss, id);
 }
 
 static VALUE
-ev_const_get(cref, id)
+ev_shvar_get(cref, id)
     NODE *cref;
     ID id;
 {
@@ -1329,13 +1329,34 @@ ev_const_get(cref, id)
     while (cbase && cbase->nd_clss != rb_cObject) {
 	struct RClass *klass = RCLASS(cbase->nd_clss);
 
-	if (klass->iv_tbl &&
-	    st_lookup(klass->iv_tbl, id, &result)) {
+	if (klass->iv_tbl && st_lookup(klass->iv_tbl, id, &result)) {
 	    return result;
 	}
 	cbase = cbase->nd_next;
     }
-    return rb_const_get(cref->nd_clss, id);
+    return rb_shvar_get(cref->nd_clss, id);
+}
+
+static VALUE
+ev_shvar_set(cref, id, val)
+    NODE *cref;
+    ID id;
+    VALUE val;
+{
+    NODE *cbase = cref;
+    VALUE tmp;
+
+    while (cbase && cbase->nd_clss != rb_cObject) {
+	struct RClass *klass = RCLASS(cbase->nd_clss);
+
+	if (klass->iv_tbl && st_lookup(klass->iv_tbl, id, 0)) {
+	    st_insert(klass->iv_tbl, id, val);
+	    return val;
+	}
+	cbase = cbase->nd_next;
+    }
+    rb_shvar_assign(cbase->nd_clss, id, val);
+    return val;
 }
 
 static VALUE
@@ -1352,17 +1373,17 @@ rb_mod_nesting()
 }
 
 static VALUE
-rb_mod_s_constants()
+rb_mod_s_shvars()
 {
     NODE *cbase = (NODE*)ruby_frame->cbase;
     VALUE ary = rb_ary_new();
 
     while (cbase && cbase->nd_clss != rb_cObject) {
-	rb_mod_const_at(cbase->nd_clss, ary);
+	rb_mod_shvar_at(cbase->nd_clss, ary);
 	cbase = cbase->nd_next;
     }
 
-    rb_mod_const_of(((NODE*)ruby_frame->cbase)->nd_clss, ary);
+    rb_mod_shvar_of(((NODE*)ruby_frame->cbase)->nd_clss, ary);
     return ary;
 }
 
@@ -1585,7 +1606,7 @@ is_defined(self, node, buf)
 	break;
 
       case NODE_CVAR:
-	if (ev_const_defined((NODE*)ruby_frame->cbase, node->nd_vid)) {
+	if (ev_shvar_defined((NODE*)ruby_frame->cbase, node->nd_vid)) {
 	    return "constant";
 	}
 	break;
@@ -1601,7 +1622,7 @@ is_defined(self, node, buf)
 	    switch (TYPE(val)) {
 	      case T_CLASS:
 	      case T_MODULE:
-		if (rb_const_defined_at(val, node->nd_mid))
+		if (rb_shvar_defined_at(val, node->nd_mid))
 		    return "constant";
 	      default:
 		if (rb_method_boundp(val, node->nd_mid, 1)) {
@@ -2392,13 +2413,15 @@ rb_eval(self, node)
 	    rb_raise(rb_eTypeError, "no class/module to define constant");
 	}
 	result = rb_eval(self, node->nd_value);
-	/* check for static scope constants */
-	if (RTEST(ruby_verbose) &&
-	    ev_const_defined((NODE*)ruby_frame->cbase, node->nd_vid)) {
-	    rb_warn("already initialized constant %s",
-		       rb_id2name(node->nd_vid));
+	ev_shvar_set((NODE*)ruby_frame->cbase, node->nd_vid, result);
+	break;
+
+      case NODE_CDECL:
+	if (NIL_P(ruby_class)) {
+	    rb_raise(rb_eTypeError, "no class/module to define constant");
 	}
-	rb_const_set(ruby_class, node->nd_vid, result);
+	result = rb_eval(self, node->nd_value);
+	rb_shvar_set(ruby_class, node->nd_vid, result);
 	break;
 
       case NODE_LVAR:
@@ -2421,7 +2444,7 @@ rb_eval(self, node)
 	break;
 
       case NODE_CVAR:
-	result = ev_const_get((NODE*)ruby_frame->cbase, node->nd_vid);
+	result = ev_shvar_get((NODE*)ruby_frame->cbase, node->nd_vid);
 	break;
 
       case NODE_BLOCK_ARG:
@@ -2448,12 +2471,12 @@ rb_eval(self, node)
 	      default:
 		return rb_funcall(klass, node->nd_mid, 0, 0);
 	    }
-	    result = rb_const_get_at(klass, node->nd_mid);
+	    result = rb_shvar_get(klass, node->nd_mid);
 	}
 	break;
 
       case NODE_COLON3:
-	result = rb_const_get_at(rb_cObject, node->nd_mid);
+	result = rb_shvar_get(rb_cObject, node->nd_mid);
 	break;
 
       case NODE_NTH_REF:
@@ -2754,12 +2777,12 @@ rb_eval(self, node)
 	    }
 
 	    klass = 0;
-	    if (rb_const_defined_at(ruby_class, node->nd_cname) &&
+	    if (rb_shvar_defined_at(ruby_class, node->nd_cname) &&
 		(ruby_class != rb_cObject || !rb_autoload_defined(node->nd_cname))) {
-		klass = rb_const_get_at(ruby_class, node->nd_cname);
+		klass = rb_shvar_get(ruby_class, node->nd_cname);
 	    }
-	    if (ruby_wrapper && rb_const_defined_at(rb_cObject, node->nd_cname)) {
-		klass = rb_const_get_at(rb_cObject, node->nd_cname);
+	    if (ruby_wrapper && rb_shvar_defined_at(rb_cObject, node->nd_cname)) {
+		klass = rb_shvar_get(rb_cObject, node->nd_cname);
 	    }
 	    if (klass) {
 		if (TYPE(klass) != T_CLASS) {
@@ -2787,7 +2810,7 @@ rb_eval(self, node)
 	    else {
 		if (!super) super = rb_cObject;
 		klass = rb_define_class_id(node->nd_cname, super);
-		rb_const_set(ruby_class, node->nd_cname, klass);
+		rb_shvar_set(ruby_class, node->nd_cname, klass);
 		rb_set_class_path(klass,ruby_class,rb_id2name(node->nd_cname));
 	    }
 	    if (ruby_wrapper) {
@@ -2807,13 +2830,13 @@ rb_eval(self, node)
 		rb_raise(rb_eTypeError, "no outer class/module");
 	    }
 	    module = 0;
-	    if (rb_const_defined_at(ruby_class, node->nd_cname) &&
+	    if (rb_shvar_defined_at(ruby_class, node->nd_cname) &&
 		(ruby_class != rb_cObject ||
 		 !rb_autoload_defined(node->nd_cname))) {
-		module = rb_const_get_at(ruby_class, node->nd_cname);
+		module = rb_shvar_get(ruby_class, node->nd_cname);
 	    }
-	    if (ruby_wrapper && rb_const_defined_at(rb_cObject, node->nd_cname)) {
-		module = rb_const_get_at(rb_cObject, node->nd_cname);
+	    if (ruby_wrapper && rb_shvar_defined_at(rb_cObject, node->nd_cname)) {
+		module = rb_shvar_get(rb_cObject, node->nd_cname);
 	    }
 	    if (module) {
 		if (TYPE(module) != T_MODULE) {
@@ -2826,7 +2849,7 @@ rb_eval(self, node)
 	    }
 	    else {
 		module = rb_define_module_id(node->nd_cname);
-		rb_const_set(ruby_class, node->nd_cname, module);
+		rb_shvar_set(ruby_class, node->nd_cname, module);
 		rb_set_class_path(module,ruby_class,rb_id2name(node->nd_cname));
 	    }
 	    if (ruby_wrapper) {
@@ -3368,7 +3391,11 @@ assign(self, lhs, val, check)
 	break;
 
       case NODE_CASGN:
-	rb_const_set(ruby_class, lhs->nd_vid, val);
+	ev_shvar_set((NODE*)ruby_frame->cbase, lhs->nd_vid, val);
+	break;
+
+      case NODE_CDECL:
+	rb_shvar_set(ruby_class, lhs->nd_vid, val);
 	break;
 
       case NODE_MASGN:
@@ -5317,7 +5344,9 @@ Init_eval()
     rb_define_private_method(rb_cModule, "alias_method", rb_mod_alias_method, 2);
 
     rb_define_singleton_method(rb_cModule, "nesting", rb_mod_nesting, 0);
-    rb_define_singleton_method(rb_cModule, "constants", rb_mod_s_constants, 0);
+    rb_define_singleton_method(rb_cModule, "shared_variables", rb_mod_s_shvars, 0);
+    /* to be removed at 1.6 */
+    rb_define_singleton_method(rb_cModule, "constants", rb_mod_s_shvars, 0);
 
     rb_define_singleton_method(ruby_top_self, "include", top_include, -1);
     rb_define_singleton_method(ruby_top_self, "public", top_public, -1);

@@ -3283,6 +3283,7 @@ Init_IO()
     rb_define_hooked_variable("$stderr", &rb_stderr, 0, set_stderr);
     rb_defout = rb_stdout;
     rb_define_hooked_variable("$>", &rb_defout, 0, rb_io_defset);
+    rb_define_hooked_variable("$defout", &rb_defout, 0, rb_io_defset);
 
     rb_define_global_const("STDIN", rb_stdin);
     rb_define_global_const("STDOUT", rb_stdout);

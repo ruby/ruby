@@ -1,3 +1,42 @@
+Wed Nov 17 02:40:40 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (Init_IO): $defout (alias of $>) added.
+
+Tue Nov 16 09:47:14 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* lib/pstore.rb: add mutual lock using symlink.
+
+Mon Nov 15 16:50:34 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* enum.c (enum_grep): non matching grep returns an empty array, no
+	  longer returns nil.
+
+	* enum.c (enum_grep): grep with block returns collection of
+	  evaluated values of block over matched elements.
+
+Mon Nov 15 04:50:33 1999  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* re.c (rb_reg_source): should not call rb_reg_expr_str()
+	  everytime.
+
+Sat Nov 13 07:34:18 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* variable.c (rb_mod_constants): traverse superclasses to collect
+	  constants (shared variables).
+
+	* eval.c (assign): modified for shared variables.
+
+	* eval.c (rb_eval): search nested scope, then superclasses to
+	  assign shared variables within methods.
+
+	* eval.c (rb_eval): remove warnings from constants modification,
+	  becase they are no longer constants.
+
+	* parse.y (node_assign): modified for shared variables.
+
+	* parse.y (assignable): allow constant assignment in methods;
+	  constants should be called `shared variable'.
+
 Wed Nov 10 21:54:11 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
 
 	* hash.c (rb_any_cmp): Fixed return without value.

@@ -278,10 +278,10 @@ process_sflag()
 	    s[0] = '$';
 	    if (p = strchr(s, '=')) {
 		*p++ = '\0';
-		rb_gvar_set2(s, rb_str_new2(p));
+		rb_gv_set(s, rb_str_new2(p));
 	    }
 	    else {
-		rb_gvar_set2(s, Qtrue);
+		rb_gv_set(s, Qtrue);
 	    }
 	    s[0] = '-';
 	}

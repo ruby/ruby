@@ -49,6 +49,7 @@ enum node_type {
     NODE_GASGN,
     NODE_IASGN,
     NODE_CASGN,
+    NODE_CDECL,
     NODE_OP_ASGN1,
     NODE_OP_ASGN2,
     NODE_OP_ASGN_AND,
@@ -260,6 +261,7 @@ typedef struct RNode {
 #define NEW_DASGN_PUSH(v,val) rb_node_newnode(NODE_DASGN_PUSH,v,val,0);
 #define NEW_IASGN(v,val) rb_node_newnode(NODE_IASGN,v,val,0)
 #define NEW_CASGN(v,val) rb_node_newnode(NODE_CASGN,v,val,0)
+#define NEW_CDECL(v,val) rb_node_newnode(NODE_CDECL,v,val,0)
 #define NEW_OP_ASGN1(p,id,a) rb_node_newnode(NODE_OP_ASGN1,p,id,a)
 #define NEW_OP_ASGN2(r,i,o,val) rb_node_newnode(NODE_OP_ASGN2,r,val,NEW_OP_ASGN22(i,o))
 #define NEW_OP_ASGN22(i,o) rb_node_newnode(NODE_OP_ASGN2,i,o,rb_id_attrset(i))

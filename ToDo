@@ -3,12 +3,14 @@ Language Spec.
 - def foo; .. rescue .. end
 - compile time string concatenation, "hello" "world" => "helloworld"
 - rescue modifier; a rescue b => begin a rescue; b end
+- assignable constant, which now should be called shared variable.
+- class variable (prefix?) -- done by shared variable
 * objectify symbols
 * objectify characters
 * ../... outside condition invokes operator method too.
+* ... inside condition turns off just before right condition.???
 * %w(a\ b\ c abc) => ["a b c", "abc"]
-* package or access control for global variables
-* class variable (prefix?)
+* package or access control for global variables??
 * named arguments like foo(nation:="german") or foo(nation: "german").
 * method to retrieve argument information (need new C API)
 * multiple return values, yield values.  maybe incompatible ???
@@ -21,6 +23,7 @@ Hacking Interpreter
 
 - use eban's fnmatch
 - RUBYOPT environment variable
+- alias $defout $>
 * non-blocking open (e.g. for named pipe) for thread
 * avoid blocking with gethostbyname/gethostbyaddr
 * objectify interpreters
@@ -36,6 +39,7 @@ Standard Libraries
 - Array#{first,last,at}
 - Dir.glob(pat){|f|...}
 - sprintf/printf's $ to specify argument order
+* debugger for thread programming
 * Dir.glob("**/*.c") ala zsh
 * Struct::new([name,]member,...) ??
 * String#scanf(?)

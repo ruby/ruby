@@ -161,7 +161,7 @@ make_struct(name, member, klass)
     else {
 	char *cname = STR2CSTR(name);
 	id = rb_intern(cname);
-	if (!rb_is_const_id(id)) {
+	if (!rb_is_shared_id(id)) {
 	    rb_raise(rb_eNameError, "identifier %s needs to be constant", cname);
 	}
 	nstr = rb_define_class_under(klass, cname, klass);

@@ -275,10 +275,7 @@ static VALUE
 rb_reg_source(re)
     VALUE re;
 {
-    VALUE str = rb_str_new(0,0);
-    rb_reg_expr_str(str, RREGEXP(re)->str, RREGEXP(re)->len);
-
-    return str;
+    return rb_str_new(RREGEXP(re)->str,RREGEXP(re)->len);
 }
 
 static VALUE

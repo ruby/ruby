@@ -375,8 +375,8 @@ void rb_define_variable _((const char*,VALUE*));
 void rb_define_virtual_variable _((const char*,VALUE(*)(),void(*)()));
 void rb_define_hooked_variable _((const char*,VALUE*,VALUE(*)(),void(*)()));
 void rb_define_readonly_variable _((const char*,VALUE*));
-void rb_define_const _((VALUE,const char*,VALUE));
-void rb_define_global_const _((const char*,VALUE));
+void rb_define_shared_variable _((VALUE,const char*,VALUE));
+void rb_define_global_shared_variable _((const char*,VALUE));
 
 void rb_define_method _((VALUE,const char*,VALUE(*)(),int));
 void rb_define_module_function _((VALUE,const char*,VALUE(*)(),int));
@@ -402,11 +402,10 @@ VALUE rb_funcall2 _((VALUE, ID, int, VALUE*));
 VALUE rb_funcall3 _((VALUE, ID, int, VALUE*));
 int rb_scan_args __((int, VALUE*, const char*, ...));
 
+VALUE rb_gv_set _((const char*, VALUE));
+VALUE rb_gv_get _((const char*));
 VALUE rb_iv_get _((VALUE, const char*));
 VALUE rb_iv_set _((VALUE, const char*, VALUE));
-VALUE rb_const_get _((VALUE, ID));
-VALUE rb_const_get_at _((VALUE, ID));
-void rb_const_set _((VALUE, ID, VALUE));
 
 VALUE rb_equal _((VALUE,VALUE));
 

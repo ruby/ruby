@@ -44,7 +44,7 @@ fc_i(key, value, res)
     VALUE path;
     char *name;
     
-    if (!rb_is_const_id(key)) return ST_CONTINUE;
+    if (!rb_is_shared_id(key)) return ST_CONTINUE;
 
     name = rb_id2name(key);
     if (res->path) {
@@ -216,7 +216,7 @@ rb_autoload_id(id, filename)
     ID id;
     const char *filename;
 {
-    if (!rb_is_const_id(id)) {
+    if (!rb_is_shared_id(id)) {
 	rb_raise(rb_eNameError, "autoload must be constant name",
 		 rb_id2name(id));
     }
@@ -630,7 +630,7 @@ rb_gvar_set(entry, val)
 }
 
 VALUE
-rb_gvar_set2(name, val)
+rb_gv_set(name, val)
     const char *name;
     VALUE val;
 {
@@ -638,6 +638,16 @@ rb_gvar_set2(name, val)
 
     entry = rb_global_entry(global_id(name));
     return rb_gvar_set(entry, val);
+}
+
+VALUE
+rb_gv_get(name)
+    const char *name;
+{
+    struct global_entry *entry;
+
+    entry = rb_global_entry(global_id(name));
+    return rb_gvar_get(entry);
 }
 
 VALUE
@@ -973,7 +983,7 @@ rb_obj_remove_instance_variable(obj, name)
 }
 
 VALUE
-rb_const_get_at(klass, id)
+rb_shvar_get_at(klass, id)
     VALUE klass;
     ID id;
 {
@@ -983,7 +993,7 @@ rb_const_get_at(klass, id)
 	return value;
     }
     if (klass == rb_cObject) {
-	return rb_const_get(klass, id);
+	return rb_shvar_get(klass, id);
     }
     rb_raise(rb_eNameError, "uninitialized constant %s::%s",
 	     RSTRING(rb_class_path(klass))->ptr,
@@ -993,7 +1003,15 @@ rb_const_get_at(klass, id)
 
 
 VALUE
-rb_const_get(klass, id)
+rb_const_get_at(klass, id)
+    VALUE klass;
+    ID id;
+{
+    return rb_shvar_get_at(klass, id);
+}
+
+VALUE
+rb_shvar_get(klass, id)
     VALUE klass;
     ID id;
 {
@@ -1008,7 +1026,7 @@ rb_const_get(klass, id)
 	tmp = RCLASS(tmp)->super;
     }
     if (BUILTIN_TYPE(klass) == T_MODULE) {
-	return rb_const_get(rb_cObject, id);
+	return rb_shvar_get(rb_cObject, id);
     }
 
     /* pre-defined class */
@@ -1023,7 +1041,7 @@ rb_const_get(klass, id)
 	module = rb_str_new2(modname);
 	free(modname);
 	rb_f_require(Qnil, module);
-	return rb_const_get(klass, id);
+	return rb_shvar_get(klass, id);
     }
 
     /* Uninitialized constant */
@@ -1037,13 +1055,21 @@ rb_const_get(klass, id)
     return Qnil;		/* not reached */
 }
 
+VALUE
+rb_const_get(klass, id)
+    VALUE klass;
+    ID id;
+{
+    return rb_shvar_get(klass, id);
+}
+
 static int
-const_i(key, value, ary)
+sv_i(key, value, ary)
     ID key;
     VALUE value;
     VALUE ary;
 {
-    if (rb_is_const_id(key)) {
+    if (rb_is_shared_id(key)) {
 	VALUE kval = rb_str_new2(rb_id2name(key));
 	if (!rb_ary_includes(ary, kval)) {
 	    rb_ary_push(ary, kval);
@@ -1053,26 +1079,33 @@ const_i(key, value, ary)
 }
 
 VALUE
-rb_mod_remove_const(mod, name)
+rb_mod_remove_shvar(mod, name)
     VALUE mod, name;
 {
     ID id = rb_to_id(name);
     VALUE val;
 
-    if (!rb_is_const_id(id)) {
-	rb_raise(rb_eNameError, "`%s' is not constant", rb_id2name(id));
+    if (!rb_is_shared_id(id)) {
+	rb_raise(rb_eNameError, "`%s' is not shared variable", rb_id2name(id));
     }
 
     if (RCLASS(mod)->iv_tbl && st_delete(ROBJECT(mod)->iv_tbl, &id, &val)) {
 	return val;
     }
-    if (rb_const_defined_at(mod, id)) {
+    if (rb_shvar_defined_at(mod, id)) {
 	rb_raise(rb_eNameError, "cannot remove %s::%s", 
 		 rb_class2name(mod), rb_id2name(id));
     }
     rb_raise(rb_eNameError, "constant %s::%s not defined", 
 	     rb_class2name(mod), rb_id2name(id));
     return Qnil;		/* not reached */
+}
+
+VALUE
+rb_mod_remove_const(mod, name)
+    VALUE mod, name;
+{
+    return rb_mod_remove_shvar(mod, name);
 }
 
 static int
@@ -1089,16 +1122,16 @@ autoload_i(key, name, ary)
 }
 
 VALUE
-rb_mod_const_at(mod, ary)
+rb_mod_shvar_at(mod, ary)
     VALUE mod, ary;
 {
     if (!FL_TEST(mod, FL_TAINT) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't get metainfo");
     if (RCLASS(mod)->iv_tbl) {
-	st_foreach(RCLASS(mod)->iv_tbl, const_i, ary);
+	st_foreach(RCLASS(mod)->iv_tbl, sv_i, ary);
     }
     if ((VALUE)mod == rb_cObject) {
-	st_foreach(rb_class_tbl, const_i, ary);
+	st_foreach(rb_class_tbl, sv_i, ary);
 	if (autoload_tbl) {
 	    st_foreach(autoload_tbl, autoload_i, ary);
 	}
@@ -1107,10 +1140,24 @@ rb_mod_const_at(mod, ary)
 }
 
 VALUE
-rb_mod_constants(mod)
-    VALUE mod;
+rb_mod_const_at(mod, ary)
+    VALUE mod, ary;
 {
-    return rb_mod_const_at(mod, rb_ary_new());
+    return rb_mod_shvar_at(mod, ary);
+}
+
+VALUE
+rb_mod_shvar_of(mod, ary)
+    VALUE mod;
+    VALUE ary;
+{
+    rb_mod_shvar_at(mod, ary);
+    for (;;) {
+	mod = RCLASS(mod)->super;
+	if (!mod) break;
+	rb_mod_shvar_at(mod, ary);
+    }
+    return ary;
 }
 
 VALUE
@@ -1118,17 +1165,25 @@ rb_mod_const_of(mod, ary)
     VALUE mod;
     VALUE ary;
 {
-    rb_mod_const_at(mod, ary);
-    for (;;) {
-	mod = RCLASS(mod)->super;
-	if (!mod) break;
-	rb_mod_const_at(mod, ary);
-    }
-    return ary;
+    return rb_mod_shvar_of(mod, ary);
+}
+
+VALUE
+rb_mod_shvars(mod)
+    VALUE mod;
+{
+    return rb_mod_shvar_of(mod, rb_ary_new());
+}
+
+VALUE
+rb_mod_constants(mod)
+    VALUE mod;
+{
+    return rb_mod_shvars(mod);
 }
 
 int
-rb_const_defined_at(klass, id)
+rb_shvar_defined_at(klass, id)
     VALUE klass;
     ID id;
 {
@@ -1136,9 +1191,17 @@ rb_const_defined_at(klass, id)
 	return Qtrue;
     }
     if (klass == rb_cObject) {
-	return rb_const_defined(klass, id);
+	return rb_shvar_defined(klass, id);
     }
     return Qfalse;
+}
+
+int
+rb_const_defined_at(klass, id)
+    VALUE klass;
+    ID id;
+{
+    return rb_shvar_defined_at(klass, id);
 }
 
 int
@@ -1151,7 +1214,7 @@ rb_autoload_defined(id)
 }
 
 int
-rb_const_defined(klass, id)
+rb_shvar_defined(klass, id)
     VALUE klass;
     ID id;
 {
@@ -1164,15 +1227,23 @@ rb_const_defined(klass, id)
 	tmp = RCLASS(tmp)->super;
     }
     if (BUILTIN_TYPE(klass) == T_MODULE) {
-	return rb_const_defined(rb_cObject, id);
+	return rb_shvar_defined(rb_cObject, id);
     }
     if (st_lookup(rb_class_tbl, id, 0))
 	return Qtrue;
     return rb_autoload_defined(id);
 }
 
+int
+rb_const_defined(klass, id)
+    VALUE klass;
+    ID id;
+{
+    return rb_shvar_defined(klass, id);
+}
+
 void
-rb_const_set(klass, id, val)
+rb_shvar_set(klass, id, val)
     VALUE klass;
     ID id;
     VALUE val;
@@ -1182,11 +1253,59 @@ rb_const_set(klass, id, val)
     if (!RCLASS(klass)->iv_tbl) {
 	RCLASS(klass)->iv_tbl = st_init_numtable();
     }
-    else if (st_lookup(RCLASS(klass)->iv_tbl, id, 0)) {
-	rb_warn("already initialized constant %s", rb_id2name(id));
-    }
 
     st_insert(RCLASS(klass)->iv_tbl, id, val);
+}
+
+void
+rb_const_set(klass, id, val)
+    VALUE klass;
+    ID id;
+    VALUE val;
+{
+    return rb_shvar_set(klass, id, val);
+}
+
+void
+rb_shvar_assign(klass, id, val)
+    VALUE klass;
+    ID id;
+    VALUE val;
+{
+    VALUE tmp = klass;
+    
+    while (tmp) {
+	if (RCLASS(tmp)->iv_tbl && st_lookup(RCLASS(tmp)->iv_tbl,id,0)) {
+	    st_insert(RCLASS(tmp)->iv_tbl, id, val);
+	    return;
+	}
+	tmp = RCLASS(tmp)->super;
+    }
+    /* pre-defined class */
+    if (st_lookup(rb_class_tbl, id, 0)) {
+	st_delete(rb_class_tbl, id, 0);
+	st_insert(RCLASS(rb_cObject)->iv_tbl, id, val);
+	return;
+    }
+
+    /* autoload */
+    if (autoload_tbl && st_lookup(autoload_tbl, id, 0)) {
+	char *modname;
+
+	st_delete(autoload_tbl, &id, &modname);
+	free(modname);
+	st_insert(RCLASS(rb_cObject)->iv_tbl, id, val);
+	return;
+    }
+
+    /* Uninitialized constant */
+    if (klass && klass != rb_cObject)
+	rb_raise(rb_eNameError, "uninitialized constant %s::%s",
+		 RSTRING(rb_class_path(klass))->ptr,
+		 rb_id2name(id));
+    else {
+	rb_raise(rb_eNameError, "uninitialized constant %s",rb_id2name(id));
+    }
 }
 
 void
@@ -1200,10 +1319,19 @@ rb_define_const(klass, name, val)
     if (klass == rb_cObject) {
 	rb_secure(4);
     }
-    if (!rb_is_const_id(id)) {
-	rb_raise(rb_eNameError, "wrong constant name %s", name);
+    if (!rb_is_shared_id(id)) {
+	rb_raise(rb_eNameError, "wrong shared variable name %s", name);
     }
-    rb_const_set(klass, id, val);
+    rb_shvar_set(klass, id, val);
+}
+
+void
+rb_define_shvar(klass, name, val)
+    VALUE klass;
+    const char *name;
+    VALUE val;
+{
+    return rb_define_const(klass, name, val);
 }
 
 void
@@ -1212,6 +1340,14 @@ rb_define_global_const(name, val)
     VALUE val;
 {
     rb_define_const(rb_cObject, name, val);
+}
+
+void
+rb_define_global_shvar(name, val)
+    const char *name;
+    VALUE val;
+{
+    rb_define_global_const(name, val);
 }
 
 VALUE
