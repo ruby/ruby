@@ -1996,7 +1996,7 @@ rb_alias(klass, name, def)
     ID name, def;
 {
     VALUE origin;
-    NODE *orig, *body;
+    NODE *orig, *body, *node;
     VALUE singleton = 0;
 
     rb_frozen_class_p(klass);
@@ -2016,9 +2016,6 @@ rb_alias(klass, name, def)
     if (FL_TEST(klass, FL_SINGLETON)) {
 	singleton = rb_iv_get(klass, "__attached__");
     }
-    if (RTEST(ruby_verbose) && klass == origin && orig->nd_cnt == 0 && orig->nd_body) {
-	rb_warning("discarding old %s", rb_id2name(name));
-    }
     body = orig->nd_body;
     orig->nd_cnt++;
     if (nd_type(body) == NODE_FBODY) { /* was alias */
@@ -2028,6 +2025,11 @@ rb_alias(klass, name, def)
     }
 
     rb_clear_cache_by_id(name);
+    if (RTEST(ruby_verbose) && st_lookup(RCLASS(klass)->m_tbl, name, (st_data_t *)&node)) {
+	if (node->nd_cnt == 0 && node->nd_body) {
+	    rb_warning("discarding old %s", rb_id2name(name));
+	}
+    }
     st_insert(RCLASS(klass)->m_tbl, name,
       (st_data_t)NEW_METHOD(NEW_FBODY(body, def, origin), orig->nd_noex));
     if (singleton) {

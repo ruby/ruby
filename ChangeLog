@@ -1,3 +1,8 @@
+Fri Oct 22 12:02:28 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_alias): was warning for wrong condition.
+	  [ruby-dev:24565]
+
 Fri Oct 22 10:36:37 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httprequest.rb (WEBrick::HTTPRequest#meta_vars):
