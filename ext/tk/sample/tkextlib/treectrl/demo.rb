@@ -7,6 +7,10 @@ $ScriptDir = File.dirname(File.expand_path(__FILE__))
 
 $HasColumnCreate = Tk::TreeCtrl::HasColumnCreateCommand
 
+class Hash
+  alias key index
+end
+
 class TkTreeCtrl_demo
   def initialize(dir)
     @ScriptDir = dir || '.'
@@ -102,9 +106,8 @@ class TkTreeCtrl_demo
 
   def init_pics(*args)
     args.each{|pat|
-      pat = "#{pat}.gif"
       unless TkImage.names.find{|img| (name = @images.key(img)) && File.fnmatch(pat, name)}
-        Dir.glob(File.join(@ScriptDir, 'pics', pat)).each{|file|
+        Dir.glob(File.join(@ScriptDir, 'pics', "#{pat}.gif")).each{|file|
           name = File.basename(file, '.gif')
           img = TkPhotoImage.new(:file=>file)
           @images[name] = img

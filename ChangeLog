@@ -1,3 +1,11 @@
+Thu Mar 31 23:52:48 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ext/tk/sample/tkextlib/treectrl/demo.rb: should use Hash#index.
+
+	* ext/tk/sample/tkextlib/treectrl/demo.rb: TkImage was not cached properly.
+
+	* ext/tk/sample/tkextlib/treectrl/random.rb: fixed typo.
+
 Thu Mar 31 22:23:51 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (SRC_EXT): exclude just case different suffixes on case
@@ -78,7 +86,7 @@ Tue Mar 29 00:04:57 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 	* lib/drb/drb.rb: move method DRbObject#reinit to DRbObject.new_with.
 	  extract method DRbObject.prepare_backtrace. add DRb.regist_server,
 	  remove_server, fetch_server. change server in thread variable if
-	  in-proc sesrver. [druby-ja:113]
+	  in-proc server. [druby-ja:113]
 
 	* lib/drb/gw.rb: ditto.
 
