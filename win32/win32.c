@@ -1311,8 +1311,8 @@ opendir(const char *filename)
     char            scannamespc[PATHLEN];
     char	   *scanname = scannamespc;
     struct stat	    sbuf;
-    WIN32_FIND_DATA FindData;
-    HANDLE          fh;
+    struct _finddata_t fd;
+    long               fh;
     char            root[PATHLEN];
     char            volname[PATHLEN];
     DWORD           serial, maxname, flags;
@@ -1351,8 +1351,8 @@ opendir(const char *filename)
     // do the FindFirstFile call
     //
 
-    fh = FindFirstFile (scanname, &FindData);
-    if (fh == INVALID_HANDLE_VALUE) {
+    fh = _findfirst(scanname, &fd);
+    if (fh == -1) {
 	return NULL;
     }
 
@@ -1361,9 +1361,9 @@ opendir(const char *filename)
     // filenames that we find.
     //
 
-    idx = strlen(FindData.cFileName)+1;
+    idx = strlen(fd.name)+1;
     p->start = ALLOC_N(char, idx);
-    strcpy (p->start, FindData.cFileName);
+    strcpy(p->start, fd.name);
     p->nfiles++;
     
     //
@@ -1372,8 +1372,8 @@ opendir(const char *filename)
     // the variable idx should point one past the null terminator
     // of the previous string found.
     //
-    while (FindNextFile(fh, &FindData)) {
-	len = strlen (FindData.cFileName);
+    while (_findnext(fh, &fd) == 0) {
+	len = strlen(fd.name);
 
 	//
 	// bump the string table size by enough for the
@@ -1386,11 +1386,11 @@ opendir(const char *filename)
 	if (p->start == NULL) {
             rb_fatal ("opendir: malloc failed!\n");
 	}
-	strcpy(&p->start[idx], FindData.cFileName);
+	strcpy(&p->start[idx], fd.name);
 	p->nfiles++;
 	idx += len+1;
     }
-    FindClose(fh);
+    _findclose(fh);
     p->size = idx;
     p->curr = p->start;
     return p;
@@ -2647,6 +2647,12 @@ win32_stat(const char *path, struct stat *st)
     *s = '\0';
     len = strlen(buf1);
     p = CharPrev(buf1, buf1 + len);
+    if( '\"' == *(--s) )
+    {
+	errno = EBADF;
+	return -1;
+    }
+
     if (isUNCRoot(buf1)) {
 	if (*p != '\\')
 	    strcat(buf1, "\\");

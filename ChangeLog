@@ -1,3 +1,8 @@
+Sun Sep 15 21:42:07 2002  KONISHI Hiromasa <konishih@fd6.so-net.ne.jp>
+
+	* win32/win32.c (opendir): Corresponds to the unjust path containing ".
+	                (win32_stat) : ditto.
+
 Thu Sep 12 00:52:15 2002  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): Merge from 1.7: link with
