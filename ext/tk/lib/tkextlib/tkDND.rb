@@ -17,9 +17,9 @@ module Tk
   module TkDND
     dir = File.expand_path(__FILE__).sub(/#{File.extname(__FILE__)}$/, '')
 
-    #autoload :DND   'tkextlib/tkDND/tkdnd'
-    #autoload :Shape 'tkextlib/tkDND/shape'
-    autoload :DND   File.join(dir, 'tkdnd')
-    autoload :Shape File.join(dir, 'shape')
+    #autoload :DND,   'tkextlib/tkDND/tkdnd'
+    #autoload :Shape, 'tkextlib/tkDND/shape'
+    autoload :DND,   File.join(dir, 'tkdnd')
+    autoload :Shape, File.join(dir, 'shape')
   end
 end

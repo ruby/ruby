@@ -1,3 +1,7 @@
+Sat Jul  3 17:19:44 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/tk/lib/tkextlib/tkDND.rb: fix syntax error.
+
 Thu Jul  1 23:15:29 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/pstore.rb (transaction): safer backup scheme.  [ruby-list:39102]
