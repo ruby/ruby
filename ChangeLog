@@ -1,3 +1,10 @@
+Tue Mar  1 00:40:35 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/rinda/tuplespace.rb (Rinda::TupleSpace): improved keeper thread.
+
+	* test/rinda/test_rinda.rb: ditto.
+
+
 Mon Feb 28 23:10:13 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/socket/socket.c (Init_socket): IPv6 is not supported although

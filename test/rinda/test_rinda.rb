@@ -6,6 +6,8 @@ require 'rinda/tuplespace'
 
 require 'singleton'
 
+require 'weakref'
+
 module Rinda
 
 class MockClock
@@ -498,6 +500,14 @@ class TupleSpaceTest < Test::Unit::TestCase
   def setup
     ThreadGroup.new.add(Thread.current)
     @ts = Rinda::TupleSpace.new(1)
+  end
+  
+  def test_gc
+    w = WeakRef.new(Rinda::TupleSpace.new)
+    GC.start
+    assert_raises(WeakRef::RefError) do
+      w.__getobj__
+    end
   end
 end
 
