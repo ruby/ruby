@@ -18,7 +18,7 @@
 $RCS_ID=%q$Header$
 
 
-def getopts(single_options = '', *options)
+def getopts(single_options, *options)
   boolopts = {}
   valopts = {}
 
@@ -31,7 +31,7 @@ def getopts(single_options = '', *options)
     else
       valopts[opt[0, 1]] = nil
     end
-  end
+  end if single_options
 
   options.each do |arg|
     opt, val = arg.split(':', 2)

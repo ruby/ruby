@@ -1,3 +1,8 @@
+Wed Mar 13 18:36:55 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/getopts.rb: single_options can be nil[*], and is not not
+	  optional. ([*]Pointed out by gotoken)
+
 Tue Mar 12 17:12:06 2002  Tanaka Akira  <akr@m17n.org>
 
 	* lib/resolv.rb: don't complete domains for absolute FQNs.
