@@ -24,7 +24,7 @@ AC_ARG_ENABLE(thread, [--disable-thread          never use user-level thread], [
 	rb_thread=$enableval
 ])
 if test $rb_thread = yes; then
-  AC_DEFINE(USE_THREAD)
+  AC_DEFINE(THREAD)
 fi
 
 AC_CANONICAL_HOST

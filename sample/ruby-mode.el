@@ -71,6 +71,7 @@
   (define-key ruby-mode-map "\e\C-f" 'ruby-end-of-block)
   (define-key ruby-mode-map "\e\C-p" 'ruby-beginning-of-block)
   (define-key ruby-mode-map "\e\C-n" 'ruby-end-of-block)
+  (define-key ruby-mode-map "\e\C-h" 'ruby-mark-defun)
   (define-key ruby-mode-map "\t" 'ruby-indent-command)
   (define-key ruby-mode-map "\C-c\C-e" 'ruby-insert-end)
   (define-key ruby-mode-map "\C-j" 'ruby-reindent-then-newline-and-indent)
@@ -129,7 +130,13 @@
   (make-variable-buffer-local 'comment-start-skip)
   (setq comment-start-skip "\\(^\\|\\s-\\);?#+ *")
   (make-local-variable 'parse-sexp-ignore-comments)
-  (setq parse-sexp-ignore-comments t))
+  (setq parse-sexp-ignore-comments t)
+  (make-local-variable 'paragraph-start)
+  (setq paragraph-start (concat "$\\|" page-delimiter))
+  (make-local-variable 'paragraph-separate)
+  (setq paragraph-separate paragraph-start)
+  (make-local-variable 'paragraph-ignore-fill-prefix)
+  (setq paragraph-ignore-fill-prefix t))
 
 (defun ruby-mode ()
   "Major mode for editing ruby scripts.
@@ -522,7 +529,7 @@ Returns t unless search stops due to end of buffer."
   "Move forward to next end of defun.
 An end of a defun is found by moving forward from the beginning of one."
   (interactive "p")
-  (and (re-search-forward (concat "^\\(" ruby-block-end-re "\\)\\b[^_]")
+  (and (re-search-forward (concat "^\\(" ruby-block-end-re "\\)\\($\\|\\b[^_]\\)")
 			  nil 'move (or arg 1))
        (progn (beginning-of-line) t))
   (forward-line 1))
@@ -590,6 +597,15 @@ An end of a defun is found by moving forward from the beginning of one."
   (ruby-indent-line t)
   (end-of-line))
 
+(defun ruby-mark-defun ()
+  "Put mark at end of this Ruby function, point at beginning."
+  (interactive)
+  (push-mark (point))
+  (ruby-end-of-defun)
+  (push-mark (point) nil t)
+  (ruby-beginning-of-defun)
+  (re-search-backward "^\n" (- (point) 1) t))
+
 (cond
  ((featurep 'hilit19)
   (hilit-set-mode-patterns
@@ -656,8 +672,8 @@ An end of a defun is found by moving forward from the beginning of one."
 	    "\\)\\b")
 	   2)
      ;; variables
-     '("\\(^\\|[^_]\\)\\b\\(nil\\|self\\|true\\|false\\)\\b\\([^_]\\|$\\)"
-       2 font-lock-variable-name-face)
+     '("\\b\\(nil\\|self\\|true\\|false\\)\\b"
+       1 font-lock-variable-name-face)
      ;; variables
      '("[$@].[a-zA-Z0-9_]*"
        0 font-lock-variable-name-face)
@@ -665,8 +681,8 @@ An end of a defun is found by moving forward from the beginning of one."
      '("\\(^\\|[^_]\\)\\b\\([A-Z]+[a-zA-Z0-9_]*\\)"
        2 font-lock-type-face)
      ;; functions
-     '("^\\s *def[ \t]+\\([^ \t(]*\\)"
-       1 font-lock-function-name-face t))
+     '("^\\s *def\\s *\\<\\(\\(\\w\\|\\s_\\)+\\.\\)?\\(\\(\\w\\|\\s_\\)+\\)\\>"
+       3 font-lock-function-name-face t))
     "*Additional expressions to highlight in ruby mode.")
   (if (and (>= (string-to-int emacs-version) 19)
           (not (featurep 'xemacs)))

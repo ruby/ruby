@@ -562,7 +562,7 @@ fi
 
 if test $rb_thread = yes; then
   cat >> confdefs.h <<\EOF
-#define USE_THREAD 1
+#define THREAD 1
 EOF
 
 fi
