@@ -1,3 +1,13 @@
+Sun Nov 14 18:59:03 2004  Tanaka Akira  <akr@m17n.org>
+
+	* process.c (proc_getrlimit): new function for Process.getrlimit.
+	  (proc_setrlimit): new function for Process.setrlimit.
+	  [ruby-dev:24834]
+
+	* configure.in: check rlim_t and its size.  check setrlimit.
+
+	* ruby.h (NUM2ULL): new macro.
+
 Sun Nov 14 13:27:03 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/pp.rb (PP#object_address_group): remove odd number of 'f'

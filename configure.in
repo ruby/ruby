@@ -205,6 +205,12 @@ AC_CHECK_SIZEOF(float, 4)
 AC_CHECK_SIZEOF(double, 8)
 AC_CHECK_SIZEOF(time_t, 0)
 
+AC_CHECK_TYPE(rlim_t, [AC_DEFINE(HAVE_RLIM_T)], [], [#include <sys/resource.h>])
+AC_CHECK_SIZEOF(rlim_t, 0, [
+  #include <stdio.h>
+  #include <sys/resource.h>
+])
+
 AC_CACHE_CHECK(for prototypes, rb_cv_have_prototypes,
   [AC_TRY_COMPILE([int foo(int x) { return 0; }], [return foo(10);],
 	rb_cv_have_prototypes=yes,
@@ -416,7 +422,8 @@ AC_CHECK_FUNCS(fmod killpg wait4 waitpid fork spawnv syscall chroot fsync getcwd
 	      setitimer setruid seteuid setreuid setresuid setproctitle\
 	      setrgid setegid setregid setresgid issetugid pause lchown lchmod\
 	      getpgrp setpgrp getpgid setpgid initgroups getgroups setgroups\
-	      getpriority getrlimit dlopen sigprocmask sigaction _setjmp\
+	      getpriority getrlimit setrlimit\
+	      dlopen sigprocmask sigaction _setjmp\
 	      setsid telldir seekdir fchmod mktime timegm cosh sinh tanh\
 	      setuid setgid daemon)
 AC_ARG_ENABLE(setreuid,

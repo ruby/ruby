@@ -265,6 +265,7 @@ unsigned long rb_fix2uint _((VALUE));
 LONG_LONG rb_num2ll _((VALUE));
 unsigned LONG_LONG rb_num2ull _((VALUE));
 # define NUM2LL(x) (FIXNUM_P(x)?FIX2LONG(x):rb_num2ll((VALUE)x))
+# define NUM2ULL(x) rb_num2ull((VALUE)x)
 #endif
 
 #if HAVE_LONG_LONG && SIZEOF_OFF_T > SIZEOF_LONG
