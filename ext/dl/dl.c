@@ -4,6 +4,7 @@
 
 #include <ruby.h>
 #include <rubyio.h>
+#include <ctype.h>
 #include "dl.h"
 
 VALUE rb_mDL;
