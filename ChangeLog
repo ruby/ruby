@@ -1,3 +1,8 @@
+Tue Aug 31 16:04:22 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tcltklib/tcltklib.c (ip_delete): when a tcltkip is deleted,
+	  destroy its root widget
+
 Tue Aug 31 12:30:36 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c (del_root): fix SEGV
