@@ -2903,8 +2903,10 @@ pipe_open(argc, argv, mode)
     if (modef & FMODE_READABLE) close(arg.pr[1]);
     if (modef & FMODE_WRITABLE) close(arg.pw[0]);
     if (pid == -1) {
+	int e = errno;
 	if (modef & FMODE_READABLE) close(arg.pr[0]);
 	if (modef & FMODE_WRITABLE) close(arg.pw[1]);
+	errno = e;
 	rb_sys_fail(cmd);
     }
 #define PIPE_FDOPEN(i) (rb_fdopen((i?arg.pw:arg.pr)[i], i?"w":"r"))
