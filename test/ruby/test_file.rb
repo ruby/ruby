@@ -3,8 +3,6 @@ require 'tempfile'
 $:.replace([File.dirname(File.expand_path(__FILE__))] | $:)
 require 'ut_eof'
 
-$KCODE = 'none'
-
 class TestFile < Test::Unit::TestCase
 
   # I don't know Ruby's spec about "unlink-before-close" exactly.

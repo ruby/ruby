@@ -1,7 +1,5 @@
 require 'test/unit'
 
-$KCODE = 'none'
-
 class TestClone < Test::Unit::TestCase
   module M001; end
   module M002; end

@@ -1,7 +1,5 @@
 require 'test/unit'
 
-$KCODE = 'none'
-
 class Array
   def iter_test1
     collect{|e| [e, yield(e)]}.sort{|a,b|a[1]<=>b[1]}

@@ -1,7 +1,5 @@
 require 'test/unit'
 
-$KCODE = 'none'
-
 class TestStruct < Test::Unit::TestCase
   def test_struct
     struct_test = Struct.new("Test", :foo, :bar)

@@ -2,8 +2,6 @@ require 'test/unit'
 $:.replace([File.dirname(File.expand_path(__FILE__))] | $:)
 require 'envutil'
 
-$KCODE = 'none'
-
 class TestSystem < Test::Unit::TestCase
   def valid_syntax?(code, fname)
     eval("BEGIN {return true}\n#{code}", nil, fname, 0)

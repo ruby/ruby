@@ -1,7 +1,5 @@
 require 'test/unit'
 
-$KCODE = 'none'
-
 class TestCondition < Test::Unit::TestCase
 
   # [should] first test to see if we can run the tests.

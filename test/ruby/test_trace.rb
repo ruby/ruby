@@ -1,7 +1,5 @@
 require 'test/unit'
 
-$KCODE = 'none'
-
 class TestTrace < Test::Unit::TestCase
   def test_trace
     $x = 1234

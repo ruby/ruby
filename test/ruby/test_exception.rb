@@ -1,7 +1,5 @@
 require 'test/unit'
 
-$KCODE = 'none'
-
 class TestException < Test::Unit::TestCase
   def test_exception
     begin

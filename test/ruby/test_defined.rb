@@ -1,7 +1,5 @@
 require 'test/unit'
 
-$KCODE = 'none'
-
 class TestDefined < Test::Unit::TestCase
   class Foo
     def foo

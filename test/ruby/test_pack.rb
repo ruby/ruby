@@ -1,7 +1,5 @@
 require 'test/unit'
 
-$KCODE = 'none'
-
 class TestPack < Test::Unit::TestCase
   def test_pack
     $format = "c2x5CCxsdils_l_a6";

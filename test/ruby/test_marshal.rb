@@ -8,8 +8,6 @@ ensure
   $:.replace(orgpath)
 end
 
-$KCODE = 'none'
-
 class TestMarshal < Test::Unit::TestCase
   include MarshalTestLib
 

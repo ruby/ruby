@@ -1,7 +1,5 @@
 require 'test/unit'
 
-$KCODE = 'none'
-
 class TestVariable < Test::Unit::TestCase
   class Gods
     @@rule = "Uranus"

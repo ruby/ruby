@@ -1,7 +1,5 @@
 require 'test/unit'
 
-$KCODE = 'none'
-
 class TestCall < Test::Unit::TestCase
   def aaa(a, b=100, *rest)
     res = [a, b]

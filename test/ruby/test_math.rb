@@ -1,7 +1,5 @@
 require 'test/unit'
 
-$KCODE = 'none'
-
 class TestMath < Test::Unit::TestCase
   def test_math
     assert_equal(2, Math.sqrt(4))

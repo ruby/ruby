@@ -1,7 +1,5 @@
 require 'test/unit'
 
-$KCODE = 'none'
-
 class TestAssignment < Test::Unit::TestCase
   def test_assign
     a=[]; a[0] ||= "bar";

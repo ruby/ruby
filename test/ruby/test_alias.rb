@@ -1,7 +1,5 @@
 require 'test/unit'
 
-$KCODE = 'none'
-
 class TestAlias < Test::Unit::TestCase
   class Alias0
     def foo; "foo" end

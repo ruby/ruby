@@ -1,7 +1,5 @@
 require 'test/unit'
 
-$KCODE = 'none'
-
 class TestSignal < Test::Unit::TestCase
   def test_signal
     defined?(Process.kill) or return
