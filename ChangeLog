@@ -1,3 +1,8 @@
+Thu Nov  4 15:02:14 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/variable.rb: forget to initialize instance_variables
+	  of TkVarAccess objects
+
 Thu Nov  4 09:11:35 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (gc_mark): enable GC stack checking.
