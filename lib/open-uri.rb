@@ -1,10 +1,10 @@
 #= open-uri.rb
 #
-#open-uri.rb is easy-to-use wrapper for net/http and net/ftp.
+#open-uri.rb is easy-to-use wrapper for net/http, net/https and net/ftp.
 #
 #== Example
 #
-#It is possible to open http/ftp URL as usual a file:
+#It is possible to open http/https/ftp URL as usual a file:
 #
 #  open("http://www.ruby-lang.org/") {|f|
 #    f.each_line {|line| p line}
@@ -31,8 +31,8 @@
 #    ...
 #  }
 #
-#The environment variables such as http_proxy and ftp_proxy are in effect by
-#default.  :proxy => nil disables proxy.
+#The environment variables such as http_proxy, https_proxy and ftp_proxy
+#are in effect by default.  :proxy => nil disables proxy.
 #
 #  open("http://www.ruby-lang.org/en/raa.html",
 #    :proxy => nil) {|f|
@@ -72,10 +72,11 @@ module Kernel
   #
   # Otherwise original open is called.
   #
-  # Since open-uri.rb provides URI::HTTP#open and URI::FTP#open,
+  # Since open-uri.rb provides URI::HTTP#open, URI::HTTPS#open and
+  # URI::FTP#open,
   # Kernel[#.]open can accepts such URIs and strings which begins with
-  # http:// and ftp://.  In this http and ftp case, the opened file object
-  # is extended by OpenURI::Meta.
+  # http://, https:// and ftp://.
+  # In these case, the opened file object is extended by OpenURI::Meta.
   def open(name, *rest, &block) # :doc:
     if name.respond_to?(:open)
       name.open(*rest, &block)
@@ -452,7 +453,7 @@ module OpenURI
     #  When String or URI is given, it is treated as proxy URI.
     #  When true is given or the option itself is not specified,
     #  environment variable `scheme_proxy' is examined.
-    #  `scheme' is replaced by `http' or `ftp'.
+    #  `scheme' is replaced by `http', `https' or `ftp'.
     #  When false or nil is given, the environment variables are ignored and
     #  connection will be made to a server directly.
     #
