@@ -48,19 +48,6 @@ File.foreach "config.status" do |$_|
       v_others << v
     end
     has_version = true if name == "MAJOR"
-    if /DEFS/
-      val.split(/\s*-D/).each do |i|
-	if i =~ /(.*)=(\\")?([^\\]*)(\\")?/
-	  key, val = $1, $3
-	  if val == '1'
-	    val = "TRUE"
-	  else
-	    val.sub! /^\s*(.*)\s*$/, '"\1"'
-	  end
-	  print "  CONFIG[\"#{key}\"] = #{val}\n"
-	end
-      end
-    end
   elsif /^ac_given_srcdir=(.*)/
     v_fast << "  CONFIG[\"srcdir\"] = \"" + File.expand_path($1) + "\"\n"
     has_srcdir = true
