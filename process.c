@@ -130,6 +130,7 @@ static VALUE S_Tms;
 static VALUE
 get_pid()
 {
+    rb_secure(2);
     return INT2FIX(getpid());
 }
 
@@ -153,6 +154,7 @@ get_pid()
 static VALUE
 get_ppid()
 {
+  rb_secure(2);
 #ifdef _WIN32
     return INT2FIX(0);
 #else
@@ -730,6 +732,7 @@ proc_wait(argc, argv)
     VALUE vpid, vflags;
     int pid, flags, status;
 
+    rb_secure(2);
     flags = 0;
     rb_scan_args(argc, argv, "02", &vpid, &vflags);
     if (argc == 0) {
@@ -804,6 +807,7 @@ proc_waitall()
     VALUE result;
     int pid, status;
 
+    rb_secure(2);
     result = rb_ary_new();
 #ifdef NO_WAITPID
     if (pid_tbl) {
@@ -910,6 +914,7 @@ static VALUE
 proc_detach(obj, pid)
     VALUE pid;
 {
+    rb_secure(2);
     return rb_detach_process(NUM2INT(pid));
 }
 
@@ -1720,6 +1725,7 @@ proc_getpgrp()
 {
     int pgrp;
 
+    rb_secure(2);
 #if defined(HAVE_GETPGRP) && defined(GETPGRP_VOID)
     pgrp = getpgrp();
     if (pgrp < 0) rb_sys_fail(0);
@@ -1747,12 +1753,13 @@ proc_getpgrp()
 static VALUE
 proc_setpgrp()
 {
+    rb_secure(2);
   /* check for posix setpgid() first; this matches the posix */
   /* getpgrp() above.  It appears that configure will set SETPGRP_VOID */
   /* even though setpgrp(0,0) would be prefered. The posix call avoids */
   /* this confusion. */
 #ifdef HAVE_SETPGID
-  if (setpgid(0,0) < 0) rb_sys_fail(0);
+    if (setpgid(0,0) < 0) rb_sys_fail(0);
 #elif defined(HAVE_SETPGRP) && defined(SETPGRP_VOID)
     if (setpgrp() < 0) rb_sys_fail(0);
 #else
@@ -1777,8 +1784,10 @@ proc_getpgid(obj, pid)
     VALUE obj, pid;
 {
 #if defined(HAVE_GETPGID) && !defined(__CHECKER__)
-    int i = getpgid(NUM2INT(pid));
+    int i;
 
+    rb_secure(2);
+    i = getpgid(NUM2INT(pid));
     if (i < 0) rb_sys_fail(0);
     return INT2NUM(i);
 #else
@@ -1886,6 +1895,7 @@ proc_getpriority(obj, which, who)
 #ifdef HAVE_GETPRIORITY
     int prio, iwhich, iwho;
 
+    rb_secure(2);
     iwhich = NUM2INT(which);
     iwho   = NUM2INT(who);
 
@@ -2545,6 +2555,7 @@ p_sys_issetugid(obj)
     VALUE obj;
 {
 #if defined HAVE_ISSETUGID
+    rb_secure(2);
     if (issetugid()) {
 	return Qtrue;
     } else {
@@ -3794,26 +3805,18 @@ Init_process()
     rb_define_module_function(rb_mProcGID, "rid", proc_getgid, 0);
     rb_define_module_function(rb_mProcUID, "eid", proc_geteuid, 0);
     rb_define_module_function(rb_mProcGID, "eid", proc_getegid, 0);
-    rb_define_module_function(rb_mProcUID, "change_privilege",
-			      p_uid_change_privilege, 1);
-    rb_define_module_function(rb_mProcGID, "change_privilege",
-			      p_gid_change_privilege, 1);
-    rb_define_module_function(rb_mProcUID, "grant_privilege",
-			      p_uid_grant_privilege, 1);
-    rb_define_module_function(rb_mProcGID, "grant_privilege",
-			      p_gid_grant_privilege, 1);
+    rb_define_module_function(rb_mProcUID, "change_privilege", p_uid_change_privilege, 1);
+    rb_define_module_function(rb_mProcGID, "change_privilege", p_gid_change_privilege, 1);
+    rb_define_module_function(rb_mProcUID, "grant_privilege", p_uid_grant_privilege, 1);
+    rb_define_module_function(rb_mProcGID, "grant_privilege", p_gid_grant_privilege, 1);
     rb_define_alias(rb_mProcUID, "eid=", "grant_privilege");
     rb_define_alias(rb_mProcGID, "eid=", "grant_privilege");
     rb_define_module_function(rb_mProcUID, "re_exchange", p_uid_exchange, 0);
     rb_define_module_function(rb_mProcGID, "re_exchange", p_gid_exchange, 0);
-    rb_define_module_function(rb_mProcUID, "re_exchangeable?",
-			      p_uid_exchangeable, 0);
-    rb_define_module_function(rb_mProcGID, "re_exchangeable?",
-			      p_gid_exchangeable, 0);
-    rb_define_module_function(rb_mProcUID, "sid_available?",
-			      p_uid_have_saved_id, 0);
-    rb_define_module_function(rb_mProcGID, "sid_available?",
-			      p_gid_have_saved_id, 0);
+    rb_define_module_function(rb_mProcUID, "re_exchangeable?", p_uid_exchangeable, 0);
+    rb_define_module_function(rb_mProcGID, "re_exchangeable?", p_gid_exchangeable, 0);
+    rb_define_module_function(rb_mProcUID, "sid_available?", p_uid_have_saved_id, 0);
+    rb_define_module_function(rb_mProcGID, "sid_available?", p_gid_have_saved_id, 0);
     rb_define_module_function(rb_mProcUID, "switch", p_uid_switch, 0);
     rb_define_module_function(rb_mProcGID, "switch", p_gid_switch, 0);
 
@@ -3833,15 +3836,10 @@ Init_process()
     rb_define_module_function(rb_mProcID_Syscall, "seteuid", p_sys_seteuid, 1);
     rb_define_module_function(rb_mProcID_Syscall, "setegid", p_sys_setegid, 1);
 
-    rb_define_module_function(rb_mProcID_Syscall, "setreuid",
-			      p_sys_setreuid, 2);
-    rb_define_module_function(rb_mProcID_Syscall, "setregid",
-			      p_sys_setregid, 2);
+    rb_define_module_function(rb_mProcID_Syscall, "setreuid", p_sys_setreuid, 2);
+    rb_define_module_function(rb_mProcID_Syscall, "setregid", p_sys_setregid, 2);
 
-    rb_define_module_function(rb_mProcID_Syscall, "setresuid",
-			      p_sys_setresuid, 3);
-    rb_define_module_function(rb_mProcID_Syscall, "setresgid",
-			      p_sys_setresgid, 3);
-    rb_define_module_function(rb_mProcID_Syscall, "issetugid",
-			      p_sys_issetugid, 0);
+    rb_define_module_function(rb_mProcID_Syscall, "setresuid", p_sys_setresuid, 3);
+    rb_define_module_function(rb_mProcID_Syscall, "setresgid", p_sys_setresgid, 3);
+    rb_define_module_function(rb_mProcID_Syscall, "issetugid", p_sys_issetugid, 0);
 }

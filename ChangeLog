@@ -1,3 +1,15 @@
+Thu Nov 18 00:21:15 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* process.c (proc_getpgrp): prohibit for $SAFE=2.
+	  [ruby-dev:24899]
+
+	* process.c (get_pid): ditto.  [ruby-dev:24904]
+
+	* process.c (get_ppid): ditto.
+
+	* array.c (rb_ary_delete): defer rb_ary_modify() until actual
+	  modification.  [ruby-dev:24901]
+
 Thu Nov 18 10:10:14 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c, rubyio.h (rb_io_modenum_flags): exported.
@@ -9,19 +21,28 @@ Wed Nov 17 23:47:30 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* test/ruby/test_settracefunc.rb: added.  [ruby-dev:24884]
 
-Wed Nov 17 11:48:17 2004  Michael Neumann  <mneumann@ruby-lang.org>
-
-	* lib/xmlrpc/parser.rb, test/xmlrpc/test_features.rb: fixed "assinging
-	  to constants" warnings
-
 Wed Nov 17 18:59:16 2004  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* process.c (proc_getrlimit, proc_setrlimit): add rb_secure(2) to
 	  methods of Process.{getrlimit,setrlimit}
 
+Wed Nov 17 13:56:57 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (newline_node): should not use FL_SET. [ruby-dev:24874]
+
+	* parse.y (string_content): should not use FL_UNSET.
+
+	* node.h (NODE_NEWLINE): remove unused bit to utilize flag field
+	  in nodes.
+
 Wed Nov 17 13:05:10 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (rb_push_glob): fix overrun.  [ruby-dev:24886]
+
+Wed Nov 17 11:48:17 2004  Michael Neumann  <mneumann@ruby-lang.org>
+
+	* lib/xmlrpc/parser.rb, test/xmlrpc/test_features.rb: fixed "assinging
+	  to constants" warnings
 
 Wed Nov 17 09:38:18 2004  Johan Holmberg  <holmberg@iar.se>
 

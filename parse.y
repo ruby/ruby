@@ -6507,9 +6507,9 @@ static NODE*
 newline_node(node)
     NODE *node;
 {
-		    if (node) {
-			node->flags |= NODE_NEWLINE;
-		    }
+    if (node) {
+	node->flags |= NODE_NEWLINE;
+    }
     return node;
 }
 
