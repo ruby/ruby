@@ -1,2 +1,2 @@
 require 'mkmf'
-create_makefile('BigFloat')
+create_makefile('bigfloat')

@@ -158,6 +158,9 @@ static VALUE BigFloat_sign();/* sign */
 static VALUE BigFloat_mode();   /* mode */
 static VALUE BigFloat_induced_from(); /* induced_from */
 static void BigFloat_delete();	/* free */
+static VALUE BigFloat_hash();
+static VALUE BigFloat_dump();
+static VALUE BigFloat_load();
 
 /* Added for ruby 1.6.0 */
 static VALUE BigFloat_IsNaN();
@@ -246,6 +249,7 @@ Initialize(BIGFLOAT)
 	rb_define_method(rb_cBigfloat, "div",BigFloat_divmod2, 2);
 
 	rb_define_singleton_method(rb_cBigfloat, "induced_from",BigFloat_induced_from, 1);
+	rb_define_singleton_method(rb_cBigfloat, "_load", BigFloat_load, 1);
 
 	rb_define_const(rb_cBigfloat, "BASE", INT2FIX((S_INT)VpBaseVal()));
 
@@ -308,6 +312,8 @@ Initialize(BIGFLOAT)
 	rb_define_method(rb_cBigfloat, "inspect", BigFloat_inspect, 0);
 	rb_define_method(rb_cBigfloat, "exponent", BigFloat_exponent, 0);
 	rb_define_method(rb_cBigfloat, "sign", BigFloat_sign, 0);
+	rb_define_method(rb_cBigfloat, "hash", BigFloat_hash, 0);
+	rb_define_method(rb_cBigfloat, "_dump", BigFloat_dump, 1);
     /* newly added for ruby 1.6.0 */
     rb_define_method(rb_cBigfloat, "nan?",      BigFloat_IsNaN, 0);
     rb_define_method(rb_cBigfloat, "infinite?", BigFloat_IsInfinite, 0);
@@ -1506,7 +1512,7 @@ BigFloat_inspect(self)
 	psz1   = ALLOCA_N(char,nc);
 	pszAll = ALLOCA_N(char,nc+256);
 	VpToString(vp, psz1, 10);
-	sprintf(pszAll,"[BigFloat:%x,'%s',%u(%u)]",self,psz1,VpPrec(vp)*VpBaseFig(),VpMaxPrec(vp)*VpBaseFig());
+	sprintf(pszAll,"#<BigFloat:%x,'%s',%u(%u)>",self,psz1,VpPrec(vp)*VpBaseFig(),VpMaxPrec(vp)*VpBaseFig());
 
 	obj = rb_str_new2(pszAll);
 	return obj;
@@ -1565,6 +1571,50 @@ BigFloat_new(argc,argv,self)
 	Check_SafeStr(iniValue);
 	GUARD_OBJ(pv,VpNewRbClass(mf, RSTRING(iniValue)->ptr,self));
 	return ToValue(pv);
+}
+
+static VALUE
+BigFloat_hash(self)
+	VALUE self;
+{
+	ENTER(1);
+    	Real *p;
+	U_LONG hash, i;
+	S_INT sign, n;
+
+	GUARD_OBJ(p,GetVpValue(self,1));
+
+	sign = p->sign;
+	hash = (U_LONG)sign;
+
+	switch (sign) {
+	case 2:
+	case -2:
+		for (i = 0; i < p->Prec; i++) {
+			hash ^= p->frac[i];
+		}
+
+		/* rotate left */
+		n = p->exponent & 0xf;
+		hash = hash << n | hash >> (sizeof(hash) * 8 - n);
+		break;
+	}
+
+	return LONG2FIX((long)hash);
+}
+
+static VALUE
+BigFloat_dump(self, limit)
+	VALUE self, limit;
+{
+	return BigFloat_to_s(self);
+}
+
+static VALUE
+BigFloat_load(klass, str)
+	VALUE klass, str;
+{
+	return BigFloat_new(1, &str, klass);
 }
 
 static VALUE
