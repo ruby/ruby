@@ -1,3 +1,30 @@
+Mon Dec 17 15:19:32 2001  Tanaka Akira  <akr@m17n.org>
+
+	* time.c: new method `gmtoff', `gmt_offset' and `utc_offset'.
+	(time_utc_offset): new function.
+	(Init_Time): bind above methods to `time_utc_offset'.
+
+	* time.c: 64bit time_t support.
+	(time_s_at): use NUM2LONG instead of NUM2INT for tv_sec.
+	(time_arg): initialize tm_isdst correctly.
+	use long to initialize tm_year.
+	(search_time_t): renamed from `make_time_t'.
+	(make_time_t): call `timegm' and `mktime' instead of `search_time_t'
+	if availabe.
+	(time_to_i): use LONG2NUM instead of INT2NUM.
+	(time_localtime): check localtime failure.
+	(time_gmtime): check gmtime failure.
+	(time_year): use LONG2NUM instead of INT2FIX.
+	(time_to_a): use long for tm_year.
+	(time_dump): check tm_year which is not representable with 17bit.
+	(time_load): initialize tm_isdst.
+
+	* configure.in: check existence of `mktime' and `timegm'.
+	check existence of tm_gmtoff field of struct tm.
+	fix negative time_t for 64bit time_t.
+
+	* missing/strftime.c: fix overflow by tm_year + 1900.
+
 Fri Dec 14 04:23:36 2001  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/pop.rb: new method Net::POP3.APOP

@@ -173,7 +173,7 @@ time_s_at(argc, argv, klass)
     VALUE time, t;
 
     if (rb_scan_args(argc, argv, "11", &time, &t) == 2) {
-	tv.tv_sec = NUM2INT(time);
+	tv.tv_sec = NUM2LONG(time);
 	tv.tv_usec = NUM2INT(t);
     }
     else {
@@ -215,6 +215,7 @@ time_arg(argc, argv, tm, usec)
 {
     VALUE v[7];
     int i;
+    long year;
 
     MEMZERO(tm, struct tm, 1);
     if (argc == 10) {
@@ -225,16 +226,28 @@ time_arg(argc, argv, tm, usec)
 	v[4] = argv[1];
 	v[5] = argv[0];
 	*usec = 0;
-	tm->tm_isdst = RTEST(argv[9]) ? 1 : 0;
+	tm->tm_isdst = RTEST(argv[8]) ? 1 : 0;
     }
     else {
 	rb_scan_args(argc, argv, "16", &v[0],&v[1],&v[2],&v[3],&v[4],&v[5],&v[6]);
 	*usec = (argc == 7) ? NUM2INT(v[6]) : 0;
+	tm->tm_isdst = -1;
     }
 
-    tm->tm_year = obj2long(v[0]);
-    if (0 <= tm->tm_year && tm->tm_year < 69) tm->tm_year += 100;
-    if (tm->tm_year >= 1900) tm->tm_year -= 1900;
+    year = obj2long(v[0]);
+
+    if (0 <= year && year < 39) {
+	year += 2000;
+	rb_warning("2 digits year is used");
+    }
+    else if (69 <= year && year < 139) {
+	year += 1900;
+	rb_warning("2 or 3 digits year is used");
+    }
+
+    year -= 1900;
+    tm->tm_year = year;
+
     if (NIL_P(v[1])) {
 	tm->tm_mon = 0;
     }
@@ -270,6 +283,7 @@ time_arg(argc, argv, tm, usec)
 
     /* value validation */
     if (
+           tm->tm_year != year ||
 #ifndef NEGATIVE_TIME_T
            tm->tm_year < 69 ||
 #endif
@@ -307,7 +321,7 @@ tmcmp(a, b)
 }
 
 static time_t
-make_time_t(tptr, utc_p)
+search_time_t(tptr, utc_p)
     struct tm *tptr;
     int utc_p;
 {
@@ -316,10 +330,10 @@ make_time_t(tptr, utc_p)
     int d, have_guess;
     int find_dst;
 
-    find_dst = 1;
+    find_dst = 0 < tptr->tm_isdst;
 
 #ifdef NEGATIVE_TIME_T
-    guess_lo = 1 << (8 * sizeof(time_t) - 1);
+    guess_lo = 1L << (8 * sizeof(time_t) - 1);
 #else
     guess_lo = 0;
 #endif
@@ -536,6 +550,55 @@ make_time_t(tptr, utc_p)
     return 0;			/* not reached */
 }
 
+static time_t
+make_time_t(tptr, utc_p)
+    struct tm *tptr;
+    int utc_p;
+{
+    time_t t;
+    struct tm *tmp, buf;
+    buf = *tptr;
+    if (utc_p) {
+#if defined(HAVE_TIMEGM)
+	t = timegm(&buf);
+	if (t == -1) {
+#ifdef NEGATIVE_TIME_T
+	    if (!(tmp = gmtime(&t)) ||
+	        tptr->tm_year != tmp->tm_year ||
+		tptr->tm_mon != tmp->tm_mon ||
+		tptr->tm_mday != tmp->tm_mday ||
+		tptr->tm_hour != tmp->tm_hour ||
+		tptr->tm_min != tmp->tm_min ||
+		tptr->tm_sec != tmp->tm_sec)
+#endif
+	    rb_raise(rb_eArgError, "gmtime error");
+        }
+#else
+	t = search_time_t(&buf, utc_p);
+#endif
+    }
+    else {
+#if defined(HAVE_MKTIME)
+	t = mktime(&buf);
+	if (t == -1) {
+#ifdef NEGATIVE_TIME_T
+	    if (!(tmp = localtime(&t)) ||
+	        tptr->tm_year != tmp->tm_year ||
+		tptr->tm_mon != tmp->tm_mon ||
+		tptr->tm_mday != tmp->tm_mday ||
+		tptr->tm_hour != tmp->tm_hour ||
+		tptr->tm_min != tmp->tm_min ||
+		tptr->tm_sec != tmp->tm_sec)
+#endif
+	    rb_raise(rb_eArgError, "localtime error");
+        }
+#else
+	t = search_time_t(&buf, utc_p);
+#endif
+    }
+    return t;
+}
+
 static VALUE
 time_utc_or_local(argc, argv, utc_p, klass)
     int argc;
@@ -578,7 +641,7 @@ time_to_i(time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    return INT2NUM(tobj->tv.tv_sec);
+    return LONG2NUM(tobj->tv.tv_sec);
 }
 
 static VALUE
@@ -746,6 +809,8 @@ time_localtime(time)
     }
     t = tobj->tv.tv_sec;
     tm_tmp = localtime(&t);
+    if (!tm_tmp)
+	rb_raise(rb_eArgError, "localtime error");
     tobj->tm = *tm_tmp;
     tobj->tm_got = 1;
     tobj->gmt = 0;
@@ -770,6 +835,8 @@ time_gmtime(time)
     }
     t = tobj->tv.tv_sec;
     tm_tmp = gmtime(&t);
+    if (!tm_tmp)
+	rb_raise(rb_eArgError, "gmtime error");
     tobj->tm = *tm_tmp;
     tobj->tm_got = 1;
     tobj->gmt = 1;
@@ -1002,7 +1069,7 @@ time_year(time)
     if (tobj->tm_got == 0) {
 	time_get_tm(time, tobj->gmt);
     }
-    return INT2FIX(tobj->tm.tm_year+1900);
+    return LONG2NUM((long)tobj->tm.tm_year+1900);
 }
 
 static VALUE
@@ -1071,6 +1138,48 @@ time_zone(time)
 }
 
 static VALUE
+time_utc_offset(time)
+    VALUE time;
+{
+    struct time_object *tobj;
+
+    GetTimeval(time, tobj);
+    if (tobj->tm_got == 0) {
+	time_get_tm(time, tobj->gmt);
+    }
+
+    if (tobj->gmt == 1) {
+	return INT2FIX(0);
+    }
+    else {
+#if defined(HAVE_STRUCT_TM_TM_GMTOFF)
+	return INT2NUM(tobj->tm.tm_gmtoff);
+#else
+	struct tm *u, *l;
+	time_t t;
+	int off;
+	l = &tobj->tm;
+	t = tobj->tv.tv_sec;
+	u = gmtime(&t);
+	if (!u)
+	    rb_raise(rb_eArgError, "gmtime error");
+	if (l->tm_year != u->tm_year)
+	    off = l->tm_year < u->tm_year ? -1 : 1;
+	else if (l->tm_mon != u->tm_mon)
+	    off = l->tm_mon < u->tm_mon ? -1 : 1;
+	else if (l->tm_mday != u->tm_mday)
+	    off = l->tm_mday < u->tm_mday ? -1 : 1;
+	else
+	    off = 0;
+	off = off * 24 + l->tm_hour - u->tm_hour;
+	off = off * 60 + l->tm_min - u->tm_min;
+	off = off * 60 + l->tm_sec - u->tm_sec;
+	return INT2FIX(off);
+#endif
+    }
+}
+
+static VALUE
 time_to_a(time)
     VALUE time;
 {
@@ -1086,7 +1195,7 @@ time_to_a(time)
 		    INT2FIX(tobj->tm.tm_hour),
 		    INT2FIX(tobj->tm.tm_mday),
 		    INT2FIX(tobj->tm.tm_mon+1),
-		    INT2FIX(tobj->tm.tm_year+1900),
+		    LONG2NUM((long)tobj->tm.tm_year+1900),
 		    INT2FIX(tobj->tm.tm_wday),
 		    INT2FIX(tobj->tm.tm_yday+1),
 		    tobj->tm.tm_isdst?Qtrue:Qfalse,
@@ -1200,6 +1309,9 @@ time_dump(argc, argv, time)
     t = tobj->tv.tv_sec;
     tm = gmtime(&t);
 
+    if ((tm->tm_year & 0x1ffff) != tm->tm_year)
+	rb_raise(rb_eArgError, "too big year to marshal");
+
     p = 0x1          << 31 | /*  1 */
 	tm->tm_year  << 14 | /* 17 */
 	tm->tm_mon   << 10 | /*  4 */
@@ -1255,8 +1367,9 @@ time_load(klass, str)
     tm.tm_hour =  p        & 0x1f;
     tm.tm_min  = (s >> 26) & 0x3f;
     tm.tm_sec  = (s >> 20) & 0x3f;
+    tm.tm_isdst = 0;
 
-    sec = make_time_t(&tm, gmtime);
+    sec = make_time_t(&tm, Qtrue);
     usec = (time_t) s & 0xfffff;
 
     return time_new_internal(klass, sec, usec);
@@ -1315,6 +1428,9 @@ Init_Time()
     rb_define_method(rb_cTime, "isdst", time_isdst, 0);
     rb_define_method(rb_cTime, "dst?", time_isdst, 0);
     rb_define_method(rb_cTime, "zone", time_zone, 0);
+    rb_define_method(rb_cTime, "gmtoff", time_utc_offset, 0);
+    rb_define_method(rb_cTime, "gmt_offset", time_utc_offset, 0);
+    rb_define_method(rb_cTime, "utc_offset", time_utc_offset, 0);
 
     rb_define_method(rb_cTime, "utc?", time_utc_p, 0);
     rb_define_method(rb_cTime, "gmt?", time_utc_p, 0);

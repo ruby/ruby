@@ -175,7 +175,8 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 	char *start = s;
 	auto char tbuf[100];
 	long off;
-	int i, w, y;
+	int i, w;
+	long y;
 	static short first = 1;
 #ifdef POSIX_SEMANTICS
 	static char *savetz = NULL;
@@ -378,7 +379,7 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 			break;
 
 		case 'Y':	/* year with century */
-			sprintf(tbuf, "%d", 1900 + timeptr->tm_year);
+			sprintf(tbuf, "%ld", 1900L + timeptr->tm_year);
 			break;
 
 #ifdef MAILHEADER_EXT
@@ -503,10 +504,10 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 
 #ifdef VMS_EXT
 		case 'v':	/* date as dd-bbb-YYYY */
-			sprintf(tbuf, "%2d-%3.3s-%4d",
+			sprintf(tbuf, "%2d-%3.3s-%4ld",
 				range(1, timeptr->tm_mday, 31),
 				months_a[range(0, timeptr->tm_mon, 11)],
-				timeptr->tm_year + 1900);
+				timeptr->tm_year + 1900L);
 			for (i = 3; i < 6; i++)
 				if (islower(tbuf[i]))
 					tbuf[i] = toupper(tbuf[i]);
@@ -516,7 +517,7 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 
 #ifdef POSIX2_DATE
 		case 'C':
-			sprintf(tbuf, "%02d", (timeptr->tm_year + 1900) / 100);
+			sprintf(tbuf, "%02ld", (timeptr->tm_year + 1900L) / 100);
 			break;
 
 
@@ -550,16 +551,16 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 			 */
 			w = iso8601wknum(timeptr);
 			if (timeptr->tm_mon == 11 && w == 1)
-				y = 1900 + timeptr->tm_year + 1;
+				y = 1900L + timeptr->tm_year + 1;
 			else if (timeptr->tm_mon == 0 && w >= 52)
-				y = 1900 + timeptr->tm_year - 1;
+				y = 1900L + timeptr->tm_year - 1;
 			else
-				y = 1900 + timeptr->tm_year;
+				y = 1900L + timeptr->tm_year;
 
 			if (*format == 'G')
-				sprintf(tbuf, "%d", y);
+				sprintf(tbuf, "%ld", y);
 			else
-				sprintf(tbuf, "%02d", y % 100);
+				sprintf(tbuf, "%02ld", y % 100);
 			break;
 #endif /* ISO_DATE_EXT */
 		default:
@@ -590,10 +591,10 @@ out:
 #ifndef __STDC__
 static int
 isleap(year)
-int year;
+long year;
 #else
 static int
-isleap(int year)
+isleap(long year)
 #endif
 {
 	return ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0);
@@ -684,7 +685,7 @@ iso8601wknum(const struct tm *timeptr)
 			dec31ly.tm_mon = 11;
 			dec31ly.tm_mday = 31;
 			dec31ly.tm_wday = (jan1day == 0) ? 6 : jan1day - 1;
-			dec31ly.tm_yday = 364 + isleap(dec31ly.tm_year + 1900);
+			dec31ly.tm_yday = 364 + isleap(dec31ly.tm_year + 1900L);
 			weeknum = iso8601wknum(& dec31ly);
 #endif
 		}
