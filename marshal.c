@@ -635,10 +635,7 @@ w_object(obj, arg, limit)
 		long i;
 
 		w_long(len, arg);
-		mem = rb_struct_iv_get(rb_obj_class(obj), "__member__");
-		if (mem == Qnil) {
-		    rb_raise(rb_eTypeError, "uninitialized struct");
-		}
+		mem = rb_struct_members(obj);
 		for (i=0; i<len; i++) {
 		    w_symbol(SYM2ID(RARRAY(mem)->ptr[i]), arg);
 		    w_object(RSTRUCT(obj)->ptr[i], arg, limit);
@@ -782,7 +779,8 @@ marshal_dump(argc, argv)
 }
 
 struct load_arg {
-    char *ptr, *end;
+    VALUE src;
+    long offset;
     st_table *symbols;
     VALUE data;
     VALUE proc;
@@ -797,17 +795,19 @@ r_byte(arg)
 {
     int c;
 
-    if (!arg->end) {
-	VALUE src = (VALUE)arg->ptr;
+    if (TYPE(arg->src) == T_STRING) {
+	if (RSTRING(arg->src)->len > arg->offset) {
+	    c = (unsigned char)RSTRING(arg->src)->ptr[arg->offset++];
+	}
+	else {
+	    rb_raise(rb_eArgError, "marshal data too short");
+	}
+    }
+    else {
+	VALUE src = arg->src;
 	VALUE v = rb_funcall2(src, s_getc, 0, 0);
 	if (NIL_P(v)) rb_eof_error();
 	c = (unsigned char)FIX2INT(v);
-    }
-    else if (arg->ptr < arg->end) {
-	c = *(unsigned char*)arg->ptr++;
-    }
-    else {
-	rb_raise(rb_eArgError, "marshal data too short");
     }
     return c;
 }
@@ -871,22 +871,25 @@ r_bytes0(len, arg)
 {
     VALUE str;
 
-    if (!arg->end) {
-	VALUE src = (VALUE)arg->ptr;
+    if (len == 0) return rb_str_new(0, 0);
+    if (TYPE(arg->src) == T_STRING) {
+	if (RSTRING(arg->src)->len > arg->offset) {
+	    str = rb_str_new(RSTRING(arg->src)->ptr+arg->offset, len);
+	    arg->offset += len;
+	}
+	else {
+	  too_short:
+	    rb_raise(rb_eArgError, "marshal data too short");
+	}
+    }
+    else {
+	VALUE src = arg->src;
 	VALUE n = LONG2NUM(len);
 	str = rb_funcall2(src, s_read, 1, &n);
 	if (NIL_P(str)) goto too_short;
 	StringValue(str);
 	if (RSTRING(str)->len != len) goto too_short;
 	if (OBJ_TAINTED(str)) arg->taint = Qtrue;
-    }
-    else {
-	if (arg->ptr + len > arg->end) {
-	  too_short:
-	    rb_raise(rb_eArgError, "marshal data too short");
-	}
-	str = rb_str_new(arg->ptr, len);
-	arg->ptr += len;
     }
     return str;
 }
@@ -1195,7 +1198,7 @@ r_object0(arg, proc, ivp, extmod)
 	    ID slot;
 
 	    klass = path2class(r_unique(arg));
-	    mem = rb_struct_iv_get(klass, "__member__");
+	    mem = rb_struct_s_members(klass);
 	    if (mem == Qnil) {
 		rb_raise(rb_eTypeError, "uninitialized struct");
 	    }
@@ -1393,20 +1396,18 @@ marshal_load(argc, argv)
     if (rb_respond_to(port, rb_intern("to_str"))) {
 	arg.taint = OBJ_TAINTED(port); /* original taintedness */
 	StringValue(port);	       /* possible conversion */
-	arg.ptr = RSTRING(port)->ptr;
-	arg.end = arg.ptr + RSTRING(port)->len;
     }
     else if (rb_respond_to(port, s_getc) && rb_respond_to(port, s_read)) {
 	if (rb_respond_to(port, s_binmode)) {
 	    rb_funcall2(port, s_binmode, 0, 0);
 	}
 	arg.taint = Qtrue;
-	arg.ptr = (char *)port;
-	arg.end = 0;
     }
     else {
 	rb_raise(rb_eTypeError, "instance of IO needed");
     }
+    arg.src = port;
+    arg.offset = 0;
 
     major = r_byte(&arg);
     minor = r_byte(&arg);

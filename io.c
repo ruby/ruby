@@ -2152,32 +2152,27 @@ rb_io_flags_mode(flags, mode)
     int flags;
     char *mode;
 {
-    char *p = mode;
-
+#ifdef O_BINARY
+# define MODE_BINMODE(a,b) ((flags & FMODE_BINMODE) ? (a) : (b))
+#else
+# define MODE_BINMODE(a,b) (a)
+#endif
+    if (flags & FMODE_APPEND) {
+	if ((flags & FMODE_READWRITE) == FMODE_READWRITE) {
+	    return MODE_BINMODE("a+", "ab+");
+	}
+	return MODE_BINMODE("a", "ab");
+    }
     switch (flags & FMODE_READWRITE) {
       case FMODE_READABLE:
-	*p++ = 'r';
-	break;
+	return MODE_BINMODE("r", "rb");
       case FMODE_WRITABLE:
-	*p++ = 'w';
-	break;
+	return MODE_BINMODE("w", "wb");
       case FMODE_READWRITE:
-	*p++ = 'r';
-	*p++ = '+';
-	break;
+	return MODE_BINMODE("r+", "rb+");
     }
-    *p++ = '\0';
-#ifdef O_BINARY
-    if (flags & FMODE_BINMODE) {
-	if (mode[1] == '+') {
-	    mode[1] = 'b'; mode[2] = '+'; mode[3] = '\0';
-	}
-	else {
-	    mode[1] = 'b'; mode[2] = '\0';
-	}
-    }
-#endif
-    return mode;
+    rb_raise(rb_eArgError, "illegal access mode %o", flags);
+    return NULL;		/* not reached */
 }
 
 int
@@ -2195,7 +2190,7 @@ rb_io_mode_flags(mode)
 	flags |= FMODE_WRITABLE;
 	break;
       case 'a':
-	flags |= FMODE_WRITABLE;
+	flags |= FMODE_WRITABLE | FMODE_APPEND;
 	break;
       default:
       error:
@@ -2232,10 +2227,13 @@ rb_io_modenum_flags(mode)
 	flags = FMODE_WRITABLE;
 	break;
       case O_RDWR:
-	flags = FMODE_WRITABLE|FMODE_READABLE;
+	flags = FMODE_READWRITE;
 	break;
     }
 
+    if (mode & O_APPEND) {
+	flags |= FMODE_APPEND;
+    }
 #ifdef O_BINARY
     if (mode & O_BINARY) {
 	flags |= FMODE_BINMODE;
@@ -2288,36 +2286,30 @@ rb_io_mode_modenum(mode)
 #define MODENUM_MAX 4
 
 static char*
-rb_io_modenum_mode(flags, mode)
+rb_io_modenum_mode(flags)
     int flags;
-    char *mode;
 {
-    char *p = mode;
-
+#ifdef O_BINARY
+# define MODE_BINARY(a,b) ((mode & O_BINARY) ? (a) : (b))
+#else
+# define MODE_BINARY(a,b) (a)
+#endif
+    if (flags & O_APPEND) {
+	if ((flags & O_RDWR) == O_RDWR) {
+	    return MODE_BINARY("a+", "ab+");
+	}
+	return MODE_BINARY("a", "ab");
+    }
     switch (flags & (O_RDONLY|O_WRONLY|O_RDWR)) {
       case O_RDONLY:
-	*p++ = 'r';
-	break;
+	return MODE_BINARY("r", "rb");
       case O_WRONLY:
-	*p++ = 'w';
-	break;
+	return MODE_BINARY("w", "wb");
       case O_RDWR:
-	*p++ = 'r';
-	*p++ = '+';
-	break;
+	return MODE_BINARY("r+", "rb+");
     }
-    *p++ = '\0';
-#ifdef O_BINARY
-    if (flags & O_BINARY) {
-	if (mode[1] == '+') {
-	    mode[1] = 'b'; mode[2] = '+'; mode[3] = '\0';
-	}
-	else {
-	    mode[1] = 'b'; mode[2] = '\0';
-	}
-    }
-#endif
-    return mode;
+    rb_raise(rb_eArgError, "illegal access modenum %o", flags);
+    return NULL;		/* not reached */
 }
 
 static int
@@ -2442,15 +2434,14 @@ rb_file_sysopen_internal(io, fname, flags, mode)
     OpenFile *fptr;
     int fd;
     char *m;
-    char mbuf[MODENUM_MAX];
 
     MakeOpenFile(io, fptr);
 
-    fd = rb_sysopen(fname, flags, mode);
-    m = rb_io_modenum_mode(flags, mbuf);
-    fptr->mode = rb_io_modenum_flags(flags);
-    fptr->f = rb_fdopen(fd, m);
     fptr->path = strdup(fname);
+    m = rb_io_modenum_mode(flags);
+    fptr->mode = rb_io_modenum_flags(flags);
+    fd = rb_sysopen(fptr->path, flags, mode);
+    fptr->f = rb_fdopen(fd, m);
 
     return io;
 }
@@ -2723,7 +2714,7 @@ rb_io_popen(str, argc, argv, klass)
 	mode = "r";
     }
     else if (FIXNUM_P(pmode)) {
-	mode = rb_io_modenum_mode(FIX2INT(pmode), mbuf);
+	mode = rb_io_modenum_mode(FIX2INT(pmode));
     }
     else {
 	strncpy(mbuf, StringValuePtr(pmode), sizeof(mbuf) - 1);
@@ -2811,12 +2802,11 @@ rb_open_file(argc, argv, io)
     VALUE io;
 {
     VALUE fname, vmode, perm;
-    char *path, *mode;
+    char *mode;
     int flags, fmode;
 
     rb_scan_args(argc, argv, "12", &fname, &vmode, &perm);
     SafeStringValue(fname);
-    path = RSTRING(fname)->ptr;
 
     if (FIXNUM_P(vmode) || !NIL_P(perm)) {
 	if (FIXNUM_P(vmode)) {
@@ -2828,7 +2818,7 @@ rb_open_file(argc, argv, io)
 	}
 	fmode = NIL_P(perm) ? 0666 :  NUM2INT(perm);
 
-	rb_file_sysopen_internal(io, path, flags, fmode);
+	rb_file_sysopen_internal(io, RSTRING(fname)->ptr, flags, fmode);
     }
     else {
 	mode = NIL_P(vmode) ? "r" : StringValuePtr(vmode);
@@ -2883,6 +2873,7 @@ rb_io_s_sysopen(argc, argv)
 {
     VALUE fname, vmode, perm;
     int flags, fmode, fd;
+    char *path;
 
     rb_scan_args(argc, argv, "12", &fname, &vmode, &perm);
     SafeStringValue(fname);
@@ -2896,7 +2887,9 @@ rb_io_s_sysopen(argc, argv)
     if (NIL_P(perm)) fmode = 0666;
     else             fmode = NUM2INT(perm);
 
-    fd = rb_sysopen(RSTRING(fname)->ptr, flags, fmode);
+    path = ALLOCA_N(char, strlen(RSTRING(fname)->ptr)+1);
+    strcpy(path, RSTRING(fname)->ptr);
+    fd = rb_sysopen(path, flags, fmode);
     return INT2NUM(fd);
 }
 
@@ -3147,7 +3140,7 @@ rb_io_reopen(argc, argv, file)
     VALUE file;
 {
     VALUE fname, nmode;
-    char mode[MODENUM_MAX];
+    char *mode;
     OpenFile *fptr;
 
     rb_secure(4);
@@ -3159,7 +3152,6 @@ rb_io_reopen(argc, argv, file)
     }
 
     SafeStringValue(fname);
-
     rb_io_taint_check(file);
     fptr = RFILE(file)->fptr;
     if (!fptr) {
@@ -3168,11 +3160,7 @@ rb_io_reopen(argc, argv, file)
     }
 
     if (!NIL_P(nmode)) {
-	strncpy(mode, StringValuePtr(nmode), sizeof(mode));
-	mode[sizeof(mode) - 1] = 0;
-    }
-    else {
-	rb_io_flags_mode(fptr->mode, mode);
+	fptr->mode = rb_io_mode_flags(StringValuePtr(nmode));
     }
 
     if (fptr->path) {
@@ -3181,7 +3169,7 @@ rb_io_reopen(argc, argv, file)
     }
 
     fptr->path = strdup(RSTRING(fname)->ptr);
-    fptr->mode = rb_io_mode_flags(mode);
+    mode = rb_io_flags_mode(fptr->mode);
     if (!fptr->f) {
 	fptr->f = rb_fopen(fptr->path, mode);
 	if (fptr->f2) {
@@ -3739,7 +3727,6 @@ rb_io_initialize(argc, argv, io)
     VALUE fnum, mode;
     OpenFile *fp;
     int fd, flags;
-    char mbuf[MODENUM_MAX];
 
     rb_secure(4);
     rb_scan_args(argc, argv, "11", &fnum, &mode);
@@ -3763,7 +3750,7 @@ rb_io_initialize(argc, argv, io)
     }
     MakeOpenFile(io, fp);
     fp->mode = rb_io_modenum_flags(flags);
-    fp->f = rb_fdopen(fd, rb_io_modenum_mode(flags, mbuf));
+	fp->f = rb_fdopen(fd, rb_io_modenum_mode(flags));
 
     return io;
 }

@@ -1,3 +1,23 @@
+Thu Oct  7 00:08:37 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_s_sysopen): preserve path in the buffer allocated by
+	  ALLOCA_N() to prevent modification.  [ruby-dev:24438]
+
+Wed Oct  6 09:21:00 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_mode_flags): preserve append mode flag.
+	  [ruby-dev:24436]
+
+	* io.c (rb_io_modenum_mode): do not use external output buffer.
+
+	* string.c (rb_str_justify): differ pointer retrieval to prevent
+	  padding string modification.  [ruby-dev:24434]
+
+	* range.c (range_each_func): allow func to terminate loop by
+	  returning RANGE_EACH_BREAK.
+
+	* range.c (member_i): use RANGE_EACH_BREAK. [ruby-talk:114959]
+
 Mon Oct  4 14:04:14 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_file_open_internal, rb_io_reopen): fname might be altered
@@ -24,6 +44,31 @@ Sat Oct  2 20:34:22 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* node.h (NEW_DVAR): extra semicolon.
 
 Sat Oct  2 00:42:20 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (r_byte): retrieve pointer from string value for each
+	  time.  [ruby-dev:24404]
+
+	* marshal.c (r_bytes0): ditto.
+
+	* enum.c (sort_by_i): re-entrance check added.  [ruby-dev:24399]
+
+	* io.c (io_read): should freeze all reading buffer.
+	  [ruby-dev:24400]
+
+	* string.c (rb_str_sum): should use bignums when bits is greater
+	  than or equals to sizeof(long)*CHAR_BITS. [ruby-dev:24395]
+
+	* eval.c (specific_eval): defer pointer retrieval to prevent
+	  unsafe sourcefile string modification.  [ruby-dev:24382]
+
+	* eval.c (specific_eval): defer pointer retrieval to prevent
+	  unsafe sourcefile string modification.  [ruby-dev:24382]
+
+	* string.c (rb_str_sum): wrong cast caused wrong result.
+	  [ruby-dev:24385]
+
+	* enum.c (enum_sort_by): hide temporary array from
+	  ObjectSpace.each_object.  [ruby-dev:24386]
 
 	* string.c (rb_str_sum): check was done with false pointer.
 	  [ruby-dev:24383]
@@ -73,6 +118,13 @@ Wed Sep 29 10:58:07 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enum.c (sort_by_i): internally used object must not be changed
 	  outside.  [ruby-dev:24368]
+
+Mon Sep 27 13:46:45 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* intern.h, struct.c (rb_struct_s_members, rb_struct_members): public
+	  accessors.  [ruby-dev:24342]
+
+	* marshal.c (w_object, r_object0): use accessors.
 
 Mon Sep 27 09:14:03 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

@@ -99,11 +99,13 @@ class PStore
       content = nil
       unless read_only
         file = File.open(@filename, File::RDWR | File::CREAT)
+        file.binmode
         file.flock(File::LOCK_EX)
         commit_new(file) if FileTest.exist?(new_file)
         content = file.read()
       else
         file = File.open(@filename, File::RDONLY)
+        file.binmode
         file.flock(File::LOCK_SH)
         content = (File.read(new_file) rescue file.read())
       end
@@ -132,6 +134,7 @@ class PStore
 	  content = dump(@table)
 	  if !md5 || size != content.size || md5 != Digest::MD5.digest(content)
             File.open(tmp_file, "w") {|t|
+              t.binmode
               t.write(content)
             }
             File.rename(tmp_file, new_file)
@@ -166,6 +169,7 @@ class PStore
     f.rewind
     new_file = @filename + ".new"
     File.open(new_file) do |nf|
+      nf.binmode
       FileUtils.copy_stream(nf, f)
     end
     File.unlink(new_file)
