@@ -263,19 +263,18 @@ ruby_init_loadpath()
     ruby_incpush(RUBY_RELATIVE(RUBY_SEARCH_PATH));
 #endif
 
+    ruby_incpush(RUBY_RELATIVE(RUBY_SITE_LIB2));
 #ifdef RUBY_SITE_THIN_ARCHLIB
     ruby_incpush(RUBY_RELATIVE(RUBY_SITE_THIN_ARCHLIB));
 #endif
     ruby_incpush(RUBY_RELATIVE(RUBY_SITE_ARCHLIB));
-    ruby_incpush(RUBY_RELATIVE(RUBY_SITE_LIB2));
     ruby_incpush(RUBY_RELATIVE(RUBY_SITE_LIB));
 
+    ruby_incpush(RUBY_RELATIVE(RUBY_LIB));
 #ifdef RUBY_THIN_ARCHLIB
     ruby_incpush(RUBY_RELATIVE(RUBY_THIN_ARCHLIB));
 #endif
     ruby_incpush(RUBY_RELATIVE(RUBY_ARCHLIB));
-
-    ruby_incpush(RUBY_RELATIVE(RUBY_LIB));
 
     if (rb_safe_level() == 0) {
 	ruby_incpush(".");
@@ -852,6 +851,7 @@ load_file(fname, script)
     else if (f != rb_stdin) {
 	rb_io_close(f);
     }
+    rb_gc();
 }
 
 void
