@@ -45,9 +45,10 @@ static void
 rb_ary_modify(ary)
     VALUE ary;
 {
-    if (FL_TEST(ary, ARY_FREEZE|ARY_TMPLOCK)) {
+    if (FL_TEST(ary, ARY_FREEZE|ARY_TMPLOCK))
 	rb_raise(rb_eTypeError, "can't modify frozen array");
-    }
+    if (rb_safe_level() >= 4 && !FL_TEST(ary, FL_TAINT))
+	rb_raise(rb_eSecurityError, "Insecure: can't modify array");
 }
 
 VALUE
@@ -116,7 +117,7 @@ rb_ary_new3(n, va_alist)
     int i;
 
     if (n < 0) {
-	rb_raise(rb_eIndexError, "Negative number of items(%d)", n);
+	rb_raise(rb_eIndexError, "negative number of items(%d)", n);
     }
     ary = rb_ary_new2(n<ARY_DEFAULT_SIZE?ARY_DEFAULT_SIZE:n);
 
@@ -226,7 +227,10 @@ rb_ary_store(ary, idx, val)
 {
     rb_ary_modify(ary);
     if (idx < 0) {
-	rb_raise(rb_eIndexError, "negative index for array");
+	idx = RARRAY(ary)->len + idx;
+	if (idx < 0) {
+	    rb_raise(rb_eIndexError, "negative index of array");
+	}
     }
 
     if (idx >= RARRAY(ary)->capa) {
@@ -339,15 +343,12 @@ rb_ary_subseq(ary, beg, len)
 {
     VALUE ary2;
 
-    if (beg < 0) {
-	beg = RARRAY(ary)->len + beg;
-	if (beg < 0) beg = 0;
-    }
-    if (len < 0) {
-	rb_raise(rb_eIndexError, "negative length %d", RARRAY(ary)->len);
-    }
-    if (len == 0) {
+    if (len <= 0) {
 	return rb_ary_new2(0);
+    }
+    if (beg < 0) {
+	len += beg;
+	beg = 0;
     }
     if (beg + len > RARRAY(ary)->len) {
 	len = RARRAY(ary)->len - beg;
@@ -370,32 +371,28 @@ beg_len(range, begp, lenp, len)
     int len;
 {
     int beg, end;
+    int b, e;
 
     if (!rb_range_beg_end(range, &beg, &end)) return Qfalse;
-
-    if ((beg > 0 && end > 0 || beg < 0 && end < 0) && beg > end) {
-	rb_raise(rb_eIndexError, "end smaller than beg [%d..%d]", beg, end);
-    }
+    b = beg; e = end;
 
     if (beg < 0) {
 	beg = len + beg;
-	if (beg < 0) beg = 0;
     }
+    if (end < 0) {
+	end = len + end;
+    }
+    if (beg > end) {
+	rb_raise(rb_eIndexError, "end smaller than beg [%d..%d]", b, e);
+    }
+
     *begp = beg;
     if (beg > len) {
 	*lenp = 0;
     }
     else {
-	if (end < 0) {
-	    end = len + end;
-	    if (end < 0) end = -1;
-	}
-	if (beg > end) {
-	    *lenp = 0;
-	}
-	else {
-	    *lenp = end - beg +1;
-	}
+	len = end - beg +1;
+	*lenp = len;
     }
     return Qtrue;
 }
@@ -412,8 +409,8 @@ rb_ary_aref(argc, argv, ary)
     if (rb_scan_args(argc, argv, "11", &arg1, &arg2) == 2) {
 	beg = NUM2INT(arg1);
 	len = NUM2INT(arg2);
-	if (len <= 0) {
-	    return rb_ary_new();
+	if (beg < 0) {
+	    beg = RARRAY(ary)->len + beg;
 	}
 	return rb_ary_subseq(ary, beg, len);
     }
@@ -482,14 +479,23 @@ rb_ary_replace(ary, beg, len, rpl)
     VALUE ary, rpl;
     int beg, len;
 {
-    rb_ary_modify(ary);
+    if (len < 0) {
+	rb_raise(rb_eIndexError, "negative length %d", len);
+    }
+
     if (TYPE(rpl) != T_ARRAY) {
 	rpl = rb_Array(rpl);
     }
-    if (beg < 0) {
-	beg = RARRAY(ary)->len + beg;
-	if (beg < 0) beg = 0;
+
+    if (beg + len < 0 || (beg < 0 && beg <= -len)) {
+	rb_raise(rb_eIndexError, "index %d out of range", beg);
     }
+    if (beg < 0) {
+	len += beg;
+	beg = 0;
+    }
+
+    rb_ary_modify(ary);
     if (beg >= RARRAY(ary)->len) {
 	len = beg + RARRAY(rpl)->len;
 	if (len >= RARRAY(ary)->capa) {
@@ -505,9 +511,6 @@ rb_ary_replace(ary, beg, len, rpl)
 
 	if (beg + len > RARRAY(ary)->len) {
 	    len = RARRAY(ary)->len - beg;
-	}
-	if (len < 0) {
-	    rb_raise(rb_eIndexError, "negative length %d", RARRAY(ary)->len);
 	}
 
 	alen = RARRAY(ary)->len + RARRAY(rpl)->len - len;
@@ -538,6 +541,10 @@ rb_ary_aset(argc, argv, ary)
     if (rb_scan_args(argc, argv, "21", &arg1, &arg2, &arg3) == 3) {
 	beg = NUM2INT(arg1);
 	len = NUM2INT(arg2);
+
+	if (beg < 0) {
+	    beg = RARRAY(ary)->len + beg;
+	}
 	rb_ary_replace(ary, beg, len, arg3);
 	return arg3;
     }
@@ -556,9 +563,6 @@ rb_ary_aset(argc, argv, ary)
 
     offset = NUM2INT(arg1);
   fixnum:
-    if (offset < 0) {
-	offset = RARRAY(ary)->len + offset;
-    }
     rb_ary_store(ary, offset, arg2);
     return arg2;
 }
@@ -677,7 +681,7 @@ rb_ary_join(ary, sep)
 	}
 	if (!NIL_P(sep)) rb_str_concat(result, sep);
 	rb_str_cat(result, RSTRING(tmp)->ptr, RSTRING(tmp)->len);
-	if (rb_str_tainted(tmp)) rb_str_taint(result);
+	if (rb_obj_tainted(tmp)) rb_obj_taint(result);
     }
 
     return result;
@@ -1353,6 +1357,7 @@ Init_Array()
     rb_define_method(rb_cArray, "==", rb_ary_equal, 1);
     rb_define_method(rb_cArray, "eql?", rb_ary_eql, 1);
     rb_define_method(rb_cArray, "hash", rb_ary_hash, 0);
+    rb_define_method(rb_cArray, "===", rb_ary_equal, 1);
 
     rb_define_method(rb_cArray, "[]", rb_ary_aref, -1);
     rb_define_method(rb_cArray, "[]=", rb_ary_aset, -1);
@@ -1387,7 +1392,6 @@ Init_Array()
     rb_define_method(rb_cArray, "clear", rb_ary_clear, 0);
     rb_define_method(rb_cArray, "fill", rb_ary_fill, -1);
     rb_define_method(rb_cArray, "include?", rb_ary_includes, 1);
-    rb_define_method(rb_cArray, "===", rb_ary_includes, 1);
     rb_define_method(rb_cArray, "<=>", rb_ary_cmp, 1);
 
     rb_define_method(rb_cArray, "assoc", rb_ary_assoc, 1);

@@ -34,6 +34,10 @@
 #include "missing/nt.h"
 #endif
 
+#ifndef EXTERN
+#define EXTERN extern
+#endif
+
 #ifdef sparc
 #define FLUSH_REGISTER_WINDOWS asm("ta 3")
 #else

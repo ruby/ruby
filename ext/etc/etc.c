@@ -37,7 +37,7 @@ etc_getlogin(obj)
 #endif
 
     if (login)
-	return rb_str_new2(login);
+	return rb_tainted_str_new2(login);
     return Qnil;
 }
 
@@ -48,15 +48,15 @@ setup_passwd(pwd)
 {
     if (pwd == 0) rb_sys_fail("/etc/passwd");
     return rb_struct_new(sPasswd,
-			 rb_str_new2(pwd->pw_name),
-			 rb_str_new2(pwd->pw_passwd),
+			 rb_tainted_str_new2(pwd->pw_name),
+			 rb_tainted_str_new2(pwd->pw_passwd),
 			 INT2FIX(pwd->pw_uid),
 			 INT2FIX(pwd->pw_gid),
 #ifdef PW_GECOS
-			 rb_str_new2(pwd->pw_gecos),
+			 rb_tainted_str_new2(pwd->pw_gecos),
 #endif
-			 rb_str_new2(pwd->pw_dir),
-			 rb_str_new2(pwd->pw_shell),
+			 rb_tainted_str_new2(pwd->pw_dir),
+			 rb_tainted_str_new2(pwd->pw_shell),
 #ifdef PW_CHANGE
 			 INT2FIX(pwd->pw_change),
 #endif
@@ -67,10 +67,10 @@ setup_passwd(pwd)
 			 INT2FIX(pwd->pw_age),
 #endif
 #ifdef PW_CLASS
-			 rb_str_new2(pwd->pw_class),
+			 rb_tainted_str_new2(pwd->pw_class),
 #endif
 #ifdef PW_COMMENT
-			 rb_str_new2(pwd->pw_comment),
+			 rb_tainted_str_new2(pwd->pw_comment),
 #endif
 #ifdef PW_EXPIRE
 			 INT2FIX(pwd->pw_expire),
@@ -155,12 +155,12 @@ setup_group(grp)
     mem = rb_ary_new();
     tbl = grp->gr_mem;
     while (*tbl) {
-	rb_ary_push(mem, rb_str_new2(*tbl));
+	rb_ary_push(mem, rb_tainted_str_new2(*tbl));
 	tbl++;
     }
     return rb_struct_new(sGroup,
-			 rb_str_new2(grp->gr_name),
-			 rb_str_new2(grp->gr_passwd),
+			 rb_tainted_str_new2(grp->gr_name),
+			 rb_tainted_str_new2(grp->gr_passwd),
 			 INT2FIX(grp->gr_gid),
 			 mem);
 }

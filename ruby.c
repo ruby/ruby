@@ -629,7 +629,7 @@ set_arg0(val, id)
 	while (++i < len)
 	    *s++ = ' ';
     }
-    rb_progname = rb_str_taint(rb_str_new2(origargv[0]));
+    rb_progname = rb_tainted_str_new2(origargv[0]);
 }
 
 void
@@ -637,7 +637,7 @@ ruby_script(name)
     char *name;
 {
     if (name) {
-	rb_progname = rb_str_taint(rb_str_new2(name));
+	rb_progname = rb_tainted_str_new2(name);
 	ruby_sourcefile = name;
     }
 }
@@ -780,7 +780,7 @@ ruby_set_argv(argc, argv)
     else          dln_argv0 = argv[0];
 #endif
     for (i=0; i < argc; i++) {
-	rb_ary_push(rb_argv, rb_str_taint(rb_str_new2(argv[i])));
+	rb_ary_push(rb_argv, rb_tainted_str_new2(argv[i]));
     }
 }
 

@@ -1,0 +1,60 @@
+README		this file
+biorhythm.rb	biorhythm calculator
+cal.rb		cal(1) clone
+cbreak.rb	no echo done by ioctl
+clnt.rb		socket client
+dbmtest.rb	test for dbm
+dir.rb		directory access
+dstore.rb	object database on dbm
+eval.rb		simple evaluator
+export.rb	method access example
+exyacc.rb	extrace BNF from yacc file
+fact.rb		factorial calculator
+fib.awk		Fibonacci number (AWK)
+fib.pl		Fibonacci number (Perl)
+fib.py		Fibonacci number (Python)
+fib.rb		Fibonacci number (Ruby)
+fib.scm		Fibonacci number (Scheme)
+freq.rb		count word occurrence
+from.rb		scan mail spool
+fullpath.rb	convert ls -lR to fullpath format
+getopts.test	test fot getopt.rb
+goodfriday.rb	print various christian calendar event.
+inf-ruby.el	program to run ruby under emacs
+io.rb		io test
+less.rb		front end for less
+list.rb		stupid object sample
+list2.rb	stupid object sample
+list3.rb	stupid object sample
+mine.rb		simple mine sweeper	
+mkproto.rb	extract protptype from C
+mpart.rb	split file int multi part
+mrshtest.rb	test marshal
+observ.rb	observer design pattern sample
+occur.pl	count word occurrence (Perl)
+occur.rb	count word occurrence (Ruby)
+occur2.rb	count word occurrence - another style
+philos.rb	famous dining philosophers
+pi.rb		calculate PI
+rbc.rb		interactive ruby, to be removed by irb
+rcs.awk		random character stereogram (AWK)
+rcs.rb		random character stereogram (Ruby)
+rcs.dat		data for random character stereogram
+regx.rb		regular expression tester
+ruby-mode.el	ruby mode for emacs
+rubydb2x.el	ruby debugger support for emacs 19.2x or before
+rubydb3x.el	ruby debugger support for emacs 19.3x or later
+sieve.rb	sieve of Eratosthenes
+svr.rb		socket server
+test.rb		test suite used by `make test'
+time.rb		/usr/bin/time clone
+tkbiff.rb	mail notifier using Tk
+tkbrowse.rb	directory browser using Tk
+tkdialog.rb	dialog example
+tkfrom.rb	scan mail spool using Tk
+tkhello.rb	simple Tk example
+tkline.rb	simple Tk example
+tktimer.rb	stopwatch
+trojan.rb	simple tool to find file that may be trojan horse.
+tsvr.rb		socket server using thread
+uumerge.rb	merge files and uudecode them

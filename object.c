@@ -254,6 +254,32 @@ rb_obj_dummy(obj)
     return Qnil;
 }
 
+VALUE
+rb_obj_tainted(obj)
+    VALUE obj;
+{
+    if (FL_TEST(obj, FL_TAINT))
+	return Qtrue;
+    return Qfalse;
+}
+
+VALUE
+rb_obj_taint(obj)
+    VALUE obj;
+{
+    FL_SET(obj, FL_TAINT);
+    return obj;
+}
+
+VALUE
+rb_obj_untaint(obj)
+    VALUE obj;
+{
+    rb_secure(3);
+    FL_UNSET(obj, FL_TAINT);
+    return obj;
+}
+
 static VALUE
 nil_to_i(obj)
     VALUE obj;
@@ -951,6 +977,10 @@ Init_Object()
     rb_define_method(rb_mKernel, "clone", rb_obj_clone, 0);
     rb_define_method(rb_mKernel, "dup", rb_obj_dup, 0);
 
+    rb_define_method(rb_mKernel, "taint", rb_obj_taint, 0);
+    rb_define_method(rb_mKernel, "tainted?", rb_obj_tainted, 0);
+    rb_define_method(rb_mKernel, "untaint", rb_obj_untaint, 0);
+
     rb_define_method(rb_mKernel, "to_a", rb_any_to_a, 0);
     rb_define_method(rb_mKernel, "to_s", rb_any_to_s, 0);
     rb_define_method(rb_mKernel, "inspect", rb_obj_inspect, 0);
@@ -968,7 +998,7 @@ Init_Object()
     rb_define_method(rb_mKernel, "is_a?", rb_obj_is_kind_of, 1);
 
     rb_define_global_function("sprintf", rb_f_sprintf, -1);
-    rb_define_alias(rb_mKernel, "format", "sprintf");
+    rb_define_global_function("format", rb_f_sprintf, -1);
 
     rb_define_global_function("Integer", rb_f_integer, 1);
     rb_define_global_function("Float", rb_f_float, 1);

@@ -153,6 +153,7 @@ rb_io_write(io, str)
     FILE *f;
     int n;
 
+    rb_secure(4);
     if (TYPE(str) != T_STRING)
 	str = rb_obj_as_string(str);
     if (RSTRING(str)->len == 0) return INT2FIX(0);
@@ -162,7 +163,6 @@ rb_io_write(io, str)
 	return rb_funcall(io, id_write, 1, str);
     }
 
-    rb_secure(4);
     GetOpenFile(io, fptr);
     rb_io_check_writable(fptr);
     f = GetWriteFile(fptr);
@@ -244,6 +244,12 @@ rb_io_seek(io, offset, ptrname)
     return INT2FIX(0);
 }
 
+#ifndef SEEK_CUR
+# define SEEK_SET 0
+# define SEEK_CUR 1
+# define SEEK_END 2
+#endif
+
 static VALUE
 rb_io_set_pos(io, offset)
      VALUE io, offset;
@@ -252,7 +258,7 @@ rb_io_set_pos(io, offset)
     long pos;
 
     GetOpenFile(io, fptr);
-    pos = fseek(fptr->f, NUM2INT(offset), 0);
+    pos = fseek(fptr->f, NUM2INT(offset), SEEK_SET);
     if (pos != 0) rb_sys_fail(fptr->path);
     clearerr(fptr->f);
 
@@ -360,20 +366,20 @@ read_all(port)
     OpenFile *fptr;
     VALUE str = Qnil;
     struct stat st;
-    int siz = BUFSIZ;
-    int bytes = 0;
+    long siz = BUFSIZ;
+    long bytes = 0;
     int n;
 
     GetOpenFile(port, fptr);
     rb_io_check_readable(fptr);
 
-#ifdef __BEOS__
     if (fstat(fileno(fptr->f), &st) == 0  && S_ISREG(st.st_mode)
-		&& (st.st_dev > 3)) {
-#else	
-    if (fstat(fileno(fptr->f), &st) == 0  && S_ISREG(st.st_mode)) {
+#ifdef __BEOS__
+	&& (st.st_dev > 3)
 #endif
-	if (st.st_size == 0) return Qnil;
+	)
+    {
+	if (st.st_size == 0) return rb_str_new(0, 0);
 	else {
 	    int pos = ftell(fptr->f);
 	    if (st.st_size > pos && pos >= 0) {
@@ -389,16 +395,16 @@ read_all(port)
 	TRAP_END;
 	if (n <= 0) {
 	    if (ferror(fptr->f)) rb_sys_fail(fptr->path);
-	    return Qnil;
+	    return rb_str_new(0,0);
 	}
 	bytes += n;
 	if (bytes <  siz) break;
 	siz += BUFSIZ;
 	rb_str_resize(str, siz);
     }
-    if (bytes == 0) return Qnil;
+    if (bytes == 0) return rb_str_new(0,0);
     if (bytes != siz) rb_str_resize(str, bytes);
-    return rb_str_taint(str);
+    return rb_obj_taint(str);
 }
 
 static VALUE
@@ -411,7 +417,8 @@ rb_io_read(argc, argv, io)
     int n, len;
     VALUE length, str;
 
-    if (rb_scan_args(argc, argv, "01", &length) == 0) {
+    rb_scan_args(argc, argv, "01", &length);
+    if (NIL_P(length)) {
 	return read_all(io);
     }
 
@@ -432,7 +439,7 @@ rb_io_read(argc, argv, io)
     RSTRING(str)->len = n;
     RSTRING(str)->ptr[n] = '\0';
 
-    return rb_str_taint(str);
+    return rb_obj_taint(str);
 }
 
 static VALUE
@@ -568,7 +575,7 @@ rb_io_gets_internal(argc, argv, io)
     if (!NIL_P(str)) {
 	fptr->lineno++;
 	lineno = INT2FIX(fptr->lineno);
-	rb_str_taint(str);
+	rb_obj_taint(str);
     }
 
     return str;
@@ -626,7 +633,7 @@ rb_io_gets(io)
     if (!NIL_P(str)) {
 	fptr->lineno++;
 	lineno = INT2FIX(fptr->lineno);
-	rb_str_taint(str);
+	rb_obj_taint(str);
     }
 
     return str;
@@ -978,7 +985,7 @@ rb_io_sysread(io, len)
 
     RSTRING(str)->len = n;
     RSTRING(str)->ptr[n] = '\0';
-    return rb_str_taint(str);
+    return rb_obj_taint(str);
 }
 
 VALUE
@@ -1388,6 +1395,7 @@ rb_io_reopen(io, nfile)
     char *mode;
     int fd;
 
+    rb_secure(4);
     GetOpenFile(io, fptr);
     nfile = rb_io_get_io(nfile);
     GetOpenFile(nfile, orig);
@@ -1661,8 +1669,10 @@ void
 rb_p(obj)			/* for debug print within C code */
     VALUE obj;
 {
-    rb_io_write(rb_defout, rb_inspect(obj));
-    rb_io_write(rb_defout, rb_default_rs);
+    obj = rb_obj_as_string(rb_inspect(obj));
+    fwrite(RSTRING(obj)->ptr, 1, RSTRING(obj)->len, stdout);
+    obj = rb_default_rs;
+    fwrite(RSTRING(obj)->ptr, 1, RSTRING(obj)->len, stdout);
 }
 
 static VALUE
@@ -1990,11 +2000,7 @@ static VALUE
 rb_f_ungetc(self, c)
     VALUE self, c;
 {
-    if (!next_argv()) {
-	rb_raise(rb_eArgError, "no stream to ungetc");
-    }
-
-    return rb_io_ungetc(file, c);
+    return rb_io_ungetc(rb_stdin, c);
 }
 
 static VALUE
@@ -2115,10 +2121,10 @@ rb_f_select(argc, argv, obj)
 
 	    GetOpenFile(io, fptr);
 	    FD_SET(fileno(fptr->f), wp);
-	    if (max > fileno(fptr->f)) max = fileno(fptr->f);
+	    if (max < fileno(fptr->f)) max = fileno(fptr->f);
 	    if (fptr->f2) {
 		FD_SET(fileno(fptr->f2), wp);
-		if (max < (int)fileno(fptr->f2)) max = fileno(fptr->f2);
+		if (max < fileno(fptr->f2)) max = fileno(fptr->f2);
 	    }
 	}
     }
@@ -2137,7 +2143,7 @@ rb_f_select(argc, argv, obj)
 	    if (max < fileno(fptr->f)) max = fileno(fptr->f);
 	    if (fptr->f2) {
 		FD_SET(fileno(fptr->f2), ep);
-		if (max > (int)fileno(fptr->f2)) max = fileno(fptr->f2);
+		if (max < fileno(fptr->f2)) max = fileno(fptr->f2);
 	    }
 	}
     }
@@ -2759,6 +2765,9 @@ Init_IO()
     rb_define_method(rb_cIO, "flush", rb_io_flush, 0);
     rb_define_method(rb_cIO, "tell", rb_io_tell, 0);
     rb_define_method(rb_cIO, "seek", rb_io_seek, 2);
+    rb_define_const(rb_cIO, "SEEK_SET", SEEK_SET);
+    rb_define_const(rb_cIO, "SEEK_CUR", SEEK_CUR);
+    rb_define_const(rb_cIO, "SEEK_END", SEEK_END);
     rb_define_method(rb_cIO, "rewind", rb_io_rewind, 0);
     rb_define_method(rb_cIO, "pos", rb_io_tell, 0);
     rb_define_method(rb_cIO, "pos=", rb_io_set_pos, 1);

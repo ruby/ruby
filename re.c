@@ -368,7 +368,7 @@ match_clone(orig)
     return (VALUE)match;
 }
 
-static int ignorecase;
+int ruby_ignorecase;
 static int may_need_recompile;
 static VALUE matchcache;
 
@@ -382,7 +382,7 @@ rb_reg_prepare_re(reg)
     if (!FL_TEST(reg, REG_IGNORECASE)) {
 	int state = FL_TEST(reg, REG_CASESTATE);
 
-	if ((ignorecase || state) && !(ignorecase && state))  {
+	if ((ruby_ignorecase || state) && !(ruby_ignorecase && state))  {
 	    RBASIC(reg)->flags ^= REG_CASESTATE;
 	    need_recompile = 1;
 	}
@@ -659,7 +659,7 @@ rb_reg_new_1(klass, s, len, options)
     if (options & ~0x3) {
 	kcode_set_option((VALUE)re);
     }
-    if (ignorecase) {
+    if (ruby_ignorecase) {
 	options |= RE_OPTION_IGNORECASE;
 	FL_SET(re, REG_CASESTATE);
     }
@@ -693,15 +693,15 @@ rb_reg_regcomp(str)
     VALUE str;
 {
     if (reg_cache && RREGEXP(reg_cache)->len == RSTRING(str)->len
-	&& case_cache == ignorecase
+	&& case_cache == ruby_ignorecase
 	&& kcode_cache == reg_kcode
 	&& memcmp(RREGEXP(reg_cache)->str, RSTRING(str)->ptr, RSTRING(str)->len) == 0)
 	return reg_cache;
 
-    case_cache = ignorecase;
+    case_cache = ruby_ignorecase;
     kcode_cache = reg_kcode;
     return reg_cache = rb_reg_new(RSTRING(str)->ptr, RSTRING(str)->len,
-				  ignorecase);
+				  ruby_ignorecase);
 }
 
 static int
@@ -739,11 +739,11 @@ rb_reg_match(re, str)
 {
     int start;
 
-    if (NIL_P(str)) return Qfalse;
+    if (NIL_P(str)) return Qnil;
     str = rb_str_to_str(str);
     start = rb_reg_search(re, str, 0, 0);
     if (start < 0) {
-	return Qfalse;
+	return Qnil;
     }
     return INT2FIX(start);
 }
@@ -756,11 +756,11 @@ rb_reg_match2(re)
     VALUE line = rb_lastline_get();
 
     if (TYPE(line) != T_STRING)
-	return Qfalse;
+	return Qnil;
 
     start = rb_reg_search(re, line, 0, 0);
     if (start < 0) {
-	return Qfalse;
+	return Qnil;
     }
     return INT2FIX(start);
 }
@@ -1024,7 +1024,7 @@ kcode_setter(val)
 static VALUE
 ignorecase_getter()
 {
-    return ignorecase?Qtrue:Qfalse;
+    return ruby_ignorecase?Qtrue:Qfalse;
 }
 
 static void
@@ -1032,13 +1032,7 @@ ignorecase_setter(val)
     VALUE val;
 {
     may_need_recompile = 1;
-    ignorecase = RTEST(val);
-}
-
-int
-rb_ignorecase_p()
-{
-    return (int)ignorecase;
+    ruby_ignorecase = RTEST(val);
 }
 
 static VALUE

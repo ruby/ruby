@@ -155,12 +155,16 @@ curses_refresh(obj)
     return Qnil;
 }
 
-/* def refresh */
+/* def doupdate */
 static VALUE
 curses_doupdate(obj)
     VALUE obj;
 {
+#ifdef HAVE_DOUPDATE
     doupdate();
+#else
+    refresh();
+#endif
     return Qnil;
 }
 
@@ -252,7 +256,9 @@ static VALUE
 curses_flash(obj)
     VALUE obj;
 {
+#ifdef HAVE_FLASH
     flash();
+#endif
     return Qnil;
 }
 

@@ -1,3 +1,5 @@
 * non-blocking open/write for thread
+* avoid blocking with gethostbyname/gethostbyaddr
 * package or access control for global variables
 * format
+* freeze or undump to bundle everything in birary format.

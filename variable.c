@@ -615,9 +615,8 @@ rb_gvar_set(entry, val)
 {
     struct trace_data trace;
 
-    if (rb_safe_level() >= 4) {
-	rb_raise(rb_eSecurityError, "cannot change global variable value");
-    }
+    if (rb_safe_level() >= 4)
+	rb_raise(rb_eSecurityError, "Insecure: can't change global variable value");
     (*entry->setter)(val, entry->id, entry->data, entry);
 
     if (entry->trace && !entry->block_trace) {
@@ -726,6 +725,8 @@ rb_ivar_set(obj, id, val)
       case T_OBJECT:
       case T_CLASS:
       case T_MODULE:
+	if (rb_safe_level() >= 4 && !FL_TEST(obj, FL_TAINT))
+	    rb_raise(rb_eSecurityError, "Insecure: can't modify instance variable");
 	if (!ROBJECT(obj)->iv_tbl) ROBJECT(obj)->iv_tbl = st_init_numtable();
 	st_insert(ROBJECT(obj)->iv_tbl, id, val);
 	break;
@@ -1016,6 +1017,8 @@ rb_const_set(klass, id, val)
     ID id;
     VALUE val;
 {
+    if (rb_safe_level() >= 4 && !FL_TEST(klass, FL_TAINT))
+	rb_raise(rb_eSecurityError, "Insecure: can't set constant");
     if (!RCLASS(klass)->iv_tbl) {
 	RCLASS(klass)->iv_tbl = st_init_numtable();
     }

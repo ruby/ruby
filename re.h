@@ -33,4 +33,6 @@ int rb_str_cicmp _((VALUE, VALUE));
 VALUE rb_reg_regcomp _((VALUE));
 int rb_reg_search _((VALUE, VALUE, int, int));
 VALUE rb_reg_regsub _((VALUE, VALUE, struct re_registers *));
+
+extern int ruby_ignorecase;
 #endif

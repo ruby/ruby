@@ -378,7 +378,7 @@ s_recv(sock, argc, argv, from)
 	}
 	rb_sys_fail("recvfrom(2)");
     }
-    rb_str_taint(str);
+    rb_obj_taint(str);
     switch (from) {
       case RECV_RECV:
 	return (VALUE)str;
@@ -588,9 +588,7 @@ open_inet(class, h, serv, type)
 	host = RSTRING(h)->ptr;
 	hostent = gethostbyname(host);
 	if (hostent == NULL) {
-	    inet_aton(host, &sockaddr.sin_addr);
-	    hostaddr = sockaddr.sin_addr.s_addr;
-	    if (hostaddr == -1) {
+	    if (!inet_aton(host, &sockaddr.sin_addr)) {
 		if (type == INET_SERVER && !strlen(host))
 		    hostaddr = INADDR_ANY;
 		else {
@@ -602,6 +600,7 @@ open_inet(class, h, serv, type)
 #endif
 		}
 	    }
+	    hostaddr = sockaddr.sin_addr.s_addr;
 	    _hostent.h_addr_list = (char **)hostaddrPtr;
 	    _hostent.h_addr_list[0] = (char *)&hostaddr;
 	    _hostent.h_addr_list[1] = NULL;

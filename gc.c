@@ -96,6 +96,7 @@ xrealloc(ptr, size)
 	rb_raise(rb_eArgError, "negative re-allocation size");
     }
     if (!ptr) return xmalloc(size);
+    if (size == 0) size = 1;
     malloc_memories += size;
     mem = realloc(ptr, size);
     if (!mem) {
@@ -281,6 +282,9 @@ rb_data_object_alloc(klass, datap, dmark, dfree)
 extern st_table *rb_class_tbl;
 VALUE *rb_gc_stack_start;
 
+#if defined(__GNUC__) && __GNUC__ >= 2
+__inline__
+#endif
 static int
 looks_pointerp(ptr)
     void *ptr;
@@ -402,6 +406,7 @@ rb_gc_mark(ptr)
 	  case NODE_CREF:
 	  case NODE_WHEN:
 	  case NODE_MASGN:
+	  case NODE_RESCUE:
 	  case NODE_RESBODY:
 	    rb_gc_mark(obj->as.node.u2.node);
 	    /* fall through */
@@ -434,7 +439,7 @@ rb_gc_mark(ptr)
 	  case NODE_AND:
 	  case NODE_OR:
 	  case NODE_CASE:
-	  case NODE_RESCUE:
+	  case NODE_SCLASS:
 	  case NODE_ARGS:
 	  case NODE_DOT2:
 	  case NODE_DOT3:
@@ -442,11 +447,9 @@ rb_gc_mark(ptr)
 	  case NODE_FLIP3:
 	  case NODE_MATCH2:
 	  case NODE_MATCH3:
-	  case NODE_SCLASS:
 	    rb_gc_mark(obj->as.node.u1.node);
 	    /* fall through */
 	  case NODE_METHOD:	/* 2 */
-	  case NODE_MODULE:
 	  case NODE_NOT:
 	  case NODE_GASGN:
 	  case NODE_LASGN:
@@ -454,11 +457,11 @@ rb_gc_mark(ptr)
 	  case NODE_DASGN_PUSH:
 	  case NODE_IASGN:
 	  case NODE_CASGN:
+	  case NODE_MODULE:
 	  case NODE_OP_ASGN_OR:
 	  case NODE_OP_ASGN_AND:
 	  case NODE_COLON3:
 	  case NODE_OPT_N:
-	  case NODE_BLOCK_PASS:
 	    obj = RANY(obj->as.node.u2.node);
 	    goto Top;
 
@@ -476,6 +479,7 @@ rb_gc_mark(ptr)
 
 	  case NODE_SCOPE:	/* 2,3 */
 	  case NODE_CLASS:
+	  case NODE_BLOCK_PASS:
 	    rb_gc_mark(obj->as.node.u3.node);
 	    obj = RANY(obj->as.node.u2.node);
 	    goto Top;
@@ -1028,7 +1032,7 @@ run_final(obj)
 
     obj = INT2NUM((long)obj);	/* make obj into id */
     for (i=0; i<RARRAY(finalizers)->len; i++) {
-	rb_eval_cmd(RARRAY(finalizers)->ptr[i], rb_ary_new3(1,obj));
+	rb_eval_cmd(RARRAY(finalizers)->ptr[i], rb_ary_new3(1, obj));
     }
 }
 

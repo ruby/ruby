@@ -1,3 +1,316 @@
+Wed Nov 25 03:41:21 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* st.c (st_init_table_with_size): round size up to prime number.
+
+Sat Nov 21 23:27:23 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* hash.c (rb_hash_aset): reduce copying key strings.
+
+	* gc.c (looks_pointerp): declare as inline function if possible.
+
+	* st.c (PTR_NOT_EQUAL): compare hash values first before calling
+	  comparing function.
+
+	* st.c (ADD_DIRECT): save hash value in entries to reduce hash
+	  calculation.
+
+	* string.c (rb_str_gsub_bang): avoid rb_scan_args() to speed-up.
+
+	* string.c (rb_str_sub_bang): ditto.
+
+	* string.c (rb_str_dup): do not copy additional data (STR_NO_ORIG).
+
+Fri Nov 20 23:23:23 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* lib/delegate.rb: do not propagate hash and eql?.
+
+Thu Nov 19 01:40:52 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* sample/ruby-mode.el (ruby-expr-beg): failed to find reserved
+	  word boundary.
+
+	* eval.c (rb_eval): avoid calling `concat' method.  calls
+	  rb_ary_concat() directly for efficiency.
+
+	* eval.c (rb_eval): actual rest arguments extended arrays too much.
+
+Wed Nov 18 10:48:09 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (read_all): SEGV on large files.
+
+Wed Nov 18 14:30:24 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* class.c (rb_define_global_function): global functions now be
+	  module function of the Kernel.
+
+Tue Nov 17 18:11:20 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version 1.1c8 released.
+
+Tue Nov 17 16:58:47 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (arg): assignment to attribute name start with capital
+	  should be allowed.
+
+	* eval.c (thread_alloc): needed to mark terminated threads too.
+
+Tue Nov 17 12:33:48 1998  Motoyuki Kasahara  <m-kasahr@sra.co.jp>
+
+	* ext/extmk.rb.in (create_makefile): Set `libdir' to `@libdir@',
+	  Set `pkglibdir' to `$libdir/$(RUBY_INSTALL_NAME)'.
+
+Tue Nov 17 10:30:46 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* sprintf.c (f_sprintf): %l%%c -> %%l%c
+
+Tue Nov 17 01:08:50 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (ret_args): distinguish `a' and `*a' for the arguments
+	  of yield and return.
+
+	* eval.c (rb_eval): flip3 should work like sed.
+
+	* eval.c (rb_eval): flip{2,3} now have independent state for each
+	  scope to work fine with thread.
+
+Mon Nov 16 23:26:29 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (primary): exec else clause if no exception raised.
+
+Sun Nov 15 15:44:07 1998  Tadayoshi Funaba  <tadf@kt.rim.or.jp>
+
+	* ext/extmk.rb.in (install): bug in target.
+
+Sat Nov 14 11:02:05 1998  Motoyuki Kasahara  <m-kasahr@sra.co.jp>
+
+	* Makefile.in (install): Give the argument `$(DESTDIR)' to
+	`instruby.rb'.
+	* instruby.rb: Recognize ARG[0] as `destdir'.
+	* instruby.rb: Give the argument `destdir' to `extmk.rb'.
+	* ext/extmk.rb.in: Recognize ARG[1] as `$destdir'.
+
+	* instruby.rb: Create the installation directories (bindir, libdir,
+	archdir, pkglibdir, archdir, and mandir) under `destdir', and
+	install all files under there.
+	* ext/extmk.rb.in: Likewise.
+	
+Sat Nov 14 10:56:55 1998  Motoyuki Kasahara  <m-kasahr@sra.co.jp>
+
+	* instruby.rb: Add the variable `pkglibdir'.
+	* instruby.rb: Set the variable `libdir' to `$(libdir)', not
+	`$(libdir)/$(ruby_install_name)'. `libruby.so' and `libruby.so.LIB'
+	are installed at `libdir'.
+	* instruby.rb: Set the variable `archdir' to `$(pkglibdir)/$(arch)'.
+
+Fri Nov 13 19:43:29 1998  KIMURA Koichi  <kbk@kt.rim.or.jp>
+
+	* missing/nt.c (SafeFree): wrong free offset.
+
+Thu Nov 12 20:11:53 1998  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* sample/ruby-mode.el: wrong highlight.
+
+	* parse.y (parse_regx): newline in regexp was ignored.
+
+Wed Nov 11 10:54:57 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (here_document): <<'FOO' should not escape anything.
+
+	* parse.y (here_document): bare << here-doc available, even though
+	  it's deprecated.
+
+	* file.c (rb_file_s_readlink): return value should be tainted.
+
+	* ext/etc/etc.c (setup_passwd): information (eg. GCOS name) should
+	  be tainted (modified at Perl Conference).
+
+Tue Nov 10 00:22:11 1998  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* configure.in: elf supprt for FreeBSD 3.x
+
+Tue Nov 10 00:05:43 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (yylex): here document available in eval.
+
+Mon Nov  9 17:55:19 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version 1.1c7 released.
+
+Fri Nov  6 19:25:27 1998  Takao KAWAMURA  <kawamura@ike.tottori-u.ac.jp>
+
+	* sample/ruby-mode.el: font-lock patch.
+
+Thu Nov  5 15:42:22 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* sample/README, lib/README: simple description for each file.
+
+Wed Nov  4 18:14:19 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (assign): attribute assignment should be called as public.
+
+Tue Nov  3 23:36:39 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (rb_str_dump): dumps core for negative char value.
+
+	* regex.c (re_compile_pattern): out of boundary access for empty
+	  regexp.
+
+Mon Nov  2 22:54:01 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (rb_str_aset): `str[str]' replaces first match.
+
+Mon Nov  2 18:24:33 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (thread_create): was accessing modified status.
+
+Sun Nov  1 01:18:52 1998  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* gc.c (xrealloc): size 0 needs round up to 1.
+
+Sat Oct 31 23:18:34 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (rb_str_split_method): negative LIMIT means number of
+	  splitted fields are unlimited, as in perl.
+
+	* string.c (rb_str_split_method): if LIMIT is unspecified,
+	  trailing null fields are stripped.
+
+Sat Oct 31 04:16:14 1998  Inaba Hiroto   <inaba@st.rim.or.jp>
+
+	* string.c (str_aref): regexp index SEGVed.
+
+Fri Oct 30 14:33:47 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* re.c (reg_match): returns nil for unmatch.
+
+	* dir.c (dir_entries): new method.
+
+	* eval.c (block_pass): do not push block, substitute it.
+
+Fri Oct 30 01:28:52 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* range.c (range_check): avoid <=> check for Fixnums.
+
+	* array.c (rb_ary_aset): accept negative index.
+
+Wed Oct 28 22:00:54 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_match): access out of boundary fixed.
+
+Wed Oct 28 11:37:42 1998  TAMITO  <tommy@valley.ne.jp>
+
+	* io.c (f_select): fd number comparison bug.
+
+Tue Oct 27 23:07:11 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* sample/ruby-mode.el (ruby-parse-region): forgot to support %w()
+	  style array literal.
+
+	* eval.c (rb_eval): unused block raises warning.
+
+Mon Oct 26 09:37:53 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (dvar_asgn_push): dvar pushed too many times if
+	  variable-in-block first appear in loops.
+
+Sun Oct 25 22:59:27 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (set_list_bits): was using wrong offset.
+
+Thu Oct 22 00:07:11 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_obj_method): method retrieved from tainted object
+	  should be tainted too.
+
+	* eval.c (method_call): safe_level should be restored during
+	  Method#call.
+
+Wed Oct 21 14:21:06 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (Init_IO): new constants IO::SEEK_{SET,CUR,END}.
+
+	* io.c (rb_f_ungetc): ungetc pushes a char back into STDIN.
+
+Mon Oct 19 11:50:00 1998  Motoyuki Kasahara  <m-kasahr@sra.co.jp>
+
+	* ext/extmk.rb: Load '@top_srcdir@/lib/find.rb', not
+	'../lib/find.rb'.
+	* ext/extmk.rb: Distinguish between `top_srcdir' and `topdir'.
+	* Makefile.in (CFLAGS): Add `-I.'.
+	* Makefile.in (lex.c): Give `@srcdir@/keywords' to gperf, not
+	`keywords'.
+	* instruby.rb: Use `CONFIG["bindir"]', instead of `prefix + "/bin"'.
+	* instruby.rb: Use `CONFIG["libdir"]', instead of `prefix + "/lib"'.
+	* instruby.rb Use `CONFIG["mandir"]', instead of `prefix + "/man"'.
+	* instruby.rb (wdir): Add the variable to preserve the current
+	working directory.
+	* instruby.rb: Chdir to wdir before install `config.h' and
+	`rbconfig.rb'.
+
+Mon Oct 19 10:07:01 1998  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* eval.c (rb_eval): reduce recursive calls to rb_eval().
+
+Fri Oct 16 15:31:45 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* time.c (time_new_internal): timeval must be positive.
+
+Thu Oct 15 13:54:48 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (arg): local variabls can be accessed within right side
+ 	  expression in assignment, notably in blocks.
+
+Wed Oct 14 00:18:33 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* array.c (Init_Array): Array#=== is now for equal check, not
+	  inclusion check.
+
+	* parse.y (when_args): `when a, *b' style new syntax for array
+	  expansion in `case'.
+
+Tue Oct 13 14:30:32 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* object.c (rb_obj_untaint): taint marks can be unset.
+
+	* eval.c (rb_eval): taint propagation for embedded strings.
+
+Mon Oct 12 13:27:15 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_call0): check stack depth more frequently.
+
+Mon Oct 12 08:08:30 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (rb_p): can print even in secure mode.
+
+Sun Oct 11 22:50:13 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* variable.c (rb_const_set): taint check for modification.
+
+	* variable.c (rb_ivar_set): taint check for modification.
+
+	* string.c (rb_str_modify): taint check for modification.
+
+	* hash.c (rb_hash_modify): taint check for modification.
+
+	* array.c (rb_ary_modify): taint check for modification.
+
+	* ruby.h (FL_TAINT): taint for all objects, not only strings.
+
+Fri Oct  9 17:01:14 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (read_all): read() returns "" at immediate EOF.
+
+	* io.c (io_read): read(nil) read all until EOF.
+
+Thu Oct  8 13:32:13 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* time.c (time_dump): marshal can dump Time object now.
+
+	* marshal.c (Init_marshal): rename marshal methods `_dump_to' to
+ 	  `_dump', `_load_from' to `_load'.
+
+	* parse.y (rb_intern): "+=".intern generates proper symbol.
+
 Mon Oct  5 18:31:53 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* version 1.1c6 released.
@@ -7,7 +320,7 @@ Fri Oct  2 14:22:33 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* regex.c (re_search): `/\s*(--)$/ =~ "- --"' did not match,
 	  because of wrong optimize condition.
 
-Thu Oct  1 01:55:16 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+Mon Oct  1 01:55:16 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* parse.y (rb_intern): should not raise exceptions.
 
@@ -83,20 +396,13 @@ Tue Sep  8 10:03:39 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (f_END): needed to initialize frame->argc;
 
-Tue Sep  8 01:42:30 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
-
-	* enum.c (Init_Enumerable): Enumerable#reverse removed.
-
-	* eval.c (call_trace_func): profiler support.
-
-	* eval.c (rb_call0): ditto.
-
 Fri Sep  4 11:27:40 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* bignum.c (bigadd): proper sign combination.
 
 	* regex.c (re_search): wrong return value for \A.
 
+>>>>>>> 1.1.1.2.2.154
 Thu Sep  3 14:08:14 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* version 1.1c4 released.

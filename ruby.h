@@ -213,6 +213,7 @@ VALUE rb_newobj _((void));
 #define OBJSETUP(obj,c,t) {\
     RBASIC(obj)->klass = (c);\
     RBASIC(obj)->flags = (t);\
+    if (rb_safe_level() >= 3) FL_SET(obj, FL_TAINT);\
 }
 #define CLONESETUP(clone,obj) {\
     OBJSETUP(clone,rb_singleton_class_clone(RBASIC(obj)->klass),RBASIC(obj)->flags);\
@@ -281,7 +282,6 @@ struct RData {
 };
 
 extern VALUE rb_cData;
-
 #define DATA_PTR(dta) (RDATA(dta)->data)
 
 VALUE rb_data_object_alloc _((VALUE,void*,void (*)(),void (*)()));
@@ -331,8 +331,9 @@ struct RBignum {
 #define FL_SINGLETON FL_USER0
 #define FL_MARK      (1<<8)
 #define FL_FINALIZE  (1<<9)
+#define FL_TAINT     (1<<10)
 
-#define FL_USHIFT    10
+#define FL_USHIFT    11
 
 #define FL_USER0     (1<<(FL_USHIFT+0))
 #define FL_USER1     (1<<(FL_USHIFT+1))
@@ -407,7 +408,7 @@ void rb_const_set _((VALUE, ID, VALUE));
 
 VALUE rb_equal _((VALUE,VALUE));
 
-extern VALUE rb_verbose, rb_debug;
+EXTERN VALUE rb_verbose, rb_debug;
 
 int rb_safe_level _((void));
 void rb_set_safe_level _((int));
@@ -436,56 +437,56 @@ void ruby_init _((void));
 void ruby_options _((int, char**));
 void ruby_run _((void));
 
-extern VALUE rb_mKernel;
-extern VALUE rb_mComparable;
-extern VALUE rb_mEnumerable;
-extern VALUE rb_mErrno;
-extern VALUE rb_mFileTest;
-extern VALUE rb_mGC;
-extern VALUE rb_mMath;
-extern VALUE rb_mProcess;
+EXTERN VALUE rb_mKernel;
+EXTERN VALUE rb_mComparable;
+EXTERN VALUE rb_mEnumerable;
+EXTERN VALUE rb_mErrno;
+EXTERN VALUE rb_mFileTest;
+EXTERN VALUE rb_mGC;
+EXTERN VALUE rb_mMath;
+EXTERN VALUE rb_mProcess;
 
-extern VALUE rb_cObject;
-extern VALUE rb_cArray;
-extern VALUE rb_cBignum;
-extern VALUE rb_cClass;
-extern VALUE rb_cDir;
-extern VALUE rb_cData;
-extern VALUE rb_cFalseClass;
-extern VALUE rb_cFile;
-extern VALUE rb_cFixnum;
-extern VALUE rb_cFloat;
-extern VALUE rb_cHash;
-extern VALUE rb_cInteger;
-extern VALUE rb_cIO;
-extern VALUE rb_cModule;
-extern VALUE rb_cNilClass;
-extern VALUE rb_cNumeric;
-extern VALUE rb_cProc;
-extern VALUE rb_cRange;
-extern VALUE rb_cRegexp;
-extern VALUE rb_cString;
-extern VALUE rb_cThread;
-extern VALUE rb_cTime;
-extern VALUE rb_cTrueClass;
-extern VALUE rb_cStruct;
+EXTERN VALUE rb_cObject;
+EXTERN VALUE rb_cArray;
+EXTERN VALUE rb_cBignum;
+EXTERN VALUE rb_cClass;
+EXTERN VALUE rb_cDir;
+EXTERN VALUE rb_cData;
+EXTERN VALUE rb_cFalseClass;
+EXTERN VALUE rb_cFile;
+EXTERN VALUE rb_cFixnum;
+EXTERN VALUE rb_cFloat;
+EXTERN VALUE rb_cHash;
+EXTERN VALUE rb_cInteger;
+EXTERN VALUE rb_cIO;
+EXTERN VALUE rb_cModule;
+EXTERN VALUE rb_cNilClass;
+EXTERN VALUE rb_cNumeric;
+EXTERN VALUE rb_cProc;
+EXTERN VALUE rb_cRange;
+EXTERN VALUE rb_cRegexp;
+EXTERN VALUE rb_cString;
+EXTERN VALUE rb_cThread;
+EXTERN VALUE rb_cTime;
+EXTERN VALUE rb_cTrueClass;
+EXTERN VALUE rb_cStruct;
 
-extern VALUE rb_eException;
-extern VALUE rb_eStandardError;
-extern VALUE rb_eSystemExit, rb_eInterrupt, rb_eFatal;
-extern VALUE rb_eArgError;
-extern VALUE rb_eEOFError;
-extern VALUE rb_eIndexError;
-extern VALUE rb_eIOError;
-extern VALUE rb_eLoadError;
-extern VALUE rb_eNameError;
-extern VALUE rb_eRuntimeError;
-extern VALUE rb_eSecurityError;
-extern VALUE rb_eSyntaxError;
-extern VALUE rb_eSystemCallError;
-extern VALUE rb_eTypeError;
-extern VALUE rb_eZeroDiv;
-extern VALUE rb_eNotImpError;
+EXTERN VALUE rb_eException;
+EXTERN VALUE rb_eStandardError;
+EXTERN VALUE rb_eSystemExit, rb_eInterrupt, rb_eFatal;
+EXTERN VALUE rb_eArgError;
+EXTERN VALUE rb_eEOFError;
+EXTERN VALUE rb_eIndexError;
+EXTERN VALUE rb_eIOError;
+EXTERN VALUE rb_eLoadError;
+EXTERN VALUE rb_eNameError;
+EXTERN VALUE rb_eRuntimeError;
+EXTERN VALUE rb_eSecurityError;
+EXTERN VALUE rb_eSyntaxError;
+EXTERN VALUE rb_eSystemCallError;
+EXTERN VALUE rb_eTypeError;
+EXTERN VALUE rb_eZeroDiv;
+EXTERN VALUE rb_eNotImpError;
 
 #if defined(__GNUC__) && __GNUC__ >= 2 && !defined(RUBY_NO_INLINE)
 extern __inline__ VALUE rb_class_of _((VALUE));

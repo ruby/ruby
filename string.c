@@ -25,7 +25,6 @@
 VALUE rb_cString;
 
 #define STR_FREEZE FL_USER1
-#define STR_TAINT  FL_USER2
 #define STR_NO_ORIG FL_USER3
 
 extern VALUE rb_rs;
@@ -38,9 +37,6 @@ rb_str_new(ptr, len)
     NEWOBJ(str, struct RString);
     OBJSETUP(str, rb_cString, T_STRING);
 
-    if (rb_safe_level() >= 3) {
-	FL_SET(str, STR_TAINT);
-    }
     str->ptr = 0;
     str->len = len;
     str->orig = 0;
@@ -60,6 +56,21 @@ rb_str_new2(ptr)
 }
 
 VALUE
+rb_tainted_str_new(ptr, len)
+    char *ptr;
+    int len;
+{
+    return rb_str_new(ptr, len);
+}
+
+VALUE
+rb_tainted_str_new2(ptr)
+    char *ptr;
+{
+    return rb_str_new2(ptr);
+}
+
+VALUE
 rb_str_new3(str)
     VALUE str;
 {
@@ -69,10 +80,6 @@ rb_str_new3(str)
     str2->len = RSTRING(str)->len;
     str2->ptr = RSTRING(str)->ptr;
     str2->orig = str;
-
-    if (rb_safe_level() >= 3) {
-	FL_SET(str2, STR_TAINT);
-    }
 
     return (VALUE)str2;
 }
@@ -96,7 +103,7 @@ rb_str_new4(orig)
 	RSTRING(orig)->orig = (VALUE)str;
 	str->orig = 0;
 	if (rb_safe_level() >= 3) {
-	    FL_SET(str, STR_TAINT);
+	    FL_SET(str, FL_TAINT);
 	}
 	return (VALUE)str;
     }
@@ -127,7 +134,7 @@ rb_str_assign(str, str2)
     RSTRING(str)->orig = RSTRING(str2)->orig;
     RSTRING(str2)->ptr = 0;	/* abandon str2 */
     RSTRING(str2)->len = 0;
-    if (rb_str_tainted(str2)) rb_str_taint(str);
+    if (rb_obj_tainted(str2)) rb_obj_taint(str);
 }
 
 static ID pr_str;
@@ -171,9 +178,7 @@ rb_str_dup(str)
 
     if (TYPE(str) != T_STRING) str = rb_str_to_str(str);
     s = rb_str_new(RSTRING(str)->ptr, RSTRING(str)->len);
-    if (rb_str_tainted(str)) s = rb_str_taint(s);
-    if (RSTRING(str)->orig && FL_TEST(str, STR_NO_ORIG))
-	RSTRING(s)->orig = RSTRING(str)->orig;
+    if (rb_obj_tainted(str)) s = rb_obj_taint(s);
     return s;
 }
 
@@ -195,7 +200,7 @@ rb_str_s_new(klass, orig)
     }
 
     if (rb_safe_level() >= 3) {
-	FL_SET(str, STR_TAINT);
+	FL_SET(str, FL_TAINT);
     }
     rb_obj_call_init((VALUE)str);
 
@@ -231,8 +236,8 @@ rb_str_plus(str1, str2)
 	   RSTRING(str2)->ptr, RSTRING(str2)->len);
     RSTRING(str3)->ptr[RSTRING(str3)->len] = '\0';
 
-    if (rb_str_tainted(str1) || rb_str_tainted(str2))
-	return rb_str_taint(str3);
+    if (rb_obj_tainted(str1) || rb_obj_tainted(str2))
+	return rb_obj_taint(str3);
     return str3;
 }
 
@@ -256,8 +261,8 @@ rb_str_times(str, times)
     }
     RSTRING(str2)->ptr[RSTRING(str2)->len] = '\0';
 
-    if (rb_str_tainted(str)) {
-	return rb_str_taint(str2);
+    if (rb_obj_tainted(str)) {
+	return rb_obj_taint(str2);
     }
 
     return str2;
@@ -300,7 +305,7 @@ rb_str_substr(str, start, len)
     }
 
     str2 = rb_str_new(RSTRING(str)->ptr+start, len);
-    if (rb_str_tainted(str)) rb_str_taint(str2);
+    if (rb_obj_tainted(str)) rb_obj_taint(str2);
 
     return str2;
 }
@@ -348,6 +353,8 @@ rb_str_modify(str)
 
     if (FL_TEST(str, STR_FREEZE))
 	rb_raise(rb_eTypeError, "can't modify frozen string");
+    if (rb_safe_level() >= 4 && !FL_TEST(str, FL_TAINT))
+	rb_raise(rb_eSecurityError, "Insecure: can't modify string");
     if (!RSTRING(str)->orig || FL_TEST(str, STR_NO_ORIG)) return;
     ptr = RSTRING(str)->ptr;
     RSTRING(str)->ptr = ALLOC_N(char, RSTRING(str)->len+1);
@@ -385,25 +392,6 @@ rb_str_dup_frozen(str)
     if (FL_TEST(str, STR_FREEZE))
 	return str;
     return rb_str_freeze(rb_str_dup(str));
-}
-
-VALUE
-rb_str_taint(str)
-    VALUE str;
-{
-    if (TYPE(str) == T_STRING) {
-	FL_SET(str, STR_TAINT);
-    }
-    return str;
-}
-
-VALUE
-rb_str_tainted(str)
-    VALUE str;
-{
-    if (FL_TEST(str, STR_TAINT))
-	return Qtrue;
-    return Qfalse;
 }
 
 VALUE
@@ -457,7 +445,7 @@ rb_str_hash(str)
     register char *p = RSTRING(str)->ptr;
     register int key = 0;
 
-    if (rb_ignorecase_p()) {
+    if (ruby_ignorecase) {
 	while (len--) {
 	    key = key*65599 + toupper(*p);
 	    p++;
@@ -489,7 +477,7 @@ rb_str_cmp(str1, str2)
     unsigned int len;
     int retval;
 
-    if (rb_ignorecase_p()) {
+    if (ruby_ignorecase) {
 	return rb_str_cicmp(str1, str2);
     }
 
@@ -740,8 +728,8 @@ rb_str_succ(orig)
 	}
     }
 
-    if (rb_str_tainted(orig)) {
-	return rb_str_taint(str);
+    if (rb_obj_tainted(orig)) {
+	return rb_obj_taint(str);
     }
 
     return str;
@@ -799,8 +787,8 @@ rb_str_aref(str, indx)
 	return INT2FIX(RSTRING(str)->ptr[idx] & 0xff);
 
       case T_REGEXP:
-	if (rb_str_match(str, indx))
-	    return rb_reg_last_match(0);
+	if (rb_reg_search(indx, str, 0, 0) >= 0)
+	    return rb_reg_last_match(rb_backref_get());
 	return Qnil;
 
       case T_STRING:
@@ -931,13 +919,11 @@ rb_str_aset(str, indx, val)
 	return val;
 
       case T_STRING:
-	for (offset=0;
-	     (beg=rb_str_index(str, indx, offset)) >= 0;
-	     offset=beg+RSTRING(val)->len) {
+	beg = rb_str_index(str, indx, 0);
+	if (beg >= 0) {
 	    end = beg + RSTRING(indx)->len - 1;
 	    rb_str_replace2(str, beg, end, val);
 	}
-	if (offset == 0) return Qnil;
 	return val;
 
       default:
@@ -1014,17 +1000,17 @@ rb_str_sub_bang(argc, argv, str)
     int iter = 0;
     int plen;
 
-    if (rb_scan_args(argc, argv, "11", &pat, &repl) == 1) {
-	if (!rb_iterator_p()) {
-	    rb_raise(rb_eArgError, "Wrong # of arguments(1 for 2)");
-	}
+    if (argc == 1 && rb_iterator_p()) {
 	iter = 1;
     }
+    else if (argc == 2) {
+	repl = repl = rb_obj_as_string(argv[1]);;
+    }
     else {
-	repl = rb_obj_as_string(repl);
+	rb_raise(rb_eArgError, "Wrong # of arguments(%d for 2)", argc);
     }
 
-    pat = get_pat(pat);
+    pat = get_pat(argv[0]);
     if (rb_reg_search(pat, str, 0, 0) >= 0) {
 	rb_str_modify(str);
 	match = rb_backref_get();
@@ -1079,17 +1065,17 @@ rb_str_gsub_bang(argc, argv, str)
     char *buf, *bp, *cp;
     int blen, len;
 
-    if (rb_scan_args(argc, argv, "11", &pat, &repl) == 1) {
-	if (!rb_iterator_p()) {
-	    rb_raise(rb_eArgError, "Wrong # of arguments(1 for 2)");
-	}
+    if (argc == 1 && rb_iterator_p()) {
 	iter = 1;
     }
+    else if (argc == 2) {
+	repl = repl = rb_obj_as_string(argv[1]);;
+    }
     else {
-	repl = rb_obj_as_string(repl);
+	rb_raise(rb_eArgError, "Wrong # of arguments(%d for 2)", argc);
     }
 
-    pat = get_pat(pat);
+    pat = get_pat(argv[0]);
     offset=0; n=0; 
     beg = rb_reg_search(pat, str, 0, 0);
     if (beg < 0) return Qnil;	/* no match, no substitution */
@@ -1178,7 +1164,7 @@ rb_str_replace_method(str, str2)
     rb_str_modify(str);
     rb_str_resize(str, RSTRING(str2)->len);
     memcpy(RSTRING(str)->ptr, RSTRING(str2)->ptr, RSTRING(str2)->len);
-    if (rb_str_tainted(str2)) rb_str_taint(str);
+    if (rb_obj_tainted(str2)) rb_obj_taint(str);
 
     return str;
 }
@@ -1491,7 +1477,7 @@ rb_str_dump(str)
 	}
 	else {
 	    *q++ = '\\';
-	    sprintf(q, "%03o", c);
+	    sprintf(q, "%03o", c&0xff);
 	    q += 3;
 	}
     }
@@ -1950,12 +1936,12 @@ rb_str_split_method(argc, argv, str)
     VALUE spat;
     VALUE limit;
     int char_sep = -1;
-    int beg, end, lim, i;
+    int beg, end, i, lim = 0;
     VALUE result, tmp;
 
     if (rb_scan_args(argc, argv, "02", &spat, &limit) == 2) {
 	lim = NUM2INT(limit);
-	if (lim == 0) limit = Qnil;
+	if (lim <= 0) limit = Qnil;
 	else if (lim == 1) return rb_ary_new3(1, str);
 	i = 1;
     }
@@ -1981,7 +1967,7 @@ rb_str_split_method(argc, argv, str)
 	  case T_REGEXP:
 	    break;
 	  default:
-	    rb_raise(rb_eArgError, "split(): bad separator");
+	    rb_raise(rb_eArgError, "bad separator");
 	}
     }
 
@@ -2068,8 +2054,13 @@ rb_str_split_method(argc, argv, str)
 	    if (!NIL_P(limit) && lim <= ++i) break;
 	}
     }
-    if (RSTRING(str)->len > beg) {
+    if (!NIL_P(limit) || RSTRING(str)->len > beg || lim < 0) {
 	rb_ary_push(result, rb_str_subseq(str, beg, -1));
+    }
+    if (NIL_P(limit) && lim == 0) {
+	while (RARRAY(result)->len > 0 &&
+	       RSTRING(RARRAY(result)->ptr[RARRAY(result)->len-1])->len == 0)
+	    rb_ary_pop(result);
     }
 
     return result;
@@ -2280,9 +2271,6 @@ rb_f_chomp(argc, argv)
 {
     VALUE str = rb_str_dup(uscore_get());
     VALUE val = rb_str_chomp_bang(argc, argv, str);
-
-    if (NIL_P(val)) return str;
-    rb_lastline_set(val);
     return val;
 }
 
@@ -2326,7 +2314,6 @@ static VALUE
 rb_str_strip(str)
     VALUE str;
 {
-
     VALUE val = rb_str_strip_bang(str = rb_str_dup(str));
 
     if (NIL_P(val)) return str;
@@ -2578,9 +2565,6 @@ Init_String()
 
     rb_define_method(rb_cString, "freeze", rb_str_freeze, 0);
     rb_define_method(rb_cString, "frozen?", rb_str_frozen_p, 0);
-
-    rb_define_method(rb_cString, "taint", rb_str_taint, 0);
-    rb_define_method(rb_cString, "tainted?", rb_str_tainted, 0);
 
     rb_define_method(rb_cString, "to_i", rb_str_to_i, 0);
     rb_define_method(rb_cString, "to_f", rb_str_to_f, 0);

@@ -119,7 +119,7 @@ dir_read(dir)
     errno = 0;
     dp = readdir(dirp);
     if (dp)
-	return rb_str_taint(rb_str_new(dp->d_name, NAMLEN(dp)));
+	return rb_tainted_str_new(dp->d_name, NAMLEN(dp));
     else if (errno == 0) {	/* end of stream */
 	return Qnil;
     }
@@ -138,7 +138,7 @@ dir_each(dir)
 
     GetDIR(dir, dirp);
     for (dp = readdir(dirp); dp != NULL; dp = readdir(dirp)) {
-	file = rb_str_taint(rb_str_new(dp->d_name, NAMLEN(dp)));
+	file = rb_tainted_str_new(dp->d_name, NAMLEN(dp));
 	rb_yield(file);
     }
     return dir;
@@ -240,7 +240,7 @@ dir_s_getwd(dir)
     if (getwd(path) == 0) rb_sys_fail(path);
 #endif
 
-    return rb_str_taint(rb_str_new2(path));
+    return rb_tainted_str_new2(path);
 }
 
 static VALUE
@@ -317,7 +317,7 @@ push_globs(ary, s)
     if (fnames == (char**)-1) rb_sys_fail(s);
     ff = fnames;
     while (*ff) {
-	rb_ary_push(ary, rb_str_taint(rb_str_new2(*ff)));
+	rb_ary_push(ary, rb_tainted_str_new2(*ff));
 	free(*ff);
 	ff++;
     }
@@ -427,6 +427,16 @@ dir_foreach(io, dirname)
     return rb_ensure(dir_each, dir, dir_close, dir);
 }
 
+static VALUE
+dir_entries(io, dirname)
+    VALUE io, dirname;
+{
+    VALUE dir;
+
+    dir = rb_funcall(rb_cDir, rb_intern("open"), 1, dirname);
+    return rb_ensure(rb_Array, dir, dir_close, dir);
+}
+
 void
 Init_Dir()
 {
@@ -437,6 +447,7 @@ Init_Dir()
     rb_define_singleton_method(rb_cDir, "new", dir_s_open, 1);
     rb_define_singleton_method(rb_cDir, "open", dir_s_open, 1);
     rb_define_singleton_method(rb_cDir, "foreach", dir_foreach, 1);
+    rb_define_singleton_method(rb_cDir, "entries", dir_entries, 1);
 
     rb_define_method(rb_cDir,"read", dir_read, 0);
     rb_define_method(rb_cDir,"each", dir_each, 0);

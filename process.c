@@ -570,7 +570,7 @@ rb_f_exit_bang(obj, status)
 {
     int code = -1;
 
-    rb_secure(2);
+    rb_secure(4);
     if (FIXNUM_P(status)) {
 	code = INT2FIX(status);
     }

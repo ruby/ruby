@@ -484,6 +484,63 @@ end
 $x = [[1,2],[3,4],[5,6]]
 ok($x.iter_test1{|x|x} == $x.iter_test2{|x|x})
 
+class IterTest
+  def initialize(e); @body = e; end
+
+  def each0(&block); @body.each(&block); end
+  def each1(&block); @body.each { |*x| block.call(*x) } end
+  def each2(&block); @body.each { |*x| block.call(x) } end
+  def each3(&block); @body.each { |x| block.call(*x) } end
+  def each4(&block); @body.each { |x| block.call(x) } end
+  def each5; @body.each { |*x| yield(*x) } end
+  def each6; @body.each { |*x| yield(x) } end
+  def each7; @body.each { |x| yield(*x) } end
+  def each8; @body.each { |x| yield(x) } end
+end
+
+IterTest.new([0]).each0 { |x| $x = x }
+ok($x == 0)
+IterTest.new([1]).each1 { |x| $x = x }
+ok($x == 1)
+IterTest.new([2]).each2 { |x| $x = x }
+ok($x == [2])
+IterTest.new([3]).each3 { |x| $x = x }
+ok($x == 3)
+IterTest.new([4]).each4 { |x| $x = x }
+ok($x == 4)
+IterTest.new([5]).each5 { |x| $x = x }
+ok($x == 5)
+IterTest.new([6]).each6 { |x| $x = x }
+ok($x == [6])
+IterTest.new([7]).each7 { |x| $x = x }
+ok($x == 7)
+IterTest.new([8]).each8 { |x| $x = x }
+ok($x == 8)
+
+IterTest.new([[0]]).each0 { |x| $x = x }
+ok($x == [0])
+IterTest.new([[1]]).each1 { |x| $x = x }
+ok($x == 1)
+IterTest.new([[2]]).each2 { |x| $x = x }
+ok($x == [2])
+IterTest.new([[3]]).each3 { |x| $x = x }
+ok($x == 3)
+IterTest.new([[4]]).each4 { |x| $x = x }
+ok($x == [4])
+IterTest.new([[5]]).each5 { |x| $x = x }
+ok($x == 5)
+IterTest.new([[6]]).each6 { |x| $x = x }
+ok($x == [6])
+IterTest.new([[7]]).each7 { |x| $x = x }
+ok($x == 7)
+IterTest.new([[8]]).each8 { |x| $x = x }
+ok($x == [8])
+
+IterTest.new([[0,0]]).each0 { |x| $x = x }
+ok($x == [0,0])
+IterTest.new([[8,8]]).each8 { |x| $x = x }
+ok($x == [8,8])
+
 check "bignum"
 def fact(n)
   return 1 if n == 0
@@ -546,9 +603,9 @@ check "string & char"
 ok("abcd" == "abcd")
 ok("abcd" =~ "abcd")
 ok("abcd" === "abcd")
-ok(("abc" =~ /^$/) == false)
-ok(("abc\n" =~ /^$/) == false)
-ok(("abc" =~ /^d*$/) == false)
+ok("abc" !~ /^$/)
+ok("abc\n" !~ /^$/)
+ok("abc" !~ /^d*$/)
 ok(("abc" =~ /d*$/) == 3)
 ok("" =~ /^$/)
 ok("\n" =~ /^$/)

@@ -28,9 +28,10 @@ static void
 rb_hash_modify(hash)
     VALUE hash;
 {
-    if (FL_TEST(hash, HASH_FREEZE)) {
+    if (FL_TEST(hash, HASH_FREEZE))
 	rb_raise(rb_eTypeError, "can't modify frozen hash");
-    }
+    if (rb_safe_level() >= 4 && !FL_TEST(hash, FL_TAINT))
+	rb_raise(rb_eSecurityError, "Insecure: can't modify hash");
 }
 
 VALUE
@@ -80,9 +81,8 @@ rb_any_cmp(a, b)
 }
 
 static int
-rb_any_hash(a, mod)
+rb_any_hash(a)
     VALUE a;
-    int mod;
 {
     unsigned int hval;
 
@@ -104,8 +104,7 @@ rb_any_hash(a, mod)
 	ENABLE_INTS;
 	hval = FIX2LONG(hval);
     }
-    if (hval < 0) hval = -hval;
-    return  hval % mod;
+    return  hval;
 }
 
 static struct st_hash_type objhash = {
@@ -126,7 +125,7 @@ rb_hash_foreach_iter(key, value, arg)
 {
     int status;
     st_table *tbl = RHASH(arg->hash)->tbl;
-    st_table_entry **bins = tbl->bins;
+    struct st_table_entry **bins = tbl->bins;
 
     if (key == Qnil) return ST_CONTINUE;
     status = (*arg->func)(key, value, arg->arg);
@@ -367,8 +366,15 @@ rb_hash_fetch(argc, argv, hash)
 }
 
 static VALUE
-rb_hash_default(hash, ifnone)
+rb_hash_default(hash)
     VALUE hash;
+{
+    return RHASH(hash)->ifnone;
+}
+
+static VALUE
+rb_hash_set_default(hash, ifnone)
+    VALUE hash, ifnone;
 {
     RHASH(hash)->ifnone = ifnone;
     return hash;
@@ -490,10 +496,12 @@ rb_hash_aset(hash, key, val)
 	rb_hash_delete(hash, key);
 	return Qnil;
     }
-    if (TYPE(key) == T_STRING) {
-	key = rb_str_dup_frozen(key);
+    if (TYPE(key) != T_STRING || st_lookup(RHASH(hash)->tbl, key, 0)) {
+	st_insert(RHASH(hash)->tbl, key, val);
     }
-    st_insert(RHASH(hash)->tbl, key, val);
+    else {
+	st_add_direct(RHASH(hash)->tbl, rb_str_dup_frozen(key), val);
+    }
     return val;
 }
 
@@ -873,7 +881,7 @@ rb_f_getenv(obj, name)
     if (env) {
 	if (strcmp(nam, "PATH") == 0 && !rb_env_path_tainted())
 	    return rb_str_new2(env);
-	return rb_str_taint(rb_str_new2(env));
+	return rb_tainted_str_new2(env);
     }
     return Qnil;
 }
@@ -960,7 +968,7 @@ rb_f_setenv(obj, name, value)
     
     setenv(RSTRING(name)->ptr, RSTRING(value)->ptr, 1);
     if (strcmp(RSTRING(name)->ptr, "PATH") == 0) {
-	if (rb_str_tainted(value)) {
+	if (rb_obj_tainted(value)) {
 	    /* already tainted, no check */
 	    path_tainted = 1;
 	    return Qtrue;
@@ -980,7 +988,7 @@ env_keys()
     env = environ;
     while (*env) {
 	char *s = strchr(*env, '=');
-	rb_ary_push(ary, rb_str_taint(rb_str_new(*env, s-*env)));
+	rb_ary_push(ary, rb_tainted_str_new(*env, s-*env));
 	env++;
     }
     return ary;
@@ -1002,7 +1010,7 @@ env_values()
     env = environ;
     while (*env) {
 	char *s = strchr(*env, '=');
-	rb_ary_push(ary, rb_str_taint(rb_str_new2(s+1)));
+	rb_ary_push(ary, rb_tainted_str_new2(s+1));
 	env++;
     }
     return ary;
@@ -1036,9 +1044,14 @@ env_each(hash)
 static VALUE
 env_delete_if()
 {
-    VALUE ary = env_keys();
-    VALUE *ptr = RARRAY(ary)->ptr;
-    int len = RARRAY(ary)->len; 
+    VALUE ary;
+    VALUE *ptr;
+    int len;
+
+    rb_secure(4);
+    ary = env_keys();
+    ptr = RARRAY(ary)->ptr;
+    len = RARRAY(ary)->len; 
 
     while (len--) {
 	VALUE val = rb_f_getenv(Qnil, *ptr);
@@ -1067,8 +1080,8 @@ env_to_a()
     env = environ;
     while (*env) {
 	char *s = strchr(*env, '=');
-	rb_ary_push(ary, rb_assoc_new(rb_str_taint(rb_str_new(*env, s-*env)),
-				   rb_str_taint(rb_str_new2(s+1))));
+	rb_ary_push(ary, rb_assoc_new(rb_tainted_str_new(*env, s-*env),
+				      rb_tainted_str_new2(s+1)));
 	env++;
     }
     return ary;
@@ -1200,7 +1213,8 @@ Init_Hash()
     rb_define_method(rb_cHash,"fetch", rb_hash_fetch, -1);
     rb_define_method(rb_cHash,"[]=", rb_hash_aset, 2);
     rb_define_method(rb_cHash,"store", rb_hash_aset, 2);
-    rb_define_method(rb_cHash,"default", rb_hash_default, 1);
+    rb_define_method(rb_cHash,"default", rb_hash_default, 0);
+    rb_define_method(rb_cHash,"default=", rb_hash_set_default, 1);
     rb_define_method(rb_cHash,"indexes", rb_hash_indexes, -1);
     rb_define_method(rb_cHash,"indices", rb_hash_indexes, -1);
     rb_define_method(rb_cHash,"length", rb_hash_length, 0);

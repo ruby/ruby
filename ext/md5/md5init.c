@@ -53,7 +53,7 @@ md5_clone(obj)
     MD5_CTX *md5, *md5_new;
 
     Data_Get_Struct(obj, MD5_CTX, md5);
-    obj = Data_Make_Struct(CLASS_OF(obj), MD5_CTX, 0, 0, md5_new);
+    obj = Data_Make_Struct(CLASS_OF(obj), MD5_CTX, 0, free, md5_new);
     *md5_new = *md5;
 
     return obj;
@@ -72,7 +72,7 @@ md5_new(argc, argv, class)
     rb_scan_args(argc, argv, "01", &arg);
     if (!NIL_P(arg)) Check_Type(arg, T_STRING);
 
-    obj = Data_Make_Struct(class, MD5_CTX, 0, 0, md5);
+    obj = Data_Make_Struct(class, MD5_CTX, 0, free, md5);
     MD5Init(md5);
     if (!NIL_P(arg)) {
 	md5_update(obj, arg);

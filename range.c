@@ -31,49 +31,52 @@ range_failed()
 }
 
 static VALUE
-range_s_new(klass, first, last)
-    VALUE klass, first, last;
+range_s_new(klass, beg, end)
+    VALUE klass, beg, end;
 {
     VALUE obj;
-    VALUE args[2];
 
-    args[0] = first; args[1] = last;
-    rb_rescue(range_check, (VALUE)args, range_failed, 0);
+    if (!FIXNUM_P(beg) || !FIXNUM_P(end)) {
+	VALUE args[2];
+
+	args[0] = beg; args[1] = end;
+	rb_rescue(range_check, (VALUE)args, range_failed, 0);
+    }
 
     obj = rb_obj_alloc(klass);
 
-    rb_ivar_set(obj, id_beg, first);
-    rb_ivar_set(obj, id_end, last);
+    rb_ivar_set(obj, id_beg, beg);
+    rb_ivar_set(obj, id_end, end);
     rb_obj_call_init(obj);
 
     return obj;
 }
 
 VALUE
-rb_range_new(first, last)
-    VALUE first, last;
+rb_range_new(beg, end)
+    VALUE beg, end;
 {
-    return range_s_new(rb_cRange, first, last);
+    return range_s_new(rb_cRange, beg, end);
 }
 
 static VALUE
 range_eqq(rng, obj)
     VALUE rng, obj;
 {
-    VALUE first, last;
+    VALUE beg, end;
 
-    first = rb_ivar_get(rng, id_beg);
-    last = rb_ivar_get(rng, id_end);
+    beg = rb_ivar_get(rng, id_beg);
+    end = rb_ivar_get(rng, id_end);
 
-    if (FIXNUM_P(first) && FIXNUM_P(obj) && FIXNUM_P(last)) {
-	if (FIX2INT(first) <= FIX2INT(obj) && FIX2INT(obj) <= FIX2INT(last)) {
+    if (FIXNUM_P(beg) && FIXNUM_P(obj) && FIXNUM_P(end)) {
+	if (FIX2INT(beg) <= FIX2INT(obj) && FIX2INT(obj) <= FIX2INT(end)) {
 	    return Qtrue;
 	}
 	return Qfalse;
     }
     else {
-	if (RTEST(rb_funcall(first, rb_intern("<="), 1, obj)) &&
-	    RTEST(rb_funcall(last, rb_intern(">="), 1, obj))) {
+	if (RTEST(rb_funcall(beg, rb_intern("<="), 1, obj)) &&
+	    RTEST(rb_funcall(end, rb_intern(">="), 1, obj))) {
 	    return Qtrue;
 	}
 	return Qfalse;
@@ -81,15 +84,15 @@ range_eqq(rng, obj)
 }
 
 struct upto_data {
-    VALUE first;
-    VALUE last;
+    VALUE beg;
+    VALUE end;
 };
 
 static VALUE
 range_upto(data)
     struct upto_data *data;
 {
-    return rb_funcall(data->first, id_upto, 1, data->last);
+    return rb_funcall(data->beg, id_upto, 1, data->end);
 }
 
 static VALUE
@@ -107,8 +110,8 @@ range_each(obj)
     else {
 	struct upto_data data;
 
-	data.first = b;
-	data.last = e;
+	data.beg = b;
+	data.end = e;
 
 	rb_iterate(range_upto, (VALUE)&data, rb_yield, 0);
     }
@@ -141,12 +144,12 @@ rb_range_beg_end(range, begp, endp)
     VALUE range;
     int *begp, *endp;
 {
-    VALUE first, last;
+    VALUE beg, end;
 
     if (!rb_obj_is_kind_of(range, rb_cRange)) return Qfalse;
 
-    first = rb_ivar_get(range, id_beg); *begp = NUM2INT(first);
-    last = rb_ivar_get(range, id_end);   *endp = NUM2INT(last);
+    beg = rb_ivar_get(range, id_beg); *begp = NUM2INT(beg);
+    end = rb_ivar_get(range, id_end);   *endp = NUM2INT(end);
     return Qtrue;
 }
 
@@ -182,19 +185,19 @@ static VALUE
 range_length(rng)
     VALUE rng;
 {
-    VALUE first, last;
+    VALUE beg, end;
     VALUE size;
 
-    first = rb_ivar_get(rng, id_beg);
-    last = rb_ivar_get(rng, id_end);
+    beg = rb_ivar_get(rng, id_beg);
+    end = rb_ivar_get(rng, id_end);
 
-    if (RTEST(rb_funcall(first, '>', 1, last))) {
+    if (RTEST(rb_funcall(beg, '>', 1, end))) {
 	return INT2FIX(0);
     }
-    if (!rb_obj_is_kind_of(first, rb_cNumeric)) {
+    if (!rb_obj_is_kind_of(beg, rb_cNumeric)) {
 	return rb_enum_length(rng);
     }
-    size = rb_funcall(last, '-', 1, first);
+    size = rb_funcall(end, '-', 1, beg);
     size = rb_funcall(size, '+', 1, INT2FIX(1));
 
     return size;
@@ -210,6 +213,8 @@ Init_Range()
     rb_define_method(rb_cRange, "each", range_each, 0);
     rb_define_method(rb_cRange, "first", range_first, 0);
     rb_define_method(rb_cRange, "last", range_last, 0);
+    rb_define_method(rb_cRange, "begin", range_first, 0);
+    rb_define_method(rb_cRange, "end", range_last, 0);
     rb_define_method(rb_cRange, "to_s", range_to_s, 0);
     rb_define_method(rb_cRange, "inspect", range_inspect, 0);
 
@@ -218,6 +223,6 @@ Init_Range()
 
     id_upto = rb_intern("upto");
     id_cmp = rb_intern("<=>");
-    id_beg = rb_intern("first");
-    id_end = rb_intern("last");
+    id_beg = rb_intern("begin");
+    id_end = rb_intern("end");
 }

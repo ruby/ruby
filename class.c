@@ -113,6 +113,7 @@ rb_define_class(name, super)
 
     id = rb_intern(name);
     klass = rb_define_class_id(id, super);
+
     st_add_direct(rb_class_tbl, id, klass);
 
     return klass;
@@ -540,7 +541,7 @@ rb_define_global_function(name, func, argc)
     VALUE (*func)();
     int argc;
 {
-    rb_define_private_method(rb_mKernel, name, func, argc);
+    rb_define_module_function(rb_mKernel, name, func, argc);
 }
 
 void

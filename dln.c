@@ -78,7 +78,7 @@ int eaccess();
 #endif
 
 #ifndef FUNCNAME_PATTERN
-# if defined(__hp9000s300) || defined(__NetBSD__) || defined(__BORLANDC__) || defined(__FreeBSD__) || defined(NeXT) || defined(__WATCOMC__)
+# if defined(__hp9000s300) || defined(__NetBSD__) || defined(__BORLANDC__) || (defined(__FreeBSD__) && __FreeBSD__ < 3) || defined(NeXT) || defined(__WATCOMC__)
 #  define FUNCNAME_PATTERN "_Init_%.200s"
 # else
 #  define FUNCNAME_PATTERN "Init_%.200s"

@@ -115,7 +115,7 @@ rb_file_reopen(argc, argv, file)
     char *mode;
     OpenFile *fptr;
 
-    rb_secure(2);
+    rb_secure(4);
     if (rb_scan_args(argc, argv, "11", &fname, &nmode) == 1) {
 	if (TYPE(fname) == T_FILE) { /* fname must be IO */
 	    return rb_io_reopen(file, fname);
@@ -238,7 +238,7 @@ rb_stat(file, st)
     if (TYPE(file) == T_FILE) {
 	OpenFile *fptr;
 
-	rb_secure(2);
+	rb_secure(4);
 	GetOpenFile(file, fptr);
 	return fstat(fileno(fptr->f), st);
     }
@@ -298,7 +298,7 @@ rb_file_lstat(obj)
     OpenFile *fptr;
     struct stat st;
 
-    rb_secure(2);
+    rb_secure(4);
     GetOpenFile(obj, fptr);
     if (lstat(fptr->path, &st) == -1) {
 	rb_sys_fail(fptr->path);
@@ -860,7 +860,7 @@ rb_file_chmod(obj, vmode)
     OpenFile *fptr;
     int mode;
 
-    rb_secure(2);
+    rb_secure(4);
     mode = NUM2INT(vmode);
 
     GetOpenFile(obj, fptr);
@@ -921,7 +921,7 @@ rb_file_chown(obj, owner, group)
 {
     OpenFile *fptr;
 
-    rb_secure(2);
+    rb_secure(4);
     GetOpenFile(obj, fptr);
 #if defined(DJGPP) || defined(__CYGWIN32__) || defined(NT) || defined(USE_CWGUSI)
     if (chown(fptr->path, NUM2INT(owner), NUM2INT(group)) == -1)
@@ -1062,7 +1062,7 @@ rb_file_s_readlink(obj, path)
     if ((cc = readlink(RSTRING(path)->ptr, buf, MAXPATHLEN)) < 0)
 	rb_sys_fail(RSTRING(path)->ptr);
 
-    return rb_str_new(buf, cc);
+    return rb_tainted_str_new(buf, cc);
 #else
     rb_notimplement();
 #endif
@@ -1109,7 +1109,7 @@ rb_file_s_umask(argc, argv)
 #else
     int omask = 0;
 
-    rb_secure(2);
+    rb_secure(4);
     if (argc == 0) {
 	omask = umask(0);
 	umask(omask);
@@ -1225,7 +1225,7 @@ rb_file_s_expand_path(argc, argv)
     if (p == buf || *p != '/') p++;
     *p = '\0';
 
-    return rb_str_taint(rb_str_new2(buf));
+    return rb_tainted_str_new2(buf);
 }
 
 static int
@@ -1277,7 +1277,7 @@ rb_file_s_basename(argc, argv)
 	f = rmext(p, ext);
 	if (f) return rb_str_new(p, f);
     }
-    return rb_str_taint(rb_str_new2(p));
+    return rb_tainted_str_new2(p);
 }
 
 static VALUE
@@ -1293,7 +1293,7 @@ rb_file_s_dirname(obj, fname)
     }
     if (p == name)
 	p++;
-    return rb_str_taint(rb_str_new(name, p - name));
+    return rb_tainted_str_new(name, p - name);
 }
 
 static VALUE
@@ -1354,7 +1354,7 @@ rb_file_truncate(obj, len)
 {
     OpenFile *fptr;
 
-    rb_secure(2);
+    rb_secure(4);
     GetOpenFile(obj, fptr);
     if (!(fptr->mode & FMODE_WRITABLE)) {
 	rb_raise(rb_eIOError, "not opened for writing");
@@ -1420,7 +1420,7 @@ rb_file_flock(obj, operation)
 #else
     OpenFile *fptr;
 
-    rb_secure(2);
+    rb_secure(4);
     GetOpenFile(obj, fptr);
 
     if (flock(fileno(fptr->f), NUM2INT(operation)) < 0) {

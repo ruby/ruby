@@ -338,8 +338,9 @@ void
 rb_trap_exit()
 {
 #ifndef MACOS_UNUSE_SIGNAL
-    if (trap_list[0])
+    if (trap_list[0]) {
 	rb_eval_cmd(trap_list[0], rb_ary_new3(1, INT2FIX(0)));
+    }
 #endif
 }
 

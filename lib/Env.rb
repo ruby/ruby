@@ -2,6 +2,7 @@
 #
 # Usage:
 #
+#  require 'Env'
 #  p $USER
 #  $USER = "matz"
 #  p ENV["USER"]

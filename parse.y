@@ -89,6 +89,7 @@ static void rb_backref_error();
 static NODE *match_gen();
 static void local_push();
 static void local_pop();
+static int  local_append();
 static int  local_cnt();
 static int  local_id();
 static ID  *local_tbl();
@@ -166,7 +167,7 @@ static void top_local_setup();
 %type <val>  literal numeric
 %type <node> compstmt stmts stmt expr arg primary command_call method_call
 %type <node> if_tail opt_else case_body cases rescue ensure
-%type <node> opt_call_args call_args ret_args args
+%type <node> opt_call_args call_args ret_args args when_args
 %type <node> aref_args opt_block_arg block_arg
 %type <node> mrhs opt_list superclass iterator var_ref
 %type <node> f_arglist f_args f_optarg f_opt f_block_arg opt_f_block_arg
@@ -561,10 +562,11 @@ reswords	: k__LINE__ | k__FILE__ | klBEGIN | klEND
 		| kTHEN | kTRUE | kUNDEF | kUNLESS_MOD | kUNTIL_MOD | kWHEN
 		| kWHILE_MOD | kYIELD
 
-arg		: variable '=' arg
+arg		: variable '=' {$$ = assignable($1, 0);} arg
 		    {
-			$$ = assignable($1, $3);
-		        fixpos($$, $3);
+			$$ = $<node>3;
+			$$->nd_value = $4;
+		        fixpos($$, $4);
 		    }
 		| primary '[' aref_args ']' '=' arg
 		    {
@@ -576,34 +578,32 @@ arg		: variable '=' arg
 			$$ = attrset($1, $3, $5);
 		        fixpos($$, $5);
 		    }
+		| primary '.' tCONSTANT '=' arg
+		    {
+			$$ = attrset($1, $3, $5);
+		        fixpos($$, $5);
+		    }
 		| backref '=' arg
 		    {
 			value_expr($3);
 		        rb_backref_error($1);
 			$$ = 0;
 		    }
-		| variable tOP_ASGN arg
+		| variable tOP_ASGN {$$ = assignable($1, 0);} arg
 		    {
-			if (is_local_id($1)) {
-			    if (local_id($1)||!dyna_in_block()) {
-				local_cnt($1);
-			    }
-			    else if (!rb_dvar_defined($1)) {
-				rb_dvar_asgn($1, Qtrue);
-			    }
-			}
 			if ($2 == tOROP) {
-			    $$ = NEW_OP_ASGN_OR(gettable($1),
-						assignable($1, $3));
+			    $<node>3->nd_value = $4;
+			    $$ = NEW_OP_ASGN_OR(gettable($1), $<node>3);
 			}
 			else if ($2 == tANDOP) {
-			    $$ = NEW_OP_ASGN_AND(gettable($1),
-		                                 assignable($1, $3));
+			    $<node>3->nd_value = $4;
+			    $$ = NEW_OP_ASGN_AND(gettable($1), $<node>3);
 			}
 			else {
-			    $$ = assignable($1,call_op(gettable($1),$2,1,$3));
+			    $$ = $<node>3;
+			    $$->nd_value = call_op(gettable($1), $2, 1, $4);
 			}
-			fixpos($$, $3);
+			fixpos($$, $4);
 		    }
 		| primary '[' aref_args ']' tOP_ASGN arg
 		    {
@@ -831,7 +831,7 @@ call_args	: command_call
 		| tSTAR arg opt_block_arg
 		    {
 			value_expr($2);
-			$$ = arg_blk_pass($2, $3);
+			$$ = arg_blk_pass(NEW_RESTARGS($2), $3);
 		    }
 		| block_arg
 
@@ -871,7 +871,8 @@ mrhs		: args
 		    {
 			if ($1 &&
 		            nd_type($1) == NODE_ARRAY &&
-		            $1->nd_next == 0) {
+		            $1->nd_next == 0)
+			{
 			    $$ = $1->nd_head;
 			}
 			else {
@@ -1061,14 +1062,19 @@ primary		: literal
 		| kBEGIN
 		  compstmt
 		  rescue
+		  opt_else
 		  ensure
 		  kEND
 		    {
-			if (!$3 && !$4)
+			if (!$3 && !$4 && !$5)
 			    $$ = NEW_BEGIN($2);
 			else {
-			    if ($3) $2 = NEW_RESCUE($2, $3);
-			    if ($4) $2 = NEW_ENSURE($2, $4);
+			    if ($3) $2 = NEW_RESCUE($2, $3, $4);
+			    else if ($4) {
+				rb_warn("else without rescue is useless");
+				$2 = block_append($2, $4);
+			    }
+			    if ($5) $2 = NEW_ENSURE($2, $5);
 			    $$ = $2;
 			}
 		        fixpos($$, $2);
@@ -1183,7 +1189,6 @@ then		: term
 
 do		: term
 		| kDO
-		| term kDO
 
 if_tail		: opt_else
 		| kELSIF expr then
@@ -1300,11 +1305,23 @@ method_call	: operation '(' opt_call_args ')'
 		    }
 
 
-case_body	: kWHEN args then
+case_body	: kWHEN when_args then
 		  compstmt
 		  cases
 		    {
 			$$ = NEW_WHEN($2, $4, $5);
+		    }
+
+when_args	: args
+		| args ',' tSTAR arg
+		    {
+			value_expr($4);
+			$$ = list_append($1, NEW_WHEN($4, 0, 0));
+		    }
+		| tSTAR arg
+		    {
+			value_expr($2);
+			$$ = NEW_LIST(NEW_WHEN($2, 0, 0));
 		    }
 
 cases		: opt_else
@@ -1576,6 +1593,7 @@ static NODE *rb_str_extend();
 
 #define LEAVE_BS 1
 
+static VALUE (*lex_gets)();	/* gets function */
 static VALUE lex_input;		/* non-nil if File */
 static VALUE lex_lastline;	/* gc protect */
 static char *lex_pbeg;
@@ -1638,7 +1656,7 @@ yycompile(f)
 
     ruby_eval_tree = 0;
     newline_seen = 0;
-    ruby_sourcefile = strdup(f);
+    ruby_sourcefile = f;
     rb_in_compile = 1;
     n = yyparse();
     rb_in_compile = 0;
@@ -1647,18 +1665,48 @@ yycompile(f)
     return 0;
 }
 
-NODE*
-rb_compile_string(f, s, len)
-    char *f, *s;
-    int len;
+static int lex_gets_ptr;
+
+static VALUE
+lex_get_str(s)
+    VALUE s;
 {
-    lex_pbeg = lex_p = s;
-    lex_pend = s + len;
-    lex_input = 0;
+    char *beg, *end, *pend;
+
+    beg = RSTRING(s)->ptr;
+    if (lex_gets_ptr) {
+	beg += lex_gets_ptr;
+    }
+    pend = RSTRING(s)->ptr + RSTRING(s)->len;
+    end = beg;
+    while (end < pend) {
+	if (*end++ == '\n') break;
+    }
+    lex_gets_ptr = end - RSTRING(s)->ptr;
+    return rb_str_new(beg, end - beg);
+}
+
+NODE*
+rb_compile_string(f, s)
+    char *f;
+    VALUE s;
+{
+    lex_gets = lex_get_str;
+    lex_gets_ptr = 0;
+    lex_input = s;
+    lex_pbeg = lex_p = lex_pend = 0;
     if (!ruby_sourcefile || strcmp(f, ruby_sourcefile))	/* not in eval() */
 	ruby_sourceline = 1;
 
     return yycompile(f);
+}
+
+NODE*
+rb_compile_cstr(f, s, len)
+    char *f, *s;
+    int len;
+{
+    return rb_compile_string(f, rb_str_new(s, len));
 }
 
 NODE*
@@ -1667,11 +1715,12 @@ rb_compile_file(f, file, start)
     VALUE file;
     int start;
 {
+    lex_gets = rb_io_gets;
     lex_input = file;
     lex_pbeg = lex_p = lex_pend = 0;
     ruby_sourceline = start;
 
-    return yycompile(f);
+    return yycompile(strdup(f));
 }
 
 static int
@@ -1681,7 +1730,7 @@ nextc()
 
     if (lex_p == lex_pend) {
 	if (lex_input) {
-	    VALUE v = rb_io_gets(lex_input);
+	    VALUE v = (*lex_gets)(lex_input);
 
 	    if (NIL_P(v)) return -1;
 	    if (heredoc_end > 0) {
@@ -1691,7 +1740,7 @@ nextc()
 	    while (RSTRING(v)->len >= 2 &&
 		   RSTRING(v)->ptr[RSTRING(v)->len-1] == '\n' &&
 		   RSTRING(v)->ptr[RSTRING(v)->len-2] == '\\') {
-		VALUE v2 = rb_io_gets(lex_input);
+		VALUE v2 = (*lex_gets)(lex_input);
 
 		if (!NIL_P(v2)) {
 		    rb_str_cat(v, RSTRING(v2)->ptr, RSTRING(v2)->len);
@@ -1888,6 +1937,9 @@ parse_regx(term, paren)
 	}
 
 	switch (c) {
+	  case '\n':
+	    ruby_sourceline++;
+	    break;
 	  case '[':
 	    in_brack = 1;
 	    break;
@@ -2026,6 +2078,12 @@ parse_string(func, term, paren)
     if (func == '\'') {
 	return parse_qstring(term, paren);
     }
+    if (func == 0) {		/* read 1 line for heredoc */
+	ruby_sourceline++;
+				/* -1 for chomp */
+	yylval.val = rb_str_new(lex_pbeg, lex_pend - lex_pbeg - 1);
+	return tSTRING;
+    }
     strstart = ruby_sourceline;
     newtok();
     while ((c = nextc()) != term || nest > 0) {
@@ -2063,7 +2121,10 @@ parse_string(func, term, paren)
 	    continue;
 	}
 	if (c == paren) nest++;
-	if (c == term) nest--;
+	if (c == term) {
+	    nest--;
+	    if (nest == 0) break;
+	}
 	tokadd(c);
     }
 
@@ -2134,7 +2195,10 @@ parse_qstring(term, paren)
 	    }
 	}
 	if (c == paren) nest++;
-	if (c == term) nest--;
+	if (c == term) {
+	    nest--;
+	    if (nest == 0) break;
+	}
 	tokadd(c);
     }
 
@@ -2175,14 +2239,15 @@ here_document(term)
 	while ((c = nextc()) != term) {
 	    tokadd(c);
 	}
+	if (term == '\'') term = 0;
 	break;
 
       default:
 	c = term;
 	term = '"';
 	if (!is_identchar(c)) {
-	    rb_compile_error("illegal here document");
-	    return 0;
+	    rb_warn("Use of bare << to mean <<\"\" is deprecated");
+	    break;
 	}
 	while (is_identchar(c)) {
 	    tokadd(c);
@@ -2200,10 +2265,11 @@ here_document(term)
 
     str = rb_str_new(0,0);
     for (;;) {
-	line = rb_io_gets(lex_input);
+	line = (*lex_gets)(lex_input);
 	if (NIL_P(line)) {
 	  error:
-	    rb_compile_error("unterminated string meets end of file");
+	    ruby_sourceline = linesave;
+	    rb_compile_error("can't find string \"%s\" anywhere before EOF", eos);
 	    free(eos);
 	    return 0;
 	}
@@ -2253,6 +2319,7 @@ here_document(term)
 	yylval.node = list;
     }
     switch (term) {
+      case '\0':
       case '\'':
       case '"':
 	if (list) return tDSTRING;
@@ -2420,9 +2487,6 @@ retry:
 	    (lex_state != EXPR_ARG || space_seen)) {
  	    int c2 = nextc();
 	    if (!ISSPACE(c2) && (strchr("\"'`", c2) || is_identchar(c2))) {
-		if (!lex_input) {
-		    rb_raise(rb_eArgError, "here document not available");
-		}
 		return here_document(c2);
 	    }
 	    pushback(c2);
@@ -2473,7 +2537,6 @@ retry:
 
       case '?':
 	if (lex_state == EXPR_END) {
-	    rb_warning("a?b:c is undocumented feature ^^;;;");
 	    lex_state = EXPR_BEG;
 	    return '?';
 	}
@@ -2482,7 +2545,6 @@ retry:
 	    pushback(c);
 	    arg_ambiguous();
 	    lex_state = EXPR_BEG;
-	    rb_warning("a?b:c is undocumented feature ^^;;;");
 	    return '?';
 	}
 	if (c == '\\') {
@@ -3508,7 +3570,7 @@ arg_add(node1, node2)
     NODE *node1;
     NODE *node2;
 {
-    return call_op(node1, rb_intern("concat"), 1, node2);
+    return NEW_ARGSCAT(node1, node2);
 }
 
 static NODE *
@@ -3668,6 +3730,7 @@ cond0(node)
 	node->nd_end = cond2(node->nd_end);
 	if (type == NODE_DOT2) nd_set_type(node,NODE_FLIP2);
 	else if (type == NODE_DOT3) nd_set_type(node, NODE_FLIP3);
+	node->nd_cnt = local_append(0);
 	return node;
 
       case NODE_LIT:
@@ -3802,17 +3865,9 @@ local_tbl()
 }
 
 static int
-local_cnt(id)
+local_append(id)
     ID id;
 {
-    int cnt, max;
-
-    if (id == 0) return lvtbl->cnt;
-
-    for (cnt=1, max=lvtbl->cnt+1; cnt<max ;cnt++) {
-	if (lvtbl->tbl[cnt] == id) return cnt-1;
-    }
-
     if (lvtbl->tbl == 0) {
 	lvtbl->tbl = ALLOC_N(ID, 4);
 	lvtbl->tbl[0] = 0;
@@ -3828,6 +3883,20 @@ local_cnt(id)
 
     lvtbl->tbl[lvtbl->cnt+1] = id;
     return lvtbl->cnt++;
+}
+
+static int
+local_cnt(id)
+    ID id;
+{
+    int cnt, max;
+
+    if (id == 0) return lvtbl->cnt;
+
+    for (cnt=1, max=lvtbl->cnt+1; cnt<max ;cnt++) {
+	if (lvtbl->tbl[cnt] == id) return cnt-1;
+    }
+    return local_append(id);
 }
 
 static int
@@ -4011,8 +4080,8 @@ static st_table *sym_rev_tbl;
 void
 Init_sym()
 {
-    sym_tbl = st_init_strtable_with_size(900);
-    sym_rev_tbl = st_init_numtable_with_size(900);
+    sym_tbl = st_init_strtable_with_size(200);
+    sym_rev_tbl = st_init_numtable_with_size(200);
     rb_global_variable((VALUE*)&cur_cref);
     rb_global_variable((VALUE*)&lex_lastline);
 }
@@ -4057,8 +4126,12 @@ rb_intern(name)
 
 	    strncpy(buf, name, last);
 	    buf[last] = '\0';
-	    id = rb_id_attrset(rb_intern(buf));
-	    goto id_regist;
+	    id = rb_intern(buf);
+	    if (id > LAST_TOKEN) {
+		id = rb_id_attrset(id);
+		goto id_regist;
+	    }
+	    id |= ID_ATTRSET;
 	}
 	else if (ISUPPER(name[0])) {
 	    id = ID_CONST;

@@ -21,6 +21,8 @@ class Mutex
   def initialize
     @waiting = []
     @locked = false;
+    @waiting.taint		# enable tainted comunication
+    self.taint
   end
 
   def locked?
@@ -72,6 +74,8 @@ class ConditionVariable
   def initialize
     @waiters = []
     @waiters_mutex = Mutex.new
+    @waiters.taint		# enable tainted comunication
+    self.taint
   end
   
   def wait(mutex)
@@ -104,6 +108,9 @@ class Queue
   def initialize
     @que = []
     @waiting = []
+    @que.taint		# enable tainted comunication
+    @waiting.taint
+    self.taint
   end
 
   def push(obj)
@@ -152,6 +159,7 @@ class SizedQueue<Queue
   def initialize(max)
     @max = max
     @queue_wait = []
+    @queue_wait.taint		# enable tainted comunication
     super()
   end
 

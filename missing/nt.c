@@ -243,7 +243,7 @@ int SafeFree(char **vec, int vecc)
 
 	char *p;
 
-	p = (char *)(vec - (vecc * sizeof (char *) + 1));
+	p = (char *)vec;
 	free(p);
 
 	return 0;

@@ -3,7 +3,6 @@
   marshal.c -
 
   $Author$
-  $Revision$
   $Date$
   created at: Thu Apr 27 16:30:01 JST 1995
 
@@ -581,7 +580,7 @@ r_string(arg)
     int len;
 
     r_bytes2(buf, len, arg);
-    return rb_str_taint(rb_str_new(buf, len));
+    return rb_str_new(buf, len);
 }
 
 static VALUE
@@ -589,6 +588,7 @@ r_regist(v, arg)
     VALUE v;
     struct load_arg *arg;
 {
+    rb_obj_taint(v);
     if (arg->proc) {
 	rb_funcall(arg->proc, rb_intern("call"), 1, v);
     }
@@ -862,8 +862,8 @@ Init_marshal()
 {
     VALUE rb_mMarshal = rb_define_module("Marshal");
 
-    s_dump = rb_intern("_dump_to");
-    s_load = rb_intern("_load_from");
+    s_dump = rb_intern("_dump");
+    s_load = rb_intern("_load");
     rb_define_module_function(rb_mMarshal, "dump", marshal_dump, -1);
     rb_define_module_function(rb_mMarshal, "load", marshal_load, -1);
     rb_define_module_function(rb_mMarshal, "restore", marshal_load, 1);

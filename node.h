@@ -78,6 +78,8 @@ enum node_type {
     NODE_DREGX,
     NODE_DREGX_ONCE,
     NODE_ARGS,
+    NODE_ARGSCAT,
+    NODE_RESTARGS,
     NODE_BLOCK_ARG,
     NODE_BLOCK_PASS,
     NODE_DEFN,
@@ -141,9 +143,11 @@ typedef struct RNode {
 #define nd_set_type(n,t) \
     RNODE(n)->flags=((RNODE(n)->flags&~FL_UMASK)|(((t)<<FL_USHIFT)&FL_UMASK))
 
-#define nd_line(n) (((RNODE(n))->flags>>18)&0x3fff)
+#define NODE_LSHIFT (FL_USHIFT+8)
+#define NODE_LMASK  ((1<<(sizeof(NODE*)*CHAR_BIT-NODE_LSHIFT))-1)
+#define nd_line(n) (((RNODE(n))->flags>>NODE_LSHIFT)&NODE_LMASK)
 #define nd_set_line(n,l) \
-    RNODE(n)->flags=((RNODE(n)->flags&~(-1<<18))|(((l)&0x7fff)<<18))
+    RNODE(n)->flags=((RNODE(n)->flags&~(-1<<NODE_LSHIFT))|(((l)&NODE_LMASK)<<NODE_LSHIFT))
 
 #define nd_head  u1.node
 #define nd_alen  u2.argc
@@ -191,8 +195,8 @@ typedef struct RNode {
 #define nd_noex  u1.id
 #define nd_defn  u3.node
 
+#define nd_old   u1.id
 #define nd_new   u2.id
-#define nd_old   u3.id
 
 #define nd_cfnc  u1.cfunc
 #define nd_argc  u2.argc
@@ -206,12 +210,11 @@ typedef struct RNode {
 #define nd_beg   u1.node
 #define nd_end   u2.node
 #define nd_state u3.state
-#define nd_rval  u3.value
+#define nd_rval  u2.value
 
 #define nd_nth   u2.argc
 
 #define nd_tag   u1.id
-#define nd_tlev  u3.cnt
 #define nd_tval  u2.value
 
 #define NEW_METHOD(n,x) rb_node_newnode(NODE_METHOD,x,n,0)
@@ -220,11 +223,19 @@ typedef struct RNode {
 #define NEW_DEFS(r,i,a,d) rb_node_newnode(NODE_DEFS,r,i,NEW_RFUNC(a,d))
 #define NEW_CFUNC(f,c) rb_node_newnode(NODE_CFUNC,f,c,0)
 #define NEW_RFUNC(b1,b2) NEW_SCOPE(block_append(b1,b2))
-#define NEW_SCOPE(b) rb_node_newnode(NODE_SCOPE,local_tbl(),(b),cur_cref)
+#define NEW_SCOPE(b) rb_node_newnode(NODE_SCOPE,local_tbl(),cur_cref,(b))
 #define NEW_BLOCK(a) rb_node_newnode(NODE_BLOCK,a,0,0)
+#ifdef NOBLOCK_RECUR
+#define NEW_IF(c,t,e) block_append(c,rb_node_newnode(NODE_IF,0,t,e))
+#else
 #define NEW_IF(c,t,e) rb_node_newnode(NODE_IF,c,t,e)
-#define NEW_UNLESS(c,t,e) rb_node_newnode(NODE_IF,c,e,t)
+#endif
+#define NEW_UNLESS(c,t,e) NEW_IF(c,e,t)
+#ifdef NOBLOCK_RECUR
+#define NEW_CASE(h,b) block_append(h,rb_node_newnode(NODE_CASE,0,b,0))
+#else
 #define NEW_CASE(h,b) rb_node_newnode(NODE_CASE,h,b,0)
+#endif
 #define NEW_WHEN(c,t,e) rb_node_newnode(NODE_WHEN,c,t,e)
 #define NEW_OPT_N(b) rb_node_newnode(NODE_OPT_N,0,b,0)
 #define NEW_WHILE(c,b,n) rb_node_newnode(NODE_WHILE,c,b,n)
@@ -236,7 +247,7 @@ typedef struct RNode {
 #define NEW_REDO() rb_node_newnode(NODE_REDO,0,0,0)
 #define NEW_RETRY() rb_node_newnode(NODE_RETRY,0,0,0)
 #define NEW_BEGIN(b) rb_node_newnode(NODE_BEGIN,0,b,0)
-#define NEW_RESCUE(b,res) rb_node_newnode(NODE_RESCUE,b,res,0)
+#define NEW_RESCUE(b,res,e) rb_node_newnode(NODE_RESCUE,b,res,e)
 #define NEW_RESBODY(a,ex,n) rb_node_newnode(NODE_RESBODY,n,ex,a)
 #define NEW_ENSURE(b,en) rb_node_newnode(NODE_ENSURE,b,0,en)
 #define NEW_RETURN(s) rb_node_newnode(NODE_RETURN,s,0,0)
@@ -274,18 +285,24 @@ typedef struct RNode {
 #define NEW_XSTR(s) rb_node_newnode(NODE_XSTR,s,0,0)
 #define NEW_DXSTR(s) rb_node_newnode(NODE_DXSTR,s,0,0)
 #define NEW_EVSTR(s,l) rb_node_newnode(NODE_EVSTR,rb_str_new(s,l),0,0)
+#ifdef NOBLOCK_RECUR_incomplete
+#define NEW_CALL(r,m,a) block_append(r,rb_node_newnode(NODE_CALL,0,m,a))
+#else
 #define NEW_CALL(r,m,a) rb_node_newnode(NODE_CALL,r,m,a)
+#endif
 #define NEW_FCALL(m,a) rb_node_newnode(NODE_FCALL,0,m,a)
 #define NEW_VCALL(m) rb_node_newnode(NODE_VCALL,0,m,0)
 #define NEW_SUPER(a) rb_node_newnode(NODE_SUPER,0,0,a)
 #define NEW_ZSUPER() rb_node_newnode(NODE_ZSUPER,0,0,0)
 #define NEW_ARGS(f,o,r) rb_node_newnode(NODE_ARGS,o,r,f)
+#define NEW_ARGSCAT(a,b) rb_node_newnode(NODE_ARGSCAT,a,b,0)
+#define NEW_RESTARGS(a) rb_node_newnode(NODE_RESTARGS,a,0,0)
 #define NEW_BLOCK_ARG(v) rb_node_newnode(NODE_BLOCK_ARG,v,0,local_cnt(v))
 #define NEW_BLOCK_PASS(b) rb_node_newnode(NODE_BLOCK_PASS,0,b,0)
-#define NEW_ALIAS(n,o) rb_node_newnode(NODE_ALIAS,0,n,o)
-#define NEW_VALIAS(n,o) rb_node_newnode(NODE_VALIAS,0,n,o)
+#define NEW_ALIAS(n,o) rb_node_newnode(NODE_ALIAS,o,n,0)
+#define NEW_VALIAS(n,o) rb_node_newnode(NODE_VALIAS,o,n,0)
 #define NEW_UNDEF(i) rb_node_newnode(NODE_UNDEF,0,i,0)
-#define NEW_CLASS(n,b,s) rb_node_newnode(NODE_CLASS,n,NEW_CBODY(b),s)
+#define NEW_CLASS(n,b,s) rb_node_newnode(NODE_CLASS,n,NEW_CBODY(b),(s))
 #define NEW_SCLASS(r,b) rb_node_newnode(NODE_SCLASS,r,NEW_CBODY(b),0)
 #define NEW_MODULE(n,b) rb_node_newnode(NODE_MODULE,n,NEW_CBODY(b),0)
 #define NEW_COLON2(c,i) rb_node_newnode(NODE_COLON2,c,i,0)
@@ -314,7 +331,8 @@ VALUE rb_method_booundp();
 #define NOEX_PRIVATE   2
 #define NOEX_PROTECTED 4 
 
-NODE *rb_compile_string _((char *, char *, int));
+NODE *rb_compile_cstr _((char *, char *, int));
+NODE *rb_compile_string _((char *, VALUE));
 NODE *rb_compile_file _((char *, VALUE, int));
 
 void rb_add_method _((VALUE, ID, NODE *, int));

@@ -15,7 +15,7 @@ else
 end
 
 if make then
-  for f in ["isendwin", "ungetch", "beep"]
+  for f in ["isendwin", "ungetch", "beep", "doupdate", "flash"]
     have_func(f)
   end
   create_makefile("curses")

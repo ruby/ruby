@@ -6,14 +6,6 @@
 
 #define ST_INCLUDED
 
-typedef struct st_table_entry st_table_entry;
-
-struct st_table_entry {
-    char *key;
-    char *record;
-    st_table_entry *next;
-};
-
 typedef struct st_table st_table;
 
 struct st_hash_type {
@@ -25,10 +17,10 @@ struct st_table {
     struct st_hash_type *type;
     int num_bins;
     int num_entries;
-    st_table_entry **bins;
+    struct st_table_entry **bins;
 };
 
-#define st_is_member(table,key) st_lookup(table,key,(char **) 0)
+#define st_is_member(table,key) st_lookup(table,key,(char **)0)
 
 enum st_retval {ST_CONTINUE, ST_STOP, ST_DELETE};
 
@@ -38,8 +30,8 @@ st_table *st_init_numtable();
 st_table *st_init_numtable_with_size();
 st_table *st_init_strtable();
 st_table *st_init_strtable_with_size();
-int st_delete(), st_delete_safe(), st_insert();
-int st_lookup(), st_find_or_add();
+int st_delete(), st_delete_safe();
+int st_insert(), st_lookup();
 void st_foreach(), st_add_direct(), st_free_table();
 st_table *st_copy();
 
