@@ -186,6 +186,14 @@ demonstration.  If you wish, you can edit the code and click the \
 "Rerun Demo" button in the code window to reinvoke the demonstration \
 with the modified code.
 
+Some demo scripts require the recent version of Tk library \
+(e.g. Tk8.4 or later) \
+If your Tk library linked to Ruby doesn't support the functions \
+required by the demo script, the demo doesn't work. \
+In such a case, please re-compile tcltklib with the later Tk library \
+which supports the required functions.
+
+
 EOT
 
 txt.insert('end', "Labels, buttons, checkbuttons, and radiobuttons.\n", tag_title)
