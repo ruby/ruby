@@ -84,35 +84,35 @@ enum map_part {
 };
 
 struct _syck_node {
-    // Symbol table ID
+    /* Symbol table ID */
     SYMID id;
-    // Underlying kind
+    /* Underlying kind */
     enum syck_kind_tag kind;
-    // Fully qualified tag-uri for type
+    /* Fully qualified tag-uri for type */
     char *type_id;
-    // Anchor name
+    /* Anchor name */
     char *anchor;
     union {
-        // Storage for map data
+        /* Storage for map data */
         struct SyckMap {
             SYMID *keys;
             SYMID *values;
             long capa;
             long idx;
         } *pairs;
-        // Storage for sequence data
+        /* Storage for sequence data */
         struct SyckSeq {
             SYMID *items;
             long capa;
             long idx;
         } *list;
-        // Storage for string data
+        /* Storage for string data */
         struct SyckStr {
             char *ptr;
             long len;
         } *str;
     } data;
-    // Shortcut node
+    /* Shortcut node */
     void *shortcut;
 };
 
@@ -143,29 +143,29 @@ enum syck_level_status {
 };
 
 struct _syck_parser {
-    // Root node
+    /* Root node */
     SYMID root, root_on_error;
-    // Implicit typing flag
+    /* Implicit typing flag */
     int implicit_typing, taguri_expansion;
-    // Scripting language function to handle nodes
+    /* Scripting language function to handle nodes */
     SyckNodeHandler handler;
-    // Error handler
+    /* Error handler */
     SyckErrorHandler error_handler;
-    // InvalidAnchor handler
+    /* InvalidAnchor handler */
     SyckBadAnchorHandler bad_anchor_handler;
-    // IO type
+    /* IO type */
     enum syck_io_type io_type;
-    // Custom buffer size
+    /* Custom buffer size */
     size_t bufsize;
-    // Buffer pointers
+    /* Buffer pointers */
     char *buffer, *linectptr, *lineptr, *toktmp, *token, *cursor, *marker, *limit;
-    // Line counter
+    /* Line counter */
     int linect;
-    // Last token from yylex()
+    /* Last token from yylex() */
     int last_token;
-    // Force a token upon next call to yylex()
+    /* Force a token upon next call to yylex() */
     int force_token;
-    // EOF flag
+    /* EOF flag */
     int eof;
     union {
         struct _syck_file {
@@ -177,11 +177,11 @@ struct _syck_parser {
             SyckIoStrRead read;
         } *str;
     } io;
-    // Symbol table for anchors
+    /* Symbol table for anchors */
     st_table *anchors, *bad_anchors;
-    // Optional symbol table for SYMIDs
+    /* Optional symbol table for SYMIDs */
     st_table *syms;
-    // Levels of indentation
+    /* Levels of indentation */
     struct _syck_level {
         int spaces;
         char *domain;

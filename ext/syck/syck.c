@@ -85,7 +85,7 @@ syck_io_str_read( char *buf, SyckIoStr *str, long max_size, long skip )
     }
     else
     {
-        // Use exact string length
+        /* Use exact string length */
         while ( str->ptr < str->end ) {
             if (*(str->ptr++) == '\n') break;
         }
@@ -210,18 +210,18 @@ syck_st_free_nodes( char *key, SyckNode *n, char *arg )
 void
 syck_st_free( SyckParser *p )
 {
-    //
-    // Free the adhoc symbol table
-    // 
+    /*
+     * Free the adhoc symbol table
+     */ 
     if ( p->syms != NULL )
     {
         st_free_table( p->syms );
         p->syms = NULL;
     }
 
-    //
-    // Free the anchor tables
-    //
+    /*
+     * Free the anchor tables
+     */
     if ( p->anchors != NULL )
     {
         st_foreach( p->anchors, syck_st_free_nodes, 0 );
@@ -243,9 +243,9 @@ syck_free_parser( SyckParser *p )
     char *key;
     SyckNode *node;
 
-    //
-    // Free tables, levels
-    //
+    /*
+     * Free tables, levels
+     */
     syck_st_free( p );
     syck_parser_reset_levels( p );
     S_FREE( p->levels[0].domain );
@@ -349,7 +349,7 @@ syck_parser_pop_level( SyckParser *p )
 {
     ASSERT( p != NULL );
 
-    // The root level should never be popped
+    /* The root level should never be popped */
     if ( p->lvl_idx <= 1 ) return;
 
     p->lvl_idx -= 1;

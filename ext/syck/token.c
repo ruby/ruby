@@ -448,12 +448,12 @@ yy33:	yyaccept = 0;
 	goto yy86;
 yy34:
 #line 319
-	{   // Isolate spaces
+	{   /* Isolate spaces */
                         int indt_len;
                         GOBBLE_UP_INDENT( indt_len, YYTOKEN );
                         lvl = CURRENT_LEVEL();
 
-                        // Check for open indent
+                        /* Check for open indent */
                         ENSURE_IEND(lvl, indt_len);
                         ENSURE_IOPEN(lvl, indt_len, 0);
                         if ( indt_len == -1 )
@@ -878,11 +878,11 @@ yy74:
 	{   ENSURE_IOPEN(lvl, 0, 1);
                         yylval->name = syck_strndup( YYTOKEN + 1, YYCURSOR - YYTOKEN - 1 );
 
-                        //
-                        // Remove previous anchors of the same name.  Since the parser will likely
-                        // construct deeper nodes first, we want those nodes to be placed in the
-                        // queue for matching at a higher level of indentation.
-                        //
+                        /*
+                         * Remove previous anchors of the same name.  Since the parser will likely
+                         * construct deeper nodes first, we want those nodes to be placed in the
+                         * queue for matching at a higher level of indentation.
+                         */
                         syck_hdlr_remove_anchor(parser, yylval->name);
                         return ANCHOR;
                     }
@@ -1551,7 +1551,7 @@ yy137:
                         }
                         else if ( indt_len < lvl->spaces )
                         {
-                            // Error!
+                            /* Error! */
                         }
 
                         while ( YYTOKTMP < YYCURSOR )
@@ -1685,7 +1685,7 @@ yy153:
                         }
                         else if ( indt_len < lvl->spaces )
                         {
-                            // Error!
+                            /* Error! */
                         }
 
                         if ( keep_nl == 1 )
@@ -1909,9 +1909,9 @@ yy180:
 
                         lvl = CURRENT_LEVEL();
 
-                        //
-                        // URL Prefixing
-                        //
+                        /*
+                         * URL Prefixing
+                         */
                         if ( *(YYTOKEN + 1) == '^' )
                         {
                             yylval->name = S_ALLOC_N( char, ( YYCURSOR - YYTOKEN ) + strlen( lvl->domain ) );
@@ -2054,10 +2054,10 @@ yy191:
                             RETURN_BLOCK();
                         }
 
-                        //
-                        // Fold only in the event of two lines being on the leftmost
-                        // indentation.
-                        //
+                        /*
+                         * Fold only in the event of two lines being on the leftmost
+                         * indentation.
+                         */
                         if ( blockType == BLOCK_FOLD && lastIndent == 0 && ( indt_len - lvl->spaces ) == 0 )
                         {
                             fold_nl = 1;
