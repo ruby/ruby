@@ -193,7 +193,7 @@ end
 
 class TestDRbReusePort < TestDRbAry
   def setup
-    sleep 1
+    sleep 1.2
     @ext = DRbService.manager.service('ut_port.rb')
     @there = @ext.front
   end
@@ -201,7 +201,6 @@ end
 
 class TestDRbSafe1 < TestDRbAry
   def setup
-    sleep 1
     @ext = DRbService.manager.service('ut_safe1.rb')
     @there = @ext.front
   end
@@ -210,7 +209,6 @@ end
 class TestDRbEval < Test::Unit::TestCase
   def setup
     super
-    sleep 1
     @ext = DRbService.manager.service('ut_eval.rb')
     @there = @ext.front
   end
@@ -242,7 +240,6 @@ end
 
 class TestDRbLarge < Test::Unit::TestCase
   def setup
-    sleep 1
     @ext = DRbService.manager.service('ut_large.rb')
     @there = @ext.front
   end

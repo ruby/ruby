@@ -136,8 +136,8 @@ module DRb
       uri = 'drbssl://:0' unless uri
       host, port, opt = parse_uri(uri)
       if host.size == 0
-	soc = TCPServer.open(port)
-	host = Socket.gethostname
+        host = getservername
+        soc = open_server_inaddr_any(host, port)
       else
 	soc = TCPServer.open(host, port)
       end

@@ -815,14 +815,40 @@ module DRb
       self.new(uri, soc, config)
     end
 
+    def self.getservername
+      host = Socket::gethostname
+      begin
+        Socket::gethostbyname(host)[0]
+      rescue
+        host
+      end
+    end
+
+    def self.open_server_inaddr_any(host, port)
+      infos = Socket::getaddrinfo(host, nil, 
+                                  Socket::AF_UNSPEC,
+                                  Socket::SOCK_STREAM, 
+                                  0,
+                                  Socket::AI_PASSIVE)
+      family = infos.collect { |af, *_| af }.uniq
+      case family
+      when ['AF_INET']
+        return TCPServer.open('0.0.0.0', port)
+      when ['AF_INET6']
+        return TCPServer.open('::', port)
+      else
+        return TCPServer.open(port)
+      end
+    end
+
     # Open a server listening for connections at +uri+ using 
     # configuration +config+.
     def self.open_server(uri, config)
       uri = 'druby://:0' unless uri
       host, port, opt = parse_uri(uri)
       if host.size == 0
-	soc = TCPServer.open(port)
-	host = Socket.gethostname
+        host = getservername
+        soc = open_server_inaddr_any(host, port)
       else
 	soc = TCPServer.open(host, port)
       end

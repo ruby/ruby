@@ -1,3 +1,11 @@
+Thu Dec 16 23:25:25 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/drb.rb, lib/drb/ssl.rb: backported from CVS HEAD.
+	  [druby-ja:101]
+
+	* test/drb/test_drb.rb: adjust and reduce sleep (backported from 
+	  CVS HEAD.)
+
 Thu Dec 16 18:44:58 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httpserver.rb (WEBrick::HTTPServer#run): should wait
