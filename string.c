@@ -141,7 +141,7 @@ rb_str_to_str(str)
 
 VALUE
 rb_string_value(ptr)
-    VALUE *ptr;
+    volatile VALUE *ptr;
 {
     return *ptr = rb_str_to_str(*ptr);
 }

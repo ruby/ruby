@@ -186,7 +186,7 @@ void rb_check_type _((VALUE,int));
 #define Check_Type(v,t) rb_check_type((VALUE)(v),t)
 
 VALUE rb_str_to_str _((VALUE));
-VALUE rb_string_value _((VALUE*));
+VALUE rb_string_value _((volatile VALUE*));
 
 #define StringValue(v) if (TYPE(v) != T_STRING) rb_string_value(&(v))
 void rb_check_safe_str _((VALUE));
