@@ -1,3 +1,10 @@
+Wed Mar  9 20:25:58 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_start_ssl, ossl_ssl_write): call
+	  rb_sys_fail if errno isn't 0. [ruby-dev:25831]
+
+	* ext/openssl/lib/openssl/cipher.rb: fix typo. [ruby-dev:24285]
+
 Wed Mar  9 15:46:35 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/server.rb (WEBrick::GenericServer#start): should

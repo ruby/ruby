@@ -462,7 +462,7 @@ ossl_start_ssl(VALUE self, int (*func)())
             rb_io_wait_readable(fileno(fptr->f));
             continue;
 	case SSL_ERROR_SYSCALL:
-	    rb_sys_fail(0);
+	    if (errno) rb_sys_fail(0);
 	default:
 	    ossl_raise(eSSLError, NULL);
 	}
@@ -567,7 +567,7 @@ ossl_ssl_write(VALUE self, VALUE str)
                 rb_io_wait_readable(fileno(fptr->f));
                 continue;
 	    case SSL_ERROR_SYSCALL:
-		rb_sys_fail(0);
+		if (errno) rb_sys_fail(0);
 	    default:
 		ossl_raise(eSSLError, "SSL_write:");
 	    }
