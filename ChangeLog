@@ -1,3 +1,10 @@
+Thu Jan  6 19:59:03 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* win32/win32.c (rb_w32_close): didn't close socket handle.
+
+	* win32/win32.c (rb_w32_open_osfhandle): bcc32's _open_osfhandle
+	  never set EMFILE.
+
 Thu Jan  6 17:22:41 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* random.c (random_seed): O_NONBLOCK isn't defined on some

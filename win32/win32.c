@@ -88,7 +88,7 @@ static struct ChildRecord *CreateChild(const char *, const char *, SECURITY_ATTR
 static int has_redirection(const char *);
 static void StartSockets(void);
 static DWORD wait_events(HANDLE event, DWORD timeout);
-#if !defined(__BORLANDC__) && !defined(_WIN32_WCE)
+#if !defined(_WIN32_WCE)
 static int rb_w32_open_osfhandle(long osfhandle, int flags);
 #else
 #define rb_w32_open_osfhandle(osfhandle, flags) _open_osfhandle(osfhandle, flags)
@@ -1650,6 +1650,19 @@ rb_w32_open_osfhandle(long osfhandle, int flags)
 #define _set_osfhnd(fh, osfh) (void)((fh), (osfh))
 #define _set_osflags(fh, flags) (void)((fh), (flags))
 
+#endif
+
+#ifdef __BORLANDC__
+static int
+rb_w32_open_osfhandle(long osfhandle, int flags)
+{
+    int fd = _open_osfhandle(osfhandle, flags);
+    if (fd == -1) {
+	errno = EMFILE;		/* too many open files */
+	_doserrno = 0L;		/* not an OS error */
+    }
+    return fd;
+}
 #endif
 
 #undef getsockopt
@@ -3427,6 +3440,7 @@ rb_w32_close(int fd)
 	return _close(fd);
     }
     _set_osfhnd(fd, (SOCKET)INVALID_HANDLE_VALUE);
+    _close(fd);
     if (closesocket(sock) == SOCKET_ERROR) {
 	errno = map_errno(WSAGetLastError());
 	return -1;
