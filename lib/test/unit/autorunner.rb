@@ -25,6 +25,10 @@ module Test
           require 'test/unit/ui/gtk/testrunner'
           Test::Unit::UI::GTK::TestRunner.run(r.suite)
         end,
+        :gtk2 => proc do |r|
+          require 'test/unit/ui/gtk2/testrunner'
+          Test::Unit::UI::GTK2::TestRunner.run(r.suite)
+        end,
         :fox => proc do |r|
           require 'test/unit/ui/fox/testrunner'
           Test::Unit::UI::Fox::TestRunner.run(r.suite)

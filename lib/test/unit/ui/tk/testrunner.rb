@@ -24,7 +24,6 @@ module Test
           # Creates a new TestRunner and runs the suite.
           def self.run(suite)
             new(suite).start
-
           end
 
           # Creates a new TestRunner for running the passed
@@ -38,7 +37,13 @@ module Test
 
             @red = false
             @fault_detail_list = []
-            @run_suite_thread = nil
+            @runner = Thread.current
+            @restart_signal = Class.new(Exception)
+            @viewer = Thread.start do
+              @runner.join rescue @runner.run
+              ::Tk.mainloop
+            end
+            @viewer.join rescue nil # wait deadlock to handshake
           end
 
           # Begins the test run.
@@ -60,7 +65,7 @@ module Test
           end
 
           def attach_to_mediator # :nodoc:
-            @run_button.command(method(:run_suite))
+            @run_button.command(method(:run_test))
             @fault_list.bind('ButtonPress-1', proc{|y|
               fault = @fault_detail_list[@fault_list.nearest(y)]
               if fault
@@ -75,24 +80,32 @@ module Test
             @mediator.add_listener(TestRunnerMediator::FINISHED, &method(:finished))
           end
 
+          def run_test
+            @runner.raise(@restart_signal)
+          end
+
           def start_ui # :nodoc:
-            run_suite
+            @viewer.run
+            running = false
             begin
-              ::Tk.mainloop
-            rescue Exception
-              if @run_suite_thread and @run_suite_thread.alive?
-                @run_suite_thread.raise $!
-                retry
-              else
-                raise
+              loop do
+                if (running ^= true)
+                  @run_button.configure('text'=>'Stop')
+                  @mediator.run_suite
+                else
+                  @run_button.configure('text'=>'Run')
+                  @viewer.join
+                  break
+                end
               end
+            rescue @restart_signal
+              retry
+            rescue
             end
+            abort if @red
           end
 
           def stop # :nodoc:
-	    if @run_suite_thread and @run_suite_thread.alive?
-	      @run_suite_thread.kill
-	    end
             ::Tk.exit
           end
 
@@ -238,15 +251,6 @@ module Test
             v = TkVariable.new(0)
             TkLabel.new(parent, 'textvariable'=>v).pack('side'=>'left', 'expand'=>true)
             v
-          end
-
-          def run_suite # :nodoc:
-            run_proc = proc {
-              @run_suite_thread = Thread.start {
-                @mediator.run_suite
-              }
-            }
-            TkAfter.new(1000, 1, run_proc).start
           end
         end
       end

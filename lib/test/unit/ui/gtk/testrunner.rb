@@ -23,7 +23,6 @@ module Test
           # Creates a new TestRunner and runs the suite.
           def self.run(suite)
             new(suite).start
-            
           end
 
           # Creates a new TestRunner for running the passed
@@ -34,6 +33,14 @@ module Test
             else
               @suite = suite
             end
+
+            @runner = Thread.current
+            @restart_signal = Class.new(Exception)
+            @viewer = Thread.start do
+              @runner.join rescue @runner.run
+              Gtk.main
+            end
+            @viewer.join rescue nil # wait deadlock to handshake
           end
 
           # Begins the test run.
@@ -55,24 +62,42 @@ module Test
           end
           
           def attach_to_mediator # :nodoc:
-            run_button.signal_connect("clicked", nil) { @mediator.run_suite }
+            run_button.signal_connect("clicked", nil, &method(:run_test))
             @mediator.add_listener(TestRunnerMediator::RESET, &method(:reset_ui))
             @mediator.add_listener(TestResult::FAULT, &method(:add_fault))
             @mediator.add_listener(TestResult::CHANGED, &method(:result_changed))
             @mediator.add_listener(TestRunnerMediator::STARTED, &method(:started))
             @mediator.add_listener(TestCase::STARTED, &method(:test_started))
+            @mediator.add_listener(TestCase::FINISHED, &method(:test_finished))
             @mediator.add_listener(TestRunnerMediator::FINISHED, &method(:finished))
+          end
+
+          def run_test(*)
+            @runner.raise(@restart_signal)
           end
           
           def start_ui # :nodoc:
-            timer = Gtk::timeout_add(0) {
-              Gtk::timeout_remove(timer)
-              @mediator.run_suite
-            }
-            Gtk.main
+            @viewer.run
+            running = false
+            begin
+              loop do
+                if (running ^= true)
+                  run_button.child.text = "Stop"
+                  @mediator.run_suite
+                else
+                  run_button.child.text = "Run"
+                  @viewer.join
+                  break
+                end
+              end
+            rescue @restart_signal
+              retry
+            rescue
+            end
+            abort if @red
           end
           
-          def stop # :nodoc:
+          def stop(*) # :nodoc:
             Gtk.main_quit
           end
           
@@ -113,8 +138,6 @@ module Test
           end
           
           def result_changed(result) # :nodoc:
-            test_progress_bar.set_value(test_progress_bar.get_value + 1)
-  
             run_count_label.set_text(result.run_count.to_s)
             assertion_count_label.set_text(result.assertion_count.to_s)
             failure_count_label.set_text(result.failure_count.to_s)
@@ -129,6 +152,10 @@ module Test
             output_status("Running #{test_name}...")
           end
           
+          def test_finished(test_name)
+            test_progress_bar.set_value(test_progress_bar.get_value + 1)
+          end
+          
           def finished(elapsed_time)
             output_status("Finished in #{elapsed_time} seconds")
           end
@@ -138,7 +165,7 @@ module Test
           end
   
           def setup_ui # :nodoc:
-            main_window.signal_connect("destroy", nil) { stop }
+            main_window.signal_connect("destroy", nil, &method(:stop))
             main_window.show_all
             fault_list.signal_connect("select-child", nil) {
               | list, item, data |
@@ -207,7 +234,8 @@ module Test
           def test_progress_bar # :nodoc:
             lazy_initialize(:test_progress_bar) {
               @test_progress_bar = EnhancedProgressBar.new
-              @test_progress_bar.set_usize(@test_progress_bar.allocation.width, 50)
+              @test_progress_bar.set_usize(@test_progress_bar.allocation.width,
+                                           info_panel.size_request.height)
               @test_progress_bar.set_style(green_style)
             }
           end
