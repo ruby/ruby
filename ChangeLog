@@ -1,3 +1,8 @@
+Tue Sep 25 10:42:46 2001  Usaku Nakamura  <usa@ruby-lang.org>
+
+	* win32/win32.c (isInternalCmd): check return value of NtMakeCmdVector
+	  (Tietew <tietew@tietew.net>'s patch).
+
 Wed Sep 19 17:46:42 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* stable version 1.6.5 released.

@@ -353,20 +353,22 @@ static char *szInternalCmds[] = {
 int
 isInternalCmd(char *cmd)
 {
-        int i, fRet=0;
-	char **vec;
-        int vecc = NtMakeCmdVector(cmd, &vec, FALSE);
+    int i, fRet=0;
+    char **vec;
+    int vecc = NtMakeCmdVector(cmd, &vec, FALSE);
 
-        for( i = 0; szInternalCmds[i] ; i++){
-	    if(!strcasecmp(szInternalCmds[i], vec[0])){
-		fRet = 1;
-		break;
-	    }
-        }
- 
-	SafeFree (vec, vecc);
+    if (vecc == 0)
+	return 0;
+    for( i = 0; szInternalCmds[i] ; i++){
+	if(!strcasecmp(szInternalCmds[i], vec[0])){
+	    fRet = 1;
+	    break;
+	}
+    }
 
-	return fRet;
+    SafeFree(vec, vecc);
+
+    return fRet;
 }
 
 
