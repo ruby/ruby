@@ -798,7 +798,7 @@ rb_reg_match_pre(match)
 
     if (NIL_P(match)) return Qnil;
     if (RMATCH(match)->BEG(0) == -1) return Qnil;
-    str = rb_str_new(RSTRING(RMATCH(match)->str)->ptr, RMATCH(match)->BEG(0));
+    str = rb_str_substr(RMATCH(match)->str, 0, RMATCH(match)->BEG(0));
     if (OBJ_TAINTED(match)) OBJ_TAINT(str);
     return str;
 }
@@ -808,11 +808,13 @@ rb_reg_match_post(match)
     VALUE match;
 {
     VALUE str;
+    long pos;
 
     if (NIL_P(match)) return Qnil;
     if (RMATCH(match)->BEG(0) == -1) return Qnil;
-    str = rb_str_new(RSTRING(RMATCH(match)->str)->ptr+RMATCH(match)->END(0),
-		     RSTRING(RMATCH(match)->str)->len-RMATCH(match)->END(0));
+    str = RMATCH(match)->str;
+    pos = RMATCH(match)->END(0);
+    str = rb_str_substr(str, pos, RSTRING(str)->len - pos);
     if (OBJ_TAINTED(match)) OBJ_TAINT(str);
     return str;
 }
@@ -862,7 +864,7 @@ match_to_a(match)
 {
     struct re_registers *regs = RMATCH(match)->regs;
     VALUE ary = rb_ary_new2(regs->num_regs);
-    char *ptr = RSTRING(RMATCH(match)->str)->ptr;
+    VALUE target = RMATCH(match)->str;
     int i;
     int taint = OBJ_TAINTED(match);
     
@@ -871,7 +873,7 @@ match_to_a(match)
 	    rb_ary_push(ary, Qnil);
 	}
 	else {
-	    VALUE str = rb_str_new(ptr+regs->beg[i], regs->end[i]-regs->beg[i]);
+	    VALUE str = rb_str_substr(target, regs->beg[i], regs->end[i]-regs->beg[i]);
 	    if (taint) OBJ_TAINT(str);
 	    rb_ary_push(ary, str);
 	}
@@ -902,7 +904,7 @@ match_select(argc, argv, match)
     VALUE match;
 {
     struct re_registers *regs = RMATCH(match)->regs;
-    char *ptr = RSTRING(RMATCH(match)->str)->ptr;
+    VALUE target = RMATCH(match)->str;
     VALUE result = rb_ary_new();
     int i;
     long idx;
@@ -915,7 +917,7 @@ match_select(argc, argv, match)
 	    rb_ary_push(result, Qnil);
 	}
 	else {
-	    VALUE str = rb_str_new(ptr+regs->beg[idx], regs->end[idx]-regs->beg[idx]);
+	    VALUE str = rb_str_substr(target, regs->beg[idx], regs->end[idx]-regs->beg[idx]);
 	    if (taint) OBJ_TAINT(str);
 	    rb_ary_push(result, str);
 	}
