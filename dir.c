@@ -787,6 +787,7 @@ glob_helper(path, sub, flags, func, arg)
 			status = glob_helper(buf, t, flags, func, arg);
 			free(buf);
 			if (status) goto finalize;
+			continue;
 		    }
 		    free(buf);
 		    continue;
@@ -796,6 +797,7 @@ glob_helper(path, sub, flags, func, arg)
 		    sprintf(buf, "%s%s%s", base, (BASE) ? "/" : "", dp->d_name);
 		    if (!m) {
 			status = glob_call_func(func, path, arg);
+			free(buf);
 			if (status) goto finalize;
 			continue;
 		    }

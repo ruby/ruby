@@ -1,3 +1,7 @@
+Thu Sep 12 17:45:15 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* dir.c (glob_helper): fixed freeing buffer.  (ruby-bugs-ja:PR#332)
+
 Thu Sep 12 00:09:32 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (rb_trap_eval): preserve thread status and so on.
