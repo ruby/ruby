@@ -1359,7 +1359,7 @@ rb_file_s_expand_path(argc, argv)
     return fname;
 
   toolong:
-    rb_raise(rb_eArgError, "argument too long (size=%d)", RSTRING(fname)->len);
+    rb_raise(rb_eArgError, "argument too long (size=%ld)", RSTRING(fname)->len);
     return Qnil;		/* not reached */
 }
 

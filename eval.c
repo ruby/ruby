@@ -1905,14 +1905,14 @@ is_defined(self, node, buf)
 
       case NODE_NTH_REF:
 	if (RTEST(rb_reg_nth_defined(node->nd_nth, MATCH_DATA))) {
-	    sprintf(buf, "$%d", node->nd_nth);
+	    sprintf(buf, "$%d", (int)node->nd_nth);
 	    return buf;
 	}
 	break;
 
       case NODE_BACK_REF:
 	if (RTEST(rb_reg_nth_defined(0, MATCH_DATA))) {
-	    sprintf(buf, "$%c", node->nd_nth);
+	    sprintf(buf, "$%c", (int)node->nd_nth);
 	    return buf;
 	}
 	break;
@@ -3606,7 +3606,7 @@ rb_yield_0(val, self, klass, acheck)
 	    if (block->var == (NODE*)1) {
 		if (acheck && val != Qundef &&
 		    TYPE(val) == T_ARRAY && RARRAY(val)->len != 0) {
-		    rb_raise(rb_eArgError, "wrong # of arguments (%d for 0)",
+		    rb_raise(rb_eArgError, "wrong # of arguments (%ld for 0)",
 			     RARRAY(val)->len);
 		}
 	    }
@@ -6528,7 +6528,7 @@ proc_to_s(self, other)
 
     Data_Get_Struct(self, struct BLOCK, data);
     str = rb_str_new(0, strlen(cname)+6+16+1); /* 6:tags 16:addr 1:eos */
-    sprintf(RSTRING(str)->ptr, "#<%s:0x%lx>", cname, data->tag);
+    sprintf(RSTRING(str)->ptr, "#<%s:0x%lx>", cname, (unsigned long)data->tag);
     RSTRING(str)->len = strlen(RSTRING(str)->ptr);
     if (OBJ_TAINTED(self)) OBJ_TAINT(str);
 
@@ -7887,7 +7887,7 @@ rb_thread_schedule()
 	curr_thread->line = ruby_sourceline;
 	FOREACH_THREAD_FROM(curr, th) {
 	    fprintf(stderr, "deadlock 0x%lx: %d:%d %s - %s:%d\n", 
-		    th->thread, th->status,
+		    (unsigned long)th->thread, th->status,
 		    th->wait_for, th==main_thread?"(main)":"",
 		    th->file, th->line);
 	}
@@ -9193,9 +9193,9 @@ rb_f_throw(argc, argv)
 	    break;
 	}
 	if (tt->tag == PROT_THREAD) {
-	    rb_raise(rb_eThreadError, "uncaught throw `%s' in thread 0x%x",
+	    rb_raise(rb_eThreadError, "uncaught throw `%s' in thread 0x%lx",
 		     rb_id2name(t),
-		     curr_thread);
+		     (unsigned long)curr_thread);
 	}
 	tt = tt->prev;
     }
@@ -9230,8 +9230,8 @@ return_check()
 	    break;
 	}
 	if (tt->tag == PROT_THREAD) {
-	    rb_raise(rb_eThreadError, "return from within thread 0x%x",
-		     curr_thread);
+	    rb_raise(rb_eThreadError, "return from within thread 0x%lx",
+		     (unsigned long)curr_thread);
 	}
 	tt = tt->prev;
     }

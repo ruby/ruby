@@ -120,7 +120,7 @@ rb_ary_new3(n, va_alist)
     long i;
 
     if (n < 0) {
-	rb_raise(rb_eIndexError, "negative number of items(%d)", n);
+	rb_raise(rb_eIndexError, "negative number of items(%ld)", n);
     }
     ary = rb_ary_new2(n<ARY_DEFAULT_SIZE?ARY_DEFAULT_SIZE:n);
 
@@ -240,7 +240,7 @@ rb_ary_store(ary, idx, val)
     if (idx < 0) {
 	idx += RARRAY(ary)->len;
 	if (idx < 0) {
-	    rb_raise(rb_eIndexError, "index %d out of array",
+	    rb_raise(rb_eIndexError, "index %ld out of array",
 		     idx - RARRAY(ary)->len);
 	}
     }
@@ -533,13 +533,13 @@ rb_ary_replace(ary, beg, len, rpl)
 {
     long rlen;
 
-    if (len < 0) rb_raise(rb_eIndexError, "negative length %d", len);
+    if (len < 0) rb_raise(rb_eIndexError, "negative length %ld", len);
     if (beg < 0) {
 	beg += RARRAY(ary)->len;
     }
     if (beg < 0) {
 	beg -= RARRAY(ary)->len;
-	rb_raise(rb_eIndexError, "index %d out of array", beg);
+	rb_raise(rb_eIndexError, "index %ld out of array", beg);
     }
     if (beg + len > RARRAY(ary)->len) {
 	len = RARRAY(ary)->len - beg;

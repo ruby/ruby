@@ -464,10 +464,10 @@ rb_struct_aref(s, idx)
     i = NUM2LONG(idx);
     if (i < 0) i = RSTRUCT(s)->len + i;
     if (i < 0)
-        rb_raise(rb_eIndexError, "offset %d too small for struct(size:%d)",
+        rb_raise(rb_eIndexError, "offset %ld too small for struct(size:%ld)",
 		 i, RSTRUCT(s)->len);
     if (RSTRUCT(s)->len <= i)
-        rb_raise(rb_eIndexError, "offset %d too large for struct(size:%d)",
+        rb_raise(rb_eIndexError, "offset %ld too large for struct(size:%ld)",
 		 i, RSTRUCT(s)->len);
     return RSTRUCT(s)->ptr[i];
 }
@@ -509,11 +509,11 @@ rb_struct_aset(s, idx, val)
     i = NUM2LONG(idx);
     if (i < 0) i = RSTRUCT(s)->len + i;
     if (i < 0) {
-        rb_raise(rb_eIndexError, "offset %d too small for struct(size:%d)",
+        rb_raise(rb_eIndexError, "offset %ld too small for struct(size:%ld)",
 		 i, RSTRUCT(s)->len);
     }
     if (RSTRUCT(s)->len <= i) {
-        rb_raise(rb_eIndexError, "offset %d too large for struct(size:%d)",
+        rb_raise(rb_eIndexError, "offset %ld too large for struct(size:%ld)",
 		 i, RSTRUCT(s)->len);
     }
     rb_struct_modify(s);

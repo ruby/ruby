@@ -723,8 +723,8 @@ rb_gc_mark(ptr)
 	break;
 
       default:
-	rb_bug("rb_gc_mark(): unknown data type 0x%x(0x%x) %s",
-	       obj->as.basic.flags & T_MASK, obj,
+	rb_bug("rb_gc_mark(): unknown data type 0x%lx(0x%lx) %s",
+	       obj->as.basic.flags & T_MASK, (unsigned long)obj,
 	       is_pointer_to_heap(obj) ? "corrupted object" : "non object");
     }
 }
@@ -1363,10 +1363,10 @@ id2ref(obj, id)
 
     ptr = id ^ FIXNUM_FLAG;	/* unset FIXNUM_FLAG */
     if (!is_pointer_to_heap((void *)ptr)) {
-	rb_raise(rb_eRangeError, "0x%x is not id value", p0);
+	rb_raise(rb_eRangeError, "0x%lx is not id value", p0);
     }
     if (BUILTIN_TYPE(ptr) == 0) {
-	rb_raise(rb_eRangeError, "0x%x is recycled object", p0);
+	rb_raise(rb_eRangeError, "0x%lx is recycled object", p0);
     }
     return (VALUE)ptr;
 }

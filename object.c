@@ -666,7 +666,7 @@ rb_to_id(name)
       case T_FIXNUM:
 	id = FIX2INT(name);
 	if (!rb_id2name(id)) {
-	    rb_raise(rb_eArgError, "%d is not a symbol", id);
+	    rb_raise(rb_eArgError, "%lu is not a symbol", id);
 	}
 	break;
       case T_SYMBOL:

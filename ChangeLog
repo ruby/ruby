@@ -1,3 +1,10 @@
+Sun Oct 27 00:55:21 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* array.c, class.c, eval.c, file.c, gc.c, node.h, numeric.c,
+	  object.c, parse.y, range.c, re.c, string.c, struct.c, util.c,
+	  ext/socket/socket.c: merge from 1.7: treat long values as long
+	  instead of int.
+
 Sat Oct 26 04:39:48 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* parse.y (str_extend): pushback() takes one argument, so properly

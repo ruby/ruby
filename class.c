@@ -633,7 +633,7 @@ rb_singleton_class(obj)
 	SPECIAL_SINGLETON(Qnil, rb_cNilClass);
 	SPECIAL_SINGLETON(Qfalse, rb_cFalseClass);
 	SPECIAL_SINGLETON(Qtrue, rb_cTrueClass);
-	rb_bug("unknown immediate %d", obj);
+	rb_bug("unknown immediate %ld", (long)obj);
     }
 
     DEFER_INTS;

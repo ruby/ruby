@@ -331,7 +331,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 
 			if (in_def || in_single)
 			    yyerror("alias within method");
-			sprintf(buf, "$%c", $3->nd_nth);
+			sprintf(buf, "$%c", (int)$3->nd_nth);
 		        $$ = NEW_VALIAS($2, rb_intern(buf));
 		    }
 		| kALIAS tGVAR tNTH_REF
@@ -4475,10 +4475,10 @@ rb_backref_error(node)
 {
     switch (nd_type(node)) {
       case NODE_NTH_REF:
-	rb_compile_error("Can't set variable $%d", node->nd_nth);
+	rb_compile_error("Can't set variable $%d", (int)node->nd_nth);
 	break;
       case NODE_BACK_REF:
-	rb_compile_error("Can't set variable $%c", node->nd_nth);
+	rb_compile_error("Can't set variable $%c", (int)node->nd_nth);
 	break;
     }
 }

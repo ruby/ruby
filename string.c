@@ -1072,10 +1072,10 @@ rb_str_aset_m(argc, argv, str)
 	if (TYPE(argv[2]) != T_STRING) argv[2] = rb_str_to_str(argv[2]);
 	beg = NUM2INT(argv[0]);
 	len = NUM2INT(argv[1]);
-	if (len < 0) rb_raise(rb_eIndexError, "negative length %d", len);
+	if (len < 0) rb_raise(rb_eIndexError, "negative length %ld", len);
 	if (RSTRING(str)->len < beg) {
 	  out_of_range:
-	    rb_raise(rb_eIndexError, "index %d out of string", beg);
+	    rb_raise(rb_eIndexError, "index %ld out of string", beg);
 	}
 	if (beg < 0) {
 	    if (-beg > RSTRING(str)->len) {

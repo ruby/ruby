@@ -785,7 +785,6 @@ match_aref(argc, argv, match)
     VALUE match;
 {
     VALUE idx, rest;
-    struct re_registers *regs;
     char *ptr;
     int i;
 

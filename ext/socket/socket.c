@@ -815,7 +815,7 @@ open_inet_internal(arg)
     else {
 	Check_SafeStr(arg->serv);
 	if (RSTRING(arg->serv)->len >= sizeof(pbuf))
-	    rb_raise(rb_eArgError, "servicename too long (%d)", RSTRING(arg->serv)->len);
+	    rb_raise(rb_eArgError, "servicename too long (%ld)", RSTRING(arg->serv)->len);
 	strcpy(pbuf, RSTRING(arg->serv)->ptr);
 	portp = pbuf;
     }
@@ -1981,7 +1981,7 @@ sock_s_getnameinfo(argc, argv)
 	    }
 	}
 	else {
-	    rb_raise(rb_eArgError, "array size should be 3 or 4, %d given",
+	    rb_raise(rb_eArgError, "array size should be 3 or 4, %ld given",
 		     RARRAY(sa)->len);
 	}
 	/* host */

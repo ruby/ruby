@@ -182,7 +182,7 @@ ruby_add_suffix(str, suffix)
     char buf[1024];
 
     if (RSTRING(str)->len > 1000)
-        rb_fatal("Cannot do inplace edit on long filename (%d characters)",
+        rb_fatal("Cannot do inplace edit on long filename (%ld characters)",
 		 RSTRING(str)->len);
 
 #if defined(DJGPP) || defined(__CYGWIN32__) || defined(NT)
