@@ -3,7 +3,6 @@
 # Copyright (C) 2000  Information-technology Promotion Agency, Japan
 
 require 'cgi'
-require 'final'
 
 class CGI
   class Session
