@@ -31,8 +31,6 @@ if !defined? message
   end
 end
 
-includes, = dir_config("openssl")
-includes ||= "/usr/include"
 
 message "=== OpenSSL for Ruby configurator ===\n"
 
@@ -73,17 +71,6 @@ EOD
 end
 
 
-def have_openssl_097(inc_dir)
-# FIXME:
-#  checking_for("OpenSSL >= 0.9.7") do
-  printf "checking for OpenSSL version... "
-  File.open(inc_dir+"/openssl/opensslv.h") {|f|
-    txt = f.read
-    puts (txt.grep(/#define SHLIB_VERSION_NUMBER/)[0].split '"')[1]
-    true
-  }
-end
-
 message "=== Checking for required stuff... ===\n"
 
 result = have_header("openssl/crypto.h")
@@ -101,7 +88,6 @@ have_header("unistd.h")
 have_header("sys/time.h")
 
 message "=== Checking for OpenSSL features... ===\n"
-have_openssl_097(includes)
 have_func("HMAC_CTX_copy")
 have_func("X509_STORE_get_ex_data")
 have_func("X509_STORE_set_ex_data")
