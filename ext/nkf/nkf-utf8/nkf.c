@@ -1249,7 +1249,7 @@ options(cp)
 	    }
             continue;
         case 'm':   /* MIME support */
-            mime_decode_f = TRUE;
+            /* mime_decode_f = TRUE; */ /* this has too large side effects... */
             if (*cp=='B'||*cp=='Q') {
                 mime_decode_mode = *cp++;
                 mimebuf_f = FIXED_MIME;
@@ -1258,6 +1258,7 @@ options(cp)
             } else if (*cp=='S') {
                 mime_f = STRICT_MIME; cp++;
             } else if (*cp=='0') {
+                mime_decode_f = FALSE;
                 mime_f = FALSE; cp++;
             }
             continue;

@@ -1,3 +1,8 @@
+Sat Mar  8 01:19:00 2005  NARUSE, Yui  <naruse@ruby-lang.org>
+
+        * ext/nkf/nkf-utf8/nkf.c: follow nkf 1.66
+          fixed: [ruby-dev:25828]
+
 Mon Mar  7 21:29:40 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/server.rb (WEBrick::GenericServer#start): should 
