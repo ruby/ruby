@@ -16,10 +16,10 @@
 #ifndef NT
 #include <sys/socket.h>
 #include <netinet/in.h>
-#ifdef NETINET_TCP
+#ifdef HAVE_NETINET_TCP_H
 # include <netinet/tcp.h>
 #endif
-#ifdef NETINET_UDP
+#ifdef HAVE_NETINET_UDP_H
 # include <netinet/udp.h>
 #endif
 #include <netdb.h>
@@ -890,7 +890,9 @@ tcp_s_gethostbyname(obj, host)
 	    struct sockaddr_in6 sin6;
 	    MEMZERO(&sin6, struct sockaddr_in6, 1);
 	    sin6.sin6_family = AF_INET;
+#ifdef SIN6_LEN
 	    sin6.sin6_len = sizeof(sin6);
+#endif
 	    memcpy((char *) &sin6.sin6_addr, *pch, h->h_length);
 	    h = gethostbyaddr((char *)&sin6.sin6_addr,
 			      sizeof(sin6.sin6_addr),

@@ -2199,7 +2199,7 @@ fi
 
 for ac_hdr in stdlib.h string.h unistd.h limits.h sys/file.h sys/ioctl.h\
 		 fcntl.h sys/fcntl.h sys/select.h sys/time.h sys/times.h sys/param.h\
-		 syscall.h pwd.h a.out.h utime.h memory.h direct.h fnmatch.h
+		 syscall.h pwd.h a.out.h utime.h memory.h direct.h
 do
 ac_safe=`echo "$ac_hdr" | sed 'y%./+-%__p_%'`
 echo $ac_n "checking for $ac_hdr""... $ac_c" 1>&6
@@ -3041,7 +3041,7 @@ test $ac_cv_func_memcmp_clean = no && LIBOBJS="$LIBOBJS memcmp.${ac_objext}"
 
 for ac_func in dup2 memmove mkdir strcasecmp strncasecmp strerror strftime\
 		 strchr strstr strtoul strdup crypt flock vsnprintf\
-		 fnmatch isinf isnan finite
+		 isinf isnan finite
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
 echo "configure:3048: checking for $ac_func" >&5

@@ -4,9 +4,9 @@ Tue Dec  7 18:25:26 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 Mon Dec  6 15:55:30 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
 
-	* numeric.c (fix_rshift): Fix -1 >> 32 returned 0. (-1 is true)
+	* numeric.c (fix_rshift): Fix -1 >> 32 returned 0 (should be -1).
 
-	* numeric.c (fix_rshift): Fix  1 >> -1 returned 0. (2 is true)
+	* numeric.c (fix_rshift): Fix  1 >> -1 returned 0 (should be 2).
 
 Mon Dec  6 11:47:23 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

@@ -7333,10 +7333,10 @@ static int
 rb_thread_loading(feature)
     const char *feature;
 {
+    if (!loading_tbl) {
+	loading_tbl = st_init_strtable();
+    }
     if (!rb_provided(feature)) {
-	if (!loading_tbl) {
-	    loading_tbl = st_init_strtable();
-	}
 	st_insert(loading_tbl, feature, 0);
 	return Qfalse; /* need to load */
     }

@@ -222,7 +222,6 @@ sample/rename.rb
 sample/rcs.awk
 sample/rcs.dat
 sample/rcs.rb
-sample/rd2html.rb
 sample/regx.rb
 sample/sieve.rb
 sample/svr.rb

@@ -41,11 +41,6 @@
 #include <sys/types.h>
 #ifndef NT
 #include <sys/param.h>
-#endif
-#ifdef HAVE_SYSCTL_H
-#include <sys/sysctl.h>
-#endif
-#ifndef NT
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>

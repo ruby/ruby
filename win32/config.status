@@ -35,7 +35,7 @@ s%@RANLIB@%rem%g
 s%@AR@%lib -nologo%g
 s%@LN_S@%%g
 s%@SET_MAKE@%%g
-s%@LIBOBJS@% crypt.obj alloca.obj win32.obj fnmatch.obj isinf.obj isnan.obj%g
+s%@LIBOBJS@% crypt.obj alloca.obj win32.obj isinf.obj isnan.obj%g
 s%@ALLOCA@%%g
 s%@DEFAULT_KCODE@%%g
 s%@EXEEXT@%.exe%g
