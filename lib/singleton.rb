@@ -14,9 +14,15 @@ module Singleton
   def Singleton.append_features(klass)
     klass.private_class_method(:new)
     klass.instance_eval %{
+      @__instance__ = nil
       def instance
+	Thread.critical = true
 	unless @__instance__
-	  @__instance__ = new
+	  begin
+	    @__instance__ = new
+	  ensure
+	    Thread.critical = false
+	  end
 	end
 	return @__instance__
       end

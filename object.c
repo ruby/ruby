@@ -6,7 +6,7 @@
   $Date$
   created at: Thu Jul 15 12:01:24 JST 1993
 
-  Copyright (C) 1993-1999 Yukihiro Matsumoto
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -565,6 +565,7 @@ rb_mod_cmp(mod, arg)
 
 static VALUE
 rb_module_s_new(klass)
+    VALUE klass;
 {
     VALUE mod = rb_module_new();
 

@@ -6,12 +6,16 @@
   $Date$
   created at: Fri May 28 15:14:02 JST 1993
 
-  Copyright (C) 1993-1999 Yukihiro Matsumoto
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
 
 ************************************************/
 
 #ifndef NODE_H
 #define NODE_H
+
+#if defined(__cplusplus)
+extern "C" {
+#endif
 
 enum node_type {
     NODE_METHOD,
@@ -310,9 +314,6 @@ typedef struct RNode {
 #define NEW_PREEXE(b) NEW_SCOPE(b)
 #define NEW_POSTEXE() rb_node_newnode(NODE_POSTEXE,0,0,0)
 
-NODE *rb_node_newnode();
-VALUE rb_method_booundp();
-
 #define NOEX_PUBLIC    0
 #define NOEX_UNDEF     1
 #define NOEX_CFUNC     1
@@ -330,5 +331,9 @@ struct global_entry *rb_global_entry _((ID));
 VALUE rb_gvar_get _((struct global_entry *));
 VALUE rb_gvar_set _((struct global_entry *, VALUE));
 VALUE rb_gvar_defined _((struct global_entry *));
+
+#if defined(__cplusplus)
+}  /* extern "C" { */
+#endif
 
 #endif

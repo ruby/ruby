@@ -57,7 +57,7 @@ VALUE rb_big_and _((VALUE, VALUE));
 VALUE rb_big_or _((VALUE, VALUE));
 VALUE rb_big_xor _((VALUE, VALUE));
 VALUE rb_big_lshift _((VALUE, VALUE));
-VALUE rb_big_rand _((VALUE));
+VALUE rb_big_rand _((VALUE, double));
 /* class.c */
 VALUE rb_class_new _((VALUE));
 VALUE rb_singleton_class_new _((VALUE));
@@ -82,7 +82,7 @@ VALUE rb_singleton_class _((VALUE));
 /* enum.c */
 VALUE rb_enum_length _((VALUE));
 /* error.c */
-extern int ruby_nerrs;
+EXTERN int ruby_nerrs;
 VALUE rb_exc_new _((VALUE, const char*, long));
 VALUE rb_exc_new2 _((VALUE, const char*));
 VALUE rb_exc_new3 _((VALUE, VALUE));
@@ -121,6 +121,7 @@ VALUE rb_f_lambda _((void));
 VALUE rb_protect _((VALUE (*)(), VALUE, int*));
 void rb_set_end_proc _((void (*)(), VALUE));
 void rb_exec_end_proc _((void));
+void rb_mark_end_proc _((void));
 void rb_gc_mark_threads _((void));
 void rb_thread_start_timer _((void));
 void rb_thread_stop_timer _((void));
@@ -210,6 +211,12 @@ VALUE rb_Array _((VALUE));
 /* parse.y */
 extern int   ruby_sourceline;
 extern char *ruby_sourcefile;
+#define yyparse rb_yyparse
+#define yylex rb_yylex
+#define yyerror rb_yyerror
+#define yylval rb_yylval
+#define yychar rb_yychar
+#define yydebug rb_yydebug
 int yyparse _((void));
 ID rb_id_attrset _((ID));
 void rb_parser_append_print _((void));
@@ -308,6 +315,7 @@ VALUE rb_f_untrace_var _((int, VALUE*));
 VALUE rb_gvar_set2 _((const char*, VALUE));
 VALUE rb_f_global_variables _((void));
 void rb_alias_variable _((ID, ID));
+struct st_table* rb_generic_ivar_table _((VALUE));
 void rb_clone_generic_ivar _((VALUE,VALUE));
 void rb_mark_generic_ivar _((VALUE));
 void rb_mark_generic_ivar_tbl _((void));

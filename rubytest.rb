@@ -9,6 +9,8 @@ if File.exist? CONFIG['LIBRUBY_SO']
     dldpath = "SHLIB_PATH"
   when /-aix/
     dldpath = "LIBPATH"
+  when /-beos/
+    dldpath = "LIBRARY_PATH"
   else
     dldpath = "LD_LIBRARY_PATH"
   end

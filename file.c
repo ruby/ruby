@@ -6,7 +6,7 @@
   $Date$
   created at: Mon Nov 15 12:24:34 JST 1993
 
-  Copyright (C) 1993-1999 Yukihiro Matsumoto
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -295,8 +295,8 @@ eaccess(path, mode)
   if (st.st_mode & mode) return 0;
 
   return -1;
-#else  /* !NT*/
-	return 0;
+#else  /* !NT */
+  return access(path, mode);
 #endif
 }
 
@@ -423,7 +423,7 @@ test_c(obj, fname)
     struct stat st;
 
     if (rb_stat(fname, &st) < 0) return Qfalse;
-    if (S_ISBLK(st.st_mode)) return Qtrue;
+    if (S_ISCHR(st.st_mode)) return Qtrue;
 
     return Qfalse;
 }
@@ -1062,12 +1062,14 @@ rb_file_s_expand_path(argc, argv)
     VALUE fname, dname;
     char *s, *p;
     char buf[MAXPATHLEN+2];
+    int tainted = 0;
 
     rb_scan_args(argc, argv, "11", &fname, &dname);
 
     s = STR2CSTR(fname);
     p = buf;
     if (s[0] == '~') {
+	tainted = 1;
 	if (isdirsep(s[1]) || s[1] == '\0') {
 	    char *dir = getenv("HOME");
 
@@ -1110,9 +1112,11 @@ rb_file_s_expand_path(argc, argv)
     else if (!isdirsep(*s)) {
 	if (argc == 2) {
 	    dname = rb_file_s_expand_path(1, &dname);
+	    if (OBJ_TAINTED(dname)) tainted = 1;
 	    strcpy(buf, RSTRING(dname)->ptr);
 	}
 	else {
+	    tainted = 1;
 #ifdef HAVE_GETCWD
 	    getcwd(buf, MAXPATHLEN);
 #else
@@ -1122,7 +1126,7 @@ rb_file_s_expand_path(argc, argv)
 	p = &buf[strlen(buf)];
 	while (p > buf && *(p - 1) == '/') p--;
     }
-    else if (isdirsep(*s)) {
+    else {
 	while (*s && isdirsep(*s)) {
 	    *p++ = '/';
 	    s++;
@@ -1144,7 +1148,8 @@ rb_file_s_expand_path(argc, argv)
 		    }
 		    else {
 			*++p = '.';
-			*++p = '.';
+			do *++p = '.'; while (*++s == '.');
+			--s;
 		    }
 		    break;
 		  case '/':
@@ -1172,7 +1177,9 @@ rb_file_s_expand_path(argc, argv)
     if (p == buf || !isdirsep(*p)) p++;
     *p = '\0';
 
-    return rb_tainted_str_new2(buf);
+    fname = rb_str_new2(buf);
+    if (tainted) OBJ_TAINT(fname);
+    return fname;
 }
 
 static int
@@ -1203,7 +1210,7 @@ rb_file_s_basename(argc, argv)
     int argc;
     VALUE *argv;
 {
-    VALUE fname, fext;
+    VALUE fname, fext, basename;
     char *name, *p, *ext;
     int f;
 
@@ -1224,7 +1231,9 @@ rb_file_s_basename(argc, argv)
 	f = rmext(p, ext);
 	if (f) return rb_str_new(p, f);
     }
-    return rb_tainted_str_new2(p);
+    basename = rb_str_new2(p);
+    if (OBJ_TAINTED(fname)) OBJ_TAINT(basename);
+    return basename;
 }
 
 static VALUE
@@ -1232,6 +1241,7 @@ rb_file_s_dirname(obj, fname)
     VALUE obj, fname;
 {
     char *name, *p;
+    VALUE dirname;
 
     name = STR2CSTR(fname);
     p = strrchr(name, '/');
@@ -1240,7 +1250,9 @@ rb_file_s_dirname(obj, fname)
     }
     if (p == name)
 	p++;
-    return rb_tainted_str_new(name, p - name);
+    dirname = rb_str_new(name, p - name);
+    if (OBJ_TAINTED(fname)) OBJ_TAINT(dirname);
+    return dirname;
 }
 
 static VALUE

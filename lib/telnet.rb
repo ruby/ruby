@@ -1,11 +1,11 @@
 =begin
-$Date: 1999/10/04 22:51:26 $
+$Date: 2000/01/24 17:02:57 $
 
-== SIMPLE TELNET CLIANT LIBRARY
+== SIMPLE TELNET CLIENT LIBRARY
 
 telnet.rb
 
-Version 1.00
+Version 1.20
 
 Wakou Aoyama <wakou@fsinet.or.jp>
 
@@ -154,6 +154,22 @@ of cource, set sync=true or flush is necessary.
 
 
 == HISTORY
+
+=== Version 1.20
+
+2000/01/24 17:02:57
+
+- respond to "IAC WILL x" with "IAC DONT x"
+- respond to "IAC WONT x" with "IAC DONT x"
+- better dumplog format
+  thanks to WATANABE Hirofumi <Hirofumi.Watanabe@jp.sony.com>
+
+=== Version 1.10
+
+2000/01/18 17:47:31
+
+- bug fix: write method
+- respond to "IAC WILL BINARY" with "IAC DO BINARY"
 
 === Version 1.00
 
@@ -338,74 +354,73 @@ if ommit password, then not require password prompt.
 
 require "socket"
 require "delegate"
-require "thread"
 require "timeout"
 
 class Telnet < SimpleDelegator
 
-  IAC   = 255.chr # "\377" # interpret as command:
-  DONT  = 254.chr # "\376" # you are not to use option
-  DO    = 253.chr # "\375" # please, you use option
-  WONT  = 252.chr # "\374" # I won't use option
-  WILL  = 251.chr # "\373" # I will use option
-  SB    = 250.chr # "\372" # interpret as subnegotiation
-  GA    = 249.chr # "\371" # you may reverse the line
-  EL    = 248.chr # "\370" # erase the current line
-  EC    = 247.chr # "\367" # erase the current character
-  AYT   = 246.chr # "\366" # are you there
-  AO    = 245.chr # "\365" # abort output--but let prog finish
-  IP    = 244.chr # "\364" # interrupt process--permanently
-  BREAK = 243.chr # "\363" # break
-  DM    = 242.chr # "\362" # data mark--for connect. cleaning
-  NOP   = 241.chr # "\361" # nop
-  SE    = 240.chr # "\360" # end sub negotiation
-  EOR   = 239.chr # "\357" # end of record (transparent mode)
-  ABORT = 238.chr # "\356" # Abort process
-  SUSP  = 237.chr # "\355" # Suspend process
-  EOF   = 236.chr # "\354" # End of file
-  SYNCH = 242.chr # "\362" # for telfunc calls
+  IAC   = 255.chr # "\377" # "\xff" # interpret as command:
+  DONT  = 254.chr # "\376" # "\xfe" # you are not to use option
+  DO    = 253.chr # "\375" # "\xfd" # please, you use option
+  WONT  = 252.chr # "\374" # "\xfc" # I won't use option
+  WILL  = 251.chr # "\373" # "\xfb" # I will use option
+  SB    = 250.chr # "\372" # "\xfa" # interpret as subnegotiation
+  GA    = 249.chr # "\371" # "\xf9" # you may reverse the line
+  EL    = 248.chr # "\370" # "\xf8" # erase the current line
+  EC    = 247.chr # "\367" # "\xf7" # erase the current character
+  AYT   = 246.chr # "\366" # "\xf6" # are you there
+  AO    = 245.chr # "\365" # "\xf5" # abort output--but let prog finish
+  IP    = 244.chr # "\364" # "\xf4" # interrupt process--permanently
+  BREAK = 243.chr # "\363" # "\xf3" # break
+  DM    = 242.chr # "\362" # "\xf2" # data mark--for connect. cleaning
+  NOP   = 241.chr # "\361" # "\xf1" # nop
+  SE    = 240.chr # "\360" # "\xf0" # end sub negotiation
+  EOR   = 239.chr # "\357" # "\xef" # end of record (transparent mode)
+  ABORT = 238.chr # "\356" # "\xee" # Abort process
+  SUSP  = 237.chr # "\355" # "\xed" # Suspend process
+  EOF   = 236.chr # "\354" # "\xec" # End of file
+  SYNCH = 242.chr # "\362" # "\xf2" # for telfunc calls
 
-  OPT_BINARY         =   0.chr # "\000" # Binary Transmission
-  OPT_ECHO           =   1.chr # "\001" # Echo
-  OPT_RCP            =   2.chr # "\002" # Reconnection
-  OPT_SGA            =   3.chr # "\003" # Suppress Go Ahead
-  OPT_NAMS           =   4.chr # "\004" # Approx Message Size Negotiation
-  OPT_STATUS         =   5.chr # "\005" # Status
-  OPT_TM             =   6.chr # "\006" # Timing Mark
-  OPT_RCTE           =   7.chr # "\a"   # Remote Controlled Trans and Echo
-  OPT_NAOL           =   8.chr # "\010" # Output Line Width
-  OPT_NAOP           =   9.chr # "\t"   # Output Page Size
-  OPT_NAOCRD         =  10.chr # "\n"   # Output Carriage-Return Disposition
-  OPT_NAOHTS         =  11.chr # "\v"   # Output Horizontal Tab Stops
-  OPT_NAOHTD         =  12.chr # "\f"   # Output Horizontal Tab Disposition
-  OPT_NAOFFD         =  13.chr # "\r"   # Output Formfeed Disposition
-  OPT_NAOVTS         =  14.chr # "\016" # Output Vertical Tabstops
-  OPT_NAOVTD         =  15.chr # "\017" # Output Vertical Tab Disposition
-  OPT_NAOLFD         =  16.chr # "\020" # Output Linefeed Disposition
-  OPT_XASCII         =  17.chr # "\021" # Extended ASCII
-  OPT_LOGOUT         =  18.chr # "\022" # Logout
-  OPT_BM             =  19.chr # "\023" # Byte Macro
-  OPT_DET            =  20.chr # "\024" # Data Entry Terminal
-  OPT_SUPDUP         =  21.chr # "\025" # SUPDUP
-  OPT_SUPDUPOUTPUT   =  22.chr # "\026" # SUPDUP Output
-  OPT_SNDLOC         =  23.chr # "\027" # Send Location
-  OPT_TTYPE          =  24.chr # "\030" # Terminal Type
-  OPT_EOR            =  25.chr # "\031" # End of Record
-  OPT_TUID           =  26.chr # "\032" # TACACS User Identification
-  OPT_OUTMRK         =  27.chr # "\e"   # Output Marking
-  OPT_TTYLOC         =  28.chr # "\034" # Terminal Location Number
-  OPT_3270REGIME     =  29.chr # "\035" # Telnet 3270 Regime
-  OPT_X3PAD          =  30.chr # "\036" # X.3 PAD
-  OPT_NAWS           =  31.chr # "\037" # Negotiate About Window Size
-  OPT_TSPEED         =  32.chr # " "    # Terminal Speed
-  OPT_LFLOW          =  33.chr # "!"    # Remote Flow Control
-  OPT_LINEMODE       =  34.chr # "\""   # Linemode
-  OPT_XDISPLOC       =  35.chr # "#"    # X Display Location
-  OPT_OLD_ENVIRON    =  36.chr # "$"    # Environment Option
-  OPT_AUTHENTICATION =  37.chr # "%"    # Authentication Option
-  OPT_ENCRYPT        =  38.chr # "&"    # Encryption Option
-  OPT_NEW_ENVIRON    =  39.chr # "'"    # New Environment Option
-  OPT_EXOPL          = 255.chr # "\377" # Extended-Options-List
+  OPT_BINARY         =   0.chr # "\000" # "\x00" # Binary Transmission
+  OPT_ECHO           =   1.chr # "\001" # "\x01" # Echo
+  OPT_RCP            =   2.chr # "\002" # "\x02" # Reconnection
+  OPT_SGA            =   3.chr # "\003" # "\x03" # Suppress Go Ahead
+  OPT_NAMS           =   4.chr # "\004" # "\x04" # Approx Message Size Negotiation
+  OPT_STATUS         =   5.chr # "\005" # "\x05" # Status
+  OPT_TM             =   6.chr # "\006" # "\x06" # Timing Mark
+  OPT_RCTE           =   7.chr # "\a"   # "\x07" # Remote Controlled Trans and Echo
+  OPT_NAOL           =   8.chr # "\010" # "\x08" # Output Line Width
+  OPT_NAOP           =   9.chr # "\t"   # "\x09" # Output Page Size
+  OPT_NAOCRD         =  10.chr # "\n"   # "\x0a" # Output Carriage-Return Disposition
+  OPT_NAOHTS         =  11.chr # "\v"   # "\x0b" # Output Horizontal Tab Stops
+  OPT_NAOHTD         =  12.chr # "\f"   # "\x0c" # Output Horizontal Tab Disposition
+  OPT_NAOFFD         =  13.chr # "\r"   # "\x0d" # Output Formfeed Disposition
+  OPT_NAOVTS         =  14.chr # "\016" # "\x0e" # Output Vertical Tabstops
+  OPT_NAOVTD         =  15.chr # "\017" # "\x0f" # Output Vertical Tab Disposition
+  OPT_NAOLFD         =  16.chr # "\020" # "\x10" # Output Linefeed Disposition
+  OPT_XASCII         =  17.chr # "\021" # "\x11" # Extended ASCII
+  OPT_LOGOUT         =  18.chr # "\022" # "\x12" # Logout
+  OPT_BM             =  19.chr # "\023" # "\x13" # Byte Macro
+  OPT_DET            =  20.chr # "\024" # "\x14" # Data Entry Terminal
+  OPT_SUPDUP         =  21.chr # "\025" # "\x15" # SUPDUP
+  OPT_SUPDUPOUTPUT   =  22.chr # "\026" # "\x16" # SUPDUP Output
+  OPT_SNDLOC         =  23.chr # "\027" # "\x17" # Send Location
+  OPT_TTYPE          =  24.chr # "\030" # "\x18" # Terminal Type
+  OPT_EOR            =  25.chr # "\031" # "\x19" # End of Record
+  OPT_TUID           =  26.chr # "\032" # "\x1a" # TACACS User Identification
+  OPT_OUTMRK         =  27.chr # "\e"   # "\x1b" # Output Marking
+  OPT_TTYLOC         =  28.chr # "\034" # "\x1c" # Terminal Location Number
+  OPT_3270REGIME     =  29.chr # "\035" # "\x1d" # Telnet 3270 Regime
+  OPT_X3PAD          =  30.chr # "\036" # "\x1e" # X.3 PAD
+  OPT_NAWS           =  31.chr # "\037" # "\x1f" # Negotiate About Window Size
+  OPT_TSPEED         =  32.chr # " "    # "\x20" # Terminal Speed
+  OPT_LFLOW          =  33.chr # "!"    # "\x21" # Remote Flow Control
+  OPT_LINEMODE       =  34.chr # "\""   # "\x22" # Linemode
+  OPT_XDISPLOC       =  35.chr # "#"    # "\x23" # X Display Location
+  OPT_OLD_ENVIRON    =  36.chr # "$"    # "\x24" # Environment Option
+  OPT_AUTHENTICATION =  37.chr # "%"    # "\x25" # Authentication Option
+  OPT_ENCRYPT        =  38.chr # "&"    # "\x26" # Encryption Option
+  OPT_NEW_ENVIRON    =  39.chr # "'"    # "\x27" # New Environment Option
+  OPT_EXOPL          = 255.chr # "\377" # "\xff" # Extended-Options-List
 
   NULL = "\000"
   CR   = "\015"
@@ -413,35 +428,56 @@ class Telnet < SimpleDelegator
   EOL  = CR + LF
 v = $-v
 $-v = false
-  VERSION = "1.00"
-  RELEASE_DATE = "$Date: 1999/10/04 22:51:26 $"
+  VERSION = "1.20"
+  RELEASE_DATE = "$Date: 2000/01/24 17:02:57 $"
 $-v = v
 
   def initialize(options)
     @options = options
-    @options["Binmode"]    = false         unless @options.key?("Binmode")
-    @options["Host"]       = "localhost"   unless @options.key?("Host")
-    @options["Port"]       = 23            unless @options.key?("Port")
-    @options["Prompt"]     = /[$%#>] \z/n  unless @options.key?("Prompt")
-    @options["Telnetmode"] = true          unless @options.key?("Telnetmode")
-    @options["Timeout"]    = 10            unless @options.key?("Timeout")
-    @options["Waittime"]   = 0             unless @options.key?("Waittime")
+    @options["Binmode"]    = false         unless @options.has_key?("Binmode")
+    @options["Host"]       = "localhost"   unless @options.has_key?("Host")
+    @options["Port"]       = 23            unless @options.has_key?("Port")
+    @options["Prompt"]     = /[$%#>] \z/n  unless @options.has_key?("Prompt")
+    @options["Telnetmode"] = true          unless @options.has_key?("Telnetmode")
+    @options["Timeout"]    = 10            unless @options.has_key?("Timeout")
+    @options["Waittime"]   = 0             unless @options.has_key?("Waittime")
 
     @telnet_option = { "SGA" => false, "BINARY" => false }
 
-    if @options.key?("Output_log")
+    if @options.has_key?("Output_log")
       @log = File.open(@options["Output_log"], 'a+')
       @log.sync = true
       @log.binmode
     end
 
-    if @options.key?("Dump_log")
+    if @options.has_key?("Dump_log")
       @dumplog = File.open(@options["Dump_log"], 'a+')
       @dumplog.sync = true
       @dumplog.binmode
+      def @dumplog.log_dump(dir, x)
+        len = x.length
+        addr = 0
+        offset = 0
+        while 0 < len
+          if len < 16
+            line = x[offset, len]
+          else
+            line = x[offset, 16]
+          end
+          hexvals = line.unpack('H*')[0]
+          hexvals.concat ' ' * (32 - hexvals.length)
+          hexvals = format "%s %s %s %s  " * 4, *hexvals.unpack('a2' * 16)
+          line.gsub! /[\000-\037\177-\377]/n, '.'
+          printf "%s 0x%5.5x: %s%s\n", dir, addr, hexvals, line
+          addr += 16
+          offset += 16
+          len -= 16
+        end
+        print "\n"
+      end
     end
 
-    if @options.key?("Proxy")
+    if @options.has_key?("Proxy")
       if @options["Proxy"].kind_of?(Telnet)
         @sock = @options["Proxy"].sock
       elsif @options["Proxy"].kind_of?(TCPsocket)
@@ -452,8 +488,8 @@ $-v = v
     else
       message = "Trying " + @options["Host"] + "...\n"
       yield(message) if iterator?
-      @log.write(message) if @options.key?("Output_log")
-      @dumplog.write(message) if @options.key?("Dump_log")
+      @log.write(message) if @options.has_key?("Output_log")
+      @dumplog.log_dump('#', message) if @options.has_key?("Dump_log")
 
       begin
         if @options["Timeout"] == false
@@ -466,8 +502,8 @@ $-v = v
       rescue TimeoutError
         raise TimeoutError, "timed-out; opening of the host"
       rescue
-        @log.write($!.to_s + "\n") if @options.key?("Output_log")
-        @dumplog.write($!.to_s + "\n") if @options.key?("Dump_log")
+        @log.write($!.to_s + "\n") if @options.has_key?("Output_log")
+        @dumplog.log_dump('#', $!.to_s + "\n") if @options.has_key?("Dump_log")
         raise
       end
       @sock.sync = true
@@ -475,8 +511,8 @@ $-v = v
 
       message = "Connected to " + @options["Host"] + ".\n"
       yield(message) if iterator?
-      @log.write(message) if @options.key?("Output_log")
-      @dumplog.write(message) if @options.key?("Dump_log")
+      @log.write(message) if @options.has_key?("Output_log")
+      @dumplog.log_dump('#', message) if @options.has_key?("Dump_log")
     end
 
     super(@sock)
@@ -532,11 +568,15 @@ $-v = v
         self.write(IAC + WONT + $1[1..1])
         ''
       elsif WILL[0] == $1[0]  # respond to "IAC WILL x"
-        if    OPT_ECHO[0] == $1[1]
+        if    OPT_BINARY[0] == $1[1]
+          self.write(IAC + DO + OPT_BINARY)
+        elsif OPT_ECHO[0] == $1[1]
           self.write(IAC + DO + OPT_ECHO)
         elsif OPT_SGA[0]  == $1[1]
           @telnet_option["SGA"] = true
           self.write(IAC + DO + OPT_SGA)
+        else
+          self.write(IAC + DONT + $1[1..1])
         end
         ''
       elsif WONT[0] == $1[0]  # respond to "IAC WON'T x"
@@ -545,6 +585,8 @@ $-v = v
         elsif OPT_SGA[0]  == $1[1]
           @telnet_option["SGA"] = false
           self.write(IAC + DONT + OPT_SGA)
+        else
+          self.write(IAC + DONT + $1[1..1])
         end
         ''
       else
@@ -560,15 +602,15 @@ $-v = v
     waittime = @options["Waittime"]
 
     if options.kind_of?(Hash)
-      prompt   = if options.key?("Match")
+      prompt   = if options.has_key?("Match")
                    options["Match"]
-                 elsif options.key?("Prompt")
+                 elsif options.has_key?("Prompt")
                    options["Prompt"]
-                 elsif options.key?("String")
+                 elsif options.has_key?("String")
                    Regexp.new( Regexp.quote(options["String"]) )
                  end
-      time_out = options["Timeout"]  if options.key?("Timeout")
-      waittime = options["Waittime"] if options.key?("Waittime")
+      time_out = options["Timeout"]  if options.has_key?("Timeout")
+      waittime = options["Waittime"] if options.has_key?("Waittime")
     else
       prompt = options
     end
@@ -586,7 +628,7 @@ $-v = v
       end
       begin
         c = @sock.sysread(1024 * 1024)
-        @dumplog.print(c) if @options.key?("Dump_log")
+        @dumplog.log_dump('<', c) if @options.has_key?("Dump_log")
         if @options["Telnetmode"]
           if Integer(c.rindex(/#{IAC}#{SE}/no)) <
              Integer(c.rindex(/#{IAC}#{SB}/no))
@@ -600,7 +642,7 @@ $-v = v
             rest = ''
           end
         end
-        @log.print(buf) if @options.key?("Output_log")
+        @log.print(buf) if @options.has_key?("Output_log")
         line.concat(buf)
         yield buf if iterator?
       rescue EOFError # End of file reached
@@ -618,7 +660,8 @@ $-v = v
     length = string.length
     while 0 < length
       IO::select(nil, [@sock])
-      length -= @sock.syswrite(string)
+      @dumplog.log_dump('>', string[-length..-1]) if @options.has_key?("Dump_log")
+      length -= @sock.syswrite(string[-length..-1])
     end
   end
 
@@ -649,8 +692,8 @@ $-v = v
 
     if options.kind_of?(Hash)
       string   = options["String"]
-      match    = options["Match"]   if options.key?("Match")
-      time_out = options["Timeout"] if options.key?("Timeout")
+      match    = options["Match"]   if options.has_key?("Match")
+      time_out = options["Timeout"] if options.has_key?("Timeout")
     else
       string = options
     end

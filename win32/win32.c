@@ -229,7 +229,6 @@ char *getlogin()
 struct {
     int inuse;
     int pid;
-    HANDLE oshandle;
     FILE *pipe;
 } MyPopenRecord[MYPOPENSIZE];
 
@@ -495,7 +494,7 @@ mypopen (char *cmd, char *mode)
 		int p[2];
 
 		BOOL fRet;
-		HANDLE hInFile, hOutFile, hStdin, hStdout;
+		HANDLE hInFile, hOutFile;
 		LPCSTR lpApplicationName = NULL;
 		LPTSTR lpCommandLine;
 		LPTSTR lpCmd2 = NULL;
@@ -509,23 +508,11 @@ mypopen (char *cmd, char *mode)
 		sa.lpSecurityDescriptor = NULL;
 		sa.bInheritHandle       = TRUE;
 
-		if (!reading) {
-        	FILE *fp;
-
-			fp = (_popen)(cmd, mode);
-
-			MyPopenRecord[slot].inuse = TRUE;
-			MyPopenRecord[slot].pipe = fp;
-			MyPopenRecord[slot].pid = -1;
-
-			if (!fp)
-                        rb_fatal("cannot open pipe \"%s\" (%s)", cmd, strerror(errno));
-				return fp;
-		}
-
 		fRet = CreatePipe(&hInFile, &hOutFile, &sa, 2048L);
-		if (!fRet)
-                        rb_fatal("cannot open pipe \"%s\" (%s)", cmd, strerror(errno));
+		if (!fRet) {
+			errno = GetLastError();
+			rb_sys_fail("mypopen: CreatePipe");
+		}
 
 		memset(&aStartupInfo, 0, sizeof (STARTUPINFO));
 		memset(&aProcessInformation, 0, sizeof (PROCESS_INFORMATION));
@@ -533,93 +520,63 @@ mypopen (char *cmd, char *mode)
 		aStartupInfo.dwFlags    = STARTF_USESTDHANDLES;
 
 		if (reading) {
-			aStartupInfo.hStdInput  = GetStdHandle(STD_OUTPUT_HANDLE);//hStdin;
-			aStartupInfo.hStdError  = INVALID_HANDLE_VALUE;
-			//for save
-			DuplicateHandle(GetCurrentProcess(), GetStdHandle(STD_OUTPUT_HANDLE),
-			  GetCurrentProcess(), &hStdout,
-			  0, FALSE, DUPLICATE_SAME_ACCESS
-			);
-			//for redirect
-			DuplicateHandle(GetCurrentProcess(), GetStdHandle(STD_INPUT_HANDLE),
-			  GetCurrentProcess(), &hStdin,
-			  0, TRUE, DUPLICATE_SAME_ACCESS
-			);
+			aStartupInfo.hStdInput  = GetStdHandle(STD_INPUT_HANDLE);
 			aStartupInfo.hStdOutput = hOutFile;
 		}
 		else {
-			aStartupInfo.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE); //hStdout;
-			aStartupInfo.hStdError  = INVALID_HANDLE_VALUE;
-			// for save
-			DuplicateHandle(GetCurrentProcess(), GetStdHandle(STD_INPUT_HANDLE),
-			  GetCurrentProcess(), &hStdin,
-			  0, FALSE, DUPLICATE_SAME_ACCESS
-			);
-			//for redirect
-			DuplicateHandle(GetCurrentProcess(), GetStdHandle(STD_OUTPUT_HANDLE),
-			  GetCurrentProcess(), &hStdout,
-			  0, TRUE, DUPLICATE_SAME_ACCESS
-			);
-			aStartupInfo.hStdInput = hInFile;
+			aStartupInfo.hStdInput  = hInFile;
+			aStartupInfo.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
 		}
+		aStartupInfo.hStdError  = GetStdHandle(STD_ERROR_HANDLE);
 
 		dwCreationFlags = (NORMAL_PRIORITY_CLASS);
 
 		lpCommandLine = cmd;
 		if (NtHasRedirection(cmd) || isInternalCmd(cmd)) {
 		  lpApplicationName = getenv("COMSPEC");
-		  lpCmd2 = malloc(strlen(lpApplicationName) + 1 + strlen(cmd) + sizeof (" /c "));
-		  if (lpCmd2 == NULL)
-                     rb_fatal("Mypopen: malloc failed");
+		  lpCmd2 = xmalloc(strlen(lpApplicationName) + 1 + strlen(cmd) + sizeof (" /c "));
 		  sprintf(lpCmd2, "%s %s%s", lpApplicationName, " /c ", cmd);
 		  lpCommandLine = lpCmd2;
 		}
 
 		fRet = CreateProcess(lpApplicationName, lpCommandLine, &sa, &sa,
 			sa.bInheritHandle, dwCreationFlags, NULL, NULL, &aStartupInfo, &aProcessInformation);
+		errno = GetLastError();
+
+		if (lpCmd2)
+			free(lpCmd2);
 
 		if (!fRet) {
 			CloseHandle(hInFile);
 			CloseHandle(hOutFile);
-                        rb_fatal("cannot fork for \"%s\" (%s)", cmd, strerror(errno));
+			return NULL;
 		}
 
 		CloseHandle(aProcessInformation.hThread);
 
 		if (reading) {
-			HANDLE hDummy;
-
 			fd = _open_osfhandle((long)hInFile,  (_O_RDONLY | pipemode));
 			CloseHandle(hOutFile);
-			DuplicateHandle(GetCurrentProcess(), hStdout,
-			  GetCurrentProcess(), &hDummy,
-			  0, TRUE, (DUPLICATE_SAME_ACCESS | DUPLICATE_CLOSE_SOURCE)
-			);
 		}
 		else {
-			HANDLE hDummy;
-
-		    fd = _open_osfhandle((long)hOutFile, (_O_WRONLY | pipemode));
+			fd = _open_osfhandle((long)hOutFile, (_O_WRONLY | pipemode));
 			CloseHandle(hInFile);
-			DuplicateHandle(GetCurrentProcess(), hStdin,
-			  GetCurrentProcess(), &hDummy,
-			  0, TRUE, (DUPLICATE_SAME_ACCESS | DUPLICATE_CLOSE_SOURCE)
-			);
 		}
 
-		if (fd == -1) 
-                  rb_fatal("cannot open pipe \"%s\" (%s)", cmd, strerror(errno));
+		if (fd == -1) {
+			CloseHandle(reading ? hInFile : hOutFile);
+			CloseHandle(aProcessInformation.hProcess);
+			rb_sys_fail("mypopen: _open_osfhandle");
+		}
 
-
-		if ((fp = (FILE *) fdopen(fd, mode)) == NULL)
-			return NULL;
-
-		if (lpCmd2)
-			free(lpCmd2);
+		if ((fp = (FILE *) fdopen(fd, mode)) == NULL) {
+			_close(fd);
+			CloseHandle(aProcessInformation.hProcess);
+			rb_sys_fail("mypopen: fdopen");
+		}
 
 		MyPopenRecord[slot].inuse = TRUE;
 		MyPopenRecord[slot].pipe  = fp;
-		MyPopenRecord[slot].oshandle = (reading ? hInFile : hOutFile);
 		MyPopenRecord[slot].pid   = (int)aProcessInformation.hProcess;
 		return fp;
     }
@@ -671,14 +628,13 @@ mypclose(FILE *fp)
 			}
 		}
 	}
+	CloseHandle((HANDLE)MyPopenRecord[i].pid);
 #endif
-
 
     //
     // close the pipe
     //
-    // Closehandle() is done by fclose().
-    //CloseHandle(MyPopenRecord[i].oshandle);
+
     fflush(fp);
     fclose(fp);
 
@@ -1218,12 +1174,6 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
 // UNIX compatible directory access functions for NT
 //
 
-//
-// File names are converted to lowercase if the
-// CONVERT_TO_LOWER_CASE variable is defined.
-//
-
-#define CONVERT_TO_LOWER_CASE
 #define PATHLEN 1024
 
 //
@@ -1246,31 +1196,16 @@ opendir(char *filename)
     char            root[PATHLEN];
     char            volname[PATHLEN];
     DWORD           serial, maxname, flags;
-    BOOL            downcase;
-    char           *dummy;
 
     //
     // check to see if we\'ve got a directory
     //
 
-    if (stat (filename, &sbuf) < 0 ||
-	sbuf.st_mode & _S_IFDIR == 0) {
+    if ((stat (filename, &sbuf) < 0 ||
+	sbuf.st_mode & _S_IFDIR == 0) &&
+	(!isalpha(filename[0]) || filename[1] != ':' || filename[2] != '\0' ||
+	((1 << (filename[0] & 0x5f) - 'A') & GetLogicalDrives()) == 0)) {
 	return NULL;
-    }
-
-    //
-    // check out the file system characteristics
-    //
-    if (GetFullPathName(filename, PATHLEN, root, &dummy)) {
-	if (dummy = strchr(root, '\\'))
-	    *++dummy = '\0';
-	if (GetVolumeInformation(root, volname, PATHLEN, 
-				 &serial, &maxname, &flags, 0, 0)) {
-	    downcase = !(flags & FS_CASE_SENSITIVE);
-	}
-    }
-    else {
-	downcase = TRUE;
     }
 
     //
@@ -1287,7 +1222,7 @@ opendir(char *filename)
 
     strcpy(scanname, filename);
 
-    if (index("/\\", *(scanname + strlen(scanname) - 1)) == NULL)
+    if (index("/\\:", *CharPrev(scanname, scanname + strlen(scanname))) == NULL)
 	strcat(scanname, "/*");
     else
 	strcat(scanname, "*");
@@ -1309,8 +1244,6 @@ opendir(char *filename)
     idx = strlen(FindData.cFileName)+1;
     p->start = ALLOC_N(char, idx);
     strcpy (p->start, FindData.cFileName);
-    if (downcase)
-	strlwr(p->start);
     p->nfiles++;
     
     //
@@ -1334,8 +1267,6 @@ opendir(char *filename)
             rb_fatal ("opendir: malloc failed!\n");
 	}
 	strcpy(&p->start[idx], FindData.cFileName);
-	if (downcase) 
-	    strlwr(&p->start[idx]);
 	p->nfiles++;
 	idx += len+1;
     }
@@ -1609,7 +1540,7 @@ typedef struct	{
 #endif  /* defined (_MT) && !defined (DLL_FOR_WIN32S) */
 }	ioinfo;
 
-EXTERN_C ioinfo * __pioinfo[];
+EXTERN_C _CRTIMP ioinfo * __pioinfo[];
 
 #define IOINFO_L2E			5
 #define IOINFO_ARRAY_ELTS	(1 << IOINFO_L2E)
@@ -1617,6 +1548,7 @@ EXTERN_C ioinfo * __pioinfo[];
 #define _osfile(i)	(_pioinfo(i)->osfile)
 
 #define FOPEN			0x01	/* file handle open */
+#define FNOINHERIT		0x10	/* file handle opened O_NOINHERIT */
 #define FAPPEND			0x20	/* file handle opened O_APPEND */
 #define FDEV			0x40	/* file handle refers to device */
 #define FTEXT			0x80	/* file handle is in text mode */
@@ -1635,6 +1567,9 @@ my_open_osfhandle(long osfhandle, int flags)
 
     if (flags & O_TEXT)
 	fileflags |= FTEXT;
+
+    if (flags & O_NOINHERIT)
+	fileflags |= FNOINHERIT;
 
     /* attempt to allocate a C Runtime file handle */
     if ((fh = _alloc_osfhnd()) == -1) {
@@ -1687,7 +1622,8 @@ myfdopen (int fd, const char *mode)
 void
 myfdclose(FILE *fp)
 {
-	fclose(fp);
+    _free_osfhnd(fileno(fp));
+    fclose(fp);
 }
 
 
@@ -1828,6 +1764,10 @@ myselect (int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
     long r;
     if (!NtSocketsInitialized++) {
 	StartSockets();
+    }
+    if (nfds == 0 && timeout) {
+	Sleep(timeout->tv_sec * 1000 + timeout->tv_usec / 1000);
+	return 0;
     }
     if ((r = select (nfds, rd, wr, ex, timeout)) == SOCKET_ERROR) {
 	errno = WSAGetLastError();
@@ -2266,7 +2206,7 @@ gettimeofday(struct timeval *tv, struct timezone *tz)
 }
 
 char *
-getcwd(buffer, size)
+win32_getcwd(buffer, size)
     char *buffer;
     int size;
 {
@@ -2281,7 +2221,7 @@ getcwd(buffer, size)
         return NULL;
     }
 
-    for (bp = buffer; *bp != '\0'; bp++) {
+    for (bp = buffer; *bp != '\0'; bp = CharNext(bp)) {
 	if (*bp == '\\') {
 	    *bp = '/';
 	}

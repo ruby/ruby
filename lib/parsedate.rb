@@ -27,7 +27,7 @@ module ParseDate
     if date.sub!(/(#{DAYPAT})[a-z]*,?/i, ' ')
       wday = DAYS[$1.downcase]
     end
-    if date.sub!(/(\d+):(\d+)(?::(\d+))?(?:\s*(am|pm))?(?:\s+([a-z]{1,4}(?:\s+[a-z]{1,4})?|[-+]\d{4}))?/i, ' ')
+    if date.sub!(/(\d+):(\d+)(?::(\d+))?(?:\s*(am|pm))?(?:\s+([a-z]{1,4}(?:\s+[a-z]{1,4}|[-+]\d{4})?|[-+]\d{4}))?/i, ' ')
       hour = $1.to_i
       min = $2.to_i
       if $3

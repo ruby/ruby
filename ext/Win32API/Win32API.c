@@ -52,13 +52,10 @@ Win32API_initialize(self, dllname, proc, import, export)
     int len;
     int ex;
 
-    hdll = GetModuleHandle(RSTRING(dllname)->ptr);
-    if (!hdll) {
-	hdll = LoadLibrary(RSTRING(dllname)->ptr);
-	if (!hdll)
-	    rb_raise(rb_eRuntimeError, "LoadLibrary: %s\n", RSTRING(dllname)->ptr);
-	Data_Wrap_Struct(self, 0, Win32API_FreeLibrary, hdll);
-    }
+    hdll = LoadLibrary(RSTRING(dllname)->ptr);
+    if (!hdll)
+	rb_raise(rb_eRuntimeError, "LoadLibrary: %s\n", RSTRING(dllname)->ptr);
+    rb_iv_set(self, "__hdll__", Data_Wrap_Struct(self, 0, Win32API_FreeLibrary, hdll));
     hproc = GetProcAddress(hdll, RSTRING(proc)->ptr);
     if (!hproc) {
 	str = rb_str_new3(proc);
@@ -68,9 +65,9 @@ Win32API_initialize(self, dllname, proc, import, export)
 	    rb_raise(rb_eRuntimeError, "GetProcAddress: %s or %s\n",
 		RSTRING(proc)->ptr, RSTRING(str)->ptr);
     }
-    rb_iv_set(self, "__dll__", INT2NUM((int)hdll));
+    rb_iv_set(self, "__dll__", UINT2NUM((unsigned long)hdll));
     rb_iv_set(self, "__dllname__", dllname);
-    rb_iv_set(self, "__proc__", INT2NUM((int)hproc));
+    rb_iv_set(self, "__proc__", UINT2NUM((unsigned long)hproc));
 
     a_import = rb_ary_new();
     ptr = RARRAY(import)->ptr;
@@ -124,7 +121,7 @@ Win32API_Call(argc, argv, obj)
     ApiVoid     *ApiFunctionVoid;
     ApiInteger  *ApiFunctionInteger;
 
-    long  lParam; 
+    long  lParam;
     char *pParam;
 
     VALUE Return;
@@ -140,11 +137,11 @@ Win32API_Call(argc, argv, obj)
 
     obj_proc = rb_iv_get(obj, "__proc__");
 
-    ApiFunction = (FARPROC)NUM2INT(obj_proc);
+    ApiFunction = (FARPROC)NUM2ULONG(obj_proc);
 
     obj_import = rb_iv_get(obj, "__import__");
     obj_export = rb_iv_get(obj, "__export__");
-    nimport  = RARRAY(obj_import)->len;
+    nimport = RARRAY(obj_import)->len;
     texport = FIX2INT(obj_export);
 
     if (items != nimport)
@@ -159,13 +156,13 @@ Win32API_Call(argc, argv, obj)
 	    switch (timport) {
 	    case _T_NUMBER:
 	    case _T_INTEGER:
-		lParam = NUM2INT(rb_ary_entry(args, i));
+		lParam = NUM2ULONG(rb_ary_entry(args, i));
 #if defined(_MSC_VER) || defined(__LCC__)
 		_asm {
 		    mov     eax, lParam
 		    push    eax
 		}
-#elif defined(__CYGWIN32__) || defined(__MINGW32__)
+#elif defined(__CYGWIN__) || defined(__MINGW32__)
 		asm volatile ("pushl %0" :: "g" (lParam));
 #else
 #error
@@ -173,15 +170,21 @@ Win32API_Call(argc, argv, obj)
 		break;
 	    case _T_POINTER:
 		str = rb_ary_entry(args, i);
-		Check_Type(str, T_STRING);
-		rb_str_modify(str);
-		pParam = RSTRING(str)->ptr;
+		if (NIL_P(str)) {
+		    pParam = 0;
+		} else if (FIXNUM_P(str)){
+		    pParam = (char *)NUM2ULONG(str);
+		} else {
+		    Check_Type(str, T_STRING);
+		    rb_str_modify(str);
+		    pParam = RSTRING(str)->ptr;
+		}
 #if defined(_MSC_VER) || defined(__LCC__)
 		_asm {
-		    mov     eax, dword ptr pParam
+		    mov     eax, pParam
 		    push    eax
 		}
-#elif defined(__CYGWIN32__) || defined(__MINGW32__)
+#elif defined(__CYGWIN__) || defined(__MINGW32__)
 		asm volatile ("pushl %0" :: "g" (pParam));
 #else
 #error
@@ -189,7 +192,6 @@ Win32API_Call(argc, argv, obj)
 		break;
 	    }
 	}
-
     }
 
     switch (texport) {

@@ -243,7 +243,7 @@ SRC
     print "no\n"
     return false
   end
-  header.tr!("a-z./\055", "A-Z___")
+  header.tr!("a-z\055./", "A-Z___")
   $defs.push(format("-DHAVE_%s", header))
   print "yes\n"
   return true
@@ -366,6 +366,8 @@ CFLAGS   = #{CONFIG["CCDLFLAGS"]} -I$(hdrdir) #{CFLAGS} #{$CFLAGS} -I#{CONFIG["i
 CXXFLAGS = $(CFLAGS)
 DLDFLAGS = #{$DLDFLAGS} #{$LDFLAGS}
 LDSHARED = #{CONFIG["LDSHARED"]} #{defflag}
+
+RUBY_INSTALL_NAME = #{CONFIG["RUBY_INSTALL_NAME"]}
 
 prefix = #{CONFIG["prefix"]}
 exec_prefix = #{CONFIG["exec_prefix"]}

@@ -5,7 +5,7 @@
   $Author$
   created at: Thu Jun 10 14:26:32 JST 1993
 
-  Copyright (C) 1993-1999 Yukihiro Matsumoto
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
 
 *************************************************/
 
@@ -89,7 +89,7 @@ extern "C" {
 ---->> ruby requires sizeof(void*) == sizeof(long) to be compiled. <<----
 #endif
 typedef unsigned long VALUE;
-typedef unsigned int ID;
+typedef unsigned long ID;
 
 #ifdef __STDC__
 # include <limits.h>
@@ -117,6 +117,8 @@ typedef unsigned int ID;
 #define INT2FIX(i) (VALUE)(((long)(i))<<1 | FIXNUM_FLAG)
 VALUE rb_int2inum _((long));
 #define INT2NUM(v) rb_int2inum(v)
+VALUE rb_uint2inum _((unsigned long));
+#define UINT2NUM(v) rb_uint2inum(v)
 
 #define FIX2LONG(x) RSHIFT((long)x,1)
 #define FIX2ULONG(x) (((unsigned long)(x))>>1)

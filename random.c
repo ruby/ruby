@@ -6,7 +6,7 @@
   $Date$
   created at: Fri Dec 24 16:39:21 JST 1993
 
-  Copyright (C) 1993-1999 Yukihiro Matsumoto
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -76,10 +76,34 @@ void srand48 _((long));
 
 #endif /* not HAVE_DRAND48 */
 
-#ifdef HAVE_RANDOM
 static int first = 1;
+#ifdef HAVE_RANDOM
 static char state[256];
 #endif
+
+static int
+rand_init(seed)
+    long seed;
+{
+    int old;
+    static unsigned int saved_seed;
+
+#ifdef HAVE_RANDOM
+    if (first == 1) {
+	initstate(1, state, sizeof state);
+    }
+    else {
+	setstate(state);
+    }
+#endif
+    first = 0;
+
+    SRANDOM(seed);
+    old = saved_seed;
+    saved_seed = seed;
+
+    return old;
+}
 
 static VALUE
 rb_f_srand(argc, argv, obj)
@@ -87,11 +111,10 @@ rb_f_srand(argc, argv, obj)
     VALUE *argv;
     VALUE obj;
 {
-    VALUE seed;
-    int old;
-    static int saved_seed;
+    VALUE a;
+    unsigned int seed, old;
 
-    if (rb_scan_args(argc, argv, "01", &seed) == 0) {
+    if (rb_scan_args(argc, argv, "01", &a) == 0) {
 	static int n = 0;
 	struct timeval tv;
 
@@ -99,24 +122,11 @@ rb_f_srand(argc, argv, obj)
 	seed = tv.tv_sec ^ tv.tv_usec ^ getpid() ^ n++;
     }
     else {
-	seed = NUM2UINT(seed);
+	seed = NUM2UINT(a);
     }
+    old = rand_init(seed);
 
-#ifdef HAVE_RANDOM
-    if (first == 1) {
-	initstate(1, state, sizeof state);
-	first = 0;
-    }
-    else {
-	setstate(state);
-    }
-#endif
-
-    SRANDOM(seed);
-    old = saved_seed;
-    saved_seed = seed;
-
-    return rb_int2inum(old);
+    return rb_uint2inum(old);
 }
 
 static VALUE
@@ -125,14 +135,19 @@ rb_f_rand(obj, vmax)
 {
     long val, max;
 
+    if (first) {
+	struct timeval tv;
+
+	gettimeofday(&tv, 0);
+	rand_init(tv.tv_sec ^ tv.tv_usec ^ getpid());
+    }
     switch (TYPE(vmax)) {
-      case T_BIGNUM:
-	return rb_big_rand(vmax);
-	
       case T_FLOAT:
-	if (RFLOAT(vmax)->value > LONG_MAX || RFLOAT(vmax)->value < LONG_MIN)
-	    return rb_big_rand(rb_dbl2big(RFLOAT(vmax)->value));
-	break;
+	if (RFLOAT(vmax)->value <= LONG_MAX && RFLOAT(vmax)->value >= LONG_MIN)
+	    break;
+	/* fall through */
+      case T_BIGNUM:
+	return rb_big_rand(vmax, RANDOM_NUMBER);
     }
 
     max = NUM2LONG(vmax);

@@ -6,7 +6,7 @@
   $Date$
   created at: Mon Aug  9 17:12:58 JST 1993
 
-  Copyright (C) 1993-1999 Yukihiro Matsumoto
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -112,9 +112,10 @@ rb_str_new4(orig)
 	str->ptr = RSTRING(orig)->ptr;
 	RSTRING(orig)->orig = (VALUE)str;
 	str->orig = 0;
-	if (FL_TEST(str, FL_TAINT)) {
+	if (FL_TEST(orig, FL_TAINT)) {
 	    FL_SET(str, FL_TAINT);
 	}
+	FL_SET(str, STR_FREEZE);
 	return (VALUE)str;
     }
 }
@@ -261,8 +262,12 @@ rb_str_times(str, times)
     long i, len;
 
     len = NUM2LONG(times);
+    if (len == 0) return rb_str_new(0,0);
     if (len < 0) {
 	rb_raise(rb_eArgError, "negative argument");
+    }
+    if (LONG_MAX / len <  RSTRING(str)->len) {
+	rb_raise(rb_eArgError, "argument too big");
     }
 
     str2 = rb_str_new(0, RSTRING(str)->len*len);
@@ -579,6 +584,10 @@ rb_str_index_method(argc, argv, str)
     else {
 	pos = 0;
     }
+    if (pos < 0) {
+	pos += RSTRING(str)->len;
+	if (pos < 0) return Qnil;
+    }
 
     switch (TYPE(sub)) {
       case T_REGEXP:
@@ -756,6 +765,7 @@ rb_str_upto(beg, end, excl)
     int excl;
 {
     VALUE current;
+    ID succ = rb_intern("succ");
 
     if (TYPE(end) != T_STRING) end = rb_str_to_str(end);
 
@@ -763,7 +773,7 @@ rb_str_upto(beg, end, excl)
     while (rb_str_cmp(current, end) <= 0) {
 	rb_yield(current);
 	if (!excl && rb_str_equal(current, end)) break;
-	current = rb_str_succ(current);
+	current = rb_funcall(current, succ, 0, 0);
 	if (excl && rb_str_equal(current, end)) break;
 	if (RSTRING(current)->len > RSTRING(end)->len)
 	    break;
@@ -858,7 +868,7 @@ rb_str_replace(str, beg, len, val)
     if (RSTRING(str)->len < beg && len < 0) {
 	MEMZERO(RSTRING(str)->ptr + RSTRING(str)->len, char, -len);
     }
-    memcpy(RSTRING(str)->ptr+beg, RSTRING(val)->ptr, RSTRING(val)->len);
+    memmove(RSTRING(str)->ptr+beg, RSTRING(val)->ptr, RSTRING(val)->len);
     RSTRING(str)->len += RSTRING(val)->len - len;
     RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
 }
@@ -1041,10 +1051,9 @@ rb_str_sub(argc, argv, str)
     VALUE *argv;
     VALUE str;
 {
-    VALUE val = rb_str_sub_bang(argc, argv, str = rb_str_dup(str));
-
-    if (NIL_P(val)) return str;
-    return val;
+    str = rb_str_dup(str);
+    rb_str_sub_bang(argc, argv, str);
+    return str;
 }
 
 static VALUE
@@ -1110,7 +1119,7 @@ rb_str_gsub_bang(argc, argv, str)
 	     * Always consume at least one character of the input string
 	     * in order to prevent infinite loops.
 	     */
-	    len = mbclen(RSTRING(str)->ptr[END(0)]);
+	    len = mbclen2(RSTRING(str)->ptr[END(0)], pat);
 	    if (RSTRING(str)->len > END(0)) {
 		memcpy(bp, RSTRING(str)->ptr+END(0), len);
 		bp += len;
@@ -1148,10 +1157,10 @@ rb_str_gsub(argc, argv, str)
     VALUE *argv;
     VALUE str;
 {
-    VALUE val = rb_str_gsub_bang(argc, argv, str = rb_str_dup(str));
+    str = rb_str_dup(str);
 
-    if (NIL_P(val)) return str;
-    return val;
+    rb_str_gsub_bang(argc, argv, str);
+    return str;
 }
 
 static VALUE
@@ -1193,13 +1202,11 @@ rb_f_sub(argc, argv)
     int argc;
     VALUE *argv;
 {
-    VALUE line, v;
+    VALUE str = rb_str_dup(uscore_get());
 
-    line = uscore_get();
-    v = rb_str_sub_bang(argc, argv, line = rb_str_dup(line));
-    if (NIL_P(v)) return line;
-    rb_lastline_set(v);
-    return v;
+    rb_str_sub_bang(argc, argv, str);
+    rb_lastline_set(str);
+    return str;
 }
 
 static VALUE
@@ -1215,13 +1222,11 @@ rb_f_gsub(argc, argv)
     int argc;
     VALUE *argv;
 {
-    VALUE line, v;
+    VALUE str = rb_str_dup(uscore_get());
 
-    line = uscore_get();
-    v = rb_str_gsub_bang(argc, argv, line = rb_str_dup(line));
-    if (NIL_P(v)) return line;
-    rb_lastline_set(v);
-    return v;
+    rb_str_gsub_bang(argc, argv, str);
+    rb_lastline_set(str);
+    return str;
 }
 
 static VALUE
@@ -1343,12 +1348,6 @@ rb_str_inspect(str)
 		*b++ = *p++;
 	    }
 	}
-#if 0
-	else if ((c & 0x80) && rb_kcode() != MBCTYPE_EUC) {
-	    CHECK(1);
-	    *b++ = c;
-	}
-#endif
 	else if (c == '"'|| c == '\\') {
 	    CHECK(2);
 	    *b++ = '\\';
@@ -1522,10 +1521,9 @@ static VALUE
 rb_str_upcase(str)
     VALUE str;
 {
-    VALUE val = rb_str_upcase_bang(str = rb_str_dup(str));
-
-    if (NIL_P(val)) return str;
-    return val;
+    str = rb_str_dup(str);
+    rb_str_upcase_bang(str);
+    return str;
 }
 
 static VALUE
@@ -1556,10 +1554,9 @@ static VALUE
 rb_str_downcase(str)
     VALUE str;
 {
-    VALUE val = rb_str_downcase_bang(str = rb_str_dup(str));
-
-    if (NIL_P(val)) return str;
-    return val;
+    str = rb_str_dup(str);
+    rb_str_downcase_bang(str);
+    return str;
 }
 
 static VALUE
@@ -1592,10 +1589,9 @@ static VALUE
 rb_str_capitalize(str)
     VALUE str;
 {
-    VALUE val = rb_str_capitalize_bang(str = rb_str_dup(str));
-
-    if (NIL_P(val)) return str;
-    return val;
+    str = rb_str_dup(str);
+    rb_str_capitalize_bang(str);
+    return str;
 }
 
 static VALUE
@@ -1630,10 +1626,9 @@ static VALUE
 rb_str_swapcase(str)
     VALUE str;
 {
-    VALUE val = rb_str_swapcase_bang(str = rb_str_dup(str));
-
-    if (NIL_P(val)) return str;
-    return val;
+    str = rb_str_dup(str);
+    rb_str_swapcase_bang(str);
+    return str;
 }
 
 typedef unsigned char *USTR;
@@ -1781,10 +1776,9 @@ static VALUE
 rb_str_tr(str, src, repl)
     VALUE str, src, repl;
 {
-    VALUE val = tr_trans(str = rb_str_dup(str), src, repl, 0);
-
-    if (NIL_P(val)) return str;
-    return val;
+    str = rb_str_dup(str);
+    tr_trans(str, src, repl, 0);
+    return str;
 }
 
 static void
@@ -1865,10 +1859,9 @@ rb_str_delete(argc, argv, str)
     VALUE *argv;
     VALUE str;
 {
-    VALUE val = rb_str_delete_bang(argc, argv, str = rb_str_dup(str));
-
-    if (NIL_P(val)) return str;
-    return val;
+    str = rb_str_dup(str);
+    rb_str_delete_bang(argc, argv, str);
+    return str;
 }
 
 static VALUE
@@ -1926,10 +1919,9 @@ rb_str_squeeze(argc, argv, str)
     VALUE *argv;
     VALUE str;
 {
-    VALUE val = rb_str_squeeze_bang(argc, argv, str = rb_str_dup(str));
-
-    if (NIL_P(val)) return str;
-    return val;
+    str = rb_str_dup(str);
+    rb_str_squeeze_bang(argc, argv, str);
+    return str;
 }
 
 static VALUE
@@ -1943,10 +1935,9 @@ static VALUE
 rb_str_tr_s(str, src, repl)
     VALUE str, src, repl;
 {
-    VALUE val = tr_trans(str = rb_str_dup(str), src, repl, 1);
-
-    if (NIL_P(val)) return str;
-    return val;
+    str = rb_str_dup(str);
+    tr_trans(str, src, repl, 1);
+    return str;
 }
 
 static VALUE
@@ -2069,6 +2060,7 @@ rb_str_split_method(argc, argv, str)
 		    if (!NIL_P(limit) && lim <= ++i) break;
 		}
 		end++;
+		if (ismbchar(*ptr)) {ptr++; end++;}
 	    }
 	}
     }
@@ -2082,11 +2074,11 @@ rb_str_split_method(argc, argv, str)
 	    regs = RMATCH(rb_backref_get())->regs;
 	    if (start == end && BEG(0) == END(0)) {
 		if (last_null == 1) {
-		    rb_ary_push(result, rb_str_substr(str, beg, mbclen(RSTRING(str)->ptr[beg])));
+		    rb_ary_push(result, rb_str_substr(str, beg, mbclen2(RSTRING(str)->ptr[beg],spat)));
 		    beg = start;
 		}
 		else {
-		    start += mbclen(RSTRING(str)->ptr[start]);
+		    start += mbclen2(RSTRING(str)->ptr[start],spat);
 		    last_null = 1;
 		    continue;
 		}
@@ -2234,10 +2226,9 @@ static VALUE
 rb_str_chop(str)
     VALUE str;
 {
-    VALUE val = rb_str_chop_bang(str = rb_str_dup(str));
-
-    if (NIL_P(val)) return str;
-    return val;
+    str = rb_str_dup(str);
+    rb_str_chop_bang(str);
+    return str;
 }
 
 static VALUE
@@ -2250,12 +2241,11 @@ rb_f_chop_bang(str)
 static VALUE
 rb_f_chop()
 {
-    VALUE str = uscore_get();
-    VALUE val = rb_str_chop_bang(str = rb_str_dup(str));
+    VALUE str = rb_str_dup(uscore_get());
 
-    if (NIL_P(val)) return str;
-    rb_lastline_set(val);
-    return val;
+    rb_str_chop_bang(str);
+    rb_lastline_set(str);
+    return str;
 }
 
 static VALUE
@@ -2307,10 +2297,9 @@ rb_str_chomp(argc, argv, str)
     VALUE *argv;
     VALUE str;
 {
-    VALUE val = rb_str_chomp_bang(argc, argv, str = rb_str_dup(str));
-
-    if (NIL_P(val)) return str;
-    return val;
+    str = rb_str_dup(str);
+    rb_str_chomp_bang(argc, argv, str);
+    return str;
 }
 
 static VALUE
@@ -2326,12 +2315,11 @@ rb_f_chomp(argc, argv)
     int argc;
     VALUE *argv;
 {
-    VALUE str = uscore_get();
-    VALUE val = rb_str_chomp_bang(argc, argv, str = rb_str_dup(str));
+    VALUE str = rb_str_dup(uscore_get());
 
-    if (NIL_P(val)) return str;
-    rb_lastline_set(val);
-    return val;
+    rb_str_chomp_bang(argc, argv, str);
+    rb_lastline_set(str);
+    return str;
 }
 
 static VALUE
@@ -2374,10 +2362,9 @@ static VALUE
 rb_str_strip(str)
     VALUE str;
 {
-    VALUE val = rb_str_strip_bang(str = rb_str_dup(str));
-
-    if (NIL_P(val)) return str;
-    return val;
+    str = rb_str_dup(str);
+    rb_str_strip_bang(str);
+    return str;
 }
 
 static VALUE
@@ -2396,7 +2383,7 @@ scan_once(str, pat, start)
 	    /*
 	     * Always consume at least one character of the input string
 	     */
-	    *start = END(0)+mbclen(RSTRING(str)->ptr[END(0)]);
+	    *start = END(0)+mbclen2(RSTRING(str)->ptr[END(0)],pat);
 	}
 	else {
 	    *start = END(0);

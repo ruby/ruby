@@ -6,7 +6,7 @@
   $Date$
   created at: Fri Aug  6 09:46:12 JST 1993
 
-  Copyright (C) 1993-1999 Yukihiro Matsumoto
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -280,6 +280,7 @@ VALUE
 rb_ary_pop(ary)
     VALUE ary;
 {
+    rb_ary_modify(ary);
     if (RARRAY(ary)->len == 0) return Qnil;
     if (RARRAY(ary)->len * 10 < RARRAY(ary)->capa && RARRAY(ary)->capa > ARY_DEFAULT_SIZE) {
 	RARRAY(ary)->capa = RARRAY(ary)->len * 2;
@@ -294,6 +295,7 @@ rb_ary_shift(ary)
 {
     VALUE top;
 
+    rb_ary_modify(ary);
     if (RARRAY(ary)->len == 0) return Qnil;
 
     top = RARRAY(ary)->ptr[0];
@@ -821,6 +823,7 @@ rb_ary_reverse(ary)
     VALUE *p1, *p2;
     VALUE tmp;
 
+    rb_ary_modify(ary);
     if (RARRAY(ary)->len == 0) return ary;
 
     p1 = RARRAY(ary)->ptr;
@@ -940,22 +943,19 @@ rb_ary_delete_at(ary, at)
     VALUE ary;
     VALUE at;
 {
-    long i1, i2, pos;
+    long i, pos = NUM2LONG(at), len = RARRAY(ary)->len;
     VALUE del = Qnil;
 
     rb_ary_modify(ary);
-    pos = NUM2LONG(at);
-    for (i1 = i2 = 0; i1 < RARRAY(ary)->len; i1++) {
-	if (i1 == pos) {
-	    del = RARRAY(ary)->ptr[i1];
-	    continue;
-	}
-	if (i1 != i2) {
-	    RARRAY(ary)->ptr[i2] = RARRAY(ary)->ptr[i1];
-	}
-	i2++;
+    if (pos >= len) return Qnil;
+    if (pos < 0) pos += len;
+    if (pos < 0) return Qnil;
+
+    del = RARRAY(ary)->ptr[pos];
+    for (i = pos + 1; i < len; i++, pos++) {
+	RARRAY(ary)->ptr[pos] = RARRAY(ary)->ptr[i];
     }
-    RARRAY(ary)->len = i2;
+    RARRAY(ary)->len = pos;
 
     return del;
 }
@@ -1005,6 +1005,7 @@ static VALUE
 rb_ary_clear(ary)
     VALUE ary;
 {
+    rb_ary_modify(ary);
     RARRAY(ary)->len = 0;
     if (ARY_DEFAULT_SIZE*3 < RARRAY(ary)->capa) {
 	RARRAY(ary)->capa = ARY_DEFAULT_SIZE * 2;

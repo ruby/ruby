@@ -17,7 +17,7 @@ double strtod();
 #endif
 
 #define MARSHAL_MAJOR   4
-#define MARSHAL_MINOR   1
+#define MARSHAL_MINOR   3
 
 #define TYPE_NIL	'0'
 #define TYPE_TRUE	'T'
@@ -33,12 +33,16 @@ double strtod();
 #define TYPE_REGEXP	'/'
 #define TYPE_ARRAY	'['
 #define TYPE_HASH	'{'
+#define TYPE_HASH_DEF	'}'
 #define TYPE_STRUCT	'S'
-#define TYPE_MODULE	'M'
+#define TYPE_MODULE_OLD	'M'
+#define TYPE_CLASS	'c'
+#define TYPE_MODULE	'm'
 
 #define TYPE_SYMBOL	':'
 #define TYPE_SYMLINK	';'
 
+#define TYPE_IVAR	'I'
 #define TYPE_LINK	'@'
 
 static ID s_dump, s_load;
@@ -198,15 +202,32 @@ w_uclass(obj, klass, arg)
 }
 
 static void
+w_ivar(tbl, arg)
+    st_table *tbl;
+    struct dump_call_arg *arg;
+{
+    struct dump_call_arg c_arg;
+
+    if (tbl) {
+	w_long(tbl->num_entries, arg->arg);
+	st_foreach(tbl, obj_each, arg);
+    }
+    else {
+	w_long(0, arg->arg);
+    }
+}
+
+static void
 w_object(obj, arg, limit)
     VALUE obj;
     struct dump_arg *arg;
     int limit;
 {
     struct dump_call_arg c_arg;
+    st_table *ivtbl = 0;
 
     if (limit == 0) {
-	rb_raise(rb_eRuntimeError, "exceed depth limit");
+	rb_raise(rb_eArgError, "exceed depth limit");
     }
     if (obj == Qnil) {
 	w_byte(TYPE_NIL, arg);
@@ -259,20 +280,31 @@ w_object(obj, arg, limit)
 	    return;
 	}
 
+	if (ivtbl = rb_generic_ivar_table(obj)) {
+	    w_byte(TYPE_IVAR, arg);
+	}
+
 	switch (BUILTIN_TYPE(obj)) {
-	  case T_MODULE:
 	  case T_CLASS:
+	    w_byte(TYPE_CLASS, arg);
+	    {
+		VALUE path = rb_class_path(obj);
+		w_bytes(RSTRING(path)->ptr, RSTRING(path)->len, arg);
+	    }
+	    break;
+
+	  case T_MODULE:
 	    w_byte(TYPE_MODULE, arg);
 	    {
 		VALUE path = rb_class_path(obj);
 		w_bytes(RSTRING(path)->ptr, RSTRING(path)->len, arg);
 	    }
-	    return;
+	    break;
 
 	  case T_FLOAT:
 	    w_byte(TYPE_FLOAT, arg);
 	    w_float(RFLOAT(obj)->value, arg);
-	    return;
+	    break;
 
 	  case T_BIGNUM:
 	    w_byte(TYPE_BIGNUM, arg);
@@ -288,20 +320,20 @@ w_object(obj, arg, limit)
 		    d++;
 		}
 	    }
-	    return;
+	    break;
 
 	  case T_STRING:
 	    w_uclass(obj, rb_cString, arg);
 	    w_byte(TYPE_STRING, arg);
 	    w_bytes(RSTRING(obj)->ptr, RSTRING(obj)->len, arg);
-	    return;
+	    break;
 
 	  case T_REGEXP:
 	    w_uclass(obj, rb_cRegexp, arg);
 	    w_byte(TYPE_REGEXP, arg);
 	    w_bytes(RREGEXP(obj)->str, RREGEXP(obj)->len, arg);
 	    w_byte(rb_reg_options(obj), arg);
-	    return;
+	    break;
 
 	  case T_ARRAY:
 	    w_uclass(obj, rb_cArray, arg);
@@ -320,9 +352,17 @@ w_object(obj, arg, limit)
 
 	  case T_HASH:
 	    w_uclass(obj, rb_cHash, arg);
-	    w_byte(TYPE_HASH, arg);
+	    if (!NIL_P(RHASH(obj)->ifnone)) {
+		w_byte(TYPE_HASH_DEF, arg);
+	    }
+	    else {
+		w_byte(TYPE_HASH, arg);
+	    }
 	    w_long(RHASH(obj)->tbl->num_entries, arg);
 	    st_foreach(RHASH(obj)->tbl, hash_each, &c_arg);
+	    if (!NIL_P(RHASH(obj)->ifnone)) {
+		w_object(RHASH(obj)->ifnone, arg, limit);
+	    }
 	    break;
 
 	  case T_STRUCT:
@@ -357,13 +397,7 @@ w_object(obj, arg, limit)
 		}
 		path = rb_class2name(klass);
 		w_unique(path, arg);
-		if (ROBJECT(obj)->iv_tbl) {
-		    w_long(ROBJECT(obj)->iv_tbl->num_entries, arg);
-		    st_foreach(ROBJECT(obj)->iv_tbl, obj_each, &c_arg);
-		}
-		else {
-		    w_long(0, arg);
-		}
+		w_ivar(ROBJECT(obj)->iv_tbl, &c_arg);
 	    }
 	    break;
 
@@ -372,6 +406,9 @@ w_object(obj, arg, limit)
 		     rb_class2name(CLASS_OF(obj)));
 	    break;
 	}
+    }
+    if (ivtbl) {
+	w_ivar(ivtbl, &c_arg);
     }
 }
 
@@ -449,9 +486,11 @@ struct load_arg {
     FILE *fp;
     char *ptr, *end;
     st_table *symbol;
-    st_table *data;
+    VALUE data;
     VALUE proc;
 };
+
+static VALUE r_object _((struct load_arg *arg));
 
 static int
 r_byte(arg)
@@ -602,8 +641,25 @@ r_regist(v, arg)
     if (arg->proc) {
 	rb_funcall(arg->proc, rb_intern("call"), 1, v);
     }
-    st_insert(arg->data, arg->data->num_entries, v);
+    rb_hash_aset(arg->data, INT2FIX(RHASH(arg->data)->tbl->num_entries), v);
     return v;
+}
+
+static void
+r_ivar(obj, arg)
+    VALUE obj;
+    struct load_arg *arg;
+{
+    int len;
+
+    len = r_long(arg);
+    if (len > 0) {
+	while (len--) {
+	    ID id = r_symbol(arg);
+	    VALUE val = r_object(arg);
+	    rb_ivar_set(obj, id, val);
+	}
+    }
 }
 
 static VALUE
@@ -612,14 +668,22 @@ r_object(arg)
 {
     VALUE v;
     int type = r_byte(arg);
+    long id;
 
     switch (type) {
       case TYPE_LINK:
-	if (st_lookup(arg->data, r_long(arg), &v)) {
-	    return v;
+	id = r_long(arg);
+	v = rb_hash_aref(arg->data, INT2FIX(id));
+	if (NIL_P(v)) {
+	    rb_raise(rb_eArgError, "dump format error (unlinked)");
 	}
-	rb_raise(rb_eArgError, "dump format error (unlinked)");
-	break;
+	return v;
+      break;
+
+      case TYPE_IVAR:
+	v = r_object(arg);
+	r_ivar(v, arg);
+	return v;
 
       case TYPE_UCLASS:
 	{
@@ -703,6 +767,7 @@ r_object(arg)
 	}
 
       case TYPE_HASH:
+      case TYPE_HASH_DEF:
 	{
 	    int len = r_long(arg);
 
@@ -712,6 +777,9 @@ r_object(arg)
 		VALUE key = r_object(arg);
 		VALUE value = r_object(arg);
 		rb_hash_aset(v, key, value);
+	    }
+	    if (type == TYPE_HASH_DEF) {
+		RHASH(v)->ifnone = r_object(arg);
 	    }
 	    return v;
 	}
@@ -768,28 +836,46 @@ r_object(arg)
       case TYPE_OBJECT:
 	{
 	    VALUE klass;
-	    int len;
 
 	    klass = rb_path2class(r_unique(arg));
-	    len = r_long(arg);
 	    v = rb_obj_alloc(klass);
 	    r_regist(v, arg);
-	    if (len > 0) {
-		while (len--) {
-		    ID id = r_symbol(arg);
-		    VALUE val = r_object(arg);
-		    rb_ivar_set(v, id, val);
-		}
-	    }
+	    r_ivar(v, arg);
 	    return v;
 	}
 	break;
 
-      case TYPE_MODULE:
+      case TYPE_MODULE_OLD:
         {
 	    char *buf;
 	    r_bytes(buf, arg);
-	    return rb_path2class(buf);
+	    return r_regist(rb_path2class(buf), arg);
+	}
+
+      case TYPE_CLASS:
+        {
+	    VALUE c;
+
+	    char *buf;
+	    r_bytes(buf, arg);
+	    c = rb_path2class(buf);
+	    if (TYPE(c) != T_CLASS) {
+		rb_raise(rb_eTypeError, "%s is not a class", buf);
+	    }
+	    return r_regist(c, arg);
+	}
+
+      case TYPE_MODULE:
+        {
+	    VALUE m;
+
+	    char *buf;
+	    r_bytes(buf, arg);
+	    m = rb_path2class(buf);
+	    if (TYPE(m) != T_CLASS) {
+		rb_raise(rb_eTypeError, "%s is not a module", buf);
+	    }
+	    return r_regist(m, arg);
 	}
 
       default:
@@ -811,7 +897,6 @@ load_ensure(arg)
     struct load_arg *arg;
 {
     st_free_table(arg->symbol);
-    st_free_table(arg->data);
     return 0;
 }
 
@@ -837,7 +922,7 @@ marshal_load(argc, argv)
 	int len;
 
 	arg.fp = 0;
-	arg.ptr = str2cstr(port, &len);
+	arg.ptr = rb_str2cstr(port, &len);
 	arg.end = arg.ptr + len;
     }
     else {
@@ -846,11 +931,13 @@ marshal_load(argc, argv)
 
     major = r_byte(&arg);
     if (major == MARSHAL_MAJOR) {
+	volatile VALUE hash;	/* protect from GC */
+
 	if (r_byte(&arg) != MARSHAL_MINOR) {
 	    rb_warn("Old marshal file format (can be read)");
 	}
 	arg.symbol = st_init_numtable();
-	arg.data   = st_init_numtable();
+	arg.data   = hash = rb_hash_new();
 	if (NIL_P(proc)) arg.proc = 0;
 	else             arg.proc = proc;
 	v = rb_ensure(load, (VALUE)&arg, load_ensure, (VALUE)&arg);

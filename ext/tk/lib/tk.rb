@@ -196,7 +196,9 @@ module TkComm
 
   def _get_eval_string(str)
     return nil if str == None
-    if str.kind_of?(Hash)
+    if str.kind_of?(String)
+      # do nothing
+    elsif str.kind_of?(Hash)
       str = hash_kv(str).join(" ")
     elsif str.kind_of?(Array)
       str = array2tk_list(str)
@@ -235,7 +237,7 @@ module TkComm
     return format("rb_out %s", id);
   end
   def uninstall_cmd(id)
-    id = $1 if /rb_out (c\d+)/
+    id = $1 if /rb_out (c\d+)/ =~ id
     Tk_CMDTBL[id] = nil
   end
   private :install_cmd, :uninstall_cmd
@@ -347,15 +349,6 @@ module TkComm
   def _bind_append(what, context, cmd, args=nil)
     _bind_core('+', what, context, cmd, args)
   end
-  private :install_bind, :tk_event_sequence, :_bind_core, :_bind, :_bind_append
-
-  def bind_all(context, cmd=Proc.new, args=nil)
-    _bind(['bind', 'all'], context, cmd, args)
-  end
-
-  def bind_append_all(context, cmd=Proc.new, args=nil)
-    _bind_append(['bind', 'all'], context, cmd, args)
-  end
 
   def _bindinfo(what, context=nil)
     if context
@@ -372,9 +365,31 @@ module TkComm
       }
     end
   end
+  private :install_bind, :tk_event_sequence, 
+          :_bind_core, :_bind, :_bind_append, :_bindinfo
+
+  def bind(tagOrClass, context, cmd=Proc.new, args=nil)
+    _bind(["bind", tagOrClass], context, cmd, args)
+  end
+
+  def bind_append(tagOrClass, context, cmd=Proc.new, args=nil)
+    _bind_append(["bind", tagOrClass], context, cmd, args)
+  end
 
   def bindinfo(tagOrClass, context=nil)
     _bindinfo(['bind', tagOrClass], context)
+  end
+
+  def bind_all(context, cmd=Proc.new, args=nil)
+    _bind(['bind', 'all'], context, cmd, args)
+  end
+
+  def bind_append_all(context, cmd=Proc.new, args=nil)
+    _bind_append(['bind', 'all'], context, cmd, args)
+  end
+
+  def bindinfo_all(context=nil)
+    _bindinfo(['bind', 'all'], context)
   end
 
   def pack(*args)
@@ -401,14 +416,14 @@ module TkCore
 
   INTERP = TclTkIp.new
 
-  INTERP._invoke("proc", "rb_out", "args", "if {[set st [catch {ruby [format \"TkCore.callback %%Q!%s!\" $args]} ret]] != 0} {return -code $st $ret} {return $ret}")
+  INTERP._invoke("proc", "rb_out", "args", "if {[set st [catch {ruby [format \"TkCore.callback %%Q!%s!\" $args]} ret]] != 0} {if {[regsub -all {!} $args {\\!} newargs] == 0} {return -code $st $ret} {if {[set st [catch {ruby [format \"TkCore.callback %%Q!%s!\" $newargs]} ret]] != 0} {return -code $st $ret} {return $ret}}} {return $ret}")
 
   def callback_break
-    raise TkCallbackBreak, "Tk callback returns 'break' status"
+    fail TkCallbackBreak, "Tk callback returns 'break' status"
   end
 
   def callback_continue
-    raise TkCallbackContinue, "Tk callback returns 'continue' status"
+    fail TkCallbackContinue, "Tk callback returns 'continue' status"
   end
 
   def after(ms, cmd=Proc.new)
@@ -514,8 +529,8 @@ module TkCore
         args.unshift "unknown"
         res = INTERP._invoke(*args)
       rescue
-	raise unless /^invalid command/ =~ $!
-	raise err
+	fail unless /^invalid command/ =~ $!
+	fail err
       end
     end
     if  INTERP._return_value() != 0
@@ -570,13 +585,39 @@ module Tk
     def yscrollcommand(cmd=Proc.new)
       configure_cmd 'yscrollcommand', cmd
     end
+    def xview(*index)
+      v = tk_send('xview', *index)
+      list(v) if index.size == 0
+    end
+    def yview(*index)
+      v = tk_send('yview', *index)
+      list(v) if index.size == 0
+    end
+    def xscrollbar(bar=nil)
+      if bar
+	@xscrollbar = bar
+	@xscrollbar.orient 'horizontal'
+	self.xscrollcommand {|arg| @xscrollbar.set *arg}
+	@xscrollbar.command {|arg| self.xview *arg}
+      end
+      @xscrollbar
+    end
+    def yscrollbar(bar=nil)
+      if bar
+	@yscrollbar = bar
+	@yscrollbar.orient 'vertical'
+	self.yscrollcommand {|arg| @yscrollbar.set *arg}
+	@yscrollbar.command {|arg| self.yview *arg}
+      end
+      @yscrollbar
+    end
   end
 
   module Wm
     include TkComm
     def aspect(*args)
-      w = window(tk_call('wm', 'grid', path, *args))
-      w.split.collect{|s|s.to_i} if args.length == 0
+      w = tk_call('wm', 'aspect', path, *args)
+      list(w) if args.length == 0
     end
     def client(name=None)
       tk_call 'wm', 'client', path, name
@@ -594,17 +635,18 @@ module Tk
       tk_call 'wm', 'focusmodel', path, *args
     end
     def frame
-      tk_call 'wm', 'frame', path
+      tk_call('wm', 'frame', path)
     end
     def geometry(*args)
-      list(tk_call('wm', 'geometry', path, *args))
+      tk_call('wm', 'geometry', path, *args)
     end
     def grid(*args)
       w = tk_call('wm', 'grid', path, *args)
       list(w) if args.size == 0
     end
     def group(*args)
-      tk_call 'wm', 'group', path, *args
+      w = tk_call 'wm', 'group', path, *args
+      window(w) if args.size == 0
     end
     def iconbitmap(*args)
       tk_call 'wm', 'iconbitmap', path, *args
@@ -628,7 +670,7 @@ module Tk
     end
     def maxsize(*args)
       w = tk_call('wm', 'maxsize', path, *args)
-      list(w) if not args.size == 0
+      list(w) if args.size == 0
     end
     def minsize(*args)
       w = tk_call('wm', 'minsize', path, *args)
@@ -661,7 +703,7 @@ module Tk
       end
     end
     def sizefrom(*args)
-      list(tk_call('wm', 'sizefrom', path, *args))
+      tk_call('wm', 'sizefrom', path, *args)
     end
     def state
       tk_call 'wm', 'state', path
@@ -670,11 +712,51 @@ module Tk
       tk_call 'wm', 'title', path, *args
     end
     def transient(*args)
-      tk_call 'wm', 'transient', path, *args
+      window(tk_call 'wm', 'transient', path, *args)
     end
     def withdraw
       tk_call 'wm', 'withdraw', path
     end
+  end
+end
+
+module TkBindCore
+  def bind(context, cmd=Proc.new, args=nil)
+    Tk.bind(to_eval, context, cmd, args)
+  end
+
+  def bind_append(context, cmd=Proc.new, args=nil)
+    Tk.bind_append(to_eval, context, cmd, args)
+  end
+
+  def bindinfo(context=nil)
+    Tk.bindinfo(to_eval, context)
+  end
+end
+
+class TkBindTag
+  include TkBindCore
+
+  BTagID_TBL = {}
+  Tk_BINDTAG_ID = ["btag00000"]
+
+  def TkBindTag.id2obj(id)
+    BTagID_TBL[id]? BTagID_TBL[id]: id
+  end
+
+  def initialize(*args)
+    @id = Tk_BINDTAG_ID[0]
+    Tk_BINDTAG_ID[0] = Tk_BINDTAG_ID[0].succ
+    BTagID_TBL[@id] = self
+    bind(*args) if args != []
+  end
+
+  def to_eval
+    @id
+  end
+
+  def inspect
+    format "#<TkBindTag: %s>", @id
   end
 end
 
@@ -730,7 +812,7 @@ class TkVariable
       INTERP._eval(format('global %s; set %s', @id, @id))
     rescue
       if INTERP._eval(format('global %s; array exists %s', @id, @id)) != "1"
-	raise
+	fail
       else
 	Hash[*tk_split_simplelist(INTERP._eval(format('global %s; array get %s', 
 						      @id, @id)))]
@@ -744,7 +826,7 @@ class TkVariable
       INTERP._eval(format('global %s; set %s %s', @id, @id, s))
     rescue
       if INTERP._eval(format('global %s; array exists %s', @id, @id)) != "1"
-	raise
+	fail
       else
 	if val == []
 	  INTERP._eval(format('global %s; unset %s; set %s(0) 0; unset %s(0)', 
@@ -761,7 +843,7 @@ class TkVariable
 	  INTERP._eval(format('global %s; unset %s; array set %s %s', 
 			      @id, @id, @id, s))
 	else
-	  raise
+	  fail
 	end
       end
     end
@@ -790,7 +872,7 @@ class TkVariable
   end
 
   def inspect
-    format "<TkVariable: %s>", @id
+    format "#<TkVariable: %s>", @id
   end
 
   def ==(other)
@@ -1063,19 +1145,19 @@ module TkWinfo
   include Tk
   extend Tk
   def TkWinfo.atom(name)
-    tk_call 'winfo', name
+    number(tk_call 'winfo', 'atom', name)
   end
   def winfo_atom(name)
     TkWinfo.atom name
   end
   def TkWinfo.atomname(id)
-    tk_call 'winfo', id
+    tk_call 'winfo', 'atomname', id
   end
   def winfo_atomname(id)
     TkWinfo.atomname id
   end
   def TkWinfo.cells(window)
-    number(tk_call('winfo', window.path))
+    number(tk_call('winfo', 'cells', window.path))
   end
   def winfo_cells
     TkWinfo.cells self
@@ -1092,6 +1174,12 @@ module TkWinfo
   end
   def winfo_classname
     TkWinfo.classname self
+  end
+  def TkWinfo.colormapfull(window)
+     bool(tk_call('winfo', 'colormapfull', window.path))
+  end
+  def winfo_colormapfull
+    TkWinfo.colormapfull self
   end
   def TkWinfo.containing(rootX, rootY)
     path = tk_call('winfo', 'containing', rootX, rootY)
@@ -1119,7 +1207,7 @@ module TkWinfo
     TkWinfo.fpixels self, number
   end
   def TkWinfo.geometry(window)
-    list(tk_call('winfo', 'geometry', window.path))
+    tk_call('winfo', 'geometry', window.path)
   end
   def winfo_geometry
     TkWinfo.geometry self
@@ -1131,15 +1219,15 @@ module TkWinfo
     TkWinfo.height self
   end
   def TkWinfo.id(window)
-    number(tk_call('winfo', 'id', window.path))
+    tk_call('winfo', 'id', window.path)
   end
   def winfo_id
     TkWinfo.id self
   end
   def TkWinfo.interps(window=nil)
     if window
-      tk_split_simplelist(tk_call('winfo', '-displayof', window.path, 
-				  'interps'))
+      tk_split_simplelist(tk_call('winfo', 'interps',
+				  '-displayof', window.path))
     else
       tk_split_simplelist(tk_call('winfo', 'interps'))
     end
@@ -1153,8 +1241,14 @@ module TkWinfo
   def winfo_mapped?
     TkWinfo.mapped? self
   end
+  def TkWinfo.manager(window)
+    tk_call('winfo', 'manager', window.path)
+  end
+  def winfo_manager
+    TkWinfo.manager self
+  end
   def TkWinfo.appname(window)
-    bool(tk_call('winfo', 'name', window.path))
+    tk_call('winfo', 'name', window.path)
   end
   def winfo_appname
     TkWinfo.appname self
@@ -1255,6 +1349,12 @@ module TkWinfo
   def winfo_screenwidth
     TkWinfo.screenwidth self
   end
+  def TkWinfo.server(window)
+    tk_call 'winfo', 'server', window.path
+  end
+  def winfo_server
+    TkWinfo.server self
+  end
   def TkWinfo.toplevel(window)
     window(tk_call('winfo', 'toplevel', window.path))
   end
@@ -1267,7 +1367,24 @@ module TkWinfo
   def winfo_visual
     TkWinfo.visual self
   end
-  def TkWinfo.vrootheigh(window)
+  def TkWinfo.visualid(window)
+    tk_call 'winfo', 'visualid', window.path
+  end
+  def winfo_visualid
+    TkWinfo.visualid self
+  end
+  def TkWinfo.visualsavailable(window, includeids=false)
+    if includeids
+      v = tk_call('winfo', 'visualsavailable', window.path, "includeids")
+    else
+      v = tk_call('winfo', 'visualsavailable', window.path)
+    end
+    list(v)
+  end
+  def winfo_visualsavailable(includeids=false)
+    TkWinfo.visualsavailable self, includeids
+  end
+  def TkWinfo.vrootheight(window)
     number(tk_call('winfo', 'vrootheight', window.path))
   end
   def winfo_vrootheight
@@ -1452,24 +1569,20 @@ module TkTreatFont
   alias fontobj font_configinfo
 
   def font_configure(slot)
-    if (fnt = slot['font'])
-      slot['font'] = nil
+    if (fnt = slot.delete('font'))
       if fnt.kind_of? TkFont
 	return fnt.call_font_configure(self.path, self.path,'configure',slot)
       else
 	latinfont_configure(fnt) if fnt
       end
     end
-    if (ltn = slot['latinfont'])
-      slot['latinfont'] = nil
+    if (ltn = slot.delete('latinfont'))
       latinfont_configure(ltn) if ltn
     end
-    if (ltn = slot['asciifont'])
-      slot['asciifont'] = nil
+    if (ltn = slot.delete('asciifont'))
       latinfont_configure(ltn) if ltn
     end
-    if (knj = slot['kanjifont'])
-      slot['kanjifont'] = nil
+    if (knj = slot.delete('kanjifont'))
       kanjifont_configure(knj) if knj
     end
 
@@ -1544,6 +1657,7 @@ end
 class TkObject<TkKernel
   include Tk
   include TkTreatFont
+  include TkBindCore
 
   def path
     return @path
@@ -1640,18 +1754,6 @@ class TkObject<TkKernel
     end
   end
 
-  def bind(context, cmd=Proc.new, args=nil)
-    _bind(["bind", to_eval], context, cmd, args)
-  end
-
-  def bind_append(context, cmd=Proc.new, args=nil)
-    _bind_append(["bind", to_eval], context, cmd, args)
-  end
-
-  def bindinfo(context=nil)
-    _bindinfo(['bind', to_eval], context)
-  end
-
   def event_generate(context, keys=nil)
     if keys
       tk_call('event', 'generate', path, 
@@ -1675,7 +1777,7 @@ class TkObject<TkKernel
 end
 
 class TkWindow<TkObject
-#  extend TkClassBind
+  extend TkBindCore
 
   def initialize(parent=nil, keys=nil)
     install_win(if parent then parent.path end)
@@ -1823,11 +1925,15 @@ class TkWindow<TkObject
       fail unless taglist.kind_of? Array
       tk_call('bindtags', path, taglist)
     else
-      tk_split_list(tk_call('bindtags', path)).collect{|tag|
-	if tag == nil
-	  '.'
-	elsif tag.kind_of?(String) && (cls = WidgetClassNames[tag])
-	  cls
+      list(tk_call('bindtags', path)).collect{|tag|
+	if tag.kind_of?(String) 
+	  if cls = WidgetClassNames[tag]
+	    cls
+	  elsif btag = TkBindTag.id2obj(tag)
+	    btag
+	  else
+	    tag
+	  end
 	else
 	  tag
 	end
@@ -1878,42 +1984,24 @@ class TkToplevel<TkWindow
     @classname = classname
     if keys.kind_of? Hash
       keys = keys.dup
-      if keys['classname']
-	@classname = keys['classname']
-	keys['classname'] = nil
-      end
-      if keys['colormap']
-	@colormap = keys['colormap']
-	keys['colormap'] = nil
-      end
-      if keys['container']
-	@classname = keys['container']
-	keys['classname'] = nil
-      end
-      if keys['screen']
-	@screen = keys['screen']
-	keys['screen'] = nil
-      end
-      if keys['use']
-	@use = keys['use']
-	keys['use'] = nil
-      end
-      if keys['visual']
-	@screen = keys['visual']
-	keys['visual'] = nil
-      end
+      @classname = keys.delete('classname') if keys.key?('classname')
+      @colormap  = keys.delete('colormap')  if keys.key?('colormap')
+      @container = keys.delete('container') if keys.key?('container')
+      @screen    = keys.delete('screen')    if keys.key?('screen')
+      @use       = keys.delete('use')       if keys.key?('use')
+      @visual    = keys.delete('visual')    if keys.key?('visual')
     end
     super(parent, keys)
   end
 
   def create_self
     s = []
-    s.push << "-class"     << @classname if @classname
-    s.push << "-colormap"  << @colormap  if @colormap
-    s.push << "-container" << @container if @container
-    s.push << "-screen"    << @screen    if @screen 
-    s.push << "-use"       << @use       if @use
-    s.push << "-visual"    << @visual    if @visual
+    s << "-class"     << @classname if @classname
+    s << "-colormap"  << @colormap  if @colormap
+    s << "-container" << @container if @container
+    s << "-screen"    << @screen    if @screen 
+    s << "-use"       << @use       if @use
+    s << "-visual"    << @visual    if @visual
     tk_call 'toplevel', @path, *s
   end
 
@@ -1932,32 +2020,20 @@ class TkFrame<TkWindow
   def initialize(parent=nil, keys=nil)
     if keys.kind_of? Hash
       keys = keys.dup
-      if keys['classname']
-	@classname = keys['classname']
-	keys['classname'] = nil
-      end
-      if keys['colormap']
-	@colormap = keys['colormap']
-	keys['colormap'] = nil
-      end
-      if keys['container']
-      @classname = keys['container']
-	keys['classname'] = nil
-      end
-      if keys['visual']
-	@screen = keys['visual']
-	keys['visual'] = nil
-      end
+      @classname = keys.delete('classname') if keys.key?('classname')
+      @colormap  = keys.delete('colormap')  if keys.key?('colormap')
+      @container = keys.delete('container') if keys.key?('container')
+      @visual    = keys.delete('visual')    if keys.key?('visual')
     end
     super(parent, keys)
   end
 
   def create_self
     s = []
-    s.push << "-class"     << @classname if @classname
-    s.push << "-colormap"  << @colormap  if @colormap
-    s.push << "-container" << @container if @container
-    s.push << "-visual"    << @visual    if @visual
+    s << "-class"     << @classname if @classname
+    s << "-colormap"  << @colormap  if @colormap
+    s << "-container" << @container if @container
+    s << "-visual"    << @visual    if @visual
     tk_call 'frame', @path, *s
   end
 end
@@ -2101,7 +2177,7 @@ end
 
 class TkTextWin<TkWindow
   def create_self
-    raise TypeError, "TkTextWin is abstract class"
+    fail TypeError, "TkTextWin is abstract class"
   end
 
   def bbox(index)
@@ -2131,6 +2207,8 @@ class TkTextWin<TkWindow
 end
 
 class TkListbox<TkTextWin
+  include Scrollable
+
   WidgetClassNames['Listbox'] = self
   def TkListbox.to_eval
     'Listbox'
@@ -2145,10 +2223,18 @@ class TkListbox<TkTextWin
   def curselection
     list(tk_send('curselection'))
   end
+  def get(*index)
+    v = tk_send('get', *index)
+    if index.size == 1
+      v
+    else
+      tk_split_simplelist(v)
+    end
+  end
   def nearest(y)
     tk_send('nearest', y).to_i
   end
-  def size(y)
+  def size
     tk_send('size').to_i
   end
   def selection_anchor(index)
@@ -2157,19 +2243,11 @@ class TkListbox<TkTextWin
   def selection_clear(first, last=None)
     tk_send 'selection', 'clear', first, last
   end
-  def selection_includes
-    bool(tk_send('selection', 'includes'))
+  def selection_includes(index)
+    bool(tk_send('selection', 'includes', index))
   end
   def selection_set(first, last=None)
     tk_send 'selection', 'set', first, last
-  end
-  def xview(cmd, *more)
-    v = tk_send('xview', cmd, *more)
-    v.to_i if more.size == 0
-  end
-  def yview(cmd, *more)
-    v = tk_send('yview', cmd, *more)
-    v.to_i if more.size == 0
   end
 end
 
@@ -2187,8 +2265,7 @@ module TkTreatMenuEntryFont
 
   def tagfont_configure(index, slot)
     pathname = self.path + ';' + index
-    if (fnt = slot['font'])
-      slot['font'] = nil
+    if (fnt = slot.delete('font'))
       if fnt.kind_of? TkFont
 	return fnt.call_font_configure(pathname, 
 				       self.path,'entryconfigure',index,slot)
@@ -2196,16 +2273,13 @@ module TkTreatMenuEntryFont
 	latintagfont_configure(index, fnt) if fnt
       end
     end
-    if (ltn = slot['latinfont'])
-      slot['latinfont'] = nil
+    if (ltn = slot.delete('latinfont'))
       latintagfont_configure(index, ltn) if ltn
     end
-    if (ltn = slot['asciifont'])
-      slot['asciifont'] = nil
+    if (ltn = slot.delete('asciifont'))
       latintagfont_configure(index, ltn) if ltn
     end
-    if (knj = slot['kanjifont'])
-      slot['kanjifont'] = nil
+    if (knj = slot.delete('kanjifont'))
       kanjitagfont_configure(index, knj) if knj
     end
 

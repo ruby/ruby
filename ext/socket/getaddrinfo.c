@@ -38,14 +38,10 @@
  * - PF_UNSPEC case would be handled in getipnodebyname() with the AI_ALL flag.
  */
 
+#include "config.h"
 #include <sys/types.h>
 #ifndef NT
 #include <sys/param.h>
-#endif
-#ifdef HAVE_SYSCTL_H
-#include <sys/sysctl.h>
-#endif
-#ifndef NT
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -71,7 +67,6 @@
 #include <socks.h>
 #endif
 
-#include "config.h"
 #include "addrinfo.h"
 #include "sockport.h"
 
@@ -135,6 +130,11 @@ static struct afd {
 #define PTON_MAX	4
 #endif
 
+#ifndef INET6
+#ifndef NT
+extern int h_errno;
+#endif
+#endif
 
 static int get_name __P((const char *, struct afd *,
 			  struct addrinfo **, char *, struct addrinfo *,
@@ -580,11 +580,6 @@ get_addr(hostname, af, res, pai, port0)
 	struct afd *afd;
 	int i, error = 0, h_error;
 	char *ap;
-#ifndef INET6
-#ifndef NT
-	extern int h_errno;
-#endif
-#endif
 
 	top = NULL;
 	sentinel.ai_next = NULL;

@@ -41,6 +41,7 @@ end
 $ipv6type = nil
 $ipv6lib = nil
 $ipv6libdir = nil
+$ipv6trylibc = nil
 if $ipv6
   if egrep_cpp("yes", <<EOF)
 #include <netinet/in.h>
@@ -59,6 +60,7 @@ EOF
     $ipv6type = "kame"
     $ipv6lib="inet6"
     $ipv6libdir="/usr/local/v6/lib"
+    $ipv6trylibc=true
     $CFLAGS="-DINET6 "+$CFLAGS
   elsif File.directory? "/usr/inet6"
     $ipv6type = "linux"
@@ -100,7 +102,7 @@ EOF
   if $ipv6lib
     if File.directory? $ipv6libdir and File.exist? "#{$ipv6libdir}/lib#{$ipv6lib}.a"
       $LOCAL_LIBS = " -L#$ipv6libdir -l#$ipv6lib"
-    else
+    elsif !$ipv6trylibc
       print <<EOS
 
 Fatal: no #$ipv6lib library found.  cannot continue.
@@ -135,6 +137,23 @@ end
 #include <netdb.h>
 #include <string.h>
 #include <sys/socket.h>
+int
+main()
+{
+   struct sockaddr_storage ss;
+
+   ss.ss_family;
+   return 0;
+}
+EOF
+    $CFLAGS="-DHAVE_SOCKADDR_STORAGE "+$CFLAGS
+end
+
+  if try_link(<<EOF)
+#include <sys/types.h>
+#include <netdb.h>
+#include <string.h>
+#include <sys/socket.h>
 #include <netinet/in.h>
 int
 main()
@@ -148,7 +167,6 @@ EOF
     $CFLAGS="-DHAVE_SA_LEN "+$CFLAGS
 end
 
-have_header("sys/sysctl.h")
 have_header("netinet/tcp.h")
 have_header("netinet/udp.h")
 
@@ -159,6 +177,10 @@ if try_run(<<EOF)
 #include <string.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+
+#ifndef AF_LOCAL
+#define AF_LOCAL AF_UNIX
+#endif
 
 main()
 {
@@ -176,6 +198,7 @@ main()
       goto bad;
     }
     for (ai = aitop; ai; ai = ai->ai_next) {
+      if (ai->ai_family == AF_LOCAL) continue;
       if (ai->ai_addr == NULL ||
           ai->ai_addrlen == 0 ||
           getnameinfo(ai->ai_addr, ai->ai_addrlen,
@@ -221,7 +244,9 @@ main()
     }
   }
 
-  if (inet6 != 2 || inet4 != 2)
+  if (!(inet4 == 0 || inet4 == 2))
+    goto bad;
+  if (!(inet6 == 0 || inet6 == 2))
     goto bad;
 
   if (aitop)

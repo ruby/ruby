@@ -6,7 +6,7 @@
   $Date$
   created at: Fri Aug 13 18:33:09 JST 1993
 
-  Copyright (C) 1993-1999 Yukihiro Matsumoto
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -43,8 +43,8 @@ num_coerce(x, y)
     VALUE x, y;
 {
     if (CLASS_OF(x) == CLASS_OF(y))
-	return rb_assoc_new(x, y);
-    return rb_assoc_new(rb_Float(x), rb_Float(y));
+	return rb_assoc_new(y, x);
+    return rb_assoc_new(rb_Float(y), rb_Float(x));
 }
 
 static VALUE
@@ -330,8 +330,7 @@ flo_modulo(x, y, modulo)
 	result = value1 - value2 * value;
     }
 #endif
-    if (modulo &&
-	(RFLOAT(x)->value < 0.0) != (result < 0.0) && result != 0.0) {
+    if (modulo && value*result<0.0) {
 	result += value;
     }
     return rb_float_new(result);
@@ -1169,12 +1168,10 @@ fix_rshift(x, y)
     long i, val;
 
     i = NUM2LONG(y);
-    if (i < sizeof(long) * 8) {
-	val = RSHIFT(FIX2LONG(x), i);
-	return INT2FIX(val);
-    }
-
-    return INT2FIX(0);
+    if (i < 0)
+	return fix_lshift(x, INT2FIX(-i));
+    val = RSHIFT(FIX2LONG(x), i);
+    return INT2FIX(val);
 }
 
 static VALUE

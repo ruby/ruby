@@ -6,7 +6,7 @@
   $Date$
   created at: Wed Jan  5 09:51:01 JST 1994
 
-  Copyright (C) 1993-1999 Yukihiro Matsumoto
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -47,12 +47,6 @@
 # endif
 #endif
 
-#ifdef HAVE_FNMATCH_H
-#include <fnmatch.h>
-#else
-#include "missing/fnmatch.h"
-#endif
-
 #include <errno.h>
 #ifdef USE_CWGUSI
 # include <sys/errno.h>
@@ -65,6 +59,167 @@ char *getenv();
 #ifndef HAVE_STRING_H
 char *strchr _((char*,char));
 #endif
+
+#include <ctype.h>
+
+#define FNM_NOESCAPE	0x01
+#define FNM_PATHNAME	0x02
+#define FNM_PERIOD	0x04
+#define FNM_NOCASE	0x08
+
+#define FNM_NOMATCH	1
+#define FNM_ERROR	2
+
+#define downcase(c) (nocase && isupper(c) ? tolower(c) : (c))
+
+#if defined DOSISH
+#define isdirsep(c) ((c) == '/' || (c) == '\\')
+static char *
+find_dirsep(s)
+    char *s;
+{
+    while (*s) {
+	if (isdirsep(*s))
+	    return s;
+	s++;
+    }
+    return 0;
+}
+#else
+#define isdirsep(c) ((c) == '/')
+#define find_dirsep(s) strchr(s, '/')
+#endif
+
+static char *
+range(pat, test, flags)
+    char *pat;
+    char test;
+    int flags;
+{
+    int not, ok = 0;
+    int nocase = flags & FNM_NOCASE;
+    int escape = !(flags & FNM_NOESCAPE);
+
+    not = *pat == '!' || *pat == '^';
+    if (not)
+	pat++;
+
+    test = downcase(test);
+
+    while (*pat) {
+	int cstart, cend;
+	cstart = cend = *pat++;
+	if (cstart == ']')
+	    return ok == not ? 0 : pat;
+        else if (escape && cstart == '\\')
+	    cstart = cend = *pat++;
+	if (*pat == '-' && pat[1] != ']') {
+	    if (escape && pat[1] == '\\')
+		pat++;
+	    cend = pat[1];
+	    if (!cend)
+		return 0;
+	    pat += 2;
+	}
+	if (downcase(cstart) <= test && test <= downcase(cend))
+	    ok = 1;
+    }
+    return 0;
+}
+
+#define PERIOD(s) (period && *(s) == '.' && \
+		  ((s) == string || pathname && isdirsep(*(s))))
+static int
+fnmatch(pat, string, flags)
+    char *pat;
+    char *string;
+    int flags;
+{
+    int c;
+    int test;
+    char *s = string;
+    int escape = !(flags & FNM_NOESCAPE);
+    int pathname = flags & FNM_PATHNAME;
+    int period = flags & FNM_PERIOD;
+    int nocase = flags & FNM_NOCASE;
+
+    while (c = *pat++) {
+	switch (c) {
+	case '?':
+	    if (!*s || pathname && isdirsep(*s) || PERIOD(s))
+		return FNM_NOMATCH;
+	    s++;
+	    break;
+	case '*':
+	    while ((c = *pat++) == '*')
+		;
+
+	    if (PERIOD(s))
+		return FNM_NOMATCH;
+
+	    if (!c) {
+		if (pathname && find_dirsep(s))
+		    return FNM_NOMATCH;
+		else
+		    return 0;
+	    }
+	    else if (pathname && isdirsep(c)) {
+		s = find_dirsep(s);
+		if (s)
+		    break;
+		return FNM_NOMATCH;
+	    }
+
+	    test = escape && c == '\\' ? *pat : c;
+	    test = downcase(test);
+	    pat--;
+	    while (*s) {
+		if ((c == '[' || downcase(*s) == test) &&
+		    !fnmatch(pat, s, flags & ~FNM_PERIOD))
+		    return 0;
+		else if (pathname && isdirsep(*s))
+		    break;
+		s++;
+	    }
+	    return FNM_NOMATCH;
+      
+	case '[':
+	    if (!*s || pathname && isdirsep(*s) || PERIOD(s))
+		return FNM_NOMATCH;
+	    pat = range(pat, *s, flags);
+	    if (!pat)
+		return FNM_NOMATCH;
+	    s++;
+	    break;
+
+	case '\\':
+	    if (escape
+#if defined DOSISH
+		&& *pat && strchr("*?[\\", *pat)
+#endif
+		) {
+		c = *pat;
+		if (!c)
+		    c = '\\';
+		else
+		    pat++;
+	    }
+	    /* FALLTHROUGH */
+
+	default:
+#if defined DOSISH
+	    if (pathname && isdirsep(c) && isdirsep(*s))
+		;
+	    else
+#endif
+	    if(downcase(c) != downcase(*s))
+		return FNM_NOMATCH;
+	    s++;
+	    break;
+	}
+    }
+    return !*s ? 0 : FNM_NOMATCH;
+}
 
 VALUE rb_cDir;
 
@@ -355,7 +510,7 @@ extract_path(p, pend)
     len = pend - p;
     alloc = ALLOC_N(char, len+1);
     memcpy(alloc, p, len);
-    if (len > 0 && pend[-1] == '/') {
+    if (len > 1 && pend[-1] == '/') {
 	alloc[len-1] = 0;
     }
     else {
@@ -421,11 +576,12 @@ glob(path, func, arg)
 		break;
 	    }
 	    magic = extract_elem(p);
+#define BASE (*base && !(*base == '/' && !base[1]))
+
 	    for (dp = readdir(dirp); dp != NULL; dp = readdir(dirp)) {
 		if (fnmatch(magic, dp->d_name, FNM_PERIOD|FNM_PATHNAME) == 0) {
 		    char *fix = ALLOC_N(char, strlen(base)+NAMLEN(dp)+2);
-
-		    sprintf(fix, "%s%s%s", base, (*base)?"/":"", dp->d_name);
+		    sprintf(fix, "%s%s%s", base, (BASE)?"/":"", dp->d_name);
 		    if (!m) {
 			(*func)(fix, arg);
 			free(fix);

@@ -16,8 +16,10 @@ module Find
 	  d = Dir.open(file)
 	  begin
 	    for f in d
-	      next if f =~ /^\.\.?$/
-	      if file == "/" then
+	      next if f =~ /\A\.\.?\z/
+	      if File::ALT_SEPARATOR and file =~ /^([\/\\]|[A-Za-z]:[\/\\]?)$/ then
+		f = file + f
+	      elsif file == "/" then
 		f = "/" + f
 	      else
 		f = file + "/" + f

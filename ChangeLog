@@ -1,3 +1,433 @@
+Mon Mar 13 18:14:52 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* stable version 1.4.4 released.
+
+Mon Mar 13 16:12:13 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (block_pass): distinguish real orphan block and still
+	  on-stack block passed by block argument.
+
+Mon Mar 13 00:20:25 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (f_norm_arg): proper error message when constant comes
+	  in formal argument list.  this message is suggested by Muvaw
+	  Pnazte <bugathlon@yahoo.com>.
+
+	* eval.c (rb_f_raise): proper error message when the first
+	  argument is not an exception class/object.
+
+Sat Mar 11 22:03:03 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_f_missing): check if argv[0] is ID.
+
+Sat Mar 11 05:07:11 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* process.c (proc_setpriority): should return 0, not nil.
+
+	* process.c (proc_setpgid): ditto.
+
+Thu Mar  9 11:13:32 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_compile_fastmap): fixed embarrassing brace bug.
+
+Thu Mar  9 01:36:32 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* missing/flock.c: emulate missing flock() with fcntl().
+
+Wed Mar  8 02:08:43 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y: escape expansion too early.
+
+	* regex.c (re_compile_pattern): support \cX et al.
+
+Mon Mar  6 12:28:37 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ext/socket/socket.c (ip_addrsetup): should check length of hostname.
+
+	* ext/socket/socket.c (ip_addrsetup): check newline at the end of
+	  hostname.  These fixes suggested by Muvaw Pnazte <bugathlon@yahoo.com>.
+
+Sun Mar  5 20:35:45 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* ext/Win32API/Win32API.c (Win32API_initialize): should call
+	  LoadLibrary() everytime and should assign the hdll to Win32API
+	  object(protect the hdll from GC).
+
+Sat Feb 26 22:39:31 2000  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* Fix String#* with huge string.
+
+Fri Feb 25 06:42:26 2000  GOTOU YUUZOU  <gotoyuzo@notwork.org>
+
+	* ext/socket/socket.c (ip_addrsetup): hostp should remain NULL if
+	  host is nil.
+
+Thu Feb 24 16:53:47 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_thread_schedule): priority was too high for sleep
+	  expired threads.
+
+Sat Feb 19 23:58:51 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_match): pop_loop should not pop at forward jump.
+
+Thu Feb 17 19:09:05 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* win32/win32.c (mypopen): don't close handle if it is not assigned.
+	* win32/win32.c (my_open_osfhandle): support O_NOINHERIT flag.
+	* win32/win32.c (win32_getcwd): rename getcwd to win32_getcwd
+	  in order to avoid using the C/C++ runtime DLL's getcwd.
+	  Use CharNext() to process directory name.
+	* win32/win32.h: map getcwd to win32_getcwd.
+
+Wed Feb 16 00:32:49 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (method_arity): nd_rest is -1 for no rest argument.
+
+	* process.c (rb_f_waitpid): returns nil when waitpid(2) returns 0.
+
+Tue Feb 15 01:47:00 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* process.c (rb_f_waitpid): pid_t should be signed.
+
+Mon Feb 14 13:59:01 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ruby.c (load_file): exit if reading file is empty.
+
+Mon Feb 14 03:34:52 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (yylex): `foo.bar=' should be <foo><.><bar><=>.
+
+	* eval.c (rb_thread_restore_context): process according to
+	  RESTORE_* is moved after longjmp().
+
+	* eval.c (thread_switch): new function to process RESTORE_*.
+
+Thu Feb 10 02:12:04 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (rb_str_index_m): did not support negative offset.
+
+Wed Feb  9 21:54:26 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* ext/socket/getaddrinfo.c: gcc --traditional support.
+	  Rearrange headers to work AC_C_CONST.
+	* ext/socket/getnameinfo.c: ditto.
+	* ext/socket/socket.c: mswin32: use double instead of long long.
+
+Wed Feb  9 16:30:41 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* numeric.c (num_coerce): should return [y, x].
+
+Fri Feb  4 10:20:25 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (rb_io_close): should not check closed IO.
+
+Fri Feb  4 05:44:01 2000  Kentaro Inagaki  <inagaki@tg.rim.or.jp>
+
+	* ext/socket/socket.c (s_recv): TRAP_BEG after retry entry.
+
+Thu Jan 27 01:27:10 2000  GOTO Kentaro  <gotoken@math.sci.hokudai.ac.jp>
+
+	* dir.c (glob): glob pattern "/*" did not match.
+
+Wed Jan 26 22:30:47 2000  Shigeo Kobayashi  <shigeo@tinyforest.gr.jp>
+
+	* numeric.c (flo_modulo): wrong result for negative modulo.
+
+Wed Jan 26 11:43:41 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* file.c (test_c): should use S_ISCHR.
+
+Sun Jan 16 20:12:13 2000  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* eval.c (dvar_asgn): may need to push dvar.
+
+Sat Jan 15 22:21:08 2000  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* eval.c (search_method): argument klass may be 0.
+
+Fri Jan 14 12:22:04 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (rb_str_replace): use memmove instead of memcpy for
+	  overwrapping strings (e.g. a[1] = a).
+
+Fri Jan  7 00:59:29 2000  Masahiro Tomita  <tommy@tmtm.org>
+
+	* io.c (io_fread): TRAP_BEG/TRAP_END added around getc().
+
+Wed Jan  5 02:14:46 2000  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* parse.y: Fix SEGV on empty parens with UMINUS or UPLUS.
+
+Tue Jan  4 22:25:54 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (stmt): `() while cond' dumped core.
+
+Mon Dec 27 12:35:47 1999  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* ext/socket/socket.c (sock_finalize): mswin32: fix socket handle leak.
+
+	* win32/win32.c (myfdclose): ditto.
+
+Sun Dec 26 23:15:13 1999  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* win32/win32.c (mypopen): raise catchable error instead of rb_fatal.
+	* win32/win32.c (mypclose): fix process handle laek.
+
+Sun Dec 26 16:17:11 1999  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* ext/Win32API/Win32API.c (Win32API_initialize): use UINT2NUM
+	  instead of INT2NUM to set __dll__ and __proc__.
+
+Sat Dec 25 00:08:59 1999  KANEKO Naoshi  <wbs01621@mail.wbs.ne.jp>
+
+	* ext/Win32API/Win32API.c (Win32API_Call): remove 'dword ptr'
+	  from _asm.
+
+Fri Dec 24 10:26:47 1999  Koji Oda  <oda@bsd1.qnes.nec.co.jp>
+
+	* win32/win32.h: use "C++" linkage.
+
+Fri Dec 24 02:00:57 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (THREAD_ALLOC): should initialize th->trace.
+
+Fri Dec 24 00:43:39 1999  KANEKO Naoshi  <wbs01621@mail.wbs.ne.jp>
+
+	* io.c (pipe_open): check for `fptr->f == NULL'.
+	* win32/win32.c (mypopen): STDERR does not work during ` function.
+
+Tue Dec 21 17:21:28 1999  Koji Oda  <oda@bsd1.qnes.nec.co.jp>
+
+	* ext/socket/socket.c (sock_finalize): mswin32: fix FILE* leak.
+
+Mon Dec 20 19:08:12 1999  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* file.c (rb_file_s_expand_path): handle dir separetor correctly.
+
+Sun Dec 19 22:56:31 1999  KANEKO Naoshi  <wbs01621@mail.wbs.ne.jp>
+
+	* lib/find.rb: support dosish root directory.
+	* win32/Makefile: ditto.
+	* win32/config.status: ditto.
+	* win32/win32.c (opendir): ditto.
+	* win32/win32.c (opendir): use CharPrev() to get last character
+	  of the directory name.
+
+Fri Dec 17 19:27:43 1999  IWAMURO Motonori  <iwa@mmp.fujitsu.co.jp>
+
+	* eval.c (rb_load): should initialize ruby_frame->last_class.
+
+Wed Dec 15 01:35:29 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ruby.c (proc_options): argv boundary check for `-X'.
+
+Sat Dec 11 03:34:38 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* gc.c (mark_hashentry): key should be VALUE, not ID.
+
+	* io.c (argf_eof): should check next_p too.
+
+Thu Dec  9 18:09:13 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* error.c (exc_set_backtrace): forgot to declare a VALUE argument.
+
+Tue Dec  7 18:25:26 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* stable version 1.4.3 released.
+
+Mon Dec  6 15:55:30 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* numeric.c (fix_rshift): Fix -1 >> 32 returned 0 (should be -1).
+
+	* numeric.c (fix_rshift): Fix  1 >> -1 returned 0 (should be 2).
+
+Mon Dec  6 11:47:23 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* sprintf.c (rb_f_sprintf): formatted string must be tainted if
+	  any of parameters is tainted.
+
+	* file.c (rb_file_s_expand_path): expanded file path need not to
+	  be tainted always.
+
+Sat Dec  4 01:40:22 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* bignum.c (rb_big_rand): should not use rand/random where drand48
+	  may be available.  RANDOM_NUMBER should be provided from outside.
+
+Fri Dec  3 09:54:59 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_f_require): should check require 'feature.o' too.
+
+Thu Dec  2 11:58:15 1999  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* eval.c (rb_thread_loading): should maintain loading_tbl.
+
+Thu Dec  2 10:21:43 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_thread_loading_done): wrong parameter to st_delete().
+
+Wed Dec  1 09:47:33 1999  Kazunori NISHI  <kazunori@swlab.csce.kyushu-u.ac.jp>
+
+	* string.c (rb_str_split_method): should increment end too.
+
+Tue Nov 30 01:46:18 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* re.c (rb_reg_source): generated source string must be tainted if
+	  regex is tainted.
+
+	* file.c (rb_file_s_basename): basename should not be tainted
+	  unless the original path is tainted.
+
+	* file.c (rb_file_s_dirname): ditto.
+
+Mon Nov 29 15:28:52 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* variable.c (rb_path2class): evaluated value from path should be
+	  module or class.
+
+Fri Nov 26 18:12:49 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_exec_end_proc): should remove only end_procs defined
+	  within load wrapper.
+
+	* eval.c (rb_load): save and restore ruby_wrapper around loading.
+
+	* eval.c (rb_mark_end_proc): mark end procs registered by END{} or
+	  at_exit{}. 
+
+	* eval.c (rb_set_end_proc): should not call rb_global_variable()
+	  on heap address;  it crashed mod_ruby.
+
+Fri Nov 26 18:12:49 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* enum.c (enum_grep): does not return nil.
+
+	* eval.c (rb_mark_end_proc): mark end procs registered by END{} or
+	  at_exit{}. 
+
+	* eval.c (rb_set_end_proc): should not call rb_global_variable()
+	  on heap address;  it crashed mod_ruby.
+
+Thu Nov 18 16:18:27 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* lib/pstore.rb: mutual lock by flock(2).
+
+Thu Nov 18 11:44:13 1999  Masahiro Tomita  <tommy@tmtm.org>
+
+	* io.c (read_all): should check bytes too.
+
+Mon Nov 15 16:50:34 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* enum.c (enum_grep): grep with block returns collection of
+	  evaluated values of block over matched elements.
+
+Mon Nov 15 04:50:33 1999  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* re.c (rb_reg_source): should not call rb_reg_expr_str()
+	  everytime.
+
+Fri Nov 12 23:52:19 1999  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* process.c (rb_f_system): argument check for NT, __EMX__, DJGPP.
+
+Wed Nov 10 21:54:11 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* hash.c (rb_any_cmp): Fixed return without value.
+
+Tue Nov  9 13:21:04 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* configure.in: AC_MINIX move to before AC_EXEEXT and AC_OBJEXT.
+
+Mon Nov  8 19:52:29 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* configure.in: Renamed AC_CHAR_UNSIGNED to AC_C_CHAR_UNSIGNED.
+
+	* configure.in: Added default to AC_CHECK_SIZEOF().
+
+Mon Nov  8 14:28:18 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_f_eval): fake outer scope when eval() called without
+	  bindings.
+
+	* eval.c (rb_f_binding): should copy last_class in the outer frame too.
+
+Sun Nov  7 18:31:04 1999  Yasuhiro Fukuma  <yasuf@big.or.jp>
+
+	* eval.c (is_defined): last_class may be 0.
+
+Sat Nov  6 19:26:55 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* Makefile.in: Added depend entry make parse.@OBJEXT@ from parse.c
+	  for UCB make
+
+Wed Nov  3 08:52:57 1999  Masaki Fukushima  <fukusima@goto.info.waseda.ac.jp>
+
+	* io.c (Init_IO): forgot to use INT2FIX() around SEEK_SET, etc. 
+
+Wed Nov  3 00:25:20 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (rb_str_split_method): use mbclen2() to handle kcode
+	  option of regexp objects.
+
+Sun Oct 31 13:12:42 1999  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* regex.c (re_compile_pattern): wrong [\W] match.
+
+Thu Oct 28 13:35:40 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (rb_str_split_method): should be mbchar aware with
+	  single char separators.
+
+Wed Oct 27 12:57:21 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* random.c (rb_f_srand): random seed should be unsigned.
+
+Tue Oct 26 19:20:54 1999  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* marshal.c (r_object): should register class/module objects.
+
+Sat Oct 23 15:59:39 1999  Takaaki Tateishi  <ttate@jaist.ac.jp>
+
+	* process.c (rb_f_system): should require at least one argument.
+
+Thu Oct 21 16:14:19 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* dir.c (fnmatch): use eban's fnmatch; do not depend on systems's
+	  fnmatch (which may have portability problem) anymore.
+
+Wed Oct 20 15:14:24 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* marshal.c (marshal_load): should protect the generated object
+	  table (arg->data) from GC.
+
+Mon Oct 18 16:15:52 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ext/nkf/nkf.c (rb_nkf_kconv): output should be NUL terminated.
+
+Fri Oct 15 22:50:41 1999  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* error.c (sys_nerr): on CYGWIN, it is _sys_nerr.
+
+Fri Oct 15 01:32:31 1999  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* ext/Win32API/Win32API.c (Win32API_Call): need to use NUM2ULONG,
+	  not NUM2INT.
+
+Tue Oct 12 22:29:04 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (block_pass): should copy block to prevent modifications.
+	  tag in the structure should be updated from latest prot_tag.
+
+	* eval.c (proc_s_new): tag in struct BLOCK should not point into
+	  unused stack.
+
+	* io.c (io_read): length may be 0 or negative.
+
+Tue Oct 12 13:26:27 1999  Jun-ichiro itojun Hagino  <itojun@itojun.org>
+
+	* signal.c (posix_signal): RETSIGTYPE may be void.
+
 Mon Oct 11 17:42:25 1999  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* parse.y (rb_intern): should generate distinct ID_ATTRSET symbols
@@ -15,6 +445,10 @@ Mon Oct 11 07:27:05 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 Mon Oct  4 12:42:32 1999  Kazuhiko Izawa  <izawa@erec.che.tohoku.ac.jp>
 
 	* pack.c (pack_unpack): % in printf format should be %%.
+
+Wed Oct  6 17:13:19 1999  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* ruby.c (addpath): rubylib_mangled_path() modified.
 
 Mon Oct  4 10:01:40 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

@@ -195,10 +195,20 @@ VALUE
 rb_path2class(path)
     const char *path;
 {
+    VALUE c;
+
     if (path[0] == '#') {
 	rb_raise(rb_eArgError, "can't retrieve anonymous class %s", path);
     }
-    return rb_eval_string(path);
+    c = rb_eval_string(path);
+    switch (TYPE(c)) {
+      case T_MODULE:
+      case T_CLASS:
+	break;
+      default:
+	rb_raise(rb_eTypeError, "class path %s does not point class", path);
+    }
+    return c;
 }
 
 void
@@ -693,6 +703,18 @@ rb_alias_variable(name1, name2)
 
 static int special_generic_ivar = 0;
 static st_table *generic_iv_tbl;
+
+st_table*
+rb_generic_ivar_table(obj)
+    VALUE obj;
+{
+    st_table *tbl;
+    VALUE val;
+
+    if (!generic_iv_tbl) return 0;
+    if (!st_lookup(generic_iv_tbl, obj, &tbl)) return 0;
+    return tbl;
+}
 
 static VALUE
 generic_ivar_get(obj, id)

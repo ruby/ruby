@@ -16,10 +16,10 @@
 #ifndef NT
 #include <sys/socket.h>
 #include <netinet/in.h>
-#ifdef NETINET_TCP
+#ifdef HAVE_NETINET_TCP_H
 # include <netinet/tcp.h>
 #endif
-#ifdef NETINET_UDP
+#ifdef HAVE_NETINET_UDP_H
 # include <netinet/udp.h>
 #endif
 #include <netdb.h>
@@ -81,10 +81,27 @@ int Rconnect();
 #define INET_SERVER 1
 #define INET_SOCKS  2
 
-#ifndef INET6
-# undef  ss_family
-# define sockaddr_storage	sockaddr
-# define ss_family		sa_family
+#ifndef HAVE_SOCKADDR_STORAGE
+/*
+ * RFC 2553: protocol-independent placeholder for socket addresses
+ */
+#define _SS_MAXSIZE	128
+#define _SS_ALIGNSIZE	(sizeof(double))
+#define _SS_PAD1SIZE	(_SS_ALIGNSIZE - sizeof(unsigned char) * 2)
+#define _SS_PAD2SIZE	(_SS_MAXSIZE - sizeof(unsigned char) * 2 - \
+				_SS_PAD1SIZE - _SS_ALIGNSIZE)
+
+struct sockaddr_storage {
+#ifdef HAVE_SA_LEN
+	unsigned char ss_len;		/* address length */
+	unsigned char ss_family;	/* address family */
+#else
+	unsigned short ss_family;
+#endif
+	char	__ss_pad1[_SS_PAD1SIZE];
+	double	__ss_align;	/* force desired structure storage alignment */
+	char	__ss_pad2[_SS_PAD2SIZE];
+};
 #endif
 
 #ifdef NT
@@ -93,16 +110,12 @@ sock_finalize(fptr)
     OpenFile *fptr;
 {
     SOCKET s;
-	extern int errno;
 
     if (!fptr->f) return;
-
-	myfdclose(fptr->f);
-	if(fptr->f2)  myfdclose(fptr->f);
-/*
-	s = get_osfhandle(fileno(fptr->f));
+    s = get_osfhandle(fileno(fptr->f));
+    myfdclose(fptr->f);
+    if (fptr->f2) myfdclose(fptr->f2);
     closesocket(s);
-*/
 }
 #endif
 
@@ -378,8 +391,8 @@ s_recv(sock, argc, argv, from)
     GetOpenFile(sock, fptr);
     fd = fileno(fptr->f);
     rb_thread_wait_fd(fd);
-    TRAP_BEG;
   retry:
+    TRAP_BEG;
     RSTRING(str)->len = recvfrom(fd, RSTRING(str)->ptr, RSTRING(str)->len, flags,
 				 (struct sockaddr*)buf, &alen);
     TRAP_END;
@@ -498,6 +511,7 @@ ip_addrsetup(host, port)
 	long i = NUM2LONG(host);
 
 	mkinetaddr(htonl(i), hbuf, sizeof(hbuf));
+	hostp = hbuf;
     }
     else {
 	char *name = STR2CSTR(host);
@@ -508,11 +522,14 @@ ip_addrsetup(host, port)
 	else if (name[0] == '<' && strcmp(name, "<broadcast>") == 0) {
 	    mkinetaddr(INADDR_BROADCAST, hbuf, sizeof(hbuf));
 	}
+	else if (strlen(name) > sizeof(hbuf)-1) {
+	    rb_raise(rb_eSocket, "hostname too long (%d)", strlen(name));
+	}
 	else {
 	    strcpy(hbuf, name);
 	}
+	hostp = hbuf;
     }
-    hostp = hbuf;
     if (NIL_P(port)) {
 	portp = 0;
     }
@@ -529,6 +546,9 @@ ip_addrsetup(host, port)
     hints.ai_socktype = SOCK_DGRAM;
     error = getaddrinfo(hostp, portp, &hints, &res);
     if (error) {
+	if (hostp && hostp[strlen(hostp)-1] == '\n') {
+	    rb_raise(rb_eSocket, "newline at the end of hostname");
+	}
 	rb_raise(rb_eSocket, "%s", gai_strerror(error));
     }
 
@@ -890,7 +910,9 @@ tcp_s_gethostbyname(obj, host)
 	    struct sockaddr_in6 sin6;
 	    MEMZERO(&sin6, struct sockaddr_in6, 1);
 	    sin6.sin6_family = AF_INET;
+#ifdef SIN6_LEN
 	    sin6.sin6_len = sizeof(sin6);
+#endif
 	    memcpy((char *) &sin6.sin6_addr, *pch, h->h_length);
 	    h = gethostbyaddr((char *)&sin6.sin6_addr,
 			      sizeof(sin6.sin6_addr),

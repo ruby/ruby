@@ -87,7 +87,7 @@
 #undef leave
 
 #if defined(__cplusplus)
-}
+extern "C++" {
 #endif
 
 #include <stdio.h>
@@ -103,7 +103,7 @@
 #include <malloc.h>
 
 #if defined(__cplusplus)
-extern "C" {
+}
 #endif
 
 #define UIDTYPE int
@@ -386,6 +386,11 @@ extern char *mystrerror(int);
 #undef get_osfhandle
 #endif
 #define get_osfhandle myget_osfhandle
+
+#ifdef getcwd
+#undef getcwd
+#endif
+#define getcwd win32_getcwd
 
 #ifdef getenv
 #undef getenv

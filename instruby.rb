@@ -15,12 +15,17 @@ if ENV["prefix"]
 else
   prefix = CONFIG["prefix"]
 end
+
 ruby_install_name = CONFIG["ruby_install_name"]
+version = "/"+CONFIG["MAJOR"]+"."+CONFIG["MINOR"]
+arch = "/"+CONFIG["arch"]
+
 bindir = destdir+CONFIG["bindir"]
 libdir = destdir+CONFIG["libdir"]
-#pkglibdir = libdir + "/" + ruby_install_name+"/"+CONFIG["MAJOR"]+"."+CONFIG["MINOR"]
-pkglibdir = libdir + "/ruby/"+CONFIG["MAJOR"]+"."+CONFIG["MINOR"]
-archdir = pkglibdir + "/" + CONFIG["arch"]
+rubylibdir = destdir+CONFIG["prefix"]+"/lib/ruby"+version
+archlibdir = rubylibdir+arch
+sitelibdir = destdir+CONFIG["prefix"]+"/lib/site_ruby"+version
+sitearchlibdir = sitelibdir+arch
 mandir = destdir+CONFIG["mandir"] + "/man1"
 wdir = Dir.getwd
 
@@ -47,17 +52,17 @@ if File.exist? CONFIG["LIBRUBY_SO"]
   end
 end
 Dir.chdir wdir
-File.makedirs pkglibdir, true
-File.makedirs archdir, true
-File.makedirs pkglibdir+"/site_ruby", true
-File.makedirs pkglibdir+"/site_ruby/"+CONFIG["arch"], true
+File.makedirs rubylibdir, true
+File.makedirs archlibdir, true
+File.makedirs sitelibdir, true
+File.makedirs sitearchlibdir, true
 
 if RUBY_PLATFORM =~ /cygwin/ and File.exist? "import.h"
-  File.install "import.h", archdir, 0644, true
+  File.install "import.h", archlibdir, 0644, true
 end
 
 if RUBY_PLATFORM =~ /-aix/
-  File.install "ruby.imp", archdir, 0644, true
+  File.install "ruby.imp", archlibdir, 0644, true
 end
 
 Dir.chdir "ext"
@@ -66,26 +71,26 @@ Dir.chdir CONFIG["srcdir"]
 
 Find.find("lib") do |f|
   next unless /\.rb$/ =~ f
-  dir = pkglibdir+"/"+File.dirname(f[4..-1])
+  dir = rubylibdir+"/"+File.dirname(f[4..-1])
   File.makedirs dir, true unless File.directory? dir
   File.install f, dir, 0644, true
 end
 
 for f in Dir["*.h"]
-  File.install f, archdir, 0644, true
+  File.install f, archlibdir, 0644, true
 end
 if RUBY_PLATFORM =~ /mswin32/
-  File.makedirs archdir + "/win32", true
-  File.install "win32/win32.h", archdir + "/win32", 0644, true
+  File.makedirs archlibdir + "/win32", true
+  File.install "win32/win32.h", archlibdir + "/win32", 0644, true
   if File.exist? wdir+'/rubymw.lib'
-    File.install wdir+'/rubymw.lib', archdir, 0644, true
+    File.install wdir+'/rubymw.lib', archlibdir, 0644, true
   end
 end
-File.install wdir+'/'+CONFIG['LIBRUBY_A'], archdir, 0644, true
+File.install wdir+'/'+CONFIG['LIBRUBY_A'], archlibdir, 0644, true
 
 File.makedirs mandir, true
 File.install "ruby.1", mandir, 0644, true
 Dir.chdir wdir
-File.install "config.h", archdir, 0644, true
-File.install "rbconfig.rb", archdir, 0644, true
+File.install "config.h", archlibdir, 0644, true
+File.install "rbconfig.rb", archlibdir, 0644, true
 # vi:set sw=2:

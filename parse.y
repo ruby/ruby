@@ -330,21 +330,31 @@ stmt		: block_call
 		| stmt kWHILE_MOD expr
 		    {
 			value_expr($3);
-			if (nd_type($1) == NODE_BEGIN) {
-			    $$ = NEW_WHILE(cond($3), $1->nd_body, 0);
+			if ($1) {
+			    if (nd_type($1) == NODE_BEGIN) {
+				$$ = NEW_WHILE(cond($3), $1->nd_body, 0);
+			    }
+			    else {
+				$$ = NEW_WHILE(cond($3), $1, 1);
+			    }
 			}
 			else {
-			    $$ = NEW_WHILE(cond($3), $1, 1);
+			    $$ = 0;
 			}
 		    }
 		| stmt kUNTIL_MOD expr
 		    {
 			value_expr($3);
-			if (nd_type($1) == NODE_BEGIN) {
-			    $$ = NEW_UNTIL(cond($3), $1->nd_body, 0);
+			if ($1) {
+			    if (nd_type($1) == NODE_BEGIN) {
+				$$ = NEW_UNTIL(cond($3), $1->nd_body, 0);
+			    }
+			    else {
+				$$ = NEW_UNTIL(cond($3), $1, 1);
+			    }
 			}
 			else {
-			    $$ = NEW_UNTIL(cond($3), $1, 1);
+			    $$ = 0;
 			}
 		    }
 		| klBEGIN
@@ -517,6 +527,10 @@ mlhs_node	: variable
 		    {
 			$$ = attrset($1, $3);
 		    }
+		| primary tCOLON2 tIDENTIFIER
+		    {
+			$$ = attrset($1, $3);
+		    }
 		| backref
 		    {
 		        rb_backref_error($1);
@@ -532,6 +546,10 @@ lhs		: variable
 			$$ = aryset($1, $3);
 		    }
 		| primary '.' tIDENTIFIER
+		    {
+			$$ = attrset($1, $3);
+		    }
+		| primary tCOLON2 tIDENTIFIER
 		    {
 			$$ = attrset($1, $3);
 		    }
@@ -573,8 +591,7 @@ undef_list	: fitem
 			$$ = block_append($1, NEW_UNDEF($4));
 		    }
 
-op		: tDOT2		{ $$ = tDOT2; }
-		| '|'		{ $$ = '|'; }
+op		: '|'		{ $$ = '|'; }
 		| '^'		{ $$ = '^'; }
 		| '&'		{ $$ = '&'; }
 		| tCMP		{ $$ = tCMP; }
@@ -669,6 +686,17 @@ arg		: lhs '=' arg
 			$$ = NEW_OP_ASGN2($1, $3, $4, $5);
 		        fixpos($$, $1);
 		    }
+		| primary tCOLON2 tIDENTIFIER tOP_ASGN arg
+		    {
+			if ($4 == tOROP) {
+			    $4 = 0;
+			}
+			else if ($4 == tANDOP) {
+			    $4 = 1;
+			}
+			$$ = NEW_OP_ASGN2($1, $3, $4, $5);
+		        fixpos($$, $1);
+		    }
 		| backref tOP_ASGN arg
 		    {
 		        rb_backref_error($1);
@@ -708,23 +736,23 @@ arg		: lhs '=' arg
 		    }
 		| tUPLUS arg
 		    {
-			if (nd_type($2) == NODE_LIT) {
+			if ($2 && nd_type($2) == NODE_LIT) {
 			    $$ = $2;
 			}
 			else {
-			    $$ = call_op($2, tUPLUS, 0);
+			    $$ = call_op($2, tUPLUS, 0, 0);
 			}
 		    }
 		| tUMINUS arg
 		    {
-			if (nd_type($2) == NODE_LIT && FIXNUM_P($2->nd_lit)) {
+			if ($2 && nd_type($2) == NODE_LIT && FIXNUM_P($2->nd_lit)) {
 			    long i = FIX2LONG($2->nd_lit);
 
 			    $2->nd_lit = INT2FIX(-i);
 			    $$ = $2;
 			}
 			else {
-			    $$ = call_op($2, tUMINUS, 0);
+			    $$ = call_op($2, tUMINUS, 0, 0);
 			}
 		    }
 		| arg '|' arg
@@ -786,7 +814,7 @@ arg		: lhs '=' arg
 		    }
 		| '~' arg
 		    {
-			$$ = call_op($2, '~', 0);
+			$$ = call_op($2, '~', 0, 0);
 		    }
 		| arg tLSHFT arg
 		    {
@@ -1516,7 +1544,11 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 			$$ = NEW_ARGS(0, 0, -1);
 		    }
 
-f_norm_arg	: tIDENTIFIER
+f_norm_arg	: tCONSTANT
+		    {
+			yyerror("formal argument must not be constant");
+		    }
+		| tIDENTIFIER
 		    {
 			if (!is_local_id($1))
 			    yyerror("formal argument must be local variable");
@@ -3236,8 +3268,8 @@ yylex()
 	    }
 	    else {
 		result = tIDENTIFIER;
-		if (lex_state == EXPR_FNAME || lex_state == EXPR_DOT) {
-		    if ((c = nextc()) == '=' && !peek('=')) {
+		if (lex_state == EXPR_FNAME) {
+		    if ((c = nextc()) == '=' && !peek('=') && !peek('~')) {
 			tokadd(c);
 		    }
 		    else {
@@ -3394,9 +3426,16 @@ rb_str_extend(list, term)
 		tokadd(c);
 		goto loop_again;
 	      case '\\':
-		c = read_escape();
-		tokadd(c);
-		goto loop_again;
+		c = nextc();
+		if (c == -1) return (NODE*)-1;
+		if (c == term) {
+		    tokadd(c);
+		}
+		else {
+		    tokadd('\\');
+		    tokadd(c);
+		}
+		break;
 	      case '{':
 		if (brace != -1) nest++;
 	      case '\"':

@@ -33,7 +33,7 @@ s%@AR@%ar%g
 s%@INSTALL_PROGRAM@%${INSTALL}%g
 s%@INSTALL_DATA@%${INSTALL} -m 644%g
 s%@SET_MAKE@%%g
-s%@LIBOBJS@% crypt.o flock.o fnmatch.o vsnprintf.o%g
+s%@LIBOBJS@% crypt.o flock.o vsnprintf.o%g
 s%@ALLOCA@%%g
 s%@DEFAULT_KCODE@%%g
 s%@EXEEXT@%.exe%g

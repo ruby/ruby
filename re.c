@@ -5,7 +5,7 @@
   $Author$
   created at: Mon Aug  9 18:24:49 JST 1993
 
-  Copyright (C) 1993-1999 Yukihiro Matsumoto
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -182,6 +182,21 @@ kcode_reset_option()
     }
 }
 
+int
+rb_mbclen2(c, re)
+    unsigned char c;
+    VALUE re;
+{
+    int len;
+
+    if (!FL_TEST(re, KCODE_FIXED))
+	return mbclen(c);
+    kcode_set_option(re);
+    len = mbclen(c);
+    kcode_reset_option();
+    return len;
+}
+
 extern int ruby_in_compile;
 
 static void
@@ -260,9 +275,8 @@ static VALUE
 rb_reg_source(re)
     VALUE re;
 {
-    VALUE str = rb_str_new(0,0);
-    rb_reg_expr_str(str, RREGEXP(re)->str,RREGEXP(re)->len);
-
+    VALUE str = rb_str_new(RREGEXP(re)->str,RREGEXP(re)->len);
+    if (OBJ_TAINTED(re)) OBJ_TAINT(str);
     return str;
 }
 
@@ -538,6 +552,7 @@ rb_reg_search(reg, str, pos, reverse)
     }
     result = re_search(RREGEXP(reg)->ptr,RSTRING(str)->ptr,RSTRING(str)->len,
 		       pos, range, regs);
+
     if (FL_TEST(reg, KCODE_FIXED))
 	kcode_reset_option();
 
@@ -710,7 +725,7 @@ static VALUE
 match_string(match)
     VALUE match;
 {
-    return rb_str_dup(RMATCH(match)->str);
+    return RMATCH(match)->str;	/* str is frozen */
 }
 
 VALUE rb_cRegexp;
@@ -1263,7 +1278,9 @@ Init_Regexp()
     rb_global_variable(&reg_cache);
     rb_global_variable(&matchcache);
 
-    rb_cMatch  = rb_define_class("MatchingData", rb_cData);
+    rb_cMatch  = rb_define_class("MatchingData", rb_cObject);
+    rb_undef_method(CLASS_OF(rb_cMatch), "new");
+
     rb_define_method(rb_cMatch, "clone", match_clone, 0);
     rb_define_method(rb_cMatch, "size", match_size, 0);
     rb_define_method(rb_cMatch, "length", match_size, 0);

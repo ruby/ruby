@@ -31,7 +31,7 @@ for i in ifp = open(basename)
   end
   ofp.write(i)
   line = line + 1
-  if line >= lines
+  if line >= lines and !ifp.eof?
     ofp.write("END--cut here--cut here\n")
     ofp.close
     part = part + 1

@@ -6,7 +6,7 @@
   $Date$
   created at: Tue Aug 10 14:30:50 JST 1993
 
-  Copyright (C) 1993-1999 Yukihiro Matsumoto
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -195,10 +195,11 @@ rb_f_waitpid(obj, vpid, vflags)
     int pid, flags, status;
 
     if (NIL_P(vflags)) flags = 0;
-    else flags = FIX2UINT(vflags);
+    else flags = NUM2UINT(vflags);
 
-    if ((pid = rb_waitpid(FIX2UINT(vpid), flags, &status)) < 0)
+    if ((pid = rb_waitpid(NUM2INT(vpid), flags, &status)) < 0)
 	rb_sys_fail(0);
+    if (pid == 0) return Qnil;
     return INT2FIX(pid);
 }
 
@@ -600,6 +601,13 @@ rb_f_system(argc, argv)
     VALUE cmd;
     int state;
 
+    fflush(stdout);
+    fflush(stderr);
+    if (argc == 0) {
+	rb_last_status = INT2FIX(0);
+	rb_raise(rb_eArgError, "wrong # of arguments");
+    }
+
     if (TYPE(argv[0]) == T_ARRAY) {
 	if (RARRAY(argv[0])->len != 2) {
 	    rb_raise(rb_eArgError, "wrong first argument");
@@ -618,6 +626,11 @@ rb_f_system(argc, argv)
 #ifdef DJGPP
     VALUE cmd;
     int state;
+
+    if (argc == 0) {
+	rb_last_status = INT2FIX(0);
+	rb_raise(rb_eArgError, "wrong # of arguments");
+    }
 
     if (TYPE(argv[0]) == T_ARRAY) {
 	if (RARRAY(argv[0])->len != 2) {
@@ -644,7 +657,7 @@ rb_f_system(argc, argv)
     fflush(stderr);
     if (argc == 0) {
 	rb_last_status = INT2FIX(0);
-	return INT2FIX(0);
+	rb_raise(rb_eArgError, "wrong # of arguments");
     }
 
     if (TYPE(argv[0]) == T_ARRAY) {
@@ -667,7 +680,7 @@ rb_f_system(argc, argv)
 #if defined(USE_CWGUSI)
     rb_notimplement();
 #else
-   volatile VALUE prog = 0;
+    volatile VALUE prog = 0;
     int pid;
     int i;
 
@@ -675,7 +688,7 @@ rb_f_system(argc, argv)
     fflush(stderr);
     if (argc == 0) {
 	rb_last_status = INT2FIX(0);
-	return INT2FIX(0);
+	rb_raise(rb_eArgError, "wrong # of arguments");
     }
 
     if (TYPE(argv[0]) == T_ARRAY) {
@@ -791,7 +804,7 @@ proc_setpgrp(argc, argv)
     rb_scan_args(argc, argv, "0");
     if (setpgrp() < 0) rb_sys_fail(0);
 #endif
-    return Qnil;
+    return INT2FIX(0);
 #else
     rb_notimplement();
 #endif
@@ -822,7 +835,7 @@ proc_setpgid(obj, pid, pgrp)
     ipgrp = NUM2INT(pgrp);
 
     if (setpgid(ipid, ipgrp) < 0) rb_sys_fail(0);
-    return Qnil;
+    return INT2FIX(0);
 #else
     rb_notimplement();
 #endif

@@ -6,6 +6,8 @@
 require 'tk.rb'
 
 class TkEntry<TkLabel
+  include Scrollable
+
   WidgetClassName = 'Entry'.freeze
   WidgetClassNames[WidgetClassName] = self
   def self.to_eval
@@ -14,9 +16,6 @@ class TkEntry<TkLabel
 
   def create_self
     tk_call 'entry', @path
-  end
-  def scrollcommand(cmd)
-    configure 'scrollcommand', cmd
   end
 
   def delete(s, e=None)
@@ -45,7 +44,7 @@ class TkEntry<TkLabel
     tk_send 'selection', 'adjust', index
   end
   def selection_clear
-    tk_send 'selection', 'clear', 'end'
+    tk_send 'selection', 'clear'
   end
   def selection_from(index)
     tk_send 'selection', 'from', index
@@ -58,9 +57,6 @@ class TkEntry<TkLabel
   end
   def selection_to(index)
     tk_send 'selection', 'to', index
-  end
-  def xview(*index)
-    tk_send 'xview', *index
   end
 
   def value

@@ -6,7 +6,7 @@
   $Date$
   created at: Fri Oct 15 10:39:26 JST 1993
 
-  Copyright (C) 1993-1999 Yukihiro Matsumoto
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -147,12 +147,13 @@ rb_f_sprintf(argc, argv)
     char *buf, *p, *end;
     int blen, bsiz;
     VALUE result;
-
     int width, prec, flags = FNONE;
+    int tainted = 0;
     VALUE tmp;
     VALUE str;
 
     fmt = GETARG();
+    if (OBJ_TAINTED(fmt)) tainted = 1;
     p = str2cstr(fmt, &blen);
     end = p + blen;
     blen = 0;
@@ -172,6 +173,7 @@ rb_f_sprintf(argc, argv)
 	p = t + 1;		/* skip `%' */
 
 	width = prec = -1;
+
       retry:
 	switch (*p) {
 	  default:
@@ -290,6 +292,7 @@ rb_f_sprintf(argc, argv)
 		int len;
 
 		str = rb_obj_as_string(arg);
+		if (OBJ_TAINTED(str)) tainted = 1;
 		len = RSTRING(str)->len;
 		if (flags&FPREC) {
 		    if (prec < len) {
@@ -618,6 +621,7 @@ rb_f_sprintf(argc, argv)
     result = rb_str_new(buf, blen);
     free(buf);
 
+    if (tainted) OBJ_TAINT(result);
     return result;
 }
 

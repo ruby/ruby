@@ -6,7 +6,7 @@
   $Date$
   created at: Mon Nov 22 18:51:18 JST 1993
 
-  Copyright (C) 1993-1999 Yukihiro Matsumoto
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -79,19 +79,17 @@ static int
 rb_any_cmp(a, b)
     VALUE a, b;
 {
+    VALUE args[2];
     if (FIXNUM_P(a)) {
 	if (FIXNUM_P(b)) return a != b;
     }
     else if (TYPE(a) == T_STRING) {
 	if (TYPE(b) == T_STRING) return rb_str_cmp(a, b);
     }
-    else {
-	VALUE args[2];
 
-	args[0] = a;
-	args[1] = b;
-	return !rb_with_disable_interrupt(eql, (VALUE)args);
-    }
+    args[0] = a;
+    args[1] = b;
+    return !rb_with_disable_interrupt(eql, (VALUE)args);
 }
 
 static int
@@ -690,10 +688,9 @@ rb_hash_inspect(hash)
 }
 
 static VALUE
-hash_to_s(hash)
+to_s_hash(hash)
     VALUE hash;
 {
-    if (rb_inspecting_p(hash)) return rb_str_new2("{...}");
     return rb_ary_to_s(rb_hash_to_a(hash));
 }
 
@@ -701,8 +698,10 @@ static VALUE
 rb_hash_to_s(hash)
     VALUE hash;
 {
+    VALUE str;
+
     if (rb_inspecting_p(hash)) return rb_str_new2("{...}");
-    return rb_protect_inspect(hash_to_s, hash, 0);
+    return rb_protect_inspect(to_s_hash, hash, 0);
 }
 
 static VALUE
@@ -1368,7 +1367,7 @@ env_index(dmy, value)
 	char *s = strchr(*env, '=')+1;
 	if (s) {
 	    if (strncmp(s, RSTRING(value)->ptr, strlen(s)) == 0) {
-		return rb_tainted_str_new(*env, s-*env);
+		return rb_tainted_str_new(*env, s-*env-1);
 	    }
 	}
 	env++;

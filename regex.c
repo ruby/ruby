@@ -48,13 +48,6 @@
 # include <sys/types.h>
 #endif
 
-#if defined(STDC_HEADERS)
-# include <stddef.h>
-#else
-/* We need this for `regex.h', and perhaps for the Emacs include files.  */
-# include <sys/types.h>
-#endif
-
 #ifndef __STDC__
 # define volatile
 #endif
@@ -1055,7 +1048,7 @@ calculate_must_string(start, end)
   return must;
 }
 
-static int
+static unsigned int
 read_backslash(c)
      int c;
 {
@@ -1085,6 +1078,47 @@ read_backslash(c)
     return '\033';
   }
   return c;
+}
+
+static unsigned int
+read_special(p, pend, pp)
+     const char *p, *pend, **pp;
+{
+  int c;
+
+  PATFETCH_RAW(c);
+  switch (c) {
+  case 'M':
+    PATFETCH_RAW(c);
+    if (c != '-') return -1;
+    PATFETCH_RAW(c);
+    *pp = p;
+    if (c == '\\') {
+      return read_special(p, pend, pp) | 0x80;
+    }
+    else if (c == -1) return ~0;
+    else {
+      return ((c & 0xff) | 0x80);
+    }
+
+  case 'C':
+    PATFETCH_RAW(c);
+    if (c != '-') return ~0;
+  case 'c':
+    PATFETCH_RAW(c);
+    *pp = p;
+    if (c == '\\') {
+      c = read_special(p, pend, pp);
+    }
+    else if (c == '?') return 0177;
+    else if (c == -1) return ~0;
+    return c & 0x9f;
+  default:
+    return read_backslash(c);
+  }
+
+ end_of_pattern:
+  return ~0;
 }
 
 /* re_compile_pattern takes a regular-expression string
@@ -1406,7 +1440,8 @@ re_compile_pattern(pattern, size, bufp)
 	  case 'W':
 	    for (c = 0; c < (1 << BYTEWIDTH); c++) {
 	      if (SYNTAX(c) != Sword &&
-		  (current_mbctype || SYNTAX(c) != Sword2))
+		  (current_mbctype && !re_mbctab[c] ||
+		  !current_mbctype && SYNTAX(c) != Sword2))
 		SET_LIST_BIT(c);
 	    }
 	    last = -1;
@@ -1454,6 +1489,16 @@ re_compile_pattern(pattern, size, bufp)
 	    PATUNFETCH;
 	    c = scan_oct(p, 3, &numlen);
 	    p += numlen;
+	    had_num_literal = 1;
+	    break;
+
+	  case 'M':
+	  case 'C':
+	  case 'c':
+	    p0 = --p;
+	    c = read_special(p, pend, &p0);
+	    if (c > 255) goto invalid_escape;
+	    p = p0;
 	    had_num_literal = 1;
 	    break;
 
@@ -2143,6 +2188,16 @@ re_compile_pattern(pattern, size, bufp)
 	BUFPUSH(c1);
 	break;
 
+      case 'M':
+      case 'C':
+      case 'c':
+	p0 = --p;
+	c = read_special(p, pend, &p0);
+	if (c > 255) goto invalid_escape;
+	p = p0;
+	had_num_literal = 1;
+	goto numeric_char;
+
       default:
 	c = read_backslash(c);
 	goto normal_char;
@@ -2305,6 +2360,9 @@ re_compile_pattern(pattern, size, bufp)
 
  nested_meta:
   FREE_AND_RETURN(stackb, "nested *?+ in regexp");
+
+ invalid_escape:
+  FREE_AND_RETURN(stackb, "Invalid escape character syntax");
 }
 
 void
@@ -2898,11 +2956,12 @@ re_compile_fastmap(bufp)
 	    c = beg + 1;
 	  }
 
-	  for (j = c; j < (1 << BYTEWIDTH); j++)
+	  for (j = c; j < (1 << BYTEWIDTH); j++) {
 	    if (num_literal)
 	      fastmap[j] = 1;
 	    if (ismbchar(j))
 	      fastmap[j] = 1;
+	  }
 	}
 	break;
 
@@ -4099,9 +4158,10 @@ re_match(bufp, string_arg, size, pos, regs)
 	case jump:
 	  p1++;
 	  EXTRACT_NUMBER_AND_INCR (mcnt, p1);
+
+	  if (mcnt >= 0) break;	/* should be backward jump */
 	  p1 += mcnt;
 
-	  if (p1 >= pend) break;
 	  if (( is_a_jump_n && (enum regexpcode)*p1 == succeed_n) ||
 	      (!is_a_jump_n && (enum regexpcode)*p1 == on_failure_jump)) {
 	    if (failed_paren) {

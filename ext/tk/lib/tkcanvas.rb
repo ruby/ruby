@@ -30,8 +30,7 @@ module TkTreatCItemFont
     else
       pathname = self.path + ';' + tagOrId.to_s
     end
-    if (fnt = slot['font'])
-      slot['font'] = nil
+    if (fnt = slot.delete('font'))
       if fnt.kind_of? TkFont
 	return fnt.call_font_configure(pathname, 
 				       self.path,'itemconfigure',tagOrId,slot)
@@ -39,16 +38,13 @@ module TkTreatCItemFont
 	latintagfont_configure(tagOrId, fnt) if fnt
       end
     end
-    if (ltn = slot['latinfont'])
-      slot['latinfont'] = nil
+    if (ltn = slot.delete('latinfont'))
       latintagfont_configure(tagOrId, ltn) if ltn
     end
-    if (ltn = slot['asciifont'])
-      slot['asciifont'] = nil
+    if (ltn = slot.delete('asciifont'))
       latintagfont_configure(tagOrId, ltn) if ltn
     end
-    if (knj = slot['kanjifont'])
-      slot['kanjifont'] = nil
+    if (knj = slot.delete('kanjifont'))
       kanjitagfont_configure(tagOrId, knj) if knj
     end
 
@@ -129,6 +125,7 @@ end
 
 class TkCanvas<TkWindow
   include TkTreatCItemFont
+  include Scrollable
 
   WidgetClassName = 'Canvas'.freeze
   WidgetClassNames[WidgetClassName] = self
@@ -492,15 +489,15 @@ class TkcTag<TkObject
     CTagID_TBL[id]? CTagID_TBL[id]: id
   end
 
-  $tk_canvas_tag = 'ctag0000'
+  Tk_CanvasTag_ID = ['ctag0000']
   def initialize(parent, mode=nil, *args)
     if not parent.kind_of?(TkCanvas)
       fail format("%s need to be TkCanvas", parent.inspect)
     end
     @c = parent
-    @path = @id = $tk_canvas_tag
+    @path = @id = Tk_CanvasTag_ID[0]
     CTagID_TBL[@id] = self
-    $tk_canvas_tag = $tk_canvas_tag.succ
+    Tk_CanvasTag_ID[0] = Tk_CanvasTag_ID[0].succ
     if mode
       tk_call @c.path, "addtag", @id, mode, *args
     end
@@ -575,15 +572,15 @@ class TkcTagCurrent<TkcTag
 end
 
 class TkcGroup<TkcTag
-  $tk_group_id = 'tkg00000'
+  Tk_cGroup_ID = ['tkcg00000']
   def create_self(parent, *args)
     if not parent.kind_of?(TkCanvas)
       fail format("%s need to be TkCanvas", parent.inspect)
     end
     @c = parent
-    @path = @id = $tk_group_id
+    @path = @id = Tk_cGroup_ID[0]
     CTagID_TBL[@id] = self
-    $tk_group_id = $tk_group_id.succ
+    Tk_cGroup_ID[0] = Tk_cGroup_ID[0].succ
     add(*args) if args != []
   end
   
@@ -705,10 +702,10 @@ class TkImage<TkObject
 
   Tk_IMGTBL = {}
 
-  $tk_image_id = 'i00000'
+  Tk_Image_ID = ['i00000']
   def initialize(keys=nil)
-    @path = $tk_image_id
-    $tk_image_id = $tk_image_id.succ
+    @path = Tk_Image_ID[0]
+    Tk_Image_ID[0] = Tk_Image_ID[0].succ
     tk_call 'image', 'create', @type, @path, *hash_kv(keys)
     Tk_IMGTBL[@path] = self
   end

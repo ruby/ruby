@@ -77,18 +77,18 @@ AC_CHECK_PROGS(AR, ar aal, ar)
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
 
-AC_EXEEXT
-AC_OBJEXT
-
 # checks for UNIX variants that set C preprocessor variables
 AC_MINIX
 
-AC_CHECK_SIZEOF(int)
-AC_CHECK_SIZEOF(short)
-AC_CHECK_SIZEOF(long)
-AC_CHECK_SIZEOF(void*)
-AC_CHECK_SIZEOF(float)
-AC_CHECK_SIZEOF(double)
+AC_EXEEXT
+AC_OBJEXT
+
+AC_CHECK_SIZEOF(int, 4)
+AC_CHECK_SIZEOF(short, 2)
+AC_CHECK_SIZEOF(long, 4)
+AC_CHECK_SIZEOF(void*, 4)
+AC_CHECK_SIZEOF(float, 4)
+AC_CHECK_SIZEOF(double, 8)
 
 AC_CACHE_CHECK(for prototypes, rb_cv_have_prototypes,
   [AC_TRY_COMPILE([int foo(int x) { return 0; }], [return foo(10);],
@@ -140,9 +140,12 @@ case "$host_os" in
 nextstep*)	;;
 openstep*)	;;
 rhapsody*)	;;
-human*)		;;
+human*)		ac_cv_func_getpgrp_void=yes;;
 beos*)		;;
 cygwin*)	;;
+os2_emx*)	LIBS="-lm $LIBS"
+		ac_cv_lib_xpg4_setlocale=no
+		ac_cv_lib_dir_opendir=no;;
 *) LIBS="-lm $LIBS";;
 esac
 AC_CHECK_LIB(crypt, crypt)
@@ -156,7 +159,7 @@ AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS(stdlib.h string.h unistd.h limits.h sys/file.h sys/ioctl.h\
 		 fcntl.h sys/fcntl.h sys/select.h sys/time.h sys/times.h sys/param.h\
-		 syscall.h pwd.h a.out.h utime.h memory.h direct.h fnmatch.h)
+		 syscall.h pwd.h a.out.h utime.h memory.h direct.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_UID_T
@@ -175,7 +178,7 @@ AC_FUNC_VFORK
 AC_FUNC_MEMCMP
 AC_REPLACE_FUNCS(dup2 memmove mkdir strcasecmp strncasecmp strerror strftime\
 		 strchr strstr strtoul strdup crypt flock vsnprintf\
-		 fnmatch isinf isnan finite)
+		 isinf isnan finite)
 AC_CHECK_FUNCS(fmod killpg drand48 random wait4 waitpid syscall getcwd\
 	      truncate chsize times utimes fcntl lockf setitimer\
 	      setruid seteuid setreuid setrgid setegid setregid\
@@ -253,7 +256,7 @@ test $rb_cv_func_strtod = no && LIBOBJS="$LIBOBJS strtod.o"
 
 AC_C_BIGENDIAN
 AC_C_CONST
-AC_CHAR_UNSIGNED
+AC_C_CHAR_UNSIGNED
 
 AC_CACHE_CHECK(whether right shift preserve sign bit, rb_cv_rshift_sign,
     [AC_TRY_RUN([
@@ -269,7 +272,7 @@ main()
 	rb_cv_rshift_sign=no,
 	rb_cv_rshift_sign=yes)])
 if test "$rb_cv_rshift_sign" = yes; then
-  AC_DEFINE(RSHIFT(x,y), ((x)>>y))
+  AC_DEFINE(RSHIFT(x,y), ((x)>>(int)y))
 else
   AC_DEFINE(RSHIFT(x,y), (((x)<0) ? ~((~(x))>>y) : (x)>>y))
 fi
@@ -309,10 +312,14 @@ AC_SUBST(DEFAULT_KCODE)
 AC_ARG_WITH(default-kcode, 
 	[--with-default-kcode=CODE specify default value for \$KCODE (utf8|euc|sjis|none)], 
 	[case $withval in
-	utf8) AC_DEFINE(DEFAULT_KCODE, KCODE_UTF8);;
-	euc)  AC_DEFINE(DEFAULT_KCODE, KCODE_EUC);;
-	sjis) AC_DEFINE(DEFAULT_KCODE, KCODE_SJIS);;
-	none) AC_DEFINE(DEFAULT_KCODE, KCODE_NONE);;
+	utf8) AC_DEFINE(DEFAULT_KCODE, KCODE_UTF8)
+	      DEFAULT_KCODE="KCODE_UTF8";;
+	euc)  AC_DEFINE(DEFAULT_KCODE, KCODE_EUC)
+	      DEFAULT_KCODE="KCODE_EUC";;
+	sjis) AC_DEFINE(DEFAULT_KCODE, KCODE_SJIS)
+	      DEFAULT_KCODE="KCODE_SJIS";;
+	none) AC_DEFINE(DEFAULT_KCODE, KCODE_NONE)
+	      DEFAULT_KCODE="KCODE_NONE";;
         *)    AC_MSG_WARN($withval is not valid kcode; ignored);;
 	esac])
 
@@ -326,10 +333,8 @@ AC_ARG_WITH(dln-a-out,
 
 AC_SUBST(XLDFLAGS)dnl
 
-case "$host_os" in
-    linux*)
-  AC_CACHE_CHECK(whether ELF binaries are produced, rb_cv_binary_elf,
-  [AC_TRY_RUN([
+AC_CACHE_CHECK(whether ELF binaries are produced, rb_cv_binary_elf,
+[AC_TRY_RUN([
 /* Test for whether ELF binaries are produced */
 #include <fcntl.h>
 #include <stdlib.h>
@@ -346,15 +351,30 @@ main() {
 	exit(0); /* succeed (yes, it's ELF) */
 }
 ],
-	rb_cv_binary_elf=yes,
-	rb_cv_binary_elf=no,
-	rb_cv_binary_elf=yes)])
+rb_cv_binary_elf=yes,
+rb_cv_binary_elf=no,
+rb_cv_binary_elf=yes)])
+
+if test "$rb_cv_binary_elf" = yes; then
+  AC_DEFINE(USE_ELF)
+fi
+
+case "$host_os" in
+    linux*)
   if test "$rb_cv_binary_elf" = no; then
     with_dln_a_out=yes
     host_os=${host_os}-a_out
   else
     LDFLAGS="-rdynamic"
   fi;;
+netbsd*)
+    if [[ "`$CC -dM -E - </dev/null | grep __ELF__`" != "" ]]
+    then
+	netbsd_elf=yes
+    else
+	netbsd_elf=no
+    fi
+    ;;
 esac
 
 AC_SUBST(DLDFLAGS)dnl
@@ -419,16 +439,17 @@ if test "$with_dln_a_out" != yes; then
 	linux*) 	LDSHARED="$CC -shared"
 			rb_cv_dlopen=yes ;;
 	freebsd*)       LDSHARED="$CC -shared"
-			if test -x /usr/bin/objformat && \
-			   test `/usr/bin/objformat` = "elf" ; then
+			if test "$rb_cv_binary_elf" = yes; then
 			    LDFLAGS="-rdynamic"
 			    DLDFLAGS='-Wl,-soname,$(.TARGET)'
-			    rb_cv_freebsd_elf=yes
 			else
 			  test "$GCC" = yes && `$CC --print-prog-name=ld` -v 2>&1 | grep "GNU ld" > /dev/null || LDSHARED="ld -Bshareable"
 			fi
 			rb_cv_dlopen=yes ;;
-	netbsd*)  	LDSHARED="ld -shared"
+	netbsd*)	LDSHARED="ld -shared"
+			if test "$rb_cv_binary_elf" = yes; then
+                          LDFLAGS="-export-dynamic"
+			fi
 			rb_cv_dlopen=yes ;;
 	openbsd*) 	LDSHARED="ld -Bforcearchive -Bshareable"
 			rb_cv_dlopen=yes ;;
@@ -437,7 +458,7 @@ if test "$with_dln_a_out" != yes; then
 					rb_cv_dlopen=yes ;;
 			esac ;;
 	bsdi*)		LDSHARED="ld -shared"
-			LDFLAGS="-rdynamic -Wl,-rpath,/usr/local/lib/ruby/1.4/i386-bsdi4.0"
+			LDFLAGS='-rdynamic -Wl,-rpath,$(prefix)/lib/ruby/$(MAJOR).$(MINOR)/i386-bsdi4.0'
 			rb_cv_dlopen=yes ;;
 	nextstep*)	LDSHARED='cc -r -nostdlib'
 			LDFLAGS="-u libsys_s"
@@ -454,6 +475,7 @@ if test "$with_dln_a_out" != yes; then
 	aix*)		LDSHARED='/usr/ccs/bin/ld'
 			XLDFLAGS='-Wl,-bE:ruby.imp'
 			DLDFLAGS='-eInit_$(TARGET) -bI:$(topdir)/ruby.imp -bM:SRE -T512 -H512 -lc'
+			LDFLAGS="-brtl"
 			rb_cv_dlopen=yes ;;
 
 	human*)		DLDFLAGS=''
@@ -520,8 +542,8 @@ else
 	 	AC_DEFINE(DLEXT, ".bundle");;
     cygwin*)	DLEXT=dll
 	 	AC_DEFINE(DLEXT, ".dll");;
-    os2_emx)	DLEXT=o
-	 	AC_DEFINE(DLEXT, ".so");;
+    os2_emx*)	DLEXT=dll
+	 	AC_DEFINE(DLEXT, ".dll");;
     *)		DLEXT=so
     		AC_DEFINE(DLEXT, ".so");;
   esac
@@ -559,7 +581,7 @@ case "$host_os" in
   human*)
     AC_CHECK_LIB(signal, _harderr)
     AC_CHECK_LIB(hmem, hmemset)
-    AC_CHECK_FUNCS(select)
+    AC_CHECK_FUNCS(select gettimeofday)
     AC_CACHE_CHECK(whether PD libc _dtos18 fail to convert big number,
 		   rb_cv_missing__dtos18,
     [AC_TRY_RUN(
@@ -598,14 +620,14 @@ rb_cv_missing_fconvert=yes, rb_cv_missing_fconvert=no, rb_cv_missing_fconvert=no
       AC_DEFINE(MISSING_FCONVERT)
     fi
     LIBOBJS="$LIBOBJS x68.o"
-    CFLAGS="$CFLAGS -fansi-only -cc1-stack=196608 -cpp-stack=2694144"
+    CFLAGS="$CFLAGS -fansi-only -cc1-stack=262144 -cpp-stack=2694144"
     EXEEXT=.x
     OBJEXT=o
     setup=Setup.x68
     ;;
   dnl OS/2 environment w/ Autoconf 2.1x for EMX
   os2_emx)
-    LIBOBJS="$LIBOBJS os2.o"
+    LIBOBJS="$LIBOBJS os2.$OBJEXT"
     setup=Setup.emx
     ;;
   cygwin*)
@@ -626,6 +648,7 @@ if test "$fat_binary" = yes ; then
   CFLAGS="$CFLAGS $ARCH_FLAG"
 fi
 
+FIRSTMAKEFILE=""
 LIBRUBY_A='lib$(RUBY_INSTALL_NAME).a'
 LIBRUBY='$(LIBRUBY_A)'
 LIBRUBYARG='$(LIBRUBY_A)'
@@ -642,6 +665,7 @@ if test "$host_os" = "beos"; then
       ;;
     i586*)
       LDFLAGS="$LDFLAGS -L."
+      FIRSTMAKEFILE=GNUmakefile:beos/GNUmakefile.in
       ;;
     *)
       echo EXPORTS > ruby.def
@@ -650,7 +674,6 @@ if test "$host_os" = "beos"; then
   esac
 fi
 
-FIRSTMAKEFILE=""
 LIBRUBY_LDSHARED=$LDSHARED
 LIBRUBY_DLDFLAGS=$DLDFLAGS
 LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR).$(TEENY)'
@@ -667,23 +690,23 @@ if test "$enable_shared" = 'yes'; then
 	LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_INSTALL_NAME).so'
 	;;
     linux*)
-	XLDFLAGS='-Wl,-rpath,${prefix}/lib':/usr/lib:/lib
+	LIBRUBY_DLDFLAGS='-Wl,-soname,lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR)'
 	LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_INSTALL_NAME).so'
 	;;
     freebsd*)
 	LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).so.$(MAJOR)$(MINOR)'
-	if test "$rb_cv_freebsd_elf" != "yes" ; then
+	if test "$rb_cv_binary_elf" != "yes" ; then
 	    LIBRUBY_SO="$LIBRUBY_SO.\$(TEENY)"
 	    LIBRUBY_ALIASES=''
 	fi
 	;;
     netbsd*)
 	LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR)'
- 	case "$host_cpu" in
-	alpha|mipsel|mipseb|powerpc|sparc64)  # ELF platforms
-	   LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so.$(MAJOR) lib$(RUBY_INSTALL_NAME).so' ;;
- 	*) LIBRUBY_ALIASES= ;;  # a.out platforms
-	esac
+	if test "$rb_cv_binary_elf" = yes; then # ELF platforms
+	   LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so.$(MAJOR) lib$(RUBY_INSTALL_NAME).so'
+	else
+	   LIBRUBY_ALIASES=   # a.out platforms
+	fi
  	;;
     solaris*)
 	XLDFLAGS='-R${prefix}/lib'

@@ -18,8 +18,8 @@ LDFLAGS = $(CFLAGS) -Fm
 #LDFLAGS = $(CFLAGS) -Fm
 XLDFLAGS = 
 #EXTLIBS = 
-LIBS = advapi32.lib wsock32.lib $(EXTLIBS)
-MISSING = crypt.obj alloca.obj win32.obj fnmatch.obj isinf.obj isnan.obj
+LIBS = user32.lib advapi32.lib wsock32.lib $(EXTLIBS)
+MISSING = crypt.obj alloca.obj win32.obj isinf.obj isnan.obj
 LDSHARED = 
 DLDFLAGS = 
 SOLIBS = 
@@ -165,9 +165,6 @@ isinf.obj: missing/isinf.c
 
 isnan.obj: missing/isnan.c
 	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c missing/isnan.c
-
-fnmatch.obj: missing/fnmatch.c
-	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c missing/fnmatch.c
 
 memcmp.obj: missing/memcmp.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c missing/memcmp.c
