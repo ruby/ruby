@@ -1,3 +1,7 @@
+Thu May 24 16:08:21 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* mkconfig.rb: autoconf 2.50 support.
+
 Thu May 24 14:23:35 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_yield_0): need argument adjustment for C defined
