@@ -1,3 +1,10 @@
+Fri Feb 27 20:37:09 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (proc_invoke): no orphan block check is needed when pcall
+	  is true.
+
+	* eval.c (localjump_destination): update localjump condition.
+
 Fri Feb 27 02:10:49 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (localjump_destination): lambda should not interfere

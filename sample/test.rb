@@ -1127,6 +1127,17 @@ test_ok(lambda{|a|}.arity == 1)
 test_ok(lambda{|a,|}.arity == 1)
 test_ok(lambda{|a,b|}.arity == 2)
 
+def yield_in_lambda
+  lambda{ yield }[]
+end
+
+def return_in_lambda
+  yield_in_lambda{ return true }
+  false
+end
+
+test_ok(return_in_lambda())
+
 def marity_test(m)
   method = method(m)
   test_ok(method.arity == method.to_proc.arity)

@@ -993,8 +993,8 @@ static NODE *compile _((VALUE, char*, int));
 
 static VALUE rb_yield_0 _((VALUE, VALUE, VALUE, int, int));
 
-#define YIELD_PROC_CALL  1
-#define YIELD_PUBLIC_DEF 2
+#define YIELD_LAMBDA_CALL 1
+#define YIELD_PUBLIC_DEF  2
 #define YIELD_FUNC_AVALUE 1
 #define YIELD_FUNC_SVALUE 2
 
@@ -4515,17 +4515,23 @@ localjump_destination(state, retval)
 {
     struct tag *tt = prot_tag;
     VALUE tag = (state == TAG_BREAK) ? PROT_ITER : PROT_FUNC;
-    int uniq = 0;
+    int yield = Qfalse;
 
     if (retval == Qundef) retval = Qnil;
     while (tt) {
 	if (tt->tag == PROT_YIELD) {
-	    uniq = tt->frame->uniq;
+	    yield = Qtrue;
+	    tt = tt->prev;
 	}
 	if ((tt->tag == PROT_THREAD && state == TAG_BREAK) ||
-	    (tt->tag == PROT_PCALL && uniq == 0) ||
-	    (tt->tag == PROT_CALL || tt->tag == tag) && tt->frame->uniq == ruby_frame->uniq) {
+	    ((tt->tag == PROT_CALL || tt->tag == PROT_PCALL || tt->tag == tag) &&
+	     tt->frame->uniq == ruby_frame->uniq)) {
 	    tt->dst = (VALUE)ruby_frame->uniq;
+	    tt->retval = retval;
+	    JUMP_TAG(state);
+	}
+	if (tt->tag == PROT_PCALL && !yield) {
+	    tt->dst = (VALUE)tt->frame->uniq;
 	    tt->retval = retval;
 	    JUMP_TAG(state);
 	}
@@ -4552,6 +4558,7 @@ rb_yield_0(val, self, klass, flags, avalue)
     int old_vmode;
     struct FRAME frame;
     NODE *cnode = ruby_current_node;
+    int lambda = flags & YIELD_LAMBDA_CALL;
     int state;
 
     if (!rb_block_given_p()) {
@@ -4590,7 +4597,7 @@ rb_yield_0(val, self, klass, flags, avalue)
 	PUSH_TAG(PROT_NONE);
 	if ((state = EXEC_TAG()) == 0) {
 	    if (block->var == (NODE*)1) { /* no parameter || */
-		if ((flags & YIELD_PROC_CALL) && RARRAY(val)->len != 0) {
+		if (lambda && RARRAY(val)->len != 0) {
 		    rb_raise(rb_eArgError, "wrong number of arguments (%ld for 0)",
 			     RARRAY(val)->len);
 		}
@@ -4605,7 +4612,7 @@ rb_yield_0(val, self, klass, flags, avalue)
 		if (!avalue) {
 		    val = svalue_to_mrhs(val, block->var->nd_head);
 		}
-		massign(self, block->var, val, flags&YIELD_PROC_CALL);
+		massign(self, block->var, val, lambda);
 	    }
 	    else {
 		int len = 0;
@@ -4632,7 +4639,7 @@ rb_yield_0(val, self, klass, flags, avalue)
 			ruby_current_node = cnode;
 		    }
 		}
-		assign(self, block->var, val, flags&YIELD_PROC_CALL);
+		assign(self, block->var, val, lambda);
 	    }
 	}
 	POP_TAG();
@@ -4645,7 +4652,7 @@ rb_yield_0(val, self, klass, flags, avalue)
     ruby_current_node = node;
 
     PUSH_ITER(block->iter);
-    PUSH_TAG(PROT_YIELD);
+    PUSH_TAG(lambda ? PROT_NONE : PROT_YIELD);
     if ((state = EXEC_TAG()) == 0) {
       redo:
 	if (nd_type(node) == NODE_CFUNC || nd_type(node) == NODE_IFUNC) {
@@ -4676,6 +4683,10 @@ rb_yield_0(val, self, klass, flags, avalue)
 	  case TAG_NEXT:
 	    state = 0;
 	    result = prot_tag->retval;
+	    break;
+	  case TAG_RETURN:
+	    if (!lambda)
+		result = prot_tag->retval;
 	    break;
 	  default:
 	    break;
@@ -4717,7 +4728,7 @@ VALUE
 rb_yield(val)
     VALUE val;
 {
-    return rb_yield_0(val, 0, 0, Qfalse, Qfalse);
+    return rb_yield_0(val, 0, 0, 0, Qfalse);
 }
 
 VALUE
@@ -4733,7 +4744,7 @@ rb_yield_values(n, va_alist)
     VALUE ary;
 
     if (n == 0) {
-	return rb_yield_0(Qundef, 0, 0, Qfalse, Qfalse);
+	return rb_yield_0(Qundef, 0, 0, 0, Qfalse);
     }
     ary = rb_ary_new2(n);
     va_init_list(args, n);
@@ -4741,7 +4752,7 @@ rb_yield_values(n, va_alist)
 	rb_ary_push(ary, va_arg(args, VALUE));
     }
     va_end(args);
-    return rb_yield_0(ary, 0, 0, Qfalse, Qtrue);
+    return rb_yield_0(ary, 0, 0, 0, Qtrue);
 }
 
 VALUE
@@ -4758,7 +4769,7 @@ rb_yield_splat(values)
 	    avalue = Qtrue;
 	}
     }
-    return rb_yield_0(values, 0, 0, Qfalse, avalue);
+    return rb_yield_0(values, 0, 0, 0, avalue);
 }
 
 /*
@@ -4779,7 +4790,7 @@ static VALUE
 rb_f_loop()
 {
     for (;;) {
-	rb_yield_0(Qundef, 0, 0, Qfalse, Qfalse);
+	rb_yield_0(Qundef, 0, 0, 0, Qfalse);
 	CHECK_INTS;
     }
     return Qnil;		/* dummy */
@@ -7970,8 +7981,8 @@ proc_invoke(proc, args, self, klass)
     }
 
     Data_Get_Struct(proc, struct BLOCK, data);
-    orphan = block_orphan(data);
-    pcall = data->flags & BLOCK_LAMBDA ? YIELD_PROC_CALL : 0;
+    pcall = (data->flags & BLOCK_LAMBDA) ? YIELD_LAMBDA_CALL : 0;
+    orphan = pcall ? 0 : block_orphan(data);
     if (!pcall && RARRAY(args)->len == 1) {
 	avalue = Qfalse;
 	args = RARRAY(args)->ptr[0];
