@@ -1,3 +1,7 @@
+Mon Dec 10 01:06:56 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (gettable): should freeze __LINE__ string.
+
 Sun Dec  9 23:00:54 2001  Keiju Ishitsuka <keiju@ishitsuka.com>
 	* matrix.rb: Vector#* bug. reported from Massimiliano Mirra
 	<info@chromatic-harp.com>. 
@@ -31,11 +35,20 @@ Fri Dec  7 15:52:05 2001  Usaku Nakamura <usa@ruby-lang.org>
 	* ext/extmk.rb.in: ignore adding -Wl,-R to DLDFLAGS when the directory
 	  is $topdir.
 
+Fri Dec  7 09:51:00 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (str_extend): should not process immature #$x and
+	  #@x interportation, e.g #@#@ etc.
+
 Thu Dec  6 18:55:01 2001  Usaku Nakamura  <usa@ruby-lang.org>
 
 	* ext/extmk.rb.in: add -Wl,-R flags to DLDFLAGS on netbsdelf.
 
 	* lib/mkmf.rb: ditto.
+
+Wed Dec  5 23:36:56 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* regex.c (WC2MBC1ST): should not pass through > 0x80 number in UTF-8.
 
 Tue Dec  4 03:49:06 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -57,6 +70,13 @@ Mon Dec  3 16:06:57 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 Mon Dec  3 16:06:04 2001  Usaku Nakamura <usa@ruby-lang.org>
 
 	* configure.in: not use X11BASE, since it's not always set.
+
+Mon Dec  3 13:53:49 2001  Tanaka Akira  <akr@m17n.org>
+
+	* time.c (rb_strftime): buffer length condition was wrong.
+
+	* time.c (time_strftime): should backup buf to the original
+	  buffer.
 
 Mon Dec  3 09:59:08 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
