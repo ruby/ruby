@@ -129,11 +129,13 @@ def install_rb(mfile, dest, srcdir = nil)
   libdir = srcdir + "/" + libdir if srcdir
   path = []
   dir = []
-  Find.find(libdir) do |f|
-    next unless /\.rb$/ =~ f
-    f = f[libdir.length+1..-1]
-    path.push f
-    dir |= File.dirname(f)
+  if File.directory? libdir
+    Find.find(libdir) do |f|
+      next unless /\.rb$/ =~ f
+      f = f[libdir.length+1..-1]
+      path.push f
+      dir |= File.dirname(f)
+    end
   end
   for f in dir
     next if f == "."

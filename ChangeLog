@@ -1,6 +1,7 @@
 Thu Sep 21 19:04:34 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
-	* ext/extmk.rb (install_rb): check whether libdir is directory or not.
+	* ext/extmk.rb, lib/mkmf.rb (install_rb): check whether libdir is
+	  directory or not.
 
 Thu Sep 21 17:23:05 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
