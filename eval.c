@@ -5427,6 +5427,15 @@ rb_require(fname)
 }
 
 static void
+secure_visibility(self)
+    VALUE self;
+{
+    if (rb_safe_level() >= 4 && !OBJ_TAINTED(self)) {
+	rb_raise(rb_eSecurityError, "Insecure: can't change method visibility");
+    }
+}
+
+static void
 set_method_visibility(self, argc, argv, ex)
     VALUE self;
     int argc;
@@ -5435,6 +5444,7 @@ set_method_visibility(self, argc, argv, ex)
 {
     int i;
 
+    secure_visibility(self);
     for (i=0; i<argc; i++) {
 	rb_export_method(self, rb_to_id(argv[i]), ex);
     }
@@ -5446,6 +5456,7 @@ rb_mod_public(argc, argv, module)
     VALUE *argv;
     VALUE module;
 {
+    secure_visibility(module);
     if (argc == 0) {
 	SCOPE_SET(SCOPE_PUBLIC);
     }
@@ -5461,6 +5472,7 @@ rb_mod_protected(argc, argv, module)
     VALUE *argv;
     VALUE module;
 {
+    secure_visibility(module);
     if (argc == 0) {
 	SCOPE_SET(SCOPE_PROTECTED);
     }
@@ -5476,6 +5488,7 @@ rb_mod_private(argc, argv, module)
     VALUE *argv;
     VALUE module;
 {
+    secure_visibility(module);
     if (argc == 0) {
 	SCOPE_SET(SCOPE_PRIVATE);
     }
@@ -5535,6 +5548,7 @@ rb_mod_modfunc(argc, argv, module)
 	rb_raise(rb_eTypeError, "module_function must be called for modules");
     }
 
+    secure_visibility(module);
     if (argc == 0) {
 	SCOPE_SET(SCOPE_MODFUNC);
 	return module;

@@ -412,6 +412,13 @@ exc_set_backtrace(exc, bt)
     return rb_iv_set(exc, "bt", check_backtrace(bt));
 }
 
+static VALUE
+exit_status(exc)
+    VALUE exc;
+{
+    return rb_iv_get(exc, "status");
+}
+
 #ifdef __BEOS__
 typedef struct {
    VALUE *list;
@@ -554,6 +561,8 @@ Init_Exception()
     rb_define_method(rb_eException, "set_backtrace", exc_set_backtrace, 1);
 
     rb_eSystemExit  = rb_define_class("SystemExit", rb_eException);
+    rb_define_method(rb_eSystemExit, "status", exit_status, 0);
+
     rb_eFatal  	    = rb_define_class("fatal", rb_eException);
     rb_eSignal      = rb_define_class("SignalException", rb_eException);
     rb_eInterrupt   = rb_define_class("Interrupt", rb_eSignal);

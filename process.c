@@ -299,12 +299,12 @@ struct waitall_data {
     int pid;
     int status;
     VALUE ary;
-}
+};
 
 static int
 waitall_each(key, value, data)
     int key, value;
-    struct wait_data *data;
+    struct waitall_data *data;
 {
     VALUE pid_status_member;
 
@@ -563,6 +563,10 @@ rb_proc_exec(str)
     char **argv, **a;
 
     security(str);
+
+    while (*str && ISSPACE(*str))
+	str++;
+
     for (s=str; *s; s++) {
 	if (*s != ' ' && !ISALPHA(*s) && strchr("*?{}[]<>()~&|\\$;'`\"\n",*s)) {
 #if defined(MSDOS)

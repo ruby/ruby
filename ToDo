@@ -74,6 +74,7 @@ Standard Libraries
 * or raise ForkException to every thread but fork caller.
 * Hash::new{default} or recommend Hash#fetch?
 * new user-defined marshal scheme. _dump(dumper), _load(restorer)
+* warn, warning for Ruby level
 
 Extension Libraries
 

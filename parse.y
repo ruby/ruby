@@ -4469,6 +4469,28 @@ warning_unless_e_option(str)
     if (e_option_supplied()) rb_warning(str);
 }
 
+static NODE *cond0();
+
+static NODE*
+cond2(node, logop)
+    NODE *node;
+    int logop;
+{
+    enum node_type type;
+
+    if (logop) return node;
+    if (!e_option_supplied()) return node;
+
+    warn_unless_e_option("integer literal in condition");
+    node = cond0(node);
+    type = nd_type(node);
+    if (type == NODE_NEWLINE) node = node->nd_next;
+    if (type == NODE_LIT && FIXNUM_P(node->nd_lit)) {
+	return call_op(node,tEQ,1,NEW_GVAR(rb_intern("$.")));
+    }
+    return node;
+}
+
 static NODE*
 cond0(node, logop)
     NODE *node;
@@ -4494,8 +4516,8 @@ cond0(node, logop)
 
       case NODE_DOT2:
       case NODE_DOT3:
-	node->nd_beg = cond0(node->nd_beg, logop);
-	node->nd_end = cond0(node->nd_end, logop);
+	node->nd_beg = cond2(node->nd_beg, logop);
+	node->nd_end = cond2(node->nd_end, logop);
 	if (type == NODE_DOT2) nd_set_type(node,NODE_FLIP2);
 	else if (type == NODE_DOT3) nd_set_type(node, NODE_FLIP3);
 	node->nd_cnt = local_append(0);
@@ -4509,20 +4531,12 @@ cond0(node, logop)
 	goto regexp;
 
       case NODE_LIT:
-	switch (TYPE(node->nd_lit)) {
-	  case T_REGEXP:
+	if (TYPE(node->nd_lit) == T_REGEXP) {
 	    warning_unless_e_option("regex literal in condition");
 	  regexp:
 	    nd_set_type(node, NODE_MATCH);
 	    local_cnt('_');
 	    local_cnt('~');
-	    break;
-
-	  case T_FIXNUM:
-	    if (logop) break;
-	    if (!e_option_supplied()) break;
-	    warn_unless_e_option("integer literal in condition");
-	    return call_op(node,tEQ,1,NEW_GVAR(rb_intern("$.")));
 	}
     }
     return node;

@@ -1,3 +1,16 @@
+Mon Feb 19 01:55:43 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (secure_visibility): visibility check for untainted modules.
+
+Mon Feb 19 00:29:29 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* signal.c (sigpipe): sighandler which does nothing.
+
+	* signal.c (trap): set sigpipe function for SIGPIPE.
+
+	* signal.c (Init_signal): default SIGPIPE handler should be
+	  sigpipe function.
+
 Sun Feb 18 15:42:38 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/curses/extconf.rb: add dir_config.
@@ -8,6 +21,10 @@ Sun Feb 18 05:46:03 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/http.rb: Response#range_length was not debugged.
 
+Sun Feb 18 04:02:03 2001  Yasushi Shoji  <yashi@yashi.com>
+
+	* array.c (rb_ary_subseq): wrong boundary check.
+
 Sun Feb 18 00:09:50 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* win32/win32.c: fasten file I/O on mswin32/mingw32.
@@ -15,6 +32,11 @@ Sun Feb 18 00:09:50 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 	* win32/win32.h: ditto.
 
 	* rubysig.h: ditto.
+
+Sat Feb 17 23:32:45 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (cond0): integer literal in condition should not be
+	  compared to lineno ($.).
 
 Fri Feb 16 01:44:56 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
