@@ -1,3 +1,32 @@
+Mon Nov 22 14:07:24 1999  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* ruby.c (proc_options): variable e_script should be visited by
+	  garbage collector.
+
+Sat Nov 20 10:10:41 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* hash.c (inspect_i): value may be nil, check revised.
+
+Fri Nov 19 18:06:21 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* dir.c (glob): recurseve wildcard match by `**' ala zsh.
+
+Fri Nov 19 11:44:26 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* variable.c: was returning void value.
+
+Fri Nov 19 03:57:22 1999  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* file.c: add methods Stat struct class to reduce stat(2).
+
+Thu Nov 18 16:18:27 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* lib/pstore.rb: mutual lock by flock(2).
+
+Thu Nov 18 11:44:13 1999  Masahiro Tomita  <tommy@tmtm.org>
+
+	* io.c (read_all): should check bytes too.
+
 Wed Nov 17 02:40:40 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* io.c (Init_IO): $defout (alias of $>) added.
@@ -36,6 +65,10 @@ Sat Nov 13 07:34:18 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* parse.y (assignable): allow constant assignment in methods;
 	  constants should be called `shared variable'.
+
+Fri Nov 12 23:52:19 1999  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* process.c (rb_f_system): argument check for NT, __EMX__, DJGPP.
 
 Wed Nov 10 21:54:11 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
 

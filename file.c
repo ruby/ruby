@@ -625,11 +625,50 @@ rb_file_s_size(obj, fname)
 }
 
 static VALUE
+rb_file_ftype(mode)
+    mode_t mode;
+{
+    char *t;
+
+    if (S_ISREG(mode)) {
+	t = "file";
+    } else if (S_ISDIR(mode)) {
+	t = "directory";
+    } else if (S_ISCHR(mode)) {
+	t = "characterSpecial";
+    }
+#ifdef S_ISBLK
+    else if (S_ISBLK(mode)) {
+	t = "blockSpecial";
+    }
+#endif
+#ifdef S_ISFIFO
+    else if (S_ISFIFO(mode)) {
+	t = "fifo";
+    }
+#endif
+#ifdef S_ISLNK
+    else if (S_ISLNK(mode)) {
+	t = "link";
+    }
+#endif
+#ifdef S_ISSOCK
+    else if (S_ISSOCK(mode)) {
+	t = "socket";
+    }
+#endif
+    else {
+	t = "unknown";
+    }
+
+    return rb_str_new2(t);
+}
+
+static VALUE
 rb_file_s_ftype(obj, fname)
     VALUE obj, fname;
 {
     struct stat st;
-    char *t;
 
 #if defined(MSDOS) || defined(NT)
     if (rb_stat(fname, &st) < 0)
@@ -641,38 +680,7 @@ rb_file_s_ftype(obj, fname)
     }
 #endif
 
-    if (S_ISREG(st.st_mode)) {
-	t = "file";
-    } else if (S_ISDIR(st.st_mode)) {
-	t = "directory";
-    } else if (S_ISCHR(st.st_mode)) {
-	t = "characterSpecial";
-    }
-#ifdef S_ISBLK
-    else if (S_ISBLK(st.st_mode)) {
-	t = "blockSpecial";
-    }
-#endif
-#ifdef S_ISFIFO
-    else if (S_ISFIFO(st.st_mode)) {
-	t = "fifo";
-    }
-#endif
-#ifdef S_ISLNK
-    else if (S_ISLNK(st.st_mode)) {
-	t = "link";
-    }
-#endif
-#ifdef S_ISSOCK
-    else if (S_ISSOCK(st.st_mode)) {
-	t = "socket";
-    }
-#endif
-    else {
-	t = "unknown";
-    }
-
-    return rb_str_new2(t);
+    return rb_file_ftype(st.st_mode);
 }
 
 static VALUE
@@ -1541,6 +1549,283 @@ rb_f_test(argc, argv)
     return Qnil;		/* not reached */
 }
 
+static ID rb_st_mode;
+static ID rb_st_size;
+static ID rb_st_uid;
+static ID rb_st_gid;
+
+#define ST_MODE(obj) FIX2INT(rb_funcall3((obj), rb_st_mode, 0, 0))
+
+static VALUE
+rb_stat_ftype(obj)
+    VALUE obj;
+{
+    return rb_file_ftype(ST_MODE(obj));
+}
+
+static VALUE
+rb_stat_d(obj)
+    VALUE obj;
+{
+    if (S_ISDIR(ST_MODE(obj))) return Qtrue;
+    return Qfalse;
+}
+
+static VALUE
+rb_stat_p(obj)
+    VALUE obj;
+{
+#ifdef S_IFIFO
+    if (S_ISFIFO(ST_MODE(obj))) return Qtrue;
+
+#endif
+    return Qfalse;
+}
+
+static VALUE
+rb_stat_l(obj)
+    VALUE obj;
+{
+#ifdef S_ISLNK
+    if (S_ISLNK(ST_MODE(obj))) return Qtrue;
+
+#endif
+    return Qfalse;
+}
+
+static VALUE
+rb_stat_S(obj)
+    VALUE obj;
+{
+#ifdef S_ISSOCK
+    if (S_ISSOCK(ST_MODE(obj))) return Qtrue;
+
+#endif
+    return Qfalse;
+}
+
+static VALUE
+rb_stat_b(obj)
+    VALUE obj;
+{
+#ifdef S_ISBLK
+    if (S_ISBLK(ST_MODE(obj))) return Qtrue;
+
+#endif
+    return Qfalse;
+}
+
+static VALUE
+rb_stat_c(obj)
+    VALUE obj;
+{
+    if (S_ISBLK(ST_MODE(obj))) return Qtrue;
+
+    return Qfalse;
+}
+
+static VALUE
+rb_stat_owned(obj)
+    VALUE obj;
+{
+    if (FIX2INT(rb_funcall3(obj, rb_st_uid, 0, 0)) == geteuid()) return Qtrue;
+    return Qfalse;
+}
+
+static VALUE
+rb_stat_rowned(obj)
+    VALUE obj;
+{
+    if (FIX2INT(rb_funcall3(obj, rb_st_uid, 0, 0)) == getuid()) return Qtrue;
+    return Qfalse;
+}
+
+static VALUE
+rb_stat_grpowned(obj)
+    VALUE obj;
+{
+#ifndef NT
+    if (FIX2INT(rb_funcall3(obj, rb_st_gid, 0, 0)) == getegid()) return Qtrue;
+#endif
+    return Qfalse;
+}
+
+static VALUE
+rb_stat_r(obj)
+    VALUE obj;
+{
+    mode_t mode = ST_MODE(obj);
+
+#ifdef S_IRUSR
+    if (rb_stat_owned(obj))
+	return mode & S_IRUSR ? Qtrue : Qfalse;
+#endif
+#ifdef S_IRGRP
+    if (rb_stat_grpowned(obj))
+	return mode & S_IRGRP ? Qtrue : Qfalse;
+#endif
+#ifdef S_IROTH
+    if (!(mode & S_IROTH)) return Qfalse;
+#endif
+    return Qtrue;
+}
+
+static VALUE
+rb_stat_R(obj)
+    VALUE obj;
+{
+    mode_t mode = ST_MODE(obj);
+
+#ifdef S_IRUSR
+    if (rb_stat_rowned(obj))
+	return mode & S_IRUSR ? Qtrue : Qfalse;
+#endif
+#ifdef S_IRGRP
+    if (group_member(FIX2INT(rb_funcall3(obj, rb_st_gid, 0, 0))))
+	return mode & S_IRGRP ? Qtrue : Qfalse;
+#endif
+#ifdef S_IROTH
+    if (!(mode & S_IROTH)) return Qfalse;
+#endif
+    return Qtrue;
+}
+
+static VALUE
+rb_stat_w(obj)
+    VALUE obj;
+{
+    mode_t mode = ST_MODE(obj);
+
+#ifdef S_IRUSR
+    if (rb_stat_owned(obj))
+	return mode & S_IWUSR ? Qtrue : Qfalse;
+#endif
+#ifdef S_IRGRP
+    if (rb_stat_grpowned(obj))
+	return mode & S_IWGRP ? Qtrue : Qfalse;
+#endif
+#ifdef S_IROTH
+    if (!(mode & S_IWOTH)) return Qfalse;
+#endif
+    return Qtrue;
+}
+
+static VALUE
+rb_stat_W(obj)
+    VALUE obj;
+{
+    mode_t mode = ST_MODE(obj);
+
+#ifdef S_IRUSR
+    if (rb_stat_rowned(obj))
+	return mode & S_IWUSR ? Qtrue : Qfalse;
+#endif
+#ifdef S_IRGRP
+    if (group_member(FIX2INT(rb_funcall3(obj, rb_st_gid, 0, 0))))
+	return mode & S_IWGRP ? Qtrue : Qfalse;
+#endif
+#ifdef S_IROTH
+    if (!(mode & S_IWOTH)) return Qfalse;
+#endif
+    return Qtrue;
+}
+
+static VALUE
+rb_stat_x(obj)
+    VALUE obj;
+{
+    mode_t mode = ST_MODE(obj);
+
+#ifdef S_IRUSR
+    if (rb_stat_owned(obj))
+	return mode & S_IXUSR ? Qtrue : Qfalse;
+#endif
+#ifdef S_IRGRP
+    if (rb_stat_grpowned(obj))
+	return mode & S_IXGRP ? Qtrue : Qfalse;
+#endif
+#ifdef S_IROTH
+    if (!(mode & S_IXOTH)) return Qfalse;
+#endif
+    return Qtrue;
+}
+
+static VALUE
+rb_stat_X(obj)
+    VALUE obj;
+{
+    mode_t mode = ST_MODE(obj);
+
+#ifdef S_IRUSR
+    if (rb_stat_rowned(obj))
+	return mode & S_IXUSR ? Qtrue : Qfalse;
+#endif
+#ifdef S_IRGRP
+    if (group_member(FIX2INT(rb_funcall3(obj, rb_st_gid, 0, 0))))
+	return mode & S_IXGRP ? Qtrue : Qfalse;
+#endif
+#ifdef S_IROTH
+    if (!(mode & S_IXOTH)) return Qfalse;
+#endif
+    return Qtrue;
+}
+
+static VALUE
+rb_stat_f(obj)
+    VALUE obj;
+{
+    if (S_ISREG(ST_MODE(obj))) return Qtrue;
+    return Qfalse;
+}
+
+static VALUE
+rb_stat_z(obj)
+    VALUE obj;
+{
+    if (rb_funcall3(obj, rb_st_size, 0, 0) == INT2FIX(0)) return Qtrue;
+    return Qfalse;
+}
+
+static VALUE
+rb_stat_s(obj)
+    VALUE obj;
+{
+    VALUE size = rb_funcall3(obj, rb_st_size, 0, 0);
+
+    if (size == INT2FIX(0)) return Qnil;
+    return size;
+}
+
+static VALUE
+rb_stat_suid(obj)
+    VALUE obj;
+{
+#ifdef S_ISUID
+    if (ST_MODE(obj) & S_ISUID) return Qtrue;
+#endif
+    return Qfalse;
+}
+
+static VALUE
+rb_stat_sgid(obj)
+    VALUE obj;
+{
+#ifndef NT
+    if (ST_MODE(obj) & S_ISGID) return Qtrue;
+#endif
+    return Qfalse;
+}
+
+static VALUE
+rb_stat_sticky(obj)
+    VALUE obj;
+{
+#ifdef S_ISVTX
+    if (ST_MODE(obj) & S_ISVTX) return Qtrue;
+#endif
+    return Qnil;
+}
+
 static VALUE rb_mConst;
 
 void
@@ -1653,4 +1938,35 @@ Init_File()
 			     "nlink", "uid", "gid", "rdev",
 			     "size", "blksize", "blocks", 
 			     "atime", "mtime", "ctime", 0);
+
+    rb_st_mode = rb_intern("mode");
+    rb_st_size = rb_intern("size");
+    rb_st_uid = rb_intern("uid");
+    rb_st_gid = rb_intern("gid");
+
+    rb_define_method(sStat, "ftype",  rb_stat_ftype, 0);
+
+    rb_define_method(sStat, "directory?",  rb_stat_d, 0);
+    rb_define_method(sStat, "readable?",  rb_stat_r, 0);
+    rb_define_method(sStat, "readable_real?",  rb_stat_R, 0);
+    rb_define_method(sStat, "writable?",  rb_stat_w, 0);
+    rb_define_method(sStat, "writable_real?",  rb_stat_W, 0);
+    rb_define_method(sStat, "executable?",  rb_stat_x, 0);
+    rb_define_method(sStat, "executable_real?",  rb_stat_X, 0);
+    rb_define_method(sStat, "file?",  rb_stat_f, 0);
+    rb_define_method(sStat, "zero?",  rb_stat_z, 0);
+    rb_define_method(sStat, "size?",  rb_stat_s, 0);
+    rb_define_method(sStat, "owned?",  rb_stat_owned, 0);
+    rb_define_method(sStat, "grpowned?",  rb_stat_grpowned, 0);
+
+    rb_define_method(sStat, "pipe?",  rb_stat_p, 0);
+    rb_define_method(sStat, "symlink?",  rb_stat_l, 0);
+    rb_define_method(sStat, "socket?",  rb_stat_S, 0);
+
+    rb_define_method(sStat, "blockdev?",  rb_stat_b, 0);
+    rb_define_method(sStat, "chardev?",  rb_stat_c, 0);
+
+    rb_define_method(sStat, "setuid?",  rb_stat_suid, 0);
+    rb_define_method(sStat, "setgid?",  rb_stat_sgid, 0);
+    rb_define_method(sStat, "sticky?",  rb_stat_sticky, 0);
 }

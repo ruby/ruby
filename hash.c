@@ -139,7 +139,7 @@ rb_hash_foreach_iter(key, value, arg)
     st_table *tbl = RHASH(arg->hash)->tbl;
     struct st_table_entry **bins = tbl->bins;
 
-    if (value == Qnil) return ST_CONTINUE;
+    if (key == Qnil) return ST_CONTINUE;
     status = (*arg->func)(key, value, arg->arg);
     if (RHASH(arg->hash)->tbl != tbl || RHASH(arg->hash)->tbl->bins != bins){
 	rb_raise(rb_eIndexError, "rehash occurred during iteration");
@@ -457,7 +457,7 @@ shift_i(key, value, var)
     VALUE key, value;
     struct shift_var *var;
 {
-    if (value == Qnil) return ST_CONTINUE;
+    if (key == Qnil) return ST_CONTINUE;
     if (var->stop) return ST_STOP;
     var->stop = 1;
     var->key = key;
@@ -483,7 +483,7 @@ static int
 delete_if_i(key, value)
     VALUE key, value;
 {
-    if (value == Qnil) return ST_CONTINUE;
+    if (key == Qnil) return ST_CONTINUE;
     if (RTEST(rb_yield(rb_assoc_new(key, value))))
 	return ST_DELETE;
     return ST_CONTINUE;
@@ -569,7 +569,7 @@ static int
 each_value_i(key, value)
     VALUE key, value;
 {
-    if (value == Qnil) return ST_CONTINUE;
+    if (key == Qnil) return ST_CONTINUE;
     rb_yield(value);
     return ST_CONTINUE;
 }
@@ -586,7 +586,7 @@ static int
 each_key_i(key, value)
     VALUE key, value;
 {
-    if (value == Qnil) return ST_CONTINUE;
+    if (key == Qnil) return ST_CONTINUE;
     rb_yield(key);
     return ST_CONTINUE;
 }
@@ -603,7 +603,7 @@ static int
 each_pair_i(key, value)
     VALUE key, value;
 {
-    if (value == Qnil) return ST_CONTINUE;
+    if (key == Qnil) return ST_CONTINUE;
     rb_yield(rb_assoc_new(key, value));
     return ST_CONTINUE;
 }
@@ -620,7 +620,7 @@ static int
 to_a_i(key, value, ary)
     VALUE key, value, ary;
 {
-    if (value == Qnil) return ST_CONTINUE;
+    if (key == Qnil) return ST_CONTINUE;
     rb_ary_push(ary, rb_assoc_new(key, value));
     return ST_CONTINUE;
 }
@@ -650,7 +650,7 @@ inspect_i(key, value, str)
 {
     VALUE str2;
 
-    if (value == Qnil) return ST_CONTINUE;
+    if (key == Qnil) return ST_CONTINUE;
     if (RSTRING(str)->len > 1) {
 	rb_str_cat(str, ", ", 2);
     }
@@ -712,7 +712,7 @@ static int
 keys_i(key, value, ary)
     VALUE key, value, ary;
 {
-    if (value == Qnil) return ST_CONTINUE;
+    if (key == Qnil) return ST_CONTINUE;
     rb_ary_push(ary, key);
     return ST_CONTINUE;
 }
@@ -733,7 +733,7 @@ static int
 values_i(key, value, ary)
     VALUE key, value, ary;
 {
-    if (value == Qnil) return ST_CONTINUE;
+    if (key == Qnil) return ST_CONTINUE;
     rb_ary_push(ary, value);
     return ST_CONTINUE;
 }
@@ -765,7 +765,7 @@ static int
 rb_hash_search_value(key, value, data)
     VALUE key, value, *data;
 {
-    if (value == Qnil) return ST_CONTINUE;
+    if (key == Qnil) return ST_CONTINUE;
     if (rb_equal(value, data[1])) {
 	data[0] = Qtrue;
 	return ST_STOP;
@@ -832,7 +832,7 @@ rb_hash_invert_i(key, value, hash)
     VALUE key, value;
     VALUE hash;
 {
-    if (value == Qnil) return ST_CONTINUE;
+    if (key == Qnil) return ST_CONTINUE;
     rb_hash_aset(hash, value, key);
     return ST_CONTINUE;
 }
@@ -852,7 +852,7 @@ rb_hash_update_i(key, value, hash)
     VALUE key, value;
     VALUE hash;
 {
-    if (value == Qnil) return ST_CONTINUE;
+    if (key == Qnil) return ST_CONTINUE;
     rb_hash_aset(hash, key, value);
     return ST_CONTINUE;
 }

@@ -13,6 +13,7 @@
 # end
 
 require "marshal"
+require "ftools"
 
 class PStore
   class Error < StandardError
@@ -77,22 +78,19 @@ class PStore
     raise PStore::Error, "nested transaction" if @transaction
     begin
       @transaction = true
-      value = file = nil
-      lock = @filename + ".lock"
-      loop do
-	begin
-	  File::symlink("pstore::#$$", lock)
-	  break
-	rescue Errno::EEXIST
-	rescue
-	  sleep 1
-	end
+      value = nil
+      backup = @filename+"~"
+      if File::exist?(@filename)
+	file = File::open(@filename, "r+")
+	orig = true
+      else
+	file = File::open(@filename, "w+")
       end
-      begin
-	File::open(@filename, "r") do |file|
-	  @table = Marshal.load(file)
-	end
-      rescue Errno::ENOENT
+      file.flock(File::LOCK_EX)
+      if orig
+	File::copy @filename, backup
+	@table = Marshal::load(file)
+      else
 	@table = {}
       end
       begin
@@ -105,16 +103,10 @@ class PStore
       ensure
 	unless @abort
 	  begin
-	    File::rename @filename, @filename+"~"
-	  rescue Errno::ENOENT
-	    no_orig = true
-	  end
-	  begin
-	    File::open(@filename, "w") do |file|
-	      Marshal::dump(@table, file)
-	    end
+	    file.rewind
+	    Marshal::dump(@table, file)
 	  rescue
-	    File::rename @filename+"~", @filename unless no_orig
+	    File::rename backup, @filename if File::exist?(backup)
 	  end
 	end
 	@abort = false
@@ -122,7 +114,7 @@ class PStore
     ensure
       @table = nil
       @transaction = false
-      File::unlink(lock)
+      file.close
     end
     value
   end

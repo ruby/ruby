@@ -50,7 +50,7 @@ enum_grep(obj, pat)
 
     arg[0] = pat; arg[1] = tmp = rb_ary_new();
     if (rb_iterator_p()) {
-	rb_iterate(rb_each, obj, grep_iter_i, pat);
+	rb_iterate(rb_each, obj, grep_iter_i, (VALUE)arg);
     }
     else {
 	rb_iterate(rb_each, obj, grep_i, (VALUE)arg);

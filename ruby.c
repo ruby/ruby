@@ -117,8 +117,6 @@ NULL
 
 extern VALUE rb_load_path;
 
-static VALUE e_script;
-
 #define STATIC_FILE_LENGTH 255
 
 #if defined(_WIN32) || defined(DJGPP)
@@ -324,6 +322,7 @@ proc_options(argc, argv)
     int version = 0;
     int copyright = 0;
     int verbose = 0;
+    VALUE e_script = Qfalse;
 
     if (argc == 0) return;
 

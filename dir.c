@@ -557,9 +557,10 @@ glob(path, func, arg)
 	if (*p == '/') p++;
 	m = strchr(p, '/');
 	if (has_magic(p, m)) {
-	    char *dir, *base, *magic;
+	    char *dir, *base, *magic, *buf;
 	    DIR *dirp;
 	    struct dirent *dp;
+	    int recursive = 0;
 
 	    struct d_link {
 		char *path;
@@ -570,24 +571,39 @@ glob(path, func, arg)
 	    if (path == p) dir = ".";
 	    else dir = base;
 
+	    magic = extract_elem(p);
+	    if (strcmp(magic, "**") == 0) {
+		recursive = 1;
+		buf = ALLOC_N(char, strlen(base)+strlen(m)+3);
+		sprintf(buf, "%s%s%s", base, (*base)?"":".", m);
+		glob(buf, func, arg);
+		free(buf);
+	    }
 	    dirp = opendir(dir);
 	    if (dirp == NULL) {
 		free(base);
 		break;
 	    }
-	    magic = extract_elem(p);
 	    for (dp = readdir(dirp); dp != NULL; dp = readdir(dirp)) {
+		if (recursive) {
+		    if (strcmp(".", dp->d_name) == 0 || strcmp("..", dp->d_name) == 0)
+			continue;
+		    buf = ALLOC_N(char, strlen(base)+NAMLEN(dp)+strlen(m)+6);
+		    sprintf(buf, "%s%s%s/**%s", base, (*base)?"/":"", dp->d_name, m);
+		    glob(buf, func, arg);
+		    free(buf);
+		    continue;
+		}
 		if (fnmatch(magic, dp->d_name, FNM_PERIOD|FNM_PATHNAME) == 0) {
-		    char *fix = ALLOC_N(char, strlen(base)+NAMLEN(dp)+2);
-
-		    sprintf(fix, "%s%s%s", base, (*base)?"/":"", dp->d_name);
+		    buf = ALLOC_N(char, strlen(base)+NAMLEN(dp)+2);
+		    sprintf(buf, "%s%s%s", base, (*base)?"/":"", dp->d_name);
 		    if (!m) {
-			(*func)(fix, arg);
-			free(fix);
+			(*func)(buf, arg);
+			free(buf);
 			continue;
 		    }
 		    tmp = ALLOC(struct d_link);
-		    tmp->path = fix;
+		    tmp->path = buf;
 		    tmp->next = link;
 		    link = tmp;
 		}

@@ -234,8 +234,6 @@ win32/config.h
 win32/config.status
 win32/ntsetup.bat
 win32/ruby.def
-win32/sdbm.c
-win32/sdbm.h
 win32/win32.c
 win32/win32.h
 x68/fconvert.c

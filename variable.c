@@ -1263,7 +1263,7 @@ rb_const_set(klass, id, val)
     ID id;
     VALUE val;
 {
-    return rb_shvar_set(klass, id, val);
+    rb_shvar_set(klass, id, val);
 }
 
 void
@@ -1331,7 +1331,7 @@ rb_define_shvar(klass, name, val)
     const char *name;
     VALUE val;
 {
-    return rb_define_const(klass, name, val);
+    rb_define_const(klass, name, val);
 }
 
 void

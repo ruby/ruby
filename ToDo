@@ -2,9 +2,10 @@ Language Spec.
 
 - def foo; .. rescue .. end
 - compile time string concatenation, "hello" "world" => "helloworld"
-- rescue modifier; a rescue b => begin a rescue; b end
 - assignable constant, which now should be called shared variable.
 - class variable (prefix?) -- done by shared variable
+- rescue modifier; a rescue b => begin a rescue; b end
+* operator !! for  rescue.
 * objectify symbols
 * objectify characters
 * ../... outside condition invokes operator method too.
@@ -39,8 +40,8 @@ Standard Libraries
 - Array#{first,last,at}
 - Dir.glob(pat){|f|...}
 - sprintf/printf's $ to specify argument order
+- Dir.glob("**/*.c") ala zsh
 * debugger for thread programming
-* Dir.glob("**/*.c") ala zsh
 * Struct::new([name,]member,...) ??
 * String#scanf(?)
 * Object#fmt(?)

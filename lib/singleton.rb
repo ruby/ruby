@@ -17,7 +17,12 @@ module Singleton
       @__instance__ = nil
       def instance
 	unless @__instance__
-	  @__instance__ = new
+	  Thread.critical = true
+	  begin
+	    @__instance__ = new
+	  ensure
+	    Thread.critical = false
+	  end
 	end
 	return @__instance__
       end
