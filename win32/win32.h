@@ -177,9 +177,6 @@ extern pid_t rb_w32_getpid(void);
 
 #ifdef __BORLANDC__
 #include <float.h>
-#ifndef isinf
-#define isinf    !_finite
-#endif
 #ifndef isnan
 #define isnan    _isnan
 #endif

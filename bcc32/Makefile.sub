@@ -102,7 +102,7 @@ RFLAGS = $(iconinc)
 EXTLIBS =
 !endif
 LIBS = cw32.lib import32.lib ws2_32.lib $(EXTLIBS)
-MISSING = acosh.obj crypt.obj win32.obj
+MISSING = acosh.obj crypt.obj win32.obj isinf.obj
 
 !ifndef STACK
 STACK = 0x2000000
@@ -270,7 +270,6 @@ config.h:
 \#define SIZEOF_DOUBLE  8
 
 \#define HAVE_DECL_SYS_NERR 1
-\#define HAVE_ISINF         1
 \#define HAVE_ISNAN         1
 \#define HAVE_MEMMOVE       1
 \#define HAVE_MKDIR         1

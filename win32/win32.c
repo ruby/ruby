@@ -363,6 +363,10 @@ NtInitialize(int *argc, char ***argv)
     WORD version;
     int ret;
 
+#ifdef __BORLANDC__
+    _controlfp(0x5, 0x5);
+#endif
+
     //
     // subvert cmd.exe's feeble attempt at command line parsing
     //
