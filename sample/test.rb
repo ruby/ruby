@@ -1338,6 +1338,13 @@ l=nil
 100000.times {
   l = S.new(l)
 }
+GC.start
+test_ok true   # reach here or dumps core
+l = []
+100000.times {
+  l.push([l])
+}
+GC.start
 test_ok true   # reach here or dumps core
 
 if $failed > 0

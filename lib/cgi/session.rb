@@ -81,7 +81,7 @@ class CGI
       unless @data
 	@data = @dbman.restore
       end
-      @data[key] = String(val)
+      @data[key] = val
     end
 
     def update
@@ -139,7 +139,7 @@ class CGI
       def update
 	@f.rewind
 	for k,v in @hash
-	  @f.printf "%s=%s\n", CGI::escape(k), CGI::escape(v)
+	  @f.printf "%s=%s\n", CGI::escape(k), CGI::escape(String(v))
 	end
 	@f.truncate @f.tell
       end

@@ -361,8 +361,8 @@ freeDevice()
 
 /* ruby function: getpty */
 static VALUE
-pty_getpty(self, shell)
-    VALUE self, shell;
+pty_getpty(self, command)
+    VALUE self, command;
 {
     VALUE res, th;
     struct pty_info info;
@@ -373,15 +373,19 @@ pty_getpty(self, shell)
     MakeOpenFile(rport, rfptr);
     MakeOpenFile(wport, wfptr);
 
-    establishShell(RSTRING(shell)->ptr,&info);
+    if (TYPE(command) == T_ARRAY)
+	command = rb_ary_join(command,rb_str_new2(" "));
+    Check_SafeStr(command);
+
+    establishShell(RSTRING(command)->ptr,&info);
 
     rfptr->mode = rb_io_mode_flags("r");
     rfptr->f = fdopen(info.fd, "r");
-    rfptr->path = strdup(RSTRING(shell)->ptr);
+    rfptr->path = strdup(RSTRING(command)->ptr);
 
     wfptr->mode = rb_io_mode_flags("w");
     wfptr->f = fdopen(dup(info.fd), "w");
-    wfptr->path = strdup(RSTRING(shell)->ptr);
+    wfptr->path = strdup(RSTRING(command)->ptr);
 
     res = rb_ary_new2(3);
     rb_ary_store(res,0,(VALUE)rport);

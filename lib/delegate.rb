@@ -29,17 +29,21 @@ class Delegator
     end
     for method in obj.methods
       next if preserved.include? method
-      eval <<-EOS
-	def self.#{method}(*args, &block)
-	  begin
-	    __getobj__.__send__(:#{method}, *args, &block)
-	  rescue Exception
-	    $@.delete_if{|s| /:in `__getobj__'$/ =~ s} #`
-	    $@.delete_if{|s| /^\\(eval\\):/ =~ s}
-	    raise
+      begin
+	eval <<-EOS
+	  def self.#{method}(*args, &block)
+	    begin
+	      __getobj__.__send__(:#{method}, *args, &block)
+	    rescue Exception
+	      $@.delete_if{|s| /:in `__getobj__'$/ =~ s} #`
+	      $@.delete_if{|s| /^\\(eval\\):/ =~ s}
+	      raise
+	    end
 	  end
-	end
-      EOS
+	EOS
+      rescue SyntaxError
+        raise NameError, "invalid identifier %s" % method, caller(4)
+      end
     end
   end
 
@@ -81,8 +85,9 @@ def DelegateClass(superclass)
   end
   EOS
   for method in methods
-    klass.module_eval <<-EOS
-	def #{method}(*args, &block)
+    begin
+      klass.module_eval <<-EOS
+        def #{method}(*args, &block)
 	  begin
 	    @obj.__send__(:#{method}, *args, &block)
 	  rescue
@@ -90,10 +95,13 @@ def DelegateClass(superclass)
 	    raise
 	  end
 	end
-	EOS
-      end
-    return klass;
+      EOS
+    rescue SyntaxError
+      raise NameError, "invalid identifier %s" % method, caller(3)
+    end
   end
+  return klass;
+end
 
 if __FILE__ == $0
   class ExtArray<DelegateClass(Array)

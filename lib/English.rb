@@ -1,4 +1,3 @@
-
 alias $ERROR_INFO              $!
 alias $ERROR_POSITION          $@
 alias $LOADED_FEATURES         $"
