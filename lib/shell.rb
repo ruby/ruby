@@ -116,7 +116,7 @@ class Shell
   attr_reader :process_controller
 
   def expand_path(path)
-    File.expand_path(path)
+    File.expand_path(path, @cwd)
   end
 
   # Most Shell commands are defined via CommandProcessor

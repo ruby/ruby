@@ -1,3 +1,7 @@
+Mon Feb 25 13:32:13 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* lib/shell.rb (Shell::expand_path): relative to @cwd.
+
 Sun Feb 24 17:20:22 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/*/*.h: Merge from rough.
