@@ -1,3 +1,7 @@
+Wed Jan 21 16:10:36 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/base64.rb: enclosed in a module.  [ruby-core:02285]
+
 Wed Jan 21 16:01:26 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/digest/rmd160/extconf.rb: have_library appends found library.
