@@ -98,8 +98,9 @@ module REXML
 		# is the case if:
 		# 1. Neither :+respect_whitespace+ nor :+compress_whitespace+ has any value
 		# 2. The context has :+respect_whitespace+ set to :+all+ or
-		#    an array containing the name of this element, and :+compress_whitespace+
-		#    isn't set to :+all+ or an array containing the name of this element.
+		#    an array containing the name of this element, and 
+    #    :+compress_whitespace+ isn't set to :+all+ or an array containing the 
+    #    name of this element.
 		# The evaluation is tested against +expanded_name+, and so is namespace
 		# sensitive.
 		def whitespace
@@ -606,7 +607,9 @@ module REXML
 		#   indentation will be this number of spaces, and children will be
 		#   indented an additional amount.  Defaults to -1
 		# transitive::
-		#   What the heck does this do? Defaults to false
+		#   If transitive is true and indent is >= 0, then the output will be
+		#   pretty-printed in such a way that the added whitespace does not affect
+		#   the parse tree of the document
 		# ie_hack::
 		#   Internet Explorer is the worst piece of crap to have ever been
 		#   written, with the possible exception of Windows itself.  Since IE is

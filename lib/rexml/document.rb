@@ -145,7 +145,10 @@ module REXML
 		#   indentation will be this number of spaces, and children will be
 		#   indented an additional amount.  Defaults to -1
 		# transitive::
-		#   What the heck does this do? Defaults to false
+		#   If transitive is true and indent is >= 0, then the output will be
+		#   pretty-printed in such a way that the added whitespace does not affect
+		#   the absolute *value* of the document -- that is, it leaves the value
+		#   and number of Text nodes in the document unchanged.
 		# ie_hack::
 		#   Internet Explorer is the worst piece of crap to have ever been
 		#   written, with the possible exception of Windows itself.  Since IE is
@@ -191,7 +194,7 @@ module REXML
 							build_context[-1] << event[1]
 						else
 							build_context.add( 
-								Text.new( event[1], true, nil, true ) 
+								Text.new( event[1], build_context.whitespace, nil, true ) 
 							) unless (
 								event[1].strip.size==0 and 
 								build_context.ignore_whitespace_nodes

@@ -175,6 +175,20 @@ module REXML
  				return string[0,place] + "\n" + wrap(string[place+1..-1], width)
  			end
  		end
+
+    # Sets the contents of this text node.  This expects the text to be 
+    # unnormalized.  It returns self.
+    #
+    #   e = Element.new( "a" )
+    #   e.add_text( "foo" )   # <a>foo</a>
+    #   e[0].value = "bar"    # <a>bar</a>
+    #   e[0].value = "<a>"    # <a>&lt;a&gt;</a>
+    def value=( val )
+			@string = val.gsub( /\r\n?/, "\n" )
+      @unnormalized = nil
+      @normalized = nil
+      @raw = false
+    end
  
  		def indent(string, level=1, style="\t", indentfirstline=true)
       return string if level < 0
@@ -190,17 +204,13 @@ module REXML
  
 		def write( writer, indent=-1, transitive=false, ie_hack=false ) 
 			s = to_s()
- 			if not (@parent and @parent.whitespace) then
- 				s = wrap(s, 60, false) if @parent and @parent.context[:wordwrap] == :all
- 				if @parent and not @parent.context[:indentstyle].nil? then
- 					indentstyle = @parent.context[:indentstyle]
- 				else
- 					indentstyle = '  '
- 				end
- 				if s.count("\n") > 0 and indent > 0 then
- 					s = indent(s, indent, indentstyle, false)
- 				end
- 			end
+      if not (@parent and @parent.whitespace) then
+        s = wrap(s, 60, false) if @parent and @parent.context[:wordwrap] == :all
+        if @parent and not @parent.context[:indentstyle].nil? and indent > 0 and s.count("\n") > 0
+          s = indent(s, indent, @parent.context[:indentstyle], false)
+        end
+        s.squeeze!(" \n\t") if @parent and !@parent.whitespace
+      end
       writer << s
 		end
 
