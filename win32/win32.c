@@ -2724,12 +2724,15 @@ int
 rb_w32_stat(const char *path, struct stat *st)
 {
     const char *p;
-    char *buf1 = ALLOCA_N(char, strlen(path) + 2);
-    char *buf2 = ALLOCA_N(char, MAXPATHLEN);
-    char *s;
+    char *buf1, *buf2, *s;
     int len;
     int ret;
 
+    if (!path || !st) {
+	errno = EFAULT;
+	return -1;
+    }
+    buf1 = ALLOCA_N(char, strlen(path) + 2);
     for (p = path, s = buf1; *p; p++, s++) {
 	if (*p == '/')
 	    *s = '\\';
@@ -2749,6 +2752,7 @@ rb_w32_stat(const char *path, struct stat *st)
 	    strcat(buf1, "\\");
     } else if (*p == '\\' || *p == ':')
 	strcat(buf1, ".");
+    buf2 = ALLOCA_N(char, MAXPATHLEN);
     if (_fullpath(buf2, buf1, MAXPATHLEN)) {
 	ret = stat(buf2, st);
 	if (ret == 0) {

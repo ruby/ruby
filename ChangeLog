@@ -1,13 +1,16 @@
+Fri Apr 11 19:00:14 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* win32/win32.c (rb_w32_stat): check arguments.  [ruby-dev:20007]
+	  [ruby-win32:535]
+
 Fri Apr 11 15:56:08 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
-
-	* sample/test.rb: NaN comparison test.
-
-Fri Apr 11 15:37:43 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* numeric.c (coerce_rescue): prevent inspected String from GC.
 
 	* numeric.c (flo_eq, rb_dbl_cmp, flo_gt, flo_ge, flo_lt, flo_le,
 	  flo_eql): correct NaN comparison.  (ruby-bugs:PR#744)
+
+	* sample/test.rb: NaN comparison test.
 
 Fri Apr 11 14:48:47 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
