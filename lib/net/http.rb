@@ -799,6 +799,12 @@ module Net # :nodoc:
       request(Mkcol.new(path, initheader), body)
     end
 
+    # Sends a TRACE request to the +path+ and gets a response,
+    # as an HTTPResponse object.
+    def trace(path, initheader = nil)
+      request(Trace.new(path, initheader))
+    end
+
     # Sends a GET request to the +path+ and gets a response,
     # as an HTTPResponse object.
     # 
@@ -1501,6 +1507,12 @@ e      @header.each_key(&block)
     class Mkcol < HTTPRequest
       METHOD = 'MKCOL'
       REQUEST_HAS_BODY = true
+      RESPONSE_HAS_BODY = true
+    end
+
+    class Trace < HTTPRequest
+      METHOD = 'TRACE'
+      REQUEST_HAS_BODY = false
       RESPONSE_HAS_BODY = true
     end
   end
