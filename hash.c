@@ -634,11 +634,11 @@ inspect_i(key, value, str)
 	rb_str_cat2(str, ", ");
     }
     str2 = rb_inspect(key);
-    rb_str_append(str, str2);
+    rb_str_buf_append(str, str2);
     OBJ_INFECT(str, str2);
-    rb_str_cat2(str, "=>");
+    rb_str_buf_cat2(str, "=>");
     str2 = rb_inspect(value);
-    rb_str_append(str, str2);
+    rb_str_buf_append(str, str2);
     OBJ_INFECT(str, str2);
 
     return ST_CONTINUE;
@@ -650,11 +650,11 @@ inspect_hash(hash)
 {
     VALUE str;
 
-    str = rb_str_new2("{");
+    str = rb_str_buf_new2("{");
     st_foreach(RHASH(hash)->tbl, inspect_i, str);
-    rb_str_cat2(str, "}");
-    
+    rb_str_buf_cat2(str, "}");
     OBJ_INFECT(str, hash);
+
     return str;
 }
 
@@ -1266,7 +1266,7 @@ static VALUE
 env_inspect()
 {
     char **env;
-    VALUE str = rb_str_new2("{");
+    VALUE str = rb_str_buf_new2("{");
     VALUE i;
 
     env = environ;
@@ -1274,18 +1274,18 @@ env_inspect()
 	char *s = strchr(*env, '=');
 
 	if (env != environ) {
-	    rb_str_cat2(str, ", ");
+	    rb_str_buf_cat2(str, ", ");
 	}
 	if (s) {
-	    rb_str_cat2(str, "\"");
-	    rb_str_cat(str, *env, s-*env);
-	    rb_str_cat2(str, "\"=>");
+	    rb_str_buf_cat2(str, "\"");
+	    rb_str_buf_cat(str, *env, s-*env);
+	    rb_str_buf_cat2(str, "\"=>");
 	    i = rb_inspect(rb_str_new2(s+1));
-	    rb_str_append(str, i);
+	    rb_str_buf_append(str, i);
 	}
 	env++;
     }
-    rb_str_cat2(str, "}");
+    rb_str_buf_cat2(str, "}");
     OBJ_TAINT(str);
 
     return str;

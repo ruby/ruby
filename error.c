@@ -359,12 +359,12 @@ exc_inspect(exc)
 	return rb_str_dup(rb_class_path(klass));
     }
 
-    str = rb_str_new2("#<");
+    str = rb_str_buf_new2("#<");
     klass = rb_class_path(klass);
-    rb_str_append(str, klass);
-    rb_str_cat(str, ": ", 2);
-    rb_str_append(str, exc);
-    rb_str_cat(str, ">", 1);
+    rb_str_buf_append(str, klass);
+    rb_str_buf_cat(str, ": ", 2);
+    rb_str_buf_append(str, exc);
+    rb_str_buf_cat(str, ">", 1);
 
     return str;
 }

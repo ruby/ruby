@@ -608,7 +608,7 @@ rb_io_gets_internal(argc, argv, io)
     VALUE rs;
 
     if (argc == 0) {
-	rs = rb_default_rs;
+	rs = rb_rs;
     }
     else {
 	rb_scan_args(argc, argv, "1", &rs);

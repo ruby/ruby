@@ -51,6 +51,7 @@ static enum lex_state {
     EXPR_BEG,			/* ignore newline, +/- is a sign. */
     EXPR_END,			/* newline significant, +/- is a operator. */
     EXPR_ARG,			/* newline significant, +/- is a operator. */
+    EXPR_CMDARG,		/* newline significant, +/- is a operator. */
     EXPR_MID,			/* newline significant, +/- is a operator. */
     EXPR_FNAME,			/* ignore newline, no reserved words. */
     EXPR_DOT,			/* right after `.' or `::', no reserved words. */
@@ -63,32 +64,40 @@ typedef unsigned LONG_LONG stack_type;
 typedef unsigned long stack_type;
 #endif
 
-static int cond_nest = 0;
 static stack_type cond_stack = 0;
-#define COND_PUSH do {\
-    cond_nest++;\
-    cond_stack = (cond_stack<<1)|1;\
+#define COND_PUSH(n) do {\
+    cond_stack = (cond_stack<<1)|((n)&1);\
 } while(0)
-#define COND_POP do {\
-    cond_nest--;\
+#define COND_POP() do {\
     cond_stack >>= 1;\
 } while (0)
-#define COND_P() (cond_nest > 0 && (cond_stack&1))
+#define COND_LEXPOP() do {\
+    int last = COND_P();\
+    cond_stack >>= 1;\
+    if (last) cond_stack |= 1;\
+} while (0)
+#define COND_P() (cond_stack&1)
 
 static stack_type cmdarg_stack = 0;
-#define CMDARG_PUSH do {\
-    cmdarg_stack = (cmdarg_stack<<1)|1;\
+#define CMDARG_PUSH(n) do {\
+    cmdarg_stack = (cmdarg_stack<<1)|((n)&1);\
 } while(0)
-#define CMDARG_POP do {\
+#define CMDARG_POP() do {\
     cmdarg_stack >>= 1;\
 } while (0)
-#define CMDARG_P() (cmdarg_stack && (cmdarg_stack&1))
+#define CMDARG_LEXPOP() do {\
+    int last = CMDARG_P();\
+    cmdarg_stack >>= 1;\
+    if (last) cmdarg_stack |= 1;\
+} while (0)
+#define CMDARG_P() (cmdarg_stack&1)
 
 static int class_nest = 0;
 static int in_single = 0;
 static int in_def = 0;
 static int compile_for_eval = 0;
 static ID cur_mid = 0;
+static ID last_id = 0;
 
 static NODE *cond();
 static NODE *logop();
@@ -104,9 +113,11 @@ static NODE *block_append();
 static NODE *list_append();
 static NODE *list_concat();
 static NODE *arg_concat();
+static NODE *arg_prepend();
 static NODE *call_op();
 static int in_defined = 0;
 
+static NODE *ret_args();
 static NODE *arg_blk_pass();
 static NODE *new_call();
 static NODE *new_fcall();
@@ -133,6 +144,7 @@ static int dyna_in_block();
 
 static void top_local_init();
 static void top_local_setup();
+
 %}
 
 %union {
@@ -199,7 +211,7 @@ static void top_local_setup();
 %type <val>  literal numeric
 %type <node> compstmt stmts stmt expr arg primary command command_call method_call
 %type <node> if_tail opt_else case_body cases rescue exc_list exc_var ensure
-%type <node> args ret_args when_args call_args paren_args opt_paren_args
+%type <node> args when_args call_args call_args2 open_args paren_args opt_paren_args
 %type <node> command_args aref_args opt_block_arg block_arg var_ref
 %type <node> mrhs mrhs_basic superclass block_call block_command
 %type <node> f_arglist f_args f_optarg f_opt f_block_arg opt_f_block_arg
@@ -228,9 +240,11 @@ static void top_local_setup();
 %token <id> tOP_ASGN	/* +=, -=  etc. */
 %token tASSOC		/* => */
 %token tLPAREN		/* ( */
+%token tLPAREN_ARG	/* ( */
 %token tRPAREN		/* ) */
 %token tLBRACK		/* [ */
 %token tLBRACE		/* { */
+%token tLBRACE_ARG	/* { */
 %token tSTAR		/* * */
 %token tAMPER		/* & */
 %token tSYMBEG
@@ -420,19 +434,19 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    }
 		| expr
 
-expr		: kRETURN ret_args
+expr		: kRETURN call_args
 		    {
 			if (!compile_for_eval && !in_def && !in_single)
 			    yyerror("return appeared outside of method");
-			$$ = NEW_RETURN($2);
+			$$ = NEW_RETURN(ret_args($2));
 		    }
-		| kBREAK ret_args
+		| kBREAK call_args
 		    {
-			$$ = NEW_BREAK($2);
+			$$ = NEW_BREAK(ret_args($2));
 		    }
-		| kNEXT ret_args
+		| kNEXT call_args
 		    {
-			$$ = NEW_NEXT($2);
+			$$ = NEW_NEXT(ret_args($2));
 		    }
 		| command_call
 		| expr kAND expr
@@ -469,7 +483,7 @@ block_command	: block_call
 			$$ = new_call($1, $3, $4);
 		    }
 
-command		:  operation command_args
+command		: operation command_args
 		    {
 			$$ = new_fcall($1, $2);
 		        fixpos($$, $2);
@@ -493,9 +507,9 @@ command		:  operation command_args
 			$$ = new_super($2);
 		        fixpos($$, $2);
 		    }
-		| kYIELD ret_args
+		| kYIELD call_args
 		    {
-			$$ = NEW_YIELD($2);
+			$$ = NEW_YIELD(ret_args($2));
 		        fixpos($$, $2);
 		    }
 
@@ -1001,9 +1015,90 @@ call_args	: command
 		    }
 		| block_arg
 
-command_args	: {CMDARG_PUSH;} call_args
+call_args2	: arg ',' args opt_block_arg
 		    {
-		        CMDARG_POP;
+			$$ = arg_blk_pass(list_append(NEW_LIST($1),$3), $4);
+		    }
+		| arg ',' tSTAR arg opt_block_arg
+		    {
+			value_expr($1);
+			value_expr($4);
+			$$ = arg_concat(NEW_LIST($1), $4);
+			$$ = arg_blk_pass($$, $5);
+		    }
+		| arg ',' args ',' tSTAR arg opt_block_arg
+		    {
+			value_expr($1);
+			value_expr($6);
+			$$ = arg_concat(list_append($1,$3), $6);
+			$$ = arg_blk_pass($$, $7);
+		    }
+		| assocs opt_block_arg
+		    {
+			$$ = NEW_LIST(NEW_HASH($1));
+			$$ = arg_blk_pass($$, $2);
+		    }
+		| assocs ',' tSTAR arg opt_block_arg
+		    {
+			value_expr($4);
+			$$ = arg_concat(NEW_LIST(NEW_HASH($1)), $4);
+			$$ = arg_blk_pass($$, $5);
+		    }
+		| arg ',' assocs opt_block_arg
+		    {
+			$$ = list_append(NEW_LIST($1), NEW_HASH($3));
+			$$ = arg_blk_pass($$, $4);
+		    }
+		| arg ',' args ',' assocs opt_block_arg
+		    {
+			value_expr($1);
+			value_expr($6);
+			$$ = list_append(list_append($1,$3), NEW_HASH($5));
+			$$ = arg_blk_pass($$, $6);
+		    }
+		| arg ',' assocs ',' tSTAR arg opt_block_arg
+		    {
+			value_expr($1);
+			value_expr($6);
+			$$ = arg_concat(list_append(NEW_LIST($1), NEW_HASH($3)), $6);
+			$$ = arg_blk_pass($$, $7);
+		    }
+		| arg ',' args ',' assocs ',' tSTAR arg opt_block_arg
+		    {
+			value_expr($1);
+			value_expr($8);
+			$$ = arg_concat(list_append(list_append(NEW_LIST($1), $3), NEW_HASH($5)), $8);
+			$$ = arg_blk_pass($$, $9);
+		    }
+		| tSTAR arg opt_block_arg
+		    {
+			value_expr($2);
+			$$ = arg_blk_pass(NEW_RESTARGS($2), $3);
+		    }
+		| block_arg
+
+command_args	:  {
+			$<num>$ = cmdarg_stack;
+			CMDARG_PUSH(1);
+		    }
+		  open_args
+		    {
+			/* CMDARG_POP() */
+		        cmdarg_stack = $<num>1;
+			$$ = $2;
+		    }
+
+open_args	: call_args
+		| tLPAREN_ARG  ')'
+		    {
+		        rb_warning("%s (...) interpreted as method call",
+		                   rb_id2name(last_id));
+			$$ = 0;
+		    }
+		| tLPAREN_ARG call_args2 ')'
+		    {
+		        rb_warning("%s (...) interpreted as method call",
+		                   rb_id2name(last_id));
 			$$ = $2;
 		    }
 
@@ -1053,20 +1148,6 @@ mrhs_basic	: args ',' arg
 			$$ = $2;
 		    }
 
-ret_args	: call_args
-		    {
-			$$ = $1;
-			if ($1) {
-			    if (nd_type($1) == NODE_ARRAY &&
-				$1->nd_next == 0) {
-				$$ = $1->nd_head;
-			    }
-			    else if (nd_type($1) == NODE_BLOCK_PASS) {
-				rb_compile_error("block argument should not be given");
-			    }
-			}
-		    }
-
 primary		: literal
 		    {
 			$$ = NEW_LIT($1);
@@ -1104,6 +1185,11 @@ primary		: literal
 			}
 		        fixpos($$, $2);
 		    }
+		| tLPAREN_ARG expr ')'
+		    {
+		        rb_warning("%s (...) interpreted as command call", rb_id2name(last_id));
+			$$ = $2;
+		    }
 		| tLPAREN compstmt ')'
 		    {
 			$$ = $2;
@@ -1140,10 +1226,10 @@ primary		: literal
 			    yyerror("return appeared outside of method");
 			$$ = NEW_RETURN(0);
 		    }
-		| kYIELD '(' ret_args ')'
+		| kYIELD '(' call_args ')'
 		    {
 			value_expr($3);
-			$$ = NEW_YIELD($3);
+			$$ = NEW_YIELD(ret_args($3));
 		    }
 		| kYIELD '(' ')'
 		    {
@@ -1191,7 +1277,7 @@ primary		: literal
 			$$ = NEW_UNLESS(cond($2), $4, $5);
 		        fixpos($$, $2);
 		    }
-		| kWHILE {COND_PUSH;} expr do {COND_POP;}
+		| kWHILE {COND_PUSH(1);} expr do {COND_POP();}
 		  compstmt
 		  kEND
 		    {
@@ -1199,7 +1285,7 @@ primary		: literal
 			$$ = NEW_WHILE(cond($3), $6, 1);
 		        fixpos($$, $3);
 		    }
-		| kUNTIL {COND_PUSH;} expr do {COND_POP;} 
+		| kUNTIL {COND_PUSH(1);} expr do {COND_POP();} 
 		  compstmt
 		  kEND
 		    {
@@ -1219,7 +1305,7 @@ primary		: literal
 		    {
 			$$ = $3;
 		    }
-		| kFOR block_var kIN {COND_PUSH;} expr do {COND_POP;}
+		| kFOR block_var kIN {COND_PUSH(1);} expr do {COND_POP();}
 		  compstmt
 		  kEND
 		    {
@@ -1407,6 +1493,16 @@ do_block	: kDO_BLOCK
 		        fixpos($$, $3?$3:$4);
 			dyna_pop($<vars>2);
 		    }
+		| tLBRACE_ARG {$<vars>$ = dyna_push();}
+		  opt_block_var
+		  compstmt
+		  '}'
+		    {
+			$$ = NEW_ITER($3, 0, $4);
+		        fixpos($$, $3?$3:$4);
+			dyna_pop($<vars>2);
+		    }
+
 
 block_call	: command do_block
 		    {
@@ -1913,6 +2009,7 @@ yyerror(msg)
 }
 
 static int heredoc_end;
+static int command_start = Qtrue;
 
 int ruby_in_compile = 0;
 int ruby__end__seen;
@@ -1958,9 +2055,9 @@ yycompile(f, line)
     ruby_debug_lines = 0;
     compile_for_eval = 0;
     ruby_in_compile = 0;
-    cond_nest = 0;
     cond_stack = 0;
     cmdarg_stack = 0;
+    command_start = 1;		  
     class_nest = 0;
     in_single = 0;
     in_def = 0;
@@ -2711,13 +2808,6 @@ here_document(term, indent)
 
 	lex_pbeg = lex_p = RSTRING(line)->ptr;
 	lex_pend = lex_p + RSTRING(line)->len;
-#if 0
-	if (indent) {
-	    while (*lex_p && *lex_p == '\t') {
-		lex_p++;
-	    }
-	}
-#endif
       retry:
 	switch (parse_string(term, '\n', '\n')) {
 	  case tSTRING:
@@ -2791,13 +2881,18 @@ arg_ambiguous()
 double strtod ();
 #endif
 
+#define IS_ARG() (lex_state == EXPR_ARG || lex_state == EXPR_CMDARG)
+
 static int
 yylex()
 {
     register int c;
     int space_seen = 0;
+    int cmd_state;
     struct kwtable *kw;
 
+    cmd_state = command_start;
+    command_start = Qfalse;
   retry:
     switch (c = nextc()) {
       case '\0':		/* NUL */
@@ -2827,6 +2922,7 @@ yylex()
 	  default:
 	    break;
 	}
+	command_start = Qtrue;
 	lex_state = EXPR_BEG;
 	return '\n';
 
@@ -2846,7 +2942,7 @@ yylex()
 	    return tOP_ASGN;
 	}
 	pushback(c);
-	if (lex_state == EXPR_ARG && space_seen && !ISSPACE(c)){
+	if (IS_ARG() && space_seen && !ISSPACE(c)){
 	    rb_warning("`*' interpreted as argument prefix");
 	    c = tSTAR;
 	}
@@ -2913,7 +3009,7 @@ yylex()
 	c = nextc();
 	if (c == '<' &&
 	    lex_state != EXPR_END && lex_state != EXPR_CLASS &&
-	    (lex_state != EXPR_ARG || space_seen)) {
+	    (!IS_ARG() || space_seen)) {
  	    int c2 = nextc();
 	    int indent = 0;
 	    if (c2 == '-') {
@@ -2980,7 +3076,7 @@ yylex()
 	    rb_compile_error("incomplete character syntax");
 	    return 0;
 	}
-	if (lex_state == EXPR_ARG && ISSPACE(c)){
+	if (IS_ARG() && ISSPACE(c)){
 	    pushback(c);
 	    lex_state = EXPR_BEG;
 	    return '?';
@@ -3009,8 +3105,8 @@ yylex()
 	    return tOP_ASGN;
 	}
 	pushback(c);
-	if (lex_state == EXPR_ARG && space_seen && !ISSPACE(c)){
-	    rb_warning("`&' interpreted as argument prefix");
+	if (IS_ARG() && space_seen && !ISSPACE(c)){
+	    rb_warning("`&' interpeted as argument prefix");
 	    c = tAMPER;
 	}
 	else if (lex_state == EXPR_BEG || lex_state == EXPR_MID) {
@@ -3054,8 +3150,8 @@ yylex()
 	    return tOP_ASGN;
 	}
 	if (lex_state == EXPR_BEG || lex_state == EXPR_MID ||
-	    (lex_state == EXPR_ARG && space_seen && !ISSPACE(c))) {
-	    if (lex_state == EXPR_ARG) arg_ambiguous();
+	    (IS_ARG() && space_seen && !ISSPACE(c))) {
+	    if (IS_ARG()) arg_ambiguous();
 	    lex_state = EXPR_BEG;
 	    pushback(c);
 	    if (ISDIGIT(c)) {
@@ -3083,8 +3179,8 @@ yylex()
 	    return tOP_ASGN;
 	}
 	if (lex_state == EXPR_BEG || lex_state == EXPR_MID ||
-	    (lex_state == EXPR_ARG && space_seen && !ISSPACE(c))) {
-	    if (lex_state == EXPR_ARG) arg_ambiguous();
+	    (IS_ARG() && space_seen && !ISSPACE(c))) {
+	    if (IS_ARG()) arg_ambiguous();
 	    lex_state = EXPR_BEG;
 	    pushback(c);
 	    if (ISDIGIT(c)) {
@@ -3276,13 +3372,9 @@ yylex()
 
       case ']':
       case '}':
-	lex_state = EXPR_END;
-	return c;
-
       case ')':
-	if (cond_nest > 0) {
-	    cond_stack >>= 1;
-	}
+	COND_LEXPOP();
+	CMDARG_LEXPOP();
 	lex_state = EXPR_END;
 	return c;
 
@@ -3290,7 +3382,7 @@ yylex()
 	c = nextc();
 	if (c == ':') {
 	    if (lex_state == EXPR_BEG ||  lex_state == EXPR_MID ||
-		(lex_state == EXPR_ARG && space_seen)) {
+		(IS_ARG() && space_seen)) {
 		lex_state = EXPR_BEG;
 		return tCOLON3;
 	    }
@@ -3315,7 +3407,7 @@ yylex()
 	    return tOP_ASGN;
 	}
 	pushback(c);
-	if (lex_state == EXPR_ARG && space_seen) {
+	if (IS_ARG() && space_seen) {
 	    if (!ISSPACE(c)) {
 		arg_ambiguous();
 		return parse_regx('/', '/');
@@ -3333,8 +3425,9 @@ yylex()
 	pushback(c);
 	return '^';
 
-      case ',':
       case ';':
+	command_start = Qtrue;
+      case ',':
 	lex_state = EXPR_BEG;
 	return c;
 
@@ -3348,15 +3441,21 @@ yylex()
 	return '~';
 
       case '(':
-	if (cond_nest > 0) {
-	    cond_stack = (cond_stack<<1)|0;
-	}
+	command_start = Qtrue;
 	if (lex_state == EXPR_BEG || lex_state == EXPR_MID) {
 	    c = tLPAREN;
 	}
-	else if (lex_state == EXPR_ARG && space_seen) {
-	    rb_warning("%s (...) interpreted as method call", tok());
+	else if (space_seen) {
+	    if (lex_state == EXPR_CMDARG) {
+		c = tLPAREN_ARG;
+	    }
+	    else if (lex_state == EXPR_ARG) {
+		rb_warning("%s (...) interpreted as method call", tok());
+		c = tLPAREN_ARG;
+	    }
 	}
+	COND_PUSH(0);
+	CMDARG_PUSH(0);
 	lex_state = EXPR_BEG;
 	return c;
 
@@ -3375,15 +3474,23 @@ yylex()
 	else if (lex_state == EXPR_BEG || lex_state == EXPR_MID) {
 	    c = tLBRACK;
 	}
-	else if (lex_state == EXPR_ARG && space_seen) {
+	else if (IS_ARG() && space_seen) {
 	    c = tLBRACK;
 	}
 	lex_state = EXPR_BEG;
+	COND_PUSH(0);
+	CMDARG_PUSH(0);
 	return c;
 
       case '{':
-	if (lex_state != EXPR_END && lex_state != EXPR_ARG)
-	    c = tLBRACE;
+	if (!IS_ARG()) {
+	    if (lex_state != EXPR_END)
+		c = tLBRACE;
+	    if (space_seen && CMDARG_P())
+		c = tLBRACE_ARG;
+	}
+	COND_PUSH(0);
+	CMDARG_PUSH(0);
 	lex_state = EXPR_BEG;
 	return c;
 
@@ -3446,7 +3553,7 @@ yylex()
 	    yylval.id = '%';
 	    return tOP_ASGN;
 	}
-	if (lex_state == EXPR_ARG && space_seen && !ISSPACE(c)) {
+	if (IS_ARG() && space_seen && !ISSPACE(c)) {
 	    goto quotation;
 	}
 	lex_state = EXPR_BEG;
@@ -3608,7 +3715,8 @@ yylex()
 		    }
 		    if (kw->id[0] == kDO) {
 			if (COND_P()) return kDO_COND;
-			if (CMDARG_P()) return kDO_BLOCK;
+			if (CMDARG_P() && state != EXPR_CMDARG && state != EXPR_ARG)
+			    return kDO_BLOCK;
 			return kDO;
 		    }
 		    if (state == EXPR_BEG)
@@ -3626,12 +3734,8 @@ yylex()
 	    }
 	    else {
 		if (lex_state == EXPR_FNAME) {
-#if 0
-		    if ((c = nextc()) == '=' && !peek('=') && !peek('~') && !peek('>')) {
-#else
 		    if ((c = nextc()) == '=' && !peek('~') && !peek('>') &&
 			(!peek('=') || lex_p + 1 < lex_pend && lex_p[1] == '>')) {
-#endif
 			result = tIDENTIFIER;
 			tokadd(c);
 		    }
@@ -3648,15 +3752,19 @@ yylex()
 	    }
 	    if (lex_state == EXPR_BEG ||
 		lex_state == EXPR_DOT ||
-		lex_state == EXPR_ARG) {
-		lex_state = EXPR_ARG;
+		lex_state == EXPR_ARG ||
+		lex_state == EXPR_CMDARG) {
+		if (cmd_state)
+		    lex_state = EXPR_CMDARG;
+		else
+		    lex_state = EXPR_ARG;
 	    }
 	    else {
 		lex_state = EXPR_END;
 	    }
 	}
 	tokfix();
-	yylval.id = rb_intern(tok());
+	last_id = yylval.id = rb_intern(tok());
 	return result;
     }
 }
@@ -4549,6 +4657,21 @@ logop(type, left, right)
 }
 
 static NODE *
+ret_args(node)
+    NODE *node;
+{
+    if (node) {
+	if (nd_type(node) == NODE_ARRAY && node->nd_next == 0) {
+	    node = node->nd_head;
+	}
+	else if (nd_type(node) == NODE_BLOCK_PASS) {
+	    rb_compile_error("block argument should not be given");
+	}
+    }
+    return node;
+}
+
+static NODE *
 arg_blk_pass(node1, node2)
     NODE *node1;
     NODE *node2;
@@ -4558,6 +4681,27 @@ arg_blk_pass(node1, node2)
 	return node2;
     }
     return node1;
+}
+
+static NODE*
+arg_prepend(node1, node2)
+    NODE *node1, *node2;
+{
+    switch (nodetype(node2)) {
+      case NODE_ARRAY:
+	return list_concat(NEW_LIST(node1), node2);
+
+      case NODE_RESTARGS:
+	return arg_concat(node1, node2->nd_head);
+
+      case NODE_BLOCK_PASS:
+	node2->nd_body = arg_prepend(node1, node2->nd_body);
+	return node2;
+
+      default:
+	rb_bug("unknown nodetype(%d) for arg_prepend");
+    }
+    return 0;			/* not reached */
 }
 
 static NODE*

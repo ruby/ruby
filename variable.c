@@ -16,6 +16,7 @@
 #include "env.h"
 #include "node.h"
 #include "st.h"
+#include "util.h"
 
 static st_table *rb_global_tbl;
 st_table *rb_class_tbl;

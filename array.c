@@ -739,26 +739,11 @@ inspect_join(ary, arg)
     return rb_ary_join(arg[0], arg[1]);
 }
 
-static long
-str_cpy(str, idx, str2)
-    VALUE str;
-    long idx;
-    VALUE str2;
-{
-    long len = idx + RSTRING(str2)->len;
-
-    if (RSTRING(str)->len < len) {
-	rb_str_resize(str, len);
-    }
-    memcpy(RSTRING(str)->ptr+idx, RSTRING(str2)->ptr, RSTRING(str2)->len);
-    return len;
-}
-
 VALUE
 rb_ary_join(ary, sep)
     VALUE ary, sep;
 {
-    long len, i, j;
+    long len, i;
     int taint = 0;
     VALUE result, tmp;
 
@@ -778,9 +763,8 @@ rb_ary_join(ary, sep)
     if (!NIL_P(sep) && TYPE(sep) == T_STRING) {
 	len += RSTRING(sep)->len * RARRAY(ary)->len - 1;
     }
-    result = rb_str_new(0, len);
-
-    for (i=0, j=0; i<RARRAY(ary)->len; i++) {
+    result = rb_str_buf_new(len);
+    for (i=0; i<RARRAY(ary)->len; i++) {
 	tmp = RARRAY(ary)->ptr[i];
 	switch (TYPE(tmp)) {
 	  case T_STRING:
@@ -800,11 +784,11 @@ rb_ary_join(ary, sep)
 	  default:
 	    tmp = rb_obj_as_string(tmp);
 	}
-	if (i > 0 && !NIL_P(sep)) j = str_cpy(result, j, sep);
-	j = str_cpy(result, j, tmp);
+	if (i > 0 && !NIL_P(sep))
+	    rb_str_buf_append(result, sep);
+	rb_str_buf_append(result, tmp);
 	if (OBJ_TAINTED(tmp)) taint = 1;
     }
-    rb_str_resize(result, j);
 
     if (taint) OBJ_TAINT(result);
     return result;
@@ -909,16 +893,14 @@ inspect_ary(ary)
     long i = 0;
     VALUE s, str;
 
-    str = rb_str_new2("[");
-
+    str = rb_str_buf_new2("[");
     for (i=0; i<RARRAY(ary)->len; i++) {
 	s = rb_inspect(RARRAY(ary)->ptr[i]);
-	tainted = OBJ_TAINTED(s);
-	if (i > 0) rb_str_cat2(str, ", ");
-	rb_str_append(str, s);
+	if (OBJ_TAINTED(s)) tainted = 1;
+	if (i > 0) rb_str_buf_cat2(str, ", ");
+	rb_str_buf_append(str, s);
     }
-    rb_str_cat(str, "]", 1);
-
+    rb_str_buf_cat2(str, "]");
     if (tainted) OBJ_TAINT(str);
     return str;
 }

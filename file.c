@@ -281,22 +281,22 @@ rb_stat_inspect(self)
         {"ctime",   rb_stat_ctime},
     };
 
-    str = rb_str_new2("#<");
-    rb_str_cat2(str, rb_class2name(CLASS_OF(self)));
-    rb_str_cat2(str, " ");
+    str = rb_str_buf_new2("#<");
+    rb_str_buf_cat2(str, rb_class2name(CLASS_OF(self)));
+    rb_str_buf_cat2(str, " ");
 
     for (i = 0; i < sizeof(member)/sizeof(member[0]); i++) {
 	VALUE str2;
 
 	if (i > 0) {
-	    rb_str_cat2(str, ", ");
+	    rb_str_buf_cat2(str, ", ");
 	}
-	rb_str_cat2(str, member[i].name);
-	rb_str_cat2(str, "=");
+	rb_str_buf_cat2(str, member[i].name);
+	rb_str_buf_cat2(str, "=");
 	str2 = rb_inspect((*member[i].func)(self));
 	rb_str_append(str, str2);
     }
-    rb_str_cat2(str, ">");
+    rb_str_buf_cat2(str, ">");
     OBJ_INFECT(str, self);
 
     return str;
@@ -449,7 +449,7 @@ eaccess(path, mode)
   if (st.st_mode & mode) return 0;
 
   return -1;
-#else  /* !NT */
+#else
   return access(path, mode);
 #endif
 }

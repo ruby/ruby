@@ -331,7 +331,7 @@ pack_pack(ary, fmt)
     static char *nul10 = "\0\0\0\0\0\0\0\0\0\0";
     static char *spc10 = "          ";
     char *p, *pend;
-    VALUE res, from;
+    VALUE res, from, associates = 0;
     char type;
     int items, len, idx;
     char *ptr;
@@ -343,7 +343,7 @@ pack_pack(ary, fmt)
     StringValue(fmt);
     p = RSTRING(fmt)->ptr;
     pend = p + RSTRING(fmt)->len;
-    res = rb_str_new(0, 0);
+    res = rb_str_buf_new(0);
 
     items = RARRAY(ary)->len;
     idx = 0;
@@ -405,15 +405,15 @@ pack_pack(ary, fmt)
 	      case 'A':
 	      case 'Z':
 		if (plen >= len)
-		    rb_str_cat(res, ptr, len);
+		    rb_str_buf_cat(res, ptr, len);
 		else {
-		    rb_str_cat(res, ptr, plen);
+		    rb_str_buf_cat(res, ptr, plen);
 		    len -= plen;
 		    while (len >= 10) {
-			rb_str_cat(res, (type == 'A')?spc10:nul10, 10);
+			rb_str_buf_cat(res, (type == 'A')?spc10:nul10, 10);
 			len -= 10;
 		    }
-		    rb_str_cat(res, (type == 'A')?spc10:nul10, len);
+		    rb_str_buf_cat(res, (type == 'A')?spc10:nul10, len);
 		}
 		break;
 
@@ -433,7 +433,7 @@ pack_pack(ary, fmt)
 			    byte >>= 1;
 			else {
 			    char c = byte & 0xff;
-			    rb_str_cat(res, &c, 1);
+			    rb_str_buf_cat(res, &c, 1);
 			    byte = 0;
 			}
 		    }
@@ -441,11 +441,9 @@ pack_pack(ary, fmt)
 			char c;
 			byte >>= 7 - (len & 7);
 			c = byte & 0xff;
-			rb_str_cat(res, &c, 1);
+			rb_str_buf_cat(res, &c, 1);
 		    }
-		    len = RSTRING(res)->len;
-		    rb_str_resize(res, len+j);
-		    MEMZERO(RSTRING(res)->ptr+len, char, j);
+		    rb_str_buf_cat(res, 0, j);
 		}
 		break;
 
@@ -464,7 +462,7 @@ pack_pack(ary, fmt)
 			    byte <<= 1;
 			else {
 			    char c = byte & 0xff;
-			    rb_str_cat(res, &c, 1);
+			    rb_str_buf_cat(res, &c, 1);
 			    byte = 0;
 			}
 		    }
@@ -472,11 +470,9 @@ pack_pack(ary, fmt)
 			char c;
 			byte <<= 7 - (len & 7);
 			c = byte & 0xff;
-			rb_str_cat(res, &c, 1);
+			rb_str_buf_cat(res, &c, 1);
 		    }
-		    len = RSTRING(res)->len;
-		    rb_str_resize(res, len+j);
-		    MEMZERO(RSTRING(res)->ptr+len, char, j);
+		    rb_str_buf_cat(res, 0, j);
 		}
 		break;
 
@@ -498,17 +494,15 @@ pack_pack(ary, fmt)
 			    byte >>= 4;
 			else {
 			    char c = byte & 0xff;
-			    rb_str_cat(res, &c, 1);
+			    rb_str_buf_cat(res, &c, 1);
 			    byte = 0;
 			}
 		    }
 		    if (len & 1) {
 			char c = byte & 0xff;
-			rb_str_cat(res, &c, 1);
+			rb_str_buf_cat(res, &c, 1);
 		    }
-		    len = RSTRING(res)->len;
-		    rb_str_resize(res, len+j);
-		    MEMZERO(RSTRING(res)->ptr+len, char, j);
+		    rb_str_buf_cat(res, 0, j);
 		}
 		break;
 
@@ -530,17 +524,15 @@ pack_pack(ary, fmt)
 			    byte <<= 4;
 			else {
 			    char c = byte & 0xff;
-			    rb_str_cat(res, &c, 1);
+			    rb_str_buf_cat(res, &c, 1);
 			    byte = 0;
 			}
 		    }
 		    if (len & 1) {
 			char c = byte & 0xff;
-			rb_str_cat(res, &c, 1);
+			rb_str_buf_cat(res, &c, 1);
 		    }
-		    len = RSTRING(res)->len;
-		    rb_str_resize(res, len+j);
-		    MEMZERO(RSTRING(res)->ptr+len, char, j);
+		    rb_str_buf_cat(res, 0, j);
 		}
 		break;
 	    }
@@ -556,7 +548,7 @@ pack_pack(ary, fmt)
 		else {
 		    c = NUM2INT(from);
 		}
-		rb_str_cat(res, &c, sizeof(char));
+		rb_str_buf_cat(res, &c, sizeof(char));
 	    }
 	    break;
 
@@ -570,7 +562,7 @@ pack_pack(ary, fmt)
 		else {
 		    s = NUM2INT(from);
 		}
-		rb_str_cat(res, OFF16(&s), NATINT_LEN(short,2));
+		rb_str_buf_cat(res, OFF16(&s), NATINT_LEN(short,2));
 	    }
 	    break;
 
@@ -584,7 +576,7 @@ pack_pack(ary, fmt)
 		else {
 		    i = NUM2UINT(from);
 		}
-		rb_str_cat(res, (char*)&i, sizeof(int));
+		rb_str_buf_cat(res, (char*)&i, sizeof(int));
 	    }
 	    break;
 
@@ -598,7 +590,7 @@ pack_pack(ary, fmt)
 		else {
 		    l = NATINT_U32(from);
 		}
-		rb_str_cat(res, OFF32(&l), NATINT_LEN(long,4));
+		rb_str_buf_cat(res, OFF32(&l), NATINT_LEN(long,4));
 	    }
 	    break;
 
@@ -612,7 +604,7 @@ pack_pack(ary, fmt)
 		    s = NUM2INT(from);
 		}
 		s = htons(s);
-		rb_str_cat(res, OFF16B(&s), NATINT_LEN(short,2));
+		rb_str_buf_cat(res, OFF16B(&s), NATINT_LEN(short,2));
 	    }
 	    break;
 
@@ -626,7 +618,7 @@ pack_pack(ary, fmt)
 		    l = NATINT_U32(from);
 		}
 		l = htonl(l);
-		rb_str_cat(res, OFF32B(&l), NATINT_LEN(long,4));
+		rb_str_buf_cat(res, OFF32B(&l), NATINT_LEN(long,4));
 	    }
 	    break;
 
@@ -640,7 +632,7 @@ pack_pack(ary, fmt)
 		    s = NUM2INT(from);
 		}
 		s = htovs(s);
-		rb_str_cat(res, OFF16(&s), NATINT_LEN(short,2));
+		rb_str_buf_cat(res, OFF16(&s), NATINT_LEN(short,2));
 	    }
 	    break;
 
@@ -654,7 +646,7 @@ pack_pack(ary, fmt)
 		    l = NATINT_U32(from);
 		}
 		l = htovl(l);
-		rb_str_cat(res, OFF32(&l), NATINT_LEN(long,4));
+		rb_str_buf_cat(res, OFF32(&l), NATINT_LEN(long,4));
 	    }
 	    break;
 
@@ -674,7 +666,7 @@ pack_pack(ary, fmt)
 		    f = (float)NUM2INT(from);
 		    break;
 		}
-		rb_str_cat(res, (char*)&f, sizeof(float));
+		rb_str_buf_cat(res, (char*)&f, sizeof(float));
 	    }
 	    break;
 
@@ -695,7 +687,7 @@ pack_pack(ary, fmt)
 		    break;
 		}
 		f = HTOVF(f,ftmp);
-		rb_str_cat(res, (char*)&f, sizeof(float));
+		rb_str_buf_cat(res, (char*)&f, sizeof(float));
 	    }
 	    break;
 
@@ -716,7 +708,7 @@ pack_pack(ary, fmt)
 		    break;
 		}
 		d = HTOVD(d,dtmp);
-		rb_str_cat(res, (char*)&d, sizeof(double));
+		rb_str_buf_cat(res, (char*)&d, sizeof(double));
 	    }
 	    break;
 
@@ -736,7 +728,7 @@ pack_pack(ary, fmt)
 		    d = (double)NUM2INT(from);
 		    break;
 		}
-		rb_str_cat(res, (char*)&d, sizeof(double));
+		rb_str_buf_cat(res, (char*)&d, sizeof(double));
 	    }
 	    break;
 
@@ -757,7 +749,7 @@ pack_pack(ary, fmt)
 		    break;
 		}
 		f = HTONF(f,ftmp);
-		rb_str_cat(res, (char*)&f, sizeof(float));
+		rb_str_buf_cat(res, (char*)&f, sizeof(float));
 	    }
 	    break;
 
@@ -778,25 +770,26 @@ pack_pack(ary, fmt)
 		    break;
 		}
 		d = HTOND(d,dtmp);
-		rb_str_cat(res, (char*)&d, sizeof(double));
+		rb_str_buf_cat(res, (char*)&d, sizeof(double));
 	    }
 	    break;
 
 	  case 'x':
 	  grow:
 	    while (len >= 10) {
-		rb_str_cat(res, nul10, 10);
+		rb_str_buf_cat(res, nul10, 10);
 		len -= 10;
 	    }
-	    rb_str_cat(res, nul10, len);
+	    rb_str_buf_cat(res, nul10, len);
 	    break;
 
 	  case 'X':
 	  shrink:
-	    if (RSTRING(res)->len < len)
+	    plen = RSTRING(res)->len;
+	    if (plen < len)
 		rb_raise(rb_eArgError, "X outside of string");
-	    RSTRING(res)->len -= len;
-	    RSTRING(res)->ptr[RSTRING(res)->len] = '\0';
+	    RSTRING(res)->len = plen - len;
+	    RSTRING(res)->ptr[plen - len] = '\0';
 	    break;
 
 	  case '@':
@@ -822,7 +815,7 @@ pack_pack(ary, fmt)
 		    l = NUM2ULONG(from);
 		}
 		le = uv_to_utf8(buf, l);
-		rb_str_cat(res, (char*)buf, le);
+		rb_str_buf_cat(res, (char*)buf, le);
 	    }
 	    break;
 
@@ -879,8 +872,11 @@ pack_pack(ary, fmt)
 		    StringValue(from);
 		    t = RSTRING(from)->ptr;
 		}
-		rb_str_associate(res, from);
-		rb_str_cat(res, (char*)&t, sizeof(char*));
+		if (!associates) {
+		    associates = rb_ary_new();
+		}
+		rb_ary_push(associates, from);
+		rb_str_buf_cat(res, (char*)&t, sizeof(char*));
 	    }
 	    break;
 
@@ -891,13 +887,12 @@ pack_pack(ary, fmt)
 		char c, *bufs, *bufe;
 
 		from = NEXTFROM;
-
 		if (TYPE(from) == T_BIGNUM) {
 		    VALUE big128 = rb_uint2big(128);
 		    while (TYPE(from) == T_BIGNUM) {
 			from = rb_big_divmod(from, big128);
 			c = NUM2INT(RARRAY(from)->ptr[1]) | 0x80; /* mod */
-			rb_str_cat(buf, &c, sizeof(char));
+			rb_str_buf_cat(buf, &c, sizeof(char));
 			from = RARRAY(from)->ptr[0]; /* div */
 		    }
 		}
@@ -909,7 +904,7 @@ pack_pack(ary, fmt)
 
 		while (ul) {
 		    c = ((ul & 0x7f) | 0x80);
-		    rb_str_cat(buf, &c, sizeof(char));
+		    rb_str_buf_cat(buf, &c, sizeof(char));
 		    ul >>=  7;
 		}
 
@@ -922,11 +917,11 @@ pack_pack(ary, fmt)
 			*bufs++ = *bufe;
 			*bufe-- = c;
 		    }
-		    rb_str_cat(res, RSTRING(buf)->ptr, RSTRING(buf)->len);
+		    rb_str_buf_cat(res, RSTRING(buf)->ptr, RSTRING(buf)->len);
 		}
 		else {
 		    c = 0;
-		    rb_str_cat(res, &c, sizeof(char));
+		    rb_str_buf_cat(res, &c, sizeof(char));
 		}
 	    }
 	    break;
@@ -936,6 +931,9 @@ pack_pack(ary, fmt)
 	}
     }
 
+    if (associates) {
+	rb_str_associate(res, associates);
+    }
     return res;
 }
 
@@ -984,7 +982,7 @@ encodes(str, s, len, type)
 	buff[i++] = padding;
     }
     buff[i++] = '\n';
-    rb_str_cat(str, buff, i);
+    rb_str_buf_cat(str, buff, i);
 }
 
 static char hex_table[] = "0123456789ABCDEF";
@@ -1030,7 +1028,7 @@ qpencode(str, from, len)
             prev = '\n';
         }
 	if (i > 1024 - 5) {
-	    rb_str_cat(str, buff, i);
+	    rb_str_buf_cat(str, buff, i);
 	    i = 0;
 	}
 	s++;
@@ -1040,7 +1038,7 @@ qpencode(str, from, len)
 	buff[i++] = '\n';
     }
     if (i > 0) {
-	rb_str_cat(str, buff, i);
+	rb_str_buf_cat(str, buff, i);
     }
 }
 

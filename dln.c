@@ -50,6 +50,10 @@ void *xrealloc();
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#ifndef S_ISDIR
+#   define S_ISDIR(m) ((m & S_IFMT) == S_IFDIR)
+#endif
+
 #ifdef HAVE_SYS_PARAM_H
 # include <sys/param.h>
 #else
@@ -1582,9 +1586,8 @@ dln_find_1(fname, path, exe_flag)
     register char *dp;
     register char *ep;
     register char *bp;
-#ifndef __MACOS__
     struct stat st;
-#else
+#ifdef __MACOS__
     const char* mac_fullpath;
 #endif
 
@@ -1669,13 +1672,17 @@ dln_find_1(fname, path, exe_flag)
 	if (stat(fbuf, &st) == 0) {
 	    if (exe_flag == 0) return fbuf;
 	    /* looking for executable */
-	    if (eaccess(fbuf, X_OK) == 0) return fbuf;
+	    if (!S_ISDIR(st.st_mode) && eaccess(fbuf, X_OK) == 0)
+		return fbuf;
 	}
 #else
 	if (mac_fullpath = _macruby_exist_file_in_libdir_as_posix_name(fbuf)) {
 	    if (exe_flag == 0) return mac_fullpath;
 	    /* looking for executable */
-	    if (eaccess(mac_fullpath, X_OK) == 0) return mac_fullpath;
+	    if (stat(mac_fullpath, &st) == 0) {
+		if (!S_ISDIR(st.st_mode) && eaccess(mac_fullpath, X_OK) == 0)
+		    return mac_fullpath;
+	    }
 	}
 #endif
 #if defined(MSDOS) || defined(NT) || defined(__human68k__) || defined(__EMX__)

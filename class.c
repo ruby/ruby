@@ -484,18 +484,28 @@ rb_class_private_instance_methods(argc, argv, mod)
 }
 
 VALUE
-rb_obj_singleton_methods(obj)
+rb_obj_singleton_methods(argc, argv, obj)
+    int argc;
+    VALUE *argv;
     VALUE obj;
 {
+    VALUE all;
     VALUE ary;
     VALUE klass;
     VALUE *p, *q, *pend;
 
+    rb_scan_args(argc, argv, "01", &all);
     ary = rb_ary_new();
     klass = CLASS_OF(obj);
     while (klass && FL_TEST(klass, FL_SINGLETON)) {
 	st_foreach(RCLASS(klass)->m_tbl, ins_methods_i, ary);
 	klass = RCLASS(klass)->super;
+    }
+    if (RTEST(all)) {
+	while (klass && TYPE(klass) == T_ICLASS) {
+	    st_foreach(RCLASS(klass)->m_tbl, ins_methods_i, ary);
+	    klass = RCLASS(klass)->super;
+	}
     }
     p = q = RARRAY(ary)->ptr; pend = p + RARRAY(ary)->len;
     while (p < pend) {

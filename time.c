@@ -314,7 +314,10 @@ make_time_t(tptr, utc_p)
 {
     time_t guess, guess_lo, guess_hi;
     struct tm *tm, tm_lo, tm_hi;
-    int d;
+    int d, have_guess;
+    int find_dst;
+
+    find_dst = 1;
 
 #ifdef NEGATIVE_TIME_T
     guess_lo = 1 << (8 * sizeof(time_t) - 1);
@@ -322,7 +325,7 @@ make_time_t(tptr, utc_p)
     guess_lo = 0;
 #endif
     guess_hi = ((time_t)-1) < ((time_t)0) ?
-               (1U << (8 * sizeof(time_t) - 1)) - 1 :
+               (1UL << (8 * sizeof(time_t) - 1)) - 1 :
 	       ~(time_t)0;
 
     tm = (utc_p ? gmtime : localtime)(&guess_lo);
@@ -339,62 +342,87 @@ make_time_t(tptr, utc_p)
     if (d == 0) return guess_hi;
     tm_hi = *tm;
 
-    while (guess_lo + 1 < guess_hi) { /* there is a gap between lo and hi. */
-      unsigned long range;
-      int a, b;
-      /*
-        Try precious guess by a linear interpolation at first.
-	`a' and `b' is a coefficient of guess_lo and guess_hi.
-	`range' is approximation of maximum error by the interpolation.
-	(a + b)**2 should be less than 2**31 to avoid overflow.
-	When these parameter is wrong, binary search is used.
-      */
-      a = (tm_hi.tm_year - tptr->tm_year);
-      b = (tptr->tm_year - tm_lo.tm_year);
-      range = 366 * 24 * 3600;
-      if (a + b < 46000 / 366) {
-        /* 46000 is selected as `some big number less than sqrt(2**31)'. */
-	/* The distinction between leap/non-leap year is not important here. */
-	static int days[] = {
-	  0,
-	  0 + 31,
-	  0 + 31 + 29,
-	  0 + 31 + 29 + 31,
-	  0 + 31 + 29 + 31 + 30,
-	  0 + 31 + 29 + 31 + 30 + 31,
-	  0 + 31 + 29 + 31 + 30 + 31 + 30,
-	  0 + 31 + 29 + 31 + 30 + 31 + 30 + 31,
-	  0 + 31 + 29 + 31 + 30 + 31 + 30 + 31 + 31,
-	  0 + 31 + 29 + 31 + 30 + 31 + 30 + 31 + 31 + 30,
-	  0 + 31 + 29 + 31 + 30 + 31 + 30 + 31 + 31 + 30 + 31,
-	  0 + 31 + 29 + 31 + 30 + 31 + 30 + 31 + 31 + 30 + 31 + 30
-	  /* Jan  Feb  Mar  Apr  May  Jun  Jul  Aug  Sep  Oct  Nov */
-	};
-	a *= 366;
-	b *= 366;
-	d = days[tptr->tm_mon] + tptr->tm_mday;
-	a += days[tm_hi.tm_mon] + tm_hi.tm_mday - d;
-	b += d - (days[tm_lo.tm_mon] + tm_lo.tm_mday);
-	range = 2 * 24 * 3600;
-      }
-      if (a + b <= 1) {
-	range = 2;
-	a *= 24 * 3600;
-	b *= 24 * 3600;
-	d = tptr->tm_hour * 3600 + tptr->tm_min * 60 + tptr->tm_sec;
-        a += tm_hi.tm_hour * 3600 + tm_hi.tm_min * 60 + tm_hi.tm_sec - d;
-        b += d - (tm_lo.tm_hour * 3600 + tm_lo.tm_min * 60 + tm_lo.tm_sec);
-      }
-      if (a <= 0) a = 1;
-      if (b <= 0) b = 1;
-      d = a + b;
-      guess = guess_lo / d * a + guess_hi / d * b;
-      /* Although `%' may not work with negative value,
-         it doesn't cause serious problem because there is a fail safe. */
-      guess += ((guess_lo % d) * a + (guess_hi % d) * b) / d;
+    have_guess = 0;
 
-      fixguess:
-      if (guess <= guess_lo || guess >= guess_hi) {
+    while (guess_lo + 1 < guess_hi) {
+      /* there is a gap between guess_lo and guess_hi. */
+      unsigned long range = 0;
+      if (!have_guess) {
+	int a, b;
+	/*
+	  Try precious guess by a linear interpolation at first.
+	  `a' and `b' is a coefficient of guess_lo and guess_hi as:
+
+	    guess = (guess_lo * a + guess_hi * b) / (a + b)
+
+	  However this causes overflow in most cases, following assignment
+	  is used instead:
+
+	    guess = guess_lo / d * a + (guess_lo % d) * a / d
+		  + guess_hi / d * b + (guess_hi % d) * b / d
+	      where d = a + b
+
+	  To avoid overflow in this assignment, `d' is restricted to less than
+	  sqrt(2**31).  By this restriction and other reasons, the guess is
+	  not accurate and some error is expected.  `range' approximates 
+	  the maximum error.
+
+	  When these parameters are not suitable, i.e. guess is not within
+	  guess_lo and guess_hi, simple guess by binary search is used.
+	*/
+	range = 366 * 24 * 60 * 60;
+	a = (tm_hi.tm_year - tptr->tm_year);
+	b = (tptr->tm_year - tm_lo.tm_year);
+	/* 46000 is selected as `some big number less than sqrt(2**31)'. */
+	if (a + b <= 46000 / 12) {
+	  range = 31 * 24 * 60 * 60;
+	  a *= 12;
+	  b *= 12;
+	  a += tm_hi.tm_mon - tptr->tm_mon;
+	  b += tptr->tm_mon - tm_lo.tm_mon;
+	  if (a + b <= 46000 / 31) {
+	    range = 24 * 60 * 60;
+	    a *= 31;
+	    b *= 31;
+	    a += tm_hi.tm_mday - tptr->tm_mday;
+	    b += tptr->tm_mday - tm_lo.tm_mday;
+	    if (a + b <= 46000 / 24) {
+	      range = 60 * 60;
+	      a *= 24;
+	      b *= 24;
+	      a += tm_hi.tm_hour - tptr->tm_hour;
+	      b += tptr->tm_hour - tm_lo.tm_hour;
+	      if (a + b <= 46000 / 60) {
+		range = 60;
+		a *= 60;
+		b *= 60;
+		a += tm_hi.tm_min - tptr->tm_min;
+		b += tptr->tm_min - tm_lo.tm_min;
+		if (a + b <= 46000 / 60) {
+		  range = 1;
+		  a *= 60;
+		  b *= 60;
+		  a += tm_hi.tm_sec - tptr->tm_sec;
+		  b += tptr->tm_sec - tm_lo.tm_sec;
+		}
+	      }
+	    }
+	  }
+	}
+	if (a <= 0) a = 1;
+	if (b <= 0) b = 1;
+	d = a + b;
+	/*
+	  Although `/' and `%' may produce unexpected result with negative
+	  argument, it doesn't cause serious problem because there is a
+	  fail safe.
+	*/
+	guess = guess_lo / d * a + (guess_lo % d) * a / d
+	      + guess_hi / d * b + (guess_hi % d) * b / d;
+	have_guess = 1;
+      }
+
+      if (guess <= guess_lo || guess_hi <= guess) {
 	/* Precious guess is invalid. try binary search. */ 
 	guess = guess_lo / 2 + guess_hi / 2;
 	if (guess <= guess_lo)
@@ -406,53 +434,99 @@ make_time_t(tptr, utc_p)
 
       tm = (utc_p ? gmtime : localtime)(&guess);
       if (!tm) goto error;
+      have_guess = 0;
 
       d = tmcmp(tptr, tm);
-      if (d == 0) {
-	if (!utc_p && !tm->tm_isdst) {
-	  /* When leaving DST, there may be two time corresponding to given
-	     argument.  make_time_t returns DST in such cases. */
-	  /* xxx this assumes a difference in time as 3600 seconds. */
-	  time_t guess2 = guess - 3600;
-	  tm = localtime(&guess2);
-	  if (!tm) return guess;
-	  if (tmcmp(tptr, tm) == 0)
-	    return guess2;
-	}
-	return guess;
-      }
-      else if (d < 0) {
+      if (d < 0) {
         guess_hi = guess;
 	tm_hi = *tm;
-	if (range && range < (unsigned long)(guess_hi - guess_lo)) {
+	if (range) {
 	  guess = guess - range;
 	  range = 0;
-	  goto fixguess;
+	  if (guess_lo < guess && guess < guess_hi)
+	    have_guess = 1;
+	}
+      }
+      else if (d > 0) {
+        guess_lo = guess;
+	tm_lo = *tm;
+	if (range) {
+	  guess = guess + range;
+	  range = 0;
+	  if (guess_lo < guess && guess < guess_hi)
+	    have_guess = 1;
 	}
       }
       else {
-        guess_lo = guess;
-	tm_lo = *tm;
-	if (range && range < (unsigned long)(guess_hi - guess_lo)) {
-	  guess = guess + range;
-	  range = 0;
-	  goto fixguess;
+	if (!utc_p) {
+	  /* If localtime is nonmonotonic, another result may exist. */
+	  time_t guess2;
+	  if (find_dst) {
+	    guess2 = guess - 2 * 60 * 60;
+	    tm = localtime(&guess2);
+	    if (tm) {
+	      if (tptr->tm_hour != (tm->tm_hour + 2) % 24 ||
+		  tptr->tm_min != tm->tm_min ||
+		  tptr->tm_sec != tm->tm_sec) {
+		guess2 -= (tm->tm_hour - tptr->tm_hour) * 60 * 60 +
+			  (tm->tm_min - tptr->tm_min) * 60 +
+			  (tm->tm_sec - tptr->tm_sec);
+		if (tptr->tm_mday != tm->tm_mday)
+		  guess2 += 24 * 60 * 60;
+		if (guess != guess2) {
+		  tm = localtime(&guess2);
+		  if (tmcmp(tptr, tm) == 0) {
+		    if (guess < guess2)
+		      return guess;
+		    else
+		      return guess2;
+		  }
+		}
+	      }
+	    }
+	  }
+	  else {
+	    guess2 = guess + 2 * 60 * 60;
+	    tm = localtime(&guess2);
+	    if (tm) {
+	      if ((tptr->tm_hour + 2) % 24 != tm->tm_hour ||
+		  tptr->tm_min != tm->tm_min ||
+		  tptr->tm_sec != tm->tm_sec) {
+		guess2 -= (tm->tm_hour - tptr->tm_hour) * 60 * 60 +
+			  (tm->tm_min - tptr->tm_min) * 60 +
+			  (tm->tm_sec - tptr->tm_sec);
+		if (tptr->tm_mday != tm->tm_mday)
+		  guess2 -= 24 * 60 * 60;
+		if (guess != guess2) {
+		  tm = localtime(&guess2);
+		  if (tmcmp(tptr, tm) == 0) {
+		    if (guess < guess2)
+		      return guess2;
+		    else
+		      return guess;
+		  }
+		}
+	      }
+	    }
+	  }
 	}
+	return guess;
       }
     }
-    /* given time is not found. */
-    if (guess_lo + 1 == guess_hi) {
-      /* given argument is invalid: 04/29 at non-leap year for example. */
-      return guess_hi;
+    /* Given argument has no corresponding time_t. Let's outerpolation. */
+    if (tm_lo.tm_year == tptr->tm_year && tm_lo.tm_mon == tptr->tm_mon) {
+      return guess_lo +
+        (tptr->tm_mday - tm_lo.tm_mday) * 24 * 60 * 60 +
+        (tptr->tm_hour - tm_lo.tm_hour) * 60 * 60 +
+        (tptr->tm_min - tm_lo.tm_min) * 60 +
+        (tptr->tm_sec - tm_lo.tm_sec);
     }
-    else {
-      /* given argument is in a gap.  When it enters DST, for example. */
-      d = tptr->tm_sec - tm_lo.tm_sec;
-      d += (tptr->tm_min - tm_lo.tm_min) * 60;
-      d += (tptr->tm_hour - tm_lo.tm_hour) * 3600;
-      if (d < 0)
-	d += 24 * 3600;
-      return guess_hi + d - 1;
+    else if (tm_hi.tm_year == tptr->tm_year && tm_hi.tm_mon == tptr->tm_mon) {
+      return guess_hi +
+        (tptr->tm_mday - tm_hi.tm_mday) * 24 * 60 * 60 +
+        (tptr->tm_hour - tm_hi.tm_hour) * 60 * 60 +
+        (tptr->tm_min - tm_hi.tm_min) * 60 +
+        (tptr->tm_sec - tm_hi.tm_sec);
     }
 
   out_of_range:

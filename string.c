@@ -28,6 +28,7 @@
 VALUE rb_cString;
 
 #define STR_NO_ORIG FL_USER2
+#define STR_ASSOC   FL_USER3
 
 VALUE rb_fs;
 
@@ -132,6 +133,40 @@ rb_str_new4(orig)
     }
 }
 
+#define STR_BUF_MIN_SIZE 128
+
+VALUE
+rb_str_buf_new(capa)
+    long capa;
+{
+    NEWOBJ(str, struct RString);
+    OBJSETUP(str, rb_cString, T_STRING);
+
+    FL_SET(str, STR_NO_ORIG);
+    if (capa < STR_BUF_MIN_SIZE)
+	capa = STR_BUF_MIN_SIZE;
+    str->ptr = 0;
+    str->len = 0;
+    str->orig = LONG2FIX(capa);
+    str->ptr = ALLOC_N(char, capa+1);
+    str->ptr[0] = '\0';
+
+    return (VALUE)str;
+}
+
+VALUE
+rb_str_buf_new2(ptr)
+    const char *ptr;
+{
+    VALUE str;
+    long len = strlen(ptr);
+
+    str = rb_str_buf_new(len + STR_BUF_MIN_SIZE);
+    rb_str_cat(str, ptr, len);
+
+    return str;
+}
+
 VALUE
 rb_str_to_str(str)
     VALUE str;
@@ -176,7 +211,7 @@ rb_str_associate(str, add)
 	    rb_str_modify(str);
 	}
 	RSTRING(str)->orig = rb_ary_new();
-	FL_SET(str, STR_NO_ORIG);
+	FL_SET(str, STR_NO_ORIG|STR_ASSOC);
     }
     rb_ary_push(RSTRING(str)->orig, add);
 }
@@ -185,7 +220,7 @@ VALUE
 rb_str_associated(str)
     VALUE str;
 {
-    if (!FL_TEST(str, STR_NO_ORIG)) {
+    if (!FL_TEST(str, STR_NO_ORIG|STR_ASSOC)) {
 	return Qfalse;
     }
     return RSTRING(str)->orig;
@@ -443,27 +478,69 @@ rb_str_resize(str, len)
 }
 
 VALUE
+rb_str_buf_cat(str, ptr, len)
+    VALUE str;
+    const char *ptr;
+    long len;
+{
+    long i, capa, total;
+
+    if (RSTRING(str)->orig == 0) {
+	capa = RSTRING(str)->len;
+	FL_SET(str, STR_NO_ORIG);
+    }
+    else {
+	capa = FIX2LONG(RSTRING(str)->orig);
+    }
+
+    total = RSTRING(str)->len+len;
+    if (capa <= total) {
+	while (total > capa) {
+	    capa = (capa + 1) * 2;
+	}
+	REALLOC_N(RSTRING(str)->ptr, char, capa+1);
+	RSTRING(str)->orig = LONG2FIX(capa);
+    }
+    memcpy(RSTRING(str)->ptr + RSTRING(str)->len, ptr, len);
+    RSTRING(str)->len = total;
+    RSTRING(str)->ptr[total] = '\0'; /* sentinel */
+
+    return str;
+}
+
+VALUE
+rb_str_buf_cat2(str, ptr)
+    VALUE str;
+    const char *ptr;
+{
+    return rb_str_buf_cat(str, ptr, strlen(ptr));
+}
+
+VALUE
 rb_str_cat(str, ptr, len)
     VALUE str;
     const char *ptr;
     long len;
 {
-    if (len > 0) {
-	int poffset = -1;
+    long i, capa;
 
-	rb_str_modify(str);
-	if (RSTRING(str)->ptr <= ptr &&
-	    ptr < RSTRING(str)->ptr + RSTRING(str)->len) {
-	    poffset = ptr - RSTRING(str)->ptr;
+    rb_str_modify(str);
+    if (len > 0) {
+	if (RSTRING(str)->orig == 0 ||
+	    (FL_TEST(str, STR_NO_ORIG) && !FL_TEST(str, STR_ASSOC))) {
+	    return rb_str_buf_cat(str, ptr, len);
 	}
-	REALLOC_N(RSTRING(str)->ptr, char, RSTRING(str)->len + len + 1);
+	REALLOC_N(RSTRING(str)->ptr, char, RSTRING(str)->len+1);
 	if (ptr) {
-	    if (poffset >= 0) ptr = RSTRING(str)->ptr + poffset;
 	    memcpy(RSTRING(str)->ptr + RSTRING(str)->len, ptr, len);
+	}
+	else {
+	    MEMZERO(RSTRING(str)->ptr + RSTRING(str)->len, char, len);
 	}
 	RSTRING(str)->len += len;
 	RSTRING(str)->ptr[RSTRING(str)->len] = '\0'; /* sentinel */
     }
+
     return str;
 }
 
@@ -476,14 +553,61 @@ rb_str_cat2(str, ptr)
 }
 
 VALUE
-rb_str_append(str1, str2)
-    VALUE str1, str2;
+rb_str_buf_append(str, str2)
+    VALUE str, str2;
 {
-    StringValue(str2);
-    str1 = rb_str_cat(str1, RSTRING(str2)->ptr, RSTRING(str2)->len);
-    OBJ_INFECT(str1, str2);
+    long i, capa, len;
 
-    return str1;
+    if (RSTRING(str)->orig == 0) {
+	capa = RSTRING(str)->len;
+	FL_SET(str, STR_NO_ORIG);
+    }
+    else {
+	capa = FIX2LONG(RSTRING(str)->orig);
+    }
+
+    len = RSTRING(str)->len+RSTRING(str2)->len;
+    if (capa <= len) {
+	while (len > capa) {
+	    capa = (capa + 1) * 2;
+	}
+	REALLOC_N(RSTRING(str)->ptr, char, capa+1);
+	RSTRING(str)->orig = LONG2FIX(capa);
+    }
+    memcpy(RSTRING(str)->ptr + RSTRING(str)->len,
+	   RSTRING(str2)->ptr, RSTRING(str2)->len);
+    RSTRING(str)->len += RSTRING(str2)->len;
+    RSTRING(str)->ptr[RSTRING(str)->len] = '\0'; /* sentinel */
+
+    return str;
+}
+
+VALUE
+rb_str_append(str, str2)
+    VALUE str, str2;
+{
+    long i, capa, len;
+
+    StringValue(str2);
+    rb_str_modify(str);
+    len = RSTRING(str)->len+RSTRING(str2)->len;
+    if (len > 0) {
+	if (RSTRING(str)->orig == 0 ||
+	    (FL_TEST(str, STR_NO_ORIG) && !FL_TEST(str, STR_ASSOC))) {
+	    rb_str_buf_append(str, str2);
+	    OBJ_INFECT(str, str2);
+	    
+	    return str;
+	}
+	REALLOC_N(RSTRING(str)->ptr, char, len+1);
+	memcpy(RSTRING(str)->ptr + RSTRING(str)->len,
+	       RSTRING(str2)->ptr, RSTRING(str2)->len);
+	RSTRING(str)->len += RSTRING(str2)->len;
+	RSTRING(str)->ptr[RSTRING(str)->len] = '\0'; /* sentinel */
+    }
+    OBJ_INFECT(str, str2);
+
+    return str;
 }
 
 VALUE
@@ -998,6 +1122,7 @@ rb_str_update(str, beg, len, val)
     }
     RSTRING(str)->len += RSTRING(val)->len - len;
     RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
+    OBJ_INFECT(str, val);
 }
 
 static VALUE rb_str_sub_bang _((int, VALUE*, VALUE));
@@ -1518,7 +1643,7 @@ rb_str_inspect(str)
     VALUE str;
 {
     char *p, *pend;
-    VALUE result = rb_str_new2("\"");
+    VALUE result = rb_str_buf_new2("\"");
     char s[5];
 
     p = RSTRING(str)->ptr; pend = p + RSTRING(str)->len;
@@ -1526,51 +1651,51 @@ rb_str_inspect(str)
 	char c = *p++;
 	if (ismbchar(c) && p < pend) {
 	    int len = mbclen(c);
-	    rb_str_cat(result, p - 1, len);
+	    rb_str_buf_cat(result, p - 1, len);
 	    p += len - 1;
 	}
 	else if (c == '"'|| c == '\\') {
 	    s[0] = '\\'; s[1] = c;
-	    rb_str_cat(result, s, 2);
+	    rb_str_buf_cat(result, s, 2);
 	}
 	else if (ISPRINT(c)) {
 	    s[0] = c;
-	    rb_str_cat(result, s, 1);
+	    rb_str_buf_cat(result, s, 1);
 	}
 	else if (c == '\n') {
 	    s[0] = '\\'; s[1] = 'n';
-	    rb_str_cat(result, s, 2);
+	    rb_str_buf_cat(result, s, 2);
 	}
 	else if (c == '\r') {
 	    s[0] = '\\'; s[1] = 'r';
-	    rb_str_cat(result, s, 2);
+	    rb_str_buf_cat(result, s, 2);
 	}
 	else if (c == '\t') {
 	    s[0] = '\\'; s[1] = 't';
-	    rb_str_cat(result, s, 2);
+	    rb_str_buf_cat(result, s, 2);
 	}
 	else if (c == '\f') {
 	    s[0] = '\\'; s[1] = 'f';
-	    rb_str_cat(result, s, 2);
+	    rb_str_buf_cat(result, s, 2);
 	}
 	else if (c == '\013') {
 	    s[0] = '\\'; s[1] = 'v';
-	    rb_str_cat(result, s, 2);
+	    rb_str_buf_cat(result, s, 2);
 	}
 	else if (c == '\007') {
 	    s[0] = '\\'; s[1] = 'a';
-	    rb_str_cat(result, s, 2);
+	    rb_str_buf_cat(result, s, 2);
 	}
 	else if (c == 033) {
 	    s[0] = '\\'; s[1] = 'e';
-	    rb_str_cat(result, s, 2);
+	    rb_str_buf_cat(result, s, 2);
 	}
 	else {
 	    sprintf(s, "\\%03o", c & 0377);
-	    rb_str_cat2(result, s);
+	    rb_str_buf_cat2(result, s);
 	}
     }
-    rb_str_cat2(result, "\"");
+    rb_str_buf_cat2(result, "\"");
 
     OBJ_INFECT(result, str);
     return result;
@@ -2661,7 +2786,7 @@ rb_str_crypt(str, salt)
     StringValue(salt);
     if (RSTRING(salt)->len < 2)
 	rb_raise(rb_eArgError, "salt too short(need >=2 bytes)");
-    return rb_str_new2(crypt(RSTRING(str)->ptr, RSTRING(salt)->ptr));
+    return rb_tainted_str_new2(crypt(RSTRING(str)->ptr, RSTRING(salt)->ptr));
 }
 
 static VALUE
@@ -2738,6 +2863,7 @@ rb_str_ljust(str, w)
     while (p < pend) {
 	*p++ = ' ';
     }
+    OBJ_INFECT(res, str);
     return res;
 }
 
@@ -2757,6 +2883,7 @@ rb_str_rjust(str, w)
 	*p++ = ' ';
     }
     memcpy(pend, RSTRING(str)->ptr, RSTRING(str)->len);
+    OBJ_INFECT(res, str);
     return res;
 }
 
@@ -2782,6 +2909,7 @@ rb_str_center(str, w)
     while (p < pend) {
 	*p++ = ' ';
     }
+    OBJ_INFECT(res, str);
     return res;
 }
 

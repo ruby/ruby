@@ -358,7 +358,7 @@ inspect_struct(s)
 	rb_bug("non-initialized struct");
     }
 
-    str = rb_str_new2("#<");
+    str = rb_str_buf_new2("#<");
     rb_str_cat2(str, cname);
     rb_str_cat2(str, " ");
     for (i=0; i<RSTRUCT(s)->len; i++) {

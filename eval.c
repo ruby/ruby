@@ -15,6 +15,7 @@
 #include "ruby.h"
 #include "node.h"
 #include "env.h"
+#include "util.h"
 #include "rubysig.h"
 
 #include <stdio.h>
@@ -1213,14 +1214,14 @@ compile_error(at)
     VALUE str;
 
     ruby_nerrs = 0;
-    str = rb_str_new2("compile error");
+    str = rb_str_buf_new2("compile error");
     if (at) {
-	rb_str_cat2(str, " in ");
-	rb_str_cat2(str, at);
+	rb_str_buf_cat2(str, " in ");
+	rb_str_buf_cat2(str, at);
     }
-    rb_str_cat(str, "\n", 1);
+    rb_str_buf_cat(str, "\n", 1);
     if (!NIL_P(ruby_errinfo)) {
-	rb_str_concat(str, ruby_errinfo);
+	rb_str_append(str, ruby_errinfo);
     }
     rb_exc_raise(rb_exc_new3(rb_eSyntaxError, str));
 }
@@ -2351,9 +2352,7 @@ rb_eval(self, n)
       case NODE_YIELD:
 	if (node->nd_stts) {
 	    result = rb_eval(self, node->nd_stts);
-	    if (nd_type(node->nd_stts) == NODE_RESTARGS &&
-		RARRAY(result)->len == 1)
-	    {
+	    if (nd_type(node->nd_stts) == NODE_RESTARGS && RARRAY(result)->len == 1) {
 		result = RARRAY(result)->ptr[0];
 	    }
 	}
@@ -6752,19 +6751,19 @@ method_inspect(method)
     const char *s;
 
     Data_Get_Struct(method, struct METHOD, data);
-    str = rb_str_new2("#<");
+    str = rb_str_buf_new2("#<");
     s = rb_class2name(CLASS_OF(method));
-    rb_str_cat2(str, s);
-    rb_str_cat2(str, ": ");
+    rb_str_buf_cat2(str, s);
+    rb_str_buf_cat2(str, ": ");
     s = rb_class2name(data->oklass);
-    rb_str_cat2(str, s);
-    rb_str_cat2(str, "(");
+    rb_str_buf_cat2(str, s);
+    rb_str_buf_cat2(str, "(");
     s = rb_class2name(data->klass);
-    rb_str_cat2(str, s);
-    rb_str_cat2(str, ")#");
+    rb_str_buf_cat2(str, s);
+    rb_str_buf_cat2(str, ")#");
     s = rb_id2name(data->oid);
-    rb_str_cat2(str, s);
-    rb_str_cat2(str, ">");
+    rb_str_buf_cat2(str, s);
+    rb_str_buf_cat2(str, ">");
 
     return str;
 }

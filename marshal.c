@@ -106,7 +106,7 @@ w_byte(c, arg)
     struct dump_arg *arg;
 {
     if (arg->fp) putc(c, arg->fp);
-    else rb_str_cat(arg->str, &c, 1);
+    else rb_str_buf_cat(arg->str, &c, 1);
 }
 
 static void
@@ -540,7 +540,7 @@ marshal_dump(argc, argv)
     }
     else {
 	arg.fp = 0;
-	port = rb_str_new(0, 0);
+	port = rb_str_buf_new(0);
 	arg.str = port;
     }
 

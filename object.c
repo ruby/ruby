@@ -809,8 +809,6 @@ rb_obj_methods(obj)
     return rb_class_instance_methods(1, argv, CLASS_OF(obj));
 }
 
-VALUE rb_obj_singleton_methods();
-
 static VALUE
 rb_obj_protected_methods(obj)
     VALUE obj;
@@ -1179,7 +1177,7 @@ Init_Object()
     rb_define_method(rb_mKernel, "inspect", rb_obj_inspect, 0);
     rb_define_method(rb_mKernel, "methods", rb_obj_methods, 0);
     rb_define_method(rb_mKernel, "public_methods", rb_obj_methods, 0);
-    rb_define_method(rb_mKernel, "singleton_methods", rb_obj_singleton_methods, 0);
+    rb_define_method(rb_mKernel, "singleton_methods", rb_obj_singleton_methods, -1);
     rb_define_method(rb_mKernel, "protected_methods", rb_obj_protected_methods, 0);
     rb_define_method(rb_mKernel, "private_methods", rb_obj_private_methods, 0);
     rb_define_method(rb_mKernel, "instance_variables", rb_obj_instance_variables, 0);

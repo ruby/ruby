@@ -1,3 +1,38 @@
+Tue May 29 17:24:23 2001  K.Kosako  <kosako@sofnec.co.jp>
+
+	* ruby.c (proc_options): unexpected SecurityError happens when -T4.
+
+Tue May 29 18:46:04 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* regex.c (re_compile_pattern): * \1 .. \9 should be
+	  backreferences always.
+
+	* regex.c (re_match): backreferences corresponding to
+	  unclosed/unmatched parentheses should fail always.
+
+Tue May 29 16:35:49 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_cat): use rb_str_buf_cat() if possible. [new]
+
+	* string.c (rb_str_append): ditto.
+
+	* string.c (rb_str_buf_cat): remove unnecessary check (type,
+	  taint, modify) to gain performance.
+
+	* string.c (rb_str_buf_append): ditto.
+
+	* string.c (rb_str_buf_finish): removed.
+
+Tue May 29 02:05:55 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_buf_new): buffering string function. [new]
+
+	* string.c (rb_str_buf_append): ditto.
+
+	* string.c (rb_str_buf_cat): ditto.
+
+	* string.c (rb_str_buf_finish): ditto.
+
 Mon May 28 23:20:43 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in: remove unnecessary AC_CANONICAL_BUILD
@@ -21,6 +56,10 @@ Mon May 28 22:12:01 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 	* ext/extconf.rb.in: make the priority of the make rule of .c
 	  higher than .C .
 
+Mon May 28 13:22:19 2001  Tanaka Akira  <akr@m17n.org>
+
+	* time.c (make_time_t): local time adjustment revised.
+
 Mon May 28 02:20:38 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* dir.c (glob_helper): teach has_magic() to handle flags and get
@@ -29,9 +68,37 @@ Mon May 28 02:20:38 2001  Akinori MUSHA  <knu@iDaemons.org>
 	* dir.c (fnmatch): fix a bug when FNM_PATHNAME and FNM_PERIOD are
 	  specified at the same time.
 
+Sat May 26 09:55:26 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y: accomplish extended syntax described in [ruby-talk:14525]
+	  using tSPC token. [new, experimental]
+
 Sat May 26 07:05:45 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
 
 	* MANIFEST: add win32/dir.h .
+
+Fri May 25 20:03:51 2001  Pascal Rigaux  <pixel@mandrakesoft.com>
+
+	* dln.c (dln_find_1): should exclude directories in executable
+	  file lookup.
+
+Fri May 25 18:00:26 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* class.c (rb_obj_singleton_methods): list methods in extended
+	  modules if optional argument is true. [new]
+
+Fri May 25 14:19:25 2001  K.Kosako  <kosako@sofnec.co.jp>
+
+	* string.c (rb_str_replace): add taint status infection
+	  (OBJ_INFECT()).
+
+	* string.c (rb_str_crypt): ditto.
+
+	* string.c (rb_str_ljust): ditto.
+
+	* string.c (rb_str_rjust): ditto.
+
+	* string.c (rb_str_center): ditto.
 
 Fri May 25 05:39:03 2001  Akinori MUSHA  <knu@iDaemons.org>
 
@@ -53,6 +120,17 @@ Fri May 25 00:53:41 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/dbm/extconf.rb: fix support for *BSD and set $CFLAGS
 	  properly.
+
+Thu May 24 16:10:33 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* range.c (range_member): check based on "<=>" comparison. [new]
+
+	* range.c (range_check): add "succ" check if first end is not a
+	  numeric.
+
+	* range.c (range_eqq): comparison should based on "<=>".
+
+	* range.c (range_each): ditto.
 
 Thu May 24 16:08:21 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 

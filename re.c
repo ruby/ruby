@@ -224,51 +224,51 @@ rb_reg_expr_str(str, s, len)
 	p++;
     }
     if (!need_escape) {
-	rb_str_cat(str, s, len);
+	rb_str_buf_cat(str, s, len);
     }
     else {
 	p = s; 
 	while (p<pend) {
 	    if (*p == '/') {
 		char c = '\\';
-		rb_str_cat(str, &c, 1);
-		rb_str_cat(str, p, 1);
+		rb_str_buf_cat(str, &c, 1);
+		rb_str_buf_cat(str, p, 1);
 	    }
 	    else if (ismbchar(*p)) {
-	    	rb_str_cat(str, p, mbclen(*p));
+	    	rb_str_buf_cat(str, p, mbclen(*p));
 		p += mbclen(*p);
 		continue;
 	    }
 	    else if (ISPRINT(*p)) {
-		rb_str_cat(str, p, 1);
+		rb_str_buf_cat(str, p, 1);
 	    }
 	    else {
 		char b[8];
 		switch (*p) {
 		case '\r':
-		    rb_str_cat(str, "\\r", 2);
+		    rb_str_buf_cat(str, "\\r", 2);
 		    break;
 		case '\n':
-		    rb_str_cat(str, "\\n", 2);
+		    rb_str_buf_cat(str, "\\n", 2);
 		    break;
 		case '\t':
-		    rb_str_cat(str, "\\t", 2);
+		    rb_str_buf_cat(str, "\\t", 2);
 		    break;
 		case '\f':
-		    rb_str_cat(str, "\\f", 2);
+		    rb_str_buf_cat(str, "\\f", 2);
 		    break;
 		case 007:
-		    rb_str_cat(str, "\\a", 2);
+		    rb_str_buf_cat(str, "\\a", 2);
 		    break;
 		case 013:
-		    rb_str_cat(str, "\\v", 2);
+		    rb_str_buf_cat(str, "\\v", 2);
 		    break;
 		case 033:
-		    rb_str_cat(str, "\\e", 2);
+		    rb_str_buf_cat(str, "\\e", 2);
 		    break;
 		default:
 		    sprintf(b, "\\%03o", *p & 0377);
-		    rb_str_cat(str, b, 4);
+		    rb_str_buf_cat(str, b, 4);
 		    break;
 		}
 	    }
@@ -283,35 +283,35 @@ rb_reg_desc(s, len, re)
     int len;
     VALUE re;
 {
-    VALUE str = rb_str_new2("/");
+    VALUE str = rb_str_buf_new2("/");
 
     rb_reg_expr_str(str, s, len);
-    rb_str_cat2(str, "/");
+    rb_str_buf_cat2(str, "/");
     if (re) {
 	rb_reg_check(re);
 	/* /p is obsolete; to be removed */
 	if ((RREGEXP(re)->ptr->options & RE_OPTION_POSIXLINE) == RE_OPTION_POSIXLINE)
-	    rb_str_cat2(str, "p");
+	    rb_str_buf_cat2(str, "p");
 	else if (RREGEXP(re)->ptr->options & RE_OPTION_MULTILINE)
-	    rb_str_cat2(str, "m");
+	    rb_str_buf_cat2(str, "m");
 	if (RREGEXP(re)->ptr->options & RE_OPTION_IGNORECASE)
-	    rb_str_cat2(str, "i");
+	    rb_str_buf_cat2(str, "i");
 	if (RREGEXP(re)->ptr->options & RE_OPTION_EXTENDED)
-	    rb_str_cat2(str, "x");
+	    rb_str_buf_cat2(str, "x");
 	
 	if (FL_TEST(re, KCODE_FIXED)) {
 	    switch ((RBASIC(re)->flags & KCODE_MASK)) {
 	      case KCODE_NONE:
-		rb_str_cat2(str, "n");
+		rb_str_buf_cat2(str, "n");
 		break;
 	      case KCODE_EUC:
-		rb_str_cat2(str, "e");
+		rb_str_buf_cat2(str, "e");
 		break;
 	      case KCODE_SJIS:
-		rb_str_cat2(str, "s");
+		rb_str_buf_cat2(str, "s");
 		break;
 	      case KCODE_UTF8:
-		rb_str_cat2(str, "u");
+		rb_str_buf_cat2(str, "u");
 		break;
 	    }
 	}
@@ -1171,8 +1171,13 @@ rb_reg_regsub(str, src, regs)
 	}
 	if (c != '\\' || s == e) continue;
 
-	if (!val) val = rb_str_new(p, ss-p);
-	else      rb_str_cat(val, p, ss-p);
+	if (!val) {
+	    val = rb_str_buf_new(ss-p);
+	    rb_str_buf_cat(val, p, ss-p);
+	}
+	else {
+	    rb_str_buf_cat(val, p, ss-p);
+	}
 
 	c = *s++;
 	p = s;
@@ -1186,11 +1191,11 @@ rb_reg_regsub(str, src, regs)
 	    break;
 
 	  case '`':
-	    rb_str_cat(val, RSTRING(src)->ptr, BEG(0));
+	    rb_str_buf_cat(val, RSTRING(src)->ptr, BEG(0));
 	    continue;
 
 	  case '\'':
-	    rb_str_cat(val, RSTRING(src)->ptr+END(0), RSTRING(src)->len-END(0));
+	    rb_str_buf_cat(val, RSTRING(src)->ptr+END(0), RSTRING(src)->len-END(0));
 	    continue;
 
 	  case '+':
@@ -1200,24 +1205,29 @@ rb_reg_regsub(str, src, regs)
 	    break;
 
 	  case '\\':
-	    rb_str_cat(val, s-1, 1);
+	    rb_str_buf_cat(val, s-1, 1);
 	    continue;
 
 	  default:
-	    rb_str_cat(val, s-2, 2);
+	    rb_str_buf_cat(val, s-2, 2);
 	    continue;
 	}
 
 	if (no >= 0) {
 	    if (no >= regs->num_regs) continue;
 	    if (BEG(no) == -1) continue;
-	    rb_str_cat(val, RSTRING(src)->ptr+BEG(no), END(no)-BEG(no));
+	    rb_str_buf_cat(val, RSTRING(src)->ptr+BEG(no), END(no)-BEG(no));
 	}
     }
 
     if (p < e) {
-	if (!val) val = rb_str_new(p, e-p);
-	else      rb_str_cat(val, p, e-p);
+	if (!val) {
+	    val = rb_str_buf_new(e-p);
+	    rb_str_buf_cat(val, p, e-p);
+	}
+	else {
+	    rb_str_buf_cat(val, p, e-p);
+	}
     }
     if (!val) return str;
 
