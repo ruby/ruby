@@ -517,6 +517,11 @@ end
       assert_directory d
     end
     rm_rf 'tmpdir'
+    dirs.each do |d|
+      mkdir_p File.expand_path(d)
+      assert_directory d
+    end
+    rm_rf 'tmpdir'
 
     mkdir_p 'tmp/tmp/tmp', :mode => 0700
     assert_directory 'tmp/tmp'
