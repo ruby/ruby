@@ -4582,10 +4582,59 @@ entry_set_text(self, text)
 }
 
 static VALUE
+entry_append_text(self, text)
+    VALUE self, text;
+{
+    gtk_entry_append_text(GTK_ENTRY(get_widget(self)), STR2CSTR(text));
+    return self;
+}
+
+static VALUE
+entry_prepend_text(self, text)
+    VALUE self, text;
+{
+    gtk_entry_prepend_text(GTK_ENTRY(get_widget(self)), STR2CSTR(text));
+    return self;
+}
+
+static VALUE
+entry_set_position(self, position)
+    VALUE self, position;
+{
+    gtk_entry_set_position(GTK_ENTRY(get_widget(self)), NUM2INT(position));
+    return self;
+}
+
+static VALUE
+entry_get_text(self)
+    VALUE self;
+{
+    gchar* text;
+    text = gtk_entry_get_text(GTK_ENTRY(get_widget(self)));
+    return str_new2(text);
+}
+
+static VALUE
+entry_set_visibility(self, visibility)
+    VALUE self, visibility;
+{
+    gtk_entry_set_visibility(GTK_ENTRY(get_widget(self)), RTEST(visibility));
+    return self;
+}
+
+static VALUE
 entry_set_editable(self, editable)
     VALUE self, editable;
 {
     gtk_entry_set_editable(GTK_ENTRY(get_widget(self)), RTEST(editable));
+    return self;
+}
+
+static VALUE
+entry_set_max_length(self, max)
+    VALUE self, max;
+{
+    gtk_entry_set_max_length(GTK_ENTRY(get_widget(self)), NUM2INT(max));
     return self;
 }
 
@@ -6251,7 +6300,13 @@ Init_gtk()
     /* Entry */
     rb_define_method(gEntry, "initialize", entry_initialize, 0);
     rb_define_method(gEntry, "set_text", entry_set_text, 1);
+    rb_define_method(gEntry, "append_text", entry_append_text, 1);
+    rb_define_method(gEntry, "prepend_text", entry_prepend_text, 1);
+    rb_define_method(gEntry, "set_position", entry_set_position, 1);
+    rb_define_method(gEntry, "get_text", entry_get_text, 0);
+    rb_define_method(gEntry, "set_visibility", entry_set_visibility, 1);
     rb_define_method(gEntry, "set_editable", entry_set_editable, 1);
+    rb_define_method(gEntry, "set_max_length", entry_set_max_length, 1);
 
     /* EventBox */
     rb_define_method(gEventBox, "initialize", eventbox_initialize, 0);
@@ -6784,6 +6839,10 @@ Init_gtk()
     rb_define_const(mGdk, "IMAGE_NORMAL", INT2FIX(GDK_IMAGE_NORMAL));
     rb_define_const(mGdk, "IMAGE_SHARED", INT2FIX(GDK_IMAGE_SHARED));
     rb_define_const(mGdk, "IMAGE_FASTEST", INT2FIX(GDK_IMAGE_FASTEST));
+
+    rb_define_const(mGdk, "CURRENT_TIME", INT2FIX(GDK_CURRENT_TIME));
+    rb_define_const(mGdk, "NONE", INT2FIX(GDK_NONE));
+    rb_define_const(mGdk, "PARENT_RELATIVE", INT2FIX(GDK_PARENT_RELATIVE));
 
     argc = RARRAY(rb_argv)->len;
     argv = ALLOCA_N(char*,argc+1);
