@@ -80,7 +80,7 @@ rb_ary_new2(len)
     if (len < 0) {
 	rb_raise(rb_eArgError, "negative array size (or size too big)");
     }
-    if (len > 0 && len*sizeof(VALUE) <= 0) {
+    if (len > 0 && len*sizeof(VALUE) <= len) {
 	rb_raise(rb_eArgError, "array size too big");
     }
     ary->len = 0;
@@ -195,7 +195,7 @@ rb_ary_initialize(argc, argv, ary)
     if (len < 0) {
 	rb_raise(rb_eArgError, "negative array size");
     }
-    if (len > 0 && len*sizeof(VALUE) <= 0) {
+    if (len > 0 && len*sizeof(VALUE) <= len) {
 	rb_raise(rb_eArgError, "array size too big");
     }
     if (len > RARRAY(ary)->capa) {
@@ -958,19 +958,22 @@ sort_1(a, b)
 }
 
 static int
-sort_2(a, b)
-    VALUE *a, *b;
+sort_2(ap, bp)
+    VALUE *ap, *bp;
 {
     VALUE retval;
+    VALUE a = *ap, b = *ap;
 
-    if (FIXNUM_P(*a)) {
-	if (FIXNUM_P(*b)) return *a - *b;
+    if (FIXNUM_P(a) && FIXNUM_P(b)) {
+	if (a > b) return INT2FIX(1);
+	if (a < b) return INT2FIX(-1);
+	return INT2FIX(0);
     }
-    else if (TYPE(*a) == T_STRING && TYPE(*b) == T_STRING) {
-	return rb_str_cmp(*a, *b);
+    if (TYPE(a) == T_STRING && TYPE(b) == T_STRING) {
+	return rb_str_cmp(a, b);
     }
 
-    retval = rb_funcall(*a, cmp, 1, *b);
+    retval = rb_funcall(a, id_cmp, 1, b);
     return rb_cmpint(retval);
 }
 

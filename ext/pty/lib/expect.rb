@@ -20,8 +20,8 @@ class IO
         STDOUT.print c
         STDOUT.flush
       end
-      if buf =~ e_pat then
-        result = [buf,$1,$2,$3,$4,$5,$6,$7,$8,$9]
+      if mat=e_pat.match(buf) then
+        result = [buf,*mat.to_a[1..-1]]
         break
       end
     end

@@ -91,7 +91,7 @@ get2comp(x, carry)		/* get 2's complement */
 	for (i=1; i<RBIGNUM(x)->len; i++) {
 	    if (ds[i] != 0) return;
 	}
-	REALLOC_N(RBIGNUM(x)->digits, BDIGIT, RBIGNUM(x)->len++);
+	REALLOC_N(RBIGNUM(x)->digits, BDIGIT, ++RBIGNUM(x)->len);
 	ds = BDIGITS(x);
 	ds[RBIGNUM(x)->len-1] = 1;
     }
@@ -156,7 +156,7 @@ rb_uint2big(n)
     }
 
     i = DIGSPERLONG;
-    while (i-- && !digits[i]) ;
+    while (--i && !digits[i]) ;
     RBIGNUM(big)->len = i+1;
     return big;
 }
@@ -381,7 +381,9 @@ rb_big2str(x, base)
 	return rb_fix2str(x, base);
     }
     i = RBIGNUM(x)->len;
-    if (i == 0) return rb_str_new2("0");
+    if (i == 0 || (i == 1 && BDIGITS(x)[0] == 0)) {
+	return rb_str_new2("0");
+    }
     if (base == 10) {
 	j = (sizeof(BDIGIT)/sizeof(char)*CHAR_BIT*i*241L)/800+2;
 	hbase = 10000;

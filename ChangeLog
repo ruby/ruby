@@ -7,6 +7,29 @@ Mon Aug 19 12:38:33 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	* eval.c (win32_get_exception_list, win32_set_exception_list):
 	  added.
 
+Sat Aug 17 23:01:25 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (sort_2): *a - *b may overflow.
+
+Sat Aug 17 00:25:08 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_new2): len*sizeof(VALUE) may be a positive value.
+
+	* array.c (rb_ary_initialize): ditto.
+
+Thu Aug 15 00:48:46 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_initialize): should not modify frozen Regexp.
+
+Tue Aug 13 00:37:11 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_uint2big): there should be no zero sized bignum.
+
+Mon Aug 12 23:45:28 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/extmk.rb.in: extmake() that works properly for both tkutil
+	  (tk/tkutil.so) and digest/sha1.
+
 Wed Aug  7 09:51:54 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* hash.c (rb_hash_equal): should check default values.
