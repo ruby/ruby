@@ -36,7 +36,7 @@
 (defconst ruby-block-end-re "end")
 
 (defconst ruby-delimiter
-  (concat "[?$/%(){}#\"'`]\\|\\[\\|\\]\\|\\<\\("
+  (concat "[?$/%(){}#\"'`.:]\\|\\[\\|\\]\\|\\<\\("
 	  ruby-block-beg-re
 	  "\\|" ruby-block-end-re
 	  "\\)\\>\\|^=begin")
@@ -85,7 +85,7 @@
   (modify-syntax-entry ?# "<" ruby-mode-syntax-table)
   (modify-syntax-entry ?\n ">" ruby-mode-syntax-table)
   (modify-syntax-entry ?\\ "\\" ruby-mode-syntax-table)
-  (modify-syntax-entry ?$ "/" ruby-mode-syntax-table)
+  (modify-syntax-entry ?$ "." ruby-mode-syntax-table)
   (modify-syntax-entry ?? "_" ruby-mode-syntax-table)
   (modify-syntax-entry ?_ "_" ruby-mode-syntax-table)
   (modify-syntax-entry ?< "." ruby-mode-syntax-table)
@@ -276,7 +276,7 @@ The variable ruby-indent-level controls the amount of indentation.
 	       ((looking-at "\\$")	;skip $char
 		(goto-char pnt)
 		(forward-char 1))
-	       ((looking-at "#")		;skip comment
+	       ((looking-at "#")	;skip comment
 		(forward-line 1)
 		(goto-char (point))
 		)
@@ -315,29 +315,41 @@ The variable ruby-indent-level controls the amount of indentation.
 		  (setq nest (cdr nest))
 		  (setq depth (1- depth)))
 		(goto-char pnt))
+	       ((looking-at "def\\s *[^\n;]*\\(\\|$\\)")
+		(if (or (bolp)
+			(progn
+			  (forward-char -1)
+			  (not (eq ?_ (char-after (point))))))
+		    (progn
+		      (setq nest (cons (cons nil pnt) nest))
+		      (setq depth (1+ depth))))
+		(goto-char (match-end 0)))
 	       ((looking-at ruby-block-beg-re)
 		(and 
 		 (or (bolp)
 		     (progn
 		       (forward-char -1)
 		       (not (eq ?_ (char-after (point))))))
-		 (progn
-		   (goto-char pnt)
-		   (setq w (char-after (point)))
-		   (and (not (eq ?_ w))
-			(not (eq ?! w))
-			(not (eq ?? w))))
+		 (goto-char pnt)
+		 (setq w (char-after (point)))
+		 (not (eq ?_ w))
+		 (not (eq ?! w))
+		 (not (eq ?? w))
 		 (progn
 		   (goto-char (match-beginning 0))
 		   (if (looking-at ruby-modifier-re)
 		       (ruby-expr-beg)
 		     t))
-		 (progn
-		   (setq nest (cons (cons nil pnt) nest))
-		   (setq depth (1+ depth))))
-		(if (looking-at "def\\s *[/`]")
-		    (goto-char (match-end 0))
-		  (goto-char pnt)))
+		 (goto-char pnt)
+		 (setq nest (cons (cons nil pnt) nest))
+		 (setq depth (1+ depth)))
+		(goto-char pnt))
+	       ((looking-at ":\\([a-zA-Z_][a-zA-Z_0-9]*\\)?")
+		(goto-char (match-end 0)))
+	       ((or (looking-at "\\.\\.\\.?")
+		    (looking-at "\\.[0-9]+")
+		    (looking-at "\\.[a-zA-Z_0-9]+"))
+		(goto-char (match-end 0)))
 	       ((looking-at "^=begin")
 		(if (re-search-forward "^=end" indent-point t)
 		    (forward-line 1)

@@ -2919,14 +2919,17 @@ rb_ensure(b_proc, data1, e_proc, data2)
 {
     int state;
     volatile VALUE result = Qnil;
+    VALUE retval;
 
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
 	result = (*b_proc)(data1);
     }
     POP_TAG();
-
+    retval = prot_tag->retval;	/* save retval */
     (*e_proc)(data2);
+    return_value(retval);
+
     if (state) {
 	JUMP_TAG(state);
     }
@@ -3710,39 +3713,32 @@ obj_instance_eval(self, src)
     return eval_under(CLASS_OF(self), self, src);
 }
 
-mod_eval(arg)
-    VALUE *arg;
-{
-    return eval_under(arg[0], arg[0], arg[1]);
-}
-
-static void
-mod_eval_ensure(a)
-    int *a;
-{
-    if (a[0]) {
-	FL_TEST(the_scope, SCOPE_PRIVATE);
-    }
-    if (a[1]) {
-	FL_TEST(the_scope, SCOPE_MODFUNC);
-    }
-}
-
 static VALUE
 mod_module_eval(mod, src)
     VALUE mod, src;
 {
-    int f[2];
-    VALUE arg[2];
+    int state;
+    int private, modfunc;
+    VALUE result = Qnil;
 
-    f[0] = FL_TEST(the_scope, SCOPE_PRIVATE);
-    f[1] = FL_TEST(the_scope, SCOPE_MODFUNC);
-
+    private = FL_TEST(the_scope, SCOPE_PRIVATE);
+    modfunc = FL_TEST(the_scope, SCOPE_MODFUNC);
     FL_UNSET(the_scope, SCOPE_PRIVATE);
     FL_UNSET(the_scope, SCOPE_MODFUNC);
+    PUSH_TAG(PROT_NONE)
+    if ((state = EXEC_TAG()) == 0) {
+	result = eval_under(mod, mod, src);
+    }
+    POP_TAG();
+    if (private) {
+	FL_TEST(the_scope, SCOPE_PRIVATE);
+    }
+    if (modfunc) {
+	FL_TEST(the_scope, SCOPE_MODFUNC);
+    }
+    if (state) JUMP_TAG(state);
 
-    arg[0] = mod; arg[1] = src;
-    return rb_ensure(mod_eval, arg, mod_eval_ensure, f);
+    return result;
 }
 
 VALUE rb_load_path;
@@ -5968,18 +5964,18 @@ f_throw(argc, argv)
 static void
 return_check()
 {
+#ifdef THREAD
     struct tag *tt = prot_tag;
 
     while (tt) {
 	if (tt->tag == PROT_FUNC) {
 	    break;
 	}
-#ifdef THREAD
 	if (tt->tag == PROT_THREAD) {
 	    Raise(eThreadError, "return from within thread 0x%x",
 		  curr_thread);
 	}
-#endif
 	tt = tt->prev;
     }
+#endif
 }

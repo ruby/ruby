@@ -230,18 +230,6 @@ obj_is_kind_of(obj, c)
       case T_CLASS:
 	break;
 
-      case T_NIL:
-	if (NIL_P(obj)) return TRUE;
-	return FALSE;
-
-      case T_FALSE:
-	if (obj) return FALSE;
-	return TRUE;
-
-      case T_TRUE:
-	if (obj) return TRUE;
-	return FALSE;
-
       default:
 	TypeError("class or module required");
     }
@@ -259,6 +247,13 @@ obj_dummy(obj)
     VALUE obj;
 {
     return Qnil;
+}
+
+static VALUE
+nil_to_i(obj)
+    VALUE obj;
+{
+    return INT2FIX(0);
 }
 
 static VALUE
@@ -322,6 +317,13 @@ true_to_s(obj)
 }
 
 static VALUE
+true_to_i(obj)
+    VALUE obj;
+{
+    return INT2FIX(1);
+}
+
+static VALUE
 true_type(obj)
     VALUE obj;
 {
@@ -333,6 +335,13 @@ false_to_s(obj)
     VALUE obj;
 {
     return str_new2("false");
+}
+
+static VALUE
+false_to_i(obj)
+    VALUE obj;
+{
+    return INT2FIX(0);
 }
 
 static VALUE
@@ -874,6 +883,7 @@ Init_Object()
 
     cNilClass = rb_define_class("NilClass", cObject);
     rb_define_method(cNilClass, "type", nil_type, 0);
+    rb_define_method(cNilClass, "to_i", nil_to_i, 0);
     rb_define_method(cNilClass, "to_s", nil_to_s, 0);
     rb_define_method(cNilClass, "to_a", nil_to_a, 0);
     rb_define_method(cNilClass, "inspect", nil_inspect, 0);
@@ -931,12 +941,14 @@ Init_Object()
 
     cTrueClass = rb_define_class("TrueClass", cObject);
     rb_define_method(cTrueClass, "to_s", true_to_s, 0);
+    rb_define_method(cTrueClass, "to_i", true_to_i, 0);
     rb_define_method(cTrueClass, "type", true_type, 0);
     rb_undef_method(CLASS_OF(cTrueClass), "new");
     rb_define_global_const("TRUE", TRUE);
 
     cFalseClass = rb_define_class("FalseClass", cObject);
     rb_define_method(cFalseClass, "to_s", false_to_s, 0);
+    rb_define_method(cFalseClass, "to_i", false_to_i, 0);
     rb_define_method(cFalseClass, "type", false_type, 0);
     rb_undef_method(CLASS_OF(cFalseClass), "new");
     rb_define_global_const("FALSE", FALSE);

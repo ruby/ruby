@@ -3,6 +3,9 @@ Wed Feb 25 15:50:07 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* eval.c (mod_module_eval): clear the_scope's PRIVATE flag before
 	  calling eval().
 
+	* gc.c (gc_call_finalizer_at_exit): run finalizers before any data 
+	  object being freed.
+
 	* eval.c (rb_eval): needed to keep prot_tag->retval before
 	  evaluating the ensure clause.
 
@@ -11,8 +14,8 @@ Tue Feb 24 11:16:32 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* parse.y (yylex): reserved words can be appear as method names at
  	  right after 'def' and `.'(dot), like foo.next.
 
-	* eval.c (return_check): checks for return out of thread (formaly
-	  done in return_value).
+	* eval.c (return_check): checks for return out of thread (formerly
+ 	  done in return_value).
 
 	* eval.c (POP_TAG): copy retval to outer level.
 
@@ -25,6 +28,12 @@ Tue Feb 24 11:16:32 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* parse.y (assignable): should not assign dyna_var to true, if it
  	  is already defined.
+
+Mon Feb 23 14:35:03 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* object.c (obj_is_kind_of): no longer accepts true/false/nil.
+
+	* object.c ({true,false,nil}_to_i): can be converted into integers.
 
 Mon Feb 23 12:11:51 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

@@ -5401,6 +5401,303 @@ idiag_initialize(self)
 }
 
 static VALUE
+style_s_new(klass)
+    VALUE klass;
+{
+    return make_gstyle(gtk_style_new());
+}
+
+static VALUE
+style_attach(self, win)
+    VALUE self, win;
+{
+    return make_gstyle(gtk_style_attach(get_gstyle(self), get_gdkwindow(win)));
+}
+
+static VALUE
+style_detach(self)
+{
+    gtk_style_detach(get_gstyle(self));
+    return self;
+}
+
+static VALUE
+style_set_bg(self, win, state_type)
+    VALUE self, win, state_type;
+{
+    gtk_style_set_background(get_gstyle(self), get_gdkwindow(win),
+			     (GtkStateType)NUM2INT(state_type));
+    return self;
+}
+
+static VALUE
+style_fg(self, idx)
+    VALUE self, idx;
+{
+    int i = NUM2INT(idx);
+
+    if (i < 0 || 5 < i) ArgError("state out of range");
+    return make_gdkcolor(get_gstyle(self)->fg[i]);
+}
+
+static VALUE
+style_bg(self, idx)
+    VALUE self, idx;
+{
+    int i = NUM2INT(idx);
+
+    if (i < 0 || 5 < i) ArgError("state out of range");
+    return make_gdkcolor(get_gstyle(self)->bg[i]);
+}
+
+static VALUE
+style_light(self, idx)
+    VALUE self, idx;
+{
+    int i = NUM2INT(idx);
+
+    if (i < 0 || 5 < i) ArgError("state out of range");
+    return make_gdkcolor(get_gstyle(self)->light[i]);
+}
+
+static VALUE
+style_dark(self, idx)
+    VALUE self, idx;
+{
+    int i = NUM2INT(idx);
+
+    if (i < 0 || 5 < i) ArgError("state out of range");
+    return make_gdkcolor(get_gstyle(self)->dark[i]);
+}
+
+static VALUE
+style_mid(self, idx)
+    VALUE self, idx;
+{
+    int i = NUM2INT(idx);
+
+    if (i < 0 || 5 < i) ArgError("state out of range");
+    return make_gdkcolor(get_gstyle(self)->mid[i]);
+}
+
+static VALUE
+style_text(self, idx)
+    VALUE self, idx;
+{
+    int i = NUM2INT(idx);
+
+    if (i < 0 || 5 < i) ArgError("state out of range");
+    return make_gdkcolor(get_gstyle(self)->text[i]);
+}
+
+static VALUE
+style_base(self, idx)
+    VALUE self, idx;
+{
+    int i = NUM2INT(idx);
+
+    if (i < 0 || 5 < i) ArgError("state out of range");
+    return make_gdkcolor(get_gstyle(self)->base[i]);
+}
+
+static VALUE
+style_black(self)
+{
+    return make_gdkcolor(get_gstyle(self)->black);
+}
+
+static VALUE
+style_white(self)
+{
+    return make_gdkcolor(get_gstyle(self)->white);
+}
+
+static VALUE
+style_font(self)
+{
+    return make_gdkfont(get_gstyle(self)->font);
+}
+
+static VALUE
+style_fg_gc(self, idx)
+    VALUE self, idx;
+{
+    int i = NUM2INT(idx);
+
+    if (i < 0 || 5 < i) ArgError("state out of range");
+    return make_gdkgc(get_gstyle(self)->fg_gc[i]);
+}
+
+static VALUE
+style_bg_gc(self, idx)
+    VALUE self, idx;
+{
+    int i = NUM2INT(idx);
+
+    if (i < 0 || 5 < i) ArgError("state out of range");
+    return make_gdkgc(get_gstyle(self)->bg_gc[i]);
+}
+
+static VALUE
+style_light_gc(self, idx)
+    VALUE self, idx;
+{
+    int i = NUM2INT(idx);
+
+    if (i < 0 || 5 < i) ArgError("state out of range");
+    return make_gdkgc(get_gstyle(self)->light_gc[i]);
+}
+
+static VALUE
+style_dark_gc(self, idx)
+    VALUE self, idx;
+{
+    int i = NUM2INT(idx);
+
+    if (i < 0 || 5 < i) ArgError("state out of range");
+    return make_gdkgc(get_gstyle(self)->dark_gc[i]);
+}
+
+static VALUE
+style_mid_gc(self, idx)
+    VALUE self, idx;
+{
+    int i = NUM2INT(idx);
+
+    if (i < 0 || 5 < i) ArgError("state out of range");
+    return make_gdkgc(get_gstyle(self)->mid_gc[i]);
+}
+
+static VALUE
+style_text_gc(self, idx)
+    VALUE self, idx;
+{
+    int i = NUM2INT(idx);
+
+    if (i < 0 || 5 < i) ArgError("state out of range");
+    return make_gdkgc(get_gstyle(self)->text_gc[i]);
+}
+
+static VALUE
+style_base_gc(self, idx)
+    VALUE self, idx;
+{
+    int i = NUM2INT(idx);
+
+    if (i < 0 || 5 < i) ArgError("state out of range");
+    return make_gdkgc(get_gstyle(self)->base_gc[i]);
+}
+
+static VALUE
+style_black_gc(self)
+{
+    return make_gdkgc(get_gstyle(self)->black_gc);
+}
+
+static VALUE
+style_white_gc(self)
+{
+    return make_gdkgc(get_gstyle(self)->white_gc);
+}
+
+static VALUE
+style_bg_pixmap(self, idx)
+    VALUE self, idx;
+{
+    int i = NUM2INT(idx);
+
+    if (i < 0 || 5 < i) ArgError("state out of range");
+    return make_gdkpixmap(get_gstyle(self)->bg_pixmap[i]);
+}
+
+
+#if 0
+static VALUE
+style_draw_hline(self, win, state_type, x1, x2, y)
+    VALUE self, win, type, x1, x2, y;
+{
+    gtk_draw_hline(get_gstyle(self), get_gdkwindow(win),
+		   (GtkStateType)NUM2INT(state_type),
+		   NUM2INT(x1), NUM2INT(x2), NUM2INT(y));
+    return self;
+}
+
+static VALUE
+style_draw_vline(self, win, state_type, y1, y2, x)
+    VALUE self,win,type,y1,y2,x;
+{
+    gtk_draw_vline(get_gstyle(self), get_gdkwindow(win),
+		   (GtkStateType)NUM2INT(state_type),
+		   NUM2INT(y1), NUM2INT(y2), NUM2INT(x));
+    return self;
+}
+
+static VALUE
+style_draw_shadow(self,win,state_type,shadow_type,x,y,w,h)
+    VALUE self,win,state_type,shadow_type,x,y,w,h;
+{
+    gtk_draw_shadow(get_gstyle(self), get_gdkwindow(win),
+		    (GtkStateType)NUM2INT(state_type),
+		    (GtkShadowType)NUM2INT(shadow_type),
+		    NUM2INT(x), NUM2INT(y), 
+		    NUM2INT(w), NUM2INT(h));
+    return self;
+}
+
+static VALUE
+style_draw_polygon(self,win,state_type,shadow_type,pnts,fill)
+    VALUE self,win,state_type,shadow_type,pnts,fill;
+{
+    GdkPoint *points;
+    int i;
+
+    Check_Type(pnts, T_ARRAY);
+    points = ALLOCA_N(GdkPoint,RARRAY(pnts)->len);
+    for (i=0; i<RARRAY(pnts)->len; i++) {
+	Check_Type(RARRAY(pnts)->ptr[i], T_ARRAY);
+	if (RARRAY(RARRAY(pnts)->ptr[i])->len < 2) {
+	    ArgError("point %d should be array of size 2", i);
+	}
+	points[i].x = NUM2INT(RARRAY(RARRAY(pnts)->ptr[i])->ptr[0]);
+	points[i].y = NUM2INT(RARRAY(RARRAY(pnts)->ptr[i])->ptr[1]);
+    }
+
+    gtk_draw_polygon(get_gstyle(self), get_gdkwindow(win),
+		     (GtkStateType)NUM2INT(state_type),
+		     (GtkShadowType)NUM2INT(shadow_type),
+		     points, RARRAY(pnts)->len,
+		     RTEST(fill));
+    return self;
+}
+
+static VALUE
+style_draw_arrow(self,)		/* 9 */
+{
+    gtk_draw_polygon(get_gstyle(self), get_gdkwindow(win),
+		     (GtkStateType)NUM2INT(state_type),
+		     (GtkShadowType)NUM2INT(shadow_type),
+		     points, RARRAY(pnts)->len,
+		     RTEST(fill));
+    return self;
+}
+
+static VALUE
+style_draw_diamond(self,)	/* 7 */
+{
+}
+
+static VALUE
+style_draw_oval(self,)		/* 7 */
+{
+}
+
+static VALUE
+style_draw_string(self,)	/* 5 */
+{
+}
+#endif
+
+static VALUE
 gtk_m_main(self)
     VALUE self;
 {
@@ -5726,7 +6023,7 @@ Init_gtk()
 
     mGtk = rb_define_module("Gtk");
 
-    gObject = rb_define_class_under(mGtk, "GtkObject", cObject);
+    gObject = rb_define_class_under(mGtk, "Object", cObject);
     gWidget = rb_define_class_under(mGtk, "Widget", gObject);
     gContainer = rb_define_class_under(mGtk, "Container", gWidget);
     gBin = rb_define_class_under(mGtk, "Bin", gContainer);
@@ -6397,6 +6694,40 @@ Init_gtk()
 
     /* AcceleratorTable */
     /* Style */
+    rb_define_singleton_method(gStyle, "new", style_s_new, 0);
+    rb_define_method(gStyle, "attach", style_attach, 1);
+    rb_define_method(gStyle, "detach", style_detach, 0);
+    rb_define_method(gStyle, "set_background", style_set_bg, 0);
+    rb_define_method(gStyle, "fg", style_fg, 1);
+    rb_define_method(gStyle, "bg", style_bg, 1);
+    rb_define_method(gStyle, "light", style_light, 1);
+    rb_define_method(gStyle, "dark", style_dark, 1);
+    rb_define_method(gStyle, "mid", style_mid, 1);
+    rb_define_method(gStyle, "text", style_text, 1);
+    rb_define_method(gStyle, "base", style_base, 1);
+    rb_define_method(gStyle, "black", style_black, 0);
+    rb_define_method(gStyle, "white", style_white, 0);
+    rb_define_method(gStyle, "font", style_font, 0);
+    rb_define_method(gStyle, "fg_gc", style_fg_gc, 1);
+    rb_define_method(gStyle, "bg_gc", style_bg_gc, 1);
+    rb_define_method(gStyle, "light_gc", style_light_gc, 1);
+    rb_define_method(gStyle, "dark_gc", style_dark_gc, 1);
+    rb_define_method(gStyle, "mid_gc", style_mid_gc, 1);
+    rb_define_method(gStyle, "text_gc", style_text_gc, 1);
+    rb_define_method(gStyle, "base_gc", style_base_gc, 1);
+    rb_define_method(gStyle, "black_gc", style_black_gc, 0);
+    rb_define_method(gStyle, "white_gc", style_white_gc, 0);
+    rb_define_method(gStyle, "bg_pixmap", style_bg_pixmap, 1);
+#if 0
+    rb_define_method(gStyle, "draw_hline", style_draw_hline, 5);
+    rb_define_method(gStyle, "draw_vline", style_draw_vline, 5);
+    rb_define_method(gStyle, "draw_shadow", style_draw_shadow, 7);
+    rb_define_method(gStyle, "draw_polygon", style_draw_polygon, 6);
+    rb_define_method(gStyle, "draw_arrow", style_draw_arrow, 9);
+    rb_define_method(gStyle, "draw_diamond", style_draw_diamond, 7);
+    rb_define_method(gStyle, "draw_oval", style_draw_oval, 7);
+    rb_define_method(gStyle, "draw_string", style_draw_string, 5);
+#endif
 
     /* Gtk module */
     rb_define_module_function(mGtk, "main", gtk_m_main, 0);
