@@ -10,27 +10,9 @@
   All the files in this distribution are covered under the Ruby's
   license (see the file COPYING).
 
+  Documentation by Yukihiro Matsumoto and Gavin Sinclair.
+
 **********************************************************************/
-
-/*
-=begin
-= Summary
-Ruby extension for codeset conversion.
-
-= Abstract
-Iconv is a wrapper class for UNIX 95 (({iconv()})) function family, which
-translates string between various coding systems.
-
-See ((<Open Group|URL:http://www.opengroup.org/>))'s on-line documents for more details.
-* ((<iconv.h|URL:http://www.opengroup.org/onlinepubs/007908799/xsh/iconv.h.html>))
-* ((<iconv_open()|URL:http://www.opengroup.org/onlinepubs/007908799/xsh/iconv_open.html>))
-* ((<iconv()|URL:http://www.opengroup.org/onlinepubs/007908799/xsh/iconv.html>))
-* ((<iconv_close()|URL:http://www.opengroup.org/onlinepubs/007908799/xsh/iconv_close.html>))
-
-Which coding systems are available, it depends on the platform.
-
-=end
-*/
 
 #include "ruby.h"
 #include <errno.h>
@@ -79,18 +61,6 @@ static VALUE iconv_init_state _((VALUE cd));
 static VALUE iconv_finish _((VALUE self));
 static VALUE iconv_iconv _((int argc, VALUE *argv, VALUE self));
 
-
-/*
-=begin
-= Classes & Modules
-=end
-*/
-
-/*
-=begin
-== Iconv
-=end
-*/
 static VALUE charset_map;
 
 static VALUE charset_map_get _((void))
@@ -718,29 +688,27 @@ iconv_iconv
 			 NULL);
 }
 
-
 /*
-=begin
-= Exceptions
-=end
-*/
-/*
-=begin
-== Iconv::Failure
-Base exceptional attributes from ((<Iconv>)).
-
-=== Instance methods
-=end
-*/
-/*
-=begin
---- Iconv::Failure#success
-    Returns string(s) translated successfully until the exception occurred.
-    * In the case of failure occurred within ((<Iconv.iconv>)), returned
-      value is an array of strings translated successfully preceding
-      failure and the last element is string on the way.
-=end
-*/
+ * Document-class: Iconv::Failure
+ *
+ * Base attributes for Iconv exceptions.
+ * 
+ * === Iconv::Failure#success
+ *
+ * Returns string(s) translated successfully until the exception occurred.
+ * * In the case of failure occurred within Iconv.iconv, returned
+ *   value is an array of strings translated successfully preceding
+ *   failure and the last element is string on the way.
+ *
+ * === Iconv::Failure#failed
+ * 
+ * Returns substring of the original string passed to Iconv that starts at the
+ * character caused the exception. 
+ *
+ * === Iconv::Failure#inspect
+ *
+ * Returns inspected string like as: #<_class_: _success_, _failed_>
+ */
 static VALUE
 iconv_failure_success
 #ifdef HAVE_PROTOTYPES
@@ -754,12 +722,8 @@ iconv_failure_success
 }
 
 /*
-=begin
---- Iconv::Failure#failed
-    Returns substring of the original string passed to ((<Iconv>)) that
-    starts at the character caused the exception. 
-=end
-*/
+ * Comment!
+ */
 static VALUE
 iconv_failure_failed
 #ifdef HAVE_PROTOTYPES
@@ -772,12 +736,6 @@ iconv_failure_failed
     return rb_attr_get(self, rb_failed);
 }
 
-/*
-=begin
---- Iconv::Failure#inspect
-    Returns inspected string like as: #<(({type})): "(({success}))", "(({failed}))">
-=end
-*/
 static VALUE
 iconv_failure_inspect
 #ifdef HAVE_PROTOTYPES
@@ -799,35 +757,97 @@ iconv_failure_inspect
 }
 
 /*
-  Hmmm, I don't like to write RD inside of function :-<.
+ * Document-class: Iconv::IllegalSequence
+ * 
+ * Input conversion stopped due to an input byte that does not belong to
+ * the input codeset, or the output codeset does not contain the
+ * character.
+ * 
+ * === Superclass
+ * 
+ * ArgumentError
+ * 
+ * === Included Modules
+ * 
+ * Iconv::Failure
+ */
 
-=begin
-== Iconv::IllegalSequence
-Input conversion stopped due to an input byte that does not belong to
-the input codeset, or the output codeset does not contain the
-character.
-=== Superclass
-(({ArgumentError}))
-=== Included Modules
-((<Iconv::Failure>))
+/*
+ * Document-class: Iconv::InvalidCharacter
+ * 
+ * Input conversion stopped due to an incomplete character or shift
+ * sequence at the end of the input buffer.
+ * 
+ * === Superclass
+ * 
+ * ArgumentError
+ * 
+ * === Included Modules
+ * 
+ * Iconv::Failure
+ */
 
-== Iconv::InvalidCharacter
-Input conversion stopped due to an incomplete character or shift
-sequence at the end of the input buffer.
-=== Superclass
-(({ArgumentError}))
-=== Included Modules
-((<Iconv::Failure>))
+/*
+ * Document-class: Iconv::OutOfRange
+ * 
+ * Iconv library internal error.  Must not occur.
+ * 
+ * === Superclass
+ * 
+ * RuntimeError
+ * 
+ * === Included Modules
+ * 
+ * Iconv::Failure
+ */
 
-== Iconv::OutOfRange
-Iconv library internal error.  Must not occur.
-=== Superclass
-(({RuntimeError}))
-=== Included Modules
-((<Iconv::Failure>))
-=end
-*/
-
+/*
+ * Document-class: Iconv
+ *
+ * == Summary
+ *
+ * Ruby extension for charset conversion.
+ * 
+ * == Abstract
+ *
+ * Iconv is a wrapper class for the UNIX 95 <tt>iconv()</tt> function family,
+ * which translates string between various encoding systems.
+ * 
+ * See Open Group's on-line documents for more details.
+ * * <tt>iconv.h</tt>:       http://www.opengroup.org/onlinepubs/007908799/xsh/iconv.h.html
+ * * <tt>iconv_open()</tt>:  http://www.opengroup.org/onlinepubs/007908799/xsh/iconv_open.html
+ * * <tt>iconv()</tt>:       http://www.opengroup.org/onlinepubs/007908799/xsh/iconv.html
+ * * <tt>iconv_close()</tt>: http://www.opengroup.org/onlinepubs/007908799/xsh/iconv_close.html
+ * 
+ * Which coding systems are available is platform-dependent.
+ * 
+ * == Examples
+ *
+ * 1. Instantiate a new Iconv and use method Iconv#iconv.
+ *
+ *      cd = Iconv.new(to, from)
+ *      begin
+ *        input.each { |s| output << cd.iconv(s) }
+ *        output << cd.iconv(nil)                   # Don't forget this!
+ *      ensure
+ *        cd.close
+ *      end
+ *
+ * 2. Invoke Iconv.open with a block.
+ *
+ *      Iconv.open(to, from) do |cd|
+ *        input.each { |s| output << cd.iconv(s) }
+ *        output << cd.iconv(nil)
+ *      end
+ *
+ * 3. Shorthand for (2).
+ *
+ *      Iconv.iconv(to, from, *input.to_a)
+ *
+ * 4. Simple conversion between two charsets.
+ *
+ *      converted_text = Iconv.new('iso-8859-15', 'utf-8').iconv(text)
+ */
 void
 Init_iconv _((void))
 {
@@ -862,24 +882,3 @@ Init_iconv _((void))
     rb_define_singleton_method(rb_cIconv, "charset_map", charset_map_get, 0);
 }
 
-
-/*
-=begin
-== Example
-(1) Instantiate a new ((<Iconv>)), use method ((<Iconv#iconv>)).
-      cd = Iconv.new(to, from)
-      begin
-        input.each {|s| output << cd.iconv(s)}
-        output << cd.iconv(nil)      # don't forget this
-      ensure
-        cd.close
-      end
-(2) Invoke ((<Iconv.open>)) with a block.
-      Iconv.open(to, from) do |cd|
-        input.each {|s| output << cd.iconv(s)}
-        output << cd.iconv(nil)
-      end
-(3) Shorthand for (2).
-      Iconv.iconv(to, from, *input.to_a)
-=end
-*/

@@ -1,4 +1,5 @@
 #! /usr/bin/ruby
+# :stopdoc:
 require 'rbconfig'
 
 # http://www.ctan.org/tex-archive/macros/texinfo/texinfo/intl/config.charset
