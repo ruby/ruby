@@ -1,4 +1,7 @@
-Wed Dec  3 11:36:42 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Dec  3 13:28:13 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (lex.c): try gperf first, and copy from the source
+	  directory if failed.  [ruby-dev:22123]
 
 	* ext/extmk.rb (MTIMES): let makefiles depend to mkmf.rb.
 
