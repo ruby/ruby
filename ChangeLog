@@ -1,3 +1,29 @@
+Wed Oct 15 00:20:15 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tcltklib/tcltklib.c: replace Tcl/Tk's vwait and tkwait to
+	  switch on threads smoothly and avoid seg-fault.
+
+	* ext/tcltklib/tcltklib.c: add TclTkIp._thread_vwait and
+	  _thread_tkwait for waiting on a thread. (Because Tcl/Tk's vwait
+	  and tkwait command wait on an eventloop.)
+
+	* ext/tk/lib/multi-tk.rb: support TclTkIp._thread_vwait and
+	  _thread_tkwait.
+
+	* ext/tk/lib/tk.rb: now, TkVariable#wait has 2 arguments. 
+	  If 1st argument is true, waits on a thread. If false, waits on
+	  an eventloop. If 2nd argument is true, checks existence of
+	  rootwidgets. If false, doesn't. Default is wait(true, false).
+
+	* ext/tk/lib/tk.rb: add TkVariable#tkwait(arg) which is equal to
+	  TkVariable#wait(arg, true). wait_visibility and wait_destroy
+	  have an argument for waiting on a thread or an eventloop.
+
+	* ext/tk/lib/tk.rb: improve of accessing Tcl/Tk's special variables.
+
+	* ext/tk/lib/tkafter.rb: support 'wait on a thread' and 'wait on
+	  an eventloop'.
+
 Wed Oct 15 00:10:24 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/soap/baseData.rb: Introduce SOAPType as the common ancestor of

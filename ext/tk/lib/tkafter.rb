@@ -82,6 +82,7 @@ class TkTimer
     if @running == false || @proc_max == 0 || @do_loop == 0
       Tk_CBTBL.delete(@id) ;# for GC
       @running = false
+      @wait_var.value = 0
       return
     end
     if @current_pos >= @proc_max
@@ -90,6 +91,7 @@ class TkTimer
       else
 	Tk_CBTBL.delete(@id) ;# for GC
 	@running = false
+	@wait_var.value = 0
 	return
       end
     end
@@ -113,6 +115,8 @@ class TkTimer
   def initialize(*args)
     @id = Tk_CBID.join
     Tk_CBID[1].succ!
+
+    @wait_var = TkVariable.new(0)
 
     # @cb_cmd = TkCore::INTERP.get_cb_entry(self.method(:do_callback))
     @cb_cmd = TkCore::INTERP.get_cb_entry(proc{
@@ -338,6 +342,7 @@ class TkTimer
 
   def cancel
     @running = false
+    @wait_var.value = 0
     tk_call 'after', 'cancel', @after_id if @after_id
     @after_id = nil
     Tk_CBTBL.delete(@id) ;# for GC
@@ -377,6 +382,30 @@ class TkTimer
     else
       nil
     end
+  end
+
+  def wait(on_thread = true, check_root = false)
+    if $SAFE >= 4
+      fail SecurityError, "can't wait timer at $SAFE >= 4"
+    end
+    return self unless @running
+    @wait_var.wait(on_thread, check_root)
+    self
+  end
+  def eventloop_wait(check_root = false)
+    wait(false, check_root)
+  end
+  def thread_wait(check_root = false)
+    wait(true, check_root)
+  end
+  def tkwait(on_thread = true)
+    wait(on_thread, true)
+  end
+  def eventloop_tkwait
+    wait(false, true)
+  end
+  def thread_tkwait
+    wait(true, true)
   end
 end
 

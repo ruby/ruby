@@ -306,7 +306,8 @@ class MultiTkIp
     # check 'display'
     if !new_keys.key?('display')
       begin
-	new_keys['display'] = @interp._eval('winfo screen .')
+	#new_keys['display'] = @interp._invoke('winfo screen .')
+	new_keys['display'] = @interp._invoke('winfo', 'screen', '.')
       rescue
 	if ENV[DISPLAY]
 	  new_keys['display'] = ENV[DISPLAY]
@@ -323,7 +324,8 @@ class MultiTkIp
       case new_keys['use']
       when TkWindow
 	new_keys['use'] = TkWinfo.id(new_keys['use'])
-	assoc_display = @interp._eval('winfo screen .')
+	#assoc_display = @interp._eval('winfo screen .')
+	assoc_display = @interp._invoke('winfo', 'screen', '.')
       when /^\..*/
 	new_keys['use'] = @interp._invoke('winfo', 'id', new_keys['use'])
 	assoc_display = @interp._invoke('winfo', 'screen', new_keys['use'])
@@ -925,6 +927,14 @@ class << MultiTkIp
     __getip._fromUTF8(str, encoding)
   end
 
+  def _thread_vwait(var)
+    __getip._thread_vwait(var)
+  end
+
+  def _thread_tkwait(mode, target)
+    __getip._thread_tkwait(mode, target)
+  end
+
   def _return_value
     __getip._return_value
   end
@@ -1037,6 +1047,14 @@ class MultiTkIp
 
   def _fromUTF8(str, encoding)
     @interp._fromUTF8(str, encoding)
+  end
+
+  def _thread_vwait(var)
+    @interp._thread_vwait(var)
+  end
+
+  def _thread_tkwait(mode, target)
+    @interp._thread_tkwait(mode, target)
   end
 
   def _return_value

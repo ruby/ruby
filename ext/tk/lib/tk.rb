@@ -1089,35 +1089,72 @@ module Tk
   extend Tk
 
   TCL_VERSION = INTERP._invoke("info", "tclversion").freeze
-  TK_VERSION  = INTERP._invoke("set", "tk_version").freeze
-
   TCL_PATCHLEVEL = INTERP._invoke("info", "patchlevel").freeze
+
+  TK_VERSION  = INTERP._invoke("set", "tk_version").freeze
   TK_PATCHLEVEL  = INTERP._invoke("set", "tk_patchLevel").freeze
 
-  TCL_LIBRARY = INTERP._invoke("set", "tcl_library").freeze
-  TK_LIBRARY  = INTERP._invoke("set", "tk_library").freeze
-  LIBRARY     = INTERP._invoke("info", "library").freeze
-
-  PLATFORM = Hash[*tk_split_simplelist(INTERP._invoke('array', 'get', 
-						      'tcl_platform'))]
-  PLATFORM.each{|k, v| k.freeze; v.freeze}
-  PLATFORM.freeze
-
-  TK_PREV = {}
-  Hash[*tk_split_simplelist(INTERP._invoke('array','get','tkPriv'))].each{|k,v|
-    k.freeze
-    case v
-    when /^-?\d+$/
-      TK_PREV[k] = v.to_i
-    when /^-?\d+\.?\d*(e[-+]?\d+)?$/
-      TK_PREV[k] = v.to_f
-    else
-      TK_PREV[k] = v.freeze
-    end
-  }
-  TK_PREV.freeze
-
   JAPANIZED_TK = (INTERP._invoke("info", "commands", "kanji") != "").freeze
+
+  def Tk.const_missing(sym)
+    case(sym)
+    when :TCL_LIBRARY
+      INTERP._invoke("set", "tcl_library").freeze
+
+    when :TK_LIBRARY
+      INTERP._invoke("set", "tk_library").freeze
+
+    when :LIBRARY
+      INTERP._invoke("info", "library").freeze
+
+    #when :PKG_PATH, :PACKAGE_PATH, :TCL_PACKAGE_PATH
+    #  tk_split_simplelist(INTERP._invoke('set', 'tcl_pkgPath'))
+
+    #when :LIB_PATH, :LIBRARY_PATH, :TCL_LIBRARY_PATH
+    #  tk_split_simplelist(INTERP._invoke('set', 'tcl_libPath'))
+
+    when :PLATFORM, :TCL_PLATFORM
+      Hash[*tk_split_simplelist(INTERP._invoke('array', 'get', 
+					       'tcl_platform'))]
+
+    when :ENV
+      Hash[*tk_split_simplelist(INTERP._invoke('array', 'get', 'env'))]
+
+    #when :AUTO_PATH   #<=== 
+    #  tk_split_simplelist(INTERP._invoke('set', 'auto_path'))
+
+    #when :AUTO_OLDPATH
+    #  tk_split_simplelist(INTERP._invoke('set', 'auto_oldpath'))
+
+    when :AUTO_INDEX
+      Hash[*tk_split_simplelist(INTERP._invoke('array', 'get', 'auto_index'))]
+
+    when :PRIV, :PRIVATE, :TK_PRIV
+      priv = {}
+      if INTERP._invoke('info', 'vars', 'tk::Priv') != ""
+	var_nam = 'tk::Priv'
+      else
+	var_nam = 'tkPriv'
+      end
+      Hash[*tk_split_simplelist(INTERP._invoke('array', 'get', 
+					       var_nam))].each{|k,v|
+	k.freeze
+	case v
+	when /^-?\d+$/
+	  priv[k] = v.to_i
+	when /^-?\d+\.?\d*(e[-+]?\d+)?$/
+	  priv[k] = v.to_f
+	else
+	  priv[k] = v.freeze
+	end
+      }
+      priv
+
+    else
+      raise NameError, 'uninitialized constant Tk::' + sym.id2name
+    end
+  end
+
 
   def root
     TkRoot.new
@@ -1709,7 +1746,8 @@ class TkVariable
 
   include Comparable
 
-  TkCommandNames = ['tkwait'.freeze].freeze
+  #TkCommandNames = ['tkwait'.freeze].freeze
+  TkCommandNames = ['vwait'.freeze].freeze
 
   #TkVar_CB_TBL = {}
   #TkVar_ID_TBL = {}
@@ -1768,8 +1806,38 @@ class TkVariable
     end
   end
 
-  def wait
-    INTERP._eval("tkwait variable #{@id}")
+  def wait(on_thread = false, check_root = false)
+    if $SAFE >= 4
+      fail SecurityError, "can't wait variable at $SAFE >= 4"
+    end
+    if on_thread
+      if check_root
+	INTERP._thread_tkwait('variable', @id)
+      else
+	INTERP._thread_vwait(@id)
+      end
+    else 
+      if check_root
+	INTERP._invoke('tkwait', 'variable', @id)
+      else
+	INTERP._invoke('vwait', @id)
+      end
+    end
+  end
+  def eventloop_wait(check_root = false)
+    wait(false, check_root)
+  end
+  def thread_wait(check_root = false)
+    wait(true, check_root)
+  end
+  def tkwait(on_thread = true)
+    wait(on_thread, true)
+  end
+  def eventloop_tkwait
+    wait(false, true)
+  end
+  def thread_tkwait
+    wait(true, true)
   end
 
   def id
@@ -2178,8 +2246,13 @@ module Tk
     end
   end
   AUTO_PATH = TkVarAccess.new('auto_path', auto_path)
+  AUTO_OLDPATH = TkVarAccess.new('auto_oldpath', auto_path)
 
   TCL_PACKAGE_PATH = TkVarAccess.new('tcl_pkgPath')
+  PACKAGE_PATH = TCL_PACKAGE_PATH
+
+  TCL_LIBRARY_PATH = TkVarAccess.new('tcl_libPath')
+  LIBRARY_PATH = TCL_LIBRARY_PATH
 
   TCL_PRECISION = TkVarAccess.new('tcl_precision')
 end
@@ -4167,14 +4240,50 @@ class TkWindow<TkObject
     uninstall_win
   end
 
-  def wait_visibility
-    tk_call 'tkwait', 'visibility', path
+  def wait_visibility(on_thread = true)
+    if $SAFE >= 4
+      fail SecurityError, "can't wait visibility at $SAFE >= 4"
+    end
+    if on_thread
+      INTERP._thread_tkwait('visibility', path)
+    else
+      INTERP._invoke('tkwait', 'visibility', path)
+    end
+  end
+  def eventloop_wait_visibility
+    wait_visibility(false)
+  end
+  def thread_wait_visibility
+    wait_visibility(true)
   end
   alias wait wait_visibility
+  alias tkwait wait_visibility
+  alias eventloop_wait eventloop_wait_visibility
+  alias eventloop_tkwait eventloop_wait_visibility
+  alias eventloop_tkwait_visibility eventloop_wait_visibility
+  alias thread_wait thread_wait_visibility
+  alias thread_tkwait thread_wait_visibility
+  alias thread_tkwait_visibility thread_wait_visibility
 
-  def wait_destroy
-    tk_call 'tkwait', 'window', epath
+  def wait_destroy(on_thread = true)
+    if $SAFE >= 4
+      fail SecurityError, "can't wait destroy at $SAFE >= 4"
+    end
+    if on_thread
+      INTERP._thread_tkwait('window', epath)
+    else
+      INTERP._invoke('tkwait', 'window', epath)
+    end
   end
+  def eventloop_wait_destroy
+    wait_destroy(false)
+  end
+  def thread_wait_destroy
+    wait_destroy(true)
+  end
+  alias tkwait_destroy wait_destroy
+  alias eventloop_tkwait_destroy eventloop_wait_destroy
+  alias thread_tkwait_destroy thread_wait_destroy
 
   def bindtags(taglist=nil)
     if taglist

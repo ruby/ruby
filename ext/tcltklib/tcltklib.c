@@ -39,6 +39,7 @@ static VALUE eTkCallbackBreak;
 static VALUE eTkCallbackContinue;
 
 static VALUE ip_invoke_real _((int, VALUE*, VALUE));
+static VALUE ip_invoke _((int, VALUE*, VALUE));
 
 /* from tkAppInit.c */
 
@@ -81,7 +82,7 @@ Tcl_Interp  *current_interp;
 #define DEFAULT_NO_EVENT_WAIT      20/*milliseconds ( 1 -- 999 ) */
 #define WATCHDOG_INTERVAL          10/*milliseconds ( 1 -- 999 ) */
 #define DEFAULT_TIMER_TICK          0/*milliseconds ( 0 -- 999 ) */
-#define NO_THREAD_INTERRUPT_TIME  200/*milliseconds ( 1 -- 999 ) */
+#define NO_THREAD_INTERRUPT_TIME  100/*milliseconds ( 1 -- 999 ) */
 
 static int event_loop_max = DEFAULT_EVENT_LOOP_MAX;
 static int no_event_tick  = DEFAULT_NO_EVENT_TICK;
@@ -93,6 +94,8 @@ static int run_timer_flag = 0;
 static int event_loop_wait_event   = 0;
 static int event_loop_abort_on_exc = 1;
 static int loop_counter = 0;
+
+static int check_rootwidget_flag = 0;
 
 #if TCL_MAJOR_VERSION >= 8
 static int ip_ruby _((ClientData, Tcl_Interp *, int, Tcl_Obj *CONST*));
@@ -357,13 +360,13 @@ lib_num_of_mainwindows(self)
     return INT2FIX(Tk_GetNumMainWindows());
 }
 
-VALUE
-lib_mainloop_core(check_root_widget)
-    VALUE check_root_widget;
+static int
+lib_eventloop_core(check_root, check_var)
+    int check_root;
+    int *check_var;
 {
     VALUE current = eventloop_thread;
-    int check = RTEST(check_root_widget);
-    int tick_counter;
+    int found_event = 1;
     struct timeval t;
 
     t.tv_sec = (time_t)0;
@@ -390,38 +393,58 @@ lib_mainloop_core(check_root_widget)
 						    (ClientData)0);
 	    }
 
-	    Tcl_DoOneEvent(TCL_ALL_EVENTS);
+	    if (check_var != (int *)NULL) {
+		if (*check_var || !found_event) {
+		    return found_event;
+		}
+	    }
+
+	    found_event = Tcl_DoOneEvent(TCL_ALL_EVENTS);
 
 	    if (loop_counter++ > 30000) {
 		loop_counter = 0;
 	    }
 
 	    if (run_timer_flag) {
+		/* 
 		DUMP1("timer interrupt");
 		run_timer_flag = 0;
 		DUMP1("call rb_trap_exec()");
 		rb_trap_exec();
+		*/
 		DUMP1("check Root Widget");
-		if (check && Tk_GetNumMainWindows() == 0) {
-		    return Qnil;
+		if (check_root && Tk_GetNumMainWindows() == 0) {
+		    run_timer_flag = 0;
+		    rb_trap_exec();
+		    return 1;
 		}
 	    }
 
 	} else {
+	    int tick_counter;
+
 	    DUMP1("there are other threads");
 	    event_loop_wait_event = 1;
+
+	    found_event = 1;
 
 	    timer_tick = req_timer_tick;
 	    tick_counter = 0;
 	    while(tick_counter < event_loop_max) {
+		if (check_var != (int *)NULL) {
+		    if (*check_var || !found_event) {
+			return found_event;
+		    }
+		}
+
 		if (Tcl_DoOneEvent(TCL_ALL_EVENTS | TCL_DONT_WAIT)) {
 		    tick_counter++;
 		} else {
 		    tick_counter += no_event_tick;
 
 		    DUMP1("check Root Widget");
-		    if (check && Tk_GetNumMainWindows() == 0) {
-			return Qnil;
+		    if (check_root && Tk_GetNumMainWindows() == 0) {
+			return 1;
 		    }
 
 		    rb_thread_wait_for(t);
@@ -432,35 +455,57 @@ lib_mainloop_core(check_root_widget)
 		}
 
 		if (watchdog_thread != 0 && eventloop_thread != current) {
-		    return Qnil;
+		    return 1;
 		}
 
 		if (run_timer_flag) {
+		    /*
 		    DUMP1("timer interrupt");
 		    run_timer_flag = 0;
+		    */
 		    break; /* switch to other thread */
 		}
 	    }
 
 	    DUMP1("check Root Widget");
-	    if (check && Tk_GetNumMainWindows() == 0) {
-		return Qnil;
+	    if (check_root && Tk_GetNumMainWindows() == 0) {
+		return 1;
 	    }
 	}
 
-	rb_thread_schedule();
+	/* rb_thread_schedule(); */
+	if (run_timer_flag) {
+	    run_timer_flag = 0;
+	    rb_trap_exec();
+	} else {
+            DUMP1("thread scheduling");
+	    rb_thread_schedule();
+	}
     }
-    return Qnil;
+    return 1;
 }
 
 VALUE
-lib_mainloop_ensure(parent_evloop)
+lib_eventloop_main(check_rootwidget)
+    VALUE check_rootwidget;
+{
+    check_rootwidget_flag = RTEST(check_rootwidget);
+
+    if (lib_eventloop_core(check_rootwidget_flag, (int *)NULL)) {
+	return Qtrue;
+    } else {
+	return Qfalse;
+    }
+}
+
+VALUE
+lib_eventloop_ensure(parent_evloop)
     VALUE parent_evloop;
 {
     Tk_DeleteTimerHandler(timer_token);
     timer_token = (Tcl_TimerToken)NULL;
-    DUMP2("mainloop-ensure: current-thread : %lx\n", rb_thread_current());
-    DUMP2("mainloop-ensure: eventloop-thread : %lx\n", eventloop_thread);
+    DUMP2("eventloop-ensure: current-thread : %lx\n", rb_thread_current());
+    DUMP2("eventloop-ensure: eventloop-thread : %lx\n", eventloop_thread);
     if (eventloop_thread == rb_thread_current()) {
 	DUMP2("eventloop-thread -> %lx\n", parent_evloop);
 	eventloop_thread = parent_evloop;
@@ -469,7 +514,7 @@ lib_mainloop_ensure(parent_evloop)
 }
 
 static VALUE
-lib_mainloop_launcher(check_rootwidget)
+lib_eventloop_launcher(check_rootwidget)
     VALUE check_rootwidget;
 {
     VALUE parent_evloop = eventloop_thread;
@@ -481,8 +526,8 @@ lib_mainloop_launcher(check_rootwidget)
 		parent_evloop, eventloop_thread);
     }
 
-    return rb_ensure(lib_mainloop_core, check_rootwidget, 
-		     lib_mainloop_ensure, parent_evloop);
+    return rb_ensure(lib_eventloop_main, check_rootwidget, 
+		     lib_eventloop_ensure, parent_evloop);
 }
 
 /* execute Tk_MainLoop */
@@ -502,7 +547,7 @@ lib_mainloop(argc, argv, self)
 	check_rootwidget = Qfalse;
     }
 
-    return lib_mainloop_launcher(check_rootwidget);
+    return lib_eventloop_launcher(check_rootwidget);
 }
 
 static VALUE
@@ -555,7 +600,7 @@ lib_watchdog_core(check_rootwidget)
 	    /* start new eventloop thread */
 	    DUMP2("eventloop thread %lx is sleeping or dead", 
 		  eventloop_thread);
-	    evloop = rb_thread_create(lib_mainloop_launcher, 
+	    evloop = rb_thread_create(lib_eventloop_launcher, 
 				      (void*)&check_rootwidget);
 	    DUMP2("create new eventloop thread %lx", evloop);
 	    loop_counter = -1;
@@ -778,9 +823,11 @@ ip_ruby(clientData, interp, argc, argv)
                      rb_eStandardError, rb_eScriptError, (VALUE)0);
     rb_trap_immediate = old_trapflg;
 
-    Tcl_ResetResult(interp);
+    /* status check */
     if (failed) {
         VALUE eclass = CLASS_OF(failed);
+	DUMP1("(rb_eval_string result) failed");
+	Tcl_ResetResult(interp);
 	Tcl_AppendResult(interp, StringValuePtr(failed), (char*)NULL);
         if (eclass == eTkCallbackBreak) {
 	    return TCL_BREAK;
@@ -794,16 +841,650 @@ ip_ruby(clientData, interp, argc, argv)
     /* result must be string or nil */
     if (NIL_P(res)) {
 	DUMP1("(rb_eval_string result) nil");
+	Tcl_ResetResult(interp);
 	return TCL_OK;
     }
 
     /* copy result to the tcl interpreter */
     DUMP2("(rb_eval_string result) %s", StringValuePtr(res));
     DUMP1("Tcl_AppendResult");
+    Tcl_ResetResult(interp);
     Tcl_AppendResult(interp, StringValuePtr(res), (char *)NULL);
 
     return TCL_OK;
 }
+
+
+/**************************/
+/*  based on tclEvent.c   */
+/**************************/
+static char *
+VwaitVarProc(clientData, interp, name1, name2, flags)
+    ClientData clientData;      /* Pointer to integer to set to 1. */
+    Tcl_Interp *interp;         /* Interpreter containing variable. */
+    CONST char *name1;          /* Name of variable. */
+    CONST char *name2;          /* Second part of variable name. */
+    int flags;                  /* Information about what happened. */
+{
+    int *donePtr = (int *) clientData;
+
+    *donePtr = 1;
+    return (char *) NULL;
+}
+
+static int
+#if TCL_MAJOR_VERSION >= 8
+ip_rbVwaitObjCmd(clientData, interp, objc, objv)
+    ClientData clientData;
+    Tcl_Interp *interp; 
+    int objc;
+    Tcl_Obj *CONST objv[];
+#else
+ip_rbVwaitCommand(clientData, interp, objc, objv)
+    ClientData clientData;
+    Tcl_Interp *interp;
+    int objc;
+    char *objv[];
+#endif
+{
+    int  done, foundEvent;
+    char *nameString;
+    int  dummy;
+
+    DUMP1("Ruby's 'vwait' is called");
+    if (objc != 2) {
+#ifdef Tcl_WrongNumArgs
+        Tcl_WrongNumArgs(interp, 1, objv, "name");
+#else
+#if TCL_MAJOR_VERSION >= 8
+	/* nameString = Tcl_GetString(objv[0]); */
+	nameString = Tcl_GetStringFromObj(objv[0], &dummy);
+#else
+	nameString = objv[0];
+#endif
+        Tcl_AppendResult(interp, "wrong # args: should be \"",
+			 nameString, " name\"", (char *) NULL);
+#endif
+        return TCL_ERROR;
+    }
+#if TCL_MAJOR_VERSION >= 8
+    /* nameString = Tcl_GetString(objv[1]); */
+    nameString = Tcl_GetStringFromObj(objv[1], &dummy);
+#else
+    nameString = objv[1];
+#endif
+
+    if (Tcl_TraceVar(interp, nameString,
+		     TCL_GLOBAL_ONLY|TCL_TRACE_WRITES|TCL_TRACE_UNSETS,
+		     VwaitVarProc, (ClientData) &done) != TCL_OK) {
+        return TCL_ERROR;
+    };
+    done = 0;
+    foundEvent = lib_eventloop_core(/* not check root-widget */0, &done);
+    Tcl_UntraceVar(interp, nameString,
+		   TCL_GLOBAL_ONLY|TCL_TRACE_WRITES|TCL_TRACE_UNSETS,
+		   VwaitVarProc, (ClientData) &done);
+
+    /*
+     * Clear out the interpreter's result, since it may have been set
+     * by event handlers.
+     */
+
+    Tcl_ResetResult(interp);
+    if (!foundEvent) {
+        Tcl_AppendResult(interp, "can't wait for variable \"", nameString,
+			 "\":  would wait forever", (char *) NULL);
+        return TCL_ERROR;
+    }
+    return TCL_OK;
+}
+
+
+/**************************/
+/*  based on tkCmd.c      */
+/**************************/
+static char *
+WaitVariableProc(clientData, interp, name1, name2, flags)
+    ClientData clientData;      /* Pointer to integer to set to 1. */
+    Tcl_Interp *interp;         /* Interpreter containing variable. */
+    CONST char *name1;          /* Name of variable. */
+    CONST char *name2;          /* Second part of variable name. */
+    int flags;                  /* Information about what happened. */
+{
+    int *donePtr = (int *) clientData;
+
+    *donePtr = 1;
+    return (char *) NULL;
+}
+
+static void
+WaitVisibilityProc(clientData, eventPtr)
+    ClientData clientData;      /* Pointer to integer to set to 1. */
+    XEvent *eventPtr;           /* Information about event (not used). */
+{
+    int *donePtr = (int *) clientData;
+
+    if (eventPtr->type == VisibilityNotify) {
+        *donePtr = 1;
+    }
+    if (eventPtr->type == DestroyNotify) {
+        *donePtr = 2;
+    }
+}
+
+static void
+WaitWindowProc(clientData, eventPtr)
+    ClientData clientData;      /* Pointer to integer to set to 1. */
+    XEvent *eventPtr;           /* Information about event. */
+{
+    int *donePtr = (int *) clientData;
+
+    if (eventPtr->type == DestroyNotify) {
+        *donePtr = 1;
+    }
+}
+
+static int
+#if TCL_MAJOR_VERSION >= 8
+ip_rbTkWaitObjCmd(clientData, interp, objc, objv)
+    ClientData clientData;
+    Tcl_Interp *interp; 
+    int objc;
+    Tcl_Obj *CONST objv[];
+#else
+ip_rbTkWaitCommand(clientData, interp, objc, objv)
+    ClientData clientData;
+    Tcl_Interp *interp;
+    int objc;
+    char *objv[];
+#endif
+{
+    Tk_Window tkwin = (Tk_Window) clientData;
+    int done, index;
+    static CONST char *optionStrings[] = { "variable", "visibility", "window",
+					   (char *) NULL };
+    enum options { TKWAIT_VARIABLE, TKWAIT_VISIBILITY, TKWAIT_WINDOW };
+    char *nameString;
+    int  dummy;
+
+    DUMP1("Ruby's 'tkwait' is called");
+
+    if (objc != 3) {
+#ifdef Tcl_WrongNumArgs
+        Tcl_WrongNumArgs(interp, 1, objv, "variable|visibility|window name");
+#else
+#if TCL_MAJOR_VERSION >= 8
+        Tcl_AppendResult(interp, "wrong # args: should be \"",
+			 Tcl_GetStringFromObj(objv[0], &dummy), 
+			 " variable|visibility|window name\"", 
+			 (char *) NULL);
+#else
+        Tcl_AppendResult(interp, "wrong # args: should be \"",
+			 objv[0], " variable|visibility|window name\"", 
+			 (char *) NULL);
+#endif
+#endif
+        return TCL_ERROR;
+    }
+
+#if TCL_MAJOR_VERSION >= 8
+    if (Tcl_GetIndexFromObj(interp, objv[1], 
+# ifdef CONST84 /* Tcl8.4.x -- ?.?.? (current latest version is 8.4.4) */
+                            (CONST84 char **)optionStrings, 
+# else
+#  if TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION <= 4 /* Tcl8.0.x -- 8.4b1 */
+                            (char **)optionStrings, 
+#  else /* unknown (maybe TCL_VERSION >= 8.5) */
+#   ifdef CONST
+                            (CONST char **)optionStrings, 
+#   else
+                            optionStrings, 
+#   endif
+#  endif
+# endif
+			    "option", 0, &index) != TCL_OK) {
+        return TCL_ERROR;
+    }
+#else
+    {
+	int c = objv[1][0];
+	size_t length = strlen(objv[1]);
+
+	if ((c == 'v') && (strncmp(objv[1], "variable", length) == 0)
+	    && (length >= 2)) {
+	    index = TKWAIT_VARIABLE;
+	} else if ((c == 'v') && (strncmp(objv[1], "visibility", length) == 0)
+		   && (length >= 2)) {
+	    index = TKWAIT_VISIBILITY;
+	} else if ((c == 'w') && (strncmp(objv[1], "window", length) == 0)) {
+	    index = TKWAIT_WINDOW;
+	} else {
+	    Tcl_AppendResult(interp, "bad option \"", objv[1],
+			     "\": must be variable, visibility, or window", 
+			     (char *) NULL);
+	    return TCL_ERROR;
+	}
+    }
+#endif
+
+#if TCL_MAJOR_VERSION >= 8
+    /* nameString = Tcl_GetString(objv[2]); */
+    nameString = Tcl_GetStringFromObj(objv[2], &dummy);
+#else
+    nameString = objv[2];
+#endif
+
+    switch ((enum options) index) {
+    case TKWAIT_VARIABLE: {
+	if (Tcl_TraceVar(interp, nameString,
+			 TCL_GLOBAL_ONLY|TCL_TRACE_WRITES|TCL_TRACE_UNSETS,
+			 WaitVariableProc, (ClientData) &done) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+	done = 0;
+	lib_eventloop_core(check_rootwidget_flag, &done);
+	Tcl_UntraceVar(interp, nameString,
+		       TCL_GLOBAL_ONLY|TCL_TRACE_WRITES|TCL_TRACE_UNSETS,
+		       WaitVariableProc, (ClientData) &done);
+	break;
+    }
+
+    case TKWAIT_VISIBILITY: {
+	Tk_Window window;
+
+	window = Tk_NameToWindow(interp, nameString, tkwin);
+	if (window == NULL) {
+	    return TCL_ERROR;
+	}
+	Tk_CreateEventHandler(window,
+			      VisibilityChangeMask|StructureNotifyMask,
+			      WaitVisibilityProc, (ClientData) &done);
+	done = 0;
+	lib_eventloop_core(check_rootwidget_flag, &done);
+	if (done != 1) {
+	    /*
+	     * Note that we do not delete the event handler because it
+	     * was deleted automatically when the window was destroyed.
+	     */
+
+	    Tcl_ResetResult(interp);
+	    Tcl_AppendResult(interp, "window \"", nameString,
+			     "\" was deleted before its visibility changed",
+			     (char *) NULL);
+	    return TCL_ERROR;
+	}
+	Tk_DeleteEventHandler(window,
+			      VisibilityChangeMask|StructureNotifyMask,
+			      WaitVisibilityProc, (ClientData) &done);
+	break;
+    }
+
+    case TKWAIT_WINDOW: {
+	Tk_Window window;
+            
+	window = Tk_NameToWindow(interp, nameString, tkwin);
+	if (window == NULL) {
+	    return TCL_ERROR;
+	}
+	Tk_CreateEventHandler(window, StructureNotifyMask,
+			      WaitWindowProc, (ClientData) &done);
+	done = 0;
+	lib_eventloop_core(check_rootwidget_flag, &done);
+	/*
+	 * Note:  there's no need to delete the event handler.  It was
+	 * deleted automatically when the window was destroyed.
+	 */
+	break;
+    }
+    }
+
+    /*
+     * Clear out the interpreter's result, since it may have been set
+     * by event handlers.
+     */
+
+    Tcl_ResetResult(interp);
+    return TCL_OK;
+}
+
+/****************************/
+/* vwait/tkwait with thread */
+/****************************/
+struct th_vwait_param {
+    VALUE thread;
+    int   done;
+};
+
+static char *
+rb_threadVwaitProc(clientData, interp, name1, name2, flags)
+    ClientData clientData;      /* Pointer to integer to set to 1. */
+    Tcl_Interp *interp;         /* Interpreter containing variable. */
+    CONST char *name1;          /* Name of variable. */
+    CONST char *name2;          /* Second part of variable name. */
+    int flags;                  /* Information about what happened. */
+{
+    struct th_vwait_param *param = (struct th_vwait_param *) clientData;
+
+    param->done = 1;
+    rb_thread_run(param->thread);
+
+    return (char *)NULL;
+}
+
+static void
+rb_threadWaitVisibilityProc(clientData, eventPtr)
+    ClientData clientData;      /* Pointer to integer to set to 1. */
+    XEvent *eventPtr;           /* Information about event (not used). */
+{
+    struct th_vwait_param *param = (struct th_vwait_param *) clientData;
+
+    if (eventPtr->type == VisibilityNotify) {
+        param->done = 1;
+    }
+    if (eventPtr->type == DestroyNotify) {
+        param->done = 2;
+    }
+}
+
+static void
+rb_threadWaitWindowProc(clientData, eventPtr)
+    ClientData clientData;      /* Pointer to integer to set to 1. */
+    XEvent *eventPtr;           /* Information about event. */
+{
+    struct th_vwait_param *param = (struct th_vwait_param *) clientData;
+
+    if (eventPtr->type == DestroyNotify) {
+        param->done = 1;
+    }
+}
+
+static int
+#if TCL_MAJOR_VERSION >= 8
+ip_rb_threadVwaitObjCmd(clientData, interp, objc, objv)
+    ClientData clientData;
+    Tcl_Interp *interp; 
+    int objc;
+    Tcl_Obj *CONST objv[];
+#else
+ip_rb_threadVwaitCommand(clientData, interp, objc, objv)
+    ClientData clientData;
+    Tcl_Interp *interp;
+    int objc;
+    char *objv[];
+#endif
+{
+    struct th_vwait_param *param;
+    char *nameString;
+    int  dummy;
+
+    DUMP1("Ruby's 'thread_vwait' is called");
+
+    if (eventloop_thread == rb_thread_current()) {
+#if TCL_MAJOR_VERSION >= 8
+	DUMP1("call ip_rbVwaitObjCmd");
+	return ip_rbVwaitObjCmd(clientData, interp, objc, objv);
+#else
+	DUMP1("call ip_rbVwaitCommand");
+	return ip_rbVwaitCommand(clientData, interp, objc, objv);
+#endif
+    }
+
+    if (objc != 2) {
+#ifdef Tcl_WrongNumArgs
+        Tcl_WrongNumArgs(interp, 1, objv, "name");
+#else
+#if TCL_MAJOR_VERSION >= 8
+	/* nameString = Tcl_GetString(objv[0]); */
+	nameString = Tcl_GetStringFromObj(objv[0], &dummy);
+#else
+	nameString = objv[0];
+#endif
+        Tcl_AppendResult(interp, "wrong # args: should be \"",
+			 nameString, " name\"", (char *) NULL);
+#endif
+        return TCL_ERROR;
+    }
+#if TCL_MAJOR_VERSION >= 8
+    /* nameString = Tcl_GetString(objv[1]); */
+    nameString = Tcl_GetStringFromObj(objv[1], &dummy);
+#else
+    nameString = objv[1];
+#endif
+
+    param = (struct th_vwait_param *)Tcl_Alloc(sizeof(struct th_vwait_param));
+    param->thread = rb_thread_current();
+    param->done = 0;
+
+    if (Tcl_TraceVar(interp, nameString,
+		     TCL_GLOBAL_ONLY|TCL_TRACE_WRITES|TCL_TRACE_UNSETS,
+		     rb_threadVwaitProc, (ClientData) param) != TCL_OK) {
+        return TCL_ERROR;
+    };
+
+    if (!param->done) {
+	rb_thread_stop();
+    }
+
+    Tcl_UntraceVar(interp, nameString,
+		   TCL_GLOBAL_ONLY|TCL_TRACE_WRITES|TCL_TRACE_UNSETS,
+		   rb_threadVwaitProc, (ClientData) param);
+
+    Tcl_Free((char *)param);
+
+    return TCL_OK;
+}
+
+static int
+#if TCL_MAJOR_VERSION >= 8
+ip_rb_threadTkWaitObjCmd(clientData, interp, objc, objv)
+    ClientData clientData;
+    Tcl_Interp *interp; 
+    int objc;
+    Tcl_Obj *CONST objv[];
+#else
+ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
+    ClientData clientData;
+    Tcl_Interp *interp;
+    int objc;
+    char *objv[];
+#endif
+{
+    struct th_vwait_param *param;
+    Tk_Window tkwin = (Tk_Window) clientData;
+    int index;
+    static CONST char *optionStrings[] = { "variable", "visibility", "window",
+					   (char *) NULL };
+    enum options { TKWAIT_VARIABLE, TKWAIT_VISIBILITY, TKWAIT_WINDOW };
+    char *nameString;
+    int  dummy;
+
+    DUMP1("Ruby's 'thread_tkwait' is called");
+
+    if (eventloop_thread == rb_thread_current()) {
+#if TCL_MAJOR_VERSION >= 8
+	DUMP1("call ip_rbTkWaitObjCmd");
+	return ip_rbTkWaitObjCmd(clientData, interp, objc, objv);
+#else
+	DUMP1("call rb_VwaitCommand");
+	return ip_rbTkWaitCommand(clientData, interp, objc, objv);
+#endif
+    }
+
+    if (objc != 3) {
+#ifdef Tcl_WrongNumArgs
+        Tcl_WrongNumArgs(interp, 1, objv, "variable|visibility|window name");
+#else
+#if TCL_MAJOR_VERSION >= 8
+        Tcl_AppendResult(interp, "wrong # args: should be \"",
+			 Tcl_GetStringFromObj(objv[0], &dummy), 
+			 " variable|visibility|window name\"", 
+			 (char *) NULL);
+#else
+        Tcl_AppendResult(interp, "wrong # args: should be \"",
+			 objv[0], " variable|visibility|window name\"", 
+			 (char *) NULL);
+#endif
+#endif
+        return TCL_ERROR;
+    }
+
+#if TCL_MAJOR_VERSION >= 8
+    if (Tcl_GetIndexFromObj(interp, objv[1], 
+# ifdef CONST84 /* Tcl8.4.x -- ?.?.? (current latest version is 8.4.4) */
+                            (CONST84 char **)optionStrings, 
+# else
+#  if TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION <= 4 /* Tcl8.0.x -- 8.4b1 */
+                            (char **)optionStrings, 
+#  else /* unknown (maybe TCL_VERSION >= 8.5) */
+#   ifdef CONST
+                            (CONST char **)optionStrings, 
+#   else
+                            optionStrings, 
+#   endif
+#  endif
+# endif
+			    "option", 0, &index) != TCL_OK) {
+        return TCL_ERROR;
+    }
+#else
+    {
+	int c = objv[1][0];
+	size_t length = strlen(objv[1]);
+
+	if ((c == 'v') && (strncmp(objv[1], "variable", length) == 0)
+	    && (length >= 2)) {
+	    index = TKWAIT_VARIABLE;
+	} else if ((c == 'v') && (strncmp(objv[1], "visibility", length) == 0)
+		   && (length >= 2)) {
+	    index = TKWAIT_VISIBILITY;
+	} else if ((c == 'w') && (strncmp(objv[1], "window", length) == 0)) {
+	    index = TKWAIT_WINDOW;
+	} else {
+	    Tcl_AppendResult(interp, "bad option \"", objv[1],
+			     "\": must be variable, visibility, or window", 
+			     (char *) NULL);
+	    return TCL_ERROR;
+	}
+    }
+#endif
+
+#if TCL_MAJOR_VERSION >= 8
+    /* nameString = Tcl_GetString(objv[2]); */
+    nameString = Tcl_GetStringFromObj(objv[2], &dummy);
+#else
+    nameString = objv[2];
+#endif
+
+    param = (struct th_vwait_param *)Tcl_Alloc(sizeof(struct th_vwait_param));
+    param->thread = rb_thread_current();
+    param->done = 0;
+
+    switch ((enum options) index) {
+    case TKWAIT_VARIABLE: {
+	if (Tcl_TraceVar(interp, nameString,
+			 TCL_GLOBAL_ONLY|TCL_TRACE_WRITES|TCL_TRACE_UNSETS,
+			 rb_threadVwaitProc, (ClientData) param) != TCL_OK) {
+	    return TCL_ERROR;
+	};
+
+	if (!param->done) {
+	    rb_thread_stop();
+	}
+
+	Tcl_UntraceVar(interp, nameString,
+		       TCL_GLOBAL_ONLY|TCL_TRACE_WRITES|TCL_TRACE_UNSETS,
+		       rb_threadVwaitProc, (ClientData) param);
+	break;
+    }
+
+    case TKWAIT_VISIBILITY: {
+	Tk_Window window;
+
+	window = Tk_NameToWindow(interp, nameString, tkwin);
+	if (window == NULL) {
+	    return TCL_ERROR;
+	}
+	Tk_CreateEventHandler(window,
+			      VisibilityChangeMask|StructureNotifyMask,
+			      rb_threadWaitVisibilityProc, (ClientData) param);
+	if (!param->done) {
+	    rb_thread_stop();
+	}
+	if (param->done != 1) {
+	    /*
+	     * Note that we do not delete the event handler because it
+	     * was deleted automatically when the window was destroyed.
+	     */
+
+	    Tcl_ResetResult(interp);
+	    Tcl_AppendResult(interp, "window \"", nameString,
+			     "\" was deleted before its visibility changed",
+			     (char *) NULL);
+	    return TCL_ERROR;
+	}
+	Tk_DeleteEventHandler(window,
+			      VisibilityChangeMask|StructureNotifyMask,
+			      rb_threadWaitVisibilityProc, (ClientData) param);
+	break;
+    }
+
+    case TKWAIT_WINDOW: {
+	Tk_Window window;
+            
+	window = Tk_NameToWindow(interp, nameString, tkwin);
+	if (window == NULL) {
+	    return TCL_ERROR;
+	}
+	Tk_CreateEventHandler(window, StructureNotifyMask,
+			      rb_threadWaitWindowProc, (ClientData) param);
+	if (!param->done) {
+	    rb_thread_stop();
+	}
+	/*
+	 * Note:  there's no need to delete the event handler.  It was
+	 * deleted automatically when the window was destroyed.
+	 */
+	break;
+    }
+    }
+
+    Tcl_Free((char *)param);
+
+    /*
+     * Clear out the interpreter's result, since it may have been set
+     * by event handlers.
+     */
+
+    Tcl_ResetResult(interp);
+    return TCL_OK;
+}
+
+static VALUE
+ip_thread_vwait(self, var)
+    VALUE self;
+    VALUE var;
+{
+    VALUE argv[2];
+
+    argv[0] = rb_str_new2("thread_vwait");
+    argv[1] = var;
+    return ip_invoke_real(2, argv, self);
+}
+
+static VALUE
+ip_thread_tkwait(self, mode, target)
+    VALUE self;
+    VALUE mode;
+    VALUE target;
+{
+    VALUE argv[3];
+
+    argv[0] = rb_str_new2("thread_tkwait");
+    argv[1] = mode;
+    argv[2] = target;
+    return ip_invoke_real(3, argv, self);
+}
+
 
 /* destroy interpreter */
 static void
@@ -901,6 +1582,50 @@ ip_init(argc, argv, self)
     DUMP1("Tcl_CreateCommand(\"ruby\")");
     Tcl_CreateCommand(ptr->ip, "ruby", ip_ruby, (ClientData)NULL,
 		      (Tcl_CmdDeleteProc *)NULL);
+#endif
+
+    /* replace 'vwait' command */
+#if TCL_MAJOR_VERSION >= 8
+    DUMP1("Tcl_CreateObjCommand(\"vwait\")");
+    Tcl_CreateObjCommand(ptr->ip, "vwait", ip_rbVwaitObjCmd, 
+			 (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
+#else
+    DUMP1("Tcl_CreateCommand(\"vwait\")");
+    Tcl_CreateCommand(ptr->ip, "vwait", ip_rbVwaitCommand, 
+		      (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
+#endif
+
+    /* replace 'tkwait' command */
+#if TCL_MAJOR_VERSION >= 8
+    DUMP1("Tcl_CreateObjCommand(\"tkwait\")");
+    Tcl_CreateObjCommand(ptr->ip, "tkwait", ip_rbTkWaitObjCmd, 
+			 (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
+#else
+    DUMP1("Tcl_CreateCommand(\"tkwait\")");
+    Tcl_CreateCommand(ptr->ip, "tkwait", ip_rbTkWaitCommand, 
+		      (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
+#endif
+
+    /* add 'thread_vwait' command */
+#if TCL_MAJOR_VERSION >= 8
+    DUMP1("Tcl_CreateObjCommand(\"thread_vwait\")");
+    Tcl_CreateObjCommand(ptr->ip, "thread_vwait", ip_rb_threadVwaitObjCmd, 
+			 (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
+#else
+    DUMP1("Tcl_CreateCommand(\"thread_vwait\")");
+    Tcl_CreateCommand(ptr->ip, "thread_vwait", ip_rb_threadVwaitCommand, 
+		      (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
+#endif
+
+    /* add 'thread_tkwait' command */
+#if TCL_MAJOR_VERSION >= 8
+    DUMP1("Tcl_CreateObjCommand(\"thread_tkwait\")");
+    Tcl_CreateObjCommand(ptr->ip, "thread_tkwait", ip_rb_threadTkWaitObjCmd, 
+			 (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
+#else
+    DUMP1("Tcl_CreateCommand(\"thread_tkwait\")");
+    Tcl_CreateCommand(ptr->ip, "thread_tkwait", ip_rb_threadTkWaitCommand, 
+		      (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
 #endif
 
     return self;
@@ -1137,12 +1862,13 @@ ip_invoke_real(argc, argv, obj)
     Tcl_Obj *resultPtr;
 #endif
 
-    /* get the data struct */
-    ptr = get_ip(obj);
-
+    DUMP2("invoke_real called by thread:%lx", rb_thread_current());
     /* get the command name string */
     v = argv[0];
     cmd = StringValuePtr(v);
+
+    /* get the data struct */
+    ptr = get_ip(obj);
 
     /* ip is deleted? */
     if (Tcl_InterpDeleted(ptr->ip)) {
@@ -1150,7 +1876,9 @@ ip_invoke_real(argc, argv, obj)
     }
 
     /* map from the command name to a C procedure */
+    DUMP2("call Tcl_GetCommandInfo, %s", cmd);
     if (!Tcl_GetCommandInfo(ptr->ip, cmd, &info)) {
+    DUMP1("error Tcl_GetCommandInfo");
 	/* if (event_loop_abort_on_exc || cmd[0] != '.') { */
 	if (event_loop_abort_on_exc > 0) {
 	    /*rb_ip_raise(obj,rb_eNameError,"invalid command name `%s'",cmd);*/
@@ -1166,6 +1894,7 @@ ip_invoke_real(argc, argv, obj)
 	    return rb_tainted_str_new2("");
 	}
     }
+    DUMP1("end Tcl_GetCommandInfo");
 
     /* memory allocation for arguments of this command */
 #if TCL_MAJOR_VERSION >= 8
@@ -1281,13 +2010,15 @@ invoke_queue_handler(evPtr, flags)
 {
     struct invoke_queue *q = (struct invoke_queue *)evPtr;
 
-    DUMP1("do_invoke_queue_handler");
+    DUMP2("do_invoke_queue_handler : evPtr = %lx", evPtr);
     DUMP2("invoke queue_thread : %lx", rb_thread_current());
     DUMP2("added by thread : %lx", q->thread);
 
     if (q->done) {
-	/* processed by another event-loop */
+	DUMP1("processed by another event-loop");
 	return 0;
+    } else {
+	DUMP1("process it on current event-loop");
     }
 
     /* process it */
@@ -1300,11 +2031,16 @@ invoke_queue_handler(evPtr, flags)
 				     Data_Wrap_Struct(rb_cData,0,0,q)), 
 			 rb_intern("call"), 0);
     } else {
+    DUMP2("call invoke_real (for caller thread:%lx)", q->thread);
+    DUMP2("call invoke_real (current thread:%lx)", rb_thread_current());
 	*(q->result) = ip_invoke_real(q->argc, q->argv, q->obj);
     }
 
     /* back to caller */
+    DUMP2("back to caller (caller thread:%lx)", q->thread);
+    DUMP2("               (current thread:%lx)", rb_thread_current());
     rb_thread_run(q->thread);
+    DUMP1("finish back to caller");
 
     /* end of handler : remove it */
     return 1;
@@ -1326,7 +2062,11 @@ ip_invoke(argc, argv, obj)
 	rb_raise(rb_eArgError, "command name missing");
     }
     if (eventloop_thread == 0 || current == eventloop_thread) {
-	DUMP2("invoke from current eventloop %lx", current);
+	if (eventloop_thread) {
+	    DUMP2("invoke from current eventloop %lx", current);
+	} else {
+	    DUMP2("invoke from thread:%lx but no eventloop", current);
+	}
 	result = ip_invoke_real(argc, argv, obj);
 	if (rb_obj_is_kind_of(result, rb_eException)) {
 	    rb_exc_raise(result);
@@ -1341,7 +2081,7 @@ ip_invoke(argc, argv, obj)
     MEMCPY(alloc_argv, argv, VALUE, argc);
     alloc_result = ALLOC(VALUE);
 
-    /* allocate memory (freed by Tcl_ServiceEvent */
+    /* allocate memory (freed by Tcl_ServiceEvent) */
     tmp = (struct invoke_queue *)Tcl_Alloc(sizeof(struct invoke_queue));
 
     /* construct event data */
@@ -1356,10 +2096,13 @@ ip_invoke(argc, argv, obj)
     position = TCL_QUEUE_TAIL;
 
     /* add the handler to Tcl event queue */
-    Tcl_QueueEvent(&tmp->ev, position);
+    DUMP1("add handler");
+    Tcl_QueueEvent(&(tmp->ev), position);
 
     /* wait for the handler to be processed */
+    DUMP2("wait for handler (current thread:%lx)", current);
     rb_thread_stop();
+    DUMP2("back from handler (current thread:%lx)", current);
 
     /* get result & free allocated memory */
     result = *alloc_result;
@@ -1449,8 +2192,10 @@ Init_tcltklib()
     rb_define_method(ip, "delete", ip_delete, 0);
     rb_define_method(ip, "deleted?", ip_is_deleted_p, 0);
     rb_define_method(ip, "_eval", ip_eval, 1);
-    rb_define_method(ip, "_toUTF8",ip_toUTF8,2);
-    rb_define_method(ip, "_fromUTF8",ip_fromUTF8,2);
+    rb_define_method(ip, "_toUTF8",ip_toUTF8, 2);
+    rb_define_method(ip, "_fromUTF8",ip_fromUTF8, 2);
+    rb_define_method(ip, "_thread_vwait", ip_thread_vwait, 1);
+    rb_define_method(ip, "_thread_tkwait", ip_thread_tkwait, 2);
     rb_define_method(ip, "_invoke", ip_invoke, -1);
     rb_define_method(ip, "_return_value", ip_retval, 0);
 
