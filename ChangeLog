@@ -1,3 +1,8 @@
+Mon Feb 25 19:35:48 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* sample/test.rb (system): test with scripts under the source
+	  directory.
+
 Mon Feb 25 15:14:01 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (method_inspect): should not dump core for unbound
