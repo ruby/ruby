@@ -892,10 +892,6 @@ rb_str_index_m(argc, argv, str)
 	pos = rb_reg_search(sub, str, pos, 0);
 	break;
 
-      case T_STRING:
-	pos = rb_str_index(str, sub, pos);
-	break;
-
       case T_FIXNUM:
       {
 	  int c = FIX2INT(sub);
@@ -908,9 +904,20 @@ rb_str_index_m(argc, argv, str)
 	  return Qnil;
       }
 
-      default:
-	rb_raise(rb_eTypeError, "type mismatch: %s given",
-		 rb_class2name(CLASS_OF(sub)));
+      default: {
+	  VALUE tmp;
+
+	  tmp = rb_check_string_type(sub);
+	  if (NIL_P(tmp)) {
+	      rb_raise(rb_eTypeError, "type mismatch: %s given",
+		       rb_class2name(CLASS_OF(sub)));
+	  }
+	  sub = tmp;
+      }
+	/* fall through */
+      case T_STRING:
+	pos = rb_str_index(str, sub, pos);
+	break;
     }
 
     if (pos == -1) return Qnil;

@@ -82,6 +82,10 @@ Sun Jan 26 03:37:18 2003  Akinori MUSHA  <knu@iDaemons.org>
 	  is used with extra arguments given.  Tested with FreeBSD and
 	  Linux by me and mswin32, bccwin32 and mingw by usa.
 
+Sat Jan 25 21:04:57 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (yylex): remove EXPR_CMDARG according to the RHG book.
+
 Fri Jan 24 18:15:33 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y: tMINUS should have lower precedence than tPOW.

@@ -490,7 +490,8 @@ set_syserr(n, name)
 }
 
 static VALUE
-get_syserr(int n)
+get_syserr(n)
+    int n;
 {
     VALUE error;
 

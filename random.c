@@ -214,6 +214,8 @@ rb_f_rand(argc, argv, obj)
 	}
 	vmax = rb_dbl2big(RFLOAT(vmax)->value);
 	/* fall through */
+      case T_BIGNUM:
+      bignum:
         {
 	    long len = RBIGNUM(vmax)->len;
 	    double *buf = ALLOCA_N(double, len);
@@ -227,6 +229,9 @@ rb_f_rand(argc, argv, obj)
 	max = 0;
 	break;
       default:
+	vmax = rb_Integer(vmax);
+	if (TYPE(vmax) == T_BIGNUM) goto bignum:
+      case T_FIXNUM:
 	max = NUM2LONG(vmax);
 	break;
     }
