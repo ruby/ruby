@@ -5781,6 +5781,7 @@ rb_intern(name)
     if (st_lookup(sym_tbl, (st_data_t)name, (st_data_t *)&id))
 	return id;
 
+    last = strlen(name)-1;
     id = 0;
     switch (*name) {
       case '$':
@@ -5812,7 +5813,6 @@ rb_intern(name)
 	    }
 	}
 
-	last = strlen(name)-1;
 	if (name[last] == '=') {
 	    /* attribute assignment */
 	    char *buf = ALLOCA_N(char,last+1);
@@ -5835,7 +5835,7 @@ rb_intern(name)
 	break;
     }
     while (*m && is_identchar(*m)) {
-	m++;
+	m += mblen(m, name + last - m + 1);
     }
     if (*m) id = ID_JUNK;
     id |= ++last_id << ID_SCOPE_SHIFT;
