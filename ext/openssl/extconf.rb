@@ -80,6 +80,7 @@ have_func("BN_mod_sub")
 have_func("BN_rand_range")
 have_func("BN_pseudo_rand_range")
 have_func("CONF_get1_default_config_file")
+have_func("X509V3_set_nconf")
 if try_compile("#define FOO(a, ...) foo(a, ##__VA_ARGS__)\n int x(){FOO(1);FOO(1,2);FOO(1,2,3);}\n")
   $defs.push("-DHAVE_VA_ARGS_MACRO")
 end

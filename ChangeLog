@@ -1,3 +1,10 @@
+Sat Oct  4 04:24:19 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/extconf.rb: add check for X509V3_set_nconf.
+
+	* ext/openssl/ossl_x509ext.c (ossl_x509extfactory_set_config):
+	  cannot implement if X509V3_set_nconf doesn't exist.
+
 Sat Oct  4 02:12:44 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/xsd/datatypes.rb: dump sign by itself.  under the problematic
