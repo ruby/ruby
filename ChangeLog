@@ -1,3 +1,7 @@
+Tue Apr  2 19:59:13 2002  Takaaki Tateishi <ttate@kt.jaist.ac.jp>
+
+	* ext/dl: Merge from rough.
+
 Tue Apr  2 15:17:54 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* Makefile.in (CPPFLAGS): remove @includedir@.
