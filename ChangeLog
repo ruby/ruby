@@ -18,7 +18,7 @@ Tue Sep  9 01:50:45 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/log.rb (BasicLog#log): add "\n" only if needed.
 
-Mon Sep  8 22:15:33 2003    <nagai@ai.kyutech.ac.jp>
+Mon Sep  8 22:15:33 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/multi-tk.rb: modify security check at creating
 	  a new interpreter
@@ -67,7 +67,7 @@ Mon Sep  8 18:26:41 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httpserver.rb (HTTPServer#accesslog): use << for logging.
 
-Sun Sep  7 16:08:28 2003    <nagai@ai.kyutech.ac.jp>
+Sun Sep  7 16:08:28 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c (lib_mainloop_core): fixed signal-trap bug
 
@@ -286,7 +286,7 @@ Tue Sep  2 14:09:20 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/socket/getnameinfo.c (getnameinfo): ditto.
 
-Tue Sep  2 14:02:19 2003    <nagai@ai.kyutech.ac.jp>
+Tue Sep  2 14:02:19 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c (ip_invoke): fixed bug on passing a exception
 
@@ -346,7 +346,7 @@ Sun Aug 31 22:46:55 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* process.c (p_gid_sw_ensure): return VALUE.
 
-Sun Aug 31 22:27:10 2003    <nagai@dumbo.ai.kyutech.ac.jp>
+Sun Aug 31 22:27:10 2003  Hidetoshi NAGAI  <nagai@dumbo.ai.kyutech.ac.jp>
 
 	* process.c (p_gid_sw_ensure): lack of function type
 
