@@ -1,3 +1,8 @@
+Tue Nov 25 16:41:33 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/wsdl/multiplefault.wsdl, test/wsdl/test_multiplefault.rb:
+	  removed.  this test requires extra libraries in soap4r/1.5.*.
+
 Tue Nov 25 16:24:42 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/soap/**/*.rb, lib/wsdl/**/*.rb, lib/xsd/**/*.rb: changed license;
