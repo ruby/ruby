@@ -272,11 +272,6 @@ static VALUE time_gmtime _((VALUE));
 static VALUE time_localtime _((VALUE));
 static VALUE time_get_tm _((VALUE, int));
 
-#if defined(HAVE_DAYLIGHT) && !defined(__MINGW32__)
-extern int daylight;
-extern long timezone;
-#endif
-
 static time_t
 make_time_t(tptr, utc_or_local)
     struct tm *tptr;
