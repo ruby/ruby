@@ -9934,14 +9934,6 @@ thgroup_add(group, thread)
     rb_secure(4);
     th = rb_thread_check(thread);
 
-    if (OBJ_FROZEN(th->thgroup)) {
-	rb_raise(rb_eThreadError, "can't move from the frozen thread group");
-    }
-    Data_Get_Struct(th->thgroup, struct thgroup, data);
-    if (data->enclosed) {
-	rb_raise(rb_eThreadError, "can't move from the enclosed thread group");
-    }
-
     if (OBJ_FROZEN(group)) {
       rb_raise(rb_eThreadError, "can't move to the frozen thread group");
     }
@@ -9954,6 +9946,14 @@ thgroup_add(group, thread)
 	rb_warn("terminated thread");
 	return;
     }
+    if (OBJ_FROZEN(th->thgroup)) {
+	rb_raise(rb_eThreadError, "can't move from the frozen thread group");
+    }
+    Data_Get_Struct(th->thgroup, struct thgroup, data);
+    if (data->enclosed) {
+	rb_raise(rb_eThreadError, "can't move from the enclosed thread group");
+    }
+
     th->thgroup = group;
     return group;
 }
