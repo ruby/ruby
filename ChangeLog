@@ -1,3 +1,8 @@
+Thu Oct  9 17:43:36 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (proc_save_safe_level, proc_get_safe_level,
+	  proc_set_safe_level): save/restore safe level 1..4.
+
 Thu Oct  9 15:45:27 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* pack.c (uv_to_utf8): change message to "out of range", since

@@ -6866,57 +6866,28 @@ rb_f_binding(self)
     return bind;
 }
 
-#define PROC_T3    FL_USER1
-#define PROC_T4    FL_USER2
-#define PROC_TMAX  (FL_USER1|FL_USER2)
-#define PROC_TMASK (FL_USER1|FL_USER2)
+#define PROC_TSHIFT (FL_USHIFT+1)
+#define PROC_TMASK  (FL_USER1|FL_USER2|FL_USER3)
 
 static void
 proc_save_safe_level(data)
     VALUE data;
 {
-    if (OBJ_TAINTED(data)) {
-	switch (ruby_safe_level) {
-	  case 3:
-	    FL_SET(data, PROC_T3);
-	    break;
-	  case 4:
-	    FL_SET(data, PROC_T4);
-	    break;
-	  default:
-	    if (ruby_safe_level > 4) {
-		FL_SET(data, PROC_TMAX);
-	    }
-	    break;
-	}
-    }
+    FL_SET(data, (ruby_safe_level << PROC_TSHIFT) & PROC_TMASK);
 }
 
 static int
 proc_get_safe_level(data)
     VALUE data;
 {
-    if (OBJ_TAINTED(data)) {
-	switch (RBASIC(data)->flags & PROC_TMASK) {
-	  case PROC_T3:
-	    return 3;
-	  case PROC_T4:
-	    return 4;
-	  case PROC_TMAX:
-	    return 5;
-	}
-	return 3;
-    }
-    return 0;
+    return (RBASIC(data)->flags & PROC_TMASK) >> PROC_TSHIFT;
 }
 
 static void
 proc_set_safe_level(data)
     VALUE data;
 {
-    if (OBJ_TAINTED(data)) {
-	ruby_safe_level = proc_get_safe_level(data);
-    }
+    ruby_safe_level = proc_get_safe_level(data);
 }
 
 static VALUE
