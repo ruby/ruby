@@ -43,8 +43,8 @@ static struct st_hash_type type_numhash = {
 /* extern int strcmp(const char *, const char *); */
 static int strhash(const char *);
 static struct st_hash_type type_strhash = {
-    (st_compare_func_t)strcmp,
-    (st_hash_func_t)strhash,
+    strcmp,
+    strhash,
 };
 
 #ifdef RUBY_PLATFORM
@@ -482,7 +482,7 @@ st_cleanup_safe(table, never)
 void
 st_foreach(table, func, arg)
     st_table *table;
-    st_each_func_t func;
+    int (*func)();
     st_data_t arg;
 {
     st_table_entry *ptr, *last, *tmp;

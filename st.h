@@ -8,15 +8,11 @@
 
 typedef long st_data_t;
 
-typedef int (*st_compare_func_t)(st_data_t data1, st_data_t data2);
-typedef int (*st_hash_func_t)(st_data_t data);
-typedef int (*st_each_func_t)(st_data_t key, st_data_t value, st_data_t data);
-
 typedef struct st_table st_table;
 
 struct st_hash_type {
-    st_compare_func_t compare;
-    st_hash_func_t hash;
+    int (*compare)();
+    int (*hash)();
 };
 
 struct st_table {
@@ -40,14 +36,14 @@ int st_delete(st_table *, st_data_t *, st_data_t *);
 int st_delete_safe(st_table *, st_data_t *, st_data_t *, st_data_t);
 int st_insert(st_table *, st_data_t, st_data_t);
 int st_lookup(st_table *, st_data_t, st_data_t *);
-void st_foreach(st_table *, st_each_func_t, st_data_t);
+void st_foreach(st_table *, int (*)(), st_data_t);
 void st_add_direct(st_table *, st_data_t, st_data_t);
 void st_free_table(st_table *);
 void st_cleanup_safe(st_table *, st_data_t);
 st_table *st_copy(st_table *);
 
-#define ST_NUMCMP	((st_compare_func_t) 0)
-#define ST_NUMHASH	((st_hash_func_t) -2)
+#define ST_NUMCMP	((int (*)()) 0)
+#define ST_NUMHASH	((int (*)()) -2)
 
 #define st_numcmp	ST_NUMCMP
 #define st_numhash	ST_NUMHASH
