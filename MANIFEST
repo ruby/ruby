@@ -343,6 +343,9 @@ lib/rexml/sax2listener.rb
 lib/rexml/source.rb
 lib/rexml/streamlistener.rb
 lib/rexml/text.rb
+lib/rexml/validation/relaxng.rb
+lib/rexml/validation/validation.rb
+lib/rexml/validation/validationexception.rb
 lib/rexml/xmldecl.rb
 lib/rexml/xmltokens.rb
 lib/rexml/xpath.rb
