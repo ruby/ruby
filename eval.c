@@ -5484,16 +5484,16 @@ eval(self, src, scope, file, line)
 	data->vmode = scope_vmode; /* write back visibility mode */
 	scope_vmode = old_vmode;
 	if (dont_recycle) {
-	   struct tag *tag;
-	   struct RVarmap *vars;
+	    struct tag *tag;
+	    struct RVarmap *vars;
 
-           scope_dup(ruby_scope);
-	   for (tag=prot_tag; tag; tag=tag->prev) {
-	       scope_dup(tag->scope);
-	   }
-	   for (vars = ruby_dyna_vars; vars; vars = vars->next) {
-	       FL_SET(vars, DVAR_DONT_RECYCLE);
-	   }
+	    scope_dup(ruby_scope);
+	    for (tag=prot_tag; tag; tag=tag->prev) {
+		scope_dup(tag->scope);
+	    }
+	    for (vars = ruby_dyna_vars; vars; vars = vars->next) {
+		FL_SET(vars, DVAR_DONT_RECYCLE);
+	    }
 	}
     }
     else {
