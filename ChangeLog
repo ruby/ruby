@@ -1,3 +1,8 @@
+Mon Nov 15 11:50:32 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-special-char-p, ruby-parse-partial): handle
+	  operator symbols.  [ruby-talk:120177]
+
 Sun Nov 14 13:27:03 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/pp.rb (PP#object_address_group): remove odd number of 'f'
