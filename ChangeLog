@@ -1,3 +1,9 @@
+Sun Dec 28 00:48:47 2003  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser::find_class_comment):
+		  Some source files use lower case class or module names
+		  when naming the Init_XXX function in C.
+
 Sat Dec 27 23:41:46 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in: fix "test: too many arguments" error.
