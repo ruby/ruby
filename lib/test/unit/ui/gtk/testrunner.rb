@@ -100,12 +100,12 @@ module Test
           end
           
           def show_fault(fault) # :nodoc:
-            raw_show_fault(fault.longDisplay)
+            raw_show_fault(fault.long_display)
           end
           
           def raw_show_fault(string) # :nodoc:
-            faultDetailLabel.set_text(string)
-            outerDetailSubPanel.queue_resize
+            fault_detail_label.set_text(string)
+            outer_detail_sub_panel.queue_resize
           end
           
           def clear_fault # :nodoc:

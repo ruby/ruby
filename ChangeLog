@@ -1,3 +1,7 @@
+Wed Nov  5 17:05:18 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit/ui/gtk/testrunner.rb: typo.
+
 Wed Nov  5 11:13:32 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* string.c: add #include "version.h". this file still depends on it.
@@ -247,7 +251,7 @@ Wed Oct 29 11:27:39 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Tue Oct 28 15:20:12 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
-	* ext/tcltklib/tcltklib.c (VwaitVarProc, ip_rbVwaitObjCmd, 
+	* ext/tcltklib/tcltklib.c (VwaitVarProc, ip_rbVwaitObjCmd,
 	  WaitVariableProc, WaitVisibilityProc, WaitWindowProc,
 	  ip_rbTkWaitObjCmd, ip_rbTkWaitCommand, rb_threadVwaitProc,
 	  rb_threadWaitVisibilityProc, rb_threadWaitWindowProc,
