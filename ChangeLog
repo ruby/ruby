@@ -25,7 +25,7 @@ Fri Mar  1 06:25:49 2002  Tanaka Akira  <akr@m17n.org>
 	(unix_recv_io): ditto.
 	(unix_s_socketpair): ditto.
 	(Init_socket): define UNIXSocket#send_io, UNIXSocket#recv_io, 
-	UNIXSocket#socketpair and UNIXSocket#pair.
+	UNIXSocket.socketpair and UNIXSocket.pair.
 
 	* dln.c (dln_load): fix typo.
 
