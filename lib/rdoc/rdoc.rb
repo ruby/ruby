@@ -235,6 +235,10 @@ module RDoc
       options = Options.instance
       options.parse(argv, GENERATORS)
     
+      unless options.all_one_file
+        setup_output_dir(options.op_dir)
+      end
+
       file_info = parse_files(options)
 
       gen = options.generator
@@ -250,10 +254,7 @@ module RDoc
 
         pwd = Dir.pwd
 
-        unless options.all_one_file
-          setup_output_dir(options.op_dir)
-          Dir.chdir(options.op_dir)
-        end
+        Dir.chdir(options.op_dir)  unless options.all_one_file
 
         begin
           Diagram.new(file_info, options).draw if options.diagram
