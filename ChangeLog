@@ -1,3 +1,11 @@
+Wed Apr 21 17:23:59 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb (HTTP#connect): CONNECT must precede SSL connect.
+	  [ruby-dev:23379]
+
+	* lib/net/http.rb (HTTP.new): class variables are not inherited
+	  now.
+
 Wed Apr 21 15:56:43 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit/ui/console/testrunner.rb (test_started): restore $0

@@ -214,12 +214,6 @@ module Net # :nodoc:
       alias is_version_1_2? version_1_2?   #:nodoc:
     end
 
-    def HTTP.setimplversion(obj)   #:nodoc:
-      f = @@newimpl
-      obj.instance_eval { @newimpl = f }
-    end
-    private_class_method :setimplversion
-
     #
     # short cut methods
     #
@@ -314,7 +308,7 @@ module Net # :nodoc:
       80
     end
 
-    # The default port to use for HTTPS requests; defaults to 80.
+    # The default port to use for HTTPS requests; defaults to 443.
     def HTTP.https_default_port
       443
     end
@@ -323,28 +317,30 @@ module Net # :nodoc:
       InternetMessageIO
     end
 
+    # creates a new Net::HTTP object and opens its TCP connection and 
+    # HTTP session.  If the optional block is given, the newly 
+    # created Net::HTTP object is passed to it and closed when the 
+    # block finishes.  In this case, the return value of this method
+    # is the return value of the block.  If no block is given, the
+    # return value of this method is the newly created Net::HTTP object
+    # itself, and the caller is responsible for closing it upon completion.
+    def HTTP.start(address, port = nil, p_addr = nil, p_port = nil, p_user = nil, p_pass = nil, &block) # :yield: +http+
+      new(address, port, p_addr, p_port, p_user, p_pass).start(&block)
+    end
+
     class << HTTP
-      # creates a new Net::HTTP object and opens its TCP connection and 
-      # HTTP session.  If the optional block is given, the newly 
-      # created Net::HTTP object is passed to it and closed when the 
-      # block finishes.  In this case, the return value of this method
-      # is the return value of the block.  If no block is given, the
-      # return value of this method is the newly created Net::HTTP object
-      # itself, and the caller is responsible for closing it upon completion.
-      def start(address, port = nil, p_addr = nil, p_port = nil, p_user = nil, p_pass = nil, &block) # :yield: +http+
-        new(address, port, p_addr, p_port, p_user, p_pass).start(&block)
-      end
-
       alias newobj new
+    end
 
-      # Creates a new Net::HTTP object.
-      # If +proxy_addr+ is given, creates an Net::HTTP object with proxy support.
-      # This method does not open the TCP connection.
-      def new(address, port = nil, p_addr = nil, p_port = nil, p_user = nil, p_pass = nil)
-        obj = Proxy(p_addr, p_port, p_user, p_pass).newobj(address, port)
-        setimplversion obj
-        obj
-      end
+    # Creates a new Net::HTTP object.
+    # If +proxy_addr+ is given, creates an Net::HTTP object with proxy support.
+    # This method does not open the TCP connection.
+    def HTTP.new(address, port = nil, p_addr = nil, p_port = nil, p_user = nil, p_pass = nil)
+      h = Proxy(p_addr, p_port, p_user, p_pass).newobj(address, port)
+      h.instance_eval {
+        @newimpl = ::Net::HTTP.version_1_2?
+      }
+      h
     end
 
     # Creates a new Net::HTTP object for the specified +address+.
@@ -458,16 +454,18 @@ module Net # :nodoc:
         end
         s = OpenSSL::SSL::SSLSocket.new(s, @ssl_context)
         s.sync_close = true
-        s.connect
       end
       @socket = BufferedIO.new(s)
       @socket.read_timeout = @read_timeout
       @socket.debug_output = @debug_output
-      if use_ssl? and proxy?
-        @socket.writeline sprintf('CONNECT %s:%s HTTP/%s',
-                                  @address, @port, HTTP_VERSION)
-        @socket.writeline ''
-        HTTPResponse.read_new(@socket).value
+      if use_ssl?
+        if proxy?
+          @socket.writeline sprintf('CONNECT %s:%s HTTP/%s',
+                                    @address, @port, HTTPVersion)
+          @socket.writeline ''
+          HTTPResponse.read_new(@socket).value
+        end
+        s.connect
       end
       on_connect
     end
@@ -547,7 +545,7 @@ module Net # :nodoc:
       attr_reader :proxy_pass
     end
 
-    # True if self is a HTTP proxy class
+    # True if self is a HTTP proxy class.
     def proxy?
       self.class.proxy_class?
     end
@@ -580,11 +578,11 @@ module Net # :nodoc:
     # without proxy
 
     def conn_address
-      address
+      address()
     end
 
     def conn_port
-      port
+      port()
     end
 
     def edit_path(path)
