@@ -1138,7 +1138,7 @@ glob_helper(path, sub, separator, flags, func, arg) /* if separator p[-1] is rem
 	free(tmp);
     }
 
-    if (!magical) {
+    if (status == 0 && !magical) {
 	status = glob_helper(path, p, separator, flags, func, arg);
     }
 
