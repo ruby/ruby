@@ -901,7 +901,7 @@ extern char *dln_find_exe();
 
 static void
 security(str)
-    char *str;
+    const char *str;
 {
     if (rb_env_path_tainted()) {
 	if (rb_safe_level() > 0) {
@@ -913,7 +913,7 @@ security(str)
 static int
 proc_exec_v(argv, prog)
     char **argv;
-    char *prog;
+    const char *prog;
 {
     int err;
 
@@ -1232,7 +1232,7 @@ rb_f_exec(argc, argv)
     e.argv = argv;
     e.prog = prog ? RSTRING(prog)->ptr : 0;
     rb_exec(&e);
-    rb_sys_fail(RSTRING(argv[0])->ptr);
+    rb_sys_fail(e.prog);
     return Qnil;		/* dummy */
 }
 
