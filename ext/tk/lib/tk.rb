@@ -665,6 +665,10 @@ module TkPackage
   include TkCore
   extend TkPackage
 
+  def add_path(path)
+    Tk::AUTO_PATH.value = Tk::AUTO_PATH.to_a << path
+  end
+
   def forget(package)
     tk_call('package', 'forget', package)
     nil
@@ -725,9 +729,6 @@ module Tk
   TCL_LIBRARY = INTERP._invoke("set", "tcl_library")
   TK_LIBRARY  = INTERP._invoke("set", "tk_library")
   LIBRARY     = INTERP._invoke("info", "library")
-
-  TCL_PACKAGE_PATH = INTERP._invoke("set", "tcl_pkgPath")
-  AUTO_PATH = tk_split_simplelist(INTERP._invoke("set", "auto_path"))
 
   PLATFORM = Hash[*tk_split_simplelist(INTERP._eval('array get tcl_platform'))]
 
@@ -1377,6 +1378,21 @@ class TkVarAccess<TkVariable
       INTERP._eval(format('global %s; set %s %s', @id, @id, s))
     end
   end
+end
+
+module Tk
+  begin
+    auto_path = INTERP._invoke('set', 'auto_path')
+  rescue
+    begin
+      auto_path = INTERP._invoke('set', 'env(TCLLIBPATH)')
+    rescue
+      auto_path = Tk::LIBRARY
+    end
+  end
+  AUTO_PATH = TkVarAccess.new('auto_path', auto_path)
+
+  TCL_PACKAGE_PATH = TkVarAccess.new('tcl_pkgPath')
 end
 
 module TkSelection

@@ -672,7 +672,9 @@ An end of a defun is found by moving forward from the beginning of one."
 		       ("\\(#\\)[{$@]" 1 (1 . nil))
 		       ("\\(/\\)\\([^/\n]\\|\\/\\)*\\(/\\)"
 			(1 (7 . ?'))
-			(3 (7 . ?')))))
+			(3 (7 . ?')))
+		       ("^\\(=\\)begin\\(\\s \\|$\\)" 1 (7 . nil))
+		       ("^\\(=\\)end\\(\\s \\|$\\)" 1 (7 . nil))))
 	       (make-local-variable 'font-lock-defaults)
 	       (setq font-lock-defaults '((ruby-font-lock-keywords) nil nil))
 	       (setq font-lock-keywords ruby-font-lock-keywords)))

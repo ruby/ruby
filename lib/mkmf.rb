@@ -282,8 +282,7 @@ SRC
     print "no\n"
     return false
   end
-  header.tr!("a-z./\055", "A-Z___")
-  $defs.push(format("-DHAVE_%s", header))
+  $defs.push(format("-DHAVE_%s", header.tr("a-z./\055", "A-Z___")))
   print "yes\n"
   return true
 end
