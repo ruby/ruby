@@ -1,7 +1,33 @@
+Wed Feb 14 00:44:17 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dir.c (dir_s_glob): supprt backslash escape of metacharacters
+	  and delimiters.
+
+	* dir.c (remove_backslases): remove backslashes from path before
+	  calling stat(2).
+
+	* dir.c (dir_s_glob): call rb_yield directly (via push_pattern) if
+	  block is given to the method.
+
+	* dir.c (push_pattern): do not call rb_ary_push; yield directly.
+
+	* eval.c (blk_copy_prev): reduced ALLOC_N too much.
+
+	* eval.c (frame_dup): ditto.
+
 Tue Feb 13 23:05:38 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* dir.c (lstat): should use rb_sys_stat if lstat(2) is not
 	  available.
+
+Sun Feb 11 16:00:30 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* eval.c (stack_length): use __builtin_frame_address() only if
+	  GCC and i386 CPU.
+
+	* gc.c (rb_gc, Init_stack): ditto.
+
+	* configure.in: add ac_cv_func_getpgrp_void=yes on DJGPP.
 
 Tue Feb 13 08:43:10 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

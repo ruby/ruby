@@ -6,7 +6,7 @@
   $Date$
   created at: Wed Jan  5 09:51:01 JST 1994
 
-  Copyright (C) 1993-2000 Yukihiro Matsumoto
+  Copyright (C) 1993-2001 Yukihiro Matsumoto
   Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
   Copyright (C) 2000  Information-technology Promotion Agency, Japan
 
@@ -557,9 +557,27 @@ extract_elem(path)
     return extract_path(path, pend);
 }
 
+static void
+remove_backslases(p)
+    char *p;
+{
+    char *pend = p + strlen(p);
+    char *t = p;
+
+    while (p < pend) {
+	if (*p == '\\') {
+	    *p++;
+	    if (p == pend) break;
+	}
+	*t++ = *p++;
+    }
+    *t = '\0';
+}
+
 #ifndef S_ISDIR
 #   define S_ISDIR(m) ((m & S_IFMT) == S_IFDIR)
 #endif
+
 
 void
 rb_glob_helper(path, flag, func, arg)
@@ -572,6 +590,7 @@ rb_glob_helper(path, flag, func, arg)
     char *p, *m;
 
     if (!has_magic(path, 0)) {
+	remove_backslases(path);
 	if (rb_sys_stat(path, &st) == 0) {
 	    (*func)(path, arg);
 	}
@@ -694,7 +713,14 @@ push_pattern(path, ary)
     char *path;
     VALUE ary;
 {
-    rb_ary_push(ary, rb_tainted_str_new2(path));
+    VALUE str = rb_tainted_str_new2(path);
+
+    if (ary) {
+	rb_ary_push(ary, str);
+    }
+    else {
+	rb_yield(str);
+    }
 }
 
 static void
@@ -768,10 +794,12 @@ dir_s_glob(dir, str)
     char buffer[MAXPATHLEN], *buf = buffer;
     char *t;
     int nest;
-    VALUE ary;
+    VALUE ary = 0;
 
     Check_SafeStr(str);
-    ary = rb_ary_new();
+    if (!rb_block_given_p()) {
+	ary = rb_ary_new();
+    }
     if (RSTRING(str)->len >= MAXPATHLEN)
 	buf = xmalloc(RSTRING(str)->len + 1);
 
@@ -785,6 +813,10 @@ dir_s_glob(dir, str)
 	while (p < pend && !isdelim(*p)) {
 	    if (*p == '{') nest+=2;
 	    if (*p == '}') nest+=3;
+	    if (*p == '\\') {
+		*t++ = *p++;
+		if (p == pend) break;
+	    }
 	    *t++ = *p++;
 	}
 	*t = '\0';
@@ -798,14 +830,6 @@ dir_s_glob(dir, str)
     }
     if (buf != buffer)
 	free(buf);
-    if (rb_block_given_p()) {
-	long len = RARRAY(ary)->len;
-	VALUE *ptr = RARRAY(ary)->ptr;
-
-	while (len--) {
-	    rb_yield(*ptr++);
-	}
-    }
     return ary;
 }
 
