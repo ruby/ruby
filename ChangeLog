@@ -1,3 +1,7 @@
+Thu Apr  4 15:45:12 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* parse.y: avoid binson 1.35 warnings. add ; at the end of a rule.
+
 Wed Apr  3 01:54:10 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* ext/extmk.rb.in (enable_config): follow lib/mkmf.rb.
