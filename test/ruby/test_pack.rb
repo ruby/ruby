@@ -42,4 +42,15 @@ class TestPack < Test::Unit::TestCase
     assert_equal [1,1], "\000\000\000\001\000\000\000\001".unpack('N*')
     assert_equal [1,1,1], "\000\000\000\001\000\000\000\001\000\000\000\001".unpack('N*')
   end
+
+  def test_pack_U
+    assert_raises(RangeError) { [-0x40000001].pack("U") }
+    assert_raises(RangeError) { [-0x40000000].pack("U") }
+    assert_raises(RangeError) { [-1].pack("U") }
+    assert_equal "\000", [0].pack("U")
+    assert_equal "\374\277\277\277\277\277", [0x3fffffff].pack("U")
+    assert_equal "\375\200\200\200\200\200", [0x40000000].pack("U")
+    assert_equal "\375\277\277\277\277\277", [0x7fffffff].pack("U")
+    assert_raises(RangeError) { [0x80000000].pack("U") }
+  end
 end
