@@ -1,3 +1,7 @@
+Tue Feb  3 08:04:57 2004  Tanaka Akira  <akr@m17n.org>
+
+	* lib/pp.rb (Struct#pretty_print_cycle): follow 1.8 style.
+
 Mon Feb  2 22:06:31 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (block_append, new_evstr, void_expr0): remove no longer used
