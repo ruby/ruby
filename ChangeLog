@@ -1,3 +1,8 @@
+Mon Sep  4 13:40:40 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* configure.in: renamed libruby.a to libruby.{cygwin,mingw32}.a
+	  on cygwin and mingw32.
+
 Fri Sep  1 10:36:45 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* stable version 1.6.0 released.

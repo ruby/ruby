@@ -849,17 +849,18 @@ case "$target_os" in
 	esac
 	;;
     cygwin*|mingw*)
+	RUBY_SO_NAME='$(RUBY_INSTALL_NAME)'.$target_os
 	if test x"$enable_shared" = xyes; then
-	    LIBRUBY_SO='$(RUBY_INSTALL_NAME).'$target_os.dll
+	    LIBRUBY_SO='$(RUBY_SO_NAME)'.dll
 	    LIBRUBY_DLDFLAGS='--dllname=$@ --output-lib=$(LIBRUBY) --add-stdcall-alias --def=$(RUBYDEF)'
 	else
 	    LIBRUBY_SO=dummy
-	    LIBRUBY_DLDFLAGS='--output-exp=$(RUBY_INSTALL_NAME).exp --dllname=$(RUBY_INSTALL_NAME)$(EXEEXT) --output-lib=$(LIBRUBY) --add-stdcall-alias --def=$(RUBYDEF)'
+	    LIBRUBY_DLDFLAGS='--output-exp=$(RUBY_SO_NAME).exp --dllname=$(RUBY_SO_NAME)$(EXEEXT) --output-lib=$(LIBRUBY) --add-stdcall-alias --def=$(RUBYDEF)'
 	fi
 	LIBRUBY_ALIASES=''
 	LIBRUBY_A='lib$(RUBY_INSTALL_NAME)s.a'
-	LIBRUBY='lib$(RUBY_INSTALL_NAME).a'
-	LIBRUBYARG='-L. -l$(RUBY_INSTALL_NAME)'
+	LIBRUBY='lib$(RUBY_SO_NAME).a'
+	LIBRUBYARG='-L. -l$(RUBY_SO_NAME)'
 	FIRSTMAKEFILE=GNUmakefile:cygwin/GNUmakefile.in
 	SOLIBS='$(LIBS)'
 	case "$target_os" in

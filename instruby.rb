@@ -32,6 +32,10 @@ wdir = Dir.getwd
 File.makedirs bindir, true
 File.install ruby_install_name+exeext,
   "#{bindir}/#{ruby_install_name}#{exeext}", 0755, true
+rubyw = ruby_install_name.sub(/ruby/, '\&w')+exeext
+if File.exist? rubyw
+  File.install rubyw, "#{bindir}/#{rubyw}", 0755, true
+end
 for dll in Dir['*.dll']
   File.install dll, "#{bindir}/#{dll}", 0755, true
 end
@@ -86,9 +90,6 @@ end
 if RUBY_PLATFORM =~ /mswin32|mingw/
   File.makedirs archlibdir + "/win32", true
   File.install "win32/win32.h", archlibdir + "/win32", 0644, true
-  if File.exist? wdir+'/'+CONFIG["LIBRUBY"]
-    File.install wdir+'/'+CONFIG["LIBRUBY"], archlibdir, 0644, true
-  end
 end
 File.install wdir+'/'+CONFIG['LIBRUBY_A'], archlibdir, 0644, true
 
