@@ -24,6 +24,9 @@
 #include <windows.h>
 #include <winbase.h>
 #include <wincon.h>
+#ifdef __MINGW32__
+#include <mswsock.h>
+#endif
 #include "win32.h"
 #include "win32/dir.h"
 #ifndef index
