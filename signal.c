@@ -386,6 +386,16 @@ sigsegv(sig)
 }
 #endif
 
+#ifdef SIGPIPE
+static RETSIGTYPE sigsegv _((int));
+static RETSIGTYPE
+sigpipe(sig)
+    int sig;
+{
+    /* do nothing */
+}
+#endif
+
 void
 rb_trap_exit()
 {
@@ -546,7 +556,7 @@ trap(arg)
 #endif
 #ifdef SIGPIPE
 	  case SIGPIPE:
-	    func = SIG_IGN;
+	    func = sigpipe;
 	    break;
 #endif
 	}
@@ -659,7 +669,7 @@ Init_signal()
     ruby_signal(SIGSEGV, sigsegv);
 #endif
 #ifdef SIGPIPE
-    ruby_signal(SIGPIPE, SIG_IGN);
+    ruby_signal(SIGPIPE, sigpipe);
 #endif
 #endif /* MACOS_UNUSE_SIGNAL */
 }
