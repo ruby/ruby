@@ -74,14 +74,19 @@ module DL
 	  return @names
 	end
 
-	def new(size = nil)
+	# ptr must be a PtrData object.
+	def new(ptr)
+	  ptr.struct!(@tys, *@names)
+	  mem = Memory.new(ptr, @names, @ty, @len, @enc, @dec)
+	  return mem
+	end
+
+	def alloc(size = nil)
 	  if( !size )
 	    size = @size
 	  end
 	  ptr = DL::malloc(size)
-	  ptr.struct!(@tys, *@names)
-	  mem = Memory.new(ptr, @names, @ty, @len, @enc, @dec)
-	  return mem
+	  return new(ptr)
 	end
 
 	def parse(contents)
