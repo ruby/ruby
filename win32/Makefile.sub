@@ -244,10 +244,8 @@ config.h:
 #define HAVE_PROTOTYPES 1
 #define TOKEN_PASTE(x,y) x##y
 #define HAVE_STDARG_PROTOTYPES 1
-#if _MSC_VER > 1100 && !defined NORETURN
+#if _MSC_VER > 1100
 #define NORETURN(x) __declspec(noreturn) x
-#else
-#define NORETURN(x) x
 #endif
 #define HAVE_DECL_SYS_NERR 1
 #define HAVE_LIMITS_H 1
