@@ -1,3 +1,17 @@
+Wed Jul 23 10:11:15 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* ext/iconv/iconv.c (check_iconv): check if Iconv instance.
+
+	* ext/iconv/iconv.c (iconv_convert): stringify argument.
+
+Tue Jul 22 19:16:40 2003  Tanaka Akira  <akr@m17n.org>
+
+	* ext/iconv/iconv.c (iconv_failure_initialize): limit
+	  inspect message.  [ruby-dev:20785]
+
+	* ext/iconv/iconv.c (rb_str_derive): share with original
+	  string if possible.  [ruby-dev:20785]
+
 Tue Jul 22 17:22:34 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* variable.c (rb_mod_const_missing): new method. [ruby-core:00441]

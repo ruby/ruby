@@ -121,7 +121,7 @@ map_charset
 static iconv_t
 iconv_create
 #ifdef HAVE_PROTOTYPES
-(VALUE to, VALUE from)
+    (VALUE to, VALUE from)
 #else /* HAVE_PROTOTYPES */
     (to, from)
     VALUE to;
@@ -155,7 +155,7 @@ iconv_create
 static void
 iconv_dfree
 #ifdef HAVE_PROTOTYPES
-(void *cd)
+    (void *cd)
 #else /* HAVE_PROTOTYPES */
     (cd)
     void *cd;
@@ -169,7 +169,7 @@ iconv_dfree
 static VALUE
 iconv_free
 #ifdef HAVE_PROTOTYPES
-(VALUE cd)
+    (VALUE cd)
 #else /* HAVE_PROTOTYPES */
     (cd)
     VALUE cd;
@@ -181,9 +181,25 @@ iconv_free
 }
 
 static VALUE
+check_iconv
+#ifdef HAVE_PROTOTYPES
+    (VALUE obj)
+#else /* HAVE_PROTOTYPES */
+    (obj)
+    VALUE obj;
+#endif /* HAVE_PROTOTYPES */
+{
+    Check_Type(obj, T_DATA);
+    if (RDATA(obj)->dfree != ICONV_FREE) {
+	rb_raise(rb_eArgError, "Iconv expected (%s)", rb_class2name(CLASS_OF(obj)));
+    }
+    return (VALUE)DATA_PTR(obj);
+}
+
+static VALUE
 iconv_try
 #ifdef HAVE_PROTOTYPES
-(iconv_t cd, const char **inptr, size_t *inlen, char **outptr, size_t *outlen)
+    (iconv_t cd, const char **inptr, size_t *inlen, char **outptr, size_t *outlen)
 #else /* HAVE_PROTOTYPES */
     (cd, inptr, inlen, outptr, outlen)
     iconv_t cd;
@@ -218,10 +234,12 @@ iconv_try
 #define iconv_fail(error, success, failed, env) \
 	rb_exc_raise(iconv_failure_initialize(error, success, failed, env))
 
+#define FAILED_MAXLEN 16
+
 static VALUE
 iconv_failure_initialize
 #ifdef HAVE_PROTOTYPES
-(VALUE error, VALUE success, VALUE failed, struct iconv_env_t* env)
+    (VALUE error, VALUE success, VALUE failed, struct iconv_env_t* env)
 #else /* HAVE_PROTOTYPES */
     (error, success, failed, env)
     VALUE error;
@@ -230,8 +248,16 @@ iconv_failure_initialize
     struct iconv_env_t *env;
 #endif /* HAVE_PROTOTYPES */
 {
-    if (NIL_P(rb_attr_get(error, rb_mesg)))
-	rb_ivar_set(error, rb_mesg, rb_inspect(failed));
+    if (NIL_P(rb_attr_get(error, rb_mesg))) {
+	if (TYPE(failed) != T_STRING || RSTRING(failed)->len < FAILED_MAXLEN) {
+	    rb_ivar_set(error, rb_mesg, rb_inspect(failed));
+	}
+	else {
+	    VALUE mesg = rb_inspect(rb_str_substr(failed, 0, FAILED_MAXLEN));
+	    rb_str_cat2(mesg, "...");
+	    rb_ivar_set(error, rb_mesg, mesg);
+	}
+    }
     if (env) {
 	success = rb_funcall3(env->ret, rb_inserter, 1, &success);
 	if (env->argc > 0) {
@@ -247,7 +273,7 @@ iconv_failure_initialize
 static VALUE
 rb_str_derive
 #ifdef HAVE_PROTOTYPES
-(VALUE str, const char* ptr, int len)
+    (VALUE str, const char* ptr, int len)
 #else /* HAVE_PROTOTYPES */
     (str, ptr, len)
     VALUE str;
@@ -261,7 +287,10 @@ rb_str_derive
 	return rb_str_new(ptr, len);
     if (RSTRING(str)->ptr == ptr && RSTRING(str)->len == len)
 	return str;
-    ret = rb_str_new(ptr, len);
+    if (RSTRING(str)->ptr + RSTRING(str)->len == ptr + len)
+	ret = rb_str_substr(str, ptr - RSTRING(str)->ptr, len);
+    else
+	ret = rb_str_new(ptr, len);
     OBJ_INFECT(ret, str);
     return ret;
 }
@@ -269,7 +298,7 @@ rb_str_derive
 static VALUE
 iconv_convert
 #ifdef HAVE_PROTOTYPES
-(iconv_t cd, VALUE str, int start, int length, struct iconv_env_t* env)
+    (iconv_t cd, VALUE str, int start, int length, struct iconv_env_t* env)
 #else /* HAVE_PROTOTYPES */
     (cd, str, start, length, env)
     iconv_t cd;
@@ -307,7 +336,7 @@ iconv_convert
     else {
 	int slen;
 
-	Check_Type(str, T_STRING);
+	StringValue(str);
 	slen = RSTRING(str)->len;
 	inptr = RSTRING(str)->ptr;
 
@@ -408,7 +437,7 @@ iconv_convert
 static VALUE
 iconv_s_allocate
 #ifdef HAVE_PROTOTYPES
-(VALUE klass)
+    (VALUE klass)
 #else /* HAVE_PROTOTYPES */
     (klass)
     VALUE klass;
@@ -420,7 +449,7 @@ iconv_s_allocate
 static VALUE
 iconv_initialize
 #ifdef HAVE_PROTOTYPES
-(VALUE self, VALUE to, VALUE from)
+    (VALUE self, VALUE to, VALUE from)
 #else /* HAVE_PROTOTYPES */
     (self, to, from)
     VALUE self;
@@ -428,7 +457,7 @@ iconv_initialize
     VALUE from;
 #endif /* HAVE_PROTOTYPES */
 {
-    iconv_free((VALUE)(DATA_PTR(self)));
+    iconv_free(check_iconv(self));
     DATA_PTR(self) = NULL;
     DATA_PTR(self) = (void *)ICONV2VALUE(iconv_create(to, from));
     return self;
@@ -437,7 +466,7 @@ iconv_initialize
 static VALUE
 iconv_s_open
 #ifdef HAVE_PROTOTYPES
-(VALUE self, VALUE to, VALUE from)
+    (VALUE self, VALUE to, VALUE from)
 #else /* HAVE_PROTOTYPES */
     (self, to, from)
     VALUE self;
@@ -447,12 +476,12 @@ iconv_s_open
 {
     VALUE cd = ICONV2VALUE(iconv_create(to, from));
 
+    self = Data_Wrap_Struct(self, NULL, ICONV_FREE, (void *)cd);
     if (rb_block_given_p()) {
-	self = Data_Wrap_Struct(self, NULL, NULL, (void *)cd);
 	return rb_ensure(rb_yield, self, (VALUE(*)())iconv_finish, self);
     }
     else {
-	return Data_Wrap_Struct(self, NULL, ICONV_FREE, (void *)cd);
+	return self;
     }
 }
 
@@ -475,7 +504,7 @@ iconv_s_open
 static VALUE
 iconv_s_convert
 #ifdef HAVE_PROTOTYPES
-(struct iconv_env_t* env)
+    (struct iconv_env_t* env)
 #else /* HAVE_PROTOTYPES */
     (env)
     struct iconv_env_t *env;
@@ -500,7 +529,7 @@ iconv_s_convert
 static VALUE
 iconv_s_iconv
 #ifdef HAVE_PROTOTYPES
-(int argc, VALUE *argv, VALUE self)
+    (int argc, VALUE *argv, VALUE self)
 #else /* HAVE_PROTOTYPES */
     (argc, argv, self)
     int argc;
@@ -558,7 +587,7 @@ iconv_s_conv
 static VALUE
 iconv_init_state
 #ifdef HAVE_PROTOTYPES
-(VALUE cd)
+    (VALUE cd)
 #else /* HAVE_PROTOTYPES */
     (cd)
     VALUE cd;
@@ -570,17 +599,14 @@ iconv_init_state
 static VALUE
 iconv_finish
 #ifdef HAVE_PROTOTYPES
-(VALUE self)
+    (VALUE self)
 #else /* HAVE_PROTOTYPES */
     (self)
     VALUE self;
 #endif /* HAVE_PROTOTYPES */
 {
-    VALUE cd;
+    VALUE cd = check_iconv(self);
 
-    Check_Type(self, T_DATA);
-
-    cd = (VALUE)DATA_PTR(self);
     if (!cd) return Qnil;
     DATA_PTR(self) = NULL;
 
@@ -615,7 +641,7 @@ iconv_finish
 static VALUE
 iconv_iconv
 #ifdef HAVE_PROTOTYPES
-(int argc, VALUE *argv, VALUE self)
+    (int argc, VALUE *argv, VALUE self)
 #else /* HAVE_PROTOTYPES */
     (argc, argv, self)
     int argc;
@@ -624,13 +650,12 @@ iconv_iconv
 #endif /* HAVE_PROTOTYPES */
 {
     VALUE str, n1, n2;
-
-    Check_Type(self, T_DATA);
+    VALUE cd = check_iconv(self);
 
     n1 = n2 = Qnil;
     rb_scan_args(argc, argv, "12", &str, &n1, &n2);
 
-    return iconv_convert(VALUE2ICONV(DATA_PTR(self)), str,
+    return iconv_convert(VALUE2ICONV(cd), str,
 			 NIL_P(n1) ? 0 : NUM2INT(n1),
 			 NIL_P(n2) ? -1 : NUM2INT(n1),
 			 NULL);
@@ -668,7 +693,7 @@ iconv_failure_success
     VALUE self;
 #endif /* HAVE_PROTOTYPES */
 {
-    return rb_ivar_get(self, rb_success);
+    return rb_attr_get(self, rb_success);
 }
 
 /*
@@ -687,7 +712,7 @@ iconv_failure_failed
     VALUE self;
 #endif /* HAVE_PROTOTYPES */
 {
-    return rb_ivar_get(self, rb_failed);
+    return rb_attr_get(self, rb_failed);
 }
 
 /*
@@ -699,15 +724,15 @@ iconv_failure_failed
 static VALUE
 iconv_failure_inspect
 #ifdef HAVE_PROTOTYPES
-(VALUE self)
+    (VALUE self)
 #else /* HAVE_PROTOTYPES */
     (self)
     VALUE self;
 #endif /* HAVE_PROTOTYPES */
 {
     char *cname = rb_class2name(CLASS_OF(self));
-    VALUE success = iconv_failure_success(self);
-    VALUE failed = iconv_failure_failed(self);
+    VALUE success = rb_attr_get(self, rb_success);
+    VALUE failed = rb_attr_get(self, rb_failed);
     VALUE str = rb_str_buf_cat2(rb_str_new2("#<"), cname);
     str = rb_str_buf_cat(str, ": ", 2);
     str = rb_str_buf_append(str, rb_inspect(success));
