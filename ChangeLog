@@ -1,8 +1,3 @@
-Wed May 21 23:07:08 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
-
-	* error.c (rb_sys_fail): should not specify errno explicitly.
-	  [ruby-dev:20264]
-
 Thu May 22 02:46:38 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (rb_eval): splat NODE_RESTARY.  [ruby-dev:20268]
