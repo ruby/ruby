@@ -67,7 +67,7 @@ module Net
     # When +true+, the connection is in passive mode.  Default: false.
     attr_accessor :passive
 
-    # The return code from the last operation.
+    # The ASCII code used to separate lines.
     attr_accessor :return_code
 
     # When +true+, all traffic to and from the server is written
