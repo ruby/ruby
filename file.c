@@ -1301,7 +1301,10 @@ rb_file_s_readlink(klass, path)
 	size *= 2;
 	buf = xrealloc(buf, size);
     }
-    if (rv < 0) rb_sys_fail(RSTRING(path)->ptr);
+    if (rv < 0) {
+	free(buf);
+	rb_sys_fail(RSTRING(path)->ptr);
+    }
     v = rb_tainted_str_new(buf, rv);
     free(buf);
 
