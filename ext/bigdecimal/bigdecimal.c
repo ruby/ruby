@@ -58,7 +58,7 @@ VALUE rb_cBigDecimal;
 /*
  * ================== Ruby Interface part ==========================
  */
-# define DoSomeOne(x,y) rb_num_coerce_bin(x,y)
+#define DoSomeOne(x,y) rb_num_coerce_bin(x,y)
 
 /*
  *  **** BigDecimal version ****
