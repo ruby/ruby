@@ -849,6 +849,9 @@ strio_read(argc, argv, self)
 		ptr->flags |= STRIO_EOF;
 		return Qnil;
 	    }
+	    else if (ptr->flags & STRIO_EOF) {
+		return Qnil;
+	    }
 	    break;
 	}
 	/* fall through */
@@ -856,6 +859,7 @@ strio_read(argc, argv, self)
 	len = RSTRING(ptr->string)->len - ptr->pos;
 	if (len == 0 && ptr->pos == RSTRING(ptr->string)->len) {
 	    if (ptr->flags & STRIO_EOF) return Qnil;
+	    ptr->flags |= STRIO_EOF;
 	}
 	break;
       default:
