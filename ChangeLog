@@ -1,3 +1,14 @@
+Sun Jan 25 01:45:38 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/httpserver.rb (WEBrick::HTTPServer#run): support
+	  virtual host.
+
+	* lib/webrick/httpserver.rb (WEBrick::HTTPServer#virtual_host): add
+	  new method to register virtual hosting server.
+
+	* lib/webrick/httpserver.rb (WEBrick::HTTPServer#lookup_server): add
+	  new method to lookup virtual hosting server.
+
 Sat Jan 24 13:06:26 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_x509hame.c (ossl_x509name_initialize): change

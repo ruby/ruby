@@ -36,22 +36,26 @@ module WEBrick
           [ $stderr, AccessLog::REFERER_LOG_FORMAT ]
         ]
       end
+ 
+      @virtual_hosts = Array.new
     end
 
     def run(sock)
       while true 
         res = HTTPResponse.new(@config)
         req = HTTPRequest.new(@config)
+        server = self
         begin
           req.parse(sock)
           res.request_method = req.request_method
           res.request_uri = req.request_uri
           res.request_http_version = req.http_version
           res.keep_alive = req.keep_alive?
-          if handler = @config[:RequestHandler]
+          server = lookup_server(req) || self
+          if handler = server[:RequestHandler]
             handler.call(req, res)
           end
-          service(req, res)
+          server.service(req, res)
         rescue HTTPStatus::EOFError, HTTPStatus::RequestTimeout => ex
           res.set_error(ex)
         rescue HTTPStatus::Error => ex
@@ -65,7 +69,7 @@ module WEBrick
           if req.request_line
             req.fixup()
             res.send_response(sock)
-            access_log(@config, req, res)
+            server.access_log(@config, req, res)
           end
         end
         break if @http_version < "1.1"
@@ -119,6 +123,18 @@ module WEBrick
       if servlet
         [ servlet, options, script_name, path_info ]
       end
+    end
+
+    def virtual_host(server)
+      @virtual_hosts << server
+    end
+
+    def lookup_server(req)
+      @virtual_hosts.find{|server|
+        (server[:Port].nil?        || req.port == server[:Port])           &&
+        (server[:BindAddress].nil? || req.addr[3] == server[:BindAddress]) &&
+        (server[:ServerName].nil?  || req.host == server[:ServerName])
+      }
     end
 
     def access_log(config, req, res)
