@@ -57,7 +57,7 @@
 #define DBL_EPSILON 2.2204460492503131e-16
 #endif
 
-static ID id_coerce, id_to_i;
+static ID id_coerce, id_to_i, id_eq;
 
 VALUE rb_cNumeric;
 VALUE rb_cFloat;
@@ -515,7 +515,8 @@ static VALUE
 num_equal(x, y)
     VALUE x, y;
 {
-    return rb_equal(y, x);
+    if (x == y) return Qtrue;
+    return rb_funcall(y, id_eq, 1, x);
 }
 
 static VALUE
@@ -1804,6 +1805,7 @@ Init_Numeric()
 #endif
     id_coerce = rb_intern("coerce");
     id_to_i = rb_intern("to_i");
+    id_eq = rb_intern("==");
 
     rb_eZeroDivError = rb_define_class("ZeroDivisionError", rb_eStandardError);
     rb_eFloatDomainError = rb_define_class("FloatDomainError", rb_eRangeError);

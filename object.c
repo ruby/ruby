@@ -42,7 +42,7 @@ rb_equal(obj1, obj2)
     if (obj1 == obj2) return Qtrue;
     result = rb_funcall(obj1, id_eq, 1, obj2);
     if (RTEST(result)) return Qtrue;
-    return result;
+    return Qfalse;
 }
 
 int
