@@ -1,3 +1,8 @@
+Wed Mar 26 20:26:17 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* dln.c (dln_find_1): break if path list end, even for too long
+	  path names.  (ruby-bugs-ja:PR#412)
+
 Sun Mar 23 22:22:04 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/jcode.rb (tr!, delete!, szueeze!): add empty string checking.

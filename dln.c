@@ -1670,7 +1670,7 @@ dln_find_1(fname, path, exe_flag)
 	    *bp = '\0';
 	    fprintf(stderr, "\tDirectory \"%s\"\n", fbuf);
 	    fprintf(stderr, "\tFile \"%s\"\n", fname);
-	    continue;
+	    goto next;
 	}
 	memcpy(bp, fname, i + 1);
 
@@ -1724,6 +1724,8 @@ dln_find_1(fname, path, exe_flag)
 	    }
 	}
 #endif /* MSDOS or NT or __human68k__ or __EMX__ */
+
+      next:
 	/* if not, and no other alternatives, life is bleak */
 	if (*ep == '\0') {
 	    return NULL;
