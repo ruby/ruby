@@ -29,7 +29,13 @@
 #endif
 
 #include <stdio.h>
+#if defined(HAVE_UCONTEXT_H) && (defined(__ia64__) || defined(HAVE_NATIVETHREAD))
+#include <ucontext.h>
+#define USE_CONTEXT
+#else
 #include <setjmp.h>
+#endif
+
 #include "st.h"
 #include "dln.h"
 
@@ -82,10 +88,33 @@ char *strrchr _((const char*,const char));
 #include "macruby_private.h"
 #endif
 
+#ifdef USE_CONTEXT
+typedef struct {
+    ucontext_t context;
+    volatile int status;
+} rb_jmpbuf_t[1];
+
+#undef longjmp
+#undef setjmp
+NORETURN(static void rb_jump_context(rb_jmpbuf_t, int));
+static inline void
+rb_jump_context(env, val)
+    rb_jmpbuf_t env;
+    int val;
+{
+    env->status = val;
+    setcontext(&env->context);
+    abort();			/* ensure noreturn */
+}
+#define longjmp(env, val) rb_jump_context(env, val)
+#define setjmp(j) ((j)->status = 0, getcontext(&(j)->context), (j)->status)
+#else
+typedef jmp_buf rb_jmpbuf_t;
 #ifndef setjmp
 #ifdef HAVE__SETJMP
 #define setjmp(env) _setjmp(env)
 #define longjmp(env,val) _longjmp(env,val)
+#endif
 #endif
 #endif
 
@@ -847,7 +876,7 @@ static struct iter *ruby_iter;
 } while (0)
 
 struct tag {
-    jmp_buf buf;
+    rb_jmpbuf_t buf;
     struct FRAME *frame;
     struct iter *iter;
     VALUE tag;
@@ -7858,7 +7887,6 @@ Init_Proc()
 }
 
 #ifdef __ia64__
-#include <ucontext.h>
 #if defined(__FreeBSD__)
 /*
  * FreeBSD/ia64 currently does not have a way for a process to get the
@@ -7963,12 +7991,7 @@ enum thread_status {
 
 struct thread {
     struct thread *next, *prev;
-#ifdef __ia64__
-    ucontext_t context;
-    int context_status;
-#else
-    jmp_buf context;
-#endif
+    rb_jmpbuf_t context;
 #ifdef SAVE_WIN32_EXCEPTION_LIST
     DWORD win32_exception_list;
 #endif
@@ -8350,12 +8373,13 @@ rb_thread_save_context(th)
     th->stk_len = len;
     FLUSH_REGISTER_WINDOWS;
     MEMCPY(th->stk_ptr, th->stk_pos, VALUE, th->stk_len);
-#ifdef __ia64__
+#ifdef USE_CONTEXT
     {
 	ucontext_t ctx;
 	VALUE *top, *bot;
 
 	getcontext(&ctx);
+#ifdef __ia64__
 	bot = (VALUE*)__libc_ia64_register_backing_store_base;
 #if defined(__FreeBSD__)
 	top = (VALUE*)ctx.uc_mcontext.mc_special.bspstore;
@@ -8365,6 +8389,7 @@ rb_thread_save_context(th)
 	th->bstr_len = top - bot;
 	REALLOC_N(th->bstr_ptr, VALUE, th->bstr_len);
 	MEMCPY(th->bstr_ptr, (VALUE*)__libc_ia64_register_backing_store_base, VALUE, th->bstr_len);
+#endif
     }
 #endif
 #ifdef SAVE_WIN32_EXCEPTION_LIST
@@ -8434,16 +8459,9 @@ rb_thread_switch(n)
     return 1;
 }
 
-#ifdef __ia64__
-# define THREAD_SAVE_CONTEXT(th) \
-    (rb_thread_save_context(th),\
-     th->context_status = 0,\
-     rb_thread_switch((FLUSH_REGISTER_WINDOWS, getcontext(&th->context),(th)->context_status)))
-#else
-# define THREAD_SAVE_CONTEXT(th) \
+#define THREAD_SAVE_CONTEXT(th) \
     (rb_thread_save_context(th),\
      rb_thread_switch((FLUSH_REGISTER_WINDOWS, setjmp((th)->context))))
-#endif
 
 NORETURN(static void rb_thread_restore_context _((rb_thread_t,int)));
 
@@ -8521,12 +8539,7 @@ rb_thread_restore_context(th, exit)
     rb_backref_set(tmp->last_match);
     tmp->last_match = tval;
 
-#ifdef __ia64__
-    tmp->context_status = ex;
-    setcontext(&tmp->context);
-#else
     longjmp(tmp->context, ex);
-#endif
 }
 
 static void
