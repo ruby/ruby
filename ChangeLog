@@ -9,6 +9,16 @@ Sat May 17 00:18:11 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	  returns EINVAL on some platforms, need to check true error
 	  status.  [ruby-core:01037]
 
+Sat May 17 00:21:51 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_class_allocate_instance): singleton class check
+	  moved to rb_obj_alloc(). (ruby-bugs-ja PR#345)
+
+Fri May 16 23:55:50 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_quote): should escape white space characters,
+	  \t, \f, \n, \r. (ruby-bugs-ja PR#231)
+
 Fri May 16 12:40:40 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (block_pass): chain previous block to the pushing block.

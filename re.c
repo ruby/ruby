@@ -1349,6 +1349,7 @@ rb_reg_quote(str)
 	  case '*': case '.': case '\\':
 	  case '?': case '+': case '^': case '$':
 	  case ' ': case '#':
+	  case '\t': case '\f': case '\n': case '\r':
 	    goto meta_found;
 	}
     }
@@ -1376,8 +1377,28 @@ rb_reg_quote(str)
 	  case '(': case ')': case '|': case '-':
 	  case '*': case '.': case '\\':
 	  case '?': case '+': case '^': case '$':
-	  case ' ': case '#':
+	  case '#':
 	    *t++ = '\\';
+	    break;
+	  case ' ':
+	    *t++ = '\\';
+	    *t++ = 's';
+	    break;
+	  case '\t':
+	    *t++ = '\\';
+	    *t++ = 't';
+	    break;
+	  case '\n':
+	    *t++ = '\\';
+	    *t++ = 'n';
+	    break;
+	  case '\r':
+	    *t++ = '\\';
+	    *t++ = 'r';
+	    break;
+	  case '\f':
+	    *t++ = '\\';
+	    *t++ = 'f';
 	    break;
 	}
 	*t++ = c;

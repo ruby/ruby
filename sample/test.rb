@@ -1194,6 +1194,13 @@ test_ok(-1045307475.to_s(36) == "-hacker")
 test_ok("Just_another_Ruby_hacker".to_i(36) == 265419172580680477752431643787347)
 test_ok(-265419172580680477752431643787347.to_s(36) == "-justanotherrubyhacker")
 
+a = []
+(0..255).each {|n|
+  ch = [n].pack("C")                     
+  a.push ch if /a#{Regexp.quote ch}b/x =~ "ab" 
+}
+test_ok(a.size == 0)
+
 test_check "assignment"
 a = nil
 test_ok(defined?(a))
