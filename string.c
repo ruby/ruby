@@ -534,7 +534,7 @@ rb_str_cat(str, ptr, len)
 	    (FL_TEST(str, STR_NO_ORIG) && !FL_TEST(str, STR_ASSOC))) {
 	    return rb_str_buf_cat(str, ptr, len);
 	}
-	REALLOC_N(RSTRING(str)->ptr, char, RSTRING(str)->len+1);
+	REALLOC_N(RSTRING(str)->ptr, char, RSTRING(str)->len+len+1);
 	if (ptr) {
 	    memcpy(RSTRING(str)->ptr + RSTRING(str)->len, ptr, len);
 	}
@@ -594,8 +594,8 @@ rb_str_append(str, str2)
 
     StringValue(str2);
     rb_str_modify(str);
-    len = RSTRING(str)->len+RSTRING(str2)->len;
-    if (len > 0) {
+    if (RSTRING(str2)->len > 0) {
+	len = RSTRING(str)->len+RSTRING(str2)->len;
 	if (RSTRING(str)->orig == 0 ||
 	    (FL_TEST(str, STR_NO_ORIG) && !FL_TEST(str, STR_ASSOC))) {
 	    rb_str_buf_append(str, str2);
