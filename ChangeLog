@@ -1,3 +1,13 @@
+Wed Feb 20 12:41:59 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (rb_any_cmp): should handle Qundef in keys.
+
+	* eval.c (remove_method): should not remove a empty method to
+	  implement "undef".
+
+	* eval.c (rb_eval): should allow singleton class def for
+	  true/false/nil.
+
 Tue Feb 19 21:43:32 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/protocol.rb: rename Protocol.port to default_port.
@@ -57,6 +67,10 @@ Tue Feb 19 21:43:32 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb: proxy related class-instance-variables are not
 	  initialized correctly.
+
+Tue Feb 19 20:20:12 2002  Ed Sinjiashvili  <edsin@swes.saren.ru>
+
+	* parse.y (str_extend): backslash escape was done wrong.
 
 Tue Feb 19 17:10:25 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 

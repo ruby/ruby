@@ -4101,7 +4101,7 @@ str_extend(list, term, paren)
 		    tokadd('\\');
 		    tokadd(c);
 		}
-		break;
+		goto loop_again;
 	      case '{':
 		if (brace != -1) brace_nest++;
 	      default:

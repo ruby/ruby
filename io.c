@@ -1165,7 +1165,7 @@ rb_io_close(io)
     int fd;
 
     fptr = RFILE(io)->fptr;
-    if (!fptr) return;
+    if (!fptr) return Qnil;
     if (!fptr->f && !fptr->f2) return;
 
     fd = fileno(fptr->f);
