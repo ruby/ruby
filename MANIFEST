@@ -112,6 +112,7 @@ lib/pstore.rb
 lib/rational.rb
 lib/shellwords.rb
 lib/sync.rb
+lib/tempfile.rb
 lib/thread.rb
 lib/thwait.rb
 lib/tk.rb

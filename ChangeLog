@@ -1,5 +1,7 @@
 Tue Jan 20 15:19:59 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
+	* ext/tcltklib/extconf.rb: more accurate check for tcl/tk libs.
+
 	* file.c (rb_stat): most of the FileTest methods (and function
  	  `test') accept File objects as the argument.
 
