@@ -1,3 +1,7 @@
+Thu May 30 09:16:36 2002  Wakou Aoyama  <wakou@ruby-lang.org>
+
+	* lib/cgi.rb: if StringIO is usable then use it.
+
 Wed May 29 13:45:15 2002  Wakou Aoyama  <wakou@ruby-lang.org>
 
 	* lib/cgi.rb: not use const if GET, HEAD. check multipart form head.
