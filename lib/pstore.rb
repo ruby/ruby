@@ -88,14 +88,14 @@ class PStore
 	file = File::open(@filename, "r+")
 	orig = true
       else
+	@table = {}
 	file = File::open(@filename, "w+")
+	Marshal::dump(@table, file)
       end
       file.flock(File::LOCK_EX)
       if orig
 	File::copy @filename, backup
 	@table = Marshal::load(file)
-      else
-	@table = {}
       end
       begin
 	catch(:pstore_abort_transaction) do
