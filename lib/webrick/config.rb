@@ -33,6 +33,7 @@ module WEBrick
       :StartCallback  => nil,
       :StopCallback   => nil,
       :AcceptCallback => nil,
+      :DoNotReverseLookup => nil,
     }
 
     # for HTTPServer, HTTPRequest, HTTPResponse ...

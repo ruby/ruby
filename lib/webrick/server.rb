@@ -90,6 +90,9 @@ module WEBrick
                 @tokens.pop          # blocks while no token is there.
                 sock = svr.accept
                 sock.sync = true
+                if @config[:DoNotReverseLookup]
+                  sock.do_not_reverse_lookup = true
+                end
                 Utils::set_close_on_exec(sock)
                 th = start_thread(sock, &block)
                 th[:WEBrickThread] = true
