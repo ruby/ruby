@@ -4,6 +4,11 @@
 require 'test/unit'
 require 'yaml'
 
+# [ruby-core:01946]
+module YAML_Tests
+    StructTest = Struct::new( :c )
+end
+
 class YAML_Unit_Tests < Test::Unit::TestCase
 	#
 	# Convert between YAML and the object to verify correct parsing and
@@ -1058,6 +1063,12 @@ EOY
     isbn: None
 EOY
 		)
+
+        assert_to_yaml( YAML_Tests::StructTest.new( 123 ), <<EOY )
+--- !ruby/struct:Test::StructTest
+c: 123
+EOY
+
 	end
 
 	def test_emitting_indicators

@@ -155,8 +155,8 @@ class Struct
 			#
 			# Basic struct is passed as a YAML map
 			#
-			struct_name = self.class.name.gsub( "Struct:", "" )
-            out.map( "!ruby/struct#{struct_name}" ) { |map|
+			struct_name = self.class.name.gsub( "Struct::", "" )
+            out.map( "!ruby/struct:#{struct_name}" ) { |map|
 				self.members.each { |m|
                     map.add( m, self[m] )
 				}
