@@ -1405,7 +1405,7 @@ test_check(n, argc, argv)
     int i;
 
     n+=1;
-    if (n < argc) rb_raise(rb_eArgError, "wrong # of arguments(%d for %d)", argc, n);
+    if (n != argc) rb_raise(rb_eArgError, "wrong # of arguments(%d for %d)", argc, n);
     for (i=1; i<n; i++) {
 	switch (TYPE(argv[i])) {
 	  case T_STRING:

@@ -1,3 +1,7 @@
+Fri Mar 24 18:26:51 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* file.c (test_check): should have checked exact number of arguments.
+
 Wed Mar 22 21:49:36 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* st.c (st_delete_safe): skip already deleted entry.
