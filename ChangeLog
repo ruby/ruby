@@ -1,4 +1,4 @@
-Tue Mar 23 14:31:47 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Mar 23 14:46:10 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in, */Makefile.sub, common.mk (clean-local, distclean-local):
 	  separate files under directories due to directory separator.
@@ -13,6 +13,8 @@ Tue Mar 23 14:31:47 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): Borland make wrongly removes braces
 	  from command lines.
+
+	* bcc32/Makefile.sub: needs bcc32/mkexports.rb.
 
 Mon Mar 22 08:21:17 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
