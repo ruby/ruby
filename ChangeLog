@@ -95,7 +95,7 @@ Tue Dec  2 23:18:12 2003  Minero Aoki  <aamine@loveruby.net>
 	* lib/net/http.rb: wrote the warning about HTTP_PROXY environment
 	  variable.
 
-Tue Dec  2 21:31:42 2003  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+Tue Dec  2 21:31:42 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bin/testrb: new test runner.  [ruby-core:01845]
 
@@ -158,7 +158,7 @@ Mon Dec  1 17:33:47 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* numeric.c (rb_num2uint): should not check for value range if the
 	  source value is negative.
 
-Mon Dec  1 17:14:34 2003  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+Mon Dec  1 17:14:34 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sample/optparse/opttest.rb: added.
 
@@ -653,7 +653,7 @@ Tue Nov 18 19:05:04 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* test/fileutils.rb: did not create correctly looped symlinks.
 
-Tue Nov 18 18:23:05 2003  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+Tue Nov 18 18:23:05 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_read): behave as IO at empty string.
 	  [ruby-dev:21939], [ruby-dev:21941]
@@ -704,7 +704,7 @@ Mon Nov 17 10:50:27 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* lib/optparse.rb (OptionParser::Completion::complete): allow least
 	  common completion for three or more candidates.
 
-Mon Nov 17 09:41:38 2003  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+Mon Nov 17 09:41:38 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit/ui/tk/testrunner.rb,
 	  lib/test/unit/ui/gtk/testrunner.rb:
