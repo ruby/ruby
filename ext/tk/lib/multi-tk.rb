@@ -934,7 +934,20 @@ class << MultiTkIp
   private :__new
 
 
-  def new_master(keys={})
+  def new_master(safe=nil, keys={})
+    if safe.kind_of?(Hash)
+      keys = safe
+    elsif safe.kind_of?(Integer)
+      raise ArgumentError, "unexpected argument(s)" unless keys.kind_of?(Hash)
+      if !keys.key?(:safe) && !keys.key?('safe')
+	keys[:safe] = safe
+      end
+    elsif safe == nil
+      # do nothing
+    else
+      raise ArgumentError, "unexpected argument(s)"
+    end
+
     ip = __new(__getip, nil, keys)
     ip.eval_proc(proc{$SAFE=ip.safe_level; Proc.new}.call) if block_given?
     ip
@@ -942,7 +955,20 @@ class << MultiTkIp
 
   alias new new_master
 
-  def new_slave(keys={})
+  def new_slave(safe=nil, keys={})
+    if safe.kind_of?(Hash)
+      keys = safe
+    elsif safe.kind_of?(Integer)
+      raise ArgumentError, "unexpected argument(s)" unless keys.kind_of?(Hash)
+      if !keys.key?(:safe) && !keys.key?('safe')
+	keys[:safe] = safe
+      end
+    elsif safe == nil
+      # do nothing
+    else
+      raise ArgumentError, "unexpected argument(s)"
+    end
+
     ip = __new(__getip, false, keys)
     ip.eval_proc(proc{$SAFE=ip.safe_level; Proc.new}.call) if block_given?
     ip
@@ -1242,21 +1268,43 @@ class MultiTkIp
   end
   private :eval_proc_core
 
-  def eval_callback(cmd = proc{$SAFE=@safe_level[0]; Proc.new}.call, *args)
-    eval_proc_core(false, cmd, *args)
+  #def eval_callback(cmd = proc{$SAFE=@safe_level[0]; Proc.new}.call, *args)
+  #  eval_proc_core(false, cmd, *args)
+  #end
+  def eval_callback(*args)
+    if block_given?
+      eval_proc_core(false, proc{$SAFE=@safe_level[0]; Proc.new}.call, *args)
+    else
+      eval_proc_core(false, *args)
+    end
   end
 
-  def eval_proc(cmd = proc{$SAFE=@safe_level[0]; Proc.new}.call, *args)
-    eval_proc_core(true, cmd, *args)
+  #def eval_proc(cmd = proc{$SAFE=@safe_level[0]; Proc.new}.call, *args)
+  #  eval_proc_core(true, cmd, *args)
+  #end
+  def eval_proc(*args)
+    if block_given?
+      eval_proc_core(true, proc{$SAFE=@safe_level[0]; Proc.new}.call, *args)
+    else
+      eval_proc_core(true, *args)
+    end
   end
   alias call eval_proc
   alias eval_string eval_proc
 end
 class << MultiTkIp
   # class method
-  def eval_proc(cmd = proc{$SAFE=__getip.safe_level; Proc.new}.call, *args)
+  # def eval_proc(cmd = proc{$SAFE=__getip.safe_level; Proc.new}.call, *args)
+  #   # class ==> interp object
+  #   __getip.eval_proc(cmd, *args)
+  # end
+  def eval_proc(*args)
     # class ==> interp object
-    __getip.eval_proc(cmd, *args)
+    if block_given?
+      __getip.eval_proc(proc{$SAFE=__getip.safe_level; Proc.new}.call, *args)
+    else
+      __getip.eval_proc(*args)
+    end
   end
   alias call eval_proc
   alias eval_string eval_proc
