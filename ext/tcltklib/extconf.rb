@@ -24,12 +24,14 @@ def find_tcl(tcllib, stubs)
     find_library(tcllib, func, *paths)
   elsif RUBY_PLATFORM =~ /mswin32|mingw|cygwin/
     find_library("tcl", func, *paths) or
+      find_library("tcl84", func, *paths) or
       find_library("tcl83", func, *paths) or
       find_library("tcl82", func, *paths) or
       find_library("tcl80", func, *paths) or
       find_library("tcl76", func, *paths)
   else
     find_library("tcl", func, *paths) or
+      find_library("tcl8.4", func, *paths) or
       find_library("tcl8.3", func, *paths) or
       find_library("tcl8.2", func, *paths) or
       find_library("tcl8.0", func, *paths) or
@@ -44,12 +46,14 @@ def find_tk(tklib, stubs)
     find_library(tklib, func, *paths)
   elsif RUBY_PLATFORM =~ /mswin32|mingw|cygwin/
     find_library("tk", func, *paths) or
+      find_library("tk84", func, *paths) or
       find_library("tk83", func, *paths) or
       find_library("tk82", func, *paths) or
       find_library("tk80", func, *paths) or
       find_library("tk42", func, *paths)
   else
     find_library("tk", func, *paths) or
+      find_library("tk8.4", func, *paths) or
       find_library("tk8.3", func, *paths) or
       find_library("tk8.2", func, *paths) or
       find_library("tk8.0", func, *paths) or

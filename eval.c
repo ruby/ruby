@@ -7366,7 +7366,7 @@ rb_thread_join(thread)
 
     if (!rb_thread_dead(th)) {
 	if (th == curr_thread)
-	    rb_raise(rb_eThreadError, "recursive join");
+	    rb_raise(rb_eThreadError, "thread tried to join itself");
 	if ((th->wait_for & WAIT_JOIN) && th->join == curr_thread)
 	    rb_raise(rb_eThreadError, "Thread#join: deadlock - mutual join");
 	curr_thread->status = THREAD_STOPPED;
