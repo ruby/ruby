@@ -370,7 +370,7 @@ rb_mark_tbl(tbl)
 
 static int
 mark_hashentry(key, value)
-    ID key;
+    VALUE key;
     VALUE value;
 {
     rb_gc_mark(key);

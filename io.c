@@ -3070,6 +3070,8 @@ argf_eof()
 {
     if (init_p == 0 && !next_argv())
 	return Qtrue;
+    if (next_p == -1)
+	return Qtrue;
     if (TYPE(current_file) != T_FILE) {
 	return argf_forward();
     }

@@ -224,6 +224,7 @@ static VALUE
 rb_struct_s_def(argc, argv, klass)
     int argc;
     VALUE *argv;
+    VALUE klass;
 {
     VALUE name, rest;
     long i;

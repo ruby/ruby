@@ -2150,7 +2150,7 @@ class TkListbox<TkTextWin
   def nearest(y)
     tk_send('nearest', y).to_i
   end
-  def size(y)
+  def size
     tk_send('size').to_i
   end
   def selection_anchor(index)
@@ -2159,8 +2159,8 @@ class TkListbox<TkTextWin
   def selection_clear(first, last=None)
     tk_send 'selection', 'clear', first, last
   end
-  def selection_includes
-    bool(tk_send('selection', 'includes'))
+  def selection_includes(index)
+    bool(tk_send('selection', 'includes', index))
   end
   def selection_set(first, last=None)
     tk_send 'selection', 'set', first, last

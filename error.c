@@ -386,6 +386,7 @@ check_backtrace(bt)
 static VALUE
 exc_set_backtrace(exc, bt)
     VALUE exc;
+    VALUE bt;
 {
     return rb_iv_set(exc, "bt", check_backtrace(bt));
 }

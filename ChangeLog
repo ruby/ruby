@@ -1,3 +1,13 @@
+Sat Dec 11 03:34:38 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* gc.c (mark_hashentry): key should be VALUE, not ID.
+
+	* io.c (argf_eof): should check next_p too.
+
+Thu Dec  9 18:09:13 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* error.c (exc_set_backtrace): forgot to declare a VALUE argument.
+
 Tue Dec  7 18:25:26 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* stable version 1.4.3 released.
