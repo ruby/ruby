@@ -3007,7 +3007,7 @@ rb_f_open(argc, argv)
 	char *str = StringValuePtr(argv[0]);
 
 	if (str[0] == '|') {
-	    VALUE tmp = rb_str_new(str+1, RSTRING(tmp)->len-1);
+	    VALUE tmp = rb_str_new(str+1, RSTRING(str)->len-1);
 	    OBJ_INFECT(tmp, argv[0]);
 	    argv[0] = tmp;
 	    return rb_io_s_popen(argc, argv, rb_cIO);
