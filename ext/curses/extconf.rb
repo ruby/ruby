@@ -19,7 +19,7 @@ elsif have_header(*curses=%w"curses.h") and have_library("curses", "initscr")
 end
 
 if make
-  for f in %w(beep bkgd bkgdset curs_set deleteln doupdate flash getbkgd getnstr init isendwin keyname keypad resizeterm scrl set setscrreg ungetch wattroff wattron wattrset wbkgd wbkgdset wdeleteln wgetnstr wresize wscrl wsetscrreg def_prog_mode reset_prog_mode timeout wtimeout nodelay init_color)
+  for f in %w(beep bkgd bkgdset curs_set deleteln doupdate flash getbkgd getnstr init isendwin keyname keypad resizeterm scrl set setscrreg ungetch wattroff wattron wattrset wbkgd wbkgdset wdeleteln wgetnstr wresize wscrl wsetscrreg def_prog_mode reset_prog_mode timeout wtimeout nodelay init_color wcolor_set)
     have_func(f)
   end
   flag = "-D_XOPEN_SOURCE_EXTENDED"

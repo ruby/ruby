@@ -212,6 +212,10 @@ make_struct(name, members, klass)
     rb_define_singleton_method(nstr, "members", rb_struct_s_members_m, 0);
     for (i=0; i< RARRAY(members)->len; i++) {
 	ID id = SYM2ID(RARRAY(members)->ptr[i]);
+	if (!rb_is_local_id(id)) {
+	    rb_raise(rb_eNameError, "`%s' is not proper name for a struct member",
+		     rb_id2name(id));
+	}
 	if (i<10) {
 	    rb_define_method_id(nstr, id, ref_func[i], 0);
 	}

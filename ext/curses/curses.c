@@ -561,7 +561,7 @@ curses_resizeterm(VALUE obj, VALUE lin, VALUE col)
 #endif
 }
 
-#ifdef USE_COLOR
+#if defined(USE_COLOR) && defined(HAVE_WCOLOR_SET)
 static VALUE
 curses_start_color(VALUE obj)
 {
@@ -1195,7 +1195,7 @@ window_setscrreg(VALUE obj, VALUE top, VALUE bottom)
 #endif
 }
 
-#ifdef USE_COLOR
+#if defined(USE_COLOR) && defined(HAVE_WCOLOR_SET)
 static VALUE
 window_color_set(VALUE obj, VALUE col) 
 {
@@ -1485,9 +1485,9 @@ Init_curses()
     rb_define_method(cWindow, "box", window_box, -1);
     rb_define_method(cWindow, "move", window_move, 2);
     rb_define_method(cWindow, "setpos", window_setpos, 2);
-#ifdef USE_COLOR
+#if defined(USE_COLOR) && defined(HAVE_WCOLOR_SET)
     rb_define_method(cWindow, "color_set", window_color_set, 1);
-#endif /* USE_COLOR */
+#endif /* USE_COLOR && HAVE_WCOLOR_SET */
     rb_define_method(cWindow, "cury", window_cury, 0);
     rb_define_method(cWindow, "curx", window_curx, 0);
     rb_define_method(cWindow, "maxy", window_maxy, 0);
