@@ -1,3 +1,8 @@
+Mon Dec 20 03:30:40 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/cgi/session.rb (CGI::Session#initialize): empty session id was
+	  used if request had no session key.  fixed: [ruby-core:03981]
+
 Mon Dec 20 00:28:20 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/encodings/SHIFT-JIS.rb: backported from CVS HEAD.
@@ -12,7 +17,7 @@ Sun Dec 19 17:19:48 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* test/openssl/ossl_x509store.rb: test certificate validity times.
 
-        * ext/openssl/ossl_x509name.c (ossl_x509name_to_s): add optional  
+	* ext/openssl/ossl_x509name.c (ossl_x509name_to_s): add optional
 	  second argument to specify the output format (see also
 	  X509_NAME_print_ex).
 
@@ -20,7 +25,7 @@ Sun Dec 19 17:19:48 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	  OpenSSL::X509::Name::COMPAT, OpenSSL::X509::Name::RFC2253,
 	  OpenSSL::X509::ONELINE, OpenSSL::X509::MULTILINE.
 
-        * ext/openssl/lib/openssl/x509.rb (OpenSSL::X509::Name::RFC2253DN):
+	* ext/openssl/lib/openssl/x509.rb (OpenSSL::X509::Name::RFC2253DN):
 	  new module to provide the parse for RFC2253 DN format.
 
 	* ext/openssl/lib/openssl/x509.rb (OpenSSL::X509::Name.parse_rfc2253):
