@@ -8,8 +8,8 @@
  * License or the Artistic License, as specified in the README file 
  * of this BigDecimal distribution. 
  *
- *  2002-12-06
- *    The sqrt() bug reported by Bret Jolly fixed.
+ * NOTES:
+ *   2003-03-28 V1.0 checked in.
  *
  */
 

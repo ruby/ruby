@@ -8,21 +8,19 @@
  * License or the Artistic License, as specified in the README file
  * of this BigDecimal distribution.
  *
- *  BigDecimal was originally copied from BigFloat(http://www.tinyforest.gr.jp/ruby/bigfloat_en.html),
- *  and has been modified so that it is fit in Ruby style.
- *  (Apr 2,2002).
- *
+ * NOTES:
+ *  2003-03-28
+ *    V1.0 checked in to CVS(ruby/ext/bigdecimal).
+ *    use rb_str2cstr() instead of STR2CSTR().
  *  2003-01-03
  *    assign instead of asign(by knu),use string.h functions(by t.saito).
  *  2002-12-06
  *    The sqrt() bug reported by Bret Jolly fixed.
  *  2002-5-6
- *    The bug reported by Sako Hiroshi <sakoh@ba2.so-net.ne.jp>(ruby-list:34988)
- *    in to_i fixed.
+ *    The bug reported by Sako Hiroshi (ruby-list:34988) in to_i fixed.
  *  2002-4-17
  *    methods prec and double_fig(class method) added(S.K).
- *
- *  Version 1.0.0(2002/04/04)
+ *  2002-04-04
  *    Copied from BigFloat 1.1.9 and
  *      hash method changed according to the suggestion from Akinori MUSHA <knu@iDaemons.org>.
  *      All ! class methods deactivated(but not actually removed).
@@ -91,7 +89,7 @@ coerce_rescue(VALUE *x)
 {
     rb_raise(rb_eTypeError, "%s can't be coerced into %s",
         rb_special_const_p(x[1])?
-        STR2CSTR(rb_inspect(x[1])):
+        rb_str2cstr(rb_inspect(x[1]),0):
         rb_class2name(CLASS_OF(x[1])),
         rb_class2name(CLASS_OF(x[0])));
     return (VALUE)0;
@@ -205,7 +203,7 @@ SomeOneMayDoIt:
     if(must) {
         rb_raise(rb_eTypeError, "%s can't be coerced into BigDecimal",
                     rb_special_const_p(v)?
-                    STR2CSTR(rb_inspect(v)):
+                    rb_str2cstr(rb_inspect(v),0):
                     rb_class2name(CLASS_OF(v))
                 );
     }
