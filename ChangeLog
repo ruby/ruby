@@ -1,3 +1,8 @@
+Mon May  3 09:47:24 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_method_or_yield_parameters):
+	  Fix parsing bug if yield called within 1 line block
+
 Sun May  2 01:04:38 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib, ext/tk: renewal Ruby/Tk

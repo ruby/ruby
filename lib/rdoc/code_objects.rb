@@ -195,7 +195,7 @@ module RDoc
     end
 
     def add_alias(an_alias)
-      meth = find_method_named(an_alias.old_name)
+      meth = find_instance_method_named(an_alias.old_name)
       if meth
         new_meth = AnyMethod.new(an_alias.text, an_alias.new_name)
         new_meth.is_alias_for = meth
@@ -378,6 +378,11 @@ module RDoc
     # Find a named method, or return nil
     def find_method_named(name)
       @method_list.find {|meth| meth.name == name}
+    end
+
+    # Find a named instance method, or return nil
+    def find_instance_method_named(name)
+      @method_list.find {|meth| meth.name == name && !meth.singleton}
     end
 
     # Find a named constant, or return nil

@@ -2020,6 +2020,8 @@ module RDoc
         when TkLBRACE
           nest += 1
         when TkRBRACE
+          # we might have a.each {|i| yield i }
+          unget_tk(tk) if nest.zero?
           nest -= 1
           break if nest <= 0
         when TkLPAREN, TkfLPAREN
