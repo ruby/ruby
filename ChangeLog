@@ -1,3 +1,9 @@
+Tue Jul  3 14:56:27 2001  Shugo Maeda <shugo@ruby-lang.org>
+
+	* eval.c (block_pass): do not change wrapper information.
+
+	* eval.c (rb_yield_0):  preserve wrapper information.
+
 Tue Jul  3 14:49:51 2001  Shugo Maeda <shugo@ruby-lang.org>
 
 	* error.c (rb_name_error): raise NameError instead of LoadError.

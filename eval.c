@@ -582,6 +582,7 @@ new_blktag()
     _block.vmode = scope_vmode;		\
     _block.flags = BLOCK_D_SCOPE;	\
     _block.dyna_vars = ruby_dyna_vars;	\
+    _block.wrapper = ruby_wrapper;	\
     ruby_block = &_block;
 
 #define POP_BLOCK_TAG(tag) do {		\
@@ -3605,6 +3606,7 @@ rb_yield_0(val, self, klass, pcall)
     NODE *node;
     volatile VALUE result = Qnil;
     volatile VALUE old_cref;
+    volatile VALUE old_wrapper;
     struct BLOCK * volatile block;
     struct SCOPE * volatile old_scope;
     struct FRAME frame;
@@ -3623,6 +3625,8 @@ rb_yield_0(val, self, klass, pcall)
     ruby_frame = &(frame);
     old_cref = (VALUE)ruby_cref;
     ruby_cref = (NODE*)ruby_frame->cbase;
+    old_wrapper = ruby_wrapper;
+    ruby_wrapper = block->wrapper;
     old_scope = ruby_scope;
     ruby_scope = block->scope;
     ruby_block = block->prev;
@@ -3726,6 +3730,7 @@ rb_yield_0(val, self, klass, pcall)
     ruby_block = block;
     ruby_frame = ruby_frame->prev;
     ruby_cref = (NODE*)old_cref;
+    ruby_wrapper = old_wrapper;
     if (ruby_scope->flags & SCOPE_DONT_RECYCLE)
        scope_dup(old_scope);
     ruby_scope = old_scope;
@@ -6515,7 +6520,6 @@ block_pass(self, node)
     int state;
     volatile int orphan;
     volatile int safe = ruby_safe_level;
-    volatile VALUE old_wrapper = ruby_wrapper;
 
     if (NIL_P(block)) {
 	return rb_eval(self, node->nd_iter);
@@ -6530,8 +6534,6 @@ block_pass(self, node)
 
     Data_Get_Struct(block, struct BLOCK, data);
     orphan = blk_orphan(data);
-
-    ruby_wrapper = data->wrapper;
 
     /* PUSH BLOCK from data */
     old_block = ruby_block;
@@ -6570,7 +6572,6 @@ block_pass(self, node)
 	}
     }
     ruby_block = old_block;
-    ruby_wrapper = old_wrapper;
     ruby_safe_level = safe;
 
     switch (state) {/* escape from orphan procedure */
