@@ -1,7 +1,7 @@
 #! /usr/local/bin/ruby
 # -*- ruby -*-
 
-$".push 'mkmf.rb'
+$".push 'mkmf.rb' # "
 ORIG_LIBPATH = ENV['LIB']
 
 if ARGV[0] == 'static'
@@ -25,8 +25,8 @@ end
 SRC_EXT = ["c", "cc", "m", "cxx", "cpp", "C"]
 $extlist = []
 
-$includedir = "@includedir@".gsub(/\$\{prefix\}|\$\(prefix\)/,'@prefix@')
-$libdir = "@libdir@".gsub(/\$\{exec_prefix\}|\$\(exec_prefix\)/,'@exec_prefix@')
+$includedir = "@includedir@"
+$libdir = "@libdir@"
 
 $top_srcdir = "@top_srcdir@"
 if $top_srcdir !~ "^/"
@@ -36,8 +36,9 @@ end
 # get absolute path
 $topdir = File.expand_path("..")
 
-$:.replace [$top_srcdir, $top_srcdir+"/lib", "."]
+$:.replace [$topdir, $top_srcdir, $top_srcdir+"/lib", "."]
 
+require 'rbconfig.rb'
 require 'find'
 
 def rm_f(*files)
@@ -64,17 +65,16 @@ def older(file1, file2)
   return false
 end
 
+CFLAGS = "@CFLAGS@"
 if RUBY_PLATFORM == "m68k-human"
-  CFLAGS = "@CFLAGS@".gsub(/-c..-stack=[0-9]+ */, '')
-else
-  CFLAGS = "@CFLAGS@"
+  CFLAGS.gsub!(/-c..-stack=[0-9]+ */, '')
 end
 if /mswin32/ =~ RUBY_PLATFORM
   OUTFLAG = '-Fe'
 else
   OUTFLAG = '-o '
 end
-LINK = "@CC@ #{OUTFLAG}conftest -I#$topdir -I#$top_srcdir #{CFLAGS} -I#$includedir -L#$libdir @LDFLAGS@ %s %s %s conftest.c %s %s @LIBS@"
+LINK = "@CC@ #{OUTFLAG}conftest -I#$topdir -I#$top_srcdir #{CFLAGS} -I#$includedir @LDFLAGS@ %s %s %s conftest.c %s %s @LIBS@"
 CPP = "@CPP@ @CPPFLAGS@ -I#$topdir -I#$top_srcdir #{CFLAGS} -I#$includedir %s %s %s conftest.c"
 
 $log = open('extmk.log', 'w')
@@ -103,13 +103,12 @@ def try_link0(src, opt="")
   if /mswin32/ =~ RUBY_PLATFORM and !$LIBPATH.empty?
     ENV['LIB'] = ($LIBPATH + [ORIG_LIBPATH]).compact.join(';')
   else
-    $LDFLAGS = ldflags.dup
-    $LIBPATH.each {|d| $LDFLAGS << " -L" + d}
+    ldflags = ldflags.dup
+    $LIBPATH.each {|d| ldflags << " -L" + d}
   end
   begin
-    xsystem(format(LINK, $CFLAGS, $CPPFLAGS, $LDFLAGS, opt, $LOCAL_LIBS))
+    xsystem(Config::expand(format(LINK, $CFLAGS, $CPPFLAGS, ldflags, opt, $LOCAL_LIBS)))
   ensure
-    $LDFLAGS = ldflags
     ENV['LIB'] = ORIG_LIBPATH if /mswin32/ =~ RUBY_PLATFORM
   end
 end
@@ -127,7 +126,7 @@ def try_cpp(src, opt="")
   cfile.print src
   cfile.close
   begin
-    xsystem(format(CPP, $CFLAGS, $CPPFLAGS, opt))
+    xsystem(Config::expand(format(CPP, $CFLAGS, $CPPFLAGS, opt)))
   ensure
     rm_f "conftest*"
   end
@@ -138,7 +137,7 @@ def egrep_cpp(pat, src, opt="")
   cfile.print src
   cfile.close
   begin
-    xsystem(format(CPP+"|egrep #{pat}", $CFLAGS, $CPPFLAGS, opt))
+    xsystem(Config::expand(format(CPP, $CFLAGS, $CPPFLAGS, opt))+"|egrep #{pat}")
   ensure
     rm_f "conftest*"
   end
@@ -298,11 +297,8 @@ def arg_config(config, default=nil)
     end
     for arg in args.split
       next unless /^--/ =~ arg
-      if /=/ =~ arg
-	$configure_args[$`] = $'
-      else
-	$configure_args[arg] = true
-      end
+      arg, val = arg.split('=', 2)
+      $configure_args[arg] = val || true
     end
   end
   $configure_args.fetch(config, default)
@@ -629,7 +625,7 @@ def extmake(target)
   $CFLAGS = ""
   $CPPFLAGS = ""
   $LDFLAGS = ""
-  $LIBPATH = []
+  $LIBPATH = [$libdir]
 
   dir_config("opt")
 

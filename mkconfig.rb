@@ -96,10 +96,9 @@ print <<EOS
   MAKEFILE_CONFIG = {}
   CONFIG.each{|k,v| MAKEFILE_CONFIG[k] = v.dup}
   def Config::expand(val)
-    val.gsub!(/\\$\\(([^()]+)\\)/) do |var|
-      key = $1
-      if CONFIG.key? key
-        Config::expand(CONFIG[key])
+    val.gsub!(/\\$\\(([^()]+)\\)|\\$\\{([^{}]+)\\}/) do |var|
+      if key = CONFIG[$1 || $2]
+        Config::expand(key)
       else
 	var
       end

@@ -1,3 +1,13 @@
+Sun Feb 17 23:41:37 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* mkconfig.rb (Config::expand): expand ${} too.
+
+	* ext/extmk.rb.in (try_link0): expand command.
+
+	* ext/extmk.rb.in (try_cpp): ditto.
+
+	* ext/extmk.rb.in (extmake): default $LIBPATH to $libdir
+
 Sun Feb 17 21:39:24 2002  Tetsuya Watanabe  <tetsuya.watanabe@nifty.com>
 
 	* ext/digest/md5/md5init.c (Init_md5): rb_cvar_declare() is
