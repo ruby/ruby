@@ -66,18 +66,17 @@ module Singleton
             #  singletons types (sounds like an oxymoron) and 
             #  helps out people counting on transitive mixins
             unless mod.instance_of? (Class)
-                raise TypeError.new "Inclusion of the OO-Singleton module in module #{mod}"
+                raise TypeError, "Inclusion of the OO-Singleton module in module #{mod}"
             end 
             unless (class << mod; self end) <= (class << Object; self end)
-                raise TypeError.new "Inclusion of the OO-Singleton module in singleton type"
+                raise TypeError, "Inclusion of the OO-Singleton module in singleton type"
             end
             super
         end
         def included (klass)
             #  remove build in copying methods
             klass.class_eval do 
-                undef_method(:clone) rescue nil
-                undef_method(:dup)   rescue nil
+	      define_method(:clone) {raise TypeError, "can't clone singleton #{self.type}"}
             end
             
             #  initialize the ``klass instance variable'' @__instance__ to nil

@@ -115,6 +115,9 @@ rb_obj_dup(obj)
 {
     VALUE dup;
 
+    if (rb_special_const_p(obj)) {
+        rb_raise(rb_eTypeError, "can't dup %s", rb_class2name(CLASS_OF(obj)));
+    }
     dup = rb_funcall(obj, clone, 0, 0);
     if (TYPE(dup) != TYPE(obj)) {
 	rb_raise(rb_eTypeError, "dupulicated object must be same type");
@@ -1239,8 +1242,6 @@ Init_Object()
     rb_define_method(rb_cNilClass, "&", false_and, 1);
     rb_define_method(rb_cNilClass, "|", false_or, 1);
     rb_define_method(rb_cNilClass, "^", false_xor, 1);
-    rb_undef_method(rb_cNilClass, "clone");
-    rb_undef_method(rb_cNilClass, "dup");
 
     rb_define_method(rb_cNilClass, "nil?", rb_true, 0);
     rb_undef_method(CLASS_OF(rb_cNilClass), "allocate");
@@ -1316,8 +1317,6 @@ Init_Object()
     rb_define_method(rb_cTrueClass, "^", true_xor, 1);
     rb_undef_method(CLASS_OF(rb_cTrueClass), "allocate");
     rb_undef_method(CLASS_OF(rb_cTrueClass), "new");
-    rb_undef_method(rb_cTrueClass, "clone");
-    rb_undef_method(rb_cTrueClass, "dup");
     rb_define_global_const("TRUE", Qtrue);
 
     rb_cFalseClass = rb_define_class("FalseClass", rb_cObject);
@@ -1327,8 +1326,6 @@ Init_Object()
     rb_define_method(rb_cFalseClass, "^", false_xor, 1);
     rb_undef_method(CLASS_OF(rb_cFalseClass), "allocate");
     rb_undef_method(CLASS_OF(rb_cFalseClass), "new");
-    rb_undef_method(rb_cFalseClass, "clone");
-    rb_undef_method(rb_cFalseClass, "dup");
     rb_define_global_const("FALSE", Qfalse);
 
     eq = rb_intern("==");

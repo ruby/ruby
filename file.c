@@ -332,6 +332,12 @@ rb_stat_inspect(self)
 	    sprintf(buf, "0%o", NUM2INT(v));
 	    rb_str_buf_cat2(str, buf);
 	}
+	else if (i == 0 || i == 6) { /* dev/rdev */
+	    char buf[32];
+
+	    sprintf(buf, "0x%x", NUM2ULONG(v));
+	    rb_str_buf_cat2(str, buf);
+	}
 	else {
 	    rb_str_append(str, rb_inspect(v));
 	}

@@ -1,3 +1,7 @@
+Fri Feb  1 00:03:30 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* file.c (rb_stat_inspect): print dev, rdev in hexadecimal.
+
 Thu Jan 31 20:45:33 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* lib/mkmf.rb (dir_config): prior --with flag.
@@ -14,6 +18,10 @@ Wed Jan 30 15:58:04 2002  K.Kosako  <kosako@sofnec.co.jp>
 	* regex.c (re_adjust_startpos): fix for SJIS and UTF-8. 
 
 	* regex.c (mbc_startpos): ditto.
+
+Wed Jan 30 13:37:05 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_search): should set regs.allocated.
 
 Wed Jan 30 02:25:38 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
