@@ -2,7 +2,7 @@ include Makefile
 
 RUBYCWDLL=rubycw.dll
 
-miniruby$(binsuffix): $(RUBYCWDLL)
+miniruby$(EXEEXT): $(RUBYCWDLL)
 
 $(RUBYCWDLL): $(OBJS) dmyext.o
 	dllwrap -o $(RUBYCWDLL) --export-all --output-lib=$(LIBRUBY_SO) --dllname=$(RUBYCWDLL) -Wl,-e,__cygwin_noncygwin_dll_entry@12 --add-stdcall-alias -s $(OBJS) dmyext.o

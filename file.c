@@ -1045,6 +1045,16 @@ rb_file_s_umask(argc, argv)
 #endif /* USE_CWGUSI */
 }
 
+#if defined(MSDOS) || defined(_WIN32) || defined(__human68k__)
+#define DOSISH 1
+#endif
+
+#if defined DOSISH
+#define ispathsep(x) ((x) == '/' || (x) == '\\')
+#else
+#define ispathsep(x) ((x) == '/')
+#endif
+
 VALUE
 rb_file_s_expand_path(argc, argv)
     int argc;
@@ -1059,11 +1069,7 @@ rb_file_s_expand_path(argc, argv)
     s = STR2CSTR(fname);
     p = buf;
     if (s[0] == '~') {
-	if (s[1] == '/' || 
-#if defined(MSDOS) || defined(NT) || defined(__human68k__)
-	    s[1] == '\\' || 
-#endif
-	    s[1] == '\0') {
+	if (ispathsep(s[1]) || s[1] == '\0') {
 	    char *dir = getenv("HOME");
 
 	    if (!dir) {
@@ -1078,7 +1084,7 @@ rb_file_s_expand_path(argc, argv)
 	    struct passwd *pwPtr;
 	    s++;
 #endif
-	    while (*s && *s != '/') {
+	    while (*s && !ispathsep(*s)) {
 		*p++ = *s++;
 	    }
 	    *p = '\0';
@@ -1094,6 +1100,13 @@ rb_file_s_expand_path(argc, argv)
 #endif
 	}
     }
+#if defined DOSISH
+    else if (isalpha(s[0]) && s[1] == ':' && ispathsep(s[2])) {
+	while (*s && !ispathsep(*s)) {
+	    *p++ = *s++;
+	}
+    }
+#endif
     else if (s[0] != '/') {
 	if (argc == 2) {
 	    dname = rb_file_s_expand_path(1, &dname);
@@ -1117,10 +1130,10 @@ rb_file_s_expand_path(argc, argv)
 	    if (*(s+1)) {
 		switch (*++s) {
 		  case '.':
-		    if (*(s+1) == '\0' || *(s+1) == '/') { 
+		    if (*(s+1) == '\0' || ispathsep(*(s+1))) { 
 			/* We must go back to the parent */
-			if (*p == '/' && p > buf) p--;
-			while (p > buf && *p != '/') p--;
+			if (ispathsep(*p) && p > buf) p--;
+			while (p > buf && !ispathsep(*p)) p--;
 		    }
 		    else {
 			*++p = '.';
@@ -1128,7 +1141,10 @@ rb_file_s_expand_path(argc, argv)
 		    }
 		    break;
 		  case '/':
-		    if (*p != '/') *++p = '/'; 
+#if defined DOSISH
+		  case '\\':
+#endif
+		    if (!ispathsep(*p)) *++p = '/'; 
 		    break;
 		  default:
 		    *++p = '.'; *++p = *s; break;
@@ -1136,14 +1152,17 @@ rb_file_s_expand_path(argc, argv)
 	    }
 	    break;
 	  case '/':
-	    if (*p != '/') *++p = '/'; break;
+#if defined DOSISH
+	  case '\\':
+#endif
+	    if (!ispathsep(*p)) *++p = '/'; break;
 	  default:
 	    *++p = *s;
 	}
     }
   
     /* Place a \0 at end. If path ends with a "/", delete it */
-    if (p == buf || *p != '/') p++;
+    if (p == buf || !ispathsep(*p)) p++;
     *p = '\0';
 
     return rb_tainted_str_new2(buf);

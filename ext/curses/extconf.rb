@@ -1,24 +1,21 @@
 require 'mkmf'
-$CFLAGS="-I/usr/include/ncurses -I/usr/local/include/ncurses"
-$LDFLAGS="-L/usr/local/lib"
-make=FALSE
 
+make=false
 have_library("mytinfo", "tgetent") if /bow/ =~ PLATFORM
 if have_header("ncurses.h") and have_library("ncurses", "initscr")
-  make=TRUE
+  make=true
 elsif have_header("ncurses/curses.h") and have_library("ncurses", "initscr")
-  make=TRUE
+  make=true
 elsif have_header("curses_colr/curses.h") and have_library("cur_colr", "initscr")
-  make=TRUE
+  make=true
 else
-  $CFLAGS=nil
   have_library("termcap", "tgetent") 
   if have_library("curses", "initscr")
-    make=TRUE
+    make=true
   end
 end
 
-if make then
+if make
   for f in %w(isendwin ungetch beep doupdate flash deleteln wdeleteln)
     have_func(f)
   end

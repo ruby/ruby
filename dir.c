@@ -485,6 +485,7 @@ push_braces(ary, s)
     char buffer[MAXPATHLEN], *buf = buffer;
     char *p, *t, *b;
     char *lbrace, *rbrace;
+    int nest = 0;
 
     p = s;
     lbrace = rbrace = 0;
@@ -496,7 +497,8 @@ push_braces(ary, s)
 	p++;
     }
     while (*p) {
-	if (*p == '}' && lbrace) {
+	if (*p == '{') nest++;
+	if (*p == '}' && --nest == 0) {
 	    rbrace = p;
 	    break;
 	}

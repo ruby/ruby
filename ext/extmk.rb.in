@@ -14,7 +14,7 @@ elsif ARGV[0] == 'clean'
   ARGV.shift
 end
 
-SRC_EXT = ["c", "cc", "cxx", "C"]
+SRC_EXT = ["c", "cc", "m", "cxx", "cpp", "C"]
 $extlist = []
 
 $cache_mod = false
@@ -60,9 +60,9 @@ def older(file1, file2)
 end
 
 if RUBY_PLATFORM == "m68k-human"
-CFLAGS = "@CFLAGS@".gsub(/-c..-stack=[0-9]+ */, '')
+  CFLAGS = "@CFLAGS@".gsub(/-c..-stack=[0-9]+ */, '')
 else
-CFLAGS = "@CFLAGS@"
+  CFLAGS = "@CFLAGS@"
 end
 LINK = "@CC@ -o conftest -I#$topdir -I#$top_srcdir -I@includedir@ #{CFLAGS} @LDFLAGS@ %s %s conftest.c %s %s @LIBS@"
 CPP = "@CPP@ @CPPFLAGS@ -I#$topdir -I#$top_srcdir -I@includedir@ #{CFLAGS} %s %s conftest.c"
@@ -160,10 +160,18 @@ def install_rb(mfile, srcdir = nil)
   end
 end
 
+def append_library(libs, lib)
+  if /mswin32/ =~ RUBY_PLATFORM
+    lib + ".lib " + libs
+  else
+    "-l" + lib + " " + libs
+  end
+end
+
 def have_library(lib, func="main")
   if $lib_cache[lib]
     if $lib_cache[lib] == "yes"
-      $libs = "-l" + lib + " " + $libs 
+      $libs = append_library($libs, lib)
       return true
     else
       return false
@@ -171,7 +179,7 @@ def have_library(lib, func="main")
   end
 
   if func && func != ""
-    libs = "-l" + lib + " " + $libs 
+    libs = append_library($libs, lib)
     unless try_link(<<"SRC", libs)
 int main() { return 0; }
 int t() { #{func}(); return 0; }
@@ -181,12 +189,29 @@ SRC
       return false
     end
   else
-    libs = "-l" + lib + " " + $libs 
+    libs = append_library($libs, lib)
   end
 
   $libs = libs
   $lib_cache[lib] = 'yes'
   $cache_mod = true
+  return true
+end
+
+def find_library(lib, func, *paths)
+  ldflags = $LDFLAGS
+  libs = "-l" + lib + " " + $libs 
+  until try_link(<<"SRC", libs)
+int main() { return 0; }
+int t() { #{func}(); return 0; }
+SRC
+    if paths.size == 0
+      $LDFLAGS = ldflags
+      return false
+    end
+    $LDFLAGS = ldflags + " -L"+paths.shift
+  end
+  $libs = libs
   return true
 end
 
@@ -285,9 +310,28 @@ def create_header()
   end
 end
 
+def dir_config(target)
+  dir = with_config("%s-dir"%target)
+  if dir
+    idir = " -I"+dir+"/include"
+    ldir = " -L"+dir+"/lib"
+  end
+  unless idir
+    dir = with_config("%s-include"%target)
+    idir = " -I"+dir if dir
+  end
+  unless ldir
+    dir = with_config("%s-lib"%target)
+    ldir = " -L"+dir if dir
+  end
+
+  $CFLAGS += idir if idir
+  $LDFLAGS += ldir if ldir
+end
+
 def create_makefile(target)
   system "rm -f conftest*"
-  if "@DLEXT@" == "o"
+  if "@DLEXT@" == $OBJEXT
     libs = $libs.split
     for lib in libs
       lib.sub!(/-l(.*)/, '"lib\1.a"')
@@ -347,14 +391,14 @@ archdir = $(pkglibdir)/@arch@
 #### End of system configuration section. ####
 
 "
-  mfile.printf "LOCAL_LIBS = %s\n", $LOCAL_LIBS unless $LOCAL_LIBS == ""
+  mfile.printf "LOCAL_LIBS = %s %s\n", $LOCAL_LIBS, $local_flags
   mfile.printf "LIBS = %s\n", $libs
   mfile.printf "OBJS = "
   if !$objs then
     $objs = []
     for f in Dir["#{$top_srcdir}/ext/#{$mdir}/*.{#{SRC_EXT.join(%q{,})}}"]
       f = File.basename(f)
-      f.sub!(/(#{SRC_EXT.join(%q{|})})$/, "o")
+      f.sub!(/(#{SRC_EXT.join(%q{|})})$/, $OBJEXT)
       $objs.push f
     end
   end
@@ -365,15 +409,15 @@ archdir = $(pkglibdir)/@arch@
 TARGET = #{target}
 DLLIB = $(TARGET).#{$static ? "a" : "@DLEXT@"}
 
-RUBY = ../../miniruby@binsuffix@
+RUBY = ../../miniruby@EXEEXT@
 
-binsuffix = @binsuffix@
+EXEEXT = @EXEEXT@
 
 all:		$(DLLIB)
 
-clean:;		@rm -f *.o *.so *.sl *.a $(DLLIB)
+clean:;		@rm -f *.#{$OBJEXT} *.so *.sl *.a $(DLLIB)
 		@rm -f Makefile extconf.h conftest.*
-		@rm -f core ruby$(binsuffix) *~
+		@rm -f core ruby$(EXEEXT) *~
 
 realclean:	clean
 EOS
@@ -397,7 +441,7 @@ $(DLLIB): $(OBJS)
 	@AR@ cru $(DLLIB) $(OBJS)
 	@-@RANLIB@ $(DLLIB) 2> /dev/null || true
 "
-  elsif "@DLEXT@" != "o"
+  elsif "@DLEXT@" != $OBJEXT
     mfile.printf "\
 $(DLLIB): $(OBJS)
 	$(LDSHARED) $(DLDFLAGS) -o $(DLLIB) $(OBJS) $(LIBS) $(LOCAL_LIBS)
@@ -445,29 +489,57 @@ def extmake(target)
     $static = false
   end
 
-  return if $nodynamic and not $static
+  unless $install or $clean
+    return if $nodynamic and not $static
+  end
 
+  $OBJEXT = "@OBJEXT@"
   $objs = nil
-  $libs = RUBY_PLATFORM =~ /cygwin|beos|openstep|nextstep|rhapsody/ ? "" : "-lc"
+  $local_flags = ""
+  case RUBY_PLATFORM
+  when /cygwin|beos|openstep|nextstep|rhapsody/
+    $libs = ""
+  when /mswin32/
+    $libs = ""
+    $local_flags = "rubymw.lib -link /LIBPATH:$(topdir) /EXPORT:Init_$(TARGET)"
+  else
+    $libs = "-lc"
+  end
   $LOCAL_LIBS = ""		# to be assigned in extconf.rb
-  $CFLAGS = ""
-  $LDFLAGS = ""
+  dir = with_config("opt-dir")
+  if dir
+    idir = "-I"+dir+"/include"
+    ldir = "-L"+dir+"/lib"
+  end
+  unless idir
+    dir = with_config("opt-include")
+    idir = "-I"+dir if dir
+  end
+  unless ldir
+    dir = with_config("opt-lib")
+    ldir = "-L"+dir if dir
+  end
+
+  $CFLAGS = idir || ""
+  $LDFLAGS = ldir || ""
 
   begin
     system "mkdir", target unless File.directory?(target)
     Dir.chdir target
     $mdir = target
-    if $static_ext.size > 0 ||
-      !File.exist?("./Makefile") ||
-      older("./Makefile", "#{$top_srcdir}/ext/@setup@") ||
-      older("./Makefile", "../extmk.rb") ||
-      older("./Makefile", "#{$top_srcdir}/ext/#{target}/extconf.rb")
-    then
-      $defs = []
-      if File.exist?("#{$top_srcdir}/ext/#{target}/extconf.rb")
-	load "#{$top_srcdir}/ext/#{target}/extconf.rb"
-      else
-	create_makefile(target)
+    unless $install or $clean
+      if $static_ext.size > 0 ||
+	!File.exist?("./Makefile") ||
+	older("./Makefile", "#{$top_srcdir}/ext/@setup@") ||
+	older("./Makefile", "../extmk.rb") ||
+	older("./Makefile", "#{$top_srcdir}/ext/#{target}/extconf.rb")
+      then
+	$defs = []
+	if File.exist?("#{$top_srcdir}/ext/#{target}/extconf.rb")
+	  load "#{$top_srcdir}/ext/#{target}/extconf.rb"
+	else
+	  create_makefile(target)
+	end
       end
     end
     if File.exist?("./Makefile")
@@ -552,9 +624,10 @@ end
 exit if $install or $clean
 $extinit = "" unless $extinit
 
-ruby = "@RUBY_INSTALL_NAME@@binsuffix@"
-miniruby = "miniruby@binsuffix@"
+ruby = "@RUBY_INSTALL_NAME@@EXEEXT@"
+miniruby = "miniruby@EXEEXT@"
 
+$extobjs = "" unless $extobjs
 if $extlist.size > 0
   for s,t in $extlist
     f = format("%s/%s.a", s, t)
@@ -563,7 +636,6 @@ if $extlist.size > 0
 \tInit_%s();\n\
 \trb_provide(\"%s.so\");\n\
 ", t, t)
-      $extobjs = "" unless $extobjs
       $extobjs += "ext/"
       $extobjs += f
       $extobjs += " "
@@ -579,7 +651,7 @@ if $extlist.size > 0
     f.printf "}\n"
     f.close
   end
-  if older("extinit.o", "extinit.c")
+  if older("extinit.#{$OBJEXT}", "extinit.c")
     cmd = "@CC@ " + CFLAGS + " -c extinit.c"
     print cmd, "\n"
     system cmd or exit 1
@@ -591,11 +663,7 @@ if $extlist.size > 0
     system("rm -f #{ruby}")
   end
 
-  if $extobjs
-    $extobjs = "ext/extinit.o " + $extobjs
-  else
-    $extobjs = "ext/extinit.o "
-  end
+  $extobjs = "ext/extinit.#{$OBJEXT} " + $extobjs
   if RUBY_PLATFORM =~ /m68k-human|beos/
     $extlibs.gsub!("-L/usr/local/lib", "") if $extlibs
   end
@@ -604,7 +672,7 @@ else
   Dir.chdir ".."
   if older(ruby, miniruby)
     system("rm -f #{ruby}")
-    system("make #{ruby}")
+    system("#{$make} #{ruby}")
   end
 end
 

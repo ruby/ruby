@@ -1,3 +1,36 @@
+Wed Jul 28 18:24:45 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version 1.3.6 - version 1.4 alpha
+
+Tue Jul 27 09:38:08 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* eval.c (rb_eval): reduce recursive rb_eval() calls by
+	  NODE_BLOCKs. 
+
+Tue Jul 27 01:20:40 1999  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* file.c (rb_file_s_expand_path): drive letter patch.
+
+Mon Jul 26 02:36:31 1999  Shugo Maeda  <shugo@netlab.co.jp>
+
+	* eval.c (rb_load): should clear ruby_nerr.
+
+	* eval.c (rb_thread_join): oldbt should not be empty to unshift.
+
+Sun Jul 25 12:09:16 1999  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* dir.c (push_braces): should treat nested braces.
+
+Fri Jul 23 02:49:49 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* hash.c (rb_hash_clear): dummy argument added; suggested by
+	  <eguchi@shizuokanet.ne.jp>.  thanks.
+
+Thu Jul 22 19:37:22 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_thread_join): get_backtrace() may retrun Qnil.
+	  typecheck added.
+
 Tue Jul 20 02:28:34 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* io.c (rb_gets): $_ should be nil, when get returns nil.
@@ -8,6 +41,10 @@ Mon Jul 19 17:13:09 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* regex.c (re_compile_fastmap): should continue fastmap compile
 	  for anychar_repeat, for it's repeat anyway.
+
+Mon Jul 26 13:33:45 1999  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* lib/jcode.rb: replaced by faster code.
 
 Mon Jul 19 01:57:28 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

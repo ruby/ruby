@@ -74,12 +74,16 @@ class << File
     begin
       rename from, to
     rescue
-      from_stat = stat(from)
-      syscopy from, to and unlink from
-      utime(from_stat.atime, from_stat.mtime, to)
       begin
-        chown(fstat.uid, fstat.gid, tpath)
+        symlink File.readlink(from), to and unlink from
       rescue
+	from_stat = stat(from)
+	syscopy from, to and unlink from
+	utime(from_stat.atime, from_stat.mtime, to)
+	begin
+	  chown(fstat.uid, fstat.gid, tpath)
+	rescue
+	end
       end
     end
   end
@@ -109,7 +113,8 @@ class << File
 	if fr = from.read(fsize)
 	  tr = to.read(fr.size)
 	else
-	  ret = !to.read(fsize)
+	  ret = to.read(fsize)
+	  ret = !ret || ret.length == 0
 	  break
 	end
       end
@@ -167,7 +172,7 @@ class << File
   def install(from, to, mode = nil, verbose = false)
     to = catname(from, to)
     unless FileTest.exist? to and cmp from, to
-      unlink to if FileTest.exist? to
+      safe_unlink to if FileTest.exist? to
       cp from, to, verbose
       chmod mode, to, verbose if mode
     end

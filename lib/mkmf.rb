@@ -6,6 +6,8 @@ require 'find'
 
 include Config
 
+SRC_EXT = ["c", "cc", "m", "cxx", "cpp", "C"]
+
 $cache_mod = false
 $lib_cache = {}
 $lib_found = {}
@@ -42,6 +44,8 @@ else
   STDERR.print "can't find header files for ruby.\n"
   exit 1
 end
+$topdir = $hdrdir
+$hdrdir.gsub!('/', '\\') if RUBY_PLATFORM =~ /mswin32/
 
 CFLAGS = CONFIG["CFLAGS"]
 if RUBY_PLATFORM == "m68k-human"
@@ -145,12 +149,20 @@ def install_rb(mfile, srcdir = nil)
   end
 end
 
+def append_library(libs, lib)
+  if /mswin32/ =~ RUBY_PLATFORM
+    lib + ".lib " + libs
+  else
+    "-l" + lib + " " + libs
+  end
+end
+
 def have_library(lib, func="main")
   printf "checking for %s() in -l%s... ", func, lib
   STDOUT.flush
   if $lib_cache[lib]
     if $lib_cache[lib] == "yes"
-      $libs = "-l" + lib + " " + $libs 
+      $libs = append_library($libs, lib)
       print "(cached) yes\n"
       return true
     else
@@ -160,23 +172,63 @@ def have_library(lib, func="main")
   end
 
   if func && func != ""
-    libs = "-l" + lib + " " + $libs 
-    unless try_link(<<"SRC", libs)
+    libs = append_library($libs, lib)
+    if /mswin32/ =~ RUBY_PLATFORM
+      r = try_link(<<"SRC", libs)
+#include <windows.h>
+#include <winsock.h>
 int main() { return 0; }
 int t() { #{func}(); return 0; }
 SRC
+      unless r
+        r = try_link(<<"SRC", libs)
+#include <windows.h>
+#include <winsock.h>
+int main() { return 0; }
+int t() { void ((*p)()); p = (void ((*)()))#{func}; return 0; }
+SRC
+      end
+    else
+      r = try_link(<<"SRC", libs)
+int main() { return 0; }
+int t() { #{func}(); return 0; }
+SRC
+    end
+    unless r
       $lib_cache[lib] = 'no'
       $cache_mod = true
       print "no\n"
       return false
     end
   else
-    libs = "-l" + lib + " " + $libs 
+    libs = append_library($libs, lib)
   end
 
   $libs = libs
   $lib_cache[lib] = 'yes'
   $cache_mod = true
+  print "yes\n"
+  return true
+end
+
+def find_library(lib, func, *paths)
+  printf "checking for %s() in -l%s... ", func, lib
+  STDOUT.flush
+
+  ldflags = $LDFLAGS
+  libs = "-l" + lib + " " + $libs 
+  until try_link(<<"SRC", libs)
+int main() { return 0; }
+int t() { #{func}(); return 0; }
+SRC
+    if paths.size == 0
+      $LDFLAGS = ldflags
+      print "no\n"
+      return false
+    end
+    $LDFLAGS = ldflags + " -L"+paths.shift
+  end
+  $libs = libs
   print "yes\n"
   return true
 end
@@ -197,11 +249,28 @@ def have_func(func)
 
   libs = $libs
 
-  unless try_link(<<"SRC", libs)
-char #{func}();
+  if /mswin32/ =~ RUBY_PLATFORM
+    r = try_link(<<"SRC", libs)
+#include <windows.h>
+#include <winsock.h>
 int main() { return 0; }
 int t() { #{func}(); return 0; }
 SRC
+    unless r
+      r = try_link(<<"SRC", libs)
+#include <windows.h>
+#include <winsock.h>
+int main() { return 0; }
+int t() { void ((*p)()); p = (void ((*)()))#{func}; return 0; }
+SRC
+    end
+  else
+    r = try_link(<<"SRC", libs)
+int main() { return 0; }
+int t() { #{func}(); return 0; }
+SRC
+  end
+  unless r
     $func_found[func] = 'no'
     $cache_mod = true
     print "no\n"
@@ -246,7 +315,6 @@ SRC
 end
 
 def arg_config(config, default=nil)
-  return default if /mswin32/i =~ RUBY_PLATFORM
   unless defined? $configure_args
     $configure_args = {}
     for arg in CONFIG["configure_args"].split + ARGV
@@ -291,11 +359,30 @@ def create_header()
   end
 end
 
-def create_makefile(target, installpos = "")
+def dir_config(target)
+  dir = with_config("%s-dir"%target)
+  if dir
+    idir = " -I"+dir+"/include"
+    ldir = " -L"+dir+"/lib"
+  end
+  unless idir
+    dir = with_config("%s-include"%target)
+    idir = " -I"+dir if dir
+  end
+  unless ldir
+    dir = with_config("%s-lib"%target)
+    ldir = " -L"+dir if dir
+  end
+
+  $CFLAGS += idir if idir
+  $LDFLAGS += ldir if ldir
+end
+
+def create_makefile(target)
   print "creating Makefile\n"
   system "rm -f conftest*"
   STDOUT.flush
-  if CONFIG["DLEXT"] == "o"
+  if CONFIG["DLEXT"] == $OBJEXT
     libs = $libs.split
     for lib in libs
       lib.sub!(/-l(.*)/, '"lib\1.a"')
@@ -319,9 +406,11 @@ def create_makefile(target, installpos = "")
   end
 
   unless $objs then
-    $objs = Dir["*.{c,cc,m}"]
-    for f in $objs
-      f.sub!(/\.(c|cc|m)$/, ".o")
+    $objs = []
+    for f in Dir["*.{#{SRC_EXT.join(%q{,})}}"]
+      f = File.basename(f)
+      f.sub!(/(#{SRC_EXT.join(%q{|})})$/, $OBJEXT)
+      $objs.push f
     end
   end
   $objs = $objs.join(" ")
@@ -333,7 +422,7 @@ SHELL = /bin/sh
 #### Start of system configuration section. ####
 
 srcdir = #{$srcdir}
-topdir = #{$hdrdir}
+topdir = #{$topdir}
 hdrdir = #{$hdrdir}
 
 CC = #{CONFIG["CC"]}
@@ -350,7 +439,7 @@ archdir = #{$archdir}
 
 #### End of system configuration section. ####
 
-LOCAL_LIBS = #{$LOCAL_LIBS}
+LOCAL_LIBS = #{$LOCAL_LIBS} #{$local_flags}
 LIBS = #{$libs}
 OBJS = #{$objs}
 
@@ -359,13 +448,14 @@ DLLIB = $(TARGET).#{CONFIG["DLEXT"]}
 
 RUBY = #{CONFIG["ruby_install_name"]}
 
-binsuffix = #{CONFIG["binsuffix"]}
+EXEEXT = #{CONFIG["EXEEXT"]}
 
 all:		$(DLLIB)
 
-clean:;		@rm -f *.o *.so *.sl *.a $(DLLIB)
+clean:;		@rm -f *.#{$OBJEXT} *.so *.sl *.a $(DLLIB)
+		@rm -f $(TARGET).lib $(TARGET).exp
 		@rm -f Makefile extconf.h conftest.*
-		@rm -f core ruby$(binsuffix) *~
+		@rm -f core ruby$(EXEEXT) *~
 
 realclean:	clean
 
@@ -378,7 +468,7 @@ EOMF
   install_rb(mfile)
   mfile.printf "\n"
 
-  if CONFIG["DLEXT"] != "o"
+  if CONFIG["DLEXT"] != $OBJEXT
     mfile.printf <<EOMF
 $(DLLIB): $(OBJS)
 	$(LDSHARED) $(DLDFLAGS) -o $(DLLIB) $(OBJS) $(LIBS) $(LOCAL_LIBS)
@@ -397,7 +487,7 @@ EOMF
     dfile = open("depend", "r")
     mfile.printf "###\n"
     while line = dfile.gets()
-      mfile.print line
+      mfile.printf "%s", line.gsub(/\.o/, ".#{$OBJEXT}")
     end
     dfile.close
   end
@@ -443,9 +533,33 @@ EOMF
   end
 end
 
-$libs = RUBY_PLATFORM =~ /cygwin|beos|openstep|nextstep|rhapsody/ ? "" : "-lc"
+$OBJEXT = CONFIG["OBJEXT"]
 $objs = nil
+$libs = "-lc"
+$local_flags = ""
+case RUBY_PLATFORM
+when /cygwin|beos|openstep|nextstep|rhapsody/
+  $libs = ""
+when /mswin32/
+  $libs = ""
+  $local_flags = "rubymw.lib -link /LIBPATH:$(topdir) /EXPORT:Init_$(TARGET)"
+end
 $LOCAL_LIBS = ""
-$CFLAGS = ""
-$LDFLAGS = ""
 $defs = []
+
+dir = with_config("opt-dir")
+if dir
+  idir = "-I"+dir+"/include"
+  ldir = "-L"+dir+"/lib"
+end
+unless idir
+  dir = with_config("opt-include")
+  idir = "-I"+dir if dir
+end
+unless ldir
+  dir = with_config("opt-lib")
+  ldir = "-L"+dir if dir
+end
+
+$CFLAGS = idir || ""
+$LDFLAGS = ldir || ""

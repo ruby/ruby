@@ -1191,11 +1191,11 @@ aix_loaderror(const char *pathname)
 	ERRBUF_APPEND(strerror(errno));
     for(i = 0; message[i] && *message[i]; i++) {
 	int nerr = atoi(message[i]);
-	for (j=0; j<LOAD_ERRTAB_LEN ; j++) {
+	for (j=0; j<LOAD_ERRTAB_LEN; j++) {
 	    if (nerr == load_errtab[i].errno && load_errtab[i].errstr)
 		ERRBUF_APPEND(load_errtab[i].errstr);
 	}
-	while (isdigit(*message[i])) message[i]++ ; 
+	while (isdigit(*message[i])) message[i]++; 
 	ERRBUF_APPEND(message[i]);
 	ERRBUF_APPEND("\n");
     }
@@ -1362,12 +1362,12 @@ dln_load(file)
 
 	init_fct = (void(*)())init_address;
 	(*init_fct)();
-	return ;
+	return;
     }
 #else/* OPENSTEP dyld functions */
     {
-	int dyld_result ;
-	NSObjectFileImage obj_file ; /* handle, but not use it */
+	int dyld_result;
+	NSObjectFileImage obj_file; /* handle, but not use it */
 	/* "file" is module file name .
 	   "buf" is initial function name with "_" . */
 
@@ -1392,7 +1392,7 @@ dln_load(file)
 	init_fct = NSAddressOfSymbol(NSLookupAndBindSymbol(buf));
 	(*init_fct)();
 
-	return ;
+	return;
     }
 #endif /* rld or dyld */
 #endif

@@ -266,7 +266,7 @@ ruby_add_suffix(str, suffix)
 
     slen = extlen;
     t = buf; baselen = 0; s = RSTRING(str)->ptr;
-    while ( (*t = *s) && *s != '.') {
+    while ((*t = *s) && *s != '.') {
 	baselen++;
 	if (*s == '\\' || *s == '/') baselen = 0;
  	s++; t++;
@@ -579,7 +579,7 @@ static void mmprepare(base, size) void *base; int size;
  
  mmsize = size;
  high = (size & (-16));
- low  = (size & 0x0C );
+ low  = (size & 0x0c);
 }
 
 static void mmswap(a, b) register char *a, *b;
@@ -664,7 +664,7 @@ typedef struct { char *LL, *RR; } stack_node; /* Stack structure for L,l,R,r */
 
 #define med3(a,b,c) ((*cmp)(a,b)<0 ?                                   \
                        ((*cmp)(b,c)<0 ? b : ((*cmp)(a,c)<0 ? c : a)) : \
-                       ((*cmp)(b,c)>0 ? b : ((*cmp)(a,c)<0 ? a : c)) )
+                       ((*cmp)(b,c)>0 ? b : ((*cmp)(a,c)<0 ? a : c)))
 
 void ruby_qsort (base, nel, size, cmp) void* base; int nel; int size; int (*cmp)();
 {
@@ -676,7 +676,7 @@ void ruby_qsort (base, nel, size, cmp) void* base; int nel; int size; int (*cmp)
  stack_node stack[32], *top = stack;    /* 32 is enough for 32bit CPU */
 
  if (nel <= 1) return;        /* need not to sort */
- mmprepare( base, size );
+ mmprepare(base, size);
  goto start;
   
  nxt:
@@ -700,18 +700,18 @@ void ruby_qsort (base, nel, size, cmp) void* base; int nel; int size; int (*cmp)
        register char *p1 = l  + t;
        register char *p2 = p1 + t;
        register char *p3 = p2 + t;
-       m1 = med3( p1, p2, p3 );
+       m1 = med3(p1, p2, p3);
        p1 = m  + t;
        p2 = p1 + t;
        p3 = p2 + t;
-       m3 = med3( p1, p2, p3 );
+       m3 = med3(p1, p2, p3);
        }
      }else{
        t = size*(t>>2); /* number of bytes in splitting 4 */
        m1 = l + t;
        m3 = m + t;
      }
-     m = med3( m1, m, m3 );
+     m = med3(m1, m, m3);
    }
    
    if ((t = (*cmp)(l,m)) < 0) {                             /*3-5-?*/

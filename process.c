@@ -456,7 +456,7 @@ proc_spawn(sv)
 	if (*s != ' ' && !ISALPHA(*s) && strchr("*?{}[]<>()~&|\\$;'`\"\n",*s)) {
 	    char *shell = dln_find_exe("sh", 0);
 	    before_exec();
-	    state = shell ? spawnl(P_WAIT, shell, "sh", "-c", str, (char *) NULL) : system(str) ;
+	    state = shell?spawnl(P_WAIT,shell,"sh","-c",str,(char*)NULL):system(str);
 	    after_exec();
 	    return state;
 	}
@@ -469,7 +469,7 @@ proc_spawn(sv)
 	    *a++ = t;
 	*a = NULL;
     }
-    return argv[0] ? proc_spawn_v(argv, 0) : -1 ;
+    return argv[0] ? proc_spawn_v(argv, 0) : -1;
 }
 #endif /* __human68k__ */
 
@@ -662,7 +662,7 @@ rb_f_system(argc, argv)
 	state = proc_spawn_n(argc, argv, prog);
     }
     rb_last_status = state == -1 ? INT2FIX(127) : INT2FIX(state);
-    return state == 0 ? Qtrue : Qfalse ;
+    return state == 0 ? Qtrue : Qfalse;
 #else
 #if defined(USE_CWGUSI)
     rb_notimplement();

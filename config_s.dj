@@ -34,6 +34,9 @@ s%@INSTALL_DATA@%${INSTALL} -m 644%g
 s%@SET_MAKE@%%g
 s%@LIBOBJS@% crypt.o flock.o snprintf.o%g
 s%@ALLOCA@%%g
+s%@DEFAULT_KCODE@%%g
+s%@EXEEXT@%.exe%g
+s%@OBJEXT@%o%g
 s%@DLDFLAGS@%%g
 s%@STATIC@%%g
 s%@CCDLFLAGS@%%g

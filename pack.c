@@ -41,7 +41,7 @@ TOKEN_PASTE(swap,x)(z)			\
     *zp = z;				\
     s = (char *)zp;			\
     t = (char *)malloc(sizeof(xtype));	\
-    for (i=0 ; i<sizeof(xtype); i++) {	\
+    for (i=0; i<sizeof(xtype); i++) {	\
 	t[sizeof(xtype)-i-1] = s[i];	\
     }					\
     r = *(xtype *)t;			\
@@ -77,7 +77,7 @@ define_swapx(s,short);
 			+(((x)&0x0000000000FF0000)<<24)	\
 			+(((x)&0x0000FF0000000000)>>24)	\
 			+(((x)&0x00000000FF000000)<<8)	\
-			+(((x)&0x000000FF00000000)>>8) )
+			+(((x)&0x000000FF00000000)>>8))
 #else
 define_swapx(l,long);
 #endif

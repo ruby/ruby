@@ -20,8 +20,10 @@
 #if !defined(DJGPP) && !defined(NT) && !defined(__human68k__)
 #include <sys/ioctl.h>
 #endif
-#if defined(HAVE_FCNTL) || defined(NT)
+#if defined(HAVE_FCNTL_H) || defined(NT)
 #include <fcntl.h>
+#elif defined(HAVE_SYS_FCNTL_H)
+#include <sys/fcntl.h>
 #endif
 
 #ifdef HAVE_SYS_TIME_H
@@ -422,7 +424,8 @@ read_all(port)
 	TRAP_BEG;
 	n = fread(RSTRING(str)->ptr+bytes, 1, siz-bytes, fptr->f);
 	TRAP_END;
-	if (n < 0) {
+	if (n == 0) {
+	    if (feof(fptr->f)) return Qnil;
 	    rb_sys_fail(fptr->path);
 	}
 	bytes += n;
@@ -456,14 +459,15 @@ io_read(argc, argv, io)
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
 
-    if (feof(fptr->f)) return Qtrue;
+    if (feof(fptr->f)) return Qnil;
     str = rb_str_new(0, len);
 
     READ_CHECK(fptr->f);
     TRAP_BEG;
     n = fread(RSTRING(str)->ptr, 1, len, fptr->f);
     TRAP_END;
-    if (n < 0) {
+    if (n == 0) {
+	if (feof(fptr->f)) return Qnil;
 	rb_sys_fail(fptr->path);
     }
     RSTRING(str)->len = n;
@@ -1047,7 +1051,9 @@ rb_io_sysread(io, len)
     TRAP_END;
 
     if (n == -1) rb_sys_fail(fptr->path);
-    if (n == 0) rb_eof_error();
+    if (n == 0 && ilen > 0) {
+	rb_eof_error();
+    }
 
     RSTRING(str)->len = n;
     RSTRING(str)->ptr[n] = '\0';

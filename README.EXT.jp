@@ -332,7 +332,7 @@ privateメソッドとは関数形式でしか呼び出すことの出来ないメソッ
 2.2.1 Rubyのプログラムをevalする
 
 CからRubyの機能を呼び出すもっとも簡単な方法として，文字列で
-与えられたRubyのプログラムを評価する関数があります．
+与えられたRubyのプログラムを評価する以下の関数があります．
 
   VALUE rb_eval_string(char *str)
 
@@ -401,16 +401,16 @@ C言語とRubyの間で情報を共有する方法について解説します．
 
 3.1 Cから参照できるRubyの定数
 
-以下のRubyの定数はCのレベルから参照できる．
+以下のRubyの定数はCのレベルから参照できます．
 
   Qtrue
   Qfalse
 
-真偽値．QfalseはC言語でも偽とみなされる(つまり0)．
+    真偽値．QfalseはC言語でも偽とみなされます(つまり0)．
 
   Qnil
 
-C言語から見た「nil」．
+    C言語から見た「nil」．
 
 3.2 CとRubyで共有される大域変数
 
@@ -837,275 +837,279 @@ C言語からRubyの機能を利用するAPIは以下の通りである．
 
 ** 型
 
- VALUE
+VALUE
 
-Rubyオブジェクトを表現する型．必要に応じてキャストして用いる．
-組み込み型を表現するCの型はruby.hに記述してあるRで始まる構造
-体である．VALUE型をこれらにキャストするためにRで始まる構造体
-名を全て大文字にした名前のマクロが用意されている．
+  Rubyオブジェクトを表現する型．必要に応じてキャストして用いる．
+  組み込み型を表現するCの型はruby.hに記述してあるRで始まる構造
+  体である．VALUE型をこれらにキャストするためにRで始まる構造体
+  名を全て大文字にした名前のマクロが用意されている．
 
 ** 変数・定数
 
- Qnil
+Qnil
 
-定数: nilオブジェクト
+  定数: nilオブジェクト
 
- Qtrue
+Qtrue
 
-定数: trueオブジェクト(真のデフォルト値)
+  定数: trueオブジェクト(真のデフォルト値)
 
- Qfalse
+Qfalse
 
-定数: falseオブジェクト
+  定数: falseオブジェクト
 
 ** Cデータのカプセル化
 
- Data_Wrap_Struct(VALUE class, void (*mark)(), void (*free)(), void *sval)
+Data_Wrap_Struct(VALUE class, void (*mark)(), void (*free)(), void *sval)
 
-Cの任意のポインタをカプセル化したRubyオブジェクトを返す．こ
-のポインタがRubyからアクセスされなくなった時，freeで指定した
-関数が呼ばれる．また，このポインタの指すデータが他のRubyオブ
-ジェクトを指している場合，markに指定する関数でマークする必要
-がある．
+  Cの任意のポインタをカプセル化したRubyオブジェクトを返す．こ
+  のポインタがRubyからアクセスされなくなった時，freeで指定した
+  関数が呼ばれる．また，このポインタの指すデータが他のRubyオブ
+  ジェクトを指している場合，markに指定する関数でマークする必要
+  がある．
 
- Data_Make_Struct(class, type, mark, free, sval)
+Data_Make_Struct(class, type, mark, free, sval)
 
-type型のメモリをmallocし，変数svalに代入した後，それをカプセ
-ル化したデータを返すマクロ．
+  type型のメモリをmallocし，変数svalに代入した後，それをカプセ
+  ル化したデータを返すマクロ．
 
- Data_Get_Struct(data, type, sval)
+Data_Get_Struct(data, type, sval)
 
-dataからtype型のポインタを取り出し変数svalに代入するマクロ．
+  dataからtype型のポインタを取り出し変数svalに代入するマクロ．
 
 ** 型チェック
 
- TYPE(value)
- FIXNUM_P(value)
- NIL_P(value)
- void Check_Type(VALUE value, int type)
- void Check_SafeStr(VALUE value)
+TYPE(value)
+FIXNUM_P(value)
+NIL_P(value)
+void Check_Type(VALUE value, int type)
+void Check_SafeStr(VALUE value)
 
 ** 型変換
 
- FIX2INT(value)
- INT2FIX(i)
- NUM2INT(value)
- INT2NUM(i)
- NUM2DBL(value)
- rb_float_new(f)
- STR2CSTR(value)
- rb_str_new2(s)
+FIX2INT(value)
+INT2FIX(i)
+NUM2INT(value)
+INT2NUM(i)
+NUM2DBL(value)
+rb_float_new(f)
+STR2CSTR(value)
+rb_str_new2(s)
 
 ** クラス/モジュール定義
 
- VALUE rb_define_class(char *name, VALUE super)
+VALUE rb_define_class(char *name, VALUE super)
 
-superのサブクラスとして新しいRubyクラスを定義する．
+  superのサブクラスとして新しいRubyクラスを定義する．
 
- VALUE rb_define_class_under(VALUE module, char *name, VALUE super)
+VALUE rb_define_class_under(VALUE module, char *name, VALUE super)
 
-superのサブクラスとして新しいRubyクラスを定義し，moduleの定
-数として定義する．
+  superのサブクラスとして新しいRubyクラスを定義し，moduleの
+  定数として定義する．
 
- VALUE rb_define_module(char *name)
+VALUE rb_define_module(char *name)
 
-新しいRubyモジュールを定義する．
+  新しいRubyモジュールを定義する．
 
- VALUE rb_define_module_under(VALUE module, char *name, VALUE super)
+VALUE rb_define_module_under(VALUE module, char *name, VALUE super)
 
-新しいRubyモジュールを定義し，moduleの定数として定義する．
+  新しいRubyモジュールを定義し，moduleの定数として定義する．
 
- void rb_include_module(VALUE class, VALUE module)
+void rb_include_module(VALUE class, VALUE module)
 
-モジュールをインクルードする．classがすでにmoduleをインクルー
-ドしている時には何もしない(多重インクルードの禁止)．
+  モジュールをインクルードする．classがすでにmoduleをインク
+  ルードしている時には何もしない(多重インクルードの禁止)．
 
- void rb_extend_object(VALUE object, VALUE module)
+void rb_extend_object(VALUE object, VALUE module)
 
-オブジェクトをモジュール(で定義されているメソッド)で拡張する．
+  オブジェクトをモジュール(で定義されているメソッド)で拡張する．
 
 ** 大域変数定義
 
- void rb_define_variable(char *name, VALUE *var)
+void rb_define_variable(char *name, VALUE *var)
 
-RubyとCとで共有するグローバル変数を定義する．変数名が`$'で始
-まらない時には自動的に追加される．nameとしてRubyの識別子とし
-て許されない文字(例えば` ')を含む場合にはRubyプログラムから
-は見えなくなる．
+  RubyとCとで共有するグローバル変数を定義する．変数名が`$'で
+  始まらない時には自動的に追加される．nameとしてRubyの識別子
+  として許されない文字(例えば` ')を含む場合にはRubyプログラ
+  ムからは見えなくなる．
 
- void rb_define_readonly_variable(char *name, VALUE *var)
+void rb_define_readonly_variable(char *name, VALUE *var)
 
-RubyとCとで共有するread onlyのグローバル変数を定義する．read
-onlyであること以外はrb_define_variable()と同じ．
+  RubyとCとで共有するread onlyのグローバル変数を定義する．
+  read onlyであること以外はrb_define_variable()と同じ．
 
- void rb_define_virtual_variable(char *name,
+void rb_define_virtual_variable(char *name,
 				VALUE (*getter)(), VALUE (*setter)())
 
-関数によって実現されるRuby変数を定義する．変数が参照された時
-にはgetterが，変数に値がセットされた時にはsetterが呼ばれる．
+  関数によって実現されるRuby変数を定義する．変数が参照された
+  時にはgetterが，変数に値がセットされた時にはsetterが呼ばれ
+  る．
 
- void rb_define_hooked_variable(char *name, VALUE *var,
-				VALUE (*getter)(), VALUE (*setter)())
+void rb_define_hooked_variable(char *name, VALUE *var,
+			       VALUE (*getter)(), VALUE (*setter)())
 
-関数によってhookのつけられたグローバル変数を定義する．変数が
-参照された時にはgetterが，関数に値がセットされた時にはsetter
-が呼ばれる．getterやsetterに0を指定した時にはhookを指定しな
-いのと同じ事になる．
+  関数によってhookのつけられたグローバル変数を定義する．変数
+  が参照された時にはgetterが，関数に値がセットされた時には
+  setterが呼ばれる．getterやsetterに0を指定した時にはhookを
+  指定しないのと同じ事になる．
 
- void rb_global_variable(VALUE *var)
+void rb_global_variable(VALUE *var)
 
-GCのため，Rubyプログラムからはアクセスされないが, Rubyオブジェ
-クトを含む大域変数をマークする．
+  GCのため，Rubyプログラムからはアクセスされないが, Rubyオブ
+  ジェクトを含む大域変数をマークする．
 
 ** 定数
 
- void rb_define_const(VALUE klass, char *name, VALUE val)
+void rb_define_const(VALUE klass, char *name, VALUE val)
 
-定数を定義する．
+  定数を定義する．
 
- void rb_define_global_const(char *name, VALUE val)
+void rb_define_global_const(char *name, VALUE val)
 
-大域定数を定義する．
+  大域定数を定義する．
 
      rb_define_const(cKernal, name, val)
 
-と同じ意味．
+  と同じ意味．
 
 ** メソッド定義
 
- rb_define_method(VALUE class, char *name, VALUE (*func)(), int argc)
+rb_define_method(VALUE class, char *name, VALUE (*func)(), int argc)
 
-メソッドを定義する．argcはselfを除く引数の数．argcが-1の時, 
-関数には引数の数(selfを含まない)を第1引数, 引数の配列を第2引
-数とする形式で与えられる(第3引数はself)．argcが-2の時, 第1引
-数がself, 第2引数がargs(argsは引数を含むRubyの配列)という形
-式で与えられる．
+  メソッドを定義する．argcはselfを除く引数の数．argcが-1の時, 
+  関数には引数の数(selfを含まない)を第1引数, 引数の配列を第2
+  引数とする形式で与えられる(第3引数はself)．argcが-2の時, 
+  第1引数がself, 第2引数がargs(argsは引数を含むRubyの配列)と
+  いう形式で与えられる．
+ 
+rb_define_private_method(VALUE class, char *name, VALUE (*func)(), int argc)
 
- rb_define_private_method(VALUE class, char *name, VALUE (*func)(), int argc)
+  privateメソッドを定義する．引数はrb_define_method()と同じ．
 
-privateメソッドを定義する．引数はrb_define_method()と同じ．
+rb_define_singleton_method(VALUE class, char *name, VALUE (*func)(), int argc)
 
- rb_define_singleton_method(VALUE class, char *name, VALUE (*func)(), int argc)
+  特異メソッドを定義する．引数はrb_define_method()と同じ．
 
-特異メソッドを定義する．引数はrb_define_method()と同じ．
+rb_scan_args(int argc, VALUE *argv, char *fmt, ...)
 
- rb_scan_args(int argc, VALUE *argv, char *fmt, ...)
-
-argc,argv形式で与えられた引数を分解する．fmtは必須引数の数, 
-付加引数の数, 残りの引数があるかを指定する文字列で, "数字数
-字*"という形式である． 2 番目の数字と"*"はそれぞれ省略可能で
-ある．必須引数が一つもない場合は0を指定する．第3引数以降は変
-数へのポインタで, 該当する要素がその変数に格納される．付加引
-数に対応する引数が与えられていない場合は変数にQnilが代入され
-る．
+  argc,argv形式で与えられた引数を分解する．fmtは必須引数の数, 
+  付加引数の数, 残りの引数があるかを指定する文字列で, "数字
+  数字*"という形式である． 2 番目の数字と"*"はそれぞれ省略可
+  能である．必須引数が一つもない場合は0を指定する．第3引数以
+  降は変数へのポインタで, 該当する要素がその変数に格納される．
+  付加引数に対応する引数が与えられていない場合は変数にQnilが
+  代入される．
 
 ** Rubyメソッド呼び出し
 
- VALUE rb_funcall(VALUE recv, ID mid, int narg, ...)
+VALUE rb_funcall(VALUE recv, ID mid, int narg, ...)
 
-メソッド呼び出し．文字列からmidを得るためにはrb_intern()を使う．
+  メソッド呼び出し．文字列からmidを得るためにはrb_intern()を
+  使う．
 
- VALUE rb_funcall2(VALUE recv, ID mid, int argc, VALUE *argv)
+VALUE rb_funcall2(VALUE recv, ID mid, int argc, VALUE *argv)
 
-メソッド呼び出し．引数をargc,argv形式で渡す．
+  メソッド呼び出し．引数をargc,argv形式で渡す．
 
- VALUE rb_eval_string(char *str)
+VALUE rb_eval_string(char *str)
 
-文字列をRubyとスクリプトしてコンパイル・実行する．
+  文字列をRubyとスクリプトしてコンパイル・実行する．
 
- ID rb_intern(char *name)
+ID rb_intern(char *name)
 
-文字列に対応するIDを返す．
+  文字列に対応するIDを返す．
 
- char *rb_id2name(ID id)
+char *rb_id2name(ID id)
 
-IDに対応する文字列を返す(デバッグ用)．
+  IDに対応する文字列を返す(デバッグ用)．
 
- char *rb_class2name(VALUE class)
+char *rb_class2name(VALUE class)
 
-classの名前を返す(デバッグ用)．classが名前を持たない時には, 
-祖先を遡って名前を持つクラスの名前を返す．
+  classの名前を返す(デバッグ用)．classが名前を持たない時には, 
+  祖先を遡って名前を持つクラスの名前を返す．
 
 ** インスタンス変数
 
- VALUE rb_iv_get(VALUE obj, char *name)
+VALUE rb_iv_get(VALUE obj, char *name)
 
-objのインスタンス変数の値を得る．`@'で始まらないインスタンス
-変数は Rubyプログラムからアクセスできない「隠れた」インスタ
-ンス変数になる．定数は大文字の名前を持つクラス(またはモジュー
-ル)のインスタンス変数として実装されている．
+  objのインスタンス変数の値を得る．`@'で始まらないインスタン
+  ス変数は Rubyプログラムからアクセスできない「隠れた」イン
+  スタンス変数になる．定数は大文字の名前を持つクラス(または
+  モジュール)のインスタンス変数として実装されている．
 
- VALUE rb_iv_set(VALUE obj, char *name, VALUE val)
+VALUE rb_iv_set(VALUE obj, char *name, VALUE val)
 
-objのインスタンス変数をvalにセットする．
+  objのインスタンス変数をvalにセットする．
 
 ** 制御構造
 
- VALUE rb_iterate(VALUE (*func1)(), void *arg1, VALUE (*func2)(), void *arg2)
+VALUE rb_iterate(VALUE (*func1)(), void *arg1, VALUE (*func2)(), void *arg2)
 
-func2をブロックとして設定し, func1をイテレータとして呼ぶ． 
-func1には arg1が引数として渡され, func2には第1引数にイテレー
-タから与えられた値, 第2引数にarg2が渡される．
+  func2をブロックとして設定し, func1をイテレータとして呼ぶ． 
+  func1には arg1が引数として渡され, func2には第1引数にイテレー
+  タから与えられた値, 第2引数にarg2が渡される．
  
- VALUE rb_yield(VALUE val)
+VALUE rb_yield(VALUE val)
 
-valを値としてイテレータブロックを呼び出す．
+  valを値としてイテレータブロックを呼び出す．
 
- VALUE rb_rescue(VALUE (*func1)(), void *arg1, VALUE (*func2)(), void *arg2)
+VALUE rb_rescue(VALUE (*func1)(), void *arg1, VALUE (*func2)(), void *arg2)
 
-関数func1をarg1を引数に呼び出す．func1の実行中に例外が発生し
-た時には func2をarg2を引数として呼ぶ．戻り値は例外が発生しな
-かった時はfunc1の戻り値, 例外が発生した時にはfunc2の戻り値で
-ある．
+  関数func1をarg1を引数に呼び出す．func1の実行中に例外が発生
+  した時には func2をarg2を引数として呼ぶ．戻り値は例外が発生
+  しなかった時はfunc1の戻り値, 例外が発生した時にはfunc2の戻
+  り値である．
 
- VALUE rb_ensure(VALUE (*func1)(), void *arg1, void (*func2)(), void *arg2)
+VALUE rb_ensure(VALUE (*func1)(), void *arg1, void (*func2)(), void *arg2)
 
-関数func1をarg1を引数として実行し, 実行終了後(たとえ例外が発
-生しても) func2をarg2を引数として実行する．戻り値はfunc1の戻
-り値である(例外が発生した時は戻らない)．
+  関数func1をarg1を引数として実行し, 実行終了後(たとえ例外が
+  発生しても) func2をarg2を引数として実行する．戻り値はfunc1
+  の戻り値である(例外が発生した時は戻らない)．
 
 ** 例外・エラー
 
- void rb_warning(char *fmt, ...)
+void rb_warning(char *fmt, ...)
 
-rb_verbose時に標準エラー出力に警告情報を表示する．引数はprintf()と同じ．
+  rb_verbose時に標準エラー出力に警告情報を表示する．引数は
+  printf()と同じ．
 
- void rb_raise(rb_eRuntimeError, char *fmt, ...)
+void rb_raise(rb_eRuntimeError, char *fmt, ...)
 
-RuntimeError例外を発生させる．引数はprintf()と同じ．
+  RuntimeError例外を発生させる．引数はprintf()と同じ．
 
- void rb_raise(VALUE exception, char *fmt, ...)
+void rb_raise(VALUE exception, char *fmt, ...)
 
-exceptionで指定した例外を発生させる．fmt以下の引数はprintf()と同じ．
+  exceptionで指定した例外を発生させる．fmt以下の引数は
+  printf()と同じ．
 
- void rb_fatal(char *fmt, ...)
+void rb_fatal(char *fmt, ...)
 
-致命的例外を発生させる．通常の例外処理は行なわれず, インター
-プリタが終了する(ただしensureで指定されたコードは終了前に実
-行される)．
+  致命的例外を発生させる．通常の例外処理は行なわれず, インター
+  プリタが終了する(ただしensureで指定されたコードは終了前に
+  実行される)．
 
- void rb_bug(char *fmt, ...)
+void rb_bug(char *fmt, ...)
 
-インタープリタなどプログラムのバグでしか発生するはずのない状
-況の時呼ぶ．インタープリタはコアダンプし直ちに終了する．例外
-処理は一切行なわれない．
+  インタープリタなどプログラムのバグでしか発生するはずのない
+  状況の時呼ぶ．インタープリタはコアダンプし直ちに終了する．
+  例外処理は一切行なわれない．
 
 ** Rubyの初期化・実行
 
 Rubyをアプリケーションに埋め込む場合には以下のインタフェース
 を使う．通常の拡張ライブラリには必要ない．
 
- void ruby_init(int argc, char **argv, char **envp)
+void ruby_init(int argc, char **argv, char **envp)
 
-Rubyインタプリタの初期化を行なう．
+  Rubyインタプリタの初期化を行なう．
 
- void ruby_run()
+void ruby_run()
 
-Rubyインタプリタを実行する．
+  Rubyインタプリタを実行する．
 
- void ruby_script(char *name)
+void ruby_script(char *name)
 
-Rubyのスクリプト名($0)を設定する．
+  Rubyのスクリプト名($0)を設定する．
 
 
 Appendix B. extconf.rbで使える関数たち
@@ -1113,27 +1117,49 @@ Appendix B. extconf.rbで使える関数たち
 extconf.rbの中では利用可能なコンパイル条件チェックの関数は以
 下の通りである．
 
- have_library(lib, func)
+have_library(lib, func)
 
-関数funcを定義しているライブラリlibの存在をチェックする．ラ
-イブラリが存在する時，trueを返す．
+  関数funcを定義しているライブラリlibの存在をチェックする．
+  ライブラリが存在する時，trueを返す．
 
- have_func(func)
+find_library(lib, func, path...)
 
-関数funcの存在をチェックする．funcが標準ではリンクされないラ
-イブラリ内のものである時には先にhave_libraryでそのライブラリ
-をチェックしておく事．関数が存在する時TRUEを返す．
+  関数funcを定義しているライブラリlibの存在を -Lpath を追加
+  しながらチェックする．ライブラリが見付かった時，trueを返す．
+  結果をキャッシュしない．
 
- have_header(header)
+have_func(func)
 
-ヘッダファイルの存在をチェックする．ヘッダファイルが存在する
-時trueを返す．
+  関数funcの存在をチェックする．funcが標準ではリンクされない
+  ライブラリ内のものである時には先にhave_libraryでそのライブ
+  ラリをチェックしておく事．関数が存在する時trueを返す．
 
- create_makefile(target)
+have_header(header)
 
-拡張ライブラリ用のMakefileを生成する．この関数を呼ばなければ
-そのライブラリはコンパイルされない．targetはモジュール名を表
-す．
+  ヘッダファイルの存在をチェックする．ヘッダファイルが存在す
+  る時trueを返す．
+
+find_header(header)
+
+  ヘッダファイルの存在を -Ipath を追加しながらチェックする．
+  ヘッダファイルが見付かった時trueを返す．結果をキャッシュし
+  ない．
+
+create_makefile(target)
+
+  拡張ライブラリ用のMakefileを生成する．この関数を呼ばなけれ
+  ばそのライブラリはコンパイルされない．targetはモジュール名
+  を表す．
+
+with_config(withval[, default=nil])
+
+  --with-<withval>で指定されたオプション値を得る．
+
+dir_config(target)
+
+  --with-<target>-dir, --with-<target>-include, --with-<target>-lib
+  のいずれかで指定されるディレクトリを $CFLAGS や $LDFLAGS
+  に追加する．
 
 /*
  * Local variables:

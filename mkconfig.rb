@@ -9,7 +9,7 @@ version = VERSION
 config = open(rbconfig_rb, "w")
 $stdout.reopen(config)
 
-fast = {'prefix'=>TRUE, 'INSTALL'=>TRUE, 'binsuffix'=>TRUE}
+fast = {'prefix'=>TRUE, 'INSTALL'=>TRUE, 'EXEEXT'=>TRUE}
 print %[
 module Config
 
@@ -23,6 +23,7 @@ module Config
 print "  CONFIG = {}\n"
 v_fast = []
 v_others = []
+has_version = false
 File.foreach "config.status" do |$_|
   next if /^#/
   if /^s%@program_transform_name@%s,(.*)%g$/
@@ -41,6 +42,7 @@ File.foreach "config.status" do |$_|
     else
       v_others << v
     end
+    has_version = true if name == "MAJOR"
     if /DEFS/
       val.split(/\s*-D/).each do |i|
 	if i =~ /(.*)=(\\")?([^\\]*)(\\")?/
@@ -60,6 +62,14 @@ File.foreach "config.status" do |$_|
     v_fast << "  CONFIG[\"INSTALL\"] = " + $1 + "\n"
   end
 #  break if /^CEOF/
+end
+
+if not has_version
+  VERSION.scan(/(\d+)\.(\d+)\.(\d+)/) {
+    print "  CONFIG[\"MAJOR\"] = \"" + $1 + "\"\n"
+    print "  CONFIG[\"MINOR\"] = \"" + $2 + "\"\n"
+    print "  CONFIG[\"TEENY\"] = \"" + $3 + "\"\n"
+  }
 end
 
 print v_fast, v_others

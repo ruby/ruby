@@ -9,7 +9,7 @@ $:.unshift CONFIG["srcdir"]+"/lib"
 require "ftools"
 require "find"
 
-binsuffix = CONFIG["binsuffix"]
+exeext = CONFIG["EXEEXT"]
 if ENV["prefix"]
   prefix = ENV["prefix"]
 else
@@ -25,8 +25,8 @@ mandir = destdir+CONFIG["mandir"] + "/man1"
 wdir = Dir.getwd
 
 File.makedirs bindir, true
-File.install ruby_install_name+binsuffix,
-  "#{bindir}/#{ruby_install_name}#{binsuffix}", 0755, true
+File.install ruby_install_name+exeext,
+  "#{bindir}/#{ruby_install_name}#{exeext}", 0755, true
 for dll in Dir['*.dll']
   File.install dll, "#{bindir}/#{dll}", 0755, true
 end
@@ -61,7 +61,7 @@ if RUBY_PLATFORM =~ /-aix/
 end
 
 Dir.chdir "ext"
-system "../miniruby#{binsuffix} extmk.rb install #{destdir}"
+system "../miniruby#{exeext} extmk.rb install #{destdir}"
 Dir.chdir CONFIG["srcdir"]
 
 Find.find("lib") do |f|
@@ -73,6 +73,13 @@ end
 
 for f in Dir["*.h"]
   File.install f, archdir, 0644, true
+end
+if RUBY_PLATFORM =~ /mswin32/
+  File.makedirs archdir + "/win32", true
+  File.install "win32/win32.h", archdir + "/win32", 0644, true
+  if File.exist? wdir+'/rubymw.lib'
+    File.install wdir+'/rubymw.lib', archdir, 0644, true
+  end
 end
 File.install wdir+'/'+CONFIG['LIBRUBY_A'], archdir, 0644, true
 

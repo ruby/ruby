@@ -1,6 +1,6 @@
 require 'mkmf'
-$LDFLAGS = "-L/usr/local/lib" if File.directory?("/usr/local/lib")
-$CFLAGS = "-Dss_family=__ss_family -Dss_len=__ss_len"
+$LDFLAGS += " -L/usr/local/lib" if File.directory?("/usr/local/lib")
+$CFLAGS += " -Dss_family=__ss_family -Dss_len=__ss_len"
 
 case PLATFORM
 when /mswin32/
@@ -245,7 +245,7 @@ EOS
 end
       
 
-$objs = ["socket.o"]
+$objs = ["socket.#{$OBJEXT}"]
     
 if $getaddr_info_ok and have_func("getaddrinfo") and have_func("getnameinfo")
   have_getaddrinfo = true
@@ -255,8 +255,8 @@ if have_getaddrinfo
   $CFLAGS="-DHAVE_GETADDRINFO "+$CFLAGS
 else
   $CFLAGS="-I. "+$CFLAGS
-  $objs += ["getaddrinfo.o"]
-  $objs += ["getnameinfo.o"]
+  $objs += ["getaddrinfo.#{$OBJEXT}"]
+  $objs += ["getnameinfo.#{$OBJEXT}"]
   have_func("inet_ntop") or have_func("inet_ntoa")
   have_func("inet_pton") or have_func("inet_aton")
 end

@@ -7,25 +7,26 @@ VPATH = .:./missing
 
 CC = cl
 YACC = byacc
-RANLIB = 
-AR = 
-INSTALL = ginstall -c
-INSTALL_PROGRAM = $(INSTALL)
-INSTALL_DATA = $(INSTALL) -m 644
 PURIFY =
+AUTOCONF = autoconf
 
-
-CFLAGS = -nologo -DNT=1 -Ox -I. -I./missing
-LDFLAGS =  $(CFLAGS) -Fm
-#CFLAGS = -nologo -DNT=1 -Zi -MD 
-#LDFLAGS =  $(CFLAGS) -Fm -MD
-LIBS =  advapi32.lib wsock32.lib
-MISSING = crypt.obj alloca.obj win32.obj fnmatch.obj isinf.obj isnan.obj
 
 prefix = 
+CFLAGS = -nologo -DNT=1 -Ox -I. -I./missing
+LDFLAGS = $(CFLAGS) -Fm
+#CFLAGS = -nologo -DNT=1 -Zi -MD
+#LDFLAGS = $(CFLAGS) -Fm -MD
+XLDFLAGS = 
+EXTLIBS = 
+LIBS = advapi32.lib wsock32.lib $(EXTLIBS)
+MISSING = crypt.obj alloca.obj win32.obj fnmatch.obj isinf.obj isnan.obj
+LDSHARED = 
+DLDFLAGS = 
+SOLIBS = 
+
 RUBY_INSTALL_NAME=ruby
-binsuffix = .exe
-PROGRAM=$(RUBY_INSTALL_NAME)$(binsuffix)
+EXEEXT = .exe
+PROGRAM=$(RUBY_INSTALL_NAME)$(EXEEXT)
 
 STACK = 0x200000
 ORGLIBPATH = $(LIB)
@@ -77,14 +78,14 @@ OBJS          = array.obj \
 		version.obj \
 		$(MISSING)
 
-all:		miniruby$(binsuffix) rbconfig.rb ext/Setup $(MISCLIBS)
+all:		miniruby$(EXEEXT) rbconfig.rb ext/Setup $(MISCLIBS)
 		set LIB=..\..\win32;$(ORGLIBPATH)
-		@.\miniruby$(binsuffix) -Xext extmk.rb static
+		@.\miniruby$(EXEEXT) -Xext extmk.rb static
 
-miniruby$(binsuffix):	$(OBJS) $(MAINOBJ) $(EXTOBJS) 
+miniruby$(EXEEXT):	$(OBJS) $(MAINOBJ) $(EXTOBJS) 
 		@echo $(EXTOBJS)
 		@echo $(LIBS)
-		@rm -f miniruby$(binsuffix)
+		@rm -f miniruby$(EXEEXT)
 		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(EXTOBJS) $(OBJS) $(LIBS) -o $@
 
 $(PROGRAM):     $(LIBRUBY) $(MAINOBJ) rubymw.dll
@@ -101,27 +102,28 @@ $(LIBRUBY):     $(OBJS)
 		lib /OUT:$(LIBRUBY) $(OBJS)
 
 install:	rbconfig.rb
-		./miniruby.exe $(srcdir)/instruby.rb $(DESTDIR)
+		.\miniruby.exe $(srcdir)/instruby.rb $(DESTDIR)
 
 clean:;		@rm -f $(OBJS) $(LIBRUBY) rbconfig.rb
-		@rm -f ext/extinit.c ext/extinit.obj *.obj
-		@.\miniruby$(binsuffix) -Xext extmk.rb clean 2> nul || true
+		@rm -f ext/extinit.c ext/extinit.obj ext/vc*.pdb *.obj
+		@.\miniruby$(EXEEXT) -Xext extmk.rb clean
 
 distclean:	clean
 		@rm -f Makefile ext/extmk.rb config.h
 		@rm -f ext/config.cache config.cache config.log config.status
 		@rm -f *~ core *.core gmon.out y.tab.c y.output ruby.imp
-		@rm -f $(PROGRAM) miniruby$(binsuffix)
+		@rm -f *.map rubymw.* ruby.def
+		@rm -f $(PROGRAM) miniruby$(EXEEXT)
 
 realclean:	distclean
 		@rm -f parse.c
 		@rm -f lex.c
 
-test:		miniruby$(binsuffix)
-		@.\miniruby$(binsuffix) $(srcdir)/rubytest.rb
+test:		miniruby$(EXEEXT)
+		@.\miniruby$(EXEEXT) $(srcdir)/rubytest.rb
 
-rbconfig.rb:	miniruby$(binsuffix)
-		@.\miniruby$(binsuffix) $(srcdir)/mkconfig.rb rbconfig.rb
+rbconfig.rb:	miniruby$(EXEEXT)
+		@.\miniruby$(EXEEXT) $(srcdir)/mkconfig.rb rbconfig.rb
 
 config.status:	$(srcdir)/configure
 #		$(SHELL) ./config.status --recheck

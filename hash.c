@@ -490,8 +490,8 @@ rb_hash_delete_if(hash)
 }
 
 static int
-clear_i(key, value)
-    VALUE key, value;
+clear_i(key, value, dummy)
+    VALUE key, value, dummy;
 {
     return ST_DELETE;
 }
@@ -501,7 +501,7 @@ rb_hash_clear(hash)
     VALUE hash;
 {
     rb_hash_modify(hash);
-    st_foreach(RHASH(hash)->tbl, clear_i);
+    st_foreach(RHASH(hash)->tbl, clear_i, 0);
 
     return hash;
 }

@@ -179,7 +179,7 @@ st_free_table(table)
     register st_table_entry *ptr, *next;
     int i;
 
-    for(i = 0; i < table->num_bins ; i++) {
+    for(i = 0; i < table->num_bins; i++) {
 	ptr = table->bins[i];
 	while (ptr != 0) {
 	    next = ptr->next;
@@ -287,7 +287,7 @@ rehash(table)
     new_num_bins = new_size(old_num_bins);
     new_bins = (st_table_entry**)Calloc(new_num_bins, sizeof(st_table_entry*));
 
-    for(i = 0; i < old_num_bins ; i++) {
+    for(i = 0; i < old_num_bins; i++) {
 	ptr = table->bins[i];
 	while (ptr != 0) {
 	    next = ptr->next;
@@ -324,7 +324,7 @@ st_copy(old_table)
 	return 0;
     }
 
-    for(i = 0; i < num_bins ; i++) {
+    for(i = 0; i < num_bins; i++) {
 	new_table->bins[i] = 0;
 	ptr = old_table->bins[i];
 	while (ptr != 0) {

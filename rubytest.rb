@@ -17,9 +17,8 @@ if File.exist? CONFIG['LIBRUBY_SO']
   ENV[dldpath] = x
 end
 
-if File.exist? CONFIG['LIBRUBY_SO']
-  ENV["LD_PRELOAD"] ||= ""
-  ENV["LD_PRELOAD"] += " ./#{CONFIG['LIBRUBY_SO']}"
+if /linux/ =~ RUBY_PLATFORM and File.exist? CONFIG['LIBRUBY_SO']
+  ENV["LD_PRELOAD"] = "./#{CONFIG['LIBRUBY_SO']}"
 end
 
 $stderr.reopen($stdout)

@@ -2191,7 +2191,7 @@ rb_str_each_line(argc, argv, str)
     }
 
     if (s != pend) {
-        if (p > pend) p = pend ;
+        if (p > pend) p = pend;
 	line = rb_str_new(s, p - s);
 	rb_yield(line);
     }

@@ -4189,7 +4189,7 @@ local_cnt(id)
 
     if (id == 0) return lvtbl->cnt;
 
-    for (cnt=1, max=lvtbl->cnt+1; cnt<max ;cnt++) {
+    for (cnt=1, max=lvtbl->cnt+1; cnt<max;cnt++) {
 	if (lvtbl->tbl[cnt] == id) return cnt-1;
     }
     return local_append(id);

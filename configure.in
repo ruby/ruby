@@ -77,6 +77,9 @@ AC_CHECK_PROGS(AR, ar aal, ar)
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
 
+AC_EXEEXT
+AC_OBJEXT
+
 # checks for UNIX variants that set C preprocessor variables
 AC_MINIX
 
@@ -151,9 +154,9 @@ dnl Checks for header files.
 AC_HEADER_DIRENT
 AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
-AC_CHECK_HEADERS(stdlib.h unistd.h limits.h sys/file.h sys/ioctl.h pwd.h \
-		 sys/select.h sys/time.h sys/times.h sys/param.h syscall.h\
-		 a.out.h string.h utime.h memory.h direct.h fnmatch.h)
+AC_CHECK_HEADERS(stdlib.h string.h unistd.h limits.h sys/file.h sys/ioctl.h\
+		 fcntl.h sys/fcntl.h sys/select.h sys/time.h sys/times.h sys/param.h\
+		 syscall.h pwd.h a.out.h utime.h memory.h direct.h fnmatch.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_UID_T
@@ -320,9 +323,6 @@ AC_ARG_WITH(dln-a-out,
 	yes) with_dln_a_out=yes;;
 	*)   with_dln_a_out=no;;
 	esac], [with_dln_a_out=no])
-
-AC_EXEEXT
-AC_OBJEXT
 
 AC_SUBST(XLDFLAGS)dnl
 

@@ -1730,15 +1730,13 @@ rb_eval(self, node)
 
     switch (nd_type(node)) {
       case NODE_BLOCK:
-	if (!node->nd_next) {
-	    node = node->nd_head;
-	    goto again;
-	}
-	while (node) {
-	    result = rb_eval(self, node->nd_head);
+	while (node->nd_next) {
+	    rb_eval(self, node->nd_head);
 	    node = node->nd_next;
 	}
-	break;
+	node = node->nd_head;
+	goto again;
+
       case NODE_POSTEXE:
 	rb_f_END();
 	nd_set_type(node, NODE_NIL); /* exec just once */
@@ -4586,6 +4584,7 @@ rb_load(fname, wrap)
     POP_VARS();
     ruby_wrapper = 0;
     if (ruby_nerrs > 0) {
+	ruby_nerrs = 0;
 	rb_exc_raise(ruby_errinfo);
     }
     if (state) JUMP_TAG(state);
@@ -5120,9 +5119,6 @@ rb_exec_end_proc()
 	link = tmp;
     }
     end_proc_data = 0;
-    if (top_scope && top_scope->local_tbl) {
-	rb_mem_clear(top_scope->local_vars, top_scope->local_tbl[0]);
-    }
 }
 
 void
@@ -6582,7 +6578,7 @@ rb_thread_join(thread)
 	VALUE oldbt = get_backtrace(th->errinfo);
 	VALUE errat = make_backtrace();
 
-	if (TYPE(oldbt) == T_ARRAY) {
+	if (TYPE(oldbt) == T_ARRAY && RARRAY(oldbt)->len > 0) {
 	    rb_ary_unshift(errat, rb_ary_entry(oldbt, 0));
 	}
 	set_backtrace(th->errinfo, errat);

@@ -2225,7 +2225,7 @@ re_compile_pattern(pattern, size, bufp)
       }
       else if (*laststart == charset || *laststart == charset_not) {
 	p0 = laststart;
-	mcnt = *++p0 ;
+	mcnt = *++p0;
 	p0 += mcnt+1;
 	mcnt = EXTRACT_UNSIGNED_AND_INCR(p0);
 	p0 += 8*mcnt;
@@ -4095,7 +4095,7 @@ re_match(bufp, string_arg, size, pos, regs)
 	  }
 	  break;
 	default:
-	  /* do nothing */ ;
+	  /* do nothing */;
 	}
       }
     }
