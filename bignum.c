@@ -856,8 +856,6 @@ static VALUE
 rb_big_eq(x, y)
     VALUE x, y;
 {
-    double d;
-
     switch (TYPE(y)) {
       case T_FIXNUM:
 	y = rb_int2big(FIX2LONG(y));
