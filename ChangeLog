@@ -1,7 +1,7 @@
 Fri Mar 25 10:53:16 2005  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in (WIN32_LEAN_AND_MEAN): removed because a lot of
-	  troubles.
+	  troubles.  [ruby-list:40721]
 
 Thu Mar 24 23:10:44 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
