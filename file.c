@@ -4,7 +4,7 @@
   file.c -
 
   $Author: matz $
-  $Date: 1994/11/22 01:22:34 $
+  $Date: 1994/12/06 09:30:00 $
   created at: Mon Nov 15 12:24:34 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -255,7 +255,7 @@ cache_stat(path, st)
 }
 
 static VALUE
-Ffile_stat(obj, fname)
+Sfile_stat(obj, fname)
     VALUE obj;
     struct RString *fname;
 {
@@ -269,7 +269,7 @@ Ffile_stat(obj, fname)
 }
 
 static VALUE
-Ffile_stat2(obj)
+Ffile_stat(obj)
     VALUE obj;
 {
     OpenFile *fptr;
@@ -283,7 +283,7 @@ Ffile_stat2(obj)
 }
 
 static VALUE
-Ffile_lstat(obj, fname)
+Sfile_lstat(obj, fname)
     VALUE obj;
     struct RString *fname;
 {
@@ -297,7 +297,7 @@ Ffile_lstat(obj, fname)
 }
 
 static VALUE
-Ffile_lstat2(obj)
+Ffile_lstat(obj)
     VALUE obj;
 {
     OpenFile *fptr;
@@ -705,7 +705,7 @@ Ftest_sticky(obj, fname)
 }
 
 static VALUE
-Ffile_type(obj, fname)
+Sfile_type(obj, fname)
     VALUE obj;
     struct RString *fname;
 {
@@ -750,7 +750,7 @@ Ffile_type(obj, fname)
 }
 
 static VALUE
-Ffile_atime(obj, fname)
+Sfile_atime(obj, fname)
     VALUE obj;
     struct RString *fname;
 {
@@ -762,7 +762,7 @@ Ffile_atime(obj, fname)
 }
 
 static VALUE
-Ffile_atime2(obj)
+Ffile_atime(obj)
     VALUE obj;
 {
     OpenFile *fptr;
@@ -776,7 +776,7 @@ Ffile_atime2(obj)
 }
 
 static VALUE
-Ffile_mtime(obj, fname)
+Sfile_mtime(obj, fname)
     VALUE obj;
     struct RString *fname;
 {
@@ -788,7 +788,7 @@ Ffile_mtime(obj, fname)
 }
 
 static VALUE
-Ffile_mtime2(obj)
+Ffile_mtime(obj)
     VALUE obj;
 {
     OpenFile *fptr;
@@ -802,7 +802,7 @@ Ffile_mtime2(obj)
 }
 
 static VALUE
-Ffile_ctime(obj, fname)
+Sfile_ctime(obj, fname)
     VALUE obj;
     struct RString *fname;
 {
@@ -814,7 +814,7 @@ Ffile_ctime(obj, fname)
 }
 
 static VALUE
-Ffile_ctime2(obj)
+Ffile_ctime(obj)
     VALUE obj;
 {
     OpenFile *fptr;
@@ -837,7 +837,7 @@ chmod_internal(path, mode)
 }
 
 static VALUE
-Ffile_chmod(obj, args)
+Sfile_chmod(obj, args)
     VALUE obj, args;
 {
     VALUE vmode;
@@ -853,7 +853,7 @@ Ffile_chmod(obj, args)
 }
 
 static VALUE
-Ffile_chmod2(obj, vmode)
+Ffile_chmod(obj, vmode)
     VALUE obj, vmode;
 {
     OpenFile *fptr;
@@ -882,7 +882,7 @@ chown_internal(path, args)
 }
 
 static VALUE
-Ffile_chown(obj, args)
+Sfile_chown(obj, args)
     VALUE obj, args;
 {
     VALUE o, g, rest;
@@ -907,7 +907,7 @@ Ffile_chown(obj, args)
     return INT2FIX(n);
 }
 
-Ffile_chown2(obj, owner, group)
+Ffile_chown(obj, owner, group)
     VALUE obj, owner, group;
 {
     OpenFile *fptr;
@@ -932,7 +932,7 @@ utime_internal(path, tvp)
 }
 
 static VALUE
-Ffile_utime(obj, args)
+Sfile_utime(obj, args)
     VALUE obj, args;
 {
     VALUE atime, mtime, rest;
@@ -949,7 +949,7 @@ Ffile_utime(obj, args)
 }
 
 static VALUE
-Ffile_link(obj, from, to)
+Sfile_link(obj, from, to)
     VALUE obj;
     struct RString *from, *to;
 {
@@ -962,7 +962,7 @@ Ffile_link(obj, from, to)
 }
 
 static VALUE
-Ffile_symlink(obj, from, to)
+Sfile_symlink(obj, from, to)
     VALUE obj;
     struct RString *from, *to;
 {
@@ -974,7 +974,8 @@ Ffile_symlink(obj, from, to)
     return TRUE;
 }
 
-Ffile_readlink(obj, path)
+static VALUE
+Sfile_readlink(obj, path)
     VALUE obj;
     struct RString *path;
 {
@@ -998,7 +999,7 @@ unlink_internal(path)
 }
 
 static VALUE
-Ffile_unlink(obj, args)
+Sfile_unlink(obj, args)
     VALUE obj;
     struct RArray *args;
 {
@@ -1009,7 +1010,7 @@ Ffile_unlink(obj, args)
 }
 
 static VALUE
-Ffile_rename(obj, from, to)
+Sfile_rename(obj, from, to)
     VALUE obj;
     struct RString *from, *to;
 {
@@ -1023,7 +1024,7 @@ Ffile_rename(obj, from, to)
 }
 
 static VALUE
-Ffile_umask(argc, argv)
+Sfile_umask(argc, argv)
     int argc;
     VALUE *argv;
 {
@@ -1044,7 +1045,7 @@ Ffile_umask(argc, argv)
 }
 
 static VALUE
-Ffile_truncate(obj, path, len)
+Sfile_truncate(obj, path, len)
     VALUE obj, len;
     struct RString *path;
 {
@@ -1056,7 +1057,7 @@ Ffile_truncate(obj, path, len)
 }
 
 static VALUE
-Ffile_truncate2(obj, len)
+Ffile_truncate(obj, len)
     VALUE obj, len;
 {
     OpenFile *fptr;
@@ -1125,40 +1126,40 @@ Init_File()
 
     C_File = rb_define_class("File", C_IO);
 
-    rb_define_single_method(C_File, "stat",  Ffile_stat, 1);
-    rb_define_single_method(C_File, "lstat", Ffile_lstat, 1);
-    rb_define_single_method(C_File, "type",  Ffile_type, 1);
+    rb_define_single_method(C_File, "stat",  Sfile_stat, 1);
+    rb_define_single_method(C_File, "lstat", Sfile_lstat, 1);
+    rb_define_single_method(C_File, "type",  Sfile_type, 1);
 
-    rb_define_single_method(C_File, "atime", Ffile_atime, 1);
-    rb_define_single_method(C_File, "mtime", Ffile_mtime, 1);
-    rb_define_single_method(C_File, "ctime", Ffile_ctime, 1);
+    rb_define_single_method(C_File, "atime", Sfile_atime, 1);
+    rb_define_single_method(C_File, "mtime", Sfile_mtime, 1);
+    rb_define_single_method(C_File, "ctime", Sfile_ctime, 1);
 
-    rb_define_single_method(C_File, "utime", Ffile_utime, -2);
-    rb_define_single_method(C_File, "chmod", Ffile_chmod, -2);
-    rb_define_single_method(C_File, "chown", Ffile_chown, -2);
+    rb_define_single_method(C_File, "utime", Sfile_utime, -2);
+    rb_define_single_method(C_File, "chmod", Sfile_chmod, -2);
+    rb_define_single_method(C_File, "chown", Sfile_chown, -2);
 
-    rb_define_single_method(C_File, "link", Ffile_link, 2);
-    rb_define_single_method(C_File, "symlink", Ffile_symlink, 2);
-    rb_define_single_method(C_File, "readlink", Ffile_readlink, 1);
+    rb_define_single_method(C_File, "link", Sfile_link, 2);
+    rb_define_single_method(C_File, "symlink", Sfile_symlink, 2);
+    rb_define_single_method(C_File, "readlink", Sfile_readlink, 1);
 
-    rb_define_single_method(C_File, "unlink", Ffile_unlink, -2);
-    rb_define_single_method(C_File, "delete", Ffile_unlink, -2);
-    rb_define_single_method(C_File, "rename", Ffile_rename, 2);
-    rb_define_single_method(C_File, "umask", Ffile_umask, -1);
-    rb_define_single_method(C_File, "truncate", Ffile_truncate, 2);
+    rb_define_single_method(C_File, "unlink", Sfile_unlink, -2);
+    rb_define_single_method(C_File, "delete", Sfile_unlink, -2);
+    rb_define_single_method(C_File, "rename", Sfile_rename, 2);
+    rb_define_single_method(C_File, "umask", Sfile_umask, -1);
+    rb_define_single_method(C_File, "truncate", Sfile_truncate, 2);
 
     rb_include_module(CLASS_OF(C_File), M_FileTest);
 
-    rb_define_method(C_File, "stat",  Ffile_stat2, 0);
-    rb_define_method(C_File, "lstat",  Ffile_lstat2, 0);
+    rb_define_method(C_File, "stat",  Ffile_stat, 0);
+    rb_define_method(C_File, "lstat",  Ffile_lstat, 0);
 
-    rb_define_method(C_File, "atime", Ffile_atime2, 0);
-    rb_define_method(C_File, "mtime", Ffile_mtime2, 0);
-    rb_define_method(C_File, "ctime", Ffile_ctime2, 0);
+    rb_define_method(C_File, "atime", Ffile_atime, 0);
+    rb_define_method(C_File, "mtime", Ffile_mtime, 0);
+    rb_define_method(C_File, "ctime", Ffile_ctime, 0);
 
-    rb_define_method(C_File, "chmod", Ffile_chmod2, 1);
-    rb_define_method(C_File, "chown", Ffile_chown2, 2);
-    rb_define_method(C_File, "truncate", Ffile_truncate2, 1);
+    rb_define_method(C_File, "chmod", Ffile_chmod, 1);
+    rb_define_method(C_File, "chown", Ffile_chown, 2);
+    rb_define_method(C_File, "truncate", Ffile_truncate, 1);
 
     rb_define_method(C_File, "tell",  Ffile_tell, 0);
     rb_define_method(C_File, "seek",  Ffile_seek, 2);

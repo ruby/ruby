@@ -3,7 +3,7 @@
   process.c -
 
   $Author: matz $
-  $Date: 1994/11/01 08:28:14 $
+  $Date: 1994/12/06 09:30:11 $
   created at: Tue Aug 10 14:30:50 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -811,6 +811,38 @@ Fproc_setuid(obj, id)
 }
 
 static VALUE
+Fproc_getgid(obj)
+    VALUE obj;
+{
+    int gid = getgid();
+    return INT2FIX(gid);
+}
+
+static VALUE
+Fproc_setgid(obj, id)
+    VALUE obj, id;
+{
+    int gid;
+
+    gid = NUM2INT(id);
+#ifdef HAS_SETRGID
+	setrgid((GIDTYPE)gid);
+#else
+#ifdef HAVE_SETREGID
+    setregid(gid, -1);
+#else
+    {
+	if (getegid() == gid)
+	    setgid(gid);
+	else
+	    Fail("getrgid not implemented");
+    }
+#endif
+#endif
+	return INT2FIX(gid);
+}
+
+static VALUE
 Fproc_geteuid(obj)
     VALUE obj;
 {
@@ -822,9 +854,48 @@ static VALUE
 Fproc_seteuid(obj, euid)
     VALUE obj, euid;
 {
-    if (seteuid(NUM2INT(euid)) == -1)
-	rb_sys_fail(Qnil);
+#ifdef HAVE_SETEUID
+    if (seteuid(NUM2INT(euid)) == -1) rb_sys_fail(Qnil);
+#else
+#ifdef HAVE_SETREUID
+    if (setreuid(-1, NUM2INT(euid)) == -1) rb_sys_fail(Qnil);
+#else
+    euid = NUM2INT(euid);
+    if (euid == getuid())
+	setuid(euid);
+    else
+	Fail("seteuid() not implemented");
+#endif
+#endif
     return euid;
+}
+
+static VALUE
+Fproc_getegid(obj)
+    VALUE obj;
+{
+    int egid = getegid();
+    return INT2FIX(egid);
+}
+
+static VALUE
+Fproc_setegid(obj, egid)
+    VALUE obj, egid;
+{
+#ifdef HAVE_SETEGID
+    if (setegid(NUM2INT(egid)) == -1) rb_sys_fail(Qnil);
+#else
+#ifdef HAVE_SETREGID
+    if (setregid(-1, NUM2INT(egid)) == -1) rb_sys_fail(Qnil);
+#else
+    egid = NUM2INT(egid);
+    if (egid == getgid())
+	setgid(egid);
+    else
+	Fail("setegid() not implemented");
+#endif
+#endif
+    return egid;
 }
 
 VALUE rb_readonly_hook();
@@ -869,6 +940,10 @@ Init_process()
 
     rb_define_module_function(M_Process, "uid", Fproc_getuid, 0);
     rb_define_module_function(M_Process, "uid=", Fproc_setuid, 1);
+    rb_define_module_function(M_Process, "gid", Fproc_getgid, 0);
+    rb_define_module_function(M_Process, "gid=", Fproc_setgid, 1);
     rb_define_module_function(M_Process, "euid", Fproc_geteuid, 0);
     rb_define_module_function(M_Process, "euid=", Fproc_seteuid, 1);
+    rb_define_module_function(M_Process, "egid", Fproc_getegid, 0);
+    rb_define_module_function(M_Process, "egid=", Fproc_setegid, 1);
 }

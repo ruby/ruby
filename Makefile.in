@@ -6,31 +6,28 @@ srcdir = @srcdir@
 VPATH = @srcdir@
 
 CC = @CC@
-DBM = @DBM@
+DBMCC = cc
 YACC = @YACC@
 INSTALL = @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_DATA = @INSTALL_DATA@
-MAKEINFO = makeinfo
 
 CFLAGS = -g
 LDFLAGS = @STATIC@ $(CFLAGS)
 LIBS = @LIBS@
 DEFS = @DEFS@
+MISSING = @LIBOBJS@
 
 prefix = /usr/local
 binprefix = 
 exec_prefix = $(prefix)
 bindir = $(exec_prefix)/bin
-infodir = $(prefix)/info
 
 #### End of system configuration section. ####
 
-.c.o:
-	$(CC) -c $(CFLAGS) $(CPPFLAGS) $(DEFS) -I$(srcdir) -I$(srcdir)/lib $<
-
 HDRS          = defines.h \
 		dln.h \
+		getopt.h \
 		ident.h \
 		io.h \
 		node.h \
@@ -39,47 +36,6 @@ HDRS          = defines.h \
 		ruby.h \
 		st.h \
 		version.h
-
-SRCS          = array.c \
-		bignum.c \
-		class.c \
-		compar.c \
-		dbm.c \
-		dict.c \
-		dir.c \
-		dln.c \
-		enum.c \
-		error.c \
-		etc.c \
-		eval.c \
-		file.c \
-		fnmatch.c \
-		gc.c \
-		glob.c \
-		gnuglob.c \
-		inits.c \
-		io.c \
-		main.c \
-		math.c \
-		missing.c \
-		numeric.c \
-		object.c \
-		pack.c \
-		parse.y \
-		process.c \
-		random.c \
-		range.c \
-		re.c \
-		regex.c \
-		ruby.c \
-		socket.c \
-		sprintf.c \
-		st.c \
-		string.c \
-		struct.c \
-		time.c \
-		variable.c \
-		version.c
 
 OBJS	      = array.o \
 		bignum.o \
@@ -96,13 +52,14 @@ OBJS	      = array.o \
 		file.o \
 		fnmatch.o \
 		gc.o \
+		getopt.o \
+		getopt1.o \
 		glob.o \
 		gnuglob.o \
 		inits.o \
 		io.o \
 		main.o \
 		math.o \
-		missing.o \
 		numeric.o \
 		object.o \
 		pack.o \
@@ -120,11 +77,9 @@ OBJS	      = array.o \
 		struct.o \
 		time.o \
 		variable.o \
-		version.o
-
-DISTFILES = README NEWS TODO THANKS COPYING INSTALL \
-ChangeLog Makefile.in configure.in \
-$(HDRS) $(SRCS) configure
+		version.o \
+		$(MISSING) \
+		@ALLOCA@
 
 PROGRAM	      = ruby
 
@@ -140,56 +95,80 @@ $(bindir)/$(PROGRAM): $(PROGRAM)
 install: $(bindir)/$(PROGRAM)
 
 clean:;		@rm -f $(OBJS)
-
-realclean:;	@rm -f $(OBJS)
 		@rm -f core ruby *~ config.status Makefile
+.c.o:
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $<
 
 dbm.o:dbm.c
-	$(CC) -c $(DBM) $(CFLAGS) $(CPPFLAGS) $(DEFS) -I$(srcdir) -I$(srcdir)/lib dbm.c
+	$(DBMCC) $(CFLAGS) $(CPPFLAGS) -c dbm.c
+
+alloca.o: missing/alloca.c
+	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c missing/alloca.c
+
+memmove.o: missing/memmove.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c missing/memmove.c
+
+mkdir.o: missing/mkdir.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c missing/mkdir.c
+
+strerror.o: missing/strerror.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c missing/strerror.c
+
+strdup.o: missing/strdup.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c missing/strdup.c
+
+strftime.o: missing/strftime.c
+	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c missing/strftime.c
+
+strstr.o: missing/strstr.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c missing/strstr.c
+
+strtol.o: missing/strtol.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c missing/strtol.c
+
+strtoul.o: missing/strtoul.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c missing/strtoul.c
 
 # Prevent GNU make v3 from overflowing arg limit on SysV.
 .NOEXPORT:
 ###
-parse.o : parse.y ruby.h defines.h env.h node.h st.h ident.h regex.h 
+parse.o : parse.y ruby.h defines.h config.h env.h node.h st.h ident.h regex.h 
 ###
-array.o : array.c ruby.h defines.h 
-bignum.o : bignum.c ruby.h defines.h 
-class.o : class.c ruby.h defines.h env.h node.h st.h
-compar.o : compar.c ruby.h defines.h 
-dbm.o : dbm.c ruby.h defines.h 
-dict.o : dict.c ruby.h defines.h st.h 
-dir.o : dir.c ruby.h defines.h 
-dln.o : dln.c defines.h dln.h 
-enum.o : enum.c ruby.h defines.h 
-error.o : error.c ruby.h defines.h env.h 
-etc.o : etc.c ruby.h defines.h 
-eval.o : eval.c ruby.h defines.h ident.h env.h node.h st.h 
-file.o : file.c ruby.h defines.h io.h 
-fnmatch.o : fnmatch.c fnmatch.h 
-gc.o : gc.c ruby.h defines.h env.h st.h 
-glob.o : glob.c ruby.h defines.h fnmatch.h 
-gnuglob.o : gnuglob.c fnmatch.h 
-inits.o : inits.c ruby.h defines.h 
-io.o : io.c ruby.h defines.h io.h 
-main.o : main.c 
-math.o : math.c ruby.h defines.h 
-missing.o : missing.c ruby.h defines.h missing/memmove.c missing/strerror.c \
-  missing/strtoul.c missing/strftime.c missing/strstr.c missing/getopt.h missing/getopt.c \
-  missing/getopt1.c missing/mkdir.c 
-numeric.o : numeric.c ruby.h defines.h 
-object.o : object.c ruby.h defines.h env.h node.h st.h 
-pack.o : pack.c ruby.h defines.h 
-process.o : process.c ruby.h defines.h st.h 
-random.o : random.c ruby.h defines.h 
-range.o : range.c ruby.h defines.h 
-re.o : re.c ruby.h defines.h re.h regex.h 
-regex.o : regex.c defines.h regex.h 
-ruby.o : ruby.c ruby.h defines.h re.h regex.h missing/getopt.h 
-socket.o : socket.c ruby.h defines.h 
-sprintf.o : sprintf.c ruby.h defines.h 
-st.o : st.c st.h 
-string.o : string.c ruby.h defines.h re.h regex.h 
-struct.o : struct.c ruby.h defines.h env.h 
-time.o : time.c ruby.h defines.h 
-variable.o : variable.c ruby.h defines.h env.h node.h ident.h st.h 
-version.o : version.c ruby.h defines.h version.h 
+array.o: array.c ruby.h config.h defines.h
+bignum.o: bignum.c ruby.h config.h defines.h
+class.o: class.c ruby.h config.h defines.h env.h node.h st.h
+compar.o: compar.c ruby.h config.h defines.h
+dbm.o: dbm.c ruby.h config.h defines.h
+dict.o: dict.c ruby.h config.h defines.h st.h
+dir.o: dir.c ruby.h config.h defines.h
+dln.o: dln.c defines.h dln.h
+enum.o: enum.c ruby.h config.h defines.h
+error.o: error.c ruby.h config.h defines.h env.h
+etc.o: etc.c ruby.h config.h defines.h
+eval.o: eval.c ruby.h config.h defines.h ident.h env.h node.h st.h
+file.o: file.c ruby.h config.h defines.h io.h
+fnmatch.o: fnmatch.c fnmatch.h
+gc.o: gc.c ruby.h config.h defines.h env.h st.h
+glob.o: glob.c ruby.h config.h defines.h fnmatch.h
+gnuglob.o: gnuglob.c fnmatch.h
+inits.o: inits.c ruby.h config.h defines.h
+io.o: io.c ruby.h config.h defines.h io.h
+main.o: main.c
+math.o: math.c ruby.h config.h defines.h
+numeric.o: numeric.c ruby.h config.h defines.h env.h
+object.o: object.c ruby.h config.h defines.h env.h node.h st.h
+pack.o: pack.c ruby.h config.h defines.h
+process.o: process.c ruby.h config.h defines.h st.h
+random.o: random.c ruby.h config.h defines.h
+range.o: range.c ruby.h config.h defines.h
+re.o: re.c ruby.h config.h defines.h re.h regex.h
+regex.o: regex.c defines.h regex.h
+ruby.o: ruby.c ruby.h config.h defines.h re.h regex.h getopt.h
+socket.o: socket.c ruby.h config.h defines.h io.h
+sprintf.o: sprintf.c ruby.h config.h defines.h
+st.o: st.c st.h
+string.o: string.c ruby.h config.h defines.h re.h regex.h
+struct.o: struct.c ruby.h config.h defines.h env.h
+time.o: time.c ruby.h config.h defines.h
+variable.o: variable.c ruby.h config.h defines.h env.h node.h ident.h st.h
+version.o: version.c ruby.h config.h defines.h version.h

@@ -3,7 +3,7 @@
   sprintf.c -
 
   $Author: matz $
-  $Date: 1994/10/14 06:19:50 $
+  $Date: 1994/12/06 09:30:23 $
   created at: Fri Oct 15 10:39:26 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -220,7 +220,7 @@ Fsprintf(argc, argv)
 		    val = str2inum(RSTRING(val)->ptr, 0);
 		    goto bin_retry;
 		  case T_BIGNUM:
-		    val = Fbig_clone(val);
+		    val = big_clone(val);
 		    break;
 		  default:
 		    WrongType(val, T_FIXNUM);
@@ -280,7 +280,6 @@ Fsprintf(argc, argv)
 		}
 		sprintf(&buf[blen], fbuf, s);
 		blen += strlen(&buf[blen]);
-		obj_free(val);
 	    }
 	    break;
 	    

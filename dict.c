@@ -3,7 +3,7 @@
   dict.c -
 
   $Author: matz $
-  $Date: 1994/11/01 08:27:49 $
+  $Date: 1994/12/06 09:29:53 $
   created at: Mon Nov 22 18:51:18 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -37,8 +37,8 @@ rb_hash(a, mod)
 #define ASSOC_KEY(a) RARRAY(a)->ptr[0]
 #define ASSOC_VAL(a) RARRAY(a)->ptr[1]
 
-VALUE
-Fdic_new(class)
+static VALUE
+Sdic_new(class)
     VALUE class;
 {
     int i, max;
@@ -48,6 +48,12 @@ Fdic_new(class)
     dic->tbl = st_init_table(rb_cmp, rb_hash);
 
     return (VALUE)dic;
+}
+
+VALUE
+dic_new()
+{
+    return Sdic_new(C_Dict);
 }
 
 static VALUE
@@ -216,7 +222,7 @@ static
 dic_to_a(key, value, ary)
     VALUE key, value, ary;
 {
-    Fary_push(ary, assoc_new(key, value));
+    ary_push(ary, assoc_new(key, value));
     return ST_CONTINUE;
 }
 
@@ -269,19 +275,14 @@ static VALUE
 Fdic_to_s(dic)
     VALUE dic;
 {
-    VALUE str;
-
-    dic = Fdic_to_a(dic);
-    str = Fary_to_s(dic);
-
-    return str;
+    return Fary_to_s(Fdic_to_a(dic));
 }
 
 static
 dic_keys(key, value, ary)
     VALUE key, value, ary;
 {
-    Fary_push(ary, key);
+    ary_push(ary, key);
     return ST_CONTINUE;
 }
 
@@ -301,7 +302,7 @@ static
 dic_values(key, value, ary)
     VALUE key, value, ary;
 {
-    Fary_push(ary, key);
+    ary_push(ary, key);
     return ST_CONTINUE;
 }
 
@@ -542,7 +543,7 @@ Init_Dict()
 
     rb_include_module(C_Dict, M_Enumerable);
 
-    rb_define_single_method(C_Dict, "new", Fdic_new, 0);
+    rb_define_single_method(C_Dict, "new", Sdic_new, 0);
 
     rb_define_method(C_Dict,"clone",  Fdic_clone, 0);
 

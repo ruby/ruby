@@ -3,7 +3,7 @@
   string.c -
 
   $Author: matz $
-  $Date: 1994/11/18 01:37:38 $
+  $Date: 1994/12/06 09:30:24 $
   created at: Mon Aug  9 17:12:58 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -61,7 +61,7 @@ str_new3(str)
 
 #define as_str(str) (struct RString*)obj_as_string(str)
 
-static ID pr_str = Qnil;
+static ID pr_str;
 
 VALUE
 obj_as_string(obj)
@@ -79,7 +79,7 @@ obj_as_string(obj)
 }
 
 VALUE
-Fstr_clone(str)
+str_clone(str)
     struct RString *str;
 {
     VALUE obj;
@@ -93,7 +93,7 @@ Fstr_clone(str)
 }
 
 static VALUE
-Fstr_new(class, str)
+Sstr_new(class, str)
     VALUE class;
     struct RString *str;
 {
@@ -164,7 +164,7 @@ Fstr_dot2(left, right)
     VALUE str;
 
     Check_Type(right, T_STRING);
-    str = range_new(C_Range, left, right);
+    str = range_new(left, right);
     return str;
 }
 
@@ -375,6 +375,7 @@ Fstr_match(x, y)
     switch (TYPE(y)) {
       case T_REGEXP:
 	return Freg_match(y, x);
+
       case T_STRING:
 	reg = re_regcomp(y);
 	start = research(reg, x, 0, ignorecase);
@@ -382,6 +383,7 @@ Fstr_match(x, y)
 	    return FALSE;
 	}
 	return INT2FIX(start);
+
       default:
 	if (obj_is_kind_of(y, C_Glob)) {
 	    return Fglob_match(y, x);
@@ -542,7 +544,6 @@ Fstr_next(orig)
 	str2 = (struct RString*)str_new(0, str->len+1);
 	str2->ptr[0] = c;
 	memmove(str2->ptr+1, str->ptr, str->len);
-	obj_free(str);
 	str = str2;
     }
 
@@ -1310,7 +1311,7 @@ Fstr_split(str, args)
 		}
 		else {
 		    if (isspace(*ptr)) {
-			Fary_push(result, str_substr(str, beg, end-beg));
+			ary_push(result, str_substr(str, beg, end-beg));
 			if (limit && lim <= ++i) break;
 			skip = 1;
 			beg = end + 1;
@@ -1324,7 +1325,7 @@ Fstr_split(str, args)
 	else {
 	    for (end = beg = 0; ptr<eptr; ptr++) {
 		if (*ptr == char_sep) {
-		    Fary_push(result, str_substr(str, beg, end-beg));
+		    ary_push(result, str_substr(str, beg, end-beg));
 		    if (limit && lim <= ++i) break;
 		    beg = end + 1;
 		}
@@ -1344,9 +1345,9 @@ Fstr_split(str, args)
 	    if (start == end && LMATCH[0] == RMATCH[0]) {
 		if (last_null == 1) {
 		    if (ismbchar(str->ptr[beg]))
-			Fary_push(result, str_substr(str, beg, 2));
+			ary_push(result, str_substr(str, beg, 2));
 		    else
-			Fary_push(result, str_substr(str, beg, 1));
+			ary_push(result, str_substr(str, beg, 1));
 		    beg = start;
 		    if (limit && lim <= ++i) break;
 		}
@@ -1357,7 +1358,7 @@ Fstr_split(str, args)
 		}
 	    }
 	    else {
-		Fary_push(result, str_substr(str, beg, end-beg));
+		ary_push(result, str_substr(str, beg, end-beg));
 		beg = start = RMATCH[0];
 		if (limit && lim <= ++i) break;
 	    }
@@ -1369,17 +1370,17 @@ Fstr_split(str, args)
 		    tmp = str_new(0, 0);
 		else
 		    tmp = str_subseq(str, LMATCH[idx], RMATCH[idx]-1);
-		Fary_push(result, tmp);
+		ary_push(result, tmp);
 		if (limit && lim <= ++i) break;
 	    }
 
 	}
     }
     if (str->len > beg) {
-	Fary_push(result, str_subseq(str, beg, -1));
+	ary_push(result, str_subseq(str, beg, -1));
     }
     else if (str->len == beg) {
-	Fary_push(result, str_new(0, 0));
+	ary_push(result, str_new(0, 0));
     }
 
     return result;
@@ -1631,8 +1632,8 @@ Init_String()
     C_String  = rb_define_class("String", C_Object);
     rb_include_module(C_String, M_Comparable);
     rb_include_module(C_String, M_Enumerable);
-    rb_define_single_method(C_String, "new", Fstr_new, 1);
-    rb_define_method(C_String, "clone", Fstr_clone, 0);
+    rb_define_single_method(C_String, "new", Sstr_new, 1);
+    rb_define_method(C_String, "clone", str_clone, 0);
     rb_define_method(C_String, "<=>", Fstr_cmp, 1);
     rb_define_method(C_String, "==", Fstr_equal, 1);
     rb_define_method(C_String, "hash", Fstr_hash, 0);

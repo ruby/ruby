@@ -1,4 +1,4 @@
-# Linked list program -- short version
+# Linked list example -- short version
 class Point
   def Point.new(x, y)
     super.init(x, y)

@@ -3,7 +3,7 @@
   array.c -
 
   $Author: matz $
-  $Date: 1994/11/22 01:22:30 $
+  $Date: 1994/12/06 09:29:47 $
   created at: Fri Aug  6 09:46:12 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -94,7 +94,7 @@ assoc_new(elm1, elm2)
 }
 
 static VALUE
-Fary_new(class)
+Sary_new(class)
     VALUE class;
 {
     NEWOBJ(ary, struct RArray);
@@ -132,7 +132,7 @@ astore(ary, idx, val)
 }
 
 VALUE
-Fary_push(ary, item)
+ary_push(ary, item)
     struct RArray *ary;
     VALUE item;
 {
@@ -150,7 +150,7 @@ Fary_append(ary, item)
 }
 
 VALUE
-Fary_pop(ary)
+ary_pop(ary)
     struct RArray *ary;
 {
     if (ary->len == 0) return Qnil;
@@ -158,7 +158,7 @@ Fary_pop(ary)
 }
 
 VALUE
-Fary_shift(ary)
+ary_shift(ary)
     struct RArray *ary;
 {
     VALUE top;
@@ -175,7 +175,7 @@ Fary_shift(ary)
 }
 
 VALUE
-Fary_unshift(ary, item)
+ary_unshift(ary, item)
     struct RArray *ary;
 {
     VALUE top;
@@ -474,7 +474,7 @@ Fary_length(ary)
 }
 
 static VALUE
-Fary_clone(ary)
+ary_clone(ary)
     struct RArray *ary;
 {
     VALUE ary2 = ary_new2(ary->len);
@@ -497,16 +497,14 @@ ary_join(ary, sep)
     if (ary->len == 0) return str_new(0, 0);
 
     if (TYPE(ary->ptr[0]) == T_STRING)
-	result = Fstr_clone(ary->ptr[0]);
+	result = str_clone(ary->ptr[0]);
     else
 	result = obj_as_string(ary->ptr[0]);
 
     for (i=1; i<ary->len; i++) {
-	int need_free = 1;
 	tmp = ary->ptr[i];
 	switch (TYPE(tmp)) {
 	  case T_STRING:
-	    need_free = 0;
 	    break;
 	  case T_ARRAY:
 	    tmp = ary_join(tmp, sep);
@@ -516,7 +514,6 @@ ary_join(ary, sep)
 	}
 	if (sep) str_cat(result, sep->ptr, sep->len);
 	str_cat(result, RSTRING(tmp)->ptr, RSTRING(tmp)->len);
-	if (need_free == 1) obj_free(tmp);
     }
 
     return result;
@@ -547,7 +544,7 @@ Fary_to_s(ary)
     return str;
 }
 
-static VALUE
+VALUE
 Fary_print_on(ary, port)
     struct RArray *ary;
     VALUE port;
@@ -556,9 +553,9 @@ Fary_print_on(ary, port)
 
     for (i=0; i<ary->len; i++) {
 	if (OFS && i>1) {
-	    Fio_write(port, OFS);
+	    io_write(port, OFS);
 	}
-	Fio_write(port, ary->ptr[i]);
+	io_write(port, ary->ptr[i]);
     }
     return port;
 }
@@ -573,7 +570,7 @@ Fary_inspect(ary)
     VALUE str;
     char *p;
 
-    ary = (struct RArray*)Fary_clone(ary);
+    ary = (struct RArray*)ary_clone(ary);
 
     len = ary->len;
     for (i=0; i<len; i++) {
@@ -766,8 +763,8 @@ Fary_plus(x, y)
 	break;
 
       default:
-	z = (struct RArray*)Fary_clone(x);
-	Fary_push(z, y);
+	z = (struct RArray*)ary_clone(x);
+	ary_push(z, y);
 	break;
     }
     return (VALUE)z;
@@ -856,18 +853,18 @@ Fary_hash(ary)
     return INT2FIX(h);
 }
 
-static int
-ary_contains(ary, item)
+static VALUE
+Fary_includes(ary, item)
     struct RArray *ary;
     VALUE item;
 {
     int i;
     for (i=0; i<ary->len; i++) {
 	if (rb_funcall(ary->ptr[i], eq, 1, item)) {
-	    return 1;
+	    return TRUE;
 	}
     }
-    return 0;
+    return FALSE;
 }
 
 static VALUE
@@ -880,9 +877,9 @@ Fary_diff(ary1, ary2)
     Check_Type(ary2, T_ARRAY);
     ary3 = ary_new();
     for (i=0; i<ary1->len; i++) {
-	if (ary_contains(ary2, ary1->ptr[i])) continue;
-	if (ary_contains(ary3, ary1->ptr[i])) continue;
-	Fary_push(ary3, ary1->ptr[i]);
+	if (Fary_includes(ary2, ary1->ptr[i])) continue;
+	if (Fary_includes(ary3, ary1->ptr[i])) continue;
+	ary_push(ary3, ary1->ptr[i]);
     }
     return ary3;
 }
@@ -897,9 +894,9 @@ Fary_and(ary1, ary2)
     Check_Type(ary2, T_ARRAY);
     ary3 = ary_new();
     for (i=0; i<ary1->len; i++) {
-	if (ary_contains(ary2, ary1->ptr[i])
-	    && !ary_contains(ary3, ary1->ptr[i])) {
-	    Fary_push(ary3, ary1->ptr[i]);
+	if (Fary_includes(ary2, ary1->ptr[i])
+	    && !Fary_includes(ary3, ary1->ptr[i])) {
+	    ary_push(ary3, ary1->ptr[i]);
 	}
     }
     return ary3;
@@ -912,16 +909,19 @@ Fary_or(ary1, ary2)
     VALUE ary3;
     int i;
 
-    if (TYPE(ary2) != T_ARRAY) return Fary_plus(ary1, ary2);
+    if (TYPE(ary2) != T_ARRAY) {
+	if (Fary_includes(ary1, ary2)) return (VALUE)ary1;
+	else return Fary_plus(ary1, ary2);
+    }
 
     ary3 = ary_new();
     for (i=0; i<ary1->len; i++) {
-	if (!ary_contains(ary3, ary1->ptr[i]))
-		Fary_push(ary3, ary1->ptr[i]);
+	if (!Fary_includes(ary3, ary1->ptr[i]))
+		ary_push(ary3, ary1->ptr[i]);
     }
     for (i=0; i<ary2->len; i++) {
-	if (!ary_contains(ary3, ary2->ptr[i]))
-		Fary_push(ary3, ary2->ptr[i]);
+	if (!Fary_includes(ary3, ary2->ptr[i]))
+		ary_push(ary3, ary2->ptr[i]);
     }
     return ary3;
 }
@@ -934,7 +934,7 @@ Init_Array()
     C_Array  = rb_define_class("Array", C_Object);
     rb_include_module(C_Array, M_Enumerable);
 
-    rb_define_single_method(C_Array, "new", Fary_new, 0);
+    rb_define_single_method(C_Array, "new", Sary_new, 0);
     rb_define_method(C_Array, "to_s", Fary_to_s, 0);
     rb_define_method(C_Array, "_inspect", Fary_inspect, 0);
     rb_define_method(C_Array, "to_a", Fary_to_a, 0);
@@ -946,17 +946,17 @@ Init_Array()
     rb_define_method(C_Array, "[]", Fary_aref, -2);
     rb_define_method(C_Array, "[]=", Fary_aset, -2);
     rb_define_method(C_Array, "<<", Fary_append, 1);
-    rb_define_method(C_Array, "push", Fary_push, 1);
-    rb_define_method(C_Array, "pop", Fary_pop, 0);
-    rb_define_method(C_Array, "shift", Fary_shift, 0);
-    rb_define_method(C_Array, "unshift", Fary_unshift, 1);
+    rb_define_method(C_Array, "push", ary_push, 1);
+    rb_define_method(C_Array, "pop", ary_pop, 0);
+    rb_define_method(C_Array, "shift", ary_shift, 0);
+    rb_define_method(C_Array, "unshift", ary_unshift, 1);
     rb_define_method(C_Array, "each", Fary_each, 0);
     rb_define_method(C_Array, "each_index", Fary_each_index, 0);
     rb_define_method(C_Array, "length", Fary_length, 0);
     rb_define_alias(C_Array,  "size", "length");
     rb_define_method(C_Array, "index", Fary_index, 1);
     rb_define_method(C_Array, "indexes", Fary_indexes, -2);
-    rb_define_method(C_Array, "clone", Fary_clone, 0);
+    rb_define_method(C_Array, "clone", ary_clone, 0);
     rb_define_method(C_Array, "join", Fary_join, -2);
     rb_define_method(C_Array, "reverse", Fary_reverse, 0);
     rb_define_method(C_Array, "sort", Fary_sort, 0);
@@ -964,6 +964,7 @@ Init_Array()
     rb_define_method(C_Array, "delete_if", Fary_delete_if, 0);
     rb_define_method(C_Array, "clear", Fary_clear, 0);
     rb_define_method(C_Array, "fill", Fary_fill, -2);
+    rb_define_method(C_Array, "includes", Fary_includes, 1);
 
     rb_define_method(C_Array, "assoc", Fary_assoc, 1);
     rb_define_method(C_Array, "rassoc", Fary_rassoc, 1);

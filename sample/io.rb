@@ -1,3 +1,6 @@
+# IO test
+# usage: ruby io.rb file..
+
 home = getenv("HOME")
 home.sub("m", "&&")
 print(home, "\n")

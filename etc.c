@@ -3,7 +3,7 @@
   etc.c -
 
   $Author: matz $
-  $Date: 1994/11/01 08:27:53 $
+  $Date: 1994/12/06 09:29:57 $
   created at: Tue Mar 22 18:39:19 JST 1994
 
 ************************************************/
@@ -119,7 +119,7 @@ setup_group(grp)
     mem = ary_new();
     tbl = grp->gr_mem;
     while (*tbl) {
-	Fary_push(mem, str_new2(*tbl));
+	ary_push(mem, str_new2(*tbl));
 	tbl++;
     }
     return struct_new("group",

@@ -3,7 +3,7 @@
   numeric.c -
 
   $Author: matz $
-  $Date: 1994/11/01 08:28:06 $
+  $Date: 1994/12/06 09:30:05 $
   created at: Fri Aug 13 18:33:09 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -22,7 +22,6 @@ VALUE C_Float;
 VALUE C_Integer;
 VALUE C_Fixnum;
 
-extern VALUE C_Range;
 double big2dbl();
 
 VALUE
@@ -64,7 +63,7 @@ Fnum_dot2(left, right)
 {
     Need_Fixnum(left);
     Need_Fixnum(right);
-    return range_new(C_Range, left, right);
+    return range_new(left, right);
 }
 
 static VALUE
@@ -768,7 +767,7 @@ Ffix_dot2(left, right)
     VALUE left, right;
 {
     Need_Fixnum(right);
-    return range_new(C_Range, left, right);
+    return range_new(left, right);
 }
 
 static VALUE
@@ -885,7 +884,8 @@ Ffix_class(fix)
     return C_Fixnum;
 }
 
-static Ffix_abs(fix)
+static
+Ffix_abs(fix)
     VALUE fix;
 {
     int i = FIX2INT(fix);

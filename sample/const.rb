@@ -1,3 +1,7 @@
+# constant access test
+# output:
+#	1234
+#	1268
 %test1 = 1
 %test2 = 2
 

@@ -3,7 +3,7 @@
   struct.c -
 
   $Author: matz $
-  $Date: 1994/08/12 04:48:01 $
+  $Date: 1994/12/06 09:30:26 $
   created at: Tue Mar 22 18:44:30 JST 1994
 
 ************************************************/
@@ -101,7 +101,7 @@ struct_new(name, va_alist)
 #define ASSOC_VAL(a) RARRAY(a)->ptr[1]
 
 static VALUE
-Fstruct_new(class, args)
+Sstruct_new(class, args)
     VALUE class, args;
 {
     VALUE name, st;
@@ -151,7 +151,7 @@ Fstruct_values(s)
     t = s->tbl;
     tend = t + s->len;
     while (t < tend) {
-	Fary_push(ary, t->value);
+	ary_push(ary, t->value);
 	t++;
     }
 
@@ -223,7 +223,7 @@ Fstruct_to_a(s)
 
     ary = ary_new2(s->len);
     for (i=0; i<s->len; i++) {
-	Fary_push(ary, s->tbl[i].value);
+	ary_push(ary, s->tbl[i].value);
     }
 
     return ary;
@@ -248,7 +248,7 @@ Init_Struct()
     C_Struct = rb_define_class("Struct", C_Object);
     rb_include_module(C_Struct, M_Enumerable);
 
-    rb_define_single_method(C_Struct, "new", Fstruct_new, -2);
+    rb_define_single_method(C_Struct, "new", Sstruct_new, -2);
     rb_define_method(C_Struct, "clone", Fstruct_clone, 0);
 
     rb_define_method(C_Struct, "to_s", Fstruct_to_s, 0);

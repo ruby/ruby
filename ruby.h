@@ -3,7 +3,7 @@
   ruby.h -
 
   $Author: matz $
-  $Date: 1994/10/14 06:19:44 $
+  $Date: 1994/12/06 09:30:16 $
   created at: Thu Jun 10 14:26:32 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -13,6 +13,7 @@
 #ifndef RUBY_H
 #define RUBY_H
 
+#include "config.h"
 #include "defines.h"
 
 #ifdef __STDC__
@@ -81,15 +82,6 @@ extern VALUE C_Data;
 
 #define CLASS_OF(obj) (FIXNUM_P(obj)?C_Fixnum: NIL_P(obj)?C_Nil:\
                        RBASIC(obj)->class)
-
-#define FL_SINGLE  0x10
-#define FL_MARK    0x20
-#define FL_LITERAL 0x40
-
-#define FL_ABLE(x) (!(FIXNUM_P(x)||NIL_P(x)))
-#define FL_TEST(x,f) (FL_ABLE(x)?(RBASIC(x)->flags&(f)):0)
-#define FL_SET(x,f) if (FL_ABLE(x)) {RBASIC(x)->flags |= (f);}
-#define FL_UNSET(x,f) if(FL_ABLE(x)){RBASIC(x)->flags &= ~(f);}
 
 #define T_NIL    0x0
 #define T_OBJECT 0x1
@@ -180,6 +172,7 @@ struct RData {
 
 #define DATA_PTR(dta) (RDATA(dta)->data)
 
+VALUE data_new();				       
 VALUE rb_ivar_get_1();
 VALUE rb_ivar_set_1();
 
@@ -191,11 +184,9 @@ VALUE rb_ivar_set_1();
 }
 
 #define Make_Data_Struct(obj, iv, type, mark, free, sval) {\
-    struct RData *_new_;\
-    _new_ = (struct RData*)newdata(sizeof(type));\
-    _new_->dmark = (void (*)())(mark);\
-    _new_->dfree = (void (*)())(free);\
-    sval = (type*)DATA_PTR(_new_);\
+    VALUE _new_;\
+    sval = ALLOC(type);\
+    _new_ = data_new(sval,free,mark);\
     memset(sval, 0, sizeof(type));\
     rb_ivar_set_1(obj, iv, _new_);\
 }
@@ -229,6 +220,20 @@ struct RBignum {
 #define RDATA(obj)   (R_CAST(RData)(obj))
 #define RSTRUCT(obj) (R_CAST(RStruct)(obj))
 #define RBIGNUM(obj) (R_CAST(RBignum)(obj))
+
+#define FL_SINGLE  (1<<4)
+#define FL_MARK    (1<<5)
+#define FL_LITERAL (1<<6)
+
+#define FL_USER0   (1<<7)
+#define FL_USER1   (1<<8)
+#define FL_USER2   (1<<9)
+#define FL_USER3   (1<<10)
+
+#define FL_ABLE(x) (!(FIXNUM_P(x)||NIL_P(x)))
+#define FL_TEST(x,f) (FL_ABLE(x)?(RBASIC(x)->flags&(f)):0)
+#define FL_SET(x,f) if (FL_ABLE(x)) {RBASIC(x)->flags |= (f);}
+#define FL_UNSET(x,f) if(FL_ABLE(x)){RBASIC(x)->flags &= ~(f);}
 
 extern VALUE rb_self();
 #define Qself rb_self()

@@ -1,3 +1,5 @@
+# ioctl example works on Sun
+
 %CBREAK = 0x00000002
 %ECHO = 0x00000008
 %TIOCGETP = 0x40067408

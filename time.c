@@ -3,7 +3,7 @@
   time.c -
 
   $Author: matz $
-  $Date: 1994/11/01 08:28:40 $
+  $Date: 1994/12/06 09:30:28 $
   created at: Tue Dec 28 14:31:59 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -38,7 +38,7 @@ static ID id_tv;
 }
 
 static VALUE
-Ftime_now(class)
+Stime_now(class)
     VALUE class;
 {
     VALUE obj = obj_alloc(class);
@@ -116,7 +116,7 @@ time_timeval(time)
 }
 
 static VALUE
-Ftime_at(class, time)
+Stime_at(class, time)
     VALUE class, time;
 { 
    VALUE obj;
@@ -501,7 +501,7 @@ Ftime_strftime(time, format)
 }
 
 static VALUE
-Ftime_times(obj)
+Stime_times(obj)
     VALUE obj;
 {
     struct tms buf;
@@ -520,11 +520,11 @@ Init_Time()
     C_Time = rb_define_class("Time", C_Object);
     rb_include_module(C_Time, M_Comparable);
 
-    rb_define_single_method(C_Time, "now", Ftime_now, 0);
-    rb_define_single_method(C_Time, "new", Ftime_now, 0);
-    rb_define_single_method(C_Time, "at", Ftime_at, 1);
+    rb_define_single_method(C_Time, "now", Stime_now, 0);
+    rb_define_single_method(C_Time, "new", Stime_now, 0);
+    rb_define_single_method(C_Time, "at", Stime_at, 1);
 
-    rb_define_single_method(C_Time, "times", Ftime_times, 0);
+    rb_define_single_method(C_Time, "times", Stime_times, 0);
 
     rb_define_method(C_Time, "to_i", Ftime_to_i, 0);
     rb_define_method(C_Time, "to_f", Ftime_to_f, 0);

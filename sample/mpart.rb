@@ -1,4 +1,6 @@
 #! ./ruby
+# split into multi part
+# usage: mpart.rb [-nnn] file..
 
 lines = 1000
 

@@ -3,7 +3,7 @@
   bignum.c -
 
   $Author: matz $
-  $Date: 1994/11/01 08:27:46 $
+  $Date: 1994/12/06 09:29:49 $
   created at: Fri Jun 10 00:48:55 JST 1994
 
 ************************************************/
@@ -44,7 +44,7 @@ bignew_1(class, len, sign)
 #define bignew(len,sign) bignew_1(C_Bignum,len,sign)
 
 static VALUE
-Fbig_new(class, y)
+Sbig_new(class, y)
     VALUE class;
     struct RBignum *y;
 {
@@ -53,7 +53,7 @@ Fbig_new(class, y)
 }
 
 VALUE
-Fbig_clone(x)
+big_clone(x)
     struct RBignum *x;
 {
     VALUE z = bignew_1(CLASS_OF(x), x->len, x->sign);
@@ -286,7 +286,7 @@ big2str(x, base)
 	Fail("bignum cannot treat base %d", base);
     }
 
-    t = Fbig_clone(x);
+    t = big_clone(x);
     ds = BDIGITS(t);
     ss = str_new(0, j);
     s = RSTRING(ss)->ptr;
@@ -406,7 +406,7 @@ static VALUE
 Fbig_uminus(x)
     struct RBignum *x;
 {
-    VALUE z = Fbig_clone(x);
+    VALUE z = big_clone(x);
 
     RBIGNUM(z)->sign = !x->sign;
 
@@ -572,7 +572,7 @@ bigdivmod(x, y, div, mod)
     xds = BDIGITS(x);
     if (ny == 1) {
 	dd = yds[0];
-	z = Fbig_clone(x);
+	z = big_clone(x);
 	zds = BDIGITS(z);
 	t2 = 0; i = nx;
 	while(i--) {
@@ -592,7 +592,7 @@ bigdivmod(x, y, div, mod)
     if (nx==ny) zds[nx+1] = 0;
     while (!yds[ny-1]) ny--;
     if ((dd = BIGRAD/(yds[ny-1]+1)) != 1) {
-	y = (struct RBignum*)Fbig_clone(y);
+	y = (struct RBignum*)big_clone(y);
 	tds = BDIGITS(y);
 	j = 0;
 	num = 0;
@@ -649,7 +649,7 @@ bigdivmod(x, y, div, mod)
 	zds[j] = q;
     } while (--j >= ny);
     if (div) {			/* move quotient down in z */
-	*div = Fbig_clone(z);
+	*div = big_clone(z);
 	zds = BDIGITS(*div);
 	j = (nx==ny ? nx+2 : nx+1) - ny;
 	for (i = 0;i < j;i++) zds[i] = zds[i+ny];
@@ -657,7 +657,7 @@ bigdivmod(x, y, div, mod)
 	*div = bignorm(*div);
     }
     if (mod) {			/* just normalize remainder */
-	*mod = Fbig_clone(z);
+	*mod = big_clone(z);
 	if (dd) {
 	    zds = BDIGITS(*mod);
 	    t2 = 0; i = ny;
@@ -763,11 +763,11 @@ Fbig_and(x, y)
     }
 
     if (!y->sign) {
-	y = (struct RBignum*)Fbig_clone(y);
+	y = (struct RBignum*)big_clone(y);
 	big_2comp(y);
     }
     if (!x->sign) {
-	x = (struct RBignum*)Fbig_clone(x);
+	x = (struct RBignum*)big_clone(x);
 	big_2comp(x);
     }
     if (x->len > y->len) {
@@ -814,11 +814,11 @@ Fbig_or(x, y)
     }
 
     if (!y->sign) {
-	y = (struct RBignum*)Fbig_clone(y);
+	y = (struct RBignum*)big_clone(y);
 	big_2comp(y);
     }
     if (!x->sign) {
-	x = (struct RBignum*)Fbig_clone(x);
+	x = (struct RBignum*)big_clone(x);
 	big_2comp(x);
     }
     if (x->len > y->len) {
@@ -866,11 +866,11 @@ Fbig_xor(x, y)
     }
 
     if (!y->sign) {
-	y = (struct RBignum*)Fbig_clone(y);
+	y = (struct RBignum*)big_clone(y);
 	big_2comp(y);
     }
     if (!x->sign) {
-	x = (struct RBignum*)Fbig_clone(x);
+	x = (struct RBignum*)big_clone(x);
 	big_2comp(x);
     }
     if (x->len > y->len) {
@@ -907,7 +907,7 @@ static VALUE
 Fbig_neg(x)
     struct RBignum *x;
 {
-    VALUE z = Fbig_clone(x);
+    VALUE z = big_clone(x);
     UINT i = x->len;
     USHORT *ds = BDIGITS(z);
 
@@ -998,7 +998,7 @@ Fbig_aref(x, y)
 
     if (!x->sign) {
 	if (s1 >= x->len) return INT2FIX(1);
-	x = (struct RBignum*)Fbig_clone(x);
+	x = (struct RBignum*)big_clone(x);
 	big_2comp(x);
     }
     else {
@@ -1065,7 +1065,7 @@ Fbig_abs(x)
     struct RBignum *x;
 {
     if (!x->sign) {
-	x = (struct RBignum*)Fbig_clone(x);
+	x = (struct RBignum*)big_clone(x);
 	x->sign = 1;
     }
     return (VALUE)x;
@@ -1074,7 +1074,7 @@ Fbig_abs(x)
 Init_Bignum()
 {
     C_Bignum = rb_define_class("Bignum", C_Integer);
-    rb_define_single_method(C_Bignum, "new", Fbig_new, 1);
+    rb_define_single_method(C_Bignum, "new", Sbig_new, 1);
 
     rb_define_method(C_Bignum, "to_s", Fbig_to_s, 0);
     rb_define_method(C_Bignum, "coerce", Fbig_coerce, 1);

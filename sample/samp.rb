@@ -1,3 +1,6 @@
+# 全角文字を含むスクリプト
+# 使い方: samp.rb file..
+
 単語 = 0
 while gets()
   printf("%3d: %s", $., $_)

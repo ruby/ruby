@@ -35,16 +35,14 @@
  * February 1994
  */
 
-#ifndef RUBY
+#include "config.h"
+
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
 #include <time.h>
-#endif
-#if defined(TM_IN_SYS_TIME) || ! defined(RUBY)
 #include <sys/types.h>
 #include <sys/time.h>
-#endif
 
 /* defaults: season to taste */
 #define SYSV_EXT    1	/* stuff in System V ascftime routine */

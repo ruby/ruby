@@ -3,7 +3,7 @@
   range.c -
 
   $Author: matz $
-  $Date: 1994/10/14 06:19:39 $
+  $Date: 1994/12/06 09:30:12 $
   created at: Thu Aug 19 17:46:47 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -17,8 +17,8 @@ VALUE C_Range;
 
 static ID next, eq;
 
-VALUE
-range_new(class, start, end)
+static VALUE
+Srng_new(class, start, end)
     VALUE class, start, end;
 {
     VALUE obj;
@@ -33,6 +33,13 @@ range_new(class, start, end)
     rb_iv_set(obj, "end", end);
 
     return obj;
+}
+
+VALUE
+range_new(start, end)
+    VALUE start, end;
+{
+    return Srng_new(C_Range, start, end);
 }
 
 static VALUE
@@ -142,6 +149,7 @@ Init_Range()
 {
     C_Range = rb_define_class("Range", C_Object);
     rb_include_module(C_Range, M_Enumerable);
+    rb_define_single_method(C_Range, "new", Srng_new, 2);
     rb_define_method(C_Range, "=~", Frng_match, 1);
     rb_define_method(C_Range, "each", Frng_each, 0);
     rb_define_method(C_Range, "start", Frng_start, 0);

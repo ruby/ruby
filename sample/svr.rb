@@ -1,3 +1,6 @@
+# socket example - server side
+# usage: ruby svr.rb
+
 gs = TCPserver.open(0)
 printf("server port is on %d\n", gs.port)
 socks = [gs]

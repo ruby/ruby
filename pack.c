@@ -3,7 +3,7 @@
   pack.c -
 
   $Author: matz $
-  $Date: 1994/10/14 06:19:34 $
+  $Date: 1994/12/06 09:30:08 $
   created at: Thu Feb 10 15:17:05 JST 1994
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -529,7 +529,7 @@ Fpck_unpack(str, fmt)
 	    }
 	  case 'a':
 	    if (len > send - s) len = send - s;
-	    Fary_push(ary, str_new(s, len));
+	    ary_push(ary, str_new(s, len));
 	    s += len;
 	    break;
 
@@ -541,7 +541,7 @@ Fpck_unpack(str, fmt)
 
 		if (p[-1] == '*' || len > (send - s) * 8)
 		    len = (send - s) * 8;
-		Fary_push(ary, bitstr = str_new(0, len + 1));
+		ary_push(ary, bitstr = str_new(0, len + 1));
 		t = RSTRING(bitstr)->ptr;
 		for (i=0; i<len; i++) {
 		    if (i & 7) bits >>= 1;
@@ -560,7 +560,7 @@ Fpck_unpack(str, fmt)
 
 		if (p[-1] == '*' || len > (send - s) * 8)
 		    len = (send - s) * 8;
-		Fary_push(ary, bitstr = str_new(0, len + 1));
+		ary_push(ary, bitstr = str_new(0, len + 1));
 		t = RSTRING(bitstr)->ptr;
 		for (i=0; i<len; i++) {
 		    if (i & 7) bits <<= 1;
@@ -579,7 +579,7 @@ Fpck_unpack(str, fmt)
 
 		if (p[-1] == '*' || len > (send - s) * 2)
 		    len = (send - s) * 2;
-		Fary_push(ary, bitstr = str_new(0, len + 1));
+		ary_push(ary, bitstr = str_new(0, len + 1));
 		t = RSTRING(bitstr)->ptr;
 		for (i=0; i<len; i++) {
 		    if (i & 1)
@@ -600,7 +600,7 @@ Fpck_unpack(str, fmt)
 
 		if (p[-1] == '*' || len > (send - s) * 2)
 		    len = (send - s) * 2;
-		Fary_push(ary, bitstr = str_new(0, len + 1));
+		ary_push(ary, bitstr = str_new(0, len + 1));
 		t = RSTRING(bitstr)->ptr;
 		for (i=0; i<len; i++) {
 		    if (i & 1)
@@ -618,7 +618,7 @@ Fpck_unpack(str, fmt)
 		len = send - s;
 	    while (len-- > 0) {
 		char c = *s++;
-		Fary_push(ary, INT2FIX(c));
+		ary_push(ary, INT2FIX(c));
 	    }
 	    break;
 
@@ -627,7 +627,7 @@ Fpck_unpack(str, fmt)
 		len = send - s;
 	    while (len-- > 0) {
 		unsigned char c = *s++;
-		Fary_push(ary, INT2FIX(c));
+		ary_push(ary, INT2FIX(c));
 	    }
 	    break;
 
@@ -638,7 +638,7 @@ Fpck_unpack(str, fmt)
 		short tmp;
 		memcpy(&tmp, s, sizeof(short));
 		s += sizeof(short);
-		Fary_push(ary, INT2FIX(tmp));
+		ary_push(ary, INT2FIX(tmp));
 	    }
 	    break;
 
@@ -649,7 +649,7 @@ Fpck_unpack(str, fmt)
 		unsigned short tmp;
 		memcpy(&tmp, s, sizeof(unsigned short));
 		s += sizeof(unsigned short);
-		Fary_push(ary, INT2FIX(tmp));
+		ary_push(ary, INT2FIX(tmp));
 	    }
 	    break;
 
@@ -660,7 +660,7 @@ Fpck_unpack(str, fmt)
 		int tmp;
 		memcpy(&tmp, s, sizeof(int));
 		s += sizeof(int);
-		Fary_push(ary, int2inum(tmp));
+		ary_push(ary, int2inum(tmp));
 	    }
 	    break;
 
@@ -671,7 +671,7 @@ Fpck_unpack(str, fmt)
 		unsigned int tmp;
 		memcpy(&tmp, s, sizeof(unsigned int));
 		s += sizeof(unsigned int);
-		Fary_push(ary, int2inum(tmp));
+		ary_push(ary, int2inum(tmp));
 	    }
 	    break;
 
@@ -682,7 +682,7 @@ Fpck_unpack(str, fmt)
 		long tmp;
 		memcpy(&tmp, s, sizeof(long));
 		s += sizeof(long);
-		Fary_push(ary, int2inum(tmp));
+		ary_push(ary, int2inum(tmp));
 	    }
 	    break;
 
@@ -693,7 +693,7 @@ Fpck_unpack(str, fmt)
 		unsigned long tmp;
 		memcpy(&tmp, s, sizeof(unsigned long));
 		s += sizeof(unsigned long);
-		Fary_push(ary, int2inum(tmp));
+		ary_push(ary, int2inum(tmp));
 	    }
 	    break;
 
@@ -705,7 +705,7 @@ Fpck_unpack(str, fmt)
 		memcpy(&tmp, s, sizeof(short));
 		s += sizeof(short);
 		tmp = ntohs(tmp);
-		Fary_push(ary, int2inum(tmp));
+		ary_push(ary, int2inum(tmp));
 	    }
 	    break;
 
@@ -717,7 +717,7 @@ Fpck_unpack(str, fmt)
 		memcpy(&tmp, s, sizeof(long));
 		s += sizeof(long);
 		tmp = ntohl(tmp);
-		Fary_push(ary, int2inum(tmp));
+		ary_push(ary, int2inum(tmp));
 	    }
 	    break;
 
@@ -729,7 +729,7 @@ Fpck_unpack(str, fmt)
 		float tmp;
 		memcpy(&tmp, s, sizeof(float));
 		s += sizeof(float);
-		Fary_push(ary, float_new((double)tmp));
+		ary_push(ary, float_new((double)tmp));
 	    }
 	    break;
 
@@ -741,7 +741,7 @@ Fpck_unpack(str, fmt)
 		double tmp;
 		memcpy(&tmp, s, sizeof(double));
 		s += sizeof(double);
-		Fary_push(ary, float_new(tmp));
+		ary_push(ary, float_new(tmp));
 	    }
 	    break;
 
@@ -753,7 +753,7 @@ Fpck_unpack(str, fmt)
 		memcpy(&tmp, s, sizeof(short));
 		s += sizeof(short);
 		tmp = vtohs(tmp);
-		Fary_push(ary, int2inum(tmp));
+		ary_push(ary, int2inum(tmp));
 	    }
 	    break;
 
@@ -765,7 +765,7 @@ Fpck_unpack(str, fmt)
 		memcpy(&tmp, s, sizeof(long));
 		s += sizeof(long);
 		tmp = vtohl(tmp);
-		Fary_push(ary, int2inum(tmp));
+		ary_push(ary, int2inum(tmp));
 	    }
 	    break;
 
@@ -812,7 +812,7 @@ Fpck_unpack(str, fmt)
 			s += 2;
 		}
 		RSTRING(str)->len = total;
-		Fary_push(ary, str);
+		ary_push(ary, str);
 	    }
 	    break;
 

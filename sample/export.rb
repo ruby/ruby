@@ -1,3 +1,8 @@
+# methos access permission
+# output:
+#	foobar
+#	foo
+
 class foo
   export(\printf)
 end

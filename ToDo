@@ -1,4 +1,7 @@
-* trからBSDコードを取り除く
+* format機能
+* here document
+* perlのようなsetuid check
+* trからBSDコードを取り除く(またはcopyrightをはっきりさせる)
 * 適切なsignal handling
 * dlnのCOFF対応
 * rubyで定義する変数hookの実現

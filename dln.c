@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <sys/param.h>
 #include <sys/file.h>
+#include "config.h"
 #include "defines.h"
 #include "dln.h"
 #include <sys/types.h>

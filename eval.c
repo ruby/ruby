@@ -3,7 +3,7 @@
   eval.c -
 
   $Author: matz $
-  $Date: 1994/11/22 01:22:33 $
+  $Date: 1994/12/06 09:29:59 $
   created at: Thu Jun 10 14:22:17 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -999,11 +999,8 @@ rb_eval(node)
 
       case NODE_HASH:
 	{
-	    extern VALUE C_Dict;
-	    extern VALUE Fdic_new();
 	    NODE *list;
-
-	    VALUE hash = Fdic_new(C_Dict);
+	    VALUE hash = dic_new();
 	    VALUE key, val;
 
 	    list = node->nd_head;
@@ -1321,7 +1318,7 @@ rb_fail(mesg)
 	    errstr = mesg;
 	}
 	else {
-	    errstr = Fstr_clone(mesg);
+	    errstr = str_clone(mesg);
 	    str_cat(errstr, "\n", 1);
 	}
     }
@@ -1965,7 +1962,6 @@ find_file(file)
 	sep = str_new2(":");
 	vpath = ary_join(rb_load_path, sep);
 	path = RSTRING(vpath)->ptr;
-	obj_free(sep);
 	sep = Qnil;
     }
     else {
@@ -1974,8 +1970,6 @@ find_file(file)
 
     found = dln_find_file(file, path);
     if (found == Qnil) Fail("No such file to load -- %s", file);
-    
-    if (vpath) obj_free(vpath);
     
     return found;
 }
@@ -2010,7 +2004,6 @@ Fload(obj, fname)
 	}
     }
 #endif
-    
     PUSH_TAG();
     DUP_ENV();
     PUSH_CLASS();
@@ -2051,12 +2044,12 @@ Frequire(obj, fname)
     file = find_file(fname->ptr);
 
     p = RARRAY(rb_loadfiles)->ptr;
-    pend = p+ RARRAY(rb_loadfiles)->len;
+    pend = p + RARRAY(rb_loadfiles)->len;
     while (p < pend) {
 	Check_Type(*p, T_STRING);
 	if (strcmp(RSTRING(*p)->ptr, file) == 0) return FALSE;
     }
-    Fary_push(rb_loadfiles, str_new2(file));
+    ary_push(rb_loadfiles, str_new2(file));
 
     Fload(obj, fname);
     return TRUE;
@@ -2083,11 +2076,11 @@ addpath(path)
     while (*p) {
 	while (*p == RUBY_LIB_SEP) p++;
 	if (s = strchr(p, RUBY_LIB_SEP)) {
-	    Fary_push(rb_load_path, str_new(p, (int)(s-p)));
+	    ary_push(rb_load_path, str_new(p, (int)(s-p)));
 	    p = s + 1;
 	}
 	else {
-	    Fary_push(rb_load_path, str_new2(p));
+	    ary_push(rb_load_path, str_new2(p));
 	    break;
 	}
     }

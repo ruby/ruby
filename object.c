@@ -3,7 +3,7 @@
   object.c -
 
   $Author: matz $
-  $Date: 1994/11/01 08:28:07 $
+  $Date: 1994/12/06 09:30:06 $
   created at: Thu Jul 15 12:01:24 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -325,6 +325,7 @@ Fcls_export(argc, argv)
     VALUE *argv;
 {
     Fcls_export_internal(argc, argv, 0);
+    return Qnil;
 }
 
 static VALUE
@@ -333,6 +334,7 @@ Fcls_unexport(argc, argv)
     VALUE *argv;
 {
     Fcls_export_internal(argc, argv, 1);
+    return Qnil;
 }
 
 static VALUE

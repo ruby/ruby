@@ -3,7 +3,7 @@
   dbm.c -
 
   $Author: matz $
-  $Date: 1994/10/14 10:00:51 $
+  $Date: 1994/12/06 09:29:52 $
   created at: Mon Jan 24 15:59:52 JST 1994
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -50,7 +50,7 @@ free_dbm(dbmp)
 }
 
 static VALUE
-Fdbm_open(class, args)
+Sdbm_open(class, args)
     VALUE class, args;
 {
     VALUE file, vmode;
@@ -302,7 +302,7 @@ Fdbm_keys(obj)
     ary = ary_new();
     GetDBM(obj, dbm);
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
-	Fary_push(ary, str_new(key.dptr, key.dsize));
+	ary_push(ary, str_new(key.dptr, key.dsize));
     }
 
     return ary;
@@ -320,7 +320,7 @@ Fdbm_values(obj)
     GetDBM(obj, dbm);
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	val = dbm_fetch(dbm, key);
-	Fary_push(ary, str_new(val.dptr, val.dsize));
+	ary_push(ary, str_new(val.dptr, val.dsize));
     }
 
     return ary;
@@ -377,8 +377,8 @@ Fdbm_to_a(obj)
     ary = ary_new();
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	val = dbm_fetch(dbm, key);
-	Fary_push(ary, assoc_new(str_new(key.dptr, key.dsize),
-				 str_new(val.dptr, val.dsize)));
+	ary_push(ary, assoc_new(str_new(key.dptr, key.dsize),
+				str_new(val.dptr, val.dsize)));
     }
 
     return ary;
@@ -389,7 +389,7 @@ Init_DBM()
     C_DBM = rb_define_class("DBM", C_Object);
     rb_include_module(C_DBM, M_Enumerable);
 
-    rb_define_single_method(C_DBM, "open", Fdbm_open, -2);
+    rb_define_single_method(C_DBM, "open", Sdbm_open, -2);
     rb_define_method(C_DBM, "close", Fdbm_close, 0);
     rb_define_method(C_DBM, "[]", Fdbm_fetch, 1);
     rb_define_method(C_DBM, "[]=", Fdbm_store, 2);

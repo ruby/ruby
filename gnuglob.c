@@ -19,6 +19,8 @@
    Unix programs use to perform this function.  I wrote this from scratch
    based on specifications for the pattern matching.  --RMS.  */
 
+#include "config.h"
+
 #if defined (SHELL)
 #  if defined (HAVE_STDLIB_H)
 #    include <stdlib.h>

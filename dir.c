@@ -3,7 +3,7 @@
   dir.c -
 
   $Author: matz $
-  $Date: 1994/10/14 06:19:12 $
+  $Date: 1994/12/06 09:29:55 $
   created at: Wed Jan  5 09:51:01 JST 1994
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -47,7 +47,7 @@ free_dir(dir)
 }
 
 static VALUE
-Fdir_open(dir_class, dirname)
+Sdir_open(dir_class, dirname)
     VALUE dir_class;
     struct RString *dirname;
 {
@@ -146,7 +146,7 @@ Fdir_close(dir)
 char *getenv();
 
 static VALUE
-Fdir_chdir(obj, args)
+Sdir_chdir(obj, args)
     VALUE obj, args;
 {
     VALUE path;
@@ -171,7 +171,7 @@ Fdir_chdir(obj, args)
 }
 
 static VALUE
-Fdir_getwd(dir)
+Sdir_getwd(dir)
     VALUE dir;
 {
     extern char *getwd();
@@ -187,7 +187,7 @@ Fdir_getwd(dir)
 }
 
 static VALUE
-Fdir_chroot(dir, path)
+Sdir_chroot(dir, path)
     VALUE dir, path;
 {
     Check_Type(path, T_STRING);
@@ -199,7 +199,7 @@ Fdir_chroot(dir, path)
 }
 
 static VALUE
-Fdir_mkdir(obj, args)
+Sdir_mkdir(obj, args)
     VALUE obj, args;
 {
     VALUE path, vmode;
@@ -220,7 +220,7 @@ Fdir_mkdir(obj, args)
 }
 
 static VALUE
-Fdir_rmdir(obj, dir)
+Sdir_rmdir(obj, dir)
     VALUE obj;
     struct RString *dir;
 {
@@ -240,7 +240,7 @@ Init_Dir()
 
     rb_include_module(C_Dir, M_Enumerable);
 
-    rb_define_single_method(C_Dir, "open", Fdir_open, 1);
+    rb_define_single_method(C_Dir, "open", Sdir_open, 1);
 
     rb_define_method(C_Dir,"each", Fdir_each, 0);
     rb_define_method(C_Dir,"rewind", Fdir_rewind, 0);
@@ -248,14 +248,14 @@ Init_Dir()
     rb_define_method(C_Dir,"seek", Fdir_seek, 1);
     rb_define_method(C_Dir,"close", Fdir_close, 0);
 
-    rb_define_single_method(C_Dir,"chdir", Fdir_chdir, -2);
-    rb_define_single_method(C_Dir,"getwd", Fdir_getwd, 0);
-    rb_define_single_method(C_Dir,"pwd", Fdir_getwd, 0);
-    rb_define_single_method(C_Dir,"chroot", Fdir_chroot, 1);
-    rb_define_single_method(C_Dir,"mkdir", Fdir_mkdir, -2);
-    rb_define_single_method(C_Dir,"rmdir", Fdir_rmdir, 1);
-    rb_define_single_method(C_Dir,"delete", Fdir_rmdir, 1);
-    rb_define_single_method(C_Dir,"unlink", Fdir_rmdir, 1);
+    rb_define_single_method(C_Dir,"chdir", Sdir_chdir, -2);
+    rb_define_single_method(C_Dir,"getwd", Sdir_getwd, 0);
+    rb_define_single_method(C_Dir,"pwd", Sdir_getwd, 0);
+    rb_define_single_method(C_Dir,"chroot", Sdir_chroot, 1);
+    rb_define_single_method(C_Dir,"mkdir", Sdir_mkdir, -2);
+    rb_define_single_method(C_Dir,"rmdir", Sdir_rmdir, 1);
+    rb_define_single_method(C_Dir,"delete", Sdir_rmdir, 1);
+    rb_define_single_method(C_Dir,"unlink", Sdir_rmdir, 1);
 
     id_dir = rb_intern("dir");
 }

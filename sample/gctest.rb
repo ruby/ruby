@@ -1,3 +1,4 @@
+# GC stress test
 def cons(car, cdr)
    [car, cdr]
 end

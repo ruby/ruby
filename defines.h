@@ -16,9 +16,9 @@
 #define EUC
 #undef SJIS
 
-/* define USE_DLN to load object file(.o). */
 #ifdef HAVE_A_OUT_H
 
+/* define USE_DLN to load object file(.o). */
 #define USE_DLN
 #ifdef USE_DLN
 #define LIBC_NAME "libc.a"

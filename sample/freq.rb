@@ -1,5 +1,5 @@
-#
-
+# word occurrence listing
+# usege: ruby freq.rb file..
 freq = {}
 while gets()
   while sub(/\w+/, '')

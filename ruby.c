@@ -3,7 +3,7 @@
   ruby.c -
 
   $Author: matz $
-  $Date: 1994/11/01 08:28:24 $
+  $Date: 1994/12/06 09:30:15 $
   created at: Tue Aug 10 12:47:31 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -18,11 +18,7 @@
 #include <sys/stat.h>
 #include <signal.h>
 
-#ifdef HAVE_GETOPT_LONG
-#include <getopt.h>
-#else
-#include "missing/getopt.h"
-#endif
+#include "getopt.h"
 
 static int version, copyright;
 
@@ -184,7 +180,7 @@ proc_options(argcp, argvp)
 	    break;
 
 	  case 'I':
-	    Fary_unshift(rb_load_path, str_new2(optarg));
+	    ary_unshift(rb_load_path, str_new2(optarg));
 	    break;
 
 	  default:
@@ -427,6 +423,6 @@ ruby_init0(argc, argv, envp)
     rb_define_variable("$*", &Argv, Qnil, Qnil);
     Argv = ary_new2(argc);
     for (i=0; i < argc; i++) {
-	Fary_push(Argv, str_new2(argv[i]));
+	ary_push(Argv, str_new2(argv[i]));
     }
 }

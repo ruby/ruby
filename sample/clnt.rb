@@ -1,3 +1,5 @@
+# socket example - client side
+# usage: ruby clnt.rb [host] port
 host=(if $ARGV.length == 2; $ARGV.shift; else "localhost"; end)
 print("Trying ", host, " ...")
 $stdout.flush

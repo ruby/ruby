@@ -17,14 +17,14 @@ License along with libiberty; see the file COPYING.LIB.  If
 not, write to the Free Software Foundation, Inc., 675 Mass Ave,
 Cambridge, MA 02139, USA.  */
 
+#include "config.h"
+
 #ifdef	LIBC
 /* For when compiled as part of the GNU C library.  */
 #include <ansidecl.h>
 #endif
 
-#ifndef RUBY
 #include "getopt.h"
-#endif
 
 #ifndef __STDC__
 #define const

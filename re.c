@@ -3,7 +3,7 @@
   re.c -
 
   $Author: matz $
-  $Date: 1994/11/01 08:28:21 $
+  $Date: 1994/12/06 09:30:14 $
   created at: Mon Aug  9 18:24:49 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -135,6 +135,9 @@ research(reg, str, start, ignorecase)
 {
     int result;
 
+    if (FL_TEST(reg, FL_USER0)) { /* case-flag set for the object */
+	ignorecase = FL_TEST(reg, FL_USER1); /* case-flag */
+    }
     if (ignorecase)
 	reg->ptr->pat.translate = casetable;
     else
@@ -149,10 +152,8 @@ research(reg, str, start, ignorecase)
 	struct match *data;
 	int beg, i;
 
-	obj = (struct RData*)newdata(sizeof(struct match));
-	OBJSETUP(obj, C_Data, T_DATA);
-	obj->dfree = free_match;
-	data = (struct match*)DATA_PTR(obj);
+	data = ALLOC(struct match);
+	obj = (struct RData*)data_new(data, free_match, Qnil);
 
 	data->len = str->len;
 	data->ptr = ALLOC_N(char, str->len+1);
@@ -350,29 +351,38 @@ Freg_match2(re)
 }
 
 static VALUE
-Freg_compile(re, str)
-    VALUE re;
-    struct RString *str;
+Sreg_new(argc, argv)
+    int argc;
+    VALUE *argv;
 {
-    Check_Type(str, T_STRING);
-    return regexp_new_1(re, str->ptr, str->ptr);
-}
+    VALUE src, reg;
 
-static VALUE
-Freg_new(re, src)
-    VALUE re, src;
-{
+    if (argc == 0 || argc > 2) {
+	Fail("wrong # of argument");
+    }
+
+    src = argv[0];
     switch (TYPE(src)) {
       case T_STRING:
-	return regexp_new_1(re, RREGEXP(src)->ptr, RREGEXP(src)->len);
+	reg = regexp_new_1(Qself, RREGEXP(src)->ptr, RREGEXP(src)->len);
 
       case T_REGEXP:
-	return regexp_new_1(re, RREGEXP(src)->str, RREGEXP(src)->len);
+	reg = regexp_new_1(Qself, RREGEXP(src)->str, RREGEXP(src)->len);
 
       default:
-	Check_Type(src, T_REGEXP);
+	Check_Type(src, T_STRING);
     }
-    /* not reached */
+
+    if (argc == 2) {
+	FL_SET(reg, FL_USER0);
+	if (argv[1]) {
+	    FL_SET(reg, FL_USER1);
+	}
+	else {
+	    FL_UNSET(reg, FL_USER1);
+	}
+    }
+
     return Qnil;
 }
 
@@ -431,8 +441,10 @@ re_regsub(str)
     }
 
     if (val == Qnil) return (VALUE)str;
+    if (p < e) {
+	str_cat(val, p, e-p);
+    }
     if (RSTRING(val)->len == 0) {
-	obj_free(val);		/* free for cost */
 	return (VALUE)str;
     }
     return val;
@@ -517,8 +529,8 @@ Init_Regexp()
     rb_define_variable("$=", &ignorecase, Qnil, Qnil);
 
     C_Regexp  = rb_define_class("Regexp", C_Object);
-    rb_define_single_method(C_Regexp, "new", Freg_new, 1);
-    rb_define_single_method(C_Regexp, "compile", Freg_compile, 1);
+    rb_define_single_method(C_Regexp, "new", Sreg_new, -1);
+    rb_define_single_method(C_Regexp, "compile", Sreg_new, -1);
 
     rb_define_method(C_Regexp, "=~", Freg_match, 1);
     rb_define_method(C_Regexp, "~", Freg_match2, 0);

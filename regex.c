@@ -25,6 +25,7 @@
    On the other hand, if you compile with both -Dtest and -Dcanned you
    can run some tests we've already thought of.  */
 
+#include "config.h"
 
 /* We write fatal error messages on standard error.  */
 #include <stdio.h>

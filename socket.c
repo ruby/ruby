@@ -3,7 +3,7 @@
   socket.c -
 
   $Author: matz $
-  $Date: 1994/11/01 08:28:26 $
+  $Date: 1994/12/06 09:30:18 $
   created at: Thu Mar 31 12:21:29 JST 1994
 
 ************************************************/
@@ -227,7 +227,7 @@ open_inet(class, h, serv, server)
 }
 
 static VALUE
-Ftcp_sock_open(class, host, serv)
+Stcp_sock_open(class, host, serv)
     VALUE class, host, serv;
 {
     Check_Type(host, T_STRING);
@@ -235,7 +235,7 @@ Ftcp_sock_open(class, host, serv)
 }
 
 static VALUE
-Ftcp_svr_open(class, args)
+Stcp_svr_open(class, args)
     VALUE class, args;
 {
     VALUE arg1, arg2;
@@ -379,7 +379,7 @@ Ftcp_peeraddr(sock)
 }
 
 static VALUE
-Funix_sock_open(sock, path)
+Sunix_sock_open(sock, path)
     VALUE sock, path;
 {
     return open_unix(sock, path, 0);
@@ -403,7 +403,7 @@ Funix_path(sock)
 }
 
 static VALUE
-Funix_svr_open(class, path)
+Sunix_svr_open(class, path)
     VALUE class, path;
 {
     return open_unix(class, path, 1);
@@ -522,7 +522,7 @@ setup_domain_and_type(domain, dv, type, tv)
 }
 
 static VALUE
-Fsock_open(class, domain, type, protocol)
+Ssock_open(class, domain, type, protocol)
     VALUE class, domain, type, protocol;
 {
     int fd;
@@ -535,14 +535,14 @@ Fsock_open(class, domain, type, protocol)
 }
 
 static VALUE
-Fsock_for_fd(class, fd)
+Ssock_for_fd(class, fd)
     VALUE class, fd;
 {
     return sock_new(class, NUM2INT(fd));
 }
 
 static VALUE
-Fsock_socketpair(class, domain, type, protocol)
+Ssock_socketpair(class, domain, type, protocol)
     VALUE class, domain, type, protocol;
 {
     int fd;
@@ -706,32 +706,32 @@ Init_Socket ()
     rb_define_method(C_BasicSocket, "getpeername", Fbsock_getpeername, 0);
 
     C_TCPsocket = rb_define_class("TCPsocket", C_BasicSocket);
-    rb_define_single_method(C_TCPsocket, "open", Ftcp_sock_open, 2);
-    rb_define_single_method(C_TCPsocket, "new", Ftcp_sock_open, 2);
+    rb_define_single_method(C_TCPsocket, "open", Stcp_sock_open, 2);
+    rb_define_single_method(C_TCPsocket, "new", Stcp_sock_open, 2);
     rb_define_method(C_TCPsocket, "addr", Ftcp_addr, 0);
     rb_define_method(C_TCPsocket, "peeraddr", Ftcp_peeraddr, 0);
 
     C_TCPserver = rb_define_class("TCPserver", C_TCPsocket);
-    rb_define_single_method(C_TCPserver, "open", Ftcp_svr_open, -2);
-    rb_define_single_method(C_TCPserver, "new", Ftcp_svr_open, -2);
+    rb_define_single_method(C_TCPserver, "open", Stcp_svr_open, -2);
+    rb_define_single_method(C_TCPserver, "new", Stcp_svr_open, -2);
     rb_define_method(C_TCPserver, "accept", Ftcp_accept, 0);
 
     C_UNIXsocket = rb_define_class("UNIXsocket", C_BasicSocket);
-    rb_define_single_method(C_UNIXsocket, "open", Funix_sock_open, 1);
-    rb_define_single_method(C_UNIXsocket, "new", Funix_sock_open, 1);
+    rb_define_single_method(C_UNIXsocket, "open", Sunix_sock_open, 1);
+    rb_define_single_method(C_UNIXsocket, "new", Sunix_sock_open, 1);
     rb_define_method(C_UNIXsocket, "path", Funix_path, 0);
     rb_define_method(C_UNIXsocket, "addr", Funix_addr, 0);
     rb_define_method(C_UNIXsocket, "peeraddr", Funix_peeraddr, 0);
 
     C_UNIXserver = rb_define_class("UNIXserver", C_UNIXsocket);
-    rb_define_single_method(C_UNIXserver, "open", Funix_svr_open, 1);
-    rb_define_single_method(C_UNIXserver, "new", Funix_svr_open, 1);
+    rb_define_single_method(C_UNIXserver, "open", Sunix_svr_open, 1);
+    rb_define_single_method(C_UNIXserver, "new", Sunix_svr_open, 1);
     rb_define_method(C_UNIXserver, "accept", Funix_accept, 0);
 
     C_Socket = rb_define_class("Socket", C_BasicSocket);
-    rb_define_single_method(C_Socket, "open", Fsock_open, 3);
-    rb_define_single_method(C_Socket, "new", Fsock_open, 3);
-    rb_define_single_method(C_Socket, "for_fd", Fsock_for_fd, 1);
+    rb_define_single_method(C_Socket, "open", Ssock_open, 3);
+    rb_define_single_method(C_Socket, "new", Ssock_open, 3);
+    rb_define_single_method(C_Socket, "for_fd", Ssock_for_fd, 1);
 
     rb_define_method(C_Socket, "connect", Fsock_connect, 1);
     rb_define_method(C_Socket, "bind", Fsock_bind, 1);
@@ -742,6 +742,6 @@ Init_Socket ()
     rb_define_method(C_Socket, "recv", Fsock_recv, -2);
     rb_define_method(C_Socket, "recvfrom", Fsock_recv, -2);
 
-    rb_define_single_method(C_Socket, "socketpair", Fsock_socketpair, 3);
+    rb_define_single_method(C_Socket, "socketpair", Ssock_socketpair, 3);
 }
 #endif /* HAVE_SOCKET */

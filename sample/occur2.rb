@@ -1,3 +1,5 @@
+# word occurrence listing
+# usege: ruby occur2.rb file..
 freq = {}
 while gets()
   for word in $_.split(/\W+/)

@@ -1,17 +1,4 @@
-#! /mp/free/bin/ruby -- -*- ruby -*-
-#
-#		less - 
-#			$Release Version: $
-#			$Revision: 1.1 $
-#			$Date: 90/09/29 15:17:59 $
-#			by Yasuo OHBA(STAFS Development Room)
-#
-# --
-#
-#	
-#
-
-$RCS_ID="$Header: less,v 1.1 90/09/29 15:17:59 ohba Locked $"
+#! /usr/local/bin/ruby -- -*- ruby -*-
 
 ZCAT = "/usr/local/bin/zcat"
 LESS = "/usr/local/bin/less"

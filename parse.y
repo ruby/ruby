@@ -3,7 +3,7 @@
   parse.y -
 
   $Author: matz $
-  $Date: 1994/11/22 01:22:38 $
+  $Date: 1994/12/06 09:30:09 $
   created at: Fri May 28 18:02:42 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -1283,8 +1283,10 @@ parse_string(term)
 		tokadd(c);
 	    }
 	    else {
+		int flags = EXPAND_B;
+		if (term != '"') flags |= LEAVE_BS;
 		pushback();
-		read_escape(LEAVE_BS | EXPAND_B);
+		read_escape(flags);
 	    }
 	    continue;
 	}
@@ -1364,9 +1366,9 @@ yylex()
 
 retry:
     switch (c = nextc()) {
-      case '\0':
-      case '\004':
-      case '\032':
+      case '\0':		/* NUL */
+      case '\004':		/* ^D */
+      case '\032':		/* ^Z */
       case -1:			/* end of script. */
 	return 0;
 
@@ -2983,8 +2985,12 @@ rb_class2name(class)
 	Fail("0x%x is not a class/module", class);
     }
 
-    while (FL_TEST(class, FL_SINGLE)) {
+    if (FL_TEST(class, FL_SINGLE)) {
 	class = (struct RClass*)class->super;
+    }
+
+    while (TYPE(class) == T_ICLASS) {
+        class = (struct RClass*)class->super;
     }
 
     st_foreach(rb_class_tbl, id_find, class);

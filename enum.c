@@ -3,7 +3,7 @@
   enum.c -
 
   $Author: matz $
-  $Date: 1994/08/12 04:47:18 $
+  $Date: 1994/12/06 09:29:56 $
   created at: Fri Oct  1 15:15:19 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -27,7 +27,7 @@ enum_grep(i, arg)
     VALUE i, *arg;
 {
     if (rb_funcall(arg[0], id_match, 1, i)) {
-	Fary_push(arg[1], i);
+	ary_push(arg[1], i);
     }
 }
 
@@ -85,7 +85,7 @@ enum_find_all(i, tmp)
     VALUE i;
 {
     if (rb_yield(i)) {
-	Fary_push(tmp, i);
+	ary_push(tmp, i);
     }
 }
 
@@ -109,7 +109,7 @@ enum_collect(i, tmp)
 
     retval = rb_yield(i);
     if (retval) {
-	Fary_push(tmp, retval);
+	ary_push(tmp, retval);
     }
 }
 
@@ -129,7 +129,7 @@ static void
 enum_reverse(i, tmp)
     VALUE i, tmp;
 {
-    Fary_unshift(tmp, i);
+    ary_unshift(tmp, i);
 }
 
 static VALUE
@@ -148,7 +148,7 @@ static void
 enum_all(i, ary)
     VALUE i, ary;
 {
-    Fary_push(ary, i);
+    ary_push(ary, i);
 }
     
 static VALUE

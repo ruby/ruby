@@ -3,7 +3,7 @@
   gc.c -
 
   $Author: matz $
-  $Date: 1994/11/01 08:27:58 $
+  $Date: 1994/12/06 09:30:02 $
   created at: Tue Oct  5 09:44:46 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -110,7 +110,7 @@ Cambridge, MA 02138
 static int dont_gc;
 
 VALUE
-Fgc_enable()
+Sgc_enable()
 {
     int old = dont_gc;
 
@@ -119,7 +119,7 @@ Fgc_enable()
 }
 
 VALUE
-Fgc_disable()
+Sgc_disable()
 {
     int old = dont_gc;
 
@@ -130,12 +130,14 @@ Fgc_disable()
 #include <sys/types.h>
 #include <sys/times.h>
 
-static Fgc_begin()
+static
+Fgc_begin()
 {
     return Qnil;
 }
 
-static Fgc_end()
+static
+Fgc_end()
 {
     return Qnil;
 }
@@ -234,14 +236,19 @@ newobj()
 }
 
 VALUE
-newdata(size)
-    UINT size;
+data_new(datap, dfree, dmark)
+    VALUE *datap;
+    void (*dfree)();
+    void (*dmark)();
 {
     extern VALUE C_Data;
     struct RData *data = (struct RData*)newobj();
 
     OBJSETUP(data, C_Data, T_DATA);
-    data->data = xmalloc(size);
+    data->data = datap;
+    data->dfree = dfree;
+    data->dmark = dmark;
+
     return (VALUE)data;
 }
 
@@ -445,6 +452,8 @@ gc_mark(obj)
 
 #define MIN_FREE_OBJ 512
 
+static void obj_free();
+
 static void
 gc_sweep()
 {
@@ -509,6 +518,7 @@ freemethod(key, body)
     return ST_CONTINUE;
 }
 
+static void
 obj_free(obj)
     struct RBasic *obj;
 {
@@ -632,7 +642,7 @@ Init_GC()
 {
     M_GC = rb_define_module("GC");
     rb_define_single_method(M_GC, "start", gc, 0);
-    rb_define_single_method(M_GC, "enable", Fgc_enable, 0);
-    rb_define_single_method(M_GC, "disable", Fgc_disable, 0);
+    rb_define_single_method(M_GC, "enable", Sgc_enable, 0);
+    rb_define_single_method(M_GC, "disable", Sgc_disable, 0);
     rb_define_method(M_GC, "garbage_collect", gc, 0);
 }

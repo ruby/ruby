@@ -1,3 +1,4 @@
+# sieve of Eratosthenes
 sieve = []
 unless max = $ARGV.shift; max = 100; end
 max = max.to_i

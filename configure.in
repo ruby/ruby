@@ -4,10 +4,6 @@ PROGS="ruby"
 AC_SUBST(PROGS)dnl
 AC_PROG_CC
 AC_GCC_TRADITIONAL
-if test "$GCC" = 1 ; then
-  DBM=-fpcc-struct-return
-fi
-AC_SUBST(DBM)dnl
 if test "$HOSTTYPE" = sparc; then
   if test "$GCC" = 1 ; then
     STATIC=-static
@@ -24,22 +20,23 @@ AC_HAVE_HEADERS(unistd.h syscall.h a.out.h)
 AC_DIR_HEADER
 AC_GETGROUPS_T
 AC_RETSIGTYPE
-AC_HAVE_FUNCS(getopt_long memmove strerror strtoul strdup strstr)
-AC_HAVE_FUNCS(setenv fmod killpg mkdir strftime socket random)
+AC_REPLACE_FUNCS(memmove mkdir strerror strftime)
+AC_REPLACE_FUNCS(strstr strtol strtoul strdup)
+AC_HAVE_FUNCS(fmod killpg socket random)
 AC_HAVE_FUNCS(wait4 waitpid syscall getcwd)
+AC_HAVE_FUNCS(setruid seteuid setreuid)
+AC_HAVE_FUNCS(setrgid setegid setregid)
 AC_HAVE_FUNCS(getpriority sigprocmask)
-if echo $DEFS | grep "HAVE_SETENV" 2>&1 > /dev/null; then
-  :
-else
-  AC_HAVE_FUNCS(putenv)
-fi
-if echo $DEFS | grep "HAVE_STRFTIME" 2>&1 > /dev/null; then
-  :
-else
-  AC_TIMEZONE
-  AC_COMPILE_CHECK([daylight], [],
-  [extern int daylight; int i = daylight;], AC_DEFINE(HAVE_DAYLIGHT))
-fi
+AC_FUNC_CHECK(setenv, [], AC_HAVE_FUNCS(putenv))
+
+case "$LIBOBJS" in
+ *) ;;
+ *strftime*)
+    AC_TIMEZONE
+    AC_COMPILE_CHECK([daylight], [],
+	 [extern int daylight; int i = daylight;], AC_DEFINE(HAVE_DAYLIGHT));;
+esac
+
 AC_ALLOCA
 AC_WORDS_BIGENDIAN
 AC_ST_BLKSIZE
@@ -63,3 +60,4 @@ AC_HAVE_LIBRARY(m, [LIBS="$LIBS -lm"])
 AC_HAVE_LIBRARY(dbm, [LIBS="$LIBS -ldbm"])
 AC_HAVE_LIBRARY(socket, [LIBS="$LIBS -lsocket"])
 AC_OUTPUT(Makefile)
+mv confdefs.h config.h

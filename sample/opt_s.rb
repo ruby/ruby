@@ -1,4 +1,6 @@
-#! ruby -s
+#! ./ruby -s
+# test for option `-s'
+
 if ($xyz)
   print("xyz = TRUE\n")
 end

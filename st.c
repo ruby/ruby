@@ -5,6 +5,7 @@ static	char	sccsid[] = "@(#) st.c 5.1 89/12/14 Crucible";
 static char *rcsid = "$Header: /usr/ext/cvsroot/ruby/st.c,v 1.2 1994/08/12 04:47:59 matz Exp $";
 #endif
 
+#include "config.h"
 #include <stdio.h>
 #include "st.h"
 
