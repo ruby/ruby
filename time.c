@@ -272,7 +272,7 @@ static VALUE time_gmtime _((VALUE));
 static VALUE time_localtime _((VALUE));
 static VALUE time_get_tm _((VALUE, int));
 
-#if defined(HAVE_DAYLIGHT) && !defined __MINGW32__
+#if defined(HAVE_DAYLIGHT) && !defined(__MINGW32__)
 extern int daylight;
 extern long timezone;
 #endif
@@ -317,9 +317,9 @@ make_time_t(tptr, utc_or_local)
     if (guess < 0) goto out_of_range;
 
     if (!utc_or_local) {	/* localtime zone adjust */
-#if defined(HAVE_DAYLIGHT)
-	localtime(&guess);
-	guess += timezone + daylight;
+#if defined(HAVE_TM_ZONE)
+	tm = localtime(&guess);
+	guess += tm->tm_gmtoff;
 #else
 	struct tm gt, lt;
 	long tzsec;
@@ -809,7 +809,9 @@ time_zone(time)
 	time_get_tm(time, tobj->gmt);
     }
 
-#if defined HAVE_TZNAME && defined HAVE_DAYLIGHT
+#if defined(HAVE_TM_ZONE)
+    return rb_str_new2(tobj->tm.tm_zone);
+#elif defined(HAVE_TZNAME) && defined(HAVE_DAYLIGHT)
     return rb_str_new2(tzname[daylight && tobj->tm.tm_isdst]);
 #else
     len = strftime(buf, 64, "%Z", &tobj->tm);
