@@ -9,20 +9,12 @@ class TestRipper_ScannerEvents < Test::Unit::TestCase
 
   class R < Ripper
     def R.scan(target, src)
-      lex(target, src).map {|id, tok| tok }
-    end
-
-    def R.lex(target, src)
       new(src, target).parse
     end
 
     def initialize(src, target)
       super src
-      if target
-        @target = ('on__' + target).intern
-      else
-        @target = nil
-      end
+      @target = target ? ('on__' + target).intern : nil
     end
 
     def parse
@@ -32,18 +24,19 @@ class TestRipper_ScannerEvents < Test::Unit::TestCase
     end
 
     def on__scan(type, tok)
-      @tokens.push [type,tok] if !@target or type == @target
+      @tokens.push tok if !@target or type == @target
+    end
+  end
+
+  class PosInfo < Ripper
+    def parse
+      @q = []
+      super
+      @q
     end
 
-    def warn(fmt, *args)
-      #p [fmt, args]
-    end
-
-    def warning(fmt, *args)
-      #p [fmt, args]
-    end
-
-    def compile_error(msg)
+    def on__scan(type, tok)
+      @q.push [tok, type, lineno(), column()]
     end
   end
 
@@ -56,10 +49,45 @@ class TestRipper_ScannerEvents < Test::Unit::TestCase
                  R.scan(nil, '1')
     assert_equal ['1', ';', 'def', ' ', 'm', '(', 'arg', ')', 'end'],
                  R.scan(nil, "1;def m(arg)end")
-    assert_equal ['print', '(', '<<EOS', "heredoc\n", "EOS\n", ')', "\n"],
+    assert_equal ['print', '(', '<<EOS', ')', "\n", "heredoc\n", "EOS\n"],
                  R.scan(nil, "print(<<EOS)\nheredoc\nEOS\n")
-    assert_equal ['print', '(', ' ', '<<EOS', "heredoc\n", "EOS\n", ')', "\n"],
+    assert_equal ['print', '(', ' ', '<<EOS', ')', "\n", "heredoc\n", "EOS\n"],
                  R.scan(nil, "print( <<EOS)\nheredoc\nEOS\n")
+  end
+
+  def test_location
+    validate_location ""
+    validate_location " "
+    validate_location "@"
+    validate_location "\n"
+    validate_location "\r\n"
+    validate_location "\n\n\n\n\n\r\n\n\n"
+    validate_location "\n;\n;\n;\n;\n"
+    validate_location "nil"
+    validate_location "@ivar"
+    validate_location "1;2;3"
+    validate_location "1\n2\n3"
+    validate_location "1\n2\n3\n"
+    validate_location "def m(a) nil end"
+    validate_location "if true then false else nil end"
+    validate_location "BEGIN{print nil}"
+    validate_location "%w(a b\nc\r\nd \ne )"
+    validate_location %Q["a\nb\r\nc"]
+    validate_location "print(<<EOS)\nheredoc\nEOS\n"
+    validate_location %Q[print(<<-"EOS")\nheredoc\n     EOS\n]
+  end
+
+  def validate_location(src)
+    data = PosInfo.new(src).parse
+    buf = ''
+    data.each do |tok, type, line, col|
+      assert_equal buf.count("\n") + 1, line,
+          "wrong lineno: #{tok.inspect} (#{type}) [#{line}:#{col}]"
+      assert_equal buf.sub(/\A.*\n/m, '').size, col,
+          "wrong column: #{tok.inspect} (#{type}) [#{line}:#{col}]"
+      buf << tok
+    end
+    assert_equal src, buf
   end
 
   def test_backref
@@ -727,6 +755,18 @@ class TestRipper_ScannerEvents < Test::Unit::TestCase
   end
 
   def test___end__
+    assert_equal [],
+                 R.scan('__end__', "")
+    assert_equal ["__END__"],
+                 R.scan('__end__', "__END__")
+    assert_equal ["__END__\n"],
+                 R.scan('__end__', "__END__\n")
+    assert_equal ["__END__\n"],
+                 R.scan(nil, "__END__\njunk junk junk")
+    assert_equal ["__END__"],
+                 R.scan('__end__', "1\n__END__")
+    assert_equal [],
+                 R.scan('__end__', "print('__END__')")
   end
 
   def test_CHAR

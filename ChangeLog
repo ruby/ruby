@@ -1,3 +1,7 @@
+Mon Sep 20 15:13:52 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* test/ripper/test_scanner_events.rb: test #lineno and #column.
+
 Mon Sep 20 14:50:17 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* parse.y [ripper]: delayed heredocument events should be
