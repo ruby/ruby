@@ -555,10 +555,11 @@ proc_options(argc, argv)
 		if (*++s) {
 		    v = scan_oct(s, 2, &numlen);
 		    if (numlen == 0) v = 1;
+		    s += numlen;
 		}
 		rb_set_safe_level(v);
 	    }
-	    break;
+	    goto reswitch;
 
 	  case 'I':
 	    forbid_setid("-I");

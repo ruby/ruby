@@ -1,3 +1,7 @@
+Wed May 22 21:26:47 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* ruby.c (proc_options): -T consumes digits only.
+
 Wed May 22 20:18:31 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in: need not link vsnprintf.o on MinGW.
