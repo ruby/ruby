@@ -5704,14 +5704,12 @@ rb_f_require(obj, fname)
 		return load_dyna(feature, tmp);
 	    }
 #endif
-	    load_failed(fname);
 	}
 	else if (strcmp(DLEXT, ext) == 0) {
 	    tmp = rb_find_file(fname);
 	    if (tmp) {
 		return load_dyna(fname, tmp);
 	    }
-	    load_failed(fname);
 	}
 #ifdef DLEXT2
 	else if (strcmp(DLEXT2, ext) == 0) {
@@ -5719,7 +5717,6 @@ rb_f_require(obj, fname)
 	    if (tmp) {
 		return load_dyna(fname, tmp);
 	    }
-	    load_failed(fname);
 	}
 #endif
     }
