@@ -59,7 +59,12 @@ DNS stub resolver.
 === class methods
 --- Resolv::DNS.new(resolv_conf='/etc/resolv.conf')
 
+--- Resolv::DNS.open(resolv_conf='/etc/resolv.conf')
+--- Resolv::DNS.open(resolv_conf='/etc/resolv.conf') {|dns| ...}
+
 === methods
+--- Resolv::DNS#close
+
 --- Resolv::DNS#getaddress(name)
 --- Resolv::DNS#getaddresses(name)
 --- Resolv::DNS#each_address(name) {|address| ...}
@@ -173,7 +178,6 @@ DNS stub resolver.
 * NIS is not supported.
 * /etc/nsswitch.conf is not supported.
 * IPv6 is not supported.
-* There is no method to close DNS socket.
 
 =end
 
@@ -350,6 +354,16 @@ class Resolv
 
     DNSThreadGroup = ThreadGroup.new
 
+    def self.open(*args)
+      dns = new(*args)
+      return dns unless block_given?
+      begin
+	yield dns
+      ensure
+	dns.close
+      end
+    end
+
     def initialize(config="/etc/resolv.conf")
       @mutex = Mutex.new
       @config = Config.new(config)
@@ -368,6 +382,16 @@ class Resolv
           end
 
           @initialized = true
+        end
+      }
+    end
+
+    def close
+      @mutex.synchronize {
+        if @initialized
+          @requester.close if @requester
+          @requester = nil
+          @initialized = false
         end
       }
     end
@@ -490,6 +514,18 @@ class Resolv
         @senders = {}
       end
 
+      def close
+        thread, sock, @thread, @sock = @thread, @sock
+        begin
+          if thread
+            thread.kill
+            thread.join
+          end
+        ensure
+          sock.close if sock
+        end
+      end
+
       def delete(arg)
         case arg
         when Sender
@@ -502,8 +538,10 @@ class Resolv
       end
 
       class Sender
-        def initialize(data, queue)
+        def initialize(msg, data, sock, queue)
+          @msg = msg
           @data = data
+          @sock = sock
           @queue = queue
         end
         attr_reader :queue
@@ -552,9 +590,7 @@ class Resolv
 
         class Sender < Requester::Sender
           def initialize(msg, data, sock, host, port, queue)
-            super(data, queue)
-            @msg = msg
-            @sock = sock
+            super(msg, data, sock, queue)
             @host = host
             @port = port
           end
@@ -604,12 +640,6 @@ class Resolv
         end
 
         class Sender < Requester::Sender
-          def initialize(msg, data, sock, queue)
-            super(data, queue)
-            @msg = msg
-            @sock = sock
-          end
-
           def send
             @sock.send(@msg, 0)
           end
@@ -657,12 +687,6 @@ class Resolv
         end
 
         class Sender < Requester::Sender
-          def initialize(msg, data, sock, queue)
-            super(data, queue)
-            @msg = msg
-            @sock = sock
-          end
-
           def send
             @sock.print(@msg)
             @sock.flush

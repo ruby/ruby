@@ -1,3 +1,9 @@
+Sat Jul 13 01:25:38 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* lib/resolv.rb (Resolv::DNS::open, close): new.
+
+	* lib/optparse.rb, lib/optparse: import.
+
 Fri Jul 12 06:34:05 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb: rename HTTP.get_uri get_response.
