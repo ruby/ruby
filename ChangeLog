@@ -1,5 +1,7 @@
 Thu Mar 12 15:33:57 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
+	* experimental release 1.1b9_01.
+
 	* range.c (range_s_new): check values by `first <= last'.
 
 	* parse.y (lastline_set): fixed offset for $_ and $~ in the local
@@ -40,10 +42,6 @@ Mon Mar  9 16:53:51 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 Sat Mar  7 21:51:46 1998  MAEDA shugo  <shugo@po.aianet.ne.jp>
 
 	* class.c (ins_methods_i): body may be NULL for some case.
-
-Sat Mar  7 00:43:32 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
-
-	* parse.y (logop): short cut syntax tree.
 
 Fri Mar  6 17:23:07 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
