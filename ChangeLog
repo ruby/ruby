@@ -2,8 +2,6 @@ Tue Jun  4 00:45:50 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ext/socket/addrinfo.h: typo.
 
-	* ext/socket/getaddrinfo.c (gai_strerror): get rid of warning.
-
 	* ext/socket/socket.c (init_inetsock): ensures resources are
 	  freed at exceptions.
 
