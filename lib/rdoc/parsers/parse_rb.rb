@@ -1510,6 +1510,10 @@ module RDoc
       read
     end
 
+    def peek_read
+      @read.join('')
+    end
+
     NORMAL = "::"
     SINGLE = "<<"
 
@@ -1814,6 +1818,10 @@ module RDoc
         return
       end
 
+
+      nest = 0
+      get_tkread
+
       tk = get_tk
       if tk.kind_of? TkGT
         unget_tk(tk)
@@ -1821,11 +1829,10 @@ module RDoc
         return
       end
 
-      nest = 0
-      get_tkread
       loop do
         puts("Param: #{tk}, #{@scanner.continue} " +
           "#{@scanner.lex_state} #{nest}")  if $DEBUG
+
         case tk
         when TkSEMICOLON
           break
@@ -1846,6 +1853,7 @@ module RDoc
         end
         tk = get_tk
       end
+
       res = get_tkread.tr("\n", " ").strip
       res = "" if res == ";"
       con = Constant.new(name, res, comment)

@@ -348,7 +348,7 @@ module Generators
       @context.constants.map do |co|
         res = {
           'name'  => co.name,
-          'value' => co.value
+          'value' => CGI.escapeHTML(co.value)
         }
         res['desc'] = markup(co.comment, true) if co.comment && !co.comment.empty?
         res

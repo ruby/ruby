@@ -1,3 +1,13 @@
+Tue Feb 24 06:08:47 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_constant): 
+	  Start collecting text of constant values earlier: was missing
+	  values in output if there was no space after '='
+
+Tue Feb 24 06:08:25 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/generators/html_generator.rb: Escape contant values.
+
 Tue Feb 24 03:45:06 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_config.c (ossl_config_each): add new method
