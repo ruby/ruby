@@ -37,7 +37,9 @@ static VALUE
 num_coerce(x, y)
     VALUE x, y;
 {
-    return assoc_new(rb_Float(x),rb_Float(y));
+    if (CLASS_OF(x) == CLASS_OF(y))
+	return assoc_new(x, y);
+    return assoc_new(rb_Float(x), rb_Float(y));
 }
 
 coerce_body(x)
