@@ -1,3 +1,18 @@
+Thu Jul  1 23:15:29 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/pstore.rb (transaction): safer backup scheme.  [ruby-list:39102]
+
+	* lib/pstore.rb (commit_new): use FileUtils.copy_stream for Cygwin.
+	  [ruby-dev:23157]
+
+	* lib/pstore.rb (transaction): allow overriding dump and load.
+	  [ruby-dev:23567]
+
+	* lib/pstore.rb (PStore#transaction): get rid of opening in write mode
+	  when read only transaction.  [ruby-dev:23842]
+
+	* lib/yaml/store.rb: follow lib/pstore.rb's change.
+
 Thu Jul  1 18:36:08 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tcltklib : bug fix
@@ -79,13 +94,13 @@ Thu Jul  1 03:16:09 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_ssl.c (ossl_ssl_read): take optional second argument
 	  to specify a string to be written.
-    
+
 	* ext/openssl/lib/openssl/buffering.rb (OpenSSL::Buffering#read):
 	  take optional second argument to specify a string to be written.
-    
+
 	* ext/openssl/lib/openssl/buffering.rb (OpenSSL::Buffering#gets):
 	  refine regexp for end-of-line.
-    
+
 	* ext/opnessl/lib/openssl/ssl.rb
 	  (OpenSSL::SSL::SocketForwarder#listen): fix typo.
 

@@ -12,7 +12,7 @@
 #   p db["root"]
 # end
 
-require "ftools"
+require "fileutils"
 require "digest/md5"
 
 class PStore
@@ -35,7 +35,11 @@ class PStore
   def in_transaction
     raise PStore::Error, "not in transaction" unless @transaction
   end
-  private :in_transaction
+  def in_transaction_wr()
+    in_transaction()
+    raise PStore::Error, "in read-only transaction" if @rdonly
+  end
+  private :in_transaction, :in_transaction_wr
 
   def [](name)
     in_transaction
@@ -52,11 +56,11 @@ class PStore
     self[name]
   end
   def []=(name, value)
-    in_transaction
+    in_transaction_wr()
     @table[name] = value
   end
   def delete(name)
-    in_transaction
+    in_transaction_wr()
     @table.delete name
   end
 
@@ -86,27 +90,35 @@ class PStore
   def transaction(read_only=false)
     raise PStore::Error, "nested transaction" if @transaction
     begin
+      @rdonly = read_only
+      @abort = false
       @transaction = true
       value = nil
-      backup = @filename+"~"
-      begin
-	file = File::open(@filename, read_only ? "rb" : "rb+")
-	orig = true
-      rescue Errno::ENOENT
-	raise if read_only
-	file = File::open(@filename, "wb+")
+      new_file = @filename + ".new"
+
+      content = nil
+      unless read_only
+        file = File.open(@filename, File::RDWR | File::CREAT)
+        file.flock(File::LOCK_EX)
+        commit_new(file) if FileTest.exist?(new_file)
+        content = file.read()
+      else
+        file = File.open(@filename, File::RDONLY)
+        file.flock(File::LOCK_SH)
+        content = (File.read(new_file) rescue file.read())
       end
-      file.flock(read_only ? File::LOCK_SH : File::LOCK_EX)
-      if read_only
-	@table = Marshal::load(file)
-      elsif orig and (content = file.read) != ""
-	@table = Marshal::load(content)
-	size = content.size
-	md5 = Digest::MD5.digest(content)
-	content = nil		# unreference huge data
+
+      if content != ""
+	@table = load(content)
+        if !read_only
+          size = content.size
+          md5 = Digest::MD5.digest(content)
+        end
       else
 	@table = {}
       end
+      content = nil		# unreference huge data
+
       begin
 	catch(:pstore_abort_transaction) do
 	  value = yield(self)
@@ -116,24 +128,17 @@ class PStore
 	raise
       ensure
 	if !read_only and !@abort
-	  file.rewind
-	  content = Marshal::dump(@table)
+          tmp_file = @filename + ".tmp"
+	  content = dump(@table)
 	  if !md5 || size != content.size || md5 != Digest::MD5.digest(content)
-	    File::copy @filename, backup
-	    begin
-	      file.write(content)
-	      file.truncate(file.pos)
-	      content = nil		# unreference huge data
-	    rescue
-	      File::rename backup, @filename if File::exist?(backup)
-	      raise
-	    end
-	  end
+            File.open(tmp_file, "w") {|t|
+              t.write(content)
+            }
+            File.rename(tmp_file, new_file)
+            commit_new(file)
+          end
+          content = nil		# unreference huge data
 	end
-	if @abort and !orig
-	  File.unlink(@filename)
-	end
-	@abort = false
       end
     ensure
       @table = nil
@@ -141,6 +146,29 @@ class PStore
       file.close if file
     end
     value
+  end
+
+  def dump(table)
+    Marshal::dump(table)
+  end
+
+  def load(content)
+    Marshal::load(content)
+  end
+
+  def load_file(file)
+    Marshal::load(file)
+  end
+
+  private
+  def commit_new(f)
+    f.truncate(0)
+    f.rewind
+    new_file = @filename + ".new"
+    File.open(new_file) do |nf|
+      FileUtils.copy_stream(nf, f)
+    end
+    File.unlink(new_file)
   end
 end
 
