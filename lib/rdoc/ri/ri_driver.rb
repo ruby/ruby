@@ -1,3 +1,4 @@
+require 'rdoc/usage'
 require 'rdoc/ri/ri_paths'
 require 'rdoc/ri/ri_cache'
 require 'rdoc/ri/ri_util'
@@ -22,18 +23,23 @@ class  RiDriver
 
     paths = @options.paths || RI::Paths::PATH
     if paths.empty?
-      $stderr.puts "No ri documentation found in:"
-      [ RI::Paths::SYSDIR, RI::Paths::SITEDIR, RI::Paths::HOMEDIR].each do |d|
-        $stderr.puts "     #{d}"
-      end
-      $stderr.puts "\nWas rdoc run to create documentation?"
-      exit 1                   
+      report_missing_documentation(paths)
     end
     @ri_reader = RI::RiReader.new(RI::RiCache.new(paths))
     @display   = @options.displayer
   end    
   
-  
+  # Couldn't find documentation in paths, so tell the user
+  # what to do
+
+  def report_missing_documentation(paths)
+    STDERR.puts "No ri documentation found in:"
+    paths.each do |d|
+      STDERR.puts "     #{d}"
+    end
+    STDERR.puts "\nWas rdoc run to create documentation?\n\n"
+    RDoc::usage("Installing Documentation")
+  end
   
   ######################################################################
   
@@ -79,7 +85,7 @@ class  RiDriver
   
   def get_info_for(arg)
     desc = NameDescriptor.new(arg)
-    
+
     namespaces = @ri_reader.top_level_namespace
     
     for class_name in desc.class_names
@@ -102,7 +108,7 @@ class  RiDriver
       methods = @ri_reader.find_methods(desc.method_name, 
                                         desc.is_class_method,
                                         namespaces)
-      
+
       if methods.empty?
         raise RiError.new("Nothing known about #{arg}")
       else
@@ -129,7 +135,7 @@ class  RiDriver
             get_info_for(arg)
           end
         rescue RiError => e
-          $stderr.puts(e.message)
+          STDERR.puts(e.message)
           exit(1)
         end
       end
