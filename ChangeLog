@@ -1,3 +1,7 @@
+Sat Feb 14 11:28:14 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* sample/drb/*: import lib/drb/sample
+
 Sat Feb 14 11:14:12 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/drb.rb: add pretty_print, thanks gotoken.
