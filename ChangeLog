@@ -1,3 +1,7 @@
+Sat Feb  8 10:11:21 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* dir.c (glob_helper): Dir.glob('**/') did not work.
+
 Sat Feb  8 00:29:26 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* dir.c (fnmatch):
