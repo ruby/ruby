@@ -102,7 +102,7 @@ OBJS          = array.obj \
 
 all:		miniruby$(EXEEXT) rbconfig.rb ext/extmk.rb \
 		$(LIBRUBY) $(MISCLIBS)
-		set LIB=../..;$(ORGLIBPATH)
+		set LIB=..\..;$(ORGLIBPATH)
 		@.\miniruby$(EXEEXT) -Cext extmk.rb 
 
 ruby: $(PROGRAM)
@@ -138,7 +138,7 @@ $(LIBRUBY):	$(RUBYDEF)
 		lib -nologo /OUT:$@ /DEF:$(RUBYDEF)
 
 $(LIBRUBY_SO):	$(LIBRUBY_A) $(EXTOBJS) $(RUBYDEF) $@.res
-		set LIB=./win32;$(ORGLIBPATH)
+		set LIB=.\win32;$(ORGLIBPATH)
 		$(CC) $(LDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBY_A) $@.res $(LIBS) \
 			-o $@ -link /DLL /DEF:$(RUBYDEF)
 

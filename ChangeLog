@@ -1,3 +1,7 @@
+Wed Aug  1 20:45:14 2001  Usaku Nakamura  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub: changed path separator of $LIB to '\'.
+
 Tue Jul 31 12:55:35 2001  Nobuyoshi.Nakada <nobu.nokada@softhome.net>  <nobu.nakada@nifty.ne.jp>
 
 	* file.c (rb_file_s_expand_path): expanded path should not end
