@@ -7034,10 +7034,15 @@ Init_Proc()
 }
 
 /* Windows SEH refers data on the stack. */
-#ifdef _WIN32
+#if defined _WIN32 || defined __CYGWIN__
 # if !(defined _M_IX86 || defined __i386__)
 #   error unsupported processor
 # endif
+
+#if defined __CYGWIN__
+typedef unsigned long DWORD;
+#endif
+
 static inline DWORD
 win32_get_exception_list()
 {
@@ -7061,7 +7066,7 @@ win32_get_exception_list()
 }
 
 static inline void
-win32_set_exception_list()
+win32_set_exception_list(p)
     DWORD p;
 {
 # if defined _MSC_VER
@@ -7109,7 +7114,7 @@ enum thread_status {
 struct thread {
     struct thread *next, *prev;
     jmp_buf context;
-#ifdef _WIN32
+#if defined _WIN32 || defined __CYGWIN__
     DWORD win32_exception_list;
 #endif
 
