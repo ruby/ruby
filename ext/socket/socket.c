@@ -61,9 +61,6 @@ void SOCKSinit();
 int Rconnect();
 #endif
 
-FILE *rb_fdopen();
-char *strdup();
-
 #define INET_CLIENT 0
 #define INET_SERVER 1
 #define INET_SOCKS  2

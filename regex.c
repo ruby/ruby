@@ -3062,7 +3062,7 @@ typedef union
         this in conjunction with AT_STRINGS_BEG.  */
 #define IS_A_LETTER(d) (SYNTAX(*(d)) == Sword ||			\
 			(current_mbctype ?				\
-			 mbctab[*(d)] == 1 :				\
+			 (mbctab[*(d)] == 1 && (d)+1<dend):		\
 			 SYNTAX(*(d)) == Sword2))
 
 static void

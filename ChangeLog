@@ -1,3 +1,24 @@
+Tue Apr 20 11:24:18 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (str_dump): `#' should be escaped.
+
+Mon Apr 19 18:56:21 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (IS_A_LETTER): a byte sequence shorter than mbc should
+	  not match with \w etc.
+
+Fri Apr 16 21:40:43 1999  Nobuetsu Nokada  <gea02117@nifty.ne.jp>
+
+	* io.c (f_backquote): pipe_open may return nil.
+
+	* io.c (f_open): io_open may return nil.
+
+	* io.c (io_s_foreach): ditto.
+
+	* io.c (io_s_readlines): ditto.
+
+	* io.c (io_defset): wrong message.
+
 Tue Apr 13 14:59:25 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* version 1.2.5 (stable) released.

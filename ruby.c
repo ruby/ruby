@@ -57,7 +57,6 @@ int tainting = FALSE;
 static int sflag = FALSE;
 
 char *inplace = FALSE;
-char *strdup();
 
 extern char *sourcefile;
 extern int yydebug;

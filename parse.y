@@ -1589,7 +1589,6 @@ VALUE newregexp();
 VALUE newstring();
 VALUE newfloat();
 VALUE newinteger();
-char *strdup();
 
 static NODE *str_extend();
 
@@ -2190,8 +2189,6 @@ parse_quotedword(term, paren)
     yylval.node = NEW_CALL(NEW_STR(yylval.val), rb_intern("split"), 0);
     return tDSTRING;
 }
-
-char *strdup();
 
 static int
 here_document(term)

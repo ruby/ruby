@@ -1299,6 +1299,7 @@ f_open(argc, argv)
     }
 
     port = io_open(RSTRING(pname)->ptr, mode);
+    if (NIL_P(port)) return Qnil;
     if (iterator_p()) {
 	return rb_ensure(rb_yield, port, io_close, port);
     }
@@ -1312,10 +1313,6 @@ io_get_io(io)
 {
     return rb_convert_type(io, T_FILE, "IO", "to_io");
 }
-
-#ifndef NT
-extern char *strdup();
-#endif
 
 static char*
 io_mode_string(fptr)
@@ -1658,7 +1655,7 @@ io_defset(val, id)
 	val = io_open(RSTRING(val)->ptr, "w");
     }
     if (!rb_respond_to(val, id_write)) {
-	TypeError("$< must have write method, %s given",
+	TypeError("$> must have write method, %s given",
 		  rb_class2name(CLASS_OF(val)));
     }
     rb_defout = val;
@@ -1969,6 +1966,8 @@ f_backquote(obj, str)
 
     Check_SafeStr(str);
     port = pipe_open(RSTRING(str)->ptr, "r");
+    if (NIL_P(port)) return Qnil;
+
     result = read_all(port);
 
     io_close(port);
@@ -2393,6 +2392,7 @@ io_s_foreach(argc, argv, io)
 
     arg.argc = argc - 1;
     arg.io = io_open(RSTRING(fname)->ptr, "r");
+    if (NIL_P(arg.io)) return Qnil;
     return rb_ensure(io_foreach_line, (VALUE)&arg, io_close, arg.io);
 }
 
@@ -2424,6 +2424,7 @@ io_s_readlines(argc, argv, io)
 
     arg.argc = argc - 1;
     arg.io = io_open(RSTRING(fname)->ptr, "r");
+    if (NIL_P(arg.io)) return Qnil;
     return rb_ensure(io_readline_line, (VALUE)&arg, io_close, arg.io);
 }
 

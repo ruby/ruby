@@ -56,7 +56,6 @@ void *xrealloc();
 #endif
 
 #ifndef NT
-char *strdup();
 char *getenv();
 #endif
 
