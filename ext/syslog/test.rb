@@ -5,17 +5,16 @@
 # Please only run this test on machines reasonable for testing.
 # If in doubt, ask your admin.
 
-require 'runit/testcase'
-require 'runit/cui/testrunner'
+require 'test/unit'
 
 # Prepend current directory to load path for testing.
 $:.unshift('.')
 
 require 'syslog'
 
-class TestSyslog < RUNIT::TestCase
+class TestSyslog < Test::Unit::TestCase
   def test_new
-    assert_exception(NameError) {
+    assert_raises(NameError) {
       Syslog.new
     }
   end
@@ -41,7 +40,7 @@ class TestSyslog < RUNIT::TestCase
     assert_equal(Syslog::LOG_USER, Syslog.facility)
 
     # open without close
-    assert_exception(RuntimeError) {
+    assert_raises(RuntimeError) {
       Syslog.open
     }
 
@@ -143,19 +142,14 @@ class TestSyslog < RUNIT::TestCase
 
   def test_inspect
     Syslog.open { |sl|
-      assert_equal(format('<#%s: opened=%s, ident="%s", ' +
-			  'options=%d, facility=%d, mask=%d>',
-			  Syslog, sl.opened?, sl.ident,
-			  sl.options, sl.facility, sl.mask),
+      assert_equal(format('<#%s: ident="%s", options=%d, facility=%d, mask=%d%s>',
+			  Syslog,
+			  sl.ident,
+			  sl.options,
+			  sl.facility,
+			  sl.mask,
+			  sl.opened? ? ', opened' : ''),
 		   sl.inspect)
     }
   end
-end
-
-if $0 == __FILE__
-  suite = RUNIT::TestSuite.new
-
-  suite.add_test(TestSyslog.suite)
-
-  RUNIT::CUI::TestRunner.run(suite)
 end
