@@ -1,3 +1,7 @@
+Thu Feb 19 22:19:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
+
+	* lib/ostruct.rb: documented
+
 Thu Feb 19 21:28:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
 
 	* ext/strscan/strscan.c: improved documentation
