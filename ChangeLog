@@ -1,6 +1,6 @@
 Sat Nov 27 21:43:39 2004  Tanaka Akira  <akr@m17n.org>
 
-	* io.c: avoid avoid data loss with nonblocking fd and
+	* io.c: avoid data lost with nonblocking fd and
 	  stdio buffering in sync mode.  [ruby-dev:24966]
 	  based on matz's patch [ruby-dev:24967]
 	  (io_fwrite): new primitive writing function which writes
