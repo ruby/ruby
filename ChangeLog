@@ -1,3 +1,10 @@
+Wed Mar 27 13:14:43 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_sysseek): new method based on a patch from Aristarkh
+	  A Zagorodnikov <xm@bolotov-team.ru>. [new]
+
+	* io.c (READ_DATA_PENDING): use !feof(fp) for default behavior.
+
 Tue Mar 26 20:28:50 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb: HTTP.get accepts URI.

@@ -95,6 +95,10 @@ extern void Init_File _((void));
 
 #include "util.h"
 
+#if SIZEOF_OFF_T > SIZEOF_LONG && !defined(HAVE_LONG_LONG)
+# error off_t is bigger than long, but you have no long long...
+#endif
+
 VALUE rb_cIO;
 VALUE rb_eEOFError;
 VALUE rb_eIOError;
@@ -148,7 +152,7 @@ static VALUE lineno;
 #else
 /* requires systems own version of the ReadDataPending() */
 extern int ReadDataPending();
-#  define READ_DATA_PENDING(fp) ReadDataPending(fp)
+#  define READ_DATA_PENDING(fp) (!feof(fp))
 #endif
 #ifndef READ_DATA_PENDING_PTR
 # ifdef FILE_READPTR
@@ -350,15 +354,7 @@ rb_io_tell(io)
     GetOpenFile(io, fptr);
     pos = ftello(fptr->f);
     if (ferror(fptr->f)) rb_sys_fail(fptr->path);
-
-#if SIZEOF_OFF_T > SIZEOF_LONG
-# if !HAVE_LONG_LONG
-#  error off_t is bigger than long, but you have no long long...
-# endif
-    return rb_ll2inum(pos);
-#else
-    return rb_int2inum(pos);
-#endif
+    return OFFT2NUM(pos);
 }
 
 #ifndef SEEK_CUR
@@ -1322,6 +1318,35 @@ rb_io_close_write(io)
     if (n != 0) rb_sys_fail(fptr->path);
 
     return Qnil;
+}
+
+static VALUE
+rb_io_sysseek(argc, argv, io)
+    int argc;
+    VALUE *argv;
+    VALUE io;
+{
+    VALUE offset, ptrname;
+    int whence;
+    OpenFile *fptr;
+    off_t pos;
+
+    rb_scan_args(argc, argv, "11", &offset, &ptrname);
+    if (argc == 1) whence = SEEK_SET;
+    else whence = NUM2INT(ptrname);
+
+    GetOpenFile(io, fptr);
+    if ((fptr->mode & FMODE_READABLE) && READ_DATA_PENDING(fptr->f)) {
+	rb_raise(rb_eIOError, "syseek for buffered IO");
+    }
+    if ((fptr->mode & FMODE_WRITABLE) && (fptr->mode & FMODE_WBUF)) {
+	rb_warn("sysseek for buffered IO");
+    }
+    pos = lseek(fileno(fptr->f), NUM2OFFT(offset), whence);
+    if (pos == -1) rb_sys_fail(fptr->path);
+    clearerr(fptr->f);
+
+    return OFFT2NUM(pos);
 }
 
 static VALUE
@@ -3761,6 +3786,7 @@ Init_IO()
     rb_define_method(rb_cIO, "isatty", rb_io_isatty, 0);
     rb_define_method(rb_cIO, "tty?", rb_io_isatty, 0);
     rb_define_method(rb_cIO, "binmode",  rb_io_binmode, 0);
+    rb_define_method(rb_cIO, "sysseek", rb_io_sysseek, -1);
 
     rb_define_method(rb_cIO, "ioctl", rb_io_ioctl, -1);
     rb_define_method(rb_cIO, "fcntl", rb_io_fcntl, -1);

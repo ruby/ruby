@@ -1,3 +1,7 @@
+: IO#sysseek
+
+  Added.
+
 : BigFloat
 
   Imported courtesy of Shigeo Kobayashi.  Variable precision extension
