@@ -1,3 +1,9 @@
+Fri Apr 19 22:03:40 2002  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* win32/Makefile.sub: add -DNT to $CFLAGS instead of $CPPFLAGS.
+
+	* win32/setup.mak: ditto.
+
 Fri Apr 19 16:22:55 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/socket/extconf.rb: include <windows.h>, <winsock.h> on _WIN32.

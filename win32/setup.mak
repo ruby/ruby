@@ -19,8 +19,8 @@ Makefile:
 	@echo RUBY_INSTALL_NAME = ruby>> $@
 	@echo RUBY_SO_NAME = $(OS)-$$(RUBY_INSTALL_NAME)17>> $@
 	@echo prefix = /usr>> $@
-	@echo CFLAGS = -nologo -MD $$(DEBUGFLAGS) $$(OPTFLAGS) $$(PROCESSOR_FLAG)>> $@
-	@echo CPPFLAGS = -I. -I$$(srcdir) -I$$(srcdir)/missing -DLIBRUBY_SO=\"$$(LIBRUBY_SO)\" -DNT=1>> $@
+	@echo CFLAGS = -nologo -MD -DNT=1 $$(DEBUGFLAGS) $$(OPTFLAGS) $$(PROCESSOR_FLAG)>> $@
+	@echo CPPFLAGS = -I. -I$$(srcdir) -I$$(srcdir)/missing -DLIBRUBY_SO=\"$$(LIBRUBY_SO)\">> $@
 	@echo LDFLAGS = $$(CFLAGS) -Fm>> $@
 	@echo XLDFLAGS = >> $@
 	@echo RFLAGS = -r>> $@
