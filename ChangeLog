@@ -1,3 +1,7 @@
+Sun Oct 31 23:37:00 2004  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* process.c: on NetBSD don't use setruid() and setrgid().
+
 Sun Oct 31 23:12:10 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/maker/*.rb: added RSS Maker.
