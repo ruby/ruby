@@ -314,7 +314,7 @@ remove_method(klass, mid)
 	rb_raise(rb_eSecurityError, "Insecure: can't remove method");
     }
     if (OBJ_FROZEN(klass)) rb_error_frozen("class/module");
-    if (!st_delete(RCLASS(klass)->m_tbl, &mid, &body)) {
+    if (!st_delete(RCLASS(klass)->m_tbl, &mid, &body) || !body->nd_body) {
 	rb_raise(rb_eNameError, "method `%s' not defined in %s",
 		 rb_id2name(mid), rb_class2name(klass));
     }
@@ -3159,17 +3159,28 @@ rb_eval(self, n)
 	{
 	    VALUE klass;
 
-	    klass = rb_eval(self, node->nd_recv);
-	    if (rb_special_const_p(klass)) {
-		rb_raise(rb_eTypeError, "no virtual class for %s",
-			 rb_class2name(CLASS_OF(klass)));
+	    result = rb_eval(self, node->nd_recv);
+	    if (result == Qtrue) {
+		klass = rb_cTrueClass;
 	    }
-	    if (rb_safe_level() >= 4 && !OBJ_TAINTED(klass))
-		rb_raise(rb_eSecurityError, "Insecure: can't extend object");
-	    if (FL_TEST(CLASS_OF(klass), FL_SINGLETON)) {
-		rb_clear_cache();
+	    else if (result == Qfalse) {
+		klass = rb_cTrueClass;
 	    }
-	    klass = rb_singleton_class(klass);
+	    else if (result == Qnil) {
+		klass = rb_cNilClass;
+	    }
+	    else {
+		if (rb_special_const_p(result)) {
+		    rb_raise(rb_eTypeError, "no virtual class for %s",
+			     rb_class2name(CLASS_OF(klass)));
+		}
+		if (rb_safe_level() >= 4 && !OBJ_TAINTED(result))
+		    rb_raise(rb_eSecurityError, "Insecure: can't extend object");
+		if (FL_TEST(CLASS_OF(result), FL_SINGLETON)) {
+		    rb_clear_cache();
+		}
+		klass = rb_singleton_class(result);
+	    }
 	    
 	    if (ruby_wrapper) {
 		rb_extend_object(klass, ruby_wrapper);

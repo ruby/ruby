@@ -1,3 +1,13 @@
+Wed Feb 20 12:41:59 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (rb_any_cmp): should handle Qundef in keys.
+
+	* eval.c (remove_method): should not remove a empty method to
+	  implement "undef".
+
+	* eval.c (rb_eval): should allow singleton class def for
+	  true/false/nil.
+
 Tue Feb 19 22:49:29 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb: remove unused class Accumulator.
@@ -9,6 +19,15 @@ Tue Feb 19 22:49:29 2002  Minero Aoki  <aamine@loveruby.net>
 	  initialized correctly.
 
 	* doc/net/http.rb: modify typo in the description of basic auth.
+
+Tue Feb 19 20:20:12 2002  Ed Sinjiashvili  <edsin@swes.saren.ru>
+
+	* parse.y (str_extend): backslash escape was done wrong.
+
+Tue Feb 19 15:51:41 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* class.c (rb_include_module): should preserve ancestor order in
+	  the included class/module.
 
 Tue Feb 19 14:45:32 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

@@ -69,6 +69,7 @@ rb_any_cmp(a, b)
     if (SYMBOL_P(a) && SYMBOL_P(b)) {
 	return a != b;
     }
+    if (a == Qundef || b == Qundef) return -1;
 
     args[0] = a;
     args[1] = b;
