@@ -22,14 +22,12 @@
 #endif
 
 #ifdef NATINT_PACK
-# define OFF16B(p) ((char*)(p) + (natint?0:(sizeof(short) - SIZE16)))
-# define OFF32B(p) ((char*)(p) + (natint?0:(sizeof(long) - SIZE32)))
 # define NATINT_I32(x) (natint?NUM2LONG(x):(NUM2I32(x)))
 # define NATINT_U32(x) (natint?NUM2ULONG(x):(NUM2U32(x)))
 # define NATINT_LEN(type,len) (natint?sizeof(type):(len))
 # ifdef WORDS_BIGENDIAN
-#   define OFF16(p) OFF16B(p)
-#   define OFF32(p) OFF32B(p)
+#   define OFF16(p) ((char*)(p) + (natint?0:(sizeof(short) - SIZE16)))
+#   define OFF32(p) ((char*)(p) + (natint?0:(sizeof(long) - SIZE32)))
 # endif
 # define NATINT_HTOVS(x) (natint?htovs(x):htov16(x))
 # define NATINT_HTOVL(x) (natint?htovl(x):htov32(x))
@@ -48,11 +46,6 @@
 #ifndef OFF16
 # define OFF16(p) (char*)(p)
 # define OFF32(p) (char*)(p)
-#endif
-
-#ifndef OFF16B
-# define OFF16B(p) (char*)(p)
-# define OFF32B(p) (char*)(p)
 #endif
 
 #define define_swapx(x, xtype)		\
@@ -775,7 +768,7 @@ pack_pack(ary, fmt)
 		    s = NUM2INT(from);
 		}
 		s = NATINT_HTONS(s);
-		rb_str_buf_cat(res, OFF16B(&s), NATINT_LEN(short,2));
+		rb_str_buf_cat(res, OFF16(&s), NATINT_LEN(short,2));
 	    }
 	    break;
 
@@ -789,7 +782,7 @@ pack_pack(ary, fmt)
 		    l = NATINT_U32(from);
 		}
 		l = NATINT_HTONL(l);
-		rb_str_buf_cat(res, OFF32B(&l), NATINT_LEN(long,4));
+		rb_str_buf_cat(res, OFF32(&l), NATINT_LEN(long,4));
 	    }
 	    break;
 
@@ -1654,7 +1647,7 @@ pack_unpack(str, fmt)
 	    PACK_LENGTH_ADJUST(unsigned short,2);
 	    while (len-- > 0) {
 		unsigned short tmp = 0;
-		memcpy(OFF16B(&tmp), s, NATINT_LEN(unsigned short,2));
+		memcpy(OFF16(&tmp), s, NATINT_LEN(unsigned short,2));
 		s += NATINT_LEN(unsigned short,2);
 		rb_ary_push(ary, UINT2NUM(ntohs(tmp)));
 	    }
@@ -1665,7 +1658,7 @@ pack_unpack(str, fmt)
 	    PACK_LENGTH_ADJUST(unsigned long,4);
 	    while (len-- > 0) {
 		unsigned long tmp = 0;
-		memcpy(OFF32B(&tmp), s, NATINT_LEN(unsigned long,4));
+		memcpy(OFF32(&tmp), s, NATINT_LEN(unsigned long,4));
 		s += NATINT_LEN(unsigned long,4);
 		rb_ary_push(ary, ULONG2NUM(ntohl(tmp)));
 	    }

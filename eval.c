@@ -9204,12 +9204,13 @@ rb_thread_join(th, limit)
     if (!NIL_P(th->errinfo) && (th->flags & THREAD_RAISED)) {
 	VALUE oldbt = get_backtrace(th->errinfo);
 	VALUE errat = make_backtrace();
+	VALUE errinfo = rb_obj_dup(th->errinfo);
 
 	if (TYPE(oldbt) == T_ARRAY && RARRAY(oldbt)->len > 0) {
 	    rb_ary_unshift(errat, rb_ary_entry(oldbt, 0));
 	}
-	set_backtrace(th->errinfo, errat);
-	rb_exc_raise(th->errinfo);
+	set_backtrace(errinfo, errat);
+	rb_exc_raise(errinfo);
     }
 
     return Qtrue;

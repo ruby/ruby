@@ -230,8 +230,8 @@ rb_io_check_readable(fptr)
 	!fptr->f2) {
 	io_seek(fptr, 0, SEEK_CUR);
     }
-    fptr->mode |= FMODE_RBUF;
 #endif
+    fptr->mode |= FMODE_RBUF;
 }
 
 void
@@ -247,6 +247,7 @@ rb_io_check_writable(fptr)
 	io_seek(fptr, 0, SEEK_CUR);
     }
 #endif
+    fptr->mode &= ~FMODE_RBUF;
 }
 
 int
@@ -568,6 +569,7 @@ rb_io_eof(io)
 	ungetc(ch, fptr->f);
 	return Qfalse;
     }
+    clearerr(fptr->f);
     return Qtrue;
 }
 
@@ -778,7 +780,6 @@ read_all(fptr, siz, str)
     long bytes = 0;
     long n;
 
-    if (feof(fptr->f)) return Qnil;
     READ_CHECK(fptr->f);
     if (siz == 0) siz = BUFSIZ;
     if (NIL_P(str)) {
@@ -3806,6 +3807,20 @@ argf_to_io()
 }
 
 static VALUE
+argf_eof()
+{
+    if (current_file) {
+	if (init_p == 0) return Qtrue;
+	ARGF_FORWARD();
+	if (rb_io_eof(current_file)) {
+	    next_p = 1;
+	    return Qtrue;
+	}
+    }
+    return Qfalse;
+}
+
+static VALUE
 argf_read(argc, argv)
     int argc;
     VALUE *argv;
@@ -3824,18 +3839,16 @@ argf_read(argc, argv)
     else {
 	tmp = io_read(argc, argv, current_file);
     }
-    if (NIL_P(tmp)) {
+    if (NIL_P(str)) str = tmp;
+    else rb_str_append(str, tmp);
+    if (NIL_P(tmp) || argc == 0) {
 	if (next_p != -1) {
 	    argf_close(current_file);
 	    next_p = 1;
 	    goto retry;
 	}
-	return str;
     }
-    else if (NIL_P(str)) str = tmp;
-    else rb_str_append(str, tmp);
-    if (argc == 0) goto retry;
-    if (argc == 1) {
+    else if (argc == 1) {
 	if (RSTRING(str)->len < len) {
 	    len -= RSTRING(str)->len;
 	    argv[0] = INT2NUM(len);
@@ -3878,20 +3891,6 @@ argf_readchar()
 	rb_eof_error();
     }
     return c;
-}
-
-static VALUE
-argf_eof()
-{
-    if (current_file) {
-	if (init_p == 0) return Qtrue;
-	ARGF_FORWARD();
-	if (rb_io_eof(current_file)) {
-	    next_p = 1;
-	    return Qtrue;
-	}
-    }
-    return Qfalse;
 }
 
 static VALUE

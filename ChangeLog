@@ -1,3 +1,32 @@
+Wed Dec 24 00:56:54 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (read_all): do not return nil at the end of file.
+	  [ruby-dev:22334]
+
+	* io.c (argf_read): do not depend on nil at eof behavior of
+	  IO#read(). 
+
+	* eval.c (rb_thread_join): dup exception before re-raising it.
+
+	* io.c (rb_io_eof): call clearerr() to prevent side effect.  this
+	  patch is supplied by Masahiro Sakai <sakai@tom.sfc.keio.ac.jp>.
+	  [ruby-dev:22234]
+
+	* pack.c (OFF16): get offset for big endian machines.
+
+	* pack.c (pack_pack): use OFF16 instead of OFF16B.
+	  [ruby-dev:22344]
+
+	* pack.c (pack_unpack): ditto.
+
+Tue Dec 23 22:47:14 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_check_readable): set FMODE_RBUF always, even if
+	  NEED_IO_SEEK_BETWEEN_RW is not defined. [ruby-dev:22340]
+
+	* io.c (rb_io_check_writable): clear FMODE_RBUF before writing
+	  something.
+
 Tue Dec 23 22:25:00 2003  Gavin Sinclair <gsinclair@soyabean.com.au>
 
 	* lib/optparse.rb: incomplete RDoc documentation added in place of
@@ -21,9 +50,6 @@ Tue Dec 23 18:09:40 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* pack.c (pack_pack): remove unnecessary negative value check.
 	  [ruby-dev:22329]
-
-	* io.c (rb_io_ungetc): need fflush before ungetc if write buffer
-	  is filled. [ruby-dev:22330]
 
 Tue Dec 23 17:26:55 2003  KONISHI Hiromasa   <konishih@fd6.so-net.ne.jp>
 

@@ -11,7 +11,7 @@ module TestEOF
     }
     open_file("") {|f|
       assert_nil(f.read(1))
-      assert_nil(f.read)
+      assert_equal("", f.read)
       assert_nil(f.read(1))
     }
   end
@@ -20,9 +20,9 @@ module TestEOF
     return unless respond_to? :open_file_rw
     open_file_rw("") {|f|
       assert_equal("", f.read)
-      assert_nil(f.read)
+      assert_equal("", f.read)
       assert_equal(0, f.syswrite(""))
-      assert_nil(f.read)
+      assert_equal("", f.read)
     }
   end
 
@@ -43,19 +43,19 @@ module TestEOF
     open_file("a") {|f|
       assert_equal("a", f.read(2))
       assert_nil(f.read(1))
-      assert_nil(f.read)
+      assert_equal("", f.read)
       assert_nil(f.read(1))
     }
     open_file("a") {|f|
       assert_equal("a", f.read)
       assert_nil(f.read(1))
-      assert_nil(f.read)
+      assert_equal("", f.read)
       assert_nil(f.read(1))
     }
     open_file("a") {|f|
       assert_equal("a", f.read(2))
-      assert_nil(f.read)
-      assert_nil(f.read)
+      assert_equal("", f.read)
+      assert_equal("", f.read)
     }
     open_file("a") {|f|
       assert_equal("a", f.read)
@@ -77,18 +77,18 @@ module TestEOF
         assert_equal("", f.read(0))
         assert_equal("", f.read)
         assert_nil(f.read(0))
-        assert_nil(f.read)
+        assert_equal("", f.read)
       }
     end
 
     def test_eof_1_seek
       open_file_seek("a", 10) {|f|
         assert_equal("", f.read)
-        assert_nil(f.read)
+        assert_equal("", f.read)
       }
       open_file_seek("a", 1) {|f|
         assert_equal("", f.read)
-        assert_nil(f.read)
+        assert_equal("", f.read)
       }
     end
   end
