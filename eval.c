@@ -1193,7 +1193,7 @@ ruby_run()
 
     if (ruby_nerrs > 0) exit(ruby_nerrs);
 
-    Init_stack(&tmp);
+    Init_stack((void*)&tmp);
     PUSH_TAG(PROT_NONE);
     PUSH_ITER(ITER_NOT);
     if ((state = EXEC_TAG()) == 0) {
