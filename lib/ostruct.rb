@@ -52,6 +52,12 @@ class OpenStruct
     end
   end
 
+  # Duplicate an OpenStruct object members. 
+  def initialize_copy(orig)
+    super
+    @table = @table.dup
+  end
+
   def method_missing(mid, *args) # :nodoc:
     mname = mid.id2name
     len = args.length

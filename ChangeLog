@@ -1,3 +1,8 @@
+Fri Feb 20 19:11:20 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/ostruct.rb (OpenStruct#initialize_copy): should not share
+	  members.  [ruby-dev:22966]
+
 Fri Feb 20 18:59:47 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/irb/init.rb (IRB::IRB.parse_opts): add -I option to
