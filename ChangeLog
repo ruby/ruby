@@ -1,6 +1,6 @@
 Fri Feb  8 23:53:08 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
 
-	* win32/config.h.in (inline): renamed from INLINE.
+	* win32/config.h.in (inline): add inline definition.
 
 Thu Feb  8 21:27:24 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
