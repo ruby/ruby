@@ -328,7 +328,9 @@ module Test
               @fault_detail_label = EnhancedLabel.new("")
               style = Gtk::Style.new
               font = Gdk::Font.font_load("-*-Courier New-medium-r-normal--*-120-*-*-*-*-*-*")
-              style.set_font(font)
+              begin
+                style.set_font(font)
+              rescue ArgumentError; end
               @fault_detail_label.set_style(style)
               @fault_detail_label.set_justify(Gtk::JUSTIFY_LEFT)
               @fault_detail_label.set_line_wrap(false)

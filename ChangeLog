@@ -1,3 +1,8 @@
+Tue Nov 11 23:54:00 2003  Nathaniel Talbott  <ntalbott@ruby-lang.org>
+
+	* lib/test/unit/ui/gtk/testrunner.rb: added a rescue clause to handle
+	  the case when the requested font is not available.
+
 Tue Nov 11 22:44:08 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (appendline): file may not end with newline.  a bug if
