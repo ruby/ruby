@@ -1,3 +1,7 @@
+Tue Jul  1 19:02:12 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* parse.y (rb_intern): should use mbclen instead of mblen.
+
 Tue Jul  1 10:36:19 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* class.c (rb_define_class, rb_define_module): also set constant under

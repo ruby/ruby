@@ -5879,8 +5879,8 @@ rb_intern(name)
 	}
 	break;
     }
-    while (*m && is_identchar(*m)) {
-	m += mblen(m, name + last - m + 1);
+    while (m <= name + last && is_identchar(*m)) {
+	m += mbclen(*m);
     }
     if (*m) id = ID_JUNK;
     id |= ++last_id << ID_SCOPE_SHIFT;
