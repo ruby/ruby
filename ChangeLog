@@ -1,3 +1,10 @@
+Wed Sep 11 12:58:57 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* string.c (get_pat): Add an extra argument "quote".
+
+	* string.c (rb_str_match_m): Do not bother to convert if a regexp
+	  is given.
+
 Wed Sep 11 11:33:40 2002  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* bcc32/Makefile.sub: remove unnecessary `.dll' from filename of 

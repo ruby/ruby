@@ -986,17 +986,13 @@ rb_str_match2(str)
     return rb_reg_match2(rb_reg_regcomp(rb_reg_quote(str)));
 }
 
+static VALUE get_pat _((VALUE, int));
+
 static VALUE
 rb_str_match_m(str, re)
     VALUE str, re;
 {
-    VALUE str2 = rb_check_convert_type(re, T_STRING, "String", "to_str");
-
-    if (!NIL_P(str2)) {
-	StringValue(re);
-	re = rb_reg_regcomp(rb_reg_quote(re));
-    }
-    return rb_funcall(re, rb_intern("match"), 1, str);
+    return rb_funcall(get_pat(re, 0), rb_intern("match"), 1, str);
 }
 
 static char
@@ -1380,8 +1376,9 @@ rb_str_slice_bang(argc, argv, str)
 }
 
 static VALUE
-get_pat(pat)
+get_pat(pat, quote)
     VALUE pat;
+    int quote;
 {
     VALUE val;
 
@@ -1399,13 +1396,18 @@ get_pat(pat)
 	}
 	pat = val;
     }
-    val = rb_reg_quote(pat);
+
+    if (quote) {
+	val = rb_reg_quote(pat);
 #if RUBY_VERSION_CODE < 180
-    if (val != pat && rb_str_cmp(val, pat) != 0) {
-	rb_warn("string pattern instead of regexp; metacharacters no longer effective");
-    }
+	if (val != pat && rb_str_cmp(val, pat) != 0) {
+	    rb_warn("string pattern instead of regexp; metacharacters no longer effective");
+	}
 #endif
-    return rb_reg_regcomp(val);
+	pat = val;
+    }
+
+    return rb_reg_regcomp(pat);
 }
 
 static VALUE
@@ -1432,7 +1434,7 @@ rb_str_sub_bang(argc, argv, str)
 	rb_raise(rb_eArgError, "wrong number of arguments(%d for 2)", argc);
     }
 
-    pat = get_pat(argv[0]);
+    pat = get_pat(argv[0], 1);
     if (rb_reg_search(pat, str, 0, 0) >= 0) {
 	rb_str_modify(str);
 	match = rb_backref_get();
@@ -1505,7 +1507,7 @@ str_gsub(argc, argv, str, bang)
 	rb_raise(rb_eArgError, "wrong number of arguments(%d for 2)", argc);
     }
 
-    pat = get_pat(argv[0]);
+    pat = get_pat(argv[0], 1);
     offset=0; n=0; 
     beg = rb_reg_search(pat, str, 0, 0);
     if (beg < 0) {
@@ -2477,7 +2479,7 @@ rb_str_split_m(argc, argv, str)
 	    }
 	}
 	else {
-	    spat = get_pat(spat);
+	    spat = get_pat(spat, 1);
 	}
     }
 
@@ -2928,7 +2930,7 @@ rb_str_scan(str, pat)
     long start = 0;
     VALUE match = Qnil;
 
-    pat = get_pat(pat);
+    pat = get_pat(pat, 1);
     if (!rb_block_given_p()) {
 	VALUE ary = rb_ary_new();
 
