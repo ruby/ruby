@@ -1166,7 +1166,7 @@ window_getbkgd(VALUE obj)
   return CHR2FIX(getbkgd(winp->window));
 }
 #endif /* USE_COLOR */
-#ifdef USE_MOUSE
+#ifdef HAVE_KEYPAD
 static VALUE
 window_keypad(VALUE obj, VALUE val)
 {
@@ -1176,7 +1176,7 @@ window_keypad(VALUE obj, VALUE val)
   return (keypad(winp->window,(val == Qtrue) ? TRUE : FALSE)) == OK ?
     Qtrue : Qfalse;
 };
-#endif /* USE_MOUSE */
+#endif /* HAVE_KEYPAD */
 
 /*------------------------- Initialization -------------------------*/
 void
@@ -1288,8 +1288,10 @@ Init_curses()
     rb_define_method(cWindow, "idlok", window_idlok, 1);
     rb_define_method(cWindow, "setscrreg", window_setscrreg, 2);
     rb_define_method(cWindow, "scrl", window_scrl, 1);
+#ifdef HAVE_KEYPAD
     rb_define_method(cWindow, "keypad", window_keypad, 1);
     rb_define_method(cWindow, "keypad=", window_keypad, 1);
+#endif
 #ifdef USE_COLOR
     rb_define_method(cWindow, "attroff", window_attroff, 1);
     rb_define_method(cWindow, "attron", window_attron, 1);
