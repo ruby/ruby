@@ -2026,7 +2026,7 @@ VpAsgn(Real *c, Real *a, int isw)
             if(c->Prec < a->Prec) {
                VpInternalRound(c,n,(n>0)?a->frac[n-1]:0,a->frac[n]);
             } else {
-                VpLimitRound(c,0);
+               VpLimitRound(c,0);
             }
         }
     } else {
@@ -2589,12 +2589,13 @@ VpMult(Real *c, Real *a, Real *b)
             }
         }
     }
-
-    VpNmlz(c);            /* normalize the result */
     if(w != NULL) {        /* free work variable */
+        VpNmlz(c);
         VpAsgn(w, c, 1);
         VpFree(c);
         c = w;
+    } else {
+        VpLimitRound(c,0);
     }
 
 Exit:
@@ -3821,7 +3822,8 @@ static int
 VpLimitRound(Real *c,U_LONG ixDigit)
 {
     U_LONG ix = VpGetPrecLimit();
-    if(!ix) return 0;
+    if(!VpNmlz(c))    return -1;
+    if(!ix)           return 0;
     if(!ixDigit) ixDigit = c->Prec-1;
     if((ix+BASE_FIG-1)/BASE_FIG > ixDigit+1) return 0;
     return VpLeftRound(c,VpGetRoundMode(),ix);
@@ -3832,7 +3834,6 @@ VpInternalRound(Real *c,int ixDigit,U_LONG vPrev,U_LONG v)
 {
     int f = 0;
 
-    if(!VpNmlz(c))              return;
     if(VpLimitRound(c,ixDigit)) return;
     if(!v)                      return;
 
