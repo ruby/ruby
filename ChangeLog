@@ -1,3 +1,11 @@
+Tue Apr  6 16:46:09 2004  Tanaka Akira  <akr@m17n.org>
+
+	* configure.in: check the size of time_t.
+	  
+	* time.c (time_add): new function.
+	  (time_plus): use time_add.
+	  (time_minus): use time_add.
+
 Tue Apr  6 13:11:48 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/socket.c (raise_socket_error): never return.

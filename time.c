@@ -1257,6 +1257,57 @@ time_to_s(time)
     return rb_str_new(buf, len);
 }
 
+#if SIZEOF_TIME_T == SIZEOF_LONG
+typedef unsigned long unsigned_time_t;
+#elif SIZEOF_TIME_T == SIZEOF_LONG_LONG
+typedef unsigned long long unsigned_time_t;
+#else
+# error cannot find integer type which size is same as time_t.
+#endif
+
+static VALUE
+time_add(tobj, offset, sign)
+    struct time_object *tobj;
+    VALUE offset;
+    int sign;
+{
+    double v = NUM2DBL(offset);
+    double f, d;
+    unsigned_time_t sec_off;
+    time_t usec_off, sec, usec;
+    VALUE result;
+
+    if (v < 0) {
+        v = -v;
+        sign = -sign;
+    }
+    d = modf(v, &f);
+    sec_off = (unsigned_time_t)f;
+    if (f != (double)sec_off)
+        rb_raise(rb_eRangeError, "time %s %f out of Time range",
+            sign < 0 ? "-" : "+", v);
+    usec_off = (time_t)(d*1e6);
+
+    if (sign < 0) {
+        sec = tobj->tv.tv_sec - sec_off;
+        usec = tobj->tv.tv_usec - usec_off;
+        if (sec > tobj->tv.tv_sec)
+            rb_raise(rb_eRangeError, "time - %f out of Time range", v);
+    }
+    else {
+        sec = tobj->tv.tv_sec + sec_off;
+        usec = tobj->tv.tv_usec + usec_off;
+        if (sec < tobj->tv.tv_sec)
+            rb_raise(rb_eRangeError, "time + %f out of Time range", v);
+    }
+    result = rb_time_new(sec, usec);
+    if (tobj->gmt) {
+	GetTimeval(result, tobj);
+	tobj->gmt = 1;
+    }
+    return result;
+}
+
 /*
  *  call-seq:
  *     time + numeric => time
@@ -1273,42 +1324,12 @@ time_plus(time1, time2)
     VALUE time1, time2;
 {
     struct time_object *tobj;
-    time_t sec, usec;
-    double f, d, v;
-    int sign;
-
     GetTimeval(time1, tobj);
 
     if (TYPE(time2) == T_DATA && RDATA(time2)->dfree == time_free) {
 	rb_raise(rb_eTypeError, "time + time?");
     }
-    v = NUM2DBL(time2);
-    d = modf(v, &f);
-    sign = (f < 0 ? -1 : 1);
-    f *= sign;
-    sec = (time_t)f;
-    if (f != (double)sec) {
-	rb_raise(rb_eRangeError, "time + %f out of Time range", v);
-    }
-#ifndef NEGATIVE_TIME_T
-    if (sign < 0 && f >= tobj->tv.tv_sec) {
-	rb_raise(rb_eArgError, "time must be positive");
-    }
-#endif
-    usec = tobj->tv.tv_usec + (time_t)(d*1e6);
-    sec = (sign > 0 ? tobj->tv.tv_sec + sec :  tobj->tv.tv_sec - sec);
-#ifdef NEGATIVE_TIME_T
-    if ((tobj->tv.tv_sec >= 0 && sign >= 0 && sec < 0) ||
-	(tobj->tv.tv_sec <= 0 && sign <= 0 && sec > 0)) {
-	rb_raise(rb_eRangeError, "time + %f out of Time range", v);
-    }
-#endif
-    time2 = rb_time_new(sec, usec);
-    if (tobj->gmt) {
-	GetTimeval(time2, tobj);
-	tobj->gmt = 1;
-    }
-    return time2;
+    return time_add(tobj, time2, 1);
 }
 
 /*
@@ -1331,13 +1352,11 @@ time_minus(time1, time2)
     VALUE time1, time2;
 {
     struct time_object *tobj;
-    time_t sec, usec;
-    double f, d, v;
-    int sign;
 
     GetTimeval(time1, tobj);
     if (TYPE(time2) == T_DATA && RDATA(time2)->dfree == time_free) {
 	struct time_object *tobj2;
+        double f;
 
 	GetTimeval(time2, tobj2);
 	f = (double)tobj->tv.tv_sec - (double)tobj2->tv.tv_sec;
@@ -1346,34 +1365,7 @@ time_minus(time1, time2)
 
 	return rb_float_new(f);
     }
-    v = NUM2DBL(time2);
-    d = modf(v, &f);
-    sign = (f < 0 ? -1 : 1);
-    f *= sign;
-    sec = (time_t)f;
-    if (f != (double)sec) {
-	rb_raise(rb_eRangeError, "time - %f out of Time range", v);
-    }
-#ifndef NEGATIVE_TIME_T
-    if (sign > 0 && f >= tobj->tv.tv_sec) {
-	rb_raise(rb_eArgError, "time must be positive");
-    }
-#endif
-    usec = tobj->tv.tv_usec - (time_t)(d*1e6);
-    sec = (sign > 0 ? tobj->tv.tv_sec - sec :  tobj->tv.tv_sec + sec);
-#ifdef NEGATIVE_TIME_T
-    if ((tobj->tv.tv_sec <= 0 && sign >= 0 && sec > 0) ||
-	(tobj->tv.tv_sec >= 0 && sign <= 0 && sec < 0)) {
-	rb_raise(rb_eRangeError, "time - %f out of Time range", v);
-    }
-#endif
-
-    time2 = rb_time_new(sec, usec);
-    if (tobj->gmt) {
-	GetTimeval(time2, tobj);
-	tobj->gmt = 1;
-    }
-    return time2;
+    return time_add(tobj, time2, -1);
 }
 
 /*

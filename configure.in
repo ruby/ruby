@@ -207,6 +207,7 @@ AC_CHECK_SIZEOF(off_t, 0)
 AC_CHECK_SIZEOF(void*, 4)
 AC_CHECK_SIZEOF(float, 4)
 AC_CHECK_SIZEOF(double, 8)
+AC_CHECK_SIZEOF(time_t, 0)
 
 AC_CACHE_CHECK(for prototypes, rb_cv_have_prototypes,
   [AC_TRY_COMPILE([int foo(int x) { return 0; }], [return foo(10);],
