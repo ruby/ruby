@@ -13,31 +13,36 @@ require "webrick/config"
 require "stringio"
 
 module WEBrick
-  module Config
-    CGI = HTTP.dup.update(
-      :ServerSoftware => ENV["SERVER_SOFTWARE"],
-      :RunOnCGI       => true,   # to detect if it runs on CGI.
-      :NPH            => false   # set true to run as NPH script.
-    )
-  end
-
   class CGI
-    def initialize(*args)
-      config = args.shift || Hash.new
-      @config = default_config.dup.update(config)
-      @logger = @config[:Logger] || WEBrick::Log.new($stderr)
-      @options = args
-    end
+    CGIError = Class.new(StandardError)
 
-    def default_config
-      WEBrick::Config::CGI
+    def initialize(*args)
+      if defined?(MOD_RUBY)
+        unless ENV.has_key?("GATEWAY_INTERFACE")
+          Apache.request.setup_cgi_env
+        end
+      end
+      if %r{HTTP/(\d+\.\d+)} =~ ENV["SERVER_PROTOCOL"]
+        httpv = $1
+      end
+      @config = WEBrick::Config::HTTP.dup.update(
+        :ServerSoftware => ENV["SERVER_SOFTWARE"],
+        :HTTPVersion    => HTTPVersion.new(httpv || "1.0"),
+        :RunOnCGI       => true,   # to detect if it runs on CGI.
+        :NPH            => false   # set true to run as NPH script.
+      )
+      if config = args.shift
+        @config.update(config)
+      end
+      @logger = @config[:Logger]
+      @options = args
     end
 
     def start(env=ENV, stdin=$stdin, stdout=$stdout)
       sock = WEBrick::CGI::Socket.new(@config, env, stdin, stdout)
       req = HTTPRequest.new(@config)
       res = HTTPResponse.new(@config)
-      unless @config[:NPH]
+      unless @config[:NPH] or defined?(MOD_RUBY)
         def res.setup_header
           @header["status"] ||= @status
           super
@@ -69,7 +74,29 @@ module WEBrick
         res.set_error(ex, true)
       ensure
         req.fixup
-        res.send_response(sock)
+        if defined?(MOD_RUBY)
+          res.setup_header
+          Apache.request.status_line = "#{res.status} #{res.reason_phrase}"
+          Apache.request.status = res.status
+          table = Apache.request.headers_out
+          res.header.each{|key, val|
+            case key
+            when /^content-encoding$/i
+              Apache::request.content_encoding = val
+            when /^content-type$/i
+              Apache::request.content_type = val
+            else
+              table[key] = val.to_s
+            end
+          }
+          res.cookies.each{|cookie|
+            table.add("Set-Cookie", cookie.to_s)
+          }
+          Apache.request.send_http_header
+          res.send_body(sock)
+        else
+          res.send_response(sock)
+        end
       end
     end
 
@@ -89,6 +116,7 @@ module WEBrick
       private
   
       def initialize(config, env, stdin, stdout)
+        @config = config
         @env = env
         @header_part = StringIO.new
         @body_part = stdin
@@ -102,36 +130,46 @@ module WEBrick
         @remote_port = @env["REMOTE_PORT"] || 0
 
         begin
+          @header_part << request_line << CRLF
           setup_header
+          @header_part << CRLF
+          @header_part.rewind
         rescue Exception => ex
-          raise Errno::EPIPE, "invalid CGI environment"
+          raise CGIError, "invalid CGI environment"
         end
-        @header_part << CRLF
-        @header_part.rewind
+      end
+
+      def request_line
+        meth = @env["REQUEST_METHOD"]
+        url = @env["SCRIPT_NAME"].dup
+        if path_info = @env["PATH_INFO"]
+          url << path_info
+        end
+        if query_string = @env["QUERY_STRING"]
+          unless query_string.empty?
+            url << "?" << query_string
+          end
+        end
+        # we cannot get real HTTP version of client ;)
+        httpv = @config[:HTTPVersion]
+        "#{meth} #{url} HTTP/#{httpv}"
       end
   
       def setup_header
-        req_line = ""
-        req_line << @env["REQUEST_METHOD"] << " "
-        req_line << @env["SCRIPT_NAME"]
-        req_line << @env["PATH_INFO"] if @env["PATH_INFO"]
-        if @env["QUERY_STRING"]
-          req_line << "?" << @env["QUERY_STRING"]
-        end
-        req_line << " " << @env["SERVER_PROTOCOL"]
-        @header_part << req_line << CRLF
         add_header("CONTENT_TYPE", "Content-Type")
         add_header("CONTENT_LENGTH", "Content-length")
-        @env.each_key do |name|
+        @env.each_key{|name|
           if /^HTTP_(.*)/ =~ name
             add_header(name, $1.gsub(/_/, "-"))
           end
-        end
+        }
       end
   
       def add_header(envname, hdrname)
-        if @env[envname] && !@env[envname].empty?
-          @header_part << hdrname << ": " << @env[envname] << CRLF
+        if value = @env[envname]
+          unless value.empty?
+            @header_part << hdrname << ": " << value << CRLF
+          end
         end
       end
 
@@ -166,18 +204,21 @@ module WEBrick
       end
 
       def cert
+        return nil unless defined?(OpenSSL)
         if pem = @env["SSL_SERVER_CERT"]
           OpenSSL::X509::Certificate.new(pem) unless pem.empty?
         end
       end
 
       def peer_cert
+        return nil unless defined?(OpenSSL)
         if pem = @env["SSL_CLIENT_CERT"]
           OpenSSL::X509::Certificate.new(pem) unless pem.empty?
         end
       end
 
       def peer_cert_chain
+        return nil unless defined?(OpenSSL)
         if @env["SSL_CLIENT_CERT_CHAIN_0"]
           keys = @env.keys
           certs = keys.sort.collect{|k|
@@ -192,8 +233,13 @@ module WEBrick
       end
 
       def cipher
+        return nil unless defined?(OpenSSL)
         if cipher = @env["SSL_CIPHER"]
-          [ cipher ]
+          ret = [ cipher ]
+          ret << @env["SSL_PROTOCOL"]
+          ret << @env["SSL_CIPHER_USEKEYSIZE"]
+          ret << @env["SSL_CIPHER_ALGKEYSIZE"]
+          ret
         end
       end
     end

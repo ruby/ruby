@@ -1,3 +1,19 @@
+Tue Dec 23 06:10:31 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/cgi.rb (CGI): add support for mod_ruby.
+
+	* lib/webrick/cgi.rb (CGI::Socket): add check for existence of
+	  OpenSSL module in all HTTPS related methods.
+
+	* lib/webrick/cgi.rb (CGI::Socket#cipher): should create similar
+	  value to OpenSSL::SSLSocket#cipher.
+
+	* lib/webrick/httpresponse.rb (HTTPResponse#setup_header): should
+	  set "connection: close" if @keep_alive is false.
+
+	* lib/webrick/https.rb (HTTPrequest#meta_vars): add supprt for
+	  SSL_PROTOCOL, SSL_CIPHER_USEKEYSIZE and SSL_CIPHER_ALGKEYSIZE.
+
 Mon Dec 22 23:00:05 2003  akira yamada  <akira@ruby-lang.org>
 
 	* lib/uri/generic.rb (URI::Generic::check_opaque): fixed typo.

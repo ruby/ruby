@@ -132,11 +132,12 @@ module WEBrick
       # Keep-Alive connection.
       if @header['connection'] == "close"
          @keep_alive = false
-      end
-      if keep_alive?
+      elsif keep_alive?
         if chunked? || @header['content-length']
           @header['connection'] = "Keep-Alive"
         end
+      else
+        @header['connection'] = "close"
       end
 
       # Location is a single absoluteURI.

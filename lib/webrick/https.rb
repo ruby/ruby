@@ -53,6 +53,9 @@ module WEBrick
           }
         end
         meta["SSL_CIPHER"] = @cipher[0]
+        meta["SSL_PROTOCOL"] = @cipher[1]
+        meta["SSL_CIPHER_USEKEYSIZE"] = @cipher[2].to_s
+        meta["SSL_CIPHER_ALGKEYSIZE"] = @cipher[3].to_s
       end
       meta
     end
