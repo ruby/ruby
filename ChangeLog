@@ -1,6 +1,6 @@
 Fri Jan 16 14:56:49 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* eavl.c (proc_eq): compare also arguments and environment.
+	* eval.c (proc_eq): compare also arguments and environment.
 	  [ruby-dev:22590]
 
 Fri Jan 16 14:33:35 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
