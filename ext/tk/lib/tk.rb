@@ -2706,6 +2706,9 @@ class TkWindow<TkObject
     end
 
     case opt
+    when 'set', :set
+      tk_call_without_enc('grab', 'set', path)
+      return self
     when 'global', :global
       #return(tk_call('grab', 'set', '-global', path))
       tk_call_without_enc('grab', 'set', '-global', path)
@@ -2719,22 +2722,26 @@ class TkWindow<TkObject
     when 'status', :status
       return tk_call_without_enc('grab', 'status', path)
     else
-      return tk_call_without_enc('grab', args[0], path)
+      return tk_call_without_enc('grab', opt, path)
     end
   end
 
   def grab_current
     grab('current')
   end
+  alias current_grab grab_current
   def grab_release
     grab('release')
   end
+  alias release_grab grab_release
   def grab_set
     grab('set')
   end
+  alias set_grab grab_set
   def grab_set_global
     grab('global')
   end
+  alias set_global_grab grab_set_global
   def grab_status
     grab('status')
   end
