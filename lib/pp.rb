@@ -1,150 +1,47 @@
-# $Id$
-
-=begin
-= Pretty-printer for Ruby objects.
-
-== Which seems better?
-
-non-pretty-printed output by (({p})) is:
-  #<PP:0x81fedf0 @genspace=#<Proc:0x81feda0>, @group_queue=#<PrettyPrint::GroupQueue:0x81fed3c @queue=[[#<PrettyPrint::Group:0x81fed78 @breakables=[], @depth=0, @break=false>], []]>, @buffer=[], @newline="\n", @group_stack=[#<PrettyPrint::Group:0x81fed78 @breakables=[], @depth=0, @break=false>], @buffer_width=0, @indent=0, @maxwidth=79, @output_width=2, @output=#<IO:0x8114ee4>>
-
-pretty-printed output by (({pp})) is:
-  #<PP:0x81fedf0
-   @buffer=[],
-   @buffer_width=0,
-   @genspace=#<Proc:0x81feda0>,
-   @group_queue=
-    #<PrettyPrint::GroupQueue:0x81fed3c
-     @queue=
-      [[#<PrettyPrint::Group:0x81fed78 @break=false, @breakables=[], @depth=0>],
-       []]>,
-   @group_stack=
-    [#<PrettyPrint::Group:0x81fed78 @break=false, @breakables=[], @depth=0>],
-   @indent=0,
-   @maxwidth=79,
-   @newline="\n",
-   @output=#<IO:0x8114ee4>,
-   @output_width=2>
-
-I like the latter.  If you do too, this library is for you.
-
-== Usage
-
-: pp(obj)
-    output ((|obj|)) to (({$>})) in pretty printed format.
-
-    It returns (({nil})).
-
-== Output Customization
-To define your customized pretty printing function for your classes,
-redefine a method (({pretty_print(((|pp|)))})) in the class.
-It takes an argument ((|pp|)) which is an instance of the class ((<PP>)).
-The method should use PP#text, PP#breakable, PP#nest, PP#group and
-PP#pp to print the object.
-
-= PP
-== super class
-((<PrettyPrint>))
-
-== class methods
---- PP.pp(obj[, out[, width]])
-    outputs ((|obj|)) to ((|out|)) in pretty printed format of
-    ((|width|)) columns in width.
-
-    If ((|out|)) is omitted, (({$>})) is assumed.
-    If ((|width|)) is omitted, 79 is assumed.
-
-    PP.pp returns ((|out|)).
-
---- PP.singleline_pp(obj[, out])
-    outputs ((|obj|)) to ((|out|)) like (({PP.pp})) but with no indent and
-    newline.
-
-    PP.singleline_pp returns ((|out|)).
-
---- PP.sharing_detection
-    returns the sharing detection flag as a boolean value.
-    It is false by default.
-
---- PP.sharing_detection = boolean_value
-    sets the sharing detection flag.
-
-== methods
---- pp(obj)
-    adds ((|obj|)) to the pretty printing buffer
-    using Object#pretty_print or Object#pretty_print_cycle.
-
-    Object#pretty_print_cycle is used when ((|obj|)) is already
-    printed, a.k.a the object reference chain has a cycle.
-
---- object_group(obj) { ... }
-    is a convenience method which is same as follows:
-
-      group(1, '#<' + obj.class.name, '>') { ... }
-
---- comma_breakable
-    is a convenience method which is same as follows:
-
-      text ','
-      breakable
-
---- seplist(list[, separator_proc[, iter_method]]) {|elt| ... }
-    adds a separated list.
-    The list is separated by comma with breakable space, by default.
-
-    seplist iterates the ((|list|)) using ((|iter_method|)).
-    It yields each object to the block given for seplist.
-    The procedure ((|separator_proc|)) is called between each yields.
-
-    If the iteration is zero times, ((|separator_proc|)) is not called at all.
-
-    If ((|separator_proc|)) is nil or not given,
-    (({lambda { comma_breakable }})) is used.
-    If ((|iter_method|)) is not given, (({:each})) is used.
-
-    For example, following 3 code fragments has similar effect.
-
-      q.seplist([1,2,3]) {|v| xxx v }
-
-      q.seplist([1,2,3], lambda { comma_breakable }, :each) {|v| xxx v }
-
-      xxx 1
-      q.comma_breakable
-      xxx 2
-      q.comma_breakable
-      xxx 3
-
-= Object
---- pretty_print(pp)
-    is a default pretty printing method for general objects.
-    It calls (({pretty_print_instance_variables})) to list instance variables.
-
-    If (({self})) has a customized (redefined) (({inspect})) method,
-    the result of (({self.inspect})) is used but it obviously has no
-    line break hints.
-
-    This module provides predefined pretty_print() methods for some of
-    the most commonly used built-in classes for convenience.
-
---- pretty_print_cycle(pp)
-    is a default pretty printing method for general objects that are
-    detected as part of a cycle.
-
---- pretty_print_instance_variables
-    returns a sorted array of instance variable names.
-
-    This method should return an array of names of instance variables as symbols or strings as:
-    (({[:@a, :@b]})).
-
---- pretty_print_inspect
-    is (({inspect})) implementation using (({pretty_print})).
-    If you implement (({pretty_print})), it can be used as follows.
-
-      alias inspect pretty_print_inspect
-
-== AUTHOR
-Tanaka Akira <akr@m17n.org>
-=end
+# == Pretty-printer for Ruby objects.
+# 
+# = Which seems better?
+# 
+# non-pretty-printed output by #p is:
+#   #<PP:0x81fedf0 @genspace=#<Proc:0x81feda0>, @group_queue=#<PrettyPrint::GroupQueue:0x81fed3c @queue=[[#<PrettyPrint::Group:0x81fed78 @breakables=[], @depth=0, @break=false>], []]>, @buffer=[], @newline="\n", @group_stack=[#<PrettyPrint::Group:0x81fed78 @breakables=[], @depth=0, @break=false>], @buffer_width=0, @indent=0, @maxwidth=79, @output_width=2, @output=#<IO:0x8114ee4>>
+# 
+# pretty-printed output by #pp is:
+#   #<PP:0x81fedf0
+#    @buffer=[],
+#    @buffer_width=0,
+#    @genspace=#<Proc:0x81feda0>,
+#    @group_queue=
+#     #<PrettyPrint::GroupQueue:0x81fed3c
+#      @queue=
+#       [[#<PrettyPrint::Group:0x81fed78 @break=false, @breakables=[], @depth=0>],
+#        []]>,
+#    @group_stack=
+#     [#<PrettyPrint::Group:0x81fed78 @break=false, @breakables=[], @depth=0>],
+#    @indent=0,
+#    @maxwidth=79,
+#    @newline="\n",
+#    @output=#<IO:0x8114ee4>,
+#    @output_width=2>
+# 
+# I like the latter.  If you do too, this library is for you.
+# 
+# = Usage
+# 
+#   pp(obj)
+#
+# output +obj+ to +$>+ in pretty printed format.
+# 
+# It returns +nil+.
+# 
+# = Output Customization
+# To define your customized pretty printing function for your classes,
+# redefine a method #pretty_print(+pp+) in the class.
+# It takes an argument +pp+ which is an instance of the class PP.
+# The method should use PP#text, PP#breakable, PP#nest, PP#group and
+# PP#pp to print the object.
+#
+# = Author
+# Tanaka Akira <akr@m17n.org>
 
 require 'prettyprint'
 
@@ -160,6 +57,13 @@ module Kernel
 end
 
 class PP < PrettyPrint
+  # Outputs +obj+ to +out+ in pretty printed format of
+  # +width+ columns in width.
+  # 
+  # If +out+ is omitted, +$>+ is assumed.
+  # If +width+ is omitted, 79 is assumed.
+  # 
+  # PP.pp returns +out+.
   def PP.pp(obj, out=$>, width=79)
     q = PP.new(out, width)
     q.guard_inspect_key {q.pp obj}
@@ -168,6 +72,10 @@ class PP < PrettyPrint
     out << "\n"
   end
 
+  # Outputs +obj+ to +out+ like PP.pp but with no indent and
+  # newline.
+  # 
+  # PP.singleline_pp returns +out+.
   def PP.singleline_pp(obj, out=$>)
     q = SingleLine.new(out)
     q.guard_inspect_key {q.pp obj}
@@ -177,6 +85,8 @@ class PP < PrettyPrint
 
   @sharing_detection = false
   class << self
+    # Returns the sharing detection flag as a boolean value.
+    # It is false by default.
     attr_accessor :sharing_detection
   end
 
@@ -198,6 +108,11 @@ class PP < PrettyPrint
       end
     end
 
+    # Adds +obj+ to the pretty printing buffer
+    # using Object#pretty_print or Object#pretty_print_cycle.
+    # 
+    # Object#pretty_print_cycle is used when +obj+ is already
+    # printed, a.k.a the object reference chain has a cycle.
     def pp(obj)
       id = obj.__id__
 
@@ -214,7 +129,10 @@ class PP < PrettyPrint
       end
     end
 
-    def object_group(obj, &block)
+    # A convenience method which is same as follows:
+    # 
+    #   group(1, '#<' + obj.class.name, '>') { ... }
+    def object_group(obj, &block) # :yield:
       group(1, '#<' + obj.class.name, '>', &block)
     end
 
@@ -224,12 +142,40 @@ class PP < PrettyPrint
       group(1, "\#<#{obj.class}:0x#{id}", '>', &block)
     end
 
+    # A convenience method which is same as follows:
+    # 
+    #   text ','
+    #   breakable
     def comma_breakable
       text ','
       breakable
     end
 
-    def seplist(list, sep=nil, iter_method=:each)
+    # Adds a separated list.
+    # The list is separated by comma with breakable space, by default.
+    # 
+    # #seplist iterates the +list+ using +iter_method+.
+    # It yields each object to the block given for #seplist.
+    # The procedure +separator_proc+ is called between each yields.
+    # 
+    # If the iteration is zero times, +separator_proc+ is not called at all.
+    # 
+    # If +separator_proc+ is nil or not given,
+    # +lambda { comma_breakable }+ is used.
+    # If +iter_method+ is not given, :each is used.
+    # 
+    # For example, following 3 code fragments has similar effect.
+    # 
+    #   q.seplist([1,2,3]) {|v| xxx v }
+    # 
+    #   q.seplist([1,2,3], lambda { comma_breakable }, :each) {|v| xxx v }
+    # 
+    #   xxx 1
+    #   q.comma_breakable
+    #   xxx 2
+    #   q.comma_breakable
+    #   xxx 3
+    def seplist(list, sep=nil, iter_method=:each) # :yield: element
       sep ||= lambda { comma_breakable }
       first = true
       list.__send__(iter_method) {|*v|
@@ -285,6 +231,15 @@ class PP < PrettyPrint
     # 3. specific to_s if instance variable is empty
     # 4. generic pretty_print
 
+    # A default pretty printing method for general objects.
+    # It calls #pretty_print_instance_variables to list instance variables.
+    # 
+    # If +self+ has a customized (redefined) #inspect method,
+    # the result of self.inspect is used but it obviously has no
+    # line break hints.
+    # 
+    # This module provides predefined #pretty_print methods for some of
+    # the most commonly used built-in classes for convenience.
     def pretty_print(q)
       if /\(Kernel\)#/ !~ method(:inspect).inspect
         q.text self.inspect
@@ -295,6 +250,8 @@ class PP < PrettyPrint
       end
     end
 
+    # A default pretty printing method for general objects that are
+    # detected as part of a cycle.
     def pretty_print_cycle(q)
       q.object_address_group(self) {
         q.breakable
@@ -302,10 +259,21 @@ class PP < PrettyPrint
       }
     end
 
+    # Returns a sorted array of instance variable names.
+    # 
+    # This method should return an array of names of instance variables as symbols or strings as:
+    # +[:@a, :@b]+.
     def pretty_print_instance_variables
       instance_variables.sort
     end
 
+    # Is #inspect implementation using #pretty_print.
+    # If you implement #pretty_print, it can be used as follows.
+    # 
+    #   alias inspect pretty_print_inspect
+    #
+    # However, doing this requires that every class that #inspect is called on
+    # implement #pretty_print, or a RuntimeError will be raised.
     def pretty_print_inspect
       if /\(PP::ObjectMixin\)#/ =~ method(:pretty_print).inspect
         raise "pretty_print is not overridden."
@@ -488,6 +456,7 @@ end
   }
 }
 
+# :enddoc:
 if __FILE__ == $0
   require 'test/unit'
 
