@@ -3300,9 +3300,13 @@ yylex()
 		    rb_warn("invalid character syntax; use ?\\%c", c);
 		}
 	    }
+	  ternary:
 	    pushback(c);
 	    lex_state = EXPR_BEG;
 	    return '?';
+	}
+	if ((ISALNUM(c) || c == '_') && lex_p < lex_pend && is_identchar(*lex_p)) {
+	    goto ternary;
 	}
 	else if (c == '\\') {
 	    c = read_escape();

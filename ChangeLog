@@ -1,4 +1,7 @@
-Wed Jun 19 00:39:52 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+Wed Jun 19 00:50:50 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* parse.y (yylex): ? followed by successive word charaters is
+	  ternary operator not numeric literal.
 
 	* parse.y (yylex): commands after break/next/rescue can take
 	  arguments.  (ruby-bugs-ja:PR#265)
