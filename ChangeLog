@@ -1,3 +1,11 @@
+Thu Sep 26 22:44:21 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/digest.c (rb_digest_base_s_digest): Fix a double
+	  free() bug mingled with allocation framework deployment.
+
+	* ext/digest/digest.c (rb_digest_base_s_hexdigest): Get rid of
+	  redundant struct allocation.
+
 Wed Sep 25 23:51:29 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* dir.c (glob_helper): must not closedir() when exception raised

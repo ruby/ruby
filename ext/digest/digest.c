@@ -105,7 +105,6 @@ rb_digest_base_s_digest(klass, str)
     obj = rb_str_new(digest, len);
 
     free(digest);
-    free(pctx);
 
     return obj;
 }
@@ -121,11 +120,10 @@ rb_digest_base_s_hexdigest(klass, str)
     unsigned char *hexdigest;
     VALUE obj = rb_digest_base_alloc(klass);
 
-    StringValue(str);
     algo = get_digest_base_metadata(klass);
+    Data_Get_Struct(obj, void, pctx);
 
-    pctx = xmalloc(algo->ctx_size);
-    algo->init_func(pctx);
+    StringValue(str);
     algo->update_func(pctx, RSTRING(str)->ptr, RSTRING(str)->len);
 
     len = algo->digest_len * 2;
@@ -136,7 +134,6 @@ rb_digest_base_s_hexdigest(klass, str)
     obj = rb_str_new(hexdigest, len);
 
     free(hexdigest);
-    free(pctx);
 
     return obj;
 }
