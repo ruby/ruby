@@ -1,3 +1,8 @@
+Tue Jul 25 19:03:04 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* cygwin/GNUmakefile: use puts instead of print, because
+	  Cygwin DLL's behavior is changed.
+
 Tue Jul 25 15:16:00 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* io.c (rb_p): redirect to $defout.

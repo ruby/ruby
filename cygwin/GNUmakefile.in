@@ -32,4 +32,4 @@ $(DLL): $(OBJS) dmyext.@OBJEXT@ $(RUBYDEF)
 $(RUBYDEF): $(OBJS) dmyext.@OBJEXT@
 	echo EXPORTS > $(RUBYDEF)
 	@NM@ --extern-only --defined-only $(OBJS) dmyext.@OBJEXT@ | \
-	  @MINIRUBY@ -ne 'print $$1, "\n" if / [CDT] _(.*)$$/' >> $(RUBYDEF)
+	  @MINIRUBY@ -ne 'puts $$1 if / [CDT] _(.*)$$/' >> $(RUBYDEF)
