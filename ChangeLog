@@ -1,3 +1,14 @@
+Fri May 14 18:37:49 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/canvas.rb: improve coords support for canvas
+	  items. Now, supports all of the followings. 
+	       TkcLine.new(c, 0, 0, 100, 100, :fill=>'red')
+	       TkcLine.new(c, [0, 0, 100, 100], :fill=>'red')
+	       TkcLine.new(c, [0, 0], [100, 100], :fill=>'red')
+	       TkcLine.new(c, [[0, 0], [100, 100]], :fill=>'red')
+	       TkcLine.new(c, :coords=>[0, 0, 100, 100], :fill=>'red')
+	       TkcLine.new(c, :coords=>[[0, 0], [100, 100]], :fill=>'red')
+
 Fri May 14 13:30:39  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* test/ruby/test_float.rb: Add test for util.c revision 1.42.

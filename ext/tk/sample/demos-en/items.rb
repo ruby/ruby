@@ -184,7 +184,7 @@ TkcText.new(cvs, '22.5c', '9c', 'anchor'=>'n', 'font'=>font1, 'width'=>'4c',
 	    'text'=>'A short string of text, word-wrapped, justified left, and anchored north (at the top).  The rectangles show the anchor points for each piece of text.', 'tags'=>$tag_item )
 TkcRectangle.new(cvs, '25.4c','10.9c','25.6c','11.1c')
 TkcText.new(cvs, '25.5c', '11c', 'anchor'=>'w', 'font'=>font1, 'fill'=>blue, 
-	    'text'=>'Several lines,\n each centered\nindividually,\nand all anchored\nat the left edge.', 'justify'=>'center', 'tags'=>$tag_item )
+	    'text'=>"Several lines,\n each centered\nindividually,\nand all anchored\nat the left edge.", 'justify'=>'center', 'tags'=>$tag_item )
 TkcRectangle.new(cvs, '24.9c','13.9c','25.1c','14.1c')
 if $tk_version =~ /^4\.[01]/
   TkcText.new(cvs, '25c', '14c', 'anchor'=>'c', 'font'=>font2, 'fill'=>red, 

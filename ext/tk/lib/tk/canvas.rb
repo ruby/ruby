@@ -60,12 +60,9 @@ class TkCanvas<TkWindow
   private :tagid
 
 
+  # create a canvas item without creating a TkcItem object
   def create(type, *args)
-    # create a canvas item without creating a TkcItem object
-    if type.kind_of?(TkcItem)
-      fail ArgumentError, 'TkcItem class expected for 1st argument'
-    end
-    type.create(@path, *args)
+    type.create(self, *args)
   end
 
 
@@ -252,6 +249,9 @@ class TkCanvas<TkWindow
   def itemconfigure(tagOrId, key, value=None)
     if key.kind_of? Hash
       key = _symbolkey2str(key)
+      coords = key.delete('coords')
+      self.coords(tagOrId, coords) if coords
+
       if ( key['font'] || key['kanjifont'] \
 	  || key['latinfont'] || key['asciifont'] )
 	tagfont_configure(tagid(tagOrId), key.dup)
@@ -261,10 +261,12 @@ class TkCanvas<TkWindow
       end
 
     else
-      if ( key == 'font' || key == :font || 
-           key == 'kanjifont' || key == :kanjifont || 
-	   key == 'latinfont' || key == :latinfont || 
-           key == 'asciifont' || key == :asciifont )
+      if ( key == 'coords' || key == :coords )
+	self.coords(tagOrId, value)
+      elsif ( key == 'font' || key == :font || 
+	      key == 'kanjifont' || key == :kanjifont || 
+	      key == 'latinfont' || key == :latinfont || 
+	      key == 'asciifont' || key == :asciifont )
 	if value == None
 	  tagfontobj(tagid(tagOrId))
 	else
@@ -292,6 +294,8 @@ class TkCanvas<TkWindow
     if TkComm::GET_CONFIGINFO_AS_ARRAY
       if key
 	case key.to_s
+	when 'coords'
+	  return ['coords', '', '', '', self.coords(tagOrId)]
 	when 'dash', 'activedash', 'disableddash'
 	  conf = tk_split_simplelist(tk_send_without_enc('itemconfigure', tagid(tagOrId), "-#{key}"))
 	  if conf[3] && conf[3] =~ /^[0-9]/
@@ -342,18 +346,21 @@ class TkCanvas<TkWindow
 	  conf[1] = conf[1][1..-1] if conf.size == 2 # alias info
 	  conf
 	}
+
 	fontconf = ret.assoc('font')
 	if fontconf
 	  ret.delete_if{|item| item[0] == 'font' || item[0] == 'kanjifont'}
 	  fontconf[4] = tagfont_configinfo(tagid(tagOrId), fontconf[4])
 	  ret.push(fontconf)
-	else
-	  ret
 	end
+
+	ret << ['coords', '', '', '', self.coords(tagOrId)]
       end
     else # ! TkComm::GET_CONFIGINFO_AS_ARRAY
       if key
 	case key.to_s
+	when 'coords'
+	  {'coords' => ['', '', '', self.coords(tagOrId)]}
 	when 'dash', 'activedash', 'disableddash'
 	  conf = tk_split_simplelist(tk_send_without_enc('itemconfigure', 
 							 tagid(tagOrId), 
@@ -410,6 +417,7 @@ class TkCanvas<TkWindow
 	    ret[key] = conf
 	  end
 	}
+
 	fontconf = ret['font']
 	if fontconf
 	  ret.delete('font')
@@ -417,6 +425,9 @@ class TkCanvas<TkWindow
 	  fontconf[3] = tagfont_configinfo(tagid(tagOrId), fontconf[3])
 	  ret['font'] = fontconf
 	end
+
+	ret['coords'] = ['', '', '', self.coords(tagOrId)]
+
 	ret
       end
     end
@@ -513,6 +524,7 @@ class TkcItem<TkObject
   extend Tk
   include TkcTagAccess
 
+  CItemTypeName = nil
   CItemTypeToClass = {}
   CItemID_TBL = TkCore::INTERP.create_table
 
@@ -529,8 +541,39 @@ class TkcItem<TkObject
   end
 
   ########################################
+  def self._parse_create_args(args)
+    fontkeys = {}
+    if args[-1].kind_of? Hash
+      keys = _symbolkey2str(args.pop)
+      if args.size == 0
+	args = keys.delete('coords')
+	unless args.kind_of?(Array)
+	  fail "coords parameter must be given by an Array"
+	end
+      end
+
+      ['font', 'kanjifont', 'latinfont', 'asciifont'].each{|key|
+	fontkeys[key] = keys.delete(key) if keys.key?(key)
+      }
+
+      args = args.flatten.concat(hash_kv(keys))
+    else
+      args = args.flatten
+    end
+
+    [args, fontkeys]
+  end
+  private_class_method :_parse_create_args
+
   def self.create(canvas, *args)
-    fail RuntimeError, "TkcItem is an abstract class"
+    unless self::CItemTypeName
+      fail RuntimeError, "#{self} is an abstract class"
+    end
+    args, fontkeys = _parse_create_args(args)
+    idnum = tk_call_without_enc(canvas.path, 'create', 
+				self::CItemTypeName, *args)
+    canvas.itemconfigure(idnum, fontkeys) unless fontkeys.empty?
+    idnum.to_i  # 'canvas item id' is an integer number
   end
   ########################################
 
@@ -540,42 +583,13 @@ class TkcItem<TkObject
     end
     @parent = @c = parent
     @path = parent.path
-    fontkeys = {}
-    if args.size == 1 && args[0].kind_of?(Hash)
-      args[0] = _symbolkey2str(args[0])
-      coords = args[0].delete('coords')
-      unless coords.kind_of?(Array)
-        fail "coords parameter must be given by an Array"
-      end
-      args[0,0] = coords.flatten
-    end
-    if args[-1].kind_of? Hash
-      keys = _symbolkey2str(args.pop)
-      ['font', 'kanjifont', 'latinfont', 'asciifont'].each{|key|
-	fontkeys[key] = keys.delete(key) if keys.key?(key)
-      }
-      args.concat(hash_kv(keys))
-    end
-    @id = create_self(*args).to_i ;# 'canvas item id' is integer number
+
+    @id = create_self(*args) # an integer number as 'canvas item id'
     CItemID_TBL[@path] = {} unless CItemID_TBL[@path]
     CItemID_TBL[@path][@id] = self
-    configure(fontkeys) unless fontkeys.empty?
-
-######## old version
-#    if args[-1].kind_of? Hash
-#      keys = args.pop
-#    end
-#    @id = create_self(*args).to_i ;# 'canvas item id' is integer number
-#    CItemID_TBL[@path] = {} unless CItemID_TBL[@path]
-#    CItemID_TBL[@path][@id] = self
-#    if keys
-#      # tk_call @path, 'itemconfigure', @id, *hash_kv(keys)
-#      configure(keys) if keys
-#    end
-########
   end
   def create_self(*args)
-    self.class.create(@path, *args)
+    self.class.create(@c, *args) # return an integer number as 'canvas item id'
   end
   private :create_self
 
@@ -593,105 +607,65 @@ class TkcItem<TkObject
 end
 
 class TkcArc<TkcItem
-  CItemTypeToClass['arc'] = self
-  def self.create(path, *args)
-    if args[-1].kind_of?(Hash)
-      keys = args.pop
-      args.concat(hash_kv(keys))
-    end
-    tk_call_without_enc(path, 'create', 'arc', *args)
-  end
+  CItemTypeName = 'arc'.freeze
+  CItemTypeToClass[CItemTypeName] = self
 end
 
 class TkcBitmap<TkcItem
-  CItemTypeToClass['bitmap'] = self
-  def self.create(path, *args)
-    if args[-1].kind_of?(Hash)
-      keys = args.pop
-      args.concat(hash_kv(keys))
-    end
-    tk_call_without_enc(path, 'create', 'bitmap', *args)
-  end
+  CItemTypeName = 'bitmap'.freeze
+  CItemTypeToClass[CItemTypeName] = self
 end
 
 class TkcImage<TkcItem
-  CItemTypeToClass['image'] = self
-  def self.create(path, *args)
-    if args[-1].kind_of?(Hash)
-      keys = args.pop
-      args.concat(hash_kv(keys))
-    end
-    tk_call_without_enc(path, 'create', 'image', *args)
-  end
+  CItemTypeName = 'image'.freeze
+  CItemTypeToClass[CItemTypeName] = self
 end
 
 class TkcLine<TkcItem
-  CItemTypeToClass['line'] = self
-  def self.create(path, *args)
-    if args[-1].kind_of?(Hash)
-      keys = args.pop
-      args.concat(hash_kv(keys))
-    end
-    tk_call_without_enc(path, 'create', 'line', *args)
-  end
+  CItemTypeName = 'line'.freeze
+  CItemTypeToClass[CItemTypeName] = self
 end
 
 class TkcOval<TkcItem
-  CItemTypeToClass['oval'] = self
-  def self.create(path, *args)
-    if args[-1].kind_of?(Hash)
-      keys = args.pop
-      args.concat(hash_kv(keys))
-    end
-    tk_call_without_enc(path, 'create', 'oval', *args)
-  end
+  CItemTypeName = 'oval'.freeze
+  CItemTypeToClass[CItemTypeName] = self
 end
 
 class TkcPolygon<TkcItem
-  CItemTypeToClass['polygon'] = self
-  def self.create(path, *args)
-    if args[-1].kind_of?(Hash)
-      keys = args.pop
-      args.concat(hash_kv(keys))
-    end
-    tk_call_without_enc(path, 'create', 'polygon', *args)
-  end
+  CItemTypeName = 'polygon'.freeze
+  CItemTypeToClass[CItemTypeName] = self
 end
 
 class TkcRectangle<TkcItem
-  CItemTypeToClass['rectangle'] = self
-  def self.create(path, *args)
-    if args[-1].kind_of?(Hash)
-      keys = args.pop
-      args.concat(hash_kv(keys))
-    end
-    tk_call_without_enc(path, 'create', 'rectangle', *args)
-  end
+  CItemTypeName = 'rectangle'.freeze
+  CItemTypeToClass[CItemTypeName] = self
 end
 
 class TkcText<TkcItem
-  CItemTypeToClass['text'] = self
-  def self.create(path, *args)
+  CItemTypeName = 'text'.freeze
+  CItemTypeToClass[CItemTypeName] = self
+  def self.create(canvas, *args)
     if args[-1].kind_of?(Hash)
-      keys = args.pop
-      args.concat(hash_kv(keys))
+      keys = _symbolkey2str(args.pop)
+      txt = keys['text']
+      keys['text'] = _get_eval_enc_str(txt) if txt
+      args.push(keys)
     end
-    #tk_call_without_enc(path, 'create', 'text', 
-    #			*(args.each{|arg| _get_eval_enc_str(arg)}))
-    tk_call(path, 'create', 'text', *args)
+    super(canvas, *args)
   end
 end
 
 class TkcWindow<TkcItem
-  CItemTypeToClass['window'] = self
-  def self.create(path, *args)
+  CItemTypeName = 'window'.freeze
+  CItemTypeToClass[CItemTypeName] = self
+  def self.create(canvas, *args)
     if args[-1].kind_of?(Hash)
       keys = _symbolkey2str(args.pop)
       win = keys['window']
       # keys['window'] = win.epath if win.kind_of?(TkWindow)
       keys['window'] = _epath(win) if win
-      args.concat(hash_kv(keys))
+      args.push(keys)
     end
-    tk_call_without_enc(path, 'create', 'window', *args)
+    super(canvas, *args)
   end
 end
