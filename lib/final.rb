@@ -15,26 +15,26 @@
 #
 
 module ObjectSpace
-  Finalizer = {}
+  Finalizers = {}
   def define_finalizer(obj, proc=lambda())
     ObjectSpace.call_finalizer(obj)
-    if assoc = Finalizer[obj.id]
+    if assoc = Finalizers[obj.id]
       assoc.push(proc)
     else
-      Finalizer[obj.id] = [proc]
+      Finalizers[obj.id] = [proc]
     end
   end
   def undefine_finalizer(obj)
-    Finalizer.delete(obj.id)
+    Finalizers.delete(obj.id)
   end
-  module_function :define_finalizer, :remove_finalizer
+  module_function :define_finalizer, :undefine_finalizer
 
   Generic_Finalizer = proc {|id|
-    if Finalizer.key? id
-      for proc in Finalizer[id]
+    if Finalizers.key? id
+      for proc in Finalizers[id]
 	proc.call(id)
       end
-      Finalizer.delete(id)
+      Finalizers.delete(id)
     end
   }
   add_finalizer Generic_Finalizer

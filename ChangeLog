@@ -2,6 +2,11 @@ Thu Jan 29 18:36:25 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
 
 	* process.c (rb_proc_exec): check `sh' to be exist.
 
+Thu Jan 29 18:18:19 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (io_stdio_set): assignment to $stdin or $stdout does
+	  reopen() as well as $stderr.
+
 Thu Jan 29 14:18:40 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* class.c (mod_ancestors): should not include singleton classes.
@@ -13,6 +18,10 @@ Thu Jan 29 14:18:40 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 Thu Jan 29 11:50:35 1998  Toshihiko SHIMOKAWA  <toshi@csce.kyushu-u.ac.jp>
 
 	* ext/socket/socket.c (udp_addrsetup): forgot to use htons().
+
+Tue Jan 27 23:15:24 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* keywords: __FILE__, __LINE__ are available again.
 
 Fri Jan 23 14:19:28 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
@@ -35,8 +44,8 @@ Thu Jan 22 16:21:08 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (rb_eval): some singleton class def cause SEGV.
 
-	* eval.c (ALLOCTMP): replace ALLOCA_N, where thread context switch 
-	  may happen.
+	* eval.c (TMP_ALLOC): replace ALLOCA_N, where thread context
+ 	  switch may happen.
 
 Wed Jan 21 01:43:42 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

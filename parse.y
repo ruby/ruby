@@ -158,6 +158,8 @@ static void top_local_setup();
 	kDEFINED
 	klBEGIN
 	klEND
+	k__LINE__
+	k__FILE__
 
 %token <id>   IDENTIFIER FID GVAR IVAR CONSTANT
 %token <val>  INTEGER FLOAT STRING XSTRING REGEXP
@@ -1232,6 +1234,8 @@ variable	: IDENTIFIER
 		| kSELF {$$ = kSELF;}
 		| kTRUE {$$ = kTRUE;} 
 		| kFALSE {$$ = kFALSE;}
+		| k__FILE__ {$$ = k__FILE__;}
+		| k__LINE__ {$$ = k__LINE__;}
 
 var_ref		: variable
 		    {
@@ -3222,6 +3226,12 @@ gettable(id)
     else if (id == kFALSE) {
 	return NEW_FALSE();
     }
+    else if (id == k__FILE__) {
+	return NEW_STR(str_new2(sourcefile));
+    }
+    else if (id == k__LINE__) {
+	return NEW_LIT(INT2FIX(sourceline));
+    }
     else if (is_local_id(id)) {
 	if (local_id(id)) return NEW_LVAR(id);
 	if (dyna_var_defined(id)) return NEW_DVAR(id);
@@ -3259,6 +3269,12 @@ assignable(id, val)
     }
     else if (id == kFALSE) {
 	yyerror("Can't assign to false");
+    }
+    else if (id == k__FILE__) {
+	yyerror("Can't assign to __FILE__");
+    }
+    else if (id == k__LINE__) {
+	yyerror("Can't assign to __LINE__");
     }
     else if (is_local_id(id)) {
 	if (local_id(id) || !dyna_in_block()) {

@@ -7,16 +7,16 @@
 #
 # Usage:
 #   foo = Object.new
-#   foo = SimpleDelegater.new(foo)
+#   foo = SimpleDelegator.new(foo)
 #   foo.type # => Object
 
-class Delegater
+class Delegator
 
   def initialize(obj)
     preserved = ["id", "equal?", "__getobj__"]
     for t in self.type.ancestors
       preserved |= t.instance_methods
-      break if t == Delegater
+      break if t == Delegator
     end
     for method in obj.methods
       next if preserved.include? method
@@ -30,7 +30,7 @@ class Delegater
 
 end
 
-class SimpleDelegater<Delegater
+class SimpleDelegator<Delegator
 
   def initialize(obj)
     super
@@ -44,4 +44,14 @@ class SimpleDelegater<Delegater
   def __setobj__(obj)
     @obj = obj
   end
+end
+
+# backword compatibility ^_^;;;
+Delegater = Delegator
+SimpleDelegater = SimpleDelegator
+
+if __FILE__ == $0
+  foo = Object.new
+  foo = SimpleDelegator.new(foo)
+  p foo.type # => Object
 end

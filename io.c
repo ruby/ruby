@@ -1394,18 +1394,27 @@ io_defset(val, id)
 }
 
 static void
-io_errset(val, id)
+io_stdio_set(val, id, var)
     VALUE val;
     ID id;
+    VALUE *var;
 {
-    OpenFile *fptr;
+    OpenFile *fptr, *fptr2;
     int fd;
-    FILE *f;
 
     if (TYPE(val) != T_FILE) {
-	TypeError("$stderr must be IO Object");
+	TypeError("%s must be IO object", rb_id2name(id));
     }
-    io_reopen(rb_stderr, val);
+    GetOpenFile(*var, fptr);
+    fd = fileno(fptr->f);
+    GetOpenFile(val, fptr);
+    if (fd == 0) {
+	io_readable(fptr);
+    }
+    else {
+	io_writable(fptr);
+    }
+    io_reopen(*var, val);
 }
 
 static VALUE
@@ -2363,11 +2372,11 @@ Init_IO()
     rb_define_method(cIO, "fcntl", io_fcntl, -1);
 
     rb_stdin = prep_stdio(stdin, FMODE_READABLE);
-    rb_define_readonly_variable("$stdin", &rb_stdin);
+    rb_define_hooked_variable("$stdin", &rb_stdin, 0, io_stdio_set);
     rb_stdout = prep_stdio(stdout, FMODE_WRITABLE);
-    rb_define_readonly_variable("$stdout", &rb_stdout);
+    rb_define_hooked_variable("$stdout", &rb_stdout, 0, io_stdio_set);
     rb_stderr = prep_stdio(stderr, FMODE_WRITABLE);
-    rb_define_hooked_variable("$stderr", &rb_stderr, 0, io_errset);
+    rb_define_hooked_variable("$stderr", &rb_stderr, 0, io_stdio_set);
     rb_defout = rb_stdout;
     rb_define_hooked_variable("$>", &rb_defout, 0, io_defset);
 

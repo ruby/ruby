@@ -10,7 +10,7 @@
 
 require "delegate"
 
-class WeakRef<Delegater
+class WeakRef<Delegator
 
   Exception :RefError
 

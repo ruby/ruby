@@ -84,7 +84,7 @@
   (modify-syntax-entry ?\` "\"" ruby-mode-syntax-table)
   (modify-syntax-entry ?# "<" ruby-mode-syntax-table)
   (modify-syntax-entry ?\n ">" ruby-mode-syntax-table)
-  (modify-syntax-entry ?\\ "'" ruby-mode-syntax-table)
+  (modify-syntax-entry ?\\ "\\" ruby-mode-syntax-table)
   (modify-syntax-entry ?$ "/" ruby-mode-syntax-table)
   (modify-syntax-entry ?? "_" ruby-mode-syntax-table)
   (modify-syntax-entry ?_ "_" ruby-mode-syntax-table)
@@ -640,7 +640,7 @@ An end of a defun is found by moving forward from the beginning of one."
      '("^\\s *def[ \t]+[^ \t(]*"
        0 font-lock-function-name-face t))
     "*Additional expressions to highlight in ruby mode.")
-  (if (and (>= (string-to-int emacs-version) 20)
+  (if (and (>= (string-to-int emacs-version) 19)
           (not (featurep 'xemacs)))
       (add-hook
        'ruby-mode-hook
@@ -650,5 +650,4 @@ An end of a defun is found by moving forward from the beginning of one."
               '((ruby-font-lock-keywords) nil nil ((?\_ . "w"))))))
     (add-hook 'ruby-mode-hook
              (lambda ()
-               (setq font-lock-keywords ruby-font-lock-keywords)
-               (font-lock-mode 1))))))
+               (setq font-lock-keywords ruby-font-lock-keywords))))))

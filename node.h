@@ -119,15 +119,15 @@ typedef struct RNode {
     union {
 	struct RNode *node;
 	ID id;
-	int argc;
+	INT argc;
 	VALUE value;
     } u2;
     union {
 	struct RNode *node;
 	ID id;
-	int state;
+	INT state;
 	struct global_entry *entry;
-	int cnt;
+	INT cnt;
 	VALUE value;
     } u3;
 } NODE;

@@ -12,7 +12,7 @@
 require 'delegate'
 require 'final'
 
-class Tempfile < SimpleDelegater
+class Tempfile < SimpleDelegator
   Max_try = 10
 
   def initialize(basename, tmpdir = '/tmp')
@@ -69,4 +69,13 @@ class Tempfile < SimpleDelegater
       ObjectSpace.undefine_finalizer(self)
     end
   end
+end
+
+if __FILE__ == $0
+  f = Tempfile.new("foo")
+  f.print("foo\n")
+  f.close
+  f.open
+  p f.gets # => "foo\n"
+  f.close(true)
 end
