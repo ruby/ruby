@@ -82,7 +82,7 @@ module OpenURI
     end
 
     unless mode == nil ||
-           mode == 'r' || mode == 'rb'
+           mode == 'r' || mode == 'rb' ||
            mode == O_RDONLY
       raise ArgumentError.new("invalid access mode #{mode} (#{uri.class} resource is read only.)")
     end

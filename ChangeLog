@@ -1,3 +1,7 @@
+Thu Dec 19 04:21:10 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/open-uri.rb: add a missing ||. (found by: ruby -wc)
+
 Wed Dec 18 03:52:55 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* string.c (rb_str_new4): handle tail shared string.
