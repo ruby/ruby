@@ -1,3 +1,8 @@
+Wed Jul 14 00:33:48  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* array.c: rdoc patch. merged patch from Johan Holmberg
+	  <holmberg@iar.se> [ruby-core:3170]
+
 Tue Jul 13 19:39:12 2004  akira yamada  <akira@ruby-lang.org>
 
 	* lib/uri/generic.rb (URI::Generic#merge_path):
