@@ -914,10 +914,10 @@ do_opendir(path)
 /* Return nonzero if S has any special globbing chars in it.  */
 static int
 has_magic(s, flags)
-     char *s;
+     const char *s;
      int flags;
 {
-    register char *p = s;
+    register const char *p = s;
     register char c;
     int open = 0;
     int escape = !(flags & FNM_NOESCAPE);
@@ -1311,7 +1311,7 @@ rb_glob2(path, flags, func, arg)
 
 void
 rb_glob(path, func, arg)
-    char *path;
+    const char *path;
     void (*func) _((const char*, VALUE));
     VALUE arg;
 {
@@ -1336,7 +1336,7 @@ push_pattern(path, ary)
 static void
 push_globs(ary, s, flags)
     VALUE ary;
-    char *s;
+    const char *s;
     int flags;
 {
     rb_glob2(s, flags, push_pattern, ary);
@@ -1345,12 +1345,12 @@ push_globs(ary, s, flags)
 static void
 push_braces(ary, s, flags)
     VALUE ary;
-    char *s;
+    const char *s;
     int flags;
 {
     char *buf;
-    char *p, *t, *b;
-    char *lbrace, *rbrace;
+    const char *p, *t, *b;
+    const char *lbrace, *rbrace;
     int nest = 0;
 
     p = s;
@@ -1400,9 +1400,9 @@ rb_push_glob(str, flags)
     VALUE str;
     int flags;
 {
-    char *p, *pend;
+    const char *p, *pend;
     char *buf;
-    char *t;
+    const char *t;
     int nest, maxnest;
     int escape = !(flags & FNM_NOESCAPE);
     VALUE ary;
