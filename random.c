@@ -133,6 +133,9 @@ genrand_real()
     /* divided by 2^32 */
 }
 
+#undef N
+#undef M
+
 /* These real versions are due to Isaku Wada, 2002/01/09 added */
 
 #include "ruby.h"
