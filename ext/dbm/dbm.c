@@ -220,57 +220,25 @@ fdbm_index(obj, valstr)
 }
 
 static VALUE
-fdbm_indexes(argc, argv, obj)
-    int argc;
-    VALUE *argv;
+fdbm_select(obj)
     VALUE obj;
 {
-    VALUE new;
+    VALUE new = rb_ary_new();
     int i;
+    datum key, val;
+    DBM *dbm;
+    struct dbmdata *dbmp;
 
-    new = rb_ary_new2(argc);
-    for (i=0; i<argc; i++) {
-	rb_ary_push(new, fdbm_fetch(obj, argv[i], Qnil));
-    }
+    GetDBM(obj, dbmp);
+    dbm = dbmp->di_dbm;
 
-    return new;
-}
-
-static VALUE
-fdbm_select(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
-{
-    VALUE new = rb_ary_new2(argc);
-    int i;
-
-    if (rb_block_given_p()) {
-        datum key, val;
-        DBM *dbm;
-        struct dbmdata *dbmp;
-
-	if (argc > 0) {
-	    rb_raise(rb_eArgError, "wrong number arguments(%d for 0)", argc);
-	}
-        GetDBM(obj, dbmp);
-        dbm = dbmp->di_dbm;
-
-        for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
-            VALUE assoc;
-            val = dbm_fetch(dbm, key);
-            assoc = rb_assoc_new(rb_tainted_str_new(key.dptr, key.dsize),
-                                 rb_tainted_str_new(val.dptr, val.dsize));
-            if (RTEST(rb_yield(assoc)))
-                rb_ary_push(new, assoc);
-        }
-    }
-    else {
-	rb_warn("DBM#select(index..) is deprecated; use DBM#values_at");
-
-        for (i=0; i<argc; i++) {
-            rb_ary_push(new, fdbm_fetch(obj, argv[i], Qnil));
-        }
+    for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
+	VALUE assoc;
+	val = dbm_fetch(dbm, key);
+	assoc = rb_assoc_new(rb_tainted_str_new(key.dptr, key.dsize),
+			     rb_tainted_str_new(val.dptr, val.dsize));
+	if (RTEST(rb_yield(assoc)))
+	    rb_ary_push(new, assoc);
     }
 
     return new;
@@ -766,8 +734,6 @@ Init_dbm()
     rb_define_method(rb_cDBM, "[]=", fdbm_store, 2);
     rb_define_method(rb_cDBM, "store", fdbm_store, 2);
     rb_define_method(rb_cDBM, "index",  fdbm_index, 1);
-    rb_define_method(rb_cDBM, "indexes",  fdbm_indexes, -1);
-    rb_define_method(rb_cDBM, "indices",  fdbm_indexes, -1);
     rb_define_method(rb_cDBM, "select",  fdbm_select, -1);
     rb_define_method(rb_cDBM, "values_at", fdbm_values_at, -1);
     rb_define_method(rb_cDBM, "length", fdbm_length, 0);
@@ -807,5 +773,7 @@ Init_dbm()
 
 #ifdef DB_VERSION_STRING
     rb_define_const(rb_cDBM, "VERSION",  rb_str_new2(DB_VERSION_STRING));
+#else
+    rb_define_const(rb_cDBM, "VERSION",  rb_str_new2("unknown"));
 #endif
 }

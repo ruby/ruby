@@ -560,32 +560,6 @@ rb_hash_index(hash, value)
 
 /*
  *  call-seq:
- *     hsh.indexes(key, ...)    => array
- *     hsh.indices(key, ...)    => array
- *  
- *  Deprecated in favor of <code>Hash#select</code>.
- *     
- */
-
-static VALUE
-rb_hash_indexes(argc, argv, hash)
-    int argc;
-    VALUE *argv;
-    VALUE hash;
-{
-    VALUE indexes;
-    int i;
-
-    indexes = rb_ary_new2(argc);
-    for (i=0; i<argc; i++) {
-	RARRAY(indexes)->ptr[i] = rb_hash_aref(hash, argv[i]);
-	RARRAY(indexes)->len++;
-    }
-    return indexes;
-}
-
-/*
- *  call-seq:
  *     hsh.delete(key)                   => value
  *     hsh.delete(key) {| key | block }  => value
  *  
@@ -770,7 +744,7 @@ rb_hash_values_at(argc, argv, hash)
     VALUE *argv;
     VALUE hash;
 {
-    VALUE result = rb_ary_new();
+    VALUE result = rb_ary_new2(argc);
     long i;
 
     for (i=0; i<argc; i++) {
@@ -793,16 +767,11 @@ rb_hash_values_at(argc, argv, hash)
  */
 
 VALUE
-rb_hash_select(argc, argv, hash)
-    int argc;
-    VALUE *argv;
+rb_hash_select(hash)
     VALUE hash;
 {
     VALUE result;
 
-    if (argc > 0) {
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)", argc);
-    }
     result = rb_ary_new();
     rb_hash_foreach(hash, select_i, result);
     return result;
@@ -2035,16 +2004,11 @@ env_values_at(argc, argv)
 }
 
 static VALUE
-env_select(argc, argv)
-    int argc;
-    VALUE *argv;
+env_select()
 {
     VALUE result;
     char **env;
 
-    if (argc > 0) {
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)", argc);
-    }
     result = rb_ary_new();
     env = GET_ENVIRON(environ);
     while (*env) {
@@ -2231,28 +2195,6 @@ env_index(dmy, value)
 }
 
 static VALUE
-env_indexes(argc, argv)
-    int argc;
-    VALUE *argv;
-{
-    int i;
-    VALUE indexes = rb_ary_new2(argc);
-
-    for (i=0;i<argc;i++) {
-	VALUE tmp = rb_check_string_type(argv[i]);
-	if (NIL_P(tmp)) {
-	    RARRAY(indexes)->ptr[i] = Qnil;
-	}
-	else {
-	    RARRAY(indexes)->ptr[i] = env_str_new2(getenv(RSTRING(tmp)->ptr));
-	}
-	RARRAY(indexes)->len = i+1;
-    }
-
-    return indexes;
-}
-
-static VALUE
 env_to_hash()
 {
     char **env;
@@ -2400,8 +2342,6 @@ Init_Hash()
     rb_define_method(rb_cHash,"default=", rb_hash_set_default, 1);
     rb_define_method(rb_cHash,"default_proc", rb_hash_default_proc, 0);
     rb_define_method(rb_cHash,"index", rb_hash_index, 1);
-    rb_define_method(rb_cHash,"indexes", rb_hash_indexes, -1);
-    rb_define_method(rb_cHash,"indices", rb_hash_indexes, -1);
     rb_define_method(rb_cHash,"size", rb_hash_size, 0);
     rb_define_method(rb_cHash,"length", rb_hash_size, 0);
     rb_define_method(rb_cHash,"empty?", rb_hash_empty_p, 0);
@@ -2419,7 +2359,7 @@ Init_Hash()
     rb_define_method(rb_cHash,"shift", rb_hash_shift, 0);
     rb_define_method(rb_cHash,"delete", rb_hash_delete, 1);
     rb_define_method(rb_cHash,"delete_if", rb_hash_delete_if, 0);
-    rb_define_method(rb_cHash,"select", rb_hash_select, -1);
+    rb_define_method(rb_cHash,"select", rb_hash_select, 0);
     rb_define_method(rb_cHash,"reject", rb_hash_reject, 0);
     rb_define_method(rb_cHash,"reject!", rb_hash_reject_bang, 0);
     rb_define_method(rb_cHash,"clear", rb_hash_clear, 0);
@@ -2454,7 +2394,7 @@ Init_Hash()
     rb_define_singleton_method(envtbl,"clear", env_clear, 0);
     rb_define_singleton_method(envtbl,"reject", env_reject, 0);
     rb_define_singleton_method(envtbl,"reject!", env_reject_bang, 0);
-    rb_define_singleton_method(envtbl,"select", env_select, -1);
+    rb_define_singleton_method(envtbl,"select", env_select, 0);
     rb_define_singleton_method(envtbl,"shift", env_shift, 0);
     rb_define_singleton_method(envtbl,"invert", env_invert, 0);
     rb_define_singleton_method(envtbl,"replace", env_replace, 1);
@@ -2464,8 +2404,6 @@ Init_Hash()
     rb_define_singleton_method(envtbl,"to_a", env_to_a, 0);
     rb_define_singleton_method(envtbl,"to_s", env_to_s, 0);
     rb_define_singleton_method(envtbl,"index", env_index, 1);
-    rb_define_singleton_method(envtbl,"indexes", env_indexes, -1);
-    rb_define_singleton_method(envtbl,"indices", env_indexes, -1);
     rb_define_singleton_method(envtbl,"size", env_size, 0);
     rb_define_singleton_method(envtbl,"length", env_size, 0);
     rb_define_singleton_method(envtbl,"empty?", env_empty_p, 0);

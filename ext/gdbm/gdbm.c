@@ -316,56 +316,24 @@ fgdbm_index(obj, valstr)
 }
 
 static VALUE
-fgdbm_indexes(argc, argv, obj)
-    int argc;
-    VALUE *argv;
+fgdbm_select(obj)
     VALUE obj;
 {
-    VALUE new;
+    VALUE new = rb_ary_new();
     int i;
+    GDBM_FILE dbm;
+    struct dbmdata *dbmp;
+    VALUE keystr;
 
-    new = rb_ary_new2(argc);
-    for (i=0; i<argc; i++) {
-	rb_ary_push(new, rb_gdbm_fetch3(obj, argv[i]));
-    }
+    GetDBM(obj, dbmp);
+    dbm = dbmp->di_dbm;
 
-    return new;
-}
+    for (keystr = rb_gdbm_firstkey(dbm); RTEST(keystr);
+	 keystr = rb_gdbm_nextkey(dbm, keystr)) {
+	VALUE assoc = rb_assoc_new(keystr, rb_gdbm_fetch2(dbm, keystr));
 
-static VALUE
-fgdbm_select(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
-{
-    VALUE new = rb_ary_new2(argc);
-    int i;
-
-    if (rb_block_given_p()) {
-        GDBM_FILE dbm;
-        struct dbmdata *dbmp;
-        VALUE keystr;
-
-	if (argc > 0) {
-	    rb_raise(rb_eArgError, "wrong number arguments(%d for 0)", argc);
-	}
-        GetDBM(obj, dbmp);
-        dbm = dbmp->di_dbm;
-
-        for (keystr = rb_gdbm_firstkey(dbm); RTEST(keystr);
-             keystr = rb_gdbm_nextkey(dbm, keystr)) {
-            VALUE assoc = rb_assoc_new(keystr, rb_gdbm_fetch2(dbm, keystr));
-
-            if (RTEST(rb_yield(assoc)))
-                rb_ary_push(new, assoc);
-        }
-    }
-    else {
-	rb_warn("GDBM#select(index..) is deprecated; use GDBM#values_at");
-
-        for (i=0; i<argc; i++) {
-            rb_ary_push(new, rb_gdbm_fetch3(obj, argv[i]));
-        }
+	if (RTEST(rb_yield(assoc)))
+	    rb_ary_push(new, assoc);
     }
 
     return new;
@@ -970,9 +938,7 @@ Init_gdbm()
     rb_define_method(rb_cGDBM, "[]=", fgdbm_store, 2);
     rb_define_method(rb_cGDBM, "store", fgdbm_store, 2);
     rb_define_method(rb_cGDBM, "index",  fgdbm_index, 1);
-    rb_define_method(rb_cGDBM, "indexes",  fgdbm_indexes, -1);
-    rb_define_method(rb_cGDBM, "indices",  fgdbm_indexes, -1);
-    rb_define_method(rb_cGDBM, "select",  fgdbm_select, -1);
+    rb_define_method(rb_cGDBM, "select",  fgdbm_select, 0);
     rb_define_method(rb_cGDBM, "values_at",  fgdbm_values_at, -1);
     rb_define_method(rb_cGDBM, "length", fgdbm_length, 0);
     rb_define_method(rb_cGDBM, "size", fgdbm_length, 0);

@@ -951,31 +951,6 @@ rb_ary_rindex(ary, val)
     return Qnil;
 }
 
-/*
- *  call-seq:
- *     array.indexes( i1, i2, ... iN )   => an_array
- *     array.indices( i1, i2, ... iN )   => an_array
- *  
- *  Deprecated; use <code>Array#select</code>.
- */
-
-static VALUE
-rb_ary_indexes(argc, argv, ary)
-    int argc;
-    VALUE *argv;
-    VALUE ary;
-{
-    VALUE new_ary;
-    long i;
-
-    new_ary = rb_ary_new2(argc);
-    for (i=0; i<argc; i++) {
-	rb_ary_push(new_ary, rb_ary_aref(1, argv+i, ary));
-    }
-
-    return new_ary;
-}
-
 VALUE
 rb_ary_to_ary(obj)
     VALUE obj;
@@ -3029,8 +3004,6 @@ Init_Array()
     rb_define_method(rb_cArray, "empty?", rb_ary_empty_p, 0);
     rb_define_method(rb_cArray, "index", rb_ary_index, 1);
     rb_define_method(rb_cArray, "rindex", rb_ary_rindex, 1);
-    rb_define_method(rb_cArray, "indexes", rb_ary_indexes, -1);
-    rb_define_method(rb_cArray, "indices", rb_ary_indexes, -1);
     rb_define_method(rb_cArray, "join", rb_ary_join_m, -1);
     rb_define_method(rb_cArray, "reverse", rb_ary_reverse_m, 0);
     rb_define_method(rb_cArray, "reverse!", rb_ary_reverse_bang, 0);

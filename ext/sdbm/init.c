@@ -196,57 +196,25 @@ fsdbm_index(obj, valstr)
 }
 
 static VALUE
-fsdbm_indexes(argc, argv, obj)
-    int argc;
-    VALUE *argv;
+fsdbm_select(obj)
     VALUE obj;
 {
-    VALUE new;
+    VALUE new = rb_ary_new();
     int i;
+    datum key, val;
+    DBM *dbm;
+    struct dbmdata *dbmp;
 
-    new = rb_ary_new2(argc);
-    for (i=0; i<argc; i++) {
-	rb_ary_push(new, fsdbm_fetch(obj, argv[i], Qnil));
-    }
+    GetDBM(obj, dbmp);
+    dbm = dbmp->di_dbm;
 
-    return new;
-}
-
-static VALUE
-fsdbm_select(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
-{
-    VALUE new = rb_ary_new2(argc);
-    int i;
-
-    if (rb_block_given_p()) {
-        datum key, val;
-        DBM *dbm;
-        struct dbmdata *dbmp;
-
-	if (argc > 0) {
-	    rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)", argc);
-	}
-        GetDBM(obj, dbmp);
-        dbm = dbmp->di_dbm;
-
-        for (key = sdbm_firstkey(dbm); key.dptr; key = sdbm_nextkey(dbm)) {
-            VALUE assoc;
-            val = sdbm_fetch(dbm, key);
-            assoc = rb_assoc_new(rb_tainted_str_new(key.dptr, key.dsize),
-                                 rb_tainted_str_new(val.dptr, val.dsize));
-            if (RTEST(rb_yield(assoc)))
-                rb_ary_push(new, assoc);
-        }
-    }
-    else {
-	rb_warn("SDBM#select(index..) is deprecated; use SDBM#values_at");
-
-        for (i=0; i<argc; i++) {
-            rb_ary_push(new, fsdbm_fetch(obj, argv[i], Qnil));
-        }
+    for (key = sdbm_firstkey(dbm); key.dptr; key = sdbm_nextkey(dbm)) {
+	VALUE assoc;
+	val = sdbm_fetch(dbm, key);
+	assoc = rb_assoc_new(rb_tainted_str_new(key.dptr, key.dsize),
+			     rb_tainted_str_new(val.dptr, val.dsize));
+	if (RTEST(rb_yield(assoc)))
+	    rb_ary_push(new, assoc);
     }
 
     return new;
@@ -749,9 +717,7 @@ Init_sdbm()
     rb_define_method(rb_cDBM, "[]=", fsdbm_store, 2);
     rb_define_method(rb_cDBM, "store", fsdbm_store, 2);
     rb_define_method(rb_cDBM, "index",  fsdbm_index, 1);
-    rb_define_method(rb_cDBM, "indexes",  fsdbm_indexes, -1);
-    rb_define_method(rb_cDBM, "indices",  fsdbm_indexes, -1);
-    rb_define_method(rb_cDBM, "select",  fsdbm_select, -1);
+    rb_define_method(rb_cDBM, "select",  fsdbm_select, 0);
     rb_define_method(rb_cDBM, "values_at",  fsdbm_values_at, -1);
     rb_define_method(rb_cDBM, "length", fsdbm_length, 0);
     rb_define_method(rb_cDBM, "size", fsdbm_length, 0);

@@ -1,3 +1,19 @@
+Fri Jun 11 22:08:50 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c: remove #indexes, #indices.
+
+	* hash.c: ditto.
+
+	* ext/dbm/dbm.c: remove #indexes, #indices, "values_at" warning
+	  from #select.
+
+	* ext/gdbm/gdbm.c: ditto.
+
+	* ext/sdbm/init.c: ditto.
+
+	* ext/dbm/dbm.c (Init_dbm): set VERSION constant as "unknown" when
+	  DB_VERSION_STRING is not available.
+
 Thu Jun 10 19:19:41 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/sdbm/init.c (fsdbm_store): sdbm should use StringValue().
