@@ -34,7 +34,7 @@ module Net
     end
     
     def initialize(host = nil, user = nil, passwd = nil, acct = nil)
-      super
+      super()
       @passive = false
       @return_code = "\n"
       @debug_mode = false
