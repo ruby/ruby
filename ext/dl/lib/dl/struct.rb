@@ -163,7 +163,7 @@ module DL
   class CUnionEntity < CStruct
     include PackInfo
 
-    def CUnionEntity.malloc(types)
+    def CUnionEntity.malloc(types, func=nil)
       addr = DL.malloc(CUnionEntity.size(types))
       CUnionEntity.new(addr, types, func)
     end
