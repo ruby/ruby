@@ -6,7 +6,7 @@
 #
 
 require "bigdecimal"
-require "newton"
+require "bigdecimal/newton"
 include Newton
 
 class Function

@@ -11,7 +11,7 @@
 #
 
 require "bigdecimal"
-require "ludcmp"
+require "bigdecimal/ludcmp"
 
 #
 # NOTE:
