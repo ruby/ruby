@@ -6122,11 +6122,11 @@ eval(self, src, scope, file, line)
 		errat = get_backtrace(ruby_errinfo);
 		mesg  = rb_attr_get(ruby_errinfo, rb_intern("mesg"));
 		if (!NIL_P(errat) && TYPE(errat) == T_ARRAY) {
-                 if (!NIL_P(mesg) && TYPE(mesg) == T_STRING) {
-		    rb_str_update(mesg, 0, 0, rb_str_new2(": "));
-		    rb_str_update(mesg, 0, 0, RARRAY(errat)->ptr[0]);
-                 }
-                 RARRAY(errat)->ptr[0] = RARRAY(backtrace(-2))->ptr[0];
+		    if (!NIL_P(mesg) && TYPE(mesg) == T_STRING) {
+			rb_str_update(mesg, 0, 0, rb_str_new2(": "));
+			rb_str_update(mesg, 0, 0, RARRAY(errat)->ptr[0]);
+		    }
+		    RARRAY(errat)->ptr[0] = RARRAY(backtrace(-2))->ptr[0];
 		}
 	    }
 	    rb_exc_raise(ruby_errinfo);
