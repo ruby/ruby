@@ -4,19 +4,19 @@ module RSS
 
 	class Rss
 
-		URI = "http://backend.userland.com/rss2"
+# 		URI = "http://backend.userland.com/rss2"
 
-		install_ns('', URI)
+# 		install_ns('', URI)
 		
-		def self.required_uri
-			URI
-		end
+# 		def self.required_uri
+# 			URI
+# 		end
 
 		class Channel
 
-			def self.required_uri
-				URI
-			end
+# 			def self.required_uri
+# 				URI
+# 			end
 
 			%w(generator ttl).each do |x|
 				install_text_element(x)
@@ -42,15 +42,15 @@ EOT
 			end
 
 			Category = Item::Category
-			def Category.required_uri
-				URI
-			end
+# 			def Category.required_uri
+# 				URI
+# 			end
 
 			class Item
 			
-				def self.required_uri
-					URI
-				end
+# 				def self.required_uri
+# 					URI
+# 				end
 
 				[
 					["pubDate", '?'],
@@ -78,9 +78,9 @@ EOT
 					
 					include RSS09
 
-					def self.required_uri
-						URI
-					end
+# 					def self.required_uri
+# 						URI
+# 					end
 
 					[
 						["isPermaLink", nil, false]
@@ -124,14 +124,15 @@ EOT
 	end
 
 	RSS09::ELEMENTS.each do |x|
-		BaseListener.install_get_text_element(x, Rss::URI, "#{x}=")
+#		BaseListener.install_get_text_element(x, Rss::URI, "#{x}=")
+		BaseListener.install_get_text_element(x, nil, "#{x}=")
 	end
 
 	module ListenerMixin
 		private
 		alias start_rss09 start_rss
 		def start_rss(tag_name, prefix, attrs, ns)
-			check_ns(tag_name, prefix, ns, Rss::URI)
+# 			check_ns(tag_name, prefix, ns, Rss::URI)
 			
 			@rss = Rss.new(attrs['version'], @version, @encoding, @standalone)
 			@last_element = @rss
@@ -139,7 +140,7 @@ EOT
 				@rss.validate_for_stream(tags) if @do_validate
 			}
 		end
-					
+		
 	end
 
 end

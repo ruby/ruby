@@ -5,7 +5,9 @@ require "rss/converter"
 
 module RSS
 
-	VERSION = "0.0.7"
+	VERSION = "0.0.8"
+
+	DEBUG = false
 
 	class Error < StandardError; end
 
@@ -363,6 +365,7 @@ EOC
 
 		def initialize(do_validate=true)
 			@converter = nil
+			@output_encoding = nil
 			@do_validate = do_validate
 			initialize_variables
 		end
@@ -393,6 +396,7 @@ EOC
 				instance_eval("@#{variable_name} = nil")
 			end
 			initialize_have_children_elements
+			@content = "" if self.class.have_content?
 		end
 
 		def initialize_have_children_elements
@@ -423,7 +427,7 @@ EOC
 			end
 			must_call_validators = self.class::must_call_validators
 			tags = tag_filter(tags.dup)
-			p tags if $DEBUG
+			p tags if DEBUG
 			self.class::NSPOOL.each do |prefix, uri|
 				if tags.has_key?(uri) and !must_call_validators.has_key?(uri)
 					meth = "#{prefix}_validate"
@@ -463,7 +467,7 @@ EOC
 
 			model.each_with_index do |elem, i|
 
-				if $DEBUG
+				if DEBUG
 					p "before" 
 					p tags
 					p elem
@@ -478,7 +482,7 @@ EOC
 					end
 				end
 
-				if $DEBUG
+				if DEBUG
 					p "mid"
 					p count
 				end
@@ -523,7 +527,7 @@ EOC
 					end
 				end
 
-				if $DEBUG
+				if DEBUG
 					p "after"
 					p not_shift
 					p do_redo

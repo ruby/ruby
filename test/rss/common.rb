@@ -99,4 +99,49 @@ EOI
 </textinput>
 EOT
 	end
+
+	def make_Rss2(content=nil, xmlns=[])
+		<<-EORSS
+#{make_xmldecl}
+<rss version="2.0"
+#{xmlns.collect {|pre, uri| "xmlns:#{pre}='#{uri}'"}.join(' ')}>
+#{block_given? ? yield : content}
+</rss>
+EORSS
+	end
+
+	def make_channel2(content=nil)
+		<<-EOC
+<channel>
+	<title>#{TITLE_VALUE}</title>
+	<link>#{LINK_VALUE}</link>
+	<description>#{DESCRIPTION_VALUE}</description>
+
+	<image>
+		<url>#{RDF_RESOURCE}</url>
+		<title>#{TITLE_VALUE}</title>
+		<link>#{LINK_VALUE}</link>
+	</image>
+
+#{RESOURCES.collect do |res| '<item><link>' + res + '</link></item>' end.join("\n")}
+
+	<textInput>
+		<link>#{RDF_RESOURCE}</link>
+	</textInput>
+
+#{block_given? ? yield : content}
+</channel>
+EOC
+	end
+
+	def make_item2(content=nil)
+		<<-EOI
+<item>
+	<title>#{TITLE_VALUE}</title>
+	<link>#{LINK_VALUE}</link>
+	<description>#{DESCRIPTION_VALUE}</description>
+#{block_given? ? yield : content}
+</item>
+EOI
+	end
 end

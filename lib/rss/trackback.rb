@@ -1,6 +1,3 @@
-# ATTENSION:
-#  TrackBack handling API MUST be CHANGED!!!!
-
 require 'rss/1.0'
 require 'rss/2.0'
 
@@ -154,13 +151,82 @@ module RSS
 
 			unless klass.class == Module
 				%w(ping).each do |x|
-					klass.install_have_child_element("#{TRACKBACK_PREFIX}_#{x}")
+					var_name = "#{TRACKBACK_PREFIX}_#{x}"
+					klass.install_have_child_element(var_name)
+					klass.module_eval(<<-EOC)
+						alias _#{var_name} #{var_name}
+						def #{var_name}
+							@#{var_name} and @#{var_name}.content
+						end
+
+						alias _#{var_name}= #{var_name}=
+						def #{var_name}=(content)
+							@#{var_name} = new_with_content_if_need(#{x.capitalize}, content)
+						end
+					EOC
 				end
 				
-				%w(about).each do |x|
-					klass.install_have_children_element("#{TRACKBACK_PREFIX}_#{x}")
+				[%w(about s)].each do |x, postfix|
+					var_name = "#{TRACKBACK_PREFIX}_#{x}"
+					klass.install_have_children_element(var_name)
+					klass.module_eval(<<-EOC)
+						alias _#{var_name}#{postfix} #{var_name}#{postfix}
+						def #{var_name}#{postfix}
+							@#{var_name}.collect {|x| x.content}
+						end
+
+						alias _#{var_name} #{var_name}
+						def #{var_name}(*args)
+							if args.empty?
+								@#{var_name}.first and @#{var_name}.first.content
+							else
+								ret = @#{var_name}.send("[]", *args)
+								if ret.is_a?(Array)
+									ret.collect {|x| x.content}
+								else
+									ret.content
+								end
+							end
+						end
+
+						alias _#{var_name}= #{var_name}=
+						alias _set_#{var_name} set_#{var_name}
+						def #{var_name}=(*args)
+							if args.size == 1
+								item = new_with_content_if_need(#{x.capitalize}, args[0])
+								@#{var_name}.push(item)
+							else
+								new_val = args.last
+								if new_val.is_a?(Array)
+									new_val = new_value.collect do |val|
+										new_with_content_if_need(#{x.capitalize}, val)
+									end
+								else
+									new_val = new_with_content_if_need(#{x.capitalize}, new_val)
+								end
+								@#{var_name}.send("[]=", *(args[0..-2] + [new_val]))
+							end
+						end
+						alias set_#{var_name} #{var_name}=
+					EOC
 				end
 			end
+
+			private
+			def new_with_content(klass, content)
+				obj = klass.new
+				obj.content = content
+				obj
+			end
+
+			def new_with_content_if_need(klass, content)
+				if content.is_a?(klass)
+					content
+				else
+					new_with_content(klass, content)
+				end
+			end
+
 		end
 
 		class Ping < Element

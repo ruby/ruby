@@ -222,7 +222,7 @@ module RSS
 		end
 
 		def tag_end(name)
-			if $DEBUG
+			if DEBUG
 				p "end tag #{name}"
 				p @tag_stack
 			end
@@ -336,7 +336,7 @@ module RSS
 			@last_element.send(setter, next_element)
 			@last_element = next_element
 			@proc_stack.push Proc.new { |text, tags|
-				p(@last_element.class) if $DEBUG
+				p(@last_element.class) if DEBUG
 				@last_element.content = text if klass.have_content?
 				@last_element.validate_for_stream(tags) if @do_validate
 				@last_element = previous

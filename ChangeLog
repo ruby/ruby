@@ -1,3 +1,19 @@
+Fri Feb 13 19:57:01 2004  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rss/test_trackback.rb: added tests for TrackBack with RSS
+	  2.0.
+
+	* test/rss/common.rb: added methods make RSS 2.0.
+
+	* lib/rss/trackback.rb: TrackBack API is decided.
+
+	* lib/rss/rss.rb: RSS::VERSION 0.0.7 -> 0.0.8.
+
+	* lib/rss/parser.rb, lib/rss/rss.rb: replaced $DEBUG by RSS::DEBUG.
+
+	* lib/rss/2.0.rb: removed RSS 2.0 URI. Because RSS 2.0 doesn't
+	  have URI.
+
 Fri Feb 13 14:41:00 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: en-bugged at last commit (Feb 11 23:24:22 2004)

@@ -5,6 +5,7 @@ require "cgi-lib"
 require "rexml/document"
 
 require "rss/1.0"
+require "rss/2.0"
 require "rss/trackback"
 require "common"
 
@@ -26,6 +27,10 @@ class TestTrackBack < Test::Unit::TestCase
 			"<#{@prefix}:#{name} rdf:resource=\"#{CGI.escapeHTML(value.to_s)}\"/>"
 		end.join("\n")
 
+		@content_nodes2 = @elems.collect do |name, value|
+			"<#{@prefix}:#{name}>#{CGI.escapeHTML(value.to_s)}</#{@prefix}:#{name}>"
+		end.join("\n")
+
 		@rss_source = make_RDF(<<-EOR, {@prefix =>  @uri})
 #{make_channel()}
 #{make_image()}
@@ -34,6 +39,14 @@ class TestTrackBack < Test::Unit::TestCase
 EOR
 
 		@rss = Parser.parse(@rss_source)
+
+		@rss2_source = make_Rss2(nil, {@prefix =>  @uri}) do
+			make_channel2(nil) do
+				make_item2(@content_nodes2)
+			end
+		end
+
+		@rss2 = Parser.parse(@rss2_source, false)
 	end
 
 	def test_parser
@@ -76,11 +89,21 @@ EOR
 
 		@elems.each do |name, value|
 			@parents.each do |parent|
-				elem = @rss.send(parent).send("#{RSS::TRACKBACK_PREFIX}_#{name}")
-				meth = "resource"
-				assert_equal(value, elem.send(meth))
-				elem.send("#{meth}=", new_value[name].to_s)
-				assert_equal(new_value[name], elem.send(meth))
+				accessor = "#{RSS::TRACKBACK_PREFIX}_#{name}"
+				target_accessor = "resource"
+				target = @rss.send(parent).send(accessor)
+				target2 = @rss2.channel.send(parent, -1)
+				assert_equal(value, target.send(target_accessor))
+				assert_equal(value, target2.send(accessor))
+				target.send("#{target_accessor}=", new_value[name].to_s)
+				if name == :about
+					# abount is zero or more
+					target2.send("#{accessor}=", 0, new_value[name].to_s)
+				else
+					target2.send("#{accessor}=", new_value[name].to_s)
+				end
+				assert_equal(new_value[name], target.send(target_accessor))
+				assert_equal(new_value[name], target2.send(accessor))
 			end
 		end
 
