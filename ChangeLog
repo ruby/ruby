@@ -1,3 +1,7 @@
+Thu Aug 16 19:53:19 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/resolv.rb, lib/resolv-replace.rb: Copy from 1.7.
+
 Thu Aug 16 16:32:21 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* LEGAL, ext/Setup*, ext/digest/*: Merge from 1.7: Import digest
