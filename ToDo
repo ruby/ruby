@@ -25,6 +25,7 @@ Hacking Interpreter
 - use eban's fnmatch
 - RUBYOPT environment variable
 - alias $defout $>
+* remove end_proc registered out of require only
 * non-blocking open (e.g. for named pipe) for thread
 * avoid blocking with gethostbyname/gethostbyaddr
 * objectify interpreters
