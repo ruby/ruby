@@ -36,6 +36,8 @@ if extout
   libs << abs_extout << File.expand_path(RUBY_PLATFORM, abs_extout)
 end
 config["bindir"] = abs_archdir
+ENV["RUBY"] = File.expand_path(ruby)
+ENV["PATH"] = [abs_archdir, ENV["PATH"]].compact.join(File::PATH_SEPARATOR)
 
 if e = ENV["RUBYLIB"]
   libs |= e.split(File::PATH_SEPARATOR)

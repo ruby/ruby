@@ -884,7 +884,7 @@ LIBS = #{$LIBRUBYARG} #{$libs} #{$LIBS}
 OBJS = #{$objs}
 TARGET = #{target}
 DLLIB = #{dllib}
-STATIC_LIB = #{staticlib}
+STATIC_LIB = #{staticlib unless $static.nil?}
 }
   if $extout
     mfile.print %{
@@ -976,10 +976,12 @@ site-install-rb: install-rb
   mfile.print "@-$(RM) $@\n\t"
   mfile.print "@-$(MAKEDIRS) $(@D)\n\t"
   mfile.print LINK_SO, "\n\n"
-  mfile.print "$(STATIC_LIB): $(OBJS)\n\t"
-  mfile.print "$(AR) #{config_string('ARFLAGS') || 'cru '}$@ $(OBJS)"
-  if ranlib = config_string('RANLIB')
-    mfile.print "\n\t@-#{ranlib} $(DLLIB) 2> /dev/null || true"
+  unless $static.nil?
+    mfile.print "$(STATIC_LIB): $(OBJS)\n\t"
+    mfile.print "$(AR) #{config_string('ARFLAGS') || 'cru '}$@ $(OBJS)"
+    config_string('RANLIB') do |ranlib|
+      mfile.print "\n\t@-#{ranlib} $(DLLIB) 2> /dev/null || true"
+    end
   end
   mfile.print "\n\n"
   if makedef

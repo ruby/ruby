@@ -9,6 +9,7 @@ module EnvUtil
     end
     begin
       require "rbconfig"
+      ENV["RUBY"] or
       File.join(
         Config::CONFIG["bindir"],
 	Config::CONFIG["ruby_install_name"] + Config::CONFIG["EXEEXT"]

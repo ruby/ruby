@@ -103,6 +103,8 @@ def extmake(target)
       else
 	if $static
 	  m = File.read(makefile)
+	  $target = m[/^TARGET[ \s]*=[ \s]*(\S*)/, 1] or $static = nil
+	  /^STATIC_LIB[ \t]*=[ \t]*\S+/ =~ m or $static = nil
 	  $preload = Shellwords.shellwords(m[/^preload[ \t]*=[ \t]*(.*)/, 1] || "")
 	  $DLDFLAGS += " " + (m[/^DLDFLAGS[ \t]*=[ \t]*(.*)/, 1] || "")
 	  if s = m[/^LIBS[ \t]*=[ \t]*(.*)/, 1]

@@ -1,3 +1,23 @@
+Thu Apr  8 19:45:08 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (extmake): skip uncompiled extensions.
+
+	* lib/mkmf.rb (create_makefile): emit no rules for static library if
+	  $static is nil, e.g., outside of ext/.
+
+	* lib/test/unit/ui/console/testrunner.rb (test_started): show test
+	  name via $0.
+
+	* runruby.rb: set environments to use the compiled binary.
+
+	* test/runner.rb: do nothing while cross-compiling.
+
+	* test/drb/drbtest.rb, test/soap/calc/test_calc_cgi.rb: use envutil to
+	  know ruby binary.
+
+	* test/ruby/envutil.rb: give priority to RUBY environment variable to
+	  use just compiled binary and libraries.
+
 Thu Apr  8 19:03:33 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_binmode): inverted condition.  [ruby-dev:23349]
