@@ -63,10 +63,14 @@ class Mutex
   def unlock
     return unless @locked
     Thread.critical = true
-    t = @waiting.shift
     @locked = false
+    begin
+      t = @waiting.shift
+      t.wakeup if t
+    rescue ThreadError
+      retry
+    end
     Thread.critical = false
-    t.run if t
     self
   end
 
@@ -82,9 +86,13 @@ class Mutex
   def exclusive_unlock
     return unless @locked
     Thread.exclusive do
-      t = @waiting.shift
       @locked = false
-      t.wakeup if t
+      begin
+	t = @waiting.shift
+	t.wakeup if t
+      rescue ThreadError
+	retry
+      end
       yield
     end
     self
@@ -105,8 +113,12 @@ class ConditionVariable
   end
   
   def signal
-    t = @waiters.shift
-    t.run if t
+    begin
+      t = @waiters.shift
+      t.run if t
+    rescue ThreadError
+      retry
+    end
   end
     
   def broadcast
@@ -116,7 +128,10 @@ class ConditionVariable
       @waiters.clear
     end
     for t in waiters0
-      t.run
+      begin
+	t.run
+      rescue ThreadError
+      end
     end
   end
 end
@@ -133,9 +148,13 @@ class Queue
   def push(obj)
     Thread.critical = true
     @que.push obj
-    t = @waiting.shift
+    begin
+      t = @waiting.shift
+      t.wakeup if t
+    rescue ThreadError
+      retry
+    end
     Thread.critical = false
-    t.run if t
   end
   alias enq push
 
@@ -201,8 +220,12 @@ class SizedQueue<Queue
       @max = max
       Thread.critical = false
       diff.times do
-	t = @queue_wait.shift
-	t.run if t
+	begin
+	  t = @queue_wait.shift
+	  t.run if t
+	rescue ThreadError
+	  retry
+	end
       end
     end
     max
@@ -221,8 +244,12 @@ class SizedQueue<Queue
   def pop(*args)
     Thread.critical = true
     if @que.length < @max
-      t = @queue_wait.shift
-      t.run if t
+      begin
+	t = @queue_wait.shift
+	t.run if t
+      rescue ThreadError
+	retry
+      end
     end
     super
   end

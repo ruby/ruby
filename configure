@@ -4722,12 +4722,13 @@ else
 EOF
 
 fi
+
 cat >> confdefs.h <<EOF
 #define RUBY_ARCHLIB "${RUBY_LIB_PATH}/${arch}"
 EOF
 
 cat >> confdefs.h <<EOF
-#define RUBY_SITE_ARCHLIB "${RUBY_SITE_LIB_PATH}/${arch}"
+#define RUBY_SITE_ARCHLIB "${RUBY_SITE_LIB_PATH2}/${arch}"
 EOF
 
 

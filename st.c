@@ -404,7 +404,7 @@ st_delete_safe(table, key, value, never)
     }
 
     for(; ptr != 0; ptr = ptr->next) {
-	if (EQUAL(table, ptr->key, *key)) {
+	if ((ptr->key != never) && EQUAL(table, ptr->key, *key)) {
 	    table->num_entries--;
 	    *key = ptr->key;
 	    if (value != 0) *value = ptr->record;

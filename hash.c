@@ -238,22 +238,16 @@ rb_hash_s_create(argc, argv, klass)
     VALUE hash;
     int i;
 
-    if (argc == 1) {
-	if (TYPE(argv[0]) == T_HASH) {
-	    NEWOBJ(hash, struct RHash);
-	    OBJSETUP(hash, klass, T_HASH);
+    if (argc == 1 && TYPE(argv[0]) == T_HASH) {
+	NEWOBJ(hash, struct RHash);
+	OBJSETUP(hash, klass, T_HASH);
 	    
-	    hash->iter_lev = 0;
-	    hash->ifnone = Qnil;
-	    hash->tbl = 0;	/* avoid GC crashing  */
-	    hash->tbl = st_copy(RHASH(argv[0])->tbl);
+	hash->iter_lev = 0;
+	hash->ifnone = Qnil;
+	hash->tbl = 0;	/* avoid GC crashing  */
+	hash->tbl = st_copy(RHASH(argv[0])->tbl);
 
-	    return (VALUE)hash;
-	}
-	else {
-	    VALUE a = rb_Array(argv[0]);
-	    return rb_hash_s_create(RARRAY(a)->len, RARRAY(a)->ptr, klass);
-	}
+	return (VALUE)hash;
     }
 
     if (argc % 2 != 0) {
@@ -431,10 +425,11 @@ rb_hash_delete(hash, key)
     VALUE val;
 
     rb_hash_modify(hash);
-    if (RHASH(hash)->iter_lev > 0 &&
-	st_delete_safe(RHASH(hash)->tbl, &key, &val, Qnil)) {
-	FL_SET(hash, HASH_DELETED);
-	return val;
+    if (RHASH(hash)->iter_lev > 0) {
+	if (st_delete_safe(RHASH(hash)->tbl, &key, &val, Qnil)) {
+	    FL_SET(hash, HASH_DELETED);
+	    return val;
+	}
     }
     else if (st_delete(RHASH(hash)->tbl, &key, &val))
 	return val;

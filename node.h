@@ -299,7 +299,7 @@ typedef struct RNode {
 #define NEW_MODULE(n,b) rb_node_newnode(NODE_MODULE,n,NEW_CBODY(b),0)
 #define NEW_COLON2(c,i) rb_node_newnode(NODE_COLON2,c,i,0)
 #define NEW_COLON3(i) rb_node_newnode(NODE_COLON3,0,i,0)
-#define NEW_CREF0() (cur_cref=rb_node_newnode(NODE_CREF,RNODE(ruby_frame->cbase)->nd_clss,0,0))
+#define NEW_CREF0() (cur_cref=RNODE(ruby_frame->cbase))
 #define NEW_CREF() (cur_cref=rb_node_newnode(NODE_CREF,0,0,cur_cref))
 #define NEW_CBODY(b) (cur_cref->nd_body=NEW_SCOPE(b),cur_cref)
 #define NEW_DOT2(b,e) rb_node_newnode(NODE_DOT2,b,e,0)

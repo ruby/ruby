@@ -1,3 +1,38 @@
+Wed Mar 22 21:49:36 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* st.c (st_delete_safe): skip already deleted entry.
+
+	* hash.c (rb_hash_delete): modify brace miss.
+
+Wed Mar 22 08:53:58 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (exec_under): do not push cbase if ruby_cbase == under.
+
+	* node.h (NEW_CREF0): preserve cbase nesting.
+
+Tue Mar 21 12:57:50 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* object.c (rb_class_s_new): Class::new should call `inherited'.
+
+Fri Mar 17 15:02:45 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* variable.c (rb_autoload_id): defining new autoload should be
+	  prohibited for $SAFE > 4.
+
+	* variable.c (rb_const_get): autoload should be possible for 
+	  $SAFE > 4.
+
+	* eval.c (call_trace_func): should handle T_ICLASS properly.
+
+Wed Mar 15 21:25:04 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* array.c (rb_ary_join): 'result' is always duplicated
+	  before concat string.
+
+Wed Mar 15 13:12:39 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (rb_str_chomp_bang): forgot to call rb_str_modify().
+
 Mon Mar 13 18:14:52 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* stable version 1.4.4 released.

@@ -226,6 +226,7 @@ rb_autoload_id(id, filename)
     ID id;
     const char *filename;
 {
+    rb_secure(4);
     if (!rb_is_const_id(id)) {
 	rb_raise(rb_eNameError, "autoload must be constant name",
 		 rb_id2name(id));
@@ -640,7 +641,7 @@ rb_gvar_set(entry, val)
 }
 
 VALUE
-rb_gvar_set2(name, val)
+rb_gv_set(name, val)
     const char *name;
     VALUE val;
 {
@@ -648,6 +649,16 @@ rb_gvar_set2(name, val)
 
     entry = rb_global_entry(global_id(name));
     return rb_gvar_set(entry, val);
+}
+
+VALUE
+rb_gv_get(name)
+    const char *name;
+{
+    struct global_entry *entry;
+
+    entry = rb_global_entry(global_id(name));
+    return rb_gvar_get(entry);
 }
 
 VALUE
@@ -1043,6 +1054,7 @@ rb_const_get(klass, id)
 
 	st_delete(autoload_tbl, &id, &modname);
 	module = rb_str_new2(modname);
+	FL_UNSET(module, FL_TAINT);
 	free(modname);
 	rb_f_require(Qnil, module);
 	return rb_const_get(klass, id);

@@ -801,8 +801,9 @@ else
     arch="${host_cpu}-${host_os}"
     AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "${arch}")
 fi
+
 AC_DEFINE_UNQUOTED(RUBY_ARCHLIB, "${RUBY_LIB_PATH}/${arch}")
-AC_DEFINE_UNQUOTED(RUBY_SITE_ARCHLIB, "${RUBY_SITE_LIB_PATH}/${arch}")
+AC_DEFINE_UNQUOTED(RUBY_SITE_ARCHLIB, "${RUBY_SITE_LIB_PATH2}/${arch}")
 
 AC_ARG_WITH(search-path,
 		[--with-search-path	  specify the additional search path],

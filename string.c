@@ -2272,6 +2272,7 @@ rb_str_chomp_bang(argc, argv, str)
 	    len--;
 	}
 	if (len < RSTRING(str)->len) {
+	    rb_str_modify(str);
 	    RSTRING(str)->len = len;
 	    RSTRING(str)->ptr[len] = '\0';
 	    return str;
@@ -2284,6 +2285,7 @@ rb_str_chomp_bang(argc, argv, str)
     if (p[len-1] == newline &&
 	(rslen <= 1 ||
 	 memcmp(RSTRING(rs)->ptr, p+len-rslen, rslen) == 0)) {
+	rb_str_modify(str);
 	RSTRING(str)->len -= rslen;
 	RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
 	return str;

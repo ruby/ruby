@@ -1736,7 +1736,10 @@ call_trace_func(event, file, line, self, id, klass)
 	ruby_frame->file = ruby_sourcefile = file;
     }
     if (klass) {
-	if (TYPE(klass) == T_ICLASS || FL_TEST(klass, FL_SINGLETON)) {
+	if (TYPE(klass) == T_ICLASS) {
+	    klass = RBASIC(klass)->klass;
+	}
+	else if (FL_TEST(klass, FL_SINGLETON)) {
 	    klass = self;
 	}
     }
@@ -3875,7 +3878,7 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
 		    line = ruby_sourceline;
 		}
 
-		call_trace_func("c-call", 0, 0, 0, id, 0);
+		call_trace_func("c-call", 0, 0, recv, id, klass);
 		PUSH_TAG(PROT_FUNC);
 		if ((state = EXEC_TAG()) == 0) {
 		    result = call_cfunc(body->nd_cfnc, recv, len, argc, argv);
@@ -4469,7 +4472,9 @@ exec_under(func, under, args)
     ruby_frame->last_class = _frame.prev->last_class;
     ruby_frame->argc = _frame.prev->argc;
     ruby_frame->argv = _frame.prev->argv;
-    ruby_frame->cbase = (VALUE)rb_node_newnode(NODE_CREF,under,0,cbase);
+    if (RNODE(ruby_frame->cbase)->nd_clss != under) {
+	ruby_frame->cbase = (VALUE)rb_node_newnode(NODE_CREF,under,0,ruby_frame->cbase);
+    }
     mode = scope_vmode;
     SCOPE_SET(SCOPE_PUBLIC);
     PUSH_TAG(PROT_NONE);

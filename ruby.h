@@ -192,6 +192,7 @@ int rb_fix2int _((VALUE));
 #define FIX2INT(x) FIX2LONG(x)
 #define FIX2UINT(x) FIX2ULONG(x)
 #endif
+#define SYM2ID(x) FIX2INT(x)
 
 double rb_num2dbl _((VALUE));
 #define NUM2DBL(x) rb_num2dbl((VALUE)(x))
@@ -404,6 +405,8 @@ VALUE rb_funcall2 _((VALUE, ID, int, VALUE*));
 VALUE rb_funcall3 _((VALUE, ID, int, VALUE*));
 int rb_scan_args __((int, VALUE*, const char*, ...));
 
+VALUE rb_gv_set _((const char*, VALUE));
+VALUE rb_gv_get _((const char*));
 VALUE rb_iv_get _((VALUE, const char*));
 VALUE rb_iv_set _((VALUE, const char*, VALUE));
 VALUE rb_const_get _((VALUE, ID));

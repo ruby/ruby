@@ -12,7 +12,7 @@ while TRUE
       print "ruby| "
       next
     end
-    if l =~ /^\s*(class|module|def|if|case|while|for|begin)\b[^_]/
+    if l =~ /^\s*(class|module|def|if|unless|case|while|until|for|begin)\b[^_]/
       indent += 1
     end
     if l =~ /^\s*end\b[^_]/

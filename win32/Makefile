@@ -28,7 +28,7 @@ RUBY_INSTALL_NAME=ruby
 EXEEXT = .exe
 PROGRAM=$(RUBY_INSTALL_NAME)$(EXEEXT)
 
-STACK = 0x200000
+STACK = 0x2000000
 ORGLIBPATH = $(LIB)
 
 #### End of system configuration section. ####

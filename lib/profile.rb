@@ -3,7 +3,7 @@ module Profiler__
   Start = Float(Time.times[0])
   top = "toplevel".intern
   Stack = [[0, 0, top]]
-  MAP = {top => [1, 0, 0, "#toplevel"]}
+  MAP = {"#toplevel" => [1, 0, 0, "#toplevel"]}
 
   p = proc{|event, file, line, id, binding, klass|
     case event
@@ -13,17 +13,18 @@ module Profiler__
     when "return", "c-return"
       now = Float(Time.times[0])
       tick = Stack.pop
-      data = MAP[id]
+      name = klass.to_s
+      if name.nil? then name = '' end
+      if klass.kind_of? Class
+	name += "#"
+      else
+	name += "."
+      end
+      name += id.id2name
+      data = MAP[name]
       unless data
-	name = klass.to_s
-	if name.nil? then name = '' end
-	if klass.kind_of? Class
-	  name += "#"
-	else
-	  name += "."
-	end
-	data = [0.0, 0.0, 0.0, name+id.id2name]
-	MAP[id] = data
+	data = [0.0, 0.0, 0.0, name]
+	MAP[name] = data
       end
       data[0] += 1
       cost = now - tick[0]
@@ -36,7 +37,7 @@ module Profiler__
     set_trace_func nil
     total = Float(Time.times[0]) - Start
     if total == 0 then total = 0.01 end
-    MAP[:toplevel][1] = total
+    MAP["#toplevel"][1] = total
 #    f = open("./rmon.out", "w")
     f = STDERR
     data = MAP.values.sort!{|a,b| b[2] <=> a[2]}

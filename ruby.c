@@ -76,7 +76,7 @@ usage(name)
     const char *name;
 {
     /* This message really ought to be max 23 lines.
-     * Removed -h because the user already knows that opton. Others? */
+     * Removed -h because the user already knows that option. Others? */
 
     static char *usage_msg[] = {
 "-0[octal]       specify record separator (\\0, if no argument)",
@@ -110,13 +110,6 @@ NULL
     while (*p)
 	printf("\n  %s", *p++);
 }
-
-#ifndef RUBY_LIB
-#define RUBY_LIB "/usr/local/lib/ruby"
-#endif
-#ifndef RUBY_SITE_LIB
-#define RUBY_SITE_LIB "/usr/local/lib/site_ruby"
-#endif
 
 extern VALUE rb_load_path;
 
@@ -563,10 +556,10 @@ proc_options(argcp, argvp)
 	    argv[0][0] = '$';
 	    if (s = strchr(argv[0], '=')) {
 		*s++ = '\0';
-		rb_gvar_set2(argv[0], rb_str_new2(s));
+		rb_gv_set(argv[0], rb_str_new2(s));
 	    }
 	    else {
-		rb_gvar_set2(argv[0], Qtrue);
+		rb_gv_set(argv[0], Qtrue);
 	    }
 	    argv[0][0] = '-';
 	}
@@ -872,17 +865,14 @@ ruby_prog_init()
     addpath(ruby_libpath());
 #endif
 
-#ifdef RUBY_ARCHLIB
     addpath(RUBY_ARCHLIB);
-#endif
 #ifdef RUBY_THIN_ARCHLIB
     addpath(RUBY_THIN_ARCHLIB);
 #endif
 
     addpath(RUBY_SITE_LIB);
-#ifdef RUBY_SITE_ARCHLIB
+    addpath(RUBY_SITE_LIB2);
     addpath(RUBY_SITE_ARCHLIB);
-#endif
 #ifdef RUBY_SITE_THIN_ARCHLIB
     addpath(RUBY_SITE_THIN_ARCHLIB);
 #endif

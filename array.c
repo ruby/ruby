@@ -663,7 +663,7 @@ rb_ary_join(ary, sep)
 	}
 	break;
       default:
-	result = rb_obj_as_string(tmp);
+	result = rb_str_dup(rb_obj_as_string(tmp));
 	break;
     }
 
