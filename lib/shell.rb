@@ -123,10 +123,10 @@ class Shell
     end
   end
 
-  # ほとんどのShell Command は CommandProcessor により定義される.
+  # Most Shell commands are defined via CommandProcessor
 
   #
-  # Dir関連メソッド
+  # Dir related methods
   #
   # Shell#cwd/dir/getwd/pwd
   # Shell#chdir/cd
@@ -143,7 +143,8 @@ class Shell
   attr :dir_stack
   alias dirs dir_stack
 
-  # イテレータとして呼ばれると一時的にcdすることになる.
+  # If called as iterator, it restores the current directory when the
+  # block ends.
   def chdir(path = nil)
     if iterator?
       cwd_old = @cwd
@@ -202,7 +203,7 @@ class Shell
 
 
   #
-  # process 管理
+  # process management
   #
   def jobs
     @process_controller.jobs
@@ -213,7 +214,7 @@ class Shell
   end
 
   #
-  # command 定義
+  # command definitions
   #
   def Shell.def_system_command(command, path = command)
     CommandProcessor.def_system_command(command, path)
