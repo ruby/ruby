@@ -5164,9 +5164,9 @@ eval(self, src, scope, file, line)
 	ruby_cref = (NODE*)ruby_frame->cbase;
 	old_wrapper = ruby_wrapper;
 	ruby_wrapper = data->wrapper;
-	if ((file == 0 || (line == 1 && strcmp(file, "(eval)") == 0)) &&
-	    data->body && data->body->nd_file) {
+	if ((file == 0 || (line == 1 && strcmp(file, "(eval)") == 0)) && data->body) {
 	    file = data->body->nd_file;
+	    if (!file) file = "__builtin__";
 	    line = nd_line(data->body);
 	}
 
@@ -7223,7 +7223,8 @@ method_inspect(method)
 }
 
 static VALUE
-mproc()
+mproc(method)
+    VALUE method;
 {
     VALUE proc;
 
@@ -7233,6 +7234,16 @@ mproc()
     proc = rb_f_lambda();
     POP_FRAME();
     POP_ITER();
+
+    if (method) {
+	struct METHOD *mdata;
+	struct BLOCK *bdata;
+
+	Data_Get_Struct(method, struct METHOD, mdata);
+	Data_Get_Struct(proc, struct BLOCK, bdata);
+	bdata->body->nd_file = mdata->body->nd_file;
+	nd_set_line(bdata->body, nd_line(mdata->body));
+    }
 
     return proc;
 }
@@ -7264,14 +7275,14 @@ static VALUE
 method_proc(method)
     VALUE method;
 {
-    return rb_iterate((VALUE(*)_((VALUE)))mproc, 0, bmcall, method);
+    return rb_iterate((VALUE(*)_((VALUE)))mproc, method, bmcall, method);
 }
 
 static VALUE
 umethod_proc(method)
     VALUE method;
 {
-    return rb_iterate((VALUE(*)_((VALUE)))mproc, 0, umcall, method);
+    return rb_iterate((VALUE(*)_((VALUE)))mproc, method, umcall, method);
 }
 
 static VALUE
@@ -7456,7 +7467,7 @@ enum thread_status {
     THREAD_TO_KILL,
     THREAD_RUNNABLE,
     THREAD_STOPPED,
-    THREAD_KILLED
+    THREAD_KILLED,
 };
 
 #define WAIT_FD		(1<<0)
@@ -9010,6 +9021,7 @@ rb_thread_create(fn, arg)
     VALUE (*fn)();
     void *arg;
 {
+    Init_stack((VALUE*)&arg);
     return rb_thread_start_0(fn, arg, rb_thread_alloc(rb_cThread));
 }
 

@@ -7,10 +7,23 @@ Tue Feb 25 23:03:08 2003  NAKAMURA Hiroshi  <nahi@ruby-lang.org>
 	* lib/debug.rb (DEBUGGER__::Context#debug_command): bp filename must
           be the basename of it.  [ruby-talk:65644]
 
+Mon Feb 24 08:06:29 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (str_new): need no MEMZERO().
+
 Sun Feb 23 17:57:06 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/fileutils (fu_stream_blksize): wrong logial condition.
 	  (and -> or).
+
+Sat Feb 22 03:12:56 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (fix_gt): use rb_num_coerce_cmp() instead of
+	  rb_num_coerce_bin.
+
+	* numeric.c (fix_ge, fix_lt, fix_le): ditto.
+
+	* numeric.c (flo_gt, flo_ge, flo_lt, flo_le): ditto.
 
 Sat Feb 22 02:45:20 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -57,9 +70,7 @@ Fri Feb 21 05:16:14 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* compar.c (cmp_gt): return nil if "<=>" returns nil (means
 	  incomparable).
 
-	* compar.c (cmp_ge): ditto.
-
-	* compar.c (cmp_lt): ditto.
+	* compar.c (cmp_ge, cmp_lt, cmp_le): ditto.
 
 	* compar.c (cmp_between): use RTEST(), since cmp_lt and cmp_gt may
 	  return nil.
@@ -102,9 +113,7 @@ Thu Feb 20 04:07:06 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (is_defined): private "[]=" and "foo=" support.
 
-	* eval.c (rb_eval): ditto.
-
-	* eval.c (assign): ditto.
+	* eval.c (rb_eval, assign): ditto.
 
 Thu Feb 20 03:58:34 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -755,7 +764,7 @@ Mon Jan 13 20:45:19 2003  Guy Decoux  <ts@moulon.inra.fr>
 
 	* parse.y (list_append): avoid O(n) search using node->nd_next->nd_end.
 
-	* parse.y (list_append): ditto.
+	* parse.y (list_concat): ditto.
 
 	* eval.c (rb_eval): NODE_ARRY nd_end adoption.
 
@@ -853,13 +862,7 @@ Tue Jan  7 02:46:29 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* hash.c (env_clear): new Hash compatible method.
 
-	* hash.c (env_shift): ditto.
-
-	* hash.c (env_invert): ditto.
-
-	* hash.c (env_replace): ditto.
-
-	* hash.c (env_update): ditto.
+	* hash.c (env_shift, env_invert, env_replace, env_update): ditto.
 
 Mon Jan  6 23:36:29 2003  Akinori MUSHA  <knu@iDaemons.org>
 
@@ -895,11 +898,7 @@ Mon Jan  6 16:44:52 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_join): dispatch based on "to_str".
 
-	* array.c (rb_ary_times): ditto.
-
-	* array.c (rb_ary_equal): ditto.
-
-	* process.c (rb_f_exec): dispatch based on "to_ary".
+	* array.c (rb_ary_times, rb_ary_equal): ditto.
 
 Mon Jan  6 13:26:35 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 

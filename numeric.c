@@ -594,7 +594,7 @@ flo_gt(x, y)
 	break;
 
       default:
-	return rb_num_coerce_bin(x, y);
+	return rb_num_coerce_cmp(x, y);
     }
     return (a > b)?Qtrue:Qfalse;
 }
@@ -620,7 +620,7 @@ flo_ge(x, y)
 	break;
 
       default:
-	return rb_num_coerce_bin(x, y);
+	return rb_num_coerce_cmp(x, y);
     }
     return (a >= b)?Qtrue:Qfalse;
 }
@@ -646,7 +646,7 @@ flo_lt(x, y)
 	break;
 
       default:
-	return rb_num_coerce_bin(x, y);
+	return rb_num_coerce_cmp(x, y);
     }
     return (a < b)?Qtrue:Qfalse;
 }
@@ -672,7 +672,7 @@ flo_le(x, y)
 	break;
 
       default:
-	return rb_num_coerce_bin(x, y);
+	return rb_num_coerce_cmp(x, y);
     }
     return (a <= b)?Qtrue:Qfalse;
 }
@@ -1407,7 +1407,7 @@ fix_gt(x, y)
 	return Qfalse;
     }
     else {
-	return rb_num_coerce_bin(x, y);
+	return rb_num_coerce_cmp(x, y);
     }
 }
 
@@ -1422,7 +1422,7 @@ fix_ge(x, y)
 	return Qfalse;
     }
     else {
-	return rb_num_coerce_bin(x, y);
+	return rb_num_coerce_cmp(x, y);
     }
 }
 
@@ -1437,7 +1437,7 @@ fix_lt(x, y)
 	return Qfalse;
     }
     else {
-	return rb_num_coerce_bin(x, y);
+	return rb_num_coerce_cmp(x, y);
     }
 }
 
@@ -1452,7 +1452,7 @@ fix_le(x, y)
 	return Qfalse;
     }
     else {
-	return rb_num_coerce_bin(x, y);
+	return rb_num_coerce_cmp(x, y);
     }
 }
 

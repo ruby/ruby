@@ -70,9 +70,6 @@ str_new(klass, ptr, len)
     if (ptr) {
 	memcpy(RSTRING(str)->ptr, ptr, len);
     }
-    else {
-	MEMZERO(RSTRING(str)->ptr, char, len);
-    }
     RSTRING(str)->ptr[len] = '\0';
     return str;
 }
