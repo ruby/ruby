@@ -1,4 +1,8 @@
-Wed Jun  6 23:02:36 2001  Keiju Ishitsuka <keiju@ishitsuka.com>
+Thu Jun  7 17:28:00 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (yylex): exclude kDO_BLOCK too much by false condition.
+
+Wed Jun  6 23:02:36 2001  Keiju Ishitsuka  <keiju@ishitsuka.com>
 
 	* lib/sync.rb: bug fix if obj.initialize has parameters when
 	  obj.extend(Sync_m)

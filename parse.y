@@ -426,6 +426,9 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    }
 		| lhs '=' mrhs_basic
 		    {
+			if (nd_type($3) == NODE_RESTARGS) {
+			    nd_set_type($3, NODE_REXPAND);
+			}
 			$$ = node_assign($1, $3);
 		    }
 		| mlhs '=' mrhs
@@ -1147,7 +1150,7 @@ mrhs_basic	: args ',' arg
 		| tSTAR arg
 		    {
 			value_expr($2);
-			$$ = NEW_REXPAND($2);
+			$$ = NEW_RESTARGS($2);
 		    }
 
 primary		: literal
@@ -1212,8 +1215,9 @@ primary		: literal
 		    }
 		| tLBRACK aref_args ']'
 		    {
-			if ($2 == 0)
+		        if ($2 == 0) {
 			    $$ = NEW_ZARRAY(); /* zero length array*/
+			}
 			else {
 			    $$ = $2;
 			}
@@ -3719,8 +3723,7 @@ yylex()
 		    }
 		    if (kw->id[0] == kDO) {
 			if (COND_P()) return kDO_COND;
-			if (CMDARG_P() && state != EXPR_CMDARG && state != EXPR_ARG)
-			    return kDO_BLOCK;
+			if (CMDARG_P()) return kDO_BLOCK;
 			return kDO;
 		    }
 		    if (state == EXPR_BEG)
