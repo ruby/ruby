@@ -946,9 +946,11 @@ if $0 == __FILE__
       assert_pathname_plus('/', '/', '..')
       assert_pathname_plus('.', 'a', '..')
       assert_pathname_plus('a', 'a/b', '..')
+      assert_pathname_plus('../..', '..', '..')
       assert_pathname_plus('/c', '/', '../c')
       assert_pathname_plus('c', 'a', '../c')
       assert_pathname_plus('a/c', 'a/b', '../c')
+      assert_pathname_plus('../../c', '..', '../c')
     end
   end
 end
