@@ -1,3 +1,7 @@
+Thu Dec 23 00:16:32 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (bsdi): use $(CC) for LDSHARED.  fixed [ruby-dev:25270]
+
 Wed Dec 22 11:14:55 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_mode_modenum): replace O_ACCMODE with O_RDWR.
