@@ -109,10 +109,12 @@ class Pathname
   # realpath returns a real pathname of self in actual filesystem.
   # The real pathname doesn't contain a symlink and useless dots.
   #
-  # If false is given for the optional argument force_absolute,
-  # it may return relative pathname.
-  # Otherwise it returns absolute pathname.
+  # It returns absolute pathname.
   def realpath(force_absolute=true)
+    unless force_absolute
+      warn "Pathname#realpath's force_absolute argument is obsoleted."
+    end
+
     if %r{\A/} =~ @path
       top = '/'
       unresolved = @path.scan(%r{[^/]+})

@@ -1,3 +1,8 @@
+Fri Nov 28 15:41:15 2003  Tanaka Akira  <akr@m17n.org>
+
+	* lib/pathname.rb (Pathname#realpath): obsolete the force_absolute
+	  argument.
+
 Fri Nov 28 14:41:52 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/soap/streamHandler.rb: drop unused http parameters.
