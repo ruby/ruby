@@ -442,11 +442,9 @@ io_gets_method(argc, argv, io)
 	    c = cnt ? 0 : EOF;
 	}
 
-	if (c == EOF) {
-	    if (!append && cnt == 0) {
-		str = Qnil;
-		goto return_gets;
-	    }
+	if (c == EOF && !append && cnt == 0) {
+	    str = Qnil;
+	    goto return_gets;
 	}
 
 	if (append)
@@ -517,11 +515,9 @@ io_gets(io)
     }
     cnt = bp - buf;
 
-    if (c == EOF) {
-	if (!append && cnt == 0) {
-	    str = Qnil;
-	    goto return_gets;
-	}
+    if (c == EOF && !append && cnt == 0) {
+	str = Qnil;
+	goto return_gets;
     }
 
     if (append)

@@ -3354,7 +3354,8 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
 
 		    if (local_vars) {
 			if (i > 0) {
-			    MEMCPY(local_vars, argv, VALUE, i);
+			    /* +2 for $_ and $~ */
+			    MEMCPY(local_vars+2, argv, VALUE, i);
 			}
 			argv += i; argc -= i;
 			if (node->nd_opt) {

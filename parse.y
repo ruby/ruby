@@ -3648,15 +3648,6 @@ logop(type, left, right)
     NODE *left, *right;
 {
     value_expr(left);
-
-    switch (nd_type(left)) {
-      case NODE_NIL:		/* always false */
-      case NODE_FALSE:
-	return type == NODE_OR ? right : left;
-      case NODE_LIT:		/* always true */
-	return type == NODE_AND ? right : left;
-    }
-
     return node_newnode(type, cond(left), cond(right));
 }
 
@@ -3728,13 +3719,7 @@ local_pop()
 
     if (lvtbl->tbl) {
 	if (!lvtbl->nofree) free(lvtbl->tbl);
-	else {
-	    lvtbl->tbl[0] = lvtbl->cnt;
-#if 1
-	    lvtbl->tbl[lvtbl->cnt+1] = local_cnt('_');
-	    lvtbl->tbl[lvtbl->cnt+2] = local_cnt('~');
-#endif
-	}
+	else lvtbl->tbl[0] = lvtbl->cnt;
     }
     free(lvtbl);
     lvtbl = local;
@@ -3743,10 +3728,6 @@ local_pop()
 static ID*
 local_tbl()
 {
-#if 1
-    local_cnt('_');
-    local_cnt('~');
-#endif
     lvtbl->nofree = 1;
     return lvtbl->tbl;
 }
@@ -3764,11 +3745,16 @@ local_cnt(id)
     }
 
     if (lvtbl->tbl == 0) {
-	lvtbl->tbl = ALLOC_N(ID, 2);
+	lvtbl->tbl = ALLOC_N(ID, 4);
 	lvtbl->tbl[0] = 0;
+	lvtbl->tbl[1] = '_';
+	lvtbl->tbl[2] = '~';
+	lvtbl->cnt = 2;
+	if (id == '_') return 0;
+	if (id == '~') return 1;
     }
     else {
-	REALLOC_N(lvtbl->tbl, ID, lvtbl->cnt+4);
+	REALLOC_N(lvtbl->tbl, ID, lvtbl->cnt+2);
     }
 
     lvtbl->tbl[lvtbl->cnt+1] = id;
@@ -4109,38 +4095,13 @@ local_var_append(id)
     lvtbl = save;
 }
 
-static VALUE
-special_local_get(c)
-    char c;
-{
-    int cnt, max;
-
-    if (!the_scope->local_vars) return Qnil;
-    for (cnt=1, max=the_scope->local_tbl[0]+1; cnt<max ;cnt++) {
-	if (the_scope->local_tbl[cnt] == c) {
-	    return the_scope->local_vars[cnt-1];
-	}
-    }
-    return Qnil;
-}
-
 static void
 special_local_set(c, val)
     char c;
     VALUE val;
 {
-    int cnt, max;
+    int cnt;
 
-#if 0
-    if (the_scope->local_tbl) {
-	for (cnt=1, max=the_scope->local_tbl[0]+1; cnt<max ;cnt++) {
-	    if (the_scope->local_tbl[cnt] == c) {
-		the_scope->local_vars[cnt-1] = val;
-		return;
-	    }
-	}
-    }
-#endif
     top_local_init();
     cnt = local_cnt(c);
     top_local_setup();
@@ -4150,51 +4111,41 @@ special_local_set(c, val)
 VALUE
 backref_get()
 {
-#if 1
-    if (the_scope->local_tbl) {
-	return the_scope->local_vars[the_scope->local_tbl[the_scope->local_tbl[0]+2]];
+    if (the_scope->local_vars) {
+	return the_scope->local_vars[1];
     }
     return Qnil;
-#else
-    return special_local_get('~');
-#endif
 }
 
 void
 backref_set(val)
     VALUE val;
 {
-#if 1
-    if (the_scope->local_tbl) {
-	the_scope->local_vars[the_scope->local_tbl[the_scope->local_tbl[0]+2]] = val;
-    } else
-#endif
-    special_local_set('~', val);
+    if (the_scope->local_vars) {
+	the_scope->local_vars[1] = val;
+    }
+    else {
+	special_local_set('~', val);
+    }
 }
 
 VALUE
 lastline_get()
 {
-#if 1
-    if (the_scope->local_tbl) {
-	return the_scope->local_vars[the_scope->local_tbl[the_scope->local_tbl[0]+1]];
+    if (the_scope->local_vars) {
+	return the_scope->local_vars[0];
     }
     return Qnil;
-#else
-    VALUE v = special_local_get('_');
-    if (v == 1) return Qnil;	/* $_ undefined */
-    return v;
-#endif
 }
 
 void
 lastline_set(val)
     VALUE val;
 {
-#if 1
-    if (the_scope->local_tbl) {
-	the_scope->local_vars[the_scope->local_tbl[the_scope->local_tbl[0]+1]] = val;
-    } else
-#endif
-    special_local_set('_', val);
+    if (the_scope->local_vars) {
+	the_scope->local_vars[0] = val;
+    }
+    else {
+	special_local_set('_', val);
+    }
 }
