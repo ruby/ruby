@@ -104,7 +104,6 @@ ext/Setup.dj
 ext/Setup.emx
 ext/Setup.nt
 ext/Setup.x68
-ext/configsub.rb
 ext/extmk.rb
 lib/English.rb
 lib/Env.rb
