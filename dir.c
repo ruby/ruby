@@ -909,7 +909,7 @@ rb_push_glob(str, flags)
     char *p, *pend;
     char *buf;
     char *t;
-    int nest, maxnest;
+    int nest, maxnest = 0;
     int noescape = flags & FNM_NOESCAPE;
     VALUE ary;
 

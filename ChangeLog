@@ -1,3 +1,8 @@
+Mon Mar 25 17:18:48 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* dir.c (rb_push_glob): local variable 'maxnest' was
+	  uninitialized.
+
 Mon Mar 25 13:24:20 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/socket/socket.c (bsock_do_not_rev_lookup_set): should not be
