@@ -1,3 +1,8 @@
+Wed Dec  8 03:26:51 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_bio.c (ossl_obj2bio): should not use fptr->f.
+	  [ruby-dev:25101]
+
 Wed Dec  8 03:26:41 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* runruby.rb: prepend LIBRUBY_SO to LD_PRELOAD as well as rubytest.rb.

@@ -17,15 +17,28 @@ ossl_obj2bio(VALUE obj)
 
     if (TYPE(obj) == T_FILE) {
 	OpenFile *fptr;
+	FILE *fp;
+	int fd;
+
 	GetOpenFile(obj, fptr);
 	rb_io_check_readable(fptr);
-	bio = BIO_new_fp(fptr->f, BIO_NOCLOSE);
-    }       
+	if ((fd = dup(fptr->fd)) < 0){
+	    rb_sys_fail(0);
+	}
+	if (!(fp = fdopen(fd, "r"))){
+	    close(fd);
+	    rb_sys_fail(0);
+	}
+	if (!(bio = BIO_new_fp(fp, BIO_CLOSE))){
+	    fclose(fp);
+	    ossl_raise(eOSSLError, NULL);
+	}
+    }
     else {
 	StringValue(obj);
 	bio = BIO_new_mem_buf(RSTRING(obj)->ptr, RSTRING(obj)->len);
+	if (!bio) ossl_raise(eOSSLError, NULL);
     }
-    if (!bio) ossl_raise(eOSSLError, NULL);
 
     return bio;
 }
