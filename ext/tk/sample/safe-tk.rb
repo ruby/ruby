@@ -5,7 +5,10 @@ require "multi-tk"
 
 # create slave interpreters
 trusted_slave = MultiTkIp.new_slave
-safe_slave    = MultiTkIp.new_safeTk
+safe_slave1   = MultiTkIp.new_safeTk
+safe_slave2   = MultiTkIp.new_safeTk('fill'=>:none, 'expand'=>false)
+#safe_slave2   = MultiTkIp.new_safeTk('fill'=>:none)
+#safe_slave2   = MultiTkIp.new_safeTk('expand'=>false)
 
 
 cmd = Proc.new{|txt|
@@ -42,7 +45,8 @@ cmd = Proc.new{|txt|
 
 # call on the default master interpreter
 trusted_slave.eval_proc(cmd, 'trusted')
-safe_slave.eval_proc(cmd, 'safe')
+safe_slave1.eval_proc(cmd, 'safe1')
+safe_slave2.eval_proc(cmd, 'safe2')
 cmd.call('master')
 
 Tk.mainloop

@@ -73,8 +73,8 @@ Tcl_Interp  *current_interp;
 #define DEFAULT_NO_EVENT_TICK      10/*counts*/
 #define DEFAULT_NO_EVENT_WAIT      20/*milliseconds ( 1 -- 999 ) */
 #define WATCHDOG_INTERVAL          10/*milliseconds ( 1 -- 999 ) */
-#define DEFAULT_TIMER_TICK          0/*milliseconds*/
-#define NO_THREAD_INTERRUPT_TIME  200/*milliseconds*/
+#define DEFAULT_TIMER_TICK          0/*milliseconds ( 0 -- 999 ) */
+#define NO_THREAD_INTERRUPT_TIME  200/*milliseconds ( 1 -- 999 ) */
 
 static int event_loop_max = DEFAULT_EVENT_LOOP_MAX;
 static int no_event_tick  = DEFAULT_NO_EVENT_TICK;
@@ -83,6 +83,7 @@ static int timer_tick     = DEFAULT_TIMER_TICK;
 static int req_timer_tick = DEFAULT_TIMER_TICK;
 static int run_timer_flag = 0;
 
+static int event_loop_wait_event   = 0;
 static int event_loop_abort_no_cmd = 0;
 static int loop_counter = 0;
 
@@ -101,8 +102,8 @@ static void
 _timer_for_tcl(clientData)
     ClientData clientData;
 {
-    struct invoke_queue *q, *tmp;
-    VALUE thread;
+    /* struct invoke_queue *q, *tmp; */
+    /* VALUE thread; */
 
     DUMP1("called timer_for_tcl");
     Tk_DeleteTimerHandler(timer_token);
@@ -216,8 +217,8 @@ rb_evloop_abort_no_cmd_set(self, val)
     VALUE self, val;
 {
     rb_secure(4);
-    event_loop_abort_no_cmd = (val == Qtrue)? 1: 0;
-    return rb_evloop_abort_no_cmd();
+    event_loop_abort_no_cmd = (RTEST(val))? 1: 0;
+    return rb_evloop_abort_no_cmd(self);
 }
 
 VALUE
@@ -244,6 +245,8 @@ lib_mainloop_core(check_root_widget)
     for(;;) {
 	if (rb_thread_alone()) {
 	    DUMP1("no other thread");
+	    event_loop_wait_event = 0;
+
 	    if (timer_tick == 0) {
 		timer_tick = NO_THREAD_INTERRUPT_TIME;
 		timer_token = Tk_CreateTimerHandler(timer_tick, 
@@ -268,6 +271,8 @@ lib_mainloop_core(check_root_widget)
 
 	} else {
 	    DUMP1("there are other threads");
+	    event_loop_wait_event = 1;
+
 	    timer_tick = req_timer_tick;
 	    tick_counter = 0;
 	    while(tick_counter < event_loop_max) {
@@ -366,15 +371,15 @@ VALUE
 lib_watchdog_core(check_rootwidget)
     VALUE check_rootwidget;
 {
-    VALUE current = eventloop_thread;
     VALUE evloop;
-    int   check = (check_rootwidget == Qtrue);
     int   prev_val = -1;
-    struct timeval t;
-    VALUE ret;
+    int   chance = 0;
+    struct timeval t0, t1;
 
-    t.tv_sec  = (time_t)0;
-    t.tv_usec = (time_t)((WATCHDOG_INTERVAL)*1000.0);
+    t0.tv_sec  = (time_t)0;
+    t0.tv_usec = (time_t)((NO_THREAD_INTERRUPT_TIME)*1000.0);
+    t1.tv_sec  = (time_t)0;
+    t1.tv_usec = (time_t)((WATCHDOG_INTERVAL)*1000.0);
 
     /* check other watchdog thread */
     if (watchdog_thread != 0) {
@@ -389,18 +394,29 @@ lib_watchdog_core(check_rootwidget)
     /* watchdog start */
     do {
 	if (eventloop_thread == 0 || loop_counter == prev_val) {
-	    /* start new eventloop thread */
-	    DUMP2("eventloop thread %lx is sleeping or dead", 
-		  eventloop_thread);
-	    evloop = rb_thread_create(lib_mainloop_launcher, 
-				      (void*)&check_rootwidget);
-	    DUMP2("create new eventloop thread %lx", evloop);
-	    rb_thread_run(evloop);
+	    if (rb_funcall(eventloop_thread, rb_intern("stop?"), 0) == Qtrue
+		&& ++chance >= 3) {
+	      /* start new eventloop thread */
+	      DUMP2("eventloop thread %lx is sleeping or dead", 
+		    eventloop_thread);
+	      evloop = rb_thread_create(lib_mainloop_launcher, 
+					(void*)&check_rootwidget);
+	      DUMP2("create new eventloop thread %lx", evloop);
+	      loop_counter = -1;
+	      chance = 0;
+	      rb_thread_run(evloop);
+	    }
 	} else {
-	    rb_thread_wait_for(t);
+	    loop_counter = prev_val;
+	    chance = 0;
+	    if (event_loop_wait_event) {
+		rb_thread_wait_for(t0);
+	    } else {
+		rb_thread_wait_for(t1);
+	    }
 	    /* rb_thread_schedule(); */
 	}
-    } while(!check || Tk_GetNumMainWindows() != 0);
+    } while(!(check_rootwidget == Qtrue) || Tk_GetNumMainWindows() != 0);
 
     return Qnil;
 }
@@ -439,7 +455,7 @@ lib_do_one_event(argc, argv, self)
     VALUE *argv;
     VALUE self;
 {
-    VALUE obj, vflags;
+    VALUE vflags;
     int flags;
     int ret;
 
@@ -619,7 +635,7 @@ ip_init(argc, argv, self)
     VALUE self;
 {
     struct tcltkip *ptr;	/* tcltkip data struct */
-    VALUE argv0, opts, opt_n;
+    VALUE argv0, opts;
     int cnt;
 
     /* create object */
@@ -960,7 +976,26 @@ ip_invoke_real(argc, argv, obj)
 #endif
     {
 	TRAP_BEG;
+#if TCL_MAJOR_VERSION >= 8
+# ifdef CONST84 /* Tcl8.4.x -- ?.?.? (current latest version is 8.4.4) */
+	ptr->return_value = (*info.proc)(info.clientData, ptr->ip, 
+					 argc, (CONST84 char **)av);
+# else
+#  if TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION <= 4 /* Tcl8.0.x -- 8.4b1 */
 	ptr->return_value = (*info.proc)(info.clientData, ptr->ip, argc, av);
+
+#  else /* unknown (maybe TCL_VERSION >= 8.5) */
+#   ifdef CONST
+	ptr->return_value = (*info.proc)(info.clientData, ptr->ip, 
+					 argc, (CONST char **)av);
+#   else
+	ptr->return_value = (*info.proc)(info.clientData, ptr->ip, argc, av);
+#   endif
+#  endif
+# endif
+#else /* TCL_MAJOR_VERSION < 8 */
+	ptr->return_value = (*info.proc)(info.clientData, ptr->ip, argc, av);
+#endif
 	TRAP_END;
     }
 
@@ -992,7 +1027,7 @@ invoke_queue_handler(evPtr, flags)
     Tcl_Event *evPtr;
     int flags;
 {
-    struct invoke_queue *tmp, *q = (struct invoke_queue *)evPtr;
+    struct invoke_queue *q = (struct invoke_queue *)evPtr;
 
     DUMP1("do_invoke_queue_handler");
     DUMP2("invoke queue_thread : %lx", rb_thread_current());

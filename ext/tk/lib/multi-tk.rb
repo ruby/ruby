@@ -259,7 +259,7 @@ class MultiTkIp
   def __check_safetk_optkeys(optkeys)
     # based on 'safetk.tcl'
     new_keys = {}
-    optkeys.each{|k,v| new_key[k.to_s] = v}
+    optkeys.each{|k,v| new_keys[k.to_s] = v}
 
     # check 'display'
     if !new_keys.key?('display')
@@ -312,12 +312,24 @@ class MultiTkIp
   private :__check_safetk_optkeys
 
   def __create_safetk_frame(slave_ip, slave_name, app_name, keys)
-    # create toplevel widget
+    # display option is used by ::safe::loadTk
+    loadTk_keys = {}
+    loadTk_keys['display'] = keys['display']
     dup_keys = keys.dup
-    dup_keys['screen'] = dup_keys.delete('display')
-    dup_keys['classname'] = 'SafeTk'
+
+    # keys for toplevel : allow followings
+    toplevel_keys = {}
+    ['height', 'width', 'background', 'menu'].each{|k|
+      toplevel_keys[k] = dup_keys.delete(k) if dup_keys.key?(k)
+    }
+    toplevel_keys['classname'] = 'SafeTk'
+    toplevel_keys['screen'] = dup_keys.delete('display')
+
+    # other keys used by pack option of container frame
+
+    # create toplevel widget
     begin
-      top = TkToplevel.new(dup_keys)
+      top = TkToplevel.new(toplevel_keys)
     rescue NameError
       fail unless @interp.safe?
       fail SecurityError, "unable create toplevel on the safe interpreter"
@@ -360,10 +372,13 @@ class MultiTkIp
     }
 
     # container frame for slave interpreter
-    c = TkFrame.new(top, :container=>true).pack(:fill=>:both, :expand=>true)
+    dup_keys['fill'] = :both  unless dup_keys.key?('fill')
+    dup_keys['expand'] = true unless dup_keys.key?('expand')
+    c = TkFrame.new(top, :container=>true).pack(dup_keys)
 
-    # return container's window id
-    TkWinfo.id(c)
+    # return keys
+    loadTk_keys['use'] = TkWinfo.id(c)
+    loadTk_keys
   end
   private :__create_safetk_frame
 
@@ -375,8 +390,7 @@ class MultiTkIp
     @interp._eval("::safe::interpInit #{ip_name} "+_keys2opts(safe_opts))
     tk_opts = __check_safetk_optkeys(tk_opts)
     unless tk_opts.key?('use')
-      tk_opts['use'] = __create_safetk_frame(slave_ip, ip_name, 
-					     app_name, tk_opts)
+      tk_opts = __create_safetk_frame(slave_ip, ip_name, app_name, tk_opts)
     end
     slave_ip._invoke('set', 'argv0', app_name) if app_name.kind_of?(String)
     @interp._eval("::safe::loadTk #{ip_name} #{_keys2opts(tk_opts)}")
