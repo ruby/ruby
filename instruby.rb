@@ -100,7 +100,7 @@ if rubyw_install_name and !rubyw_install_name.empty?
   install rubyw_install_name+exeext, bindir, :mode => 0755
 end
 install dll, bindir, :mode => 0755 if enable_shared and dll != lib
-install lib, libdir, :mode => 0555 unless lib == arc
+install lib, libdir, :mode => 0755 unless lib == arc
 install arc, libdir, :mode => 0644
 install "config.h", archlibdir, :mode => 0644
 install "rbconfig.rb", archlibdir, :mode => 0644
@@ -179,6 +179,8 @@ if RUBY_PLATFORM =~ /mswin32|mingw|bccwin32/
 end
 
 Dir.glob("*.[1-9]") do |mdoc|
+  next unless File.read(mdoc)[0] == ?.
+
   section = mdoc[-1,1]
 
   destdir = mandir + section
