@@ -424,7 +424,6 @@ window_s_new(class, h, w, top, left)
     wclear(window);
     win = prep_window(class, window);
     args[0] = h; args[1] = w; args[2] = top; args[3] = left;
-    rb_obj_call_init(win, 4, args);
 
     return win;
 }
@@ -448,7 +447,6 @@ window_subwin(obj, h, w, top, left)
 		                  NUM2INT(top), NUM2INT(left));
     win = prep_window(cWindow, window);
     args[0] = h; args[1] = w; args[2] = top; args[3] = left;
-    rb_obj_call_init(win, 4, args);
 
     return win;
 }

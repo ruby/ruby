@@ -560,7 +560,11 @@ def extmake(target)
       elsif $clean
 	system "#{$make} clean"
       else
-	system "#{$make} all" or exit
+	unless system "#{$make} all"
+	  if ENV["MAKEFLAGS"] != "k" and ENV["MFLAGS"] != "-k"
+	    exit
+	  end
+	end
       end
     end
     if $static

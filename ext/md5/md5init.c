@@ -95,7 +95,6 @@ md5_new(argc, argv, class)
     if (!NIL_P(arg)) {
 	md5_update(obj, arg);
     }
-    rb_obj_call_init(obj, argc, argv);
 
     return obj;
 }

@@ -40,7 +40,7 @@ class WeakRef<Delegator
     ObjectSpace.call_finalizer orig
     ObjectSpace.call_finalizer self
     ID_MAP[@__id] = [] unless ID_MAP[@__id]
-    ID_MAP[@__id].concat self.__id__
+    ID_MAP[@__id].push self.__id__
     ID_REV_MAP[self.id] = @__id
   end
 

@@ -73,7 +73,7 @@ ruby.hではTYPE()というマクロが定義されていて，VALUEのデータ
       break;
     default:
       /* 例外を発生させる */
-      TypeError("not valid value");
+      rb_raise(rb_eTypeError, "not valid value");
       break;
   }
 
@@ -252,7 +252,7 @@ Rubyで提供されている関数を使えばRubyインタプリタに新しい機能
 
 メソッドや特異メソッドを定義するには以下の関数を使います．
 
-  void rb_define_method(VALUE class, char *name, 
+  void rb_define_method(VALUE klass, char *name, 
 		        VALUE (*func)(), int argc)
 
   void rb_define_singleton_method(VALUE object, char *name, 
@@ -277,8 +277,8 @@ argcが-1の時は引数を配列に入れて渡されます．argcが-2の時は引
 メソッドを定義する関数はもう二つあります．ひとつはprivateメ
 ソッドを定義する関数で，引数はrb_define_method()と同じです．
 
-  void rb_define_private_method(VALUE class, char *name, 
-			        VALUE (*func)(), int argc)
+  void rb_define_private_method(VALUE klass, char *name, 
+				VALUE (*func)(), int argc)
 
 privateメソッドとは関数形式でしか呼び出すことの出来ないメソッ
 ドです．
@@ -312,7 +312,7 @@ privateメソッドとは関数形式でしか呼び出すことの出来ないメソッ
 拡張ライブラリが必要な定数はあらかじめ定義しておいた方が良い
 でしょう．定数を定義する関数は二つあります．
 
-  void rb_define_const(VALUE class, char *name, VALUE val)
+  void rb_define_const(VALUE klass, char *name, VALUE val)
   void rb_define_global_const(char *name, VALUE val)
 
 前者は特定のクラス/モジュールに属する定数を定義するもの，後
@@ -467,11 +467,11 @@ RubyオブジェクトにCの構造体(へのポインタ)をくるむことでRuby
 Dataオブジェクトを生成して構造体をRubyオブジェクトにカプセル
 化するためには，以下のマクロを使います．
 
-  Data_Wrap_Struct(class,mark,free,ptr)
+  Data_Wrap_Struct(klass, mark, free, ptr)
 
 このマクロの戻り値は生成されたDataオブジェクトです．
 
-classはこのDataオブジェクトのクラスです．ptrはカプセル化する
+klassはこのDataオブジェクトのクラスです．ptrはカプセル化する
 Cの構造体へのポインタです．markはこの構造体がRubyのオブジェ
 クトへの参照がある時に使う関数です．そのような参照を含まない
 時には0を指定します．
@@ -484,11 +484,11 @@ freeはこの構造体がもう不要になった時に呼ばれる関数です．この
 Cの構造体の割当とDataオブジェクトの生成を同時に行うマクロと
 して以下のものが提供されています．
 
-  Data_Make_Struct(class, type, mark, free, sval)
+  Data_Make_Struct(klass, type, mark, free, sval)
 
 このマクロの戻り値は生成されたDataオブジェクトです．
 
-class, mark, freeはData_Wrap_Structと同じ働きをします．type
+klass, mark, freeはData_Wrap_Structと同じ働きをします．type
 は割り当てるC構造体の型です．割り当てられた構造体は変数sval
 に代入されます．この変数の型は (type*) である必要があります．
 
@@ -588,7 +588,7 @@ struct dbmdata {
 };
 
 
-obj = Data_Make_Struct(class,struct dbmdata,0,free_dbm,dbmp);
+obj = Data_Make_Struct(klass, struct dbmdata, 0, free_dbm, dbmp);
 --
 
 ここではdbmstruct構造体へのポインタをDataにカプセル化してい
@@ -633,10 +633,10 @@ fdbm_delete(obj, keystr)
 
 --
 static VALUE
-fdbm_s_open(argc, argv, class)
+fdbm_s_open(argc, argv, klass)
     int argc;
     VALUE *argv;
-    VALUE class;
+    VALUE klass;
 {
 	:
     if (rb_scan_args(argc, argv, "11", &file, &vmode) == 1) {
@@ -712,7 +712,7 @@ Makefileを作る場合の雛型になるextconf.rbというファイルを作り
 もし，ディレクトリにdependというファイルが存在すれば，
 Makefileが依存関係をチェックしてくれます．
 
- % gcc -MM *.c > depend
+  % gcc -MM *.c > depend
 
 などで作ることが出来ます．あって損は無いでしょう．
 
@@ -793,8 +793,6 @@ Ruby言語のコア
 ユーティリティ関数
 
   dln.c
-  fnmatch.c
-  glob.c
   regex.c
   st.c
   util.c
@@ -821,6 +819,7 @@ Rubyコマンドの実装
   math.c
   numeric.c
   pack.c
+  prec.c
   process.c
   random.c
   range.c
@@ -860,7 +859,7 @@ Qfalse
 
 ** Cデータのカプセル化
 
-Data_Wrap_Struct(VALUE class, void (*mark)(), void (*free)(), void *sval)
+Data_Wrap_Struct(VALUE klass, void (*mark)(), void (*free)(), void *sval)
 
   Cの任意のポインタをカプセル化したRubyオブジェクトを返す．こ
   のポインタがRubyからアクセスされなくなった時，freeで指定した
@@ -868,7 +867,7 @@ Data_Wrap_Struct(VALUE class, void (*mark)(), void (*free)(), void *sval)
   ジェクトを指している場合，markに指定する関数でマークする必要
   がある．
 
-Data_Make_Struct(class, type, mark, free, sval)
+Data_Make_Struct(klass, type, mark, free, sval)
 
   type型のメモリをmallocし，変数svalに代入した後，それをカプセ
   ル化したデータを返すマクロ．
@@ -915,7 +914,7 @@ VALUE rb_define_module_under(VALUE module, char *name, VALUE super)
 
   新しいRubyモジュールを定義し，moduleの定数として定義する．
 
-void rb_include_module(VALUE class, VALUE module)
+void rb_include_module(VALUE klass, VALUE module)
 
   モジュールをインクルードする．classがすでにmoduleをインク
   ルードしている時には何もしない(多重インクルードの禁止)．
@@ -974,7 +973,7 @@ void rb_define_global_const(char *name, VALUE val)
 
 ** メソッド定義
 
-rb_define_method(VALUE class, char *name, VALUE (*func)(), int argc)
+rb_define_method(VALUE klass, char *name, VALUE (*func)(), int argc)
 
   メソッドを定義する．argcはselfを除く引数の数．argcが-1の時, 
   関数には引数の数(selfを含まない)を第1引数, 引数の配列を第2
@@ -982,17 +981,17 @@ rb_define_method(VALUE class, char *name, VALUE (*func)(), int argc)
   第1引数がself, 第2引数がargs(argsは引数を含むRubyの配列)と
   いう形式で与えられる．
  
-rb_define_private_method(VALUE class, char *name, VALUE (*func)(), int argc)
+rb_define_private_method(VALUE klass, char *name, VALUE (*func)(), int argc)
 
   privateメソッドを定義する．引数はrb_define_method()と同じ．
 
-rb_define_singleton_method(VALUE class, char *name, VALUE (*func)(), int argc)
+rb_define_singleton_method(VALUE klass, char *name, VALUE (*func)(), int argc)
 
   特異メソッドを定義する．引数はrb_define_method()と同じ．
 
 rb_scan_args(int argc, VALUE *argv, char *fmt, ...)
 
-  argc,argv形式で与えられた引数を分解する．fmtは必須引数の数, 
+  argc, argv形式で与えられた引数を分解する．fmtは必須引数の数, 
   付加引数の数, 残りの引数があるかを指定する文字列で, "数字
   数字*"という形式である． 2 番目の数字と"*"はそれぞれ省略可
   能である．必須引数が一つもない場合は0を指定する．第3引数以
@@ -1009,7 +1008,7 @@ VALUE rb_funcall(VALUE recv, ID mid, int narg, ...)
 
 VALUE rb_funcall2(VALUE recv, ID mid, int argc, VALUE *argv)
 
-  メソッド呼び出し．引数をargc,argv形式で渡す．
+  メソッド呼び出し．引数をargc, argv形式で渡す．
 
 VALUE rb_eval_string(char *str)
 
@@ -1023,9 +1022,9 @@ char *rb_id2name(ID id)
 
   IDに対応する文字列を返す(デバッグ用)．
 
-char *rb_class2name(VALUE class)
+char *rb_class2name(VALUE klass)
 
-  classの名前を返す(デバッグ用)．classが名前を持たない時には, 
+  クラスの名前を返す(デバッグ用)．クラスが名前を持たない時には, 
   祖先を遡って名前を持つクラスの名前を返す．
 
 int rb_respond_to(VALUE obj, ID id)
@@ -1134,7 +1133,6 @@ find_library(lib, func, path...)
 
   関数funcを定義しているライブラリlibの存在を -Lpath を追加
   しながらチェックする．ライブラリが見付かった時，trueを返す．
-  結果をキャッシュしない．
 
 have_func(func)
 
@@ -1150,8 +1148,7 @@ have_header(header)
 find_header(header)
 
   ヘッダファイルの存在を -Ipath を追加しながらチェックする．
-  ヘッダファイルが見付かった時trueを返す．結果をキャッシュし
-  ない．
+  ヘッダファイルが見付かった時trueを返す．
 
 create_makefile(target)
 

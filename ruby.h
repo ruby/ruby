@@ -422,6 +422,7 @@ VALUE rb_funcall __((VALUE, ID, int, ...));
 VALUE rb_funcall2 _((VALUE, ID, int, VALUE*));
 VALUE rb_funcall3 _((VALUE, ID, int, VALUE*));
 int rb_scan_args __((int, VALUE*, const char*, ...));
+VALUE rb_call_super _((int, VALUE*));
 
 VALUE rb_gv_set _((const char*, VALUE));
 VALUE rb_gv_get _((const char*));

@@ -314,7 +314,9 @@ The variable ruby-indent-level controls the amount of indentation.
 		(if (or (and (not (bolp))
 			     (progn
 			       (forward-char -1)
-			       (eq ?_ (char-after (point)))))
+			       (setq w (char-after (point)))
+			       (or (eq ?_ w)
+				   (eq ?. w))))
 			(progn
 			  (goto-char pnt)
 			  (setq w (char-after (point)))
@@ -339,7 +341,9 @@ The variable ruby-indent-level controls the amount of indentation.
 		 (or (bolp)
 		     (progn
 		       (forward-char -1)
-		       (not (eq ?_ (char-after (point))))))
+		       (setq w (char-after (point)))
+		       (not (or (eq ?_ w)
+				(eq ?. w)))))
 		 (goto-char pnt)
 		 (setq w (char-after (point)))
 		 (not (eq ?_ w))
@@ -622,12 +626,12 @@ An end of a defun is found by moving forward from the beginning of one."
 	       (setq font-lock-keywords ruby-font-lock-keywords)))
 
   (defun ruby-font-lock-docs (limit)
-    (if (re-search-forward "^=begin\\s *$" limit t)
+    (if (re-search-forward "^=begin\\(\\s \\|$\\)" limit t)
 	(let (beg)
 	  (beginning-of-line)
 	  (setq beg (point))
 	  (forward-line 1)
-	  (if (re-search-forward "^=end\\s *$" limit t)
+	  (if (re-search-forward "^=end\\(\\s \\|$\\)" limit t)
 	      (progn
 		(set-match-data (list beg (point)))
 		t)))))
@@ -672,12 +676,13 @@ An end of a defun is found by moving forward from the beginning of one."
 	       "until"
 	       "when"
 	       "while"
+	       "yield"
 	       )
 	     "\\|")
-	    "\\)\\>[^_]")
+	    "\\)\\>\\([^_]\\|$\\)")
 	   2)
      ;; variables
-     '("\\(^\\|[^_:.@$]\\|\\.\\.\\)\\b\\(nil\\|self\\|true\\|false\\)\\b[^_]"
+     '("\\(^\\|[^_:.@$]\\|\\.\\.\\)\\b\\(nil\\|self\\|true\\|false\\)\\b\\([^_]\\|$\\)"
        2 font-lock-variable-name-face)
      ;; variables
      '("[$@].\\(\\w\\|_\\)*"
@@ -708,8 +713,8 @@ An end of a defun is found by moving forward from the beginning of one."
      ("^\\s *\\(require\\|load\\).*$" nil include)
      ("^\\s *\\(include\\|alias\\|undef\\).*$" nil decl)
      ("^\\s *\\<\\(class\\|def\\|module\\)\\>" "[)\n;]" defun)
-     ("[^_]\\<\\(begin\\|case\\|else\\|elsif\\|end\\|ensure\\|for\\|if\\|unless\\|rescue\\|then\\|when\\|while\\|until\\|do\\)\\>[^_]" 1 defun)
-     ("[^_]\\<\\(and\\|break\\|next\\|raise\\|fail\\|in\\|not\\|or\\|redo\\|retry\\|return\\|super\\|yield\\|catch\\|throw\\|self\\|nil\\)\\>[^_]" 1 keyword)
+     ("[^_]\\<\\(begin\\|case\\|else\\|elsif\\|end\\|ensure\\|for\\|if\\|unless\\|rescue\\|then\\|when\\|while\\|until\\|do\\|yield\\)\\>\\([^_]\\|$\\)" 1 defun)
+     ("[^_]\\<\\(and\\|break\\|next\\|raise\\|fail\\|in\\|not\\|or\\|redo\\|retry\\|return\\|super\\|yield\\|catch\\|throw\\|self\\|nil\\)\\>\\([^_]\\|$\\)" 1 keyword)
      ("\\$\\(.\\|\\sw+\\)" nil type)
      ("[$@].[a-zA-Z_0-9]*" nil struct)
      ("^__END__" nil label))))

@@ -648,10 +648,12 @@ convert string charset, and set language to "ja".
 =end
   def Cookie::parse(raw_cookie)
     cookies = Hash.new([])
+    return cookies unless raw_cookie
 
     raw_cookie.split('; ').each do |pairs|
       name, values = pairs.split('=',2)
       name = CGI::unescape(name)
+      values ||= ""
       values = values.split('&').filter{|v| CGI::unescape(v) }
       if cookies.has_key?(name)
         cookies[name].value.push(*values)
@@ -877,8 +879,7 @@ convert string charset, and set language to "ja".
                   )
       end
 
-      @cookies = CGI::Cookie::parse((env_table['HTTP_COOKIE'] or
-        env_table['COOKIE'] or ""))
+      @cookies = CGI::Cookie::parse((env_table['HTTP_COOKIE'] or env_table['COOKIE']))
 
     end
     private :initialize_query

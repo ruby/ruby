@@ -67,7 +67,7 @@ data-types, the code will be like:
       break;
     default:
       /* raise exception */
-      Fail("not valid value");
+      rb_raise(rb_eTypeError, "not valid value");
       break;
   }
 
@@ -202,6 +202,11 @@ To define class or module, use functions below:
 
 These functions return the newly created class or module.  You may
 want to save this reference into the variable to use later.
+
+To define nested class or module, use functions below:
+
+  VALUE rb_define_class_under(VALUE outer, char *name, VALUE super)
+  VALUE rb_define_module_under(VALUE outer, char *name)
 
 2.1.2 Method/singleton method definition
 
@@ -387,9 +392,9 @@ The prototypes of the getter and setter functions are as following:
 To wrapping and objectify the C pointer as Ruby object (so called
 DATA), use Data_Wrap_Struct().
 
-  Data_Wrap_Struct(klass,mark,free,ptr)
+  Data_Wrap_Struct(klass, mark, free, ptr)
 
-Data_Wrap_Struct() returns a created DATA object.  The class argument
+Data_Wrap_Struct() returns a created DATA object.  The klass argument
 is the class for the DATA object.  The mark argument is the function
 to mark Ruby objects pointed by this data.  The free argument is the
 function to free the pointer allocation.  The functions, mark and
@@ -484,7 +489,7 @@ struct dbmdata {
 };
 
 
-obj = Data_Make_Struct(klass,struct dbmdata,0,free_dbm,dbmp);
+obj = Data_Make_Struct(klass, struct dbmdata, 0, free_dbm, dbmp);
 --
 
 This code wraps dbmdata structure into Ruby object.  We avoid wrapping
@@ -598,7 +603,7 @@ not be done.
 If the file named depend exists, Makefile will include that file to
 check dependency.  You can make this file by invoking
 
- % gcc -MM *.c > depend
+  % gcc -MM *.c > depend
 
 It's no harm.  Prepare it.
 
@@ -657,8 +662,6 @@ ruby language core
 utility functions
 
   dln.c
-  fnmatch.c
-  glob.c
   regex.c
   st.c
   util.c
@@ -681,9 +684,11 @@ class library
   file.c
   hash.c
   io.c
+  marshal.c
   math.c
   numeric.c
   pack.c
+  prec.c
   process.c
   random.c
   range.c
@@ -779,11 +784,11 @@ Defines a read-only global variable.  Works just like
 rb_define_variable(), except defined variable is read-only.
 
  void rb_define_virtual_variable(char *name,
-				VALUE (*getter)(), VALUE (*setter)())
+				 VALUE (*getter)(), VALUE (*setter)())
 
 Defines a virtual variable, whose behavior is defined by pair of C
 functions.  The getter function is called when the variable is
-referred. The setter function is called when the value is set to the
+referred.  The setter function is called when the value is set to the
 variable.  The prototype for getter/setter functions are:
 
 	VALUE getter(ID id)
@@ -874,7 +879,7 @@ Returns the name corresponding ID.
 
 Returns the name of the class.
 
-  int rb_respond_to(VALUE object, ID id)
+ int rb_respond_to(VALUE object, ID id)
 
 Returns true if the object reponds to the message specified by id.
 
