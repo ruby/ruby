@@ -83,18 +83,20 @@ in Japanese, but you can download at least.
     make test
     make DESTDIR=/usr/local install
 
-* Build on the relative directory from the ruby source directory.
+* Build on the relative directory from the ruby source directory and CPU type 
+  i386.
 
   ex.)
     ruby source directory:  C:\ruby
     build directory:        C:\ruby\bccwin32
     install directory:      C:\usr\local
-
+    CPU                     i386
+    
     C:
     cd \ruby
     mkdir bccwin32
     cd bccwin32
-    ..\bcc32\configure
+    ..\bcc32\configure target i386-bccwin32
     make
     make test
     make DESTDIR=/usr/local install
