@@ -52,6 +52,10 @@ Mon Dec 30 21:10:59 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 	* parse.y (yylex): use strncmp instead of strcmp. 
 	  accept "__END__\r\n".  ([ruby-dev:19241])
 
+Mon Dec 30 20:32:14 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (rb_gc_mark_frame): should mark frame->node.
+
 Mon Dec 30 19:10:30 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ext/extmk.rb: split --make argument contains options, assume
@@ -148,6 +152,11 @@ Fri Dec 27 13:23:29 2002  Minero Aoki  <aamine@loveruby.net>
 	* lib/fileutils.rb (uptodate?): parameter declaration was wrong.
 
 	* lib/fileutils.rb: change coding styles.
+
+Fri Dec 27 09:25:22 2002  ABE Shigeru  <shiger-a@nifty.com>
+
+	* process.c (rb_proc_times): avoid WindowsXP crash using volatile
+	  variables.
 
 Fri Dec 27 02:56:58 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 

@@ -1131,6 +1131,7 @@ rb_gc_mark_frame(frame)
 {
     mark_locations_array(frame->argv, frame->argc);
     rb_gc_mark(frame->cbase);
+    rb_gc_mark((VALUE)frame->node);
 }
 
 #ifdef __GNUC__
