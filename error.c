@@ -431,7 +431,7 @@ rb_name_error(id, fmt, va_alist)
     va_init_list(args, fmt);
     vsnprintf(buf, BUFSIZ, fmt, args);
     va_end(args);
-    exc = rb_exc_new2(rb_eLoadError, buf);
+    exc = rb_exc_new2(rb_eNameError, buf);
     rb_iv_set(exc, "name", ID2SYM(id));
     rb_exc_raise(exc);
 }

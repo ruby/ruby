@@ -1,3 +1,7 @@
+Tue Jul  3 14:49:51 2001  Shugo Maeda <shugo@ruby-lang.org>
+
+	* error.c (rb_name_error): raise NameError instead of LoadError.
+
 Mon Jul  2 17:22:00 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* error.c (exc_exception): clone the receiver exception instead of
