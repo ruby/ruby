@@ -769,8 +769,6 @@ num_step(argc, argv, from)
     VALUE from;
 {
     VALUE to, step;
-    VALUE i = from;
-    ID cmp;
 
     if (rb_scan_args(argc, argv, "11", &to, &step) == 1) {
 	step = INT2FIX(1);
@@ -798,19 +796,40 @@ num_step(argc, argv, from)
 		i += diff;
 	    }
 	}
-	return from;
     }
+    else if (TYPE(from) == T_FLOAT || TYPE(to) == T_FLOAT || TYPE(step) == T_FLOAT) {
+	double beg = NUM2DBL(from);
+	double end = NUM2DBL(to);
+	double unit = NUM2DBL(step);
+	double n = beg;
+	long i = 0;
 
-    if (RTEST(rb_funcall(step, '>', 1, INT2FIX(0)))) {
-	cmp = '>';
+	if (unit > 0) {
+	    for (i=0; n<=end; i++, n=unit*i+beg) {
+		rb_yield(rb_float_new(n));
+	    }
+	}
+	else {
+	    for (i=0; n>=end; i++, n=unit*i+beg) {
+		rb_yield(rb_float_new(n));
+	    }
+	}
     }
     else {
-	cmp = '<';
-    }
-    for (;;) {
-	if (RTEST(rb_funcall(i, cmp, 1, to))) break;
-	rb_yield(i);
-	i = rb_funcall(i, '+', 1, step);
+	VALUE i = from;
+	ID cmp;
+
+	if (RTEST(rb_funcall(step, '>', 1, INT2FIX(0)))) {
+	    cmp = '>';
+	}
+	else {
+	    cmp = '<';
+	}
+	for (;;) {
+	    if (RTEST(rb_funcall(i, cmp, 1, to))) break;
+	    rb_yield(i);
+	    i = rb_funcall(i, '+', 1, step);
+	}
     }
     return from;
 }

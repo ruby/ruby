@@ -1,3 +1,7 @@
+Wed Apr 24 14:06:35 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (num_step): try to reduce residual on Float operations.
+
 Wed Apr 24 06:48:31 2002  Koji Arai  <jca02266@nifty.ne.jp>
 
 	* io.c (rb_io_mode_flags): both 'r+b' and 'rb+' should be allowed.
