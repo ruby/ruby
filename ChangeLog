@@ -1,3 +1,10 @@
+Mon Nov  1 13:59:28 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/extmk.rb (MANIFEST): do not use anymore, use extconf.rb instead.
+
+	* ext/enumerator/extconf.rb, ext/fcntl/extconf.rb,
+	  ext/stringio/extconf.rb: added.
+
 Mon Nov  1 00:36:48 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* main.c (_stklen): move to gc.c.

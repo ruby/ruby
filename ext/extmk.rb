@@ -71,7 +71,7 @@ def extmake(target)
       if $static ||
 	 !(t = modified?(makefile, MTIMES)) ||
 	 %W<#{$srcdir}/makefile.rb #{$srcdir}/extconf.rb
-	    #{$srcdir}/depend #{$srcdir}/MANIFEST>.any? {|f| modified?(f, [t])}
+	    #{$srcdir}/depend>.any? {|f| modified?(f, [t])}
       then
 	$defs = []
 	Logging::logfile 'mkmf.log'
@@ -232,7 +232,7 @@ if File.expand_path(srcdir) != File.expand_path(srcdir, dir)
 end
 $topdir = ".."
 ext_prefix = "#{$top_srcdir}/ext"
-Dir.glob("#{ext_prefix}/*/**/MANIFEST") do |d|
+Dir.glob("#{ext_prefix}/*/**/extconf.rb") do |d|
   d = File.dirname(d)
   d.slice!(0, ext_prefix.length + 1)
   extmake(d) or exit(1)
