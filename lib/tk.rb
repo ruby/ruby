@@ -268,6 +268,13 @@ module TkCore
   end
 
   def mainloop
+    if defined?(Thread)
+      INTERP._eval("proc rb_after {} {
+                      ruby {Thread.pass};
+                      after 200 rb_after
+                    }")
+      INTERP._eval("rb_after")
+    end
     TclTkLib.mainloop
   end
 
@@ -315,10 +322,6 @@ module Tk
 
   def bell
     tk_call 'bell'
-  end
-
-  def mainloop
-    TclTkLib.mainloop
   end
 
   module Scrollable

@@ -3520,7 +3520,7 @@ rb_call(klass, recv, mid, argc, argv, scope)
     VALUE *argv;		/* OK */
     int scope;
 {
-    NODE *body;			/* OK */
+    NODE  *body;		/* OK */
     int    noex;
     ID     id = mid;
     struct cache_entry *ent;

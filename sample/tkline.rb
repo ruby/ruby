@@ -1,5 +1,4 @@
 
-$tk_thread_safe = TRUE
 require "tkclass"
 
 $tkline_init = FALSE

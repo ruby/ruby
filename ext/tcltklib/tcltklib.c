@@ -33,23 +33,13 @@ int *tclDummyMathPtr = (int *) matherr;
 
 /*---- module TclTkLib ----*/
 
-static VALUE thread_safe = Qnil;
-
 /* execute Tk_MainLoop */
 static VALUE
 lib_mainloop(VALUE self)
 {
-    int old_trapflg;
-    int flags = RTEST(thread_safe)?TCL_DONT_WAIT:0;
-
     DUMP1("start Tk_Mainloop");
     while (Tk_GetNumMainWindows() > 0) {
-	old_trapflg = trap_immediate;
-	trap_immediate = 1;
-        Tcl_DoOneEvent(flags);
-	trap_immediate = old_trapflg;
-	CHECK_INTS;
-	flags = (thread_safe == 0 || thread_safe == Qnil)?0:TCL_DONT_WAIT;
+        Tcl_DoOneEvent(0);
     }
     DUMP1("stop Tk_Mainloop");
 
@@ -210,8 +200,6 @@ void Init_tcltklib()
     /* from Tk_Main() */
     DUMP1("Tcl_FindExecutable");
     Tcl_FindExecutable(RSTRING(rb_argv0)->ptr);
-
-    rb_define_variable("$tk_thread_safe", &thread_safe);
 }
 
 /* eof */

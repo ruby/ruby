@@ -1,5 +1,7 @@
 Thu Apr 16 16:52:01 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
+	* lib/tk.rb: thread support (experimental - maybe slow).
+
 	* eval.c (rb_longjmp): trace event on exception in raising
  	  context, just before raising exception.
 
