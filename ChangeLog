@@ -1,3 +1,7 @@
+Sun Jul  4 12:24:50 2004  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/rss.rb: added copyright header.
+
 Sun Jul  4 00:24:40 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* added files
