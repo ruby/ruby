@@ -1267,8 +1267,11 @@ mod_av_set(klass, id, val, isconst)
     if (!RCLASS(klass)->iv_tbl) {
 	RCLASS(klass)->iv_tbl = st_init_numtable();
     }
-    else if (isconst && st_lookup(RCLASS(klass)->iv_tbl, id, 0)) {
-	rb_warn("already initialized %s %s", dest, rb_id2name(id));
+    else if (isconst) {
+	if (st_lookup(RCLASS(klass)->iv_tbl, id, 0) ||
+	    (klass == rb_cObject && st_lookup(rb_class_tbl, id, 0))) {
+	    rb_warn("already initialized %s %s", dest, rb_id2name(id));
+	}
     }
 
     st_insert(RCLASS(klass)->iv_tbl, id, val);

@@ -1718,6 +1718,7 @@ is_defined(self, node, buf)
     VALUE val;			/* OK */
     int state;
 
+    if (!node) return "expression";
     switch (nd_type(node)) {
       case NODE_SUPER:
       case NODE_ZSUPER:
@@ -6693,8 +6694,10 @@ umethod_bind(method, recv)
 	    st_lookup(RCLASS(CLASS_OF(recv))->m_tbl, data->oid, 0)) {
 	    rb_raise(rb_eTypeError, "method `%s' overridden", rb_id2name(data->oid));
 	}
-	if (!rb_obj_is_instance_of(recv, data->oklass)) {
-	    rb_raise(rb_eTypeError, "first argument must be an instance of %s",
+	if (!((TYPE(data->oklass) == T_MODULE) ?
+	      rb_obj_is_kind_of(recv, data->oklass) :
+	      rb_obj_is_instance_of(recv, data->oklass))) {
+	    rb_raise(rb_eTypeError, "bind argument must be an instance of %s",
 		     rb_class2name(data->oklass));
 	}
     }

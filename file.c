@@ -394,7 +394,7 @@ group_member(gid)
     GETGROUPS_T gid;
 {
 #if !defined(NT)
-    if (getgid() ==  gid || getegid() == gid)
+    if (getgid() ==  gid)
 	return Qtrue;
 
 # ifdef HAVE_GETGROUPS
@@ -426,31 +426,30 @@ eaccess(path, mode)
 {
 #ifdef S_IXGRP
   struct stat st;
-  static int euid = -1;
+  int euid;
 
   if (rb_sys_stat(path, &st) < 0) return (-1);
 
-  if (euid == -1)
-    euid = geteuid ();
-
-  if (euid == 0)
-    {
+  euid = geteuid();
+  if (euid == 0) {
       /* Root can read or write any file. */
-      if (mode != X_OK)
+      if (!(mode & X_OK))
 	return 0;
 
       /* Root can execute any file that has any one of the execute
 	 bits set. */
       if (st.st_mode & S_IXUGO)
 	return 0;
-    }
+
+      return -1;
+  }
 
   if (st.st_uid == euid)        /* owner */
-    mode <<= 6;
-  else if (group_member (st.st_gid))
-    mode <<= 3;
+      mode <<= 6;
+  else if (getegid() == st.st_gid || group_member(st.st_gid))
+      mode <<= 3;
 
-  if (st.st_mode & mode) return 0;
+  if ((st.st_mode & mode) == mode) return 0;
 
   return -1;
 #else  /* !NT */

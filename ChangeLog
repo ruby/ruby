@@ -1,8 +1,29 @@
+Thu Aug 23 10:10:59 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (is_defined): should not dump core for "defined?(())".
+
+	* eval.c (umethod_bind): recv can be an instance of descender of
+	  oklass if oklass is a Module.
+
+Wed Aug 22 23:20:03 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (rb_hash_equal): check identiry equality first.
+
 Mon Aug 20 19:53:16 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/digest/sha2/extconf.rb: fix support for cross-compiling.
 
 	* mkconfig.rb: fix support for autoconf 2.52.
+
+Mon Aug 20 16:09:05 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* variable.c (mod_av_set): detect constant overriding for built-in
+	  classes/modules.
+
+Mon Aug 20 12:43:08 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (w_object): should retrieve __member__ data from
+	  non-singleton class.
 
 Wed Aug 17 13:55:33 2001  Usaku Nakamura  <usa@ruby-lang.org>
 

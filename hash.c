@@ -800,6 +800,7 @@ rb_hash_equal(hash1, hash2)
 {
     struct equal_data data;
 
+    if (hash1 == hash2) return Qtrue;
     if (TYPE(hash2) != T_HASH) return Qfalse;
     if (RHASH(hash1)->tbl->num_entries != RHASH(hash2)->tbl->num_entries)
 	return Qfalse;

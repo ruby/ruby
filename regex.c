@@ -3740,6 +3740,8 @@ re_match(bufp, string_arg, size, pos, regs)
 	  int regno = *p++;   /* Get which register to match against */
 	  register unsigned char *d2, *dend2;
 
+	  /* Check if there's corresponding group */
+	  if (regno >= num_regs) goto fail;
 	  /* Check if corresponding group is still open */
 	  if (IS_ACTIVE(reg_info[regno])) goto fail;
 

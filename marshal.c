@@ -144,7 +144,7 @@ w_long(x, arg)
     int i, len = 0;
 
 #if SIZEOF_LONG > 4
-    if (!(RSHIFT(x, 32) == 0 || RSHIFT(x, 32) == -1)) {
+    if (!(RSHIFT(x, 31) == 0 || RSHIFT(x, 31) == -1)) {
 	/* big long does not fit in 4 bytes */
 	rb_raise(rb_eTypeError, "long too big to dump");
     }
@@ -443,13 +443,15 @@ w_object(obj, arg, limit)
 	    w_byte(TYPE_STRUCT, arg);
 	    {
 		long len = RSTRUCT(obj)->len;
-		char *path = rb_class2name(CLASS_OF(obj));
-		VALUE mem;
+		VALUE c, mem;
 		long i;
 
-		w_unique(path, arg);
+		c = CLASS_OF(obj);
+		w_unique(rb_class2name(c), arg);
 		w_long(len, arg);
-		mem = rb_ivar_get(CLASS_OF(obj), rb_intern("__member__"));
+		if (FL_TEST(c, FL_SINGLETON))
+		    c = RCLASS(c)->super;
+		mem = rb_ivar_get(c, rb_intern("__member__"));
 		if (mem == Qnil) {
 		    rb_raise(rb_eTypeError, "uninitialized struct");
 		}
