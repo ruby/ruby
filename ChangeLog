@@ -1,3 +1,10 @@
+Wed Nov  5 19:08:47 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (OptionParser::Switch::PlacedArgument::parse):
+	  do not remove next argument if empty value is placed.
+
+	* test/optparse: added.
+
 Wed Nov  5 17:05:18 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit/ui/gtk/testrunner.rb: typo.

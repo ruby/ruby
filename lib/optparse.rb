@@ -354,7 +354,7 @@ Switch that can omit argument.
 	end
         opt = (val = parse_arg(val, &error))[1]
         val = conv_arg(*val)
-        if opt
+        if opt and !arg
           argv.shift
         else
           val[0] = nil
