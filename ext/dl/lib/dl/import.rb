@@ -70,7 +70,7 @@ module DL
 	init_types()
 	init_sym()
 
-	rty,renc,rdec = @types.encode_type(ret)
+	rty,renc,rdec,_,_,_ = @types.encode_type(ret)
 	ty,enc,dec = encode_types(args)
 	symty = rty + ty
 
@@ -131,7 +131,7 @@ module DL
 	init_types()
 	init_sym()
 
-	rty,_,rdec = @types.encode_type(rettype)
+	rty,_,rdec,_,_,_ = @types.encode_type(rettype)
 	ty,enc,dec = encode_types(argtypes)
 	symty = rty + ty
 
@@ -184,7 +184,7 @@ module DL
 	enc = nil
 	dec = nil
 	tys.each_with_index{|ty,idx|
-	  ty,c1,c2,_,_ = @types.encode_type(ty)
+	  ty,c1,c2,_,_,_ = @types.encode_type(ty)
 	  encty.push(ty)
 	  if( enc )
 	    if( c1 )
