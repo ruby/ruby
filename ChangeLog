@@ -1,3 +1,12 @@
+Sun Nov 16 04:41:33 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (eval): do not re-raise exception to avoid unnecessary
+	  exception copying, instead modify exception and internal
+	  information to adjust eval().
+
+	* eval.c (backtrace): can return the current frame information
+	  only if lev < -1.
+
 Sat Nov 15 22:16:42 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* /ext/openssl/ossl_x509ext.c (ossl_x509extfactory_create_ext):
