@@ -179,17 +179,12 @@ module DL
       dec = nil
       senc = nil
       sdec = nil
-      ty1 = nil
-      ty2 = nil
+      ty1 = ty
+      ty2 = ty
       @TYDEFS.each{|t1,t2,c1,c2,t3,c3,c4|
-#	if( t1.is_a?(String) )
-#	  t1 = Regexp.new("^" + t1 + "$")
-#	end
-	if( (t1.is_a?(Regexp) && (t1 =~ ty)) || (t1 == ty) )
-	  ty1 = ty.gsub(t1,t2) if t2
-          ty2 = ty.gsub(t1,t3) if t3
+	if( (t1.is_a?(Regexp) && (t1 =~ ty1)) || (t1 == ty1) )
+	  ty1 = ty1.gsub(t1,t2) if t2
           ty1.strip! if ty1
-          ty2.strip! if ty2
 	  if( enc )
 	    if( c1 )
 	      conv1 = enc
@@ -210,6 +205,10 @@ module DL
 	      dec = c2
 	    end
 	  end
+	end
+	if( (t1.is_a?(Regexp) && (t1 =~ ty2)) || (t1 == ty2) )
+          ty2 = ty2.gsub(t1,t3) if t3
+          ty2.strip! if ty2
 	  if( senc )
 	    if( c3 )
 	      conv3 = senc
@@ -230,11 +229,8 @@ module DL
 	      sdec = c4
 	    end
 	  end
-	end
+        end
       }
-      if( ty1.length != 1 && ty2.length != 1 )
-	raise(TypeError, "unknown type: #{orig_ty}.")
-      end
       return [ty1,enc,dec,ty2,senc,sdec]
     end
   end # end of Types

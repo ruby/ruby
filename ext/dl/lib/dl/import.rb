@@ -71,6 +71,9 @@ module DL
 	init_sym()
 
 	rty,renc,rdec,_,_,_ = @types.encode_type(ret)
+        if( !rty )
+          raise(TypeError, "unsupported type: #{ret}")
+        end
 	ty,enc,dec = encode_types(args)
 	symty = rty + ty
 
@@ -132,6 +135,9 @@ module DL
 	init_sym()
 
 	rty,_,rdec,_,_,_ = @types.encode_type(rettype)
+        if( !rty )
+          raise(TypeError, "unsupported type: #{rettype}")
+        end
 	ty,enc,dec = encode_types(argtypes)
 	symty = rty + ty
 
@@ -185,6 +191,9 @@ module DL
 	dec = nil
 	tys.each_with_index{|ty,idx|
 	  ty,c1,c2,_,_,_ = @types.encode_type(ty)
+          if( !ty )
+            raise(TypeError, "unsupported type: #{ty}")
+          end
 	  encty.push(ty)
 	  if( enc )
 	    if( c1 )
