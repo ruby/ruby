@@ -1169,7 +1169,7 @@ rb_str_rindex_m(argc, argv, str)
 
     if (rb_scan_args(argc, argv, "11", &sub, &position) == 2) {
 	pos = NUM2LONG(position);
-        if (pos < 0) {
+	if (pos < 0) {
 	    pos += RSTRING(str)->len;
 	    if (pos < 0) {
 		if (TYPE(sub) == T_REGEXP) {
@@ -1177,7 +1177,7 @@ rb_str_rindex_m(argc, argv, str)
 		}
 		return Qnil;
 	    }
-        }
+	}
 	if (pos > RSTRING(str)->len) pos = RSTRING(str)->len;
     }
     else {
@@ -1365,8 +1365,8 @@ rb_str_succ(orig)
 	sbeg = RSTRING(str)->ptr; s = sbeg + RSTRING(str)->len - 1;
 	c = '\001';
 	while (sbeg <= s) {
-           if ((*s += 1) != 0) break;
-           s--;
+	    if ((*s += 1) != 0) break;
+	    s--;
 	}
     }
     if (s < sbeg) {
@@ -3523,7 +3523,7 @@ rb_str_split_m(argc, argv, str)
 		if (!RSTRING(str)->ptr) {
 		    rb_ary_push(result, rb_str_new("", 0));
 		    break;
-                }
+		}
 		else if (last_null == 1) {
 		    rb_ary_push(result, rb_str_substr(str, beg, mbclen2(RSTRING(str)->ptr[beg],spat)));
 		    beg = start;
@@ -3687,7 +3687,7 @@ rb_str_each_line(argc, argv, str)
     }
 
     if (s != pend) {
-        if (p > pend) p = pend;
+	if (p > pend) p = pend;
 	line = rb_str_new5(str, s, p - s);
 	OBJ_INFECT(line, str);
 	rb_yield(line);
@@ -4473,41 +4473,41 @@ rb_str_justify(argc, argv, str, jflag)
     }
     p = RSTRING(res)->ptr;
     if (jflag != 'l') {
-        n = width - RSTRING(str)->len;
-        pend = p + ((jflag == 'r') ? n : n/2);
-        if (flen <= 1) {
-            while (p < pend) {
-                *p++ = *f;
-            }
-        }
-        else {
-            char *q = f;
-            while (p + flen <= pend) {
-                memcpy(p,f,flen);
-                p += flen;
-            }
-            while (p < pend) {
-                *p++ = *q++;
-            }
-        }
+	n = width - RSTRING(str)->len;
+	pend = p + ((jflag == 'r') ? n : n/2);
+	if (flen <= 1) {
+	    while (p < pend) {
+		*p++ = *f;
+	    }
+	}
+	else {
+	    char *q = f;
+	    while (p + flen <= pend) {
+		memcpy(p,f,flen);
+		p += flen;
+	    }
+	    while (p < pend) {
+		*p++ = *q++;
+	    }
+	}
     }
     memcpy(p, RSTRING(str)->ptr, RSTRING(str)->len);
     if (jflag != 'r') {
-        p += RSTRING(str)->len; pend = RSTRING(res)->ptr + width;
-        if (flen <= 1) {
-            while (p < pend) {
-                *p++ = *f;
-            }
-        }
-        else {
-            while (p + flen <= pend) {
-                memcpy(p,f,flen);
-                p += flen;
-            }
-            while (p < pend) {
-                *p++ = *f++;
-            }
-        }
+	p += RSTRING(str)->len; pend = RSTRING(res)->ptr + width;
+	if (flen <= 1) {
+	    while (p < pend) {
+		*p++ = *f;
+	    }
+	}
+	else {
+	    while (p + flen <= pend) {
+		memcpy(p,f,flen);
+		p += flen;
+	    }
+	    while (p < pend) {
+		*p++ = *f++;
+	    }
+	}
     }
     OBJ_INFECT(res, str);
     if (flen > 0) OBJ_INFECT(res, pad);
