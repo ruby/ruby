@@ -1,3 +1,7 @@
+Tue Dec  9 02:53:55 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/sample/tkalignbox.rb: new sample script
+
 Tue Dec  9 00:45:00 2003  Nathaniel Talbott  <ntalbott@ruby-lang.org>
 
 	* lib/test/unit/assertions.rb: renamed #assert_raises to #assert_raise
