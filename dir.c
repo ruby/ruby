@@ -141,7 +141,7 @@ range(pat, test, flags)
 
 #define ISDIRSEP(c) (pathname && isdirsep(c))
 #define PERIOD(s) (period && *(s) == '.' && \
-		  ((s) == string || isdirsep((s)[-1])))
+		  ((s) == string || ISDIRSEP((s)[-1])))
 static int
 fnmatch(pat, string, flags)
     const char *pat;
