@@ -377,13 +377,9 @@ rb_range_beg_len(range, begp, lenp, len, err)
 	if (end > len)
 	    end = len;
     }
-    if (end < 0) {
-	end += len;
-	if (end < 0) {
-	    goto out_of_range;
-	}
-    }
+    if (end < 0) end += len;
     if (!EXCL(range)) end++;	/* include end point */
+    if (end < 0) goto out_of_range;
     len = end - beg;
     if (len < 0) goto out_of_range;
 

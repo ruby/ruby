@@ -1284,10 +1284,11 @@ rb_const_get_at(klass, id)
     return Qnil;		/* not reached */
 }
 
-VALUE
-rb_const_get(klass, id)
+static VALUE
+rb_const_get_0(klass, id, exclude)
     VALUE klass;
     ID id;
+    int exclude;
 {
     VALUE value, tmp;
     int mod_retry = 0;
@@ -1295,6 +1296,10 @@ rb_const_get(klass, id)
     tmp = klass;
   retry:
     while (tmp) {
+	if (exclude && tmp == rb_cObject && klass != rb_cObject) {
+	    rb_warn("toplevel constant %s referenced by %s::%s",
+		    rb_id2name(id), rb_class2name(klass), rb_id2name(id));
+	}
 	while (RCLASS(tmp)->iv_tbl && st_lookup(RCLASS(tmp)->iv_tbl,id,&value)) {
 	    if (value == Qundef) {
 		rb_autoload_load(tmp, id);
@@ -1313,6 +1318,22 @@ rb_const_get(klass, id)
 
     uninitialized_constant(klass, id);
     return Qnil;		/* not reached */
+}
+
+VALUE
+rb_const_get_from(klass, id)
+    VALUE klass;
+    ID id;
+{
+    return rb_const_get_0(klass, id, Qtrue);
+}
+
+VALUE
+rb_const_get(klass, id)
+    VALUE klass;
+    ID id;
+{
+    return rb_const_get_0(klass, id, Qfalse);
 }
 
 VALUE
@@ -1435,6 +1456,27 @@ rb_const_defined_at(klass, id)
     }
     if (klass == rb_cObject) {
 	return rb_const_defined(klass, id);
+    }
+    return Qfalse;
+}
+
+int
+rb_const_defined_from(klass, id)
+    VALUE klass;
+    ID id;
+{
+    VALUE tmp = klass, value;
+
+    while (tmp) {
+	if (tmp == rb_cObject && klass != rb_cObject) {
+	    break;
+	}
+	if (RCLASS(tmp)->iv_tbl && st_lookup(RCLASS(tmp)->iv_tbl, id, &value)) {
+	    if (value == Qundef && NIL_P(autoload_file(klass, id)))
+		return Qfalse;
+	    return Qtrue;
+	}
+	tmp = RCLASS(tmp)->super;
     }
     return Qfalse;
 }

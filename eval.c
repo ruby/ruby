@@ -2131,7 +2131,7 @@ is_defined(self, node, buf)
 	    switch (TYPE(val)) {
 	      case T_CLASS:
 	      case T_MODULE:
-		if (rb_const_defined_at(val, node->nd_mid))
+		if (rb_const_defined_from(val, node->nd_mid))
 		    return "constant";
 		break;
 	      default:
@@ -2774,14 +2774,14 @@ rb_eval(self, n)
 	break;
 
       case NODE_YIELD:
-	if (node->nd_stts) {
+	if (node->nd_head) {
 	    result = rb_eval(self, node->nd_head);
 	}
 	else {
 	    result = Qundef;	/* no arg */
 	}
 	SET_CURRENT_SOURCE();
-	result = rb_yield_0(result, 0, 0, Qfalse, Qfalse);
+	result = rb_yield_0(result, 0, 0, Qfalse, node->nd_state);
 	break;
 
       case NODE_RESCUE:
@@ -3235,15 +3235,22 @@ rb_eval(self, n)
 	    VALUE klass;
 
 	    klass = rb_eval(self, node->nd_head);
-	    switch (TYPE(klass)) {
-	      case T_CLASS:
-	      case T_MODULE:
-		result = rb_const_get(klass, node->nd_mid);
-		break;
-	      default:
-		result = rb_funcall(klass, node->nd_mid, 0, 0);
-		break;
+	    if (rb_is_const_id(node->nd_mid)) {
+		switch (TYPE(klass)) {
+		  case T_CLASS:
+		  case T_MODULE:
+		    result = rb_const_get_from(klass, node->nd_mid);
+		    break;
+		  default:
+		    rb_raise(rb_eTypeError, "%s is not a class/module",
+			     RSTRING(rb_obj_as_string(klass))->ptr);
+		    break;
+		}
 	    }
+	    else {
+		result = rb_funcall(klass, node->nd_mid, 0, 0);
+	    }
+	    break;
 	}
 	break;
 
@@ -3506,7 +3513,7 @@ rb_eval(self, n)
 	    cbase = class_prefix(self, node->nd_cpath);
 	    cname = node->nd_cpath->nd_mid;
 	    if (rb_const_defined_at(cbase, cname)) {
-		klass = rb_const_get(cbase, cname);
+		klass = rb_const_get_at(cbase, cname);
 		if (TYPE(klass) != T_CLASS) {
 		    rb_raise(rb_eTypeError, "%s is not a class",
 			     rb_id2name(cname));
@@ -3549,7 +3556,7 @@ rb_eval(self, n)
 	    cbase = class_prefix(self, node->nd_cpath);
 	    cname = node->nd_cpath->nd_mid;
 	    if (rb_const_defined_at(cbase, cname)) {
-		module = rb_const_get(cbase, cname);
+		module = rb_const_get_at(cbase, cname);
 		if (TYPE(module) != T_MODULE) {
 		    rb_raise(rb_eTypeError, "%s is not a module",
 			     rb_id2name(cname));
@@ -4014,6 +4021,7 @@ rb_yield_0(val, self, klass, pcall, avalue)
     volatile VALUE old_wrapper;
     struct BLOCK * volatile block;
     struct SCOPE * volatile old_scope;
+    int old_vmode;
     struct FRAME frame;
     NODE *cnode = ruby_current_node;
     int state;
@@ -4035,6 +4043,8 @@ rb_yield_0(val, self, klass, pcall, avalue)
     ruby_wrapper = block->wrapper;
     old_scope = ruby_scope;
     ruby_scope = block->scope;
+    old_vmode = scope_vmode;
+    scope_vmode = block->vmode;
     ruby_block = block->prev;
     if (block->flags & BLOCK_D_SCOPE) {
 	/* put place holder for dynamic (in-block) local variables */
@@ -4154,6 +4164,7 @@ rb_yield_0(val, self, klass, pcall, avalue)
     if (ruby_scope->flags & SCOPE_DONT_RECYCLE)
        scope_dup(old_scope);
     ruby_scope = old_scope;
+    scope_vmode = old_vmode;
     ruby_current_node = cnode;
     if (state) {
 	if (!block->tag) {
@@ -8117,7 +8128,6 @@ rb_thread_save_context(th)
     th->wrapper = ruby_wrapper;
     th->cref = ruby_cref;
     th->dyna_vars = ruby_dyna_vars;
-    FL_SET(ruby_dyna_vars, DVAR_DONT_RECYCLE);
     th->block = ruby_block;
     th->flags &= THREAD_FLAGS_MASK;
     th->flags |= (rb_trap_immediate<<8) | scope_vmode;

@@ -12,6 +12,20 @@ Fri Jun 20 15:04:28 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* ruby.c (proc_options): ditto.
 
+Fri Jun 20 03:09:21 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (new_yield): distinguish "yield 1,2" and "yield [1,2]". 
+	  [ruby-dev:20360]
+
+	* eval.c (rb_eval): support new_yield() change.
+
+	* variable.c (rb_const_get_0): warn for Foo::BAR when BAR is a
+	  toplevel constant (i.e. a constant defined under Object).
+	  [ruby-list:36935]
+
+	* parse.y (no_blockarg): separate no block argument check and
+	  ret_args argument processing. 
+
 Fri Jun 20 00:45:19 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>
 
 	* lib/csv.rb: Import csv module.
@@ -32,11 +46,30 @@ Thu Jun 19 13:13:10 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 	* hash.c (env_delete, rb_f_getenv, env_fetch): case insensitive to
 	  access environment variables on DOSISH platforms.
 
+Thu Jun 19 00:51:47 2003  NAKAMURA Hiroshi  <nakahiro@sarion.co.jp>
+
+	* range.c (rb_range_beg_len): out_of_range check after adjusting
+	  end point. [ruby-dev:20370]
+
+Wed Jun 18 23:59:11 2003  Guy Decoux  <ts@moulon.inra.fr>
+
+	* parse.y (call_args): the first argument to arg_cancat() should
+	  be NODE_LIST. [ruby-core:01151]
+
 Wed Jun 18 23:41:27 2003  Marc Cartright  <marc@isri.unlv.edu>
 
 	* ext/zlib/zlib.c (zstream_run): In a particular situation,
 	deflate/inflate will return Z_BUF_ERROR, even though another call
 	is required by the zlib library.
+
+Wed Jun 18 13:50:06 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): should dispatch based on ID type.
+
+Wed Jun 18 12:53:42 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* eval.c (rb_yield_0): should restore scope_vmode during yield.
+	  [ruby-dev:20361]
 
 Wed Jun 18 01:13:36 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
 

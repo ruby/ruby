@@ -2562,7 +2562,6 @@ rb_file_const(name, value)
 {
     rb_define_const(rb_mFConst, name, value);
     rb_define_const(rb_cIO, name, value);
-    rb_define_const(rb_cFile, name, value);
 }
 
 static int
@@ -2903,7 +2902,6 @@ Init_File()
     rb_define_method(rb_cFile, "flock", rb_file_flock, 1);
 
     rb_mFConst = rb_define_module_under(rb_cFile, "Constants");
-    rb_include_module(rb_cFile, rb_mFConst);
     rb_file_const("LOCK_SH", INT2FIX(LOCK_SH));
     rb_file_const("LOCK_EX", INT2FIX(LOCK_EX));
     rb_file_const("LOCK_UN", INT2FIX(LOCK_UN));

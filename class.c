@@ -229,7 +229,7 @@ rb_define_class_under(outer, name, super)
 
     id = rb_intern(name);
     if (rb_const_defined_at(outer, id)) {
-	klass = rb_const_get(outer, id);
+	klass = rb_const_get_at(outer, id);
 	if (TYPE(klass) != T_CLASS) {
 	    rb_raise(rb_eTypeError, "%s is not a class", name);
 	}
@@ -306,7 +306,7 @@ rb_define_module_under(outer, name)
 
     id = rb_intern(name);
     if (rb_const_defined_at(outer, id)) {
-	module = rb_const_get(outer, id);
+	module = rb_const_get_at(outer, id);
 	if (TYPE(module) == T_MODULE)
 	    return module;
 	rb_raise(rb_eTypeError, "%s::%s is not a module",

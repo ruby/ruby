@@ -145,6 +145,7 @@ static NODE *arg_blk_pass();
 static NODE *new_call();
 static NODE *new_fcall();
 static NODE *new_super();
+static NODE *new_yield();
 
 static NODE *gettable();
 static NODE *assignable();
@@ -714,7 +715,7 @@ command		: operation command_args       %prec tLOWEST
 		    }
 		| kYIELD command_args
 		    {
-			$$ = NEW_YIELD(ret_args($2));
+			$$ = new_yield($2);
 		        fixpos($$, $2);
 		    }
 		;
@@ -1287,7 +1288,7 @@ call_args2	: arg_value ',' args opt_block_arg
 		    }
 		| arg_value ',' args ',' tSTAR arg_value opt_block_arg
 		    {
-			$$ = arg_concat(list_concat($1,$3), $6);
+                       $$ = arg_concat(list_concat(NEW_LIST($1),$3), $6);
 			$$ = arg_blk_pass($$, $7);
 		    }
 		| assocs opt_block_arg
@@ -1454,15 +1455,15 @@ primary		: literal
 		    }
 		| kYIELD '(' call_args ')'
 		    {
-			$$ = NEW_YIELD(ret_args($3));
+			$$ = new_yield($3);
 		    }
 		| kYIELD '(' ')'
 		    {
-			$$ = NEW_YIELD(0);
+			$$ = NEW_YIELD(0, Qfalse);
 		    }
 		| kYIELD
 		    {
-			$$ = NEW_YIELD(0);
+			$$ = NEW_YIELD(0, Qfalse);
 		    }
 		| kDEFINED opt_nl '(' {in_defined = 1;} expr ')'
 		    {
@@ -5366,22 +5367,52 @@ cond_negative(nodep)
     return 0;
 }
 
+static void
+no_blockarg(node)
+    NODE *node;
+{
+    if (node && nd_type(node) == NODE_BLOCK_PASS) {
+	rb_compile_error("block argument should not be given");
+    }
+}
+
 static NODE *
 ret_args(node)
     NODE *node;
 {
     if (node) {
-	if (nd_type(node) == NODE_BLOCK_PASS) {
-	    rb_compile_error("block argument should not be given");
-	}
+	no_blockarg(node);
 	if (nd_type(node) == NODE_ARRAY && node->nd_next == 0) {
 	    node = node->nd_head;
 	}
-    }
-    if (node && nd_type(node) == NODE_RESTARY) {
-	nd_set_type(node, NODE_SPLAT);
+	if (nd_type(node) == NODE_RESTARY) {
+	    nd_set_type(node, NODE_SPLAT);
+	}
     }
     return node;
+}
+
+static NODE *
+new_yield(node)
+    NODE *node;
+{
+    long state = Qtrue;
+
+    if (node) {
+	no_blockarg(node);
+	if (nd_type(node) == NODE_ARRAY && node->nd_next == 0) {
+	    node = node->nd_head;
+	    state = Qfalse;
+	}
+	if (nd_type(node) == NODE_RESTARY) {
+	    nd_set_type(node, NODE_SPLAT);
+	    state = Qfalse;
+	}
+    }
+    else {
+	state = Qfalse;
+    }
+    return NEW_YIELD(node, state);
 }
 
 static NODE*

@@ -125,7 +125,6 @@ def f; yield *[1]; end; f {|a| test_ok(a == 1)}
 def f; yield *[nil]; end; f {|a| test_ok(a == nil)}
 def f; yield *[[]]; end; f {|a| test_ok(a == [])}
 def f; yield *[*[1]]; end; f {|a| test_ok(a == 1)}
-def f; yield *[*[1,2]]; end; f {|a| test_ok(a == [1,2])}
 
 def f; yield; end; f {|*a| test_ok(a == [])}
 def f; yield nil; end; f {|*a| test_ok(a == [nil])}
