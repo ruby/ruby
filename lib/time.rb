@@ -60,7 +60,7 @@ class Time
       'MST' => -7, 'MDT' => -6,
       'PST' => -8, 'PDT' => -7,
       # Following definition of military zones is original one.
-      # See RFC 1123 and RFC 2822 for the error of RFC 822.
+      # See RFC 1123 and RFC 2822 for the error in RFC 822.
       'A' => +1, 'B' => +2, 'C' => +3, 'D' => +4,  'E' => +5,  'F' => +6, 
       'G' => +7, 'H' => +8, 'I' => +9, 'K' => +10, 'L' => +11, 'M' => +12,
       'N' => -1, 'O' => -2, 'P' => -3, 'Q' => -4,  'R' => -5,  'S' => -6, 
@@ -82,6 +82,17 @@ class Time
       end
       off
     end
+
+    def zone_utc?(zone)
+      # * +0000 means localtime. [RFC 2822]
+      # * GMT is a localtime abbreviation in Europe/London, etc.
+      if /\A(?:-00:00|-0000|-00|UTC|Z|UT)\z/i =~ zone
+        true
+      else
+        false
+      end
+    end
+    private :zone_utc?
 
     #
     # Parses +date+ using ParseDate.parsedate and converts it to a Time object.
@@ -160,7 +171,7 @@ class Time
 
       if off
         t = Time.utc(year, mon, day, hour, min, sec) - off
-        t.localtime if off != 0
+        t.localtime if !zone_utc?(zone)
         t
       else
         Time.local(year, mon, day, hour, min, sec)
@@ -212,8 +223,8 @@ class Time
                end
 
         t = Time.utc(year, mon, day, hour, min, sec)
-        offset = zone_offset(zone)
-	t = (t - offset).localtime if offset != 0 || zone == '+0000'
+        t -= zone_offset(zone)
+        t.localtime if !zone_utc?(zone)
 	t
       else
         raise ArgumentError.new("not RFC 2822 compliant date: #{date.inspect}")
@@ -611,6 +622,19 @@ if __FILE__ == $0
       assert_raise(ArgumentError) { Time.rfc2822("=?iso-8859-1?Q?(=C5=DA),?= 10   2 2001 23:32:26 +0900 (JST)") }
       assert_raise(ArgumentError) { Time.rfc2822("\307\341\314\343\332\311, 30 \344\346\335\343\310\321 2001 10:01:06") }
       assert_raise(ArgumentError) { Time.rfc2822("=?iso-8859-1?Q?(=BF=E5),?= 12  =?iso-8859-1?Q?9=B7=EE?= 2001 14:52:41\n+0900 (JST)") }
+    end
+
+    def test_zone_0000
+      assert_equal(true, Time.parse("2000-01-01T00:00:00Z").utc?)
+      assert_equal(true, Time.parse("2000-01-01T00:00:00-00:00").utc?)
+      assert_equal(false, Time.parse("2000-01-01T00:00:00+00:00").utc?)
+      assert_equal(false, Time.parse("Sat, 01 Jan 2000 00:00:00 GMT").utc?)
+      assert_equal(true, Time.parse("Sat, 01 Jan 2000 00:00:00 -0000").utc?)
+      assert_equal(false, Time.parse("Sat, 01 Jan 2000 00:00:00 +0000").utc?)
+      assert_equal(false, Time.rfc2822("Sat, 01 Jan 2000 00:00:00 GMT").utc?)
+      assert_equal(true, Time.rfc2822("Sat, 01 Jan 2000 00:00:00 -0000").utc?)
+      assert_equal(false, Time.rfc2822("Sat, 01 Jan 2000 00:00:00 +0000").utc?)
+      assert_equal(true, Time.rfc2822("Sat, 01 Jan 2000 00:00:00 UTC").utc?)
     end
   end
 

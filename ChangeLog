@@ -1,3 +1,7 @@
+Thu Jan  6 13:45:35 2005  Tanaka Akira  <akr@m17n.org>
+
+	* lib/time.rb: recognize +00:00 and GMT as a localtime.
+
 Thu Jan  6 07:58:28 2005  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/usage.rb (RDoc::RDoc.usage_no_exit): Allow for colons
