@@ -1,3 +1,13 @@
+Fri Mar 15 17:44:08 2002  Usaku Nakamura <usa@ruby-lang.org>
+
+	* bignum.c, intern.h (rb_ull2big, rb_ll2big, rb_ull2inum, rb_ll2inum,
+	  big2ull, rb_big2ull, rb_big2ll): use LONG_LONG macro instead of
+	  long long.
+
+	* numeric.c, intern.h, ruby.h (rb_num2ll, rb_num2ull): ditto.
+
+	* ruby.h: use _I64_MAX and _I64_MIN if they are defined (for VC++).
+
 Fri Mar 15 14:02:43 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* ext/iconv/iconv.c: fixed document, Iconv#new is no longer an

@@ -71,10 +71,10 @@ long rb_big2long _((VALUE));
 unsigned long rb_big2ulong _((VALUE));
 #define rb_big2uint(x) rb_big2ulong(x)
 #if HAVE_LONG_LONG
-VALUE rb_ll2inum _((long long));
-VALUE rb_ull2inum _((unsigned long long));
-long long rb_big2ll _((VALUE));
-unsigned long long rb_big2ull _((VALUE));
+VALUE rb_ll2inum _((LONG_LONG));
+VALUE rb_ull2inum _((unsigned LONG_LONG));
+LONG_LONG rb_big2ll _((VALUE));
+unsigned LONG_LONG rb_big2ull _((VALUE));
 #endif  /* HAVE_LONG_LONG */
 void rb_quad_pack _((char*,VALUE));
 VALUE rb_quad_unpack _((const char*,int));

@@ -871,7 +871,7 @@ rb_num2fix(val)
 
 #if HAVE_LONG_LONG
 
-long long
+LONG_LONG
 rb_num2ll(val)
     VALUE val;
 {
@@ -879,13 +879,13 @@ rb_num2ll(val)
 	rb_raise(rb_eTypeError, "no implicit conversion from nil");
     }
 
-    if (FIXNUM_P(val)) return (long long)FIX2LONG(val);
+    if (FIXNUM_P(val)) return (LONG_LONG)FIX2LONG(val);
 
     switch (TYPE(val)) {
     case T_FLOAT:
 	if (RFLOAT(val)->value <= (double)LLONG_MAX
 	    && RFLOAT(val)->value >= (double)LLONG_MIN) {
-	    return (long long)(RFLOAT(val)->value);
+	    return (LONG_LONG)(RFLOAT(val)->value);
 	}
 	else {
 	    char buf[24];
@@ -914,14 +914,14 @@ rb_num2ll(val)
     }
 }
 
-unsigned long long
+unsigned LONG_LONG
 rb_num2ull(val)
     VALUE val;
 {
     if (TYPE(val) == T_BIGNUM) {
 	return rb_big2ull(val);
     }
-    return (unsigned long long)rb_num2ll(val);
+    return (unsigned LONG_LONG)rb_num2ll(val);
 }
 
 #endif  /* HAVE_LONG_LONG */

@@ -90,15 +90,23 @@ typedef unsigned long ID;
 #  ifdef LONG_LONG_MAX
 #   define LLONG_MAX  LONG_LONG_MAX
 #  else
+#   ifdef _I64_MAX
+#    define LLONG_MAX _I64_MAX
+#   else
     /* assuming 64bit(2's complement) long long */
-#   define LLONG_MAX 9223372036854775807LL
+#    define LLONG_MAX 9223372036854775807LL
+#   endif
 #  endif
 # endif
 # ifndef LLONG_MIN
 #  ifdef LONG_LONG_MIN
 #   define LLONG_MIN  LONG_LONG_MIN
 #  else
-#   define LLONG_MIN (-LLONG_MAX-1)
+#   ifdef _I64_MIN
+#    define LLONG_MIN _I64_MAX
+#   else
+#    define LLONG_MIN (-LLONG_MAX-1)
+#   endif
 #  endif
 # endif
 #endif
@@ -120,9 +128,9 @@ VALUE rb_uint2inum _((unsigned long));
 #define rb_uint_new(v) rb_uint2inum(v)
 
 #if HAVE_LONG_LONG
-VALUE rb_ll2inum _((long long));
+VALUE rb_ll2inum _((LONG_LONG));
 #define LL2NUM(v) rb_ll2inum(v)
-VALUE rb_ull2inum _((unsigned long long));
+VALUE rb_ull2inum _((unsigned LONG_LONG));
 #define ULL2NUM(v) rb_ull2inum(v)
 #endif
 
@@ -233,8 +241,8 @@ int rb_fix2int _((VALUE));
 #endif
 
 #if HAVE_LONG_LONG
-long long rb_num2ll _((VALUE));
-unsigned long long rb_num2ull _((VALUE));
+LONG_LONG rb_num2ll _((VALUE));
+unsigned LONG_LONG rb_num2ull _((VALUE));
 # define NUM2LL(x) (FIXNUM_P(x)?FIX2LONG(x):rb_num2ll((VALUE)x))
 #endif
 

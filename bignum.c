@@ -27,7 +27,7 @@ typedef LONG_LONG BDIGIT_DBL_SIGNED;
 #elif SIZEOF_INT*2 <= SIZEOF_LONG
 typedef unsigned int BDIGIT;
 typedef unsigned long BDIGIT_DBL;
-typedef long long BDIGIT_DBL_SIGNED;
+typedef LONG_LONG BDIGIT_DBL_SIGNED;
 #else
 typedef unsigned short BDIGIT;
 typedef unsigned long BDIGIT_DBL;
@@ -39,7 +39,7 @@ typedef long BDIGIT_DBL_SIGNED;
 #define BIGRAD ((BDIGIT_DBL)1 << BITSPERDIG)
 #define DIGSPERLONG ((unsigned int)(sizeof(long)/sizeof(BDIGIT)))
 #if HAVE_LONG_LONG
-# define DIGSPERLL ((unsigned int)(sizeof(long long)/sizeof(BDIGIT)))
+# define DIGSPERLL ((unsigned int)(sizeof(LONG_LONG)/sizeof(BDIGIT)))
 #endif
 #define BIGUP(x) ((BDIGIT_DBL)(x) << BITSPERDIG)
 #define BIGDN(x) RSHIFT(x,BITSPERDIG)
@@ -514,7 +514,7 @@ rb_str_to_inum(str, base, badcheck)
 
 VALUE
 rb_ull2big(n)
-    unsigned long long n;
+    unsigned LONG_LONG n;
 {
     BDIGIT_DBL num = n;
     long i = 0;
@@ -537,7 +537,7 @@ rb_ull2big(n)
 
 VALUE
 rb_ll2big(n)
-    long long n;
+    LONG_LONG n;
 {
     long neg = 0;
     VALUE big;
@@ -555,7 +555,7 @@ rb_ll2big(n)
 
 VALUE
 rb_ull2inum(n)
-    unsigned long long n;
+    unsigned LONG_LONG n;
 {
     if (POSFIXABLE(n)) return INT2FIX(n);
     return rb_ull2big(n);
@@ -563,7 +563,7 @@ rb_ull2inum(n)
 
 VALUE
 rb_ll2inum(n)
-    long long n;
+    LONG_LONG n;
 {
     if (FIXABLE(n)) return INT2FIX(n);
     return rb_ll2big(n);
@@ -716,7 +716,7 @@ rb_big2long(x)
 
 #if HAVE_LONG_LONG
 
-static unsigned long long
+static unsigned LONG_LONG
 big2ull(x, type)
     VALUE x;
     char *type;
@@ -725,7 +725,7 @@ big2ull(x, type)
     BDIGIT_DBL num;
     BDIGIT *ds;
 
-    if (len > sizeof(long long)/sizeof(BDIGIT))
+    if (len > sizeof(LONG_LONG)/sizeof(BDIGIT))
 	rb_raise(rb_eRangeError, "bignum too big to convert into `%s'", type);
     ds = BDIGITS(x);
     num = 0;
@@ -736,27 +736,27 @@ big2ull(x, type)
     return num;
 }
 
-unsigned long long
+unsigned LONG_LONG
 rb_big2ull(x)
     VALUE x;
 {
-    unsigned long long num = big2ull(x, "unsigned long long");
+    unsigned LONG_LONG num = big2ull(x, "unsigned long long");
 
     if (!RBIGNUM(x)->sign) return -num;
     return num;
 }
 
-long long
+LONG_LONG
 rb_big2ll(x)
     VALUE x;
 {
-    unsigned long long num = big2ull(x, "long long");
+    unsigned LONG_LONG num = big2ull(x, "long long");
 
-    if ((long long)num < 0 && (RBIGNUM(x)->sign
-			       || (long long)num != LLONG_MIN)) {
+    if ((LONG_LONG)num < 0 && (RBIGNUM(x)->sign
+			       || (LONG_LONG)num != LLONG_MIN)) {
 	rb_raise(rb_eRangeError, "bignum too big to convert into `long long'");
     }
-    if (!RBIGNUM(x)->sign) return -(long long)num;
+    if (!RBIGNUM(x)->sign) return -(LONG_LONG)num;
     return num;
 }
 
