@@ -1,3 +1,8 @@
+Thu Apr 24 19:40:02 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/extmk.rb: add -Wl,--no-undefined to LDSHARED only
+	  if GNU ld is 2.11 or later.
+
 Wed Apr 23 14:05:40 2003  Dave Thomas <dave@pragprog.com>
 
 	* lib/ipaddr.rb (include?): Support non-IPAddr parameters.

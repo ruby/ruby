@@ -10,6 +10,7 @@ $extinit = nil
 $extobjs = nil
 $ignore = nil
 $message = nil
+$use_no_undef = nil
 
 $progname = $0
 alias $PROGRAM_NAME $0
@@ -33,6 +34,12 @@ $topdir = File.expand_path(".")
 $top_srcdir = srcdir
 $hdrdir = $top_srcdir
 
+if not $use_no_undef and /linux/ =~ RUBY_PLATFORM and
+   $configure_args['--enable-shared'] and
+   CONFIG["GNU_LD"] == "yes"
+  $use_no_undef = 0 <= (`ld -v`.scan(/\d+/).map{|x| x.to_i} <=> [2, 11])
+end
+
 def sysquote(x)
   @quote ||= /human|os2|macos/ =~ (CROSS_COMPILING || RUBY_PLATFORM)
   @quote ? x.quote : x
@@ -53,7 +60,7 @@ def extmake(target)
 
   init_mkmf
 
-  if /linux/ =~ RUBY_PLATFORM and $configure_args['--enable-shared'] and CONFIG["GNU_LD"] == "yes"
+  if $use_no_undef
     $DLDFLAGS << " -Wl,--no-undefined"
   end
 
