@@ -184,7 +184,7 @@ print_undef(klass, id)
     ID id;
 {
     rb_name_error(id, "undefined method `%s' for %s `%s'",
-		  rb_id2name(id), 
+		  rb_id2name(id),
 		  (TYPE(klass) == T_MODULE) ? "module" : "class",
 		  rb_class2name(klass));
 }
@@ -365,7 +365,7 @@ rb_get_method_body(klassp, idp, noexp)
 	ent->mid = ent->mid0 = id;
 	ent->noex   = 0;
 	ent->method = 0;
-	
+
 	return 0;
     }
 
@@ -1345,7 +1345,7 @@ ruby_cleanup(ex)
     }
     else if (ex == 0) {
 	ex = state;
-    }   
+    }
     POP_ITER();
 
     ex = error_handle(ex);
@@ -1987,7 +1987,19 @@ arg_defined(self, node, buf, type)
     }
     return type;
 }
-    
+
+static VALUE
+search_iclass(self, klass)
+    VALUE self, klass;
+{
+    VALUE k = CLASS_OF(self);
+
+    while (k && !(BUILTIN_TYPE(k) == T_ICLASS && RBASIC(k)->klass == klass)) {
+	k = RCLASS(k)->super;
+    }
+    return k;
+}
+
 static char*
 is_defined(self, node, buf)
     VALUE self;
@@ -2004,8 +2016,12 @@ is_defined(self, node, buf)
       case NODE_ZSUPER:
 	if (ruby_frame->orig_func == 0) return 0;
 	else if (ruby_frame->last_class == 0) return 0;
-	else if (rb_method_boundp(RCLASS(ruby_frame->last_class)->super,
-				  ruby_frame->orig_func, 0)) {
+	val = ruby_frame->last_class;
+	if (BUILTIN_TYPE(val) == T_MODULE) {
+	    val = search_iclass(self, val);
+	    if (!val) return 0;
+	}
+	if (rb_method_boundp(RCLASS(val)->super, ruby_frame->orig_func, 0)) {
 	    if (nd_type(node) == NODE_SUPER) {
 		return arg_defined(self, node->nd_args, buf, "super");
 	    }
@@ -2561,7 +2577,7 @@ rb_eval(self, n)
 		if (trace_func) {
 		    call_trace_func("line", tag, self,
 				    ruby_frame->last_func,
-				    ruby_frame->last_class);	
+				    ruby_frame->last_class);
 		}
 		if (nd_type(tag->nd_head) == NODE_WHEN) {
 		    VALUE v = rb_eval(self, tag->nd_head->nd_head);
@@ -2604,7 +2620,7 @@ rb_eval(self, n)
 		    if (trace_func) {
 			call_trace_func("line", tag, self,
 					ruby_frame->last_func,
-					ruby_frame->last_class);	
+					ruby_frame->last_class);
 		    }
 		    if (nd_type(tag->nd_head) == NODE_WHEN) {
 			VALUE v = rb_eval(self, tag->nd_head->nd_head);
@@ -3017,7 +3033,7 @@ rb_eval(self, n)
 	    int argc; VALUE *argv; /* used in SETUP_ARGS */
 	    TMP_PROTECT;
 
-	    if (ruby_frame->last_class == 0) {	
+	    if (ruby_frame->last_class == 0) {
 		if (ruby_frame->orig_func) {
 		    rb_name_error(ruby_frame->last_func,
 				  "superclass method `%s' disabled",
@@ -3494,7 +3510,7 @@ rb_eval(self, n)
 		}
 	    }
 	    defn = copy_node_scope(node->nd_defn, ruby_cref);
-	    rb_add_method(klass, node->nd_mid, defn, 
+	    rb_add_method(klass, node->nd_mid, defn,
 			  NOEX_PUBLIC|(body?body->nd_noex&NOEX_UNDEF:0));
 	    result = Qnil;
 	}
@@ -3617,12 +3633,12 @@ rb_eval(self, n)
 	    if (ruby_safe_level >= 4 && !OBJ_TAINTED(result))
 		rb_raise(rb_eSecurityError, "Insecure: can't extend object");
 	    klass = rb_singleton_class(result);
-	    
+
 	    if (ruby_wrapper) {
 		rb_extend_object(klass, ruby_wrapper);
 		rb_include_module(klass, ruby_wrapper);
 	    }
-	    
+
 	    result = module_setup(klass, node);
 	}
 	break;
@@ -3641,7 +3657,7 @@ rb_eval(self, n)
 	if (trace_func) {
 	    call_trace_func("line", node, self,
 			    ruby_frame->last_func,
-			    ruby_frame->last_class);	
+			    ruby_frame->last_class);
 	}
 	node = node->nd_next;
 	goto again;
@@ -5246,7 +5262,7 @@ rb_call_super(argc, argv)
 {
     VALUE result, self, klass, k;
 
-    if (ruby_frame->last_class == 0) {	
+    if (ruby_frame->last_class == 0) {
 	rb_name_error(ruby_frame->last_func, "calling `super' from `%s' is prohibited",
 		      rb_id2name(ruby_frame->last_func));
     }
@@ -5254,14 +5270,11 @@ rb_call_super(argc, argv)
     self = ruby_frame->self;
     klass = ruby_frame->last_class;
     if (BUILTIN_TYPE(klass) == T_MODULE) {
-	k = CLASS_OF(self);
-	while (!(BUILTIN_TYPE(k) == T_ICLASS && RBASIC(k)->klass == klass)) {
-	    k = RCLASS(k)->super;
-	    if (!k) {
-		rb_raise(rb_eTypeError, "%s is not included in %s",
-			 rb_class2name(klass),
-			 rb_class2name(CLASS_OF(self)));
-	    }
+	k = search_iclass(self, klass);
+	if (!k) {
+	    rb_raise(rb_eTypeError, "%s is not included in %s",
+		     rb_class2name(klass),
+		     rb_class2name(CLASS_OF(self)));
 	}
 	if (RCLASS(k)->super == 0) {
 	    rb_name_error(ruby_frame->last_func,
@@ -5387,7 +5400,6 @@ compile(src, file, line)
     rb_thread_critical = Qtrue;
     node = rb_compile_string(file, src, line);
     rb_thread_critical = critical;
-    
 
     if (ruby_nerrs == 0) return node;
     return 0;
@@ -5470,7 +5482,7 @@ eval(self, src, scope, file, line)
 	    compile_error(0);
 	}
 	if (!NIL_P(result)) ruby_errinfo = result;
-	result = eval_node(self, node); 
+	result = eval_node(self, node);
     }
     POP_TAG();
     POP_CLASS();
@@ -8212,7 +8224,7 @@ rb_thread_save_context(th)
 	th->stk_max = len;
     }
     th->stk_len = len;
-    FLUSH_REGISTER_WINDOWS; 
+    FLUSH_REGISTER_WINDOWS;
     MEMCPY(th->stk_ptr, th->stk_pos, VALUE, th->stk_len);
 #ifdef __ia64__
     {
@@ -8631,7 +8643,7 @@ rb_thread_schedule()
 	}
     }
     END_FOREACH_FROM(curr, th);
-    
+
     /* Do the select if needed */
     if (need_select) {
 	/* Convert delay to a timeval */
@@ -8692,7 +8704,7 @@ rb_thread_schedule()
 	}
 	if (n > 0) {
 	    now = -1.0;
-	    /* Some descriptors are ready. 
+	    /* Some descriptors are ready.
 	       Make the corresponding threads runnable. */
 	    FOREACH_THREAD_FROM(curr, th) {
 		if ((th->wait_for&WAIT_FD) && FD_ISSET(th->fd, &readfds)) {
@@ -8731,11 +8743,11 @@ rb_thread_schedule()
 	    break;
 	}
 	if (th->status == THREAD_RUNNABLE && th->stk_ptr) {
-	    if (!next || next->priority < th->priority) 
+	    if (!next || next->priority < th->priority)
 	       next = th;
 	}
     }
-    END_FOREACH_FROM(curr, th); 
+    END_FOREACH_FROM(curr, th);
 
     if (!next) {
 	/* raise fatal error to main thread */
@@ -9097,7 +9109,7 @@ rb_thread_kill(thread)
 	rb_secure(4);
     }
     if (th->status == THREAD_TO_KILL || th->status == THREAD_KILLED)
-	return thread; 
+	return thread;
     if (th == th->next || th == main_thread) rb_exit(0);
 
     rb_thread_ready(th);
@@ -9391,7 +9403,7 @@ rb_thread_start_0(fn, arg, th)
     int state;
 
     if (OBJ_FROZEN(curr_thread->thgroup)) {
-	rb_raise(rb_eThreadError, 
+	rb_raise(rb_eThreadError,
 		 "can't start a new thread (frozen ThreadGroup)");
     }
 
@@ -9460,7 +9472,7 @@ rb_thread_start_0(fn, arg, th)
 
     if (state && status != THREAD_TO_KILL && !NIL_P(ruby_errinfo)) {
 	th->flags |= THREAD_RAISED;
-	if (state == TAG_FATAL) { 
+	if (state == TAG_FATAL) {
 	    /* fatal error within this thread, need to stop whole script */
 	    main_thread->errinfo = ruby_errinfo;
 	    rb_thread_cleanup();
@@ -9500,7 +9512,7 @@ rb_thread_create(fn, arg)
 }
 
 static VALUE
-rb_thread_yield(arg, th) 
+rb_thread_yield(arg, th)
     VALUE arg;
     rb_thread_t th;
 {
@@ -9888,7 +9900,7 @@ rb_thread_inspect(thread)
     const char *status = thread_status_name(th->status);
     VALUE str;
 
-    str = rb_str_new(0, strlen(cname)+7+16+9+1); /* 7:tags 16:addr 9:status 1:nul */ 
+    str = rb_str_new(0, strlen(cname)+7+16+9+1); /* 7:tags 16:addr 9:status 1:nul */
     sprintf(RSTRING(str)->ptr, "#<%s:0x%lx %s>", cname, thread, status);
     RSTRING(str)->len = strlen(RSTRING(str)->ptr);
     OBJ_INFECT(str, thread);

@@ -1,3 +1,8 @@
+Fri Oct 10 07:50:54 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (is_defined): inheritance line adjustment as like as
+	  rb_call_super().
+
 Fri Oct 10 01:19:00 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_x509name.c (ossl_x509name_initialize): add
