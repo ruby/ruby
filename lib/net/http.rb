@@ -221,11 +221,6 @@ module Net
     def do_finish
     end
 
-    def re_connect
-      @socket.reopen @open_timeout
-      on_connect
-    end
-
 
     ###
     ### proxy
@@ -438,7 +433,7 @@ module Net
 
       yield req
       req.response.__send__ :terminate
-      @curr_http_version = req.http_version
+      @curr_http_version = req.response.http_version
 
       if keep_alive? req, req.response then
         if @socket.closed? then
@@ -579,12 +574,10 @@ module Net
 
       @socket = nil
       @response = nil
-      @http_version = nil
     end
 
     attr_reader :path
     attr_reader :response
-    attr_reader :http_version
 
     def inspect
       "\#<#{type}>"
@@ -633,6 +626,7 @@ module Net
       ready( sock, ihead ) {|header|
         request ver, path, header
       }
+      @response
     end
 
     def ready( sock, ihead )
@@ -663,12 +657,6 @@ module Net
       resp
     end
 
-  end
-
-  module HTTPReadResponse
-
-    private
-
     def read_response
       resp = get_resline
 
@@ -697,18 +685,14 @@ module Net
       unless m then
         raise HTTPBadResponse, "wrong status line: #{str}"
       end
-      @http_version = m[1]
+      httpver = m[1]
       status  = m[2]
       discrip = m[3]
       
       ::Net::NetPrivate::HTTPResponse.new(
-              status, discrip, @socket, type::HAS_BODY )
+              status, discrip, @socket, type::HAS_BODY, httpver )
     end
   
-  end
-
-  class HTTPRequest
-    include ::Net::NetPrivate::HTTPReadResponse
   end
 
 
@@ -733,6 +717,7 @@ module Net
         request ver, path, header
         @socket.write data
       }
+      @response
     end
 
     def check_arg( data, blkp )
@@ -792,7 +777,7 @@ module Net
       METHOD = 'PUT'
     end
 
-  end   # HTTP::
+  end
 
 
 
@@ -804,7 +789,7 @@ module Net
 
   class HTTPResponse < Response
 
-    HTTPCODE_CLASS_TO_OBJ = {
+    CODE_CLASS_TO_OBJ = {
       '1' => HTTPInformationCode,
       '2' => HTTPSuccessCode,
       '3' => HTTPRedirectionCode,
@@ -812,7 +797,7 @@ module Net
       '5' => HTTPServerErrorCode
     }
 
-    HTTPCODE_TO_OBJ = {
+    CODE_TO_OBJ = {
       '100' => ContinueCode,
       '101' => HTTPSwitchProtocol,
 
@@ -857,18 +842,21 @@ module Net
     }
 
 
-    def initialize( status, msg, sock, be )
-      code = HTTPCODE_TO_OBJ[status] ||
-             HTTPCODE_CLASS_TO_OBJ[status[0,1]] ||
+    def initialize( stat, msg, sock, be, hv )
+      code = CODE_TO_OBJ[stat] ||
+             CODE_CLASS_TO_OBJ[stat[0,1]] ||
              UnknownCode
-      super code, status, msg
+      super code, stat, msg
       @socket = sock
       @body_exist = be
+      @http_version = hv
 
       @header = {}
       @body = nil
       @read = false
     end
+
+    attr_reader :http_version
 
     def inspect
       "#<#{type} #{code}>"
