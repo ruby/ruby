@@ -263,6 +263,8 @@ sample/binding_sample.rb
 sample/bindtag_sample.rb
 sample/binstr_usage.rb
 sample/btn_with_frame.rb
+sample/cmd_res_test.rb
+sample/cmd_resource
 sample/encstr_usage.rb
 sample/iso2022-kr.txt
 sample/menubar1.rb
