@@ -492,6 +492,7 @@ ossl_ssl_read(int argc, VALUE *argv, VALUE self)
     OpenFile *fptr;
 
     Data_Get_Struct(self, SSL, ssl);
+    GetOpenFile(ossl_ssl_get_io(self), fptr);
     rb_scan_args(argc, argv, "11", &len, &str);
     ilen = NUM2INT(len);
     if(NIL_P(str)) str = rb_str_new(0, ilen);
@@ -500,37 +501,34 @@ ossl_ssl_read(int argc, VALUE *argv, VALUE self)
         rb_str_modify(str);
         rb_str_resize(str, ilen);
     }
+    if(ilen == 0) return str;
 
     if (ssl) {
+	if(SSL_pending(ssl) <= 0)
+	    rb_thread_wait_fd(fileno(fptr->f));
 	for (;;){
 	    nread = SSL_read(ssl, RSTRING(str)->ptr, RSTRING(str)->len);
 	    switch(SSL_get_error(ssl, nread)){
 	    case SSL_ERROR_NONE:
 		goto end;
 	    case SSL_ERROR_ZERO_RETURN:
-		ossl_raise(rb_eEOFError, "End of file reached");
+		rb_eof_error();
 	    case SSL_ERROR_WANT_WRITE:
 	    case SSL_ERROR_WANT_READ:
 		rb_thread_schedule();
 		continue;
+	    case SSL_ERROR_SYSCALL:
+		if(ERR_peek_error() == 0 && nread == 0) rb_eof_error();
+		ossl_raise(eSSLError, "SSL_read: %s", strerror(errno));
 	    default:
 		ossl_raise(eSSLError, "SSL_read:");
 	    }
         }
     }
     else {
+        ID id_sysread = rb_intern("sysread");
         rb_warning("SSL session is not started yet.");
-        GetOpenFile(ossl_ssl_get_io(self), fptr);
-        rb_io_check_readable(fptr);
-        TRAP_BEG;
-        nread = read(fileno(fptr->f), RSTRING(str)->ptr, RSTRING(str)->len);
-        TRAP_END;
-	if (nread == 0) {
-	    ossl_raise(rb_eEOFError, "End of file reached");
-	}
-        if(nread < 0) {
-            ossl_raise(eSSLError, "read:%s", strerror(errno));
-        }
+        return rb_funcall(ossl_ssl_get_io(self), id_sysread, 2, len, str);
     }
 
   end:
@@ -546,7 +544,6 @@ ossl_ssl_write(VALUE self, VALUE str)
 {
     SSL *ssl;
     int nwrite = 0;
-    OpenFile *fptr;
     FILE *fp;
 
     Data_Get_Struct(self, SSL, ssl);
@@ -568,14 +565,9 @@ ossl_ssl_write(VALUE self, VALUE str)
         }
     }
     else {
+        ID id_syswrite = rb_intern("syswrite");
         rb_warning("SSL session is not started yet.");
-        GetOpenFile(ossl_ssl_get_io(self), fptr);
-        rb_io_check_writable(fptr);
-        fp = GetWriteFile(fptr);
-        nwrite = write(fileno(fp), RSTRING(str)->ptr, RSTRING(str)->len);
-        if (nwrite < 0) {
-            ossl_raise(eSSLError, "write:%s", strerror(errno));
-        }
+	return rb_funcall(ossl_ssl_get_io(self), id_syswrite, 1, str);
     }
 
   end:
@@ -705,6 +697,20 @@ ossl_ssl_get_state(VALUE self)
     return ret;
 }
 
+static VALUE
+ossl_ssl_pending(VALUE self)
+{
+    SSL *ssl;
+
+    Data_Get_Struct(self, SSL, ssl);
+    if (!ssl) {
+        rb_warning("SSL session is not started yet.");
+        return Qnil;
+    }
+
+    return INT2NUM(SSL_pending(ssl));
+}
+
 void
 Init_ossl_ssl()
 {
@@ -744,6 +750,7 @@ Init_ossl_ssl()
     rb_define_method(cSSLSocket, "peer_cert_chain", ossl_ssl_get_peer_cert_chain, 0);
     rb_define_method(cSSLSocket, "cipher",     ossl_ssl_get_cipher, 0);
     rb_define_method(cSSLSocket, "state",      ossl_ssl_get_state, 0);
+    rb_define_method(cSSLSocket, "pending",    ossl_ssl_pending, 0);
 
 #define ossl_ssl_def_const(x) rb_define_const(mSSL, #x, INT2FIX(SSL_##x))
 

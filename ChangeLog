@@ -1,3 +1,19 @@
+Mon Aug 23 14:04:51 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_ssl_read):
+	  - should return an empty string if specified length to read is 0.
+	  - should check for pending data and wait for fd before reading.
+	  - call underlying IO's sysread if SSL session is not started.
+	  [ruby-dev:24072], [ruby-dev:24075]
+
+	* ext/openssl/ossl_ssl.c (ossl_ssl_write):
+	  - call underlying IO's syswrite if SSL session is not started.
+
+	* ext/openssl/ossl_ssl.c (ossl_ssl_pending): new method
+	  OpenSSL::SSL#pending.
+
+	* ext/openssl/lib/openssl/buffering.rb: should not use select.
+
 Mon Aug 23 12:40:56 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/resolv.rb (Config.default_config_hash): when multiple domains
