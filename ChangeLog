@@ -1,3 +1,7 @@
+Wed Mar 28 09:52:33 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* win32/Makefile.sub: disable global optimization.
+
 Tue Mar 27 15:00:54 2001  K.Kosako  <kosako@sofnec.co.jp>
 
 	* eval.c (rb_mod_define_method): should have clear method cache.
