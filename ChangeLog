@@ -1,3 +1,8 @@
+Wed Jun  9 15:07:06 2004  Akinori MUSHA  <knu@iDaemons.org>
+
+	* config.guess, config.sub: Update to a more recent version as of
+	  2004-01-20.
+
 Wed Jun  9 11:20:05 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c: remove unused functions and variables.
