@@ -31,26 +31,26 @@ Tue May 18 21:21:43 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 	  * CSV::Cell removed.  a cell is represented as just a String or
 	    nil(NULL).  this change will cause widespread destruction.
 
-	  	      CSV.open("foo.csv", "r") do |row|
-		  row.each do |cell|
+      	      CSV.open("foo.csv", "r") do |row|
+		row.each do |cell|
 		  if cell.is_null       # Cell#is_null
 		    p "(NULL)"
 		  else
 		    p cell.data         # Cell#data
 		  end
-		  end
+		end
 	      end
 
 	    must be just;
 
 	      CSV.open("foo.csv", "r") do |row|
-		  row.each do |cell|
+		row.each do |cell|
 		  if cell.nil?
 		    p "(NULL)"
 		  else
 		    p cell
 		  end
-		  end
+		end
 	      end
 
 	* lib/csv.rb: [CAUTION] record separator(CR, LF, CR+LF) behavior
