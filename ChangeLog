@@ -1,3 +1,8 @@
+Mon Mar 25 13:24:20 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (bsock_do_not_rev_lookup_set): should not be
+	  allowed when $SAFE > 3.
+
 Mon Mar 25 11:32:21 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* dln.c (dln_argv0): unused unless USE_DLN_A_OUT.
@@ -5,6 +10,23 @@ Mon Mar 25 11:32:21 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 	* ext/digest: add depend files.
 
 	* ext/syslog: ditto.
+
+Sun Mar 24 12:19:09 2002  Koji Arai  <jca02266@nifty.ne.jp>
+
+	* dir.c (fnmatch): "*/bar" (with FNM_PATHNAME flag) does not
+	  match "foo/bar".
+
+Sat Mar 23 01:50:30 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (read_all): files on /proc filesystem with zero stat size,
+	  may have contents.
+
+Fri Mar 22 15:04:03 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (exec_under): changing ruby_class is OK, but should not
+	  alter cbase.
+
+	* eval.c (yield_under_i): ditto.
 
 Fri Mar 22 14:32:14 2002  Minero Aoki  <aamine@loveruby.net>
 

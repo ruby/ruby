@@ -87,6 +87,10 @@ struct timeval {
 #include <signal.h>
 #include <errno.h>
 
+#if defined(__VMS)
+#pragma nostandard
+#endif
+
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif
@@ -2960,7 +2964,7 @@ rb_eval(self, n)
 	    body = search_method(ruby_class, node->nd_mid, &origin);
 	    if (body){
 		if (RTEST(ruby_verbose) && ruby_class == origin && body->nd_cnt == 0) {
-		    rb_warning("discarding old %s", rb_id2name(node->nd_mid));
+		    rb_warning("method redefined; discarding old %s", rb_id2name(node->nd_mid));
 		}
 		if (node->nd_noex) { /* toplevel */
 		    /* should upgrade to rb_warn() if no super was called inside? */
@@ -5022,9 +5026,9 @@ rb_f_eval(argc, argv, self)
 
 /* function to call func under the specified class/module context */
 static VALUE
-exec_under(func, under, args)
+exec_under(func, under, cbase, args)
     VALUE (*func)();
-    VALUE under;
+    VALUE under, cbase;
     void *args;
 {
     VALUE val;			/* OK */
@@ -5039,10 +5043,12 @@ exec_under(func, under, args)
     ruby_frame->last_class = _frame.prev->last_class;
     ruby_frame->argc = _frame.prev->argc;
     ruby_frame->argv = _frame.prev->argv;
-    if (ruby_cbase != under) {
-	ruby_frame->cbase = (VALUE)rb_node_newnode(NODE_CREF,under,0,ruby_frame->cbase);
+    if (cbase) {
+	if (ruby_cbase != cbase) {
+	    ruby_frame->cbase = (VALUE)rb_node_newnode(NODE_CREF,under,0,ruby_frame->cbase);
+	}
+	PUSH_CREF(cbase);
     }
-    PUSH_CREF(under);
 
     mode = scope_vmode;
     SCOPE_SET(SCOPE_PUBLIC);
@@ -5051,7 +5057,7 @@ exec_under(func, under, args)
 	val = (*func)(args);
     }
     POP_TAG();
-    POP_CREF();
+    if (cbase) POP_CREF();
     SCOPE_SET(mode);
     POP_FRAME();
     POP_CLASS();
@@ -5086,39 +5092,13 @@ eval_under(under, self, src, file, line)
     args[1] = src;
     args[2] = (VALUE)file;
     args[3] = (VALUE)line;
-    return exec_under(eval_under_i, under, args);
+    return exec_under(eval_under_i, under, under, args);
 }
 
 static VALUE
 yield_under_i(self)
     VALUE self;
 {
-    if (ruby_block->flags & BLOCK_DYNAMIC) {
-	struct BLOCK * volatile old_block = ruby_block;
-	struct BLOCK block;
-
-	/* cbase should be pointed from volatile local variable */
-	/* to be protected from GC. 				*/
-	VALUE result;
-	int state;
-
-	block = *ruby_block;
-	/* copy the block to avoid modifying global data. */
-	block.frame.cbase = ruby_frame->cbase;
-	ruby_block = &block;
-
-	PUSH_TAG(PROT_NONE);
-	if ((state = EXEC_TAG()) == 0) {
-	    result = rb_yield_0(self, self, ruby_class, 0);
-	}
-	POP_TAG();
-	ruby_block = old_block;
-	if (state) JUMP_TAG(state);
-
-	return result;
-    }
-    /* static block, no need to restore */
-    ruby_block->frame.cbase = ruby_frame->cbase;
     return rb_yield_0(self, self, ruby_class, 0);
 }
 
@@ -5127,7 +5107,7 @@ static VALUE
 yield_under(under, self)
     VALUE under, self;
 {
-    return exec_under(yield_under_i, under, self);
+    return exec_under(yield_under_i, under, 0, self);
 }
 
 static VALUE

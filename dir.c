@@ -169,8 +169,10 @@ fnmatch(pat, string, flags)
 	    }
 	    else if (ISDIRSEP(c)) {
 		s = find_dirsep(s);
-		if (s)
+		if (s) {
+                    s++;
 		    break;
+                }
 		return FNM_NOMATCH;
 	    }
 

@@ -517,15 +517,9 @@ read_all(port)
 #endif
 	)
     {
-	if (st.st_size == 0) {
-	    getc(fptr->f);	/* force EOF */
-	    return rb_str_new(0, 0);
-	}
-	else {
-	    long pos = ftell(fptr->f);
-	    if (st.st_size > pos && pos >= 0) {
-		siz = st.st_size - pos + 1;
-	    }
+	long pos = ftell(fptr->f);
+	if (st.st_size > pos && pos >= 0) {
+	    siz = st.st_size - pos + 1;
 	}
     }
     str = rb_tainted_str_new(0, siz);
