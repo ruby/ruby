@@ -1,3 +1,18 @@
+Mon Dec 31 04:27:28 2001  Minero Aoki  <aamine@mx.edit.ne.jp>
+
+	* lib/net/protocol.rb: Protocol#start returns the return value of
+	  block.
+
+	* lib/net/protocol.rb: set timeout limit by default.
+
+	* lib/net/protocol.rb: new methods WriteAdapter#write, puts,
+	  print, printf.
+
+	* lib/net/http.rb: rename HTTP#get2 to request_get, post2 to
+	  request_post ...
+
+	* lib/net/smtp.rb: should not resolve HELO domain automatically.
+
 Sun Dec 30 00:59:16 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/extmk.rb.in, lib/mkmf.rb (have_library): accept -lm

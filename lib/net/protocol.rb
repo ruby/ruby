@@ -28,27 +28,17 @@ module Net
     Version = '1.2.3'
     Revision = %q$Revision$.split(/\s+/)[1]
 
+
     class << self
-
-      def start( address, port = nil, *args )
-        instance = new( address, port )
-
-        if block_given? then
-          instance.start( *args ) { yield instance }
-        else
-          instance.start( *args )
-          instance
-        end
-      end
 
       private
 
       def protocol_param( name, val )
-        module_eval %-
-          def self.#{name.id2name}
-            #{val}
-          end
-        -
+        module_eval <<-End, __FILE__, __LINE__ + 1
+            def self.#{name.id2name}
+              #{val}
+            end
+        End
       end
         
     end
@@ -61,17 +51,30 @@ module Net
     #   protocol_param command_type
     #   protocol_param socket_type   (optional)
     #
-    #   private method do_start      (optional)
-    #   private method do_finish     (optional)
+    #   private method do_start
+    #   private method do_finish
     #
-    #   private method on_connect    (optional)
-    #   private method on_disconnect (optional)
+    #   private method conn_address
+    #   private method conn_port
     #
 
     protocol_param :port,         'nil'
     protocol_param :command_type, 'nil'
     protocol_param :socket_type,  '::Net::BufferedSocket'
 
+
+    def Protocol.start( address, port = nil, *args )
+      instance = new( address, port )
+
+      if block_given? then
+        ret = nil
+        instance.start( *args ) { ret = yield(instance) }
+        ret
+      else
+        instance.start( *args )
+        instance
+      end
+    end
 
     def initialize( addr, port = nil )
       @address = addr
@@ -82,8 +85,8 @@ module Net
 
       @active = false
 
-      @open_timeout = nil
-      @read_timeout = nil
+      @open_timeout = 30
+      @read_timeout = 60
 
       @dout = nil
     end
@@ -112,90 +115,80 @@ module Net
     end
 
     #
-    # open session
+    # open
     #
 
     def start( *args )
-      active? and raise IOError, 'protocol has been opened already'
+      @active and raise IOError, 'protocol has been opened already'
 
       if block_given? then
         begin
-          _start args
-          yield self
+          do_start( *args )
+          @active = true
+          return yield(self)
         ensure
-          finish if active?
+          finish if @active
         end
-      else
-        _start args
       end
+
+      do_start( *args )
+      @active = true
       nil
     end
 
     private
 
-    def _start( args )
-      connect
-      do_start( *args )
-      @active = true
-    end
+    # abstract do_start()
 
-    def connect
-      conn_socket @address, @port
+    def conn_socket
+      @socket = type.socket_type.open(
+              conn_address(), conn_port(),
+              @open_timeout, @read_timeout, @dout )
       on_connect
-      conn_command @socket
     end
 
-    def re_connect
+    alias conn_address address
+    alias conn_port    port
+
+    def reconn_socket
       @socket.reopen @open_timeout
       on_connect
     end
 
-    def conn_socket( addr, port )
-      @socket = type.socket_type.open(
-              addr, port, @open_timeout, @read_timeout, @dout )
-    end
-
-    def conn_command( sock )
-      @command = type.command_type.new( sock )
+    def conn_command
+      @command = type.command_type.new(@socket)
     end
 
     def on_connect
     end
 
-    def do_start
-    end
-
     #
-    # close session
+    # close
     #
 
     public
 
     def finish
-      active? or raise IOError, 'already closed protocol'
-
-      do_finish if @command and not @command.critical?
-      disconnect
+      active? or raise IOError, 'closing already closed protocol'
+      do_finish
       @active = false
       nil
     end
 
     private
 
-    def do_finish
-      @command.quit
+    # abstract do_finish()
+
+    def disconn_command
+      @command.quit if @command and not @command.critical?
+      @command = nil
     end
 
-    def disconnect
-      @command = nil
+    def disconn_socket
       if @socket and not @socket.closed? then
         @socket.close
       end
       @socket = nil
-      on_disconnect
-    end
-
-    def on_disconnect
     end
     
   end
@@ -220,7 +213,7 @@ module Net
     end
 
     def error!
-      raise @code_type.error_type.new( code + ' ' + Net.quote(msg), self )
+      raise @code_type.error_type.new( code + ' ' + msg.dump, self )
     end
 
   end
@@ -305,19 +298,30 @@ module Net
     end
 
     def inspect
-      "#<#{type}>"
-    end
-
-    def write( str )
-      @socket.__send__ @mid, str
+      "#<#{type} socket=#{@socket.inspect}>"
     end
 
     def <<( str )
       @socket.__send__ @mid, str
       self
     end
+
+    def write( str )
+      @socket.__send__ @mid, str
+    end
+
+    alias print write
+
+    def puts( str = '' )
+      @socket.__send__ @mid, str.sub(/\n?/, "\n")
+    end
+
+    def printf( *args )
+      @socket.__send__ @mid, sprintf(*args)
+    end
   
   end
+
 
   class ReadAdapter
 
@@ -330,25 +334,13 @@ module Net
     end
 
     def <<( str )
-      callblock( str, &@block ) if @block
+      call_block str, &@block if @block
     end
 
     private
 
-    def callblock( str )
-      begin
-        user_break = true
-        yield str
-        user_break = false
-      rescue Exception
-        user_break = false
-        raise
-      ensure
-        if user_break then
-          @block = nil
-          return   # stop breaking
-        end
-      end
+    def call_block( str )
+      yield str
     end
   
   end
@@ -360,7 +352,7 @@ module Net
     def initialize( sock )
       @socket = sock
       @last_reply = nil
-      @critical = false
+      @atomic = false
     end
 
     attr_accessor :socket
@@ -370,23 +362,20 @@ module Net
       "#<#{type}>"
     end
 
-    # abstract quit
-
+    # abstract quit()
 
     private
 
-    # abstract get_reply()
-
     def check_reply( *oks )
-      @last_reply = get_reply
-      reply_must( @last_reply, *oks )
+      @last_reply = get_reply()
+      reply_must @last_reply, *oks
     end
+
+    # abstract get_reply()
 
     def reply_must( rep, *oks )
       oks.each do |i|
-        if i === rep then
-          return rep
-        end
+        return rep if i === rep
       end
       rep.error!
     end
@@ -396,7 +385,6 @@ module Net
       check_reply expect
     end
 
-
     #
     # error handle
     #
@@ -404,80 +392,77 @@ module Net
     public
 
     def critical?
-      @critical
+      @atomic
     end
 
     def error_ok
-      @critical = false
+      @atomic = false
     end
-
 
     private
 
-    def critical
-      @critical = true
+    def atomic
+      @atomic = true
       ret = yield
-      @critical = false
+      @atomic = false
       ret
     end
 
-    def begin_critical
-      ret = @critical
-      @critical = true
+    def begin_atomic
+      ret = @atomic
+      @atomic = true
       not ret
     end
 
-    def end_critical
-      @critical = false
+    def end_atomic
+      @atomic = false
     end
+
+    alias critical       atomic
+    alias begin_critical begin_atomic
+    alias end_critical   end_atomic
 
   end
 
 
+
   class BufferedSocket
-
-    def initialize( addr, port, otime = nil, rtime = nil, dout = nil )
-      @addr = addr
-      @port = port
-
-      @read_timeout = rtime
-
-      @debugout = dout
-
-      @socket = nil
-      @sending = ''
-      @rbuf  = ''
-
-      connect otime
-      D 'opened'
-    end
-
-    def connect( otime )
-      D "opening connection to #{@addr}..."
-      timeout( otime ) {
-        @socket = TCPsocket.new( @addr, @port )
-      }
-    end
-    private :connect
-
-    attr :pipe, true
 
     class << self
       alias open new
     end
 
-    def inspect
-      "#<#{type} #{closed? ? 'closed' : 'opened'}>"
-    end
+    def initialize( addr, port, otime = nil, rtime = nil, dout = nil )
+      @address      = addr
+      @port         = port
+      @read_timeout = rtime
+      @debugout = dout
 
-    def reopen( otime = nil )
-      D 'reopening...'
-      close
+      @socket  = nil
+      @rbuf    = nil
+
       connect otime
-      D 'reopened'
+      D 'opened'
     end
 
-    attr :socket, true
+    attr_reader :address
+    attr_reader :port
+
+    def ip_address
+      @socket or return ''
+      @socket.addr[3]
+    end
+
+    attr_reader :socket
+
+    def connect( otime )
+      D "opening connection to #{@address}..."
+      timeout( otime ) {
+          @socket = TCPsocket.new( @address, @port )
+      }
+      @rbuf = ''
+    end
+    private :connect
 
     def close
       if @socket then
@@ -490,48 +475,43 @@ module Net
       @rbuf = ''
     end
 
+    def reopen( otime = nil )
+      D 'reopening...'
+      close
+      connect otime
+      D 'reopened'
+    end
+
     def closed?
       not @socket
     end
 
-    def address
-      @addr.dup
+    def inspect
+      "#<#{type} #{closed? ? 'closed' : 'opened'}>"
     end
 
-    alias addr address
-
-    attr_reader :port
-
-    def ip_address
-      @socket or return ''
-      @socket.addr[3]
-    end
-
-    alias ipaddr ip_address
-
-    attr_reader :sending
-
+    ###
+    ###  READ
+    ###
 
     #
-    # input
+    # basic reader
     #
 
     public
 
-    CRLF = "\r\n"
-
-    def read( len, dest = '', igneof = false )
+    def read( len, dest = '', ignore = false )
       D_off "reading #{len} bytes..."
 
       rsize = 0
       begin
         while rsize + @rbuf.size < len do
-          rsize += rbuf_moveto( dest, @rbuf.size )
+          rsize += rbuf_moveto(dest, @rbuf.size)
           rbuf_fill
         end
         rbuf_moveto dest, len - rsize
       rescue EOFError
-        raise unless igneof
+        raise unless ignore
       end
 
       D_on "read #{len} bytes"
@@ -544,7 +524,7 @@ module Net
       rsize = 0
       begin
         while true do
-          rsize += rbuf_moveto( dest, @rbuf.size )
+          rsize += rbuf_moveto(dest, @rbuf.size)
           rbuf_fill
         end
       rescue EOFError
@@ -555,27 +535,33 @@ module Net
       dest
     end
 
-    def readuntil( target, igneof = false )
+    def readuntil( target, ignore = false )
       dest = ''
       begin
         while true do
-          idx = @rbuf.index( target )
+          idx = @rbuf.index(target)
           break if idx
           rbuf_fill
         end
         rbuf_moveto dest, idx + target.size
       rescue EOFError
-        raise unless igneof
+        raise unless ignore
         rbuf_moveto dest, @rbuf.size
       end
       dest
     end
         
     def readline
-      ret = readuntil( "\n" )
+      ret = readuntil("\n")
       ret.chop!
       ret
     end
+
+    #
+    # line oriented reader
+    #
+
+    public
 
     def read_pendstr( dest )
       D_off 'reading text...'
@@ -590,7 +576,7 @@ module Net
       D_on "read #{rsize} bytes"
       dest
     end
-
+  
     # private use only (can not handle 'break')
     def read_pendlist
     #  D_off 'reading list...'
@@ -605,6 +591,10 @@ module Net
 
     #  D_on "read #{i} items"
     end
+
+    #
+    # lib (reader)
+    #
 
     private
 
@@ -623,50 +613,60 @@ module Net
 
     def rbuf_moveto( dest, len )
       dest << (s = @rbuf.slice!(0, len))
-      @debugout << %Q<read  "#{Net.quote s}"\n> if @debugout
+      @debugout << %Q[-> #{s.dump}\n] if @debugout
       len
     end
 
 
+    ###
+    ###  WRITE
+    ###
+
     #
-    # output
+    # basic writer
     #
 
     public
 
     def write( str )
       writing {
-        do_write str
+          do_write str
       }
     end
 
     def writeline( str )
       writing {
-        do_write str + "\r\n"
+          do_write str + "\r\n"
       }
     end
 
     def write_bin( src, block )
       writing {
-        if block then
-          block.call WriteAdapter.new(self, :do_write)
-        else
-          src.each do |bin|
-            do_write bin
+          if block then
+            block.call WriteAdapter.new(self, :do_write)
+          else
+            src.each do |bin|
+              do_write bin
+            end
           end
-        end
       }
     end
 
-    def write_pendstr( src, block )
+    #
+    # line oriented writer
+    #
+
+    public
+
+    def write_pendstr( src, &block )
       D_off "writing text from #{src.type}"
 
       wsize = using_each_crlf_line {
-        if block then
-          block.call WriteAdapter.new(self, :wpend_in)
-        else
-          wpend_in src
-        end
+          if block_given? then
+            yield WriteAdapter.new(self, :wpend_in)
+          else
+            wpend_in src
+          end
       }
 
       D_on "wrote #{wsize} bytes text"
@@ -688,22 +688,22 @@ module Net
 
     def using_each_crlf_line
       writing {
-        @wbuf = ''
+          @wbuf = ''
 
-        yield
+          yield
 
-        if not @wbuf.empty? then       # unterminated last line
-          if @wbuf[-1] == ?\r then
-            @wbuf.chop!
+          if not @wbuf.empty? then       # unterminated last line
+            if @wbuf[-1] == ?\r then
+              @wbuf.chop!
+            end
+            @wbuf.concat "\r\n"
+            do_write @wbuf
+          elsif @writtensize == 0 then   # empty src
+            do_write "\r\n"
           end
-          @wbuf.concat "\r\n"
-          do_write @wbuf
-        elsif @writtensize == 0 then   # empty src
-          do_write "\r\n"
-        end
-        do_write ".\r\n"
+          do_write ".\r\n"
 
-        @wbuf = nil
+          @wbuf = nil
       }
     end
 
@@ -758,34 +758,32 @@ module Net
       end
     end
 
+    #
+    # lib (writer)
+    #
+
+    private
 
     def writing
       @writtensize = 0
-      @sending = ''
-
+      @debugout << '<- ' if @debugout
       yield
-
-      if @debugout then
-        @debugout << 'write "'
-        @debugout << @sending
-        @debugout << "\"\n"
-      end
       @socket.flush
+      @debugout << "\n" if @debugout
       @writtensize
     end
 
-    def do_write( arg )
-      if @debugout or @sending.size < 128 then
-        @sending << Net.quote( arg )
-      else
-        @sending << '...' unless @sending[-1] == ?.
-      end
-
-      s = @socket.write( arg )
-      @writtensize += s
-      s
+    def do_write( str )
+      @debugout << str.dump if @debugout
+      @writtensize += (n = @socket.write(str))
+      n
     end
 
+    ###
+    ### DEBUG
+    ###
+
+    private
 
     def D_off( msg )
       D msg
@@ -803,14 +801,6 @@ module Net
       @debugout << "\n"
     end
 
-  end
-
-
-  def Net.quote( str )
-    str = str.gsub( "\n", '\\n' )
-    str.gsub!( "\r", '\\r' )
-    str.gsub!( "\t", '\\t' )
-    str
   end
 
 
