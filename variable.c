@@ -291,14 +291,19 @@ struct trace_var {
     struct trace_var *next;
 };
 
-struct global_entry {
-    ID id;
+struct global_variable {
+    int   counter;
     void *data;
     VALUE (*getter)();
     void  (*setter)();
     void  (*marker)();
     int block_trace;
     struct trace_var *trace;
+};
+
+struct global_entry {
+    struct global_variable *var;
+    ID id;
 };
 
 static VALUE undef_getter();
@@ -313,9 +318,6 @@ static VALUE var_getter();
 static void  var_setter();
 static void  var_marker();
 
-static VALUE alias_getter();
-static void  alias_setter();
-
 struct global_entry*
 rb_global_entry(id)
     ID id;
@@ -323,16 +325,20 @@ rb_global_entry(id)
     struct global_entry *entry;
 
     if (!st_lookup(rb_global_tbl, id, &entry)) {
+	struct global_variable *var;
 	entry = ALLOC(struct global_entry);
 	st_add_direct(rb_global_tbl, id, entry);
+	var = ALLOC(struct global_variable);
 	entry->id = id;
-	entry->data = 0;
-	entry->getter = undef_getter;
-	entry->setter = undef_setter;
-	entry->marker = undef_marker;
+	entry->var = var;
+	var->counter = 1;
+	var->data = 0;
+	var->getter = undef_getter;
+	var->setter = undef_setter;
+	var->marker = undef_marker;
 
-	entry->block_trace = 0;
-	entry->trace = 0;
+	var->block_trace = 0;
+	var->trace = 0;
     }
     return entry;
 }
@@ -348,17 +354,17 @@ undef_getter(id)
 }
 
 static void
-undef_setter(val, id, data, entry)
+undef_setter(val, id, data, var)
     VALUE val;
     ID id;
     void *data;
-    struct global_entry *entry;
+    struct global_variable *var;
 {
-    entry->getter = val_getter;
-    entry->setter = val_setter;
-    entry->marker = val_marker;
+    var->getter = val_getter;
+    var->setter = val_setter;
+    var->marker = val_marker;
 
-    entry->data = (void*)val;
+    var->data = (void*)val;
 }
 
 static void
@@ -375,13 +381,13 @@ val_getter(id, val)
 }
 
 static void
-val_setter(val, id, data, entry)
+val_setter(val, id, data, var)
     VALUE val;
     ID id;
     void *data;
-    struct global_entry *entry;
+    struct global_variable *var;
 {
-    entry->data = (void*)val;
+    var->data = (void*)val;
 }
 
 static void
@@ -426,52 +432,15 @@ readonly_setter(val, id, var)
 }
 
 static int
-alias_fixup(entry1, entry2)
-    struct global_entry *entry1, *entry2;
-{
-    if (entry2->getter != val_getter) return 0;
-    entry1->data   = &entry2->data;
-    entry1->getter = var_getter;
-    if (entry2->setter == val_setter)
-	entry1->setter = var_setter;
-    else
-	entry1->setter = entry2->setter;
-    return 1;
-}
-
-static VALUE
-alias_getter(id, data, entry)
-    ID id;
-    void *data;
-    struct global_entry *entry;
-{
-    struct global_entry *entry2 = data;
-    VALUE val = (*entry2->getter)(id, entry2->data, entry2);
-    alias_fixup(entry, entry2);
-    return val;
-}
-
-static void
-alias_setter(val, id, data, entry)
-    VALUE val;
-    ID id;
-    void *data;
-    struct global_entry *entry;
-{
-    struct global_entry *entry2 = data;
-    (*entry2->setter)(val, id, entry2->data, entry2);
-    alias_fixup(entry, entry2);
-}
-
-static int
 mark_global_entry(key, entry)
     ID key;
     struct global_entry *entry;
 {
     struct trace_var *trace;
+    struct global_variable *var = entry->var;
 
-    (*entry->marker)(entry->data);
-    trace = entry->trace;
+    (*var->marker)(var->data);
+    trace = var->trace;
     while (trace) {
 	if (trace->data) rb_gc_mark_maybe(trace->data);
 	trace = trace->next;
@@ -508,14 +477,14 @@ rb_define_hooked_variable(name, var, getter, setter)
     VALUE (*getter)();
     void  (*setter)();
 {
-    struct global_entry *entry;
+    struct global_variable *gvar;
     ID id = global_id(name);
 
-    entry = rb_global_entry(id);
-    entry->data = (void*)var;
-    entry->getter = getter?getter:var_getter;
-    entry->setter = setter?setter:var_setter;
-    entry->marker = var_marker;
+    gvar = rb_global_entry(id)->var;
+    gvar->data = (void*)var;
+    gvar->getter = getter?getter:var_getter;
+    gvar->setter = setter?setter:var_setter;
+    gvar->marker = var_marker;
 }
 
 void
@@ -573,20 +542,20 @@ rb_f_trace_var(argc, argv)
 	rb_name_error(id, "undefined global variable %s", rb_id2name(id));
     }
     trace = ALLOC(struct trace_var);
-    trace->next = entry->trace;
+    trace->next = entry->var->trace;
     trace->func = rb_trace_eval;
     trace->data = cmd;
     trace->removed = 0;
-    entry->trace = trace;
+    entry->var->trace = trace;
 
     return Qnil;
 }
 
 static void
-remove_trace(entry)
-    struct global_entry *entry;
+remove_trace(var)
+    struct global_variable *var;
 {
-    struct trace_var *trace = entry->trace;
+    struct trace_var *trace = var->trace;
     struct trace_var t;
     struct trace_var *next;
 
@@ -602,7 +571,7 @@ remove_trace(entry)
 	    trace = next;
 	}
     }
-    entry->trace = t.next;
+    var->trace = t.next;
 }
 
 VALUE
@@ -621,7 +590,7 @@ rb_f_untrace_var(argc, argv)
 	rb_name_error(id, "undefined global variable %s", rb_id2name(id));
     }
 
-    trace = entry->trace;
+    trace = entry->var->trace;
     if (NIL_P(cmd)) {
 	VALUE ary = rb_ary_new();
 
@@ -632,14 +601,14 @@ rb_f_untrace_var(argc, argv)
 	    trace = next;
 	}
 
-	if (!entry->block_trace) remove_trace(entry);
+	if (!entry->var->block_trace) remove_trace(entry->var);
 	return ary;
     }
     else {
 	while (trace) {
 	    if (trace->data == cmd) {
 		trace->removed = 1;
-		if (!entry->block_trace) remove_trace(entry);
+		if (!entry->var->block_trace) remove_trace(entry->var);
 		return rb_ary_new3(1, cmd);
 	    }
 	    trace = trace->next;
@@ -652,7 +621,8 @@ VALUE
 rb_gvar_get(entry)
     struct global_entry *entry;
 {
-    return (*entry->getter)(entry->id, entry->data, entry);
+    struct global_variable *var = entry->var;
+    return (*var->getter)(entry->id, var->data, var);
 }
 
 struct trace_data {
@@ -674,11 +644,11 @@ trace_ev(data)
 }
 
 static VALUE
-trace_en(entry)
-    struct global_entry *entry;
+trace_en(var)
+    struct global_variable *var;
 {
-    entry->block_trace = 0;
-    remove_trace(entry);
+    var->block_trace = 0;
+    remove_trace(var);
     return Qnil;		/* not reached */
 }
 
@@ -688,16 +658,17 @@ rb_gvar_set(entry, val)
     VALUE val;
 {
     struct trace_data trace;
+    struct global_variable *var = entry->var;
 
     if (rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't change global variable value");
-    (*entry->setter)(val, entry->id, entry->data, entry);
+    (*var->setter)(val, entry->id, var->data, var);
 
-    if (entry->trace && !entry->block_trace) {
-	entry->block_trace = 1;
-	trace.trace = entry->trace;
+    if (var->trace && !var->block_trace) {
+	var->block_trace = 1;
+	trace.trace = var->trace;
 	trace.val = val;
-	rb_ensure(trace_ev, (VALUE)&trace, trace_en, (VALUE)entry);
+	rb_ensure(trace_ev, (VALUE)&trace, trace_en, (VALUE)var);
     }
     return val;
 }
@@ -727,9 +698,7 @@ VALUE
 rb_gvar_defined(entry)
     struct global_entry *entry;
 {
-    if (entry->getter == alias_getter && !alias_fixup(entry, entry->data))
-	entry = entry->data;
-    if (entry->getter == undef_getter) return Qfalse;
+    if (entry->var->getter == undef_getter) return Qfalse;
     return Qtrue;
 }
 
@@ -769,20 +738,34 @@ rb_alias_variable(name1, name2)
 
     if (rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't alias global variable");
-    entry1 = rb_global_entry(name1);
-    entry2 = rb_global_entry(name2);
 
-    if (entry2->getter == undef_getter) {
-	entry1->data   = entry2;
-	entry1->getter = alias_getter;
-	entry1->setter = alias_setter;
+    entry2 = rb_global_entry(name2);
+    if (!st_lookup(rb_global_tbl, name1, &entry1)) {
+	entry1 = ALLOC(struct global_entry);
+	st_add_direct(rb_global_tbl, name1, entry1);
+	entry1->id = name1;
     }
-    else if (!alias_fixup(entry1, entry2)) {
-	entry1->data   = entry2->data;
-	entry1->getter = entry2->getter;
-	entry1->setter = entry2->setter;
+    else if (entry1->var != entry2->var) {
+	struct global_variable *var = entry1->var;
+	if (var->block_trace) {
+	    rb_raise(rb_eRuntimeError, "can't alias in tracer");
+	}
+	var->counter--;
+	if (var->counter == 0) {
+	    struct trace_var *trace = var->trace;
+	    while (trace) {
+		struct trace_var *next = trace->next;
+		free(trace);
+		trace = next;
+	    }
+	    free(var);
+	}
     }
-    entry1->marker = undef_marker;
+    else {
+	return;
+    }
+    entry2->var->counter++;
+    entry1->var = entry2->var;
 }
 
 static int special_generic_ivar = 0;

@@ -1,3 +1,34 @@
+Tue Oct 23 01:15:43 2001  K.Kosako  <kosako@sofnec.co.jp>
+
+	* variable.c (rb_global_entry): reconstruct global variable
+	  aliasing (sharing global_entry->var with other global_entry).
+
+	* variable.c (undef_getter): ditto.
+
+	* variable.c (undef_setter): ditto.
+
+	* variable.c (val_setter): ditto.
+
+	* variable.c (mark_global_entry): ditto.
+
+	* variable.c (rb_define_hooked_variable): ditto.
+
+	* variable.c (rb_f_trace_var): ditto.
+
+	* variable.c (remove_trace): ditto.
+
+	* variable.c (rb_f_untrace_var): ditto.
+
+	* variable.c (rb_gvar_get): ditto.
+
+	* variable.c (trace_en): ditto.
+
+	* variable.c (rb_gvar_set): ditto.
+
+	* variable.c (rb_gvar_defined): ditto.
+
+	* variable.c (rb_alias_variable): ditto.
+
 Mon Oct 22 15:21:55 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* class.c (rb_mod_clone): should not copy class name, since clone
@@ -51,7 +82,6 @@ Tue Oct 16 13:18:47 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 	* object.c (rb_mod_initialize): optional block with
 	  Module.new. [new] (from 2001-10-10)
 
->>>>>>> 1.591
 Tue Oct 16 00:07:06 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* parse.y (yylex): disallow alpha-numeric and mbchar for
