@@ -1,0 +1,1 @@
+bigfloat.o: bigfloat.c bigfloat.h $(hdrdir)/ruby.h
