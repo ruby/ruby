@@ -709,8 +709,7 @@ sprintf.obj: {$(srcdir)}sprintf.c {$(srcdir)}ruby.h config.h \
 st.obj: {$(srcdir)}st.c config.h {$(srcdir)}st.h
 string.obj: {$(srcdir)}string.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}re.h {$(srcdir)}regex.h {$(srcdir)}version.h \
-  {$(srcdir)}/win32/win32.h
+  {$(srcdir)}re.h {$(srcdir)}regex.h {$(srcdir)}/win32/win32.h
 struct.obj: {$(srcdir)}struct.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
   {$(srcdir)}/win32/win32.h

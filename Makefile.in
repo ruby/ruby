@@ -399,7 +399,7 @@ signal.@OBJEXT@: signal.c ruby.h config.h defines.h intern.h missing.h \
 sprintf.@OBJEXT@: sprintf.c ruby.h config.h defines.h intern.h missing.h
 st.@OBJEXT@: st.c config.h st.h
 string.@OBJEXT@: string.c ruby.h config.h defines.h intern.h missing.h \
-  re.h regex.h version.h
+  re.h regex.h
 struct.@OBJEXT@: struct.c ruby.h config.h defines.h intern.h missing.h
 time.@OBJEXT@: time.c ruby.h config.h defines.h intern.h missing.h
 util.@OBJEXT@: util.c ruby.h config.h defines.h intern.h missing.h util.h

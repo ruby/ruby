@@ -14,7 +14,6 @@
 
 #include "ruby.h"
 #include "re.h"
-#include "version.h"
 
 #define BEG(no) regs->beg[no]
 #define END(no) regs->end[no]
@@ -1249,11 +1248,8 @@ rb_str_match(x, y)
 
     switch (TYPE(y)) {
       case T_STRING:
-#if RUBY_VERSION_CODE < 182
-	rb_warn("string =~ string will be obsolete; use explicit regexp");
-#endif
-	y = rb_reg_regcomp(y);
-	/* fall through */
+	rb_raise(rb_eTypeError, "type mismatch: String given");
+
       case T_REGEXP:
 	return rb_reg_match(y, x);
 
@@ -1262,24 +1258,6 @@ rb_str_match(x, y)
     }
 }
 
-
-/*
- *  call-seq:
- *     ~str   => fixnum or nil
- *  
- *  Equivalent to <code>$_</code><code>=~ <i>str</i></code>.
- */
-
-static VALUE
-rb_str_match2(str)
-    VALUE str;
-{
-    StringValue(str);
-#if RUBY_VERSION_CODE < 182
-	rb_warn("~string will be obsolete; use explicit regexp");
-#endif
-    return rb_reg_match2(rb_reg_regcomp(rb_reg_quote(str)));
-}
 
 static VALUE get_pat _((VALUE, int));
 
@@ -4596,7 +4574,6 @@ Init_String()
     rb_define_method(rb_cString, "size", rb_str_length, 0);
     rb_define_method(rb_cString, "empty?", rb_str_empty, 0);
     rb_define_method(rb_cString, "=~", rb_str_match, 1);
-    rb_define_method(rb_cString, "~", rb_str_match2, 0);
     rb_define_method(rb_cString, "match", rb_str_match_m, 1);
     rb_define_method(rb_cString, "succ", rb_str_succ, 0);
     rb_define_method(rb_cString, "succ!", rb_str_succ_bang, 0);

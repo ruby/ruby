@@ -630,7 +630,7 @@ ruby.obj: ruby.c ruby.h config.h defines.h intern.h missing.h dln.h node.h util.
 signal.obj: signal.c ruby.h config.h defines.h intern.h missing.h rubysig.h win32.h
 sprintf.obj: sprintf.c ruby.h config.h defines.h intern.h missing.h win32.h
 st.obj: st.c config.h st.h
-string.obj: string.c ruby.h config.h defines.h intern.h missing.h re.h regex.h version.h win32.h
+string.obj: string.c ruby.h config.h defines.h intern.h missing.h re.h regex.h win32.h
 struct.obj: struct.c ruby.h config.h defines.h intern.h missing.h win32.h
 time.obj: time.c ruby.h config.h defines.h intern.h missing.h win32.h
 util.obj: util.c ruby.h config.h defines.h intern.h missing.h util.h win32.h
