@@ -5178,24 +5178,22 @@ rb_call_super(argc, argv)
     }
 
     self = ruby_frame->self;
-    klass = CLASS_OF(self);
-    k = ruby_frame->last_class;
-    if (BUILTIN_TYPE(k) == T_MODULE) {
-	while (!(BUILTIN_TYPE(klass) == T_ICLASS && RBASIC(klass)->klass == k)) {
-	    klass = RCLASS(klass)->super;
-	    if (!klass) {
+    klass = ruby_frame->last_class;
+    if (BUILTIN_TYPE(klass) == T_MODULE) {
+	k = CLASS_OF(self);
+	while (!(BUILTIN_TYPE(k) == T_ICLASS && RBASIC(k)->klass == klass)) {
+	    k = RCLASS(k)->super;
+	    if (!k) {
 		rb_raise(rb_eTypeError, "%s is not included in %s",
-			 rb_class2name(k),
+			 rb_class2name(klass),
 			 rb_class2name(CLASS_OF(self)));
 	    }
 	}
-    }
-    else {
 	klass = k;
     }
 
     PUSH_ITER(ruby_iter->iter?ITER_PRE:ITER_NOT);
-    result = rb_call(RCLASS(klass)->super, self, ruby_frame->last_func, argc, argv, 3);
+    result = rb_call(RCLASS(klass)->super, self, ruby_frame->orig_func, argc, argv, 3);
     POP_ITER();
 
     return result;
