@@ -111,6 +111,7 @@ $dryrun = mflags.include?(?n)
 
 unless $message
   if $message = ARGV.shift and /^[a-z]+$/ =~ $message
+    $mflags.push($message)
     $message = $message.sub(/^(?:dist|real)(?=(?:clean)?$)/, '\1')
     case $message
     when "clean"
