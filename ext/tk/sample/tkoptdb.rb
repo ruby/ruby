@@ -10,7 +10,9 @@ require "tk"
 
 if ENV['LANG'] =~ /^ja/
   # read Japanese resource
-  TkOptionDB.readfile(File.expand_path('resource.ja', File.dirname(__FILE__)))
+  TkOptionDB.read_with_encoding(File.expand_path('resource.ja', 
+						 File.dirname(__FILE__)), 
+				'euc-jp')
 else
   # read English resource
   TkOptionDB.readfile(File.expand_path('resource.en', File.dirname(__FILE__)))

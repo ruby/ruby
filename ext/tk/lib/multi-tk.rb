@@ -1155,8 +1155,6 @@ class MultiTkIp
   # from tkencoding.rb by ttate@jaist.ac.jp
   alias __eval _eval
   alias __invoke _invoke
-  private :__eval
-  private :__invoke
 
   def encoding
     @encoding[0]

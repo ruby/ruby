@@ -1,6 +1,6 @@
-#
-#  see Tcl/Tk's "options" manual for "Database Name" and "Database Class"
-#
+!
+!  see Tcl/Tk's "options" manual for "Database Name" and "Database Class"
+!
 *BtnFrame.borderWidth: 5
 *BtnFrame.relief: ridge
 *BtnFrame.Button.background: wheat

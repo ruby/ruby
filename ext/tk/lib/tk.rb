@@ -1509,8 +1509,6 @@ if /^8\.[1-9]/ =~ Tk::TCL_VERSION && !Tk::JAPANIZED_TK
     # from tkencoding.rb by ttate@jaist.ac.jp
     alias __eval _eval
     alias __invoke _invoke
-    private :__eval
-    private :__invoke
     
     attr_accessor :encoding
     
@@ -1521,7 +1519,7 @@ if /^8\.[1-9]/ =~ Tk::TCL_VERSION && !Tk::JAPANIZED_TK
 	__eval(cmd)
       end
     end
-    
+
     def _invoke(*cmds)
       if defined? @encoding
 	cmds = cmds.collect{|cmd| _toUTF8(cmd, @encoding)}
@@ -1557,6 +1555,16 @@ if /^8\.[1-9]/ =~ Tk::TCL_VERSION && !Tk::JAPANIZED_TK
       def encoding_system=(enc)
 	tk_call('encoding', 'system', enc)
       end
+
+      def encoding_convertfrom(str, enc=None)
+	TkCore::INTERP.__invoke('encoding', 'convertfrom', enc, str)
+      end
+      alias encoding_convert_from encoding_convertfrom
+
+      def encoding_convertto(str, enc=None)
+	TkCore::INTERP.__invoke('encoding', 'convertto', enc, str)
+      end
+      alias encoding_convert_to encoding_convertto
     end
 
     extend Encoding
@@ -1580,6 +1588,11 @@ if /^8\.[1-9]/ =~ Tk::TCL_VERSION && !Tk::JAPANIZED_TK
 
 else
   # dummy methods
+  class TclTkIp
+    alias __eval _eval
+    alias __invoke _invoke
+  end
+
   module Tk
     module Encoding
       extend Encoding
@@ -1599,6 +1612,16 @@ else
       def encoding_system=(enc)
 	nil
       end
+
+      def encoding_convertfrom(str, enc=None)
+	str
+      end
+      alias encoding_convert_from encoding_convertfrom
+
+      def encoding_convertto(str, enc=None)
+	str
+      end
+      alias encoding_convert_to encoding_convertto
     end
 
     extend Encoding
@@ -2848,6 +2871,43 @@ module TkOptionDB
     tk_call 'option', 'readfile', file, pri
   end
   module_function :add, :clear, :get, :readfile
+      
+  def read_with_encoding(file, f_enc=nil, pri=None)
+    i_enc = Tk.encoding()
+
+    unless f_enc
+      f_enc = i_enc
+    end
+
+    cline = ''
+    open(file, 'r') {|f|
+      while line = f.gets
+	cline += line.chomp!
+	case cline
+	when /\\$/    # continue
+	  cline.chop!
+	  next
+	when /^!/     # coment
+	  cline = ''
+	  next
+	when /^([^:]+):\s(.*)$/
+	  pat = $1
+	  val = $2
+	  p "ResourceDB: #{[pat, val].inspect}" if $DEBUG
+	  pat = TkCore::INTERP._toUTF8(pat, f_enc)
+	  pat = TkCore::INTERP._fromUTF8(pat, i_enc)
+	  val = TkCore::INTERP._toUTF8(val, f_enc)
+	  val = TkCore::INTERP._fromUTF8(val, i_enc)
+	  add(pat, val, pri)
+	  cline = ''
+	else          # unknown --> ignore
+	  cline = ''
+	  next
+	end
+      end
+    }
+  end
+  module_function :read_with_encoding
 
   # support procs on the resource database
   @@resource_proc_class = Class.new
