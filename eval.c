@@ -3837,7 +3837,7 @@ rb_eval(self, n)
 
 	    result = rb_eval(self, node->nd_recv);
 	    if (FIXNUM_P(result) || SYMBOL_P(result)) {
-		rb_raise(rb_eTypeError, "no virtual class for %s",
+		rb_raise(rb_eTypeError, "no singleton class for %s",
 			 rb_obj_classname(result));
 	    }
 	    if (ruby_safe_level >= 4 && !OBJ_TAINTED(result))

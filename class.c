@@ -34,16 +34,27 @@ rb_class_boot(super)
     return (VALUE)klass;
 }
 
+void
+rb_check_inheritable(super)
+    VALUE super;
+{
+    if (TYPE(super) != T_CLASS) {
+	rb_raise(rb_eTypeError, "superclass must be a Class (%s given)",
+		 rb_obj_classname(super));
+    }
+    if (RBASIC(super)->flags & FL_SINGLETON) {
+	rb_raise(rb_eTypeError, "can't make subclass of singleton class");
+    }
+}
+
 VALUE
 rb_class_new(super)
     VALUE super;
 {
     Check_Type(super, T_CLASS);
+    rb_check_inheritable(super);
     if (super == rb_cClass) {
 	rb_raise(rb_eTypeError, "can't make subclass of Class");
-    }
-    if (FL_TEST(super, FL_SINGLETON)) {
-	rb_raise(rb_eTypeError, "can't make subclass of virtual class");
     }
     return rb_class_boot(super);
 }
@@ -180,19 +191,6 @@ rb_define_class_id(id, super)
     rb_make_metaclass(klass, RBASIC(super)->klass);
 
     return klass;
-}
-
-void
-rb_check_inheritable(super)
-    VALUE super;
-{
-    if (TYPE(super) != T_CLASS) {
-	rb_raise(rb_eTypeError, "superclass must be a Class (%s given)",
-		 rb_obj_classname(super));
-    }
-    if (RBASIC(super)->flags & FL_SINGLETON) {
-	rb_raise(rb_eTypeError, "can't make subclass of virtual class");
-    }
 }
 
 VALUE

@@ -13,6 +13,9 @@ Tue Nov 16 11:19:07 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Tue Nov 16 01:41:31 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
+	* string.c (str_mod_check): frozen check should be separated.
+	  [ruby-core:3742]
+
 	* array.c (rb_ary_update): pedantic check to detect
 	  rb_ary_to_ary() to modify the receiver.  [ruby-dev:24861]
 
