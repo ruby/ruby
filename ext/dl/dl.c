@@ -1,3 +1,4 @@
+/* -*- mode: C; c-file-style: "gnu" -*-
 /*
  * $Id$
  */
@@ -164,9 +165,9 @@ dlsizeof(const char *cstr)
   size = 0;
   for (i=0; i<len; i++) {
     n = 1;
-    if (isdigit(cstr[i+1])) {
+    if (ISDIGIT(cstr[i+1])) {
       dlen = 1;
-      while (isdigit(cstr[i+dlen])) { dlen ++; };
+      while (ISDIGIT(cstr[i+dlen])) { dlen ++; };
       dlen --;
       d = ALLOCA_N(char, dlen + 1);
       strncpy(d, cstr + i + 1, dlen);
@@ -563,8 +564,14 @@ rb_dl_malloc(VALUE self, VALUE size)
 VALUE
 rb_dl_strdup(VALUE self, VALUE str)
 {
+  void *ptr;
+  long len;
+
   SafeStringValue(str);
-  return rb_dlptr_new(strdup(RSTRING(str)->ptr), RSTRING(str)->len, dlfree);
+  len = RSTRING(str)->len;
+  ptr = memcpy(dlmalloc(len + 1), RSTRING(str)->ptr, len + 1);
+  ((char *)ptr)[len] = '\0';
+  return rb_dlptr_new(ptr, len, dlfree);
 }
 
 static VALUE

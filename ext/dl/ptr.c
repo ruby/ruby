@@ -1,53 +1,64 @@
-/* -*- C -*-
+/* -*- mode: C; c-file-style: "gnu" -*-
  * $Id$
  */
 
 #include <ruby.h>
 #include <ctype.h>
-#include <version.h> /* for ruby version code */
+#include <st.h>
 #include "dl.h"
 
 VALUE rb_cDLPtrData;
 VALUE rb_mDLMemorySpace;
-static VALUE DLMemoryTable;
+static st_table *DLMemoryTable;
+static int finalized;
 
 #ifndef T_SYMBOL
 # define T_SYMBOL T_FIXNUM
 #endif
 
-#if RUBY_VERSION_CODE < 171
-static VALUE
-rb_hash_delete(VALUE hash, VALUE key)
+static void
+free_memtbl(void *ptr)
 {
-  return rb_funcall(hash, rb_intern("delete"), 1, key);
+  if (!DLMemoryTable) return;
+  if (DLMemoryTable->num_entries) {
+    finalized = 1;
+  }
+  else {
+    st_free_table(DLMemoryTable);
+    DLMemoryTable = 0;
+  }
 }
-#endif
 
 static void
 rb_dlmem_delete(void *ptr)
 {
-  rb_secure(4);
-  rb_hash_delete(DLMemoryTable, DLLONG2NUM(ptr));
+  st_data_t key = (st_data_t)ptr;
+
+  if (!DLMemoryTable) return;
+  st_delete(DLMemoryTable, &key, 0);
+  if (finalized && !DLMemoryTable->num_entries) {
+    st_free_table(DLMemoryTable);
+    DLMemoryTable = 0;
+  }
 }
 
 static void
 rb_dlmem_aset(void *ptr, VALUE obj)
 {
-  if (obj == Qnil) {
-    rb_dlmem_delete(ptr);
-  }
-  else{
-    rb_hash_aset(DLMemoryTable, DLLONG2NUM(ptr), DLLONG2NUM(obj));
+  st_data_t val;
+  if (!st_lookup(DLMemoryTable, (st_data_t)ptr, &val) || (VALUE)val != obj) {
+    st_add_direct(DLMemoryTable, (st_data_t)ptr, (st_data_t)obj);
   }
 }
 
 static VALUE
 rb_dlmem_aref(void *ptr)
 {
-  VALUE val;
+  st_data_t val;
 
-  val = rb_hash_aref(DLMemoryTable, DLLONG2NUM(ptr));
-  return val == Qnil ? Qnil : (VALUE)DLNUM2LONG(val);
+  if (!st_lookup(DLMemoryTable, (st_data_t)ptr, &val))
+    return Qnil;
+  return (VALUE)val;
 }
 
 void
@@ -69,6 +80,7 @@ dlptr_free(struct ptr_data *data)
   if (data->stype) dlfree(data->stype);
   if (data->ssize) dlfree(data->ssize);
   if (data->ids) dlfree(data->ids);
+  dlfree(data);
 }
 
 void
@@ -94,7 +106,7 @@ rb_dlptr_new2(VALUE klass, void *ptr, long size, freefunc_t func)
   rb_secure(4);
   if (ptr) {
     val = rb_dlmem_aref(ptr);
-    if (val == Qnil) {
+    if (NIL_P(val)) {
       val = Data_Make_Struct(klass, struct ptr_data,
 			     0, dlptr_free, data);
       data->ptr = ptr;
@@ -149,7 +161,7 @@ rb_dlptr2cptr(VALUE val)
     Data_Get_Struct(val, struct ptr_data, data);
     ptr = data->ptr;
   }
-  else if (val == Qnil) {
+  else if (NIL_P(val)) {
     ptr = NULL;
   }
   else{
@@ -189,6 +201,7 @@ rb_dlptr_initialize(int argc, VALUE argv[], VALUE self)
   freefunc_t f = NULL;
   long s = 0;
 
+  rb_secure(4);
   switch (rb_scan_args(argc, argv, "12", &ptr, &size, &sym)) {
   case 1:
     p = (void*)(DLNUM2LONG(rb_Integer(ptr)));
@@ -208,13 +221,19 @@ rb_dlptr_initialize(int argc, VALUE argv[], VALUE self)
 
   if (p) {
     Data_Get_Struct(self, struct ptr_data, data);
-    if (data->ptr && data->free) {
-      /* Free previous memory. Use of inappropriate initialize may cause SEGV. */
-      (*(data->free))(data->ptr);
+    if (data->ptr) {
+      rb_dlmem_delete(data->ptr);
+      if (data->free) {
+	/* Free previous memory. Use of inappropriate initialize may cause SEGV. */
+	(*data->free)(data->ptr);
+      }
     }
     data->ptr  = p;
     data->size = s;
     data->free = f;
+    if (p) {
+      if (NIL_P(rb_dlmem_aref(p))) rb_dlmem_aset(p, self);
+    }
   }
 
   return Qnil;
@@ -525,7 +544,7 @@ rb_dlptr_define_data_type(int argc, VALUE argv[], VALUE self)
   rb_scan_args(argc, argv, "11*", &data_type, &type, &rest);
   Data_Get_Struct(self, struct ptr_data, data);
 
-  if (argc == 1 || (argc == 2 && type == Qnil)) {
+  if (NIL_P(type)) {
     if (NUM2INT(data_type) == DLPTR_CTYPE_UNKNOWN) {
       data->ctype = DLPTR_CTYPE_UNKNOWN;
       data->slen = 0;
@@ -569,9 +588,9 @@ rb_dlptr_define_data_type(int argc, VALUE argv[], VALUE self)
     data->ids[i] = rb_to_id(vid);
     data->stype[i] = *ctype;
     ctype ++;
-    if (isdigit(*ctype)) {
+    if (ISDIGIT(*ctype)) {
       char *p, *d;
-      for (p=ctype; isdigit(*p); p++) ;
+      for (p=ctype; ISDIGIT(*p); p++) ;
       d = ALLOCA_N(char, p - ctype + 1);
       strncpy(d, ctype, p - ctype);
       d[p - ctype] = '\0';
@@ -866,7 +885,7 @@ rb_dlptr_aset(int argc, VALUE argv[], VALUE self)
     dst = (void*)((long)(data->ptr) + DLNUM2LONG(key));
     src = RSTRING(val)->ptr;
     len = RSTRING(val)->len;
-    if (num == Qnil) {
+    if (NIL_P(num)) {
       memcpy(dst, src, len);
     }
     else{
@@ -1007,20 +1026,17 @@ rb_dlptr_size(int argc, VALUE argv[], VALUE self)
   }
 }
 
-static VALUE
-dlmem_each_i(VALUE assoc, void *data)
+static int
+dlmem_each_i(st_data_t key, st_data_t val, st_data_t arg)
 {
-  VALUE key, val;
-  key = rb_ary_entry(assoc, 0);
-  val = rb_ary_entry(assoc, 1);
-  rb_yield(rb_assoc_new(key,(VALUE)DLNUM2LONG(val)));
-  return Qnil;
+  rb_yield_values(DLLONG2NUM(key), (VALUE)val);
+  return ST_CONTINUE;
 }
 
 VALUE
 rb_dlmem_each(VALUE self)
 {
-  rb_iterate(rb_each, DLMemoryTable, dlmem_each_i, 0);
+  st_foreach(DLMemoryTable, dlmem_each_i, 0);
   return Qnil;
 }
 
@@ -1059,7 +1075,9 @@ Init_dlptr()
   rb_define_method(rb_cDLPtrData, "size=", rb_dlptr_size, -1);
 
   rb_mDLMemorySpace = rb_define_module_under(rb_mDL, "MemorySpace");
-  DLMemoryTable = rb_hash_new();
-  rb_define_const(rb_mDLMemorySpace, "MemoryTable", DLMemoryTable);
+  rb_extend_object(rb_mDLMemorySpace, rb_mEnumerable);
+  DLMemoryTable = st_init_numtable();
+  rb_define_const(rb_mDLMemorySpace, "MemoryTable",
+		  Data_Wrap_Struct(rb_cData, 0, free_memtbl, DLMemoryTable));
   rb_define_module_function(rb_mDLMemorySpace, "each", rb_dlmem_each, 0);
 }

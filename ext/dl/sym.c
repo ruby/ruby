@@ -1,4 +1,4 @@
-/* -*- C -*-
+/* -*- mode: C; c-file-style: "gnu" -*-
  * $Id$
  */
 

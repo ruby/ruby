@@ -9,15 +9,11 @@ module DL
 
     module Internal
       def init_types()
-	if( !@types )
-	  @types = ::DL::Types.new
-	end
+	@types ||= ::DL::Types.new
       end
 
       def init_sym()
-	if( !@SYM )
-	  @SYM = {}
-	end
+	@SYM ||= {}
       end
 
       def [](name)
