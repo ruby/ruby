@@ -85,8 +85,9 @@ enum_find(argc, argv, obj)
     rb_scan_args(argc, argv, "01", &if_none);
     rb_iterate(rb_each, obj, find_i, (VALUE)memo);
     if (memo->u2.value) {
+	VALUE result = memo->u1.value;
 	rb_gc_force_recycle((VALUE)memo);
-	return memo->u1.value;
+	return result;
     }
     rb_gc_force_recycle((VALUE)memo);
     if (!NIL_P(if_none)) {
@@ -188,8 +189,9 @@ inject_i(i, memo)
         memo->u2.value = Qfalse;
         memo->u1.value = i;
     }
-    else
+    else {
         memo->u1.value = rb_yield(rb_assoc_new(memo->u1.value, i));
+    }
 
     return Qnil;
 }
@@ -278,12 +280,14 @@ static VALUE
 enum_all(obj)
     VALUE obj;
 {
+    VALUE result;
     NODE *memo = rb_node_newnode(NODE_MEMO, Qnil, 0, 0);
 
     memo->u1.value = Qtrue;
     rb_iterate(rb_each, obj, all_i, (VALUE)memo);
+    result = memo->u1.value;
     rb_gc_force_recycle((VALUE)memo);
-    return memo->u1.value;
+    return result;
 }
 
 static VALUE
@@ -302,12 +306,14 @@ static VALUE
 enum_any(obj)
     VALUE obj;
 {
+    VALUE result;
     NODE *memo = rb_node_newnode(NODE_MEMO, Qnil, 0, 0);
 
     memo->u1.value = Qfalse;
     rb_iterate(rb_each, obj, any_i, (VALUE)memo);
+    result = memo->u1.value;
     rb_gc_force_recycle((VALUE)memo);
-    return memo->u1.value;
+    return result;
 }
 
 static VALUE
@@ -348,11 +354,13 @@ static VALUE
 enum_min(obj)
     VALUE obj;
 {
+    VALUE result;
     NODE *memo = rb_node_newnode(NODE_MEMO, Qnil, 0, 0);
 
     rb_iterate(rb_each, obj, rb_block_given_p()?min_ii:min_i, (VALUE)memo);
+    result = memo->u1.value;
     rb_gc_force_recycle((VALUE)memo);
-    return memo->u1.value;
+    return result;
 }
 
 static VALUE
@@ -393,11 +401,13 @@ static VALUE
 enum_max(obj)
     VALUE obj;
 {
+    VALUE result;
     NODE *memo = rb_node_newnode(NODE_MEMO, Qnil, 0, 0);
 
     rb_iterate(rb_each, obj, rb_block_given_p()?max_ii:max_i, (VALUE)memo);
+    result = memo->u1.value;
     rb_gc_force_recycle((VALUE)memo);
-    return memo->u1.value;
+    return result;
 }
 
 static VALUE
@@ -417,7 +427,6 @@ enum_member(obj, val)
     VALUE obj, val;
 {
     VALUE result;
-
     NODE *memo = rb_node_newnode(NODE_MEMO, val, Qfalse, 0);
 
     rb_iterate(rb_each, obj, member_i, (VALUE)memo);
