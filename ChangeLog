@@ -1,3 +1,19 @@
+Wed Nov 27 17:42:56 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/syslog/syslog.c: Cut redundancy.
+
+	* ext/syslog/syslog.c: Do not leak ident.
+
+	* ext/syslog/syslog.c, ext/syslog/test.rb: Syslog.close should
+	  raise RuntimeError when not opened.
+
+	* ext/syslog/syslog.c, ext/syslog/test.rb:
+	  Syslog.{ident,options,facility,mask} should all return nil when
+	  not opened.
+
+	* ext/syslog/syslog.c, ext/syslog/test.rb: Change back the output
+	  format of inspect().
+
 Wed Nov 27 16:27:59 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/test.rb: Switch from RUnit to Test::Unit.

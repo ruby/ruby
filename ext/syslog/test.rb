@@ -28,7 +28,7 @@ class TestSyslog < Test::Unit::TestCase
     assert_equal(Syslog, sl2)
     assert_equal(Syslog, sl3)
   ensure
-    Syslog.close
+    Syslog.close if Syslog.opened?
   end
 
   def test_open
@@ -59,16 +59,16 @@ class TestSyslog < Test::Unit::TestCase
     Syslog.open
     Syslog.close
 
-    assert_equal($0, Syslog.ident)
-    assert_equal(Syslog::LOG_PID | Syslog::LOG_CONS, Syslog.options)
-    assert_equal(Syslog::LOG_USER, Syslog.facility)
+    assert_equal(nil, Syslog.ident)
+    assert_equal(nil, Syslog.options)
+    assert_equal(nil, Syslog.facility)
 
     # block
     param = nil
     Syslog.open { |param| }
     assert_equal(Syslog, param)
   ensure
-    Syslog.close
+    Syslog.close if Syslog.opened?
   end
 
   def test_opened?
@@ -87,7 +87,15 @@ class TestSyslog < Test::Unit::TestCase
     assert_equal(false, Syslog.opened?)
   end
 
+  def test_close
+    assert_raises(RuntimeError) {
+      Syslog.close
+    }
+  end
+
   def test_mask
+    assert_equal(nil, Syslog.mask)
+
     Syslog.open
 
     orig = Syslog.mask
@@ -100,7 +108,7 @@ class TestSyslog < Test::Unit::TestCase
 
     Syslog.mask = orig
   ensure
-    Syslog.close
+    Syslog.close if Syslog.opened?
   end
 
   def test_log
@@ -142,14 +150,15 @@ class TestSyslog < Test::Unit::TestCase
 
   def test_inspect
     Syslog.open { |sl|
-      assert_equal(format('<#%s: ident="%s", options=%d, facility=%d, mask=%d%s>',
+      assert_equal(format('<#%s: opened=true, ident="%s", options=%d, facility=%d, mask=%d>',
 			  Syslog,
 			  sl.ident,
 			  sl.options,
 			  sl.facility,
-			  sl.mask,
-			  sl.opened? ? ', opened' : ''),
+			  sl.mask),
 		   sl.inspect)
     }
+
+    assert_equal(format('<#%s: opened=false>', Syslog), Syslog.inspect)
   end
 end
