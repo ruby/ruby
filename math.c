@@ -271,6 +271,22 @@ math_hypot(obj, x, y)
     return rb_float_new(hypot(RFLOAT(x)->value, RFLOAT(y)->value));
 }
 
+static VALUE
+math_erf(obj, x)
+    VALUE obj, x;
+{
+    Need_Float(x);
+    return rb_float_new(erf(RFLOAT(x)->value));
+}
+
+static VALUE
+math_erfc(obj, x)
+    VALUE obj, x;
+{
+    Need_Float(x);
+    return rb_float_new(erfc(RFLOAT(x)->value));
+}
+
 void
 Init_Math()
 {
@@ -314,4 +330,7 @@ Init_Math()
     rb_define_module_function(rb_mMath, "ldexp", math_ldexp, 2);
 
     rb_define_module_function(rb_mMath, "hypot", math_hypot, 2);
+
+    rb_define_module_function(rb_mMath, "erf",  math_erf,  1);
+    rb_define_module_function(rb_mMath, "erfc", math_erfc, 1);
 }

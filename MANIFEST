@@ -262,6 +262,7 @@ missing/acosh.c
 missing/alloca.c
 missing/crypt.c
 missing/dup2.c
+missing/erf.c
 missing/file.h
 missing/fileblocks.c
 missing/finite.c

@@ -54,6 +54,11 @@ extern double frexp _((double, int *));
 extern double hypot _((double, double));
 #endif
 
+#ifndef HAVE_ERF
+extern double erf _((double, double));
+extern double erfc _((double, double));
+#endif
+
 #ifndef HAVE_ISINF
 extern int isinf _((double));
 #endif

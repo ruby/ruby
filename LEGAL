@@ -134,6 +134,7 @@ st.[ch]:
 x68/*:
 missing/alloca.c:
 missing/dup2.c:
+missing/erf.c:
 missing/finite.c:
 missing/hypot.c:
 missing/isinf.c:
