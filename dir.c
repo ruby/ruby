@@ -436,6 +436,7 @@ dir_s_chdir(argc, argv, obj)
 	dist = getenv("HOME");
 	if (!dist) {
 	    dist = getenv("LOGDIR");
+	    if (!dist) rb_raise(rb_eArgError, "HOME/LOGDIR not set");
 	}
     }
 
@@ -622,8 +623,9 @@ remove_backslashes(p)
 #endif
 
 static void
-glob_helper(path, flags, func, arg)
+glob_helper(path, sub, flags, func, arg)
     char *path;
+    char *sub;
     int flags;
     void (*func) _((const char*, VALUE));
     VALUE arg;
@@ -631,7 +633,8 @@ glob_helper(path, flags, func, arg)
     struct stat st;
     char *p, *m;
 
-    if (!has_magic(path, 0, flags)) {
+    p = sub ? sub : path;
+    if (!has_magic(p, 0, flags)) {
 	remove_backslashes(path);
 	if (stat(path, &st) == 0) {
 	    (*func)(path, arg);
@@ -644,7 +647,6 @@ glob_helper(path, flags, func, arg)
 	return;
     }
 
-    p = path;
     while (p) {
 	if (*p == '/') p++;
 	m = strchr(p, '/');
@@ -671,10 +673,11 @@ glob_helper(path, flags, func, arg)
 	    }
 	    if (S_ISDIR(st.st_mode)) {
 		if (m && strcmp(magic, "**") == 0) {
+		    int n = strlen(base);
 		    recursive = 1;
-		    buf = ALLOC_N(char, strlen(base)+strlen(m)+3);
+		    buf = ALLOC_N(char, n+strlen(m)+3);
 		    sprintf(buf, "%s%s", base, *base ? m : m+1);
-		    glob_helper(buf, flags, func, arg);
+		    glob_helper(buf, buf+n, flags, func, arg);
 		    free(buf);
 		}
 		dirp = opendir(dir);
@@ -706,9 +709,10 @@ glob_helper(path, flags, func, arg)
 			continue;
 		    }
 		    if (S_ISDIR(st.st_mode)) {
-		        strcat(buf, "/**");
-			strcat(buf, m);
-			glob_helper(buf, flags, func, arg);
+			char *t = buf+strlen(buf);
+		        strcpy(t, "/**");
+			strcpy(t+3, m);
+			glob_helper(buf, t, flags, func, arg);
 		    }
 		    free(buf);
 		    continue;
@@ -739,7 +743,7 @@ glob_helper(path, flags, func, arg)
 			    char *t = ALLOC_N(char, len+mlen+1);
 
 			    sprintf(t, "%s%s", link->path, m);
-			    glob_helper(t, flags, func, arg);
+			    glob_helper(t, t+len, flags, func, arg);
 			    free(t);
 			}
 			tmp = link;
@@ -764,7 +768,7 @@ rb_glob(path, func, arg)
     void (*func) _((const char*, VALUE));
     VALUE arg;
 {
-    glob_helper(path, FNM_PERIOD, func, arg);
+    glob_helper(path, 0, FNM_PERIOD, func, arg);
 }
 
 void
@@ -773,7 +777,7 @@ rb_globi(path, func, arg)
     void (*func) _((const char*, VALUE));
     VALUE arg;
 {
-    glob_helper(path, FNM_PERIOD|FNM_CASEFOLD, func, arg);
+    glob_helper(path, 0, FNM_PERIOD|FNM_CASEFOLD, func, arg);
 }
 
 static void push_pattern _((const char *path, VALUE ary));
