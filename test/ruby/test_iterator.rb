@@ -179,7 +179,7 @@ class TestIterator < Test::Unit::TestCase
     m(block_given?,&proc{})
   end
 
-  def test_block_in_arg
+  def test_block_given
     assert(m1{p 'test'})
     assert(m2{p 'test'})
     assert(!m1())
@@ -299,6 +299,7 @@ class TestIterator < Test::Unit::TestCase
     lambda = lambda{44}
     assert_raises(LocalJumpError) {get_block{break}.call}
     assert_nothing_raised {lambda{break}.call}
+    assert_instance_of(LocalJumpError, (get_block{break}.call rescue $!))
 
     assert_equal(-1, block.arity)
     assert_equal(-1, lambda.arity)
@@ -319,7 +320,7 @@ class TestIterator < Test::Unit::TestCase
     marity_test(:p)
 
     lambda(&method(:assert)).call(true)
-    lambda(&get_block{|a,n| assert(a,n)}).call(true, 2)
+    lambda(&get_block{|a,n| assert(a,n)}).call(true, "marity")
   end
 
   class ITER_TEST1

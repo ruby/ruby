@@ -1,3 +1,12 @@
+Tue Sep  9 10:39:51 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (struct tag): dst should be VALUE.
+
+Tue Sep  9 10:39:51 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (localjump_destination): stop at the scope where the current
+	  block was created.  [ruby-dev:21353]
+
 Tue Sep  9 05:17:04 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_config.rb: avoid compile error in OpenSSL-0.9.6.
@@ -7,11 +16,11 @@ Tue Sep  9 01:50:45 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	* lib/webrick/httpserver.rb (HTTPServer#access_log): add "\n" to
 	  the message.
 
-	* lib/webrick/log.rb (BasicLog#log): add "\n" only if needed. 
+	* lib/webrick/log.rb (BasicLog#log): add "\n" only if needed.
 
 Mon Sep  8 22:15:33 2003    <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/multi-tk.rb: modify security check at creating 
+	* ext/tk/lib/multi-tk.rb: modify security check at creating
 	  a new interpreter
 
 Mon Sep  8 20:00:12 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>

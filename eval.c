@@ -822,7 +822,7 @@ struct tag {
     VALUE tag;
     VALUE retval;
     struct SCOPE *scope;
-    int dst;
+    VALUE dst;
     struct tag *prev;
 };
 static struct tag *prot_tag;
@@ -1520,6 +1520,7 @@ localjump_reason(exc)
     return rb_iv_get(exc, "@reason");
 }
 
+NORETURN(static void jump_tag_but_local_jump _((int)));
 static void
 jump_tag_but_local_jump(state)
     int state;
@@ -4023,18 +4024,16 @@ localjump_destination(state, scope, retval)
 	    (tt->tag == PROT_CALL || tt->tag == tag) && tt->scope == scope) {
 	    tt->dst = (VALUE)scope;
 	    tt->retval = retval;
-	    break;
+	    JUMP_TAG(state);
 	}
+	if (tt->tag == PROT_FUNC && tt->scope == scope) break;
 	if (tt->tag == PROT_THREAD) {
 	    rb_raise(rb_eThreadError, "%s jump can't across threads",
 		     (state == TAG_BREAK) ? "break" : "return");
 	}
 	tt = tt->prev;
     }
-    if (!tt) {
-	jump_tag_but_local_jump(state);
-    }
-    JUMP_TAG(state);
+    jump_tag_but_local_jump(state);
 }
 
 static VALUE
