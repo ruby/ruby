@@ -37,10 +37,7 @@ module DL
       end
       alias dllink :dlload
 
-      # example:
-      #   extern "int strlen(char*)"
-      #
-      def extern(proto)
+      def parse_cproto(proto)
 	proto = proto.gsub(/\s+/, " ").strip
 	case proto
 	when /^([\d\w\*_\s]+)\(([\d\w\*_\s\,\[\]]*)\)$/
@@ -54,10 +51,50 @@ module DL
 	    ret.push("*")
 	  end
 	  ret  = ret.join(" ")
-	  return import(func, ret, args)
+	  return [func, ret, args]
 	else
 	  raise(RuntimeError,"can't parse the function prototype: #{proto}")
 	end
+      end
+
+      # example:
+      #   extern "int strlen(char*)"
+      #
+      def extern(proto)
+	func,ret,args = parse_cproto(proto)
+	return import(func, ret, args)
+      end
+
+      # example:
+      #   callback "int method_name(int, char*)"
+      #
+      def callback(proto)
+	func,ret,args = parse_cproto(proto)
+
+	init_types()
+	init_sym()
+
+	rty,_,rdec = @types.encode_type(ret)
+	ty,enc,dec = encode_types(args)
+	symty = rty + ty
+
+	module_eval("module_function :#{func}")
+	sym = module_eval [
+	  "DL::callback(\"#{symty}\"){|*args|",
+	  "  sym,rdec,enc,dec  = @SYM['#{func}']",
+	  "  args = enc.call(args) if enc",
+	  "  r,rs = #{func}(*args)",
+	  "  r  = rdec.call(r) if rdec",
+	  "  rs = dec.call(rs) if dec",
+	  "  @retval = r",
+	  "  @args   = rs",
+	  "  @retval",
+	  "}",
+	].join("\n")
+
+	@SYM[func] = [sym,rdec,enc,dec]
+
+	return sym
       end
 
       # example:
@@ -74,11 +111,12 @@ module DL
       def import(name, rettype, argtypes = nil)
 	init_types()
 	init_sym()
-	@LIBS.each{|lib|
-	  rty,_,rdec = @types.encode_type(rettype)
-	  ty,enc,dec = encode_types(argtypes)
-	  symty = rty + ty
 
+	rty,_,rdec = @types.encode_type(rettype)
+	ty,enc,dec = encode_types(argtypes)
+	symty = rty + ty
+
+	@LIBS.each{|lib|
 	  begin
 	    sym = lib[name, symty]
 	  rescue
