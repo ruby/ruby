@@ -617,9 +617,11 @@ mark_locations_array(x, n)
     register VALUE *x;
     register long n;
 {
+    VALUE v;
     while (n--) {
-	if (is_pointer_to_heap((void *)*x)) {
-	    gc_mark(*x, 0);
+        v = *x;
+	if (is_pointer_to_heap((void *)v)) {
+	    gc_mark(v, 0);
 	}
 	x++;
     }
