@@ -10,7 +10,7 @@
 #   
 #
 
-require "irb/irb"
+require "irb"
 require "irb/frame"
 
 class XMP

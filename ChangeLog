@@ -1,3 +1,7 @@
+Fri May 30 11:25:58 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* lib/irb/xmp.rb: sync with 1.8 ("irb/irb" -> "irb").
+
 Sun May 25 03:33:53 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/smtp.rb: support LOGIN authentication. Thanks to
