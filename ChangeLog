@@ -1,11 +1,26 @@
-Mon Sep 18 17:46:11 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Tue Sep 19 16:53:06 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* stable version 1.6.0 released.
 
+Tue Sep 19 16:24:52 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (Init_marshal): provide marshal.so no more.
+
 Tue Sep 19 14:01:01 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* configure.in: include version number in RUBY_SO_NAME.
 
 	* configure.in, win32/setup.mak: include version number
 	  in RUBY_SO_NAME.
+
+Tue Sep 19 13:07:47 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (yylex): was confusing $~ and $_.
+
+Tue Sep 19 13:06:53 2000  GOTOU YUUZOU  <gotoyuzo@notwork.org>
+
+	* signal.c (rb_f_kill): signum may be a negative number, should be
+	  treated by signed number.
 
 Tue Sep 19 01:14:56 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

@@ -3398,8 +3398,6 @@ yylex()
 	newtok();
 	c = nextc();
 	switch (c) {
-	  case '~':		/* $~: match-data */
-            /* fall through */
 	  case '_':		/* $_: last read line string */
 	    c = nextc();
 	    if (is_identchar(c)) {
@@ -3409,7 +3407,9 @@ yylex()
 	    }
 	    pushback(c);
 	    c = '_';
-	    local_cnt('_');
+	    /* fall through */
+	  case '~':		/* $~: match-data */
+	    local_cnt(c);
 	    /* fall through */
 	  case '*':		/* $*: argv */
 	  case '$':		/* $$: pid */

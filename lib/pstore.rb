@@ -12,7 +12,6 @@
 #   p db["root"]
 # end
 
-require "marshal"
 require "ftools"
 
 class PStore

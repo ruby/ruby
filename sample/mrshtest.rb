@@ -1,4 +1,3 @@
-require "marshal"
 include Marshal
 a = 25.6;
 pt = Struct.new('Point', :x,:y);

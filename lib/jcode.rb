@@ -4,6 +4,11 @@ $vsave, $VERBOSE = $VERBOSE, false
 class String
   printf STDERR, "feel free for some warnings:\n" if $VERBOSE
 
+  def _regex_quote(str)
+    a = str.gsub(/\W/){|s| if s == "-" then s else "\\\\#{s}" end}
+  end
+  private :_regex_quote
+
   PATTERN_SJIS = '[\x81-\x9f\xe0-\xef][\x40-\x7e\x80-\xfc]'
   PATTERN_EUC = '[\xa1-\xfe][\xa1-\xfe]'
   PATTERN_UTF8 = '[\xc0-\xdf][\x80-\xbf]|[\xe0-\xef][\x80-\xbf][\x80-\xbf]'
@@ -118,7 +123,7 @@ class String
   def tr!(from, to)
     return self.delete!(from) if to.length == 0
 
-    pattern = TrPatternCache[from] ||= /[#{Regexp::quote(from)}]/
+    pattern = TrPatternCache[from] ||= /[#{_regex_quote(from)}]/
     if from[0] == ?^
       last = /.$/.match(to)[0]
       self.gsub!(pattern, last)
@@ -133,7 +138,7 @@ class String
   end
 
   def delete!(del)
-    self.gsub!(DeletePatternCache[del] ||= /[#{Regexp::quote(del)}]+/, '')
+    self.gsub!(DeletePatternCache[del] ||= /[#{_regex_quote(del)}]+/, '')
   end
 
   def delete(del)
@@ -143,7 +148,7 @@ class String
   def squeeze!(del=nil)
     pattern =
       if del
-	SqueezePatternCache[del] ||= /([#{Regexp::quote(del)}])\1+/
+	SqueezePatternCache[del] ||= /([#{_regex_quote(del)}])\1+/
       else
 	/(.|\n)\1+/
       end
@@ -157,7 +162,7 @@ class String
   def tr_s!(from, to)
     return self.delete!(from) if to.length == 0
 
-    pattern = SqueezePatternCache[from] ||= /([#{Regexp::quote(from)}])\1+"/ #"
+    pattern = SqueezePatternCache[from] ||= /([#{_regex_quote(from)}])\1+"/
     if from[0] == ?^
       last = /.$/.match(to)[0]
       self.gsub!(pattern, last)

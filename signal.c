@@ -205,7 +205,7 @@ rb_f_kill(argc, argv)
 	rb_raise(rb_eArgError, "wrong # of arguments -- kill(sig, pid...)");
     switch (TYPE(argv[0])) {
       case T_FIXNUM:
-	sig = FIX2UINT(argv[0]);
+	sig = FIX2INT(argv[0]);
 	break;
 
       case T_SYMBOL:
