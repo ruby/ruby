@@ -1,3 +1,7 @@
+Thu Dec 11 18:49:30 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb: def m( arg ) -> def m(arg).
+
 Thu Dec 11 11:39:43 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (ieeefp.h), numeric.c: needed for finite() on

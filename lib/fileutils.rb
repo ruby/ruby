@@ -12,29 +12,29 @@
 # 
 # === Module Functions
 # 
-#   cd( dir, options )
-#   cd( dir, options ) {|dir| .... }
+#   cd(dir, options)
+#   cd(dir, options) {|dir| .... }
 #   pwd()
-#   mkdir( dir, options )
-#   mkdir_p( dir, options )
-#   rmdir( dir, options )
-#   ln( old, new, options )
-#   ln( list, destdir, options )
-#   ln_s( old, new, options )
-#   ln_s( list, destdir, options )
-#   ln_sf( src, dest, options )
-#   cp( src, dest, options )
-#   cp( list, dir, options )
-#   cp_r( src, dest, options )
-#   cp_r( list, dir, options )
-#   mv( src, dest, options )
-#   mv( list, dir, options )
-#   rm( list, options )
-#   rm_r( list, options )
-#   rm_rf( list, options )
-#   install( src, dest, mode = <src's>, options )
-#   chmod( mode, list, options )
-#   touch( list, options )
+#   mkdir(dir, options)
+#   mkdir_p(dir, options)
+#   rmdir(dir, options)
+#   ln(old, new, options)
+#   ln(list, destdir, options)
+#   ln_s(old, new, options)
+#   ln_s(list, destdir, options)
+#   ln_sf(src, dest, options)
+#   cp(src, dest, options)
+#   cp(list, dir, options)
+#   cp_r(src, dest, options)
+#   cp_r(list, dir, options)
+#   mv(src, dest, options)
+#   mv(list, dir, options)
+#   rm(list, options)
+#   rm_r(list, options)
+#   rm_rf(list, options)
+#   install(src, dest, mode = <src's>, options)
+#   chmod(mode, list, options)
+#   touch(list, options)
 #
 # The <tt>options</tt> parameter is a hash of options, taken from the list
 # +:force+, +:noop+, +:preserve+, and +:verbose+.  +:noop+ means that no changes
@@ -47,11 +47,11 @@
 #
 # There are some `low level' methods, which does not accept any option:
 #
-#   uptodate?( file, cmp_list )
-#   copy_file( srcfilename, destfilename )
-#   copy_stream( srcstream, deststream )
-#   compare_file( file_a, file_b )
-#   compare_stream( stream_a, stream_b )
+#   uptodate?(file, cmp_list)
+#   copy_file(srcfilename, destfilename)
+#   copy_stream(srcstream, deststream)
+#   compare_file(file_a, file_b)
+#   compare_stream(stream_a, stream_b)
 #
 # == module FileUtils::Verbose
 # 
@@ -92,7 +92,7 @@ module FileUtils
   # 
   #   FileUtils.cd('/', :verbose => true)   # chdir and report it
   # 
-  def cd( dir, options = {}, &block ) # :yield: dir
+  def cd(dir, options = {}, &block) # :yield: dir
     fu_check_options options, :noop, :verbose
     fu_output_message "cd #{dir}" if options[:verbose]
     Dir.chdir(dir, &block) unless options[:noop]
@@ -111,7 +111,7 @@ module FileUtils
   #   FileUtils.uptodate?('hello.o', %w(hello.c hello.h)) or \
   #       system 'make hello.o'
   # 
-  def uptodate?( new, old_list, options = nil )
+  def uptodate?(new, old_list, options = nil)
     raise ArgumentError, 'uptodate? does not accept any option' if options
 
     return false unless File.exist?(new)
@@ -135,7 +135,7 @@ module FileUtils
   #   FileUtils.mkdir 'notexist', :noop => true  # Does not really create.
   #   FileUtils.mkdir 'tmp', :mode => 0700
   # 
-  def mkdir( list, options = {} )
+  def mkdir(list, options = {})
     fu_check_options options, :mode, :noop, :verbose
     list = fu_list(list)
     fu_output_message "mkdir #{options[:mode] ? ('-m %03o ' % options[:mode]) : ''}#{list.join ' '}" if options[:verbose]
@@ -163,7 +163,7 @@ module FileUtils
   #
   # You can pass several directories at a time in a list.
   # 
-  def mkdir_p( list, options = {} )
+  def mkdir_p(list, options = {})
     fu_check_options options, :mode, :noop, :verbose
     list = fu_list(list)
     fu_output_message "mkdir -p #{options[:mode] ? ('-m %03o ' % options[:mode]) : ''}#{list.join ' '}" if options[:verbose]
@@ -198,7 +198,7 @@ module FileUtils
   #   # Does not really remove directory; outputs message.
   #   FileUtils.rmdir 'somedir', :verbose => true, :noop => true
   # 
-  def rmdir( list, options = {} )
+  def rmdir(list, options = {})
     fu_check_options options, :noop, :verbose
     list = fu_list(list)
     fu_output_message "rmdir #{list.join ' '}" if options[:verbose]
@@ -232,7 +232,7 @@ module FileUtils
   #   cd '/bin'
   #   ln %w(cp mv mkdir), '/usr/bin'   # Now /usr/bin/cp and /bin/cp are linked.
   # 
-  def ln( src, dest, options = {} )
+  def ln(src, dest, options = {})
     fu_check_options options, :force, :noop, :verbose
     fu_output_message "ln#{options[:force] ? ' -f' : ''} #{[src,dest].flatten.join ' '}" if options[:verbose]
     return if options[:noop]
@@ -267,7 +267,7 @@ module FileUtils
   # 
   #   FileUtils.ln_s Dir.glob('bin/*.rb'), '/home/aamine/bin'
   # 
-  def ln_s( src, dest, options = {} )
+  def ln_s(src, dest, options = {})
     fu_check_options options, :force, :noop, :verbose
     fu_output_message "ln -s#{options[:force] ? 'f' : ''} #{[src,dest].flatten.join ' '}" if options[:verbose]
     return if options[:noop]
@@ -286,7 +286,7 @@ module FileUtils
   # Same as
   #   #ln_s(src, dest, :force)
   # 
-  def ln_sf( src, dest, options = {} )
+  def ln_sf(src, dest, options = {})
     fu_check_options options, :noop, :verbose
     options = options.dup
     options[:force] = true
@@ -306,7 +306,7 @@ module FileUtils
   #   FileUtils.cp %w(cgi.rb complex.rb date.rb), '/usr/lib/ruby/1.6'
   #   FileUtils.cp %w(cgi.rb complex.rb date.rb), '/usr/lib/ruby/1.6', :verbose => true
   # 
-  def cp( src, dest, options = {} )
+  def cp(src, dest, options = {})
     fu_check_options options, :preserve, :noop, :verbose
     fu_output_message "cp#{options[:preserve] ? ' -p' : ''} #{[src,dest].flatten.join ' '}" if options[:verbose]
     return if options[:noop]
@@ -337,7 +337,7 @@ module FileUtils
   #   FileUtils.cp_r %w(mail.rb field.rb debug/), site_ruby + '/tmail'
   #   FileUtils.cp_r Dir.glob('*.rb'), '/home/aamine/lib/ruby', :noop, :verbose
   # 
-  def cp_r( src, dest, options = {} )
+  def cp_r(src, dest, options = {})
     fu_check_options options, :preserve, :noop, :verbose
     fu_output_message "cp -r#{options[:preserve] ? 'p' : ''} #{[src,dest].flatten.join ' '}" if options[:verbose]
     return if options[:noop]
@@ -351,7 +351,7 @@ module FileUtils
     end
   end
 
-  def fu_copy_dir( src, dest, rel, preserve ) #:nodoc:
+  def fu_copy_dir(src, dest, rel, preserve) #:nodoc:
     fu_preserve_attr(preserve, "#{src}/#{rel}", "#{dest}/#{rel}") {|s,d|
         dir = File.expand_path(d)   # to remove '/./'
         Dir.mkdir dir unless File.directory?(dir)
@@ -367,14 +367,14 @@ module FileUtils
   end
   private :fu_copy_dir
 
-  def fu_p_copy( src, dest, really ) #:nodoc:
+  def fu_p_copy(src, dest, really) #:nodoc:
     fu_preserve_attr(really, src, dest) {
         copy_file src, dest
     }
   end
   private :fu_p_copy
 
-  def fu_preserve_attr( really, src, dest ) #:nodoc:
+  def fu_preserve_attr(really, src, dest) #:nodoc:
     unless really
       yield src, dest
       return
@@ -397,7 +397,7 @@ module FileUtils
   # Copies file +src+ to +dest+.
   # Both of +src+ and +dest+ must be a filename.
   #
-  def copy_file( src, dest )
+  def copy_file(src, dest)
     File.open(src,  'rb') {|r|
       File.open(dest, 'wb') {|w|
         copy_stream r, w
@@ -409,7 +409,7 @@ module FileUtils
   # Copies stream +src+ to +dest+.
   # Both of +src+ and +dest+ must be a IO.
   #
-  def copy_stream( src, dest )
+  def copy_stream(src, dest)
     bsize = fu_stream_blksize(src, dest)
     begin
       while true
@@ -431,7 +431,7 @@ module FileUtils
   #   FileUtils.mv %w(junk.txt dust.txt), '/home/aamine/.trash/'
   #   FileUtils.mv Dir.glob('test*.rb'), 'test', :noop, :verbose => true
   # 
-  def mv( src, dest, options = {} )
+  def mv(src, dest, options = {})
     fu_check_options options, :noop, :verbose
     fu_output_message "mv #{[src,dest].flatten.join ' '}" if options[:verbose]
     return if options[:noop]
@@ -480,7 +480,7 @@ module FileUtils
   #   FileUtils.rm Dir.glob('*.so')
   #   FileUtils.rm 'NotExistFile', :force => true   # never raises exception
   # 
-  def rm( list, options = {} )
+  def rm(list, options = {})
     fu_check_options options, :force, :noop, :verbose
     list = fu_list(list)
     fu_output_message "rm#{options[:force] ? ' -f' : ''} #{list.join ' '}" if options[:verbose]
@@ -499,7 +499,7 @@ module FileUtils
   # Same as
   #   #rm(list, :force)
   #
-  def rm_f( list, options = {} )
+  def rm_f(list, options = {})
     fu_check_options options, :noop, :verbose
     options = options.dup
     options[:force] = true
@@ -518,7 +518,7 @@ module FileUtils
   #   FileUtils.rm_r Dir.glob('/tmp/*')
   #   FileUtils.rm_r '/', :force => true          #  :-)
   # 
-  def rm_r( list, options = {} )
+  def rm_r(list, options = {})
     fu_check_options options, :force, :noop, :verbose
     list = fu_list(list)
     fu_output_message "rm -r#{options[:force] ? 'f' : ''} #{list.join ' '}" if options[:verbose]
@@ -544,7 +544,7 @@ module FileUtils
   # Same as 
   #   #rm_r(list, :force => true)
   # 
-  def rm_rf( list, options = {} )
+  def rm_rf(list, options = {})
     fu_check_options options, :noop, :verbose
     options = options.dup
     options[:force] = true
@@ -553,7 +553,7 @@ module FileUtils
 
   alias rmtree rm_rf
 
-  def remove_file( fname, force = false ) #:nodoc:
+  def remove_file(fname, force = false) #:nodoc:
     first_time_p = true
     begin
       File.unlink fname
@@ -570,7 +570,7 @@ module FileUtils
     end
   end
 
-  def remove_dir( dir, force = false ) #:nodoc:
+  def remove_dir(dir, force = false) #:nodoc:
     Dir.foreach(dir) do |file|
       next if /\A\.\.?\z/ === file
       path = "#{dir}/#{file}"
@@ -594,7 +594,7 @@ module FileUtils
   #   FileUtils.compare_file('somefile', 'somefile')  #=> true
   #   FileUtils.compare_file('/bin/cp', '/bin/mv')    #=> maybe false
   #
-  def compare_file( a, b )
+  def compare_file(a, b)
     return false unless File.size(a) == File.size(b)
     File.open(a, 'rb') {|fa|
     File.open(b, 'rb') {|fb|
@@ -608,7 +608,7 @@ module FileUtils
   #
   # Returns true if the contents of a stream +a+ and +b+ are identical.
   #
-  def compare_stream( a, b )
+  def compare_stream(a, b)
     bsize = fu_stream_blksize(a, b)
     sa = sb = nil
     while sa == sb
@@ -633,7 +633,7 @@ module FileUtils
   #   FileUtils.install 'ruby', '/usr/local/bin/ruby', :mode => 0755, :verbose => true
   #   FileUtils.install 'lib.rb', '/usr/local/lib/ruby/site_ruby', :verbose => true
   # 
-  def install( src, dest, options = {} )
+  def install(src, dest, options = {})
     fu_check_options options, :mode, :preserve, :noop, :verbose
     fu_output_message "install -c#{options[:preserve] && ' -p'}#{options[:mode] ? (' -m 0%o' % options[:mode]) : ''} #{[src,dest].flatten.join ' '}" if options[:verbose]
     return if options[:noop]
@@ -660,7 +660,7 @@ module FileUtils
   #   FileUtils.chmod 0644, %w(my.rb your.rb his.rb her.rb)
   #   FileUtils.chmod 0755, '/usr/bin/ruby', :verbose => true
   # 
-  def chmod( mode, list, options = {} )
+  def chmod(mode, list, options = {})
     fu_check_options options, :noop, :verbose
     list = fu_list(list)
     fu_output_message sprintf('chmod %o %s', mode, list.join(' ')) if options[:verbose]
@@ -678,7 +678,7 @@ module FileUtils
   #   FileUtils.touch 'timestamp'
   #   FileUtils.touch Dir.glob('*.c');  system 'make'
   # 
-  def touch( list, options = {} )
+  def touch(list, options = {})
     fu_check_options options, :noop, :verbose
     list = fu_list(list)
     fu_output_message "touch #{list.join ' '}" if options[:verbose]
@@ -698,7 +698,7 @@ module FileUtils
 
   private
 
-  def fu_check_options( options, *optdecl )
+  def fu_check_options(options, *optdecl)
     h = options.dup
     optdecl.each do |name|
       h.delete name
@@ -706,18 +706,18 @@ module FileUtils
     raise ArgumentError, "no such option: #{h.keys.join(' ')}" unless h.empty?
   end
 
-  def fu_list( arg )
+  def fu_list(arg)
     arg.is_a?(Array) ? arg : [arg]
   end
 
-  def fu_each_src_dest( src, dest )
+  def fu_each_src_dest(src, dest)
     fu_each_src_dest0(src, dest) do |s, d|
       raise ArgumentError, "same file: #{s} and #{d}" if fu_same?(s, d)
       yield s, d
     end
   end
 
-  def fu_each_src_dest0( src, dest )
+  def fu_each_src_dest0(src, dest)
     unless src.is_a?(Array)
       yield src.to_str, fu_dest_filename(src.to_str, dest.to_str)
     else
@@ -730,7 +730,7 @@ module FileUtils
     end
   end
 
-  def fu_dest_filename( src, dest )
+  def fu_dest_filename(src, dest)
     if File.directory?(dest)
       (dest[-1,1] == '/' ? dest : dest + '/') + File.basename(src)
     else
@@ -738,7 +738,7 @@ module FileUtils
     end
   end
 
-  def fu_same?( a, b )
+  def fu_same?(a, b)
     if have_st_ino?
       st1 = File.stat(a)
       st2 = File.stat(b)
@@ -754,7 +754,7 @@ module FileUtils
     /mswin|mingw|bccwin|wince|emx/ !~ RUBY_PLATFORM
   end
 
-  def fu_stream_blksize( *streams )
+  def fu_stream_blksize(*streams)
     streams.each do |s|
       next unless s.respond_to?(:stat)
       size = s.stat.blksize
@@ -766,13 +766,13 @@ module FileUtils
   @fileutils_output = $stderr
   @fileutils_label  = ''
 
-  def fu_output_message( msg )
+  def fu_output_message(msg)
     @fileutils_output ||= $stderr
     @fileutils_label  ||= ''
     @fileutils_output.puts @fileutils_label + msg
   end
 
-  def fu_update_option( args, new )
+  def fu_update_option(args, new)
     if args.last.is_a?(Hash)
       args.last.update new
     else
@@ -833,7 +833,7 @@ module FileUtils
     FileUtils::OPT_TABLE.each do |name, opts|
       next unless opts.include?('verbose')
       module_eval(<<-EOS, __FILE__, __LINE__ + 1)
-        def #{name}( *args )
+        def #{name}(*args)
           @fileutils_verbose = true unless defined?(@fileutils_verbose)
           super(*fu_update_option(args, :verbose => @fileutils_verbose))
         end
@@ -861,7 +861,7 @@ module FileUtils
     FileUtils::OPT_TABLE.each do |name, opts|
       next unless opts.include?('noop')
       module_eval(<<-EOS, __FILE__, __LINE__ + 1)
-        def #{name}( *args )
+        def #{name}(*args)
           unless defined?(@fileutils_nowrite)
             @fileutils_nowrite ||= true
           end
