@@ -11,7 +11,7 @@ Tue Feb 10 20:49:07 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Tue Feb 10 16:43:50 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* eval.c (umethod_bind): perge unused check.  [ruby-dev:22850]
+	* eval.c (umethod_bind): purge unused check.  [ruby-dev:22850]
 
 Tue Feb 10 14:33:08 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
