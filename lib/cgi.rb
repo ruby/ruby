@@ -128,7 +128,7 @@ require 'English'
 #
 # === Writing output
 #
-# The simplest way send output to the HTTP client is using the #out() method.
+# The simplest way to send output to the HTTP client is using the #out() method.
 # This takes the HTTP headers as a hash parameter, and the body content
 # via a block.  The headers can be generated as a string using the #header()
 # method.  The output stream can be written directly to using the #print()
@@ -783,7 +783,7 @@ class CGI
     # value:: the cookie's value or list of values.
     # path:: the path for which this cookie applies.  Defaults to the
     #        base directory of the CGI script.
-    # domain:: the for which this cookie applies.
+    # domain:: the domain for which this cookie applies.
     # expires:: the time at which this cookie expires, as a +Time+ object.
     # secure:: whether this cookie is a secure cookie or not (default to
     #          false).  Secure cookies are only transmitted to HTTPS 
