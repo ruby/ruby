@@ -183,10 +183,6 @@ typedef struct
 } regmatch_t;
 
 
-#ifdef NeXT
-#define re_match rre_match
-#endif
-
 #ifdef __STDC__
 
 extern char *re_compile_pattern (const char *, int, struct re_pattern_buffer *);

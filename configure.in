@@ -764,8 +764,11 @@ case "$host_os" in
 	openstep*)
     	CFLAGS="$CFLAGS -pipe"
 		;;
-	rhasody*)
+	rhapsody*)
     	CFLAGS="$CFLAGS -pipe -no-precomp"
+		;;
+	os2_emx)
+    	CFLAGS="$CFLAGS -DOS2"
 		;;
 	*)
 		;;	

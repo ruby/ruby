@@ -305,6 +305,7 @@ dir_each(dir)
     for (dp = readdir(dirp); dp != NULL; dp = readdir(dirp)) {
 	file = rb_tainted_str_new(dp->d_name, NAMLEN(dp));
 	rb_yield(file);
+	if (DATA_PTR(dir) == NULL) dir_closed();
     }
     return dir;
 }

@@ -45,7 +45,13 @@ class WeakRef<Delegator
     @__id = orig.__id__
     ObjectSpace.call_finalizer orig
     ObjectSpace.call_finalizer self
-    ID_MAP[@__id] = [] unless ID_MAP[@__id]
+    begin
+      __old_status = Thread.critical
+      Thread.critical = true
+      ID_MAP[@__id] = [] unless ID_MAP[@__id]
+    ensure
+      Thread.critical = __old_status
+    end
     ID_MAP[@__id].push self.__id__
     ID_REV_MAP[self.id] = @__id
   end

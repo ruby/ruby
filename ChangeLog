@@ -1,3 +1,8 @@
+Sat Jul 29 23:42:04 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* dir.c (dir_each): should check whether dir is closed during the
+	  block execution. (ruby-bugs:#PR47)
+
 Sat Jul 29 21:57:30 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* ruby.c (rubylib_mangle): provide another buffer for the result.

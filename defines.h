@@ -28,6 +28,8 @@
 #endif
 #define S_IXGRP 0000010         /* execute/search permission, group */
 #define S_IXOTH 0000001         /* execute/search permission, other */
+
+#define HAVE_SYS_WAIT_H         /* configure fails to find this */
 #endif /* NeXT */
 
 #ifdef NT
