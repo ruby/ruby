@@ -2608,6 +2608,10 @@ parse_string(func, term, paren)
 	    rb_compile_error("unterminated string meets end of file");
 	    return 0;
 	}
+	if (paren) {
+	    if (c == paren) nest++;
+	    if (c == term && nest-- == 0) break;
+	}
 	if (ismbchar(c)) {
 	    int i, len = mbclen(c)-1;
 
@@ -2634,10 +2638,6 @@ parse_string(func, term, paren)
                 tokadd(read_escape());
   	    }
 	    continue;
-	}
-	if (paren) {
-	    if (c == paren) nest++;
-	    if (c == term && nest-- == 0) break;
 	}
 	tokadd(c);
     }
@@ -2682,6 +2682,10 @@ parse_qstring(term, paren)
 	    rb_compile_error("unterminated string meets end of file");
 	    return 0;
 	}
+	if (paren) {
+	    if (c == paren) nest++;
+	    if (c == term && nest-- == 0) break;
+	}
 	if (ismbchar(c)) {
 	    int i, len = mbclen(c)-1;
 
@@ -2708,10 +2712,6 @@ parse_qstring(term, paren)
 		}
 		tokadd('\\');
 	    }
-	}
-	if (paren) {
-	    if (c == paren) nest++;
-	    if (c == term && nest-- == 0) break;
 	}
 	tokadd(c);
     }
@@ -2742,6 +2742,10 @@ parse_quotedwords(term, paren)
 	    ruby_sourceline = strstart;
 	    rb_compile_error("unterminated string meets end of file");
 	    return 0;
+	}
+	if (paren) {
+	    if (c == paren) nest++;
+	    if (c == term && nest-- == 0) break;
 	}
 	if (ismbchar(c)) {
 	    int i, len = mbclen(c)-1;
@@ -2781,10 +2785,6 @@ parse_quotedwords(term, paren)
 		;		/* skip continuous spaces */
 	    pushback(c);
 	    continue;
-	}
-	if (paren) {
-	    if (c == paren) nest++;
-	    if (c == term && nest-- == 0) break;
 	}
 	tokadd(c);
     }
@@ -4106,6 +4106,14 @@ str_extend(list, term, paren)
 		    list_append(list, NEW_STR(rb_str_new(tok(), toklen())));
 		    newtok();
 		    return list;
+		}
+		else if (ismbchar(c)) {
+		    int i, len = mbclen(c)-1;
+
+		    for (i = 0; i < len; i++) {
+			tokadd(c);
+			c = nextc();
+		    }
 		}
 	      case '\n':
 		tokadd(c);

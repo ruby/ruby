@@ -1,3 +1,14 @@
+Mon Mar 18 10:55:03 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* parse.y (parse_string): part of multi-byte sequence must not
+	  match to paren.
+
+	* parse.y (parse_qstring): ditto.
+
+	* parse.y (parse_quotedwords): ditto.
+
+	* parse.y (str_extend): handle multi-byte characters.
+
 Mon Mar 18 10:31:20 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* enum.c (enum_find): catch a value before recycle.
