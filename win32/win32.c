@@ -675,7 +675,7 @@ rb_w32_join_argv(char *cmd, char *const *argv)
 
 pid_t
 rb_w32_pipe_exec(const char *cmd, const char *prog, int mode,
-		 FILE **fpr, FILE **fpw)
+		 int *pr, int *pw)
 {
     struct ChildRecord* child;
     HANDLE hReadIn, hReadOut;
@@ -687,7 +687,6 @@ rb_w32_pipe_exec(const char *cmd, const char *prog, int mode,
     BOOL reading, writing;
     int fd;
     int pipemode;
-    char modes[3];
     int ret;
 
     /* Figure out what we're doing... */
@@ -695,12 +694,9 @@ rb_w32_pipe_exec(const char *cmd, const char *prog, int mode,
     reading = ((mode & O_RDWR) || !writing) ? TRUE : FALSE;
     if (mode & O_BINARY) {
 	pipemode = O_BINARY;
-	modes[1] = 'b';
-	modes[2] = '\0';
     }
     else {
 	pipemode = O_TEXT;
-	modes[1] = '\0';
     }
 
     sa.nLength              = sizeof (SECURITY_ATTRIBUTES);
@@ -767,10 +763,10 @@ rb_w32_pipe_exec(const char *cmd, const char *prog, int mode,
 
 	/* associate handle to fp */
 	if (reading) {
-	    fd = rb_w32_open_osfhandle((long)hDupInFile,
-				       (_O_RDONLY | pipemode));
+	    *pr = rb_w32_open_osfhandle((long)hDupInFile,
+					(_O_RDONLY | pipemode));
 	    CloseHandle(hReadOut);
-	    if (fd == -1) {
+	    if (*pr == -1) {
 		CloseHandle(hDupInFile);
 	      read_open_failed:
 		if (writing) {
@@ -780,29 +776,19 @@ rb_w32_pipe_exec(const char *cmd, const char *prog, int mode,
 		CloseChildHandle(child);
 		break;
 	    }
-	    modes[0] = 'r';
-	    if ((*fpr = (FILE *)fdopen(fd, modes)) == NULL) {
-		_close(fd);
-		goto read_open_failed;
-	    }
 	}
 	if (writing) {
-	    fd = rb_w32_open_osfhandle((long)hDupOutFile,
-				       (_O_WRONLY | pipemode));
+	    *pw = rb_w32_open_osfhandle((long)hDupOutFile,
+					(_O_WRONLY | pipemode));
 	    CloseHandle(hWriteIn);
-	    if (fd == -1) {
+	    if (*pw == -1) {
 		CloseHandle(hDupOutFile);
 	      write_open_failed:
 		if (reading) {
-		    fclose(*fpr);
+		    close(*pr);
 		}
 		CloseChildHandle(child);
 		break;
-	    }
-	    modes[0] = 'w';
-	    if ((*fpw = (FILE *)fdopen(fd, modes)) == NULL) {
-		_close(fd);
-		goto write_open_failed;
 	    }
 	}
 	ret = child->pid;
@@ -1672,8 +1658,14 @@ rb_w32_open_osfhandle(long osfhandle, int flags)
 
 #undef getsockopt
 
+int
+rb_w32_is_socket(int fd)
+{
+    return is_socket(TO_SOCKET(fd));
+}
+
 static int
-is_socket(SOCKET fd)
+is_socket(SOCKET sock)
 {
     char sockbuf[80];
     int optlen;
@@ -1682,7 +1674,7 @@ is_socket(SOCKET fd)
 
     optlen = sizeof(sockbuf);
     RUBY_CRITICAL({
-	retval = getsockopt(fd, SOL_SOCKET, SO_TYPE, sockbuf, &optlen);
+	retval = getsockopt(sock, SOL_SOCKET, SO_TYPE, sockbuf, &optlen);
 	if (retval == SOCKET_ERROR) {
 	    int iRet;
 	    iRet = WSAGetLastError();
@@ -1692,7 +1684,7 @@ is_socket(SOCKET fd)
     });
 
     //
-    // If we get here, then fd is actually a socket.
+    // If we get here, then sock is actually a socket.
     //
 
     return result;

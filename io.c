@@ -20,7 +20,13 @@
 #include <errno.h>
 
 #include <sys/types.h>
-#include <sys/socket.h>
+#if !defined(_WIN32)
+# if defined(__BEOS__)
+#  include <net/socket.h>
+# else
+#  include <sys/socket.h>
+# endif
+#endif
 
 #if defined(MSDOS) || defined(__BOW__) || defined(__CYGWIN__) || defined(_WIN32) || defined(__human68k__) || defined(__EMX__) || defined(__BEOS__)
 # define NO_SAFE_RENAME
@@ -130,6 +136,19 @@ static VALUE lineno = INT2FIX(0);
 	rb_io_check_closed(fptr);\
      }\
 } while(0)
+
+#if defined(_WIN32)
+#define is_socket(fd)	rb_w32_is_socket(fd)
+#else
+static int
+is_socket(fd)
+    int fd;
+{
+    if (fstat(fptr->fd, &sbuf) < 0)
+        rb_sys_fail(fptr->path);
+    return S_ISSOCK(sbuf.st_mode);
+}
+#endif
 
 void
 rb_eof_error()
@@ -1940,7 +1959,8 @@ rb_io_fptr_finalize(fptr)
 	free(fptr->path);
 	fptr->path = 0;
     }
-    rb_io_fptr_cleanup(fptr, Qtrue);
+    if (fptr->f)
+	rb_io_fptr_cleanup(fptr, Qtrue);
     if (fptr->rbuf) {
         free(fptr->rbuf);
         fptr->rbuf = 0;
@@ -2059,15 +2079,12 @@ rb_io_close_read(io)
     VALUE io;
 {
     OpenFile *fptr;
-    struct stat sbuf;
 
     if (rb_safe_level() >= 4 && !OBJ_TAINTED(io)) {
 	rb_raise(rb_eSecurityError, "Insecure: can't close");
     }
     GetOpenFile(io, fptr);
-    if (fstat(fptr->fd, &sbuf) < 0)
-        rb_sys_fail(fptr->path);
-    if (S_ISSOCK(sbuf.st_mode)) {
+    if (is_socket(fptr->fd)) {
         if (shutdown(fptr->fd, 0) < 0)
             rb_sys_fail(fptr->path);
         fptr->mode &= ~FMODE_READABLE;
@@ -2105,15 +2122,12 @@ rb_io_close_write(io)
     VALUE io;
 {
     OpenFile *fptr;
-    struct stat sbuf;
 
     if (rb_safe_level() >= 4 && !OBJ_TAINTED(io)) {
 	rb_raise(rb_eSecurityError, "Insecure: can't close");
     }
     GetOpenFile(io, fptr);
-    if (fstat(fptr->fd, &sbuf) < 0)
-        rb_sys_fail(fptr->path);
-    if (S_ISSOCK(sbuf.st_mode)) {
+    if (is_socket(fptr->fd)) {
         if (shutdown(fptr->fd, 1) < 0)
             rb_sys_fail(fptr->path);
         fptr->mode &= ~FMODE_WRITABLE;
@@ -2790,7 +2804,7 @@ pipe_open(argc, argv, mode)
     struct popen_arg arg;
     volatile int doexec;
 #elif defined(_WIN32)
-    FILE *fpr, *fpw;
+    int r, w;
     int openmode = rb_io_mode_modenum(mode);
     char *exename = NULL;
 #endif
@@ -2880,7 +2894,7 @@ pipe_open(argc, argv, mode)
     else {
 	cmd = StringValueCStr(prog);
     }
-    while ((pid = rb_w32_pipe_exec(cmd, exename, openmode, &fpr, &fpw)) == -1) {
+    while ((pid = rb_w32_pipe_exec(cmd, exename, openmode, &r, &w)) == -1) {
 	/* exec failed */
 	switch (errno) {
 	  case EAGAIN:
@@ -2894,7 +2908,16 @@ pipe_open(argc, argv, mode)
 	    break;
 	}
     }
-#define PIPE_FDOPEN(i) (i?fpw:fpr)
+    if ((modef & FMODE_READABLE) && (modef & FMODE_WRITABLE)) {
+	close(w);
+	fp = rb_fdopen(r, "r+");
+    }
+    else if (modef & FMODE_READABLE) {
+	fp = rb_fdopen(r, "r");
+    }
+    else {
+	fp = rb_fdopen(w, "w");
+    }
 #else
     prog = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
     fp = popen(StringValueCStr(prog), mode);

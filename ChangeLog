@@ -1,3 +1,19 @@
+Mon Dec  6 20:13:28 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io.c (is_socket): new function.
+
+	* io.c (rb_io_close_read, rb_io_close_write): use is_socket().
+
+	* io.c (rb_io_fptr_finalize): need to check fptr->f before calling
+	  rb_io_fptr_cleanup().
+
+	* io.c (pipe_open): win32 pipe support (experimental).
+
+	* win32/win32.[ch] (rb_w32_pipe_exec): return file descripters
+	  instead of FILE structure.
+
+	* win32/win32.[ch] (rb_w32_is_socket): new function.
+
 Mon Dec  6 19:40:40 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* Makefile.in (.y.c): simplify the rule.
