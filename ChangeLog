@@ -1,3 +1,8 @@
+Fri Mar  1 11:29:10 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/socket/{addinfo.h,getaddrinfo.c} (gai_strerror): add const
+	  qualifier only for uClibc.
+
 Wed Feb 27 16:31:38 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* stable version 1.6.7 released.
