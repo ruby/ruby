@@ -1,3 +1,7 @@
+Fri May 14 13:30:39  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* test/ruby/test_float.rb: Add test for util.c revision 1.42.
+
 Fri May 14 12:13:46  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* util.c (ruby_strtod): strtod("0", &end); => end should point '\0'.
