@@ -82,9 +82,9 @@ char *strchr _((char*,char));
 
 #if defined DOSISH
 #define isdirsep(c) ((c) == '/' || (c) == '\\')
-static char *
+static const char *
 find_dirsep(s)
-    char *s;
+    const char *s;
 {
     while (*s) {
 	if (isdirsep(*s))
@@ -767,7 +767,7 @@ glob_helper(path, sub, flags, func, arg)
 		free(magic);
 		break;
 	    }
-	    
+
 #if defined DOSISH_DRIVE_LETTER
 #define BASE (*base && !((isdirsep(*base) && !base[1]) || (base[1] == ':' && isdirsep(base[2]) && !base[3])))
 #else

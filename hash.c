@@ -1583,8 +1583,8 @@ env_has_value(dmy, value)
     if (TYPE(value) != T_STRING) return Qfalse;
     env = GET_ENVIRON(environ);
     while (*env) {
-	char *s = strchr(*env, '=')+1;
-	if (s) {
+	char *s = strchr(*env, '=');
+	if (s++) {
 #ifdef ENV_IGNORECASE
 	    if (strncasecmp(s, RSTRING(value)->ptr, strlen(s)) == 0) {
 #else
@@ -1610,8 +1610,8 @@ env_index(dmy, value)
     StringValue(value);
     env = GET_ENVIRON(environ);
     while (*env) {
-	char *s = strchr(*env, '=')+1;
-	if (s) {
+	char *s = strchr(*env, '=');
+	if (s++) {
 #ifdef ENV_IGNORECASE
 	    if (strncasecmp(s, RSTRING(value)->ptr, strlen(s)) == 0) {
 #else

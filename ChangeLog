@@ -1,3 +1,21 @@
+Mon Jun 23 17:40:58 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* dir.c (find_dirsep): get rid of warnings.
+
+	* eval.c (error_print): temporary value might be disposed by GC.
+
+	* hash.c (env_has_value, env_index): should not increment NULL.
+
+	* io.c (io_read, rb_io_sysread): not read when length is 0.
+
+	* io.c (rb_io_reopen): ensure initialized IO.
+
+	* io.c (rb_io_init_copy): sychronize file pointer.
+
+	* io.c (rb_io_s_pipe): make exception proof.
+
+	* string.c (rb_str_rindex_m): Fixnum 0 matched end of string.
+
 Mon Jun 23 16:18:12 2003  Tanaka Akira  <akr@m17n.org>
 
 	* io.c (rb_open_file): initialize flags.

@@ -1034,7 +1034,7 @@ static void
 error_print()
 {
     VALUE errat = Qnil;		/* OK */
-    volatile VALUE eclass;
+    volatile VALUE eclass, e;
     char *einfo;
     long elen;
 
@@ -1069,7 +1069,7 @@ error_print()
 
     eclass = CLASS_OF(ruby_errinfo);
     if (EXEC_TAG() == 0) {
-	VALUE e = rb_obj_as_string(ruby_errinfo);
+	e = rb_obj_as_string(ruby_errinfo);
 	einfo = RSTRING(e)->ptr;
 	elen = RSTRING(e)->len;
     }

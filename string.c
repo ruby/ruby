@@ -451,18 +451,6 @@ VALUE
 rb_string_value(ptr)
     volatile VALUE *ptr;
 {
-    *ptr = rb_str_to_str(*ptr);
-    if (!RSTRING(*ptr)->ptr) {
-	FL_SET(*ptr, ELTS_SHARED);
-	RSTRING(*ptr)->ptr = null_str;
-    }
-    return *ptr;
-}
-
-char *
-rb_string_value_ptr(ptr)
-    volatile VALUE *ptr;
-{
     VALUE s = *ptr;
     if (TYPE(s) != T_STRING) {
 	s = rb_str_to_str(s);
@@ -472,7 +460,14 @@ rb_string_value_ptr(ptr)
 	FL_SET(s, ELTS_SHARED);
 	RSTRING(s)->ptr = null_str;
     }
-    return RSTRING(s)->ptr;
+    return s;
+}
+
+char *
+rb_string_value_ptr(ptr)
+    volatile VALUE *ptr;
+{
+    return RSTRING(rb_string_value(s))->ptr;
 }
 
 VALUE
@@ -1015,9 +1010,8 @@ rb_str_rindex_m(argc, argv, str)
 	  char *p = RSTRING(str)->ptr + pos;
 	  char *pbeg = RSTRING(str)->ptr;
 
-	  while (pbeg <= p) {
+	  while (pbeg <= --p) {
 	      if (*p == c) return LONG2NUM(p - RSTRING(str)->ptr);
-	      p--;
 	  }
 	  return Qnil;
       }

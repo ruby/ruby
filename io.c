@@ -823,13 +823,13 @@ io_read(argc, argv, io)
     if (feof(fptr->f)) return Qnil;
     if (NIL_P(str)) {
 	str = rb_str_new(0, len);
-	if (len == 0) return str;
     }
     else {
 	StringValue(str);
 	rb_str_modify(str);
 	rb_str_resize(str,len);
     }
+    if (len == 0) return str;
 
     READ_CHECK(fptr->f);
     n = rb_io_fread(RSTRING(str)->ptr, len, fptr->f);
@@ -1573,6 +1573,7 @@ rb_io_sysread(argc, argv, io)
 	rb_str_modify(str);
 	rb_str_resize(str, ilen);
     }
+    if (ilen == 0) return str;
 
     n = fileno(fptr->f);
     rb_thread_wait_fd(fileno(fptr->f));
@@ -2439,6 +2440,9 @@ rb_io_reopen(argc, argv, file)
 
     rb_io_taint_check(file);
     fptr = RFILE(file)->fptr;
+    if (!fptr) {
+	fptr = RFILE(file)->fptr = ALLOC(OpenFile);
+    }
 
     if (!NIL_P(nmode)) {
 	mode = StringValuePtr(nmode);
@@ -2497,9 +2501,13 @@ rb_io_init_copy(dest, io)
 
     if (orig->f2) {
 	io_fflush(orig->f2, orig);
+	fseeko(orig->f, 0L, SEEK_CUR);
     }
     else if (orig->mode & FMODE_WRITABLE) {
 	io_fflush(orig->f, orig);
+    }
+    else {
+	fseeko(orig->f, 0L, SEEK_CUR);
     }
 
     /* copy OpenFile structure */
@@ -3528,12 +3536,21 @@ rb_f_syscall(argc, argv)
 #endif
 }
 
+static VALUE io_new_instance _((VALUE));
 static VALUE
-rb_io_s_pipe()
+io_new_instance(args)
+    VALUE args;
+{
+    return rb_class_new_instance(2, (VALUE*)args+1, *(VALUE*)args);
+}
+
+static VALUE
+rb_io_s_pipe(klass)
+    VALUE klass;
 {
 #ifndef __human68k__
-    int pipes[2];
-    VALUE r, w;
+    int pipes[2], state;
+    VALUE r, w, args[3];
 
 #ifdef _WIN32
     if (_pipe(pipes, 1024, O_BINARY) == -1)
@@ -3542,8 +3559,24 @@ rb_io_s_pipe()
 #endif
 	rb_sys_fail(0);
 
-    r = prep_stdio(rb_fdopen(pipes[0], "r"), FMODE_READABLE, rb_cIO);
-    w = prep_stdio(rb_fdopen(pipes[1], "w"), FMODE_WRITABLE|FMODE_SYNC, rb_cIO);
+    args[0] = klass;
+    args[1] = INT2NUM(pipes[0]);
+    args[2] = INT2FIX(O_RDONLY);
+    r = rb_protect(io_new_instance, (VALUE)args, &state);
+    if (state) {
+	close(pipes[0]);
+	close(pipes[1]);
+	rb_jump_tag(state);
+    }
+    args[1] = INT2NUM(pipes[1]);
+    args[2] = INT2FIX(O_WRONLY);
+    w = rb_protect(io_new_instance, (VALUE)args, &state);
+    if (state) {
+	close(pipes[1]);
+	if (!NIL_P(r)) rb_io_close(r);
+	rb_jump_tag(state);
+    }
+    rb_io_synchronized(RFILE(w)->fptr);
 
     return rb_assoc_new(r, w);
 #else
