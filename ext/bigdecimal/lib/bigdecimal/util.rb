@@ -63,7 +63,6 @@ end
 
 class Rational < Numeric
   # Convert Rational to BigDecimal
-  # to_d returns an array [quotient,residue]
   def to_d(nFig=0)
      num = self.numerator.to_s
      if nFig<=0

@@ -20,9 +20,9 @@ def big_pi(sig) # sig: Number of significant figures
   k = BigDecimal::new("1")
   w = BigDecimal::new("1")
   t = BigDecimal::new("-80")
-  while (u.exponent >= exp) 
+  while (u.nonzero? && u.exponent >= exp) 
     t   = t*m25
-    u,r = t.div(k,sig)
+    u   = t.div(k,sig)
     pi  = pi + u
     k   = k+two
   end
@@ -31,9 +31,9 @@ def big_pi(sig) # sig: Number of significant figures
   k = BigDecimal::new("1")
   w = BigDecimal::new("1")
   t = BigDecimal::new("956")
-  while (u.exponent >= exp )
-    t,r = t.div(m57121,sig)
-    u,r = t.div(k,sig)
+  while (u.nonzero? && u.exponent >= exp )
+    t   = t.div(m57121,sig)
+    u   = t.div(k,sig)
     pi  = pi + u
     k   = k+two
   end
