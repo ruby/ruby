@@ -1,8 +1,8 @@
 #
 #               Date.rb - 
 #                       $Release Version: $
-#                       $Revision: 1.1.1.2 $
-#                       $Date: 1999/01/20 04:59:35 $
+#                       $Revision: 1.2 $
+#                       $Date: 2000/07/06 07:21:23 $
 #                       by Yasuo OHBA(SHL Japan Inc. Technology Dept.)
 #
 # --
@@ -168,12 +168,10 @@ class Date
     m = Date.daylist(@year)
     if @month < 1 || @month > 12
       raise ArgumentError, "argument(month) out of range."
-      return nil
     end
     if @year == 1752 && @month == 9
       if @day >= 3 && @day <= 13
         raise ArgumentError, "argument(1752/09/3-13) out of range."
-        return nil
       end
       d = 30
     else
@@ -181,7 +179,6 @@ class Date
     end
     if @day < 1 || @day > d
       raise ArgumentError, "argument(day) out of range."
-      return nil
     end
     return self
   end
@@ -299,4 +296,3 @@ def Date.jan1!(y)
   end
   return (d % 7)
 end
-

@@ -1,4 +1,4 @@
-#! /usr/local/bin/ruby
+#! /usr/bin/env ruby
 
 # cal.rb: Written by Tadayoshi Funaba 1998-2000
 # $Id: cal.rb,v 1.10 2000/05/20 02:09:47 tadf Exp $

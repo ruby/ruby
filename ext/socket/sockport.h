@@ -45,4 +45,28 @@
 # define IN_MULTICAST(i)	IN_CLASSD(i)
 #endif
 
+#ifndef IN_EXPERIMENTAL
+# define IN_EXPERIMENTAL(i) ((((long)(i)) & 0xe0000000) == 0xe0000000)
+#endif
+
+#ifndef IN_CLASSA_NSHIFT
+# define IN_CLASSA_NSHIFT 24
+#endif
+
+#ifndef IN_LOOPBACKNET
+# define IN_LOOPBACKNET 127
+#endif
+
+#ifndef AF_UNSPEC
+# define AF_UNSPEC 0
+#endif
+
+#ifndef PF_UNSPEC
+# define PF_UNSPEC AF_UNSPEC
+#endif
+
+#ifndef PF_INET
+# define PF_INET AF_INET
+#endif
+
 #endif

@@ -147,7 +147,7 @@ class Date
 
     def new3(y=-4712, m=1, d=1, sg=ITALY)
       unless jd = exist3?(y, m, d, sg)
-	fail ArgumentError, 'invalid date'
+	raise ArgumentError, 'invalid date'
       end
       new(jd, sg)
     end
@@ -169,7 +169,7 @@ class Date
 
     def new2(y=-4712, d=1, sg=ITALY)
       unless jd = exist2?(y, d, sg)
-	fail ArgumentError, 'invalid date'
+	raise ArgumentError, 'invalid date'
       end
       new(jd, sg)
     end
@@ -189,7 +189,7 @@ class Date
 
     def neww(y=1582, w=41, d=5, sg=ITALY)
       unless jd = existw?(y, w, d, sg)
-	fail ArgumentError, 'invalid date'
+	raise ArgumentError, 'invalid date'
       end
       new(jd, sg)
     end
@@ -280,7 +280,7 @@ class Date
     case n
     when Numeric; return type.new(@rjd + n, @sg)
     end
-    fail TypeError, 'expected numeric'
+    raise TypeError, 'expected numeric'
   end
 
   def - (x)
@@ -288,7 +288,7 @@ class Date
     when Numeric; return type.new(@rjd - x, @sg)
     when Date;    return @rjd - x.rjd
     end
-    fail TypeError, 'expected numeric or date'
+    raise TypeError, 'expected numeric or date'
   end
 
   def <=> (other)
@@ -296,7 +296,7 @@ class Date
     when Numeric; return @rjd <=> other
     when Date;    return @rjd <=> other.rjd
     end
-    fail TypeError, 'expected numeric or date'
+    raise TypeError, 'expected numeric or date'
   end
 
   def === (other)
@@ -304,7 +304,7 @@ class Date
     when Numeric; return jd == other
     when Date;    return jd == other.jd
     end
-    fail TypeError, 'expected numeric or date'
+    raise TypeError, 'expected numeric or date'
   end
 
   def >> (n)

@@ -377,7 +377,7 @@ module Net
       end
     end
     
-    def putbinaryfile(localfile, remotefile, blocksize, callback = nil)
+    def putbinaryfile(localfile, remotefile, blocksize = 4096, callback = nil)
       if iterator?
 	callback = Proc.new
       end
@@ -635,7 +635,7 @@ module Net
       host = (@sock.peeraddr())[3]
       return host, port
     end
-    private :parse228
+    private :parse229
     
     def parse257(resp)
       if resp[0, 3] != "257"

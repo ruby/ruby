@@ -11,6 +11,20 @@
 #       
 #
 
+# probably based on:
+#
+# Newsgroups: comp.sources.misc,de.comp.sources.os9
+# From: fkk@stasys.sta.sub.org (Frank Kaefer)
+# Subject: v41i126:  br - Biorhythm v3.0, Part01/01
+# Message-ID: <1994Feb1.070616.15982@sparky.sterling.com>
+# Sender: kent@sparky.sterling.com (Kent Landfield)
+# Organization: Sterling Software
+# Date: Tue, 1 Feb 1994 07:06:16 GMT
+#
+# Posting-number: Volume 41, Issue 126
+# Archive-name: br/part01
+# Environment: basic, dos, os9
+
 include Math
 require "date.rb"
 require "parsearg.rb"

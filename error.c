@@ -159,6 +159,7 @@ rb_bug(fmt, va_alist)
     va_init_list(args, fmt);
     err_print(buf, args);
     va_end(args);
+    ruby_show_version();
     abort();
 }
 

@@ -37,9 +37,15 @@
 #include "config.h"
 #include <sys/types.h>
 #ifndef NT
-#include <sys/socket.h>
+#if defined(__BEOS__)
+# include <net/socket.h>
+#else
+# include <sys/socket.h>
+#endif
 #include <netinet/in.h>
+#if defined(HAVE_ARPA_INET_H)
 #include <arpa/inet.h>
+#endif
 #if defined(HAVE_ARPA_NAMESER_H)
 #include <arpa/nameser.h>
 #endif
@@ -178,6 +184,7 @@ getnameinfo(sa, salen, host, hostlen, serv, servlen, flags)
 			return ENI_MEMORY;
 		strcpy(serv, numserv);
 	} else {
+#if defined(HAVE_GETSERVBYPORT)
 		sp = getservbyport(port, (flags & NI_DGRAM) ? "udp" : "tcp");
 		if (sp) {
 			if (strlen(sp->s_name) > servlen)
@@ -185,6 +192,9 @@ getnameinfo(sa, salen, host, hostlen, serv, servlen, flags)
 			strcpy(serv, sp->s_name);
 		} else
 			return ENI_NOSERVNAME;
+#else
+		return ENI_NOSERVNAME;
+#endif
 	}
 
 	switch (sa->sa_family) {

@@ -42,9 +42,15 @@
 #include <sys/types.h>
 #ifndef NT
 #include <sys/param.h>
-#include <sys/socket.h>
+#if defined(__BEOS__)
+# include <net/socket.h>
+#else
+# include <sys/socket.h>
+#endif
 #include <netinet/in.h>
+#if defined(HAVE_ARPA_INET_H)
 #include <arpa/inet.h>
+#endif
 #if defined(HAVE_ARPA_NAMESER_H)
 #include <arpa/nameser.h>
 #endif
@@ -330,12 +336,16 @@ getaddrinfo(hostname, servname, hints, res)
 				pai->ai_socktype = SOCK_STREAM;
 				break;
 			default:
+#if defined(SOCK_RAW)
 				pai->ai_socktype = SOCK_RAW;
+#endif
 				break;
 			}
 			break;
+#if defined(SOCK_RAW)
 		case SOCK_RAW:
 			break;
+#endif
 		case SOCK_DGRAM:
 			if (pai->ai_protocol != IPPROTO_UDP &&
 			    pai->ai_protocol != ANY)

@@ -1,3 +1,28 @@
+Mon Jul 10 09:07:54 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* error.c (rb_bug): print version number and such too.
+
+Sat Jul  8 23:08:40 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_thread_start_0): should copy previous scopes to
+	  prevent rb_gc_force_recylce().
+
+Fri Jul  7 23:36:36 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* ext/socket/addrinfo.h: move IN_EXPERIMENTAL and IN_LOOPBACKNET
+	  definitions to ext/socket/sockport.h.
+
+	* ext/socket/extconf.rb: add getservbyport() and arpa/inet.h check.
+
+	* ext/socket/getaddrinfo.c (getaddrinfo): SOCK_RAW may not be
+	  defined (ex. BeOS, Palm OS 2.x or before).
+
+	* ext/socket/getnameinfo.c (getnameinfo): getservbyport() may not
+	  exist (ex. BeOS, Palm OS).
+
+	* ext/socket/sockport.h: add IN_EXPERIMENTAL, IN_CLASSA_NSHIFT,
+	  IN_LOOPBACKNET, AF_UNSPEC, PF_UNSPEC and PF_INET.
+
 Fri Jul  7 03:30:00 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* parse.y (aref_args): should allow Hash[:a=>2] etc.

@@ -1,6 +1,6 @@
 # jcode.rb - ruby code to handle japanese (EUC/SJIS) string
 
-$vsave, $VERBOSE = $VERBOSE, FALSE
+$vsave, $VERBOSE = $VERBOSE, false
 class String
   printf STDERR, "feel free for some warnings:\n" if $VERBOSE
 

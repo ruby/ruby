@@ -17,10 +17,10 @@ class Tracer
   @RCS_ID='-$Id: tracer.rb,v 1.8 1998/05/19 03:42:49 keiju Exp keiju $-'
 
   class << self
-    attr :verbose, TRUE
+    attr :verbose, true
     alias verbose? verbose
   end
-  verbose = TRUE
+  verbose = true
   
   MY_FILE_NAME = caller(0)[0].scan(/^(.*):[0-9]+$/)[0][0]
   
@@ -114,14 +114,14 @@ class Tracer
       return unless p.call event, file, line, id, binding
     end
     
-    Thread.critical = TRUE
+    Thread.critical = true
     printf("#%d:%s:%d:%s: %s",
 	   get_thread_no,
 	   file,
 	   line,
 	   EVENT_SYMBOL[event],
 	   get_line(file, line))
-    Thread.critical = FALSE
+    Thread.critical = false
   end
 
   Single = new

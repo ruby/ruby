@@ -21,7 +21,11 @@
 #endif
 
 #ifndef NT
-#include <sys/socket.h>
+#if defined(__BEOS__)
+# include <net/socket.h>
+#else
+# include <sys/socket.h>
+#endif
 #include <netinet/in.h>
 #ifdef HAVE_NETINET_TCP_H
 # include <netinet/tcp.h>

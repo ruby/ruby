@@ -150,6 +150,15 @@ interpreter.  Useful functions are listed below (not all):
     Creates a new Ruby string from C string.  This is equivalent to
     rb_str_new(ptr, strlen(ptr)).
 
+  rb_tainted_str_new(char *ptr, int len)
+
+    Creates a new tainted Ruby string.  Strings from external data
+    should be tainted.
+
+  rb_tainted_str_new2(char *ptr)
+
+    Creates a new tainted Ruby string from C string.
+
   rb_str_cat(VALUE str, char *ptr, int len)
 
     Appends len bytes data from ptr to the Ruby string.
@@ -266,6 +275,9 @@ in Kernel module, can be defined using:
 
   void rb_define_global_function(char *name, VALUE (*func)(), int argc)
 
+To define alias to the method,
+
+  void rb_define_alias(VALUE module, const char* new, const char* old);
 
 2.1.3 Constant definition
 

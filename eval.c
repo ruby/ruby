@@ -778,6 +778,9 @@ static VALUE ruby_wrapper;	/* security wrapper */
     ruby_scope = _scope;		\
     scope_vmode = SCOPE_PUBLIC;
 
+typedef struct thread * rb_thread_t;
+static rb_thread_t curr_thread = 0;
+
 #define SCOPE_DONT_RECYCLE FL_USER2
 #define POP_SCOPE() 			\
     if (FL_TEST(ruby_scope, SCOPE_DONT_RECYCLE)) {\
@@ -6315,7 +6318,7 @@ enum thread_status {
 /* +infty, for this purpose */
 #define DELAY_INFTY 1E30
 
-typedef struct thread * rb_thread_t;
+/* typedef struct thread * rb_thread_t; */
 
 struct thread {
     struct thread *next, *prev;
@@ -6372,7 +6375,7 @@ struct thread {
 #define THREAD_RAISED 0x200
 
 static rb_thread_t main_thread;
-static rb_thread_t curr_thread = 0;
+/*static rb_thread_t curr_thread = 0;*/
 
 #define FOREACH_THREAD_FROM(f,x) x = f; do { x = x->next;
 #define END_FOREACH_FROM(f,x) } while (x != f)
@@ -7513,6 +7516,9 @@ rb_thread_start_0(fn, arg, th)
     }
 #endif
 
+    if (ruby_block) {		/* should nail down higher scopes */
+	blk_copy_prev(ruby_block);
+    }
     scope_dup(ruby_scope);
     FL_SET(ruby_scope, SCOPE_SHARED);
     if (THREAD_SAVE_CONTEXT(curr_thread)) {
