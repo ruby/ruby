@@ -6,10 +6,13 @@
 
 # But for now
 
+abbrev.rb
+base64.rb
 benchmark.rb
 cgi.rb
 complex.rb
 date.rb
+English.rb
 fileutils.rb
 find.rb
 generator.rb
