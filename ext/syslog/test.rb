@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-# $RoughId: test.rb,v 1.8 2001/11/24 18:11:32 knu Exp $
+# $RoughId: test.rb,v 1.9 2002/02/25 08:20:14 knu Exp $
 # $Id$
 
 # Please only run this test on machines reasonable for testing.
@@ -14,94 +14,94 @@ $:.unshift('.')
 require 'syslog'
 
 class TestSyslog < RUNIT::TestCase
-  def test_s_new
+  def test_new
     assert_exception(NameError) {
       Syslog.new
     }
   end
 
-  def test_s_instance
+  def test_instance
     sl1 = Syslog.instance
     sl2 = Syslog.open
     sl3 = Syslog.instance
 
-    assert_equal(sl1, sl2)
-    assert_equal(sl1, sl3)
+    assert_equal(Syslog, sl1)
+    assert_equal(Syslog, sl2)
+    assert_equal(Syslog, sl3)
   ensure
-    sl1.close
+    Syslog.close
   end
 
-  def test_s_open
+  def test_open
     # default parameters
-    sl = Syslog.open
+    Syslog.open
 
-    assert_equal($0, sl.ident)
-    assert_equal(Syslog::LOG_PID | Syslog::LOG_CONS, sl.options)
-    assert_equal(Syslog::LOG_USER, sl.facility)
+    assert_equal($0, Syslog.ident)
+    assert_equal(Syslog::LOG_PID | Syslog::LOG_CONS, Syslog.options)
+    assert_equal(Syslog::LOG_USER, Syslog.facility)
 
     # open without close
     assert_exception(RuntimeError) {
-      sl.open
+      Syslog.open
     }
 
-    sl.close
+    Syslog.close
 
     # given parameters
-    sl = Syslog.open("foo", Syslog::LOG_NDELAY | Syslog::LOG_PERROR, Syslog::LOG_DAEMON) 
+    Syslog.open("foo", Syslog::LOG_NDELAY | Syslog::LOG_PERROR, Syslog::LOG_DAEMON) 
 
-    assert_equal('foo', sl.ident)
-    assert_equal(Syslog::LOG_NDELAY | Syslog::LOG_PERROR, sl.options)
-    assert_equal(Syslog::LOG_DAEMON, sl.facility)
+    assert_equal('foo', Syslog.ident)
+    assert_equal(Syslog::LOG_NDELAY | Syslog::LOG_PERROR, Syslog.options)
+    assert_equal(Syslog::LOG_DAEMON, Syslog.facility)
 
-    sl.close
+    Syslog.close
 
     # default parameters again (after close)
-    sl = Syslog.open
-    sl.close
+    Syslog.open
+    Syslog.close
 
-    assert_equal($0, sl.ident)
-    assert_equal(Syslog::LOG_PID | Syslog::LOG_CONS, sl.options)
-    assert_equal(Syslog::LOG_USER, sl.facility)
+    assert_equal($0, Syslog.ident)
+    assert_equal(Syslog::LOG_PID | Syslog::LOG_CONS, Syslog.options)
+    assert_equal(Syslog::LOG_USER, Syslog.facility)
 
     # block
     param = nil
     Syslog.open { |param| }
-    assert_equal(sl, param)
+    assert_equal(Syslog, param)
   ensure
-    sl.close
+    Syslog.close
   end
 
   def test_opened?
-    sl = Syslog.instance
-    assert_equal(false, sl.opened?)
+    assert_equal(false, Syslog.opened?)
 
-    sl.open
-    assert_equal(true, sl.opened?)
+    Syslog.open
+    assert_equal(true, Syslog.opened?)
 
-    sl.close
-    assert_equal(false, sl.opened?)
+    Syslog.close
+    assert_equal(false, Syslog.opened?)
 
-    sl.open {
-      assert_equal(true, sl.opened?)
+    Syslog.open {
+      assert_equal(true, Syslog.opened?)
     }
 
-    assert_equal(false, sl.opened?)
+    assert_equal(false, Syslog.opened?)
   end
 
   def test_mask
-    sl = Syslog.open
+    Syslog.open
 
-    orig = sl.mask
+    orig = Syslog.mask
 
-    sl.mask = Syslog.LOG_UPTO(Syslog::LOG_ERR)
-    assert_equal(Syslog.LOG_UPTO(Syslog::LOG_ERR), sl.mask)
+    Syslog.mask = Syslog.LOG_UPTO(Syslog::LOG_ERR)
+    assert_equal(Syslog.LOG_UPTO(Syslog::LOG_ERR), Syslog.mask)
 
-    sl.mask = Syslog.LOG_MASK(Syslog::LOG_CRIT)
-    assert_equal(Syslog.LOG_MASK(Syslog::LOG_CRIT), sl.mask)
+    Syslog.mask = Syslog.LOG_MASK(Syslog::LOG_CRIT)
+    assert_equal(Syslog.LOG_MASK(Syslog::LOG_CRIT), Syslog.mask)
 
-    sl.mask = orig
+    Syslog.mask = orig
   ensure
-    sl.close
+    Syslog.close
   end
 
   def test_log
