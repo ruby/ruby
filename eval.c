@@ -8160,9 +8160,8 @@ proc_arity(proc)
 	    data->body->nd_cfnc == bmcall) {
 	    return method_arity(data->body->nd_tval);
 	}
-	return INT2FIX(-1);
+	return INT2FIX(0);
     }
-    if (!(data->flags & BLOCK_LAMBDA)) return INT2FIX(-1);
     if (data->var == (NODE*)1) return INT2FIX(0);
     if (data->var == (NODE*)2) return INT2FIX(0);
     switch (nd_type(data->var)) {
@@ -8202,7 +8201,8 @@ proc_eq(self, other)
     Data_Get_Struct(other, struct BLOCK, data2);
     if (data->body != data2->body) return Qfalse;
     if (data->var != data2->var) return Qfalse;
-    if (data->frame.uniq != data2->frame.uniq) return Qfalse;
+    if (data->scope != data2->scope) return Qfalse;
+    if (data->dyna_vars != data2->dyna_vars) return Qfalse;
     if (data->flags != data2->flags) return Qfalse;
 
     return Qtrue;

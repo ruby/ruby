@@ -50,7 +50,7 @@ class TestProc < Test::Unit::TestCase
   end
 
   def test_arity
-    assert_equal(-1, proc{}.arity)
+    assert_equal(0, proc{}.arity)
     assert_equal(0, proc{||}.arity)
     assert_equal(1, proc{|x|}.arity)
     assert_equal(2, proc{|x, y|}.arity)
@@ -58,7 +58,7 @@ class TestProc < Test::Unit::TestCase
     assert_equal(-1, proc{|*x|}.arity)
     assert_equal(-1, proc{|*|}.arity)
 
-    assert_arity(-1) {}
+    assert_arity(0) {}
     assert_arity(0) {||}
     assert_arity(1) {|x|}
     assert_arity(2) {|x, y|}

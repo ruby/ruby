@@ -311,8 +311,8 @@ class TestIterator < Test::Unit::TestCase
 
     block = get_block{11}
     lambda = lambda{44}
-    assert_equal(-1, block.arity)
-    assert_equal(-1, lambda.arity)
+    assert_equal(0, block.arity)
+    assert_equal(0, lambda.arity)
     assert_equal(0, lambda{||}.arity)
     assert_equal(1, lambda{|a|}.arity)
     assert_equal(1, lambda{|a,|}.arity)

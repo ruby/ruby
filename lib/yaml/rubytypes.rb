@@ -353,7 +353,7 @@ class Range
 	def to_yaml( opts = {} )
 		YAML::quick_emit( nil, opts ) { |out|
 			out << "!ruby/range " 
-			self.to_s.to_yaml( :Emitter => out )
+            self.to_s.to_yaml(:Emitter => out)
 		}
 	end
 end

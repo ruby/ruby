@@ -10,6 +10,15 @@ Thu Mar 18 17:46:35 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/drb.rb: do not undef :to_a.
 
+Thu Mar 18 16:22:38 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (proc_eq): avoid false positive by using scope and
+	  dyna_vars.  no longer use frame.uniq.
+
+	* eval.c (proc_arity): arity is now defined as number of
+	  parameters that would not be ignored. i.e. Proc.new{}.arity
+	  returns zero.  update test suites too.
+
 Thu Mar 18 15:27:25 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c: remove specialized version of rb_Array().  use simple

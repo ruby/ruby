@@ -1000,7 +1000,7 @@ module DRb
     end
 
     undef :to_s
-    undef :to_a if respond_to?(:respond_to)
+    undef :to_a if respond_to?(:to_a)
     undef :respond_to?
 
     # Routes method calls to the referenced object.
