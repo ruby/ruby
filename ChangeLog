@@ -1,5 +1,13 @@
 Mon May 17 12:26:31 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
+	* numeric.c (fix_rev): should treat Fixnum as signed long.
+
+	* eval.c (massign): add strict number check for yield (and call).
+
+	* eval.c (proc_arity): new method to return number of arguments.
+
+	* eval.c (method_arity): new method to return number of arguments.
+
 	* parse.y (read_escape): char may be unsigned.
 
 	* string.c (rb_str_succ): ditto.

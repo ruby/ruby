@@ -5523,10 +5523,10 @@ proc_arity(proc)
     int n;
 
     Data_Get_Struct(proc, struct BLOCK, data);
-    if (data->var == 0) return 0;
+    if (data->var == 0) return FIX2INT(-1);
     switch (nd_type(data->var)) {
       default:
-	return INT2FIX(-1);
+	return INT2FIX(-2);
       case NODE_MASGN:
 	list = data->var->nd_head;
 	n = 0;
@@ -5534,7 +5534,7 @@ proc_arity(proc)
 	    n++;
 	    list = list->nd_next;
 	}
-	if (data->var->nd_args) return INT2FIX(-n);
+	if (data->var->nd_args) return INT2FIX(-n-1);
 	return INT2FIX(n);
     }
 }
@@ -5717,7 +5717,7 @@ method_arity(method)
 	    body = body->nd_head;
 	if (!body) return INT2FIX(0);
 	n = body->nd_cnt;
-	if (body->nd_rest) n = -n;
+	if (body->nd_rest) n = -n-1;
 	return INT2FIX(n);
     }
 }

@@ -1100,7 +1100,7 @@ static VALUE
 fix_rev(num)
     VALUE num;
 {
-    unsigned long val = FIX2ULONG(num);
+    long val = FIX2LONG(num);
 
     val = ~val;
     return rb_int2inum(val);
