@@ -133,8 +133,8 @@ class TkNamespace < TkObject
     # <pattern> must be glob-style pattern
     tk_split_simplelist(tk_call('namespace', 'children', *args)).collect{|ns|
       # ns is fullname
-      if Tk_Namesapce_ID.key?(ns)
-	Tk_Namesapce_ID[ns]
+      if Tk_Namespace_ID_TBL.key?(ns)
+	Tk_Namespace_ID_TBL[ns]
       else
 	ns
       end
@@ -264,8 +264,8 @@ class TkNamespace < TkObject
 
   def self.parent(namespace=None)
     ns = tk_call('namespace', 'parent', namespace)
-    if Tk_Namesapce_ID.key?(ns)
-      Tk_Namesapce_ID[ns]
+    if Tk_Namespace_ID_TBL.key?(ns)
+      Tk_Namespace_ID_TBL[ns]
     else
       ns
     end

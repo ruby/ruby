@@ -15,7 +15,7 @@ require 'tkextlib/treectrl/setup.rb'
 TkPackage.require('treectrl')
 
 module Tk
-  class TreeCtrl_Widget < TkWindow
+  class TreeCtrl < TkWindow
     def self.package_version
       begin
 	TkPackage.require('treectrl')
@@ -24,17 +24,37 @@ module Tk
       end
     end
 
+    # dummy :: 
+    #  pkgIndex.tcl of TreeCtrl-1.0 doesn't support auto_load for 
+    #  'loupe' command (probably it is bug, I think). 
+    #  So, calling a 'treectrl' command for loading the dll with 
+    #  the auto_load facility. 
+    begin
+      tk_call('treectrl')
+    rescue
+    end
+    def self.loupe(img, x, y, w, h, zoom)
+      # NOTE: platform == 'unix' only
+
+      # img  => TkPhotoImage
+      # x, y => screen coords 
+      # w, h => magnifier width and height
+      # zoom => zooming rate
+      Tk.tk_call_without_enc('loupe', img, x, y, w, h, zoom)
+    end
+
     class NotifyEvent < TkUtil::CallbackSubst
     end
 
     module ConfigMethod
     end
   end
+  TreeCtrl_Widget = TreeCtrl
 end
 
 ##############################################
 
-class Tk::TreeCtrl_Widget::NotifyEvent
+class Tk::TreeCtrl::NotifyEvent
   # [ <'%' subst-key char>, <proc type char>, <instance var (accessor) name>]
   KEY_TBL = [
     [ ?c, ?n, :item_num ], 
@@ -94,7 +114,7 @@ end
 
 ##############################################
 
-module Tk::TreeCtrl_Widget::ConfigMethod
+module Tk::TreeCtrl::ConfigMethod
   include TkItemConfigMethod
 
   def treectrl_tagid(key, obj)
@@ -312,8 +332,8 @@ end
 
 ##############################################
 
-class Tk::TreeCtrl_Widget
-  include Tk::TreeCtrl_Widget::ConfigMethod
+class Tk::TreeCtrl
+  include Tk::TreeCtrl::ConfigMethod
   include Scrollable
 
   TkCommandNames = ['treectrl'.freeze].freeze
@@ -321,7 +341,7 @@ class Tk::TreeCtrl_Widget
   WidgetClassNames[WidgetClassName] = self
 
   def install_bind(cmd, *args)
-    install_bind_for_event_class(Tk::TreeCtrl_Widget::NotifyEvent, cmd, *args)
+    install_bind_for_event_class(Tk::TreeCtrl::NotifyEvent, cmd, *args)
   end
 
   #########################
