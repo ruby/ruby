@@ -588,9 +588,6 @@ else
   AC_DEFINE(RSHIFT(x,y), (((x)<0) ? ~((~(x))>>y) : (x)>>y))
 fi
 
-AC_CHECK_HEADERS(stdio_ext.h)
-AC_CHECK_FUNCS(__fpending)
-
 AC_MSG_CHECKING(read count field in FILE structures)
 AC_CACHE_VAL(rb_cv_fcnt,
 [for fcnt in	dnl
