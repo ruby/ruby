@@ -36,6 +36,7 @@ class CGI
       end
       unless id
 	id, = request[session_key]
+        id = id.read if id.respond_to?(:read)
 	unless id
 	  id, = request.cookies[session_key]
 	end
