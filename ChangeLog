@@ -1,3 +1,8 @@
+Mon Oct 18 23:37:05 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (r_object0): check inheritance by the internal function.
+	  [ruby-dev:24515]
+
 Mon Oct 18 11:29:32 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_flags_mode, rb_io_mode_flags): distinguish whether file
