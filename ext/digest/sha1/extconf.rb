@@ -5,11 +5,17 @@ require "mkmf"
 
 $CFLAGS << " -DHAVE_CONFIG_H -I#{File.dirname(__FILE__)}/.."
 
-$objs = [
-  "sha1.#{$OBJEXT}",
-  "sha1hl.#{$OBJEXT}",
-  "sha1init.#{$OBJEXT}",
-]
+$objs = [ "sha1init.#{$OBJEXT}" ]
+
+dir_config("openssl")
+
+if !with_config("bundled-sha1") &&
+    have_library("crypto") && have_header("openssl/sha.h")
+  $objs << "sha1ossl.#{$OBJEXT}"
+  $libs << " -lcrypto"
+else
+  $objs << "sha1.#{$OBJEXT}" << "sha1hl.#{$OBJEXT}"
+end
 
 have_header("sys/cdefs.h")
 

@@ -5,3 +5,4 @@ sha1hl.o: sha1hl.c sha1.h $(srcdir)/../defs.h $(hdrdir)/ruby.h \
 sha1init.o: sha1init.c $(srcdir)/../digest.h $(hdrdir)/ruby.h \
   $(topdir)/config.h $(hdrdir)/defines.h $(hdrdir)/intern.h \
   sha1.h $(srcdir)/../defs.h
+sha1ossl.o: sha1ossl.h  $(srcdir)/../defs.h

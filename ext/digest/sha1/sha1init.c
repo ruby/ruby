@@ -2,7 +2,11 @@
 /* $Id$ */
 
 #include "digest.h"
+#if defined(HAVE_OPENSSL_SHA_H)
+#include "sha1ossl.h"
+#else
 #include "sha1.h"
+#endif
 
 static algo_t sha1 = {
     SHA1_DIGEST_LENGTH,
