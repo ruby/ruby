@@ -1,3 +1,8 @@
+Wed Jan 21 23:03:45 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/drb.rb: remove O_NONBLOCK, thanks \ay
+	* lib/drb/extserv.rb: typo
+
 Wed Jan 21 17:57:56 2004  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (envelope): allow NIL.
