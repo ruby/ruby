@@ -1,3 +1,7 @@
+Sun Aug 25 20:10:32 2002  Wakou Aoyama  <wakou@ruby-lang.org>
+
+	* lib/cgi.rb (CGI#form): fix ruby-bugs-ja:PR#280, add default action.
+
 Sat Aug 24 13:57:28 2002  Tanaka Akira  <akr@m17n.org>
 
 	* lib/time.rb (Time.rfc2822, Time#rfc2822): preserve localtimeness.
