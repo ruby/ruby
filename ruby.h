@@ -550,7 +550,7 @@ VALUE rb_require _((const char*));
 
 void ruby_init _((void));
 void ruby_options _((int, char**));
-void ruby_run _((void));
+NORETURN(void ruby_run _((void)));
 
 RUBY_EXTERN VALUE rb_mKernel;
 RUBY_EXTERN VALUE rb_mComparable;

@@ -187,7 +187,7 @@ void rb_set_end_proc _((void (*)(VALUE), VALUE));
 void rb_mark_end_proc _((void));
 void rb_exec_end_proc _((void));
 void ruby_finalize _((void));
-void ruby_stop _((int));
+NORETURN(void ruby_stop _((int)));
 int ruby_cleanup _((int));
 int ruby_exec _((void));
 void rb_gc_mark_threads _((void));

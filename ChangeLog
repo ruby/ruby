@@ -1,3 +1,9 @@
+Tue Oct 14 11:53:49 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* intern.h (ruby_stop): never return.
+
+	* ruby.h (ruby_run): ditto.
+
 Tue Oct 14 04:43:55 2003  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pathname.rb (realpath): make ELOOP check bit more robust.
