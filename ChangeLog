@@ -1,3 +1,8 @@
+Fri May 23 15:16:16 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* pack.c (pack_unpack): sign-extend if sizeof long is bigger than
+	  32.  (ruby-bugs-ja:PR#472)
+
 Thu May 22 18:07:46 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
 
 	* lib/token.c: single- and double-quoted root-level fix.

@@ -351,6 +351,18 @@ num2u32(x)
 # endif
 #endif
 
+#if SIZEOF_LONG == SIZE32 || SIZEOF_INT == SIZE32
+# define EXTEND32(x) ((I32)(x))
+#else
+/* invariant in modulo 1<<31 */
+# define EXTEND32(x) (I32)(((1<<31)-1-(x))^~(~0<<31))
+#endif
+#if SIZEOF_SHORT == SIZE16
+# define EXTEND16(x) (short)(x)
+#else
+# define EXTEND16(x) (short)(((1<<15)-1-(x))^~(~0<<15))
+#endif
+
 #ifdef HAVE_LONG_LONG
 # define QUAD_SIZE sizeof(LONG_LONG)
 #else
@@ -1317,6 +1329,9 @@ pack_unpack(str, fmt)
 	    while (len-- > 0) {
 		short tmp = 0;
 		memcpy(OFF16(&tmp), s, NATINT_LEN(short,2));
+#if SIZEOF_SHORT != SIZE16
+		if (!natint) tmp = EXTEND16(tmp);
+#endif
 		s += NATINT_LEN(short,2);
 		rb_ary_push(ary, INT2FIX(tmp));
 	    }
@@ -1361,6 +1376,9 @@ pack_unpack(str, fmt)
 	    while (len-- > 0) {
 		long tmp = 0;
 		memcpy(OFF32(&tmp), s, NATINT_LEN(long,4));
+#if SIZEOF_LONG != SIZE32
+		if (!natint) tmp = EXTEND32(tmp);
+#endif
 		s += NATINT_LEN(long,4);
 		rb_ary_push(ary, LONG2NUM(tmp));
 	    }
