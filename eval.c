@@ -7000,13 +7000,11 @@ proc_invoke(proc, args, self, klass)
 		     state == TAG_BREAK ? "break" : "return");
 	    localjump_error(mesg, prot_tag->retval, state);
 	}
-	else {
+	else if (state == incoming_state) {
 	    ruby_block->tag->dst = incoming_state;
-	    JUMP_TAG(incoming_state);
 	}
-	break;
       default:
-	JUMP_TAG(incoming_state);
+	JUMP_TAG(state);
     }
     return result;
 }
