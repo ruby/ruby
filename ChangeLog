@@ -1,3 +1,7 @@
+Fri Apr 19 16:22:55 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/socket/extconf.rb: include <windows.h>, <winsock.h> on _WIN32.
+
 Fri Apr 19 14:57:44 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* re.c (rb_reg_to_s): remove redundant shy group.
