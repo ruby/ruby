@@ -300,9 +300,9 @@ lib/rexml/encodings/EUC-JP.rb
 lib/rexml/encodings/EUC-JP_decl.rb
 lib/rexml/encodings/ISO-8859-1.rb
 lib/rexml/encodings/ISO-8859-1_decl.rb
-lib/rexml/encodings/Shift-JIS.rb
+lib/rexml/encodings/SHIFT-JIS.rb
+lib/rexml/encodings/SHIFT_JIS.rb
 lib/rexml/encodings/Shift-JIS_decl.rb
-lib/rexml/encodings/Shift_JIS.rb
 lib/rexml/encodings/UNILE.rb
 lib/rexml/encodings/UNILE_decl.rb
 lib/rexml/encodings/US-ASCII.rb

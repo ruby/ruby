@@ -1,3 +1,11 @@
+Fri Jul 18 13:04:36 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_f_missing): VCALL is called only for LOCAL_ID.  no
+	  check required.
+
+	* parse.y (primary): pritmary:tFID generates NODE_FCALL.
+	  [ruby-dev:20641]
+
 Thu Jul 17 18:50:26 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* re.c (match_captures): rename from "groups".

@@ -4678,12 +4678,8 @@ rb_f_missing(argc, argv, obj)
 	format = "protected method `%s' called for %s%s%s";
     }
     else if (last_call_status & CSTAT_VCALL) {
-	const char *mname = rb_id2name(id);
-
-	if (('a' <= mname[0] && mname[0] <= 'z') || mname[0] == '_') {
-	    format = "undefined local variable or method `%s' for %s%s%s";
-	    exc = rb_eNameError;
-	}
+	format = "undefined local variable or method `%s' for %s%s%s";
+	exc = rb_eNameError;
     }
     else if (last_call_status & CSTAT_SUPER) {
 	format = "super: no superclass method `%s'";

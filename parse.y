@@ -1406,7 +1406,7 @@ primary		: literal
 		| backref
 		| tFID
 		    {
-			$$ = NEW_VCALL($1);
+			$$ = NEW_FCALL($1, 0);
 		    }
 		| kBEGIN
 		    {
