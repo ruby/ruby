@@ -1,3 +1,9 @@
+Fri Nov 26 13:29:02 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::look_for_directives_in): Break
+	  out of preprocessing when we find a :section: directive (previously cleared out the
+	  comment, but this apparently now generates an error in gsub!)
+
 Fri Nov 26 00:17:40 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (io_read): move StringValue() check before GetOpenFile().
