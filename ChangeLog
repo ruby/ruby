@@ -1,3 +1,8 @@
+Tue Aug 14 21:14:07 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/sha2/extconf.rb: do not create Makefile when no 64bit
+	  integer type is detected.
+
 Tue Aug 14 17:09:12 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* range.c (range_step): new method.

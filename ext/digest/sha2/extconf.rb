@@ -17,4 +17,12 @@ have_header("inttypes.h")
 
 have_header("unistd.h")
 
+unless try_link(<<SRC, $defs.join(' '))
+#include "../defs.h"
+main(){}
+SRC
+  puts "** Cannot find a 64bit integer type - skipping the SHA2 module."
+  exit 1
+end
+
 create_makefile("digest/sha2")
