@@ -529,12 +529,6 @@ rb_hash_select(argc, argv, hash)
 {
     VALUE result;
 
-    if (!rb_block_given_p()) {
-#if RUBY_VERSION_CODE < 181
-	rb_warn("Hash#select(key..) is deprecated; use Hash#values_at");
-#endif
-	return rb_hash_values_at(argc, argv, hash);
-    }
     if (argc > 0) {
 	rb_raise(rb_eArgError, "wrong number arguments(%d for 0)", argc);
     }
@@ -1454,10 +1448,6 @@ env_select(argc, argv)
     VALUE result;
     char **env;
 
-    if (!rb_block_given_p()) {
-	rb_warn("ENV.select(index..) is deprecated; use ENV.values_at");
-	return env_values_at(argc, argv);
-    }
     if (argc > 0) {
 	rb_raise(rb_eArgError, "wrong number arguments(%d for 0)", argc);
     }

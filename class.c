@@ -539,12 +539,7 @@ class_instance_method_list(argc, argv, mod, func)
     st_table *list;
 
     if (argc == 0) {
-#if RUBY_VERSION_CODE < 181
-	rb_warn("%s: parameter will default to 'true' as of 1.8.1", rb_id2name(rb_frame_last_func()));
-	recur = Qfalse;
-#else
 	recur = Qtrue;
-#endif
     }
     else {
 	VALUE r;
@@ -613,11 +608,7 @@ rb_obj_singleton_methods(argc, argv, obj)
 
     rb_scan_args(argc, argv, "01", &recur);
     if (argc == 0) {
-#if RUBY_VERSION_CODE < 181
-	rb_warn("singleton_methods: parameter will default to 'true' as of 1.8.1");
-#else
 	recur = Qtrue;
-#endif
     }
     klass = CLASS_OF(obj);
     list = st_init_numtable();

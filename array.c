@@ -254,8 +254,8 @@ rb_ary_initialize(argc, argv, ary)
     if (rb_block_given_p()) {
 	long i;
 
-	if (argc > 1) {
-	    rb_raise(rb_eArgError, "wrong number of arguments");
+	if (argc == 2) {
+	    rb_warn("block supersedes default value argument");
 	}
 	for (i=0; i<len; i++) {
 	    RARRAY(ary)->ptr[i] = rb_yield(LONG2NUM(i));
@@ -655,8 +655,7 @@ rb_ary_indexes(argc, argv, ary)
     VALUE new_ary;
     long i;
 
-    rb_warn("Array#%s is deprecated; use Array#values_at",
-	    rb_id2name(rb_frame_last_func()));
+    rb_warn("Array#%s is deprecated; use Array#values_at", rb_id2name(rb_frame_last_func()));
     new_ary = rb_ary_new2(argc);
     for (i=0; i<argc; i++) {
 	rb_ary_push(new_ary, rb_ary_aref(1, argv+i, ary));
@@ -1270,10 +1269,6 @@ rb_ary_select(argc, argv, ary)
     VALUE result;
     long i;
 
-    if (!rb_block_given_p()) {
-	rb_warn("Array#select(index..) is deprecated; use Array#values_at");
-	return rb_ary_values_at(argc, argv, ary);
-    }
     if (argc > 0) {
 	rb_raise(rb_eArgError, "wrong number arguments (%d for 0)", argc);
     }

@@ -992,10 +992,6 @@ match_select(argc, argv, match)
     VALUE *argv;
     VALUE match;
 {
-    if (!rb_block_given_p()) {
-	rb_warn("MatchData#select(index..) is deprecated; use MatchData#values_at");
-	return match_values_at(argc, argv, match);
-    }
     if (argc > 0) {
 	rb_raise(rb_eArgError, "wrong number arguments(%d for 0)", argc);
     }

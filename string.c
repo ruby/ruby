@@ -1056,19 +1056,14 @@ rb_str_match(x, y)
     long start;
 
     switch (TYPE(y)) {
-      case T_REGEXP:
-	return rb_reg_match(y, x);
-
       case T_STRING:
-#if RUBY_VERSION_CODE < 181
+#if RUBY_VERSION_CODE < 182
 	rb_warn("string =~ string will be obsolete; use explicit regexp");
 #endif
-	reg = rb_reg_regcomp(y);
-	start = rb_reg_search(reg, x, 0, 0);
-	if (start == -1) {
-	    return Qnil;
-	}
-	return INT2NUM(start);
+	y = rb_reg_regcomp(y);
+	/* fall through */
+      case T_REGEXP:
+	return rb_reg_match(y, x);
 
       default:
 	return rb_funcall(y, rb_intern("=~"), 1, x);
@@ -1080,7 +1075,7 @@ rb_str_match2(str)
     VALUE str;
 {
     StringValue(str);
-#if RUBY_VERSION_CODE < 181
+#if RUBY_VERSION_CODE < 182
 	rb_warn("~string will be obsolete; use explicit regexp");
 #endif
     return rb_reg_match2(rb_reg_regcomp(rb_reg_quote(str)));
@@ -1501,13 +1496,7 @@ get_pat(pat, quote)
     }
 
     if (quote) {
-	val = rb_reg_quote(pat);
-#if RUBY_VERSION_CODE < 181
-	if (val != pat && rb_str_cmp(val, pat) != 0) {
-	    rb_warn("string pattern instead of regexp; metacharacters no longer effective");
-	}
-#endif
-	pat = val;
+	pat = rb_reg_quote(pat);
     }
 
     return rb_reg_regcomp(pat);

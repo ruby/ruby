@@ -544,10 +544,6 @@ rb_struct_select(argc, argv, s)
     VALUE result;
     long i;
 
-    if (!rb_block_given_p()) {
-	rb_warn("Struct#select(index..) is deprecated; use Struct#values_at");
-	return rb_struct_values_at(argc, argv, s);
-    }
     if (argc > 0) {
 	rb_raise(rb_eArgError, "wrong number arguments(%d for 0)", argc);
     }

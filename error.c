@@ -480,6 +480,7 @@ name_err_initialize(argc, argv, self)
     VALUE self;
 {
     VALUE name = (argc > 1) ? argv[--argc] : Qnil;
+
     exc_initialize(argc, argv, self);
     rb_iv_set(self, "name", name);
     return self;

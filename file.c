@@ -99,7 +99,7 @@ rb_file_path(obj)
 
     fptr = RFILE(rb_io_taint_check(obj))->fptr;
     if (!fptr->path) return Qnil;
-    return rb_str_new2(fptr->path);
+    return rb_tainted_str_new2(fptr->path);
 }
 
 static VALUE

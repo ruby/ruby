@@ -4727,7 +4727,6 @@ rb_method_missing(argc, argv, obj)
 
     id = SYM2ID(argv[0]);
 
-
     switch (TYPE(obj)) {
       case T_NIL:
 	desc = "nil";

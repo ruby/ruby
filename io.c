@@ -790,6 +790,7 @@ read_all(fptr, siz, str)
 	n = rb_io_fread(RSTRING(str)->ptr+bytes, siz-bytes, fptr->f);
 	if (pos > 0 && n == 0 && bytes == 0) {
 	    rb_str_resize(str,0);
+	    if (!fptr->f) return Qnil;
 	    if (feof(fptr->f)) return Qnil;
 	    if (!ferror(fptr->f)) return str;
 	    rb_sys_fail(fptr->path);
@@ -843,6 +844,7 @@ io_read(argc, argv, io)
     n = rb_io_fread(RSTRING(str)->ptr, len, fptr->f);
     if (n == 0) {
 	rb_str_resize(str,0);
+	if (!fptr->f) return Qnil;
 	if (feof(fptr->f)) return Qnil;
 	if (len > 0) rb_sys_fail(fptr->path);
     }

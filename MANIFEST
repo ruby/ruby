@@ -342,6 +342,7 @@ lib/test/unit/ui/fox/testrunner.rb
 lib/test/unit/ui/gtk/testrunner.rb
 lib/test/unit/ui/testrunnermediator.rb
 lib/test/unit/ui/testrunnerutilities.rb
+lib/test/unit/ui/tk/testrunner.rb
 lib/test/unit/util/backtracefilter.rb
 lib/test/unit/util/observable.rb
 lib/test/unit/util/procwrapper.rb

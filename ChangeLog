@@ -1,3 +1,32 @@
+Tue Nov  4 06:54:52 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (read_all): fptr->f may be NULL, if IO is closed in the
+	  signal handler.
+
+	* io.c (io_read): ditto.
+
+	* string.c (get_pat): remove 1.8.0 warning code.
+
+	* string.c (rb_str_match): extend warning until 1.8.2.
+
+	* string.c (rb_str_match2): ditto.
+
+	* class.c (class_instance_method_list): remove 1.8.0 warnings.
+	  method_list now recurs.  [ruby-dev:21816]
+
+	* class.c (rb_obj_singleton_methods): ditto.
+
+	* array.c (rb_ary_select): remove select with block.
+	  [ruby-dev:21824]
+
+	* hash.c (rb_hash_select): ditto.
+
+	* hash.c (env_select): ditto.
+
+	* re.c (match_select): ditto.
+
+	* struct.c (rb_struct_select): ditto.
+
 Mon Nov  3 22:53:21 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/racc/parser.rb: synchronize with Racc 1.4.4.
@@ -6,6 +35,12 @@ Mon Nov  3 22:53:21 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/racc/cparse/cparse.c (parse_main): should abort when
 	  the length of LR state stack <=1, not ==0.
+
+Mon Nov  3 08:50:47 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* process.c (check_uid_switch): remove duplicated error messages.
+
+	* process.c (check_gid_switch): ditto.
 
 Sun Nov  2 02:28:33 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
