@@ -826,7 +826,7 @@ rb_str_cmp_m(str1, str2)
     else {
 	result = rb_str_cmp(str1, str2);
     }
-    return LONG2FIX(result);
+    return LONG2NUM(result);
 }
 
 static VALUE

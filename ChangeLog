@@ -3,6 +3,10 @@ Fri Feb 21 17:19:27 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 	* eval.c (rb_f_require): do not need to abort if a DLEXT file
 	  is not found.
 
+Fri Feb 21 13:39:25 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_cmp_m): should use LONG2NUM().
+
 Fri Feb 21 12:45:50 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_cmp_m): two small bugs fixed.
