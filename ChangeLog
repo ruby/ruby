@@ -1,3 +1,8 @@
+Mon Nov 29 13:37:54 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (fptr_finalize): must not use FILE after fclose().
+	  [ruby-dev:24985]
+
 Mon Nov 29 13:16:31 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (CreateChild): push back the last space before next
