@@ -1,8 +1,15 @@
+Sat Jul 15 21:59:58 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* gc.c (define_final): integrate final.rb features into the
+	  interpreter.  define_finalizer and undefine_finalizer was
+	  added to ObjectSpace.
+
 Sat Jul 15 01:32:34 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
-	* eval.c (Init_eval): should prohibit `include' and
-	  `module_function' for class Class.  The latter was very
-	  dangerous.
+	* eval.c (rb_mod_method): implements unbound method.
+
+	* eval.c (Init_eval): should prohibit `module_function' for class
+	  Class.
 
 Fri Jul 14 17:19:59 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 

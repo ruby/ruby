@@ -74,6 +74,9 @@ Standard Libraries
 - alternative for interator? => block_given?
 - regex - /p (make obsolete), /m (new)
 - consistent /, %, divmod
+- unbound method object
+- integrate final.rb into the core.
+* make clone depend on dup
 * Enumerable#sort_by for Schwartzian transformation
 * String#scanf(?)
 * Object#fmt(?)

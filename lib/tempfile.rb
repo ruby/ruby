@@ -10,7 +10,6 @@
 #  o file mode of the temporary files are 0600.
 
 require 'delegate'
-require 'final'
 
 class Tempfile < SimpleDelegator
   Max_try = 10

@@ -138,6 +138,7 @@ extern int ruby_in_compile;
 static int dont_gc;
 static int during_gc;
 static int need_call_final = 0;
+static st_table *finalizer_table = 0;
 
 static VALUE
 gc_enable()
@@ -931,6 +932,9 @@ rb_gc()
     rb_gc_mark(ruby_class);
     rb_gc_mark(ruby_scope);
     rb_gc_mark(ruby_dyna_vars);
+    if (finalizer_table) {
+	rb_mark_tbl(finalizer_table);
+    }
 
     FLUSH_REGISTER_WINDOWS;
     /* This assumes that all registers are saved into the jmp_buf */
@@ -1076,6 +1080,7 @@ static VALUE
 add_final(os, proc)
     VALUE os, proc;
 {
+    rb_warn("ObjectSpace::add_finalizer is deprecated; use define_finalizer");
     if (!rb_obj_is_kind_of(proc, rb_cProc)) {
 	rb_raise(rb_eArgError, "wrong type argument %s (Proc required)",
 		 rb_class2name(CLASS_OF(proc)));
@@ -1088,6 +1093,7 @@ static VALUE
 rm_final(os, proc)
     VALUE os, proc;
 {
+    rb_warn("ObjectSpace::remove_finalizer is deprecated; use undefine_finalizer");
     rb_ary_delete(finalizers, proc);
     return proc;
 }
@@ -1095,6 +1101,7 @@ rm_final(os, proc)
 static VALUE
 finals()
 {
+    rb_warn("ObjectSpace::finals is deprecated");
     return finalizers;
 }
 
@@ -1102,9 +1109,53 @@ static VALUE
 call_final(os, obj)
     VALUE os, obj;
 {
+    rb_warn("ObjectSpace::call_final is deprecated; use define_finalizer");
     need_call_final = 1;
     FL_SET(obj, FL_FINALIZE);
     return obj;
+}
+
+static VALUE
+undefine_final(os, obj)
+    VALUE os, obj;
+{
+    VALUE table;
+
+    if (finalizer_table) {
+	st_delete(finalizer_table, &obj, 0);
+    }
+    return obj;
+}
+
+static VALUE
+define_final(argc, argv, os)
+    int argc;
+    VALUE *argv;
+    VALUE os;
+{
+    VALUE obj, proc, table;
+
+    rb_scan_args(argc, argv, "11", &obj, &proc);
+    if (argc == 1) {
+	proc = rb_f_lambda();
+    }
+    else if (!rb_obj_is_kind_of(proc, rb_cProc)) {
+	rb_raise(rb_eArgError, "wrong type argument %s (Proc required)",
+		 rb_class2name(CLASS_OF(proc)));
+    }
+    need_call_final = 1;
+    FL_SET(obj, FL_FINALIZE);
+
+    if (!finalizer_table) {
+	finalizer_table = st_init_numtable();
+    }
+    if (st_lookup(finalizer_table, obj, &table)) {
+	rb_ary_push(table, proc);
+    }
+    else {
+	st_add_direct(finalizer_table, obj, rb_ary_new3(1, proc));
+    }
+    return proc;
 }
 
 static VALUE
@@ -1120,13 +1171,20 @@ run_final(obj)
     VALUE obj;
 {
     int i, status;
-    VALUE args[2];
+    VALUE id, args[2], table;
 
-    obj = rb_obj_id(obj);	/* make obj into id */
-    args[1] = rb_ary_new3(1, obj);
+    id = rb_obj_id(obj);	/* make obj into id */
+    args[1] = rb_ary_new3(1, id);
     for (i=0; i<RARRAY(finalizers)->len; i++) {
 	args[0] = RARRAY(finalizers)->ptr[i];
 	rb_protect(run_single_final, (VALUE)args, &status);
+    }
+    if (finalizer_table && st_lookup(finalizer_table, obj, &table)) {
+	st_delete(finalizer_table, &obj, 0);
+	for (i=0; i<RARRAY(table)->len; i++) {
+	    args[0] = RARRAY(table)->ptr[i];
+	    rb_protect(run_single_final, (VALUE)args, &status);
+	}
     }
 }
 
@@ -1204,6 +1262,10 @@ Init_GC()
     rb_define_module_function(rb_mObSpace, "remove_finalizer", rm_final, 1);
     rb_define_module_function(rb_mObSpace, "finalizers", finals, 0);
     rb_define_module_function(rb_mObSpace, "call_finalizer", call_final, 1);
+
+    rb_define_module_function(rb_mObSpace, "define_finalizer", define_final, -1);
+    rb_define_module_function(rb_mObSpace, "undefine_finalizer", undefine_final, 1);
+
     rb_define_module_function(rb_mObSpace, "_id2ref", id2ref, 1);
 
     rb_gc_register_address(&rb_mObSpace);

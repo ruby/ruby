@@ -546,14 +546,14 @@ strhash(string)
 
 static int
 numcmp(x, y)
-    int x, y;
+    long x, y;
 {
     return x != y;
 }
 
 static int
 numhash(n)
-    int n;
+    long n;
 {
     return n;
 }
