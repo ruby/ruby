@@ -45,7 +45,6 @@ $sitedir = CONFIG["sitedir"]
 $sitelibdir = CONFIG["sitelibdir"]
 $sitearchdir = CONFIG["sitearchdir"]
 
-$extmk = /extmk\.rb/ =~ $0
 $mswin = /mswin/ =~ RUBY_PLATFORM
 $bccwin = /bccwin/ =~ RUBY_PLATFORM
 $mingw = /mingw/ =~ RUBY_PLATFORM
@@ -79,9 +78,10 @@ def map_dir(dir, map = nil)
 end
 
 libdir = File.dirname(__FILE__)
-if libdir == Config::CONFIG["rubylibdir"] and
-    File.exist?(Config::CONFIG["archdir"] + "/ruby.h")
-  $topdir = $hdrdir = $archdir
+$extmk = libdir != Config::CONFIG["rubylibdir"]
+if not $extmk and File.exist?(Config::CONFIG["archdir"] + "/ruby.h")
+  $topdir = Config::CONFIG["archdir"]
+  $hdrdir = $archdir
 elsif File.exist?(($top_srcdir ||= File.dirname(libdir))  + "/ruby.h") and
     File.exist?(($topdir ||= Config::CONFIG["topdir"]) + "/config.h")
   $hdrdir = $top_srcdir
@@ -740,7 +740,7 @@ SHELL = /bin/sh
 
 srcdir = #{srcdir}
 topdir = #{$topdir}
-hdrdir = #{$hdrdir}
+hdrdir = #{$extmk ? $hdrdir : '$(topdir)'}
 VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
 }
   drive = File::PATH_SEPARATOR == ';' ? /\A\w:/ : /\A/
@@ -799,7 +799,13 @@ INSTALL_DATA = $(RUBY) -run -e install -- -vpm 0644
 end
 
 def dummy_makefile(srcdir)
-  configuration(srcdir) << "all install install-so install-rb: Makefile\n" << CLEANINGS
+  configuration(srcdir) << <<RULES << CLEANINGS
+CLEANFILES = #{$cleanfiles.join(' ')}
+DISTCLEANFILES = #{$distcleanfiles.join(' ')}
+
+all install install-so install-rb: Makefile
+
+RULES
 end
 
 def create_makefile(target, srcprefix = nil)
@@ -1052,7 +1058,7 @@ $configure_args["--topsrcdir"] ||= $srcdir
 Config::CONFIG["topdir"] = CONFIG["topdir"] =
   $curdir = arg_config("--curdir", Dir.pwd)
 $configure_args["--topdir"] ||= $curdir
-$ruby = arg_config("--ruby", File.join(CONFIG["bindir"], CONFIG["ruby_install_name"]))
+$ruby = arg_config("--ruby", File.join(Config::CONFIG["bindir"], CONFIG["ruby_install_name"]))
 
 split = Shellwords.method(:shellwords).to_proc
 

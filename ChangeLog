@@ -1,3 +1,10 @@
+Wed Mar 24 18:48:05 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb ($ruby, $topdir, $hdrdir): should not be affected by
+	  DESTDIR after installed.
+
+	* lib/mkmf.rb (dummy_makefile): default file lists to be cleaned.
+
 Wed Mar 24 12:32:56 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser::handle_class_module):
@@ -10,7 +17,7 @@ Wed Mar 24 12:32:56 2004  Dave Thomas  <dave@pragprog.com>
 
 Wed Mar 24 11:11:26 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/rdoc/generators/html_generator.rb (Generators::HTMLGenerator::load_html_template): 
+	* lib/rdoc/generators/html_generator.rb (Generators::HTMLGenerator::load_html_template):
 	  Allow non-RDoc templates by putting a slash in the template name
 
 Wed Mar 24 10:05:22 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
