@@ -85,7 +85,7 @@ apply2files(func, vargs, arg)
     for (i=0; i<args->len; i++) {
 	path = args->ptr[i];
 	SafeStringValue(path);
-	(*func)(RSTRING(path)->ptr, arg);
+	(*func)(StringValueCStr(path), arg);
     }
 
     return args->len;
@@ -357,7 +357,7 @@ rb_stat(file, st)
 	return fstat(fileno(fptr->f), st);
     }
     SafeStringValue(file);
-    return stat(StringValuePtr(file), st);
+    return stat(StringValueCStr(file), st);
 }
 
 static VALUE
@@ -368,7 +368,7 @@ rb_file_s_stat(klass, fname)
 
     SafeStringValue(fname);
     if (rb_stat(fname, &st) < 0) {
-	rb_sys_fail(RSTRING(fname)->ptr);
+	rb_sys_fail(StringValueCStr(fname));
     }
     return stat_new(&st);
 }
@@ -395,7 +395,7 @@ rb_file_s_lstat(klass, fname)
     struct stat st;
 
     SafeStringValue(fname);
-    if (lstat(RSTRING(fname)->ptr, &st) == -1) {
+    if (lstat(StringValueCStr(fname), &st) == -1) {
 	rb_sys_fail(RSTRING(fname)->ptr);
     }
     return stat_new(&st);
@@ -560,7 +560,7 @@ test_l(obj, fname)
     struct stat st;
 
     SafeStringValue(fname);
-    if (lstat(RSTRING(fname)->ptr, &st) < 0) return Qfalse;
+    if (lstat(StringValueCStr(fname), &st) < 0) return Qfalse;
     if (S_ISLNK(st.st_mode)) return Qtrue;
 #endif
 
@@ -656,7 +656,7 @@ test_r(obj, fname)
     VALUE obj, fname;
 {
     SafeStringValue(fname);
-    if (eaccess(RSTRING(fname)->ptr, R_OK) < 0) return Qfalse;
+    if (eaccess(StringValueCStr(fname), R_OK) < 0) return Qfalse;
     return Qtrue;
 }
 
@@ -665,7 +665,7 @@ test_R(obj, fname)
     VALUE obj, fname;
 {
     SafeStringValue(fname);
-    if (access(RSTRING(fname)->ptr, R_OK) < 0) return Qfalse;
+    if (access(StringValueCStr(fname), R_OK) < 0) return Qfalse;
     return Qtrue;
 }
 
@@ -674,7 +674,7 @@ test_w(obj, fname)
     VALUE obj, fname;
 {
     SafeStringValue(fname);
-    if (eaccess(RSTRING(fname)->ptr, W_OK) < 0) return Qfalse;
+    if (eaccess(StringValueCStr(fname), W_OK) < 0) return Qfalse;
     return Qtrue;
 }
 
@@ -683,7 +683,7 @@ test_W(obj, fname)
     VALUE obj, fname;
 {
     SafeStringValue(fname);
-    if (access(RSTRING(fname)->ptr, W_OK) < 0) return Qfalse;
+    if (access(StringValueCStr(fname), W_OK) < 0) return Qfalse;
     return Qtrue;
 }
 
@@ -692,7 +692,7 @@ test_x(obj, fname)
     VALUE obj, fname;
 {
     SafeStringValue(fname);
-    if (eaccess(RSTRING(fname)->ptr, X_OK) < 0) return Qfalse;
+    if (eaccess(StringValueCStr(fname), X_OK) < 0) return Qfalse;
     return Qtrue;
 }
 
@@ -701,7 +701,7 @@ test_X(obj, fname)
     VALUE obj, fname;
 {
     SafeStringValue(fname);
-    if (access(RSTRING(fname)->ptr, X_OK) < 0) return Qfalse;
+    if (access(StringValueCStr(fname), X_OK) < 0) return Qfalse;
     return Qtrue;
 }
 
@@ -786,7 +786,7 @@ check3rdbyte(fname, mode)
     struct stat st;
 
     SafeStringValue(fname);
-    if (stat(RSTRING(fname)->ptr, &st) < 0) return Qfalse;
+    if (stat(StringValueCStr(fname), &st) < 0) return Qfalse;
     if (st.st_mode & mode) return Qtrue;
     return Qfalse;
 }
@@ -832,7 +832,7 @@ rb_file_s_size(klass, fname)
     struct stat st;
 
     if (rb_stat(fname, &st) < 0)
-	rb_sys_fail(RSTRING(fname)->ptr);
+	rb_sys_fail(StringValueCStr(fname));
     return OFFT2NUM(st.st_size);
 }
 
@@ -885,7 +885,7 @@ rb_file_s_ftype(klass, fname)
     struct stat st;
 
     SafeStringValue(fname);
-    if (lstat(RSTRING(fname)->ptr, &st) == -1) {
+    if (lstat(StringValueCStr(fname), &st) == -1) {
 	rb_sys_fail(RSTRING(fname)->ptr);
     }
 
@@ -899,7 +899,7 @@ rb_file_s_atime(klass, fname)
     struct stat st;
 
     if (rb_stat(fname, &st) < 0)
-	rb_sys_fail(RSTRING(fname)->ptr);
+	rb_sys_fail(StringValueCStr(fname));
     return rb_time_new(st.st_atime, 0);
 }
 
@@ -1234,6 +1234,20 @@ rb_file_s_utime(argc, argv)
 
 #endif
 
+NORETURN(static void syserr2 _((VALUE,VALUE)));
+static void
+sys_fail2(s1, s2)
+    VALUE s1, s2;
+{
+    char *buf;
+    int len;
+
+    len = RSTRING(s1)->len + RSTRING(s2)->len + 5;
+    buf = ALLOCA_N(char, len);
+    snprintf(buf, len, "%s or %s", RSTRING(s1)->ptr, RSTRING(s2)->ptr);
+    rb_sys_fail(buf);
+}
+
 static VALUE
 rb_file_s_link(klass, from, to)
     VALUE klass, from, to;
@@ -1241,8 +1255,9 @@ rb_file_s_link(klass, from, to)
     SafeStringValue(from);
     SafeStringValue(to);
 
-    if (link(RSTRING(from)->ptr, RSTRING(to)->ptr) < 0)
-	rb_sys_fail(RSTRING(from)->ptr);
+    if (link(StringValueCStr(from), StringValueCStr(to)) < 0) {
+	sys_fail2(from, to);
+    }
     return INT2FIX(0);
 }
 
@@ -1254,8 +1269,9 @@ rb_file_s_symlink(klass, from, to)
     SafeStringValue(from);
     SafeStringValue(to);
 
-    if (symlink(RSTRING(from)->ptr, RSTRING(to)->ptr) < 0)
-	rb_sys_fail(RSTRING(from)->ptr);
+    if (symlink(StringValueCStr(from), StringValueCStr(to)) < 0) {
+	sys_fail2(from, to);
+    }
     return INT2FIX(0);
 #else
     rb_notimplement();
@@ -1275,7 +1291,7 @@ rb_file_s_readlink(klass, path)
 
     SafeStringValue(path);
     buf = xmalloc(size);
-    while ((rv = readlink(RSTRING(path)->ptr, buf, size)) == size) {
+    while ((rv = readlink(StringValueCStr(path), buf, size)) == size) {
 	size *= 2;
 	buf = xrealloc(buf, size);
     }
@@ -1319,12 +1335,12 @@ rb_file_s_rename(klass, from, to)
     SafeStringValue(from);
     SafeStringValue(to);
 
-    if (rename(RSTRING(from)->ptr, RSTRING(to)->ptr) < 0) {
+    if (rename(StringValueCStr(from), StringValueCStr(to)) < 0) {
 #if defined __CYGWIN__
 	extern unsigned long __attribute__((stdcall)) GetLastError();
 	errno = GetLastError(); /* This is a Cygwin bug */
 #endif
-	rb_sys_fail(RSTRING(from)->ptr);
+	sys_fail2(from, to);
     }
 
     return INT2FIX(0);
@@ -1520,7 +1536,7 @@ file_expand_path(fname, dname, result)
     long buflen;
     int tainted;
 
-    s = StringValuePtr(fname);
+    s = StringValueCStr(fname);
     BUFINIT();
     tainted = OBJ_TAINTED(fname);
 
@@ -1756,7 +1772,7 @@ rb_file_s_basename(argc, argv)
     int f;
 
     if (rb_scan_args(argc, argv, "11", &fname, &fext) == 2) {
-	ext = StringValuePtr(fext);
+	ext = StringValueCStr(fext);
     }
     StringValue(fname);
     if (RSTRING(fname)->len == 0 || !*(name = RSTRING(fname)->ptr))
@@ -1796,7 +1812,7 @@ rb_file_s_dirname(klass, fname)
     char *name, *root, *p;
     VALUE dirname;
 
-    name = StringValuePtr(fname);
+    name = StringValueCStr(fname);
     root = skiproot(name);
 #ifdef DOSISH_UNC
     if (root > name + 2 && isdirsep(*name))
@@ -1827,7 +1843,7 @@ rb_file_s_extname(klass, fname)
     char *name, *p, *e;
     VALUE extname;
 
-    name = StringValuePtr(fname);
+    name = StringValueCStr(fname);
     p = strrdirsep(name);	/* get the last path component */
     if (!p)
  	p = name;
@@ -1908,7 +1924,7 @@ rb_file_join(ary, sep)
 	  default:
 	    tmp = rb_obj_as_string(tmp);
 	}
-	name = StringValuePtr(result);
+	name = StringValueCStr(result);
 	if (i > 0 && !NIL_P(sep) && !*chompdirsep(name))
 	    rb_str_buf_append(result, sep);
 	rb_str_buf_append(result, tmp);
@@ -1934,7 +1950,7 @@ rb_file_s_truncate(klass, path, len)
     SafeStringValue(path);
 
 #ifdef HAVE_TRUNCATE
-    if (truncate(RSTRING(path)->ptr, NUM2OFFT(len)) < 0)
+    if (truncate(StringValueCStr(path), NUM2OFFT(len)) < 0)
 	rb_sys_fail(RSTRING(path)->ptr);
 #else
 # ifdef HAVE_CHSIZE
@@ -1942,11 +1958,11 @@ rb_file_s_truncate(klass, path, len)
 	int tmpfd;
 
 #  ifdef _WIN32
-	if ((tmpfd = open(RSTRING(path)->ptr, O_RDWR)) < 0) {
+	if ((tmpfd = open(StringValueCStr(path), O_RDWR)) < 0) {
 	    rb_sys_fail(RSTRING(path)->ptr);
 	}
 #  else
-	if ((tmpfd = open(RSTRING(path)->ptr, 0)) < 0) {
+	if ((tmpfd = open(StringValueCStr(path), 0)) < 0) {
 	    rb_sys_fail(RSTRING(path)->ptr);
 	}
 #  endif
@@ -2245,7 +2261,7 @@ rb_stat_init(obj, fname)
 
     SafeStringValue(fname);
 
-    if (stat(RSTRING(fname)->ptr, &st) == -1) {
+    if (stat(StringValueCStr(fname), &st) == -1) {
 	rb_sys_fail(RSTRING(fname)->ptr);
     }
     if (DATA_PTR(obj)) {
@@ -2586,7 +2602,7 @@ path_check_1(path)
      VALUE path;
 {
     struct stat st;
-    char *p0 = RSTRING(path)->ptr;
+    char *p0 = StringValueCStr(path);
     char *p = 0, *s;
 
     if (!is_absolute_path(p0)) {
@@ -2690,7 +2706,7 @@ rb_find_file_ext(filep, ext)
 	if (rb_safe_level() >= 2 && OBJ_TAINTED(fname)) {
 	    rb_raise(rb_eSecurityError, "loading from unsafe file %s", f);
 	}
-	f = StringValuePtr(fname);
+	f = StringValueCStr(fname);
 	*filep = fname;
     }
 
@@ -2698,7 +2714,7 @@ rb_find_file_ext(filep, ext)
 	for (i=0; ext[i]; i++) {
 	    fname = rb_str_dup(*filep);
 	    rb_str_cat2(fname, ext[i]);
-	    if (file_load_ok(RSTRING(fname)->ptr)) {
+	    if (file_load_ok(StringValueCStr(fname))) {
 		*filep = fname;
 		return i+1;
 	    }
@@ -2718,7 +2734,7 @@ rb_find_file_ext(filep, ext)
 	for (j=0; ext[j]; j++) {
 	    fname = rb_str_dup(*filep);
 	    rb_str_cat2(fname, ext[j]);
-	    found = dln_find_file(RSTRING(fname)->ptr, path);
+	    found = dln_find_file(StringValueCStr(fname), path);
 	    if (found && file_load_ok(found)) {
 		*filep = fname;
 		return j+1;
@@ -2733,7 +2749,7 @@ rb_find_file(path)
     VALUE path;
 {
     VALUE tmp;
-    char *f = RSTRING(path)->ptr;
+    char *f = StringValueCStr(path);
     char *lpath;
 
     if (f[0] == '~') {
@@ -2741,7 +2757,7 @@ rb_find_file(path)
 	if (rb_safe_level() >= 1 && OBJ_TAINTED(path)) {
 	    rb_raise(rb_eSecurityError, "loading from unsafe path %s", f);
 	}
-	f = StringValuePtr(path);
+	f = StringValueCStr(path);
     }
 
 #if defined(__MACOS__) || defined(riscos)

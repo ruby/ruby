@@ -473,6 +473,19 @@ rb_string_value_ptr(ptr)
     return RSTRING(rb_string_value(ptr))->ptr;
 }
 
+char *
+rb_string_value_cstr(ptr)
+    volatile VALUE *ptr;
+{
+    VALUE str = rb_string_value(ptr);
+    char *s = RSTRING(str)->ptr;
+
+    if (!s || RSTRING(str)->len != strlen(s)) {
+	rb_raise(rb_eArgError, "string contains null byte");
+    }
+    return s;
+}
+
 VALUE
 rb_check_string_type(str)
     VALUE str;

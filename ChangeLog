@@ -1,3 +1,13 @@
+Mon Jul 21 01:53:43 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c: use StringValueCStr to retrieve paths to system calls.
+
+	* string.c (rb_string_value_cstr): check null byte in the string
+	  before retrieving C ptr.  accessed via macro StringValueCStr.
+
+	* file.c (sys_fail2): raise error for two operand system calls
+	  such as rename, link, symlink.  (ruby-bugs PR#1047)
+
 Sun Jul 20 11:03:25 2003  UENO Katsuhiro  <katsu@blue.sky.or.jp>
 
 	* ext/zlib/zlib.c (gzfile_read_header): gz->z.input may be nil after

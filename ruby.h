@@ -213,9 +213,11 @@ void rb_check_type _((VALUE,int));
 VALUE rb_str_to_str _((VALUE));
 VALUE rb_string_value _((volatile VALUE*));
 char *rb_string_value_ptr _((volatile VALUE*));
+char *rb_string_value_cstr _((volatile VALUE*));
 
 #define StringValue(v) rb_string_value(&(v))
 #define StringValuePtr(v) rb_string_value_ptr(&(v))
+#define StringValueCStr(v) rb_string_value_cstr(&(v))
 
 void rb_check_safe_obj _((VALUE));
 void rb_check_safe_str _((VALUE));

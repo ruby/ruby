@@ -507,7 +507,12 @@ rb_str_to_inum(str, base, badcheck)
     long len;
 
     StringValue(str);
-    s = RSTRING(str)->ptr;
+    if (badcheck) {
+	s = StringValueCStr(str);
+    }
+    else {
+	s = RSTRING(str)->ptr;
+    }
     if (s) {
 	len = RSTRING(str)->len;
 	if (s[len]) {		/* no sentinel somehow */
@@ -516,9 +521,6 @@ rb_str_to_inum(str, base, badcheck)
 	    MEMCPY(p, s, char, len);
 	    p[len] = '\0';
 	    s = p;
-	}
-	if (badcheck && len != strlen(s)) {
-	    rb_raise(rb_eArgError, "string for Integer contains null byte");
 	}
     }
     return rb_cstr_to_inum(s, base, badcheck); 
