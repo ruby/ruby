@@ -98,6 +98,9 @@ rb_define_class_id(id, super)
     RBASIC(klass)->klass = singleton_class_new(RBASIC(super)->klass);
     singleton_class_attached(RBASIC(klass)->klass, klass);
     rb_funcall(super, rb_intern("inherited"), 1, klass);
+    if (FL_TEST(super, FL_PRIMITIVE)) {
+	FL_SET(klass, FL_PRIMITIVE);
+    }
 
     return klass;
 }

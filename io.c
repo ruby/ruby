@@ -149,6 +149,7 @@ io_write(io, str)
     if (RSTRING(str)->len == 0) return INT2FIX(0);
 
     if (BUILTIN_TYPE(io) != T_FILE) {
+	/* port is not IO, call write method for it. */
 	return rb_funcall(io, id_write, 1, str);
     }
 
@@ -2318,7 +2319,6 @@ Init_IO()
     rb_define_global_function("printf", f_printf, -1);
     rb_define_global_function("print", f_print, -1);
     rb_define_global_function("putc", f_putc, 1);
-    rb_define_global_function("putchar", f_putc, 1);
     rb_define_global_function("puts", f_puts, -1);
     rb_define_global_function("gets", f_gets_method, -1);
     rb_define_global_function("readline", f_readline, -1);
@@ -2453,9 +2453,12 @@ Init_IO()
     rb_global_variable(&file);
 
     rb_define_virtual_variable("$-i", opt_i_get, opt_i_set);
-    Init_File();
 
 #if defined (NT) || defined(DJGPP) || defined(__CYGWIN32__) || defined(__human68k__)
     atexit(pipe_atexit);
 #endif
+
+    /* turn on premitive flag for the class */
+    FL_SET(cIO, FL_PRIMITIVE);
+    Init_File();
 }

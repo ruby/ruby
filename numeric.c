@@ -1097,6 +1097,7 @@ Init_Numeric()
     cInteger = rb_define_class("Integer", cNumeric);
     rb_define_method(cInteger, "integer?", int_int_p, 0);
     rb_define_method(cInteger, "succ", int_succ, 0);
+    rb_define_method(cInteger, "next", int_succ, 0);
 
     cFixnum = rb_define_class("Fixnum", cInteger);
 
@@ -1137,12 +1138,14 @@ Init_Numeric()
     rb_define_method(cFixnum, "to_f", fix_to_f, 0);
 
     rb_define_method(cFixnum, "succ", fix_succ, 0);
+    rb_define_method(cFixnum, "next", fix_succ, 0);
     rb_define_method(cFixnum, "size", fix_size, 0);
 
     rb_define_method(cFixnum, "upto", fix_upto, 1);
     rb_define_method(cFixnum, "downto", fix_downto, 1);
     rb_define_method(cFixnum, "step", fix_step, 2);
     rb_define_method(cFixnum, "times", fix_dotimes, 0);
+    FL_SET(cFixnum, FL_PRIMITIVE);
 
     cFloat  = rb_define_class("Float", cNumeric);
 
@@ -1164,4 +1167,5 @@ Init_Numeric()
     rb_define_method(cFloat, "to_i", flo_to_i, 0);
     rb_define_method(cFloat, "to_f", flo_to_f, 0);
     rb_define_method(cFloat, "abs", flo_abs, 0);
+    FL_SET(cFloat, FL_PRIMITIVE);
 }

@@ -295,6 +295,7 @@ struct RBignum {
 #define RFILE(obj)   (R_CAST(RFile)(obj))
 
 #define FL_SINGLETON FL_USER0
+#define FL_PRIMITIVE FL_USER1
 #define FL_MARK      (1<<8)
 #define FL_FINALIZE  (1<<9)
 

@@ -1248,4 +1248,6 @@ Init_Bignum()
     rb_define_method(cBignum, "to_f", big_to_f, 0);
     rb_define_method(cBignum, "abs", big_abs, 0);
     rb_define_method(cBignum, "size", big_size, 0);
+
+    FL_SET(cBignum, FL_PRIMITIVE);
 }

@@ -164,14 +164,18 @@ rb_check_type(x, t)
     int t;
 {
     struct types *type = builtin_types;
+    int tt = TYPE(x);
 
-    if (TYPE(x)!=(t)) {
+    if (tt != t) {
 	while (type->type >= 0) {
 	    if (type->type == t) {
 		char *etype;
 
 		if (NIL_P(x)) {
 		    etype = "nil";
+		}
+		else if (FIXNUM_P(x)) {
+		    etype = "Fixnum";
 		}
 		else if (rb_special_const_p(x)) {
 		    etype = RSTRING(obj_as_string(x))->ptr;

@@ -1090,6 +1090,9 @@ Init_Regexp()
     rb_global_variable(&reg_cache);
     rb_global_variable(&matchcache);
 
+    /* turn on premitive flag for the class */
+    FL_SET(cRegexp, FL_PRIMITIVE);
+
     cMatch  = rb_define_class("MatchingData", cData);
     rb_define_method(cMatch, "to_a", match_to_a, 0);
     rb_define_method(cMatch, "[]", match_aref, -1);

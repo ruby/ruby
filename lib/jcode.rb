@@ -31,6 +31,7 @@ class String
       original_succ
     end
   end
+  alias next succ
 
   def upto(to)
     return if self > to

@@ -369,11 +369,16 @@ VALUE
 obj_alloc(klass)
     VALUE klass;
 {
-    NEWOBJ(obj, struct RObject);
-    OBJSETUP(obj, klass, T_OBJECT);
-    obj->iv_tbl = 0;
+    if (FL_TEST(klass, FL_PRIMITIVE)) {
+	TypeError("allocating normal object for primitive class");
+    }
+    else {
+	NEWOBJ(obj, struct RObject);
+	OBJSETUP(obj, klass, T_OBJECT);
+	obj->iv_tbl = 0;
 
-    return (VALUE)obj;
+	return (VALUE)obj;
+    }
 }
 
 static VALUE
@@ -820,6 +825,9 @@ Init_Object()
     rb_include_module(cObject, mKernel);
     rb_define_private_method(cClass, "inherited", obj_dummy, 1);
 
+    FL_SET(cModule, FL_PRIMITIVE);
+    FL_SET(cClass, FL_PRIMITIVE);
+
     /*
      * Ruby's Class Hierarchy Chart
      *
@@ -891,6 +899,7 @@ Init_Object()
     rb_define_method(cNilClass, "nil?", rb_true, 0);
     rb_undef_method(CLASS_OF(cNilClass), "new");
     rb_define_global_const("NIL", Qnil);
+    FL_SET(cNilClass, FL_PRIMITIVE);
 
     /* default addition */
     rb_define_method(cNilClass, "+", nil_plus, 1);
@@ -934,6 +943,7 @@ Init_Object()
     rb_define_singleton_method(cClass, "new", class_s_new, -1);
 
     cData = rb_define_class("Data", cObject);
+    rb_undef_method(CLASS_OF(cData), "new");
 
     TopSelf = obj_alloc(cObject);
     rb_global_variable(&TopSelf);
@@ -945,6 +955,7 @@ Init_Object()
     rb_define_method(cTrueClass, "type", true_type, 0);
     rb_undef_method(CLASS_OF(cTrueClass), "new");
     rb_define_global_const("TRUE", TRUE);
+    FL_SET(cTrueClass, FL_PRIMITIVE);
 
     cFalseClass = rb_define_class("FalseClass", cObject);
     rb_define_method(cFalseClass, "to_s", false_to_s, 0);
@@ -952,6 +963,7 @@ Init_Object()
     rb_define_method(cFalseClass, "type", false_type, 0);
     rb_undef_method(CLASS_OF(cFalseClass), "new");
     rb_define_global_const("FALSE", FALSE);
+    FL_SET(cFalseClass, FL_PRIMITIVE);
 
     eq = rb_intern("==");
     eql = rb_intern("eql?");

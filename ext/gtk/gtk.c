@@ -408,7 +408,7 @@ make_tobj(obj, klass, size)
 
     copy = xmalloc(size);
     memcpy(copy, obj, size);
-    data = Data_Wrap_Struct(klass, 0, (void*)-1, copy);
+    data = Data_Wrap_Struct(klass, 0, free, copy);
     rb_funcall(data, id_init, 0, 0);
 
     return data;

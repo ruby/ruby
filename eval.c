@@ -38,9 +38,12 @@ char *strrchr();
 extern VALUE cData;
 
 VALUE cProc;
+static VALUE cBinding;
 static VALUE proc_call _((VALUE,VALUE));
 static VALUE f_binding _((VALUE));
 static void f_END _((void));
+static VALUE f_iterator_p _((void));
+static VALUE block_pass _((VALUE,NODE*));
 
 #define SCOPE_PRIVATE  FL_USER4
 #define SCOPE_MODFUNC  FL_USER5
@@ -1580,6 +1583,10 @@ rb_eval(self, node)
 	}
 	RETURN(Qnil);
 
+      case NODE_BLOCK_PASS:
+	result = block_pass(self, node);
+	break;
+
       case NODE_ITER:
       case NODE_FOR:
 	{
@@ -1895,8 +1902,8 @@ rb_eval(self, node)
       case NODE_LASGN:
 	if (the_scope->local_vars == 0)
 	    Bug("unexpected local variable assignment");
-	the_scope->local_vars[node->nd_cnt] = rb_eval(self, node->nd_value);
-	result = the_scope->local_vars[node->nd_cnt];
+	result = rb_eval(self, node->nd_value);
+	the_scope->local_vars[node->nd_cnt] = result;
 	break;
 
       case NODE_DASGN:
@@ -1960,6 +1967,18 @@ rb_eval(self, node)
 
       case NODE_CVAR:
 	result = ev_const_get(the_frame->cbase, node->nd_vid);
+	break;
+
+      case NODE_BLOCK_ARG:
+	if (the_scope->local_vars == 0)
+	    Bug("unexpected block argument");
+	if (iterator_p()) {
+	    result = f_lambda();
+	    the_scope->local_vars[node->nd_cnt] = result;
+	}
+	else {
+	    result = Qnil;
+	}
 	break;
 
       case NODE_COLON2:
@@ -2946,8 +2965,8 @@ f_missing(argc, argv, obj)
     VALUE *argv;
     VALUE obj;
 {
-    VALUE desc = 0;
     ID    id;
+    VALUE desc = 0;
     char *format = 0;
     char *file = sourcefile;
     int   line = sourceline;
@@ -2966,7 +2985,7 @@ f_missing(argc, argv, obj)
 	format = "undefined method `%s' for FALSE";
 	break;
       case T_OBJECT:
-	desc = obj_as_string(obj);
+	desc = any_to_s(obj);
 	break;
       default:
 	desc = rb_inspect(obj);
@@ -3051,19 +3070,19 @@ stack_length()
 }
 
 static VALUE
-rb_call0(klass, recv, mid, id, argc, argv, scope, body, type)
+rb_call0(klass, recv, id, argc, argv, scope, body)
     VALUE klass, recv;
-    ID    mid, id;
+    ID    id;
     int argc;			/* OK */
     VALUE *argv;		/* OK */
     int scope;
     NODE *body;
-    enum node_type type;
 {
     NODE *b2;		/* OK */
     volatile VALUE result = Qnil;
     int itr;
     static int tick;
+    TMP_PROTECT;
 
     switch (the_iter->iter) {
       case ITER_PRE:
@@ -3085,7 +3104,7 @@ rb_call0(klass, recv, mid, id, argc, argv, scope, body, type)
     the_frame->argc = argc;
     the_frame->argv = argv;
 
-    switch (type) {
+    switch (nd_type(body)) {
       case NODE_CFUNC:
 	{
 	    int len = body->nd_argc;
@@ -3188,7 +3207,7 @@ rb_call0(klass, recv, mid, id, argc, argv, scope, body, type)
 	      default:
 		if (len < 0) {
 		    Bug("bad argc(%d) specified for `%s(%s)'",
-			len, rb_class2name(klass), rb_id2name(mid));
+			len, rb_class2name(klass), rb_id2name(id));
 		}
 		else {
 		    ArgError("too many arguments(%d)", len);
@@ -3198,6 +3217,8 @@ rb_call0(klass, recv, mid, id, argc, argv, scope, body, type)
 	}
 	break;
 
+	/* for re-scoped/renamed method */
+      case NODE_ZSUPER:
 	/* for attr get/set */
       case NODE_ATTRSET:
       case NODE_IVAR:
@@ -3348,10 +3369,7 @@ rb_call(klass, recv, mid, argc, argv, scope)
     int    noex;
     ID     id = mid;
     struct cache_entry *ent;
-    enum node_type type;
-    TMP_PROTECT;
 
-  again:
     /* is it in the method cache? */
     ent = cache + EXPR1(klass, mid);
     if (ent->mid == mid && ent->klass == klass) {
@@ -3368,27 +3386,7 @@ rb_call(klass, recv, mid, argc, argv, scope)
     if (noex == NOEX_PRIVATE && scope == 0)
 	return rb_undefined(recv, mid, argc, argv, CSTAT_NOEX);
 
-    type = nd_type(body);
-    if (type == NODE_ZSUPER) {
-	/* for re-scoped/renamed method */
-	mid = id;
-	if (scope == 0) scope = 1;
-	if (BUILTIN_TYPE(klass) == T_MODULE) {
-	    /* origin is the Module, so need to scan superclass hierarchy. */
-	    struct RClass *cl = RCLASS(klass);
-
-	    klass = RBASIC(recv)->klass;
-	    while (klass) {
-		if (RCLASS(klass)->m_tbl == cl->m_tbl)
-		    break;
-		klass = RCLASS(klass)->super;
-	    }
-	}
-	klass = RCLASS(klass)->super;
-	goto again;
-    }
-
-    return rb_call0(klass, recv, mid, id, argc, argv, scope, body, type);
+    return rb_call0(klass, recv, id, argc, argv, scope, body);
 }
 
 VALUE
@@ -3424,27 +3422,6 @@ f_send(argc, argv, recv)
     return vid;
 }
 
-static VALUE
-f_pass_block(argc, argv, recv)
-    int argc;
-    VALUE *argv;
-    VALUE recv;
-{
-    VALUE vid;
-
-    if (argc == 0) ArgError("no iterator name given");
-    if (iterator_p())
-	ArgError("iterator block given to pass_block");
-    if (!f_iterator_p())
-	ArgError("pass_block called out of iterator");
-
-    vid = *argv++; argc--;
-    PUSH_ITER(ITER_PRE);
-    vid = rb_call(CLASS_OF(recv), recv, rb_to_id(vid), argc, argv, 1);
-    POP_ITER();
-
-    return vid;
-}
 
 #include <varargs.h>
 
@@ -4319,7 +4296,6 @@ Init_eval()
     rb_define_global_function("global_variables", f_global_variables, 0);
 
     rb_define_method(mKernel, "send", f_send, -1);
-    rb_define_method(mKernel, "pass_block", f_pass_block, -1);
     rb_define_method(mKernel, "instance_eval", obj_instance_eval, 1);
 
     rb_define_private_method(cModule, "append_features", mod_append_features, 1);
@@ -4447,7 +4423,7 @@ f_binding(self)
     VALUE bind;
 
     PUSH_BLOCK(0,0);
-    bind = Data_Make_Struct(cData, struct BLOCK, blk_mark, blk_free, data);
+    bind = Data_Make_Struct(cBinding, struct BLOCK, blk_mark,blk_free,data);
     MEMCPY(data, the_block, struct BLOCK, 1);
 
 #ifdef THREAD
@@ -4631,29 +4607,33 @@ proc_call(proc, args)
 }
 
 static VALUE
-proc_iterate(proc)
-    VALUE proc;
+block_pass(self, node)
+    VALUE self;
+    NODE *node;
 {
-    VALUE lambda = f_lambda();
+    VALUE block = rb_eval(self, node->nd_body);
     struct BLOCK *data;
     volatile VALUE result = Qnil;
     int state;
     volatile int orphan;
     volatile int safe = safe_level;
 
-    Data_Get_Struct(lambda, struct BLOCK, data);
-    data->frame.iter = ITER_PRE;
-    data->iter = ITER_PRE;
+    if (TYPE(block) != T_DATA
+	|| RDATA(block)->dfree != blk_free
+	|| !obj_is_kind_of(block, cProc)) {
+	TypeError("wrong argument type %s (expected Proc)",
+		  rb_class2name(CLASS_OF(block)));
+    }
 
-    Data_Get_Struct(proc, struct BLOCK, data);
+    Data_Get_Struct(block, struct BLOCK, data);
     orphan = blk_orphan(data);
 
     /* PUSH BLOCK from data */
     PUSH_BLOCK2(data);
     PUSH_ITER(ITER_PRE);
     the_frame->iter = ITER_PRE;
-    if (FL_TEST(proc, PROC_TAINT)) {
-	switch (RBASIC(proc)->flags & PROC_TMASK) {
+    if (FL_TEST(block, PROC_TAINT)) {
+	switch (RBASIC(block)->flags & PROC_TMASK) {
 	  case PROC_T3:
 	    safe_level = 3;
 	    break;
@@ -4669,7 +4649,7 @@ proc_iterate(proc)
     PUSH_TAG(PROT_NONE);
     state = EXEC_TAG();
     if (state == 0) {
-	result = proc_call(lambda, Qnil);
+	result = rb_eval(self, node->nd_iter);
     }
     POP_TAG();
 
@@ -4701,16 +4681,18 @@ proc_iterate(proc)
 }
 
 static VALUE cMethod;
+
 struct METHOD {
-    VALUE klass;
+    VALUE klass, oklass;
     VALUE recv;
-    ID id;
+    ID id, oid;
     NODE *body;
 };
 
 static void
 bm_mark(struct METHOD *data)
 {
+    gc_mark(data->oklass);
     gc_mark(data->klass);
     gc_mark(data->recv);
     gc_mark(data->body);
@@ -4729,33 +4711,16 @@ obj_method(obj, vid)
     enum node_type type;
     struct METHOD *data;
 
-    mid = id = rb_to_id(vid);
+    id = rb_to_id(vid);
 
   again:
     if ((body = rb_get_method_body(&klass, &id, &noex)) == 0) {
-	return rb_undefined(obj, mid, 0, 0, 0);
+	return rb_undefined(obj, rb_to_id(vid), 0, 0, 0);
     }
 
-    type = nd_type(body);
-    if (type == NODE_ZSUPER) {
-	/* for re-scoped/renamed method */
-	mid = id;
-	if (BUILTIN_TYPE(klass) == T_MODULE) {
-	    /* origin is the Module, so need to scan superclass hierarchy. */
-	    struct RClass *cl = RCLASS(klass);
-
-	    klass = RBASIC(obj)->klass;
-	    while (klass) {
-		if (RCLASS(klass)->m_tbl == cl->m_tbl)
-		    break;
-		klass = RCLASS(klass)->super;
-	    }
-	}
+    if (nd_type(body) == NODE_ZSUPER) {
 	klass = RCLASS(klass)->super;
 	goto again;
-    }
-    if (BUILTIN_TYPE(klass) == T_ICLASS) {
-	klass = RBASIC(klass)->klass;
     }
 
     method = Data_Make_Struct(cMethod, struct METHOD, bm_mark, free, data);
@@ -4763,6 +4728,8 @@ obj_method(obj, vid)
     data->recv = obj;
     data->id = id;
     data->body = body;
+    data->oklass = CLASS_OF(obj);
+    data->oid = rb_to_id(vid);
 
     return method;
 }
@@ -4778,8 +4745,8 @@ method_call(argc, argv, method)
 
     Data_Get_Struct(method, struct METHOD, data);
     PUSH_ITER(iterator_p()?ITER_PRE:ITER_NOT);
-    result = rb_call0(data->klass, data->recv, data->id, data->id,
-		      argc, argv, 1, data->body, nd_type(data->body));
+    result = rb_call0(data->klass, data->recv, data->id,
+		      argc, argv, 1, data->body);
     POP_ITER();
     return result;
 }
@@ -4797,10 +4764,10 @@ method_inspect(method)
     s = rb_class2name(CLASS_OF(method));
     str_cat(str, s, strlen(s));
     str_cat(str, ": ", 2);
-    s = rb_class2name(data->klass);
+    s = rb_class2name(data->oklass);
     str_cat(str, s, strlen(s));
     str_cat(str, "#", 1);
-    s = rb_id2name(data->id);
+    s = rb_id2name(data->oid);
     str_cat(str, s, strlen(s));
     str_cat(str, ">", 1);
 
@@ -4816,15 +4783,16 @@ Init_Proc()
     rb_define_singleton_method(cProc, "new", proc_s_new, 0);
 
     rb_define_method(cProc, "call", proc_call, -2);
-    rb_define_method(cProc, "iterate", proc_iterate, 0);
     rb_define_global_function("proc", f_lambda, 0);
     rb_define_global_function("lambda", f_lambda, 0);
     rb_define_global_function("binding", f_binding, 0);
+    cBinding = rb_define_class("Binding", cData);
 
     cMethod = rb_define_class("Method", cObject);
     rb_undef_method(CLASS_OF(cMethod), "new");
     rb_define_method(cMethod, "call", method_call, -1);
     rb_define_method(cMethod, "inspect", method_inspect, 0);
+    rb_define_method(cMethod, "to_s", method_inspect, 0);
     rb_define_method(mKernel, "method", obj_method, 1);
 }
 
@@ -5858,7 +5826,7 @@ thread_status(thread)
 }
 
 static VALUE
-thread_stopped(thread)
+thread_stop_p(thread)
     VALUE thread;
 {
     thread_t th = thread_check(thread);
@@ -6015,7 +5983,7 @@ Init_Thread()
     rb_define_method(cThread, "value", thread_value, 0);
     rb_define_method(cThread, "status", thread_status, 0);
     rb_define_method(cThread, "alive?", thread_status, 0);
-    rb_define_method(cThread, "stop?", thread_stopped, 0);
+    rb_define_method(cThread, "stop?", thread_stop_p, 0);
     rb_define_method(cThread, "raise", thread_raise, -1);
 
     rb_define_method(cThread, "abort_on_exception", thread_abort_exc, 0);

@@ -1,3 +1,19 @@
+Thu Mar  5 13:47:39 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (f_missing): use any_to_s() for stringify.
+
+Wed Mar  4 01:39:52 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (block_arg): new syntax - block argument in the
+	  calling arglist.
+
+	* eval.c (rb_call): no module search. simplified a lot.
+
+	* eval.c (rb_eval): block arg support.
+
+	* parse.y (f_block_arg): new syntax - block argument in the
+ 	  formal arglist.
+
 Tue Mar  3 14:20:15 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (obj_method): returns bound method object.

@@ -149,6 +149,7 @@ make_struct(name, member)
 	}
 	rb_define_method_id(nstr, id_attrset(id), struct_set, 1);
     }
+    FL_SET(nstr, FL_PRIMITIVE);
 
     return nstr;
 }
@@ -429,4 +430,5 @@ Init_Struct()
     rb_define_method(cStruct, "[]=", struct_aset, 2);
 
     rb_define_method(cStruct, "members", struct_members, 0);
+    FL_SET(cStruct, FL_PRIMITIVE);
 }

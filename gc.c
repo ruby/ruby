@@ -261,6 +261,9 @@ data_object_alloc(klass, datap, dmark, dfree)
     data->dfree = dfree;
     data->dmark = dmark;
 
+    /* turn on premitive flag for the class */
+    FL_SET(klass, FL_PRIMITIVE);
+
     return (VALUE)data;
 }
 
@@ -370,7 +373,7 @@ gc_mark(ptr)
     if (FIXNUM_P(obj)) return;	/* fixnum not marked */
     if (rb_special_const_p((VALUE)obj)) return; /* special const not marked */
     if (obj->as.basic.flags == 0) return; /* free cell */
-    if (obj->as.basic.flags & FL_MARK) return; /* marked */
+    if (obj->as.basic.flags & FL_MARK) return; /* already marked */
 
     obj->as.basic.flags |= FL_MARK;
 

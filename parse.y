@@ -81,6 +81,10 @@ static NODE *arg_add();
 static NODE *call_op();
 static int in_defined = 0;
 
+static NODE *arg_blk_pass();
+static NODE *new_call();
+static NODE *new_fcall();
+
 static NODE *gettable();
 static NODE *assignable();
 static NODE *aryset();
@@ -169,14 +173,16 @@ static void top_local_setup();
 %type <node> singleton
 %type <val>  literal numeric
 %type <node> compstmt stmts stmt expr arg primary command_call method_call
-%type <node> if_tail opt_else case_body cases rescue ensure iterator
-%type <node> call_args call_args0 ret_args args mrhs opt_list var_ref
-%type <node> superclass f_arglist f_args f_optarg f_opt
+%type <node> if_tail opt_else case_body cases rescue ensure
+%type <node> opt_call_args call_args ret_args args
+%type <node> aref_args opt_block_arg block_arg
+%type <node> mrhs opt_list superclass iterator var_ref
+%type <node> f_arglist f_args f_optarg f_opt f_block_arg opt_f_block_arg
 %type <node> array assoc_list assocs assoc undef_list
 %type <node> iter_var opt_iter_var iter_block iter_do_block
 %type <node> mlhs mlhs_head mlhs_tail lhs backref
-%type <id>   variable symbol operation assoc_kw
-%type <id>   cname fname op rest_arg
+%type <id>   variable symbol operation
+%type <id>   cname fname op f_rest_arg
 %type <num>  f_arg
 %token UPLUS 		/* unary+ */
 %token UMINUS 		/* unary- */
@@ -196,11 +202,11 @@ static void top_local_setup();
 %token COLON3           /* :: at EXPR_BEG */
 %token <id> OP_ASGN     /* +=, -=  etc. */
 %token ASSOC            /* => */
-%token KW_ASSOC         /* -> */
 %token LPAREN           /* ( */
 %token LBRACK           /* [ */
 %token LBRACE           /* { */
 %token STAR             /* * */
+%token AMPER            /* & */
 %token SYMBEG
 
 /*
@@ -265,6 +271,9 @@ stmts		: /* none */
 
 stmt		: iterator iter_do_block
 		    {
+			if ($1 && nd_type($1) == NODE_BLOCK_PASS) {
+			    Error("both block arg and actual block given");
+			}
 			$2->nd_iter = $1;
 			$$ = $2;
 		        fixpos($$, $2);
@@ -396,24 +405,24 @@ expr		: mlhs '=' mrhs
 		    }
 		| arg
 
-command_call	: operation call_args0
+command_call	: operation call_args
 		    {
-			$$ = NEW_FCALL($1, $2);
+			$$ = new_fcall($1, $2);
 		        fixpos($$, $2);
 		   }
-		| primary '.' operation call_args0
+		| primary '.' operation call_args
 		    {
 			value_expr($1);
-			$$ = NEW_CALL($1, $3, $4);
+			$$ = new_call($1, $3, $4);
 		        fixpos($$, $1);
 		    }
-		| primary COLON2 operation call_args0
+		| primary COLON2 operation call_args
 		    {
 			value_expr($1);
-			$$ = NEW_CALL($1, $3, $4);
+			$$ = new_call($1, $3, $4);
 		        fixpos($$, $1);
 		    }
-		| kSUPER call_args0
+		| kSUPER call_args
 		    {
 			if (!cur_mid && !in_single && !in_defined)
 			    yyerror("super called outside of method");
@@ -457,7 +466,7 @@ lhs		: variable
 		    {
 			$$ = assignable($1, 0);
 		    }
-		| primary '[' call_args ']'
+		| primary '[' aref_args ']'
 		    {
 			$$ = aryset($1, $3, 0);
 		    }
@@ -542,7 +551,7 @@ arg		: variable '=' arg
 			$$ = assignable($1, $3);
 		        fixpos($$, $3);
 		    }
-		| primary '[' call_args ']' '=' arg
+		| primary '[' aref_args ']' '=' arg
 		    {
 			$$ = aryset($1, $3, $6);
 		        fixpos($$, $1);
@@ -566,7 +575,7 @@ arg		: variable '=' arg
 		  	$$ = assignable($1, call_op(gettable($1), $2, 1, $3));
 		        fixpos($$, $3);
 		    }
-		| primary '[' call_args ']' OP_ASGN arg
+		| primary '[' aref_args ']' OP_ASGN arg
 		    {
 			NODE *args = NEW_LIST($6);
 
@@ -723,51 +732,81 @@ arg		: variable '=' arg
 			$$ = $1;
 		    }
 
-call_args	: /* none */
+aref_args	: opt_call_args
+		    {
+			if ($1 && nd_type($1) == NODE_BLOCK_PASS) {
+			    Error("block argument should not be given");
+			}
+			$$ = $1;
+		    }
+
+opt_call_args	: /* none */
 		    {
 			$$ = 0;
 		    }
-		| call_args0 opt_nl
+		| call_args opt_nl
 
-call_args0	: command_call
+call_args	: command_call
 		    {
 			value_expr($1);
 			$$ = NEW_LIST($1);
 		    }
-		| args
-		| args ',' STAR arg
+		| args opt_block_arg
+		    {
+			$$ = arg_blk_pass($1, $2);
+		    }
+		| args ',' STAR arg opt_block_arg
 		    {
 			$$ = arg_add($1, $4);
+			$$ = arg_blk_pass($$, $5);
 		    }
-		| assocs
+		| assocs opt_block_arg
 		    {
 			$$ = NEW_LIST(NEW_HASH($1));
+			$$ = arg_blk_pass($$, $2);
 		    }
-		| assocs ',' STAR arg
+		| assocs ',' STAR arg opt_block_arg
 		    {
-			$$ = NEW_LIST(NEW_HASH($1));
-			$$ = arg_add($$, $4);
+			$$ = arg_add(NEW_LIST(NEW_HASH($1)), $4);
+			$$ = arg_blk_pass($$, $5);
 		    }
-		| args ',' assocs
-		    {
-			$$ = list_append($1, NEW_HASH($3));
-		    }
-		| args ',' assocs ',' STAR arg
+		| args ',' assocs opt_block_arg
 		    {
 			$$ = list_append($1, NEW_HASH($3));
-			$$ = arg_add($$, $6);
+			$$ = arg_blk_pass($$, $4);
 		    }
-		| STAR arg
+		| args ',' assocs ',' STAR arg opt_block_arg
+		    {
+			$$ = arg_add(list_append($1, NEW_HASH($3)), $6);
+			$$ = arg_blk_pass($$, $7);
+		    }
+		| STAR arg opt_block_arg
 		    {
 			value_expr($2);
-			$$ = $2;
+			$$ = arg_blk_pass($2, $3);
+		    }
+		| block_arg
+
+block_arg	: AMPER arg
+		    {
+			value_expr($2);
+			$$ = NEW_BLOCK_PASS($2);
 		    }
 
-opt_list	: /* none */
+opt_block_arg	: ',' block_arg
+		    {
+			$$ = $2;
+		    }
+		| /* none */
 		    {
 			$$ = 0;
 		    }
-		| args
+
+opt_list	: args
+		| /* none */
+		    {
+			$$ = 0;
+		    }
 
 args 		: arg
 		    {
@@ -801,15 +840,17 @@ mrhs		: args
 			$$ = $2;
 		    }
 
-ret_args	: call_args0
+ret_args	: call_args
 		    {
-			if ($1 &&
-			    nd_type($1) == NODE_ARRAY &&
-			    $1->nd_next == 0) {
-			    $$ = $1->nd_head;
-			}
-			else {
-			    $$ = $1;
+			$$ = $1;
+			if ($1) {
+			    if (nd_type($1) == NODE_ARRAY &&
+				$1->nd_next == 0) {
+				$$ = $1->nd_head;
+			    }
+			    else if (nd_type($1) == NODE_BLOCK_PASS) {
+				Error("block argument should not be given");
+			    }
 			}
 		    }
 
@@ -845,7 +886,7 @@ primary		: literal
 		| DREGEXP
 		| var_ref
 		| backref
-		| primary '[' call_args ']'
+		| primary '[' aref_args ']'
 		    {
 			value_expr($1);
 			$$ = NEW_CALL($1, AREF, $3);
@@ -901,7 +942,7 @@ primary		: literal
 		    }
 		| FID
 		    {
-			$$ = NEW_FCALL($1, 0);
+			$$ = NEW_VCALL($1);
 		    }
 		| operation iter_block
 		    {
@@ -911,6 +952,9 @@ primary		: literal
 		| method_call
 		| method_call iter_block
 		    {
+			if ($1 && nd_type($1) == NODE_BLOCK_PASS) {
+			    Error("both block arg and actual block given");
+			}
 			$2->nd_iter = $1;
 			$$ = $2;
 		        fixpos($$, $1);
@@ -1158,42 +1202,42 @@ iter_block	: '{'
 
 iterator	: IDENTIFIER
 		    {
-			$$ = NEW_FCALL($1, 0);
+			$$ = NEW_VCALL($1);
 		    }
 		| CONSTANT
 		    {
-			$$ = NEW_FCALL($1, 0);
+			$$ = NEW_VCALL($1);
 		    }
 		| FID
 		    {
-			$$ = NEW_FCALL($1, 0);
+			$$ = NEW_VCALL($1);
 		    }
 		| method_call
 		| command_call
 
-method_call	: operation '(' call_args ')'
+method_call	: operation '(' opt_call_args ')'
 		    {
-			$$ = NEW_FCALL($1, $3);
+			$$ = new_fcall($1, $3);
 		        fixpos($$, $3);
 		    }
-		| primary '.' operation '(' call_args ')'
+		| primary '.' operation '(' opt_call_args ')'
 		    {
 			value_expr($1);
-			$$ = NEW_CALL($1, $3, $5);
+			$$ = new_call($1, $3, $5);
 		        fixpos($$, $1);
 		    }
 		| primary '.' operation
 		    {
 			value_expr($1);
-			$$ = NEW_CALL($1, $3, 0);
+			$$ = new_call($1, $3, 0);
 		    }
-		| primary COLON2 operation '(' call_args ')'
+		| primary COLON2 operation '(' opt_call_args ')'
 		    {
 			value_expr($1);
-			$$ = NEW_CALL($1, $3, $5);
+			$$ = new_call($1, $3, $5);
 		        fixpos($$, $1);
 		    }
-		| kSUPER '(' call_args ')'
+		| kSUPER '(' opt_call_args ')'
 		    {
 			if (!cur_mid && !in_single && !in_defined)
 			    yyerror("super called outside of method");
@@ -1295,37 +1339,41 @@ f_arglist	: '(' f_args ')'
 			$$ = $1;
 		    }
 
-f_args		: /* no arg */
+f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
+		    {
+			$$ = block_append(NEW_ARGS($1, $3, $5), $6);
+		    }
+		| f_arg ',' f_optarg opt_f_block_arg
+		    {
+			$$ = block_append(NEW_ARGS($1, $3, -1), $4);
+		    }
+		| f_arg ',' f_rest_arg opt_f_block_arg
+		    {
+			$$ = block_append(NEW_ARGS($1, 0, $3), $4);
+		    }
+		| f_arg opt_f_block_arg
+		    {
+			$$ = block_append(NEW_ARGS($1, 0, -1), $2);
+		    }
+		| f_optarg ',' f_rest_arg opt_f_block_arg
+		    {
+			$$ = block_append(NEW_ARGS(0, $1, $3), $4);
+		    }
+		| f_optarg opt_f_block_arg
+		    {
+			$$ = block_append(NEW_ARGS(0, $1, -1), $2);
+		    }
+		| f_rest_arg opt_f_block_arg
+		    {
+			$$ = block_append(NEW_ARGS(0, 0, $1), $2);
+		    }
+		| f_block_arg
+		    {
+			$$ = block_append(NEW_ARGS(0, 0, -1), $1);
+		    }
+		| /* none */
 		    {
 			$$ = NEW_ARGS(0, 0, -1);
-		    }
-		| f_arg
-		    {
-			$$ = NEW_ARGS($1, 0, -1);
-		    }
-		| f_arg ',' rest_arg
-		    {
-			$$ = NEW_ARGS($1, 0, $3);
-		    }
-		| f_arg ',' f_optarg
-		    {
-			$$ = NEW_ARGS($1, $3, -1);
-		    }
-		| f_arg ',' f_optarg ',' rest_arg
-		    {
-			$$ = NEW_ARGS($1, $3, $5);
-		    }
-		| f_optarg
-		    {
-			$$ = NEW_ARGS(0, $1, -1);
-		    }
-		| f_optarg ',' rest_arg
-		    {
-			$$ = NEW_ARGS(0, $1, $3);
-		    }
-		| rest_arg
-		    {
-			$$ = NEW_ARGS(0, 0, $1);
 		    }
 
 f_arg		: IDENTIFIER
@@ -1360,11 +1408,25 @@ f_optarg	: f_opt
 			$$ = block_append($1, $3);
 		    }
 
-rest_arg	: STAR IDENTIFIER
+f_rest_arg	: STAR IDENTIFIER
 		    {
 			if (!is_local_id($2))
 			    yyerror("rest argument must be local variable");
 			$$ = local_cnt($2);
+		    }
+
+f_block_arg	: AMPER IDENTIFIER
+		    {
+			$$ = NEW_BLOCK_ARG($2);
+		    }
+
+opt_f_block_arg	: ',' f_block_arg
+		    {
+			$$ = $2;
+		    }
+		| /* none */
+		    {
+			$$ = 0;
 		    }
 
 singleton	: var_ref
@@ -1424,13 +1486,6 @@ assoc		: arg ASSOC arg
 		    {
 			$$ = list_append(NEW_LIST($1), $3);
 		    }
-		| assoc_kw KW_ASSOC arg
-		    {
-			$$ = list_append(NEW_LIST(NEW_STR(str_new2(rb_id2name($1)))), $3);
-		    }
-
-assoc_kw	: IDENTIFIER
-		| CONSTANT
 
 operation	: IDENTIFIER
 		| CONSTANT
@@ -2226,6 +2281,7 @@ retry:
 	    return STAR;
 	}
 	if (lex_state == EXPR_BEG || lex_state == EXPR_MID) {
+	    lex_state = EXPR_BEG;
 	    return STAR;
 	}
 	lex_state = EXPR_BEG;
@@ -2364,15 +2420,26 @@ retry:
 	return INTEGER;
 
       case '&':
-	lex_state = EXPR_BEG;
 	if ((c = nextc()) == '&') {
+	    lex_state = EXPR_BEG;
 	    return ANDOP;
 	}
 	else if (c == '=') {
 	    yylval.id = '&';
+	    lex_state = EXPR_BEG;
 	    return OP_ASGN;
 	}
 	pushback(c);
+	if (lex_state == EXPR_ARG && space_seen && !isspace(c)){
+	    arg_ambiguous();
+	    lex_state = EXPR_BEG;
+	    return AMPER;
+	}
+	if (lex_state == EXPR_BEG || lex_state == EXPR_MID) {
+	    lex_state = EXPR_BEG;
+	    return AMPER;
+	}
+	lex_state = EXPR_BEG;
 	return '&';
 
       case '|':
@@ -2434,11 +2501,6 @@ retry:
 	    lex_state = EXPR_BEG;
 	    yylval.id = '-';
 	    return OP_ASGN;
-	}
-	if (c == '>') {
-	    Warning("-> is undocumented feature ^^;;;");
-	    lex_state = EXPR_BEG;
-	    return KW_ASSOC;
 	}
 	if (lex_state == EXPR_ARG) {
 	    if (space_seen && !isspace(c)) {
@@ -3585,6 +3647,43 @@ logop(type, left, right)
     value_expr(left);
 
     return node_newnode(type, cond(left), cond(right));
+}
+
+static NODE *
+arg_blk_pass(node1, node2)
+    NODE *node1;
+    NODE *node2;
+{
+    if (node2) {
+	node2->nd_head = node1;
+	return node2;
+    }
+    return node1;
+}
+
+static NODE*
+new_call(r,m,a)
+    NODE *r;
+    ID m;
+    NODE *a;
+{
+    if (a && nd_type(a) == NODE_BLOCK_PASS) {
+	a->nd_iter = NEW_CALL(r,m,a->nd_head);
+	return a;
+    }
+    return NEW_CALL(r,m,a);
+}
+
+static NODE*
+new_fcall(m,a)
+    ID m;
+    NODE *a;
+{
+    if (a && nd_type(a) == NODE_BLOCK_PASS) {
+	a->nd_iter = NEW_FCALL(m,a->nd_head);
+	return a;
+    }
+    return NEW_FCALL(m,a);
 }
 
 st_table *new_idhash();

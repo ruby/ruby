@@ -77,6 +77,8 @@ enum node_type {
     NODE_DREGX,
     NODE_DREGX_ONCE,
     NODE_ARGS,
+    NODE_BLOCK_ARG,
+    NODE_BLOCK_PASS,
     NODE_DEFN,
     NODE_DEFS,
     NODE_ALIAS,
@@ -275,6 +277,8 @@ typedef struct RNode {
 #define NEW_SUPER(a) node_newnode(NODE_SUPER,0,0,a)
 #define NEW_ZSUPER() node_newnode(NODE_ZSUPER,0,0,0)
 #define NEW_ARGS(f,o,r) node_newnode(NODE_ARGS,o,r,f)
+#define NEW_BLOCK_ARG(v) node_newnode(NODE_BLOCK_ARG,v,0,local_cnt(v))
+#define NEW_BLOCK_PASS(b) node_newnode(NODE_BLOCK_PASS,0,b,0)
 #define NEW_ALIAS(n,o) node_newnode(NODE_ALIAS,0,n,o)
 #define NEW_VALIAS(n,o) node_newnode(NODE_VALIAS,0,n,o)
 #define NEW_UNDEF(i) node_newnode(NODE_UNDEF,0,i,0)

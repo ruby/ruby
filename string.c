@@ -2423,6 +2423,8 @@ Init_String()
     rb_define_method(cString, "~", str_match2, 0);
     rb_define_method(cString, "succ", str_succ, 0);
     rb_define_method(cString, "succ!", str_succ_bang, 0);
+    rb_define_method(cString, "next", str_succ, 0);
+    rb_define_method(cString, "next!", str_succ_bang, 0);
     rb_define_method(cString, "upto", str_upto, 1);
     rb_define_method(cString, "index", str_index_method, -1);
     rb_define_method(cString, "rindex", str_rindex, -1);
@@ -2510,4 +2512,7 @@ Init_String()
     rb_define_global_function("split", f_split, -1);
 
     pr_str = rb_intern("to_s");
+
+    /* turn on premitive flag for the class */
+    FL_SET(cString, FL_PRIMITIVE);
 }
