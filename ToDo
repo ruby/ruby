@@ -58,6 +58,7 @@ Hacking Interpreter
 * trap every method invocation, which can be enabled by e.g. trap_call :method.
 * unify Errno exceptions of same errno, or new exception comparison scheme.
 * 2.times{|i| if i==0 then a = 15 else puts eval("a") end} should print nil.
+* Thread#max_stack_size attribute (possible??)
 
 Standard Libraries
 

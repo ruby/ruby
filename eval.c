@@ -2937,7 +2937,7 @@ rb_eval(self, n)
 	      default:
 		return rb_funcall(klass, node->nd_mid, 0, 0);
 	    }
-	    result = rb_const_get(klass, node->nd_mid);
+	    result = rb_const_get_at(klass, node->nd_mid);
 	}
 	break;
 

@@ -1169,14 +1169,6 @@ rb_ary_collect_bang(ary)
 }
 
 static VALUE
-rb_ary_filter(ary)
-    VALUE ary;
-{
-    rb_warn("Array#filter is deprecated; use Array#collect!");
-    return rb_ary_collect_bang(ary);
-}
-
-static VALUE
 rb_ary_select(argc, argv, ary)
     int argc;
     VALUE *argv;
@@ -1872,7 +1864,6 @@ Init_Array()
     rb_define_method(rb_cArray, "select", rb_ary_select, -1);
     rb_define_method(rb_cArray, "map", rb_ary_collect, 0);
     rb_define_method(rb_cArray, "map!", rb_ary_collect_bang, 0);
-    rb_define_method(rb_cArray, "filter", rb_ary_filter, 0);
     rb_define_method(rb_cArray, "delete", rb_ary_delete, 1);
     rb_define_method(rb_cArray, "delete_at", rb_ary_delete_at_m, 1);
     rb_define_method(rb_cArray, "delete_if", rb_ary_delete_if, 0);

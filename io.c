@@ -439,6 +439,28 @@ rb_io_set_sync(io, mode)
 }
 
 static VALUE
+rb_io_fsync(io)
+    VALUE io;
+{
+#ifdef HAVE_FSYNC
+    OpenFile *fptr;
+    FILE *f;
+
+    GetOpenFile(io, fptr);
+    rb_io_check_writable(fptr);
+    f = GetWriteFile(fptr);
+    
+    io_fflush(f, fptr->path);
+    if (fsync(fileno(f)) < 0)
+	rb_sys_fail(fptr->path);
+    return INT2FIX(0);
+#else
+    rb_notimplement();
+    return Qnil;		/* not reached */
+#endif
+}
+
+static VALUE
 rb_io_fileno(io)
     VALUE io;
 {
@@ -3557,6 +3579,7 @@ Init_IO()
     rb_define_alias(rb_cIO, "to_i", "fileno");
     rb_define_method(rb_cIO, "to_io", rb_io_to_io, 0);
 
+    rb_define_method(rb_cIO, "fsync",   rb_io_fsync, 0);
     rb_define_method(rb_cIO, "sync",   rb_io_sync, 0);
     rb_define_method(rb_cIO, "sync=",  rb_io_set_sync, 1);
 

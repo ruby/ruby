@@ -252,9 +252,12 @@ The variable ruby-indent-level controls the amount of indentation.
 		     (looking-at ruby-block-mid-re))
 		 (goto-char (match-end 0))
 		 (looking-at "\\>"))
+		((eq option 'expr-qstr)
+		 (looking-at "[a-zA-Z][a-zA-z0-9_]* +%[^ \t]"))
+		((eq option 'expr-re)
+		 (looking-at "[a-zA-Z][a-zA-z0-9_]* +/[^ \t]"))
 		(t
-		 (and (not (eq option 'expr-arg))
-		      (looking-at "[a-zA-Z][a-zA-z0-9_]* +/[^ \t]"))))))))))
+		 (looking-at "[a-zA-Z][a-zA-z0-9_]* +")))))))))
 
 (defun ruby-forward-string (term &optional end no-error expand)
   (let ((n 1) (c (string-to-char term))
@@ -310,7 +313,7 @@ The variable ruby-indent-level controls the amount of indentation.
 		  (goto-char indent-point))))
 	       ((looking-at "/")
 		(cond
-		 ((and (not (eobp)) (ruby-expr-beg))
+		 ((and (not (eobp)) (ruby-expr-beg 'expr-re))
 		  (if (ruby-forward-string "/" indent-point t t)
 		      nil
 		    (setq in-string (point))
@@ -319,7 +322,8 @@ The variable ruby-indent-level controls the amount of indentation.
 		  (goto-char pnt))))
 	       ((looking-at "%")
 		(cond
-		 ((and (not (eobp)) (ruby-expr-beg 'expr-arg)
+		 ((and (not (eobp))
+		       (ruby-expr-beg 'expr-qstr)
 		       (not (looking-at "%="))
 		       (looking-at "%[Qqrxw]?\\(.\\)"))
 		  (goto-char (match-beginning 1))

@@ -1,3 +1,7 @@
+: IO#fsync
+
+  Added.
+
 : Array expansion
 
   Fixed with the following behavior:

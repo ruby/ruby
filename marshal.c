@@ -392,7 +392,7 @@ w_object(obj, arg, limit)
 	  case T_BIGNUM:
 	    w_byte(TYPE_BIGNUM, arg);
 	    {
-		char sign = RBIGNUM(obj)->sign?'+':'-';
+		char sign = RBIGNUM(obj)->sign ? '+' : '-';
 		long len = RBIGNUM(obj)->len;
 		BDIGIT *d = RBIGNUM(obj)->digits;
 

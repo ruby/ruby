@@ -1,11 +1,27 @@
+Wed Jan 23 16:07:31 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (Init_Array): remove Array#filter.
+
 Wed Jan 23 13:27:44 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* eval.c (rb_yield_0): restore source file/line after yield.
 
+Wed Jan 23 02:00:14 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_mod_initialize): should accept zero argument.
+
+	* object.c (rb_mod_cmp): should raise ArgumentError if
+	  inheritance/inclusion relation between two classes/modules is
+	  not defined. [new]
+
+Tue Jan 22 17:45:23 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_fsync): new method. [new]
+
 Mon Jan 21 22:57:18 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
-	* signal.c (ruby_signal): must define sighandler_t unless
-	  POSIX_SIGNAL.
+	* signal.c (ruby_signal): must define sighandler_t for every
+	  occasion.
 
 Mon Jan 21 08:25:30 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

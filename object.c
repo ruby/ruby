@@ -521,6 +521,7 @@ static VALUE
 rb_mod_le(mod, arg)
     VALUE mod, arg;
 {
+    if (mod == arg) return Qtrue;
     switch (TYPE(arg)) {
       case T_MODULE:
       case T_CLASS:
@@ -534,7 +535,6 @@ rb_mod_le(mod, arg)
 	    return Qtrue;
 	mod = RCLASS(mod)->super;
     }
-
     return Qfalse;
 }
 
@@ -573,8 +573,9 @@ static VALUE
 rb_mod_cmp(mod, arg)
     VALUE mod, arg;
 {
-    if (mod == arg) return INT2FIX(0);
+    VALUE start = mod;
 
+    if (mod == arg) return INT2FIX(0);
     switch (TYPE(arg)) {
       case T_MODULE:
       case T_CLASS:
@@ -588,19 +589,33 @@ rb_mod_cmp(mod, arg)
     if (rb_mod_le(mod, arg)) {
 	return INT2FIX(-1);
     }
-    return INT2FIX(1);
+
+    while (arg) {
+	if (RCLASS(arg)->m_tbl == RCLASS(start)->m_tbl)
+	    return INT2FIX(1);
+	arg = RCLASS(arg)->super;
+    }
+    rb_raise(rb_eArgError, "non related class/module");
+    return Qnil;		/* not reached */
 }
 
 static VALUE
-rb_mod_initialize(argc, argv, module)
-    int argc;
-    VALUE *argv;
+rb_mod_initialize(module)
     VALUE module;
 {
     if (rb_block_given_p()) {
 	rb_mod_module_eval(0, 0, module);
     }
     return Qnil;
+}
+
+static VALUE
+rb_class_initialize(argc, argv, klass)
+    int argc;
+    VALUE *argv;
+    VALUE klass;
+{
+    return rb_mod_initialize(klass);
 }
 
 static VALUE
@@ -1262,7 +1277,7 @@ Init_Object()
     rb_define_private_method(rb_cModule, "attr_accessor", rb_mod_attr_accessor, -1);
 
     rb_define_singleton_method(rb_cModule, "allocate", rb_module_s_alloc, 0);
-    rb_define_method(rb_cModule, "initialize", rb_mod_initialize, -1);
+    rb_define_method(rb_cModule, "initialize", rb_mod_initialize, 0);
     rb_define_method(rb_cModule, "instance_methods", rb_class_instance_methods, -1);
     rb_define_method(rb_cModule, "public_instance_methods", rb_class_instance_methods, -1);
     rb_define_method(rb_cModule, "protected_instance_methods", rb_class_protected_instance_methods, -1);
@@ -1278,6 +1293,7 @@ Init_Object()
 
     rb_define_method(rb_cClass, "allocate", rb_class_allocate_instance, 0);
     rb_define_method(rb_cClass, "new", rb_class_new_instance, -1);
+    rb_define_method(rb_cClass, "initialize", rb_class_initialize, -1);
     rb_define_method(rb_cClass, "superclass", rb_class_superclass, 0);
     rb_undef_method(CLASS_OF(rb_cClass), "allocate");
     rb_define_singleton_method(rb_cClass, "new", rb_class_s_new, -1);

@@ -1549,7 +1549,7 @@ rb_file_s_basename(argc, argv)
 	basename = rb_str_new(name, f);
     }
     else {
-	p++;			/* skip last `/' */
+	p++;			/* skip last / */
 	if (NIL_P(fext) || !(f = rmext(p, ext))) {
 	    basename = rb_str_new2(p);
 	}
@@ -2216,6 +2216,8 @@ rb_file_const(name, value)
     VALUE value;
 {
     rb_define_const(rb_mFConst, name, value);
+    rb_define_const(rb_cIO, name, value);
+    rb_define_const(rb_cFile, name, value);
 }
 
 static int
