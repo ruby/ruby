@@ -17,8 +17,11 @@ class TestBeginEndBlock < Test::Unit::TestCase
   end
 
   def test_endinmethod
-    assert_raises(SyntaxError) do
+    verbose, $VERBOSE = $VERBOSE, nil
+    assert_nothing_raised(SyntaxError) do
       eval("def foo; END {}; end")
     end
+  ensure
+    $VERBOSE = verbose
   end
 end

@@ -1,3 +1,8 @@
+Tue Oct  7 09:13:24 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_beginendblock.rb (test_endinmethod): END{} is now
+	  allowed in eval.
+
 Tue Oct  7 04:15:25 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (stmt): should not expand mrhs if lhs is solely starred.
