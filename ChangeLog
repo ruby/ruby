@@ -4,6 +4,9 @@ Mon Mar  7 21:29:40 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	  restore @token if accept failure. suggested by Dominique Brezinski.
 	  [ruby-core:04518]
 
+	* sample/webrick/httpsd.rb: fix typo in comment. suggested by
+	  Kazuhiko Shiozaki.
+
 Mon Mar  7 21:01:37 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_require_safe): get actual path string under safe level

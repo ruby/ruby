@@ -11,8 +11,8 @@ httpd = WEBrick::HTTPServer.new(
   :SSLEnable      => true,
 
   # Specify key pair and server certificate.
-  # :SSLPrivateKey  => OpenSSL::PKey::RSA.new("server.key"),
-  # :SSLCertificate => OpenSSL::X509::Certificate.new("server.crt"),
+  # :SSLPrivateKey  => OpenSSL::PKey::RSA.new(File.read("server.key")),
+  # :SSLCertificate => OpenSSL::X509::Certificate.new(File.read("server.crt")),
 
   # specify the following SSL options if you want to use auto
   # generated self-signed certificate.
