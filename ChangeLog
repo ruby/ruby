@@ -1,3 +1,8 @@
+Wed Aug 18 23:44:20 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/protocol.rb (rbuf_fill): OpenSSL::SSLSocket has its own
+	  buffer, select(2) might not work. [ruby-dev:24072]
+
 Wed Aug 18 17:10:12 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/tcltklib/stubs.c (ruby_tcltk_stubs): need to call

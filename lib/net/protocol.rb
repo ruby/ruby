@@ -129,10 +129,9 @@ module Net # :nodoc:
     private
 
     def rbuf_fill
-      until IO.select([@io], nil, nil, @read_timeout)
-        raise TimeoutError, "socket read timeout (#{@read_timeout} sec)"
-      end
-      @rbuf << @io.sysread(1024)
+      timeout(@read_timeout) {
+        @rbuf << @io.sysread(1024)
+      }
     end
 
     def rbuf_consume(len)
