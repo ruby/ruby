@@ -353,7 +353,13 @@ module DRb
 
   # Error raised when an error occurs on the underlying communication
   # protocol.
-  class DRbConnError < DRbError; end
+  class DRbConnError < DRbError
+    def self.new_with_error(cause)
+      conn_error = self.new(cause.message)
+      conn_error.set_backtrace(cause.backtrace)
+      conn_error
+    end
+  end
 
   # Class responsible for converting between an object and its id.
   #
@@ -549,12 +555,20 @@ module DRb
     end
 
     def load(soc)  # :nodoc:
-      sz = soc.read(4)	# sizeof (N)
+      begin
+        sz = soc.read(4)	# sizeof (N)
+      rescue
+        raise(DRbConnError.new_with_error($!))
+      end
       raise(DRbConnError, 'connection closed') if sz.nil?
       raise(DRbConnError, 'premature header') if sz.size < 4
       sz = sz.unpack('N')[0]
       raise(DRbConnError, "too large packet #{sz}") if @load_limit < sz
-      str = soc.read(sz)
+      begin
+        str = soc.read(sz)
+      rescue
+        raise(DRbConnError.new_with_error($!))
+      end
       raise(DRbConnError, 'connection closed') if sz.nil?
       raise(DRbConnError, 'premature marshal format(can\'t read)') if str.size < sz
       begin
