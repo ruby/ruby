@@ -1159,11 +1159,16 @@ void Init_ext _((void));
 
 #ifdef HAVE_NATIVETHREAD
 static rb_nativethread_t ruby_thid;
+#endif
+
 int 
 is_ruby_native_thread() {
+#ifdef HAVE_NATIVETHREAD
     return NATIVETHREAD_EQUAL(ruby_thid, NATIVETHREAD_CURRENT());
-}
+#else
+    return 1;
 #endif
+}
 
 void
 ruby_init()

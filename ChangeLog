@@ -1,3 +1,10 @@
+Thu Nov 20 13:37:34 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ruby.h: define is_ruby_native_thread() for no native thread 
+	  environment
+
+	* eval.c: ditto
+
 Thu Nov 20 12:42:47 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* configure.in: always check existence of the pthread library
