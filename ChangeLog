@@ -1,9 +1,10 @@
 Tue Nov 25 21:41:35 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* defines.h (ENV_IGNORECASE): should define when DOSISH without
-	  human68k.
+	  human68k. [ruby-dev:22047]
 
 	* hash.c (env_has_value, env_index): don't ignore case of value.
+	  [ruby-dev:22048]
 
 Tue Nov 25 20:02:14 2003  Minero Aoki  <aamine@loveruby.net>
 
