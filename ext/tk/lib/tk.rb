@@ -3079,7 +3079,7 @@ module TkGrid
   end
 
   def size(master)
-    tk_call 'grid', 'size', master
+    list(tk_call('grid', 'size', master))
   end
 
   def slaves(master, args)
@@ -4056,9 +4056,10 @@ class TkWindow<TkObject
 
   def pack_propagate(mode=None)
     if mode == None
-      tk_call('pack', 'propagate', epath, mode)
-    else
       bool(tk_call('pack', 'propagate', epath))
+    else
+      tk_call('pack', 'propagate', epath, mode)
+      self
     end
   end
 
@@ -4144,18 +4145,20 @@ class TkWindow<TkObject
 
   def grid_propagate(mode=None)
     if mode == None
-      tk_call('grid', 'propagate', epath, mode)
-    else
       bool(tk_call('grid', 'propagate', epath))
+    else
+      tk_call('grid', 'propagate', epath, mode)
+      self
     end
   end
 
   def grid_remove()
     tk_call 'grid', 'remove', epath
+    self
   end
 
   def grid_size()
-    tk_call 'grid', 'size', epath
+    list(tk_call('grid', 'size', epath))
   end
 
   def grid_slaves(args)

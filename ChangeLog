@@ -1,3 +1,8 @@
+Tue Dec 16 13:20:43 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: condition bug of if statement on 
+	  {pack,grid}_propagate methods
+
 Tue Dec 16 03:17:29 2003  why the lucky stiff  <why@ruby-lang.org>
 
 	* lib/yaml/rubytypes.rb: comments in strings. [ruby-talk:88012]
