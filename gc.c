@@ -50,12 +50,6 @@ void *alloca();
 #pragma alloca
 #endif
 
-#ifdef C_ALLOCA
-#ifndef alloca
-void *alloca();
-#endif
-#endif
-
 static void run_final();
 
 #ifndef GC_MALLOC_LIMIT

@@ -545,11 +545,10 @@ extern inline VALUE rb_class_of _((VALUE));
 extern inline int rb_type _((VALUE));
 extern inline int rb_special_const_p _((VALUE));
 
-#ifndef RUBY_NO_INLINE
-extern inline
-#endif
-VALUE
-rb_class_of(VALUE obj)
+#if !defined(NO_C_INLINE) || defined(INLINE_DEFINE)
+extern inline VALUE
+rb_class_of(obj)
+    VALUE obj;
 {
     if (FIXNUM_P(obj)) return rb_cFixnum;
     if (obj == Qnil) return rb_cNilClass;
@@ -560,11 +559,9 @@ rb_class_of(VALUE obj)
     return RBASIC(obj)->klass;
 }
 
-#ifndef RUBY_NO_INLINE
-extern inline
-#endif
-int
-rb_type(VALUE obj)
+extern inline int
+rb_type(obj)
+    VALUE obj;
 {
     if (FIXNUM_P(obj)) return T_FIXNUM;
     if (obj == Qnil) return T_NIL;
@@ -575,15 +572,14 @@ rb_type(VALUE obj)
     return BUILTIN_TYPE(obj);
 }
 
-#ifndef RUBY_NO_INLINE
-extern inline
-#endif
-int
-rb_special_const_p(VALUE obj)
+extern inline int
+rb_special_const_p(obj)
+    VALUE obj;
 {
     if (SPECIAL_CONST_P(obj)) return Qtrue;
     return Qfalse;
 }
+#endif
 
 #include "intern.h"
 
