@@ -12,6 +12,9 @@
 
 #include "ruby.h"
 
+#ifdef HAVE_CDEFS_H
+# include <cdefs.h>
+#endif
 #include <ndbm.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -84,7 +87,7 @@ fdbm_s_open(argc, argv, klass)
     obj = Data_Make_Struct(klass,struct dbmdata,0,free_dbm,dbmp);
     dbmp->di_dbm = dbm;
     dbmp->di_size = -1;
-    rb_obj_call_init(obj);
+    rb_obj_call_init(obj, argc, argv);
 
     return obj;
 }
@@ -329,7 +332,7 @@ fdbm_store(obj, keystr, valstr)
     dbmp->di_size = -1;
     dbm = dbmp->di_dbm;
     if (dbm_store(dbm, key, val, DBM_REPLACE)) {
-#ifdef HAVE_DBM_CLAERERR
+#ifdef HAVE_DBM_CLEARERR
 	dbm_clearerr(dbm);
 #endif
 	if (errno == EPERM) rb_sys_fail(0);

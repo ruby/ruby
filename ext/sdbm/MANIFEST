@@ -1,0 +1,5 @@
+MANIFEST
+_sdbm.c
+extconf.rb
+init.c
+sdbm.h

@@ -34,6 +34,7 @@ pack up your own arguments to pass as args for locking functions, etc.
 #include "ruby.h"
 #include <fcntl.h>
 
+void
 Init_fcntl()
 {
     VALUE mFcntl = rb_define_module("Fcntl");

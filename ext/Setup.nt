@@ -1,12 +1,19 @@
-option nodynamic
+#option nodynamic
 
 #GD
+Win32API
 #curses
 #dbm
 #etc
 fcntl
-kconv
-#marshal
+#gdbm
+#gtk
+marshal
 md5
+nkf
+#pty
+#readline
+sdbm
 socket
-#tkutil
+#tcltklib
+#tk

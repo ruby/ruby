@@ -1,4 +1,8 @@
 MANIFEST
+addrinfo.h
 depend
 extconf.rb
+getaddrinfo.c
+getnameinfo.c
+sockport.h
 socket.c

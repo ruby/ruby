@@ -1,0 +1,7 @@
+MANIFEST
+depend
+MANIFEST
+Win32API.c
+extconf.rb
+getch.rb
+point.rb

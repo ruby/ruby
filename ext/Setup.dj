@@ -3,10 +3,12 @@ option nodynamic
 #GD
 #curses
 dbm
+gdbm
 #etc
 fcntl
-kconv
+nkf
 marshal
 md5
+sdbm
 #socket
 #tkutil
