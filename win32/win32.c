@@ -43,10 +43,6 @@
 #undef close
 #undef setsockopt
 
-#ifndef bool
-#define bool int
-#endif
-
 #ifdef _M_IX86
 # define WIN95 1
 #else
@@ -87,12 +83,10 @@
 
 #define TO_SOCKET(x)	_get_osfhandle(x)
 
-bool NtSyncProcess = TRUE;
-
 static struct ChildRecord *CreateChild(const char *, const char *, SECURITY_ATTRIBUTES *, HANDLE, HANDLE, HANDLE);
 static int make_cmdvector(const char *, char ***);
-static bool has_redirection(const char *);
-static void StartSockets ();
+static int has_redirection(const char *);
+static void StartSockets(void);
 static DWORD wait_events(HANDLE event, DWORD timeout);
 #if !defined(__BORLANDC__) && !defined(_WIN32_WCE)
 static int rb_w32_open_osfhandle(long osfhandle, int flags);
@@ -248,7 +242,8 @@ static struct {
 /* interrupt stuff */
 static HANDLE interrupted_event;
 
-HANDLE GetCurrentThreadHandle(void)
+HANDLE
+GetCurrentThreadHandle(void)
 {
     static HANDLE current_process_handle = NULL;
     HANDLE h;
@@ -388,7 +383,8 @@ NtInitialize(int *argc, char ***argv)
 #endif
 }
 
-char *getlogin()
+char *
+getlogin()
 {
     char buffer[200];
     DWORD len = 200;
@@ -460,25 +456,6 @@ FindFreeChildSlot(void)
 	}
     } END_FOREACH_CHILD;
     return NULL;
-}
-
-
-int SafeFree(char **vec, int vecc)
-{
-    //   vec
-    //   |
-    //   V       ^---------------------V
-    //   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-    //   |   |       | ....  |  NULL |   | ..... |\0 |   | ..... |\0 |...
-    //   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-    //   |-  elements+1             -| ^ 1st element   ^ 2nd element
-
-	char *p;
-
-	p = (char *)vec;
-	free(p);
-
-	return 0;
 }
 
 
@@ -661,7 +638,8 @@ rb_w32_join_argv(char *cmd, char *const *argv)
 }
 
 pid_t
-rb_w32_pipe_exec(const char *cmd, const char *prog, int mode, FILE **fpr, FILE **fpw)
+rb_w32_pipe_exec(const char *cmd, const char *prog, int mode,
+		 FILE **fpr, FILE **fpw)
 {
     struct ChildRecord* child;
     HANDLE hReadIn, hReadOut;
@@ -847,7 +825,8 @@ rb_w32_aspawn(int mode, const char *prog, char *const *argv)
 }
 
 static struct ChildRecord *
-CreateChild(const char *cmd, const char *prog, SECURITY_ATTRIBUTES *psa, HANDLE hInput, HANDLE hOutput, HANDLE hError)
+CreateChild(const char *cmd, const char *prog, SECURITY_ATTRIBUTES *psa,
+	    HANDLE hInput, HANDLE hOutput, HANDLE hError)
 {
     BOOL fRet;
     DWORD  dwCreationFlags;
@@ -1048,7 +1027,7 @@ cmdglob(NtCmdLineElement *patt, NtCmdLineElement **tail)
 // characters that require it to be executed by a command interpreter
 //
 
-static bool
+static int
 has_redirection(const char *cmd)
 {
     char quote = '\0';
@@ -1549,10 +1528,6 @@ rb_w32_closedir(DIR *dirp)
 	free(dirp);
 }
 
-EXTERN_C void __cdecl _lock_fhandle(int);
-EXTERN_C void __cdecl _unlock_fhandle(int);
-EXTERN_C void __cdecl _unlock(int);
-
 #if (defined _MT || defined __MSVCRT__) && !defined __BORLANDC__
 #define MSVCRT_THREADS
 #endif
@@ -1861,8 +1836,8 @@ extract_file_fd(fd_set *set, fd_set *fileset)
 }
 
 long 
-rb_w32_select (int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
-	       struct timeval *timeout)
+rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
+	      struct timeval *timeout)
 {
     long r;
     fd_set file_rd;
@@ -1916,7 +1891,7 @@ rb_w32_select (int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 }
 
 static void
-StartSockets ()
+StartSockets(void)
 {
     WORD version;
     WSADATA retdata;
@@ -2355,10 +2330,10 @@ rb_w32_getservbyport (int port, char *proto)
 // Networking stubs
 //
 
-void endhostent() {}
-void endnetent() {}
-void endprotoent() {}
-void endservent() {}
+void endhostent(void) {}
+void endnetent(void) {}
+void endprotoent(void) {}
+void endservent(void) {}
 
 struct netent *getnetent (void) {return (struct netent *) NULL;}
 
@@ -2524,7 +2499,7 @@ rb_w32_getcwd(buffer, size)
 int
 chown(const char *path, int owner, int group)
 {
-	return 0;
+    return 0;
 }
 
 int
@@ -2843,7 +2818,8 @@ rb_w32_times(struct tms *tmbuf)
 #define yield_once() Sleep(0)
 #define yield_until(condition) do yield_once(); while (!(condition))
 
-static DWORD wait_events(HANDLE event, DWORD timeout)
+static DWORD
+wait_events(HANDLE event, DWORD timeout)
 {
     HANDLE events[2];
     int count = 0;
@@ -2864,7 +2840,8 @@ static DWORD wait_events(HANDLE event, DWORD timeout)
     return ret;
 }
 
-static CRITICAL_SECTION* system_state(void)
+static CRITICAL_SECTION *
+system_state(void)
 {
     static int initialized = 0;
     static CRITICAL_SECTION syssect;
@@ -2879,7 +2856,8 @@ static CRITICAL_SECTION* system_state(void)
 static LONG flag_interrupt = -1;
 static volatile DWORD tlsi_interrupt = TLS_OUT_OF_INDEXES;
 
-void rb_w32_enter_critical(void)
+void
+rb_w32_enter_critical(void)
 {
     if (IsWinNT()) {
 	EnterCriticalSection(system_state());
@@ -2900,7 +2878,8 @@ void rb_w32_enter_critical(void)
     }
 }
 
-void rb_w32_leave_critical(void)
+void
+rb_w32_leave_critical(void)
 {
     if (IsWinNT()) {
 	LeaveCriticalSection(system_state());
@@ -2919,7 +2898,8 @@ struct handler_arg_t {
     HANDLE handshake;
 };
 
-static void rb_w32_call_handler(struct handler_arg_t* h)
+static void
+rb_w32_call_handler(struct handler_arg_t* h)
 {
     int status;
     RUBY_CRITICAL(rb_protect((VALUE (*)(VALUE))h->handler, (VALUE)h->arg, &h->status);
@@ -2932,10 +2912,9 @@ static void rb_w32_call_handler(struct handler_arg_t* h)
     Sleep(INFINITE);		/* safe on Win95? */
 }
 
-static struct handler_arg_t* setup_handler(struct handler_arg_t *harg,
-					   int arg,
-					   void (*handler)(int),
-					   HANDLE handshake)
+static struct handler_arg_t *
+setup_handler(struct handler_arg_t *harg, int arg, void (*handler)(int),
+	      HANDLE handshake)
 {
     harg->handler = handler;
     harg->arg = arg;
@@ -2945,7 +2924,8 @@ static struct handler_arg_t* setup_handler(struct handler_arg_t *harg,
     return harg;
 }
 
-static void setup_call(CONTEXT* ctx, struct handler_arg_t *harg)
+static void
+setup_call(CONTEXT* ctx, struct handler_arg_t *harg)
 {
 #ifdef _M_IX86
     DWORD *esp = (DWORD *)ctx->Esp;
@@ -2960,7 +2940,8 @@ static void setup_call(CONTEXT* ctx, struct handler_arg_t *harg)
 #endif
 }
 
-int rb_w32_main_context(int arg, void (*handler)(int))
+int
+rb_w32_main_context(int arg, void (*handler)(int))
 {
     static HANDLE interrupt_done = NULL;
     struct handler_arg_t harg;
@@ -3021,7 +3002,8 @@ int rb_w32_main_context(int arg, void (*handler)(int))
     return TRUE;
 }
 
-int rb_w32_sleep(unsigned long msec)
+int
+rb_w32_sleep(unsigned long msec)
 {
     DWORD ret;
     RUBY_CRITICAL(ret = wait_events(NULL, msec));
@@ -3030,7 +3012,8 @@ int rb_w32_sleep(unsigned long msec)
     return ret != WAIT_TIMEOUT;
 }
 
-static void catch_interrupt(void)
+static void
+catch_interrupt(void)
 {
     yield_once();
     RUBY_CRITICAL(wait_events(NULL, 0));
@@ -3038,7 +3021,8 @@ static void catch_interrupt(void)
 }
 
 #undef fgetc
-int rb_w32_getc(FILE* stream)
+int
+rb_w32_getc(FILE* stream)
 {
     int c, trap_immediate = rb_trap_immediate;
 #ifndef _WIN32_WCE
@@ -3062,7 +3046,8 @@ int rb_w32_getc(FILE* stream)
 }
 
 #undef fputc
-int rb_w32_putc(int c, FILE* stream)
+int
+rb_w32_putc(int c, FILE* stream)
 {
     int trap_immediate = rb_trap_immediate;
 #ifndef _WIN32_WCE
@@ -3169,7 +3154,8 @@ rb_w32_asynchronize(asynchronous_func_t func, VALUE self,
     return val;
 }
 
-char **rb_w32_get_environ(void)
+char **
+rb_w32_get_environ(void)
 {
     char *envtop, *env;
     char **myenvtop, **myenv;
@@ -3202,7 +3188,8 @@ char **rb_w32_get_environ(void)
     return myenvtop;
 }
 
-void rb_w32_free_environ(char **env)
+void
+rb_w32_free_environ(char **env)
 {
     char **t = env;
 
@@ -3210,7 +3197,8 @@ void rb_w32_free_environ(char **env)
     free(env);
 }
 
-pid_t rb_w32_getpid(void)
+pid_t
+rb_w32_getpid(void)
 {
     pid_t pid;
 
