@@ -1,3 +1,7 @@
+Fri May 25 01:36:52 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* MANIFEST: update the entries I forgot to add or remove.
+
 Thu May 24 16:08:21 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* mkconfig.rb: autoconf 2.50 support.
