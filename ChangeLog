@@ -1,15 +1,15 @@
 Thu May 17 19:17:11 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/shell.rb, lib/shell/process-controller.rb,
-	lib/shell/command-processor.rb: translate Japanese comments into
-	English.
+	  lib/shell/command-processor.rb: translate Japanese comments into
+	  English.
 
 Thu May 17 19:07:14 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* doc/shell.rd.jp: RD'ify and make some fixes.
 
 	* doc/shell.rd: RD'ify, delete Japanese leftovers, make overall
-	English fixes, and sync with doc/shell.rd.jp.
+	  English fixes, and sync with doc/shell.rd.jp.
 
 Thu May 17 17:35:04 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -137,7 +137,7 @@ Wed May  9 14:38:33 2001  K.Kosako  <kosako@sofnec.co.jp>
 Tue May  8 18:28:19 2001  Keiju Ishitsuka  <keiju@ishitsuka.com>
 
 	* lib/irb.rb lib/irb/multi-irb.rb lib/irb/ruby-lex.rb
-	lib/irb/version.rb resolve ctrl-c problem
+	  lib/irb/version.rb resolve ctrl-c problem
 
 Tue May  8 17:12:43 2001  K.Kosako  <kosako@sofnec.co.jp>
 
@@ -149,21 +149,21 @@ Tue May  8 17:12:43 2001  K.Kosako  <kosako@sofnec.co.jp>
 Tue May  8 08:52:57 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* doc/forwardable.rd, doc/forwardable.rd.jp: Hit `=begin' and
-	`=end' in proper places so rd2 can format them without a problem.
+	  `=end' in proper places so rd2 can format them without a problem.
 
 	* doc/irb/irb-tools.rd.jp, doc/irb/irb.rd, doc/irb/irb.rd.jp:
-	ditto.
+	  ditto.
 
 Tue May  8 08:38:53 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* doc/forwardable.rd, doc/forwardable.rd.jp, lib/forwardable.rb:
-	Import forwardable 1.1.
+	  Import forwardable 1.1.
 
 Tue May  8 08:34:33 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* doc/irb/irb-tools.rd.jp, doc/irb/irb.rd.jp: Convert from JIS to
-	EUC.
-	
+	  EUC.
+
 Tue May  8 03:46:39 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* sample/rbc.rb: Obsoleted by IRB.
@@ -196,7 +196,7 @@ Thu May  3 03:15:06 2001  SHIROYAMA Takayuki <psi@fortune.nest.or.jp>
 	* configure.in: get --enable-shared to work on MacOS X.
 
 	* Makefile.in: make $(LIBRUBY_SO) depend on miniruby properly.
-	Now `make -jN' should work without a problem.
+	  Now `make -jN' should work without a problem.
 
 Thu May  3 02:07:45 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
 
@@ -234,12 +234,12 @@ Tue May  1 16:23:03 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Tue May  1 03:24:05 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/irb/completion.rb, lib/irb/frame.rb, lib/irb/xmp.rb,
-	doc/irb/irb-tools.rd.jp: Merge from irb-tools 0.7.1.
+	  doc/irb/irb-tools.rd.jp: Merge from irb-tools 0.7.1.
 
 Tue May  1 03:07:17 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* sample/irb.rb, lib/irb.rb, lib/irb/*, doc/irb/*: Merge from irb
-	0.7.3.
+	  0.7.3.
 
 	* instruby.rb: Install help-message's too.
 
@@ -289,10 +289,10 @@ Tue Apr 24 15:35:32 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Tue Apr 24 15:18:49 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/extmk.rb.in, lib/mkmf.rb: (dir_config) do not add the
-	specified include directory if already included in $CPPFLAGS.
+	  specified include directory if already included in $CPPFLAGS.
 
 	* ext/extmk.rb.in, lib/mkmf.rb: (dir_config) return a more useful
-	value, [include_dir, lib_dir].
+	  value, [include_dir, lib_dir].
 
 Mon Apr 23 14:43:59 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -517,12 +517,12 @@ Mon Apr  2 01:32:38 2001  Akinori MUSHA  <knu@iDaemons.org>
 	* Makefile.in: Introduce MAINLIBS.
 
 	* configure.in: Link libc_r against the ruby executable on
-	FreeBSD, which is the first attempt to work around a certain
-	problem regarding pthread on FreeBSD.  It should make ruby/libruby
-	happy when it loads an extention to a library compiled and linked
-	with -pthread.  Note, however, that libruby is _not_ linked with
-	libc_r so as not to mess up pthread unfriendly stuff including
-	apache+mod_ruby and vim6+ruby_interp.
+	  FreeBSD, which is the first attempt to work around a certain
+	  problem regarding pthread on FreeBSD.  It should make ruby/libruby
+	  happy when it loads an extention to a library compiled and linked
+	  with -pthread.  Note, however, that libruby is _not_ linked with
+	  libc_r so as not to mess up pthread unfriendly stuff including
+	  apache+mod_ruby and vim6+ruby_interp.
 
 Mon Apr  2 01:16:24 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
@@ -576,7 +576,7 @@ Thu Mar 29 17:05:09 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Wed Mar 28 23:43:00 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* ext/extmk.rb.in, lib/mkmf.rb: add C++ rules in addition to C
-	rules for the mswin32 platforms.
+	  rules for the mswin32 platforms.
 
 Wed Mar 28 19:29:21 2001  Akinori MUSHA  <knu@iDaemons.org>
 
@@ -966,7 +966,7 @@ Mon Feb 26 16:20:27 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Mon Feb 26 14:29:04 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/extmk.rb.in, lib/mkmf.rb: add C++ rules in addition to C
-	rules.
+	  rules.
 
 Mon Feb 26 00:04:52 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -1350,7 +1350,7 @@ Fri Jan 26 01:42:40 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Wed Jan 24 14:58:08 2001  Akinori MUSHA  <knu@ruby-lang.org>
 
 	* lib/cgi.rb: fix the problem that when running under mod_ruby
-	header() outputs only one Set-Cookie line.
+	  header() outputs only one Set-Cookie line.
 
 Wed Jan 24 01:45:49 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -3725,12 +3725,12 @@ Fri Jun  9 15:11:35 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 Thu Jun  8 14:25:45 2000  Hiroshi Igarashi  <iga@ruby-lang.org>
 
 	* lib/mkmf.rb: add target `distclean' in Makefile for extlib.
-	target `clean' doesn't remove Makefile.
+	  target `clean' doesn't remove Makefile.
 
 Thu Jun  8 13:34:03 2000  Dave Thomas  <dave@thomases.com>
 
 	* numeric.c: add nan?, infinite?, and finite? to Float
-	
+
 Thu Jun  8 00:31:04 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* regex.h: export re_mbctab properly on cygwin.
@@ -3835,11 +3835,11 @@ Sun May 28 19:21:43 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 	* ruby.h: ditto.
 
 	* main.c: turn off command line mingw32's globbing.
-	
+
 Wed May 25 22:25:13 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
-	
+
 	* ext/extmk.rb.in: use "ftools" instead of "rm -f".
-	
+
 	* lib/mkmf.rb: ditto.
 
 Thu May 25 22:01:32 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
@@ -4241,7 +4241,7 @@ Mon May  1 23:42:44 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 	* defines.h: use dllimport, dllexport for Cygwin 1.1.x.
 
 	* ruby.h: ditto.
-	
+
 	* cygwin/GNUmakefile.in: ditto.
 
 	* ext/Win32API/Win32API.c: directly "call" in asm statement for
@@ -6450,7 +6450,7 @@ Thu Jun 10 16:41:48 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* io.c: do not call `initialize' for IO objects.  So with Array,
 	  Hash, Range, and Time objects.
-	
+
 	* ext/curses/curses.c (curses_getch): made thread aware using
 	  rb_read_check().
 
@@ -8051,22 +8051,28 @@ Sun Nov 15 15:44:07 1998  Tadayoshi Funaba  <tadf@kt.rim.or.jp>
 Sat Nov 14 11:02:05 1998  Motoyuki Kasahara  <m-kasahr@sra.co.jp>
 
 	* Makefile.in (install): Give the argument `$(DESTDIR)' to
-	`instruby.rb'.
+	  `instruby.rb'.
+
 	* instruby.rb: Recognize ARG[0] as `destdir'.
+
 	* instruby.rb: Give the argument `destdir' to `extmk.rb'.
+
 	* ext/extmk.rb.in: Recognize ARG[1] as `$destdir'.
 
 	* instruby.rb: Create the installation directories (bindir, libdir,
-	archdir, pkglibdir, archdir, and mandir) under `destdir', and
-	install all files under there.
+	  archdir, pkglibdir, archdir, and mandir) under `destdir', and
+	  install all files under there.
+
 	* ext/extmk.rb.in: Likewise.
-	
+
 Sat Nov 14 10:56:55 1998  Motoyuki Kasahara  <m-kasahr@sra.co.jp>
 
 	* instruby.rb: Add the variable `pkglibdir'.
+
 	* instruby.rb: Set the variable `libdir' to `$(libdir)', not
-	`$(libdir)/$(ruby_install_name)'. `libruby.so' and `libruby.so.LIB'
-	are installed at `libdir'.
+	  `$(libdir)/$(ruby_install_name)'. `libruby.so' and `libruby.so.LIB'
+	  are installed at `libdir'.
+
 	* instruby.rb: Set the variable `archdir' to `$(pkglibdir)/$(arch)'.
 
 Fri Nov 13 19:43:29 1998  KIMURA Koichi  <kbk@kt.rim.or.jp>
@@ -8201,18 +8207,26 @@ Wed Oct 21 14:21:06 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 Mon Oct 19 11:50:00 1998  Motoyuki Kasahara  <m-kasahr@sra.co.jp>
 
 	* ext/extmk.rb: Load '@top_srcdir@/lib/find.rb', not
-	'../lib/find.rb'.
+	  '../lib/find.rb'.
+
 	* ext/extmk.rb: Distinguish between `top_srcdir' and `topdir'.
+
 	* Makefile.in (CFLAGS): Add `-I.'.
+
 	* Makefile.in (lex.c): Give `@srcdir@/keywords' to gperf, not
-	`keywords'.
+	  `keywords'.
+
 	* instruby.rb: Use `CONFIG["bindir"]', instead of `prefix + "/bin"'.
+
 	* instruby.rb: Use `CONFIG["libdir"]', instead of `prefix + "/lib"'.
+
 	* instruby.rb Use `CONFIG["mandir"]', instead of `prefix + "/man"'.
+
 	* instruby.rb (wdir): Add the variable to preserve the current
-	working directory.
+	  working directory.
+
 	* instruby.rb: Chdir to wdir before install `config.h' and
-	`rbconfig.rb'.
+	  `rbconfig.rb'.
 
 Mon Oct 19 10:07:01 1998  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
 
@@ -8964,7 +8978,7 @@ Mon May 18 16:40:50 1998  MAEDA shugo  <shugo@aianet.ne.jp>
 	* glob.c: #include <alloca.h> added.
 
 Mon May 18 14:52:21 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
-	
+
 	* experimental release 1.1b9_21.
 
 Mon May 18 03:27:57 1998  MAEDA shugo  <shugo@aianet.ne.jp>
@@ -10266,7 +10280,7 @@ Thu Dec 11 13:14:35 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	  not exist.
 
 	* ext/curses/curses.c: remove CHECK macro for BSD curses.
-	
+
 Thu Dec 11 12:44:01 1997  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
 
 	* pack.c: sun4 cc patch
@@ -10731,7 +10745,7 @@ Mon Sep  1 13:42:48 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* parse.y: did not generate here document strings properly.
 
 Mon Sep  1 11:43:57 1997  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
-	
+
 	* parse.y (yylex): heredoc dropped an extra character.
 
 Fri Aug 29 11:10:21 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
@@ -10874,7 +10888,7 @@ Sat Aug 16 00:17:44 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 Fri Aug 15 15:49:46 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (call_trace_func): block context switch in the trace
-          function.
+	  function.
 
 	* eval.c (rb_eval): clear method cache at class extension.
 
