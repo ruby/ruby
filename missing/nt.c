@@ -491,6 +491,20 @@ mypopen (char *cmd, char *mode)
 		sa.lpSecurityDescriptor = NULL;
 		sa.bInheritHandle       = TRUE;
 
+		if (!reading) {
+        	FILE *fp;
+
+			fp = (_popen)(cmd, mode);
+
+			MyPopenRecord[slot].inuse = TRUE;
+			MyPopenRecord[slot].pipe = fp;
+			MyPopenRecord[slot].pid = -1;
+
+			if (!fp)
+			Fatal("cannot open pipe \"%s\" (%s)", cmd, strerror(errno));
+				return fp;
+		}
+
 		fRet = CreatePipe(&hInFile, &hOutFile, &sa, 2048L);
 		if (!fRet)
 			Fatal("cannot open pipe \"%s\" (%s)", cmd, strerror(errno));

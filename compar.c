@@ -79,7 +79,7 @@ cmp_between(x, min, max)
     int t = NUM2INT(c);
     if (t < 0) return FALSE;
 
-    c = rb_funcall(x, cmp, 1, min);
+    c = rb_funcall(x, cmp, 1, max);
     t = NUM2INT(c);
     if (t > 0) return FALSE;
     return TRUE;

@@ -445,10 +445,10 @@ time_coerce(time1, time2)
 	double d = RFLOAT(time2)->value;
 	unsigned int i = (unsigned int) d;
 
-	return time_new_internal(i, (int)(d - (double)i)*1e6);
+	return assoc_new(time_new(i, (int)((d - (double)i)*1e6)),time1);
     }
 
-    return time_new(CLASS_OF(time1), NUM2INT(time2), 0);
+    return assoc_new(time_new(NUM2INT(time2), 0), time1);
 }
 
 static VALUE

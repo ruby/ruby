@@ -880,7 +880,7 @@ io_unbuffered(fptr)
     OpenFile *fptr;
 {
     if (fptr->f2 == 0) TypeError("non-writable fptr");
-    setbuf(fptr->f, NULL);
+    if (fptr->f != 0) setbuf(fptr->f, NULL);
     setbuf(fptr->f2, NULL);
     fptr->mode |= FMODE_SYNC;
 }

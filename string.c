@@ -682,12 +682,12 @@ str_aref(str, indx)
 	return (VALUE)INT2FIX(str->ptr[idx] & 0xff);
 
       case T_REGEXP:
-	if (str_index(str, indx))
+	if (str_match(str, indx))
 	    return reg_last_match(0);
 	return Qnil;
 
       case T_STRING:
-	if (str_index(str, indx, 0)) return indx;
+	if (str_index(str, indx, 0) != -1) return indx;
 	return Qnil;
 
       default:

@@ -7,7 +7,7 @@ elsif have_header("ncurses/curses.h") and have_library("ncurses", "initscr")
   make=TRUE
 else
   $CFLAGS=nil
-  have_library("termcap", "tparam") 
+  have_library("termcap", "tgetent") 
   if have_library("curses", "initscr")
     make=TRUE
   end
