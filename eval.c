@@ -9951,7 +9951,7 @@ thgroup_add(group, thread)
     }
 
     if (!th->thgroup) {
-	rb_warn(rb_eThreadError, "terminated thread");
+	rb_warn("terminated thread");
 	return;
     }
     th->thgroup = group;
