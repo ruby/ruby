@@ -331,7 +331,7 @@ module Net # :nodoc:
           do_start(helo, user, secret, authtype)
           return yield(self)
         ensure
-          finish if @started
+          finish
         end
       else
         do_start(helo, user, secret, authtype)
@@ -365,11 +365,8 @@ module Net # :nodoc:
     end
     private :do_start
 
-    # Finish (close) the SMTP session.  
-    #
-    # If the SMTP session has not been started, an IOError is raised.
+    # Finishes the SMTP session and closes TCP connection.
     def finish
-      raise IOError, 'closing already closed SMTP session' unless @started
       quit if @socket and not @socket.closed? and not @error_occured
       @socket.close if @socket and not @socket.closed?
       @socket = nil
