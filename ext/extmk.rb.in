@@ -313,7 +313,7 @@ archdir = $(pkglibdir)/@arch@
   mfile.printf $objs.join(" ")
   mfile.printf "\n"
 
-  mfile.printf << EOS
+  mfile.printf <<EOS
 TARGET = #{target}.#{$static ? "a" : "@DLEXT@"}
 
 INSTALL = #{$dots}@INSTALL@
