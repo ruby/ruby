@@ -1,3 +1,7 @@
+Sat Feb 22 09:51:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
+
+	* re.c: corrected documentation format (rb_reg_initialize_m)
+
 Sat Feb 21 22:41:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
 
 	* ext/zlib/zlib.c: documented, but needs more effort.

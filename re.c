@@ -1621,7 +1621,7 @@ rb_reg_match_m(re, str)
  *  call-seq:
  *     Regexp.new(string [, options [, lang]])       => regexp
  *     Regexp.new(regexp)                            => regexp
- *	   Regexp.compile(string [, options [, lang]])   => regexp
+ *     Regexp.compile(string [, options [, lang]])   => regexp
  *     Regexp.compile(regexp)                        => regexp
  *  
  *  Constructs a new regular expression from <i>pattern</i>, which can be either
@@ -1634,7 +1634,7 @@ rb_reg_match_m(re, str)
  *  <code>nil</code>, the regexp will be case insensitive. The <i>lang</i>
  *  parameter enables multibyte support for the regexp: `n', `N' = none, `e',
  *  `E' = EUC, `s', `S' = SJIS, `u', `U' = UTF-8.
- *     
+ * 
  *     r1 = Regexp.new('^a-z+:\\s+\w+')           #=> /^a-z+:\s+\w+/
  *     r2 = Regexp.new('cat', true)               #=> /cat/i
  *     r3 = Regexp.new('dog', Regexp::EXTENDED)   #=> /dog/x
