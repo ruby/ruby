@@ -160,13 +160,13 @@ module Net # :nodoc:
   # allows you to use 1.2 features again.
   # 
   #     # example
-  #     Net::HTTP.start { |http1| ...(http1 has 1.2 features)... }
+  #     Net::HTTP.start {|http1| ...(http1 has 1.2 features)... }
   # 
   #     Net::HTTP.version_1_1
-  #     Net::HTTP.start { |http2| ...(http2 has 1.1 features)... }
+  #     Net::HTTP.start {|http2| ...(http2 has 1.1 features)... }
   # 
   #     Net::HTTP.version_1_2
-  #     Net::HTTP.start { |http3| ...(http3 has 1.2 features)... }
+  #     Net::HTTP.start {|http3| ...(http3 has 1.2 features)... }
   # 
   # This function is NOT thread-safe.
   #
@@ -213,7 +213,7 @@ module Net # :nodoc:
       alias is_version_1_2? version_1_2?   #:nodoc:
     end
 
-    def HTTP.setimplversion( obj )   #:nodoc:
+    def HTTP.setimplversion(obj)   #:nodoc:
       f = @@newimpl
       obj.instance_eval { @newimpl = f }
     end
@@ -234,7 +234,7 @@ module Net # :nodoc:
     #
     #    Net::HTTP.get_print('www.example.com', '/index.html')
     #
-    def HTTP.get_print( arg1, arg2 = nil, port = nil )
+    def HTTP.get_print(arg1, arg2 = nil, port = nil)
       if arg2
         addr, path = arg1, arg2
       else
@@ -259,7 +259,7 @@ module Net # :nodoc:
     #
     #    print Net::HTTP.get('www.example.com', '/index.html')
     #
-    def HTTP.get( arg1, arg2 = nil, arg3 = nil )
+    def HTTP.get(arg1, arg2 = nil, arg3 = nil)
       get_response(arg1,arg2,arg3).body
     end
 
@@ -275,7 +275,7 @@ module Net # :nodoc:
     #    res = Net::HTTP.get_response('www.example.com', '/index.html')
     #    print res.body
     #
-    def HTTP.get_response( arg1, arg2 = nil, arg3 = nil )
+    def HTTP.get_response(arg1, arg2 = nil, arg3 = nil)
       if arg2
         get_by_path(arg1, arg2, arg3)
       else
@@ -283,14 +283,14 @@ module Net # :nodoc:
       end
     end
 
-    def HTTP.get_by_path( addr, path, port = nil )   #:nodoc:
+    def HTTP.get_by_path(addr, path, port = nil)   #:nodoc:
       new(addr, port || HTTP.default_port).start {|http|
         return http.request(Get.new(path))
       }
     end
     private_class_method :get_by_path
 
-    def HTTP.get_by_uri( uri )   #:nodoc:
+    def HTTP.get_by_uri(uri)   #:nodoc:
       # Should we allow this?
       # uri = URI.parse(uri) unless uri.respond_to?(:host)
       new(uri.host, uri.port).start {|http|
@@ -320,7 +320,7 @@ module Net # :nodoc:
       # is the return value of the block.  If no block is given, the
       # return value of this method is the newly created Net::HTTP object
       # itself, and the caller is responsible for closing it upon completion.
-      def start( address, port = nil, p_addr = nil, p_port = nil, p_user = nil, p_pass = nil, &block ) # :yield: +http+
+      def start(address, port = nil, p_addr = nil, p_port = nil, p_user = nil, p_pass = nil, &block) # :yield: +http+
         new(address, port, p_addr, p_port, p_user, p_pass).start(&block)
       end
 
@@ -329,7 +329,7 @@ module Net # :nodoc:
       # Creates a new Net::HTTP object.
       # If +proxy_addr+ is given, creates an Net::HTTP object with proxy support.
       # This method does not open the TCP connection.
-      def new( address, port = nil, p_addr = nil, p_port = nil, p_user = nil, p_pass = nil )
+      def new(address, port = nil, p_addr = nil, p_port = nil, p_user = nil, p_pass = nil)
         obj = Proxy(p_addr, p_port, p_user, p_pass).newobj(address, port)
         setimplversion obj
         obj
@@ -338,9 +338,9 @@ module Net # :nodoc:
 
     # Creates a new Net::HTTP object for the specified +address+.
     # This method does not open the TCP connection.
-    def initialize( address, port = nil )
+    def initialize(address, port = nil)
       @address = address
-      @port    = port || HTTP.default_port
+      @port    = (port || HTTP.default_port)
 
       @curr_http_version = HTTPVersion
       @seems_1_0_server = false
@@ -367,7 +367,7 @@ module Net # :nodoc:
     #   http.set_debug_output $stderr
     #   http.start { .... }
     #
-    def set_debug_output( output )
+    def set_debug_output(output)
       warn 'Net::HTTP#set_debug_output called after HTTP started' if started?
       @debug_output = output
     end
@@ -389,7 +389,7 @@ module Net # :nodoc:
     attr_reader :read_timeout
 
     # Setter for the read_timeout attribute.
-    def read_timeout=( sec )
+    def read_timeout=(sec)
       @socket.read_timeout = sec if @socket
       @read_timeout = sec
     end
@@ -481,9 +481,8 @@ module Net # :nodoc:
     #                     :
     #     }
     # 
-    def HTTP.Proxy( p_addr, p_port = nil, p_user = nil, p_pass = nil )
+    def HTTP.Proxy(p_addr, p_port = nil, p_user = nil, p_pass = nil)
       return self unless p_addr
-
       delta = ProxyDelta
       proxyclass = Class.new(self)
       proxyclass.module_eval {
@@ -550,15 +549,13 @@ module Net # :nodoc:
       port
     end
 
-    def edit_path( path )
+    def edit_path(path)
       path
     end
 
     module ProxyDelta   #:nodoc: internal use only
       private
 
-      # with proxy
-    
       def conn_address
         proxy_address()
       end
@@ -567,7 +564,7 @@ module Net # :nodoc:
         proxy_port()
       end
 
-      def edit_path( path )
+      def edit_path(path)
         'http://' + addr_port() + path
       end
     end
@@ -613,7 +610,7 @@ module Net # :nodoc:
     #       end
     #     }
     #
-    def get( path, initheader = nil, dest = nil, &block ) # :yield: +body_segment+
+    def get(path, initheader = nil, dest = nil, &block) # :yield: +body_segment+
       res = nil
       request(Get.new(path, initheader)) {|r|
         r.read_body dest, &block
@@ -643,7 +640,7 @@ module Net # :nodoc:
     #     }
     #     p response['content-type']
     #
-    def head( path, initheader = nil ) 
+    def head(path, initheader = nil) 
       res = request(Head.new(path, initheader))
       res.value unless @newimpl
       res
@@ -687,7 +684,8 @@ module Net # :nodoc:
     #         f.write str
     #       end
     #     }
-    def post( path, data, initheader = nil, dest = nil, &block ) # :yield: +body_segment+
+    #
+    def post(path, data, initheader = nil, dest = nil, &block) # :yield: +body_segment+
       res = nil
       request(Post.new(path, initheader), data) {|r|
         r.read_body dest, &block
@@ -701,9 +699,9 @@ module Net # :nodoc:
       res
     end
 
-    def put( path, data, initheader = nil )   #:nodoc:
+    def put(path, data, initheader = nil)   #:nodoc:
       res = request(Put.new(path, initheader), data)
-      @newimpl or res.value
+      res.value unless @newimpl
       res
     end
 
@@ -732,8 +730,8 @@ module Net # :nodoc:
     #       end
     #     }
     #
-    def request_get( path, initheader = nil, &block ) # :yield: +response+
-      request Get.new(path, initheader), &block
+    def request_get(path, initheader = nil, &block) # :yield: +response+
+      request(Get.new(path, initheader), &block)
     end
 
     # Sends a HEAD request to the +path+ and gets a response,
@@ -746,8 +744,8 @@ module Net # :nodoc:
     #     response = http.request_head('/index.html')
     #     p response['content-type']
     #
-    def request_head( path, initheader = nil, &block )
-      request Head.new(path, initheader), &block
+    def request_head(path, initheader = nil, &block)
+      request(Head.new(path, initheader), &block)
     end
 
     # Sends a POST request to the +path+ and gets a response,
@@ -775,11 +773,12 @@ module Net # :nodoc:
     #         print str
     #       end
     #     }
-    def request_post( path, data, initheader = nil, &block ) # :yield: +response+
+    #
+    def request_post(path, data, initheader = nil, &block) # :yield: +response+
       request Post.new(path, initheader), data, &block
     end
 
-    def request_put( path, data, initheader = nil, &block )   #:nodoc:
+    def request_put(path, data, initheader = nil, &block)   #:nodoc:
       request Put.new(path, initheader), data, &block
     end
 
@@ -799,7 +798,7 @@ module Net # :nodoc:
     #    response = http.send_request('GET', '/index.html')
     #    puts response.body
     #
-    def send_request( name, path, data = nil, header = nil )
+    def send_request(name, path, data = nil, header = nil)
       r = HTTPGenericRequest.new(name,(data ? true : false),true,path,header)
       request r, data
     end
@@ -816,7 +815,8 @@ module Net # :nodoc:
     # Returns a HTTPResponse object.
     # 
     # This method never raises Net::* exceptions.
-    def request( req, body = nil, &block )  # :yield: +response+
+    #
+    def request(req, body = nil, &block)  # :yield: +response+
       unless started?
         start {
           req['connection'] = 'close'
@@ -826,15 +826,15 @@ module Net # :nodoc:
       if proxy_user()
         req.proxy_basic_auth proxy_user(), proxy_pass()
       end
-        
+
       begin_transport req
-          req.exec @socket, @curr_http_version, edit_path(req.path), body
-          begin
-            res = HTTPResponse.read_new(@socket)
-          end while HTTPContinue === res
-          res.reading_body(@socket, req.response_body_permitted?) {
-            yield res if block_given?
-          }
+        req.exec @socket, @curr_http_version, edit_path(req.path), body
+        begin
+          res = HTTPResponse.read_new(@socket)
+        end while HTTPContinue === res
+        res.reading_body(@socket, req.response_body_permitted?) {
+          yield res if block_given?
+        }
       end_transport req, res
 
       res
@@ -842,7 +842,7 @@ module Net # :nodoc:
 
     private
 
-    def begin_transport( req )
+    def begin_transport(req)
       if @socket.closed?
         @socket.reopen @open_timeout
         on_connect
@@ -856,13 +856,12 @@ module Net # :nodoc:
       req['host'] = addr_port()
     end
 
-    def end_transport( req, res )
+    def end_transport(req, res)
       @curr_http_version = res.http_version
-
       if not res.body and @close_on_empty_response
         D 'Conn close'
         @socket.close
-      elsif keep_alive? req, res
+      elsif keep_alive?(req, res)
         D 'Conn keep-alive'
         if @socket.closed?
           D 'Conn (but seems 1.0 server)'
@@ -874,17 +873,14 @@ module Net # :nodoc:
       end
     end
 
-    def keep_alive?( req, res )
-      /close/i === req['connection'].to_s            and return false
-      @seems_1_0_server                              and return false
-
-      /keep-alive/i === res['connection'].to_s       and return true
-      /close/i      === res['connection'].to_s       and return false
-      /keep-alive/i === res['proxy-connection'].to_s and return true
-      /close/i      === res['proxy-connection'].to_s and return false
-
-      @curr_http_version == '1.1'                    and return true
-      false
+    def keep_alive?(req, res)
+      return false if /close/i =~ req['connection'].to_s
+      return false if @seems_1_0_server
+      return true  if /keep-alive/i =~ res['connection'].to_s
+      return false if /close/i      =~ res['connection'].to_s
+      return true  if /keep-alive/i =~ res['proxy-connection'].to_s
+      return false if /close/i      =~ res['proxy-connection'].to_s
+      (@curr_http_version == '1.1')
     end
 
     #
@@ -897,11 +893,10 @@ module Net # :nodoc:
       address + (port == HTTP.default_port ? '' : ":#{port}")
     end
 
-    def D( msg )
-      if @debug_output
-        @debug_output << msg
-        @debug_output << "\n"
-      end
+    def D(msg)
+      return unless @debug_output
+      @debug_output << msg
+      @debug_output << "\n"
     end
 
   end
@@ -926,46 +921,46 @@ module Net # :nodoc:
 
     # Returns the header field corresponding to the case-insensitive key.
     # For example, a key of "Content-Type" might return "text/html"
-    def []( key )
+    def [](key)
       @header[key.downcase]
     end
 
     # Sets the header field corresponding to the case-insensitive key.
-    def []=( key, val )
+    def []=(key, val)
       @header[key.downcase] = val
     end
 
     # Returns the header field corresponding to the case-insensitive key.
     # Returns the default value +args+, or the result of the block, or nil,
     # if there's no header field named key.  See Hash#fetch
-    def fetch( key, *args, &block )  # :yield: +key+
+    def fetch(key, *args, &block)   #:yield: +key+
       @header.fetch(key.downcase, *args, &block)
     end
 
     # Iterates for each header names and values.
-    def each_header( &block ) # :yield: +key+, +value+
+    def each_header(&block)   #:yield: +key+, +value+
       @header.each(&block)
     end
 
     alias each each_header
 
     # Iterates for each header names.
-    def each_key( &block ) # :yield: +key+
+    def each_key(&block)   #:yield: +key+
       @header.each_key(&block)
     end
 
     # Iterates for each header values.
-    def each_value( &block ) # :yield: +value+
+    def each_value(&block)   #:yield: +value+
       @header.each_value(&block)
     end
 
     # Removes a header field.
-    def delete( key )
+    def delete(key)
       @header.delete(key.downcase)
     end
 
     # true if +key+ header exists.
-    def key?( key )
+    def key?(key)
       @header.key?(key.downcase)
     end
 
@@ -974,18 +969,19 @@ module Net # :nodoc:
       @header.dup
     end
 
-    # As for #each_header, except the keys are provided in
-    # canonical form, which is to say, capitalized.
-    def canonical_each
+    # As for #each_header, except the keys are provided in capitalized form.
+    def each_capitalized
       @header.each do |k,v|
-        yield canonical(k), v
+        yield capitalize(k), v
       end
     end
 
-    def canonical( k )
+    alias canonical_each each_capitalized
+
+    def capitalize(k)
       k.split(/-/).map {|i| i.capitalize }.join('-')
     end
-    private :canonical
+    private :capitalize
 
     # Returns a Range object which represents Range: header field,
     # or +nil+ if there is no such header.
@@ -1007,32 +1003,27 @@ module Net # :nodoc:
 
     # Set Range: header from Range (arg r) or beginning index and
     # length from it (arg i&len).
-    def range=( r, fin = nil )
+    def range=(r, fin = nil)
       r = (r ... r + fin) if fin
-
       case r
       when Numeric
-        s = r > 0 ? "0-#{r - 1}" : "-#{-r}"
+        rangestr = (r > 0 ? "0-#{r.to_i - 1}" : "-#{-r.to_i}")
       when Range
         first = r.first
         last = r.last
-        if r.exclude_end?
-          last -= 1
-        end
-
+        last -= 1 if r.exclude_end?
         if last == -1
-          s = first > 0 ? "#{first}-" : "-#{-first}"
+          rangestr = (first > 0 ? "#{first}-" : "-#{-first}")
         else
-          first >= 0 or raise HTTPHeaderSyntaxError, 'range.first is negative' 
-          last > 0  or raise HTTPHeaderSyntaxError, 'range.last is negative' 
-          first < last or raise HTTPHeaderSyntaxError, 'must be .first < .last'
-          s = "#{first}-#{last}"
+          raise HTTPHeaderSyntaxError, 'range.first is negative' if first < 0
+          raise HTTPHeaderSyntaxError, 'range.last is negative' if last < 0
+          raise HTTPHeaderSyntaxError, 'must be .first < .last' if first > last
+          rangestr = "#{first}-#{last}"
         end
       else
         raise TypeError, 'Range/Integer is required'
       end
-
-      @header['range'] = "bytes=#{s}"
+      @header['range'] = "bytes=#{rangestr}"
       r
     end
 
@@ -1041,10 +1032,9 @@ module Net # :nodoc:
     # Returns an Integer object which represents the Content-Length: header field
     # or +nil+ if that field is not provided.
     def content_length
-      s = @header['content-length'] or return nil
-      m = /\d+/.match(s) or
-              raise HTTPHeaderSyntaxError, 'wrong Content-Length format'
-      m[0].to_i
+      len = @header['content-length'].to_s.slice(/\d+/) or
+          raise HTTPHeaderSyntaxError, 'wrong Content-Length format'
+      len.to_i
     end
 
     # Returns "true" if the "transfer-encoding" header is present and
@@ -1052,37 +1042,37 @@ module Net # :nodoc:
     # the content to be sent in "chunks" without at the outset
     # stating the entire content length.
     def chunked?
-      s = @header['transfer-encoding']
-      (s and /(?:\A|[^\-\w])chunked(?:[^\-\w]|\z)/i === s) ? true : false
+      field = @header['transfer-encoding'] or return false
+      (/(?:\A|[^\-\w])chunked(?:[^\-\w]|\z)/i =~ field) ? true : false
     end
 
     # Returns a Range object which represents Content-Range: header field.
     # This indicates, for a partial entity body, where this fragment
     # fits inside the full entity body, as range of byte offsets.
     def content_range
-      s = @header['content-range'] or return nil
-      m = %r<bytes\s+(\d+)-(\d+)/(?:\d+|\*)>i.match(s) or
-              raise HTTPHeaderSyntaxError, 'wrong Content-Range format'
+      return nil unless @header['content-range']
+      m = %r<bytes\s+(\d+)-(\d+)/(\d+|\*)>i.match(@header['content-range']) or
+          raise HTTPHeaderSyntaxError, 'wrong Content-Range format'
       m[1].to_i .. m[2].to_i + 1
     end
 
     # The length of the range represented in Range: header.
     def range_length
-      r = self.content_range
-      r and (r.end - r.begin)
+      r = content_range() or return nil
+      r.end - r.begin
     end
 
     # Set the Authorization: header for "Basic" authorization.
-    def basic_auth( account, password )
+    def basic_auth(account, password)
       @header['authorization'] = basic_encode(account, password)
     end
 
     # Set Proxy-Authorization: header for "Basic" authorization.
-    def proxy_basic_auth( account, password )
+    def proxy_basic_auth(account, password)
       @header['proxy-authorization'] = basic_encode(account, password)
     end
 
-    def basic_encode( account, password )
+    def basic_encode(account, password)
       'Basic ' + ["#{account}:#{password}"].pack('m').strip
     end
     private :basic_encode
@@ -1099,17 +1089,18 @@ module Net # :nodoc:
 
     include HTTPHeader
 
-    def initialize( m, reqbody, resbody, path, initheader = nil )
+    def initialize(m, reqbody, resbody, path, initheader = nil)
       @method = m
       @request_has_body = reqbody
       @response_has_body = resbody
+      raise ArgumentError, "invalid request path: #{path.inspect}" unless %r<\A/> =~ path
       @path = path
 
       @header = {}
       return unless initheader
       initheader.each do |k,v|
         key = k.downcase
-        $stderr.puts "net/http: warning: duplicated HTTP header: #{k}" if @header.key?(key) and $VERBOSE
+        warn "net/http: warning: duplicated HTTP header: #{k}" if @header.key?(key) and $VERBOSE
         @header[key] = v.strip
       end
       @header['accept'] ||= '*/*'
@@ -1136,9 +1127,10 @@ module Net # :nodoc:
     # write
     #
 
-    def exec( sock, ver, path, body )   #:nodoc: internal use only
+    def exec(sock, ver, path, body)   #:nodoc: internal use only
       if body
-        check_body_permitted
+        raise ArgumentError, 'HTTP request body is not permitted' \
+            unless request_body_permitted?
         send_request_with_body sock, ver, path, body
       else
         request sock, ver, path
@@ -1147,27 +1139,20 @@ module Net # :nodoc:
 
     private
 
-    def check_body_permitted
-      request_body_permitted? or
-          raise ArgumentError, 'HTTP request body is not permitted'
-    end
-
-    def send_request_with_body( sock, ver, path, body )
+    def send_request_with_body(sock, ver, path, body)
       @header['content-length'] = body.length.to_s
       @header.delete 'transfer-encoding'
-
       unless @header['content-type']
-        $stderr.puts 'net/http: warning: Content-Type did not set; using application/x-www-form-urlencoded' if $VERBOSE
+        warn 'net/http: warning: Content-Type did not set; using application/x-www-form-urlencoded' if $VERBOSE
         @header['content-type'] = 'application/x-www-form-urlencoded'
       end
-
       request sock, ver, path
       sock.write body
     end
 
-    def request( sock, ver, path )
+    def request(sock, ver, path)
       buf = "#{@method} #{path} HTTP/#{ver}\r\n"
-      canonical_each do |k,v|
+      each_capitalized do |k,v|
         buf << k + ': ' + v + "\r\n"
       end
       buf << "\r\n"
@@ -1184,7 +1169,7 @@ module Net # :nodoc:
   class HTTPRequest < HTTPGenericRequest
 
     # Creates HTTP request object.
-    def initialize( path, initheader = nil )
+    def initialize(path, initheader = nil)
       super self.class::METHOD,
             self.class::REQUEST_HAS_BODY,
             self.class::RESPONSE_HAS_BODY,
@@ -1229,7 +1214,7 @@ module Net # :nodoc:
   # HTTP exception class.
   # You must use its subclasses.
   module HTTPExceptions
-    def initialize( msg, res )   #:nodoc:
+    def initialize(msg, res)   #:nodoc:
       super msg
       @response = res
     end
@@ -1541,11 +1526,11 @@ module Net # :nodoc:
 
     class << self
 
-      def read_new( sock )   #:nodoc: internal use only
+      def read_new(sock)   #:nodoc: internal use only
         httpv, code, msg = read_status_line(sock)
         res = response_class(code).new(httpv, code, msg)
         each_response_header(sock) do |k,v|
-          if res.key? k
+          if res.key?(k)
             res[k] << ', ' << v
           else
             res[k] = v
@@ -1557,25 +1542,25 @@ module Net # :nodoc:
 
       private
 
-      def read_status_line( sock )
+      def read_status_line(sock)
         str = sock.readline
         m = /\AHTTP(?:\/(\d+\.\d+))?\s+(\d\d\d)\s*(.*)\z/in.match(str) or
-                raise HTTPBadResponse, "wrong status line: #{str.dump}"
-        m.to_a[1,3]
+          raise HTTPBadResponse, "wrong status line: #{str.dump}"
+        m.captures
       end
 
-      def response_class( code )
+      def response_class(code)
         CODE_TO_OBJ[code] or
         CODE_CLASS_TO_OBJ[code[0,1]] or
         HTTPUnknownResponse
       end
 
-      def each_response_header( sock )
+      def each_response_header(sock)
         while true
           line = sock.readuntil("\n", true).sub(/\s+\z/, '')
           break if line.empty?
           m = /\A([^:]+):\s*/.match(line) or
-                  raise HTTPBadResponse, 'wrong header line format'
+              raise HTTPBadResponse, 'wrong header line format'
           yield m[1], m.post_match
         end
       end
@@ -1588,7 +1573,7 @@ module Net # :nodoc:
 
     include HTTPHeader
 
-    def initialize( httpv, code, msg )   #:nodoc: internal use only
+    def initialize(httpv, code, msg)   #:nodoc: internal use only
       @http_version = httpv
       @code         = code
       @message      = msg
@@ -1660,7 +1645,7 @@ module Net # :nodoc:
     # body
     #
 
-    def reading_body( sock, reqmethodallowbody )  #:nodoc: internal use only
+    def reading_body(sock, reqmethodallowbody)  #:nodoc: internal use only
       @socket = sock
       @body_exist = reqmethodallowbody && self.class.body_permitted?
       begin
@@ -1693,12 +1678,11 @@ module Net # :nodoc:
     #     end
     #   }
     #
-    def read_body( dest = nil, &block )
+    def read_body(dest = nil, &block)
       if @read
         raise IOError, "#{self.class}\#read_body called twice" if dest or block
         return @body
       end
-
       to = procdest(dest, block)
       stream_check
       if @body_exist
@@ -1734,32 +1718,31 @@ module Net # :nodoc:
 
     private
 
-    def read_body_0( dest )
+    def read_body_0(dest)
       if chunked?
         read_chunked dest
-      else
-        clen = content_length()
-        if clen
-          @socket.read clen, dest, true   # ignore EOF
-        else
-          clen = range_length()
-          if clen
-            @socket.read clen, dest
-          else
-            @socket.read_all dest
-          end
-        end
+        return
       end
+      clen = content_length()
+      if clen
+        @socket.read clen, dest, true   # ignore EOF
+        return
+      end
+      clen = range_length()
+      if clen
+        @socket.read clen, dest
+        return
+      end
+      @socket.read_all dest
     end
 
-    def read_chunked( dest )
+    def read_chunked(dest)
       len = nil
       total = 0
-
       while true
         line = @socket.readline
         hexlen = line.slice(/[0-9a-fA-F]+/) or
-                raise HTTPBadResponse, "wrong chunk size line: #{line}"
+            raise HTTPBadResponse, "wrong chunk size line: #{line}"
         len = hexlen.hex
         break if len == 0
         @socket.read len, dest; total += len
@@ -1774,9 +1757,9 @@ module Net # :nodoc:
       raise IOError, 'try to read body out of block' if @socket.closed?
     end
 
-    def procdest( dest, block )
-      raise ArgumentError, 'both of arg and block are given for HTTP method'\
-                      if dest and block
+    def procdest(dest, block)
+      raise ArgumentError, 'both of arg and block are given for HTTP method' \
+          if dest and block
       if block
         ReadAdapter.new(block)
       else

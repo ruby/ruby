@@ -1,3 +1,10 @@
+Mon Dec 29 20:08:17 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb (GenericRequest#initialize): check if path
+	  begins with '/'.
+
+	* lib/net/http.rb: def m( arg ) -> def m(arg)
+
 Mon Dec 29 12:51:02 2003  Dave Thomas  <dave@pragprog.com>
 
 	* eval.c: Add RDoc for Kernel global functions.
