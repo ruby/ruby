@@ -1,7 +1,12 @@
+Fri Feb  6 18:54:18 2004  akira yamada  <akira@ruby-lang.org>
+
+	* test/ruby/test_proc.rb (TestProc::test_eq): added a
+	  test.  [ruby-dev:22599]
+
 Fri Feb  6 18:26:00 2004  akira yamada  <akira@ruby-lang.org>
 
 	* test/ruby/test_proc.rb (TestProc::test_eq): added tests for
-	  Proc#==.
+	  Proc#==.  [ruby-dev:22592], [ruby-dev:22601]
 
 Fri Feb  6 10:12:06 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

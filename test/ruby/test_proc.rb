@@ -77,12 +77,15 @@ class TestProc < Test::Unit::TestCase
     # [ruby-dev:22592]
     a = m(1)
     b = m(2)
-    assert_equal(false, a == b)
-    assert_equal(false, a.call == b.call)
+    assert_not_equal(a, b)
+    assert_not_equal(a.call, b.call)
+
+    # [ruby-dev:22599]
+    assert_not_equal(proc {||}, proc {|x,y|})
 
     # [ruby-dev:22601]
     a = lambda {|x| lambda {} }.call(1)
     b = lambda {}
-    assert_equal(false, a == b)
+    assert_not_equal(a, b)
   end
 end
