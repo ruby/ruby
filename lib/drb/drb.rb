@@ -1333,7 +1333,11 @@ module DRb
 
     # Stop this server.
     def stop_service
-      @thread.kill
+      if  Thread.current['DRb'] && Thread.current['DRb']['server'] == self
+        Thread.current['DRb']['stop_service'] = true
+      else
+        @thread.kill
+      end
     end
 
     # Convert a dRuby reference to the local object it refers to.
@@ -1518,10 +1522,11 @@ module DRb
 	    end
 	    client.send_reply(succ, result) rescue nil
 	  ensure
-	    unless succ
-	      client.close
-	      break
-	    end
+            client.close unless succ
+            if Thread.current['DRb']['stop_service']
+              Thread.new { stop_service }
+            end
+            break unless succ
 	  end
 	end
       end

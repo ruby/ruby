@@ -25,10 +25,7 @@ module DRb
       @invoker.unregist(@name)
       server = @server
       @server = nil
-      Thread.new do
-	sleep 1
-	server.stop_service
-      end
+      server.stop_service
       true
     end
 
