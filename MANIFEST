@@ -66,7 +66,6 @@ regcomp.c
 regenc.c
 regenc.h
 regerror.c
-regex.c
 regex.h
 regexec.c
 reggnu.c
