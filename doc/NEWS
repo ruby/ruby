@@ -1,8 +1,3 @@
-: Readline::completion_append_characte
-: Readline::completion_append_character=
-
-  Added.
-
 : Proc#yield
 
   Added.  This is equivalent to Proc#call except it does not check the
