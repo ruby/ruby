@@ -230,7 +230,7 @@ module Tk::TreeCtrl::ConfigMethod
   private :__item_configinfo_struct
 
   def __item_numstrval_optkeys(id)
-    if id.kind_of?(Array) && id[0] == 'debug'
+    if id == 'debug'
       ['displaydelay']
     else
       super(id)
@@ -239,10 +239,10 @@ module Tk::TreeCtrl::ConfigMethod
   private :__item_numstrval_optkeys
 
   def __item_boolval_optkeys(id)
-    if id.kind_of?(Array)
+    if id == 'debug'
+      ['data', 'display', 'enable']
+    elsif id.kind_of?(Array)
       case id[0]
-      when 'debug'
-        ['data', 'display', 'enable']
       when 'column'
         ['button', 'expand', 'squeeze', 'sunken', 'visible', 'widthhack']
       when 'element'
@@ -254,10 +254,10 @@ module Tk::TreeCtrl::ConfigMethod
       super(id)
     end
   end
-  private :__item_listval_optkeys
+  private :__item_boolval_optkeys
 
   def __item_strval_optkeys(id)
-    if id.kind_of?(Array) && id[0] == 'debug'
+    if id == 'debug'
       ['erasecolor']
     else
       super(id)
@@ -301,23 +301,23 @@ module Tk::TreeCtrl::ConfigMethod
     itemconfigure(['column', tagOrId], slot, value)
   end
   def column_configinfo(tagOrId, slot=nil)
-    itemconfigure(['column', tagOrId], slot)
+    itemconfiginfo(['column', tagOrId], slot)
   end
   def current_column_configinfo(tagOrId, slot=nil)
-    itemconfigure(['column', tagOrId], slot)
+    current_itemconfiginfo(['column', tagOrId], slot)
   end
 
-  def debug_cget(tagOrId, option)
-    itemcget(['debug', tagOrId], option)
+  def debug_cget(option)
+    itemcget('debug', option)
   end
-  def debug_configure(tagOrId, slot, value=None)
-    itemconfigure(['debug', tagOrId], slot, value)
+  def debug_configure(slot, value=None)
+    itemconfigure('debug', slot, value)
   end
-  def debug_configinfo(tagOrId, slot=nil)
-    itemconfigure(['debug', tagOrId], slot)
+  def debug_configinfo(slot=nil)
+    itemconfiginfo('debug', slot)
   end
-  def debug_element_configinfo(tagOrId, slot=nil)
-    itemconfigure(['debug', tagOrId], slot)
+  def current_debug_configinfo(slot=nil)
+    current_itemconfiginfo('debug', slot)
   end
 
   def dragimage_cget(tagOrId, option)
@@ -327,10 +327,10 @@ module Tk::TreeCtrl::ConfigMethod
     itemconfigure(['dragimage', tagOrId], slot, value)
   end
   def dragimage_configinfo(tagOrId, slot=nil)
-    itemconfigure(['dragimage', tagOrId], slot)
+    itemconfiginfo(['dragimage', tagOrId], slot)
   end
   def current_dragimage_configinfo(tagOrId, slot=nil)
-    itemconfigure(['dragimage', tagOrId], slot)
+    current_itemconfiginfo(['dragimage', tagOrId], slot)
   end
 
   def element_cget(tagOrId, option)
@@ -340,10 +340,10 @@ module Tk::TreeCtrl::ConfigMethod
     itemconfigure(['element', tagOrId], slot, value)
   end
   def element_configinfo(tagOrId, slot=nil)
-    itemconfigure(['element', tagOrId], slot)
+    itemconfiginfo(['element', tagOrId], slot)
   end
   def current_element_configinfo(tagOrId, slot=nil)
-    itemconfigure(['element', tagOrId], slot)
+    current_itemconfiginfo(['element', tagOrId], slot)
   end
 
   def item_element_cget(tagOrId, option)
@@ -353,10 +353,10 @@ module Tk::TreeCtrl::ConfigMethod
     itemconfigure([['item', 'element'], tagOrId], slot, value)
   end
   def item_element_configinfo(tagOrId, slot=nil)
-    itemconfigure([['item', 'element'], tagOrId], slot)
+    itemconfiginfo([['item', 'element'], tagOrId], slot)
   end
   def current_item_element_configinfo(tagOrId, slot=nil)
-    itemconfigure([['item', 'element'], tagOrId], slot)
+    current_itemconfiginfo([['item', 'element'], tagOrId], slot)
   end
 
   def marquee_cget(tagOrId, option)
@@ -366,10 +366,10 @@ module Tk::TreeCtrl::ConfigMethod
     itemconfigure(['marquee', tagOrId], slot, value)
   end
   def marquee_configinfo(tagOrId, slot=nil)
-    itemconfigure(['marquee', tagOrId], slot)
+    itemconfiginfo(['marquee', tagOrId], slot)
   end
   def current_marquee_configinfo(tagOrId, slot=nil)
-    itemconfigure(['marquee', tagOrId], slot)
+    current_itemconfiginfo(['marquee', tagOrId], slot)
   end
 
   def notify_cget(win, pattern, option)
@@ -379,7 +379,7 @@ module Tk::TreeCtrl::ConfigMethod
     itemconfigure(['notify', [win, pattern]], slot, value)
   end
   def notify_configinfo(win, pattern, slot=nil)
-    itemconfigure(['notify', [win, pattern]], slot)
+    itemconfiginfo(['notify', [win, pattern]], slot)
   end
   alias current_notify_configinfo notify_configinfo
 
@@ -390,10 +390,10 @@ module Tk::TreeCtrl::ConfigMethod
     itemconfigure(['style', tagOrId], slot, value)
   end
   def style_configinfo(tagOrId, slot=nil)
-    itemconfigure(['style', tagOrId], slot)
+    itemconfiginfo(['style', tagOrId], slot)
   end
   def current_style_configinfo(tagOrId, slot=nil)
-    itemconfigure(['style', tagOrId], slot)
+    current_itemconfiginfo(['style', tagOrId], slot)
   end
 
   private :itemcget, :itemconfigure
