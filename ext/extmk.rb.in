@@ -398,7 +398,7 @@ def create_makefile(target)
   else
     $LIBPATH.each {|d| $DLDFLAGS << " -L" << d}
     if /netbsdelf/ =~ RUBY_PLATFORM
-      $LIBPATH.each {|d| $DLDFLAGS << " -Wl,-R" + d}
+      $LIBPATH.each {|d| $DLDFLAGS << " -Wl,-R" + d unless d == $topdir}
     end
   end
 
