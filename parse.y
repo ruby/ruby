@@ -426,7 +426,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    }
 		| lhs '=' mrhs_basic
 		    {
-			$$ = node_assign($1, ret_args($3));
+			$$ = node_assign($1, $3);
 		    }
 		| mlhs '=' mrhs
 		    {

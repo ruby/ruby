@@ -660,24 +660,21 @@ An end of a defun is found by moving forward from the beginning of one."
 
 (cond
  ((featurep 'font-lock)
-  (or (boundp 'font-lock-variable-name-face)
-      (setq font-lock-variable-name-face font-lock-type-face))
 
-
-  (add-hook 'ruby-mode-hook
-	    '(lambda ()
-	       (make-local-variable 'font-lock-syntactic-keywords)
-	       (setq font-lock-syntactic-keywords
-		     '(("\\$\\([#\"'`$\\]\\)" 1 (1 . nil))
-		       ("\\(#\\)[{$@]" 1 (1 . nil))
-		       ("\\(/\\)\\([^/\n]\\|\\/\\)*\\(/\\)"
-			(1 (7 . ?'))
-			(3 (7 . ?')))
-		       ("^\\(=\\)begin\\(\\s \\|$\\)" 1 (7 . nil))
-		       ("^\\(=\\)end\\(\\s \\|$\\)" 1 (7 . nil))))
-	       (make-local-variable 'font-lock-defaults)
-	       (setq font-lock-defaults '((ruby-font-lock-keywords) nil nil))
-	       (setq font-lock-keywords ruby-font-lock-keywords)))
+  (setq ruby-font-lock-syntactic-keywords
+ 	'(("\\$\\([#\"'`$\\]\\)" 1 (1 . nil))
+ 	  ("\\(#\\)[{$@]" 1 (1 . nil))
+ 	  ("\\(/\\)\\([^/\n]\\|\\/\\)*\\(/\\)"
+ 	   (1 (7 . ?'))
+ 	   (3 (7 . ?')))
+	  ("^\\(=\\)begin\\(\\s \\|$\\)" 1 (7 . nil))
+	  ("^\\(=\\)end\\(\\s \\|$\\)" 1 (7 . nil))))
+  (put major-mode 'font-lock-defaults
+       '((ruby-font-lock-keywords)
+	 nil nil nil
+	 beginning-of-line
+	 (font-lock-syntactic-keywords
+	  . ruby-font-lock-syntactic-keywords)))
 
   (defun ruby-font-lock-docs (limit)
     (if (re-search-forward "^=begin\\(\\s \\|$\\)" limit t)

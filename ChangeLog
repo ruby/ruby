@@ -1,3 +1,11 @@
+Wed Jun  6 14:34:27 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (aref_args): "*arg" should always be expanded by REXPAND.
+
+Tue Jun  5 23:58:43 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* variable.c (fc_i): removed vast string allocation.
+
 Tue Jun  5 16:45:48 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* error.c (Init_Exception): NameError went under StandardError,

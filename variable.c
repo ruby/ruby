@@ -36,6 +36,33 @@ struct fc_result {
     struct fc_result *prev;
 };
 
+static VALUE
+fc_path(fc, name)
+    struct fc_result *fc;
+    ID name;
+{
+    VALUE path, tmp;
+
+    path = rb_str_new2(rb_id2name(name));
+    while (fc) {
+	if (fc->track == rb_cObject) break;
+	if (ROBJECT(fc->track)->iv_tbl &&
+	    st_lookup(ROBJECT(fc->track)->iv_tbl, rb_intern("__classpath__"), &tmp)) {
+	    tmp = rb_str_dup(tmp);
+	    rb_str_cat2(tmp, "::");
+	    rb_str_append(tmp, path);
+
+	    return tmp;
+	}
+	tmp = rb_str_new2(rb_id2name(fc->name));
+	rb_str_cat2(tmp, "::");
+	rb_str_append(tmp, path);
+	path = tmp;
+	fc = fc->prev;
+    }
+    return path;
+}
+
 static int
 fc_i(key, value, res)
     ID key;
@@ -43,48 +70,43 @@ fc_i(key, value, res)
     struct fc_result *res;
 {
     VALUE path;
-    char *name;
     
     if (!rb_is_const_id(key)) return ST_CONTINUE;
 
-    name = rb_id2name(key);
-    if (res->path) {
-	path = rb_str_dup(res->path);
-	rb_str_cat2(path, "::");
-	rb_str_cat2(path, name);
-    }
-    else {
-	path = rb_str_new2(name);
-    }
     if (value == res->klass) {
-	res->name = key;
-	res->path = path;
+	res->path = fc_path(res, key);
 	return ST_STOP;
     }
-    if (rb_obj_is_kind_of(value, rb_cModule)) {
-	struct fc_result arg;
-	struct fc_result *list;
-
-
+    switch (TYPE(value)) {
+      case T_MODULE:
+      case T_CLASS:
 	if (!RCLASS(value)->iv_tbl) return ST_CONTINUE;
+	else {
+	    struct fc_result arg;
+	    struct fc_result *list;
 
-	list = res;
-	while (list) {
-	    if (list->track == value) return ST_CONTINUE;
-	    list = list->prev;
-	}
+	    list = res;
+	    while (list) {
+		if (list->track == value) return ST_CONTINUE;
+		list = list->prev;
+	    }
 
-	arg.name = 0;
-	arg.path = path;
-	arg.klass = res->klass;
-	arg.track = value;
-	arg.prev = res;
-	st_foreach(RCLASS(value)->iv_tbl, fc_i, &arg);
-	if (arg.name) {
-	    res->name = arg.name;
-	    res->path = arg.path;
-	    return ST_STOP;
+	    arg.name = key;
+	    arg.path = 0;
+	    arg.klass = res->klass;
+	    arg.track = value;
+	    arg.prev = res;
+	    st_foreach(RCLASS(value)->iv_tbl, fc_i, &arg);
+	    if (arg.path) {
+		res->path = arg.path;
+		return ST_STOP;
+	    }
 	}
+	break;
+
+      default:
+	break;
+	    
     }
     return ST_CONTINUE;
 }
@@ -103,10 +125,10 @@ find_class_path(klass)
     if (RCLASS(rb_cObject)->iv_tbl) {
 	st_foreach(RCLASS(rb_cObject)->iv_tbl, fc_i, &arg);
     }
-    if (arg.name == 0) {
+    if (arg.path == 0) {
 	st_foreach(rb_class_tbl, fc_i, &arg);
     }
-    if (arg.name) {
+    if (arg.path) {
 	st_insert(ROBJECT(klass)->iv_tbl,rb_intern("__classpath__"),arg.path);
 	return arg.path;
     }
