@@ -39,7 +39,7 @@ Wed Jan 22 14:22:53 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* error.c (set_syserr): should preserve duplicated error names.
 
-=Tue Jan 21 20:29:31 2003  Michal Rokos  <michal@rokos.homeip.net>
+Tue Jan 21 20:29:31 2003  Michal Rokos  <michal@rokos.homeip.net>
 
 	* mkmf.rb: make possible to add files to clean and distclean targets 
 
