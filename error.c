@@ -280,7 +280,7 @@ rb_check_type(x, t)
 	    }
 	    type++;
 	}
-	rb_bug("unknown type 0x%x", t);
+	rb_bug("unknown type 0x%x (0x%x given)", t, TYPE(x));
     }
 }
 

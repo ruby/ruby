@@ -1,3 +1,8 @@
+Wed Jul 28 15:44:08 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_call0): should call rb_call_super() directly for
+	  visibility overriding.  [ruby-dev:23989]
+
 Wed Jul 28 01:04:44 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* env.h: remove argv from ruby_frame.

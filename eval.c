@@ -5539,8 +5539,8 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 	result = rb_ivar_set(recv, body->nd_vid, argv[0]);
 	break;
 
-      case NODE_ZSUPER:
-	result = rb_eval(recv, body);
+      case NODE_ZSUPER:		/* visibility override */
+	result = rb_call_super(argc, argv);
 	break;
 
       case NODE_BMETHOD:

@@ -564,7 +564,7 @@ module DRb
       rescue
         raise(DRbConnError, $!.message, $!.backtrace)
       end
-      raise(DRbConnError, 'connection closed') if sz.nil?
+      raise(DRbConnError, 'connection closed') if str.nil?
       raise(DRbConnError, 'premature marshal format(can\'t read)') if str.size < sz
       begin
 	Marshal::load(str)
@@ -1395,7 +1395,7 @@ module DRb
           @result = perform_without_block
         end
 	@succ = true
-	if @msg_id == :to_ary && @result.class == Values
+	if @msg_id == :to_ary
 	  @result = DRbArray.new(@result) 
 	end
 	return @succ, @result

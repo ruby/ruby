@@ -6,14 +6,18 @@ end
 require "rbconfig"
 require "socket"
 require "test/unit"
+begin
+  loadpath = $:.dup
+  $:.replace($: | [File.expand_path("../ruby", File.dirname(__FILE__))])
+  require 'envutil'
+ensure
+  $:.replace(loadpath)
+end
 
 if defined?(OpenSSL)
 
 class OpenSSL::TestSSL < Test::Unit::TestCase
-  RUBY = ENV["RUBY"] || File.join(
-    ::Config::CONFIG["bindir"],
-    ::Config::CONFIG["ruby_install_name"] + ::Config::CONFIG["EXEEXT"]
-  )
+  RUBY = EnvUtil.rubybin
   SSL_SERVER = File.join(File.dirname(__FILE__), "ssl_server.rb")
   PORT = 20443
   ITERATIONS = ($0 == __FILE__) ? 100 : 10
