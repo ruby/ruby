@@ -1,3 +1,30 @@
+Sun Sep  8 14:38:31 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in: modify program_prefix only if specified
+	  --program-prefix.
+
+	* configure.in: don't generate ext/extmk.rb.
+
+	* Makefile.in: execute directly $(srcdir)/ext/extmk.rb.
+	  remove -Cext option, "Dir::chdir 'ext'" in ext/extmk.rb.
+
+	* {win32,bccwin32}/Makefile.sub: ditto.
+
+	* instruby.rb: ditto.
+
+	* ext/extmk.rb: renamed from ext/extmk.rb.in.
+
+	* lib/mkmf.rb (module Logging): create log files (mkmf.log)
+	  in each extension module directories.
+
+	* ext/extmk.rb: ditto.
+
+	* lib/mkmf.rb (macro_defined?): new method.
+
+	* ext/.cvsignore: remove extmk.rb.
+
+	* ext/*/.cvsignore: add "*.def".
+
 Sun Sep  8 14:36:40 2002  KONISHI Hiromasa <konishih@fd6.so-net.ne.jp>
 
 	* bcc32/configure.bat : Control of a message.

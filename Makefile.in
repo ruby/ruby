@@ -84,7 +84,7 @@ OBJS	      = array.@OBJEXT@ \
 		$(MISSING)
 
 all:		miniruby$(EXEEXT) @PREP@ rbconfig.rb $(LIBRUBY)
-		@@MINIRUBY@ -Cext extmk.rb @EXTSTATIC@
+		@@MINIRUBY@ $(srcdir)/ext/extmk.rb @EXTSTATIC@
 
 miniruby$(EXEEXT):	config.status $(LIBRUBY_A) $(MAINOBJ) dmyext.@OBJEXT@
 		@rm -f $@
@@ -107,7 +107,7 @@ $(LIBRUBY_SO):	$(OBJS) dmyext.@OBJEXT@ miniruby$(EXEEXT)
 install:	rbconfig.rb
 		@MINIRUBY@ $(srcdir)/instruby.rb $(DESTDIR)
 
-clean-ext:;	@-@MINIRUBY@ -Cext extmk.rb clean 2> /dev/null || true
+clean-ext:;	@-@MINIRUBY@ $(srcdir)/ext/extmk.rb clean 2> /dev/null || true
 
 clean-local:
 		@rm -f $(OBJS) $(MAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY_ALIASES)
@@ -117,10 +117,10 @@ clean-local:
 clean: clean-ext clean-local
 
 distclean-ext:
-		@-@MINIRUBY@ -Cext extmk.rb distclean 2> /dev/null || true
+		@-@MINIRUBY@ $(srcdir)/ext/extmk.rb distclean 2> /dev/null || true
 
 distclean-local: clean-local
-		@rm -f Makefile ext/extmk.rb config.h rbconfig.rb
+		@rm -f Makefile config.h rbconfig.rb
 		@rm -f ext/config.cache config.cache config.log config.status
 		@rm -f *~ core *.core gmon.out y.tab.c y.output ruby.imp
 

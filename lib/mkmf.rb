@@ -80,14 +80,18 @@ end
 
 if /mswin32/ =~ RUBY_PLATFORM
   OUTFLAG = '-Fe'
+  CPPOUTFILE = '-P'
 elsif /bccwin32/ =~ RUBY_PLATFORM
   OUTFLAG = '-o'
+  CPPOUTFILE = '-oconftest.i'
 else
   OUTFLAG = '-o '
+  CPPOUTFILE = '-o conftest.i'
 end
+
 $LINK = "#{CONFIG['CC']} #{OUTFLAG}conftest -I#{$hdrdir} #{CFLAGS} %s %s #{CONFIG['LDFLAGS']} %s conftest.c %s %s #{CONFIG['LIBS']}"
 $CC = "#{CONFIG['CC']} -c #{CONFIG['CPPFLAGS']} %s -I#{$hdrdir} #{CFLAGS} %s %s conftest.c"
-$CPP = "#{CONFIG['CPP']} #{CONFIG['CPPFLAGS']} %s -I#{$hdrdir} #{CFLAGS} %s %s conftest.c"
+$CPP = "#{CONFIG['CPP']} #{CONFIG['CPPFLAGS']} %s -I#{$hdrdir} #{CFLAGS} %s %s %s conftest.c"
 
 def rm_f(*files)
   targets = []
@@ -113,28 +117,34 @@ def older(file1, file2)
   return false
 end
 
-$log = nil
-$orgerr = $stderr.dup
-$orgout = $stdout.dup
-$extmk = /extmk\.rb/ =~ $0
+module Logging
+  @log = nil
+  @logfile = 'mkmf.log'
+  @orgerr = $stderr.dup
+  @orgout = $stdout.dup
 
-def logging
-  if $DEBUG
-    return yield
+  def self::open
+    @log ||= File::open(@logfile, 'w')
+    $stderr.reopen(@log)
+    $stdout.reopen(@log)
+    yield
+  ensure
+    $stderr.reopen(@orgerr)
+    $stdout.reopen(@orgout)
   end
-  logfile = $extmk ? File.join($topdir, 'ext', 'extmk.log') : 'mkmf.log'
-  $log ||= open(logfile, 'w')
-  $stderr.reopen($log)
-  $stdout.reopen($log)
-  yield
-ensure
-  $stderr.reopen($orgerr)
-  $stdout.reopen($orgout)
+
+  def self::logfile file
+    @logfile = file
+    if @log and not @log.closed?
+      @log.close
+      @log = nil
+    end
+  end
 end
 
 def xsystem command
   Config.expand(command)
-  logging do
+  Logging::open do
     puts command
     system(command)
   end
@@ -142,7 +152,7 @@ end
 
 def xpopen command, *mode, &block
   Config.expand(command)
-  logging do
+  Logging::open do
     case mode[0]
     when nil, /^r/
       puts "#{command} |"
@@ -194,12 +204,20 @@ def try_compile(src, opt="")
   end
 end
 
+def macro_defined?(macro, src, opt="")
+  try_cpp(src + <<EOP, opt)
+#ifndef #{macro}
+# error
+#endif
+EOP
+end
+
 def try_cpp(src, opt="")
   cfile = open("conftest.c", "w")
   cfile.print src
   cfile.close
   begin
-    xsystem(format($CPP, $CPPFLAGS, $CFLAGS, opt))
+    xsystem(format($CPP, $CPPFLAGS, $CFLAGS, CPPOUTFILE, opt))
   ensure
     rm_f "conftest*"
   end
@@ -210,7 +228,7 @@ def egrep_cpp(pat, src, opt="")
   cfile.print src
   cfile.close
   begin
-    xpopen(format($CPP, $CFLAGS, $CPPFLAGS, opt)) do |f|
+    xpopen(format($CPP, $CFLAGS, $CPPFLAGS, '', opt)) do |f|
       if Regexp === pat
 	puts("    ruby -ne 'print if /#{pat.source}/'")
 	f.grep(pat) {|l|
@@ -300,7 +318,7 @@ def append_library(libs, lib)
 end
 
 def message(*s)
-  unless $extmk
+  unless /extmk\.rb/ =~ $0 and not $VERBOSE
     print(*s)
     STDOUT.flush
   end
@@ -526,7 +544,7 @@ def create_makefile(target, srcprefix = nil)
   end
   $DLDFLAGS = CONFIG["DLDFLAGS"]
 
-  $libs = CONFIG["LIBRUBYARG"] + " " + $libs + CONFIG["LIBS"]
+  $libs = CONFIG["LIBRUBYARG"] + " " + $libs + " " + CONFIG["LIBS"]
   $configure_args['--enable-shared'] or $LIBPATH |= [$topdir]
   $LIBPATH |= [CONFIG["libdir"]]
 

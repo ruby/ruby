@@ -69,12 +69,8 @@ if RUBY_PLATFORM =~ /-aix/
   File.install "ruby.imp", archlibdir, 0644, true
 end
 
-Dir.chdir "ext"
-if defined? CROSS_COMPILING
-  system "#{CONFIG['MINIRUBY']} extmk.rb install #{destdir}"
-else
-  system "../miniruby#{exeext} extmk.rb install #{destdir}"
-end
+system "#{CONFIG['MINIRUBY']} #{CONFIG['srcdir']}/ext/extmk.rb install #{destdir}"
+
 Dir.chdir CONFIG["srcdir"]
 
 File.install "sample/irb.rb", "#{bindir}/irb", 0755, true

@@ -153,10 +153,10 @@ OBJS          = array.obj \
 		version.obj \
 		$(MISSING)
 
-all:		miniruby$(EXEEXT) rbconfig.rb ext/extmk.rb \
+all:		miniruby$(EXEEXT) rbconfig.rb \
 		$(LIBRUBY) $(MISCLIBS)
 		set LIB=..\..;$(ORGLIBPATH)
-		@.\miniruby$(EXEEXT) -Cext extmk.rb 
+		@.\miniruby$(EXEEXT) $(srcdir)/ext/extmk.rb 
 
 ruby: $(PROGRAM)
 rubyw: $(WPROGRAM)
@@ -319,6 +319,7 @@ s,@DLEXT2@,dll,;t t
 s,@STRIP@,$(STRIP),;t t
 s,@EXTSTATIC@,$(EXTSTATIC),;t t
 s,@setup@,Setup,;t t
+s,@MINIRUBY@,$(MINIRUBY),;t t
 s,@LIBRUBY_LDSHARED@,$(LIBRUBY_LDSHARED),;t t
 s,@LIBRUBY_DLDFLAGS@,$(LIBRUBY_DLDFLAGS),;t t
 s,@RUBY_INSTALL_NAME@,$(RUBY_INSTALL_NAME),;t t
@@ -340,13 +341,13 @@ s,@srcdir@,$(srcdir),;t t
 s,@top_srcdir@,$(srcdir),;t t
 <<
 
-ext/extmk.rb:	$(srcdir)/ext/extmk.rb.in config.status
-		@echo Creating ext/extmk.rb
-		@.\miniruby$(EXEEXT) $(srcdir)/ext/configsub.rb \
-			-srcdir=$(srcdir) \
-			-install_name=$(RUBY_INSTALL_NAME) \
-			-so_name=$(RUBY_SO_NAME) \
-			-output=$@ $(srcdir)/ext/extmk.rb.in
+#ext/extmk.rb:	$(srcdir)/ext/extmk.rb.in config.status
+#		@echo Creating ext/extmk.rb
+#		@.\miniruby$(EXEEXT) $(srcdir)/ext/configsub.rb \
+#			-srcdir=$(srcdir) \
+#			-install_name=$(RUBY_INSTALL_NAME) \
+#			-so_name=$(RUBY_SO_NAME) \
+#			-output=$@ $(srcdir)/ext/extmk.rb.in
 
 miniruby$(EXEEXT):	$(OBJS) $(MAINOBJ) $(EXTOBJS) 
 		@echo $(EXTOBJS)
@@ -396,13 +397,12 @@ clean-local:
 		@if exist *.res del *.res
 
 clean-ext:
-		@-.\miniruby$(EXEEXT) -Cext extmk.rb clean
+		@-.\miniruby$(EXEEXT) $(srcdir)/ext/extmk.rb clean
 
 distclean:	distclean-ext distclean-local
 
 distclean-local:	clean-local
 		@if exist Makefile del Makefile
-		@if exist ext\extmk.rb del ext\extmk.rb
 		@if exist config.h del config.h
 		@if exist ext\config.cache del ext\config.cache
 		@if exist config.cache del config.cache
@@ -431,7 +431,7 @@ distclean-local:	clean-local
 		@if exist miniruby$(EXEEXT) del miniruby$(EXEEXT)
 
 distclean-ext:
-		@-.\miniruby$(EXEEXT) -Cext extmk.rb distclean
+		@-.\miniruby$(EXEEXT) $(srcdir)/ext/extmk.rb distclean
 
 realclean:	distclean
 		@if exist parse.c del parse.c

@@ -99,7 +99,7 @@ ext/Setup.nt
 ext/Setup.x68
 ext/aix_mksym.rb
 ext/configsub.rb
-ext/extmk.rb.in
+ext/extmk.rb
 lib/English.rb
 lib/Env.rb
 lib/README

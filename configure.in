@@ -27,6 +27,9 @@ then
 (it is also a good idea to do 'make clean' before compiling))
 fi
 
+if test "$program_prefix" = NONE; then
+  program_prefix=
+fi
 AC_CANONICAL_TARGET
 
 dnl checks for fat-binary
@@ -1172,5 +1175,5 @@ else
 fi
 : > confdefs.h
 
-AC_CONFIG_FILES([$FIRSTMAKEFILE Makefile ext/extmk.rb])
+AC_CONFIG_FILES([$FIRSTMAKEFILE Makefile])
 AC_OUTPUT
