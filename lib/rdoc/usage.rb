@@ -9,8 +9,8 @@
 #
 # = Usage
 #
-#   RDoc::usage( [ exit_status ], [ section, ...], [options])
-#   RDoc::usage_no_exit( [ section, ...], [options])
+#   RDoc::usage( [ exit_status ], [ section, ...])
+#   RDoc::usage_no_exit( [ section, ...])
 #
 # where:
 #
@@ -24,18 +24,6 @@
 #     For example, this section is named 'Usage', and the next
 #     section is named 'Examples'. The section names are case
 #     insensitive.
-#
-# options::
-#     a hash of options. Option keys and values must implement +to_str+.
-#     Supported options are:
-#
-#     formatter::  
-#       plain | html | bs | ansi
-#  
-#       Select the output format: plain text, html, text using
-#       backspace combinations to do underling and bold, or
-#       text using ANSI escape sequences to colorize bold, italic, etc
-#
 #
 # = Examples
 #
@@ -59,10 +47,9 @@
 #    RDoc::usage(99, 'Summary')
 #
 #    # Display information in the Author and Copyright
-#    # sections, then exit 0. Use the ANSI formatter
-#    # (which colorized using ANSI escape sequences)
+#    # sections, then exit 0.
 #    
-#    RDoc::usage('Author', 'Copyright', :formatter => :ansi)
+#    RDoc::usage('Author', 'Copyright')
 #
 #    # Display information in the Author and Copyright
 #    # sections, but don't exit
@@ -124,16 +111,14 @@ module RDoc
     format = "plain"
 
     unless args.empty?
-      if args[-1].class == Hash
-        options = args.pop
-        o_format = options[:formatter] || options['formatter']
-        format = o_format.to_s if o_format
-      end
       flow = extract_sections(flow, args)
     end
 
     options = RI::Options.instance
-    formatter = RI::TextFormatter.for(format).new(options, "   ")
+    if ENV["RI"]
+      options.parse
+    end
+    formatter = options.formatter.new(options, "   ")
     formatter.display_flow(flow)
   end
 
@@ -194,12 +179,18 @@ module RDoc
         end
       end
     end
+    if result.empty?
+      puts "Note to developer: requested section(s) [#{sections.join(', ')}] " +
+           "not found"
+      result = flow
+    end
     result
   end
 
   #####
   # Report the fact that no doc comment count be found
   def RDoc.no_comment
+fail "xxx"
     $stderr.puts "No usage information available for this program"
     nil
   end
@@ -207,13 +198,6 @@ end
 
 
 if $0 == __FILE__
-
-  opts = {}
-  if ARGV[0] && ARGV[0] =~ /^(plain|ansi|html|bs)$/
-    opts[:formatter] = ARGV.shift
-  end
-  
-  ARGV.push opts unless opts.empty?
 
   RDoc::usage(*ARGV)
 
