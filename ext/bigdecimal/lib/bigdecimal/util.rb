@@ -38,8 +38,6 @@ class BigDecimal < Numeric
      else
        i       = self.to_i.to_s
        s,f,y,z = self.frac.split
-       f = f.gsub(/0+$/,"")
-       f = "0" if f==""
        i + "." + ("0"*(-z)) + f
      end
   end
