@@ -3743,6 +3743,10 @@ local_pop()
 static ID*
 local_tbl()
 {
+#if 1
+    local_cnt('_');
+    local_cnt('~');
+#endif
     lvtbl->nofree = 1;
     return lvtbl->tbl;
 }
@@ -3832,17 +3836,11 @@ top_local_setup()
 		the_scope->local_vars = vars+1;
 		memclear(the_scope->local_vars+i, len-i);
 	    }
-#if 1
-	    local_cnt('_');
-	    local_cnt('~');
-#endif
-	    lvtbl->tbl[0] = len;
 	    if (the_scope->local_tbl && the_scope->local_vars[-1] == 0) {
 		free(the_scope->local_tbl);
 	    }
 	    the_scope->local_vars[-1] = 0;
-	    the_scope->local_tbl = lvtbl->tbl;
-	    lvtbl->nofree = 1;
+	    the_scope->local_tbl = local_tbl();
 	}
     }
     local_pop();
