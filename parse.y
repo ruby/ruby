@@ -3645,12 +3645,7 @@ yylex()
 	    lex_state = EXPR_BEG;
 	    pushback(c);
 	    if (ISDIGIT(c)) {
-#if 0
-		c = '-';
-		goto start_num;
-#else
 		return tUMINUS_NUM;
-#endif
 	    }
 	    return tUMINUS;
 	}
@@ -3668,12 +3663,11 @@ yylex()
 	    return tDOT2;
 	}
 	pushback(c);
-	if (!ISDIGIT(c)) {
-	    lex_state = EXPR_DOT;
-	    return '.';
+	if (ISDIGIT(c)) {
+	    rb_warning("no .<digit> floating literal anymore; put 0 before dot");
 	}
-	c = '.';
-	/* fall through */
+	lex_state = EXPR_DOT;
+	return '.';
 
       start_num:
       case '0': case '1': case '2': case '3': case '4':

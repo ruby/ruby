@@ -1,3 +1,7 @@
+Wed Feb  5 17:11:02 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (yylex): no .<digit> floating literal anymore.
+
 Tue Feb  4 16:11:30 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_equal): a == b is true when b is non T_ARRAY
