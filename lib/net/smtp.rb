@@ -44,7 +44,7 @@ executed.
 
     require 'net/smtp'
     Net::SMTP.start('your.smtp.server', 25) {|smtp|
-        # use smtp object only in this block
+        # use SMTP object only in this block
     }
 
 Replace 'your.smtp.server' by your SMTP server. Normally
@@ -144,8 +144,14 @@ the SMTP session by inspecting HELO domain.
     authentication by using AUTH command. :plain or :cram_md5 is
     allowed for AUTHTYPE.
 
-: active?
+: started?
     true if SMTP session is started.
+
+: esmtp?
+    true if the SMTP object uses ESMTP.
+
+: esmtp=(b)
+    set wheather SMTP should use ESMTP.
 
 : address
     the address to connect
@@ -209,14 +215,15 @@ the SMTP session by inspecting HELO domain.
 == Exceptions
 
 SMTP objects raise these exceptions:
+
 : Net::ProtoSyntaxError
-    syntax error (errno.500)
+    Syntax error (errno.500)
 : Net::ProtoFatalError
-    fatal error (errno.550)
+    Fatal error (errno.550)
 : Net::ProtoUnknownError
-    unknown error. (is probably bug)
+    Unknown error. (is probably bug)
 : Net::ProtoServerBusy
-    temporary error (errno.420/450)
+    Temporal error (errno.420/450)
 
 =end
 
@@ -226,16 +233,31 @@ require 'digest/md5'
 
 module Net
 
-  class SMTP < Protocol
+  class SMTP
 
-    protocol_param :default_port, '25'
-    protocol_param :command_type, '::Net::SMTPCommand'
-    protocol_param :socket_type,  '::Net::InternetMessageIO'
-  
+    Revision = %q$Revision$.split[1]
 
-    def initialize( addr, port = nil )
-      super
+    def SMTP.default_port
+      25
+    end
+
+    def initialize( address, port = nil )
+      @address = address
+      @port = port || SMTP.default_port
+
       @esmtp = true
+
+      @command = nil
+      @socket = nil
+      @started = false
+      @open_timeout = 30
+      @read_timeout = 60
+
+      @debug_output = nil
+    end
+
+    def inspect
+      "#<#{self.class} #{address}:#{@port} open=#{@started}>"
     end
 
     def esmtp?
@@ -248,27 +270,70 @@ module Net
 
     alias esmtp esmtp?
 
-    private
+    attr_reader :address
+    attr_reader :port
 
-    def do_start( helo = 'localhost.localdomain',
-                  user = nil, secret = nil, authtype = nil )
-      conn_socket
-      conn_command
+    attr_accessor :open_timeout
+    attr_reader :read_timeout
 
+    def read_timeout=( sec )
+      @socket.read_timeout = sec if @socket
+      @read_timeout = sec
+    end
+
+    def set_debug_output( arg )
+      @debug_output = arg
+    end
+
+    #
+    # SMTP session control
+    #
+
+    def SMTP.start( address, port = nil,
+                    helo = 'localhost.localdomain',
+                    user = nil, secret = nil, authtype = nil,
+                    &block)
+      new(address, port).start(helo, user, secret, authtype, &block)
+    end
+
+    def started?
+      @started
+    end
+
+    def start( helo = 'localhost.localdomain',
+               user = nil, secret = nil, authtype = nil )
+      raise IOError, 'SMTP session opened already' if @started
+      if block_given?
+        begin
+          do_start(helo, user, secret, authtype)
+          return yield(self)
+        ensure
+          finish if @started
+        end
+      else
+        do_start(helo, user, secret, authtype)
+        return self
+      end
+    end
+
+    def do_start( helo, user, secret, authtype )
+      @socket = InternetMessageIO.open(@address, @port,
+                                       @open_timeout, @read_timeout,
+                                       @debug_output)
+      @command = SMTPCommand.new(@socket)
       begin
         if @esmtp
-          command().ehlo helo
+          @command.ehlo helo
         else
-          command().helo helo
+          @command.helo helo
         end
       rescue ProtocolError
         if @esmtp
           @esmtp = false
-          command().error_ok
+          @command.error_ok
           retry
-        else
-          raise
         end
+        raise
       end
 
       if user or secret
@@ -277,28 +342,30 @@ module Net
         mid = 'auth_' + (authtype || 'cram_md5').to_s
         raise ArgumentError, "wrong auth type #{authtype}"\
                         unless command().respond_to?(mid)
-        command().__send__ mid, user, secret
+        @command.__send__ mid, user, secret
       end
     end
+    private :do_start
 
-    def do_finish
-      disconn_command
-      disconn_socket
+    def finish
+      raise IOError, 'closing already closed SMTP session' unless @started
+      @command.quit if @command
+      @command = nil
+      @socket.close if @socket and not @socket.closed?
+      @socket = nil
+      @started = false
     end
 
-
     #
-    # SMTP operations
+    # SMTP wrapper
     #
-
-    public
 
     def send_mail( mailsrc, from_addr, *to_addrs )
       do_ready from_addr, to_addrs.flatten
       command().write_mail mailsrc
     end
 
-    alias sendmail send_mail
+    alias sendmail send_mail   # backward compatibility
 
     def ready( from_addr, *to_addrs, &block )
       do_ready from_addr, to_addrs.flatten
@@ -313,45 +380,49 @@ module Net
       command().rcpt to_addrs
     end
 
+    def command
+      raise IOError, "closed session" unless @command
+      @command
+    end
+
   end
 
   SMTPSession = SMTP
 
 
-  class SMTPCommand < Command
+  class SMTPCommand
 
     def initialize( sock )
-      super
-      atomic {
-          check_reply SuccessCode
-      }
+      @socket = sock
+      @in_critical_block = false
+      check_response(critical { recv_response() })
+    end
+
+    def inspect
+      "#<#{self.class} socket=#{@socket.inspect}>"
     end
 
     def helo( domain )
-      atomic {
-          getok sprintf('HELO %s', domain)
-      }
+      getok('HELO %s', domain)
     end
 
     def ehlo( domain )
-      atomic {
-          getok sprintf('EHLO %s', domain)
-      }
+      getok('EHLO %s', domain)
     end
 
     # "PLAIN" authentication [RFC2554]
     def auth_plain( user, secret )
-      atomic {
-          getok sprintf('AUTH PLAIN %s',
-                        ["\0#{user}\0#{secret}"].pack('m').chomp)
-      }
+      res = critical { get_response('AUTH PLAIN %s',
+                                    ["\0#{user}\0#{secret}"].pack('m').chomp) }
+      raise SMTPAuthenticationError, res unless /\A2../ === res
     end
 
     # "CRAM-MD5" authentication [RFC2195]
     def auth_cram_md5( user, secret )
-      atomic {
-          rep = getok('AUTH CRAM-MD5', ContinueCode)
-          challenge = rep.msg.split(/ /)[1].unpack('m')[0]
+      res = nil
+      critical {
+          res = check_response(get_response('AUTH CRAM-MD5'), true)
+          challenge = res.split(/ /)[1].unpack('m')[0]
           secret = Digest::MD5.digest(secret) if secret.size > 64
 
           isecret = secret + "\0" * (64 - secret.size)
@@ -363,86 +434,89 @@ module Net
           tmp = Digest::MD5.digest(isecret + challenge)
           tmp = Digest::MD5.hexdigest(osecret + tmp)
 
-          getok [user + ' ' + tmp].pack('m').gsub(/\s+/, '')
+          res = get_response([user + ' ' + tmp].pack('m').gsub(/\s+/, ''))
       }
+      raise SMTPAuthenticationError, res unless /\A2../ === res
     end
 
     def mailfrom( fromaddr )
-      atomic {
-          getok sprintf('MAIL FROM:<%s>', fromaddr)
-      }
+      getok('MAIL FROM:<%s>', fromaddr)
     end
 
     def rcpt( toaddrs )
       toaddrs.each do |i|
-        atomic {
-            getok sprintf('RCPT TO:<%s>', i)
-        }
+        getok('RCPT TO:<%s>', i)
       end
     end
 
     def write_mail( src )
-      atomic {
-          getok 'DATA', ContinueCode
+      res = critical {
+          check_response(get_response('DATA'), true)
           @socket.write_message src
-          check_reply SuccessCode
+          recv_response()
       }
+      check_response(res)
     end
 
     def through_mail( &block )
-      atomic {
-          getok 'DATA', ContinueCode
+      res = critical {
+          check_response(get_response('DATA'), true)
           @socket.through_message(&block)
-          check_reply SuccessCode
+          recv_response()
       }
+      check_response(res)
     end
 
     def quit
-      atomic {
-          getok 'QUIT'
-      }
+      getok('QUIT')
     end
 
     private
 
-    def get_reply
-      arr = read_reply
-      stat = arr[0][0,3]
+    def getok( fmt, *args )
+      @socket.writeline sprintf(fmt, *args)
+      check_response(critical { recv_response() })
+    end
 
-      klass = case stat[0]
-              when ?2 then SuccessCode
-              when ?3 then ContinueCode
-              when ?4 then ServerErrorCode
+    def get_response( fmt, *args )
+      @socket.writeline sprintf(fmt, *args)
+      recv_response()
+    end
+
+    def recv_response
+      res = ''
+      while true
+        line = @socket.readline
+        res << line << "\n"
+        break unless line[3] == ?-   # "210-PIPELINING"
+      end
+      res
+    end
+
+    def check_response( res, cont = false )
+      etype = case res[0]
+              when ?2 then nil
+              when ?3 then cont ? nil : ProtoUnknownError
+              when ?4 then ProtoServerError
               when ?5 then
-                case stat[1]
-                when ?0 then SyntaxErrorCode
-                when ?3 then AuthErrorCode
-                when ?5 then FatalErrorCode
+                case res[1]
+                when ?0 then ProtoSyntaxError
+                when ?3 then ProtoAuthError
+                when ?5 then ProtoFatalError
                 end
               end
-      klass ||= UnknownCode
-
-      Response.new(klass, stat, arr.join(''))
+      raise etype, res if etype
+      res
     end
 
-    def read_reply
-      arr = []
-      while true
-        str = @socket.readline
-        break unless str[3] == ?-   # "210-PIPELINING"
-        arr.push str
-      end
-      arr.push str
-
-      arr
+    def critical
+      return if @in_critical_block
+      @in_critical_block = true
+      result = yield()
+      @in_critical_block = false
+      result
     end
 
-  end
-
-
-  # for backward compatibility
-  module NetPrivate
-    SMTPCommand = ::Net::SMTPCommand
   end
 
 end   # module Net

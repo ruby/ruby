@@ -1,3 +1,28 @@
+Fri May  2 23:29:53 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/protocol.rb: remove Protocol class.
+
+	* lib/net/smtp.rb (SMTP): ditto.
+
+	* lib/net/pop.rb (POP3): ditto.
+
+	* lib/net/http.rb (HTTP): ditto.
+
+	* lib/net/protocol.rb: remove Command class.
+
+	* lib/net/smtp.rb (SMTPCommand): ditto.
+
+	* lib/net/pop.rb (POP3Command): ditto.
+
+	* lib/net/pop.rb: remove APOPCommand class.
+
+	* lib/net/protocol.rb: remove Code class and its all subclasses.
+
+	* lib/net/protocol.rb: remove Response class and its all
+	  subclasses.
+
+	* lib/net/pop.rb (POPMail): new method unique_id (alias uidl).
+
 Fri May  2 18:17:37 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* compar.c (cmp_gt): raises ArgumentError when "<=>" give nil.

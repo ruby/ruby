@@ -562,10 +562,11 @@ module Net
   class HTTPHeaderSyntaxError < StandardError; end
 
 
-  class HTTP < Protocol
+  class HTTP
+
+    Revision = %q$Revision$.split[1]
 
     HTTPVersion = '1.1'
-
 
     #
     # for backward compatibility
@@ -590,7 +591,6 @@ module Net
       obj.instance_eval { @newimpl = f }
     end
     private_class_method :setimplversion
-
 
     #
     # short cut methods
@@ -644,13 +644,17 @@ module Net
     end
     private_class_method :get_by_uri
 
-
     #
-    # connection
+    # HTTP session management
     #
 
-    protocol_param :default_port, '80'
-    protocol_param :socket_type,  '::Net::InternetMessageIO'
+    def HTTP.default_port
+      80
+    end
+
+    def HTTP.socket_type
+      InternetMessageIO
+    end
 
     class << HTTP
       def start( address, port = nil, p_addr = nil, p_port = nil, p_user = nil, p_pass = nil, &block )
@@ -666,25 +670,94 @@ module Net
       end
     end
 
-    def initialize( addr, port = nil )
-      super
+    def initialize( address, port = nil )
+      @address = address
+      @port    = port || HTTP.default_port
+
       @curr_http_version = HTTPVersion
       @seems_1_0_server = false
       @close_on_empty_response = false
+      @socket  = nil
+      @started = false
+
+      @open_timeout = 30
+      @read_timeout = 60
+
+      @debug_output = nil
     end
+
+    def inspect
+      "#<#{self.class} #{@address}:#{@port} open=#{active?}>"
+    end
+
+    def set_debug_output( arg )   # :nodoc:
+      @debug_output = arg
+    end
+
+    attr_reader :address
+    attr_reader :port
+
+    attr_accessor :open_timeout
+
+    attr_reader :read_timeout
+
+    def read_timeout=( sec )
+      @socket.read_timeout = sec if @socket
+      @read_timeout = sec
+    end
+
+    def started?
+      @started
+    end
+
+    alias active? started?
 
     attr_accessor :close_on_empty_response
 
-    private
+    def start
+      raise IOError, 'HTTP session already opened' if @started
+      if block_given?
+        begin
+          do_start
+          return yield(self)
+        ensure
+          finish
+        end
+      end
+      do_start
+      self
+    end
 
     def do_start
-      conn_socket
+      @socket = self.class.socket_type.open(conn_address(), conn_port(),
+                                            @open_timeout, @read_timeout,
+                                            @debug_output)
+      on_connect
+      @started = true
     end
+    private :do_start
 
-    def do_finish
-      disconn_socket
+    def conn_address
+      address()
     end
+    private :conn_address
 
+    def conn_port
+      port()
+    end
+    private :conn_port
+
+    def on_connect
+    end
+    private :on_connect
+
+    def finish
+      raise IOError, 'closing already closed HTTP session' unless @started
+      @socket.close if @socket and not @socket.closed?
+      @socket = nil
+      @started = false
+      nil
+    end
 
     #
     # proxy
@@ -784,9 +857,8 @@ module Net
       end
     end
 
-
     #
-    # http operations
+    # HTTP operations
     #
 
     public
@@ -888,7 +960,8 @@ module Net
 
     def begin_transport( req )
       if @socket.closed?
-        reconn_socket
+        @socket.reopen @open_timeout
+        on_connect
       end
       if @seems_1_0_server
         req['connection'] = 'close'
@@ -930,7 +1003,6 @@ module Net
       false
     end
 
-
     #
     # utils
     #
@@ -954,7 +1026,7 @@ module Net
 
 
   ###
-  ### header
+  ### Header
   ###
 
   module HTTPHeader
@@ -1012,6 +1084,7 @@ module Net
     def canonical( k )
       k.split(/-/).map {|i| i.capitalize }.join('-')
     end
+    private :canonical
 
     def range
       s = @header['range'] or return nil
@@ -1101,7 +1174,7 @@ module Net
 
 
   ###
-  ### request
+  ### Request
   ###
 
   class HTTPGenericRequest
@@ -1188,14 +1261,12 @@ module Net
 
 
   class HTTPRequest < HTTPGenericRequest
-
     def initialize( path, initheader = nil )
       super self.class::METHOD,
             self.class::REQUEST_HAS_BODY,
             self.class::RESPONSE_HAS_BODY,
             path, initheader
     end
-
   end
 
 
@@ -1228,10 +1299,32 @@ module Net
   end
 
 
+  ###
+  ### Response
+  ###
 
-  ###
-  ### response
-  ###
+  module HTTPExceptions
+    def initialize( msg, res )
+      super msg
+      @response = res
+    end
+    attr_reader :response
+    alias data response
+  end
+  class HTTPError < ProtocolError
+    include HTTPExceptions
+  end
+  class HTTPRetriableError < ProtoRetriableError
+    include HTTPExceptions
+  end
+  # We cannot use the name "HTTPServerError", it is the name of the response.
+  class HTTPServerException < ProtoServerError
+    include HTTPExceptions
+  end
+  class HTTPFatalError < ProtoFatalError
+    include HTTPExceptions
+  end
+
 
   class HTTPResponse
     # predefine HTTPResponse class to allow inheritance
@@ -1245,30 +1338,29 @@ module Net
     end
   end
 
-
   class HTTPUnknownResponse < HTTPResponse
     HAS_BODY = true
-    EXCEPTION_TYPE = ProtocolError
+    EXCEPTION_TYPE = HTTPError
   end
   class HTTPInformation < HTTPResponse           # 1xx
     HAS_BODY = false
-    EXCEPTION_TYPE = ProtocolError
+    EXCEPTION_TYPE = HTTPError
   end
   class HTTPSuccess < HTTPResponse               # 2xx
     HAS_BODY = true
-    EXCEPTION_TYPE = ProtocolError
+    EXCEPTION_TYPE = HTTPError
   end
   class HTTPRedirection < HTTPResponse           # 3xx
     HAS_BODY = true
-    EXCEPTION_TYPE = ProtoRetriableError
+    EXCEPTION_TYPE = HTTPRetriableError
   end
   class HTTPClientError < HTTPResponse           # 4xx
     HAS_BODY = true
-    EXCEPTION_TYPE = ProtoServerError   # for backward compatibility
+    EXCEPTION_TYPE = HTTPServerException   # for backward compatibility
   end
   class HTTPServerError < HTTPResponse           # 5xx
     HAS_BODY = true
-    EXCEPTION_TYPE = ProtoFatalError    # for backward compatibility
+    EXCEPTION_TYPE = HTTPFatalError    # for backward compatibility
   end
 
   class HTTPContinue < HTTPInformation           # 100
@@ -1649,12 +1741,6 @@ module Net
 
   # for backward compatibility
 
-  module NetPrivate
-    HTTPResponse         = ::Net::HTTPResponse
-    HTTPGenericRequest   = ::Net::HTTPGenericRequest
-    HTTPRequest          = ::Net::HTTPRequest
-    HTTPHeader           = ::Net::HTTPHeader
-  end
   HTTPInformationCode = HTTPInformation
   HTTPSuccessCode     = HTTPSuccess
   HTTPRedirectionCode = HTTPRedirection
