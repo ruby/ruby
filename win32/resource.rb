@@ -30,13 +30,13 @@ end
 
 ruby_icon = rubyw_icon = nil
 [$ruby_name, 'ruby'].each do |i|
-  if i = icons.delete(i)
+  if i = icons[i]
     ruby_icon = "1 ICON DISCARDABLE "+i.dump+"\n"
     break
   end
 end
 [$rubyw_name, 'rubyw'].each do |i|
-  if i = icons.delete(i)
+  if i = icons[i]
     rubyw_icon = "1 ICON DISCARDABLE "+i.dump+"\n"
     break
   end
@@ -48,7 +48,7 @@ end
 
 [ # base name    extension         file type  icons
   [$ruby_name,   CONFIG["EXEEXT"], 'VFT_APP', ruby_icon],
-  [$rubyw_name,  CONFIG["EXEEXT"], 'VFT_APP', rubyw_icon],
+  [$rubyw_name,  CONFIG["EXEEXT"], 'VFT_APP', rubyw_icon || ruby_icon],
   [$so_name,     '.dll',           'VFT_DLL', dll_icons],
 ].each do |base, ext, type, icons|
   open(base + '.rc', "w") { |f|
@@ -57,6 +57,7 @@ end
     f.print <<EOF
 #ifndef __BORLANDC__
 #include <windows.h>
+#include <winver.h>
 #endif
 
 #{icons}
@@ -77,7 +78,7 @@ BEGIN
    VALUE "FileVersion",      "#{fversion}\\0"
    VALUE "Home Page",        "http://www.ruby-lang.org/\\0"
    VALUE "InternalName",     "#{base + ext}\\0"
-   VALUE "LegalCopyright",   "Copyright (C) 1993-2003 Yukihiro Matsumoto\\0"
+   VALUE "LegalCopyright",   "Copyright (C) 1993-#{RUBY_RELEASE_DATE[/\d+/]} Yukihiro Matsumoto\\0"
    VALUE "OriginalFilename", "#{base + ext}\\0"
    VALUE "Platform",         "#{RUBY_PLATFORM}\\0"
    VALUE "ProductVersion",   "#{fversion}\\0"

@@ -12,7 +12,6 @@
 
 #include "ruby.h"
 #include "env.h"
-#include "version.h"
 #include "st.h"
 
 #include <stdio.h>
@@ -23,6 +22,8 @@
 #include <varargs.h>
 #define va_init_list(a,b) va_start(a)
 #endif
+
+extern const char ruby_version[], ruby_release_date[], ruby_platform[];
 
 int ruby_nerrs;
 
@@ -202,7 +203,7 @@ rb_bug(fmt, va_alist)
 	vfprintf(out, fmt, args);
 	va_end(args);
 	fprintf(out, "\nruby %s (%s) [%s]\n\n",
-		RUBY_VERSION, RUBY_RELEASE_DATE, RUBY_PLATFORM);
+		ruby_version, ruby_release_date, ruby_platform);
     }
     abort();
 }
