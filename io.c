@@ -1557,9 +1557,9 @@ rb_io_s_popen(argc, argv, self)
     VALUE self;
 {
     char *mode;
-    VALUE pname, pmode, port;
+    VALUE pname, pmode, port, proc;
 
-    if (rb_scan_args(argc, argv, "11", &pname, &pmode) == 1) {
+    if (rb_scan_args(argc, argv, "12", &pname, &pmode, &proc) == 1) {
 	mode = "r";
     }
     else {
@@ -1573,7 +1573,12 @@ rb_io_s_popen(argc, argv, self)
     Check_SafeStr(pname);
     port = pipe_open(RSTRING(pname)->ptr, mode);
     if (NIL_P(port)) {
-	rb_yield(port);
+	if (!NIL_P(proc)) {
+	    rb_eval_cmd(proc, rb_ary_new2(0));
+	}
+	else {
+	    rb_yield(port);
+	}
     }
     else if (rb_iterator_p()) {
 	return rb_ensure(rb_yield, port, rb_io_close, port);
@@ -2275,6 +2280,9 @@ rb_io_initialize(argc, argv, io)
     fp->f = rb_fdopen(NUM2INT(fnum), m);
     fp->mode = rb_io_mode_flags(m);
 
+    if (rb_iterator_p()) {
+	return rb_ensure(rb_yield, io, rb_io_close, io);
+    }
     return io;
 }
 

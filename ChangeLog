@@ -1,3 +1,12 @@
+Tue May  9 17:08:43 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* array.c (Init_Array): prepare 'append' as alias to `push'. 
+
+	* eval.c (massign): no longer convert nil into empty array.
+
+	* io.c (rb_io_s_popen): optional 3rd argument to give proc, which
+	  will be executed in spawned child process.
+
 Mon May  8 23:47:39 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
 
 	* eval.c (rb_callcc): prev & next should be initialized to zero.
@@ -5,7 +14,7 @@ Mon May  8 23:47:39 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
 Mon May  8 23:17:36 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* dln.c (dln_init): remove possible buffer overrun.  This is
-	  suggested by Aleksi Niemela <aleksi.niemela@cinnober.com>
+	  suggested by Aleksi Niemela <aleksi.niemela@cinnober.com>.
 
 	* dln.c (init_funcname): ditto.
 

@@ -3437,10 +3437,14 @@ massign(self, node, val, check)
     list = node->nd_head;
 
     if (TYPE(val) != T_ARRAY) {
+#if 0
 	if (!check && NIL_P(val))
 	    val = rb_ary_new2(0);
 	else
 	    val = rb_ary_new3(1, val);
+#else
+	val = rb_ary_new3(1, val);
+#endif
     }
     len = RARRAY(val)->len;
     for (i=0; list && i<len; i++) {
@@ -4636,7 +4640,12 @@ eval_under(under, self, src, file, line)
 {
     VALUE args[4];
 
-    Check_SafeStr(src);
+    if (ruby_safe_level >= 4) {
+	Check_Type(src, T_STRING);
+    }
+    else {
+	Check_SafeStr(src);
+    }
     args[0] = self;
     args[1] = src;
     args[2] = (VALUE)file;
@@ -6632,6 +6641,7 @@ rb_thread_schedule()
     thread_t next;		/* OK */
     thread_t th;
     thread_t curr;
+    int found = 0;
 
   select_err:
     rb_thread_pending = 0;
@@ -6646,6 +6656,14 @@ rb_thread_schedule()
 	curr = curr->prev;
     }
 
+    FOREACH_THREAD_FROM(curr, th) {
+       if (th->status == THREAD_RUNNABLE || th->status == THREAD_TO_KILL) {
+	   found = 1;
+	   break;
+       }
+    }
+    END_FOREACH_FROM(curr, th); 
+
     if (num_waiting_on_join) {
 	FOREACH_THREAD_FROM(curr, th) {
 	    if ((th->wait_for&WAIT_JOIN) && rb_thread_dead(th->join)) {
@@ -6653,6 +6671,7 @@ rb_thread_schedule()
 		th->wait_for &= ~WAIT_JOIN;
 		th->status = THREAD_RUNNABLE;
 		num_waiting_on_join--;
+		found = 1;
 	    }
 	}
 	END_FOREACH_FROM(curr, th);
@@ -6662,7 +6681,7 @@ rb_thread_schedule()
 	fd_set readfds;
 	struct timeval delay_tv, *delay_ptr;
 	double delay, now;	/* OK */
-	int n, max, found;
+	int n, max;
 
 	do {
 	    max = 0;
@@ -6765,13 +6784,11 @@ rb_thread_schedule()
 		    th->thread, th->status,
 		    th->wait_for, th==main_thread?"(main)":"",
 		    th->file, th->line);
-	    if (th->status == THREAD_STOPPED) {
-		next = th;
-	    }
 	}
 	END_FOREACH_FROM(curr, th);
 	/* raise fatal error to main thread */
 	rb_thread_deadlock();
+	next = main_thread;
 	rb_thread_ready(next);
 	next->gid = 0;
 	next->status = THREAD_TO_KILL;

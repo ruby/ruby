@@ -726,7 +726,7 @@ ok(a == [1, 2, 3])
 ok(a == [4])
 
 *a = nil
-ok(a == [])
+ok(a == [nil])
 
 check "call"
 def aaa(a, b=100, *rest)

@@ -1601,6 +1601,7 @@ Init_Array()
     rb_define_method(rb_cArray, "last", rb_ary_last, 0);
     rb_define_method(rb_cArray, "concat", rb_ary_concat, 1);
     rb_define_method(rb_cArray, "<<", rb_ary_push, 1);
+    rb_define_method(rb_cArray, "append", rb_ary_push_m, -1);
     rb_define_method(rb_cArray, "push", rb_ary_push_m, -1);
     rb_define_method(rb_cArray, "pop", rb_ary_pop, 0);
     rb_define_method(rb_cArray, "shift", rb_ary_shift, 0);

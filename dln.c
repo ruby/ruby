@@ -1211,9 +1211,11 @@ dln_load(file)
 {
 #ifdef _WIN32
     HINSTANCE handle;
-    char winfile[255];
+    char winfile[MAXPATHLEN];
     void (*init_fct)();
     char buf[MAXPATHLEN];
+
+    if (strlen(file) >= MAXPATHLEN) rb_loaderror("filename too long");
 
     /* Load the file as an object one */
     init_funcname(buf, file);
@@ -1421,6 +1423,7 @@ dln_load(file)
 
       if (err_stat != B_NO_ERROR) {
 	char real_name[MAXPATHLEN];
+
 	strcpy(real_name, buf);
 	strcat(real_name, "__Fv");
         err_stat = get_image_symbol(img_id, real_name,
