@@ -107,13 +107,13 @@ You can get it from RAA
 
     # this is wrong
     http.get2( '/index.html' ) do |recv|
-      print recv.header.body   # body is not read yet!!!
+      print recv.response.body   # body is not read yet!!!
     end
 
     # but this is ok
     http.get2( '/index.html' ) do |recv|
-      recv.body                # read body and set recv.header.body
-      print recv.header.body   # ref
+      recv.body                  # read body and set recv.header.body
+      print recv.response.body   # ref
     end
 
 : head2( path, header = nil )
@@ -180,7 +180,7 @@ All "key" is case-insensitive.
   iterate for each field name and value pair
 
 : code
-  HTTP result code. For example, '302'
+  HTTP result code string. For example, '302'
 
 : message
   HTTP result message. For example, 'Not Found'
@@ -444,13 +444,13 @@ module Net
 
     def HTTP.Proxy( p_addr, p_port = nil )
       klass = super
-      klass.module_eval %-
+      klass.module_eval( <<SRC, 'http.rb', __LINE__ + 1 )
         def edit_path( path )
           'http://' + address +
-              (@port == HTTP.port ? '' : ":#{@port}") +
+              (@port == HTTP.port ? '' : ':' + @port.to_s) +
               path
         end
-      -
+SRC
       klass
     end
 
