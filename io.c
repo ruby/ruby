@@ -1696,8 +1696,9 @@ rb_io_ungetc(io, c)
 	rb_raise(rb_eIOError, "unread stream");
     rb_io_check_readable(fptr);
 
-    if (ungetc(cc, fptr->f) == EOF && cc != EOF)
-	rb_sys_fail(fptr->path);
+    if (ungetc(cc, fptr->f) == EOF && cc != EOF) {
+	rb_raise(rb_eIOError, "ungetc failed");
+    }
     return Qnil;
 }
 

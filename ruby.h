@@ -193,19 +193,19 @@ VALUE rb_ull2inum _((unsigned LONG_LONG));
 #define T_BIGNUM 0x0d
 #define T_FILE   0x0e
 
-#define T_TRUE   0x20
-#define T_FALSE  0x21
-#define T_DATA   0x22
-#define T_MATCH  0x23
-#define T_SYMBOL 0x24
+#define T_TRUE   0x10
+#define T_FALSE  0x11
+#define T_DATA   0x12
+#define T_MATCH  0x13
+#define T_SYMBOL 0x14
 
-#define T_BLKTAG 0x3b
-#define T_UNDEF  0x3c
-#define T_VARMAP 0x3d
-#define T_SCOPE  0x3e
-#define T_NODE   0x3f
+#define T_BLOCK  0x1b
+#define T_UNDEF  0x1c
+#define T_VARMAP 0x1d
+#define T_SCOPE  0x1e
+#define T_NODE   0x1f
 
-#define T_MASK   0x3f
+#define T_MASK   0x1f
 
 #define BUILTIN_TYPE(x) (((struct RBasic*)(x))->flags & T_MASK)
 

@@ -34,7 +34,7 @@ class GetoptLong
   # Error types.
   #
   class Error  < StandardError; end
-  class AmbigousOption   < Error; end
+  class AmbiguousOption   < Error; end
   class NeedlessArgument < Error; end
   class MissingArgument  < Error; end
   class InvalidOption    < Error; end
@@ -208,7 +208,7 @@ class GetoptLong
   end
 
   #
-  # Set/Unset `quit' mode.
+  # Set/Unset `quiet' mode.
   #
   attr_writer :quiet
 
@@ -351,16 +351,16 @@ class GetoptLong
 	# The option `option_name' is not registered in `@canonical_names'.
 	# It may be an abbreviated.
 	#
-	match_count = 0
+	matches = []
 	@canonical_names.each_key do |key|
 	  if key.index(pattern) == 0
 	    option_name = key
-	    match_count += 1
+	    matches << key
 	  end
 	end
-	if 2 <= match_count
-	  set_error(AmbigousOption, "option `#{argument}' is ambiguous")
-	elsif match_count == 0
+	if 2 <= matches.length
+	  set_error(AmbiguousOption, "option `#{argument}' is ambiguous between #{matches.join(', ')}")
+	elsif matches.length == 0
 	  set_error(InvalidOption, "unrecognized option `#{argument}'")
 	end
       end

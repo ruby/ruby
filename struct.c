@@ -285,12 +285,19 @@ rb_struct_s_def(argc, argv, klass)
 	id = rb_to_id(RARRAY(rest)->ptr[i]);
 	RARRAY(rest)->ptr[i] = ID2SYM(id);
     }
-    if (!NIL_P(name) && TYPE(name) != T_STRING) {
-	id = rb_to_id(name);
-	rb_ary_unshift(rest, ID2SYM(id));
-	name = Qnil;
+    if (!NIL_P(name)) {
+	VALUE tmp = rb_check_string_type(name);
+
+	if (NIL_P(tmp)) {
+	    id = rb_to_id(name);
+	    rb_ary_unshift(rest, ID2SYM(id));
+	    name = Qnil;
+	}
     }
     st = make_struct(name, rest, klass);
+    if (rb_block_given_p()) {
+	rb_mod_module_eval(0, 0, st);
+    }
 
     return st;
 }

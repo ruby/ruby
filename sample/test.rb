@@ -1134,23 +1134,135 @@ test_ok(55, begin
               $!.exit_value
             end)
 
-test_ok(block.arity == -1)
-test_ok(lambda.arity == -1)
-test_ok(lambda{||}.arity == 0)
-test_ok(lambda{|a|}.arity == 1)
-test_ok(lambda{|a,|}.arity == 1)
-test_ok(lambda{|a,b|}.arity == 2)
-
-def yield_in_lambda
-  lambda{ yield }[]
+def block_call(&block)
+  block.call
 end
 
-def return_in_lambda
-  yield_in_lambda{ return true }
-  false
+def block_get(&block)
+  block
 end
 
-test_ok(return_in_lambda())
+def test_b1
+  block_call{break 11}
+end
+test_ok(test_b1() == 11)
+
+def ljump_rescue(r)
+  begin
+    yield
+  rescue LocalJumpError => e
+    r if /from proc-closure/ =~ e.message
+  end
+end
+
+def test_b2
+  ljump_rescue(22) do
+    block_get{break 21}.call
+  end
+end
+test_ok(test_b2() == 22)
+
+def test_b3
+  ljump_rescue(33) do
+    Proc.new{break 31}.call
+  end
+end
+test_ok(test_b3() == 33)
+
+def test_b4
+  lambda{break 44}.call
+end
+test_ok(test_b4() == 44)
+
+def test_b5
+  ljump_rescue(55) do
+    b = block_get{break 54}
+    block_call(&b)
+  end
+end
+test_ok(test_b5() == 55)
+
+def test_b6
+  b = lambda{break 67}
+  block_call(&b)
+  66
+end
+test_ok(test_b6() == 66)
+
+def util_r7
+  block_get{break 78}
+end
+
+def test_b7
+  b = util_r7()
+  ljump_rescue(77) do
+    block_call(&b)
+  end
+end
+test_ok(test_b7() == 77)
+
+def util_b8(&block)
+  block_call(&block)
+end
+
+def test_b8
+  util_b8{break 88}
+end
+test_ok(test_b8() == 88)
+
+def util_b9(&block)
+  lambda{block.call}.call
+end
+
+def test_b9
+  util_b9{break 99}
+end
+test_ok(test_b9() == 99)
+
+def util_b10
+  util_b9{break 100}
+end
+
+def test_b10
+  util_b10()
+end
+test_ok(test_b10() == 100)
+
+def test_b11
+  ljump_rescue(111) do
+    loop do
+      Proc.new{break 110}.call
+      break 112
+    end
+  end
+end
+test_ok(test_b11() == 111)
+
+def test_b12
+  loop do
+    break lambda{break 122}.call
+    break 121
+  end
+end
+test_ok(test_b12() == 122)
+
+def test_b13
+  ljump_rescue(133) do
+    while true
+      Proc.new{break 130}.call
+      break 131
+    end
+  end
+end
+test_ok(test_b13() == 133)
+
+def test_b14
+  while true
+    break lambda{break 144}.call
+    break 143
+  end
+end
+test_ok(test_b14() == 144)
 
 def marity_test(m)
   method = method(m)

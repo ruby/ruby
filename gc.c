@@ -934,7 +934,7 @@ gc_mark_children(ptr, lev)
       case T_REGEXP:
       case T_FLOAT:
       case T_BIGNUM:
-      case T_BLKTAG:
+      case T_BLOCK:
 	break;
 
       case T_MATCH:
@@ -1186,7 +1186,7 @@ obj_free(obj)
 
       case T_FLOAT:
       case T_VARMAP:
-      case T_BLKTAG:
+      case T_BLOCK:
 	break;
 
       case T_BIGNUM:
@@ -1838,7 +1838,7 @@ id2ref(obj, id)
     }
 
     ptr = id ^ FIXNUM_FLAG;	/* unset FIXNUM_FLAG */
-    if (!is_pointer_to_heap((void *)ptr)|| BUILTIN_TYPE(ptr) >= T_BLKTAG) {
+    if (!is_pointer_to_heap((void *)ptr)|| BUILTIN_TYPE(ptr) >= T_BLOCK) {
 	rb_raise(rb_eRangeError, "0x%lx is not id value", p0);
     }
     if (BUILTIN_TYPE(ptr) == 0 || RBASIC(ptr)->klass == 0) {

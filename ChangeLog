@@ -1,9 +1,24 @@
+Wed Mar 10 16:00:14 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* struct.c (rb_struct_s_def): Struct::new executes block with
+	  generated struct class. [ruby-talk:02606]
+
+Wed Mar 10 15:58:43 2004  Ryan Davis  <ryand@zenspider.com>
+
+	* eval.c (eval): Only print backtrace if generating the backtrace
+	  doesn't generate an exception.  [ruby-core:02621]
+
 Wed Mar 10 10:15:16 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ruby.c (opt_W_getter): get rid of warning.
 
 	* bcc32/Makefile.sub, win32/Makefile.sub, wince/Makefile.sub:
 	  fixed dependency.
+
+Tue Mar  9 13:04:26 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_ungetc): raise IOError instead of calling
+	  rb_sys_fail().  [ruby-talk:23181]
 
 Tue Mar 09 10:03:40 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -214,6 +229,11 @@ Thu Mar  4 11:46:32 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/drb/extservm.rb (DRb::ExtServManager#invoke_service_command):
 	  detach server processes to get rid of zombies.
+
+Thu Mar  4 10:41:25 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.h (T_MASK): save 1 bit in flags bits by shifting T_xxx
+	  values.
 
 Thu Mar  4 08:08:36 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

@@ -683,6 +683,23 @@ sock_addrinfo(host, port, socktype, flags)
 	rb_raise(rb_eSocket, "getaddrinfo: %s", gai_strerror(error));
     }
 
+#if defined(__APPLE__) && defined(__MACH__)
+    {
+        struct addrinfo *r;
+       r = res;
+       while (r) {
+            if (! r->ai_socktype) r->ai_socktype = hints.ai_socktype;
+            if (! r->ai_protocol) {
+                if (r->ai_socktype == SOCK_DGRAM) {
+                    r->ai_protocol = IPPROTO_UDP;
+                } else if (r->ai_socktype == SOCK_STREAM) {
+                    r->ai_protocol = IPPROTO_TCP;
+                }
+            }
+            r = r->ai_next;
+        }
+    }
+#endif
     return res;
 }
 
