@@ -1,6 +1,8 @@
 Fri Nov 30 17:02:55 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in: set target_cpu to i386 on cygwin and mingw32.
+	
+	* configure.in: default --enable-shared to yes on cygwin and mingw32.
 
 Fri Nov 30 00:25:28 2001  Usaku Nakamura  <usa@ruby-lang.org>
 
