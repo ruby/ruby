@@ -420,7 +420,11 @@ All "key" is case-insensitive.
       @http_version = HTTPVersion
 
       @in_header = {}
-      @in_header[ 'Host' ]       = sock.addr
+      if sock.port == HTTP.port
+        @in_header[ 'Host' ] = sock.addr
+      else
+        @in_header[ 'Host' ] = sock.addr + ':' + sock.port
+      end
       @in_header[ 'Connection' ] = 'Keep-Alive'
       @in_header[ 'Accept' ]     = '*/*'
 
@@ -505,6 +509,12 @@ All "key" is case-insensitive.
               if tmp and /close/i === tmp then
                 @socket.read_all dest
                 @socket.close
+              else
+                tmp = resp['proxy-connection']
+                if tmp and /close/i === tmp then
+                  @socket.read_all dest
+                  @socket.close
+                end
               end
             end
           end
