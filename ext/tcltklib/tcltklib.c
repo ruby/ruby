@@ -69,13 +69,15 @@ Tcl_Interp  *current_interp;
  *  'timer_tick' is a limit of one term of thread scheduling. 
  *  If 'timer_tick' == 0, then not use the timer for thread scheduling.
  */
-static int tick_counter;
-#define DEFAULT_EVENT_LOOP_MAX  800
-#define DEFAULT_NO_EVENT_TICK    10
-#define DEFAULT_TIMER_TICK        0
+#define DEFAULT_EVENT_LOOP_MAX  800/*counts*/
+#define DEFAULT_NO_EVENT_TICK    10/*counts*/
+#define DEFAULT_TIMER_TICK        0/*milliseconds*/
+#define DEFAULT_INTERRUPT_TIME  200/*milliseconds*/
 static int event_loop_max = DEFAULT_EVENT_LOOP_MAX;
 static int no_event_tick  = DEFAULT_NO_EVENT_TICK;
 static int timer_tick     = DEFAULT_TIMER_TICK;
+static int req_timer_tick = DEFAULT_TIMER_TICK;
+static int run_timer_flag = 0;
 
 #if TCL_MAJOR_VERSION >= 8
 static int ip_ruby _((ClientData, Tcl_Interp *, int, Tcl_Obj *CONST*));
@@ -95,7 +97,11 @@ _timer_for_tcl(clientData)
     struct invoke_queue *q, *tmp;
     VALUE thread;
 
+    DUMP1("called timer_for_tcl");
     Tk_DeleteTimerHandler(timer_token);
+
+    run_timer_flag = 1;
+
     if (timer_tick > 0) {
       timer_token = Tk_CreateTimerHandler(timer_tick, _timer_for_tcl, 
 					  (ClientData)0);
@@ -104,7 +110,7 @@ _timer_for_tcl(clientData)
     }
 
     /* rb_thread_schedule(); */
-    timer_tick += event_loop_max;
+    /* tick_counter += event_loop_max; */
 }
 
 static VALUE
@@ -115,13 +121,14 @@ set_eventloop_tick(self, tick)
     int ttick = NUM2INT(tick);
 
     if (ttick < 0) {
-      rb_raise(rb_eArgError, "timer-tick parameter must be 0 or plus number");
+      rb_raise(rb_eArgError, 
+	       "timer-tick parameter must be 0 or positive number");
     }
 
     /* delete old timer callback */
     Tk_DeleteTimerHandler(timer_token);
 
-    timer_tick = ttick;
+    timer_tick = req_timer_tick = ttick;
     if (timer_tick > 0) {
       /* start timer callback */
       timer_token = Tk_CreateTimerHandler(timer_tick, _timer_for_tcl, 
@@ -168,37 +175,72 @@ get_eventloop_weight(self)
 
 VALUE
 lib_mainloop_core(check_root_widget)
-    VALUE check_root_widget;
+     VALUE check_root_widget;
 {
-    VALUE current = eventloop_thread;
-    int check = (check_root_widget == Qtrue);
+  VALUE current = eventloop_thread;
+  int check = (check_root_widget == Qtrue);
+  int tick_counter;
 
-    Tk_DeleteTimerHandler(timer_token);
-    if (timer_tick > 0) {
-      timer_token = Tk_CreateTimerHandler(timer_tick, _timer_for_tcl, 
-					  (ClientData)0);
-    } else {
-      timer_token = (Tcl_TimerToken)NULL;
-    }
+  Tk_DeleteTimerHandler(timer_token);
+  run_timer_flag = 0;
+  if (timer_tick > 0) {
+    timer_token = Tk_CreateTimerHandler(timer_tick, _timer_for_tcl, 
+					(ClientData)0);
+  } else {
+    timer_token = (Tcl_TimerToken)NULL;
+  }
 
-    for(;;) {
-      tick_counter = 0;
-      while(tick_counter < event_loop_max) {
-        if (Tcl_DoOneEvent(TCL_ALL_EVENTS | (rb_thread_alone() ? 0 : TCL_DONT_WAIT))) {
-          tick_counter++;
-	} else {
-          tick_counter += no_event_tick;
-	}
-	if (watchdog_thread != 0 && eventloop_thread != current) {
+  for(;;) {
+    if (rb_thread_alone()) {
+      DUMP1("no other thread");
+      if (timer_tick == 0) {
+	timer_tick = DEFAULT_INTERRUPT_TIME;
+	timer_token = Tk_CreateTimerHandler(timer_tick, _timer_for_tcl, 
+					    (ClientData)0);
+      }
+
+      Tcl_DoOneEvent(TCL_ALL_EVENTS);
+
+      if (run_timer_flag) {
+	DUMP1("timer interrupt");
+	run_timer_flag = 0;
+	DUMP1("check Root Widget");
+	if (check && Tk_GetNumMainWindows() == 0) {
 	  return Qnil;
 	}
       }
-      if (check && Tk_GetNumMainWindows() == 0) {
-	break;
+
+    } else {
+      DUMP1("there are other threads");
+      timer_tick = req_timer_tick;
+      tick_counter = 0;
+      while(tick_counter < event_loop_max) {
+	if (Tcl_DoOneEvent(TCL_ALL_EVENTS | TCL_DONT_WAIT)) {
+	  tick_counter++;
+	} else {
+	  tick_counter += no_event_tick;
+	}
+
+	if (watchdog_thread != 0 && eventloop_thread != current) {
+	  return Qnil;
+	}
+
+	if (run_timer_flag) {
+	  DUMP1("timer interrupt");
+	  run_timer_flag = 0;
+	  break; /* switch to other thread */
+	}
       }
-      rb_thread_schedule();
+
+      DUMP1("check Root Widget");
+      if (check && Tk_GetNumMainWindows() == 0) {
+	return Qnil;
+      }
     }
-    return Qnil;
+
+    rb_thread_schedule();
+  }
+  return Qnil;
 }
 
 VALUE
