@@ -1,3 +1,12 @@
+Thu Oct 17 19:17:56 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* marshal.c (w_byten): added; write n bytes from s to arg.
+
+	* marshal.c (dump): flush buffered data.
+
+	* marshal.c (marshal_dump, r_byte, r_bytes0, marshal_load): unify
+	  marshaling I/O.  [ruby-talk:53368]
+
 Thu Oct 17 12:58:24 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb: stat.blksize might become 0/nil.

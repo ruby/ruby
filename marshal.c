@@ -76,11 +76,12 @@ shortlen(len, ds)
 
 static ID s_dump, s_load;
 static ID s_dump_data, s_load_data, s_alloc;
+static ID s_getc, s_read, s_write;
 
 struct dump_arg {
     VALUE obj;
     FILE *fp;
-    VALUE str;
+    VALUE str, dest;
     st_table *symbol;
     st_table *data;
     int taint;
@@ -95,12 +96,31 @@ struct dump_call_arg {
 static void w_long _((long, struct dump_arg*));
 
 static void
+w_byten(s, n, arg)
+    char *s;
+    int n;
+    struct dump_arg *arg;
+{
+    if (arg->fp) {
+	fwrite(s, 1, n, arg->fp);
+    }
+    else {
+	VALUE buf = arg->str;
+	rb_str_buf_cat(buf, s, n);
+	if (arg->dest && RSTRING(buf)->len >= BUFSIZ) {
+	    if (arg->taint) OBJ_TAINT(buf);
+	    rb_io_write(arg->dest, buf);
+	    rb_str_resize(buf, 0);
+	}
+    }
+}
+
+static void
 w_byte(c, arg)
     char c;
     struct dump_arg *arg;
 {
-    if (arg->fp) putc(c, arg->fp);
-    else rb_str_buf_cat(arg->str, &c, 1);
+    w_byten(&c, 1, arg);
 }
 
 static void
@@ -110,12 +130,7 @@ w_bytes(s, n, arg)
     struct dump_arg *arg;
 {
     w_long(n, arg);
-    if (arg->fp) {
-	fwrite(s, 1, n, arg->fp);
-    }
-    else {
-	rb_str_buf_cat(arg->str, s, n);
-    }
+    w_byten(s, n, arg);
 }
 
 static void
@@ -551,6 +566,10 @@ dump(arg)
     struct dump_call_arg *arg;
 {
     w_object(arg->obj, arg->arg, arg->limit);
+    if (arg->arg->dest) {
+	rb_io_write(arg->arg->dest, arg->arg->str);
+	rb_str_resize(arg->arg->str, 0);
+    }
     return 0;
 }
 
@@ -586,6 +605,7 @@ marshal_dump(argc, argv)
 	if (FIXNUM_P(a1)) limit = FIX2INT(a1);
 	else port = a1;
     }
+    arg.dest = 0;
     if (port) {
 	if (rb_obj_is_kind_of(port, rb_cIO)) {
 	    OpenFile *fptr;
@@ -594,6 +614,11 @@ marshal_dump(argc, argv)
 	    GetOpenFile(port, fptr);
 	    rb_io_check_writable(fptr);
 	    arg.fp = (fptr->f2) ? fptr->f2 : fptr->f;
+	}
+	else if (rb_respond_to(port, s_write)) {
+	    arg.fp = 0;
+	    arg.str = rb_str_buf_new(0);
+	    arg.dest = port;
 	}
 	else {
 	    rb_raise(rb_eTypeError, "instance of IO needed");
@@ -641,6 +666,12 @@ r_byte(arg)
 	c = rb_getc(arg->fp);
 	if (c == EOF) rb_eof_error();
     }
+    else if (!arg->end) {
+	VALUE src = (VALUE)arg->ptr;
+	VALUE v = rb_funcall2(src, s_getc, 0, 0);
+	if (NIL_P(v)) rb_eof_error();
+	c = (unsigned char)FIX2INT(v);
+    }
     else if (arg->ptr < arg->end) {
 	c = *(unsigned char*)arg->ptr++;
     }
@@ -648,18 +679,6 @@ r_byte(arg)
 	rb_raise(rb_eArgError, "marshal data too short");
     }
     return c;
-}
-
-static unsigned short
-r_short(arg)
-    struct load_arg *arg;
-{
-    unsigned short x;
-
-    x =  r_byte(arg);
-    x |= r_byte(arg)<<8;
-
-    return x;
 }
 
 static void
@@ -727,6 +746,15 @@ r_bytes0(len, arg)
 	  too_short:
 	    rb_raise(rb_eArgError, "marshal data too short");
 	}
+    }
+    else if (!arg->end) {
+	VALUE src = (VALUE)arg->ptr;
+	VALUE n = LONG2NUM(len);
+	str = rb_funcall2(src, s_read, 1, &n);
+	if (NIL_P(str)) goto too_short;
+	Check_Type(str, T_STRING);
+	if (RSTRING(str)->len != len) goto too_short;
+	if (OBJ_TAINTED(str)) arg->taint = Qtrue;
     }
     else {
 	if (arg->ptr + len > arg->end) {
@@ -933,34 +961,41 @@ r_object0(arg, proc)
 	{
 	    long len;
 	    BDIGIT *digits;
+	    VALUE data;
 
 	    NEWOBJ(big, struct RBignum);
 	    OBJSETUP(big, rb_cBignum, T_BIGNUM);
 	    big->sign = (r_byte(arg) == '+');
 	    len = r_long(arg);
+	    data = r_bytes0(len * 2, arg);
 #if SIZEOF_BDIGITS == SIZEOF_SHORT
 	    big->len = len;
 #else
 	    big->len = (len + 1) * 2 / sizeof(BDIGIT);
 #endif
 	    big->digits = digits = ALLOC_N(BDIGIT, big->len);
-	    while (len > 0) {
+	    MEMCPY(digits, RSTRING(data)->ptr, char, len * 2);
 #if SIZEOF_BDIGITS > SIZEOF_SHORT
+	    MEMZERO((char *)digits + len * 2, char,
+		    big->len * sizeof(BDIGIT) - len * 2);
+#endif
+	    len = big->len;
+	    while (len > 0) {
+		unsigned char *p = (unsigned char *)digits;
 		BDIGIT num = 0;
+#if SIZEOF_BDIGITS > SIZEOF_SHORT
 		int shift = 0;
 		int i;
 
-		for (i=0; i<SIZEOF_BDIGITS; i+=2) {
-		    int j = r_short(arg);
-		    num |= j << shift;
-		    shift += BITSPERSHORT;
-		    if (--len == 0) break;
+		for (i=0; i<SIZEOF_BDIGITS; i++) {
+		    num |= (int)p[i] << shift;
+		    shift += 8;
 		}
-		*digits++ = num;
 #else
-		*digits++ = r_short(arg);
-		len--;
+		num = p[0] | (p[1] << 8);
 #endif
+		*digits++ = num;
+		len--;
 	    }
 	    v = rb_big_norm((VALUE)big);
 	    r_regist(v, arg);
@@ -1189,6 +1224,12 @@ marshal_load(argc, argv)
 	arg.ptr = RSTRING(port)->ptr;
 	arg.end = arg.ptr + RSTRING(port)->len;
     }
+    else if (rb_respond_to(port, s_getc) && rb_respond_to(port, s_read)) {
+	arg.taint = Qfalse;
+	arg.fp = 0;
+	arg.ptr = (char *)port;
+	arg.end = 0;
+    }
     else {
 	rb_raise(rb_eTypeError, "instance of IO needed");
     }
@@ -1225,6 +1266,10 @@ Init_marshal()
     s_dump_data = rb_intern("_dump_data");
     s_load_data = rb_intern("_load_data");
     s_alloc = rb_intern("_alloc");
+    s_getc = rb_intern("getc");
+    s_read = rb_intern("read");
+    s_write = rb_intern("write");
+
     rb_define_module_function(rb_mMarshal, "dump", marshal_dump, -1);
     rb_define_module_function(rb_mMarshal, "load", marshal_load, -1);
     rb_define_module_function(rb_mMarshal, "restore", marshal_load, -1);
