@@ -1,3 +1,8 @@
+Mon Aug 30 11:29:35 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (CreateChild): strip trailing spaces. [ruby-dev:24143]
+	  merge from HEAD.
+
 Sun Aug 29 14:08:56 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c: compile error on bcc32 [ruby-dev:24081]
