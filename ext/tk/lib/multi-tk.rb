@@ -1200,17 +1200,6 @@ end
 class MultiTkIp
   # instance method
   def eval_proc_core(req_val, cmd, *args)
-    # cmd string ==> proc
-    if cmd.kind_of?(String)
-      xcmd  = cmd
-      xargs = args
-      cmd = proc{ 
-	$SAFE=@safe_level[0]
-	TkComm._get_eval_string(eval(xcmd, *xargs))
-      }
-      args = []
-    end
-
     # check
     unless cmd.kind_of?(Proc) || cmd.kind_of?(Method)
       raise RuntimeError, "A Proc/Method object is expected for the 'cmd' argument"
@@ -1314,7 +1303,16 @@ class MultiTkIp
 		   *args)
   end
   alias call eval_proc
-  alias eval_string eval_proc
+
+  def eval_string(cmd, *eval_args)
+    # cmd string ==> proc
+    unless cmd.kind_of?(String)
+      raise RuntimeError, "A String object is expected for the 'cmd' argument"
+    end
+
+    eval_proc_core(true, proc{|safe| $SAFE=safe; Kernel.eval(cmd, *eval_args)})
+  end
+  alias eval_str eval_string
 end
 
 class << MultiTkIp
