@@ -662,7 +662,8 @@ module TkCore
     if self.const_defined? :IP_NAME
       name = IP_NAME.to_s
     else
-      name = nil
+      #name = nil
+      name = $0
     end
     if self.const_defined? :IP_OPTS
       if IP_OPTS.kind_of?(Hash)
