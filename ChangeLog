@@ -1,3 +1,9 @@
+Sun Aug  3 15:56:27 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>
+
+	* math.c (math_log): nan takes a dummy argument on Cygwin 1.5.0.
+	  backport from 1.8.
+	  Thu Jul 10 14:42:02 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
 Sun Jul 27 03:10:31 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* io.c (io_reopen): avoid dup2() equal handles not to close itself and
