@@ -20,7 +20,7 @@ class TestCalc < Test::Unit::TestCase
     @t = Thread.new {
       @server.start
     }
-    while @server.server.nil? or @server.server.status != :Running
+    while @server.status != :Running
       sleep 0.1
       unless @t.alive?
 	@t.join
@@ -36,7 +36,7 @@ class TestCalc < Test::Unit::TestCase
   end
 
   def teardown
-    @server.server.shutdown
+    @server.shutdown
     @t.kill
     @t.join
     @calc.reset_stream

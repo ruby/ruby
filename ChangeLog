@@ -1,3 +1,13 @@
+Tue Dec  9 00:07:35 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/soap/rpc/standaloneServer.rb: add 'shutdown' and 'status'
+	  methods as delegates to WEBrick.
+
+	* test/soap/calc/{test_calc.rb,test_calc2.rb},
+	  test/soap/helloworld/test_helloworld.rb,
+	  test/wsdl/datetime/test_datetime.rb, test/wsdl/raa/test_raa.rb:
+	  follow the change.
+
 Mon Dec  8 22:48:03 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit/autorunner.rb: remove dependency to a particular

@@ -21,7 +21,7 @@ class TestHelloWorld < Test::Unit::TestCase
       Thread.current.abort_on_exception = true
       @server.start
     }
-    while @server.server.nil? or @server.server.status != :Running
+    while @server.status != :Running
       sleep 0.1
       unless @t.alive?
 	@t.join
@@ -34,7 +34,7 @@ class TestHelloWorld < Test::Unit::TestCase
   end
 
   def teardown
-    @server.server.shutdown
+    @server.shutdown
     @t.kill
     @t.join
     @client.reset_stream

@@ -51,6 +51,18 @@ class StandaloneServer < Logger::Application
   def on_init
     # define extra methods in derived class.
   end
+
+  def status
+    if @server
+      @server.status
+    else
+      nil
+    end
+  end
+
+  def shutdown
+    @server.shutdown
+  end
   
   def add_rpc_request_servant(klass, namespace = @namespace, mapping_registry = nil)
     @soaplet.add_rpc_request_servant(klass, namespace, mapping_registry)

@@ -26,7 +26,7 @@ class TestDatetime < Test::Unit::TestCase
       Thread.current.abort_on_exception = true
       @server.start
     }
-    while @server.server.nil? or @server.server.status != :Running
+    while @server.status != :Running
       sleep 0.1
       unless @t.alive?
 	@t.join
@@ -48,7 +48,7 @@ class TestDatetime < Test::Unit::TestCase
   end
 
   def teardown_server
-    @server.server.shutdown
+    @server.shutdown
     @t.kill
     @t.join
   end

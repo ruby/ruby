@@ -79,7 +79,7 @@ class Property
     self[generate_new_key] = value
   end
 
-  # name: a Symbol, String or an Array.  nil means hook to the root.
+  # name: a Symbol, String or an Array.  nil means hook to the root
   # hook: block which will be called with 2 args, name and value
   def add_hook(name = nil, &hook)
     if name.nil?
@@ -142,6 +142,7 @@ protected
     end
   end
 
+  # returns: Array of hook
   def assign(ary, value)
     key, rest = location_pair(ary)
     if rest.empty?
