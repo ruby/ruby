@@ -3,12 +3,12 @@
  */
 
 /* array.c */
-void memclear _((register VALUE *, register int));
+void memclear _((register VALUE*, register int));
 VALUE assoc_new _((VALUE, VALUE));
 VALUE ary_new _((void));
 VALUE ary_new2 _((int));
 VALUE ary_new3();
-VALUE ary_new4 _((int, VALUE *));
+VALUE ary_new4 _((int, VALUE*));
 VALUE ary_freeze _((VALUE));
 void ary_store _((VALUE, int, VALUE));
 VALUE ary_push _((VALUE, VALUE));
@@ -34,14 +34,16 @@ VALUE ary_includes _((VALUE, VALUE));
 VALUE big_clone _((VALUE));
 void big_2comp _((VALUE));
 VALUE big_norm _((VALUE));
-VALUE uint2big _((UINT));
-VALUE int2big _((INT));
-VALUE uint2inum _((UINT));
-VALUE int2inum _((INT));
-VALUE str2inum _((UCHAR *, int));
+VALUE uint2big _((unsigned long));
+VALUE int2big _((long));
+VALUE uint2inum _((unsigned long));
+VALUE int2inum _((long));
+VALUE str2inum _((char*, int));
 VALUE big2str _((VALUE, int));
-INT big2int _((VALUE));
-UINT big2uint _((VALUE));
+long big2long _((VALUE));
+#define big2int(x) big2long(x)
+unsigned long big2ulong _((VALUE));
+#define big2uint(x) big2ulong(x)
 VALUE big_to_i _((VALUE));
 VALUE dbl2big _((double));
 double big2dbl _((VALUE));
@@ -65,21 +67,21 @@ VALUE module_new _((void));
 VALUE rb_define_module_id _((ID));
 VALUE mod_included_modules _((VALUE));
 VALUE mod_ancestors _((VALUE));
-VALUE class_instance_methods _((int, VALUE *, VALUE));
-VALUE class_private_instance_methods _((int, VALUE *, VALUE));
+VALUE class_instance_methods _((int, VALUE*, VALUE));
+VALUE class_private_instance_methods _((int, VALUE*, VALUE));
 VALUE obj_singleton_methods _((VALUE));
 void rb_define_method_id _((VALUE, ID, VALUE (*)(), int));
-void rb_undef_method _((VALUE, char *));
-void rb_define_protected_method _((VALUE, char *, VALUE (*)(), int));
-void rb_define_private_method _((VALUE, char *, VALUE (*)(), int));
+void rb_undef_method _((VALUE, char*));
+void rb_define_protected_method _((VALUE, char*, VALUE (*)(), int));
+void rb_define_private_method _((VALUE, char*, VALUE (*)(), int));
 void rb_define_singleton_method _((VALUE,char*,VALUE(*)(),int));
 void rb_define_private_method _((VALUE,char*,VALUE(*)(),int));
 VALUE rb_singleton_class _((VALUE));
 /* enum.c */
 VALUE enum_length _((VALUE));
 /* error.c */
-VALUE exc_new _((VALUE, char *, UINT));
-VALUE exc_new2 _((VALUE, char *));
+VALUE exc_new _((VALUE, char*, unsigned int));
+VALUE exc_new2 _((VALUE, char*));
 VALUE exc_new3 _((VALUE, VALUE));
 #ifdef __GNUC__
 volatile voidfn TypeError;
@@ -95,9 +97,9 @@ void IndexError();
 void LoadError();
 #endif
 /* eval.c */
-void rb_remove_method _((VALUE, char *));
-void rb_disable_super _((VALUE, char *));
-void rb_enable_super _((VALUE, char *));
+void rb_remove_method _((VALUE, char*));
+void rb_disable_super _((VALUE, char*));
+void rb_enable_super _((VALUE, char*));
 void rb_clear_cache _((void));
 void rb_alias _((VALUE, ID, ID));
 void rb_attr _((VALUE,ID,int,int,int));
@@ -106,7 +108,7 @@ VALUE dyna_var_defined _((ID));
 VALUE dyna_var_ref _((ID));
 VALUE dyna_var_asgn _((ID, VALUE));
 void ruby_init _((void));
-void ruby_options _((int, char **));
+void ruby_options _((int, char**));
 void ruby_run _((void));
 void rb_eval_cmd _((VALUE, VALUE));
 void rb_trap_eval _((VALUE, int));
@@ -117,14 +119,14 @@ void rb_interrupt _((void));
 int iterator_p _((void));
 VALUE rb_yield_0 _((VALUE, volatile VALUE));
 VALUE rb_apply _((VALUE, ID, VALUE));
-VALUE rb_funcall2 _((VALUE, ID, int, VALUE *));
+VALUE rb_funcall2 _((VALUE, ID, int, VALUE*));
 void rb_backtrace _((void));
 ID rb_frame_last_func _((void));
 VALUE f_load _((VALUE, VALUE));
-void rb_provide _((char *));
+void rb_provide _((char*));
 VALUE f_require _((VALUE, VALUE));
 void obj_call_init _((VALUE));
-VALUE class_new_instance _((int, VALUE *, VALUE));
+VALUE class_new_instance _((int, VALUE*, VALUE));
 VALUE f_lambda _((void));
 void rb_set_end_proc _((void (*)(),VALUE));
 void gc_mark_threads _((void));
@@ -134,16 +136,16 @@ void thread_fd_writable _((int));
 int thread_alone _((void));
 void thread_sleep _((int));
 void thread_sleep_forever _((void));
-VALUE thread_create _((VALUE (*)(), void *));
+VALUE thread_create _((VALUE (*)(), void*));
 void thread_interrupt _((void));
 void thread_trap_eval _((VALUE, int));
 /* file.c */
-VALUE file_open _((char *, char *));
-int eaccess _((char *, int));
+VALUE file_open _((char*, char*));
+int eaccess _((char*, int));
 VALUE file_s_expand_path _((VALUE, VALUE));
 /* gc.c */
-void rb_global_variable _((VALUE *));
-void gc_mark_locations _((VALUE *, VALUE *));
+void rb_global_variable _((VALUE*));
+void gc_mark_locations _((VALUE*, VALUE*));
 void gc_mark_maybe();
 void gc_mark();
 void gc_force_recycle();
@@ -165,10 +167,10 @@ VALUE io_getc _((VALUE));
 VALUE io_ungetc _((VALUE, VALUE));
 VALUE io_close _((VALUE));
 VALUE io_binmode _((VALUE));
-int io_mode_flags _((char *));
+int io_mode_flags _((char*));
 VALUE io_reopen _((VALUE, VALUE));
 VALUE f_gets _((void));
-void rb_str_setter _((VALUE, ID, VALUE *));
+void rb_str_setter _((VALUE, ID, VALUE*));
 /* numeric.c */
 void num_zerodiv _((void));
 VALUE num_coerce_bin _((VALUE, VALUE));
@@ -208,11 +210,11 @@ void backref_set _((VALUE));
 VALUE lastline_get _((void));
 void lastline_set _((VALUE));
 /* process.c */
-int rb_proc_exec _((char *));
+int rb_proc_exec _((char*));
 void rb_syswait _((int));
 /* range.c */
 VALUE range_new _((VALUE, VALUE));
-VALUE range_beg_end _((VALUE, int *, int *));
+VALUE range_beg_end _((VALUE, int*, int*));
 /* re.c */
 VALUE reg_nth_defined _((int, VALUE));
 VALUE reg_nth_match _((int, VALUE));
@@ -220,30 +222,30 @@ VALUE reg_last_match _((VALUE));
 VALUE reg_match_pre _((VALUE));
 VALUE reg_match_post _((VALUE));
 VALUE reg_match_last _((VALUE));
-VALUE reg_new _((char *, int, int));
+VALUE reg_new _((char*, int, int));
 VALUE reg_match _((VALUE, VALUE));
 VALUE reg_match2 _((VALUE));
 char*rb_get_kcode _((void));
-void rb_set_kcode _((char *));
+void rb_set_kcode _((char*));
 /* ruby.c */
-void rb_load_file _((char *));
-void ruby_script _((char *));
+void rb_load_file _((char*));
+void ruby_script _((char*));
 void ruby_prog_init _((void));
-void ruby_set_argv _((int, char **));
-void ruby_process_options _((int, char **));
+void ruby_set_argv _((int, char**));
+void ruby_process_options _((int, char**));
 void ruby_require_modules _((void));
 void ruby_load_script _((void));
 /* signal.c */
-VALUE f_kill _((int, VALUE *));
+VALUE f_kill _((int, VALUE*));
 void gc_mark_trap_list _((void));
 void posix_signal _((int, void (*)()));
 void rb_trap_exit _((void));
 void rb_trap_exec _((void));
 /* sprintf.c */
-VALUE f_sprintf _((int, VALUE *));
+VALUE f_sprintf _((int, VALUE*));
 /* string.c */
-VALUE str_new _((UCHAR *, UINT));
-VALUE str_new2 _((UCHAR *));
+VALUE str_new _((char*, unsigned int));
+VALUE str_new2 _((char*));
 VALUE str_new3 _((VALUE));
 VALUE str_new4 _((VALUE));
 VALUE obj_as_string _((VALUE));
@@ -258,12 +260,12 @@ VALUE str_dup_frozen _((VALUE));
 VALUE str_taint _((VALUE));
 VALUE str_tainted _((VALUE));
 VALUE str_resize _((VALUE, int));
-VALUE str_cat _((VALUE, UCHAR *, UINT));
+VALUE str_cat _((VALUE, char*, unsigned int));
 int str_hash _((VALUE));
 int str_cmp _((VALUE, VALUE));
 VALUE str_upto _((VALUE, VALUE));
 VALUE str_inspect _((VALUE));
-VALUE str_split _((VALUE, char *));
+VALUE str_split _((VALUE, char*));
 /* struct.c */
 VALUE struct_new();
 VALUE struct_define();
@@ -274,21 +276,21 @@ VALUE struct_getmember _((VALUE, ID));
 /* time.c */
 VALUE time_new _((int, int));
 /* util.c */
-void add_suffix _((VALUE, char *));
-unsigned long scan_oct _((char *, int, int *));
-unsigned long scan_hex _((char *, int, int *));
+void add_suffix _((VALUE, char*));
+unsigned long scan_oct _((char*, int, int*));
+unsigned long scan_hex _((char*, int, int*));
 /* variable.c */
 VALUE mod_name _((VALUE));
 VALUE rb_class_path _((VALUE));
-void rb_set_class_path _((VALUE, VALUE, char *));
-VALUE rb_path2class _((char *));
+void rb_set_class_path _((VALUE, VALUE, char*));
+VALUE rb_path2class _((char*));
 void rb_name_class _((VALUE, ID));
-void rb_autoload _((char *, char *));
+void rb_autoload _((char*, char*));
 VALUE f_autoload _((VALUE, VALUE, VALUE));
 void gc_mark_global_tbl _((void));
-VALUE f_trace_var _((int, VALUE *));
-VALUE f_untrace_var _((int, VALUE *));
-VALUE rb_gvar_set2 _((char *, VALUE));
+VALUE f_trace_var _((int, VALUE*));
+VALUE f_untrace_var _((int, VALUE*));
+VALUE rb_gvar_set2 _((char*, VALUE));
 VALUE f_global_variables _((void));
 void rb_alias_variable _((ID, ID));
 VALUE rb_ivar_get _((VALUE, ID));

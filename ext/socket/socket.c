@@ -1386,7 +1386,7 @@ static VALUE mConst;
 static void
 sock_define_const(name, value)
     char *name;
-    INT value;
+    int value;
 {
     rb_define_const(cSocket, name, INT2FIX(value));
     rb_define_const(mConst, name, INT2FIX(value));

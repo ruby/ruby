@@ -232,7 +232,7 @@ VALUE
 exc_new(etype, ptr, len)
     VALUE etype;
     char *ptr;
-    UINT len;
+    unsigned len;
 {
     VALUE exc = obj_alloc(etype);
 

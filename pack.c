@@ -101,11 +101,11 @@ pack_pack(ary, fmt)
 {
     static char *nul10 = "\0\0\0\0\0\0\0\0\0\0";
     static char *spc10 = "          ";
-    UCHAR *p, *pend;
+    char *p, *pend;
     VALUE res, from;
     char type;
     int items, len, idx;
-    UCHAR *ptr;
+    char *ptr;
     int plen;
 
     Check_Type(fmt, T_STRING);
@@ -296,7 +296,7 @@ pack_pack(ary, fmt)
 		else {
 		    s = NUM2INT(from);
 		}
-		str_cat(res, (UCHAR*)&s, sizeof(short));
+		str_cat(res, (char*)&s, sizeof(short));
 	    }
 	    break;
 
@@ -310,7 +310,7 @@ pack_pack(ary, fmt)
 		else {
 		    i = NUM2UINT(from);
 		}
-		str_cat(res, (UCHAR*)&i, sizeof(int));
+		str_cat(res, (char*)&i, sizeof(int));
 	    }
 	    break;
 
@@ -324,7 +324,7 @@ pack_pack(ary, fmt)
 		else {
 		    l = NUM2UINT(from);
 		}
-		str_cat(res, (UCHAR*)&l, sizeof(long));
+		str_cat(res, (char*)&l, sizeof(long));
 	    }
 	    break;
 
@@ -338,7 +338,7 @@ pack_pack(ary, fmt)
 		    s = NUM2INT(from);
 		}
 		s = htons(s);
-		str_cat(res, (UCHAR*)&s, sizeof(short));
+		str_cat(res, (char*)&s, sizeof(short));
 	    }
 	    break;
 
@@ -352,7 +352,7 @@ pack_pack(ary, fmt)
 		    l = NUM2UINT(from);
 		}
 		l = htonl(l);
-		str_cat(res, (UCHAR*)&l, sizeof(long));
+		str_cat(res, (char*)&l, sizeof(long));
 	    }
 	    break;
 
@@ -366,7 +366,7 @@ pack_pack(ary, fmt)
 		    s = NUM2INT(from);
 		}
 		s = htovs(s);
-		str_cat(res, (UCHAR*)&s, sizeof(short));
+		str_cat(res, (char*)&s, sizeof(short));
 	    }
 	    break;
 
@@ -380,7 +380,7 @@ pack_pack(ary, fmt)
 		    l = NUM2UINT(from);
 		}
 		l = htovl(l);
-		str_cat(res, (UCHAR*)&l, sizeof(long));
+		str_cat(res, (char*)&l, sizeof(long));
 	    }
 	    break;
 
@@ -400,7 +400,7 @@ pack_pack(ary, fmt)
 		    f = (float)NUM2INT(from);
 		    break;
 		}
-		str_cat(res, (UCHAR*)&f, sizeof(float));
+		str_cat(res, (char*)&f, sizeof(float));
 	    }
 	    break;
 
@@ -420,7 +420,7 @@ pack_pack(ary, fmt)
 		    d = (double)NUM2INT(from);
 		    break;
 		}
-		str_cat(res, (UCHAR*)&d, sizeof(double));
+		str_cat(res, (char*)&d, sizeof(double));
 	    }
 	    break;
 
@@ -507,12 +507,12 @@ static char b64_table[] =
 static void
 encodes(str, s, len, type)
     VALUE str;
-    UCHAR *s;
+    char *s;
     int len;
     int type;
 {
     char hunk[4];
-    UCHAR *p, *pend;
+    char *p, *pend;
     char *trans = type == 'u' ? uu_table : b64_table;
     int padding;
 
@@ -550,8 +550,8 @@ pack_unpack(str, fmt)
     VALUE str, fmt;
 {
     static char *hexdigits = "0123456789abcdef0123456789ABCDEFx";
-    UCHAR *s, *send;
-    UCHAR *p, *pend;
+    char *s, *send;
+    char *p, *pend;
     VALUE ary;
     char type;
     int len;
@@ -586,7 +586,7 @@ pack_unpack(str, fmt)
 	    if (len > send - s) len = send - s;
 	    {
 		int end = len;
-		UCHAR *t = s + len - 1;
+		char *t = s + len - 1;
 
 		while (t >= s) {
 		    if (*t != ' ' && *t != '\0') break;
@@ -607,7 +607,7 @@ pack_unpack(str, fmt)
 	  case 'b':
 	    {
 		VALUE bitstr;
-		UCHAR *t;
+		char *t;
 		int bits, i;
 
 		if (p[-1] == '*' || len > (send - s) * 8)
@@ -626,7 +626,7 @@ pack_unpack(str, fmt)
 	  case 'B':
 	    {
 		VALUE bitstr;
-		UCHAR *t;
+		char *t;
 		int bits, i;
 
 		if (p[-1] == '*' || len > (send - s) * 8)
@@ -645,7 +645,7 @@ pack_unpack(str, fmt)
 	  case 'h':
 	    {
 		VALUE bitstr;
-		UCHAR *t;
+		char *t;
 		int bits, i;
 
 		if (p[-1] == '*' || len > (send - s) * 2)
@@ -666,7 +666,7 @@ pack_unpack(str, fmt)
 	  case 'H':
 	    {
 		VALUE bitstr;
-		UCHAR *t;
+		char *t;
 		int bits, i;
 
 		if (p[-1] == '*' || len > (send - s) * 2)
@@ -698,7 +698,7 @@ pack_unpack(str, fmt)
 	    if (len > send - s)
 		len = send - s;
 	    while (len-- > 0) {
-		UCHAR c = *s++;
+		unsigned char c = *s++;
 		ary_push(ary, INT2FIX(c));
 	    }
 	    break;
@@ -844,7 +844,7 @@ pack_unpack(str, fmt)
 	  case 'u':
 	    {
 		VALUE str = str_new(0, (send - s)*3/4);
-		UCHAR *ptr = RSTRING(str)->ptr;
+		char *ptr = RSTRING(str)->ptr;
 		int total = 0;
 
 		while (s < send && *s > ' ' && *s < 'a') {
@@ -898,7 +898,7 @@ pack_unpack(str, fmt)
 	  case 'm':
 	    {
 		VALUE str = str_new(0, (send - s)*3/4);
-		UCHAR *ptr = RSTRING(str)->ptr;
+		char *ptr = RSTRING(str)->ptr;
 		int total = 0;
 		int a,b,c,d;
 		static int first = 1;

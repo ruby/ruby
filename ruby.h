@@ -51,22 +51,16 @@
 #pragma alloca
 #endif
 
-#if SIZEOF_INT == SIZEOF_VOIDP
-typedef int INT;
-typedef unsigned int UINT;
-# define PTR_SIZED_MAX INT_MAX
-#elif SIZEOF_LONG == SIZEOF_VOIDP
+#if SIZEOF_LONG != SIZEOF_VOIDP
+---->> ruby requires sizeof(void*) == sizeof(long) to be compiled. <<----
+# endif
+/* INT, UINT, UCHAR are obsolete macro, do not use them. */
 typedef long INT;
 typedef unsigned long UINT;
-# define PTR_SIZED_MAX LONG_MAX
-#else
----->> ruby requires sizeof(void*) == sizeof(int/long) to be compiled. <<----
-#endif
-typedef UINT VALUE;
-typedef unsigned int ID;
-
 typedef unsigned char UCHAR;
-typedef unsigned short USHORT;
+
+typedef unsigned long VALUE;
+typedef unsigned int ID;
 
 #ifdef __STDC__
 # include <limits.h>
@@ -82,23 +76,17 @@ typedef unsigned short USHORT;
 # ifndef LONG_MIN
 #  define LONG_MIN (-LONG_MAX-1)
 # endif
-# ifndef INT_MAX
-   /* assuming 32bit(2's compliment) int */
-#  define INT_MAX       2147483647
-#  define INT_MIN       (-INT_MAX-1)
-# endif
 # ifndef CHAR_BIT
 #  define CHAR_BIT 8
 # endif
 #endif
 
-#define PTR_SIZED_MIN (-PTR_SIZED_MAX-1)
-#define FIXNUM_MAX (PTR_SIZED_MAX>>1)
-#define FIXNUM_MIN RSHIFT((INT)PTR_SIZED_MIN,1)
+#define FIXNUM_MAX (LONG_MAX>>1)
+#define FIXNUM_MIN RSHIFT((long)LONG_MIN,1)
 
 #define FIXNUM_FLAG 0x01
-#define INT2FIX(i) (VALUE)(((INT)(i))<<1 | FIXNUM_FLAG)
-VALUE int2inum _((INT));
+#define INT2FIX(i) (VALUE)(((long)(i))<<1 | FIXNUM_FLAG)
+VALUE int2inum _((long));
 #define INT2NUM(v) int2inum(v)
 
 #if (-1==(((-1)<<1)&FIXNUM_FLAG)>>1)
@@ -106,9 +94,8 @@ VALUE int2inum _((INT));
 #else
 # define RSHIFT(x,y) (((x)<0) ? ~((~(x))>>y) : (x)>>y)
 #endif
-#define FIX2INT(x) RSHIFT((INT)x,1)
-
-#define FIX2UINT(f) (((UINT)(f))>>1)
+#define FIX2LONG(x) RSHIFT((long)x,1)
+#define FIX2ULONG(x) (((unsigned long)(x))>>1)
 #define FIXNUM_P(f) (((long)(f))&FIXNUM_FLAG)
 #define POSFIXABLE(f) ((f) <= FIXNUM_MAX)
 #define NEGFIXABLE(f) ((f) >= FIXNUM_MIN)
@@ -170,10 +157,23 @@ void rb_check_safe_str _((VALUE));
 #define Check_SafeStr(v) rb_check_safe_str((VALUE)(v))
 void rb_secure _((int));
 
-INT num2int _((VALUE));
+long num2long _((VALUE));
+unsigned long num2ulong _((VALUE));
+#define NUM2LONG(x) (FIXNUM_P(x)?FIX2INT(x):num2long((VALUE)x))
+#define NUM2ULONG(x) num2ulong((VALUE)x)
+#if SIZEOF_INT < SIZEOF_LONG
+int num2int _((VALUE));
 #define NUM2INT(x) (FIXNUM_P(x)?FIX2INT(x):num2int((VALUE)x))
-UINT num2uint _((VALUE));
-#define NUM2UINT(x) num2uint((VALUE)x)
+int fix2int _((VALUE));
+#define FIX2INT(x) fix2int((VALUE)x)
+#define NUM2UINT(x) ((unsigned int)NUM2ULONG(x))
+#define FIX2UINT(x) ((unsigned int)FIX2ULONG(x))
+#else
+#define NUM2INT(x) NUM2LONG(x)
+#define NUM2UINT(x) NUM2ULONG(x)
+#define FIX2INT(x) FIX2LONG(x)
+#define FIX2UINT(x) FIX2ULONG(x)
+#endif
 
 double num2dbl _((VALUE));
 #define NUM2DBL(x) num2dbl((VALUE)(x))
@@ -197,7 +197,7 @@ VALUE rb_newobj _((void));
 }
 
 struct RBasic {
-    UINT flags;
+    unsigned long flags;
     VALUE klass;
 };
 
@@ -220,29 +220,29 @@ struct RFloat {
 
 struct RString {
     struct RBasic basic;
-    UINT len;
-    UCHAR *ptr;
+    unsigned int len;
+    char *ptr;
     VALUE orig;
 };
 
 struct RArray {
     struct RBasic basic;
-    UINT len, capa;
+    unsigned int len, capa;
     VALUE *ptr;
 };
 
 struct RRegexp {
     struct RBasic basic;
     struct re_pattern_buffer *ptr;
-    UINT len;
-    UCHAR *str;
+    unsigned int len;
+    char *str;
 };
 
 struct RHash {
     struct RBasic basic;
     struct st_table *tbl;
     int iter_lev;
-    UINT status;
+    long status;
 };
 
 struct RFile {
@@ -279,15 +279,15 @@ VALUE data_object_alloc _((VALUE,void*,void (*)(),void (*)()));
 
 struct RStruct {
     struct RBasic basic;
-    UINT len;
+    unsigned int len;
     VALUE *ptr;
 };
 
 struct RBignum {
     struct RBasic basic;
     char sign;
-    UINT len;
-    USHORT *digits;
+    unsigned int len;
+    unsigned short *digits;
 };
 
 #define R_CAST(st)   (struct st*)

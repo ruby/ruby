@@ -159,7 +159,7 @@ io_write(io, str)
 
 #ifdef __human68k__
     {
-	register UCHAR *ptr = RSTRING(str)->ptr;
+	register char *ptr = RSTRING(str)->ptr;
 	n = (int)RSTRING(str)->len;
 	while (--n >= 0)
 	    if (fputc(*ptr++, f) == EOF)

@@ -14,19 +14,20 @@
 
 extern VALUE cInteger;
 VALUE cBignum;
+typedef unsigned short USHORT;
 
 #define BDIGITS(x) RBIGNUM(x)->digits
-#define BITSPERDIG (sizeof(USHORT)*CHAR_BIT)
+#define BITSPERDIG (sizeof(short)*CHAR_BIT)
 #define BIGRAD (1L << BITSPERDIG)
-#define DIGSPERINT ((UINT)(sizeof(INT)/sizeof(USHORT)))
-#define BIGUP(x) ((UINT)(x) << BITSPERDIG)
+#define DIGSPERINT ((unsigned int)(sizeof(long)/sizeof(short)))
+#define BIGUP(x) ((unsigned int)(x) << BITSPERDIG)
 #define BIGDN(x) ((x) >> BITSPERDIG)
 #define BIGLO(x) ((x) & (BIGRAD-1))
 
 static VALUE
 bignew_1(klass, len, sign)
     VALUE klass;
-    UINT len;
+    unsigned int len;
     char sign;
 {
     NEWOBJ(big, struct RBignum);
@@ -54,7 +55,7 @@ void
 big_2comp(x)			/* get 2's complement */
     VALUE x;
 {
-    UINT i = RBIGNUM(x)->len;
+    unsigned int i = RBIGNUM(x)->len;
     USHORT *ds = BDIGITS(x);
     long num;
 
@@ -79,7 +80,7 @@ static VALUE
 bignorm(x)
     VALUE x;
 {
-    UINT len = RBIGNUM(x)->len;
+    unsigned int len = RBIGNUM(x)->len;
     USHORT *ds = BDIGITS(x);
 
     while (len-- && !ds[len]) ;
@@ -109,9 +110,9 @@ big_norm(x)
 
 VALUE
 uint2big(n)
-    UINT n;
+    unsigned long n;
 {
-    UINT i = 0;
+    unsigned int i = 0;
     USHORT *digits;
     VALUE big;
 
@@ -131,9 +132,9 @@ uint2big(n)
 
 VALUE
 int2big(n)
-    INT n;
+    long n;
 {
-    INT neg = 0;
+    long neg = 0;
     VALUE big;
 
     if (n < 0) {
@@ -149,7 +150,7 @@ int2big(n)
 
 VALUE
 uint2inum(n)
-    UINT n;
+    unsigned long n;
 {
     if (POSFIXABLE(n)) return INT2FIX(n);
     return uint2big(n);
@@ -157,7 +158,7 @@ uint2inum(n)
 
 VALUE
 int2inum(n)
-    INT n;
+    long n;
 {
     if (FIXABLE(n)) return INT2FIX(n);
     return int2big(n);
@@ -165,12 +166,12 @@ int2inum(n)
 
 VALUE
 str2inum(str, base)
-    UCHAR *str;
+    char *str;
     int base;
 {
     char sign = 1, c;
     unsigned long num;
-    UINT len, blen = 1, i;
+    unsigned int len, blen = 1, i;
     VALUE z;
     USHORT *zds;
 
@@ -208,12 +209,12 @@ str2inum(str, base)
     }
 
     if (len <= (sizeof(VALUE)*CHAR_BIT)) {
-	UINT val = strtoul((char*)str, 0, base);
+	unsigned int val = strtoul((char*)str, 0, base);
 
 	if (POSFIXABLE(val)) {
 	    if (sign) return INT2FIX(val);
 	    else {
-		INT result = -(INT)val;
+		long result = -(long)val;
 		return INT2FIX(result);
 	    }
 	}
@@ -273,9 +274,9 @@ big2str(x, base)
 {
     VALUE t;
     USHORT *ds;
-    UINT i, j, hbase;
+    unsigned int i, j, hbase;
     VALUE ss;
-    UCHAR *s, c;
+    char *s, c;
 
     if (FIXNUM_P(x)) {
 	return fix2str(x, base);
@@ -342,15 +343,15 @@ big_to_s(x)
     return big2str(x, 10);
 }
 
-UINT
-big2uint(x)
+unsigned long
+big2ulong(x)
     VALUE x;
 {
-    UINT num;
-    UINT len = RBIGNUM(x)->len;
+    unsigned int num;
+    unsigned int len = RBIGNUM(x)->len;
     USHORT *ds;
 
-    if (len > sizeof(INT)/sizeof(USHORT))
+    if (len > sizeof(long)/sizeof(short))
 	ArgError("bignum too big to convert into `uint'");
     ds = BDIGITS(x);
     num = 0;
@@ -361,13 +362,13 @@ big2uint(x)
     return num;
 }
 
-INT
-big2int(x)
+long
+big2long(x)
     VALUE x;
 {
-    UINT num = big2uint(x);
+    unsigned long num = big2ulong(x);
 
-    if ((INT)num < 0) {
+    if ((long)num < 0) {
 	ArgError("bignum too big to convert into `int'");
     }
     if (!RBIGNUM(x)->sign) return -num;
@@ -385,7 +386,7 @@ VALUE
 dbl2big(d)
     double d;
 {
-    UINT i = 0;
+    unsigned int i = 0;
     long c;
     USHORT *digits;
     VALUE z;
@@ -412,7 +413,7 @@ big2dbl(x)
     VALUE x;
 {
     double d = 0.0;
-    UINT i = RBIGNUM(x)->len;
+    unsigned int i = RBIGNUM(x)->len;
     USHORT *ds = BDIGITS(x);
 
     while (i--) {
@@ -485,7 +486,7 @@ big_neg(x)
     VALUE x;
 {
     VALUE z = big_clone(x);
-    UINT i = RBIGNUM(x)->len;
+    unsigned int i = RBIGNUM(x)->len;
     USHORT *ds = BDIGITS(z);
 
     if (!RBIGNUM(x)->sign) big_2comp(z);
@@ -503,7 +504,7 @@ bigsub(x, y)
     VALUE z = 0;
     USHORT *zds;
     long num;
-    UINT i;
+    unsigned int i;
 
     i = RBIGNUM(x)->len;
     /* if x is larger than y, swap */
@@ -551,7 +552,7 @@ bigadd(x, y, sign)
 {
     VALUE z;
     long num;
-    UINT i, len;
+    unsigned int i, len;
 
     if (RBIGNUM(x)->sign == (RBIGNUM(y)->sign ^ sign)) {
 	if (RBIGNUM(y)->sign == sign) return bigsub(y, x);
@@ -630,7 +631,7 @@ VALUE
 big_mul(x, y)
     VALUE x, y;
 {
-    UINT i = 0, j;
+    unsigned int i = 0, j;
     unsigned long n = 0;
     VALUE z;
     USHORT *zds;
@@ -679,7 +680,7 @@ bigdivmod(x, y, div, mod, modulo)
     VALUE *div, *mod;
     int modulo;
 {
-    UINT nx = RBIGNUM(x)->len, ny = RBIGNUM(y)->len, i, j;
+    unsigned int nx = RBIGNUM(x)->len, ny = RBIGNUM(y)->len, i, j;
     VALUE yy, z;
     USHORT *xds, *yds, *zds, *tds;
     unsigned long t2;
@@ -944,7 +945,7 @@ big_and(x, y)
 {
     VALUE z;
     USHORT *ds1, *ds2, *zds;
-    UINT i, l1, l2;
+    unsigned int i, l1, l2;
     char sign;
 
     if (FIXNUM_P(y)) {
@@ -995,7 +996,7 @@ big_or(x, y)
 {
     VALUE z;
     USHORT *ds1, *ds2, *zds;
-    UINT i, l1, l2;
+    unsigned int i, l1, l2;
     char sign;
 
     if (FIXNUM_P(y)) {
@@ -1047,7 +1048,7 @@ big_xor(x, y)
 {
     VALUE z;
     USHORT *ds1, *ds2, *zds;
-    UINT i, l1, l2;
+    unsigned int i, l1, l2;
     char sign;
 
     if (FIXNUM_P(y)) {
@@ -1103,11 +1104,11 @@ big_lshift(x, y)
 {
     USHORT *xds, *zds;
     int shift = NUM2INT(y);
-    UINT s1 = shift/BITSPERDIG;
-    UINT s2 = shift%BITSPERDIG;
+    unsigned int s1 = shift/BITSPERDIG;
+    unsigned int s2 = shift%BITSPERDIG;
     VALUE z;
     unsigned long num = 0;
-    UINT len, i;
+    unsigned int len, i;
 
     if (shift < 0) return big_rshift(x, INT2FIX(-shift));
     xds = BDIGITS(x);
@@ -1132,12 +1133,12 @@ big_rshift(x, y)
 {
     USHORT *xds, *zds;
     int shift = NUM2INT(y);
-    UINT s1 = shift/BITSPERDIG;
-    UINT s2 = shift%BITSPERDIG;
+    unsigned int s1 = shift/BITSPERDIG;
+    unsigned int s2 = shift%BITSPERDIG;
     VALUE z;
     unsigned long num = 0;
-    UINT i = RBIGNUM(x)->len;
-    UINT j;
+    unsigned int i = RBIGNUM(x)->len;
+    unsigned int j;
 
     if (shift < 0) return big_lshift(x, INT2FIX(-shift));
     if (s1 > RBIGNUM(x)->len) {
@@ -1164,7 +1165,7 @@ big_aref(x, y)
 {
     USHORT *xds;
     int shift = NUM2INT(y);
-    UINT s1, s2;
+    unsigned int s1, s2;
 
     if (shift < 0) return INT2FIX(0);
     s1 = shift/BITSPERDIG;

@@ -69,7 +69,7 @@ w_byte(c, arg)
     struct dump_arg *arg;
 {
     if (arg->fp) putc(c, arg->fp);
-    else str_cat(arg->str, (UCHAR*)&c, 1);
+    else str_cat(arg->str, &c, 1);
 }
 
 static void
@@ -94,7 +94,7 @@ w_short(x, arg)
 {
     int i;
 
-    for (i=0; i<sizeof(USHORT); i++) {
+    for (i=0; i<sizeof(short); i++) {
 	w_byte((x >> (i*8)) & 0xff, arg);
     }
 }
@@ -286,7 +286,7 @@ w_object(obj, arg, limit)
 	    {
 		char sign = RBIGNUM(obj)->sign?'+':'-';
 		int len = RBIGNUM(obj)->len;
-		USHORT *d = RBIGNUM(obj)->digits;
+		unsigned short *d = RBIGNUM(obj)->digits;
 
 		w_byte(sign, arg);
 		w_long(len, arg);
@@ -452,7 +452,7 @@ marshal_dump(argc, argv)
 
 struct load_arg {
     FILE *fp;
-    UCHAR *ptr, *end;
+    char *ptr, *end;
     st_table *symbol;
     st_table *data;
     VALUE proc;
@@ -467,15 +467,15 @@ r_byte(arg)
     return EOF;
 }
 
-static USHORT
+static unsigned short
 r_short(arg)
     struct load_arg *arg;
 {
-    USHORT x;
+    unsigned short x;
     int i;
 
     x = 0;
-    for (i=0; i<sizeof(USHORT); i++) {
+    for (i=0; i<sizeof(short); i++) {
 	x |= r_byte(arg)<<(i*8);
     }
 
@@ -656,13 +656,13 @@ r_object(arg)
       case TYPE_BIGNUM:
 	{
 	    int len;
-	    USHORT *digits;
+	    unsigned short *digits;
 
 	    NEWOBJ(big, struct RBignum);
 	    OBJSETUP(big, cBignum, T_BIGNUM);
 	    big->sign = (r_byte(arg) == '+');
 	    big->len = len = r_long(arg);
-	    big->digits = digits = ALLOC_N(USHORT, len);
+	    big->digits = digits = ALLOC_N(unsigned short, len);
 	    while (len--) {
 		*digits++ = r_short(arg);
 	    }

@@ -36,8 +36,8 @@ extern VALUE RS;
 
 VALUE
 str_new(ptr, len)
-    UCHAR *ptr;
-    UINT len;
+    char *ptr;
+    unsigned len;
 {
     NEWOBJ(str, struct RString);
     OBJSETUP(str, cString, T_STRING);
@@ -58,7 +58,7 @@ str_new(ptr, len)
 
 VALUE
 str_new2(ptr)
-    UCHAR *ptr;
+    char *ptr;
 {
     return str_new(ptr, strlen(ptr));
 }
@@ -345,7 +345,7 @@ void
 str_modify(str)
     VALUE str;
 {
-    UCHAR *ptr;
+    char *ptr;
 
     if (rb_safe_level() >= 5) {
 	extern VALUE eSecurityError;
@@ -431,8 +431,8 @@ str_resize(str, len)
 VALUE
 str_cat(str, ptr, len)
     VALUE str;
-    UCHAR *ptr;
-    UINT len;
+    char *ptr;
+    unsigned len;
 {
     if (len > 0) {
 	str_modify(str);
@@ -459,7 +459,7 @@ str_hash(str)
     VALUE str;
 {
     register int len = RSTRING(str)->len;
-    register UCHAR *p = RSTRING(str)->ptr;
+    register char *p = RSTRING(str)->ptr;
     register int key = 0;
 
     if (RTEST(ignorecase)) {
@@ -491,7 +491,7 @@ int
 str_cmp(str1, str2)
     VALUE str1, str2;
 {
-    UINT len;
+    unsigned int len;
     int retval;
 
     if (RTEST(ignorecase)) {
@@ -571,7 +571,7 @@ str_index(str, sub, offset)
     VALUE str, sub;
     int offset;
 {
-    UCHAR *s, *e, *p;
+    char *s, *e, *p;
     int len;
 
     if (RSTRING(str)->len - offset < RSTRING(sub)->len) return -1;
@@ -643,7 +643,7 @@ str_rindex(argc, argv, str)
     VALUE sub;
     VALUE initpos;
     int pos, len;
-    UCHAR *s, *sbeg, *t;
+    char *s, *sbeg, *t;
 
     if (rb_scan_args(argc, argv, "11", &sub, &initpos) == 2) {
 	pos = NUM2INT(initpos);
@@ -690,9 +690,9 @@ str_rindex(argc, argv, str)
     return Qnil;
 }
 
-static UCHAR
+static char
 succ_char(s)
-    UCHAR *s;
+    char *s;
 {
     char c = *s;
 
@@ -720,7 +720,7 @@ str_succ(orig)
     VALUE orig;
 {
     VALUE str, str2;
-    UCHAR *sbeg, *s;
+    char *sbeg, *s;
     char c = -1;
 
     str = str_new(RSTRING(orig)->ptr, RSTRING(orig)->len);
@@ -1296,7 +1296,7 @@ static VALUE
 str_reverse_bang(str)
     VALUE str;
 {
-    UCHAR *s, *e, *p, *q;
+    char *s, *e, *p, *q;
 
     s = RSTRING(str)->ptr;
     e = s + RSTRING(str)->len - 1;
@@ -1315,7 +1315,7 @@ str_reverse(str)
     VALUE str;
 {
     VALUE obj;
-    UCHAR *s, *e, *p;
+    char *s, *e, *p;
 
     if (RSTRING(str)->len <= 1) return str;
 
@@ -1387,9 +1387,9 @@ str_inspect(str)
     VALUE str;
 {
 #define STRMAX 80
-    UCHAR buf[STRMAX];
-    UCHAR *p, *pend;
-    UCHAR *b;
+    char buf[STRMAX];
+    char *p, *pend;
+    char *b;
 
     p = RSTRING(str)->ptr; pend = p + RSTRING(str)->len;
     b = buf;
@@ -1404,7 +1404,7 @@ str_inspect(str)
 }
 
     while (p < pend) {
-	UCHAR c = *p++;
+	char c = *p++;
 	if (ismbchar(c) && p < pend) {
 	    CHECK(2);
 	    *b++ = c;
@@ -1479,14 +1479,14 @@ str_dump(str)
     VALUE str;
 {
     int len;
-    UCHAR *p, *pend;
-    UCHAR *q, *qend;
+    char *p, *pend;
+    char *q, *qend;
     VALUE result;
 
     len = 2;			/* "" */
     p = RSTRING(str)->ptr; pend = p + RSTRING(str)->len;
     while (p < pend) {
-	UCHAR c = *p++;
+	char c = *p++;
 	switch (c) {
 	  case '"':  case '\'':
 	  case '\n': case '\r':
@@ -1512,7 +1512,7 @@ str_dump(str)
 
     *q++ = '"';
     while (p < pend) {
-	UCHAR c = *p++;
+	char c = *p++;
 
 	if (c == '"' || c == '\\') {
 	    *q++ = '\\';
@@ -1564,7 +1564,7 @@ static VALUE
 str_upcase_bang(str)
     VALUE str;
 {
-    UCHAR *s, *send;
+    char *s, *send;
     int modify = 0;
 
     str_modify(str);
@@ -1598,7 +1598,8 @@ static VALUE
 str_downcase_bang(str)
     VALUE str;
 {
-    UCHAR *s, *send, modify = 0;
+    char *s, *send;
+    int modify = 0;
 
     str_modify(str);
     s = RSTRING(str)->ptr; send = s + RSTRING(str)->len;
@@ -1631,7 +1632,8 @@ static VALUE
 str_capitalize_bang(str)
     VALUE str;
 {
-    UCHAR *s, *send, modify = 0;
+    char *s, *send;
+    int modify = 0;
 
     str_modify(str);
     s = RSTRING(str)->ptr; send = s + RSTRING(str)->len;
@@ -1666,7 +1668,8 @@ static VALUE
 str_swapcase_bang(str)
     VALUE str;
 {
-    UCHAR *s, *send, modify = 0;
+    char *s, *send;
+    int modify = 0;
 
     str_modify(str);
     s = RSTRING(str)->ptr; send = s + RSTRING(str)->len;
@@ -1699,11 +1702,11 @@ str_swapcase(str)
     return val;
 }
 
-typedef UCHAR *USTR;
+typedef unsigned char *USTR;
 
 static struct tr {
     int gen, now, max;
-    UCHAR *p, *pend;
+    char *p, *pend;
 } trsrc, trrepl;
 
 static int
@@ -1746,9 +1749,9 @@ tr_trans(str, src, repl, sflag)
 {
     struct tr trsrc, trrepl;
     int cflag = 0;
-    UCHAR trans[256];
+    char trans[256];
     int i, c, c0, modify = 0;
-    UCHAR *s, *send;
+    char *s, *send;
 
     str_modify(str);
     src = str_to_str(src);
@@ -1803,7 +1806,7 @@ tr_trans(str, src, repl, sflag)
     s = RSTRING(str)->ptr; send = s + RSTRING(str)->len;
     c0 = -1;
     if (sflag) {
-	UCHAR *t = s;
+	char *t = s;
 
 	while (s < send) {
 	    c = trans[*s++ & 0xff] & 0xff;
@@ -1857,7 +1860,7 @@ str_tr(str, src, repl)
 static void
 tr_setup_table(str, table)
     VALUE str;
-    UCHAR table[256];
+    char table[256];
 {
     struct tr tr;
     int i, cflag = 0;
@@ -1882,8 +1885,8 @@ static VALUE
 str_delete_bang(str1, str2)
     VALUE str1, str2;
 {
-    UCHAR *s, *send, *t;
-    UCHAR squeez[256];
+    char *s, *send, *t;
+    char squeez[256];
     int modify = 0;
 
     str2 = str_to_str(str2);
@@ -1921,8 +1924,8 @@ static VALUE
 tr_squeeze(str1, str2)
     VALUE str1, str2;
 {
-    UCHAR squeez[256];
-    UCHAR *s, *send, *t;
+    char squeez[256];
+    char *s, *send, *t;
     char c, save, modify = 0;
 
     if (!NIL_P(str2)) {
@@ -2047,9 +2050,9 @@ str_split_method(argc, argv, str)
     result = ary_new();
     beg = 0;
     if (char_sep != 0) {
-	UCHAR *ptr = RSTRING(str)->ptr;
+	char *ptr = RSTRING(str)->ptr;
 	int len = RSTRING(str)->len;
-	UCHAR *eptr = ptr + len;
+	char *eptr = ptr + len;
 
 	if (char_sep == ' ') {	/* AWK emulation */
 	    int skip = 1;
@@ -2163,8 +2166,8 @@ str_each_line(argc, argv, str)
     VALUE rs;
     int newline;
     int rslen;
-    UCHAR *p = RSTRING(str)->ptr, *pend = p + RSTRING(str)->len, *s;
-    UCHAR *ptr = p;
+    char *p = RSTRING(str)->ptr, *pend = p + RSTRING(str)->len, *s;
+    char *ptr = p;
     int len = RSTRING(str)->len;
     VALUE line;
 
@@ -2281,7 +2284,7 @@ str_chomp_bang(argc, argv, str)
     VALUE rs;
     int newline;
     int rslen;
-    UCHAR *p = RSTRING(str)->ptr;
+    char *p = RSTRING(str)->ptr;
     int len = RSTRING(str)->len;
 
     if (rb_scan_args(argc, argv, "01", &rs) == 0) {
@@ -2351,7 +2354,7 @@ static VALUE
 str_strip_bang(str)
     VALUE str;
 {
-    UCHAR *s, *t, *e;
+    char *s, *t, *e;
 
     str_modify(str);
     s = RSTRING(str)->ptr;
@@ -2366,7 +2369,7 @@ str_strip_bang(str)
 
     RSTRING(str)->len = t-s;
     if (s > RSTRING(str)->ptr) { 
-	UCHAR *p = RSTRING(str)->ptr;
+	char *p = RSTRING(str)->ptr;
 
 	RSTRING(str)->ptr = ALLOC_N(char, RSTRING(str)->len+1);
 	memcpy(RSTRING(str)->ptr, s, RSTRING(str)->len);
@@ -2512,14 +2515,14 @@ str_sum(argc, argv, str)
 {
     VALUE vbits;
     int   bits;
-    UCHAR *p, *pend;
+    char *p, *pend;
 
     rb_scan_args(argc, argv, "01", &vbits);
     if (NIL_P(vbits)) bits = 16;
     else bits = NUM2INT(vbits);
 
     p = RSTRING(str)->ptr; pend = p + RSTRING(str)->len;
-    if (bits > sizeof(UINT)*CHAR_BIT) {
+    if (bits > sizeof(long)*CHAR_BIT) {
 	VALUE res = INT2FIX(0);
 	VALUE mod;
 
@@ -2527,21 +2530,21 @@ str_sum(argc, argv, str)
 	mod = rb_funcall(mod, '-', 1, INT2FIX(1));
 
 	while (p < pend) {
-	    res = rb_funcall(res, '+', 1, INT2FIX((UINT)*p));
+	    res = rb_funcall(res, '+', 1, INT2FIX((unsigned int)*p));
 	    p++;
 	}
 	res = rb_funcall(res, '&', 1, mod);
 	return res;
     }
     else {
-	UINT res = 0;
-	UINT mod = (1<<bits)-1;
+	unsigned int res = 0;
+	unsigned int mod = (1<<bits)-1;
 
 	if (mod == 0) {
 	    mod = -1;
 	}
 	while (p < pend) {
-	    res += (UINT)*p;
+	    res += (unsigned int)*p;
 	    p++;
 	}
 	res &= mod;
@@ -2556,7 +2559,7 @@ str_ljust(str, w)
 {
     int width = NUM2INT(w);
     VALUE res;
-    UCHAR *p, *pend;
+    char *p, *pend;
 
     if (width < 0 || RSTRING(str)->len >= width) return str;
     res = str_new(0, width);
@@ -2575,7 +2578,7 @@ str_rjust(str, w)
 {
     int width = NUM2INT(w);
     VALUE res;
-    UCHAR *p, *pend;
+    char *p, *pend;
 
     if (width < 0 || RSTRING(str)->len >= width) return str;
     res = str_new(0, width);
@@ -2594,7 +2597,7 @@ str_center(str, w)
 {
     int width = NUM2INT(w);
     VALUE res;
-    UCHAR *p, *pend;
+    char *p, *pend;
     int n;
 
     if (width < 0 || RSTRING(str)->len >= width) return str;

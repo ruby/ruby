@@ -542,7 +542,7 @@ load_file(fname, script)
 		    RSTRING(line)->ptr[RSTRING(line)->len-2] = '\0';
 		if (p = strstr(p, " -")) {
 		    int argc; char *argv[2]; char **argvp = argv;
-		    UCHAR *s = ++p;
+		    char *s = ++p;
 
 		    argc = 2; argv[0] = 0;
 		    while (*p == '-') {

@@ -1,3 +1,9 @@
+Wed May 13 14:56:23 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ruby.h: xxx2INT, xxx2UINT checks values as int, not long.
+
+	* ruby.h: remove typedef's. INT, UINT, UCHAR, USHORT.
+
 Tue May 12 17:38:00 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* experimental release 1.1b9_18.

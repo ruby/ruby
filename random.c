@@ -87,7 +87,7 @@ f_rand(obj, vmax)
 	return big_rand(vmax);
 	
       case T_FLOAT:
-	if (RFLOAT(vmax)->value > INT_MAX || RFLOAT(vmax)->value < INT_MIN)
+	if (RFLOAT(vmax)->value > LONG_MAX || RFLOAT(vmax)->value < LONG_MIN)
 	    return big_rand(dbl2big(RFLOAT(vmax)->value));
 	break;
     }

@@ -170,7 +170,7 @@ rb_global_variable(var)
 typedef struct RVALUE {
     union {
 	struct {
-	    UINT flag;		/* always 0 for freed obj */
+	    unsigned long flag;	/* always 0 for freed obj */
 	    struct RVALUE *next;
 	} free;
 	struct RBasic  basic;
@@ -985,7 +985,7 @@ run_final(obj)
 
     if (!FL_TEST(obj, FL_FINALIZE)) return;
 
-    obj = INT2NUM((int)obj);	/* make obj into id */
+    obj = INT2NUM((long)obj);	/* make obj into id */
     for (i=0; i<RARRAY(finalizers)->len; i++) {
 	rb_eval_cmd(RARRAY(finalizers)->ptr[i], ary_new3(1,obj));
     }
@@ -1022,7 +1022,7 @@ static VALUE
 id2ref(obj, id)
     VALUE obj, id;
 {
-    INT ptr = NUM2UINT(id);
+    unsigned long ptr = NUM2UINT(id);
 
     if (FIXNUM_P(ptr)) return (VALUE)ptr;
     if (ptr == TRUE) return TRUE;

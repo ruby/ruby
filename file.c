@@ -1247,7 +1247,7 @@ static VALUE
 file_s_dirname(obj, fname)
     VALUE obj, fname;
 {
-    UCHAR *name, *p;
+    char *name, *p;
 
     name = STR2CSTR(fname);
     p = strrchr(name, '/');

@@ -134,7 +134,7 @@ num_chr(num)
     VALUE num;
 {
     char c;
-    INT i = NUM2INT(num);
+    long i = NUM2LONG(num);
 
     if (i < 0 || 0xff < i)
 	Fail("%d out of char range", i);
@@ -276,7 +276,7 @@ static VALUE
 flo_div(x, y)
     VALUE x, y;
 {
-    INT f_y;
+    long f_y;
     double d;
 
     switch (TYPE(y)) {
@@ -563,7 +563,7 @@ flo_to_i(num)
     VALUE num;
 {
     double f = RFLOAT(num)->value;
-    INT val;
+    long val;
 
     if (!FIXABLE(f)) {
 	return dbl2big(f);
@@ -612,8 +612,8 @@ fail_to_integer(val)
 	      rb_class2name(CLASS_OF(val)));
 }
 
-INT
-num2int(val)
+long
+num2long(val)
     VALUE val;
 {
     if (NIL_P(val)) {
@@ -625,16 +625,16 @@ num2int(val)
 	return FIX2INT(val);
 
       case T_FLOAT:
-	if (RFLOAT(val)->value <= (double)INT_MAX
-	    && RFLOAT(val)->value >= (double)INT_MIN) {
-	    return (int)(RFLOAT(val)->value);
+	if (RFLOAT(val)->value <= (double)LONG_MAX
+	    && RFLOAT(val)->value >= (double)LONG_MIN) {
+	    return (long)(RFLOAT(val)->value);
 	}
 	else {
 	    TypeError("float %g out of rang of integer", RFLOAT(val)->value);
 	}
 
       case T_BIGNUM:
-	return big2int(val);
+	return big2long(val);
 
       case T_STRING:
 	TypeError("no implicit conversion from string");
@@ -645,29 +645,55 @@ num2int(val)
 	if (!obj_is_kind_of(val, cInteger)) {
 	    TypeError("`to_i' need to return integer");
 	}
-	return NUM2INT(val);
+	return NUM2LONG(val);
     }
 }
 
-UINT
-num2uint(val)
+unsigned long
+num2ulong(val)
     VALUE val;
 {
     if (TYPE(val) == T_BIGNUM) {
-	return big2uint(val);
+	return big2ulong(val);
     }
-    return (UINT)num2int(val);
+    return (unsigned long)num2long(val);
 }
+
+#if SIZEOF_INT < SIZEOF_LONG
+int
+num2int(val)
+    VALUE val;
+{
+    long num = num2int(val);
+
+    if (num < INT_MIN || INT_MAX < num) {
+	ArgError("integer %d too big to convert to `int'.", num);
+    }
+    return (int)num;
+}
+
+int
+fix2int(val)
+    VALUE val;
+{
+    long num = FIXNUM_P(val)?FIX2LONG(val):num2long(val);
+
+    if (num < INT_MIN || INT_MAX < num) {
+	ArgError("integer %d too big to convert to `int'.", num);
+    }
+    return (int)num;
+}
+#endif
 
 VALUE
 num2fix(val)
     VALUE val;
 {
-    INT v;
+    long v;
 
     if (FIXNUM_P(val)) return val;
 
-    v = num2int(val);
+    v = num2long(val);
     if (!FIXABLE(v))
 	Fail("integer %d out of range of fixnum", v);
     return INT2FIX(v);
@@ -725,7 +751,7 @@ fix_plus(x, y)
     switch (TYPE(y)) {
       case T_FIXNUM:
 	{
-	    INT a, b, c;
+	    long a, b, c;
 	    VALUE r;
 
 	    a = FIX2INT(x);
@@ -752,7 +778,7 @@ fix_minus(x, y)
     switch (TYPE(y)) {
       case T_FIXNUM:
 	{
-	    INT a, b, c;
+	    long a, b, c;
 	    VALUE r;
 
 	    a = FIX2INT(x);
@@ -779,7 +805,7 @@ fix_mul(x, y)
     switch (TYPE(y)) {
       case T_FIXNUM:
 	{
-	    INT a, b, c;
+	    long a, b, c;
 	    VALUE r;
 
 	    a = FIX2INT(x);
@@ -805,7 +831,7 @@ static VALUE
 fix_div(x, y)
     VALUE x, y;
 {
-    INT i;
+    long i;
 
     if (TYPE(y) == T_FIXNUM) {
 	i = FIX2INT(y);
@@ -820,7 +846,7 @@ static VALUE
 fix_modulo(x, y, modulo)
     VALUE x, y;
 {
-    INT i;
+    long i;
 
     if (TYPE(y) == T_FIXNUM) {
 	i = FIX2INT(y);
@@ -855,7 +881,7 @@ fix_pow(x, y)
     VALUE x, y;
 {
     if (FIXNUM_P(y)) {
-	INT a, b;
+	long a, b;
 
 	b = FIX2INT(y);
 	if (b == 0) return INT2FIX(1);
@@ -888,7 +914,7 @@ fix_cmp(x, y)
     VALUE x, y;
 {
     if (FIXNUM_P(y)) {
-	INT a = FIX2INT(x), b = FIX2INT(y);
+	long a = FIX2INT(x), b = FIX2INT(y);
 
 	if (a == b) return INT2FIX(0);
 	if (a > b) return INT2FIX(1);
@@ -904,7 +930,7 @@ fix_gt(x, y)
     VALUE x, y;
 {
     if (FIXNUM_P(y)) {
-	INT a = FIX2INT(x), b = FIX2INT(y);
+	long a = FIX2INT(x), b = FIX2INT(y);
 
 	if (a > b) return TRUE;
 	return FALSE;
@@ -919,7 +945,7 @@ fix_ge(x, y)
     VALUE x, y;
 {
     if (FIXNUM_P(y)) {
-	INT a = FIX2INT(x), b = FIX2INT(y);
+	long a = FIX2INT(x), b = FIX2INT(y);
 
 	if (a >= b) return TRUE;
 	return FALSE;
@@ -934,7 +960,7 @@ fix_lt(x, y)
     VALUE x, y;
 {
     if (FIXNUM_P(y)) {
-	INT a = FIX2INT(x), b = FIX2INT(y);
+	long a = FIX2INT(x), b = FIX2INT(y);
 
 	if (a < b) return TRUE;
 	return FALSE;
@@ -949,7 +975,7 @@ fix_le(x, y)
     VALUE x, y;
 {
     if (FIXNUM_P(y)) {
-	INT a = FIX2INT(x), b = FIX2INT(y);
+	long a = FIX2INT(x), b = FIX2INT(y);
 
 	if (a <= b) return TRUE;
 	return FALSE;
@@ -1031,7 +1057,7 @@ fix_rshift(x, y)
     long i, val;
 
     i = NUM2INT(y);
-    if (i < sizeof(INT) * 8) {
+    if (i < sizeof(long) * 8) {
 	val = RSHIFT(FIX2INT(x), i);
 	return INT2FIX(val);
     }
@@ -1082,7 +1108,7 @@ static VALUE
 fix_abs(fix)
     VALUE fix;
 {
-    INT i = FIX2INT(fix);
+    long i = FIX2INT(fix);
 
     if (i < 0) i = -i;
 
@@ -1102,7 +1128,7 @@ static VALUE
 fix_succ(fix)
     VALUE fix;
 {
-    INT i = FIX2INT(fix) + 1;
+    long i = FIX2INT(fix) + 1;
 
     return int2inum(i);
 }
@@ -1111,7 +1137,7 @@ static VALUE
 fix_size(fix)
     VALUE fix;
 {
-    return INT2FIX(sizeof(INT));
+    return INT2FIX(sizeof(long));
 }
 
 VALUE
@@ -1185,7 +1211,7 @@ VALUE
 fix_upto(from, to)
     VALUE from, to;
 {
-    INT i, end;
+    long i, end;
 
     if (!FIXNUM_P(to)) return num_upto(from, to);
     end = FIX2INT(to);
@@ -1200,7 +1226,7 @@ static VALUE
 fix_downto(from, to)
     VALUE from, to;
 {
-    INT i, end;
+    long i, end;
 
     if (!FIXNUM_P(to)) return num_downto(from, to);
     end = FIX2INT(to);
@@ -1215,7 +1241,7 @@ static VALUE
 fix_step(from, to, step)
     VALUE from, to, step;
 {
-    INT i, end, diff;
+    long i, end, diff;
 
     if (!FIXNUM_P(to) || !FIXNUM_P(step))
 	return num_step(from, to, step);
@@ -1243,7 +1269,7 @@ static VALUE
 fix_dotimes(num)
     VALUE num;
 {
-    INT i, end;
+    long i, end;
 
     end = FIX2INT(num);
     for (i=0; i<end; i++) {

@@ -110,7 +110,7 @@ enum node_type {
 };
 
 typedef struct RNode {
-    UINT flags;
+    unsigned long flags;
     char *nd_file;
     union {
 	struct RNode *node;
@@ -122,15 +122,15 @@ typedef struct RNode {
     union {
 	struct RNode *node;
 	ID id;
-	INT argc;
+	int argc;
 	VALUE value;
     } u2;
     union {
 	struct RNode *node;
 	ID id;
-	INT state;
+	int state;
 	struct global_entry *entry;
-	INT cnt;
+	int cnt;
 	VALUE value;
     } u3;
 } NODE;

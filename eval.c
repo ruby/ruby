@@ -758,7 +758,7 @@ error_print()
 	    putc('\n', stderr);
 	}
 	else {
-	    UCHAR *tail  = 0;
+	    char *tail  = 0;
 	    int len = RSTRING(einfo)->len;
 
 	    if (RSTRING(epath)->ptr[0] == '#') epath = 0;
@@ -2791,7 +2791,7 @@ rb_yield_0(val, self)
     struct SCOPE *old_scope;
     struct FRAME frame;
     int state;
-    static USHORT serial = 1;
+    static unsigned serial = 1;
 
     if (!iterator_p()) {
 	Raise(eLocalJumpError, "yield called out of iterator");
