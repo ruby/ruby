@@ -1,3 +1,11 @@
+Thu Dec 14 09:20:26 2000 Wakou Aoyama <wakou@fsinet.or.jp>
+
+	* lib/cgi.rb: support -T1 on ruby 1.6.2
+
+	* lib/cgi.rb: $1 --> Regexp::last_match[1]
+
+	* lib/net/telnet.rb: ditto.
+
 Wed Dec 13 12:41:27 2000  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ruby.c (proc_options): accept "--^M" for DOS line endings.

@@ -4,7 +4,7 @@
 
 net/telnet.rb - simple telnet client library
 
-Version 1.6.0
+Version 1.6.1
 
 Wakou Aoyama <wakou@fsinet.or.jp>
 
@@ -239,10 +239,10 @@ module Net
     CR   = "\015"
     LF   = "\012"
     EOL  = CR + LF
-    VERSION = "1.6.0"
-    RELEASE_DATE = "2000-09-12"
-    VERSION_CODE = 160
-    RELEASE_CODE = 20000912
+    VERSION = "1.6.1"
+    RELEASE_DATE = "2000-12-14"
+    VERSION_CODE = 161
+    RELEASE_CODE = 20001214
 
     def initialize(options)
       @options = options
@@ -398,42 +398,42 @@ module Net
                      [#{OPT_BINARY}-#{OPT_NEW_ENVIRON}#{OPT_EXOPL}]|
                    #{SB}[^#{IAC}]*#{IAC}#{SE}
                  )/xno) do
-        if    IAC == $1         # handle escaped IAC characters
+        if    IAC == Regexp::last_match[1]  # handle escaped IAC characters
           IAC
-        elsif AYT == $1         # respond to "IAC AYT" (are you there)
+        elsif AYT == Regexp::last_match[1]  # respond to "IAC AYT" (are you there)
           self.write("nobody here but us pigeons" + EOL)
           ''
-        elsif DO[0] == $1[0]    # respond to "IAC DO x"
-          if OPT_BINARY[0] == $1[1]
+        elsif DO[0] == Regexp::last_match[1][0]  # respond to "IAC DO x"
+          if OPT_BINARY[0] == Regexp::last_match[1][1]
             @telnet_option["BINARY"] = true
             self.write(IAC + WILL + OPT_BINARY)
           else
-            self.write(IAC + WONT + $1[1..1])
+            self.write(IAC + WONT + Regexp::last_match[1][1..1])
           end
           ''
-        elsif DONT[0] == $1[0]  # respond to "IAC DON'T x" with "IAC WON'T x"
-          self.write(IAC + WONT + $1[1..1])
+        elsif DONT[0] == Regexp::last_match[1][0]  # respond to "IAC DON'T x" with "IAC WON'T x"
+          self.write(IAC + WONT + Regexp::last_match[1][1..1])
           ''
-        elsif WILL[0] == $1[0]  # respond to "IAC WILL x"
-          if    OPT_BINARY[0] == $1[1]
+        elsif WILL[0] == Regexp::last_match[1][0]  # respond to "IAC WILL x"
+          if    OPT_BINARY[0] == Regexp::last_match[1][1]
             self.write(IAC + DO + OPT_BINARY)
-          elsif OPT_ECHO[0] == $1[1]
+          elsif OPT_ECHO[0] == Regexp::last_match[1][1]
             self.write(IAC + DO + OPT_ECHO)
-          elsif OPT_SGA[0]  == $1[1]
+          elsif OPT_SGA[0]  == Regexp::last_match[1][1]
             @telnet_option["SGA"] = true
             self.write(IAC + DO + OPT_SGA)
           else
-            self.write(IAC + DONT + $1[1..1])
+            self.write(IAC + DONT + Regexp::last_match[1][1..1])
           end
           ''
-        elsif WONT[0] == $1[0]  # respond to "IAC WON'T x"
-          if    OPT_ECHO[0] == $1[1]
+        elsif WONT[0] == Regexp::last_match[1][0]  # respond to "IAC WON'T x"
+          if    OPT_ECHO[0] == Regexp::last_match[1][1]
             self.write(IAC + DONT + OPT_ECHO)
-          elsif OPT_SGA[0]  == $1[1]
+          elsif OPT_SGA[0]  == Regexp::last_match[1][1]
             @telnet_option["SGA"] = false
             self.write(IAC + DONT + OPT_SGA)
           else
-            self.write(IAC + DONT + $1[1..1])
+            self.write(IAC + DONT + Regexp::last_match[1][1..1])
           end
           ''
         else
@@ -598,6 +598,10 @@ end
 =begin
 
 == HISTORY
+
+* Mon Dec 11 00:16:51 JST 2000 - wakou
+  * version 1.6.1
+  * $1 --> Regexp::last_match[1]
 
 * 2000/09/12 05:37:35 - matz
   * change: iterator? --> block_given?

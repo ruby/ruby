@@ -4,7 +4,7 @@
 
 cgi.rb - cgi support library
 
-Version 2.1.0
+Version 2.1.1
 
 Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
 
@@ -185,10 +185,10 @@ class CGI
   CR  = "\015"
   LF  = "\012"
   EOL = CR + LF
-  VERSION = "2.1.0"
-  RELEASE_DATE = "2000-10-12"
-  VERSION_CODE = 210
-  RELEASE_CODE = 20001012
+  VERSION = "2.1.1"
+  RELEASE_DATE = "2000-12-14"
+  VERSION_CODE = 211
+  RELEASE_CODE = 20001214
 
   NEEDS_BINMODE = true if /WIN/ni === RUBY_PLATFORM
   PATH_SEPARATOR = {'UNIX'=>'/', 'WINDOWS'=>'\\', 'MACINTOSH'=>':'}
@@ -241,7 +241,7 @@ class CGI
 =end
   def CGI::escape(string)
     string.gsub(/([^ a-zA-Z0-9_.-]+)/n) do
-      '%' + $1.unpack('H2' * $1.size).join('%').upcase
+      '%' + Regexp::last_match[1].unpack('H2' * Regexp::last_match[1].size).join('%').upcase
     end.tr(' ', '+')
   end
 
@@ -252,7 +252,7 @@ class CGI
 =end
   def CGI::unescape(string)
     string.tr('+', ' ').gsub(/((?:%[0-9a-fA-F]{2})+)/n) do
-      [$1.delete('%')].pack('H*')
+      [Regexp::last_match[1].delete('%')].pack('H*')
     end
   end
 
@@ -272,34 +272,34 @@ class CGI
 =end
   def CGI::unescapeHTML(string)
     string.gsub(/&(.*?);/n) do
-      match = $1.dup
+      match = Regexp::last_match[1].dup
       case match
       when /\Aamp\z/ni           then '&'
       when /\Aquot\z/ni          then '"'
       when /\Agt\z/ni            then '>'
       when /\Alt\z/ni            then '<'
       when /\A#(\d+)\z/n         then
-        if Integer($1) < 256
-          Integer($1).chr
+        if Integer(Regexp::last_match[1]) < 256
+          Integer(Regexp::last_match[1]).chr
         else
-          if Integer($1) < 65536 and ($KCODE[0] == ?u or $KCODE[0] == ?U)
-            [Integer($1)].pack("U")
+          if Integer(Regexp::last_match[1]) < 65536 and ($KCODE[0] == ?u or $KCODE[0] == ?U)
+            [Integer(Regexp::last_match[1])].pack("U")
           else
-            "&##{$1};"
+            "&##{Regexp::last_match[1]};"
           end
         end
       when /\A#x([0-9a-f]+)\z/ni then
-        if $1.hex < 256
-          $1.hex.chr
+        if Regexp::last_match[1].hex < 256
+          Regexp::last_match[1].hex.chr
         else
-          if $1.hex < 65536 and ($KCODE[0] == ?u or $KCODE[0] == ?U)
-            [$1.hex].pack("U")
+          if Regexp::last_match[1].hex < 65536 and ($KCODE[0] == ?u or $KCODE[0] == ?U)
+            [Regexp::last_match[1].hex].pack("U")
           else
-            "&#x#{$1};"
+            "&#x#{Regexp::last_match[1]};"
           end
         end
       else
-        "&#{$1};"
+        "&#{Regexp::last_match[1]};"
       end
     end
   end
@@ -316,7 +316,7 @@ class CGI
   def CGI::escapeElement(string, *element)
     unless element.empty?
       string.gsub(/<\/?(?:#{element.join("|")})(?!\w)(?:.|\n)*?>/ni) do
-        CGI::escapeHTML($&)
+        CGI::escapeHTML(Regexp::last_match[0])
       end
     else
       string
@@ -336,7 +336,7 @@ class CGI
 =end
   def CGI::unescapeElement(string, *element)
     string.gsub(/&lt;\/?(?:#{element.join("|")})(?!\w)(?:.|\n)*?&gt;/ni) do
-      CGI::unescapeHTML($&)
+      CGI::unescapeHTML(Regexp::last_match[0])
     end
   end
 
@@ -491,7 +491,7 @@ status:
 
     if defined?(MOD_RUBY)
       buf.scan(/([^:]+): (.+)#{EOL}/n){
-        Apache::request[$1] = $2
+        Apache::request[Regexp::last_match[1]] = Regexp::last_match[2]
       }
       Apache::request.send_http_header
       ''
@@ -787,7 +787,7 @@ convert string charset, and set language to "ja".
 
           if (not head) and (/#{EOL}#{EOL}/n === buf)
             buf = buf.sub(/\A((?:.|\n)*?#{EOL})#{EOL}/n) do
-              head = $1.dup
+              head = Regexp::last_match[1].dup
               ""
             end
             next
@@ -809,8 +809,8 @@ convert string charset, and set language to "ja".
         end
 
         buf = buf.sub(/\A((?:.|\n)*?)(?:#{EOL})?#{boundary}(#{EOL}|--)/n) do
-          body.print $1
-          if "--" == $2
+          body.print Regexp::last_match[1]
+          if "--" == Regexp::last_match[2]
             content_length = -1
           end
           ""
@@ -828,27 +828,27 @@ convert string charset, and set language to "ja".
         eval <<-END
           def body.original_filename
             #{
-              filename = ($1 or "").dup
+              filename = (Regexp::last_match[1] or "").dup
               if (/Mac/ni === env_table['HTTP_USER_AGENT']) and
                  (/Mozilla/ni === env_table['HTTP_USER_AGENT']) and
                  (not /MSIE/ni === env_table['HTTP_USER_AGENT'])
                 CGI::unescape(filename)
               else
                 filename
-              end.dump
-            }
+              end.dump.untaint
+            }.taint
           end
         END
 
         /Content-Type: (.*)/ni === head
         eval <<-END
           def body.content_type
-            #{($1 or "").dump}
+            #{(Regexp::last_match[1] or "").dump.untaint}.taint
           end
         END
 
         /Content-Disposition:.* name="?([^\";]*)"?/ni === head
-        name = $1.dup
+        name = Regexp::last_match[1].dup
 
         if params.has_key?(name)
           params[name].push(body)
@@ -891,7 +891,7 @@ convert string charset, and set language to "ja".
       if ("POST" == env_table['REQUEST_METHOD']) and
          (%r|\Amultipart/form-data.*boundary=\"?([^\";,]+)\"?|n ===
            env_table['CONTENT_TYPE'])
-        boundary = $1.dup
+        boundary = Regexp::last_match[1].dup
         @params = read_multipart(boundary, Integer(env_table['CONTENT_LENGTH']))
       else
         @params = CGI::parse(
@@ -951,7 +951,7 @@ convert string charset, and set language to "ja".
     lines = string.gsub(/(?!\A)<(?:.|\n)*?>/n, "\n\\0").gsub(/<(?:.|\n)*?>(?!\n)/n, "\\0\n")
     end_pos = 0
     while end_pos = lines.index(/^<\/(\w+)/n, end_pos)
-      element = $1.dup
+      element = Regexp::last_match[1].dup
       start_pos = lines.rindex(/^\s*<#{element}/ni, end_pos)
       lines[start_pos ... end_pos] = "__" + lines[start_pos ... end_pos].gsub(/\n(?!\z)/n, "\n" + shift) + "__"
     end
@@ -1924,6 +1924,15 @@ end
 =begin
 
 == HISTORY
+
+* Mon Dec 11 00:16:51 JST 2000 - wakou
+  * version 2.1.1
+  * support -T1 on ruby 1.6.2
+    * body.original_filename: eval(str.dump.untaint).taint
+    * body.content_type: eval(str.dump.untaint).taint
+  * $& --> Regexp::last_match[0]
+  * $1 --> Regexp::last_match[1]
+  * $2 --> Regexp::last_match[2]
 
 * Thu Oct 12 01:16:59 JST 2000 - wakou
   * version 2.1.0
