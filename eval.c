@@ -5386,6 +5386,8 @@ static int   th_raise_argc;
 static VALUE th_raise_argv[2];
 static char *th_raise_file;
 static int   th_raise_line;
+static VALUE th_cmd;
+static int   th_sig;
 
 static void
 thread_restore_context(th, exit)
@@ -5442,6 +5444,10 @@ thread_restore_context(th, exit)
 	break;
 
       case 3:
+	rb_trap_eval(th_cmd, th_sig);
+	break;
+
+      case 4:
 	the_frame->last_func = 0;
 	sourcefile = th_raise_file;
 	sourceline = th_raise_line;
@@ -6244,6 +6250,26 @@ thread_interrupt()
     thread_restore_context(curr_thread, 2);
 }
 
+void
+thread_trap_eval(cmd, sig)
+    VALUE cmd;
+    int sig;
+{
+    thread_critical = 0;
+    thread_ready(main_thread);
+    if (curr_thread == main_thread) {
+	rb_trap_eval(cmd, sig);
+    }
+    thread_save_context(curr_thread);
+    if (setjmp(curr_thread->context)) {
+	return;
+    }
+    th_cmd = cmd;
+    th_sig = sig;
+    curr_thread = main_thread;
+    thread_restore_context(curr_thread, 3);
+}
+
 static VALUE
 thread_raise(argc, argv, thread)
     int argc;
@@ -6269,7 +6295,7 @@ thread_raise(argc, argv, thread)
     th_raise_argc = argc;
     th_raise_file = sourcefile;
     th_raise_line = sourceline;
-    thread_restore_context(curr_thread, 3);
+    thread_restore_context(curr_thread, 4);
     return Qnil;		/* not reached */
 }
 

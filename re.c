@@ -147,7 +147,7 @@ kcode_set_option(reg)
 	mbcinit(MBCTYPE_EUC);
 	break;
       case KCODE_SJIS:
-	mbcinit(MBCTYPE_EUC);
+	mbcinit(MBCTYPE_SJIS);
 	break;
     }
 }	  
@@ -883,6 +883,10 @@ reg_regsub(str, src, regs)
 	char *ss = s;
 
 	c = *s++;
+	if (ismbchar(c)) {
+	    s++;
+	    continue;
+	}
 	if (c != '\\' || s == e) continue;
 
 	if (!val) val = str_new(p, ss-p);

@@ -1,3 +1,19 @@
+Mon Apr 13 13:18:32 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (thread_trap_eval): all handlers executed under main_thread.
+
+Mon Apr 13 12:47:03 1998  TAKAHASHI Masayoshi  <maki@inac.co.jp>
+
+	* re.c (kcode_set_option): did not SJIS on SJIS condition.
+
+Sun Apr 12 22:14:07 1998  Kazunori NISHI  <kazunori@swlab.csce.kyushu-u.ac.jp>
+
+	* array.c (ary_uniq_bang): should be `==', not `='. embarrassing.
+
+Fri Apr 10 21:29:06 1998  Tadayoshi Funaba  <tadf@kt.rim.or.jp>
+
+	* array.c (ary_subseq): add check for beg larger than array length.
+
 Wed Apr  8 17:24:11 1998  MAEDA shugo  <shugo@po.aianet.ne.jp>
 
 	* dir.c (dir_s_open): can be called with block (like IO#open).

@@ -341,7 +341,11 @@ rb_trap_exec()
 #endif
 		return;
 	    }
+#ifdef THREAD
+	    thread_trap_eval(trap_list[i], i);
+#else
 	    rb_trap_eval(trap_list[i], i);
+#endif
 	}
     }
     trap_pending = 0;
