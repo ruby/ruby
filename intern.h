@@ -187,6 +187,7 @@ VALUE rb_inspect _((VALUE));
 VALUE obj_is_instance_of _((VALUE, VALUE));
 VALUE obj_is_kind_of _((VALUE, VALUE));
 VALUE obj_alloc _((VALUE));
+VALUE rb_convert_type _((VALUE,int,char*,char*));
 VALUE rb_Integer _((VALUE));
 VALUE rb_Float _((VALUE));
 VALUE rb_String _((VALUE));

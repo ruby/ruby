@@ -58,8 +58,8 @@ button.set_flags(Gtk::CAN_FOCUS);
 button.signal_connect("clicked") do
   tmp_list = list.selection
   list.remove_items(tmp_list)
-  for i in tmp_list
-    i.destroy
+  for w in tmp_list
+    w.destroy
   end
 end
 box2.pack_start(button, FALSE, TRUE, 0)

@@ -743,18 +743,41 @@ rb_Integer(val)
     return f_integer(Qnil, val);
 }
 
-static VALUE
-to_flo(val)
+struct arg_to {
     VALUE val;
+    char *s;
+};
+
+static VALUE
+to_type(arg)
+    struct arg_to *arg;
 {
-    return rb_funcall(val, rb_intern("to_f"), 0);
+    return rb_funcall(arg->val, rb_intern(arg->s), 0);
 }
 
 static VALUE
-fail_to_flo(val)
-    VALUE val;
+fail_to_type(arg)
+    struct arg_to *arg;
 {
-    TypeError("failed to convert %s into Float", rb_class2name(CLASS_OF(val)));
+    TypeError("failed to convert %s into %s",
+	      rb_class2name(CLASS_OF(arg->val)), arg->s);
+}
+
+VALUE
+rb_convert_type(val, type, tname, method)
+    VALUE val;
+    int type;
+    char *tname, *method;
+{
+    struct arg_to arg1, arg2;
+
+    if (TYPE(val) == type) return val;
+    arg1.val = arg2.val = val;
+    arg1.s = method;
+    arg2.s = tname;
+    val = rb_rescue(to_type, &arg1, fail_to_type, &arg2);
+    Check_Type(val, type);
+    return val;
 }
 
 double big2dbl();
@@ -774,7 +797,7 @@ f_float(obj, arg)
 	return float_new(big2dbl(arg));
 
       default:
-	return rb_rescue(to_flo, arg, fail_to_flo, arg);
+	return rb_convert_type(arg, T_FLOAT, "Float", "to_f");
     }
 }
 
@@ -794,43 +817,22 @@ num2dbl(val)
 }
 
 static VALUE
-to_s(obj)
-    VALUE obj;
-{
-    return rb_funcall(obj, rb_intern("to_s"), 0);
-}
-
-static VALUE
-fail_to_str(val)
-    VALUE val;
-{
-    TypeError("failed to convert %s into Sting",
-	      rb_class2name(CLASS_OF(val)));
-}
-
-static VALUE
 f_string(obj, arg)
     VALUE obj, arg;
 {
-    return rb_rescue(to_s, arg, fail_to_str, arg);
-}
-
-static VALUE
-to_str(obj)
-    VALUE obj;
-{
-    return rb_funcall(obj, rb_intern("to_str"), 0);
+    return rb_convert_type(arg, T_STRING, "String", "to_s");
 }
 
 char*
-str2cstr(str)
+str2cstr(str, len)
     VALUE str;
+    int *len;
 {
     if (NIL_P(str)) return NULL;
     if (TYPE(str) != T_STRING) {
-	str = rb_rescue(to_str, str, fail_to_str, str);
-	Check_Type(str, T_STRING);
+	str = rb_convert_type(str, T_STRING, "String", "to_str");
     }
+    if (len) *len = RSTRING(str)->len;
     return RSTRING(str)->ptr;
 }
 

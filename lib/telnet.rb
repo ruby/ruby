@@ -4,54 +4,54 @@
 # Wakou Aoyama <wakou@fsinet.or.jp>
 #
 # == make new Telnet object
-# host = Telnet.new({"Binmode" => TRUE,              default: TRUE
-#                    "Host" => "localhost",          default: "localhost"
-#                    "Output_log"] => "output_log",  default: not output
-#                    "Port" => 23,                   default: 23
-#                    "Prompt" => /[$%#>] $/,         default: /[$%#>] $/
-#                    "Telnetmode"] => TRUE,          default: TRUE
-#                    "Timeout"] => 10}               default: 10
+# host = Telnet.new("Binmode" => TRUE,              default: TRUE
+#                   "Host" => "localhost",          default: "localhost"
+#                   "Output_log" => "output_log",   default: not output
+#                   "Port" => 23,                   default: 23
+#                   "Prompt" => /[$%#>] $/,         default: /[$%#>] $/
+#                   "Telnetmode" => TRUE,           default: TRUE
+#                   "Timeout" => 10)                default: 10
 #
 # if set "Telnetmode" option FALSE. not TELNET command interpretation.
 #
 # == wait for match
 # print host.waitfor(/match/)
-# print host.waitfor({"Match"   => /match/,
-#                     "String"  => "string",
-#                     "Timeout" => secs})
+# print host.waitfor("Match"   => /match/,
+#                    "String"  => "string",
+#                    "Timeout" => secs)
 # if set "String" option. Match = Regexp.new(quote(string))
 #
 # realtime output. of cource, set sync=TRUE or flush is necessary.
 # host.waitfor(/match/){|c| print c }
-# host.waitfor({"Match"   => /match/,
-#               "String"  => "string",
-#               "Timeout" => secs}){|c| print c}
+# host.waitfor("Match"   => /match/,
+#              "String"  => "string",
+#              "Timeout" => secs){|c| print c}
 #
 # == send string and wait prompt
 # print host.cmd("string")
-# print host.cmd({"String" => "string",
-#                 "Prompt" => /[$%#>] $//,
-#                 "Timeout" => 10})
+# print host.cmd("String" => "string",
+#                "Prompt" => /[$%#>] $//,
+#                "Timeout" => 10)
 #
 # realtime output. of cource, set sync=TRUE or flush is necessary.
 # host.cmd("string"){|c| print c }
-# host.cmd({"String" => "string",
-#           "Prompt" => /[$%#>] $//,
-#           "Timeout" => 10}){|c| print c }
+# host.cmd("String" => "string",
+#          "Prompt" => /[$%#>] $//,
+#          "Timeout" => 10){|c| print c }
 #
 # == login
 # host.login("username", "password")
-# host.login({"Name" => "username",
-#             "Password" => "password",
-#             "Prompt" => /[$%#>] $/,
-#             "Timeout" => 10})
+# host.login("Name" => "username",
+#            "Password" => "password",
+#            "Prompt" => /[$%#>] $/,
+#            "Timeout" => 10)
 #
 # and Telnet object has socket class methods
 #
 # == sample
-# localhost = Telnet.new({"Host" => "localhost",
-#                         "Timeout" => 10,
-#                         "Prompt" => /[$%#>] $/})
+# localhost = Telnet.new("Host" => "localhost",
+#                        "Timeout" => 10,
+#                        "Prompt" => /[$%#>] $/)
 # localhost.login("username", "password")
 # print localhost.cmd("command")
 # localhost.close

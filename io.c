@@ -1172,11 +1172,7 @@ static VALUE
 io_get_io(io)
     VALUE io;
 {
-    if (TYPE(io) != T_FILE) {
-	io = rb_funcall(io, rb_intern("to_io"), 0, 0);
-	Check_Type(io, T_FILE);
-    }
-    return io;
+    return rb_convert_type(io, T_FILE, "IO", "to_io");
 }
 
 #ifndef NT

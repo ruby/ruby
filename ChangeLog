@@ -1,4 +1,22 @@
+Mon Apr 27 16:59:17 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ext/gtk/gtk.c (Init_gtk): use timeout, not idle to avoid
+	  comsuming CPU too much.
+
+	* lib/tk.rb: use tcltklib#_invoke instead of `_eval'.
+
+Mon Apr 27 13:46:27 1998  Tadahiro Maebashi  <maebashi@iij.ad.jp>
+
+	* ext/tcltklib/tcltklib.c (ip_invoke): invoke tcl command
+	  directly.  need not worry about escaping tcl characters.
+
+Mon Apr 27 12:04:43 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* random.c (f_rand): do not call srand() implicitly.
+
 Fri Apr 24 14:35:45 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* experimental release 1.1b9_15.
 
 	* parse.y (assignable): dyna_var_asgn actually defines nested
 	  local variables in outer context.

@@ -298,6 +298,13 @@ hash_dup(hash)
     return (VALUE)hash2;
 }
 
+static VALUE
+to_hash(hash)
+    VALUE hash;
+{
+    return rb_convert_type(hash, T_HASH, "Hash", "to_hash");
+}
+
 static int
 hash_rehash_i(key, value, tbl)
     VALUE key, value;
@@ -468,7 +475,7 @@ static VALUE
 hash_replace(hash, hash2)
     VALUE hash, hash2;
 {
-    Check_Type(hash2, T_HASH);
+    hash2 = to_hash(hash2);
     hash_clear(hash);
     st_foreach(RHASH(hash2)->tbl, replace_i, hash);
 
@@ -600,6 +607,13 @@ hash_to_s(hash)
     VALUE hash;
 {
     return ary_to_s(hash_to_a(hash));
+}
+
+static VALUE
+hash_to_hash(hash)
+    VALUE hash;
+{
+    return hash;
 }
 
 static int
@@ -755,8 +769,7 @@ static VALUE
 hash_update(hash1, hash2)
     VALUE hash1, hash2;
 {
-    Check_Type(hash2, T_HASH);
-
+    hash2 = to_hash(hash2);
     st_foreach(RHASH(hash2)->tbl, hash_update_i, hash1);
     return hash1;
 }
@@ -776,8 +789,7 @@ env_delete(obj, name)
     char *nam, *val = 0;
 
     rb_secure(4);
-    Check_Type(name, T_STRING);
-    nam = RSTRING(name)->ptr;
+    nam = STR2CSTR(name);
     len = strlen(nam);
     if (strcmp(nam, "PATH") == 0) path_tainted = 0;
     for(i=0; environ[i]; i++) {
@@ -809,16 +821,16 @@ static VALUE
 f_getenv(obj, name)
     VALUE obj, name;
 {
-    char *env;
+    char *nam, *env;
+    int len;
 
-    Check_Type(name, T_STRING);
-
-    if (strlen(RSTRING(name)->ptr) != RSTRING(name)->len)
+    nam = str2cstr(name, &len);
+    if (strlen(nam) != len)
 	ArgError("Bad environment name");
 
-    env = getenv(RSTRING(name)->ptr);
+    env = getenv(nam);
     if (env) {
-	if (strcmp(RSTRING(name)->ptr, "PATH") == 0 && !env_path_tainted())
+	if (strcmp(nam, "PATH") == 0 && !env_path_tainted())
 	    return str_new2(env);
 	return str_taint(str_new2(env));
     }
@@ -1100,6 +1112,25 @@ env_indexes(argc, argv)
     return indexes;
 }
 
+static VALUE
+env_to_hash(obj)
+    VALUE obj;
+{
+    VALUE hash = hash_new();
+    VALUE ary = env_keys();
+    VALUE *ptr = RARRAY(ary)->ptr;
+    int len = RARRAY(ary)->len; 
+
+    while (len--) {
+	VALUE val = f_getenv(Qnil, *ptr);
+	if (!NIL_P(val)) {
+	    hash_aset(hash, *ptr, val);
+	}
+	ptr++;
+    }
+    return hash;
+}
+
 void
 Init_Hash()
 {
@@ -1121,6 +1152,7 @@ Init_Hash()
     rb_define_method(cHash,"freeze", hash_freeze, 0);
     rb_define_method(cHash,"frozen?",hash_frozen_p, 0);
 
+    rb_define_method(cHash,"to_hash", hash_to_hash, 0);
     rb_define_method(cHash,"to_a", hash_to_a, 0);
     rb_define_method(cHash,"to_s", hash_to_s, 0);
     rb_define_method(cHash,"inspect", hash_inspect, 0);
@@ -1181,6 +1213,7 @@ Init_Hash()
     rb_define_singleton_method(envtbl,"has_value?", env_has_value, 1);
     rb_define_singleton_method(envtbl,"key?", env_has_key, 1);
     rb_define_singleton_method(envtbl,"value?", env_has_value, 1);
+    rb_define_singleton_method(envtbl,"to_hash", env_to_hash, 0);
 
     rb_define_global_const("ENV", envtbl);
 }

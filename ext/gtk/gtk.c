@@ -1105,7 +1105,7 @@ signal_callback(widget, data, nparams, params)
 {
     VALUE self = get_value_from_gobject(GTK_OBJECT(widget));
     VALUE proc = RARRAY(data)->ptr[0];
-    VALUE a = RARRAY(data)->ptr[3];
+    VALUE a = RARRAY(data)->ptr[2];
     ID id = NUM2INT(RARRAY(data)->ptr[1]);
     VALUE result = Qnil;
     VALUE args = ary_new2(nparams+1+RARRAY(a)->len);
@@ -1152,7 +1152,7 @@ gobj_smethod_added(self, id)
     char *name = rb_id2name(NUM2INT(id));
     
     if (gtk_signal_lookup(name, GTK_OBJECT_TYPE(obj))) {
-	VALUE data = assoc_new(Qnil, id);
+	VALUE data = ary_new3(3, Qnil, id, ary_new2(0));
 
 	add_relative(self, data);
 	gtk_signal_connect_interp(obj, name,
@@ -5729,6 +5729,9 @@ static gint
 idle()
 {
     CHECK_INTS;
+#ifdef THREAD
+    if (!thread_critical) thread_schedule();
+#endif
     return TRUE;
 }
 
@@ -5740,20 +5743,13 @@ exec_interval(proc)
 }
 
 static VALUE
-timeout_add(argc, argv, self)
-    int argc;
-    VALUE *argv;
-    VALUE self;
+timeout_add(self, interval)
+    VALUE self, interval;
 {
-    VALUE interval, func;
     int id;
 
-    rb_scan_args(argc, argv, "11", &interval, &func);
-    if (NIL_P(func)) {
-	func = f_lambda();
-    }
     id = gtk_timeout_add_interp(NUM2INT(interval), exec_interval,
-				(gpointer)func, 0);
+				(gpointer)f_lambda(), 0);
     return INT2FIX(id);
 }
 
@@ -5766,19 +5762,12 @@ timeout_remove(self, id)
 }
 
 static VALUE
-idle_add(argc, argv, self)
-    int argc;
-    VALUE *argv;
+idle_add(self)
     VALUE self;
 {
-    VALUE func;
     int id;
 
-    rb_scan_args(argc, argv, "01", &func);
-    if (NIL_P(func)) {
-	func = f_lambda();
-    }
-    id = gtk_idle_add_interp(exec_interval, (gpointer)func, 0);
+    id = gtk_idle_add_interp(exec_interval, (gpointer)f_lambda(), 0);
     return INT2FIX(id);
 }
 
@@ -6624,9 +6613,9 @@ Init_gtk()
 
     /* Gtk module */
     rb_define_module_function(mGtk, "main", gtk_m_main, 0);
-    rb_define_module_function(mGtk, "timeout_add", timeout_add, -1);
+    rb_define_module_function(mGtk, "timeout_add", timeout_add, 1);
     rb_define_module_function(mGtk, "timeout_remove", timeout_remove, 1);
-    rb_define_module_function(mGtk, "idle_add", idle_add, -1);
+    rb_define_module_function(mGtk, "idle_add", idle_add, 0);
     rb_define_module_function(mGtk, "idle_remove", idle_remove, 1);
 
     rb_define_module_function(mGtk, "set_warning_handler",
@@ -6839,7 +6828,12 @@ Init_gtk()
     id_call = rb_intern("call");
     id_gtkdata = rb_intern("gtkdata");
     id_relatives = rb_intern("relatives");
+#if 0
     gtk_idle_add((GtkFunction)idle, 0);
+#else
+    /* use timeout to avoid busy wait */
+    gtk_timeout_add(1, (GtkFunction)idle, 0);
+#endif
 
     g_set_error_handler(gtkerr);
     g_set_warning_handler(gtkerr);

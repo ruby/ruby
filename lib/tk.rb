@@ -48,8 +48,9 @@ module TkComm
   end
 
   def tk_split_list(str)
+    return [] if str == ""
     idx = str.index('{')
-    return tk_tcl2ruby(str) if not idx
+    return tk_tcl2ruby(str) unless idx
 
     list = tk_tcl2ruby(str[0,idx])
     str = str[idx+1..-1]
@@ -112,7 +113,8 @@ module TkComm
     end
   end
   def list(val)
-    tk_split_list(val)
+    p val
+    tk_split_list(val).to_a
   end
   def window(val)
     Tk_WINDOWS[val]
@@ -260,7 +262,7 @@ module TkCore
   extend TkComm
 
   INTERP = TclTkIp.new
-  INTERP._eval("proc rb_out {args} { ruby [format \"TkCore.callback %%Q!%s!\" $args] }")
+  INTERP._invoke("proc", "rb_out", "args", "ruby [format \"TkCore.callback %%Q!%s!\" $args]")
 
   def TkCore.callback(arg)
     arg = Array(tk_split_list(arg))
@@ -271,36 +273,35 @@ module TkCore
     TclTkLib.mainloop
   end
 
-  def _get_eval_string(*args)
-    argstr = ""
-    args.each{|arg|
-      next if arg == None
-      if arg.kind_of?(Hash)
-	str = hash_kv(arg).join(" ")
-      elsif arg == nil
-	str = ""
-      elsif arg == false
-	str = "0"
-      elsif arg == true
-	str = "1"
-      elsif (arg.respond_to?(:to_eval))
-	str = arg.to_eval()
-      else
-	str = arg.to_s()
-      end
-      argstr += " " if argstr != ""
-      argstr += '"' + str.gsub(/[][$"]/, '\\\\\&') + '"' #'
-    }
-    return argstr
+  def _get_eval_string(str)
+    return str if str == None
+    if str.kind_of?(Hash)
+      str = hash_kv(str).join(" ")
+    elsif str == nil
+      str = ""
+    elsif str == false
+      str = "0"
+    elsif str == true
+      str = "1"
+    elsif (str.respond_to?(:to_eval))
+      str = str.to_eval()
+    else
+      str = str.to_s()
+    end
+    return str
   end
 
   def tk_call(*args)
-    argstr = _get_eval_string(*args)
-
-    res = INTERP._eval(argstr)
+    print args.join(" "), "\n" if $DEBUG
+    args.filter {|x|_get_eval_string(x)}
+    args.delete!(None)
+    args.flatten!
+    args.compact!
+    res = INTERP._invoke(*args)
     if  INTERP._return_value() != 0
       fail RuntimeError, res, error_at
     end
+    print "==> ", res, "\n" if $DEBUG
     return res
   end
 end
@@ -376,7 +377,8 @@ module Tk
       list(w) if args.size == 0
     end
     def iconwindow(*args)
-      tk_call 'wm', 'iconwindow', path, *args
+      w = tk_call('wm', 'iconwindow', path, *args)
+      window(w) if args.size == 0
     end
     def maxsize(*args)
       w = tk_call('wm', 'maxsize', path, *args)
@@ -431,7 +433,8 @@ class TkVariable
   def initialize(val="")
     @id = Tk_VARIABLE_ID[0]
     Tk_VARIABLE_ID[0] = Tk_VARIABLE_ID[0].succ
-    INTERP._eval(format('global %s; set %s %s', @id, @id, _get_eval_string(val)))
+    s = '"' + _get_eval_string(val).gsub(/[][$"]/, '\\\\\&') + '"' #'
+    INTERP._eval(format('global %s; set %s %s', @id, @id, s))
   end
 
   def id
@@ -816,6 +819,8 @@ class TkObject<TkKernel
     if (args.length == 1)
       configure id.id2name, args[0]
     else
+      p caller
+      p id.id2name
       $@ = error_at
       super
     end
@@ -1139,11 +1144,17 @@ class TkListbox<TkTextWin
     tk_call 'listbox', path
   end
 
+  def activate(y)
+    tk_send 'activate', y
+  end
   def curselection
-    tk_send 'curselection'
+    list(tk_send('curselection'))
   end
   def nearest(y)
-    tk_send 'nearest', y
+    tk_send('nearest', y).to_i
+  end
+  def size(y)
+    tk_send('size').to_i
   end
   def selection_anchor(index)
     tk_send 'selection', 'anchor', index
@@ -1158,10 +1169,12 @@ class TkListbox<TkTextWin
     tk_send 'selection', 'set', first, last
   end
   def xview(cmd, index, *more)
-    tk_send 'xview', cmd, index, *more
+    v = tk_send('xview', cmd, index, *more)
+    v.to_i if more.size == 0
   end
   def yview(cmd, index, *more)
-    tk_send 'yview', cmd, index, *more
+    v = tk_send('yview', cmd, index, *more)
+    v.to_i if more.size == 0
   end
 end
 

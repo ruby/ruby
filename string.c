@@ -106,12 +106,25 @@ str_new4(orig)
     }
 }
 
+static VALUE
+to_str(str)
+    VALUE str;
+{
+    return rb_convert_type(str, T_STRING, "String", "to_str");
+}
+
 static void
 str_assign(str, str2)
     VALUE str, str2;
 {
-    if (NIL_P(str2) || str == str2) return;
-    if ((!RSTRING(str)->orig||FL_TEST(str, STR_NO_ORIG)) && RSTRING(str)->ptr)
+    if (str == str2) return;
+    if (NIL_P(str2)) {
+	RSTRING(str)->ptr = 0;
+	RSTRING(str)->len = 0;
+	RSTRING(str)->orig = 0;
+	return;
+    }
+    if ((!RSTRING(str)->orig||FL_TEST(str, STR_NO_ORIG))&&RSTRING(str)->ptr)
 	free(RSTRING(str)->ptr);
     RSTRING(str)->ptr = RSTRING(str2)->ptr;
     RSTRING(str)->len = RSTRING(str2)->len;
@@ -212,11 +225,7 @@ str_plus(str1, str2)
 {
     VALUE str3;
 
-#if 0
-    str2 = obj_as_string(str2);
-#else
-    Check_Type(str2, T_STRING);
-#endif
+    str2 = to_str(str2);
     str3 = str_new(0, RSTRING(str1)->len+RSTRING(str2)->len);
     memcpy(RSTRING(str3)->ptr, RSTRING(str1)->ptr, RSTRING(str1)->len);
     memcpy(RSTRING(str3)->ptr+RSTRING(str1)->len, RSTRING(str2)->ptr, RSTRING(str2)->len);
@@ -437,12 +446,7 @@ static VALUE
 str_concat(str1, str2)
     VALUE str1, str2;
 {
-#if 0
-    str2 = obj_as_string(str2);
-#else
-    if (NIL_P(str2)) return str1;
-    Check_Type(str2, T_STRING);
-#endif
+    str2 = to_str(str2);
     str_cat(str1, RSTRING(str2)->ptr, RSTRING(str2)->len);
     return str1;
 }
@@ -523,11 +527,7 @@ str_cmp_method(str1, str2)
 {
     int result;
 
-#if 0
-    str2 = obj_as_string(str2);
-#else
-    Check_Type(str2, T_STRING);
-#endif
+    str2 = to_str(str2);
     result = str_cmp(str1, str2);
     return INT2FIX(result);
 }
@@ -767,7 +767,7 @@ str_upto(beg, end)
 {
     VALUE current;
 
-    Check_Type(end, T_STRING);
+    end = to_str(end);
     if (RTEST(rb_funcall(beg, '>', 1, end))) 
 	return Qnil;
 
@@ -1117,8 +1117,7 @@ str_aset_method(argc, argv, str)
     if (rb_scan_args(argc, argv, "21", &arg1, &arg2, &arg3) == 3) {
 	int beg, len;
 
-	Check_Type(arg3, T_STRING);
-
+	arg3 = to_str(arg3);
 	beg = NUM2INT(arg1);
 	if (beg < 0) {
 	    beg = RSTRING(str)->len + beg;
@@ -1203,8 +1202,7 @@ static VALUE
 str_replace_method(str, str2)
     VALUE str, str2;
 {
-    Check_Type(str2, T_STRING);
-
+    str2 = to_str(str2);
     str_modify(str);
     str_resize(str, RSTRING(str2)->len);
     memcpy(RSTRING(str)->ptr, RSTRING(str2)->ptr, RSTRING(str2)->len);
@@ -1352,8 +1350,7 @@ str_include(str, arg)
 	return FALSE;
     }
 
-    Check_Type(arg, T_STRING);
-    i = str_index(str, arg, 0);
+    i = str_index(str, to_str(arg), 0);
 
     if (i == -1) return FALSE;
     return INT2FIX(i);
@@ -1755,13 +1752,13 @@ tr_trans(str, src, repl, sflag)
     UCHAR *s, *send;
 
     str_modify(str);
-    Check_Type(src, T_STRING);
+    src = to_str(src);
     trsrc.p = RSTRING(src)->ptr; trsrc.pend = trsrc.p + RSTRING(src)->len;
     if (RSTRING(src)->len > 2 && RSTRING(src)->ptr[0] == '^') {
 	cflag++;
 	trsrc.p++;
     }
-    Check_Type(repl, T_STRING);
+    repl = to_str(repl);
     if (RSTRING(repl)->len == 0) return str_delete_bang(str, src);
     trrepl.p = RSTRING(repl)->ptr;
     trrepl.pend = trrepl.p + RSTRING(repl)->len;
@@ -1884,13 +1881,13 @@ tr_setup_table(str, table)
 
 static VALUE
 str_delete_bang(str1, str2)
-    VALUE str1, *str2;
+    VALUE str1, str2;
 {
     UCHAR *s, *send, *t;
     UCHAR squeez[256];
     int modify = 0;
 
-    Check_Type(str2, T_STRING);
+    str2 = to_str(str2);
     tr_setup_table(str2, squeez);
 
     str_modify(str1);
@@ -1968,7 +1965,7 @@ str_squeeze_bang(argc, argv, str1)
     VALUE str2;
 
     if (rb_scan_args(argc, argv, "01", &str2) == 1) {
-	Check_Type(str2, T_STRING);
+	str2 = to_str(str2);
     }
     return tr_squeeze(str1, str2);
 }
@@ -2145,7 +2142,7 @@ str_split(str, sep0)
 {
     VALUE sep;
 
-    Check_Type(str, T_STRING);
+    str = to_str(str);
     sep = str_new2(sep0);
     return str_split_method(1, &sep, str);
 }
@@ -2180,7 +2177,7 @@ str_each_line(argc, argv, str)
 	rb_yield(str);
 	return Qnil;
     }
-    Check_Type(rs, T_STRING);
+    rs = to_str(rs);
 
     rslen = RSTRING(rs)->len;
     if (rslen == 0) {
@@ -2293,7 +2290,7 @@ str_chomp_bang(argc, argv, str)
     }
     if (NIL_P(rs)) return Qnil;
 
-    Check_Type(rs, T_STRING);
+    rs = to_str(rs);
     rslen = RSTRING(rs)->len;
     if (rslen == 0) {
 	while (len>0 && p[len-1] == '\n') {
@@ -2490,7 +2487,7 @@ str_crypt(str, salt)
 {
     extern char *crypt();
 
-    Check_Type(salt, T_STRING);
+    salt = to_str(salt);
     if (RSTRING(salt)->len < 2)
 	ArgError("salt too short(need >2 bytes)");
     return str_new2(crypt(RSTRING(str)->ptr, RSTRING(salt)->ptr));

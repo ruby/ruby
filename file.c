@@ -90,8 +90,7 @@ file_s_open(argc, argv, klass)
     rb_scan_args(argc, argv, "11", &fname, &vmode);
     Check_SafeStr(fname);
     if (!NIL_P(vmode)) {
-	Check_Type(vmode, T_STRING);
-	mode = RSTRING(vmode)->ptr;
+	mode = STR2CSTR(vmode);
     }
     else {
 	mode = "r";
@@ -125,8 +124,7 @@ file_reopen(argc, argv, file)
 
     Check_SafeStr(fname);
     if (!NIL_P(nmode)) {
-	Check_Type(nmode, T_STRING);
-	mode = RSTRING(nmode)->ptr;
+	mode = STR2CSTR(nmode);
     }
     else {
 	mode = "r";
@@ -305,19 +303,12 @@ rb_stat(file, st)
 {
     OpenFile *fptr;
 
-    switch (TYPE(file)) {
-      case T_STRING:
-	Check_SafeStr(file);
-	return stat(RSTRING(file)->ptr, st);
-	break;
-      case T_FILE:
+    if (TYPE(file) == T_FILE) {
 	GetOpenFile(file, fptr);
 	return fstat(fileno(fptr->f), st);
-	break;
-      default:
-	Check_Type(file, T_STRING); 
     }
-    return -1;			/* not reached */
+    Check_SafeStr(file);
+    return stat(RSTRING(file)->ptr, st);
 }
 
 static VALUE
@@ -757,9 +748,8 @@ static VALUE
 test_sticky(obj, fname)
     VALUE obj, fname;
 {
-    Check_Type(fname, T_STRING);
 #ifdef S_ISVTX
-    return check3rdbyte(RSTRING(fname)->ptr, S_ISVTX);
+    return check3rdbyte(STR2CSTR(fname), S_ISVTX);
 #else
     return FALSE;
 #endif
@@ -1183,9 +1173,7 @@ file_s_expand_path(obj, fname)
     char *s, *p;
     char buf[MAXPATHLEN+2];
 
-    Check_Type(fname, T_STRING);
-    s = RSTRING(fname)->ptr;
-
+    s = STR2CSTR(fname);
     p = buf;
     if (s[0] == '~') {
 	if (s[1] == '/' || 
@@ -1300,24 +1288,24 @@ file_s_basename(argc, argv)
     int argc;
     VALUE *argv;
 {
-    VALUE fname, ext;
-    char *p;
+    VALUE fname, fext;
+    char *name, *p, *ext;
     int f;
 
-    rb_scan_args(argc, argv, "11", &fname, &ext);
-    Check_Type(fname, T_STRING);
-    if (!NIL_P(ext)) Check_Type(ext, T_STRING);
-    p = strrchr(RSTRING(fname)->ptr, '/');
+    rb_scan_args(argc, argv, "11", &fname, &fext);
+    name = STR2CSTR(fname);
+    if (!NIL_P(fext)) ext = STR2CSTR(fext);
+    p = strrchr(name, '/');
     if (!p) {
-	if (!NIL_P(ext)) {
-	    f = rmext(RSTRING(fname)->ptr, RSTRING(ext)->ptr);
-	    if (f) return str_new(RSTRING(fname)->ptr, f);
+	if (!NIL_P(fext)) {
+	    f = rmext(name, ext);
+	    if (f) return str_new(name, f);
 	}
 	return fname;
     }
     p++;			/* skip last `/' */
-    if (!NIL_P(ext)) {
-	f = rmext(p, RSTRING(ext)->ptr);
+    if (!NIL_P(fext)) {
+	f = rmext(p, ext);
 	if (f) return str_new(p, f);
     }
     return str_taint(str_new2(p));
@@ -1327,16 +1315,16 @@ static VALUE
 file_s_dirname(obj, fname)
     VALUE obj, fname;
 {
-    UCHAR *p;
+    UCHAR *name, *p;
 
-    Check_Type(fname, T_STRING);
-    p = strrchr(RSTRING(fname)->ptr, '/');
+    name = STR2CSTR(fname);
+    p = strrchr(name, '/');
     if (!p) {
 	return str_new2(".");
     }
-    if (p == RSTRING(fname)->ptr)
+    if (p == name)
 	p++;
-    return str_taint(str_new(RSTRING(fname)->ptr, p - RSTRING(fname)->ptr));
+    return str_taint(str_new(name, p - name));
 }
 
 static VALUE

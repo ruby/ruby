@@ -249,10 +249,7 @@ VALUE
 f_autoload(obj, klass, file)
     VALUE obj, klass, file;
 {
-    ID id = rb_to_id(klass);
-
-    Check_Type(file, T_STRING);
-    rb_autoload_id(id, RSTRING(file)->ptr);
+    rb_autoload_id(rb_to_id(klass), STR2CSTR(file));
     return Qnil;
 }
 

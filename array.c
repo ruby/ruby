@@ -599,6 +599,13 @@ ary_dup(ary)
     return ary_new4(RARRAY(ary)->len, RARRAY(ary)->ptr);
 }
 
+static VALUE
+to_ary(ary)
+    VALUE ary;
+{
+    return rb_convert_type(ary, T_ARRAY, "Array", "to_ary");
+}
+
 extern VALUE OFS;
 
 VALUE
@@ -720,7 +727,7 @@ static VALUE
 ary_reverse_method(ary)
     VALUE ary;
 {
-    return ary_reverse(ary_clone(ary));
+    return ary_reverse(ary_dup(ary));
 }
 
 static ID cmp;
@@ -767,7 +774,7 @@ ary_sort(ary)
     VALUE ary;
 {
     if (RARRAY(ary)->len == 0) return ary;
-    return ary_sort_bang(ary_clone(ary));
+    return ary_sort_bang(ary_dup(ary));
 }
 
 VALUE
@@ -857,7 +864,7 @@ static VALUE
 ary_replace_method(ary, ary2)
     VALUE ary, ary2;
 {
-    Check_Type(ary2, T_ARRAY);
+    ary2 = to_ary(ary2);
     ary_replace(ary, 0, RARRAY(ary2)->len, ary2);
     return ary;
 }
@@ -1084,7 +1091,7 @@ ary_cmp(ary, ary2)
 {
     int i, len;
 
-    Check_Type(ary2, T_ARRAY);
+    ary2 = to_ary(ary2);
     len = RARRAY(ary)->len;
     if (len > RARRAY(ary2)->len) {
 	len = RARRAY(ary2)->len;
@@ -1108,7 +1115,7 @@ ary_diff(ary1, ary2)
     VALUE ary3;
     int i;
 
-    Check_Type(ary2, T_ARRAY);
+    ary2 = to_ary(ary2);
     ary3 = ary_new();
     for (i=0; i<RARRAY(ary1)->len; i++) {
 	if (ary_includes(ary2, RARRAY(ary1)->ptr[i])) continue;
@@ -1125,7 +1132,7 @@ ary_and(ary1, ary2)
     VALUE ary3;
     int i;
 
-    Check_Type(ary2, T_ARRAY);
+    ary2 = to_ary(ary2);
     ary3 = ary_new();
     for (i=0; i<RARRAY(ary1)->len; i++) {
 	if (ary_includes(ary2, RARRAY(ary1)->ptr[i])
@@ -1194,7 +1201,7 @@ static VALUE
 ary_uniq(ary)
     VALUE ary;
 {
-    VALUE v = ary_uniq_bang(ary_clone(ary));
+    VALUE v = ary_uniq_bang(ary_dup(ary));
 
     if (NIL_P(v)) return ary;
     return v;
@@ -1226,7 +1233,7 @@ static VALUE
 ary_compact(ary)
     VALUE ary;
 {
-    VALUE v = ary_compact_bang(ary_clone(ary));
+    VALUE v = ary_compact_bang(ary_dup(ary));
 
     if (NIL_P(v)) return ary;
     return v;
@@ -1271,7 +1278,7 @@ static VALUE
 ary_flatten(ary)
     VALUE ary;
 {
-    VALUE v = ary_flatten_bang(ary_clone(ary));
+    VALUE v = ary_flatten_bang(ary_dup(ary));
 
     if (NIL_P(v)) return ary;
     return v;
@@ -1290,6 +1297,7 @@ Init_Array()
     rb_define_method(cArray, "to_s", ary_to_s, 0);
     rb_define_method(cArray, "inspect", ary_inspect, 0);
     rb_define_method(cArray, "to_a", ary_to_a, 0);
+    rb_define_method(cArray, "to_ary", ary_to_a, 0);
 
     rb_define_method(cArray, "freeze",  ary_freeze, 0);
     rb_define_method(cArray, "frozen?",  ary_frozen_p, 0);

@@ -37,12 +37,12 @@ int *tclDummyMathPtr = (int *) matherr;
 typedef struct {
     Tcl_TimerToken token;
     int  flag;
-} Tk_ThreadTimerData;
+} Tk_TimerData;
 
 /* timer callback */
-void _timer_for_thread (ClientData clientData)
+void _timer_for_tcl (ClientData clientData)
 {
-    Tk_ThreadTimerData *timer = (Tk_ThreadTimerData *) clientData;
+    Tk_TimerData *timer = (Tk_TimerData*)clientData;
 
     timer->flag = 0;
     CHECK_INTS;
@@ -50,8 +50,8 @@ void _timer_for_thread (ClientData clientData)
     if (!thread_critical) thread_schedule();
 #endif
 
-    timer->token = Tk_CreateTimerHandler(200, _timer_for_thread, 
-					 (ClientData) timer);
+    timer->token = Tk_CreateTimerHandler(200, _timer_for_tcl, 
+					 (ClientData)timer);
     timer->flag = 1;
 }
 
@@ -59,12 +59,12 @@ void _timer_for_thread (ClientData clientData)
 static VALUE
 lib_mainloop(VALUE self)
 {
-    Tk_ThreadTimerData *timer;
+    Tk_TimerData *timer;
 
-    timer = (Tk_ThreadTimerData *) ckalloc(sizeof(Tk_ThreadTimerData));
+    timer = (Tk_TimerData *) ckalloc(sizeof(Tk_TimerData));
     timer->flag = 0;
-    timer->token = Tk_CreateTimerHandler(200, _timer_for_thread, 
-					 (ClientData) timer);
+    timer->token = Tk_CreateTimerHandler(200, _timer_for_tcl, 
+					 (ClientData)timer);
     timer->flag = 1;
 
     DUMP1("start Tk_Mainloop");
@@ -219,7 +219,7 @@ ip_invoke(int argc, VALUE *argv, VALUE obj)
 
     av = (char **)ALLOCA_N(char **, argc+1);
     for (i = 0; i < argc; ++i) {
-	char *s = CTR2CSTR(argv[i]);
+	char *s = STR2CSTR(argv[i]);
 
         av[i] = ALLOCA_N(char, strlen(s)+1);
 	strcpy(av[i], s);
@@ -230,6 +230,7 @@ ip_invoke(int argc, VALUE *argv, VALUE obj)
 	NameError("invalid command name `%s'", av[0]);
     }
 
+    Tcl_ResetResult(ptr->ip);
     ptr->return_value = (*info.proc)(info.clientData,
 				     ptr->ip, argc, av);
     if (ptr->return_value == TCL_ERROR) {

@@ -75,7 +75,7 @@ typedef unsigned short USHORT;
 #  ifdef HAVE_LIMITS_H
 #   include <limits.h>
 #  else
-    /* assuming 32bit(2's compliment) LONG */
+    /* assuming 32bit(2's compliment) long */
 #   define LONG_MAX 2147483647	
 #  endif
 # endif
@@ -176,8 +176,8 @@ INT num2int _((VALUE));
 double num2dbl _((VALUE));
 #define NUM2DBL(x) num2dbl((VALUE)(x))
 
-char *str2cstr _((VALUE));
-#define STR2CSTR(x) str2cstr((VALUE)(x))
+char *str2cstr _((VALUE,int*));
+#define STR2CSTR(x) str2cstr((VALUE)(x),0)
 
 #define NUM2CHR(x) (((TYPE(x) == T_STRING)&&(RSTRING(x)->len>=1))?\
                      RSTRING(x)->ptr[0]:(char)NUM2INT(x))
@@ -423,7 +423,6 @@ volatile voidfn Raise;
 volatile voidfn Fail;
 volatile voidfn Fatal;
 volatile voidfn Bug;
-volatile voidfn WrongType;
 volatile voidfn rb_sys_fail;
 volatile voidfn rb_iter_break;
 volatile voidfn rb_exit;
@@ -435,7 +434,6 @@ void Raise();
 void Fail();
 void Fatal();
 void Bug();
-void WrongType();
 void rb_sys_fail _((char *));
 void rb_iter_break _((void));
 void rb_exit _((int));

@@ -452,14 +452,15 @@ new_dvar(id, value)
 {
     NEWOBJ(vars, struct RVarmap);
     OBJSETUP(vars, 0, T_VARMAP);
-    vars->val = value;
     if (id == 0) {
 	vars->id = (ID)value;
+	vars->val = 0;
 	vars->next = the_dyna_vars;
 	the_dyna_vars = vars;
     }
     else if (the_dyna_vars) {
 	vars->id = id;
+	vars->val = value;
 	vars->next = the_dyna_vars->next;
 	the_dyna_vars->next = vars;
     }
@@ -1722,7 +1723,7 @@ rb_eval(self, node)
 		    POP_ITER();
 		}
 	    }
-	    else if (the_block->tag->dst == state) {
+	    else if (_block.tag->dst == state) {
 		state &= TAG_MASK;
 		if (state == TAG_RETURN) {
 		    result = prot_tag->retval;

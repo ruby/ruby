@@ -24,8 +24,12 @@ struct timeval {
 #endif
 #endif /* NT */
 
-static int first = 1;
+#ifdef HAVE_STDLIB_H
+# include <stdlib.h>
+#endif
+
 #ifdef HAVE_RANDOM
+static int first = 1;
 static char state[256];
 #endif
 
@@ -43,7 +47,7 @@ f_srand(argc, argv, obj)
 	struct timeval tv;
 
 	gettimeofday(&tv, 0);
-	seed = tv.tv_usec;
+	seed = tv.tv_sec ^ tv.tv_usec;
     }
     else {
 	seed = NUM2INT(seed);
@@ -78,16 +82,12 @@ f_rand(obj, vmax)
 {
     int val, max;
 
-    if (first == 1) {
-	f_srand(0, 0, 0);
-    }
-
     switch (TYPE(vmax)) {
       case T_BIGNUM:
 	return big_rand(vmax);
 	
       case T_FLOAT:
-	if (RFLOAT(vmax)->value > LONG_MAX || RFLOAT(vmax)->value < LONG_MIN)
+	if (RFLOAT(vmax)->value > INT_MAX || RFLOAT(vmax)->value < INT_MIN)
 	    return big_rand(dbl2big(RFLOAT(vmax)->value));
 	break;
     }
@@ -96,9 +96,14 @@ f_rand(obj, vmax)
     if (max == 0) ArgError("rand(0)");
 
 #ifdef HAVE_RANDOM
-    val = random() % max;
+    val = random();
 #else
-    val = rand() % max;
+    val = rand();
+#endif
+#ifdef RAND_MAX
+    val = val * (double)max / (double)RAND_MAX;
+#else
+    val = (val>>8) % max;
 #endif
 
     if (val < 0) val = -val;
