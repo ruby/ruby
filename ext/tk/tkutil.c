@@ -939,7 +939,6 @@ cbsubst_init()
     inf->size = 0;
 
     inf->key = ALLOC_N(char, 1);
-    inf->key = ALLOC_N(char, 1);
     inf->key[0] = '\0';
 
     inf->type = ALLOC_N(char, 1);
@@ -1028,7 +1027,7 @@ cbsubst_get_all_subst_keys(self)
 		    struct cbsubst_info, inf);
 
     len = strlen(inf->key);
-    buf = ALLOC_N(char, 3*len);
+    buf = ALLOC_N(char, 3*len + 1);
     ptr = buf;
     for(i = 0; i < len; i++) {
 	*(ptr++) = '%';

@@ -1,3 +1,9 @@
+Tue Aug 31 18:20:49 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ext/tk/tkutil.c (cbsubst_init): fix memory leak
+
+	* ext/tk/tkutil.c (cbsubst_get_all_subst_keys): fix SEGV
+
 Tue Aug 31 16:04:22 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c (ip_delete): when a tcltkip is deleted,
