@@ -298,6 +298,7 @@ def arg_config(config, default=nil)
       args << " " << ENV["CONFIGURE_ARGS"]
     end
     for arg in args.split
+      arg.gsub! /^'|'$/, ''
       next unless /^--/ =~ arg
       if /=/ =~ arg
 	$configure_args[$`] = $'
