@@ -1,3 +1,7 @@
+Mon Mar 26 14:04:41 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/Win32API/Win32API.c: remove Init_win32api().
+
 Thu Mar 22 22:15:45 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/Win32API/extconf.rb: add -fno-omit-frame-pointer.

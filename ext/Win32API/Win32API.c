@@ -305,9 +305,3 @@ Init_Win32API()
     rb_define_method(cWin32API, "call", Win32API_Call, -1);
     rb_define_alias(cWin32API,  "Call", "call");
 }
-
-void
-Init_win32api()
-{
-    Init_Win32API();
-}
