@@ -267,7 +267,7 @@ fnmatch(pat, string, flags)
 
 	    test = escape && c == '\\' ? pat+1 : pat;
 	    while (*s) {
-		if ((c == '[' || Compare(s, test) == 0) &&
+		if ((c == '?' || c == '[' || Compare(s, test) == 0) &&
 		    !fnmatch(pat, s, flags | FNM_DOTMATCH))
 		    return 0;
 		else if (ISDIRSEP(*s))
@@ -288,7 +288,7 @@ fnmatch(pat, string, flags)
 	  case '\\':
 	    if (escape && pat[1]
 #if defined DOSISH
-		&& strchr("*?[\\", pat[1])
+		&& strchr("*?[]\\", pat[1])
 #endif
 		) {
 		c = *++pat;
