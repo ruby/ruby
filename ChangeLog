@@ -1,3 +1,9 @@
+Thu Mar 19 13:48:55 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* experimental release 1.1b9_04.
+
+	* parse.y (yylex): `10e0.9' should cause syntax error.
+
 Wed Mar 18 17:46:31 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* ruby.c (load_file): new file object constant DATA.  Only
@@ -13,8 +19,8 @@ Tue Mar 17 18:23:06 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* bignum.c (bigdivmod): calculates modulo.
 
-	* numeric.c (fix_remainder): returns reminder, formerly known as
- 	  modulo.
+	* numeric.c (fix_remainder): returns reminder, formerly introduced
+ 	  as modulo.
 
 	* numeric.c (fix_modulo): calculates proper `modulo'.
 

@@ -2604,7 +2604,7 @@ retry:
 		    break;
 
 		  case '.':
-		    if (seen_point) {
+		    if (seen_point || seen_e) {
 			goto decode_num;
 		    }
 		    else {
