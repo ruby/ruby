@@ -7,14 +7,15 @@ module RSS
 		include Utils
 
 		def initialize(to_enc, from_enc=nil)
-			to_enc = to_enc.downcase.gsub(/-/, '_')
+			normalized_to_enc = to_enc.downcase.gsub(/-/, '_')
 			from_enc ||= 'utf-8'
-			from_enc = from_enc.downcase.gsub(/-/, '_')
-			if to_enc == from_enc
+			normalized_from_enc = from_enc.downcase.gsub(/-/, '_')
+			if normalized_to_enc == normalized_from_enc
 				def_same_enc()
 			else
-				if respond_to?("def_to_#{to_enc}_from_#{from_enc}")
-					send("def_to_#{to_enc}_from_#{from_enc}")
+				def_diff_enc = "def_to_#{normalized_to_enc}_from_#{normalized_from_enc}"
+				if respond_to?(def_diff_enc)
+					__send__(def_diff_enc)
 				else
 					def_else_enc(to_enc, from_enc)
 				end
@@ -40,9 +41,9 @@ module RSS
 		def def_iconv_convert(to_enc, from_enc, depth=0)
 			begin
 				require "iconv"
+				@iconv = Iconv.new(to_enc, from_enc)
 				def_convert(depth+1) do |value|
 					<<-EOC
-					@iconv ||= Iconv.new("#{to_enc}", "#{from_enc}")
 					begin
 						@iconv.iconv(#{value})
 					rescue Iconv::Failure
@@ -56,7 +57,7 @@ module RSS
 		end
 		
 		def def_else_enc(to_enc, from_enc)
-			raise UnknownConversionMethodError.new(to_enc, from_enc)
+			def_iconv_convert(to_enc, from_enc, 0)
 		end
 		
 		def def_same_enc()
