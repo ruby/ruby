@@ -1011,9 +1011,16 @@ if (dir = File.dirname(File.dirname($0))) == '.'
 else
   dir << "/"
 end
+
+def valid_syntax?(code)
+  eval("BEGIN {return true}\n#{code}")
+rescue Exception
+ensure
+  false
+end
+
 for script in Dir["#{dir}{lib,sample,ext}/**/*.rb"]
-  `./miniruby -c #{script}`
-  unless $?
+  unless valid_syntax? open(script).read
     $bad = true
   end
 end

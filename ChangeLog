@@ -1,3 +1,8 @@
+Fri May 17 16:16:19 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* sampl/test.rb: use eval instead of './miniruby -c',
+	  in order to check a syntax error.
+
 Thu May 16 16:14:25 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (rb_thread_select): cleanup conditional compilation.
