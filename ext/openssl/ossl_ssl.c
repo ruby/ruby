@@ -484,16 +484,22 @@ ossl_ssl_accept(VALUE self)
 }
 
 static VALUE
-ossl_ssl_read(VALUE self, VALUE len)
+ossl_ssl_read(int argc, VALUE *argv, VALUE self)
 {
     SSL *ssl;
     int ilen, nread = 0;
-    VALUE str;
+    VALUE len, str;
     OpenFile *fptr;
 
     Data_Get_Struct(self, SSL, ssl);
+    rb_scan_args(argc, argv, "11", &len, &str);
     ilen = NUM2INT(len);
-    str = rb_str_new(0, ilen);
+    if(NIL_P(str)) str = rb_str_new(0, ilen);
+    else{
+        StringValue(str);
+        rb_str_modify(str);
+        rb_str_resize(str, ilen);
+    }
 
     if (ssl) {
 	for (;;){
@@ -730,7 +736,7 @@ Init_ossl_ssl()
     rb_define_method(cSSLSocket, "initialize", ossl_ssl_initialize, -1);
     rb_define_method(cSSLSocket, "connect",    ossl_ssl_connect, 0);
     rb_define_method(cSSLSocket, "accept",     ossl_ssl_accept, 0);
-    rb_define_method(cSSLSocket, "sysread",    ossl_ssl_read, 1);
+    rb_define_method(cSSLSocket, "sysread",    ossl_ssl_read, -1);
     rb_define_method(cSSLSocket, "syswrite",   ossl_ssl_write, 1);
     rb_define_method(cSSLSocket, "sysclose",   ossl_ssl_close, 0);
     rb_define_method(cSSLSocket, "cert",       ossl_ssl_get_cert, 0);

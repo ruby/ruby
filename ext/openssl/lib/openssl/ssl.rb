@@ -68,7 +68,7 @@ module OpenSSL
         @svr
       end
 
-      def listen(basklog=5)
+      def listen(backlog=5)
         @svr.listen(backlog)
       end
 
