@@ -1,3 +1,11 @@
+Wed Feb 27 13:18:49 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* io.c (READ_DATA_PENDING): uClibc support.
+
+	* random.c (rand_init): ditto.
+
+	* ext/socket/{addinfo.h,getaddrinfo.c} (gai_strerror): ditto.
+
 Wed Feb 27 07:08:16 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/sha2/sha2.c: Merge from rough.  Fix a couple of

@@ -154,7 +154,7 @@ extern int getnameinfo __P((
 
 extern void freehostent __P((struct hostent *));
 extern void freeaddrent __P((struct addrinfo *));
-extern char *gai_strerror __P((int));
+extern const char *gai_strerror __P((int));
 
 /* In case there is no definition of offsetof() provided - though any proper
 Standard C system should have one. */
