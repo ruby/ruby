@@ -1,3 +1,9 @@
+Fri Aug 23 23:59:57 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* eval.c (method_call): check receiver is defined.
+
+	* eval.c (umethod_call): removed.
+
 Fri Aug 23 17:06:48 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in: RUBY_SO_NAME is msvcrt-rubyXX on mswin32/mingw32.

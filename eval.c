@@ -6914,6 +6914,9 @@ method_call(argc, argv, method)
     volatile int safe = ruby_safe_level;
 
     Data_Get_Struct(method, struct METHOD, data);
+    if (data->recv == Qundef) {
+	rb_raise(rb_eTypeError, "you cannot call unbound method; bind first");
+    }
     PUSH_ITER(rb_block_given_p()?ITER_PRE:ITER_NOT);
     PUSH_TAG(PROT_NONE);
     if (OBJ_TAINTED(method) && ruby_safe_level < 4) {
@@ -6927,16 +6930,6 @@ method_call(argc, argv, method)
     ruby_safe_level = safe;
     if (state) JUMP_TAG(state);
     return result;
-}
-
-static VALUE
-umethod_call(argc, argv, method)
-    int argc;
-    VALUE *argv;
-    VALUE method;
-{
-    rb_raise(rb_eTypeError, "you cannot call unbound method; bind first");
-    return Qnil;		/* not reached */
 }
 
 static VALUE
@@ -7078,7 +7071,7 @@ static VALUE
 umcall(args, method)
     VALUE args, method;
 {
-    return umethod_call(0, 0, method);
+    return method_call(0, 0, method);
 }
 
 VALUE
@@ -7212,8 +7205,6 @@ Init_Proc()
     rb_define_method(rb_mKernel, "method", rb_obj_method, 1);
 
     rb_cUnboundMethod = rb_define_class("UnboundMethod", rb_cMethod);
-    rb_define_method(rb_cUnboundMethod, "call", umethod_call, -1);
-    rb_define_method(rb_cUnboundMethod, "[]", umethod_call, -1);
     rb_define_method(rb_cUnboundMethod, "to_proc", umethod_proc, 0);
     rb_define_method(rb_cUnboundMethod, "bind", umethod_bind, 1);
     rb_define_method(rb_cUnboundMethod, "unbind", umethod_unbind, 0);
