@@ -41,19 +41,23 @@ class Ripper
 
   class Lexer < ::Ripper   #:nodoc: internal use only
     def tokenize
-      parse().map {|pos, event, tok| tok }
+      lex().map {|pos, event, tok| tok }
     end
 
     def lex
+      parse().sort_by {|pos, event, tok| pos }
+    end
+
+    def parse
       @buf = []
-      parse
-      @buf.sort_by {|pos, event, tok| pos }
+      super
+      @buf
     end
 
     private
 
     SCANNER_EVENTS.each do |event|
-      module_eval(<<-End)
+      module_eval(<<-End, __FILE__+'/module_eval', __LINE__ + 1)
         def on_#{event}(tok)
           @buf.push [[lineno(), column()], :on_#{event}, tok]
         end
