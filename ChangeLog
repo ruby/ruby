@@ -1,3 +1,8 @@
+Fri Apr 23 16:38:46 2004  Tanaka Akira  <akr@m17n.org>
+
+	* lib/pathname.rb: sync taint/freeze flag between
+	  a pathname object and its internal string object.
+
 Fri Apr 23 14:52:14 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (stmt, arg, aref_args): should not make sole splat into

@@ -188,12 +188,17 @@ class Pathname
   #
   def initialize(path)
     @path = path.to_str.dup
-    @path.freeze
 
     if /\0/ =~ @path
       raise ArgumentError, "pathname contains \\0: #{@path.inspect}"
     end
+
+    self.taint if @path.tainted?
   end
+
+  def freeze() super; @path.freeze; self end
+  def taint() super; @path.taint; self end
+  def untaint() super; @path.untaint; self end
 
   #
   # Compare this pathname with +other+.  The comparison is string-based.
@@ -1122,6 +1127,33 @@ if $0 == __FILE__
       assert_pathname_plus('c', 'a', '../c')
       assert_pathname_plus('a/c', 'a/b', '../c')
       assert_pathname_plus('../../c', '..', '../c')
+    end
+
+    def test_taint
+      obj = Pathname.new("a"); assert_same(obj, obj.taint)
+      obj = Pathname.new("a"); assert_same(obj, obj.untaint)
+
+      assert_equal(false, Pathname.new("a"      )           .tainted?)
+      assert_equal(false, Pathname.new("a"      )      .to_s.tainted?)
+      assert_equal(true,  Pathname.new("a"      ).taint     .tainted?)
+      assert_equal(true,  Pathname.new("a"      ).taint.to_s.tainted?)
+      assert_equal(true,  Pathname.new("a".taint)           .tainted?)
+      assert_equal(true,  Pathname.new("a".taint)      .to_s.tainted?)
+      assert_equal(true,  Pathname.new("a".taint).taint     .tainted?)
+      assert_equal(true,  Pathname.new("a".taint).taint.to_s.tainted?)
+    end
+
+    def test_freeze
+      obj = Pathname.new("a"); assert_same(obj, obj.freeze)
+
+      assert_equal(false, Pathname.new("a"       )            .frozen?)
+      assert_equal(false, Pathname.new("a".freeze)            .frozen?)
+      assert_equal(true,  Pathname.new("a"       ).freeze     .frozen?)
+      assert_equal(true,  Pathname.new("a".freeze).freeze     .frozen?)
+      assert_equal(false, Pathname.new("a"       )       .to_s.frozen?)
+      assert_equal(false, Pathname.new("a".freeze)       .to_s.frozen?)
+      assert_equal(false, Pathname.new("a"       ).freeze.to_s.frozen?)
+      assert_equal(false, Pathname.new("a".freeze).freeze.to_s.frozen?)
     end
   end
 end
