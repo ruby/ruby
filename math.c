@@ -64,6 +64,11 @@ math_exp(obj, x)
     return rb_float_new(exp(RFLOAT(x)->value));
 }
 
+#if defined __CYGWIN__
+#define log(x) ((x) < 0.0 ? 0.0 / 0.0 : log(x))
+#define log10(x) ((x) < 0.0 ? 0.0 / 0.0 : log10(x))
+#endif
+
 static VALUE
 math_log(obj, x)
     VALUE obj, x;
