@@ -1,6 +1,6 @@
-: tsort library
+: tsort module
 
-  added.
+  Imported.  Topological sorting library.
 
 : stringio module
 
