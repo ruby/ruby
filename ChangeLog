@@ -71,6 +71,11 @@ Tue Feb 25 23:03:08 2003  NAKAMURA Hiroshi  <nahi@ruby-lang.org>
 	* lib/debug.rb (DEBUGGER__::Context#debug_command): bp filename must
           be the basename of it.  [ruby-talk:65644]
 
+Mon Feb 24 17:49:35 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* parse.y (yycompile): zero clear ruby_eval_tree_begin if
+	  compilation failed.
+
 Mon Feb 24 08:06:29 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (str_new): need no MEMZERO().
