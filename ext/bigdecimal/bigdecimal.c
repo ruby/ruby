@@ -2495,7 +2495,7 @@ VP_EXPORT int
 VpMult(Real *c, Real *a, Real *b)
 {
     U_LONG MxIndA, MxIndB, MxIndAB, MxIndC;
-    U_LONG ind_c, i, nc;
+    U_LONG ind_c, i, ii, nc;
     U_LONG ind_as, ind_ae, ind_bs, ind_be;
     U_LONG Carry, s;
     Real *w;
@@ -2568,26 +2568,26 @@ VpMult(Real *c, Real *a, Real *b)
             ind_be = 0;
         }
 
-        s = 0L;
-        for(i = ind_as; i <= ind_ae; ++i) s +=((a->frac[i]) *(b->frac[ind_bs--]));
-        Carry = s / BASE;
-        s = s -(Carry * BASE);
-
-        c->frac[ind_c] += s;
-        if(c->frac[ind_c] >= BASE) {
-            s = c->frac[ind_c] / BASE;
-            Carry += s;
-            c->frac[ind_c] -=(s * BASE);
-        }
-        i = ind_c;
-        if(Carry) {
-            while((--i) >= 0) {
-                c->frac[i] += Carry;
-                if(c->frac[i] >= BASE) {
-                    Carry = c->frac[i] / BASE;
-                    c->frac[i] -=(Carry * BASE);
-                } else {
-                    break;
+        for(i = ind_as; i <= ind_ae; ++i) {
+            s =((a->frac[i]) *(b->frac[ind_bs--]));
+            Carry = s / BASE;
+            s = s -(Carry * BASE);
+            c->frac[ind_c] += s;
+            if(c->frac[ind_c] >= BASE) {
+                s = c->frac[ind_c] / BASE;
+                Carry += s;
+                c->frac[ind_c] -= (s * BASE);
+            }
+            if(Carry) {
+                ii = ind_c;
+                while((--ii) >= 0) {
+                    c->frac[ii] += Carry;
+                    if(c->frac[ii] >= BASE) {
+                        Carry = c->frac[ii] / BASE;
+                        c->frac[ii] -=(Carry * BASE);
+                    } else {
+                        break;
+                    }
                 }
             }
         }
@@ -2827,7 +2827,7 @@ Exit:
 static int
 VpNmlz(Real *a)
 {
-    U_LONG ind_a, i, j;
+    U_LONG ind_a, i;
 
     if(!VpIsDef(a)) goto NoVal;
     if(VpIsZero(a)) goto NoVal;
@@ -2836,20 +2836,13 @@ VpNmlz(Real *a)
     while(ind_a--) {
         if(a->frac[ind_a]) {
             a->Prec = ind_a + 1;
-            i = j = 0;
+            i = 0;
             while(a->frac[i] == 0) ++i;        /* skip the first few zeros */
             if(i) {
                 a->Prec -= i;
                 if(!AddExponent(a,-((S_INT)i))) return 0;
-                while(i <= ind_a) {
-                    a->frac[j] = a->frac[i];
-                    ++i;
-                    ++j;
-                }
+                memmove(&(a->frac[0]),&(a->frac[i]),(a->Prec)*sizeof(U_LONG));
             }
-#ifdef _DEBUG
-            if(gfCheckVal)    VpVarCheck(a);
-#endif /* _DEBUG */
             return 1;
         }
     }

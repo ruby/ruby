@@ -1,3 +1,8 @@
+Tue Aug 21 00:13:00 2003  Shigeo Kobayashi  <shigek@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c: Int. overflow bug in multiplication fixed,
+	  and VpNmlz() speed up.
+
 Wed Aug 20 16:44:49 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/socket.c (ruby_connect): many systems seem to have
