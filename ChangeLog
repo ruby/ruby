@@ -1,3 +1,10 @@
+Fri Dec 12 22:36:44 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/csv.rb: add Cell#to_str and Cell#to_s for /.../ =~ aCell,
+	  "#{aCell}" and so on.
+
+	* test/csv/test_csv.rb: add tests.
+
 Fri Dec 12 19:33:06 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (mkdir): remove trailing `/' from pathes.

@@ -1,4 +1,5 @@
-require 'test/unit'
+require 'test/unit/testsuite'
+require 'test/unit/testcase'
 require 'tempfile'
 require 'fileutils'
 
@@ -91,6 +92,29 @@ class TestCSVCell < Test::Unit::TestCase
     assert_equal(d2.is_null, true, "Data: true.")
     d3 = CSV::Cell.new(nil, false)
     assert_equal(d3.is_null, false, "Data: false.")
+  end
+
+  def test_to_str
+    d = CSV::Cell.new("foo", false)
+    assert_equal("foo", d.to_str)
+    assert(/foo/ =~ d)
+    d = CSV::Cell.new("foo", true)
+    begin
+      d.to_str
+      assert(false)
+    rescue
+      # NoMethodError or NameError
+      assert(true)
+    end
+  end
+
+  def test_to_s
+    d = CSV::Cell.new("foo", false)
+    assert_equal("foo", d.to_s)
+    assert_equal("foo", "#{d}")
+    d = CSV::Cell.new("foo", true)
+    assert_equal("", d.to_s)
+    assert_equal("", "#{d}")
   end
 end
 

@@ -85,6 +85,20 @@ public
         @data == rhs.data
       end
     end
+
+    def to_str
+      content.to_str
+    end
+
+    def to_s
+      content.to_s
+    end
+
+  private
+
+    def content
+      @is_null ? nil : data
+    end
   end
   
 
