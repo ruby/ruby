@@ -1,3 +1,7 @@
+Thu Apr 22 04:15:36 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (aref_args): should pass expanded list.  [ruby-core:02793]
+
 Wed Apr 21 22:57:27 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/rinda/rinda.rb, test/rinda/test_rinda.rb: check Hash tuple size.
