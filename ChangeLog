@@ -1,3 +1,7 @@
+Sat Apr  3 09:36:38 2004  why the lucky stiff  <why@ruby-lang.org>
+
+	* ext/syck/syck.h: version 0.43.
+
 Sat Apr  3 08:28:47 2004  why the lucky stiff  <why@ruby-lang.org>
 
 	* ext/syck/lib/gram.c: allow root-level inline collections.
