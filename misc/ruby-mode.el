@@ -832,7 +832,7 @@ An end of a defun is found by moving forward from the beginning of one."
 		       (skip-chars-forward "<"))
 		     (not expr))))
 	    (setq i (1- i)))
-	((error) (forward-word)))
+	((error) (forward-word 1)))
       i)))
 
 (defun-region-command ruby-backward-sexp (&optional cnt)
