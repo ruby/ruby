@@ -1,3 +1,7 @@
+Wed Sep 27 18:40:05 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* stable version 1.6.1 released.
+
 Wed Sep 27 16:13:05 2000  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* mkconfig.rb: variables should be expanded only if /\$\{?\w+\}?/.
