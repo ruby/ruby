@@ -254,7 +254,6 @@ test_ok(f.call(42) == 42)
 test_ok(f.call([42]) == [42])
 test_ok(f.call([[42]]) == [[42]])
 test_ok(f.call([42,55]) == [42,55])
-test_ok(f.call(42,55) == [42,55])
 
 f = lambda{|x,| x}
 test_ok(f.call(42) == 42)

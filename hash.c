@@ -465,7 +465,7 @@ delete_if_i(key, value)
     VALUE key, value;
 {
     if (key == Qundef) return ST_CONTINUE;
-    if (RTEST(rb_yield(rb_assoc_new(key, value))))
+    if (RTEST(rb_yield_values(2, key, value)))
 	return ST_DELETE;
     return ST_CONTINUE;
 }
@@ -500,12 +500,9 @@ static enum st_retval
 select_i(key, value, result)
     VALUE key, value, result;
 {
-    VALUE assoc;
-
     if (key == Qundef) return ST_CONTINUE;
-    assoc = rb_assoc_new(key, value);
-    if (RTEST(rb_yield(assoc)))
-	rb_ary_push(result, assoc);
+    if (RTEST(rb_yield_values(2, key, value)))
+	rb_ary_push(result, rb_assoc_new(key, value));
     return ST_CONTINUE;
 }
 
@@ -663,7 +660,7 @@ each_pair_i(key, value)
     VALUE key, value;
 {
     if (key == Qundef) return ST_CONTINUE;
-    rb_yield(rb_assoc_new(key, value));
+    rb_yield_values(2, key, value);
     return ST_CONTINUE;
 }
 
@@ -938,7 +935,7 @@ rb_hash_update_block_i(key, value, hash)
 {
     if (key == Qundef) return ST_CONTINUE;
     if (rb_hash_has_key(hash, key)) {
-	value = rb_yield(rb_ary_new3(3, key, rb_hash_aref(hash, key), value));
+	value = rb_yield_values(3, key, rb_hash_aref(hash, key), value);
     }
     rb_hash_aset(hash, key, value);
     return ST_CONTINUE;
@@ -1334,8 +1331,8 @@ env_each(hash)
     while (*env) {
 	char *s = strchr(*env, '=');
 	if (s) {
-	    rb_yield(rb_assoc_new(rb_tainted_str_new(*env, s-*env),
-				  rb_tainted_str_new2(s+1)));
+	    rb_yield_values(2, rb_tainted_str_new(*env, s-*env),
+			       rb_tainted_str_new2(s+1));
 	}
 	env++;
     }
@@ -1359,7 +1356,7 @@ env_reject_bang()
     while (len--) {
 	VALUE val = rb_f_getenv(Qnil, *ptr);
 	if (!NIL_P(val)) {
-	    if (RTEST(rb_yield(rb_assoc_new(*ptr, val)))) {
+	    if (RTEST(rb_yield_values(2, *ptr, val))) {
 		FL_UNSET(*ptr, FL_TAINT);
 		env_delete(Qnil, *ptr);
 		del++;
@@ -1413,10 +1410,10 @@ env_select(argc, argv)
     while (*env) {
 	char *s = strchr(*env, '=');
 	if (s) {
-	    VALUE assoc = rb_assoc_new(rb_tainted_str_new(*env, s-*env),
-				       rb_tainted_str_new2(s+1));
-	    if (RTEST(rb_yield(assoc))) {
-		rb_ary_push(result, assoc);
+	    VALUE k = rb_tainted_str_new(*env, s-*env);
+	    VALUE v = rb_tainted_str_new2(s+1);
+	    if (RTEST(rb_yield_values(2, k, v))) {
+		rb_ary_push(result, rb_assoc_new(k, v));
 	    }
 	}
 	env++;
@@ -1712,7 +1709,7 @@ env_update_i(key, val)
 {
     if (key != Qundef) {
 	if (rb_block_given_p()) {
-	    val = rb_yield(rb_ary_new3(3, key, rb_f_getenv(Qnil, key), val));
+	    val = rb_yield_values(3, key, rb_f_getenv(Qnil, key), val);
 	}
 	env_aset(Qnil, key, val);
     }

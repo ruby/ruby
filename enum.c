@@ -397,7 +397,7 @@ min_ii(i, memo)
 	memo->u1.value = i;
     }
     else {
-	cmp = rb_yield(rb_assoc_new(i, memo->u1.value));
+	cmp = rb_yield_values(2, i, memo->u1.value);
 	if (rb_cmpint(cmp, i, memo->u1.value) < 0) {
 	    memo->u1.value = i;
 	}
@@ -448,7 +448,7 @@ max_ii(i, memo)
 	memo->u1.value = i;
     }
     else {
-	cmp = rb_yield(rb_assoc_new(i, memo->u1.value));
+	cmp = rb_yield_values(2, i, memo->u1.value);
 	if (rb_cmpint(cmp, i, memo->u1.value) > 0) {
 	    memo->u1.value = i;
 	}

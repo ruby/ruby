@@ -1085,7 +1085,7 @@ static int
 sort_1(a, b)
     VALUE *a, *b;
 {
-    VALUE retval = rb_yield(rb_assoc_new(*a, *b));
+    VALUE retval = rb_yield_values(2, *a, *b);
     return rb_cmpint(retval, *a, *b);
 }
 

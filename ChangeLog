@@ -16,6 +16,29 @@ Tue May 20 10:51:26 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	* error.c (name_err_initialize, nometh_err_initialize,
 	  syserr_initialize): initialize attributes.
 
+Tue May 20 10:26:56 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_yield_0): give warning for multiple values for a
+	  block parameter.
+
+	* eval.c (rb_yield_values): a function to yield multiple values.
+
+	* array.c (sort_1): use rb_yield_values.
+
+	* enum.c (min_ii, max_ii): ditto.
+
+	* hash.c (rb_hash_update_block_i, delete_if_i, select_i,
+	  each_pair_i, env_each, env_reject_bang, env_select,
+	  env_update_i): ditto.
+
+	* struct.c (rb_struct_each_pair): ditto.
+
+	* eval.c (top_include): should include module in the current self,
+	  not ruby_top_self. [ruby-dev:20198]
+
+	* eval.c (top_include): stop inclusion to ruby_wrapper; give
+	  warning.
+
 Mon May 19 18:54:30 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
 
 	* ext/syck/token.c, ext/syck/implicit.c: expanded character set to

@@ -346,7 +346,7 @@ rb_struct_each_pair(s)
 	rb_bug("non-initialized struct");
     }
     for (i=0; i<RSTRUCT(s)->len; i++) {
-	rb_yield(rb_assoc_new(RARRAY(member)->ptr[i], RSTRUCT(s)->ptr[i]));
+	rb_yield_values(2, RARRAY(member)->ptr[i], RSTRUCT(s)->ptr[i]);
     }
     return s;
 }

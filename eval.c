@@ -4025,7 +4025,7 @@ rb_yield_0(val, self, klass, pcall, avalue)
     if (block->var) {
 	PUSH_TAG(PROT_NONE);
 	if ((state = EXEC_TAG()) == 0) {
-	    if (block->var == (NODE*)1) {
+	    if (block->var == (NODE*)1) { /* no parameter || */
 		if (pcall && RARRAY(val)->len != 0) {
 		    rb_raise(rb_eArgError, "wrong number of arguments (%ld for 0)",
 			     RARRAY(val)->len);
@@ -4044,8 +4044,22 @@ rb_yield_0(val, self, klass, pcall, avalue)
 		massign(self, block->var, val, pcall);
 	    }
 	    else {
-		if (avalue) val = avalue_splat(val);
-		if (val == Qundef) val = Qnil;
+		if (avalue) {
+		    if (RARRAY(val)->len == 0) {
+			goto zero_arg;
+		    }
+		    if (RARRAY(val)->len == 1) {
+			val = RARRAY(val)->ptr[0];
+		    }
+		    else {
+			rb_warn("multiple values for a block parameter (%d for 1)", RARRAY(val)->len);
+		    }
+		}
+		else if (val == Qundef) {
+		  zero_arg:
+		    rb_warn("multiple values for a block parameter (0 for 1)");
+		    val = Qnil;
+		}
 		assign(self, block->var, val, pcall);
 	    }
 	}
@@ -4134,6 +4148,26 @@ rb_yield(val)
     VALUE val;
 {
     return rb_yield_0(val, 0, 0, 0, 0);
+}
+
+VALUE
+#ifdef HAVE_STDARG_PROTOTYPES
+rb_yield_values(int n, ...)
+#else
+rb_yield_values(int n, va_alist)
+    int n;
+    va_dcl
+#endif
+{
+    va_list args;
+    VALUE ary = rb_ary_new2(n);
+
+    va_init_list(args, n);
+    while (n--) {
+	rb_ary_push(ary, va_arg(args, VALUE));
+    }
+    va_end(args);
+    return rb_yield_0(ary, 0, 0, 0, Qtrue);
 }
 
 static VALUE
@@ -5623,7 +5657,7 @@ rb_load(fname, wrap)
 	/* load in anonymous module as toplevel */
 	ruby_class = ruby_wrapper = rb_module_new();
 	self = rb_obj_clone(ruby_top_self);
-	rb_extend_object(self, ruby_class);
+	rb_extend_object(self, ruby_wrapper);
 	PUSH_CREF(ruby_wrapper);
     }
     PUSH_ITER(ITER_NOT);
@@ -6167,14 +6201,15 @@ rb_obj_extend(argc, argv, obj)
 }
 
 static VALUE
-top_include(argc, argv)
+top_include(argc, argv, self)
     int argc;
     VALUE *argv;
+    VALUE self;
 {
     rb_secure(4);
     if (ruby_wrapper) {
-	rb_obj_extend(argc, argv, ruby_top_self);
-	return rb_mod_include(argc, argv, ruby_wrapper);
+	rb_warn("main#include in the wrapped load is effective only for toplevel");
+	return rb_obj_extend(argc, argv, self);
     }
     else {
 	return rb_mod_include(argc, argv, rb_cObject);
