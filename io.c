@@ -219,6 +219,7 @@ void
 rb_io_check_readable(fptr)
     OpenFile *fptr;
 {
+    rb_io_check_closed(fptr);
     if (!(fptr->mode & FMODE_READABLE)) {
 	rb_raise(rb_eIOError, "not opened for reading");
     }
@@ -236,6 +237,7 @@ void
 rb_io_check_writable(fptr)
     OpenFile *fptr;
 {
+    rb_io_check_closed(fptr);
     if (!(fptr->mode & FMODE_WRITABLE)) {
 	rb_raise(rb_eIOError, "not opened for writing");
     }
@@ -1007,6 +1009,7 @@ rb_io_getline(rs, fptr)
 {
     VALUE str = Qnil;
 
+    rb_io_check_readable(fptr);
     if (NIL_P(rs)) {
 	str = read_all(fptr, 0, Qnil);
     }
@@ -1082,7 +1085,6 @@ rb_io_gets_m(argc, argv, io)
 	rb_scan_args(argc, argv, "1", &rs);
     }
     GetOpenFile(io, fptr);
-    rb_io_check_readable(fptr);
     str = rb_io_getline(rs, fptr);
 
     if (!NIL_P(str)) {
@@ -1170,7 +1172,6 @@ rb_io_readlines(argc, argv, io)
 	rb_scan_args(argc, argv, "1", &rs);
     }
     GetOpenFile(io, fptr);
-    rb_io_check_readable(fptr);
     ary = rb_ary_new();
     while (!NIL_P(line = rb_io_getline(rs, fptr))) {
 	rb_ary_push(ary, line);
@@ -1195,7 +1196,6 @@ rb_io_each_line(argc, argv, io)
 	rb_scan_args(argc, argv, "1", &rs);
     }
     GetOpenFile(io, fptr);
-    rb_io_check_readable(fptr);
     while (!NIL_P(str = rb_io_getline(rs, fptr))) {
 	rb_yield(str);
     }
@@ -1211,10 +1211,10 @@ rb_io_each_byte(io)
     int c;
 
     GetOpenFile(io, fptr);
-    rb_io_check_readable(fptr);
-    f = fptr->f;
 
     for (;;) {
+	rb_io_check_readable(fptr);
+	f = fptr->f;
 	READ_CHECK(f);
 	TRAP_BEG;
 	c = getc(f);
@@ -3092,7 +3092,6 @@ argf_getline(argc, argv)
 	    rb_scan_args(argc, argv, "1", &rs);
 	}
 	GetOpenFile(current_file, fptr);
-	rb_io_check_readable(fptr);
 	line = rb_io_getline(rs, fptr);
     }
     if (NIL_P(line) && next_p != -1) {

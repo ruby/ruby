@@ -1,3 +1,12 @@
+Fri Aug  1 16:22:57 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_check_readable, rb_io_check_writable): ensure not
+	  closed at first.
+
+	* io.c (rb_io_getline): check readable always.  (ruby-bugs:PR#1069)
+
+	* io.c (rb_io_each_byte): ditto.
+
 Fri Aug  1 16:02:46 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (READ_DATA_PENDING_PTR): cast to get rid of warnings.
