@@ -507,6 +507,13 @@ sym_to_s(sym)
 }
 
 static VALUE
+sym_id2name(sym)
+    VALUE sym;
+{
+    return rb_str_new2(rb_id2name(SYM2ID(sym)));
+}
+
+static VALUE
 rb_mod_clone(module)
     VALUE module;
 {
@@ -1110,7 +1117,7 @@ Init_Object()
     rb_define_method(rb_cSymbol, "type", sym_type, 0);
     rb_define_method(rb_cSymbol, "to_i", sym_to_i, 0);
     rb_define_method(rb_cSymbol, "to_s", sym_to_s, 0);
-    rb_define_method(rb_cSymbol, "id2name", sym_to_s, 0);
+    rb_define_method(rb_cSymbol, "id2name", sym_id2name, 0);
 
     rb_define_method(rb_cModule, "===", rb_mod_eqq, 1);
     rb_define_method(rb_cModule, "<=>",  rb_mod_cmp, 1);

@@ -180,7 +180,7 @@ static void top_local_setup();
 %type <node> f_arglist f_args f_optarg f_opt f_block_arg opt_f_block_arg
 %type <node> array assoc_list assocs assoc undef_list backref
 %type <node> block_var opt_block_var brace_block do_block lhs none
-%type <node> mlhs mlhs_head mlhs_tail mlhs_basic mlhs_entry mlhs_item mlhs_node
+%type <node> mlhs mlhs_head mlhs_basic mlhs_entry mlhs_item mlhs_node
 %type <id>   fitem variable sym symbol operation operation2 operation3
 %type <id>   cname fname op f_rest_arg
 %type <num>  f_norm_arg f_arg
@@ -471,27 +471,19 @@ mlhs_entry	: mlhs_basic
 
 mlhs_basic	: mlhs_head
 		    {
-			$$ = NEW_MASGN(NEW_LIST($1), 0);
+			$$ = NEW_MASGN($1, 0);
 		    }
-		| mlhs_head tSTAR lhs
+		| mlhs_head mlhs_item
 		    {
-			$$ = NEW_MASGN(NEW_LIST($1), $3);
+			$$ = NEW_MASGN(list_append($1,$2), 0);
+		    }
+		| mlhs_head tSTAR mlhs_node
+		    {
+			$$ = NEW_MASGN($1, $3);
 		    }
 		| mlhs_head tSTAR
 		    {
-			$$ = NEW_MASGN(NEW_LIST($1), -1);
-		    }
-		| mlhs_head mlhs_tail
-		    {
-			$$ = NEW_MASGN(list_concat(NEW_LIST($1),$2), 0);
-		    }
-		| mlhs_head mlhs_tail ',' tSTAR lhs
-		    {
-			$$ = NEW_MASGN(list_concat(NEW_LIST($1),$2),$5);
-		    }
-		| mlhs_head mlhs_tail ',' tSTAR
-		    {
-			$$ = NEW_MASGN(list_concat(NEW_LIST($1),$2),-1);
+			$$ = NEW_MASGN($1, -1);
 		    }
 		| tSTAR mlhs_node
 		    {
@@ -510,16 +502,11 @@ mlhs_item	: mlhs_node
 
 mlhs_head	: mlhs_item ','
 		    {
-			$$ = $1;
-		    }
-
-mlhs_tail	: mlhs_item
-		    {
 			$$ = NEW_LIST($1);
 		    }
-		| mlhs_tail ',' mlhs_item
+		| mlhs_head mlhs_item ','
 		    {
-			$$ = list_append($1, $3);
+			$$ = list_append($1, $2);
 		    }
 
 mlhs_node	: variable

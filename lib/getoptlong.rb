@@ -1,5 +1,5 @@
 #                                                         -*- Ruby -*-
-# Copyright (C) 1998  Motoyuki Kasahara
+# Copyright (C) 1998, 1999, 2000  Motoyuki Kasahara
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -232,7 +232,7 @@ class GetoptLong
   # Termintate option processing.
   #
   def terminate
-    return if @status == STATUS_TERMINATED
+    return nil if @status == STATUS_TERMINATED
     raise RuntimeError, "an error has occured" if @error != nil
 
     @status = STATUS_TERMINATED
@@ -293,12 +293,12 @@ class GetoptLong
   # Get next option name and its argument as an array.
   #
   def get
-    name, argument = nil, ''
+    option_name, option_argument = nil, ''
 
     #
     # Check status.
     #
-    return if @error != nil
+    return nil if @error != nil
     case @status
     when STATUS_YET
       @status = STATUS_STARTED
@@ -310,7 +310,7 @@ class GetoptLong
     # Get next option argument.
     #
     if 0 < @rest_singles.length
-      $_ = '-' + @rest_singles
+      argument = '-' + @rest_singles
     elsif (ARGV.length == 0)
       terminate
       return nil
@@ -322,22 +322,22 @@ class GetoptLong
 	terminate
 	return nil
       end
-      $_ = ARGV.shift
+      argument = ARGV.shift
     elsif @ordering == REQUIRE_ORDER 
       if (ARGV[0] !~ /^-./)
 	terminate
 	return nil
       end
-      $_ = ARGV.shift
+      argument = ARGV.shift
     else
-      $_ = ARGV.shift
+      argument = ARGV.shift
     end
 
     #
     # Check the special argument `--'.
     # `--' indicates the end of the option list.
     #
-    if $_ == '--' && @rest_singles.length == 0
+    if argument == '--' && @rest_singles.length == 0
       terminate
       return nil
     end
@@ -345,87 +345,88 @@ class GetoptLong
     #
     # Check for long and short options.
     #
-    if /^(--[^=]+)/ && @rest_singles.length == 0
+    if argument =~ /^(--[^=]+)/ && @rest_singles.length == 0
       #
       # This is a long style option, which start with `--'.
       #
       pattern = $1
       if @canonical_names.include?(pattern)
-	name = pattern
+	option_name = pattern
       else
 	#
-	# The option `name' is not registered in `@canonical_names'.
+	# The option `option_name' is not registered in `@canonical_names'.
 	# It may be an abbreviated.
 	#
 	match_count = 0
 	@canonical_names.each_key do |key|
 	  if key.index(pattern) == 0
-	    name = key
+	    option_name = key
 	    match_count += 1
 	  end
 	end
 	if 2 <= match_count
-	  set_error(AmbigousOption, "option `#{$_}' is ambiguous")
+	  set_error(AmbigousOption, "option `#{argument}' is ambiguous")
 	elsif match_count == 0
-	  set_error(InvalidOption, "unrecognized option `#{$_}'")
+	  set_error(InvalidOption, "unrecognized option `#{argument}'")
 	end
       end
 
       #
       # Check an argument to the option.
       #
-      if @argument_flags[name] == REQUIRED_ARGUMENT
-	if /=(.*)$/
-	  argument = $1
+      if @argument_flags[option_name] == REQUIRED_ARGUMENT
+	if argument =~ /=(.*)$/
+	  option_argument = $1
 	elsif 0 < ARGV.length
-	  argument = ARGV.shift
+	  option_argument = ARGV.shift
 	else
-	  set_error(MissingArgument, "option `#{$_}' requires an argument")
+	  set_error(MissingArgument,
+	            "option `#{argument}' requires an argument")
 	end
-      elsif @argument_flags[name] == OPTIONAL_ARGUMENT
-	if /=(.*)$/
-	  argument = $1
+      elsif @argument_flags[option_name] == OPTIONAL_ARGUMENT
+	if argument =~ /=(.*)$/
+	  option_argument = $1
 	elsif 0 < ARGV.length && ARGV[0] !~ /^-./
-	  argument = ARGV.shift
+	  option_argument = ARGV.shift
 	else
-	  argument = ''
+	  option_argument = ''
 	end
-      elsif /=(.*)$/
+      elsif argument =~ /=(.*)$/
 	set_error(NeedlessArgument,
-		  "option `#{name}' doesn't allow an argument")
+		  "option `#{option_name}' doesn't allow an argument")
       end
 
-    elsif /^(-(.))(.*)/
+    elsif argument =~ /^(-(.))(.*)/
       #
       # This is a short style option, which start with `-' (not `--').
       # Short options may be catinated (e.g. `-l -g' is equivalent to
       # `-lg').
       #
-      name, ch, @rest_singles = $1, $2, $3
+      option_name, ch, @rest_singles = $1, $2, $3
 
-      if @canonical_names.include?(name)
+      if @canonical_names.include?(option_name)
 	#
-	# The option `name' is found in `@canonical_names'.
+	# The option `option_name' is found in `@canonical_names'.
 	# Check its argument.
 	#
-	if @argument_flags[name] == REQUIRED_ARGUMENT
+	if @argument_flags[option_name] == REQUIRED_ARGUMENT
 	  if 0 < @rest_singles.length
-	    argument = @rest_singles
+	    option_argument = @rest_singles
 	    @rest_singles = ''
 	  elsif 0 < ARGV.length
-	    argument = ARGV.shift
+	    option_argument = ARGV.shift
 	  else
 	    # 1003.2 specifies the format of this message.
 	    set_error(MissingArgument, "option requires an argument -- #{ch}")
 	  end
-	elsif @argument_flags[name] == OPTIONAL_ARGUMENT
+	elsif @argument_flags[option_name] == OPTIONAL_ARGUMENT
 	  if 0 < @rest_singles.length
-	    argument = @rest_singles
+	    option_argument = @rest_singles
 	    @rest_singles = ''
 	  elsif 0 < ARGV.length && ARGV[0] !~ /^-./
-	    argument = ARGV.shift
+	    option_argument = ARGV.shift
 	  else
-	    argument = ''
+	    option_argument = ''
 	  end
 	end
       else
@@ -444,10 +445,10 @@ class GetoptLong
       # This is a non-option argument.
       # Only RETURN_IN_ORDER falled into here.
       #
-      return '', $_
+      return '', argument
     end
 
-    return @canonical_names[name], argument
+    return @canonical_names[option_name], option_argument
   end
 
   #
@@ -460,9 +461,9 @@ class GetoptLong
   #
   def each
     loop do
-      name, argument = get_option
-      break if name == nil
-      yield name, argument
+      option_name, option_argument = get_option
+      break if option_name == nil
+      yield option_name, option_argument
     end
   end
 

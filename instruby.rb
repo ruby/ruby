@@ -22,10 +22,10 @@ arch = version+"/"+CONFIG["arch"]
 
 bindir = destdir+CONFIG["bindir"]
 libdir = destdir+CONFIG["libdir"]
-rubydir = libdir+"/ruby"
-rubylibdir = rubydir+version
-archlibdir = rubydir+arch
-sitelibdir = rubydir+"/site_ruby"+version
+scriptdir = destdir+CONFIG["prefix"]+"/lib/ruby"+version
+archlibdir = libdir+"/ruby"+arch
+sitelibdir = libdir+"/site_ruby"+version
+sitearchlibdir = libdir+"/site_ruby"+arch
 mandir = destdir+CONFIG["mandir"] + "/man1"
 wdir = Dir.getwd
 
@@ -52,9 +52,10 @@ if File.exist? CONFIG["LIBRUBY_SO"]
   end
 end
 Dir.chdir wdir
-File.makedirs rubylibdir, true
+File.makedirs scriptdir, true
 File.makedirs archlibdir, true
 File.makedirs sitelibdir, true
+File.makedirs sitearchlibdir, true
 
 if RUBY_PLATFORM =~ /cygwin/ and File.exist? "import.h"
   File.install "import.h", archlibdir, 0644, true
@@ -70,7 +71,7 @@ Dir.chdir CONFIG["srcdir"]
 
 Find.find("lib") do |f|
   next unless /\.rb$/ =~ f
-  dir = rubylibdir+"/"+File.dirname(f[4..-1])
+  dir = scriptdir+"/"+File.dirname(f[4..-1])
   File.makedirs dir, true unless File.directory? dir
   File.install f, dir, 0644, true
 end
