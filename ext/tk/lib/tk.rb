@@ -1614,7 +1614,16 @@ module Tk
 
   def Tk.errorCode
     INTERP._invoke_without_enc('global', 'errorCode')
-    tk_split_simplelist(INTERP._invoke_without_enc('set', 'errorCode'))
+    code = tk_split_simplelist(INTERP._invoke_without_enc('set', 'errorCode'))
+    case code[0]
+    when 'CHILDKILLED', 'CHILDSTATUS', 'CHILDSUSP'
+      begin
+	pid = Integer(code[1])
+	code[1] = pid
+      rescue
+      end
+    end
+    code
   end
 
   def root
