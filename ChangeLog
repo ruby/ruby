@@ -37,16 +37,14 @@ Sat Mar 13 14:56:32 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 Fri Mar 12 23:52:56  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
-	* dir.c (fnmatch):
-	  directory recursion '**/' can be used with File::FNM_PATHNAME.
-	  [ruby-dev:22901]
+	* dir.c (fnmatch): directory recursion '**/' can be used with
+	  File::FNM_PATHNAME. [ruby-dev:22901]
 
-	* dir.c (fnmatch, fnmatch_helper):
-	  only '/' is accepted as path separator even in DOSISH environment.
-	  [ruby-dev:22974] [ruby-list:39337]
+	* dir.c (fnmatch, fnmatch_helper): only '/' is accepted as path
+	  separator even in DOSISH environment. [ruby-dev:22974]
+	  [ruby-list:39337]
 
-	* dir.c (fnmatch_helper):
-	  faster '*' matching.
+	* dir.c (fnmatch_helper): faster '*' matching.
 
 Fri Mar 12 20:19:16 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
