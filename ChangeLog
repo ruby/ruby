@@ -1,3 +1,7 @@
+Tue Jun 11 12:37:46 2002  KONISHI Hiromasa <konishih@fd6.so-net.ne.jp>
+
+	* bcc32/configure.bat fix.
+
 Tue Jun 11 10:18:23 2002  KONISHI Hiromasa <konishih@fd6.so-net.ne.jp>
 
 	* new platform [bccwin32] merged.

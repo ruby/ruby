@@ -5,7 +5,7 @@
 
 echo> ~tmp~.mak ####
 echo>> ~tmp~.mak conf = %0
-echo>> ~tmp~.mak $(conf:\=/):
+echo>> ~tmp~.mak $(conf:\=/): nul
 echo>> ~tmp~.mak  @del ~tmp~.mak
 echo>> ~tmp~.mak  make -Dbcc32dir="$(@D)" -f$(@D)/setup.mak %1
 make -f ~tmp~.mak
