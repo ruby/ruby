@@ -1,3 +1,7 @@
+Tue May  7 15:24:32 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* eval.c (rb_yield_0): The destination of the goto jump was wrong.
+
 Tue May  7 09:21:12 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* eval.c (superclass): undesirable "unexpected return" when the

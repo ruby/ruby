@@ -3645,8 +3645,8 @@ rb_yield_0(val, self, klass, acheck)
 	}
     }
     POP_TAG();
-  pop_state:
     POP_ITER();
+  pop_state:
     POP_CLASS();
 #if 0
     if (ruby_dyna_vars && (block->flags & BLOCK_D_SCOPE) &&
