@@ -1,3 +1,11 @@
+Thu Jun 29 18:57:05 2000  Koga Youichirou <y-koga@mms.mt.nec.co.jp>
+
+	* ruby.c (proc_options): mktemp() vulnerability removed.
+
+Wed Jun 28 14:52:28 2000  Koga Youichirou <y-koga@mms.mt.nec.co.jp>
+
+	* config.sub: NetBSD/hpcmips support.
+
 Wed Jun 28 09:30:09 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* cygwin/GNUmakefile: add $(LIBS).

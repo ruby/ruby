@@ -525,6 +525,10 @@ case $basic_machine in
 		basic_machine=i386-unknown
 		os=-netbsd
 		;;
+	hpcmips*-*)
+		basic_machine=hpcmips-unknown
+		os=-netbsd
+		;;
 	netwinder)
 		basic_machine=armv4l-corel
 		os=-linux

@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <ctype.h>
+#include <fcntl.h>
 
 #ifdef __hpux
 #include <sys/pstat.h>
@@ -342,9 +343,14 @@ proc_options(argcp, argvp)
 		exit(2);
 	    }
 	    if (!e_fp) {
+		int fd;
 		e_tmpname = ruby_mktemp();
 		if (!e_tmpname) rb_fatal("Can't mktemp");
-		e_fp = fopen(e_tmpname, "w");
+		fd = open(e_tmpname, O_CREAT|O_EXCL|O_RDWR, 0600);
+		if (fd < 0) {
+		    rb_fatal("Cannot open temporary file: %s", e_tmpname);
+		}
+		e_fp = fdopen(fd, "w");
 		if (!e_fp) {
 		    rb_fatal("Cannot open temporary file: %s", e_tmpname);
 		}
