@@ -1654,12 +1654,6 @@ rb_w32_open_osfhandle(long osfhandle, int flags)
 
 #undef getsockopt
 
-int
-rb_w32_is_socket(int fd)
-{
-    return is_socket(TO_SOCKET(fd));
-}
-
 static int
 is_socket(SOCKET sock)
 {
@@ -1684,6 +1678,12 @@ is_socket(SOCKET sock)
     //
 
     return result;
+}
+
+int
+rb_w32_is_socket(int fd)
+{
+    return is_socket(TO_SOCKET(fd));
 }
 
 //

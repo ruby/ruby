@@ -1,3 +1,7 @@
+Wed Dec 08 01:35:44 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (is_socket): reorder of function definitions.
+
 Wed Dec 08 00:44:31 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (pipe_open): win32 bidirectional pipe support.
