@@ -1,3 +1,8 @@
+Thu Jul 24 11:21:10 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* ext/io/wait/extconf.rb: removed unnecessary backward
+	  compatibility stuff.
+
 Thu Jul 24 11:09:10 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/openssl/extconf.rb: revert use of dir_config.
