@@ -5470,6 +5470,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
     volatile VALUE result = Qnil;
     int itr;
     static int tick;
+    volatile int trace_status = 0; /* 0:none 1:cfunc 2:rfunc */
     TMP_PROTECT;
 
     switch (ruby_iter->iter) {
@@ -5507,21 +5508,10 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 		       len, rb_class2name(klass), rb_id2name(id));
 	    }
 	    if (trace_func) {
-		int state;
-
 		call_trace_func("c-call", ruby_current_node, recv, id, klass);
-		PUSH_TAG(PROT_FUNC);
-		if ((state = EXEC_TAG()) == 0) {
-		    result = call_cfunc(body->nd_cfnc, recv, len, argc, argv);
-		}
-		POP_TAG();
-		ruby_current_node = ruby_frame->node;
-		call_trace_func("c-return", ruby_current_node, recv, id, klass);
-		if (state) JUMP_TAG(state);
+		trace_status = 1; /* cfunc */
 	    }
-	    else {
-		result = call_cfunc(body->nd_cfnc, recv, len, argc, argv);
-	    }
+	    result = call_cfunc(body->nd_cfnc, recv, len, argc, argv);
 	}
 	break;
 
@@ -5647,6 +5637,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 
 		if (trace_func) {
 		    call_trace_func("call", b2, recv, id, klass);
+		    trace_status = 2; /* rfunc */
 		}
 		result = rb_eval(recv, body);
 	    }
@@ -5659,8 +5650,14 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 	    POP_CLASS();
 	    POP_SCOPE();
 	    ruby_cref = saved_cref;
-	    if (trace_func) {
-		call_trace_func("return", ruby_frame->prev->node, recv, id, klass);
+	    switch (trace_status) {
+	      case 0: break;	/* none  */
+	      case 1: 		/* cfunc */
+		call_trace_func("c-return", body, recv, id, klass);
+		break;
+	      case 2: 		/* rfunc */
+		call_trace_func("return", body, recv, id, klass);
+		break;
 	    }
 	    switch (state) {
 	      case 0:

@@ -1,3 +1,7 @@
+Wed Mar 16 18:08:32 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_call0): reorganize "return" event post.
+
 Tue Mar 15 23:49:19 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv/iconv.c (Init_iconv): InvalidEncoding also should include
@@ -18,6 +22,10 @@ Mon Mar 14 12:21:03 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/timer.rb (TkRTTimer): forgot to reset the callback
 	  time. So, 'continue' do all callbacks between 'stop' and 'continue'.
+
+Mon Mar 14 08:14:56 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (str_to_id): warn for NUL containing strings.
 
 Mon Mar 14 00:13:49 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
@@ -59,6 +67,11 @@ Thu Mar 10 19:12:06 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/sample/tktextio.rb: add test part of "seek by text index
 	  modifiers"
+
+Thu Mar 10 08:10:11 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (make_regexp): need to free internal regexp structure when
+	  compilation fails.  [ruby-talk:133228]
 
 Wed Mar  9 20:25:58 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 

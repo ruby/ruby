@@ -641,6 +641,7 @@ make_regexp(s, len, flags)
     err = re_compile_pattern(s, len, rp);
 
     if (err != NULL) {
+	re_free_pattern(rp);
 	rb_reg_raise(s, len, err, 0);
     }
     return rp;
@@ -1627,7 +1628,7 @@ rb_reg_match_m(re, str)
  *  options are propagated, and new options may not be specified (a change as of
  *  Ruby 1.8). If <i>options</i> is a <code>Fixnum</code>, it should be one or
  *  more of the constants <code>Regexp::EXTENDED</code>,
- *  <code>Regexp::IGNORECASE</code>, and <code>Regexp::POSIXLINE</code>,
+ *  <code>Regexp::IGNORECASE</code>, and <code>Regexp::MULTILINE</code>,
  *  <em>or</em>-ed together. Otherwise, if <i>options</i> is not
  *  <code>nil</code>, the regexp will be case insensitive. The <i>lang</i>
  *  parameter enables multibyte support for the regexp: `n', `N' = none, `e',
@@ -1801,11 +1802,12 @@ rb_reg_quote(str)
 
 /*
  *  call-seq:
- *     Regexp.escape(str)   => new_str
- *     Regexp.quote(str)    => new_str
+ *     Regexp.escape(str)   => a_str
+ *     Regexp.quote(str)    => a_str
  *  
  *  Escapes any characters that would have special meaning in a regular
- *  expression. For any string,
+ *  expression. Returns a new escaped string, or self if no characters are
+ *  escaped.  For any string,
  *  <code>Regexp.escape(<i>str</i>)=~<i>str</i></code> will be true.
  *     
  *     Regexp.escape('\\*?{}.')   #=> \\\\\*\?\{\}\.
