@@ -1,12 +1,16 @@
+Wed Oct 25 12:30:19 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_concat): replacing array might be the receiver
+	  itself.  do not call rb_ary_push_m.
+
+	* array.c (rb_ary_replace): replacing array might be the receiver
+	  itself.  use memmove.
+
 Fri Oct 20 07:56:23 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_eval): ARGSPUSH should not modify args array.
 
-Wed Oct 18 03:10:20 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
-
-	* stable version 1.6.2 released.
-
-Thu Oct 19 16:51:46 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Thu Oct 19 14:58:17 2000  WATANABE Tetsuya  <tetsu@jpn.hp.com>
 
 	* pack.c (NUM2U32): should use NUM2ULONG().
 

@@ -288,8 +288,9 @@ rb_ary_push_m(argc, argv, ary)
 	/* make rooms by copying the last item */
 	rb_ary_store(ary, len + argc, argv[argc]);
 
-	if (argc)		/* if any rest */
+	if (argc) {		/* if any rest */
 	    MEMCPY(RARRAY(ary)->ptr + len, argv, VALUE, argc);
+	}
     }
     return ary;
 }
@@ -531,6 +532,8 @@ rb_ary_replace(ary, beg, len, rpl)
     VALUE ary, rpl;
     long beg, len;
 {
+    int rlen;
+
     if (len < 0) rb_raise(rb_eIndexError, "negative length %d", len);
     if (beg < 0) {
 	beg += RARRAY(ary)->len;
@@ -549,16 +552,17 @@ rb_ary_replace(ary, beg, len, rpl)
     else if (TYPE(rpl) != T_ARRAY) {
 	rpl = rb_ary_new3(1, rpl);
     }
+    rlen = RARRAY(rpl)->len;
 
     rb_ary_modify(ary);
     if (beg >= RARRAY(ary)->len) {
-	len = beg + RARRAY(rpl)->len;
+	len = beg + rlen;
 	if (len >= RARRAY(ary)->capa) {
 	    RARRAY(ary)->capa=len;
 	    REALLOC_N(RARRAY(ary)->ptr, VALUE, RARRAY(ary)->capa);
 	}
 	rb_mem_clear(RARRAY(ary)->ptr+RARRAY(ary)->len, beg-RARRAY(ary)->len);
-	MEMCPY(RARRAY(ary)->ptr+beg, RARRAY(rpl)->ptr, VALUE, RARRAY(rpl)->len);
+	MEMCPY(RARRAY(ary)->ptr+beg, RARRAY(rpl)->ptr, VALUE, rlen);
 	RARRAY(ary)->len = len;
     }
     else {
@@ -568,18 +572,18 @@ rb_ary_replace(ary, beg, len, rpl)
 	    len = RARRAY(ary)->len - beg;
 	}
 
-	alen = RARRAY(ary)->len + RARRAY(rpl)->len - len;
+	alen = RARRAY(ary)->len + rlen - len;
 	if (alen >= RARRAY(ary)->capa) {
 	    RARRAY(ary)->capa=alen;
 	    REALLOC_N(RARRAY(ary)->ptr, VALUE, RARRAY(ary)->capa);
 	}
 
 	if (len != RARRAY(rpl)->len) {
-	    MEMMOVE(RARRAY(ary)->ptr+beg+RARRAY(rpl)->len, RARRAY(ary)->ptr+beg+len,
+	    MEMMOVE(RARRAY(ary)->ptr+beg+rlen, RARRAY(ary)->ptr+beg+len,
 		    VALUE, RARRAY(ary)->len-(beg+len));
 	    RARRAY(ary)->len = alen;
 	}
-	MEMCPY(RARRAY(ary)->ptr+beg, RARRAY(rpl)->ptr, VALUE, RARRAY(rpl)->len);
+	MEMMOVE(RARRAY(ary)->ptr+beg, RARRAY(rpl)->ptr, VALUE, rlen);
     }
 }
 
@@ -1250,9 +1254,19 @@ VALUE
 rb_ary_concat(x, y)
     VALUE x, y;
 {
+    int xlen = RARRAY(x)->len;
+    int ylen;
+
     y = to_ary(y);
-    if (RARRAY(y)->len > 0) {
-	rb_ary_push_m(RARRAY(y)->len, RARRAY(y)->ptr, x);
+    ylen = RARRAY(y)->len;
+    if (ylen > 0) {
+	rb_ary_modify(x);
+	if (xlen + ylen > RARRAY(x)->capa) {
+	    RARRAY(x)->capa = xlen + ylen;
+	    REALLOC_N(RARRAY(x)->ptr, VALUE, RARRAY(x)->capa);
+	}
+	MEMCPY(RARRAY(x)->ptr+xlen, RARRAY(y)->ptr, VALUE, ylen);
+	RARRAY(x)->len = xlen + ylen;
     }
     return x;
 }

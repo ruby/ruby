@@ -9,39 +9,42 @@
 
 module Open3
   #[stdin, stdout, stderr] = popen3(command);
-  def popen3(cmd)
+  def popen3(*cmd)
     pw = IO::pipe   # pipe[0] for read, pipe[1] for write
     pr = IO::pipe
     pe = IO::pipe
 
     pid = fork{
       # child
-      pw[1].close
-      STDIN.reopen(pw[0])
-      pw[0].close
+      fork{
+	# grandchild
+	pw[1].close
+	STDIN.reopen(pw[0])
+	pw[0].close
 
-      pr[0].close
-      STDOUT.reopen(pr[1])
-      pr[1].close
+	pr[0].close
+	STDOUT.reopen(pr[1])
+	pr[1].close
 
-      pe[0].close
-      STDERR.reopen(pe[1])
-      pe[1].close
+	pe[0].close
+	STDERR.reopen(pe[1])
+	pe[1].close
 
-      exec(cmd)
-      _exit 127
+	exec(*cmd)
+      }
     }
 
     pw[0].close
     pr[1].close
     pe[1].close
-    Thread.start do
-      sleep 1
-      Process.waitpid(pid)
-    end
-    pi = [ pw[1], pr[0], pe[0] ]
+    Process.waitpid(pid)
+    pi = [pw[1], pr[0], pe[0]]
     if defined? yield
-      return yield *pi
+      begin
+	return yield *pi
+      ensure
+	pi.each{|p| p.close unless p.closed?}
+      end
     end
     pi
   end
