@@ -9,6 +9,9 @@ srcdir = $(WIN32DIR:/win32=)
 !else
 srcdir = $(WIN32DIR)/..
 !endif
+!ifndef prefix
+prefix = /usr
+!endif
 OS = mswin32
 RT = msvcrt
 INCLUDE = !include
@@ -20,6 +23,7 @@ MAKEFILE = Makefile
 !endif
 ARCH = PROCESSOR_ARCHITECTURE
 CPU = PROCESSOR_LEVEL
+CPP = cl -nologo -EP
 
 all: -prologue- -generic- -epilogue-
 i386-$(OS): -prologue- -i386- -epilogue-
@@ -32,11 +36,13 @@ alpha-$(OS): -prologue- -alpha- -epilogue-
 	@type << > $(MAKEFILE)
 ### Makefile for ruby $(OS) ###
 srcdir = $(srcdir:\=/)
+prefix = $(prefix:\=/)
+EXTSTATIC = $(EXTSTATIC)
 !if defined(RDOCTARGET)
 RDOCTARGET = $(RDOCTARGET)
 !endif
 <<
-	@cl -nologo -EP -I$(srcdir) -DRUBY_EXTERN="//" <<"Creating $(MAKEFILE)" >> $(MAKEFILE)
+	@$(CPP) -I$(srcdir) -DRUBY_EXTERN="//" <<"Creating $(MAKEFILE)" >> $(MAKEFILE)
 #include "version.h"
 MAJOR = RUBY_VERSION_MAJOR
 MINOR = RUBY_VERSION_MINOR
@@ -76,7 +82,6 @@ $(CPU) = $(PROCESSOR_LEVEL)
 # RT = $(RT)
 # RUBY_INSTALL_NAME = ruby
 # RUBY_SO_NAME = $$(RT)-$$(RUBY_INSTALL_NAME)$$(MAJOR)$$(MINOR)
-# prefix = /usr
 # CFLAGS = -nologo -MD $$(DEBUGFLAGS) $$(OPTFLAGS) $$(PROCESSOR_FLAG)
 # CPPFLAGS = -I. -I$$(srcdir) -I$$(srcdir)/missing -DLIBRUBY_SO=\"$$(LIBRUBY_SO)\"
 # STACK = 0x2000000
@@ -87,6 +92,5 @@ $(CPU) = $(PROCESSOR_LEVEL)
 
 $(INCLUDE) $$(srcdir)/win32/Makefile.sub
 <<
-	@if exist config.h del config.h
-	@if exist config.status del config.status
+	@$(srcdir:/=\)\win32\rm.bat config.h config.status
 	@echo type `$(MAKE)' to make ruby for $(OS).

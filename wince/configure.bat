@@ -82,7 +82,7 @@ goto :loop
   echo   --help                  display this help
   echo   --srcdir=DIR            find the sources in DIR [configure dir or `..']
   echo Installation directories:
-  echo   --prefix=PREFIX         install files in PREFIX [/usr]
+  echo   --prefix=PREFIX         install files in PREFIX (ignored currently)
   echo System types:
   echo   --target=TARGET         configure for TARGET [i386-mswin32]
   echo Optional Package:

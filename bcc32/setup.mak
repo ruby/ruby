@@ -9,7 +9,9 @@ srcdir = $(bcc32dir:/bcc32/=/)
 !else
 srcdir = $(bcc32dir)../
 !endif
-
+!ifndef prefix
+prefix = /usr
+!endif
 OS = bccwin32
 RT = $(OS)
 INCLUDE = !include
@@ -33,6 +35,11 @@ alpha-$(OS): -prologue- -alpha- -epilogue-
 	@type > $(MAKEFILE) &&|
 \#\#\# Makefile for ruby $(OS) \#\#\#
 srcdir = $(srcdir:\=/)
+prefix = $(prefix:\=/)
+EXTSTATIC = $(EXTSTATIC)
+!if defined(RDOCTARGET)
+RDOCTARGET = $(RDOCTARGET)
+!endif
 |
 	@cpp32 -I$(srcdir) -DRUBY_EXTERN="//" -P- -o$(MAKEFILE) > nul &&|
 \#include "version.h"
@@ -77,7 +84,6 @@ PROCESSOR_LEVEL = $(PROCESSOR_LEVEL)
 \# RT = $(RT)
 \# RUBY_INSTALL_NAME = ruby
 \# RUBY_SO_NAME = $$(RT)-$$(RUBY_INSTALL_NAME)$$(MAJOR)$$(MINOR)
-\# prefix = /usr
 \# CFLAGS = -q $$(DEBUGFLAGS) $$(OPTFLAGS) $$(PROCESSOR_FLAG) -w- -wsus -wcpt -wdup -wext -wrng -wrpt -wzdi
 \# CPPFLAGS = -I. -I$$(srcdir) -I$$(srcdir)missing -DLIBRUBY_SO=\"$$(LIBRUBY_SO)\"
 \# STACK = 0x2000000
@@ -86,6 +92,5 @@ PROCESSOR_LEVEL = $(PROCESSOR_LEVEL)
 \# EXTLIBS = cw32.lib import32.lib user32.lib kernel32.lib
 $(INCLUDE) $$(srcdir)bcc32/Makefile.sub
 |
-	@if exist config.h del config.h
-	@if exist config.status del config.status
+	@$(srcdir:/=\)\win32\rm.bat config.h config.status
 	@echo type "`$(MAKE)'" to make ruby for $(OS).
