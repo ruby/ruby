@@ -1,3 +1,13 @@
+Sun May 12 03:01:08 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* missing.h: add for missing/*.c.
+
+	* ruby.h: add `#include "missing.h"'.
+
+	* Makefile.in: add the dependency of missing.h by gcc -MM.
+
+	* MANIFEST: add missing.h
+
 Sat May 11 10:52:09 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* dir.c (glob_helper): remove escaping backslashes.

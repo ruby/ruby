@@ -41,6 +41,7 @@ lex.c
 main.c
 marshal.c
 math.c
+missing.h
 mkconfig.rb
 node.h
 numeric.c
