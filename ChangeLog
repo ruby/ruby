@@ -1,3 +1,8 @@
+Mon Feb 18 14:06:28 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* misc/ruby-mode.el (ruby-block-hanging-re): rescue block was too
+	  indented.
+
 Sun Feb 17 23:41:37 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* mkconfig.rb (Config::expand): expand ${} too.

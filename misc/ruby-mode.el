@@ -25,8 +25,12 @@
   "\\(\\s *\\(class\\|module\\|def\\)\\)\\|if\\|unless\\|case\\|while\\|until\\|for\\|begin"
     )
 
+(defconst ruby-modifier-beg-re
+  "if\\|unless\\|while\\|until"
+  )
+
 (defconst ruby-modifier-re
-  "if\\|unless\\|while\\|until\\|rescue"
+  (concat ruby-modifier-beg-re "\\|rescue")
   )
 
 (defconst ruby-block-mid-re
@@ -38,7 +42,7 @@
   )
 
 (defconst ruby-block-hanging-re
-  (concat ruby-modifier-re "\\|" ruby-block-op-re)
+  (concat ruby-modifier-beg-re "\\|" ruby-block-op-re)
   )
 
 (defconst ruby-block-end-re "end")
