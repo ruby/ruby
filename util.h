@@ -41,7 +41,6 @@ unsigned long scan_hex _((const char*, int, int*));
 
 #if defined(MSDOS) || defined(__CYGWIN32__) || defined(_WIN32)
 void ruby_add_suffix();
-#define add_suffix ruby_add_suffix
 #endif
 
 void ruby_qsort _((void*, const int, const int, int (*)()));
@@ -51,17 +50,17 @@ void ruby_setenv _((const char*, const char*));
 void ruby_unsetenv _((const char*));
 #undef setenv
 #undef unsetenv
-#define setenv(name,val) ruby_setenv((name),(val))
-#define unsetenv(name,val) ruby_unsetenv((name));
+#define setenv(name,val) ruby_setenv(name,val)
+#define unsetenv(name,val) ruby_unsetenv(name);
 
 char *ruby_strdup _((const char*));
 #undef strdup
-#define strdup(s) ruby_strdup((s))
+#define strdup(s) ruby_strdup(s)
 
 char *ruby_getcwd _((void));
 #define my_getcwd() ruby_getcwd()
 
 double ruby_strtod _((const char*, char **));
-#define strtod(s,e) ruby_strtod((s),(e))
+#define strtod(s,e) ruby_strtod(s,e)
 
 #endif /* UTIL_H */

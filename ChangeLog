@@ -1,3 +1,7 @@
+Mon Aug  4 10:27:22 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* util.h: remove unnecessary parentheses.  [ruby-dev:20879]
+
 Mon Aug  4 10:00:47 2003  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (receive_responses): raise exception to
