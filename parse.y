@@ -531,6 +531,10 @@ mlhs_node	: variable
 		    {
 			$$ = attrset($1, $3);
 		    }
+		| primary '.' tCONSTANT
+		    {
+			$$ = attrset($1, $3);
+		    }
 		| backref
 		    {
 		        rb_backref_error($1);
@@ -550,6 +554,10 @@ lhs		: variable
 			$$ = attrset($1, $3);
 		    }
 		| primary tCOLON2 tIDENTIFIER
+		    {
+			$$ = attrset($1, $3);
+		    }
+		| primary '.' tCONSTANT
 		    {
 			$$ = attrset($1, $3);
 		    }
@@ -3172,13 +3180,16 @@ yylex()
 	  case '1': case '2': case '3':
 	  case '4': case '5': case '6':
 	  case '7': case '8': case '9':
+	    tokadd('$');
 	    while (ISDIGIT(c)) {
 		tokadd(c);
 		c = nextc();
 	    }
+	    if (is_identchar(c))
+		break;
 	    pushback(c);
 	    tokfix();
-	    yylval.node = NEW_NTH_REF(atoi(tok()));
+	    yylval.node = NEW_NTH_REF(atoi(tok()+1));
 	    return tNTH_REF;
 
 	  default:
@@ -3232,7 +3243,7 @@ yylex()
     tokfix();
 
     {
-	int result;
+	int result = 0;
 
 	switch (tok()[0]) {
 	  case '$':
@@ -3260,14 +3271,10 @@ yylex()
 		}
 	    }
 
-	    if (ISUPPER(tok()[0])) {
-		result = tCONSTANT;
-	    }
-	    else if (toklast() == '!' || toklast() == '?') {
+	    if (toklast() == '!' || toklast() == '?') {
 		result = tFID;
 	    }
 	    else {
-		result = tIDENTIFIER;
 		if (lex_state == EXPR_FNAME) {
 		    if ((c = nextc()) == '=' && !peek('=') && !peek('~')) {
 			tokadd(c);
@@ -3275,6 +3282,12 @@ yylex()
 		    else {
 			pushback(c);
 		    }
+		}
+		if (result == 0 && ISUPPER(tok()[0])) {
+		    result = tCONSTANT;
+		}
+		else {
+		    result = tIDENTIFIER;
 		}
 	    }
 	    if (lex_state == EXPR_BEG ||

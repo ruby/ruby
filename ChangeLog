@@ -1,3 +1,28 @@
+Mon May  8 23:17:36 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* dln.c (dln_init): remove possible buffer overrun.  This is
+	  suggested by Aleksi Niemela <aleksi.niemela@cinnober.com>
+
+	* dln.c (init_funcname): ditto.
+
+Sat May  6 23:35:47 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (lhs): should allow `obj.Attr = 5' type expression.
+
+Sat May  6 15:46:08 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* ext/socket/extconf.rb: add a new configure option to force use
+	  of the WIDE Project's getaddrinfo(): --enbale-wide-getaddrinfo.
+
+Fri May  5 21:19:22 2000  MOROHOSHI Akihiko  <moro@remus.dti.ne.jp>
+
+	* parse.y (yylex): allow '$1foo' and such.
+
+Fri May  5 03:25:15 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_compile_fastmap): charset_not for multibyte
+	  characters excluded too many characters.
+
 Wed Apr 26 15:23:02 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* string.c (rb_str_succ): insert carrying character just before

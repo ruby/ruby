@@ -173,7 +173,7 @@ have_header("netinet/tcp.h")
 have_header("netinet/udp.h")
 
 $getaddr_info_ok = false
-if try_run(<<EOF)
+if not enable_config("wide-getaddrinfo", false) and try_run(<<EOF)
 #include <sys/types.h>
 #include <netdb.h>
 #include <string.h>
@@ -290,6 +290,22 @@ else
   have_func("inet_pton") or have_func("inet_aton")
   have_header("arpa/nameser.h")
   have_header("resolv.h")
+end
+
+if !try_link(<<EOF)
+#include <sys/types.h>
+#include <netdb.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+int
+main()
+{
+   socklen_t len;
+   return 0;
+}
+EOF
+  $CFLAGS="-Dsocklen_t=int "+$CFLAGS
 end
 
 have_header("sys/un.h")

@@ -81,7 +81,7 @@ OBJS	      = array.@OBJEXT@ \
 		version.@OBJEXT@ \
 		$(MISSING)
 
-all:		miniruby$(EXEEXT) rbconfig.rb
+all:		miniruby$(EXEEXT) rbconfig.rb $(LIBRUBY)
 		@./miniruby$(EXEEXT) -Xext extmk.rb @EXTSTATIC@
 
 miniruby$(EXEEXT):	config.status $(LIBRUBY_A) $(MAINOBJ) dmyext.@OBJEXT@

@@ -4878,6 +4878,8 @@ rb_f_require(obj, fname)
 		buf = ALLOCA_N(char, strlen(file)+sizeof(DLEXT)+1);
 		strcpy(buf, feature);
 		ext = strrchr(buf, '.');
+		strcpy(ext, ".so");
+		if (rb_provided(buf)) return Qfalse;
 		strcpy(ext, DLEXT);
 		file = feature = buf;
 		if (rb_provided(feature)) return Qfalse;
@@ -6250,8 +6252,8 @@ thread_free(th)
     th->stk_ptr = 0;
     if (th->locals) st_free_table(th->locals);
     if (th->status != THREAD_KILLED) {
-	th->prev->next = th->next;
-	th->next->prev = th->prev;
+	if (th->prev) th->prev->next = th->next;
+	if (th->next) th->next->prev = th->prev;
     }
     if (th != main_thread) free(th);
 }
@@ -7497,6 +7499,7 @@ rb_callcc(self)
     for (tag=prot_tag; tag; tag=tag->prev) {
 	scope_dup(tag->scope);
     }
+    th->prev = th->next = 0;
     if (THREAD_SAVE_CONTEXT(th)) {
 	return th->result;
     }

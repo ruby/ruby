@@ -2937,23 +2937,22 @@ re_compile_fastmap(bufp)
 	  for (j = 0,c = 0;j < (int)size; j++) {
 	    unsigned int cc = EXTRACT_MBC(&p[j*8]);
 	    beg = WC2MBC1ST(cc);
-	    while (c < beg) {
+	    while (c <= beg) {
 	      if (ismbchar(c))
 		fastmap[c] = 1;
 	      c++;
 	    }
 
 	    cc = EXTRACT_MBC(&p[j*8+4]);
-	    beg = WC2MBC1ST(cc);
 	    if (cc < 0xff) {
 	      num_literal = 1;
-	      while (c <= beg) {
+	      while (c <= cc) {
 		if (ismbchar(c))
 		  fastmap[c] = 1;
 		c++;
 	      }
 	    }
-	    c = beg + 1;
+	    c = WC2MBC1ST(cc);
 	  }
 
 	  for (j = c; j < (1 << BYTEWIDTH); j++) {

@@ -102,7 +102,7 @@ init_funcname(buf, file)
 	if (*p == '/') slash = p;
 #endif
 
-    sprintf(buf, FUNCNAME_PATTERN, slash + 1);
+    snprintf(buf, MAXPATHLEN, FUNCNAME_PATTERN, slash + 1);
     for (p = buf; *p; p++) {         /* Delete suffix if it exists */
 	if (*p == '.') {
 	    *p = '\0'; break;
@@ -371,6 +371,10 @@ dln_init(prog)
 	while (read(fd, p, 1) == 1) {
 	    if (*p == '\n' || *p == '\t' || *p == ' ') break;
 	    p++;
+	    if (p-buf >= MAXPATHLEN) {
+		dln_errno = ENAMETOOLONG;
+		return -1;
+	    }
 	}
 	*p = '\0';
 
@@ -1185,7 +1189,7 @@ aix_loaderror(const char *pathname)
 #define LOAD_ERRTAB_LEN	(sizeof(load_errtab)/sizeof(load_errtab[0]))
 #define ERRBUF_APPEND(s) strncat(errbuf, s, sizeof(errbuf)-strlen(errbuf)-1)
 
-    sprintf(errbuf, "load failed - %.200s ", pathname);
+    snprintf(errbuf, 1024, "load failed - %.200s ", pathname);
 
     if (!loadquery(1, &message[0], sizeof(message))) 
 	ERRBUF_APPEND(strerror(errno));
@@ -1411,20 +1415,20 @@ dln_load(file)
       }
       
       /* find symbol for module initialize function. */
-	  /* The Be Book KernelKit Images section described to use
-		 B_SYMBOL_TYPE_TEXT for symbol of function, not
-		 B_SYMBOL_TYPE_CODE. Why ? */
-	  /* strcat(init_fct_symname, "__Fv"); */  /* parameter nothing. */
-	  /* "__Fv" dont need! The Be Book Bug ? */
+      /* The Be Book KernelKit Images section described to use
+	 B_SYMBOL_TYPE_TEXT for symbol of function, not
+	 B_SYMBOL_TYPE_CODE. Why ? */
+      /* strcat(init_fct_symname, "__Fv"); */  /* parameter nothing. */
+      /* "__Fv" dont need! The Be Book Bug ? */
       err_stat = get_image_symbol(img_id, buf,
 				  B_SYMBOL_TYPE_TEXT, (void **)&init_fct);
 
       if (err_stat != B_NO_ERROR) {
-	    char real_name[1024];
-	    strcpy(real_name, buf);
-	    strcat(real_name, "__Fv");
-        err_stat = get_image_symbol(img_id, real_name,
-				  B_SYMBOL_TYPE_TEXT, (void **)&init_fct);
+	  char real_name[MAXPATHLEN];
+	  strcpy(real_name, buf);
+	  strcat(real_name, "__Fv");
+	  err_stat = get_image_symbol(img_id, real_name,
+				      B_SYMBOL_TYPE_TEXT, (void **)&init_fct);
       }
 
       if ((B_BAD_IMAGE_ID == err_stat) || (B_BAD_INDEX == err_stat)) {

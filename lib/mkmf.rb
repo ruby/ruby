@@ -328,6 +328,11 @@ def create_makefile(target)
   end
   $DLDFLAGS = CONFIG["DLDFLAGS"]
 
+  if $configure_args['--enable-shared']
+    $libs = CONFIG["LIBRUBYARG"] + " " + $libs
+    $DLDFLAGS = $DLDFLAGS + " -L$(topdir)"
+  end
+
   if RUBY_PLATFORM =~ /beos/
     $libs = $libs + " " + CONFIG["LIBRUBYARG"]
     $DLDFLAGS = $DLDFLAGS + " -L" + CONFIG["prefix"] + "/lib"
@@ -338,8 +343,6 @@ def create_makefile(target)
     if File.exist? target + ".def"
       defflag = "--def=" + target + ".def"
     end
-    $libs = $libs + " " + CONFIG["LIBRUBYARG"]
-    $DLDFLAGS = $DLDFLAGS + " -L$(topdir)"
   end
 
   unless $objs then
