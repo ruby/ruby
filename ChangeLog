@@ -1,3 +1,8 @@
+Sun Jan 11 23:54:41 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* env.h (ruby_frame, ruby_scope, ruby_in_eval, ruby_class,
+	  ruby_dyna_vars): export.  [ruby-dev:22566]
+
 Sun Jan 11 02:35:53 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/socket/socket.c (make_hostent): a bug in brace position.
@@ -7,7 +12,7 @@ Sun Jan 11 02:35:53 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Sun Jan 11 02:07:47 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/rdoc/ri/ri_options.rb (RI::Options::OptionList::OptionList): 
+	* lib/rdoc/ri/ri_options.rb (RI::Options::OptionList::OptionList):
 	  Also accept command line options via the 'RI' environment variable.
 
 Sat Jan 10 21:27:41 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>

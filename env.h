@@ -13,7 +13,7 @@
 #ifndef ENV_H
 #define ENV_H
 
-extern struct FRAME {
+RUBY_EXTERN struct FRAME {
     VALUE self;
     int argc;
     VALUE *argv;
@@ -33,7 +33,7 @@ void rb_gc_mark_frame _((struct FRAME *));
 #define FRAME_ALLOCA 0
 #define FRAME_MALLOC 1
 
-extern struct SCOPE {
+RUBY_EXTERN struct SCOPE {
     struct RBasic super;
     ID *local_tbl;
     VALUE *local_vars;
@@ -45,9 +45,9 @@ extern struct SCOPE {
 #define SCOPE_NOSTACK 2
 #define SCOPE_DONT_RECYCLE 4
 
-extern int ruby_in_eval;
+RUBY_EXTERN int ruby_in_eval;
 
-extern VALUE ruby_class;
+RUBY_EXTERN VALUE ruby_class;
 
 struct RVarmap {
     struct RBasic super;
@@ -55,6 +55,6 @@ struct RVarmap {
     VALUE val;
     struct RVarmap *next;
 };
-extern struct RVarmap *ruby_dyna_vars;
+RUBY_EXTERN struct RVarmap *ruby_dyna_vars;
 
 #endif /* ENV_H */
