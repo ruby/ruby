@@ -1142,6 +1142,28 @@ if test "$search_path" != ""; then
     AC_DEFINE_UNQUOTED(RUBY_SEARCH_PATH,"$search_path")
 fi
 
+AC_ARG_WITH(mantype,
+		[  --with-mantype=TYPE specify man page type; TYPE is one of man and doc],
+		[
+			case "$withval" in
+			man|doc)
+				MANTYPE=$withval
+				;;
+			*)
+				AC_MSG_ERROR(invalid man type: $withval)
+				;;
+			esac
+		])
+if test -z "$MANTYPE"; then
+	AC_PATH_PROGS(NROFF, nroff awf, /bin/false, "/usr/bin:/usr/ucb")
+	if ${NROFF} -mdoc ${srcdir}/ruby.1 >/dev/null 2>&1; then
+		MANTYPE=doc
+	else
+		MANTYPE=man
+	fi
+fi
+AC_SUBST(MANTYPE)
+
 if test -f config.h && tr -d '\015' < confdefs.h | cmp -s config.h -; then
   echo "config.h unchanged"
 else

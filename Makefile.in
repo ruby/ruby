@@ -83,6 +83,8 @@ OBJS	      = array.@OBJEXT@ \
 		version.@OBJEXT@ \
 		$(MISSING)
 
+MANTYPE	      = @MANTYPE@
+
 all:		miniruby$(EXEEXT) @PREP@ rbconfig.rb $(LIBRUBY)
 		@@MINIRUBY@ -Cext extmk.rb @EXTSTATIC@
 
@@ -105,7 +107,7 @@ $(LIBRUBY_SO):	$(OBJS) dmyext.@OBJEXT@ miniruby$(EXEEXT)
 				$(LIBRUBY_ALIASES) || true
 
 install:	rbconfig.rb
-		@MINIRUBY@ $(srcdir)/instruby.rb $(DESTDIR)
+		@MINIRUBY@ $(srcdir)/instruby.rb --mantype=$(MANTYPE) $(DESTDIR)
 
 clean-ext:
 		@-@MINIRUBY@ -Cext extmk.rb clean 2> /dev/null || true

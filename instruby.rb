@@ -4,11 +4,16 @@ load "./rbconfig.rb"
 include Config
 
 File.umask(0)
-destdir = ARGV[0] || ''
 
 $:.unshift CONFIG["srcdir"]+"/lib"
 require "ftools"
 require "find"
+require "getopts"
+require "tempfile"
+
+getopts(nil, "mantype:doc")
+mantype = $OPT["mantype"]
+destdir = ARGV[0] || ''
 
 exeext = CONFIG["EXEEXT"]
 if ENV["prefix"]
@@ -27,7 +32,7 @@ rubylibdir = destdir+CONFIG["prefix"]+"/lib/ruby"+version
 archlibdir = rubylibdir+arch
 sitelibdir = destdir+CONFIG["sitedir"]+version
 sitearchlibdir = sitelibdir+arch
-mandir = destdir+CONFIG["mandir"] + "/man1"
+mandir = destdir+CONFIG["mandir"] + "/man"
 wdir = Dir.getwd
 
 File.makedirs bindir, true
@@ -120,17 +125,41 @@ Find.find("lib") do |f|
   File.install f, dir, 0644, true
 end
 
-for f in Dir["*.h"]
+Dir.glob("*.h") do |f|
   File.install f, archlibdir, 0644, true
 end
+
 if RUBY_PLATFORM =~ /mswin32|mingw/
   File.makedirs archlibdir + "/win32", true
   File.install "win32/win32.h", archlibdir + "/win32", 0644, true
 end
 File.install wdir+'/'+CONFIG['LIBRUBY_A'], archlibdir, 0644, true
 
-File.makedirs mandir, true
-File.install "ruby.1", mandir+"/"+ruby_install_name+".1", 0644, true
+Dir.glob("*.[1-9]") do |mdoc|
+  section = mdoc[-1,1]
+
+  mandestdir = mandir + section
+  destfile = File.join(mandestdir, mdoc.sub(/ruby/, ruby_install_name))
+
+  File.makedirs mandestdir, true
+
+  if mantype == "doc"
+    File.install mdoc, destfile, 0644, true
+  else
+    require 'mdoc2man.rb'
+
+    w = Tempfile.open(mdoc)
+
+    open(mdoc) { |r|
+      Mdoc2Man.mdoc2man(r, w)
+    }
+
+    w.close
+
+    File.install w.path, destfile, 0644, true
+  end
+end
+
 Dir.chdir wdir
 File.install "config.h", archlibdir, 0644, true
 File.install "rbconfig.rb", archlibdir, 0644, true

@@ -1,3 +1,18 @@
+Thu Feb 20 23:11:42 2003  Akinori MUSHA  <knu@iDaemons.org>
+
+	* mdoc2man.rb: New file.  A mdoc to man converter ported from
+	  Perl. [merged from 1.8]
+
+	* configure.in (MANTYPE): Detect if the system's nroff(1) groks
+	  mdoc.  Provide a new option --with-mantype={doc|man} in case the
+	  check does not work as expected. [merged from 1.8]
+
+	* Makefile.in (MANTYPE): Define MANTYPE and pass it to
+	  instruby.rb. [merged from 1.8]
+
+	* instruby.rb: Convert mdoc manpages to man for systems which
+	  nroff(1) does not grok mdoc. [merged from 1.8]
+
 Fri Feb 14 14:25:24 2003  akira yamada  <akira@arika.org>
 
 	* lib/uri/generic.rb, lib/uri/ldap.rb, lib/uri/mailto.ldap: all foo=()
