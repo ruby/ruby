@@ -1,3 +1,7 @@
+Thu Dec 25 22:29:53 2003  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* string.c (rb_str_update): don't return any value.
+
 Thu Dec 25 15:30:17 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_update): call rb_str_modify().
