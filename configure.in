@@ -833,7 +833,7 @@ if test "$with_dln_a_out" != yes; then
 			rb_cv_dlopen=yes;;
 	cygwin*|mingw*)	: ${LDSHARED="${CC} -shared -s"}
 			XLDFLAGS='-Wl,--stack,0x02000000'
-			DLDFLAGS="${DLDFLAGS} "'$(DEFFILE)'
+			DLDFLAGS="${DLDFLAGS} -Wl,--enable-auto-import "'$(DEFFILE)'
 			rb_cv_dlopen=yes ;;
 	hiuxmpp)	LDSHARED='ld -r' ;;
 	atheos*) 	LDSHARED="$CC -shared"
@@ -1178,6 +1178,7 @@ case "$target_os" in
 	    COMMON_LIBS=m
 	    COMMON_MACROS="WIN32_LEAN_AND_MEAN="
 	    COMMON_HEADERS="windows.h winsock.h"
+	    XCFLAGS='-D__USE_CRTIMP'
 	    ;;
 	esac
 	XCFLAGS="$XCFLAGS -DRUBY_EXPORT"
