@@ -1,3 +1,7 @@
+Mon Mar 18 12:52:01 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/iconv/extconf.rb: workaround for GNU libiconv.
+
 Mon Mar 18 10:55:03 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* parse.y (parse_string): part of multi-byte sequence must not
