@@ -1,3 +1,7 @@
+Tue Mar  4 01:17:08 2003  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/Win32API/MANIFEST: Belatedly add lib/win32/registry.rb.
+
 Tue Mar  4 00:33:04 2003  Akinori MUSHA  <knu@iDaemons.org>
 
 	* MANIFEST: Belatedly add Test::Unit files.  D'oh!
