@@ -282,11 +282,12 @@ module OpenURI
 
     def content_type_parse # :nodoc:
       v = @meta['content-type']
-      if v && %r{\A#{RE_LWS}?(#{RE_TOKEN})#{RE_LWS}?/(#{RE_TOKEN})#{RE_LWS}?(#{RE_PARAMETERS})\z}o =~ v
+      # The last (?:;#{RE_LWS}?)? matches extra ";" which is not permitted by RFC2045.
+      if v && %r{\A#{RE_LWS}?(#{RE_TOKEN})#{RE_LWS}?/(#{RE_TOKEN})#{RE_LWS}?(#{RE_PARAMETERS})(?:;#{RE_LWS}?)?\z}no =~ v
         type = $1.downcase
         subtype = $2.downcase
         parameters = []
-        $3.scan(/;#{RE_LWS}?(#{RE_TOKEN})#{RE_LWS}?=#{RE_LWS}?(?:(#{RE_TOKEN})|(#{RE_QUOTED_STRING}))/o) {|att, val, qval|
+        $3.scan(/;#{RE_LWS}?(#{RE_TOKEN})#{RE_LWS}?=#{RE_LWS}?(?:(#{RE_TOKEN})|(#{RE_QUOTED_STRING}))/no) {|att, val, qval|
           val = qval.gsub(/[\r\n\t !#-\[\]-~\x80-\xff]+|(\\[\x00-\x7f])/) { $1 ? $1[1,1] : $& } if qval
           parameters << [att.downcase, val]
         }
