@@ -26,7 +26,7 @@ module Net
     FTP_PORT = 21
     CRLF = "\r\n"
     
-    attr_accessor :passive, :return_code, :debug_mode
+    attr_accessor :passive, :return_code, :debug_mode, :resume
     attr_reader :welcome, :lastresp
     
     def FTP.open(host, user = nil, passwd = nil, acct = nil)
@@ -38,6 +38,7 @@ module Net
       @passive = false
       @return_code = "\n"
       @debug_mode = false
+      @resume = false
       if host
 	connect(host)
 	if user
@@ -188,16 +189,28 @@ module Net
     end
     private :makepasv
     
-    def transfercmd(cmd)
+    def transfercmd(cmd, rest_offset = nil)
       if @passive
 	host, port = makepasv
 	conn = open_socket(host, port)
+	if @resume and rest_offset
+	  resp = sendcmd("REST " + rest_offset.to_s) 
+	  if resp[0] != ?3
+	    raise FTPReplyError, resp
+	  end
+	end
 	resp = sendcmd(cmd)
 	if resp[0] != ?1
 	  raise FTPReplyError, resp
 	end
       else
 	sock = makeport
+	if @resume and rest_offset
+	  resp = sendcmd("REST " + rest_offset.to_s) 
+	  if resp[0] != ?3
+	    raise FTPReplyError, resp
+	  end
+	end
 	resp = sendcmd(cmd)
 	if resp[0] != ?1
 	  raise FTPReplyError, resp
@@ -245,10 +258,10 @@ module Net
       @welcome = resp
     end
     
-    def retrbinary(cmd, blocksize, callback = Proc.new)
+    def retrbinary(cmd, blocksize, rest_offset = nil, callback = Proc.new)
       synchronize do
 	voidcmd("TYPE I")
-	conn = transfercmd(cmd)
+	conn = transfercmd(cmd, rest_offset)
 	loop do
 	  data = conn.read(blocksize)
 	  break if data == nil
@@ -283,14 +296,14 @@ module Net
       end
     end
     
-    def storbinary(cmd, file, blocksize, callback = nil)
+    def storbinary(cmd, file, blocksize, rest_offset = nil, callback = nil)
       if iterator?
 	callback = Proc.new
       end
       use_callback = callback.is_a?(Proc)
       synchronize do
 	voidcmd("TYPE I")
-	conn = transfercmd(cmd)
+	conn = transfercmd(cmd, rest_offset)
 	loop do
 	  buf = file.read(blocksize)
 	  break if buf == nil
@@ -329,10 +342,16 @@ module Net
 	callback = Proc.new
       end
       use_callback = callback.is_a?(Proc)
-      f = open(localfile, "w")
+      if @resume
+	rest_offset = File.size?(localfile)
+	f = open(localfile, "a")
+      else
+	rest_offset = nil
+	f = open(localfile, "w")
+      end
       begin
 	f.binmode
-	retrbinary("RETR " + remotefile, blocksize) do |data|
+	retrbinary("RETR " + remotefile, blocksize, rest_offset) do |data|
 	  f.write(data)
 	  callback.call(data) if use_callback
 	end
@@ -363,10 +382,15 @@ module Net
 	callback = Proc.new
       end
       use_callback = callback.is_a?(Proc)
+      if @resume
+	rest_offset = size(remotefile)
+      else
+	rest_offset = nil
+      end
       f = open(localfile)
       begin
 	f.binmode
-	storbinary("STOR " + remotefile, f, blocksize) do |data|
+	storbinary("STOR " + remotefile, f, blocksize, rest_offset) do |data|
 	  callback.call(data) if use_callback
 	end
       ensure

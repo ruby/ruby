@@ -1,3 +1,7 @@
+Thu Jun 22 13:49:02 2000  Uechi Yasumasa <uechi@ryucom.ne.jp>
+
+	* lib/net/ftp.rb: support resume.
+
 Thu Jun 22 13:37:19 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* eval.c (rb_thread_sleep_forever): merge pause() macro.
