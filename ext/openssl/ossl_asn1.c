@@ -813,11 +813,12 @@ ossl_asn1_traverse(VALUE self, VALUE obj)
 {
     unsigned char *p;
     long offset = 0;
+    volatile VALUE tmp;
 
     obj = ossl_to_der_if_possible(obj);
-    obj = rb_str_new4(StringValue(obj));
-    p = RSTRING(obj)->ptr;
-    ossl_asn1_decode0(&p, RSTRING(obj)->len, &offset, 0, 0, 1);
+    tmp = rb_str_new4(StringValue(obj));
+    p = RSTRING(tmp)->ptr;
+    ossl_asn1_decode0(&p, RSTRING(tmp)->len, &offset, 0, 0, 1);
 
     return Qnil;
 }
@@ -828,11 +829,12 @@ ossl_asn1_decode(VALUE self, VALUE obj)
     VALUE ret, ary;
     unsigned char *p;
     long offset = 0;
+    volatile VALUE tmp;
 
     obj = ossl_to_der_if_possible(obj);
-    obj = rb_str_new4(StringValue(obj));
-    p = RSTRING(obj)->ptr;
-    ary = ossl_asn1_decode0(&p, RSTRING(obj)->len, &offset, 0, 1, 0);
+    tmp = rb_str_new4(StringValue(obj));
+    p = RSTRING(tmp)->ptr;
+    ary = ossl_asn1_decode0(&p, RSTRING(tmp)->len, &offset, 0, 1, 0);
     ret = rb_ary_entry(ary, 0);
 
     return ret;
@@ -844,11 +846,12 @@ ossl_asn1_decode_all(VALUE self, VALUE obj)
     VALUE ret;
     unsigned char *p;
     long offset = 0;
+    volatile VALUE tmp;
 
     obj = ossl_to_der_if_possible(obj);
-    StringValue(obj);
-    p = RSTRING(obj)->ptr;
-    ret = ossl_asn1_decode0(&p, RSTRING(obj)->len, &offset, 0, 0, 0);
+    tmp = rb_str_new4(StringValue(obj));
+    p = RSTRING(tmp)->ptr;
+    ret = ossl_asn1_decode0(&p, RSTRING(tmp)->len, &offset, 0, 0, 0);
 
     return ret;
 }
