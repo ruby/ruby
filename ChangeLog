@@ -1,3 +1,8 @@
+Sun Dec 19 17:24:59 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (enable_rpath): use rpath flag to embed the library
+	  path into extensions on ELF environment.  [ruby-dev:25035]
+
 Sun Dec 19 11:01:25 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit.rb: use standalone runner for -e.
