@@ -4322,10 +4322,6 @@ void_expr(node)
 	  case tLEQ:
 	  case tEQ:
 	  case tNEQ:
-	  case tAREF:
-	  case tRSHFT:
-	  case tCOLON2:
-	  case tCOLON3:
 	    useless = rb_id2name(node->nd_mid);
 	    break;
 	}

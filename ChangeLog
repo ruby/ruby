@@ -1,3 +1,26 @@
+Mon Jul  2 09:53:12 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval_string_wrap): extend new ruby_top_self, not
+	  original self.
+
+	* eval.c (rb_eval_cmd): respect ruby_wrapper if set.
+
+	* eval.c (eval): do not update ruby_class unless scope is not
+	  provided.
+
+Sun Jul  1 10:51:15 2001  Shugo Maeda <shugo@ruby-lang.org>
+
+	* eval.c (eval): preserve wrapper information.
+
+	* eval.c (proc_invoke): ditto.
+
+	* eval.c (block_pass): ditto.
+
+Sat Jun 30 02:55:45 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (void_expr): too much warnings for void context
+	  (e.g. foo[1] that can be mere Proc call).
+
 Fri Jun 29 15:29:31 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lex.c (rb_reserved_word): lex_state after tRESCUE should be

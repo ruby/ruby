@@ -538,6 +538,7 @@ struct BLOCK {
     int flags;
     struct RVarmap *dyna_vars;
     VALUE orig_thread;
+    VALUE wrapper;
     struct BLOCK *prev;
 };
 
@@ -1261,7 +1262,7 @@ rb_eval_string_wrap(str, state)
     PUSH_CLASS();
     ruby_class = ruby_wrapper = rb_module_new();
     ruby_top_self = rb_obj_clone(ruby_top_self);
-    rb_extend_object(self, ruby_class);
+    rb_extend_object(ruby_top_self, ruby_class);
 
     val = rb_eval_string_protect(str, &status);
     ruby_top_self = self;
@@ -1324,7 +1325,7 @@ rb_eval_cmd(cmd, arg)
     saved_scope = ruby_scope;
     ruby_scope = top_scope;
 
-    ruby_class = rb_cObject;
+    ruby_class = ruby_wrapper ? ruby_wrapper : rb_cObject;
     if (OBJ_TAINTED(cmd)) {
 	ruby_safe_level = 4;
     }
@@ -4774,6 +4775,7 @@ eval(self, src, scope, file, line)
     struct RVarmap * volatile old_dyna_vars;
     VALUE volatile old_cref;
     int volatile old_vmode;
+    volatile VALUE old_wrapper;
     struct FRAME frame;
     char *filesave = ruby_sourcefile;
     int linesave = ruby_sourceline;
@@ -4784,6 +4786,7 @@ eval(self, src, scope, file, line)
 	file = ruby_sourcefile;
 	line = ruby_sourceline;
     }
+    PUSH_CLASS();
     if (!NIL_P(scope)) {
 	if (!rb_obj_is_block(scope)) {
 	    rb_raise(rb_eTypeError, "wrong argument type %s (expected Proc/Binding)",
@@ -4805,17 +4808,18 @@ eval(self, src, scope, file, line)
 	scope_vmode = data->vmode;
 	old_cref = (VALUE)ruby_cref;
 	ruby_cref = (NODE*)ruby_frame->cbase;
+	old_wrapper = ruby_wrapper;
+	ruby_wrapper = data->wrapper;
 
 	self = data->self;
 	ruby_frame->iter = data->iter;
+	ruby_class = ruby_cbase;
     }
     else {
 	if (ruby_frame->prev) {
 	    ruby_frame->iter = ruby_frame->prev->iter;
 	}
     }
-    PUSH_CLASS();
-    ruby_class = ruby_cbase;
 
     ruby_in_eval++;
     if (TYPE(ruby_class) == T_ICLASS) {
@@ -4840,6 +4844,7 @@ eval(self, src, scope, file, line)
     if (!NIL_P(scope)) {
 	int dont_recycle = ruby_scope->flag & SCOPE_DONT_RECYCLE;
 
+	ruby_wrapper = old_wrapper;
 	ruby_cref  = (NODE*)old_cref;
 	ruby_frame = frame.tmp;
 	ruby_scope = old_scope;
@@ -6016,6 +6021,7 @@ blk_mark(data)
 	rb_gc_mark(data->dyna_vars);
 	rb_gc_mark(data->klass);
 	rb_gc_mark(data->tag);
+	rb_gc_mark(data->wrapper);
 	data = data->prev;
     }
 }
@@ -6130,6 +6136,7 @@ rb_f_binding(self)
     *data = *ruby_block;
 
     data->orig_thread = rb_thread_current();
+    data->wrapper = ruby_wrapper;
     data->iter = rb_f_block_given_p();
     frame_dup(&data->frame);
     if (ruby_frame->prev) {
@@ -6219,6 +6226,7 @@ proc_new(klass)
     *data = *ruby_block;
 
     data->orig_thread = rb_thread_current();
+    data->wrapper = ruby_wrapper;
     data->iter = data->prev?Qtrue:Qfalse;
     frame_dup(&data->frame);
     if (data->iter) {
@@ -6298,6 +6306,7 @@ proc_call(proc, args)
     int state;
     volatile int orphan;
     volatile int safe = ruby_safe_level;
+    volatile VALUE old_wrapper = ruby_wrapper;
 
     if (rb_block_given_p() && ruby_frame->last_func) {
 	rb_warning("block for %s#%s is useless",
@@ -6307,6 +6316,8 @@ proc_call(proc, args)
 
     Data_Get_Struct(proc, struct BLOCK, data);
     orphan = blk_orphan(data);
+
+    ruby_wrapper = data->wrapper;
 
     /* PUSH BLOCK from data */
     old_block = ruby_block;
@@ -6334,6 +6345,7 @@ proc_call(proc, args)
 	state &= TAG_MASK;
     }
     ruby_block = old_block;
+    ruby_wrapper = old_wrapper;
     ruby_safe_level = safe;
 
     if (state) {
@@ -6427,6 +6439,7 @@ block_pass(self, node)
     int state;
     volatile int orphan;
     volatile int safe = ruby_safe_level;
+    volatile VALUE old_wrapper = ruby_wrapper;
 
     if (NIL_P(block)) {
 	return rb_eval(self, node->nd_iter);
@@ -6441,6 +6454,8 @@ block_pass(self, node)
 
     Data_Get_Struct(block, struct BLOCK, data);
     orphan = blk_orphan(data);
+
+    ruby_wrapper = data->wrapper;
 
     /* PUSH BLOCK from data */
     old_block = ruby_block;
@@ -6479,6 +6494,7 @@ block_pass(self, node)
 	}
     }
     ruby_block = old_block;
+    ruby_wrapper = old_wrapper;
     ruby_safe_level = safe;
 
     switch (state) {/* escape from orphan procedure */
