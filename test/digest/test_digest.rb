@@ -5,55 +5,28 @@
 
 require 'test/unit'
 
-require 'digest/md5'
-require 'digest/rmd160'
-require 'digest/sha1'
-require 'digest/sha2'
+require 'digest'
+%w[digest/md5 digest/rmd160 digest/sha1 digest/sha2].each do |lib|
+  begin
+    require lib
+  rescue LoadError
+  end
+end
 include Digest
 
-class TestDigest < Test::Unit::TestCase
-  ALGOS = [
-    MD5,
-    SHA1,
-    SHA256,
-    SHA384,
-    SHA512,
-    RMD160
-  ]
-
-  DATA = {
-    "abc" => {
-      MD5 => "900150983cd24fb0d6963f7d28e17f72",
-      SHA1 => "a9993e364706816aba3e25717850c26c9cd0d89d",
-      SHA256 => "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
-      SHA384 => "cb00753f45a35e8bb5a03d699ac65007272c32ab0eded1631a8b605a43ff5bed8086072ba1e7cc2358baeca134c825a7",
-      SHA512 => "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a2192992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f",
-      RMD160 => "8eb208f7e05d987a9b044a8e98c6b087f15a0bfc"
-    },
-
-    "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq" => {
-      MD5 => "8215ef0796a20bcaaae116d3876c664a",
-      SHA1 => "84983e441c3bd26ebaae4aa1f95129e5e54670f1",
-      SHA256 => "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1",
-      SHA384 => "3391fdddfc8dc7393707a65b1b4709397cf8b1d162af05abfe8f450de5f36bc6b0455a8520bc4e6f5fe95b1fe3c8452b",
-      SHA512 => "204a8fc6dda82f0a0ced7beb8e08a41657c16ef468b228a8279be331a703c33596fd15c13b1b07f9aa1d3bea57789ca031ad85c7a71dd70354ec631238ca3445",
-      RMD160 => "12a053384a9c0c88e405a06c27dcf49ada62eb2b"
-    }
-  }
+module TestDigest
+  Data1 = "abc"
+  Data2 = "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"
 
   def test_s_hexdigest
-    ALGOS.each do |algo|
-      DATA.each do |str, table|
-	assert_equal(table[algo], algo.hexdigest(str))
-      end
+    self.class::DATA.each do |str, digest|
+      assert_equal(digest, self.class::ALGO.hexdigest(str))
     end
   end
 
   def test_s_digest
-    ALGOS.each do |algo|
-      DATA.each do |str, table|
-	assert_equal([table[algo]].pack("H*"), algo.digest(str))
-      end
+    self.class::DATA.each do |str, digest|
+      assert_equal([digest].pack("H*"), self.class::ALGO.digest(str))
     end
   end
 
@@ -62,36 +35,86 @@ class TestDigest < Test::Unit::TestCase
 
     str = "ABC"
 
-    ALGOS.each do |algo|
-      md = algo.new
-      md.update str
-      assert_equal(algo.hexdigest(str), md.hexdigest)
-      assert_equal(algo.digest(str), md.digest)
-    end
+    md = self.class::ALGO.new
+    md.update str
+    assert_equal(self.class::ALGO.hexdigest(str), md.hexdigest)
+    assert_equal(self.class::ALGO.digest(str), md.digest)
   end
 
   def test_eq
     # This test is also for clone()
 
-    ALGOS.each do |algo|
-      md1 = algo.new("ABC")
+    md1 = self.class::ALGO.new("ABC")
 
-      assert_equal(md1, md1.clone, algo)
+    assert_equal(md1, md1.clone, self.class::ALGO)
 
-      md2 = algo.new
-      md2 << "A"
+    md2 = self.class::ALGO.new
+    md2 << "A"
 
-      assert(md1 != md2, algo)
+    assert(md1 != md2, self.class::ALGO)
 
-      md2 << "BC"
+    md2 << "BC"
 
-      assert_equal(md1, md2, algo)
-    end
+    assert_equal(md1, md2, self.class::ALGO)
   end
 
   def test_instance_eval
     assert_nothing_raised {
-      Digest::SHA1.new.instance_eval { update "a" }
+      self.class::ALGO.new.instance_eval { update "a" }
     }
   end
+
+  class TestMD5 < Test::Unit::TestCase
+    include TestDigest
+    ALGO = MD5
+    DATA = {
+      Data1 => "900150983cd24fb0d6963f7d28e17f72",
+      Data2 => "8215ef0796a20bcaaae116d3876c664a",
+    }
+  end if defined?(MD5)
+
+  class TestSHA1 < Test::Unit::TestCase
+    include TestDigest
+    ALGO = SHA1
+    DATA = {
+      Data1 => "a9993e364706816aba3e25717850c26c9cd0d89d",
+      Data2 => "84983e441c3bd26ebaae4aa1f95129e5e54670f1",
+    }
+  end if defined?(SHA1)
+
+  class TestSHA256 < Test::Unit::TestCase
+    include TestDigest
+    ALGO = SHA256
+    DATA = {
+      Data1 => "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+      Data2 => "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1",
+    }
+  end if defined?(SHA256)
+
+  class TestSHA384 < Test::Unit::TestCase
+    include TestDigest
+    ALGO = SHA384
+    DATA = {
+      Data1 => "cb00753f45a35e8bb5a03d699ac65007272c32ab0eded1631a8b605a43ff5bed8086072ba1e7cc2358baeca134c825a7",
+      Data2 => "3391fdddfc8dc7393707a65b1b4709397cf8b1d162af05abfe8f450de5f36bc6b0455a8520bc4e6f5fe95b1fe3c8452b",
+    }
+  end if defined?(SHA384)
+
+  class TestSHA512 < Test::Unit::TestCase
+    include TestDigest
+    ALGO = SHA512
+    DATA = {
+      Data1 => "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a2192992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f",
+      Data2 => "204a8fc6dda82f0a0ced7beb8e08a41657c16ef468b228a8279be331a703c33596fd15c13b1b07f9aa1d3bea57789ca031ad85c7a71dd70354ec631238ca3445",
+    }
+  end if defined?(SHA512)
+
+  class TestRMD160 < Test::Unit::TestCase
+    include TestDigest
+    ALGO = RMD160
+    DATA = {
+      Data1 => "8eb208f7e05d987a9b044a8e98c6b087f15a0bfc",
+      Data2 => "12a053384a9c0c88e405a06c27dcf49ada62eb2b",
+    }
+  end if defined?(RMD160)
 end

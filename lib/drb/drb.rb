@@ -1216,8 +1216,8 @@ module DRb
       @@idconv = idconv
     end
 
-    def self.default_sefe_level(level)
-      @@level = level
+    def self.default_safe_level(level)
+      @@safe_level = level
     end
 
     # Set the default value of the :verbose option.

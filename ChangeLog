@@ -1,6 +1,14 @@
+Thu Feb 17 20:09:23 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* lib/drb/drb.rb (DRbServer.default_safe_level): fix typo.
+
+	* test/digest/test_digest.rb: separate test case for each algorithms.
+	  (Thanks nobu) [ruby-dev:25412]
+
 Thu Feb 17 13:46:00 2005  Nathaniel Talbott  <ntalbott@ruby-lang.org>
+
 	* lib/test/unit/collector.rb (collect_file): now deletes paths added
-    	  to $LOAD_PATH instead of restoring it verbatim.
+	  to $LOAD_PATH instead of restoring it verbatim.
 
 	* lib/test/unit/autorunner.rb (AutoRunner.run): fixed so that
 	  'ruby -rtest/unit -rtest1 -rtest2 -e0' will use the objectspace
