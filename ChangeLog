@@ -1,10 +1,18 @@
+Thu Feb  3 23:42:36 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_close, strio_close_read, strio_close_write):
+	  should return nil instead of self as well as IO.  [ruby-dev:25623]
+
+	* ext/stringio/stringio.c (strio_extend, strio_putc): fill with zero
+	  extended portion.  [ruby-dev:25626]
+
 Wed Feb  3 03:31:20 2005  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* ext/nkf/nkf-utf8/nkf.c: follow original v 1.57 
+	* ext/nkf/nkf-utf8/nkf.c: follow original v 1.57
 
 	* ext/nkf/nkf-utf8/utf8tbl.c: follow original v 1.8
 
-	* ext/nkf/nkf-utf8/config.h: follow original v 1.7 
+	* ext/nkf/nkf-utf8/config.h: follow original v 1.7
 
 Wed Feb  2 23:52:53 2005  sheepman  <sheepman@tcn.zaq.ne.jp>
 

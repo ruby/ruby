@@ -339,7 +339,7 @@ strio_close(self)
     }
     ptr->string = Qnil;
     ptr->flags &= ~FMODE_READWRITE;
-    return self;
+    return Qnil;
 }
 
 static VALUE
@@ -353,7 +353,7 @@ strio_close_read(self)
     if (!((ptr->flags &= ~FMODE_READABLE) & FMODE_READWRITE)) {
 	ptr->string = Qnil;
     }
-    return self;
+    return Qnil;
 }
 
 static VALUE
@@ -367,7 +367,7 @@ strio_close_write(self)
     if (!((ptr->flags &= ~FMODE_WRITABLE) & FMODE_READWRITE)) {
 	ptr->string = Qnil;
     }
-    return self;
+    return Qnil;
 }
 
 static VALUE
@@ -559,6 +559,25 @@ strio_getc(self)
     return CHR2FIX(c);
 }
 
+static void
+strio_extend(ptr, pos, len)
+    struct StringIO *ptr;
+    long pos, len;
+{
+    long olen;
+
+    check_modifiable(ptr);
+    olen = RSTRING(ptr->string)->len;
+    if (pos + len > olen) {
+	rb_str_resize(ptr->string, pos + len);
+	if (pos > olen)
+	    MEMZERO(RSTRING(ptr->string)->ptr + olen, char, pos - olen);
+    }
+    else {
+	rb_str_modify(ptr->string);
+    }
+}
+
 static VALUE
 strio_ungetc(self, ch)
     VALUE self, ch;
@@ -568,18 +587,11 @@ strio_ungetc(self, ch)
     long len, pos = ptr->pos;
 
     if (cc != EOF && pos > 0) {
-	if ((len = RSTRING(ptr->string)->len) < pos ||
-	    (unsigned char)RSTRING(ptr->string)->ptr[pos - 1] !=
+	if ((len = RSTRING(ptr->string)->len) < pos-- ||
+	    (unsigned char)RSTRING(ptr->string)->ptr[pos] !=
 	    (unsigned char)cc) {
-	    check_modifiable(ptr);
-	    if (len < pos) {
-		rb_str_resize(ptr->string, pos);
-		MEMZERO(RSTRING(ptr->string)->ptr + len, char, pos - len - 1);
-	    }
-	    else {
-		rb_str_modify(ptr->string);
-	    }
-	    RSTRING(ptr->string)->ptr[pos - 1] = cc;
+	    strio_extend(ptr, pos, 1);
+	    RSTRING(ptr->string)->ptr[pos] = cc;
 	    OBJ_INFECT(ptr->string, self);
 	}
 	--ptr->pos;
@@ -784,13 +796,7 @@ strio_write(self, str)
 	rb_str_cat(ptr->string, RSTRING(str)->ptr, len);
     }
     else {
-	if (ptr->pos + len > olen) {
-	    rb_str_resize(ptr->string, ptr->pos + len);
-	    MEMZERO(RSTRING(ptr->string)->ptr + olen, char, ptr->pos + len - olen);
-	}
-	else {
-	    rb_str_modify(ptr->string);
-	}
+	strio_extend(ptr, ptr->pos, len);
 	rb_str_update(ptr->string, ptr->pos, len, str);
     }
     OBJ_INFECT(ptr->string, self);
@@ -810,17 +816,14 @@ strio_putc(self, ch)
 {
     struct StringIO *ptr = writable(StringIO(self));
     int c = NUM2CHR(ch);
+    long olen;
 
     check_modifiable(ptr);
+    olen = RSTRING(ptr->string)->len;
     if (ptr->flags & FMODE_APPEND) {
-	ptr->pos = RSTRING(ptr->string)->len;
+	ptr->pos = olen;
     }
-    if (ptr->pos >= RSTRING(ptr->string)->len) {
-	rb_str_resize(ptr->string, ptr->pos + 1);
-    }
-    else {
-	rb_str_modify(ptr->string);
-    }
+    strio_extend(ptr, ptr->pos, 1);
     RSTRING(ptr->string)->ptr[ptr->pos++] = c;
     OBJ_INFECT(ptr->string, self);
     return ch;
