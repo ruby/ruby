@@ -358,9 +358,9 @@ end
 
 def create_makefile(target)
   $target = target
-  if target.rindex(%r!/!)
-    target = $'
-    target_prefix = "/"+$`
+  if target.include?('/')
+    target_prefix, target = File.split(target)
+    target_prefix[0,0] = '/'
   else
     target_prefix = ""
   end

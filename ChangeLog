@@ -1,3 +1,11 @@
+Fri Jul 13 23:18:19 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/mkmf.rb: use File::split to split a target into a prefix and
+	  a module name.  This also works around a just found bug of
+	  String#rindex.
+
+	* ext/extmk.rb.in: ditto.
+
 Fri Jul 13 19:25:16 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* missing/strstr.c, missing/strtol.c: Merge from 1.7: replace with

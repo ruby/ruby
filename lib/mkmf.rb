@@ -363,9 +363,9 @@ def create_makefile(target, srcdir = File.dirname($0))
   print "creating Makefile\n"
   rm_f "conftest*"
   STDOUT.flush
-  if target.rindex(%r!/!) #/
-    target = $'
-    target_prefix = "/"+$`
+  if target.include?('/')
+    target_prefix, target = File.split(target)
+    target_prefix[0,0] = '/'
   else
     target_prefix = ""
   end
