@@ -74,6 +74,7 @@ def makedirs(dirs)
 end
 
 def with_destdir(dir)
+  return dir if $destdir.empty?
   dir = dir.sub(/\A\w:/, '') if File::PATH_SEPARATOR == ';'
   $destdir + dir
 end
@@ -157,11 +158,11 @@ for src in Dir["bin/*"]
     open(with_destdir(batfile), "w") { |b|
       b.print <<EOH, shebang, body, <<EOF
 @echo off
-if "%OS%" == "Windows_NT" goto WinNT
+if not "%~d0" == "~d0" goto WinNT
 #{ruby_bin_dosish} -x "#{batfile}" %1 %2 %3 %4 %5 %6 %7 %8 %9
 goto endofruby
 :WinNT
-#{ruby_bin_dosish} -x "#{batfile}" %*
+"%~dp0#{ruby_install_name}" -x "%~f0" %*
 goto endofruby
 EOH
 __END__

@@ -1,3 +1,10 @@
+Wed Feb 25 21:16:10 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* instruby.rb (with_destdir): should return the given argument if no
+	  DESTDIR is given.
+
+	* instruby.rb: use path name expansion of cmd.exe.
+
 Wed Feb 25 20:44:45 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/cgi-lib.rb, lib/getopts.rb, lib/importenv.rb, lib/parsearg.rb:
