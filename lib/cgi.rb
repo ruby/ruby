@@ -4,7 +4,7 @@
 
 cgi.rb - cgi support library
 
-Version 2.1.2
+Version 2.1.3
 
 Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
 
@@ -185,10 +185,11 @@ class CGI
   CR  = "\015"
   LF  = "\012"
   EOL = CR + LF
-  VERSION = "2.1.2"
-  RELEASE_DATE = "2000-12-25"
-  VERSION_CODE = 212
-  RELEASE_CODE = 20001225
+  VERSION = '2.1.3'
+  RELEASE_DATE = '2001-02-26'
+  VERSION_CODE = 213
+  RELEASE_CODE = 20010226
+  REVISION = '$Id$'
 
   NEEDS_BINMODE = true if /WIN/ni === RUBY_PLATFORM
   PATH_SEPARATOR = {'UNIX'=>'/', 'WINDOWS'=>'\\', 'MACINTOSH'=>':'}
@@ -354,7 +355,7 @@ class CGI
 =end
   def CGI::rfc1123_date(time)
     t = time.clone.gmtime
-    return format("%s, %d %s %d %.2d:%.2d:%.2d GMT",
+    return format("%s, %.2d %s %d %.2d:%.2d:%.2d GMT",
                 RFC822_DAYS[t.wday], t.day, RFC822_MONTHS[t.month-1], t.year,
                 t.hour, t.min, t.sec)
   end
@@ -446,7 +447,9 @@ status:
     end
 
     if options.has_key?("status")
-      buf.concat("Status: " + options.delete("status") + EOL)
+      status = HTTP_STATUS[options["status"]] or options["status"]
+      buf.concat("Status: " + status + EOL)
+      options.delete("status")
     end
 
     if options.has_key?("server")
@@ -496,8 +499,21 @@ status:
     }
 
     if defined?(MOD_RUBY)
-      buf.scan(/([^:]+): (.+)#{EOL}/n){
-        Apache::request[$1] = $2
+      table = Apache::request.headers_out
+      buf.scan(/([^:]+): (.+)#{EOL}/n){ |name, value|
+        $stderr.printf("name:%s value:%s\n", name, value) if $DEBUG
+        case name
+        when 'Set-Cookie'
+          table.add($1, $2)
+        when /^status$/ni
+          Apache::request.status_line = value
+        when /^content-type$/ni
+          Apache::request.content_type = value
+        when /^content-encoding$/ni
+          Apache::request.content_encoding = value
+        else
+          Apache::request.headers_out[name] = value
+        end
       }
       Apache::request.send_http_header
       ''
@@ -975,8 +991,8 @@ convert string charset, and set language to "ja".
   cgi = CGI.new("html3")  # add HTML generation methods
   cgi.element
   cgi.element{ "string" }
-  cgi.element({ "ATTRILUTE1" => "value1", "ATTRIBUTE2" => "value2" })
-  cgi.element({ "ATTRILUTE1" => "value1", "ATTRIBUTE2" => "value2" }){ "string" }
+  cgi.element({ "ATTRIBUTE1" => "value1", "ATTRIBUTE2" => "value2" })
+  cgi.element({ "ATTRIBUTE1" => "value1", "ATTRIBUTE2" => "value2" }){ "string" }
 
   # add HTML generation methods
   CGI.new("html3")    # html3.2
@@ -1235,8 +1251,10 @@ convert string charset, and set language to "ja".
   form("get", "url"){ "string" }
     # <FORM METHOD="get" ACTION="url" ENCTYPE="application/x-www-form-urlencoded">string</FORM>
 
-  form({"METHOD" => "post", ENCTYPE => "enctype"}){ "string" }
+  form({"METHOD" => "post", "ENCTYPE" => "enctype"}){ "string" }
     # <FORM METHOD="post" ENCTYPE="enctype">string</FORM>
+
+The hash keys are case sensitive. Ask the samples.
 =end
     def form(method = "post", action = nil, enctype = "application/x-www-form-urlencoded")
       attributes = if method.kind_of?(String)
@@ -1244,7 +1262,7 @@ convert string charset, and set language to "ja".
                        "ENCTYPE" => enctype } 
                    else
                      unless method.has_key?("METHOD")
-                       method["METHOD"] = method
+                       method["METHOD"] = "post"
                      end
                      unless method.has_key?("ENCTYPE")
                        method["ENCTYPE"] = enctype
@@ -1935,161 +1953,7 @@ end
 
 == HISTORY
 
-* Mon Dec 25 05:02:27 JST 2000 - wakou
-  * version 2.1.2
-  * bug fix: CGI::escapeElement(): didn't accept empty element.
-  * bug fix: CGI::unescapeElement(): ditto.
-  * bug fix: CGI::unescapeHTML(): support for "&copy;, &hearts;, ..."
-    thanks to YANAGAWA Kazuhisa <kjana@os.xaxon.ne.jp>
-  * bug fix: CGI::unescapeHTML(): support for "&#09;"
-    thanks to OHSHIMA Ryunosuke <ryu@jaist.ac.jp>
-  * Regexp::last_match[0] --> $&
-  * Regexp::last_match[1] --> $1
-  * Regexp::last_match[2] --> $2
-  * add: CGI#param(): test implement. undocumented.
+delete. see cvs log.
 
-* Mon Dec 11 00:16:51 JST 2000 - wakou
-  * version 2.1.1
-  * support -T1 on ruby 1.6.2
-    * body.original_filename: eval(str.dump.untaint).taint
-    * body.content_type: eval(str.dump.untaint).taint
-  * $& --> Regexp::last_match[0]
-  * $1 --> Regexp::last_match[1]
-  * $2 --> Regexp::last_match[2]
 
-* Thu Oct 12 01:16:59 JST 2000 - wakou
-  * version 2.1.0
-  * bug fix: CGI::html(): PRETTY option didn't work.
-    thanks to akira yamada <akira@ruby-lang.org>
-
-* Wed Sep 13 06:09:26 JST 2000 - wakou
-  * version 2.0.1
-  * bug fix: CGI::header(): output status header.
-    thanks to Yasuhiro Fukuma <yasuf@bsdclub.org>
-
-* Tue Sep 12 06:56:51 JST 2000 - wakou
-  * version 2.0.0
-  * require ruby1.5.4 or later. (ruby1.4 doesn't have block_given? method.)
-  * improvement: CGI::escape(), CGI::unescape().
-    thanks to WATANABE Hirofumi <eban@os.rim.or.jp>
-  * bug fix: CGI::escapeElement().
-  * improvement: CGI::unescapeHTML().
-    thanks to Kazuhiro NISHIYAMA <zn@mbf.nifty.com>
-
-* 2000/08/09 04:32:22 - matz
-  * improvement: CGI::pretty()
-
-* 2000/06/23 07:01:34 - matz
-  * change: iterator? --> block_given?
-
-* Sun Jun 18 23:31:44 JST 2000 - wakou
-  * version 1.7.0
-  * change: version syntax. old: x.yz, now: x.y.z
-
-* 2000/06/13 15:49:27 - wakou
-  * version 1.61
-  * read_multipart(): if no content body then raise EOFError.
-
-* 2000/06/03 18:16:17 - wakou
-  * version 1.60
-  * improve: CGI::pretty()
-
-* 2000/05/30 19:04:08 - wakou
-  * version 1.50
-  * CGI#out(): if "HEAD" == REQUEST_METHOD then output only HTTP header.
-
-* 2000/05/24 06:58:51 - wakou
-  * version 1.40
-  * typo: CGI::Cookie::new()
-  * bug fix: CGI::escape():  bad: " " --> "%2B";  true: " " --> "+";
-    thanks to Ryunosuke Ohshima <ryu@jaist.ac.jp>
-
-* 2000/05/08 21:51:30 - wakou
-  * version 1.31
-  * improvement of time forming new CGI object accompanied with HTML generation methods.
-
-* 2000/05/07 21:51:14 - wakou
-  * version 1.30
-  * require English.rb
-  * improvement of load time.
-
-* 2000/05/02 21:44:12 - wakou
-  * version 1.21
-  * support for ruby 1.5.3 (2000-05-01) (Array#filter --> Array#collect!)
-
-* 2000/04/03 18:31:42 - wakou
-  * version 1.20
-  * bug fix: CGI#image_button() can't get Hash option.
-    thanks to Takashi Ikeda <ikeda@auc.co.jp>
-  * CGI::unescapeHTML(): simple support for "&#12345;"
-  * CGI::Cookie::new(): simple support for IE
-  * CGI::escape(): ' ' replaced by '+'
-
-* 1999/12/06 20:16:34 - wakou
-  * version 1.10
-  * can make many CGI objects.
-  * if use mod_ruby, then require ruby1.4.3 or later.
-
-* 1999/11/29 21:35:58 - wakou
-  * version 1.01
-  * support for ruby 1.5.0 (1999-11-20)
-
-* 1999/09/13 23:00:58 - wakou
-  * version 1.00
-  * COUTION! name change. CGI.rb --> cgi.rb
-  * CGI#auth_type, CGI#content_length, CGI#content_type, ...
-    if not ENV included it, then return nil.
-  * CGI#content_length and CGI#server_port return Integer.
-  * if not CGI#params.include?('name'), then CGI#params['name'] return [].
-  * if not CGI#cookies.include?('name'), then CGI#cookies['name'] return [].
-
-* 1999/08/05 18:04:59 - wakou
-  * version 0.41
-  * typo. thanks to MJ Ray <markj@altern.org>
-      HTTP_STATUS["NOT_INPLEMENTED"] --> HTTP_STATUS["NOT_IMPLEMENTED"]
-
-* 1999/07/20 20:44:31 - wakou
-  * version 0.40
-  * COUTION! incompatible change.
-    sorry, but probably this change is last big incompatible change.
-  * CGI::print  -->  CGI#out
-      cgi = CGI.new
-      cgi.out{"string"}             # old: CGI::print{"string"}
-  * CGI::cookie  --> CGI::Cookie::new
-      cookie1 = CGI::Cookie::new    # old: CGI::cookie
-  * CGI::header  -->  CGI#header
-
-* 1999/06/29 06:50:21 - wakou
-  * version 0.30
-  * COUTION! incompatible change.
-      query = CGI.new
-      cookies = query.cookies       # old: query.cookie
-      values = query.cookies[name]  # old: query.cookie[name]
-
-* 1999/06/21 21:05:57 - wakou
-  * version 0.24
-  * CGI::Cookie::parse() return { name => CGI::Cookie object } pairs.
-
-* 1999/06/20 23:29:12 - wakou
-  * version 0.23
-  * modified a bit to clear module separation.
-
-* Mon Jun 14 17:49:32 JST 1999 - matz
-  * version 0.22
-  * Cookies are now CGI::Cookie objects.
-  * Cookie modeled after CGI::Cookie.pm.
-
-* Fri Jun 11 11:19:11 JST 1999 - matz
-  * version 0.21
-  * modified a bit to clear module separation.
-
-* 1999/06/03 06:48:15 - wakou
-  * version 0.20
-  * support for multipart form.
-
-* 1999/05/24 07:05:41 - wakou
-  * version 0.10
-  * first release.
-
-$Date$
 =end
