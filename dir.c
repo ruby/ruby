@@ -1503,7 +1503,8 @@ dir_s_aref(obj, str)
  *  block. Note that this pattern is not a regexp (it's closer to a
  *  shell glob). See <code>File::fnmatch</code> for
  *  details of file name matching and the meaning of the <i>flags</i>
- *  parameter.
+ *  parameter. Note that case sensitivity depends on your system. (so
+ *  <code>File::FNM_CASEFOLD</code> is ignored)
  *
  *     Dir["config.?"]                     #=> ["config.h"]
  *     Dir.glob("config.?")                #=> ["config.h"]
@@ -1593,33 +1594,38 @@ dir_entries(io, dirname)
  *  <i>flags</i> is a bitwise OR of the <code>FNM_xxx</code> parameters.
  *  The same glob pattern and flags are used by <code>Dir::glob</code>.
  *
- *     File.fnmatch('cat',       'cat')        #=> true
- *     File.fnmatch('cat',       'category')   #=> false
- *     File.fnmatch('c{at,ub}s', 'cats')       #=> false
- *     File.fnmatch('c{at,ub}s', 'cubs')       #=> false
- *     File.fnmatch('c{at,ub}s', 'cat')        #=> false
+ *     File.fnmatch('cat',       'cat')        #=> true  : match entire string
+ *     File.fnmatch('cat',       'category')   #=> false : only match partial string
+ *     File.fnmatch('c{at,ub}s', 'cats')       #=> false : { } isn't supported
  *
- *     File.fnmatch('c?t',    'cat')                       #=> true
- *     File.fnmatch('c\?t',   'cat')                       #=> false
- *     File.fnmatch('c??t',   'cat')                       #=> false
- *     File.fnmatch('c*',     'cats')                      #=> true
- *     File.fnmatch('c/ * FIXME * /t', 'c/a/b/c/t')                 #=> true
- *     File.fnmatch('c*t',    'cat')                       #=> true
- *     File.fnmatch('c\at',   'cat')                       #=> true
- *     File.fnmatch('c\at',   'cat', File::FNM_NOESCAPE)   #=> false
- *     File.fnmatch('a?b',    'a/b')                       #=> true
- *     File.fnmatch('a?b',    'a/b', File::FNM_PATHNAME)   #=> false
+ *     File.fnmatch('c?t',     'cat')          #=> true  : '?' match only 1 character
+ *     File.fnmatch('c??t',    'cat')          #=> false : ditto
+ *     File.fnmatch('c*',      'cats')         #=> true  : '*' match 0 or more characters
+ *     File.fnmatch('ca[a-z]', 'cat')          #=> true  : inclusive bracket expression
+ *     File.fnmatch('ca[^t]',  'cat')          #=> false : exclusive bracket expression ('^' or '!')
  *
- *     File.fnmatch('*',   '.profile')                            #=> false
- *     File.fnmatch('*',   '.profile', File::FNM_DOTMATCH)        #=> true
- *     File.fnmatch('*',   'dave/.profile')                       #=> true
- *     File.fnmatch('*',   'dave/.profile', File::FNM_DOTMATCH)   #=> true
- *     File.fnmatch('*',   'dave/.profile', File::FNM_PATHNAME)   #=> false
- *     File.fnmatch('* / FIXME *', 'dave/.profile', File::FNM_PATHNAME)   #=> false
- *     STRICT = File::FNM_PATHNAME | File::FNM_DOTMATCH
- *     File.fnmatch('* / FIXME *', 'dave/.profile', STRICT)               #=> true
+ *     File.fnmatch('?',   '/', File::FNM_PATHNAME)  #=> false : wildcard doesn't match '/' on FNM_PATHNAME
+ *     File.fnmatch('*',   '/', File::FNM_PATHNAME)  #=> false : ditto
+ *     File.fnmatch('[/]', '/', File::FNM_PATHNAME)  #=> false : ditto
  *
- *     File.fnmatch('** ERASEME /t', 'c/a/b/c/t', File::FNM_PATHNAME) #=> true
+ *     File.fnmatch('\?',   '?')                       #=> true  : escaped wildcard becomes ordinary
+ *     File.fnmatch('\a',   'a')                       #=> true  : escaped ordinary remains ordinary
+ *     File.fnmatch('\a',   '\a', File::FNM_NOESCAPE)  #=> true  : FNM_NOESACPE makes '\' ordinary
+ *     File.fnmatch('[\?]', '?')                       #=> true  : can escape inside bracket expression
+ *
+ *     File.fnmatch('*',   '.profile')                      #=> false : wildcard doesn't match leading
+ *     File.fnmatch('*',   '.profile', File::FNM_DOTMATCH)  #=> true    period by default.
+ *     File.fnmatch('.*'   '.profile')                      #=> true
+ *
+ *     File.fnmatch('*',           'dave/.profile')                      #=> true
+ *     File.fnmatch('* IGNORE /*', 'dave/.profile', File::FNM_PATHNAME)  #=> false
+ *     File.fnmatch('* IGNORE /*', 'dave/.profile', File::FNM_PATHNAME | File::FNM_DOTMATCH) #=> true
+ *
+ *     File.fnmatch('** IGNORE /foo', 'a/b/c/foo', File::FNM_PATHNAME)     #=> true
+ *     File.fnmatch('** IGNORE /foo', '/a/b/c/foo', File::FNM_PATHNAME)    #=> true
+ *     File.fnmatch('** IGNORE /foo', 'c:/a/b/c/foo', File::FNM_PATHNAME)  #=> true
+ *     File.fnmatch('** IGNORE /foo', 'a/.b/c/foo', File::FNM_PATHNAME)    #=> false
+ *     File.fnmatch('** IGNORE /foo', 'a/.b/c/foo', File::FNM_PATHNAME | File::FNM_DOTMATCH) #=> true
  */
 static VALUE
 file_s_fnmatch(argc, argv, obj)

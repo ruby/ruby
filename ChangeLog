@@ -1,3 +1,7 @@
+Mon Apr 19 18:27:26  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* dir.c: Updated RDocs.
+
 Mon Apr 19 08:19:11 2004  Doug Kearns  <djkea2@mugca.its.monash.edu.au>
 
 	* dln.c, io.c, pack.c, lib/benchmark.rb, lib/cgi.rb, lib/csv.rb,
