@@ -245,7 +245,7 @@ strscan_init_copy(vself, vorig)
 	self->str = orig->str;
 	self->prev = orig->prev;
 	self->curr = orig->curr;
-	re_copy_registers(&self->regs, &orig->regs);
+	onig_region_copy(&self->regs, &orig->regs);
     }
 
     return vself;
@@ -684,9 +684,9 @@ adjust_registers_to_matched(p)
     struct strscanner *p;
 {
     if (p->regs.allocated == 0) {
-        p->regs.beg = ALLOC_N(int, RE_NREGS);
-        p->regs.end = ALLOC_N(int, RE_NREGS);
-        p->regs.allocated = RE_NREGS;
+        p->regs.beg = ALLOC_N(int, ONIG_NREGION);
+        p->regs.end = ALLOC_N(int, ONIG_NREGION);
+        p->regs.allocated = ONIG_NREGION;
     }
     p->regs.num_regs = 1;
     p->regs.beg[0] = 0;

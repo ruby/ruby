@@ -1,3 +1,8 @@
+Sat Feb 26 16:58:20 2005  K.Kosako <sndgk393@ybb.ne.jp>
+
+	* parse.y, re.c, regex.h, LEGAL, ext/strscan/strscan.c:
+	remove oniggnu.h (GNU regex API).
+
 Wed Feb 23 22:08:16 2005  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
 
 	* st.c, st.h: imported additional file changes on

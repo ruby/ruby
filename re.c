@@ -13,6 +13,11 @@
 #include "re.h"
 #include <ctype.h>
 
+#define MBCTYPE_ASCII         0
+#define MBCTYPE_EUC           1
+#define MBCTYPE_SJIS          2
+#define MBCTYPE_UTF8          3
+
 static VALUE rb_eRegexpError;
 
 #define BEG(no) regs->beg[no]

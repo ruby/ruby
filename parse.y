@@ -4772,13 +4772,13 @@ parser_regx_options(parser)
     while (c = nextc(), ISALPHA(c)) {
 	switch (c) {
 	  case 'i':
-	    options |= RE_OPTION_IGNORECASE;
+	    options |= ONIG_OPTION_IGNORECASE;
 	    break;
 	  case 'x':
-	    options |= RE_OPTION_EXTENDED;
+	    options |= ONIG_OPTION_EXTEND;
 	    break;
 	  case 'm':
-	    options |= RE_OPTION_MULTILINE;
+	    options |= ONIG_OPTION_MULTILINE;
 	    break;
 	  case 'o':
 	    options |= RE_OPTION_ONCE;
