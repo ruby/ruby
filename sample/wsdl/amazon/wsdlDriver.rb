@@ -3,7 +3,8 @@ require 'soap/wsdlDriver'
 book = ARGV.shift || "Ruby"
 
 # AmazonSearch.rb is generated from WSDL.
-# Run "wsdl2ruby.rb --wsdl http://soap.amazon.com/schemas2/AmazonWebServices.wsdl --classDef --force"
+# Run "wsdl2ruby.rb --wsdl http://soap.amazon.com/schemas3/AmazonWebServices.wsdl --classdef --force"
+# http://soap.amazon.com/schemas3/AmazonWebServices.wsdl
 require 'AmazonSearch.rb'
 
 =begin
@@ -32,7 +33,8 @@ end
 #devtag = File.open(File.expand_path("~/.amazon_key")).read.chomp
 devtag = nil
 
-AMAZON_WSDL = 'http://soap.amazon.com/schemas2/AmazonWebServices.wsdl'
+# v2: AMAZON_WSDL = 'http://soap.amazon.com/schemas2/AmazonWebServices.wsdl'
+AMAZON_WSDL = 'http://soap.amazon.com/schemas3/AmazonWebServices.wsdl'
 amazon = SOAP::WSDLDriverFactory.new(AMAZON_WSDL).create_driver
 p "WSDL loaded"
 amazon.generate_explicit_type = true

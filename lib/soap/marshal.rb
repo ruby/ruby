@@ -36,7 +36,7 @@ module Marshal
     Time,
     ::SOAP::SOAPDateTime,
     ::SOAP::Mapping::Registry::DateTimeFactory
-)
+  )
 
   class << self
   public

@@ -135,10 +135,6 @@ class XSDAnySimpleType < NSDBase
     end
   end
 
-  def trim(data)
-    data.sub(/\A\s*(\S*)\s*\z/, '\1')
-  end
-
 private
 
   def _set(value)
@@ -204,7 +200,7 @@ private
 
   def _set(value)
     if value.is_a?(String)
-      str = trim(value)
+      str = value.strip
       if str == 'true' || str == '1'
 	@data = true
       elsif str == 'false' || str == '0'
@@ -245,7 +241,7 @@ private
   end
 
   def set_str(str)
-    /^([+\-]?)(\d*)(?:\.(\d*)?)?$/ =~ trim(str.to_s)
+    /^([+\-]?)(\d*)(?:\.(\d*)?)?$/ =~ str.to_s.strip
     unless Regexp.last_match
       raise ValueSpaceError.new("#{ type }: cannot accept '#{ str }'.")
     end
@@ -281,7 +277,14 @@ private
   end
 end
 
+module FloatConstants
+  NaN = 0.0/0.0
+  POSITIVE_INF = 1.0/0.0
+  NEGATIVE_INF = -1.0/0.0
+end
+
 class XSDFloat < XSDAnySimpleType
+  include FloatConstants
   Type = QName.new(Namespace, FloatLiteral)
 
   def initialize(value = nil)
@@ -299,13 +302,13 @@ private
       return
     end
 
-    str = trim(value.to_s)
+    str = value.to_s.strip
     if str == 'NaN'
-      @data = 0.0/0.0
+      @data = NaN
     elsif str == 'INF'
-      @data = 1.0/0.0
+      @data = POSITIVE_INF
     elsif str == '-INF'
-      @data = -1.0/0.0
+      @data = NEGATIVE_INF
     else
       if /^[+\-\.\deE]+$/ !~ str
 	raise ValueSpaceError.new("#{ type }: cannot accept '#{ str }'.")
@@ -320,7 +323,6 @@ private
     end
   end
 
-  # Do I have to convert 0.0 -> 0 and -0.0 -> -0 ?
   def _to_s
     if @data.nan?
       'NaN'
@@ -329,7 +331,8 @@ private
     elsif @data.infinite? == -1
       '-INF'
     else
-      sprintf("%+.10g", @data)
+      sign = (1 / @data > 0.0) ? '+' : '-'
+      sign + sprintf("%.10g", @data.abs).sub(/[eE]([+-])?0+/) { 'e' + $1 }
     end
   end
 
@@ -346,6 +349,7 @@ end
 
 # Ruby's Float is double-precision 64-bit floating point value.
 class XSDDouble < XSDAnySimpleType
+  include FloatConstants
   Type = QName.new(Namespace, DoubleLiteral)
 
   def initialize(value = nil)
@@ -363,13 +367,13 @@ private
       return
     end
 
-    str = trim(value.to_s)
+    str = value.to_s.strip
     if str == 'NaN'
-      @data = 0.0/0.0
+      @data = NaN
     elsif str == 'INF'
-      @data = 1.0/0.0
+      @data = POSITIVE_INF
     elsif str == '-INF'
-      @data = -1.0/0.0
+      @data = NEGATIVE_INF
     else
       begin
 	@data = Float(str)
@@ -388,7 +392,6 @@ private
     end
   end
 
-  # Do I have to convert 0.0 -> 0 and -0.0 -> -0 ?
   def _to_s
     if @data.nan?
       'NaN'
@@ -397,7 +400,8 @@ private
     elsif @data.infinite? == -1
       '-INF'
     else
-      sprintf("%+.16g", @data)
+      sign = (1 / @data > 0.0) ? '+' : '-'
+      sign + sprintf("%.16g", @data.abs).sub(/[eE]([+-])?0+/) { 'e' + $1 }
     end
   end
 end
@@ -429,7 +433,7 @@ class XSDDuration < XSDAnySimpleType
 private
 
   def _set(value)
-    /^([+\-]?)P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)D)?(T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?)?$/ =~ trim(value.to_s)
+    /^([+\-]?)P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)D)?(T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?)?$/ =~ value.to_s.strip
     unless Regexp.last_match
       raise ValueSpaceError.new("#{ type }: cannot accept '#{ value }'.")
     end
@@ -475,9 +479,6 @@ end
 
 require 'rational'
 require 'date'
-unless Object.const_defined?('DateTime')
-  raise LoadError.new('XSD4R requires date2/3.2 or later to be installed.  You can download it from http://www.funaba.org/en/ruby.html#date2')
-end
 
 module XSDDateTimeImpl
   SecInDay = 86400	# 24 * 60 * 60
@@ -557,7 +558,7 @@ class XSDDateTime < XSDAnySimpleType
 private
 
   def set_str(t)
-    /^([+\-]?\d\d\d\d\d*)-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d(?:\.(\d*))?)(Z|(?:[+\-]\d\d:\d\d)?)?$/ =~ trim(t.to_s)
+    /^([+\-]?\d{4,})-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d(?:\.(\d*))?)(Z|(?:[+\-]\d\d:\d\d)?)?$/ =~ t.to_s.strip
     unless Regexp.last_match
       raise ValueSpaceError.new("#{ type }: cannot accept '#{ t }'.")
     end
@@ -620,7 +621,7 @@ class XSDTime < XSDAnySimpleType
 private
 
   def set_str(t)
-    /^(\d\d):(\d\d):(\d\d(?:\.(\d*))?)(Z|(?:([+\-])(\d\d):(\d\d))?)?$/ =~ trim(t.to_s)
+    /^(\d\d):(\d\d):(\d\d(?:\.(\d*))?)(Z|(?:([+\-])(\d\d):(\d\d))?)?$/ =~ t.to_s.strip
     unless Regexp.last_match
       raise ValueSpaceError.new("#{ type }: cannot accept '#{ t }'.")
     end
@@ -663,7 +664,7 @@ class XSDDate < XSDAnySimpleType
 private
 
   def set_str(t)
-    /^([+\-]?\d\d\d\d\d*)-(\d\d)-(\d\d)(Z|(?:([+\-])(\d\d):(\d\d))?)?$/ =~ trim(t.to_s)
+    /^([+\-]?\d{4,})-(\d\d)-(\d\d)(Z|(?:([+\-])(\d\d):(\d\d))?)?$/ =~ t.to_s.strip
     unless Regexp.last_match
       raise ValueSpaceError.new("#{ type }: cannot accept '#{ t }'.")
     end
@@ -699,7 +700,7 @@ class XSDGYearMonth < XSDAnySimpleType
 private
 
   def set_str(t)
-    /^([+\-]?\d\d\d\d\d*)-(\d\d)(Z|(?:([+\-])(\d\d):(\d\d))?)?$/ =~ trim(t.to_s)
+    /^([+\-]?\d{4,})-(\d\d)(Z|(?:([+\-])(\d\d):(\d\d))?)?$/ =~ t.to_s.strip
     unless Regexp.last_match
       raise ValueSpaceError.new("#{ type }: cannot accept '#{ t }'.")
     end
@@ -734,7 +735,7 @@ class XSDGYear < XSDAnySimpleType
 private
 
   def set_str(t)
-    /^([+\-]?\d\d\d\d\d*)(Z|(?:([+\-])(\d\d):(\d\d))?)?$/ =~ trim(t.to_s)
+    /^([+\-]?\d{4,})(Z|(?:([+\-])(\d\d):(\d\d))?)?$/ =~ t.to_s.strip
     unless Regexp.last_match
       raise ValueSpaceError.new("#{ type }: cannot accept '#{ t }'.")
     end
@@ -768,7 +769,7 @@ class XSDGMonthDay < XSDAnySimpleType
 private
 
   def set_str(t)
-    /^(\d\d)-(\d\d)(Z|(?:[+\-]\d\d:\d\d)?)?$/ =~ trim(t.to_s)
+    /^(\d\d)-(\d\d)(Z|(?:[+\-]\d\d:\d\d)?)?$/ =~ t.to_s.strip
     unless Regexp.last_match
       raise ValueSpaceError.new("#{ type }: cannot accept '#{ t }'.")
     end
@@ -799,7 +800,7 @@ class XSDGDay < XSDAnySimpleType
 private
 
   def set_str(t)
-    /^(\d\d)(Z|(?:[+\-]\d\d:\d\d)?)?$/ =~ trim(t.to_s)
+    /^(\d\d)(Z|(?:[+\-]\d\d:\d\d)?)?$/ =~ t.to_s.strip
     unless Regexp.last_match
       raise ValueSpaceError.new("#{ type }: cannot accept '#{ t }'.")
     end
@@ -829,7 +830,7 @@ class XSDGMonth < XSDAnySimpleType
 private
 
   def set_str(t)
-    /^(\d\d)(Z|(?:[+\-]\d\d:\d\d)?)?$/ =~ trim(t.to_s)
+    /^(\d\d)(Z|(?:[+\-]\d\d:\d\d)?)?$/ =~ t.to_s.strip
     unless Regexp.last_match
       raise ValueSpaceError.new("#{ type }: cannot accept '#{ t }'.")
     end
@@ -860,7 +861,7 @@ class XSDHexBinary < XSDAnySimpleType
     if /^[0-9a-fA-F]*$/ !~ value
       raise ValueSpaceError.new("#{ type }: cannot accept '#{ value }'.")
     end
-    @data = trim(String.new(value))
+    @data = String.new(value).strip
     @is_nil = false
   end
 
@@ -890,7 +891,7 @@ class XSDBase64Binary < XSDAnySimpleType
     if /^[A-Za-z0-9+\/=]*$/ !~ value
       raise ValueSpaceError.new("#{ type }: cannot accept '#{ value }'.")
     end
-    @data = trim(String.new(value))
+    @data = String.new(value).strip
     @is_nil = false
   end
 
@@ -901,7 +902,7 @@ class XSDBase64Binary < XSDAnySimpleType
 private
 
   def _set(value)
-    @data = trim([value].pack("m"))
+    @data = [value].pack("m").strip
   end
 end
 
@@ -918,7 +919,7 @@ private
 
   def _set(value)
     begin
-      @data = URI.parse(trim(value.to_s))
+      @data = URI.parse(value.to_s.strip)
     rescue URI::InvalidURIError
       raise ValueSpaceError.new("#{ type }: cannot accept '#{ value }'.")
     end
@@ -937,7 +938,7 @@ class XSDQName < XSDAnySimpleType
 private
 
   def _set(value)
-    /^(?:([^:]+):)?([^:]+)$/ =~ trim(value.to_s)
+    /^(?:([^:]+):)?([^:]+)$/ =~ value.to_s.strip
     unless Regexp.last_match
       raise ValueSpaceError.new("#{ type }: cannot accept '#{ value }'.")
     end

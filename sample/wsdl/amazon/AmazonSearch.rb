@@ -229,6 +229,62 @@ class Details
     @imageUrlLarge = value
   end
 
+  def MerchantId
+    @merchantId
+  end
+
+  def MerchantId=(value)
+    @merchantId = value
+  end
+
+  def MinPrice
+    @minPrice
+  end
+
+  def MinPrice=(value)
+    @minPrice = value
+  end
+
+  def MaxPrice
+    @maxPrice
+  end
+
+  def MaxPrice=(value)
+    @maxPrice = value
+  end
+
+  def MinSalePrice
+    @minSalePrice
+  end
+
+  def MinSalePrice=(value)
+    @minSalePrice = value
+  end
+
+  def MaxSalePrice
+    @maxSalePrice
+  end
+
+  def MaxSalePrice=(value)
+    @maxSalePrice = value
+  end
+
+  def MultiMerchant
+    @multiMerchant
+  end
+
+  def MultiMerchant=(value)
+    @multiMerchant = value
+  end
+
+  def MerchantSku
+    @merchantSku
+  end
+
+  def MerchantSku=(value)
+    @merchantSku = value
+  end
+
   def ListPrice
     @listPrice
   end
@@ -461,6 +517,14 @@ class Details
     @encoding = value
   end
 
+  def ProductDescription
+    @productDescription
+  end
+
+  def ProductDescription=(value)
+    @productDescription = value
+  end
+
   def Reviews
     @reviews
   end
@@ -477,6 +541,14 @@ class Details
     @similarProducts = value
   end
 
+  def FeaturedProducts
+    @featuredProducts
+  end
+
+  def FeaturedProducts=(value)
+    @featuredProducts = value
+  end
+
   def Lists
     @lists
   end
@@ -491,6 +563,14 @@ class Details
 
   def Status=(value)
     @status = value
+  end
+
+  def Variations
+    @variations
+  end
+
+  def Variations=(value)
+    @variations = value
   end
 
   def initialize(url = nil,
@@ -510,6 +590,13 @@ class Details
       imageUrlSmall = nil,
       imageUrlMedium = nil,
       imageUrlLarge = nil,
+      merchantId = nil,
+      minPrice = nil,
+      maxPrice = nil,
+      minSalePrice = nil,
+      maxSalePrice = nil,
+      multiMerchant = nil,
+      merchantSku = nil,
       listPrice = nil,
       ourPrice = nil,
       usedPrice = nil,
@@ -539,10 +626,13 @@ class Details
       accessories = nil,
       platforms = nil,
       encoding = nil,
+      productDescription = nil,
       reviews = nil,
       similarProducts = nil,
+      featuredProducts = nil,
       lists = nil,
-      status = nil)
+      status = nil,
+      variations = nil)
     @url = url
     @asin = asin
     @productName = productName
@@ -560,6 +650,13 @@ class Details
     @imageUrlSmall = imageUrlSmall
     @imageUrlMedium = imageUrlMedium
     @imageUrlLarge = imageUrlLarge
+    @merchantId = merchantId
+    @minPrice = minPrice
+    @maxPrice = maxPrice
+    @minSalePrice = minSalePrice
+    @maxSalePrice = maxSalePrice
+    @multiMerchant = multiMerchant
+    @merchantSku = merchantSku
     @listPrice = listPrice
     @ourPrice = ourPrice
     @usedPrice = usedPrice
@@ -589,10 +686,13 @@ class Details
     @accessories = accessories
     @platforms = platforms
     @encoding = encoding
+    @productDescription = productDescription
     @reviews = reviews
     @similarProducts = similarProducts
+    @featuredProducts = featuredProducts
     @lists = lists
     @status = status
+    @variations = variations
   end
 end
 
@@ -841,10 +941,140 @@ class SimilarProductsArray < Array
 end
 
 # http://soap.amazon.com
+class FeaturedProductsArray < Array
+  # Contents type should be dumped here...
+  @@schema_type = "FeaturedProductsArray"
+  @@schema_ns = "http://soap.amazon.com"
+end
+
+# http://soap.amazon.com
+class FeaturedProduct
+  @@schema_type = "FeaturedProduct"
+  @@schema_ns = "http://soap.amazon.com"
+
+  def Asin
+    @asin
+  end
+
+  def Asin=(value)
+    @asin = value
+  end
+
+  def Comment
+    @comment
+  end
+
+  def Comment=(value)
+    @comment = value
+  end
+
+  def initialize(asin = nil,
+      comment = nil)
+    @asin = asin
+    @comment = comment
+  end
+end
+
+# http://soap.amazon.com
 class ListArray < Array
   # Contents type should be dumped here...
   @@schema_type = "ListArray"
   @@schema_ns = "http://soap.amazon.com"
+end
+
+# http://soap.amazon.com
+class VariationArray < Array
+  # Contents type should be dumped here...
+  @@schema_type = "VariationArray"
+  @@schema_ns = "http://soap.amazon.com"
+end
+
+# http://soap.amazon.com
+class Variation
+  @@schema_type = "Variation"
+  @@schema_ns = "http://soap.amazon.com"
+
+  def Asin
+    @asin
+  end
+
+  def Asin=(value)
+    @asin = value
+  end
+
+  def ClothingSize
+    @clothingSize
+  end
+
+  def ClothingSize=(value)
+    @clothingSize = value
+  end
+
+  def ClothingColor
+    @clothingColor
+  end
+
+  def ClothingColor=(value)
+    @clothingColor = value
+  end
+
+  def Price
+    @price
+  end
+
+  def Price=(value)
+    @price = value
+  end
+
+  def SalePrice
+    @salePrice
+  end
+
+  def SalePrice=(value)
+    @salePrice = value
+  end
+
+  def Availability
+    @availability
+  end
+
+  def Availability=(value)
+    @availability = value
+  end
+
+  def MultiMerchant
+    @multiMerchant
+  end
+
+  def MultiMerchant=(value)
+    @multiMerchant = value
+  end
+
+  def MerchantSku
+    @merchantSku
+  end
+
+  def MerchantSku=(value)
+    @merchantSku = value
+  end
+
+  def initialize(asin = nil,
+      clothingSize = nil,
+      clothingColor = nil,
+      price = nil,
+      salePrice = nil,
+      availability = nil,
+      multiMerchant = nil,
+      merchantSku = nil)
+    @asin = asin
+    @clothingSize = clothingSize
+    @clothingColor = clothingColor
+    @price = price
+    @salePrice = salePrice
+    @availability = availability
+    @multiMerchant = multiMerchant
+    @merchantSku = merchantSku
+  end
 end
 
 # http://soap.amazon.com
@@ -1150,6 +1380,14 @@ class ListingProductDetails
     @exchangeTitle = value
   end
 
+  def ExchangeDescription
+    @exchangeDescription
+  end
+
+  def ExchangeDescription=(value)
+    @exchangeDescription = value
+  end
+
   def ExchangePrice
     @exchangePrice
   end
@@ -1297,6 +1535,7 @@ class ListingProductDetails
   def initialize(exchangeId = nil,
       listingId = nil,
       exchangeTitle = nil,
+      exchangeDescription = nil,
       exchangePrice = nil,
       exchangeAsin = nil,
       exchangeEndDate = nil,
@@ -1318,6 +1557,7 @@ class ListingProductDetails
     @exchangeId = exchangeId
     @listingId = listingId
     @exchangeTitle = exchangeTitle
+    @exchangeDescription = exchangeDescription
     @exchangePrice = exchangePrice
     @exchangeAsin = exchangeAsin
     @exchangeEndDate = exchangeEndDate
@@ -1626,12 +1866,102 @@ class KeywordRequest
     @sort = value
   end
 
-  def variations
-    @variations
+  def locale
+    @locale
   end
 
-  def variations=(value)
-    @variations = value
+  def locale=(value)
+    @locale = value
+  end
+
+  def price
+    @price
+  end
+
+  def price=(value)
+    @price = value
+  end
+
+  def initialize(keyword = nil,
+      page = nil,
+      mode = nil,
+      tag = nil,
+      type = nil,
+      devtag = nil,
+      sort = nil,
+      locale = nil,
+      price = nil)
+    @keyword = keyword
+    @page = page
+    @mode = mode
+    @tag = tag
+    @type = type
+    @devtag = devtag
+    @sort = sort
+    @locale = locale
+    @price = price
+  end
+end
+
+# http://soap.amazon.com
+class TextStreamRequest
+  @@schema_type = "TextStreamRequest"
+  @@schema_ns = "http://soap.amazon.com"
+
+  def textStream
+    @textStream
+  end
+
+  def textStream=(value)
+    @textStream = value
+  end
+
+  def page
+    @page
+  end
+
+  def page=(value)
+    @page = value
+  end
+
+  def mode
+    @mode
+  end
+
+  def mode=(value)
+    @mode = value
+  end
+
+  def tag
+    @tag
+  end
+
+  def tag=(value)
+    @tag = value
+  end
+
+  def type
+    @type
+  end
+
+  def type=(value)
+    @type = value
+  end
+
+  def devtag
+    @devtag
+  end
+
+  def devtag=(value)
+    @devtag = value
+  end
+
+  def sort
+    @sort
+  end
+
+  def sort=(value)
+    @sort = value
   end
 
   def locale
@@ -1642,24 +1972,32 @@ class KeywordRequest
     @locale = value
   end
 
-  def initialize(keyword = nil,
+  def price
+    @price
+  end
+
+  def price=(value)
+    @price = value
+  end
+
+  def initialize(textStream = nil,
       page = nil,
       mode = nil,
       tag = nil,
       type = nil,
       devtag = nil,
       sort = nil,
-      variations = nil,
-      locale = nil)
-    @keyword = keyword
+      locale = nil,
+      price = nil)
+    @textStream = textStream
     @page = page
     @mode = mode
     @tag = tag
     @type = type
     @devtag = devtag
     @sort = sort
-    @variations = variations
     @locale = locale
+    @price = price
   end
 end
 
@@ -1724,14 +2062,6 @@ class PowerRequest
     @sort = value
   end
 
-  def variations
-    @variations
-  end
-
-  def variations=(value)
-    @variations = value
-  end
-
   def locale
     @locale
   end
@@ -1747,7 +2077,6 @@ class PowerRequest
       type = nil,
       devtag = nil,
       sort = nil,
-      variations = nil,
       locale = nil)
     @power = power
     @page = page
@@ -1756,7 +2085,6 @@ class PowerRequest
     @type = type
     @devtag = devtag
     @sort = sort
-    @variations = variations
     @locale = locale
   end
 end
@@ -1830,6 +2158,22 @@ class BrowseNodeRequest
     @locale = value
   end
 
+  def keywords
+    @keywords
+  end
+
+  def keywords=(value)
+    @keywords = value
+  end
+
+  def price
+    @price
+  end
+
+  def price=(value)
+    @price = value
+  end
+
   def initialize(browse_node = nil,
       page = nil,
       mode = nil,
@@ -1837,7 +2181,9 @@ class BrowseNodeRequest
       type = nil,
       devtag = nil,
       sort = nil,
-      locale = nil)
+      locale = nil,
+      keywords = nil,
+      price = nil)
     @browse_node = browse_node
     @page = page
     @mode = mode
@@ -1846,6 +2192,8 @@ class BrowseNodeRequest
     @devtag = devtag
     @sort = sort
     @locale = locale
+    @keywords = keywords
+    @price = price
   end
 end
 
@@ -1910,13 +2258,22 @@ class AsinRequest
     @locale = value
   end
 
+  def mode
+    @mode
+  end
+
+  def mode=(value)
+    @mode = value
+  end
+
   def initialize(asin = nil,
       tag = nil,
       type = nil,
       devtag = nil,
       offer = nil,
       offerpage = nil,
-      locale = nil)
+      locale = nil,
+      mode = nil)
     @asin = asin
     @tag = tag
     @type = type
@@ -1924,6 +2281,7 @@ class AsinRequest
     @offer = offer
     @offerpage = offerpage
     @locale = locale
+    @mode = mode
   end
 end
 
@@ -2038,14 +2396,6 @@ class UpcRequest
     @sort = value
   end
 
-  def variations
-    @variations
-  end
-
-  def variations=(value)
-    @variations = value
-  end
-
   def locale
     @locale
   end
@@ -2060,7 +2410,6 @@ class UpcRequest
       type = nil,
       devtag = nil,
       sort = nil,
-      variations = nil,
       locale = nil)
     @upc = upc
     @mode = mode
@@ -2068,7 +2417,104 @@ class UpcRequest
     @type = type
     @devtag = devtag
     @sort = sort
-    @variations = variations
+    @locale = locale
+  end
+end
+
+# http://soap.amazon.com
+class SkuRequest
+  @@schema_type = "SkuRequest"
+  @@schema_ns = "http://soap.amazon.com"
+
+  def sku
+    @sku
+  end
+
+  def sku=(value)
+    @sku = value
+  end
+
+  def mode
+    @mode
+  end
+
+  def mode=(value)
+    @mode = value
+  end
+
+  def tag
+    @tag
+  end
+
+  def tag=(value)
+    @tag = value
+  end
+
+  def type
+    @type
+  end
+
+  def type=(value)
+    @type = value
+  end
+
+  def devtag
+    @devtag
+  end
+
+  def devtag=(value)
+    @devtag = value
+  end
+
+  def merchant_id
+    @merchant_id
+  end
+
+  def merchant_id=(value)
+    @merchant_id = value
+  end
+
+  def keywords
+    @keywords
+  end
+
+  def keywords=(value)
+    @keywords = value
+  end
+
+  def sort
+    @sort
+  end
+
+  def sort=(value)
+    @sort = value
+  end
+
+  def locale
+    @locale
+  end
+
+  def locale=(value)
+    @locale = value
+  end
+
+  def initialize(sku = nil,
+      mode = nil,
+      tag = nil,
+      type = nil,
+      devtag = nil,
+      merchant_id = nil,
+      keywords = nil,
+      sort = nil,
+      locale = nil)
+    @sku = sku
+    @mode = mode
+    @tag = tag
+    @type = type
+    @devtag = devtag
+    @merchant_id = merchant_id
+    @keywords = keywords
+    @sort = sort
     @locale = locale
   end
 end
@@ -2134,20 +2580,28 @@ class ArtistRequest
     @sort = value
   end
 
-  def variations
-    @variations
-  end
-
-  def variations=(value)
-    @variations = value
-  end
-
   def locale
     @locale
   end
 
   def locale=(value)
     @locale = value
+  end
+
+  def keywords
+    @keywords
+  end
+
+  def keywords=(value)
+    @keywords = value
+  end
+
+  def price
+    @price
+  end
+
+  def price=(value)
+    @price = value
   end
 
   def initialize(artist = nil,
@@ -2157,8 +2611,9 @@ class ArtistRequest
       type = nil,
       devtag = nil,
       sort = nil,
-      variations = nil,
-      locale = nil)
+      locale = nil,
+      keywords = nil,
+      price = nil)
     @artist = artist
     @page = page
     @mode = mode
@@ -2166,8 +2621,9 @@ class ArtistRequest
     @type = type
     @devtag = devtag
     @sort = sort
-    @variations = variations
     @locale = locale
+    @keywords = keywords
+    @price = price
   end
 end
 
@@ -2232,20 +2688,28 @@ class AuthorRequest
     @sort = value
   end
 
-  def variations
-    @variations
-  end
-
-  def variations=(value)
-    @variations = value
-  end
-
   def locale
     @locale
   end
 
   def locale=(value)
     @locale = value
+  end
+
+  def keywords
+    @keywords
+  end
+
+  def keywords=(value)
+    @keywords = value
+  end
+
+  def price
+    @price
+  end
+
+  def price=(value)
+    @price = value
   end
 
   def initialize(author = nil,
@@ -2255,8 +2719,9 @@ class AuthorRequest
       type = nil,
       devtag = nil,
       sort = nil,
-      variations = nil,
-      locale = nil)
+      locale = nil,
+      keywords = nil,
+      price = nil)
     @author = author
     @page = page
     @mode = mode
@@ -2264,8 +2729,9 @@ class AuthorRequest
     @type = type
     @devtag = devtag
     @sort = sort
-    @variations = variations
     @locale = locale
+    @keywords = keywords
+    @price = price
   end
 end
 
@@ -2330,20 +2796,28 @@ class ActorRequest
     @sort = value
   end
 
-  def variations
-    @variations
-  end
-
-  def variations=(value)
-    @variations = value
-  end
-
   def locale
     @locale
   end
 
   def locale=(value)
     @locale = value
+  end
+
+  def keywords
+    @keywords
+  end
+
+  def keywords=(value)
+    @keywords = value
+  end
+
+  def price
+    @price
+  end
+
+  def price=(value)
+    @price = value
   end
 
   def initialize(actor = nil,
@@ -2353,8 +2827,9 @@ class ActorRequest
       type = nil,
       devtag = nil,
       sort = nil,
-      variations = nil,
-      locale = nil)
+      locale = nil,
+      keywords = nil,
+      price = nil)
     @actor = actor
     @page = page
     @mode = mode
@@ -2362,8 +2837,9 @@ class ActorRequest
     @type = type
     @devtag = devtag
     @sort = sort
-    @variations = variations
     @locale = locale
+    @keywords = keywords
+    @price = price
   end
 end
 
@@ -2428,20 +2904,28 @@ class DirectorRequest
     @sort = value
   end
 
-  def variations
-    @variations
-  end
-
-  def variations=(value)
-    @variations = value
-  end
-
   def locale
     @locale
   end
 
   def locale=(value)
     @locale = value
+  end
+
+  def keywords
+    @keywords
+  end
+
+  def keywords=(value)
+    @keywords = value
+  end
+
+  def price
+    @price
+  end
+
+  def price=(value)
+    @price = value
   end
 
   def initialize(director = nil,
@@ -2451,8 +2935,9 @@ class DirectorRequest
       type = nil,
       devtag = nil,
       sort = nil,
-      variations = nil,
-      locale = nil)
+      locale = nil,
+      keywords = nil,
+      price = nil)
     @director = director
     @page = page
     @mode = mode
@@ -2460,8 +2945,9 @@ class DirectorRequest
     @type = type
     @devtag = devtag
     @sort = sort
-    @variations = variations
     @locale = locale
+    @keywords = keywords
+    @price = price
   end
 end
 
@@ -2584,20 +3070,28 @@ class ManufacturerRequest
     @sort = value
   end
 
-  def variations
-    @variations
-  end
-
-  def variations=(value)
-    @variations = value
-  end
-
   def locale
     @locale
   end
 
   def locale=(value)
     @locale = value
+  end
+
+  def keywords
+    @keywords
+  end
+
+  def keywords=(value)
+    @keywords = value
+  end
+
+  def price
+    @price
+  end
+
+  def price=(value)
+    @price = value
   end
 
   def initialize(manufacturer = nil,
@@ -2607,8 +3101,9 @@ class ManufacturerRequest
       type = nil,
       devtag = nil,
       sort = nil,
-      variations = nil,
-      locale = nil)
+      locale = nil,
+      keywords = nil,
+      price = nil)
     @manufacturer = manufacturer
     @page = page
     @mode = mode
@@ -2616,8 +3111,9 @@ class ManufacturerRequest
     @type = type
     @devtag = devtag
     @sort = sort
-    @variations = variations
     @locale = locale
+    @keywords = keywords
+    @price = price
   end
 end
 
@@ -2866,6 +3362,14 @@ class MarketplaceRequest
     @listing_id = value
   end
 
+  def desc
+    @desc
+  end
+
+  def desc=(value)
+    @desc = value
+  end
+
   def locale
     @locale
   end
@@ -2895,6 +3399,7 @@ class MarketplaceRequest
       geo = nil,
       sort = nil,
       listing_id = nil,
+      desc = nil,
       locale = nil,
       index = nil)
     @marketplace_search = marketplace_search
@@ -2910,6 +3415,7 @@ class MarketplaceRequest
     @geo = geo
     @sort = sort
     @listing_id = listing_id
+    @desc = desc
     @locale = locale
     @index = index
   end
@@ -2960,6 +3466,14 @@ class SellerProfileRequest
     @page = value
   end
 
+  def desc
+    @desc
+  end
+
+  def desc=(value)
+    @desc = value
+  end
+
   def locale
     @locale
   end
@@ -2973,12 +3487,14 @@ class SellerProfileRequest
       type = nil,
       devtag = nil,
       page = nil,
+      desc = nil,
       locale = nil)
     @seller_id = seller_id
     @tag = tag
     @type = type
     @devtag = devtag
     @page = page
+    @desc = desc
     @locale = locale
   end
 end
@@ -3052,6 +3568,14 @@ class SellerRequest
     @keyword = value
   end
 
+  def desc
+    @desc
+  end
+
+  def desc=(value)
+    @desc = value
+  end
+
   def locale
     @locale
   end
@@ -3076,6 +3600,7 @@ class SellerRequest
       page = nil,
       seller_browse_id = nil,
       keyword = nil,
+      desc = nil,
       locale = nil,
       index = nil)
     @seller_id = seller_id
@@ -3086,6 +3611,7 @@ class SellerRequest
     @page = page
     @seller_browse_id = seller_browse_id
     @keyword = keyword
+    @desc = desc
     @locale = locale
     @index = index
   end
@@ -3232,6 +3758,14 @@ class Item
     @ourPrice = value
   end
 
+  def MerchantSku
+    @merchantSku
+  end
+
+  def MerchantSku=(value)
+    @merchantSku = value
+  end
+
   def initialize(itemId = nil,
       productName = nil,
       catalog = nil,
@@ -3239,7 +3773,8 @@ class Item
       exchangeId = nil,
       quantity = nil,
       listPrice = nil,
-      ourPrice = nil)
+      ourPrice = nil,
+      merchantSku = nil)
     @itemId = itemId
     @productName = productName
     @catalog = catalog
@@ -3248,6 +3783,7 @@ class Item
     @quantity = quantity
     @listPrice = listPrice
     @ourPrice = ourPrice
+    @merchantSku = merchantSku
   end
 end
 
@@ -3298,12 +3834,28 @@ class AddItem
   @@schema_type = "AddItem"
   @@schema_ns = "http://soap.amazon.com"
 
+  def ParentAsin
+    @parentAsin
+  end
+
+  def ParentAsin=(value)
+    @parentAsin = value
+  end
+
   def Asin
     @asin
   end
 
   def Asin=(value)
     @asin = value
+  end
+
+  def MerchantId
+    @merchantId
+  end
+
+  def MerchantId=(value)
+    @merchantId = value
   end
 
   def ExchangeId
@@ -3322,10 +3874,14 @@ class AddItem
     @quantity = value
   end
 
-  def initialize(asin = nil,
+  def initialize(parentAsin = nil,
+      asin = nil,
+      merchantId = nil,
       exchangeId = nil,
       quantity = nil)
+    @parentAsin = parentAsin
     @asin = asin
+    @merchantId = merchantId
     @exchangeId = exchangeId
     @quantity = quantity
   end
@@ -3368,14 +3924,24 @@ class ShoppingCart
     @items = value
   end
 
+  def SimilarProducts
+    @similarProducts
+  end
+
+  def SimilarProducts=(value)
+    @similarProducts = value
+  end
+
   def initialize(cartId = nil,
       hMAC = nil,
       purchaseUrl = nil,
-      items = nil)
+      items = nil,
+      similarProducts = nil)
     @cartId = cartId
     @hMAC = hMAC
     @purchaseUrl = purchaseUrl
     @items = items
+    @similarProducts = similarProducts
   end
 end
 
@@ -3424,16 +3990,26 @@ class GetShoppingCartRequest
     @locale = value
   end
 
+  def sims
+    @sims
+  end
+
+  def sims=(value)
+    @sims = value
+  end
+
   def initialize(tag = nil,
       devtag = nil,
       cartId = nil,
       hMAC = nil,
-      locale = nil)
+      locale = nil,
+      sims = nil)
     @tag = tag
     @devtag = devtag
     @cartId = cartId
     @hMAC = hMAC
     @locale = locale
+    @sims = sims
   end
 end
 
@@ -3548,18 +4124,28 @@ class AddShoppingCartItemsRequest
     @locale = value
   end
 
+  def sims
+    @sims
+  end
+
+  def sims=(value)
+    @sims = value
+  end
+
   def initialize(tag = nil,
       devtag = nil,
       cartId = nil,
       hMAC = nil,
       items = nil,
-      locale = nil)
+      locale = nil,
+      sims = nil)
     @tag = tag
     @devtag = devtag
     @cartId = cartId
     @hMAC = hMAC
     @items = items
     @locale = locale
+    @sims = sims
   end
 end
 
@@ -3616,18 +4202,28 @@ class RemoveShoppingCartItemsRequest
     @locale = value
   end
 
+  def sims
+    @sims
+  end
+
+  def sims=(value)
+    @sims = value
+  end
+
   def initialize(tag = nil,
       devtag = nil,
       cartId = nil,
       hMAC = nil,
       items = nil,
-      locale = nil)
+      locale = nil,
+      sims = nil)
     @tag = tag
     @devtag = devtag
     @cartId = cartId
     @hMAC = hMAC
     @items = items
     @locale = locale
+    @sims = sims
   end
 end
 
@@ -3684,18 +4280,414 @@ class ModifyShoppingCartItemsRequest
     @locale = value
   end
 
+  def sims
+    @sims
+  end
+
+  def sims=(value)
+    @sims = value
+  end
+
   def initialize(tag = nil,
       devtag = nil,
       cartId = nil,
       hMAC = nil,
       items = nil,
-      locale = nil)
+      locale = nil,
+      sims = nil)
     @tag = tag
     @devtag = devtag
     @cartId = cartId
     @hMAC = hMAC
     @items = items
     @locale = locale
+    @sims = sims
+  end
+end
+
+# http://soap.amazon.com
+class OrderIdArray < Array
+  # Contents type should be dumped here...
+  @@schema_type = "OrderIdArray"
+  @@schema_ns = "http://soap.amazon.com"
+end
+
+# http://soap.amazon.com
+class Price
+  @@schema_type = "Price"
+  @@schema_ns = "http://soap.amazon.com"
+
+  def Amount
+    @amount
+  end
+
+  def Amount=(value)
+    @amount = value
+  end
+
+  def CurrencyCode
+    @currencyCode
+  end
+
+  def CurrencyCode=(value)
+    @currencyCode = value
+  end
+
+  def initialize(amount = nil,
+      currencyCode = nil)
+    @amount = amount
+    @currencyCode = currencyCode
+  end
+end
+
+# http://soap.amazon.com
+class Package
+  @@schema_type = "Package"
+  @@schema_ns = "http://soap.amazon.com"
+
+  def TrackingNumber
+    @trackingNumber
+  end
+
+  def TrackingNumber=(value)
+    @trackingNumber = value
+  end
+
+  def CarrierName
+    @carrierName
+  end
+
+  def CarrierName=(value)
+    @carrierName = value
+  end
+
+  def initialize(trackingNumber = nil,
+      carrierName = nil)
+    @trackingNumber = trackingNumber
+    @carrierName = carrierName
+  end
+end
+
+# http://soap.amazon.com
+class PackageArray < Array
+  # Contents type should be dumped here...
+  @@schema_type = "PackageArray"
+  @@schema_ns = "http://soap.amazon.com"
+end
+
+# http://soap.amazon.com
+class OrderItem
+  @@schema_type = "OrderItem"
+  @@schema_ns = "http://soap.amazon.com"
+
+  def ItemNumber
+    @itemNumber
+  end
+
+  def ItemNumber=(value)
+    @itemNumber = value
+  end
+
+  def ASIN
+    @aSIN
+  end
+
+  def ASIN=(value)
+    @aSIN = value
+  end
+
+  def ExchangeId
+    @exchangeId
+  end
+
+  def ExchangeId=(value)
+    @exchangeId = value
+  end
+
+  def Quantity
+    @quantity
+  end
+
+  def Quantity=(value)
+    @quantity = value
+  end
+
+  def UnitPrice
+    @unitPrice
+  end
+
+  def UnitPrice=(value)
+    @unitPrice = value
+  end
+
+  def TotalPrice
+    @totalPrice
+  end
+
+  def TotalPrice=(value)
+    @totalPrice = value
+  end
+
+  def initialize(itemNumber = nil,
+      aSIN = nil,
+      exchangeId = nil,
+      quantity = nil,
+      unitPrice = nil,
+      totalPrice = nil)
+    @itemNumber = itemNumber
+    @aSIN = aSIN
+    @exchangeId = exchangeId
+    @quantity = quantity
+    @unitPrice = unitPrice
+    @totalPrice = totalPrice
+  end
+end
+
+# http://soap.amazon.com
+class OrderItemArray < Array
+  # Contents type should be dumped here...
+  @@schema_type = "OrderItemArray"
+  @@schema_ns = "http://soap.amazon.com"
+end
+
+# http://soap.amazon.com
+class ShortSummary
+  @@schema_type = "ShortSummary"
+  @@schema_ns = "http://soap.amazon.com"
+
+  def OrderId
+    @orderId
+  end
+
+  def OrderId=(value)
+    @orderId = value
+  end
+
+  def SellerId
+    @sellerId
+  end
+
+  def SellerId=(value)
+    @sellerId = value
+  end
+
+  def Condition
+    @condition
+  end
+
+  def Condition=(value)
+    @condition = value
+  end
+
+  def TransactionDate
+    @transactionDate
+  end
+
+  def TransactionDate=(value)
+    @transactionDate = value
+  end
+
+  def TransactionDateEpoch
+    @transactionDateEpoch
+  end
+
+  def TransactionDateEpoch=(value)
+    @transactionDateEpoch = value
+  end
+
+  def Total
+    @total
+  end
+
+  def Total=(value)
+    @total = value
+  end
+
+  def Subtotal
+    @subtotal
+  end
+
+  def Subtotal=(value)
+    @subtotal = value
+  end
+
+  def Shipping
+    @shipping
+  end
+
+  def Shipping=(value)
+    @shipping = value
+  end
+
+  def Tax
+    @tax
+  end
+
+  def Tax=(value)
+    @tax = value
+  end
+
+  def Promotion
+    @promotion
+  end
+
+  def Promotion=(value)
+    @promotion = value
+  end
+
+  def StoreName
+    @storeName
+  end
+
+  def StoreName=(value)
+    @storeName = value
+  end
+
+  def Packages
+    @packages
+  end
+
+  def Packages=(value)
+    @packages = value
+  end
+
+  def OrderItems
+    @orderItems
+  end
+
+  def OrderItems=(value)
+    @orderItems = value
+  end
+
+  def ErrorCode
+    @errorCode
+  end
+
+  def ErrorCode=(value)
+    @errorCode = value
+  end
+
+  def ErrorString
+    @errorString
+  end
+
+  def ErrorString=(value)
+    @errorString = value
+  end
+
+  def initialize(orderId = nil,
+      sellerId = nil,
+      condition = nil,
+      transactionDate = nil,
+      transactionDateEpoch = nil,
+      total = nil,
+      subtotal = nil,
+      shipping = nil,
+      tax = nil,
+      promotion = nil,
+      storeName = nil,
+      packages = nil,
+      orderItems = nil,
+      errorCode = nil,
+      errorString = nil)
+    @orderId = orderId
+    @sellerId = sellerId
+    @condition = condition
+    @transactionDate = transactionDate
+    @transactionDateEpoch = transactionDateEpoch
+    @total = total
+    @subtotal = subtotal
+    @shipping = shipping
+    @tax = tax
+    @promotion = promotion
+    @storeName = storeName
+    @packages = packages
+    @orderItems = orderItems
+    @errorCode = errorCode
+    @errorString = errorString
+  end
+end
+
+# http://soap.amazon.com
+class ShortSummaryArray < Array
+  # Contents type should be dumped here...
+  @@schema_type = "ShortSummaryArray"
+  @@schema_ns = "http://soap.amazon.com"
+end
+
+# http://soap.amazon.com
+class GetTransactionDetailsRequest
+  @@schema_type = "GetTransactionDetailsRequest"
+  @@schema_ns = "http://soap.amazon.com"
+
+  def tag
+    @tag
+  end
+
+  def tag=(value)
+    @tag = value
+  end
+
+  def devtag
+    @devtag
+  end
+
+  def devtag=(value)
+    @devtag = value
+  end
+
+  def key
+    @key
+  end
+
+  def key=(value)
+    @key = value
+  end
+
+  def OrderIds
+    @orderIds
+  end
+
+  def OrderIds=(value)
+    @orderIds = value
+  end
+
+  def locale
+    @locale
+  end
+
+  def locale=(value)
+    @locale = value
+  end
+
+  def initialize(tag = nil,
+      devtag = nil,
+      key = nil,
+      orderIds = nil,
+      locale = nil)
+    @tag = tag
+    @devtag = devtag
+    @key = key
+    @orderIds = orderIds
+    @locale = locale
+  end
+end
+
+# http://soap.amazon.com
+class GetTransactionDetailsResponse
+  @@schema_type = "GetTransactionDetailsResponse"
+  @@schema_ns = "http://soap.amazon.com"
+
+  def ShortSummaries
+    @shortSummaries
+  end
+
+  def ShortSummaries=(value)
+    @shortSummaries = value
+  end
+
+  def initialize(shortSummaries = nil)
+    @shortSummaries = shortSummaries
   end
 end
 

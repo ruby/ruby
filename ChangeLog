@@ -1,3 +1,10 @@
+Sat Oct  4 02:12:44 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/xsd/datatypes.rb: dump sign by itself.  under the problematic
+	  platform, sprintf("%+.10g", -0.0) => +0.  sigh.
+
+	* sample/wsdl/amazon/*: update schema ver2 to ver3.
+
 Sat Oct  4 01:33:46 2003  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pathname.rb (initialize): duplicate and freeze argument.

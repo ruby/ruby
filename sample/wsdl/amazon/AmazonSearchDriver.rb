@@ -24,6 +24,12 @@ class AmazonSearchPort < SOAP::RPC::Driver
     { :type => XSD::QName.new("http://soap.amazon.com", "Details") }
   )
   MappingRegistry.set(
+    TextStreamRequest,
+    ::SOAP::SOAPStruct,
+    ::SOAP::Mapping::Registry::TypedStructFactory,
+    { :type => XSD::QName.new("http://soap.amazon.com", "TextStreamRequest") }
+  )
+  MappingRegistry.set(
     PowerRequest,
     ::SOAP::SOAPStruct,
     ::SOAP::Mapping::Registry::TypedStructFactory,
@@ -58,6 +64,12 @@ class AmazonSearchPort < SOAP::RPC::Driver
     ::SOAP::SOAPStruct,
     ::SOAP::Mapping::Registry::TypedStructFactory,
     { :type => XSD::QName.new("http://soap.amazon.com", "UpcRequest") }
+  )
+  MappingRegistry.set(
+    SkuRequest,
+    ::SOAP::SOAPStruct,
+    ::SOAP::Mapping::Registry::TypedStructFactory,
+    { :type => XSD::QName.new("http://soap.amazon.com", "SkuRequest") }
   )
   MappingRegistry.set(
     AuthorRequest,
@@ -192,6 +204,12 @@ class AmazonSearchPort < SOAP::RPC::Driver
     { :type => XSD::QName.new("http://soap.amazon.com", "Item") }
   )
   MappingRegistry.set(
+    SimilarProductsArray,
+    ::SOAP::SOAPArray,
+    ::SOAP::Mapping::Registry::TypedArrayFactory,
+    { :type => XSD::QName.new("http://www.w3.org/2001/XMLSchema", "string") }
+  )
+  MappingRegistry.set(
     ClearShoppingCartRequest,
     ::SOAP::SOAPStruct,
     ::SOAP::Mapping::Registry::TypedStructFactory,
@@ -232,6 +250,30 @@ class AmazonSearchPort < SOAP::RPC::Driver
     ::SOAP::SOAPArray,
     ::SOAP::Mapping::Registry::TypedArrayFactory,
     { :type => XSD::QName.new("http://soap.amazon.com", "ItemQuantity") }
+  )
+  MappingRegistry.set(
+    GetTransactionDetailsRequest,
+    ::SOAP::SOAPStruct,
+    ::SOAP::Mapping::Registry::TypedStructFactory,
+    { :type => XSD::QName.new("http://soap.amazon.com", "GetTransactionDetailsRequest") }
+  )
+  MappingRegistry.set(
+    OrderIdArray,
+    ::SOAP::SOAPArray,
+    ::SOAP::Mapping::Registry::TypedArrayFactory,
+    { :type => XSD::QName.new("http://www.w3.org/2001/XMLSchema", "string") }
+  )
+  MappingRegistry.set(
+    GetTransactionDetailsResponse,
+    ::SOAP::SOAPStruct,
+    ::SOAP::Mapping::Registry::TypedStructFactory,
+    { :type => XSD::QName.new("http://soap.amazon.com", "GetTransactionDetailsResponse") }
+  )
+  MappingRegistry.set(
+    ShortSummaryArray,
+    ::SOAP::SOAPArray,
+    ::SOAP::Mapping::Registry::TypedArrayFactory,
+    { :type => XSD::QName.new("http://soap.amazon.com", "ShortSummary") }
   )
   MappingRegistry.set(
     Details,
@@ -281,11 +323,23 @@ class AmazonSearchPort < SOAP::RPC::Driver
     ::SOAP::Mapping::Registry::TypedStructFactory,
     { :type => XSD::QName.new("http://soap.amazon.com", "ItemQuantity") }
   )
+  MappingRegistry.set(
+    ShortSummary,
+    ::SOAP::SOAPStruct,
+    ::SOAP::Mapping::Registry::TypedStructFactory,
+    { :type => XSD::QName.new("http://soap.amazon.com", "ShortSummary") }
+  )
   
   Methods = [
     ["KeywordSearchRequest", "keywordSearchRequest", [
       ["in", "KeywordSearchRequest",
        [::SOAP::SOAPStruct, "http://soap.amazon.com", "KeywordRequest"]],
+      ["retval", "return",
+       [::SOAP::SOAPStruct, "http://soap.amazon.com", "ProductInfo"]]],
+     "http://soap.amazon.com", "http://soap.amazon.com"],
+    ["TextStreamSearchRequest", "textStreamSearchRequest", [
+      ["in", "TextStreamSearchRequest",
+       [::SOAP::SOAPStruct, "http://soap.amazon.com", "TextStreamRequest"]],
       ["retval", "return",
        [::SOAP::SOAPStruct, "http://soap.amazon.com", "ProductInfo"]]],
      "http://soap.amazon.com", "http://soap.amazon.com"],
@@ -316,6 +370,12 @@ class AmazonSearchPort < SOAP::RPC::Driver
     ["UpcSearchRequest", "upcSearchRequest", [
       ["in", "UpcSearchRequest",
        [::SOAP::SOAPStruct, "http://soap.amazon.com", "UpcRequest"]],
+      ["retval", "return",
+       [::SOAP::SOAPStruct, "http://soap.amazon.com", "ProductInfo"]]],
+     "http://soap.amazon.com", "http://soap.amazon.com"],
+    ["SkuSearchRequest", "skuSearchRequest", [
+      ["in", "SkuSearchRequest",
+       [::SOAP::SOAPStruct, "http://soap.amazon.com", "SkuRequest"]],
       ["retval", "return",
        [::SOAP::SOAPStruct, "http://soap.amazon.com", "ProductInfo"]]],
      "http://soap.amazon.com", "http://soap.amazon.com"],
@@ -420,10 +480,16 @@ class AmazonSearchPort < SOAP::RPC::Driver
        [::SOAP::SOAPStruct, "http://soap.amazon.com", "ModifyShoppingCartItemsRequest"]],
       ["retval", "ShoppingCart",
        [::SOAP::SOAPStruct, "http://soap.amazon.com", "ShoppingCart"]]],
+     "http://soap.amazon.com", "http://soap.amazon.com"],
+    ["GetTransactionDetailsRequest", "getTransactionDetailsRequest", [
+      ["in", "GetTransactionDetailsRequest",
+       [::SOAP::SOAPStruct, "http://soap.amazon.com", "GetTransactionDetailsRequest"]],
+      ["retval", "GetTransactionDetailsResponse",
+       [::SOAP::SOAPStruct, "http://soap.amazon.com", "GetTransactionDetailsResponse"]]],
      "http://soap.amazon.com", "http://soap.amazon.com"]
   ]
 
-  DefaultEndpointUrl = "http://soap.amazon.com/onca/soap2"
+  DefaultEndpointUrl = "http://soap.amazon.com/onca/soap3"
 
   def initialize(endpoint_url = nil)
     endpoint_url ||= DefaultEndpointUrl
