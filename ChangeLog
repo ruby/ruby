@@ -1,3 +1,17 @@
+Tue Mar 11 04:30:12 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (massign): remove unnecessary array unpacking; it should
+	  be handled before massign() by svalue_to_mrhs().
+
+	* eval.c (svalue_to_mrhs): '*a = v' value conversion to avalue
+	  (i.e. [1] => [[1]], [1,2] => [1,2]).
+
+	* eval.c (rb_eval): use svalue_to_mrhs.
+
+	* eval.c (rb_yield_0): ditto.
+
+	* eval.c (proc_invoke): break from "Proc#yield" is legal.
+
 Mon Mar 10 23:19:29 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* file.c (rb_find_file): need world writable directory check for

@@ -240,6 +240,17 @@ def r; return *[*[]]; end; a,b,*c = r(); test_ok([a,b,c] == [nil,nil,[]])
 def r; return *[*[1]]; end; a,b,*c = r(); test_ok([a,b,c] == [1,nil,[]])
 def r; return *[*[1,2]]; end; a,b,*c = r(); test_ok([a,b,c] == [1,2,[]])
 
+f = lambda {|r,| test_ok([] == r)}
+f.call([], *[])
+f.yield([], *[])
+
+f = lambda {|r,*l| test_ok([] == r); test_ok([1] == l)}
+f.call([], *[1])
+f.yield([], *[1])
+
+a,=*[1]
+test_ok(a == 1)
+
 a = loop do break; end; test_ok(a == nil)
 a = loop do break nil; end; test_ok(a == nil)
 a = loop do break 1; end; test_ok(a == 1)
