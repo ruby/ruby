@@ -323,7 +323,7 @@ c_parray(VALUE v, long *size)
     case T_STRING:
       {
 	char *str, *src;
-	src = StringValuePtr(e);
+	src = RSTRING(e)->ptr;
 	str = dlstrdup(src);
 	ary[i] = (void*)str;
       };
@@ -472,7 +472,7 @@ rb_dl_strdup(VALUE self, VALUE str)
   void *p;
 
   str = rb_String(str);
-  return rb_dlptr_new(strdup(StringValuePtr(str)), RSTRING(str)->len, dlfree);
+  return rb_dlptr_new(strdup(RSTRING(str)->ptr), RSTRING(str)->len, dlfree);
 }
 
 static VALUE
@@ -482,7 +482,7 @@ rb_dl_sizeof(VALUE self, VALUE str)
 }
 
 static VALUE
-rb_dl_callback_type(VALUE str)
+rb_dl_callback_type(VALUE *str)
 {
   char *type;
   int len;
@@ -490,8 +490,8 @@ rb_dl_callback_type(VALUE str)
   long ftype;
 
   ftype = 0;
-  type = StringValuePtr(str);
-  len  = RSTRING(str)->len;
+  type = StringValuePtr(*str);
+  len  = RSTRING(*str)->len;
 
   if( len - 1 > MAX_CBARG ){
     rb_raise(rb_eDLError, "maximum number of the argument is %d.", MAX_CBARG);
@@ -567,7 +567,7 @@ rb_dl_set_callback(int argc, VALUE argv[], VALUE self)
     rb_bug("rb_dl_set_callback");
   };
 
-  key = rb_dl_callback_type(types);
+  key = rb_dl_callback_type(&types);
   entry = rb_hash_aref(DLFuncTable, key);
   if( entry == Qnil ){
     entry = rb_hash_new();
@@ -578,7 +578,7 @@ rb_dl_set_callback(int argc, VALUE argv[], VALUE self)
   if( func ){
     rb_hash_aset(entry, num, proc);
     snprintf(func_name, 1023, "rb_dl_func%d_%d", NUM2INT(key), NUM2INT(num));
-    return rb_dlsym_new(func, func_name, StringValuePtr(types));
+    return rb_dlsym_new(func, func_name, RSTRING(types)->ptr);
   }
   else{
     return Qnil;
@@ -591,7 +591,7 @@ rb_dl_get_callback(VALUE self, VALUE types, VALUE num)
   VALUE key;
   VALUE entry;
 
-  key = rb_dl_callback_type(types);
+  key = rb_dl_callback_type(&types);
   entry = rb_hash_aref(DLFuncTable, key);
   if( entry == Qnil ){
     return Qnil;

@@ -142,16 +142,7 @@ rb_dlsym_s_new(int argc, VALUE argv[], VALUE self)
   void *saddr;
   const char *sname, *stype;
 
-  switch( rb_scan_args(argc, argv, "12", &addr, &name, &type) ){
-  case 3:
-    break;
-  case 2:
-    type = Qnil;
-    break;
-  case 1:
-    name = Qnil;
-    type = Qnil;
-  };
+  rb_scan_args(argc, argv, "12", &addr, &name, &type);
 
   saddr = (void*)(DLNUM2LONG(rb_Integer(addr)));
   sname = NIL_P(name) ? NULL : StringValuePtr(name);
@@ -270,7 +261,7 @@ rb_dlsym_inspect(VALUE self)
   str = dlmalloc(str_size);
   snprintf(str, str_size - 1,
 	   "#<DL::Symbol:0x%x func=0x%x '%s'>",
-	   sym, sym->func, StringValuePtr(proto));
+	   sym, sym->func, RSTRING(proto)->len);
   val = rb_tainted_str_new2(str);
   dlfree(str);
 
@@ -418,16 +409,19 @@ rb_dlsym_call(int argc, VALUE argv[], VALUE self)
 	ANY2S(args[i]) = DLSTR(0);
       }
       else{
-	ANY2S(args[i]) = DLSTR(StringValuePtr(argv[i]));
+	if( TYPE(argv[i]) != T_STRING ){
+	  raise(rb_eDLError, "#%d must be a string",i);
+	};
+	ANY2S(args[i]) = DLSTR(argv[i]);
       };
       PUSH_P(ftype);
       break;
     case 's':
-      if( argv[i] == Qnil ){
+      if( TYPE(argv[i]) != T_STRING ){
 	raise(rb_eDLError, "#%d must be a string",i);
       };
       ANY2S(args[i]) = DLSTR(dlmalloc(RSTRING(argv[i])->len + 1));
-      memcpy((char*)(ANY2S(args[i])), StringValuePtr(argv[i]), RSTRING(argv[i])->len + 1);
+      memcpy((char*)(ANY2S(args[i])), RSTRING(argv[i])->ptr, RSTRING(argv[i])->len + 1);
       dtypes[i] = 's';
       PUSH_P(ftype);
       break;
