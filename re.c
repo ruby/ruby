@@ -1045,13 +1045,14 @@ static VALUE
 rb_reg_s_alloc(klass)
     VALUE klass;
 {
-    VALUE re = rb_obj_alloc(klass);
+    NEWOBJ(re, struct RRegexp);
+    OBJSETUP(re, klass, T_REGEXP);
 
-    RREGEXP(re)->ptr = 0;
-    RREGEXP(re)->len = 0;
-    RREGEXP(re)->str = 0;
+    re->ptr = 0;
+    re->len = 0;
+    re->str = 0;
 
-    return re;
+    return (VALUE)re;
 }
 
 static VALUE
