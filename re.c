@@ -1260,7 +1260,7 @@ rb_reg_initialize_m(argc, argv, self)
     }
     else {
 	s = StringValuePtr(argv[0]);
-	len = RREGEXP(argv[0])->len;
+	len = RSTRING(argv[0])->len;
 	if (argc >= 2) {
 	    if (FIXNUM_P(argv[1])) flags = FIX2INT(argv[1]);
 	    else if (RTEST(argv[1])) flags = RE_OPTION_IGNORECASE;

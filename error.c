@@ -544,6 +544,7 @@ Init_Exception()
     rb_define_method(rb_eException, "exception", exc_exception, -1);
     rb_define_method(rb_eException, "initialize", exc_initialize, -1);
     rb_define_method(rb_eException, "to_s", exc_to_s, 0);
+    rb_define_method(rb_eException, "to_str", exc_to_s, 0);
     rb_define_method(rb_eException, "message", exc_to_s, 0);
     rb_define_method(rb_eException, "inspect", exc_inspect, 0);
     rb_define_method(rb_eException, "backtrace", exc_backtrace, 0);
