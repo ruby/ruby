@@ -359,7 +359,7 @@ class Time
     If self is a UTC time, Z is used as TZD.
     [+-]hh:mm is used otherwise.
 
-    ((|fractional_seconds|)) specify as a number of digits of
+    ((|fractional_seconds|)) specify a number of digits of
     fractional seconds.
     The default value of ((|fractional_seconds|)) is 0.
 =end
