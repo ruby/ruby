@@ -1,7 +1,7 @@
 #= open-uri.rb
 #
 #open-uri.rb is easy-to-use wrapper for net/http and net/ftp.
-# 
+#
 #== Example
 #
 #It is possible to open http/ftp URL as usual a file:
@@ -40,7 +40,7 @@
 #  }
 #
 #URI objects can be opened in similar way.
-# 
+#
 #  uri = URI.parse("http://www.ruby-lang.org/en/")
 #  uri.open {|f|
 #    ...
@@ -66,7 +66,7 @@ module Kernel
   # If the first argument respond to `open' method,
   # the method is called with the rest arguments.
   #
-  # If the first argument is a string which begins with xxx://, 
+  # If the first argument is a string which begins with xxx://,
   # it is parsed by URI.parse.  If the parsed object respond to `open' method,
   # the method is called with the rest arguments.
   #
@@ -181,7 +181,7 @@ module OpenURI
         end
         uri = redirect
         raise "HTTP redirection loop: #{uri}" if uri_set.include? uri.to_s
-        uri_set[uri.to_s] = true 
+        uri_set[uri.to_s] = true
       else
         break
       end
@@ -528,6 +528,16 @@ module URI
     def proxy_open(buf, uri, options) # :nodoc:
       header = {}
       options.each {|k, v| header[k] = v if String === k }
+
+      if uri.respond_to? :host
+        # According to RFC2616 14.23, Host: request-header field should be set
+        # an origin server.
+        # But net/http wrongly set a proxy server if an absolute URI is
+        # specified as a request URI.
+        # So open-uri override it here explicitly.
+        header['host'] = uri.host
+        header['host'] += ":#{uri.port}" if uri.port
+      end
 
       require 'net/http'
       resp = nil

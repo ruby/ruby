@@ -1,3 +1,7 @@
+Wed Apr 21 20:05:00 2004  Tanaka Akira  <akr@m17n.org>
+
+	* lib/open-uri.rb (URI::HTTP#proxy_open): set Host: field explicitly.
+
 Wed Apr 21 18:39:46 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/smtp.rb: merge SMTP-TLS patch.  This patch is
@@ -465,7 +469,7 @@ Sun Mar 28 14:09:13 2004  Minero Aoki  <aamine@loveruby.net>
 
 Sat Mar 27 21:40:41 2004  Tanaka Akira  <akr@m17n.org>
 
-	* (lib/open-uri.rb): permit extra semicolon in content-type field.
+	* lib/open-uri.rb: permit extra semicolon in content-type field.
 
 Sat Mar 27 10:40:48 2004  Tanaka Akira  <akr@m17n.org>
 
