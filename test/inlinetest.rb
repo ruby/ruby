@@ -1,21 +1,28 @@
 module InlineTest
+  def eval_part(libname, sep, part)
+    path = libpath(libname)
+    program = File.open(path) { |f| f.read }
+    mainpart, endpart = program.split(sep)
+    if endpart.nil?
+      raise RuntimeError.new("No #{part} part in the library '#{filename}'")
+    end
+    require(libname)
+    eval(endpart, nil, path, mainpart.count("\n")+1)
+  end
+  module_function :eval_part
+
   def loadtest(libname)
+    Kernel.require(libname)
     in_critical do
       in_progname(libpath(libname)) do
-	Kernel.load(libname)
+        eval_part(libname, /^(?=if\s+(?:\$0\s*==\s*__FILE__|__FILE__\s*==\s*\$0)(?:[\#\s]|$))/, '$0 == __FILE__')
       end
     end
   end
   module_function :loadtest
 
   def loadtest__END__part(libname)
-    program = File.open(libpath(libname)) { |f| f.read }
-    mainpart, endpart = program.split(/^__END__$/)
-    if endpart.nil?
-      raise RuntimeError.new("No __END__ part in the library '#{filename}'")
-    end
-    require(libname)
-    eval(endpart)
+    eval_part(libname, /^__END__$/, '__END__')
   end
   module_function :loadtest__END__part
 
