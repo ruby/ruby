@@ -19,6 +19,7 @@ module RSS
 		LINK_VALUE = "http://xml.com/pub"
 		URL_VALUE = "http://xml.com/universal/images/xml_tiny.gif"
 		NAME_VALUE = "hogehoge"
+		LANGUAGE_VALUE = "ja"
 		DESCRIPTION_VALUE = "
     XML.com features a rich mix of information and services 
     for the XML community.
@@ -27,6 +28,18 @@ module RSS
 			"http://xml.com/pub/2000/08/09/xslt/xslt.html",
 			"http://xml.com/pub/2000/08/09/rdfdb/index.html",
 		]
+
+		CLOUD_DOMAIN = "data.ourfavoritesongs.com"
+		CLOUD_PORT = "80"
+		CLOUD_PATH = "/RPC2"
+		CLOUD_REGISTER_PROCEDURE = "ourFavoriteSongs.rssPleaseNotify"
+		CLOUD_PROTOCOL = "xml-rpc"
+		
+		ENCLOSURE_URL = "http://www.scripting.com/mp3s/weatherReportSuite.mp3"
+		ENCLOSURE_LENGTH = "12216320"
+		ENCLOSURE_TYPE = "audio/mpeg"
+		
+		CATEGORY_DOMAIN = "http://www.superopendirectory.com/"
 
 		def default_test
 			# This class isn't tested
@@ -116,7 +129,7 @@ EOT
 EOR
 		end
 
-		def make_Rss2(content=nil, xmlns=[])
+		def make_rss20(content=nil, xmlns=[])
 			<<-EORSS
 #{make_xmldecl}
 <rss version="2.0"
@@ -126,12 +139,13 @@ EOR
 EORSS
 		end
 
-		def make_channel2(content=nil)
+		def make_channel20(content=nil)
 			<<-EOC
 <channel>
 	<title>#{TITLE_VALUE}</title>
 	<link>#{LINK_VALUE}</link>
 	<description>#{DESCRIPTION_VALUE}</description>
+	<language>#{LANGUAGE_VALUE}</language>
 
 	<image>
 		<url>#{RDF_RESOURCE}</url>
@@ -142,6 +156,9 @@ EORSS
 #{RESOURCES.collect do |res| '<item><link>' + res + '</link></item>' end.join("\n")}
 
 	<textInput>
+		<title>#{TITLE_VALUE}</title>
+		<description>#{DESCRIPTION_VALUE}</description>
+		<name>#{NAME_VALUE}</name>
 		<link>#{RDF_RESOURCE}</link>
 	</textInput>
 
@@ -150,7 +167,7 @@ EORSS
 EOC
 		end
 
-		def make_item2(content=nil)
+		def make_item20(content=nil)
 			<<-EOI
 <item>
 	<title>#{TITLE_VALUE}</title>
@@ -160,5 +177,17 @@ EOC
 </item>
 EOI
 		end
+
+		def make_cloud20
+			<<-EOC
+<cloud
+  domain="#{CLOUD_DOMAIN}"
+  port="#{CLOUD_PORT}"
+  path="#{CLOUD_PATH}"
+  registerProcedure="#{CLOUD_REGISTER_PROCEDURE}"
+  protocol="#{CLOUD_PROTOCOL}" />
+EOC
+		end
+
 	end
 end

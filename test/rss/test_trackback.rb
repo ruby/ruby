@@ -40,13 +40,13 @@ EOR
 
 			@rss = Parser.parse(@rss_source)
 
-			@rss2_source = make_Rss2(nil, {@prefix =>  @uri}) do
-				make_channel2(nil) do
-					make_item2(@content_nodes2)
+			@rss20_source = make_rss20(nil, {@prefix =>  @uri}) do
+				make_channel20(nil) do
+					make_item20(@content_nodes2)
 				end
 			end
 
-			@rss2 = Parser.parse(@rss2_source, false)
+			@rss20 = Parser.parse(@rss20_source, false)
 		end
 
 		def test_parser
@@ -92,18 +92,18 @@ EOR
 					accessor = "#{RSS::TRACKBACK_PREFIX}_#{name}"
 					target_accessor = "resource"
 					target = @rss.send(parent).send(accessor)
-					target2 = @rss2.channel.send(parent, -1)
+					target20 = @rss20.channel.send(parent, -1)
 					assert_equal(value, target.send(target_accessor))
-					assert_equal(value, target2.send(accessor))
+					assert_equal(value, target20.send(accessor))
 					target.send("#{target_accessor}=", new_value[name].to_s)
 					if name == :about
 						# abount is zero or more
-						target2.send("#{accessor}=", 0, new_value[name].to_s)
+						target20.send("#{accessor}=", 0, new_value[name].to_s)
 					else
-						target2.send("#{accessor}=", new_value[name].to_s)
+						target20.send("#{accessor}=", new_value[name].to_s)
 					end
 					assert_equal(new_value[name], target.send(target_accessor))
-					assert_equal(new_value[name], target2.send(accessor))
+					assert_equal(new_value[name], target20.send(accessor))
 				end
 			end
 			

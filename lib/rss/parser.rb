@@ -124,9 +124,20 @@ module RSS
 		class << self
 
 			@@setter = {}
+			@@registered_uris = {}
+
 			def install_setter(uri, tag_name, setter)
 				@@setter[uri] = {}  unless @@setter.has_key?(uri)
 				@@setter[uri][tag_name] = setter
+			end
+
+			def register_uri(name, uri)
+				@@registered_uris[name] = {}  unless @@registered_uris.has_key?(name)
+				@@registered_uris[name][uri] = nil
+			end
+
+			def uri_registered?(name, uri)
+				@@registered_uris[name].has_key?(uri)
 			end
 
 			def setter(uri, tag_name)
@@ -147,27 +158,32 @@ module RSS
 					
 			def install_get_text_element(name, uri, setter)
 				install_setter(uri, name, setter)
-				def_get_text_element(name, *get_file_and_line_from_caller(1))
+				def_get_text_element(uri, name, *get_file_and_line_from_caller(1))
 			end
 			
 			private
 
-			def def_get_text_element(name, file, line)
+			def def_get_text_element(uri, name, file, line)
+				register_uri(name, uri)
 				unless private_instance_methods(false).include?("start_#{name}")
 					module_eval(<<-EOT, file, line)
 					def start_#{name}(name, prefix, attrs, ns)
 						uri = ns[prefix]
-						if @do_validate
-							tags = self.class.available_tags(uri)
-							unless tags.include?(name)
-								raise UnknownTagError.new(name, uri)
+						if self.class.uri_registered?(#{name.inspect}, uri)
+							if @do_validate
+								tags = self.class.available_tags(uri)
+								unless tags.include?(name)
+									raise UnknownTagError.new(name, uri)
+								end
 							end
+							start_get_text_element(name, prefix, ns, uri)
+						else
+							start_else_element(name, prefix, attrs, ns)
 						end
-						start_get_text_element(name, prefix, ns, uri)
 					end
 					EOT
+					send("private", "start_#{name}")
 				end
-				send("private", "start_#{name}")
 			end
 
 		end
