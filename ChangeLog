@@ -1,3 +1,7 @@
+Tue Jan 16 16:59:14 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/protocol.rb: ignore EOFError for read
+
 Sun Jan 14 21:49:28 2001  Koji Arai  <JCA02266@nifty.ne.jp>
 
 	* sprintf.c (rb_f_sprintf): simple typo.  binary base should be 2,
@@ -6,7 +10,7 @@ Sun Jan 14 21:49:28 2001  Koji Arai  <JCA02266@nifty.ne.jp>
 Sun Jan 14 02:49:57 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/protocol.rb (adding): too few "yield" in case of arg is
-	not String/File.
+	  not String/File.
 
 Sat Jan 13 19:18:18 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
