@@ -1,3 +1,13 @@
+Tue Jan 21 14:46:12 2003  Tanaka Akira  <akr@m17n.org>
+
+        * lib/pp.rb: Use Test::Unit.
+
+        * lib/prettyprint.rb: Ditto
+
+        * lib/time.rb: Ditto
+
+        * lib/tsort.rb: Ditto
+
 Tue Jan 21 04:15:50 2003  Tanaka Akira  <akr@m17n.org>
 
         * lib/pp.rb: Use redefined `to_s' as well as `inspect'.

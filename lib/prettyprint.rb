@@ -392,10 +392,9 @@ class PrettyPrint
 end
 
 if __FILE__ == $0
-  require 'runit/testcase'
-  require 'runit/cui/testrunner'
+  require 'test/unit'
 
-  class WadlerExample < RUNIT::TestCase
+  class WadlerExample < Test::Unit::TestCase
     def setup
       @tree = Tree.new("aaaa", Tree.new("bbbbb", Tree.new("ccc"),
                                                  Tree.new("dd")),
@@ -632,7 +631,7 @@ End
     end
   end
 
-  class StrictPrettyExample < RUNIT::TestCase
+  class StrictPrettyExample < Test::Unit::TestCase
     def prog(width)
       PrettyPrint.format('', width) {|pp|
         pp.group {
@@ -777,7 +776,7 @@ End
 
   end
 
-  class TailGroup < RUNIT::TestCase
+  class TailGroup < Test::Unit::TestCase
     def test_1
       out = PrettyPrint.format('', 10) {|pp|
         pp.group {
@@ -797,7 +796,7 @@ End
     end
   end
 
-  class NonString < RUNIT::TestCase
+  class NonString < Test::Unit::TestCase
     def format(width)
       PrettyPrint.format([], width, 'newline', lambda {|n| "#{n} spaces"}) {|pp|
         pp.text(3, 3)
@@ -816,7 +815,7 @@ End
 
   end
 
-  class Fill < RUNIT::TestCase
+  class Fill < Test::Unit::TestCase
     def format(width)
       PrettyPrint.format('', width) {|pp|
         pp.group {
@@ -907,10 +906,4 @@ End
     end
 
   end
-
-  RUNIT::CUI::TestRunner.run(WadlerExample.suite)
-  RUNIT::CUI::TestRunner.run(StrictPrettyExample.suite)
-  RUNIT::CUI::TestRunner.run(TailGroup.suite)
-  RUNIT::CUI::TestRunner.run(NonString.suite)
-  RUNIT::CUI::TestRunner.run(Fill.suite)
 end

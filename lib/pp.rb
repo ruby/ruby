@@ -423,10 +423,9 @@ end
 }
 
 if __FILE__ == $0
-  require 'runit/testcase'
-  require 'runit/cui/testrunner'
+  require 'test/unit'
 
-  class PPTest < RUNIT::TestCase
+  class PPTest < Test::Unit::TestCase
     def test_list0123_12
       assert_equal("[0, 1, 2, 3]\n", PP.pp([0,1,2,3], '', 12))
     end
@@ -474,7 +473,15 @@ if __FILE__ == $0
     end
   end
 
-  class PPInspectTest < RUNIT::TestCase
+  class PrettyPrintInspect < HasPrettyPrint
+    alias inspect pretty_print_inspect
+  end
+
+  class PrettyPrintInspectWithoutPrettyPrint
+    alias inspect pretty_print_inspect
+  end
+
+  class PPInspectTest < Test::Unit::TestCase
     def test_hasinspect
       a = HasInspect.new(1)
       assert_equal("<inspect:1>\n", PP.pp(a, ''))
@@ -489,9 +496,21 @@ if __FILE__ == $0
       a = HasBoth.new(1)
       assert_equal("<pretty_print:1>\n", PP.pp(a, ''))
     end
+
+    def test_pretty_print_inspect
+      a = PrettyPrintInspect.new(1)
+      assert_equal("<pretty_print:1>", a.inspect)
+      a = PrettyPrintInspectWithoutPrettyPrint.new
+      assert_raises(RuntimeError) { a.inspect }
+    end
+
+    def test_proc
+      a = proc {1}
+      assert_equal("#{a.inspect}\n", PP.pp(a, ''))
+    end
   end
 
-  class PPCycleTest < RUNIT::TestCase
+  class PPCycleTest < Test::Unit::TestCase
     def test_array
       a = []
       a << a
@@ -522,9 +541,15 @@ if __FILE__ == $0
       a << HasInspect.new(a)
       assert_equal("[<inspect:[...]>]\n", PP.pp(a, ''))
     end
-  end
 
-  RUNIT::CUI::TestRunner.run(PPTest.suite)
-  RUNIT::CUI::TestRunner.run(PPInspectTest.suite)
-  RUNIT::CUI::TestRunner.run(PPCycleTest.suite)
+    def test_share_nil
+      begin
+        PP.sharing_detection = true
+        a = [nil, nil]
+        assert_equal("[nil, nil]\n", PP.pp(a, ''))
+      ensure
+        PP.sharing_detection = false
+      end
+    end
+  end
 end

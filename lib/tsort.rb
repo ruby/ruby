@@ -245,8 +245,7 @@ module TSort
 end
 
 if __FILE__ == $0
-  require 'runit/testcase'
-  require 'runit/cui/testrunner'
+  require 'test/unit'
 
   class Hash
     include TSort
@@ -264,7 +263,7 @@ if __FILE__ == $0
     end
   end
 
-  class TSortTest < RUNIT::TestCase
+  class TSortTest < Test::Unit::TestCase
     def test_dag
       h = {1=>[2, 3], 2=>[3], 3=>[]}
       assert_equal([3, 2, 1], h.tsort)
@@ -275,7 +274,7 @@ if __FILE__ == $0
       h = {1=>[2], 2=>[3, 4], 3=>[2], 4=>[]}
       assert_equal([[4], [2, 3], [1]],
         h.strongly_connected_components.map {|nodes| nodes.sort})
-      assert_exception(TSort::Cyclic) { h.tsort }
+      assert_raises(TSort::Cyclic) { h.tsort }
     end
 
     def test_array
@@ -289,6 +288,5 @@ if __FILE__ == $0
     end
   end
 
-  RUNIT::CUI::TestRunner.run(TSortTest.suite)
 end
 
