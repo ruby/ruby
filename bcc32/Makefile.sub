@@ -102,7 +102,7 @@ RFLAGS = $(iconinc)
 EXTLIBS =
 !endif
 LIBS = cw32.lib import32.lib ws2_32.lib $(EXTLIBS)
-MISSING = acosh.obj crypt.obj win32.obj
+MISSING = acosh.obj crypt.obj erf.obj win32.obj
 
 !ifndef STACK
 STACK = 0x2000000
@@ -334,7 +334,7 @@ s,@AR@,$(AR),;t t
 s,@ARFLAGS@,$(ARFLAGS) ,;t t
 s,@LN_S@,$(LN_S),;t t
 s,@SET_MAKE@,$(SET_MAKE),;t t
-s,@LIBOBJS@, acosh.obj crypt.obj win32.obj,;t t
+s,@LIBOBJS@, acosh.obj crypt.obj erf.obj win32.obj,;t t
 s,@ALLOCA@,$(ALLOCA),;t t
 s,@DEFAULT_KCODE@,$(DEFAULT_KCODE),;t t
 s,@EXEEXT@,.exe,;t t
@@ -518,6 +518,7 @@ acosh.obj: acosh.c win32.h
 alloca.obj: alloca.c win32.h
 crypt.obj: crypt.c win32.h
 dup2.obj: dup2.c win32.h
+erf.obj: erf.c win32.h
 finite.obj: finite.c win32.h
 flock.obj: flock.c win32.h
 memcmp.obj: memcmp.c win32.h

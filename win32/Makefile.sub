@@ -93,7 +93,7 @@ RFLAGS = -r
 EXTLIBS =
 !endif
 LIBS = oldnames.lib user32.lib advapi32.lib wsock32.lib $(EXTLIBS)
-MISSING = acosh.obj crypt.obj win32.obj
+MISSING = acosh.obj crypt.obj erf.obj win32.obj
 
 ARFLAGS = -machine:$(MACHINE) -out:
 CC = $(CC) -nologo
@@ -331,7 +331,7 @@ s,@AR@,$(AR),;t t
 s,@ARFLAGS@,$(ARFLAGS),;t t
 s,@LN_S@,$(LN_S),;t t
 s,@SET_MAKE@,$(SET_MAKE),;t t
-s,@LIBOBJS@, acosh.obj crypt.obj win32.obj,;t t
+s,@LIBOBJS@, acosh.obj crypt.obj erf.obj win32.obj,;t t
 s,@ALLOCA@,$(ALLOCA),;t t
 s,@DEFAULT_KCODE@,$(DEFAULT_KCODE),;t t
 s,@EXEEXT@,.exe,;t t
@@ -517,6 +517,7 @@ acosh.obj: {$(srcdir)}missing/acosh.c
 alloca.obj: {$(srcdir)}missing/alloca.c
 crypt.obj: {$(srcdir)}missing/crypt.c
 dup2.obj: {$(srcdir)}missing/dup2.c
+erf.obj: {$(srcdir)}missing/erf.c
 finite.obj: {$(srcdir)}missing/finite.c
 flock.obj: {$(srcdir)}missing/flock.c
 memcmp.obj: {$(srcdir)}missing/memcmp.c

@@ -55,8 +55,8 @@ extern double hypot _((double, double));
 #endif
 
 #ifndef HAVE_ERF
-extern double erf _((double, double));
-extern double erfc _((double, double));
+extern double erf _((double));
+extern double erfc _((double));
 #endif
 
 #ifndef HAVE_ISINF
