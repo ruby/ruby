@@ -26,7 +26,7 @@ static void
 rb_dlmem_delete(void *ptr)
 {
   rb_hash_delete(DLMemoryTable, DLLONG2NUM(ptr));
-};
+}
 
 static void
 rb_dlmem_aset(void *ptr, VALUE obj)
@@ -37,7 +37,7 @@ rb_dlmem_aset(void *ptr, VALUE obj)
   else{
     rb_hash_aset(DLMemoryTable, DLLONG2NUM(ptr), DLLONG2NUM(obj));
   };
-};
+}
 
 static VALUE
 rb_dlmem_aref(void *ptr)
@@ -46,7 +46,7 @@ rb_dlmem_aref(void *ptr)
 
   val = rb_hash_aref(DLMemoryTable, DLLONG2NUM(ptr));
   return val == Qnil ? Qnil : (VALUE)DLNUM2LONG(val);
-};
+}
 
 void
 dlptr_free(struct ptr_data *data)
@@ -67,7 +67,7 @@ dlptr_free(struct ptr_data *data)
   if( data->stype ) dlfree(data->stype);
   if( data->ssize ) dlfree(data->ssize);
   if( data->ids  ) dlfree(data->ids);
-};
+}
 
 void
 dlptr_init(VALUE val)
@@ -80,7 +80,7 @@ dlptr_init(VALUE val)
 	   data->ptr);
   });
   rb_dlmem_aset(data->ptr, val);
-};
+}
 
 VALUE
 rb_dlptr_new(void *ptr, long size, freefunc_t func)
@@ -116,13 +116,13 @@ rb_dlptr_new(void *ptr, long size, freefunc_t func)
   };
 
   return val;
-};
+}
 
 VALUE
 rb_dlptr_alloc(long size, freefunc_t func)
 {
   return rb_dlptr_new(dlmalloc((size_t)size), size, func);
-};
+}
 
 void *
 rb_dlptr2cptr(VALUE val)
@@ -142,14 +142,14 @@ rb_dlptr2cptr(VALUE val)
   };
     
   return ptr;
-};
+}
 
 static VALUE
 rb_dlptr_s_new(int argc, VALUE argv[], VALUE klass)
 {
   VALUE ptr, sym, obj, size;
   void *p = NULL;
-  void  (*f)() = NULL;
+  freefunc_t f = NULL;
   long s = 0;
 
   switch( rb_scan_args(argc, argv, "12", &ptr, &size, &sym) ){
@@ -174,14 +174,14 @@ rb_dlptr_s_new(int argc, VALUE argv[], VALUE klass)
   rb_obj_call_init(obj, argc, argv);
 
   return obj;
-};
+}
 
 static VALUE
 rb_dlptr_s_alloc(int argc, VALUE argv[], VALUE klass)
 {
   VALUE size, sym, obj;
   int   s;
-  void  (*f)() = NULL;
+  freefunc_t f = NULL;
 
   switch( rb_scan_args(argc, argv, "11", &size, &sym) ){
   case 1:
@@ -200,13 +200,13 @@ rb_dlptr_s_alloc(int argc, VALUE argv[], VALUE klass)
   rb_obj_call_init(obj, argc, argv);
 
   return obj;
-};
+}
 
 static VALUE
 rb_dlptr_init(int argc, VALUE argv[], VALUE self)
 {
   return Qnil;
-};
+}
 
 static VALUE
 rb_dlptr_cast(int argc, VALUE argv[], VALUE self)
@@ -244,7 +244,7 @@ rb_dlptr_cast(int argc, VALUE argv[], VALUE self)
   RDATA(val)->dfree = 0;
 
   return Qnil;
-};
+}
 
 VALUE
 rb_dlptr_to_i(VALUE self)
@@ -253,7 +253,7 @@ rb_dlptr_to_i(VALUE self)
 
   Data_Get_Struct(self, struct ptr_data, data);
   return DLLONG2NUM(data->ptr);
-};
+}
 
 VALUE
 rb_dlptr_ptr(VALUE self)
@@ -262,7 +262,7 @@ rb_dlptr_ptr(VALUE self)
 
   Data_Get_Struct(self, struct ptr_data, data);
   return rb_dlptr_new(*((void**)(data->ptr)),0,0);
-};
+}
 
 VALUE
 rb_dlptr_ref(VALUE self)
@@ -271,7 +271,7 @@ rb_dlptr_ref(VALUE self)
 
   Data_Get_Struct(self, struct ptr_data, data);
   return rb_dlptr_new(&(data->ptr),0,0);
-};
+}
 
 VALUE
 rb_dlptr_null_p(VALUE self)
@@ -280,7 +280,7 @@ rb_dlptr_null_p(VALUE self)
 
   Data_Get_Struct(self, struct ptr_data, data);
   return data->ptr ? Qfalse : Qtrue;
-};
+}
 
 VALUE
 rb_dlptr_free_set(VALUE self, VALUE val)
@@ -293,7 +293,7 @@ rb_dlptr_free_set(VALUE self, VALUE val)
   data->free = DLFREEFUNC(rb_dlsym2csym(val));
 
   return Qnil;
-};
+}
 
 VALUE
 rb_dlptr_free_get(VALUE self)
@@ -303,7 +303,7 @@ rb_dlptr_free_get(VALUE self)
   Data_Get_Struct(self, struct ptr_data, pdata);
 
   return rb_dlsym_new(pdata->free,"(free)","0P");
-};
+}
 
 VALUE
 rb_dlptr_to_array(int argc, VALUE argv[], VALUE self)
@@ -319,11 +319,11 @@ rb_dlptr_to_array(int argc, VALUE argv[], VALUE self)
 
   switch( rb_scan_args(argc, argv, "11", &type, &size) ){
   case 2:
-    t = STR2CSTR(type)[0];
+    t = StringValuePtr(type)[0];
     n = NUM2INT(size);
     break;
   case 1:
-    t = STR2CSTR(type)[0];
+    t = StringValuePtr(type)[0];
     switch( t ){
     case 'C':
       n = data->size;
@@ -416,7 +416,7 @@ rb_dlptr_to_array(int argc, VALUE argv[], VALUE self)
   };
 
   return ary;
-};
+}
 
 
 VALUE
@@ -440,7 +440,7 @@ rb_dlptr_to_s(int argc, VALUE argv[], VALUE self)
   };
 
   return val;
-};
+}
 
 VALUE
 rb_dlptr_to_str(int argc, VALUE argv[], VALUE self)
@@ -463,7 +463,7 @@ rb_dlptr_to_str(int argc, VALUE argv[], VALUE self)
   };
 
   return val;
-};
+}
 
 VALUE
 rb_dlptr_inspect(VALUE self)
@@ -476,7 +476,7 @@ rb_dlptr_inspect(VALUE self)
   snprintf(str, 1023, "#<%s:0x%x ptr=0x%x size=%ld free=0x%x>",
 	   rb_class2name(CLASS_OF(self)), data, data->ptr, data->size, data->free);
   return rb_str_new2(str);
-};
+}
 
 VALUE
 rb_dlptr_eql(VALUE self, VALUE other)
@@ -486,7 +486,7 @@ rb_dlptr_eql(VALUE self, VALUE other)
   ptr2 = rb_dlptr2cptr(other);
 
   return ptr1 == ptr2 ? Qtrue : Qfalse;
-};
+}
 
 VALUE
 rb_dlptr_cmp(VALUE self, VALUE other)
@@ -495,7 +495,7 @@ rb_dlptr_cmp(VALUE self, VALUE other)
   ptr1 = rb_dlptr2cptr(self);
   ptr2 = rb_dlptr2cptr(other);
   return DLLONG2NUM((long)ptr1 - (long)ptr2);
-};
+}
 
 VALUE
 rb_dlptr_plus(VALUE self, VALUE other)
@@ -506,8 +506,8 @@ rb_dlptr_plus(VALUE self, VALUE other)
   ptr = rb_dlptr2cptr(self);
   size = RDLPTR(self)->size;
   num = DLNUM2LONG(other);
-  return rb_dlptr_new((void*)(ptr + num), size - num, 0);
-};
+  return rb_dlptr_new((char *)ptr + num, size - num, 0);
+}
 
 VALUE
 rb_dlptr_minus(VALUE self, VALUE other)
@@ -518,8 +518,8 @@ rb_dlptr_minus(VALUE self, VALUE other)
   ptr = rb_dlptr2cptr(self);
   size = RDLPTR(self)->size;
   num = DLNUM2LONG(other);
-  return rb_dlptr_new((void*)(ptr - num), size + num, 0);
-};
+  return rb_dlptr_new((char *)ptr - num, size + num, 0);
+}
 
 VALUE
 rb_dlptr_define_data_type(int argc, VALUE argv[], VALUE self)
@@ -553,10 +553,9 @@ rb_dlptr_define_data_type(int argc, VALUE argv[], VALUE self)
     };
   };
 
-  Check_Type(data_type, T_FIXNUM);
-  Check_Type(type, T_STRING);
+  t = NUM2INT(data_type);
+  StringValue(type);
   Check_Type(rest, T_ARRAY);
-  t = FIX2INT(data_type);
   num = RARRAY(rest)->len;
   for( i=0; i<num; i++ ){
     vid = rb_ary_entry(rest,i);
@@ -575,7 +574,7 @@ rb_dlptr_define_data_type(int argc, VALUE argv[], VALUE self)
   if( data->ids ) dlfree(data->ids);
   data->ids  = (ID*)dlmalloc(sizeof(ID) * data->ids_num);
 
-  ctype = STR2CSTR(type);
+  ctype = StringValuePtr(type);
   for( i=0; i<num; i++ ){
     vid = rb_ary_entry(rest,i);
     data->ids[i] = rb_to_id(vid);
@@ -600,10 +599,10 @@ rb_dlptr_define_data_type(int argc, VALUE argv[], VALUE self)
   };
 
   if( !data->size )
-    data->size = dlsizeof(STR2CSTR(type));
+    data->size = dlsizeof(RSTRING(type)->ptr);
 
   return Qnil;
-};
+}
 
 VALUE
 rb_dlptr_define_struct(int argc, VALUE argv[], VALUE self)
@@ -618,7 +617,7 @@ rb_dlptr_define_struct(int argc, VALUE argv[], VALUE self)
     pass_argv[i] = argv[i-1];
   };
   return rb_dlptr_define_data_type(pass_argc, pass_argv, self);
-};
+}
 
 VALUE
 rb_dlptr_define_union(int argc, VALUE argv[], VALUE self)
@@ -633,7 +632,7 @@ rb_dlptr_define_union(int argc, VALUE argv[], VALUE self)
     pass_argv[i] = argv[i-1];
   };
   return rb_dlptr_define_data_type(pass_argc, pass_argv, self);
-};
+}
 
 VALUE
 rb_dlptr_get_data_type(VALUE self)
@@ -646,7 +645,7 @@ rb_dlptr_get_data_type(VALUE self)
 			rb_tainted_str_new(data->stype, data->slen));
   else
     return rb_assoc_new(INT2FIX(data->ctype), Qnil);
-};
+}
 
 static VALUE
 cary2ary(void *ptr, char t, int len)
@@ -662,31 +661,31 @@ cary2ary(void *ptr, char t, int len)
     switch( t ){
     case 'I': case 'i':
       elem = INT2NUM(*((int*)ptr));
-      ptr += sizeof(int);
+      ptr = (char *)ptr + sizeof(int);
       break;
     case 'L': case 'l':
       elem = DLLONG2NUM(*((long*)ptr));
-      ptr += sizeof(long);
+      ptr = (char *)ptr + sizeof(long);
       break;
     case 'P': case 'p':
       elem = rb_dlptr_new(*((void**)ptr),0, 0);
-      ptr += sizeof(void*);
+      ptr = (char *)ptr + sizeof(void*);
       break;
     case 'F': case 'f':
       elem = rb_float_new(*((float*)ptr));
-      ptr += sizeof(float);
+      ptr = (char *)ptr + sizeof(float);
       break;
     case 'D': case 'd':
       elem = rb_float_new(*((float*)ptr));
-      ptr += sizeof(double);
+      ptr = (char *)ptr + sizeof(double);
       break;
     case 'C': case 'c':
       elem = INT2NUM(*((char*)ptr));
-      ptr += sizeof(char);
+      ptr = (char *)ptr + sizeof(char);
       break;
     case 'H': case 'h':
       elem = INT2NUM(*((short*)ptr));
-      ptr += sizeof(short);
+      ptr = (char *)ptr + sizeof(short);
     default:
       raise(rb_eDLTypeError, "unsupported type '%c'", t);
     };
@@ -698,31 +697,31 @@ cary2ary(void *ptr, char t, int len)
     switch( t ){
     case 'I': case 'i':
       elem = INT2NUM(*((int*)ptr));
-      ptr += sizeof(int);
+      ptr = (char *)ptr + sizeof(int);
       break;
     case 'L': case 'l':
       elem = DLLONG2NUM(*((long*)ptr));
-      ptr += sizeof(long);
+      ptr = (char *)ptr + sizeof(long);
       break;
     case 'P': case 'p':
       elem = rb_dlptr_new(*((void**)ptr), 0, 0);
-      ptr += sizeof(void*);
+      ptr = (char *)ptr + sizeof(void*);
       break;
     case 'F': case 'f':
       elem = rb_float_new(*((float*)ptr));
-      ptr += sizeof(float);
+      ptr = (char *)ptr + sizeof(float);
       break;
     case 'D': case 'd':
       elem = rb_float_new(*((float*)ptr));
-      ptr += sizeof(double);
+      ptr = (char *)ptr + sizeof(double);
       break;
     case 'C': case 'c':
       elem = INT2NUM(*((char*)ptr));
-      ptr += sizeof(char);
+      ptr = (char *)ptr + sizeof(char);
       break;
     case 'H': case 'h':
       elem = INT2NUM(*((short*)ptr));
-      ptr += sizeof(short);
+      ptr = (char *)ptr + sizeof(short);
     default:
       raise(rb_eDLTypeError, "unsupported type '%c'", t);
     };
@@ -730,7 +729,7 @@ cary2ary(void *ptr, char t, int len)
   };
 
   return ary;
-};
+}
 
 VALUE
 rb_dlptr_aref(int argc, VALUE argv[], VALUE self)
@@ -757,9 +756,9 @@ rb_dlptr_aref(int argc, VALUE argv[], VALUE self)
 
   id = rb_to_id(key);
   Data_Get_Struct(self, struct ptr_data, data);
+  offset = 0;
   switch( data->ctype ){
   case DLPTR_CTYPE_STRUCT:
-    offset = 0;
     for( i=0; i < data->ids_num; i++ ){
       if( data->ids[i] == id ){
 	switch( data->stype[i] ){
@@ -785,7 +784,7 @@ rb_dlptr_aref(int argc, VALUE argv[], VALUE self)
 	default:
 	  raise(rb_eDLTypeError, "unsupported type '%c'", data->stype[i]);
 	};
-	return cary2ary(data->ptr + offset, data->stype[i], data->ssize[i]);
+	return cary2ary((char *)data->ptr + offset, data->stype[i], data->ssize[i]);
       };
       switch( data->stype[i] ){
       case 'I':
@@ -824,7 +823,7 @@ rb_dlptr_aref(int argc, VALUE argv[], VALUE self)
   case DLPTR_CTYPE_UNION:
     for( i=0; i < data->ids_num; i++ ){
       if( data->ids[i] == id ){
-	return cary2ary(data->ptr + offset, data->stype[i], data->ssize[i]);
+	return cary2ary((char *)data->ptr + offset, data->stype[i], data->ssize[i]);
       };
     };
     break;
@@ -834,7 +833,7 @@ rb_dlptr_aref(int argc, VALUE argv[], VALUE self)
 	   rb_id2name(id), rb_class2name(CLASS_OF(self)));
 
   return Qnil;
-};
+}
 
 static void *
 ary2cary(char t, VALUE val, long *size)
@@ -848,7 +847,7 @@ ary2cary(char t, VALUE val, long *size)
     ptr = rb_ary2cary(t, rb_ary_new3(1, val), size);
   };
   return ptr;
-};
+}
 
 VALUE
 rb_dlptr_aset(int argc, VALUE argv[], VALUE self)
@@ -872,10 +871,10 @@ rb_dlptr_aset(int argc, VALUE argv[], VALUE self)
     void *dst, *src;
     int len;
     
-    Check_Type(val, T_STRING);
+    StringValue(val);
     Data_Get_Struct(self, struct ptr_data, data);
     dst = (void*)((long)(data->ptr) + DLNUM2LONG(key));
-    src = STR2CSTR(val);
+    src = RSTRING(val)->ptr;
     if( num == Qnil ){
       len = RSTRING(val)->len;
     }
@@ -922,7 +921,7 @@ rb_dlptr_aset(int argc, VALUE argv[], VALUE self)
 	  raise(rb_eDLTypeError, "unsupported type '%c'", data->stype[i]);
 	};
 	memimg = ary2cary(data->stype[i], val, &memsize);
-	memcpy(data->ptr + offset, memimg, memsize);
+	memcpy((char *)data->ptr + offset, memimg, memsize);
 	return val;
       };
       switch( data->stype[i] ){
@@ -1000,21 +999,21 @@ rb_dlptr_aset(int argc, VALUE argv[], VALUE self)
 	   rb_id2name(id), rb_class2name(CLASS_OF(self)));
 
   return Qnil;
-};
+}
 
 VALUE
 rb_dlptr_size(int argc, VALUE argv[], VALUE self)
 {
   VALUE size;
 
-  switch( rb_scan_args(argc, argv, "01", &size) ){
-  case 0:
+  if( rb_scan_args(argc, argv, "01", &size) == 0){
     return DLLONG2NUM(RDLPTR(self)->size);
-  case 1:
+  }
+  else{
     RDLPTR(self)->size = DLNUM2LONG(size);
     return size;
   };
-};
+}
 
 static VALUE
 dlmem_each_i(VALUE assoc, void *data)
@@ -1024,14 +1023,14 @@ dlmem_each_i(VALUE assoc, void *data)
   val = rb_ary_entry(assoc, 1);
   rb_yield(rb_assoc_new(key,(VALUE)DLNUM2LONG(val)));
   return Qnil;
-};
+}
 
 VALUE
 rb_dlmem_each(VALUE self)
 {
   rb_iterate(rb_each, DLMemoryTable, dlmem_each_i, 0);
   return Qnil;
-};
+}
 
 void
 Init_dlptr()
@@ -1072,4 +1071,4 @@ Init_dlptr()
   DLMemoryTable = rb_hash_new();
   rb_define_const(rb_mDLMemorySpace, "MemoryTable", DLMemoryTable);
   rb_define_module_function(rb_mDLMemorySpace, "each", rb_dlmem_each, 0);
-};
+}

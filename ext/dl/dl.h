@@ -8,6 +8,11 @@
 #include <ruby.h>
 #include <dlconfig.h>
 
+#define DL_VERSION     "1.1.0"
+#define DL_MAJOR_VERSION 1
+#define DL_MINOR_VERSION 1
+#define DL_PATCH_VERSION 0
+
 #if defined(HAVE_DLFCN_H)
 # include <dlfcn.h>
 #else
@@ -23,6 +28,13 @@
 # endif
 #endif
 
+#if !defined(StringValue)
+# define StringValue(v) if(TYPE(v) != T_STRING) v = rb_str_to_str(v)
+#endif
+#if !defined(StringValuePtr)
+# define StringValuePtr(v) RSTRING((TYPE(v) == T_STRING) ? (v) : rb_str_to_str(v))->ptr
+#endif
+
 #ifdef DEBUG
 #define DEBUG_CODE(b) {printf("DEBUG:%d\n",__LINE__);b;}
 #define DEBUG_CODE2(b1,b2) {printf("DEBUG:%d\n",__LINE__);b1;}
@@ -30,11 +42,6 @@
 #define DEBUG_CODE(b)
 #define DEBUG_CODE2(b1,b2) b2
 #endif
-
-#define DL_VERSION     "1.1.0"
-#define DL_MAJOR_VERSION 1
-#define DL_MINOR_VERSION 1
-#define DL_PATCH_VERSION 0
 
 #define VOID_DLTYPE   0x00
 #define CHAR_DLTYPE   0x01
@@ -203,7 +210,7 @@ typedef struct { char c; double x; } s_double;
 #define DOUBLE_ALIGN ALIGN_DOUBLE
 
 #define DLALIGN(ptr,offset,align) {\
-  while( (((unsigned long)(ptr + offset)) % align) != 0 ) offset++;\
+  while( (((unsigned long)((char *)ptr + offset)) % align) != 0 ) offset++;\
 }
 
 typedef void (*freefunc_t)(void *);

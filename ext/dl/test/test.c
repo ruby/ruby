@@ -221,7 +221,8 @@ test_data_add(struct test_data *list, const char *name)
   struct test_data *data;
 
   data = (struct test_data *)malloc(sizeof(struct test_data));
-  strcpy(data->name, name);
+  memset(data->name, 0, 1024);
+  strncpy(data->name, name, 1024);
   data->next = list->next;
   list->next = data;
 };
@@ -236,7 +237,7 @@ test_data_print(struct test_data *list)
   };
 };
 
-struct data *
+struct test_data *
 test_data_aref(struct test_data *list, int i)
 {
   struct test_data *data;

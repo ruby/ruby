@@ -19,7 +19,7 @@ static ID id_call;
 static void
 init_dl_func_table(){
 #include "cbtable.func"
-};
+}
 
 void *
 dlmalloc(size_t size)
@@ -35,7 +35,7 @@ dlmalloc(size_t size)
   {
     return xmalloc(size);
   });
-};
+}
 
 void *
 dlrealloc(void *ptr, size_t size)
@@ -44,7 +44,7 @@ dlrealloc(void *ptr, size_t size)
     printf("dlrealloc(0x%x,%d)\n",ptr,size);
   });
   return xrealloc(ptr, size);
-};
+}
 
 void
 dlfree(void *ptr)
@@ -53,7 +53,7 @@ dlfree(void *ptr)
     printf("dlfree(0x%x)\n",ptr);
   });
   xfree(ptr);
-};
+}
 
 char*
 dlstrdup(const char *str)
@@ -64,7 +64,7 @@ dlstrdup(const char *str)
   strcpy(newstr,str);
 
   return newstr;
-};
+}
 
 size_t
 dlsizeof(const char *cstr)
@@ -133,7 +133,7 @@ dlsizeof(const char *cstr)
   };
 
   return size;
-};
+}
 
 static float *
 c_farray(VALUE v, long *size)
@@ -161,7 +161,7 @@ c_farray(VALUE v, long *size)
   };
 
   return ary;
-};
+}
 
 static double *
 c_darray(VALUE v, long *size)
@@ -189,7 +189,7 @@ c_darray(VALUE v, long *size)
   };
 
   return ary;
-};
+}
 
 static long *
 c_larray(VALUE v, long *size)
@@ -218,7 +218,7 @@ c_larray(VALUE v, long *size)
   };
 
   return ary;
-};
+}
 
 static int *
 c_iarray(VALUE v, long *size)
@@ -247,7 +247,7 @@ c_iarray(VALUE v, long *size)
   };
 
   return ary;
-};
+}
 
 static short *
 c_harray(VALUE v, long *size)
@@ -276,7 +276,7 @@ c_harray(VALUE v, long *size)
   };
 
   return ary;
-};
+}
 
 static char *
 c_carray(VALUE v, long *size)
@@ -305,7 +305,7 @@ c_carray(VALUE v, long *size)
   };
 
   return ary;
-};
+}
 
 static void *
 c_parray(VALUE v, long *size)
@@ -323,7 +323,7 @@ c_parray(VALUE v, long *size)
     case T_STRING:
       {
 	char *str, *src;
-	src = STR2CSTR(e);
+	src = StringValuePtr(e);
 	str = dlstrdup(src);
 	ary[i] = (void*)str;
       };
@@ -348,7 +348,7 @@ c_parray(VALUE v, long *size)
   };
 
   return ary;
-};
+}
 
 void *
 rb_ary2cary(char t, VALUE v, long *size)
@@ -403,7 +403,7 @@ rb_ary2cary(char t, VALUE v, long *size)
   default:
     rb_raise(rb_eDLTypeError, "unsupported type");
   };
-};
+}
 
 VALUE
 rb_str_to_ptr(VALUE self)
@@ -413,10 +413,10 @@ rb_str_to_ptr(VALUE self)
 
   len = RSTRING(self)->len;
   ptr = (char*)dlmalloc(len + 1);
-  memcpy(ptr, STR2CSTR(self), len);
+  memcpy(ptr, RSTRING(self)->ptr, len);
   ptr[len] = '\0';
   return rb_dlptr_new((void*)ptr,len,dlfree);
-};
+}
 
 VALUE
 rb_ary_to_ptr(int argc, VALUE argv[], VALUE self)
@@ -427,14 +427,14 @@ rb_ary_to_ptr(int argc, VALUE argv[], VALUE self)
 
   switch( rb_scan_args(argc, argv, "01", &t) ){
   case 1:
-    ptr = rb_ary2cary(STR2CSTR(t)[0], self, &size);
+    ptr = rb_ary2cary(StringValuePtr(t)[0], self, &size);
     break;
   case 0:
     ptr = rb_ary2cary(0, self, &size);
     break;
   };
   return ptr ? rb_dlptr_new(ptr, size, dlfree) : Qnil;
-};
+}
 
 VALUE
 rb_io_to_ptr(VALUE self)
@@ -452,7 +452,7 @@ VALUE
 rb_dl_dlopen(int argc, VALUE argv[], VALUE self)
 {
   return rb_dlhandle_s_new(argc, argv, rb_cDLHandle);
-};
+}
 
 VALUE
 rb_dl_malloc(VALUE self, VALUE size)
@@ -464,7 +464,7 @@ rb_dl_malloc(VALUE self, VALUE size)
   ptr = dlmalloc((size_t)s);
   memset(ptr,0,(size_t)s);
   return rb_dlptr_new(ptr, s, dlfree);
-};
+}
 
 VALUE
 rb_dl_strdup(VALUE self, VALUE str)
@@ -472,14 +472,14 @@ rb_dl_strdup(VALUE self, VALUE str)
   void *p;
 
   str = rb_String(str);
-  return rb_dlptr_new(strdup(STR2CSTR(str)), RSTRING(str)->len, dlfree);
-};
+  return rb_dlptr_new(strdup(StringValuePtr(str)), RSTRING(str)->len, dlfree);
+}
 
 static VALUE
 rb_dl_sizeof(VALUE self, VALUE str)
 {
-  return INT2NUM(dlsizeof(STR2CSTR(str)));
-};
+  return INT2NUM(dlsizeof(StringValuePtr(str)));
+}
 
 static VALUE
 rb_dl_callback_type(VALUE str)
@@ -490,7 +490,7 @@ rb_dl_callback_type(VALUE str)
   long ftype;
 
   ftype = 0;
-  type = STR2CSTR(str);
+  type = StringValuePtr(str);
   len  = RSTRING(str)->len;
 
   if( len - 1 > MAX_CBARG ){
@@ -517,7 +517,7 @@ rb_dl_callback_type(VALUE str)
       rb_raise(rb_eDLError, "unsupported type `%c'", type[i]);
       break;
     };
-  };
+  }
 
   switch( type[0] ){
   case '0':
@@ -544,7 +544,7 @@ rb_dl_callback_type(VALUE str)
   };
 
   return INT2NUM(ftype);
-};
+}
 
 VALUE
 rb_dl_set_callback(int argc, VALUE argv[], VALUE self)
@@ -578,12 +578,12 @@ rb_dl_set_callback(int argc, VALUE argv[], VALUE self)
   if( func ){
     rb_hash_aset(entry, num, proc);
     snprintf(func_name, 1023, "rb_dl_func%d_%d", NUM2INT(key), NUM2INT(num));
-    return rb_dlsym_new(func, func_name, STR2CSTR(types));
+    return rb_dlsym_new(func, func_name, StringValuePtr(types));
   }
   else{
     return Qnil;
   };
-};
+}
 
 VALUE
 rb_dl_get_callback(VALUE self, VALUE types, VALUE num)
@@ -597,7 +597,7 @@ rb_dl_get_callback(VALUE self, VALUE types, VALUE num)
     return Qnil;
   };
   return rb_hash_aref(entry, num);
-};
+}
 
 void
 Init_dl()
@@ -652,4 +652,4 @@ Init_dl()
   rb_define_method(rb_cString, "to_ptr", rb_str_to_ptr, 0);
   rb_define_method(rb_cArray, "to_ptr", rb_ary_to_ptr, -1);
   rb_define_method(rb_cIO, "to_ptr", rb_io_to_ptr, 0);
-};
+}

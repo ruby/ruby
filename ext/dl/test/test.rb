@@ -184,10 +184,12 @@ if( fp )
   r,rs = sym_gets[" " * 256, 256, fp]
   debug r,rs
   assert("open,gets", :must, rs[0] == line)
+  ObjectSpace.define_finalizer(fp) {File.unlink("tmp.txt")}
+  fp = nil
 else
   assert("open,gets", :must, line == nil)
+  File.unlink("tmp.txt")
 end
-File.unlink("tmp.txt")
 
 
 callback1 = h["test_callback1"]

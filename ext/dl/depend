@@ -1,16 +1,17 @@
 CLEANFILES = test/test.o
 DISTCLEANFILES = call.func callback.func cbtable.func dlconfig.rb dlconfig.h \
                  test/libtest.so test/*~ *~ mkmf.log
+LDSHARED_TEST = $(LDSHARED) $(LDFLAGS) test/test.o -o test/libtest.so $(LOCAL_LIBS)
 
 libtest.so: test/libtest.so
 
 test/libtest.so: test/test.o test/libtest.def
 	$(RUBY) -rftools -e 'ARGV.each{|d|File.mkpath(File.dirname(d))}' $@
-	`$(RUBY) -e 'print ARGV.join(" ").gsub(/dl\\.def/,"test/libtest.def")' $(LDSHARED)` $(LDFLAGS) test/test.o -o test/libtest.so
+	$(LDSHARED_TEST:dl.def=test/libtest.def)
 
-test/test.o: test/test.c
+test/test.o: $(srcdir)/test/test.c
 	@$(RUBY) -rftools -e 'File.mkpath(*ARGV)' test
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/test/test.c -o $@
 
 test:: dl.so libtest.so .force
 	$(RUBY) -I. -I$(srcdir)/lib $(srcdir)/test/test.rb
@@ -22,23 +23,23 @@ test:: dl.so libtest.so .force
 allclean: distclean
 	@rm -f $(CLEANFILES) $(DISTCLEANFILES)
 
-$(OBJS): dlconfig.h
+$(OBJS): ./dlconfig.h
 
 sym.o: call.func
 
 dl.o: callback.func cbtable.func
 
-call.func: mkcall.rb dlconfig.rb
+call.func: $(srcdir)/mkcall.rb ./dlconfig.rb
 	@echo "Generating call.func"
-	@$(RUBY) $< > $@
+	@$(RUBY) $(srcdir)/mkcall.rb > $@
 
-callback.func: mkcallback.rb dlconfig.rb
+callback.func: $(srcdir)/mkcallback.rb ./dlconfig.rb
 	@echo "Generating callback.func"
-	@$(RUBY) $< > $@
+	@$(RUBY) $(srcdir)/mkcallback.rb > $@
 
-cbtable.func: mkcbtable.rb dlconfig.rb
+cbtable.func: $(srcdir)/mkcbtable.rb ./dlconfig.rb
 	@echo "Generating cbtable.func"
-	@$(RUBY) $< > $@
+	@$(RUBY) $(srcdir)/mkcbtable.rb > $@
 
 debug:
 	$(MAKE) CPPFLAGS="$(CPPFLAGS) -DDEBUG"

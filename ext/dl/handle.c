@@ -13,7 +13,7 @@ dlhandle_free(struct dl_handle *dlhandle)
   if( dlhandle->ptr && dlhandle->open && dlhandle->enable_close ){
     dlclose(dlhandle->ptr);
   };
-};
+}
 
 VALUE
 rb_dlhandle_close(VALUE self)
@@ -23,7 +23,7 @@ rb_dlhandle_close(VALUE self)
   Data_Get_Struct(self, struct dl_handle, dlhandle);
   dlhandle->open = 0;
   return INT2NUM(dlclose(dlhandle->ptr));
-};
+}
 
 VALUE
 rb_dlhandle_s_new(int argc, VALUE argv[], VALUE self)
@@ -38,11 +38,11 @@ rb_dlhandle_s_new(int argc, VALUE argv[], VALUE self)
 
   switch( rb_scan_args(argc, argv, "11", &lib, &flag) ){
   case 1:
-    clib = STR2CSTR(lib);
+    clib = StringValuePtr(lib);
     cflag = RTLD_LAZY | RTLD_GLOBAL;
     break;
   case 2:
-    clib = STR2CSTR(lib);
+    clib = StringValuePtr(lib);
     cflag = NUM2INT(flag);
     break;
   default:
@@ -73,13 +73,13 @@ rb_dlhandle_s_new(int argc, VALUE argv[], VALUE self)
   };
 
   return val;
-};
+}
 
 VALUE
 rb_dlhandle_init(int argc, VALUE argv[], VALUE self)
 {
   return Qnil;
-};
+}
 
 VALUE
 rb_dlhandle_enable_close(VALUE self)
@@ -89,7 +89,7 @@ rb_dlhandle_enable_close(VALUE self)
   Data_Get_Struct(self, struct dl_handle, dlhandle);
   dlhandle->enable_close = 1;
   return Qnil;
-};
+}
 
 VALUE
 rb_dlhandle_disable_close(VALUE self)
@@ -99,7 +99,7 @@ rb_dlhandle_disable_close(VALUE self)
   Data_Get_Struct(self, struct dl_handle, dlhandle);
   dlhandle->enable_close = 0;
   return Qnil;
-};
+}
 
 VALUE
 rb_dlhandle_to_i(VALUE self)
@@ -108,7 +108,7 @@ rb_dlhandle_to_i(VALUE self)
 
   Data_Get_Struct(self, struct dl_handle, dlhandle);
   return DLLONG2NUM(dlhandle);
-};
+}
 
 VALUE
 rb_dlhandle_to_ptr(VALUE self)
@@ -117,7 +117,7 @@ rb_dlhandle_to_ptr(VALUE self)
 
   Data_Get_Struct(self, struct dl_handle, dlhandle);
   return rb_dlptr_new(dlhandle, sizeof(dlhandle), 0);
-};
+}
 
 VALUE
 rb_dlhandle_sym(int argc, VALUE argv[], VALUE self)
@@ -134,8 +134,7 @@ rb_dlhandle_sym(int argc, VALUE argv[], VALUE self)
   const char *err;
 
   if( rb_scan_args(argc, argv, "11", &sym, &type) == 2 ){
-    Check_Type(type, T_STRING);
-    stype = STR2CSTR(type);
+    stype = StringValuePtr(type);
   }
   else{
     stype = NULL;
@@ -149,8 +148,7 @@ rb_dlhandle_sym(int argc, VALUE argv[], VALUE self)
 #endif
   }
   else{
-    Check_Type(sym, T_STRING);
-    name = STR2CSTR(sym);
+    name = StringValuePtr(sym);
   };
 
 
@@ -189,7 +187,7 @@ rb_dlhandle_sym(int argc, VALUE argv[], VALUE self)
   val = rb_dlsym_new(func, name, stype);
 
   return val;
-};
+}
 
 void
 Init_dlhandle()
@@ -204,4 +202,4 @@ Init_dlhandle()
   rb_define_method(rb_cDLHandle, "[]",  rb_dlhandle_sym, -1);
   rb_define_method(rb_cDLHandle, "disable_close", rb_dlhandle_disable_close, 0);
   rb_define_method(rb_cDLHandle, "enable_close", rb_dlhandle_enable_close, 0);
-};
+}

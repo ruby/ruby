@@ -59,7 +59,7 @@ char2type(int ch)
     return "[]"; /* ?? */
   };
   return NULL;
-};
+}
 
 void
 dlsym_free(struct sym_data *data)
@@ -76,7 +76,7 @@ dlsym_free(struct sym_data *data)
     });
     free(data->type);
   };
-};
+}
 
 VALUE
 rb_dlsym_new(void (*func)(), const char *name, const char *type)
@@ -112,13 +112,13 @@ rb_dlsym_new(void (*func)(), const char *name, const char *type)
   };
 
   return val;
-};
+}
 
 freefunc_t
 rb_dlsym2csym(VALUE val)
 {
   struct sym_data *data;
-  void (*func)();
+  freefunc_t func;
 
   if( rb_obj_is_kind_of(val, rb_cDLSymbol) ){
     Data_Get_Struct(val, struct sym_data, data);
@@ -132,7 +132,7 @@ rb_dlsym2csym(VALUE val)
   };
 
   return func;
-};
+}
 
 VALUE
 rb_dlsym_s_new(int argc, VALUE argv[], VALUE self)
@@ -154,8 +154,8 @@ rb_dlsym_s_new(int argc, VALUE argv[], VALUE self)
   };
 
   saddr = (void*)(DLNUM2LONG(rb_Integer(addr)));
-  sname = (name == Qnil) ? NULL : STR2CSTR(name);
-  stype = (type == Qnil) ? NULL : STR2CSTR(type);
+  sname = NIL_P(name) ? NULL : StringValuePtr(name);
+  stype = NIL_P(type) ? NULL : StringValuePtr(type);
 
   val = rb_dlsym_new(saddr, sname, stype);
 
@@ -164,26 +164,26 @@ rb_dlsym_s_new(int argc, VALUE argv[], VALUE self)
   };
 
   return val;
-};
+}
 
 VALUE
 rb_dlsym_initialize(int argc, VALUE argv[], VALUE self)
 {
   return Qnil;
-};
+}
 
 VALUE
 rb_s_dlsym_char2type(VALUE self, VALUE ch)
 {
   const char *type;
 
-  type = char2type(STR2CSTR(ch)[0]);
+  type = char2type(StringValuePtr(ch)[0]);
 
   if (type == NULL)
     return Qnil;
   else
     return rb_str_new2(type);
-};
+}
 
 VALUE
 rb_dlsym_name(VALUE self)
@@ -192,7 +192,7 @@ rb_dlsym_name(VALUE self)
 
   Data_Get_Struct(self, struct sym_data, sym);
   return sym->name ? rb_tainted_str_new2(sym->name) : Qnil;
-};
+}
 
 VALUE
 rb_dlsym_proto(VALUE self)
@@ -201,7 +201,7 @@ rb_dlsym_proto(VALUE self)
 
   Data_Get_Struct(self, struct sym_data, sym);
   return sym->type ? rb_tainted_str_new2(sym->type) : Qnil;
-};
+}
 
 VALUE
 rb_dlsym_cproto(VALUE self)
@@ -252,7 +252,7 @@ rb_dlsym_cproto(VALUE self)
   };
 
   return val;
-};
+}
 
 VALUE
 rb_dlsym_inspect(VALUE self)
@@ -270,12 +270,12 @@ rb_dlsym_inspect(VALUE self)
   str = dlmalloc(str_size);
   snprintf(str, str_size - 1,
 	   "#<DL::Symbol:0x%x func=0x%x '%s'>",
-	   sym, sym->func, STR2CSTR(proto));
+	   sym, sym->func, StringValuePtr(proto));
   val = rb_tainted_str_new2(str);
   dlfree(str);
 
   return val;
-};
+}
 
 
 VALUE
@@ -418,7 +418,7 @@ rb_dlsym_call(int argc, VALUE argv[], VALUE self)
 	ANY2S(args[i]) = DLSTR(0);
       }
       else{
-	ANY2S(args[i]) = DLSTR(STR2CSTR(argv[i]));
+	ANY2S(args[i]) = DLSTR(StringValuePtr(argv[i]));
       };
       PUSH_P(ftype);
       break;
@@ -427,7 +427,7 @@ rb_dlsym_call(int argc, VALUE argv[], VALUE self)
 	raise(rb_eDLError, "#%d must be a string",i);
       };
       ANY2S(args[i]) = DLSTR(dlmalloc(RSTRING(argv[i])->len + 1));
-      memcpy((char*)(ANY2S(args[i])), STR2CSTR(argv[i]), RSTRING(argv[i])->len + 1);
+      memcpy((char*)(ANY2S(args[i])), StringValuePtr(argv[i]), RSTRING(argv[i])->len + 1);
       dtypes[i] = 's';
       PUSH_P(ftype);
       break;
@@ -732,7 +732,7 @@ rb_dlsym_call(int argc, VALUE argv[], VALUE self)
 
 #undef FREE_ARGS
   return rb_assoc_new(val,dvals);
-};
+}
 
 VALUE
 rb_dlsym_to_i(VALUE self)
@@ -741,7 +741,7 @@ rb_dlsym_to_i(VALUE self)
 
   Data_Get_Struct(self, struct sym_data, sym);
   return DLLONG2NUM(sym);
-};
+}
 
 VALUE
 rb_dlsym_to_ptr(VALUE self)
@@ -750,7 +750,7 @@ rb_dlsym_to_ptr(VALUE self)
 
   Data_Get_Struct(self, struct sym_data, sym);
   return rb_dlptr_new(sym->func, sizeof(freefunc_t), 0);
-};
+}
 
 void
 Init_dlsym()
@@ -768,4 +768,4 @@ Init_dlsym()
   rb_define_method(rb_cDLSymbol, "to_s", rb_dlsym_cproto, 0);
   rb_define_method(rb_cDLSymbol, "to_ptr", rb_dlsym_to_ptr, 0);
   rb_define_method(rb_cDLSymbol, "to_i", rb_dlsym_to_i, 0);
-};
+}

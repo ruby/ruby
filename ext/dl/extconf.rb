@@ -20,8 +20,7 @@ end
 
 ($CPPFLAGS || $CFLAGS) << " -I."
 
-case RUBY_PLATFORM  # from Win32API
-when /cygwin/,/mingw/
+if (Config::CONFIG['CC'] =~ /gcc/)  # from Win32API
   $CFLAGS << " -fno-defer-pop -fno-omit-frame-pointer"
 end
 
@@ -56,11 +55,11 @@ $with_type_voidp &= DLTYPE[VOIDP][:sym]
 
 $with_cbtype_voidp = DLTYPE[VOIDP][:cb]
 
-$with_type_char  = with_config("type-char")  ? true : false
-$with_type_short = with_config("type-short") ? true : false 
-$with_type_float = with_config("type-float") ? true : false
+$with_type_char  = enable_config("type-char", $with_type_char)
+$with_type_short = enable_config("type-short", $with_type_short)
+$with_type_float = enable_config("type-float", $with_type_float)
 
-$with_asm        = with_config("asm") ? true : $with_asm
+$with_asm        = enable_config("asm", $with_asm)
 
 args = with_config("args")
 max_arg = max_cbarg = max_cbent = nil
