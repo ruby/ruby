@@ -784,6 +784,7 @@ test/optparse/test_optparse.rb
 test/optparse/test_placearg.rb
 test/optparse/test_reqarg.rb
 test/ostruct/test_ostruct.rb
+test/rinda/test_rinda.rb
 test/rss/common.rb
 test/rss/my-assertions.rb
 test/rss/test_1.0.rb
