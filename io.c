@@ -1131,6 +1131,9 @@ io_readpartial(argc, argv, io)
 	return str;
 
     READ_CHECK(fptr->f);
+    if (RSTRING(str)->len != len) {
+	rb_raise(rb_eRuntimeError, "buffer string modified");
+    }
     n = read_buffered_data(RSTRING(str)->ptr, len, fptr->f);
     if (n <= 0) {
       again:

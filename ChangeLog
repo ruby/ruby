@@ -1,3 +1,12 @@
+Thu Oct 21 00:36:41 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (lex_getline): should not touch ruby_debug_lines if
+	  RIPPER is defined.  [ruby-dev:24547]
+
+Wed Oct 20 19:45:13 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (str_gsub): 	reentrant check.  [ruby-dev:24432]
+
 Wed Oct 20 12:42:53 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_getline): rs modification check should not interfere

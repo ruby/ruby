@@ -2048,6 +2048,9 @@ str_gsub(argc, argv, str, bang)
 	if (iter) {
 	    rb_match_busy(match);
 	    val = rb_obj_as_string(rb_yield(rb_reg_nth_match(0, match)));
+	    if (RSTRING(str)->ptr == buf) {
+		rb_raise(rb_eRuntimeError, "gsub reentered");
+	    }
 	    rb_backref_set(match);
 	}
 	else {

@@ -4404,9 +4404,11 @@ lex_getline(parser)
     struct parser_params *parser;
 {
     VALUE line = (*parser->parser_lex_gets)(parser, parser->parser_lex_input);
+#ifndef RIPPER
     if (ruby_debug_lines && !NIL_P(line)) {
 	rb_ary_push(ruby_debug_lines, line);
     }
+#endif
     return line;
 }
 
