@@ -84,6 +84,8 @@ module Tk
 
     autoload :TNotebook,     'tkextlib/tile/tnotebook'
 
+    autoload :TProgressbar,  'tkextlib/tile/tprogressbar'
+
     autoload :TRadioButton,  'tkextlib/tile/tradiobutton'
     autoload :TRadiobutton,  'tkextlib/tile/tradiobutton'
 

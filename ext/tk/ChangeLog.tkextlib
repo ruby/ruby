@@ -1,5 +1,9 @@
 2005-03-05  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
+	* ext/tk/lib/tkextlib/tile.rb: lack of "autoload TProgressbar"
+
+2005-03-05  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
 	* ext/tk/lib/tkextlib/tile.rb: support tile-0.6
 
 	* ext/tk/lib/tkextlib/tile/tbutton.rb: ditto
