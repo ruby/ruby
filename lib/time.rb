@@ -10,7 +10,7 @@ This library extends Time class:
   * date-time defined by RFC 2822
   * HTTP-date defined by RFC 2616
   * dateTime defined by XML Schema Part 2: Datatypes (ISO 8601)
-  * various format handled by ParseDate. (string to time only)
+  * various format handled by ParseDate (string to time only)
 
 == Design Issue
 
@@ -212,7 +212,10 @@ class Time
                  year
                end
 
-        Time.utc(year, mon, day, hour, min, sec) - zone_offset(zone)
+        t = Time.utc(year, mon, day, hour, min, sec)
+        offset = zone_offset(zone)
+	t = (t - offset).localtime if offset != 0 || zone == '+0000'
+	t
       else
         raise ArgumentError.new("not RFC 2822 compliant date: #{date.inspect}")
       end
@@ -303,7 +306,7 @@ class Time
 
     where zone is [+-]hhmm.
 
-    If self is a UTC time, +0000 is used as zone.
+    If self is a UTC time, -0000 is used as zone.
 =end
 
   RFC2822_DAY_NAME = [
@@ -319,7 +322,7 @@ class Time
       day, RFC2822_MONTH_NAME[mon-1], year,
       hour, min, sec) +
     if utc?
-      '+0000'
+      '-0000'
     else
       off = utc_offset
       sign = off < 0 ? '-' : '+'
@@ -445,6 +448,32 @@ if __FILE__ == $0
                    Time.httpdate("Tue, 15 Nov 1994 12:45:26 GMT"))
       assert_equal(Time.utc(1999, 12, 31, 23, 59, 59),
                    Time.httpdate("Fri, 31 Dec 1999 23:59:59 GMT"))
+    end
+
+    def test_rfc3339
+      t = Time.utc(1985, 4, 12, 23, 20, 50, 520000)
+      s = "1985-04-12T23:20:50.52Z"
+      assert_equal(t, Time.iso8601(s))
+      assert_equal(s, t.iso8601(2))
+
+      t = Time.utc(1996, 12, 20, 0, 39, 57)
+      s = "1996-12-19T16:39:57-08:00"
+      assert_equal(t, Time.iso8601(s))
+      # There is no way to generate time string with arbitrary timezone.
+      s = "1996-12-20T00:39:57Z"
+      assert_equal(t, Time.iso8601(s))
+      assert_equal(s, t.iso8601)
+
+      t = Time.utc(1990, 12, 31, 23, 59, 60)
+      s = "1990-12-31T23:59:60Z"
+      assert_equal(t, Time.iso8601(s))
+      # leap second is representable only if timezone file has it.
+      s = "1990-12-31T15:59:60-08:00"
+      assert_equal(t, Time.iso8601(s))
+
+      #t = Time.utc(1937, 1, 1, 11, 40, 27, 870000)
+      #s = "1937-01-01T12:00:27.87+00:20"
+      #assert_equal(t, Time.iso8601(s))
     end
 
     # http://www.w3.org/TR/xmlschema-2/

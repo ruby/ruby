@@ -1,3 +1,7 @@
+Sat Aug 24 13:57:28 2002  Tanaka Akira  <akr@m17n.org>
+
+	* lib/time.rb (Time.rfc2822, Time#rfc2822): preserve localtimeness.
+
 Wed Aug 21 16:43:19 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_thread_cleanup): should not modify the global
