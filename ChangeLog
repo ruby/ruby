@@ -1,3 +1,7 @@
+Tue Feb 17 11:33:30 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rss/rexmlparser.rb: REXML version may be 4 digits.
+
 Tue Feb 17 10:45:59 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/syck/rubyext.c (syck_emitter_end_object): takes only one arg.
