@@ -357,6 +357,7 @@ void rb_add_method _((VALUE, ID, NODE *, int));
 NODE *rb_node_newnode _((enum node_type,VALUE,VALUE,VALUE));
 
 NODE* rb_method_node _((VALUE klass, ID id));
+int rb_node_arity _((NODE* node));
 
 struct global_entry *rb_global_entry _((ID));
 VALUE rb_gvar_get _((struct global_entry *));

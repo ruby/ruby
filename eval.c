@@ -4581,7 +4581,7 @@ break_jump(retval)
 }
 
 static VALUE bmcall _((VALUE, VALUE));
-static VALUE method_arity _((VALUE));
+static int method_arity _((VALUE));
 
 static VALUE
 kk()
@@ -8275,6 +8275,45 @@ proc_call(proc, args)
     return proc_invoke(proc, args, Qundef, 0);
 }
 
+int
+rb_proc_arity(proc)
+    VALUE proc;
+{
+    struct BLOCK *data;
+    NODE *var, *list;
+    int n;
+
+    Data_Get_Struct(proc, struct BLOCK, data);
+    var = data->var;
+    if (var == 0) {
+	if (data->body && nd_type(data->body) == NODE_IFUNC &&
+	    data->body->nd_cfnc == bmcall) {
+	    return method_arity(data->body->nd_tval);
+	}
+	return 0;
+    }
+    if (var == (NODE*)1) return 0;
+    if (var == (NODE*)2) return 0;
+    if (nd_type(var) == NODE_BLOCK_ARG) {
+	var = var->nd_args;
+	if (var == (NODE*)1) return 0;
+	if (var == (NODE*)2) return 0;
+    }
+    switch (nd_type(var)) {
+      default:
+	return 1;
+      case NODE_MASGN:
+	list = var->nd_head;
+	n = 0;
+	while (list) {
+	    n++;
+	    list = list->nd_next;
+	}
+	if (var->nd_args) return -n-1;
+	return n;
+    }
+}
+
 /*
  *  call-seq:
  *     prc.arity -> fixnum
@@ -8299,39 +8338,8 @@ static VALUE
 proc_arity(proc)
     VALUE proc;
 {
-    struct BLOCK *data;
-    NODE *var, *list;
-    int n;
-
-    Data_Get_Struct(proc, struct BLOCK, data);
-    var = data->var;
-    if (var == 0) {
-	if (data->body && nd_type(data->body) == NODE_IFUNC &&
-	    data->body->nd_cfnc == bmcall) {
-	    return method_arity(data->body->nd_tval);
-	}
-	return INT2FIX(0);
-    }
-    if (var == (NODE*)1) return INT2FIX(0);
-    if (var == (NODE*)2) return INT2FIX(0);
-    if (nd_type(var) == NODE_BLOCK_ARG) {
-	var = var->nd_args;
-	if (var == (NODE*)1) return INT2FIX(0);
-	if (var == (NODE*)2) return INT2FIX(0);
-    }
-    switch (nd_type(var)) {
-      default:
-	return INT2FIX(1);
-      case NODE_MASGN:
-	list = var->nd_head;
-	n = 0;
-	while (list) {
-	    n++;
-	    list = list->nd_next;
-	}
-	if (var->nd_args) return INT2FIX(-n-1);
-	return INT2FIX(n);
-    }
+    int arity = rb_proc_arity(proc);
+    return INT2FIX(arity);
 }
 
 /*
@@ -8612,7 +8620,7 @@ mnew(klass, obj, id, mklass)
 	rklass = RCLASS(rklass)->super;
     }
     if (TYPE(klass) == T_ICLASS) klass = RBASIC(klass)->klass;
-    method = Data_Make_Struct(mklass, struct METHOD, bm_mark, free, data);
+    method = Data_Make_Struct(mklass, struct METHOD, bm_mark, -1, data);
     data->klass = klass;
     data->recv = obj;
     data->id = id;
@@ -8986,6 +8994,38 @@ umethod_bind(method, recv)
     return method;
 }
 
+int
+rb_node_arity(body)
+    NODE *body;
+{
+    int n;
+
+    switch (nd_type(body)) {
+      case NODE_CFUNC:
+	if (body->nd_argc < 0) return -1;
+	return body->nd_argc;
+      case NODE_ZSUPER:
+	return -1;
+      case NODE_ATTRSET:
+	return 1;
+      case NODE_IVAR:
+	return 0;
+      case NODE_BMETHOD:
+	return rb_proc_arity(body->nd_cval);
+      case NODE_SCOPE:
+	body = body->nd_next;	/* skip NODE_SCOPE */
+	if (nd_type(body) == NODE_BLOCK)
+	    body = body->nd_head;
+	if (!body) return 0;
+	n = body->nd_cnt;
+	if (body->nd_opt || body->nd_rest != -1)
+	    n = -n-1;
+	return n;
+      default:
+	rb_raise(rb_eArgError, "invalid node 0x%x", nd_type(body));
+    }
+}
+
 /*
  *  call-seq:
  *     meth.arity    => fixnum
@@ -9020,38 +9060,38 @@ umethod_bind(method, recv)
  */
 
 static VALUE
+method_arity_m(method)
+    VALUE method;
+{
+    int n = method_arity(method);
+    return INT2FIX(n);
+}
+
+static int
 method_arity(method)
     VALUE method;
 {
     struct METHOD *data;
-    NODE *body;
-    int n;
 
     Data_Get_Struct(method, struct METHOD, data);
+    return rb_node_arity(data->body);
+}
 
-    body = data->body;
-    switch (nd_type(body)) {
-      case NODE_CFUNC:
-	if (body->nd_argc < 0) return INT2FIX(-1);
-	return INT2FIX(body->nd_argc);
-      case NODE_ZSUPER:
-	return INT2FIX(-1);
-      case NODE_ATTRSET:
-	return INT2FIX(1);
-      case NODE_IVAR:
-	return INT2FIX(0);
-      case NODE_BMETHOD:
-	return proc_arity(body->nd_cval);
-      default:
-	body = body->nd_next;	/* skip NODE_SCOPE */
-	if (nd_type(body) == NODE_BLOCK)
-	    body = body->nd_head;
-	if (!body) return INT2FIX(0);
-	n = body->nd_cnt;
-	if (body->nd_opt || body->nd_rest != -1)
-	    n = -n-1;
-	return INT2FIX(n);
-    }
+int
+rb_mod_method_arity(mod, id)
+    VALUE mod;
+    ID id;
+{
+    NODE *node = rb_method_node(mod, id);
+    return rb_node_arity(node);
+}
+
+int
+rb_obj_method_arity(obj, id)
+    VALUE obj;
+    ID id;
+{
+    return rb_mod_method_arity(CLASS_OF(obj), id);
 }
 
 /*
@@ -9360,7 +9400,7 @@ Init_Proc()
     rb_define_method(rb_cMethod, "clone", method_clone, 0);
     rb_define_method(rb_cMethod, "call", method_call, -1);
     rb_define_method(rb_cMethod, "[]", method_call, -1);
-    rb_define_method(rb_cMethod, "arity", method_arity, 0);
+    rb_define_method(rb_cMethod, "arity", method_arity_m, 0);
     rb_define_method(rb_cMethod, "inspect", method_inspect, 0);
     rb_define_method(rb_cMethod, "to_s", method_inspect, 0);
     rb_define_method(rb_cMethod, "to_proc", method_proc, 0);
@@ -9374,7 +9414,7 @@ Init_Proc()
     rb_define_method(rb_cUnboundMethod, "eql?", method_eq, 1);
     rb_define_method(rb_cUnboundMethod, "hash", method_hash, 0);
     rb_define_method(rb_cUnboundMethod, "clone", method_clone, 0);
-    rb_define_method(rb_cUnboundMethod, "arity", method_arity, 0);
+    rb_define_method(rb_cUnboundMethod, "arity", method_arity_m, 0);
     rb_define_method(rb_cUnboundMethod, "inspect", method_inspect, 0);
     rb_define_method(rb_cUnboundMethod, "to_s", method_inspect, 0);
     rb_define_method(rb_cUnboundMethod, "bind", umethod_bind, 1);
