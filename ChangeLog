@@ -1,3 +1,21 @@
+Wed Oct  2 23:09:20 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* io.c (rb_io_wait_readable): handle retryable errors.
+
+	* io.c (rb_io_wait_writable): ditto.
+
+	* ext/socket/socket.c (bsock_send): ditto.
+
+	* ext/socket/socket.c (s_recvfrom): ditto.
+
+	* ext/socket/socket.c (s_accept): ditto.
+
+	* ext/socket/socket.c (udp_send): ditto.
+
+	* ext/socket/getaddrinfo.c (afdl): made private structures constant.
+
+	* rubyio.h: prototype; rb_io_wait_readable(), rb_io_wait_writable().
+
 Wed Oct  2 13:03:58 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in: set ac_cv_func_setitimer to "no" on Cygwin.

@@ -368,9 +368,9 @@ bsock_send(argc, argv, sock)
     GetOpenFile(sock, fptr);
     f = GetWriteFile(fptr);
     fd = fileno(f);
-  retry:
     rb_thread_fd_writable(fd);
     StringValue(mesg);
+  retry:
     if (!NIL_P(to)) {
 	StringValue(to);
 	n = sendto(fd, RSTRING(mesg)->ptr, RSTRING(mesg)->len, NUM2INT(flags),
@@ -380,9 +380,7 @@ bsock_send(argc, argv, sock)
 	n = send(fd, RSTRING(mesg)->ptr, RSTRING(mesg)->len, NUM2INT(flags));
     }
     if (n < 0) {
-	switch (errno) {
-	  case EINTR:
-	    rb_thread_schedule();
+	if (rb_io_wait_writable(fd)) {
 	    goto retry;
 	}
 	rb_sys_fail("send(2)");
@@ -438,9 +436,7 @@ s_recvfrom(sock, argc, argv, from)
     TRAP_END;
 
     if (slen < 0) {
-	switch (errno) {
-	  case EINTR:
-	    rb_thread_schedule();
+	if (rb_io_wait_readable(fd)) {
 	    goto retry;
 	}
 	rb_sys_fail("recvfrom(2)");
@@ -1166,8 +1162,9 @@ s_accept(klass, fd, sockaddr, len)
 	    rb_gc();
 	    retry = 1;
 	    goto retry;
-	  case EINTR:
-	    rb_thread_schedule();
+	  default:
+	    if (!rb_io_wait_readable(fd)) break;
+	    retry = 0;
 	    goto retry;
 	}
 	rb_sys_fail(0);
@@ -1431,9 +1428,7 @@ udp_send(argc, argv, sock)
 	    freeaddrinfo(res0);
 	    return INT2FIX(n);
 	}
-	switch (errno) {
-	  case EINTR:
-	    rb_thread_schedule();
+	if (rb_io_wait_writable(fileno(f))) {
 	    goto retry;
 	}
     }

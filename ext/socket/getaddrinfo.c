@@ -105,7 +105,7 @@ struct sockinet {
 	u_short	si_port;
 };
 
-static struct afd {
+static const struct afd {
 	int a_af;
 	int a_addrlen;
 	int a_socklen;
@@ -136,14 +136,14 @@ static struct afd {
 #define PTON_MAX	4
 #endif
 
-static int get_name __P((const char *, struct afd *,
+static int get_name __P((const char *, const struct afd *,
 			  struct addrinfo **, char *, struct addrinfo *,
 			  int));
 static int get_addr __P((const char *, int, struct addrinfo **,
 			struct addrinfo *, int));
 static int str_isnumber __P((const char *));
 	
-static const char *ai_errlist[] = {
+static const char *const ai_errlist[] = {
 	"success.",
 	"address family for hostname not supported.",	/* EAI_ADDRFAMILY */
 	"temporary failure in name resolution.",	/* EAI_AGAIN      */
@@ -418,7 +418,7 @@ getaddrinfo(hostname, servname, hints, res)
 	 * non-passive socket -> localhost (127.0.0.1 or ::1)
 	 */
 	if (hostname == NULL) {
-		struct afd *afd;
+		const struct afd *afd;
 		int s;
 
 		for (afd = &afdl[0]; afd->a_af; afd++) {
@@ -533,7 +533,7 @@ getaddrinfo(hostname, servname, hints, res)
 static int
 get_name(addr, afd, res, numaddr, pai, port0)
 	const char *addr;
-	struct afd *afd;
+	const struct afd *afd;
 	struct addrinfo **res;
 	char *numaddr;
 	struct addrinfo *pai;
@@ -588,7 +588,7 @@ get_addr(hostname, af, res, pai, port0)
 	struct addrinfo sentinel;
 	struct hostent *hp;
 	struct addrinfo *top, *cur;
-	struct afd *afd;
+	const struct afd *afd;
 	int i, error = 0, h_error;
 	char *ap;
 

@@ -64,6 +64,8 @@ void rb_io_check_readable _((OpenFile*));
 void rb_io_fptr_finalize _((OpenFile*));
 void rb_io_synchronized _((OpenFile*));
 void rb_io_check_closed _((OpenFile*));
+int rb_io_wait_readable _((int));
+int rb_io_wait_writable _((int));
 
 VALUE rb_io_taint_check _((VALUE));
 void rb_eof_error _((void));

@@ -250,24 +250,60 @@ io_fflush(f, fptr)
     fptr->mode &= ~FMODE_WBUF;
 }
 
-void
+int
 rb_io_wait_readable(f)
     int f;
 {
     fd_set rfds;
-    FD_ZERO(&rfds);
-    FD_SET(f, &rfds);
-    rb_thread_select(f + 1, &rfds, NULL, NULL, NULL);
+
+    switch (errno) {
+      case EINTR:
+#if defined(ERESTART)
+      case ERESTART:
+#endif
+	rb_thread_wait_fd(f);
+	return Qtrue;
+
+      case EAGAIN:
+#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
+      case EWOULDBLOCK:
+#endif
+	FD_ZERO(&rfds);
+	FD_SET(f, &rfds);
+	rb_thread_select(f + 1, &rfds, NULL, NULL, NULL);
+	return Qtrue;
+
+      default:
+	return Qfalse;
+    }
 }
 
-void
+int
 rb_io_wait_writable(f)
     int f;
 {
     fd_set wfds;
-    FD_ZERO(&wfds);
-    FD_SET(f, &wfds);
-    rb_thread_select(f + 1, NULL, &wfds, NULL, NULL);
+
+    switch (errno) {
+      case EINTR:
+#if defined(ERESTART)
+      case ERESTART:
+#endif
+	rb_thread_fd_writable(f);
+	return Qtrue;
+
+      case EAGAIN:
+#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
+      case EWOULDBLOCK:
+#endif
+	FD_ZERO(&wfds);
+	FD_SET(f, &wfds);
+	rb_thread_select(f + 1, NULL, &wfds, NULL, NULL);
+	return Qtrue;
+
+      default:
+	return Qfalse;
+    }
 }
 
 /* writing functions */
@@ -308,19 +344,8 @@ io_write(io, str)
 	ptr += r;
 	n -= r;
 	if (ferror(f)) {
-	    switch (errno) {
-	      case EINTR:
-#if defined(ERESTART)
-	      case ERESTART:
-#endif
+	    if (rb_io_wait_writable(fileno(f))) {
 		clearerr(f);
-		continue;
-	      case EAGAIN:
-#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
-	      case EWOULDBLOCK:
-#endif
-		clearerr(f);
-		rb_io_wait_writable(fileno(f));
 		continue;
 	    }
 	    rb_sys_fail(fptr->path);
@@ -571,31 +596,6 @@ rb_io_to_io(io)
 }
 
 /* reading functions */
-static void
-io_read_retryable(f, path)
-    FILE *f;
-    const char *path;
-{
-    switch (errno) {
-      case EINTR:
-#if defined(ERESTART)
-      case ERESTART:
-#endif
-	clearerr(f);
-	break;
-      case EAGAIN:
-#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
-      case EWOULDBLOCK:
-#endif
-	clearerr(f);
-	rb_io_wait_readable(fileno(f));
-	break;
-      default:
-	rb_sys_fail(path);
-	break;
-    }
-}
-
 long
 rb_io_fread(ptr, len, f)
     char *ptr;
@@ -636,6 +636,9 @@ rb_io_fread(ptr, len, f)
 	    if (ferror(f)) {
 		switch (errno) {
 		  case EINTR:
+#if defined(ERESTART)
+		  case ERESTART:
+#endif
 		    clearerr(f);
 		    continue;
 		  case EAGAIN:
@@ -820,7 +823,9 @@ appendline(fptr, delim, strp)
 	TRAP_END;
 	if (c == EOF) {
 	    if (ferror(f)) {
-		io_read_retryable(f, fptr->path);
+		if (!rb_io_wait_readable(fileno(f)))
+		    rb_sys_fail(fptr->path);
+		clearerr(f);
 		continue;
 	    }
 	    return c;
@@ -1133,7 +1138,9 @@ rb_io_each_byte(io)
 	TRAP_END;
 	if (c == EOF) {
 	    if (ferror(f)) {
-		io_read_retryable(f, fptr->path);
+		if (!rb_io_wait_readable(fileno(f)))
+		    rb_sys_fail(fptr->path);
+		clearerr(f);
 		continue;
 	    }
 	    break;
@@ -1164,7 +1171,9 @@ rb_io_getc(io)
 
     if (c == EOF) {
 	if (ferror(f)) {
-	    io_read_retryable(f, fptr->path);
+	    if (!rb_io_wait_readable(fileno(f)))
+		rb_sys_fail(fptr->path);
+	    clearerr(f);
 	    goto retry;
 	}
 	return Qnil;
