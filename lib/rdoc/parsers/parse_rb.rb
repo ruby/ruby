@@ -1123,6 +1123,7 @@ class RubyLex
   def identify_quotation(initial_char)
     ch = getc
     if lt = PERCENT_LTYPE[ch]
+      initial_char += ch
       ch = getc
     elsif ch =~ /\W/
       lt = "\""
