@@ -121,33 +121,44 @@ Net::Protocol
 
     def initialize( sock )
       super
-      check_reply SuccessCode
+      critical {
+        check_reply SuccessCode
+      }
     end
 
 
     def helo( fromdom )
-      getok sprintf( 'HELO %s', fromdom )
+      critical {
+        getok sprintf( 'HELO %s', fromdom )
+      }
     end
 
 
     def ehlo( fromdom )
-      getok sprintf( 'EHLO %s', fromdom )
+      critical {
+        getok sprintf( 'EHLO %s', fromdom )
+      }
     end
 
 
     def mailfrom( fromaddr )
-      getok sprintf( 'MAIL FROM:<%s>', fromaddr )
+      critical {
+        getok sprintf( 'MAIL FROM:<%s>', fromaddr )
+      }
     end
 
 
     def rcpt( toaddrs )
       toaddrs.each do |i|
-        getok sprintf( 'RCPT TO:<%s>', i )
+        critical {
+          getok sprintf( 'RCPT TO:<%s>', i )
+        }
       end
     end
 
 
     def data
+      return unless begin_critical
       getok 'DATA', ContinueCode
     end
 
@@ -155,16 +166,19 @@ Net::Protocol
     def write_mail( mailsrc = nil, &block )
       @socket.write_pendstr mailsrc, &block
       check_reply SuccessCode
+      end_critical
     end
     alias sendmail write_mail
 
 
-    private
-
-
-    def do_quit
-      getok 'QUIT'
+    def quit
+      critical {
+        getok 'QUIT'
+      }
     end
+
+
+    private
 
 
     def get_reply
