@@ -1,8 +1,25 @@
+Mon Feb 19 01:55:43 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (secure_visibility): visibility check for untainted modules.
+
+Mon Feb 19 00:29:29 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* signal.c (sigpipe): sighandler which does nothing.
+
+	* signal.c (trap): set sigpipe function for SIGPIPE.
+
+	* signal.c (Init_signal): default SIGPIPE handler should be
+	  sigpipe function.
+
 Sun Feb 18 15:42:38 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/curses/extconf.rb: add dir_config.
 
 	* missing/flock.c: use fcntl(2) instead of lockf(2).
+
+Sun Feb 18 13:02:03 2001  Yasushi Shoji  <yashi@yashi.com>
+
+	* array.c (rb_ary_subseq): wrong boundary check.
 
 Fri Feb 16 01:44:56 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
