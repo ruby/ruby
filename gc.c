@@ -924,7 +924,7 @@ gc_sweep()
 	    else {
 		RBASIC(p)->flags &= ~FL_MARK;
 		live += sizeof(VALUE);
-		switch (TYPE(p)) {
+		switch (BUILTIN_TYPE(p)) {
 		  case T_OBJECT:
 		    live += size_of_table(ROBJECT(p)->iv_tbl);
 		    break;
