@@ -1,3 +1,8 @@
+Fri May  2 18:17:37 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* compar.c (cmp_gt): raises ArgumentError when "<=>" give nil.
+	  inspired by discussion on comp.lang.python.
+
 Fri May  2 17:37:01 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/cgi/session.rb (CGI::Session::initialize): updated to

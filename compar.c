@@ -31,14 +31,22 @@ rb_cmpint(val)
 }
 
 static VALUE
+cmperr()
+{
+    rb_raise(rb_eArgError, "comparison failed");
+    return Qnil;		/* not reached */
+}
+
+static VALUE
 cmp_equal(x, y)
     VALUE x, y;
 {
     int c;
 
     if (x == y) return Qtrue;
+
     c  = rb_funcall(x, cmp, 1, y);
-    if (NIL_P(c)) return Qfalse;
+    if (NIL_P(c)) return Qnil;
     if (c == INT2FIX(0)) return Qtrue;
     if (rb_cmpint(c) == 0) return Qtrue;
     return Qfalse;
@@ -50,7 +58,7 @@ cmp_gt(x, y)
 {
     VALUE c = rb_funcall(x, cmp, 1, y);
 
-    if (NIL_P(c)) return Qnil;
+    if (NIL_P(c)) return cmperr();
     if (rb_cmpint(c) > 0) return Qtrue;
     return Qfalse;
 }
@@ -61,7 +69,7 @@ cmp_ge(x, y)
 {
     VALUE c = rb_funcall(x, cmp, 1, y);
 
-    if (NIL_P(c)) return Qnil;
+    if (NIL_P(c)) return cmperr();
     if (rb_cmpint(c) >= 0) return Qtrue;
     return Qfalse;
 }
@@ -72,7 +80,7 @@ cmp_lt(x, y)
 {
     VALUE c = rb_funcall(x, cmp, 1, y);
 
-    if (NIL_P(c)) return Qnil;
+    if (NIL_P(c)) return cmperr();
     if (rb_cmpint(c) < 0) return Qtrue;
     return Qfalse;
 }
@@ -83,7 +91,7 @@ cmp_le(x, y)
 {
     VALUE c = rb_funcall(x, cmp, 1, y);
 
-    if (NIL_P(c)) return Qnil;
+    if (NIL_P(c)) return cmperr();
     if (rb_cmpint(c) <= 0) return Qtrue;
     return Qfalse;
 }
