@@ -1,3 +1,11 @@
+Wed Dec 24 14:23:27 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_read): clear the buffer argument
+	  when returning nil.  [ruby-dev:22363]
+
+	* test/ruby/ut_eof.rb (TestEOF::test_eof_0, TestEOF::test_eof_1):
+	  add buffer argument tests.
+
 Wed Dec 24 14:07:55 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit/assertions.rb: Modules are allowed to rescue.

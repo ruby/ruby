@@ -851,9 +851,11 @@ strio_read(argc, argv, self)
 	    }
 	    if (len > 0 && ptr->pos >= RSTRING(ptr->string)->len) {
 		ptr->flags |= STRIO_EOF;
+		if (!NIL_P(str)) rb_str_resize(str, 0);
 		return Qnil;
 	    }
 	    else if (ptr->flags & STRIO_EOF) {
+		if (!NIL_P(str)) rb_str_resize(str, 0);
 		return Qnil;
 	    }
 	    break;
