@@ -16,6 +16,7 @@
 #include "st.h"
 #include "util.h"
 #include "rubysig.h"
+#include "version.h"
 
 #ifdef __APPLE__
 #include <crt_externs.h>

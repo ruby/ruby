@@ -14,6 +14,7 @@
 #include "rubysig.h"
 #include "node.h"
 #include "st.h"
+#include "version.h"
 #include <ctype.h>
 
 extern st_table *rb_class_tbl;

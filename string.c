@@ -14,6 +14,7 @@
 
 #include "ruby.h"
 #include "re.h"
+#include "version.h"
 
 #define BEG(no) regs->beg[no]
 #define END(no) regs->end[no]

@@ -1,3 +1,11 @@
+Mon May 19 16:13:57 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* class.c: add #include "version.h".
+
+	* hash.c: ditto.
+
+	* string.c: ditto.
+
 Mon May 19 14:42:50 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c (rb_mod_cmp): stupid comparison fixed.
