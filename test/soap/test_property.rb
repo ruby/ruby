@@ -130,7 +130,7 @@ __EOP__
     tag = Object.new
     tested = false
     @prop.add_hook("foo.bar") do |key, value|
-      assert_raise(TypeError) do
+      assert_raise(RuntimeError) do
 	key << "baz"
       end
       tested = true

@@ -47,7 +47,7 @@ if defined? DBM
     def test_freeze
       DBM.open("#{TMPROOT}/a") {|d|
         d.freeze
-        assert_raises(TypeError) { d["k"] = "v" }
+        assert_raises(RuntimeError) { d["k"] = "v" }
       }
     end
   end

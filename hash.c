@@ -1690,7 +1690,8 @@ rb_f_getenv(obj, name)
 {
     char *nam, *env;
 
-    StringValue(name);
+    rb_secure(4);
+    SafeStringValue(name);
     nam = RSTRING(name)->ptr;
     if (strlen(nam) != RSTRING(name)->len) {
 	rb_raise(rb_eArgError, "bad environment variable name");
@@ -1722,12 +1723,13 @@ env_fetch(argc, argv)
     long block_given;
     char *nam, *env;
 
+    rb_secure(4);
     rb_scan_args(argc, argv, "11", &key, &if_none);
     block_given = rb_block_given_p();
     if (block_given && argc == 2) {
 	rb_warn("block supersedes default value argument");
     }
-    StringValue(key);
+    SafeStringValue(key);
     nam = RSTRING(key)->ptr;
     if (strlen(nam) != RSTRING(key)->len) {
 	rb_raise(rb_eArgError, "bad environment variable name");
@@ -1924,8 +1926,10 @@ static VALUE
 env_keys()
 {
     char **env;
-    VALUE ary = rb_ary_new();
+    VALUE ary;
 
+    rb_secure(4);
+    ary = rb_ary_new();
     env = GET_ENVIRON(environ);
     while (*env) {
 	char *s = strchr(*env, '=');
@@ -1942,9 +1946,11 @@ static VALUE
 env_each_key(ehash)
     VALUE ehash;
 {
-    VALUE keys = env_keys();
+    VALUE keys;
     long i;
 
+    rb_secure(4);
+    keys = env_keys();
     for (i=0; i<RARRAY(keys)->len; i++) {
 	rb_yield(RARRAY(keys)->ptr[i]);
     }
@@ -1954,9 +1960,11 @@ env_each_key(ehash)
 static VALUE
 env_values()
 {
+    VALUE ary;
     char **env;
-    VALUE ary = rb_ary_new();
 
+    rb_secure(4);
+    ary = rb_ary_new();
     env = GET_ENVIRON(environ);
     while (*env) {
 	char *s = strchr(*env, '=');
@@ -1976,6 +1984,8 @@ env_each_value(ehash)
     VALUE values = env_values();
     long i;
 
+    rb_secure(4);
+    values = env_values();
     for (i=0; i<RARRAY(values)->len; i++) {
 	rb_yield(RARRAY(values)->ptr[i]);
     }
@@ -1988,9 +1998,11 @@ env_each_i(ehash, values)
     int values;
 {
     char **env;
-    VALUE ary = rb_ary_new();
+    VALUE ary;
     long i;
 
+    rb_secure(4);
+    ary = rb_ary_new();
     env = GET_ENVIRON(environ);
     while (*env) {
 	char *s = strchr(*env, '=');
@@ -2036,7 +2048,6 @@ env_reject_bang()
 
     rb_secure(4);
     keys = env_keys();
-
     for (i=0; i<RARRAY(keys)->len; i++) {
 	VALUE val = rb_f_getenv(Qnil, RARRAY(keys)->ptr[i]);
 	if (!NIL_P(val)) {
@@ -2063,9 +2074,11 @@ env_values_at(argc, argv)
     int argc;
     VALUE *argv;
 {
-    VALUE result = rb_ary_new();
+    VALUE result;
     long i;
 
+    rb_secure(4);
+    result = rb_ary_new();
     for (i=0; i<argc; i++) {
 	rb_ary_push(result, rb_f_getenv(Qnil, argv[i]));
     }
@@ -2078,6 +2091,7 @@ env_select()
     VALUE result;
     char **env;
 
+    rb_secure(4);
     result = rb_ary_new();
     env = GET_ENVIRON(environ);
     while (*env) {
@@ -2104,7 +2118,6 @@ env_clear()
     
     rb_secure(4);
     keys = env_keys();
-
     for (i=0; i<RARRAY(keys)->len; i++) {
 	VALUE val = rb_f_getenv(Qnil, RARRAY(keys)->ptr[i]);
 	if (!NIL_P(val)) {
@@ -2124,9 +2137,10 @@ static VALUE
 env_inspect()
 {
     char **env;
-    VALUE str = rb_str_buf_new2("{");
-    VALUE i;
+    VALUE str, i;
 
+    rb_secure(4);
+    str = rb_str_buf_new2("{");
     env = GET_ENVIRON(environ);
     while (*env) {
 	char *s = strchr(*env, '=');
@@ -2154,8 +2168,10 @@ static VALUE
 env_to_a()
 {
     char **env;
-    VALUE ary = rb_ary_new();
+    VALUE ary;
 
+    rb_secure(4);
+    ary = rb_ary_new();
     env = GET_ENVIRON(environ);
     while (*env) {
 	char *s = strchr(*env, '=');
@@ -2181,6 +2197,7 @@ env_size()
     int i;
     char **env;
 
+    rb_secure(4);
     env = GET_ENVIRON(environ);
     for(i=0; env[i]; i++)
 	;
@@ -2193,6 +2210,7 @@ env_empty_p()
 {
     char **env;
 
+    rb_secure(4);
     env = GET_ENVIRON(environ);
     if (env[0] == 0) {
 	FREE_ENVIRON(environ);
@@ -2208,6 +2226,7 @@ env_has_key(env, key)
 {
     char *s;
 
+    rb_secure(4);
     s = StringValuePtr(key);
     if (strlen(s) != RSTRING(key)->len)
 	rb_raise(rb_eArgError, "bad environment variable name");
@@ -2221,6 +2240,7 @@ env_has_value(dmy, value)
 {
     char **env;
 
+    rb_secure(4);
     if (TYPE(value) != T_STRING) return Qfalse;
     env = GET_ENVIRON(environ);
     while (*env) {
@@ -2245,6 +2265,7 @@ env_index(dmy, value)
     char **env;
     VALUE str;
 
+    rb_secure(4);
     StringValue(value);
     env = GET_ENVIRON(environ);
     while (*env) {
@@ -2267,8 +2288,10 @@ static VALUE
 env_to_hash()
 {
     char **env;
-    VALUE hash = rb_hash_new();
+    VALUE hash;
 
+    rb_secure(4);
+    hash = rb_hash_new();
     env = GET_ENVIRON(environ);
     while (*env) {
 	char *s = strchr(*env, '=');
@@ -2293,6 +2316,7 @@ env_shift()
 {
     char **env;
 
+    rb_secure(4);
     env = GET_ENVIRON(environ);
     if (*env) {
 	char *s = strchr(*env, '=');
@@ -2330,9 +2354,11 @@ static VALUE
 env_replace(env, hash)
     VALUE env, hash;
 {
-    volatile VALUE keys = env_keys();
+    volatile VALUE keys;
     long i;
 
+    rb_secure(4);
+    keys = env_keys();
     if (env == hash) return env;
     hash = to_hash(hash);
     rb_hash_foreach(hash, env_replace_i, keys);
@@ -2360,6 +2386,7 @@ static VALUE
 env_update(env, hash)
     VALUE env, hash;
 {
+    rb_secure(4);
     if (env == hash) return env;
     hash = to_hash(hash);
     rb_hash_foreach(hash, env_update_i, 0);

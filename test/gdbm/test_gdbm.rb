@@ -45,7 +45,7 @@ if defined? GDBM
     def test_freeze
       GDBM.open("#{TMPROOT}/a.dbm") {|d|
         d.freeze
-        assert_raises(TypeError) { d["k"] = "v" }
+        assert_raises(RuntimeError) { d["k"] = "v" }
       }
     end
   end

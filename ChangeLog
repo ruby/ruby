@@ -3,6 +3,10 @@ Thu Nov 18 17:05:01 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* parse.y (f_rest_arg): store rest args into invisible local variabe
 	  in order to get rid of SEGV at ZSUPER.  [ruby-dev:24913]
 
+Thu Nov 18 15:39:52 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (rb_f_getenv): prohibit for $SAFE=4. [ruby-dev:24908]
+
 Thu Nov 18 14:58:42 2004  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* ext/readline/readline.c: check $SAFE.
