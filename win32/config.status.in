@@ -1,12 +1,12 @@
 s%@SHELL@%%g
-s%@CFLAGS@%-nologo -DNT=1 -Zi -O2b2x -G5%g
+s%@CFLAGS@%-nologo -DNT=1 -MDd -Zi%g
 s%@CPPFLAGS@%%g
 s%@CXXFLAGS@%%g
 s%@FFLAGS@%%g
 s%@DEFS@%
  -DUSE_THREAD -DSIZEOF_INT=4 -DSIZEOF_SHORT=2 -DSIZEOF_LONG=4 -DSIZEOF_VOIDP=4 -DSIZEOF_FLOAT=4 -DSIZEOF_DOUBLE=8 -DHAVE_PROTOTYPES=1 -DHAVE_STDARG_PROTOTYPES=1 -DHAVE_STDLIB_H=1 -DHAVE_LIMITS_H=1 -DHAVE_FCNTL_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_ST_RDEV=1 -DGETGROUPS_T=int -DRETSIGTYPE=void -DHAVE_ALLOCA=1 -DHAVE_FMOD=1 -DHAVE_WAITPID=1 -DHAVE_GETCWD=1 -DHAVE_CHSIZE=1 -DHAVE_GETGROUPS=1 -DHAVE_GETLOGIN=1 -DRSHIFT=\(x,y\)\ \(\(x\)\>\>y\) -DFILE_COUNT=_cnt -DDLEXT=\".so\" -DDLEXT2=\".dll\" -DRUBY_PLATFORM=\"i586-mswin32\" %g
-s%@LDFLAGS@%-nologo -Ox%g
-s%@LIBS@%user32.lib advapi32.lib wsock32.lib%g
+s%@LDFLAGS@%-nologo -MDd -Zi%g
+s%@LIBS@%RubyCRTD.lib user32.lib advapi32.lib ws2_32.lib%g
 s%@exec_prefix@%${prefix}%g
 s%@prefix@%%g
 s%@program_transform_name@%s,x,x,%g
@@ -40,7 +40,7 @@ s%@DEFAULT_KCODE@%%g
 s%@EXEEXT@%.exe%g
 s%@OBJEXT@%obj%g
 s%@XLDFLAGS@%%g
-s%@DLDFLAGS@%%g
+s%@DLDFLAGS@%-MDd -Zi%g
 s%@STATIC@%%g
 s%@CCDLFLAGS@%-DIMPORT%g
 s%@LDSHARED@%cl -LD%g
@@ -59,10 +59,10 @@ s%@LIBRUBY_ALIASES@%%g
 s%@LIBRUBY@%$(RUBY_SO_NAME).lib%g
 s%@LIBRUBYARG@%$(topdir)/$(RUBY_SO_NAME).lib%g
 s%@SOLIBS@%%g
-s%@DLDLIBS@%%g
+s%@DLDLIBS@%RubyCRTD.lib%g
 s%@arch@%i586-mswin32%g
 s%@sitedir@%${prefix}/lib/ruby/site_ruby%g
-s%@configure_args@%--with-make-prog=nmake%g
+s%@configure_args@%--with-make-prog=nmake --with-tcllib=tcl83 --with-tklib=tk83%g
 s%@configure_input@%$configure_input%g
 s%@srcdir@%$srcdir%g
 s%@top_srcdir@%$top_srcdir%g

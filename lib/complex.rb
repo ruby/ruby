@@ -125,12 +125,12 @@ class Complex < Numeric
   
   def / (other)
     if other.kind_of?(Complex)
-      self * other.conjugate / other.abs2
+      self*other.conjugate/other.abs2
     elsif Complex.generic?(other)
-      Complex(@real / other, @image / other)
+      Complex(@real/other, @image/other)
     else
-      x , y = other.coerce(self)
-      x / y
+      x, y = other.coerce(self)
+      x/y
     end
   end
   
@@ -171,8 +171,8 @@ class Complex < Numeric
       r, theta = polar
       Complex.polar(r.power!(other), theta * other)
     else
-      x , y = other.coerce(self)
-      x / y
+      x, y = other.coerce(self)
+      x/y
     end
   end
   

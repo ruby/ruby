@@ -14,6 +14,12 @@
 #include "defines.h"
 #include "dln.h"
 
+#ifdef __CHECKER__
+#undef HAVE_DLOPEN
+#undef USE_DLN_A_OUT
+#undef USE_DLN_DLOPEN
+#endif
+
 char *dln_argv0;
 void rb_loaderror();
 

@@ -1516,6 +1516,7 @@ rb_alias(klass, name, def)
 	print_undef(klass, def);
     }
     body = orig->nd_body;
+    orig->nd_cnt++;
     if (nd_type(body) == NODE_FBODY) { /* was alias */
 	def = body->nd_mid;
 	origin = body->nd_orig;
@@ -1793,7 +1794,7 @@ static VALUE
 rb_obj_is_block(block)
     VALUE block;
 {
-    if (TYPE(block) == T_DATA && RDATA(block)->dfree == blk_free) {
+    if (TYPE(block) == T_DATA && RDATA(block)->dfree == (RUBY_DATA_FUNC)blk_free) {
 	return Qtrue;
     }
     return Qfalse;
@@ -2792,7 +2793,7 @@ rb_eval(self, n)
 	    frozen_class_p(ruby_class);
 	    body = search_method(ruby_class, node->nd_mid, &origin);
 	    if (body){
-		if (RTEST(ruby_verbose) && ruby_class == origin) {
+		if (RTEST(ruby_verbose) && ruby_class == origin && body->nd_cnt == 0) {
 		    rb_warning("discarding old %s", rb_id2name(node->nd_mid));
 		}
 		rb_clear_cache_by_id(node->nd_mid);
@@ -5932,6 +5933,12 @@ proc_call(proc, args)
     volatile int orphan;
     volatile int safe = ruby_safe_level;
 
+    if (rb_block_given_p()) {
+	rb_warning("block for %s#%s is useless",
+		   rb_class2name(CLASS_OF(proc)),
+		   rb_id2name(ruby_frame->last_func));
+    }
+
     Data_Get_Struct(proc, struct BLOCK, data);
     orphan = blk_orphan(data);
 
@@ -6601,7 +6608,7 @@ static rb_thread_t
 rb_thread_check(data)
     VALUE data;
 {
-    if (TYPE(data) != T_DATA || RDATA(data)->dfree != thread_free) {
+    if (TYPE(data) != T_DATA || RDATA(data)->dfree != (RUBY_DATA_FUNC)thread_free) {
 	rb_raise(rb_eTypeError, "wrong argument type %s (expected Thread)",
 		 rb_class2name(CLASS_OF(data)));
     }
@@ -7089,7 +7096,9 @@ rb_thread_wait_fd(fd)
     int fd;
 {
     if (curr_thread == curr_thread->next) return;
+#if 0
     if (ruby_in_compile) return;
+#endif
 
     curr_thread->status = THREAD_STOPPED;
     curr_thread->fd = fd;
@@ -7101,7 +7110,7 @@ int
 rb_thread_fd_writable(fd)
     int fd;
 {
-    if (curr_thread == curr_thread->next) return;
+    if (curr_thread == curr_thread->next) return Qtrue;
 
     curr_thread->status = THREAD_STOPPED;
     FD_ZERO(&curr_thread->readfds);
@@ -7111,6 +7120,7 @@ rb_thread_fd_writable(fd)
     curr_thread->fd = fd+1;
     curr_thread->wait_for = WAIT_SELECT;
     rb_thread_schedule();
+    return Qfalse;
 }
 
 void

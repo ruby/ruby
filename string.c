@@ -97,7 +97,12 @@ rb_str_new4(orig)
     VALUE orig;
 {
     if (OBJ_FROZEN(orig)) return orig;
-    if (RSTRING(orig)->orig && !FL_TEST(orig, STR_NO_ORIG)) {
+    if (RSTRING(orig)->orig) {
+	if (FL_TEST(orig, STR_NO_ORIG)) {
+	    orig = rb_str_new(RSTRING(orig)->ptr, RSTRING(orig)->len);
+	    OBJ_FREEZE(orig);
+	    return orig;
+	}
 	OBJ_FREEZE(RSTRING(orig)->orig);
 	return RSTRING(orig)->orig;
     }
@@ -349,24 +354,32 @@ rb_str_substr(str, beg, len)
     return str2;
 }
 
+static int
+str_independent(str)
+    VALUE str;
+{
+    if (OBJ_FROZEN(str)) rb_error_frozen("string");
+    if (!OBJ_TAINTED(str) && rb_safe_level() >= 4)
+	rb_raise(rb_eSecurityError, "Insecure: can't modify string");
+    if (!RSTRING(str)->orig || FL_TEST(str, STR_NO_ORIG)) return 1;
+    if (TYPE(RSTRING(str)->orig) != T_STRING) rb_bug("non string str->orig");
+    RSTRING(str)->orig = 0;
+    return 0;
+}
+
 void
 rb_str_modify(str)
     VALUE str;
 {
     char *ptr;
 
-    if (OBJ_FROZEN(str)) rb_error_frozen("string");
-    if (!OBJ_TAINTED(str) && rb_safe_level() >= 4)
-	rb_raise(rb_eSecurityError, "Insecure: can't modify string");
-    if (!RSTRING(str)->orig || FL_TEST(str, STR_NO_ORIG)) return;
-    if (TYPE(RSTRING(str)->orig) != T_STRING) abort();
+    if (str_independent(str)) return;
     ptr = ALLOC_N(char, RSTRING(str)->len+1);
     if (RSTRING(str)->ptr) {
 	memcpy(ptr, RSTRING(str)->ptr, RSTRING(str)->len);
     }
     ptr[RSTRING(str)->len] = 0;
     RSTRING(str)->ptr = ptr;
-    RSTRING(str)->orig = 0;
 }
 
 VALUE
@@ -1250,8 +1263,9 @@ str_gsub(argc, argv, str, bang)
     }
     rb_backref_set(match);
     if (bang) {
-	rb_str_modify(str);
-	free(RSTRING(str)->ptr);
+	if (str_independent(str)) {
+	    free(RSTRING(str)->ptr);
+	}
     }
     else {
 	NEWOBJ(dup, struct RString);
@@ -1325,13 +1339,12 @@ rb_f_sub(argc, argv)
     int argc;
     VALUE *argv;
 {
-    VALUE str = uscore_get();
-    VALUE dup = rb_str_dup(str);
+    VALUE str = rb_str_dup(uscore_get());
 
-    if (NIL_P(rb_str_sub_bang(argc, argv, dup)))
+    if (NIL_P(rb_str_sub_bang(argc, argv, str)))
 	return str;
-    rb_lastline_set(dup);
-    return dup;
+    rb_lastline_set(str);
+    return str;
 }
 
 static VALUE
@@ -1347,13 +1360,12 @@ rb_f_gsub(argc, argv)
     int argc;
     VALUE *argv;
 {
-    VALUE str = uscore_get();
-    VALUE dup = rb_str_dup(str);
+    VALUE str = rb_str_dup(uscore_get());
 
-    if (NIL_P(rb_str_gsub_bang(argc, argv, dup)))
+    if (NIL_P(rb_str_gsub_bang(argc, argv, str)))
 	return str;
-    rb_lastline_set(dup);
-    return dup;
+    rb_lastline_set(str);
+    return str;
 }
 
 static VALUE

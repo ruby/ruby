@@ -10,7 +10,7 @@ SCRIPT_LINES__ = {} unless defined? SCRIPT_LINES__
 require 'tracer'
 class Tracer
   def Tracer.trace_func(*vars)
-    Single.trace_func *vars
+    Single.trace_func(*vars)
   end
 end
 
@@ -216,7 +216,7 @@ class DEBUGGER__
       @frames[0] = [binding, file, line, id]
       display_expressions(binding)
       while input = readline("(rdb:%d) "%thnum(), true)
-	catch (:debug_error) do
+	catch(:debug_error) do
 	  if input == ""
 	    input = DEBUG_LAST_CMD[0]
 	    stdout.print input, "\n"

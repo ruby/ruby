@@ -574,7 +574,7 @@ void
 rb_syswait(pid)
     int pid;
 {
-    RETSIGTYPE (*hfunc)(), (*qfunc)(), (*ifunc)();
+    RETSIGTYPE (*hfunc)_((int)), (*qfunc)_((int)), (*ifunc)_((int));
     int status;
     int i;
 
@@ -817,7 +817,7 @@ static VALUE
 proc_getpgid(obj, pid)
     VALUE obj, pid;
 {
-#ifdef HAVE_GETPGID
+#if defined(HAVE_GETPGID) && !defined(__CHECKER__)
     int i;
 
     i = getpgid(NUM2INT(pid));

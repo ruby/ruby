@@ -1450,8 +1450,9 @@ pipe_del_fptr(fptr)
     }
 }
 
+#if defined (NT) || defined(DJGPP) || defined(__CYGWIN__) || defined(__human68k__)
 static void
-pipe_atexit()
+pipe_atexit _((void))
 {
     struct pipe_list *list = pipe_list;
     struct pipe_list *tmp;
@@ -1462,6 +1463,7 @@ pipe_atexit()
 	list = tmp;
     }
 }
+#endif
 
 static void
 pipe_finalize(fptr)

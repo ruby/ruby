@@ -1022,7 +1022,7 @@ rb_file_chown(obj, owner, group)
 
 struct timeval rb_time_timeval();
 
-#ifdef HAVE_UTIMES
+#if defined(HAVE_UTIMES) && !defined(__CHECKER__)
 
 static void
 utime_internal(path, tvp)
@@ -1504,7 +1504,7 @@ rb_file_truncate(obj, len)
 #  define LOCK_UN 8
 # endif
 
-#if defined(EWOULDBLOCK)
+#if defined(EWOULDBLOCK) && 0
 static int
 rb_thread_flock(fd, op, fptr)
     int fd, op;
@@ -1535,6 +1535,7 @@ rb_file_flock(obj, operation)
     VALUE obj;
     VALUE operation;
 {
+#ifndef __CHECKER__
     OpenFile *fptr;
 
     rb_secure(2);
@@ -1551,6 +1552,7 @@ rb_file_flock(obj, operation)
 #endif
 	rb_sys_fail(fptr->path);
     }
+#endif
     return INT2FIX(0);
 }
 #undef flock

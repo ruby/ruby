@@ -278,15 +278,11 @@ rb_newobj()
 {
     VALUE obj;
 
-    if (freelist) {
-      retry:
-	obj = (VALUE)freelist;
-	freelist = freelist->as.free.next;
-	return obj;
-    }
-    rb_gc();
+    if (!freelist) rb_gc();
 
-    goto retry;
+    obj = (VALUE)freelist;
+    freelist = freelist->as.free.next;
+    return obj;
 }
 
 VALUE
@@ -648,8 +644,6 @@ rb_gc_mark(ptr)
 	       is_pointer_to_heap(obj)?"corrupted object":"non object");
     }
 }
-
-#define MIN_FREE_OBJ 512
 
 static void obj_free _((VALUE));
 

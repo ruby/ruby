@@ -29,12 +29,12 @@ AUTOCONF = autoconf
 
 
 prefix = /usr
-CFLAGS = -nologo -DNT=1 -Zi -O2b2x -G5
+CFLAGS = -nologo -DNT=1 -MDd -Zi
 CPPFLAGS = -I$(srcdir) -I$(srcdir)/missing
 LDFLAGS = $(CFLAGS) -Fm
 XLDFLAGS = 
 #EXTLIBS = 
-LIBS = user32.lib advapi32.lib wsock32.lib $(EXTLIBS)
+LIBS = RubyCRTD.lib user32.lib advapi32.lib ws2_32.lib $(EXTLIBS)
 MISSING = crypt.obj alloca.obj win32.obj isinf.obj isnan.obj
 LDSHARED = 
 DLDFLAGS = 

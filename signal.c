@@ -282,7 +282,7 @@ rb_gc_mark_trap_list()
 void
 posix_signal(signum, handler)
     int signum;
-    RETSIGTYPE (*handler)();
+    RETSIGTYPE (*handler)_((int));
 {
     struct sigaction sigact;
 
@@ -336,6 +336,7 @@ signal_exec(sig)
     }
 }
 
+static RETSIGTYPE sighandle _((int));
 static RETSIGTYPE
 sighandle(sig)
     int sig;
@@ -360,6 +361,7 @@ sighandle(sig)
 }
 
 #ifdef SIGBUS
+static RETSIGTYPE sigbus _((int));
 static RETSIGTYPE
 sigbus(sig)
     int sig;
@@ -369,6 +371,7 @@ sigbus(sig)
 #endif
 
 #ifdef SIGSEGV
+static RETSIGTYPE sigsegv _((int));
 static RETSIGTYPE
 sigsegv(sig)
     int sig;
@@ -420,8 +423,10 @@ static sigset_t trap_last_mask;
 static int trap_last_mask;
 # endif
 
+static RETSIGTYPE sigexit _((int));
 static RETSIGTYPE
-sigexit()
+sigexit(sig)
+    int sig;
 {
     rb_exit(0);
 }
@@ -430,7 +435,7 @@ static VALUE
 trap(arg)
     struct trap_arg *arg;
 {
-    RETSIGTYPE (*func)();
+    RETSIGTYPE (*func)_((int));
     VALUE command, old;
     int sig;
     char *s;

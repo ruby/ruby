@@ -1121,7 +1121,7 @@ rb_ary_slice_bang(argc, argv, ary)
 }
 
 static VALUE
-rb_ary_delete_if(ary)
+rb_ary_reject_bang(ary)
     VALUE ary;
 {
     long i1, i2;
@@ -1134,8 +1134,17 @@ rb_ary_delete_if(ary)
 	}
 	i2++;
     }
+    if (RARRAY(ary)->len == i2) return Qnil;
     RARRAY(ary)->len = i2;
 
+    return ary;
+}
+
+static VALUE
+rb_ary_delete_if(ary)
+    VALUE ary;
+{
+    rb_ary_reject_bang(ary);
     return ary;
 }
 
@@ -1274,7 +1283,7 @@ rb_ary_assoc(ary, key)
     p = RARRAY(ary)->ptr; pend = p + RARRAY(ary)->len;
     while (p < pend) {
 	if (TYPE(*p) == T_ARRAY
-	    && RARRAY(*p)->len > 1
+	    && RARRAY(*p)->len > 0
 	    && rb_equal(RARRAY(*p)->ptr[0], key))
 	    return *p;
 	p++;
@@ -1626,7 +1635,7 @@ Init_Array()
     rb_define_method(rb_cArray, "delete", rb_ary_delete, 1);
     rb_define_method(rb_cArray, "delete_at", rb_ary_delete_at_m, 1);
     rb_define_method(rb_cArray, "delete_if", rb_ary_delete_if, 0);
-    rb_define_method(rb_cArray, "reject!", rb_ary_delete_if, 0);
+    rb_define_method(rb_cArray, "reject!", rb_ary_reject_bang, 0);
     rb_define_method(rb_cArray, "replace", rb_ary_replace_m, 1);
     rb_define_method(rb_cArray, "clear", rb_ary_clear, 0);
     rb_define_method(rb_cArray, "fill", rb_ary_fill, -1);

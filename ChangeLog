@@ -1,3 +1,7 @@
+Mon Aug  7 13:59:12 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* regex.c (re_match): check for stack depth was needed.
+
 Sat Aug  5 16:43:43 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* djgpp/*: convert DOS line endings to UNIX style.
@@ -7,6 +11,26 @@ Sat Aug  5 16:43:43 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 	* lib/ftools.rb (compare, safe_unlink, chmod): avoid warnings.
 
 	* lib/ftools.rb (move): typo. not `tpath', but `to'.
+
+Fri Aug  4 23:26:48 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (proc_call): gives warning if a block is supplied.
+
+	* eval.c (rb_eval): no warning for discarding if an alias for the
+	  method is already made.
+
+Fri Aug  4 16:32:29 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* array.c (rb_ary_reject_bang): returns nil if no element removed.
+
+	* hash.c (rb_hash_reject_bang): returns nil if no element removed.
+
+Thu Aug  3 19:44:26 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_thread_fd_writable): should return integer value.
+
+	* array.c (rb_ary_assoc): search array element whose length is
+	  longer than 0 (not 1).
 
 Wed Aug  2 18:27:47 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

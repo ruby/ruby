@@ -21,13 +21,13 @@ if $DEBUG
 end
 
 def Thread.exclusive
+  _old = Thread.critical
   begin
     Thread.critical = true
-    r = yield
+    return yield
   ensure
-    Thread.critical = false
+    Thread.critical = _old
   end
-  r
 end
 
 class Mutex

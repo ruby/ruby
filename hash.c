@@ -456,7 +456,16 @@ rb_hash_delete_if(hash)
 {
     rb_hash_modify(hash);
     rb_hash_foreach(hash, delete_if_i, 0);
+    return hash;
+}
 
+VALUE
+rb_hash_reject_bang(hash)
+    VALUE hash;
+{
+    int n = RHASH(hash)->tbl->num_entries;
+    rb_hash_delete_if(hash);
+    if (n == RHASH(hash)->tbl->num_entries) return Qnil;
     return hash;
 }
 
@@ -1211,11 +1220,11 @@ env_each(hash)
 }
 
 static VALUE
-env_delete_if()
+env_reject_bang()
 {
     volatile VALUE keys;
     VALUE *ptr;
-    int len;
+    int len, del = 0;
 
     rb_secure(4);
     keys = env_keys();
@@ -1227,10 +1236,19 @@ env_delete_if()
 	if (!NIL_P(val)) {
 	    if (RTEST(rb_yield(rb_assoc_new(*ptr, val)))) {
 		env_delete(Qnil, *ptr);
+		del++;
 	    }
 	}
 	ptr++;
     }
+    if (del == 0) return Qnil;
+    return envtbl;
+}
+
+static VALUE
+env_delete_if()
+{
+    env_reject_bang();
     return envtbl;
 }
 
@@ -1425,8 +1443,8 @@ Init_Hash()
     rb_define_method(rb_cHash,"shift", rb_hash_shift, 0);
     rb_define_method(rb_cHash,"delete", rb_hash_delete, 1);
     rb_define_method(rb_cHash,"delete_if", rb_hash_delete_if, 0);
-    rb_define_method(rb_cHash,"reject!", rb_hash_delete_if, 0);
     rb_define_method(rb_cHash,"reject", rb_hash_reject, 0);
+    rb_define_method(rb_cHash,"reject!", rb_hash_reject_bang, 0);
     rb_define_method(rb_cHash,"clear", rb_hash_clear, 0);
     rb_define_method(rb_cHash,"invert", rb_hash_invert, 0);
     rb_define_method(rb_cHash,"update", rb_hash_update, 1);
@@ -1454,8 +1472,8 @@ Init_Hash()
     rb_define_singleton_method(envtbl,"each_value", env_each_value, 0);
     rb_define_singleton_method(envtbl,"delete", env_delete_m, 1);
     rb_define_singleton_method(envtbl,"delete_if", env_delete_if, 0);
-    rb_define_singleton_method(envtbl,"reject!", env_delete_if, 0);
     rb_define_singleton_method(envtbl,"reject", env_reject, 0);
+    rb_define_singleton_method(envtbl,"reject!", env_reject_bang, 0);
     rb_define_singleton_method(envtbl,"to_s", env_to_s, 0);
     rb_define_singleton_method(envtbl,"rehash", env_none, 0);
     rb_define_singleton_method(envtbl,"to_a", env_to_a, 0);

@@ -223,7 +223,7 @@ AC_FUNC_MEMCMP
 AC_REPLACE_FUNCS(dup2 memmove mkdir strcasecmp strncasecmp strerror strftime\
 		 strchr strstr strtoul crypt flock vsnprintf\
 		 isinf isnan finite)
-AC_CHECK_FUNCS(fmod killpg drand48 random wait4 waitpid syscall getcwd\
+AC_CHECK_FUNCS(fmod killpg drand48 random wait4 waitpid syscall getcwd chroot\
 	      truncate chsize times utimes fcntl lockf setitimer pause\
 	      setruid seteuid setreuid setrgid setegid setregid\
 	      getpgrp setpgrp getpgid setpgid getgroups getpriority\
@@ -861,6 +861,7 @@ esac
 AC_SUBST(LIBRUBY_LDSHARED)
 AC_SUBST(LIBRUBY_DLDFLAGS)
 AC_SUBST(RUBY_INSTALL_NAME)
+AC_SUBST(RUBY_SO_NAME)
 AC_SUBST(LIBRUBY_A)
 AC_SUBST(LIBRUBY_SO)
 AC_SUBST(LIBRUBY_ALIASES)
