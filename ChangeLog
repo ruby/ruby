@@ -1,3 +1,7 @@
+Sun Feb  1 18:17:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
+
+	* lib/net/http.rb: merged coding style changes from HEAD.
+
 Sun Feb  1 16:15:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
 
 	* lib/test/unit.rb: rearranged documentation for RDoc's sake.
