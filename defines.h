@@ -74,9 +74,14 @@ void xfree _((void*));
 # define SIZEOF_BDIGITS SIZEOF_INT
 # define BDIGIT_DBL unsigned long
 # define BDIGIT_DBL_SIGNED long
-#else
+#elif SIZEOF_SHORT*2 <= SIZEOF_LONG
 # define BDIGIT unsigned short
 # define SIZEOF_BDIGITS SIZEOF_SHORT
+# define BDIGIT_DBL unsigned long
+# define BDIGIT_DBL_SIGNED long
+#else
+# define BDIGIT unsigned short
+# define SIZEOF_BDIGITS (SIZEOF_LONG/2)
 # define BDIGIT_DBL unsigned long
 # define BDIGIT_DBL_SIGNED long
 #endif
