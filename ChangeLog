@@ -1,3 +1,8 @@
+Mon Nov 22 22:33:02 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/parsers/parse_rb.rb (RDoc::parse_require): Don't use names
+	  of variables or constants when oarsing 'require'
+
 Sat Nov 20 23:57:33 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/README (et al): Add a new directive, :section:, and
