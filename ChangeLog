@@ -1,3 +1,10 @@
+Thu Mar 17 17:42:13 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* struct.c (make_struct): allow non local-id field
+	  names. [ruby-core:04575]
+
+	* struct.c (inspect_struct): ditto.
+
 Wed Mar 16 23:36:02 2005  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* eval.c (rb_call0): call_cfunc() should be protected.
