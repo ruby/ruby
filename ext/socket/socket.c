@@ -845,9 +845,11 @@ open_inet(class, h, serv, type)
 	    continue;
 	}
 	if (type == INET_SERVER) {
+#ifndef NT
 	    status = 1;
 	    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR,
 		       (char*)&status, sizeof(status));
+#endif
 	    status = bind(fd, res->ai_addr, res->ai_addrlen);
 	    syscall = "bind(2)";
 	}

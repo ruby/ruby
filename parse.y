@@ -3742,6 +3742,12 @@ str_extend(list, term)
 	    tokadd(c);
 	    goto fetch_id;
 
+	  case '-':
+	    tokadd(c);
+	    c = nextc();
+	    tokadd(c);
+	    goto fetch_id;
+
           default:
 	    if (c == term) {
 		list_append(list, NEW_STR(rb_str_new2("#$")));

@@ -1319,8 +1319,10 @@ rb_eval_cmd(cmd, arg)
     volatile int safe = ruby_safe_level;
 
     if (TYPE(cmd) != T_STRING) {
-	return rb_funcall2(cmd, rb_intern("call"),
-			   RARRAY(arg)->len, RARRAY(arg)->ptr);
+	PUSH_ITER(ITER_NOT);
+	val = rb_funcall2(cmd, rb_intern("call"), RARRAY(arg)->len, RARRAY(arg)->ptr);
+	POP_ITER();
+	return val;
     }
 
     saved_scope = ruby_scope;
@@ -5877,11 +5879,19 @@ rb_f_at_exit()
 void
 rb_exec_end_proc()
 {
-    struct end_proc_data *link;
+    struct end_proc_data *link, *save;
     int status;
 
-    link = end_procs;
+    save = link = end_procs;
     while (link) {
+	rb_protect((VALUE(*)())link->func, link->data, &status);
+	if (status) {
+	    error_handle(status);
+	}
+	link = link->next;
+    }
+    link = end_procs;
+    while (link != save) {
 	rb_protect((VALUE(*)())link->func, link->data, &status);
 	if (status) {
 	    error_handle(status);

@@ -591,8 +591,7 @@ rb_big_eq(x, y)
       case T_BIGNUM:
 	break;
       case T_FLOAT:
-	y = dbl2big(RFLOAT(y)->value);
-	break;
+	return (rb_big2dbl(x) == RFLOAT(y)->value)?Qtrue:Qfalse;
       default:
 	return Qfalse;
     }

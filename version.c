@@ -17,9 +17,9 @@
 void
 Init_version()
 {
-    VALUE v = rb_str_new2(RUBY_VERSION);
-    VALUE d = rb_str_new2(RUBY_RELEASE_DATE);
-    VALUE p = rb_str_new2(RUBY_PLATFORM);
+    VALUE v = rb_obj_freeze(rb_str_new2(RUBY_VERSION));
+    VALUE d = rb_obj_freeze(rb_str_new2(RUBY_RELEASE_DATE));
+    VALUE p = rb_obj_freeze(rb_str_new2(RUBY_PLATFORM));
 
     rb_define_global_const("RUBY_VERSION", v);
     rb_define_global_const("RUBY_RELEASE_DATE", d);

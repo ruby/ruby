@@ -145,14 +145,17 @@ static VALUE
 rb_stat_cmp(self, other)
     VALUE self, other;
 {
-    time_t t1 = get_stat(self)->st_mtime;
-    time_t t2 = get_stat(other)->st_mtime;
-    if (t1 == t2)
-	return INT2FIX(0);
-    else if (t1 < t2)
-	return INT2FIX(-1);
-    else
-	return INT2FIX(1);
+    if (rb_obj_is_kind_of(other, rb_obj_class(self))) {
+	time_t t1 = get_stat(self)->st_mtime;
+	time_t t2 = get_stat(other)->st_mtime;
+	if (t1 == t2)
+	    return INT2FIX(0);
+	else if (t1 < t2)
+	    return INT2FIX(-1);
+	else
+	    return INT2FIX(1);
+    }
+    rb_raise(rb_eTypeError, "operand is not File::Stat");
 }
 
 static VALUE
@@ -2335,18 +2338,18 @@ Init_File()
     rb_define_singleton_method(rb_cFile, "basename", rb_file_s_basename, -1);
     rb_define_singleton_method(rb_cFile, "dirname", rb_file_s_dirname, 1);
 
-    separator = rb_str_new2("/");
+    separator = rb_obj_freeze(rb_str_new2("/"));
     rb_define_const(rb_cFile, "Separator", separator);
     rb_define_const(rb_cFile, "SEPARATOR", separator);
     rb_define_singleton_method(rb_cFile, "split",  rb_file_s_split, 1);
     rb_define_singleton_method(rb_cFile, "join",   rb_file_s_join, -2);
 
 #if defined DOSISH && !defined __CYGWIN__
-    rb_define_const(rb_cFile, "ALT_SEPARATOR", rb_str_new2("\\"));
+    rb_define_const(rb_cFile, "ALT_SEPARATOR", rb_obj_freeze(rb_str_new2("\\")));
 #else
     rb_define_const(rb_cFile, "ALT_SEPARATOR", Qnil);
 #endif
-    rb_define_const(rb_cFile, "PATH_SEPARATOR", rb_str_new2(PATH_SEP));
+    rb_define_const(rb_cFile, "PATH_SEPARATOR", rb_obj_freeze(rb_str_new2(PATH_SEP)));
 
     rb_define_method(rb_cIO, "stat",  rb_io_stat, 0); /* this is IO's method */
     rb_define_method(rb_cFile, "lstat",  rb_file_lstat, 0);

@@ -77,6 +77,9 @@ module TkComm
   def tk_split_list(str)
     return [] if str == ""
     idx = str.index('{')
+    while idx and idx > 0 and str[idx-1] == ?\\
+      idx = str.index('{', idx+1)
+    end
     return tk_tcl2ruby(str) unless idx
 
     list = tk_tcl2ruby(str[0,idx])
@@ -102,6 +105,9 @@ module TkComm
   def tk_split_simplelist(str)
     return [] if str == ""
     idx = str.index('{')
+    while idx and idx > 0 and str[idx-1] == ?\\
+      idx = str.index('{', idx+1)
+    end
     return str.split unless idx
 
     list = str[0,idx].split
@@ -467,7 +473,15 @@ module TkCore
 
   INTERP = TclTkIp.new
 
-  INTERP._invoke("proc", "rb_out", "args", "if {[set st [catch {ruby [format \"TkCore.callback %%Q!%s!\" $args]} ret]] != 0} {if {[regsub -all {!} $args {\\!} newargs] == 0} {return -code $st $ret} {if {[set st [catch {ruby [format \"TkCore.callback %%Q!%s!\" $newargs]} ret]] != 0} {return -code $st $ret} {return $ret}}} {return $ret}")
+  INTERP._invoke("proc", "rb_out", "args", <<-'EOL')
+    regsub -all {!} $args {\\!} args
+    regsub -all "{" $args "\\{" args
+    if {[set st [catch {ruby [format "TkCore.callback %%Q!%s!" $args]} ret]] != 0} {
+	return -code $st $ret
+    } {
+	return $ret
+    }
+  EOL
 
   def callback_break
     fail TkCallbackBreak, "Tk callback returns 'break' status"

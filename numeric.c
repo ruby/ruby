@@ -146,10 +146,11 @@ num_remainder(x, y)
 {
     VALUE z = rb_funcall(x, '%', 1, y);
 
-    if ((RTEST(rb_funcall(x, '<', 1, INT2FIX(0))) &&
-	 RTEST(rb_funcall(y, '>', 1, INT2FIX(0)))) ||
-	(RTEST(rb_funcall(x, '>', 1, INT2FIX(0))) &&
-	 RTEST(rb_funcall(y, '<', 1, INT2FIX(0))))) {
+    if ((!RTEST(rb_equal(z, INT2FIX(0)))) &&
+	((RTEST(rb_funcall(x, '<', 1, INT2FIX(0))) &&
+	  RTEST(rb_funcall(y, '>', 1, INT2FIX(0)))) ||
+	 (RTEST(rb_funcall(x, '>', 1, INT2FIX(0))) &&
+	  RTEST(rb_funcall(y, '<', 1, INT2FIX(0)))))) {
 	return rb_funcall(z, '-', 1, y);
     }
     return z;
@@ -1302,15 +1303,22 @@ fix_aref(fix, idx)
     VALUE fix, idx;
 {
     long val = FIX2LONG(fix);
-    int i = NUM2INT(idx);
 
-    if (i < 0 || sizeof(VALUE)*CHAR_BIT-1 < i) {
-	if (val < 0) return INT2FIX(1);
+    if (TYPE(idx) == T_BIGNUM) {
+	if (val >= 0) return INT2FIX(0);
+	return INT2FIX(1);
+    }
+    else {
+	int i = NUM2INT(idx);
+
+	if (i < 0 || sizeof(VALUE)*CHAR_BIT-1 < i) {
+	    if (val < 0) return INT2FIX(1);
+	    return INT2FIX(0);
+	}
+	if (val & (1L<<i))
+	    return INT2FIX(1);
 	return INT2FIX(0);
     }
-    if (val & (1L<<i))
-	return INT2FIX(1);
-    return INT2FIX(0);
 }
 
 static VALUE
