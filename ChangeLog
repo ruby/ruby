@@ -1,3 +1,7 @@
+Sat Feb 21 22:41:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
+
+	* ext/zlib/zlib.c: documented, but needs more effort.
+
 Sat Feb 21 14:33:20 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb: prefer relative path.  [ruby-talk:93037]
