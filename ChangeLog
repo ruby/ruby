@@ -1,3 +1,8 @@
+Thu Jul 15 23:53:38 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (OptionParser#warn, OptionParser#abort): Exception
+	  no longer has to_str method.
+
 Thu Jul 15 22:59:48 2004  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* ext/readline/extconf.rb: added dir_config for curses, ncurses,
@@ -19,7 +24,7 @@ Thu Jul 15 10:15:04 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/, ext/tcltklib/: bug fix
 
-	* ext/tk/lib/tk.rb: better operation for SIGINT when processing 
+	* ext/tk/lib/tk.rb: better operation for SIGINT when processing
 	  callbacks.
 	* ext/tk/lib/tk/msgcat.rb: ditto.
 	* ext/tk/lib/tk/variable.rb: ditto.
@@ -28,10 +33,10 @@ Thu Jul 15 10:15:04 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/lib/tk/validation.rb: add Tk::ValidateConfigure.__def_validcmd
 	  to define validatecommand methods easier
 
-	* ext/tk/lib/tk.rb (_genobj_for_tkwidget): support autoload Tk ext 
+	* ext/tk/lib/tk.rb (_genobj_for_tkwidget): support autoload Tk ext
 	  classes
 
-	* ext/tk/lib/tk/canvas.rb and so on: remove the parent widget type 
+	* ext/tk/lib/tk/canvas.rb and so on: remove the parent widget type
 	  check for items (e.g. canvas items; depends on the class) to
 	  avoid some troubles on Tk extension widget class definition.
 
@@ -103,14 +108,14 @@ Sat Jul 10 09:30:24 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 Sat Jul 10 04:21:56 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tk.rb: better operation for SIGINT when processing 
+	* ext/tk/lib/tk.rb: better operation for SIGINT when processing
 	  callbacks.
 	* ext/tk/lib/tk/msgcat.rb: ditto.
 	* ext/tk/lib/tk/variable.rb: ditto.
 	* ext/tk/lib/tk/timer.rb: ditto.
 
-	* ext/tk/lib/tk/validation.rb (__def_validcmd):  add a module 
-	  function of Tk::ValidateConfigure to define validatecommand 
+	* ext/tk/lib/tk/validation.rb (__def_validcmd):  add a module
+	  function of Tk::ValidateConfigure to define validatecommand
 	  methods easier
 
 Fri Jul  9 22:18:59 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
