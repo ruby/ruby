@@ -1,3 +1,8 @@
+Wed Jun 19 00:39:52 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* parse.y (yylex): commands after break/next/rescue can take
+	  arguments.  (ruby-bugs-ja:PR#265)
+
 Tue Jun 18 19:20:16 2002  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* win32/mkexports.rb: remove unnecessary exports. (ruby-dev:17418)
