@@ -2,10 +2,24 @@ Mon Sep 18 17:46:11 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* stable version 1.6.0 released.
 
+Tue Sep 19 01:14:56 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_provide): better feature handling.
+
+	* eval.c (rb_f_require): loading ruby library may be partial
+	  state.  checks in rb_thread_loading is integrated.
+
+	* eval.c (rb_provided): better thread awareness.
+
+	* lib/irb/frame.rb: 6 (not 5) parameters for trace_func proc.
+
+	* eval.c (error_print): should print error position even if
+	  get_backtrace() failed.
+
 Sat Sep 16 03:29:59 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* eval.c (rb_f_require): rb_provided() called too early; does not
-	  work well with threads.
+	* eval.c (rb_f_require): rb_provided() was called too early; does
+	  not work well with threads.
 
 	* parse.y (ensure): should distinguish empty ensure and non
 	  existing ensure.

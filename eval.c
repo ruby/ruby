@@ -862,7 +862,7 @@ set_backtrace(info, bt)
 static void
 error_print()
 {
-    VALUE errat;
+    VALUE errat = Qnil;
     VALUE eclass;
     char *einfo;
     int elen;
@@ -877,7 +877,10 @@ error_print()
 	errat = Qnil;
     }
     POP_TAG();
-    if (!NIL_P(errat)) {
+    if (NIL_P(errat)) {
+	fprintf(stderr, "%s:%d", ruby_sourcefile, ruby_sourceline);
+    }
+    else {
 	VALUE mesg = RARRAY(errat)->ptr[0];
 
 	if (NIL_P(mesg)) error_pos();
@@ -5018,6 +5021,7 @@ rb_f_load(argc, argv)
 }
 
 static VALUE rb_features;
+static st_table *loading_tbl;
 
 static int
 rb_provided(feature)
@@ -5031,19 +5035,32 @@ rb_provided(feature)
     pend = p + RARRAY(rb_features)->len;
     while (p < pend) {
 	f = STR2CSTR(*p);
-	if (strcmp(f, feature) == 0) return Qtrue;
+	if (strcmp(f, feature) == 0) {
+	    goto load_wait;
+	}
 	len = strlen(feature);
-	if (strncmp(f, feature, len) == 0
-	    && (strcmp(f+len, ".rb") == 0 ||strcmp(f+len, ".so") == 0)) {
-	    return Qtrue;
+	if (strncmp(f, feature, len) == 0) {
+	    if (strcmp(f+len, ".so") == 0) {
+		return Qtrue;
+	    }
+	    goto load_wait;
 	}
 	p++;
     }
     return Qfalse;
-}
 
-static int rb_thread_loading _((const char*));
-static void rb_thread_loading_done _((const char*));
+  load_wait:
+    if (loading_tbl) {
+	char *ext = strrchr(f, '.');
+	if (strcmp(ext, ".rb") == 0) {
+	    while (st_lookup(loading_tbl, f, 0)) {
+		CHECK_INTS;
+		rb_thread_schedule();
+	    }
+	}
+    }
+    return Qtrue;
+}
 
 void
 rb_provide(feature)
@@ -5051,17 +5068,20 @@ rb_provide(feature)
 {
     char *buf, *ext;
 
-    if (!rb_provided(feature)) {
-	ext = strrchr(feature, '.');
-	if (ext && strcmp(DLEXT, ext) == 0) {
-	    buf = ALLOCA_N(char, strlen(feature)+4);
-	    strcpy(buf, feature);
-	    ext = strrchr(buf, '.');
-	    strcpy(ext, ".so");
-	    feature = buf;
-	}
-	rb_ary_push(rb_features, rb_str_new2(feature));
+    ext = strrchr(feature, '.');
+    if (ext && (strcmp(DLEXT, ext) == 0
+#ifdef DLEXT2
+	     || strcmp(DLEXT2, ext) == 0
+#endif
+	)) {
+	buf = ALLOCA_N(char, strlen(feature)+4);
+	strcpy(buf, feature);
+	ext = strrchr(buf, '.');
+	strcpy(ext, ".so");
+	feature = buf;
     }
+    if (rb_provided(feature)) return;
+    rb_ary_push(rb_features, rb_str_new2(feature));
 }
 
 VALUE
@@ -5074,21 +5094,19 @@ rb_f_require(obj, fname)
     volatile int safe = ruby_safe_level;
 
     Check_SafeStr(fname);
+    if (rb_provided(RSTRING(fname)->ptr)) return Qfalse;
     ext = strrchr(RSTRING(fname)->ptr, '.');
     if (ext) {
+	feature = file = RSTRING(fname)->ptr;
 	if (strcmp(".rb", ext) == 0) {
-	    feature = file = RSTRING(fname)->ptr;
 	    file = rb_find_file(file);
 	    if (file) goto load_rb;
 	}
 	else if (strcmp(".so", ext) == 0 || strcmp(".o", ext) == 0) {
-	    file = feature = RSTRING(fname)->ptr;
 	    if (strcmp(ext, DLEXT) != 0) {
 		buf = ALLOCA_N(char, strlen(file)+sizeof(DLEXT)+4);
 		strcpy(buf, feature);
 		ext = strrchr(buf, '.');
-		strcpy(ext, ".so");
-		if (rb_provided(buf)) return Qfalse;
 		strcpy(ext, DLEXT);
 		file = feature = buf;
 	    }
@@ -5100,8 +5118,6 @@ rb_f_require(obj, fname)
 		buf = ALLOCA_N(char, strlen(file)+sizeof(DLEXT2)+4);
 		strcpy(buf, feature);
 		ext = strrchr(buf, '.');
-		strcpy(ext, ".so");
-		if (rb_provided(buf)) return Qfalse;
 		strcpy(ext, DLEXT2);
 		file = feature = buf;
 	    }
@@ -5150,7 +5166,6 @@ rb_f_require(obj, fname)
 	     RSTRING(fname)->ptr);
 
   load_dyna:
-    if (rb_thread_loading(feature)) return Qfalse;
     rb_provide(feature);
 
     PUSH_TAG(PROT_NONE);
@@ -5160,22 +5175,26 @@ rb_f_require(obj, fname)
 	dln_load(file);
     }
     POP_TAG();
-    rb_thread_loading_done(feature);
     if (state) JUMP_TAG(state);
 
     return Qtrue;
 
   load_rb:
     ruby_safe_level = 0;
-    if (rb_thread_loading(feature)) return Qfalse;
     rb_provide(feature);
+    /* loading ruby library should be serialized. */
+    if (!loading_tbl) {
+	loading_tbl = st_init_strtable();
+    }
+    st_insert(loading_tbl, strdup(feature), 0);	/* partial state */
 
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
 	rb_load(fname, 0);
     }
     POP_TAG();
-    rb_thread_loading_done(feature);
+    st_delete(loading_tbl, &feature, 0); /* loading done */
+    free(feature);
     ruby_safe_level = safe;
     if (state) JUMP_TAG(state);
 
@@ -8011,35 +8030,6 @@ rb_thread_raise(argc, argv, thread)
     th_raise_line = ruby_sourceline;
     rb_thread_restore_context(curr_thread, RESTORE_RAISE);
     return Qnil;		/* not reached */
-}
-
-static st_table *loading_tbl;
-
-static int
-rb_thread_loading(feature)
-    const char *feature;
-{
-    if (!loading_tbl) {
-	loading_tbl = st_init_strtable();
-    }
-    if (!rb_provided(feature)) {
-	st_insert(loading_tbl, feature, 0);
-	return Qfalse; /* need to load */
-    }
-    while (st_lookup(loading_tbl, feature, 0)) {
-	CHECK_INTS;
-	rb_thread_schedule();
-    }
-    return Qtrue;
-}
-
-static void
-rb_thread_loading_done(feature)
-    const char *feature;
-{
-    if (loading_tbl) {
-	st_delete(loading_tbl, &feature, 0);
-    }
 }
 
 VALUE
