@@ -1869,7 +1869,7 @@ rb_file_sysopen(fname, flags, mode)
     const char *fname;
     int flags, mode;
 {
-    return rb_file_sysopen_internal(io_alloc(rb_cFile));
+    return rb_file_sysopen_internal(io_alloc(rb_cFile), fname, flags, mode);
 }
 
 #if defined (_WIN32) || defined(DJGPP) || defined(__CYGWIN__) || defined(__human68k__) || defined(__VMS)
