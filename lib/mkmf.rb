@@ -351,6 +351,30 @@ SRC
   return true
 end
 
+def find_executable(bin, path = nil)
+  printf "checking for %s... ", bin
+  STDOUT.flush
+
+  if path.nil?
+    path = ENV['PATH'].split(Config::CONFIG['PATH_SEPARATOR'])
+  else
+    path = path.split(Config::CONFIG['PATH_SEPARATOR'])
+  end
+ 
+  bin += Config::CONFIG['EXEEXT']
+  for dir in path
+    file = File.join(dir, bin)
+    if FileTest.executable?(file)
+      print "yes\n"
+      return file
+    else
+      next
+    end
+  end
+  print "no\n"
+  return nil
+end
+
 def arg_config(config, default=nil)
   $configure_args.fetch(config, default)
 end

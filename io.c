@@ -2378,10 +2378,9 @@ static VALUE
 rb_io_putc(io, ch)
     VALUE io, ch;
 {
-    char c[2];
-    c[0] = NUM2CHR(ch);
-    c[1] = '\0';
-    rb_io_write(io, rb_str_new(c, 1));
+    char c = NUM2CHR(ch);
+
+    rb_io_write(io, rb_str_new(&c, 1));
     return ch;
 }
 

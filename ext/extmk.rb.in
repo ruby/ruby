@@ -295,6 +295,25 @@ SRC
   return true
 end
 
+def find_executable(bin, path = nil)
+  if path.nil?
+    path = ENV['PATH'].split(Config::CONFIG['PATH_SEPARATOR'])
+  else
+    path = path.split(Config::CONFIG['PATH_SEPARATOR'])
+  end
+ 
+  bin += "@EXEEXT@"
+  for dir in path
+    file = File.join(dir, bin)
+    if FileTest.executable?(file)
+      return file
+    else
+      next
+    end
+  end
+  return nil
+end
+
 def arg_config(config, default=nil)
   unless defined? $configure_args
     $configure_args = {}

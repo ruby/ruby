@@ -1,3 +1,8 @@
+Wed Aug 21 16:43:19 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_thread_cleanup): should not modify the global
+	  variable curr_thread.
+
 Wed Aug 21 16:14:26 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in: set ac_cv_func__setjmp to "no" on Cygwin.
