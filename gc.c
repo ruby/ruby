@@ -280,6 +280,7 @@ rb_newobj()
 
     if (!freelist) rb_gc();
 
+    if (freelist->as.free.next && freelist->as.free.next->as.free.flag != 0) abort();
     obj = (VALUE)freelist;
     freelist = freelist->as.free.next;
     return obj;
@@ -665,7 +666,7 @@ gc_sweep()
 		if (p->as.basic.flags) {
 		    obj_free((VALUE)p);
 		}
-	if (need_call_final && FL_TEST(p, FL_FINALIZE)) {
+		if (need_call_final && FL_TEST(p, FL_FINALIZE)) {
 		    p->as.free.flag = FL_MARK; /* remain marked */
 		    p->as.free.next = final_list;
 		    final_list = p;
