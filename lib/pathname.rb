@@ -256,7 +256,7 @@ class Pathname
   # Clean the path simply by resolving and removing excess "." and ".." entries.
   # Nothing more, nothing less.
   #
-  def cleanpath_aggressive # :nodoc:
+  def cleanpath_aggressive
     # cleanpath_aggressive assumes:
     # * no symlink
     # * all pathname prefix contained in the pathname is existing directory
@@ -282,8 +282,9 @@ class Pathname
     path << names.join('/')
     Pathname.new(path)
   end
+  private :cleanpath_aggressive
 
-  def cleanpath_conservative # :nodoc:
+  def cleanpath_conservative
     return Pathname.new('') if @path == ''
     names = @path.scan(%r{[^/]+})
     last_dot = names.last == '.'
@@ -301,6 +302,7 @@ class Pathname
     end
     Pathname.new(path)
   end
+  private :cleanpath_conservative
 
   #
   # Returns a real (absolute) pathname of +self+ in the actual filesystem.

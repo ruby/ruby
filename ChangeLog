@@ -1,3 +1,9 @@
+Mon Dec 13 00:58:02 2004  Tanaka Akira  <akr@m17n.org>
+
+	* lib/pathname.rb (cleanpath_aggressive): make it private.
+	  (cleanpath_conservative): ditto.
+	  Suggested by Daniel Berger.  [ruby-core:3914]
+
 Sun Dec 12 21:32:14 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_super.rb (TestSuper#test_define_method): now methods
