@@ -334,7 +334,7 @@ static VALUE
 dir_tell(dir)
     VALUE dir;
 {
-#if !defined(__CYGWIN32__) && !defined(__BEOS__)
+#ifdef HAVE_TELLDIR
     DIR *dirp;
     long pos;
 
@@ -352,7 +352,7 @@ dir_seek(dir, pos)
 {
     DIR *dirp;
 
-#if !defined(__CYGWIN32__) && !defined(__BEOS__)
+#ifdef HAVE_SEEKDIR
     GetDIR(dir, dirp);
     seekdir(dirp, NUM2INT(pos));
     return dir;

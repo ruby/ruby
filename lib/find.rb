@@ -12,17 +12,17 @@ module Find
     while file = path.shift
       catch(:prune) {
 	yield file
-	if File.directory? file then
+       if File.lstat(file).directory? then
 	  d = Dir.open(file)
 	  begin
 	    for f in d
-	      next if f =~ /\A\.\.?\z/
-	      if File::ALT_SEPARATOR and file =~ /^([\/\\]|[A-Za-z]:[\/\\]?)$/ then
+             next if f == "." or f == ".."
+             if File::ALT_SEPARATOR and file =~ /^(?:[\/\\]|[A-Za-z]:[\/\\]?)$/ then
 		f = file + f
 	      elsif file == "/" then
 		f = "/" + f
 	      else
-		f = file + "/" + f
+               f = File.join(file, f)
 	      end
 	      path.unshift f
 	    end

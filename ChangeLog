@@ -1,3 +1,19 @@
+Thu Sep 21 17:23:05 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* file.c (rb_file_s_symlink): use HAVE_SYMLINK.
+
+	* file.c (rb_file_s_readlink): use HAVE_READLINK.
+
+	* dir.c (dir_tell): use HAVE_TELLDIR.
+
+	* dir.c (dir_seek): use HAVE_SEEKDIR.
+
+	* configure.in (AC_CHECK_FUNCS): lstat, symlink, readlink,
+	  telldir, seekdir checks added.
+
+	* file.c (lstat): should use stat(2) if lstat(2) is not
+	  available.
+
 Thu Sep 21 15:59:23 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.28.
@@ -5,6 +21,11 @@ Thu Sep 21 15:59:23 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 	* lib/net/http.rb: HTTPReadAdapter -> HTTPResponseReceiver
 
 	* lib/net/http.rb (connecting): response is got in receive()
+
+Thu Sep 21 15:49:07 2000  Wayne Scott  <wscott@ichips.intel.com>
+
+	* lib/find.rb (find): should not follow symbolic links;
+	  tuned performance too.
 
 Wed Sep 20 23:21:38 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

@@ -66,7 +66,7 @@ char *strrchr _((const char*,const char));
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#ifdef __EMX__
+#ifndef HAVE_LSTAT
 #define lstat stat
 #endif
  
@@ -348,7 +348,7 @@ static VALUE
 rb_file_s_lstat(obj, fname)
     VALUE obj, fname;
 {
-#if !defined(MSDOS) && !defined(NT) && !defined(__EMX__)
+#ifdef HAVE_LSTAT
     struct stat st;
 
     Check_SafeStr(fname);
@@ -357,8 +357,7 @@ rb_file_s_lstat(obj, fname)
     }
     return stat_new(&st);
 #else
-    rb_notimplement();
-    return Qnil;		/* not reached */
+    return rb_file_s_stat(obj, fname);
 #endif
 }
 
@@ -366,7 +365,7 @@ static VALUE
 rb_file_lstat(obj)
     VALUE obj;
 {
-#if !defined(MSDOS) && !defined(NT)
+#ifdef HAVE_LSTAT
     OpenFile *fptr;
     struct stat st;
 
@@ -378,8 +377,7 @@ rb_file_lstat(obj)
     }
     return stat_new(&st);
 #else
-    rb_notimplement();
-    return Qnil;		/* not reached */
+    return rb_io_stat(obj);
 #endif
 }
 
@@ -822,15 +820,10 @@ rb_file_s_ftype(obj, fname)
 {
     struct stat st;
 
-#if defined(MSDOS) || defined(NT)
-    if (rb_stat(fname, &st) < 0)
-	rb_sys_fail(RSTRING(fname)->ptr);
-#else
     Check_SafeStr(fname);
     if (lstat(RSTRING(fname)->ptr, &st) == -1) {
 	rb_sys_fail(RSTRING(fname)->ptr);
     }
-#endif
 
     return rb_file_ftype(&st);
 }
@@ -1119,7 +1112,7 @@ static VALUE
 rb_file_s_symlink(obj, from, to)
     VALUE obj, from, to;
 {
-#if !defined(MSDOS) && !defined(NT) && !defined(__EMX__) && !defined(riscos)
+#ifdef HAVE_SYMLINK
     Check_SafeStr(from);
     Check_SafeStr(to);
 
@@ -1136,7 +1129,7 @@ static VALUE
 rb_file_s_readlink(obj, path)
     VALUE obj, path;
 {
-#if !defined(MSDOS) && !defined(NT) && !defined(__EMX__) && !defined(riscos)
+#ifdef READLINK
     char buf[MAXPATHLEN];
     int cc;
 

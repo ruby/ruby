@@ -2792,7 +2792,7 @@ rb_io_ctl(io, req, arg, io_p)
 #ifdef HAVE_FCNTL
     TRAP_BEG;
 # if defined(__CYGWIN__)
-    retval = io_p?ioctl(fd, cmd, (void*) narg):fcntl(fd, cmd, narg);
+    retval = io_p?ioctl(fd, cmd, (void*)narg):fcntl(fd, cmd, narg);
 # else
     retval = io_p?ioctl(fd, cmd, narg):fcntl(fd, cmd, narg);
 # endif
