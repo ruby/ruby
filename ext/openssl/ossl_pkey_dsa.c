@@ -129,8 +129,10 @@ ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
     VALUE arg, pass;
 	
     GetPKey(self, pkey);
-    rb_scan_args(argc, argv, "11", &arg, &pass);
-    if (FIXNUM_P(arg)) {
+    if(rb_scan_args(argc, argv, "02", &arg, &pass) == 0) {
+        dsa = DSA_new();
+    }
+    else if (FIXNUM_P(arg)) {
 	if (!(dsa = dsa_generate(FIX2INT(arg)))) {
 	    ossl_raise(eDSAError, NULL);
 	}
@@ -148,11 +150,11 @@ ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
 	    BIO_reset(in);
 	    dsa = PEM_read_bio_DSA_PUBKEY(in, NULL, NULL, NULL);
 	}
-        if (!dsa) {
+	if (!dsa) {
 	    BIO_reset(in);
 	    dsa = d2i_DSAPrivateKey_bio(in, NULL);
 	}
-        if (!dsa) {
+	if (!dsa) {
 	    BIO_reset(in);
 	    dsa = d2i_DSA_PUBKEY_bio(in, NULL);
 	}
@@ -370,6 +372,12 @@ ossl_dsa_verify(VALUE self, VALUE digest, VALUE sig)
     return Qfalse;
 }
 
+OSSL_PKEY_BN(dsa, p);
+OSSL_PKEY_BN(dsa, q);
+OSSL_PKEY_BN(dsa, g);
+OSSL_PKEY_BN(dsa, pub_key);
+OSSL_PKEY_BN(dsa, priv_key);
+
 /*
  * INIT
  */
@@ -393,6 +401,12 @@ Init_ossl_dsa()
     rb_define_method(cDSA, "public_key", ossl_dsa_to_public_key, 0);
     rb_define_method(cDSA, "syssign", ossl_dsa_sign, 1);
     rb_define_method(cDSA, "sysverify", ossl_dsa_verify, 2);
+
+    DEF_OSSL_PKEY_BN(cDSA, dsa, p);
+    DEF_OSSL_PKEY_BN(cDSA, dsa, q);
+    DEF_OSSL_PKEY_BN(cDSA, dsa, g);
+    DEF_OSSL_PKEY_BN(cDSA, dsa, pub_key);
+    DEF_OSSL_PKEY_BN(cDSA, dsa, priv_key);
 
     rb_define_method(cDSA, "params", ossl_dsa_get_params, 0);
 }

@@ -1,3 +1,23 @@
+Thu Jul  1 03:33:55 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_pkey_dh.c (ossl_dh_initialize): should create
+	  empty pkey object if no argument is passed. [ruby-talk:103328]
+
+	* ext/openssl/ossl_pkey_dsa.c (ossl_dsa_initialize): ditto.
+
+	* ext/openssl/ossl_pkey_rsa.c (ossl_rsa_initialize): ditto.
+
+	* ext/openssl/ossl_pkey_dh.c: add new methods: OpenSSL::PKey::DH#p,
+	  OpenSSL::PKey::DH#p=, OpenSSL::PKey::DH#g, OpenSSL::PKey::DH#g=,
+	  OpenSSL::PKey::DH#pub_key, OpenSSL::PKey::DH#pub_key=,
+	  OpenSSL::PKey::DH#priv_key and OpenSSL::PKey::DH#priv_key=.
+
+	* ext/openssl/ossl_pkey_dsa.c: add new methods: OpenSSL::PKey::DSA#p,
+	  OpenSSL::PKey::DSA#p=, OpenSSL::PKey::DSA#q, OpenSSL::PKey::DSA#q=,
+	  OpenSSL::PKey::DSA#g, OpenSSL::PKey::DSA#g=,
+	  OpenSSL::PKey::DSA#pub_key, OpenSSL::PKey::DSA#pub_key=,
+	  OpenSSL::PKey::DSA#priv_key and OpenSSL::PKey::DSA#priv_key=.
+
 Thu Jul  1 03:16:09 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_ssl.c (ossl_ssl_read): take optional second argument

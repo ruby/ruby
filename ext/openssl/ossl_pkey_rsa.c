@@ -119,8 +119,10 @@ ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
     VALUE arg, pass;
 	
     GetPKey(self, pkey);
-    rb_scan_args(argc, argv, "11", &arg, &pass);
-    if (FIXNUM_P(arg)) {
+    if(rb_scan_args(argc, argv, "02", &arg, &pass) == 0) {
+	rsa = RSA_new();
+    }
+    else if (FIXNUM_P(arg)) {
 	rsa = rsa_generate(FIX2INT(arg), NIL_P(pass) ? RSA_F4 : NUM2INT(pass));
 	if (!rsa) ossl_raise(eRSAError, NULL);
     }
