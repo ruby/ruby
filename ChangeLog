@@ -1,3 +1,7 @@
+Tue Mar 26 14:08:11 2002  okabe katsuyuki <HGC02147@nifty.ne.jp>
+
+	* win32/mkexports.rb: support VC++.NET.
+
 Mon Mar 25 19:30:25 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/extmk.rb.in (arg_config): get rid of single quotes
