@@ -86,7 +86,7 @@ AC_ARG_ENABLE(fat-binary,
                           is disabled or omitted entirely, then the package
                           will be built only for the target platform],
        [fat_binary=$enableval], [fat_binary=no])
- if test "$fat_binary" != no; then
+if test "$fat_binary" != no; then
 
     AC_MSG_CHECKING([target architectures])
 
@@ -125,7 +125,7 @@ AC_ARG_ENABLE(fat-binary,
         ARCH_FLAG="$ARCH_FLAG -arch $archs"
     done
     AC_DEFINE(NEXT_FAT_BINARY)
-fi 
+fi
 
 case $target_cpu in
   i?86) frame_address=yes;;
@@ -793,6 +793,7 @@ esac
 LIBEXT=a
 
 AC_SUBST(DLDFLAGS)dnl
+AC_SUBST(ARCH_FLAG)dnl
 
 AC_SUBST(STATIC)dnl
 AC_SUBST(CCDLFLAGS)dnl
@@ -894,19 +895,15 @@ if test "$with_dln_a_out" != yes; then
 			rb_cv_dlopen=yes ;;
 	nextstep*)	: ${LDSHARED='cc -r -nostdlib'}
 			LDFLAGS="$LDFLAGS -u libsys_s"
-			DLDFLAGS="$DLDFLAGS $ARCH_FLAG" 
 			rb_cv_dlopen=yes ;;
 	openstep*)	: ${LDSHARED='cc -dynamic -bundle -undefined suppress'}
 			: ${LDFLAGS=""}
-			DLDFLAGS="$DLDFLAGS $ARCH_FLAG"
 			rb_cv_dlopen=yes ;;
 	rhapsody*)	: $LDSHARED='cc -dynamic -bundle -undefined suppress'}
 			: ${LDFLAGS=""}
-			DLDFLAGS="$DLDFLAGS $ARCH_FLAG"
 			rb_cv_dlopen=yes ;;
 	darwin*)	: ${LDSHARED='cc -dynamic -bundle -undefined suppress -flat_namespace'}
 			: ${LDFLAGS=""}
-			DLDFLAGS="$DLDFLAGS $ARCH_FLAG"
 			rb_cv_dlopen=yes ;;
 	aix*)		: ${LDSHARED='/usr/ccs/bin/ld'}
 			XLDFLAGS="$XLDFLAGS -Wl,-bE:ruby.imp"
@@ -1103,9 +1100,9 @@ if test "$prefix" = NONE; then
   prefix=$ac_default_prefix
 fi
 
-if test "$fat_binary" != no ; then
-  CFLAGS="$CFLAGS $ARCH_FLAG"
-fi
+#if test "$fat_binary" != no ; then
+#  CFLAGS="$CFLAGS $ARCH_FLAG"
+#fi
 
 if test x"$cross_compiling" = xyes; then
   test x"$MINIRUBY" = x && MINIRUBY="${RUBY-ruby} -I`pwd` -rfake"

@@ -1,3 +1,14 @@
+Sun Nov 30 20:18:07 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in: keep ARCH_FLAG separate. export ARCH_FLAG.
+	  [ruby-core:01819]
+
+	* Makefile.in: add ARCH_FLAG to CFLAGS.
+
+	* Makefile.in: add @CPPFLAGS@ to CPPFLAGS.
+
+	* lib/mkmf.rb (link_command, cc_command): use ARCH_FLAG.
+
 Sun Nov 30 18:22:48 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in: do not override CCDLDFLAGS, LDFLAGS, XLDFLAGS,
