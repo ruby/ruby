@@ -1,0 +1,5 @@
+MANIFEST
+bigfloat.c
+bigfloat.h
+depend
+extconf.rb

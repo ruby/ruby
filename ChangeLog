@@ -1,3 +1,8 @@
+Fri Mar 22 13:51:11 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/bigfloat/.cvsignore, ext/bigfloat/MANIFEST: BigFloat 1.1.8
+	  has been imported.  Add .cvsignore and MANIFEST.
+
 Thu Mar 21 01:11:37 2002  Usaku Nakamura <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (config.status): fix install path (prefix).
