@@ -794,6 +794,7 @@ test/erb/test_erb.rb
 test/fileutils/fileasserts.rb
 test/fileutils/test_fileutils.rb
 test/fileutils/test_nowrite.rb
+test/gdbm/test_gdbm.rb
 test/inlinetest.rb
 test/logger/test_logger.rb
 test/monitor/test_monitor.rb
