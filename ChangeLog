@@ -1,3 +1,7 @@
+Thu May 31 08:31:22 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
+
+	* dln.c: #define S_ISDIR if not defined.
+
 Thu May 31 01:28:54 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* configure.in: default --with-libc_r to `no' until the problem is
