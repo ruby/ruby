@@ -1,0 +1,42 @@
+require 'test/unit'
+
+$KCODE = 'none'
+
+class TestDefined < Test::Unit::TestCase
+  class Foo
+    def foo
+      p :foo
+    end
+    protected :foo
+    def bar(f)
+      yield(defined?(self.foo))
+      yield(defined?(f.foo))
+    end
+  end
+
+  def defined_test
+    return !defined?(yield)
+  end
+
+  def test_defined
+    $x = nil
+
+    assert(defined?($x))		# global variable
+    assert(defined?($x) == 'global-variable')# returns description
+    
+    foo=5
+    assert(defined?(foo))		# local variable
+    
+    assert(defined?(::Array))		# constant	!! Array -> ::Array
+    assert(defined?(Object.new))	# method
+    assert(!defined?(Object.print))	# private method
+    assert(defined?(1 == 2))		# operator expression
+    
+    f = Foo.new
+    assert(defined?(f.foo) == nil)
+    f.bar(f) { |v| assert(v) }
+    
+    assert(defined_test)		# not iterator
+    assert(!defined_test{})	# called as iterator
+  end
+end

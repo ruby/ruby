@@ -1,3 +1,13 @@
+Wed Sep  5 01:10:11 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/ruby: tests for ruby itself.
+
+	* test/ruby/test_*.rb: split sample/test.rb into 28 test/unit testcases.
+	  some tests could not be translates...  search '!!' mark to see it.
+
+	* test/csv/test_csv.rb: should require 'csv', not '../lib/csv'.  test
+	  runner should set load path correctly.
+
 Wed Sep  5 01:03:59 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/csv/test_csv.rb: close opened files for CSV::IOBuf explicitly.
