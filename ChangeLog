@@ -1,3 +1,8 @@
+Mon Apr 21 00:47:42 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* sample/test.rb: avoid the MSVCRT *printf problem(float).
+	  [ruby-dev:20037]
+
 Mon Apr 21 00:11:15 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* marshal.c (w_float): append least mantissa bits to get rid

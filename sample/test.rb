@@ -995,8 +995,11 @@ nan.test(-0.001);
 nan.test(1.0/0);
 nan.test(-1.0/0);
 
-s = "3.7517675036461267e+17"
-test_ok(s == sprintf("%.16e", s.to_f))
+#s = "3.7517675036461267e+17"
+#test_ok(s == sprintf("%.16e", s.to_f))
+f = 3.7517675036461267e+17
+test_ok(f == sprintf("%.16e", f).to_f)
+
 
 test_check "bignum"
 def fact(n)
