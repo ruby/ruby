@@ -221,7 +221,7 @@ For irb commands, both simple name and `irb_'-prefixed name are prepared.
     Whether readline is used or not. 
     true: uses 
     false: doen't use
-    nil: intends to use readline except for inf-reuby-mode (default)
+    nil: intends to use readline except for inf-ruby-mode (default)
 #
 #--- conf.verbose=T/F
 #    Whether verbose messages are display or not. 

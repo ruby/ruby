@@ -1,3 +1,9 @@
+Fri Aug  1 00:52:58 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (Init_stack): IA64 requires STACK_LEVEL_MAX to be less than
+	  magic number when optimizer turned on, regardless of rlimit
+	  values.
+
 Thu Jul 31 23:44:00 2003  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/erb.rb: import erb-2.0.4b4.

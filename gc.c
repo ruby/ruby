@@ -1318,6 +1318,14 @@ Init_stack(addr)
 	    STACK_LEVEL_MAX = (rlim.rlim_cur - space) / sizeof(VALUE);
 	}
     }
+#ifdef __ia64__
+    /* ruby crashes on IA64 if compiled with optimizer on */
+    /* when if STACK_LEVEL_MAX is greater than this magic number */
+    /* I know this is a kludge.  I suspect optimizer bug */
+#define IA64_MAGIC_STACK_LIMIT 65535
+    if (STACK_LEVEL_MAX > IA64_MAGIC_STACK_LIMIT)
+	STACK_LEVEL_MAX = IA64_MAGIC_STACK_LIMIT;
+#endif
 #endif
 }
 

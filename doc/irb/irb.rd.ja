@@ -53,7 +53,7 @@ irbの使い方は, Rubyさえ知っていればいたって簡単です. 基本的には irb と
   --noinspect	    結果出力にinspectを用いない.
   --readline	    readlineライブラリを利用する.
   --noreadline	    readlineライブラリを利用しない. デフォルトの動作は,
-		    inf-reuby-mode以外でreadlineライブラリを利用しよう
+		    inf-ruby-mode以外でreadlineライブラリを利用しよう
 		    とする. 
   --prompt prompt-mode
   --prompt-mode prompt-mode
@@ -232,7 +232,7 @@ irb拡張コマンドは, 簡単な名前と頭に`irb_'をつけた名前と両方定義されて
     readlineを使うかどうか?
     true: readlineを使う.
     false: readlineを使わない.
-    nil: (デフォルト)inf-reuby-mode以外でreadlineライブラリを利用しよ
+    nil: (デフォルト)inf-ruby-mode以外でreadlineライブラリを利用しよ
          うとする.  
 #
 #--- conf.verbose=T/F
@@ -277,7 +277,7 @@ irb拡張コマンドは, 簡単な名前と頭に`irb_'をつけた名前と両方定義されて
 
 --- _  
     前の計算の実行結果を覚えている(ローカル変数).
-___ __ 
+--- __ 
     実行結果の履歴を覚えている.
     __[line_no]で、その行で実行した結果を得ることができる. line_noが負の
     時には、最新の結果から-line_no前の結果を得ることができる.
