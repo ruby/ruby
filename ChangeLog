@@ -3,6 +3,8 @@ Wed Apr 24 14:21:41 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 	* configure.in: set size of the initial stack from
 	  2MB to 32MB on MinGW/Cygwin.
 
+	* util.c (push_element): avoid warning for djgpp.
+
 Wed Apr 24 01:16:14 2002  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): should print depend file when

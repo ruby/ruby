@@ -323,9 +323,10 @@ struct PathInfo {
 };
 
 static void
-push_element(char *path, struct PathInfo *info)
+push_element(const char *path, VALUE vinfo)
 {
     struct PathList *p;
+    struct PathInfo *info = (struct PathInfo *)vinfo;
 
     p = ALLOC(struct PathList);
     MEMZERO(p, struct PathList, 1);
