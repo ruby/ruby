@@ -352,6 +352,7 @@ lib/webrick/httputils.rb
 lib/webrick/httpversion.rb
 lib/webrick/log.rb
 lib/webrick/server.rb
+lib/webrick/ssl.rb
 lib/webrick/utils.rb
 lib/webrick/version.rb
 lib/webrick/compat.rb
