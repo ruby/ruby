@@ -1,3 +1,7 @@
+Thu Dec  7 17:35:51 2000  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* eval.c (stack_length): don't use __builtin_frame_address() on alpha.
+
 Wed Dec  6 18:07:13 2000  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* djgpp/config.sed, win32/Makefile.sub: typo.
