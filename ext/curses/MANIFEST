@@ -5,3 +5,5 @@ extconf.rb
 hello.rb
 rain.rb
 view.rb
+view2.rb
+mouse.rb

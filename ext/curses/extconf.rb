@@ -1,8 +1,8 @@
 require 'mkmf'
 
-dir_config('curses')
-dir_config('ncurses')
-dir_config('termcap')
+if( ! $CPPFLAGS )
+  $CPPFLAGS = ""
+end
 
 make=false
 have_library("mytinfo", "tgetent") if /bow/ =~ RUBY_PLATFORM
@@ -20,7 +20,7 @@ else
 end
 
 if make
-  for f in %w(isendwin ungetch beep doupdate flash deleteln wdeleteln)
+  for f in %w(isendwin ungetch beep doupdate flash deleteln wdeleteln keypad init_color)
     have_func(f)
   end
   create_makefile("curses")
