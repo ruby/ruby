@@ -97,7 +97,6 @@ Thu Nov 14 22:40:29 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	  block to beginning line, instead of the first statement inside
 	  the block.
 
->>>>>>> 1.1270
 Thu Nov 14 08:23:42 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* math.c (math_acos): check errno after operation.  ditto for
