@@ -1,3 +1,8 @@
+Fri Jan 21 20:07:02 2005  Tanaka Akira  <akr@m17n.org>
+
+	* lib/resolv.rb (Resolv::DNS::Config.resolv): don't raise ResolvError.
+	  reported by Sam Roberts.  [ruby-talk:127133]
+
 Fri Jan 21 17:09:44 2005  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (decode_utf7): use pack("U*") to encode UTF-8.
