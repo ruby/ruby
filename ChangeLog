@@ -2,6 +2,11 @@ Thu Jun 20 17:10:27 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/ftool.rb (BUFSIZE): tuning, set buffer length to 8192.
 
+	* configure.in (__NO_ISOCEXT): add for mingw-runtime 2.0-2.
+
+	* configure.in (__MSVCRT__): removed because it is defined
+	  in the GCC specs.
+
 Wed Jun 19 14:46:18 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/extmk.rb, lib/mkmf.rb (xsystem): open the log file if xsystem
