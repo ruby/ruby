@@ -80,7 +80,8 @@ Keyword completion module.
         completion pattern.
 =end #'#"#`#
     def complete(key, pat = nil)
-      pat ||= Regexp.new('\A' + Regexp.quote(key).gsub(/\w+(?=.)/, '\&\w*'), true)
+      pat ||= Regexp.new('\A' + Regexp.quote(key).gsub(/\w+(?=.)/, '\&\w*'),
+                         ignore_case?)
       canon, sw, k, v = nil
       each do |k, *v|
 	(if Regexp === k
@@ -109,6 +110,10 @@ Keyword completion module.
     def convert(opt = nil, val = nil, *)
       val
     end
+
+    def ignore_case?
+      false
+    end
   end
 
 =begin private
@@ -121,6 +126,11 @@ Map from option/keyword string to object with completion.
 =end #'#"#`#
   class OptionMap < Hash
     include Completion
+  end
+  class OptionCaseMap < OptionMap
+    def ignore_case?
+      true
+    end
   end
 
 
@@ -383,7 +393,7 @@ summary feature.
     def initialize
       @atype = {}
       @short = OptionMap.new
-      @long = OptionMap.new
+      @long = OptionCaseMap.new
       @list = []
     end
 

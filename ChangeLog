@@ -1,4 +1,4 @@
-Thu Nov  6 10:17:51 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Nov  6 11:01:19 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_set_string, strio_reopen): check
 	  tainted.
@@ -10,6 +10,9 @@ Thu Nov  6 10:17:51 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (proc_options): reserve searched script path in the
 	  source file name table.  [ruby-list:38765]
+
+	* lib/optparse.rb (OptionParser::Completion#complete): default not to
+	  ignore case on completion.  [ruby-talk:84726]
 
 Wed Nov  5 23:49:45 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
