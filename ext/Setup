@@ -1,6 +1,8 @@
 #option nodynamic
 
 #Win32API
+#bigdecimal
+#bigdecimal/lib
 #curses
 #dbm
 #digest
