@@ -1,3 +1,7 @@
+Wed Nov  3 16:30:41 2004  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf: follow nkf 2.0.4
+
 Wed Nov  3 15:53:34 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rss/test_maker_*.rb: added tests for RSS Maker.
