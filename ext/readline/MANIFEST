@@ -1,5 +1,6 @@
 MANIFEST
 README
+README.ja
 depend
 extconf.rb
 readline.c

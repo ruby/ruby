@@ -1,8 +1,8 @@
 MANIFEST
 README
 README.expect
-README.expect.jp
-README.jp
+README.expect.ja
+README.ja
 depend
 expect_sample.rb
 extconf.rb

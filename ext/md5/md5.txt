@@ -1,4 +1,4 @@
-.\" md5.doc -  -*- Indented-Text -*- created at: Fri Aug  2 12:01:27 JST 1996
+.\" md5.txt -  -*- Indented-Text -*- created at: Fri Aug  2 12:01:27 JST 1996
 
 ** MD5(Class)
 
