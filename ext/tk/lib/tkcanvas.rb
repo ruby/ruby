@@ -548,7 +548,7 @@ class TkcTag<TkObject
     @path = @id = Tk_CanvasTag_ID.join
     CTagID_TBL[@cpath] = {} unless CTagID_TBL[@cpath]
     CTagID_TBL[@cpath][@id] = self
-    Tk_CanvasTag_ID[1] = Tk_CanvasTag_ID[1].succ
+    Tk_CanvasTag_ID[1].succ!
     if mode
       tk_call @c.path, "addtag", @id, mode, *args
     end
@@ -670,7 +670,7 @@ class TkcGroup<TkcTag
     @path = @id = Tk_cGroup_ID.join
     CTagID_TBL[@cpath] = {} unless CTagID_TBL[@cpath]
     CTagID_TBL[@cpath][@id] = self
-    Tk_cGroup_ID[1] = Tk_cGroup_ID[1].succ
+    Tk_cGroup_ID[1].succ!
     add(*args) if args != []
   end
   
@@ -829,7 +829,7 @@ class TkImage<TkObject
 
   def initialize(keys=nil)
     @path = Tk_Image_ID.join
-    Tk_Image_ID[1] = Tk_Image_ID[1].succ
+    Tk_Image_ID[1].succ!
     tk_call 'image', 'create', @type, @path, *hash_kv(keys)
     Tk_IMGTBL[@path] = self
   end

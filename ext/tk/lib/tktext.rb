@@ -991,7 +991,7 @@ class TkTextMark<TkObject
     TMarkID_TBL[@id] = self
     TMarkID_TBL[@tpath] = {} unless TMarkID_TBL[@tpath]
     TMarkID_TBL[@tpath][@id] = self
-    Tk_TextMark_ID[0] = Tk_TextMark_ID[0].succ
+    Tk_TextMark_ID[1].succ!
     tk_call @t.path, 'mark', 'set', @id, index
     @t._addtag id, self
   end
