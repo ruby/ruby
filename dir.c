@@ -510,7 +510,7 @@ extract_path(p, pend)
     len = pend - p;
     alloc = ALLOC_N(char, len+1);
     memcpy(alloc, p, len);
-    if (len > 0 && pend[-1] == '/') {
+    if (len > 1 && pend[-1] == '/') {
 	alloc[len-1] = 0;
     }
     else {
@@ -584,19 +584,21 @@ glob(path, func, arg)
 		free(base);
 		break;
 	    }
+#define BASE (*base && !(*base == '/' && !base[1]))
+
 	    for (dp = readdir(dirp); dp != NULL; dp = readdir(dirp)) {
 		if (recursive) {
 		    if (strcmp(".", dp->d_name) == 0 || strcmp("..", dp->d_name) == 0)
 			continue;
 		    buf = ALLOC_N(char, strlen(base)+NAMLEN(dp)+strlen(m)+6);
-		    sprintf(buf, "%s%s%s/**%s", base, (*base)?"/":"", dp->d_name, m);
+		    sprintf(buf, "%s%s%s/**%s", base, (BASE)?"/":"", dp->d_name, m);
 		    glob(buf, func, arg);
 		    free(buf);
 		    continue;
 		}
 		if (fnmatch(magic, dp->d_name, FNM_PERIOD|FNM_PATHNAME) == 0) {
 		    buf = ALLOC_N(char, strlen(base)+NAMLEN(dp)+2);
-		    sprintf(buf, "%s%s%s", base, (*base)?"/":"", dp->d_name);
+		    sprintf(buf, "%s%s%s", base, (BASE)?"/":"", dp->d_name);
 		    if (!m) {
 			(*func)(buf, arg);
 			free(buf);

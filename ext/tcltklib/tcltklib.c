@@ -69,8 +69,7 @@ _timer_for_tcl(clientData)
     VALUE thread;
 
     Tk_DeleteTimerHandler(timer_token);
-    timer_token = Tk_CreateTimerHandler(100, _timer_for_tcl, 
-					(ClientData)0);
+    timer_token = Tk_CreateTimerHandler(100, _timer_for_tcl, (ClientData)0);
 
     CHECK_INTS;
     q = iqueue;
@@ -93,8 +92,7 @@ static VALUE
 lib_mainloop(self)
     VALUE self;
 {
-    timer_token = Tk_CreateTimerHandler(100, _timer_for_tcl, 
-					(ClientData)0);
+    timer_token = Tk_CreateTimerHandler(100, _timer_for_tcl, (ClientData)0);
     DUMP1("start Tk_Mainloop");
     Tk_MainLoop();
     DUMP1("stop Tk_Mainloop");

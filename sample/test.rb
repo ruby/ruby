@@ -137,7 +137,9 @@ tmp.close
 $bad = false
 tmp = open("while_tmp", "r")
 while tmp.gets()
-  if gsub!('vt100', 'VT100')
+  line = $_
+  $_ = gsub(/vt100/, 'VT100')
+  if $_ != line
     gsub!('VT100', 'Vt100')
     redo;
   end
@@ -677,7 +679,8 @@ ok("a".upcase![0] == ?A)
 ok("A".downcase![0] == ?a)
 ok("abc".tr!("a-z", "A-Z") == "ABC")
 ok("aabbcccc".tr_s!("a-z", "A-Z") == "ABC")
-ok("abc".tr!("0-9", "A-Z") == nil)
+$x = "abc"
+ok($x.tr("0-9", "A-Z").equal?($x))
 ok("abcc".squeeze!("a-z") == "abc")
 ok("abcd".delete!("bc") == "ad")
 
@@ -965,6 +968,7 @@ File.unlink "script_tmp.bak" or `/bin/rm -f "script_tmp.bak"`
 $bad = false
 for script in Dir["{lib,sample}/*.rb"]
   unless `./miniruby -c #{script}`.chomp == "Syntax OK"
+    p `./miniruby -c #{script}`.chomp
     $bad = true
   end
 end
@@ -1009,7 +1013,7 @@ ok(foo.test == "test")
 begin
   foo.test2
   ok false
-rescue
+rescue NameError
   ok true
 end
 
@@ -1061,7 +1065,7 @@ ok($$.instance_of?(Fixnum))
 begin
   $$ = 5
   ok false
-rescue
+rescue NameError
   ok true
 end
 

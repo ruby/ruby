@@ -239,15 +239,17 @@ VALUE rb_eSignal;
 VALUE rb_eFatal;
 VALUE rb_eStandardError;
 VALUE rb_eRuntimeError;
-VALUE rb_eSyntaxError;
 VALUE rb_eTypeError;
 VALUE rb_eArgError;
-VALUE rb_eNameError;
 VALUE rb_eIndexError;
-VALUE rb_eLoadError;
 VALUE rb_eSecurityError;
 VALUE rb_eNotImpError;
 VALUE rb_eNoMemError;
+
+VALUE rb_eScriptError;
+VALUE rb_eNameError;
+VALUE rb_eSyntaxError;
+VALUE rb_eLoadError;
 
 VALUE rb_eSystemCallError;
 VALUE rb_mErrno;
@@ -533,16 +535,18 @@ Init_Exception()
     rb_eSignal      = rb_define_class("SignalException", rb_eException);
 
     rb_eStandardError = rb_define_class("StandardError", rb_eException);
-    rb_eSyntaxError = rb_define_class("SyntaxError", rb_eStandardError);
     rb_eTypeError   = rb_define_class("TypeError", rb_eStandardError);
     rb_eArgError    = rb_define_class("ArgumentError", rb_eStandardError);
-    rb_eNameError   = rb_define_class("NameError", rb_eStandardError);
     rb_eIndexError  = rb_define_class("IndexError", rb_eStandardError);
-    rb_eLoadError   = rb_define_class("LoadError", rb_eStandardError);
+
+    rb_eScriptError = rb_define_class("ScriptError", rb_eException);
+    rb_eSyntaxError = rb_define_class("SyntaxError", rb_eScriptError);
+    rb_eNameError   = rb_define_class("NameError", rb_eScriptError);
+    rb_eLoadError   = rb_define_class("LoadError", rb_eScriptError);
+    rb_eNotImpError = rb_define_class("NotImplementError", rb_eScriptError);
 
     rb_eRuntimeError = rb_define_class("RuntimeError", rb_eStandardError);
     rb_eSecurityError = rb_define_class("SecurityError", rb_eStandardError);
-    rb_eNotImpError = rb_define_class("NotImplementError", rb_eException);
     rb_eNoMemError = rb_define_class("NoMemoryError", rb_eException);
 
     init_syserr();
@@ -670,6 +674,13 @@ rb_sys_fail(mesg)
 #endif
     rb_iv_set(ee, "errno", INT2FIX(n));
     rb_exc_raise(ee);
+}
+
+void
+rb_error_frozen(what)
+    char *what;
+{
+    rb_raise(rb_eTypeError, "can't modify frozen %s", what);
 }
 
 static void

@@ -532,6 +532,10 @@ mlhs_node	: variable
 		    {
 			$$ = attrset($1, $3);
 		    }
+		| primary tCOLON2 tIDENTIFIER
+		    {
+			$$ = attrset($1, $3);
+		    }
 		| backref
 		    {
 		        rb_backref_error($1);
@@ -547,6 +551,10 @@ lhs		: variable
 			$$ = aryset($1, $3);
 		    }
 		| primary '.' tIDENTIFIER
+		    {
+			$$ = attrset($1, $3);
+		    }
+		| primary tCOLON2 tIDENTIFIER
 		    {
 			$$ = attrset($1, $3);
 		    }
@@ -673,6 +681,17 @@ arg		: lhs '=' arg
 		        fixpos($$, $1);
 		    }
 		| primary '.' tCONSTANT tOP_ASGN arg
+		    {
+			if ($4 == tOROP) {
+			    $4 = 0;
+			}
+			else if ($4 == tANDOP) {
+			    $4 = 1;
+			}
+			$$ = NEW_OP_ASGN2($1, $3, $4, $5);
+		        fixpos($$, $1);
+		    }
+		| primary tCOLON2 tIDENTIFIER tOP_ASGN arg
 		    {
 			if ($4 == tOROP) {
 			    $4 = 0;
@@ -968,15 +987,6 @@ primary		: literal
 		    {
 			$$ = NEW_LIT($1);
 		    }
-		| primary tCOLON2 tCONSTANT
-		    {
-			value_expr($1);
-			$$ = NEW_COLON2($1, $3);
-		    }
-		| tCOLON3 cname
-		    {
-			$$ = NEW_COLON3($2);
-		    }
 		| string
 		| tXSTRING
 		    {
@@ -986,6 +996,43 @@ primary		: literal
 		| tDREGEXP
 		| var_ref
 		| backref
+		| tFID
+		    {
+			$$ = NEW_VCALL($1);
+		    }
+		| kBEGIN
+		  compstmt
+		  rescue
+		  opt_else
+		  ensure
+		  kEND
+		    {
+			if (!$3 && !$4 && !$5)
+			    $$ = NEW_BEGIN($2);
+			else {
+			    if ($3) $2 = NEW_RESCUE($2, $3, $4);
+			    else if ($4) {
+				rb_warn("else without rescue is useless");
+				$2 = block_append($2, $4);
+			    }
+			    if ($5) $2 = NEW_ENSURE($2, $5);
+			    $$ = $2;
+			}
+		        fixpos($$, $2);
+		    }
+		| tLPAREN compstmt ')'
+		    {
+			$$ = $2;
+		    }
+		| primary tCOLON2 tCONSTANT
+		    {
+			value_expr($1);
+			$$ = NEW_COLON2($1, $3);
+		    }
+		| tCOLON3 cname
+		    {
+			$$ = NEW_COLON3($2);
+		    }
 		| primary '[' aref_args ']'
 		    {
 			value_expr($1);
@@ -1039,10 +1086,6 @@ primary		: literal
 		    {
 		        in_defined = 0;
 			$$ = NEW_DEFINED($5);
-		    }
-		| tFID
-		    {
-			$$ = NEW_VCALL($1);
 		    }
 		| operation brace_block
 		    {
@@ -1108,30 +1151,6 @@ primary		: literal
 			value_expr($2);
 			$$ = NEW_FOR($2, $5, $8);
 		        fixpos($$, $2);
-		    }
-		| kBEGIN
-		  compstmt
-		  rescue
-		  opt_else
-		  ensure
-		  kEND
-		    {
-			if (!$3 && !$4 && !$5)
-			    $$ = NEW_BEGIN($2);
-			else {
-			    if ($3) $2 = NEW_RESCUE($2, $3, $4);
-			    else if ($4) {
-				rb_warn("else without rescue is useless");
-				$2 = block_append($2, $4);
-			    }
-			    if ($5) $2 = NEW_ENSURE($2, $5);
-			    $$ = $2;
-			}
-		        fixpos($$, $2);
-		    }
-		| tLPAREN compstmt ')'
-		    {
-			$$ = $2;
 		    }
 		| kCLASS cname superclass
 		    {
@@ -2400,11 +2419,80 @@ parse_qstring(term, paren)
 }
 
 static int
-parse_quotedword(term, paren)
+parse_quotedwords(term, paren)
     int term, paren;
 {
-    if (parse_qstring(term, paren) == 0) return 0;
-    yylval.node = NEW_CALL(NEW_STR(yylval.val), rb_intern("split"), 0);
+    NODE *qwords = 0;
+    int strstart;
+    int c;
+    int nest = 0;
+
+    strstart = ruby_sourceline;
+    newtok();
+
+    while ((c = nextc()) == ' ')
+	;		/* skip preceding spaces */
+    pushback(c);
+    while ((c = nextc()) != term || nest > 0) {
+	if (c == -1) {
+	    ruby_sourceline = strstart;
+	    rb_compile_error("unterminated string meets end of file");
+	    return 0;
+	}
+	if (ismbchar(c)) {
+	    int i, len = mbclen(c)-1;
+
+	    for (i = 0; i < len; i++) {
+		tokadd(c);
+		c = nextc();
+	    }
+	}
+	else if (c == '\\') {
+	    c = nextc();
+	    switch (c) {
+	      case '\n':
+		continue;
+	      case '\\':
+		c = '\\';
+		break;
+	      case ' ':
+		tokadd(' ');
+		break;
+	      default:
+		tokadd('\\');
+	    }
+	}
+	else if (c == ' ') {
+	    NODE *str;
+
+	    tokfix();
+	    str = NEW_STR(rb_str_new(tok(), toklen()));
+	    newtok();
+	    if (!qwords) qwords = NEW_LIST(str);
+	    else list_append(qwords, str);
+	    while ((c = nextc()) == ' ')
+		;		/* skip continuous spaces */
+	    pushback(c);
+	    continue;
+	}
+	if (paren) {
+	    if (c == paren) nest++;
+	    if (c == term && nest-- == 0) break;
+	}
+	tokadd(c);
+    }
+
+    tokfix();
+    if (toklen() > 0) {
+	NODE *str;
+
+	str = NEW_STR(rb_str_new(tok(), toklen()));
+	if (!qwords) qwords = NEW_LIST(str);
+	else list_append(qwords, str);
+    }
+    if (!qwords) qwords = NEW_ZARRAY();
+    yylval.node = qwords;
+    lex_state = EXPR_END;
     return tDSTRING;
 }
 
@@ -2814,6 +2902,8 @@ yylex()
 	if (lex_state == EXPR_BEG || lex_state == EXPR_MID ||
 	    (lex_state == EXPR_ARG && space_seen && !ISSPACE(c))) {
 	    pushback(c);
+	    if (lex_state == EXPR_ARG) arg_ambiguous();
+	    if (ISDIGIT(c)) goto start_num;
 	    lex_state = EXPR_BEG;
 	    return tUPLUS;
 	}
@@ -2837,8 +2927,13 @@ yylex()
 	}
 	if (lex_state == EXPR_BEG || lex_state == EXPR_MID ||
 	    (lex_state == EXPR_ARG && space_seen && !ISSPACE(c))) {
+	    if (lex_state == EXPR_ARG) arg_ambiguous();
 	    lex_state = EXPR_BEG;
 	    pushback(c);
+	    if (ISDIGIT(c)) {
+		c = '-';
+		goto start_num;
+	    }
 	    return tUMINUS;
 	}
 	lex_state = EXPR_BEG;
@@ -3072,6 +3167,12 @@ yylex()
 	    lex_state = EXPR_BEG;
 	}
 	else {
+	    if (lex_state == EXPR_ARG) {
+		if (space_seen) {
+		    arg_ambiguous();
+		    c = tLPAREN;
+		}
+	    }
 	    lex_state = EXPR_BEG;
 	}
 	return c;
@@ -3147,7 +3248,7 @@ yylex()
 		return parse_qstring(term, paren);
 
 	      case 'w':
-		return parse_quotedword(term, paren);
+		return parse_quotedwords(term, paren);
 
 	      case 'x':
 		return parse_string('`', term, paren);
@@ -3766,15 +3867,18 @@ assignable(id, val)
 	yyerror("Can't assign to __LINE__");
     }
     else if (is_local_id(id)) {
-	if (rb_dvar_defined(id)) {
+	if (rb_dvar_curr(id)) {
+	    lhs = NEW_DASGN_CURR(id, val);
+	}
+	else if (rb_dvar_defined(id)) {
 	    lhs = NEW_DASGN(id, val);
 	}
 	else if (local_id(id) || !dyna_in_block()) {
 	    lhs = NEW_LASGN(id, val);
 	}
 	else{
-	    rb_dvar_push(id, 0);
-	    lhs = NEW_DASGN_PUSH(id, val);
+	    rb_dvar_push(id, Qnil);
+	    lhs = NEW_DASGN_CURR(id, val);
 	}
     }
     else if (is_global_id(id)) {
@@ -3871,7 +3975,7 @@ node_assign(lhs, rhs)
       case NODE_IASGN:
       case NODE_LASGN:
       case NODE_DASGN:
-      case NODE_DASGN_PUSH:
+      case NODE_DASGN_CURR:
       case NODE_MASGN:
       case NODE_CASGN:
       case NODE_CDECL:
@@ -4354,8 +4458,11 @@ top_local_setup()
 static struct RVarmap*
 dyna_push()
 {
+    struct RVarmap* vars = ruby_dyna_vars;
+
+    rb_dvar_push(0, 0);
     lvtbl->dlev++;
-    return ruby_dyna_vars;
+    return vars;
 }
 
 static void

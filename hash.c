@@ -23,37 +23,15 @@ char *strchr _((char*,char));
 char* strdup(const char*);
 #endif
 
-#define HASH_FREEZE   FL_USER1
-#define HASH_DELETED  FL_USER2
+#define HASH_DELETED  FL_USER1
 
 static void
 rb_hash_modify(hash)
     VALUE hash;
 {
-    if (FL_TEST(hash, HASH_FREEZE))
-	rb_raise(rb_eTypeError, "can't modify frozen hash");
+    if (OBJ_FROZEN(hash)) rb_error_frozen("hash");
     if (!OBJ_TAINTED(hash) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify hash");
-}
-
-VALUE
-rb_hash_freeze(hash)
-    VALUE hash;
-{
-    if (rb_safe_level() >= 4 && !OBJ_TAINTED(hash))
-	rb_raise(rb_eSecurityError, "Insecure: can't freeze hash");
-	
-    FL_SET(hash, HASH_FREEZE);
-    return hash;
-}
-
-static VALUE
-rb_hash_frozen_p(hash)
-    VALUE hash;
-{
-    if (FL_TEST(hash, HASH_FREEZE))
-	return Qtrue;
-    return Qfalse;
 }
 
 VALUE rb_cHash;
@@ -1386,9 +1364,6 @@ Init_Hash()
     rb_define_method(rb_cHash,"clone", rb_hash_clone, 0);
     rb_define_method(rb_cHash,"dup", rb_hash_dup, 0);
     rb_define_method(rb_cHash,"rehash", rb_hash_rehash, 0);
-
-    rb_define_method(rb_cHash,"freeze", rb_hash_freeze, 0);
-    rb_define_method(rb_cHash,"frozen?",rb_hash_frozen_p, 0);
 
     rb_define_method(rb_cHash,"to_hash", rb_hash_to_hash, 0);
     rb_define_method(rb_cHash,"to_a", rb_hash_to_a, 0);

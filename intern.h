@@ -101,6 +101,7 @@ void rb_alias _((VALUE, ID, ID));
 void rb_attr _((VALUE,ID,int,int,int));
 int rb_method_boundp _((VALUE, ID, int));
 VALUE rb_dvar_defined _((ID));
+VALUE rb_dvar_curr _((ID));
 VALUE rb_dvar_ref _((ID));
 void rb_dvar_asgn _((ID, VALUE));
 void rb_dvar_push _((ID, VALUE));

@@ -331,8 +331,7 @@ flo_modulo(x, y, modulo)
 	result = value1 - value2 * value;
     }
 #endif
-    if (modulo &&
-	(RFLOAT(x)->value < 0.0) != (result < 0.0) && result != 0.0) {
+    if (modulo && value*result<0.0) {
 	result += value;
     }
     return rb_float_new(result);
@@ -350,6 +349,45 @@ flo_remainder(x, y)
     VALUE x, y;
 {
     return flo_modulo(x,y,0);
+}
+
+static VALUE
+flo_divmod(x, y)
+    VALUE x, y;
+{
+    double value, div, mod;
+
+    switch (TYPE(y)) {
+      case T_FIXNUM:
+	value = (double)FIX2LONG(y);
+	break;
+      case T_BIGNUM:
+	value = rb_big2dbl(y);
+	break;
+      case T_FLOAT:
+	value = RFLOAT(y)->value;
+	break;
+      default:
+	return rb_num_coerce_bin(x, y);
+    }
+
+#ifdef HAVE_FMOD
+    mod = fmod(RFLOAT(x)->value, value);
+#else
+    {
+	double value1 = RFLOAT(x)->value;
+	double value2;
+
+	modf(value1/value, &value2);
+	mod = value1 - value2 * value;
+    }
+#endif
+    div = (RFLOAT(x)->value - mod) / value;
+    if (value*mod<0.0) {
+	mod += value;
+	div -= 1.0;
+    }
+    return rb_assoc_new(rb_float_new(div), rb_float_new(mod));
 }
 
 static VALUE
@@ -1517,6 +1555,7 @@ Init_Numeric()
     rb_define_method(rb_cFloat, "*", flo_mul, 1);
     rb_define_method(rb_cFloat, "/", flo_div, 1);
     rb_define_method(rb_cFloat, "%", flo_mod, 1);
+    rb_define_method(rb_cFloat, "divmod", flo_divmod, 1);
     rb_define_method(rb_cFloat, "remainder", flo_remainder, 1);
     rb_define_method(rb_cFloat, "**", flo_pow, 1);
     rb_define_method(rb_cFloat, "==", flo_eq, 1);

@@ -160,11 +160,11 @@ VALUE rb_uint2inum _((unsigned long));
 #define T_DATA   0x22
 #define T_MATCH  0x23
 
-#define T_VARMAP 0x7d
-#define T_SCOPE  0x7e
-#define T_NODE   0x7f
+#define T_VARMAP 0x3d
+#define T_SCOPE  0x3e
+#define T_NODE   0x3f
 
-#define T_MASK   0x7f
+#define T_MASK   0x3f
 
 #define BUILTIN_TYPE(x) (((struct RBasic*)(x))->flags & T_MASK)
 
@@ -175,6 +175,10 @@ void rb_check_type _((VALUE,int));
 void rb_check_safe_str _((VALUE));
 #define Check_SafeStr(v) rb_check_safe_str((VALUE)(v))
 void rb_secure _((int));
+
+extern int ruby_safe_level;
+#define rb_safe_level() (ruby_safe_level)
+void rb_set_safe_level _((int));
 
 long rb_num2long _((VALUE));
 unsigned long rb_num2ulong _((VALUE));
@@ -326,10 +330,11 @@ struct RBignum {
 #define RFILE(obj)   (R_CAST(RFile)(obj))
 
 #define FL_SINGLETON FL_USER0
-#define FL_MARK      (1<<7)
-#define FL_FINALIZE  (1<<8)
-#define FL_TAINT     (1<<9)
-#define FL_EXIVAR    (1<<10)
+#define FL_MARK      (1<<6)
+#define FL_FINALIZE  (1<<7)
+#define FL_TAINT     (1<<8)
+#define FL_EXIVAR    (1<<9)
+#define FL_FREEZE    (1<<10)
 
 #define FL_USHIFT    11
 
@@ -355,6 +360,9 @@ struct RBignum {
 #define OBJ_TAINTED(x) FL_TEST((x), FL_TAINT)
 #define OBJ_TAINT(x) FL_SET((x), FL_TAINT)
 #define OBJ_INFECT(x,s) (FL_ABLE(x) && FL_ABLE(s) && (RBASIC(x)->flags |= RBASIC(s)->flags & FL_TAINT))
+
+#define OBJ_FROZEN(x) FL_TEST((x), FL_FREEZE)
+#define OBJ_FREEZE(x) FL_SET((x), FL_FREEZE)
 
 void *xmalloc _((size_t));
 void *xcalloc _((size_t,size_t));
@@ -416,9 +424,6 @@ VALUE rb_iv_set _((VALUE, const char*, VALUE));
 VALUE rb_equal _((VALUE,VALUE));
 
 EXTERN VALUE ruby_verbose, ruby_debug;
-
-int rb_safe_level _((void));
-void rb_set_safe_level _((int));
 
 void rb_raise __((VALUE, const char*, ...)) NORETURN;
 void rb_fatal __((const char*, ...)) NORETURN;

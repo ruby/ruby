@@ -2,31 +2,32 @@ Language Spec.
 
 - def foo; .. rescue .. end
 - compile time string concatenation, "hello" "world" => "helloworld"
-- assignable constant, which now should be called shared variable.
-- class variable (prefix?) -- done by shared variable
 - rescue modifier; a rescue b => begin a rescue; b end
-* operator !! for  rescue.
+- %w(a\ b\ c abc) => ["a b c", "abc"]
+* class variable (prefix @@?) ??
+* operator !! for rescue. ???
 * objectify symbols
 * objectify characters
 * ../... outside condition invokes operator method too.
 * ... inside condition turns off just before right condition.???
-* %w(a\ b\ c abc) => ["a b c", "abc"]
 * package or access control for global variables??
 * named arguments like foo(nation:="german") or foo(nation: "german").
-* method to retrieve argument information (need new C API)
+* method to retrieve argument information (needs new C API)
 * multiple return values, yield values.  maybe incompatible ???
 * cascading method invocation ???
 * def Class#method .. end ??
 * class Foo::Bar<Baz .. end, module Boo::Bar .. end
 * def Foo::Bar::baz() .. end ??
+* I18N (or M17N) script/string/regexp
 
 Hacking Interpreter
 
 - use eban's fnmatch
 - RUBYOPT environment variable
 - alias $defout $>
-* retrieve STACK_LEVEL_MAX from users' limit.
-* remove end_proc registered out of require only
+- retrieve STACK_LEVEL_MAX from users' limit.
+- remove end_proc registered out of require only
+- all object made freezable
 * non-blocking open (e.g. for named pipe) for thread
 * avoid blocking with gethostbyname/gethostbyaddr
 * objectify interpreters
@@ -34,7 +35,6 @@ Hacking Interpreter
 * syntax tree -> bytecode ???
 * scrambled script, or script filter
 * setuid ruby
-* freeze all object
 
 Standard Libraries
 
@@ -45,9 +45,12 @@ Standard Libraries
 - sprintf/printf's $ to specify argument order
 - Dir.glob("**/*.c") ala zsh
 - Remove Enumerable#{size,length}
-* Marshal should handle generic instance variables.
-* SyntaxError and NameError should not be subclasses of StandardError, maybe.
-* debugger for thread programming
+- Array#slice, Array#slice!
+- String#slice, String#slice!
+- Marshal should handle generic instance variables.
+- debugger for thread programming
+- SyntaxError, NameError, LoadError and NotImplementError are subclasses of
+  ScriptError<Exception, not StandardError.
 * Struct::new([name,]member,...) ??
 * String#scanf(?)
 * Object#fmt(?)
@@ -66,14 +69,16 @@ Extension Libraries
 
 Ruby Libraries
 
-* httplib.rb, urllib.rb, nttplib.rb, etc.
+- net/http.rb
+* urllib.rb, nttplib.rb, etc.
 * format like perl's
 
 Tools
 
-- extension library maker like XS or SWIG
+- extension library maker using SWIG
 * freeze or undump to bundle everything
 
 Misc
 
 - publish Ruby books
+* publish Ruby books in English

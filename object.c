@@ -297,6 +297,25 @@ rb_obj_untaint(obj)
     return obj;
 }
 
+VALUE
+rb_obj_freeze(obj)
+    VALUE obj;
+{
+    if (rb_safe_level() >= 4 && !OBJ_TAINTED(obj))
+	rb_raise(rb_eSecurityError, "Insecure: can't freeze object");
+	
+    OBJ_FREEZE(obj);
+    return obj;
+}
+
+static VALUE
+rb_obj_frozen_p(obj)
+    VALUE obj;
+{
+    if (OBJ_FROZEN(obj)) return Qtrue;
+    return Qfalse;
+}
+
 static VALUE
 nil_to_i(obj)
     VALUE obj;
@@ -1004,6 +1023,8 @@ Init_Object()
     rb_define_method(rb_mKernel, "taint", rb_obj_taint, 0);
     rb_define_method(rb_mKernel, "tainted?", rb_obj_tainted, 0);
     rb_define_method(rb_mKernel, "untaint", rb_obj_untaint, 0);
+    rb_define_method(rb_mKernel, "freeze", rb_obj_freeze, 0);
+    rb_define_method(rb_mKernel, "frozen?", rb_obj_frozen_p, 0);
 
     rb_define_method(rb_mKernel, "to_a", rb_any_to_a, 0);
     rb_define_method(rb_mKernel, "to_s", rb_any_to_s, 0);

@@ -305,7 +305,7 @@ static void
 pack_add_ptr(str, add)
     VALUE str, add;
 {
-#define STR_NO_ORIG FL_USER3	/* copied from string.c */
+#define STR_NO_ORIG FL_USER2	/* copied from string.c */
     if (!RSTRING(str)->orig) {
 	RSTRING(str)->orig = rb_ary_new();
 	FL_SET(str, STR_NO_ORIG);

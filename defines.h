@@ -55,8 +55,12 @@
 #endif
 #define PATH_SEP_CHAR PATH_SEP[0]
 
-#if defined(__human68k__) || defined(__CYGWIN__)
+#if defined(__human68k__)
 #undef HAVE_RANDOM
+#undef HAVE_SETITIMER
+#endif
+
+#if defined(__CYGWIN__) || defined(DJGPP) || defined(__BOW__)
 #undef HAVE_SETITIMER
 #endif
 

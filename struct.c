@@ -474,6 +474,7 @@ rb_struct_aset_id(s, id, val)
 	rb_bug("non-initialized struct");
     }
 
+    if (OBJ_FROZEN(s)) rb_error_frozen("Struct");
     len = RARRAY(member)->len;
     for (i=0; i<len; i++) {
 	if (FIX2UINT(RARRAY(member)->ptr[i]) == id) {
@@ -502,6 +503,7 @@ rb_struct_aset(s, idx, val)
     if (RSTRUCT(s)->len <= i)
         rb_raise(rb_eIndexError, "offset %d too large for struct(size:%d)",
 		 i, RSTRUCT(s)->len);
+    if (OBJ_FROZEN(s)) rb_error_frozen("Struct");
     return RSTRUCT(s)->ptr[i] = val;
 }
 

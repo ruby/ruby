@@ -1619,7 +1619,8 @@ myfdopen (int fd, const char *mode)
 void
 myfdclose(FILE *fp)
 {
-	fclose(fp);
+    _free_osfhnd(fileno(fp));
+    fclose(fp);
 }
 
 

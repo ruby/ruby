@@ -492,7 +492,7 @@ rb_gc_mark(ptr)
 	  case NODE_GASGN:
 	  case NODE_LASGN:
 	  case NODE_DASGN:
-	  case NODE_DASGN_PUSH:
+	  case NODE_DASGN_CURR:
 	  case NODE_IASGN:
 	  case NODE_CASGN:
 	  case NODE_MODULE:

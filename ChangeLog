@@ -1,3 +1,82 @@
+Mon Jan 31 15:24:58 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (rb_str_sub): no bang method returns original string if
+	  no change is made.
+
+	* string.c (str_sub_bang): bang method returns string always.
+	  experimental.
+
+Sun Jan 30 17:58:09 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* eval.c: arrange to use setitimer(2) for BOW, DJGPP
+
+	* defines.h: ditto. use random(3) on cygwin b20.1.
+
+Sun Jan 30 17:20:16 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* eval.c: use getrlimit(2) on DJGPP.
+
+Thu Jan 27 01:27:10 2000  GOTO Kentaro  <gotoken@math.sci.hokudai.ac.jp>
+
+	* dir.c (glob): glob pattern "/*" did not match.
+
+Wed Jan 26 22:30:47 2000  Shigeo Kobayashi  <shigeo@tinyforest.gr.jp>
+
+	* numeric.c (flo_modulo): wrong result for negative modulo.
+
+Wed Jan 26 02:01:57 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* file.c (test_c): should use S_ISCHR.
+
+	* file.c (rb_stat_c): ditto.
+
+	* string.c (rb_str_each_line): should propagate tainting.
+
+Tue Jan 25 04:01:34 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* object.c (rb_obj_freeze): all objects made freezable.
+
+Tue Jan 25 00:37:01 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* configure.in: use AC_CHECK_TOOL for cross compiling.
+
+Mon Jan 24 19:01:54 2000  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* array.c (rb_protect_inspect): should be checked by id of
+	  objects; not by object themselves.
+
+Mon Jan 24 18:48:08 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* eval.c (rb_eval): too many warnings;  warned on every method
+	  overriding.  should be on method discarding.
+
+Mon Jan 24 02:56:44 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (yylex): -2.abs should be `(-2).abs' to accomplish the
+	  principle of less surprise.  `+2' too.
+
+	* eval.c (rb_eval): when defining class is already there, and
+	  superclass differ, throw away the old class.
+
+	* variable.c (rb_const_set): gives warining again on constant
+	  redefinition.
+
+	* error.c (Init_Exception): SyntaxError, NameError, LoadError and
+	  NotImplementError are subclasses of ScriptError<Exception, not
+	  StandardError.  experimental.
+
+Sat Jan 22 00:00:41 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (parse_quotedwords): no longer use `String#split'.
+	  and enable space escape within quoted word list.
+	  e.g. %w(a\ b\ c abc) => ["a b c", "abc"].
+
+	* string.c (rb_str_slice_bang): new method `slice!'.
+
+Fri Jan 21 16:15:59 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (thgroup_s_new): new class ThreadGroup.
+
 Tue Jan 18 12:24:28 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* struct.c (Init_Struct): remove Struct's own hash and eql?.
@@ -68,8 +147,8 @@ Tue Jan  4 06:04:14 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 Sat Jan  1 13:26:14 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
-	* eval.c (rb_yield_0): force_recycle ruby_dyna_vars to performance
-	  gain.
+	* eval.c (rb_yield_0): force_recycle ruby_dyna_vars to gain
+	  performance.
 
 	* array.c (rb_ary_delete_at_m): takes same argument pattern with
 	  rb_ary_aref.
@@ -85,8 +164,8 @@ Sat Jan  1 10:12:26 2000  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	* ruby.h (FL_ABLE, FL_SET, FL_UNSET, FL_REVERSE): made expressions
 	  not statements.
 
-	* ruby.h (OBJ_INFECT): newly added which copies taint from `s' to
-	  `x'.
+	* ruby.h (OBJ_INFECT): newly added macro which copies taint from
+	  `s' to `x'.
 
 Sat Jan  1 02:04:18 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
@@ -202,7 +281,7 @@ Mon Dec 13 15:15:31 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	  because of major performace drawback.
 
 	* class.c (rb_singleton_class): tainted status of the singleton
-	  class must synchronize with the object.
+	  class must be synchronized with the object.
 
 	* eval.c (rb_thread_schedule): implement thread priority.
 
@@ -404,7 +483,7 @@ Mon Nov 15 04:50:33 1999  Koji Arai  <JCA02266@nifty.ne.jp>
 Sat Nov 13 07:34:18 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* variable.c (rb_mod_constants): traverse superclasses to collect
-	  constants (shared variables).
+	  constants.
 
 	* eval.c (assign): modified for shared variables.
 

@@ -227,7 +227,7 @@ w_object(obj, arg, limit)
     st_table *ivtbl = 0;
 
     if (limit == 0) {
-	rb_raise(rb_eRuntimeError, "exceed depth limit");
+	rb_raise(rb_eArgError, "exceed depth limit");
     }
     if (obj == Qnil) {
 	w_byte(TYPE_NIL, arg);

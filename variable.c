@@ -898,6 +898,7 @@ rb_ivar_set(obj, id, val)
 {
     if (!OBJ_TAINTED(obj) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify instance variable");
+    if (OBJ_FROZEN(obj)) rb_error_frozen("object");
     switch (TYPE(obj)) {
       case T_OBJECT:
       case T_CLASS:
@@ -984,6 +985,7 @@ rb_obj_remove_instance_variable(obj, name)
 
     if (!OBJ_TAINTED(obj) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify instance variable");
+    if (OBJ_FROZEN(obj)) rb_error_frozen("object");
     if (!rb_is_instance_id(id)) {
 	rb_raise(rb_eNameError, "`%s' is not an instance variable",
 		 rb_id2name(id));
@@ -1099,11 +1101,12 @@ rb_mod_remove_const(mod, name)
     ID id = rb_to_id(name);
     VALUE val;
 
-    if (!OBJ_TAINTED(mod) && rb_safe_level() >= 4)
-	rb_raise(rb_eSecurityError, "Insecure: can't remove constant");
     if (!rb_is_const_id(id)) {
 	rb_raise(rb_eNameError, "`%s' is not constant", rb_id2name(id));
     }
+    if (!OBJ_TAINTED(mod) && rb_safe_level() >= 4)
+	rb_raise(rb_eSecurityError, "Insecure: can't remove constant");
+    if (OBJ_FROZEN(mod)) rb_error_frozen("class/module");
 
     if (RCLASS(mod)->iv_tbl && st_delete(ROBJECT(mod)->iv_tbl, &id, &val)) {
 	return val;
@@ -1221,8 +1224,12 @@ rb_const_set(klass, id, val)
 {
     if (!OBJ_TAINTED(klass) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't set constant");
+    if (OBJ_FROZEN(klass)) rb_error_frozen("class/module");
     if (!RCLASS(klass)->iv_tbl) {
 	RCLASS(klass)->iv_tbl = st_init_numtable();
+    }
+    else if (st_lookup(RCLASS(klass)->iv_tbl, id, 0)) {
+	rb_warn("already initialized constant %s", rb_id2name(id));
     }
 
     st_insert(RCLASS(klass)->iv_tbl, id, val);

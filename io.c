@@ -1576,7 +1576,12 @@ rb_io_s_popen(argc, argv, self)
     }
     Check_SafeStr(pname);
     port = pipe_open(RSTRING(pname)->ptr, mode);
-    if (NIL_P(port)) return Qnil;
+    if (NIL_P(port)) {
+	rb_yield(port);
+    }
+    else if (rb_iterator_p()) {
+	return rb_ensure(rb_yield, port, rb_io_close, port);
+    }
     return port;
 }
 
@@ -1647,8 +1652,10 @@ rb_f_open(argc, argv)
     }
 
     port = pipe_open(RSTRING(pname)->ptr+1, mode);
-    if (NIL_P(port)) return Qnil;
-    if (rb_iterator_p()) {
+    if (NIL_P(port)) {
+	rb_yield(port);
+    }
+    else if (rb_iterator_p()) {
 	return rb_ensure(rb_yield, port, rb_io_close, port);
     }
 
@@ -3222,7 +3229,7 @@ Init_IO()
 
     rb_rs = rb_default_rs = rb_str_new2("\n"); rb_output_rs = Qnil;
     rb_global_variable(&rb_default_rs);
-    rb_str_freeze(rb_default_rs);	/* avoid modifying RS_default */
+    OBJ_FREEZE(rb_default_rs);	/* avoid modifying RS_default */
     rb_define_hooked_variable("$/", &rb_rs, 0, rb_str_setter);
     rb_define_hooked_variable("$-0", &rb_rs, 0, rb_str_setter);
     rb_define_hooked_variable("$\\", &rb_output_rs, 0, rb_str_setter);

@@ -38,37 +38,24 @@ memfill(mem, size, val)
     }
 }
 
-#define ARY_FREEZE   FL_USER1
-#define ARY_TMPLOCK  FL_USER2
+#define ARY_TMPLOCK  FL_USER1
 
 static void
 rb_ary_modify(ary)
     VALUE ary;
 {
-    if (FL_TEST(ary, ARY_FREEZE))
-	rb_raise(rb_eTypeError, "can't modify frozen array");
+    if (OBJ_FROZEN(ary)) rb_error_frozen("array");
     if (FL_TEST(ary, ARY_TMPLOCK))
 	rb_raise(rb_eTypeError, "can't modify array during sort");
     if (!OBJ_TAINTED(ary) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify array");
 }
 
-VALUE
-rb_ary_freeze(ary)
-    VALUE ary;
-{
-    if (rb_safe_level() >= 4 && !OBJ_TAINTED(ary))
-	rb_raise(rb_eSecurityError, "Insecure: can't freeze array");
-	
-    FL_SET(ary, ARY_FREEZE);
-    return ary;
-}
-
 static VALUE
 rb_ary_frozen_p(ary)
     VALUE ary;
 {
-    if (FL_TEST(ary, ARY_FREEZE|ARY_TMPLOCK))
+    if (FL_TEST(ary, FL_FREEZE|ARY_TMPLOCK))
 	return Qtrue;
     return Qfalse;
 }
@@ -355,7 +342,7 @@ rb_ary_entry(ary, offset)
 }
 
 static VALUE
-rb_ary_subary(ary, beg, len)
+rb_ary_subseq(ary, beg, len)
     VALUE ary;
     long beg, len;
 {
@@ -397,7 +384,7 @@ rb_ary_aref(argc, argv, ary)
 	if (beg < 0) {
 	    beg = RARRAY(ary)->len + beg;
 	}
-	return rb_ary_subary(ary, beg, len);
+	return rb_ary_subseq(ary, beg, len);
     }
 
     /* special case - speeding up */
@@ -415,7 +402,7 @@ rb_ary_aref(argc, argv, ary)
 	  case Qnil:
 	    return Qnil;
 	  default:
-	    return rb_ary_subary(ary, beg, len);
+	    return rb_ary_subseq(ary, beg, len);
 	}
     }
     return rb_ary_entry(ary, NUM2LONG(arg1));
@@ -790,8 +777,8 @@ rb_protect_inspect(func, obj, arg)
     VALUE obj, arg;
 {
     struct inspect_arg iarg;
-
     VALUE inspect_tbl;
+    VALUE id;
 
     if (!inspect_key) {
 	inspect_key = rb_intern("__inspect_key__");
@@ -801,10 +788,11 @@ rb_protect_inspect(func, obj, arg)
 	inspect_tbl = rb_ary_new();
 	rb_thread_local_aset(rb_thread_current(), inspect_key, inspect_tbl);
     }
-    if (rb_ary_includes(inspect_tbl, obj)) {
+    id = rb_obj_id(obj);
+    if (rb_ary_includes(inspect_tbl, id)) {
 	return (*func)(obj, arg);
     }
-    rb_ary_push(inspect_tbl, obj);
+    rb_ary_push(inspect_tbl, id);
     iarg.func = func;
     iarg.arg1 = obj;
     iarg.arg2 = arg;
@@ -821,7 +809,7 @@ rb_inspecting_p(obj)
     if (!inspect_key) return Qfalse;
     inspect_tbl = rb_thread_local_aref(rb_thread_current(), inspect_key);
     if (NIL_P(inspect_tbl)) return Qfalse;
-    return rb_ary_includes(inspect_tbl, obj);
+    return rb_ary_includes(inspect_tbl, rb_obj_id(obj));
 }
 
 static VALUE
@@ -1040,7 +1028,7 @@ rb_ary_delete_at_m(argc, argv, ary)
 	if (pos < 0) {
 	    pos = RARRAY(ary)->len + pos;
 	}
-	arg2 = rb_ary_subary(ary, pos, len);
+	arg2 = rb_ary_subseq(ary, pos, len);
 	rb_ary_replace(ary, pos, len, Qnil);	/* Qnil/rb_ary_new2(0) */
 	return arg2;
     }
@@ -1064,6 +1052,7 @@ rb_ary_delete_at_m(argc, argv, ary)
 
     return arg2;
 }
+
 static VALUE
 rb_ary_delete_if(ary)
     VALUE ary;
@@ -1500,11 +1489,26 @@ rb_ary_flatten_bang(ary)
 {
     long i;
     int mod = 0;
+    VALUE flattening = Qnil;
 
     rb_ary_modify(ary);
     for (i=0; i<RARRAY(ary)->len; i++) {
 	VALUE ary2 = RARRAY(ary)->ptr[i];
 	if (TYPE(ary2) == T_ARRAY) {
+	    if (ary == ary2) {
+		ary2 = Qnil;
+	    } else {
+		VALUE id;
+
+		if (NIL_P(flattening)) {
+		    flattening = rb_ary_new();
+		}
+		id = rb_obj_id(ary2);
+		if (rb_ary_includes(flattening, id)) {
+		    rb_raise(rb_eArgError, "tryed to flatten recursive array");
+		}
+		rb_ary_push(flattening, id);
+	    }
 	    rb_ary_replace(ary, i--, 1, ary2);
 	    mod = 1;
 	}
@@ -1534,8 +1538,6 @@ Init_Array()
     rb_define_method(rb_cArray, "inspect", rb_ary_inspect, 0);
     rb_define_method(rb_cArray, "to_a", rb_ary_to_a, 0);
     rb_define_method(rb_cArray, "to_ary", rb_ary_to_a, 0);
-
-    rb_define_method(rb_cArray, "freeze",  rb_ary_freeze, 0);
     rb_define_method(rb_cArray, "frozen?",  rb_ary_frozen_p, 0);
 
     rb_define_method(rb_cArray, "==", rb_ary_equal, 1);
@@ -1582,6 +1584,9 @@ Init_Array()
     rb_define_method(rb_cArray, "fill", rb_ary_fill, -1);
     rb_define_method(rb_cArray, "include?", rb_ary_includes, 1);
     rb_define_method(rb_cArray, "<=>", rb_ary_cmp, 1);
+
+    rb_define_method(rb_cArray, "slice", rb_ary_aref, -1);
+    rb_define_method(rb_cArray, "slice!", rb_ary_delete_at_m, -1);
 
     rb_define_method(rb_cArray, "assoc", rb_ary_assoc, 1);
     rb_define_method(rb_cArray, "rassoc", rb_ary_rassoc, 1);

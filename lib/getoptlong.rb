@@ -35,7 +35,7 @@ class GetoptLong
   #
   # Status codes.
   #
-  STATUS_YET, STATUS_STARTED, STATUS_TERMINATED = 0..2
+  STATUS_YET, STATUS_STARTED, STATUS_TERMINATED = 0, 1, 2
 
   #
   # Error types.

@@ -400,14 +400,12 @@ time_cmp(time1, time2)
 	{
 	    double t;
 
-	    if (tobj1->tv.tv_sec == (time_t)RFLOAT(time2)->value)
-		return INT2FIX(0);
 	    t = (double)tobj1->tv.tv_sec + (double)tobj1->tv.tv_usec*1e-6;
-	    if (tobj1->tv.tv_sec == (time_t)RFLOAT(time2)->value)
-		return INT2FIX(0);
-	    if (tobj1->tv.tv_sec > (time_t)RFLOAT(time2)->value)
+	    if (t > RFLOAT(time2)->value)
 		return INT2FIX(1);
-	    return FIX2INT(-1);
+	    if (t < RFLOAT(time2)->value)
+		return INT2FIX(-1);
+	    return INT2FIX(0);
 	}
     }
 
