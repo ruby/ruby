@@ -549,7 +549,7 @@ rb_dlptr_define_data_type(int argc, VALUE argv[], VALUE self)
       return Qnil;
     }
     else{
-      raise(rb_eArgError, "wrong arguments");
+      rb_raise(rb_eArgError, "wrong arguments");
     };
   };
 
@@ -687,7 +687,7 @@ cary2ary(void *ptr, char t, int len)
       elem = INT2NUM(*((short*)ptr));
       ptr = (char *)ptr + sizeof(short);
     default:
-      raise(rb_eDLTypeError, "unsupported type '%c'", t);
+      rb_raise(rb_eDLTypeError, "unsupported type '%c'", t);
     };
     return elem;
   };
@@ -723,7 +723,7 @@ cary2ary(void *ptr, char t, int len)
       elem = INT2NUM(*((short*)ptr));
       ptr = (char *)ptr + sizeof(short);
     default:
-      raise(rb_eDLTypeError, "unsupported type '%c'", t);
+      rb_raise(rb_eDLTypeError, "unsupported type '%c'", t);
     };
     rb_ary_push(ary, elem);
   };
@@ -746,7 +746,8 @@ rb_dlptr_aref(int argc, VALUE argv[], VALUE self)
   };
 
   if( TYPE(key) == T_FIXNUM || TYPE(key) == T_BIGNUM ){
-    VALUE pass[] = {num};
+    VALUE pass[1];
+    pass[0] = num;
     return rb_dlptr_to_str(1, pass, rb_dlptr_plus(self, key));
   };
 
@@ -782,41 +783,34 @@ rb_dlptr_aref(int argc, VALUE argv[], VALUE self)
 	  DLALIGN(data->ptr,offset,SHORT_ALIGN);
 	  break;
 	default:
-	  raise(rb_eDLTypeError, "unsupported type '%c'", data->stype[i]);
+	  rb_raise(rb_eDLTypeError, "unsupported type '%c'", data->stype[i]);
 	};
 	return cary2ary((char *)data->ptr + offset, data->stype[i], data->ssize[i]);
       };
       switch( data->stype[i] ){
       case 'I':
-      case 'i':
 	offset += sizeof(int) * data->ssize[i];
 	break;
       case 'L':
-      case 'l':
 	offset += sizeof(long) * data->ssize[i];
 	break;
       case 'P':
-      case 'p':
 	offset += sizeof(void*) * data->ssize[i];
 	break;
       case 'F':
-      case 'f':
 	offset += sizeof(float) * data->ssize[i];
 	break;
       case 'D':
-      case 'd':
 	offset += sizeof(double) * data->ssize[i];
 	break;
       case 'C':
-      case 'c':
 	offset += sizeof(char) * data->ssize[i];
 	break;
       case 'H':
-      case 'h':
 	offset += sizeof(short) * data->ssize[i];
 	break;
       default:
-	raise(rb_eDLTypeError, "unsupported type '%c'", data->stype[i]);
+	rb_raise(rb_eDLTypeError, "unsupported type '%c'", data->stype[i]);
       };
     };
     break;
@@ -918,7 +912,7 @@ rb_dlptr_aset(int argc, VALUE argv[], VALUE self)
 	  DLALIGN(data->ptr,offset,SHORT_ALIGN);
 	  break;
 	default:
-	  raise(rb_eDLTypeError, "unsupported type '%c'", data->stype[i]);
+	  rb_raise(rb_eDLTypeError, "unsupported type '%c'", data->stype[i]);
 	};
 	memimg = ary2cary(data->stype[i], val, &memsize);
 	memcpy((char *)data->ptr + offset, memimg, memsize);
@@ -954,7 +948,7 @@ rb_dlptr_aset(int argc, VALUE argv[], VALUE self)
 	offset += sizeof(short) * data->ssize[i];
 	break;
       default:
-	raise(rb_eDLTypeError, "unsupported type '%c'", data->stype[i]);
+	rb_raise(rb_eDLTypeError, "unsupported type '%c'", data->stype[i]);
       };
     };
     return val;
@@ -985,7 +979,7 @@ rb_dlptr_aset(int argc, VALUE argv[], VALUE self)
 	  memsize = sizeof(short) * data->ssize[i];
 	  break;
 	default:
-	  raise(rb_eDLTypeError, "unsupported type '%c'", data->stype[i]);
+	  rb_raise(rb_eDLTypeError, "unsupported type '%c'", data->stype[i]);
 	};
 	memimg = ary2cary(data->stype[i], val, NULL);
 	memcpy(data->ptr, memimg, memsize);

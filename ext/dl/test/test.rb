@@ -237,7 +237,7 @@ set_val = h["test_set_long_value","0"]
 get_val = h["test_get_long_value","L"]
 lval = get_val[][0]
 ptr = h["internal_long_value"]
-ptr.struct!("l", :l)
+ptr.struct!("L", :l)
 assert("get value", :must, ptr["l"] == lval)
 assert("get value", :must, ptr[:l] == lval) unless (Fixnum === :-)
 ptr["l"] = 200

@@ -410,7 +410,7 @@ rb_dlsym_call(int argc, VALUE argv[], VALUE self)
       }
       else{
 	if( TYPE(argv[i]) != T_STRING ){
-	  raise(rb_eDLError, "#%d must be a string",i);
+	  rb_raise(rb_eDLError, "#%d must be a string",i);
 	};
 	ANY2S(args[i]) = DLSTR(RSTRING(argv[i])->ptr);
       };
@@ -418,7 +418,7 @@ rb_dlsym_call(int argc, VALUE argv[], VALUE self)
       break;
     case 's':
       if( TYPE(argv[i]) != T_STRING ){
-	raise(rb_eDLError, "#%d must be a string",i);
+	rb_raise(rb_eDLError, "#%d must be a string",i);
       };
       ANY2S(args[i]) = DLSTR(dlmalloc(RSTRING(argv[i])->len + 1));
       memcpy((char*)(ANY2S(args[i])), RSTRING(argv[i])->ptr, RSTRING(argv[i])->len + 1);
