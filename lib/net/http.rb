@@ -404,7 +404,32 @@ module Net
 
   class HTTP < Protocol
 
-    HTTPVersion = '1.1'
+    #
+    # constructors
+    #
+
+    class << self
+
+      def start( address, port = nil, p_addr = nil, p_port = nil, &block )
+        new( address, port, p_addr, p_port ).start( &block )
+      end
+
+      alias newobj new
+
+      def new( address, port = nil, p_addr = nil, p_port = nil )
+        obj = Proxy(p_addr, p_port).newobj(address, port)
+        setimplversion obj
+        obj
+      end
+
+    end
+
+    def initialize( addr, port = nil )
+      super
+      @curr_http_version = HTTPVersion
+      @seems_1_0_server = false
+    end
+
 
     #
     # connection
@@ -412,11 +437,7 @@ module Net
 
     protocol_param :port, '80'
 
-    def initialize( addr, port = nil )
-      super
-      @curr_http_version = HTTPVersion
-      @seems_1_0_server = false
-    end
+    HTTPVersion = '1.1'
 
     private
 
@@ -457,26 +478,19 @@ module Net
     public
 
     class << self
-
       def Proxy( p_addr, p_port = nil )
-        if p_addr then
-          ProxyMod.create_proxy_class( p_addr, p_port || self.port )
-        else
-          self
-        end
-      end
+        p_addr or return self
 
-      alias orig_new new
-
-      def new( address, port = nil, p_addr = nil, p_port = nil )
-        c = p_addr ? self::Proxy(p_addr, p_port) : self
-        i = c.orig_new( address, port )
-        setimplversion i
-        i
-      end
-
-      def start( address, port = nil, p_addr = nil, p_port = nil, &block )
-        new( address, port, p_addr, p_port ).start( &block )
+        p_port ||= port()
+        mod = ProxyDelta
+        proxyclass = Class.new(self)
+        proxyclass.module_eval {
+            include mod
+            @is_proxy_class = true
+            @proxy_address = p_addr
+            @proxy_port    = p_port
+        }
+        proxyclass
       end
 
       @is_proxy_class = false
@@ -489,7 +503,6 @@ module Net
 
       attr_reader :proxy_address
       attr_reader :proxy_port
-
     end
 
     def proxy?
@@ -507,40 +520,39 @@ module Net
     alias proxyaddr proxy_address
     alias proxyport proxy_port
 
+    private
+
+    # without proxy
+
+    def conn_address
+      address
+    end
+
+    def conn_port
+      port
+    end
+
     def edit_path( path )
       path
     end
 
-
-    module ProxyMod
-
-      def self.create_proxy_class( p_addr, p_port )
-        mod = self
-        klass = Class.new( HTTP )
-        klass.module_eval {
-            include mod
-            @is_proxy_class = true
-            @proxy_address = p_addr
-            @proxy_port    = p_port
-        }
-        klass
-      end
-
+    module ProxyDelta
       private
+
+      # with proxy
     
       def conn_address
-        proxy_address()
+        proxy_address
       end
 
       def conn_port
-        proxy_port()
+        proxy_port
       end
 
       def edit_path( path )
         'http://' + addr_port() + path
       end
-    
-    end   # module ProxyMod
+    end
 
 
     #

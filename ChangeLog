@@ -1,3 +1,10 @@
+Fri Feb  8 05:39:15 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb: HTTP.Proxy should use self for proxy-class's
+	  super class.
+
+	* lib/net/http.rb: initialize HTTP.proxy_port by HTTP.port.
+
 Thu Feb 07 13:44:08 2002  akira yamada  <akira@arika.org>
 
 	* uri/common.rb (URI::join): new method.
