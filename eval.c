@@ -3819,7 +3819,7 @@ assign(self, lhs, val, check)
 	break;
 
       case NODE_CVDECL:
-	if (ruby_verbose && FL_TEST(ruby_cbase, FL_SINGLETON)) {
+	if (RTEST(ruby_verbose) && FL_TEST(ruby_cbase, FL_SINGLETON)) {
 	    rb_warn("declaring singleton class variable");
 	}
 	rb_cvar_declare(cvar_cbase(), lhs->nd_vid, val);
@@ -8533,11 +8533,13 @@ rb_thread_cleanup()
     }
 
     FOREACH_THREAD(th) {
-	if (th != curr_thread && th->status != THREAD_KILLED) {
+	if (th->status != THREAD_KILLED) {
 	    rb_thread_ready(th);
 	    th->gid = 0;
 	    th->priority = 0;
-	    th->status = THREAD_TO_KILL;
+	    if (th != main_thread) {
+		th->status = THREAD_TO_KILL;
+	    }
 	}
     }
     END_FOREACH(th);

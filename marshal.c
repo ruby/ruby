@@ -246,7 +246,7 @@ w_uclass(obj, klass, arg)
     VALUE obj, klass;
     struct dump_arg *arg;
 {
-    if (CLASS_OF(obj) != klass) {
+    if (rb_obj_class(obj) != klass) {
 	w_byte(TYPE_UCLASS, arg);
 	w_unique(rb_class2name(CLASS_OF(obj)), arg);
     }

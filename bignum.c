@@ -597,7 +597,7 @@ rb_big_eq(x, y)
       case T_FLOAT:
 	return (rb_big2dbl(x) == RFLOAT(y)->value)?Qtrue:Qfalse;
       default:
-	return Qfalse;
+	return rb_equal(y, x);
     }
     if (RBIGNUM(x)->sign != RBIGNUM(y)->sign) return Qfalse;
     if (RBIGNUM(x)->len != RBIGNUM(y)->len) return Qfalse;

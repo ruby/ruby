@@ -1026,7 +1026,7 @@ rb_str2cstr(str, len)
 	str = rb_str_to_str(str);
     }
     if (len) *len = RSTRING(str)->len;
-    else if (ruby_verbose && RSTRING(str)->len != strlen(RSTRING(str)->ptr)) {
+    else if (RTEST(ruby_verbose) && RSTRING(str)->len != strlen(RSTRING(str)->ptr)) {
 	rb_warn("string contains \\0 character");
     }
     return RSTRING(str)->ptr;

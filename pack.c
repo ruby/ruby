@@ -1457,11 +1457,11 @@ pack_unpack(str, fmt)
 	  case 'U':
 	    if (len > send - s) len = send - s;
 	    while (len > 0 && s < send) {
-		int alen = len;
+		int alen = send - s;
 		unsigned long l;
 
 		l = utf8_to_uv(s, &alen);
-		s += alen; len -= alen;
+		s += alen; len--;
 		rb_ary_push(ary, rb_uint2inum(l));
 	    }
 	    break;

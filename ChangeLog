@@ -1,6 +1,15 @@
+Mon Apr 29 18:46:42 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* file.c (rb_find_file): load must be done from an abolute path if
+	  $SAFE >= 4.
+
 Sun Apr 28 17:01:56 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* win32/win32.c (insert): fix prototype for ANSI C.
+
+Fri Apr 26 13:41:00 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_s_quote): quote whitespaces for /x cases.
 
 Wed Apr 24 14:21:41 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
@@ -22,10 +31,54 @@ Wed Apr 24 00:42:41 2002  NAKAMURA Usaku <usa@ruby-lang.org>
 	* lib/mkmf.rb (create_makefile): add `{$(srcdir)}' when including depend
 	  file.
 
+Mon Apr 22 09:31:30 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_thread_cleanup): should not terminate main_thread by
+	  Fatal error.
+
+	* regex.c (is_in_list): need to not exclude NUL and NEWLINE.
+
+Sat Apr 20 00:19:13 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_expr_str): wrong backslash escapement.
+
+	* re.c (rb_reg_expr_str): do not escape embedded space
+	  characters.
+
 Fri Apr 19 17:06:48 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/socket/extconf.rb: include <windows.h>, <winsock.h> on _WIN32.
 	
+Fri Apr 19 01:08:20 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_thread_cleanup): current thread may be THREAD_STOPPED,
+	  for example when terminated from signal handler.
+
+Wed Apr 17 16:53:33 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_expr_str): should treat backslash specially in
+	  escaping.
+
+Mon Apr 15 18:12:57 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_big_eq): check `y == x' if y is neither Fixnum,
+	  Bignum, nor Float.
+
+Mon Apr 15 09:27:31 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* pack.c (pack_unpack): should treat 'U' in character unit, not in
+	  byte unit.
+
+Thu Apr 11 23:54:36 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (w_uclass): should check based on rb_obj_class(), not
+	  CLASS_OF().
+
+Thu Apr 11 20:01:44 2002  Masahiro Tomita  <tommy@tmtm.org>
+
+	* io.c (io_write): check error if written data is less than
+	  specified size to detect EPIPE.
+
 Thu Apr 11 18:40:38 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* io.c (read_all): return "" if file.size == 0.
@@ -33,6 +86,22 @@ Thu Apr 11 18:40:38 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 	* random.c (rand_init): add check for initstate(3).
 
 	* configure.in: ditto.
+
+Thu Apr 11 07:57:48 2002  Michal Rokos  <m.rokos@sh.cvut.cz>
+
+	* eval.c (assign): ruby_verbose should be surrounded by RTEST().
+
+	* object.c (rb_str2cstr): ditto.
+
+	* parse.y (void_expr): ditto.
+
+	* parse.y (void_stmts): ditto.
+
+	* variable.c (rb_ivar_get): ditto.
+
+	* variable.c (rb_cvar_set): ditto.
+
+	* variable.c (rb_cvar_get): ditto.
 
 Thu Apr 11 01:55:52 2002  Wakou Aoyama  <wakou@fsinet.or.jp>
 

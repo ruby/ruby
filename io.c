@@ -250,11 +250,11 @@ io_write(io, str)
 		break;
 	n = ptr - RSTRING(str)->ptr;
     }
-    if (n == 0 && ferror(f))
+    if (n != RSTRING(str)->len && ferror(f))
 	rb_sys_fail(fptr->path);
 #else
     n = fwrite(RSTRING(str)->ptr, 1, RSTRING(str)->len, f);
-    if (n == 0 && ferror(f)) {
+    if (n != RSTRING(str)->len && ferror(f)) {
 	rb_sys_fail(fptr->path);
     }
 #endif

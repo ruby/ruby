@@ -4493,7 +4493,7 @@ void_expr(node)
 {
     char *useless = 0;
 
-    if (!ruby_verbose) return;
+    if (!RTEST(ruby_verbose)) return;
     if (!node) return;
 
   again:
@@ -4590,7 +4590,7 @@ static void
 void_stmts(node)
     NODE *node;
 {
-    if (!ruby_verbose) return;
+    if (!RTEST(ruby_verbose)) return;
     if (!node) return;
     if (nd_type(node) != NODE_BLOCK) return;
 

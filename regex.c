@@ -717,8 +717,7 @@ is_in_list(c, b)
     else
       j = k;
   }
-  if (i < size && EXTRACT_MBC(&b[i*8]) <= c
-      && ((unsigned char)c != '\n' && (unsigned char)c != '\0'))
+  if (i < size && EXTRACT_MBC(&b[i*8]) <= c)
     return 1;
   return 0;
 }
