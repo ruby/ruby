@@ -350,7 +350,7 @@ module Net # :nodoc:
       send_command("AUTHENTICATE", auth_type) do |resp|
 	if resp.instance_of?(ContinuationRequest)
 	  data = authenticator.process(resp.data.text.unpack("m")[0])
-	  send_data([data].pack("m").chomp)
+	  send_data([data].pack("m").gsub(/\n/, ""))
 	end
       end
     end

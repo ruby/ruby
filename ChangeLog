@@ -1,3 +1,8 @@
+Wed Dec 24 13:43:34 2003  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (authenticate): remove "\n" from base64 encoded
+	strings.
+
 Wed Dec 24 11:26:41 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/fileutils/test_fileutils.rb: should not create any
