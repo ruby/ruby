@@ -1,3 +1,7 @@
+Sat Nov 22 13:10:10 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb (have_st_ino?): djgpp has valid st_ino.
+
 Sat Nov 22 11:28:48 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (Init_stack): stack region is far smaller than usual if
