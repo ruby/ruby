@@ -25,11 +25,11 @@ $stdout.sync = true
 
 name_ary = name_str.scan(/\s*([^\/,]+)\s*/).collect { |i| i[0].split("=") }
 p name_ary
-name = X509::Name.new(name_ary)
+name = X509::Name.new(name_ary, OpenSSL::ASN1::PRINTABLESTRING)
 
 keypair = nil
 if keypair_file
-  keypair = PKey::RSA.new(File.read(keypair_file))
+  keypair = PKey::RSA.new(File.open(keypair_file).read)
 else
   keypair = PKey::RSA.new(1024) { putc "." }
   puts
@@ -42,9 +42,10 @@ end
 puts "Generating CSR for #{name_ary.inspect}"
 
 req = X509::Request.new
+req.version = 0
 req.subject = name
 req.public_key = keypair.public_key
-req.sign(keypair, Digest::SHA1.new)
+req.sign(keypair, Digest::MD5.new)
 
 puts "Writing #{csrout}..."
 File.open(csrout, "w") do |f|

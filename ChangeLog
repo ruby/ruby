@@ -1,3 +1,8 @@
+Wed Nov  5 23:49:45 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* sample/openssl/gen_csr.rb: there (at least) is a CA which does not
+	  accept DN in UTF8STRING format.  it's a sample.
+
 Wed Nov  5 22:55:16 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* configure.in, eval.c, signal.c: : add '--with-pthread-ext' 
