@@ -36,10 +36,41 @@ unless Socket.const_defined? "AF_INET6"
   class Socket
     AF_INET6 = Object.new
   end
+
   class << IPSocket
+    def valid_v4?(addr)
+      if /\A(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\Z/ =~ addr
+        return $~.captures.all? {|i| i.to_i < 256}
+      end
+      return false
+    end
+
+    def valid_v6?(addr)
+      # IPv6 (normal)
+      return true if /\A[\dA-Fa-f]{1,4}(:[\dA-Fa-f]{1,4})*\Z/ =~ addr
+      return true if /\A[\dA-Fa-f]{1,4}(:[\dA-Fa-f]{1,4})*::([\dA-Fa-f]{1,4}(:[\dA-Fa-f]{1,4})*)?\Z/ =~ addr
+      return true if /\A::([\dA-Fa-f]{1,4}(:[\dA-Fa-f]{1,4})*)?\Z/ =~ addr
+      # IPv6 (IPv4 compat)
+      return true if /\A[\dA-Fa-f]{1,4}(:[\dA-Fa-f]{1,4})*:/ =~ addr && valid_v4?($')
+      return true if /\A[\dA-Fa-f]{1,4}(:[\dA-Fa-f]{1,4})*::([\dA-Fa-f]{1,4}(:[\dA-Fa-f]{1,4})*:)?/ =~ addr && valid_v4?($')
+      return true if /\A::([\dA-Fa-f]{1,4}(:[\dA-Fa-f]{1,4})*:)?/ =~ addr && valid_v4?($')
+
+      false
+    end
+
+    def valid?(addr)
+      valid_v4?(addr) || valid_v6?(addr)
+    end
+
     alias getaddress_orig getaddress
     def getaddress(s)
-      /^::/ =~ s ? s : getaddress_orig(s)
+      if valid?(s)
+        s
+      elsif /\A[-A-Za-z\d.]+\Z/ =~ s
+        getaddress_orig(s)
+      else
+        raise ArgumentError, "invalid address"
+      end
     end
   end
 end
@@ -162,7 +193,26 @@ class IPAddr
 
   # Returns a string containing the IP address representation.
   def to_s
-    return IPSocket.getaddress(to_string)
+    str = to_string
+    return str if ipv4?
+
+    str.gsub!(/\b0{1,3}([\da-f]+)\b/i, '\1')
+    loop do
+      break if str.sub!(/\A0:0:0:0:0:0:0:0\Z/, '::')
+      break if str.sub!(/\b0:0:0:0:0:0:0\b/, ':')
+      break if str.sub!(/\b0:0:0:0:0:0\b/, ':')
+      break if str.sub!(/\b0:0:0:0:0\b/, ':')
+      break if str.sub!(/\b0:0:0:0\b/, ':')
+      break if str.sub!(/\b0:0:0\b/, ':')
+      break if str.sub!(/\b0:0\b/, ':')
+      break
+    end
+
+    if /\A::(ffff:)?([\da-f]{1,4}):([\da-f]{1,4})\Z/i =~ str
+      str = sprintf('::%s%d.%d.%d.%d', $1, $2.hex / 256, $2.hex % 256, $3.hex / 256, $3.hex % 256)
+    end
+
+    str
   end
 
   # Returns a string containing the IP address representation in
@@ -368,7 +418,7 @@ class IPAddr
     #		       Socket::AI_NUMERICHOST)
     begin
       IPSocket.getaddress(prefix)		# test if address is vaild
-    rescue
+    rescue ArgumentError
       raise ArgumentError, "invalid address"
     end
     @addr = @family = nil

@@ -1,3 +1,8 @@
+Thu Dec 18 15:27:59 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* lib/ipaddr.rb (IPSocket::getaddress): merge usa's patch.
+	  [ruby-dev:21678]
+
 Wed Dec 17 15:15:30 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/cgi.rb (CGI::QueryExtension::Value::[]): should work like
