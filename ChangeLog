@@ -1,3 +1,8 @@
+Tue Jul  4 13:20:56 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* ext/extmk.rb.in: make command line must be single-quoted.
+	  $(RUBY_INSTALL_NAME) is command substitution in the POSIX sh.
+
 Tue Jul  4 13:16:02 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* util.c (rb_type): should add T_UNDEF.

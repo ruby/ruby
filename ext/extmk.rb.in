@@ -673,7 +673,7 @@ if $extlist.size > 0
   if RUBY_PLATFORM =~ /m68k-human|beos/
     $extlibs.gsub!("-L/usr/local/lib", "") if $extlibs
   end
-  system format(%[#{$make} #{ruby} EXTOBJS="%s" EXTLIBS="%s"], $extobjs, $extlibs)
+  system format(%[#{$make} #{ruby} EXTOBJS='%s' EXTLIBS='%s'], $extobjs, $extlibs)
 else
   Dir.chdir ".."
   if older(ruby, miniruby)
