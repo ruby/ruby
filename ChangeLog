@@ -1,3 +1,15 @@
+Wed Oct 22 12:53:31 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit/collector/dir.rb (Test::Unit::Collector::Dir#collect_file):
+	  ignore tests which raised LoadError.
+
+	* test/drb/drbtest.rb, test/ruby/test_beginendblock.rb,
+	  test/ruby/test_system.rb: avoid requiring same file twice.
+
+	* test/drb/test_drbssl.rb, test/drb/test_drbunix.rb: should not use
+	  ARGV unless invoked directly.  do not create test cases unless
+	  required libraries are available.
+
 Wed Oct 22 02:31:34 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (ruby_cleanup): should not ignore exit_value in END

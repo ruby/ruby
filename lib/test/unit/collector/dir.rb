@@ -75,6 +75,7 @@ module Test
             require(name)
           end
           find_test_cases(already_gathered).each{|t| add_suite(suites, t.suite)}
+        rescue LoadError, SystemExit
         ensure
           $:.replace(loadpath)
         end

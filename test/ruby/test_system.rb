@@ -1,5 +1,6 @@
 require 'test/unit'
-require "#{File.dirname(File.expand_path(__FILE__))}/envutil"
+$:.unshift(File.dirname(File.expand_path(__FILE__)))
+require 'envutil'
 
 $KCODE = 'none'
 

@@ -1,10 +1,9 @@
-require "#{File.dirname(File.expand_path(__FILE__))}/drbtest"
 require 'test/unit'
 require 'drb/drb'
 require 'drb/extservm'
 require 'timeout'
-
-require "#{File.dirname(File.expand_path(__FILE__))}/../ruby/envutil"
+$:.unshift(File.expand_path("../../ruby", __FILE__))
+require 'envutil'
 
 class DRbService
   @@manager = DRb::ExtServManager.new
@@ -68,11 +67,11 @@ module DRbCore
     ro = DRbObject.new(nil, 'druby://localhost:12345')
     assert_equal('druby://localhost:12345', ro.__drburi)
     assert_equal(nil, ro.__drbref)
-    
+
     ro = DRbObject.new_with_uri('druby://localhost:12345')
     assert_equal('druby://localhost:12345', ro.__drburi)
     assert_equal(nil, ro.__drbref)
-    
+
     ro = DRbObject.new_with_uri('druby://localhost:12345?foobar')
     assert_equal('druby://localhost:12345', ro.__drburi)
     assert_equal(DRb::DRbURIOption.new('foobar'), ro.__drbref)
@@ -88,7 +87,7 @@ module DRbCore
 
   def test_01_02_loop
     onecky = Onecky.new('3')
-    50.times do 
+    50.times do
       assert_equal(6, @there.sample(onecky, 1, 2))
       ary = @there.to_a
       assert_kind_of(DRb::DRbObject, ary)
@@ -166,14 +165,14 @@ module DRbCore
       begin
 	@there.method_missing(:eval)
       rescue NameError
-	assert_match(/^private method `eval'/, $!.message)
+	assert_match(/^private method \`eval\'/, $!.message)
       end
     }
     assert_nothing_raised() {
       begin
 	@there.method_missing(:undefined_method_test)
       rescue NameError
-	assert_match(/^undefined method `undefined_method_test'/, $!.message)
+	assert_match(/^undefined method \`undefined_method_test\'/, $!.message)
       end
     }
     assert_raises(SecurityError) do
@@ -184,7 +183,7 @@ module DRbCore
   def test_08_here
     ro = DRbObject.new(nil, DRb.uri)
     assert_kind_of(String, ro.to_s)
-    
+
     ro = DRbObject.new_with_uri(DRb.uri)
     assert_kind_of(String, ro.to_s)
   end

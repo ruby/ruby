@@ -1,4 +1,5 @@
-require "#{File.dirname(File.expand_path(__FILE__))}/drbtest"
+$:.unshift(File.dirname(File.expand_path(__FILE__)))
+require 'drbtest'
 require 'drb/ssl'
 
 class DRbSSLService < DRbService
@@ -22,7 +23,8 @@ class DRbSSLService < DRbService
       [ ["C","JP"], ["O","Foo.DRuby.Org"], ["CN", "Sample"] ]
   end
 
-  @server = DRb::DRbServer.new(ARGV.shift || 'drbssl://:0', @@manager, config)
+  uri = ARGV.shift if $0 == __FILE__
+  @server = DRb::DRbServer.new(uri || 'drbssl://:0', @@manager, config)
 end
 
 class TestDRbSSLCore < Test::Unit::TestCase

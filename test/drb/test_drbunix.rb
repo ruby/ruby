@@ -1,11 +1,14 @@
-require "#{File.dirname(File.expand_path(__FILE__))}/drbtest"
+$:.unshift(File.dirname(File.expand_path(__FILE__)))
+require 'drbtest'
 require 'drb/unix'
 
 class DRbUNIXService < DRbService
   %w(ut_drb_drbunix.rb ut_array_drbunix.rb).each do |nm|
     DRb::ExtServManager.command[nm] = "#{@@ruby} #{@@dir}/#{nm}"
   end
-  @server = DRb::DRbServer.new(ARGV.shift || 'drbunix:', @@manager, {})
+
+  uri = ARGV.shift if $0 == __FILE__
+  @server = DRb::DRbServer.new(uri || 'drbunix:', @@manager, {})
 end
 
 class TestDRbUNIXCore < Test::Unit::TestCase
