@@ -41,7 +41,7 @@
 ***********************************************************************/
 /* $Id$ */
 #define NKF_VERSION "2.0.4"
-#define NKF_RELEASE_DATE "2005-03-04"
+#define NKF_RELEASE_DATE "2005-03-05"
 #include "config.h"
 
 static char *CopyRight =
@@ -743,6 +743,9 @@ main(argc, argv)
     } else {
       int nfiles = argc;
       while (argc--) {
+	    is_inputcode_mixed = FALSE;
+	    is_inputcode_set   = FALSE;
+	    input_codename = "";
           if ((fin = fopen((origfname = *argv++), "r")) == NULL) {
               perror(*--argv);
               return(-1);
@@ -1246,7 +1249,7 @@ options(cp)
 	    }
             continue;
         case 'm':   /* MIME support */
-            mime_decode_f = TRUE;
+            /* mime_decode_f = TRUE; */ /* this has too large side effects... */
             if (*cp=='B'||*cp=='Q') {
                 mime_decode_mode = *cp++;
                 mimebuf_f = FIXED_MIME;
@@ -1255,6 +1258,7 @@ options(cp)
             } else if (*cp=='S') {
                 mime_f = STRICT_MIME; cp++;
             } else if (*cp=='0') {
+                mime_decode_f = FALSE;
                 mime_f = FALSE; cp++;
             }
             continue;
@@ -1884,6 +1888,7 @@ kanji_convert(f)
 {
     int    c1,
                     c2, c3;
+    int is_8bit = FALSE;
 
     module_connection();
     c2 = 0;
@@ -1948,6 +1953,7 @@ kanji_convert(f)
                 /* 8 bit code */
                 if (!estab_f && !iso8859_f) {
                     /* not established yet */
+		    if (!is_8bit) is_8bit = TRUE;
                     c2 = c1;
                     NEXT;
                 } else { /* estab_f==TRUE */
@@ -2198,12 +2204,17 @@ kanji_convert(f)
     /* epilogue */
     (*iconv)(EOF, 0, 0);
     if (!is_inputcode_set)
-	set_input_codename(
-	    iconv == e_iconv ? "EUC-JP" :
-	    iconv == s_iconv ? "Shift_JIS" :
-	    iconv == w_iconv ? "UTF-8" :
-	    iconv == w_iconv16 ? "UTF-16" :
-	    "ASCII");
+    {
+	if (is_8bit) {
+	    struct input_code *p = input_code_list;
+	    struct input_code *result = p;
+	    while (p->name){
+		if (p->score < result->score) result = p;
+		++p;
+	    }
+	    set_input_codename(result->name);
+	}
+    }
     return 1;
 }
 
