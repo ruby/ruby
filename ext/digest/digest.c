@@ -96,6 +96,12 @@ rb_digest_base_s_digest(class, str)
     if (class == cDigest_Base)
 	rb_raise(rb_eNotImpError, "Digest::Base is an abstract class");
 
+#ifdef StringValue
+    StringValue(str);
+#else
+    Check_Type(str, T_STRING);
+#endif
+
     algo = get_digest_base_metadata(class);
 
     pctx = xmalloc(algo->ctx_size);
@@ -128,6 +134,12 @@ rb_digest_base_s_hexdigest(class, str)
 
     if (class == cDigest_Base)
 	rb_raise(rb_eNotImpError, "Digest::Base is an abstract class");
+
+#ifdef StringValue
+    StringValue(str);
+#else
+    Check_Type(str, T_STRING);
+#endif
 
     algo = get_digest_base_metadata(class);
 
