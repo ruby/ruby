@@ -25,7 +25,7 @@ Init_version()
 void
 show_version()
 {
-    fprintf(stderr, "ruby - version %s (%s)\n", RUBY_VERSION, RUBY_PLATFORM);
+    fprintf(stderr, "ruby %s(%s) [%s]\n", RUBY_VERSION, VERSION_DATE, RUBY_PLATFORM);
 }
 
 void

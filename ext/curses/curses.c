@@ -32,7 +32,8 @@ struct windata {
     WINDOW *window;
 };
 
-#define NUM2CHAR(x) (char)NUM2INT(x)
+#define NUM2CHAR(x) ((TYPE(x) == T_STRING)&&(RSTRING(x)->len>=1))?\
+    RSTRING(x)->ptr[0]:(char)NUM2INT(x)
 #define CHAR2FIX(x) INT2FIX((int)x)
 
 static void
@@ -46,13 +47,7 @@ no_window()
     if (winp->window == 0) no_window();\
 }
 
-static void
-curses_err()
-{
-    Fail("curses error");
-}
-
-#define CHECK(c) if ((c)==ERR) {curses_err();}
+#define CHECK(c) c
 
 static void
 free_window(winp)
@@ -99,7 +94,7 @@ curses_init_screen()
 static VALUE
 curses_stdscr()
 {
-    if (!rb_stdscr) curses_init_screen();
+    if (rb_stdscr == 0) curses_init_screen();
     return rb_stdscr;
 }
 
@@ -107,7 +102,7 @@ curses_stdscr()
 static VALUE
 curses_close_screen()
 {
-    CHECK(endwin());
+    endwin();
     return Qnil;
 }
 
@@ -139,7 +134,7 @@ static VALUE
 curses_refresh(obj)
     VALUE obj;
 {
-    CHECK(refresh());
+    refresh();
     return Qnil;
 }
 
@@ -148,7 +143,7 @@ static VALUE
 curses_doupdate(obj)
     VALUE obj;
 {
-    CHECK(doupdate());
+    doupdate();
     return Qnil;
 }
 
@@ -157,7 +152,7 @@ static VALUE
 curses_echo(obj)
     VALUE obj;
 {
-    CHECK(echo());
+    echo();
     return Qnil;
 }
 
@@ -166,7 +161,7 @@ static VALUE
 curses_noecho(obj)
     VALUE obj;
 {
-    CHECK(noecho());
+    noecho();
     return Qnil;
 }
 
@@ -175,7 +170,7 @@ static VALUE
 curses_raw(obj)
     VALUE obj;
 {
-    CHECK(raw());
+    raw();
     return Qnil;
 }
 
@@ -184,7 +179,7 @@ static VALUE
 curses_noraw(obj)
     VALUE obj;
 {
-    CHECK(noraw());
+    noraw();
     return Qnil;
 }
 
@@ -193,7 +188,7 @@ static VALUE
 curses_cbreak(obj)
     VALUE obj;
 {
-    CHECK(cbreak());
+    cbreak();
     return Qnil;
 }
 
@@ -202,7 +197,7 @@ static VALUE
 curses_nocbreak(obj)
     VALUE obj;
 {
-    CHECK(nocbreak());
+    nocbreak();
     return Qnil;
 }
 
@@ -211,7 +206,7 @@ static VALUE
 curses_nl(obj)
     VALUE obj;
 {
-    CHECK(nl());
+    nl();
     return Qnil;
 }
 
@@ -220,7 +215,7 @@ static VALUE
 curses_nonl(obj)
     VALUE obj;
 {
-    CHECK(nonl());
+    nonl();
     return Qnil;
 }
 
@@ -251,7 +246,7 @@ curses_ungetch(obj, ch)
     VALUE ch;
 {
 #ifdef HAVE_UNGETCH
-    CHECK(ungetch(NUM2INT(ch)));
+    ungetch(NUM2INT(ch));
 #else
     rb_notimplement();
 #endif
@@ -265,7 +260,7 @@ curses_setpos(obj, y, x)
     VALUE y;
     VALUE x;
 {
-    CHECK(move(NUM2INT(y), NUM2INT(x)));
+    move(NUM2INT(y), NUM2INT(x));
     return Qnil;
 }
 
@@ -301,7 +296,7 @@ curses_addch(obj, ch)
     VALUE obj;
     VALUE ch;
 {
-    CHECK(addch(NUM2CHAR(ch)));
+    addch(NUM2CHAR(ch));
     return Qnil;
 }
 
@@ -311,7 +306,7 @@ curses_insch(obj, ch)
     VALUE obj;
     VALUE ch;
 {
-    CHECK(insch(NUM2CHAR(ch)));
+    insch(NUM2CHAR(ch));
     return Qnil;
 }
 
@@ -339,7 +334,7 @@ curses_getstr(obj)
     VALUE obj;
 {
     char rtn[1024]; /* This should be big enough.. I hope */
-    CHECK(getstr(rtn));
+    getstr(rtn);
     return str_taint(str_new2(rtn));
 }
 
@@ -348,7 +343,7 @@ static VALUE
 curses_delch(obj)
     VALUE obj;
 {
-    CHECK(delch());
+    delch();
     return Qnil;
 }
 
@@ -357,7 +352,7 @@ static VALUE
 curses_deleteln(obj)
     VALUE obj;
 {
-    CHECK(deleteln());
+    deleteln();
     return Qnil;
 }
 
@@ -443,7 +438,7 @@ window_refresh(obj)
     struct windata *winp;
     
     GetWINDOW(obj, winp);
-    CHECK(wrefresh(winp->window));
+    wrefresh(winp->window);
     
     return Qnil;
 }
@@ -474,7 +469,7 @@ window_move(obj, y, x)
     struct windata *winp;
     
     GetWINDOW(obj, winp);
-    CHECK(mvwin(winp->window, NUM2INT(y), NUM2INT(x)));
+    mvwin(winp->window, NUM2INT(y), NUM2INT(x));
 
     return Qnil;
 }
@@ -489,7 +484,7 @@ window_setpos(obj, y, x)
     struct windata *winp;
     
     GetWINDOW(obj, winp);
-    CHECK(wmove(winp->window, NUM2INT(y), NUM2INT(x)));
+    wmove(winp->window, NUM2INT(y), NUM2INT(x));
     return Qnil;
 }
 
@@ -639,7 +634,7 @@ window_addch(obj, ch)
     struct windata *winp;
     
     GetWINDOW(obj, winp);
-    CHECK(waddch(winp->window, NUM2CHAR(ch)));
+    waddch(winp->window, NUM2CHAR(ch));
     
     return Qnil;
 }
@@ -653,7 +648,7 @@ window_insch(obj, ch)
     struct windata *winp;
     
     GetWINDOW(obj, winp);
-    CHECK(winsch(winp->window, NUM2CHAR(ch)));
+    winsch(winp->window, NUM2CHAR(ch));
     
     return Qnil;
 }
@@ -667,7 +662,7 @@ window_addstr(obj, str)
     struct windata *winp;
     
     GetWINDOW(obj, winp);
-    CHECK(waddstr(winp->window, RSTRING(str)->ptr));
+    waddstr(winp->window, RSTRING(str)->ptr);
     
     return Qnil;
 }
@@ -702,7 +697,7 @@ window_getstr(obj)
     char rtn[1024]; /* This should be big enough.. I hope */
     
     GetWINDOW(obj, winp);
-    CHECK(wgetstr(winp->window, rtn));
+    wgetstr(winp->window, rtn);
     return str_taint(str_new2(rtn));
 }
 
@@ -714,7 +709,7 @@ window_delch(obj)
     struct windata *winp;
     
     GetWINDOW(obj, winp);
-    CHECK(wdelch(winp->window));
+    wdelch(winp->window);
     return Qnil;
 }
 
@@ -726,7 +721,7 @@ window_deleteln(obj)
     struct windata *winp;
     
     GetWINDOW(obj, winp);
-    CHECK(wdeleteln(winp->window));
+    wdeleteln(winp->window);
     return Qnil;
 }
 

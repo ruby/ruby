@@ -22,28 +22,27 @@ extern VALUE cModule;
 
 VALUE
 class_new(super)
-    struct RClass *super;
+    VALUE super;
 {
-    NEWOBJ(cls, struct RClass);
-    OBJSETUP(cls, cClass, T_CLASS);
+    NEWOBJ(klass, struct RClass);
+    OBJSETUP(klass, cClass, T_CLASS);
 
-    cls->super = super;
-    cls->iv_tbl = 0;
-    cls->m_tbl = 0;		/* safe GC */
-    cls->m_tbl = new_idhash();
+    klass->super = super;
+    klass->iv_tbl = 0;
+    klass->m_tbl = 0;		/* safe GC */
+    klass->m_tbl = new_idhash();
 
-    return (VALUE)cls;
+    return (VALUE)klass;
 }
 
 VALUE
 singleton_class_new(super)
-    struct RClass *super;
+    VALUE super;
 {
-    struct RClass *cls = (struct RClass*)class_new(super);
+    VALUE klass = class_new(super);
 
-    FL_SET(cls, FL_SINGLETON);
-
-    return (VALUE)cls;
+    FL_SET(klass, FL_SINGLETON);
+    return klass;
 }
 
 static int
@@ -57,40 +56,50 @@ clone_method(mid, body, tbl)
 }
 
 VALUE
-singleton_class_clone(class)
-    struct RClass *class;
+singleton_class_clone(klass)
+    VALUE klass;
 {
-    if (!FL_TEST(class, FL_SINGLETON))
-	return (VALUE)class;
+    if (!FL_TEST(klass, FL_SINGLETON))
+	return klass;
     else {
 	/* copy singleton(unnamed) class */
 	NEWOBJ(clone, struct RClass);
-	CLONESETUP(clone, class);
+	CLONESETUP(clone, klass);
 
-	clone->super = class->super;
+	clone->super = RCLASS(klass)->super;
 	clone->iv_tbl = 0;
 	clone->m_tbl = 0;
 	clone->m_tbl = new_idhash();
-	st_foreach(class->m_tbl, clone_method, clone->m_tbl);
+	st_foreach(RCLASS(klass)->m_tbl, clone_method, clone->m_tbl);
 	FL_SET(clone, FL_SINGLETON);
 	return (VALUE)clone;
     }
 }
 
+void
+singleton_class_attached(klass, obj)
+    VALUE klass, obj;
+{
+    if (FL_TEST(klass, FL_SINGLETON))
+	rb_iv_set(klass, "__attached__", obj);
+}
+
 VALUE
 rb_define_class_id(id, super)
     ID id;
-    struct RBasic *super;
+    VALUE super;
 {
-    struct RClass *cls;
+    VALUE klass;
 
-    if (!super) super = (struct RBasic*)cClass;
-    cls = (struct RClass*)class_new(super);
-    rb_name_class(cls, id);
+    if (!super) super = cObject;
+    klass = class_new(super);
+    rb_name_class(klass, id);
     /* make metaclass */
-    RBASIC(cls)->class = singleton_class_new(super->class);
+    RBASIC(klass)->class = singleton_class_new(RBASIC(super)->class);
+    singleton_class_attached(RBASIC(klass)->class, klass);
+    rb_funcall(super, rb_intern("inherited"), 1, klass);
 
-    return (VALUE)cls;
+    return (VALUE)klass;
 }
 
 VALUE
@@ -98,14 +107,14 @@ rb_define_class(name, super)
     char *name;
     VALUE super;
 {
-    VALUE class;
+    VALUE klass;
     ID id;
 
     id = rb_intern(name);
-    class = rb_define_class_id(id, super);
-    st_add_direct(rb_class_tbl, id, class);
+    klass = rb_define_class_id(id, super);
+    st_add_direct(rb_class_tbl, id, klass);
 
-    return class;
+    return klass;
 }
 
 VALUE
@@ -114,15 +123,15 @@ rb_define_class_under(under, name, super)
     char *name;
     VALUE super;
 {
-    VALUE class;
+    VALUE klass;
     ID id;
 
     id = rb_intern(name);
-    class = rb_define_class_id(id, super);
-    rb_const_set(under, id, class);
-    rb_set_class_path(class, under, name);
+    klass = rb_define_class_id(id, super);
+    rb_const_set(under, id, klass);
+    rb_set_class_path(klass, under, name);
 
-    return class;
+    return klass;
 }
 
 VALUE
@@ -144,11 +153,11 @@ rb_define_module_id(id)
     ID id;
 {
     extern st_table *rb_class_tbl;
-    struct RClass *mdl = (struct RClass*)module_new();
+    VALUE mdl = module_new();
 
     rb_name_class(mdl, id);
 
-    return (VALUE)mdl;
+    return mdl;
 }
 
 VALUE
@@ -181,31 +190,31 @@ rb_define_module_under(under, name)
     return module;
 }
 
-static struct RClass *
+static VALUE
 include_class_new(module, super)
-    struct RClass *module, *super;
+    VALUE module, super;
 {
-    NEWOBJ(cls, struct RClass);
-    OBJSETUP(cls, cClass, T_ICLASS);
+    NEWOBJ(klass, struct RClass);
+    OBJSETUP(klass, cClass, T_ICLASS);
 
-    cls->m_tbl = module->m_tbl;
-    cls->iv_tbl = module->iv_tbl;
-    cls->super = super;
+    klass->m_tbl = RCLASS(module)->m_tbl;
+    klass->iv_tbl = RCLASS(module)->iv_tbl;
+    klass->super = super;
     if (TYPE(module) == T_ICLASS) {
-	RBASIC(cls)->class = RBASIC(module)->class;
+	RBASIC(klass)->class = RBASIC(module)->class;
     }
     else {
-	RBASIC(cls)->class = (VALUE)module;
+	RBASIC(klass)->class = module;
     }
 
-    return cls;
+    return (VALUE)klass;
 }
 
 void
-rb_include_module(class, module)
-    VALUE class, module;
+rb_include_module(klass, module)
+    VALUE klass, module;
 {
-    struct RClass *p;
+    VALUE p;
 
     if (NIL_P(module)) return;
 
@@ -217,71 +226,233 @@ rb_include_module(class, module)
 	Check_Type(module, T_MODULE);
     }
 
-    if (class == module) return;
+    if (klass == module) return;
     rb_clear_cache();
  
     while (module) {
 	/* ignore if the module included already in superclasses */
-	for (p = RCLASS(class)->super; p; p = p->super) {
-	    if (BUILTIN_TYPE(p) == T_ICLASS && p->m_tbl == RCLASS(module)->m_tbl)
+	for (p = RCLASS(klass)->super; p; p = RCLASS(p)->super) {
+	    if (BUILTIN_TYPE(p) == T_ICLASS &&
+		RCLASS(p)->m_tbl == RCLASS(module)->m_tbl)
 		return;
 	}
 
-	RCLASS(class)->super = include_class_new(module, RCLASS(class)->super);
-	class = (VALUE)RCLASS(class)->super;
-	module = (VALUE)RCLASS(module)->super;
+	RCLASS(klass)->super =
+	    include_class_new(module, RCLASS(klass)->super);
+	klass = RCLASS(klass)->super;
+	module = RCLASS(module)->super;
     }
 }
 
+VALUE
+mod_included_modules(mod)
+    VALUE mod;
+{
+    VALUE ary = ary_new();
+    VALUE p;
+
+    for (p = RCLASS(mod)->super; p; p = RCLASS(p)->super) {
+	if (BUILTIN_TYPE(p) == T_ICLASS) {
+	    ary_push(ary, RBASIC(p)->class);
+	}
+    }
+    return ary;
+}
+
+VALUE
+mod_ancestors(mod)
+    VALUE mod;
+{
+    VALUE ary = ary_new();
+    VALUE p;
+
+    for (p = mod; p; p = RCLASS(p)->super) {
+	if (BUILTIN_TYPE(p) == T_ICLASS) {
+	    ary_push(ary, RBASIC(p)->class);
+	}
+	else {
+	    ary_push(ary, p);
+	}
+    }
+    return ary;
+}
+
+static int
+ins_methods_i(key, body, ary)
+    ID key;
+    NODE *body;
+    VALUE ary;
+{
+    if (!body->nd_noex) {
+	VALUE name = str_new2(rb_id2name(key));
+
+	if (!ary_includes(ary, name)) {
+	    if (!body->nd_body) {
+		ary_push(ary, Qnil);
+	    }
+	    ary_push(ary, name);
+	}
+    }
+    else if (nd_type(body->nd_body) == NODE_ZSUPER) {
+	ary_push(ary, Qnil);
+	ary_push(ary, str_new2(rb_id2name(key)));
+    }
+    return ST_CONTINUE;
+}
+
+static int
+ins_methods_priv_i(key, body, ary)
+    ID key;
+    NODE *body;
+    VALUE ary;
+{
+    if (!body->nd_body) {
+	ary_push(ary, Qnil);
+	ary_push(ary, str_new2(rb_id2name(key)));
+    }
+    else if (body->nd_noex) {
+	VALUE name = str_new2(rb_id2name(key));
+
+	if (!ary_includes(ary, name)) {
+	    ary_push(ary, name);
+	}
+    }
+    else if (nd_type(body->nd_body) == NODE_ZSUPER) {
+	ary_push(ary, Qnil);
+	ary_push(ary, str_new2(rb_id2name(key)));
+    }
+    return ST_CONTINUE;
+}
+
+static VALUE
+method_list(mod, option, func)
+    VALUE mod;
+    int option;
+    int (*func)();
+{
+    VALUE ary;
+    VALUE klass;
+    VALUE *p, *q, *pend;
+
+    ary = ary_new();
+    for (klass = mod; klass; klass = RCLASS(klass)->super) {
+	st_foreach(RCLASS(klass)->m_tbl, func, ary);
+	if (!option) break;
+    }
+    p = q = RARRAY(ary)->ptr; pend = p + RARRAY(ary)->len;
+    while (p < pend) {
+	if (*p == Qnil) {
+	    p+=2;
+	    continue;
+	}
+	*q++ = *p++;
+    }
+    RARRAY(ary)->len = q - RARRAY(ary)->ptr;
+    return ary;
+}
+
+VALUE
+class_instance_methods(argc, argv, mod)
+    int argc;
+    VALUE *argv;
+    VALUE mod;
+{
+    VALUE option;
+
+    rb_scan_args(argc, argv, "01", &option);
+    return method_list(mod, RTEST(option), ins_methods_i);
+}
+
+VALUE
+class_private_instance_methods(argc, argv, mod)
+    int argc;
+    VALUE *argv;
+    VALUE mod;
+{
+    VALUE option;
+
+    rb_scan_args(argc, argv, "01", &option);
+    return method_list(mod, RTEST(option), ins_methods_priv_i);
+}
+
+VALUE
+obj_singleton_methods(obj)
+    VALUE obj;
+{
+    VALUE ary;
+    VALUE klass;
+    VALUE *p, *q, *pend;
+
+    ary = ary_new();
+    klass = CLASS_OF(obj);
+    while (klass && FL_TEST(klass, FL_SINGLETON)) {
+	st_foreach(RCLASS(klass)->m_tbl, ins_methods_i, ary);
+	klass = RCLASS(klass)->super;
+    }
+    p = q = RARRAY(ary)->ptr; pend = p + RARRAY(ary)->len;
+    while (p < pend) {
+	if (*p == Qnil) {
+	    p+=2;
+	    continue;
+	}
+	*q++ = *p++;
+    }
+    RARRAY(ary)->len = q - RARRAY(ary)->ptr;
+
+    return ary;
+}
+
 void
-rb_define_method_id(class, name, func, argc)
-    struct RClass *class;
+rb_define_method_id(klass, name, func, argc)
+    VALUE klass;
     ID name;
     VALUE (*func)();
     int argc;
 {
-    rb_add_method(class, name, NEW_CFUNC(func, argc), NOEX_PUBLIC);
+    rb_add_method(klass, name, NEW_CFUNC(func, argc), NOEX_PUBLIC);
 }
 
 void
-rb_define_method(class, name, func, argc)
-    VALUE class;
+rb_define_method(klass, name, func, argc)
+    VALUE klass;
     char *name;
     VALUE (*func)();
     int argc;
 {
-    rb_add_method(class, rb_intern(name), NEW_CFUNC(func, argc), NOEX_PUBLIC);
+    rb_add_method(klass, rb_intern(name), NEW_CFUNC(func, argc), NOEX_PUBLIC);
 }
 
 void
-rb_undef_method(class, name)
-    VALUE class;
+rb_undef_method(klass, name)
+    VALUE klass;
     char *name;
 {
-    rb_add_method(class, rb_intern(name), 0, NOEX_PUBLIC);
+    rb_add_method(klass, rb_intern(name), 0, NOEX_PUBLIC);
 }
 
 void
-rb_define_private_method(class, name, func, argc)
-    struct RClass *class;
+rb_define_private_method(klass, name, func, argc)
+    VALUE klass;
     char *name;
     VALUE (*func)();
     int argc;
 {
-    rb_add_method(class, rb_intern(name), NEW_CFUNC(func, argc), NOEX_PRIVATE);
+    rb_add_method(klass, rb_intern(name), NEW_CFUNC(func, argc), NOEX_PRIVATE);
 }
 
 VALUE
 rb_singleton_class(obj)
-    struct RBasic *obj;
+    VALUE obj;
 {
-    if (rb_special_const_p((VALUE)obj)) {
+    if (rb_special_const_p(obj)) {
 	TypeError("cannot define singleton");
     }
-    if (FL_TEST(obj->class, FL_SINGLETON)) {
-	return (VALUE)obj->class;
+    if (FL_TEST(RBASIC(obj)->class, FL_SINGLETON)) {
+	return (VALUE)RBASIC(obj)->class;
     }
-    return obj->class = singleton_class_new(obj->class);
+    RBASIC(obj)->class = singleton_class_new(RBASIC(obj)->class);
+    singleton_class_attached(RBASIC(obj)->class, obj);
+    return RBASIC(obj)->class;
 }
 
 void
@@ -305,7 +476,7 @@ rb_define_module_function(module, name, func, argc)
     rb_define_singleton_method(module, name, func, argc);
 }
 
-VALUE mKernel;
+extern VALUE mKernel;
 
 void
 rb_define_global_function(name, func, argc)
@@ -317,18 +488,18 @@ rb_define_global_function(name, func, argc)
 }
 
 void
-rb_define_alias(class, name1, name2)
-    VALUE class;
+rb_define_alias(klass, name1, name2)
+    VALUE klass;
     char *name1, *name2;
 {
-    rb_alias(class, rb_intern(name1), rb_intern(name2));
+    rb_alias(klass, rb_intern(name1), rb_intern(name2));
 }
 
 void
-rb_define_attr(class, id, pub)
-    VALUE class;
+rb_define_attr(klass, id, read, write)
+    VALUE klass;
     ID id;
-    int pub;
+    int read, write;
 {
     char *name;
     char *buf;
@@ -341,11 +512,11 @@ rb_define_attr(class, id, pub)
     attreq = rb_intern(buf);
     sprintf(buf, "@%s", name);
     attriv = rb_intern(buf);
-    if (!rb_method_boundp(class, attr, NOEX_PRIVATE)) {
-	rb_add_method(class, attr, NEW_IVAR(attriv), 0);
+    if (read) {
+	rb_add_method(klass, attr, NEW_IVAR(attriv), 0);
     }
-    if (pub && !rb_method_boundp(class, attreq, NOEX_PRIVATE)) {
-	rb_add_method(class, attreq, NEW_ATTRSET(attriv), 0);
+    if (write) {
+	rb_add_method(klass, attreq, NEW_ATTRSET(attriv), 0);
     }
 }
 

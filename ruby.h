@@ -21,6 +21,12 @@
 # include <stdlib.h>
 #endif
 
+#ifdef HAVE_STRING_H
+# include <string.h>
+#else
+# include <strings.h>
+#endif
+
 #ifndef __STDC__
 # define volatile
 # ifdef __GNUC__
@@ -41,11 +47,19 @@
 #pragma alloca
 #endif
 
-typedef unsigned int UINT;
-typedef UINT VALUE;
-typedef UINT ID;
-
 typedef unsigned short USHORT;
+typedef unsigned long UINT;
+
+#if SIZEOF_INT == SIZEOF_VOIDP
+typedef int INT;
+#elif SIZEOF_LONG == SIZEOF_VOIDP
+typedef long INT;
+#else
+---->> ruby requires sizeof(void*) == sizeof(int/long) to be compiled. <<----
+#endif
+typedef UINT VALUE;
+typedef unsigned int ID;
+
 typedef unsigned char UCHAR;
 
 #ifdef __STDC__
@@ -71,11 +85,11 @@ typedef unsigned char UCHAR;
 #endif
 
 #define FIXNUM_MAX (LONG_MAX>>1)
-#define FIXNUM_MIN RSHIFT((long)LONG_MIN,1)
+#define FIXNUM_MIN RSHIFT((INT)LONG_MIN,1)
 
 #define FIXNUM_FLAG 0x01
-#define INT2FIX(i) (VALUE)(((int)(i))<<1 | FIXNUM_FLAG)
-VALUE int2inum _((int));
+#define INT2FIX(i) (VALUE)(((INT)(i))<<1 | FIXNUM_FLAG)
+VALUE int2inum _((INT));
 #define INT2NUM(v) int2inum(v)
 
 #if (-1==(((-1)<<1)&FIXNUM_FLAG)>>1)
@@ -83,22 +97,24 @@ VALUE int2inum _((int));
 #else
 # define RSHIFT(x,y) (((x)<0) ? ~((~(x))>>y) : (x)>>y)
 #endif
-#define FIX2INT(x) RSHIFT((int)x,1)
+#define FIX2INT(x) RSHIFT((INT)x,1)
 
-#define FIX2UINT(f) ((UINT)(f)>>1)
-#define FIXNUM_P(f) (((int)(f))&FIXNUM_FLAG)
+#define FIX2UINT(f) (((UINT)(f))>>1)
+#define FIXNUM_P(f) (((long)(f))&FIXNUM_FLAG)
 #define POSFIXABLE(f) ((f) <= FIXNUM_MAX)
 #define NEGFIXABLE(f) ((f) >= FIXNUM_MIN)
 #define FIXABLE(f) (POSFIXABLE(f) && NEGFIXABLE(f))
 
 /* special contants - i.e. non-zero and non-fixnum constants */
 #undef FALSE 
-#define FALSE 0
 #undef TRUE
-#define TRUE  2
-#define Qnil 4
+#define FALSE  0
+#define TRUE   2
+#define NIL    4
+#define Qfalse 0
+#define Qtrue  2
+#define Qnil   4
 
-int rb_test_false_or_nil _((VALUE));
 # define RTEST(v) rb_test_false_or_nil((VALUE)(v))
 #define NIL_P(v) ((VALUE)(v) == Qnil)
 
@@ -135,7 +151,6 @@ VALUE rb_class_of _((VALUE));
 
 #define BUILTIN_TYPE(x) (((struct RBasic*)(x))->flags & T_MASK)
 
-int rb_type _((VALUE));
 #define TYPE(x) rb_type((VALUE)(x))
 
 void rb_check_type _((VALUE,int));
@@ -144,17 +159,22 @@ void rb_check_safe_str _((VALUE));
 #define Check_SafeStr(v) rb_check_safe_str((VALUE)(v))
 void rb_secure _((int));
 
-#define NUM2INT(x) (FIXNUM_P(x)?FIX2INT(x):num2int(x))
-VALUE num2fix _((VALUE));
 int   num2int _((VALUE));
+#define NUM2INT(x) (FIXNUM_P(x)?FIX2INT(x):num2int(x))
 
+double num2dbl _((VALUE));
+#define NUM2DBL(x) num2dbl((VALUE)(x))
+
+VALUE rb_newobj _((void));
 #define NEWOBJ(obj,type) type *obj = (type*)rb_newobj()
 #define OBJSETUP(obj,c,t) {\
     RBASIC(obj)->class = (c);\
     RBASIC(obj)->flags = (t);\
 }
-#define CLONESETUP(obj1,obj2) \
-    OBJSETUP(obj1,RBASIC(obj2)->class,RBASIC(obj2)->flags);
+#define CLONESETUP(clone,obj) {\
+    OBJSETUP(clone,singleton_class_clone(RBASIC(obj)->class),RBASIC(obj)->flags);\
+    singleton_class_attached(RBASIC(clone)->class, (VALUE)clone);\
+}
 
 struct RBasic {
     UINT flags;
@@ -170,7 +190,7 @@ struct RClass {
     struct RBasic basic;
     struct st_table *iv_tbl;
     struct st_table *m_tbl;
-    struct RClass *super;
+    VALUE super;
 };
 
 struct RFloat {
@@ -182,7 +202,7 @@ struct RString {
     struct RBasic basic;
     UINT len;
     UCHAR *ptr;
-    struct RString *orig;
+    VALUE orig;
 };
 
 struct RArray {
@@ -278,13 +298,44 @@ struct RBignum {
 
 #define FL_UMASK  (0x7f<<FL_USHIFT)
 
-int rb_special_const_p _((VALUE));
 #define FL_ABLE(x) (!(FIXNUM_P(x)||rb_special_const_p((VALUE)(x))))
 #define FL_TEST(x,f) (FL_ABLE(x)?(RBASIC(x)->flags&(f)):0)
 #define FL_SET(x,f) if (FL_ABLE(x)) {RBASIC(x)->flags |= (f);}
 #define FL_UNSET(x,f) if(FL_ABLE(x)){RBASIC(x)->flags &= ~(f);}
 #define FL_REVERSE(x,f) if(FL_ABLE(x)){RBASIC(x)->flags ^= f;}
 
+#if defined(__GNUC__) && __GNUC__ >= 2 && !defined(RUBY_NO_INLINE)
+extern __inline__ int
+rb_type(VALUE obj)
+{
+    if (FIXNUM_P(obj)) return T_FIXNUM;
+    if (obj == Qnil) return T_NIL;
+    if (obj == FALSE) return T_FALSE;
+    if (obj == TRUE) return T_TRUE;
+
+    return BUILTIN_TYPE(obj);
+}
+
+extern __inline__ int
+rb_special_const_p(VALUE obj)
+{
+    return (FIXNUM_P(obj)||obj == Qnil||obj == FALSE||obj == TRUE)?TRUE:FALSE;
+}
+
+extern __inline__ int
+rb_test_false_or_nil(VALUE v)
+{
+    return (v != Qnil) && (v != FALSE);
+}
+#else
+int rb_type _((VALUE));
+int rb_special_const_p _((VALUE));
+int rb_test_false_or_nil _((VALUE));
+#endif
+
+void *xmalloc _((unsigned long));
+void *xcalloc _((unsigned long,unsigned long));
+void *xrealloc _((void*,unsigned long));
 #define ALLOC_N(type,n) (type*)xmalloc(sizeof(type)*(n))
 #define ALLOC(type) (type*)xmalloc(sizeof(type))
 #define REALLOC_N(var,type,n) (var)=(type*)xrealloc((char*)(var),sizeof(type)*(n))
@@ -295,51 +346,53 @@ int rb_special_const_p _((VALUE));
 #define MEMCPY(p1,p2,type,n) memcpy((p1), (p2), sizeof(type)*(n))
 #define MEMMOVE(p1,p2,type,n) memmove((p1), (p2), sizeof(type)*(n))
 
-void *xmalloc _((unsigned long));
-void *xcalloc _((unsigned long,unsigned long));
-void *xrealloc _((void*,unsigned long));
-
 VALUE rb_define_class _((char*,VALUE));
 VALUE rb_define_module _((char*));
+VALUE rb_define_class_under _((VALUE, char *, VALUE));
+VALUE rb_define_module_under _((VALUE, char *));
+
 void rb_include_module _((VALUE,VALUE));
 void rb_extend_object _((VALUE,VALUE));
 
 void rb_define_variable _((char*,VALUE*));
 void rb_define_virtual_variable _((char*,VALUE(*)(),void(*)()));
 void rb_define_hooked_variable _((char*,VALUE*,VALUE(*)(),void(*)()));
+void rb_define_readonly_variable _((char*,VALUE*));
 void rb_define_const _((VALUE,char*,VALUE));
 void rb_define_global_const _((char*,VALUE));
 
 void rb_define_method _((VALUE,char*,VALUE(*)(),int));
-void rb_define_singleton_method _((VALUE,char*,VALUE(*)(),int));
+void rb_define_function _((VALUE,char*,VALUE(*)(),int));
+void rb_define_module_function _((VALUE,char*,VALUE(*)(),int));
+void rb_define_global_function _((char *, VALUE (*)(), int));
+
 void rb_undef_method _((VALUE,char*));
 void rb_define_alias _((VALUE,char*,char*));
-void rb_define_attr _((VALUE,ID,int));
+void rb_define_attr _((VALUE,ID,int,int));
 
 ID rb_intern _((char*));
 char *rb_id2name _((ID));
 ID rb_to_id _((VALUE));
 
 char *rb_class2name _((VALUE));
-int rb_method_boundp _((VALUE,ID,int));
+
+void rb_p _((VALUE));
 
 VALUE rb_eval_string _((char*));
 VALUE rb_funcall();
 int rb_scan_args();
 
-VALUE rb_iv_get();
-VALUE rb_iv_set();
-void rb_const_set();
-VALUE rb_const_get();
-
-VALUE rb_yield();
-int iterator_p();
+VALUE rb_iv_get _((VALUE, char *));
+VALUE rb_iv_set _((VALUE, char *, VALUE));
+VALUE rb_const_get _((VALUE, ID));
+VALUE rb_const_get_at _((VALUE, ID));
+void rb_const_set _((VALUE, ID, VALUE));
 
 VALUE rb_equal _((VALUE,VALUE));
 
-extern int verbose, debug;
+extern VALUE verbose, debug;
 
-int rb_safe_level();
+int rb_safe_level _((void));
 void rb_set_safe_level _((int));
 
 #ifdef __GNUC__
@@ -350,7 +403,7 @@ volatile voidfn Fatal;
 volatile voidfn Bug;
 volatile voidfn WrongType;
 volatile voidfn rb_sys_fail;
-volatile voidfn rb_break;
+volatile voidfn rb_iter_break;
 volatile voidfn rb_exit;
 volatile voidfn rb_fatal;
 volatile voidfn rb_raise;
@@ -361,16 +414,25 @@ void Fail();
 void Fatal();
 void Bug();
 void WrongType();
-void rb_sys_fail();
-void rb_break();
-void rb_exit();
-void rb_fatal();
-void rb_raise();
-void rb_notimplement();
+void rb_sys_fail _((char *));
+void rb_iter_break _((void));
+void rb_exit _((int));
+void rb_raise _((VALUE));
+void rb_fatal _((VALUE));
+void rb_notimplement _((void));
 #endif
 
 void Error();
 void Warning();
+
+VALUE rb_each _((VALUE));
+VALUE rb_yield _((VALUE));
+int iterator_p _((void));
+VALUE rb_iterate();
+VALUE rb_rescue();
+VALUE rb_ensure();
+
+#include "intern.h"
 
 #if defined(EXTLIB) && defined(USE_DLN_A_OUT)
 /* hook for external modules */

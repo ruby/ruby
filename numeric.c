@@ -12,11 +12,6 @@
 
 #include "ruby.h"
 #include <math.h>
-#if defined (HAVE_STRING_H)
-#  include <string.h>
-#else
-#  include <strings.h>
-#endif
 
 static ID coerce;
 static ID to_i;
@@ -42,7 +37,7 @@ static VALUE
 num_coerce(x, y)
     VALUE x, y;
 {
-    return assoc_new(f_float(x,x),f_float(y,y));
+    return assoc_new(rb_Float(x),rb_Float(y));
 }
 
 VALUE
@@ -116,7 +111,7 @@ num_chr(num)
     VALUE num;
 {
     char c;
-    int i = NUM2INT(num);
+    INT i = NUM2INT(num);
 
     if (i < 0 || 0xff < i)
 	Fail("%d out of char range", i);
@@ -147,11 +142,11 @@ float_new(d)
 
 static VALUE
 flo_to_s(flt)
-    struct RFloat *flt;
+    VALUE flt;
 {
     char buf[32];
 
-    sprintf(buf, "%g", flt->value);
+    sprintf(buf, "%g", RFLOAT(flt)->value);
     if (strchr(buf, '.') == 0) {
 	int len = strlen(buf);
 	char *ind = strchr(buf, 'e');
@@ -172,27 +167,27 @@ static VALUE
 flo_coerce(x, y)
     VALUE x, y;
 {
-    return assoc_new(f_float(x, y), x);
+    return assoc_new(rb_Float(y), x);
 }
 
 static VALUE
 flo_uminus(flt)
-    struct RFloat *flt;
+    VALUE flt;
 {
-    return float_new(-flt->value);
+    return float_new(-RFLOAT(flt)->value);
 }
 
 static VALUE
 flo_plus(x, y)
-    struct RFloat *x, *y;
+    VALUE x, y;
 {
     switch (TYPE(y)) {
       case T_FIXNUM:
-	return float_new(x->value + (double)FIX2INT(y));
+	return float_new(RFLOAT(x)->value + (double)FIX2INT(y));
       case T_BIGNUM:
-	return float_new(x->value + big2dbl(y));
+	return float_new(RFLOAT(x)->value + big2dbl(y));
       case T_FLOAT:
-	return float_new(x->value + y->value);
+	return float_new(RFLOAT(x)->value + RFLOAT(y)->value);
       case T_STRING:
 	return str_plus(obj_as_string(x), y);
       default:
@@ -202,15 +197,15 @@ flo_plus(x, y)
 
 static VALUE
 flo_minus(x, y)
-    struct RFloat *x, *y;
+    VALUE x, y;
 {
     switch (TYPE(y)) {
       case T_FIXNUM:
-	return float_new(x->value - (double)FIX2INT(y));
+	return float_new(RFLOAT(x)->value - (double)FIX2INT(y));
       case T_BIGNUM:
-	return float_new(x->value - big2dbl(y));
+	return float_new(RFLOAT(x)->value - big2dbl(y));
       case T_FLOAT:
-	return float_new(x->value - y->value);
+	return float_new(RFLOAT(x)->value - RFLOAT(y)->value);
       default:
 	return num_coerce_bin(x, y);
     }
@@ -218,17 +213,17 @@ flo_minus(x, y)
 
 static VALUE
 flo_mul(x, y)
-    struct RFloat *x, *y;
+    VALUE x, y;
 {
     switch (TYPE(y)) {
       case T_FIXNUM:
-	return float_new(x->value * (double)FIX2INT(y));
+	return float_new(RFLOAT(x)->value * (double)FIX2INT(y));
       case T_BIGNUM:
-	return float_new(x->value * big2dbl(y));
+	return float_new(RFLOAT(x)->value * big2dbl(y));
       case T_FLOAT:
-	return float_new(x->value * y->value);
+	return float_new(RFLOAT(x)->value * RFLOAT(y)->value);
       case T_STRING:
-	return str_times(y, INT2FIX((int)x->value));
+	return str_times(y, INT2FIX((int)RFLOAT(x)->value));
       default:
 	return num_coerce_bin(x, y);
     }
@@ -236,23 +231,23 @@ flo_mul(x, y)
 
 static VALUE
 flo_div(x, y)
-    struct RFloat *x, *y;
+    VALUE x, y;
 {
-    int f_y;
+    INT f_y;
     double d;
 
     switch (TYPE(y)) {
       case T_FIXNUM:
 	f_y = FIX2INT(y);
 	if (f_y == 0) num_zerodiv();
-	return float_new(x->value / (double)f_y);
+	return float_new(RFLOAT(x)->value / (double)f_y);
       case T_BIGNUM:
 	d = big2dbl(y);
 	if (d == 0.0) num_zerodiv();
-	return float_new(x->value / d);
+	return float_new(RFLOAT(x)->value / d);
       case T_FLOAT:
-	if (y->value == 0.0) num_zerodiv();
-	return float_new(x->value / y->value);
+	if (RFLOAT(y)->value == 0.0) num_zerodiv();
+	return float_new(RFLOAT(x)->value / RFLOAT(y)->value);
       default:
 	return num_coerce_bin(x, y);
     }
@@ -260,7 +255,7 @@ flo_div(x, y)
 
 static VALUE
 flo_mod(x, y)
-    struct RFloat *x, *y;
+    VALUE x, y;
 {
     double value;
 
@@ -272,16 +267,16 @@ flo_mod(x, y)
 	value = big2dbl(y);
 	break;
       case T_FLOAT:
-	value = y->value;
+	value = RFLOAT(y)->value;
 	break;
       default:
 	return num_coerce_bin(x, y);
     }
 #ifdef HAVE_FMOD
-    value = fmod(x->value, value);
+    value = fmod(RFLOAT(x)->value, value);
 #else
     {
-	double value1 = x->value;
+	double value1 = RFLOAT(x)->value;
 	double value2;
 
 	modf(value1/value, &value2);
@@ -294,15 +289,15 @@ flo_mod(x, y)
 
 VALUE
 flo_pow(x, y)
-    struct RFloat *x, *y;
+    VALUE x, y;
 {
     switch (TYPE(y)) {
       case T_FIXNUM:
-        return float_new(pow(x->value, (double)FIX2INT(y)));
+        return float_new(pow(RFLOAT(x)->value, (double)FIX2INT(y)));
       case T_BIGNUM:
-	return float_new(pow(x->value, big2dbl(y)));
+	return float_new(pow(RFLOAT(x)->value, big2dbl(y)));
       case T_FLOAT:
-        return float_new(pow(x->value, y->value));
+        return float_new(pow(RFLOAT(x)->value, RFLOAT(y)->value));
       default:
         return num_coerce_bin(x, y);
     }
@@ -327,16 +322,16 @@ num_equal(x, y)
 
 static VALUE
 flo_eq(x, y)
-    struct RFloat *x, *y;
+    VALUE x, y;
 {
     switch (TYPE(y)) {
       case T_FIXNUM:
-	if (x->value == FIX2INT(y)) return TRUE;
+	if (RFLOAT(x)->value == FIX2INT(y)) return TRUE;
 	return FALSE;
       case T_BIGNUM:
-	return (x->value == big2dbl(y))?TRUE:FALSE;
+	return (RFLOAT(x)->value == big2dbl(y))?TRUE:FALSE;
       case T_FLOAT:
-	return (x->value == y->value)?TRUE:FALSE;
+	return (RFLOAT(x)->value == RFLOAT(y)->value)?TRUE:FALSE;
       default:
 	return num_equal(x, y);
     }
@@ -344,13 +339,13 @@ flo_eq(x, y)
 
 static VALUE
 flo_hash(num)
-    struct RFloat *num;
+    VALUE num;
 {
     double d;
     char *c;
     int i, hash;
 
-    d = num->value;
+    d = RFLOAT(num)->value;
     c = (char*)&d;
     for (hash=0, i=0; i<sizeof(double);i++) {
 	hash += c[i] * 971;
@@ -361,11 +356,11 @@ flo_hash(num)
 
 static VALUE
 flo_cmp(x, y)
-    struct RFloat *x, *y;
+    VALUE x, y;
 {
     double a, b;
 
-    a = x->value;
+    a = RFLOAT(x)->value;
     switch (TYPE(y)) {
       case T_FIXNUM:
 	b = (double)FIX2INT(y);
@@ -376,7 +371,7 @@ flo_cmp(x, y)
 	break;
 
       case T_FLOAT:
-	b = y->value;
+	b = RFLOAT(y)->value;
 	break;
 
       default:
@@ -389,19 +384,20 @@ flo_cmp(x, y)
 
 static VALUE
 flo_eql(x, y)
-    struct RFloat *x, *y;
+    VALUE x, y;
 {
     if (TYPE(y) == T_FLOAT) {
-	if (x->value == y->value) return TRUE;
+	if (RFLOAT(x)->value == RFLOAT(y)->value) return TRUE;
     }
+    return FALSE;
 }
 
 static VALUE
 flo_to_i(num)
-    struct RFloat *num;
+    VALUE num;
 {
-    double f = num->value;
-    int val;
+    double f = RFLOAT(num)->value;
+    INT val;
 
     if (!FIXABLE(f)) {
 	return dbl2big(f);
@@ -419,9 +415,9 @@ flo_to_f(num)
 
 static VALUE
 flo_abs(flt)
-    struct RFloat *flt;
+    VALUE flt;
 {
-    double val = fabs(flt->value);
+    double val = fabs(RFLOAT(flt)->value);
     return float_new(val);
 }
 
@@ -472,7 +468,7 @@ VALUE
 num2fix(val)
     VALUE val;
 {
-    int v;
+    INT v;
 
     if (NIL_P(val)) return INT2FIX(0);
     switch (TYPE(val)) {
@@ -515,12 +511,12 @@ fix2str(x, base)
     VALUE x;
     int base;
 {
-    char fmt[3], buf[12];
+    char fmt[4], buf[22];
 
-    fmt[0] = '%'; fmt[2] = '\0';
-    if (base == 10) fmt[1] = 'd';
-    else if (base == 16) fmt[1] = 'x';
-    else if (base == 8) fmt[1] = 'o';
+    fmt[0] = '%'; fmt[1] = 'l'; fmt[3] = '\0';
+    if (base == 10) fmt[2] = 'd';
+    else if (base == 16) fmt[2] = 'x';
+    else if (base == 8) fmt[2] = 'o';
     else Fatal("fixnum cannot treat base %d", base);
 
     sprintf(buf, fmt, FIX2INT(x));
@@ -536,13 +532,12 @@ fix_to_s(in)
 
 static VALUE
 fix_plus(x, y)
-    VALUE x;
-    struct RFloat *y;
+    VALUE x, y;
 {
     switch (TYPE(y)) {
       case T_FIXNUM:
 	{
-	    int a, b, c;
+	    INT a, b, c;
 	    VALUE r;
 
 	    a = FIX2INT(x);
@@ -556,7 +551,7 @@ fix_plus(x, y)
 	    return r;
 	}
       case T_FLOAT:
-	return float_new((double)FIX2INT(x) + y->value);
+	return float_new((double)FIX2INT(x) + RFLOAT(y)->value);
       default:
 	return num_coerce_bin(x, y);
     }
@@ -564,13 +559,12 @@ fix_plus(x, y)
 
 static VALUE
 fix_minus(x, y)
-    VALUE x;
-    struct RFloat *y;
+    VALUE x, y;
 {
     switch (TYPE(y)) {
       case T_FIXNUM:
 	{
-	    int a, b, c;
+	    INT a, b, c;
 	    VALUE r;
 
 	    a = FIX2INT(x);
@@ -584,7 +578,7 @@ fix_minus(x, y)
 	    return r;
 	}
       case T_FLOAT:
-	return float_new((double)FIX2INT(x) - y->value);
+	return float_new((double)FIX2INT(x) - RFLOAT(y)->value);
       default:
 	return num_coerce_bin(x, y);
     }
@@ -592,13 +586,12 @@ fix_minus(x, y)
 
 static VALUE
 fix_mul(x, y)
-    VALUE x;
-    struct RFloat *y;
+    VALUE x, y;
 {
     switch (TYPE(y)) {
       case T_FIXNUM:
 	{
-	    int a, b, c;
+	    INT a, b, c;
 	    VALUE r;
 
 	    a = FIX2INT(x);
@@ -614,7 +607,7 @@ fix_mul(x, y)
 	    return r;
 	}
       case T_FLOAT:
-	return float_new((double)FIX2INT(x) * y->value);
+	return float_new((double)FIX2INT(x) * RFLOAT(y)->value);
       default:
 	return num_coerce_bin(x, y);
     }
@@ -622,10 +615,9 @@ fix_mul(x, y)
 
 static VALUE
 fix_div(x, y)
-    VALUE x;
-    struct RFloat *y;
+    VALUE x, y;
 {
-    int i;
+    INT i;
 
     if (TYPE(y) == T_FIXNUM) {
 	i = FIX2INT(y);
@@ -640,7 +632,7 @@ static VALUE
 fix_mod(x, y)
     VALUE x, y;
 {
-    int i;
+    INT i;
 
     if (TYPE(y) == T_FIXNUM) {
 	i = FIX2INT(y);
@@ -656,7 +648,7 @@ fix_pow(x, y)
     VALUE x, y;
 {
     if (FIXNUM_P(y)) {
-	int a, b;
+	INT a, b;
 
 	b = FIX2INT(y);
 	if (b == 0) return INT2FIX(1);
@@ -689,7 +681,7 @@ fix_cmp(x, y)
     VALUE x, y;
 {
     if (FIXNUM_P(y)) {
-	int a = FIX2INT(x), b = FIX2INT(y);
+	INT a = FIX2INT(x), b = FIX2INT(y);
 
 	if (a == b) return INT2FIX(0);
 	if (a > b) return INT2FIX(1);
@@ -705,7 +697,7 @@ fix_gt(x, y)
     VALUE x, y;
 {
     if (FIXNUM_P(y)) {
-	int a = FIX2INT(x), b = FIX2INT(y);
+	INT a = FIX2INT(x), b = FIX2INT(y);
 
 	if (a > b) return TRUE;
 	return FALSE;
@@ -720,7 +712,7 @@ fix_ge(x, y)
     VALUE x, y;
 {
     if (FIXNUM_P(y)) {
-	int a = FIX2INT(x), b = FIX2INT(y);
+	INT a = FIX2INT(x), b = FIX2INT(y);
 
 	if (a >= b) return TRUE;
 	return FALSE;
@@ -735,7 +727,7 @@ fix_lt(x, y)
     VALUE x, y;
 {
     if (FIXNUM_P(y)) {
-	int a = FIX2INT(x), b = FIX2INT(y);
+	INT a = FIX2INT(x), b = FIX2INT(y);
 
 	if (a < b) return TRUE;
 	return FALSE;
@@ -750,7 +742,7 @@ fix_le(x, y)
     VALUE x, y;
 {
     if (FIXNUM_P(y)) {
-	int a = FIX2INT(x), b = FIX2INT(y);
+	INT a = FIX2INT(x), b = FIX2INT(y);
 
 	if (a <= b) return TRUE;
 	return FALSE;
@@ -876,14 +868,14 @@ static VALUE
 fix_type(fix)
     VALUE fix;
 {
-    return str_new2("Fixnum");
+    return cFixnum;
 }
 
 static VALUE
 fix_abs(fix)
     VALUE fix;
 {
-    int i = FIX2INT(fix);
+    INT i = FIX2INT(fix);
 
     if (i < 0) i = -i;
 
@@ -903,7 +895,7 @@ static VALUE
 fix_succ(fix)
     VALUE fix;
 {
-    int i = FIX2INT(fix) + 1;
+    INT i = FIX2INT(fix) + 1;
 
     return int2inum(i);
 }
@@ -912,7 +904,7 @@ static VALUE
 fix_size(fix)
     VALUE fix;
 {
-    return INT2FIX(sizeof(VALUE));
+    return INT2FIX(sizeof(INT));
 }
 
 VALUE
@@ -951,7 +943,7 @@ num_step(from, to, step)
     ID cmp;
 
     if (step == INT2FIX(0)) {
-	IndexError("step cannot be 0");
+	ArgError("step cannot be 0");
     }
 
     if (RTEST(rb_funcall(step, '>', 1, INT2FIX(0)))) {
@@ -986,7 +978,7 @@ VALUE
 fix_upto(from, to)
     VALUE from, to;
 {
-    int i, end;
+    INT i, end;
 
     if (!FIXNUM_P(to)) return num_upto(from, to);
     end = FIX2INT(to);
@@ -1001,7 +993,7 @@ static VALUE
 fix_downto(from, to)
     VALUE from, to;
 {
-    int i, end;
+    INT i, end;
 
     if (!FIXNUM_P(to)) return num_downto(from, to);
     end = FIX2INT(to);
@@ -1016,7 +1008,7 @@ static VALUE
 fix_step(from, to, step)
     VALUE from, to, step;
 {
-    int i, end, diff;
+    INT i, end, diff;
 
     if (!FIXNUM_P(to) || !FIXNUM_P(step))
 	return num_step(from, to, step);
@@ -1044,7 +1036,7 @@ static VALUE
 fix_dotimes(num)
     VALUE num;
 {
-    int i, end;
+    INT i, end;
 
     end = FIX2INT(num);
     for (i=0; i<end; i++) {

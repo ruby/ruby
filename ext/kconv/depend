@@ -1,1 +1,1 @@
-kconv.o: kconv.c ../../ruby.h ../../config.h ../../defines.h
+kconv.o: kconv.c $(hdrdir)/ruby.h $(hdrdir)/config.h $(hdrdir)/defines.h

@@ -14,16 +14,8 @@
 #include <math.h>
 
 VALUE mMath;
-VALUE float_new();
-VALUE f_float();
 
-#define Need_Float(x) \
-if (FIXNUM_P(x)) {\
-    (x) = (struct RFloat*)float_new((double)FIX2INT(x));\
-} else {\
-    (x) = (struct RFloat*)f_float(x, x);\
-}
-
+#define Need_Float(x) (x) = rb_Float(x)
 #define Need_Float2(x,y) {\
     Need_Float(x);\
     Need_Float(y);\
@@ -31,79 +23,71 @@ if (FIXNUM_P(x)) {\
 
 static VALUE
 math_atan2(obj, x, y)
-    VALUE obj;
-    struct RFloat *x, *y;
+    VALUE obj, x, y;
 {
     Need_Float2(x, y);
-    return float_new(atan2(x->value, y->value));
+    return float_new(atan2(RFLOAT(x)->value, RFLOAT(y)->value));
 }
 
 static VALUE
 math_cos(obj, x)
-    VALUE obj;
-    struct RFloat *x;
+    VALUE obj, x;
 {
     Need_Float(x);
 
-    return float_new(cos(x->value));
+    return float_new(cos(RFLOAT(x)->value));
 }
 
 static VALUE
 math_sin(obj, x)
-    VALUE obj;
-    struct RFloat *x;
+    VALUE obj, x;
 {
     Need_Float(x);
 
-    return float_new(sin(x->value));
+    return float_new(sin(RFLOAT(x)->value));
 }
 
 static VALUE
 math_tan(obj, x)
-    VALUE obj;
-    struct RFloat *x;
+    VALUE obj, x;
 {
     Need_Float(x);
 
-    return float_new(tan(x->value));
+    return float_new(tan(RFLOAT(x)->value));
 }
 
 static VALUE
 math_exp(obj, x)
-    VALUE obj;
-    struct RFloat *x;
+    VALUE obj, x;
 {
     Need_Float(x);
-    return float_new(exp(x->value));
+    return float_new(exp(RFLOAT(x)->value));
 }
 
 static VALUE
 math_log(obj, x)
-    VALUE obj;
-    struct RFloat *x;
+    VALUE obj, x;
 {
     Need_Float(x);
-    return float_new(log(x->value));
+    return float_new(log(RFLOAT(x)->value));
 }
 
 static VALUE
 math_log10(obj, x)
-    VALUE obj;
-    struct RFloat *x;
+    VALUE obj, x;
 {
     Need_Float(x);
-    return float_new(log10(x->value));
+    return float_new(log10(RFLOAT(x)->value));
 }
 
 static VALUE
 math_sqrt(obj, x)
-    VALUE obj;
-    struct RFloat *x;
+    VALUE obj, x;
 {
     Need_Float(x);
 
-    if (x->value < 0.0) ArgError("square root for negative number");
-    return float_new(sqrt(x->value));
+    if (RFLOAT(x)->value < 0.0) ArgError("square root for negative number");
+    return float_new(sqrt(RFLOAT(x)->value));
 }
 
 void

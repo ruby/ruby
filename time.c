@@ -13,10 +13,6 @@
 #include "ruby.h"
 #include <sys/types.h>
 
-#ifdef HAVE_STRING_H
-# include <string.h>
-#endif
-
 #include <time.h>
 #ifndef NT
 #ifdef HAVE_SYS_TIME_H
@@ -438,20 +434,6 @@ time_asctime(time)
 }
 
 static VALUE
-time_coerce(time1, time2)
-    VALUE time1, time2;
-{
-    if (TYPE(time2) == T_FLOAT) {
-	double d = RFLOAT(time2)->value;
-	unsigned int i = (unsigned int) d;
-
-	return assoc_new(time_new(i, (int)((d - (double)i)*1e6)),time1);
-    }
-
-    return assoc_new(time_new(NUM2INT(time2), 0), time1);
-}
-
-static VALUE
 time_plus(time1, time2)
     VALUE time1, time2;
 {
@@ -673,13 +655,40 @@ time_to_a(time)
     return ary;
 }
 
+#define SMALLBUF 100
+static int
+rb_strftime(buf, format, time)
+    char ** volatile buf;
+    char * volatile format;
+    struct tm * volatile time;
+{
+    volatile int i;
+    int len;
+
+    len = strftime(*buf, SMALLBUF, format, time);
+    if (len != 0) return len;
+    for (i=1024; i<8192; i+=1024) {
+	*buf = xmalloc(i);
+	len = strftime(*buf, i-1, format, time);
+	if (len == 0) {
+	    free(*buf);
+	    continue;
+	}
+	return len;
+    }
+
+    ArgError("bad strftime format or result too long");
+}
+
 static VALUE
 time_strftime(time, format)
     VALUE time, format;
 {
     struct time_object *tobj;
-    char buf[100];
+    char buffer[SMALLBUF];
+    char *buf = buffer;
     int len;
+    VALUE str;
 
     Check_Type(format, T_STRING);
     GetTimeval(time, tobj);
@@ -687,22 +696,23 @@ time_strftime(time, format)
 	time_localtime(time);
     }
     if (strlen(RSTRING(format)->ptr) < RSTRING(format)->len) {
-	/* Ruby string contains \0. */
-	VALUE str;
+	/* Ruby string may contain \0's. */
 	int l;
 	char *p = RSTRING(format)->ptr, *pe = p + RSTRING(format)->len;
 
 	str = str_new(0, 0);
 	while (p < pe) {
-	    len = strftime(buf, 100, p, &(tobj->tm));
+	    len = rb_strftime(&buf, p, &(tobj->tm));
 	    str_cat(str, buf, len);
-	    l = strlen(p);
-	    p += l + 1;
+	    p += strlen(p) + 1;
+	    if (len > SMALLBUF) free(buf);
 	}
 	return str;
     }
-    len = strftime(buf, 100, RSTRING(format)->ptr, &(tobj->tm));
-    return str_new(buf, len);
+    len = rb_strftime(&buf, RSTRING(format)->ptr, &(tobj->tm));
+    str = str_new(buf, len);
+    if (len > SMALLBUF) free(buf);
+    return str;
 }
 
 static VALUE
@@ -767,7 +777,6 @@ Init_Time()
     rb_define_method(cTime, "to_s", time_asctime, 0);
     rb_define_method(cTime, "inspect", time_asctime, 0);
     rb_define_method(cTime, "to_a", time_to_a, 0);
-    rb_define_method(cTime, "coerce", time_coerce, 1);
 
     rb_define_method(cTime, "+", time_plus, 1);
     rb_define_method(cTime, "-", time_minus, 1);
@@ -776,7 +785,9 @@ Init_Time()
     rb_define_method(cTime, "min", time_min, 0);
     rb_define_method(cTime, "hour", time_hour, 0);
     rb_define_method(cTime, "mday", time_mday, 0);
+    rb_define_method(cTime, "day", time_mday, 0);
     rb_define_method(cTime, "mon", time_mon, 0);
+    rb_define_method(cTime, "month", time_mon, 0);
     rb_define_method(cTime, "year", time_year, 0);
     rb_define_method(cTime, "wday", time_wday, 0);
     rb_define_method(cTime, "yday", time_yday, 0);

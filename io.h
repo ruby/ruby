@@ -48,6 +48,11 @@ typedef struct OpenFile {
 
 #define GetWriteFile(fptr) (((fptr)->f2) ? (fptr)->f2 : (fptr)->f)
 
-FILE *rb_fopen();
+FILE *rb_fopen _((char *, char *));
+FILE *rb_fdopen _((int, char *));
+void io_writable _((OpenFile *));
+void io_readable _((OpenFile *));
+void io_fptr_finalize _((OpenFile *));
+void io_unbuffered _((OpenFile *));
 
 #endif

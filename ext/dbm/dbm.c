@@ -122,17 +122,15 @@ fdbm_fetch(obj, keystr)
 }
 
 static VALUE
-fdbm_indexes(obj, args)
-    VALUE obj;
-    struct RArray *args;
+fdbm_indexes(obj, ag)
+    VALUE obj, ag;
 {
     VALUE *p, *pend;
     VALUE new;
     int i = 0;
+    struct RArray *args = RARRAY(rb_Array(ag));
 
-    args = (struct RArray*)rb_to_a(args);
     new = ary_new2(args->len);
-
     p = args->ptr; pend = p + args->len;
     while (p < pend) {
 	ary_push(new, fdbm_fetch(obj, *p++));

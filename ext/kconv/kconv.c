@@ -88,6 +88,9 @@ static char *Patchlevel =
 #define	_JIS	1
 #define	_EUC	2
 #define	_SJIS	3
+#define	_BINARY	4
+#define	_NOCONV	4
+#define	_UNKNOWN	_AUTO
 
 #if (defined(__TURBOC__) || defined(LSI_C)) && !defined(MSDOS)
 #define MSDOS
@@ -596,7 +599,7 @@ do_kconv(i, o, siz, out_code, in_code)
     outptr = o;		/* output buffer */
     outsiz = siz;	/* output buffer size */
     outlen = 0;		/* current length of output string */
-    x0201_f = FALSE;    /* don't assume JISX0201 kana */
+    x0201_f = TRUE;     /* don't assume JISX0201 kana */
     rot_f = FALSE;      /* rot14/43 mode */
     input_f = FALSE;    /* non fixed input code  */
     alpha_f = FALSE;    /* convert JISX0208 alphbet to ASCII */
@@ -1774,7 +1777,7 @@ kconv_kconv(argc, argv)
     int argc;
     VALUE *argv;
 {
-    struct RString *src, *dst;
+    VALUE src, dst;
     VALUE in, out;
     int in_code, out_code;
 
@@ -1786,63 +1789,134 @@ kconv_kconv(argc, argv)
     }
     else {
 	out_code = NUM2INT(out);
+	if (out_code == _NOCONV) return (VALUE)src;
     }
     if (NIL_P(in)) {
 	in_code = _AUTO;
     }
     else {
 	in_code = NUM2INT(in);
+	if (in_code == _NOCONV) return (VALUE)src;
     }
 
-    dst = RSTRING(str_new(0, src->len*3+10)); /* large enough? */
-    dst->len = do_kconv(src->ptr, dst->ptr, dst->len, out_code, in_code);
+    dst = str_new(0, RSTRING(src)->len*3+10); /* large enough? */
+    RSTRING(dst)->len = do_kconv(RSTRING(src)->ptr, RSTRING(dst)->ptr, RSTRING(dst)->len, out_code, in_code);
 
-    return (VALUE)dst;
+    return dst;
 }
 
 static VALUE
 kconv_tojis(obj, src)
-    VALUE obj;
-    struct RString *src;
+    VALUE obj, src;
 {
-    struct RString *dst;
+    VALUE dst;
 
     Check_Type(src, T_STRING);
 
-    dst = RSTRING(str_new(0, src->len*3+10)); /* large enough? */
-    dst->len = do_kconv(src->ptr, dst->ptr, dst->len, _JIS, _AUTO);
+    dst = str_new(0, RSTRING(src)->len*3+10); /* large enough? */
+    RSTRING(dst)->len = do_kconv(RSTRING(src)->ptr, RSTRING(dst)->ptr, RSTRING(dst)->len, _JIS, _AUTO);
 
-    return (VALUE)dst;
+    return dst;
 }
 
 static VALUE
 kconv_toeuc(obj, src)
-    VALUE obj;
-    struct RString* src;
+    VALUE obj, src;
 {
-    struct RString *dst;
+    VALUE dst;
 
     Check_Type(src, T_STRING);
 
-    dst = RSTRING(str_new(0, src->len*3+10)); /* large enough? */
-    dst->len = do_kconv(src->ptr, dst->ptr, dst->len, _EUC, _AUTO);
+    dst = str_new(0, RSTRING(src)->len*3+10); /* large enough? */
+    RSTRING(dst)->len = do_kconv(RSTRING(src)->ptr, RSTRING(dst)->ptr, RSTRING(dst)->len, _EUC, _AUTO);
 
     return (VALUE)dst;
 }
 
 static VALUE
 kconv_tosjis(obj, src)
-    VALUE obj;
-    struct RString* src;
+    VALUE obj, src;
 {
-    struct RString *dst;
+    VALUE dst;
 
     Check_Type(src, T_STRING);
 
-    dst = RSTRING(str_new(0, src->len*3+10)); /* large enough? */
-    dst->len = do_kconv(src->ptr, dst->ptr, dst->len, _SJIS, _AUTO);
+    dst = str_new(0, RSTRING(src)->len*3+10); /* large enough? */
+    RSTRING(dst)->len = do_kconv(RSTRING(src)->ptr, RSTRING(dst)->ptr, RSTRING(dst)->len, _SJIS, _AUTO);
 
-    return (VALUE)dst;
+    return dst;
+}
+
+/*
+ * Character code detection - Algorithm described in:
+ * Ken Lunde. `Understanding Japanese Information Processing'
+ * Sebastopol, CA: O'Reilly & Associates.
+ */
+
+static VALUE
+kconv_guess(obj, src)
+    VALUE obj, src;
+{
+    unsigned char *p = RSTRING(src)->ptr;
+    unsigned char *pend = p + RSTRING(src)->len;
+
+#define INCR {p++;if (p==pend) return INT2FIX(_UNKNOWN);}
+
+    while (p<pend) {
+	if (*p == '\033') {
+	    return INT2FIX(_JIS);
+	}
+	if ('\000' < *p && *p < '\006'
+	    || *p == 0x7f
+	    || *p == 0xdf) {
+	    return INT2FIX(_BINARY);
+	}
+	if (0x81 <= *p && *p <= 0x8d) {
+	    return INT2FIX(_SJIS);
+	}
+	if (*p == 0x8e) {
+	    INCR;
+	    if ((0x40 <= *p && *p <= 0x7e) ||
+		(0x80 <= *p && *p <= 0xa0) ||
+		(0xe0 <= *p && *p <= 0xfc))
+		return INT2FIX(_SJIS);
+	}
+	if (0xa1 <= *p && *p <= 0xdf) {
+	    INCR;
+	    if (0xf0 <= *p && *p <= 0xfe)
+		return INT2FIX(_EUC);
+	    if (0xe0 <= *p && *p <= 0xef) {
+		while (*p >= 0x40) {
+		    if (*p >= 0x81) {
+			if (0x8d <= *p || (0x8f <= *p && *p <= 0x9f)) {
+			    return INT2FIX(_SJIS);
+			}
+			else if (0xfd <= *p && *p <= 0xfe) {
+			    return INT2FIX(_EUC);
+			}
+		    }
+		}
+	    }
+	    if (*p <= 0x9f) {
+		return INT2FIX(_SJIS);
+	    }
+	}
+	if (0xf0 <= *p && *p <= 0xfe) {
+	    return INT2FIX(_EUC);
+	}
+	if (0xe0 <= *p && *p <= 0xef) {
+	    INCR;
+	    if ((0x40 <= *p && *p <= 0x7e) ||
+		(0x80 <= *p && *p <= 0xa0)) {
+		return INT2FIX(_SJIS);
+	    }
+	    if (0xfd <= *p && *p <= 0xfe) {
+		return INT2FIX(_EUC);
+	    }
+	}
+	p++;
+    }
+    return INT2FIX(_UNKNOWN);
 }
 
 void
@@ -1854,11 +1928,15 @@ Init_kconv()
     rb_define_module_function(mKconv, "tojis", kconv_tojis, 1);
     rb_define_module_function(mKconv, "toeuc", kconv_toeuc, 1);
     rb_define_module_function(mKconv, "tosjis", kconv_tosjis, 1);
+    rb_define_module_function(mKconv, "guess", kconv_guess, 1);
 
     rb_define_const(mKconv, "AUTO", INT2FIX(_AUTO));
     rb_define_const(mKconv, "JIS", INT2FIX(_JIS));
     rb_define_const(mKconv, "EUC", INT2FIX(_EUC));
     rb_define_const(mKconv, "SJIS", INT2FIX(_SJIS));
+    rb_define_const(mKconv, "BINARY", INT2FIX(_BINARY));
+    rb_define_const(mKconv, "NOCONV", INT2FIX(_NOCONV));
+    rb_define_const(mKconv, "UNKNOWN", INT2FIX(_UNKNOWN));
 }
 
 /**

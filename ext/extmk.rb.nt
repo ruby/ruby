@@ -18,7 +18,8 @@ $lib_cache = {}
 $func_cache = {}
 $hdr_cache = {}
 
-$dllopt = '-MD'
+#$dllopt = '-MD'
+$dllopt = ''
 
 if File.exist?("config.cache") then
   f = open("config.cache", "r")
@@ -48,11 +49,15 @@ def older(file1, file2)
   return FALSE
 end
 
-LINK = "cl -o conftest -I../.. -Zi -O -I. %s  %s conftest.c %s >  nul"
-CPP = "cl -E  -I../.. -I../../missing -I. -Zi -O %s conftest.c >  nul"
+#LINK = "cl -o conftest.exe -I../.. -Zi -O -I. %s  conftest.c %s >  nul"
+LINK = "cl -o conftest.exe -Zi -O  %s  conftest.c %s >  nul"
+CPP = "cl -E  -I../.. -I../../missing -I../../win32 -I. -Zi -O %s conftest.c >  nul"
 
 def try_link(libs)
-  system(format(LINK, $CFLAGS, $LDFLAGS, libs))
+  #print(format("try #{LINK}", $CFLAGS, $LDFLAGS, libs))
+  #system(format(LINK, $CFLAGS, $LDFLAGS, libs))
+  print(format("try #{LINK}\n", $CFLAGS, libs))
+  system(format(LINK, $CFLAGS, libs))
 end
 
 def try_cpp
@@ -60,12 +65,13 @@ def try_cpp
 end
 
 def have_library(lib, func)
+  #print format("have_library(%s, %s)\n", lib, func)
   if $lib_cache[lib]
     if $lib_cache[lib] == "yes"
-      if $libs
-	$libs = "-l" + lib + " " + $libs 
+      if $libs#
+	$libs = lib + ".lib " + $libs 
       else
-	$libs = "-l" + lib
+	$libs = lib + ".lib "
       end
       return TRUE
     else
@@ -75,6 +81,8 @@ def have_library(lib, func)
 
   cfile = open("conftest.c", "w")
   cfile.printf "\
+#include <windows.h>
+#include <winsock.h>
 int main() { return 0; }
 int t() { %s(); return 0; }
 ", func
@@ -86,7 +94,9 @@ int t() { %s(); return 0; }
     else
       libs =  lib + ".lib"
     end
+    #print "libs=#{libs}\n"
     unless try_link(libs)
+      #print "fail : #{libs}\n"
       $lib_cache[lib] = 'no'
       $cache_mod = TRUE
       return FALSE
@@ -113,7 +123,9 @@ def have_func(func)
 
   cfile = open("conftest.c", "w")
   cfile.printf "\
-char %s();
+#include <windows.h>
+#include <winsock.h>
+//char %s();
 int main() { return 0; }
 int t() { %s(); return 0; }
 ", func, func
@@ -123,6 +135,7 @@ int t() { %s(); return 0; }
   libs = "" if libs == nil
 
   begin
+    #print "libs=#{libs}\n"
     unless try_link(libs)
       $func_cache[func] = 'no'
       $cache_mod = TRUE
@@ -186,7 +199,7 @@ def create_makefile(target)
   if $libs and "obj" == "obj"
     libs = $libs.split
     for lib in libs
-      lib.sub!(/(.*)/, '"lib\1.lib"')
+      lib.sub!(/(.*)/, '"\1.lib"') if /.lib$/ !~ lib
     end
     $defs.push(format("-DEXTLIB='%s'", libs.join(",")))
   end
@@ -203,7 +216,7 @@ VPATH = .
 
 CC = cl
 
-CFLAGS   = %s -I../.. -I../../missing -I. -O -DNT %s #$CFLAGS %s
+CFLAGS   = %s -I../.. -I../../missing -I../../win32 -I. -O -DNT %s #$CFLAGS %s
 
 RUBYLIB  = ../../ruby.lib
 DLDFLAGS =  /DLL
@@ -211,9 +224,9 @@ LDSHARED =
 ", if $static then "" else "-fpic" end, $dllopt, $defs.join(" ")
 
   if $force_static
-    print "static\n"
+  print "static\n"
   else
-    print "non static\n"
+  print "non static\n"
   end
 
   mfile.printf "\
@@ -245,7 +258,7 @@ DEFFILE = %s.def
 
 all:            $(TARGET)
 
-clean:;         @rm -f *.obj *.lib *.exp *.pdb *.bak
+clean:;         @rm -f *.obj *.lib *.exp vc*.pdb *.bak *.def
 		@rm -f Makefile extconf.h conftest.*
 
 realclean:      clean
@@ -274,8 +287,8 @@ $(TARGET): $(OBJS)
 	lib /OUT:$(TARGET) $(OBJS)
 "
   else
-      mfile.printf "\
-$(DEFFILE):
+    mfile.printf "\
+$(DEFFILE): 
 	echo $(DEFFILE)
 
 $(TARGET): $(OBJS)  $(DEFFILE)
@@ -293,9 +306,26 @@ $(TARGET): $(OBJS)  $(DEFFILE)
   end
   mfile.close
   if $static
-    printf format("push %s,%s\n", $static, target); ##debug print##
+    #printf format("push %s,%s\n", $static, target); ##debug print##
     $extlist.push [$static,target]
   end
+end
+
+#template of .def file.
+def create_def(basename)
+  defname = sprintf("%s.def", basename)
+  f = open(defname, "w")
+  f.printf "\
+LIBRARY %s.dll
+CODE LOADONCALL
+DATA LOADONCALL
+DESCRIPTION 'win32 %s.dll'
+EXPORTS
+
+	Init_%s
+", basename, basename, basename
+  f.close
+
 end
 
 def extmake(target)
@@ -328,6 +358,11 @@ def extmake(target)
 	create_makefile(target);
       end
     end
+
+    if !File.exist?("#{target}.def")
+        create_def(target)
+    end
+
     if File.exist?("./Makefile")
       if $install
 	system "nmake install"
@@ -339,10 +374,12 @@ def extmake(target)
       elsif $clean
 	system "nmake clean"
       else
+	#print "!!!make!!!\n"
 	system "nmake all"
       end
     end
     if $static
+      #$extlibs = " "
       $extlibs += " " + $LDFLAGS if $LDFLAGS
       $extlibs += " " + $local_libs if $local_libs
       $extlibs += " " + $libs if $libs
@@ -360,7 +397,8 @@ if File.file? "./Setup"
     $_.chop!
     sub!(/#.*$/, '')
     next if /^\s*$/
-	print $_, "\n"
+    #print $_, "\n"
+
     if /^option +nodynamic/
       $nodynamic = TRUE
       next
@@ -401,20 +439,19 @@ end
 
 exit if $install or $clean
 if $extlist.size > 0
-  #for s,t in $extlist
-  for s,t in $static_ext
+  for s,t in $extlist
+  #for s,t in $static_ext
     #f = format("%s/%s.obj", s, t)
     #f = format("%s/%s.obj", s, s)
-    l = format("%s/%s.lib", s, s)
-	#print format("%s/%s.obj\n", s, s) ##debug print##
+    l = format("%s/%s.lib", s, s)    
     if File.exist?(l)
       $extinit += format("\
 \tInit_%s();\n\
 \trb_provide(\"%s.o\");\n\
 ", s, s)
       $extobjs += "ext/"
-      #$extobjs += f    # *.obj
-      $extobjs += l	# *.lib
+      #$extobjs += f  # *.obj
+      $extobjs += l   # *.lib
       $extobjs += " "
     else
       FALSE
@@ -441,7 +478,12 @@ if $extlist.size > 0
   end
 
   $extobjs = "ext/extinit.obj " + $extobjs
-  $extlibs = ""
+  #$extlibs = ""
+  #print "EXTLIBS=#{$extlibs}\n"
+  $extlibs.gsub!("-L/usr/local/lib", "") if $extlibs
+  $extlibs.gsub!(" +", " ") if $extlibs
+  #print "EXTLIBS=#{$extlibs}\n"
+
   system format('nmake ruby.exe EXTOBJS="%s" EXTLIBS="%s"', $extobjs, $extlibs)
 else
   Dir.chdir ".."
@@ -450,31 +492,6 @@ else
     `cp miniruby.exe ruby.exe`
   end
 end
-
-#template of .def file.
-#LIBRARY kconv.dll
-#CODE LOADONCALL
-#DATA LOADONCALL
-#DESCRIPTION 'win32 kconv.dll'
-#EXPORTS
-#
-#        Init_kconv
-def makedef(basename)
-  defname = sprintf("%s.def", basename)
-  f = open(defname, "w")
-  f.printf "\
-LIBRARY %s.dll
-CODE LOADONCALL
-DATA LOADONCALL
-DESCRIPTION 'win32 %s.dll'
-EXPORTS
-
-	Init_%s
-", basename, basename
-  f.close
-
-end                       
-
 #Local variables:
 # mode: ruby
 #end:

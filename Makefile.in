@@ -7,9 +7,6 @@ VPATH = @srcdir@:@srcdir@/missing
 
 CC = @CC@
 YACC = @YACC@
-INSTALL = @INSTALL@
-INSTALL_PROGRAM = @INSTALL_PROGRAM@
-INSTALL_DATA = @INSTALL_DATA@
 PURIFY =
 @SET_MAKE@
 
@@ -18,14 +15,6 @@ LDFLAGS = @STATIC@ $(CFLAGS) @LDFLAGS@
 LIBS = @LIBS@ $(EXTLIBS)
 MISSING = @LIBOBJS@ @ALLOCA@
 
-program_transform_name = -e @program_transform_name@
-RUBY_INSTALL_NAME = `t='$(program_transform_name)'; echo ruby | sed $$t`
-
-prefix = @prefix@
-exec_prefix = @exec_prefix@
-bindir = @bindir@
-libdir = @libdir@/$(RUBY_INSTALL_NAME)
-
 binsuffix = @binsuffix@
 
 #### End of system configuration section. ####
@@ -33,7 +22,7 @@ binsuffix = @binsuffix@
 
 LIBRUBY	      = libruby.a
 
-EXTOBJS	      = dmyext.o
+EXTOBJS	      = 
 
 MAINOBJ	      = main.o
 
@@ -54,6 +43,7 @@ OBJS	      = array.o \
 		inits.o \
 		io.o \
 		math.o \
+		marshal.o \
 		numeric.o \
 		object.o \
 		pack.o \
@@ -75,15 +65,12 @@ OBJS	      = array.o \
 		version.o \
 		$(MISSING)
 
-all:		miniruby$(binsuffix) @srcdir@/ext/Setup 
-		@if test -z "$$UNDER_EXTMAKE_RB"; \
-		then echo "Compiling ext modules"; \
-		UNDER_EXTMAKE_RB=yes; export UNDER_EXTMAKE_RB; \
-		cd ext; ../miniruby ./extmk.rb @EXTSTATIC@; fi
+all:		miniruby$(binsuffix) rbconfig.rb
+		@cd ext; ../miniruby$(binsuffix) ./extmk.rb @EXTSTATIC@
 
-miniruby$(binsuffix):	$(OBJS) $(MAINOBJ) $(EXTOBJS) 
+miniruby$(binsuffix):	$(OBJS) $(MAINOBJ) dmyext.o
 		@rm -f $@
-		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(LIBS) -o miniruby
+		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(OBJS) dmyext.o $(LIBS) -o miniruby
 
 ruby$(binsuffix):     	$(LIBRUBY) $(MAINOBJ) $(EXTOBJS) 
 		@rm -f $@
@@ -93,35 +80,30 @@ $(LIBRUBY):	$(OBJS) dmyext.o
 		@AR@ rcu $(LIBRUBY) $(OBJS) dmyext.o
 		@-@RANLIB@ $(LIBRUBY) 2> /dev/null || true
 
-install:;	$(INSTALL_PROGRAM) ruby$(binsuffix) $(bindir)/$(RUBY_INSTALL_NAME)$(binsuffix)
-		@-@STRIP@ $(bindir)/$(RUBY_INSTALL_NAME)$(binsuffix)
-		@test -d $(libdir) || mkdir $(libdir)
-		cd ext; ../miniruby ./extmk.rb install
-		@for rb in `grep '^lib/' @srcdir@/MANIFEST`; do \
-		  $(INSTALL_DATA) @srcdir@/$$rb $(libdir); \
-		done
+install:	rbconfig.rb
+		./miniruby$(binsuffix) $(srcdir)/instruby.rb
 
-clean:;		@rm -f $(OBJS) $(LIBRUBY) $(MAINOBJ)
+clean:;		@rm -f $(OBJS) $(LIBRUBY) $(MAINOBJ) rbconfig.rb
 		@rm -f ext/extinit.c ext/extinit.o dmyext.o
-		cd ext; ../miniruby ./extmk.rb clean
+		@if test -f ./miniruby; then cd ext; ../miniruby ./extmk.rb clean; fi
 
 realclean:	clean
-		@rm -f Makefile ext/extmk.rb ext/config.cache parse.c
+		@rm -f Makefile ext/extmk.rb ext/config.cache
 		@rm -f config.cache config.h config.log config.status
-		@rm -f core ruby$(binsuffix) miniruby$(binsuffix) parse.c *~ *.core gmon.out
+		@rm -f parse.c lex.c *~ core *.core gmon.out
+		@rm -f ruby$(binsuffix) miniruby$(binsuffix)
 
-test:;		@-./ruby @srcdir@/sample/test.rb > ./ruby_test 2>&1; \
-		 if grep '^end of test' ./ruby_test > /dev/null; then \
-		   echo "test succeeded"; \
-		 else \
-	           grep '^sample/test.rb' ./ruby_test; \
-		   grep '^not' ./ruby_test; \
-	   	   echo "test failed";\
-		 fi;\
-		 rm -f ./ruby_test
+test:		miniruby$(binsuffix)
+		@./miniruby$(binsuffix) $(srcdir)/rubytest.rb
+
+rbconfig.rb:	config.status miniruby$(binsuffix)
+		@./miniruby$(binsuffix) $(srcdir)/mkconfig.rb rbconfig.rb
 
 .c.o:
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $<
+
+lex.c: keywords
+	gperf -p -j1 -i 1 -g -o -t -N rb_reserved_word -k1,3,$$ keywords > lex.c
 
 parse.c: parse.y
 	$(YACC) $<
@@ -178,42 +160,40 @@ x68.o: @srcdir@/missing/x68.c
 # Prevent GNU make v3 from overflowing arg limit on SysV.
 .NOEXPORT:
 ###
-parse.o : parse.y ruby.h defines.h config.h env.h node.h st.h regex.h 
+parse.o : parse.y ruby.h defines.h config.h intern.h env.h node.h st.h regex.h lex.c
 ###
-array.o: array.c ruby.h config.h defines.h
-bignum.o: bignum.c ruby.h config.h defines.h
-class.o: class.c ruby.h config.h defines.h node.h st.h
-compar.o: compar.c ruby.h config.h defines.h
-dir.o: dir.c ruby.h config.h defines.h
+array.o: array.c ruby.h config.h defines.h intern.h
+bignum.o: bignum.c ruby.h config.h defines.h intern.h
+class.o: class.c ruby.h config.h defines.h intern.h node.h st.h
+compar.o: compar.c ruby.h config.h defines.h intern.h
+dir.o: dir.c ruby.h config.h defines.h intern.h
 dln.o: dln.c config.h defines.h dln.h st.h
 dmyext.o: dmyext.c
-enum.o: enum.c ruby.h config.h defines.h
-error.o: error.c ruby.h config.h defines.h env.h
-eval.o: eval.c ruby.h config.h defines.h env.h node.h sig.h st.h dln.h
-file.o: file.c ruby.h config.h defines.h io.h sig.h
-fnmatch.o: fnmatch.c config.h fnmatch.h
-gc.o: gc.c ruby.h config.h defines.h env.h sig.h st.h node.h re.h regex.h
-glob.o: glob.c config.h fnmatch.h
-hash.o: hash.c ruby.h config.h defines.h st.h
-inits.o: inits.c ruby.h config.h defines.h
-io.o: io.c ruby.h config.h defines.h io.h sig.h
+enum.o: enum.c ruby.h config.h defines.h intern.h
+error.o: error.c ruby.h config.h defines.h intern.h env.h
+eval.o: eval.c ruby.h config.h defines.h intern.h env.h node.h sig.h st.h dln.h
+file.o: file.c ruby.h config.h defines.h intern.h io.h sig.h
+gc.o: gc.c ruby.h config.h defines.h intern.h env.h sig.h st.h node.h re.h regex.h
+hash.o: hash.c ruby.h config.h defines.h intern.h st.h
+inits.o: inits.c ruby.h config.h defines.h intern.h
+io.o: io.c ruby.h config.h defines.h intern.h io.h sig.h
 main.o: main.c
-math.o: math.c ruby.h config.h defines.h
-numeric.o: numeric.c ruby.h config.h defines.h
-object.o: object.c ruby.h config.h defines.h st.h
-pack.o: pack.c ruby.h config.h defines.h
-process.o: process.c ruby.h config.h defines.h sig.h st.h
-random.o: random.c ruby.h config.h defines.h
-range.o: range.c ruby.h config.h defines.h
-re.o: re.c ruby.h config.h defines.h re.h regex.h
-regex.o: regex.c config.h defines.h regex.h util.h
-ruby.o: ruby.c ruby.h config.h defines.h re.h regex.h dln.h
-signal.o: signal.c ruby.h config.h defines.h sig.h
-sprintf.o: sprintf.c ruby.h config.h defines.h
+marshal.o: marshal.c ruby.h config.h defines.h intern.h io.h sig.h st.h
+math.o: math.c ruby.h config.h defines.h intern.h
+numeric.o: numeric.c ruby.h config.h defines.h intern.h
+object.o: object.c ruby.h config.h defines.h intern.h st.h
+pack.o: pack.c ruby.h config.h defines.h intern.h
+process.o: process.c ruby.h config.h defines.h intern.h sig.h st.h
+random.o: random.c ruby.h config.h defines.h intern.h
+range.o: range.c ruby.h config.h defines.h intern.h
+re.o: re.c ruby.h config.h defines.h intern.h re.h regex.h
+ruby.o: ruby.c ruby.h config.h defines.h intern.h re.h regex.h dln.h
+signal.o: signal.c ruby.h config.h defines.h intern.h sig.h
+sprintf.o: sprintf.c ruby.h config.h defines.h intern.h
 st.o: st.c config.h st.h
-string.o: string.c ruby.h config.h defines.h re.h regex.h
-struct.o: struct.c ruby.h config.h defines.h
-time.o: time.c ruby.h config.h defines.h
-util.o: util.c defines.h config.h util.h
-variable.o: variable.c ruby.h config.h defines.h env.h st.h
-version.o: version.c ruby.h config.h defines.h version.h
+string.o: string.c ruby.h config.h defines.h intern.h re.h regex.h
+struct.o: struct.c ruby.h config.h defines.h intern.h
+time.o: time.c ruby.h config.h defines.h intern.h
+util.o: util.c defines.h intern.h config.h util.h
+variable.o: variable.c ruby.h config.h defines.h intern.h env.h st.h
+version.o: version.c ruby.h config.h defines.h intern.h version.h

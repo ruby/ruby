@@ -10,11 +10,42 @@
 
 ************************************************/
 
+#define RUBY_NO_INLINE
 #include "ruby.h"
+
+int
+rb_type(obj)
+    VALUE obj;
+{
+    if (FIXNUM_P(obj)) return T_FIXNUM;
+    if (obj == Qnil) return T_NIL;
+    if (obj == FALSE) return T_FALSE;
+    if (obj == TRUE) return T_TRUE;
+
+    return BUILTIN_TYPE(obj);
+}
+
+int
+rb_special_const_p(obj)
+    VALUE obj;
+{
+    if (FIXNUM_P(obj)) return TRUE;
+    if (obj == Qnil) return TRUE;
+    if (obj == FALSE) return TRUE;
+    if (obj == TRUE) return TRUE;
+
+    return FALSE;
+}
+
+int
+rb_test_false_or_nil(v)
+    VALUE v;
+{
+    return (v != Qnil) && (v != FALSE);
+}
+
 #include "util.h"
-#ifdef HAVE_STRING_H
-# include <string.h>
-#else
+#ifndef HAVE_STRING_H
 char *strchr();
 #endif
 
@@ -136,7 +167,7 @@ static char suffix2[] = ".~~~";
 #define strEQ(s1,s2) (strcmp(s1,s2) == 0)
 
 void
-add_suffix(struct RString *str, char *suffix)
+add_suffix(VALUE str, char *suffix)
 {
     int baselen;
     int extlen = strlen(suffix);
@@ -144,25 +175,25 @@ add_suffix(struct RString *str, char *suffix)
     int slen;
     char buf[1024];
 
-    if (str->len > 1000)
-        Fatal("Cannot do inplace edit on long filename (%d characters)", str->len);
+    if (RSTRING(str)->len > 1000)
+        Fatal("Cannot do inplace edit on long filename (%d characters)", RSTRING(str)->len);
 
 #if defined(DJGPP) || defined(__CYGWIN32__) || defined(NT)
     /* Style 0 */
-    slen = str->len;
+    slen = RSTRING(str)->len;
     str_cat(str, suffix, extlen);
 #if defined(DJGPP)
     if (_USE_LFN) return;
 #else
-    if (valid_filename(str->ptr)) return;
+    if (valid_filename(RSTRING(str)->ptr)) return;
 #endif
 
     /* Fooey, style 0 failed.  Fix str before continuing. */
-    str->ptr[str->len = slen] = '\0';
+    RSTRING(str)->ptr[RSTRING(str)->len = slen] = '\0';
 #endif
 
     slen = extlen;
-    t = buf; baselen = 0; s = str->ptr;
+    t = buf; baselen = 0; s = RSTRING(str)->ptr;
     while ( (*t = *s) && *s != '.') {
 	baselen++;
 	if (*s == '\\' || *s == '/') baselen = 0;
@@ -194,7 +225,7 @@ fallback:
 	(void)memcpy(p, strEQ(ext, suffix1) ? suffix2 : suffix1, 5);
     }
     str_resize(str, strlen(buf));
-    memcpy(str->ptr, buf, str->len);
+    memcpy(RSTRING(str)->ptr, buf, RSTRING(str)->len);
 }
 
 #if defined(__CYGWIN32__) || defined(NT)
@@ -232,7 +263,6 @@ valid_filename(char *s)
 #include <stdio.h>		/* For FILENAME_MAX */
 #include <errno.h>		/* For errno */
 #include <ctype.h>		/* For tolower */
-#include <string.h>		/* For strlen() */
 #include <fcntl.h>		/* For LFN stuff */
 #include <go32.h>
 #include <dpmi.h>		/* For dpmisim */

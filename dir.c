@@ -13,14 +13,15 @@
 #include "ruby.h"
 
 #include <sys/types.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
+#include <sys/stat.h>
 
 #ifdef HAVE_SYS_PARAM_H
 # include <sys/param.h>
 #else
 # define MAXPATHLEN 1024
+#endif
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
 #endif
 
 #if HAVE_DIRENT_H
@@ -60,22 +61,21 @@ free_dir(dir)
 
 static VALUE
 dir_s_open(dir_class, dirname)
-    VALUE dir_class;
-    struct RString *dirname;
+    VALUE dir_class, dirname;
 {
     VALUE obj;
     DIR *dirp;
 
     Check_SafeStr(dirname);
 
-    dirp = opendir(dirname->ptr);
+    dirp = opendir(RSTRING(dirname)->ptr);
     if (dirp == NULL) {
 	if (errno == EMFILE || errno == ENFILE) {
-	    gc();
-	    dirp = opendir(dirname->ptr);
+	    gc_gc();
+	    dirp = opendir(RSTRING(dirname)->ptr);
 	}
 	if (dirp == NULL) {
-	    rb_sys_fail(dirname->ptr);
+	    rb_sys_fail(RSTRING(dirname)->ptr);
 	}
     }
 
@@ -178,7 +178,7 @@ dir_s_chdir(argc, argv, obj)
 
     rb_secure(2);
     rb_scan_args(argc, argv, "01", &path);
-    if (path) {
+    if (!NIL_P(path)) {
 	Check_SafeStr(path);
 	dist = RSTRING(path)->ptr;
     }
@@ -259,13 +259,12 @@ dir_s_mkdir(argc, argv, obj)
 
 static VALUE
 dir_s_rmdir(obj, dir)
-    VALUE obj;
-    struct RString *dir;
+    VALUE obj, dir;
 {
     rb_secure(2);
     Check_SafeStr(dir);
-    if (rmdir(dir->ptr) < 0)
-	rb_sys_fail(dir->ptr);
+    if (rmdir(RSTRING(dir)->ptr) < 0)
+	rb_sys_fail(RSTRING(dir)->ptr);
 
     return TRUE;
 }
@@ -342,18 +341,18 @@ push_braces(ary, s)
 }
 
 static VALUE
-dir_s_glob(dir, str)
-    VALUE dir;
-    struct RString *str;
+dir_s_glob(dir, vstr)
+    VALUE dir, vstr;
 {
     char *p, *pend;
     char buf[MAXPATHLEN];
     char *t, *t0;
     int nest;
     VALUE ary;
+    struct RString *str;
 
-    Check_SafeStr(str);
-
+    Check_SafeStr(vstr);
+    str = RSTRING(vstr);
     ary = ary_new();
 
     p = str->ptr;
@@ -386,8 +385,7 @@ dir_s_glob(dir, str)
 
 static VALUE
 dir_foreach(io, dirname)
-    VALUE io;
-    struct RString *dirname;
+    VALUE io, dirname;
 {
     VALUE dir;
 

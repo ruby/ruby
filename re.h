@@ -29,6 +29,9 @@ struct RMatch {
 
 #define RMATCH(obj)  (R_CAST(RMatch)(obj))
 
-VALUE re_regcomp();
-VALUE re_regsub();
+int str_cicmp _((VALUE, VALUE));
+VALUE reg_regcomp _((VALUE));
+int reg_search _((VALUE, VALUE, int, struct re_registers *));
+VALUE reg_regsub _((VALUE, VALUE, struct re_registers *));
+void reg_free _((Regexp *));
 #endif

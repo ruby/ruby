@@ -149,8 +149,8 @@ flock(int fd, int oper)
 #undef LK_LEN
 
 
-#undef const
-FILE *fdopen(int, const char *);
+//#undef const
+//FILE *fdopen(int, const char *);
 
 #if 0
 void
@@ -185,7 +185,7 @@ NtInitialize(int *argc, char ***argv) {
     tzset();
 
 	// Initialize Winsock
-	// StartSockets();
+	StartSockets();
 }
 
 
@@ -500,7 +500,6 @@ mypopen (char *cmd, char *mode)
 			Fatal("cannot open pipe \"%s\" (%s)", cmd, strerror(errno));
 				return fp;
 		}
-
 
 		fRet = CreatePipe(&hInFile, &hOutFile, &sa, 2048L);
 		if (!fRet)
@@ -1572,13 +1571,15 @@ valid_filename(char *s)
 //
 
 FILE *
-fdopen (int fd, const char *mode)
+myfdopen (int fd, const char *mode)
 {
     FILE *fp;
     char sockbuf[80];
     int optlen;
     int retval;
     extern int errno;
+
+    //fprintf(stderr, "myfdopen()\n");
 
     retval = getsockopt((SOCKET)fd, SOL_SOCKET, SO_TYPE, sockbuf, &optlen);
     if (retval == SOCKET_ERROR) {
@@ -1951,8 +1952,10 @@ mysocket (int af, int type, int protocol)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if ((s = socket (af, type, protocol)) == INVALID_SOCKET)
+    if ((s = socket (af, type, protocol)) == INVALID_SOCKET) {
 	errno = WSAGetLastError();
+	//fprintf(stderr, "socket fail (%d)", WSAGetLastError());
+    }
     return s;
 }
 

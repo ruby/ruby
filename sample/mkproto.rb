@@ -1,6 +1,6 @@
 $/ = nil
 while gets()
-  if /^((void|VALUE|int|char *\*|ID|struct [\w_]+ *\*|st_table *\*) *)?\n([\w\d_]+)\(.*\)\n\s*((.+;\n)*){/
+  if /^((void|VALUE|int|char *\*|ID|struct [\w_]+ *\*|st_table *\*) *)?\n([\w\d_]+)\(.*\)\n\s*((.+;\n)*)\{/
     $_ = $'
     printf "%s %s(", $2, $3
     args = []

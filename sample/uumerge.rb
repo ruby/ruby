@@ -1,37 +1,43 @@
 #!/usr/local/bin/ruby
 
 if ARGV[0] == "-c"
-  out_stdout = 1;
+  out_stdout = 1
   ARGV.shift
 end
+
+$sawbegin = 0
+$sawend = 0
 
 while gets()
   if /^begin\s*(\d*)\s*(\S*)/
     $mode, $file = $1, $2
     $sawbegin+=1
-    break
+    if out_stdout
+      out = STDOUT
+    else
+      out = open($file, "w") if $file != ""
+    end
+    out.binmode
+    next
   end
 end
 
-fail "missing begin" if ! $sawbegin;
+raise "missing begin" unless $sawbegin
 
-if out_stdout
-  out = STDOUT
-else
-  out = open($file, "w") if $file != "";
-end
-
+out.binmode
 while gets()
   if /^end/
     $sawend+=1
-    break
+    out.close unless out_stdout
+    File.chmod $mode.oct, $file unless out_stdout
+    next
   end
-  sub(/[a-z]+$/, ""); # handle stupid trailing lowercase letters
+  sub(/[a-z]+$/, "")		# handle stupid trailing lowercase letters
   next if /[a-z]/
   next if !(((($_[0] - 32) & 077) + 2) / 3 == $_.length / 4)
-  out << $_.unpack("u");
+  out << $_.unpack("u") if $sawbegin > $sawend
 end
 
-fail "missing end" if !$sawend;
-File.chmod $mode.oct, $file if ! out_stdout
-exit 0;
+raise "missing end" if $sawbegin > $sawend
+raise "missing begin" if ! $sawbegin
+exit 0

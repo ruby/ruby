@@ -109,7 +109,7 @@ f_sprintf(argc, argv)
     int argc;
     VALUE *argv;
 {
-    struct RString *fmt;
+    VALUE fmt;
     char *buf, *p, *end;
     int blen, bsiz;
     VALUE result;
@@ -122,7 +122,7 @@ f_sprintf(argc, argv)
 #define FWIDTH 16
 #define FPREC  32
 
-    int width, prec, flags = FNONE;
+    int width = 0, prec = 0, flags = FNONE;
     VALUE str;
 
 
@@ -142,15 +142,15 @@ f_sprintf(argc, argv)
 #define GETARG() \
     ((argc == 0)?(ArgError("too few argument."),0):(argc--,((argv++)[0])))
 
-    fmt = (struct RString*)GETARG();
+    fmt = GETARG();
     Check_Type(fmt, T_STRING);
 
     blen = 0;
     bsiz = 120;
     buf = ALLOC_N(char, bsiz);
-    end = fmt->ptr + fmt->len;
+    end = RSTRING(fmt)->ptr + RSTRING(fmt)->len;
 
-    for (p = fmt->ptr; p < end; p++) {
+    for (p = RSTRING(fmt)->ptr; p < end; p++) {
 	char *t;
 
 	for (t = p; t < end && *t != '%'; t++) ;
@@ -597,7 +597,7 @@ f_sprintf(argc, argv)
     }
 
   sprint_exit:
-    if (verbose && argc > 1) {
+    if (RTEST(verbose) && argc > 1) {
 	ArgError("too many argument for format string");
     }
     result = str_new(buf, blen);

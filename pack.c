@@ -85,8 +85,7 @@ static void encodes();
 
 static VALUE
 pack_pack(ary, fmt)
-    struct RArray *ary;
-    struct RString *fmt;
+    VALUE ary, fmt;
 {
     static char *nul10 = "\0\0\0\0\0\0\0\0\0\0";
     static char *spc10 = "          ";
@@ -99,14 +98,14 @@ pack_pack(ary, fmt)
 
     Check_Type(fmt, T_STRING);
 
-    p = fmt->ptr;
-    pend = fmt->ptr + fmt->len;
+    p = RSTRING(fmt)->ptr;
+    pend = RSTRING(fmt)->ptr + RSTRING(fmt)->len;
     res = str_new(0, 0);
 
-    items = ary->len;
+    items = RARRAY(ary)->len;
     idx = 0;
 
-#define NEXTFROM (items-- > 0 ? ary->ptr[idx++] : (ArgError(toofew),0))
+#define NEXTFROM (items-- > 0 ? RARRAY(ary)->ptr[idx++] : (ArgError(toofew),0))
 
     while (p < pend) {
 	type = *p++;		/* get data type */
@@ -285,7 +284,7 @@ pack_pack(ary, fmt)
 		else {
 		    s = NUM2INT(from);
 		}
-		str_cat(res, &s, sizeof(short));
+		str_cat(res, (UCHAR*)&s, sizeof(short));
 	    }
 	    break;
 
@@ -299,7 +298,7 @@ pack_pack(ary, fmt)
 		else {
 		    i = NUM2INT(from);
 		}
-		str_cat(res, &i, sizeof(int));
+		str_cat(res, (UCHAR*)&i, sizeof(int));
 	    }
 	    break;
 
@@ -313,7 +312,7 @@ pack_pack(ary, fmt)
 		else {
 		    l = NUM2INT(from);
 		}
-		str_cat(res, &l, sizeof(long));
+		str_cat(res, (UCHAR*)&l, sizeof(long));
 	    }
 	    break;
 
@@ -327,7 +326,7 @@ pack_pack(ary, fmt)
 		    s = NUM2INT(from);
 		}
 		s = htons(s);
-		str_cat(res, &s, sizeof(short));
+		str_cat(res, (UCHAR*)&s, sizeof(short));
 	    }
 	    break;
 
@@ -341,7 +340,7 @@ pack_pack(ary, fmt)
 		    l = NUM2INT(from);
 		}
 		l = htonl(l);
-		str_cat(res, &l, sizeof(long));
+		str_cat(res, (UCHAR*)&l, sizeof(long));
 	    }
 	    break;
 
@@ -355,7 +354,7 @@ pack_pack(ary, fmt)
 		    s = NUM2INT(from);
 		}
 		s = htovs(s);
-		str_cat(res, &s, sizeof(short));
+		str_cat(res, (UCHAR*)&s, sizeof(short));
 	    }
 	    break;
 
@@ -369,7 +368,7 @@ pack_pack(ary, fmt)
 		    l = NUM2INT(from);
 		}
 		l = htovl(l);
-		str_cat(res, &l, sizeof(long));
+		str_cat(res, (UCHAR*)&l, sizeof(long));
 	    }
 	    break;
 
@@ -389,7 +388,7 @@ pack_pack(ary, fmt)
 		    f = (float)NUM2INT(from);
 		    break;
 		}
-		str_cat(res, &f, sizeof(float));
+		str_cat(res, (UCHAR*)&f, sizeof(float));
 	    }
 	    break;
 
@@ -409,7 +408,7 @@ pack_pack(ary, fmt)
 		    d = (double)NUM2INT(from);
 		    break;
 		}
-		str_cat(res, &d, sizeof(double));
+		str_cat(res, (UCHAR*)&d, sizeof(double));
 	    }
 	    break;
 
@@ -442,6 +441,7 @@ pack_pack(ary, fmt)
 	    break;
 
 	  case 'u':
+	  case 'm':
 	    from = obj_as_string(NEXTFROM);
 	    ptr = RSTRING(from)->ptr;
 	    plen = RSTRING(from)->len;
@@ -457,7 +457,7 @@ pack_pack(ary, fmt)
 		    todo = len;
 		else
 		    todo = plen;
-		encodes(res, ptr, todo);
+		encodes(res, ptr, todo, type);
 		plen -= todo;
 		ptr += todo;
 	    }
@@ -471,39 +471,55 @@ pack_pack(ary, fmt)
     return res;
 }
 
+static char uu_table[] =
+"`!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_";
+static char b64_table[] =
+"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
 static void
-encodes(str, s, len)
-    struct RString *str;
+encodes(str, s, len, type)
+    VALUE str;
     UCHAR *s;
     int len;
+    int type;
 {
     char hunk[4];
     UCHAR *p, *pend;
+    char *trans = type == 'u' ? uu_table : b64_table;
+    int padding;
 
-    *hunk = len + ' ';
-    str_cat(str, hunk, 1);
+    if (type == 'u') {
+	*hunk = len + ' ';
+	str_cat(str, hunk, 1);
+	padding = '`';
+    }
+    else {
+	padding = '=';
+    }
     while (len > 0) {
-	hunk[0] = ' ' + (077 & (*s >> 2));
-	hunk[1] = ' ' + (077 & (((*s << 4) & 060) | ((s[1] >> 4) & 017)));
-	hunk[2] = ' ' + (077 & (((s[1] << 2) & 074) | ((s[2] >> 6) & 03)));
-	hunk[3] = ' ' + (077 & (s[2] & 077));
+	hunk[0] = trans[077 & (*s >> 2)];
+	hunk[1] = trans[077 & (((*s << 4) & 060) | ((s[1] >> 4) & 017))];
+	hunk[2] = trans[077 & (((s[1] << 2) & 074) | ((s[2] >> 6) & 03))];
+	hunk[3] = trans[077 & s[2]];
 	str_cat(str, hunk, 4);
 	s += 3;
 	len -= 3;
     }
-    p = str->ptr;
-    pend = str->ptr + str->len;
-    while (p < pend) {
-	if (*p == ' ')
-	    *p = '`';
-	p++;
+    p = RSTRING(str)->ptr;
+    pend = RSTRING(str)->ptr + RSTRING(str)->len;
+    if (len == -1) {
+	pend[-1] = padding;
+    }
+    else if (len == -2) {
+	pend[-2] = padding;
+	pend[-1] = padding;
     }
     str_cat(str, "\n", 1);
 }
 
 static VALUE
 pack_unpack(str, fmt)
-    struct RString *str, *fmt;
+    VALUE str, fmt;
 {
     static char *hexdigits = "0123456789abcdef0123456789ABCDEFx";
     UCHAR *s, *send;
@@ -514,10 +530,10 @@ pack_unpack(str, fmt)
 
     Check_Type(fmt, T_STRING);
 
-    s = str->ptr;
-    send = s + str->len;
-    p = fmt->ptr;
-    pend = p + fmt->len;
+    s = RSTRING(str)->ptr;
+    send = s + RSTRING(str)->len;
+    p = RSTRING(fmt)->ptr;
+    pend = p + RSTRING(fmt)->len;
 
     ary = ary_new();
     while (p < pend) {
@@ -851,12 +867,55 @@ pack_unpack(str, fmt)
 	    }
 	    break;
 
+	  case 'm':
+	    {
+		VALUE str = str_new(0, (send - s)*3/4);
+		UCHAR *ptr = RSTRING(str)->ptr;
+		int total = 0;
+		int a,b,c,d;
+		static int first = 1;
+		static int b64_xtable[256];
+
+		if (first) {
+		    int i;
+		    first = 0;
+
+		    for (i = 0; i < 256; i++) {
+			b64_xtable[i] = -1;
+		    }
+		    for (i = 0; i < 64; i++) {
+			b64_xtable[b64_table[i]] = i;
+		    }
+		}
+		for (;;) {
+		    while (s[0] == '\r' || s[0] == '\n') { s++; }
+		    if ((a = b64_xtable[s[0]]) == -1) break;
+		    if ((b = b64_xtable[s[1]]) == -1) break;
+		    if ((c = b64_xtable[s[2]]) == -1) break;
+		    if ((d = b64_xtable[s[3]]) == -1) break;
+		    *ptr++ = a << 2 | b >> 4;
+		    *ptr++ = b << 4 | c >> 2;
+		    *ptr++ = c << 6 | d;
+		    s += 4;
+		}
+		if (a != -1 && b != -1 && s[2] == '=') {
+		    *ptr++ = a << 2 | b >> 4;
+		}
+		if (a != -1 && b != -1 && c != -1 && s[3] == '=') {
+		    *ptr++ = a << 2 | b >> 4;
+		    *ptr++ = b << 4 | c >> 2;
+		}
+		RSTRING(str)->len = ptr - RSTRING(str)->ptr;
+		ary_push(ary, str);
+	    }
+	    break;
+
 	  case '@':
-	    s = str->ptr + len;
+	    s = RSTRING(str)->ptr + len;
 	    break;
 
 	  case 'X':
-	    if (len > s - str->ptr)
+	    if (len > s - RSTRING(str)->ptr)
 		ArgError("X outside of string");
 	    s -= len;
 	    break;

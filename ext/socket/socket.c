@@ -12,9 +12,11 @@
 #include "io.h"
 #include <stdio.h>
 #include <sys/types.h>
+#ifndef NT
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#endif
 #include <errno.h>
 #ifdef HAVE_SYS_UN_H
 #include <sys/un.h>
@@ -36,8 +38,10 @@ extern VALUE cIO;
 extern VALUE cInteger;
 
 VALUE cBasicSocket;
+VALUE cIPsocket;
 VALUE cTCPsocket;
 VALUE cTCPserver;
+VALUE cUDPsocket;
 #ifdef AF_UNIX
 VALUE cUNIXsocket;
 VALUE cUNIXserver;
@@ -85,8 +89,6 @@ sock_new(class, fd)
     fp->f = rb_fdopen(fd, "r");
 #ifdef NT
     fp->finalize = sock_finalize;
-#else
-    setbuf(fp->f, NULL);
 #endif
     fp->f2 = rb_fdopen(fd, "w");
     fp->mode = FMODE_READWRITE;
@@ -254,24 +256,29 @@ bsock_send(argc, argv, sock)
     return INT2FIX(n);
 }
 
-static VALUE tcpaddr _((struct sockaddr_in*));
+static VALUE ipaddr _((struct sockaddr_in*));
 #ifdef HAVE_SYS_UN_H
 static VALUE unixaddr _((struct sockaddr_un*));
 #endif
+
+enum sock_recv_type {
+    RECV_RECV,			/* BasicSocket#recv(no from) */
+    RECV_TCP,			/* TCPsocket#recvfrom */
+    RECV_UDP,			/* UDPsocket#recvfrom */
+    RECV_UNIX,			/* UNIXsocket#recvfrom */
+    RECV_SOCKET,		/* Socket#recvfrom */
+};
 
 static VALUE
 s_recv(sock, argc, argv, from)
     VALUE sock;
     int argc;
     VALUE *argv;
-    int from;			/* 0 - recv,
-				   1 - TCPsocket#recvfrom,
-				   2 - UNIXsocket#recvfrom,
-				   3 - Socket#recvfrom */
+    enum sock_recv_type from;
 {
     OpenFile *fptr;
     FILE f;
-    struct RString *str;
+    VALUE str;
     char buf[1024];
     int fd, alen = sizeof buf;
     VALUE len, flg;
@@ -282,7 +289,7 @@ s_recv(sock, argc, argv, from)
     if (flg == Qnil) flags = 0;
     else             flags = NUM2INT(flg);
 
-    str = (struct RString*)str_new(0, NUM2INT(len));
+    str = str_new(0, NUM2INT(len));
 
     GetOpenFile(sock, fptr);
     fd = fileno(fptr->f);
@@ -291,11 +298,11 @@ s_recv(sock, argc, argv, from)
 #endif
     TRAP_BEG;
   retry:
-    str->len = recvfrom(fd, str->ptr, str->len, flags,
-			(struct sockaddr*)buf, &alen);
+    RSTRING(str)->len = recvfrom(fd, RSTRING(str)->ptr, RSTRING(str)->len, flags,
+				 (struct sockaddr*)buf, &alen);
     TRAP_END;
 
-    if (str->len < 0) {
+    if (RSTRING(str)->len < 0) {
 	switch (errno) {
 	  case EINTR:
 	  case EWOULDBLOCK:
@@ -311,21 +318,28 @@ s_recv(sock, argc, argv, from)
     }
     str_taint(str);
     switch (from) {
-      case 0:
+      case RECV_RECV:
 	return (VALUE)str;
-      case 1:
+      case RECV_TCP:
 	if (alen != sizeof(struct sockaddr_in)) {
 	    TypeError("sockaddr size differs - should not happen");
 	}
-	return assoc_new(str, tcpaddr((struct sockaddr_in *)buf));
+	return assoc_new(str, ipaddr((struct sockaddr_in *)buf));
+      case RECV_UDP:
+        {
+	    VALUE addr = ipaddr((struct sockaddr_in *)buf);
+
+	    return assoc_new(str, assoc_new(RARRAY(addr)->ptr[2],
+					    RARRAY(addr)->ptr[1]));
+	}
 #ifdef HAVE_SYS_UN_H
-      case 2:
+      case RECV_UNIX:
 	if (alen != sizeof(struct sockaddr_un)) {
 	    TypeError("sockaddr size differs - should not happen");
 	}
 	return assoc_new(str, unixaddr((struct sockaddr_un *)buf));
 #endif
-      case 3:
+      case RECV_SOCKET:
 	return assoc_new(str, str_new(buf, alen));
     }
 }
@@ -336,7 +350,7 @@ bsock_recv(argc, argv, sock)
     VALUE *argv;
     VALUE sock;
 {
-    return s_recv(sock, argc, argv, 0);
+    return s_recv(sock, argc, argv, RECV_RECV);
 }
 
 #if defined(THREAD) && defined(HAVE_FCNTL)
@@ -470,7 +484,7 @@ open_inet(class, h, serv, type)
 	Raise(eSocket, "no such proto %s", servent->s_proto);
     }
 
-    fd = socket(PF_INET, SOCK_STREAM, protoent->p_proto);
+    fd = socket(AF_INET, SOCK_STREAM, protoent->p_proto);
 
     memset(&sockaddr, 0, sizeof(sockaddr));
     sockaddr.sin_family = AF_INET;
@@ -515,9 +529,7 @@ open_inet(class, h, serv, type)
     if (type == INET_SERVER) listen(fd, 5);
 
     /* create new instance */
-    sock = sock_new(class, fd);
-
-    return sock;
+    return sock_new(class, fd);
 }
 
 static VALUE
@@ -606,6 +618,15 @@ tcp_accept(sock)
 		    (struct sockaddr*)&from, &fromlen);
 }
 
+static VALUE
+tcp_recvfrom(argc, argv, sock)
+    int argc;
+    VALUE *argv;
+    VALUE sock;
+{
+    return s_recv(sock, argc, argv, RECV_TCP);
+}
+
 #ifdef HAVE_SYS_UN_H
 static VALUE
 open_unix(class, path, server)
@@ -619,7 +640,7 @@ open_unix(class, path, server)
     OpenFile *fptr;
 
     Check_SafeStr(path);
-    fd = socket(PF_UNIX, SOCK_STREAM, 0);
+    fd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (fd < 0) rb_sys_fail("socket(2)");
 
     memset(&sockaddr, 0, sizeof(sockaddr));
@@ -700,7 +721,7 @@ mkipaddr(x)
 }
 
 static VALUE
-tcpaddr(sockaddr)
+ipaddr(sockaddr)
     struct sockaddr_in *sockaddr;
 {
     VALUE family, port, addr1, addr2;
@@ -725,7 +746,7 @@ tcpaddr(sockaddr)
 }
 
 static VALUE
-tcp_addr(sock)
+ip_addr(sock)
     VALUE sock;
 {
     OpenFile *fptr;
@@ -736,11 +757,11 @@ tcp_addr(sock)
 
     if (getsockname(fileno(fptr->f), (struct sockaddr*)&addr, &len) < 0)
 	rb_sys_fail("getsockname(2)");
-    return tcpaddr(&addr);
+    return ipaddr(&addr);
 }
 
 static VALUE
-tcp_peeraddr(sock)
+ip_peeraddr(sock)
     VALUE sock;
 {
     OpenFile *fptr;
@@ -751,24 +772,14 @@ tcp_peeraddr(sock)
 
     if (getpeername(fileno(fptr->f), (struct sockaddr*)&addr, &len) < 0)
 	rb_sys_fail("getpeername(2)");
-    return tcpaddr(&addr);
+    return ipaddr(&addr);
 }
 
 static VALUE
-tcp_recvfrom(argc, argv, sock)
-    int argc;
-    VALUE *argv;
-    VALUE sock;
-{
-    return s_recv(sock, argc, argv, 1);
-}
-
-static VALUE
-tcp_s_getaddress(obj, host)
+ip_s_getaddress(obj, host)
     VALUE obj, host;
 {
     struct sockaddr_in addr;
-    struct hostent *h;
 
     if (obj_is_kind_of(host, cInteger)) {
 	int i = NUM2INT(host);
@@ -780,6 +791,148 @@ tcp_s_getaddress(obj, host)
     }
 
     return mkipaddr(addr.sin_addr.s_addr);
+}
+
+static VALUE
+udp_s_open(class)
+    VALUE class;
+{
+    return sock_new(class, socket(AF_INET, SOCK_DGRAM, 0));
+}
+
+static void
+udp_addrsetup(host, port, addr)
+    VALUE host, port;
+    struct sockaddr_in *addr;
+{
+    struct hostent *hostent;
+
+    memset(addr, 0, sizeof(struct sockaddr_in));
+    addr->sin_family = AF_INET;
+    if (NIL_P(host)) {
+	addr->sin_addr.s_addr = INADDR_ANY;
+    }
+    else if (obj_is_kind_of(host, cInteger)) {
+	int i = NUM2INT(host);
+	addr->sin_addr.s_addr = htonl(i);
+    }
+    else {
+	Check_Type(host, T_STRING);
+	setipaddr(RSTRING(host)->ptr, addr);
+    }
+    if (FIXNUM_P(port)) {
+	addr->sin_port = FIX2INT(port);
+    }
+    else {
+	struct servent *servent;
+
+	Check_Type(port, T_STRING);
+	servent = getservbyname(RSTRING(port)->ptr, "udp");
+	if (servent) {
+	    addr->sin_port = servent->s_port;
+	}
+	else {
+	    int port = strtoul(RSTRING(port)->ptr, 0, 0);
+
+	    if (port == -1) {
+		Raise(eSocket, "no such servce %s", RSTRING(port)->ptr);
+	    }
+	    addr->sin_port = htons(port);
+	}
+    }
+}
+
+static VALUE
+udp_connect(sock, host, port)
+    VALUE sock, host, port;
+{
+    struct sockaddr_in addr;
+    OpenFile *fptr;
+
+    udp_addrsetup(host, port, &addr);
+    GetOpenFile(sock, fptr);
+  retry:
+    if (connect(fileno(fptr->f), (struct sockaddr*)&addr, sizeof(addr))<0) {
+	switch (errno) {
+	  case EINTR:
+	  case EWOULDBLOCK:
+#if EAGAIN != EWOULDBLOCK
+	  case EAGAIN:
+#endif
+#ifdef THREAD
+	    thread_schedule();
+#endif
+	    goto retry;
+	}
+	rb_sys_fail("connect(2)");
+    }
+
+    return INT2FIX(0);
+}
+
+static VALUE
+udp_bind(sock, host, port)
+    VALUE sock, host, port;
+{
+    struct sockaddr_in addr;
+    OpenFile *fptr;
+
+    udp_addrsetup(host, port, &addr);
+    GetOpenFile(sock, fptr);
+    if (bind(fileno(fptr->f), (struct sockaddr*)&addr, sizeof(addr))<0) {
+	rb_sys_fail("bind(2)");
+    }
+    return INT2FIX(0);
+}
+
+static VALUE
+udp_send(argc, argv, sock)
+    int argc;
+    VALUE *argv;
+    VALUE sock;
+{
+    VALUE mesg, flags, host, port;
+    struct sockaddr_in addr;
+    OpenFile *fptr;
+    FILE *f;
+    int n;
+
+    if (argc == 2) {
+	return bsock_send(argc, argv, sock);
+    }
+    rb_scan_args(argc, argv, "4", &mesg, &flags, &host, &port);
+    Check_Type(mesg, T_STRING);
+
+    udp_addrsetup(host, port, &addr);
+    GetOpenFile(sock, fptr);
+    f = fptr->f2?fptr->f2:fptr->f;
+  retry:
+    n = sendto(fileno(f), RSTRING(mesg)->ptr, RSTRING(mesg)->len,
+	       NUM2INT(flags), (struct sockaddr*)&addr, sizeof(addr));
+    if (n < 0) {
+	switch (errno) {
+	  case EINTR:
+	  case EWOULDBLOCK:
+#if EAGAIN != EWOULDBLOCK
+	  case EAGAIN:
+#endif
+#ifdef THREAD
+	    thread_schedule();
+#endif
+	    goto retry;
+	}
+	rb_sys_fail("sendto(2)");
+    }
+    return INT2FIX(n);
+}
+
+static VALUE
+udp_recvfrom(argc, argv, sock)
+    int argc;
+    VALUE *argv;
+    VALUE sock;
+{
+    return s_recv(sock, argc, argv, RECV_UDP);
 }
 
 #ifdef HAVE_SYS_UN_H
@@ -820,7 +973,7 @@ unix_recvfrom(argc, argv, sock)
     VALUE *argv;
     VALUE sock;
 {
-    return s_recv(sock, argc, argv, 2);
+    return s_recv(sock, argc, argv, RECV_UNIX);
 }
 
 static VALUE
@@ -884,7 +1037,25 @@ setup_domain_and_type(domain, dv, type, tv)
 
     if (TYPE(domain) == T_STRING) {
 	ptr = RSTRING(domain)->ptr;
-	if (strcmp(ptr, "PF_INET") == 0)
+	if (strcmp(ptr, "AF_INET") == 0)
+	    *dv = AF_INET;
+#ifdef AF_UNIX
+	else if (strcmp(ptr, "AF_UNIX") == 0)
+	    *dv = AF_UNIX;
+#endif
+#ifdef AF_ISO
+	else if (strcmp(ptr, "AF_ISO") == 0)
+	    *dv = AF_ISO;
+#endif
+#ifdef AF_NS
+	else if (strcmp(ptr, "AF_NS") == 0)
+	    *dv = AF_NS;
+#endif
+#ifdef AF_IMPLINK
+	else if (strcmp(ptr, "AF_IMPLINK") == 0)
+	    *dv = AF_IMPLINK;
+#endif
+	else if (strcmp(ptr, "PF_INET") == 0)
 	    *dv = PF_INET;
 #ifdef PF_UNIX
 	else if (strcmp(ptr, "PF_UNIX") == 0)
@@ -893,6 +1064,8 @@ setup_domain_and_type(domain, dv, type, tv)
 #ifdef PF_IMPLINK
 	else if (strcmp(ptr, "PF_IMPLINK") == 0)
 	    *dv = PF_IMPLINK;
+	else if (strcmp(ptr, "AF_IMPLINK") == 0)
+	    *dv = AF_IMPLINK;
 #endif
 #ifdef PF_AX25
 	else if (strcmp(ptr, "PF_AX25") == 0)
@@ -978,8 +1151,7 @@ sock_s_socketpair(class, domain, type, protocol)
 
 static VALUE
 sock_connect(sock, addr)
-    VALUE sock;
-    struct RString *addr;
+    VALUE sock, addr;
 {
     OpenFile *fptr;
 
@@ -988,7 +1160,7 @@ sock_connect(sock, addr)
 
     GetOpenFile(sock, fptr);
   retry:
-    if (connect(fileno(fptr->f), (struct sockaddr*)addr->ptr, addr->len) < 0) {
+    if (connect(fileno(fptr->f), (struct sockaddr*)RSTRING(addr)->ptr, RSTRING(addr)->len) < 0) {
 	switch (errno) {
 	  case EINTR:
 	  case EWOULDBLOCK:
@@ -1008,8 +1180,7 @@ sock_connect(sock, addr)
 
 static VALUE
 sock_bind(sock, addr)
-    VALUE sock;
-    struct RString *addr;
+    VALUE sock, addr;
 {
     OpenFile *fptr;
 
@@ -1017,7 +1188,7 @@ sock_bind(sock, addr)
     str_modify(addr);
 
     GetOpenFile(sock, fptr);
-    if (bind(fileno(fptr->f), (struct sockaddr*)addr->ptr, addr->len) < 0)
+    if (bind(fileno(fptr->f), (struct sockaddr*)RSTRING(addr)->ptr, RSTRING(addr)->len) < 0)
 	rb_sys_fail("bind(2)");
 
     return INT2FIX(0);
@@ -1042,7 +1213,7 @@ sock_recvfrom(argc, argv, sock)
     VALUE *argv;
     VALUE sock;
 {
-    return s_recv(sock, argc, argv, 3);
+    return s_recv(sock, argc, argv, RECV_SOCKET);
 }
 
 static VALUE
@@ -1185,7 +1356,7 @@ sock_s_getservbyaname(argc, argv)
     VALUE *argv;
 {
     VALUE service, protocol;
-    char *name, *proto;
+    char *proto;
     struct servent *sp;
     int port;
 
@@ -1203,12 +1374,24 @@ sock_s_getservbyaname(argc, argv)
     return INT2FIX(port);
 }
 
+static VALUE mConst;
+
+static void
+sock_define_const(name, value)
+    char *name;
+    INT value;
+{
+    rb_define_const(cSocket, name, INT2FIX(value));
+    rb_define_const(mConst, name, INT2FIX(value));
+}
+
 Init_socket()
 {
     eSocket = rb_define_class("SocketError", eException);
 
     cBasicSocket = rb_define_class("BasicSocket", cIO);
     rb_undef_method(CLASS_OF(cBasicSocket), "new");
+    rb_undef_method(CLASS_OF(cBasicSocket), "open");
     rb_define_method(cBasicSocket, "shutdown", bsock_shutdown, -1);
     rb_define_method(cBasicSocket, "setsockopt", bsock_setsockopt, 3);
     rb_define_method(cBasicSocket, "getsockopt", bsock_getsockopt, 2);
@@ -1217,12 +1400,14 @@ Init_socket()
     rb_define_method(cBasicSocket, "send", bsock_send, -1);
     rb_define_method(cBasicSocket, "recv", bsock_recv, -1);
 
-    cTCPsocket = rb_define_class("TCPsocket", cBasicSocket);
+    cIPsocket = rb_define_class("IPsocket", cBasicSocket);
+    rb_define_method(cIPsocket, "addr", ip_addr, 0);
+    rb_define_method(cIPsocket, "peeraddr", ip_peeraddr, 0);
+    rb_define_singleton_method(cIPsocket, "getaddress", ip_s_getaddress, 1);
+
+    cTCPsocket = rb_define_class("TCPsocket", cIPsocket);
     rb_define_singleton_method(cTCPsocket, "open", tcp_s_open, 2);
     rb_define_singleton_method(cTCPsocket, "new", tcp_s_open, 2);
-    rb_define_method(cTCPsocket, "addr", tcp_addr, 0);
-    rb_define_method(cTCPsocket, "peeraddr", tcp_peeraddr, 0);
-    rb_define_singleton_method(cTCPsocket, "getaddress", tcp_s_getaddress, 1);
     rb_define_method(cTCPsocket, "recvfrom", tcp_recvfrom, -1);
 
 #ifdef SOCKS
@@ -1235,6 +1420,14 @@ Init_socket()
     rb_define_singleton_method(cTCPserver, "open", tcp_svr_s_open, -1);
     rb_define_singleton_method(cTCPserver, "new", tcp_svr_s_open, -1);
     rb_define_method(cTCPserver, "accept", tcp_accept, 0);
+
+    cUDPsocket = rb_define_class("UDPsocket", cIPsocket);
+    rb_define_singleton_method(cUDPsocket, "open", udp_s_open, 0);
+    rb_define_singleton_method(cUDPsocket, "new", udp_s_open, 0);
+    rb_define_method(cUDPsocket, "connect", udp_connect, 2);
+    rb_define_method(cUDPsocket, "bind", udp_bind, 2);
+    rb_define_method(cUDPsocket, "send", udp_send, -1);
+    rb_define_method(cUDPsocket, "recvfrom", udp_recvfrom, -1);
 
 #ifdef HAVE_SYS_UN_H
     cUNIXsocket = rb_define_class("UNIXsocket", cBasicSocket);
@@ -1271,137 +1464,138 @@ Init_socket()
     rb_define_singleton_method(cSocket, "getservbyname", sock_s_getservbyaname, -1);
 
     /* constants */
-    rb_define_const(cSocket, "SOCK_STREAM", INT2FIX(SOCK_STREAM));
-    rb_define_const(cSocket, "SOCK_DGRAM", INT2FIX(SOCK_DGRAM));
-    rb_define_const(cSocket, "SOCK_RAW", INT2FIX(SOCK_RAW));
+    mConst = rb_define_module_under(cSocket, "Constants");
+    sock_define_const("SOCK_STREAM", SOCK_STREAM);
+    sock_define_const("SOCK_DGRAM", SOCK_DGRAM);
+    sock_define_const("SOCK_RAW", SOCK_RAW);
 #ifdef SOCK_RDM
-    rb_define_const(cSocket, "SOCK_RDM", INT2FIX(SOCK_RDM));
+    sock_define_const("SOCK_RDM", SOCK_RDM);
 #endif
 #ifdef SOCK_SEQPACKET
-    rb_define_const(cSocket, "SOCK_SEQPACKET", INT2FIX(SOCK_SEQPACKET));
+    sock_define_const("SOCK_SEQPACKET", SOCK_SEQPACKET);
 #endif
 #ifdef SOCK_PACKET
-    rb_define_const(cSocket, "SOCK_PACKET", INT2FIX(SOCK_PACKET));
+    sock_define_const("SOCK_PACKET", SOCK_PACKET);
 #endif
 
-    rb_define_const(cSocket, "AF_INET", INT2FIX(AF_INET));
-    rb_define_const(cSocket, "PF_INET", INT2FIX(PF_INET));
+    sock_define_const("AF_INET", AF_INET);
+    sock_define_const("PF_INET", PF_INET);
 #ifdef AF_UNIX
-    rb_define_const(cSocket, "AF_UNIX", INT2FIX(AF_UNIX));
-    rb_define_const(cSocket, "PF_UNIX", INT2FIX(PF_UNIX));
+    sock_define_const("AF_UNIX", AF_UNIX);
+    sock_define_const("PF_UNIX", PF_UNIX);
 #endif
 #ifdef AF_AX25
-    rb_define_const(cSocket, "AF_AX25", INT2FIX(AF_AX25));
-    rb_define_const(cSocket, "PF_AX25", INT2FIX(PF_AX25));
+    sock_define_const("AF_AX25", AF_AX25);
+    sock_define_const("PF_AX25", PF_AX25);
 #endif
 #ifdef AF_IPX
-    rb_define_const(cSocket, "AF_IPX", INT2FIX(AF_IPX));
-    rb_define_const(cSocket, "PF_IPX", INT2FIX(PF_IPX));
+    sock_define_const("AF_IPX", AF_IPX);
+    sock_define_const("PF_IPX", PF_IPX);
 #endif
 #ifdef AF_APPLETALK
-    rb_define_const(cSocket, "AF_APPLETALK", INT2FIX(AF_APPLETALK));
-    rb_define_const(cSocket, "PF_APPLETALK", INT2FIX(PF_APPLETALK));
+    sock_define_const("AF_APPLETALK", AF_APPLETALK);
+    sock_define_const("PF_APPLETALK", PF_APPLETALK);
 #endif
 
-    rb_define_const(cSocket, "MSG_OOB", INT2FIX(MSG_OOB));
-    rb_define_const(cSocket, "MSG_PEEK", INT2FIX(MSG_PEEK));
-    rb_define_const(cSocket, "MSG_DONTROUTE", INT2FIX(MSG_DONTROUTE));
+    sock_define_const("MSG_OOB", MSG_OOB);
+    sock_define_const("MSG_PEEK", MSG_PEEK);
+    sock_define_const("MSG_DONTROUTE", MSG_DONTROUTE);
 
-    rb_define_const(cSocket, "SOL_SOCKET", INT2FIX(SOL_SOCKET));
+    sock_define_const("SOL_SOCKET", SOL_SOCKET);
 #ifdef SOL_IP
-    rb_define_const(cSocket, "SOL_IP", INT2FIX(SOL_IP));
+    sock_define_const("SOL_IP", SOL_IP);
 #endif
 #ifdef SOL_IPX
-    rb_define_const(cSocket, "SOL_IPX", INT2FIX(SOL_IPX));
+    sock_define_const("SOL_IPX", SOL_IPX);
 #endif
 #ifdef SOL_AX25
-    rb_define_const(cSocket, "SOL_AX25", INT2FIX(SOL_AX25));
+    sock_define_const("SOL_AX25", SOL_AX25);
 #endif
 #ifdef SOL_ATALK
-    rb_define_const(cSocket, "SOL_ATALK", INT2FIX(SOL_ATALK));
+    sock_define_const("SOL_ATALK", SOL_ATALK);
 #endif
 #ifdef SOL_TCP
-    rb_define_const(cSocket, "SOL_TCP", INT2FIX(SOL_TCP));
+    sock_define_const("SOL_TCP", SOL_TCP);
 #endif
 #ifdef SOL_UDP
-    rb_define_const(cSocket, "SOL_UDP", INT2FIX(SOL_UDP));
+    sock_define_const("SOL_UDP", SOL_UDP);
 #endif
 
 #ifdef SO_DEBUG
-    rb_define_const(cSocket, "SO_DEBUG", INT2FIX(SO_DEBUG));
+    sock_define_const("SO_DEBUG", SO_DEBUG);
 #endif
-    rb_define_const(cSocket, "SO_REUSEADDR", INT2FIX(SO_REUSEADDR));
+    sock_define_const("SO_REUSEADDR", SO_REUSEADDR);
 #ifdef SO_TYPE
-    rb_define_const(cSocket, "SO_TYPE", INT2FIX(SO_TYPE));
+    sock_define_const("SO_TYPE", SO_TYPE);
 #endif
 #ifdef SO_ERROR
-    rb_define_const(cSocket, "SO_ERROR", INT2FIX(SO_ERROR));
+    sock_define_const("SO_ERROR", SO_ERROR);
 #endif
 #ifdef SO_DONTROUTE
-    rb_define_const(cSocket, "SO_DONTROUTE", INT2FIX(SO_DONTROUTE));
+    sock_define_const("SO_DONTROUTE", SO_DONTROUTE);
 #endif
 #ifdef SO_BROADCAST
-    rb_define_const(cSocket, "SO_BROADCAST", INT2FIX(SO_BROADCAST));
+    sock_define_const("SO_BROADCAST", SO_BROADCAST);
 #endif
 #ifdef SO_SNDBUF
-    rb_define_const(cSocket, "SO_SNDBUF", INT2FIX(SO_SNDBUF));
+    sock_define_const("SO_SNDBUF", SO_SNDBUF);
 #endif
 #ifdef SO_RCVBUF
-    rb_define_const(cSocket, "SO_RCVBUF", INT2FIX(SO_RCVBUF));
+    sock_define_const("SO_RCVBUF", SO_RCVBUF);
 #endif
-    rb_define_const(cSocket, "SO_KEEPALIVE", INT2FIX(SO_KEEPALIVE));
+    sock_define_const("SO_KEEPALIVE", SO_KEEPALIVE);
 #ifdef SO_OOBINLINE
-    rb_define_const(cSocket, "SO_OOBINLINE", INT2FIX(SO_OOBINLINE));
+    sock_define_const("SO_OOBINLINE", SO_OOBINLINE);
 #endif
 #ifdef SO_NO_CHECK
-    rb_define_const(cSocket, "SO_NO_CHECK", INT2FIX(SO_NO_CHECK));
+    sock_define_const("SO_NO_CHECK", SO_NO_CHECK);
 #endif
 #ifdef SO_PRIORITY
-    rb_define_const(cSocket, "SO_PRIORITY", INT2FIX(SO_PRIORITY));
+    sock_define_const("SO_PRIORITY", SO_PRIORITY);
 #endif
-    rb_define_const(cSocket, "SO_LINGER", INT2FIX(SO_LINGER));
+    sock_define_const("SO_LINGER", SO_LINGER);
 
 #ifdef SOPRI_INTERACTIVE
-    rb_define_const(cSocket, "SOPRI_INTERACTIVE", INT2FIX(SOPRI_INTERACTIVE));
+    sock_define_const("SOPRI_INTERACTIVE", SOPRI_INTERACTIVE);
 #endif
 #ifdef SOPRI_NORMAL
-    rb_define_const(cSocket, "SOPRI_NORMAL", INT2FIX(SOPRI_NORMAL));
+    sock_define_const("SOPRI_NORMAL", SOPRI_NORMAL);
 #endif
 #ifdef SOPRI_BACKGROUND
-    rb_define_const(cSocket, "SOPRI_BACKGROUND", INT2FIX(SOPRI_BACKGROUND));
+    sock_define_const("SOPRI_BACKGROUND", SOPRI_BACKGROUND);
 #endif
 
 #ifdef IP_MULTICAST_IF
-    rb_define_const(cSocket, "IP_MULTICAST_IF", INT2FIX(IP_MULTICAST_IF));
+    sock_define_const("IP_MULTICAST_IF", IP_MULTICAST_IF);
 #endif
 #ifdef IP_MULTICAST_TTL
-    rb_define_const(cSocket, "IP_MULTICAST_TTL", INT2FIX(IP_MULTICAST_TTL));
+    sock_define_const("IP_MULTICAST_TTL", IP_MULTICAST_TTL);
 #endif
 #ifdef IP_MULTICAST_LOOP
-    rb_define_const(cSocket, "IP_MULTICAST_LOOP", INT2FIX(IP_MULTICAST_LOOP));
+    sock_define_const("IP_MULTICAST_LOOP", IP_MULTICAST_LOOP);
 #endif
 #ifdef IP_ADD_MEMBERSHIP
-    rb_define_const(cSocket, "IP_ADD_MEMBERSHIP", INT2FIX(IP_ADD_MEMBERSHIP));
+    sock_define_const("IP_ADD_MEMBERSHIP", IP_ADD_MEMBERSHIP);
 #endif
 
 #ifdef IP_DEFAULT_MULTICAST_TTL
-    rb_define_const(cSocket, "IP_DEFAULT_MULTICAST_TTL", INT2FIX(IP_DEFAULT_MULTICAST_TTL));
+    sock_define_const("IP_DEFAULT_MULTICAST_TTL", IP_DEFAULT_MULTICAST_TTL);
 #endif
 #ifdef IP_DEFAULT_MULTICAST_LOOP
-    rb_define_const(cSocket, "IP_DEFAULT_MULTICAST_LOOP", INT2FIX(IP_DEFAULT_MULTICAST_LOOP));
+    sock_define_const("IP_DEFAULT_MULTICAST_LOOP", IP_DEFAULT_MULTICAST_LOOP);
 #endif
 #ifdef IP_MAX_MEMBERSHIPS
-    rb_define_const(cSocket, "IP_MAX_MEMBERSHIPS", INT2FIX(IP_MAX_MEMBERSHIPS));
+    sock_define_const("IP_MAX_MEMBERSHIPS", IP_MAX_MEMBERSHIPS);
 #endif
 
 #ifdef IPX_TYPE
-    rb_define_const(cSocket, "IPX_TYPE", INT2FIX(IPX_TYPE));
+    sock_define_const("IPX_TYPE", IPX_TYPE);
 #endif
 
 #ifdef TCP_NODELAY
-    rb_define_const(cSocket, "TCP_NODELAY", INT2FIX(TCP_NODELAY));
+    sock_define_const("TCP_NODELAY", TCP_NODELAY);
 #endif
 #ifdef TCP_MAXSEG
-    rb_define_const(cSocket, "TCP_MAXSEG", INT2FIX(TCP_MAXSEG));
+    sock_define_const("TCP_MAXSEG", TCP_MAXSEG);
 #endif
 }

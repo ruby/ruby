@@ -131,7 +131,7 @@ class TkTextMark<TkObject
     @t = parent
     @path = @id = $tk_text_mark
     $tk_text_mark = $tk_text_mark.succ
-    tk_call @t.path, 'set', @id, index
+    tk_call @t.path, 'mark', 'set', @id, index
     @t._addtag id, self
   end
   def id
@@ -139,7 +139,7 @@ class TkTextMark<TkObject
   end
 
   def set(where)
-    tk_call @t.path, 'mark', 'unset', @id, where
+    tk_call @t.path, 'mark', 'set', @id, where
   end
 
   def unset

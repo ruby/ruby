@@ -1,13 +1,19 @@
 #
 #   sync.rb - カウント付2-フェーズロッククラス
-#   	$Release Version: 0.1$
+#   	$Release Version: 0.2$
 #   	$Revision$
 #   	$Date$
 #   	by Keiju ISHITSUKA
 #
 # --
+#  Sync_m, Synchronizer_m
 #  Usage:
-#   Sync_m, Synchronizer_m
+#   obj.extend(Sync_m)
+#   or
+#   class Foo
+#	Sync_m.include_to self
+#	:
+#   end
 #
 #   Sync_m#sync_mode
 #   Sync_m#sync_locked?, locked?
@@ -19,8 +25,9 @@
 #
 #   Sync, Synchronicer:
 #	include Sync_m
-#
+#   Usage:
 #   sync = Sync.new
+#
 #   Sync#mode
 #   Sync#locked?
 #   Sync#shared?
@@ -36,15 +43,17 @@ unless defined? Thread
   fail "Thread not available for this ruby interpreter"
 end
 
-require "finalize.rb"
+require "finalize"
 
 module Sync_m
   RCS_ID='-$Header$-'
   
+  # lock mode
   UN = :UN
   SH = :SH
   EX = :EX
   
+  # 例外定義
   class Err < Exception
     def Err.Fail(*opt)
       fail self, sprintf(self::Message, *opt)
@@ -68,19 +77,51 @@ module Sync_m
     end
   end
   
-  def Sync_m.extend_object(obj)
+  # include and extend initialize methods.
+  def Sync_m.extendable_module(obj)
     if Fixnum === obj or TRUE === obj or FALSE === obj or nil == obj
       raise TypeError, "Sync_m can't extend to this class(#{obj.type})"
     else
       begin
-	eval "class << obj
-		@sync_locked
-	      end"
-	obj.extend(For_primitive_object)
+	obj.instance_eval "@sync_locked"
+	For_general_object
       rescue TypeError
-	obj.extend(For_general_object)
+	For_primitive_object
       end
     end
+  end
+  
+  def Sync_m.includable_module(cl)
+    begin
+      dummy = cl.new
+      Sync_m.extendable_module(dummy)
+    rescue NameError
+      # newが定義されていない時は, DATAとみなす.
+      For_primitive_object
+    end
+  end
+  
+  def Sync_m.extend_class(cl)
+    return super if cl.instance_of?(Module)
+    
+    # モジュールの時は何もしない. クラスの場合, 適切なモジュールの決定
+    # とaliasを行う.  
+    real = includable_module(cl)
+    cl.module_eval %q{
+      include real
+
+      alias locked? sync_locked?
+      alias shared? sync_shared?
+      alias exclusive? sync_exclusive?
+      alias lock sync_lock
+      alias unlock sync_unlock
+      alias try_lock sync_try_lock
+      alias synchronize sync_synchronize
+    }
+  end
+  
+  def Sync_m.extend_object(obj)
+    obj.extend(Sync_m.extendable_module(obj))
   end
   
   def sync_extended
@@ -94,7 +135,7 @@ module Sync_m
       eval "class << self
 	alias locked? sync_locked?
         alias shared? sync_shared?
-        alias excluive? sync_exclusive?
+        alias exclusive? sync_exclusive?
 	alias lock sync_lock
 	alias unlock sync_unlock
 	alias try_lock sync_try_lock
@@ -103,6 +144,7 @@ module Sync_m
     end
   end
   
+  # accessing
   def sync_locked?
     sync_mode != UN
   end
@@ -115,6 +157,7 @@ module Sync_m
     sync_mode == EX
   end
   
+  # locking methods.
   def sync_try_lock(mode = EX)
     return unlock if sync_mode == UN
     
@@ -238,7 +281,6 @@ module Sync_m
 	self.sync_ex_locker = Thread.current
 	self.sync_ex_count = 1
 	ret = TRUE
-	
       elsif sync_mode == EX && sync_ex_locker == Thread.current
 	self.sync_ex_count = sync_ex_count + 1
 	ret = TRUE
@@ -262,6 +304,7 @@ module Sync_m
     end
   end
   
+  # internal class
   module For_primitive_object
     include Sync_m
     
@@ -281,12 +324,18 @@ module Sync_m
       Finalizer.add(obj, For_primitive_object, :sync_finalize)
     end
     
-    def sync_extended
+    def initialize
       super
       Sync_Locked[id] = LockState.new(UN, [], [], Hash.new, nil, 0 )
+      self
     end
     
-    def sync_finalize
+    def sync_extended
+      super
+      initialize
+    end
+    
+    def For_primitive_object.sync_finalize(id)
       wait = Sync_Locked.delete(id)
       # waiting == [] ときだけ GCされるので, 待ち行列の解放は意味がない.
     end
@@ -343,7 +392,7 @@ module Sync_m
       obj.sync_extended
     end
     
-    def sync_extended
+    def initialize
       super
       @sync_mode = UN
       @sync_waiting = []
@@ -351,6 +400,12 @@ module Sync_m
       @sync_sh_locker = Hash.new
       @sync_ex_locker = nil
       @sync_ex_count = 0
+      self
+    end
+    
+    def sync_extended
+      super
+      initialize
     end
     
     attr :sync_mode, TRUE
@@ -366,10 +421,11 @@ end
 Synchronizer_m = Sync_m
 
 class Sync
-  include Sync_m::For_general_object
+  Sync_m.extend_class self
+  #include Sync_m
     
   def initialize
-    sync_extended
+    super
   end
     
 end

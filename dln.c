@@ -24,6 +24,12 @@ char *dln_argv0;
 #include <alloca.h>
 #endif
 
+#ifdef HAVE_STRING_H
+# include <string.h>
+#else
+# include <strings.h>
+#endif
+
 void *xmalloc();
 void *xcalloc();
 void *xrealloc();
@@ -47,15 +53,8 @@ void *xrealloc();
 # include <unistd.h>
 #endif
 
-#if defined (HAVE_STRING_H)
-#  include <string.h>
-#else
-#  include <strings.h>
-#endif
-
 #ifndef NT
 char *strdup();
-
 char *getenv();
 #endif
 
@@ -1069,12 +1068,15 @@ dln_sym(name)
 #ifdef _AIX
 #include <ctype.h>	/* for isdigit()	*/
 #include <errno.h>	/* for global errno	*/
-#include <string.h>	/* for strerror()	*/
 #include <sys/ldr.h>
 #endif
 
 #ifdef NeXT
 /*#include <mach-o/rld.h>*/
+#endif
+
+#ifdef _WIN32
+#include <windows.h>
 #endif
 
 static char *
@@ -1103,6 +1105,20 @@ dln_strerror()
 
 #ifdef USE_DLN_DLOPEN
     return (char*)dlerror();
+#endif
+
+#ifdef _WIN32
+    static char message[1024];
+    FormatMessage(
+	FORMAT_MESSAGE_FROM_SYSTEM,
+	NULL,
+	GetLastError(),
+	MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
+	message,
+	sizeof message,
+	NULL);
+
+    return message;
 #endif
 }
 
@@ -1159,6 +1175,43 @@ void
 dln_load(file)
     char *file;
 {
+#ifdef _WIN32
+    HINSTANCE handle;
+    char winfile[255];
+    void (*init_fct)();
+    char buf[MAXPATHLEN];
+
+    /* Load the file as an object one */
+    init_funcname(buf, file);
+
+#ifdef __CYGWIN32__
+    cygwin32_conv_to_win32_path(file, winfile);
+#else
+    strcpy(winfile, file);
+#endif
+
+    /* Load file */
+    if ((handle =
+	LoadLibraryExA(winfile, NULL, LOAD_WITH_ALTERED_SEARCH_PATH)) == NULL) {
+        printf("LoadLibraryExA\n");
+	goto failed;
+    }
+
+#ifdef __CYGWIN32__
+    init_fct = (void(*)())GetProcAddress(handle, "impure_setup");
+
+    if (init_fct)
+	init_fct(_impure_ptr);
+#endif
+
+    if ((init_fct = (void(*)())GetProcAddress(handle, buf)) == NULL) {
+        printf("GetProcAddress %s\n", buf);
+	goto failed;
+    }
+    /* Call the init code */
+    (*init_fct)();
+    return;
+#else
 #ifdef USE_DLN_A_OUT
     if (load(file) == -1) {
 	goto failed;
@@ -1175,7 +1228,6 @@ dln_load(file)
     {
 	void *handle;
 	void (*init_fct)();
-	int len = strlen(file);
 
 # ifndef RTLD_LAZY
 #  define RTLD_LAZY 1
@@ -1280,6 +1332,7 @@ dln_load(file)
 #endif
 
 #endif /* USE_DLN_A_OUT */
+#endif
 #if !defined(_AIX) && !defined(NeXT)
   failed:
     LoadError("%s - %s", dln_strerror(), file);

@@ -1,1 +1,1 @@
-dbm.o: dbm.c ../../ruby.h ../../config.h ../../defines.h
+dbm.o: dbm.c $(hdrdir)/ruby.h $(hdrdir)/config.h $(hdrdir)/defines.h

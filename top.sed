@@ -1,6 +1,6 @@
 /^SHELL/s,/bin/sh,$(COMPSEC),
-/^VPATH/s/:/;/g
 s/@srcdir@/./g
+s/@top_srcdir@/../
 s/@CC@/gcc/
 s/@CPP@/gcc -E/
 s/@CPPFLAGS@//
@@ -11,7 +11,7 @@ s/@INSTALL@/ginstall -c/
 s/@INSTALL_PROGRAM@/${INSTALL}/
 s/@INSTALL_DATA@/${INSTALL} -m 644/
 s/@SET_MAKE@//
-s/@CFLAGS@/-g -O -I./
+s/@CFLAGS@/-g -O2 -I./
 s/@STATIC@//
 s/@LDFLAGS@//
 s/@LIBS@//
@@ -40,7 +40,7 @@ s/y\.tab\.c/y_tab.c/
 #/`rm -f ruby`/s//`rm -f ruby.exe`/
 #/`cp miniruby ruby`/s//`cp miniruby.exe ruby.exe`/
 /^all:.*miniruby/ {
-    n;N;N;N;c\
+    n;c\
 		cd ext\
 		../miniruby ./extmk.rb\
 		cd ..

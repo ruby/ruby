@@ -16,6 +16,10 @@ extern char **origenviron;
 char *strdup();
 #endif
 
+#ifdef USE_WIN32_RTL_ENV
+#include <stdlib.h>
+#endif
+
 static int
 envix(nam)
 char *nam;
@@ -29,9 +33,11 @@ char *nam;
     return i;
 }
 
+#ifndef WIN32
 void
-setenv(nam,val)
+setenv(nam,val, n)
 char *nam, *val;
+int n;
 {
     register int i=envix(nam);		/* where does it go? */
 
@@ -75,3 +81,69 @@ char *nam, *val;
     (void)sprintf(environ[i] + strlen(nam),"=%s",val);
 #endif /* MSDOS */
 }
+#else /* if WIN32 */
+void
+setenv(nam,val, n)
+char *nam, *val;
+int n;
+{
+#ifdef USE_WIN32_RTL_ENV
+
+    register char *envstr;
+    STRLEN namlen = strlen(nam);
+    STRLEN vallen;
+    char *oldstr = environ[envix(nam)];
+
+    /* putenv() has totally broken semantics in both the Borland
+     * and Microsoft CRTLs.  They either store the passed pointer in
+     * the environment without making a copy, or make a copy and don't
+     * free it. And on top of that, they dont free() old entries that
+     * are being replaced/deleted.  This means the caller must
+     * free any old entries somehow, or we end up with a memory
+     * leak every time setenv() is called.  One might think
+     * one could directly manipulate environ[], like the UNIX code
+     * above, but direct changes to environ are not allowed when
+     * calling putenv(), since the RTLs maintain an internal
+     * *copy* of environ[]. Bad, bad, *bad* stink.
+     * GSAR 97-06-07
+     */
+
+    if (!val) {
+	if (!oldstr)
+	    return;
+	val = "";
+	vallen = 0;
+    }
+    else
+	vallen = strlen(val);
+    envstr = ALLOC_N(char, namelen + vallen + 3);
+    (void)sprintf(envstr,"%s=%s",nam,val);
+    (void)putenv(envstr);
+    if (oldstr)
+	free(oldstr);
+#ifdef _MSC_VER
+    free(envstr);		/* MSVCRT leaks without this */
+#endif
+
+#else /* !USE_WIN32_RTL_ENV */
+
+    /* The sane way to deal with the environment.
+     * Has these advantages over putenv() & co.:
+     *  * enables us to store a truly empty value in the
+     *    environment (like in UNIX).
+     *  * we don't have to deal with RTL globals, bugs and leaks.
+     *  * Much faster.
+     * Why you may want to enable USE_WIN32_RTL_ENV:
+     *  * environ[] and RTL functions will not reflect changes,
+     *    which might be an issue if extensions want to access
+     *    the env. via RTL.  This cuts both ways, since RTL will
+     *    not see changes made by extensions that call the Win32
+     *    functions directly, either.
+     * GSAR 97-06-07
+     */
+    SetEnvironmentVariable(nam,val);
+
+#endif
+}
+
+#endif /* WIN32 */

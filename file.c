@@ -42,15 +42,11 @@ struct timeval {
 #include <pwd.h>
 #endif
 
-#ifdef HAVE_STRING_H
-# include <string.h>
-#else
+#ifndef HAVE_STRING_H
 char *strrchr();
 #endif
 
-#ifdef NT
 #include <sys/stat.h>
-#endif
 
 #ifndef NT
 char *strdup();
@@ -101,6 +97,10 @@ file_s_open(argc, argv, class)
     file = file_open(RSTRING(fname)->ptr, mode);
 
     RBASIC(file)->class = class;
+    if (iterator_p()) {
+	rb_ensure(rb_yield, file, io_close, file);
+    }
+
     return file;
 }
 
@@ -136,7 +136,8 @@ file_reopen(argc, argv, file)
     if (!fptr->f) {
 	fptr->f = rb_fopen(RSTRING(fname)->ptr, mode);
 	if (fptr->f2) {
-	    fclose(fptr->f2);
+	    if (fileno(fptr->f2) < 3)	/* need to keep stdio */
+		fclose(fptr->f2);
 	    fptr->f2 = NULL;
 	}
 	return file;
@@ -155,13 +156,14 @@ file_reopen(argc, argv, file)
 }
 
 static int
-apply2files(func, args, arg)
+apply2files(func, vargs, arg)
     int (*func)();
-    struct RArray *args;
+    VALUE vargs;
     void *arg;
 {
     int i;
     VALUE path;
+    struct RArray *args = RARRAY(vargs);
 
     for (i=0; i<args->len; i++) {
 	Check_SafeStr(args->ptr[i]);
@@ -269,7 +271,6 @@ file_isatty(obj)
 #else
 #include "missing/file.h"
 #endif
-#include <sys/stat.h>
 
 static VALUE
 stat_new(st)
@@ -306,14 +307,13 @@ stat_new(st)
 
 static VALUE
 file_s_stat(obj, fname)
-    VALUE obj;
-    struct RString *fname;
+    VALUE obj, fname;
 {
     struct stat st;
 
     Check_SafeStr(fname);
-    if (stat(fname->ptr, &st) == -1) {
-	rb_sys_fail(fname->ptr);
+    if (stat(RSTRING(fname)->ptr, &st) == -1) {
+	rb_sys_fail(RSTRING(fname)->ptr);
     }
     return stat_new(&st);
 }
@@ -334,15 +334,14 @@ file_stat(obj)
 
 static VALUE
 file_s_lstat(obj, fname)
-    VALUE obj;
-    struct RString *fname;
+    VALUE obj, fname;
 {
 #if !defined(MSDOS) && !defined(NT)
     struct stat st;
 
     Check_SafeStr(fname);
-    if (lstat(fname->ptr, &st) == -1) {
-	rb_sys_fail(fname->ptr);
+    if (lstat(RSTRING(fname)->ptr, &st) == -1) {
+	rb_sys_fail(RSTRING(fname)->ptr);
     }
     return stat_new(&st);
 #else
@@ -424,19 +423,6 @@ eaccess(path, mode)
 	return 0;
     }
 
-#if defined(DJGPP)
-  {
-    int stat_mode = 0;
-    if (mode & X_OK)
-      stat_mode |= S_IXOTH;
-    if (mode & W_OK)
-      stat_mode |= S_IWOTH;
-    if (mode & R_OK)
-      stat_mode |= S_IROTH;
-    mode = stat_mode;
-  }
-#endif
-
   if (st.st_uid == euid)        /* owner */
     mode <<= 6;
   else if (group_member (st.st_gid))
@@ -452,8 +438,7 @@ eaccess(path, mode)
 
 static VALUE
 test_d(obj, fname)
-    VALUE obj;
-    struct RString *fname;
+    VALUE obj, fname;
 {
 #ifndef S_ISDIR
 #   define S_ISDIR(m) ((m & S_IFMT) == S_IFDIR)
@@ -462,15 +447,14 @@ test_d(obj, fname)
     struct stat st;
 
     Check_SafeStr(fname);
-    if (stat(fname->ptr, &st) < 0) return FALSE;
+    if (stat(RSTRING(fname)->ptr, &st) < 0) return FALSE;
     if (S_ISDIR(st.st_mode)) return TRUE;
     return FALSE;
 }
 
 static VALUE
 test_p(obj, fname)
-    VALUE obj;
-    struct RString *fname;
+    VALUE obj, fname;
 {
 #ifdef S_IFIFO
 #  ifndef S_ISFIFO
@@ -480,7 +464,7 @@ test_p(obj, fname)
     struct stat st;
 
     Check_SafeStr(fname);
-    if (stat(fname->ptr, &st) < 0) return FALSE;
+    if (stat(RSTRING(fname)->ptr, &st) < 0) return FALSE;
     if (S_ISFIFO(st.st_mode)) return TRUE;
 
 #endif
@@ -489,8 +473,7 @@ test_p(obj, fname)
 
 static VALUE
 test_l(obj, fname)
-    VALUE obj;
-    struct RString *fname;
+    VALUE obj, fname;
 {
 #ifndef S_ISLNK
 #  ifdef _S_ISLNK
@@ -510,7 +493,7 @@ test_l(obj, fname)
     struct stat st;
 
     Check_SafeStr(fname);
-    if (lstat(fname->ptr, &st) < 0) return FALSE;
+    if (lstat(RSTRING(fname)->ptr, &st) < 0) return FALSE;
     if (S_ISLNK(st.st_mode)) return TRUE;
 
 #endif
@@ -519,8 +502,7 @@ test_l(obj, fname)
 
 static VALUE
 test_S(obj, fname)
-    VALUE obj;
-    struct RString *fname;
+    VALUE obj, fname;
 {
 #ifndef S_ISSOCK
 #  ifdef _S_ISSOCK
@@ -540,7 +522,7 @@ test_S(obj, fname)
     struct stat st;
 
     Check_SafeStr(fname);
-    if (stat(fname->ptr, &st) < 0) return FALSE;
+    if (stat(RSTRING(fname)->ptr, &st) < 0) return FALSE;
     if (S_ISSOCK(st.st_mode)) return TRUE;
 
 #endif
@@ -549,8 +531,7 @@ test_S(obj, fname)
 
 static VALUE
 test_b(obj, fname)
-    VALUE obj;
-    struct RString *fname;
+    VALUE obj, fname;
 {
 #ifndef S_ISBLK
 #   ifdef S_IFBLK
@@ -564,7 +545,7 @@ test_b(obj, fname)
     struct stat st;
 
     Check_SafeStr(fname);
-    if (stat(fname->ptr, &st) < 0) return FALSE;
+    if (stat(RSTRING(fname)->ptr, &st) < 0) return FALSE;
     if (S_ISBLK(st.st_mode)) return TRUE;
 
 #endif
@@ -573,8 +554,7 @@ test_b(obj, fname)
 
 static VALUE
 test_c(obj, fname)
-    VALUE obj;
-    struct RString *fname;
+    VALUE obj, fname;
 {
 #ifndef S_ISCHR
 #   define S_ISCHR(m) ((m & S_IFMT) == S_IFCHR)
@@ -583,7 +563,7 @@ test_c(obj, fname)
     struct stat st;
 
     Check_SafeStr(fname);
-    if (stat(fname->ptr, &st) < 0) return FALSE;
+    if (stat(RSTRING(fname)->ptr, &st) < 0) return FALSE;
     if (S_ISBLK(st.st_mode)) return TRUE;
 
     return FALSE;
@@ -591,73 +571,66 @@ test_c(obj, fname)
 
 static VALUE
 test_e(obj, fname)
-    VALUE obj;
-    struct RString *fname;
+    VALUE obj, fname;
 {
     struct stat st;
 
     Check_SafeStr(fname);
-    if (stat(fname->ptr, &st) < 0) return FALSE;
+    if (stat(RSTRING(fname)->ptr, &st) < 0) return FALSE;
     return TRUE;
 }
 
 static VALUE
 test_r(obj, fname)
-    VALUE obj;
-    struct RString *fname;
+    VALUE obj, fname;
 {
     Check_SafeStr(fname);
-    if (eaccess(fname->ptr, R_OK) < 0) return FALSE;
+    if (eaccess(RSTRING(fname)->ptr, R_OK) < 0) return FALSE;
     return TRUE;
 }
 
 static VALUE
 test_R(obj, fname)
-    VALUE obj;
-    struct RString *fname;
+    VALUE obj, fname;
 {
     Check_SafeStr(fname);
-    if (access(fname->ptr, R_OK) < 0) return FALSE;
+    if (access(RSTRING(fname)->ptr, R_OK) < 0) return FALSE;
     return TRUE;
 }
 
 static VALUE
 test_w(obj, fname)
-    VALUE obj;
-    struct RString *fname;
+    VALUE obj, fname;
 {
     Check_SafeStr(fname);
-    if (eaccess(fname->ptr, W_OK) < 0) return FALSE;
+    if (eaccess(RSTRING(fname)->ptr, W_OK) < 0) return FALSE;
     return TRUE;
 }
 
 static VALUE
 test_W(obj, fname)
-    VALUE obj;
-    struct RString *fname;
+    VALUE obj, fname;
 {
     Check_SafeStr(fname);
-    if (access(fname->ptr, W_OK) < 0) return FALSE;
+    if (access(RSTRING(fname)->ptr, W_OK) < 0) return FALSE;
     return TRUE;
 }
 
 static VALUE
 test_x(obj, fname)
-    VALUE obj;
-    struct RString *fname;
+    VALUE obj, fname;
 {
     Check_SafeStr(fname);
-    if (eaccess(fname->ptr, X_OK) < 0) return FALSE;
+    if (eaccess(RSTRING(fname)->ptr, X_OK) < 0) return FALSE;
     return TRUE;
 }
 
 static VALUE
 test_X(obj, fname)
-    VALUE obj;
-    struct RString *fname;
+    VALUE obj, fname;
 {
     Check_SafeStr(fname);
-    if (access(fname->ptr, X_OK) < 0) return FALSE;
+    if (access(RSTRING(fname)->ptr, X_OK) < 0) return FALSE;
     return TRUE;
 }
 
@@ -667,79 +640,73 @@ test_X(obj, fname)
 
 static VALUE
 test_f(obj, fname)
-    VALUE obj;
-    struct RString *fname;
+    VALUE obj, fname;
 {
     struct stat st;
 
     Check_SafeStr(fname);
-    if (stat(fname->ptr, &st) < 0) return FALSE;
+    if (stat(RSTRING(fname)->ptr, &st) < 0) return FALSE;
     if (S_ISREG(st.st_mode)) return TRUE;
     return FALSE;
 }
 
 static VALUE
 test_z(obj, fname)
-    VALUE obj;
-    struct RString *fname;
+    VALUE obj, fname;
 {
     struct stat st;
 
     Check_SafeStr(fname);
-    if (stat(fname->ptr, &st) < 0) return FALSE;
+    if (stat(RSTRING(fname)->ptr, &st) < 0) return FALSE;
     if (st.st_size == 0) return TRUE;
     return FALSE;
 }
 
 static VALUE
 test_s(obj, fname)
-    VALUE obj;
-    struct RString *fname;
+    VALUE obj, fname;
 {
     struct stat st;
 
     Check_SafeStr(fname);
-    if (stat(fname->ptr, &st) < 0) return FALSE;
+    if (stat(RSTRING(fname)->ptr, &st) < 0) return FALSE;
     if (st.st_size == 0) return FALSE;
     return int2inum(st.st_size);
 }
 
 static VALUE
 test_owned(obj, fname)
-    VALUE obj;
-    struct RString *fname;
+    VALUE obj, fname;
 {
     struct stat st;
 
     Check_SafeStr(fname);
-    if (stat(fname->ptr, &st) < 0) return FALSE;
+    if (stat(RSTRING(fname)->ptr, &st) < 0) return FALSE;
     if (st.st_uid == geteuid()) return TRUE;
     return FALSE;
 }
 
 static VALUE
 test_rowned(obj, fname)
-    VALUE obj;
-    struct RString *fname;
+    VALUE obj, fname;
 {
     struct stat st;
 
     Check_SafeStr(fname);
-    if (stat(fname->ptr, &st) < 0) return FALSE;
+    if (stat(RSTRING(fname)->ptr, &st) < 0) return FALSE;
     if (st.st_uid == getuid()) return TRUE;
     return FALSE;
 }
 
 static VALUE
 test_grpowned(obj, fname)
-    VALUE obj;
-    struct RString *fname;
+    VALUE obj, fname;
 {
 #ifndef NT
     struct stat st;
 
     Check_SafeStr(fname);
-    if (stat(fname->ptr, &st) < 0) return FALSE;
+    if (stat(RSTRING(fname)->ptr, &st) < 0) return FALSE;
     if (st.st_gid == getegid()) return TRUE;
 #endif
     return FALSE;
@@ -761,12 +728,11 @@ check3rdbyte(file, mode)
 
 static VALUE
 test_suid(obj, fname)
-    VALUE obj;
-    struct RString *fname;
+    VALUE obj, fname;
 {
 #ifdef S_ISUID
     Check_SafeStr(fname);
-    return check3rdbyte(fname->ptr, S_ISUID);
+    return check3rdbyte(RSTRING(fname)->ptr, S_ISUID);
 #else
     return FALSE;
 #endif
@@ -774,12 +740,11 @@ test_suid(obj, fname)
 
 static VALUE
 test_sgid(obj, fname)
-    VALUE obj;
-    struct RString *fname;
+    VALUE obj, fname;
 {
 #ifndef NT
     Check_SafeStr(fname);
-    return check3rdbyte(fname->ptr, S_ISGID);
+    return check3rdbyte(RSTRING(fname)->ptr, S_ISGID);
 #else
     return FALSE;
 #endif
@@ -787,12 +752,11 @@ test_sgid(obj, fname)
 
 static VALUE
 test_sticky(obj, fname)
-    VALUE obj;
-    struct RString *fname;
+    VALUE obj, fname;
 {
     Check_Type(fname, T_STRING);
 #ifdef S_ISVTX
-    return check3rdbyte(fname->ptr, S_ISVTX);
+    return check3rdbyte(RSTRING(fname)->ptr, S_ISVTX);
 #else
     return FALSE;
 #endif
@@ -800,26 +764,26 @@ test_sticky(obj, fname)
 
 static VALUE
 file_s_size(obj, fname)
-    VALUE obj;
-    struct RString *fname;
+    VALUE obj, fname;
 {
     struct stat st;
 
     Check_SafeStr(fname);
-    if (stat(fname->ptr, &st) < 0) rb_sys_fail(fname->ptr);
+    if (stat(RSTRING(fname)->ptr, &st) < 0)
+	rb_sys_fail(RSTRING(fname)->ptr);
     return int2inum(st.st_size);
 }
 
 static VALUE
 file_s_ftype(obj, fname)
-    VALUE obj;
-    struct RString *fname;
+    VALUE obj, fname;
 {
     struct stat st;
     char *t;
 
     Check_SafeStr(fname);
-    if (stat(fname->ptr, &st) < 0) rb_sys_fail(fname->ptr);
+    if (stat(RSTRING(fname)->ptr, &st) < 0)
+	rb_sys_fail(RSTRING(fname)->ptr);
 
     if (S_ISREG(st.st_mode)) {
 	t = "file";
@@ -857,13 +821,13 @@ file_s_ftype(obj, fname)
 
 static VALUE
 file_s_atime(obj, fname)
-    VALUE obj;
-    struct RString *fname;
+    VALUE obj, fname;
 {
     struct stat st;
 
     Check_SafeStr(fname);
-    if (stat(fname->ptr, &st) < 0) rb_sys_fail(fname->ptr);
+    if (stat(RSTRING(fname)->ptr, &st) < 0)
+	rb_sys_fail(RSTRING(fname)->ptr);
     return time_new(st.st_atime, 0);
 }
 
@@ -883,13 +847,13 @@ file_atime(obj)
 
 static VALUE
 file_s_mtime(obj, fname)
-    VALUE obj;
-    struct RString *fname;
+    VALUE obj, fname;
 {
     struct stat st;
 
     Check_SafeStr(fname);
-    if (stat(fname->ptr, &st) < 0) rb_sys_fail(fname->ptr);
+    if (stat(RSTRING(fname)->ptr, &st) < 0)
+	rb_sys_fail(RSTRING(fname)->ptr);
     return time_new(st.st_mtime, 0);
 }
 
@@ -909,13 +873,13 @@ file_mtime(obj)
 
 static VALUE
 file_s_ctime(obj, fname)
-    VALUE obj;
-    struct RString *fname;
+    VALUE obj, fname;
 {
     struct stat st;
 
     Check_SafeStr(fname);
-    if (stat(fname->ptr, &st) < 0) rb_sys_fail(fname->ptr);
+    if (stat(RSTRING(fname)->ptr, &st) < 0)
+	rb_sys_fail(RSTRING(fname)->ptr);
     return time_new(st.st_ctime, 0);
 }
 
@@ -1118,32 +1082,26 @@ file_s_utime(argc, argv)
 
 static VALUE
 file_s_link(obj, from, to)
-    VALUE obj;
-    struct RString *from, *to;
+    VALUE obj, from, to;
 {
-#ifndef __human68k__
     Check_SafeStr(from);
     Check_SafeStr(to);
 
-    if (link(from->ptr, to->ptr) < 0)
-	rb_sys_fail(from->ptr);
+    if (link(RSTRING(from)->ptr, RSTRING(to)->ptr) < 0)
+	rb_sys_fail(RSTRING(from)->ptr);
     return INT2FIX(0);
-#else
-    rb_notimplement();
-#endif
 }
 
 static VALUE
 file_s_symlink(obj, from, to)
-    VALUE obj;
-    struct RString *from, *to;
+    VALUE obj, from, to;
 {
 #if !defined(MSDOS) && !defined(NT)
     Check_SafeStr(from);
     Check_SafeStr(to);
 
-    if (symlink(from->ptr, to->ptr) < 0)
-	rb_sys_fail(from->ptr);
+    if (symlink(RSTRING(from)->ptr, RSTRING(to)->ptr) < 0)
+	rb_sys_fail(RSTRING(from)->ptr);
     return TRUE;
 #else
         rb_notimplement();
@@ -1152,8 +1110,7 @@ file_s_symlink(obj, from, to)
 
 static VALUE
 file_s_readlink(obj, path)
-    VALUE obj;
-    struct RString *path;
+    VALUE obj, path;
 {
 #if !defined(MSDOS) && !defined(NT)
     char buf[MAXPATHLEN];
@@ -1161,8 +1118,8 @@ file_s_readlink(obj, path)
 
     Check_SafeStr(path);
 
-    if ((cc = readlink(path->ptr, buf, MAXPATHLEN)) < 0)
-	rb_sys_fail(path->ptr);
+    if ((cc = readlink(RSTRING(path)->ptr, buf, MAXPATHLEN)) < 0)
+	rb_sys_fail(RSTRING(path)->ptr);
 
     return str_new(buf, cc);
 #else
@@ -1180,8 +1137,7 @@ unlink_internal(path)
 
 static VALUE
 file_s_unlink(obj, args)
-    VALUE obj;
-    struct RArray *args;
+    VALUE obj, args;
 {
     int n;
 
@@ -1191,14 +1147,13 @@ file_s_unlink(obj, args)
 
 static VALUE
 file_s_rename(obj, from, to)
-    VALUE obj;
-    struct RString *from, *to;
+    VALUE obj, from, to;
 {
     Check_SafeStr(from);
     Check_SafeStr(to);
 
-    if (rename(from->ptr, to->ptr) == -1)
-	rb_sys_fail(from->ptr);
+    if (rename(RSTRING(from)->ptr, RSTRING(to)->ptr) < 0)
+	rb_sys_fail(RSTRING(from)->ptr);
 
     return INT2FIX(0);
 }
@@ -1225,14 +1180,13 @@ file_s_umask(argc, argv)
 
 VALUE
 file_s_expand_path(obj, fname)
-    VALUE obj;
-    struct RString *fname;
+    VALUE obj, fname;
 {
     char *s, *p;
     char buf[MAXPATHLEN];
 
     Check_Type(fname, T_STRING);
-    s = fname->ptr;
+    s = RSTRING(fname)->ptr;
 
     p = buf;
     if (s[0] == '~') {
@@ -1326,6 +1280,11 @@ rmext(p, e)
     if (!e) return 0;
 
     l2 = strlen(e);
+    if (l2 == 2 && e[1] == '*') {
+	e = strrchr(p, *e);
+	if (!e) return 0;
+	return e - p;
+    }
     if (l1 < l2) return l1;
 
     if (strcmp(p+l1-l2, e) == 0) {
@@ -1339,25 +1298,24 @@ file_s_basename(argc, argv)
     int argc;
     VALUE *argv;
 {
-    struct RString *fname;
-    struct RString *ext;
+    VALUE fname, ext;
     char *p;
     int f;
 
     rb_scan_args(argc, argv, "11", &fname, &ext);
     Check_Type(fname, T_STRING);
     if (!NIL_P(ext)) Check_Type(ext, T_STRING);
-    p = strrchr(fname->ptr, '/');
+    p = strrchr(RSTRING(fname)->ptr, '/');
     if (!p) {
 	if (!NIL_P(ext)) {
-	    f = rmext(fname->ptr, ext->ptr);
-	    if (f) return str_new(fname->ptr, f);
+	    f = rmext(RSTRING(fname)->ptr, RSTRING(ext)->ptr);
+	    if (f) return str_new(RSTRING(fname)->ptr, f);
 	}
 	return (VALUE)fname;
     }
     p++;			/* skip last `/' */
     if (!NIL_P(ext)) {
-	f = rmext(p, ext->ptr);
+	f = rmext(p, RSTRING(ext)->ptr);
 	if (f) return str_new(p, f);
     }
     return str_taint(str_new2(p));
@@ -1365,19 +1323,18 @@ file_s_basename(argc, argv)
 
 static VALUE
 file_s_dirname(obj, fname)
-    VALUE obj;
-    struct RString *fname;
+    VALUE obj, fname;
 {
     UCHAR *p;
 
     Check_Type(fname, T_STRING);
-    p = strrchr(fname->ptr, '/');
+    p = strrchr(RSTRING(fname)->ptr, '/');
     if (!p) {
 	return str_new2(".");
     }
-    if (p == fname->ptr)
+    if (p == RSTRING(fname)->ptr)
 	p++;
-    return str_taint(str_new(fname->ptr, p - fname->ptr));
+    return str_taint(str_new(RSTRING(fname)->ptr, p - RSTRING(fname)->ptr));
 }
 
 static VALUE
@@ -1398,31 +1355,30 @@ file_s_join(obj, args)
 
 static VALUE
 file_s_truncate(obj, path, len)
-    VALUE obj, len;
-    struct RString *path;
+    VALUE obj, path, len;
 {
     Check_SafeStr(path);
 
 #ifdef HAVE_TRUNCATE
-    if (truncate(path->ptr, NUM2INT(len)) < 0)
-	rb_sys_fail(path->ptr);
+    if (truncate(RSTRING(path)->ptr, NUM2INT(len)) < 0)
+	rb_sys_fail(RSTRING(path)->ptr);
 #else
 # ifdef HAVE_CHSIZE
     {
 	int tmpfd;
 
 #  if defined(NT)
-	if ((tmpfd = open(path->ptr, O_RDWR)) < 0) {
-	    rb_sys_fail(path->ptr);
+	if ((tmpfd = open(RSTRING(path)->ptr, O_RDWR)) < 0) {
+	    rb_sys_fail(RSTRING(path)->ptr);
 	}
 #  else
-	if ((tmpfd = open(path->ptr, 0)) < 0) {
-	    rb_sys_fail(path->ptr);
+	if ((tmpfd = open(RSTRING(path)->ptr, 0)) < 0) {
+	    rb_sys_fail(RSTRING(path)->ptr);
 	}
 #  endif
 	if (chsize(tmpfd, NUM2INT(len)) < 0) {
 	    close(tmpfd);
-	    rb_sys_fail(path->ptr);
+	    rb_sys_fail(RSTRING(path)->ptr);
 	}
 	close(tmpfd);
     }
@@ -1635,6 +1591,8 @@ extern VALUE mKernel;
 void
 Init_File()
 {
+    VALUE mConst;
+
     mFileTest = rb_define_module("FileTest");
 
     rb_define_module_function(mFileTest, "directory?",  test_d, 1);
@@ -1649,6 +1607,7 @@ Init_File()
     rb_define_module_function(mFileTest, "file?",  test_f, 1);
     rb_define_module_function(mFileTest, "zero?",  test_z, 1);
     rb_define_module_function(mFileTest, "size?",  test_s, 1);
+    rb_define_module_function(mFileTest, "size",   test_s, 1);
     rb_define_module_function(mFileTest, "owned?",  test_owned, 1);
     rb_define_module_function(mFileTest, "grpowned?",  test_grpowned, 1);
 
@@ -1740,10 +1699,16 @@ Init_File()
 #  define LOCK_UN 8
 # endif
 
+    mConst = rb_define_module_under(cFile, "Constants");
     rb_define_const(cFile, "LOCK_SH", INT2FIX(LOCK_SH));
     rb_define_const(cFile, "LOCK_EX", INT2FIX(LOCK_EX));
     rb_define_const(cFile, "LOCK_UN", INT2FIX(LOCK_UN));
     rb_define_const(cFile, "LOCK_NB", INT2FIX(LOCK_NB));
+
+    rb_define_const(mConst, "LOCK_SH", INT2FIX(LOCK_SH));
+    rb_define_const(mConst, "LOCK_EX", INT2FIX(LOCK_EX));
+    rb_define_const(mConst, "LOCK_UN", INT2FIX(LOCK_UN));
+    rb_define_const(mConst, "LOCK_NB", INT2FIX(LOCK_NB));
 
     rb_define_method(cFile, "path",  file_path, 0);
 
