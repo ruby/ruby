@@ -40,7 +40,7 @@ class TestWin32OLE < RUNIT::TestCase
     exc = assert_exception(WIN32OLERuntimeError) {
       WIN32OLE.new("{000}")
     }
-    assert_match(/Unknown OLE server : `\{000\}'/, exc.message)
+    assert_match(/Unknown OLE server: `\{000\}'/, exc.message)
   end
   def test_s_connect
     excel2 = WIN32OLE.connect('Excel.Application')
