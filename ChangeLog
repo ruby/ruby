@@ -1,3 +1,8 @@
+Thu Oct 23 20:25:32 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/server.rb (GenericServer#start): should rescue
+	  IOError from IO::accept. [ruby-dev:21692]
+
 Thu Oct 23 17:59:36 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (ruby_cleanup): initialize stack bottom for embedding.

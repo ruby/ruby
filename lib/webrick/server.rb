@@ -99,7 +99,7 @@ module WEBrick
           rescue Errno::ECONNRESET, Errno::ECONNABORTED, Errno::EPROTO => ex
             # TCP connection was established but RST segment was sent
             # from peer before calling TCPServer#accept.
-          rescue Errno::EBADF => ex
+          rescue Errno::EBADF, IOError => ex
             # if the listening socket was closed in GenericServer#shutdown,
             # IO::select raise it.
           rescue => ex
