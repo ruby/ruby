@@ -1,3 +1,8 @@
+Tue Jan 20 02:49:22 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/extconf.rb: add check for OpenSSL version.
+	  [ruby-list:39054]
+
 Mon Jan 19 23:56:20 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (name_err_mesg_to_str): inverted condition for result of
