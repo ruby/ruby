@@ -1,3 +1,7 @@
+Sun Jan  5 22:54:05 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* lib/fileutils.rb (ln): `argv' is not a argument.
+
 Sun Jan  5 17:44:37 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ext/extmk.rb (extmake): set $0 temporarily while loading

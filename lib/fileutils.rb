@@ -326,7 +326,7 @@ module FileUtils
 
   def ln( src, dest, *options )
     force, noop, verbose, = fu_parseargs(options, :force, :noop, :verbose)
-    fu_output_message "ln #{argv.join ' '}" if verbose
+    fu_output_message "ln #{[src,dest].flatten.join ' '}" if verbose
     return if noop
 
     fu_each_src_dest(src, dest) do |s,d|
