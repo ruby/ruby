@@ -1,7 +1,15 @@
+Fri Jan 23 02:26:30 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* pack.c (num2i32): pack should not raise RangeError.
+	  [ruby-dev:22654]
+
+	* pack.c (pack_pack): do not auto convert nil to zero.
+
 Thu Jan 22 22:54:53 2004  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (BEG_REGEXP): allow 8-bit characters in quoted
-	strings for Novell GroupWise Internet Agent.
+	  strings for Novell GroupWise Internet Agent.
+
 	* lib/net/imap.rb (DATA_REGEXP): ditto.
 
 Thu Jan 22 18:35:49 2004  WATANABE Hirofumi  <eban@ruby-lang.org>

@@ -27,6 +27,10 @@ class TestPack < Test::Unit::TestCase
     assert_equal "\377\377\377\376", [4294967294].pack('N')
     assert_equal "\377\377\377\377", [4294967295].pack('N')
 
+    assert_equal "\200\000\000\000", [2**31].pack('N')
+    assert_equal "\177\377\377\377", [-2**31-1].pack('N')
+    assert_equal "\377\377\377\377", [-1].pack('N')
+
     assert_equal "\000\000\000\001\000\000\000\001", [1,1].pack('N*')
     assert_equal "\000\000\000\001\000\000\000\001\000\000\000\001", [1,1,1].pack('N*')
   end

@@ -203,8 +203,9 @@ rb_quad_pack(buf, val)
 	long len = RBIGNUM(val)->len;
 	BDIGIT *ds;
 
-	if (len > SIZEOF_LONG_LONG/SIZEOF_BDIGITS)
-	    rb_raise(rb_eRangeError, "bignum too big to convert into `quad int'");
+	if (len > SIZEOF_LONG_LONG/SIZEOF_BDIGITS) {
+	    len = SIZEOF_LONG/SIZEOF_BDIGITS;
+	}
 	ds = BDIGITS(val);
 	q = 0;
 	while (len--) {
@@ -725,16 +726,20 @@ rb_big_to_s(argc, argv, x)
 }
 
 static unsigned long
-big2ulong(x, type)
+big2ulong(x, type, check)
     VALUE x;
     char *type;
+    int check;
 {
     long len = RBIGNUM(x)->len;
     BDIGIT_DBL num;
     BDIGIT *ds;
 
-    if (len > SIZEOF_LONG/SIZEOF_BDIGITS)
-	rb_raise(rb_eRangeError, "bignum too big to convert into `%s'", type);
+    if (len > SIZEOF_LONG/SIZEOF_BDIGITS) {
+	if (check)
+	    rb_raise(rb_eRangeError, "bignum too big to convert into `%s'", type);
+	len = SIZEOF_LONG/SIZEOF_BDIGITS;
+    }
     ds = BDIGITS(x);
     num = 0;
     while (len--) {
@@ -745,10 +750,21 @@ big2ulong(x, type)
 }
 
 unsigned long
+rb_big2ulong_pack(x)
+    VALUE x;
+{
+    unsigned long num = big2ulong(x, "unsigned long", Qfalse);
+    if (!RBIGNUM(x)->sign) {
+	return -num;
+    }
+    return num;
+}
+
+unsigned long
 rb_big2ulong(x)
     VALUE x;
 {
-    unsigned long num = big2ulong(x, "unsigned long");
+    unsigned long num = big2ulong(x, "unsigned long", Qtrue);
 
     if (!RBIGNUM(x)->sign) {
 	if ((long)num < 0) {
@@ -763,7 +779,7 @@ long
 rb_big2long(x)
     VALUE x;
 {
-    unsigned long num = big2ulong(x, "long");
+    unsigned long num = big2ulong(x, "long", Qtrue);
 
     if ((long)num < 0 && (RBIGNUM(x)->sign || (long)num != LONG_MIN)) {
 	rb_raise(rb_eRangeError, "bignum too big to convert into `long'");
