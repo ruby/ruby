@@ -189,7 +189,7 @@ module REXML
 		end
 
 		def to_s
-			"<!NOTATION #@name #@middle #@rest>"
+			"<!NOTATION #@name '#@middle #@rest'>"
 		end
 
 		def write( output, indent=-1 )
