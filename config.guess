@@ -590,47 +590,8 @@ EOF
 	  ${CC-cc} dummy.c -o dummy 2>/dev/null && ./dummy "${UNAME_MACHINE}" && rm dummy.c dummy && exit 0
 	  rm -f dummy.c dummy
 	else
-	  # Either a pre-BFD a.out linker (linux-oldld)
-	  # or one that does not give us useful --help.
-	  # GCC wants to distinguish between linux-oldld and linux-aout.
-	  # If ld does not provide *any* "supported emulations:"
-	  # that means it is gnuoldld.
-	  echo "$ld_help_string" | grep >/dev/null 2>&1 "supported emulations:"
-	  test $? != 0 && echo "${UNAME_MACHINE}-pc-linux-oldld" && exit 0
-
-	  case "${UNAME_MACHINE}" in
-	  i?86)
-	    VENDOR=pc;
-	    ;;
-	  *)
-	    VENDOR=unknown;
-	    ;;
-	  esac
-	  # Determine whether the default compiler is a.out or elf
-	  cat >dummy.c <<EOF
-#include <features.h>
-main(argc, argv)
-     int argc;
-     char *argv[];
-{
-#ifdef __ELF__
-# ifdef __GLIBC__
-#  if __GLIBC__ >= 2
-    printf ("%s-${VENDOR}-linux\n", argv[1]);
-#  else
-    printf ("%s-${VENDOR}-linux-libc1\n", argv[1]);
-#  endif
-# else
-   printf ("%s-${VENDOR}-linux-libc1\n", argv[1]);
-# endif
-#else
-  printf ("%s-${VENDOR}-linux-aout\n", argv[1]);
-#endif
-  return 0;
-}
-EOF
-	  ${CC-cc} dummy.c -o dummy 2>/dev/null && ./dummy "${UNAME_MACHINE}" && rm dummy.c dummy && exit 0
-	  rm -f dummy.c dummy
+	  echo ${UNAME_MACHINE}-pc-linux
+	  exit 0
 	fi ;;
 # ptx 4.0 does uname -s correctly, with DYNIX/ptx in there.  earlier versions
 # are messed up and put the nodename in both sysname and nodename.

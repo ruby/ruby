@@ -165,8 +165,8 @@ case $basic_machine in
 	i[3456]86)
 	  basic_machine=$basic_machine-pc
 	  ;;
-	i[3456]86-TOWNS-pc)
-	  basic_machine=`echo $basic_machine | sed -e 's/-pc//'`
+	i[3456]86-TOWNS*)
+	  basic_machine=`echo $basic_machine | sed -e 's/-TOWNS.*/-TOWNS/'`
 	  ;;
 	# Object if more than one company name word.
 	*-*-*)
