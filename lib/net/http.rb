@@ -89,7 +89,7 @@ class HTTPBadResponse < HTTPError; end
 
 
     def get( path, u_header = nil, dest = nil, &block )
-      u_header ||= {}
+      u_header = procheader( u_header )
       if block then
         dest = ReadAdapter.new( block )
         ret = nil
@@ -106,7 +106,8 @@ class HTTPBadResponse < HTTPError; end
       return resp['http-header'], ret
     end
 
-    def get2( path, u_header = {} )
+    def get2( path, u_header = nil )
+      u_header = procheader( u_header )
       only_header( :get, path, u_header )
     end
 
@@ -120,14 +121,15 @@ class HTTPBadResponse < HTTPError; end
       dest
     end
 
-    def head( path, u_header = {} )
-      ret = only_header( :head, path, u_header )['http-header']
+    def head( path, u_header = nil )
+      u_header = procheader( u_header )
+      header = only_header( :head, path, u_header )
       ensure_termination u_header
-      ret
+      header
     end
 
     def post( path, data, u_header = nil, dest = nil, &block )
-      u_header ||= {}
+      u_header = procheader( u_header )
       if block then
         dest = ReadAdapter.new( block )
         ret = nil
@@ -145,12 +147,13 @@ class HTTPBadResponse < HTTPError; end
     end
 
     def post2( path, data, u_header = {} )
+      u_header = procheader( u_header )
       only_header :post, path, u_header, data
     end
 
     # not tested because I could not setup apache  (__;;;
-    def put( path, src = nil, u_header = {}, &block )
-      u_header ||= u_header
+    def put( path, src = nil, u_header = nil, &block )
+      u_header = procheader( u_header )
       connecting( u_header, true ) {
         @command.put path, u_header, src, dest
       }
@@ -163,13 +166,13 @@ class HTTPBadResponse < HTTPError; end
 
 
     def only_header( mid, path, u_header, data = nil )
-      @u_header = u_header ?  procheader(u_header) : {}
+      @u_header = u_header
       @response = nil
-      ensure_connection @u_header
+      ensure_connection u_header
       if data then
-        @command.send mid, edit_path(path), @u_header, data
+        @command.send mid, edit_path(path), u_header, data
       else
-        @command.send mid, edit_path(path), @u_header
+        @command.send mid, edit_path(path), u_header
       end
       @response = @command.get_response
       @response['http-header']
@@ -187,7 +190,6 @@ class HTTPBadResponse < HTTPError; end
     end
 
     def connecting( u_header, putp = false )
-      u_header = procheader( u_header )
       ensure_connection u_header
       yield
       ensure_termination u_header
@@ -203,7 +205,7 @@ class HTTPBadResponse < HTTPError; end
     end
 
     def ensure_termination( u_header )
-      unless keep_alive? u_header then
+      unless keep_alive? u_header and not @socket.closed? then
         @socket.close
       end
       @u_header = @response = nil
@@ -224,6 +226,7 @@ class HTTPBadResponse < HTTPError; end
     end
 
     def procheader( h )
+      return( {} ) unless h
       new = {}
       h.each do |k,v|
         arr = k.split('-')
@@ -339,10 +342,11 @@ class HTTPBadResponse < HTTPError; end
         if clen = content_length( header ) then
           @socket.read clen, dest
         else
-          ###
-          ### "multipart/bytelenges" check should be done here ...
-          ###
+          ##### "multipart/byteranges" check should be done here ...
+
+          # now, length is designated by closing socket
           @socket.read_all dest
+          @socket.close
         end
       end
     end
