@@ -32,7 +32,7 @@ $tab =
 $cc = 'gb'
 
 def usage
-  $stderr.puts 'usage: cal [-c iso3166] [-jmty] [[month] year]'
+  warn 'usage: cal [-c iso3166] [-jmty] [[month] year]'
   exit 1
 end
 
