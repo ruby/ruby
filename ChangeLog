@@ -1,3 +1,7 @@
+Thu Feb 17 00:02:27 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (is_defined): NODE_IASGN is an assignment.
+
 Wed Feb 16 23:34:30 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/drb.rb: add lazy stop_service. ([druby-ja:109])

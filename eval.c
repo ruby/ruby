@@ -2271,6 +2271,7 @@ is_defined(self, node, buf)
       case NODE_DASGN:
       case NODE_DASGN_CURR:
       case NODE_GASGN:
+      case NODE_IASGN:
       case NODE_CDECL:
       case NODE_CVDECL:
       case NODE_CVASGN:
