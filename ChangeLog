@@ -8,6 +8,8 @@ Tue Jul 29 19:20:34 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/mkmf.rb: use un.rb instead of ftools.rb.
 
+	* MANIFEST: add lib/un.rb.
+
 Tue Jul 29 18:55:22 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/smtp.rb: unify coding style.
