@@ -92,8 +92,8 @@ c=a+b
 <H3>メソッド一覧</H3>
 以下のメソッドが利用可能です。
 「有効桁数」とは BigDecimal が精度を保証する桁数です。
-ぴったりではありません、若干の余裕を持って計算されます。また、
-例えば３２ビットのシステムでは１０進で４桁毎に計算します。従って、現状では、
+ぴったりではありません、若干の余裕を持って計算されます。
+また、例えば３２ビットのシステムでは１０進で４桁毎に計算します。従って、現状では、
 内部の「有効桁数」は４の倍数となっています。
 <P>
 以下のメソッド以外にも、(C ではない) Ruby ソースの形で
@@ -123,7 +123,6 @@ BigDecimal("1",10) / BigDecimal("3",10) # => 0.3333333333 3333333333 33333333E0
 </PRE></CODE>
 ただし、個々の演算における最大有効桁数 n の取り扱いは将来のバージョンで
 若干変更される可能性があります。
-
 </BLOCKQUOTE>
 
 <LI><B>mode</B></LI><BLOCKQUOTE>
@@ -181,15 +180,23 @@ f = BigDecimal::mode(BigDecimal::COMP_MODE,flag)
 戻り値は指定前の flag の値です。
 引数に正しくないものが指定された場合は nil が返ります。<BR>
 mode メソッドでは丸め操作の位置をユーザが指定することはできません。
-丸め操作と位置を自分で制御したい場合は truncate/round/ceil/floor といった
-インスタンスメソッドを使用して下さい。
+丸め操作と位置を自分で制御したい場合は truncate/round/ceil/floor や 
+add/sub/mult といったインスタンスメソッドを使用して下さい。
 </BLOCKQUOTE>
 <LI><B>limit([n])</B></LI><BLOCKQUOTE>
-生成されるBigDecimalオブジェクトの最大桁数をn桁に制限します。戻り値は
-設定する前の値です。設定値のデフォルト値は０で、桁数無制限という意味です。
-nを指定しない場合は、現状の最大桁数が返ります。<BR>
+生成されるBigDecimalオブジェクトの最大桁数をn桁に制限します。
+戻り値は設定する前の値です。設定値のデフォルト値は０で、桁数無制限という意味です。
+n を指定しない場合は、現状の最大桁数が返ります。<BR>
+計算を続行する間に、数字の桁数が無制限に増えてしまうような場合
+ limit で予め桁数を制限できます。この場合 BigDecimal.mode で指定された
+丸め処理が実行されます。
+ただし、実際には n より若干大きい
+桁数が確保されます。また、limit による桁数制限は(無制限を除いて)、
+インスタンスメソッド (truncate/round/ceil/floor/add/sub/mult) より
+優先されるので注意が必要です。<BR>
 mf = BigDecimal::limit(n)<BR>
 </BLOCKQUOTE>
+
 <LI><B>double_fig</B></LI><BLOCKQUOTE>
 Ruby の Float クラスが保持できる有効数字の数を返します。
 <CODE><PRE>
@@ -240,32 +247,30 @@ c の精度については「<A HREF="#PREC">計算精度について</A>」を参照してください。
 以下のように使用します。<BR>
 c = a.add(b,n)<BR>
 c = a + b を最大で n 桁まで計算します。
-a + b の精度が n より大きいときは丸められます。
+a + b の精度が n より大きいときは BigDecimal.mode で指定された方法で丸められます。
 
 </BLOCKQUOTE>
 <LI><B>sub</B></LI><BLOCKQUOTE>
 以下のように使用します。<BR>
 c = a.sub(b,n)<BR>
 c = a - b を最大で n 桁まで計算します。
-a - b の精度が n より大きいときは丸められます。
+a - b の精度が n より大きいときは BigDecimal.mode で指定された方法で丸められます。
 
 </BLOCKQUOTE>
 <LI><B>mult</B></LI><BLOCKQUOTE>
 以下のように使用します。<BR>
 c = a.mult(b,n)<BR>
 c = a * b を最大で n 桁まで計算します。
-a * b の精度が n より大きいときは丸められます。
+a * b の精度が n より大きいときは BigDecimal.mode で指定された方法で丸められます。
 
 </BLOCKQUOTE>
 <LI><B>div</B></LI><BLOCKQUOTE>
 以下のように使用します。<BR>
-c,r = a.div(b,n)<BR>
-c=a/b の計算をします。 r には剰余が代入されます。a/bは
-必要ならn 桁まで計算されます。divmod メソッド
-と異なり、c は整数とは限りません。
-また、 c は丸められることはありません。
- a = c*b + r の関係は成立します。
+c = a.div(b,n)<BR>
+c = a / b を最大で n 桁まで計算します。
+a / b の精度が n より大きいときは BigDecimal.mode で指定された方法で丸められます。
 </BLOCKQUOTE>
+
 <LI><B>%</B></LI><BLOCKQUOTE>
 r = a%b <BR>
 a/b の余りを計算します。以下の計算と同じものです。<BR>
@@ -708,21 +713,34 @@ c = a op b という計算(op は + - * /)をしたときの動作は
 加減算の場合は、誤差が出ないだけの精度を持つ c を生成します。例えば
  c = 0.1+0.1*10**(-100) のような場合、c の精度は１００桁以上の精度を
 持つようになります。
-<BR>
+<BR><BR>
 ２．次に c = a op b の計算を実行します。<BR><BR>
 このように、加減算と乗算での c は必ず「誤差が出ない」だけの精度を
-持って生成されます。除算は(a の最大有効桁数)+(b の最大有効桁数)分の最大桁数
+持って生成されます(BigDecimal.limit を指定しない場合)。
+除算は(a の最大有効桁数)+(b の最大有効桁数)分の最大桁数
 を持つ c が生成されますが、c = 1.0/3.0 のような計算で明らかなように、
  c の最大精度を超えるところで計算が打ち切られる場合があります。<BR><BR>
 いずれにせよ、c の最大精度は a や b より大きくなりますので c が必要とする
 メモリー領域は大きくなることに注意して下さい。
 <BR><BR>
 注意：「+,-,*,/」では結果の精度（有効桁数）を自分で指定できません。
-精度をコントロールしたい場合は、以下の add,sub 等のメソッド
-を使用します。<BR>
-
+精度をコントロールしたい場合は、以下のインスタンスメソッドを使用します。<BR>
+<UL>
+<LI>add,sub,mult,div</LI><BLOCKQUOTE>
+これらのメソッドは先頭(最左)の数字からの桁数を指定できます。
+<CODE><PRE>
+ BigDecimal("2").div(3,12) # 2.0/3.0 => 0.6666666666 67E0
+</PRE></CODE>
+</BLOCKQUOTE>
+<LI>truncate,round,ceil,floor</LI><BLOCKQUOTE>
+これらのメソッドは小数点からの相対位置を指定して桁数を決定します。
+<CODE><PRE>
+ BigDecimal("6.66666666666666").round(12) # => 0.6666666666 667E1
+</PRE></CODE>
+</BLOCKQUOTE>
+</UL>
 <H3>自分で精度をコントロールしたい場合</H3>
-自分で精度(有効桁数)をコントロールしたい場合は assign、add、sub、mult、div 等のメソッド
+自分で精度(有効桁数)をコントロールしたい場合は add、sub、mult、div 等のメソッド
 が使用できます。
 以下の円周率を計算するプログラム例のように、
 求める桁数は自分で指定することができます。
@@ -730,16 +748,10 @@ c = a op b という計算(op は + - * /)をしたときの動作は
 <CODE><PRE>
 #!/usr/local/bin/ruby
 
-#
-# pi.rb
-#  USAGE: ruby pi.rb n
-#   where n is the number of digits required.
-#  EX.: ruby pi.rb 1000
-#
-
 require "bigdecimal"
 #
-# Calculates 3.1415.... using J. Machin's formula.
+# Calculates 3.1415.... (the number of times that a circle's diameter
+# will fit around the circle) using J. Machin's formula.
 #
 def big_pi(sig) # sig: Number of significant figures
   exp    = -sig
@@ -752,9 +764,9 @@ def big_pi(sig) # sig: Number of significant figures
   k = BigDecimal::new("1")
   w = BigDecimal::new("1")
   t = BigDecimal::new("-80")
-  while (u.exponent >= exp) 
+  while (u.nonzero? && u.exponent >= exp) 
     t   = t*m25
-    u,r = t.div(k,sig)
+    u   = t.div(k,sig)
     pi  = pi + u
     k   = k+two
   end
@@ -763,9 +775,9 @@ def big_pi(sig) # sig: Number of significant figures
   k = BigDecimal::new("1")
   w = BigDecimal::new("1")
   t = BigDecimal::new("956")
-  while (u.exponent >= exp )
-    t,r = t.div(m57121,sig)
-    u,r = t.div(k,sig)
+  while (u.nonzero? && u.exponent >= exp )
+    t   = t.div(m57121,sig)
+    u   = t.div(k,sig)
     pi  = pi + u
     k   = k+two
   end
@@ -773,8 +785,12 @@ def big_pi(sig) # sig: Number of significant figures
 end
 
 if $0 == __FILE__
-  print "PI("+ARGV[0]+"):\n"
-  p pi(ARGV[0].to_i)
+  if ARGV.size == 1
+    print "PI("+ARGV[0]+"):\n"
+    p big_pi(ARGV[0].to_i)
+  else
+    print "TRY: ruby pi.rb 1000 \n"
+  end
 end
 
 </PRE></CODE>

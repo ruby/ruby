@@ -108,13 +108,13 @@ where:<BR>
 s: Initial value string.<BR>
 n: Maximum number of significant digits of a. n must be a Fixnum object.
 If n is omitted or is equal to 0,then the maximum number of significant digits of a is determined from the length of s.
+Actual number of digits handled in computations are usually gretaer than n.<BR>
 n is useful when performing divisions like
 <CODE><PRE>
 BigDecimal("1")    / BigDecimal("3")    # => 0.3333333333 33E0
 BigDecimal("1",10) / BigDecimal("3",10) # => 0.3333333333 3333333333 33333333E0
 </PRE></CODE>
-but the result may differ in future version.
-
+but the resulting digits obtained may differ in future version.
 </BLOCKQUOTE>
 
 <LI><B>mode</B></LI><BLOCKQUOTE>
@@ -168,14 +168,17 @@ where flag must be one of:
 </TABLE>
 nil is returned if any argument is illegal.<BR>
 The digit location for rounding operation can not be specified by mode method,
-use truncate/round/ceil/floor mthods for each instance instead.
-
+use truncate/round/ceil/floor/add/sub/mult/div mthods for each instance instead.
 </BLOCKQUOTE>
 
 <LI><B>limit[(n)]</B></LI><BLOCKQUOTE>
 Limits the maximum digits that the newly created BigDecimal objects can hold
-never exceed n. Returns maximum value before set.
+never exceed n+? (Currently,? can not be determined beforehand,but not so big).
+This means the rounding operation specified by BigDecimal.mode is 
+performed if necessary.
+limit returns maximum value before set.
 Zero,the default value,means no upper limit.<BR>
+Except for zero,the limit has more priority than instance methods such as truncate,round,ceil,floor,add,sub,mult,and div. <BR>
 mf = BigDecimal::limit(n)<BR>
 </BLOCKQUOTE>
 
@@ -230,31 +233,28 @@ For the resulting number of significant digits of c,see <A HREF="#PREC">Resultin
 c = a.add(b,n)<BR>
 c = a.add(b,n) performs c = a + b.
 If n is less than the actual significant digits of a + b,
-then c is rounded properly.
+then c is rounded properly according to the BigDecimal.limit.
 
 </BLOCKQUOTE>
 <LI><B>sub</B></LI><BLOCKQUOTE>
 c = a.sub(b,n)<BR>
 c = a.sub(b,n) performs c = a - b.
 If n is less than the actual significant digits of a - b,
-then c is rounded properly.
+then c is rounded properly according to the BigDecimal.limit.
 
 </BLOCKQUOTE>
 <LI><B>mult</B></LI><BLOCKQUOTE>
 c = a.mult(b,n)<BR>
 c = a.mult(b,n) performs c = a * b.
 If n is less than the actual significant digits of a * b,
-then c is rounded properly.
+then c is rounded properly according to the BigDecimal.limit.
 
 </BLOCKQUOTE>
 <LI><B>div</B></LI><BLOCKQUOTE>
-c,r = a.div(b,n)<BR>
-c,r = a.div(b,n) performs c = a / b, r is the residue of a / b.
-If necessary,the divide operation continues to n digits which c
- can hold.
-Unlike the divmod method,c is not always an integer.
-c is never rounded,and the equation a = c*b + r is always 
-valid unless c is NaN or Infinity.
+c = a.div(b,n)<BR>
+c = a.div(b,n) performs c = a / b.
+If n is less than the actual significant digits of a / b,
+then c is rounded properly according to the BigDecimal.limit.
 
 </BLOCKQUOTE>
 <LI><B>%</B></LI><BLOCKQUOTE>
@@ -724,32 +724,40 @@ maximum significant digits of both side of the operator.<BR>
 For example, c has more than 100 siginificant digits if c is computed as:<BR>
 c = 0.1+0.1*10**(-100)<br>
 <BR>
-As +,-,and * are always exact(no round operation is performed),
+As +,-,and * are always exact(no round operation is performed unless BigDecimal.limit is specified),
 which means more momories are required to keep computation results.
-
-Division such as c=1.0/3.0 will be rounded.<BR>
+But,the division such as c=1.0/3.0 will always be rounded.<BR>
 
 <H3>2. assign,add,sub,mult,div</H3>
 The length of the significant digits obtained from +,-,*,/ 
 is always defined by that of right and left side of the operator.
 To specify the length of the significant digits by your self,
-use methos assign,add,sub,mult,div, or limit(class method).
+use methos assign,add,sub,mult,div.
+<CODE><PRE>
+ BigDecimal("2").div(3,12) # 2.0/3.0 => 0.6666666666 67E0
+</PRE></CODE>
+</BLOCKQUOTE>
+
+<H3>3. truncate,round,ceil,floor</H3>
+Using these methods,you can specify rounding location relatively from
+decimal point.
+<CODE><PRE>
+ BigDecimal("6.66666666666666").round(12) # => 0.6666666666 667E1
+</PRE></CODE>
+</BLOCKQUOTE>
+
+
+<H3>4. Example</H3>
 Following example compute the ratio of the circumference of a circle to 
 its dirmeter(pi=3.14159265358979....) using J.Machin's formula.
 <BR><BR>
 <CODE><PRE>
 #!/usr/local/bin/ruby
 
-#
-# pi.rb
-#  USAGE: ruby pi.rb n
-#   where n is the number of digits required.
-#  EX.: ruby pi.rb 1000
-#
-
 require "bigdecimal"
 #
-# Calculates 3.1415.... using J. Machin's formula.
+# Calculates 3.1415.... (the number of times that a circle's diameter
+# will fit around the circle) using J. Machin's formula.
 #
 def big_pi(sig) # sig: Number of significant figures
   exp    = -sig
@@ -762,9 +770,9 @@ def big_pi(sig) # sig: Number of significant figures
   k = BigDecimal::new("1")
   w = BigDecimal::new("1")
   t = BigDecimal::new("-80")
-  while (u.exponent >= exp) 
+  while (u.nonzero? && u.exponent >= exp) 
     t   = t*m25
-    u,r = t.div(k,sig)
+    u   = t.div(k,sig)
     pi  = pi + u
     k   = k+two
   end
@@ -773,9 +781,9 @@ def big_pi(sig) # sig: Number of significant figures
   k = BigDecimal::new("1")
   w = BigDecimal::new("1")
   t = BigDecimal::new("956")
-  while (u.exponent >= exp )
-    t,r = t.div(m57121,sig)
-    u,r = t.div(k,sig)
+  while (u.nonzero? && u.exponent >= exp )
+    t   = t.div(m57121,sig)
+    u   = t.div(k,sig)
     pi  = pi + u
     k   = k+two
   end
@@ -783,8 +791,12 @@ def big_pi(sig) # sig: Number of significant figures
 end
 
 if $0 == __FILE__
-  print "PI("+ARGV[0]+"):\n"
-  p pi(ARGV[0].to_i)
+  if ARGV.size == 1
+    print "PI("+ARGV[0]+"):\n"
+    p big_pi(ARGV[0].to_i)
+  else
+    print "TRY: ruby pi.rb 1000 \n"
+  end
 end
 
 </PRE></CODE>

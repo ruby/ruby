@@ -21,6 +21,14 @@ extern "C" {
 #endif
 
 /*
+ *  NaN & Infinity
+ */
+#define SZ_NaN  "NaN"
+#define SZ_INF  "Infinity"
+#define SZ_PINF "+Infinity"
+#define SZ_NINF "+Infinity"
+
+/*
  *   #define VP_EXPORT other than static to let VP_ routines 
  *   be called from outside of this module.
  */
@@ -136,6 +144,8 @@ VP_EXPORT void VpDtoV(Real *m,double d);
 VP_EXPORT void VpItoV(Real *m,S_INT ival);
 VP_EXPORT int VpSqrt(Real *y,Real *x);
 VP_EXPORT void VpActiveRound(Real *y,Real *x,int f,int il);
+VP_EXPORT void VpMidRound(Real *y, int f, int nf);
+VP_EXPORT void VpLeftRound(Real *y, int f, int nf);
 VP_EXPORT void VpFrac(Real *y,Real *x);
 VP_EXPORT int VpPower(Real *y,Real *x,S_INT n);
 VP_EXPORT void VpPi(Real *y);
@@ -189,7 +199,7 @@ VP_EXPORT void VpSinCos(Real *psin,Real *pcos,Real *x);
 #define VpSetNegInf(a)  ((a)->frac[0]=0,(a)->Prec=1,(a)->sign=VP_SIGN_NEGATIVE_INFINITE)
 #define VpSetInf(a,s)   ( ((s)>0)?VpSetPosInf(a):VpSetNegInf(a) )
 #define VpIsOne(a)      ((a->Prec==1)&&(a->frac[0]==1)&&(a->exponent==1))
-
+#define VpExponent(a)   (a->exponent)
 #ifdef _DEBUG
 int VpVarCheck(Real * v);
 VP_EXPORT int VPrint(FILE *fp,char *cntl_chr,Real *a);
