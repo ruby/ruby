@@ -6874,11 +6874,8 @@ rb_mod_define_method(argc, argv, mod)
     else if (argc == 2) {
 	id = rb_to_id(argv[0]);
 	body = argv[1];
-	if (rb_obj_is_kind_of(body, rb_cMethod)) {
-	    body = method_proc(body);
-	}
-	else if (!rb_obj_is_proc(body)) {
-	    rb_raise(rb_eTypeError, "wrong argument type %s (expected Proc)",
+	if (!rb_obj_is_kind_of(body, rb_cMethod) && !rb_obj_is_proc(body)) {
+	    rb_raise(rb_eTypeError, "wrong argument type %s (expected Proc/Method)",
 		     rb_class2name(CLASS_OF(body)));
 	}
     }
@@ -6893,7 +6890,7 @@ rb_mod_define_method(argc, argv, mod)
     }
     else {
 	/* type error */
-	rb_raise(rb_eTypeError, "wrong argument type (expected Proc)");
+	rb_raise(rb_eTypeError, "wrong argument type (expected Proc/Method)");
     }
 
     if (SCOPE_TEST(SCOPE_PRIVATE)) {
