@@ -3051,39 +3051,19 @@ stack_length()
 }
 
 static VALUE
-rb_call(klass, recv, mid, argc, argv, scope)
+rb_call0(klass, recv, mid, id, argc, argv, scope, body, type)
     VALUE klass, recv;
-    ID    mid;
+    ID    mid, id;
     int argc;			/* OK */
     VALUE *argv;		/* OK */
     int scope;
+    NODE *body;
+    enum node_type type;
 {
-    NODE *body, *b2;		/* OK */
-    int    noex;
-    ID     id = mid;
-    struct cache_entry *ent;
+    NODE *b2;		/* OK */
     volatile VALUE result = Qnil;
     int itr;
-    enum node_type type;
     static int tick;
-    TMP_PROTECT;
-
-  again:
-    /* is it in the method cache? */
-    ent = cache + EXPR1(klass, mid);
-    if (ent->mid == mid && ent->klass == klass) {
-	klass = ent->origin;
-	id    = ent->mid0;
-	noex  = ent->noex;
-	body  = ent->method;
-    }
-    else if ((body = rb_get_method_body(&klass, &id, &noex)) == 0) {
-	return rb_undefined(recv, mid, argc, argv, scope==2?CSTAT_VCALL:0);
-    }
-
-    /* receiver specified form for private method */
-    if (noex == NOEX_PRIVATE && scope == 0)
-	return rb_undefined(recv, mid, argc, argv, CSTAT_NOEX);
 
     switch (the_iter->iter) {
       case ITER_PRE:
@@ -3093,28 +3073,6 @@ rb_call(klass, recv, mid, argc, argv, scope)
       default:
 	itr = ITER_NOT;
 	break;
-    }
-
-    type = nd_type(body);
-    if (type == NODE_ZSUPER) {
-	/* for re-scoped/renamed method */
-	mid = id;
-	if (scope == 0) scope = 1;
-	if (RCLASS(klass)->super == 0) {
-	    /* origin is the Module, so need to scan superclass hierarchy. */
-	    struct RClass *cl = RCLASS(klass);
-
-	    klass = RBASIC(recv)->klass;
-	    while (klass) {
-		if (RCLASS(klass)->m_tbl == cl->m_tbl)
-		    break;
-		klass = RCLASS(klass)->super;
-	    }
-	}
-	else {
-	    klass = RCLASS(klass)->super;
-	}
-	goto again;
     }
 
     if ((++tick & 0xfff) == 0 && stack_length() > STACK_LEVEL_MAX)
@@ -3271,15 +3229,22 @@ rb_call(klass, recv, mid, argc, argv, scope)
 	    PUSH_VARS();
 
 	    if ((state = EXEC_TAG()) == 0) {
-		if (nd_type(body) == NODE_BLOCK) {
-		    NODE *node = body->nd_head;
-		    int i;
+		NODE *node = 0;
+		int i;
 
+		if (nd_type(body) == NODE_ARGS) {
+		    node = body;
+		    body = 0;
+		}
+		else if (nd_type(body) == NODE_BLOCK) {
+		    node = body->nd_head;
+		    body = body->nd_next;
+		}
+		if (node) {
 		    if (nd_type(node) != NODE_ARGS) {
 			Bug("no argument-node");
 		    }
 
-		    body = body->nd_next;
 		    i = node->nd_cnt;
 		    if (i > argc) {
 			ArgError("Wrong # of arguments(%d for %d)", argc, i);
@@ -3321,9 +3286,7 @@ rb_call(klass, recv, mid, argc, argv, scope)
 			}
 		    }
 		}
-		else if (nd_type(body) == NODE_ARGS) {
-		    body = 0;
-		}
+
 		if (trace_func) {
 		    call_trace_func("call", b2->nd_file, nd_line(b2),
 				    recv, the_frame->last_func);
@@ -3371,6 +3334,61 @@ rb_call(klass, recv, mid, argc, argv, scope)
     POP_FRAME();
     POP_ITER();
     return result;
+}
+
+static VALUE
+rb_call(klass, recv, mid, argc, argv, scope)
+    VALUE klass, recv;
+    ID    mid;
+    int argc;			/* OK */
+    VALUE *argv;		/* OK */
+    int scope;
+{
+    NODE *body;			/* OK */
+    int    noex;
+    ID     id = mid;
+    struct cache_entry *ent;
+    enum node_type type;
+    TMP_PROTECT;
+
+  again:
+    /* is it in the method cache? */
+    ent = cache + EXPR1(klass, mid);
+    if (ent->mid == mid && ent->klass == klass) {
+	klass = ent->origin;
+	id    = ent->mid0;
+	noex  = ent->noex;
+	body  = ent->method;
+    }
+    else if ((body = rb_get_method_body(&klass, &id, &noex)) == 0) {
+	return rb_undefined(recv, mid, argc, argv, scope==2?CSTAT_VCALL:0);
+    }
+
+    /* receiver specified form for private method */
+    if (noex == NOEX_PRIVATE && scope == 0)
+	return rb_undefined(recv, mid, argc, argv, CSTAT_NOEX);
+
+    type = nd_type(body);
+    if (type == NODE_ZSUPER) {
+	/* for re-scoped/renamed method */
+	mid = id;
+	if (scope == 0) scope = 1;
+	if (BUILTIN_TYPE(klass) == T_MODULE) {
+	    /* origin is the Module, so need to scan superclass hierarchy. */
+	    struct RClass *cl = RCLASS(klass);
+
+	    klass = RBASIC(recv)->klass;
+	    while (klass) {
+		if (RCLASS(klass)->m_tbl == cl->m_tbl)
+		    break;
+		klass = RCLASS(klass)->super;
+	    }
+	}
+	klass = RCLASS(klass)->super;
+	goto again;
+    }
+
+    return rb_call0(klass, recv, mid, id, argc, argv, scope, body, type);
 }
 
 VALUE
@@ -4682,6 +4700,113 @@ proc_iterate(proc)
     return result;
 }
 
+static VALUE cMethod;
+struct METHOD {
+    VALUE klass;
+    VALUE recv;
+    ID id;
+    NODE *body;
+};
+
+static void
+bm_mark(struct METHOD *data)
+{
+    gc_mark(data->klass);
+    gc_mark(data->recv);
+    gc_mark(data->body);
+}
+
+static VALUE
+obj_method(obj, vid)
+    VALUE obj;
+    VALUE vid;
+{
+    VALUE method;
+    VALUE klass = CLASS_OF(obj);
+    ID mid, id;
+    NODE *body;
+    int noex;
+    enum node_type type;
+    struct METHOD *data;
+
+    mid = id = rb_to_id(vid);
+
+  again:
+    if ((body = rb_get_method_body(&klass, &id, &noex)) == 0) {
+	return rb_undefined(obj, mid, 0, 0, 0);
+    }
+
+    type = nd_type(body);
+    if (type == NODE_ZSUPER) {
+	/* for re-scoped/renamed method */
+	mid = id;
+	if (BUILTIN_TYPE(klass) == T_MODULE) {
+	    /* origin is the Module, so need to scan superclass hierarchy. */
+	    struct RClass *cl = RCLASS(klass);
+
+	    klass = RBASIC(obj)->klass;
+	    while (klass) {
+		if (RCLASS(klass)->m_tbl == cl->m_tbl)
+		    break;
+		klass = RCLASS(klass)->super;
+	    }
+	}
+	klass = RCLASS(klass)->super;
+	goto again;
+    }
+    if (BUILTIN_TYPE(klass) == T_ICLASS) {
+	klass = RBASIC(klass)->klass;
+    }
+
+    method = Data_Make_Struct(cMethod, struct METHOD, bm_mark, free, data);
+    data->klass = klass;
+    data->recv = obj;
+    data->id = id;
+    data->body = body;
+
+    return method;
+}
+
+static VALUE
+method_call(argc, argv, method)
+    int argc;
+    VALUE *argv;
+    VALUE method;
+{
+    VALUE result;
+    struct METHOD *data;
+
+    Data_Get_Struct(method, struct METHOD, data);
+    PUSH_ITER(iterator_p()?ITER_PRE:ITER_NOT);
+    result = rb_call0(data->klass, data->recv, data->id, data->id,
+		      argc, argv, 1, data->body, nd_type(data->body));
+    POP_ITER();
+    return result;
+}
+
+static VALUE
+method_inspect(method)
+    VALUE method;
+{
+    struct METHOD *data;
+    VALUE str;
+    char *s;
+
+    Data_Get_Struct(method, struct METHOD, data);
+    str = str_new2("#<");
+    s = rb_class2name(CLASS_OF(method));
+    str_cat(str, s, strlen(s));
+    str_cat(str, ": ", 2);
+    s = rb_class2name(data->klass);
+    str_cat(str, s, strlen(s));
+    str_cat(str, "#", 1);
+    s = rb_id2name(data->id);
+    str_cat(str, s, strlen(s));
+    str_cat(str, ">", 1);
+
+    return str;
+}
+
 void
 Init_Proc()
 {
@@ -4695,6 +4820,12 @@ Init_Proc()
     rb_define_global_function("proc", f_lambda, 0);
     rb_define_global_function("lambda", f_lambda, 0);
     rb_define_global_function("binding", f_binding, 0);
+
+    cMethod = rb_define_class("Method", cObject);
+    rb_undef_method(CLASS_OF(cMethod), "new");
+    rb_define_method(cMethod, "call", method_call, -1);
+    rb_define_method(cMethod, "inspect", method_inspect, 0);
+    rb_define_method(mKernel, "method", obj_method, 1);
 }
 
 #ifdef THREAD

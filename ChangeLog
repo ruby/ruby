@@ -1,4 +1,18 @@
+Tue Mar  3 14:20:15 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (obj_method): returns bound method object.
+
+	* eval.c (rb_call): argument check for empty methods.
+
+	* ruby.h (NUM2CHR): new macro, originally from curses module.
+
+Tue Mar  3 13:03:35 1998  MAEDA shugo  <shugo@po.aianet.ne.jp>
+
+	* io.c (io_putc): new method.
+
 Tue Mar  3 11:21:28 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (str_inspect): more strict charcode detection.
 
 	* eval.c (thread_stop): stopping only thread raises ThreadError
 	  exception.

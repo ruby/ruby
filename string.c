@@ -1375,7 +1375,7 @@ str_inspect(str)
 
     while (p < pend) {
 	UCHAR c = *p++;
-	if (ismbchar(c) && p < pend) {
+	if (ismbchar(c) && p < pend && ismbchar2(*p)) {
 	    CHECK(2);
 	    *b++ = c;
 	    *b++ = *p++;

@@ -32,10 +32,6 @@ struct windata {
     WINDOW *window;
 };
 
-#define NUM2CHAR(x) ((TYPE(x) == T_STRING)&&(RSTRING(x)->len>=1))?\
-    RSTRING(x)->ptr[0]:(char)NUM2INT(x)
-#define CHAR2FIX(x) INT2FIX((int)x)
-
 static void
 no_window()
 {
@@ -288,7 +284,7 @@ static VALUE
 curses_inch(obj)
     VALUE obj;
 {
-    return CHAR2FIX(inch());
+    return CHR2FIX(inch());
 }
 
 /* def addch(ch) */
@@ -297,7 +293,7 @@ curses_addch(obj, ch)
     VALUE obj;
     VALUE ch;
 {
-    addch(NUM2CHAR(ch));
+    addch(NUM2CHR(ch));
     return Qnil;
 }
 
@@ -307,7 +303,7 @@ curses_insch(obj, ch)
     VALUE obj;
     VALUE ch;
 {
-    insch(NUM2CHAR(ch));
+    insch(NUM2CHR(ch));
     return Qnil;
 }
 
@@ -326,7 +322,7 @@ static VALUE
 curses_getch(obj)
     VALUE obj;
 {
-    return CHAR2FIX(getch());
+    return CHR2FIX(getch());
 }
 
 /* def getstr */
@@ -454,7 +450,7 @@ window_box(obj, vert, hor)
     struct windata *winp; 
    
     GetWINDOW(obj, winp);
-    box(winp->window, NUM2CHAR(vert), NUM2CHAR(hor));
+    box(winp->window, NUM2CHR(vert), NUM2CHR(hor));
     
     return Qnil;
 }
@@ -623,7 +619,7 @@ window_inch(obj)
     struct windata *winp;
     
     GetWINDOW(obj, winp);
-    return CHAR2FIX(winch(winp->window));
+    return CHR2FIX(winch(winp->window));
 }
 
 /* def addch(ch) */
@@ -635,7 +631,7 @@ window_addch(obj, ch)
     struct windata *winp;
     
     GetWINDOW(obj, winp);
-    waddch(winp->window, NUM2CHAR(ch));
+    waddch(winp->window, NUM2CHR(ch));
     
     return Qnil;
 }
@@ -649,7 +645,7 @@ window_insch(obj, ch)
     struct windata *winp;
     
     GetWINDOW(obj, winp);
-    winsch(winp->window, NUM2CHAR(ch));
+    winsch(winp->window, NUM2CHR(ch));
     
     return Qnil;
 }
@@ -686,7 +682,7 @@ window_getch(obj)
     struct windata *winp;
     
     GetWINDOW(obj, winp);
-    return CHAR2FIX(wgetch(winp->window));
+    return CHR2FIX(wgetch(winp->window));
 }
 
 /* def getstr */

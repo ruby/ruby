@@ -172,6 +172,10 @@ double num2dbl _((VALUE));
 char *str2cstr _((VALUE));
 #define STR2CSTR(x) str2cstr((VALUE)(x))
 
+#define NUM2CHR(x) (((TYPE(x) == T_STRING)&&(RSTRING(x)->len>=1))?\
+                     RSTRING(x)->ptr[0]:(char)NUM2INT(x))
+#define CHR2FIX(x) INT2FIX((int)x)
+
 VALUE rb_newobj _((void));
 #define NEWOBJ(obj,type) type *obj = (type*)rb_newobj()
 #define OBJSETUP(obj,c,t) {\
@@ -290,11 +294,11 @@ struct RBignum {
 #define RBIGNUM(obj) (R_CAST(RBignum)(obj))
 #define RFILE(obj)   (R_CAST(RFile)(obj))
 
-#define FL_SINGLETON (1<<8)
-#define FL_MARK      (1<<9)
-#define FL_FINALIZE  (1<<10)
+#define FL_SINGLETON FL_USER0
+#define FL_MARK      (1<<8)
+#define FL_FINALIZE  (1<<9)
 
-#define FL_USHIFT    11
+#define FL_USHIFT    10
 
 #define FL_USER0     (1<<(FL_USHIFT+0))
 #define FL_USER1     (1<<(FL_USHIFT+1))
@@ -303,8 +307,9 @@ struct RBignum {
 #define FL_USER4     (1<<(FL_USHIFT+4))
 #define FL_USER5     (1<<(FL_USHIFT+5))
 #define FL_USER6     (1<<(FL_USHIFT+6))
+#define FL_USER7     (1<<(FL_USHIFT+7))
 
-#define FL_UMASK  (0x7f<<FL_USHIFT)
+#define FL_UMASK  (0xff<<FL_USHIFT)
 
 #define FL_ABLE(x) (!(FIXNUM_P(x)||rb_special_const_p((VALUE)(x))))
 #define FL_TEST(x,f) (FL_ABLE(x)?(RBASIC(x)->flags&(f)):0)

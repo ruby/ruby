@@ -1314,6 +1314,35 @@ f_print(argc, argv)
 }
 
 static VALUE
+io_putc(io, ch)
+    VALUE io, ch;
+{
+    OpenFile *fptr;
+    FILE *f;
+    int c = NUM2CHR(ch);
+
+    rb_secure(4);
+    GetOpenFile(io, fptr);
+    io_writable(fptr);
+
+    f = GetWriteFile(fptr);
+
+    if (fputc(c, f) == EOF || ferror(f))
+	rb_sys_fail(fptr->path);
+    if (fptr->mode & FMODE_SYNC)
+	fflush(f);
+
+    return ch;
+}
+
+static VALUE
+f_putc(recv, ch)
+    VALUE recv, ch;
+{
+    return io_putc(rb_defout, ch);
+}
+
+static VALUE
 io_puts(argc, argv, out)
     int argc;
     VALUE *argv;
@@ -2275,6 +2304,7 @@ opt_i_set(val)
 void
 Init_IO()
 {
+    extern VALUE mKernel;
     extern VALUE mEnumerable;
     extern VALUE eException;
 
@@ -2287,6 +2317,8 @@ Init_IO()
     rb_define_global_function("open", f_open, -1);
     rb_define_global_function("printf", f_printf, -1);
     rb_define_global_function("print", f_print, -1);
+    rb_define_global_function("putc", f_putc, 1);
+    rb_define_global_function("putchar", f_putc, 1);
     rb_define_global_function("puts", f_puts, -1);
     rb_define_global_function("gets", f_gets_method, -1);
     rb_define_global_function("readline", f_readline, -1);
@@ -2331,6 +2363,7 @@ Init_IO()
     rb_define_method(cIO, "reopen", io_reopen, 1);
 
     rb_define_method(cIO, "print", io_print, -1);
+    rb_define_method(cIO, "putc", io_putc, 1);
     rb_define_method(cIO, "puts", io_puts, -1);
     rb_define_method(cIO, "printf", io_printf, -1);
 

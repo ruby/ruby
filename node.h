@@ -135,7 +135,7 @@ typedef struct RNode {
 
 #define RNODE(obj)  (R_CAST(RNode)(obj))
 
-#define nd_type(n) (((RNODE(n))->flags>>FL_USHIFT)&0x7f)
+#define nd_type(n) (((RNODE(n))->flags>>FL_USHIFT)&0xff)
 #define nd_set_type(n,t) \
     RNODE(n)->flags=((RNODE(n)->flags&~FL_UMASK)|(((t)<<FL_USHIFT)&FL_UMASK))
 

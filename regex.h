@@ -182,11 +182,25 @@ extern long re_syntax_options;
 #undef ismbchar
 #define ismbchar(c) \
   (re_syntax_options & RE_MBCTYPE_EUC		\
-   ? ((unsigned char) (c) >= 0x80)		\
-   : (re_syntax_options & RE_MBCTYPE_SJIS		\
-      ? ((   0x80 <= (unsigned char) (c)	\
+   ? (   0xa1 <= (unsigned char) (c)		\
+      && (unsigned char) (c) <= 0xfe)		\
+   : (re_syntax_options & RE_MBCTYPE_SJIS	\
+      ? ((   0x81 <= (unsigned char) (c)	\
 	  && (unsigned char) (c) <= 0x9f)	\
-	 || (0xe0 <= (unsigned char) (c)))	\
+	||  ((0xe0 <= (unsigned char) (c))	\
+	  && (unsigned char) (c) <= 0xef))	\
+      : 0))
+
+#undef ismbchar2
+#define ismbchar2(c) \
+  (re_syntax_options & RE_MBCTYPE_EUC		\
+   ? (   0xa1 <= (unsigned char) (c)		\
+      && (unsigned char) (c) <= 0xfe)		\
+   : (re_syntax_options & RE_MBCTYPE_SJIS	\
+      ? ((   0x40 <= (unsigned char) (c)	\
+	  && (unsigned char) (c) <= 0x7e)	\
+	||  ((0x80 <= (unsigned char) (c))	\
+	  && (unsigned char) (c) <= 0xfc))	\
       : 0))
 
 /* This data structure is used to represent a compiled pattern.  */
