@@ -13,6 +13,12 @@ class TestEmptyCharset < Test::Unit::TestCase
   def test_wsdl
     begin
       xml = WSDL::XMLSchema::Parser.new.parse(File.open(@file) { |f| f.read })
+    rescue RuntimeError
+      if XSD::XMLParser.const_defined?("REXMLParser")
+	STDERR.puts("rexml cannot handle euc-jp without iconv/uconv.")
+	return
+      end
+      raise
     rescue Errno::EINVAL
       # unsupported encoding
       return

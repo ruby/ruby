@@ -1,3 +1,12 @@
+Tue Dec 23 16:08:16 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/rexml/encodings/US-ASCII.rb: typo.  [ruby-talk:88650]
+
+	* test/ruby/test_system.rb: num of asserts depended on running dir.
+
+	* test/xsd/test_noencoding.rb: rexml + without iconv/uconv cannot
+	  handle euc-jp.  install iconv, uconv or xmlscan.
+
 Tue Dec 23 14:13:51 2003  akira yamada  <akira@ruby-lang.org>
 
 	* lib/uri/generic.rb (URI::Generic::check_userinfo,

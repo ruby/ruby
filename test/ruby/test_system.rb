@@ -61,8 +61,8 @@ class TestSystem < Test::Unit::TestCase
       dir << "/"
     end
 
-    for script in Dir["#{dir}{lib,sample,ext}/**/*.rb"]
-      assert_nothing_raised(Exception) do
+    assert_nothing_raised(Exception) do
+      for script in Dir["#{dir}{lib,sample,ext}/**/*.rb"]
         valid_syntax? IO::read(script), script
       end
     end
