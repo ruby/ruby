@@ -173,6 +173,8 @@ void rb_mark_end_proc _((void));
 void rb_exec_end_proc _((void));
 void ruby_finalize _((void));
 void ruby_stop _((int));
+int ruby_cleanup _((int));
+int ruby_exec _((void));
 void rb_gc_mark_threads _((void));
 void rb_thread_start_timer _((void));
 void rb_thread_stop_timer _((void));

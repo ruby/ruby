@@ -1044,6 +1044,7 @@ error_print()
 	    }
 	}
     }
+    fflush(stderr);
 }
 
 #if defined(__APPLE__)
@@ -1229,8 +1230,8 @@ ruby_finalize()
     POP_TAG();
 }
 
-void
-ruby_stop(ex)
+int
+ruby_cleanup(ex)
     int ex;
 {
     int state;
@@ -1251,17 +1252,14 @@ ruby_stop(ex)
     ex = error_handle(ex);
     POP_TAG();
     ruby_finalize();
-    exit(ex);
+    return ex;
 }
 
-void
-ruby_run()
+int
+ruby_exec()
 {
     int state;
-    static int ex;
     volatile NODE *tmp;
-
-    if (ruby_nerrs > 0) exit(ruby_nerrs);
 
     Init_stack((void*)&tmp);
     PUSH_TAG(PROT_NONE);
@@ -1273,7 +1271,23 @@ ruby_run()
     }
     POP_ITER();
     POP_TAG();
+    return state;
+}
 
+void
+ruby_stop(ex)
+    int ex;
+{
+    exit(ruby_cleanup(ex));
+}
+
+void
+ruby_run()
+{
+    int state;
+    static int ex;
+    if (ruby_nerrs > 0) exit(ruby_nerrs);
+    state = ruby_exec();
     if (state && !ex) ex = state;
     ruby_stop(ex);
 }
@@ -3611,6 +3625,7 @@ rb_longjmp(tag, mesg)
 		rb_class2name(CLASS_OF(ruby_errinfo)),
 		ruby_sourcefile, ruby_sourceline,
 		RSTRING(e)->ptr);
+	fflush(stderr);
     }
 
     rb_trap_restore_mask();
@@ -8120,6 +8135,7 @@ rb_thread_schedule()
 		    th->node->nd_file, nd_line(th->node));
 	}
 	END_FOREACH_FROM(curr, th);
+	fflush(stderr);
 	next = main_thread;
 	rb_thread_ready(next);
 	next->status = THREAD_TO_KILL;
