@@ -1,3 +1,7 @@
+Wed Mar 16 23:39:13 2005  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* test/ruby/test_settracefunc.rb: added test for c-return.
+
 Wed Mar 16 22:57:43 2005  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* eval.c (rb_call0): call_cfunc() should be protected.
