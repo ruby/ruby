@@ -789,7 +789,7 @@ glob_helper(path, sub, flags, func, arg)
 			strcpy(t+3, m);
 			status = glob_helper(buf, t, flags, func, arg);
 			free(buf);
-			if (status) goto finalize;
+			if (status) break;
 			continue;
 		    }
 		    free(buf);
@@ -801,7 +801,7 @@ glob_helper(path, sub, flags, func, arg)
 		    if (!m) {
 			status = glob_call_func(func, buf, arg);
 			free(buf);
-			if (status) goto finalize;
+			if (status) break;
 			continue;
 		    }
 		    tmp = ALLOC(struct d_link);
@@ -810,8 +810,8 @@ glob_helper(path, sub, flags, func, arg)
 		    link = tmp;
 		}
 	    }
-	  finalize:
 	    closedir(dirp);
+	  finalize:
 	    free(base);
 	    free(magic);
 	    if (link) {

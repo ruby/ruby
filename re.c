@@ -527,23 +527,6 @@ match_alloc(klass)
 }
 
 static VALUE
-match_clone(match)
-    VALUE match;
-{
-    NEWOBJ(clone, struct RMatch);
-    CLONESETUP(clone, match);
-
-    clone->str = RMATCH(match)->str;
-    clone->regs = 0;
-
-    clone->regs = ALLOC(struct re_registers);
-    clone->regs->allocated = 0;
-    re_copy_registers(clone->regs, RMATCH(match)->regs);
-
-    return (VALUE)clone;
-}
-
-static VALUE
 match_become(obj, orig)
     VALUE obj, orig;
 {

@@ -1683,9 +1683,9 @@ re_compile_pattern(pattern, size, bufp)
       while ((int)b[-1] > 0 && b[b[-1] - 1] == 0) 
 	b[-1]--; 
       if (b[-1] != (1 << BYTEWIDTH) / BYTEWIDTH)
-	memmove(&b[b[-1]], &b[(1 << BYTEWIDTH) / BYTEWIDTH],
+	memmove(&b[(unsigned char)b[-1]], &b[(1 << BYTEWIDTH) / BYTEWIDTH],
 		2 + EXTRACT_UNSIGNED(&b[(1 << BYTEWIDTH) / BYTEWIDTH])*8);
-      b += b[-1] + 2 + EXTRACT_UNSIGNED(&b[b[-1]])*8;
+      b += b[-1] + 2 + EXTRACT_UNSIGNED(&b[(unsigned char)b[-1]])*8;
       break;
 
     case '(':
@@ -2194,9 +2194,9 @@ re_compile_pattern(pattern, size, bufp)
 	while ((int)b[-1] > 0 && b[b[-1] - 1] == 0) 
 	  b[-1]--; 
 	if (b[-1] != (1 << BYTEWIDTH) / BYTEWIDTH)
-	  memmove(&b[b[-1]], &b[(1 << BYTEWIDTH) / BYTEWIDTH],
+	  memmove(&b[(unsigned char)b[-1]], &b[(1 << BYTEWIDTH) / BYTEWIDTH],
 		  2 + EXTRACT_UNSIGNED(&b[(1 << BYTEWIDTH) / BYTEWIDTH])*8);
-	b += b[-1] + 2 + EXTRACT_UNSIGNED(&b[b[-1]])*8;
+	b += b[-1] + 2 + EXTRACT_UNSIGNED(&b[(unsigned char)b[-1]])*8;
 	break;
 
       case 'w':

@@ -293,7 +293,6 @@ w_uclass(obj, base_klass, arg)
     struct dump_arg *arg;
 {
     VALUE klass = CLASS_OF(obj);
-    char *path;
 
     w_extended(klass, arg);
     if (klass != base_klass) {

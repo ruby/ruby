@@ -1,3 +1,15 @@
+Wed Sep 25 23:51:29 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* dir.c (glob_helper): must not closedir() when exception raised
+	  while globbing "**".
+
+	* marshal.c (w_uclass): unused variable.
+
+	* re.c (match_clone): unused.
+
+	* regex.c (re_compile_pattern): get rid of implicit promotion from
+	  plain char to int.
+
 Wed Sep 25 17:46:46 2002  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* lib/mkmf.rb (libpathflag): restore ENV['LIB'] when some error occured.
@@ -11,7 +23,7 @@ Mon Sep 23 23:22:43 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* parse.y (yylex): nextc() returns -1 at end of input, not 0.
 
-	* parse.y (newline_node): reduce deplicated newline node.
+	* parse.y (newline_node): reduce duplicated newline node.
 
 	* parse.y (literal_concat): get rid of warning.
 
