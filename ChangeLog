@@ -1,7 +1,3 @@
-Fri Jun 10 13:42:10 1999  Koji Arai  <JCA02266@nifty.ne.jp>
-
-	* pack.c (pack_pack): template `Z' should be allowed.
-
 Fri Jun 11 15:21:21 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* ext/etc/etc.c (etc_group): dumps core if there's no more group.
@@ -31,6 +27,10 @@ Thu Jun 10 16:41:48 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (is_defined): `defined? super' should be true even for
 	  private superclass methods.
+
+Fri Jun 10 13:42:10 1999  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* pack.c (pack_pack): template `Z' should be allowed.
 
 Wed Jun  9 13:26:38 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
