@@ -1,9 +1,13 @@
+Sun Jan 18 16:46:48 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* time.c (time_overflow_p): should return results.  [ruby-dev:22614]
+
 Sun Jan 18 12:07:24 2004  Siena.  <siena@faculty.chiba-u.jp>
 
-	* test/ruby/test_time.rb: new test case to test Time#[+-]. 
+	* test/ruby/test_time.rb: new test case to test Time#[+-].
 
-	* time.c (time_plus, time_minus): fix RangeError for a negative 
-	  argument in environments whose time_t is unsigned. [ruby-dev:22608] 
+	* time.c (time_plus, time_minus): fix RangeError for a negative
+	  argument in environments whose time_t is unsigned. [ruby-dev:22608]
 
 Sun Jan 18 02:33:26 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 

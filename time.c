@@ -112,10 +112,10 @@ time_init(time)
 #define NMOD(x,y) ((y)-(-((x)+1)%(y))-1)
 
 void
-time_overflow_p(sec, usec)
-    time_t sec, usec;
+time_overflow_p(secp, usecp)
+    time_t *secp, *usecp;
 {
-    time_t tmp;
+    time_t tmp, sec = *secp, usec = *usecp;
 
     if (usec >= 1000000) {	/* usec positive overflow */
 	tmp = sec + usec / 1000000;
@@ -137,6 +137,8 @@ time_overflow_p(sec, usec)
     if (sec < 0 || (sec == 0 && usec < 0))
 	rb_raise(rb_eArgError, "time must be positive");
 #endif
+    *secp = sec;
+    *usecp = usec;
 }
 
 static VALUE
@@ -148,7 +150,7 @@ time_new_internal(klass, sec, usec)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    time_overflow_p(sec, usec);
+    time_overflow_p(&sec, &usec);
     tobj->tv.tv_sec = sec;
     tobj->tv.tv_usec = usec;
 
@@ -1192,7 +1194,7 @@ time_plus(time1, time2)
     }
     v = NUM2DBL(time2);
     d = modf(v, &f);
-    sign = ( f < 0 ? -1 : 1 );
+    sign = (f < 0 ? -1 : 1);
     f *= sign;
     sec = (time_t)f;
     if (f != (double)sec) {
@@ -1204,8 +1206,7 @@ time_plus(time1, time2)
     }
 #endif
     usec = tobj->tv.tv_usec + (time_t)(d*1e6);
-    sec = ( sign > 0 ? tobj->tv.tv_sec + sec :  tobj->tv.tv_sec - sec );
-
+    sec = (sign > 0 ? tobj->tv.tv_sec + sec :  tobj->tv.tv_sec - sec);
 #ifdef NEGATIVE_TIME_T
     if ((tobj->tv.tv_sec >= 0 && sign >= 0 && sec < 0) ||
 	(tobj->tv.tv_sec <= 0 && sign <= 0 && sec > 0)) {
@@ -1257,7 +1258,7 @@ time_minus(time1, time2)
     }
     v = NUM2DBL(time2);
     d = modf(v, &f);
-    sign = ( f < 0 ? -1 : 1 );
+    sign = (f < 0 ? -1 : 1);
     f *= sign;
     sec = (time_t)f;
     if (f != (double)sec) {
@@ -1269,7 +1270,7 @@ time_minus(time1, time2)
     }
 #endif
     usec = tobj->tv.tv_usec - (time_t)(d*1e6);
-    sec = ( sign > 0 ? tobj->tv.tv_sec - sec :  tobj->tv.tv_sec + sec );
+    sec = (sign > 0 ? tobj->tv.tv_sec - sec :  tobj->tv.tv_sec + sec);
 #ifdef NEGATIVE_TIME_T
     if ((tobj->tv.tv_sec <= 0 && sign >= 0 && sec > 0) ||
 	(tobj->tv.tv_sec >= 0 && sign <= 0 && sec < 0)) {
@@ -1909,7 +1910,7 @@ time_mload(time, str)
 	sec = make_time_t(&tm, Qtrue);
 	usec = (time_t)(s & 0xfffff);
     }
-    time_overflow_p(sec, usec);
+    time_overflow_p(&sec, &usec);
 
     GetTimeval(time, tobj);
     tobj->tm_got = 0;
