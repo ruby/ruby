@@ -1,3 +1,66 @@
+Thu May 27 23:15:18 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* lib/logger.rb: leading 0 padding of timestamp usec part.
+
+	* lib/csv.rb (CSV.parse): [CAUTION] behavior changed.  in the past,
+	  CSV.parse accepts a filename to be read-opened (it was just a
+	  shortcut of CSV.open(filename, 'r')).  now CSV.parse accepts a
+	  string or a stream to be parsed e.g.
+	  CSV.parse("1,2\n3,r") #=> [['1', '2'], ['3', '4']]
+
+	* lib/csv.rb: CSV::Row and CSV::Cell are deprecated.  these classes
+	  are removed in the future.  in the new csv.rb, row is represented
+	  as just an Array.  since CSV::Row was a subclass of Array, it won't
+	  hurt almost all programs except one which depended CSV::Row#match.
+	  and a cell is represented as just a String or nil(NULL).  this
+	  change will cause widespread destruction.
+
+      	      CSV.open("foo.csv", "r") do |row|
+		row.each do |cell|
+		  if cell.is_null       # using Cell#is_null
+		    p "(NULL)"
+		  else
+		    p cell.data         # using Cell#data
+		  end
+		end
+	      end
+
+	    must be just;
+
+	      CSV.open("foo.csv", "r") do |row|
+		row.each do |cell|
+		  if cell.nil?
+		    p "(NULL)"
+		  else
+		    p cell
+		  end
+		end
+	      end
+
+	* lib/csv.rb: [CAUTION] record separator(CR, LF, CR+LF) behavior
+	  change.  CSV.open, CSV.parse, and CSV,generate now do not force
+	  opened file binmode.  formerly it set binmode explicitly.
+
+	  with CSV.open, binmode of opened file depends the given mode
+	  parameter "r", "w", "rb", and "wb".  CSV.parse and CSV.generate open
+	  file with "r" and "w".
+
+	  setting mode properly is user's responsibility now.
+
+	* lib/csv.rb: accepts String as a fs (field separator/column separator)
+	  and rs (record separator/row separator)
+
+	* lib/csv.rb (CSV.read, CSV.readlines): added.  works as IO.read and
+	  IO.readlines in CSV format.
+
+	* lib/csv.rb: added CSV.foreach(path, rs = nil, &block).  CSV.foreach
+	  now does not handle "| cmd" as a path different from IO.foreach.
+	  needed?
+
+	* test/csv/test_csv.rb: updated.
+
+	* test/ruby/test_float.rb: added test_strtod to test Float("0").
+
 Thu May 27 21:37:50 2004  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pathname.rb (Pathname#initialize): refine pathname initialization 
