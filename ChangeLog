@@ -1,3 +1,7 @@
+2003-04-24  Dave Thomas  <dave@wireless_1.local.thomases.com>
+
+	* lib/matrix.rb (Matrix.row_vector): Fix method name typo
+
 Thu Apr 24 19:40:02 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/extmk.rb: add -Wl,--no-undefined to LDSHARED only

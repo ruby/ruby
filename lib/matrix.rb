@@ -310,7 +310,7 @@ class Matrix
     when Array
       Matrix.rows([row.dup], false)
     else
-      Matrix.row([[row]], false)
+      Matrix.rows([[row]], false)
     end
   end
   
