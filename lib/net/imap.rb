@@ -291,7 +291,7 @@ module Net
       end
       authenticator = @@authenticators[auth_type].new(*args)
       send_command("AUTHENTICATE", auth_type) do |resp|
-	if resp.instance_of?(ContinueRequest)
+	if resp.instance_of?(ContinuationRequest)
 	  data = authenticator.process(resp.data.text.unpack("m")[0])
 	  send_data([data].pack("m").chomp)
 	end
@@ -778,7 +778,7 @@ module Net
       end
     end
 
-    ContinueRequest = Struct.new(:data, :raw_data)
+    ContinuationRequest = Struct.new(:data, :raw_data)
     UntaggedResponse = Struct.new(:name, :data, :raw_data)
     TaggedResponse = Struct.new(:tag, :name, :data, :raw_data)
     ResponseText = Struct.new(:code, :text)
@@ -924,7 +924,7 @@ module Net
       def continue_req
 	match(T_PLUS)
 	match(T_SPACE)
-	return ContinueRequest.new(resp_text, @str)
+	return ContinuationRequest.new(resp_text, @str)
       end
 
       def response_untagged
