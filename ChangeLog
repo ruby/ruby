@@ -1,3 +1,11 @@
+Sun Oct 17 12:53:46 2004  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (fole_func_methods): correct argument mismatch.
+	* ext/win32ole/win32ole.c (fole_get_methods): ditto.
+	* ext/win32ole/win32ole.c (fole_put_methods): ditto.
+	* ext/win32ole/tests/testWIN32OLE.rb: add test for WIN32OLE#ole_func_methods
+	  WIN32OLE#ole_get_methods, WIN32OLE#ole_put_methods
+
 Sat Oct 16 14:45:28 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/0.9.rb (RSS::Rss#to_s): removed garbage.

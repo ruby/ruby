@@ -189,6 +189,24 @@ class TestWin32OLE < RUNIT::TestCase
     method_names = methods.collect{|m| m.name}
     assert(method_names.include?("Quit"))
   end
+  def test_ole_func_methods
+    methods = @excel.ole_func_methods
+    assert(methods.size > 0)
+    method_names = methods.collect{|m| m.name}
+    assert(method_names.include?("Quit"))
+  end
+  def test_ole_put_methods
+    methods = @excel.ole_put_methods
+    assert(methods.size > 0)
+    method_names = methods.collect{|m| m.name}
+    assert(method_names.include?("Visible"))
+  end
+  def test_ole_get_methods
+    methods = @excel.ole_get_methods
+    assert(methods.size > 0)
+    method_names = methods.collect{|m| m.name}
+    assert(method_names.include?("Visible"))
+  end
   def test_ole_method_help
     quit_info = @excel.ole_method_help("Quit")
     assert_equal(0, quit_info.size_params)
@@ -202,10 +220,6 @@ class TestWin32OLE < RUNIT::TestCase
     assert(add_info.params[0].optional?)
     assert_equal('VARIANT', add_info.params[0].ole_type)
   end
-#  def test_ole_put_methods
-#    methods_list = @excel.ole_put_methods
-#    puts methods_list
-#  end
   def teardown
     @excel.quit
     @excel = nil
