@@ -67,15 +67,9 @@ It can be replaced by the following code:
     Sets an OpenSSL::PKey::RSA or OpenSSL::PKey::DSA object.
     (This method is appeared in Michal Rokos's OpenSSL extention.)
 
-: key_file, key_file=((|path|))
-    Sets a private key file to use in PEM format.
-
 : cert, cert=((|cert|))
     Sets an OpenSSL::X509::Certificate object as client certificate
     (This method is appeared in Michal Rokos's OpenSSL extention).
-
-: cert_file, cert_file=((|path|))
-    Sets pathname of a X.509 certification file in PEM format.
 
 : ca_file, ca_file=((|path|))
     Sets path of a CA certification file in PEM format.

@@ -1,3 +1,10 @@
+Mon Dec 20 14:45:19 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/net/https.rb: delete descriptions about key_file and cert_file.
+	  fixed: [ruby-dev:25243]
+
+	* ext/openssl/lib/net/telnets.rb: ditto.
+
 Mon Dec 20 14:07:02 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/multi-tk.rb: supports new features of Tcl/Tk8.5a2
