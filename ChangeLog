@@ -1,3 +1,26 @@
+Fri May 12 17:33:44 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_compile_pattern): charset_not should not exclude
+	  newline from matching set.
+
+Thu May 11 22:29:25 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* ext/md5/depend: add $(topdir)/config.h dependency to md5c.o.
+
+	* ext/md5/extconf.rb: new file to add -DHAVE_CONFIG_H flag for Alpha.
+
+Thu May 11 00:37:55 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (parse_regx): remove in_brack.
+
+Wed May 10 12:51:18 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ruby.c (proc_options): move adding RUBYLIB and "." to the load
+	  path after #! line parsing.
+
+	* parse.y (parse_regx): should parse backslash escape like `\c['
+	  here to avoid causing `unterminated regexp' error.
+
 Mon May  8 23:17:36 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* dln.c (dln_init): remove possible buffer overrun.  This is

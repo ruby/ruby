@@ -5,7 +5,7 @@
   $Author$
   created at: Fri Aug  2 09:24:12 JST 1996
 
-  Copyright (C) 1995-1998 Yukihiro Matsumoto
+  Copyright (C) 1995-2000 Yukihiro Matsumoto
 
 ************************************************/
 /* This module provides an interface to the RSA Data Security,

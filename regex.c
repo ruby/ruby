@@ -1379,12 +1379,6 @@ re_compile_pattern(pattern, size, bufp)
       had_num_literal = 0;
       had_char_class = 0;
 
-      /* charset_not matches newline according to a syntax bit.  */
-      if ((enum regexpcode)b[-2] == charset_not) {
-	if (bufp->options & RE_OPTION_POSIXLINE)
-	  SET_LIST_BIT ('\n');
-      }
-
       /* Read in characters and ranges, setting map bits.  */
       for (;;) {
 	int size;

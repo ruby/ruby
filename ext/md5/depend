@@ -1,2 +1,2 @@
-md5c.o: md5c.c md5.h
+md5c.o: md5c.c md5.h $(topdir)/config.h
 md5init.o: md5init.c $(hdrdir)/ruby.h $(topdir)/config.h $(hdrdir)/defines.h md5.h

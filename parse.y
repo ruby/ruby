@@ -2060,6 +2060,84 @@ read_escape()
 }
 
 static int
+tokadd_escape()
+{
+    int c;
+
+    switch (c = nextc()) {
+      case '\n':
+	return 0;		/* just ignore */
+
+      case '0': case '1': case '2': case '3': /* octal constant */
+      case '4': case '5': case '6': case '7':
+	{
+	    int i;
+
+	    tokadd('\\');
+	    tokadd(c);
+	    for (i=0; i<2; i++) {
+		c = nextc();
+		if (c == -1) goto eof;
+		if (c < '0' || '7' < c) {
+		    pushback(c);
+		    break;
+		}
+		tokadd(c);
+	    }
+	}
+	return 0;
+
+      case 'x':	/* hex constant */
+	{
+	    int numlen;
+
+	    scan_hex(lex_p, 2, &numlen);
+	    while (numlen--)
+		tokadd(nextc());
+	}
+	return 0;
+
+      case 'M':
+	if ((c = nextc()) != '-') {
+	    yyerror("Invalid escape character syntax");
+	    pushback(c);
+	    return 0;
+	}
+	tokadd('\\'); tokadd('M'); tokadd('-');
+	goto escaped;
+
+      case 'C':
+	if ((c = nextc()) != '-') {
+	    yyerror("Invalid escape character syntax");
+	    pushback(c);
+	    return 0;
+	}
+	tokadd('\\'); tokadd('C'); tokadd('-');
+	goto escaped;
+
+      case 'c':
+	tokadd('\\'); tokadd('c');
+      escaped:
+	if ((c = nextc()) == '\\') {
+	    return tokadd_escape();
+	}
+	else if (c == -1) goto eof;
+	tokadd(c);
+	return 0;
+
+      eof:
+      case -1:
+        yyerror("Invalid escape character syntax");
+	return -1;
+
+      default:
+	tokadd('\\');
+	tokadd(c);
+    }
+    return 0;
+}
+
+static int
 parse_regx(term, paren)
     int term, paren;
 {
@@ -2068,78 +2146,31 @@ parse_regx(term, paren)
     int once = 0;
     int nest = 0;
     int options = 0;
-    int in_brack = 0;
     int re_start = ruby_sourceline;
     NODE *list = 0;
 
     newtok();
     while ((c = nextc()) != -1) {
-	if (!in_brack && c == term && nest == 0) {
+	if (c == term && nest == 0) {
 	    goto regx_end;
 	}
 
 	switch (c) {
-	  case '[':
-	    in_brack = 1;
-	    break;
-	  case ']':
-	    in_brack = 0;
-	    break;
-
 	  case '#':
 	    list = rb_str_extend(list, term);
 	    if (list == (NODE*)-1) return 0;
 	    continue;
 
 	  case '\\':
-	    switch (c = nextc()) {
-	      case -1:
-		ruby_sourceline = re_start;
-		rb_compile_error("unterminated regexp meets end of file");
+	    if (tokadd_escape() < 0)
 		return 0;
-
-	      case '\n':
-		break;
-
-	      case '\\':
-	      case '^':
-	      case 's':
-		tokadd('\\');
-		tokadd(c);
-		break;
-
-	      case '1': case '2': case '3':
-	      case '4': case '5': case '6':
-	      case '7': case '8': case '9':
-	      case '0': case 'x':
-		tokadd('\\');
-		tokadd(c);
-		break;
-
-	      case 'b':
-		if (!in_brack) {
-		    tokadd('\\');
-		    tokadd('b');
-		    break;
-		}
-		/* fall through */
-	      default:
-		if (c == term) {
-		    tokadd(c);
-		}
-		else {
-		    tokadd('\\');
-		    tokadd(c);
-		}
-	    }
 	    continue;
 
 	  case -1:
-	    rb_compile_error("unterminated regexp");
-	    return 0;
+	    goto unterminated;
 
 	  default:
-	    if (paren && !in_brack)  {
+	    if (paren)  {
 	      if (c == paren) nest++;
 	      if (c == term) nest--;
 	    }
@@ -2207,7 +2238,9 @@ parse_regx(term, paren)
 	}
 	tokadd(c);
     }
-    rb_compile_error("unterminated regexp");
+  unterminated:
+    ruby_sourceline = re_start;
+    rb_compile_error("unterminated regexp meets end of file");
     return 0;
 }
 

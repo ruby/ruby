@@ -4896,9 +4896,8 @@ rb_f_require(obj, fname)
     buf = ALLOCA_N(char, strlen(RSTRING(fname)->ptr) + 5);
     strcpy(buf, RSTRING(fname)->ptr);
     strcat(buf, ".rb");
-    file = find_file(buf);
-    if (file) {
-	fname = rb_str_new2(file);
+    if (find_file(buf)) {
+	fname = rb_str_new2(buf);
 	feature = buf;
 	goto load_rb;
     }

@@ -636,6 +636,12 @@ load_file(fname, script)
 		    while (p < pend && !ISSPACE(*p))
 			p++;
 		    *p++ = '\0';
+    if (rb_safe_level() == 0) {
+	rb_ary_push(rb_load_path, rb_str_new2("."));
+	addpath(getenv("RUBYLIB"));
+    }
+
+
 		    if (p < pend) {
 			argv = ALLOCA_N(char*, origargc+3);
 			argv[1] = p;
@@ -856,10 +862,6 @@ ruby_prog_init()
     rb_define_readonly_variable("$-p", &do_print);
     rb_define_readonly_variable("$-l", &do_line);
 
-    if (rb_safe_level() == 0) {
-	addpath(".");
-    }
-
     addpath(RUBY_LIB);
 #if defined(_WIN32) || defined(DJGPP)
     addpath(ruby_libpath());
@@ -880,10 +882,6 @@ ruby_prog_init()
 #ifdef RUBY_SEARCH_PATH
     addpath(RUBY_SEARCH_PATH);
 #endif
-
-    if (rb_safe_level() == 0) {
-	addpath(getenv("RUBYLIB"));
-    }
 
     rb_define_hooked_variable("$0", &rb_progname, 0, set_arg0);
 
