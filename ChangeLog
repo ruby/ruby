@@ -1,3 +1,16 @@
+Fri Apr 12 00:34:17 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* MANIFEST (missing/acosh.c): added.
+
+	* Makefile.in (missing/acosh.c): ditto.
+
+	* Makefile.in (missing/fileblocks.c): ditto.
+
+	* configure.in (AC_REPLACE_FUNCS): check acosh() on behalf of
+	  inverse hyperbolic functions, asinh() and atanh().
+
+	* missing/acosh.c: added for acosh(), asinh() and atanh().
+
 Thu Apr 11 19:10:37 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* io.c (remain_size): IO#read returns "" if file.size == 0.

@@ -165,6 +165,9 @@ parse.c: parse.y
 
 parse.@OBJEXT@: parse.c
 
+acosh.@OBJEXT@: $(srcdir)/missing/acosh.c
+	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/acosh.c
+
 alloca.@OBJEXT@: $(srcdir)/missing/alloca.c
 	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/alloca.c
 
@@ -173,6 +176,9 @@ crypt.@OBJEXT@: $(srcdir)/missing/crypt.c
 
 dup2.@OBJEXT@: $(srcdir)/missing/dup2.c
 	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/dup2.c
+
+fileblocks.@OBJEXT@: $(srcdir)/missing/fileblocks.c
+	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/fileblocks.c
 
 finite.@OBJEXT@: $(srcdir)/missing/finite.c
 	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/finite.c
