@@ -1,3 +1,8 @@
+Tue Aug 26 23:53:23 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/ostruct.rb (OpenStruct::method_missing): prohibit modifying
+	  frozen OpenStruct. [ruby-talk:80214]
+
 Tue Aug 26 20:03:50 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (create_tmpsrc): add the hook for source.

@@ -25,6 +25,9 @@ class OpenStruct
       if len != 1
 	raise ArgumentError, "wrong # of arguments (#{len} for 1)", caller(1)
       end
+      if self.frozen?
+	raise TypeError, "can't modify frozen #{self.class}", caller(1)
+      end
       mname.chop!
       @table[mname.intern] = args[0]
     elsif len == 0
