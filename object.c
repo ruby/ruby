@@ -853,8 +853,12 @@ rb_convert_type(val, type, tname, method)
     arg1.val = arg2.val = val;
     arg1.s = method;
     arg2.s = tname;
-    val = rb_rescue(to_type, (VALUE)&arg1, fail_to_type, (VALUE)&arg2);
-    Check_Type(val, type);
+    val = rb_rescue2(to_type, (VALUE)&arg1, fail_to_type, (VALUE)&arg2,
+		     rb_eStandardError, rb_eNameError, 0);
+    if (TYPE(val) != type) {
+	rb_raise(rb_eTypeError, "%s#%s should return %s",
+		 rb_class2name(CLASS_OF(arg1.val)), method, tname);
+    }
     return val;
 }
 
@@ -888,9 +892,11 @@ rb_Integer(val)
     arg1.val = arg2.val = val;
     arg1.s = "to_i";
     arg2.s = "Integer";
-    val = rb_rescue(to_type, (VALUE)&arg1, fail_to_type, (VALUE)&arg2);
+    val = rb_rescue2(to_type, (VALUE)&arg1, fail_to_type, (VALUE)&arg2,
+		     rb_eStandardError, rb_eNameError, 0);
     if (!rb_obj_is_kind_of(val, rb_cInteger)) {
-	rb_raise(rb_eTypeError, "to_i should return Integer");
+	rb_raise(rb_eTypeError, "%s#to_i should return Integer",
+		 rb_class2name(CLASS_OF(arg1.val)));
     }
     return val;
 }

@@ -42,7 +42,8 @@ range_init(obj, beg, end, exclude_end)
 
     args[0] = beg; args[1] = end;
     if (!FIXNUM_P(beg) || !FIXNUM_P(end)) {
-	rb_rescue(range_check, (VALUE)args, range_failed, 0);
+	rb_rescue2(range_check, (VALUE)args, range_failed, 0,
+		   rb_eStandardError, rb_eNameError, 0);
     }
 
     if (exclude_end) {

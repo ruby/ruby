@@ -70,7 +70,8 @@ do_coerce(x, y)
     VALUE a[2];
 
     a[0] = *x; a[1] = *y;
-    ary = rb_rescue2(coerce_body, (VALUE)a, rb_eNameError, coerce_rescue, (VALUE)a);
+    ary = rb_rescue2(coerce_body, (VALUE)a, coerce_rescue, (VALUE)a,
+		     rb_eStandardError, rb_eNameError, 0);
     if (TYPE(ary) != T_ARRAY || RARRAY(ary)->len != 2) {
 	rb_raise(rb_eTypeError, "coerce must return [x, y]");
     }
@@ -746,22 +747,6 @@ num_truncate(num)
     return flo_truncate(rb_Float(num));
 }
 
-static VALUE
-to_integer(val)
-    VALUE val;
-{
-    return rb_funcall(val, to_i, 0);
-}
-
-static VALUE
-fail_to_integer(val)
-    VALUE val;
-{
-    rb_raise(rb_eTypeError, "failed to convert %s into Integer",
-	     rb_class2name(CLASS_OF(val)));
-    return Qnil;		/* dummy */
-}
-
 long
 rb_num2long(val)
     VALUE val;
@@ -800,10 +785,7 @@ rb_num2long(val)
 	return Qnil;		/* not reached */
 
       default:
-	val = rb_rescue(to_integer, val, fail_to_integer, val);
-	if (!rb_obj_is_kind_of(val, rb_cInteger)) {
-	    rb_raise(rb_eTypeError, "`to_i' need to return integer");
-	}
+	val = rb_Integer(val);
 	return NUM2LONG(val);
     }
 }

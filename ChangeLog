@@ -1,3 +1,27 @@
+Thu Aug 31 14:28:39 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* stable version 1.6.0 released.
+
+Thu Aug 31 10:11:47 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (stmt): allow stmt_rhs to be right hand side of multiple
+	  assignment.
+
+	* time.c (rb_time_timeval): type error should not mention the word
+	  'interval'.
+
+Wed Aug 30 23:21:20 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (rb_num2long): use rb_Integer() instead of independent
+	  convert routine.
+
+	* eval.c (rb_rescue2): now arbitrary number of exception types can
+	  be specified.
+
+	* object.c (rb_convert_type): use rb_rescue2 now to handle NameError.
+
+	* object.c (rb_convert_type): better error message.
+
 Wed Aug 30 17:09:14 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* ext/Win32API/Win32API.c (Win32API_initialize): AlphaNT support.

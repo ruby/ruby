@@ -214,8 +214,8 @@ static void top_local_setup();
  *	precedence table
  */
 
-%nonassoc kDO
-%nonassoc kDO2
+/*%nonassoc kDO
+%nonassoc kDO2*/
 %left  kIF_MOD kUNLESS_MOD kWHILE_MOD kUNTIL_MOD kRESCUE_MOD
 %left  kOR kAND
 %right kNOT
@@ -391,6 +391,12 @@ stmt		: block_call
 		    {
 			value_expr($3);
 			$$ = node_assign($1, $3);
+		    }
+		| mlhs '=' stmt_rhs
+		    {
+			value_expr($3);
+			$1->nd_value = $3;
+			$$ = $1;
 		    }
 		| expr
 

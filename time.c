@@ -105,9 +105,10 @@ rb_time_new(sec, usec)
     return time_new_internal(rb_cTime, sec, usec);
 }
 
-struct timeval
-rb_time_interval(time)
+static struct timeval
+time_timeval(time, interval)
     VALUE time;
+    int interval;
 {
     struct timeval t;
 
@@ -134,11 +135,19 @@ rb_time_interval(time)
 	break;
 
       default:
-	rb_raise(rb_eTypeError, "can't convert %s into Time interval",
-		 rb_class2name(CLASS_OF(time)));
+	rb_raise(rb_eTypeError, "can't convert %s into Time%s",
+		 rb_class2name(CLASS_OF(time)),
+		 interval ? " interval" : "");
 	break;
     }
     return t;
+}
+
+struct timeval
+rb_time_interval(time)
+    VALUE time;
+{
+    return time_timeval(time, Qtrue);
 }
 
 struct timeval
@@ -153,7 +162,7 @@ rb_time_timeval(time)
 	t = tobj->tv;
 	return t;
     }
-    return rb_time_interval(time);
+    return time_timeval(time, Qfalse);
 }
 
 static VALUE

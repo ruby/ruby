@@ -62,7 +62,7 @@ Standard Libraries
 - String#slice, String#slice!
 - Marshal should handle generic instance variables.
 - debugger for thread programming
-- SyntaxError, NameError, LoadError and NotImplementError are subclasses of
+- SyntaxError, NameError, LoadError and NotImplementedError are subclasses of
   ScriptError<Exception, not StandardError.
 - Thread::start gives arguments, not a thread object to the block
 - regexp: (?>..), \G

@@ -22,6 +22,14 @@
 #include "st.h"
 #include "dln.h"
 
+#ifdef HAVE_STDARG_PROTOTYPES
+#include <stdarg.h>
+#define va_init_list(a,b) va_start(a,b)
+#else
+#include <varargs.h>
+#define va_init_list(a,b) va_start(a)
+#endif
+
 #ifndef HAVE_STRING_H
 char *strrchr _((const char*,const char));
 #endif
@@ -3706,37 +3714,57 @@ handle_rescue(self, node)
 }
 
 VALUE
-rb_rescue2(b_proc, data1, eclass, r_proc, data2)
+#ifdef HAVE_STDARG_PROTOTYPES
+rb_rescue2(VALUE (*b_proc)(), VALUE data1, VALUE (*r_proc)(), VALUE data2, ...)
+#else
+rb_rescue2(b_proc, data1, r_proc, data2, va_alist)
     VALUE (*b_proc)(), (*r_proc)();
-    VALUE data1, eclass, data2;
+    VALUE data1, data2;
+    va_dcl
+#endif
 {
     int state;
     volatile VALUE result;
     volatile VALUE e_info = ruby_errinfo;
+    va_list args;
 
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
       retry_entry:
 	result = (*b_proc)(data1);
     }
-    else if (state == TAG_RAISE && rb_obj_is_kind_of(ruby_errinfo, eclass)) {
-	if (r_proc) {
-	    PUSH_TAG(PROT_NONE);
-	    if ((state = EXEC_TAG()) == 0) {
-		result = (*r_proc)(data2, ruby_errinfo);
+    else if (state == TAG_RAISE) {
+	int handle = Qfalse;
+	VALUE eclass;
+
+	va_init_list(args, data2);
+	while (eclass = va_arg(args, VALUE)) {
+	    if (rb_obj_is_kind_of(ruby_errinfo, eclass)) {
+		handle = Qtrue;
+		break;
 	    }
-	    POP_TAG();
-	    if (state == TAG_RETRY) {
+	}
+	va_end(args);
+
+	if (handle) {
+	    if (r_proc) {
+		PUSH_TAG(PROT_NONE);
+		if ((state = EXEC_TAG()) == 0) {
+		    result = (*r_proc)(data2, ruby_errinfo);
+		}
+		POP_TAG();
+		if (state == TAG_RETRY) {
+		    state = 0;
+		    goto retry_entry;
+		}
+	    }
+	    else {
+		result = Qnil;
 		state = 0;
-		goto retry_entry;
 	    }
-	}
-	else {
-	    result = Qnil;
-	    state = 0;
-	}
-	if (state == 0) {
-	    ruby_errinfo = e_info;
+	    if (state == 0) {
+		ruby_errinfo = e_info;
+	    }
 	}
     }
     POP_TAG();
@@ -3750,7 +3778,7 @@ rb_rescue(b_proc, data1, r_proc, data2)
     VALUE (*b_proc)(), (*r_proc)();
     VALUE data1, data2;
 {
-    return rb_rescue2(b_proc, data1, rb_eStandardError, r_proc, data2);
+    return rb_rescue2(b_proc, data1, r_proc, data2, rb_eStandardError, 0);
 }
 
 VALUE

@@ -467,7 +467,7 @@ VALUE rb_yield _((VALUE));
 int rb_block_given_p _((void));
 VALUE rb_iterate _((VALUE(*)(),VALUE,VALUE(*)(),VALUE));
 VALUE rb_rescue _((VALUE(*)(),VALUE,VALUE(*)(),VALUE));
-VALUE rb_rescue2 _((VALUE(*)(),VALUE,VALUE,VALUE(*)(),VALUE));
+VALUE rb_rescue2 __((VALUE(*)(),VALUE,VALUE(*)(),VALUE,...));
 VALUE rb_ensure _((VALUE(*)(),VALUE,VALUE(*)(),VALUE));
 VALUE rb_catch _((const char*,VALUE(*)(),VALUE));
 void rb_throw _((const char*,VALUE)) NORETURN;
