@@ -183,12 +183,11 @@ class  DefaultDisplay
   ######################################################################
 
   def page
-    setup_pager
+    pager = setup_pager
     begin
       yield
-      page_output
     ensure
-      STDOUT.reopen(@save_stdout) if @save_stdout
+      page_output(pager)
     end
   end
 
@@ -203,20 +202,20 @@ class  DefaultDisplay
         else
           @save_stdout = STDOUT.clone
           STDOUT.reopen(pager)
-          return
+          return pager
         end
       end
       @options.use_stdout = true
+      nil
     end
   end
 
   ######################################################################
 
-  def page_output
-    unless @options.use_stdout
-      STDOUT.reopen(@save_stdout)
-      @save_stdout = nil
-    end
+  def page_output(pager)
+    STDOUT.reopen(@save_stdout) if @save_stdout
+    @save_stdout = nil
+    pager.close if pager
   end
 
   ######################################################################
