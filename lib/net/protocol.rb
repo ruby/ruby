@@ -64,7 +64,7 @@ module Net
 
   class Protocol
 
-    Version = '1.1.23'
+    Version = '1.1.24'
 
 
     class << self
@@ -80,7 +80,8 @@ module Net
         end
       end
 
-      def Proxy( p_addr, p_port )
+      def Proxy( p_addr, p_port = nil )
+        p_port ||= self.port
         klass = Class.new( self )
         klass.module_eval %-
 
@@ -109,7 +110,7 @@ module Net
       def proxy?
         false
       end
-            
+
 
       private
 
@@ -587,44 +588,43 @@ module Net
 
 
     def write( str )
-      do_write_beg
-      do_write_do str
-      do_write_fin
+      writing {
+        do_write str
+      }
     end
 
 
     def writeline( str )
-      do_write_beg
-      do_write_do str
-      do_write_do "\r\n"
-      do_write_fin
+      writing {
+        do_write str
+        do_write "\r\n"
+      }
     end
 
 
     def write_bin( src, block )
-      do_write_beg
-      if block then
-        block.call WriteAdapter.new( self, :do_write_do )
-      else
-        src.each do |bin|
-          do_write_do bin
+      writing {
+        if block then
+          block.call WriteAdapter.new( self, :do_write )
+        else
+          src.each do |bin|
+            do_write bin
+          end
         end
-      end
-      do_write_fin
+      }
     end
 
 
     def write_pendstr( src, block )
       @pipe << "writing text from #{src.type}\n" if @pipe; pipeoff
 
-      do_write_beg
-      if block then
-        block.call WriteAdapter.new( self, :write_pendstr_inner )
-      else
-        write_pendstr_inner src
-      end
-      do_write_do ".\r\n"
-      wsize = do_write_fin
+      wsize = use_each_crlf_line {
+        if block then
+          block.call WriteAdapter.new( self, :wpend_in )
+        else
+          wpend_in src
+        end
+      }
 
       @pipe << "wrote #{wsize} bytes text\n" if pipeon
       wsize
@@ -634,82 +634,102 @@ module Net
     private
 
 
-    def write_inner( src )
-      each_crlf_line( src, :do_write_do )
+    def wpend_in( src )
+      line = nil
+      each_crlf_line( src ) do |line|
+        do_write '.' if line[0] == ?.
+        do_write line
+      end
     end
 
+    def use_each_crlf_line
+      writing {
+        @wbuf = ''
 
-    def write_pendstr_inner( src )
-      each_crlf_line src, :i_w_pend
+        yield
+
+        if not @wbuf.empty? then       # un-terminated last line
+          if @wbuf[-1] == ?\r then
+            @wbuf.chop!
+          end
+          @wbuf.concat "\r\n"
+          do_write @wbuf
+        elsif @writtensize == 0 then   # empty src
+          do_write "\r\n"
+        end
+        do_write ".\r\n"
+
+        @wbuf = nil
+      }
     end
 
-    def i_w_pend( line )
-      do_write_do '.' if line[0] == ?.
-      do_write_do line
-    end
-
-
-    def each_crlf_line( src, mid )
-      buf = ''
+    def each_crlf_line( src )
       str = m = nil
+      beg = 0
 
-      adding( src, buf ) do
-        while true do
-          m = /[^\r\n]*(\n|\r\n|\r)/.match( buf )
-          break unless m
-
-          str = m[0]
-          if str.size == buf.size and buf[-1] == ?\r then
+      adding( src ) do
+        buf = @wbuf
+        while buf.index( /\n|\r\n|\r/, beg ) do
+          m = $~
+          if m.begin(0) == buf.size - 1 and buf[-1] == ?\r then
             # "...\r" : can follow "\n..."
             break
           end
-          buf[ 0, str.size ] = ''
-          str.chop!
+          str = buf[ beg, m.begin(0) - beg ]
           str.concat "\r\n"
-          __send__ mid, str
+          yield str
+          beg = m.end(0)
         end
-      end
-      if not buf.empty? then    # un-terminated last line
-        buf.concat "\r\n"
-        __send__ mid, buf
-      elsif not str then        # empty src
-        __send__ mid, "\r\n"
+        @wbuf = buf[ beg, buf.size - beg ]
       end
     end
 
-    def adding( src, buf )
+    def adding( src )
       i = nil
 
       case src
       when String
-        0.step( src.size, 512 ) do |i|
-          buf << src[ i, 512 ]
+        0.step( src.size - 1, 2048 ) do |i|
+          @wbuf << src[i,2048]
           yield
         end
 
       when File
         while true do
-          i = src.read( 512 )
+          i = src.read( 2048 )
           break unless i
-          buf << i
+          i[0,0] = @wbuf
+          @wbuf = i
           yield
         end
 
       else
-        src.each do |bin|
-          buf << bin
-          yield if buf.size > 512
+        src.each do |i|
+          @wbuf << i
+          if @wbuf.size > 2048 then
+            yield
+          end
         end
       end
     end
 
 
-    def do_write_beg
+    def writing
       @writtensize = 0
       @sending = ''
+
+      yield
+
+      if @pipe then
+        @pipe << 'write "'
+        @pipe << @sending
+        @pipe << "\"\n"
+      end
+      @socket.flush
+      @writtensize
     end
 
-    def do_write_do( arg )
+    def do_write( arg )
       if @pipe or @sending.size < 128 then
         @sending << Net.quote( arg )
       else
@@ -719,17 +739,6 @@ module Net
       s = @socket.write( arg )
       @writtensize += s
       s
-    end
-
-    def do_write_fin
-      if @pipe then
-        @pipe << 'write "'
-        @pipe << @sending
-        @pipe << "\"\n"
-      end
-
-      @socket.flush
-      @writtensize
     end
 
 
