@@ -1,5 +1,7 @@
 Fri Jan 23 14:19:28 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
+	* version 1.1b6 released.
+
 	* object.c (mod_to_s): need to duplicate classpath.
 
 	* error.c (exc_inspect): need to duplicate classpath.
