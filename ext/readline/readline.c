@@ -3,7 +3,9 @@
 
 #include <errno.h>
 #include <stdio.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <readline/readline.h>
 #include <readline/history.h>
 

@@ -1,3 +1,8 @@
+Wed Apr  9 15:35:04 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* ext/readline/readline.c: include <unistd.h> only when
+	  HAVE_UNISTD_H is defined.
+
 Wed Apr  9 14:05:00 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* marshal.c (w_object): preserve extended module on struct.
