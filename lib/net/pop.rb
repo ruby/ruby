@@ -1,6 +1,6 @@
 =begin
 
-= net/pop.rb version 1.1.33
+= net/pop.rb version 1.1.34
 
 written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 
@@ -184,6 +184,7 @@ module Net
 
     protocol_param :port,         '110'
     protocol_param :command_type, '::Net::NetPrivate::POP3Command'
+    protocol_param :apop_command_type, '::Net::NetPrivate::APOPCommand'
 
     protocol_param :mail_type,    '::Net::POPMail'
 
@@ -206,9 +207,10 @@ module Net
     end
 
 
-    def initialize( addr = nil, port = nil )
-      super
+    def initialize( addr = nil, port = nil, apop = false )
+      super addr, port
       @mails = nil
+      @apop = false
     end
 
     attr :mails
@@ -237,6 +239,11 @@ module Net
 
 
     private
+
+    def conn_command( sock )
+      @command =
+          (@apop ? type.apop_command_type : type.command_type).new(sock)
+    end
 
     def do_start( acnt, pwd )
       @command.auth( acnt, pwd )

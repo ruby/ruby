@@ -1,3 +1,13 @@
+Sat Feb 24 15:43:31 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/protocol.rb: use net 1.2 for also ruby 1.6 branch.
+
+	* lib/net/smtp.rb: ditto.
+
+	* lib/net/pop.rb: ditto.
+
+	* lib/net/http.rb: ditto.
+
 Fri Feb 23 16:36:09 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/http.rb: always close connection if body is not exist.
