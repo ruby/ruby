@@ -185,7 +185,8 @@ rhapsody*)	;;
 darwin*)	LIBS="-lobjc $LIBS";;
 human*)		ac_cv_func_getpgrp_void=yes;;
 beos*)		;;
-cygwin*)	rb_cv_have_daylight=no;;
+cygwin*)	rb_cv_have_daylight=no
+		ac_cv_var_tzname=no;;
 mingw*)		LIBS="-lwsock32 -lmsvcrt $LIBS"
 		ac_cv_header_a_out_h=no
 		ac_cv_header_pwd_h=no
@@ -240,6 +241,13 @@ linux*)		LIBS="-lm $LIBS"
 		case "$target_cpu" in
 		alpha*)
 		    CFLAGS="-mieee $CFLAGS" ;;
+		esac ;;
+osf*)		LIBS="-lm $LIBS"
+		case "$target_cpu"::"$without_gcc" in
+		alpha*::no)
+		    CFLAGS="-mieee $CFLAGS" ;;
+		alpha*::yes)
+		    CFLAGS="-ieee $CFLAGS" ;;
 		esac ;;
 *) LIBS="-lm $LIBS";;
 esac

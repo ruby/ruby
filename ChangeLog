@@ -1,3 +1,10 @@
+Thu Apr 26 22:36:11 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in:  don't use tzname on cygwin 1.3.1+.
+
+	* configure.in: add -mieee/-ieee to CFLAGS on OSF1/Alpha
+	  to disable "DIVISION BY ZERO" exception.
+
 Tue Apr 24 16:03:25 2001  Hiroshi Igarashi  <iga@ruby-lang.org>
 
 	* ext/extmk.rb.in: add target `distclean' in Makefile for extlib.
