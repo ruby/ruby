@@ -346,25 +346,32 @@ class Time
   end
 
 =begin
---- Time#xmlschema
---- Time#iso8601
+--- Time#xmlschema([fractional_seconds])
+--- Time#iso8601([fractional_seconds])
     returns a string which represents the time as dateTime
     defined by XML Schema:
 
       CCYY-MM-DDThh:mm:ssTZD
+      CCYY-MM-DDThh:mm:ss.sssTZD
 
     where TZD is Z or [+-]hh:mm.
 
     If self is a UTC time, Z is used as TZD.
     [+-]hh:mm is used otherwise.
+
+    ((|fractional_seconds|)) specify as a number of digits of
+    fractional seconds.
+    The default value of ((|fractional_seconds|)) is 0.
 =end
-  def xmlschema
+  def xmlschema(fraction_digits=0)
     sprintf('%d-%02d-%02dT%02d:%02d:%02d',
       year, mon, day, hour, min, sec) +
-    if usec == 0
+    if fraction_digits == 0
       ''
+    elsif fraction_digits <= 6
+      '.' + sprintf('%06d', usec)[0, fraction_digits]
     else
-      sprintf('.%06d', usec).sub(/0*\z/, '')
+      '.' + sprintf('%06d', usec) + '0' * (fraction_digits - 6)
     end +
     if utc?
       'Z'
@@ -479,8 +486,20 @@ if __FILE__ == $0
     end
 
     def test_encode_xmlschema
-      assert_equal("2001-04-17T19:23:17.3Z",
-		   Time.utc(2001, 4, 17, 19, 23, 17, 300000).xmlschema)
+      t = Time.utc(2001, 4, 17, 19, 23, 17, 300000)
+      assert_equal("2001-04-17T19:23:17Z", t.xmlschema)
+      assert_equal("2001-04-17T19:23:17.3Z", t.xmlschema(1))
+      assert_equal("2001-04-17T19:23:17.300000Z", t.xmlschema(6))
+      assert_equal("2001-04-17T19:23:17.3000000Z", t.xmlschema(7))
+
+      t = Time.utc(2001, 4, 17, 19, 23, 17, 123456)
+      assert_equal("2001-04-17T19:23:17.1234560Z", t.xmlschema(7))
+      assert_equal("2001-04-17T19:23:17.123456Z", t.xmlschema(6))
+      assert_equal("2001-04-17T19:23:17.12345Z", t.xmlschema(5))
+      assert_equal("2001-04-17T19:23:17.1Z", t.xmlschema(1))
+
+      t = Time.utc(1960, 12, 31, 23, 0, 0, 123456)
+      assert_equal("1960-12-31T23:00:00.123456Z", t.xmlschema(6))
     end
 
     def test_completion

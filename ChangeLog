@@ -1,3 +1,9 @@
+Mon Jan  7 12:38:47 2002  Tanaka Akira  <akr@m17n.org>
+
+	* lib/time.rb (Time#xmlschema): new optional argument
+	fractional_seconds to specify a number of digits of
+	fractional part of the time.
+
 Sat Jan  5 13:18:11 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* range.c (range_member): beginning check was
