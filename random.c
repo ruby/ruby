@@ -230,7 +230,7 @@ rb_f_rand(argc, argv, obj)
 	break;
       default:
 	vmax = rb_Integer(vmax);
-	if (TYPE(vmax) == T_BIGNUM) goto bignum:
+	if (TYPE(vmax) == T_BIGNUM) goto bignum;
       case T_FIXNUM:
 	max = NUM2LONG(vmax);
 	break;
