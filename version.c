@@ -24,11 +24,6 @@ Init_version()
     rb_define_global_const("RUBY_VERSION", v);
     rb_define_global_const("RUBY_RELEASE_DATE", d);
     rb_define_global_const("RUBY_PLATFORM", p);
-
-    /* obsolete constants */
-    rb_define_global_const("VERSION", v);
-    rb_define_global_const("RELEASE_DATE", d);
-    rb_define_global_const("PLATFORM", p);
 }
 
 void

@@ -3,6 +3,15 @@ Thu Jan 22 16:21:02 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* parse.y (string_content): reset lexical states at the beginning of
 	  string contents.  [ruby-list:39061]
 
+Thu Jan 22 08:08:50 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (opt_rescue): use NODE_ERRINFO() instead of
+	  NODE_GVAR("$!"), to avoid confusion from variable aliasing.
+	  [ruby-talk:90074]
+
+	* version.c (Init_version): remove obsolete constants VERSION
+	  etc.  [ruby-dev:22643]
+
 Thu Jan 22 01:46:32 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (newline_node): do not use NODE_NEWLINE node anymore,

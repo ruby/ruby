@@ -384,7 +384,7 @@ stmts		: none
 		    }
 		| stmts terms stmt
 		    {
-			$$ = block_append($1, $3);
+			$$ = block_append($1, newline_node($3));
 		    }
 		| error stmt
 		    {
@@ -1858,7 +1858,7 @@ opt_rescue	: kRESCUE exc_list exc_var then
 		  opt_rescue
 		    {
 		        if ($3) {
-		            $3 = node_assign($3, NEW_GVAR(rb_intern("$!")));
+		            $3 = node_assign($3, NEW_ERRINFO());
 			    $5 = block_append($3, $5);
 			}
 			$$ = NEW_RESBODY($2, $5, $6);

@@ -112,6 +112,7 @@ enum node_type {
     NODE_NIL,
     NODE_TRUE,
     NODE_FALSE,
+    NODE_ERRINFO,
     NODE_DEFINED,
     NODE_POSTEXE,
 #ifdef C_ALLOCA
@@ -330,6 +331,7 @@ typedef struct RNode {
 #define NEW_NIL() NEW_NODE(NODE_NIL,0,0,0)
 #define NEW_TRUE() NEW_NODE(NODE_TRUE,0,0,0)
 #define NEW_FALSE() NEW_NODE(NODE_FALSE,0,0,0)
+#define NEW_ERRINFO() NEW_NODE(NODE_ERRINFO,0,0,0)
 #define NEW_DEFINED(e) NEW_NODE(NODE_DEFINED,e,0,0)
 #define NEW_PREEXE(b) NEW_SCOPE(b)
 #define NEW_POSTEXE() NEW_NODE(NODE_POSTEXE,0,0,0)

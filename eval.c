@@ -2775,6 +2775,9 @@ rb_eval(self, n)
       case NODE_FALSE:
 	RETURN(Qfalse);
 
+      case NODE_ERRINFO:
+	RETURN(ruby_errinfo);
+
       case NODE_IF:
 	if (trace_func) {
 	    call_trace_func("line", node, self,

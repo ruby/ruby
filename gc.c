@@ -857,6 +857,7 @@ gc_mark_children(ptr, lev)
 	  case NODE_NIL:
 	  case NODE_TRUE:
 	  case NODE_FALSE:
+	  case NODE_ERRINFO:
 	  case NODE_ATTRSET:
 	  case NODE_BLOCK_ARG:
 	  case NODE_POSTEXE:
