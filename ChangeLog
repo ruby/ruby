@@ -1,3 +1,8 @@
+Wed Jul 23 14:19:17 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* lib/mkmf.rb (log_src, checking_for, create_header):
+	  Logging.message is printf like format.
+
 Wed Jul 23 10:11:15 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ext/iconv/iconv.c (check_iconv): check if Iconv instance.

@@ -169,10 +169,10 @@ def xpopen command, *mode, &block
 end
 
 def log_src(src)
-  Logging::message <<"EOM"
+  Logging::message <<"EOM", src
 checked program was:
 /* begin */
-#{src}/* end */
+%s/* end */
 
 EOM
 end
@@ -363,11 +363,11 @@ end
 def checking_for(m)
   f = caller[0][/in `(.*)'$/, 1] and f << ": " #` for vim
   m = "checking for #{m}... "
-  message m
-  Logging::message "#{f}#{m}--------------------\n"
+  message "%s", m
+  Logging::message "%s%s--------------------\n", f, m
   r = yield
   message(a = r ? "yes\n" : "no\n")
-  Logging::message "-------------------- #{a}\n"
+  Logging::message "-------------------- %s\n", a
   r
 end
 
@@ -481,7 +481,7 @@ def enable_config(config, default=nil)
 end
 
 def create_header(header = "extconf.h")
-  message "creating #{header}\n"
+  message "creating %s\n", header
   if $defs.length > 0
     sym = header.tr("a-z./\055", "A-Z___")
     open(header, "w") do |hfile|
