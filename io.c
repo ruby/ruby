@@ -741,6 +741,7 @@ rb_io_eof(io)
 	ungetc(ch, fptr->f);
 	return Qfalse;
     }
+    rb_io_check_closed(fptr);
     clearerr(fptr->f);
     return Qtrue;
 }
