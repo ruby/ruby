@@ -1,3 +1,5 @@
+warn "Warning: cgi-lib is deprecated after Ruby 1.8.1; use cgi instead"
+
 =begin
 
 = simple CGI support library

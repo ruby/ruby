@@ -10,6 +10,8 @@
 #	
 #
 
+warn "Warning: parsearg is deprecated after Ruby 1.8.1; use optparse instead"
+
 $RCS_ID=%q$Header$
 
 require "getopts"

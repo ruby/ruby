@@ -1,3 +1,10 @@
+Wed Feb 19 00:20:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
+
+	* lib/cgi-lib.rb:   deprecated after 1.8.1
+	* lib/getopts.rb:   ditto
+	* lib/importenv.rb: ditto
+	* lib/parsearg.rb:  ditto
+
 Thu Feb 19 00:11:05 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/markup/simple_markup/preprocess.rb (SM::PreProcess::handle): 
@@ -11,6 +18,7 @@ Wed Feb 18 22:42:19 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* test/rinda/test_rinda.rb: improt test_rinda.rb
 
+>>>>>>> 1.2947
 Wed Feb 18 22:03:11 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* test/*: should not depend on $KCODE.
