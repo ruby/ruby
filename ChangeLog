@@ -1,3 +1,15 @@
+Fri Feb  6 22:48:16 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/generators/html_generator.rb (gen_url): Support 
+	  https in RDoc hyperlinks
+
+<<<<<<< ChangeLog
+Thu Jan 29 22:41:53 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/generators/html_generator.rb: Allow 'link:' in Tidylinks.
+	  THis means you can write "see f1[link:files/f1_rb.html]".
+
+=======
 Fri Feb  6 22:41:22 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* lib/pp.rb (PPInspectTest#test_to_s_with_iv): rollback the previous
@@ -127,6 +139,7 @@ Thu Jan 29 15:33:23 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* sample/openssl/gen_csr.rb: use OpenSSL::X509::Name.parse.
 
+>>>>>>> 1.2673.2.103
 Tue Jan 27 11:09:29 2004  FUKUMOTO Atsushi  <fukumoto@nospam.imasy.or.jp>
 
 	* ext/socket/socket.c (s_recvfrom): sending length should be an
