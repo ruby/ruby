@@ -403,4 +403,25 @@ class TestIterator < Test::Unit::TestCase
     end
     assert(false, "must not reach here")
   end
+
+  def test_break_from_enum
+    result = ["a"].inject("ng") {|x,y| break "ok"}
+    assert_equal("ok", result)
+  end
+
+  def _test_return_trace_func(x)
+    set_trace_func(proc {})
+    [].fetch(2) {return x}
+  ensure
+    set_trace_func(nil)
+  end
+
+  def test_return_trace_func
+    ok = "returned gracefully"
+    result = "skipped"
+    result = _test_return_from_builtin(ok)
+  ensure
+    assert_equal(ok, result)
+    return
+  end
 end

@@ -76,16 +76,16 @@ class TestDigest < Test::Unit::TestCase
     ALGOS.each do |algo|
       md1 = algo.new("ABC")
 
-      assert_equal(md1, md1.clone)
+      assert_equal(md1, md1.clone, algo)
 
       md2 = algo.new
       md2 << "A"
 
-      assert(md1 != md2)
+      assert(md1 != md2, algo)
 
       md2 << "BC"
 
-      assert_equal(md1, md2)
+      assert_equal(md1, md2, algo)
     end
   end
 end

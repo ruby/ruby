@@ -1,3 +1,10 @@
+Thu Oct 16 08:38:06 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/digest/test_digest.rb (test_eq): show failed class.
+
+	* test/ruby/test_iterator.rb (test_break, test_return_trace_func):
+	  test localjump destination.
+
 Wed Oct 15 20:22:31 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/soap/netHttpClient.rb: use URI::HTTP#request_uri instead of
