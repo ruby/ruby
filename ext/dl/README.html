@@ -1,0 +1,247 @@
+<html>
+<head><title>Ruby/DL</title></head>
+<body>
+<center>
+ <h2>Ruby/DL</h2>
+ an interface to dynamic linking loader
+</center>
+
+<hr>
+<h2>Ruby/DL</h2>
+
+`Ruby/DL' provides an interface to the dynamic linking loader.
+
+<hr>
+<h2>Installing</h2>
+
+<blockquote>
+<pre>
+$ ruby extconf.rb    # to create the Makefile
+$ make               # to build the library 'dl.so'
+$ make libtest.so    # to build the C library 'libtest.so' for the test script
+$ make test          # to run the test script
+$ make install       # to install the library
+$ make clean         # to remove the created files without Makefile
+$ make distclean     # to remove the all created files
+</pre>
+</blockquote>
+
+<hr>
+<h2>Functions and Classes</h2>
+
+after loading the `dl' library, we get access to the module called `DL'.
+the DL module has the following constants, functions and classes.
+
+<h2>Constants</h2>
+
+VERSION<br>
+MAJOR_VERSION<br>
+MINOR_VERSION<br>
+PATCH_VERSION<br>
+RTLD_GLOBAL<br>
+RTLD_LAZY<br>
+RTLD_NOW<br>
+MAX_ARG<br>
+MAX_CBARG<br>
+MAX_CBENT<br>
+
+<h2>Functions</h2>
+
+<dl>
+ <dt>handle = dlopen(lib){|handle| ... }</dt>
+ <dd>is quite equal to `Handle.new(lib)'
+
+ <dt>sym = set_callback(cbtype, entry){|args| ... }
+ <dt>sym = set_callback(cbtype, entry, proc)
+ <dd>makes <u>entry</u>-th pre-defined function to call the <u>proc</u>
+     or given block.
+     the <u>entry</u>-th pre-defined function is specified by
+     <u>cbtype</u> and <u>entry</u>.
+     <u>cbtype</u> is a prototype of the callback.
+     see also the section `Type specifiers' about <u>cbtype</u>.
+
+ <dt>sym = get_callback(cbtype, entry)
+ <dd>returns the Proc object which is given by the above function `set_callback'.
+
+ <dt>ptr = malloc(size, [free = nil])
+ <dd>allocates the <u>size</u> bytes, and returns the pointer as a
+     PtrData object <u>ptr</u>.
+
+ <dt>ptr = strdup(str)
+ <dd>returns a PtrData object <u>ptr</u> which represents the pointer to
+     a new string which is a duplicate of the string <u>str</u>.
+
+ <dt>size = sizeof(type)
+ <dd>returns the size of <u>type</u>. `sizeof("C") + sizeof("L")' is not
+     equal to `sizeof("CL")'. the latter is assumed to returns the
+     enough size of the structure `struct foo { char c; long l; }',
+     but the size may not equal to `sizeof(foo)' of C.
+</dl>
+
+<h2>class Handle</h2>
+
+<dl>
+ <dt>handle = Handle.new(lib){|handle| ... }</dt>
+ <dd>opens a library <u>lib</u> and returns a Handle object
+     <u>handle</u>. if a block is given, the handle is
+     automatically closed as the block ends.
+
+ <dt>Handle#close
+ <dd>closes the handle opened by the above Handle.new(lib).
+
+ <dt>sym = Handle#sym(func, prototype = "0")
+ <dt>sym = Handle#[func, prototype = nil]
+ <dd>obtains the pointer to a function called <u>func</u> and returns
+     a Symbol object or a DataPtr object.
+     <u>prototype</u> is a string which consists of type specifiers,
+     it indicates the function's prototype.
+     see also the section `Type specifiers'.
+</dl>
+
+<h2>class Symbol</h2>
+
+<dl>
+ <dt>sym = Symbol.new(addr, type = nil, name = nil)
+ <dd>creates the Symbol object <u>sym</u> with the type <u>type</u>
+     if <u>type</u> is not nil. <u>addr</u> is the address where the
+     function is allocated. If <u>type</u> is nil, it returns a DataPtr
+     object.
+
+ <dt>Symbol::char2type(char)
+ <dd>takes a character <u>char</u> that represents a type and returns
+     the type specifier of the C language.
+
+ <dt>str = Symbol#proto()
+ <dd>returns the function prototype.
+
+ <dt>str = Symbol#name()
+ <dd>Returns the function name.
+
+ <dt>str = Symbol#cproto()
+ <dt>str = Symbol#to_s()
+ <dd>returns the prototype of the C language.
+
+ <dt>str = Symbol#inspect()
+ <dd>returns the inspectable string.
+
+ <dt>r,rs = Symbol#call(arg1,arg2,...,argN)
+ <dt>r,rs = Symbol#[](arg1,arg2,...,argN)
+ <dd>calls the function with parameters arg1, arg2, ..., argN.
+     and the result consists of the return value <u>r</u> and
+     parameters <u>rs</u>. <u>rs</u> is an array.
+
+ <dt>ptr = Symbol#to_ptr
+ <dd>returns the corresponding PtrData object <u>ptr</u>.
+</dl>
+
+<h2>class PtrData</h2>
+
+<dl>
+ <dt>ptr = PtrData.new(addr, [free = nil])
+ <dd>returns the PtrData object representing the pointer which
+     indicates the address <u>addr</u>.
+     GC frees the memory using the <u>free</u> function.
+
+ <dt>PtrData#free=(sym)
+ <dd>if you specify a symbol object <u>sym</u>, GC frees the memory
+     using the function represented by <u>sym</u>.
+
+ <dt>sym = PtrData#free
+ <dd>returns a symbol object <u>sym</u> which is used when GC frees
+     the memory. it usually configured by `PtrData#free=' or `PtrData.new'.
+
+ <dt>size = PtrData#size, PtrData#size=(size)
+ <dd>gets and sets allocated size of the memory.
+
+ <dt>ary = PtrData#to_a(type, [size])
+ <dd>returns an array of the type which specified with <u>type</u>.
+     <u>type</u> must be one of 'S','P','I','L','D' and 'F'.
+
+ <dt>str = PtrData#to_s([len])
+ <dd>returns a string which length is <u>len</u>. if <u>len</u>
+     is omitted, the end of the string is '\0'.
+
+ <dt>ptr = PtrData#ptr,+@
+ <dd>returns the pointed value as a PtrData object <u>ptr</u>.
+
+ <dt>ptr = PtrData#ref,-@
+ <dd>returns the reference as a PtrData object <u>ptr</u>.
+
+ <dt>ptr = PtrData#+
+ <dd>returns the PtrData object
+
+ <dt>ptr = PtrData#-
+ <dd>returns the PtrData object
+
+ <dt>PtrData#struct!(type, *members)
+ <dd>defines the data type to get access to a structure member with a symbol.
+     (see also PtrData#[])
+
+ <dt>PtrData#union!(type, *members)
+ <dd>defines the data type to get access to a union member with a symbol.
+     (see also PtrData#[])
+
+ <dt>val = PtrData#[key], PtrData#[key, num = 0]
+ <dd>if the <u>key</u> is a string or symbol, this method returns the
+     value of the structure/union member which has the type defined by
+     PtrData#{struct!,union!}.
+     if the <u>key</u> is a integer value and this object represents
+     the pointer <u>ptr</u>, it returns the value of 
+     `(<u>ptr</u> + <u>key</u>).to_s(num)'
+
+ <dt>PtrData#[key,num]=val, PtrData#[key]=val
+ <dd>if the <u>key</u> is a string or symbol, this method substitute
+     the value of the structure/union member with <u>val</u>.
+     if the <u>key</u> is a integer value and <u>val</u> is a string,
+     this method copies <u>num</u> bytes of <u>val</u> to the memory
+     area <u>ptr</u> using memcpy(3).
+</dl>
+
+<hr>
+<h2>Type specifiers</h2>
+
+the <u>prototype</u> consists of the following type specifiers,
+first element of <u>prototype</u> represents the type of return value,
+and remaining elements represent the type of each argument.
+
+<blockquote>
+ C : a character (char)<br>
+ c : a pointer to a character (char *)<br>
+ H : a short integer (short)<br>
+ h : a pointer to a short integer (short *)<br>
+ I : an integer (char, short, int)<br>
+ i : a pointer to an integer (char *, short *, int *)<br>
+ L : a long integer (long)<br>
+ l : a pointer to a long integer (long *)<br>
+ F : a real (float)<br>
+ f : a pointer to a real (float *)<br>
+ D : a real (double)<br>
+ d : a pointer to a real (double *)<br>
+ S : an immutable string (const char *)<br>
+ s : a mutable string (char *)<br>
+ A : an array (const type[])<br>
+ a : a mutable array (type[])<br>
+ P : a pointer (void *)<br>
+ p : a mutable object (void *)<br>
+ 0 : void function
+     (this must be a first character of the <u>prototype</u>)<br>
+</blockquote>
+
+the <u>cbtype</u> consists of type specifiers 0, I, L, D and P.
+<br>
+for example:
+<blockquote>
+<pre>
+DL.set_callback('IPP',0){|ptr1,ptr2|
+  str1 = ptr1.ptr.to_s
+  str2 = ptr2.ptr.to_s
+  return str1 <=> str2
+}
+</pre>
+</blockquote>
+
+<hr>
+<i>ttate@kt.jaist.ac.jp</i>
+
+</body>
+</html>
