@@ -19,7 +19,7 @@ module RSS
       
       version = "1.0"
       encoding = "UTF-8"
-      standalone = "no"
+      standalone = false
       
       rdf = RDF.new(version, encoding, standalone)
       
@@ -27,9 +27,10 @@ module RSS
       
       xmldecl = doc.xml_decl
       
-      %w(version encoding standalone).each do |x|
+      %w(version encoding).each do |x|
         assert_equal(instance_eval(x), xmldecl.send(x))
       end
+      assert_equal(standalone, !xmldecl.standalone.nil?)
       
       assert_equal(@rdf_uri, doc.root.namespace)
       

@@ -58,7 +58,7 @@ require "rss/xml-stylesheet"
 
 module RSS
 
-  VERSION = "0.1.0"
+  VERSION = "0.1.1"
 
   URI = "http://purl.org/rss/1.0/"
 
@@ -164,17 +164,17 @@ EOC
     end
     alias_method(:install_have_attribute_element, :install_have_child_element)
 
-    def install_have_children_element(name, postfix="s")
+    def install_have_children_element(name, plural_name=nil)
       add_have_children_element(name)
 
-      def_children_accessor(name, postfix)
-      install_element(name, postfix) do |n, elem_name|
+      def_children_accessor(name, plural_name)
+      install_element(name, "s") do |n, elem_name|
         <<-EOC
-        rv = ''
+        rv = []
         @#{n}.each do |x|
           rv << "\#{x.to_s(convert, indent)}"
         end
-        rv
+        rv.join("\n")
 EOC
       end
     end
@@ -289,9 +289,10 @@ EOC
       end
     end
 
-    def def_children_accessor(accessor_name, postfix="s")
+    def def_children_accessor(accessor_name, plural_name=nil)
+      plural_name ||= "#{accessor_name}s"
       module_eval(<<-EOC, *get_file_and_line_from_caller(2))
-      def #{accessor_name}#{postfix}
+      def #{plural_name}
         @#{accessor_name}
       end
 
@@ -314,6 +315,22 @@ EOC
 EOC
     end
 
+    def def_content_only_to_s
+      module_eval(<<-EOC, *get_file_and_line_from_caller(2))
+      def to_s(convert=true, indent=calc_indent)
+        if @content
+          rv = tag(indent) do |next_indent|
+            h(@content)
+          end
+          rv = @converter.convert(rv) if convert and @converter
+          rv
+        else
+          ""
+        end
+      end
+EOC
+    end
+    
   end
 
   class Element
@@ -329,7 +346,8 @@ EOC
         klass.module_eval(<<-EOC)
         public
         
-        @tag_name = name.split(/::/).last.downcase
+        @tag_name = name.split(/::/).last
+        @tag_name[0,1] = @tag_name[0,1].downcase
         @indent_size = name.split(/::/).size - 2
 
         @@must_call_validators = {}
@@ -373,6 +391,7 @@ EOC
         def self.content_setup
           attr_writer :content
           convert_attr_reader :content
+          def_content_only_to_s
           @@have_content = true
         end
 
@@ -440,6 +459,14 @@ EOC
       self.class.tag_name
     end
 
+    def full_name
+      tag_name
+    end
+    
+    def indent_size
+      self.class.indent_size
+    end
+    
     def converter=(converter)
       @converter = converter
       children.each do |child|
@@ -472,6 +499,66 @@ EOC
       end
     end
 
+    def tag(indent, additional_attrs=[])
+      next_indent = indent + INDENT
+
+      attrs = collect_attrs
+      return "" if attrs.nil?
+
+      attrs += additional_attrs
+      start_tag = make_start_tag(indent, next_indent, attrs)
+      
+      if block_given?
+        content = yield(next_indent)
+      else
+        content = []
+      end
+
+      if content.is_a?(String)
+        content = [content]
+        start_tag << ">"
+        end_tag = "</#{full_name}>"
+      else
+        content = content.reject{|x| x.empty?}
+        if content.empty?
+          end_tag = "/>"
+        else
+          start_tag << ">\n"
+          end_tag = "\n#{indent}</#{full_name}>"
+        end
+      end
+      
+      start_tag + content.join("\n") + end_tag
+    end
+
+    def make_start_tag(indent, next_indent, attrs)
+      start_tag = ["#{indent}<#{full_name}"]
+      unless attrs.empty?
+        start_tag << attrs.collect do |key, value|
+          %Q[#{h key}="#{h value}"]
+        end.join("\n#{next_indent}")
+      end
+      start_tag.join(" ")
+    end
+
+    def collect_attrs
+      _attrs.collect do |name, required, alias_name|
+        value = __send__(alias_name || name)
+        return nil if required and value.nil?
+        [name, value]
+      end.reject do |name, value|
+        value.nil?
+      end
+    end
+    
+    def tag_name_with_prefix(prefix)
+      "#{prefix}:#{tag_name}"
+    end
+    
+    def calc_indent
+      INDENT * (self.class.indent_size)
+    end
+    
     # not String class children.
     def children
       []
@@ -507,23 +594,23 @@ EOC
     end
 
     def validate_attribute
-      _attrs.each do |a_name, required|
-        if required and send(a_name).nil?
-          raise MissingAttributeError.new(self.class.tag_name, a_name)
+      _attrs.each do |a_name, required, alias_name|
+        if required and __send__(alias_name || a_name).nil?
+          raise MissingAttributeError.new(tag_name, a_name)
         end
       end
     end
 
     def other_element(convert, indent='')
-      rv = ''
+      rv = []
       private_methods.each do |meth|
         if /\A([^_]+)_[^_]+_elements?\z/ =~ meth and
             self.class::NSPOOL.has_key?($1)
-          res = send(meth, convert)
-          rv << "#{indent}#{res}\n" if /\A\s*\z/ !~ res
+          res = __send__(meth, convert)
+          rv << "#{indent}#{res}" if /\A\s*\z/ !~ res
         end
       end
-      rv
+      rv.join("\n")
     end
 
     def _validate(tags, model=self.class.model)
@@ -626,19 +713,12 @@ EOC
       rv
     end
 
-    private
-    def calc_indent
-      INDENT * (self.class.indent_size)
-    end
-    
-    def remove_empty_newline(string)
-      string.gsub(/^\s*$(?:\r?\n?)/, '')
-    end
-    
   end
 
   module RootElementMixin
 
+    include XMLStyleSheetMixin
+    
     attr_reader :output_encoding
 
     def initialize(rss_version, version=nil, encoding=nil, standalone=nil)
@@ -656,23 +736,27 @@ EOC
     end
 
     private
+    def tag(indent, attrs)
+      rv = xmldecl + xml_stylesheet_pi
+      rv << super
+      rv
+    end
+
     def xmldecl
       rv = %Q[<?xml version="#{@version}"]
       if @output_encoding or @encoding
         rv << %Q[ encoding="#{@output_encoding or @encoding}"]
       end
-      rv << %Q[ standalone="#{@standalone}"] if @standalone
-      rv << '?>'
+      rv << %Q[ standalone="yes"] if @standalone
+      rv << "?>\n"
       rv
     end
     
-    def ns_declaration(indent)
-      rv = ''
-      self.class::NSPOOL.each do |prefix, uri|
+    def ns_declarations
+      self.class::NSPOOL.collect do |prefix, uri|
         prefix = ":#{prefix}" unless prefix.empty?
-        rv << %Q|\n#{indent}xmlns#{prefix}="#{html_escape(uri)}"|
+        ["xmlns#{prefix}", uri]
       end
-      rv
     end
     
   end

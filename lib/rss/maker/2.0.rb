@@ -13,23 +13,26 @@ module RSS
 
       class Channel < RSS09::Channel
 
-        add_other_element("cloud")
-        
         def have_required_values?
           @title and @link and @description
         end
 
-        private
-        def setup_cloud(rss, current)
-          @maker.channel.cloud.to_rss(rss)
+        class SkipDays < RSS09::Channel::SkipDays
+          class Day < RSS09::Channel::SkipDays::Day
+          end
         end
-
+        
+        class SkipHours < RSS09::Channel::SkipHours
+          class Hour < RSS09::Channel::SkipHours::Hour
+          end
+        end
+        
         class Cloud < RSS09::Channel::Cloud
-          def to_rss(rss)
+          def to_rss(rss, channel)
             cloud = Rss::Channel::Cloud.new
             set = setup_values(cloud)
             if set
-              rss.channel.cloud = cloud
+              channel.cloud = cloud
               setup_other_elements(rss)
             end
           end
@@ -39,6 +42,30 @@ module RSS
               @registerProcedure and @protocol
           end
         end
+
+        class Categories < RSS09::Channel::Categories
+          def to_rss(rss, channel)
+            @categories.each do |category|
+              category.to_rss(rss, channel)
+            end
+          end
+          
+          class Category < RSS09::Channel::Categories::Category
+            def to_rss(rss, channel)
+              category = Rss::Channel::Category.new
+              set = setup_values(category)
+              if set
+                channel.category = category
+                setup_other_elements(rss)
+              end
+            end
+            
+            def have_required_values?
+              @content
+            end
+          end
+        end
+        
       end
       
       class Image < RSS09::Image
@@ -102,18 +129,26 @@ module RSS
             end
           end
 
-          class Category < RSS09::Items::Item::Category
+          class Categories < RSS09::Items::Item::Categories
             def to_rss(rss, item)
-              category = Rss::Channel::Item::Category.new
-              set = setup_values(category)
-              if set
-                item.category = category
-                setup_other_elements(rss)
+              @categories.each do |category|
+                category.to_rss(rss, item)
               end
             end
-            
-            def have_required_values?
-              @content
+          
+            class Category < RSS09::Items::Item::Categories::Category
+              def to_rss(rss, item)
+                category = Rss::Channel::Item::Category.new
+                set = setup_values(category)
+                if set
+                  item.category = category
+                  setup_other_elements(rss)
+                end
+              end
+              
+              def have_required_values?
+                @content
+              end
             end
           end
         end

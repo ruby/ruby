@@ -69,9 +69,72 @@ module RSS
           super + ["pubDate"]
         end
 
+        class SkipDays < SkipDaysBase
+          def to_rss(rss, channel)
+            unless @days.empty?
+              skipDays = Rss::Channel::SkipDays.new
+              channel.skipDays = skipDays
+              @days.each do |day|
+                day.to_rss(rss, skipDays.days)
+              end
+            end
+          end
+          
+          class Day < DayBase
+            def to_rss(rss, days)
+              day = Rss::Channel::SkipDays::Day.new
+              set = setup_values(day)
+              if set
+                days << day
+                setup_other_elements(rss)
+              end
+            end
+
+            def have_required_values?
+              @content
+            end
+          end
+        end
+        
+        class SkipHours < SkipHoursBase
+          def to_rss(rss, channel)
+            unless @hours.empty?
+              skipHours = Rss::Channel::SkipHours.new
+              channel.skipHours = skipHours
+              @hours.each do |hour|
+                hour.to_rss(rss, skipHours.hours)
+              end
+            end
+          end
+          
+          class Hour < HourBase
+            def to_rss(rss, hours)
+              hour = Rss::Channel::SkipHours::Hour.new
+              set = setup_values(hour)
+              if set
+                hours << hour
+                setup_other_elements(rss)
+              end
+            end
+
+            def have_required_values?
+              @content
+            end
+          end
+        end
+        
         class Cloud < CloudBase
+          def to_rss(*args)
+          end
         end
 
+        class Categories < CategoriesBase
+          def to_rss(*args)
+          end
+
+          class Category < CategoryBase
+          end
+        end
       end
       
       class Image < ImageBase
@@ -130,8 +193,11 @@ module RSS
             end
           end
         
-          class Category < CategoryBase
+          class Categories < CategoriesBase
             def to_rss(*args)
+            end
+
+            class Category < CategoryBase
             end
           end
           

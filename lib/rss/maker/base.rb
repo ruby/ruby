@@ -38,12 +38,23 @@ module RSS
           OTHER_ELEMENTS
         end
 
-        def self.add_need_initialize_variable(variable_name)
-          const_get("NEED_INITIALIZE_VARIABLES") << variable_name
+        def self.add_need_initialize_variable(variable_name, init_value="nil")
+          const_get("NEED_INITIALIZE_VARIABLES") << [variable_name, init_value]
         end
 
         def self.need_initialize_variables
           NEED_INITIALIZE_VARIABLES
+        end
+
+        def self.def_array_element(name)
+          include Enumerable
+          extend Forwardable
+
+          def_delegators("@\#{name}", :<<, :[], :[]=, :first, :last)
+          def_delegators("@\#{name}", :push, :pop, :shift, :unshift)
+          def_delegators("@\#{name}", :each)
+          
+          add_need_initialize_variable(name, "[]")
         end
         EOC
       end
@@ -59,8 +70,8 @@ module RSS
       
       private
       def initialize_variables
-        self.class.need_initialize_variables.each do |variable_name|
-          instance_eval("@#{variable_name} = nil", __FILE__, __LINE__)
+        self.class.need_initialize_variables.each do |variable_name, init_value|
+          instance_eval("@#{variable_name} = #{init_value}", __FILE__, __LINE__)
         end
       end
 
@@ -88,7 +99,11 @@ module RSS
       end
 
       def variables
-        self.class.need_initialize_variables
+        self.class.need_initialize_variables.find_all do |name, init|
+          "nil" == init
+        end.collect do |name, init|
+          name
+        end
       end
       
     end
@@ -159,17 +174,7 @@ module RSS
     class XMLStyleSheets
       include Base
 
-      include Enumerable
-      extend Forwardable
-
-      def_delegators(:@xml_stylesheets, :<<, :[], :[]=, :first, :last)
-      def_delegators(:@xml_stylesheets, :push, :pop, :shift, :unshift)
-      def_delegators(:@xml_stylesheets, :each)
-
-      def initialize(maker)
-        super
-        @xml_stylesheets = []
-      end
+      def_array_element("xml_stylesheets")
 
       def to_rss(rss)
         @xml_stylesheets.each do |xss|
@@ -217,12 +222,25 @@ module RSS
     class ChannelBase
       include Base
 
-      attr_reader :cloud
+      %w(cloud categories skipDays skipHours).each do |element|
+        attr_reader element
+        add_other_element(element)
+        add_need_initialize_variable(element, "make_#{element}")
+        module_eval(<<-EOC, __FILE__, __LINE__)
+          private
+          def setup_#{element}(rss, current)
+            @#{element}.to_rss(rss, current)
+          end
+
+          def make_#{element}
+            self.class::#{element[0,1].upcase}#{element[1..-1]}.new(@maker)
+          end
+EOC
+      end
 
       %w(about title link description language copyright
-      managingEditor webMaster rating docs skipDays
-      skipHours date lastBuildDate category generator ttl
-      ).each do |element|
+         managingEditor webMaster rating docs date
+         lastBuildDate generator ttl).each do |element|
         attr_accessor element
         add_need_initialize_variable(element)
       end
@@ -230,18 +248,68 @@ module RSS
       alias_method(:pubDate, :date)
       alias_method(:pubDate=, :date=)
 
-      def initialize(maker)
-        super
-        @cloud = make_cloud
-      end
-
       def current_element(rss)
         rss.channel
       end
 
-      private
-      def make_cloud
-        self.class::Cloud.new(@maker)
+      class SkipDaysBase
+        include Base
+
+        def_array_element("days")
+
+        def new_day
+          day = self.class::Day.new(@maker)
+          @days << day 
+          day
+        end
+        
+        def current_element(rss)
+          rss.channel.skipDays
+        end
+
+        class DayBase
+          include Base
+          
+          %w(content).each do |element|
+            attr_accessor element
+            add_need_initialize_variable(element)
+          end
+
+          def current_element(rss)
+            rss.channel.skipDays.last
+          end
+
+        end
+      end
+      
+      class SkipHoursBase
+        include Base
+
+        def_array_element("hours")
+
+        def new_hour
+          hour = self.class::Hour.new(@maker)
+          @hours << hour 
+          hour
+        end
+        
+        def current_element(rss)
+          rss.channel.skipHours
+        end
+
+        class HourBase
+          include Base
+          
+          %w(content).each do |element|
+            attr_accessor element
+            add_need_initialize_variable(element)
+          end
+
+          def current_element(rss)
+            rss.channel.skipHours.last
+          end
+
+        end
       end
       
       class CloudBase
@@ -256,6 +324,27 @@ module RSS
           rss.channel.cloud
         end
 
+      end
+
+      class CategoriesBase
+        include Base
+        
+        def_array_element("categories")
+
+        def new_category
+          category = self.class::Category.new(@maker)
+          @categories << category
+          category
+        end
+
+        class CategoryBase
+          include Base
+
+          %w(domain content).each do |element|
+            attr_accessor element
+            add_need_initialize_variable(element)
+          end
+        end
       end
     end
     
@@ -279,18 +368,12 @@ module RSS
     class ItemsBase
       include Base
 
-      include Enumerable
-      extend Forwardable
-
-      def_delegators(:@items, :<<, :[], :[]=, :first, :last)
-      def_delegators(:@items, :push, :pop, :shift, :unshift)
-      def_delegators(:@items, :each)
+      def_array_element("items")
       
       attr_accessor :do_sort
       
       def initialize(maker)
         super
-        @items = []
         @do_sort = false
       end
       
@@ -326,9 +409,10 @@ module RSS
       class ItemBase
         include Base
         
-        %w(guid enclosure source category).each do |element|
+        %w(guid enclosure source categories).each do |element|
           attr_reader element
           add_other_element(element)
+          add_need_initialize_variable(element, "make_#{element}")
           module_eval(<<-EOC, __FILE__, __LINE__)
           private
           def setup_#{element}(rss, current)
@@ -349,14 +433,6 @@ EOC
         alias_method(:pubDate, :date)
         alias_method(:pubDate=, :date=)
 
-        def initialize(maker)
-          super
-          @guid = make_guid
-          @enclosure = make_enclosure
-          @source = make_source
-          @category = make_category
-        end
-      
         def <=>(other)
           if @date and other.date
             @date <=> other.date
@@ -400,14 +476,7 @@ EOC
           end
         end
       
-        class CategoryBase
-          include Base
-
-          %w(domain content).each do |element|
-            attr_accessor element
-            add_need_initialize_variable(element)
-          end
-        end
+        CategoriesBase = ChannelBase::CategoriesBase
       
       end
     end

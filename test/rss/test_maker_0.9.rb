@@ -55,8 +55,14 @@ module RSS
       webMaster = "web master"
       rating = "6"
       docs = "http://foo.com/doc"
-      skipDays = "Sunday"
-      skipHours = "13"
+      skipDays = [
+        "Sunday",
+        "Monday",
+      ]
+      skipHours = [
+        0,
+        13,
+      ]
       pubDate = Time.now
       lastBuildDate = Time.now
       
@@ -70,11 +76,18 @@ module RSS
         maker.channel.webMaster = webMaster
         maker.channel.rating = rating
         maker.channel.docs = docs
-        maker.channel.skipDays = skipDays
-        maker.channel.skipHours = skipHours
         maker.channel.pubDate = pubDate
         maker.channel.lastBuildDate = lastBuildDate
 
+        skipDays.each do |day|
+          new_day = maker.channel.skipDays.new_day
+          new_day.content = day
+        end
+        skipHours.each do |hour|
+          new_hour = maker.channel.skipHours.new_hour
+          new_hour.content = hour
+        end
+        
         setup_dummy_image(maker)
       end
       channel = rss.channel
@@ -88,11 +101,16 @@ module RSS
       assert_equal(webMaster, channel.webMaster)
       assert_equal(rating, channel.rating)
       assert_equal(docs, channel.docs)
-      assert_equal(skipDays, channel.skipDays)
-      assert_equal(skipHours, channel.skipHours)
       assert_equal(pubDate, channel.pubDate)
       assert_equal(lastBuildDate, channel.lastBuildDate)
 
+      skipDays.each_with_index do |day, i|
+        assert_equal(day, channel.skipDays.days[i].content)
+      end
+      skipHours.each_with_index do |hour, i|
+        assert_equal(hour, channel.skipHours.hours[i].content)
+      end
+      
       assert(channel.items.empty?)
       assert_not_nil(channel.image)
       assert_nil(channel.textInput)

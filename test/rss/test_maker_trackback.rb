@@ -10,18 +10,23 @@ module RSS
       
       @elements = {
         :ping => "http://bar.com/tb.cgi?tb_id=rssplustrackback",
-        :about => "http://foo.com/trackback/tb.cgi?tb_id=20020923",
+        :abouts => [
+          "http://foo.com/trackback/tb.cgi?tb_id=20020923",
+          "http://bar.com/trackback/tb.cgi?tb_id=20041114",
+        ],
       }
     end
 
     def test_rss10
-      rss = RSS::Maker.make("1.0", ["trackback"]) do |maker|
+      rss = RSS::Maker.make("1.0") do |maker|
         setup_dummy_channel(maker)
 
         setup_dummy_item(maker)
         item = maker.items.last
-        @elements.each do |name, value|
-          item.__send__("#{accessor_name(name)}=", value)
+        item.trackback_ping = @elements[:ping]
+        @elements[:abouts].each do |about|
+          new_about = item.trackback_abouts.new_about
+          new_about.value = about
         end
       end
       assert_trackback(@elements, rss.items.last)

@@ -45,7 +45,7 @@ module RSS
     end
 
     def on_xmldecl_end
-      xmldecl(@version, @encoding, @standalone)
+      xmldecl(@version, @encoding, @standalone == "yes")
     end
 
     alias_method(:on_pi, :instruction)

@@ -348,6 +348,13 @@ module RSS
         end
 
         if @do_validate and required and val.nil?
+          unless a_uri.include?(nil)
+            for prefix, uri in ns
+              if a_uri.include?(uri)
+                a_name = "#{prefix}:#{a_name}"
+              end
+            end
+          end
           raise MissingAttributeError.new(tag_name, a_name)
         end
 

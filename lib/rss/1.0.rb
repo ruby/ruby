@@ -18,7 +18,6 @@ module RSS
 
     include RSS10
     include RootElementMixin
-    include XMLStyleSheetMixin
 
     class << self
 
@@ -57,21 +56,22 @@ module RSS
       super('1.0', version, encoding, standalone)
     end
 
+    def full_name
+      tag_name_with_prefix(PREFIX)
+    end
+    
     def to_s(convert=true, indent=calc_indent)
-      next_indent = indent + INDENT
-      rv = <<-EORDF
-#{xmldecl}
-#{xml_stylesheet_pi}
-#{indent}<#{PREFIX}:RDF#{ns_declaration(next_indent)}>
-#{channel_element(false, next_indent)}
-#{image_element(false, next_indent)}
-#{item_elements(false, next_indent)}
-#{textinput_element(false, next_indent)}
-#{other_element(false, next_indent)}
-#{indent}</#{PREFIX}:RDF>
-EORDF
+      rv = tag(indent, ns_declarations) do |next_indent|
+        [
+          channel_element(false, next_indent),
+          image_element(false, next_indent),
+          item_elements(false, next_indent),
+          textinput_element(false, next_indent),
+          other_element(false, next_indent),
+        ]
+      end
       rv = @converter.convert(rv) if convert and @converter
-      remove_empty_newline(rv)
+      rv
     end
 
     private
@@ -119,16 +119,19 @@ EORDF
       end
       
       def to_s(convert=true, indent=calc_indent)
-        next_indent = indent + INDENT
-        <<-EOT
-#{indent}<#{PREFIX}:Seq>
-#{li_elements(convert, next_indent)}
-#{other_element(convert, next_indent)}
-#{indent}</#{PREFIX}:Seq>
-EOT
+        tag(indent) do |next_indent|
+          [
+            li_elements(convert, next_indent),
+            other_element(convert, next_indent),
+          ]
+        end
       end
 
-  		private
+      def full_name
+        tag_name_with_prefix(PREFIX)
+      end
+      
+      private
       def children
         @li
       end
@@ -169,15 +172,15 @@ EOT
         super()
         @resource = resource
       end
+
+      def full_name
+        tag_name_with_prefix(PREFIX)
+      end
       
       def to_s(convert=true, indent=calc_indent)
-        if @resource
-          rv = %Q!#{indent}<#{PREFIX}:li resource="#{h @resource}" />\n!
-          rv = @converter.convert(rv) if convert and @converter
-          rv
-        else
-          ''
-        end
+        rv = tag(indent)
+        rv = @converter.convert(rv) if convert and @converter
+        rv
       end
 
       private
@@ -232,20 +235,17 @@ EOT
       end
 
       def to_s(convert=true, indent=calc_indent)
-        next_indent = indent + INDENT
-        about = ''
-        about << %Q!#{PREFIX}:about="#{h @about}"! if @about
-        rv = <<-EOT
-#{indent}<channel #{about}>
-#{title_element(false, next_indent)}
-#{link_element(false, next_indent)}
-#{description_element(false, next_indent)}
-#{image_element(false, next_indent)}
-#{items_element(false, next_indent)}
-#{textinput_element(false, next_indent)}
-#{other_element(false, next_indent)}
-#{indent}</channel>
-EOT
+        rv = tag(indent) do |next_indent|
+          [
+            title_element(false, next_indent),
+            link_element(false, next_indent),
+            description_element(false, next_indent),
+            image_element(false, next_indent),
+            items_element(false, next_indent),
+            textinput_element(false, next_indent),
+            other_element(false, next_indent),
+          ]
+        end
         rv = @converter.convert(rv) if convert and @converter
   	    rv
       end
@@ -270,7 +270,7 @@ EOT
 
       def _attrs
         [
-          ["about", true]
+          ["#{PREFIX}:about", true, "about"]
         ]
       end
       
@@ -298,22 +298,17 @@ EOT
         end
 
         def to_s(convert=true, indent=calc_indent)
-          if @resource
-            rv = %Q!#{indent}<image #{PREFIX}:resource="#{h @resource}" />!
-            rv = @converter.convert(rv) if convert and @converter
-            rv
-          else
-            ''
-          end
+          rv = tag(indent)
+          rv = @converter.convert(rv) if convert and @converter
+          rv
         end
 
         private
         def _attrs
           [
-            ["resource", true]
+            ["#{PREFIX}:resource", true, "resource"]
           ]
         end
-
       end
 
       class Textinput < Element
@@ -340,22 +335,17 @@ EOT
         end
 
         def to_s(convert=true, indent=calc_indent)
-          if @resource
-            rv = %Q|#{indent}<textinput #{PREFIX}:resource="#{h @resource}" />|
-            rv = @converter.convert(rv) if convert and @converter
-            rv
-          else
-            ''
-          end
+          rv = tag(indent)
+          rv = @converter.convert(rv) if convert and @converter
+          rv
         end
         
         private
         def _attrs
           [
-            ["resource", true],
+            ["#{PREFIX}:resource", true, "resource"]
           ]
         end
-
       end
       
       class Items < Element
@@ -387,13 +377,12 @@ EOT
         end
         
         def to_s(convert=true, indent=calc_indent)
-          next_indent = indent + INDENT
-          <<-EOT
-#{indent}<items>
-#{Seq_element(convert, next_indent)}
-#{other_element(convert, next_indent)}
-#{indent}</items>
-EOT
+          rv = tag(indent) do |next_indent|
+            [
+              Seq_element(convert, next_indent),
+              other_element(convert, next_indent),
+            ]
+          end
         end
 
         private
@@ -452,17 +441,14 @@ EOT
       end
 
       def to_s(convert=true, indent=calc_indent)
-        next_indent = indent + INDENT
-        about = ''
-        about << %Q!#{PREFIX}:about="#{h @about}"! if @about
-        rv = <<-EOT
-#{indent}<image #{about}>
-#{title_element(false, next_indent)}
-#{url_element(false, next_indent)}
-#{link_element(false, next_indent)}
-#{other_element(false, next_indent)}
-#{indent}</image>
-EOT
+        rv = tag(indent) do |next_indent|
+          [
+            title_element(false, next_indent),
+            url_element(false, next_indent),
+            link_element(false, next_indent),
+            other_element(false, next_indent),
+          ]
+        end
         rv = @converter.convert(rv) if convert and @converter
         rv
       end
@@ -480,10 +466,9 @@ EOT
 
       def _attrs
         [
-          ["about", true],
+          ["#{PREFIX}:about", true, "about"]
         ]
       end
-
     end
 
     class Item < Element
@@ -522,17 +507,14 @@ EOT
       end
 
       def to_s(convert=true, indent=calc_indent)
-        next_indent = indent + INDENT
-        about = ''
-        about << %Q!#{PREFIX}:about="#{h @about}"! if @about
-        rv = <<-EOT
-#{indent}<item #{about}>
-#{title_element(false, next_indent)}
-#{link_element(false, next_indent)}
-#{description_element(false, next_indent)}
-#{other_element(false, next_indent)}
-#{indent}</item>
-EOT
+        rv = tag(indent) do |next_indent|
+          [
+            title_element(false, next_indent),
+            link_element(false, next_indent),
+            description_element(false, next_indent),
+            other_element(false, next_indent),
+          ]
+        end
         rv = @converter.convert(rv) if convert and @converter
         rv
       end
@@ -550,10 +532,9 @@ EOT
 
       def _attrs
         [
-          ["about", true],
+          ["#{PREFIX}:about", true, "about"]
         ]
       end
-
     end
 
     class Textinput < Element
@@ -593,18 +574,15 @@ EOT
       end
 
       def to_s(convert=true, indent=calc_indent)
-        next_indent = indent + INDENT
-        about = ''
-        about << %Q!#{PREFIX}:about="#{h @about}"! if @about
-        rv = <<-EOT
-#{indent}<textinput #{about}>
-#{title_element(false, next_indent)}
-#{description_element(false, next_indent)}
-#{name_element(false, next_indent)}
-#{link_element(false, next_indent)}
-#{other_element(false, next_indent)}
-#{indent}</textinput>
-EOT
+        rv = tag(indent) do |next_indent|
+          [
+            title_element(false, next_indent),
+            description_element(false, next_indent),
+            name_element(false, next_indent),
+            link_element(false, next_indent),
+            other_element(false, next_indent),
+          ]
+        end
         rv = @converter.convert(rv) if convert and @converter
         rv
       end
@@ -623,10 +601,9 @@ EOT
       
       def _attrs
         [
-          ["about", true],
+          ["#{PREFIX}:about", true, "about"]
         ]
       end
-
     end
 
   end

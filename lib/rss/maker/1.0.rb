@@ -86,7 +86,33 @@ module RSS
           end
         end
 
+        class SkipDays < SkipDaysBase
+          def to_rss(*args)
+          end
+          
+          class Day < DayBase
+          end
+        end
+        
+        class SkipHours < SkipHoursBase
+          def to_rss(*args)
+          end
+
+          class Hour < HourBase
+          end
+        end
+        
         class Cloud < CloudBase
+          def to_rss(*args)
+          end
+        end
+
+        class Categories < CategoriesBase
+          def to_rss(*args)
+          end
+
+          class Category < CategoryBase
+          end
         end
       end
 
@@ -153,8 +179,11 @@ module RSS
             end
           end
         
-          class Category < CategoryBase
+          class Categories < CategoriesBase
             def to_rss(*args)
+            end
+
+            class Category < CategoryBase
             end
           end
         end

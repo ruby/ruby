@@ -1,3 +1,37 @@
+Fri Nov 19 17:18:17 2004  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/rss.rb (RSS::VERSION): 0.1.0 -> 0.1.1.
+
+	* lib/rss: #to_s used #tag.
+
+	* test/rss/test_to_s.rb: added.
+
+	* lib/rss/maker.rb (RSS::Maker.make): changed API. It's not
+	  received modules which is used as the second argument.
+
+	* lib/rss/xml-stylesheet.rb (RSS::XMLStyleSheet#alternate):
+	  changed return value type which is not String but Boolean.
+
+	* lib/rss/2.0.rb (RSS::Rss::Channel#ttl): changed return value
+	  type which is not String but Integer.
+	
+	* lib/rss/0.9.rb (RSS::Rss::Channel): <skipDays> has <day>s and
+	  <skipHours> has <hour>s.
+
+	* lib/rss/maker/0.9.rb (RSS::Maker::RSS09::Channel): ditto.
+
+	* lib/rss/0.9.rb (RSS::Rss::Channel::Item): <item> has <category>s.
+
+	* lib/rss/maker/2.0.rb (RSS::Maker::Rss20::Channel::Item): ditto.
+
+	* lib/rss/2.0.rb (RSS::Rss::Channel): <channel> has <category>s.
+
+	* lib/rss/maker/2.0.rb (RSS::Maker::RSS20::Channel): ditto.
+
+	* lib/rss/trackback.rb: parent element has <trackback:about>s.
+
+	* lib/rss/maker/trackback.rb: ditto.
+
 Fri Nov 19 11:10:16 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/test/unit/collector/dir.rb: add support for directory name
