@@ -2,6 +2,8 @@
 
 #include "md5ossl.h"
 #include <sys/types.h>
+#include <stdio.h>
+#include <string.h>
 
 void
 MD5_End(MD5_CTX *pctx, unsigned char *hexdigest)

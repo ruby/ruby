@@ -3,6 +3,7 @@
  */
 
 #include <ruby.h>
+#include <ctype.h>
 #include <version.h> /* for ruby version code */
 #include "dl.h"
 

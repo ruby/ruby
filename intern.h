@@ -22,6 +22,7 @@
 /* array.c */
 void rb_mem_clear _((register VALUE*, register long));
 VALUE rb_assoc_new _((VALUE, VALUE));
+VALUE rb_check_array_type _((VALUE));
 VALUE rb_ary_new _((void));
 VALUE rb_ary_new2 _((long));
 VALUE rb_ary_new3 __((long,...));
