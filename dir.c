@@ -1500,9 +1500,14 @@ rb_push_glob(str, flags) /* '\0' is delimiter */
 
     while (offset < RSTRING(str)->len) {
 	int status = push_glob(ary, str, offset, flags);
+	char *p, *pend;
 	if (status) rb_jump_tag(status);
-	offset += strlen(RSTRING(str)->ptr+offset) + 1;
-	while (!RSTRING(str)->ptr[offset]) offset++;
+	p = RSTRING(str)->ptr + offset;
+	p += strlen(p) + 1;
+	pend = RSTRING(str)->ptr + RSTRING(str)->len;
+	while (p < pend && !*p)
+	    p++;
+	offset = p - RSTRING(str)->ptr;
     }
 
     if (rb_block_given_p()) {

@@ -1,3 +1,7 @@
+Wed Nov 17 13:05:10 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (rb_push_glob): fix overrun.  [ruby-dev:24886]
+
 Wed Nov 17 09:38:18 2004  Johan Holmberg  <holmberg@iar.se>
 
 	* re.c (rb_reg_initialize_m): should raise exception instead of
@@ -9,7 +13,7 @@ Wed Nov 17 03:42:45 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  StringValue(), which may alter the receiver.  [ruby-dev:24878]
 
 	* error.c (rb_error_frozen): now raise RuntimeError instead of
-	  TypeError. 
+	  TypeError.
 
 Tue Nov 16 21:22:47 2004  Michael Neumann  <mneumann@ruby-lang.org>
 
@@ -30,7 +34,7 @@ Tue Nov 16 14:31:54 2004  Michael Neumann  <mneumann@ruby-lang.org>
 	  some tests on it (both http and https servers are started).
 
 	* lib/xmlrpc/create.rb (XMLWriter::each_installed_writer),
-	  lib/xmlrpc/parser.rb (XMLParser::each_installed_parser): 
+	  lib/xmlrpc/parser.rb (XMLParser::each_installed_parser):
 	  added methods to simply original test cases
 
 	* lib/xmlrpc/parser.rb, lib/xmlrpc/datetime.rb: applied patch by
