@@ -2,14 +2,7 @@
 #
  
 
-RDOC_VERSION = "1.0pr1"
-
-rcs = '$Date$ $Revision$'.
-  gsub(/\$/, '').
-  sub(/Date: /, ': ').
-  sub(/ Revision: (\S+)/) { "(#$1)" }
-
-VERSION_STRING = %{RDoc V} + RDOC_VERSION + rcs
+VERSION_STRING = %{RDoc V1.0.1 - 20041108}
 
 
 require 'rdoc/parsers/parse_rb.rb'
