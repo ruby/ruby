@@ -118,12 +118,12 @@ module DL
       f = import_function(symname, ctype, argtype, opt[:call_type])
       name = symname.gsub(/@.+/,'')
       @func_map[name] = f
-      #define_method(name){|*args,&block| f.call(*args,&block)}
-      module_eval(<<-EOS)
-        def #{name}(*args, &block)
-          @func_map['#{name}'].call(*args,&block)
-        end
-      EOS
+      define_method(name){|*args,&block| f.call(*args,&block)}
+      #module_eval(<<-EOS)
+      #  def #{name}(*args, &block)
+      #    @func_map['#{name}'].call(*args,&block)
+      #  end
+      #EOS
       module_function(name)
       f
     end
@@ -142,12 +142,12 @@ module DL
         raise(RuntimeError, "unknown callback type: #{h[:callback_type]}")
       end
       @func_map[name] = f
-      #define_method(name){|*args,&block| f.call(*args,&block)}
-      module_eval(<<-EOS)
-        def #{name}(*args,&block)
-          @func_map['#{name}'].call(*args,&block)
-        end
-      EOS
+      define_method(name){|*args,&block| f.call(*args,&block)}
+      #module_eval(<<-EOS)
+      #  def #{name}(*args,&block)
+      #    @func_map['#{name}'].call(*args,&block)
+      #  end
+      #EOS
       module_function(name)
       f
     end

@@ -54,7 +54,7 @@ module DL
 
     def test_io()
       io_in,io_out = IO.pipe()
-      LIBC.fprintf(DL::CPtr[io_out], "hello")
+      LIBC.fprintf(io_out, "hello")
       io_out.flush()
       io_out.close()
       str = io_in.read()
