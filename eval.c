@@ -7723,7 +7723,7 @@ catch_timer(sig)
 int rb_thread_tick = THREAD_TICK;
 #endif
 
-static VALUE rb_thread_raise _((int, VALUE*, VALUE));
+static VALUE rb_thread_raise _((int, VALUE*, rb_thread_t));
 
 #define SCOPE_SHARED  FL_USER1
 
@@ -7806,13 +7806,13 @@ rb_thread_start_0(fn, arg, th)
 	}
 	else if (rb_obj_is_kind_of(ruby_errinfo, rb_eSystemExit)) {
 	    /* delegate exception to main_thread */
-	    rb_thread_raise(1, &ruby_errinfo, main_thread->thread);
+	    rb_thread_raise(1, &ruby_errinfo, main_thread);
 	}
 	else if (thread_abort || th->abort || RTEST(ruby_debug)) {
 	    VALUE err = rb_exc_new(rb_eSystemExit, 0, 0);
 	    error_print();
 	    /* exit on main_thread */
-	    rb_thread_raise(1, &err, main_thread->thread);
+	    rb_thread_raise(1, &err, main_thread);
 	}
 	else {
 	    th->errinfo = ruby_errinfo;
@@ -7948,7 +7948,7 @@ rb_thread_cleanup()
 {
     rb_thread_t th;
 
-    if (curr_thread != curr_thread->next->prev) {
+    while (curr_thread->status == THREAD_KILLED) {
 	curr_thread = curr_thread->prev;
     }
 
@@ -8049,23 +8049,18 @@ rb_thread_trap_eval(cmd, sig)
 }
 
 static VALUE
-rb_thread_raise(argc, argv, thread)
+rb_thread_raise(argc, argv, th)
     int argc;
     VALUE *argv;
-    VALUE thread;
+    rb_thread_t th;
 {
-    rb_thread_t th = rb_thread_check(thread);
-
     if (rb_thread_dead(th)) return Qnil;
     if (curr_thread == th) {
 	rb_f_raise(argc, argv);
     }
-    if (ruby_safe_level > th->safe) {
-	rb_secure(4);
-    }
 
     if (THREAD_SAVE_CONTEXT(curr_thread)) {
-	return thread;
+	return th->thread;
     }
 
     rb_scan_args(argc, argv, "11", &th_raise_argv[0], &th_raise_argv[1]);
@@ -8077,6 +8072,20 @@ rb_thread_raise(argc, argv, thread)
     th_raise_line = ruby_sourceline;
     rb_thread_restore_context(curr_thread, RESTORE_RAISE);
     return Qnil;		/* not reached */
+}
+
+static VALUE
+rb_thread_raise_m(argc, argv, thread)
+    int argc;
+    VALUE *argv;
+    VALUE thread;
+{
+    rb_thread_t th = rb_thread_check(thread);
+
+    if (ruby_safe_level > th->safe) {
+	rb_secure(4);
+    }
+    rb_thread_raise(argc, argv, th);
 }
 
 VALUE
@@ -8332,7 +8341,7 @@ Init_Thread()
     rb_define_method(rb_cThread, "join", rb_thread_join, 0);
     rb_define_method(rb_cThread, "alive?", rb_thread_alive_p, 0);
     rb_define_method(rb_cThread, "stop?", rb_thread_stop_p, 0);
-    rb_define_method(rb_cThread, "raise", rb_thread_raise, -1);
+    rb_define_method(rb_cThread, "raise", rb_thread_raise_m, -1);
 
     rb_define_method(rb_cThread, "abort_on_exception", rb_thread_abort_exc, 0);
     rb_define_method(rb_cThread, "abort_on_exception=", rb_thread_abort_exc_set, 1);

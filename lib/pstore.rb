@@ -108,6 +108,7 @@ class PStore
 	  begin
 	    file.rewind
 	    Marshal::dump(@table, file)
+	    file.truncate(file.pos)
 	  rescue
 	    File::rename backup, @filename if File::exist?(backup)
 	    raise

@@ -1271,6 +1271,7 @@ primary		: literal
 
 		        /* NOEX_PRIVATE for toplevel */
 			$$ = NEW_DEFN($2, $4, $5, class_nest?NOEX_PUBLIC:NOEX_PRIVATE);
+			if (is_attrset_id($2)) $$->nd_noex = NOEX_PUBLIC;
 		        fixpos($$, $4);
 		        local_pop();
 			cur_mid = 0;

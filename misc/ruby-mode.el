@@ -512,7 +512,7 @@ The variable ruby-indent-level controls the amount of indentation.
 		(setq end (point))
 		(beginning-of-line)
 		(if (re-search-forward "^\\s *#" end t)
-		    (forward-line 1)
+		    (beginning-of-line)
 		  (setq done t))))
 	    (setq bol (point))
 	    (end-of-line)

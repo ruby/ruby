@@ -4,6 +4,17 @@ Wed Oct 11 14:29:51 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/http.rb: code refining.
 
+Wed Oct 11 11:13:03 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (primary): setter method (e.g. foo=) should always be
+	  public.
+
+	* eval.c (rb_thread_raise): should not raise SecurityError if
+	  exception raised by the interpreter.
+
+	* eval.c (rb_thread_cleanup): skip all THREAD_KILLED threads
+	  before FOREACH_THREAD.
+
 Tue Oct 10 16:11:54 2000  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* dln.c (dln_load): remove unused code for cygwin.

@@ -16,9 +16,11 @@
 class Tracer
   @RCS_ID='-$Id: tracer.rb,v 1.8 1998/05/19 03:42:49 keiju Exp keiju $-'
 
+  @stdout = STDOUT
   class << self
     attr :verbose, true
     alias verbose? verbose
+    attr :stdout, true
   end
   verbose = true
   
@@ -44,6 +46,10 @@ class Tracer
     @filters = []
   end
   
+  def stdout
+    Tracer.stdout
+  end
+
   def on
     if block_given?
       on
@@ -56,13 +62,13 @@ class Tracer
       set_trace_func proc{|event, file, line, id, binding, klass|
 	trace_func event, file, line, id, binding
       }
-      print "Trace on\n" if Tracer.verbose?
+      stdout.print "Trace on\n" if Tracer.verbose?
     end
   end
   
   def off
     set_trace_func nil
-    print "Trace off\n" if Tracer.verbose?
+    stdout.print "Trace off\n" if Tracer.verbose?
   end
 
   def add_filter(p = proc)
@@ -79,7 +85,7 @@ class Tracer
     end
 
     unless list = LINES__[file]
-#      print file if $DEBUG
+#      stdout.print file if $DEBUG
       begin
 	f = open(file)
 	begin 
@@ -108,14 +114,14 @@ class Tracer
   
   def trace_func(event, file, line, id, binding)
     return if file == MY_FILE_NAME
-    #printf "Th: %s\n", Thread.current.inspect
+    #stdout.printf "Th: %s\n", Thread.current.inspect
     
     for p in @filters
       return unless p.call event, file, line, id, binding
     end
     
     Thread.critical = true
-    printf("#%d:%s:%d:%s: %s",
+    stdout.printf("#%d:%s:%d:%s: %s",
 	   get_thread_no,
 	   file,
 	   line,
