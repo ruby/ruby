@@ -672,6 +672,7 @@ test/testunit/test_testresult.rb
 test/testunit/test_testsuite.rb
 test/testunit/util/test_observable.rb
 test/testunit/util/test_procwrapper.rb
+test/ostruct/test_ostruct.rb
 test/wsdl/emptycomplextype.wsdl
 test/wsdl/test_emptycomplextype.rb
 test/xsd/test_xmlschemaparser.rb
