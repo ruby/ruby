@@ -107,8 +107,6 @@ class TkMultiListbox < TkListbox
     @lbox_list.each{|lbox|
       lbox.yscrollcommand proc{|first, last| 
 	@v_scroll.set first, last
-	idx = lbox.nearest(0)
-	@lbox_list.each{|l| l.yview(idx)}
       }
     }
     @v_scroll.command proc{|*args| @lbox_list.each{|lbox| lbox.yview *args} }
@@ -127,10 +125,12 @@ class TkMultiListbox < TkListbox
 	     proc{|w| focus_shift(w, 1); Tk.callback_break}, '%W')
 
       l.bind('Button-2', proc{|x, y| 
+	       @lbox_mark_x = x
 	       @lbox_list.each{|lbox| lbox.scan_mark(x, y)}
 	     }, '%x %y')
       l.bind('B2-Motion', proc{|x, y| 
-	       @lbox_list.each{|lbox| lbox.scan_dragto(x, y)}
+	       @lbox_list.each{|lbox| lbox.scan_dragto(@lbox_mark_x, y)}
+	       l.scan_dragto(x, y)
 	     }, '%x %y')
 
       l.bindtags(l.bindtags.unshift(@mode[@current_mode]))
