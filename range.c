@@ -21,11 +21,7 @@ static VALUE
 range_check(args)
     VALUE *args;
 {
-    VALUE v = rb_funcall(args[0], rb_intern("<="), 1, args[1]);
-
-    if (!RTEST(v)) {
-	Fail("");		/* no ascending values */
-    }
+    rb_funcall(args[0], rb_intern("<=>"), 1, args[1]);
     return Qnil;
 }
 

@@ -31,26 +31,27 @@ class WeakRef<Delegator
 			    
   def initialize(orig)
     super
-    @id = orig.id
+    @__id = orig.id
     ObjectSpace.call_finalizer orig
-    ID_MAP[@id] = self.id
-    ID_REV_MAP[self.id] = @id
+    ObjectSpace.call_finalizer self
+    ID_MAP[@__id] = self.id
+    ID_REV_MAP[self.id] = @__id
   end
 
   def __getobj__
-    unless ID_MAP[@id]
+    unless ID_MAP[@__id]
       $@ = caller(1)
       $! = RefError.new("Illegal Reference - probably recycled")
       raise
     end
-    ObjectSpace.id2ref(@id)
+    ObjectSpace._id2ref(@__id)
 #    ObjectSpace.each_object do |obj|
-#      return obj if obj.id == @id
+#      return obj if obj.id == @__id
 #    end
   end
 
   def weakref_alive?
-    if ID_MAP[@id]
+    if ID_MAP[@__id]
       true
     else
       false
@@ -62,9 +63,11 @@ class WeakRef<Delegator
   end
 end
 
-foo = Object.new
-p foo.hash
-foo = WeakRef.new(foo)
-p foo.hash
-ObjectSpace.garbage_collect
-p foo.hash
+if __FILE__ == $0
+  foo = Object.new
+  p foo.hash
+  foo = WeakRef.new(foo)
+  p foo.hash
+  ObjectSpace.garbage_collect
+  p foo.hash
+end

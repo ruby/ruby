@@ -369,7 +369,7 @@ io_gets_method(argc, argv, io)
     VALUE rs;
 
     if (argc == 0) {
-	return io_gets(io);
+	rs = RS;
     }
     else {
 	rb_scan_args(argc, argv, "1", &rs);
@@ -394,7 +394,6 @@ io_gets_method(argc, argv, io)
 	rsptr = 0;
 	rslen = 0;
     }
-    newline = rslen ? rsptr[rslen - 1] : 0777;
 
     GetOpenFile(io, fptr);
     io_readable(fptr);
@@ -413,6 +412,7 @@ io_gets_method(argc, argv, io)
 	} while (c != EOF);
     }
 
+    newline = rslen ? rsptr[rslen - 1] : 0777;
     {
 	char buf[8192];
 	char *bp, *bpe = buf + sizeof buf - 3;

@@ -386,6 +386,7 @@ mod_clone(module)
     clone->super = RCLASS(module)->super;
     clone->iv_tbl = 0;
     clone->m_tbl = 0;		/* avoid GC crashing  */
+    clone->iv_tbl = st_copy(RCLASS(module)->iv_tbl);
     clone->m_tbl = st_copy(RCLASS(module)->m_tbl);
 
     return (VALUE)clone;

@@ -1879,8 +1879,9 @@ rb_eval(self, node)
 	    }
 
 	    PUSH_ITER(the_iter->iter?ITER_PRE:ITER_NOT);
-	    result = rb_call(RCLASS(the_frame->last_class)->super, self,
-			     the_frame->last_func, argc, argv, 3);
+	    result = rb_call(RCLASS(the_frame->last_class)->super,
+			     the_frame->self, the_frame->last_func,
+			     argc, argv, 3);
 	    POP_ITER();
 	}
 	break;
@@ -2234,7 +2235,7 @@ rb_eval(self, node)
 	if (node->nd_defn) {
 	    VALUE recv = rb_eval(self, node->nd_recv);
 	    VALUE klass;
-	    NODE *body;
+	    NODE *body = 0;
 
 	    if (FIXNUM_P(recv)) {
 		TypeError("Can't define method \"%s\" for Fixnum",
@@ -3169,6 +3170,7 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
     PUSH_FRAME();
     the_frame->last_func = id;
     the_frame->last_class = nosuper?0:klass;
+    the_frame->self = recv;
     the_frame->argc = argc;
     the_frame->argv = argv;
 

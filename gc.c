@@ -1016,6 +1016,10 @@ id2ref(obj, id)
     INT ptr = NUM2INT(id);
 
     if (FIXNUM_P(ptr)) return (VALUE)ptr;
+    if (ptr == TRUE) return TRUE;
+    if (ptr == FALSE) return FALSE;
+    if (ptr == Qnil) return Qnil;
+
     if (!looks_pointerp(ptr)) {
 	IndexError("0x%x is not the id value", ptr);
     }
@@ -1045,7 +1049,7 @@ Init_GC()
     rb_define_module_function(mObSpace, "remove_finalizer", rm_final, 1);
     rb_define_module_function(mObSpace, "finalizers", finals, 0);
     rb_define_module_function(mObSpace, "call_finalizer", call_final, 1);
-    rb_define_module_function(mObSpace, "id2ref", id2ref, 1);
+    rb_define_module_function(mObSpace, "_id2ref", id2ref, 1);
 
     rb_global_variable(&finalizers);
     finalizers = ary_new();

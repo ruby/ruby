@@ -12,6 +12,7 @@
 #define ENV_H
 
 extern struct FRAME {
+    VALUE self;
     int argc;
     VALUE *argv;
     ID last_func;
