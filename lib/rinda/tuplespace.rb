@@ -259,7 +259,7 @@ module Rinda
 	  notify_event('take', entry.value)
 	  return entry.value
 	end
-	return nil if template.expired?
+        raise RequestExpiredError if template.expired?
 
 	begin
 	  @take_waiter.push(template)
@@ -287,7 +287,7 @@ module Rinda
       synchronize do
 	entry = @bag.find(template)
 	return entry.value if entry
-	return nil if template.expired?
+        raise RequestExpiredError if template.expired?
 
 	begin
 	  @read_waiter.push(template)
