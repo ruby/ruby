@@ -2,6 +2,8 @@ Fri Jul 26 16:01:16 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/extmk.rb.in (create_makefile): use Regexp in gsub.
 
+	* sample/mkproto.rb: ditto and fix bug.
+
 Fri Jul 26 14:31:06 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* random.c: replace with Mersenne Twister RNG.

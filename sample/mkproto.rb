@@ -1,11 +1,11 @@
 $/ = nil
 while line = gets()
   if /^((void|VALUE|int|char *\*|ID|struct [\w_]+ *\*|st_table *\*) *)?\n([\w\d_]+)\(.*\)\n\s*((.+;\n)*)\{/ =~ line
-    $_ = $'
+    line = $'
     printf "%s %s(", $2, $3
     args = []
     for arg in $4.split(/;\n\s*/)
-      arg.gsub! ' +', ' '
+      arg.gsub!(/ +/, ' ')
       if arg =~ /,/
 	if arg =~ /(([^*]+) *\** *[\w\d_]+),/
 	  type = $2.strip
