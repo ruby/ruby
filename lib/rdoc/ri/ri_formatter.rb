@@ -68,6 +68,15 @@ module RI
     
     ######################################################################
 
+    # called when we want to ensure a nbew 'wrap' starts on a newline
+    # Only needed for HtmlFormatter, because the rest do their
+    # own line breaking
+
+    def break_to_newline
+    end
+    
+    ######################################################################
+
     def bold_print(txt)
       print txt
     end
@@ -459,14 +468,13 @@ module RI
         print(escape(achar.char))
       end
       update_attributes(curr_attr, 0) unless curr_attr.zero?
-      puts
     end
 
     def draw_line(label=nil)
       if label != nil
         bold_print(label)
       end
-      puts("<hr /><p />")
+      puts("<hr>")
     end
 
     def bold_print(txt)
@@ -475,6 +483,10 @@ module RI
 
     def blankline()
       puts("<p>")
+    end
+
+    def break_to_newline
+      puts("<br>")
     end
 
     def display_heading(text, level, indent)

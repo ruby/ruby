@@ -237,7 +237,10 @@ class  DefaultDisplay
         params = method.name + params
       end
     end
-    params.split(/\n/).each {|p| @formatter.wrap(p) }
+    params.split(/\n/).each do |p|
+      @formatter.wrap(p) 
+      @formatter.break_to_newline
+    end
   end
 
   ######################################################################

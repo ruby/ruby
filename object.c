@@ -844,7 +844,7 @@ main_to_s(obj)
 
 
 /***********************************************************************
- * Document-class:  TrueClass
+ *  Document-class: TrueClass
  *
  *  The global value <code>true</code> is the only instance of class
  *  <code>TrueClass</code> and represents a logically true value in
