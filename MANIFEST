@@ -114,6 +114,7 @@ lib/debug.rb
 lib/delegate.rb
 lib/e2mmap.rb
 lib/eregex.rb
+lib/fileutils.rb
 lib/find.rb
 lib/final.rb
 lib/finalize.rb
