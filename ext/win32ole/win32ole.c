@@ -78,7 +78,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.5.8"
+#define WIN32OLE_VERSION "0.5.9"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -1976,9 +1976,10 @@ ole_invoke(argc, argv, self, wFlags)
                 ole_val2variant(param, &op.dp.rgvarg[n]);
             }
             memset(&excepinfo, 0, sizeof(EXCEPINFO));
+            VariantInit(&result);
             hr = pole->pDispatch->lpVtbl->Invoke(pole->pDispatch, DispID, 
                                                  &IID_NULL, lcid, wFlags,
-                                                 &op.dp, NULL,
+                                                 &op.dp, &result,
                                                  &excepinfo, &argErr);
             for(i = cNamedArgs; i < op.dp.cArgs; i++) {
                 n = op.dp.cArgs - i + cNamedArgs - 1;
@@ -1991,9 +1992,10 @@ ole_invoke(argc, argv, self, wFlags)
          * functions whose DISPID > 0x8000 */
         if (hr == DISP_E_EXCEPTION && DispID > 0x8000) {
             memset(&excepinfo, 0, sizeof(EXCEPINFO));
+            VariantInit(&result);
             hr = pole->pDispatch->lpVtbl->Invoke(pole->pDispatch, DispID, 
                                                  &IID_NULL, lcid, wFlags,
-                                                 &op.dp, NULL,
+                                                 &op.dp, &result,
                                                  &excepinfo, &argErr);
 
         }
