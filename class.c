@@ -3,7 +3,7 @@
   class.c -
 
   $Author: matz $
-  $Date: 1994/11/01 08:27:48 $
+  $Date: 1994/12/16 00:59:42 $
   created at: Tue Aug 10 15:05:44 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -86,7 +86,6 @@ rb_define_class_id(id, super)
 
     /* make metaclass */
     RBASIC(cls)->class = single_class_new(super?super->class:C_Class);
-    literalize(RBASIC(cls)->class);
 
     return (VALUE)cls;
 }
@@ -193,10 +192,6 @@ rb_add_method(class, mid, node, noex)
 	    Warning("redefine %s", rb_id2name(mid));
 	}
 	rb_clear_cache(body);
-	freenode(body);
-    }
-    if (node && node->type != NODE_FBODY) {
-	node = NEW_FBODY(node, mid);
     }
     body = NEW_METHOD(node, noex);
     st_insert(class->m_tbl, mid, body);

@@ -3,7 +3,7 @@
   inits.c -
 
   $Author: matz $
-  $Date: 1994/11/01 08:28:00 $
+  $Date: 1994/12/16 00:59:24 $
   created at: Tue Dec 28 16:01:58 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -38,6 +38,7 @@ rb_call_inits()
     Init_process();
     Init_Etc();
     Init_load();
+    Init_Block();
     Init_Math();
 #ifdef USE_DBM
     Init_DBM();

@@ -3,8 +3,8 @@
   version.c -
 
   $Author: matz $
-  $Revision: 1.3 $
-  $Date: 1994/08/18 07:06:32 $
+  $Revision: 1.4 $
+  $Date: 1994/12/19 08:30:17 $
   created at: Thu Sep 30 20:08:01 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -22,7 +22,7 @@ VALUE rb_readonly_hook();
 Init_version()
 {
     rb_version = str_new2(RUBY_VERSION);
-    rb_define_variable("$VERSION", &rb_version, Qnil, rb_readonly_hook);
+    rb_define_variable("$VERSION", &rb_version, Qnil, rb_readonly_hook, 0);
 }
 
 show_version()

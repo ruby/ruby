@@ -1,4 +1,4 @@
-# methos access permission
+# methods access permission
 # output:
 #	foobar
 #	foo

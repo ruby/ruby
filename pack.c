@@ -3,7 +3,7 @@
   pack.c -
 
   $Author: matz $
-  $Date: 1994/12/06 09:30:08 $
+  $Date: 1994/12/09 09:40:22 $
   created at: Thu Feb 10 15:17:05 JST 1994
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -462,8 +462,8 @@ encodes(str, s, len)
     str_cat(str, hunk, 1);
     while (len > 0) {
 	hunk[0] = ' ' + (077 & (*s >> 2));
-	hunk[1] = ' ' + (077 & ((*s << 4) & 060 | (s[1] >> 4) & 017));
-	hunk[2] = ' ' + (077 & ((s[1] << 2) & 074 | (s[2] >> 6) & 03));
+	hunk[1] = ' ' + (077 & (((*s << 4) & 060) | ((s[1] >> 4) & 017)));
+	hunk[2] = ' ' + (077 & (((s[1] << 2) & 074) | ((s[2] >> 6) & 03)));
 	hunk[3] = ' ' + (077 & (s[2] & 077));
 	str_cat(str, hunk, 4);
 	s += 3;

@@ -16,17 +16,20 @@ fi
 AC_SUBST(STATIC)dnl
 AC_PROG_YACC
 AC_PROG_INSTALL
-AC_HAVE_HEADERS(unistd.h syscall.h a.out.h)
+AC_HAVE_HEADERS(unistd.h stdlib.h syscall.h a.out.h dirent.h\
+		string.h strings.h)
 AC_DIR_HEADER
 AC_GETGROUPS_T
 AC_RETSIGTYPE
-AC_REPLACE_FUNCS(memmove mkdir strerror strftime)
-AC_REPLACE_FUNCS(strstr strtol strtoul strdup)
-AC_HAVE_FUNCS(fmod killpg socket random)
-AC_HAVE_FUNCS(wait4 waitpid syscall getcwd)
-AC_HAVE_FUNCS(setruid seteuid setreuid)
-AC_HAVE_FUNCS(setrgid setegid setregid)
-AC_HAVE_FUNCS(getpriority sigprocmask)
+AC_HAVE_LIBRARY(m, [LIBS="$LIBS -lm"])
+AC_HAVE_LIBRARY(dbm, [LIBS="$LIBS -ldbm"])
+AC_HAVE_LIBRARY(socket, [LIBS="$LIBS -lsocket"])
+AC_HAVE_LIBRARY(crypt, [LIBS="$LIBS -lcrypt"])
+AC_REPLACE_FUNCS(memmove mkdir strerror strftime\
+		 strstr strtol strtoul strdup)
+AC_HAVE_FUNCS(fmod killpg socket random wait4 waitpid syscall getcwd\
+	      setruid seteuid setreuid setrgid setegid setregid\
+	      getpriority sigprocmask)
 AC_FUNC_CHECK(setenv, [], AC_HAVE_FUNCS(putenv))
 
 case "$LIBOBJS" in
@@ -56,8 +59,5 @@ AC_COMPILE_CHECK([pw_comment in struct passwd], [#include <pwd.h>],
 [struct passwd pw; pw.pw_comment;], AC_DEFINE(PW_COMMENT))
 AC_COMPILE_CHECK([pw_expire in struct passwd], [#include <pwd.h>],
 [struct passwd pw; pw.pw_expire;], AC_DEFINE(PW_EXPIRE))
-AC_HAVE_LIBRARY(m, [LIBS="$LIBS -lm"])
-AC_HAVE_LIBRARY(dbm, [LIBS="$LIBS -ldbm"])
-AC_HAVE_LIBRARY(socket, [LIBS="$LIBS -lsocket"])
 AC_OUTPUT(Makefile)
 mv confdefs.h config.h

@@ -39,7 +39,11 @@
 
 #include <stdio.h>
 #include <ctype.h>
-#include <string.h>
+#if defined (HAVE_STRING_H)
+#  include <string.h>
+#else /* !HAVE_STRING_H */
+#  include <strings.h>
+#endif /* !HAVE_STRING_H */
 #include <time.h>
 #include <sys/types.h>
 #include <sys/time.h>

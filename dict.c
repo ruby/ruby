@@ -3,7 +3,7 @@
   dict.c -
 
   $Author: matz $
-  $Date: 1994/12/06 09:29:53 $
+  $Date: 1994/12/19 08:30:00 $
   created at: Mon Nov 22 18:51:18 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -90,8 +90,16 @@ Fdic_indexes(dic, args)
     struct RArray *new;
     int i = 0;
 
-    if (!args || args->len == 1 && TYPE(args->ptr) != T_ARRAY) {
-	args = (struct RArray*)rb_to_a(args->ptr[0]);
+    if (!args || args->len == 0) {
+	Fail("wrong # of argment");
+    }
+    else if (args->len == 1) {
+	if (TYPE(args->ptr[0])) {
+	    args = (struct RArray*)rb_to_a(args->ptr[0]);
+	}
+	else {
+	    args = (struct RArray*)args->ptr[0];
+	}
     }
 
     new = (struct RArray*)ary_new2(args->len);
@@ -583,7 +591,7 @@ Init_Dict()
     rb_define_single_method(envtbl,"to_s", Fenv_to_s, 0);
     rb_include_module(CLASS_OF(envtbl), M_Enumerable);
 
-    rb_define_variable("$ENV", &envtbl, Qnil, rb_readonly_hook);
+    rb_define_variable("$ENV", &envtbl, Qnil, rb_readonly_hook, 0);
 
     rb_define_private_method(C_Kernel, "getenv", Fgetenv, 1);
     rb_define_private_method(C_Kernel, "setenv", Fsetenv, 2);

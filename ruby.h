@@ -1,14 +1,14 @@
 /************************************************
-
+  
   ruby.h -
-
+  
   $Author: matz $
-  $Date: 1994/12/06 09:30:16 $
+  $Date: 1994/12/19 08:30:14 $
   created at: Thu Jun 10 14:26:32 JST 1993
-
+  
   Copyright (C) 1994 Yukihiro Matsumoto
-
-************************************************/
+  
+  ************************************************/
 
 #ifndef RUBY_H
 #define RUBY_H
@@ -29,12 +29,16 @@
 typedef unsigned int UINT;
 typedef UINT VALUE;
 typedef UINT ID;
+
 typedef unsigned short USHORT;
+
 #ifdef __STDC__
 # include <limits.h>
 #else
 # ifndef LONG_MAX
-#  define LONG_MAX ((long)((unsigned long)~0L>>1))
+# if !defined(LONG_MAX) || !defined(CHAR_BIT)
+#  include <limits.h>
+# endif
 # endif
 # ifndef LONG_MIN
 #  if (0 != ~0)
@@ -83,22 +87,26 @@ extern VALUE C_Data;
 #define CLASS_OF(obj) (FIXNUM_P(obj)?C_Fixnum: NIL_P(obj)?C_Nil:\
                        RBASIC(obj)->class)
 
-#define T_NIL    0x0
-#define T_OBJECT 0x1
-#define T_CLASS  0x2
-#define T_ICLASS 0x3
-#define T_MODULE 0x4
-#define T_FLOAT  0x5
-#define T_STRING 0x6
-#define T_REGEXP 0x7
-#define T_ARRAY  0x8
-#define T_FIXNUM 0x9
-#define T_DICT   0xA
-#define T_DATA   0xB
-#define T_STRUCT 0xC
-#define T_BIGNUM 0xD
+#define T_NIL    0x00
+#define T_OBJECT 0x01
+#define T_CLASS  0x02
+#define T_ICLASS 0x03
+#define T_MODULE 0x04
+#define T_FLOAT  0x05
+#define T_STRING 0x06
+#define T_REGEXP 0x07
+#define T_ARRAY  0x08
+#define T_FIXNUM 0x09
+#define T_DICT   0x0a
+#define T_STRUCT 0x0b
+#define T_BIGNUM 0x0c
 
-#define T_MASK   0xF
+#define T_NODE   0x0d
+#define T_CONS   0x0e
+
+#define T_DATA   0xff
+
+#define T_MASK   0xff
 
 #define BUILTIN_TYPE(x) (((struct RBasic*)(x))->flags & T_MASK)
 #define TYPE(x) (FIXNUM_P(x)?T_FIXNUM:NIL_P(x)?T_NIL:BUILTIN_TYPE(x))
@@ -115,7 +123,7 @@ int   num2int();
 }
 #define CLONESETUP(obj1,obj2) \
     OBJSETUP(obj1,RBASIC(obj2)->class,RBASIC(obj2)->flags&T_MASK);
-				 
+
 struct RBasic {
     UINT flags;
     VALUE class;
@@ -208,6 +216,11 @@ struct RBignum {
     USHORT *digits;
 };
 
+struct RCons {
+    struct RBasic basic;
+    VALUE car, cdr;
+};
+
 #define R_CAST(st) (struct st*)
 #define RBASIC(obj)  (R_CAST(RBasic)(obj))
 #define ROBJECT(obj) (R_CAST(RObject)(obj))
@@ -220,24 +233,28 @@ struct RBignum {
 #define RDATA(obj)   (R_CAST(RData)(obj))
 #define RSTRUCT(obj) (R_CAST(RStruct)(obj))
 #define RBIGNUM(obj) (R_CAST(RBignum)(obj))
+#define RCONS(obj)   (R_CAST(RCons)(obj))
 
-#define FL_SINGLE  (1<<4)
-#define FL_MARK    (1<<5)
-#define FL_LITERAL (1<<6)
+#define FL_SINGLE  (1<<8)
+#define FL_MARK    (1<<9)
+#define FL_LITERAL (1<<10)
 
-#define FL_USER0   (1<<7)
-#define FL_USER1   (1<<8)
-#define FL_USER2   (1<<9)
-#define FL_USER3   (1<<10)
+#define FL_USER1   (1<<11)
+#define FL_USER2   (1<<12)
+#define FL_USER3   (1<<13)
+#define FL_USER4   (1<<14)
+#define FL_USER5   (1<<15)
+#define FL_USER6   (1<<16)
+
+#define FL_UMASK   (0x3f<<11)
 
 #define FL_ABLE(x) (!(FIXNUM_P(x)||NIL_P(x)))
 #define FL_TEST(x,f) (FL_ABLE(x)?(RBASIC(x)->flags&(f)):0)
 #define FL_SET(x,f) if (FL_ABLE(x)) {RBASIC(x)->flags |= (f);}
 #define FL_UNSET(x,f) if(FL_ABLE(x)){RBASIC(x)->flags &= ~(f);}
 
-extern VALUE rb_self();
-#define Qself rb_self()
-#define Qnil (VALUE)0
+extern VALUE Qself;
+#define Qnil 0
 
 #define ALLOC_N(type,n) (type*)xmalloc(sizeof(type)*(n))
 #define ALLOC(type) (type*)xmalloc(sizeof(type))

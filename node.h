@@ -3,7 +3,7 @@
   node.h -
 
   $Author: matz $
-  $Date: 1994/11/01 08:28:04 $
+  $Date: 1994/12/16 03:10:04 $
   created at: Fri May 28 15:14:02 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -36,7 +36,7 @@ enum node_type {
     NODE_IASGN,
     NODE_CASGN,
     NODE_CALL,
-    NODE_CALL2,
+    NODE_ICALL,
     NODE_SUPER,
     NODE_ZSUPER,
     NODE_ARRAY,
@@ -50,6 +50,7 @@ enum node_type {
     NODE_RETRY,
     NODE_FAIL,
     NODE_YIELD,
+    NODE_IYIELD,
     NODE_LVAR,
     NODE_GVAR,
     NODE_IVAR,
@@ -77,24 +78,24 @@ enum node_type {
     NODE_NIL,
 };
 
-typedef struct node {
-    enum node_type type;
-    char *src;
+typedef struct RNode {
+    UINT flags;
+    char *file;
     unsigned int line;
     union {
-	struct node *node;
+	struct RNode *node;
 	ID id;
 	VALUE value;
 	VALUE (*cfunc)();
 	ID *tbl;
     } u1;
     union {
-	struct node *node;
+	struct RNode *node;
 	ID id;
 	int argc;
     } u2;
     union {
-	struct node *node;
+	struct RNode *node;
 	ID id;
 	int state;
 	struct global_entry *entry;
@@ -103,8 +104,14 @@ typedef struct node {
     } u3;
 } NODE;
 
+#define RNODE(obj)  (R_CAST(RNode)(obj))
+
+#define nd_type(n) (((n)->flags>>11)&0x3f)
+#define nd_set_type(n,t) \
+    (n)->flags=(((n)->flags&~FL_UMASK)|(((t)<<11)&FL_UMASK))
+
 #define nd_head  u1.node
-#define nd_last  u2.node
+#define nd_alen  u2.argc
 #define nd_next  u3.node
 
 #define nd_cond  u1.node
@@ -163,13 +170,13 @@ typedef struct node {
 #define nd_rval  u3.node
 
 #define NEW_METHOD(n,x) newnode(NODE_METHOD,x,n,Qnil)
-#define NEW_FBODY(n,i) newnode(NODE_FBODY,n,i,1)
-#define NEW_DEFN(i,d,p) newnode(NODE_DEFN,p,i,NEW_FBODY(d,i))
-#define NEW_DEFS(r,i,d) newnode(NODE_DEFS,r,i,NEW_FBODY(d,i))
+#define NEW_FBODY(n,i) newnode(NODE_FBODY,n,i,Qnil)
+#define NEW_DEFN(i,d,p) newnode(NODE_DEFN,p,i,d)
+#define NEW_DEFS(r,i,d) newnode(NODE_DEFS,r,i,d)
 #define NEW_CFUNC(f,c) newnode(NODE_CFUNC,f,c,Qnil)
 #define NEW_RFUNC(b1,b2) NEW_SCOPE(block_append(b1,b2))
 #define NEW_SCOPE(b) newnode(NODE_SCOPE,local_tbl(),(b),local_cnt(0))
-#define NEW_BLOCK(a) newnode(NODE_BLOCK,a,Qnil,Qnil)
+#define NEW_BLOCK(a) newnode(NODE_BLOCK,a,1,Qnil)
 #define NEW_IF(c,t,e) newnode(NODE_IF,c,t,e)
 #define NEW_EXNOT(c) newnode(NODE_EXNOT,c,Qnil,Qnil)
 #define NEW_UNLESS(c,t,e) newnode(NODE_IF,NEW_EXNOT(c),t,e)
@@ -190,8 +197,7 @@ typedef struct node {
 #define NEW_FAIL(s)  newnode(NODE_FAIL,s,Qnil,Qnil)
 #define NEW_YIELD(a) newnode(NODE_YIELD,a,Qnil,Qnil)
 #define NEW_LIST(a) NEW_ARRAY(a)
-#define NEW_QLIST(a) newnode(NODE_QLIST,a,Qnil,Qnil)
-#define NEW_ARRAY(a) newnode(NODE_ARRAY,a,Qnil,Qnil)
+#define NEW_ARRAY(a) newnode(NODE_ARRAY,a,1,Qnil)
 #define NEW_ZARRAY() newnode(NODE_ZARRAY,Qnil,Qnil,Qnil)
 #define NEW_HASH(a) newnode(NODE_HASH,a,Qnil,Qnil)
 #define NEW_AND(a,b) newnode(NODE_AND,a,b,Qnil)
@@ -212,10 +218,9 @@ typedef struct node {
 #define NEW_XSTR(s) newnode(NODE_XSTR,s,Qnil,Qnil)
 #define NEW_XSTR2(s) newnode(NODE_XSTR2,s,Qnil,Qnil)
 #define NEW_CALL(r,m,a) newnode(NODE_CALL,r,m,a)
-#define NEW_CALL2(r,m,a) newnode(NODE_CALL2,r,m,a)
 #define NEW_SUPER(a) newnode(NODE_SUPER,Qnil,Qnil,a)
 #define NEW_ZSUPER() newnode(NODE_ZSUPER,Qnil,Qnil,Qnil)
-#define NEW_ARGS(f,r) newnode(NODE_ARGS,f,r,Qnil)
+#define NEW_ARGS(f,r) newnode(NODE_ARGS,Qnil,r,f)
 #define NEW_ALIAS(n,o) newnode(NODE_ALIAS,Qnil,n,o)
 #define NEW_UNDEF(i) newnode(NODE_UNDEF,Qnil,i,Qnil)
 #define NEW_CLASS(n,b,s) newnode(NODE_CLASS,n,NEW_SCOPE(b),s)
@@ -228,6 +233,5 @@ typedef struct node {
 
 NODE *newnode();
 VALUE rb_method_booundp();
-void freenode();
 
 #endif

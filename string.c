@@ -3,7 +3,7 @@
   string.c -
 
   $Author: matz $
-  $Date: 1994/12/06 09:30:24 $
+  $Date: 1994/12/09 09:40:28 $
   created at: Mon Aug  9 17:12:58 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -925,7 +925,7 @@ Fstr_inspect(str)
 	    *b++ = '\\';
 	    *b++ = 'v';
 	}
-	else if (c == '\a') {
+	else if (c == '\1') {
 	    CHECK(2);
 	    *b++ = '\\';
 	    *b++ = 'a';

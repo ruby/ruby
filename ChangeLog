@@ -1,4 +1,44 @@
+Mon Dec 19 12:01:10 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* eval.c: 不必要になったPUSH_ENV, POP_ENVを減らした．
+
+	* env.h: ENVIONからselfをはずした．PUSH_ENVはsuperの準備のためだけ
+	  に用いることにした．
+
+	* eval.c: 下記のオブジェクト化で遅くなった実行速度をもとに戻した．
+
+Mon Dec 17 23:01:10 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* eval.c: env.{argv,argc}とscope.local_varsのオブジェクト化．
+
+	* eval.c: 1スコープ内で複数Blockを生成したときのバグを修正．
+
+Fri Dec 16 15:52:06 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* parse.y: `&&'と`||'の両辺はいつでも条件式とした．
+
+Thu Dec 15 00:16:04 1994  Yukihiro Matsumoto  (matz@dyna)
+
+	* eval.c(Block): Blockオブジェクトを実現．
+
+	* node.h: NODE_QLISTはなくなった．
+
+	* eval.c(rb_call): 引数への代入を名前で一つずつ代入するのをやめて，
+	  一度にコピーするようにした．
+
+	* eval.c(rb_call): rubyで記述されたメソッドへの引数渡しをinline化．
+
+	* eval.c: イテレータ判定処理の全面書き換え．不適切なイテレータ呼び
+	  出しをなくした．例えば「[foo(),bar()]{i|baz(i)}」でfooもbarもイ
+	  テレータとして呼び出され*ない*．
+
+	* eval.c(rb_call): SCOPE処理をinline化．メソッド呼び出しの若干の高
+	  速化．
+
+Wed Dec 14 18:09:33 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* node.h: nodeもオブジェクトにする．よってGCで回収される．
+
 Thu Dec  8 14:17:29 1994  Yukihiro Matsumoto  (matz@ix-02)
 
 	* 0.60 released - alpha test baseline.
-

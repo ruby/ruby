@@ -2,15 +2,15 @@
 
   glob.c -
 
-  $Author$
-  $Date$
+  $Author: matz $
+  $Date: 1994/12/09 09:47:52 $
   created at: Mon Sep 12 18:56:43 JST 1994
 
 ************************************************/
 
+#include <sys/param.h>
 #include "ruby.h"
 #include "fnmatch.h"
-#include <sys/param.h>
 
 char *strdup();
 

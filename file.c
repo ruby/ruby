@@ -4,17 +4,17 @@
   file.c -
 
   $Author: matz $
-  $Date: 1994/12/06 09:30:00 $
+  $Date: 1994/12/09 09:40:19 $
   created at: Mon Nov 15 12:24:34 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
 
 ************************************************/
 
+#include <sys/param.h>
+#include <sys/time.h>
 #include "ruby.h"
 #include "io.h"
-#include <sys/time.h>
-#include <sys/param.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif

@@ -3,7 +3,7 @@
   gc.c -
 
   $Author: matz $
-  $Date: 1994/12/06 09:30:02 $
+  $Date: 1994/12/19 08:39:19 $
   created at: Tue Oct  5 09:44:46 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -13,6 +13,7 @@
 #include "ruby.h"
 #include "env.h"
 #include "st.h"
+#include "node.h"
 #include <stdio.h>
 #include <setjmp.h>
 
@@ -166,7 +167,7 @@ rb_global_variable(var)
 struct RVALUE {
     union {
 	struct {
-	    UINT flag;		/* alway 0 for freed obj */
+	    UINT flag;		/* always 0 for freed obj */
 	    struct RVALUE *next;
 	} free;
 	struct RObject object;
@@ -179,6 +180,7 @@ struct RVALUE {
 	struct RData   data;
 	struct RStruct rstruct;
 	struct RBignum bignum;
+	struct RNode   node;
     } as;
 } *freelist = Qnil;
 
@@ -189,7 +191,7 @@ struct heap_block {
     struct RVALUE body[1];
 } *heap_link = Qnil;
 
-#define SEG_SLOTS 4000
+#define SEG_SLOTS 10000
 #define SEG_SIZE  (SEG_SLOTS*sizeof(struct RVALUE))
 
 static int heap_size;
@@ -252,53 +254,6 @@ data_new(datap, dfree, dmark)
     return (VALUE)data;
 }
 
-static struct literal_list {
-    VALUE val;
-    struct literal_list *next;
-} *Literal_List = Qnil;
-
-void
-literalize(obj)
-    VALUE obj;
-{
-    struct literal_list *tmp;
-
-    tmp = (struct literal_list*)xmalloc(sizeof(struct literal_list));
-    tmp->next = Literal_List;
-    tmp->val = obj;
-    Literal_List = tmp;
-}
-
-void
-unliteralize(obj)
-    VALUE obj;
-{
-    struct literal_list *ptr = Literal_List, *tmp;
-
-    if (NIL_P(obj) || FIXNUM_P(obj)) return;
-
-    if (!FL_TEST(obj, FL_LITERAL)) return;
-    FL_UNSET(obj, FL_LITERAL);
-
-    if (ptr->val == obj) {
-	Literal_List = ptr->next;
-	free(ptr);
-	return;
-    }
-
-    while (ptr->next) {
-	if (ptr->next->val == obj) {
-	    tmp = ptr->next;
-	    ptr->next = ptr->next->next;
-	    ptr = tmp;
-	    free(tmp);
-	    return;
-	}
-	ptr = ptr->next;
-    }
-    Bug("0x%x is not a literal object.", obj);
-}
-
 extern st_table *rb_class_tbl;
 static VALUE *stack_start_ptr;
 
@@ -311,7 +266,7 @@ looks_pointerp(p)
     if (FIXNUM_P(p)) return FALSE;
     while (heap) {
 	if (heap->beg <= p && p < heap->end
-	    && ((((char*)p) - ((char*)heap->beg)) % sizeof(struct RVALUE)) == 0)
+	    && ((((char*)p)-((char*)heap->beg))%sizeof(struct RVALUE)) == 0)
 	    return TRUE;
 	heap = heap->next;
     }
@@ -384,6 +339,15 @@ mark_dict(tbl)
 }
 
 void
+gc_mark_maybe(obj)
+    void *obj;
+{
+    if (looks_pointerp(obj)) {
+	gc_mark(obj);
+    }
+}
+
+void
 gc_mark(obj)
     register struct RBasic *obj;
 {
@@ -400,19 +364,21 @@ gc_mark(obj)
 	break;
     }
 
-    if (obj->iv_tbl) mark_tbl(obj->iv_tbl);
-    gc_mark(obj->class);
     switch (obj->flags & T_MASK) {
       case T_ICLASS:
 	gc_mark(RCLASS(obj)->super);
 	if (RCLASS(obj)->c_tbl) mark_tbl(RCLASS(obj)->c_tbl);
+	mark_tbl(RCLASS(obj)->m_tbl);
 	break;
+
       case T_CLASS:
 	gc_mark(RCLASS(obj)->super);
       case T_MODULE:
 	if (RCLASS(obj)->c_tbl) mark_tbl(RCLASS(obj)->c_tbl);
+	mark_tbl(RCLASS(obj)->m_tbl);
 	gc_mark(RBASIC(obj)->class);
 	break;
+
       case T_ARRAY:
 	{
 	    int i, len = RARRAY(obj)->len;
@@ -422,20 +388,25 @@ gc_mark(obj)
 		gc_mark(ptr[i]);
 	}
 	break;
+
       case T_DICT:
 	mark_dict(RDICT(obj)->tbl);
 	break;
+
       case T_STRING:
 	if (RSTRING(obj)->orig) gc_mark(RSTRING(obj)->orig);
 	break;
+
       case T_DATA:
 	if (RDATA(obj)->dmark) (*RDATA(obj)->dmark)(DATA_PTR(obj));
 	break;
+
       case T_OBJECT:
       case T_REGEXP:
       case T_FLOAT:
       case T_BIGNUM:
 	break;
+
       case T_STRUCT:
 	{
 	    int i, len = RSTRUCT(obj)->len;
@@ -445,9 +416,23 @@ gc_mark(obj)
 		gc_mark(ptr[i].value);
 	}
 	break;
+
+      case T_CONS:
+	gc_mark(RCONS(obj)->car);
+	gc_mark(RCONS(obj)->cdr);
+	break;
+
+      case T_NODE:
+	gc_mark_maybe(RNODE(obj)->u1.node);
+	gc_mark_maybe(RNODE(obj)->u2.node);
+	gc_mark_maybe(RNODE(obj)->u3.node);
+	return;			/* no need to mark class & tbl */
+
       default:
 	Bug("gc_mark(): unknown data type %d", obj->flags & T_MASK);
     }
+    if (obj->iv_tbl) mark_tbl(obj->iv_tbl);
+    gc_mark(obj->class);
 }
 
 #define MIN_FREE_OBJ 512
@@ -509,15 +494,6 @@ gc_sweep()
     }
 }
 
-static
-freemethod(key, body)
-    ID key;
-    void *body;
-{
-    freenode(body);
-    return ST_CONTINUE;
-}
-
 static void
 obj_free(obj)
     struct RBasic *obj;
@@ -529,14 +505,12 @@ obj_free(obj)
 	break;
     }
 
-    if (obj->iv_tbl) st_free_table(obj->iv_tbl);
     switch (obj->flags & T_MASK) {
       case T_OBJECT:
 	break;
       case T_MODULE:
       case T_CLASS:
 	rb_clear_cache2(obj);
-	st_foreach(RCLASS(obj)->m_tbl, freemethod);
 	st_free_table(RCLASS(obj)->m_tbl);
 	if (RCLASS(obj)->c_tbl)
 	    st_free_table(RCLASS(obj)->c_tbl);
@@ -569,15 +543,29 @@ obj_free(obj)
       case T_BIGNUM:
 	free(RBIGNUM(obj)->digits);
 	break;
+      case T_NODE:
+	if (nd_type(obj) == NODE_SCOPE && RNODE(obj)->nd_tbl) {
+	    free(RNODE(obj)->nd_tbl);
+	}
+	return;			/* no need to free iv_tbl */
       default:
 	Bug("gc_sweep(): unknown data type %d", obj->flags & T_MASK);
     }
+    if (obj->iv_tbl) st_free_table(obj->iv_tbl);
+}
+
+void
+gc_mark_scope(scope)
+    struct SCOPE *scope;
+{
+    if (scope->local_vars && scope->var_ary == Qnil)
+	mark_locations_array(scope->local_vars, scope->local_tbl[0]);
+    gc_mark(scope->var_ary);
 }
 
 void
 gc()
 {
-    struct literal_list *lit;
     struct gc_list *list;
     struct ENVIRON *env;
     struct SCOPE *scope;
@@ -588,17 +576,9 @@ gc()
     if (dont_gc) return;
     dont_gc++;
 
-    /* mark env stack */
-    for (env = the_env; env; env = env->prev) {
-	gc_mark(env->self);
-	if (env->argv)
-	    mark_locations_array(env->argv, env->argc);
-    }
-
     /* mark scope stack */
     for (scope = the_scope; scope; scope = scope->prev) {
-	if (scope->local_vars)
-	    mark_locations_array(scope->local_vars, scope->local_tbl[0]);
+	gc_mark_scope(scope);
     }
 
     FLUSH_REGISTER_WINDOWS;
@@ -615,11 +595,6 @@ gc()
     /* mark protected global variables */
     for (list = Global_List; list; list = list->next) {
 	gc_mark(*list->varptr);
-    }
-
-    /* mark literal objects */
-    for (lit = Literal_List; lit; lit = lit->next) {
-	gc_mark(lit->val);
     }
 
     gc_mark_global_tbl();

@@ -3,7 +3,7 @@
   io.c -
 
   $Author: matz $
-  $Date: 1994/12/06 09:30:03 $
+  $Date: 1994/12/19 08:30:05 $
   created at: Fri Oct 15 18:08:59 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -561,8 +561,8 @@ pipe_open(pname, mode)
     MakeOpenFile(port, fptr);
     fptr->mode = io_mode_flags(mode);
 
-    if ((fptr->mode & FMODE_READABLE) && pipe(pr) == -1 ||
-	(fptr->mode & FMODE_WRITABLE) && pipe(pw) == -1)
+    if (((fptr->mode & FMODE_READABLE) && pipe(pr) == -1) ||
+	((fptr->mode & FMODE_WRITABLE) && pipe(pw) == -1))
 	rb_sys_fail(Qnil);
 
     doexec = (strcmp("-", pname) != 0);
@@ -1313,15 +1313,15 @@ Init_IO()
     C_IO = rb_define_class("IO", C_Object);
     rb_include_module(C_IO, M_Enumerable);
 
-    rb_define_variable("$;", &FS,  Qnil, rb_check_str);
-    rb_define_variable("$,", &OFS, Qnil, rb_check_str);
+    rb_define_variable("$;", &FS,  Qnil, rb_check_str, 0);
+    rb_define_variable("$,", &OFS, Qnil, rb_check_str, 0);
 
     RS = str_new2("\n");
-    rb_define_variable("$/",  &RS, Qnil, rb_check_str);
-    rb_define_variable("$\\", &ORS, Qnil, rb_check_str);
+    rb_define_variable("$/",  &RS, Qnil, rb_check_str, 0);
+    rb_define_variable("$\\", &ORS, Qnil, rb_check_str, 0);
 
-    rb_define_variable("$.", &lineno, Qnil, Qnil);
-    rb_define_variable("$_", &rb_lastline, Qnil, Qnil);
+    rb_define_variable("$.", &lineno, Qnil, Qnil, 0);
+    rb_define_variable("$_", &rb_lastline, Qnil, Qnil, 0);
 
     rb_define_method(C_IO, "each",  Fio_each, 0);
     rb_define_method(C_IO, "each_byte",  Fio_each_byte, 0);
@@ -1355,17 +1355,17 @@ Init_IO()
     rb_define_method(C_IO, "ioctl", Fio_ioctl, 2);
 
     rb_stdin = prep_stdio(stdin, FMODE_READABLE);
-    rb_define_variable("$stdin",  &rb_stdin, Qnil, rb_readonly_hook);
+    rb_define_variable("$stdin",  &rb_stdin, Qnil, rb_readonly_hook, 0);
     rb_stdout = prep_stdio(stdout, FMODE_WRITABLE);
-    rb_define_variable("$stdout", &rb_stdout, Qnil, rb_readonly_hook);
+    rb_define_variable("$stdout", &rb_stdout, Qnil, rb_readonly_hook, 0);
     rb_stderr = prep_stdio(stderr, FMODE_WRITABLE);
-    rb_define_variable("$stderr", &rb_stderr, Qnil, rb_readonly_hook);
+    rb_define_variable("$stderr", &rb_stderr, Qnil, rb_readonly_hook, 0);
     rb_defout = rb_stdout;
-    rb_define_variable("$>", &rb_defout, Qnil, io_defset);
+    rb_define_variable("$>", &rb_defout, Qnil, io_defset, 0);
 
     argf = obj_alloc(C_Object);
-    rb_define_variable("$<", &argf, Qnil, rb_readonly_hook);
-    rb_define_variable("$ARGF", &argf, Qnil, rb_readonly_hook);
+    rb_define_variable("$<", &argf, Qnil, rb_readonly_hook, 0);
+    rb_define_variable("$ARGF", &argf, Qnil, rb_readonly_hook, 0);
 
     rb_define_single_method(argf, "each",  Farg_each, 0);
     rb_define_single_method(argf, "each_byte",  Farg_each_byte, 0);
@@ -1383,7 +1383,7 @@ Init_IO()
     rb_include_module(CLASS_OF(argf), M_Enumerable);
 
     filename = str_new2("-");
-    rb_define_variable("$FILENAME", &filename, Qnil, rb_readonly_hook);
+    rb_define_variable("$FILENAME", &filename, Qnil, rb_readonly_hook, 0);
     file = rb_stdin;
     rb_global_variable(&file);
 

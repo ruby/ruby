@@ -3,7 +3,7 @@
   variable.c -
 
   $Author: matz $
-  $Date: 1994/11/01 08:28:42 $
+  $Date: 1994/12/19 08:30:16 $
   created at: Tue Apr 19 23:55:15 JST 1994
 
 ************************************************/
@@ -55,9 +55,10 @@ struct global_entry {
     } v;
     VALUE (*get_hook)();
     VALUE (*set_hook)();
+    void *data;
 };
 
-static 
+static
 mark_global_entry(key, entry)
     ID key;
     struct global_entry *entry;
@@ -73,9 +74,13 @@ mark_global_entry(key, entry)
       default:
 	break;
     }
+    if (entry->data) {
+	gc_mark_maybe(entry->data);
+    }
     return ST_CONTINUE;
 }
 
+void
 gc_mark_global_tbl()
 {
     st_foreach(global_tbl, mark_global_entry, 0);
@@ -99,11 +104,12 @@ rb_global_entry(id)
 }
 
 void
-rb_define_variable(name, var, get_hook, set_hook)
+rb_define_variable(name, var, get_hook, set_hook, data)
     char  *name;
     VALUE *var;
     VALUE (*get_hook)();
     VALUE (*set_hook)();
+    void *data;
 {
     struct global_entry *entry;
     ID id;
@@ -123,13 +129,15 @@ rb_define_variable(name, var, get_hook, set_hook)
     entry->v.var = var;
     entry->get_hook = get_hook;
     entry->set_hook = set_hook;
+    entry->data = data;
 }
 
 void
-rb_define_varhook(name, get_hook, set_hook)
+rb_define_varhook(name, get_hook, set_hook, data)
     char  *name;
     VALUE (*get_hook)();
     VALUE (*set_hook)();
+    void *data;
 {
     struct global_entry *entry;
     ID id;
@@ -154,6 +162,9 @@ rb_define_varhook(name, get_hook, set_hook)
     entry->v.val = Qnil;
     entry->get_hook = get_hook;
     entry->set_hook = set_hook;
+    if (data) {
+	entry->data = data;
+    }
 }
 
 VALUE
@@ -183,7 +194,7 @@ rb_gvar_get(entry)
     VALUE val;
 
     if (entry->get_hook)
-	val = (*entry->get_hook)(entry->id);
+	val = (*entry->get_hook)(entry->id, entry->data);
     switch (entry->mode) {
       case GLOBAL_VAL:
 	return entry->v.val;
@@ -258,7 +269,7 @@ rb_gvar_set(entry, val)
     VALUE val;
 {
     if (entry->set_hook)
-	(*entry->set_hook)(val, entry->id);
+	(*entry->set_hook)(val, entry->id, entry->data);
 
     if (entry->mode == GLOBAL_VAR) {
 	if (entry->v.var == Qnil) {

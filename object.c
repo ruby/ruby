@@ -3,7 +3,7 @@
   object.c -
 
   $Author: matz $
-  $Date: 1994/12/06 09:30:06 $
+  $Date: 1994/12/19 08:30:07 $
   created at: Thu Jul 15 12:01:24 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -412,7 +412,7 @@ Init_Object()
     rb_define_method(C_Kernel, "!", P_false, 0);
     rb_define_method(C_Kernel, "==", Fkrn_equal, 1);
     rb_define_alias(C_Kernel, "equal", "==");
-    rb_define_method(C_Kernel, "hash", rb_self, 0);
+    rb_define_method(C_Kernel, "hash", Fkrn_id, 0);
     rb_define_method(C_Kernel, "id", Fkrn_id, 0);
     rb_define_method(C_Kernel, "class", Fkrn_class, 0);
     rb_define_method(C_Kernel, "!=", Fkrn_noteq, 1);
@@ -444,7 +444,7 @@ Init_Object()
 
     C_Nil = rb_define_class("Nil", C_Kernel);
     rb_define_method(C_Nil, "to_s", Fnil_to_s, 0);
-    rb_define_method(C_Nil, "clone", rb_self, 0);
+    rb_define_method(C_Nil, "clone", P_false, 0);
     rb_define_method(C_Nil, "class", Fnil_class, 0);
 
     rb_define_method(C_Nil, "is_nil", P_true, 0);

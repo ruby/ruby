@@ -3,7 +3,7 @@
   process.c -
 
   $Author: matz $
-  $Date: 1994/12/06 09:30:11 $
+  $Date: 1994/12/19 08:30:10 $
   created at: Tue Aug 10 14:30:50 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -905,8 +905,8 @@ Init_process()
 {
     extern VALUE C_Kernel;
 
-    rb_define_variable("$$", Qnil, get_pid, Qnil);
-    rb_define_variable("$?", &status, Qnil, rb_readonly_hook);
+    rb_define_variable("$$", Qnil, get_pid, Qnil, 0);
+    rb_define_variable("$?", &status, Qnil, rb_readonly_hook, 0);
     rb_define_private_method(C_Kernel, "exec", Fexec, 1);
     rb_define_private_method(C_Kernel, "fork", Ffork, 0);
     rb_define_private_method(C_Kernel, "_exit", Ffork, 1);

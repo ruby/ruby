@@ -16,7 +16,7 @@ CFLAGS = -g
 LDFLAGS = @STATIC@ $(CFLAGS)
 LIBS = @LIBS@
 DEFS = @DEFS@
-MISSING = @LIBOBJS@
+MISSING = @LIBOBJS@ @ALLOCA@
 
 prefix = /usr/local
 binprefix = 
@@ -78,8 +78,7 @@ OBJS	      = array.o \
 		time.o \
 		variable.o \
 		version.o \
-		$(MISSING) \
-		@ALLOCA@
+		$(MISSING)
 
 PROGRAM	      = ruby
 
@@ -95,6 +94,8 @@ $(bindir)/$(PROGRAM): $(PROGRAM)
 install: $(bindir)/$(PROGRAM)
 
 clean:;		@rm -f $(OBJS)
+
+realclean:;	@rm -f $(OBJS)
 		@rm -f core ruby *~ config.status Makefile
 .c.o:
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $<

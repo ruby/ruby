@@ -3,20 +3,20 @@
   dir.c -
 
   $Author: matz $
-  $Date: 1994/12/06 09:29:55 $
+  $Date: 1994/12/09 09:40:18 $
   created at: Wed Jan  5 09:51:01 JST 1994
 
   Copyright (C) 1994 Yukihiro Matsumoto
 
 ************************************************/
 
+#include <sys/param.h>
 #include "ruby.h"
 
 #include <sys/types.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#include <sys/param.h>
 
 /* unistd.h defines _POSIX_VERSION on POSIX.1 systems.  */
 #if defined(DIRENT) || defined(_POSIX_VERSION)

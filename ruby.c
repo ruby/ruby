@@ -3,7 +3,7 @@
   ruby.c -
 
   $Author: matz $
-  $Date: 1994/12/06 09:30:15 $
+  $Date: 1994/12/19 08:30:13 $
   created at: Tue Aug 10 12:47:31 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -395,10 +395,10 @@ ruby_init0(argc, argv, envp)
 
     rb_call_inits();
 
-    rb_define_variable("$@", &errat, Qnil, Qnil);
+    rb_define_variable("$@", &errat, Qnil, Qnil, 0);
     errat = str_new2(argv[0]);
-    rb_define_variable("$VERBOSE", &verbose, Qnil, Qnil);
-    rb_define_variable("$DEBUG", &debug, Qnil, Qnil);
+    rb_define_variable("$VERBOSE", &verbose, Qnil, Qnil, 0);
+    rb_define_variable("$DEBUG", &debug, Qnil, Qnil, 0);
 
 #ifdef USE_DLN
     rb_dln_argv0 = argv[0];
@@ -416,11 +416,11 @@ ruby_init0(argc, argv, envp)
 	yywhole_loop(do_line, do_split);
     }
 
-    rb_define_variable("$0", &Progname, Qnil, set_arg0);
+    rb_define_variable("$0", &Progname, Qnil, set_arg0, 0);
     ruby_script(script);
 
-    rb_define_variable("$ARGV", &Argv, Qnil, Qnil);
-    rb_define_variable("$*", &Argv, Qnil, Qnil);
+    rb_define_variable("$ARGV", &Argv, Qnil, Qnil, 0);
+    rb_define_variable("$*", &Argv, Qnil, Qnil, 0);
     Argv = ary_new2(argc);
     for (i=0; i < argc; i++) {
 	ary_push(Argv, str_new2(argv[i]));

@@ -3,7 +3,7 @@
   re.c -
 
   $Author: matz $
-  $Date: 1994/12/06 09:30:14 $
+  $Date: 1994/12/19 08:30:12 $
   created at: Mon Aug  9 18:24:49 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -135,8 +135,8 @@ research(reg, str, start, ignorecase)
 {
     int result;
 
-    if (FL_TEST(reg, FL_USER0)) { /* case-flag set for the object */
-	ignorecase = FL_TEST(reg, FL_USER1); /* case-flag */
+    if (FL_TEST(reg, FL_USER1)) { /* case-flag set for the object */
+	ignorecase = FL_TEST(reg, FL_USER2); /* case-flag */
     }
     if (ignorecase)
 	reg->ptr->pat.translate = casetable;
@@ -233,24 +233,13 @@ re_match_last()
     return nth_match(i);
 }
 
-#ifdef __STDC__
-#define CONCAT(a,b) a##b
-#else
-#define CONCAT(a,b) a/**/b
-#endif
-
-#define GET_MATCH(n) CONCAT(get_macth,n)
-#define GET_MATCH_FUNC(n) GET_MATCH(n)(id) ID id; { return nth_match(n); }
-
-GET_MATCH_FUNC(1);
-GET_MATCH_FUNC(2);
-GET_MATCH_FUNC(3);
-GET_MATCH_FUNC(4);
-GET_MATCH_FUNC(5);
-GET_MATCH_FUNC(6);
-GET_MATCH_FUNC(7);
-GET_MATCH_FUNC(8);
-GET_MATCH_FUNC(9);
+static VALUE
+get_match_data(id, nth)
+    ID id;
+    int nth;
+{
+    return nth_match(nth);
+}
 
 static VALUE
 store_match_data(val)
@@ -374,12 +363,12 @@ Sreg_new(argc, argv)
     }
 
     if (argc == 2) {
-	FL_SET(reg, FL_USER0);
+	FL_SET(reg, FL_USER1);
 	if (argv[1]) {
-	    FL_SET(reg, FL_USER1);
+	    FL_SET(reg, FL_USER2);
 	}
 	else {
-	    FL_UNSET(reg, FL_USER1);
+	    FL_UNSET(reg, FL_USER2);
 	}
     }
 
@@ -507,26 +496,26 @@ Init_Regexp()
 	| RE_NO_BK_CURLY_BRACES
 	| RE_MBCTYPE_EUC;
 
-    rb_define_variable("$~", last_match_data, Qnil, store_match_data);
+    rb_define_variable("$~", last_match_data, Qnil, store_match_data, 0);
 
-    rb_define_variable("$&", Qnil, re_last_match, Qnil);
-    rb_define_variable("$`", Qnil, re_match_pre,  Qnil);
-    rb_define_variable("$'", Qnil, re_match_post, Qnil);
-    rb_define_variable("$+", Qnil, re_match_last, Qnil);
+    rb_define_variable("$&", Qnil, re_last_match, Qnil, 0);
+    rb_define_variable("$`", Qnil, re_match_pre,  Qnil, 0);
+    rb_define_variable("$'", Qnil, re_match_post, Qnil, 0);
+    rb_define_variable("$+", Qnil, re_match_last, Qnil, 0);
 
-    rb_define_variable("$1", Qnil, GET_MATCH(1), Qnil);
-    rb_define_variable("$2", Qnil, GET_MATCH(2), Qnil);
-    rb_define_variable("$3", Qnil, GET_MATCH(3), Qnil);
-    rb_define_variable("$4", Qnil, GET_MATCH(4), Qnil);
-    rb_define_variable("$5", Qnil, GET_MATCH(5), Qnil);
-    rb_define_variable("$6", Qnil, GET_MATCH(6), Qnil);
-    rb_define_variable("$7", Qnil, GET_MATCH(7), Qnil);
-    rb_define_variable("$8", Qnil, GET_MATCH(8), Qnil);
-    rb_define_variable("$9", Qnil, GET_MATCH(9), Qnil);
+    rb_define_variable("$1", Qnil, get_match_data, Qnil, 1);
+    rb_define_variable("$2", Qnil, get_match_data, Qnil, 2);
+    rb_define_variable("$3", Qnil, get_match_data, Qnil, 3);
+    rb_define_variable("$4", Qnil, get_match_data, Qnil, 4);
+    rb_define_variable("$5", Qnil, get_match_data, Qnil, 5);
+    rb_define_variable("$6", Qnil, get_match_data, Qnil, 6);
+    rb_define_variable("$7", Qnil, get_match_data, Qnil, 7);
+    rb_define_variable("$8", Qnil, get_match_data, Qnil, 8);
+    rb_define_variable("$9", Qnil, get_match_data, Qnil, 9);
 
-    rb_define_variable("$KANJI", Qnil, kanji_var_get, kanji_var_set);
+    rb_define_variable("$KANJI", Qnil, kanji_var_get, kanji_var_set, 0);
 
-    rb_define_variable("$=", &ignorecase, Qnil, Qnil);
+    rb_define_variable("$=", &ignorecase, Qnil, Qnil, 0);
 
     C_Regexp  = rb_define_class("Regexp", C_Object);
     rb_define_single_method(C_Regexp, "new", Sreg_new, -1);
