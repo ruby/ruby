@@ -769,10 +769,10 @@ dir_s_rmdir(obj, dir)
 /* Return nonzero if S has any special globbing chars in it.  */
 static int
 has_magic(s, send, flags)
-     char *s, *send;
-     int flags;
+    const char *s, *send;
+    int flags;
 {
-    register char *p = s;
+    register const char *p = s;
     register char c;
     int open = 0;
     int escape = !(flags & FNM_NOESCAPE);
@@ -803,7 +803,7 @@ has_magic(s, send, flags)
 
 static char*
 extract_path(p, pend)
-    char *p, *pend;
+    const char *p, *pend;
 {
     char *alloc;
     int len;
@@ -827,9 +827,9 @@ extract_path(p, pend)
 
 static char*
 extract_elem(path)
-    char *path;
+    const char *path;
 {
-    char *pend;
+    const char *pend;
 
     pend = strchr(path, '/');
     if (!pend) pend = path + strlen(path);
@@ -1053,18 +1053,24 @@ glob_helper(path, sub, flags, func, arg)
 
 static void
 rb_glob2(path, flags, func, arg)
-    char *path;
+    const char *path;
     int flags;
     void (*func) _((const char*, VALUE));
     VALUE arg;
 {
-    int status = glob_helper(path, 0, flags, func, arg);
+    char *buf;
+    int status;
+
+    buf = ALLOC_N(char, strlen(path)+1);
+    strcpy(buf, path);
+    status = glob_helper(buf, 0, flags, func, arg);
+    free(buf);
     if (status) rb_jump_tag(status);
 }
 
 void
 rb_glob(path, func, arg)
-    char *path;
+    const char *path;
     void (*func) _((const char*, VALUE));
     VALUE arg;
 {
@@ -1073,7 +1079,7 @@ rb_glob(path, func, arg)
 
 void
 rb_globi(path, func, arg)
-    char *path;
+    const char *path;
     void (*func) _((const char*, VALUE));
     VALUE arg;
 {
@@ -1098,7 +1104,7 @@ push_pattern(path, ary)
 static void
 push_globs(ary, s, flags)
     VALUE ary;
-    char *s;
+    const char *s;
     int flags;
 {
     rb_glob2(s, flags, push_pattern, ary);
@@ -1107,12 +1113,12 @@ push_globs(ary, s, flags)
 static void
 push_braces(ary, s, flags)
     VALUE ary;
-    char *s;
+    const char *s;
     int flags;
 {
-    char *buf;
-    char *p, *t, *b;
-    char *lbrace, *rbrace;
+    char *buf, *b;
+    const char *p, *t;
+    const char *lbrace, *rbrace;
     int nest = 0;
 
     p = s;
@@ -1163,7 +1169,7 @@ rb_push_glob(str, flags)
     VALUE str;
     int flags;
 {
-    char *p, *pend;
+    const char *p, *pend;
     char *buf;
     char *t;
     int nest, maxnest;

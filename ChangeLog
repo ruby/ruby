@@ -1,3 +1,9 @@
+Mon Feb 16 13:39:44 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* dir.c (rb_glob, rb_globi): add const.
+
+	* ruby.h: ditto.
+
 Mon Feb 16 02:16:33 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* bcc32/Makefile.sub: should warn suspicious pointer conversion.
