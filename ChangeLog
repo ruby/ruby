@@ -1,3 +1,7 @@
+Thu May 30 09:16:36 2002  Wakou Aoyama  <wakou@ruby-lang.org>
+
+	* lib/cgi.rb: if StringIO is usable then use it.
+
 Wed May 29 18:55:47 2002  KONISHI Hiromasa <H_Konishi@ruby-lang.org>
 
 	* function renames my* and win32_* to rb_w32_* in win32/win32.c

@@ -70,8 +70,7 @@ cgi.params is a hash.
   values[0].original_filename  # <== original filename of values[0]
   values[0].content_type       # <== content_type of values[0]
 
-and values[0] has Tempfile class methods.
-(Tempfile class object has File class methods)
+and values[0] has StringIO or Tempfile class methods.
 
 
 === GET COOKIE VALUES
@@ -792,11 +791,20 @@ convert string charset, and set language to "ja".
         raise EOFError, "bad content body"
       end
 
-      require "tempfile"
-
       until -1 == content_length
         head = nil
-        body = Tempfile.new("CGI")
+        if 10240 < content_length
+          require "tempfile"
+          body = Tempfile.new("CGI")
+        else
+          begin
+            require "stringio" if not defined? StringIO
+            body = StringIO.new
+          rescue LoadError
+            require "tempfile"
+            body = Tempfile.new("CGI")
+          end
+        end
         body.binmode
 
         until head and /#{boundary}(?:#{EOL}|--)/n.match(buf)
