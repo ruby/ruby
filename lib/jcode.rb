@@ -9,7 +9,7 @@ class String
   printf STDERR, "feel free for some warnings:\n" if $VERBOSE
 
   def _regex_quote(str)
-    str.gsub(/(\\[][\-\\])|\\(.)|([][\\])/) do
+    str.gsub(/(\\[\]\[\-\\])|\\(.)|([\]\[\\])/) do
       $1 || $2 || '\\' + $3
     end
   end

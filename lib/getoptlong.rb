@@ -180,7 +180,7 @@ class GetoptLong
 	#
 	next if i == argument_flag
 	begin
-	  if !i.is_a?(String) || i !~ /^-([^-]|-.+)$/
+	  if !i.is_a?(String) || i !~ /^-([^\-]|-.+)$/
 	    raise ArgumentError, "an invalid option `#{i}'"
 	  end
 	  if (@canonical_names.include?(i))

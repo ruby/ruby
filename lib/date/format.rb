@@ -80,7 +80,7 @@ class Date
       when '%F'
 	return unless __strptime(str, '%Y-%m-%d', elem)
       when '%G'
-	return unless str.sub!(/\A([-+]?\d+)/o, '')
+	return unless str.sub!(/\A([\-+]?\d+)/o, '')
 	val = $1.to_i
 	elem[:cwyear] = val
       when '%g'
@@ -163,7 +163,7 @@ class Date
       when '%x'
 	return unless __strptime(str, '%m/%d/%y', elem)
       when '%Y'
-	return unless str.sub!(/\A([-+]?\d+)/o, '')
+	return unless str.sub!(/\A([\-+]?\d+)/o, '')
 	val = $1.to_i
 	elem[:year] = val
       when '%y'
@@ -173,7 +173,7 @@ class Date
 	elem[:year] = val
 	elem[:cent] ||= if val >= 69 then 19 else 20 end
       when '%Z', '%z'
-	return unless str.sub!(/\A([a-z0-9:+-]+(?:\s+dst\b)?)/io, '')
+	return unless str.sub!(/\A([a-z0-9:+\-]+(?:\s+dst\b)?)/io, '')
 	val = $1
 	elem[:zone] = val
 	offset = zone_to_diff(val)
@@ -227,7 +227,7 @@ class Date
   def self._parse(str, comp=false)
     str = str.dup
 
-    str.gsub!(/[^-+.\/:0-9a-z]+/ino, ' ')
+    str.gsub!(/[^\-+.\/:0-9a-z]+/ino, ' ')
 
     # day
     if str.sub!(/(#{PARSE_DAYPAT})\S*/ino, ' ')
@@ -246,7 +246,7 @@ class Date
 		   (
 		     [a-z]+(?:\s+dst)?\b
 		   |
-		     [-+]\d+(?::?\d+)
+		     [\-+]\d+(?::?\d+)
 		   )
 		 )?
 		/inox,
@@ -308,7 +308,7 @@ class Date
       end
 
     # iso
-    elsif str.sub!(/([-+]?\d+)-(\d+)-(-?\d+)/no, ' ')
+    elsif str.sub!(/([\-+]?\d+)-(\d+)-(-?\d+)/no, ' ')
       year = $1.to_i
       mon = $2.to_i
       mday = $3.to_i
@@ -363,7 +363,7 @@ class Date
 
     # ddd
     elsif str.sub!(
-		   /([-+]?)(\d{4,14})
+		   /([\-+]?)(\d{4,14})
 		    (?:
 		      \s*
 		      T?
@@ -375,7 +375,7 @@ class Date
 		      (
 			Z
 		      |
-			[-+]\d{2,4}
+			[\-+]\d{2,4}
 		      )
 		      \b
 		    )?
@@ -444,7 +444,7 @@ class Date
     if ZONES.include?(abb)
       offset  = ZONES[abb]
       offset += 3600 if dst
-    elsif /\A([+-])(\d{2}):?(\d{2})?\Z/no =~ str
+    elsif /\A([+\-])(\d{2}):?(\d{2})?\Z/no =~ str
       offset = $2.to_i * 3600 + $3.to_i * 60
       offset *= -1 if $1 == '-'
     end

@@ -577,13 +577,13 @@ module Benchmark
 
     def format(arg0 = nil, *args)
       fmtstr = (arg0 || FMTSTR).dup
-      fmtstr.gsub!(/(%[-+\.\d]*)n/){"#{$1}s" % label}
-      fmtstr.gsub!(/(%[-+\.\d]*)u/){"#{$1}f" % utime}
-      fmtstr.gsub!(/(%[-+\.\d]*)y/){"#{$1}f" % stime}
-      fmtstr.gsub!(/(%[-+\.\d]*)U/){"#{$1}f" % cutime}
-      fmtstr.gsub!(/(%[-+\.\d]*)Y/){"#{$1}f" % cstime}
-      fmtstr.gsub!(/(%[-+\.\d]*)t/){"#{$1}f" % total}
-      fmtstr.gsub!(/(%[-+\.\d]*)r/){"(#{$1}f)" % real}
+      fmtstr.gsub!(/(%[\-+\.\d]*)n/){"#{$1}s" % label}
+      fmtstr.gsub!(/(%[\-+\.\d]*)u/){"#{$1}f" % utime}
+      fmtstr.gsub!(/(%[\-+\.\d]*)y/){"#{$1}f" % stime}
+      fmtstr.gsub!(/(%[\-+\.\d]*)U/){"#{$1}f" % cutime}
+      fmtstr.gsub!(/(%[\-+\.\d]*)Y/){"#{$1}f" % cstime}
+      fmtstr.gsub!(/(%[\-+\.\d]*)t/){"#{$1}f" % total}
+      fmtstr.gsub!(/(%[\-+\.\d]*)r/){"(#{$1}f)" % real}
       arg0 ? Kernel::format(fmtstr, *args) : fmtstr
     end
 

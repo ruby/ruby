@@ -1,3 +1,13 @@
+Fri Mar 21 23:40:41 2003  Tanaka Akira  <akr@m17n.org>
+
+        * regex.c (re_compile_pattern): fix previous change.
+
+        * instruby.rb, ext/extmk.rb, ext/tk/lib/tk.rb, lib/benchmark.rb,
+          lib/cgi.rb, lib/debug.rb, lib/getoptlong.rb, lib/jcode.rb,
+          lib/optparse.rb, lib/time.rb, lib/date/format.rb,
+          lib/irb/ruby-lex.rb: escape `[', `]', `-' in chracter class in
+          regexp to avoid warning.
+
 Fri Mar 21 23:23:45 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* regex.c (re_compile_pattern): give warning for unescaped square

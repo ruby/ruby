@@ -425,7 +425,7 @@ class Context
 	    b = previous_line ? previous_line - 10 : binding_line - 5
 	    e = b + 9
 	  else
-	    b, e = $1.split(/[-,]/)
+	    b, e = $1.split(/[\-,]/)
 	    if e
 	      b = b.to_i
 	      e = e.to_i

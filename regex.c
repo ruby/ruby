@@ -185,7 +185,7 @@ static int current_mbctype = MBCTYPE_ASCII;
 
 #ifdef RUBY
 #include "util.h"
-# re_warning(x) rb_warn(x)
+# define re_warning(x) rb_warn(x)
 #endif
 
 #ifndef re_warning
@@ -1489,6 +1489,8 @@ re_compile_pattern(pattern, size, bufp)
 
 	if (c == '-')
           re_warning("character class has `-' without escape");
+        if (c == '[' && *p != ':')
+          re_warning("character class has `[' without escape");
 
 	/* \ escapes characters when inside [...].  */
 	if (c == '\\') {
@@ -1695,8 +1697,6 @@ re_compile_pattern(pattern, size, bufp)
 	  }
 	}
 	else if (had_mbchar == 0 && (!current_mbctype || !had_num_literal)) {
-          if (c == '[')
-            re_warning("character class has `[' without escape");
 	  SET_LIST_BIT(c);
  	  had_num_literal = 0;
 	}

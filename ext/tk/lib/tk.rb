@@ -605,7 +605,7 @@ module TkCore
   end
 
   def rb_appsend(interp, async, *args)
-    args = args.collect!{|c| _get_eval_string(c).gsub(/[][$"]/, '\\\\\&')}
+    args = args.collect!{|c| _get_eval_string(c).gsub(/[\]\[$"]/, '\\\\\&')}
     args.push(').to_s"')
     appsend(interp, async, 'ruby "(', *args)
   end
@@ -620,7 +620,7 @@ module TkCore
   end
 
   def rb_appsend_displayof(interp, win, async, *args)
-    args = args.collect!{|c| _get_eval_string(c).gsub(/[][$"]/, '\\\\\&')}
+    args = args.collect!{|c| _get_eval_string(c).gsub(/[\]\[$"]/, '\\\\\&')}
     args.push(').to_s"')
     appsend_displayof(interp, win, async, 'ruby "(', *args)
   end
@@ -1179,14 +1179,14 @@ class TkVariable
     elsif val.kind_of?(Array)
       a = []
       val.each_with_index{|e,i| a.push(i); a.push(array2tk_list(e))}
-      s = '"' + a.join(" ").gsub(/[][$"]/, '\\\\\&') + '"'
+      s = '"' + a.join(" ").gsub(/[\]\[$"]/, '\\\\\&') + '"'
       INTERP._eval(format('global %s; array set %s %s', @id, @id, s))
     elsif  val.kind_of?(Hash)
       s = '"' + val.to_a.collect{|e| array2tk_list(e)}.join(" ")\
-                   .gsub(/[][$"]/, '\\\\\&') + '"'
+                   .gsub(/[\]\[$"]/, '\\\\\&') + '"'
       INTERP._eval(format('global %s; array set %s %s', @id, @id, s))
     else
-      s = '"' + _get_eval_string(val).gsub(/[][$"]/, '\\\\\&') + '"'
+      s = '"' + _get_eval_string(val).gsub(/[\]\[$"]/, '\\\\\&') + '"'
       INTERP._eval(format('global %s; set %s %s', @id, @id, s))
     end
   end
@@ -1214,7 +1214,7 @@ class TkVariable
 
   def value=(val)
     begin
-      s = '"' + _get_eval_string(val).gsub(/[][$"]/, '\\\\\&') + '"'
+      s = '"' + _get_eval_string(val).gsub(/[\]\[$"]/, '\\\\\&') + '"'
       INTERP._eval(format('global %s; set %s %s', @id, @id, s))
     rescue
       if INTERP._eval(format('global %s; array exists %s', @id, @id)) != "1"
@@ -1226,12 +1226,12 @@ class TkVariable
 	elsif val.kind_of?(Array)
 	  a = []
 	  val.each_with_index{|e,i| a.push(i); a.push(array2tk_list(e))}
-	  s = '"' + a.join(" ").gsub(/[][$"]/, '\\\\\&') + '"'
+	  s = '"' + a.join(" ").gsub(/[\]\[$"]/, '\\\\\&') + '"'
 	  INTERP._eval(format('global %s; unset %s; array set %s %s', 
 			      @id, @id, @id, s))
 	elsif  val.kind_of?(Hash)
 	  s = '"' + val.to_a.collect{|e| array2tk_list(e)}.join(" ")\
-	                        .gsub(/[][$"]/, '\\\\\&') + '"'
+	                        .gsub(/[\]\[$"]/, '\\\\\&') + '"'
 	  INTERP._eval(format('global %s; unset %s; array set %s %s', 
 			      @id, @id, @id, s))
 	else
@@ -1438,7 +1438,7 @@ class TkVarAccess<TkVariable
   def initialize(varname, val=nil)
     @id = varname
     if val
-      s = '"' + _get_eval_string(val).gsub(/[][$"]/, '\\\\\&') + '"' #"
+      s = '"' + _get_eval_string(val).gsub(/[\]\[$"]/, '\\\\\&') + '"' #"
       INTERP._eval(format('global %s; set %s %s', @id, @id, s))
     end
   end

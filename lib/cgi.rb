@@ -236,7 +236,7 @@ class CGI
   url_encoded_string = CGI::escape("string")
 =end
   def CGI::escape(string)
-    string.gsub(/([^ a-zA-Z0-9_.-]+)/n) do
+    string.gsub(/([^ a-zA-Z0-9_.\-]+)/n) do
       '%' + $1.unpack('H2' * $1.size).join('%').upcase
     end.tr(' ', '+')
   end

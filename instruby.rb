@@ -25,7 +25,7 @@ def parse_args()
 
   $mflags = Shellwords.shellwords(mflags)
   if arg = $mflags.first
-    arg.insert(0, '-') if /\A[^-][^=]*\Z/ =~ arg
+    arg.insert(0, '-') if /\A[^\-][^=]*\Z/ =~ arg
   end
 
   $make, *rest = Shellwords.shellwords($make)
