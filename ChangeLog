@@ -1,3 +1,11 @@
+Fri May  2 17:21:02 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* class.c (method_list): classify methods based on nearest
+	  visibility. [ruby-dev:20127]
+
+	* class.c (rb_class_instance_methods): recurse by default.  other
+	  method listing methods as well.
+
 Fri May  2 09:38:06 2003  Warren Brown  <wkb@airmail.net>
 
 	* string.c (rb_str_ljust): now takes optional argument to specify

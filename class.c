@@ -453,132 +453,104 @@ rb_mod_ancestors(mod)
     return ary;
 }
 
-#define VISI_CHECK(x,f) (((x)&NOEX_MASK) == (f))
+#define VISI(x) ((x)&NOEX_MASK)
+#define VISI_CHECK(x,f) (VISI(x) == (f))
 
 static int
-ins_methods_i(key, body, ary)
-    ID key;
-    NODE *body;
+ins_methods_push(name, type, ary, visi)
+    ID name;
+    long type;
     VALUE ary;
+    long visi;
 {
-    if (key == ID_ALLOCATOR) return ST_CONTINUE;
-    if (!body->nd_body) {
-	rb_ary_push(ary, Qnil);
-	rb_ary_push(ary, rb_str_new2(rb_id2name(key)));
+    if (type == -1) return ST_CONTINUE;
+    switch (visi) {
+      case NOEX_PRIVATE:
+      case NOEX_PROTECTED:
+      case NOEX_PUBLIC:
+	visi = (type == visi);
+	break;
+      default:
+	visi = (type != NOEX_PRIVATE);
+	break;
     }
-    else if (!VISI_CHECK(body->nd_noex, NOEX_PRIVATE)) {
-	VALUE name = rb_str_new2(rb_id2name(key));
-
-	if (!rb_ary_includes(ary, name)) {
-	    rb_ary_push(ary, name);
-	}
-    }
-    else if (nd_type(body->nd_body) == NODE_ZSUPER) {
-	rb_ary_push(ary, Qnil);
-	rb_ary_push(ary, rb_str_new2(rb_id2name(key)));
+    if (visi) {
+	rb_ary_push(ary, rb_str_new2(rb_id2name(name)));
     }
     return ST_CONTINUE;
 }
 
 static int
-ins_methods_prot_i(key, body, ary)
-    ID key;
-    NODE *body;
+ins_methods_i(name, type, ary)
+    ID name;
+    long type;
     VALUE ary;
 {
-    if (key == ID_ALLOCATOR) return ST_CONTINUE;
-    if (!body->nd_body) {
-	rb_ary_push(ary, Qnil);
-	rb_ary_push(ary, rb_str_new2(rb_id2name(key)));
-    }
-    else if (VISI_CHECK(body->nd_noex, NOEX_PROTECTED)) {
-	VALUE name = rb_str_new2(rb_id2name(key));
-
-	if (!rb_ary_includes(ary, name)) {
-	    rb_ary_push(ary, name);
-	}
-    }
-    else if (nd_type(body->nd_body) == NODE_ZSUPER) {
-	rb_ary_push(ary, Qnil);
-	rb_ary_push(ary, rb_str_new2(rb_id2name(key)));
-    }
-    return ST_CONTINUE;
+    return ins_methods_push(name, type, ary, -1); /* everything but private */
 }
 
 static int
-ins_methods_priv_i(key, body, ary)
-    ID key;
-    NODE *body;
+ins_methods_prot_i(name, type, ary)
+    ID name;
+    long type;
     VALUE ary;
 {
-    if (key == ID_ALLOCATOR) return ST_CONTINUE;
-    if (!body->nd_body) {
-	rb_ary_push(ary, Qnil);
-	rb_ary_push(ary, rb_str_new2(rb_id2name(key)));
-    }
-    else if (VISI_CHECK(body->nd_noex, NOEX_PRIVATE)) {
-	VALUE name = rb_str_new2(rb_id2name(key));
-
-	if (!rb_ary_includes(ary, name)) {
-	    rb_ary_push(ary, name);
-	}
-    }
-    else if (nd_type(body->nd_body) == NODE_ZSUPER) {
-	rb_ary_push(ary, Qnil);
-	rb_ary_push(ary, rb_str_new2(rb_id2name(key)));
-    }
-    return ST_CONTINUE;
+    return ins_methods_push(name, type, ary, NOEX_PROTECTED);
 }
 
 static int
-ins_methods_pub_i(key, body, ary)
-    ID key;
-    NODE *body;
+ins_methods_priv_i(name, type, ary)
+    ID name;
+    long type;
     VALUE ary;
 {
-    if (key == ID_ALLOCATOR) return ST_CONTINUE;
-    if (!body->nd_body) {
-	rb_ary_push(ary, Qnil);
-	rb_ary_push(ary, rb_str_new2(rb_id2name(key)));
-    }
-    else if (VISI_CHECK(body->nd_noex, NOEX_PUBLIC)) {
-	VALUE name = rb_str_new2(rb_id2name(key));
+    return ins_methods_push(name, type, ary, NOEX_PRIVATE);
+}
 
-	if (!rb_ary_includes(ary, name)) {
-	    rb_ary_push(ary, name);
-	}
-    }
-    else if (nd_type(body->nd_body) == NODE_ZSUPER) {
-	rb_ary_push(ary, Qnil);
-	rb_ary_push(ary, rb_str_new2(rb_id2name(key)));
+static int
+ins_methods_pub_i(name, type, ary)
+    ID name;
+    long type;
+    VALUE ary;
+{
+    return ins_methods_push(name, type, ary, NOEX_PUBLIC);
+}
+
+static int
+method_entry(key, body, list)
+    ID key;
+    NODE *body;
+    st_table *list;
+{
+    long type;
+
+    if (key == ID_ALLOCATOR) return ST_CONTINUE;
+    if (!st_lookup(list, key, 0)) {
+	if (!body->nd_body) type = -1; /* none */
+	else type = VISI(body->nd_noex);
+	st_add_direct(list, key, type);
     }
     return ST_CONTINUE;
 }
 
 static VALUE
-method_list(mod, option, func)
+method_list(mod, recur, func)
     VALUE mod;
-    int option;
+    int recur;
     int (*func)();
 {
-    VALUE ary;
-    VALUE klass;
-    VALUE *p, *q, *pend;
+    st_table *list;
+    VALUE klass, ary;
 
-    ary = rb_ary_new();
+    list = st_init_numtable();
     for (klass = mod; klass; klass = RCLASS(klass)->super) {
-	st_foreach(RCLASS(klass)->m_tbl, func, ary);
-	if (!option) break;
+	st_foreach(RCLASS(klass)->m_tbl, method_entry, (st_data_t)list);
+	if (!recur) break;
     }
-    p = q = RARRAY(ary)->ptr; pend = p + RARRAY(ary)->len;
-    while (p < pend) {
-	if (*p == Qnil) {
-	    p+=2;
-	    continue;
-	}
-	*q++ = *p++;
-    }
-    RARRAY(ary)->len = q - RARRAY(ary)->ptr;
+    ary = rb_ary_new();
+    st_foreach(list, func, ary);
+    st_free_table(list);
+
     return ary;
 }
 
@@ -588,10 +560,11 @@ rb_class_instance_methods(argc, argv, mod)
     VALUE *argv;
     VALUE mod;
 {
-    VALUE option;
+    VALUE recur;
 
-    rb_scan_args(argc, argv, "01", &option);
-    return method_list(mod, RTEST(option), ins_methods_i);
+    rb_scan_args(argc, argv, "01", &recur);
+    if (argc == 0) recur = Qtrue;
+    return method_list(mod, RTEST(recur), ins_methods_i);
 }
 
 VALUE
@@ -600,10 +573,11 @@ rb_class_protected_instance_methods(argc, argv, mod)
     VALUE *argv;
     VALUE mod;
 {
-    VALUE option;
+    VALUE recur;
 
-    rb_scan_args(argc, argv, "01", &option);
-    return method_list(mod, RTEST(option), ins_methods_prot_i);
+    rb_scan_args(argc, argv, "01", &recur);
+    if (argc == 0) recur = Qtrue;
+    return method_list(mod, RTEST(recur), ins_methods_prot_i);
 }
 
 VALUE
@@ -612,10 +586,11 @@ rb_class_private_instance_methods(argc, argv, mod)
     VALUE *argv;
     VALUE mod;
 {
-    VALUE option;
+    VALUE recur;
 
-    rb_scan_args(argc, argv, "01", &option);
-    return method_list(mod, RTEST(option), ins_methods_priv_i);
+    rb_scan_args(argc, argv, "01", &recur);
+    if (argc == 0) recur = Qtrue;
+    return method_list(mod, RTEST(recur), ins_methods_priv_i);
 }
 
 VALUE
@@ -624,10 +599,11 @@ rb_class_public_instance_methods(argc, argv, mod)
     VALUE *argv;
     VALUE mod;
 {
-    VALUE option;
+    VALUE recur;
 
-    rb_scan_args(argc, argv, "01", &option);
-    return method_list(mod, RTEST(option), ins_methods_pub_i);
+    rb_scan_args(argc, argv, "01", &recur);
+    if (argc == 0) recur = Qtrue;
+    return method_list(mod, RTEST(recur), ins_methods_pub_i);
 }
 
 VALUE
@@ -636,33 +612,26 @@ rb_obj_singleton_methods(argc, argv, obj)
     VALUE *argv;
     VALUE obj;
 {
-    VALUE all;
-    VALUE ary;
-    VALUE klass;
-    VALUE *p, *q, *pend;
+    VALUE all, ary, klass;
+    st_table *list;
 
     rb_scan_args(argc, argv, "01", &all);
-    ary = rb_ary_new();
+    if (argc == 0) all = Qtrue;
     klass = CLASS_OF(obj);
+    list = st_init_numtable();
     while (klass && FL_TEST(klass, FL_SINGLETON)) {
-	st_foreach(RCLASS(klass)->m_tbl, ins_methods_i, ary);
+	st_foreach(RCLASS(klass)->m_tbl, method_entry, (st_data_t)list);
 	klass = RCLASS(klass)->super;
     }
     if (RTEST(all)) {
 	while (klass && TYPE(klass) == T_ICLASS) {
-	    st_foreach(RCLASS(klass)->m_tbl, ins_methods_i, ary);
+	    st_foreach(RCLASS(klass)->m_tbl, method_entry, (st_data_t)list);
 	    klass = RCLASS(klass)->super;
 	}
     }
-    p = q = RARRAY(ary)->ptr; pend = p + RARRAY(ary)->len;
-    while (p < pend) {
-	if (*p == Qnil) {
-	    p+=2;
-	    continue;
-	}
-	*q++ = *p++;
-    }
-    RARRAY(ary)->len = q - RARRAY(ary)->ptr;
+    ary = rb_ary_new();
+    st_foreach(list, ins_methods_i, ary);
+    st_free_table(list);
 
     return ary;
 }
