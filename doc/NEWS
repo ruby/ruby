@@ -1,3 +1,8 @@
+: Proc#yield
+
+  Added.  This is equivalent to Proc#call except it does not check the
+  number of given arguments, which are thus passed to the proc as-is.
+
 : File#fnmatch, File::Constants::FNM_*
 
   Added.  Refer to the fnmatch(3) manpage for details.
