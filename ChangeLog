@@ -1,10 +1,12 @@
-Mon Nov 17 09:23:38 2003  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+Mon Nov 17 09:41:38 2003  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* lib/test/unit/ui/tk/testrunner.rb,
 	  lib/test/unit/ui/gtk/testrunner.rb:
 	  run GUI main loop in sub thread.
 
 	* lib/test/unit/ui/gtk2/testrunner.rb: imported from rough.
+
+	* lib/test/unit/autorunner.rb (keyword_display): sort keywords.
 
 Sun Nov 16 18:10:57 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

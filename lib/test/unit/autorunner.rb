@@ -174,7 +174,7 @@ module Test
       end
 
       def keyword_display(array)
-        array.collect{|e| e.to_s.sub(/^(.)(.+)$/, '\\1[\\2]')}.join(", ")
+        array.collect{|e| e.to_s.sub(/^(.)([A-Za-z]+)(?=\w*$)/, '\\1[\\2]')}.sort.join(", ")
       end
 
       def run
