@@ -1,3 +1,9 @@
+Mon Feb 18 20:48:40 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* pack.c (pack_pack): avoid infinite loop at comment.
+
+	* pack.c (pack_unpack): ditto.
+
 Mon Feb 18 14:06:28 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* misc/ruby-mode.el (ruby-block-hanging-re): rescue block was too
@@ -63,7 +69,6 @@ Thu Feb 16 02:11:08 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 	* misc/ruby-mode.el (ruby-font-lock-keywords): fontify
 	  instance/class/global variables start with '_'.
 
->>>>>>> 1.742
 Fri Feb 15 14:40:38 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_eval): replace rb_cvar_declare() by rb_cvar_set().

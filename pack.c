@@ -364,8 +364,7 @@ pack_pack(ary, fmt)
 
 	if (ISSPACE(type)) continue;
 	if (type == '#') {
-	    while (p < pend) {
-		if (*p == '\n') continue;
+	    while ((p < pend) && (*p != '\n')) {
 		p++;
 	    }
 	    break;
@@ -1084,8 +1083,7 @@ pack_unpack(str, fmt)
 
 	if (ISSPACE(type)) continue;
 	if (type == '#') {
-	    while (p < pend) {
-		if (*p == '\n') continue;
+	    while ((p < pend) && (*p != '\n')) {
 		p++;
 	    }
 	    break;
