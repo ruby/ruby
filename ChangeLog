@@ -1,3 +1,8 @@
+Mon Sep 13 10:48:37 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_getpid): don't need to use _getpid() on
+	  mswin32 and mingw32.
+
 Mon Sep 13 10:22:05 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* object.c (nil_inspect): fix typo.
