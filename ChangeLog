@@ -1,3 +1,7 @@
+Thu Oct 14 14:34:01 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* io.c (MODE_BINMODE, MODE_BINARY): fixed reversed condition.
+
 Thu Oct 14 13:33:59 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/rss.rb: added link to Tutorial.
