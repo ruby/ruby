@@ -825,7 +825,7 @@ Fri Jun 11 17:08:21 2004  Akinori MUSHA  <knu@iDaemons.org>
 Fri Jun 11 14:30:08 2004  Akinori MUSHA  <knu@iDaemons.org>
 
 	* config.guess: Attempt to avoid system name change on
-	  Darwin platfowms also.
+	  Darwin platforms also.
 
 Fri Jun 11 14:22:45 2004  Akinori MUSHA  <knu@iDaemons.org>
 
@@ -1438,6 +1438,12 @@ Wed Apr 14 13:06:35 2004  Doug Kearns  <djkea2@mugca.its.monash.edu.au>
 	* array.c, enum.c, eval.c, file.c, io.c, numeric.c, object.c, prec.c,
 	  process.c, re.c, string.c: typos in RDoc comments.  [ruby-core:02783]
 
+Wed Apr 14 11:06:38 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::scan): Changed
+	  behavior of :enddoc: -- it now unconditionally terminates
+	  processing of the current file.
+
 Wed Apr 14 11:03:22 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* defines.h: include <net/socket.h> to get fd_set definition in BeOS.
@@ -1460,12 +1466,6 @@ Tue Apr 13 01:30:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
 	* ext/iconv/charset_alias.rb: Prevent from RDoc'ing.
 
 Mon Apr 12 19:11:29 2004  Eric Hodel  <drbrain@segment7.net>
-
-Wed Apr 14 11:06:38 2004  Dave Thomas  <dave@pragprog.com>
-
-	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::scan): Changed
-	  behavior of :enddoc: -- it now unconditionally terminates
-	  processing of the current file.
 
 	* gc.c (rb_gc_copy_finalizer): typo.  [ruby-core:02774]
 
