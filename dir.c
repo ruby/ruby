@@ -1467,12 +1467,12 @@ rb_push_glob(str, flags) /* '\0' is delimiter */
     pend = p + RSTRING(str)->len;
 
     while (p < pend) {
-	int status;
-	while (p < pend && *p == '\0') p++;
-	if (p == pend) break;
-	status = push_glob(ary, p, flags);
-	if (status) rb_jump_tag(status);
-	while (p < pend && *p != '\0') p++;
+	if (*p) {
+	    int status = push_glob(ary, p, flags);
+	    if (status) rb_jump_tag(status);
+	    p += strlen(p);
+	}
+	else p++;
     }
 
     return ary;

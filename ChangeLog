@@ -1,3 +1,7 @@
+Thu May  6 14:38:02  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* dir.c (rb_push_glob): simplified code (not change behavior)
+
 Thu May  6 13:32:44 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb: get rid of side effect of Config.expand, patched by
