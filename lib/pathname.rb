@@ -111,6 +111,8 @@ class Pathname
   # it may return relative pathname.
   # Otherwise it returns absolute pathname.
   def realpath(force_absolute=true)
+    File.stat(@path)
+
     top = %r{\A/} =~ @path ? '/' : ''
     unresolved = @path.scan(%r{[^/]+})
     resolved = []
@@ -123,7 +125,7 @@ class Pathname
         resolved.unshift unresolved.pop
       else
         path = top + unresolved.join('/')
-        if File.lstat(path).symlink?
+        if FileTest.symlink? path
           link = File.readlink(path)
           if %r{\A/} =~ link
             top = '/'
