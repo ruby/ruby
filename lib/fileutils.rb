@@ -1,5 +1,5 @@
 # 
-# == fileutils.rb
+# = fileutils.rb
 # 
 # Copyright (c) 2000-2002 Minero Aoki <aamine@loveruby.net>
 # 
@@ -46,16 +46,15 @@
 # either one file or a list of files in that argument.  See the method
 # documentation for examples.
 #
-# TODO: confirm correctness of all examples in doco.  Some seem very wrong!
-# 
 # == module FileUtils::Verbose
 # 
-# This class has all methods of FileUtils module, but it outputs messages before
-# acting.  This equates to passing the +:verbose+ flag to methods in FileUtils.
+# This module has all methods of FileUtils module, but it outputs messages
+# before acting.  This equates to passing the +:verbose+ flag to methods in
+# FileUtils.
 # 
 # == module FileUtils::NoWrite
 # 
-# This class has all methods of FileUtils module, but never changes
+# This module has all methods of FileUtils module, but never changes
 # files/directories.  This equates to passing the +:noop+ flag to methods in
 # FileUtils.
 # 
@@ -94,7 +93,7 @@ module FileUtils
   # Returns true if +newer+ is newer than all +old_list+.
   # Non-existent files are older than any file.
   # 
-  #   FileUtils.newest? 'hello.o', 'hello.c', 'hello.h' or system 'make' FIXME
+  #   FileUtils.uptodate? 'hello.o', 'hello.c', 'hello.h' or system 'make'
   # 
   def uptodate?( new, old_list, *options )
     verbose, = fu_parseargs(options, :verbose)
@@ -137,13 +136,13 @@ module FileUtils
   # Creates a directory and all its parent directories.
   # For example,
   # 
-  #   FileUtils.mkdir_p '/usr/local/bin/ruby'
+  #   FileUtils.mkdir_p '/usr/local/lib/ruby'
   # 
-  # causes to make following directories (if it does not exist).
+  # causes to make following directories, if it does not exist.
   #     * /usr
   #     * /usr/local
-  #     * /usr/local/bin
-  #     * /usr/local/bin/ruby
+  #     * /usr/local/lib
+  #     * /usr/local/lib/ruby
   #
   # You can pass several directories at a time in a list.
   # 
@@ -283,11 +282,9 @@ module FileUtils
   #
   # If +src+ is a list of files, then +dest+ must be a directory.
   #
-  #   FIXME: There's no way examples 2 and 3 will work!!!
-  # 
   #   FileUtils.cp 'eval.c', 'eval.c.org'
-  #   FileUtils.cp 'cgi.rb', 'complex.rb', 'date.rb', '/usr/lib/ruby/1.6'
-  #   FileUtils.cp :verbose, %w(cgi.rb complex.rb date.rb), '/usr/lib/ruby/1.6'
+  #   FileUtils.cp %w(cgi.rb complex.rb date.rb), '/usr/lib/ruby/1.6'
+  #   FileUtils.cp %w(cgi.rb complex.rb date.rb), '/usr/lib/ruby/1.6', :verbose
   # 
   def cp( src, dest, *options )
     preserve, noop, verbose, = fu_parseargs(options, :preserve, :noop, :verbose)
@@ -399,8 +396,8 @@ module FileUtils
   #   FileUtils.mv 'badname.rb', 'goodname.rb'
   #   FileUtils.mv 'stuff.rb', 'lib/ruby', :force
   # 
-  #   FileUtils.mv 'junk.txt', 'dust.txt', '/home/aamine/.trash/' # FIXME
-  #   FileUtils.mv Dir.glob('test*.rb'), 'T', :noop, :verbose
+  #   FileUtils.mv %w(junk.txt dust.txt), '/home/aamine/.trash/'
+  #   FileUtils.mv Dir.glob('test*.rb'), 'test', :noop, :verbose
   # 
   def mv( src, dest, *options )
     noop, verbose, = fu_parseargs(options, :noop, :verbose)
@@ -435,12 +432,10 @@ module FileUtils
 
   alias move mv
 
-  #
-  # For internal use.
-  #
   def cannot_overwrite_file? #:nodoc:
     /djgpp|cygwin|mswin32/ === RUBY_PLATFORM
   end
+  private :cannot_overwrite_file?
 
 
   #
@@ -450,7 +445,7 @@ module FileUtils
   # All errors are ignored when the :force option is set.
   # 
   #   FileUtils.rm %w( junk.txt dust.txt )
-  #   FileUtils.rm Dir['*.so']
+  #   FileUtils.rm Dir.glob('*.so')
   #   FileUtils.rm 'NotExistFile', :force    # never raises exception
   # 
   def rm( list, *options )
@@ -519,10 +514,7 @@ module FileUtils
     rm_r list, :force, *options
   end
 
-  #
-  # For internal use.
-  #
-  def remove_file( fname, force = false ) # :nodoc:
+  def remove_file( fname, force = false ) #:nodoc:
     first_time_p = true
     begin
       File.unlink fname
@@ -539,10 +531,7 @@ module FileUtils
     end
   end
 
-  #
-  # For internal use.
-  #
-  def remove_dir( dir, force = false ) # :nodoc:
+  def remove_dir( dir, force = false ) #:nodoc:
     Dir.foreach(dir) do |file|
       next if /\A\.\.?\z/ === file
       path = "#{dir}/#{file}"
@@ -568,8 +557,6 @@ module FileUtils
   #   FileUtils.cmp 'somefile', 'somefile'  #=> true
   #   FileUtils.cmp '/bin/cp', '/bin/mv'    #=> maybe false
   #
-  # FIXME: This method is not implemented properly!!!
-  # 
   def cmp( filea, fileb, *options )
     verbose, = fu_parseargs(options, :verbose)
     fu_output_message "cmp #{filea} #{fileb}" if verbose
@@ -605,10 +592,10 @@ module FileUtils
   # Options: noop verbose
   # 
   # If +src+ is not same as +dest+, copies it and changes the permission
-  # mode to +mode+.
+  # mode to +mode+.  If +dest+ is a directory, destination is +dest+/+src+.
   # 
   #   FileUtils.install 'ruby', '/usr/local/bin/ruby', 0755, :verbose
-  #   FileUtils.install 'lib.rb', '/usr/local/lib/ruby/site_ruby', :verbose #   FIXME
+  #   FileUtils.install 'lib.rb', '/usr/local/lib/ruby/site_ruby', :verbose
   # 
   def install( src, dest, mode, *options )
     noop, verbose, = fu_parseargs(options, :noop, :verbose)
@@ -631,8 +618,8 @@ module FileUtils
   # Changes permission bits on the named files (in +list+) to the bit pattern
   # represented by +mode+.
   # 
-  #   FileUtils.chmod 0644, 'my.rb', 'your.rb' FIXME
   #   FileUtils.chmod 0755, 'somecommand'
+  #   FileUtils.chmod 0644, %w(my.rb your.rb)
   #   FileUtils.chmod 0755, '/usr/bin/ruby', :verbose
   # 
   def chmod( mode, list, *options )
@@ -719,11 +706,11 @@ module FileUtils
 
 
   @fileutils_output = $stderr
-  @fileutils_label  = 'fileutils.'
+  @fileutils_label  = ''
 
   def fu_output_message( msg )
     @fileutils_output ||= $stderr
-    @fileutils_label  ||= 'fileutils.'
+    @fileutils_label  ||= ''
     @fileutils_output.puts @fileutils_label + msg
   end
 
@@ -732,6 +719,7 @@ module FileUtils
 
 
   OPT_TABLE = {
+    'pwd'          => %w( verbose ),
     'cd'           => %w( noop verbose ),
     'chdir'        => %w( noop verbose ),
     'chmod'        => %w( noop verbose ),
@@ -765,27 +753,29 @@ module FileUtils
 
 
   # 
-  # This class has all methods of FileUtils module, but it outputs messages before
-  # acting.  This equates to passing the +:verbose+ flag to methods in FileUtils.
+  # This module has all methods of FileUtils module, but it outputs messages
+  # before acting.  This equates to passing the +:verbose+ flag to methods in
+  # FileUtils.
   # 
   module Verbose
 
     include FileUtils
 
     @fileutils_output  = $stderr
-    @fileutils_label   = 'fileutils.'
+    @fileutils_label   = ''
     @fileutils_verbose = true
 
-    body = proc do |*args|
-      unless defined? @fileutils_verbose
-        @fileutils_verbose = true
-      end
-      args.push :verbose if @fileutils_verbose
-      super(*args)
-    end
     FileUtils::OPT_TABLE.each do |name, opts|
       next unless opts.include? 'verbose'
-      define_method(name, body)
+      module_eval(<<-EOS, __FILE__, __LINE__ + 1)
+        def #{name}( *args )
+          unless defined? @fileutils_verbose
+            @fileutils_verbose = true
+          end
+          args.push :verbose if @fileutils_verbose
+          super(*args)
+        end
+      EOS
     end
 
     extend self
@@ -794,7 +784,7 @@ module FileUtils
 
 
   # 
-  # This class has all methods of FileUtils module, but never changes
+  # This module has all methods of FileUtils module, but never changes
   # files/directories.  This equates to passing the +:noop+ flag to methods in
   # FileUtils.
   # 
@@ -803,19 +793,20 @@ module FileUtils
     include FileUtils
 
     @fileutils_output  = $stderr
-    @fileutils_label   = 'fileutils.'
+    @fileutils_label   = ''
     @fileutils_nowrite = true
 
-    body = proc do |*args|
-      unless defined? @fileutils_nowrite
-        @fileutils_nowrite = true
-      end
-      args.push :noop if @fileutils_nowrite
-      super(*args)
-    end
     FileUtils::OPT_TABLE.each do |name, opts|
       next unless opts.include? 'noop'
-      define_method(name, body)
+      module_eval(<<-EOS, __FILE__, __LINE__ + 1)
+        def #{name}( *args )
+          unless defined? @fileutils_nowrite
+            @fileutils_nowrite ||= true
+          end
+          args.push :noop if @fileutils_nowrite
+          super(*args)
+        end
+      EOS
     end
 
     extend self
@@ -823,7 +814,7 @@ module FileUtils
   end
 
 
-  class Operator # :nodoc:
+  class Operator #:nodoc:
 
     include FileUtils
 
@@ -855,10 +846,6 @@ end
 
 
 # Documentation comments:
-#  - Some methods should probably be private.  They are marked :nodoc: to avoid
-#    RDoc pollution.
-#  - This module was already extensively commented using RD.  I converted it to
-#    RDoc and attempted to improve it.
 #  - Some RDoc markup used here doesn't work (namely, +file1+, +:noop+,
 #    +dir/file+).  I consider this a bug and expect that these will be valid in
 #    the near future.

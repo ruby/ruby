@@ -1,3 +1,13 @@
+Thu Feb  6 19:01:32 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb: new method FileUtils.pwd.
+
+	* lib/fileutils.rb: default label is ''.
+
+	* lib/fileutils.rb: using module_eval again, to avoid ruby's bug.
+
+	* lib/fileutils.rb: fix wrong examples in rdoc.
+
 Thu Feb  6 17:43:56 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/complex.rb (Complex#==): should not raise error by type
