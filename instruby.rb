@@ -49,17 +49,20 @@ end
 
 parse_args()
 
-include FileUtils
+include FileUtils::Verbose
 include FileUtils::NoWrite if $dryrun
 @fileutils_output = STDOUT
 @fileutils_label = ''
-alias makelink ln_sf
-class << self
-  body = proc {|*args|super(*fu_update_option(args,:verbose=>true))}
-  for func in [:install, :makelink]
-    define_method(func, body)
+
+def install(src, dest, options = {})
+  super
+  return if options[:noop]
+  fu_each_src_dest(src, dest) do |s, d|
+    st = File.stat(s)
+    File.utime(st.atime, st.mtime, d)
   end
 end
+
 $made_dirs = {}
 def makedirs(dirs)
   dirs = fu_list(dirs)
@@ -112,7 +115,7 @@ end
 
 if dll == lib and dll != arc
   for link in CONFIG["LIBRUBY_ALIASES"].split
-    makelink(dll, File.join(libdir, link))
+    ln_sf(dll, File.join(libdir, link))
   end
 end
 
