@@ -1943,12 +1943,19 @@ if (/^(8\.[1-9]|9\.|[1-9][0-9])/ =~ Tk::TCL_VERSION && !Tk::JAPANIZED_TK)
 	tk_call('encoding', 'system', enc)
       end
 
-      def encoding_convertfrom(str, enc=None)
+      def encoding_convertfrom(str, enc=nil)
+	# str must be a Tcl's internal string expression in enc. 
+	# the return value is a UTF-8 string.
+	enc = encoding_system unless enc
 	TkCore::INTERP.__invoke('encoding', 'convertfrom', enc, str)
       end
       alias encoding_convert_from encoding_convertfrom
 
-      def encoding_convertto(str, enc=None)
+      def encoding_convertto(str, enc=nil)
+	# str must be a UTF-8 string.
+	# The return value is a Tcl's internal string expression in enc. 
+        # To get an usual enc string, use Tk.fromUTF8(ret_val, enc).
+	enc = encoding_system unless enc
 	TkCore::INTERP.__invoke('encoding', 'convertto', enc, str)
       end
       alias encoding_convert_to encoding_convertto
