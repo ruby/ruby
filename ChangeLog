@@ -1,3 +1,7 @@
+Fri Apr 30 20:08:41 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* time.c (SIZEOF_TIME_T): support SIZEOF_TIME_T == SIZEOF_INT.
+
 Tue Apr 27 08:41:28 2004  why the lucky stiff  <why@ruby-lang.org>
 
 	* lib/yaml/rubytypes.rb: passing Range tests.
