@@ -5,6 +5,7 @@
 # License:: Ruby license.
 
 require 'test/unit/assertionfailederror'
+require 'test/unit/util/backtracefilter'
 
 module Test # :nodoc:
   module Unit # :nodoc:
@@ -120,7 +121,11 @@ module Test # :nodoc:
       public
       def assert_respond_to(object, method, message="")
         _wrap_assertion do
-          assert(method.kind_of?(Symbol) || method.kind_of?(String), "The method argument to #assert_respond_to should be specified as a Symbol or a String.")
+          full_message = build_message('', method) do |arg|
+            "<#{arg}>\n" +
+            "given as the method name argument to #assert_respond_to must be a Symbol or #respond_to?(:to_str)."
+          end
+          assert(method.kind_of?(Symbol) || method.respond_to?(:to_str), full_message)
           full_message = build_message(message, object, object.class, method) do |arg1, arg2, arg3|
             "<#{arg1}>\n" +
             "of type <#{arg2}>\n" +
@@ -134,15 +139,15 @@ module Test # :nodoc:
       public
       def assert_match(pattern, string, message="")
         _wrap_assertion do
+          pattern = case(pattern)
+            when String
+              Regexp.new(Regexp.escape(pattern))
+            else
+              pattern
+          end
           full_message = build_message(message, string, pattern) do |arg1, arg2|
             "<#{arg1}> expected to be =~\n" +
             "<#{arg2}>"
-          end
-          pattern = case(pattern)
-            when String
-              Regexp.new(pattern)
-            else
-              pattern
           end
           assert_block(full_message) { string =~ pattern }
         end
@@ -153,8 +158,10 @@ module Test # :nodoc:
       public
       def assert_same(expected, actual, message="")
         full_message = build_message(message, expected, expected.__id__, actual, actual.__id__) do |arg1, arg2, arg3, arg4|
-          "<#{arg1}:#{arg2}> expected to be equal? to\n" +
-          "<#{arg3}:#{arg4}>"
+          "<#{arg1}>\n" +
+          "with id <#{arg2}> expected to be equal? to\n" +
+          "<#{arg3}>\n" +
+          "with id <#{arg4}>"
         end
         assert_block(full_message) { actual.equal?(expected) }
       end
@@ -164,12 +171,19 @@ module Test # :nodoc:
       # true.
       public
       def assert_operator(object1, operator, object2, message="")
-        full_message = build_message(message, object1, operator, object2) do |arg1, arg2, arg3|
-          "<#{arg1}> expected to be\n" +
-          "#{arg2}\n" +
-          "<#{arg3}>"
+        _wrap_assertion do
+          full_message = build_message('', operator) do |arg|
+            "<#{arg}>\n" +
+            "given as the operator for #assert_operator must be a Symbol or #respond_to?(:to_str)."
+          end
+          assert(operator.kind_of?(Symbol) || operator.respond_to?(:to_str), full_message)
+          full_message = build_message(message, object1, AssertionMessage.literal(operator), object2) do |arg1, arg2, arg3|
+            "<#{arg1}> expected to be\n" +
+            "#{arg2}\n" +
+            "<#{arg3}>"
+          end
+          assert_block(full_message) { object1.send(operator, object2) }
         end
-        assert_block(full_message) { object1.send(operator, object2) }
       end
 
       # Passes if block does not raise an exception.
@@ -207,8 +221,10 @@ module Test # :nodoc:
       public
       def assert_not_same(expected, actual, message="")
         full_message = build_message(message, expected, expected.__id__, actual, actual.__id__) do |arg1, arg2, arg3, arg4|
-          "<#{arg1}:#{arg2}> expected to not be equal? to\n" +
-          "<#{arg3}:#{arg4}>"
+          "<#{arg1}>\n" +
+          "with id <#{arg2}> expected to not be equal? to\n" +
+          "<#{arg3}>\n" +
+          "with id <#{arg4}>"
         end
         assert_block(full_message) { !actual.equal?(expected) }
       end
@@ -237,9 +253,9 @@ module Test # :nodoc:
       def assert_no_match(regexp, string, message="")
         _wrap_assertion do
           assert_instance_of(Regexp, regexp, "The first argument to assert_does_not_match should be a Regexp.")
-          full_message = build_message(message, regexp.source, string) do |arg1, arg2|
-            "</#{arg1}/> expected to not match\n" +
-            " <#{arg2}>"
+          full_message = build_message(message, regexp, string) do |arg1, arg2|
+            "<#{arg1}> expected to not match\n" +
+            "<#{arg2}>"
           end
           assert_block(full_message) { regexp !~ string }
         end
@@ -258,16 +274,16 @@ module Test # :nodoc:
               caught = false
             end
             full_message = build_message(message, expected_symbol) do |arg|
-              "<:#{arg}> should have been thrown"
+              "<#{arg}> should have been thrown"
             end
             assert(caught, full_message)
           rescue NameError => name_error
             if ( name_error.message !~ /^uncaught throw `(.+)'$/ )  #`
               raise name_error
             end
-            full_message = build_message(message, expected_symbol, $1) do |arg1, arg2|
-              "<:#{arg1}> expected to be thrown but\n" +
-              "<:#{arg2}> was thrown"
+            full_message = build_message(message, expected_symbol, $1.intern) do |arg1, arg2|
+              "<#{arg1}> expected to be thrown but\n" +
+              "<#{arg2}> was thrown"
             end
             flunk(full_message)
           end  
@@ -285,8 +301,8 @@ module Test # :nodoc:
             if (name_error.message !~ /^uncaught throw `(.+)'$/ )  #`
               raise name_error
             end
-            full_message = build_message(message, $1) do |arg|
-              "<:#{arg}> was thrown when nothing was expected"
+            full_message = build_message(message, $1.intern) do |arg|
+              "<#{arg}> was thrown when nothing was expected"
             end
             flunk(full_message)
           end
@@ -319,9 +335,9 @@ module Test # :nodoc:
         _wrap_assertion do
           assert_instance_of(Array, send_array, "assert_send requires an array of send information")
           assert(send_array.size >= 2, "assert_send requires at least a receiver and a message name")
-          full_message = build_message(message, send_array[0], send_array[1], send_array[2..-1]) do |arg1, arg2, arg3|
+          full_message = build_message(message, send_array[0], AssertionMessage.literal(send_array[1].to_s), send_array[2..-1]) do |arg1, arg2, arg3|
             "<#{arg1}> expected to respond to\n" +
-            "<#{arg2}(#{arg3})> with true"
+            "<#{arg2}(#{arg3})> with a true value"
           end
           assert_block(full_message) { send_array[0].__send__(send_array[1], *send_array[2..-1]) }
         end
@@ -354,20 +370,32 @@ module Test # :nodoc:
       end
       
       class AssertionMessage # :nodoc: all
-        def self.convert(object)
+        class Literal
+          def initialize(value)
+            @value = value
+          end
+          
+          def inspect
+            @value
+          end
+        end
+
+        def self.literal(value)
+          Literal.new(value)
+        end
+
+        include Util::BacktraceFilter
+
+        def convert(object)
           case object
-            when String
-              return object
-            when Symbol
-              return object.to_s
-            when Regexp
-              return "/#{object.source}/"
             when Exception
-              return "Class: <#{object.class}>\n" +
-                  "Message: <#{object.message}>\n" +
-                  "---Backtrace---\n" +
-                  object.backtrace.join("\n") + "\n" +
-                  "---------------"
+              return <<EOM.strip
+Class: <#{object.class}>
+Message: <#{object.message}>
+---Backtrace---
+#{filter_backtrace(object.backtrace).join("\n")}
+---------------
+EOM
             else
               return object.inspect
           end
@@ -389,7 +417,7 @@ module Test # :nodoc:
           end
           @parameters = @parameters.collect {
             | parameter |
-            self.class.convert(parameter)
+            convert(parameter)
           }
           message_parts << @block.call(*@parameters)
           return message_parts.join("\n")

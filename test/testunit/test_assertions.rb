@@ -99,12 +99,15 @@ module Test
         check_nothing_fails {
           assert_equal("string1", "string1", "successful assert_equal")
         }
-        check_fails("<string1> expected but was\n<string2>") {
+        check_fails(%Q{<"string1"> expected but was\n<"string2">}) {
           assert_equal("string1", "string2")
         }
-        check_fails("failed assert_equal.\n<string1> expected but was\n<string2>") {
+        check_fails(%Q{failed assert_equal.\n<"string1"> expected but was\n<"string2">}) {
           assert_equal("string1", "string2", "failed assert_equal")
         }
+        check_fails(%Q{<"1"> expected but was\n<1>}) do
+          assert_equal("1", 1)
+        end
       end
       
       def test_assert_raises
@@ -153,10 +156,10 @@ module Test
         check_nothing_fails {
           assert_instance_of(String, "string", "successful assert_instance_of")
         }
-        check_fails("<string> expected to be an instance of\n<Hash> but was\n<String>") {
+        check_fails(%Q{<"string"> expected to be an instance of\n<Hash> but was\n<String>}) {
           assert_instance_of(Hash, "string")
         }
-        check_fails("failed assert_instance_of.\n<string> expected to be an instance of\n<Hash> but was\n<String>") {
+        check_fails(%Q{failed assert_instance_of.\n<"string"> expected to be an instance of\n<Hash> but was\n<String>}) {
           assert_instance_of(Hash, "string", "failed assert_instance_of")
         }
       end
@@ -171,10 +174,10 @@ module Test
         check_nothing_fails {
           assert_nil(nil, "successful assert_nil")
         }
-        check_fails("<nil> expected but was\n<string>") {
+        check_fails(%Q{<nil> expected but was\n<"string">}) {
           assert_nil("string")
         }
-        check_fails("failed assert_nil.\n<nil> expected but was\n<string>") {
+        check_fails(%Q{failed assert_nil.\n<nil> expected but was\n<"string">}) {
           assert_nil("string", "failed assert_nil")
         }
       end
@@ -192,10 +195,10 @@ module Test
         check_nothing_fails {
           assert_kind_of(Comparable, 1)
         }
-        check_fails("<string>\nexpected to be kind_of?<Class>") {
+        check_fails(%Q{<"string">\nexpected to be kind_of?<Class>}) {
           assert_kind_of(Class, "string")
         }
-        check_fails("failed assert_kind_of.\n<string>\nexpected to be kind_of?<Class>") {
+        check_fails(%Q{failed assert_kind_of.\n<"string">\nexpected to be kind_of?<Class>}) {
           assert_kind_of(Class, "string", "failed assert_kind_of")
         }
       end
@@ -213,13 +216,13 @@ module Test
         check_nothing_fails {
           assert_match(/strin./, "string", "successful assert_match")
         }
-        check_fails("<string> expected to be =~\n</slin./>") {
+        check_fails(%Q{<"string"> expected to be =~\n</slin./>}) {
           assert_match(/slin./, "string")
         }
-        check_fails("<string> expected to be =~\n<slin>") {
-          assert_match("slin", "string")
+        check_fails(%Q{<"string"> expected to be =~\n</strin\\./>}) {
+          assert_match("strin.", "string")
         }
-        check_fails("failed assert_match.\n<string> expected to be =~\n</slin./>") {
+        check_fails(%Q{failed assert_match.\n<"string"> expected to be =~\n</slin./>}) {
           assert_match(/slin./, "string", "failed assert_match")
         }
       end
@@ -236,10 +239,10 @@ module Test
           assert_same(thing, thing, "successful assert_same")
         }
         thing2 = "thing"
-        check_fails("<#{thing}:#{thing.__id__}> expected to be equal? to\n<#{thing2}:#{thing2.__id__}>") {
+        check_fails(%Q{<"thing">\nwith id <#{thing.__id__}> expected to be equal? to\n<"thing">\nwith id <#{thing2.__id__}>}) {
           assert_same(thing, thing2)
         }
-        check_fails("failed assert_same.\n<#{thing}:#{thing.__id__}> expected to be equal? to\n<#{thing2}:#{thing2.__id__}>") {
+        check_fails(%Q{failed assert_same.\n<"thing">\nwith id <#{thing.__id__}> expected to be equal? to\n<"thing">\nwith id <#{thing2.__id__}>}) {
           assert_same(thing, thing2, "failed assert_same")
         }
       end
@@ -308,10 +311,10 @@ module Test
         check_nothing_fails {
           assert_not_same(thing, thing2, "message")
         }
-        check_fails("<#{thing}:#{thing.__id__}> expected to not be equal? to\n<#{thing}:#{thing.__id__}>") {
+        check_fails(%Q{<"thing">\nwith id <#{thing.__id__}> expected to not be equal? to\n<"thing">\nwith id <#{thing.__id__}>}) {
           assert_not_same(thing, thing)
         }
-        check_fails("message.\n<#{thing}:#{thing.__id__}> expected to not be equal? to\n<#{thing}:#{thing.__id__}>") {
+        check_fails(%Q{message.\n<"thing">\nwith id <#{thing.__id__}> expected to not be equal? to\n<"thing">\nwith id <#{thing.__id__}>}) {
           assert_not_same(thing, thing, "message")
         }
       end
@@ -323,10 +326,10 @@ module Test
         check_nothing_fails {
           assert_not_equal("string1", "string2", "message")
         }
-        check_fails("<string> expected to be != to\n<string>") {
+        check_fails(%Q{<"string"> expected to be != to\n<"string">}) {
           assert_not_equal("string", "string")
         }
-        check_fails("message.\n<string> expected to be != to\n<string>") {
+        check_fails(%Q{message.\n<"string"> expected to be != to\n<"string">}) {
           assert_not_equal("string", "string", "message")
         }
       end
@@ -353,10 +356,10 @@ module Test
         check_nothing_fails {
           assert_no_match(/sling/, "string", "message")
         }
-        check_fails("</string/> expected to not match\n <string>") {
+        check_fails(%Q{</string/> expected to not match\n<"string">}) {
           assert_no_match(/string/, "string")
         }
-        check_fails("message.\n</string/> expected to not match\n <string>") {
+        check_fails(%Q{message.\n</string/> expected to not match\n<"string">}) {
           assert_no_match(/string/, "string", "message")
         }
       end
@@ -396,7 +399,10 @@ module Test
         check_nothing_fails {
           assert_operator("thing", :==, "thing", "message")
         }
-        check_fails("message.\n<thing1> expected to be\n==\n<thing2>") {
+        check_fails(%Q{<0.15>\ngiven as the operator for #assert_operator must be a Symbol or #respond_to?(:to_str).}) do
+          assert_operator("thing", 0.15, "thing")
+        end
+        check_fails(%Q{message.\n<"thing1"> expected to be\n==\n<"thing2">}) {
           assert_operator("thing1", :==, "thing2", "message")
         }
       end
@@ -408,10 +414,10 @@ module Test
         check_nothing_fails {
           assert_respond_to("thing", "to_s", "message")
         }
-        check_fails("The method argument to #assert_respond_to should be specified as a Symbol or a String.") {
+        check_fails("<0.15>\ngiven as the method name argument to #assert_respond_to must be a Symbol or #respond_to?(:to_str).") {
           assert_respond_to("thing", 0.15)
         }
-        check_fails("message.\n<symbol>\nof type <Symbol>\nexpected to respond_to?<non_existent>") {
+        check_fails("message.\n<:symbol>\nof type <Symbol>\nexpected to respond_to?<:non_existent>") {
           assert_respond_to(:symbol, :non_existent, "message")
         }
       end
@@ -433,7 +439,7 @@ module Test
         check_fails("message.\n<0.5> and\n<0.4> expected to be within\n<0.05> of each other") {
           assert_in_delta(0.5, 0.4, 0.05, "message")
         }
-        check_fails(%r{The arguments must respond to to_f; the first float did not\.\n<.+>\nof type <Object>\nexpected to respond_to\?<to_f>}) {
+        check_fails(%r{The arguments must respond to to_f; the first float did not\.\n<.+>\nof type <Object>\nexpected to respond_to\?<:to_f>}) {
           assert_in_delta(Object.new, 0.4, 0.1)
         }
         check_fails("The delta should not be negative.\n<-0.1> expected to be\n>=\n<0.0>") {
@@ -452,7 +458,7 @@ module Test
         check_nothing_fails {
           assert_send([object, :return_argument, true, "bogus"], "message")
         }
-        check_fails(%r{message\.\n<.+> expected to respond to\n<return_argument\(\[false, "bogus"\]\)> with true}) {
+        check_fails(%r{message\.\n<.+> expected to respond to\n<return_argument\(\[false, "bogus"\]\)> with a true value}) {
           assert_send([object, :return_argument, false, "bogus"], "message")
         }
       end
