@@ -63,7 +63,7 @@ enum lex_state_e {
     EXPR_FNAME,			/* ignore newline, no reserved words. */
     EXPR_DOT,			/* right after `.' or `::', no reserved words. */
     EXPR_CLASS,			/* immediate after `class', no here document. */
-    EXPR_TERNARY,		/* alike EXPR_BEG but immediate after ternary op. */
+    EXPR_VALUE,			/* alike EXPR_BEG but label is disallowed. */
 };
 
 # ifdef HAVE_LONG_LONG
@@ -488,7 +488,7 @@ static void ripper_compile_error _((struct parser_params*, const char *fmt, ...)
 %type <node> command_args aref_args opt_block_arg block_arg var_ref var_lhs
 %type <node> mrhs superclass block_call block_command
 %type <node> f_arglist f_args f_optarg f_opt f_block_arg opt_f_block_arg
-%type <node> assoc_list assocs assoc kwargs undef_list backref string_dvar
+%type <node> assoc_list assocs assoc undef_list backref string_dvar
 %type <node> for_var block_var opt_block_var block_par
 %type <node> brace_block cmd_brace_block do_block lhs none fitem
 %type <node> mlhs mlhs_head mlhs_basic mlhs_entry mlhs_item mlhs_node
@@ -4066,10 +4066,6 @@ assoc_list	: none
 		    	$$ = dispatch1(assoclist_from_args, $1);
 		    %*/
 		    }
-		| kwargs trailer
-		    {
-		    	$$ = $1;
-		    }
 		;
 
 assocs		: assoc
@@ -4097,23 +4093,12 @@ assoc		: arg_value tASSOC arg_value
 			$$ = dispatch2(assoc_new, $1, $3);
 		    %*/
 		    }
-		;
-
-kwargs		: tLABEL arg_value
+		| tLABEL arg_value
 		    {
 		    /*%%%*/
 			$$ = list_append(NEW_LIST(NEW_LIT(ID2SYM($1))), $2);
 		    /*%
 		    	$$ = dispatch2(assoc_new, $1, $2);
-		    %*/
-		    }
-		| kwargs ',' tLABEL arg_value
-		    {
-		    /*%%%*/
-			$$ = list_append(NEW_LIST(NEW_LIT(ID2SYM($3))), $4);
-			$$ = list_concat($1, $$);
-		    /*%
-		    	rb_ary_push($$, dispatch2(assoc_new, $3, $4));
 		    %*/
 		    }
 		;
@@ -5235,7 +5220,7 @@ lvar_defined_gen(parser, id)
 }
 
 #define IS_ARG() (lex_state == EXPR_ARG || lex_state == EXPR_CMDARG)
-#define IS_BEG() (lex_state == EXPR_BEG || lex_state == EXPR_MID || lex_state == EXPR_TERNARY || lex_state == EXPR_CLASS)
+#define IS_BEG() (lex_state == EXPR_BEG || lex_state == EXPR_MID || lex_state == EXPR_VALUE || lex_state == EXPR_CLASS)
 
 static int
 parser_yylex(parser)
@@ -5319,7 +5304,7 @@ parser_yylex(parser)
 	  case EXPR_FNAME:
 	  case EXPR_DOT:
 	  case EXPR_CLASS:
-	  case EXPR_TERNARY:
+	  case EXPR_VALUE:
 #ifdef RIPPER
             if (!fallthru) {
                 ripper_dispatch_scan_event(parser, tIGNORED_NL);
@@ -5523,7 +5508,7 @@ parser_yylex(parser)
 
       case '?':
 	if (lex_state == EXPR_END || lex_state == EXPR_ENDARG) {
-	    lex_state = EXPR_TERNARY;
+	    lex_state = EXPR_VALUE;
 	    return '?';
 	}
 	c = nextc();
@@ -5561,7 +5546,7 @@ parser_yylex(parser)
 	    }
 	  ternary:
 	    pushback(c);
-	    lex_state = EXPR_TERNARY;
+	    lex_state = EXPR_VALUE;
 	    return '?';
 	}
 	else if (ismbchar(uc)) {
@@ -6398,7 +6383,7 @@ parser_yylex(parser)
 			    return kDO_BLOCK;
 			return kDO;
 		    }
-		    if (state == EXPR_BEG || state == EXPR_TERNARY)
+		    if (state == EXPR_BEG || state == EXPR_VALUE)
 			return kw->id[0];
 		    else {
 			if (kw->id[0] != kw->id[1])

@@ -1,3 +1,8 @@
+Tue Feb  8 22:38:28 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* keywords, parse.y: separate EXPR_VALUE from EXPR_BEG.
+	  fixed: [ruby-core:04310], [ruby-core:04368]
+
 Tue Feb  8 00:19:02 2005  Tanaka Akira  <akr@m17n.org>
 
 	* lib/resolv.rb (Resolv::DNS::Name#subdomain_of?): new method.
