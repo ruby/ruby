@@ -1,10 +1,11 @@
-# -*- tab-width: 2 -*- vim: ts=2
+require "erb"
 
 require "test/unit"
 require 'rss-assertions'
 
 module RSS
   class TestCase < Test::Unit::TestCase
+    include ERB::Util
 
     include RSS
     include Assertions
@@ -189,6 +190,17 @@ EOI
 EOC
     end
 
+    def make_element(elem_name, attrs, contents)
+      attrs_str = attrs.collect do |name, value|
+        "#{h name}='#{h value}'"
+      end.join(" ")
+      contents_str = contents.collect do |name, value|
+        "#{Element::INDENT}<#{h name}>#{h value}</#{h name}>"
+      end.join("\n")
+
+      "<#{h elem_name} #{attrs_str}>\n#{contents_str}\n</#{h elem_name}>"
+    end
+    
     private
     def setup_dummy_channel(maker)
       about = "http://hoge.com"

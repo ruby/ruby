@@ -144,7 +144,7 @@ module RSS
           end
 
           def make_#{element}
-            self.class::#{element[0,1].upcase}#{element[1..-1]}.new(self)
+            self.class::#{Utils.to_class_name(element)}.new(self)
           end
 EOC
       end
@@ -255,7 +255,7 @@ EOC
           end
 
           def make_#{element}
-            self.class::#{element[0,1].upcase}#{element[1..-1]}.new(@maker)
+            self.class::#{Utils.to_class_name(element)}.new(@maker)
           end
 EOC
       end
@@ -443,7 +443,7 @@ EOC
           end
 
           def make_#{element}
-            self.class::#{element[0,1].upcase}#{element[1..-1]}.new(@maker)
+            self.class::#{Utils.to_class_name(element)}.new(@maker)
           end
 EOC
         end

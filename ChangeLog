@@ -1,3 +1,8 @@
+Fri Feb  4 00:24:15 2005  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss: supported Image module.
+	  http://web.resource.org/rss/1.0/modules/image/
+
 Thu Feb  3 23:42:36 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_close, strio_close_read, strio_close_write):

@@ -7,7 +7,7 @@ module RSS
       def self.append_features(klass)
         super
 
-        ::RSS::DublinCoreModel::ELEMENTS.each do |element|
+        ::RSS::DublinCoreModel::ELEMENTS.uniq.each do |element|
           klass.add_need_initialize_variable(element)
           klass.add_other_element(element)
           klass.__send__(:attr_accessor, element)

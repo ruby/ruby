@@ -2,6 +2,13 @@ module RSS
 
   module Utils
 
+    module_function
+    def to_class_name(name)
+      name.split(/_/).collect do |part|
+        "#{part[0, 1].upcase}#{part[1..-1]}"
+      end.join("")
+    end
+    
     def get_file_and_line_from_caller(i=0)
       file, line, = caller[i].split(':')
       [file, line.to_i]
