@@ -1,3 +1,8 @@
+Tue Apr 13 19:54:29 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb: should not overwrite HTTP request header.
+	  [ruby-list:39543]
+
 Tue Apr 13 01:30:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
 
 	* ext/iconv/iconv.c: RDoc documentation (from RD; nearly finished).

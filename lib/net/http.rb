@@ -819,7 +819,7 @@ module Net # :nodoc:
     def request(req, body = nil, &block)  # :yield: +response+
       unless started?
         start {
-          req['connection'] = 'close'
+          req['connection'] ||= 'close'
           return request(req, body, &block)
         }
       end
@@ -848,12 +848,12 @@ module Net # :nodoc:
         on_connect
       end
       if @seems_1_0_server
-        req['connection'] = 'close'
+        req['connection'] ||= 'close'
       end
       if not req.response_body_permitted? and @close_on_empty_response
-        req['connection'] = 'close'
+        req['connection'] ||= 'close'
       end
-      req['host'] = addr_port()
+      req['host'] ||= addr_port()
     end
 
     def end_transport(req, res)
