@@ -467,7 +467,7 @@ rb_big2long(x)
 {
     unsigned long num = big2ulong(x, "int");
 
-    if ((long)num < 0) {
+    if ((long)num < 0 && (long)num != LONG_MIN) {
 	rb_raise(rb_eRangeError, "bignum too big to convert into `int'");
     }
     if (!RBIGNUM(x)->sign) return -(long)num;

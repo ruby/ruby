@@ -1,3 +1,8 @@
+Tue Feb 20 16:37:58 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_big2long): should not raise RangeError for Bignum
+	  LONG_MIN value.
+
 Mon Feb 19 17:46:37 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_substr): "a"[1,2] should return ""; need

@@ -26,10 +26,10 @@ The Ruby distribution can be found on:
 
 You can get it by anonymous CVS.  How to check out is:
 
-  $ cvs -d :pserver:anonymous@cvs.netlab.co.jp:/home/cvs login
-  (Logging in to anonymous@cvs.netlab.co.jp)
+  $ cvs -d :pserver:anonymous@cvs.ruby-lang.org:/home/cvs login
+  (Logging in to anonymous@cvs.ruby-lang.org)
   CVS password: guest
-  $ cvs -d :pserver:anonymous@cvs.netlab.co.jp:/home/cvs checkout ruby
+  $ cvs -d :pserver:anonymous@cvs.ruby-lang.org:/home/cvs checkout ruby
 
 * Mailing list
 
@@ -40,7 +40,7 @@ To subscribe this list, please send the following phrase
 e.g.
         subscribe Joseph Smith
 
-in the mail body (not subject) to the address <ruby-talk-ctl@netlab.co.jp>.
+in the mail body (not subject) to the address <ruby-talk-ctl@ruby-lang.org>.
 
 * How to compile and install
 

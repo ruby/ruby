@@ -387,7 +387,7 @@ sigsegv(sig)
 #endif
 
 #ifdef SIGPIPE
-static RETSIGTYPE sigsegv _((int));
+static RETSIGTYPE sigpipe _((int));
 static RETSIGTYPE
 sigpipe(sig)
     int sig;
