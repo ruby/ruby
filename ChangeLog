@@ -1,3 +1,7 @@
+Sun Jun 27 12:19:46 2004  Kouhei Sutou  <kou@cozmixng.org>
+
+	* {lib,sample,test}/rss: added RSS Parser. [ruby-dev:23780]
+
 Sat Jun 26 11:07:30 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (aix): -b must come at the start of the command line,
