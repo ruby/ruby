@@ -1,3 +1,9 @@
+Sat Nov 27 17:21:30 2004  Kouhei Sutou  <kou@cozmixng.org>
+
+	* sample/rss/list_description.rb: untabified.
+	
+	* sample/rss/rss_recent.rb: ditto.
+
 Sat Nov 27 09:41:21 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (io_fread): [ruby-dev:24964]
