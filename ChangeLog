@@ -1,3 +1,8 @@
+Sun Aug  3 19:25:28 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (call_trace_func): clear exception flag temporarily.
+	  [ruby-dev:21090]
+
 Sun Aug  3 18:03:44 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* regex.h (re_mbctab): should refer to RUBY_EXPORT.  [ruby-ext:02199]

@@ -419,7 +419,7 @@ remove_method(klass, mid)
 	rb_warn("removing `%s' may cause serious problem", rb_id2name(mid));
     }
     if (!st_delete(RCLASS(klass)->m_tbl, &mid, (st_data_t *)&body) ||
-      !body->nd_body) {
+	!body->nd_body) {
 	rb_name_error(mid, "method `%s' not defined in %s",
 		      rb_id2name(mid), rb_class2name(klass));
     }
@@ -1225,7 +1225,7 @@ static void rb_thread_cleanup _((void));
 static void rb_thread_wait_other_threads _((void));
 
 static int thread_set_raised();
-static void thread_reset_raised();
+static int thread_reset_raised();
 
 static VALUE exception_error;
 static VALUE sysstack_error;
@@ -2228,7 +2228,7 @@ call_trace_func(event, node, self, id, klass)
     ID id;
     VALUE klass;		/* OK */
 {
-    int state;
+    int state, raised;
     struct FRAME *prev;
     NODE *node_save;
     VALUE srcfile;
@@ -2263,6 +2263,7 @@ call_trace_func(event, node, self, id, klass)
 	}
     }
     PUSH_TAG(PROT_NONE);
+    raised = thread_reset_raised();
     if ((state = EXEC_TAG()) == 0) {
 	srcfile = rb_str_new2(ruby_sourcefile?ruby_sourcefile:"(ruby)");
 	proc_invoke(trace_func, rb_ary_new3(6, rb_str_new2(event),
@@ -2273,6 +2274,7 @@ call_trace_func(event, node, self, id, klass)
 					    klass),
 		    Qundef, 0);
     }
+    if (raised) thread_set_raised();
     POP_TMPTAG();		/* do not propagate retval */
     POP_FRAME();
 
@@ -3266,7 +3268,6 @@ rb_eval(self, n)
 	    else {
 		result = rb_funcall(klass, node->nd_mid, 0, 0);
 	    }
-	    break;
 	}
 	break;
 
@@ -7577,11 +7578,6 @@ bmcall(args, method)
     return method_call(RARRAY(a)->len, RARRAY(a)->ptr, method);
 }
 
-struct proc_funcall_data {
-    VALUE (*func)(ANYARGS);
-    VALUE val;
-};
-
 VALUE
 rb_proc_new(func, val)
     VALUE (*func)(ANYARGS);	/* VALUE yieldarg[, VALUE procarg] */
@@ -7946,10 +7942,12 @@ thread_set_raised()
     return 0;
 }
 
-static void
+static int
 thread_reset_raised()
 {
+    if (!(curr_thread->flags & THREAD_RAISED)) return 0;
     curr_thread->flags &= ~THREAD_RAISED;
+    return 1;
 }
 
 static void rb_thread_ready _((rb_thread_t));
