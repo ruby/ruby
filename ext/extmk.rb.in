@@ -8,6 +8,7 @@ if ARGV[0] == 'static'
   ARGV.shift
 elsif ARGV[0] == 'install'
   $install = TRUE
+  $destdir = ARGV[1] || ''
   ARGV.shift
 elsif ARGV[0] == 'clean'
   $clean = TRUE
@@ -113,10 +114,10 @@ def install_rb(mfile)
   end
   for f in dir
     next if f == "."
-    mfile.printf "\t@test -d $(libdir)/%s || mkdir $(libdir)/%s\n", f, f
+    mfile.printf "\t@test -d $(DESTDIR)$(pkglibdir)/%s || mkdir $(DESTDIR)$(pkglibdir)/%s\n", f, f
   end
   for f in path
-    mfile.printf "\t$(INSTALL_DATA) lib/%s $(libdir)/%s\n", f, f
+    mfile.printf "\t$(INSTALL_DATA) lib/%s $(DESTDIR)$(pkglibdir)/%s\n", f, f
   end
 end
 
@@ -290,8 +291,9 @@ RUBY_INSTALL_NAME = `t='$(program_transform_name)'; echo ruby | sed $$t`
 
 prefix = @prefix@
 exec_prefix = @exec_prefix@
-libdir = @libdir@/$(RUBY_INSTALL_NAME)
-archdir = $(libdir)/@arch@
+libdir = @libdir@
+pkglibdir = $(libdir)/$(RUBY_INSTALL_NAME)
+archdir = $(pkglibdir)/@arch@
 @SET_MAKE@
 
 #### End of system configuration section. ####
@@ -332,12 +334,13 @@ realclean:	clean
   mfile.printf "\
 
 install:
-	@test -d $(libdir) || mkdir $(libdir)
-	@test -d $(archdir) || mkdir $(archdir)
+	@test -d $(DESTDIR)$(libdir) || mkdir $(DESTDIR)$(libdir)
+	@test -d $(DESTDIR)$(pkglibdir) || mkdir $(DESTDIR)$(pkglibdir)
+	@test -d $(DESTDIR)$(archdir) || mkdir $(DESTDIR)$(archdir)
 "
   if !$static
     mfile.printf "\
-	$(INSTALL) $(TARGET) $(archdir)/$(TARGET)
+	$(INSTALL) $(TARGET) $(DESTDIR)$(archdir)/$(TARGET)
 "
   end
   install_rb(mfile)
@@ -433,7 +436,7 @@ def extmake(target)
 	$extlist.push [$static,target]
       end
       if $install
-	system "make install"
+	system "make install DESTDIR=#{$destdir}"
       elsif $clean
 	system "make clean"
       else

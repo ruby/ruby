@@ -1,3 +1,62 @@
+Tue Nov 17 18:11:20 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version 1.1c8 released.
+
+Tue Nov 17 16:58:47 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (arg): assignment to attribute name start with capital
+	  should be allowed.
+
+	* eval.c (thread_alloc): needed to mark terminated threads too.
+
+Tue Nov 17 12:33:48 1998  Motoyuki Kasahara  <m-kasahr@sra.co.jp>
+
+	* ext/extmk.rb.in (create_makefile): Set `libdir' to `@libdir@',
+	  Set `pkglibdir' to `$libdir/$(RUBY_INSTALL_NAME)'.
+
+Tue Nov 17 10:30:46 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* sprintf.c (f_sprintf): %l%%c -> %%l%c
+
+Sun Nov 15 15:44:07 1998  Tadayoshi Funaba  <tadf@kt.rim.or.jp>
+
+	* ext/extmk.rb.in (install): bug in target.
+
+Sat Nov 14 11:02:05 1998  Motoyuki Kasahara  <m-kasahr@sra.co.jp>
+
+	* Makefile.in (install): Give the argument `$(DESTDIR)' to
+	`instruby.rb'.
+	* instruby.rb: Recognize ARG[0] as `destdir'.
+	* instruby.rb: Give the argument `destdir' to `extmk.rb'.
+	* ext/extmk.rb.in: Recognize ARG[1] as `$destdir'.
+
+	* instruby.rb: Create the installation directories (bindir, libdir,
+	archdir, pkglibdir, archdir, and mandir) under `destdir', and
+	install all files under there.
+	* ext/extmk.rb.in: Likewise.
+	
+Sat Nov 14 10:56:55 1998  Motoyuki Kasahara  <m-kasahr@sra.co.jp>
+
+	* instruby.rb: Add the variable `pkglibdir'.
+	* instruby.rb: Set the variable `libdir' to `$(libdir)', not
+	`$(libdir)/$(ruby_install_name)'. `libruby.so' and `libruby.so.LIB'
+	are installed at `libdir'.
+	* instruby.rb: Set the variable `archdir' to `$(pkglibdir)/$(arch)'.
+
+Fri Nov 13 19:43:29 1998  KIMURA Koichi  <kbk@kt.rim.or.jp>
+
+	* missing/nt.c (SafeFree): wrong free offset.
+
+Tue Nov 10 00:22:11 1998  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* configure.in: elf supprt for FreeBSD 3.x
+
+Thu Nov 12 20:11:53 1998  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* sample/ruby-mode.el: wrong highlight.
+
+	* parse.y (parse_regx): newline in regexp was ignored.
+
 Mon Nov  9 17:55:19 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* version 1.1c7 released.

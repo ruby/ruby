@@ -592,7 +592,7 @@ An end of a defun is found by moving forward from the beginning of one."
      ("[^$\\?]\\('[^\\']*\\(\\\\\\(.\\|\n\\)[^\\']*\\)*'\\)" 1 string)
      ("[^$\\?]\\(`[^\\`]*\\(\\\\\\(.\\|\n\\)[^\\`]*\\)*`\\)" 1 string)
      ("^\\s *#.*$" nil comment)
-     ("[^$@?\\]\\(#[^$@{].*$\\)" 1 comment)
+     ("[^$@?\\]\\(#[^$@{\n].*$\\)" 1 comment)
      ("[^a-zA-Z_]\\(\\?\\(\\\\[CM]-\\)*.\\)" 1 string)
      ("^\\s *\\(require\\|load\\).*$" nil include)
      ("^\\s *\\(include\\|alias\\|undef\\).*$" nil decl)

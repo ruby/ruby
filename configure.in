@@ -159,7 +159,7 @@ AC_FUNC_ALLOCA
 AC_FUNC_VFORK
 AC_FUNC_MEMCMP
 AC_REPLACE_FUNCS(dup2 setenv memmove mkdir strcasecmp strerror strftime\
-		 strchr strstr strtoul strdup crypt flock snprintf)
+		 strchr strstr strtoul strdup crypt flock vsnprintf)
 AC_CHECK_FUNCS(fmod killpg drand48 random wait4 waitpid syscall getcwd\
 	      truncate chsize times utimes fcntl lockf setitimer\
 	      setruid seteuid setreuid setrgid setegid setregid\
@@ -362,6 +362,9 @@ if test "$with_dln_a_out" != yes; then
 	esix*|uxpds*) 	LDSHARED="ld -G"
 			rb_cv_dlopen=yes ;;
 	linux*) 	LDSHARED="gcc -shared"
+			rb_cv_dlopen=yes ;;
+	freebsd3*)      LDSHARED="ld -Bshareable"   
+			LDFLAGS="-rdynamic"
 			rb_cv_dlopen=yes ;;
 	freebsd*) 	LDSHARED="ld -Bshareable"
 			rb_cv_dlopen=yes ;;

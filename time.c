@@ -807,7 +807,6 @@ time_dump(time, limit)
 	buf[i] = sec & 0xff;
 	sec = RSHIFT(sec, 8);
     }
-    printf("::");
     for (i=4; i<8; i++) {
 	buf[i] = usec & 0xff;
 	usec = RSHIFT(usec, 8);

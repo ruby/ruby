@@ -396,7 +396,7 @@ f_sprintf(argc, argv)
 			    sc = ' ';
 			    width--;
 			}
-			sprintf(fbuf, "%l%%c", c);
+			sprintf(fbuf, "%%l%c", c);
 			sprintf(nbuf, fbuf, v);
 			s = nbuf;
 			goto format_integer;
@@ -406,7 +406,7 @@ f_sprintf(argc, argv)
 			strcpy(s, "..");
 			s += 2;
 		    }
-		    sprintf(fbuf, "%l%%c", *p);
+		    sprintf(fbuf, "%%l%c", *p);
 		    sprintf(s, fbuf, v);
 		    if (v < 0) {
 			char d = 0;

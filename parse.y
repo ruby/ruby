@@ -585,6 +585,11 @@ arg		: variable '=' {$$ = assignable($1, 0);} arg
 			$$ = attrset($1, $3, $5);
 		        fixpos($$, $5);
 		    }
+		| primary '.' tCONSTANT '=' arg
+		    {
+			$$ = attrset($1, $3, $5);
+		        fixpos($$, $5);
+		    }
 		| backref '=' arg
 		    {
 			value_expr($3);
@@ -1898,6 +1903,9 @@ parse_regx(term, paren)
 	}
 
 	switch (c) {
+	  case '\n':
+	    sourceline++;
+	    break;
 	  case '[':
 	    in_brack = 1;
 	    break;

@@ -90,7 +90,7 @@ libruby.so:	$(OBJS) dmyext.o
 		$(LDSHARED) $(DLDFLAGS) $(SOLIBS) $(OBJS) dmyext.o -o $@
 
 install:	rbconfig.rb
-		./miniruby$(binsuffix) $(srcdir)/instruby.rb
+		./miniruby$(binsuffix) $(srcdir)/instruby.rb $(DESTDIR)
 
 clean:;		@rm -f $(OBJS) $(LIBRUBY) $(MAINOBJ) rbconfig.rb
 		@rm -f ext/extinit.c ext/extinit.o dmyext.o

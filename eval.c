@@ -4839,6 +4839,7 @@ blk_mark(data)
 	gc_mark(data->body);
 	gc_mark(data->self);
 	gc_mark(data->d_vars);
+	gc_mark(data->klass);
 	data = data->prev;
     }
 }
@@ -5011,7 +5012,7 @@ proc_call(proc, args)
     VALUE proc, args;		/* OK */
 {
     struct BLOCK * volatile old_block;
-    struct BLOCK *data;
+    struct BLOCK *data, data_body;
     volatile VALUE result = Qnil;
     int state;
     volatile int orphan;
@@ -5033,7 +5034,12 @@ proc_call(proc, args)
 
     /* PUSH BLOCK from data */
     old_block = the_block;
+#if 0
     the_block = data;
+#else
+    data_body = *data;
+    the_block = &data_body;
+#endif
     PUSH_ITER(ITER_CUR);
     the_frame->iter = ITER_CUR;
 
@@ -5100,7 +5106,7 @@ block_pass(self, node)
 {
     VALUE block = rb_eval(self, node->nd_body);
     struct BLOCK * volatile old_block;
-    struct BLOCK *data;
+    struct BLOCK *data, data_body;
     volatile VALUE result = Qnil;
     int state;
     volatile int orphan;
@@ -5122,7 +5128,12 @@ block_pass(self, node)
 
     /* PUSH BLOCK from data */
     old_block = the_block;
+#if 0
     the_block = data;
+#else
+    data_body = *data;
+    the_block = &data_body;
+#endif
     PUSH_ITER(ITER_PRE);
     the_frame->iter = ITER_PRE;
     if (FL_TEST(block, PROC_TAINT)) {
@@ -5453,6 +5464,7 @@ thread_mark(th)
     gc_mark(th->last_match);
 
     /* mark data in copied stack */
+    if (th->status == THREAD_KILLED) return;
     if (th->stk_len == 0) return;  /* stack not active, no need to mark. */
     if (th->stk_ptr) {
 	gc_mark_locations(th->stk_ptr, th->stk_ptr+th->stk_len);
@@ -5485,7 +5497,7 @@ gc_mark_threads()
 
     if (!curr_thread) return;
     FOREACH_THREAD(th) {
-	thread_mark(th);
+	gc_mark(th->thread);
     } END_FOREACH(th);
 }
 
@@ -6207,7 +6219,7 @@ thread_alloc()
     th->last_match = 0;
     th->abort = 0;
 
-    th->thread = data_object_alloc(cThread, th, 0, thread_free);
+    th->thread = data_object_alloc(cThread, th, thread_mark, thread_free);
 
     if (curr_thread) {
 	th->prev = curr_thread;
@@ -6250,6 +6262,7 @@ thread_create(fn, arg)
     void *arg;
 {
     thread_t th = thread_alloc();
+    volatile VALUE thread = th->thread;
     int state;
     enum thread_status status;
 

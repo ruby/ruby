@@ -47,3 +47,5 @@ s%@LIBRUBY@%libruby.a%g
 s%@LIBRUBYARG@%libruby.a%g
 s%@SOLIBS@%%g
 s%@arch@%i386-djgpp%g
+s%@srcdir%.%g
+ac_given_srcdir=.
