@@ -1,3 +1,8 @@
+Mon May  3 09:47:24 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_method_or_yield_parameters):
+	  Fix parsing bug if yield called within 1 line block
+
 Sun May  2 21:56:48 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* test/fileutils/test_fileutils.rb (rm_f, rm_r): test :force flag.
