@@ -99,8 +99,7 @@ getopts('', 'extstatic', 'make:', 'make-flags:')
 
 $force_static = $OPT['extstatic']
 $make = $OPT['make'] || $make
-$mflags = $OPT['make-flags'] || ""
-$mflags = Shellwords.shellwords(mflags)
+$mflags = Shellwords.shellwords($OPT['make-flags'] || "")
 
 if mflags = ENV["MAKEFLAGS"]
   mflags, = mflags.split(nil, 2)
