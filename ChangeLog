@@ -1,3 +1,13 @@
+Sun Feb  6 03:24:20 2005  Tanaka Akira  <akr@m17n.org>
+
+	* lib/resolv.rb (Resolv::DNS::Resource::TXT): multiple strings was not
+	  handled.
+	  (Resolv::DNS::Resource::TXT#strings): new method to return all
+	  strings.
+	  (Resolv::DNS::Message::MessageEncoder#put_string_list): new method.
+	  (Resolv::DNS::Message::MessageDecoder#get_string_list): ditto.
+	  based on [ruby-talk:129732] by Sam Roberts.
+
 Sat Feb  5 02:24:06 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* test/ripper/test_scanner_events.rb: fix test.
