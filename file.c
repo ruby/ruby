@@ -354,10 +354,7 @@ rb_stat(file, st)
 	return fstat(fileno(fptr->f), st);
     }
     SafeStringValue(file);
-#if defined DJGPP
-    if (RSTRING(file)->len == 0) return -1;
-#endif
-    return stat(RSTRING(file)->ptr, st);
+    return stat(StringValuePtr(file), st);
 }
 
 static VALUE
@@ -367,7 +364,7 @@ rb_file_s_stat(klass, fname)
     struct stat st;
 
     SafeStringValue(fname);
-    if (stat(RSTRING(fname)->ptr, &st) == -1) {
+    if (rb_stat(fname, &st) < 0) {
 	rb_sys_fail(RSTRING(fname)->ptr);
     }
     return stat_new(&st);
