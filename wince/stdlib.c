@@ -37,3 +37,21 @@ int mblen(const char *mbstr, size_t count)
 
 	return n;
 }
+
+void *bsearch( const void *key, const void *base,
+			   size_t num, size_t width,
+			   int ( __cdecl *compare )(const void *, const void *))
+{
+	size_t i;
+	const void* p = base;
+	const char* px;
+
+	for( i=0; i<num; i++ )
+	{
+		if( 0==compare( key, p ) )
+			return (void*)p;
+		px = (const char*)p; px+=width; p=(const void*)px;
+	}
+	return NULL;
+}
+
