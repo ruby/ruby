@@ -187,7 +187,8 @@ class Pathname
   # If +path+ contains a NUL character (<tt>\0</tt>), an ArgumentError is raised.
   #
   def initialize(path)
-    @path = path.to_str.dup
+    path = path.to_path if path.respond_to? :to_path
+    @path = path.dup
 
     if /\0/ =~ @path
       raise ArgumentError, "pathname contains \\0: #{@path.inspect}"
@@ -890,6 +891,13 @@ if $0 == __FILE__
   require 'test/unit'
 
   class PathnameTest < Test::Unit::TestCase # :nodoc:
+    def test_initialize
+      p1 = Pathname.new('a')
+      assert_equal('a', p1.to_s)
+      p2 = Pathname.new(p1)
+      assert_equal(p1, p2)
+    end
+
     class AnotherStringLike # :nodoc:
       def initialize(s) @s = s end
       def to_str() @s end

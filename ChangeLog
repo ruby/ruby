@@ -1,3 +1,8 @@
+Thu May 27 21:37:50 2004  Tanaka Akira  <akr@m17n.org>
+
+	* lib/pathname.rb (Pathname#initialize): fix pathname initialization
+	  by pathname.
+
 Thu May 27 20:02:09  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* io.c (rb_io_fwrite): check all case errno != 0 [ruby-dev:23648]
