@@ -279,6 +279,25 @@ class TestGDBM < RUNIT::TestCase
     assert_equals(values.reverse, @gdbm.indexes(*keys.reverse))
   end
 
+  def test_select
+    keys = %w(foo bar baz)
+    values = %w(FOO BAR BAZ)
+    @gdbm[keys[0]], @gdbm[keys[1]], @gdbm[keys[2]] = values
+    assert_equals(values.reverse, @gdbm.select(*keys.reverse))
+  end
+
+  def test_select_with_block
+    keys = %w(foo bar baz)
+    values = %w(FOO BAR BAZ)
+    @gdbm[keys[0]], @gdbm[keys[1]], @gdbm[keys[2]] = values
+    ret = @gdbm.select {|k,v|
+      assert_equals(k.upcase, v)
+      k != "bar"
+    }
+    assert_equals([['baz', 'BAZ'], ['foo', 'FOO']],
+		  ret.sort)
+  end
+
   def test_length
     num = 10
     assert_equals(0, @gdbm.size)
@@ -411,7 +430,7 @@ class TestGDBM < RUNIT::TestCase
 
     @gdbm[keys[0]], @gdbm[keys[1]], @gdbm[keys[2]] = values
 
-    assert_equals(@gdbm, @gdbm.delete(key))
+    assert_equals('BAR', @gdbm.delete(key))
     assert_nil(@gdbm[key])
     assert_equals(2, @gdbm.size)
 
@@ -428,12 +447,13 @@ class TestGDBM < RUNIT::TestCase
   def test_delete_with_block
     key = 'no called block'
     @gdbm[key] = 'foo'
-    assert_equals(@gdbm, @gdbm.delete(key) {|k| k.replace 'called block'})
+    assert_equals('foo', @gdbm.delete(key) {|k| k.replace 'called block'})
     assert_equals('no called block', key)
     assert_equals(0, @gdbm.size)
 
     key = 'no called block'
-    assert_nil(@gdbm.delete(key) {|k| k.replace 'called block'})
+    assert_equals(:blockval,
+		  @gdbm.delete(key) {|k| k.replace 'called block'; :blockval})
     assert_equals('called block', key)
     assert_equals(0, @gdbm.size)
   end

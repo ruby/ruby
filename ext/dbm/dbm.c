@@ -32,7 +32,7 @@ struct dbmdata {
 static void
 closed_dbm()
 {
-    rb_raise(rb_eRuntimeError, "closed DBM file");
+    rb_raise(rb_eDBMError, "closed DBM file");
 }
 
 #define GetDBM(obj, dbmp) {\
@@ -51,7 +51,18 @@ free_dbm(dbmp)
     }
 }
 
-static VALUE fdbm_close _((VALUE));
+static VALUE
+fdbm_close(obj)
+    VALUE obj;
+{
+    struct dbmdata *dbmp;
+
+    GetDBM(obj, dbmp);
+    dbm_close(dbmp->di_dbm);
+    dbmp->di_dbm = 0;
+
+    return Qnil;
+}
 
 static VALUE
 fdbm_s_new(argc, argv, klass)
@@ -127,19 +138,6 @@ fdbm_s_open(argc, argv, klass)
     }
 
     return obj;
-}
-
-static VALUE
-fdbm_close(obj)
-    VALUE obj;
-{
-    struct dbmdata *dbmp;
-
-    GetDBM(obj, dbmp);
-    dbm_close(dbmp->di_dbm);
-    dbmp->di_dbm = 0;
-
-    return Qnil;
 }
 
 static VALUE
@@ -230,12 +228,52 @@ fdbm_indexes(argc, argv, obj)
 }
 
 static VALUE
+fdbm_select(argc, argv, obj)
+    int argc;
+    VALUE *argv;
+    VALUE obj;
+{
+    VALUE new = rb_ary_new2(argc);
+    int i;
+
+    if (rb_block_given_p()) {
+        datum key, val;
+        DBM *dbm;
+        struct dbmdata *dbmp;
+        VALUE keystr, valstr;
+
+	if (argc > 0) {
+	    rb_raise(rb_eArgError, "wrong number arguments(%d for 0)", argc);
+	}
+        GetDBM(obj, dbmp);
+        dbm = dbmp->di_dbm;
+
+        for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
+            VALUE assoc;
+            val = dbm_fetch(dbm, key);
+            assoc = rb_assoc_new(rb_tainted_str_new(key.dptr, key.dsize),
+                                 rb_tainted_str_new(val.dptr, val.dsize));
+            if (RTEST(rb_yield(assoc)))
+                rb_ary_push(new, assoc);
+        }
+    }
+    else {
+        for (i=0; i<argc; i++) {
+            rb_ary_push(new, fdbm_fetch(obj, argv[i]));
+        }
+    }
+
+    return new;
+}
+
+static VALUE
 fdbm_delete(obj, keystr)
     VALUE obj, keystr;
 {
     datum key, value;
     struct dbmdata *dbmp;
     DBM *dbm;
+    VALUE valstr;
 
     rb_secure(4);
     StringValue(keystr);
@@ -247,9 +285,12 @@ fdbm_delete(obj, keystr)
 
     value = dbm_fetch(dbm, key);
     if (value.dptr == 0) {
-	if (rb_block_given_p()) rb_yield(keystr);
+	if (rb_block_given_p()) return rb_yield(keystr);
 	return Qnil;
     }
+
+    /* need to save value before dbm_delete() */
+    valstr = rb_tainted_str_new(value.dptr, value.dsize);
 
     if (dbm_delete(dbm, key)) {
 	dbmp->di_size = -1;
@@ -258,7 +299,7 @@ fdbm_delete(obj, keystr)
     else if (dbmp->di_size >= 0) {
 	dbmp->di_size--;
     }
-    return obj;
+    return valstr;
 }
 
 static VALUE
@@ -691,6 +732,7 @@ Init_dbm()
     rb_define_method(rb_cDBM, "index",  fdbm_index, 1);
     rb_define_method(rb_cDBM, "indexes",  fdbm_indexes, -1);
     rb_define_method(rb_cDBM, "indices",  fdbm_indexes, -1);
+    rb_define_method(rb_cDBM, "select",  fdbm_select, -1);
     rb_define_method(rb_cDBM, "length", fdbm_length, 0);
     rb_define_method(rb_cDBM, "size", fdbm_length, 0);
     rb_define_method(rb_cDBM, "empty?", fdbm_empty_p, 0);

@@ -14,11 +14,11 @@
 #include <fcntl.h>
 #include <errno.h>
 
-static VALUE cGDBM, rb_eGDBMError, rb_eGDBMFatalError;
+static VALUE rb_cGDBM, rb_eGDBMError, rb_eGDBMFatalError;
 
 #define MY_BLOCK_SIZE (2048)
 #define MY_FATAL_FUNC rb_gdbm_fatal
-void
+static void
 rb_gdbm_fatal(msg)
     char *msg;
 {
@@ -52,7 +52,18 @@ free_dbm(dbmp)
     }
 }
 
-static VALUE fgdbm_close _((VALUE));
+static VALUE
+fgdbm_close(obj)
+    VALUE obj;
+{
+    struct dbmdata *dbmp;
+
+    GetDBM(obj, dbmp);
+    gdbm_close(dbmp->di_dbm);
+    dbmp->di_dbm = 0;
+
+    return Qnil;
+}
 
 static VALUE
 fgdbm_s_new(argc, argv, klass)
@@ -141,19 +152,6 @@ fgdbm_s_open(argc, argv, klass)
 }
 
 static VALUE
-fgdbm_close(obj)
-    VALUE obj;
-{
-    struct dbmdata *dbmp;
-
-    GetDBM(obj, dbmp);
-    gdbm_close(dbmp->di_dbm);
-    dbmp->di_dbm = 0;
-
-    return Qnil;
-}
-
-static VALUE
 rb_gdbm_fetch(dbm, key)
     GDBM_FILE dbm;
     datum key;
@@ -219,7 +217,7 @@ rb_gdbm_firstkey(dbm)
     RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
 
     OBJ_TAINT(str);
-    return (VALUE)str;
+    return str;
 }
 
 static VALUE
@@ -243,7 +241,7 @@ rb_gdbm_nextkey(dbm, keystr)
     RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
 
     OBJ_TAINT(str);
-    return (VALUE)str;
+    return str;
 }
 
 static VALUE
@@ -321,6 +319,43 @@ fgdbm_indexes(argc, argv, obj)
     new = rb_ary_new2(argc);
     for (i=0; i<argc; i++) {
 	rb_ary_push(new, rb_gdbm_fetch3(obj, argv[i]));
+    }
+
+    return new;
+}
+
+static VALUE
+fgdbm_select(argc, argv, obj)
+    int argc;
+    VALUE *argv;
+    VALUE obj;
+{
+    VALUE new = rb_ary_new2(argc);
+    int i;
+
+    if (rb_block_given_p()) {
+        GDBM_FILE dbm;
+        struct dbmdata *dbmp;
+        VALUE keystr;
+
+	if (argc > 0) {
+	    rb_raise(rb_eArgError, "wrong number arguments(%d for 0)", argc);
+	}
+        GetDBM(obj, dbmp);
+        dbm = dbmp->di_dbm;
+
+        for (keystr = rb_gdbm_firstkey(dbm); RTEST(keystr);
+             keystr = rb_gdbm_nextkey(dbm, keystr)) {
+            VALUE assoc = rb_assoc_new(keystr, rb_gdbm_fetch2(dbm, keystr));
+
+            if (RTEST(rb_yield(assoc)))
+                rb_ary_push(new, assoc);
+        }
+    }
+    else {
+        for (i=0; i<argc; i++) {
+            rb_ary_push(new, rb_gdbm_fetch3(obj, argv[i]));
+        }
     }
 
     return new;
@@ -407,7 +442,7 @@ fgdbm_delete_if(obj)
          keystr = rb_gdbm_nextkey(dbm, keystr)) {
 
 	valstr = rb_gdbm_fetch2(dbm, keystr);
-        ret = rb_protect(rb_yield, rb_assoc_new(rb_str_dup(keystr), valstr), &status);
+        ret = rb_protect(rb_yield, rb_assoc_new(keystr, valstr), &status);
         if (status != 0) break;
 	if (RTEST(ret)) rb_ary_push(ary, keystr);
     }
@@ -625,7 +660,7 @@ fgdbm_each_key(obj)
     for (keystr = rb_gdbm_firstkey(dbm); RTEST(keystr);
          keystr = rb_gdbm_nextkey(dbm, keystr)) {
 
-        rb_yield(rb_str_dup(keystr));
+        rb_yield(keystr);
     }
     return obj;
 }
@@ -644,8 +679,7 @@ fgdbm_each_pair(obj)
     for (keystr = rb_gdbm_firstkey(dbm); RTEST(keystr);
          keystr = rb_gdbm_nextkey(dbm, keystr)) {
 
-        rb_yield(rb_assoc_new(rb_str_dup(keystr), 
-                              rb_gdbm_fetch2(dbm, keystr)));
+        rb_yield(rb_assoc_new(keystr, rb_gdbm_fetch2(dbm, keystr)));
     }
 
     return obj;
@@ -755,8 +789,7 @@ fgdbm_to_a(obj)
     for (keystr = rb_gdbm_firstkey(dbm); RTEST(keystr);
          keystr = rb_gdbm_nextkey(dbm, keystr)) {
 
-        rb_ary_push(ary, rb_assoc_new(rb_str_dup(keystr),
-                                      rb_gdbm_fetch2(dbm, keystr)));
+        rb_ary_push(ary, rb_assoc_new(keystr, rb_gdbm_fetch2(dbm, keystr)));
     }
 
     return ary;
@@ -886,75 +919,76 @@ fgdbm_reject(obj)
 void
 Init_gdbm()
 {
-    cGDBM = rb_define_class("GDBM", rb_cObject);
+    rb_cGDBM = rb_define_class("GDBM", rb_cObject);
     rb_eGDBMError = rb_define_class("GDBMError", rb_eStandardError);
     rb_eGDBMFatalError = rb_define_class("GDBMFatalError", rb_eException);
-    rb_include_module(cGDBM, rb_mEnumerable);
+    rb_include_module(rb_cGDBM, rb_mEnumerable);
 
-    rb_define_singleton_method(cGDBM, "new", fgdbm_s_new, -1);
-    rb_define_singleton_method(cGDBM, "open", fgdbm_s_open, -1);
+    rb_define_singleton_method(rb_cGDBM, "new", fgdbm_s_new, -1);
+    rb_define_singleton_method(rb_cGDBM, "open", fgdbm_s_open, -1);
 
-    rb_define_method(cGDBM, "initialize", fgdbm_initialize, -1);
-    rb_define_method(cGDBM, "close", fgdbm_close, 0);
-    rb_define_method(cGDBM, "[]", fgdbm_aref, 1);
-    rb_define_method(cGDBM, "fetch", fgdbm_fetch_m, -1);
-    rb_define_method(cGDBM, "[]=", fgdbm_store, 2);
-    rb_define_method(cGDBM, "store", fgdbm_store, 2);
-    rb_define_method(cGDBM, "index",  fgdbm_index, 1);
-    rb_define_method(cGDBM, "indexes",  fgdbm_indexes, -1);
-    rb_define_method(cGDBM, "indices",  fgdbm_indexes, -1);
-    rb_define_method(cGDBM, "length", fgdbm_length, 0);
-    rb_define_alias(cGDBM,  "size", "length");
-    rb_define_method(cGDBM, "empty?", fgdbm_empty_p, 0);
-    rb_define_method(cGDBM, "each", fgdbm_each_pair, 0);
-    rb_define_method(cGDBM, "each_value", fgdbm_each_value, 0);
-    rb_define_method(cGDBM, "each_key", fgdbm_each_key, 0);
-    rb_define_method(cGDBM, "each_pair", fgdbm_each_pair, 0);
-    rb_define_method(cGDBM, "keys", fgdbm_keys, 0);
-    rb_define_method(cGDBM, "values", fgdbm_values, 0);
-    rb_define_method(cGDBM, "shift", fgdbm_shift, 0);
-    rb_define_method(cGDBM, "delete", fgdbm_delete, 1);
-    rb_define_method(cGDBM, "delete_if", fgdbm_delete_if, 0);
-    rb_define_method(cGDBM, "reject!", fgdbm_delete_if, 0);
-    rb_define_method(cGDBM, "reject", fgdbm_reject, 0);
-    rb_define_method(cGDBM, "clear", fgdbm_clear, 0);
-    rb_define_method(cGDBM,"invert", fgdbm_invert, 0);
-    rb_define_method(cGDBM,"update", fgdbm_update, 1);
-    rb_define_method(cGDBM,"replace", fgdbm_replace, 1);
-    rb_define_method(cGDBM,"reorganize", fgdbm_reorganize, 0);
-    rb_define_method(cGDBM,"sync", fgdbm_sync, 0);
-    /* rb_define_method(cGDBM,"setopt", fgdbm_setopt, 2); */
-    rb_define_method(cGDBM,"cachesize=", fgdbm_set_cachesize, 1);
-    rb_define_method(cGDBM,"fastmode=", fgdbm_set_fastmode, 1);
-    rb_define_method(cGDBM,"syncmode=", fgdbm_set_syncmode, 1);
+    rb_define_method(rb_cGDBM, "initialize", fgdbm_initialize, -1);
+    rb_define_method(rb_cGDBM, "close", fgdbm_close, 0);
+    rb_define_method(rb_cGDBM, "[]", fgdbm_aref, 1);
+    rb_define_method(rb_cGDBM, "fetch", fgdbm_fetch_m, -1);
+    rb_define_method(rb_cGDBM, "[]=", fgdbm_store, 2);
+    rb_define_method(rb_cGDBM, "store", fgdbm_store, 2);
+    rb_define_method(rb_cGDBM, "index",  fgdbm_index, 1);
+    rb_define_method(rb_cGDBM, "indexes",  fgdbm_indexes, -1);
+    rb_define_method(rb_cGDBM, "indices",  fgdbm_indexes, -1);
+    rb_define_method(rb_cGDBM, "select",  fgdbm_select, -1);
+    rb_define_method(rb_cGDBM, "length", fgdbm_length, 0);
+    rb_define_method(rb_cGDBM, "size", fgdbm_length, 0);
+    rb_define_method(rb_cGDBM, "empty?", fgdbm_empty_p, 0);
+    rb_define_method(rb_cGDBM, "each", fgdbm_each_pair, 0);
+    rb_define_method(rb_cGDBM, "each_value", fgdbm_each_value, 0);
+    rb_define_method(rb_cGDBM, "each_key", fgdbm_each_key, 0);
+    rb_define_method(rb_cGDBM, "each_pair", fgdbm_each_pair, 0);
+    rb_define_method(rb_cGDBM, "keys", fgdbm_keys, 0);
+    rb_define_method(rb_cGDBM, "values", fgdbm_values, 0);
+    rb_define_method(rb_cGDBM, "shift", fgdbm_shift, 0);
+    rb_define_method(rb_cGDBM, "delete", fgdbm_delete, 1);
+    rb_define_method(rb_cGDBM, "delete_if", fgdbm_delete_if, 0);
+    rb_define_method(rb_cGDBM, "reject!", fgdbm_delete_if, 0);
+    rb_define_method(rb_cGDBM, "reject", fgdbm_reject, 0);
+    rb_define_method(rb_cGDBM, "clear", fgdbm_clear, 0);
+    rb_define_method(rb_cGDBM,"invert", fgdbm_invert, 0);
+    rb_define_method(rb_cGDBM,"update", fgdbm_update, 1);
+    rb_define_method(rb_cGDBM,"replace", fgdbm_replace, 1);
+    rb_define_method(rb_cGDBM,"reorganize", fgdbm_reorganize, 0);
+    rb_define_method(rb_cGDBM,"sync", fgdbm_sync, 0);
+    /* rb_define_method(rb_cGDBM,"setopt", fgdbm_setopt, 2); */
+    rb_define_method(rb_cGDBM,"cachesize=", fgdbm_set_cachesize, 1);
+    rb_define_method(rb_cGDBM,"fastmode=", fgdbm_set_fastmode, 1);
+    rb_define_method(rb_cGDBM,"syncmode=", fgdbm_set_syncmode, 1);
 
-    rb_define_method(cGDBM, "include?", fgdbm_has_key, 1);
-    rb_define_method(cGDBM, "has_key?", fgdbm_has_key, 1);
-    rb_define_method(cGDBM, "member?", fgdbm_has_key, 1);
-    rb_define_method(cGDBM, "has_value?", fgdbm_has_value, 1);
-    rb_define_method(cGDBM, "key?", fgdbm_has_key, 1);
-    rb_define_method(cGDBM, "value?", fgdbm_has_value, 1);
+    rb_define_method(rb_cGDBM, "include?", fgdbm_has_key, 1);
+    rb_define_method(rb_cGDBM, "has_key?", fgdbm_has_key, 1);
+    rb_define_method(rb_cGDBM, "member?", fgdbm_has_key, 1);
+    rb_define_method(rb_cGDBM, "has_value?", fgdbm_has_value, 1);
+    rb_define_method(rb_cGDBM, "key?", fgdbm_has_key, 1);
+    rb_define_method(rb_cGDBM, "value?", fgdbm_has_value, 1);
 
-    rb_define_method(cGDBM, "to_a", fgdbm_to_a, 0);
-    rb_define_method(cGDBM, "to_hash", fgdbm_to_hash, 0);
+    rb_define_method(rb_cGDBM, "to_a", fgdbm_to_a, 0);
+    rb_define_method(rb_cGDBM, "to_hash", fgdbm_to_hash, 0);
 
     /* flags for gdbm_opn() */
     /*
-    rb_define_const(cGDBM, "READER",  INT2FIX(GDBM_READER));
-    rb_define_const(cGDBM, "WRITER",  INT2FIX(GDBM_WRITER));
-    rb_define_const(cGDBM, "WRCREAT", INT2FIX(GDBM_WRCREAT));
-    rb_define_const(cGDBM, "NEWDB",   INT2FIX(GDBM_NEWDB));
+    rb_define_const(rb_cGDBM, "READER",  INT2FIX(GDBM_READER));
+    rb_define_const(rb_cGDBM, "WRITER",  INT2FIX(GDBM_WRITER));
+    rb_define_const(rb_cGDBM, "WRCREAT", INT2FIX(GDBM_WRCREAT));
+    rb_define_const(rb_cGDBM, "NEWDB",   INT2FIX(GDBM_NEWDB));
     */
-    rb_define_const(cGDBM, "FAST", INT2FIX(GDBM_FAST));
+    rb_define_const(rb_cGDBM, "FAST", INT2FIX(GDBM_FAST));
     /* this flag is obsolete in gdbm 1.8.
        On gdbm 1.8, fast mode is default behavior. */
 
     /* gdbm version 1.8 specific */
 #if defined(GDBM_SYNC)
-    rb_define_const(cGDBM, "SYNC",    INT2FIX(GDBM_SYNC));
+    rb_define_const(rb_cGDBM, "SYNC",    INT2FIX(GDBM_SYNC));
 #endif
 #if defined(GDBM_NOLOCK)
-    rb_define_const(cGDBM, "NOLOCK",  INT2FIX(GDBM_NOLOCK));
+    rb_define_const(rb_cGDBM, "NOLOCK",  INT2FIX(GDBM_NOLOCK));
 #endif
-    rb_define_const(cGDBM, "VERSION",  rb_str_new2(gdbm_version));
+    rb_define_const(rb_cGDBM, "VERSION",  rb_str_new2(gdbm_version));
 }

@@ -165,7 +165,7 @@ class TestDBM < RUNIT::TestCase
     assert_nil(dbm.close)
 
     # closed DBM file
-    assert_exception(RuntimeError) { dbm.close }
+    assert_exception(DBMError) { dbm.close }
   end
 
   def test_aref
@@ -243,6 +243,25 @@ class TestDBM < RUNIT::TestCase
     values = %w(FOO BAR BAZ)
     @dbm[keys[0]], @dbm[keys[1]], @dbm[keys[2]] = values
     assert_equals(values.reverse, @dbm.indexes(*keys.reverse))
+  end
+
+  def test_select
+    keys = %w(foo bar baz)
+    values = %w(FOO BAR BAZ)
+    @dbm[keys[0]], @dbm[keys[1]], @dbm[keys[2]] = values
+    assert_equals(values.reverse, @dbm.select(*keys.reverse))
+  end
+
+  def test_select_with_block
+    keys = %w(foo bar baz)
+    values = %w(FOO BAR BAZ)
+    @dbm[keys[0]], @dbm[keys[1]], @dbm[keys[2]] = values
+    ret = @dbm.select {|k,v|
+      assert_equals(k.upcase, v)
+      k != "bar"
+    }
+    assert_equals([['baz', 'BAZ'], ['foo', 'FOO']],
+		  ret.sort)
   end
 
   def test_length
@@ -377,7 +396,7 @@ class TestDBM < RUNIT::TestCase
 
     @dbm[keys[0]], @dbm[keys[1]], @dbm[keys[2]] = values
 
-    assert_equals(@dbm, @dbm.delete(key))
+    assert_equals('BAR', @dbm.delete(key))
     assert_nil(@dbm[key])
     assert_equals(2, @dbm.size)
 
@@ -394,12 +413,13 @@ class TestDBM < RUNIT::TestCase
   def test_delete_with_block
     key = 'no called block'
     @dbm[key] = 'foo'
-    assert_equals(@dbm, @dbm.delete(key) {|k| k.replace 'called block'})
+    assert_equals('foo', @dbm.delete(key) {|k| k.replace 'called block'})
     assert_equals('no called block', key)
     assert_equals(0, @dbm.size)
 
     key = 'no called block'
-    assert_nil(@dbm.delete(key) {|k| k.replace 'called block'})
+    assert_equals(:blockval,
+		  @dbm.delete(key) {|k| k.replace 'called block'; :blockval})
     assert_equals('called block', key)
     assert_equals(0, @dbm.size)
   end

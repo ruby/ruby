@@ -901,11 +901,10 @@ r_object(arg)
 		len--;
 #endif
 	    }
-	    big = RBIGNUM(rb_big_norm((VALUE)big));
-	    if (TYPE(big) == T_BIGNUM) {
-		r_regist((VALUE)big, arg);
+	    v = rb_big_norm((VALUE)big);
+	    if (TYPE(v) == T_BIGNUM) {
+		r_regist(v, arg);
 	    }
-	    v = (VALUE)big;
 	}
 	break;
 
@@ -1009,10 +1008,10 @@ r_object(arg)
 
 	    klass = rb_path2class(r_unique(arg));
 	    v = rb_obj_alloc(klass);
-	    r_regist(v, arg);
 	    if (TYPE(v) != T_OBJECT) {
 		rb_raise(rb_eArgError, "dump format error");
 	    }
+	    r_regist(v, arg);
 	    r_ivar(v, arg);
 	}
 	break;
@@ -1051,9 +1050,10 @@ r_object(arg)
 
       case TYPE_SYMBOL:
 	v = ID2SYM(r_symreal(arg));
+	break;
 
       case TYPE_SYMLINK:
-	v = ID2SYM(r_symlink(arg));
+	return ID2SYM(r_symlink(arg));
 
       default:
 	rb_raise(rb_eArgError, "dump format error(0x%x)", type);

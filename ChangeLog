@@ -15,9 +15,30 @@ Wed Feb 27 07:05:17 2002  Akinori MUSHA  <knu@iDaemons.org>
 	  KAME PR:        393
 	  FreeBSD PR:     kern/34242
 
+Wed Feb 27 03:36:47 2002  Koji Arai  <jca02266@nifty.ne.jp>
+
+	* ext/dbm/dbm.c (fdbm_select): 1.7 behavior.
+
+	* ext/gdbm/gdbm.c (fgdbm_select): ditto.
+
+	* ext/sdbm/sdbm.c (fsdbm_select): ditto.
+
+	* ext/dbm/dbm.c (fdbm_delete): adopt Hash#delete behavior.
+
+	* ext/sdbm/sdbm.c (fsdbm_delete): ditto.
+
+	* ext/gdbm/gdbm.c: need not to dup key to the block.
+
+	* ext/sdbm/sdbm.c : replace RuntimeError with SDBMError.
+
 Tue Feb 26 21:34:07 2002  Usaku Nakamura <usa@ruby-lang.org>
 
 	* bignum.c (rb_big_2comp): void function cannot return any value.
+
+Tue Feb 26 16:52:12 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_f_missing): NoMethod error messages for true, false,
+	  nil must respond visibility like for other objects.
 
 Tue Feb 26 15:41:30 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

@@ -4232,13 +4232,13 @@ rb_f_missing(argc, argv, obj)
 
     switch (TYPE(obj)) {
       case T_NIL:
-	format = "undefined method `%s' for nil";
+	desc = "nil";
 	break;
       case T_TRUE:
-	format = "undefined method `%s' for true";
+	desc = "true";
 	break;
       case T_FALSE:
-	format = "undefined method `%s' for false";
+	desc = "false";
 	break;
       case T_OBJECT:
 	d = rb_any_to_s(obj);
@@ -4248,40 +4248,41 @@ rb_f_missing(argc, argv, obj)
 	break;
     }
     if (d) {
-	if (last_call_status & CSTAT_PRIV) {
-	    format = "private method `%s' called for %s%s%s";
-	}
-	if (last_call_status & CSTAT_PROT) {
-	    format = "protected method `%s' called for %s%s%s";
-	}
-	else if (last_call_status & CSTAT_VCALL) {
-	    const char *mname = rb_id2name(id);
-
-	    if (('a' <= mname[0] && mname[0] <= 'z') || mname[0] == '_') {
-		format = "undefined local variable or method `%s' for %s%s%s";
-		exc = rb_eNameError;
-	    }
-	}
-	if (!format) {
-	    format = "undefined method `%s' for %s%s%s";
-	}
 	if (RSTRING(d)->len > 65) {
 	    d = rb_any_to_s(obj);
 	}
 	desc = RSTRING(d)->ptr;
     }
 
+    if (last_call_status & CSTAT_PRIV) {
+	format = "private method `%s' called for %s%s%s";
+    }
+    if (last_call_status & CSTAT_PROT) {
+	format = "protected method `%s' called for %s%s%s";
+    }
+    else if (last_call_status & CSTAT_VCALL) {
+	const char *mname = rb_id2name(id);
+
+	if (('a' <= mname[0] && mname[0] <= 'z') || mname[0] == '_') {
+	    format = "undefined local variable or method `%s' for %s%s%s";
+	    exc = rb_eNameError;
+	}
+    }
+    if (!format) {
+	format = "undefined method `%s' for %s%s%s";
+    }
+
     ruby_sourcefile = file;
     ruby_sourceline = line;
     PUSH_FRAME();		/* fake frame */
     *ruby_frame = *_frame.prev->prev;
-
     {
 	char buf[BUFSIZ];
+	int noclass = (!d || desc[0]=='#');
 
 	snprintf(buf, BUFSIZ, format, rb_id2name(id),
-		 desc, desc[0]=='#' ? "" : ":",
-		 desc[0]=='#' ? "" : rb_class2name(CLASS_OF(obj)));
+		 desc, noclass ? "" : ":",
+		 noclass ? "" : rb_class2name(CLASS_OF(obj)));
 	exc = rb_exc_new2(exc, buf);
 	rb_iv_set(exc, "name", argv[0]);
 	rb_iv_set(exc, "args", rb_ary_new4(argc-1, argv+1));

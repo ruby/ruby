@@ -139,7 +139,7 @@ class TestSDBM < RUNIT::TestCase
     assert_nil(sdbm.close)
 
     # closed SDBM file
-    assert_exception(RuntimeError) { sdbm.close }
+    assert_exception(SDBMError) { sdbm.close }
   end
 
   def test_aref
@@ -217,6 +217,25 @@ class TestSDBM < RUNIT::TestCase
     values = %w(FOO BAR BAZ)
     @sdbm[keys[0]], @sdbm[keys[1]], @sdbm[keys[2]] = values
     assert_equals(values.reverse, @sdbm.indexes(*keys.reverse))
+  end
+
+  def test_select
+    keys = %w(foo bar baz)
+    values = %w(FOO BAR BAZ)
+    @sdbm[keys[0]], @sdbm[keys[1]], @sdbm[keys[2]] = values
+    assert_equals(values.reverse, @sdbm.select(*keys.reverse))
+  end
+
+  def test_select_with_block
+    keys = %w(foo bar baz)
+    values = %w(FOO BAR BAZ)
+    @sdbm[keys[0]], @sdbm[keys[1]], @sdbm[keys[2]] = values
+    ret = @sdbm.select {|k,v|
+      assert_equals(k.upcase, v)
+      k != "bar"
+    }
+    assert_equals([['baz', 'BAZ'], ['foo', 'FOO']],
+		  ret.sort)
   end
 
   def test_length
@@ -351,7 +370,7 @@ class TestSDBM < RUNIT::TestCase
 
     @sdbm[keys[0]], @sdbm[keys[1]], @sdbm[keys[2]] = values
 
-    assert_equals(@sdbm, @sdbm.delete(key))
+    assert_equals('BAR', @sdbm.delete(key))
     assert_nil(@sdbm[key])
     assert_equals(2, @sdbm.size)
 
@@ -360,12 +379,13 @@ class TestSDBM < RUNIT::TestCase
   def test_delete_with_block
     key = 'no called block'
     @sdbm[key] = 'foo'
-    assert_equals(@sdbm, @sdbm.delete(key) {|k| k.replace 'called block'})
+    assert_equals('foo', @sdbm.delete(key) {|k| k.replace 'called block'})
     assert_equals('no called block', key)
     assert_equals(0, @sdbm.size)
 
     key = 'no called block'
-    assert_nil(@sdbm.delete(key) {|k| k.replace 'called block'})
+    assert_equals(:blockval,
+		  @sdbm.delete(key) {|k| k.replace 'called block'; :blockval})
     assert_equals('called block', key)
     assert_equals(0, @sdbm.size)
   end
