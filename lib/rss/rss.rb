@@ -627,11 +627,21 @@ EOC
     
     def setup_maker_element(target)
       self.class.need_initialize_variables.each do |var|
-        setter = "#{var}="
-        if target.respond_to?(setter)
-          target.__send__(setter, __send__(var))
+        value = __send__(var)
+        if value.respond_to?("setup_maker") and
+            !not_need_to_call_setup_maker_variables.include?(var)
+          value.setup_maker(target)
+        else
+          setter = "#{var}="
+          if target.respond_to?(setter)
+            target.__send__(setter, value)
+          end
         end
       end
+    end
+
+    def not_need_to_call_setup_maker_variables
+      []
     end
     
     def setup_maker_elements(parent)

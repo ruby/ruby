@@ -223,6 +223,10 @@ module RSS
         end
       end
 
+      def not_need_to_call_setup_maker_variables
+        %w(image textInput)
+      end
+    
       class SkipDays < Element
         include RSS09
 
