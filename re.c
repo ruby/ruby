@@ -1239,21 +1239,23 @@ rb_reg_initialize_m(argc, argv, self)
 	}
 	rb_reg_check(argv[0]);
 	flags = RREGEXP(argv[0])->ptr->options & 0xf;
-	switch (RBASIC(argv[0])->flags & KCODE_MASK) {
-	  case KCODE_NONE:
-	    flags |= 16;
-	    break;
-	  case KCODE_EUC:
-	    flags |= 32;
-	    break;
-	  case KCODE_SJIS:
-	    flags |= 48;
-	    break;
-	  case KCODE_UTF8:
-	    flags |= 64;
-	    break;
-	  default:
-	    break;
+	if (FL_TEST(argv[0], KCODE_FIXED)) {
+	    switch (RBASIC(argv[0])->flags & KCODE_MASK) {
+	      case KCODE_NONE:
+		flags |= 16;
+		break;
+	      case KCODE_EUC:
+		flags |= 32;
+		break;
+	      case KCODE_SJIS:
+		flags |= 48;
+		break;
+	      case KCODE_UTF8:
+		flags |= 64;
+		break;
+	      default:
+		break;
+	    }
 	}
 	s = RREGEXP(argv[0])->str;
 	len = RREGEXP(argv[0])->len;
