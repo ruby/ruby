@@ -1,6 +1,10 @@
-Tue Sep 12 15:41:13 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Tue Sep 12 16:02:20 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* stable version 1.6.0 released.
+
+Tue Sep 12 16:01:58 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* array.c (rb_ary_unshift_m): typo.
 
 Tue Sep 12 15:37:55 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

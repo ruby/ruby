@@ -358,7 +358,7 @@ rb_ary_unshift_m(argc, argv, ary)
     if (argc == 0) {
 	rb_raise(rb_eArgError, "wrong # of arguments(at least 1)");
     }
-    if (argc > 1) {
+    if (argc > 0) {
 	long len = RARRAY(ary)->len;
 
 	/* make rooms by setting the last item */
