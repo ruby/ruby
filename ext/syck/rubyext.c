@@ -29,6 +29,10 @@ static double S_nan() { return S_zero() / S_zero(); }
 
 static VALUE syck_node_transform( VALUE );
 
+SYMID rb_syck_parse_handler _((SyckParser *, SyckNode *));
+SYMID rb_syck_load_handler _((SyckParser *, SyckNode *));
+void rb_syck_err_handler _((SyckParser *, char *));
+
 /*
  * read from io.
  */

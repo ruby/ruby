@@ -1,3 +1,7 @@
+Wed May 14 19:56:43 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* ext/syck/rubyext.c: add prototypes to avoid VC++ warnings.
+
 Wed May 14 12:23:46 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb (Net::HTTP#start): should check whether HTTP
@@ -12,7 +16,7 @@ Tue May 13 22:31:04 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
 	* lib/yaml/rubytypes.rb, lib/yaml/types.rb: using Object#object_id
 	  rather than deprecated Object#id.
 
-	* ext/token.c: changed ASCII escapes to octal notation.
+	* ext/syck/token.c: changed ASCII escapes to octal notation.
 
 	* ext/Setup*: added entries for static linking of Syck extension.
 
