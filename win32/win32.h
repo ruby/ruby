@@ -172,7 +172,7 @@ extern int rb_w32_vsnprintf(char *, size_t, const char *, va_list);
 extern int rb_w32_snprintf(char *, size_t, const char *, ...);
 
 extern int chown(const char *, int, int);
-extern int link(char *, char *);
+extern int link(const char *, const char *);
 extern int gettimeofday(struct timeval *, struct timezone *);
 extern pid_t waitpid (pid_t, int *, int);
 extern int do_spawn(int, char *);

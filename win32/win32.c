@@ -2593,7 +2593,7 @@ kill(int pid, int sig)
 }
 
 int
-link(char *from, char *to)
+link(const char *from, const char *to)
 {
     static BOOL (WINAPI *pCreateHardLink)(LPCTSTR, LPCTSTR, LPSECURITY_ATTRIBUTES) = NULL;
     static int myerrno = 0;
@@ -2605,9 +2605,8 @@ link(char *from, char *to)
 	if (hKernel) {
 	    pCreateHardLink = (BOOL (WINAPI *)(LPCTSTR, LPCTSTR, LPSECURITY_ATTRIBUTES))GetProcAddress(hKernel, "CreateHardLinkA");
 	    if (!pCreateHardLink) {
-		myerrno = map_errno(GetLastError());
+		rb_notimplement();
 	    }
-	    CloseHandle(hKernel);
 	}
 	else {
 	    myerrno = map_errno(GetLastError());

@@ -1,3 +1,10 @@
+Thu Feb 12 13:32:49 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (link): raise NotImplementedError on Win9X.
+	  contributed by Tietew. [ruby-dev:22713]
+
+	* win32/win32.c, win32/win32.h (link): add const.
+
 Thu Feb 12 09:56:19 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/tk/lib/tk.rb (TkComm::tk_split_list): suppress a warning.
