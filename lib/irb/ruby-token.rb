@@ -164,6 +164,7 @@ module RubyToken
     [:TkSTRING,     TkVal],
     [:TkXSTRING,    TkVal],
     [:TkREGEXP,     TkVal],
+    [:TkSYMBOL,     TkVal],
 
     [:TkDSTRING,    TkNode],
     [:TkDXSTRING,   TkNode],

@@ -301,7 +301,8 @@ class RubyLex
     "x" => "\`",
     "r" => "\/",
     "w" => "]",
-    "W" => "]"
+    "W" => "]",
+    "s" => ":"
   }
   
   PERCENT_PAREN = {
@@ -316,7 +317,8 @@ class RubyLex
     "\"" => TkSTRING,
     "\`" => TkXSTRING,
     "\/" => TkREGEXP,
-    "]" => TkDSTRING
+    "]" => TkDSTRING,
+    ":" => TkSYMBOL
   }
   DLtype2Token = {
     "\"" => TkDSTRING,
