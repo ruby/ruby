@@ -158,7 +158,7 @@ VALUE ossl_x509name_add_entry(int argc, VALUE *argv, VALUE self)
 }
 
 static VALUE
-ossl_x509name_to_s(VALUE self)
+ossl_x509name_to_s_old(VALUE self)
 {
     X509_NAME *name;
     char *buf;
@@ -168,6 +168,30 @@ ossl_x509name_to_s(VALUE self)
     buf = X509_NAME_oneline(name, NULL, 0);
     str = rb_str_new2(buf);
     OPENSSL_free(buf);
+
+    return str;
+}
+
+static VALUE
+ossl_x509name_to_s(int argc, VALUE *argv, VALUE self)
+{
+    X509_NAME *name;
+    VALUE flag, str;
+    BIO *out;
+    unsigned long iflag;
+
+    GetX509Name(self, name);
+    rb_scan_args(argc, argv, "01", &flag);
+    if (NIL_P(flag))
+	return ossl_x509name_to_s_old(self);
+    else iflag = NUM2ULONG(flag);
+    if (!(out = BIO_new(BIO_s_mem())))
+	rb_raise(eX509NameError, NULL);
+    if (!X509_NAME_print_ex(out, name, 0, iflag)){
+	BIO_free(out);
+	rb_raise(eX509NameError, NULL);
+    }
+    str = ossl_membio2str(out);
 
     return str;
 }
@@ -287,7 +311,7 @@ Init_ossl_x509name()
     rb_define_alloc_func(cX509Name, ossl_x509name_alloc);
     rb_define_method(cX509Name, "initialize", ossl_x509name_initialize, -1);
     rb_define_method(cX509Name, "add_entry", ossl_x509name_add_entry, -1);
-    rb_define_method(cX509Name, "to_s", ossl_x509name_to_s, 0);
+    rb_define_method(cX509Name, "to_s", ossl_x509name_to_s, -1);
     rb_define_method(cX509Name, "to_a", ossl_x509name_to_a, 0);
     rb_define_method(cX509Name, "cmp", ossl_x509name_cmp, 1);
     rb_define_alias(cX509Name, "<=>", "cmp");
@@ -308,4 +332,9 @@ Init_ossl_x509name()
     rb_hash_aset(hash, rb_str_new2("domainComponent"), ia5str);
     rb_hash_aset(hash, rb_str_new2("emailAddress"), ia5str);
     rb_define_const(cX509Name, "OBJECT_TYPE_TEMPLATE", hash);
+
+    rb_define_const(cX509Name, "COMPAT", ULONG2NUM(XN_FLAG_COMPAT));
+    rb_define_const(cX509Name, "RFC2253", ULONG2NUM(XN_FLAG_RFC2253));
+    rb_define_const(cX509Name, "ONELINE", ULONG2NUM(XN_FLAG_ONELINE));
+    rb_define_const(cX509Name, "MULTILINE", ULONG2NUM(XN_FLAG_MULTILINE));
 }

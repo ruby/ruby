@@ -1,3 +1,19 @@
+Mon Sep 13 21:33:40 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_x509name.c (ossl_x509name_to_s): add optional
+	  second argument to specify the output format (see also
+	   X509_NAME_print_ex).
+
+	* ext/openssl/ossl_x509name.c (ossl_x509name_init): new constants:
+	  OpenSSL::X509::Name::COMPAT, OpenSSL::X509::Name::RFC2253,
+	  OpenSSL::X509::ONELINE, OpenSSL::X509::MULTILINE.
+
+	* ext/openssl/lib/openssl/x509.rb (OpenSSL::X509::Name::RFC2253DN):
+	  new module to provide the parse for RFC2253 DN format.
+
+	* ext/openssl/lib/openssl/x509.rb (OpenSSL::X509::Name.parse_rfc2253):
+	  new method to parse RFC2253 DN format.
+
 Mon Sep 13 19:16:33 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* eval.c (blk_copy_prev): need frame_dup().  [ruby-dev:24103]
