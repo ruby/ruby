@@ -109,7 +109,7 @@ ossl_config_s_alloc(VALUE klass)
     VALUE obj;
 
     if(!(conf = NCONF_new(NULL)))
-	ossl_rasie(eConfigError, NULL);
+	ossl_raise(eConfigError, NULL);
     WrapConfig(klass, obj, conf);
 
     return obj;
