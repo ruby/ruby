@@ -1437,9 +1437,8 @@ rb_ary_diff(ary1, ary2)
 }
 
 static VALUE
-ary_make_hash(ary1, ary2, func)
+ary_make_hash(ary1, ary2)
     VALUE ary1, ary2;
-    int (*func)();
 {
     VALUE hash = rb_hash_new();
     int i, n;

@@ -320,10 +320,7 @@ rb_f_sprintf(argc, argv)
 		len = RSTRING(str)->len;
 		if (flags&FPREC) {
 		    if (prec < len) {
-			CHECK(prec);
-			memcpy(&buf[blen], RSTRING(str)->ptr, prec);
-			blen += prec;
-			break;
+			len = prec;
 		    }
 		}
 		if (flags&FWIDTH) {

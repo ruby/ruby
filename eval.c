@@ -5635,6 +5635,9 @@ call_end_proc(data)
 {
     PUSH_ITER(ITER_NOT);
     PUSH_FRAME();
+    ruby_frame->self = ruby_frame->prev->self;
+    ruby_frame->last_func = 0;
+    ruby_frame->last_class = 0;
     proc_call(data, Qundef);
     POP_FRAME();
     POP_ITER();

@@ -469,7 +469,7 @@ time_cmp(time1, time2)
 	}
     }
 
-    if (rb_obj_is_instance_of(time2, rb_cTime)) {
+    if (rb_obj_is_kind_of(time2, rb_cTime)) {
 	GetTimeval(time2, tobj2);
 	if (tobj1->tv.tv_sec == tobj2->tv.tv_sec) {
 	    if (tobj1->tv.tv_usec == tobj2->tv.tv_usec) return INT2FIX(0);
@@ -492,7 +492,7 @@ time_eql(time1, time2)
     struct time_object *tobj1, *tobj2;
 
     GetTimeval(time1, tobj1);
-    if (rb_obj_is_instance_of(time2, rb_cTime)) {
+    if (rb_obj_is_kind_of(time2, rb_cTime)) {
 	GetTimeval(time2, tobj2);
 	if (tobj1->tv.tv_sec == tobj2->tv.tv_sec) {
 	    if (tobj1->tv.tv_usec == tobj2->tv.tv_usec) return Qtrue;
@@ -676,7 +676,7 @@ time_minus(time1, time2)
     double f;
 
     GetTimeval(time1, tobj);
-    if (rb_obj_is_instance_of(time2, rb_cTime)) {
+    if (rb_obj_is_kind_of(time2, rb_cTime)) {
 	struct time_object *tobj2;
 
 	GetTimeval(time2, tobj2);
@@ -945,7 +945,7 @@ static VALUE
 time_s_times(obj)
     VALUE obj;
 {
-#ifdef HAVE_TIMES
+#if defined(HAVE_TIMES) && !defined(__CHECKER__)
 #ifndef HZ
 # ifdef CLK_TCK
 #   define HZ CLK_TCK

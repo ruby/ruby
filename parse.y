@@ -1914,7 +1914,6 @@ yyerror(msg)
 }
 
 static int heredoc_end;
-static int last_newline;
 
 int ruby_in_compile = 0;
 int ruby__end__seen;
@@ -1954,7 +1953,6 @@ yycompile(f, line)
     ruby__end__seen = 0;
     ruby_eval_tree = 0;
     heredoc_end = 0;
-    last_newline = 0;
     ruby_sourcefile = f;
     ruby_in_compile = 1;
     n = yyparse();
@@ -2814,7 +2812,7 @@ yylex()
 	/* white spaces */
       case ' ': case '\t': case '\f': case '\r':
       case '\13': /* '\v' */
-	space_seen = 1;
+	space_seen++;
 	goto retry;
 
       case '#':		/* it's a comment */
@@ -2982,6 +2980,10 @@ yylex()
 	    return '?';
 	}
 	c = nextc();
+	if (c == -1 || c == 10) {
+	    rb_compile_error("incomplete character syntax");
+	    return 0;
+	}
 	if (lex_state == EXPR_ARG && ISSPACE(c)){
 	    pushback(c);
 	    lex_state = EXPR_BEG;
@@ -3294,8 +3296,8 @@ yylex()
 	}
 	pushback(c);
 	if (lex_state == EXPR_ARG && space_seen) {
-	    arg_ambiguous();
 	    if (!ISSPACE(c)) {
+		arg_ambiguous();
 		return parse_regx('/', '/');
 	    }
 	}
@@ -3847,10 +3849,9 @@ newline_node(node)
 {
     NODE *nl = 0;
     if (node) {
-	if (nd_line(node) == last_newline) return node;
         nl = NEW_NEWLINE(node);
         fixpos(nl, node);
-        last_newline = nl->nd_nth = nd_line(node);
+        nl->nd_nth = nd_line(node);
     }
     return nl;
 }
@@ -4645,7 +4646,7 @@ top_local_setup()
 	i = ruby_scope->local_tbl?ruby_scope->local_tbl[0]:0;
 
 	if (i < len) {
-	    if (i == 0 || ruby_scope->flag == SCOPE_ALLOCA) {
+	    if (i == 0 || (ruby_scope->flag & SCOPE_MALLOC) == 0) {
 		VALUE *vars = ALLOC_N(VALUE, len+1);
 		if (ruby_scope->local_vars) {
 		    *vars++ = ruby_scope->local_vars[-1];

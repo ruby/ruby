@@ -1013,13 +1013,10 @@ fptr_finalize(fptr)
     }
 }
 
-void
-rb_io_fptr_finalize(fptr)
+static void
+rb_io_fptr_cleanup(fptr)
     OpenFile *fptr;
 {
-    if (!fptr) return;
-    if (!fptr->f && !fptr->f2) return;
-
     if (fptr->finalize) {
 	(*fptr->finalize)(fptr);
     }
@@ -1034,6 +1031,17 @@ rb_io_fptr_finalize(fptr)
     }
 }
 
+void
+rb_io_fptr_finalize(fptr)
+    OpenFile *fptr;
+{
+    if (!fptr) return;
+    if (!fptr->f && !fptr->f2) return;
+    if (fileno(fptr->f) < 3) return;
+
+    rb_io_fptr_cleanup(fptr);
+}
+
 static void
 rb_io_fptr_close(fptr)
     OpenFile *fptr;
@@ -1044,7 +1052,7 @@ rb_io_fptr_close(fptr)
     if (!fptr->f && !fptr->f2) return;
 
     fd = fileno(fptr->f);
-    rb_io_fptr_finalize(fptr);
+    rb_io_fptr_cleanup(fptr);
     rb_thread_fd_close(fd);
 }
 

@@ -28,6 +28,7 @@ Language Spec.
   + variables appears within block may have independent values.
 * Regexp: make /o thread safe.
 * decide if begin with rescue or ensure make do..while loop.
+* a +1 to be a+1, not a(+1).
 
 Hacking Interpreter
 
@@ -98,7 +99,9 @@ Standard Libraries
 * IO#for_fd in general
 * Array#&, Array#| to allow duplication. ???
 - fork_and_kill_other_threads.
-* way to specify immortal (fork endurance) thread.
+* way to specify immortal (fork endurance) thread;
+* or raise ForkException to every thread but fork caller.
+* Array#fetch
 
 Extension Libraries
 

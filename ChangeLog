@@ -1,3 +1,33 @@
+Tue Dec 12 15:45:42 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (newline_node): cancel newline unification.
+
+Mon Dec 11 23:01:57 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (yylex): supports cases `?' precedes EOF and newline.
+
+Mon Dec 11 12:11:25 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (call_end_proc): some frame members were left
+	  uninitialized.
+
+Mon Dec 11 01:14:58 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_fptr_finalize): do not fclose stdin, stdout and
+	  stderr at exit.
+
+Sat Dec  9 17:34:48 2000  Tachino Nobuhiro <tachino@open.nm.fujitsu.co.jp>
+
+	* time.c (time_cmp): should check with kind_of?, not instance_of?
+
+	* time.c (time_eql): ditto.
+
+	* time.c (time_minus): ditto.
+
+Fri Dec  8 17:23:25 2000  Tachino Nobuhiro <tachino@open.nm.fujitsu.co.jp>
+
+	* sprintf.c (rb_f_sprintf): proper string precision treat.
+
 Fri Dec  8 10:44:05 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* variable.c (rb_mod_remove_cvar): Module#remove_class_variable
