@@ -179,8 +179,12 @@ module TkComm
   private :_genobj_for_tkwidget
   module_function :_genobj_for_tkwidget
 
-  def _at(x,y)
-    "@#{Integer(x)},#{Integer(y)}"
+  def _at(x,y=nil)
+    if y
+      "@#{Integer(x)},#{Integer(y)}"
+    else
+      "@#{Integer(x)}"
+    end
   end
   module_function :_at
 
