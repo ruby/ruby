@@ -3,7 +3,7 @@
 # goodfriday.rb: Written by Tadayoshi Funaba 1998, 2000
 # $Id: goodfriday.rb,v 1.1.1.1 2000-07-16 10:25:30+09 tadf Exp $
 
-require 'date2'
+require 'date'
 
 def easter(y)
   g = (y % 19) + 1

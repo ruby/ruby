@@ -1,9 +1,9 @@
 #! /usr/bin/env ruby
 
-# cal.rb: Written by Tadayoshi Funaba 1998-2000
-# $Id: cal.rb,v 1.11 2000-07-16 10:28:50+09 tadf Exp $
+# cal.rb: Written by Tadayoshi Funaba 1998-2002
+# $Id: cal.rb,v 2.3 2002-05-14 07:43:39+09 tadf Exp $
 
-require 'date2'
+require 'date'
 require 'getopts'
 
 $tab =
@@ -84,7 +84,7 @@ end
 
 usage unless getopts('jmty', "c:#{$cc}")
 
-y, m = ARGV.indexes(1, 0).compact.collect{|x| x.to_i}
+y, m = ARGV.select(1, 0).compact.collect{|x| x.to_i}
 $OPT_y ||= (y and not m)
 
 to = Date.today

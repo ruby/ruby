@@ -1,3 +1,8 @@
+Sat May 18 21:38:11 2002  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* date.rb, date/format.rb, parsedate.rb:
+	  updated to the new version (based on date2 3.2.1).
+
 Sat May 18 21:18:00 2002  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (config.h): add VC++4/5 support about noreturn
