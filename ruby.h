@@ -48,7 +48,7 @@ extern "C" {
 #define ISXDIGIT(c) (ISASCII(c) && isxdigit((unsigned char)(c)))
 #endif
 
-#define NORETURN_STYLE_NEW
+#define NORETURN_STYLE_NEW 1
 #ifndef NORETURN
 # define NORETURN(x) x
 #endif

@@ -1,3 +1,10 @@
+Sun Feb 09 15:16:04 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* intern.h (HAVE_RB_DEFINE_ALLOC_FUNC, RB_CVAR_SET_4ARGS):
+	  define to 1.
+
+	* ruby.h (NORETURN_STYLE_NEW): ditto.
+
 Sun Feb 09 12:28:18 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* lib/mkmf.rb (init_mkmf): add libdir to LIBPATH unless cross

@@ -147,7 +147,7 @@ VALUE rb_f_abort _((int,VALUE*));
 void rb_remove_method _((VALUE, const char*));
 void rb_disable_super _((VALUE, const char*));
 void rb_enable_super _((VALUE, const char*));
-#define HAVE_RB_DEFINE_ALLOC_FUNC
+#define HAVE_RB_DEFINE_ALLOC_FUNC 1
 void rb_define_alloc_func _((VALUE, VALUE (*)(VALUE)));
 void rb_undef_alloc_func _((VALUE));
 void rb_clear_cache _((void));
@@ -454,7 +454,7 @@ void rb_const_assign _((VALUE, ID, VALUE));
 VALUE rb_mod_constants _((VALUE));
 void rb_autoload_load _((ID));
 VALUE rb_cvar_defined _((VALUE, ID));
-#define RB_CVAR_SET_4ARGS
+#define RB_CVAR_SET_4ARGS 1
 void rb_cvar_set _((VALUE, ID, VALUE, int));
 VALUE rb_cvar_get _((VALUE, ID));
 void rb_cv_set _((VALUE, const char*, VALUE));
