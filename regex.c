@@ -1464,7 +1464,7 @@ re_compile_pattern(pattern, size, bufp)
 	if (range && had_char_class) {
 	  FREE_AND_RETURN(stackb, "invalid regular expression; can't use character class as an end value of range");
 	}
-	PATFETCH(c);
+	PATFETCH_RAW(c);
 
 	if (c == ']') {
 	  if (p == p0 + 1) {
@@ -1608,7 +1608,7 @@ re_compile_pattern(pattern, size, bufp)
 	    FREE_AND_RETURN(stackb, "invalid regular expression; re can't end '[[:'");
 
 	  for (;;) {
-	    PATFETCH (c);
+	    PATFETCH_RAW(c);
 	    if (c == ':' || c == ']' || p == pend
 		|| c1 == CHAR_CLASS_MAX_LENGTH)
 	      break;
@@ -1680,8 +1680,14 @@ re_compile_pattern(pattern, size, bufp)
 
 	  range = 0;
 	  if (had_mbchar == 0) {
-	    for (;last<=c;last++)
-	      SET_LIST_BIT(last);
+	    if (TRANSLATE_P()) {
+	      for (;last<=c;last++) 
+		SET_LIST_BIT(translate[last]);
+	    }
+	    else {
+	      for (;last<=c;last++) 
+		SET_LIST_BIT(last);
+	    }
 	  }
 	  else if (had_mbchar == 2) {
 	    set_list_bits(last, c, b);
@@ -1693,16 +1699,20 @@ re_compile_pattern(pattern, size, bufp)
 	}
 	else if (p[0] == '-' && p[1] != ']') {
 	  last = c;
-	  PATFETCH(c1);
+	  PATFETCH_RAW(c1);
 	  range = 1;
 	  goto range_retry;
 	}
-	else if (had_mbchar == 0 && (!current_mbctype || !had_num_literal)) {
-	  SET_LIST_BIT(c);
- 	  had_num_literal = 0;
+	else {
+	  if (TRANSLATE_P()) c = (unsigned char)translate[c];
+	  if (had_mbchar == 0 && (!current_mbctype || !had_num_literal)) {
+	    SET_LIST_BIT(c);
+	    had_num_literal = 0;
+	  }
+	  else {
+	    set_list_bits(c, c, b);
+	  }
 	}
-	else 
-	  set_list_bits(c, c, b);
 	had_mbchar = 0;
       }
 

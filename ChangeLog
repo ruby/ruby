@@ -2,6 +2,11 @@ Mon Sep 16 22:25:06 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/csv/test_csv.rb: add negative tests of row_sep.
 
+Tue Sep 16 18:02:36 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* regex.c (re_compile_pattern): should not translate character
+	  class range edge. [ruby-list:38393]
+
 Tue Sep 16 16:47:56 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* MANIFEST: add test/csv/mac.csv.
