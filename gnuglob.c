@@ -105,8 +105,8 @@ char *alloca ();
 #  endif /* !SHELL */
 #endif /* OPENDIR_NOT_ROBUST */
 
+extern void *xmalloc (), *xrealloc ();
 #if !defined (HAVE_STDLIB_H)
-extern char *malloc (), *realloc ();
 extern void free ();
 #endif /* !HAVE_STDLIB_H */
 
@@ -243,7 +243,7 @@ glob_vector (pat, dir)
     {
       nextlink = (struct globval *)alloca (sizeof (struct globval));
       nextlink->next = lastlink;
-      nextname = (char *) malloc (1);
+      nextname = (char *) xmalloc (1);
       if (!nextname)
 	lose = 1;
       else
@@ -291,7 +291,7 @@ glob_vector (pat, dir)
 	{
 	  nextlink = (struct globval *) alloca (sizeof (struct globval));
 	  nextlink->next = lastlink;
-	  nextname = (char *) malloc (D_NAMLEN (dp) + 1);
+	  nextname = (char *) xmalloc (D_NAMLEN (dp) + 1);
 	  if (nextname == NULL)
 	    {
 	      lose = 1;
@@ -307,7 +307,7 @@ glob_vector (pat, dir)
 
   if (!lose)
     {
-      name_vector = (char **) malloc ((count + 1) * sizeof (char *));
+      name_vector = (char **) xmalloc ((count + 1) * sizeof (char *));
       lose |= name_vector == NULL;
     }
 
@@ -361,13 +361,13 @@ glob_dir_to_array (dir, array)
   while (array[i] != NULL)
     ++i;
 
-  result = (char **) malloc ((i + 1) * sizeof (char *));
+  result = (char **) xmalloc ((i + 1) * sizeof (char *));
   if (result == NULL)
     return (NULL);
 
   for (i = 0; array[i] != NULL; i++)
     {
-      result[i] = (char *) malloc (l + (add_slash ? 1 : 0)
+      result[i] = (char *) xmalloc (l + (add_slash ? 1 : 0)
 				   + strlen (array[i]) + 1);
       if (result[i] == NULL)
 	return (NULL);
@@ -399,7 +399,7 @@ glob_filename (pathname)
   char *directory_name, *filename;
   unsigned int directory_len;
 
-  result = (char **) malloc (sizeof (char *));
+  result = (char **) xmalloc (sizeof (char *));
   result_size = 1;
   if (result == NULL)
     return (NULL);
@@ -475,7 +475,7 @@ glob_filename (pathname)
 		++l;
 
 	      result =
-		(char **)realloc (result, (result_size + l) * sizeof (char *));
+		(char **)xrealloc(result, (result_size + l) * sizeof (char *));
 
 	      if (result == NULL)
 		goto memory_error;
@@ -501,10 +501,10 @@ glob_filename (pathname)
   /* If there is only a directory name, return it. */
   if (*filename == '\0')
     {
-      result = (char **) realloc ((char *) result, 2 * sizeof (char *));
+      result = (char **) xrealloc ((char *) result, 2 * sizeof (char *));
       if (result == NULL)
 	return (NULL);
-      result[0] = (char *) malloc (directory_len + 1);
+      result[0] = (char *) xmalloc (directory_len + 1);
       if (result[0] == NULL)
 	goto memory_error;
       bcopy (directory_name, result[0], directory_len + 1);

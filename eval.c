@@ -3,7 +3,7 @@
   eval.c -
 
   $Author: matz $
-  $Date: 1994/11/01 08:27:55 $
+  $Date: 1994/11/22 01:22:33 $
   created at: Thu Jun 10 14:22:17 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -2097,13 +2097,15 @@ extern VALUE C_Kernel;
 
 Init_load()
 {
-    extern VALUE rb_check_str();
     char *path;
 
-    rb_define_variable("$LOAD_PATH", &rb_load_path, Qnil, rb_check_str);
     rb_load_path = ary_new();
-    rb_define_variable("$LOAD_FILES", &rb_load_path, Qnil, rb_readonly_hook);
+    rb_define_variable("$:", &rb_load_path, Qnil, rb_readonly_hook);
+    rb_define_variable("$LOAD_PATH", &rb_load_path, Qnil, rb_readonly_hook);
+
     rb_loadfiles = ary_new();
+    rb_define_variable("$\"", &rb_load_path, Qnil, rb_readonly_hook);
+    rb_define_variable("$LOAD_FILES", &rb_load_path, Qnil, rb_readonly_hook);
     addpath(getenv("RUBYLIB"));
     addpath(RUBY_LIB);
 

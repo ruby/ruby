@@ -3,7 +3,7 @@
   array.c -
 
   $Author: matz $
-  $Date: 1994/11/01 08:27:44 $
+  $Date: 1994/11/22 01:22:30 $
   created at: Fri Aug  6 09:46:12 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -856,6 +856,76 @@ Fary_hash(ary)
     return INT2FIX(h);
 }
 
+static int
+ary_contains(ary, item)
+    struct RArray *ary;
+    VALUE item;
+{
+    int i;
+    for (i=0; i<ary->len; i++) {
+	if (rb_funcall(ary->ptr[i], eq, 1, item)) {
+	    return 1;
+	}
+    }
+    return 0;
+}
+
+static VALUE
+Fary_diff(ary1, ary2)
+    struct RArray *ary1, *ary2;
+{
+    VALUE ary3;
+    int i, j;
+
+    Check_Type(ary2, T_ARRAY);
+    ary3 = ary_new();
+    for (i=0; i<ary1->len; i++) {
+	if (ary_contains(ary2, ary1->ptr[i])) continue;
+	if (ary_contains(ary3, ary1->ptr[i])) continue;
+	Fary_push(ary3, ary1->ptr[i]);
+    }
+    return ary3;
+}
+
+static VALUE
+Fary_and(ary1, ary2)
+    struct RArray *ary1, *ary2;
+{
+    VALUE ary3;
+    int i, j;
+
+    Check_Type(ary2, T_ARRAY);
+    ary3 = ary_new();
+    for (i=0; i<ary1->len; i++) {
+	if (ary_contains(ary2, ary1->ptr[i])
+	    && !ary_contains(ary3, ary1->ptr[i])) {
+	    Fary_push(ary3, ary1->ptr[i]);
+	}
+    }
+    return ary3;
+}
+
+static VALUE
+Fary_or(ary1, ary2)
+    struct RArray *ary1, *ary2;
+{
+    VALUE ary3;
+    int i;
+
+    if (TYPE(ary2) != T_ARRAY) return Fary_plus(ary1, ary2);
+
+    ary3 = ary_new();
+    for (i=0; i<ary1->len; i++) {
+	if (!ary_contains(ary3, ary1->ptr[i]))
+		Fary_push(ary3, ary1->ptr[i]);
+    }
+    for (i=0; i<ary2->len; i++) {
+	if (!ary_contains(ary3, ary2->ptr[i]))
+		Fary_push(ary3, ary2->ptr[i]);
+    }
+    return ary3;
+}
+
 extern VALUE C_Kernel;
 extern VALUE M_Enumerable;
 
@@ -900,6 +970,10 @@ Init_Array()
 
     rb_define_method(C_Array, "+", Fary_plus, 1);
     rb_define_method(C_Array, "*", Fary_times, 1);
+
+    rb_define_method(C_Array, "-", Fary_diff, 1);
+    rb_define_method(C_Array, "&", Fary_and, 1);
+    rb_define_method(C_Array, "|", Fary_or, 1);
 
     cmp = rb_intern("<=>");
     eq = rb_intern("==");

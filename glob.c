@@ -131,11 +131,18 @@ Fglob_each(glob)
 	    rb_yield(str_new2(*patv));
 	    continue;
 	}
-	fnames = ff = glob_filename(*patv);
-	while (*ff) {
-	    rb_yield(str_new2(*ff));
-	    free(*ff);
-	    ff++;
+	fnames = glob_filename(*patv);
+	if (fnames == (char**)-1) rb_sys_fail(*patv);
+	if (fnames[0] == Qnil) {
+	    rb_yield(str_new2(*patv));
+	}
+	else {
+	    ff = fnames;
+	    while (*ff) {
+		rb_yield(str_new2(*ff));
+		free(*ff);
+		ff++;
+	    }
 	}
 	free(fnames);
     }

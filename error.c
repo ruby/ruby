@@ -3,7 +3,7 @@
   error.c -
 
   $Author: matz $
-  $Date: 1994/11/01 08:27:52 $
+  $Date: 1994/11/22 01:22:31 $
   created at: Mon Aug  9 16:11:34 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -140,9 +140,9 @@ rb_sys_fail(mesg)
     extern int errno;
 
     if (mesg == Qnil)
-	sprintf(buf, "%s.\n", strerror(errno));
+	sprintf(buf, "%s\n", strerror(errno));
     else
-	sprintf(buf, "%s - %s.\n", strerror(errno), mesg);
+	sprintf(buf, "%s - %s\n", strerror(errno), mesg);
 
     errno = 0;
     rb_fail(str_new2(buf));

@@ -4,7 +4,7 @@
   file.c -
 
   $Author: matz $
-  $Date: 1994/11/01 08:27:57 $
+  $Date: 1994/11/22 01:22:34 $
   created at: Mon Nov 15 12:24:34 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -69,19 +69,29 @@ apply2files0(func, args, arg, gl)
 	path = args->ptr[i];
 	if (TYPE(path) == T_STRING) {
 	    if (gl) {
-		char *p;
+		char buf[MAXPATHLEN];
+		char *p, *s;
+
+		s = buf;
 		p = RSTRING(path)->ptr;
 		while (*p) {
-		    switch (*p++) {
+		    switch (*s = *p++) {
 		      case '*': case '?':
-		      case '[': case ']':
-		      case '{': case '}':
+		      case '[': case '{':
 			path = glob_new(path);
 			goto glob;
+		      case '\\':
+			if (*p == '\0') break;
+			*s = *p++;
 		    }
+		    s++;
 		}
+		*s = '\0';
+		(*func)(buf, arg);
 	    }
-	    (*func)(path, arg);
+	    else {
+		(*func)(RSTRING(path)->ptr, arg);
+	    }
 	    n++;
 	}
 	else {
@@ -819,11 +829,11 @@ Ffile_ctime2(obj)
 
 static void
 chmod_internal(path, mode)
-    struct RString *path;
+    char *path;
     int mode;
 {
-    if (chmod(path->ptr, mode) == -1)
-	rb_sys_fail(RSTRING(path)->ptr);
+    if (chmod(path, mode) == -1)
+	rb_sys_fail(path);
 }
 
 static VALUE
@@ -864,11 +874,11 @@ struct chown_args {
 
 static void
 chown_internal(path, args)
-    struct RString *path;
+    char *path;
     struct chown_args *args;
 {
-    if (chown(path->ptr, args->owner, args->group) < 0)
-	rb_sys_fail(path->ptr);
+    if (chown(path, args->owner, args->group) < 0)
+	rb_sys_fail(path);
 }
 
 static VALUE
@@ -914,11 +924,11 @@ struct timeval *time_timeval();
 
 static void
 utime_internal(path, tvp)
-    struct RString *path;
+    char *path;
     struct timeval tvp[];
 {
-    if (utimes(path->ptr, tvp) < 0)
-	rb_sys_fail(path->ptr);
+    if (utimes(path, tvp) < 0)
+	rb_sys_fail(path);
 }
 
 static VALUE
@@ -981,10 +991,10 @@ Ffile_readlink(obj, path)
 
 static void
 unlink_internal(path)
-    struct RString *path;
+    char *path;
 {
-    if (unlink(path->ptr) < 0)
-	rb_sys_fail(path->ptr);
+    if (unlink(path) < 0)
+	rb_sys_fail(path);
 }
 
 static VALUE

@@ -3,7 +3,7 @@
   io.c -
 
   $Author: matz $
-  $Date: 1994/11/01 08:28:01 $
+  $Date: 1994/11/22 01:22:36 $
   created at: Fri Oct 15 18:08:59 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -616,6 +616,20 @@ pipe_open(pname, mode)
 }
 
 static VALUE
+io_open(fname, mode)
+    char *fname, *mode;
+{
+    int pipe = 0;
+
+    if (fname[0] == '|') {
+	return pipe_open(fname+1, mode);
+    }
+    else {
+	return file_open(fname, mode);
+    }
+}
+
+static VALUE
 Fopen(self, args)
     VALUE self, args;
 {
@@ -635,15 +649,7 @@ Fopen(self, args)
 	    Fail("illegal access mode");
 	mode = RSTRING(pmode)->ptr;
     }
-
-    if (RSTRING(pname)->ptr[0] == '|') {
-	port = pipe_open(RSTRING(pname)->ptr+1, mode);
-    }
-    else {
-	port = file_open(RSTRING(pname)->ptr, mode);
-    }
-
-    return port;
+    return io_open(RSTRING(pname)->ptr, mode);
 }
 
 static VALUE
@@ -695,6 +701,19 @@ Fprint(argc, argv)
     }
 
     return Qnil;
+}
+
+static VALUE
+io_defset(obj, val)
+    VALUE obj, val;
+{
+    if (TYPE(val) == T_STRING) {
+	val = io_open(RSTRING(val)->ptr, "w");
+    }
+    if (!obj_is_kind_of(val, C_IO)) {
+	Fail("$< must be a file, %s given", rb_class2name(CLASS_OF(val)));
+    }
+    return rb_defout = val;
 }
 
 static VALUE
@@ -1073,7 +1092,7 @@ io_ctl(obj, req, arg, io_p)
     }
     arg->ptr[len] = 17;
     fd = fileno(fptr->f);
-    if (io_p?ioctl(fd, cmd, arg->ptr):fcntl(fd, cmd, arg->ptr)<0) {
+    if ((io_p?ioctl(fd, cmd, arg->ptr):fcntl(fd, cmd, arg->ptr))<0) {
 	rb_sys_fail(fptr->path);
     }
     if (arg->ptr[len] != 17) {
@@ -1088,20 +1107,6 @@ Fio_ioctl(obj, req, arg)
 {
     io_ctl(obj, req, arg, 1);
     return obj;
-}
-
-static VALUE
-Fio_defget(obj)
-    VALUE obj;
-{
-    return rb_defout;
-}
-
-static VALUE
-Fio_defset(obj, val)
-    VALUE obj, val;
-{
-    return rb_defout = val;
 }
 
 static VALUE
@@ -1302,6 +1307,7 @@ Init_IO()
     rb_define_variable("$/",  &RS, Qnil, rb_check_str);
     rb_define_variable("$\\", &ORS, Qnil, rb_check_str);
 
+    rb_define_variable("$<", &filename, Qnil, rb_readonly_hook);
     rb_define_variable("$FILENAME", &filename, Qnil, rb_readonly_hook);
     rb_global_variable(&file);
 
@@ -1346,9 +1352,7 @@ Init_IO()
     rb_stderr = prep_stdio(stderr, FMODE_WRITABLE);
     rb_define_variable("$stderr", &rb_stderr, Qnil, rb_readonly_hook);
     rb_defout = rb_stdout;
-    rb_global_variable(&rb_defout);
-    rb_define_single_method(C_IO, "default", Fio_defget, 0);
-    rb_define_single_method(C_IO, "default=", Fio_defset, 1);
+    rb_define_variable("$>", &rb_defout, Qnil, io_defset);
 
     argf = obj_alloc(C_Object);
     rb_define_variable("$ARGF", &argf, Qnil, rb_readonly_hook);
@@ -1359,7 +1363,7 @@ Init_IO()
     rb_define_single_method(argf, "read",  Farg_read, 0);
     rb_define_single_method(argf, "readlines", Freadlines, 0);
     rb_define_single_method(argf, "gets", Fgets, 0);
-    rb_define_single_method(argf, "realine", Fgets, 0);
+    rb_define_single_method(argf, "readline", Fgets, 0);
     rb_define_single_method(argf, "getc", Farg_getc, 0);
     rb_define_single_method(argf, "eof", Feof, 0);
 

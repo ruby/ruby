@@ -3,7 +3,7 @@
   parse.y -
 
   $Author: matz $
-  $Date: 1994/11/01 08:28:09 $
+  $Date: 1994/11/22 01:22:38 $
   created at: Fri May 28 18:02:42 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -1855,6 +1855,10 @@ retry:
 	  case '+':		/* $&: string matches last paren. */
 	  case '~':		/* $~: match-data */
 	  case '=':		/* $=: ignorecase */
+	  case ':':		/* $:: load path */
+	  case '<':		/* $<: reading filename */
+	  case '>':		/* $>: default output handle */
+	  case '"':		/* $": already loaded files */
 	    tokadd(c);
 	    tokadd('\0');
 	    goto id_fetch;

@@ -3,7 +3,7 @@
   string.c -
 
   $Author: matz $
-  $Date: 1994/11/01 08:28:38 $
+  $Date: 1994/11/18 01:37:38 $
   created at: Mon Aug  9 17:12:58 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
