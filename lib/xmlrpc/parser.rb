@@ -712,6 +712,7 @@ module XMLRPC
         alias :tag_start :startElement
         alias :tag_end :endElement
         alias :text :character
+        alias :cdata :character
 
         def method_missing(*a)
           # ignore
@@ -757,6 +758,10 @@ module XMLRPC
         end
        
         def on_chardata(str)
+          character(str)
+        end
+
+        def on_cdata(str)
           character(str)
         end
 
