@@ -1,3 +1,10 @@
+Wed Jan 31 22:27:29 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in: gcc-2.95.2-7(cygwin) support.
+	  add -mwin32 if available.
+
+	* cygwin/GNUmakefile: ditto.
+
 Mon Jan 29 14:25:39 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (block_pass): return from block jumps directory to
