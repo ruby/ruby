@@ -36,23 +36,51 @@ module TupleSpaceTestModule
     tmpl = Rinda::Template.new({"message"=>String, "name"=>String})
     assert_equal(2, tmpl.size)
     assert(tmpl.match({"message"=>"Hello", "name"=>"Foo"}))
-    assert(tmpl.match({"message"=>"Hello", "name"=>"Foo", 1=>2}))
-    assert(tmpl.match({"message"=>"Hi", "name"=>"Foo", :name=>1}))
+    assert(tmpl.match({"message"=>"Hello", "name"=>"Foo", "1"=>2}))
+    assert(tmpl.match({"message"=>"Hi", "name"=>"Foo", "age"=>1}))
     assert(!tmpl.match({"message"=>"Hello", "no_name"=>"Foo"}))
 
-    tmpl = Rinda::Template.new({:message=>String, "name"=>String})
+    assert_raises(Rinda::InvalidHashTupleKey) do
+      tmpl = Rinda::Template.new({:message=>String, "name"=>String})
+    end
+    tmpl = Rinda::Template.new({"name"=>String})
     assert_equal(1, tmpl.size)
     assert(tmpl.match({"message"=>"Hello", "name"=>"Foo"}))
-    assert(tmpl.match({"message"=>:symbol, "name"=>"Foo", 1=>2}))
-    assert(tmpl.match({"message"=>"Hi", "name"=>"Foo", :name=>1}))
+    assert(tmpl.match({"message"=>:symbol, "name"=>"Foo", "1"=>2}))
+    assert(tmpl.match({"message"=>"Hi", "name"=>"Foo", "age"=>1}))
     assert(!tmpl.match({"message"=>"Hello", "no_name"=>"Foo"}))
 
     tmpl = Rinda::Template.new({"message"=>String, "name"=>String, :size=>2})
     assert_equal(2, tmpl.size)
     assert(tmpl.match({"message"=>"Hello", "name"=>"Foo"}))
-    assert(!tmpl.match({"message"=>"Hello", "name"=>"Foo", 1=>2}))
-    assert(!tmpl.match({"message"=>"Hi", "name"=>"Foo", :name=>1}))
+    assert(!tmpl.match({"message"=>"Hello", "name"=>"Foo", "1"=>2}))
+    assert(!tmpl.match({"message"=>"Hi", "name"=>"Foo", "age"=>1}))
     assert(!tmpl.match({"message"=>"Hello", "no_name"=>"Foo"}))
+
+    tmpl = Rinda::Template.new({"message"=>String, :size=>2})
+    assert_equal(1, tmpl.size)
+    assert(tmpl.match({"message"=>"Hello", "name"=>"Foo"}))
+    assert(!tmpl.match({"message"=>"Hello", "name"=>"Foo", "1"=>2}))
+    assert(!tmpl.match({"message"=>"Hi", "name"=>"Foo", "age"=>1}))
+    assert(tmpl.match({"message"=>"Hello", "no_name"=>"Foo"}))
+
+    tmpl = Rinda::Template.new({"message"=>String, "name"=>nil})
+    assert_equal(2, tmpl.size)
+    assert(tmpl.match({"message"=>"Hello", "name"=>"Foo"}))
+    assert(tmpl.match({"message"=>"Hello", "name"=>"Foo", "1"=>2}))
+    assert(tmpl.match({"message"=>"Hi", "name"=>"Foo", "age"=>1}))
+    assert(!tmpl.match({"message"=>"Hello", "no_name"=>"Foo"}))
+
+    tmpl = Rinda::Template.new({:size=>2})
+    assert_equal(0, tmpl.size)
+    assert(tmpl.match({"message"=>"Hello", "name"=>"Foo"}))
+    assert(!tmpl.match({"message"=>"Hello", "name"=>"Foo", "1"=>2}))
+    assert(!tmpl.match({"message"=>"Hi", "name"=>"Foo", "age"=>1}))
+    assert(tmpl.match({"message"=>"Hello", "no_name"=>"Foo"}))
+
+    assert_raises(Rinda::InvalidHashTupleKey) do
+      @ts.write({:message=>String, "name"=>String})
+    end
   end
 
   def test_00_DRbObject
@@ -246,7 +274,7 @@ module TupleSpaceTestModule
     end
     assert_equal([], ary)
   end
-  
+
   def test_cancel_01
     entry = @ts.write([:removeme, 1])
     assert_equal([[:removeme, 1]], @ts.read_all([nil, nil]))

@@ -18,6 +18,8 @@ require 'thread'
 # This is part of +drb+ (dRuby).
 #
 module Rinda
+  class RindaError < RuntimeError; end
+  class InvalidHashTupleKey < RindaError; end
   class RequestCanceledError < ThreadError; end
   class RequestExpiredError < ThreadError; end
 
@@ -44,6 +46,10 @@ module Rinda
     # Accessor method for elements of the tuple.
     def [](k)
       @tuple[k]
+    end
+
+    def fetch(k)
+      @tuple.fetch(k)
     end
 
     # Iterate through the tuple, yielding the index or key, and the
@@ -74,7 +80,8 @@ module Rinda
       @tuple_size = hash[:size]
       @tuple = Hash.new
       hash.each do |k, v|
-	next unless String === k
+        next if k == :size
+        raise InvalidHashTupleKey unless String === k
 	@tuple[k] = v
       end
     end
@@ -89,11 +96,16 @@ module Rinda
     # matching any value in the corresponding position in the tuple.
     def match(tuple)
       return false unless tuple.respond_to?(:size)
-      return false unless tuple.respond_to?(:[])
+      return false unless tuple.respond_to?(:fetch)
       return false if @tuple_size && (@tuple_size != tuple.size)
       each do |k, v|
+        begin
+          it = tuple.fetch(k)
+        rescue
+          return false
+        end
 	next if v.nil?
-	return false unless (v === tuple[k] rescue false)
+	return false unless (v === it)
       end
       return true
     end
