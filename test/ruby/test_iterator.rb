@@ -298,12 +298,19 @@ class TestIterator < Test::Unit::TestCase
   end
 
   def test_ljump
+    assert_raises(LocalJumpError) {get_block{break}.call}
+
+    # cannot use assert_nothing_raised due to passing block.
+    begin
+      val = lambda{break 11}.call
+    rescue LocalJumpError
+      assert(false, "LocalJumpError occurred from break in lambda")
+    else
+      assert(11, val)
+    end
+
     block = get_block{11}
     lambda = lambda{44}
-    assert_raises(LocalJumpError) {get_block{break}.call}
-    assert_nothing_raised {lambda{break}.call}
-    assert_instance_of(LocalJumpError, (get_block{break}.call rescue $!))
-
     assert_equal(-1, block.arity)
     assert_equal(-1, lambda.arity)
     assert_equal(0, lambda{||}.arity)

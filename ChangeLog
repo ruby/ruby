@@ -1,3 +1,8 @@
+Tue Mar  2 11:28:40 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_iterator.rb (test_ljump): cannot use
+	  assert_nothing_raised due to passing block.
+
 Tue Mar  2 06:23:14 2004  David Black  <dblack@wobblini.net>
 
    * Fixed Kernel#scanf to propagate code block
@@ -5,7 +10,7 @@ Tue Mar  2 06:23:14 2004  David Black  <dblack@wobblini.net>
 Mon Mar  1 23:25:40 2004  David Black  <dblack@wobblini.net>
 
 	* lib/scanf.rb: Partial fix so STDIN#scanf works with new
-     STDIN#pos behavior 
+	 STDIN#pos behavior
 
 Mon Mar  1 19:42:05  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
@@ -20,7 +25,7 @@ Mon Mar  1 12:24:10 2004  Dave Thomas  <dave@pragprog.com>
 
 Sun Feb 29 23:14:53 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_class): 
+	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_class):
 	  Handle :nodoc: on singleton classes.
 
 Sat Feb 28 21:50:20  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
