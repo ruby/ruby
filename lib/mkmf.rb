@@ -82,10 +82,15 @@ if not $extmk and File.exist? Config::CONFIG["archdir"] + "/ruby.h"
 elsif File.exist? $srcdir + "/ruby.h"
   $hdrdir = $srcdir
 else
-  warn "can't find header files for ruby."
-  exit 1
+  abort "can't find header files for ruby."
 end
-$topdir = $hdrdir
+if File.exist?($hdrdir + "/config.h")
+  $topdir = $hdrdir
+elsif File.exist?((compile_dir = Config::CONFIG['compile_dir']) + "/config.h")
+  $topdir = compile_dir
+else
+  abort "can't find header files for ruby."
+end
 
 OUTFLAG = CONFIG['OUTFLAG']
 CPPOUTFILE = CONFIG['CPPOUTFILE']
@@ -414,7 +419,7 @@ def install_files(mfile, ifiles, map = nil, srcprefix = nil)
   ifiles.each do |files, dir, prefix|
     dir = map_dir(dir, map)
     prefix = %r|\A#{Regexp.quote(prefix)}/?| if prefix
-    if( files[0,2] == "./" )
+    if /\A\.\// =~ files
       # install files which are in current working directory.
       files = files[2..-1]
       len = nil
@@ -751,7 +756,7 @@ arch = #{CONFIG['arch']}
 sitearch = #{CONFIG['sitearch']}
 ruby_version = #{Config::CONFIG['ruby_version']}
 RUBY = #{$ruby}
-RM = $(RUBY) -run -e rm -- -f
+RM = #{config_string('RM') || '$(RUBY) -run -e rm -- -f'}
 MAKEDIRS = $(RUBY) -run -e mkdir -- -p
 INSTALL_PROG = $(RUBY) -run -e install -- -vpm 0755
 INSTALL_DATA = $(RUBY) -run -e install -- -vpm 0644
@@ -772,7 +777,7 @@ INSTALL_DATA = $(RUBY) -run -e install -- -vpm 0644
 end
 
 def dummy_makefile(srcdir)
-  configuration(srcdir) << "all install: Makefile\n" << CLEANINGS
+  configuration(srcdir) << "all install install-so install-rb: Makefile\n" << CLEANINGS
 end
 
 def create_makefile(target, srcprefix = nil)
@@ -793,6 +798,8 @@ def create_makefile(target, srcprefix = nil)
   else
     target_prefix = ""
   end
+
+  $outdir_prefix = $outdir ? "$(outdir)$(target_prefix)/" : ""
 
   srcprefix ||= '$(srcdir)'
   Config::expand(srcdir = srcprefix.dup)
@@ -841,6 +848,8 @@ DEFFILE = #{deffile}
 CLEANFILES = #{$cleanfiles.join(' ')}
 DISTCLEANFILES = #{$distcleanfiles.join(' ')}
 
+outdir = #{$outdir.sub(/#{Regexp.quote($topdir)}/, '$(topdir)') if $outdir}
+outdir_prefix = #{$outdir_prefix}
 target_prefix = #{target_prefix}
 LOCAL_LIBS = #{$LOCAL_LIBS}
 LIBS = #{$LIBRUBYARG} #{$libs} #{$LIBS}
@@ -849,7 +858,13 @@ TARGET = #{target}
 DLLIB = #{dllib}
 STATIC_LIB = #{staticlib}
 }
-  if $extmk
+  if $outdir
+    mfile.print %{
+RUBYCOMMONDIR = $(outdir)
+RUBYLIBDIR    = $(outdir)$(target_prefix)
+RUBYARCHDIR   = $(outdir)/$(arch)$(target_prefix)
+}
+  elsif $extmk
     mfile.print %{
 RUBYCOMMONDIR = $(rubylibdir)
 RUBYLIBDIR    = $(rubylibdir)$(target_prefix)
@@ -863,43 +878,51 @@ RUBYARCHDIR   = $(sitearchdir)$(target_prefix)
 }
   end
   mfile.print %{
-CLEANLIBS     = "$(TARGET).{lib,exp,il?,tds,map}" $(DLLIB)
-CLEANOBJS     = "*.{#{$OBJEXT},#{$LIBEXT},s[ol],pdb,bak}"
+CLEANLIBS     = #{$outdir_prefix}$(TARGET).*
+CLEANOBJS     = *.#{$OBJEXT} *.#{$LIBEXT} *.s[ol] *.pdb *.bak
 
-all:		#{target ? "$(DLLIB)" : "Makefile"}
+all:		#{target ? $outdir ? "install" : "$(DLLIB)" : "Makefile"}
 static:		$(STATIC_LIB)
+
 }
   mfile.print CLEANINGS
   dirs = []
+  mfile.print "install: install-so install-rb\n\n"
   if not $static and target
     dirs << (dir = "$(RUBYARCHDIR)")
-    mfile.print("install: #{dir}\n")
+    mfile.print("install-so: #{dir}\n")
     f = "$(DLLIB)"
     dest = "#{dir}/#{f}"
-    mfile.print "install: #{dest}\n"
-    mfile.print "#{dest}: #{f} #{dir}\n\t@$(INSTALL_PROG) #{f} #{dir}\n"
+    mfile.print "install-so: #{dest}\n"
+    unless $outdir
+      mfile.print "#{dest}: #{f}\n\t@$(INSTALL_PROG) #{f} #{dir}\n"
+    end
   end
+  dirs << (dir = "$(RUBYLIBDIR)")
+  mfile.print("install-rb: #{dir}\n")
   for i in [[["lib/**/*.rb", "$(RUBYLIBDIR)", "lib"]], $INSTALLFILES]
     files = install_files(mfile, i, nil, srcprefix) or next
     for dir, *files in files
       unless dirs.include?(dir)
 	dirs << dir
-	mfile.print("install: #{dir}\n")
+	mfile.print "install-rb: #{dir}\n"
       end
       files.each do |f|
 	dest = "#{dir}/#{File.basename(f)}"
-	mfile.print("install: #{dest}\n")
-	mfile.print("#{dest}: #{f} #{dir}\n\t@$(INSTALL_DATA) #{f} #{dir}\n")
+	mfile.print("install-rb: #{dest}\n")
+	mfile.print("#{dest}: #{f}\n\t@$(INSTALL_DATA) #{f} #{dir}\n")
       end
     end
   end
-  if dirs.empty?
-    mfile.print("install:\n")
-  else
-    dirs.each {|dir| mfile.print "#{dir}:\n\t@$(MAKEDIRS) #{dir}\n"}
-  end
+  dirs.each {|dir| mfile.print "#{dir}:\n\t@$(MAKEDIRS) $@\n"}
 
-  mfile.print "\nsite-install: install\n\n"
+  mfile.print <<-SITEINSTALL
+
+site-install: site-install-so site-install-rb
+site-install-so: install-so
+site-install-rb: install-rb
+
+  SITEINSTALL
 
   return unless target
 
@@ -919,13 +942,11 @@ static:		$(STATIC_LIB)
     end
   end
 
-  if makedef
-    mfile.print "$(DLLIB): $(OBJS) $(DEFFILE)\n\t"
-  else
-    mfile.print "$(DLLIB): $(OBJS)\n\t"
-  end
+  mfile.print "$(RUBYARCHDIR)/" if $outdir
+  mfile.print "$(DLLIB): ", (makedef ? "$(DEFFILE) " : ""), "$(OBJS)\n\t"
   mfile.print "@-$(RM) $@\n\t"
   mfile.print "@-$(RM) $(TARGET).lib\n\t" if $mswin
+  mfile.print "@-$(MAKEDIRS) $(@D)\n\t"
   mfile.print LINK_SO, "\n\n"
   mfile.print "$(STATIC_LIB): $(OBJS)\n\t"
   mfile.print "$(AR) #{config_string('ARFLAGS') || 'cru '}$@ $(OBJS)"
@@ -970,7 +991,7 @@ def init_mkmf(config = CONFIG)
   $LIBRUBYARG_STATIC = config['LIBRUBYARG_STATIC']
   $LIBRUBYARG_SHARED = config['LIBRUBYARG_SHARED']
   $LIBPATH = CROSS_COMPILING ? [] : ["$(libdir)"]
-  $LIBPATH.unshift("$(topdir)") if $extmk
+  $LIBPATH.unshift("$(topdir)") if $extmk or CROSS_COMPILING
   $INSTALLFILES = nil
 
   $objs = nil
@@ -983,6 +1004,8 @@ def init_mkmf(config = CONFIG)
 
   $cleanfiles = []
   $distcleanfiles = []
+
+  $outdir ||= nil
 
   dir_config("opt")
 end
@@ -1032,9 +1055,9 @@ TRY_LINK = config_string('TRY_LINK') ||
   "$(CFLAGS) $(src) $(LIBPATH) $(LDFLAGS) $(ARCH_FLAG) $(LOCAL_LIBS) $(LIBS)"
 LINK_SO = config_string('LINK_SO') ||
   if CONFIG["DLEXT"] == $OBJEXT
-    "ld $(DLDFLAGS) -r -o $(DLLIB) $(OBJS)\n"
+    "ld $(DLDFLAGS) -r -o $@ $(OBJS)\n"
   else
-    "$(LDSHARED) $(DLDFLAGS) $(LIBPATH) #{OUTFLAG}$(DLLIB) " \
+    "$(LDSHARED) $(DLDFLAGS) $(LIBPATH) #{OUTFLAG}$@ " \
     "$(OBJS) $(LOCAL_LIBS) $(LIBS)"
   end
 LIBPATHFLAG = config_string('LIBPATHFLAG') || " -L'%s'"

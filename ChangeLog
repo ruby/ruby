@@ -1,3 +1,23 @@
+Mon Feb  9 17:46:07 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in, bcc32/Makefile.sub, win32/Makefile.sub, configure.in,
+	  runruby.rb: run rdoc, test and so on with compiled extension
+	  libraries.  [ruby-dev:22688]
+
+	* ext/extmk.rb, lib/mkmf.rb: make extension libraries in separated
+	  directory, similar to the actual directory structure.
+
+	* lib/fileutils.rb (FileUtils.copy_file): use the mode of the original
+	  file to create new file.
+
+	* lib/rdoc/ri/ri_paths.rb (RI::Paths::SYSDIR): get rid of unexpected
+	  influence by envirionment variable.
+
+	* bcc32/configure.bat, win32/configure.bat: add install-doc options.
+
+	* win32/win32.c, win32/win32.h (rb_w32_fstat): fix Borland C runtime
+	  bug which returns wrong mode.  [ruby-dev:22846]
+
 Mon Feb  9 16:30:12 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (detach_process_watcher): return the last status.

@@ -17,9 +17,16 @@ bindir = @bindir@
 sbindir = @sbindir@
 libdir = @libdir@
 libexecdir = @libexecdir@
+datadir = @datadir@
 arch = @arch@
 sitearch = @sitearch@
 sitedir = @sitedir@
+
+TESTUI = console
+TESTS =
+
+EXTOUT = .ext
+RIDATADIR = $(DESTDIR)$(datadir)/ri/$(MAJOR).$(MINOR)/system
 
 CFLAGS = @CFLAGS@ @XCFLAGS@ @ARCH_FLAG@
 CPPFLAGS = -I. -I$(srcdir) @CPPFLAGS@
@@ -40,6 +47,8 @@ EXEEXT = @EXEEXT@
 PROGRAM=$(RUBY_INSTALL_NAME)$(EXEEXT)
 RUBY = $(RUBY_INSTALL_NAME)
 MINIRUBY = @MINIRUBY@
+RUNRUBY = @RUNRUBY@
+EXTCONF = extconf.rb
 
 #### End of system configuration section. ####
 
@@ -109,17 +118,22 @@ SCRIPT_ARGS   =	--dest-dir="$(DESTDIR)" \
 		--make="$(MAKE)" \
 		--mflags="$(MFLAGS)" \
 		--make-flags="$(MAKEFLAGS)"
+EXTMK_ARGS    =	$(SCRIPT_ARGS) --extout="$(EXTOUT)" --extension="$(EXTS)" --extstatic="$(EXTSTATIC)"
 
 all:		@MAKEFILES@ miniruby$(EXEEXT) rbconfig.rb $(LIBRUBY)
-		@$(MINIRUBY) $(srcdir)/ext/extmk.rb --extstatic="$(EXTSTATIC)" $(SCRIPT_ARGS)
+		@$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS)
 
 miniruby$(EXEEXT):	config.status $(LIBRUBY_A) $(MAINOBJ) $(DMYEXT)
 		@rm -f $@
-		$(PURIFY) $(CC) $(LDFLAGS) $(MAINLIBS) $(MAINOBJ) $(DMYEXT) $(LIBRUBY_A) $(LIBS) -o $@
+		$(PURIFY) $(CC) $(LDFLAGS) $(MAINLIBS) $(MAINOBJ) $(LIBRUBY_A) $(LIBS) -o $@
 
 $(PROGRAM):     $(LIBRUBY) $(MAINOBJ) $(EXTOBJS) $(SETUP) miniruby$(EXEEXT)
 		@rm -f $@
 		$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINLIBS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(LIBS) -o $@
+
+static-ruby:	$(MAINOBJ) $(EXTOBJS) $(LIBRUBY_A)
+		@rm -f $(STATICRUBY)
+		$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINLIBS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBY_A) $(LIBS) -o $(STATICRUBY)
 
 # We must `rm' the library each time this rule is invoked because "updating" a
 # MAB library on Apple/NeXT (see --enable-fat-binary in configure) is not
@@ -140,21 +154,29 @@ ruby.imp:	$(LIBRUBY_A)
 # $(MINIRUBY) $< $@
 
 install:	install-nodoc @RDOCTARGET@
+install-all:	install-nodoc install-doc
 
-install-nodoc:	rbconfig.rb
+install-nodoc:	install-local install-ext
+install-local:	rbconfig.rb
 		$(MINIRUBY) $(srcdir)/instruby.rb $(SCRIPT_ARGS) --mantype="$(MANTYPE)"
-		$(MINIRUBY) $(srcdir)/ext/extmk.rb $(SCRIPT_ARGS) install
+install-ext:	rbconfig.rb
+		$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS) install
 
-what-where no-install:	rbconfig.rb
+what-where-all no-install-all:	no-install no-install-doc
+what-where no-install:	no-install-local no-install-ext
+what-where-local:	no-install-local
+no-install-local:	rbconfig.rb
 		$(MINIRUBY) $(srcdir)/instruby.rb -n $(SCRIPT_ARGS) --mantype="$(MANTYPE)"
-		$(MINIRUBY) $(srcdir)/ext/extmk.rb -n $(SCRIPT_ARGS) install
+what-where-ext:	no-install-ext
+no-install-ext:	rbconfig.rb
+		$(MINIRUBY) $(srcdir)/ext/extmk.rb -n $(EXTMK_ARGS) install
 
-install-doc:
+install-doc:	$(PROGRAM)
 		@echo Generating RDoc documentation
-		$(bindir)/$(PROGRAM) $(srcdir)/bin/rdoc --all --ri-system $(srcdir)
+		$(RUNRUBY) "$(srcdir)/bin/rdoc" --all --ri --op "$(RIDATADIR)" "$(srcdir)"
 
 clean-ext:
-		@-$(MINIRUBY) $(srcdir)/ext/extmk.rb $(SCRIPT_ARGS) clean 2> /dev/null || true
+		@-$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS) clean 2> /dev/null || true
 
 clean-local:
 		@rm -f $(OBJS) $(MAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY_ALIASES)
@@ -164,7 +186,7 @@ clean-local:
 clean: clean-ext clean-local
 
 distclean-ext:
-		@-$(MINIRUBY) $(srcdir)/ext/extmk.rb $(SCRIPT_ARGS) distclean 2> /dev/null || true
+		@-$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS) distclean 2> /dev/null || true
 
 distclean-local: clean-local
 		@rm -f @MAKEFILES@ config.h rbconfig.rb
@@ -179,6 +201,13 @@ realclean: 	distclean
 
 test:		miniruby$(EXEEXT) rbconfig.rb $(PROGRAM) PHONY
 		@./miniruby$(EXEEXT) $(srcdir)/rubytest.rb
+
+test-all:
+		$(RUNRUBY) -C "$(srcdir)/test" runner.rb --runner=$(TESTUI) $(TESTS)
+
+extconf:
+		$(MINIRUBY) -run -e mkdir -- -p "$(EXTCONFDIR)"
+		$(RUNRUBY) -C "$(EXTCONFDIR)" $(EXTCONF) $(EXTCONFARGS)
 
 rbconfig.rb:	miniruby$(EXEEXT) $(srcdir)/mkconfig.rb config.status $(PREP)
 		@$(MINIRUBY) $(srcdir)/mkconfig.rb rbconfig.rb

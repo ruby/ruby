@@ -29,13 +29,7 @@ module RI
     version = Config::CONFIG['ruby_version']
 
     base    = File.join(Config::CONFIG['datadir'], "ri", version)
-
-    if ENV["DESTDIR"]
-      SYSDIR = File.join(ENV["DESTDIR"], base, "system")
-    else
-      SYSDIR  = File.join(base, "system")
-    end
-
+    SYSDIR  = File.join(base, "system")
     SITEDIR = File.join(base, "site")
     homedir = ENV['HOME'] || ENV['USERPROFILE'] || ENV['HOMEPATH']
 

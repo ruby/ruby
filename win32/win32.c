@@ -2731,6 +2731,24 @@ isUNCRoot(const char *path)
     return 0;
 }
 
+#ifdef __BORLANDC__
+#undef fstat
+int
+rb_w32_fstat(int fd, struct stat *st)
+{
+    BY_HANDLE_FILE_INFORMATION info;
+    int ret = fstat(fd, st);
+
+    if (ret) return ret;
+    st->st_mode &= ~(S_IWGRP | S_IWOTH);
+    if (GetFileInformationByHandle((HANDLE)_get_osfhandle(fd), &info) &&
+	!(info.dwFileAttributes & FILE_ATTRIBUTE_READONLY)) {
+	st->st_mode |= S_IWUSR;
+    }
+    return ret;
+}
+#endif
+
 int
 rb_w32_stat(const char *path, struct stat *st)
 {

@@ -91,8 +91,26 @@ exec_prefix = $(prefix)
 !ifndef libdir
 libdir = $(exec_prefix)/lib
 !endif
+!if !defined(datadir)
+datadir = $(prefix)/share
+!endif
 !ifndef DESTDIR
 DESTDIR = $(prefix)
+!endif
+!ifndef EXTOUT
+EXTOUT = .ext
+!endif
+!ifndef RIDATADIR
+RIDATADIR = $(DESTDIR)$(datadir)/ri/$(MAJOR).$(MINOR)/system
+!endif
+!ifndef TESTUI
+TESTUI = console
+!endif
+!ifndef TESTS
+TESTS =
+!endif
+!ifndef RDOCTARGET
+RDOCTARGET = install-doc
 !endif
 !ifndef CFLAGS
 CFLAGS = -q $(DEBUGFLAGS) $(OPTFLAGS) $(PROCESSOR_FLAG) -w-
@@ -135,6 +153,8 @@ PROGRAM=$(RUBY_INSTALL_NAME)$(EXEEXT)
 WPROGRAM=$(RUBYW_INSTALL_NAME)$(EXEEXT)
 RUBYDEF = $(RUBY_SO_NAME).def
 MINIRUBY = .\miniruby$(EXEEXT)
+RUNRUBY = .\ruby$(EXEEXT) "$(srcdir)runruby.rb" --extout="$(EXTOUT)" --
+EXTCONF = extconf.rb
 
 ORGLIBPATH = $(LIB)
 
@@ -194,10 +214,11 @@ SCRIPT_ARGS   =	"--dest-dir=$(DESTDIR)" \
 		"--make=$(MAKE)" \
 		"--mflags=$(MFLAGS)" \
 		"--make-flags=$(MAKEFLAGS)"
+EXTMK_ARGS    =	$(SCRIPT_ARGS) --extout="$(EXTOUT)" --extension="$(EXTS)" --extstatic="$(EXTSTATIC)"
 
 all:		miniruby$(EXEEXT) rbconfig.rb \
 		$(LIBRUBY) $(MISCLIBS)
-		.\miniruby$(EXEEXT) $(srcdir)ext/extmk.rb --extstatic=$(EXTSTATIC) $(SCRIPT_ARGS)
+		@$(MINIRUBY) $(srcdir)ext/extmk.rb $(EXTMK_ARGS)
 
 ruby: $(PROGRAM)
 rubyw: $(WPROGRAM)
@@ -400,9 +421,9 @@ s,@srcdir@,$(srcdir),;t t
 s,@top_srcdir@,$(srcdir),;t t
 |
 
-miniruby$(EXEEXT):	$(LIBRUBY_A) $(MAINOBJ) dmyext.obj
+miniruby$(EXEEXT):	$(LIBRUBY_A) $(MAINOBJ)
 		@echo $(LIBS)
-		$(LD) $(LDFLAGS) $(XLDFLAGS) $(MAINOBJ) dmyext.obj,$@,nul,$(LIBRUBY_A) $(LIBS)
+		$(LD) $(LDFLAGS) $(XLDFLAGS) $(MAINOBJ),$@,nul,$(LIBRUBY_A) $(LIBS)
 
 $(PROGRAM):	$(MAINOBJ) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME).res
 		$(LD) $(LDFLAGS) $(XLDFLAGS) $(MAINOBJ),$@,nul,$(LIBRUBYARG) $(LIBS),,$(RUBY_INSTALL_NAME).res
@@ -424,13 +445,27 @@ $(LIBRUBY_SO) $(LIBRUBY): $(LIBRUBY_A) $(EXTOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
 $(RUBYDEF):	$(LIBRUBY_A) miniruby$(EXEEXT)
 		$(MINIRUBY) $(srcdir)bcc32/mkexports.rb -output=$@ $(LIBRUBY_A)
 
-install:	rbconfig.rb
-		$(MINIRUBY) $(srcdir)instruby.rb $(SCRIPT_ARGS)
-		$(MINIRUBY) $(srcdir)ext/extmk.rb $(SCRIPT_ARGS) install
+install:	install-nodoc $(RDOCTARGET)
+install-all:	install-nodoc install-doc
 
-what-where no-install:	rbconfig.rb
+install-nodoc:	install-local install-ext
+install-local:	rbconfig.rb
+		$(MINIRUBY) $(srcdir)instruby.rb $(SCRIPT_ARGS)
+install-ext:	rbconfig.rb
+		$(MINIRUBY) $(srcdir)ext/extmk.rb $(EXTMK_ARGS) install
+
+what-where-all no-install-all:	no-install no-install-doc
+what-where no-install:		no-install-local no-install-ext
+what-where-local:	no-install-local
+no-install-local:	rbconfig.rb
 		$(MINIRUBY) $(srcdir)instruby.rb -n $(SCRIPT_ARGS)
-		$(MINIRUBY) $(srcdir)ext/extmk.rb -n $(SCRIPT_ARGS) install
+what-where-ext:	no-install-ext
+no-install-ext:	rbconfig.rb
+		$(MINIRUBY) $(srcdir)ext/extmk.rb -n $(EXTMK_ARGS) install
+
+install-doc: $(PROGRAM)
+		@echo Generating RDoc documentation
+		$(RUNRUBY) "$(srcdir)bin/rdoc" --all --ri --op "$(RIDATADIR)" "$(srcdir)"
 
 clean:		clean-ext clean-local
 
@@ -447,7 +482,7 @@ clean-local:
 		@if exist *.il? del *.il?
 
 clean-ext:
-		@-$(MINIRUBY) $(srcdir)ext/extmk.rb $(SCRIPT_ARGS) clean
+		@-$(MINIRUBY) $(srcdir)ext/extmk.rb $(EXTMK_ARGS) clean
 
 distclean:	distclean-ext distclean-local
 
@@ -481,7 +516,7 @@ distclean-local:	clean-local
 		@if exist miniruby$(EXEEXT) del miniruby$(EXEEXT)
 
 distclean-ext:
-		@-$(MINIRUBY) $(srcdir)ext/extmk.rb $(SCRIPT_ARGS) distclean
+		@-$(MINIRUBY) $(srcdir)ext/extmk.rb $(EXTMK_ARGS) distclean
 
 realclean:	distclean
 		@if exist parse.c del parse.c
@@ -489,6 +524,13 @@ realclean:	distclean
 
 test:		miniruby$(EXEEXT) NUL
 		@$(MINIRUBY) $(srcdir)rubytest.rb
+
+test-all:
+		$(RUNRUBY) -C "$(srcdir)test" runner.rb --runner=$(TESTUI) $(TESTS)
+
+extconf:
+		$(MINIRUBY) -run -e mkdir -- -p "$(EXTCONFDIR)"
+		$(RUNRUBY) -C "$(EXTCONFDIR)" $(EXTCONF) $(EXTCONFARGS)
 
 rbconfig.rb:	miniruby$(EXEEXT) config.status
 		@$(MINIRUBY) $(srcdir)mkconfig.rb -srcdir=$(srcdir) \

@@ -121,12 +121,33 @@ def extmake(target)
 end
 
 def parse_args()
-  getopts('n', 'extstatic:', 'dest-dir:',
-	  'make:', 'make-flags:', 'mflags:')
+  getopts('n', 'extstatic:', 'extension:', 'dest-dir:', 'extout:',
+	  'make:', 'make-flags:', 'mflags:', 'message:')
 
   $dryrun = $OPT['n']
-  $force_static = $OPT['extstatic'] == 'static'
+  if $extension = $OPT['extension']
+    if $extension.empty?
+      $extension = nil
+    elsif $extension == "none"
+      $extension = []
+    else
+      $extension = $extension.split(/[\s,]+/)
+    end
+  end
+  if $extstatic = $OPT['extstatic']
+    if $extstatic.empty?
+      $extstatic = nil
+    elsif $extstatic == "none"
+      $extstatic = ""
+    else
+      $force_static = true
+      $extstatic = nil if $extstatic == 'static'
+    end
+  end
   $destdir = $OPT['dest-dir'] || ''
+  if opt = $OPT['extout'] and !opt.empty?
+    $outdir = File.expand_path(opt, $topdir)
+  end
   $make = $OPT['make'] || $make || 'make'
   mflags = ($OPT['make-flags'] || '').strip
   mflags = ($OPT['mflags'] || '').strip if mflags.empty?
@@ -143,6 +164,9 @@ def parse_args()
     grep(/\A-(?!-).*#{'%c' % flag}/i) { return true }
     false
   end
+  def $mflags.defined?(var)
+    grep(/\A#{var}=(.*)/) {return $1}
+  end
 
   if $mflags.set?(?n)
     $dryrun = true
@@ -151,25 +175,37 @@ def parse_args()
   end
 
   $continue = $mflags.set?(?k)
-  $mflags |= ["DESTDIR=#{$destdir}"] unless $destdir.to_s.empty?
+  if !$destdir.to_s.empty?
+    $destdir = File.expand_path($destdir)
+    $mflags.defined?("DESTDIR") or $mflags << "DESTDIR=#{$destdir}"
+  end
+  if $outdir
+    $mflags << "outdir=#{$outdir.sub(/#{Regexp.quote($topdir)}/, '$(topdir)')}"
+    $mflags << "outdir_prefix=#{$outdir_prefix}"
+  end
+
+  $message = $OPT['message']
 end
 
 parse_args()
 
+if target = ARGV.shift and /^[a-z-]+$/ =~ target
+  $mflags.push(target)
+  target = target.sub(/^(?:dist|real)(?=(?:clean)?$)/, '\1')
+  case target
+  when /clean/
+    $ignore ||= true
+  when /^install\b/
+    $install = true
+    $ignore ||= true
+    $mflags.unshift("INSTALL_PROG=install -c -p -m 0755",
+                    "INSTALL_DATA=install -c -p -m 0644",
+                    "MAKEDIRS=mkdir -p") if $dryrun
+  end
+end
 unless $message
-  if $message = ARGV.shift and /^[a-z]+$/ =~ $message
-    $mflags.push($message)
-    $message = $message.sub(/^(?:dist|real)(?=(?:clean)?$)/, '\1')
-    case $message
-    when "clean"
-      $ignore ||= true
-    when "install"
-      $ignore ||= true
-      $mflags.unshift("INSTALL_PROG=install -c -p -m 0755",
-		      "INSTALL_DATA=install -c -p -m 0644",
-		      "MAKEDIRS=mkdir -p") if $dryrun
-    end
-    $message.sub!(/e?$/, "ing")
+  if target
+    $message = target.sub(/^(\w+)e?\b/, '\1ing').tr('-', ' ')
   else
     $message = "compiling"
   end
@@ -190,6 +226,12 @@ MTIMES = [__FILE__, 'rbconfig.rb', srcdir+'/lib/mkmf.rb'].collect {|f| File.mtim
 
 # get static-link modules
 $static_ext = {}
+if $extstatic
+  $extstatic.split(/[\s,]+/).each do |target|
+    target = target.downcase if /mswin32|bccwin32/ =~ RUBY_PLATFORM
+    $static_ext[target] = $static_ext.size
+  end
+end
 for dir in ["ext", File::join($top_srcdir, "ext")]
   setup = File::join(dir, CONFIG['setup'])
   if File.file? setup
@@ -214,20 +256,33 @@ for dir in ["ext", File::join($top_srcdir, "ext")]
     f.close
     break
   end
+end unless $extstatic
+
+ext_prefix = "#{$top_srcdir}/ext"
+exts = $static_ext.sort_by {|t, i| i}.collect {|t, i| t}
+exts |= $extension if $extension
+exts.delete_if {|t| !File.exist?("#{ext_prefix}/#{t}/MANIFEST")}
+exts |= Dir.glob("#{ext_prefix}/*/**/MANIFEST").collect {|d|
+  d = File.dirname(d)
+  d.slice!(0, ext_prefix.length + 1)
+  d
+} unless $extension
+
+if $outdir
+  if $install
+    Config.expand(dest = "#{$destdir}#{$rubylibdir}")
+    FileUtils.cp_r($outdir+"/.", dest, :verbose => true, :noop => $dryrun)
+    exit
+  end
+  unless $ignore
+    FileUtils.mkpath($outdir)
+  end
 end
 
 FileUtils::makedirs('ext')
 Dir::chdir('ext')
 
-ext_prefix = "#{$top_srcdir}/ext"
-$static_ext.sort_by {|t, i| i}.each do |t, i|
-  next unless File.exist?("#{ext_prefix}/#{t}/MANIFEST")
-  extmake(t) or abort
-end
-Dir.glob("#{ext_prefix}/*/**/MANIFEST") do |d|
-  d = File.dirname(d)
-  d.slice!(0, ext_prefix.length + 1)
-  next if $static_ext[d]
+exts.each do |d|
   extmake(d) or abort
 end
 

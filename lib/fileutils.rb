@@ -406,7 +406,7 @@ module FileUtils
   #
   def copy_file(src, dest)
     File.open(src,  'rb') {|r|
-      File.open(dest, 'wb') {|w|
+      File.open(dest, 'wb', r.stat.mode) {|w|
         copy_stream r, w
       }
     }

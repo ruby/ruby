@@ -113,6 +113,8 @@ extern "C++" {
 #define write(h, b, l)		_write(h, b, l)
 #define _open			_sopen
 #define sopen			_sopen
+#undef fstat
+#define fstat(fd,st)		rb_w32_fstat(fd,st)
 #endif
 #define fsync(h)		_commit(h)
 #undef stat

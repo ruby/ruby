@@ -191,6 +191,8 @@ AC_PROG_MAKE_SET
 AC_AIX
 AC_MINIX
 
+AC_SUBST(RM, ['rm -f'])
+
 dnl check for large file stuff
 AC_SYS_LARGEFILE
 
@@ -828,6 +830,7 @@ if test "$with_dln_a_out" != yes; then
 	hpux*)		DLDFLAGS="$DLDFLAGS -E"
 			: ${LDSHARED='ld -b'}
 			XLDFLAGS="$XLDFLAGS -Wl,-E"
+			: ${LIBPATHENV=SHLIB_PATH}
 			rb_cv_dlopen=yes;;
 	solaris*) 	if test "$GCC" = yes; then
 			   : ${LDSHARED='$(CC) -Wl,-G'}
@@ -899,12 +902,14 @@ if test "$with_dln_a_out" != yes; then
 			rb_cv_dlopen=yes ;;
 	darwin*)	: ${LDSHARED='cc -dynamic -bundle -undefined suppress -flat_namespace'}
 			: ${LDFLAGS=""}
+			: ${LIBPATHENV=DYLD_LIBRARY_PATH}
 			rb_cv_dlopen=yes ;;
 	aix*)		: ${LDSHARED='/usr/ccs/bin/ld'}
 			XLDFLAGS="$XLDFLAGS -Wl,-bE:ruby.imp"
 			DLDFLAGS="$DLDFLAGS "'-brtl -eInit_$(TARGET) -bI:$(topdir)/ruby.imp -bM:SRE -T512 -H512 -lc'
 			: LDFLAGS="$LDFLAGS -brtl"
 			: ${ARCHFILE="ruby.imp"}
+			: ${LIBPATHENV=SHLIB_PATH}
 			rb_cv_dlopen=yes ;;
 
 	human*)		: ${DLDFLAGS=''}
@@ -922,6 +927,7 @@ if test "$with_dln_a_out" != yes; then
 			    DLDFLAGS="$DLDFLAGS -L/boot/develop/lib/x86 -lbe -lroot"
 			    ;;
 			esac
+			: ${LIBPATHENV=LIBRARY_PATH}
 			rb_cv_dlopen=yes ;;
 	nto-qnx*)	DLDFLAGS="$DLDFLAGS -L/lib -L/usr/lib -L/usr/local/lib"
 			: ${LDSHARED='ld -Bshareable -x'}
@@ -930,6 +936,7 @@ if test "$with_dln_a_out" != yes; then
 	cygwin*|mingw*)	: ${LDSHARED="${CC} -shared -s"}
 			XLDFLAGS="$XLDFLAGS -Wl,--stack,0x02000000"
 			DLDFLAGS="${DLDFLAGS} -Wl,--enable-auto-import,--export-all"
+			: ${LIBPATHENV=""}
 			rb_cv_dlopen=yes ;;
 	hiuxmpp)	: ${LDSHARED='ld -r'} ;;
 	atheos*) 	: ${LDSHARED="$CC -shared"}
@@ -943,6 +950,7 @@ fi
 AC_SUBST(LINK_SO)
 AC_SUBST(LIBPATHFLAG)
 AC_SUBST(RPATHFLAG)
+AC_SUBST(LIBPATHENV, "${LIBPATHENV-LD_LIBRARY_PATH}")
 
 dln_a_out_works=no
 if test "$ac_cv_header_a_out_h" = yes; then
@@ -1100,12 +1108,15 @@ fi
 if test x"$cross_compiling" = xyes; then
   test x"$MINIRUBY" = x && MINIRUBY="${RUBY-ruby} -I`pwd` -rfake"
   PREP=fake.rb
+  RUNRUBY='$(MINIRUBY) -I`cd $(srcdir)/lib; pwd`'
 else
   MINIRUBY='./miniruby$(EXEEXT)'
   PREP=''
+  RUNRUBY='$(MINIRUBY) $(srcdir)/runruby.rb --extout=$(EXTOUT) --'
 fi
 AC_SUBST(MINIRUBY)
 AC_SUBST(PREP)
+AC_SUBST(RUNRUBY)
 
 FIRSTMAKEFILE=""
 LIBRUBY_A='lib$(RUBY_SO_NAME)-static.a'

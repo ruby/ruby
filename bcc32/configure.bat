@@ -15,18 +15,61 @@ if "%1" == "--srcdir" goto :srcdir
 if "%1" == "srcdir" goto :srcdir
 if "%1" == "--target" goto :target
 if "%1" == "target" goto :target
-  echo>> ~tmp~.mak 	"%1" 
+if "%1" == "--program-suffix" goto :suffix
+if "%1" == "--program-name" goto :progname
+if "%1" == "--enable-install-doc" goto :enable-rdoc
+if "%1" == "--disable-install-doc" goto :disable-rdoc
+if "%1" == "-h" goto :help
+if "%1" == "--help" goto :help
+  echo>> ~tmp~.mak 	"%1" \
   shift
 goto :loop
 :srcdir
-  echo>> ~tmp~.mak 	"srcdir=%2" 
+  echo>> ~tmp~.mak 	-D"srcdir=%2" \
+  shift
+  shift
+goto :loop
+:suffix
+  echo>> ~tmp~.mak 	-D"RUBY_SUFFIX=%2" \
+  shift
+  shift
+goto :loop
+:installname
+  echo>> ~tmp~.mak 	-D"RUBY_INSTALL_NAME=%2" \
+  shift
+  shift
+goto :loop
+:soname
+  echo>> ~tmp~.mak 	-D"RUBY_SO_NAME=%2" \
   shift
   shift
 goto :loop
 :target
-  echo>> ~tmp~.mak 	%2 
+  echo>> ~tmp~.mak 	%2 \
   shift
   shift
 goto :loop
+:enable-rdoc
+  echo>> ~tmp~.mak 	-D"RDOCTARGET=install-doc" \
+  shift
+goto :loop
+:disable-rdoc
+  echo>> ~tmp~.mak 	-D"RDOCTARGET=install-nodoc" \
+  shift
+goto :loop
+:help
+  echo Configuration:
+  echo   --help                  display this help
+  echo   --srcdir=DIR            find the sources in DIR [configure dir or `..']
+  echo Installation directories:
+  echo   --prefix=PREFIX         install files in PREFIX [/usr]
+  echo System types:
+  echo   --target=TARGET         configure for TARGET [i386-mswin32]
+  echo Optional Package:
+  echo   --with-static-linked-ext link external modules statically
+  echo   --disable-install-doc   do not install rdoc indexes during install
+  del ~tmp~.mak
+goto :exit
 :end
+echo.>> ~tmp~.mak
 make -s -f ~tmp~.mak
