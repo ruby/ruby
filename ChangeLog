@@ -1,3 +1,11 @@
+Tue Oct 16 21:38:15 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* eval.c (rb_f_missing): check stack level with rb_stack_check().
+
+	* eval.c (rb_call0): ditto.
+
+	* eval.c, intern.h (rb_stack_check): added. [new]
+
 Tue Oct 16 00:07:06 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* parse.y (yylex): disallow alpha-numeric and mbchar for

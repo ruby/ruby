@@ -4065,6 +4065,8 @@ rb_f_missing(argc, argv, obj)
 	rb_raise(rb_eArgError, "no id given");
     }
 
+    rb_stack_check();
+
     id = SYM2ID(argv[0]);
     argc--; argv++;
 
@@ -4189,6 +4191,14 @@ stack_length(p)
 #endif
 }
 
+void
+rb_stack_check()
+{
+    if (stack_length(0) > STACK_LEVEL_MAX) {
+	rb_raise(rb_eSysStackError, "stack level too deep");
+    }
+}
+
 static VALUE
 call_cfunc(func, recv, len, argc, argv)
     VALUE (*func)();
@@ -4304,9 +4314,7 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
 
     if ((++tick & 0xff) == 0) {
 	CHECK_INTS;		/* better than nothing */
-	if (stack_length(0) > STACK_LEVEL_MAX) {
-	    rb_raise(rb_eSysStackError, "stack level too deep");
-	}
+	rb_stack_check();
     }
     PUSH_ITER(itr);
     PUSH_FRAME();

@@ -115,6 +115,7 @@ void rb_error_frozen _((char*)) NORETURN;
 /* eval.c */
 void rb_exc_raise _((VALUE)) NORETURN;
 void rb_exc_fatal _((VALUE)) NORETURN;
+void rb_stack_check _((void));
 void rb_remove_method _((VALUE, const char*));
 void rb_disable_super _((VALUE, const char*));
 void rb_enable_super _((VALUE, const char*));
