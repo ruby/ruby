@@ -100,7 +100,7 @@ static VALUE gAcceleratorTable;
 static VALUE gStyle;
 static VALUE gPreviewInfo;
 static VALUE gAllocation;
-static VALUE gRequisiton;
+static VALUE gRequisition;
 
 static VALUE mRC;
 
@@ -381,6 +381,61 @@ get_gdkfont(font)
 }
 
 static VALUE
+gdkfnt_load_font(self, name)
+    VALUE self, name;
+{
+    GdkFont *font;
+
+    font = gdk_font_load(STR2CSTR(name));
+    return Data_Wrap_Struct(gdkFont, 0, gdk_font_unref, font);
+	/*    return make_gdkfont(new); */ 
+}
+
+static VALUE
+gdkfnt_load_fontset(self, name)
+    VALUE self, name;
+{
+    GdkFont *new;
+
+    new = gdk_fontset_load(STR2CSTR(name));
+    return make_gdkfont(new);
+}
+
+static VALUE
+gdkfnt_new(self, name)
+    VALUE self, name;
+{
+  char *cname = STR2CSTR(name);
+  return (strchr(cname, ',') == NULL)
+	? gdkfnt_load_font(self, name)
+	: gdkfnt_load_fontset(self, name);
+}
+
+static VALUE
+gdkfnt_string_width(self, str)
+    VALUE self, str;
+{
+  int w;
+
+  w = gdk_string_width(get_gdkfont(self), STR2CSTR(str));
+  return INT2NUM(w);
+}
+
+static VALUE
+gdkfnt_ascent(self)
+    VALUE self;
+{
+  return INT2NUM(get_gdkfont(self)->ascent);
+}
+
+static VALUE
+gdkfnt_descent(self)
+    VALUE self;
+{
+  return INT2NUM(get_gdkfont(self)->descent);
+}
+
+static VALUE
 gdkfnt_equal(fn1, fn2)
     VALUE fn1, fn2;
 {
@@ -436,8 +491,8 @@ get_tobj(obj, klass)
 #define make_gallocation(c) make_tobj(c, gAllocation, sizeof(GtkAllocation))
 #define get_gallocation(c) ((GtkAllocation*)get_tobj(c, gAllocation))
 
-#define make_grequisiton(c) make_tobj(c, gRequisiton, sizeof(GtkRequisition))
-#define get_grequisiton(c) ((GtkRequisition*)get_tobj(c, gRequisiton))
+#define make_grequisition(c) make_tobj(c, gRequisition, sizeof(GtkRequisition))
+#define get_grequisition(c) ((GtkRequisition*)get_tobj(c, gRequisition))
 
 #define make_gdkrectangle(r) make_tobj(r, gdkRectangle, sizeof(GdkRectangle))
 #define get_gdkrectangle(r) ((GdkRectangle*)get_tobj(r, gdkRectangle))
@@ -776,6 +831,77 @@ gdkwin_root_window(self)
   return INT2NUM(GDK_ROOT_WINDOW() );
 }
 
+static VALUE
+gdkwin_clear(self)
+     VALUE self;
+{
+  gdk_window_clear(get_gdkwindow(self));
+  return self;
+}
+
+static VALUE
+gdkwin_clear_area(self, x,y,w,h)
+     VALUE self,x,y,w,h;
+{
+  gdk_window_clear_area(get_gdkwindow(self),
+						NUM2INT(x), NUM2INT(y), NUM2INT(w), NUM2INT(h));
+  return self;
+}
+
+static VALUE
+gdkwin_clear_area_e(self, x,y,w,h)
+     VALUE self,x,y,w,h;
+{
+  gdk_window_clear_area_e(get_gdkwindow(self),
+						  NUM2INT(x), NUM2INT(y), NUM2INT(w), NUM2INT(h));
+  return self;
+}
+
+static VALUE
+gdkwin_set_background(self, c)
+    VALUE self, c;
+{
+  GdkColor color;
+  color.pixel = NUM2INT(c);
+  gdk_window_set_background(get_gdkwindow(self), &color);
+  return self;
+}
+
+static VALUE
+gdkwin_set_back_pixmap(self, pixmap, parent_relative)
+    VALUE self, pixmap, parent_relative;
+{
+  gdk_window_set_back_pixmap(get_gdkwindow(self), get_gdkpixmap(pixmap),
+							 NUM2INT(parent_relative));
+  return self;
+}
+
+static VALUE
+gdkwin_move(self, x,y)
+    VALUE self, x,y;
+{
+  gdk_window_move(get_gdkwindow(self),
+				  NUM2INT(x), NUM2INT(y));
+  return self;
+}
+
+static VALUE
+gdkwin_resize(self, w,h)
+    VALUE self, w,h;
+{
+  gdk_window_resize(get_gdkwindow(self),
+					NUM2INT(w), NUM2INT(h));
+  return self;
+}
+
+static VALUE
+gdkwin_move_resize(self, x,y,w,h)
+    VALUE self, x,y,w,h;
+{
+  gdk_window_move_resize(get_gdkwindow(self),
+						 NUM2INT(x), NUM2INT(y), NUM2INT(w), NUM2INT(h));
+  return self;
+}
 
 static VALUE
 make_gdkevent(event)
@@ -866,6 +992,72 @@ gdkgc_destroy(self)
     DATA_PTR(self) = 0;
     return Qnil;
 }
+
+static VALUE
+gdkgc_set_function(self, func)
+    VALUE func;
+{
+  GdkFunction f;
+  f = (GdkFunction) NUM2INT(func);
+  if (f != GDK_COPY && f != GDK_INVERT && f != GDK_XOR)
+	ArgError("function out of range");
+  
+  gdk_gc_set_function(get_gdkgc(self), f);
+  return func;
+}
+
+static VALUE
+gdkgc_set_foreground(self, pix)
+    VALUE pix;
+{
+  GdkColor c;
+  c.pixel = NUM2INT(pix);
+  gdk_gc_set_foreground(get_gdkgc(self), &c);
+  return pix;
+}
+
+static VALUE
+gdkgc_set_background(self, pix)
+    VALUE pix;
+{
+  GdkColor c;
+  c.pixel = NUM2INT(pix);
+  gdk_gc_set_background(get_gdkgc(self), &c);
+  return pix;
+}
+
+static VALUE
+gdkgc_set_clip_mask(self, mask)
+    VALUE mask;
+{
+  gdk_gc_set_clip_mask(get_gdkgc(self), get_gdkbitmap(mask));
+  return mask;
+}
+
+static VALUE
+gdkgc_set_clip_origin(self, x, y)
+    VALUE x, y;
+{
+  gdk_gc_set_clip_origin(get_gdkgc(self), NUM2INT(x), NUM2INT(y));
+  return self;
+}
+
+static VALUE
+gdkgc_set_clip_rectangle(self, rectangle)
+	 VALUE rectangle;
+{
+  gdk_gc_set_clip_rectangle(get_gdkgc(self), get_gdkrectangle(rectangle));
+  return rectangle;
+}
+/*
+static VALUE
+gdkgc_set_clip_region(self, region)
+	 VALUE region;
+{
+  gdk_gc_set_clip_region(get_gdkgc(self), get_gdkregion(region));
+  return region;
+}
+*/
 
 static VALUE
 glist2ary(list)
@@ -1038,6 +1230,7 @@ signal_setup_args(obj, sig, argc, params, args)
     GtkArg *params;
     VALUE args;
 {
+    GtkArg *params1;
     int i;
     char *signame = rb_id2name(sig);
 
@@ -1047,7 +1240,7 @@ signal_setup_args(obj, sig, argc, params, args)
 	    return;
 	}
 	if (strcmp(signame, "size_request") == 0) {
-	    ary_push(args, make_grequisiton(GTK_VALUE_POINTER(params[0])));
+	    ary_push(args, make_grequisition(GTK_VALUE_POINTER(params[0])));
 	    return;
 	}
 	if (strcmp(signame, "size_allocate") == 0) {
@@ -1055,12 +1248,12 @@ signal_setup_args(obj, sig, argc, params, args)
 	    return;
 	}
     }
-    else if (obj_is_kind_of(obj, gWindow)) {
+    if (obj_is_kind_of(obj, gWindow)) {
 	if (strcmp(signame, "move_resize") == 0) {
-	    ary_push(args, NUM2INT(*GTK_RETLOC_INT(params[0])));
-	    ary_push(args, NUM2INT(*GTK_RETLOC_INT(params[1])));
-	    ary_push(args, NUM2INT(GTK_VALUE_INT(params[3])));
-	    ary_push(args, NUM2INT(GTK_VALUE_INT(params[4])));
+	    ary_push(args, INT2NUM(*GTK_RETLOC_INT(params[0])));
+	    ary_push(args, INT2NUM(*GTK_RETLOC_INT(params[1])));	
+	    ary_push(args, INT2NUM(GTK_VALUE_INT(params[3])));
+	    ary_push(args, INT2NUM(GTK_VALUE_INT(params[4])));
 	    return;
 	}
 	if (strcmp(signame, "set_focus") == 0) {
@@ -1068,32 +1261,49 @@ signal_setup_args(obj, sig, argc, params, args)
 	    return;
 	}
     }
-    else if (obj_is_kind_of(obj, gEntry)) {
+    if (obj_is_kind_of(obj, gEntry)) {
 	if (strcmp(signame, "insert_position") == 0) {
-	    ary_push(args, NUM2INT(*GTK_RETLOC_INT(params[0])));
+	    ary_push(args, INT2NUM(*GTK_RETLOC_INT(params[0])));
 	    return;
 	}
     }
-    else if (obj_is_kind_of(obj, gCList)) {
-	if (strcmp(signame, "select_row") == 0) {
-	    if (GTK_VALUE_POINTER(params[0]))
-		ary_push(args, make_gdkevent(GTK_VALUE_POINTER(params[0])));
-	    else
-		ary_push(args, Qnil);
-	    return;
-	}
-	if (strcmp(signame, "unselect_row") == 0) {
-	    if (GTK_VALUE_POINTER(params[0]))
-		ary_push(args, make_gdkevent(GTK_VALUE_POINTER(params[0])));
+    if (obj_is_kind_of(obj, gCList)) {
+	if (strcmp(signame, "select_row") == 0 ||
+	    strcmp(signame, "unselect_row") == 0) {
+	    ary_push(args, INT2NUM(GTK_VALUE_INT(params[0])));
+	    ary_push(args, INT2NUM(GTK_VALUE_INT(params[1])));
+	    if (GTK_VALUE_POINTER(params[2]))
+		ary_push(args, make_gdkevent(GTK_VALUE_POINTER(params[2])));
 	    else
 		ary_push(args, Qnil);
 	    return;
 	}
     }
 
+    params1 = params;
     for (i=0; i<argc; i++) {
-	ary_push(args, arg_to_value(params));
-	params++;
+	ary_push(args, arg_to_value(params1));
+	params1++;
+    }
+}
+
+static void
+signal_sync_args(obj, sig, argc, params, args)
+    VALUE obj;
+    ID sig;
+    int argc;
+    GtkArg *params;
+    VALUE args;
+{
+    int i;
+    char *signame = rb_id2name(sig);
+
+    if (obj_is_kind_of(obj, gWidget)) {
+	if (strcmp(signame, "size_request") == 0) {
+	    memcpy(GTK_VALUE_POINTER(params[0]), get_grequisition(ary_pop(args)),
+			   sizeof(GtkRequisition));
+	    return;
+	}
     }
 }
 
@@ -1220,8 +1430,14 @@ signal_callback(widget, data, nparams, params)
     else {
 	ary_unshift(args, self);
 	result = rb_apply(proc, id_call, args);
+	ary_shift(args);
     }
     arg_set_value(params+nparams, result);
+
+    for (i=0; i<RARRAY(a)->len; i++) {
+	ary_pop(args);
+    }
+    signal_sync_args(self, id, nparams, params, args);
 }
 
 static void
@@ -1384,6 +1600,12 @@ cont_bwidth(self, width)
 			       NUM2INT(width));
     return self;
 }
+static VALUE
+cont_get_bwidth(self)
+    VALUE self;
+{
+    return INT2NUM(GTK_CONTAINER(get_widget(self))->border_width);
+}
 
 static VALUE
 cont_add(self, other)
@@ -1534,6 +1756,34 @@ misc_set_padding(self, xpad, ypad)
     gtk_misc_set_padding(GTK_MISC(get_widget(self)),
 			 NUM2DBL(xpad), NUM2DBL(ypad));
     return self;
+}
+
+static VALUE
+misc_get_xalign(self)
+    VALUE self;
+{
+    return float_new(GTK_MISC(get_widget(self))->xalign);
+}
+
+static VALUE
+misc_get_yalign(self)
+    VALUE self;
+{
+    return float_new(GTK_MISC(get_widget(self))->yalign);
+}
+
+static VALUE
+misc_get_xpad(self)
+    VALUE self;
+{
+    return INT2NUM(GTK_MISC(get_widget(self))->xpad);
+}
+
+static VALUE
+misc_get_ypad(self)
+    VALUE self;
+{
+    return INT2NUM(GTK_MISC(get_widget(self))->ypad);
 }
 
 static VALUE
@@ -1742,7 +1992,7 @@ static VALUE
 widget_size_request(self, req)
     VALUE self, req;
 {
-    gtk_widget_size_request(get_widget(self), get_grequisiton(req));
+    gtk_widget_size_request(get_widget(self), get_grequisition(req));
     return self;
 }
 
@@ -1813,6 +2063,23 @@ widget_visible(self)
     VALUE self;
 {
     if (GTK_WIDGET_VISIBLE(get_widget(self)))
+	return TRUE;
+    return FALSE;
+}
+static VALUE
+widget_mapped(self)
+    VALUE self;
+{
+    if (GTK_WIDGET_MAPPED(get_widget(self)))
+	return TRUE;
+    return FALSE;
+}
+
+static VALUE
+widget_realized(self)
+    VALUE self;
+{
+    if (GTK_WIDGET_REALIZED(get_widget(self)))
 	return TRUE;
     return FALSE;
 }
@@ -2056,41 +2323,74 @@ static VALUE
 widget_push_visual(self, visual)
     VALUE self, visual;
 {
+    GdkVisual v;
     gtk_widget_push_visual(get_gdkvisual(visual));
     return make_gdkcmap(visual);
 }
 
 static VALUE
 widget_push_style(self, style)
-    VALUE self, style;
+    VALUE self;
 {
     gtk_widget_push_style(get_gstyle(style));
     return Qnil;
 }
 
 static VALUE
-widget_pop_cmap(self, cmap)
-    VALUE self, cmap;
+widget_pop_cmap(self)
+    VALUE self;
 {
     gtk_widget_pop_colormap();
     return Qnil;
 }
 
 static VALUE
-widget_pop_visual(self, visual)
-    VALUE self, visual;
+widget_pop_visual(self)
+    VALUE self;
 {
     gtk_widget_pop_visual();
     return Qnil;
 }
 
 static VALUE
-widget_pop_style(self, style)
-    VALUE self, style;
+widget_pop_style(self)
+    VALUE self;
 {
     gtk_widget_pop_style();
     return Qnil;
 }
+
+/*
+static VALUE
+widget_peek_cmap(self)
+    VALUE self;
+{
+    GdkColormap *cmap;
+
+	cmap = (GdkColormap*)gtk_widget_peek_colormap();
+    return make_gdkcmap(cmap);
+}
+
+static VALUE
+widget_peek_visual(self)
+    VALUE self;
+{
+    GdkVisual *v;
+
+	v = (GdkVisual*)gtk_widget_peek_visual();
+    return make_gdkvisual(v);
+}
+
+static VALUE
+widget_peek_style(self)
+    VALUE self;
+{
+    GtkStyle *style;
+
+	style = (GtkStyle*)gtk_widget_peek_style();
+    return make_gstyle(style);
+}
+*/
 
 static VALUE
 widget_set_default_cmap(self, cmap)
@@ -2166,6 +2466,34 @@ widget_get_alloc(self)
 	VALUE self;
 {
 	return make_gallocation(&(get_widget(self)->allocation));
+}
+static VALUE
+widget_set_alloc(self, x,y,w,h)
+  VALUE self, x,y,w,h;
+{
+  GtkAllocation *a = &(get_widget(self)->allocation);
+  a->x      = NUM2INT(x);
+  a->y      = NUM2INT(y);
+  a->width  = NUM2INT(w);
+  a->height = NUM2INT(h);
+  return self;
+}
+
+static VALUE
+widget_get_requisition(self)
+	VALUE self;
+{
+	return make_grequisition(&(get_widget(self)->requisition));
+}
+
+static VALUE
+widget_set_requisition(self, w,h)
+	VALUE self,w,h;
+{
+  GtkRequisition *r = &(get_widget(self)->requisition);
+  r->width  = NUM2INT(w);
+  r->height = NUM2INT(h);
+  return self;
 }
 
 static VALUE
@@ -2818,14 +3146,29 @@ label_initialize(self, label)
     set_widget(self, gtk_label_new(STR2CSTR(label)));
     return Qnil;
 }
+static VALUE
+label_get_jtype(self)
+    VALUE self;
+{
+  return(INT2FIX(GTK_LABEL(get_widget(self))->jtype));
+}
+static VALUE
+label_set_jtype(self, jtype)
+    VALUE self, jtype;
+{
+  GtkJustification j;
+  j = (GtkJustification) NUM2INT(jtype);
+  gtk_label_set_justify(GTK_LABEL(get_widget(self)), j);
+  return self;
+}
 
 static VALUE
 label_get(self)
      VALUE self;
 {
-  gchar** str;
-  gtk_label_get(GTK_LABEL(get_widget(self)), str);
-  return str_new2(*str);
+  gchar* str;
+  gtk_label_get(GTK_LABEL(get_widget(self)), &str);
+  return str_new2(str);
 }
 
 static VALUE
@@ -5492,6 +5835,13 @@ style_s_new(klass)
 }
 
 static VALUE
+style_copy(self)
+    VALUE self;
+{
+  return make_gstyle(gtk_style_copy(get_gstyle(self)));
+}
+
+static VALUE
 style_attach(self, win)
     VALUE self, win;
 {
@@ -5506,7 +5856,7 @@ style_detach(self)
 }
 
 static VALUE
-style_set_bg(self, win, state_type)
+style_set_background(self, win, state_type)
     VALUE self, win, state_type;
 {
     gtk_style_set_background(get_gstyle(self), get_gdkwindow(win),
@@ -5584,6 +5934,33 @@ style_base(self, idx)
     return make_gdkcolor(get_gstyle(self)->base[i]);
 }
 
+#define DEFINE_STYLE_SET_COLOR(func, type) \
+static VALUE \
+func(self, idx, r, g, b) \
+    VALUE self, idx, r, g, b; \
+{ \
+  GtkStyle *style; \
+  GdkColor *color; \
+  int i = NUM2INT(idx); \
+ \
+  if (i < 0 || 5 < i) ArgError("state out of range"); \
+  style = get_gstyle(self); \
+  if (style->fg_gc[0] != NULL) ArgError("you must not change widget style."); \
+  color =  &(style-> type [i]); \
+  color->red   = NUM2INT(r); \
+  color->green = NUM2INT(g); \
+  color->blue  = NUM2INT(b); \
+  return(make_gdkcolor(*color)); \
+} \
+
+DEFINE_STYLE_SET_COLOR(style_set_fg, fg)
+DEFINE_STYLE_SET_COLOR(style_set_bg, bg)
+DEFINE_STYLE_SET_COLOR(style_set_light, light)
+DEFINE_STYLE_SET_COLOR(style_set_dark, dark)
+DEFINE_STYLE_SET_COLOR(style_set_mid, mid)
+DEFINE_STYLE_SET_COLOR(style_set_text, text)
+DEFINE_STYLE_SET_COLOR(style_set_base, base)
+
 static VALUE
 style_black(self)
 {
@@ -5600,6 +5977,23 @@ static VALUE
 style_font(self)
 {
     return make_gdkfont(get_gstyle(self)->font);
+}
+
+static VALUE
+style_set_font(self, f)
+	 VALUE f;
+{
+  GdkFont *font = get_gdkfont(f);
+  GtkStyle *style = get_gstyle(self);
+
+  if (style->fg_gc[0] != NULL) ArgError("you must not change widget style.");
+  if (style->font != NULL)
+	gdk_font_unref(style->font);
+
+  gdk_font_ref(font);
+  style->font = font;
+
+  return self;
 }
 
 static VALUE
@@ -5782,6 +6176,18 @@ style_draw_string(self,)	/* 5 */
 #endif
 
 static VALUE
+gallocation_new(VALUE self, VALUE x, VALUE y, VALUE w, VALUE h)
+{
+  GtkAllocation a;
+
+  a.x = NUM2INT(x);
+  a.y = NUM2INT(y);
+  a.width = NUM2INT(w);
+  a.height = NUM2INT(h);
+  return make_gallocation(&a);
+}
+
+static VALUE
 gallocation_x(self)
 {
 	return INT2NUM(get_gallocation(self)->x);
@@ -5805,6 +6211,27 @@ gallocation_h(self)
 	return INT2NUM(get_gallocation(self)->height);
 }
 
+static VALUE
+gallocation_to_a(self)
+	 VALUE self;
+{
+  GtkAllocation *a;
+
+  a = get_gallocation(self);
+  return ary_new3(4, a->x, a->y, a->width, a->height);
+}
+
+static VALUE
+gallocation_to_s(self)
+	 VALUE self;
+{
+  char str[2 +2*3 +5*4  +1]; /* member is guint16. max string size is 5 */
+  GtkAllocation *a;
+
+  a = get_gallocation(self);
+  sprintf(str, "(%5d, %5d, %5d, %5d)", a->x, a->y, a->width, a->height);
+  return str_new2(str);
+}
 
 static VALUE
 gtk_m_main(self)
@@ -6011,108 +6438,167 @@ gdkdraw_draw_segs(self, gc, segs)
 	segments[i].y2 = NUM2INT(RARRAY(RARRAY(segs)->ptr[i])->ptr[3]);
     }
     gdk_draw_segments(get_gdkdrawable(self), get_gdkgc(gc),
-		      segments,
-		      RARRAY(segs)->len);
+		      segments, RARRAY(segs)->len);
     return self;
 }
 
+static VALUE grequisition_new(self, w, h)
+    VALUE self, w, h;
+{
+  GtkRequisition r;
+
+  r.width = NUM2INT(w);
+  r.height = NUM2INT(h);
+  return make_grequisition(&r);
+}
+
+static VALUE
+grequisition_w(self)
+    VALUE self;
+{
+	return INT2NUM(get_grequisition(self)->width);
+}
+
+static VALUE
+grequisition_h(self)
+    VALUE self;
+{
+	return INT2NUM(get_grequisition(self)->height);
+}
+
+static VALUE
+grequisition_set_w(self, w)
+	 VALUE self, w;
+{
+  get_grequisition(self)->width = NUM2INT(w);
+  return self;
+}
+
+static VALUE
+grequisition_set_h(self, h)
+	 VALUE self, h;
+{
+  get_grequisition(self)->height = NUM2INT(h);
+  return self;
+}
+
+static VALUE
+grequisition_to_a(self)
+	 VALUE self;
+{
+  GtkRequisition *r;
+
+  r = get_grequisition(self);
+  return ary_new3(2, r->width, r->height);
+}
+
+static VALUE
+grequisition_to_s(self)
+	 VALUE self;
+{
+  char str[2 +2*1 +5*2  +1]; /* member is guint16. max string size is 5 */
+  GtkRequisition *r;
+
+  r = get_grequisition(self);
+  sprintf(str, "(%5d, %5d)", r->width, r->height);
+  return str_new2(str);
+}
 
 static VALUE
 gdkrect_s_new(self, x, y, width, height)
 	VALUE self, x, y, width, height;
 {
-	GdkRectangle new;
-	new.x = NUM2INT(x);
-	new.y = NUM2INT(y);
-	new.width = NUM2INT(width);
-	new.height = NUM2INT(height);
-	return make_gdkrectangle(&new);
+    GdkRectangle new;
+    new.x = NUM2INT(x);
+    new.y = NUM2INT(y);
+    new.width = NUM2INT(width);
+    new.height = NUM2INT(height);
+    return make_gdkrectangle(&new);
 }
 
 static VALUE
 gdkrect_x(self)
 {
-	return INT2NUM(get_gdkrectangle(self)->x);
+    return INT2NUM(get_gdkrectangle(self)->x);
 }
 
 static VALUE
 gdkrect_y(self)
 {
-	return INT2NUM(get_gdkrectangle(self)->y);
+    return INT2NUM(get_gdkrectangle(self)->y);
 }
 
 static VALUE
 gdkrect_w(self)
 {
-	return INT2NUM(get_gdkrectangle(self)->width);
+    return INT2NUM(get_gdkrectangle(self)->width);
 }
 
 static VALUE
 gdkrect_h(self)
 {
-	return INT2NUM(get_gdkrectangle(self)->height);
+    return INT2NUM(get_gdkrectangle(self)->height);
 }
 
 static VALUE
 gdkevent_type(self)
 {
-  return INT2NUM(get_gdkevent(self)->type);
+    return INT2NUM(get_gdkevent(self)->type);
 }
 
 static VALUE
 gdkeventexpose_area(self)
 {
-  return make_gdkrectangle( &(((GdkEventExpose*)get_gdkevent(self))->area) );
+    return make_gdkrectangle(&(((GdkEventExpose*)get_gdkevent(self))->area));
 }
 
 static VALUE
 gdkeventbutton_x(self)
 {
-  return INT2NUM(((GdkEventButton*)get_gdkevent(self))->x);
+    return INT2NUM(((GdkEventButton*)get_gdkevent(self))->x);
 }
 
 static VALUE
 gdkeventbutton_y(self)
 {
-  return INT2NUM(((GdkEventButton*)get_gdkevent(self))->y);
+    return INT2NUM(((GdkEventButton*)get_gdkevent(self))->y);
 }
 
 static VALUE
 gdkeventbutton_button(self)
 {
-  return INT2NUM(((GdkEventButton*)get_gdkevent(self))->button);
+    return INT2NUM(((GdkEventButton*)get_gdkevent(self))->button);
 }
 
 static VALUE
 gdkeventmotion_window(self)
 {
-  return make_gdkwindow( ((GdkEventMotion*)get_gdkevent(self))->window);
+    return make_gdkwindow(((GdkEventMotion*)get_gdkevent(self))->window);
 }
 
 static VALUE
 gdkeventmotion_x(self)
 {
-  return INT2NUM(((GdkEventMotion*)get_gdkevent(self))->x);
+    return INT2NUM(((GdkEventMotion*)get_gdkevent(self))->x);
 }
 
 static VALUE
 gdkeventmotion_y(self)
 {
-  return INT2NUM(((GdkEventMotion*)get_gdkevent(self))->y);
+    return INT2NUM(((GdkEventMotion*)get_gdkevent(self))->y);
 }
 
 static VALUE
 gdkeventmotion_state(self)
 {
-  return INT2NUM(((GdkEventMotion*)get_gdkevent(self))->state);
+    return INT2NUM(((GdkEventMotion*)get_gdkevent(self))->state);
 }
 
 static VALUE
 gdkeventmotion_is_hint(self)
 {
-  return INT2NUM(((GdkEventMotion*)get_gdkevent(self))->is_hint);
+    return INT2NUM(((GdkEventMotion*)get_gdkevent(self))->is_hint);
 }
-
 
 static gint
 idle()
@@ -6340,7 +6826,7 @@ Init_gtk()
     gAcceleratorTable = rb_define_class_under(mGtk, "AcceleratorTable", cData);
     gStyle = rb_define_class_under(mGtk, "Style", cData);
     gPreviewInfo = rb_define_class_under(mGtk, "PreviewInfo", cData);
-    gRequisiton = rb_define_class_under(mGtk, "Requisiton", cData);
+    gRequisition = rb_define_class_under(mGtk, "Requisition", cData);
     gAllocation = rb_define_class_under(mGtk, "Allocation", cData);
 
     mRC = rb_define_module_under(mGtk, "RC");
@@ -6424,6 +6910,7 @@ Init_gtk()
     rb_define_method(gWidget, "grab_default", widget_grab_default, 0);
     rb_define_method(gWidget, "set_state", widget_set_state, 1);
     rb_define_method(gWidget, "visible?", widget_visible, 0);
+    rb_define_method(gWidget, "mapped?", widget_mapped, 0);
     rb_define_method(gWidget, "reparent", widget_reparent, 1);
     rb_define_method(gWidget, "popup", widget_popup, 2);
     rb_define_method(gWidget, "intersect", widget_intersect, 2);
@@ -6439,6 +6926,9 @@ Init_gtk()
     rb_define_method(gWidget, "set_extension_events", widget_set_eevents, 1);
     rb_define_method(gWidget, "unparent", widget_unparent, 0);
     rb_define_method(gWidget, "allocation", widget_get_alloc, 0);
+    rb_define_method(gWidget, "set_allocation", widget_set_alloc, 4);
+    rb_define_method(gWidget, "requisition", widget_get_requisition, 0);
+    rb_define_method(gWidget, "set_requisition", widget_set_requisition, 2);
     rb_define_method(gWidget, "state", widget_state, 0);
     rb_define_method(gWidget, "get_toplevel", widget_get_toplevel, 0);
     rb_define_method(gWidget, "get_ancestor", widget_get_ancestor, 1);
@@ -6460,6 +6950,11 @@ Init_gtk()
     rb_define_singleton_method(gWidget, "pop_colomap", widget_pop_cmap, 0);
     rb_define_singleton_method(gWidget, "pop_visual", widget_pop_visual, 0);
     rb_define_singleton_method(gWidget, "pop_style", widget_pop_style, 0);
+	/* below peek_* function is defined in *.c but not decralated in gtk/*.h
+    rb_define_singleton_method(gWidget, "peek_colomap", widget_pop_cmap, 0);
+    rb_define_singleton_method(gWidget, "peek_visual", widget_pop_visual, 0);
+    rb_define_singleton_method(gWidget, "peek_style", widget_pop_style, 0);
+	*/
 
     rb_define_singleton_method(gWidget, "set_default_colomap",
 			       widget_set_default_cmap, 1);
@@ -6488,6 +6983,7 @@ Init_gtk()
 
     /* Container */
     rb_define_method(gContainer, "border_width", cont_bwidth, 1);
+    rb_define_method(gContainer, "get_border_width", cont_get_bwidth, 0);
     rb_define_method(gContainer, "add", cont_add, 1);
     rb_define_method(gContainer, "disable_resize", cont_disable_resize, 0);
     rb_define_method(gContainer, "enable_resize", cont_enable_resize, 0);
@@ -6509,6 +7005,10 @@ Init_gtk()
     /* Misc */
     rb_define_method(gMisc, "set_alignment", misc_set_align, 2);
     rb_define_method(gMisc, "set_padding", misc_set_padding, 2);
+    rb_define_method(gMisc, "xalign", misc_get_xalign, 0);
+    rb_define_method(gMisc, "yalign", misc_get_yalign, 0);
+    rb_define_method(gMisc, "xpad", misc_get_xpad, 0);
+    rb_define_method(gMisc, "ypad", misc_get_ypad, 0);
     
     /* Arrow */
     rb_define_method(gArrow, "initialize", arrow_initialize, 2);
@@ -6548,6 +7048,7 @@ Init_gtk()
     rb_define_method(gTButton, "set_state", tbtn_set_state, 1);
     rb_define_method(gTButton, "toggled", tbtn_toggled, 0);
     rb_define_method(gTButton, "active", tbtn_active, 0);
+    rb_define_method(gTButton, "active?", tbtn_active, 0);
 
     /* CheckButton */
     rb_define_method(gCButton, "initialize", cbtn_initialize, -1);
@@ -6817,7 +7318,11 @@ Init_gtk()
     /* Label */
     rb_define_method(gLabel, "initialize", label_initialize, 1);
     rb_define_method(gLabel, "get", label_get, 0);
+    rb_define_method(gLabel, "jtype", label_get_jtype, 0);
+    rb_define_method(gLabel, "jtype=", label_set_jtype, 1);
     rb_define_method(gLabel, "set", label_set, 1);
+    rb_define_method(gLabel, "jtype", label_get_jtype, 0);
+    rb_define_method(gLabel, "jtype=", label_set_jtype, 1);
 
     /* List */
     rb_define_method(gList, "initialize", list_initialize, 0);
@@ -7011,9 +7516,12 @@ Init_gtk()
     /* AcceleratorTable */
     /* Style */
     rb_define_singleton_method(gStyle, "new", style_s_new, 0);
+    rb_define_method(gStyle, "copy", style_copy, 0);
+    rb_define_method(gStyle, "clone", style_copy, 0);
+    rb_define_method(gStyle, "dup", style_copy, 0);
     rb_define_method(gStyle, "attach", style_attach, 1);
     rb_define_method(gStyle, "detach", style_detach, 0);
-    rb_define_method(gStyle, "set_background", style_set_bg, 0);
+    rb_define_method(gStyle, "set_background", style_set_background, 2);
     rb_define_method(gStyle, "fg", style_fg, 1);
     rb_define_method(gStyle, "bg", style_bg, 1);
     rb_define_method(gStyle, "light", style_light, 1);
@@ -7021,9 +7529,18 @@ Init_gtk()
     rb_define_method(gStyle, "mid", style_mid, 1);
     rb_define_method(gStyle, "text", style_text, 1);
     rb_define_method(gStyle, "base", style_base, 1);
+    rb_define_method(gStyle, "set_fg", style_set_fg, 4);
+    rb_define_method(gStyle, "set_bg", style_set_bg, 4);
+    rb_define_method(gStyle, "set_light", style_set_light, 4);
+    rb_define_method(gStyle, "set_dark", style_set_dark, 4);
+    rb_define_method(gStyle, "set_mid", style_set_mid, 4);
+    rb_define_method(gStyle, "set_text", style_set_text, 4);
+    rb_define_method(gStyle, "set_base", style_set_base, 4);
+
     rb_define_method(gStyle, "black", style_black, 0);
     rb_define_method(gStyle, "white", style_white, 0);
     rb_define_method(gStyle, "font", style_font, 0);
+    rb_define_method(gStyle, "set_font", style_set_font, 1);
     rb_define_method(gStyle, "fg_gc", style_fg_gc, 1);
     rb_define_method(gStyle, "bg_gc", style_bg_gc, 1);
     rb_define_method(gStyle, "light_gc", style_light_gc, 1);
@@ -7045,10 +7562,28 @@ Init_gtk()
     rb_define_method(gStyle, "draw_string", style_draw_string, 5);
 #endif
 
+    rb_define_singleton_method(gAllocation, "new", gallocation_new, 4);
     rb_define_method(gAllocation, "x", gallocation_x, 0);
     rb_define_method(gAllocation, "y", gallocation_y, 0);
     rb_define_method(gAllocation, "width", gallocation_w, 0);
     rb_define_method(gAllocation, "height", gallocation_h, 0);
+    rb_define_method(gAllocation, "to_a", gallocation_to_a, 0);
+    rb_define_method(gAllocation, "to_s", gallocation_to_s, 0);
+
+    rb_define_singleton_method(gRequisition, "new", grequisition_new, 2);
+    rb_define_method(gRequisition, "width", grequisition_w, 0);
+    rb_define_method(gRequisition, "height", grequisition_h, 0);
+    rb_define_method(gRequisition, "width=", grequisition_set_w, 1);
+    rb_define_method(gRequisition, "height=", grequisition_set_h, 1);
+    rb_define_method(gRequisition, "to_a", grequisition_to_a, 0);
+    rb_define_method(gRequisition, "to_s", grequisition_to_s, 0);
+
+    rb_define_method(gRequisition, "width", grequisition_w, 0);
+    rb_define_method(gRequisition, "height", grequisition_h, 0);
+	/*
+    rb_define_method(gRequisition, "width=", grequisition_set_w, 1);
+    rb_define_method(gRequisition, "height=", grequisition_set_h, 1);
+	*/
 
     /* Gtk module */
     rb_define_module_function(mGtk, "main", gtk_m_main, 0);
@@ -7075,6 +7610,12 @@ Init_gtk()
 
     /* Gdk module */
     /* GdkFont */
+    rb_define_singleton_method(gdkFont, "load_font", gdkfnt_load_font, 1);
+    rb_define_singleton_method(gdkFont, "new", gdkfnt_new, 1);
+    rb_define_singleton_method(gdkFont, "load_fontset", gdkfnt_load_fontset, 1);
+    rb_define_method(gdkFont, "string_width", gdkfnt_string_width, 1);
+    rb_define_method(gdkFont, "ascent", gdkfnt_ascent, 0);
+    rb_define_method(gdkFont, "descent", gdkfnt_descent, 0);
     rb_define_method(gdkFont, "==", gdkfnt_equal, 1);
 
     /* GdkDrawable */
@@ -7112,11 +7653,26 @@ Init_gtk()
     rb_define_method(gdkWindow, "pointer_ungrab", gdkwin_pointer_ungrab, 1);
     rb_define_singleton_method(gdkWindow, "foreign_new", gdkwin_foreign_new, 1);
     rb_define_singleton_method(gdkWindow, "root_window", gdkwin_root_window, 0);
+    rb_define_method(gdkWindow, "clear", gdkwin_clear, 0);
+    rb_define_method(gdkWindow, "clear_area", gdkwin_clear_area, 4);
+    rb_define_method(gdkWindow, "clear_area_e", gdkwin_clear, 4);
+    rb_define_method(gdkWindow, "set_background", gdkwin_set_background, 1);
+    rb_define_method(gdkWindow, "set_back_pixmap", gdkwin_set_back_pixmap, 2);
+    rb_define_method(gdkWindow, "move", gdkwin_move, 2);
+    rb_define_method(gdkWindow, "resize", gdkwin_resize, 2);
+    rb_define_method(gdkWindow, "move_resize", gdkwin_move_resize, 4);
 
     /* GdkGC */
     rb_define_singleton_method(gdkGC, "new", gdkgc_s_new, 1);
     rb_define_method(gdkGC, "copy", gdkgc_copy, 1);
     rb_define_method(gdkGC, "destroy", gdkgc_destroy, 0);
+    rb_define_method(gdkGC, "set_function", gdkgc_set_function, 1);
+    rb_define_method(gdkGC, "set_foreground", gdkgc_set_foreground, 1);
+    rb_define_method(gdkGC, "set_background", gdkgc_set_background, 1);
+    rb_define_method(gdkGC, "set_clip_mask", gdkgc_set_clip_mask, 1);
+    rb_define_method(gdkGC, "set_clip_origin", gdkgc_set_clip_origin, 2);
+    rb_define_method(gdkGC, "set_clip_rectangle", gdkgc_set_clip_rectangle, 1);
+	/* rb_define_method(gdkGC, "set_clip_region", gdkgc_set_clip_region, 1); */
 
     /* GdkImage */
     rb_define_singleton_method(gdkImage, "new_bitmap", gdkimage_s_newbmap, 4);
@@ -7185,11 +7741,18 @@ Init_gtk()
     rb_define_const(mGtk, "POLICY_ALWAYS", INT2FIX(GTK_POLICY_ALWAYS));
     rb_define_const(mGtk, "POLICY_AUTOMATIC", INT2FIX(GTK_POLICY_AUTOMATIC));
 
+    /* GtkJustification */
+    rb_define_const(mGtk, "JUSTIFY_LEFT", INT2FIX(GTK_JUSTIFY_LEFT));
+    rb_define_const(mGtk, "JUSTIFY_RIGHT", INT2FIX(GTK_JUSTIFY_RIGHT));
+    rb_define_const(mGtk, "JUSTIFY_CENTER", INT2FIX(GTK_JUSTIFY_CENTER));
+    rb_define_const(mGtk, "JUSTIFY_FILL", INT2FIX(GTK_JUSTIFY_FILL));
+
     /* GtkSelectionMode */
     rb_define_const(mGtk, "SELECTION_SINGLE", INT2FIX(GTK_SELECTION_SINGLE));
     rb_define_const(mGtk, "SELECTION_BROWSE", INT2FIX(GTK_SELECTION_BROWSE));
     rb_define_const(mGtk, "SELECTION_MULTIPLE", INT2FIX(GTK_SELECTION_MULTIPLE));
     rb_define_const(mGtk, "SELECTION_EXTENDED", INT2FIX(GTK_SELECTION_EXTENDED));
+
     /* GtkPositionType */
     rb_define_const(mGtk, "POS_LEFT", INT2FIX(GTK_POS_LEFT));
     rb_define_const(mGtk, "POS_RIGHT", INT2FIX(GTK_POS_RIGHT));
@@ -7202,22 +7765,27 @@ Init_gtk()
     rb_define_const(mGtk, "SHADOW_OUT", INT2FIX(GTK_SHADOW_OUT));
     rb_define_const(mGtk, "SHADOW_ETCHED_IN", INT2FIX(GTK_SHADOW_ETCHED_IN));
     rb_define_const(mGtk, "SHADOW_ETCHED_OUT", INT2FIX(GTK_SHADOW_ETCHED_OUT));
+
     /* GtkStateType */
     rb_define_const(mGtk, "STATE_NORMAL", INT2FIX(GTK_STATE_NORMAL));
     rb_define_const(mGtk, "STATE_ACTIVE", INT2FIX(GTK_STATE_ACTIVE));
     rb_define_const(mGtk, "STATE_PRELIGHT", INT2FIX(GTK_STATE_PRELIGHT));
     rb_define_const(mGtk, "STATE_SELECTED", INT2FIX(GTK_STATE_SELECTED));
     rb_define_const(mGtk, "STATE_INSENSITIVE", INT2FIX(GTK_STATE_INSENSITIVE));
+
     /* GtkAttachOptions */
     rb_define_const(mGtk, "EXPAND", INT2FIX(GTK_EXPAND));
     rb_define_const(mGtk, "SHRINK", INT2FIX(GTK_SHRINK));
     rb_define_const(mGtk, "FILL", INT2FIX(GTK_FILL));
+
     /* GtkSubmenuDirection */
     rb_define_const(mGtk, "DIRECTION_LEFT", INT2FIX(GTK_DIRECTION_LEFT));
     rb_define_const(mGtk, "DIRECTION_RIGHT", INT2FIX(GTK_DIRECTION_RIGHT));
+
     /* GtkSubmenuPlacement */
     rb_define_const(mGtk, "TOP_BOTTOM", INT2FIX(GTK_TOP_BOTTOM));
     rb_define_const(mGtk, "LEFT_RIGHT", INT2FIX(GTK_LEFT_RIGHT));
+
     /* GtkMetricType */
     rb_define_const(mGtk, "PIXELS", INT2FIX(GTK_PIXELS));
     rb_define_const(mGtk, "INCHES", INT2FIX(GTK_INCHES));
@@ -7247,6 +7815,11 @@ Init_gtk()
     /* GtkOrientation */
     rb_define_const(mGtk, "ORIENTATION_HORIZONTAL", INT2FIX(GTK_ORIENTATION_HORIZONTAL));
     rb_define_const(mGtk, "ORIENTATION_VERTICAL", INT2FIX(GTK_ORIENTATION_VERTICAL));
+
+    /* GdkMiscMode */
+    rb_define_const(mGdk, "FUNCTION_COPY", INT2FIX(GDK_COPY));
+    rb_define_const(mGdk, "FUNCTION_INVERT", INT2FIX(GDK_INVERT));
+    rb_define_const(mGdk, "FUNCTION_XOR", INT2FIX(GDK_XOR));
 
     /* GdkExtensionMode */
     rb_define_const(mGdk, "EXTENSION_EVENTS_NONE", INT2FIX(GDK_EXTENSION_EVENTS_NONE));
@@ -7336,7 +7909,7 @@ Init_gtk()
     }
 
     for (i=1;i<argc;i++) {
-	RARRAY(rb_argv)->ptr[i] = str_taint(str_new2(argv[i]));
+	RARRAY(rb_argv)->ptr[i-1] = str_taint(str_new2(argv[i]));
     }
     RARRAY(rb_argv)->len = argc-1;
 
