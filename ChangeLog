@@ -1,3 +1,15 @@
+Tue Apr  3 15:29:10 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* Makefile.in: Introduce MAINLIBS.
+
+	* configure.in: Link libc_r against the ruby executable on
+	FreeBSD, which is the first attempt to work around a certain
+	problem regarding pthread on FreeBSD.  It should make ruby/libruby
+	happy when it loads an extention to a library compiled and linked
+	with -pthread.  Note, however, that libruby is _not_ linked with
+	libc_r so as not to mess up pthread unfriendly stuff including
+	apache+mod_ruby and vim6+ruby_interp.
+
 Tue Apr  3 09:56:20 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/extmk.rb.in (create_makefile): create def file only if
