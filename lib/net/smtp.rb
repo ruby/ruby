@@ -1,6 +1,6 @@
 =begin
 
-= net/smtp.rb version 1.1.32
+= net/smtp.rb version 1.2.0
 
 written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 
