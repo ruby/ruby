@@ -199,18 +199,20 @@ module TSort
     result
   end
 
-  def each_strongly_connected_component(&block)
+  def each_strongly_connected_component
     id_map = {}
     stack = []
     tsort_each_node {|node|
       unless id_map.include? node
-        each_strongly_connected_component_from(node, id_map, stack, &block)
+        each_strongly_connected_component_from(node, id_map, stack) {|c|
+          yield c
+        }
       end
     }
     nil
   end
 
-  def each_strongly_connected_component_from(node, id_map={}, stack=[], &block)
+  def each_strongly_connected_component_from(node, id_map={}, stack=[])
     minimum_id = node_id = id_map[node] = id_map.size
     stack_length = stack.length
     stack << node
@@ -221,7 +223,9 @@ module TSort
         minimum_id = child_id if child_id && child_id < minimum_id
       else
         sub_minimum_id =
-          each_strongly_connected_component_from(child, id_map, stack, &block)
+          each_strongly_connected_component_from(child, id_map, stack) {|c|
+            yield c
+          }
         minimum_id = sub_minimum_id if sub_minimum_id < minimum_id
       end
     }
@@ -285,6 +289,20 @@ if __FILE__ == $0
       a = [[], [0]]
       assert_equal([[0], [1]],
         a.strongly_connected_components.map {|nodes| nodes.sort})
+    end
+
+    def orphaned_proc(block_str)
+      eval "lambda {#{block_str}}"
+    end
+
+    def test_orphaned_break
+      a = [[1], [2], []]
+      @n = 0
+      x = orphaned_proc %{|c| @n += 1; break :break_value}
+      assert_nothing_raised {
+        assert_equal(:break_value, a.each_strongly_connected_component(&x))
+      }
+      assert_equal(1, @n)
     end
   end
 

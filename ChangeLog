@@ -1,3 +1,12 @@
+Tue Apr 22 06:06:22 2003  Tanaka Akira  <akr@m17n.org>
+
+        * lib/resolv.rb (Resolv::DNS::Resource#hash): use XOR to accumulate
+          hash value.
+
+        * lib/tsort.rb (TSort#each_strongly_connected_component): don't use
+          block argument.
+          (each_strongly_connected_component_from): ditto.
+
 Mon Apr 21 21:59:48 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* marshal.c: one more digit for decimal point.  [ruby-talk:69808]

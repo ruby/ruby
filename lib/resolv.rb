@@ -1272,7 +1272,7 @@ class Resolv
       def hash
         h = 0
         self.instance_variables.each {|name|
-          h += self.instance_eval("#{name}.hash")
+          h ^= self.instance_eval("#{name}.hash")
         }
         return h
       end
@@ -1550,7 +1550,7 @@ class Resolv
 
     def initialize(address)
       unless address.kind_of?(String) && address.length == 4
-        raise ArgumentError.new('IPv4 address muse be 4 bytes')
+        raise ArgumentError.new('IPv4 address must be 4 bytes')
       end
       @address = address
     end
@@ -1658,7 +1658,7 @@ class Resolv
 
     def initialize(address)
       unless address.kind_of?(String) && address.length == 16
-        raise ArgumentError.new('IPv6 address muse be 16 bytes')
+        raise ArgumentError.new('IPv6 address must be 16 bytes')
       end
       @address = address
     end
