@@ -69,7 +69,7 @@ rb_big_2comp(x)			/* get 2's complement */
 	for (i=1; i<RBIGNUM(x)->len; i++) {
 	    if (ds[i] != 0) return;
 	}
-	REALLOC_N(BDIGITS(x), USHORT, RBIGNUM(x)->len++);
+	REALLOC_N(RBIGNUM(x)->digits, USHORT, RBIGNUM(x)->len++);
 	ds = BDIGITS(x);
 	ds[RBIGNUM(x)->len-1] = 1;
     }

@@ -336,7 +336,7 @@ rb_hash_fetch(argc, argv, hash)
 	    if (argc > 1) {
 		rb_raise(rb_eArgError, "wrong # of arguments", argc);
 	    }
-	    return rb_yield(argv[0]);
+	    return rb_yield(key);
 	}
 	if (argc == 1) {
 	    rb_raise(rb_eIndexError, "key not found");
@@ -918,6 +918,40 @@ rb_f_getenv(obj, name)
     return Qnil;
 }
 
+static VALUE
+env_fetch(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    VALUE key, if_none;
+    char *nam, *env;
+    int len;
+
+    VALUE val;
+
+    rb_scan_args(argc, argv, "11", &key, &if_none);
+    nam = rb_str2cstr(key, &len);
+    if (strlen(nam) != len) {
+	rb_raise(rb_eArgError, "bad environment variable name");
+    }
+    env = getenv(nam);
+    if (!env) {
+	if (rb_iterator_p()) {
+	    if (argc > 1) {
+		rb_raise(rb_eArgError, "wrong # of arguments", argc);
+	    }
+	    return rb_yield(key);
+	}
+	if (argc == 1) {
+	    rb_raise(rb_eIndexError, "key not found");
+	}
+	return if_none;
+    }
+    if (strcmp(nam, "PATH") == 0 && !rb_env_path_tainted())
+	return rb_str_new2(env);
+    return rb_tainted_str_new2(env);
+}
+
 static void
 path_tainted_p(path)
     char *path;
@@ -1434,7 +1468,9 @@ Init_Hash()
     rb_extend_object(envtbl, rb_mEnumerable);
 
     rb_define_singleton_method(envtbl,"[]", rb_f_getenv, 1);
+    rb_define_singleton_method(envtbl,"fetch", env_fetch, -1);
     rb_define_singleton_method(envtbl,"[]=", rb_f_setenv, 2);
+    rb_define_singleton_method(envtbl,"store", rb_f_setenv, 2);
     rb_define_singleton_method(envtbl,"each", env_each, 0);
     rb_define_singleton_method(envtbl,"each_pair", env_each, 0);
     rb_define_singleton_method(envtbl,"each_key", env_each_key, 0);

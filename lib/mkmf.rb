@@ -13,6 +13,8 @@ $config_cache = CONFIG["compile_dir"]+"/ext/config.cache"
 $srcdir = CONFIG["srcdir"]
 $libdir = CONFIG["libdir"]+"/ruby/"+CONFIG["MAJOR"]+"."+CONFIG["MINOR"]
 $archdir = $libdir+"/"+CONFIG["arch"]
+$sitelibdir = CONFIG["sitedir"]+"/"+CONFIG["MAJOR"]+"."+CONFIG["MINOR"]
+$sitearchdir = $sitelibdir+"/"+CONFIG["arch"]
 
 if File.exist? $archdir + "/ruby.h"
   $hdrdir = $archdir
@@ -107,7 +109,7 @@ def try_run(src, opt="")
   end
 end
 
-def install_rb(mfile, srcdir = nil)
+def install_rb(mfile, dest, srcdir = nil)
   libdir = "lib"
   libdir = srcdir + "/" + libdir if srcdir
   path = []
@@ -120,10 +122,10 @@ def install_rb(mfile, srcdir = nil)
   end
   for f in dir
     next if f == "."
-    mfile.printf "\t@$(RUBY) -r ftools -e 'File::makedirs(*ARGV)' $(libdir)/%s\n", f
+    mfile.printf "\t@$(RUBY) -r ftools -e 'File::makedirs(*ARGV)' %s/%s\n", dest, f
   end
   for f in path
-    mfile.printf "\t@$(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0644, true)' lib/%s $(libdir)/%s\n", f, f
+    mfile.printf "\t@$(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0644, true)' lib/%s %s/%s\n", f, dest, f
   end
 end
 
@@ -373,6 +375,8 @@ prefix = #{CONFIG["prefix"]}
 exec_prefix = #{CONFIG["exec_prefix"]}
 libdir = #{$libdir}
 archdir = #{$archdir}
+sitelibdir = #{$sitelibdir}
+sitearchdir = #{$sitearchdir}
 
 #### End of system configuration section. ####
 
@@ -398,11 +402,21 @@ realclean:	clean
 
 install:	$(archdir)/$(DLLIB)
 
+site-install:	$(sitearchdir)/$(DLLIB)
+
 $(archdir)/$(DLLIB): $(DLLIB)
 	@$(RUBY) -r ftools -e 'File::makedirs(*ARGV)' $(libdir) $(archdir)
 	@$(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0555, true)' $(DLLIB) $(archdir)/$(DLLIB)
 EOMF
-  install_rb(mfile)
+  install_rb(mfile, "$(libdir)")
+  mfile.printf "\n"
+
+  mfile.printf <<EOMF
+$(sitearchdir)/$(DLLIB): $(DLLIB)
+	@$(RUBY) -r ftools -e 'File::makedirs(*ARGV)' $(libdir) $(sitearchdir)
+	@$(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0555, true)' $(DLLIB) $(sitearchdir)/$(DLLIB)
+EOMF
+  install_rb(mfile, "$(sitelibdir)")
   mfile.printf "\n"
 
   if CONFIG["DLEXT"] != $OBJEXT
