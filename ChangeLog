@@ -1,3 +1,8 @@
+Tue Sep  2 20:37:15 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/lib/net/protocols.rb (SSLIO#ssl_connect): warning
+	  for skipping server verification.
+
 Tue Sep  2 14:09:20 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/socket/extconf.rb: check s6_addr8 in in6_addr (Tru64 UNIX).
@@ -312,8 +317,8 @@ Tue Aug 19 07:47:09 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/utils.rb (Utils::create_lisnteners): new method.
 
-	* lib/webrick/server.rb (GenericServer#start): should not
-	  through unknown errors. and refine comments.
+	* lib/webrick/server.rb (GenericServer#start): should rescue
+	  unknown errors. and refine comments.
 
 	* ext/openssl/lib/openssl/ssl.rb (SSLServer#accept): should close
 	  socket if SSLSocket raises error.

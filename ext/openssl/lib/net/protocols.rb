@@ -40,6 +40,10 @@ module Net
     end
 
     def ssl_connect()
+      unless @ssl_context.verify_mode
+        warn "warning: peer certificate won't be verified in this SSL session."
+        @ssl_context.verify_mode = OpenSSL::SSL::VERIFY_NONE
+      end
       @socket = OpenSSL::SSL::SSLSocket.new(@socket, @ssl_context)
       @socket.sync = true
       @socket.sync_close = true
