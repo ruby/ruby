@@ -1,4 +1,14 @@
+Wed Apr  5 11:35:21 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* version 0.72
+
+	* EWS4800対応
+
+	* file.c: utimesがない時はutimeを使うように．
+
 Mon Apr  3 15:19:41 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* version 0.71
 
 	* regexp.c(re_match): バグがあった．match_2を削除した時にenbugして
 	  いたのだった．

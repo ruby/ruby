@@ -7,7 +7,7 @@ AC_PROG_GCC_TRADITIONAL
 AC_PROG_YACC
 AC_PROG_INSTALL
 AC_CHECK_HEADERS(unistd.h stdlib.h syscall.h a.out.h dirent.h\
-		string.h)
+		string.h utime.h)
 AC_HEADER_DIRENT
 AC_TYPE_GETGROUPS
 AC_TYPE_SIGNAL
@@ -20,7 +20,7 @@ AC_REPLACE_FUNCS(memmove mkdir strerror strftime\
 		 strstr strtoul strdup)
 AC_CHECK_FUNCS(fmod killpg socket random wait4 waitpid syscall getcwd\
 	      setruid seteuid setreuid setrgid setegid setregid\
-	      getpriority sigprocmask dlopen)
+	      getpriority sigprocmask dlopen utimes)
 AC_CHECK_FUNC(setenv, [], AC_CHECK_FUNCS(putenv))
 if test $ac_cv_func strftime = no; then
     AC_STRUCT_TIMEZONE

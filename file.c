@@ -18,6 +18,11 @@
 #include <unistd.h>
 #endif
 
+#ifdef HAVE_UTIME_H
+#include <utime.h>
+#endif
+
+
 char *strdup();
 
 extern VALUE C_IO;
@@ -889,6 +894,8 @@ Ffile_chown(obj, owner, group)
 
 struct timeval *time_timeval();
 
+#ifdef HAVE_UTIME
+
 static void
 utime_internal(path, tvp)
     char *path;
@@ -916,6 +923,55 @@ Sfile_utime(argc, argv, obj)
     n = apply2files(utime_internal, rest, tvp);
     return INT2FIX(n);
 }
+
+#else
+
+static void
+utime_internal(path, utp)
+    char *path;
+#ifdef HAVE_UTIME_H
+    struct utimbuf *utp;
+#else
+    struct {
+	long    actime;
+	long	modtime;
+    } *utp;
+#endif
+{
+    if (utime(path, utp) < 0)
+	rb_sys_fail(path);
+}
+
+static VALUE
+Sfile_utime(argc, argv, obj)
+    int argc;
+    VALUE *argv;
+    VALUE obj;
+{
+    VALUE atime, mtime, rest;
+    int n;
+    struct timeval *tv;
+#ifdef HAVE_UTIME_H
+    struct utimbuf utbuf;
+#else
+    struct {
+	long    actime;
+	long	modtime;
+    } utbuf;
+#endif
+
+    rb_scan_args(argc, argv, "2*", &atime, &mtime, &rest);
+
+    tv = time_timeval(atime);
+    utbuf.actime = tv->tv_sec;
+    tv = time_timeval(mtime);
+    utbuf.modtime = tv->tv_sec;
+
+    n = apply2files(utime_internal, rest, &utbuf);
+    return INT2FIX(n);
+}
+
+#endif
 
 static VALUE
 Sfile_link(obj, from, to)

@@ -21,11 +21,16 @@
 #include <stdio.h>
 #include <sys/param.h>
 #include <sys/file.h>
+#include <sys/stat.h>
 
 #ifdef HAVE_STDLIB_H
 # include <stdlib.h>
 #else
 char *getenv();
+#endif
+
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
 #endif
 
 #if defined (HAVE_STRING_H)
@@ -1017,6 +1022,14 @@ dln_strerror()
 }
 
 # endif
+
+void
+dln_perror(str)
+    char *str;
+{
+    fprintf(stderr, "%s: %s\n", str, dln_strerror());
+}
+
 #endif /* USE_DL */
 
 static char *dln_find_1();
@@ -1149,11 +1162,4 @@ dln_find_1(fname, path, exe_flag)
 
 	/* otherwise try the next component in the search path */
     }
-}
-
-void
-dln_perror(str)
-    char *str;
-{
-    fprintf(stderr, "%s: %s\n", str, dln_strerror());
 }

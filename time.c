@@ -83,7 +83,7 @@ time_timeval(time)
     VALUE time;
 {
     struct time_object *tobj;
-    static struct timeval t, *tp;
+    static struct timeval t;
 
     switch (TYPE(time)) {
       case T_FIXNUM:
@@ -91,7 +91,6 @@ time_timeval(time)
 	if (t.tv_sec < 0)
 	    Fail("time must be positive");
 	t.tv_usec = 0;
-	tp = &t;
 	break;
 
       case T_FLOAT:
@@ -104,7 +103,6 @@ time_timeval(time)
 	    microseconds = (RFLOAT(time)->value - seconds) * 1000000.0;
 	    t.tv_sec = seconds;
 	    t.tv_usec = microseconds;
-	    tp = &t;
 	}
 	break;
 
@@ -113,10 +111,10 @@ time_timeval(time)
 	    Fail("Can't convert %s into Time", rb_class2name(CLASS_OF(time)));
 	}
 	GetTimeval(time, tobj);
-	tp = &(tobj->tv);
+	t = tobj->tv;
 	break;
     }
-    return tp;
+    return &t;
 }
 
 static VALUE

@@ -27,6 +27,7 @@ fnmatch.c
 fnmatch.h
 gc.c
 glob.c
+hash.c
 ident.h
 inits.c
 install-sh
