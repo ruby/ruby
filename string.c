@@ -829,7 +829,7 @@ rb_str_succ(orig)
 	memmove(s+1, s, RSTRING(str)->len - n);
 	*s = c;
 	RSTRING(str)->len += 1;
-	
+	RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
     }
 
     return str;

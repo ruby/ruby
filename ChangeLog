@@ -1,3 +1,7 @@
+Fri Nov 17 14:55:18 2000  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* string.c (rb_str_succ): output should be NUL terminated.
+
 Fri Nov 17 02:54:15 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_io_close): need not to flush before closing.
