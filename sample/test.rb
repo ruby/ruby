@@ -928,9 +928,9 @@ class IterTest
     a
   end
 end
-test_ok(IterTest.new(nil).method(:f).to_proc.call([1]) == [1])
+test_ok(IterTest.new(nil).method(:f).to_block.call([1]) == [1])
 m = /\w+/.match("abc")
-test_ok(IterTest.new(nil).method(:f).to_proc.call([m]) == [m])
+test_ok(IterTest.new(nil).method(:f).to_block.call([m]) == [m])
 
 IterTest.new([0]).each0 {|x| test_ok(x == 0)}
 IterTest.new([1]).each1 {|x| test_ok(x == 1)}

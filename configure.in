@@ -1178,7 +1178,6 @@ case "$target_os" in
 	    COMMON_LIBS=m
 	    COMMON_MACROS="WIN32_LEAN_AND_MEAN="
 	    COMMON_HEADERS="windows.h winsock.h"
-	    XCFLAGS='-D__USE_CRTIMP'
 	    ;;
 	esac
 	XCFLAGS="$XCFLAGS -DRUBY_EXPORT"

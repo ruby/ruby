@@ -1213,7 +1213,7 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
 	// we can remove them.
 	//
 
-	if (InputCmd && (base[0] == '\"' && base[len-1] == '\"')) {
+	if (InputCmd && !instring && (base[0] == '\"' && base[len-1] == '\"')) {
 	    char *p;
 	    base++;
 	    len -= 2;
@@ -1225,7 +1225,7 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
 		}
 	    }
 	}
-	else if (InputCmd && (base[0] == '\'' && base[len-1] == '\'')) {
+	else if (InputCmd && !instring && (base[0] == '\'' && base[len-1] == '\'')) {
 	    base++;
 	    len -= 2;
 	}
@@ -1562,7 +1562,8 @@ typedef struct	{
 #endif
 }	ioinfo;
 
-#if !defined _CRTIMP
+#if !defined _CRTIMP || defined __MINGW32__
+#undef _CRTIMP
 #define _CRTIMP __declspec(dllimport)
 #endif
 
