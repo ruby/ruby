@@ -529,7 +529,12 @@ IF:attributes
 START:attributes
         <tr class="top-aligned-row context-row">
           <td class="context-item-name">%name%</td>
+IF:rw
           <td class="context-item-value">&nbsp;[%rw%]&nbsp;</td>
+ENDIF:rw
+IFNOT:rw
+          <td class="context-item-value">&nbsp;&nbsp;</td>
+ENDIF:rw
           <td class="context-item-desc">%a_desc%</td>
         </tr>
 END:attributes
