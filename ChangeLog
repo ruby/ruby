@@ -9,9 +9,6 @@ Thu Jul  1 00:44:42 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	* ext/openssl/ossl_cipher.c (ossl_cipher_set_key_length): new method
 	  OpenSSL::Cipher::Cipher#key_len=.
 
-	* ext/openssl/ossl_cipher.c (ossl_cipher_set_padding): the type of
-	  argument is changed from integer to boolean.
-
 Wed Jun 30 19:48:09 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/extconf.rb: check for EVP_CIPHER_CTX_copy, ENGINE_add,

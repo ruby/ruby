@@ -316,7 +316,7 @@ ossl_cipher_set_padding(VALUE self, VALUE padding)
     EVP_CIPHER_CTX *ctx;
 
     GetCipher(self, ctx);
-    if (EVP_CIPHER_CTX_set_padding(ctx, RTEST(padding)) != 1)
+    if (EVP_CIPHER_CTX_set_padding(ctx, NUM2INT(padding)) != 1)
 	ossl_raise(eCipherError, NULL);
 #else
     rb_notimplement();
