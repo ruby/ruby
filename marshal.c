@@ -185,18 +185,47 @@ w_long(x, arg)
 }
 
 #ifdef DBL_MANT_DIG
+#define DECIMAL_MANT (53-16)	/* from IEEE754 double precision */
+
+#if DBL_MANT_DIG > 32
+#define MANT_BITS 32
+#elif DBL_MANT_DIG > 24
+#define MANT_BITS 24
+#elif DBL_MANT_DIG > 16
+#define MANT_BITS 16
+#else
+#define MANT_BITS 8
+#endif
+
 static int
 save_mantissa(d, buf)
     double d;
     char *buf;
 {
-    int e, m;
+    int e, i = 0;
+    unsigned long m;
+    double n;
 
-    m = (int)(modf(ldexp(frexp(fabs(d), &e), DBL_MANT_DIG - 16), &d) * 0x10000);
-    *buf++ = 0;
-    *buf++ = m >> 8;
-    *buf++ = m;
-    return 3;
+    d = modf(ldexp(frexp(fabs(d), &e), DECIMAL_MANT), &d);
+    if (d > 0) {
+	buf[i++] = 0;
+	do {
+	    d = modf(ldexp(d, MANT_BITS), &n);
+	    m = (unsigned long)n;
+#if MANT_BITS > 24
+	    buf[i++] = m >> 24;
+#endif
+#if MANT_BITS > 16
+	    buf[i++] = m >> 16;
+#endif
+#if MANT_BITS > 8
+	    buf[i++] = m >> 8;
+#endif
+	    buf[i++] = m;
+	} while (d > 0);
+	while (!buf[i - 1]) --i;
+    }
+    return i;
 }
 
 static double
@@ -205,13 +234,29 @@ load_mantissa(d, buf, len)
     const char *buf;
     int len;
 {
-    if (len > 0) {
-	int e, s = d < 0, dig = len << 3;
-	unsigned long m = 0;
+    if (--len > 0 && !*buf++) {	/* binary mantissa mark */
+	int e, s = d < 0, dig = 0;
+	unsigned long m;
 
-	modf(ldexp(frexp(fabs(d), &e), DBL_MANT_DIG - dig), &d);
-	do {m = (m << 8) | (*buf++ & 0xff);} while (--len);
-	d = ldexp(frexp(d + ldexp((double)m, -dig), &dig), e);
+	modf(ldexp(frexp(fabs(d), &e), DECIMAL_MANT), &d);
+	do {
+	    m = 0;
+	    switch (len) {
+	      default: m = *buf++ & 0xff;
+#if MANT_BITS > 24
+	      case 3: m = (m << 8) | (*buf++ & 0xff);
+#endif
+#if MANT_BITS > 16
+	      case 2: m = (m << 8) | (*buf++ & 0xff);
+#endif
+#if MANT_BITS > 8
+	      case 1: m = (m << 8) | (*buf++ & 0xff);
+#endif
+	    }
+	    dig -= len < MANT_BITS / 8 ? 8 * (unsigned)len : MANT_BITS;
+	    d += ldexp((double)m, dig);
+	} while ((len -= MANT_BITS / 8) > 0);
+	d = ldexp(d, e - DECIMAL_MANT);
 	if (s) d = -d;
     }
     return d;
@@ -983,9 +1028,7 @@ r_object0(arg, proc)
 	    else {
 		char *e;
 		d = strtod(ptr, &e);
-		if (!*e++) {
-		    d = load_mantissa(d, e, RSTRING(str)->len - (e - ptr));
-		}
+		d = load_mantissa(d, e, RSTRING(str)->len - (e - ptr));
 	    }
 	    v = rb_float_new(d);
 	    r_regist(v, arg);
