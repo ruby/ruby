@@ -1,3 +1,10 @@
+Mon Jun 16 16:23:56 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* ext/dl/dl.c (rb_dl_callback): use rb_block_proc() instead of
+	  rb_block_new().
+
+	* ext/win32ole/win32ole.c (ev_on_event): ditto.
+
 Mon Jun 16 16:06:47 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (proc_alloc): re-unification of Block and Proc.  Block
