@@ -18,6 +18,11 @@ Sat Jul 12 04:43:57 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
 
 	* lib/yaml/emitter.rb: ditto.
 
+Sat Jul 12 04:23:13 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* eval.c (rb_undef): need to clear cache for inherited class.
+	  (rubicon/builtin/TestModulePrivate.rb:test_undef_method)
+
 Sat Jul 12 01:21:54 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (avalue_to_svalue): typo.
