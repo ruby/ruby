@@ -1,3 +1,11 @@
+Mon Sep 27 04:57:07 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/ruby/test_file.rb: new file.  only asserts unlink-before-close
+	  behaviour now.
+
+	* test/soap/marshal/test_digraph.rb: should close before unlink.
+	  unlink-before-close pattern is not needed here.
+
 Mon Sep 27 03:32:37 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/soap/*, test/wsdl/*, test/xsd/*: move TestCase classes into

@@ -36,7 +36,7 @@ class TestDigraph < Test::Unit::TestCase
     f = File.open("digraph_marshalled_string.soap", "wb")
     SOAP::Marshal.dump(@n1, f)
     f.close
-    str = File.open("digraph_marshalled_string.soap").read
+    str = File.read("digraph_marshalled_string.soap")
     newnode = SOAP::Marshal.unmarshal(str)
     assert_equal(newnode.first.first.__id__, newnode.second.first.__id__)
     assert_equal(newnode.first.first.first.first.__id__, newnode.second.first.second.first.__id__)
