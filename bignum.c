@@ -375,22 +375,38 @@ rb_cstr_to_inum(str, base, badcheck)
 	    str += 2;
 	}
 	break;
+      case 3:
+	len = 2;
+	break;
       case 8:
-	len = 3;
 	if (str[0] == '0' && (str[1] == 'o'||str[1] == 'O')) {
 	    str += 2;
 	}
+      case 4: case 5: case 6: case 7:
+	len = 3;
 	break;
       case 10:
-	len = 4;
 	if (str[0] == '0' && (str[1] == 'd'||str[1] == 'D')) {
 	    str += 2;
 	}
+      case 11: case 12: case 13: case 14: case 15:
+	len = 4;
 	break;
       case 16:
 	len = 4;
 	if (str[0] == '0' && (str[1] == 'x'||str[1] == 'X')) {
 	    str += 2;
+	}
+	break;
+      default:
+	if (base < 2 || 36 < base) {
+	    rb_raise(rb_eArgError, "illegal radix %d", base);
+	}
+	if (base <= 32) {
+	    len = 5;
+	}
+	else {
+	    len = 6;
 	}
 	break;
     }
@@ -407,10 +423,7 @@ rb_cstr_to_inum(str, base, badcheck)
 	if (badcheck) {
 	    if (end == str) goto bad; /* no number */
 	    while (*end && ISSPACE(*end)) end++;
-	    if (*end) {		      /* trailing garbage */
-	      bad:
-		rb_invalid_str(s, "Integer");
-	    }
+	    if (*end) goto bad;	      /* trailing garbage */
 	}
 
 	if (POSFIXABLE(val)) {
@@ -434,42 +447,27 @@ rb_cstr_to_inum(str, base, badcheck)
     zds = BDIGITS(z);
     for (i=len;i--;) zds[i]=0;
     while (c = *str++) {
-	switch (c) {
-	  case '8': case '9':
-	    if (base == 8) {
-		c = base;
-		break;
-	    }
-	  case '0': case '1': case '2': case '3': case '4':
-	  case '5': case '6': case '7': 
-	    c = c - '0';
-	    nondigit = 0;
-	    break;
-	  case 'a': case 'b': case 'c':
-	  case 'd': case 'e': case 'f':
-	    c -= 'a' - 'A';
-	  case 'A': case 'B': case 'C':
-	  case 'D': case 'E': case 'F':
-	    if (base != 16) {
-		nondigit = c;
-		c = base;
-	    }
-	    else {
-		c = c - 'A' + 10;
-		nondigit = 0;
-	    }
-	    break;
-	  case '_':
+	if (c == '_') {
 	    if (badcheck) {
 		if (nondigit) goto bad;
 		nondigit = c;
 	    }
 	    continue;
-	  default:
-	    c = base;
+	}
+	else if (isdigit(c)) {
+	    c -= '0';
+	}
+	else if (islower(c)) {
+	    c -= 'a' - 10;
+	}
+	else if (isupper(c)) {
+	    c -= 'A' - 10;
+	}
+	else {
 	    break;
 	}
 	if (c >= base) break;
+	nondigit = 0;
 	i = 0;
 	num = c;
 	for (;;) {
@@ -489,7 +487,10 @@ rb_cstr_to_inum(str, base, badcheck)
 	str--;
 	if (s+1 < str && str[-1] == '_') goto bad;
 	while (*str && ISSPACE(*str)) str++;
-	if (*str) goto bad;
+	if (*str) {
+	  bad:
+	    rb_invalid_str(s, "Integer");
+	}
     }
 
     return bignorm(z);
@@ -598,7 +599,7 @@ rb_str2inum(str, base)
     return rb_str_to_inum(str, base, base==0);
 }
 
-static char hexmap[] = "0123456789abcdef";
+const char ruby_digitmap[] = "0123456789abcdefghijklmnopqrstuvwxyz";
 VALUE
 rb_big2str(x, base)
     VALUE x;
@@ -617,25 +618,36 @@ rb_big2str(x, base)
     if (BIGZEROP(x)) {
 	return rb_str_new2("0");
     }
-    if (base == 10) {
-	j = (SIZEOF_BDIGITS/sizeof(char)*CHAR_BIT*i*241L)/800+2;
-	hbase = 10000;
-    }
-    else if (base == 16) {
-	j = (SIZEOF_BDIGITS/sizeof(char)*CHAR_BIT*i)/4+2;
-	hbase = 0x10000;
-    }
-    else if (base == 8) {
-	j = (SIZEOF_BDIGITS/sizeof(char)*CHAR_BIT*i)+2;
-	hbase = 010000;
-    }
-    else if (base == 2) {
-	j = (SIZEOF_BDIGITS*CHAR_BIT*i)+2;
-	hbase = 020;
-    }
-    else {
+    j = SIZEOF_BDIGITS*CHAR_BIT*i;
+    switch (base) {
+      case 2: break;
+      case 3:
+	j = j * 647L / 1024;
+	break;
+      case 4: case 5: case 6: case 7:
+	j /= 2;
+	break;
+      case 8: case 9:
+	j /= 3;
+	break;
+      case 10: case 11: case 12: case 13: case 14: case 15:
+	j = j * 241L / 800;
+	break;
+      case 16: case 17: case 18: case 19: case 20: case 21:
+      case 22: case 23: case 24: case 25: case 26: case 27:
+      case 28: case 29: case 30: case 31:
+	j /= 4;
+	break;
+      case 32: case 33: case 34: case 35: case 36:
+	j /= 5;
+	break;
+      default:
 	rb_raise(rb_eArgError, "illegal radix %d", base);
+	break;
     }
+    j += 2;
+    hbase = base * base;
+    hbase *= hbase;
 
     t = rb_big_clone(x);
     ds = BDIGITS(t);
@@ -656,7 +668,7 @@ rb_big2str(x, base)
 	k = 4;
 	while (k--) {
 	    c = (char)(num % base);
-	    s[--j] = hexmap[(int)c];
+	    s[--j] = ruby_digitmap[(int)c];
 	    num /= base;
 	    if (i == 0 && num == 0) break;
 	}

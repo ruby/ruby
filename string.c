@@ -1836,12 +1836,6 @@ rb_str_to_i(argc, argv, str)
     if (argc == 0) base = 10;
     else base = NUM2INT(b);
 
-    switch (base) {
-      case 0: case 2: case 8: case 10: case 16:
-	break;
-      default:
-	rb_raise(rb_eArgError, "illegal radix %d", base);
-    }
     return rb_str_to_inum(str, base, Qfalse);
 }
 

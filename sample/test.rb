@@ -1181,6 +1181,12 @@ s = <<EOS
 }
 EOS
 test_ok(s == "1,2,3\n")
+test_ok("Just".to_i(36) == 926381)
+test_ok("-another".to_i(36) == -23200231779)
+test_ok(1299022.to_s(36) == "ruby")
+test_ok(-1045307475.to_s(36) == "-hacker")
+test_ok("Just_another_Ruby_hacker".to_i(36) == 265419172580680477752431643787347)
+test_ok(-265419172580680477752431643787347.to_s(36) == "-justanotherrubyhacker")
 
 test_check "assignment"
 a = nil

@@ -1,3 +1,11 @@
+Mon Apr 14 15:54:18 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* bignum.c (rb_cstr_to_inum, rb_big2str): allow 2-36 as radix.
+
+	* numeric.c (rb_fix2str): ditto.
+
+	* string.c (rb_str_to_i): ditto.
+
 Sun Apr 13 03:20:31 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/mkmf.rb (try_func): remove COMMON_HEADERS at first for

@@ -1178,21 +1178,30 @@ rb_fix2str(x, base)
     VALUE x;
     int base;
 {
-    char fmt[4], buf[22], *b = buf;
+    extern const char ruby_digitmap[];
+    char buf[SIZEOF_LONG*CHAR_BIT/2 + 2], *b = buf + sizeof buf;
     long val = FIX2LONG(x);
+    int neg = 0;
 
-    fmt[0] = '%'; fmt[1] = 'l'; fmt[3] = '\0';
-    if (base == 10) fmt[2] = 'd';
-    else if (base == 16) fmt[2] = 'x';
-    else if (base == 8) fmt[2] = 'o';
-    else rb_raise(rb_eArgError, "illegal radix %d", base);
+    if (base < 2 || 36 < base) {
+	rb_raise(rb_eArgError, "illegal radix %d", base);
+    }
+    if (val == 0) {
+	return rb_str_new2("0");
+    }
     if (val < 0) {
 	val = -val;
-	*b++ = '-';
+	neg = 1;
+    }
+    *--b = '\0';
+    do {
+	*--b = ruby_digitmap[(int)(val % base)];
+    } while (val /= base);
+    if (neg) {
+	*--b = '-';
     }
 
-    sprintf(b, fmt, val);
-    return rb_str_new2(buf);
+    return rb_str_new2(b);
 }
 
 static VALUE
