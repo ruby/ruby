@@ -1,6 +1,6 @@
 #
 #   irb/locale.rb - internationalization module
-#   	$Release Version: 0.7.3$
+#   	$Release Version: 0.7.4$
 #   	$Revision$
 #   	$Date$
 #   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
@@ -10,7 +10,8 @@
 #   
 #
 
-require "kconv"
+autoload :Tempfile, "tempfile"
+autoload :Kconv, "kconv"
 
 module IRB
   class Locale
@@ -18,16 +19,6 @@ module IRB
 
     JPDefaultLocale = "ja"
     LOCALE_DIR = "/lc/"
-
-    LC2KCONV = {
-#      "ja" => Kconv::JIS,
-#      "ja_JP" => Kconv::JIS,
-      "ja_JP.ujis" => Kconv::EUC,
-      "ja_JP.euc" => Kconv::EUC,
-      "ja_JP.eucJP" => Kconv::EUC,
-      "ja_JP.sjis" => Kconv::SJIS,
-      "ja_JP.SJIS" => Kconv::SJIS,
-    }
 
     def initialize(locale = nil)
       @lang = locale || ENV["IRB_LANG"] || ENV["LC_MESSAGES"] || ENV["LC_ALL"] || ENV["LANG"]
@@ -40,7 +31,17 @@ module IRB
       mes = super(mes)
       case @lang
       when /^ja/
-	mes = Kconv::kconv(mes, LC2KCONV[@lang])
+	@@LC2KCONV = {
+	  #      "ja" => Kconv::JIS,
+	  #      "ja_JP" => Kconv::JIS,
+	  "ja_JP.ujis" => Kconv::EUC,
+	  "ja_JP.euc" => Kconv::EUC,
+	  "ja_JP.eucJP" => Kconv::EUC,
+	  "ja_JP.sjis" => Kconv::SJIS,
+	  "ja_JP.SJIS" => Kconv::SJIS,
+	  } unless defined? @@LC2KCONV
+	
+	mes = Kconv::kconv(mes, @@LC2KCONV[@lang])
       else
 	mes
       end
@@ -73,8 +74,6 @@ module IRB
       ary = opts.collect{|opt| String(opts)}
       super *ary
     end
-
-    autoload :Tempfile, "tempfile"
 
     def require(file, priv = nil)
       rex = Regexp.new("lc/#{Regexp.quote(file)}\.(so|o|sl|rb)?")

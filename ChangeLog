@@ -1,3 +1,7 @@
+Fri Jun 22 23:11:17 2001 Keiju Ishitsuka <keiju@ishitsuka.com>
+	
+	* lib/irb/locale.rb: fix for require "kconv" problem
+	
 Fri Jun 22 18:08:45 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_yield_0): no mvalue_to_svalue conversion here.
