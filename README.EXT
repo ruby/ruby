@@ -1001,6 +1001,32 @@ Starts execution of the interpreter.
 
 Specifies the name of the script ($0).
 
+** Hooks for the Interpreter Events
+
+ void rb_add_event_hook(rb_event_hook_func_t func, rb_event_t events)
+
+Adds a hook function for the specified interpreter events.
+events should be Or'ed value of:
+
+	RUBY_EVENT_LINE
+	RUBY_EVENT_CLASS
+	RUBY_EVENT_END
+	RUBY_EVENT_CALL
+	RUBY_EVENT_RETURN
+	RUBY_EVENT_C_CALL
+	RUBY_EVENT_C_RETURN
+	RUBY_EVENT_RAISE
+	RUBY_EVENT_ALL
+
+The definition of rb_event_hook_func_t is below:
+
+ typedef void (*rb_event_hook_func_t)(rb_event_t event, NODE *node,
+ 				      VALUE self, ID id, VALUE klass)
+
+ int rb_remove_event_hook(rb_event_hook_func_t func)
+
+Removes the specified hook function.
+
 Appendix C. Functions Available in extconf.rb
 
 These functions are available in extconf.rb:

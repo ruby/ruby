@@ -1117,6 +1117,32 @@ void ruby_script(char *name)
 
   Rubyのスクリプト名($0)を設定する．
 
+** インタプリタのイベントのフック
+
+ void rb_add_event_hook(rb_event_hook_func_t func, rb_event_t events)
+
+指定されたインタプリタのイベントに対するフック関数を追加します．
+eventsは以下の値のorでなければなりません:
+
+	RUBY_EVENT_LINE
+	RUBY_EVENT_CLASS
+	RUBY_EVENT_END
+	RUBY_EVENT_CALL
+	RUBY_EVENT_RETURN
+	RUBY_EVENT_C_CALL
+	RUBY_EVENT_C_RETURN
+	RUBY_EVENT_RAISE
+	RUBY_EVENT_ALL
+
+rb_event_hook_func_tの定義は以下の通りです:
+
+ typedef void (*rb_event_hook_func_t)(rb_event_t event, NODE *node,
+ 				      VALUE self, ID id, VALUE klass)
+
+ int rb_remove_event_hook(rb_event_hook_func_t func)
+
+指定されたフック関数を削除します．
+
 
 Appendix C. extconf.rbで使える関数たち
 

@@ -1,3 +1,8 @@
+Wed Mar 16 22:03:15 2005  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* eval.c (rb_add_event_hook): new function to add a hook function for
+	  interpreter events.
+
 Wed Mar 16 18:08:32 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_call0): reorganize "return" event post.
