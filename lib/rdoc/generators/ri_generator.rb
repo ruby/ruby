@@ -236,7 +236,13 @@ module Generators
         namespace = rdr.top_level_namespace
         namespace = rdr.lookup_namespace_in(cls_desc.name, namespace)
         if namespace.empty?
-          raise RiError.new("Nothing known about #{arg}")
+          $stderr.puts "You asked me to merge this source into existing "
+          $stderr.puts "documentation. This file references a class or "
+          $stderr.puts "module called #{cls_desc.name} which I don't"
+          $stderr.puts "have existing documentation for."
+          $stderr.puts 
+          $stderr.puts "Perhaps you need to generate its documentation first"
+          exit 1
         else
           old_cls = namespace[0]
         end

@@ -5,35 +5,74 @@ require 'yaml'
 # tree. ri then reads these to generate the documentation
 
 module RI
-  Alias          = Struct.new(:old_name, :new_name)
-  AliasName      = Struct.new(:name)
-  Attribute      = Struct.new(:name, :rw, :comment)
-  Constant       = Struct.new(:name, :value, :comment)
-  IncludedModule = Struct.new(:name)
-  
-  class MethodSummary
-    attr_accessor :name
-    def initialize(name="")
+  class NamedThing
+    attr_reader :name
+    def initialize(name)
       @name = name
     end
-
     def <=>(other)
-      self.name <=> other.name
+      @name <=> other.name
+    end
+
+    def hash
+      @name.hash
+    end
+
+    def eql?(other)
+      @name.eql?(other)
     end
   end
+
+#  Alias          = Struct.new(:old_name, :new_name)
+
+  class AliasName < NamedThing
+  end
+
+  class Attribute < NamedThing
+    attr_reader :rw, :comment
+    def initialize(name, rw, comment)
+      super(name)
+      @rw = rw
+      @comment = comment
+    end
+  end
+
+  class Constant < NamedThing
+    attr_reader :value, :comment
+    def initialize(name, value, comment)
+      super(name)
+      @value = value
+      @comment = comment
+    end
+  end
+
+  class IncludedModule < NamedThing
+  end
+
+
+  class MethodSummary < NamedThing
+    def initialize(name="")
+      super
+    end
+  end
+
 
 
   class Description
     attr_accessor :name
     attr_accessor :full_name
     attr_accessor :comment
-    
+
     def serialize
       self.to_yaml
     end
 
     def Description.deserialize(from)
       YAML.load(from)
+    end
+
+    def <=>(other)
+      @name <=> other.name
     end
   end
   
@@ -48,11 +87,20 @@ module RI
 
     # merge in another class desscription into this one
     def merge_in(old)
-      @class_methods.concat(old.class_methods).sort!
-      @instance_methods.concat(old.instance_methods).sort!
-      @attributes.concat(old.attributes).sort!
-      @constants.concat(old.constants).sort!
-      @includes.concat(old.includes).sort!
+      merge(@class_methods, old.class_methods)
+      merge(@instance_methods, old.instance_methods)
+      merge(@attributes, old.attributes)
+      merge(@constants, old.constants)
+      merge(@includes, old.includes)
+    end
+
+    private
+
+    def merge(into, from)
+      names = {}
+      into.each {|i| names[i.name] = i }
+      from.each {|i| names[i.name] = i }
+      into.replace(names.keys.sort.map {|n| names[n]})
     end
   end
   

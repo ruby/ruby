@@ -69,6 +69,15 @@ cmp_failed()
     return Qnil;
 }
 
+/*
+ *  call-seq:
+ *     obj == other    => true or false
+ *  
+ *  Compares two objects based on the receiver's <code><=></code>
+ *  method, returning true if it returns 0. Also returns true if
+ *  _obj_ and _other_ are the same object.
+ */
+
 static VALUE
 cmp_equal(x, y)
     VALUE x, y;
@@ -81,6 +90,14 @@ cmp_equal(x, y)
     return rb_rescue(cmp_eq, (VALUE)a, cmp_failed, 0);
 }
 
+/*
+ *  call-seq:
+ *     obj > other    => true or false
+ *  
+ *  Compares two objects based on the receiver's <code><=></code>
+ *  method, returning true if it returns 1.
+ */
+
 static VALUE
 cmp_gt(x, y)
     VALUE x, y;
@@ -91,6 +108,14 @@ cmp_gt(x, y)
     if (rb_cmpint(c, x, y) > 0) return Qtrue;
     return Qfalse;
 }
+
+/*
+ *  call-seq:
+ *     obj >= other    => true or false
+ *  
+ *  Compares two objects based on the receiver's <code><=></code>
+ *  method, returning true if it returns 0 or 1.
+ */
 
 static VALUE
 cmp_ge(x, y)
@@ -103,6 +128,14 @@ cmp_ge(x, y)
     return Qfalse;
 }
 
+/*
+ *  call-seq:
+ *     obj < other    => true or false
+ *  
+ *  Compares two objects based on the receiver's <code><=></code>
+ *  method, returning true if it returns -1.
+ */
+
 static VALUE
 cmp_lt(x, y)
     VALUE x, y;
@@ -113,6 +146,15 @@ cmp_lt(x, y)
     if (rb_cmpint(c, x, y) < 0) return Qtrue;
     return Qfalse;
 }
+
+
+/*
+ *  call-seq:
+ *     obj <= other    => true or false
+ *  
+ *  Compares two objects based on the receiver's <code><=></code>
+ *  method, returning true if it returns -1 or 0.
+ */
 
 static VALUE
 cmp_le(x, y)
@@ -125,6 +167,21 @@ cmp_le(x, y)
     return Qfalse;
 }
 
+/*
+ *  call-seq:
+ *     obj.between?(min, max)    => true or false
+ *  
+ *  Returns <code>false</code> if <i>obj</i> <code><=></code>
+ *  <i>min</i> is less than zero or if <i>anObject</i> <code><=></code>
+ *  <i>max</i> is greater than zero, <code>true</code> otherwise.
+ *     
+ *     3.between?(1, 5)               #=> true
+ *     6.between?(1, 5)               #=> false
+ *     'cat'.between?('ant', 'dog')   #=> true
+ *     'gnu'.between?('ant', 'dog')   #=> false
+ *     
+ */
+
 static VALUE
 cmp_between(x, min, max)
     VALUE x, min, max;
@@ -133,6 +190,43 @@ cmp_between(x, min, max)
     if (RTEST(cmp_gt(x, max))) return Qfalse;
     return Qtrue;
 }
+
+/*
+ *  The <code>Comparable</code> mixin is used by classes whose objects
+ *  may be ordered. The class must define the <code><=></code> operator,
+ *  which compares the receiver against another object, returning -1, 0,
+ *  or +1 depending on whether the receiver is less than, equal to, or
+ *  greater than the other object. <code>Comparable</code> uses
+ *  <code><=></code> to implement the conventional comparison operators
+ *  (<code><</code>, <code><=</code>, <code>==</code>, <code>>=</code>,
+ *  and <code>></code>) and the method <code>between?</code>.
+ *     
+ *     class SizeMatters
+ *       include Comparable
+ *       attr :str
+ *       def <=>(anOther)
+ *         str.size <=> anOther.str.size
+ *       end
+ *       def initialize(str)
+ *         @str = str
+ *       end
+ *       def inspect
+ *         @str
+ *       end
+ *     end
+ *     
+ *     s1 = SizeMatters.new("Z")
+ *     s2 = SizeMatters.new("YY")
+ *     s3 = SizeMatters.new("XXX")
+ *     s4 = SizeMatters.new("WWWW")
+ *     s5 = SizeMatters.new("VVVVV")
+ *     
+ *     s1 < s2                       #=> true
+ *     s4.between?(s1, s3)           #=> false
+ *     s4.between?(s3, s5)           #=> true
+ *     [ s3, s2, s5, s4, s1 ].sort   #=> [Z, YY, XXX, WWWW, VVVVV]
+ *     
+ */
 
 void
 Init_Comparable()

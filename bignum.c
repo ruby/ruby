@@ -688,6 +688,20 @@ rb_big2str(x, base)
     return ss;
 }
 
+/*
+ *  call-seq:
+ *     big.to_s(base=10)   =>  string
+ *  
+ *  Returns a string containing the representation of <i>big</i> radix
+ *  <i>base</i> (2 through 36).
+ *     
+ *     12345654321.to_s         #=> "12345654321"
+ *     12345654321.to_s(2)      #=> "1011011111110110111011110000110001"
+ *     12345654321.to_s(8)      #=> "133766736061"
+ *     12345654321.to_s(16)     #=> "2dfdbbc31"
+ *     78546939656932.to_s(36)  #=> "rubyrules"
+ */
+
 static VALUE
 rb_big_to_s(argc, argv, x)
     int argc;
@@ -935,6 +949,13 @@ rb_big_eql(x, y)
     return Qtrue;
 }
 
+/*
+ * call-seq:
+ *    -big   =>  other_big
+ *
+ * Unary minus (returns a new Bignum whose value is 0-big)
+ */
+
 static VALUE
 rb_big_uminus(x)
     VALUE x;
@@ -1054,6 +1075,13 @@ bigadd(x, y, sign)
     return z;
 }
 
+/*
+ *  call-seq:
+ *     big + other  => Numeric
+ *
+ *  Adds big and other, returning the result.
+ */
+
 VALUE
 rb_big_plus(x, y)
     VALUE x, y;
@@ -1073,6 +1101,13 @@ rb_big_plus(x, y)
     }
 }
 
+/*
+ *  call-seq:
+ *     big - other  => Numeric
+ *
+ *  Subtracts other from big, returning the result.
+ */
+
 VALUE
 rb_big_minus(x, y)
     VALUE x, y;
@@ -1091,6 +1126,13 @@ rb_big_minus(x, y)
 	return rb_num_coerce_bin(x, y);
     }
 }
+
+/*
+ *  call-seq:
+ *     big * other  => Numeric
+ *
+ *  Multiplies big and other, returning the result.
+ */
 
 VALUE
 rb_big_mul(x, y)
@@ -1287,6 +1329,14 @@ bigdivmod(x, y, divp, modp)
     }
 }
 
+/*
+ *  call-seq:
+ *     big / other     => Numeric
+ *     big.div(other)  => Numeric
+ *
+ *  Divides big by other, returning the result.
+ */
+
 static VALUE
 rb_big_div(x, y)
     VALUE x, y;
@@ -1312,6 +1362,15 @@ rb_big_div(x, y)
     return bignorm(z);
 }
 
+/*
+ *  call-seq:
+ *     big % other         => Numeric
+ *     big.modulo(other)   => Numeric
+ *
+ *  Returns big modulo other. See Numeric.divmod for more
+ *  information.
+ */
+
 static VALUE
 rb_big_modulo(x, y)
     VALUE x, y;
@@ -1334,6 +1393,15 @@ rb_big_modulo(x, y)
     return bignorm(z);
 }
 
+/*
+ *  call-seq:
+ *     big.remainder(numeric)    => number
+ *  
+ *  Returns the remainder after dividing <i>big</i> by <i>numeric</i>.
+ *     
+ *     -1234567890987654321.remainder(13731)      #=> -6966
+ *     -1234567890987654321.remainder(13731.24)   #=> -9906.22531493148
+ */
 static VALUE
 rb_big_remainder(x, y)
     VALUE x, y;
@@ -1356,6 +1424,13 @@ rb_big_remainder(x, y)
     return bignorm(z);
 }
 
+/*
+ *  call-seq:
+ *     big.divmod(numeric)   => array
+ *  
+ *  See <code>Numeric#divmod</code>.
+ *     
+ */
 VALUE
 rb_big_divmod(x, y)
     VALUE x, y;
@@ -1377,6 +1452,18 @@ rb_big_divmod(x, y)
 
     return rb_assoc_new(bignorm(div), bignorm(mod));
 }
+
+/*
+ *  call-seq:
+ *     big.quo(numeric) -> float
+ *  
+ *  Returns the floating point result of dividing <i>big</i> by
+ *  <i>numeric</i>.
+ *     
+ *     -1234567890987654321.quo(13731)      #=> -89910996357705.5
+ *     -1234567890987654321.quo(13731.24)   #=> -89909424858035.7
+ *     
+ */
 
 static VALUE
 rb_big_quo(x, y)
@@ -1403,6 +1490,19 @@ rb_big_quo(x, y)
     }
     return rb_float_new(dx / dy);
 }
+
+/*
+ *  call-seq:
+ *     big ** exponent   #=> numeric
+ *
+ *  Raises _big_ to the _exponent_ power (which may be an integer, float,
+ *  or anything that will coerce to a number). The result may be
+ *  a Fixnum, Bignum, or Float
+ *
+ *    123456789 ** 2      #=> 15241578750190521
+ *    123456789 ** 1.2    #=> 5126464716.09932
+ *    123456789 ** -2     #=> 6.5610001194102e-17
+ */
 
 VALUE
 rb_big_pow(x, y)
@@ -1446,6 +1546,13 @@ rb_big_pow(x, y)
     }
     return rb_float_new(pow(rb_big2dbl(x), d));
 }
+
+/*
+ * call-seq:
+ *     big & numeric   =>  integer
+ *
+ * Performs bitwise +and+ between _big_ and _numeric_.
+ */
 
 VALUE
 rb_big_and(x, y)
@@ -1716,6 +1823,10 @@ rb_big_hash(x)
     return LONG2FIX(key);
 }
 
+/*
+ * MISSING: documentation
+ */
+
 static VALUE
 rb_big_coerce(x, y)
     VALUE x, y;
@@ -1767,6 +1878,24 @@ rb_big_size(big)
 {
     return LONG2FIX(RBIGNUM(big)->len*SIZEOF_BDIGITS);
 }
+
+/*
+ *  Bignum objects hold integers outside the range of
+ *  Fixnum. Bignum objects are created
+ *  automatically when integer calculations would otherwise overflow a
+ *  Fixnum. When a calculation involving
+ *  Bignum objects returns a result that will fit in a
+ *  Fixnum, the result is automatically converted.
+ *     
+ *  For the purposes of the bitwise operations and <code>[]</code>, a
+ *  Bignum is treated as if it were an infinite-length
+ *  bitstring with 2's complement representation.
+ *     
+ *  While Fixnum values are immediate, Bignum
+ *  objects are not---assignment and parameter passing work with
+ *  references to objects, not the objects themselves.
+ *     
+ */
 
 void
 Init_Bignum()
