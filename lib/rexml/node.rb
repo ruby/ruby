@@ -25,7 +25,7 @@ module REXML
 		end
 
 		def indent to, ind
- 			if @parent and not @parent.context[:indentstyle].nil? then
+ 			if @parent and @parent.context and not @parent.context[:indentstyle].nil? then
  				indentstyle = @parent.context[:indentstyle]
  			else
  				indentstyle = '  '
