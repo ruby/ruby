@@ -52,19 +52,30 @@
 #define V_BOOL(X) V_UNION(X,boolVal)
 #endif
 
-#define OLE_RELEASE(X) ((X)->lpVtbl->Release(X))
-#define OLE_ADDREF(X)  ((X)->lpVtbl->AddRef(X))
+#define OLE_RELEASE(X) (X) ? ((X)->lpVtbl->Release(X)) : 0
+
+#define OLE_ADDREF(X) (X) ? ((X)->lpVtbl->AddRef(X)) : 0
+
 #define OLE_GET_TYPEATTR(X, Y) ((X)->lpVtbl->GetTypeAttr((X), (Y)))
 #define OLE_RELEASE_TYPEATTR(X, Y) ((X)->lpVtbl->ReleaseTypeAttr((X), (Y)))
 
-#define OLE_FREE(x) if(gOLEInitialized == Qtrue) {\
-                        if((x)) {\
-                            OLE_RELEASE((x));\
-                            (x) = 0;\
-                        }\
-                    }\
-                    ole_msg_loop();\
-                    CoFreeUnusedLibraries()
+#define OLE_FREE(x) {\
+    if(gOLEInitialized == Qtrue) {\
+        if(x) {\
+            OLE_RELEASE(x);\
+            (x) = 0;\
+        }\
+    }\
+    ole_msg_loop();\
+    CoFreeUnusedLibraries();\
+}
+
+#define OLEData_Get_Struct(obj, pole) {\
+    Data_Get_Struct(obj, struct oledata, pole);\
+    if(!pole->pDispatch) {\
+        rb_raise(rb_eRuntimeError, "Fail to get Dispatch Interface");\
+    }\
+}
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
@@ -1376,7 +1387,7 @@ fole_s_const_load(argc, argv, self)
         rb_raise(rb_eTypeError, "2nd paramator must be Class or Module.");
     }
     if (rb_obj_is_kind_of(ole, cWIN32OLE)) {
-        Data_Get_Struct(ole, struct oledata, pole);
+        OLEData_Get_Struct(ole, pole);
         hr = pole->pDispatch->lpVtbl->GetTypeInfo(pole->pDispatch,
                                                   0, lcid, &pTypeInfo);
         if(FAILED(hr)) {
@@ -1478,7 +1489,7 @@ fole_s_reference_count(self, obj)
     VALUE obj;
 {
     struct oledata * pole;
-    Data_Get_Struct(obj, struct oledata, pole);
+    OLEData_Get_Struct(obj, pole);
     return INT2NUM(reference_count(pole));
 }
 
@@ -1497,7 +1508,7 @@ fole_s_free(self, obj)
 {
     ULONG n = 0;
     struct oledata * pole;
-    Data_Get_Struct(obj, struct oledata, pole);
+    OLEData_Get_Struct(obj, pole);
     if(pole->pDispatch) {
         if (reference_count(pole) > 0) {
             n = OLE_RELEASE(pole->pDispatch);
@@ -1691,7 +1702,7 @@ ole_invoke(argc, argv, self, wFlags)
     op.dp.cArgs = 0;
 
     rb_scan_args(argc, argv, "1*", &cmd, &paramS);
-    Data_Get_Struct(self, struct oledata, pole);
+    OLEData_Get_Struct(self, pole);
     if(!pole->pDispatch) {
 	rb_raise(rb_eRuntimeError, "Fail to get dispatch interface.");
     }
@@ -1857,7 +1868,7 @@ ole_invoke2(self, dispid, args, types, dispkind)
     memset(&excepinfo, 0, sizeof(EXCEPINFO));
     memset(&dispParams, 0, sizeof(DISPPARAMS));
     VariantInit(&result);
-    Data_Get_Struct(self, struct oledata, pole);
+    OLEData_Get_Struct(self, pole);
 
     dispParams.cArgs = RARRAY(args)->len;
     dispParams.rgvarg = ALLOCA_N(VARIANTARG, dispParams.cArgs);
@@ -2138,7 +2149,7 @@ ole_propertyput(self, property, value)
     VariantInit(&propertyValue[1]);
     memset(&excepinfo, 0, sizeof(excepinfo));
 
-    Data_Get_Struct(self, struct oledata, pole);
+    OLEData_Get_Struct(self, pole);
 
     /* get ID from property name */
     pBuf[0]  = ole_mb2wc(StringValuePtr(property), -1);
@@ -2165,6 +2176,17 @@ ole_propertyput(self, property, value)
         v = ole_excepinfo2msg(&excepinfo);
         ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, StringValuePtr(v));
     }
+    return Qnil;
+}
+
+static VALUE
+fole_free(self)
+    VALUE self;
+{
+    struct oledata *pole;
+    OLEData_Get_Struct(self, pole);
+    OLE_FREE(pole->pDispatch);
+    pole->pDispatch = NULL;
     return Qnil;
 }
 
@@ -2197,7 +2219,7 @@ fole_each(self)
     dispParams.cArgs = 0;
     memset(&excepinfo, 0, sizeof(excepinfo));
     
-    Data_Get_Struct(self, struct oledata, pole);
+    OLEData_Get_Struct(self, pole);
     hr = pole->pDispatch->lpVtbl->Invoke(pole->pDispatch, DISPID_NEWENUM,
                                          &IID_NULL, lcid,
                                          DISPATCH_METHOD | DISPATCH_PROPERTYGET,
@@ -2263,6 +2285,81 @@ fole_missing(argc, argv, self)
         argv[0] = rb_str_new2(mname);
         return ole_invoke(argc, argv, self, DISPATCH_METHOD|DISPATCH_PROPERTYGET);
     }
+}
+
+static VALUE
+ole_method_sub(self, pOwnerTypeInfo, pTypeInfo, name)
+    VALUE self;
+    ITypeInfo *pOwnerTypeInfo;
+    ITypeInfo *pTypeInfo;
+    VALUE name;
+{
+    HRESULT hr;
+    TYPEATTR *pTypeAttr;
+    BSTR bstr;
+    FUNCDESC *pFuncDesc;
+    WORD i;
+    VALUE fname;
+    VALUE method = Qnil;
+    hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
+    if (FAILED(hr)) {
+        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Fail to GetTypeAttr");
+    }
+    for(i = 0; i < pTypeAttr->cFuncs && method == Qnil; i++) {
+        hr = pTypeInfo->lpVtbl->GetFuncDesc(pTypeInfo, i, &pFuncDesc);
+	if (FAILED(hr))
+	     continue;
+
+        hr = pTypeInfo->lpVtbl->GetDocumentation(pTypeInfo, pFuncDesc->memid,
+                                                 &bstr, NULL, NULL, NULL);
+        if (FAILED(hr)) {
+            pTypeInfo->lpVtbl->ReleaseFuncDesc(pTypeInfo, pFuncDesc);
+            continue;
+        }
+	fname = WC2VSTR(bstr);
+	if (strcasecmp(StringValuePtr(name), StringValuePtr(fname)) == 0) {
+	    olemethod_set_member(self, pTypeInfo, pOwnerTypeInfo, i, fname);
+            method = self;
+        }
+        pTypeInfo->lpVtbl->ReleaseFuncDesc(pTypeInfo, pFuncDesc);
+	pFuncDesc=NULL;
+    }
+    OLE_RELEASE_TYPEATTR(pTypeInfo, pTypeAttr);
+    return method;
+}
+
+static VALUE
+olemethod_from_typeinfo(self, pTypeInfo, name)
+    VALUE self;
+    ITypeInfo *pTypeInfo;
+    VALUE name;
+{
+    HRESULT hr;
+    TYPEATTR *pTypeAttr;
+    WORD i;
+    HREFTYPE href;
+    ITypeInfo *pRefTypeInfo;
+    VALUE method = Qnil;
+    hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
+    if (FAILED(hr)) {
+        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Fail to GetTypeAttr");
+    }
+    method = ole_method_sub(self, 0, pTypeInfo, name);
+    if (method != Qnil) {
+       return method;
+    }
+    for(i=0; i < pTypeAttr->cImplTypes && method == Qnil; i++){
+       hr = pTypeInfo->lpVtbl->GetRefTypeOfImplType(pTypeInfo, i, &href);
+       if(FAILED(hr))
+           continue;
+       hr = pTypeInfo->lpVtbl->GetRefTypeInfo(pTypeInfo, href, &pRefTypeInfo);
+       if (FAILED(hr))
+           continue;
+       method = ole_method_sub(self, pTypeInfo, pRefTypeInfo, name);
+       OLE_RELEASE(pRefTypeInfo);
+    }
+    OLE_RELEASE_TYPEATTR(pTypeInfo, pTypeAttr);
+    return method;
 }
 
 static VALUE
@@ -2340,33 +2437,67 @@ ole_methods_from_typeinfo(pTypeInfo, mask)
     return methods;
 }
 
+static HRESULT
+typeinfo_from_ole(pole, ppti)
+    struct oledata *pole;
+    ITypeInfo **ppti;
+{
+    ITypeInfo *pTypeInfo;
+    ITypeLib *pTypeLib;
+    BSTR bstr;
+    VALUE type;
+    UINT i;
+    UINT count;
+    LCID    lcid = LOCALE_SYSTEM_DEFAULT;
+    HRESULT hr = pole->pDispatch->lpVtbl->GetTypeInfo(pole->pDispatch,
+                                                      0, lcid, &pTypeInfo);
+    if(FAILED(hr)) {
+        ole_raise(hr, rb_eRuntimeError, "fail to GetTypeInfo");
+    }
+    hr = pTypeInfo->lpVtbl->GetDocumentation(pTypeInfo,
+                                             -1,
+                                             &bstr,
+                                             NULL, NULL, NULL);
+    type = WC2VSTR(bstr);
+    hr = pTypeInfo->lpVtbl->GetContainingTypeLib(pTypeInfo, &pTypeLib, &i);
+    OLE_RELEASE(pTypeInfo);
+    if (FAILED(hr)) {
+        ole_raise(hr, rb_eRuntimeError, "fail to GetContainingTypeLib");
+    }
+    count = pTypeLib->lpVtbl->GetTypeInfoCount(pTypeLib);
+    for (i = 0; i < count; i++) {
+        hr = pTypeLib->lpVtbl->GetDocumentation(pTypeLib, i,
+                                                &bstr, NULL, NULL, NULL);
+        if (SUCCEEDED(hr) && rb_str_cmp(WC2VSTR(bstr), type) == 0) {
+            hr = pTypeLib->lpVtbl->GetTypeInfo(pTypeLib, i, &pTypeInfo);
+            if (SUCCEEDED(hr)) {
+                *ppti = pTypeInfo;
+                break;
+            }
+        }
+    }
+    OLE_RELEASE(pTypeLib);
+    return hr;
+}
+
 static VALUE
 ole_methods(self,mask)
     VALUE self;
     int mask;
 {
-    UINT iVar;
-    UINT count;
     ITypeInfo *pTypeInfo;
     HRESULT hr;
     VALUE methods;
     struct oledata *pole;
-    LCID    lcid = LOCALE_SYSTEM_DEFAULT;
 
-    Data_Get_Struct(self, struct oledata, pole);
+    OLEData_Get_Struct(self, pole);
     methods = rb_ary_new();
-    count = 0;
 
-    hr = pole->pDispatch->lpVtbl->GetTypeInfoCount(pole->pDispatch, &count);
-    if (FAILED(hr))
+    hr = typeinfo_from_ole(pole, &pTypeInfo);
+    if(FAILED(hr))
         return methods;
-    for( iVar=0; iVar<count; iVar++ ){
-        hr = pole->pDispatch->lpVtbl->GetTypeInfo( pole->pDispatch, 0, lcid, &pTypeInfo );
-        if(FAILED(hr)) 
-            continue;
-        rb_ary_concat(methods, ole_methods_from_typeinfo(pTypeInfo, mask));
-        OLE_RELEASE(pTypeInfo);
-    }
+    rb_ary_concat(methods, ole_methods_from_typeinfo(pTypeInfo, mask));
+    OLE_RELEASE(pTypeInfo);
     return methods;
 }
 
@@ -2442,7 +2573,7 @@ fole_obj_help( self )
     LCID  lcid = LOCALE_SYSTEM_DEFAULT;
     VALUE type = Qnil;
 
-    Data_Get_Struct(self, struct oledata, pole);
+    OLEData_Get_Struct(self, pole);
 
     hr = pole->pDispatch->lpVtbl->GetTypeInfo( pole->pDispatch, 0, lcid, &pTypeInfo );
     if(FAILED(hr)) {
@@ -2681,11 +2812,10 @@ fole_method_help( self, cmdname )
     LCID    lcid = LOCALE_SYSTEM_DEFAULT;
 
     Check_SafeStr(cmdname);
-    Data_Get_Struct(self, struct oledata, pole);
-    hr = pole->pDispatch->lpVtbl->GetTypeInfo( pole->pDispatch, 0, lcid, &pTypeInfo );
-    if(FAILED(hr)) {
-        ole_raise(hr, rb_eRuntimeError, "fail to GetTypeInfo");
-    }
+    OLEData_Get_Struct(self, pole);
+    hr = typeinfo_from_ole(pole, &pTypeInfo);
+    if(FAILED(hr))
+        ole_raise(hr, rb_eRuntimeError, "fail to get ITypeInfo");
     method = folemethod_s_allocate(cWIN32OLE_METHOD);
     obj = olemethod_from_typeinfo(method, pTypeInfo, cmdname);
     OLE_RELEASE(pTypeInfo);
@@ -3559,81 +3689,6 @@ folevariable_varkind(self)
     struct olevariabledata *pvar;
     Data_Get_Struct(self, struct olevariabledata, pvar);
     return ole_variable_varkind(pvar->pTypeInfo, pvar->index);
-}
-
-static VALUE
-ole_method_sub(self, pOwnerTypeInfo, pTypeInfo, name)
-    VALUE self;
-    ITypeInfo *pOwnerTypeInfo;
-    ITypeInfo *pTypeInfo;
-    VALUE name;
-{
-    HRESULT hr;
-    TYPEATTR *pTypeAttr;
-    BSTR bstr;
-    FUNCDESC *pFuncDesc;
-    WORD i;
-    VALUE fname;
-    VALUE method = Qnil;
-    hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
-    if (FAILED(hr)) {
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Fail to GetTypeAttr");
-    }
-    for(i = 0; i < pTypeAttr->cFuncs && method == Qnil; i++) {
-        hr = pTypeInfo->lpVtbl->GetFuncDesc(pTypeInfo, i, &pFuncDesc);
-	if (FAILED(hr))
-	     continue;
-
-        hr = pTypeInfo->lpVtbl->GetDocumentation(pTypeInfo, pFuncDesc->memid,
-                                                 &bstr, NULL, NULL, NULL);
-        if (FAILED(hr)) {
-            pTypeInfo->lpVtbl->ReleaseFuncDesc(pTypeInfo, pFuncDesc);
-            continue;
-        }
-	fname = WC2VSTR(bstr);
-	if (strcasecmp(StringValuePtr(name), StringValuePtr(fname)) == 0) {
-	    olemethod_set_member(self, pTypeInfo, pOwnerTypeInfo, i, fname);
-            method = self;
-        }
-        pTypeInfo->lpVtbl->ReleaseFuncDesc(pTypeInfo, pFuncDesc);
-	pFuncDesc=NULL;
-    }
-    OLE_RELEASE_TYPEATTR(pTypeInfo, pTypeAttr);
-    return method;
-}
-
-static VALUE
-olemethod_from_typeinfo(self, pTypeInfo, name)
-    VALUE self;
-    ITypeInfo *pTypeInfo;
-    VALUE name;
-{
-    HRESULT hr;
-    TYPEATTR *pTypeAttr;
-    WORD i;
-    HREFTYPE href;
-    ITypeInfo *pRefTypeInfo;
-    VALUE method = Qnil;
-    hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
-    if (FAILED(hr)) {
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Fail to GetTypeAttr");
-    }
-    method = ole_method_sub(self, 0, pTypeInfo, name);
-    if (method != Qnil) {
-       return method;
-    }
-    for(i=0; i < pTypeAttr->cImplTypes && method == Qnil; i++){
-       hr = pTypeInfo->lpVtbl->GetRefTypeOfImplType(pTypeInfo, i, &href);
-       if(FAILED(hr))
-           continue;
-       hr = pTypeInfo->lpVtbl->GetRefTypeInfo(pTypeInfo, href, &pRefTypeInfo);
-       if (FAILED(hr))
-           continue;
-       method = ole_method_sub(self, pTypeInfo, pRefTypeInfo, name);
-       OLE_RELEASE(pRefTypeInfo);
-    }
-    OLE_RELEASE_TYPEATTR(pTypeInfo, pTypeAttr);
-    return method;
 }
 
 static VALUE
@@ -4772,7 +4827,7 @@ find_iid(ole, pitf, piid, ppTypeInfo)
     BOOL is_found = FALSE;
     LCID    lcid = LOCALE_SYSTEM_DEFAULT;
 
-    Data_Get_Struct(ole, struct oledata, pole);
+    OLEData_Get_Struct(ole, pole);
 
     pDispatch = pole->pDispatch;
 
@@ -4880,7 +4935,7 @@ find_default_source(ole, piid, ppTypeInfo)
 
     struct oledata *pole;
 
-    Data_Get_Struct(ole, struct oledata, pole);
+    OLEData_Get_Struct(ole, pole);
     pDispatch = pole->pDispatch;
     hr = pDispatch->lpVtbl->QueryInterface(pDispatch,
                                            &IID_IProvideClassInfo2,
@@ -5024,7 +5079,7 @@ fev_initialize(argc, argv, self)
         ole_raise(hr, rb_eRuntimeError, "not found interface");
     }
 
-    Data_Get_Struct(ole, struct oledata, pole);
+    OLEData_Get_Struct(ole, pole);
     pDispatch = pole->pDispatch;
     hr = pDispatch->lpVtbl->QueryInterface(pDispatch,
                                            &IID_IConnectionPointContainer,
@@ -5170,6 +5225,8 @@ Init_win32ole()
 
     /* support propput method that takes an argument */
     rb_define_method(cWIN32OLE, "[]=", fole_setproperty, -1); 
+
+    rb_define_method(cWIN32OLE, "ole_free", fole_free, 0);
 
     rb_define_method(cWIN32OLE, "each", fole_each, 0);
     rb_define_method(cWIN32OLE, "method_missing", fole_missing, -1);
