@@ -3,14 +3,17 @@
 #
 
 require 'ripper'
-raise 'ripper version differ' unless Ripper::Version == '0.1.0'
 require 'test/unit'
 
 class TestRipper_ScannerEvents < Test::Unit::TestCase
 
   class R < Ripper
     def R.scan(target, src)
-      new(src, target).parse.map {|id, tok| tok }
+      lex(target, src).map {|id, tok| tok }
+    end
+
+    def R.lex(target, src)
+      new(src, target).parse
     end
 
     def initialize(src, target)
@@ -696,7 +699,7 @@ class TestRipper_ScannerEvents < Test::Unit::TestCase
                  R.scan('nl', "1 +\n1")
     assert_equal [],
                  R.scan('nl', "1;\n")
-    assert_equal ["\n"],
+    assert_equal ["\r\n"],
                  R.scan('nl', "1 + 1\r\n")
     assert_equal [],
                  R.scan('nl', "1;\r\n")
@@ -717,7 +720,7 @@ class TestRipper_ScannerEvents < Test::Unit::TestCase
                  R.scan('ignored_nl', "1;\n")
     assert_equal [],
                  R.scan('ignored_nl', "1 + 1\r\n")
-    assert_equal ["\n"],
+    assert_equal ["\r\n"],
                  R.scan('ignored_nl', "1;\r\n")
   end
 

@@ -1,3 +1,11 @@
+Mon Sep 20 12:02:41 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* parse.y [ripper]: unify old_lex_p and token_head.
+
+	* test/ripper/test_scanner_events.rb: now \r\n is saved correctly.
+
+	* parse.y: new macro lex_goto_eol() for next change.
+
 Mon Sep 20 11:01:55 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* parse.y [ripper]: adjust line number for heredoc.  [ruby-dev:24272]

@@ -102,13 +102,11 @@ union tmpyystype {
 /*
     Structure of Lexer Buffer:
 
- lex_pbeg    old_lex_p              lex_p           lex_pend
-    |            |                     |               |
-    |------------+----------+----------+---------------|
-                 |<-------->|<-------->|
-                    space   | non-space token
-                            |
-                            token_head
+ lex_pbeg      tokp         lex_p        lex_pend
+    |           |              |            |
+    |-----------+--------------+------------|
+                |<------------>|
+                     token
 */
 struct parser_params {
     VALUE value;
@@ -116,12 +114,7 @@ struct parser_params {
     VALUE parsing_thread;
     int toplevel_p;
     union tmpyystype *parser_yylval;   /* YYSTYPE not defined yet */
-    char *token_head;
-    char *old_lex_p;
-    VALUE buf;
     VALUE eofp;
-    long current_position;   /* from file head */
-    long current_column;     /* from line head */
 
     NODE *parser_lex_strterm;
     enum lex_state_e parser_lex_state;
@@ -151,6 +144,9 @@ struct parser_params {
     int parser_ruby__end__seen;
     int parser_ruby_sourceline;
     VALUE parser_ruby_sourcefile;
+    VALUE delayed;
+    char *tokp;
+    long current_position;
 #endif
 };
 
@@ -4192,91 +4188,49 @@ static int parser_here_document _((struct parser_params*,NODE*));
 # define set_yylval_literal(x) yylval.val = x
 #endif
 
-static void
-parser_save_token(parser)
-    struct parser_params *parser;
-{
-    rb_ary_push(parser->buf, rb_str_new(parser->old_lex_p, lex_pend - parser->old_lex_p));
-}
-
 #ifdef RIPPER
-
 static void
-ripper_flush_buffer(parser, t)
+ripper_save_token(parser)
     struct parser_params *parser;
 {
-    long i;
-
-    for (i = 0; i < RARRAY(parser->buf)->len; i++) {
-        ID event = ripper_token2eventid(t);
-
-        ripper_dispatch2(parser, ripper_id_scan, ID2SYM(event), RARRAY(parser->buf)->ptr[i]);
-        ripper_dispatch1(parser, event, RARRAY(parser->buf)->ptr[i]);
-    }
-    rb_ary_clear(parser->buf);
+    rb_ary_push(parser->delayed,
+		rb_str_new(parser->tokp, lex_pend - parser->tokp));
 }
 
 static void
-ripper_dispatch_space(parser)
-    struct parser_params *parser;
-{
-    if (parser->token_head - parser->old_lex_p > 0) {
-        long len = parser->token_head - parser->old_lex_p;
-        VALUE str = rb_str_new(parser->old_lex_p, len);
-
-        ripper_dispatch2(parser, ripper_id_scan, ID2SYM(ripper_id_sp), rb_str_dup(str));
-        ripper_dispatch1(parser, ripper_id_sp, str);
-        parser->current_position += len;
-        parser->current_column += len;
-    }
-    parser->old_lex_p = lex_p;
-}
-
-static void
-ripper_dispatch_nonspace(parser, t)
+ripper_dispatch_delayed(parser, t)
     struct parser_params *parser;
     int t;
 {
-    if (lex_p > parser->token_head) {
-        long len = lex_p - parser->token_head;
-        VALUE str = rb_str_new(parser->token_head, len);
+    long i;
+
+    for (i = 0; i < RARRAY(parser->delayed)->len; i++) {
         ID event = ripper_token2eventid(t);
 
-        ripper_dispatch2(parser, ripper_id_scan, ID2SYM(event), rb_str_dup(str));
-        ripper_dispatch1(parser, event, str);
-        parser->current_position += len;
-        parser->current_column += len;
+        ripper_dispatch2(parser, ripper_id_scan,
+                         ID2SYM(event), RARRAY(parser->delayed)->ptr[i]);
+        ripper_dispatch1(parser, event, RARRAY(parser->delayed)->ptr[i]);
     }
-    parser->token_head = lex_p;
+    rb_ary_clear(parser->delayed);
 }
+
+#define ripper_flush(p) (p->tokp = p->parser_lex_p)
 
 static void
 ripper_dispatch_scan_event(parser, t)
     struct parser_params *parser;
     int t;
 {
-    ripper_flush_buffer(parser, t);
-    ripper_dispatch_space(parser);
-    ripper_dispatch_nonspace(parser, t);
-}
+    if (lex_p > parser->tokp) {
+        VALUE str = rb_str_new(parser->tokp, lex_p - parser->tokp);
+        ID event = ripper_token2eventid(t);
 
-#if 0
-static void
-stat_parser_buffer(parser)
-    struct parser_params *parser;
-{
-    puts("----stat");
-    printf("old_lex_p=0x%x\n", (unsigned)parser->old_lex_p);
-    printf("token_head=0x%x\n", (unsigned)parser->token_head);
-    printf("space len=%d\n", parser->token_head - parser->old_lex_p);
-    printf("token len=%d\n", lex_p - parser->token_head);
-    printf("lex_pbeg=0x%x\n", (unsigned)lex_pbeg);
-    printf("lex_p=0x%x\n", (unsigned)lex_p);
-    printf("lex_pend=0x%x\n", (unsigned)lex_pend);
-    if (parser->token_head < parser->old_lex_p) {puts("abort"); exit(1);}
-    if (parser->token_head - parser->old_lex_p > 60) {puts("abort"); exit(1);}
+        ripper_dispatch2(parser, ripper_id_scan, ID2SYM(event), rb_str_dup(str));
+        ripper_dispatch1(parser, event, str);
+        parser->current_position += RSTRING(str)->len;
+        ripper_flush(parser);
+    }
 }
-#endif
 #endif /* RIPPER */
 
 #include "regex.h"
@@ -4496,14 +4450,6 @@ rb_compile_file(f, file, start)
 }
 #endif  /* !RIPPER */
 
-static void
-parser_clear_token(parser)
-    struct parser_params *parser;
-{
-    parser->old_lex_p = lex_p;
-    parser->token_head = lex_p;
-}
-
 static inline int
 parser_nextc(parser)
     struct parser_params *parser;
@@ -4520,9 +4466,11 @@ parser_nextc(parser)
                 parser->eofp = Qtrue;
                 return -1;
             }
-            if (parser->old_lex_p < lex_pend) {
-                parser_save_token(parser);
+#ifdef RIPPER
+            if (parser->tokp < lex_pend) {
+                ripper_save_token(parser);
             }
+#endif
 	    if (heredoc_end > 0) {
 		ruby_sourceline = heredoc_end;
 		heredoc_end = 0;
@@ -4530,8 +4478,9 @@ parser_nextc(parser)
 	    ruby_sourceline++;
 	    lex_pbeg = lex_p = RSTRING(v)->ptr;
 	    lex_pend = lex_p + RSTRING(v)->len;
-	    parser_clear_token(parser);
-            parser->current_column = 0;
+#ifdef RIPPER
+	    ripper_flush(parser);
+#endif
 	    lex_lastline = v;
 	}
 	else {
@@ -4540,12 +4489,10 @@ parser_nextc(parser)
 	}
     }
     c = (unsigned char)*lex_p++;
-#ifndef RIPPER
     if (c == '\r' && lex_p < lex_pend && *lex_p == '\n') {
 	lex_p++;
 	c = '\n';
     }
-#endif
 
     return c;
 }
@@ -4557,8 +4504,12 @@ parser_pushback(parser, c)
 {
     if (c == -1) return;
     lex_p--;
+    if (lex_p > lex_pbeg && lex_p[0] == '\n' && lex_p[-1] == '\r') {
+	lex_p--;
+    }
 }
 
+#define lex_goto_eol(parser) (parser->parser_lex_p = parser->parser_lex_pend)
 #define was_bol() (lex_p == lex_pbeg + 1)
 #define peek(c) (lex_p != lex_pend && (c) == *lex_p)
 
@@ -4941,9 +4892,9 @@ parser_tokadd_string(parser, func, term, paren, nest)
 #define NEW_STRTERM0(func, term, paren) \
 	rb_node_newnode(NODE_STRTERM, (func), (term) | ((paren) << (CHAR_BIT * 2)), 0)
 #ifndef RIPPER
-#define NEW_STRTERM(func, term, paren) NEW_STRTERM0(func, term, paren)
+# define NEW_STRTERM(func, term, paren) NEW_STRTERM0(func, term, paren)
 #else
-#define NEW_STRTERM(func, term, paren) ripper_new_strterm(parser, func, term, paren)
+# define NEW_STRTERM(func, term, paren) ripper_new_strterm(parser, func, term, paren)
 static NODE *
 ripper_new_strterm(parser, func, term, paren)
     struct parser_params *parser;
@@ -5060,17 +5011,18 @@ parser_heredoc_identifier(parser)
 
     tokfix();
 #ifdef RIPPER
-    ripper_dispatch_space(parser);
-    ripper_dispatch_nonspace(parser, tHEREDOC_BEG);
+    ripper_dispatch_scan_event(parser, tHEREDOC_BEG);
 #endif
     len = lex_p - lex_pbeg;
-    lex_p = lex_pend;
+    lex_goto_eol(parser);
     lex_strterm = rb_node_newnode(NODE_HEREDOC,
 				  rb_str_new(tok(), toklen()),	/* nd_lit */
 				  len,				/* nd_nth */
 				  lex_lastline);		/* nd_orig */
     nd_set_line(lex_strterm, ruby_sourceline);
-    parser_clear_token(parser);
+#ifdef RIPPER
+    ripper_flush(parser);
+#endif
     return term == '`' ? tXSTRING_BEG : tSTRING_BEG;
 }
 
@@ -5082,9 +5034,9 @@ parser_heredoc_restore(parser, here)
     VALUE line;
 
 #ifdef RIPPER
-    ripper_flush_buffer(parser, tHEREDOC_CONTENT);
-    lex_p = lex_pend;
-    ripper_dispatch_nonspace(parser, tHEREDOC_END);
+    ripper_dispatch_delayed(parser, tHEREDOC_CONTENT);
+    lex_goto_eol(parser);
+    ripper_dispatch_scan_event(parser, tHEREDOC_END);
 #endif
     line = here->nd_orig;
     lex_lastline = line;
@@ -5095,7 +5047,9 @@ parser_heredoc_restore(parser, here)
     ruby_sourceline = nd_line(here);
     dispose_string(here->nd_lit);
     rb_gc_force_recycle((VALUE)here);
-    parser_clear_token(parser);
+#ifdef RIPPER
+    ripper_flush(parser);
+#endif
 }
 
 static int
@@ -5162,7 +5116,7 @@ parser_here_document(parser, here)
 	    else
 		str = rb_str_new(p, pend - p);
 	    if (pend < lex_pend) rb_str_cat(str, "\n", 1);
-	    lex_p = lex_pend;
+	    lex_goto_eol(parser);
 	    if (nextc() == -1) {
 		if (str) dispose_string(str);
 		goto error;
@@ -5270,15 +5224,15 @@ parser_yylex(parser)
         switch (c) {
           case ' ': case '\t': case '\f': case '\r':
           case '\13': /* '\v' */
-            parser->token_head++;
             space_seen++;
             break;
           default:
             goto outofloop;
         }
     }
- outofloop:
+  outofloop:
     pushback(c);
+    ripper_dispatch_scan_event(parser, tSP);
 #endif
     switch (c = nextc()) {
       case '\0':		/* NUL */
@@ -5381,11 +5335,11 @@ parser_yylex(parser)
 #ifdef RIPPER
                 int first_p = Qtrue;
 
-                lex_p = lex_pend;
+                lex_goto_eol(parser);
                 ripper_dispatch_scan_event(parser, tEMBDOC_BEG);
 #endif
 		for (;;) {
-		    lex_p = lex_pend;
+		    lex_goto_eol(parser);
 #ifdef RIPPER
                     if (!first_p) {
                         ripper_dispatch_scan_event(parser, tEMBDOC);
@@ -5403,7 +5357,7 @@ parser_yylex(parser)
 			break;
 		    }
 		}
-		lex_p = lex_pend;
+		lex_goto_eol(parser);
 #ifdef RIPPER
                 ripper_dispatch_scan_event(parser, tEMBDOC_END);
 #endif
@@ -6080,22 +6034,11 @@ parser_yylex(parser)
 
       case '\\':
 	c = nextc();
-#ifdef RIPPER
-        if (c == '\r') {    /* ripper does not skip '\r' */
-            space_seen++;
-            parser->token_head += 2;
-            c = nextc();
-            if (c == '\n') {
-                parser->token_head++;
-                goto retry;
-            }
-            pushback(c);
-            goto retry;
-        }
-#endif
 	if (c == '\n') {
 	    space_seen = 1;
-            parser->token_head += 2;
+#ifdef RIPPER
+	    ripper_dispatch_scan_event(parser, tSP);
+#endif
 	    goto retry; /* skip \\n */
 	}
 	pushback(c);
@@ -6311,7 +6254,7 @@ parser_yylex(parser)
 #ifndef RIPPER
 	    return -1;
 #else
-            lex_p = lex_pend;
+            lex_goto_eol(parser);
             ripper_dispatch_scan_event(parser, k__END__);
             return 0;
 #endif
@@ -6471,12 +6414,13 @@ yylex(p)
     parser->parser_yylval->val = Qundef;
 #endif
     t = parser_yylex(parser);
-
 #ifdef RIPPER
-    if (t != 0) ripper_flush_buffer(parser, t);
-    ripper_dispatch_space(parser);
-    if (t != 0) ripper_dispatch_nonspace(parser, t);
+    if (t != 0) {
+	ripper_dispatch_delayed(parser, t);
+	ripper_dispatch_scan_event(parser, t);
+    }
 #endif
+
     return t;
 }
 
@@ -8141,9 +8085,6 @@ static void
 parser_initialize(parser)
     struct parser_params *parser;
 {
-    parser->current_position = 0;
-    parser->current_column = 0;
-
     parser->result = Qnil;
     parser->toplevel_p = Qtrue;
     parser->parsing_thread = Qnil;
@@ -8165,7 +8106,10 @@ parser_initialize(parser)
     parser->parser_lex_pbeg = 0;
     parser->parser_lex_p = 0;
     parser->parser_lex_pend = 0;
-    parser->buf = rb_ary_new();
+#ifdef RIPPER
+    parser->delayed = rb_ary_new();
+    parser->current_position = 0;
+#endif
 }
 
 static void
@@ -8182,8 +8126,8 @@ ripper_mark(ptr)
     rb_gc_mark(p->parser_lex_lastline);
 #ifdef RIPPER
     rb_gc_mark(p->parser_ruby_sourcefile);
+    rb_gc_mark(p->delayed);
 #endif
-    rb_gc_mark(p->buf);
 }
 
 static void
@@ -8682,13 +8626,15 @@ ripper_column(self)
     VALUE self;
 {
     struct parser_params *parser;
+    long col;
 
     Data_Get_Struct(self, struct parser_params, parser);
     if (!ripper_initialized_p(parser)) {
         rb_raise(rb_eArgError, "method called for uninitialized object");
     }
     if (NIL_P(parser->parsing_thread)) return Qnil;
-    return LONG2NUM(parser->current_column);
+    col = parser->parser_lex_p - parser->parser_lex_pbeg;
+    return LONG2NUM(col);
 }
 
 /*
