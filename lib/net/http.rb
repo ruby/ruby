@@ -1607,7 +1607,11 @@ module Net # :nodoc:
     # 
     def to_ary
       warn "net/http.rb: warning: Net::HTTP v1.1 style assignment found at #{caller(1)[0]}; use `response = http.get(...)' instead." if $VERBOSE
-      [self, body()]
+      res = self.dup
+      class << res
+        undef to_ary
+      end
+      [res, res.body]
     end
 
     #

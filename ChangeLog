@@ -1,3 +1,9 @@
+Fri Mar  5 19:42:09 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb (HTTPResponse#to_ary): should return an object
+	  which does not respond to #to_ary.  It causes infinite loop in
+	  puts. [ruby-core:02578]
+
 Fri Mar  5 00:51:35 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/test/unit.rb: MOve RDoc documentation so that you can 
