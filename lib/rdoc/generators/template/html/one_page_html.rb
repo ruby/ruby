@@ -52,7 +52,13 @@ IF:method_list
 START:method_list
 IF:methods
 START:methods
-<h4>%type% %category% method: <a name="%aref%">%name%%params%</a></h4>
+<h4>%type% %category% method: 
+IF:callseq
+<a name="%aref%">%callseq%</a>
+ENDIF:callseq
+IFNOT:callseq
+<a name="%aref%">%name%%params%</a></h4>
+ENDIF:callseq
 
 IF:m_desc
 %m_desc%

@@ -1,3 +1,8 @@
+Thu Mar 25 02:00:18 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/generators/template/html/one_page_html.rb (Page): 
+	  Fix to work with C modules.
+
 Wed Mar 24 20:49:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
 
 	* lib/uri.rb: Documented (thanks Dmitry V. Sabanin).
