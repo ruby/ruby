@@ -1,3 +1,8 @@
+Sun Mar 16 12:29:55 2003  Tanaka Akira  <akr@m17n.org>
+
+        * lib/pp.rb (object_address_group): use to_s instead of name
+          to get name of class.
+
 Wed Mar 12 16:48:19 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* io.c (prep_stdio): set binmode only if the file descriptor
