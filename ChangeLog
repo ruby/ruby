@@ -1,3 +1,8 @@
+Wed May 16 18:05:52 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/md5/md5init.c: add an instance method "<<" as an alias for
+	"update". (inspired by Steve Coltrin's ruby-sha1)
+
 Tue May 15 17:46:37 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_and): should not push frozen key string.
