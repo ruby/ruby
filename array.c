@@ -1305,13 +1305,25 @@ rb_ary_zip(argc, argv, ary)
     VALUE *argv;
     VALUE ary;
 {
-    int i, j, len;
+    int i, j;
+    long len;
     VALUE result;
 
     len = RARRAY(ary)->len;
     for (i=0; i<argc; i++) {
 	argv[i] = to_ary(argv[i]);
-	if (RARRAY(argv[i])->len > len) len = RARRAY(argv[i])->len;
+    }
+    if (rb_block_given_p()) {
+	for (i=0; i<len; i++) {
+	    VALUE tmp = rb_ary_new2(argc+1);
+
+	    rb_ary_push(tmp, rb_ary_entry(ary, i));
+	    for (j=0; j<argc; j++) {
+		rb_ary_push(tmp, rb_ary_entry(argv[j], i));
+	    }
+	    rb_yield(tmp);
+	}
+	return Qnil;
     }
     result = rb_ary_new2(len);
     for (i=0; i<len; i++) {
@@ -1322,6 +1334,34 @@ rb_ary_zip(argc, argv, ary)
 	    rb_ary_push(tmp, rb_ary_entry(argv[j], i));
 	}
 	rb_ary_push(result, tmp);
+    }
+    return result;
+}
+
+static VALUE
+rb_ary_transpose(ary)
+{
+    long elen = -1, alen, i, j;
+    VALUE tmp, result;
+
+    alen = RARRAY(ary)->len;
+    if (alen == 0) return rb_ary_dup(ary);
+    for (i=0; i<alen; i++) {
+	tmp = to_ary(RARRAY(ary)->ptr[i]);
+	if (elen < 0) {		/* first element */
+	    elen = RARRAY(tmp)->len;
+	    result = rb_ary_new2(elen);
+	    for (j=0; j<elen; j++) {
+		rb_ary_store(result, j, rb_ary_new2(alen));
+	    }
+	}
+	else if (elen != RARRAY(tmp)->len) {
+	    rb_raise(rb_eIndexError, "element size differ (%d should be %d)",
+		     RARRAY(tmp)->len, elen);
+	}
+	for (j=0; j<elen; j++) {
+	    rb_ary_store(RARRAY(result)->ptr[j], i, RARRAY(tmp)->ptr[j]);
+	}
     }
     return result;
 }
@@ -1893,6 +1933,7 @@ Init_Array()
     rb_define_method(rb_cArray, "reject", rb_ary_reject, 0);
     rb_define_method(rb_cArray, "reject!", rb_ary_reject_bang, 0);
     rb_define_method(rb_cArray, "zip", rb_ary_zip, -1);
+    rb_define_method(rb_cArray, "transpose", rb_ary_transpose, 0);
     rb_define_method(rb_cArray, "replace", rb_ary_replace, 1);
     rb_define_method(rb_cArray, "clear", rb_ary_clear, 0);
     rb_define_method(rb_cArray, "fill", rb_ary_fill, -1);

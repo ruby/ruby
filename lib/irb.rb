@@ -51,7 +51,7 @@ module IRB
   def IRB.start(ap_path = nil)
     $0 = File::basename(ap_path, ".rb") if ap_path
 
-    IRB.initialize(ap_path)
+    IRB.setup(ap_path)
 
     if @CONF[:SCRIPT]
       irb = Irb.new(nil, @CONF[:SCRIPT])

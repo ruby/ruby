@@ -12,7 +12,7 @@
 
 #include "ruby.h"
 #include <math.h>
-#include <sys/errno.h>
+#include <errno.h>
 
 VALUE rb_mMath;
 

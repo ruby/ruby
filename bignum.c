@@ -182,8 +182,6 @@ rb_int2inum(n)
 
 #ifdef HAVE_LONG_LONG
 
-#define DIGSPERLONGLONG ((unsigned int)(SIZEOF_LONG_LONG/SIZEOF_BDIGITS))
-
 void
 rb_quad_pack(buf, val)
     char *buf;
@@ -233,14 +231,14 @@ rb_quad_unpack(buf, sign)
     }
 
     i = 0;
-    big = bignew(DIGSPERLONGLONG, 1);
+    big = bignew(DIGSPERLL, 1);
     digits = BDIGITS(big);
-    while (i < DIGSPERLONGLONG) {
+    while (i < DIGSPERLL) {
 	digits[i++] = BIGLO(q);
 	q = BIGDN(q);
     }
 
-    i = DIGSPERLONGLONG;
+    i = DIGSPERLL;
     while (i-- && !digits[i]) ;
     RBIGNUM(big)->len = i+1;
 
