@@ -535,6 +535,15 @@ time_clone(time)
     return clone;
 }
 
+static void
+time_modify(time)
+    VALUE time;
+{
+    if (OBJ_FROZEN(time)) rb_error_frozen("Time");
+    if (!OBJ_TAINTED(time) && rb_safe_level() >= 4)
+	rb_raise(rb_eSecurityError, "Insecure: can't modify Time");
+}
+
 static VALUE
 time_localtime(time)
     VALUE time;
@@ -547,6 +556,7 @@ time_localtime(time)
     if (tobj->tm_got && !tobj->gmt) {
 	return time;
     }
+    time_modify(time);
     t = tobj->tv.tv_sec;
     tm_tmp = localtime(&t);
     tobj->tm = *tm_tmp;
@@ -567,6 +577,7 @@ time_gmtime(time)
     if (tobj->tm_got && tobj->gmt) {
 	return time;
     }
+    time_modify(time);
     t = tobj->tv.tv_sec;
     tm_tmp = gmtime(&t);
     tobj->tm = *tm_tmp;

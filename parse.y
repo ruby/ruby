@@ -862,6 +862,14 @@ aref_args	: none
 			value_expr($4);
 			$$ = arg_concat($1, $4);
 		    }
+		| assocs
+		    {
+			$$ = NEW_LIST(NEW_HASH($1));
+		    }
+		| assocs ','
+		    {
+			$$ = NEW_LIST(NEW_HASH($1));
+		    }
 		| tSTAR arg opt_nl
 		    {
 			value_expr($2);
@@ -3381,6 +3389,7 @@ yylex()
 	    tokadd(c);
 	    tokfix();
 	    yylval.id = rb_intern(tok());
+	    /* xxx shouldn't check if valid option variable */
 	    return tGVAR;
 
 	  case '&':		/* $&: last match */

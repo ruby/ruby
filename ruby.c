@@ -255,6 +255,7 @@ require_libraries()
 	free(list);
 	list = tmp;
     }
+    req_list_head.next = 0;
     ruby_eval_tree = save[0];
     ruby_eval_tree_begin = save[1];
     ruby_sourcefile = orig_sourcefile;
@@ -638,7 +639,6 @@ proc_options(argc, argv)
 	rb_compile_string(script, e_script, 1);
     }
     else if (strlen(script) == 1 && script[0] == '-') {
-	require_libraries();
 	load_stdin();
     }
     else {
@@ -925,6 +925,7 @@ ruby_prog_init()
     ruby_sourcefile = "ruby";
     rb_define_variable("$VERBOSE", &ruby_verbose);
     rb_define_variable("$-v", &ruby_verbose);
+    rb_define_variable("$-w", &ruby_verbose);
     rb_define_variable("$DEBUG", &ruby_debug);
     rb_define_variable("$-d", &ruby_debug);
     rb_define_readonly_variable("$-p", &do_print);

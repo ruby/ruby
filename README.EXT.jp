@@ -694,7 +694,7 @@ Makefileを作る場合の雛型になるextconf.rbというファイルを作り
 数を使うことが出来ます．
 
   have_library(lib, func): ライブラリの存在チェック
-  have_func(func): 関数の存在チェック
+  have_func(func, header): 関数の存在チェック
   have_header(header): ヘッダファイルの存在チェック
   create_makefile(target): Makefileの生成
 
@@ -1134,11 +1134,12 @@ find_library(lib, func, path...)
   関数funcを定義しているライブラリlibの存在を -Lpath を追加
   しながらチェックする．ライブラリが見付かった時，trueを返す．
 
-have_func(func)
+have_func(func, header)
 
-  関数funcの存在をチェックする．funcが標準ではリンクされない
-  ライブラリ内のものである時には先にhave_libraryでそのライブ
-  ラリをチェックしておく事．関数が存在する時trueを返す．
+  ヘッダファイルheaderをインクルードして関数funcの存在をチェッ
+  クする．funcが標準ではリンクされないライブラリ内のものであ
+  る時には先にhave_libraryでそのライブラリをチェックしておく
+  事．関数が存在する時trueを返す．
 
 have_header(header)
 

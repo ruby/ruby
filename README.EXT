@@ -585,7 +585,7 @@ at the top of the file.  You can use the functions below to check the
 condition.
 
   have_library(lib, func): check whether library containing function exists.
-  have_func(func): check whether function exists
+  have_func(func, header): check whether function exists
   have_header(header): check whether header file exists
   create_makefile(target): generate Makefile
 
@@ -975,11 +975,11 @@ These functions are available in extconf.rb:
 Checks whether library which contains specified function exists.
 Returns true if the library exists.
 
- have_func(func)
+ have_func(func, header)
 
-Checks whether func exists.  Returns true if the function exists.  To
-check functions in the additional library, you need to check that
-library first using have_library().
+Checks whether func exists with header.  Returns true if the function
+exists.  To check functions in the additional library, you need to
+check that library first using have_library().
 
  have_header(header)
 

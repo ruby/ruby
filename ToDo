@@ -6,7 +6,7 @@ Language Spec.
 - %w(a\ b\ c abc) => ["a b c", "abc"]
 - objectify symbols
 - class variable (prefix @@)
-- rescue RuntimeError =>n err
+- rescue RuntimeError => err
 * operator !! for rescue. ???
 * objectify characters
 * ../... outside condition invokes operator method too.

@@ -1,6 +1,27 @@
+Fri Jul  7 03:30:00 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (aref_args): should allow Hash[:a=>2] etc.
+
+	* numeric.c (fix_aref): convert index by NUM2INT, not FIX2INT. 
+	  (ruby-bugs:#PR37)
+
+	* time.c (time_localtime): should prohibit for frozen time.
+
+	* time.c (time_gmtime): ditto.
+
+Thu Jul  6 19:12:12 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (rb_file_s_open): should not terminate fptr; just clear it.
+
+	* ruby.c (proc_options): should not call require_libraries()
+	  twice.
+
+	* ruby.c (require_libraries): clear req_list_head.next after
+	  execution. 
+
 Thu Jul  6 13:51:57 2000  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
-	* object.c (rb_to_id): name may not be symbol or fixnum.
+	* object.c (rb_to_id): name may not be symbol nor fixnum.
 
 	* struct.c (rb_struct_s_def): name may be nil.
 
@@ -40,7 +61,7 @@ Wed Jul  5 09:47:14 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* io.c (rb_io_reopen): clear fptr->path after free() to prevent
 	  potential GC crash.
 
-	* io.c (rb_file_s_open): terminate fptr uless null.
+	* io.c (rb_file_s_open): terminate fptr unless null.
 
 	* io.c (rb_file_initialize): ditto.
 

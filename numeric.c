@@ -1314,7 +1314,7 @@ fix_aref(fix, idx)
     VALUE fix, idx;
 {
     unsigned long val = FIX2LONG(fix);
-    int i = FIX2LONG(idx);
+    int i = NUM2INT(idx);
 
     if (i < 0 || sizeof(VALUE)*CHAR_BIT-1 < i)
 	return INT2FIX(0);
