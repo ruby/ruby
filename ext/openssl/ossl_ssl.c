@@ -231,7 +231,7 @@ ossl_call_tmp_dh_callback(VALUE *args)
 static DH*
 ossl_tmp_dh_callback(SSL *ssl, int is_export, int keylength)
 {
-    VALUE obj, args[3];
+    VALUE args[3];
     int status, success;
 
     args[0] = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx);
@@ -241,7 +241,7 @@ ossl_tmp_dh_callback(SSL *ssl, int is_export, int keylength)
                          (VALUE)args, &status);
     if (status || !success) return NULL;
 
-    return GetPKeyPtr(ossl_ssl_get_tmp_dh(obj))->pkey.dh;
+    return GetPKeyPtr(ossl_ssl_get_tmp_dh(args[0]))->pkey.dh;
 }
 
 static DH*

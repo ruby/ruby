@@ -1,3 +1,8 @@
+Sun Mar 13 02:32:54 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_tmp_dh_callback): should get DH
+	  parameter from the current SSL object.
+
 Sun Mar 13 02:09:03 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_pkey_dh.c (ossl_create_dh): fix typo.
