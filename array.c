@@ -31,7 +31,7 @@ rb_mem_clear(mem, size)
     }
 }
 
-static void
+static inline void
 memfill(mem, size, val)
     register VALUE *mem;
     register long size;
@@ -70,6 +70,7 @@ rb_ary_modify(ary)
 	RARRAY(ary)->ptr = ptr;
     }
 }
+
 VALUE
 rb_ary_freeze(ary)
     VALUE ary;
@@ -864,10 +865,6 @@ rb_ary_index(ary, val)
  *     array.rindex(obj)    ->  int or nil
  *  
  *  Returns the index of the last object in <i>array</i> 
-	if (i > RARRAY(ary)->len) {
-	    i = RARRAY(ary)->len;
-	    continue;
-	}
  *  <code>==</code> to <i>obj</i>. Returns <code>nil</code> if
  *  no match is found.
  *     
@@ -2474,8 +2471,8 @@ rb_ary_equal(ary1, ary2)
 	}
 	return rb_equal(ary2, ary1);
     }
+    if (RARRAY(ary1)->len != RARRAY(ary2)->len) return Qfalse;
     for (i=0; i<RARRAY(ary1)->len; i++) {
-	if (RARRAY(ary1)->len != RARRAY(ary2)->len) return Qfalse;
 	if (!rb_equal(rb_ary_elt(ary1, i), rb_ary_elt(ary2, i)))
 	    return Qfalse;
     }
@@ -2591,7 +2588,7 @@ rb_ary_cmp(ary1, ary2)
 	len = RARRAY(ary2)->len;
     }
     for (i=0; i<len; i++) {
-	VALUE v = rb_funcall(RARRAY(ary1)->ptr[i], id_cmp, 1, RARRAY(ary2)->ptr[i]);
+	VALUE v = rb_funcall(rb_ary_elt(ary1, i), id_cmp, 1, rb_ary_elt(ary2, i));
 	if (v != INT2FIX(0)) {
 	    return v;
 	}
@@ -2644,7 +2641,7 @@ rb_ary_diff(ary1, ary2)
 
     for (i=0; i<RARRAY(ary1)->len; i++) {
 	if (st_lookup(RHASH(hash)->tbl, RARRAY(ary1)->ptr[i], 0)) continue;
-	rb_ary_push(ary3, rb_ary_entry(ary1, i));
+	rb_ary_push(ary3, rb_ary_elt(ary1, i));
     }
     return ary3;
 }
@@ -2673,9 +2670,9 @@ rb_ary_and(ary1, ary2)
     hash = ary_make_hash(ary2, 0);
 
     for (i=0; i<RARRAY(ary1)->len; i++) {
-	VALUE v = RARRAY(ary1)->ptr[i];
+	VALUE v = rb_ary_elt(ary1, i);
 	if (st_delete(RHASH(hash)->tbl, (st_data_t*)&v, 0)) {
-	rb_ary_push(ary3, rb_ary_elt(ary1, i));
+	    rb_ary_push(ary3, v);
 	}
     }
 

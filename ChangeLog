@@ -1,5 +1,7 @@
 Tue Sep 21 18:29:49 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
+	* array.c (rb_ary_equal): merge miss.
+
 	* array.c (rb_ary_uniq_bang): element size might change during
 	  comparison.  [ruby-dev:24298]
 
