@@ -104,47 +104,17 @@ struct sockaddr_storage {
 };
 #endif
 
-#define LOOKUP_ORDER_UNSPEC	0
-#define LOOKUP_ORDER_INET	1
-#define LOOKUP_ORDER_INET6	2
-
-#if   defined(DEFAULT_LOOKUP_ORDER_UNSPEC)
-# define LOOKUP_ORDER_DEFAULT LOOKUP_ORDER_UNSPEC
-#elif defined(DEFAULT_LOOKUP_ORDER_INET)
-# define LOOKUP_ORDER_DEFAULT LOOKUP_ORDER_INET
-#elif defined(DEFAULT_LOOKUP_ORDER_INET6)
-# define LOOKUP_ORDER_DEFAULT LOOKUP_ORDER_INET6
-#endif
-
-#ifdef INET6
+#if defined(INET6) && (defined(LOOKUP_ORDER_HACK_INET) || defined(LOOKUP_ORDER_HACK_INET))
 #define LOOKUP_ORDERS		3
-int lookup_order_table[LOOKUP_ORDERS][LOOKUP_ORDERS] = {
-  {PF_UNSPEC, PF_UNSPEC, PF_UNSPEC},	/* 0:unspec */
-  {PF_INET, PF_INET6, PF_UNSPEC},	/* 1:inet inet6 */
-  {PF_INET6, PF_INET, PF_UNSPEC}	/* 2:inet6 inet */
+static int lookup_order_table[LOOKUP_ORDERS] = {
+#if defined(LOOKUP_ORDER_HACK_INET)
+    PF_INET, PF_INET6, PF_UNSPEC,
+#elif defined(LOOKUP_ORDER_HACK_INET6)
+    PF_INET6, PF_INET, PF_UNSPEC,
+#else
+    /* should not happen */
+#endif
 };
-
-static int lookup_order = LOOKUP_ORDER_DEFAULT;
-
-static VALUE
-lookup_order_get(self)
-    VALUE self;
-{
-    return INT2FIX(lookup_order);
-}
-
-static VALUE
-lookup_order_set(self, order)
-    VALUE self, order;
-{
-    int n = NUM2INT(order);
-
-    if (n < 0 || LOOKUP_ORDERS <= n) {
-	rb_raise(rb_eArgError, "invalid value for lookup_order");
-    }
-    lookup_order = n;
-    return order;
-}
 
 static int
 rb_getaddrinfo(nodename, servname, hints, res)
@@ -156,8 +126,12 @@ rb_getaddrinfo(nodename, servname, hints, res)
     struct addrinfo tmp_hints;
     int i, af, error;
 
+    if (hints->ai_family != PF_UNSPEC) {
+	return getaddrinfo(nodename, servname, hints, res);
+    }
+
     for (i = 0; i < LOOKUP_ORDERS; i++) {
-	af = lookup_order_table[lookup_order][i];
+	af = lookup_order_table[i];
 	MEMCPY(&tmp_hints, hints, struct addrinfo, 1);
 	tmp_hints.ai_family = af;
 	error = getaddrinfo(nodename, servname, &tmp_hints, res);
@@ -173,20 +147,7 @@ rb_getaddrinfo(nodename, servname, hints, res)
 
     return error;
 }
-#else
-static VALUE
-lookup_order_get(self)
-    VALUE self;
-{
-    return INT2FIX(LOOKUP_ORDER_DEFAULT);
-}
-
-static VALUE
-lookup_order_set(self, order)
-    VALUE self, order;
-{
-    return order;
-}
+#define getaddrinfo(node,serv,hints,res) rb_getaddrinfo((node),(serv),(hints),(res))
 #endif
 
 #ifdef NT
@@ -478,9 +439,6 @@ s_recv(sock, argc, argv, from)
     else             flags = NUM2INT(flg);
 
     GetOpenFile(sock, fptr);
-    if (rb_read_pending(fptr->f)) {
-	rb_raise(rb_eIOError, "recv for buffered IO");
-    }
     fd = fileno(fptr->f);
 
     str = rb_tainted_str_new(0, NUM2INT(len));
@@ -641,11 +599,7 @@ ip_addrsetup(host, port)
     MEMZERO(&hints, struct addrinfo, 1);
     hints.ai_family = PF_UNSPEC;
     hints.ai_socktype = SOCK_DGRAM;
-#ifndef INET6
     error = getaddrinfo(hostp, portp, &hints, &res);
-#else
-    error = rb_getaddrinfo(hostp, portp, &hints, &res);
-#endif
     if (error) {
 	if (hostp && hostp[strlen(hostp)-1] == '\n') {
 	    rb_raise(rb_eSocket, "newline at the end of hostname");
@@ -839,11 +793,7 @@ open_inet(class, h, serv, type)
     if (type == INET_SERVER) {
 	hints.ai_flags = AI_PASSIVE;
     }
-#ifndef INET6
     error = getaddrinfo(host, portp, &hints, &res0);
-#else
-    error = rb_getaddrinfo(host, portp, &hints, &res0);
-#endif
     if (error) {
 	rb_raise(rb_eSocket, "%s", gai_strerror(error));
     }
@@ -1878,11 +1828,9 @@ sock_s_getaddrinfo(argc, argv)
     if (!NIL_P(family)) {
 	hints.ai_family = NUM2INT(family);
     }
-#ifndef INET6
     else {
 	hints.ai_family = PF_UNSPEC;
     }
-#endif
     if (!NIL_P(socktype)) {
 	hints.ai_socktype = NUM2INT(socktype);
     }
@@ -1892,16 +1840,7 @@ sock_s_getaddrinfo(argc, argv)
     if (!NIL_P(flags)) {
 	hints.ai_flags = NUM2INT(flags);
     }
-#ifndef INET6
     error = getaddrinfo(hptr, pptr, &hints, &res);
-#else
-    if (!NIL_P(family)) {
-      error = getaddrinfo(hptr, pptr, &hints, &res);
-    }
-    else {
-      error = rb_getaddrinfo(hptr, pptr, &hints, &res);
-    }
-#endif
     if (error) {
 	rb_raise(rb_eSocket, "%s", gai_strerror(error));
     }
@@ -1917,17 +1856,22 @@ sock_s_getnameinfo(argc, argv)
     VALUE *argv;
 {
     VALUE sa, af = Qnil, host = Qnil, port = Qnil, flags;
-    static char hbuf[1024], pbuf[1024];
     char *hptr, *pptr;
+    char hbuf[1024], pbuf[1024];
     int fl;
-    struct addrinfo hints, *res = NULL;
+    struct addrinfo hints, *res = NULL, *r;
     int error;
     struct sockaddr_storage ss;
     struct sockaddr *sap;
+    char *ep;
 
     sa = flags = Qnil;
     rb_scan_args(argc, argv, "11", &sa, &flags);
 
+    fl = 0;
+    if (!NIL_P(flags)) {
+	fl = NUM2INT(flags);
+    }
     if (TYPE(sa) == T_STRING) {
 	if (sizeof(ss) < RSTRING(sa)->len) {
 	    rb_raise(rb_eTypeError, "sockaddr length too big");
@@ -1939,6 +1883,7 @@ sock_s_getnameinfo(argc, argv)
 	sap = (struct sockaddr *)&ss;
     }
     else if (TYPE(sa) == T_ARRAY) {
+	MEMZERO(&hints, struct addrinfo, 1);
 	if (RARRAY(sa)->len == 3) {
 	    af = RARRAY(sa)->ptr[0];
 	    port = RARRAY(sa)->ptr[1];
@@ -1951,11 +1896,19 @@ sock_s_getnameinfo(argc, argv)
 	    if (NIL_P(host)) {
 		host = RARRAY(sa)->ptr[2];
 	    }
+	    else {
+		/*
+		 * 4th element holds numeric form, don't resolve.
+		 * see ipaddr().
+		 */
+		hints.ai_flags |= AI_NUMERICHOST;
+	    }
 	}
 	else {
 	    rb_raise(rb_eArgError, "array size should be 3 or 4, %d given",
 		     RARRAY(sa)->len);
 	}
+	/* host */
 	if (NIL_P(host)) {
 	    hptr = NULL;
 	}
@@ -1964,11 +1917,12 @@ sock_s_getnameinfo(argc, argv)
 	    hbuf[sizeof(hbuf) - 1] = '\0';
 	    hptr = hbuf;
 	}
+	/* port */
 	if (NIL_P(port)) {
 	    strcpy(pbuf, "0");
 	    pptr = NULL;
 	}
-	else if (!NIL_P(port)) {
+	else if (FIXNUM_P(port)) {
 	    snprintf(pbuf, sizeof(pbuf), "%ld", NUM2INT(port));
 	    pptr = pbuf;
 	}
@@ -1977,8 +1931,15 @@ sock_s_getnameinfo(argc, argv)
 	    pbuf[sizeof(pbuf) - 1] = '\0';
 	    pptr = pbuf;
 	}
-	MEMZERO(&hints, struct addrinfo, 1);
-	if (strcmp(STR2CSTR(af), "AF_INET") == 0) {
+	hints.ai_socktype = (fl & NI_DGRAM) ? SOCK_DGRAM : SOCK_STREAM;
+	/* af */
+	if (NIL_P(af)) {
+	    hints.ai_family = PF_UNSPEC;
+	}
+	else if (FIXNUM_P(af)) {
+	    hints.ai_family = FIX2INT(af);
+	}
+	else if (strcmp(STR2CSTR(af), "AF_INET") == 0) {
 	    hints.ai_family = PF_INET;
 	}
 #ifdef INET6
@@ -1986,33 +1947,35 @@ sock_s_getnameinfo(argc, argv)
 	    hints.ai_family = PF_INET6;
 	}
 #endif
-	else {
-	    hints.ai_family = PF_UNSPEC;
-	}
 	error = getaddrinfo(hptr, pptr, &hints, &res);
-	if (error) {
-	    rb_raise(rb_eSocket, "%s", gai_strerror(error));
-	}
+	if (error) goto error_exit;
 	sap = res->ai_addr;
     }
     else {
 	rb_raise(rb_eTypeError, "expecting String or Array");
     }
 
-    fl = 0;
-    if (!NIL_P(flags)) {
-	fl = NUM2INT(flags);
-    }
-
     error = getnameinfo(sap, SA_LEN(sap), hbuf, sizeof(hbuf),
 			pbuf, sizeof(pbuf), fl);
-    if (error) {
-	rb_raise(rb_eSocket, "%s", gai_strerror(error));
-    }
-    if (res)
-	freeaddrinfo(res);
+    if (error) goto error_exit;
+    for (r = res->ai_next; r; r = r->ai_next) {
+	char hbuf2[1024], pbuf2[1024];
 
+	sap = r->ai_addr;
+	error = getnameinfo(sap, SA_LEN(sap), hbuf2, sizeof(hbuf2),
+			    pbuf2, sizeof(pbuf2), fl);
+	if (error) goto error_exit;
+	if (strcmp(hbuf, hbuf2) != 0|| strcmp(pbuf, pbuf2) != 0) {
+	    freeaddrinfo(res);
+	    rb_raise(rb_eSocket, "sockaddr resolved to multiple nodename");
+	}
+    }
+    freeaddrinfo(res);
     return rb_assoc_new(rb_tainted_str_new2(hbuf), rb_tainted_str_new2(pbuf));
+
+  error_exit:
+    if (res) freeaddrinfo(res);
+    rb_raise(rb_eSocket, "%s", gai_strerror(error));
 }
 
 static VALUE mConst;
@@ -2173,12 +2136,6 @@ Init_socket()
 #ifdef PF_INET6
     sock_define_const("PF_INET6", PF_INET6);
 #endif
-
-    sock_define_const("LOOKUP_INET", LOOKUP_ORDER_INET);
-    sock_define_const("LOOKUP_INET6", LOOKUP_ORDER_INET6);
-    sock_define_const("LOOKUP_UNSPEC", LOOKUP_ORDER_UNSPEC);
-    rb_define_singleton_method(rb_cBasicSocket, "lookup_order", lookup_order_get, 0);
-    rb_define_singleton_method(rb_cBasicSocket, "lookup_order=", lookup_order_set, 1);
 
     sock_define_const("MSG_OOB", MSG_OOB);
 #ifdef MSG_PEEK

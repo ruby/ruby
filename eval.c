@@ -4618,7 +4618,7 @@ is_absolute_path(path)
     const char *path;
 {
     if (path[0] == '/') return 1;
-# if defined(MSDOS) || defined(NT) || defined(__human68k__) || defined(__EMX__)
+# if defined DOSISH
     if (path[0] == '\\') return 1;
     if (strlen(path) > 2 && path[1] == ':') return 1;
 # endif
