@@ -1,3 +1,7 @@
+Tue Feb 13 17:00:18 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/http.rb: supports HTTP 1.0 server.
+
 Tue Feb 13 01:13:43 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (primary): preserve and clear in_single and in_def using

@@ -1,6 +1,6 @@
 =begin
 
-= net/http.rb version 1.1.32
+= net/http.rb version 1.1.33
 
 maintained by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 This file is derived from "http-access.rb".
@@ -474,6 +474,9 @@ module Net
 
       resp = yield
 
+      if @command.http_version == '1.0' then
+        @seems_1_0 = true
+      end
       if keep_alive? header, resp then
         if @socket.closed? then
           @seems_1_0 = true
