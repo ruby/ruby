@@ -201,6 +201,7 @@ rb_str_new4(orig)
     else {
 	str = str_new4(klass, orig);
     }
+    OBJ_INFECT(str, orig);
     OBJ_FREEZE(str);
     return str;
 }

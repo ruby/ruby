@@ -11,6 +11,7 @@
 **********************************************************************/
 
 #include "ruby.h"
+#include "env.h"
 
 VALUE rb_cStruct;
 
@@ -118,7 +119,7 @@ static VALUE
 rb_struct_ref(obj)
     VALUE obj;
 {
-    return rb_struct_getmember(obj, rb_frame_last_func());
+    return rb_struct_getmember(obj, ruby_frame->orig_func);
 }
 
 static VALUE rb_struct_ref0(obj) VALUE obj; {return RSTRUCT(obj)->ptr[0];}
@@ -159,18 +160,20 @@ rb_struct_set(obj, val)
     VALUE obj, val;
 {
     VALUE members, slot;
+    ID id;
     long i;
 
     members = rb_struct_members(obj);
     rb_struct_modify(obj);
+    id = ruby_frame->orig_func;
     for (i=0; i<RARRAY(members)->len; i++) {
 	slot = RARRAY(members)->ptr[i];
-	if (rb_id_attrset(SYM2ID(slot)) == rb_frame_last_func()) {
+	if (rb_id_attrset(SYM2ID(slot)) == id) {
 	    return RSTRUCT(obj)->ptr[i] = val;
 	}
     }
-    rb_name_error(rb_frame_last_func(), "`%s' is not a struct member",
-		  rb_id2name(rb_frame_last_func()));
+    rb_name_error(ruby_frame->last_func, "`%s' is not a struct member",
+		  rb_id2name(id));
     return Qnil;		/* not reached */
 }
 
