@@ -8202,6 +8202,7 @@ static VALUE
 rb_thread_join_m(argc, argv, thread)
     int argc;
     VALUE *argv;
+    VALUE thread;
 {
     VALUE limit;
     double delay = DELAY_INFTY;
