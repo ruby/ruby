@@ -1,3 +1,9 @@
+Thu Feb  8 21:27:24 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* lib/mkmf.rb (install_rb): fix handling of relative path.
+
+	* lib/mkmf.rb (create_makefile): add srcdir.
+
 Thu Feb  8 02:22:09 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/http.rb: join HTTPReadResponse into HTTPResponse again.
