@@ -281,9 +281,9 @@ rb_gc_mark_trap_list()
 #endif /* MACOS_UNUSE_SIGNAL */
 }
 
-#ifdef POSIX_SIGNAL
 typedef RETSIGTYPE (*sighandler_t)_((int));
 
+#ifdef POSIX_SIGNAL
 static sighandler_t
 ruby_signal(signum, handler)
     int signum;
