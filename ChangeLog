@@ -1,3 +1,8 @@
+Mon Dec 20 03:30:40 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/cgi/session.rb (CGI::Session#initialize): empty session id was
+	  used if request had no session key.  fixed: [ruby-core:03981]
+
 Mon Dec 20 00:16:54 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/encodings/SHIFT_JIS.rb: fixed LoadError bug.

@@ -253,7 +253,8 @@ class CGI
 	end
       end
       unless session_id
-	if session_id = request[session_key] 
+	if request.key?(session_key)
+	  session_id = request[session_key]
 	  session_id = session_id.read if session_id.respond_to?(:read)
 	end
 	unless session_id
