@@ -2389,7 +2389,7 @@ rb_io_mode_flags(mode)
     return flags;
 }
 
-static int
+int
 rb_io_modenum_flags(mode)
     int mode;
 {

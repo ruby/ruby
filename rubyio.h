@@ -65,6 +65,7 @@ int rb_getc _((FILE*));
 long rb_io_fread _((char *, long, FILE *));
 long rb_io_fwrite _((const char *, long, FILE *));
 int  rb_io_mode_flags _((const char*));
+int  rb_io_modenum_flags _((int));
 void rb_io_check_writable _((OpenFile*));
 void rb_io_check_readable _((OpenFile*));
 int rb_io_fptr_finalize _((OpenFile*));

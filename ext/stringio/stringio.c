@@ -201,7 +201,7 @@ strio_initialize(argc, argv, self)
 {
     struct StringIO *ptr = check_strio(self);
     VALUE string, mode;
-    const char* m;
+    int trunc = Qfalse;
 
     if (!ptr) {
 	DATA_PTR(self) = ptr = strio_alloc();
@@ -209,21 +209,23 @@ strio_initialize(argc, argv, self)
     rb_call_super(0, 0);
     switch (rb_scan_args(argc, argv, "02", &string, &mode)) {
       case 2:
-	StringValue(mode);
+	if (FIXNUM_P(mode)) {
+	    int flags = FIX2INT(mode);
+	    ptr->flags = rb_io_modenum_flags(flags);
+	    trunc = flags & O_TRUNC;
+	}
+	else {
+	    const char *m = StringValueCStr(mode);
+	    ptr->flags = rb_io_mode_flags(m);
+	    trunc = *m == 'w';
+	}
 	StringValue(string);
-	if (!(m = RSTRING(mode)->ptr)) m = "";
-	ptr->flags = rb_io_mode_flags(m);
 	if ((ptr->flags & FMODE_WRITABLE) && OBJ_FROZEN(string)) {
 	    errno = EACCES;
 	    rb_sys_fail(0);
 	}
-	switch (*m) {
-	  case 'a':
-	    ptr->flags |= FMODE_APPEND;
-	    break;
-	  case 'w':
+	if (trunc) {
 	    rb_str_resize(string, 0);
-	    break;
 	}
 	break;
       case 1:
