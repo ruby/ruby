@@ -1,3 +1,7 @@
+Wed Oct 31 16:59:25 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (exec_under): should initialize ruby_frame->self;
+
 Wed Oct 31 15:09:28 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (POP_VARS): should not set DVAR_DONT_RECYCLE if _old
