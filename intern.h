@@ -141,6 +141,7 @@ VALUE rb_f_lambda _((void));
 VALUE rb_protect _((VALUE (*)(), VALUE, int*));
 void rb_set_end_proc _((void (*)(), VALUE));
 void rb_mark_end_proc _((void));
+void rb_exec_end_proc _((void));
 void ruby_finalize _((void));
 void ruby_stop _((int));
 void rb_gc_mark_threads _((void));
