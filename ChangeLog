@@ -1,3 +1,8 @@
+Mon May  7 15:45:48 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* lib/ftools.rb (syscopy): chmod destination file only if
+	  it does not exist.
+
 Thu May  3 03:41:01 2001  SHIROYAMA Takayuki <psi@fortune.nest.or.jp>
 
 	* configure.in: get --enable-shared to work on MacOS X.
