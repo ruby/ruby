@@ -1,3 +1,17 @@
+Wed Sep  8 15:19:49 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tcltklib/tcltklib.c (ip_init): cannot create a IP at level 4
+
+	* ext/tk/lib/multi-tk.rb: improve 'exit' operation, security check, 
+	  and error treatment
+
+	* ext/tk/lib/multi-tk.rb: allow a trusted slave IP to create slave IPs
+
+	* ext/tk/lib/tk/listbox.rb: add TkListbox#value, value=, clear,	and 
+	  erase 
+
+	* ext/tk/lib/tk/text.rb: add TkText#clear and erase
+
 Mon Sep  6 11:08:50 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/tk/lib/tk/menu.rb(TkOptionMenubutton#insert): call correct method

@@ -120,6 +120,12 @@ class TkText<TkTextWin
     val
   end
 
+  def clear
+    tk_send_without_enc('delete', "1.0", 'end')
+    self
+  end
+  alias erase clear
+
   def _addcmd(cmd)
     @cmdtbl.push cmd
   end
