@@ -25,7 +25,7 @@
 
 static VALUE sPasswd, sGroup;
 
-char *getenv();
+char *getenv _((const char *));
 char *getlogin();
 
 static VALUE
