@@ -6585,6 +6585,13 @@ proc_to_s(self, other)
 }
 
 static VALUE
+proc_to_proc(proc)
+    VALUE proc;
+{
+    return proc;
+}
+
+static VALUE
 block_pass(self, node)
     VALUE self;
     NODE *node;
@@ -6605,12 +6612,14 @@ block_pass(self, node)
 	POP_ITER();
 	return result;
     }
-    b = rb_check_convert_type(block, T_DATA, "Proc", "to_proc");
-    if (!rb_obj_is_proc(b)) {
-	rb_raise(rb_eTypeError, "wrong argument type %s (expected Proc)",
-		 rb_class2name(CLASS_OF(block)));
+    if (!rb_obj_is_proc(block)) {
+	b = rb_check_convert_type(block, T_DATA, "Proc", "to_proc");
+	if (!rb_obj_is_proc(b)) {
+	    rb_raise(rb_eTypeError, "wrong argument type %s (expected Proc)",
+		     rb_class2name(CLASS_OF(block)));
+	}
+	block = b;
     }
-    block = b;
 
     if (rb_safe_level() >= 1 && OBJ_TAINTED(block)) {
 	if (rb_safe_level() > proc_get_safe_level(block)) {
@@ -7081,6 +7090,7 @@ Init_Proc()
     rb_define_method(rb_cProc, "[]", proc_call, -2);
     rb_define_method(rb_cProc, "==", proc_eq, 1);
     rb_define_method(rb_cProc, "to_s", proc_to_s, 0);
+    rb_define_method(rb_cProc, "to_proc", proc_to_proc, 0);
     rb_define_global_function("proc", rb_f_lambda, 0);
     rb_define_global_function("lambda", rb_f_lambda, 0);
     rb_define_global_function("binding", rb_f_binding, 0);

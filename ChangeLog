@@ -1,3 +1,9 @@
+Wed Apr 24 14:56:46 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* eval.c (proc_to_proc): return self. [new]
+
+	* eval.c (block_pass): no need to convert if block is Proc.
+
 Wed Apr 24 14:21:41 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in: set size of the initial stack from
