@@ -1,3 +1,8 @@
+Sun Aug 24 00:44:03 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (file_expand_path): performance improvement.
+	  [ruby-talk:79748]
+
 Sat Aug 23 18:56:53 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/nkf/nkf.c (rb_nkf_putchar): should use rb_str_resize() to just
@@ -513,7 +518,7 @@ add-log-time-format: (lambda ()
   	 (diff (+ (cadr time) 32400))
 	  (lo (% diff 65536))
 	  (hi  (+ (car time) (/ diff 65536))))
-    (format-time-string "%a %b %e %H:%M:%S %Y" (list hi lo) t)))
+	  (format-time-string "%a %b %e %H:%M:%S %Y" (list hi lo) t)))
 indent-tabs-mode: t
 tab-width: 8
 end:

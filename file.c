@@ -1527,14 +1527,16 @@ chompdirsep(path)
     return (char *)path;
 }
 
-#define BUFCHECK(cond) while (cond) {\
+#define BUFCHECK(cond) do {\
     long bdiff = p - buf;\
-    buflen *= 2;\
+    while (cond) {\
+	buflen *= 2;\
+    }\
     rb_str_resize(result, buflen);\
     buf = RSTRING(result)->ptr;\
     p = buf + bdiff;\
     pend = buf + buflen;\
-}
+} while (0)
 
 #define BUFINIT() (\
     p = buf = RSTRING(result)->ptr,\
@@ -1552,7 +1554,7 @@ file_expand_path(fname, dname, result)
     VALUE fname, dname, result;
 {
     char *s, *buf, *b, *p, *pend, *root;
-    long buflen;
+    long buflen, dirlen;
     int tainted;
 
     s = StringValuePtr(fname);
@@ -1566,7 +1568,8 @@ file_expand_path(fname, dname, result)
 	    if (!dir) {
 		rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding `%s'", s);
 	    }
-	    BUFCHECK(strlen(dir) > buflen);
+	    dirlen = strlen(dir);
+	    BUFCHECK(dirlen > buflen);
 	    strcpy(buf, dir);
 #if defined DOSISH || defined __CYGWIN__
 	    for (p = buf; *p; p = CharNext(p)) {
@@ -1596,7 +1599,8 @@ file_expand_path(fname, dname, result)
 		endpwent();
 		rb_raise(rb_eArgError, "user %s doesn't exist", buf);
 	    }
-	    BUFCHECK(strlen(pwPtr->pw_dir) > buflen);
+	    dirlen = strlen(pwPtr->pw_dir);
+	    BUFCHECK(dirlen > buflen);
 	    strcpy(buf, pwPtr->pw_dir);
 	    p = buf + strlen(pwPtr->pw_dir);
 	    endpwent();
@@ -1644,7 +1648,8 @@ file_expand_path(fname, dname, result)
 	    char *dir = my_getcwd();
 
 	    tainted = 1;
-	    BUFCHECK(strlen(dir) > buflen);
+	    dirlen = strlen(dir);
+	    BUFCHECK(dirlen > buflen);
 	    strcpy(buf, dir);
 	    free(dir);
 	}
