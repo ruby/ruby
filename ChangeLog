@@ -1,3 +1,7 @@
+Sat Jul 19 02:00:39 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* eval.c (rb_attr): extra calls of method_added.  [ruby-talk:76361]
+
 Fri Jul 18 18:44:22 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* lib/mkmf.rb (init_mkmf): clear $INSTALLFILES.  [ruby-dev:20727]

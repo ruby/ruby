@@ -560,13 +560,11 @@ rb_attr(klass, id, read, write, ex)
     attriv = rb_intern(buf);
     if (read) {
 	rb_add_method(klass, id, NEW_IVAR(attriv), noex);
-	rb_funcall(klass, added, 1, ID2SYM(id));
     }
     if (write) {
 	sprintf(buf, "%s=", name);
 	id = rb_intern(buf);
 	rb_add_method(klass, id, NEW_ATTRSET(attriv), noex);
-	rb_funcall(klass, added, 1, ID2SYM(id));
     }
 }
 
