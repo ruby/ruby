@@ -1905,8 +1905,8 @@ The hash keys are case sensitive. Ask the samples.
         else
           at_exit() do
             if defined?(CGI_PARAMS)
-              remove_const(:CGI_PARAMS)
-              remove_const(:CGI_COOKIES)
+              self.class.class_eval("remove_const(:CGI_PARAMS)")
+              self.class.class_eval("remove_const(:CGI_COOKIES)")
             end
           end
         end
