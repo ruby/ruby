@@ -2241,7 +2241,8 @@ read_escape()
 }
 
 static int
-tokadd_escape()
+tokadd_escape(term)
+    int term;
 {
     int c;
 
@@ -2302,7 +2303,7 @@ tokadd_escape()
 	tokadd('\\'); tokadd('c');
       escaped:
 	if ((c = nextc()) == '\\') {
-	    return tokadd_escape();
+	    return tokadd_escape(term);
 	}
 	else if (c == -1) goto eof;
 	tokadd(c);
@@ -2314,7 +2315,8 @@ tokadd_escape()
 	return -1;
 
       default:
-	tokadd('\\');
+	if (c != term)
+	    tokadd('\\');
 	tokadd(c);
     }
     return 0;
@@ -2345,7 +2347,7 @@ parse_regx(term, paren)
 	    continue;
 
 	  case '\\':
-	    if (tokadd_escape() < 0)
+	    if (tokadd_escape(term) < 0)
 		return 0;
 	    continue;
 

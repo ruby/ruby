@@ -214,7 +214,7 @@ rb_reg_expr_str(str, s, len)
     const char *p, *pend;
     int need_escape = 0;
 
-    p = s; pend = p + len;
+    p = s; pend = p + len; 
     while (p<pend) {
 	if (*p == '/' || (!ISPRINT(*p) && !ismbchar(*p))) {
 	    need_escape = 1;
