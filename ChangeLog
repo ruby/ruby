@@ -1,3 +1,7 @@
+Tue Jul 29 22:36:50 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/smtp.rb (send0): do taint check only when $SAFE > 0
+
 Tue Jul 29 19:20:34 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/fileutils.rb (install): support preserve timestamp.

@@ -490,9 +490,11 @@ module Net
     def send0( from_addr, to_addrs )
       raise IOError, 'closed session' unless @socket
       raise ArgumentError, 'mail destination does not given' if to_addrs.empty?
-      raise SecurityError, 'tainted from_addr' if from_addr.tainted?
-      to_addrs.each do |to| 
-        raise SecurityError, 'tainted to_addr' if to.tainted?
+      if $SAFE > 0
+        raise SecurityError, 'tainted from_addr' if from_addr.tainted?
+        to_addrs.each do |to| 
+          raise SecurityError, 'tainted to_addr' if to.tainted?
+        end
       end
 
       mailfrom from_addr
