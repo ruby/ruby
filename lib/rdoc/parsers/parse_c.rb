@@ -44,6 +44,27 @@
   #
   # C classes can be diagramed (see /tc/dl/ruby/ruby/error.c), and RDoc
   # integrates C and Ruby source into one tree
+  #
+  # The comment blocks may include special direcives:
+  #
+  # [Document-class: <i>name</i>]
+  #   This comment block is documentation for the given class. Use this
+  #   when the <tt>Init_xxx</tt> method is not named after the class.
+  #
+  # [Document-method: <i>name</i>]
+  #   This comment documents the named method. Use when RDoc cannot outomatically
+  #   find the method from it's declaration
+  #
+  # [call-seq:  <i>text up to an empty line</i>]
+  #   Because C source doesn't give descripive names to Ruby-level parameters,
+  #   you need to document the calling sequence explicitly
+  #
+  # In additon, RDoc assumes by default that the C method implementing a 
+  # Ruby function is in the same source file as the rb_define_method call.
+  # If this isn't the case, add the comment 
+  #
+  #    rb_define_method(....);  // in: filename
+  #
 
   # Classes and modules built in to the interpreter. We need
   # these to define superclasses of user objects

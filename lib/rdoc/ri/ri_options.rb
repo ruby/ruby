@@ -120,7 +120,7 @@ module RI
               ri  zip
 
           Note that shell quoting may be required for method names
-          containing puncuation:
+          containing punctuation:
 
               ri 'Array.[]'
               ri compact\\!
@@ -150,7 +150,7 @@ module RI
             end
             puts
           end
-          puts "Options may also be passed in the 'RI' environment varaible"
+          puts "Options may also be passed in the 'RI' environment variable"
           exit 0
         end
       end

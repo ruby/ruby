@@ -1,3 +1,8 @@
+Thu Feb 19 02:34:28 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/markup/simple_markup/preprocess.rb (SM::PreProcess::include_file): 
+	  Only strip comment markers if all lines start with comments.
+
 Thu Feb 19 03:05:49 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/strscan/strscan.c: StringScanner#restsize is obsolete;
