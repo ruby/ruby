@@ -59,7 +59,7 @@ extern "C" {
 #define VP_ROUND_HALF_DOWN  4
 #define VP_ROUND_CEIL       5
 #define VP_ROUND_FLOOR      6
-#define VP_ROUND_EVEN       7
+#define VP_ROUND_HALF_EVEN  7
 
 #define VP_SIGN_NaN                0 /* NaN                      */
 #define VP_SIGN_POSITIVE_ZERO      1 /* Positive zero            */
@@ -121,7 +121,7 @@ VP_EXPORT double VpGetDoubleNegZero(void);
 VP_EXPORT U_LONG VpGetPrecLimit(void);
 VP_EXPORT U_LONG VpSetPrecLimit(U_LONG n);
 
-/* Computation mode */
+/* Round mode */
 VP_EXPORT unsigned long VpGetRoundMode(void);
 VP_EXPORT unsigned long VpSetRoundMode(unsigned long n);
 

@@ -156,18 +156,22 @@ Suppose the return value of the mode method is f,then
 <B>[ROUND error control]</B><P>
 Rounding operation can be controlled as:
 <BLOCKQUOTE>
-f = BigDecimal::mode(BigDecimal::COMP_MODE,flag)
+f = BigDecimal::mode(BigDecimal::ROUND_MODE,flag)
 </BLOCKQUOTE>
 where flag must be one of:
 <TABLE>
-<TR><TD>COMP_MODE_TRUNCATE</TD><TD>truncate</TD></TR>
-<TR><TD>COMP_MODE_ROUND</TD><TD>round,default</TD></TR>
-<TR><TD>COMP_MODE_CEIL</TD><TD>ceil</TD></TR>
-<TR><TD>COMP_MODE_FLOOR</TD><TD>floor</TD></TR>
-<TR><TD>COMP_MODE_EVEN</TD><TD>Banker's rounding</TD></TR>
+
+<TR><TD>ROUND_UP</TD><TD>round away from zero.</TD></TR>
+<TR><TD>ROUND_DOWN</TD><TD>round towards zero(truncate).</TD></TR>
+<TR><TD>ROUND_HALF_UP</TD><TD>round up if the digit &gt;= 5 otherwise truncated(default).</TD></TR>
+<TR><TD>ROUND_HALF_DOWN</TD><TD>round up if the digit &gt;= 6 otherwise truncated.</TD></TR>
+<TR><TD>ROUND_HALF_EVEN</TD><TD>round towards the even neighbor(Banker's rounding).
+<TR><TD>ROUND_CEILING</TD><TD>round towards positive infinity(ceil).</TD></TR>
+<TR><TD>ROUND_FLOOR</TD><TD>round towards negative infinity(floor).</TD></TR>
 </TABLE>
-nil is returned if any argument is illegal.<BR>
-The digit location for rounding operation can not be specified by mode method,
+New rounding mode is returned,nil is returned if any argument is not an integer.
+Bad specification is ignored.<BR>
+The digit location for rounding operation can not be specified by this mode method,
 use truncate/round/ceil/floor/add/sub/mult/div mthods for each instance instead.
 </BLOCKQUOTE>
 
@@ -286,8 +290,8 @@ of the target digit can be given.<BR>
 If n> 0,then the (n+1)th digit counted from the decimal point in fraction part is processed(resulting number of fraction part digits is less than or equal to n).<BR>
 If n<0,then the n-th digit counted from the decimal point in integer part is processed(at least n 0's are placed from the decimal point to left).
 <CODE><PRE>
- c = BigDecimal::new("1.23456").floor(4)   #  ==> 1.2345
- c = BigDecimal::new("15.23456").floor(-1) #  ==> 10.0
+ c = BigDecimal("1.23456").floor(4)   #  ==> 1.2345
+ c = BigDecimal("15.23456").floor(-1) #  ==> 10.0
 </PRE></CODE>
 
 </BLOCKQUOTE>
@@ -304,37 +308,33 @@ of the target digit can be given.<BR>
 If n>0,then the (n+1)th digit counted from the decimal point in fraction part is processed(resulting number of fraction part digits is less than or equal to n).<BR>
 If n<0,then the n-th digit counted from the decimal point in integer part is processed(at least n 0's are placed from the decimal point to left).
 <CODE><PRE>
- c = BigDecimal::new("1.23456").ceil(4)   # ==> 1.2346
- c = BigDecimal::new("15.23456").ceil(-1) # ==> 20.0
+ c = BigDecimal("1.23456").ceil(4)   # ==> 1.2346
+ c = BigDecimal("15.23456").ceil(-1) # ==> 20.0
 </PRE></CODE>
 
 </BLOCKQUOTE>
 <LI><B>round[(n[,b])]</B></LI><BLOCKQUOTE>
 c = a.round<BR>
-round a to the nearest 1ÅD<BR>
+round a to the nearest 1(default)ÅD<BR>
 <CODE><PRE>
  c = BigDecimal("1.23456").round  #  ==> 1
  c = BigDecimal("-1.23456").round #  ==> -1
 </PRE></CODE>
+The rounding operation changes according to BigDecimal::mode(BigDecimal::ROUND_MODE,flag) if specified.
 
 As shown in the following example,an optional integer argument (n) specifying the position 
 of the target digit can be given.<BR>
-If n>0,then the (n+1)th digit counted from the decimal point in fraction part is processed(resulting number of fraction part digits is less than or equal to n).<BR>
+If n>0,then the (n+1)th digit counted from the decimal point in fraction part is processed(resulting number of fraction  part digits is less than or equal to n).<BR>
 If n<0,then the n-th digit counted from the decimal point in integer part is processed(at least n 0's are placed from the decimal point to left).
 <CODE><PRE>
 c = BigDecimal::new("1.23456").round(4)   #  ==> 1.2346
 c = BigDecimal::new("15.23456").round(-1) #  ==> 20.0
 </PRE></CODE>
 
-If the second optional argument b is given with the non-zero value(default is zero) then 
-so called Banker's rounding is performed.<BR>
-Suppose the digit p is to be rounded,then:<BR>
- If p<5 then p is truncated<BR>
- If p>5 then p is rounded up<BR>
- If p is 5 then round up operation is taken only when the left hand side digit of p is odd.
+Rounding operation can be specified by setting the second optional argument b with the valid ROUND_MODE.<BR>
 <CODE><PRE>
-c = BigDecimal::new("1.23456").round(3,1)   #  ==> 1.234
-c = BigDecimal::new("1.23356").round(3,1)   #  ==> 1.234
+c = BigDecimal::new("1.23456").round(3,BigDecimal::ROUND_HALF_EVEN)   #  ==> 1.234
+c = BigDecimal::new("1.23356").round(3,BigDecimal::ROUND_HALF_EVEN)   #  ==> 1.234
 </PRE></CODE>
 
 </BLOCKQUOTE>
@@ -728,11 +728,11 @@ As +,-,and * are always exact(no round operation is performed unless BigDecimal.
 which means more momories are required to keep computation results.
 But,the division such as c=1.0/3.0 will always be rounded.<BR>
 
-<H3>2. assign,add,sub,mult,div</H3>
+<H3>2. add,sub,mult,div</H3>
 The length of the significant digits obtained from +,-,*,/ 
 is always defined by that of right and left side of the operator.
 To specify the length of the significant digits by your self,
-use methos assign,add,sub,mult,div.
+use methos add,sub,mult,div.
 <CODE><PRE>
  BigDecimal("2").div(3,12) # 2.0/3.0 => 0.6666666666 67E0
 </PRE></CODE>

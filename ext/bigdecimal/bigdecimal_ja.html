@@ -166,22 +166,26 @@ EXCEPTION_NaNが設定されているという意味です。<BR>
 <B>[丸め処理指定]</B><P>
 計算途中の丸め操作の指定ができます。
 <BLOCKQUOTE>
-f = BigDecimal::mode(BigDecimal::COMP_MODE,flag)
+f = BigDecimal::mode(BigDecimal::ROUND_MODE,flag)
 </BLOCKQUOTE>
 の形式で指定します。<BR>
 ここで、flag は以下(括弧内は対応するインスタンスメソッド)の一つを指定します。
 <TABLE>
-<TR><TD>COMP_MODE_TRUNCATE</TD><TD>全て切り捨てます(truncate)。</TD></TR>
-<TR><TD>COMP_MODE_ROUND</TD><TD>四捨五入します(round、デフォルト)。</TD></TR>
-<TR><TD>COMP_MODE_CEIL</TD><TD>数値の大きい方に繰り上げます(ceil)。</TD></TR>
-<TR><TD>COMP_MODE_FLOOR</TD><TD>数値の小さい方に繰り下げます(floor)。</TD></TR>
-<TR><TD>COMP_MODE_EVEN</TD><TD>四捨六入します。５の時は上位１桁が奇数の時のみ繰り上げます(Banker's rounding)。</TD></TR>
+<TR><TD>ROUND_UP</TD><TD>全て切り上げます。</TD></TR>
+<TR><TD>ROUND_DOWN</TD><TD>全て切り捨てます(truncate)。</TD></TR>
+<TR><TD>ROUND_HALF_UP</TD><TD>四捨五入します(デフォルト)。</TD></TR>
+<TR><TD>ROUND_HALF_DOWN</TD><TD>五捨六入します。</TD></TR>
+<TR><TD>ROUND_HALF_EVEN</TD><TD>四捨六入します。５の時は上位１桁が奇数の時のみ繰り上げます(Banker's rounding)。</TD></TR>
+<TR><TD>ROUND_CEILING</TD><TD>数値の大きい方に繰り上げます(ceil)。</TD></TR>
+<TR><TD>ROUND_FLOOR</TD><TD>数値の小さい方に繰り下げます(floor)。</TD></TR>
+
 </TABLE>
-戻り値は指定前の flag の値です。
-引数に正しくないものが指定された場合は nil が返ります。<BR>
+戻り値は指定後の flag の値です。
+引数に数値以外が指定された場合は nil が返ります。正しくない ROUND_MODE が指定されたときは
+無視され、現状の ROUND_MODE が返ります。<BR>
 mode メソッドでは丸め操作の位置をユーザが指定することはできません。
 丸め操作と位置を自分で制御したい場合は truncate/round/ceil/floor や 
-add/sub/mult といったインスタンスメソッドを使用して下さい。
+add/sub/mult/div といったインスタンスメソッドを使用して下さい。
 </BLOCKQUOTE>
 <LI><B>limit([n])</B></LI><BLOCKQUOTE>
 生成されるBigDecimalオブジェクトの最大桁数をn桁に制限します。
@@ -192,7 +196,7 @@ n を指定しない場合は、現状の最大桁数が返ります。<BR>
 丸め処理が実行されます。
 ただし、実際には n より若干大きい
 桁数が確保されます。また、limit による桁数制限は(無制限を除いて)、
-インスタンスメソッド (truncate/round/ceil/floor/add/sub/mult) より
+インスタンスメソッド (truncate/round/ceil/floor/add/sub/mult/div) より
 優先されるので注意が必要です。<BR>
 mf = BigDecimal::limit(n)<BR>
 </BLOCKQUOTE>
@@ -296,8 +300,8 @@ c = BigDecimal("-1.23456").floor #  ==> -2
 n>=0 なら、小数点以下 n+1 位の数字を操作します(少数点以下を、最大 n 桁にします)。<BR>
 n が負のときは小数点以上 n 桁目を操作します(小数点位置から左に少なくとも n 個の 0 が並びます)。<BR>
 <CODE><PRE>
- c = BigDecimal::new("1.23456").floor(4)   #  ==> 1.2345
- c = BigDecimal::new("15.23456").floor(-1) #  ==> 10.0
+ c = BigDecimal("1.23456").floor(4)   #  ==> 1.2345
+ c = BigDecimal("15.23456").floor(-1) #  ==> 10.0
 </PRE></CODE>
 
 </BLOCKQUOTE>
@@ -313,32 +317,35 @@ c = BigDecimal("-1.23456").ceil #  ==> -1
 n>=0 なら、小数点以下 n+1 位の数字を操作します(少数点以下を、最大 n 桁にします)。<BR>
  n が負のときは小数点以上 n 桁目をを操作します(小数点位置から左に少なくとも n 個の 0 が並びます)。<BR>
 <CODE><PRE>
- c = BigDecimal::new("1.23456").ceil(4)   # ==> 1.2346
- c = BigDecimal::new("15.23456").ceil(-1) # ==> 20.0
+ c = BigDecimal("1.23456").ceil(4)   # ==> 1.2346
+ c = BigDecimal("15.23456").ceil(-1) # ==> 20.0
 </PRE></CODE>
 
 </BLOCKQUOTE>
 <LI><B>round[(n[,b])]</B></LI><BLOCKQUOTE>
 c = a.round<BR>
-小数点以下第一位の数を四捨五入して整数（BigDecimal 値）にします。<BR>
+
+クラスメソッド BigDecimal::mode(BigDecimal::ROUND_MODE,flag) で指定した 
+ROUND_MODE に従って丸め操作を実行します。
+BigDecimal::mode(BigDecimal::ROUND_MODE,flag) で何も指定せず、かつ、引数
+を指定しない場合は「小数点以下第一位の数を四捨五入して整数（BigDecimal 値）」にします。<BR>
 <CODE><PRE>
  c = BigDecimal("1.23456").round  #  ==> 1
  c = BigDecimal("-1.23456").round #  ==> -1
 </PRE></CODE>
 
 以下のように引数を与えて、小数点以下 n+1 位の数字を操作することもできます。<BR>
-n が正の時は、小数点以下 n+1 位の数字を四捨五入します(少数点以下を、最大 n 桁にします)。<BR>
-n が負のときは小数点以上 n 桁目をを操作します(小数点位置から左に少なくとも n 個の 0 が並びます)。
+n が正の時は、小数点以下 n+1 位の数字を丸めます(少数点以下を、最大 n 桁にします)。<BR>
+n が負のときは小数点以上 n 桁目を丸めます(小数点位置から左に少なくとも n 個の 0 が並びます)。
 <CODE><PRE>
-c = BigDecimal::new("1.23456").round(4)   #  ==> 1.2346
-c = BigDecimal::new("15.23456").round(-1) #  ==> 20.0
+c = BigDecimal("1.23456").round(4)   #  ==> 1.2346
+c = BigDecimal("15.23456").round(-1) #  ==> 20.0
 </PRE></CODE>
-２番目の引数（デフォルトは 0）にゼロ以外を指定すると、いわゆる Banker's rounding になります。<BR>
- Banker's rounding とは、四捨五入する数字を p として、p &lt; 5 なら切り捨て p &gt; 5 なら切り上げ、
-p がちょうど５のときだけは切り上げ先の数字＋１が偶数になるときだけ切り上げます。
+２番目の引数を指定すると、BigDecimal#mode の指定を無視して、指定された方法で
+丸め操作を実行します。
 <CODE><PRE>
-c = BigDecimal::new("1.23456").round(3,1)   #  ==> 1.234
-c = BigDecimal::new("1.23356").round(3,1)   #  ==> 1.234
+c = BigDecimal("1.23456").round(3,BigDecimal::ROUND_HALF_EVEN)   #  ==> 1.234
+c = BigDecimal("1.23356").round(3,BigDecimal::ROUND_HALF_EVEN)   #  ==> 1.234
 </PRE></CODE>
 
 </BLOCKQUOTE>
@@ -349,8 +356,8 @@ c = a.truncate<BR>
 n が正の時は、小数点以下 n+1 位の数字を切り捨てます(少数点以下を、最大 n 桁にします)。
 n が負のときは小数点以上 n 桁目をを操作します(小数点位置から左に少なくとも n 個の 0 が並びます)。<BR>
 <CODE><PRE>
-c = BigDecimal::new("1.23456").truncate(4)   #  ==> 1.2345
-c = BigDecimal::new("15.23456").truncate(-1) #  ==> 10.0
+c = BigDecimal("1.23456").truncate(4)   #  ==> 1.2345
+c = BigDecimal("15.23456").truncate(-1) #  ==> 10.0
 </PRE></CODE>
 
 </BLOCKQUOTE>
