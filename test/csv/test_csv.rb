@@ -1,5 +1,4 @@
-require 'test/unit/testsuite'
-require 'test/unit/testcase'
+require 'test/unit'
 require 'tempfile'
 require 'fileutils'
 
@@ -15,174 +14,20 @@ end
 
 
 module CSVTestSupport
-  def d(data, is_null = false)
-    CSV::Cell.new(data.to_s, is_null)
-  end
-end
-
-
-class TestCSVCell < Test::Unit::TestCase
-  @@colData = ['', nil, true, false, 'foo', '!' * 1000]
-
-  def test_Cell_EQUAL # '=='
-    d1 = CSV::Cell.new('d', false)
-    d2 = CSV::Cell.new('d', false)
-    d3 = CSV::Cell.new('d', true)
-    d4 = CSV::Cell.new('d', true)
-    assert(d1 == d2, "Normal case.")
-    assert(d1 != d3, "RHS is null.")
-    assert(d4 != d1, "LHS is null.")
-    assert(d3 != d4, "Either is null.")
-  end
-
-  def test_Cell_match
-    d1 = CSV::Cell.new('d', false)
-    d2 = CSV::Cell.new('d', false)
-    d3 = CSV::Cell.new('d', true)
-    d4 = CSV::Cell.new('d', true)
-    assert(d1.match(d2), "Normal case.")
-    assert(!d1.match(d3), "RHS is null.")
-    assert(!d4.match(d1), "LHS is null.")
-    assert(d3.match(d4), "Either is null.")
-  end
-
-  def test_Cell_data
-    d = CSV::Cell.new()
-    @@colData.each do |v|
-      d.data = v
-      assert_equal(d.data, v, "Case: #{ v }.")
-    end
-  end
-
-  def test_Cell_data=
-    d = CSV::Cell.new()
-    @@colData.each do |v|
-      d.data = v
-      assert_equal(d.data, v, "Case: #{ v }.")
-    end
-  end
-
-  def test_Cell_is_null
-    d = CSV::Cell.new()
-    d.is_null = true
-    assert_equal(d.is_null, true, "Case: true.")
-    d.is_null = false
-    assert_equal(d.is_null, false, "Case: false.")
-  end
-
-  def test_Cell_is_null=
-    d = CSV::Cell.new()
-    d.is_null = true
-    assert_equal(d.is_null, true, "Case: true.")
-    d.is_null = false
-    assert_equal(d.is_null, false, "Case: false.")
-  end
-
-  def test_Cell_s_new
-    d1 = CSV::Cell.new()
-    assert_equal(d1.data, '', "Default: data.")
-    assert_equal(d1.is_null, true, "Default: is_null.")
-
-    @@colData.each do |v|
-      d = CSV::Cell.new(v)
-      assert_equal(d.data, v, "Data: #{ v }.")
-    end
-
-    d2 = CSV::Cell.new(nil, true)
-    assert_equal(d2.is_null, true, "Data: true.")
-    d3 = CSV::Cell.new(nil, false)
-    assert_equal(d3.is_null, false, "Data: false.")
-  end
-
-  def test_to_str
-    d = CSV::Cell.new("foo", false)
-    assert_equal("foo", d.to_str)
-    assert(/foo/ =~ d)
-    d = CSV::Cell.new("foo", true)
-    begin
-      d.to_str
-      assert(false)
-    rescue
-      # NoMethodError or NameError
-      assert(true)
-    end
-  end
-
-  def test_to_s
-    d = CSV::Cell.new("foo", false)
-    assert_equal("foo", d.to_s)
-    assert_equal("foo", "#{d}")
-    d = CSV::Cell.new("foo", true)
-    assert_equal("", d.to_s)
-    assert_equal("", "#{d}")
-  end
-end
-
-
-class TestCSVRow < Test::Unit::TestCase
-  include CSVTestSupport
-
-  def test_Row_s_match
-    c1 = CSV::Row[d(1), d(2), d(3)]
-    c2 = CSV::Row[d(1, false), d(2, false), d(3, false)]
-    assert(c1.match(c2), "Normal case.")
-
-    c1 = CSV::Row[d(1), d('foo', true), d(3)]
-    c2 = CSV::Row[d(1, false), d('bar', true), d(3, false)]
-    assert(c1.match(c2), "Either is null.")
-
-    c1 = CSV::Row[d(1), d('foo', true), d(3)]
-    c2 = CSV::Row[d(1, false), d('bar', false), d(3, false)]
-    assert(!c1.match(c2), "LHS is null.")
-
-    c1 = CSV::Row[d(1), d('foo'), d(3)]
-    c2 = CSV::Row[d(1, false), d('bar', true), d(3, false)]
-    assert(!c1.match(c2), "RHS is null.")
-
-    c1 = CSV::Row[d(1), d('', true), d(3)]
-    c2 = CSV::Row[d(1, false), d('', true), d(3, false)]
-    assert(c1.match(c2), "Either is null(empty data).")
-
-    c1 = CSV::Row[d(1), d('', true), d(3)]
-    c2 = CSV::Row[d(1, false), d('', false), d(3, false)]
-    assert(!c1.match(c2), "LHS is null(empty data).")
-
-    c1 = CSV::Row[d(1), d(''), d(3)]
-    c2 = CSV::Row[d(1, false), d('', true), d(3, false)]
-    assert(!c1.match(c2), "RHS is null(empty data).")
-
-    c1 = CSV::Row[]
-    c2 = CSV::Row[]
-    assert(c1.match(c2))
-
-    c1 = CSV::Row[]
-    c2 = CSV::Row[d(1)]
-    assert(!c1.match(c2))
-  end
-
-  def test_Row_to_a
-    r = CSV::Row[d(1), d(2), d(3)]
-    assert_equal(['1', '2', '3'], r.to_a, 'Normal case')
-
-    r = CSV::Row[d(1)]
-    assert_equal(['1'], r.to_a, '1 item')
-
-    r = CSV::Row[d(nil, true), d(2), d(3)]
-    assert_equal([nil, '2', '3'], r.to_a, 'Null in data')
-    
-    r = CSV::Row[d(nil, true), d(nil, true), d(nil, true)]
-    assert_equal([nil, nil, nil], r.to_a, 'Nulls')
-
-    r = CSV::Row[d(nil, true)]
-    assert_equal([nil], r.to_a, '1 Null')
-
-    r = CSV::Row[]
-    assert_equal([], r.to_a, 'Empty')
+  def d(data)
+    data
   end
 end
 
 
 class TestCSV < Test::Unit::TestCase
+  file = Tempfile.new("crlf")
+  file << "\n"
+  file.open
+  file.binmode
+  RSEP = file.read
+  file.close
+
   include CSVTestSupport
 
   class << self
@@ -221,17 +66,17 @@ class TestCSV < Test::Unit::TestCase
   }
 
   @@fullCSVData = {
-    [d('', true)] => '',
+    [d(nil)] => '',
     [d('')] => '""',
-    [d('', true), d('', true)] => ',',
-    [d('', true), d('', true), d('', true)] => ',,',
+    [d(nil), d(nil)] => ',',
+    [d(nil), d(nil), d(nil)] => ',,',
     [d('foo')] => 'foo',
     [d('foo'), d('bar')] => 'foo,bar',
     [d('foo'), d('"bar"'), d('baz')] => 'foo,"""bar""",baz',
     [d('foo'), d('foo,bar'), d('baz')] => 'foo,"foo,bar",baz',
     [d('foo'), d('""'), d('baz')] => 'foo,"""""",baz',
     [d('foo'), d(''), d('baz')] => 'foo,"",baz',
-    [d('foo'), d('', true), d('baz')] => 'foo,,baz',
+    [d('foo'), d(nil), d('baz')] => 'foo,,baz',
     [d('foo'), d("\r"), d('baz')] => "foo,\"\r\",baz",
     [d('foo'), d("\n"), d('baz')] => "foo,\"\n\",baz",
     [d('foo'), d("\r\n"), d('baz')] => "foo,\"\r\n\",baz",
@@ -259,7 +104,7 @@ class TestCSV < Test::Unit::TestCase
   end
 
   def sepConv(srcStr, srcSep, destSep, row_sep = nil)
-    rows = CSV::Row.new
+    rows = []
     cols, idx = CSV.parse_row(srcStr, 0, rows, srcSep, row_sep)
     destStr = ''
     cols = CSV.generate_row(rows, rows.size, destStr, destSep, row_sep)
@@ -278,13 +123,13 @@ public
     @bomfile = File.join(@tmpdir, "bom.csv")
     @macfile = File.join(@tmpdir, "mac.csv")
 
-    CSV.open(@infile, "w") do |writer|
+    CSV.open(@infile, "wb") do |writer|
       @@fullCSVDataArray.each do |row|
 	writer.add_row(row)
       end
     end
 
-    CSV.open(@infiletsv, "w", ?\t) do |writer|
+    CSV.open(@infiletsv, "wb", ?\t) do |writer|
       @@fullCSVDataArray.each do |row|
 	writer.add_row(row)
       end
@@ -317,11 +162,11 @@ public
       first = true
       ret = reader.each { |row|
 	if first
-	  assert_instance_of(CSV::Row, row)
+	  assert_instance_of(Array, row)
 	  first = false
 	end
 	expected = expectedArray.shift
-	assert(row.match(expected))
+	assert_equal(expected, row)
       }
       assert_nil(ret, "Return is nil")
       assert(expectedArray.empty?)
@@ -352,10 +197,10 @@ public
       @@fullCSVDataArray.each do |expected|
 	actual = reader.shift
 	if first
-	  assert_instance_of(CSV::Row, actual)
+	  assert_instance_of(Array, actual)
 	  first = false
 	end
-	assert(actual.match(expected))
+	assert_equal(expected, actual)
 	checked += 1
       end
       assert(checked == @@fullCSVDataArray.size)
@@ -445,10 +290,21 @@ public
     file << "\"\r\n\",\"\r\",\"\n\"\r1,2,3"
     file.close
 
-    file = File.open(@outfile, "r")	# not "rb"
+    file = File.open(@outfile, "rb")
     begin
       reader = CSV::IOReader.new(file, ?,, ?\r)
       assert_equal(["\r\n", "\r", "\n"], reader.shift.to_a)
+      assert_equal(["1", "2", "3"], reader.shift.to_a)
+      reader.close
+    ensure
+      file.close
+    end
+
+    file = File.open(@outfile, "r")	# not "rb"
+    begin
+      lfincell = (RSEP == "\n" ? "\r\n" : "\n")
+      reader = CSV::IOReader.new(file, ?,, ?\r)
+      assert_equal([lfincell, "\r", "\n"], reader.shift.to_a)
       assert_equal(["1", "2", "3"], reader.shift.to_a)
       reader.close
     ensure
@@ -458,19 +314,19 @@ public
 
   def test_Reader_s_parse
     ret = CSV::Reader.parse("a,b,c") { |row|
-      assert_instance_of(CSV::Row, row, "Block parameter")
+      assert_instance_of(Array, row, "Block parameter")
     }
     assert_nil(ret, "Return is nil")
 
     ret = CSV::Reader.parse("a;b;c", ?;) { |row|
-      assert_instance_of(CSV::Row, row, "Block parameter")
+      assert_instance_of(Array, row, "Block parameter")
     }
 
     file = Tempfile.new("in.csv")
     file << "a,b,c"
     file.open
     ret = CSV::Reader.parse(file) { |row|
-      assert_instance_of(CSV::Row, row, "Block parameter")
+      assert_instance_of(Array, row, "Block parameter")
     }
     assert_nil(ret, "Return is nil")
 
@@ -478,7 +334,7 @@ public
     file << "a,b,c"
     file.open
     ret = CSV::Reader.parse(file, ?,) { |row|
-      assert_instance_of(CSV::Row, row, "Block parameter")
+      assert_instance_of(Array, row, "Block parameter")
     }
 
     # Illegal format.
@@ -536,38 +392,38 @@ public
     file.open
     file.binmode
     str = file.read
-    assert_equal("a,b,c\r\n,e,f\r\n,,\"\"\r\n", str, 'Normal')
+    assert_equal("a,b,c#{RSEP},e,f#{RSEP},,\"\"#{RSEP}", str, 'Normal')
 
     file = Tempfile.new("out2.csv")
     CSV::Writer.generate(file) do |writer|
       ret = writer << [d('a'), d('b'), d('c')]
       assert_instance_of(CSV::BasicWriter, ret, 'Return is self')
 
-      writer << [d(nil, true), d('e'), d('f')] << [d(nil, true), d(nil, true), d('')]
+      writer << [d(nil), d('e'), d('f')] << [d(nil), d(nil), d('')]
     end
     file.open
     file.binmode
     str = file.read
-    assert_equal("a,b,c\r\n,e,f\r\n,,\"\"\r\n", str, 'Normal')
+    assert_equal("a,b,c#{RSEP},e,f#{RSEP},,\"\"#{RSEP}", str, 'Normal')
   end
 
   def test_Writer_add_row
     file = Tempfile.new("out.csv")
     CSV::Writer.generate(file) do |writer|
       ret = writer.add_row(
-	[d('a', false), d('b', false), d('c', false)])
+	[d('a'), d('b'), d('c')])
       assert_instance_of(CSV::BasicWriter, ret, 'Return is self')
 
       writer.add_row(
-	[d('dummy', true), d('e', false), d('f', false)]
+	[d(nil), d('e'), d('f')]
      ).add_row(
-	[d('a', true), d('b', true), d('', false)]
+	[d(nil), d(nil), d('')]
      )
     end
     file.open
     file.binmode
     str = file.read
-    assert_equal("a,b,c\r\n,e,f\r\n,,\"\"\r\n", str, 'Normal')
+    assert_equal("a,b,c#{RSEP},e,f#{RSEP},,\"\"#{RSEP}", str, 'Normal')
   end
 
   def test_Writer_close
@@ -606,7 +462,7 @@ public
     file = File.open(@outfile, "rb")
     str = file.read
     file.close
-    assert_equal("\"\r\n\",\"\r\",\"\n\"\r1,2,3\r", str)
+    assert_equal("\"\r#{RSEP}\",\"\r\",\"#{RSEP}\"\r1,2,3\r", str)
   end
 
   #### CSV unit test
@@ -633,12 +489,12 @@ public
     reader.close
 
     CSV.open(@infile, "r") do |row|
-      assert_instance_of(CSV::Row, row)
+      assert_instance_of(Array, row)
       break
     end
 
     CSV.open(@infiletsv, "r", ?\t) do |row|
-      assert_instance_of(CSV::Row, row)
+      assert_instance_of(Array, row)
       break
     end
 
@@ -686,12 +542,12 @@ public
     reader.close
 
     CSV.parse(@infile) do |row|
-      assert_instance_of(CSV::Row, row)
+      assert_instance_of(Array, row)
       break
     end
 
     CSV.parse(@infiletsv, ?\t) do |row|
-      assert_instance_of(CSV::Row, row)
+      assert_instance_of(Array, row)
       break
     end
 
@@ -776,12 +632,12 @@ public
 
     @@simpleCSVData.each do |col, str|
       buf = CSV.generate_line(col, ?;)
-      assert_equal(str + "\r\n", ssv2csv(buf))
+      assert_equal(str + "\n", ssv2csv(buf))
     end
 
     @@simpleCSVData.each do |col, str|
       buf = CSV.generate_line(col, ?\t)
-      assert_equal(str + "\r\n", tsv2csv(buf))
+      assert_equal(str + "\n", tsv2csv(buf))
     end
   end
 
@@ -789,17 +645,17 @@ public
     buf = ''
     cols = CSV.generate_row([], 0, buf)
     assert_equal(0, cols)
-    assert_equal("\r\n", buf, "Extra boundary check.")
+    assert_equal("\n", buf, "Extra boundary check.")
 
     buf = ''
     cols = CSV.generate_row([], 0, buf, ?;)
     assert_equal(0, cols)
-    assert_equal("\r\n", buf, "Extra boundary check.")
+    assert_equal("\n", buf, "Extra boundary check.")
 
     buf = ''
     cols = CSV.generate_row([], 0, buf, ?\t)
     assert_equal(0, cols)
-    assert_equal("\r\n", buf, "Extra boundary check.")
+    assert_equal("\n", buf, "Extra boundary check.")
 
     buf = ''
     cols = CSV.generate_row([], 0, buf, ?\t, ?|)
@@ -807,64 +663,64 @@ public
     assert_equal("|", buf, "Extra boundary check.")
 
     buf = ''
-    cols = CSV.generate_row([d(1)], 2, buf)
+    cols = CSV.generate_row([d('1')], 2, buf)
     assert_equal('1,', buf)
 
     buf = ''
-    cols = CSV.generate_row([d(1)], 2, buf, ?;)
+    cols = CSV.generate_row([d('1')], 2, buf, ?;)
     assert_equal('1;', buf)
 
     buf = ''
-    cols = CSV.generate_row([d(1)], 2, buf, ?\t)
+    cols = CSV.generate_row([d('1')], 2, buf, ?\t)
     assert_equal("1\t", buf)
 
     buf = ''
-    cols = CSV.generate_row([d(1)], 2, buf, ?\t, ?|)
+    cols = CSV.generate_row([d('1')], 2, buf, ?\t, ?|)
     assert_equal("1\t", buf)
 
     buf = ''
-    cols = CSV.generate_row([d(1), d(2)], 1, buf)
-    assert_equal("1\r\n", buf)
-
-    buf = ''
-    cols = CSV.generate_row([d(1), d(2)], 1, buf, ?;)
-    assert_equal("1\r\n", buf)
-
-    buf = ''
-    cols = CSV.generate_row([d(1), d(2)], 1, buf, ?\t)
-    assert_equal("1\r\n", buf)
-
-    buf = ''
-    cols = CSV.generate_row([d(1), d(2)], 1, buf, ?\t, ?\n)
+    cols = CSV.generate_row([d('1'), d('2')], 1, buf)
     assert_equal("1\n", buf)
 
     buf = ''
-    cols = CSV.generate_row([d(1), d(2)], 1, buf, ?\t, ?\r)
+    cols = CSV.generate_row([d('1'), d('2')], 1, buf, ?;)
+    assert_equal("1\n", buf)
+
+    buf = ''
+    cols = CSV.generate_row([d('1'), d('2')], 1, buf, ?\t)
+    assert_equal("1\n", buf)
+
+    buf = ''
+    cols = CSV.generate_row([d('1'), d('2')], 1, buf, ?\t, ?\n)
+    assert_equal("1\n", buf)
+
+    buf = ''
+    cols = CSV.generate_row([d('1'), d('2')], 1, buf, ?\t, ?\r)
     assert_equal("1\r", buf)
 
     buf = ''
-    cols = CSV.generate_row([d(1), d(2)], 1, buf, ?\t, ?|)
+    cols = CSV.generate_row([d('1'), d('2')], 1, buf, ?\t, ?|)
     assert_equal("1|", buf)
 
     @@fullCSVData.each do |col, str|
       buf = ''
       cols = CSV.generate_row(col, col.size, buf)
       assert_equal(col.size, cols)
-      assert_equal(str + "\r\n", buf)
+      assert_equal(str + "\n", buf)
     end
 
     @@fullCSVData.each do |col, str|
       buf = ''
       cols = CSV.generate_row(col, col.size, buf, ?;)
       assert_equal(col.size, cols)
-      assert_equal(str + "\r\n", ssv2csv(buf))
+      assert_equal(str + "\n", ssv2csv(buf))
     end
 
     @@fullCSVData.each do |col, str|
       buf = ''
       cols = CSV.generate_row(col, col.size, buf, ?\t)
       assert_equal(col.size, cols)
-      assert_equal(str + "\r\n", tsv2csv(buf))
+      assert_equal(str + "\n", tsv2csv(buf))
     end
 
     # row separator
@@ -889,7 +745,7 @@ public
     colsToBe = 0
     @@fullCSVData.each do |col, str|
       cols += CSV.generate_row(col, col.size, buf)
-      toBe << str << "\r\n"
+      toBe << str << "\n"
       colsToBe += col.size
     end
     assert_equal(colsToBe, cols)
@@ -902,8 +758,8 @@ public
     @@fullCSVData.each do |col, str|
       lineBuf = ''
       cols += CSV.generate_row(col, col.size, lineBuf, ?;)
-      buf << ssv2csv(lineBuf) << "\r\n"
-      toBe << ssv2csv(lineBuf) << "\r\n"
+      buf << ssv2csv(lineBuf) << "\n"
+      toBe << ssv2csv(lineBuf) << "\n"
       colsToBe += col.size
     end
     assert_equal(colsToBe, cols)
@@ -916,8 +772,8 @@ public
     @@fullCSVData.each do |col, str|
       lineBuf = ''
       cols += CSV.generate_row(col, col.size, lineBuf, ?\t)
-      buf << tsv2csv(lineBuf) << "\r\n"
-      toBe << tsv2csv(lineBuf) << "\r\n"
+      buf << tsv2csv(lineBuf) << "\n"
+      toBe << tsv2csv(lineBuf) << "\n"
       colsToBe += col.size
     end
     assert_equal(colsToBe, cols)
@@ -941,7 +797,7 @@ public
   def test_s_parse_line
     @@simpleCSVData.each do |col, str|
       row = CSV.parse_line(str)
-      assert_instance_of(CSV::Row, row)
+      assert_instance_of(Array, row)
       assert_equal(col.size, row.size)
       assert_equal(col, row)
     end
@@ -949,214 +805,214 @@ public
     @@simpleCSVData.each do |col, str|
       str = csv2ssv(str)
       row = CSV.parse_line(str, ?;)
-      assert_instance_of(CSV::Row, row)
-      assert_equal(col.size, row.size)
-      assert_equal(col, row)
+      assert_instance_of(Array, row)
+      assert_equal(col.size, row.size, str.inspect)
+      assert_equal(col, row, str.inspect)
     end
 
     @@simpleCSVData.each do |col, str|
       str = csv2tsv(str)
       row = CSV.parse_line(str, ?\t)
-      assert_instance_of(CSV::Row, row)
+      assert_instance_of(Array, row)
       assert_equal(col.size, row.size)
       assert_equal(col, row)
     end
 
     # Illegal format.
-    buf = CSV::Row.new
+    buf = []
     row = CSV.parse_line("a,b,\"c\"\ra")
-    assert_instance_of(CSV::Row, row)
+    assert_instance_of(Array, row)
     assert_equal(0, row.size)
 
-    buf = CSV::Row.new
+    buf = Array.new
     row = CSV.parse_line("a;b;\"c\"\ra", ?;)
-    assert_instance_of(CSV::Row, row)
+    assert_instance_of(Array, row)
     assert_equal(0, row.size)
 
-    buf = CSV::Row.new
+    buf = Array.new
     row = CSV.parse_line("a\tb\t\"c\"\ra", ?\t)
-    assert_instance_of(CSV::Row, row)
+    assert_instance_of(Array, row)
     assert_equal(0, row.size)
 
     row = CSV.parse_line("a,b\"")
-    assert_instance_of(CSV::Row, row)
+    assert_instance_of(Array, row)
     assert_equal(0, row.size)
 
     row = CSV.parse_line("a;b\"", ?;)
-    assert_instance_of(CSV::Row, row)
+    assert_instance_of(Array, row)
     assert_equal(0, row.size)
 
     row = CSV.parse_line("a\tb\"", ?\t)
-    assert_instance_of(CSV::Row, row)
+    assert_instance_of(Array, row)
     assert_equal(0, row.size)
 
     row = CSV.parse_line("\"a,b\"\r,")
-    assert_instance_of(CSV::Row, row)
+    assert_instance_of(Array, row)
     assert_equal(0, row.size)
 
     row = CSV.parse_line("\"a;b\"\r;", ?;)
-    assert_instance_of(CSV::Row, row)
+    assert_instance_of(Array, row)
     assert_equal(0, row.size)
 
     row = CSV.parse_line("\"a\tb\"\r\t", ?\t)
-    assert_instance_of(CSV::Row, row)
+    assert_instance_of(Array, row)
     assert_equal(0, row.size)
 
     row = CSV.parse_line("\"a,b\"\r\"")
-    assert_instance_of(CSV::Row, row)
+    assert_instance_of(Array, row)
     assert_equal(0, row.size)
 
     row = CSV.parse_line("\"a;b\"\r\"", ?;)
-    assert_instance_of(CSV::Row, row)
+    assert_instance_of(Array, row)
     assert_equal(0, row.size)
 
     row = CSV.parse_line("\"a\tb\"\r\"", ?\t)
-    assert_instance_of(CSV::Row, row)
+    assert_instance_of(Array, row)
     assert_equal(0, row.size)
   end
 
   def test_s_parse_row
     @@fullCSVData.each do |col, str|
-      buf = CSV::Row.new
+      buf = Array.new
       cols, idx = CSV.parse_row(str + "\r\n", 0, buf)
       assert_equal(cols, buf.size, "Reported size.")
       assert_equal(col.size, buf.size, "Size.")
-      assert(buf.match(col))
+      assert_equal(col, buf, str.inspect)
 
-      buf = CSV::Row.new
-      cols, idx = CSV.parse_row(str + "\n", 0, buf)
+      buf = Array.new
+      cols, idx = CSV.parse_row(str + "\n", 0, buf, ?,, ?\n)
       assert_equal(cols, buf.size, "Reported size.")
       assert_equal(col.size, buf.size, "Size.")
-      assert(buf.match(col))
+      assert_equal(col, buf, str.inspect)
 
       # separator: |
-      buf = CSV::Row.new
+      buf = Array.new
       cols, idx = CSV.parse_row(str + "|", 0, buf, ?,)
-      assert(!buf.match(col))
-      buf = CSV::Row.new
+      assert_not_equal(col, buf)
+      buf = Array.new
       cols, idx = CSV.parse_row(str + "|", 0, buf, ?,, ?|)
       assert_equal(cols, buf.size, "Reported size.")
       assert_equal(col.size, buf.size, "Size.")
-      assert(buf.match(col))
+      assert_equal(col, buf, str.inspect)
     end
 
     @@fullCSVData.each do |col, str|
       str = csv2ssv(str)
-      buf = CSV::Row.new
+      buf = Array.new
       cols, idx = CSV.parse_row(str + "\r\n", 0, buf, ?;)
       assert_equal(cols, buf.size, "Reported size.")
       assert_equal(col.size, buf.size, "Size.")
-      assert(buf.match(col))
+      assert_equal(col, buf, str)
     end
 
     @@fullCSVData.each do |col, str|
       str = csv2tsv(str)
-      buf = CSV::Row.new
+      buf = Array.new
       cols, idx = CSV.parse_row(str + "\r\n", 0, buf, ?\t)
       assert_equal(cols, buf.size, "Reported size.")
       assert_equal(col.size, buf.size, "Size.")
-      assert(buf.match(col))
+      assert_equal(col, buf, str)
     end
 
     @@fullCSVData.each do |col, str|
       str = csv2tsv(str, ?|)
-      buf = CSV::Row.new
+      buf = Array.new
       cols, idx = CSV.parse_row(str + "|", 0, buf, ?\t, ?|)
       assert_equal(cols, buf.size, "Reported size.")
       assert_equal(col.size, buf.size, "Size.")
-      assert(buf.match(col), str)
+      assert_equal(col, buf, str)
     end
 
-    buf = CSV::Row.new
+    buf = Array.new
     cols, idx = CSV.parse_row("a,b,\"c\r\"", 0, buf)
     assert_equal(["a", "b", "c\r"], buf.to_a)
 
-    buf = CSV::Row.new
+    buf = Array.new
     cols, idx = CSV.parse_row("a;b;\"c\r\"", 0, buf, ?;)
     assert_equal(["a", "b", "c\r"], buf.to_a)
 
-    buf = CSV::Row.new
+    buf = Array.new
     cols, idx = CSV.parse_row("a\tb\t\"c\r\"", 0, buf, ?\t)
     assert_equal(["a", "b", "c\r"], buf.to_a)
 
-    buf = CSV::Row.new
-    cols, idx = CSV.parse_row("a,b,c\n", 0, buf)
+    buf = Array.new
+    cols, idx = CSV.parse_row("a,b,c\n", 0, buf, ?,, ?\n)
     assert_equal(["a", "b", "c"], buf.to_a)
 
-    buf = CSV::Row.new
-    cols, idx = CSV.parse_row("a\tb\tc\n", 0, buf, ?\t)
+    buf = Array.new
+    cols, idx = CSV.parse_row("a\tb\tc\n", 0, buf, ?\t, ?\n)
     assert_equal(["a", "b", "c"], buf.to_a)
 
     # Illegal format.
-    buf = CSV::Row.new
+    buf = Array.new
     cols, idx = CSV.parse_row("a,b,c\"", 0, buf)
     assert_equal(0, cols, "Illegal format; unbalanced double-quote.")
 
-    buf = CSV::Row.new
+    buf = Array.new
     cols, idx = CSV.parse_row("a;b;c\"", 0, buf, ?;)
     assert_equal(0, cols, "Illegal format; unbalanced double-quote.")
 
-    buf = CSV::Row.new
+    buf = Array.new
     cols, idx = CSV.parse_row("a,b,\"c\"\ra", 0, buf)
     assert_equal(0, cols)
     assert_equal(0, idx)
 
-    buf = CSV::Row.new
+    buf = Array.new
     cols, idx = CSV.parse_row("a,b,\"c\"\ra", 0, buf, ?;)
     assert_equal(0, cols)
     assert_equal(0, idx)
 
-    buf = CSV::Row.new
+    buf = Array.new
     cols, idx = CSV.parse_row("a,b\"", 0, buf)
     assert_equal(0, cols)
     assert_equal(0, idx)
 
-    buf = CSV::Row.new
+    buf = Array.new
     cols, idx = CSV.parse_row("a;b\"", 0, buf, ?;)
     assert_equal(0, cols)
     assert_equal(0, idx)
 
-    buf = CSV::Row.new
+    buf = Array.new
     cols, idx = CSV.parse_row("\"a,b\"\r,", 0, buf)
     assert_equal(0, cols)
     assert_equal(0, idx)
 
-    buf = CSV::Row.new
+    buf = Array.new
     cols, idx = CSV.parse_row("a\r,", 0, buf)
     assert_equal(0, cols)
     assert_equal(0, idx)
 
-    buf = CSV::Row.new
+    buf = Array.new
     cols, idx = CSV.parse_row("a\r", 0, buf)
     assert_equal(0, cols)
     assert_equal(0, idx)
 
-    buf = CSV::Row.new
+    buf = Array.new
     cols, idx = CSV.parse_row("a\rbc", 0, buf)
     assert_equal(0, cols)
     assert_equal(0, idx)
 
-    buf = CSV::Row.new
+    buf = Array.new
     cols, idx = CSV.parse_row("a\r\"\"", 0, buf)
     assert_equal(0, cols)
     assert_equal(0, idx)
 
-    buf = CSV::Row.new
+    buf = Array.new
     cols, idx = CSV.parse_row("a\r\rabc,", 0, buf)
     assert_equal(0, cols)
     assert_equal(0, idx)
 
-    buf = CSV::Row.new
+    buf = Array.new
     cols, idx = CSV.parse_row("\"a;b\"\r;", 0, buf, ?;)
     assert_equal(0, cols)
     assert_equal(0, idx)
 
-    buf = CSV::Row.new
+    buf = Array.new
     cols, idx = CSV.parse_row("\"a,b\"\r\"", 0, buf)
     assert_equal(0, cols)
     assert_equal(0, idx)
 
-    buf = CSV::Row.new
+    buf = Array.new
     cols, idx = CSV.parse_row("\"a;b\"\r\"", 0, buf, ?;)
     assert_equal(0, cols)
     assert_equal(0, idx)
@@ -1168,11 +1024,11 @@ public
 	# String "" is not allowed.
 	next
       end
-      buf = CSV::Row.new
+      buf = Array.new
       cols, idx = CSV.parse_row(str, 0, buf)
       assert_equal(col.size, cols, "Reported size.")
       assert_equal(col.size, buf.size, "Size.")
-      assert(buf.match(col))
+      assert_equal(col, buf)
     end
   end
 
@@ -1185,7 +1041,7 @@ public
     end
     idx = 0
     cols = 0
-    parsed = CSV::Row.new
+    parsed = Array.new
     parsedCols = 0
     begin
       cols, idx = CSV.parse_row(buf, idx, parsed)
@@ -1193,7 +1049,7 @@ public
     end while cols > 0
     assert_equal(toBe.size, parsedCols)
     assert_equal(toBe.size, parsed.size)
-    assert(parsed.match(toBe))
+    assert_equal(toBe, parsed)
 
     buf = ''
     toBe = []
@@ -1203,15 +1059,15 @@ public
     end
     idx = 0
     cols = 0
-    parsed = CSV::Row.new
+    parsed = Array.new
     parsedCols = 0
     begin
-      cols, idx = CSV.parse_row(buf, idx, parsed)
+      cols, idx = CSV.parse_row(buf, idx, parsed, ?,, ?\n)
       parsedCols += cols
     end while cols > 0
     assert_equal(toBe.size, parsedCols)
     assert_equal(toBe.size, parsed.size)
-    assert(parsed.match(toBe))
+    assert_equal(toBe, parsed)
 
     buf = ''
     toBe = []
@@ -1223,15 +1079,15 @@ public
     end
     idx = 0
     cols = 0
-    parsed = CSV::Row.new
+    parsed = Array.new
     parsedCols = 0
     begin
-      cols, idx = CSV.parse_row(buf, idx, parsed)
+      cols, idx = CSV.parse_row(buf, idx, parsed, ?,, ?\n)
       parsedCols += cols
     end while cols > 0
     assert_equal(toBe.size, parsedCols)
     assert_equal(toBe.size, parsed.size)
-    assert(parsed.match(toBe))
+    assert_equal(toBe, parsed)
 
     buf = ''
     toBe = []
@@ -1241,7 +1097,7 @@ public
     end
     idx = 0
     cols = 0
-    parsed = CSV::Row.new
+    parsed = []
     parsedCols = 0
     begin
       cols, idx = CSV.parse_row(buf, idx, parsed, ?,, ?|)
@@ -1249,7 +1105,7 @@ public
     end while cols > 0
     assert_equal(toBe.size, parsedCols)
     assert_equal(toBe.size, parsed.size)
-    assert(parsed.match(toBe))
+    assert_equal(toBe, parsed)
   end
 
   def test_utf8
@@ -1278,26 +1134,34 @@ public
     rows = []
     assert_raises(CSV::IllegalFormatError) do
       CSV.open(@macfile, "r") do |row|
-	rows << row.to_a
+        rows << row.to_a
       end
+      assert_equal([["Avenches", "aus Umgebung\r\"Bad Hersfeld", "Ausgrabung"]], rows)
     end
 
     rows = []
     file = File.open(@macfile)
-    CSV::Reader.parse(file, ?,, ?\r) do |row|
-      rows << row.to_a
+    begin
+      CSV::Reader.parse(file, ?,, ?\r) do |row|
+        rows << row.to_a
+      end
+      assert_equal([["Avenches", "aus Umgebung"], ["Bad Hersfeld", "Ausgrabung"]], rows)
+    ensure
+      file.close
     end
-    assert_equal([["Avenches", "aus Umgebung"], ["Bad Hersfeld", "Ausgrabung"]], rows)
-    file.close
 
     rows = []
     file = File.open(@macfile)
-    assert_raises(CSV::IllegalFormatError) do
-      CSV::Reader.parse(file, ?,) do |row|
-	rows << row.to_a
+    begin
+      assert_raises(CSV::IllegalFormatError) do
+        CSV::Reader.parse(file, ?,) do |row|
+          rows << row.to_a
+        end
+        assert_equal([["Avenches", "aus Umgebung\r\"Bad Hersfeld", "Ausgrabung"]], rows)
       end
+    ensure
+      file.close
     end
-    file.close
   end
 
 
@@ -1678,8 +1542,8 @@ public
   #
   def test_s_parseAndCreate
     colSize = 8
-    csvStr = "foo,!!!foo!!!,!foo,bar!,!!!!!!,!!,,!\r!,!\r\n!\r\nNaHi,!!!Na!!!,!Na,Hi!,!\r.\n!,!\r\n\n!,!!!!,!\n!,!\r\n!".gsub!('!', '"')
-    csvStrTerminated = csvStr + "\r\n"
+    csvStr = "foo,!!!foo!!!,!foo,bar!,!!!!!!,!!,,!\r!,!\r\n!\nNaHi,!!!Na!!!,!Na,Hi!,!\r.\n!,!\r\n\n!,!!!!,!\n!,!\r\n!".gsub!('!', '"')
+    csvStrTerminated = csvStr + "\n"
 
     myStr = csvStr.dup
     res1 = []; res2 = []
@@ -1708,19 +1572,9 @@ public
     buf = ''
     CSV::Writer.generate(buf) do |writer|
       parsed.each do |row|
-	writer << row.collect { |e| e.is_null ? nil : e.data }
+	writer << row
       end
     end
     assert_equal(csvStrTerminated, buf)
   end
-end
-
-
-if $0 == __FILE__
-  suite = Test::Unit::TestSuite.new('CSV')
-  ObjectSpace.each_object(Class) do |klass|
-    suite << klass.suite if (Test::Unit::TestCase > klass)
-  end
-  require 'test/unit/ui/console/testrunner'
-  Test::Unit::UI::Console::TestRunner.run(suite).passed?
 end
