@@ -1,3 +1,8 @@
+Fri Nov 12 17:32:07 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* bcc32/README.bcc32, win32/README.win32: need bison instead of
+	  byacc.
+
 Fri Nov 12 15:15:06 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* eval.c (ruby_options): now we cannot call rb_glob() before

@@ -16,7 +16,7 @@
      * ilink
 
 (3) If you want to build from CVS source, following commands are required.
-     * byacc
+     * bison
      * sed
 
 == How to compile and install
