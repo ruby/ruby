@@ -1,3 +1,7 @@
+Sat Jul  3 17:19:44 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/tk/lib/tkextlib/tkDND.rb: fix syntax error.
+
 Thu Jul  1 18:36:08 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tcltklib : bug fix
