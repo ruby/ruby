@@ -1,3 +1,11 @@
+Sat Nov  9 02:05:00 2003  Nathaniel Talbott  <ntalbott@ruby-lang.org>
+
+	* lib/test/unit/assertions.rb: un-deprecated #assert_not_nil to
+	  maintain symmetry with #assert_nil. Also added better output for
+	  #assert_kind_of.
+
+	* test/testunit/tc_assertions.rb: ditto.
+
 Sat Nov  8 18:50:20 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/wsdl/raa/*: add new testcase for WSDL loading, parsing and

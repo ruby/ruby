@@ -104,7 +104,7 @@ EOT
       def assert_kind_of(klass, object, message="")
         _wrap_assertion do
           assert(klass.kind_of?(Module), "The first parameter to assert_kind_of should be a kind_of Module.")
-          full_message = build_message(message, "<?>\nexpected to be kind_of\\?<?>.", object, klass)
+          full_message = build_message(message, "<?>\nexpected to be kind_of\\?\n<?> but was\n<?>.", object, klass, object.class)
           assert_block(full_message){object.kind_of?(klass)}
         end
       end
@@ -221,7 +221,6 @@ EOT
       # Passes if !object.nil?.
       public
       def assert_not_nil(object, message="")
-        warn("Assertions#assert_not_nil is deprecated and will be removed after 1.8.1. Use #assert.")
         full_message = build_message(message, "<?> expected to not be nil.", object)
         assert_block(full_message){!object.nil?}
       end

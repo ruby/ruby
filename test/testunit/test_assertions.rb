@@ -176,6 +176,13 @@ module Test
         }
       end
       
+      def test_assert_not_nil
+        check_nothing_fails{assert_not_nil(false)}
+        check_nothing_fails{assert_not_nil(false, "message")}
+        check_fails("<nil> expected to not be nil."){assert_not_nil(nil)}
+        check_fails("message.\n<nil> expected to not be nil.") {assert_not_nil(nil, "message")}
+      end
+        
       def test_assert_kind_of
         check_nothing_fails {
           assert_kind_of(Module, Array)
@@ -189,10 +196,10 @@ module Test
         check_nothing_fails {
           assert_kind_of(Comparable, 1)
         }
-        check_fails(%Q{<"string">\nexpected to be kind_of?<Class>.}) {
+        check_fails(%Q{<"string">\nexpected to be kind_of?\n<Class> but was\n<String>.}) {
           assert_kind_of(Class, "string")
         }
-        check_fails(%Q{failed assert_kind_of.\n<"string">\nexpected to be kind_of?<Class>.}) {
+        check_fails(%Q{failed assert_kind_of.\n<"string">\nexpected to be kind_of?\n<Class> but was\n<String>.}) {
           assert_kind_of(Class, "string", "failed assert_kind_of")
         }
       end
