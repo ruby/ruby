@@ -252,7 +252,7 @@ end
 def libpathflag(libpath=$LIBPATH)
   libpath.map{|x|
     (x == "$(topdir)" ? LIBPATHFLAG : LIBPATHFLAG+RPATHFLAG) % x
-  }.join
+  }.quote.join
 end
 
 def try_link0(src, opt="", &b)
@@ -541,10 +541,9 @@ def find_header(header, *paths)
     else
       found = false
       paths.each do |dir|
-        opt = "-I#{dir}"
+        opt = "-I#{dir}".quote
         if try_cpp(cpp_include(header), opt)
-          $INCFLAGS += " "
-          $INCFLAGS += opt
+          $INCFLAGS << " " << opt
           found = true
           break
         end
@@ -682,7 +681,7 @@ def dir_config(target, idefault=nil, ldefault=nil)
     idirs.collect! {|dir| "-I" + dir}
     idirs -= Shellwords.shellwords($CPPFLAGS)
     unless idirs.empty?
-      $CPPFLAGS = (idirs << $CPPFLAGS).join(" ")
+      $CPPFLAGS = (idirs.quote << $CPPFLAGS).join(" ")
     end
   end
 
