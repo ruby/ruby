@@ -110,6 +110,9 @@ class  RiDriver
     if @options.list_classes
       classes = @ri_reader.full_class_names
       @display.list_known_classes(classes)
+    elsif @options.list_names
+      names = @ri_reader.all_names
+      @display.list_known_names(names)
     else
       if ARGV.size.zero?
         @display.display_usage

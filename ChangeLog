@@ -1,3 +1,8 @@
+Thu Mar 25 04:16:18 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/ri/ri_options.rb (RI::Options): Add the --list-names option,
+	  which dumps our all known names
+
 Thu Mar 25 03:57:47 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/ri/ri_util.rb (NameDescriptor::initialize): No longer

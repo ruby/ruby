@@ -83,6 +83,12 @@ module RI
 
     ######################################################################
 
+    def raw_print_line(txt)
+      puts txt
+    end
+
+    ######################################################################
+
     # convert HTML entities back to ASCII
     def conv_html(txt)
       txt.

@@ -87,6 +87,13 @@ module RI
       res << @name
     end
 
+    # Return a list of all out method names
+    def all_method_names
+      res = @class_methods.map {|m| m.full_name }
+      @instance_methods.each {|m| res << m.full_name}
+      res
+    end
+
     private
 
     # Return a list of all our methods matching a given string.
