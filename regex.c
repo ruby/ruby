@@ -2063,6 +2063,7 @@ re_compile_pattern(pattern, size, bufp)
 	BUFPUSH(notwordchar);
 	break;
 
+#ifndef RUBY
       case '<':
 	BUFPUSH(wordbeg);
 	break;
@@ -2070,6 +2071,7 @@ re_compile_pattern(pattern, size, bufp)
       case '>':
 	BUFPUSH(wordend);
 	break;
+#endif
 
       case 'b':
 	BUFPUSH(wordbound);

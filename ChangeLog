@@ -1,3 +1,16 @@
+Sun Nov  7 18:31:04 1999  Yasuhiro Fukuma  <yasuf@big.or.jp>
+
+	* eval.c (is_defined): last_class may be 0.
+
+Sat Nov  6 19:26:55 1999  EGUCHI Osamu  <eguchi@triton2.>
+
+	* Makefile.in: Added depend entry make parse.@OBJEXT@ from parse.c
+	  for UCB make
+
+Thu Nov  4 17:41:18 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_compile_pattern): \< (wordbeg), \> (wordend) disabled.
+
 Wed Nov  3 08:52:57 1999  Masaki Fukushima  <fukusima@goto.info.waseda.ac.jp>
 
 	* io.c (Init_IO): forgot to use INT2FIX() around SEEK_SET, etc. 

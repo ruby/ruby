@@ -429,6 +429,10 @@ if test "$with_dln_a_out" != yes; then
 			fi
 			rb_cv_dlopen=yes ;;
 	netbsd*)  	LDSHARED="ld -shared"
+                      	case "$host_cpu" in
+                      	alpha)
+                          LDFLAGS="-export-dynamic" ;;
+                      	esac
 			rb_cv_dlopen=yes ;;
 	openbsd*) 	LDSHARED="ld -Bforcearchive -Bshareable"
 			rb_cv_dlopen=yes ;;

@@ -1498,6 +1498,7 @@ is_defined(self, node, buf)
       case NODE_SUPER:
       case NODE_ZSUPER:
 	if (ruby_frame->last_func == 0) return 0;
+	else if (ruby_frame->last_class == 0) return 0;
 	else if (rb_method_boundp(RCLASS(ruby_frame->last_class)->super,
 				  ruby_frame->last_func, 0)) {
 	    if (nd_type(node) == NODE_SUPER) {
@@ -5305,6 +5306,7 @@ Init_eval()
     rb_define_global_function("untrace_var", rb_f_untrace_var, -1);
 
     rb_define_global_function("set_trace_func", set_trace_func, 1);
+    rb_global_variable(&trace_func);
 
     rb_define_virtual_variable("$SAFE", safe_getter, safe_setter);
 }
@@ -6087,6 +6089,7 @@ thread_mark(th)
     rb_gc_mark(th->errinfo);
     rb_gc_mark(th->last_line);
     rb_gc_mark(th->last_match);
+    rb_gc_mark(th->trace);
     rb_mark_tbl(th->locals);
 
     /* mark data in copied stack */

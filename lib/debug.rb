@@ -26,6 +26,7 @@ class DEBUGGER__
     @frames = [nil]
     @last_file = nil
     @last = [nil, nil]
+    @no_step = nil
   end
 
   DEBUG_LAST_CMD = []
