@@ -520,7 +520,7 @@ module Net
                       unless user and secret
       auth_method = "auth_#{authtype || 'cram_md5'}"
       raise ArgumentError, "wrong auth type #{authtype}"\
-                      unless respond_to?(auth_method)
+                      unless respond_to?(auth_method, true)
     end
 
     def authenticate( user, secret, authtype )

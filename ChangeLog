@@ -1,3 +1,8 @@
+Sat Aug  2 19:18:40 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/smtp.rb: respond_to? needs 2nd argument.
+	  Thanks Jim Bob.  [ruby-talk:77796]
+
 Sat Aug  2 15:11:54 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/extmk.rb (--no-undefined): annoying option removed.
