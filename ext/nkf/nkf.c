@@ -1,11 +1,14 @@
 /*
  * NKF Module for Ruby base on nkf 2.x
  *
- * original nkf2.0 is maintained at http://sourceforge.jp/projects/nkf/
+ * original nkf2.x is maintained at http://sourceforge.jp/projects/nkf/
+ *
+ * $Id$
  *
  */
 
-static char *RVersion = "2.0.4.1r1";
+#define RUBY_NKF_REVISION "$Revision$"
+#define RUBY_NKF_DATETIME __DATE__ " " __TIME__
 
 #include "ruby.h"
 
@@ -71,6 +74,7 @@ rb_nkf_putchar(c)
 /* getchar and putchar will be replaced during inclusion */
 
 #define PERL_XS 1
+#include "nkf-utf8/config.h"
 #include "nkf-utf8/utf8tbl.c"
 #include "nkf-utf8/nkf.c"
 
@@ -85,12 +89,7 @@ rb_nkf_kconv(obj, opt, src)
   StringValue(opt);
   opt_ptr = RSTRING(opt)->ptr;
   opt_end = opt_ptr + RSTRING(opt)->len;
-  for (; opt_ptr < opt_end; opt_ptr++) {
-    if (*opt_ptr != '-') {
-      continue;
-    }
-    options(opt_ptr);
-  }
+  options(opt_ptr);
 
   incsize = INCSIZE;
 
@@ -285,5 +284,9 @@ Init_nkf()
   rb_define_const(mKconv, "UTF16", INT2FIX(_UTF16));
   rb_define_const(mKconv, "UTF32", INT2FIX(_UTF32));
   rb_define_const(mKconv, "UNKNOWN", INT2FIX(_UNKNOWN));
-  rb_define_const(mKconv, "VERSION", rb_str_new2(RVersion));
+  /* for debug */
+  rb_define_const(mKconv, "REVISION", rb_str_new2(RUBY_NKF_REVISION));
+  rb_define_const(mKconv, "DATETIME", rb_str_new2(RUBY_NKF_DATETIME));
+  rb_define_const(mKconv, "NKF_VERSION", rb_str_new2(NKF_VERSION));
+  rb_define_const(mKconv, "NKF_RELEASE_DATE", rb_str_new2(NKF_RELEASE_DATE));
 }
