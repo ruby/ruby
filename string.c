@@ -27,6 +27,7 @@
 
 VALUE rb_cString;
 
+#define STR_TMPLOCK FL_USER1
 #define STR_ASSOC   FL_USER3
 #define STR_NOCAPA  (ELTS_SHARED|STR_ASSOC)
 
@@ -462,6 +463,9 @@ static int
 str_independent(str)
     VALUE str;
 {
+    if (FL_TEST(str, STR_TMPLOCK)) {
+	rb_raise(rb_eRuntimeError, "can't modify string; temporarily locked");
+    }
     if (OBJ_FROZEN(str)) rb_error_frozen("string");
     if (!OBJ_TAINTED(str) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify string");
@@ -629,6 +633,22 @@ rb_str_dup_frozen(str)
     if (OBJ_FROZEN(str)) return str;
     str = rb_str_dup(str);
     OBJ_FREEZE(str);
+    return str;
+}
+
+VALUE
+rb_str_locktmp(str)
+    VALUE str;
+{
+    FL_SET(str, STR_TMPLOCK);
+    return str;
+}
+
+VALUE
+rb_str_unlocktmp(str)
+    VALUE str;
+{
+    FL_UNSET(str, STR_TMPLOCK);
     return str;
 }
 

@@ -1,3 +1,18 @@
+Mon Nov  1 01:14:52 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_f_open): create copy of popen specifier.  [ruby-dev:24656]
+
+	* string.c (rb_str_locktmp): lock string temporarily.
+
+	* string.c (str_independent): add tmplock check.
+
+	* io.c (io_write): lock output string temporarily.
+	  [ruby-dev:24649]
+
+	* io.c (io_write): use rb_str_locktmp().
+
+	* io.c (read_all): ditto.
+
 Sun Oct 31 23:37:00 2004  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* process.c: on NetBSD don't use setruid() and setrgid().

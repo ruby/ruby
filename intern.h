@@ -418,6 +418,8 @@ VALUE rb_str_buf_cat2 _((VALUE, const char*));
 VALUE rb_obj_as_string _((VALUE));
 VALUE rb_check_string_type _((VALUE));
 VALUE rb_str_dup _((VALUE));
+VALUE rb_str_locktmp _((VALUE));
+VALUE rb_str_unlocktmp _((VALUE));
 VALUE rb_str_dup_frozen _((VALUE));
 VALUE rb_str_plus _((VALUE, VALUE));
 VALUE rb_str_times _((VALUE, VALUE));

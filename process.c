@@ -1260,14 +1260,17 @@ rb_f_exec(argc, argv)
 
     prog = rb_check_argv(argc, argv);
     if (!prog && argc == 1) {
-	--argc;
-	prog = *argv++;
+	e.argc = 0;
+	e.argv = 0;
+	e.prog = RSTRING(argv[0])->ptr;
     }
-    e.argc = argc;
-    e.argv = argv;
-    e.prog = prog ? RSTRING(prog)->ptr : 0;
+    else {
+	e.argc = argc;
+	e.argv = argv;
+	e.prog = RSTRING(prog)->ptr;
+    }
     rb_exec(&e);
-    rb_sys_fail(prog ? e.prog : RSTRING(argv[0])->ptr);
+    rb_sys_fail(e.prog);
     return Qnil;		/* dummy */
 }
 

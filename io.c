@@ -473,7 +473,9 @@ io_write(io, str)
     rb_io_check_writable(fptr);
     f = GetWriteFile(fptr);
 
+    rb_str_locktmp(str);
     n = rb_io_fwrite(RSTRING(str)->ptr, RSTRING(str)->len, f);
+    rb_str_unlocktmp(str);
     if (n == -1L) rb_sys_fail(fptr->path);
     if (fptr->mode & FMODE_SYNC) {
 	io_fflush(f, fptr);
@@ -1031,10 +1033,10 @@ read_all(fptr, siz, str)
 	rb_str_resize(str, siz);
     }
     for (;;) {
-	FL_SET(str, FL_FREEZE);
+	rb_str_locktmp(str);
 	READ_CHECK(fptr->f);
 	n = rb_io_fread(RSTRING(str)->ptr+bytes, siz-bytes, fptr->f);
-	FL_UNSET(str, FL_FREEZE);
+	rb_str_unlocktmp(str);
 	if (n == 0 && bytes == 0) {
 	    rb_str_resize(str,0);
 	    if (!fptr->f) break;
@@ -1212,10 +1214,10 @@ io_read(argc, argv, io)
     }
     if (len == 0) return str;
 
-    FL_SET(str, FL_FREEZE);
+    rb_str_locktmp(str);
     READ_CHECK(fptr->f);
     n = rb_io_fread(RSTRING(str)->ptr, len, fptr->f);
-    FL_UNSET(str, FL_FREEZE);
+    rb_str_unlocktmp(str);
     if (n == 0) {
 	rb_str_resize(str,0);
 	if (!fptr->f) return Qnil;
@@ -2511,15 +2513,12 @@ rb_fopen(fname, mode)
     const char *mode;
 {
     FILE *file;
-    char mbuf[MODENUM_MAX];
 
-    strncpy(mbuf, mode, sizeof(mbuf) - 1);
-    mbuf[sizeof(mbuf) - 1] = 0;
-    file = fopen(fname, mbuf);
+    file = fopen(fname, mode);
     if (!file) {
 	if (errno == EMFILE || errno == ENFILE) {
 	    rb_gc();
-	    file = fopen(fname, mbuf);
+	    file = fopen(fname, mode);
 	}
 	if (!file) {
 	    rb_sys_fail(fname);
@@ -2776,7 +2775,7 @@ pipe_open(argc, argv, pname, mode)
     int modef = rb_io_mode_flags(mode);
     int pid = 0;
     OpenFile *fptr;
-    VALUE port, arg0;
+    VALUE port, prog;
 #if defined(HAVE_FORK)
     int status;
     struct popen_arg arg;
@@ -2786,17 +2785,20 @@ pipe_open(argc, argv, pname, mode)
     int openmode = rb_io_mode_modenum(mode);
     char *prog = NULL;
 #endif
-    char *cmd = pname;
+    char *cmd;
 
     if (!pname) {
-	arg0 = rb_check_argv(argc, argv);
-	if (arg0) pname = StringValuePtr(arg0);
-	cmd = pname;
-	if (!pname) pname = RSTRING(argv[0])->ptr;
+	prog = rb_check_argv(argc, argv);
+	if (!prog && argc == 1) {
+	    argc = 0;
+	    prog = argv[0];
+	}
+	pname = StringValuePtr(prog);
     }
+    cmd = pname;
 
 #if defined(HAVE_FORK)
-    doexec = (argc > 0) || (strcmp("-", pname) != 0);
+    doexec = (strcmp("-", pname) != 0);
     if (!doexec) {
 	fflush(stdin);		/* is it really needed? */
 	fflush(stdout);
@@ -2871,8 +2873,8 @@ pipe_open(argc, argv, pname, mode)
 #define PIPE_FDOPEN(i) (i?fpw:fpr)
 #else
     if (argc > 0) {
-	arg0 = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
-	cmd = StringValuePtr(arg0);
+	prog = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
+	cmd = StringValuePtr(prog);
     }
     fpr = popen(cmd, mode);
 
@@ -2897,44 +2899,6 @@ pipe_open(argc, argv, pname, mode)
     fptr->finalize = pipe_finalize;
     pipe_add_fptr(fptr);
 #endif
-    return port;
-}
-
-static VALUE
-rb_io_popen(str, argc, argv, klass)
-    char *str;
-    int argc;
-    VALUE *argv;
-    VALUE klass;
-{
-    char *mode;
-    VALUE pname, pmode, port;
-
-    if (rb_scan_args(argc, argv, "11", &pname, &pmode) == 1) {
-	mode = "r";
-    }
-    else if (FIXNUM_P(pmode)) {
-	mode = rb_io_modenum_mode(FIX2INT(pmode));
-    }
-    else {
-	mode = rb_io_flags_mode(rb_io_mode_flags(StringValuePtr(pmode)));
-    }
-    SafeStringValue(pname);
-    port = pipe_open(0, 0, str, mode);
-    if (NIL_P(port)) {
-	/* child */
-	if (rb_block_given_p()) {
-	    rb_yield(Qnil);
-	    fflush(stdout);
-	    fflush(stderr);
-	    _exit(0);
-	}
-	return Qnil;
-    }
-    RBASIC(port)->klass = klass;
-    if (rb_block_given_p()) {
-	return rb_ensure(rb_yield, port, io_close, port);
-    }
     return port;
 }
 
@@ -2995,7 +2959,6 @@ rb_io_s_popen(argc, argv, klass)
 {
     char *mode;
     VALUE pname, pmode, port, tmp;
-    char mbuf[MODENUM_MAX];
 
     if (rb_scan_args(argc, argv, "11", &pname, &pmode) == 1) {
 	mode = "r";
@@ -3004,9 +2967,7 @@ rb_io_s_popen(argc, argv, klass)
 	mode = rb_io_modenum_mode(FIX2INT(pmode));
     }
     else {
-	strncpy(mbuf, StringValuePtr(pmode), sizeof(mbuf) - 1);
-	mbuf[sizeof(mbuf) - 1] = 0;
-	mode = mbuf;
+	mode = rb_io_flags_mode(rb_io_mode_flags(StringValuePtr(pmode)));
     }
     tmp = rb_check_array_type(pname);
     if (!NIL_P(tmp)) {
@@ -3018,7 +2979,7 @@ rb_io_s_popen(argc, argv, klass)
     }
     else {
 	SafeStringValue(pname);
-	port = pipe_open(0, 0, RSTRING(pname)->ptr, mode);
+	port = pipe_open(1, &pname, 0, mode);
 	if (NIL_P(port)) {
 	    /* child */
 	    if (rb_block_given_p()) {
@@ -3237,7 +3198,9 @@ rb_f_open(argc, argv)
 	    if (!NIL_P(tmp)) {
 		char *str = StringValuePtr(tmp);
 		if (str && str[0] == '|') {
-		    return rb_io_popen(str+1, argc, argv, rb_cIO);
+		    argv[0] = rb_str_new(str+1, RSTRING(tmp)->len-1);
+		    OBJ_INFECT(argv[0], tmp);
+		    return rb_io_s_popen(argc, argv, rb_cIO);
 		}
 	    }
 	}
@@ -4478,7 +4441,7 @@ rb_f_backquote(obj, str)
     OpenFile *fptr;
 
     SafeStringValue(str);
-    port = pipe_open(0, 0, RSTRING(str)->ptr, "r");
+    port = pipe_open(1, &str, 0, "r");
     if (NIL_P(port)) return rb_str_new(0,0);
 
     GetOpenFile(port, fptr);

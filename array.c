@@ -52,7 +52,7 @@ rb_ary_modify_check(ary)
 {
     if (OBJ_FROZEN(ary)) rb_error_frozen("array");
     if (FL_TEST(ary, ARY_TMPLOCK))
-	rb_raise(rb_eTypeError, "can't modify array during iteration");
+	rb_raise(rb_eRuntimeError, "can't modify array during iteration");
     if (!OBJ_TAINTED(ary) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify array");
 }
