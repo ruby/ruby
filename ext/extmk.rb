@@ -16,6 +16,7 @@ alias $PROGRAM_NAME $0
 alias $0 $progname
 
 $extlist = []
+$extupdate = false
 
 $:.replace ["."]
 require 'rbconfig'
@@ -74,8 +75,7 @@ def extmake(target)
     $preload = nil
     makefile = "./Makefile"
     unless $ignore
-      if $static ||
-	 !(t = modified?(makefile, MTIMES)) ||
+      if !(t = modified?(makefile, MTIMES)) ||
 	 %W<#{$srcdir}/makefile.rb #{$srcdir}/extconf.rb
 	    #{$srcdir}/depend #{$srcdir}/MANIFEST>.any? {|f| modified?(f, [t])}
       then
@@ -91,6 +91,7 @@ def extmake(target)
 	  else
 	    create_makefile(target)
 	  end
+	  $extupdate = true
 	  File.exist?(makefile)
 	rescue SystemExit
 	  # ignore
@@ -100,6 +101,19 @@ def extmake(target)
 	  Config::CONFIG["srcdir"] = $top_srcdir
 	end
       else
+	if $static
+	  m = File.read(makefile)
+	  $preload = Shellwords.shellwords(m[/^preload[ \t]*=[ \t]*(.*)/, 1] || "")
+	  $DLDFLAGS += " " + (m[/^DLDFLAGS[ \t]*=[ \t]*(.*)/, 1] || "")
+	  if s = m[/^LIBS[ \t]*=[ \t]*(.*)/, 1]
+            s.sub!(/^#{Regexp.quote($LIBRUBYARG)} */, "")
+            s.sub!(/ *#{Regexp.quote($LIBS)}$/, "")
+            $libs = s
+          end
+	  $LOCAL_LIBS = m[/^LOCAL_LIBS[ \t]*=[ \t]*(.*)/, 1] || ""
+	  $LIBPATH = Shellwords.shellwords(m[/^libpath[ \t]*=[ \t]*(.*)/, 1] || "") -
+		     %w[$(libdir) $(topdir)]
+	end
 	true
       end
     else
@@ -124,8 +138,7 @@ def extmake(target)
       $extlibs ||= []
       $extpath ||= []
       unless $mswin
-        $extflags += " " + $DLDFLAGS unless $DLDFLAGS.empty?
-        $extflags += " " + $LDFLAGS unless $LDFLAGS.empty?
+        $extflags = ($extflags.split | $DLDFLAGS.split | $LDFLAGS.split).join(" ")
       end
       $extlibs = merge_libs($extlibs, $libs.split, $LOCAL_LIBS.split)
       $extpath |= $LIBPATH
@@ -180,7 +193,12 @@ def parse_args()
     opts.on('--message [MESSAGE]', String) do |v|
       $message = v
     end
-    opts.parse!
+    begin
+      opts.parse!
+    rescue OptionParser::InvalidOption => e
+      retry if /^--/ =~ e.args[0]
+      raise
+    end
   end or abort opts.to_s
 
   $destdir ||= ''
@@ -334,7 +352,7 @@ if $extlist.size > 0
   list = $extlist.dup
   while e = list.shift
     s,t,i,r = e
-    if r
+    if r and !r.empty?
       l = list.size
       if (while l > 0; break true if r.include?(list[l-=1][1]) end)
         list.insert(l + 1, e)
@@ -375,11 +393,13 @@ SRC
 end
 rubies = []
 %w[RUBY RUBYW].each {|r|
-  config_string(r+"_INSTALL_NAME") {|r| rubies << r+EXEEXT}
+  if r = arg_config("--"+r.downcase) || config_string(r+"_INSTALL_NAME")
+    rubies << r+EXEEXT
+  end
 }
 
 Dir.chdir ".."
-if $extlist.size > 0
+if !$extlist.empty? and $extupdate
   rm_f(Config::CONFIG["LIBRUBY_SO"])
 end
 puts "making #{rubies.join(', ')}"

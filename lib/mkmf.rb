@@ -803,7 +803,7 @@ def dummy_makefile(srcdir)
 CLEANFILES = #{$cleanfiles.join(' ')}
 DISTCLEANFILES = #{$distcleanfiles.join(' ')}
 
-all install install-so install-rb: Makefile
+all install static install-so install-rb: Makefile
 
 RULES
 end
@@ -868,6 +868,8 @@ def create_makefile(target, srcprefix = nil)
   mfile = open("Makefile", "wb")
   mfile.print configuration(srcdir)
   mfile.print %{
+preload = #{$preload.join(" ") if $preload}
+libpath = #{$LIBPATH.join(" ")}
 LIBPATH = #{libpath}
 DEFFILE = #{deffile}
 
@@ -915,9 +917,9 @@ static:		$(STATIC_LIB)
   mfile.print CLEANINGS
   dirs = []
   mfile.print "install: install-so install-rb\n\n"
-  if not $static and target
-    dirs << (dir = "$(RUBYARCHDIR)")
-    mfile.print("install-so: #{dir}\n")
+  dirs << (dir = "$(RUBYARCHDIR)")
+  mfile.print("install-so: #{dir}\n")
+  if target
     f = "$(DLLIB)"
     dest = "#{dir}/#{f}"
     mfile.print "install-so: #{dest}\n"

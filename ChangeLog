@@ -1,3 +1,11 @@
+Fri Apr  2 18:00:05 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (extmake): extract necessary variables for static link
+	  from Makefile.
+
+	* lib/mkmf.rb (create_makefile): save preload and libpath for next
+	  compile.
+
 Fri Apr  2 17:27:17 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (top_include): include in the wrapped load is done for
@@ -50,7 +58,7 @@ Thu Apr  1 19:58:37 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 	  object with soap/marshal.
 	  added URIFactory class for URI mapping.  BasetypeFactory checks
 	  instance_variables when original mapping is not allowed (ivar must
-	  be empty).  Instance of URI have instance_variables but it must be 
+	  be empty).  Instance of URI have instance_variables but it must be
 	  llowed whenever original mapping is allowed or not.
 
 Wed Mar 31 19:06:23 2004  Tanaka Akira  <akr@m17n.org>
