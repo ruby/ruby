@@ -3715,19 +3715,12 @@ argf_read(argc, argv)
     if (NIL_P(tmp) && next_p != -1) {
 	io_close(current_file);
 	next_p = 1;
-	return str;
+	if (argc == 0) goto retry;
     }
     if (NIL_P(tmp) || RSTRING(tmp)->len == 0) return str;
     else if (NIL_P(str)) str = tmp;
     else rb_str_append(str, tmp);
-    if (argc == 0) {
-	goto retry;
-    }
-    if (RSTRING(tmp)->len < len) {
-	len -= RSTRING(tmp)->len;
-	argv[0] = LONG2FIX(len);
-	goto retry;
-    }
+    if (argc == 0) goto retry;
 
     return str;
 }

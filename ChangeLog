@@ -1,3 +1,8 @@
+Sat Apr 26 23:34:42 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (open_args): warning message changed to "don't put space
+	  before argument parentheses".
+
 Sat Apr 26 14:25:00 2003  Takaaki Uematsu  <uema2x@jcom.home.ne.jp>
 
 	* wince/ : files removed.
@@ -31,6 +36,10 @@ Sat Apr 26 14:25:00 2003  Takaaki Uematsu  <uema2x@jcom.home.ne.jp>
 	* wince/sys/utime.h, utime.c : rename _utime to utime.
 
 	* wince/sys/stat.c : expand relative directory in stat.
+
+Sat Apr 26 06:33:04 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (argf_read): ARGF.read() should read all argument files.
 
 Fri Apr 25 18:46:00 2003  Takaaki Uematsu  <uema2x@jcom.home.ne.jp>
 

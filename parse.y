@@ -1340,14 +1340,12 @@ command_args	:  {
 open_args	: call_args
 		| tLPAREN_ARG  {lex_state = EXPR_ENDARG;} ')'
 		    {
-		        rb_warning("%s (...) interpreted as method call",
-		                   rb_id2name($<id>1));
+		        rb_warn("don't put space before argument parentheses");
 			$$ = 0;
 		    }
 		| tLPAREN_ARG call_args2 {lex_state = EXPR_ENDARG;} ')'
 		    {
-		        rb_warning("%s (...) interpreted as method call",
-		                   rb_id2name($<id>1));
+		        rb_warn("don't put space before argument parentheses");
 			$$ = $2;
 		    }
 		;
@@ -3277,7 +3275,6 @@ arg_ambiguous()
 static int
 yylex()
 {
-    static ID last_id = 0;
     register int c;
     int space_seen = 0;
     int cmd_state;
@@ -4029,7 +4026,6 @@ yylex()
 	    }
 	    else if (lex_state == EXPR_ARG) {
 		c = tLPAREN_ARG;
-		yylval.id = last_id;
 	    }
 	}
 	COND_PUSH(0);
@@ -4407,8 +4403,8 @@ yylex()
 	    }
 	}
 	tokfix();
-	last_id = yylval.id = rb_intern(tok());
-	if ((dyna_in_block() && rb_dvar_defined(last_id)) || local_id(last_id)) {
+	yylval.id = rb_intern(tok());
+	if ((dyna_in_block() && rb_dvar_defined(yylval.id)) || local_id(yylval.id)) {
 	    lex_state = EXPR_END;
 	}
 	return result;
