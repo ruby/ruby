@@ -1,3 +1,15 @@
+Mon Feb  2 00:01:19 2004  Tanaka Akira  <akr@m17n.org>
+
+	* lib/resolv-replace.rb (BasicSocket#send): don't replace because
+	  it has no hostname argument.
+	  (IPSocket.getaddress): raise SocketError instead of
+	  Resolv::ResolvError for errors.
+	  (TCPSocket#initialize, UDPSocket#bind, UDPSocket#connect)
+	  (SOCKSSocket#initialize): use IPSocket.getaddress instead of
+	  Resolv.getaddress.
+	  (UDPSocket#send): recognize 3 arguments form.  try all addresses on
+	  4 arguments form.
+
 Sun Feb  1 18:17:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
 
 	* lib/net/http.rb: merged coding style changes from HEAD.
