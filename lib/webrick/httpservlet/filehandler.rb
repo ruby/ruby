@@ -72,13 +72,15 @@ module WEBrick
       def make_partial_content(req, res, filename, filesize)
         mtype = HTTPUtils::mime_type(filename, @config[:MimeTypes])
         unless ranges = HTTPUtils::parse_range_header(req['range'])
-          raise BadRequest, "Unrecognized range-spec: \"#{range}\""
+          raise HTTPStatus::BadRequest,
+            "Unrecognized range-spec: \"#{req['range']}\""
         end
         open(filename, "rb"){|io|
           if ranges.size > 1
+            time = Time.now
             boundary = "#{time.sec}_#{time.usec}_#{Process::pid}"
             body = ''
-            ranges.each{|r|
+            ranges.each{|range|
               first, last = prepare_range(range, filesize)
               next if first < 0
               io.pos = first
@@ -92,6 +94,8 @@ module WEBrick
             }
             raise HTTPStatus::RequestRangeNotSatisfiable if body.empty?
             body << "--" << boundary << "--" << CRLF
+            res["content-type"] = "multipart/byteranges; boundary=#{boundary}"
+            res.body = body
           elsif range = ranges[0]
             first, last = prepare_range(range, filesize)
             raise HTTPStatus::RequestRangeNotSatisfiable if first < 0

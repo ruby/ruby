@@ -167,7 +167,7 @@ module WEBrick
           case range_spec
           when /^(\d+)-(\d+)/ then $1.to_i .. $2.to_i
           when /^(\d+)-/      then $1.to_i .. -1
-          when /^(\d+)/       then -($1.to_i) .. -1
+          when /^-(\d+)/      then -($1.to_i) .. -1
           else return nil
           end
         }
