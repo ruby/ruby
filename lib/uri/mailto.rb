@@ -51,7 +51,7 @@ module URI
     # headers    =  "?" header *( "&" header )
     # to         =  #mailbox
     # mailtoURL  =  "mailto:" [ to ] [ headers ]
-    MAILBOX_PATTERN = "(?:[^(),%?=&]|#{PATTERN::ESCAPED})".freeze
+    MAILBOX_PATTERN = "(?:#{PATTERN::ESCAPED}|[^(),%?=&])".freeze
     MAILTO_REGEXP = Regexp.new("
       \\A
       (#{MAILBOX_PATTERN}*?)                          (?# 1: to)
@@ -128,7 +128,8 @@ module URI
 	  set_to($1)
 	  set_headers($2)
 	end
-      elsif arg[-1]
+
+      else
 	raise InvalidComponentError,
 	  "unrecognised opaque part for mailtoURL: #{@opaque}"
       end
