@@ -1,3 +1,12 @@
+Mon Nov 24 19:32:55 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/etc/extconf.rb: check for pw_passwd in struct passwd and
+	  gr_passwd in struct group for DJGPP.
+
+	* ext/etc/etc.c: ditto.
+
+	* ext/Setup.dj: support for curses, etc, zlib.
+
 Mon Nov 24 17:00:00 2003  Tanaka Akira  <akr@m17n.org>
 
 	* lib/open-uri.rb: validate option names.

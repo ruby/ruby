@@ -12,5 +12,7 @@ if  a or b or c
   have_struct_member('struct passwd', 'pw_class', 'pwd.h')
   have_struct_member('struct passwd', 'pw_comment', 'pwd.h') unless /cygwin/ === RUBY_PLATFORM
   have_struct_member('struct passwd', 'pw_expire', 'pwd.h')
+  have_struct_member('struct passwd', 'pw_passwd', 'pwd.h')
+  have_struct_member('struct group', 'gr_passwd', 'grp.h')
   create_makefile("etc")
 end

@@ -67,7 +67,9 @@ setup_passwd(pwd)
     if (pwd == 0) rb_sys_fail("/etc/passwd");
     return rb_struct_new(sPasswd,
 			 safe_setup_str(pwd->pw_name),
+#ifdef HAVE_ST_PW_PASSWD
 			 safe_setup_str(pwd->pw_passwd),
+#endif
 			 INT2FIX(pwd->pw_uid),
 			 INT2FIX(pwd->pw_gid),
 #ifdef HAVE_ST_PW_GECOS
@@ -235,7 +237,9 @@ setup_group(grp)
     }
     return rb_struct_new(sGroup,
 			 safe_setup_str(grp->gr_name),
+#ifdef HAVE_ST_GR_PASSWD
 			 safe_setup_str(grp->gr_passwd),
+#endif
 			 INT2FIX(grp->gr_gid),
 			 mem);
 }
