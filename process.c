@@ -1261,13 +1261,17 @@ rb_proc_times(obj)
 # endif
 #endif /* HZ */
     struct tms buf;
+    VALUE volatile utime = rb_float_new((double)buf.tms_utime / HZ);
+    VALUE volatile stime = rb_float_new((double)buf.tms_stime / HZ);
+    VALUE volatile cutime = rb_float_new((double)buf.tms_cutime / HZ);
+    VALUE volatile sctime = rb_float_new((double)buf.tms_cstime / HZ);
 
     times(&buf);
     return rb_struct_new(S_Tms,
-			 rb_float_new((double)buf.tms_utime / HZ),
-			 rb_float_new((double)buf.tms_stime / HZ),
-			 rb_float_new((double)buf.tms_cutime / HZ),
-			 rb_float_new((double)buf.tms_cstime / HZ));
+                        utime,
+                        stime,
+                        cutime,
+                        sctime);
 #else
     rb_notimplement();
 #endif
