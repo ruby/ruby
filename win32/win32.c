@@ -3178,7 +3178,7 @@ unixtime_to_filetime(time_t time, FILETIME *ft)
 int
 rb_w32_utime(const char *path, struct utimbuf *times)
 {
-    HANDLE hDir;
+    HANDLE hFile;
     SYSTEMTIME st;
     FILETIME atime, mtime;
     struct tm *tm;
@@ -3188,9 +3188,6 @@ rb_w32_utime(const char *path, struct utimbuf *times)
     if (rb_w32_stat(path, &stat)) {
 	return -1;
     }
-    if (!(stat.st_mode & S_IFDIR) || IsWin95()) {
-	return utime(path, times);
-    }
 
     if (unixtime_to_filetime(times->actime, &atime)) {
 	return -1;
@@ -3199,17 +3196,21 @@ rb_w32_utime(const char *path, struct utimbuf *times)
 	return -1;
     }
 
-    hDir = CreateFile(path, GENERIC_WRITE, 0, 0, OPEN_EXISTING,
-		      FILE_FLAG_BACKUP_SEMANTICS, 0);
-    if (hDir == INVALID_HANDLE_VALUE) {
-	errno = map_errno();
-	return -1;
-    }
-    if (!SetFileTime(hDir, NULL, &atime, &mtime)) {
-	errno = map_errno();
-	ret = -1;
-    }
-    CloseHandle(hDir);
+    RUBY_CRITICAL({
+	hFile = CreateFile(path, GENERIC_WRITE, 0, 0, OPEN_EXISTING,
+			   IsWin95() ? 0 : FILE_FLAG_BACKUP_SEMANTICS, 0);
+	if (hFile == INVALID_HANDLE_VALUE) {
+	    errno = map_errno();
+	    ret = -1;
+	}
+	else {
+	    if (!SetFileTime(hFile, NULL, &atime, &mtime)) {
+		errno = map_errno();
+		ret = -1;
+	    }
+	    CloseHandle(hFile);
+	}
+    });
 
     return ret;
 }

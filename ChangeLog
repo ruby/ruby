@@ -1,3 +1,8 @@
+Mon Aug  4 02:34:05 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_utime): never use utime() of C runtime.
+	  [ruby-talk:77782]
+
 Sun Aug  3 23:56:50 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_call_super): should propagate previous block for
