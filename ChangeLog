@@ -1,3 +1,8 @@
+Wed Nov 19 11:04:47 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* lib/fileutils.rb (cannot_overwrite_file?, have_st_ino?): bccwin32
+	  is same as mswin32.
+
 Tue Nov 19 07:54:00 2003  Nathaniel Talbott  <ntalbott@ruby-lang.org>
 
 	* lib/test/unit.rb: do not run tests if $! is set.

@@ -465,7 +465,7 @@ module FileUtils
   alias move mv
 
   def cannot_overwrite_file? #:nodoc:
-    /djgpp|cygwin|mswin|mingw/ === RUBY_PLATFORM
+    /djgpp|cygwin|mswin|mingw|bccwin/ === RUBY_PLATFORM
   end
   private :cannot_overwrite_file?
 
@@ -749,7 +749,7 @@ module FileUtils
   end
 
   def have_st_ino?
-    /mswin|mingw/ !~ RUBY_PLATFORM
+    /mswin|mingw|bccwin/ !~ RUBY_PLATFORM
   end
 
   def fu_stream_blksize( *streams )
