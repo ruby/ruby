@@ -116,6 +116,7 @@ static int quoted_term;
 
 static NODE *cond();
 static NODE *logop();
+static int cond_negative();
 
 static NODE *newline_node();
 static void fixpos();
@@ -409,8 +410,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    {
 			$$ = NEW_IF(cond($3), $1, 0);
 		        fixpos($$, $3);
-			if (nd_type($$->nd_cond) == NODE_NOT) {
-			    $$->nd_cond = $$->nd_cond->nd_body;
+			if (cond_negative(&$$->nd_cond)) {
 		            $$->nd_else = $$->nd_body;
 		            $$->nd_body = 0;
 			}
@@ -419,8 +419,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    {
 			$$ = NEW_UNLESS(cond($3), $1, 0);
 		        fixpos($$, $3);
-			if (nd_type($$->nd_cond) == NODE_NOT) {
-			    $$->nd_cond = $$->nd_cond->nd_body;
+			if (cond_negative(&$$->nd_cond)) {
 		            $$->nd_body = $$->nd_else;
 		            $$->nd_else = 0;
 			}
@@ -433,8 +432,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			else {
 			    $$ = NEW_WHILE(cond($3), $1, 1);
 			}
-			if (nd_type($$->nd_cond) == NODE_NOT) {
-			    $$->nd_cond = $$->nd_cond->nd_body;
+			if (cond_negative(&$$->nd_cond)) {
 			    nd_set_type($$, NODE_UNTIL);
 			}
 		    }
@@ -446,8 +444,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			else {
 			    $$ = NEW_UNTIL(cond($3), $1, 1);
 			}
-			if (nd_type($$->nd_cond) == NODE_NOT) {
-			    $$->nd_cond = $$->nd_cond->nd_body;
+			if (cond_negative(&$$->nd_cond)) {
 			    nd_set_type($$, NODE_WHILE);
 			}
 		    }
@@ -1494,9 +1491,8 @@ primary		: literal
 		    {
 			$$ = NEW_IF(cond($2), $4, $5);
 		        fixpos($$, $2);
-			if (nd_type($$->nd_cond) == NODE_NOT) {
+			if (cond_negative(&$$->nd_cond)) {
 		            NODE *tmp = $$->nd_body;
-			    $$->nd_cond = $$->nd_cond->nd_body;
 		            $$->nd_body = $$->nd_else;
 		            $$->nd_else = tmp;
 			}
@@ -1508,9 +1504,8 @@ primary		: literal
 		    {
 			$$ = NEW_UNLESS(cond($2), $4, $5);
 		        fixpos($$, $2);
-			if (nd_type($$->nd_cond) == NODE_NOT) {
+			if (cond_negative(&$$->nd_cond)) {
 		            NODE *tmp = $$->nd_body;
-			    $$->nd_cond = $$->nd_cond->nd_body;
 		            $$->nd_body = $$->nd_else;
 		            $$->nd_else = tmp;
 			}
@@ -1521,8 +1516,7 @@ primary		: literal
 		    {
 			$$ = NEW_WHILE(cond($3), $6, 1);
 		        fixpos($$, $3);
-			if (nd_type($$->nd_cond) == NODE_NOT) {
-			    $$->nd_cond = $$->nd_cond->nd_body;
+			if (cond_negative(&$$->nd_cond)) {
 			    nd_set_type($$, NODE_UNTIL);
 			}
 		    }
@@ -1532,8 +1526,7 @@ primary		: literal
 		    {
 			$$ = NEW_UNTIL(cond($3), $6, 1);
 		        fixpos($$, $3);
-			if (nd_type($$->nd_cond) == NODE_NOT) {
-			    $$->nd_cond = $$->nd_cond->nd_body;
+			if (cond_negative(&$$->nd_cond)) {
 			    nd_set_type($$, NODE_WHILE);
 			}
 		    }
@@ -5285,6 +5278,26 @@ logop(type, left, right)
 	return left;
     }
     return rb_node_newnode(type, left, right, 0);
+}
+
+static int
+cond_negative(nodep)
+    NODE **nodep;
+{
+    NODE *c = *nodep;
+
+    if (!c) return 0;
+    switch (nd_type(c)) {
+      case NODE_NOT:
+	*nodep = c->nd_body;
+	return 1;
+      case NODE_NEWLINE:
+	if (c->nd_next && nd_type(c->nd_next) == NODE_NOT) {
+	    c->nd_next = c->nd_next->nd_body;
+	    return 1;
+	}
+    }
+    return 0;
 }
 
 static NODE *

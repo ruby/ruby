@@ -1,3 +1,10 @@
+Thu Mar 20 16:03:18 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* parse.y (stmt, primary): get rid of SEGV at empty or invalid
+	  condition.  (ruby-bugs-ja:PR#410)
+
+	* parse.y (cond_negative): negate condition node when NODE_NOT.
+
 Thu Mar 20 10:45:29 2003  Tanaka Akira  <akr@m17n.org>
 
 	* eval.c (bmcall): add volatile to avoid GC problem.
