@@ -1,3 +1,10 @@
+Tue Apr  3 09:56:20 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/extmk.rb.in (create_makefile): create def file only if
+	  it does not yet exist.
+
+	* lib/mkmf.rb: ditto.
+
 Mon Apr  2 14:25:49 2001  Shugo Maeda <shugo@ruby-lang.org>
 
 	* lib/monitor.rb (wait): ensure reentrance.
