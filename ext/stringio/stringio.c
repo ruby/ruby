@@ -794,7 +794,7 @@ strio_write(self, str)
     else {
 	if (ptr->pos + len > olen) {
 	    rb_str_resize(ptr->string, ptr->pos + len);
-	    MEMZERO(RSTRING(ptr->string)->ptr + olen, char, ptr->pos - olen);
+	    MEMZERO(RSTRING(ptr->string)->ptr + olen, char, ptr->pos + len - olen);
 	}
 	else {
 	    rb_str_modify(ptr->string);

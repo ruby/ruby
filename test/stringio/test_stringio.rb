@@ -30,4 +30,14 @@ class TestStringIO < Test::Unit::TestCase
     io.print "last"
     assert_equal("\0" * n + "last", io.string)
   end
+
+  def test_overwrite # [ruby-core:03836]
+    stringio = StringIO.new
+    responses = ['', 'just another ruby', 'hacker']
+    responses.each do |resp|
+      stringio.puts(resp)
+      stringio.rewind
+    end
+    assert_equal("hacker\nother ruby\n", stringio.string)
+  end
 end
