@@ -1,3 +1,10 @@
+Tue Dec 31 19:48:21 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* configure.in: Improve OpenBSD support. [obtained from: OpenBSD
+	  ports]
+
+	* dln.c (FUNCNAME_PATTERN): Ditto.
+
 Tue Dec 31 19:21:02 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* array.c (rb_ary_transpose): Properly declare ary as a VALUE.
