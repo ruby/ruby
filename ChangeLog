@@ -1,3 +1,30 @@
+Fri Jan 25 17:16:23 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* class.c (rb_include_module): detect cyclic module inclusion.
+
+Fri Jan 25 02:17:56 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_thread_cleanup): need not to free thread stacks at
+	  process termination.
+
+	* array.c (rb_ary_fetch): use the block to get the default value
+	  if the block is given.
+
+	* eval.c (rb_thread_schedule): should check time only if BOTH
+	  WAIT_SELECT and WAIT_TIME.
+
+Thu Jan 24 11:49:05 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (umethod_bind): should update rklass field.
+
+	* hash.c (rb_hash_update): if a block is given, yields [key,
+	  value1, value2] to the block to resolve conflict.
+
+Thu Jan 24 05:42:01 2002  Koji Arai  <jca02266@nifty.ne.jp>
+
+	* string.c (rb_str_split_m): no need to consider KANJI
+	characters, if the length of separator is 1 (byte).
+
 Wed Jan 23 16:07:31 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (Init_Array): remove Array#filter.

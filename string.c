@@ -1634,7 +1634,7 @@ uscore_get()
     line = rb_lastline_get();
     if (TYPE(line) != T_STRING) {
 	rb_raise(rb_eTypeError, "$_ value need to be String (%s given)",
-		 NIL_P(line)?"nil":rb_class2name(CLASS_OF(line)));
+		 NIL_P(line) ? "nil" : rb_class2name(CLASS_OF(line)));
     }
     return line;
 }
@@ -2509,7 +2509,6 @@ rb_str_split_m(argc, argv, str)
 		    if (!NIL_P(limit) && lim <= ++i) break;
 		}
 		end++;
-		if (ismbchar(*ptr)) {ptr++; end++;}
 	    }
 	}
     }

@@ -550,8 +550,16 @@ rb_ary_fetch(argc, argv, ary)
 	idx +=  RARRAY(ary)->len;
     }
     if (idx < 0 || RARRAY(ary)->len <= idx) {
-	if (argc == 2) return ifnone;
-	rb_raise(rb_eIndexError, "index %d out of array", idx);
+	if (rb_block_given_p()) {
+	    if (argc > 1) {
+		rb_raise(rb_eArgError, "wrong number of arguments");
+	    }
+	    return rb_yield(pos);
+	}
+	if (argc == 1) {
+	    rb_raise(rb_eIndexError, "index %d out of array", idx);
+	}
+	return ifnone;
     }
     return RARRAY(ary)->ptr[idx];
 }

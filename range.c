@@ -438,7 +438,7 @@ rb_range_beg_len(range, begp, lenp, len, err)
   out_of_range:
     if (err) {
 	rb_raise(rb_eRangeError, "%d..%s%d out of range",
-		 b, EXCL(range)?".":"", e);
+		 b, EXCL(range)? "." : "", e);
     }
     return Qnil;
 }

@@ -349,11 +349,13 @@ rb_include_module(klass, module)
     OBJ_INFECT(klass, module);
     c = klass;
     while (module) {
+	if (RCLASS(klass)->m_tbl == RCLASS(module)->m_tbl)
+	    rb_raise(rb_eArgError, "cyclic include detected");
 	/* ignore if the module included already in superclasses */
 	for (p = RCLASS(klass)->super; p; p = RCLASS(p)->super) {
-	    if (BUILTIN_TYPE(p) == T_ICLASS &&
-		RCLASS(p)->m_tbl == RCLASS(module)->m_tbl) {
-		goto skip;
+	    if (BUILTIN_TYPE(p) == T_ICLASS) {
+		if (RCLASS(p)->m_tbl == RCLASS(module)->m_tbl)
+		    goto skip;
 	    }
 	}
 	RCLASS(c)->super = include_class_new(module, RCLASS(c)->super);

@@ -1,3 +1,11 @@
+: Array#fetch
+
+  takes block to get the default value.
+
+: Hash#update
+
+  takes block to resolve key conflict.
+
 : IO#fsync
 
   Added.

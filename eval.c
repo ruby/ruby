@@ -166,7 +166,7 @@ print_undef(klass, id)
 {
     rb_name_error(id, "undefined method `%s' for %s `%s'",
 		  rb_id2name(id), 
-		  (TYPE(klass) == T_MODULE)?"module":"class",
+		  (TYPE(klass) == T_MODULE) ? "module" : "class",
 		  rb_class2name(klass));
 }
 
@@ -4262,8 +4262,8 @@ rb_f_missing(argc, argv, obj)
 	char buf[BUFSIZ];
 
 	snprintf(buf, BUFSIZ, format, rb_id2name(id),
-		 desc, desc[0]=='#'?"":":",
-		 desc[0]=='#'?"":rb_class2name(CLASS_OF(obj)));
+		 desc, desc[0]=='#' ? "" : ":",
+		 desc[0]=='#' ? "" : rb_class2name(CLASS_OF(obj)));
 	exc = rb_exc_new2(exc, buf);
 	rb_iv_set(exc, "name", argv[0]);
 	rb_iv_set(exc, "args", rb_ary_new4(argc-1, argv+1));
@@ -6866,6 +6866,7 @@ umethod_bind(method, recv)
     method = Data_Make_Struct(rb_cMethod,struct METHOD,bm_mark,free,bound);
     *bound = *data;
     bound->recv = recv;
+    bound->rklass = CLASS_OF(recv);
 
     return method;
 }
@@ -7319,7 +7320,7 @@ static rb_thread_t
 rb_thread_check(data)
     VALUE data;
 {
-    if (TYPE(data) != T_DATA || RDATA(data)->dfree != (RUBY_DATA_FUNC)thread_free) {
+    if (TYPE(data) != T_DATA || RDATA(data)->dmark != (RUBY_DATA_FUNC)thread_mark) {
 	rb_raise(rb_eTypeError, "wrong argument type %s (expected Thread)",
 		 rb_class2name(CLASS_OF(data)));
     }
@@ -7744,7 +7745,8 @@ rb_thread_schedule()
  	if (select_timeout && n == 0) {
  	    if (now < 0.0) now = timeofday();
  	    FOREACH_THREAD_FROM(curr, th) {
- 		if ((th->wait_for & (WAIT_SELECT|WAIT_TIME)) && th->delay <= now) {
+ 		if (((th->wait_for&(WAIT_SELECT|WAIT_TIME)) == (WAIT_SELECT|WAIT_TIME)) &&
+		    th->delay <= now) {
  		    th->status = THREAD_RUNNABLE;
  		    th->wait_for = 0;
  		    th->select_value = 0;
@@ -7810,7 +7812,7 @@ rb_thread_schedule()
 	FOREACH_THREAD_FROM(curr, th) {
 	    fprintf(stderr, "deadlock 0x%lx: %d:%d %s - %s:%d\n", 
 		    th->thread, th->status,
-		    th->wait_for, th==main_thread?"(main)":"",
+		    th->wait_for, th==main_thread ? "(main)" : "",
 		    th->file, th->line);
 	}
 	END_FOREACH_FROM(curr, th);
@@ -8664,6 +8666,7 @@ rb_thread_cleanup()
 	    th->gid = 0;
 	    th->priority = 0;
 	    th->status = THREAD_TO_KILL;
+	    RDATA(th->thread)->dfree = NULL;
 	}
     }
     END_FOREACH(th);

@@ -256,8 +256,7 @@ The variable ruby-indent-level controls the amount of indentation.
 		 (looking-at "[a-zA-Z][a-zA-z0-9_]* +%[^ \t]"))
 		((eq option 'expr-re)
 		 (looking-at "[a-zA-Z][a-zA-z0-9_]* +/[^ \t]"))
-		(t
-		 (looking-at "[a-zA-Z][a-zA-z0-9_]* +")))))))))
+		(t nil))))))))
 
 (defun ruby-forward-string (term &optional end no-error expand)
   (let ((n 1) (c (string-to-char term))

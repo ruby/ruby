@@ -734,7 +734,7 @@ glob_helper(path, sub, flags, func, arg)
 		    if (strcmp(".", dp->d_name) == 0 || strcmp("..", dp->d_name) == 0)
 			continue;
 		    buf = ALLOC_N(char, strlen(base)+NAMLEN(dp)+strlen(m)+6);
-		    sprintf(buf, "%s%s%s", base, (BASE)?"/":"", dp->d_name);
+		    sprintf(buf, "%s%s%s", base, (BASE) ? "/" : "", dp->d_name);
 		    if (lstat(buf, &st) < 0) {
 			if (errno != ENOENT) rb_sys_warning(buf);
 			continue;
@@ -750,7 +750,7 @@ glob_helper(path, sub, flags, func, arg)
 		}
 		if (fnmatch(magic, dp->d_name, flags) == 0) {
 		    buf = ALLOC_N(char, strlen(base)+NAMLEN(dp)+2);
-		    sprintf(buf, "%s%s%s", base, (BASE)?"/":"", dp->d_name);
+		    sprintf(buf, "%s%s%s", base, (BASE) ? "/" : "", dp->d_name);
 		    if (!m) {
 			(*func)(buf, arg);
 			free(buf);

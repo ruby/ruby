@@ -889,12 +889,30 @@ rb_hash_update_i(key, value, hash)
     return ST_CONTINUE;
 }
 
+static int
+rb_hash_update_block_i(key, value, hash)
+    VALUE key, value;
+    VALUE hash;
+{
+    if (key == Qundef) return ST_CONTINUE;
+    if (rb_hash_has_key(hash, key)) {
+	value = rb_yield(rb_ary_new3(3, key, rb_hash_aref(hash, key), value));
+    }
+    rb_hash_aset(hash, key, value);
+    return ST_CONTINUE;
+}
+
 static VALUE
 rb_hash_update(hash1, hash2)
     VALUE hash1, hash2;
 {
     hash2 = to_hash(hash2);
-    st_foreach(RHASH(hash2)->tbl, rb_hash_update_i, hash1);
+    if (rb_block_given_p()) {
+	st_foreach(RHASH(hash2)->tbl, rb_hash_update_block_i, hash1);
+    }
+    else {
+	st_foreach(RHASH(hash2)->tbl, rb_hash_update_i, hash1);
+    }
     return hash1;
 }
 
@@ -985,7 +1003,7 @@ env_fetch(argc, argv)
     if (!env) {
 	if (rb_block_given_p()) {
 	    if (argc > 1) {
-		rb_raise(rb_eArgError, "wrong number of arguments", argc);
+		rb_raise(rb_eArgError, "wrong number of arguments");
 	    }
 	    return rb_yield(key);
 	}
