@@ -31,10 +31,11 @@ directry of Ruby sources, please try something like as the followings.
 
 
  *** ATTENTION ***
-If your Tcl/Tk libraries are compiled with "pthread support", Ruby/Tk
-may cause "Hang-up" or "Segmentation Fault" frequently. To avoid this 
-trouble, please try to use the '--with-pthread-ext' option of the 
-'configure' command and re-compile Ruby sources.
+When your Tcl/Tk libraries are compiled with "pthread support", 
+Ruby/Tk may cause "Hang-up" or "Segmentation Fault" frequently. 
+If you have such a trouble, please try to use the '--with-pthread-ext' 
+option of the 'configure' command and re-compile Ruby sources. 
+It may help you to avoid this trouble, 
 
 ==========================================================
                 Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)

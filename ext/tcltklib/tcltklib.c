@@ -79,6 +79,16 @@ struct invoke_queue {
     VALUE *result;
     VALUE thread;
 };
+
+struct eval_queue {
+    Tcl_Event ev;
+    VALUE str;
+    VALUE obj;
+    int done;
+    int safe_level;
+    VALUE *result;
+    VALUE thread;
+};
  
 static VALUE eventloop_thread;
 static VALUE watchdog_thread;
@@ -451,7 +461,9 @@ lib_eventloop_core(check_root, check_var)
 		    }
 		}
 
-		if (Tcl_DoOneEvent(TCL_ALL_EVENTS | TCL_DONT_WAIT)) {
+		found_event = Tcl_DoOneEvent(TCL_ALL_EVENTS | TCL_DONT_WAIT);
+
+		if (found_event) {
 		    tick_counter++;
 		} else {
 		    tick_counter += no_event_tick;
@@ -687,6 +699,7 @@ lib_do_one_event_core(argc, argv, self, is_ip)
 {
     VALUE vflags;
     int flags;
+    int found_event;
 
     if (rb_scan_args(argc, argv, "01", &vflags) == 0) {
 	flags = TCL_ALL_EVENTS | TCL_DONT_WAIT;
@@ -708,7 +721,9 @@ lib_do_one_event_core(argc, argv, self, is_ip)
 	}
     }
 
-    if (Tcl_DoOneEvent(flags)) {
+    found_event = Tcl_DoOneEvent(TCL_ALL_EVENTS | TCL_DONT_WAIT);
+
+    if (found_event) {
 	return Qtrue;
     } else {
 	return Qfalse;
@@ -736,7 +751,7 @@ ip_do_one_event(argc, argv, self)
 
 /* Tcl command `ruby' */
 static VALUE
-ip_eval_rescue(failed, einfo)
+ip_ruby_eval_rescue(failed, einfo)
     VALUE *failed;
     VALUE einfo;
 {
@@ -744,55 +759,28 @@ ip_eval_rescue(failed, einfo)
     return Qnil;
 }
 
-/* restart Tk */
+struct eval_body_arg {
+    char  *string;
+    VALUE failed;
+};
+
 static VALUE
-lib_restart(self)
-    VALUE self;
+ip_ruby_eval_body(arg)
+     struct eval_body_arg *arg;
 {
-    struct tcltkip *ptr = get_ip(self);
-
-    rb_secure(4);
-
-    /* destroy the root wdiget */
-    ptr->return_value = Tcl_Eval(ptr->ip, "destroy .");
-    /* ignore ERROR */
-    DUMP2("(TCL_Eval result) %d", ptr->return_value);
-
-    /* execute Tk_Init of Tk_SafeInit */
-#if TCL_MAJOR_VERSION >= 8
-    if (Tcl_IsSafe(ptr->ip)) {
-	DUMP1("Tk_SafeInit");
-	if (Tk_SafeInit(ptr->ip) == TCL_ERROR) {
-	    rb_raise(rb_eRuntimeError, "%s", ptr->ip->result);
-	}
-    } else {
-	DUMP1("Tk_Init");
-	if (Tk_Init(ptr->ip) == TCL_ERROR) {
-	    rb_raise(rb_eRuntimeError, "%s", ptr->ip->result);
-	}
-    }
-#else
-    DUMP1("Tk_Init");
-    if (Tk_Init(ptr->ip) == TCL_ERROR) {
-	rb_raise(rb_eRuntimeError, "%s", ptr->ip->result);
-    }
-#endif
-
-    return Qnil;
+    rb_trap_immediate = 0;
+    return rb_rescue2(rb_eval_string, (VALUE)arg->string, 
+		      ip_ruby_eval_rescue, (VALUE)&(arg->failed),
+		      rb_eStandardError, rb_eScriptError, rb_eSystemExit, 
+		      (VALUE)0);
 }
 
 static VALUE
-ip_restart(self)
-    VALUE self;
+ip_ruby_eval_ensure(trapflag)
+     VALUE trapflag;
 {
-    struct tcltkip *ptr = get_ip(self);
-
-    rb_secure(4);
-    if (Tcl_GetMaster(ptr->ip) != (Tcl_Interp*)NULL) {
-	/* slave IP */
-	return Qnil;
-    }
-    return lib_restart(self);
+    rb_trap_immediate = NUM2INT(trapflag);
+    return Qnil;
 }
 
 static int
@@ -811,9 +799,8 @@ ip_ruby(clientData, interp, argc, argv)
 #endif
 {
     VALUE res;
-    int old_trapflg;
-    VALUE failed = 0;
-    char *arg;
+    int old_trapflag;
+     struct eval_body_arg arg;
     int  dummy;
 
     /* ruby command has 1 arg. */
@@ -823,34 +810,31 @@ ip_ruby(clientData, interp, argc, argv)
 
     /* get C string from Tcl object */
 #if TCL_MAJOR_VERSION >= 8
-    arg = Tcl_GetStringFromObj(argv[1], &dummy);
+    arg.string = Tcl_GetStringFromObj(argv[1], &dummy);
 #else
-    arg = argv[1];
+    arg.string = argv[1];
 #endif
+    arg.failed = 0;
 
     /* evaluate the argument string by ruby */
     DUMP2("rb_eval_string(%s)", arg);
-    old_trapflg = rb_trap_immediate;
-    rb_trap_immediate = 0;
-    res = rb_rescue2(rb_eval_string, (VALUE)arg, 
-                     ip_eval_rescue, (VALUE)&failed,
-                     rb_eStandardError, rb_eScriptError, rb_eSystemExit, 
-		     (VALUE)0);
-    rb_trap_immediate = old_trapflg;
+    old_trapflag = rb_trap_immediate;
+    res = rb_ensure(ip_ruby_eval_body, (VALUE)&arg, 
+		    ip_ruby_eval_ensure, INT2FIX(old_trapflag));
 
     /* status check */
-    if (failed) {
-        VALUE eclass = CLASS_OF(failed);
+    if (arg.failed) {
+        VALUE eclass = CLASS_OF(arg.failed);
 	DUMP1("(rb_eval_string result) failed");
 	Tcl_ResetResult(interp);
-	Tcl_AppendResult(interp, StringValuePtr(failed), (char*)NULL);
+	Tcl_AppendResult(interp, StringValuePtr(arg.failed), (char*)NULL);
         if (eclass == eTkCallbackBreak) {
 	    return TCL_BREAK;
 	} else if (eclass == eTkCallbackContinue) {
 	    return TCL_CONTINUE;
 	} else if (eclass == rb_eSystemExit) {
 	    Tcl_Eval(interp, "destroy .");
-	    rb_raise(rb_eSystemExit, StringValuePtr(failed));
+	    rb_raise(rb_eSystemExit, StringValuePtr(arg.failed));
 	} else {
 	    return TCL_ERROR;
 	}
@@ -1743,9 +1727,10 @@ ip_is_deleted_p(self)
     }
 }
 
+
 /* eval string in tcl by Tcl_Eval() */
 static VALUE
-ip_eval(self, str)
+ip_eval_real(self, str)
     VALUE self;
     VALUE str;
 {
@@ -1767,6 +1752,179 @@ ip_eval(self, str)
     /* pass back the result (as string) */
     /* return(rb_str_new2(ptr->ip->result)); */
     return(rb_tainted_str_new2(ptr->ip->result));
+}
+
+static VALUE
+evq_safelevel_handler(arg, evq)
+    VALUE arg;
+    VALUE evq;
+{
+    struct eval_queue *q;
+
+    Data_Get_Struct(evq, struct eval_queue, q);
+    DUMP2("(safe-level handler) $SAFE = %d", q->safe_level);
+    rb_set_safe_level(q->safe_level);
+    return ip_eval_real(q->obj, q->str);
+}
+
+int eval_queue_handler _((Tcl_Event *, int));
+int
+eval_queue_handler(evPtr, flags)
+    Tcl_Event *evPtr;
+    int flags;
+{
+    struct eval_queue *q = (struct eval_queue *)evPtr;
+
+    DUMP2("do_eval_queue_handler : evPtr = %lx", evPtr);
+    DUMP2("eval queue_thread : %lx", rb_thread_current());
+    DUMP2("added by thread : %lx", q->thread);
+
+    if (q->done) {
+	DUMP1("processed by another event-loop");
+	return 0;
+    } else {
+	DUMP1("process it on current event-loop");
+    }
+
+    /* process it */
+    q->done = 1;
+
+    /* check safe-level */
+    if (rb_safe_level() != q->safe_level) {
+	*(q->result) 
+	    = rb_funcall(rb_proc_new(evq_safelevel_handler, 
+				     Data_Wrap_Struct(rb_cData,0,0,q)), 
+			 rb_intern("call"), 0);
+    } else {
+    DUMP2("call eval_real (for caller thread:%lx)", q->thread);
+    DUMP2("call eval_real (current thread:%lx)", rb_thread_current());
+	*(q->result) = ip_eval_real(q->obj, q->str);
+    }
+
+    /* back to caller */
+    DUMP2("back to caller (caller thread:%lx)", q->thread);
+    DUMP2("               (current thread:%lx)", rb_thread_current());
+    rb_thread_run(q->thread);
+    DUMP1("finish back to caller");
+
+    /* end of handler : remove it */
+    return 1;
+}
+
+static VALUE
+ip_eval(self, str)
+    VALUE self;
+    VALUE str;
+{
+    struct eval_queue *tmp;
+    VALUE current = rb_thread_current();
+    VALUE result;
+    VALUE *alloc_result;
+    Tcl_QueuePosition position;
+
+    if (eventloop_thread == 0 || current == eventloop_thread) {
+	if (eventloop_thread) {
+	    DUMP2("eval from current eventloop %lx", current);
+	} else {
+	    DUMP2("eval from thread:%lx but no eventloop", current);
+	}
+	result = ip_eval_real(self, str);
+	if (rb_obj_is_kind_of(result, rb_eException)) {
+	    rb_exc_raise(result);
+	}
+	return result;
+    }
+
+    DUMP2("eval from thread %lx (NOT current eventloop)", current);
+
+    /* allocate memory (protected from Tcl_ServiceEvent) */
+    alloc_result = ALLOC(VALUE);
+
+    /* allocate memory (freed by Tcl_ServiceEvent) */
+    tmp = (struct eval_queue *)Tcl_Alloc(sizeof(struct eval_queue));
+
+    /* construct event data */
+    tmp->done = 0;
+    tmp->obj = self;
+    tmp->str = str;
+    tmp->result = alloc_result;
+    tmp->thread = current;
+    tmp->safe_level = rb_safe_level();
+    tmp->ev.proc = eval_queue_handler;
+    position = TCL_QUEUE_TAIL;
+
+    /* add the handler to Tcl event queue */
+    DUMP1("add handler");
+    Tcl_QueueEvent(&(tmp->ev), position);
+
+    /* wait for the handler to be processed */
+    DUMP2("wait for handler (current thread:%lx)", current);
+    rb_thread_stop();
+    DUMP2("back from handler (current thread:%lx)", current);
+
+    /* get result & free allocated memory */
+    result = *alloc_result;
+    free(alloc_result);
+    if (rb_obj_is_kind_of(result, rb_eException)) {
+	rb_exc_raise(result);
+    }
+
+    return result;
+}
+
+
+/* restart Tk */
+static VALUE
+lib_restart(self)
+    VALUE self;
+{
+    struct tcltkip *ptr = get_ip(self);
+
+    rb_secure(4);
+
+    /* destroy the root wdiget */
+    /* ptr->return_value = Tcl_Eval(ptr->ip, "destroy ."); */
+    ptr->return_value = FIX2INT(ip_eval(self, "destroy ."));
+    /* ignore ERROR */
+    DUMP2("(TCL_Eval result) %d", ptr->return_value);
+    Tcl_ResetResult(ptr->ip);
+
+    /* execute Tk_Init of Tk_SafeInit */
+#if TCL_MAJOR_VERSION >= 8
+    if (Tcl_IsSafe(ptr->ip)) {
+	DUMP1("Tk_SafeInit");
+	if (Tk_SafeInit(ptr->ip) == TCL_ERROR) {
+	    rb_raise(rb_eRuntimeError, "%s", ptr->ip->result);
+	}
+    } else {
+	DUMP1("Tk_Init");
+	if (Tk_Init(ptr->ip) == TCL_ERROR) {
+	    rb_raise(rb_eRuntimeError, "%s", ptr->ip->result);
+	}
+    }
+#else
+    DUMP1("Tk_Init");
+    if (Tk_Init(ptr->ip) == TCL_ERROR) {
+	rb_raise(rb_eRuntimeError, "%s", ptr->ip->result);
+    }
+#endif
+
+    return Qnil;
+}
+
+
+static VALUE
+ip_restart(self)
+    VALUE self;
+{
+    struct tcltkip *ptr = get_ip(self);
+
+    rb_secure(4);
+    if (Tcl_GetMaster(ptr->ip) != (Tcl_Interp*)NULL) {
+	/* slave IP */
+	return Qnil;
+    }
+    return lib_restart(self);
 }
 
 static VALUE

@@ -1,3 +1,11 @@
+Sat Nov  8 06:19:38 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tcltklib/tcltklib.c: To fix 'pthread-enabled Tcl/Tk' problem, 
+	  TclTkIp#_eval calls Tcl_Eval() on the mainloop thread only 
+	  (queueing a handler to the EventQueue). 
+
+	* ext/tcltklib/README.1st: edit the description of '--with-pthread-ext'
+
 Fri Nov  7 23:23:04 2003  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pathname.rb (Pathname#+): if self or the argument is `.', return
