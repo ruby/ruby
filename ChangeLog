@@ -1,3 +1,15 @@
+Thu Jan 29 11:32:14 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* test/rss/test_*: do $: trick while searching a module in the current
+	  directory.
+
+	* test/xsd/test_xmlschemaparser.rb, test/wsdl/test_emptycomplextype.rb,
+	  test/soap/helloworld/test_helloworld.rb,
+	  test/soap/calc/{test_calc.rb,test_calc2.rb}: do File.expand_path
+	  before using __FILE__.
+
+	* test/yaml/test_yaml.rb: assert_equals -> assert_equal.
+
 Thu Jan 29 01:56:02 2004  why the lucky stiff  <why@ruby-lang.org>
 
 	* ext/syck/rubyext.c: usec round-tripping skew. [ruby-core:2305]

@@ -1191,7 +1191,7 @@ EOY
         require 'yaml'
         t = Time.now
         5.times do
-            assert_equals( t, YAML.load( YAML.dump( t ) ) )
+            assert_equal( t, YAML.load( YAML.dump( t ) ) )
         end
     end
 

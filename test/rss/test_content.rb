@@ -6,7 +6,10 @@ require "rexml/document"
 
 require "rss/parser"
 require "rss/content"
+dir = File.dirname(File.expand_path(__FILE__))
+$:.push(dir)
 require "common"
+$:.delete(dir)
 
 class TestContent < Test::Unit::TestCase
 	include TestRSSMixin

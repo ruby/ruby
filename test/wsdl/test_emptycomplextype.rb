@@ -7,7 +7,7 @@ module WSDL
 
 class TestWSDL < Test::Unit::TestCase
   def setup
-    @file = File.join(File.dirname(__FILE__), 'emptycomplextype.wsdl')
+    @file = File.join(File.dirname(File.expand_path(__FILE__)), 'emptycomplextype.wsdl')
   end
 
   def test_wsdl
