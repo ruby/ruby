@@ -1,3 +1,7 @@
+Sat Feb 24 22:14:00 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* win32/win32.c (myrename): fix error handling.
+
 Sat Feb 24 13:58:48 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/http.rb: always close connection on request without
