@@ -535,7 +535,11 @@ extract_path(p, pend)
     len = pend - p;
     alloc = ALLOC_N(char, len+1);
     memcpy(alloc, p, len);
-    if (len > 1 && pend[-1] == '/') {
+    if (len > 1 && pend[-1] == '/'
+#if defined DOSISH
+    && len > 2 && pend[-2] != ':'
+#endif
+    ) {
 	alloc[len-1] = 0;
     }
     else {
@@ -621,7 +625,11 @@ rb_glob_helper(path, flag, func, arg)
 	      break;
 	    }
 	    
+#if defined DOSISH
+#define BASE (*base && !((isdirsep(*base) && !base[1]) || (base[1] == ':' && isdirsep(base[2]) && !base[3])))
+#else
 #define BASE (*base && !(*base == '/' && !base[1]))
+#endif
 
 	    for (dp = readdir(dirp); dp != NULL; dp = readdir(dirp)) {
 		if (recursive) {

@@ -1,3 +1,7 @@
+Tue Mar 13 16:39:45 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* dir.c (rb_glob_helper): fix drive letter handling on DOSISH.
+
 Tue Mar 13 15:01:12 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/http.rb: add HTTPRequest#basic_auth.
