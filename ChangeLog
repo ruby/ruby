@@ -1,3 +1,7 @@
+Thu Dec 25 00:17:53 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* stable version 1.8.1 released.
+
 Wed Dec 24 23:48:04 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/soap/test_basetype.rb, test/soap/marshal/test_marshal.rb
@@ -19,6 +23,10 @@ Wed Dec 24 20:37:37 2003  Eric Sunshine  <sunshine@sunshineco.com>
 	* configure.in (LDSHARED): Fixed typographical error in assignment of
 	  LDSHARED for Rhapsody which caused linking of extension modules to
 	  fail.
+
+Wed Dec 24 17:51:18 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* file.c (rb_thread_flock): enable thread support again.
 
 Wed Dec 24 16:46:08 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

@@ -1813,7 +1813,7 @@ gzfile_read_all(gz)
 	if (!(gz->z.flags & GZFILE_FLAG_FOOTER_FINISHED)) {
 	    gzfile_check_footer(gz);
 	}
-	return Qnil;
+	return rb_str_new(0, 0);
     }
 
     dst = zstream_detach_buffer(&gz->z);

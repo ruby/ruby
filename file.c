@@ -2905,7 +2905,6 @@ rb_file_flock(obj, operation)
 {
 #ifndef __CHECKER__
     OpenFile *fptr;
-    int ret;
 
     rb_secure(2);
     GetOpenFile(obj, fptr);
@@ -2914,10 +2913,7 @@ rb_file_flock(obj, operation)
 	fflush(GetWriteFile(fptr));
     }
   retry:
-    TRAP_BEG;
-    ret = flock(fileno(fptr->f), NUM2INT(operation));
-    TRAP_END;
-    if (ret < 0) {
+    if (flock(fileno(fptr->f), NUM2INT(operation)) < 0) {
         switch (errno) {
           case EAGAIN:
           case EACCES:
