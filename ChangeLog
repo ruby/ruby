@@ -1,3 +1,7 @@
+Wed Jul  2 01:32:40 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* lib/net/pop.rb (Net::POP3#start): typofix.
+
 Tue Jul  1 19:02:12 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* parse.y (rb_intern): should use mbclen instead of mblen.

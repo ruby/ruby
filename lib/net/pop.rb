@@ -513,7 +513,7 @@ module Net
           finish if @started
         end
       else
-        do_start acount, password
+        do_start account, password
         return self
       end
     end
