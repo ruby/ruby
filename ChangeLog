@@ -1,5 +1,8 @@
 Thu Oct  7 12:55:04 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
+	* io.c (io_read): should freeze buffer before thread context
+	  switch. [ruby-dev:24442]
+
 	* pack.c (pack_unpack): string conversion should at the top of the
 	  method.  [ruby-dev:24439]
 
