@@ -1655,6 +1655,7 @@ yycompile(f)
 
     eval_tree = 0;
     newline_seen = 0;
+    heredoc_end = 0;
     sourcefile = f;
     rb_in_compile = 1;
     n = yyparse();

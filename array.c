@@ -864,7 +864,7 @@ ary_delete_if(ary)
 
     ary_modify(ary);
     for (i1 = i2 = 0; i1 < RARRAY(ary)->len; i1++) {
-	if (rb_yield(RARRAY(ary)->ptr[i1])) continue;
+	if (RTEST(rb_yield(RARRAY(ary)->ptr[i1]))) continue;
 	if (i1 != i2) {
 	    RARRAY(ary)->ptr[i2] = RARRAY(ary)->ptr[i1];
 	}

@@ -1,3 +1,30 @@
+Mon Feb  8 23:53:58 1999  SHIROYAMA Takayuki  <psi@fortune.nest.or.jp>
+
+	* dln.c (FUNCNAME_PATTERN): FreeBSD for alpha/mips
+
+Mon Feb  8 17:07:37 1999  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* error.c (rb_sys_fail): need to allocate enough size buffer.
+
+Fri Feb  5 00:01:50 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (terms): needed to clear heredoc_end.
+
+Sat Jan 30 01:51:16 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* array.c (rb_ary_delete_if): RTEST() missing.
+
+	* hash.c (delete_if_i): ditto.
+
+Wed Jan 27 17:50:02 1999  Kazuhiro HIWADA  <hiwada@kuee.kyoto-u.ac.jp>
+
+	* bignum.c (dbl2big): raised error if double is too big to cast
+	  into long.  check added.
+
+Wed Jan 27 15:45:04 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_alias): was corrupting body.
+
 Thu Jan 21 18:04:05 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* version 1.2.2 (stable) released.

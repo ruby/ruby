@@ -395,7 +395,7 @@ dbl2big(d)
     VALUE z;
     double u = (d < 0)?-d:d;
 
-    while (0 != (long)u) {
+    while (!FIXABLE(u) || 0 != (long)u) {
 	u /= (double)(BIGRAD);
 	i++;
     }

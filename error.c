@@ -702,7 +702,7 @@ rb_sys_fail(mesg)
 
     err = strerror(errno);
     if (mesg) {
-	buf = ALLOCA_N(char, strlen(err)+strlen(mesg)+1);
+	buf = ALLOCA_N(char, strlen(err)+strlen(mesg)+4);
 	sprintf(buf, "%s - %s", err, mesg);
     }
     else {

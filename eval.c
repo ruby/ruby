@@ -203,9 +203,9 @@ rb_alias(klass, name, def)
     }
     body = orig->nd_body;
     if (nd_type(body) == NODE_FBODY) { /* was alias */
-	body = body->nd_head;
 	def = body->nd_mid;
 	origin = body->nd_orig;
+	body = body->nd_head;
     }
 
     st_insert(RCLASS(klass)->m_tbl, name,

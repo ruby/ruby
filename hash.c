@@ -439,7 +439,7 @@ delete_if_i(key, value)
     VALUE key, value;
 {
     if (key == Qnil) return ST_CONTINUE;
-    if (rb_yield(assoc_new(key, value)))
+    if (RTEST(rb_yield(assoc_new(key, value))))
 	return ST_DELETE;
     return ST_CONTINUE;
 }
