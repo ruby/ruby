@@ -1,3 +1,8 @@
+Fri Oct 15 01:32:31 1999  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* ext/Win32API/Win32API.c (Win32API_Call): need to use NUM2ULONG,
+	  not NUM2INT.
+
 Tue Oct 12 22:29:04 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (block_pass): should copy block to prevent modifications.
@@ -29,6 +34,10 @@ Mon Oct 11 07:27:05 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 Mon Oct  4 12:42:32 1999  Kazuhiko Izawa  <izawa@erec.che.tohoku.ac.jp>
 
 	* pack.c (pack_unpack): % in printf format should be %%.
+
+Wed Oct  6 17:13:19 1999  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* ruby.c (addpath): rubylib_mangled_path() modified.
 
 Mon Oct  4 10:01:40 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
