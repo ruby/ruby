@@ -1522,6 +1522,7 @@ run_final(obj)
     int status;
     VALUE args[2], table;
 
+    DEFER_INTS;
     args[1] = rb_ary_new3(1, rb_obj_id(obj)); /* make obj into id */
     for (i=0; i<RARRAY(finalizers)->len; i++) {
 	args[0] = RARRAY(finalizers)->ptr[i];
@@ -1533,6 +1534,7 @@ run_final(obj)
 	    rb_protect((VALUE(*)_((VALUE)))run_single_final, (VALUE)args, &status);
 	}
     }
+    ENABLE_INTS;
 }
 
 void

@@ -184,6 +184,7 @@ lib/observer.rb
 lib/open-uri.rb
 lib/open3.rb
 lib/optparse.rb
+lib/optparse/date.rb
 lib/optparse/shellwords.rb
 lib/optparse/time.rb
 lib/optparse/uri.rb

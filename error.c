@@ -541,21 +541,29 @@ syserr_initialize(argc, argv, self)
 #endif
     char *err;
     char *buf;
-    VALUE error, mesg;
+    VALUE mesg, error;
     VALUE klass = rb_obj_class(self);
 
-    rb_scan_args(argc, argv, klass == rb_eSystemCallError ? "11" : "02",
-		 &mesg, &error);
-    if (argc == 1 && FIXNUM_P(mesg)) {
-	error = mesg;
-	mesg = Qnil;
+    if (klass == rb_eSystemCallError) {
+	rb_scan_args(argc, argv, "11", &mesg, &error);
+	if (argc == 1 && FIXNUM_P(mesg)) {
+	    error = mesg; mesg = Qnil;
+	}
+	if (!NIL_P(error) && st_lookup(syserr_tbl, NUM2LONG(error), &klass)) {
+	    /* change class */
+	    if (TYPE(self) != T_OBJECT) { /* insurance to avoid type crash */
+		rb_raise(rb_eTypeError, "invalid instance type");
+	    }
+	    RBASIC(self)->klass = klass;
+	}
     }
-    if (klass != rb_eSystemCallError && NIL_P(error)) {
+    else {
+	rb_scan_args(argc, argv, "01", &mesg);
 	error = rb_const_get_at(klass, rb_intern("Errno"));
     }
-    err = strerror(NUM2LONG(error));
-    if (!err) err = "Unknown error";
-    if (RTEST(mesg)) {
+    if (!NIL_P(error)) err = strerror(NUM2LONG(error));
+    else err = "unknown error";
+    if (!NIL_P(mesg)) {
 	StringValue(mesg);
 	buf = ALLOCA_N(char, strlen(err)+RSTRING(mesg)->len+4);
 	sprintf(buf, "%s - %s", err, RSTRING(mesg)->ptr);
@@ -564,7 +572,6 @@ syserr_initialize(argc, argv, self)
     else {
 	mesg = rb_str_new2(err);
     }
-
     exc_initialize(1, &mesg, self);
     rb_iv_set(self, "errno", error);
     return self;

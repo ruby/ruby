@@ -7982,7 +7982,6 @@ rb_thread_save_context(th)
     th->stk_pos = (rb_gc_stack_start<pos)?rb_gc_stack_start
 				         :rb_gc_stack_start - len;
     if (len > th->stk_max) {
-	rb_gc();
 	REALLOC_N(th->stk_ptr, VALUE, len);
 	th->stk_max = len;
     }

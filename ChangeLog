@@ -1,3 +1,13 @@
+Wed May 21 17:44:16 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* error.c (syserr_initialize): prohibit specifying errno for
+	  subclasses of SystemCallError.  in addition, if initialize is
+	  called for SystenCallError instance, its class be changed.
+	  [ruby-dev:20257]
+
+	* gc.c (run_final): to protect thread context switch, finalizers
+	  are wrapped in DEFER_INTS/ENABLE_INTS.
+
 Wed May 21 13:26:08 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* lib/optparse.rb: get rid of warnings.
