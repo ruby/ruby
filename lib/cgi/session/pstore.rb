@@ -31,10 +31,6 @@ class CGI
     # library file pstore.rb.  Session data is marshalled and stored
     # in a file.  File locking and transaction services are provided.
     class PStore
-      def check_id(id) #:nodoc:
-	/[^0-9a-zA-Z]/ =~ id.to_s ? false : true
-      end
-
       # Create a new CGI::Session::PStore instance
       #
       # This constructor is used internally by CGI::Session.  The
@@ -58,13 +54,12 @@ class CGI
       # This session's PStore file will be created if it does
       # not exist, or opened if it does.
       def initialize session, option={}
-	dir = option['tmpdir'] || ENV['TMP'] || '/tmp'
+	dir = option['tmpdir'] || Dir::tmpdir
 	prefix = option['prefix'] || ''
 	id = session.session_id
-	unless check_id(id)
-	  raise ArgumentError, "session_id `%s' is invalid" % id
-	end
-	path = dir+"/"+prefix+id
+        require 'digest/md5'
+        md5 = Digest::MD5.hexdigest(id)[0,16]
+	path = dir+"/"+prefix+md5
 	path.untaint
 	unless File::exist? path
 	  @hash = {}

@@ -1,3 +1,13 @@
+Tue Aug 24 17:30:00 2004  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/cgi/session.rb (CGI::Session::FileStore#initialize): do not
+	  use a session id as a filename. (backported from HEAD)
+
+	* lib/cgi/session/pstore.rb (CGI::Session::PStore#initialize): ditto.
+
+	* lib/cgi/session/pstore.rb (CGI::Session::PStore#initialize): use
+	  Dir::tmpdir. (backported from HEAD)
+
 Tue Aug 24 14:40:16 2004  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/cgi/session.rb (CGI::Session::FileStore#initialize): untaint
