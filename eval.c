@@ -8211,6 +8211,11 @@ rb_thread_schedule()
     if (!next) {
 	/* raise fatal error to main thread */
 	curr_thread->node = ruby_current_node;
+	if (curr->next == curr) {
+	    TRAP_BEG;
+	    pause();
+	    TRAP_END;
+	}
 	FOREACH_THREAD_FROM(curr, th) {
 	    fprintf(stderr, "deadlock 0x%lx: %s:",
 		    th->thread, thread_status_name(th->status));

@@ -72,6 +72,7 @@ cmp_lt(x, y)
 {
     VALUE c = rb_funcall(x, cmp, 1, y);
 
+    if (NIL_P(c)) return Qfalse;
     if (rb_cmpint(c) < 0) return Qtrue;
     return Qfalse;
 }

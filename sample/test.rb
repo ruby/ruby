@@ -1651,6 +1651,20 @@ test_ok(!x.foo)
 test_ok(x.bar)
 test_ok(!x.quux)
 
+test_check "path"
+test_ok(File.basename("a") == "a")
+test_ok(File.basename("a/b") == "b")
+test_ok(File.basename("a/b/") == "b")
+test_ok(File.basename("a/b////") == "b")
+test_ok(File.basename("a.rb", ".rb") == "a")
+test_ok(File.dirname("a") == ".")
+test_ok(File.dirname("/a") == "/")
+test_ok(File.dirname("a/b") == "a")
+test_ok(File.dirname("a/b/c") == "a/b")
+test_ok(File.dirname("/a/b/c") == "/a/b")
+test_ok(File.dirname("/a/b/") == "/a")
+test_ok(File.dirname("/a/b///") == "/a")
+
 test_check "gc"
 begin
   1.upto(10000) {

@@ -1755,6 +1755,7 @@ rb_file_s_basename(argc, argv)
 	if (NIL_P(fext) || !(f = rmext(p, ext))) {
 	    f = chompdirsep(p) - p;
 	}
+	basename = rb_str_new(p, f);
     }
     basename = rb_str_new(p, f);
     OBJ_INFECT(basename, fname);

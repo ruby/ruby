@@ -12,6 +12,13 @@ Thu Feb 13 01:30:10 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	* eval.c (rb_thread_schedule): current thread may be dead when
 	  deadlock.  (ruby-bugs:PR#588)
 
+Thu Feb 13 00:28:52 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* range.c (range_step): step might be float 0 < x < 1.
+
+	* eval.c (rb_thread_schedule): pause if no runnable thread when
+	  there's only one thread.
+
 Thu Feb 13 00:09:47 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* file.c (strrdirsep): ignore trailing directory separators.

@@ -242,13 +242,14 @@ range_step(argc, argv, range)
     }
 
     unit = NUM2LONG(step);
-    if (unit <= 0) {
-	rb_raise(rb_eArgError, "step can't be <= 0");
-    }
+    if (unit < 0) {
+	rb_raise(rb_eArgError, "step can't be negative");
+    } 
     if (FIXNUM_P(b) && FIXNUM_P(e)) { /* fixnums are special */
 	long end = FIX2LONG(e);
 	long i;
 
+	if (unit == 0) rb_raise(rb_eArgError, "step can't be 0");
 	if (!EXCL(range)) end += 1;
 	for (i=FIX2LONG(b); i<end; i+=unit) {
 	    rb_yield(LONG2NUM(i));
@@ -257,6 +258,7 @@ range_step(argc, argv, range)
     else if (rb_obj_is_kind_of(b, rb_cNumeric)) {
 	ID c = rb_intern(EXCL(range) ? "<" : "<=");
 
+	if (rb_equal(step, INT2FIX(0))) rb_raise(rb_eArgError, "step can't be 0");
 	while (RTEST(rb_funcall(b, c, 1, e))) {
 	    rb_yield(b);
 	    b = rb_funcall(b, '+', 1, step);
@@ -266,6 +268,7 @@ range_step(argc, argv, range)
 	VALUE args[5];
 	long iter[2];
 
+	if (unit == 0) rb_raise(rb_eArgError, "step can't be 0");
 	args[0] = b; args[1] = e; args[2] = range;
 	iter[0] = 1; iter[1] = unit;
 	rb_iterate((VALUE(*)_((VALUE)))str_step, (VALUE)args, step_i, (VALUE)iter);
@@ -273,6 +276,7 @@ range_step(argc, argv, range)
     else {
 	long args[2];
 
+	if (unit == 0) rb_raise(rb_eArgError, "step can't be 0");
 	if (!rb_respond_to(b, id_succ)) {
 	    rb_raise(rb_eTypeError, "cannot iterate from %s",
 		     rb_obj_classname(b));
