@@ -31,7 +31,7 @@ module IRB
 
     def thread(key)
       th, irb = search(key)
-      irb
+      th
     end
 
     def irb(key)
@@ -58,6 +58,7 @@ module IRB
       @current_job = irb
       th.run
       Thread.stop
+      p "X"
       @current_job = irb(Thread.current)
     end
 
@@ -74,7 +75,7 @@ module IRB
       when Integer
 	@jobs[key]
       when Irb
-	@jobs.find{|k, v| v.equal?(irb)}
+	@jobs.find{|k, v| v.equal?(key)}
       when Thread
 	@jobs.assoc(key)
       else
@@ -156,6 +157,7 @@ module IRB
       end
       @CONF[:IRB_RC].call(irb.context) if @CONF[:IRB_RC]
       @JobManager.insert(irb)
+      @JobManager.current_job = irb
       begin
 	system_exit = false
 	catch(:IRB_EXIT) do
@@ -200,8 +202,32 @@ module IRB
   @JobManager.insert(@CONF[:MAIN_CONTEXT].irb)
   @JobManager.current_job = @CONF[:MAIN_CONTEXT].irb
 
+  class Irb
+    def signal_handle
+      unless @context.ignore_sigint?
+	print "\nabort!!\n" if @context.verbose?
+	exit
+      end
+
+      case @signal_status
+      when :IN_INPUT
+	print "^C\n"
+	IRB.JobManager.thread(self).raise RubyLex::TerminateLineInput
+      when :IN_EVAL
+	IRB.irb_abort(self)
+      when :IN_LOAD
+	IRB.irb_abort(self, LoadAbort)
+      when :IN_IRB
+	# ignore (JP: 何もしない.)
+      else
+	# ignore (JP: その他の場合も何もしない.)
+      end
+    end
+  end
+
   trap("SIGINT") do
     @JobManager.current_job.signal_handle
+    Thread.stop
   end
 
 end

@@ -24,6 +24,8 @@ class RubyLex
   def_exception(:TkReading2TokenDuplicateError, 
 		"key duplicate(token_n='%s', key='%s')")
   def_exception(:SyntaxError, "%s")
+
+  def_exception(:TerminateLineInput, "Terminate Line Input")
   
   include RubyToken
 
@@ -211,27 +213,35 @@ class RubyLex
   
   def each_top_level_statement
     initialize_input
-    loop do
-      @continue = false
-      prompt
-      unless l = lex
-	break if @line == ''
-      else
-	# p l
-	@line.concat l
-	if @ltype or @continue or @indent > 0
-	  next
+    catch(:TERM_INPUT) do
+      loop do
+	begin
+	  @continue = false
+	  prompt
+	  unless l = lex
+	    throw :TERM_INPUT if @line == ''
+	  else
+	    #p l
+	    @line.concat l
+	    if @ltype or @continue or @indent > 0
+	      next
+	    end
+	  end
+	  if @line != "\n"
+	    yield @line, @exp_line_no
+	  end
+	  break unless l
+	  @line = ''
+	  @exp_line_no = @line_no
+
+	  @indent = 0
+	  prompt
+	rescue TerminateLineInput
+	  initialize_input
+	  prompt
+	  get_readed
 	end
       end
-      if @line != "\n"
-	yield @line, @exp_line_no
-      end
-      break unless l
-      @line = ''
-      @exp_line_no = @line_no
-
-      @indent = 0
-      prompt
     end
   end
 

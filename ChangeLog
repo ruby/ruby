@@ -1,3 +1,7 @@
+Thu May 17 05:23:52 2001  Keiju Ishitsuka <keiju@ishitsuka.com>
+	* lib/irb.rb lib/irb/multi-irb.rb lib/irb/ruby-lex.rb lib/irb/version.rb
+	  resolve ctrl-c problem
+	
 Tue May 15 17:46:37 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_and): should not push frozen key string.
