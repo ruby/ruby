@@ -1,3 +1,14 @@
+Fri Jul 16 11:17:38 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (exit_initialize): use EXIT_SUCCESS instead of 0.
+	  [ruby-dev:23913]
+
+	* error.c (exit_success_p): new method SystemExit#success?.
+	  [ruby-dev:23912]
+
+	* error.c (syserr_initialize): initialization for subclasses.
+	  [ruby-dev:23912]
+
 Thu Jul 15 23:53:38 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (OptionParser#warn, OptionParser#abort): Exception
