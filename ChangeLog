@@ -1,3 +1,20 @@
+Mon Jan 12 12:07:22 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser::do_methods): 
+	  Someone changed the "// in eval.c" comments to "/*...*/" style,
+	  so the parsing of the source file name broke.
+
+	* object.c: Remove spurious space in TrueClass documentation.
+
+	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser::find_body): Fix
+	  bad regexp: if the code before a documented method contained
+	  a comment that wasn't terminated by whitespace, that comment
+	  and all intervening code was included in the following
+	  method's documentation.
+
+	* lib/rdoc/ri/ri_formatter.rb (RI::HtmlFormatter::break_to_newline): 
+	  HTML formats need explicit line breaks.
+
 Mon Jan 12 02:24:07 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/ri/ri_formatter.rb (RI::HtmlFormatter): Add HTML

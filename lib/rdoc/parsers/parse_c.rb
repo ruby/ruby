@@ -261,11 +261,10 @@ module RDoc
                        \s*"([^"]+)",
                        \s*(?:RUBY_METHOD_FUNC\(|VALUEFUNC\()?(\w+)\)?,
                        \s*(-?\w+)\s*\)
-                     (?:;\s*//\s+in\s+(\w+?\.[cy]))?
+                     (?:;\s*/[*/]\s+in\s+(\w+?\.[cy]))?
                    }xm) do
         |type, var_name, meth_name, meth_body, param_count, source_file|
        #" 
-        next if meth_name == "initialize_copy"
 
         # Ignore top-object and weird struct.c dynamic stuff
         next if var_name == "ruby_top_self" 
@@ -282,10 +281,9 @@ module RDoc
                                \s*"([^"]+)",
                                \s*(?:RUBY_METHOD_FUNC\(|VALUEFUNC\()?(\w+)\)?,
                                \s*(-?\w+)\s*\)
-                  (?:;\s*//\s+in\s+(\w+?\.[cy]))?
+                  (?:;\s*/[*/]\s+in\s+(\w+?\.[cy]))?
                   }xm) do  #"
         |meth_name, meth_body, param_count, source_file|
-        
         handle_method("method", "rb_mKernel", meth_name, 
                       meth_body, param_count, source_file)
       end
@@ -346,7 +344,7 @@ module RDoc
 
     # Find the C code corresponding to a Ruby method
     def find_body(meth_name, meth_obj, body)
-      if body =~ %r{((?>/\*.*?\*/\s+))(static\s+)?VALUE\s+#{meth_name}
+      if body =~ %r{((?>/\*.*?\*/\s*))(static\s+)?VALUE\s+#{meth_name}
                     \s*(\(.*?\)).*?^}xm
         comment, params = $1, $3
         body_text = $&
