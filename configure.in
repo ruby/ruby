@@ -291,7 +291,7 @@ cygwin*)	rb_cv_have_daylight=no
 		ac_cv_func__setjmp=no
 		ac_cv_func_setitimer=no
 		;;
-mingw*)		LIBS="-lwsock32 $LIBS"
+mingw*)		LIBS="-lshell32 -lwsock32 $LIBS"
 		ac_cv_header_a_out_h=no
 		ac_cv_header_pwd_h=no
 		ac_cv_header_utime_h=no
