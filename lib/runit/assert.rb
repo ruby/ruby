@@ -16,20 +16,22 @@ module RUNIT
       assert_nothing_raised(*args, &block)
     end
 
-    # To deal with the fact that RubyUnit does not check that the regular expression
-    # is, indeed, a regular expression, if it is not, we do our own assertion using
-    # the same semantics as RubyUnit
+    # To deal with the fact that RubyUnit does not check that the
+    # regular expression is, indeed, a regular expression, if it is
+    # not, we do our own assertion using the same semantics as
+    # RubyUnit
     def assert_match(actual_string, expected_re, message="")
       _wrap_assertion {
-        full_message = build_message(message, actual_string, expected_re) {
-          | arg1, arg2 |
-          "Expected <#{arg1}> to match <#{arg2}>"
-         }
+        full_message = build_message(message, "Expected <?> to match <?>", actual_string, expected_re)
         assert_block(full_message) {
           expected_re =~ actual_string
         }
         Regexp.last_match
       }
+    end
+
+    def assert_not_nil(actual, message="")
+      assert(!actual.nil?, message)
     end
 
     def assert_not_match(actual_string, expected_re, message="")

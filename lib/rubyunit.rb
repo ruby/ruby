@@ -4,5 +4,3 @@
 
 require 'runit/testcase'
 require 'test/unit'
-
-TestCase = RUNIT::TestCase
