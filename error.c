@@ -706,7 +706,7 @@ name_err_to_s(exc)
  * call-seq:
  *   NoMethodError.new(msg, name [, args])  => no_method_error
  *
- * Contruct a NoMethodError exception for a method of the given name
+ * Construct a NoMethodError exception for a method of the given name
  * called with the given arguments. The name may be accessed using
  * the <code>#name</code> method on the resulting object, and the
  * arguments using the <code>#args</code> method.
