@@ -30,11 +30,11 @@ module RSS
         install_model(x, occurs)
       end
 
-      def other_element(convert, indent)
+      def other_element(need_convert, indent)
         rv = <<-EOT
-#{category_elements(convert, indent)}
-#{generator_element(convert, indent)}
-#{ttl_element(convert, indent)}
+#{category_elements(need_convert, indent)}
+#{generator_element(need_convert, indent)}
+#{ttl_element(need_convert, indent)}
 EOT
         rv << super
       end
@@ -86,7 +86,7 @@ EOT
           install_model(x, occurs)
         end
       
-        def other_element(convert, indent)
+        def other_element(need_convert, indent)
           rv = [
             super,
             *%w(author comments pubDate guid).collect do |name|

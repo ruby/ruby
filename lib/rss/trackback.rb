@@ -146,9 +146,9 @@ module RSS
         tag_name_with_prefix(TRACKBACK_PREFIX)
       end
       
-      def to_s(convert=true, indent=calc_indent)
+      def to_s(need_convert=true, indent=calc_indent)
         rv = tag(indent)
-        rv = @converter.convert(rv) if convert and @converter
+        rv = convert(rv) if need_convert
         rv
       end
 
@@ -194,9 +194,9 @@ module RSS
         tag_name_with_prefix(TRACKBACK_PREFIX)
       end
       
-      def to_s(convert=true, indent=calc_indent)
+      def to_s(need_convert=true, indent=calc_indent)
         rv = tag(indent)
-        rv = @converter.convert(rv) if convert and @converter
+        rv = convert(rv) if need_convert
         rv
       end
 
