@@ -79,12 +79,35 @@ def xsystem command
   return r
 end
 
-def try_link(libs)
+def try_link(src, opt="")
+  cfile = open("conftest.c", "w")
+  cfile.print src
+  cfile.close
   xsystem(format(LINK, $CFLAGS, $LDFLAGS, libs))
 end
 
-def try_cpp
-  xsystem(format(CPP, $CFLAGS))
+def try_cpp(src, opt=$CFLAGS)
+  cfile = open("conftest.c", "w")
+  cfile.print src
+  cfile.close
+  xsystem(format(CPP, opt))
+end
+
+def egrep_cpp(pat, src, opt=$CFLAGS)
+  cfile = open("conftest.c", "w")
+  cfile.print src
+  cfile.close
+  xsystem(format(CPP+"|egrep #{pat}", opt))
+end
+
+def try_run(src, opt="")
+  begin
+    if try_link(src, opt)
+      xsystem("./conftest")
+    end
+  ensure
+    system "rm -f conftest*"
+  end
 end
 
 def install_rb(mfile)
@@ -137,7 +160,10 @@ int t() { %s(); return 0; }
       else
 	libs = "-l" + lib
       end
-      unless try_link(libs)
+      unless try_link(<<"SRC", libs)
+int main() { return 0; }
+int t() { #{func}(); return 0; }
+SRC
 	$lib_cache[lib] = 'no'
 	$cache_mod = TRUE
 	print "no\n"
@@ -175,19 +201,15 @@ def have_func(func)
     end
   end
 
-  cfile = open("conftest.c", "w")
-  cfile.printf "\
-char %s();
-int main() { return 0; }
-int t() { %s(); return 0; }
-", func, func
-  cfile.close
-
   libs = $libs
   libs = "" if libs == nil
 
   begin
-    unless try_link(libs)
+      unless try_link(<<"SRC", libs)
+char #{func}();
+int main() { return 0; }
+int t() { #{func}(); return 0; }
+SRC
       $func_found[func] = 'no'
       $found = TRUE
       print "no\n"
@@ -218,14 +240,10 @@ def have_header(header)
     end
   end
 
-  cfile = open("conftest.c", "w")
-  cfile.printf "\
-#include <%s>
-", header
-  cfile.close
-
   begin
-    unless try_cpp
+    unless try_cpp(<<"SRC")
+#include <#{header}>
+SRC
       $hdr_found[header] = 'no'
       $found = TRUE
       print "no\n"
@@ -262,6 +280,16 @@ def with_config(config, default="yes")
     config = '--with-' + config
   end
   arg_config(config, default)
+end
+
+def enable_config(config, default=nil)
+  if arg_config("--enable-"+config, true)
+    true
+  elsif arg_config("--disable-"+config, false)
+    false
+  else
+    default
+  end
 end
 
 def create_header()
