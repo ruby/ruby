@@ -99,19 +99,18 @@ install-doc: $(PROGRAM)
 
 clean: clean-ext clean-local
 clean-local::
-	@$(RM) $(OBJS) $(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY_ALIASES)
-	@$(RM) ext/extinit.c ext/extinit.$(OBJEXT) dmyext.$(OBJEXT)
-	@$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT)
+	@$(RM) $(OBJS) $(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
+	@$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT)
 clean-ext:
 	@-$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS) clean
 
 distclean: distclean-ext distclean-local
 distclean-local:: clean-local
-	@$(RM) $(MKFILES) config.h rbconfig.rb $(RBCONFIG)
-	@$(RM) ext/config.cache config.cache config.log config.status
+	@$(RM) $(MKFILES) config.h rbconfig.rb
+	@$(RM) config.cache config.log config.status
 	@$(RM) *~ *.bak *.stackdump core *.core gmon.out y.tab.c y.output ruby.imp
 distclean-ext:
-	@-$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS) distclean 2> $(NULL)
+	@-$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS) distclean
 
 realclean:: distclean
 	@$(RM) parse.c lex.c

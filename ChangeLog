@@ -1,3 +1,19 @@
+Tue Mar 23 14:31:47 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in, */Makefile.sub, common.mk (clean-local, distclean-local):
+	  separate files under directories due to directory separator.
+
+	* */Makefile.sub (MKFILES): common.mk and */Makefile.sub should not be
+	  removed.
+
+	* win32/Makefile.sub, wince/Makefile.sub: $* cannot appear in explicit
+	  rules.
+
+	* cygwin/GNUmakefile.in: some mingw stuffs were missed.
+
+	* lib/mkmf.rb (create_makefile): Borland make wrongly removes braces
+	  from command lines.
+
 Mon Mar 22 08:21:17 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in, */Makefile.sub, common.mk: extract common portions.

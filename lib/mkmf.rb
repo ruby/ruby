@@ -897,8 +897,9 @@ RUBYLIBDIR    = $(sitelibdir)$(target_prefix)
 RUBYARCHDIR   = $(sitearchdir)$(target_prefix)
 }
   end
+  n = ($extout ? '$(RUBYARCHDIR)/' : '') + '$(TARGET).'
   mfile.print %{
-CLEANLIBS     = #{$extout ? '$(RUBYARCHDIR)/' : ''}$(TARGET).{#{CONFIG['DLEXT']},il?,tds,map}
+CLEANLIBS     = #{n}#{CONFIG['DLEXT']} #{n}il? #{n}tds #{n}map
 CLEANOBJS     = *.#{$OBJEXT} *.#{$LIBEXT} *.s[ol] *.pdb *.exp *.bak
 
 all:		#{target ? $extout ? "install" : "$(DLLIB)" : "Makefile"}
@@ -1024,8 +1025,8 @@ def init_mkmf(config = CONFIG)
 
   $LOCAL_LIBS = ""
 
-  $cleanfiles = []
-  $distcleanfiles = []
+  $cleanfiles = config_string('CLEANFILES') {|s| Shellwords.shellwords(s)} || []
+  $distcleanfiles = config_string('DISTCLEANFILES') {|s| Shellwords.shellwords(s)} || []
 
   $extout ||= nil
   $extout_prefix ||= nil

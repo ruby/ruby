@@ -116,6 +116,7 @@ $(LIBRUBY_SO):
 		@-$(MINIRUBY) -e 'ARGV.each{|link| File.delete link if File.exist? link; \
 						  File.symlink "$(LIBRUBY_SO)", link}' \
 				$(LIBRUBY_ALIASES) || true
+
 fake.rb:	Makefile
 		@echo ' \
 		class Object; \
@@ -166,3 +167,8 @@ lex.c: keywords
 .c.@OBJEXT@:
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $<
 
+clean-local::
+	@$(RM) ext/extinit.c ext/extinit.$(OBJEXT)
+
+distclean-local::
+	@$(RM) ext/config.cache $(RBCONFIG)

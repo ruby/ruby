@@ -1,7 +1,7 @@
 # -*- makefile -*-
 
 SHELL = $(COMSPEC)
-MKFILES = Makefile $(srcdir)/wince/Makefile.sub $(srcdir)/common.mk
+MKFILES = Makefile
 NULL = nul
 
 #### Start of system configuration section. ####
@@ -178,7 +178,7 @@ DLDOBJS       =
 
 WINMAINOBJ    = wincemain.$(OBJEXT)
 
-all:
+all: $(srcdir)/wince/Makefile.sub $(srcdir)/common.mk
 ruby: $(PROGRAM)
 lib: $(LIBRUBY)
 dll: $(LIBRUBY_SO)
@@ -297,10 +297,11 @@ $(BANG)endif
 #endif
 <<KEEP
 
-config.status: $(MKFILES)
+config.status: $(MKFILES) $(srcdir)/wince/Makefile.sub $(srcdir)/common.mk
 	@echo Creating <<$@
 # Generated automatically by Makefile.sub.
 s,@SHELL@,$$(COMSPEC),;t t
+s,@PATH_SEPARATOR@,;,;t t
 s,@CFLAGS@,$(CFLAGS),;t t
 s,@CPPFLAGS@,$(CPPFLAGS),;t t
 s,@CXXFLAGS@,$(CXXFLAGS),;t t
@@ -412,10 +413,11 @@ $(LIBRUBY_A):	$(OBJS) $(DMYEXT)
 $(LIBRUBY):	$(RUBYDEF)
 		$(AR) $(ARFLAGS)$@ -def:$(RUBYDEF)
 
-$(LIBRUBY_SO):	$(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $*.res
+$(LIBRUBY_SO):	$(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
 		@echo. $(DLDOBJS)
-		$(LDSHARED) $(MAINOBJ) $(DLDOBJS) $(LIBRUBY_A) $*.res $(LIBS) \
-			-Fe$@ $(LDFLAGS) $(LIBRUBY_DLDFLAGS)
+		$(LDSHARED) $(MAINOBJ) $(DLDOBJS) $(LIBRUBY_A) \
+			$(RUBY_SO_NAME).res $(LIBS) -Fe$@ $(LDFLAGS) \
+			$(LIBRUBY_DLDFLAGS)
 
 $(RUBYDEF):	$(LIBRUBY_A) $(PREP)
 		$(MINIRUBY) $(srcdir)/win32/mkexports.rb \

@@ -6,9 +6,7 @@
 
 (1) eMbedded Visual C++ 3.0 or later.
 
-(2) If you want to run `((%nmake clean%))' or `((%nmake distclean%))'
-    properly, you must install UNIX compatible `((%rm%))' command on
-    your ((|PATH|)) if you want to clean after compile.
+(2) ruby executable on the compiling host environment.
 
 (3) Please set environment variable (({INCLUDE})), (({LIB})), (({PATH})),
     (({CE_TOOLS_DIR})), (({EMBEDDED_TOOLS_DIR})) to run required commands
@@ -25,6 +23,9 @@
 (1) Execute wince\configure.bat on your build directory.
     You can specify the target platform as an argument.
     For example, run `((%configure arm-hpc2k-wince%))'
+    You can also specify the install directory.
+    For example, run `((%configure --prefix=<install_directory>%))'
+    Default of the install directory is /usr .
 
 (2) Change ((|RUBY_INSTALL_NAME|)) and ((|RUBY_SO_NAME|)) in (({Makefile}))
     if you want to change the name of the executable files. 
@@ -79,9 +80,9 @@ in Japanese, but you can download at least.
 
     C:
     cd \ruby
-    win32\configure
+    win32\configure --prefix=/usr/local
     nmake
-    nmake DESTDIR=/usr/local install
+    nmake install
 
 * Build on the relative directory from the ruby source directory.
 
@@ -94,9 +95,9 @@ in Japanese, but you can download at least.
     cd \ruby
     mkdir mswin32
     cd mswin32
-    ..\win32\configure
+    ..\win32\configure --prefix=/usr/local
     nmake
-    nmake DESTDIR=/usr/local install
+    nmake install
 
 * Build on the different drive.
 
@@ -107,9 +108,9 @@ in Japanese, but you can download at least.
 
     D:
     cd D:\build\ruby
-    C:\src\ruby\win32\configure
+    C:\src\ruby\win32\configure --prefix=C:/usr/local
     nmake
-    nmake DESTDIR=C:/usr/local install
+    nmake install
 
 == Bugs
 

@@ -1,11 +1,14 @@
 include Makefile
 
 ENABLE_SHARED=@ENABLE_SHARED@
+DLLWRAP = @DLLWRAP@ --target=@target_os@
 
 ifeq (@target_os@,cygwin)
   DLL_BASE_NAME := $(subst .dll,,$(LIBRUBY_SO))
 else
   DLL_BASE_NAME := $(RUBY_SO_NAME)
+  DLLWRAP += -mno-cygwin
+  VPATH += $(srcdir)/win32
 endif
 
 ifneq ($(ENABLE_SHARED),yes)
@@ -44,7 +47,7 @@ $(WPROGRAM): $(RUBYW_INSTALL_NAME).res.@OBJEXT@
 	  $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(LIBS) -o $@
 
 $(RUBY_EXP): $(LIBRUBY_A)
-	@DLLWRAP@ --target=@target_os@ --driver-name=$(CC) \
+	$(DLLWRAP) \
 	  --output-exp=$(RUBY_EXP) \
 	  --export-all $(LIBRUBY_A) $(LIBS) -o $(PROGRAM)
 	$(LDSHARED) $(DLDFLAGS) $(OBJS) dmyext.o $(SOLIBS) -o $(PROGRAM)

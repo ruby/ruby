@@ -116,6 +116,9 @@ def extmake(target)
     unless system($make, *args)
       $ignore or $continue or return false
     end
+    if $clean and $clean != true
+      File.unlink(makefile) rescue nil
+    end
     if $static
       $extflags ||= ""
       $extlibs ||= []
@@ -215,11 +218,11 @@ parse_args()
 
 if target = ARGV.shift and /^[a-z-]+$/ =~ target
   $mflags.push(target)
-  target = target.sub(/^(?:dist|real)(?=(?:clean)?$)/, '\1')
+  target = target.sub(/^(dist|real)(?=(?:clean)?$)/, '')
   case target
   when /clean/
     $ignore ||= true
-    $clean = true
+    $clean = $1 ? $1[0] : true
   when /^install\b/
     $install = true
     $ignore ||= true

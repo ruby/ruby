@@ -1,7 +1,7 @@
 # -*- makefile -*-
 
 SHELL = $(COMSPEC)
-MKFILES = Makefile $(srcdir)/win32/Makefile.sub $(srcdir)/common.mk
+MKFILES = Makefile
 NULL = nul
 
 #### Start of system configuration section. ####
@@ -171,7 +171,7 @@ DLDOBJS       =
 
 WINMAINOBJ    = winmain.$(OBJEXT)
 
-all:
+all: $(srcdir)/win32/Makefile.sub $(srcdir)/common.mk
 
 !include $(srcdir)/common.mk
 
@@ -271,10 +271,11 @@ config.h:
 #define RUBY_SITE_ARCHLIB "/lib/ruby/site_ruby/$(MAJOR).$(MINOR)/$(ARCH)-$(RT)"
 <<KEEP
 
-config.status: $(MKFILES)
+config.status: $(MKFILES) $(srcdir)/win32/Makefile.sub $(srcdir)/common.mk
 	@echo Creating <<$@
 # Generated automatically by Makefile.sub.
 s,@SHELL@,$$(COMSPEC),;t t
+s,@PATH_SEPARATOR@,;,;t t
 s,@CFLAGS@,$(CFLAGS),;t t
 s,@CPPFLAGS@,$(CPPFLAGS),;t t
 s,@CXXFLAGS@,$(CXXFLAGS),;t t
@@ -366,6 +367,7 @@ s,@TRY_LINK@,$$(CC) -Feconftest $$(INCFLAGS) -I$$(hdrdir) $$(CPPFLAGS) $$(CFLAGS
 s,@COMMON_LIBS@,m,;t t
 s,@COMMON_MACROS@,WIN32_LEAN_AND_MEAN;t t
 s,@COMMON_HEADERS@,winsock2.h windows.h,;t t
+s,@DISTCLEANFILES@,vc*.pdb,;t t
 s,@EXPORT_PREFIX@, ,;t t
 s,@arch@,$(ARCH)-$(OS),;t t
 s,@sitearch@,$(ARCH)-$(RT),;t t
@@ -380,13 +382,14 @@ miniruby$(EXEEXT):
 		@echo. $(LIBS)
 		$(PURIFY) $(CC) $(MAINOBJ) $(LIBRUBY_A) $(LIBS) -Fe$@ $(LDFLAGS)
 
-$(PROGRAM):	$*.res
-		$(PURIFY) $(CC) $(MAINOBJ) $*.res \
+$(PROGRAM):	$(RUBY_INSTALL_NAME).res
+		$(PURIFY) $(CC) $(MAINOBJ) $(RUBY_INSTALL_NAME).res \
 			$(OUTFLAG)$@ $(LIBRUBYARG) $(LDFLAGS) $(XLDFLAGS)
 
-$(WPROGRAM):	$(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_SO) $*.res
-		$(PURIFY) $(CC) $(MAINOBJ) $(WINMAINOBJ) $*.res \
-			$(OUTFLAG)$@ $(LIBRUBYARG) $(LDFLAGS) $(XLDFLAGS) -subsystem:Windows
+$(WPROGRAM):	$(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_SO) $(RUBYW_INSTALL_NAME).res
+		$(PURIFY) $(CC) $(MAINOBJ) $(WINMAINOBJ) \
+			$(RUBYW_INSTALL_NAME).res $(OUTFLAG)$@ $(LIBRUBYARG) \
+			$(LDFLAGS) $(XLDFLAGS) -subsystem:Windows
 
 $(LIBRUBY_A):	$(OBJS) $(DMYEXT)
 		$(AR) $(ARFLAGS)$@ $(OBJS) $(DMYEXT)
@@ -394,10 +397,11 @@ $(LIBRUBY_A):	$(OBJS) $(DMYEXT)
 $(LIBRUBY):	$(RUBYDEF)
 		$(AR) $(ARFLAGS)$@ -def:$(RUBYDEF)
 
-$(LIBRUBY_SO):	$(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $*.res
+$(LIBRUBY_SO):	$(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
 		@echo. $(DLDOBJS)
-		$(LDSHARED) $(MAINOBJ) $(DLDOBJS) $(LIBRUBY_A) $*.res $(LIBS) \
-			-Fe$@ $(LDFLAGS) $(LIBRUBY_DLDFLAGS)
+		$(LDSHARED) $(MAINOBJ) $(DLDOBJS) $(LIBRUBY_A) \
+			$(RUBY_SO_NAME).res $(LIBS) -Fe$@ $(LDFLAGS) \
+			$(LIBRUBY_DLDFLAGS)
 
 $(RUBYDEF):	$(LIBRUBY_A) $(PREP)
 		$(MINIRUBY) $(srcdir)/win32/mkexports.rb -output=$@ $(LIBRUBY_A)
