@@ -338,6 +338,7 @@ typedef struct RNode {
 #define NOEX_CFUNC     1
 #define NOEX_PRIVATE   2
 #define NOEX_PROTECTED 4 
+#define NOEX_MASK      6 
 
 NODE *rb_compile_cstr _((const char*, const char*, int, int));
 NODE *rb_compile_string _((const char*, VALUE, int));

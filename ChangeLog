@@ -1,3 +1,18 @@
+Wed Oct 30 17:00:47 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_mod_public_method_defined, etc.): new methods:
+	  public_method_defined?, private_method_defined?,
+	  protected_method_defined?
+
+	* object.c (rb_obj_public_methods): new method
+	  Object#public_methods.
+
+	* class.c (ins_methods_i): Object#methods should list both public
+	  and protected methods.
+
+	* class.c (rb_class_public_instance_methods): new method
+	  Module#public_instance_methods.
+
 Wed Oct 30 06:29:00 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* eval.c, file.c, gc.c, io.c, object.c, ruby.c, ruby.h, struct.c,

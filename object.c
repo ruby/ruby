@@ -911,6 +911,16 @@ rb_obj_private_methods(obj)
 }
 
 static VALUE
+rb_obj_public_methods(obj)
+    VALUE obj;
+{
+    VALUE argv[1];
+
+    argv[0] = Qtrue;
+    return rb_class_public_instance_methods(1, argv, CLASS_OF(obj));
+}
+
+static VALUE
 convert_type(val, tname, method, raise)
     VALUE val;
     const char *tname, *method;
@@ -1329,6 +1339,7 @@ Init_Object()
     rb_define_method(rb_mKernel, "singleton_methods", rb_obj_singleton_methods, -1);
     rb_define_method(rb_mKernel, "protected_methods", rb_obj_protected_methods, 0);
     rb_define_method(rb_mKernel, "private_methods", rb_obj_private_methods, 0);
+    rb_define_method(rb_mKernel, "public_methods", rb_obj_public_methods, 0);
     rb_define_method(rb_mKernel, "instance_variables", rb_obj_instance_variables, 0);
     rb_define_private_method(rb_mKernel, "remove_instance_variable",
 			     rb_obj_remove_instance_variable, 1);
@@ -1400,7 +1411,7 @@ Init_Object()
     rb_define_singleton_method(rb_cModule, "allocate", rb_module_s_alloc, 0);
     rb_define_method(rb_cModule, "initialize", rb_mod_initialize, 0);
     rb_define_method(rb_cModule, "instance_methods", rb_class_instance_methods, -1);
-    rb_define_method(rb_cModule, "public_instance_methods", rb_class_instance_methods, -1);
+    rb_define_method(rb_cModule, "public_instance_methods", rb_class_public_instance_methods, -1);
     rb_define_method(rb_cModule, "protected_instance_methods", rb_class_protected_instance_methods, -1);
     rb_define_method(rb_cModule, "private_instance_methods", rb_class_private_instance_methods, -1);
 

@@ -3510,8 +3510,52 @@ static VALUE
 rb_mod_method_defined(mod, mid)
     VALUE mod, mid;
 {
-    if (rb_method_boundp(mod, rb_to_id(mid), 1)) {
-	return Qtrue;
+    return rb_method_boundp(mod, rb_to_id(mid), 1);
+}
+
+#define VISI_CHECK(x,f) (((x)&NOEX_MASK) == (f))
+
+static VALUE
+rb_mod_public_method_defined(mod, mid)
+    VALUE mod, mid;
+{
+    VALUE klass;
+    ID id = rb_to_id(mid);
+    int noex;
+
+    if (rb_get_method_body(&mod, &id, &noex)) {
+	if (VISI_CHECK(noex, NOEX_PUBLIC))
+	    return Qtrue;
+    }
+    return Qfalse;
+}
+
+static VALUE
+rb_mod_private_method_defined(mod, mid)
+    VALUE mod, mid;
+{
+    VALUE klass;
+    ID id = rb_to_id(mid);
+    int noex;
+
+    if (rb_get_method_body(&mod, &id, &noex)) {
+	if (VISI_CHECK(noex, NOEX_PRIVATE))
+	    return Qtrue;
+    }
+    return Qfalse;
+}
+
+static VALUE
+rb_mod_protected_method_defined(mod, mid)
+    VALUE mod, mid;
+{
+    VALUE klass;
+    ID id = rb_to_id(mid);
+    int noex;
+
+    if (rb_get_method_body(&mod, &id, &noex)) {
+	if (VISI_CHECK(noex, NOEX_PROTECTED))
+	    return Qtrue;
     }
     return Qfalse;
 }
@@ -6152,6 +6196,9 @@ Init_eval()
     rb_define_private_method(rb_cModule, "private", rb_mod_private, -1);
     rb_define_private_method(rb_cModule, "module_function", rb_mod_modfunc, -1);
     rb_define_method(rb_cModule, "method_defined?", rb_mod_method_defined, 1);
+    rb_define_method(rb_cModule, "public_method_defined?", rb_mod_public_method_defined, 1);
+    rb_define_method(rb_cModule, "private_method_defined?", rb_mod_private_method_defined, 1);
+    rb_define_method(rb_cModule, "protected_method_defined?", rb_mod_protected_method_defined, 1);
     rb_define_method(rb_cModule, "public_class_method", rb_mod_public_method, -1);
     rb_define_method(rb_cModule, "private_class_method", rb_mod_private_method, -1);
     rb_define_method(rb_cModule, "module_eval", rb_mod_module_eval, -1);

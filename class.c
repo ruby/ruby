@@ -456,23 +456,26 @@ rb_mod_ancestors(mod)
     return ary;
 }
 
+#define VISI_CHECK(x,f) (((x)&NOEX_MASK) == (f))
+
 static int
 ins_methods_i(key, body, ary)
     ID key;
     NODE *body;
     VALUE ary;
 {
-    if ((body->nd_noex&(NOEX_PRIVATE|NOEX_PROTECTED)) == 0) {
+    if (!body->nd_body) {
+	rb_ary_push(ary, Qnil);
+	rb_ary_push(ary, rb_str_new2(rb_id2name(key)));
+    }
+    else if (!VISI_CHECK(body->nd_noex, NOEX_PRIVATE)) {
 	VALUE name = rb_str_new2(rb_id2name(key));
 
 	if (!rb_ary_includes(ary, name)) {
-	    if (!body->nd_body) {
-		rb_ary_push(ary, Qnil);
-	    }
 	    rb_ary_push(ary, name);
 	}
     }
-    else if (body->nd_body && nd_type(body->nd_body) == NODE_ZSUPER) {
+    else if (nd_type(body->nd_body) == NODE_ZSUPER) {
 	rb_ary_push(ary, Qnil);
 	rb_ary_push(ary, rb_str_new2(rb_id2name(key)));
     }
@@ -489,7 +492,7 @@ ins_methods_prot_i(key, body, ary)
 	rb_ary_push(ary, Qnil);
 	rb_ary_push(ary, rb_str_new2(rb_id2name(key)));
     }
-    else if (body->nd_noex & NOEX_PROTECTED) {
+    else if (VISI_CHECK(body->nd_noex, NOEX_PROTECTED)) {
 	VALUE name = rb_str_new2(rb_id2name(key));
 
 	if (!rb_ary_includes(ary, name)) {
@@ -513,7 +516,31 @@ ins_methods_priv_i(key, body, ary)
 	rb_ary_push(ary, Qnil);
 	rb_ary_push(ary, rb_str_new2(rb_id2name(key)));
     }
-    else if (body->nd_noex & NOEX_PRIVATE) {
+    else if (VISI_CHECK(body->nd_noex, NOEX_PRIVATE)) {
+	VALUE name = rb_str_new2(rb_id2name(key));
+
+	if (!rb_ary_includes(ary, name)) {
+	    rb_ary_push(ary, name);
+	}
+    }
+    else if (nd_type(body->nd_body) == NODE_ZSUPER) {
+	rb_ary_push(ary, Qnil);
+	rb_ary_push(ary, rb_str_new2(rb_id2name(key)));
+    }
+    return ST_CONTINUE;
+}
+
+static int
+ins_methods_pub_i(key, body, ary)
+    ID key;
+    NODE *body;
+    VALUE ary;
+{
+    if (!body->nd_body) {
+	rb_ary_push(ary, Qnil);
+	rb_ary_push(ary, rb_str_new2(rb_id2name(key)));
+    }
+    else if (VISI_CHECK(body->nd_noex, NOEX_PUBLIC)) {
 	VALUE name = rb_str_new2(rb_id2name(key));
 
 	if (!rb_ary_includes(ary, name)) {
@@ -588,6 +615,18 @@ rb_class_private_instance_methods(argc, argv, mod)
 
     rb_scan_args(argc, argv, "01", &option);
     return method_list(mod, RTEST(option), ins_methods_priv_i);
+}
+
+VALUE
+rb_class_public_instance_methods(argc, argv, mod)
+    int argc;
+    VALUE *argv;
+    VALUE mod;
+{
+    VALUE option;
+
+    rb_scan_args(argc, argv, "01", &option);
+    return method_list(mod, RTEST(option), ins_methods_pub_i);
 }
 
 VALUE
