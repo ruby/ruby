@@ -77,7 +77,7 @@ PP#pp to print the object.
     returns the sharing detection flag as boolean value.
     It is false by default.
 
---- PP.sharing_detection = value
+--- PP.sharing_detection = boolean_value
     sets the sharing detection flag.
 
 == methods
@@ -195,14 +195,17 @@ class PP < PrettyPrint
     group(1, '#<' + obj.class.name, '>', &block)
   end
 
+  def object_address_group(obj, &block)
+    group(1, sprintf('#<%s:0x%x', obj.class.name, obj.__id__ * 2), '>', &block)
+  end
+
   def comma_breakable
     text ','
     breakable
   end
 
   def pp_object(obj)
-    object_group(obj) {
-      text sprintf(':0x%x', obj.__id__)
+    object_address_group(obj) {
       obj.pretty_print_instance_variables.each {|v|
 	v = v.to_s if Symbol === v
 	text ',' unless first?
@@ -244,7 +247,7 @@ class PP < PrettyPrint
       # specific pretty_print is not defined, try specific inspect.
       begin
         old = Thread.current[Key]
-	result1 = sprintf('#<%s:0x%x pretty_printed>', self.class.name, self.__id__)
+	result1 = sprintf('#<%s:0x%x pretty_printed>', self.class.name, self.__id__ * 2)
         Thread.current[Key] = [pp, result1]
 	result2 = ObjectMixin.pp_call_inspect(self)
       ensure
@@ -271,9 +274,10 @@ class PP < PrettyPrint
     end
 
     def pretty_print_cycled(pp)
-      pp.text sprintf("#<%s:0x%x", self.class.name, self.__id__)
-      pp.breakable
-      pp.text sprintf("...>")
+      pp.object_address_group(self) {
+	pp.breakable
+	pp.text '...'
+      }
     end
 
     def pretty_print_instance_variables
