@@ -122,7 +122,7 @@ math_sinh(obj, x)
     return rb_float_new(sinh(RFLOAT(x)->value));
 }
 
-#ifndef HAVE_SINH
+#ifndef HAVE_TANH
 double
 tanh(x)
     double x;
