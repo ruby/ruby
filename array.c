@@ -935,10 +935,12 @@ get_inspect_tbl(create)
 {
     VALUE inspect_tbl = rb_thread_local_aref(rb_thread_current(), inspect_key);
 
-    if (create && NIL_P(inspect_tbl)) {
-      tbl_init:
-	inspect_tbl = rb_ary_new();
-	rb_thread_local_aset(rb_thread_current(), inspect_key, inspect_tbl);
+    if (NIL_P(inspect_tbl)) {
+	if (create) {
+	  tbl_init:
+	    inspect_tbl = rb_ary_new();
+	    rb_thread_local_aset(rb_thread_current(), inspect_key, inspect_tbl);
+	}
     }
     else if (TYPE(inspect_tbl) != T_ARRAY) {
 	rb_warn("invalid inspect_tbl value");
@@ -1084,7 +1086,7 @@ sort_1(a, b)
     VALUE *a, *b;
 {
     VALUE retval = rb_yield(rb_assoc_new(*a, *b));
-    return rb_cmpint(retval);
+    return rb_cmpint(retval, *a, *b);
 }
 
 static int
@@ -1104,7 +1106,7 @@ sort_2(ap, bp)
     }
 
     retval = rb_funcall(a, id_cmp, 1, b);
-    return rb_cmpint(retval);
+    return rb_cmpint(retval, a, b);
 }
 
 static VALUE

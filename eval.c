@@ -628,6 +628,7 @@ struct BLOCK {
     struct RVarmap *dyna_vars;
     VALUE orig_thread;
     VALUE wrapper;
+    struct BLOCK *outer;
     struct BLOCK *prev;
 };
 
@@ -658,6 +659,7 @@ new_blktag()
     _block.frame.node = ruby_current_node;\
     _block.scope = ruby_scope;		\
     _block.prev = ruby_block;		\
+    _block.outer = ruby_block;		\
     _block.iter = ruby_iter->iter;	\
     _block.vmode = scope_vmode;		\
     _block.flags = BLOCK_D_SCOPE;	\
@@ -1477,20 +1479,45 @@ rb_eval_string_wrap(str, state)
 }
 
 static void
-localjump_error(mesg, status)
+localjump_error(mesg, status, reason)
     const char *mesg;
     VALUE status;
+    int reason;
 {
     VALUE exc = rb_exc_new2(rb_eLocalJumpError, mesg);
-    rb_iv_set(exc, "@status", status);
+    VALUE id;
+
+    rb_iv_set(exc, "@exit_value", status);
+    switch (reason) {
+      case TAG_BREAK:
+	id = rb_intern("break"); break;
+      case TAG_REDO:
+	id = rb_intern("redo"); break;
+      case TAG_RETRY:
+	id = rb_intern("retry"); break;
+      case TAG_NEXT:
+	id = rb_intern("next"); break;
+      case TAG_RETURN:
+	id = rb_intern("return"); break;
+      default:
+	id = rb_intern("noreason"); break;
+    }
+    rb_iv_set(exc, "@reason", ID2SYM(id));
     rb_exc_raise(exc);
 }
 
 static VALUE
-localjump_exitstatus(exc)
+localjump_xvalue(exc)
     VALUE exc;
 {
-    return rb_iv_get(exc, "@status");
+    return rb_iv_get(exc, "@exit_value");
+}
+
+static VALUE
+localjump_reason(exc)
+    VALUE exc;
+{
+    return rb_iv_get(exc, "@reason");
 }
 
 static void
@@ -1505,19 +1532,19 @@ jump_tag_but_local_jump(state)
       case 0:
 	break;
       case TAG_RETURN:
-	localjump_error("unexpected return", val);
+	localjump_error("unexpected return", val, state);
 	break;
       case TAG_NEXT:
-	localjump_error("unexpected next", val);
+	localjump_error("unexpected next", val, state);
 	break;
       case TAG_BREAK:
-	localjump_error("unexpected break", val);
+	localjump_error("unexpected break", val, state);
 	break;
       case TAG_REDO:
-	localjump_error("unexpected redo", Qnil);
+	localjump_error("unexpected redo", Qnil, state);
 	break;
       case TAG_RETRY:
-	localjump_error("retry outside of rescue clause", Qnil);
+	localjump_error("retry outside of rescue clause", Qnil, state);
 	break;
       default:
 	JUMP_TAG(state);
@@ -1897,7 +1924,7 @@ copy_node_scope(node, rval)
 #define BEGIN_CALLARGS do {\
     struct BLOCK *tmp_block = ruby_block;\
     if (ruby_iter->iter == ITER_PRE) {\
-	ruby_block = ruby_block->prev;\
+	ruby_block = ruby_block->outer;\
     }\
     PUSH_ITER(ITER_NOT)
 
@@ -3967,7 +3994,7 @@ rb_yield_0(val, self, klass, pcall, avalue)
     static unsigned serial = 1;
 
     if (!rb_block_given_p()) {
-	localjump_error("no block given", Qnil);
+	localjump_error("no block given", Qnil, 0);
     }
 
     PUSH_VARS();
@@ -6805,7 +6832,7 @@ proc_invoke(proc, args, pcall, self)
 	break;
       case TAG_RETRY:
 	if (pcall || orphan) {
-	    localjump_error("retry from proc-closure", Qnil);
+	    localjump_error("retry from proc-closure", Qnil, state);
 	}
 	/* fall through */
       case TAG_BREAK:
@@ -6813,7 +6840,7 @@ proc_invoke(proc, args, pcall, self)
 	    result = prot_tag->retval;
 	}
 	else if (orphan) {
-	    localjump_error("break from proc-closure", prot_tag->retval);
+	    localjump_error("break from proc-closure", prot_tag->retval, state);
 	}
 	else {
 	    ruby_block->tag->dst = incoming_state;
@@ -6822,7 +6849,7 @@ proc_invoke(proc, args, pcall, self)
 	break;
       case TAG_RETURN:
 	if (orphan) {	/* orphan procedure */
-	    localjump_error("return from proc-closure", prot_tag->retval);
+	    localjump_error("return from proc-closure", prot_tag->retval, state);
 	}
 	/* fall through */
       default:
@@ -6988,7 +7015,7 @@ block_pass(self, node)
     /* PUSH BLOCK from data */
     old_block = ruby_block;
     _block = *data;
-    _block.prev = old_block;
+    _block.outer = ruby_block;
     ruby_block = &_block;
     PUSH_ITER(ITER_PRE);
     ruby_frame->iter = ITER_PRE;
@@ -7035,7 +7062,7 @@ block_pass(self, node)
 	goto retry;
       case TAG_RETURN:
 	if (orphan) {
-	    localjump_error("return from proc-closure", prot_tag->retval);
+	    localjump_error("return from proc-closure", prot_tag->retval, state);
 	}
       default:
 	JUMP_TAG(state);
@@ -7445,7 +7472,8 @@ void
 Init_Proc()
 {
     rb_eLocalJumpError = rb_define_class("LocalJumpError", rb_eStandardError);
-    rb_define_method(rb_eLocalJumpError, "exitstatus", localjump_exitstatus, 0);
+    rb_define_method(rb_eLocalJumpError, "exit_value", localjump_xvalue, 0);
+    rb_define_method(rb_eLocalJumpError, "reason", localjump_reason, 0);
 
     rb_eSysStackError = rb_define_class("SystemStackError", rb_eStandardError);
 

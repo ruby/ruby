@@ -156,23 +156,23 @@ collect_all(i, ary)
 }
 
 static VALUE
-enum_to_a(obj)
-    VALUE obj;
-{
-    VALUE ary = rb_ary_new();
-    
-    rb_iterate(rb_each, obj, collect_all, ary);
-
-    return ary;
-}
-
-static VALUE
 enum_collect(obj)
     VALUE obj;
 {
     VALUE ary = rb_ary_new();
     
     rb_iterate(rb_each, obj, rb_block_given_p() ? collect_i : collect_all, ary);
+
+    return ary;
+}
+
+static VALUE
+enum_to_a(obj)
+    VALUE obj;
+{
+    VALUE ary = rb_ary_new();
+    
+    rb_iterate(rb_each, obj, collect_all, ary);
 
     return ary;
 }
@@ -264,7 +264,7 @@ sort_by_cmp(a, b)
     VALUE retval;
 
     retval = rb_funcall(RARRAY(*a)->ptr[0], id_cmp, 1, RARRAY(*b)->ptr[0]);
-    return rb_cmpint(retval);
+    return rb_cmpint(retval, *a, *b);
 }
 
 static VALUE
@@ -274,7 +274,12 @@ enum_sort_by(obj)
     VALUE ary;
     long i;
 
-    ary  = rb_ary_new2((TYPE(obj) == T_ARRAY) ? RARRAY(obj)->len : 2000);
+    if (TYPE(obj) == T_ARRAY) {
+	ary  = rb_ary_new2(RARRAY(obj)->len);
+    }
+    else {
+	ary = rb_ary_new();
+    }
     rb_iterate(rb_each, obj, sort_by_i, ary);
     if (RARRAY(ary)->len > 1) {
 	qsort(RARRAY(ary)->ptr, RARRAY(ary)->len, sizeof(VALUE), sort_by_cmp);
@@ -374,7 +379,7 @@ min_i(i, memo)
     }
     else {
 	cmp = rb_funcall(i, id_cmp, 1, memo->u1.value);
-	if (rb_cmpint(cmp) < 0) {
+	if (rb_cmpint(cmp, i, memo->u1.value) < 0) {
 	    memo->u1.value = i;
 	}
     }
@@ -393,7 +398,7 @@ min_ii(i, memo)
     }
     else {
 	cmp = rb_yield(rb_assoc_new(i, memo->u1.value));
-	if (rb_cmpint(cmp) < 0) {
+	if (rb_cmpint(cmp, i, memo->u1.value) < 0) {
 	    memo->u1.value = i;
 	}
     }
@@ -425,7 +430,7 @@ max_i(i, memo)
     }
     else {
 	cmp = rb_funcall(i, id_cmp, 1, memo->u1.value);
-	if (rb_cmpint(cmp) > 0) {
+	if (rb_cmpint(cmp, i, memo->u1.value) > 0) {
 	    memo->u1.value = i;
 	}
     }
@@ -444,7 +449,7 @@ max_ii(i, memo)
     }
     else {
 	cmp = rb_yield(rb_assoc_new(i, memo->u1.value));
-	if (rb_cmpint(cmp) > 0) {
+	if (rb_cmpint(cmp, i, memo->u1.value) > 0) {
 	    memo->u1.value = i;
 	}
     }

@@ -17,9 +17,12 @@ VALUE rb_mComparable;
 static ID cmp;
 
 int
-rb_cmpint(val)
-    VALUE val;
+rb_cmpint(val, a, b)
+    VALUE val, a, b;
 {
+    if (NIL_P(val)) {
+	rb_cmperr(a, b);
+    }
     if (FIXNUM_P(val)) return FIX2INT(val);
     if (TYPE(val) == T_BIGNUM) {
 	if (RBIGNUM(val)->sign) return 1;
@@ -43,7 +46,7 @@ rb_cmperr(x, y)
     else {
 	classname = rb_obj_classname(y);
     }
-    rb_raise(rb_eArgError, "comparison of %s to %s failed",
+    rb_raise(rb_eArgError, "comparison of %s with %s failed",
 	     rb_obj_classname(x), classname);
 }
 
@@ -60,7 +63,7 @@ cmp_equal(x, y)
     c  = rb_funcall(x, cmp, 1, y);
     if (NIL_P(c)) return Qnil;
     if (c == INT2FIX(0)) return Qtrue;
-    if (rb_cmpint(c) == 0) return Qtrue;
+    if (rb_cmpint(c, x, y) == 0) return Qtrue;
     return Qfalse;
 }
 
@@ -71,7 +74,7 @@ cmp_gt(x, y)
     VALUE c = rb_funcall(x, cmp, 1, y);
 
     if (NIL_P(c)) return cmperr();
-    if (rb_cmpint(c) > 0) return Qtrue;
+    if (rb_cmpint(c, x, y) > 0) return Qtrue;
     return Qfalse;
 }
 
@@ -82,7 +85,7 @@ cmp_ge(x, y)
     VALUE c = rb_funcall(x, cmp, 1, y);
 
     if (NIL_P(c)) return cmperr();
-    if (rb_cmpint(c) >= 0) return Qtrue;
+    if (rb_cmpint(c, x, y) >= 0) return Qtrue;
     return Qfalse;
 }
 
@@ -93,7 +96,7 @@ cmp_lt(x, y)
     VALUE c = rb_funcall(x, cmp, 1, y);
 
     if (NIL_P(c)) return cmperr();
-    if (rb_cmpint(c) < 0) return Qtrue;
+    if (rb_cmpint(c, x, y) < 0) return Qtrue;
     return Qfalse;
 }
 
@@ -104,7 +107,7 @@ cmp_le(x, y)
     VALUE c = rb_funcall(x, cmp, 1, y);
 
     if (NIL_P(c)) return cmperr();
-    if (rb_cmpint(c) <= 0) return Qtrue;
+    if (rb_cmpint(c, x, y) <= 0) return Qtrue;
     return Qfalse;
 }
 

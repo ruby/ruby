@@ -962,6 +962,28 @@ IterTest.new([[8]]).each8 {|x| test_ok(x == [8])}
 IterTest.new([[0,0]]).each0 {|x| test_ok(x == [0,0])}
 IterTest.new([[8,8]]).each8 {|x| test_ok(x == [8,8])}
 
+def m
+  test_ok(block_given?)
+end
+m{p 'test'}
+
+def m
+  test_ok(block_given?,&proc)
+end
+m{p 'test'}
+
+class C
+  include Enumerable
+  def initialize
+    @a = [1,2,3]
+  end
+  def each(&block)
+    @a.each(&block)
+  end
+end
+
+test_ok(C.new.collect{|n| n} == [1,2,3])
+
 test_check "float"
 test_ok(2.6.floor == 2)
 test_ok((-2.6).floor == -3)
@@ -1525,6 +1547,11 @@ test_ok([TEST1,TEST2,TEST3,TEST4] == [1,2,3,4])
 include Const2
 STDERR.print "intentionally redefines TEST3, TEST4\n" if $VERBOSE
 test_ok([TEST1,TEST2,TEST3,TEST4] == [1,2,6,8])
+
+
+test_ok((String <=> Object) == -1)
+test_ok((Object <=> String) == 1)
+test_ok((Array <=> String) == nil)
 
 test_check "clone"
 foo = Object.new

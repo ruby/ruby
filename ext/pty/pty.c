@@ -300,6 +300,7 @@ pty_finalize_syswait(info)
     struct pty_info *info;
 {
     rb_thread_kill(info->thread);
+    rb_funcall(info->thread, rb_intern("value"), 0);
     rb_detach_process(info->child_pid);
     return Qnil;
 }
@@ -438,9 +439,9 @@ pty_getpty(argc, argv, self)
 
     thinfo.thread = rb_thread_create(pty_syswait, (void*)&info);
     thinfo.child_pid = info.child_pid;
+    rb_thread_schedule();
 
     if (rb_block_given_p()) {
-
 	rb_ensure(rb_yield, res, pty_finalize_syswait, (VALUE)&thinfo);
 	return Qnil;
     }

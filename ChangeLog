@@ -1,3 +1,20 @@
+Tue May 20 00:09:41 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/pty/pty.c (pty_finalize_syswait): join (using Thread#value)
+	  before detach pid. [ruby-talk:71519]
+
+Mon May 19 23:02:10 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (PUSH_FRAME): save outer ruby_block. [ruby-list:37677],
+	  [ruby-dev:20202]
+
+	* eval.c (BEGIN_CALLARGS): restore outer block by using
+	  ruby_block->outer.
+
+	* eval.c (block_pass): do not alter block->prev, but block->outer.
+
+	* array.c (get_inspect_tbl): warning on wrong condition.
+
 Mon May 19 16:13:57 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* class.c: add #include "version.h".
@@ -5,6 +22,19 @@ Mon May 19 16:13:57 2003  Minero Aoki  <aamine@loveruby.net>
 	* hash.c: ditto.
 
 	* string.c: ditto.
+
+Mon May 19 15:33:27 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (localjump_xvalue): renamed exitstatus to exit_value
+	  since it's not exit "status" after all.
+
+	* eval.c (localjump_error): add reason to LocalJumpError.
+
+	* compar.c (rb_cmpint): raise error via rb_cmperr(), if cmp value
+	  is nil. now take new 2 arguments.
+
+	* time.c (time_cmp): 2003-05-16 fix was incomplete.
+	  (ruby-bugs-ja:PR#458)
 
 Mon May 19 14:42:50 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -76,6 +106,7 @@ Fri May 16 23:55:50 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Fri May 16 12:40:40 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (block_pass): chain previous block to the pushing block.
+	  [ruby-list:37677]
 
 	* time.c (time_cmp): does not compare with numbers for
 	  interchangeability. (ruby-bugs-ja:PR#458)

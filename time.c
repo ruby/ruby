@@ -704,31 +704,15 @@ time_cmp(time1, time2)
     long i;
 
     GetTimeval(time1, tobj1);
-    switch (TYPE(time2)) {
-      case T_FIXNUM:
-	i = FIX2LONG(time2);
-	if (tobj1->tv.tv_sec == i) {
-	    if (tobj1->tv.tv_usec == 0)
-		return INT2FIX(0);
-	    if (tobj1->tv.tv_usec > 0)
-		return INT2FIX(1);
+    if (TYPE(time2) == T_DATA && RDATA(time2)->dfree == time_free) {
+	GetTimeval(time2, tobj2);
+	if (tobj1->tv.tv_sec == tobj2->tv.tv_sec) {
+	    if (tobj1->tv.tv_usec == tobj2->tv.tv_usec) return INT2FIX(0);
+	    if (tobj1->tv.tv_usec > tobj2->tv.tv_usec) return INT2FIX(1);
 	    return INT2FIX(-1);
 	}
-	if (tobj1->tv.tv_sec > i) return INT2FIX(1);
+	if (tobj1->tv.tv_sec > tobj2->tv.tv_sec) return INT2FIX(1);
 	return INT2FIX(-1);
-
-      case T_DATA:
-	if (RDATA(time2)->dfree == time_free) {
-	    GetTimeval(time2, tobj2);
-	    if (tobj1->tv.tv_sec == tobj2->tv.tv_sec) {
-		if (tobj1->tv.tv_usec == tobj2->tv.tv_usec) return INT2FIX(0);
-		if (tobj1->tv.tv_usec > tobj2->tv.tv_usec) return INT2FIX(1);
-		return INT2FIX(-1);
-	    }
-	    if (tobj1->tv.tv_sec > tobj2->tv.tv_sec) return INT2FIX(1);
-	    return INT2FIX(-1);
-	}
-	break;
     }
 
     return Qnil;
