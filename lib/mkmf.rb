@@ -799,7 +799,7 @@ def create_makefile(target, srcprefix = nil)
     target_prefix = ""
   end
 
-  $outdir_prefix = $outdir ? "$(outdir)$(target_prefix)/" : ""
+  $extout_prefix = $extout ? "$(extout)$(target_prefix)/" : ""
 
   srcprefix ||= '$(srcdir)'
   Config::expand(srcdir = srcprefix.dup)
@@ -848,8 +848,8 @@ DEFFILE = #{deffile}
 CLEANFILES = #{$cleanfiles.join(' ')}
 DISTCLEANFILES = #{$distcleanfiles.join(' ')}
 
-outdir = #{$outdir.sub(/#{Regexp.quote($topdir)}/, '$(topdir)') if $outdir}
-outdir_prefix = #{$outdir_prefix}
+extout = #{$extout.sub(/#{Regexp.quote($topdir)}/, '$(topdir)') if $extout}
+extout_prefix = #{$extout_prefix}
 target_prefix = #{target_prefix}
 LOCAL_LIBS = #{$LOCAL_LIBS}
 LIBS = #{$LIBRUBYARG} #{$libs} #{$LIBS}
@@ -858,11 +858,11 @@ TARGET = #{target}
 DLLIB = #{dllib}
 STATIC_LIB = #{staticlib}
 }
-  if $outdir
+  if $extout
     mfile.print %{
-RUBYCOMMONDIR = $(outdir)
-RUBYLIBDIR    = $(outdir)$(target_prefix)
-RUBYARCHDIR   = $(outdir)/$(arch)$(target_prefix)
+RUBYCOMMONDIR = $(extout)
+RUBYLIBDIR    = $(extout)$(target_prefix)
+RUBYARCHDIR   = $(extout)/$(arch)$(target_prefix)
 }
   elsif $extmk
     mfile.print %{
@@ -878,10 +878,10 @@ RUBYARCHDIR   = $(sitearchdir)$(target_prefix)
 }
   end
   mfile.print %{
-CLEANLIBS     = #{$outdir_prefix}$(TARGET).*
+CLEANLIBS     = #{$extout_prefix}$(TARGET).*
 CLEANOBJS     = *.#{$OBJEXT} *.#{$LIBEXT} *.s[ol] *.pdb *.bak
 
-all:		#{target ? $outdir ? "install" : "$(DLLIB)" : "Makefile"}
+all:		#{target ? $extout ? "install" : "$(DLLIB)" : "Makefile"}
 static:		$(STATIC_LIB)
 
 }
@@ -894,7 +894,7 @@ static:		$(STATIC_LIB)
     f = "$(DLLIB)"
     dest = "#{dir}/#{f}"
     mfile.print "install-so: #{dest}\n"
-    unless $outdir
+    unless $extout
       mfile.print "#{dest}: #{f}\n\t@$(INSTALL_PROG) #{f} #{dir}\n"
     end
   end
@@ -942,7 +942,7 @@ site-install-rb: install-rb
     end
   end
 
-  mfile.print "$(RUBYARCHDIR)/" if $outdir
+  mfile.print "$(RUBYARCHDIR)/" if $extout
   mfile.print "$(DLLIB): ", (makedef ? "$(DEFFILE) " : ""), "$(OBJS)\n\t"
   mfile.print "@-$(RM) $@\n\t"
   mfile.print "@-$(RM) $(TARGET).lib\n\t" if $mswin
@@ -1005,7 +1005,7 @@ def init_mkmf(config = CONFIG)
   $cleanfiles = []
   $distcleanfiles = []
 
-  $outdir ||= nil
+  $extout ||= nil
 
   dir_config("opt")
 end

@@ -146,7 +146,7 @@ def parse_args()
   end
   $destdir = $OPT['dest-dir'] || ''
   if opt = $OPT['extout'] and !opt.empty?
-    $outdir = File.expand_path(opt, $topdir)
+    $extout = File.expand_path(opt, $topdir)
   end
   $make = $OPT['make'] || $make || 'make'
   mflags = ($OPT['make-flags'] || '').strip
@@ -179,9 +179,9 @@ def parse_args()
     $destdir = File.expand_path($destdir)
     $mflags.defined?("DESTDIR") or $mflags << "DESTDIR=#{$destdir}"
   end
-  if $outdir
-    $mflags << "outdir=#{$outdir.sub(/#{Regexp.quote($topdir)}/, '$(topdir)')}"
-    $mflags << "outdir_prefix=#{$outdir_prefix}"
+  if $extout
+    $mflags << "extout=#{$extout.sub(/#{Regexp.quote($topdir)}/, '$(topdir)')}"
+    $mflags << "extout_prefix=#{$extout_prefix}"
   end
 
   $message = $OPT['message']
@@ -268,14 +268,14 @@ exts |= Dir.glob("#{ext_prefix}/*/**/MANIFEST").collect {|d|
   d
 } unless $extension
 
-if $outdir
+if $extout
   if $install
     Config.expand(dest = "#{$destdir}#{$rubylibdir}")
-    FileUtils.cp_r($outdir+"/.", dest, :verbose => true, :noop => $dryrun)
+    FileUtils.cp_r($extout+"/.", dest, :verbose => true, :noop => $dryrun)
     exit
   end
   unless $ignore
-    FileUtils.mkpath($outdir)
+    FileUtils.mkpath($extout)
   end
 end
 
