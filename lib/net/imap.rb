@@ -1266,7 +1266,7 @@ module Net
           buf.concat(c)
           i += 1
         elsif (c & 0xe0) == 0xc0 &&
-            inlen >= 2 &&
+            len >= 2 &&
             (s[i + 1] & 0xc0) == 0x80
           if c == 0xc0 || c == 0xc1
             raise DataFormatError, format("non-shortest UTF-8 sequence (%02x)", c)
