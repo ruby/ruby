@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<definitions
+    xmlns:http="http://schemas.xmlsoap.org/wsdl/http/"
+    xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+    xmlns:i1="http://www.winfessor.com/SoapBoxWebService/RosterDataSet.xsd"
+    xmlns:s="http://www.w3.org/2001/XMLSchema"
+    xmlns:s0="http://www.winfessor.com/SoapBoxWebService/SoapBoxWebService"
+    xmlns:i2="http://www.winfessor.com/SoapBoxWebService/ExceptionDataSet.xsd"
+    xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/"
+    xmlns:i0="http://www.winfessor.com/SoapBoxWebService/MessageDataSet.xsd"
+    xmlns:tm="http://microsoft.com/wsdl/mime/textMatching/"
+    xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/"
+    targetNamespace="http://www.winfessor.com/SoapBoxWebService/SoapBoxWebService"
+    xmlns="http://schemas.xmlsoap.org/wsdl/">
+
+  <types>
+    <s:schema
+	elementFormDefault="qualified"
+	targetNamespace="http://www.winfessor.com/SoapBoxWebService/SoapBoxWebService">
+      <s:element name="typeIn">
+        <s:complexType />
+      </s:element>
+
+      <s:element name="typeOut">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="str1" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="str2" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="seq">
+              <s:complexType>
+                <s:sequence>
+                  <s:any />
+                </s:sequence>
+              </s:complexType>
+            </s:element>
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+    </s:schema>
+  </types>
+
+  <message name="doIn">
+    <part name="parameters" element="s0:typeIn" />
+  </message>
+  <message name="doOut">
+    <part name="parameters" element="s0:typeOut" />
+  </message>
+
+  <portType name="DotNetPortType">
+    <operation name="do">
+      <input message="s0:doIn" />
+      <output message="s0:doOut" />
+    </operation>
+  </portType>
+
+  <binding name="DotNetBinding" type="s0:DotNetPortType">
+    <soap:binding transport="http://schemas.xmlsoap.org/soap/http" style="document" />
+    <operation name="do">
+      <soap:operation soapAction="http://www.winfessor.com/SoapBoxWebService/SoapBoxWebService/SessionClose" style="document" />
+      <input>
+        <soap:body use="literal" />
+	<soap:header message="s0:SessionCloseSoapBoxHeader" part="SoapBoxHeader" use="literal" />
+      </input>
+      <output>
+        <soap:body use="literal" />
+	<soap:header message="s0:SessionCloseSoapBoxHeader" part="SoapBoxHeader" use="literal" />
+      </output>
+    </operation>
+  </binding>
+
+  <service name="DotNetService">
+    <documentation>doc doc doc.</documentation>
+    <port name="DotNetPort" binding="s0:DotNetBinding">
+      <soap:address location="http://localhost:8808" />
+      <!-- <soap:address location="http://www.winfessor.com/SoapBoxWebservice/SoapBoxWebService.asmx" /> -->
+    </port>
+  </service>
+</definitions>

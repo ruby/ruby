@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:mstns="http://www.winfessor.com/SoapBoxWebService/MessageDataSet.xsd" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns="http://www.winfessor.com/SoapBoxWebService/MessageDataSet.xsd" attributeFormDefault="qualified" elementFormDefault="qualified" targetNamespace="http://www.winfessor.com/SoapBoxWebService/MessageDataSet.xsd" id="MessageDataSet" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element msdata:IsDataSet="true" name="MessageDataSet">
+    <xs:complexType>
+      <xs:choice maxOccurs="unbounded" />
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

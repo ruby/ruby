@@ -1,3 +1,21 @@
+Mon Sep 25 00:13:15 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/soap/* (29 files): SOAP4R added.
+
+	* lib/wsdl/* (42 files): WSDL4R added.
+
+	* lib/xsd/* (12 files): XSD4R added.
+
+	* test/soap/* (16 files): added.
+
+	* test/wsdl/* (2 files): added.
+
+	* test/xsd/* (3 files): added.
+
+	* sample/soap/* (27 files): added.
+
+	* sample/wsdl/* (13 files): added.
+
 Wed Sep 24 02:08:11 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httpservlet/cgihandler.rb: conform to mswin32.
