@@ -1,3 +1,11 @@
+Fri Sep  6 05:03:50 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* gc.c (gc_sweep): should mark parser.
+
+	* parse.y (rb_gc_mark_parser): new function.
+
+	* intern.h (rb_gc_mark_parser): added.
+
 Thu Sep  5 18:32:32 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* variable.c (rb_path2class): should not use rb_eval_string().

@@ -1186,6 +1186,8 @@ rb_gc()
 
     /* mark generic instance variables for special constants */
     rb_mark_generic_ivar_tbl();
+
+    rb_gc_mark_parser();
     
     /* gc_mark objects whose marking are not completed*/
     while (!MARK_STACK_EMPTY){
