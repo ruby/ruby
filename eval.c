@@ -10099,6 +10099,7 @@ Init_Thread()
     rb_define_method(cThGroup, "add", thgroup_add, 1);
     thgroup_default = rb_obj_alloc(cThGroup);
     rb_define_const(cThGroup, "Default", thgroup_default);
+    rb_global_variable(&thgroup_default);
 
     /* allocate main thread */
     main_thread = rb_thread_alloc(rb_cThread);

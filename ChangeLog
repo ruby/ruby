@@ -1,3 +1,11 @@
+Mon Sep  1 18:00:02 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (aref_args): forgot to call NEW_SPLAT(). reported by
+	  Dave Butcher.
+
+	* eval.c (Init_Thread): protect thgroup_default.  suggested by Guy
+	  Decoux in [ruby-talk:80623]
+
 Mon Sep  1 16:59:10 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_thread_switch): add RESTORE_EXIT; exit by another

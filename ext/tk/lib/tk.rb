@@ -1317,7 +1317,7 @@ module Tk
     def frame
       tk_call('wm', 'frame', path)
     end
-    def geometry(geom)
+    def geometry(geom=nil)
       if geom
 	tk_call('wm', 'geometry', path, geom)
 	self
