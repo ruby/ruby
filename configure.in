@@ -974,7 +974,7 @@ if test "$fat_binary" = yes ; then
 fi
 
 if test x"$cross_compiling" = xyes; then
-  MINIRUBY="${RUBY-ruby} -I`pwd` -rfake"
+  test x"$MINIRUBY" = x && MINIRUBY="${RUBY-ruby} -I`pwd` -rfake"
   PREP=fake.rb
 else
   MINIRUBY='./miniruby$(EXEEXT)'
@@ -984,9 +984,10 @@ AC_SUBST(MINIRUBY)
 AC_SUBST(PREP)
 
 FIRSTMAKEFILE=""
-LIBRUBY_A='lib$(RUBY_INSTALL_NAME).a'
+LIBRUBY_A='lib$(RUBY_SO_NAME)-static.a'
 LIBRUBY='$(LIBRUBY_A)'
-LIBRUBYARG='-l$(RUBY_INSTALL_NAME)'
+LIBRUBYARG_STATIC='-l$(RUBY_SO_NAME)-static'
+LIBRUBYARG='$(LIBRUBYARG_STATIC)'
 SOLIBS=
 
 case "$target_os" in
@@ -1010,7 +1011,8 @@ AC_ARG_ENABLE(shared,
        [enable_shared=$enableval])
 if test "$enable_shared" = 'yes'; then
   LIBRUBY='$(LIBRUBY_SO)'
-  LIBRUBYARG='-l$(RUBY_SO_NAME)'
+  LIBRUBYARG_SHARED='-l$(RUBY_SO_NAME)'
+  LIBRUBYARG='$(LIBRUBYARG_SHARED)'
   CFLAGS="$CFLAGS $CCDLFLAGS"
   ENABLE_SHARED=yes
   if test "$rb_cv_binary_elf" = yes; then
@@ -1040,7 +1042,7 @@ if test "$enable_shared" = 'yes'; then
 	SOLIBS='$(LIBS)'
 	LIBRUBY_SO='lib$(RUBY_SO_NAME).so.$(MAJOR)$(MINOR).$(TEENY)'
 	LIBRUBY_DLDFLAGS='-Wl,-soname,lib$(RUBY_SO_NAME).so.$(MAJOR)$(MINOR)'
-	LIBRUBYARG='-Wl,-R -Wl,${libdir} -L${libdir} -L. -l$(RUBY_SO_NAME)'
+	LIBRUBYARG_SHARED='-Wl,-R -Wl,${libdir} -L${libdir} -L. -l$(RUBY_SO_NAME)'
 	if test "$rb_cv_binary_elf" = yes; then # ELF platforms
 	   LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(MAJOR)$(MINOR) lib$(RUBY_SO_NAME).so'
 	else	# a.out platforms
@@ -1067,7 +1069,7 @@ if test "$enable_shared" = 'yes'; then
 	    LIBRUBY_DLDFLAGS='-bE:ruby.imp -bM:SRE -bnoentry'
 	    ARCHFILE="ruby.imp"
 	fi
-	LIBRUBYARG='-L${libdir} -Wl,lib$(RUBY_SO_NAME).so'
+	LIBRUBYARG_SHARED='-L${libdir} -Wl,lib$(RUBY_SO_NAME).so'
 	SOLIBS='-lm -lc'
 	;;
     beos*)
@@ -1158,7 +1160,6 @@ case "$target_os" in
 	    LIBRUBY='lib$(RUBY_SO_NAME).a'
 	fi
 	LIBRUBY_ALIASES=''
-	LIBRUBY_A='lib$(RUBY_INSTALL_NAME)s.a'
 	FIRSTMAKEFILE=GNUmakefile:cygwin/GNUmakefile.in
 	SOLIBS='$(LIBS)'
 	;;
@@ -1177,6 +1178,8 @@ AC_SUBST(LIBRUBY_SO)
 AC_SUBST(LIBRUBY_ALIASES)
 AC_SUBST(LIBRUBY)
 AC_SUBST(LIBRUBYARG)
+AC_SUBST(LIBRUBYARG_STATIC)
+AC_SUBST(LIBRUBYARG_SHARED)
 AC_SUBST(SOLIBS)
 AC_SUBST(DLDLIBS)
 AC_SUBST(ENABLE_SHARED)

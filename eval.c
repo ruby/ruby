@@ -2103,6 +2103,7 @@ call_trace_func(event, node, self, id, klass)
 
     if (node) {
 	ruby_current_node = node;
+	ruby_frame->node = node;
 	ruby_sourcefile = node->nd_file;
 	ruby_sourceline = nd_line(node);
     }
@@ -2324,7 +2325,7 @@ rb_eval(self, n)
 	if (trace_func) {
 	    call_trace_func("line", node, self,
 			    ruby_frame->last_func,
-			    ruby_frame->last_class);	
+			    ruby_frame->last_class);
 	}
 	if (RTEST(rb_eval(self, node->nd_cond))) {
 	    node = node->nd_body;
@@ -6686,17 +6687,18 @@ proc_to_s(self, other)
     VALUE self, other;
 {
     struct BLOCK *data;
+    NODE *node;
     char *cname = rb_class2name(CLASS_OF(self));
     const int w = (SIZEOF_LONG * CHAR_BIT) / 4;
     long len = strlen(cname)+6+w; /* 6:tags 16:addr */
     VALUE str;
 
     Data_Get_Struct(self, struct BLOCK, data);
-    if (data->body) {
-	len += strlen(data->body->nd_file) + 2 + (SIZEOF_LONG*CHAR_BIT-NODE_LSHIFT)/3;
+    if ((node = data->frame.node) || (node = data->body)) {
+	len += strlen(node->nd_file) + 2 + (SIZEOF_LONG*CHAR_BIT-NODE_LSHIFT)/3;
 	str = rb_str_new(0, len);
 	sprintf(RSTRING(str)->ptr, "#<%s:0x%.*lx@%s:%d>", cname, w, (VALUE)data->tag,
-		data->body->nd_file, nd_line(data->body));
+		node->nd_file, nd_line(node));
     }
     else {
 	str = rb_str_new(0, len);

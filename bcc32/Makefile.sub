@@ -132,7 +132,7 @@ ORGLIBPATH = $(LIB)
 
 #### End of system configuration section. ####
 
-LIBRUBY_A     = lib$(RUBY_INSTALL_NAME).lib
+LIBRUBY_A     = $(RUBY_SO_NAME)-static.lib
 LIBRUBY_SO    = $(RUBY_SO_NAME).dll
 LIBRUBY       = $(RUBY_SO_NAME).lib
 LIBRUBYARG    = $(LIBRUBY)
@@ -350,11 +350,13 @@ s,@RUBY_INSTALL_NAME@,$(RUBY_INSTALL_NAME),;t t
 s,@rubyw_install_name@,$(RUBYW_INSTALL_NAME),;t t
 s,@RUBYW_INSTALL_NAME@,$(RUBYW_INSTALL_NAME),;t t
 s,@RUBY_SO_NAME@,$(RUBY_SO_NAME),;t t
-s,@LIBRUBY_A@,lib$$(RUBY_INSTALL_NAME).lib,;t t
+s,@LIBRUBY_A@,$$(RUBY_SO_NAME)-static.lib,;t t
 s,@LIBRUBY_SO@,$$(RUBY_SO_NAME).dll,;t t
 s,@LIBRUBY_ALIASES@,$(LIBRUBY_ALIASES),;t t
 s,@LIBRUBY@,$$(RUBY_SO_NAME).lib,;t t
-s,@LIBRUBYARG@,$$(RUBY_SO_NAME).lib,;t t
+s,@LIBRUBYARG@,$$(LIBRUBYARG_SHARED),;t t
+s,@LIBRUBYARG_STATIC@,$$(LIBRUBY_A),;t t
+s,@LIBRUBYARG_SHARED@,$$(LIBRUBY),;t t
 s,@SOLIBS@,$(SOLIBS),;t t
 s,@DLDLIBS@,$(DLDLIBS),;t t
 s,@ENABLE_SHARED@,yes,;t t
@@ -392,7 +394,7 @@ $(WPROGRAM):	$(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_SO) $(RUBYW_INSTALL_NAME).res
 
 $(LIBRUBY_A):	$(OBJS)
 		@-if exist $@ del $@
-		$(AR) $(ARFLAGS) $@ $(OBJS)
+		$(AR) $(ARFLAGS) "$@" $(OBJS)
 
 # $(LIBRUBY):	$(LIBRUBY_SO)
 #		implib $@ $(LIBRUBY_SO)

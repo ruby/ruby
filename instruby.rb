@@ -81,7 +81,7 @@ if rubyw_install_name and !rubyw_install_name.empty?
 end
 Installer.install dll, bindir, 0755, true if enable_shared and dll != lib
 Installer.install lib, libdir, 0555, true unless lib == arc
-Installer.install arc, archlibdir, 0644, true
+Installer.install arc, libdir, 0644, true
 Installer.install "config.h", archlibdir, 0644, true
 Installer.install "rbconfig.rb", archlibdir, 0644, true
 if CONFIG["ARCHFILE"]

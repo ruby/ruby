@@ -52,6 +52,8 @@ LIBRUBY_SO    = @LIBRUBY_SO@
 LIBRUBY_ALIASES= @LIBRUBY_ALIASES@
 LIBRUBY	      = @LIBRUBY@
 LIBRUBYARG    = @LIBRUBYARG@
+LIBRUBYARG_STATIC = @LIBRUBYARG_STATIC@
+LIBRUBYARG_SHARED = @LIBRUBYARG_SHARED@
 
 PREP          = @PREP@ @ARCHFILE@
 SETUP         =
@@ -183,7 +185,7 @@ Makefile:	$(srcdir)/Makefile.in
 		{ echo "Makefile updated, restart."; exit 1; }
 
 config.status:	$(srcdir)/configure
-		$(SHELL) ./config.status --recheck
+		MINIRUBY="$(MINIRUBY)" $(SHELL) ./config.status --recheck
 
 $(srcdir)/configure: $(srcdir)/configure.in
 		cd $(srcdir) && $(AUTOCONF)

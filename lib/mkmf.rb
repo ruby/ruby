@@ -211,7 +211,7 @@ def link_command(ldflags, opt="", libpath=$LIBPATH)
 		 'LDFLAGS' => "#$LDFLAGS #{ldflags}",
 		 'LIBPATH' => libpathflag(libpath),
 		 'LOCAL_LIBS' => "#$LOCAL_LIBS #$libs",
-		 'LIBS' => "#$LIBRUBYARG #{opt} #$LIBS")
+		 'LIBS' => "#$LIBRUBYARG_STATIC #{opt} #$LIBS")
 end
 
 def cc_command(opt="")
@@ -558,6 +558,10 @@ VPATH = $(srcdir)
   end
   mk << %{
 CC = #{CONFIG['CC']}
+LIBRUBY = #{CONFIG['LIBRUBY']}
+LIBRUBY_A = #{CONFIG['LIBRUBY_A']}
+LIBRUBYARG_SHARED = #$LIBRUBYARG_SHARED
+LIBRUBYARG_STATIC = #$LIBRUBYARG_STATIC
 
 CFLAGS   = #{CONFIG['CCDLFLAGS'] unless $static} #$CFLAGS
 CPPFLAGS = -I. -I$(topdir) -I$(hdrdir) -I$(srcdir) #{$defs.join(" ")} #{$CPPFLAGS}
@@ -774,6 +778,8 @@ def init_mkmf(config = CONFIG)
   $OBJEXT = config["OBJEXT"].dup
   $LIBS = "#{config['LIBS']} #{config['DLDLIBS']}"
   $LIBRUBYARG = config['LIBRUBYARG']
+  $LIBRUBYARG_STATIC = config['LIBRUBYARG_STATIC']
+  $LIBRUBYARG_SHARED = config['LIBRUBYARG_SHARED']
   $LIBPATH = []
 
   $objs = nil

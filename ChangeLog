@@ -1,3 +1,28 @@
+Thu Nov 14 22:40:29 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* configure.in (LIBRUBY_A): append -static.  [ruby-dev:18689]
+
+	* configure.in (LIBRUBYARG_STATIC, LIBRUBYARG_SHARED): linker
+	  argument to link static/shared library respectively.
+
+	* Makefile.in (LIBRUBYARG_STATIC, LIBRUBYARG_SHARED): added.
+
+	* bcc32/Makefile.sub, win32/Makefile.sub: ditto.
+
+	* instruby.rb (LIBRUBY_A): install to libdir.
+
+	* lib/mkmf.rb (link_command): link static library of ruby, or
+	  try_run fails unless LIBRUBY_SO is installed.  [ruby-dev:18646]
+
+	* eval.c (call_trace_func): toplevel caller was missing.
+	  [ruby-dev:18754]
+
+	* eval.c (proc_to_s): adjust created line number.
+
+	* parse.y (primary, do_block, brace_block): adjust line number of
+	  block to beginning line, instead of the first statement inside
+	  the block.
+
 Thu Nov 14 08:23:42 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* math.c (math_acos): check errno after operation.  ditto for

@@ -1302,10 +1302,14 @@ primary		: literal
 			$$ = NEW_VCALL($1);
 		    }
 		| kBEGIN
+		    {
+			$<num>1 = ruby_sourceline;
+		    }
 		  bodystmt
 		  kEND
 		    {
-			$$ = NEW_BEGIN($2);
+			$$ = NEW_BEGIN($3);
+			nd_set_line($$, $<num>1);
 		    }
 		| tLPAREN_ARG expr {lex_state = EXPR_ENDARG;} ')'
 		    {
@@ -1589,22 +1593,27 @@ opt_block_var	: none
 do_block	: kDO_BLOCK
 		    {
 		        $<vars>$ = dyna_push();
+			$<num>1 = ruby_sourceline;
 		    }
 		  opt_block_var
 		  compstmt
 		  kEND
 		    {
 			$$ = NEW_ITER($3, 0, $4);
-		        fixpos($$, $3?$3:$4);
+			nd_set_line($$, $<num>1);
 			dyna_pop($<vars>2);
 		    }
-		| tLBRACE_ARG {$<vars>$ = dyna_push();}
+		| tLBRACE_ARG
+		    {
+			$<vars>$ = dyna_push();
+			$<num>1 = ruby_sourceline;
+		    }
 		  opt_block_var
 		  compstmt
 		  '}'
 		    {
 			$$ = NEW_ITER($3, 0, $4);
-		        fixpos($$, $3?$3:$4);
+			nd_set_line($$, $<num>1);
 			dyna_pop($<vars>2);
 		    }
 
@@ -1661,23 +1670,25 @@ method_call	: operation paren_args
 brace_block	: '{'
 		    {
 		        $<vars>$ = dyna_push();
+			$<num>1 = ruby_sourceline;
 		    }
 		  opt_block_var
 		  compstmt '}'
 		    {
 			$$ = NEW_ITER($3, 0, $4);
-		        fixpos($$, $4);
+			nd_set_line($$, $<num>1);
 			dyna_pop($<vars>2);
 		    }
 		| kDO
 		    {
 		        $<vars>$ = dyna_push();
+			$<num>1 = ruby_sourceline;
 		    }
 		  opt_block_var
 		  compstmt kEND
 		    {
 			$$ = NEW_ITER($3, 0, $4);
-		        fixpos($$, $4);
+			nd_set_line($$, $<num>1);
 			dyna_pop($<vars>2);
 		    }
 		;
