@@ -1,3 +1,13 @@
+Mon Nov 15 00:33:40 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_clear): avoid revealing NULL pointer.
+	  [ruby-dev:24766]
+
+	* string.c (str_gsub): add paranoid check. [ruby-dev:24827]
+
+	* string.c (str_mod_check): check frozen status as well.
+	  [ruby-dev:24801] 
+
 Sun Nov 14 18:59:03 2004  Tanaka Akira  <akr@m17n.org>
 
 	* process.c (proc_getrlimit): new function for Process.getrlimit.
@@ -12,6 +22,11 @@ Sun Nov 14 13:27:03 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/pp.rb (PP#object_address_group): remove odd number of 'f'
 	  prefixed to negative address.
+
+Sun Nov 14 10:48:21 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/mathn.rb (Integer::gcd2): faster implementation by
+	  <erlercw@siu.edu>. [ruby-talk:120232]
 
 Sun Nov 14 08:46:33 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
@@ -37,6 +52,11 @@ Fri Nov 12 14:08:01 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/lib/tk/event.rb: remove $LOADED_FEATURES trick
 
 	* ext/tk/lib/tk.rb: ditto
+
+Fri Nov 12 00:31:05 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/gdbm/gdbm.c (fgdbm_store): StringValue() may alter string
+	  pointer.  [ruby-dev:24783]
 
 Thu Nov 11 17:58:19 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

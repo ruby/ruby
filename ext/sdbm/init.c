@@ -445,11 +445,11 @@ fsdbm_store(obj, keystr, valstr)
 
     fdbm_modify(obj);
     StringValue(keystr);
+    StringValue(valstr);
 
     key.dptr = RSTRING(keystr)->ptr;
     key.dsize = RSTRING(keystr)->len;
 
-    StringValue(valstr);
     val.dptr = RSTRING(valstr)->ptr;
     val.dsize = RSTRING(valstr)->len;
 

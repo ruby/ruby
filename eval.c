@@ -4686,6 +4686,10 @@ rb_yield_0(val, self, klass, flags, avalue)
 	POP_TAG();
 	if (state) goto pop_state;
     }
+    else if (lambda && RARRAY(val)->len != 0) {
+	rb_raise(rb_eArgError, "wrong number of arguments (%ld for 0)",
+		 RARRAY(val)->len);
+    }
     if (!node) {
 	state = 0;
 	goto pop_state;

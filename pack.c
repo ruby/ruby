@@ -253,11 +253,11 @@ endian()
 #undef ntohl
 #undef htons
 #undef htonl
+#endif
 #define ntohs(x) swaps(x)
 #define ntohl(x) swapl(x)
 #define htons(x) swaps(x)
 #define htonl(x) swapl(x)
-#endif
 #define ntohf(x) swapf(x)
 #define ntohd(x) swapd(x)
 #define htonf(x) swapf(x)

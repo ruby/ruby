@@ -462,11 +462,11 @@ fdbm_store(obj, keystr, valstr)
 
     fdbm_modify(obj);
     keystr = rb_obj_as_string(keystr);
+    valstr = rb_obj_as_string(valstr);
 
     key.dptr = RSTRING(keystr)->ptr;
     key.dsize = RSTRING(keystr)->len;
 
-    valstr = rb_obj_as_string(valstr);
     val.dptr = RSTRING(valstr)->ptr;
     val.dsize = RSTRING(valstr)->len;
 

@@ -45,7 +45,7 @@ str_mod_check(s, p, len)
     char *p;
     long len;
 {
-    if (RSTRING(s)->ptr != p || RSTRING(s)->len != len) {
+    if (RSTRING(s)->ptr != p || RSTRING(s)->len != len || OBJ_FROZEN(s)) {
 	rb_raise(rb_eRuntimeError, "string modified");
     }
 }
@@ -1962,9 +1962,7 @@ rb_str_sub_bang(argc, argv, str)
 
 	    rb_match_busy(match);
 	    repl = rb_obj_as_string(rb_yield(rb_reg_nth_match(0, match)));
-	    if (RSTRING(str)->ptr != p || RSTRING(str)->len != len) {
-		rb_raise(rb_eRuntimeError, "string modified");
-	    }
+	    str_mod_check(str, p, len);
 	    rb_backref_set(match);
 	}
 	else {
@@ -2084,6 +2082,9 @@ str_gsub(argc, argv, str, bang)
 	    rb_match_busy(match);
 	    val = rb_obj_as_string(rb_yield(rb_reg_nth_match(0, match)));
 	    str_mod_check(str, sp, slen);
+	    if (val == dest) { 	/* paranoid chack [ruby-dev:24827] */
+		rb_raise(rb_eRuntimeError, "block should not cheat");
+	    }
 	    rb_backref_set(match);
 	}
 	else {

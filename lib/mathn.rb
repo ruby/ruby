@@ -17,24 +17,13 @@ require "matrix.rb"
 class Integer
 
   remove_method(:gcd2)
-  def gcd2(int)
-    a = self.abs
-    b = int.abs
-    a, b = b, a if a < b
-    
-    pd_a = a.prime_division
-    pd_b = b.prime_division
-    
-    gcd = 1
-    for pair in pd_a
-      as = pd_b.assoc(pair[0])
-      if as
-	gcd *= as[0] ** [as[1], pair[1]].min
-      end
-    end
-    return gcd
+  def gcd2(other)
+    min = self.abs
+    max = other.abs
+    min, max = max % min, min while min > 0
+    max
   end
-  
+
   def Integer.from_prime_division(pd)
     value = 1
     for prime, index in pd
@@ -68,34 +57,54 @@ end
   
 class Prime
   include Enumerable
+  # These are included as class variables to cache them for later uses.  If memory
+  #   usage is a problem, they can be put in Prime#initialize as instance variables.
 
-  def initialize
-    @seed = 1
-    @primes = []
-    @counts = []
+  # There must be no primes between @@primes[-1] and @@next_to_check.
+  @@primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101]
+  # @@next_to_check % 6 must be 1.  
+  @@next_to_check = 103            # @@primes[-1] - @@primes[-1] % 6 + 7
+  @@ulticheck_index = 3            # @@primes.index(@@primes.reverse.find {|n|
+                                   #   n < Math.sqrt(@@next_to_check) })
+  @@ulticheck_next_squared = 121   # @@primes[@@ulticheck_index + 1] ** 2
+
+  class << self
+    # Return the prime cache.
+    def cache
+      return @@primes
+    end
+    alias primes cache
+    alias primes_so_far cache
   end
   
+  def initialize
+    @index = -1
+  end
+  
+  # Return primes given by this instance so far.
+  def primes
+    return @@primes[0, @index + 1]
+  end
+  alias primes_so_far primes
+  
   def succ
-    i = -1
-    size = @primes.size
-    while i < size
-      if i == -1
-	@seed += 1
-	i += 1
-      else
-	while @seed > @counts[i]
-	  @counts[i] += @primes[i]
-	end
-	if @seed != @counts[i]
-	  i += 1
-	else
-	  i = -1
-	end
+    @index += 1
+    while @index >= @@primes.length
+      # Only check for prime factors up to the square root of the potential primes,
+      #   but without the performance hit of an actual square root calculation.
+      if @@next_to_check + 4 > @@ulticheck_next_squared
+        @@ulticheck_index += 1
+        @@ulticheck_next_squared = @@primes.at(@@ulticheck_index + 1) ** 2
       end
+      # Only check numbers congruent to one and five, modulo six. All others
+      #   are divisible by two or three.  This also allows us to skip checking against
+      #   two and three.
+      @@primes.push @@next_to_check if @@primes[2..@@ulticheck_index].find {|prime| @@next_to_check % prime == 0 }.nil?
+      @@next_to_check += 4
+      @@primes.push @@next_to_check if @@primes[2..@@ulticheck_index].find {|prime| @@next_to_check % prime == 0 }.nil?
+      @@next_to_check += 2 
     end
-    @primes.push @seed
-    @counts.push @seed + @seed
-    return @seed
+    return @@primes[@index]
   end
   alias next succ
 
