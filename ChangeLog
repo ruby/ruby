@@ -1,3 +1,8 @@
+Wed May 19 11:08:10 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: change permition of TkObject#tk_send from 
+	  private to public
+
 Wed May 19 02:29:36 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb: support TRACE.
