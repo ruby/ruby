@@ -353,13 +353,7 @@ module DRb
 
   # Error raised when an error occurs on the underlying communication
   # protocol.
-  class DRbConnError < DRbError
-    def self.new_with_error(cause)
-      conn_error = self.new(cause.message)
-      conn_error.set_backtrace(cause.backtrace)
-      conn_error
-    end
-  end
+  class DRbConnError < DRbError; end
 
   # Class responsible for converting between an object and its id.
   #
@@ -558,7 +552,7 @@ module DRb
       begin
         sz = soc.read(4)	# sizeof (N)
       rescue
-        raise(DRbConnError.new_with_error($!))
+        raise(DRbConnError, $!.message, $!.backtrace)
       end
       raise(DRbConnError, 'connection closed') if sz.nil?
       raise(DRbConnError, 'premature header') if sz.size < 4
@@ -567,7 +561,7 @@ module DRb
       begin
         str = soc.read(sz)
       rescue
-        raise(DRbConnError.new_with_error($!))
+        raise(DRbConnError, $!.message, $!.backtrace)
       end
       raise(DRbConnError, 'connection closed') if sz.nil?
       raise(DRbConnError, 'premature marshal format(can\'t read)') if str.size < sz
