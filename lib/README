@@ -61,4 +61,10 @@ thread.rb	thread support
 thwait.rb	thread syncronization class
 timeout.rb	provides timeout
 tracer.rb	execution tracer
+uri.rb		URI support
+uri/ftp.rb	ftp scheme support
+uri/http.rb	http scheme support
+uri/https.rb	https scheme support
+uri/ldap.rb	ldap scheme support
+uri/mailto.rb	mailto scheme support
 weakref.rb	weak reference class
