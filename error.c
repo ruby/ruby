@@ -293,6 +293,7 @@ VALUE rb_eNoMethodError;
 VALUE rb_eSecurityError;
 VALUE rb_eNotImpError;
 VALUE rb_eNoMemError;
+static VALUE rb_cNameErrorMesg;
 
 VALUE rb_eScriptError;
 VALUE rb_eSyntaxError;
@@ -629,6 +630,28 @@ name_err_name(self)
 
 /*
  * call-seq:
+ *  name_error.to_s   => string
+ *
+ * Produce a nicely-formated string representing the +NameError+.
+ */
+
+static VALUE
+name_err_to_s(exc)
+    VALUE exc;
+{
+    VALUE mesg = rb_attr_get(exc, rb_intern("mesg")), str = mesg;
+
+    if (NIL_P(mesg)) return rb_class_path(CLASS_OF(exc));
+    StringValue(str);
+    if (str != mesg) {
+	rb_iv_set(exc, "mesg", mesg = str);
+    }
+    if (OBJ_TAINTED(exc)) OBJ_TAINT(mesg);
+    return mesg;
+}
+
+/*
+ * call-seq:
  *   NoMethodError.new(msg, name [, args])  => no_method_error
  *
  * Contruct a NoMethodError exception for a method of the given name
@@ -647,6 +670,78 @@ nometh_err_initialize(argc, argv, self)
     name_err_initialize(argc, argv, self);
     rb_iv_set(self, "args", args);
     return self;
+}
+
+static void
+name_err_mesg_mark(ptr)
+    VALUE *ptr;
+{
+    rb_gc_mark_locations(ptr, ptr+3);
+}
+
+static VALUE
+name_err_mesg_init(obj, mesg, recv, method)
+    VALUE obj, mesg, recv, method;
+{
+    VALUE *ptr = ALLOC_N(VALUE, 3);
+
+    ptr[0] = mesg;
+    ptr[1] = recv;
+    ptr[2] = method;
+    return Data_Wrap_Struct(rb_cNameErrorMesg, name_err_mesg_mark, -1, ptr);
+}
+
+static VALUE
+name_err_mesg_to_str(obj)
+    VALUE obj;
+{
+    VALUE *ptr, mesg;
+    Data_Get_Struct(obj, VALUE, ptr);
+
+    mesg = ptr[0];
+    if (NIL_P(mesg)) return Qnil;
+    else {
+	char *desc = 0;
+	VALUE d = 0, args[3];
+
+	obj = ptr[1];
+	switch (TYPE(obj)) {
+	  case T_NIL:
+	    desc = "nil";
+	    break;
+	  case T_TRUE:
+	    desc = "true";
+	    break;
+	  case T_FALSE:
+	    desc = "false";
+	    break;
+	  default:
+	    d = rb_protect(rb_inspect, obj, 0);
+	    if (!NIL_P(d) || RSTRING(d)->len > 65) {
+		d = rb_any_to_s(obj);
+	    }
+	    desc = RSTRING(d)->ptr;
+	    break;
+	}
+	if (desc && desc[0] != '#') {
+	    d = rb_str_new2(desc);
+	    rb_str_cat2(d, ":");
+	    rb_str_cat2(d, rb_obj_classname(obj));
+	}
+	args[0] = mesg;
+	args[1] = ptr[2];
+	args[2] = d;
+	mesg = rb_f_sprintf(3, args);
+    }
+    if (OBJ_TAINTED(obj)) OBJ_TAINT(mesg);
+    return mesg;
+}
+
+static VALUE
+name_err_mesg_load(klass, str)
+    VALUE klass, str;
+{
+    return str;
 }
 
 /*
@@ -884,6 +979,12 @@ Init_Exception()
     rb_eNameError     = rb_define_class("NameError", rb_eStandardError);
     rb_define_method(rb_eNameError, "initialize", name_err_initialize, -1);
     rb_define_method(rb_eNameError, "name", name_err_name, 0);
+    rb_define_method(rb_eNameError, "to_s", name_err_to_s, 0);
+    rb_define_singleton_method(rb_eNameError, "message", name_err_mesg_init, 3);
+    rb_cNameErrorMesg = rb_define_class_under(rb_eNameError, "Message", rb_cData);
+    rb_define_method(rb_cNameErrorMesg, "to_str", name_err_mesg_to_str, 0);
+    rb_define_method(rb_cNameErrorMesg, "_dump", name_err_mesg_to_str, 1);
+    rb_define_singleton_method(rb_cNameErrorMesg, "_load", name_err_mesg_load, 1);
     rb_eNoMethodError = rb_define_class("NoMethodError", rb_eNameError);
     rb_define_method(rb_eNoMethodError, "initialize", nometh_err_initialize, -1);
     rb_define_method(rb_eNoMethodError, "args", nometh_err_args, 0);

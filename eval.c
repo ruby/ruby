@@ -5160,65 +5160,6 @@ static int last_call_status;
 #define CSTAT_SUPER 8
 
 /*
- * call-seq:
- *  name_error.to_s   => string
- *
- * Produce a nicely-formated string representing the +NameError+.
- */
-
-static VALUE
-name_err_to_s(exc)
-    VALUE exc;
-{
-    VALUE mesg = rb_attr_get(exc, rb_intern("mesg"));
-    ID id_recv = rb_intern("recv");
-
-    if (NIL_P(mesg)) return rb_class_path(CLASS_OF(exc));
-    if (rb_ivar_defined(exc, id_recv)) {
-	char buf[BUFSIZ];
-	char *desc = "";
-	volatile VALUE d = 0;
-	int noclass;
-	VALUE obj = rb_ivar_get(exc, id_recv);
-	int state;
-
-	switch (TYPE(obj)) {
-	  case T_NIL:
-	    desc = "nil";
-	    break;
-	  case T_TRUE:
-	    desc = "true";
-	    break;
-	  case T_FALSE:
-	    desc = "false";
-	    break;
-	  default:
-	    PUSH_TAG(PROT_NONE);
-	    if ((state = EXEC_TAG()) == 0) {
-		d = rb_inspect(obj);
-	    }
-	    POP_TAG();
-	    if (!d || RSTRING(d)->len > 65) {
-		d = rb_any_to_s(obj);
-	    }
-	    break;
-	}
-	if (d) {
-	    desc = RSTRING(d)->ptr;
-	}
-	noclass = (!desc || desc[0]=='#');
-	snprintf(buf, BUFSIZ, RSTRING(mesg)->ptr, desc,
-		 noclass ? "" : ":",
-		 noclass ? "" : rb_obj_classname(obj));
-	mesg = rb_str_new2(buf);
-	rb_iv_set(exc, "mesg", mesg);
-	st_delete(ROBJECT(exc)->iv_tbl, (st_data_t*)&id_recv, 0);
-    }
-    if (OBJ_TAINTED(exc)) OBJ_TAINT(mesg);
-    return mesg;
-}
-
-/*
  *  call-seq:
  *     obj.method_missing(symbol [, *args] )   => result
  *  
@@ -5268,36 +5209,33 @@ rb_method_missing(argc, argv, obj)
     id = SYM2ID(argv[0]);
 
     if (last_call_status & CSTAT_PRIV) {
-	format = "private method `%s' called for %%s%%s%%s";
+	format = "private method `%s' called for %s";
     }
     else if (last_call_status & CSTAT_PROT) {
-	format = "protected method `%s' called for %%s%%s%%s";
+	format = "protected method `%s' called for %s";
     }
     else if (last_call_status & CSTAT_VCALL) {
-	format = "undefined local variable or method `%s' for %%s%%s%%s";
+	format = "undefined local variable or method `%s' for %s";
 	exc = rb_eNameError;
     }
     else if (last_call_status & CSTAT_SUPER) {
 	format = "super: no superclass method `%s'";
     }
     if (!format) {
-	format = "undefined method `%s' for %%s%%s%%s";
+	format = "undefined method `%s' for %s";
     }
 
     ruby_current_node = cnode;
     {
-	char buf[BUFSIZ];
 	int n = 0;
 	VALUE args[3];
 
-	snprintf(buf, BUFSIZ, format, rb_id2name(id));
-	args[n++] = rb_str_new2(buf);
+	args[n++] = rb_funcall(exc, rb_intern("message"), 3, rb_str_new2(format), obj, argv[0]);
 	args[n++] = argv[0];
 	if (exc == rb_eNoMethodError) {
 	    args[n++] = rb_ary_new4(argc-1, argv+1);
 	}
 	exc = rb_class_new_instance(n, args, exc);
-	rb_iv_set(exc, "recv", obj);
 	ruby_frame = ruby_frame->prev; /* pop frame for "method_missing" */
 	rb_exc_raise(exc);
     }
@@ -7661,9 +7599,6 @@ Init_load()
 
     ruby_dln_librefs = rb_ary_new();
     rb_global_variable(&ruby_dln_librefs);
-
-    /* not really a right place */
-    rb_define_method(rb_eNameError, "to_s", name_err_to_s, 0);
 }
 
 static void
