@@ -1160,11 +1160,6 @@ have_header(header)
   ヘッダファイルの存在をチェックする．ヘッダファイルが存在す
   る時trueを返す．
 
-find_header(header)
-
-  ヘッダファイルの存在を -Ipath を追加しながらチェックする．
-  ヘッダファイルが見付かった時trueを返す．
-
 create_makefile(target)
 
   拡張ライブラリ用のMakefileを生成する．この関数を呼ばなけれ
@@ -1173,13 +1168,17 @@ create_makefile(target)
 
 with_config(withval[, default=nil])
 
-  --with-<withval>で指定されたオプション値を得る．
+  コマンドライン上の--with-<withval>で指定されたオプション値を得る．
 
-dir_config(target)
+dir_config(target[, default_dir])
+dir_config(target[, default_include, default_lib])
 
-  --with-<target>-dir, --with-<target>-include, --with-<target>-lib
-  のいずれかで指定されるディレクトリを $CFLAGS や $LDFLAGS
-  に追加する．
+  コマンドライン上の--with-<target>-dir, --with-<target>-include,
+  --with-<target>-libのいずれかで指定されるディレクトリを
+  $CFLAGS や $LDFLAGS に追加する．--with-<target>-dir=/pathは
+  --with-<target>-include=/path/include --with-<target>-lib=/path/lib
+  と等価である．追加された include ディレクトリと lib ディレクトリの
+  配列を返す． ([include_dir, lib_dir])
 
 /*
  * Local variables:

@@ -34,10 +34,10 @@ Rubyはテキスト処理関係の能力などに優れ，Perlと同じくらい強力
 
 ** CVSで
 
-  $ cvs -d :pserver:anonymous@cvs.netlab.co.jp:/home/cvs login
-  (Logging in to anonymous@cvs.netlab.co.jp)
-  CVS password: guest
-  $ cvs -d :pserver:anonymous@cvs.netlab.co.jp:/home/cvs checkout ruby
+  $ cvs -d :pserver:anonymous@cvs.ruby-lang.org:/src login
+  (Logging in to anonymous@cvs.ruby-lang.org)
+  CVS password: anonymous
+  $ cvs -z4 -d :pserver:anonymous@cvs.ruby-lang.org:src checkout ruby
 
 
 * ホームページ
@@ -53,7 +53,7 @@ RubyのホームページのURLは
 
 Rubyのメーリングリストがあります。参加希望の方は
 
-   ruby-list-ctl@netlab.co.jp
+   ruby-list-ctl@ruby-lang.org
 
 まで本文に
 
@@ -65,11 +65,12 @@ Ruby開発者向けメーリングリストもあります。こちらではrubyのバ
 グ、将来の仕様拡張など実装上の問題について議論されています。
 参加希望の方は
 
-   ruby-dev-ctl@netlab.co.jp
+   ruby-dev-ctl@ruby-lang.org
 
 までruby-listと同様の方法でメールしてください。 
 
 Ruby拡張モジュールについて話し合うruby-extメーリングリストと
+数学関係の話題について話し合うruby-mathメーリングリストと
 英語で話し合うruby-talkメーリングリストもあります。参加方法
 はどれも同じです。 
 
@@ -78,13 +79,17 @@ Ruby拡張モジュールについて話し合うruby-extメーリングリストと
 
 以下の手順で行ってください．
 
-  1. configureを実行してMakefileなどを生成する
+  1. もしconfigureファイルが見つからない、もしくは
+     configure.inより古いようなら、autoconfを実行して
+     新しくconfigureを生成する
 
-  2. (必要ならば)defines.hを編集する
+  2. configureを実行してMakefileなどを生成する
+
+  3. (必要ならば)defines.hを編集する
 
      多分，必要無いと思います．
 
-  3. (必要ならば)ext/Setupに静的にリンクする拡張モジュールを
+  4. (必要ならば)ext/Setupに静的にリンクする拡張モジュールを
      指定する
 
      ext/Setupに記述したモジュールは静的にリンクされます．
@@ -95,14 +100,14 @@ Ruby拡張モジュールについて話し合うruby-extメーリングリストと
      拡張モジュールを利用するためには，あらかじめ静的にリン
      クしておく必要があります．
 
-  4. makeを実行してコンパイルする
+  5. makeを実行してコンパイルする
 
-  5. make testでテストを行う．
+  6. make testでテストを行う．
 
      「test succeeded」と表示されれば成功です．ただしテスト
      に成功しても完璧だと保証されている訳ではありません．
 
-  6. make install
+  7. make install
 
      rootで作業する必要があるかもしれません．
 

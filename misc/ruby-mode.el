@@ -749,7 +749,7 @@ An end of a defun is found by moving forward from the beginning of one."
      '("^\\s *def\\s +\\([^( ]+\\)"
        1 font-lock-function-name-face)
      ;; symbols
-     '("\\(^\\|[^:]\\)\\(:\\(\\w\\|_\\)+\\??\\)\\b"
+     '("\\(^\\|[^:]\\)\\(:\\([-+/%&|^~`]\\|\\*\\*?\\|<\\(<\\|=>?\\)?\\|>[>=]?\\|===?\\|=~\\|\\[\\]\\|\\(\\w\\|_\\)+\\([!?=]\\|\\b\\)\\)\\)"
        2 font-lock-reference-face))
     "*Additional expressions to highlight in ruby mode."))
 

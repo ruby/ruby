@@ -26,6 +26,7 @@ class << File
 
     fmode = stat(from).mode
     tpath = to
+    not_exist = !exist?(tpath)
 
     from = open(from, "r")
     from.binmode
@@ -50,7 +51,7 @@ class << File
       to.close
       from.close
     end
-    chmod(fmode, tpath)
+    chmod(fmode, tpath) if not_exist
     ret
   end
 

@@ -30,13 +30,13 @@ AUTOCONF = autoconf
 
 
 prefix = /usr
-CFLAGS = -nologo -DNT=1 -Zi -MD -O2b2x -G5
+CFLAGS = -nologo -DNT=1 -Zi -MD -O2b2xg- -G5
 CPPFLAGS = -I$(srcdir) -I$(srcdir)/missing
 LDFLAGS = $(CFLAGS) -Fm
 XLDFLAGS = 
 #EXTLIBS = 
 LIBS = user32.lib advapi32.lib wsock32.lib $(EXTLIBS)
-MISSING = crypt.obj alloca.obj win32.obj isinf.obj isnan.obj
+MISSING = crypt.obj win32.obj isinf.obj isnan.obj
 LDSHARED = 
 DLDFLAGS = 
 SOLIBS = 

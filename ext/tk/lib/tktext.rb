@@ -189,6 +189,14 @@ class TkText<TkTextWin
     }
   end
 
+  def mark_next(index)
+    tagid2obj(tk_send('mark', 'next', index))
+  end
+
+  def mark_previous(index)
+    tagid2obj(tk_send('mark', 'previous', index))
+  end
+
   def window_names
     tk_send('window', 'names').collect{|elt|
       tagid2obj(elt)

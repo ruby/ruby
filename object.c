@@ -162,6 +162,7 @@ inspect_i(id, value, str)
     if (!rb_is_instance_id(id)) return ST_CONTINUE;
     if (RSTRING(str)->ptr[0] == '-') { /* first element */
 	RSTRING(str)->ptr[0] = '#';
+	rb_str_cat2(str, " ");
     }
     else {
 	rb_str_cat2(str, ", ");
@@ -182,6 +183,7 @@ inspect_obj(obj, str)
 {
     st_foreach(ROBJECT(obj)->iv_tbl, inspect_i, str);
     rb_str_cat2(str, ">");
+    RSTRING(str)->ptr[0] = '#';
     OBJ_INFECT(str, obj);
 
     return str;
@@ -227,12 +229,10 @@ rb_obj_is_instance_of(obj, c)
 	return Qfalse;
 
       case T_FALSE:
-	if (obj) return Qfalse;
-	return Qtrue;
+	return RTEST(obj) ? Qfalse : Qtrue;
 
       case T_TRUE:
-	if (obj) return Qtrue;
-	return Qfalse;
+	return RTEST(obj) ? Qtrue : Qfalse;
 
       default:
 	rb_raise(rb_eTypeError, "class or module required");
@@ -286,6 +286,9 @@ rb_obj_taint(obj)
     VALUE obj;
 {
     rb_secure(4);
+    if (OBJ_FROZEN(obj)) {
+	rb_error_frozen("object");
+    }
     OBJ_TAINT(obj);
     return obj;
 }
@@ -511,33 +514,6 @@ sym_to_s(sym)
     VALUE sym;
 {
     return rb_str_new2(rb_id2name(SYM2ID(sym)));
-}
-
-static VALUE
-rb_mod_clone(module)
-    VALUE module;
-{
-    NEWOBJ(clone, struct RClass);
-    CLONESETUP(clone, module);
-
-    clone->super = RCLASS(module)->super;
-    if (RCLASS(module)->iv_tbl) {
-	clone->iv_tbl = st_copy(RCLASS(module)->iv_tbl);
-    }
-    if (RCLASS(module)->m_tbl) {
-	clone->m_tbl = st_copy(RCLASS(module)->m_tbl);
-    }
-
-    return (VALUE)clone;
-}
-
-static VALUE
-rb_mod_dup(module)
-    VALUE module;
-{
-    VALUE dup = rb_mod_clone(module);
-    OBJSETUP(dup, RBASIC(module)->klass, BUILTIN_TYPE(module));
-    return dup;
 }
 
 static VALUE
@@ -776,14 +752,24 @@ static VALUE
 rb_mod_const_get(mod, name)
     VALUE mod, name;
 {
-    return rb_const_get(mod, rb_to_id(name));
+    ID id = rb_to_id(name);
+
+    if (!rb_is_const_id(id)) {
+	rb_raise(rb_eNameError, "wrong constant name %s", name);
+    }
+    return rb_const_get(mod, id);
 }
 
 static VALUE
 rb_mod_const_set(mod, name, value)
     VALUE mod, name, value;
 {
-    rb_const_set(mod, rb_to_id(name), value);
+    ID id = rb_to_id(name);
+
+    if (!rb_is_const_id(id)) {
+	rb_raise(rb_eNameError, "wrong constant name %s", name);
+    }
+    rb_const_set(mod, id, value);
     return value;
 }
 
@@ -791,7 +777,12 @@ static VALUE
 rb_mod_const_defined(mod, name)
     VALUE mod, name;
 {
-    return rb_const_defined_at(mod, rb_to_id(name));
+    ID id = rb_to_id(name);
+
+    if (!rb_is_const_id(id)) {
+	rb_raise(rb_eNameError, "wrong constant name %s", name);
+    }
+    return rb_const_defined_at(mod, id);
 }
 
 static VALUE
@@ -1036,6 +1027,9 @@ rb_str2cstr(str, len)
 	str = rb_str_to_str(str);
     }
     if (len) *len = RSTRING(str)->len;
+    else if (ruby_verbose && RSTRING(str)->len != strlen(RSTRING(str)->ptr)) {
+	rb_warn("string contains \\0 character");
+    }
     return RSTRING(str)->ptr;
 }
 

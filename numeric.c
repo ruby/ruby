@@ -332,7 +332,7 @@ flodivmod(x, y, divp, modp)
 	double z;
 
 	modf(x/y, &z);
-	mod = x - z * x;
+	mod = x - z * y;
     }
 #endif
     div = (x - mod) / y;
@@ -1295,12 +1295,14 @@ static VALUE
 fix_aref(fix, idx)
     VALUE fix, idx;
 {
-    unsigned long val = FIX2LONG(fix);
+    long val = FIX2LONG(fix);
     int i = NUM2INT(idx);
 
-    if (i < 0 || sizeof(VALUE)*CHAR_BIT-1 < i)
+    if (i < 0 || sizeof(VALUE)*CHAR_BIT-1 < i) {
+	if (val < 0) return INT2FIX(1);
 	return INT2FIX(0);
-    if (val & (1<<i))
+    }
+    if (val & (1L<<i))
 	return INT2FIX(1);
     return INT2FIX(0);
 }
