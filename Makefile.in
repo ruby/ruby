@@ -203,6 +203,6 @@ st.o: st.c config.h st.h
 string.o: string.c ruby.h config.h defines.h intern.h re.h regex.h
 struct.o: struct.c ruby.h config.h defines.h intern.h
 time.o: time.c ruby.h config.h defines.h intern.h
-util.o: util.c defines.h intern.h config.h util.h
+util.o: util.c ruby.h defines.h intern.h config.h util.h
 variable.o: variable.c ruby.h config.h defines.h intern.h env.h st.h
 version.o: version.c ruby.h config.h defines.h intern.h version.h

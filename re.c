@@ -913,10 +913,6 @@ reg_regsub(str, src, regs)
 	    if (no == 0) continue;
 	    break;
 
-	  case '\\':
-	    str_cat(val, s-1, 1);
-	    continue;
-
 	  default:
 	    str_cat(val, s-2, 2);
 	    continue;

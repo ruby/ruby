@@ -389,19 +389,20 @@ class FTP
     return files
   end
   
-  def list(*args)
+  def list(*args, &block)
     cmd = "LIST"
-    if iterator?
-      callback = Proc.new
-    elsif args[-1].is_a?(Proc)
-      callback = args.pop
-    else
-      callback = nil
-    end
     args.each do |arg|
       cmd = cmd + " " + arg
     end
-    retrlines(cmd, callback)
+    if block
+      retrlines(cmd, &block)
+    else
+      lines = []
+      retrlines(cmd) do |line|
+	lines << line
+      end
+      return lines
+    end
   end
   alias ls list
   alias dir list
@@ -441,6 +442,7 @@ class FTP
   end
    
   def size(filename)
+    voidcmd("TYPE I")
     resp = sendcmd("SIZE " + filename)
     if resp[0, 3] == "213"
       return resp[3 .. -1].strip.to_i

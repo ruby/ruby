@@ -17,7 +17,7 @@ class String
     elsif $KCODE =~ /^e/i
       self =~ /[\xa1-\xfe][\xa1-\xfe]/n
     else
-      FALSE
+      false
     end
   end
 
@@ -42,7 +42,7 @@ class String
       if self[0..-2] == to[0..-2]
 	first = self[-2].chr
 	for c in self[-1] .. to[-1]
-	  if first+c.chr.mbchar?
+	  if (first+c.chr).mbchar?
 	    yield self[0..-2]+c.chr
 	  end
 	end
