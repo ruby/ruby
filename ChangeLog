@@ -1,3 +1,15 @@
+Sun Mar  7 22:37:46 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* test/drb/ut_drb.rb: use 'druby://localhost:0'. [ruby-dev:23078]
+
+	* test/drb/ut_eval.rb: ditto.
+
+	* test/drb/ut_large.rb: ditto.
+
+	* test/drb/ut_safe1.rb: ditto.
+
+	* test/drb/ut_drb_drbssl.rb: use 'drbssl://localhost:0'.
+
 Sun Mar  7 16:22:26 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* Makefile.in (lex.c): use $? instead of $<.
