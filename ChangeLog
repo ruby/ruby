@@ -1,3 +1,7 @@
+Tue Feb 22 07:24:57 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_yylex): identfier after dot must not be a variable.
+
 Mon Feb 21 18:31:12 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* signal.c: Standard signal handlers ignore signals on non-Ruby native
@@ -5,7 +9,7 @@ Mon Feb 21 18:31:12 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	  standard signal handlers), the handler for the signal is marked as
 	  it cannot accept non-Ruby native threads. If a handler can treat all
 	  signals on all native threads, please use ruby_nativethread_signal()
-	  to entry it. 
+	  to entry it.
 
 Sun Feb 20 00:48:48 2005  Tanaka Akira  <akr@m17n.org>
 

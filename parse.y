@@ -2619,7 +2619,7 @@ primary		: literal
 			$$ = dispatch2(while, $3, $6);
 		    %*/
 		    }
-		| kUNTIL {COND_PUSH(1);} expr_value do {COND_POP();} 
+		| kUNTIL {COND_PUSH(1);} expr_value do {COND_POP();}
 		  compstmt
 		  kEND
 		    {
@@ -4446,7 +4446,7 @@ lex_io_gets(parser, io)
     struct parser_params *parser;
     VALUE io;
 {
-    return rb_io_gets(io);		  
+    return rb_io_gets(io);
 }
 
 NODE*
@@ -5037,7 +5037,7 @@ parser_heredoc_identifier(parser)
             uc = (unsigned int)c;
 	    len = mbclen(uc);
 	    do {tokadd(c);} while (--len > 0 && (c = nextc()) != -1);
-	} while ((c = nextc()) != -1 && 
+	} while ((c = nextc()) != -1 &&
 		 (uc = (unsigned char)c, is_identchar(uc)));
 	pushback(c);
 	break;
@@ -5430,7 +5430,7 @@ parser_yylex(parser)
 	if (c == '<' &&
 	    lex_state != EXPR_END &&
 	    lex_state != EXPR_DOT &&
-	    lex_state != EXPR_ENDARG && 
+	    lex_state != EXPR_ENDARG &&
 	    lex_state != EXPR_CLASS &&
 	    (!IS_ARG() || space_seen)) {
 	    int token = heredoc_identifier();
@@ -6326,6 +6326,7 @@ parser_yylex(parser)
 
     {
 	int result = 0;
+	enum lex_state_e last_state = lex_state;
 
 	switch (tok()[0]) {
 	  case '$':
@@ -6421,7 +6422,7 @@ parser_yylex(parser)
             ID ident = rb_intern(tok());
 
             set_yylval_id(ident);
-            if (is_local_id(ident) && lvar_defined(ident)) {
+            if (last_state != EXPR_DOT && is_local_id(ident) && lvar_defined(ident)) {
                 lex_state = EXPR_END;
             }
         }
