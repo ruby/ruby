@@ -1,3 +1,8 @@
+Tue Jul 15 03:30:41 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
+
+    * ext/syck/rubyext.c (syck_mark_emitter): forgot to rb_gc_mark the 
+      outgoing IO object.
+
 Sat Jul 12 17:01:28 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* struct.c (struct_entry): add prototype to avoid VC++ warnings.

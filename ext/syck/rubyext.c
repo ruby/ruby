@@ -1035,7 +1035,11 @@ static void
 syck_mark_emitter(emitter)
     SyckEmitter *emitter;
 {
-    rb_gc_mark(emitter->ignore_id);
+    rb_gc_mark( emitter->ignore_id );
+    if ( emitter->bonus != NULL )
+    {
+        rb_gc_mark( (VALUE)emitter->bonus );
+    }
 }
 
 /*
