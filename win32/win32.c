@@ -2695,7 +2695,7 @@ isUNCRoot(const char *path)
 		if (*p == '\\')
 		    break;
 	    }
-	    if (!p[0] || !p[1])
+	    if (!p[0] || !p[1] || (p[0] == '\\' && p[1] == '.'))
 		return 1;
 	}
     }
@@ -2706,7 +2706,7 @@ int
 rb_w32_stat(const char *path, struct stat *st)
 {
     const char *p;
-    char *buf1, *buf2, *s;
+    char *buf1, *s, *end;
     int len;
     int ret;
 
@@ -2727,23 +2727,21 @@ rb_w32_stat(const char *path, struct stat *st)
 	errno = ENOENT;
 	return -1;
     }
-    p = CharPrev(buf1, buf1 + len);
+    end = CharPrev(buf1, buf1 + len);
 
     if (isUNCRoot(buf1)) {
-	if (*p != '\\')
+	if (*end == '.')
+	    *end = '\0';
+	else if (*end != '\\')
 	    strcat(buf1, "\\");
-    } else if (*p == '\\' || *p == ':')
+    } else if (*end == '\\' || *end == ':')
 	strcat(buf1, ".");
-    buf2 = ALLOCA_N(char, MAXPATHLEN);
-    if (_fullpath(buf2, buf1, MAXPATHLEN)) {
-	ret = stat(buf2, st);
-	if (ret == 0) {
-	    st->st_mode &= ~(S_IWGRP | S_IWOTH);
-	}
-	return ret;
+
+    ret = stat(buf1, st);
+    if (ret == 0) {
+	st->st_mode &= ~(S_IWGRP | S_IWOTH);
     }
-    else
-	return -1;
+    return ret;
 }
 
 static long
