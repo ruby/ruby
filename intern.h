@@ -258,6 +258,7 @@ VALUE rb_num_coerce_bin _((VALUE, VALUE));
 VALUE rb_float_new _((double));
 VALUE rb_num2fix _((VALUE));
 VALUE rb_fix2str _((VALUE, int));
+VALUE rb_dbl_cmp _((double, double));
 /* object.c */
 int rb_eql _((VALUE, VALUE));
 VALUE rb_any_to_s _((VALUE));

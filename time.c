@@ -713,16 +713,8 @@ time_cmp(time1, time2)
 	return INT2FIX(-1);
 	
       case T_FLOAT:
-	{
-	    double t;
-
-	    t = (double)tobj1->tv.tv_sec + (double)tobj1->tv.tv_usec*1e-6;
-	    if (t > RFLOAT(time2)->value)
-		return INT2FIX(1);
-	    if (t < RFLOAT(time2)->value)
-		return INT2FIX(-1);
-	    return INT2FIX(0);
-	}
+	return rb_dbl_cmp((double)tobj1->tv.tv_sec + (double)tobj1->tv.tv_usec*1e-6,
+			  RFLOAT(time2)->value);
     }
 
     if (rb_obj_is_kind_of(time2, rb_cTime)) {

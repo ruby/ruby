@@ -479,6 +479,16 @@ flo_hash(num)
     return INT2FIX(hash);
 }
 
+VALUE
+rb_dbl_cmp(a, b)
+    double a, b;
+{
+    if (a == b) return INT2FIX(0);
+    if (a > b) return INT2FIX(1);
+    if (a < b) return INT2FIX(-1);
+    rb_raise(rb_eFloatDomainError, "comparing NaN");
+}
+
 static VALUE
 flo_cmp(x, y)
     VALUE x, y;
@@ -502,10 +512,7 @@ flo_cmp(x, y)
       default:
 	return rb_num_coerce_bin(x, y);
     }
-    if (a == b) return INT2FIX(0);
-    if (a > b) return INT2FIX(1);
-    if (a < b) return INT2FIX(-1);
-    rb_raise(rb_eFloatDomainError, "comparing NaN");
+    return rb_dbl_cmp(a, b);
 }
 
 static VALUE

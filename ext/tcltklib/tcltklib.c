@@ -343,6 +343,19 @@ struct tcltkip {
     int return_value;		/* return value */
 };
 
+static struct tcltkip *
+get_ip(self)
+    VALUE self;
+{
+    struct tcltkip *ptr;
+
+    Data_Get_Struct(self, struct tcltkip, ptr);
+    if (ptr == 0) {
+	rb_raise(rb_eTypeError, "uninitialized TclTkIp");
+    }
+    return ptr;
+}
+
 /* Tcl command `ruby' */
 static VALUE
 ip_eval_rescue(failed, einfo)
@@ -358,10 +371,7 @@ static VALUE
 lib_restart(self)
     VALUE self;
 {
-    struct tcltkip *ptr;	/* tcltkip data struct */
-
-    /* get the data struct */
-    Data_Get_Struct(self, struct tcltkip, ptr);
+    struct tcltkip *ptr = get_ip(self);
 
     /* destroy the root wdiget */
     ptr->return_value = Tcl_Eval(ptr->ip, "destroy .");
@@ -452,20 +462,30 @@ ip_free(ptr)
     struct tcltkip *ptr;
 {
     DUMP1("Tcl_DeleteInterp");
-    Tcl_DeleteInterp(ptr->ip);
-    free(ptr);
+    if (ptr) {
+	Tcl_DeleteInterp(ptr->ip);
+	free(ptr);
+    }
 }
 
 /* create and initialize interpreter */
 static VALUE
-ip_new(self)
+ip_alloc(self)
+    VALUE self;
+{
+    return Data_Wrap_Struct(self, 0, ip_free, 0);
+}
+
+static VALUE
+ip_init(self)
     VALUE self;
 {
     struct tcltkip *ptr;	/* tcltkip data struct */
-    VALUE obj;			/* newly created object */
 
     /* create object */
-    obj = Data_Make_Struct(self, struct tcltkip, 0, ip_free, ptr);
+    Data_Get_Struct(self, struct tcltkip, ptr);
+    ptr = ALLOC(struct tcltkip);
+    DATA_PTR(self) = ptr;
     ptr->return_value = 0;
 
     /* from Tk_Main() */
@@ -497,7 +517,7 @@ ip_new(self)
 		      (Tcl_CmdDeleteProc *)NULL);
 #endif
 
-    return obj;
+    return self;
 }
 
 /* eval string in tcl by Tcl_Eval() */
@@ -508,10 +528,7 @@ ip_eval(self, str)
 {
     char *s;
     char *buf;			/* Tcl_Eval requires re-writable string region */
-    struct tcltkip *ptr;	/* tcltkip data struct */
-
-    /* get the data struct */
-    Data_Get_Struct(self, struct tcltkip, ptr);
+    struct tcltkip *ptr = get_ip(self);
 
     /* call Tcl_Eval() */
     s = StringValuePtr(str);
@@ -542,7 +559,7 @@ ip_toUTF8(self, str, encodename)
     struct tcltkip *ptr;
     char *buf;
 
-    Data_Get_Struct(self,struct tcltkip, ptr);
+    ptr = get_ip(self);
     interp = ptr->ip;
 
     StringValue(encodename);
@@ -575,7 +592,7 @@ ip_fromUTF8(self, str, encodename)
     struct tcltkip *ptr;
     char *buf;
 
-    Data_Get_Struct(self,struct tcltkip, ptr);
+    ptr = get_ip(self);
     interp = ptr->ip;
 
     StringValue(encodename);
@@ -615,7 +632,7 @@ ip_invoke_real(argc, argv, obj)
 #endif
 
     /* get the data struct */
-    Data_Get_Struct(obj, struct tcltkip, ptr);
+    ptr = get_ip(obj);
 
     /* get the command name string */
     v = argv[0];
@@ -794,7 +811,7 @@ ip_retval(self)
     struct tcltkip *ptr;	/* tcltkip data struct */
 
     /* get the data strcut */
-    Data_Get_Struct(self, struct tcltkip, ptr);
+    ptr = get_ip(self);
 
     return (INT2FIX(ptr->return_value));
 }
@@ -845,7 +862,8 @@ Init_tcltklib()
     rb_define_module_function(lib, "get_eventloop_weight", 
 			      get_eventloop_weight, 0);
 
-    rb_define_singleton_method(ip, "new", ip_new, 0);
+    rb_define_singleton_method(ip, "allocate", ip_alloc, 0);
+    rb_define_method(ip, "initialize", ip_init, 0);
     rb_define_method(ip, "_eval", ip_eval, 1);
     rb_define_method(ip, "_toUTF8",ip_toUTF8,2);
     rb_define_method(ip, "_fromUTF8",ip_fromUTF8,2);

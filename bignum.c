@@ -609,7 +609,9 @@ rb_big2str(x, base)
 	return rb_fix2str(x, base);
     }
     i = RBIGNUM(x)->len;
-    if (i == 0) return rb_str_new2("0");
+    if (i == 0 || (i == 1 && BDIGITS(x)[0] == 0)) {
+	return rb_str_new2("0");
+    }
     if (base == 10) {
 	j = (SIZEOF_BDIGITS/sizeof(char)*CHAR_BIT*i*241L)/800+2;
 	hbase = 10000;
@@ -846,15 +848,7 @@ rb_big_cmp(x, y)
 	break;
 
       case T_FLOAT:
-        {
-	    double d = rb_big2dbl(x);
-
-	    if (d == RFLOAT(y)->value) return INT2FIX(0);
-	    if (d > RFLOAT(y)->value) return INT2FIX(1);
-	    if (d < RFLOAT(y)->value) return INT2FIX(-1);
-	    rb_raise(rb_eFloatDomainError, "comparing NaN");
-	}
-	break;
+	return rb_dbl_cmp(rb_big2dbl(x), RFLOAT(y)->value);
 
       default:
 	return rb_num_coerce_bin(x, y);

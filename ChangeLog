@@ -7,6 +7,16 @@ Mon Aug 19 12:38:33 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	* eval.c (win32_get_exception_list, win32_set_exception_list):
 	  added.
 
+Sat Aug 17 23:01:25 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (sort_2): *a - *b may overflow.
+
+Sat Aug 17 00:25:08 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (ary_new): len*sizeof(VALUE) may be a positive value.
+
+	* array.c (rb_ary_initialize): ditto.
+
 Fri Aug 16 15:58:16 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* io.c (NOFILE): define NOFILE as 64 if not defined.
@@ -16,6 +26,11 @@ Fri Aug 16 15:58:16 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 Fri Aug 16 15:37:04 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* bignum.c (rb_cstr_to_inum): new decimal and octal string.
+
+Fri Aug 16 13:17:11 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_class_allocate_instance): move singleton class
+	  check from rb_obj_alloc().
 
 Fri Aug 16 11:47:24 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
@@ -60,6 +75,14 @@ Thu Aug 15 20:38:58 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	* parse.y (node_assign): ditto.
 
 	* parse.y (yycompile): clear current node.
+
+Thu Aug 15 00:48:46 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_initialize): should not modify frozen Regexp.
+
+Tue Aug 13 18:33:18 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/tcltklib/tcltklib.c (ip_init): allocation framework.
 
 Tue Aug 13 15:32:14 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

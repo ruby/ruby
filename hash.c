@@ -611,6 +611,9 @@ rb_hash_replace(hash, hash2)
     if (FL_TEST(hash2, HASH_PROC_DEFAULT)) {
 	FL_SET(hash, HASH_PROC_DEFAULT);
     }
+    else {
+	FL_UNSET(hash, HASH_PROC_DEFAULT);
+    }
 
     return hash;
 }

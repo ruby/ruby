@@ -55,6 +55,9 @@ class CGI
 	@output_cookies =  [
           Cookie::new("name" => session_key,
 		      "value" => id,
+		      "expires" => option['session_expires'],
+		      "domain" => option['session_domain'],
+		      "secure" => option['session_secure'],
 		      "path" => if option['session_path'] then
 				  option['session_path']
 		                elsif ENV["SCRIPT_NAME"] then

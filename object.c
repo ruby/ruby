@@ -667,12 +667,7 @@ VALUE
 rb_obj_alloc(klass)
     VALUE klass;
 {
-    VALUE obj;
-
-    if (FL_TEST(klass, FL_SINGLETON)) {
-	rb_raise(rb_eTypeError, "can't create instance of virtual class");
-    }
-    obj = rb_funcall(klass, alloc, 0, 0);
+    VALUE obj = rb_funcall(klass, alloc, 0, 0);
 
     if (rb_obj_class(obj) != rb_class_real(klass)) {
 	rb_raise(rb_eTypeError, "wrong instance allocation");
@@ -684,6 +679,9 @@ static VALUE
 rb_class_allocate_instance(klass)
     VALUE klass;
 {
+    if (FL_TEST(klass, FL_SINGLETON)) {
+	rb_raise(rb_eTypeError, "can't create instance of virtual class");
+    }
     if (rb_frame_last_func() != alloc) {
 	return rb_obj_alloc(klass);
     }
