@@ -1041,7 +1041,7 @@ rb_file_s_lchmod(argc, argv)
     rb_scan_args(argc, argv, "1*", &vmode, &rest);
     mode = NUM2INT(vmode);
 
-    n = apply2files(lchmod_internal, rest, mode);
+    n = apply2files(lchmod_internal, rest, (void *)(long)mode);
     return LONG2FIX(n);
 }
 #else

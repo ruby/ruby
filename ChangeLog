@@ -1,3 +1,7 @@
+Sat Jan  4 01:33:40 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* file.c (rb_file_s_lchmod): get rid of gcc-3 -O3 warning.
+
 Fri Jan  3 22:26:07 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* process.c (rb_proc_times): need to initialize first.
