@@ -1,3 +1,8 @@
+Tue Mar 09 10:03:40 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* bcc32/Makefile.sub, win32/Makefile.sub, wince/Makefile.sub:
+	  replaced regex.c entry with Oniguruma files.
+
 Tue Mar  9 01:09:46 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
 
 	* Makefile.in: replaced regex.c entry with Oniguruma files.

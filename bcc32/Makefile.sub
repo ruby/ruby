@@ -172,7 +172,8 @@ EXTOBJS       = dmyext.obj
 MAINOBJ       = main.obj
 WINMAINOBJ    = winmain.obj
 
-OBJS          = array.obj \
+OBJS          = ascii.obj \
+		array.obj \
 		bignum.obj \
 		class.obj \
 		compar.obj \
@@ -180,6 +181,7 @@ OBJS          = array.obj \
 		dln.obj \
 		enum.obj \
 		error.obj \
+		euc_jp.obj \
 		eval.obj \
 		file.obj \
 		gc.obj \
@@ -197,14 +199,21 @@ OBJS          = array.obj \
 		random.obj \
 		range.obj \
 		re.obj \
-		regex.obj \
+		regcomp.obj \
+		regenc.obj \
+		regerror.obj \
+		regexec.obj \
+		reggnu.obj \
+		regparse.obj \
 		ruby.obj \
 		signal.obj \
+		sjis.obj \
 		sprintf.obj \
 		st.obj \
 		string.obj \
 		struct.obj \
 		time.obj \
+		utf8.obj \
 		util.obj \
 		variable.obj \
 		version.obj \
@@ -583,6 +592,7 @@ dl_os2.obj: dl_os2.c win32.h
 win32.obj: win32.c win32.h
 
 ###
+ascii.obj: ascii.c regenc.h oniguruma.h config.h
 array.obj: array.c ruby.h config.h defines.h intern.h missing.h util.h st.h win32.h
 bignum.obj: bignum.c ruby.h config.h defines.h intern.h missing.h win32.h
 class.obj: class.c ruby.h config.h defines.h intern.h missing.h rubysig.h node.h st.h win32.h
@@ -592,6 +602,7 @@ dln.obj: dln.c ruby.h config.h defines.h intern.h missing.h dln.h win32.h
 dmyext.obj: dmyext.c
 enum.obj: enum.c ruby.h config.h defines.h intern.h missing.h node.h util.h win32.h
 error.obj: error.c ruby.h config.h defines.h intern.h missing.h env.h version.h st.h win32.h
+euc_jp.obj: euc_jp.c regenc.h oniguruma.h config.h
 eval.obj: eval.c ruby.h config.h defines.h intern.h missing.h node.h env.h util.h rubysig.h st.h dln.h win32.h
 file.obj: file.c ruby.h config.h defines.h intern.h missing.h rubyio.h rubysig.h util.h dln.h win32.h
 gc.obj: gc.c ruby.h config.h defines.h intern.h missing.h rubysig.h st.h node.h env.h re.h regex.h win32.h
@@ -610,14 +621,21 @@ process.obj: process.c ruby.h config.h defines.h intern.h missing.h rubysig.h st
 random.obj: random.c ruby.h config.h defines.h intern.h missing.h win32.h
 range.obj: range.c ruby.h config.h defines.h intern.h missing.h win32.h
 re.obj: re.c ruby.h config.h defines.h intern.h missing.h re.h regex.h win32.h
-regex.obj: regex.c config.h regex.h win32.h
+regcomp.obj: regcomp.c oniguruma.h regint.h regparse.h regenc.h config.h
+regenc.obj: regenc.c regint.h regenc.h oniguruma.h config.h
+regerror.obj: regerror.c regint.h regenc.h oniguruma.h config.h
+regexec.obj: regexec.c regint.h regenc.h oniguruma.h config.h
+reggnu.obj: reggnu.c regint.h regenc.h oniguruma.h config.h oniggnu.h
+regparse.obj: regparse.c oniguruma.h regint.h regparse.h regenc.h config.h
 ruby.obj: ruby.c ruby.h config.h defines.h intern.h missing.h dln.h node.h util.h win32.h
 signal.obj: signal.c ruby.h config.h defines.h intern.h missing.h rubysig.h win32.h
+sjis.obj: sjis.c regenc.h oniguruma.h config.h
 sprintf.obj: sprintf.c ruby.h config.h defines.h intern.h missing.h win32.h
 st.obj: st.c config.h st.h
 string.obj: string.c ruby.h config.h defines.h intern.h missing.h re.h regex.h win32.h
 struct.obj: struct.c ruby.h config.h defines.h intern.h missing.h win32.h
 time.obj: time.c ruby.h config.h defines.h intern.h missing.h win32.h
+utf8.obj: utf8.c regenc.h oniguruma.h config.h
 util.obj: util.c ruby.h config.h defines.h intern.h missing.h util.h win32.h
 variable.obj: variable.c ruby.h config.h defines.h intern.h missing.h env.h node.h st.h util.h win32.h
 version.obj: version.c ruby.h config.h defines.h intern.h missing.h version.h win32.h
