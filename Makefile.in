@@ -167,7 +167,7 @@ realclean: 	distclean
 		@rm -f parse.c
 		@rm -f lex.c
 
-test:		miniruby$(EXEEXT) rbconfig.rb $(PROGRAM)
+test:		miniruby$(EXEEXT) rbconfig.rb $(PROGRAM) PHONY
 		@./miniruby$(EXEEXT) $(srcdir)/rubytest.rb
 
 rbconfig.rb:	miniruby$(EXEEXT) $(srcdir)/mkconfig.rb config.status $(PREP)
@@ -193,6 +193,10 @@ fake.rb:	miniruby$(EXEEXT) Makefile
 Makefile:	$(srcdir)/Makefile.in
 
 .PRECIOUS:	@MAKEFILES@
+
+.PHONY:		test
+
+PHONY:
 
 @MAKEFILES@: config.status
 		MAKE=$(MAKE) $(SHELL) ./config.status

@@ -1,4 +1,6 @@
-Sat Sep  6 00:15:09 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Sep  6 00:21:59 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* Makefile.in (test): phony target.
 
 	* lib/optparse.rb (OptionParser#order, #permute, #parse): allow an
 	  array as argument.
