@@ -1,3 +1,10 @@
+Mon Oct  4 12:53:45 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/optiondb.rb: support definition of command
+	  resources on widgets
+
+	* ext/tk/lib/tk/image.rb: bug fix
+
 Sun Oct  3 21:16:05 2004  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (TEXT_REGEXP): allow 8-bit characters for the german

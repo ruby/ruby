@@ -107,7 +107,7 @@ class TkPhotoImage<TkImage
 	  term
 	end
       }.flatten
-      tk_send('copy', source, *args)
+      tk_send('copy', src, *args)
     end
     self
   end

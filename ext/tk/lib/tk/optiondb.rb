@@ -8,6 +8,7 @@ module TkOptionDB
   extend Tk
 
   TkCommandNames = ['option'.freeze].freeze
+  CmdClassID = ['CMD_CLASS'.freeze, '00000'.taint].freeze
 
   module Priority
     WidgetDefault = 20
@@ -193,6 +194,7 @@ module TkOptionDB
   end
   @@resource_proc_class.freeze
 
+=begin
   def __create_new_class(klass, func, safe = 4, add = false, parent = nil)
     klass = klass.to_s if klass.kind_of? Symbol
     unless (?A..?Z) === klass[0]
@@ -229,12 +231,55 @@ module TkOptionDB
       eval('TkOptionDB::' + klass)
     end
   end
+=end
+  def __create_new_class(klass, func, safe = 4, add = false, parent = nil)
+    if klass.kind_of?(TkWindow)
+      carrier = klass.path
+      klass = CmdClassID.join(TkCore::INTERP._ip_id_)
+      CmdClassID[1].succ!
+      parent = nil # ignore parent
+    else
+      klass = klass.to_s if klass.kind_of? Symbol
+      unless (?A..?Z) === klass[0]
+	fail ArgumentError, "bad string '#{klass}' for class name"
+      end
+      if parent == nil
+	install_win(nil)
+      elsif parent.kind_of?(TkWindow)
+	install_win(parent.path)
+      elsif parent <= @@resource_proc_class
+	install_win(parent::CARRIER)
+      else
+	fail ArgumentError, "parent must be Resource-Proc class"
+      end
+      carrier = Tk.tk_call_without_enc('frame', @path, '-class', klass)
+    end
+
+    unless func.kind_of? Array
+      fail ArgumentError, "method-list must be Array"
+    end
+    func_str = func.join(' ')
+
+    if parent.kind_of?(Class) && parent <= @@resource_proc_class
+      cmd_klass = Class.new(parent)
+    else
+      cmd_klass = Class.new(TkOptionDB.module_eval('@@resource_proc_class'))
+    end
+    cmd_klass.const_set(:CARRIER, carrier.dup.freeze)
+    cmd_klass.const_set(:METHOD_TBL, TkCore::INTERP.create_table)
+    cmd_klass.const_set(:ADD_METHOD, add)
+    cmd_klass.const_set(:SAFE_MODE, safe)
+    func.each{|f| cmd_klass::METHOD_TBL[f.to_s.intern] = nil }
+
+    cmd_klass
+  end
   module_function :__create_new_class
   private_class_method :__create_new_class
 
   def __remove_methods_of_proc_class(klass)
     # for security, make these methods invalid
     class << klass
+=begin
       attr_reader :class_eval, :name, :superclass, 
 	:ancestors, :const_defined?, :const_get, :const_set, 
 	:constants, :included_modules, :instance_methods, 
@@ -244,6 +289,19 @@ module TkOptionDB
 	:to_s, :inspect, :display, :method, :methods, 
 	:instance_eval, :instance_variables, :kind_of?, :is_a?,
 	:private_methods, :protected_methods, :public_methods
+=end
+      def __null_method(*args); nil; end
+      [ :class_eval, :name, :superclass, 
+	:ancestors, :const_defined?, :const_get, :const_set, 
+	:constants, :included_modules, :instance_methods, 
+	:method_defined?, :module_eval, :private_instance_methods, 
+	:protected_instance_methods, :public_instance_methods, 
+	:remove_const, :remove_method, :undef_method, 
+	:to_s, :inspect, :display, :method, :methods, 
+	:instance_eval, :instance_variables, :kind_of?, :is_a?,
+	:private_methods, :protected_methods, :public_methods ].each{|m|
+	alias_method(m, :__null_method)
+      }
     end
   end
   module_function :__remove_methods_of_proc_class
