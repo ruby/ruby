@@ -2337,23 +2337,30 @@ kill(int pid, int sig)
 {
     int ret = 0;
 
+    if (pid <= 0) {
+	errno = EINVAL;
+	return -1;
+    }
+
+    if (IsWin95()) pid = -pid;
     if ((unsigned int)pid == GetCurrentProcessId() && sig != SIGKILL)
 	return raise(sig);
 
-    if (sig == SIGINT && pid > 0) {
+    switch (sig) {
+      case SIGINT:
 	RUBY_CRITICAL({
 	    if (!GenerateConsoleCtrlEvent(CTRL_C_EVENT, (DWORD)pid)) {
-		errno = GetLastError();
+		if ((errno = GetLastError()) == 0) {
+		    errno = EPERM;
+		}
 		ret = -1;
 	    }
 	});
-    }
-    else if (sig == SIGKILL && pid > 0) {
-	HANDLE hProc;
+	break;
 
+      case SIGKILL:
 	RUBY_CRITICAL({
-	    hProc = OpenProcess(PROCESS_TERMINATE, FALSE,
-				IsWin95() ? -pid : pid);
+	    HANDLE hProc = OpenProcess(PROCESS_TERMINATE, FALSE, (DWORD)pid);
 	    if (hProc == NULL || hProc == INVALID_HANDLE_VALUE) {
 		if (GetLastError() == ERROR_INVALID_PARAMETER) {
 		    errno = ESRCH;
@@ -2369,10 +2376,12 @@ kill(int pid, int sig)
 	    }
 	    CloseHandle(hProc);
 	});
-    }
-    else {
+	break;
+
+      define:
 	errno = EINVAL;
 	ret = -1;
+	break;
     }
 
     return ret;
