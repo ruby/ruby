@@ -1,3 +1,7 @@
+Fri Feb 13 14:41:00 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: en-bugged at last commit (Feb 11 23:24:22 2004)
+
 Fri Feb 13 12:26:37 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* test/fileutils/test_fileutils.rb: rescue SystemCallError instead

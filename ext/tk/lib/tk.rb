@@ -104,8 +104,8 @@ module TkComm
     when /^-?\d+\.?\d*(e[-+]?\d+)?$/
       val.to_f
     when /[^\\] /
-      val.split.collect{|elt|
-	tk_tcl2ruby(elt)
+      tk_split_escstr(val).collect{|elt|
+        tk_tcl2ruby(elt)
       }
     when /\\ /
       val.gsub(/\\ /, ' ')
@@ -114,18 +114,13 @@ module TkComm
     end
   end
 
-  def tk_split_list(str)
+  def tk_split_escstr(str)
     return [] if str == ""
     list = []
     token = nil
     escape = false
     brace = 0
     str.split('').each {|c|
-      if c == '\\' && !escape
-        escape = true
-        token = (token || "") << c
-        next
-      end
       brace += 1 if c == '{' && !escape
       brace -= 1 if c == '}' && !escape
       if brace == 0 && c == ' ' && !escape
@@ -134,15 +129,26 @@ module TkComm
       else
         token = (token || "") << c
       end
-      escape = false
+      escape = (c == '\\' && !escape)
     }
     list << token.gsub(/^\{(.*)\}$/, '\1') if token
+    list
+  end
 
+  def tk_split_sublist(str)
+    return [] if str == ""
+    return [tk_split_sublist(str[1..-2])] if str =~ /^\{.*\}$/
+    list = tk_split_escstr(str)
     if list.size == 1
-      tk_tcl2ruby(list[0].gsub(/\\(\{|\})/, '\1'))
+      tk_tcl2ruby(list[0])
     else
-      list.collect{|token| tk_split_list(token)}
+      list.collect{|token| tk_split_sublist(token)}
     end
+  end
+
+  def tk_split_list(str)
+    return [] if str == ""
+    tk_split_escstr(str).collect{|token| tk_split_sublist(token)}
   end
 =begin
   def tk_split_list(str)
@@ -194,6 +200,7 @@ module TkComm
     str.split('').each {|c|
       if c == '\\' && !escape
         escape = true
+        token = (token || "") << c if brace > 0
         next
       end
       brace += 1 if c == '{' && !escape
@@ -236,14 +243,15 @@ module TkComm
       list.push ' '
     else
       #list.push str[0..i-1]
-      list.push(str[0..i-1].gsub(/\\(\{|})/, '\1'))
+      list.push(str[0..i-1].gsub(/\\(\{|\})/, '\1'))
     end
     list += tk_split_simplelist(str[i+1..-1])
     list
   end
 =end
 
-  private :tk_tcl2ruby, :tk_split_list, :tk_split_simplelist
+  private :tk_tcl2ruby, :tk_split_escstr, 
+          :tk_split_sublist, :tk_split_list, :tk_split_simplelist
 
   def _symbolkey2str(keys)
     h = {}
@@ -1619,8 +1627,8 @@ module Tk
     @@enc_buf = '__rb_encoding_buffer__'
 
     def self.tk_escape(str)
-      #s = '"' + str.gsub(/[\[\]$"]/, '\\\\\&') + '"'
-      s = '"' + str.gsub(/[\[\]$"\\]/, '\\\\\&') + '"'
+      s = '"' + str.gsub(/[\[\]$"]/, '\\\\\&') + '"'
+      #s = '"' + str.gsub(/[\[\]$"\\]/, '\\\\\&') + '"'
       TkCore::INTERP.__eval(Kernel.format('global %s; set %s %s', 
 					  @@enc_buf, @@enc_buf, s))
     end
@@ -1903,7 +1911,8 @@ class TkVariable
 	"ruby [format \"TkVariable.callback %%Q!%s!\" $args]")
 
   def TkVariable.callback(args)
-    name1,name2,op = tk_split_list(args)
+    #name1,name2,op = tk_split_list(args)
+    name1,name2,op = tk_split_simplelist(args)
     if TkVar_CB_TBL[name1]
       _get_eval_string(TkVar_CB_TBL[name1].trace_callback(name2,op))
     else
