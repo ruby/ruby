@@ -540,8 +540,11 @@ static VALUE
 tcp_s_open(class, host, serv)
     VALUE class, host, serv;
 {
+    VALUE s;
     Check_SafeStr(host);
-    return open_inet(class, host, serv, INET_CLIENT);
+    s = open_inet(class, host, serv, INET_CLIENT);
+    obj_call_init(s);
+    return s;
 }
 
 #ifdef SOCKS
@@ -550,6 +553,7 @@ socks_s_open(class, host, serv)
     VALUE class, host, serv;
 {
     static init = 0;
+    VALUE s;
 
     if (init == 0) {
 	SOCKSinit("ruby");
@@ -557,7 +561,9 @@ socks_s_open(class, host, serv)
     }
 	
     Check_SafeStr(host);
-    return open_inet(class, host, serv, INET_SOCKS);
+    s = open_inet(class, host, serv, INET_SOCKS);
+    obj_call_init(s);
+    return s;
 }
 #endif
 
@@ -567,12 +573,14 @@ tcp_svr_s_open(argc, argv, class)
     VALUE *argv;
     VALUE class;
 {
-    VALUE arg1, arg2;
+    VALUE arg1, arg2, s;
 
     if (rb_scan_args(argc, argv, "11", &arg1, &arg2) == 2)
-	return open_inet(class, arg1, arg2, INET_SERVER);
+	s = open_inet(class, arg1, arg2, INET_SERVER);
     else
-	return open_inet(class, 0, arg1, INET_SERVER);
+	s = open_inet(class, 0, arg1, INET_SERVER);
+    obj_call_init(s);
+    return s;
 }
 
 static VALUE
@@ -801,7 +809,11 @@ static VALUE
 udp_s_open(class)
     VALUE class;
 {
-    return sock_new(class, socket(AF_INET, SOCK_DGRAM, 0));
+    VALUE s;
+
+    s = sock_new(class, socket(AF_INET, SOCK_DGRAM, 0));
+    obj_call_init(s);
+    return s;
 }
 
 static void
@@ -944,7 +956,10 @@ static VALUE
 unix_s_sock_open(sock, path)
     VALUE sock, path;
 {
-    return open_unix(sock, path, 0);
+    VALUE s;
+    s = open_unix(sock, path, 0);
+    obj_call_init(s);
+    return s;
 }
 
 static VALUE
@@ -965,10 +980,13 @@ unix_path(sock)
 }
 
 static VALUE
-unix_svr_s_open(class, path)
-    VALUE class, path;
+unix_svr_s_open(sock, path)
+    VALUE sock, path;
 {
-    return open_unix(class, path, 1);
+    VALUE s;
+    s = open_unix(sock, path, 1);
+    obj_call_init(s);
+    return s;
 }
 
 static VALUE
@@ -1121,18 +1139,25 @@ sock_s_open(class, domain, type, protocol)
 {
     int fd;
     int d, t;
+    VALUE s;
 
     setup_domain_and_type(domain, &d, type, &t);
     fd = socket(d, t, NUM2INT(protocol));
     if (fd < 0) rb_sys_fail("socket(2)");
-    return sock_new(class, fd);
+    s = sock_new(class, fd);
+    obj_call_init(s);
+
+    return s;
 }
 
 static VALUE
 sock_s_for_fd(class, fd)
     VALUE class, fd;
 {
-    return sock_new(class, NUM2INT(fd));
+    VALUE s = sock_new(class, NUM2INT(fd));
+
+    obj_call_init(s);
+    return s;
 }
 
 static VALUE

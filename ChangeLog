@@ -1,7 +1,22 @@
+Thu Apr  2 18:31:46 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (obj_call_init): every object call `initialize'.
+
+Wed Apr  1 01:20:31 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* object.c (true_and): boolean operators &, | and ^.
+
 Tue Mar 31 13:23:58 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
-	* numeric.c (num2int): raise exception for too big Fixnums on
- 	  platforms that sizeof(int) < sizeof(INT).
+	* array.c (ary_compact_bang): returns nil, if it does not modify
+	  the array like String's bang methods.
+
+	* array.c (ary_uniq_bang): new method to remove duplicate items.
+
+	* eval.c (bind_s_new): new method.
+
+	* numeric.c (num2int): raise exception if Fixnums too big to
+ 	  convert into `int' in case that sizeof(int) < sizeof(INT).
 
 	* string.c (str_center): SEGV on negative width.
 

@@ -121,6 +121,7 @@ ID rb_frame_last_func _((void));
 VALUE f_load _((VALUE, VALUE));
 void rb_provide _((char *));
 VALUE f_require _((VALUE, VALUE));
+void obj_call_init _((VALUE));
 VALUE class_new_instance _((int, VALUE *, VALUE));
 VALUE f_lambda _((void));
 void rb_set_end_proc _((void (*)(),VALUE));

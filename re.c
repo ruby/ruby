@@ -659,6 +659,7 @@ reg_new_1(klass, s, len, flag)
     memcpy(re->str, s, len);
     re->str[len] = '\0';
     re->len = len;
+    obj_call_init((VALUE)re);
 
     return (VALUE)re;
 }
@@ -795,7 +796,7 @@ reg_s_new(argc, argv, self)
 	Check_Type(src, T_STRING);
     }
 
-    return Qnil;
+    return Qnil;		/* not reached */
 }
 
 static VALUE

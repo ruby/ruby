@@ -45,6 +45,7 @@ range_s_new(klass, first, last)
 
     rb_iv_set(obj, "first", first);
     rb_iv_set(obj, "last", last);
+    obj_call_init(obj);
 
     return obj;
 }

@@ -74,6 +74,7 @@ md5_new(argc, argv, class)
     if (!NIL_P(arg)) {
 	md5_update(obj, arg);
     }
+    obj_call_init(obj);
 
     return obj;
 }

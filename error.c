@@ -268,13 +268,17 @@ exc_s_new(argc, argv, etype)
     VALUE *argv;
     VALUE etype;
 {
-    VALUE arg;
+    VALUE arg, exc;
 
     if (rb_scan_args(argc, argv, "01", &arg) == 0) {
-	return exc_new(etype, 0, 0);
+	exc = exc_new(etype, 0, 0);
     }
-    Check_Type(arg, T_STRING);
-    return exc_new3(etype, arg);
+    else {
+	Check_Type(arg, T_STRING);
+	exc = exc_new3(etype, arg);
+    }
+    obj_call_init(exc);
+    return exc;
 }
 
 static VALUE

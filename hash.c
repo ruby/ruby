@@ -205,6 +205,7 @@ hash_s_new(argc, argv, klass)
     hash->status = 0;
     hash->tbl = 0;		/* avoid GC crashing  */
     hash->tbl = st_init_table_with_size(&objhash, size);
+    obj_call_init((VALUE)hash);
 
     return (VALUE)hash;
 }
@@ -213,7 +214,15 @@ static VALUE
 hash_new2(klass)
     VALUE klass;
 {
-    return hash_s_new(0, 0, klass);
+    NEWOBJ(hash, struct RHash);
+    OBJSETUP(hash, klass, T_HASH);
+
+    hash->iter_lev = 0;
+    hash->status = 0;
+    hash->tbl = 0;		/* avoid GC crashing  */
+    hash->tbl = st_init_table(&objhash);
+
+    return (VALUE)hash;
 }
 
 VALUE
@@ -241,6 +250,7 @@ hash_s_create(argc, argv, klass)
 	    hash->status = 0;
 	    hash->tbl = 0;	/* avoid GC crashing  */
 	    hash->tbl = (st_table*)st_copy(RHASH(argv[0])->tbl);
+	    obj_call_init((VALUE)hash);
 	    return (VALUE)hash;
 	}
     }
@@ -253,6 +263,7 @@ hash_s_create(argc, argv, klass)
     for (i=0; i<argc; i+=2) {
 	st_insert(RHASH(hash)->tbl, argv[i], argv[i+1]);
     }
+    obj_call_init(hash);
 
     return hash;
 }

@@ -185,6 +185,7 @@ struct_s_def(argc, argv)
     struct RString *name;
     struct RArray *rest;
     int i;
+    VALUE st;
 
     rb_scan_args(argc, argv, "1*", &name, &rest);
     Check_Type(name, T_STRING);
@@ -192,7 +193,10 @@ struct_s_def(argc, argv)
 	ID id = rb_to_id(rest->ptr[i]);
 	rest->ptr[i] = INT2FIX(id);
     }
-    return make_struct(name, rest);
+    st = make_struct(name, rest);
+    obj_call_init((VALUE)st);
+
+    return st;
 }
 
 VALUE
@@ -215,6 +219,7 @@ struct_alloc(klass, values)
 	st->len = n;
 	MEMCPY(st->ptr, RARRAY(values)->ptr, VALUE, RARRAY(values)->len);
 	memclear(st->ptr+RARRAY(values)->len, n - RARRAY(values)->len);
+	obj_call_init((VALUE)st);
 
 	return (VALUE)st;
     }

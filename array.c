@@ -155,6 +155,7 @@ ary_s_new(argc, argv, klass)
     ary->capa = NIL_P(size)?ARY_DEFAULT_SIZE:NUM2INT(size);
     ary->ptr = ALLOC_N(VALUE, ary->capa);
     memclear(ary->ptr, ary->capa);
+    obj_call_init((VALUE)ary);
 
     return (VALUE)ary;
 }
@@ -739,7 +740,8 @@ ary_sort_bang(ary)
     if (RARRAY(ary)->len == 0) return ary;
 
     ary_modify(ary);
-    qsort(RARRAY(ary)->ptr, RARRAY(ary)->len, sizeof(VALUE), iterator_p()?sort_1:sort_2);
+    qsort(RARRAY(ary)->ptr, RARRAY(ary)->len, sizeof(VALUE),
+	  iterator_p()?sort_1:sort_2);
     return ary;
 }
 
@@ -1118,6 +1120,46 @@ ary_or(ary1, ary2)
 }
 
 static VALUE
+ary_uniq_bang(ary)
+    VALUE ary;
+{
+    VALUE *p, *q, *t, *end;
+    VALUE v;
+    int i;
+
+    ary_modify(ary);
+    p = RARRAY(ary)->ptr;
+    end = p + RARRAY(ary)->len;
+
+    while (p < end) {
+	v = *p++;
+	q = t = p;
+	while (q < end) {
+	    if (rb_equal(*q, v)) q++;
+	    else *t++ = *q++;
+	}
+	end = t;
+    }
+    if (RARRAY(ary)->len = (end - RARRAY(ary)->ptr)) {
+	return Qnil;
+    }
+
+    RARRAY(ary)->len = (end - RARRAY(ary)->ptr);
+
+    return ary;
+}
+
+static VALUE
+ary_uniq(ary)
+    VALUE ary;
+{
+    VALUE v = ary_uniq_bang(ary_clone(ary));
+
+    if (NIL_P(v)) return ary;
+    return v;
+}
+
+static VALUE
 ary_compact_bang(ary)
     VALUE ary;
 {
@@ -1130,6 +1172,9 @@ ary_compact_bang(ary)
 	if (NIL_P(*t)) t++;
 	else *p++ = *t++;
     }
+    if (RARRAY(ary)->len == (p - RARRAY(ary)->ptr)) {
+	return Qnil;
+    }
     RARRAY(ary)->len = RARRAY(ary)->capa = (p - RARRAY(ary)->ptr);
     REALLOC_N(RARRAY(ary)->ptr, VALUE, RARRAY(ary)->len);
 
@@ -1140,7 +1185,10 @@ static VALUE
 ary_compact(ary)
     VALUE ary;
 {
-    return ary_compact_bang(ary_clone(ary));
+    VALUE v = ary_compact_bang(ary_clone(ary));
+
+    if (NIL_P(v)) return ary;
+    return v;
 }
 
 static VALUE
@@ -1224,7 +1272,8 @@ Init_Array()
     rb_define_method(cArray, "&", ary_and, 1);
     rb_define_method(cArray, "|", ary_or, 1);
 
-    rb_define_method(cArray, "compact", ary_compact, 0);
+    rb_define_method(cArray, "uniq!", ary_uniq_bang, 0);
+    rb_define_method(cArray, "uniq", ary_uniq, 0);
     rb_define_method(cArray, "compact!", ary_compact_bang, 0);
     rb_define_method(cArray, "nitems", ary_nitems, 0);
 

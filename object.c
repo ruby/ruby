@@ -331,6 +331,27 @@ true_type(obj)
 }
 
 static VALUE
+true_and(obj, obj2)
+    VALUE obj, obj2;
+{
+    return RTEST(obj2)?TRUE:FALSE;
+}
+
+static VALUE
+true_or(obj, obj2)
+    VALUE obj, obj2;
+{
+    return TRUE;
+}
+
+static VALUE
+true_xor(obj, obj2)
+    VALUE obj, obj2;
+{
+    return RTEST(obj2)?FALSE:TRUE;
+}
+
+static VALUE
 false_to_s(obj)
     VALUE obj;
 {
@@ -349,6 +370,27 @@ false_type(obj)
     VALUE obj;
 {
     return cFalseClass;
+}
+
+static VALUE
+false_and(obj, obj2)
+    VALUE obj, obj2;
+{
+    return FALSE;
+}
+
+static VALUE
+false_or(obj, obj2)
+    VALUE obj, obj2;
+{
+    return RTEST(obj2)?TRUE:FALSE;
+}
+
+static VALUE
+false_xor(obj, obj2)
+    VALUE obj, obj2;
+{
+    return RTEST(obj2)?TRUE:FALSE;
 }
 
 static VALUE
@@ -480,7 +522,14 @@ mod_cmp(mod, arg)
     return INT2FIX(1);
 }
 
-VALUE module_new();
+VALUE module_s_new()
+{
+    VALUE mod = module_new();
+
+    obj_call_init(mod);
+    return mod;
+}
+
 VALUE class_new_instance();
 
 static VALUE
@@ -500,6 +549,7 @@ class_s_new(argc, argv)
     /* make metaclass */
     RBASIC(klass)->klass = singleton_class_new(RBASIC(super)->klass);
     singleton_class_attached(RBASIC(klass)->klass, klass);
+    obj_call_init(klass);
 
     return klass;
 }
@@ -917,7 +967,7 @@ Init_Object()
     rb_define_private_method(cModule, "attr_writer", mod_attr_writer, -1);
     rb_define_private_method(cModule, "attr_accessor", mod_attr_accessor, -1);
 
-    rb_define_singleton_method(cModule, "new", module_new, 0);
+    rb_define_singleton_method(cModule, "new", module_s_new, 0);
     rb_define_method(cModule, "instance_methods", class_instance_methods, -1);
     rb_define_method(cModule, "private_instance_methods", class_private_instance_methods, -1);
 
@@ -933,8 +983,6 @@ Init_Object()
     rb_undef_method(cClass, "extend_object");
     rb_undef_method(cClass, "append_features");
 
-    rb_define_singleton_method(cClass, "new", class_s_new, -1);
-
     cData = rb_define_class("Data", cObject);
     rb_undef_method(CLASS_OF(cData), "new");
 
@@ -946,6 +994,9 @@ Init_Object()
     rb_define_method(cTrueClass, "to_s", true_to_s, 0);
     rb_define_method(cTrueClass, "to_i", true_to_i, 0);
     rb_define_method(cTrueClass, "type", true_type, 0);
+    rb_define_method(cTrueClass, "&", true_and, 1);
+    rb_define_method(cTrueClass, "|", true_or, 1);
+    rb_define_method(cTrueClass, "^", true_xor, 1);
     rb_undef_method(CLASS_OF(cTrueClass), "new");
     rb_define_global_const("TRUE", TRUE);
 
@@ -953,6 +1004,9 @@ Init_Object()
     rb_define_method(cFalseClass, "to_s", false_to_s, 0);
     rb_define_method(cFalseClass, "to_i", false_to_i, 0);
     rb_define_method(cFalseClass, "type", false_type, 0);
+    rb_define_method(cFalseClass, "&", false_and, 1);
+    rb_define_method(cFalseClass, "|", false_or, 1);
+    rb_define_method(cFalseClass, "^", false_xor, 1);
     rb_undef_method(CLASS_OF(cFalseClass), "new");
     rb_define_global_const("FALSE", FALSE);
 

@@ -177,6 +177,7 @@ str_s_new(klass, orig)
     if (rb_safe_level() >= 3) {
 	FL_SET(str, STR_TAINT);
     }
+    obj_call_init((VALUE)str);
 
     return (VALUE)str;
 }

@@ -390,11 +390,15 @@ window_s_new(class, lines, cols, top, left)
     VALUE top;
     VALUE left;
 {
+    VALUE w;
     WINDOW *window;
     
     window = newwin(NUM2INT(lines), NUM2INT(cols), NUM2INT(top), NUM2INT(left));
     wclear(window);
-    return prep_window(class, window);
+    w = prep_window(class, window);
+    obj_call_init(w);
+
+    return w;
 }
 
 /* def subwin(lines, cols, top, left) */

@@ -1533,8 +1533,8 @@ io_s_new(argc, argv)
     VALUE *argv;
 {
     VALUE fnum, mode;
-    FILE *f;
     char *m = "r";
+    VALUE io;
 
     rb_scan_args(argc, argv, "11", &fnum, &mode);
 
@@ -1542,8 +1542,10 @@ io_s_new(argc, argv)
 	Check_SafeStr(mode);
 	m = RSTRING(mode)->ptr;
     }
-    f = rb_fdopen(NUM2INT(fnum), m);
-    return prep_stdio(f, io_mode_flags(m));
+    io = prep_stdio(rb_fdopen(NUM2INT(fnum), m), io_mode_flags(m));
+    obj_call_init(io);
+
+    return io;
 }
 
 static VALUE filename, file;

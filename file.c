@@ -101,6 +101,7 @@ file_s_open(argc, argv, klass)
     if (iterator_p()) {
 	rb_ensure(rb_yield, file, io_close, file);
     }
+    obj_call_init(file);
 
     return file;
 }

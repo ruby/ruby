@@ -4344,6 +4344,15 @@ mod_include(argc, argv, module)
     return module;
 }
 
+void
+obj_call_init(obj)
+    VALUE obj;
+{
+    PUSH_ITER(iterator_p()?ITER_PRE:ITER_NOT);
+    rb_funcall2(obj, init, the_frame->argc, the_frame->argv);
+    POP_ITER();
+}
+
 VALUE
 class_new_instance(argc, argv, klass)
     int argc;
@@ -4356,9 +4365,8 @@ class_new_instance(argc, argv, klass)
 	TypeError("can't create instance of virtual class");
     }
     obj = obj_alloc(klass);
-    PUSH_ITER(iterator_p()?ITER_PRE:ITER_NOT);
-    rb_funcall2(obj, init, argc, argv);
-    POP_ITER();
+    obj_call_init(obj);
+
     return obj;
 }
 
@@ -4665,6 +4673,30 @@ blk_copy_prev(block)
 	block->prev = tmp;
 	block = tmp;
     }
+}
+
+
+static VALUE
+bind_clone(self)
+    VALUE self;
+{
+    struct BLOCK *orig, *data;
+    VALUE bind;
+
+    Data_Get_Struct(self, struct BLOCK, orig);
+    bind = Data_Make_Struct(self, struct BLOCK, blk_mark,blk_free,data);
+    MEMCPY(data, orig, struct BLOCK, 1);
+    data->frame.argv = ALLOC_N(VALUE, orig->frame.argc);
+    MEMCPY(data->frame.argv, orig->frame.argv, VALUE, orig->frame.argc);
+
+    if (data->iter) {
+	blk_copy_prev(data);
+    }
+    else {
+	data->prev = 0;
+    }
+
+    return bind;
 }
 
 static VALUE
@@ -5076,6 +5108,8 @@ Init_Proc()
     rb_define_global_function("lambda", f_lambda, 0);
     rb_define_global_function("binding", f_binding, 0);
     cBinding = rb_define_class("Binding", cObject);
+    rb_undef_method(CLASS_OF(cMethod), "new");
+    rb_define_method(cBinding, "clone", bind_clone, 0);
 
     cMethod = rb_define_class("Method", cObject);
     rb_undef_method(CLASS_OF(cMethod), "new");

@@ -83,6 +83,7 @@ fdbm_s_open(argc, argv, class)
     obj = Data_Make_Struct(class,struct dbmdata,0,free_dbm,dbmp);
     dbmp->di_dbm = dbm;
     dbmp->di_size = -1;
+    obj_call_init(obj);
 
     return obj;
 }
