@@ -12,10 +12,20 @@ AUTOCONF = autoconf
 @SET_MAKE@
 
 prefix = @prefix@
-CFLAGS = @CFLAGS@
+exec_prefix = @exec_prefix@
+bindir = @bindir@
+sbindir = @sbindir@
+libdir = @libdir@
+libexecdir = @libexecdir@
+arch = @arch@
+sitearch = @sitearch@
+sitedir = @sitedir@
+
+CFLAGS = @CFLAGS@ @XCFLAGS@
 CPPFLAGS = -I. -I$(srcdir)
 LDFLAGS = @STATIC@ $(CFLAGS) @LDFLAGS@
-XLDFLAGS = @XLDFLAGS@
+EXTLDFLAGS = 
+XLDFLAGS = @XLDFLAGS@ $(EXTLDFLAGS)
 EXTLIBS = 
 LIBS = @LIBS@ $(EXTLIBS)
 MISSING = @LIBOBJS@ @ALLOCA@
@@ -28,6 +38,8 @@ RUBY_INSTALL_NAME=@RUBY_INSTALL_NAME@
 RUBY_SO_NAME=@RUBY_SO_NAME@
 EXEEXT = @EXEEXT@
 PROGRAM=$(RUBY_INSTALL_NAME)$(EXEEXT)
+RUBY = $(RUBY_INSTALL_NAME)
+MINIRUBY = @MINIRUBY@
 
 #### End of system configuration section. ####
 
@@ -40,6 +52,9 @@ LIBRUBY_SO    = @LIBRUBY_SO@
 LIBRUBY_ALIASES= @LIBRUBY_ALIASES@
 LIBRUBY	      = @LIBRUBY@
 LIBRUBYARG    = @LIBRUBYARG@
+
+PREP          = @PREP@ @ARCHFILE@
+SETUP         =
 
 EXTOBJS	      = 
 
@@ -83,14 +98,14 @@ OBJS	      = array.@OBJEXT@ \
 		version.@OBJEXT@ \
 		$(MISSING)
 
-all:		miniruby$(EXEEXT) @PREP@ rbconfig.rb $(LIBRUBY)
-		@@MINIRUBY@ $(srcdir)/ext/extmk.rb @EXTSTATIC@
+all:		@MAKEFILES@ miniruby$(EXEEXT) rbconfig.rb $(LIBRUBY)
+		@$(MINIRUBY) $(srcdir)/ext/extmk.rb @EXTSTATIC@ $(MAKE) $(MFLAGS)$(MAKEFLAGS)
 
 miniruby$(EXEEXT):	config.status $(LIBRUBY_A) $(MAINOBJ) dmyext.@OBJEXT@
 		@rm -f $@
 		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) dmyext.@OBJEXT@ $(LIBRUBY_A) $(LIBS) -o $@
 
-$(PROGRAM):     $(LIBRUBY) $(MAINOBJ) $(EXTOBJS) 
+$(PROGRAM):     $(LIBRUBY) $(MAINOBJ) $(EXTOBJS) $(SETUP) miniruby$(EXEEXT)
 		@rm -f $@
 		$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINLIBS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(LIBS) -o $@
 
@@ -98,16 +113,22 @@ $(LIBRUBY_A):	$(OBJS) dmyext.@OBJEXT@
 		@AR@ rcu $@ $(OBJS) dmyext.@OBJEXT@
 		@-@RANLIB@ $@ 2> /dev/null || true
 
-$(LIBRUBY_SO):	$(OBJS) dmyext.@OBJEXT@ miniruby$(EXEEXT)
+$(LIBRUBY_SO):	$(OBJS) dmyext.@OBJEXT@ miniruby$(EXEEXT) $(PREP)
 		$(LDSHARED) $(DLDFLAGS) $(OBJS) dmyext.@OBJEXT@ $(SOLIBS) -o $@
-		@-@MINIRUBY@ -e 'ARGV.each{|link| File.delete link if File.exist? link; \
+		@-$(MINIRUBY) -e 'ARGV.each{|link| File.delete link if File.exist? link; \
 						  File.symlink "$(LIBRUBY_SO)", link}' \
 				$(LIBRUBY_ALIASES) || true
 
-install:	rbconfig.rb
-		@MINIRUBY@ $(srcdir)/instruby.rb $(DESTDIR)
+ruby.imp:	$(LIBRUBY_A)
+		@@NM@ -Pgp $(LIBRUBY_A) | awk 'BEGIN{print "#!"}; $$2~/^[BD]$$/{print $$1}' | sort -u -o $@
+# $(MINIRUBY) $< $@
 
-clean-ext:;	@-@MINIRUBY@ $(srcdir)/ext/extmk.rb clean 2> /dev/null || true
+install:	rbconfig.rb
+		$(MINIRUBY) $(srcdir)/instruby.rb --make=$(MAKE) $(MFLAGS)$(MAKEFLAGS) $(DESTDIR)
+		$(MINIRUBY) $(srcdir)/ext/extmk.rb $(MAKE) $(MFLAGS)$(MAKEFLAGS) DESTDIR=$(DESTDIR) install
+
+clean-ext:
+		@-$(MINIRUBY) $(srcdir)/ext/extmk.rb $(MAKE) $(MFLAGS)$(MAKEFLAGS) clean 2> /dev/null || true
 
 clean-local:
 		@rm -f $(OBJS) $(MAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY_ALIASES)
@@ -117,10 +138,10 @@ clean-local:
 clean: clean-ext clean-local
 
 distclean-ext:
-		@-@MINIRUBY@ $(srcdir)/ext/extmk.rb distclean 2> /dev/null || true
+		@-$(MINIRUBY) $(srcdir)/ext/extmk.rb $(MAKE) $(MFLAGS)$(MAKEFLAGS) distclean 2> /dev/null || true
 
 distclean-local: clean-local
-		@rm -f Makefile config.h rbconfig.rb
+		@rm -f @MAKEFILES@ config.h rbconfig.rb
 		@rm -f ext/config.cache config.cache config.log config.status
 		@rm -f *~ core *.core gmon.out y.tab.c y.output ruby.imp
 
@@ -130,22 +151,36 @@ realclean: 	distclean
 		@rm -f parse.c
 		@rm -f lex.c
 
-test:		miniruby$(EXEEXT) rbconfig.rb
+test:		miniruby$(EXEEXT) rbconfig.rb $(PROGRAM)
 		@./miniruby$(EXEEXT) $(srcdir)/rubytest.rb
 
-rbconfig.rb:	miniruby$(EXEEXT) $(srcdir)/mkconfig.rb config.status
-		@@MINIRUBY@ $(srcdir)/mkconfig.rb rbconfig.rb
+rbconfig.rb:	miniruby$(EXEEXT) $(srcdir)/mkconfig.rb config.status $(PREP)
+		@$(MINIRUBY) $(srcdir)/mkconfig.rb rbconfig.rb
 
-fake.rb:	miniruby$(EXEEXT)
+fake.rb:	miniruby$(EXEEXT) Makefile
 		@echo ' \
 		class Object; \
+		  CROSS_COMPILING = RUBY_PLATFORM; \
 		  remove_const :RUBY_PLATFORM; \
 		  remove_const :RUBY_VERSION; \
 		  RUBY_PLATFORM = "@arch@"; \
 		  RUBY_VERSION = "@MAJOR@.@MINOR@.@TEENY@"; \
-		  CROSS_COMPILING = true; \
 		end \
 		' > $@
+
+Makefile:	$(srcdir)/Makefile.in
+
+.PRECIOUS:	@MAKEFILES@
+
+@MAKEFILES@: config.status
+		MAKE=$(MAKE) $(SHELL) ./config.status
+		@{ : $(MAKE); \
+		    echo "all:; -@rm -f conftest.mk"; \
+		    echo "conftest.mk: .force; @echo AUTO_REMAKE"; \
+		    echo ".force:"; \
+		} > conftest.mk
+		@$(MAKE) -f conftest.mk | grep '^AUTO_REMAKE$$' >/dev/null 2>&1 || \
+		{ echo "Makefile updated, restart."; exit 1; }
 
 config.status:	$(srcdir)/configure
 		$(SHELL) ./config.status --recheck
@@ -159,9 +194,13 @@ $(srcdir)/configure: $(srcdir)/configure.in
 lex.c: keywords
 	gperf -p -j1 -i 1 -g -o -t -N rb_reserved_word -k1,3,$$ $(srcdir)/keywords > lex.c
 
-parse.c: parse.y
+.y.c:
 	$(YACC) $<
-	mv -f y.tab.c parse.c
+	sed '/^#/s|y\.tab\.c|$@|' y.tab.c > $@
+	rm -f y.tab.c
+
+ext/extinit.@OBJEXT@: ext/extinit.c $(SETUP)
+	$(CC) $(CFLAGS) $(CPPFLAGS) @OUTFLAG@$@ -c ext/extinit.c
 
 acosh.@OBJEXT@: $(srcdir)/missing/acosh.c
 	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/acosh.c

@@ -1,3 +1,80 @@
+Mon Oct 21 22:53:02 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* configure.in (XCFLAGS): CFLAGS to comile ruby itself.
+
+	* configure.in (LIBEXT): suffix for static libraries.
+
+	* configure.in (LIBPATHFLAG): switch template to specify library
+	  path.
+
+	* configure.in (LINK_SO): command to link shared objects.
+
+	* configure.in (DEFFILE, ARCHFILE): miscellaneous system dependent
+	  files.
+
+	* configure.in (EXPORT_PREFIX): prefix to exported symbols on
+	  Windows.
+
+	* configure.in (COMMON_LIBS, COMMON_MACROS, COMMON_HEADERS):
+	  libraries, macros and headers used in common.
+
+	* configure.in (RUBYW_INSTALL_NAME, rubyw_install_name): GUI mode
+	  excutable name.
+
+	* Makefile.in (CFLAGS): append XCFLAGS.
+
+	* Makefile.in (PREP): miscellaneous system dependent files.
+
+	* Makefile.in (ruby.imp, ext/extinit.o): moved from ext/extmk.rb.
+
+	* Makefile.in (fake.rb): CROSS_COMPILING keeps building platform.
+
+	* Makefile.in (MAKEFILES): depend on *.in and config.status.
+
+	* Makefile.in (parse.c): replace "y.tab.c" with actual name for
+	  byacc.
+
+	* ext/extmk.rb, lib/mkmf.rb: integrated.
+
+	* ext/extmk.rb: propagate MFLAGS.
+
+	* ext/extmk.rb (extmake): make dummy Makefile to clean even if no
+	  Makefile is made.
+
+	* lib/mkmf.rb (older): accept multiple file names and Time
+	  objects.
+
+	* lib/mkmf.rb (xsystem): split and qoute.
+
+	* lib/mkmf.rb (cpp_include): make include directives.
+
+	* lib/mkmf.rb (try_func): try wheather specified function is
+	  available.
+
+	* lib/mkmf.rb (install_files): default to site-install.
+
+	* lib/mkmf.rb (checking_for): added.
+
+	* lib/mkmf.rb (find_executable0): just find executable file with
+	  no message.
+
+	* lib/mkmf.rb (create_header): output header file is variable.
+
+	* lib/mkmf.rb (create_makefile): separate sections.
+
+	* lib/mkmf.rb (init_mkmf): initialize global variables.
+
+	* win32/Makefile.sub, bcc32/Makefile.sub (CPP, AR): added.
+
+	* bcc32/Makefile.sub (ARCH): fixed to i386.
+
+	* win32/Makefile.sub, bcc32/Makefile.sub (miniruby): should not
+	  link EXTOBJS.
+
+	* ext/dl/extconf.rb: use try_cpp to cross compile.
+
+	* ext/dl/extconf.rb: not modify files in source directory.
+
 Fri Oct 18 23:11:21 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* parse.y (value_expr0): allow return/break/next/redo/retry in rhs

@@ -3,7 +3,7 @@
 require File.dirname($0)+"/lib/ftools"
 
 rbconfig_rb = ARGV[0] || 'rbconfig.rb'
-srcdir = $srcdir if $srcdir
+srcdir = $srcdir || '.'
 File.makedirs(File.dirname(rbconfig_rb), true)
 
 version = RUBY_VERSION
@@ -23,10 +23,8 @@ module Config
 # made to this file will be lost the next time ruby is built.
 ]
 
-print "  DESTDIR = '' if not defined? DESTDIR\n  CONFIG = {}\n"
 v_fast = []
 v_others = []
-has_srcdir = false
 has_version = false
 File.foreach "config.status" do |line|
   next if /^#/ =~ line
@@ -49,19 +47,33 @@ File.foreach "config.status" do |line|
     end
     has_version = true if name == "MAJOR"
   elsif /^(?:ac_given_)?srcdir=(.*)/ =~ line
-    v_fast << "  CONFIG[\"srcdir\"] = \"" + File.expand_path($1) + "\"\n"
-    has_srcdir = true
+    srcdir = $1
   elsif /^ac_given_INSTALL=(.*)/ =~ line
     v_fast << "  CONFIG[\"INSTALL\"] = " + $1 + "\n"
   end
 #  break if /^CEOF/
 end
 
-if not has_srcdir
-  v_fast << "  CONFIG[\"srcdir\"] = \"" + File.expand_path(srcdir || '.') + "\"\n"
+srcdir = File.expand_path(srcdir)
+v_fast.unshift("  CONFIG[\"srcdir\"] = \"" + srcdir + "\"\n")
+
+v_fast.collect! do |x|
+  if /"prefix"/ === x
+    x.sub(/= (.*)/, '= (TOPDIR || DESTDIR + \1)')
+  else
+    x
+  end
 end
 
-if not has_version
+drive = File::PATH_SEPARATOR == ';'
+
+prefix = Regexp.quote('/lib/ruby/' + RUBY_VERSION.sub(/\.\d+$/, '') + '/' + RUBY_PLATFORM)
+print "  TOPDIR = File.dirname(__FILE__).sub!(%r'#{prefix}\\Z', '')\n"
+print "  DESTDIR = ", (drive ? "TOPDIR && TOPDIR[/\\A[a-z]:/i] || " : ""), "'' unless defined? DESTDIR\n"
+print "  CONFIG = {}\n"
+print "  CONFIG[\"DESTDIR\"] = DESTDIR\n"
+
+unless has_version
   RUBY_VERSION.scan(/(\d+)\.(\d+)\.(\d+)/) {
     print "  CONFIG[\"MAJOR\"] = \"" + $1 + "\"\n"
     print "  CONFIG[\"MINOR\"] = \"" + $2 + "\"\n"
@@ -69,11 +81,10 @@ if not has_version
   }
 end
 
-v_fast.collect! do |x|
-  if /"prefix"/ === x
-    prefix = Regexp.quote('/lib/ruby/' + RUBY_VERSION.sub(/\.\d+$/, '') + '/' + RUBY_PLATFORM)
-    puts "  TOPDIR = File.dirname(__FILE__).sub!(%r'#{prefix}\\Z', '')"
-    x.sub(/= (.*)/, '= (TOPDIR || DESTDIR + \1)')
+dest = drive ? /= \"(?!\$[\(\{])(?:[a-z]:)?/i : /= \"(?!\$[\(\{])/
+v_others.collect! do |x|
+  if /^\s*CONFIG\["(?!abs_|old)[a-z]+(?:_prefix|dir)"]/ === x
+    x.sub(dest, '= "$(DESTDIR)')
   else
     x
   end
@@ -97,10 +108,14 @@ print <<EOS
   CONFIG["compile_dir"] = "#{Dir.pwd}"
   MAKEFILE_CONFIG = {}
   CONFIG.each{|k,v| MAKEFILE_CONFIG[k] = v.dup}
-  def Config::expand(val)
-    val.gsub!(/\\$\\(([^()]+)\\)|\\$\\{([^{}]+)\\}/) do |var|
-      if key = CONFIG[$1 || $2]
-        Config::expand(key)
+  def Config::expand(val, config = CONFIG)
+    val.gsub!(/\\$\\$|\\$\\(([^()]+)\\)|\\$\\{([^{}]+)\\}/) do |var|
+      if !(v = $1 || $2)
+	'$'
+      elsif key = config[v]
+	config[v] = false
+        Config::expand(key, config)
+	config[v] = key
       else
 	var
       end
