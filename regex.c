@@ -1544,11 +1544,15 @@ re_compile_pattern(pattern, size, bufp)
 	  case 'M':
 	  case 'C':
 	  case 'c':
-	    p0 = --p;
-	    c = read_special(p, pend, &p0);
-	    if (c > 255) goto invalid_escape;
-	    p = p0;
-	    had_num_literal = 1;
+	    {
+	      char *pp;
+
+	      --p;
+	      c = read_special(p, pend, &pp);
+	      if (c > 255) goto invalid_escape;
+	      p = pp;
+	      had_num_literal = 1;
+	    }
 	    break;
 
 	  default:

@@ -1,3 +1,11 @@
+Tue Oct 30 14:04:04 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_f_eval): can't modify untainted binding.
+
+Mon Oct 29 16:08:30 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* regex.c (re_compile_pattern): should preverve p0 value.
+
 Mon Oct 29 07:57:31 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (str_extend): shuould allow interpolation of $-x.

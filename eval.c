@@ -4961,6 +4961,9 @@ rb_f_eval(argc, argv, self)
 
     if (ruby_safe_level >= 4) {
 	Check_Type(src, T_STRING);
+	if (!NIL_P(scope) && !OBJ_TAINTED(scope)) {
+	    rb_raise(rb_eSecurityError, "Insecure: can't modify trusted binding");
+	}
     }
     else {
 	Check_SafeStr(src);
