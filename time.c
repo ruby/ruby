@@ -1895,11 +1895,11 @@ time_mdump(time)
     t = tobj->tv.tv_sec;
     tm = gmtime(&t);
 
-    if ((tm->tm_year & 0x1ffff) != tm->tm_year)
+    if ((tm->tm_year & 0xffff) != tm->tm_year)
 	rb_raise(rb_eArgError, "year too big to marshal");
 
     p = 0x1          << 31 | /*  1 */
-	tm->tm_year  << 14 | /* 17 */
+	tm->tm_year  << 14 | /* 16 */
 	tm->tm_mon   << 10 | /*  4 */
 	tm->tm_mday  <<  5 | /*  5 */
 	tm->tm_hour;         /*  5 */
@@ -1980,7 +1980,7 @@ time_mload(time, str)
     }
     else {
 	p &= ~(1<<31);
-	tm.tm_year = (p >> 14) & 0x1ffff;
+	tm.tm_year = (p >> 14) & 0xffff;
 	tm.tm_mon  = (p >> 10) & 0xf;
 	tm.tm_mday = (p >>  5) & 0x1f;
 	tm.tm_hour =  p        & 0x1f;
