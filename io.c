@@ -138,14 +138,16 @@ static VALUE lineno = INT2FIX(0);
 } while(0)
 
 #if defined(_WIN32)
-#define is_socket(fd)	rb_w32_is_socket(fd)
+#define is_socket(fd, path)	rb_w32_is_socket(fd)
 #else
 static int
-is_socket(fd)
+is_socket(fd, path)
     int fd;
+    const char *path;
 {
-    if (fstat(fptr->fd, &sbuf) < 0)
-        rb_sys_fail(fptr->path);
+    struct stat sbuf;
+    if (fstat(fd, &sbuf) < 0)
+        rb_sys_fail(path);
     return S_ISSOCK(sbuf.st_mode);
 }
 #endif
@@ -2084,7 +2086,7 @@ rb_io_close_read(io)
 	rb_raise(rb_eSecurityError, "Insecure: can't close");
     }
     GetOpenFile(io, fptr);
-    if (is_socket(fptr->fd)) {
+    if (is_socket(fptr->fd, fptr->path)) {
         if (shutdown(fptr->fd, 0) < 0)
             rb_sys_fail(fptr->path);
         fptr->mode &= ~FMODE_READABLE;
@@ -2127,7 +2129,7 @@ rb_io_close_write(io)
 	rb_raise(rb_eSecurityError, "Insecure: can't close");
     }
     GetOpenFile(io, fptr);
-    if (is_socket(fptr->fd)) {
+    if (is_socket(fptr->fd, fptr->path)) {
         if (shutdown(fptr->fd, 1) < 0)
             rb_sys_fail(fptr->path);
         fptr->mode &= ~FMODE_WRITABLE;

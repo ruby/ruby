@@ -1,3 +1,7 @@
+Mon Dec  6 21:19:40 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io.c (is_socket): fix typos. [ruby-core:03900]
+
 Mon Dec  6 20:13:28 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (is_socket): new function.
