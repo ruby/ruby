@@ -1,3 +1,8 @@
+Fri Jan 21 09:30:16 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* rubyio.h (rb_eof_error): should mark as NORETURN. (backported
+	  from CVS HEAD)
+
 Fri Jan 21 00:31:36 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/syck/rubyext.c (syck_parser_bufsize_set): avoid VC++ warning
