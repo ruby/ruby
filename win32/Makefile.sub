@@ -208,7 +208,7 @@ s,@target_alias@,$(ARCH)-$(OS),;t t
 s,@target_cpu@,$(ARCH),;t t
 s,@target_vendor@,pc,;t t
 s,@target_os@,$(OS),;t t
-s,@CC@,cl,;t t
+s,@CC@,$(CC),;t t
 s,@CPP@,$$(CC) -E,;t t
 s,@YACC@,$(YACC),;t t
 s,@RANLIB@,rem,;t t

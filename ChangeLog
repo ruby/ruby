@@ -1,3 +1,8 @@
+Thu Mar 28 18:58:13 2002  Usaku Nakamura <usa@ruby-lang.org>
+
+	* win32/Makefile.sub (config.status): reflect user defined $CC in
+	  config.status.
+
 Thu Mar 28 18:03:51 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/strscan/strscan.c: add taint check.
