@@ -1,3 +1,11 @@
+Wed Jul  5 22:27:56 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* cygwin/GNUmakefile: use ruby.def to make rubycw.dll.
+
+	* ext/extmk.rb.in: create target.def.
+
+	* lib/mkmf.rb: ditto.
+
 Wed Jul  5 01:02:53 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* ext/extmk.rb.in: join ' ' -> join(' ').

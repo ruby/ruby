@@ -352,9 +352,10 @@ def create_makefile(target)
 
   defflag = ''
   if RUBY_PLATFORM =~ /cygwin|mingw/
-    if File.exist? target + ".def"
-      defflag = "--def=" + target + ".def"
+    open(target + '.def', 'wb') do |f|
+      f.print "EXPORTS\n", "Init_", target, "\n"
     end
+    defflag = "--def=" + target + ".def"
   end
 
   unless $objs then
