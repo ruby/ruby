@@ -139,7 +139,7 @@ module WEBrick
       def initialize(server, root, options={}, default=Config::FileHandler)
         @config = server.config
         @logger = @config[:Logger]
-        @root = root
+        @root = File.expand_path(root)
         if options == true || options == false
           options = { :FancyIndexing => options }
         end

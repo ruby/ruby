@@ -61,6 +61,7 @@ module WEBrick
         else
           req.path_info = env["PATH_INFO"].dup
         end
+        req.user = env["REMOTE_USER"]
         res.request_method = req.request_method
         res.request_uri = req.request_uri
         res.request_http_version = req.http_version

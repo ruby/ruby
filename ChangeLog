@@ -1,3 +1,12 @@
+Thu Sep 16 18:12:13 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/cgi.rb (WEBrick::CGI#start): should set REMOTE_USER
+	  to request.user attribute.
+
+	* lib/webrick/httpservlet/filehandler.rb
+	  (WEBrick::HTTPServlet::FileHandler#initialize): should expand
+	  the pathname of document root directory.
+
 Wed Sep 15 20:22:23 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/sample/tkoptdb-safeTk.rb: fix a bug depend on the changes
