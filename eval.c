@@ -7794,12 +7794,17 @@ rb_thread_fd_close(fd)
 static void
 rb_thread_deadlock()
 {
+    char msg[21+SIZEOF_LONG*2];
+    VALUE e;
+
+    sprintf(msg, "Thread(0x%lx): deadlock", curr_thread->thread);
+    e = rb_exc_new2(rb_eFatal, msg);
     if (curr_thread == main_thread) {
-	rb_raise(rb_eFatal, "Thread: deadlock");
+	rb_exc_raise(e);
     }
     curr_thread = main_thread;
     th_raise_argc = 1;
-    th_raise_argv[0] = rb_exc_new2(rb_eFatal, "Thread: deadlock");
+    th_raise_argv[0] = e;
     th_raise_node = ruby_current_node;
     rb_thread_restore_context(main_thread, RESTORE_RAISE);
 }
@@ -8066,9 +8071,17 @@ rb_thread_schedule()
 	/* raise fatal error to main thread */
 	curr_thread->node = ruby_current_node;
 	FOREACH_THREAD_FROM(curr, th) {
-	    fprintf(stderr, "deadlock 0x%lx: %d:%d %s - %s:%d\n", 
-		    th->thread, th->status,
-		    th->wait_for, th==main_thread ? "(main)" : "",
+	    fprintf(stderr, "deadlock 0x%lx: %s:",
+		    th->thread, thread_status_name(th->status));
+	    if (th->wait_for & WAIT_FD) fprintf(stderr, "F(%d)", th->fd);
+	    if (th->wait_for & WAIT_SELECT) fprintf(stderr, "S");
+	    if (th->wait_for & WAIT_TIME) fprintf(stderr, "T(%f)", th->delay);
+	    if (th->wait_for & WAIT_JOIN)
+		fprintf(stderr, "J(0x%lx)", th->join ? th->join->thread : 0);
+	    if (th->wait_for & WAIT_PID) fprintf(stderr, "P");
+	    if (!th->wait_for) fprintf(stderr, "-");
+	    fprintf(stderr, " %s - %s:%d\n",
+		    th==main_thread ? "(main)" : "",
 		    th->node->nd_file, nd_line(th->node));
 	}
 	END_FOREACH_FROM(curr, th);
@@ -8291,9 +8304,11 @@ rb_thread_join(th, limit)
     if (rb_thread_critical) rb_thread_deadlock();
     if (!rb_thread_dead(th)) {
 	if (th == curr_thread)
-	    rb_raise(rb_eThreadError, "thread tried to join itself");
+	    rb_raise(rb_eThreadError, "thread 0x%lx tried to join itself",
+		     th->thread);
 	if ((th->wait_for & WAIT_JOIN) && th->join == curr_thread)
-	    rb_raise(rb_eThreadError, "Thread#join: deadlock - mutual join");
+	    rb_raise(rb_eThreadError, "Thread#join: deadlock 0x%lx - mutual join(0x%lx)",
+		     curr_thread->thread, th->thread);
 	if (curr_thread->status == THREAD_TO_KILL)
 	    last_status = THREAD_TO_KILL;
 	if (limit == 0) return Qfalse;
