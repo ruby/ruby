@@ -1,3 +1,8 @@
+Mon Mar  5 17:19:56 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* win32/win32.c (gettimeofday): use GetLocalTime() instead of ftime()
+	  for high-resolution timing.
+
 Sun Mar  4 17:01:09 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* string.c (trnext): support backslash escape in String#tr.
