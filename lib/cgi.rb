@@ -5,10 +5,10 @@ $Date$
 
 cgi.rb
 
-Version 1.20
+Version 1.31
 
 Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
-Copyright (C) 2000  Information-technology Promotion Agancy, Japan
+Copyright (C) 2000  Information-technology Promotion Agency, Japan
 
 Wakou Aoyama <wakou@fsinet.or.jp>
 
@@ -108,7 +108,7 @@ and see MAKE COOKIE OBJECT.
 
 === GET ENVIRONMENT VALUE
 
-	require "CGI"
+	require "cgi"
 	cgi = CGI.new
 	value = cgi.auth_type
 	  # ENV["AUTH_TYPE"]
@@ -141,7 +141,7 @@ HTTP_CACHE_CONTROL HTTP_FROM HTTP_HOST HTTP_NEGOTIATE HTTP_PRAGMA
 HTTP_REFERER HTTP_USER_AGENT
 
 
-=== PRINT HTTP HEADER AND HTML STRING TO $>
+=== PRINT HTTP HEADER AND HTML STRING TO $DEFAULT_OUTPUT ($>)
 
 	require "cgi"
 	cgi = CGI.new("html3")  # add HTML generation methods
@@ -176,6 +176,8 @@ HTTP_REFERER HTTP_USER_AGENT
 =end
 
 
+require 'English'
+
 class CGI
 
   CR  = "\015"
@@ -183,7 +185,7 @@ class CGI
   EOL = CR + LF
 v = $-v
 $-v = false
-  VERSION = "1.20"
+  VERSION = "1.31"
   RELEASE_DATE = "$Date$"
 $-v = v
 
@@ -223,7 +225,7 @@ $-v = v
   end
 
   def stdoutput
-    $>
+    $DEFAULT_OUTPUT
   end
 
   private :env_table, :stdinput, :stdoutput
@@ -237,10 +239,9 @@ $-v = v
 	url_encoded_string = CGI::escape("string")
 =end
   def CGI::escape(string)
-    str = string.dup
-    str.gsub!(/ /n, '+')
-    str.gsub!(/([^a-zA-Z0-9_.-])/n){ sprintf("%%%02X", $1.unpack("C")[0]) }
-    str
+    string.gsub(/ /n, '+').gsub(/([^a-zA-Z0-9_.-])/n) do
+      sprintf("%%%02X", $1.unpack("C")[0])
+    end
   end
 
 
@@ -249,10 +250,9 @@ $-v = v
 	string = CGI::unescape("url encoded string")
 =end
   def CGI::unescape(string)
-    str = string.dup
-    str.gsub!(/\+/n, ' ')
-    str.gsub!(/%([0-9a-fA-F]{2})/n){ [$1.hex].pack("c") }
-    str
+    string.gsub(/\+/n, ' ').gsub(/%([0-9a-fA-F]{2})/n) do
+      [$1.hex].pack("c")
+    end
   end
 
 
@@ -261,12 +261,7 @@ $-v = v
 	CGI::escapeHTML("string")
 =end
   def CGI::escapeHTML(string)
-    str = string.dup
-    str.gsub!(/&/n, '&amp;')
-    str.gsub!(/\"/n, '&quot;')
-    str.gsub!(/>/n, '&gt;')
-    str.gsub!(/</n, '&lt;')
-    str
+    string.gsub(/&/n, '&amp;').gsub(/\"/n, '&quot;').gsub(/>/n, '&gt;').gsub(/</n, '&lt;')
   end
 
 
@@ -275,8 +270,7 @@ $-v = v
 	CGI::unescapeHTML("HTML escaped string")
 =end
   def CGI::unescapeHTML(string)
-    str = string.dup
-    str.gsub!(/&(.*?);/n){
+    string.gsub(/&(.*?);/n) do
       match = $1.dup
       case match
       when /\Aamp\z/ni           then '&'
@@ -295,8 +289,7 @@ $-v = v
         end
       when /\A#x([0-9a-f]+)\z/ni then $1.hex.chr
       end
-    }
-    str
+    end
   end
 
 
@@ -309,11 +302,9 @@ $-v = v
 	  # "<BR>&lt;A HREF="url"&gt;&lt;/A&gt"
 =end
   def CGI::escapeElement(string, *element)
-    str = string.dup
-    str.gsub!(/<\/?(?:#{element.join("|")})(?!\w)(?:.|\n)*?>/ni){
+    string.gsub(/<\/?(?:#{element.join("|")})(?!\w)(?:.|\n)*?>/ni) do
       CGI::escapeHTML($&)
-    }
-    str
+    end
   end
 
 
@@ -328,11 +319,9 @@ $-v = v
 	  # "&lt;BR&gt;<A HREF="url"></A>"
 =end
   def CGI::unescapeElement(string, *element)
-    str = string.dup
-    str.gsub!(/&lt;\/?(?:#{element.join("|")})(?!\w)(?:.|\n)*?&gt;/ni){
+    string.gsub(/&lt;\/?(?:#{element.join("|")})(?!\w)(?:.|\n)*?&gt;/ni) do
       CGI::unescapeHTML($&)
-    }
-    str
+    end
   end
 
 
@@ -493,7 +482,7 @@ status:
 
 
 =begin
-=== PRINT HTTP HEADER AND STRING TO $>
+=== PRINT HTTP HEADER AND STRING TO $DEFAULT_OUTPUT ($>)
 	cgi = CGI.new
 	cgi.out{ "string" }
 	  # Content-Type: text/html
@@ -555,7 +544,7 @@ convert string charset, and set language to "ja".
 =begin
 === PRINT
 	cgi = CGI.new
-	cgi.print    # default:  cgi.print == $>.print
+	cgi.print    # default:  cgi.print == $DEFAULT_OUTPUT.print
 =end
   def print(*options)
     stdoutput.print(*options)
@@ -637,7 +626,7 @@ convert string charset, and set language to "ja".
       if @value.kind_of?(String)
         buf.concat CGI::escape(@value)
       else
-        buf.concat(@value.filter{|v| CGI::escape(v) }.join("&"))
+        buf.concat(@value.collect{|v| CGI::escape(v) }.join("&"))
       end
 
       if @domain
@@ -675,7 +664,7 @@ convert string charset, and set language to "ja".
       name, values = pairs.split('=',2)
       name = CGI::unescape(name)
       values ||= ""
-      values = values.split('&').filter{|v| CGI::unescape(v) }
+      values = values.split('&').collect{|v| CGI::unescape(v) }
       if cookies.has_key?(name)
         cookies[name].value.push(*values)
       else
@@ -697,7 +686,7 @@ convert string charset, and set language to "ja".
     params = Hash.new([])
 
     query.split(/[&;]/n).each do |pairs|
-      key, value = pairs.split('=',2).filter{|v| CGI::unescape(v) }
+      key, value = pairs.split('=',2).collect{|v| CGI::unescape(v) }
       if params.has_key?(key)
         params[key].push(value)
       else
@@ -711,30 +700,28 @@ convert string charset, and set language to "ja".
 
   module QueryExtension
 
-    %w[ CONTENT_LENGTH SERVER_PORT ].
-    each{|env|
+    for env in %w[ CONTENT_LENGTH SERVER_PORT ]
       eval( <<-END )
         def #{env.sub(/^HTTP_/n, '').downcase}
           env_table["#{env}"] && Integer(env_table["#{env}"])
         end
       END
-    }
+    end
 
-    %w[ AUTH_TYPE CONTENT_TYPE GATEWAY_INTERFACE PATH_INFO
+    for env in %w[ AUTH_TYPE CONTENT_TYPE GATEWAY_INTERFACE PATH_INFO
         PATH_TRANSLATED QUERY_STRING REMOTE_ADDR REMOTE_HOST
         REMOTE_IDENT REMOTE_USER REQUEST_METHOD SCRIPT_NAME
         SERVER_NAME SERVER_PROTOCOL SERVER_SOFTWARE
 
         HTTP_ACCEPT HTTP_ACCEPT_CHARSET HTTP_ACCEPT_ENCODING
         HTTP_ACCEPT_LANGUAGE HTTP_CACHE_CONTROL HTTP_FROM HTTP_HOST
-        HTTP_NEGOTIATE HTTP_PRAGMA HTTP_REFERER HTTP_USER_AGENT ].
-    each{|env|
+        HTTP_NEGOTIATE HTTP_PRAGMA HTTP_REFERER HTTP_USER_AGENT ]
       eval( <<-END )
         def #{env.sub(/^HTTP_/n, '').downcase}
           env_table["#{env}"]
         end
       END
-    }
+    end
 
     def raw_cookie
       env_table["HTTP_COOKIE"]
@@ -761,7 +748,7 @@ convert string charset, and set language to "ja".
       stdinput.binmode
       content_length -= stdinput.read((boundary + EOL).size).size
 
-      require "tempfile.rb"
+      require "tempfile"
 
       until -1 == content_length
         head = nil
@@ -771,10 +758,10 @@ convert string charset, and set language to "ja".
         until head and (/#{boundary}(?:#{EOL}|--)/n === buf)
 
           if (not head) and (/#{EOL}#{EOL}/n === buf)
-            buf.sub!(/\A((?:.|\n)*?#{EOL})#{EOL}/n){
+            buf = buf.sub(/\A((?:.|\n)*?#{EOL})#{EOL}/n) do
               head = $1.dup
               ""
-            }
+            end
             next
           end
 
@@ -793,13 +780,13 @@ convert string charset, and set language to "ja".
 
         end
 
-        buf.sub!(/\A((?:.|\n)*?)(?:#{EOL})?#{boundary}(#{EOL}|--)/n){
+        buf = buf.sub(/\A((?:.|\n)*?)(?:#{EOL})?#{boundary}(#{EOL}|--)/n) do
           body.print $1
           if "--" == $2
             content_length = -1
           end
           ""
-        }
+        end
 
         body.rewind
 
@@ -849,24 +836,20 @@ convert string charset, and set language to "ja".
 
     # offline mode. read name=value pairs on standard input.
     def read_from_cmdline
-      require "shellwords.rb"
+      require "shellwords"
 
-      unless ARGV.empty?
-        str = ARGV.join(' ')
+      string = unless ARGV.empty?
+        ARGV.join(' ')
       else
         if STDIN.tty?
           STDERR.print(
             %|(offline mode: enter name=value pairs on standard input)\n|
           )
         end
-        str = readlines.join(' ')
-        str.gsub!(/\n/n, '')
-      end
+        readlines.join(' ').gsub(/\n/n, '')
+      end.gsub(/\\=/n, '%3D').gsub(/\\&/n, '%26')
 
-      str.gsub!(/\\=/n, '%3D')
-      str.gsub!(/\\&/n, '%26')
-
-      words = Shellwords.shellwords(str)
+      words = Shellwords.shellwords(string)
 
       if words.find{|x| /=/n === x }
         words.join('&')
@@ -938,22 +921,17 @@ convert string charset, and set language to "ja".
 =end
   def CGI::pretty_shift(string, shift = "  ")
     shift = "  " if true == shift
-    str = string.dup
-    str.gsub!(/\n(?!\z)/n, "\n" + shift)
-    str
+    string.gsub(/\n(?!\z)/n, "\n" + shift)
   end
   def CGI::pretty_nest(string, shift = "  ")
-    str = string.dup
-    str.gsub!(/(<(\w+).*?>)((?:.|\n)*?)(<\/\2>)/n){
+    string.gsub(/(<(\w+).*?>)((?:.|\n)*?)(<\/\2>)/n) do
       $1 + CGI::pretty_shift(CGI::pretty_nest($3, shift), shift) + $4
-    }
-    str
+    end
   end
   def CGI::pretty(string, shift = "  ")
-    str = string.dup
-    str.gsub!(/<(?:.|\n)*?>/n, "\n\\0")
-    str.gsub!(/<(?:.|\n)*?>(?!\n)/n, "\\0\n")
-    CGI::pretty_nest(str, shift)
+    CGI::pretty_nest(
+      string.gsub(/<(?:.|\n)*?>/n, "\n\\0").gsub(/<(?:.|\n)*?>(?!\n)/n, "\\0\n"), shift
+    )
   end
 
 
@@ -1037,7 +1015,6 @@ convert string charset, and set language to "ja".
 
 
   module HtmlExtension
-    extend TagMaker
 
 
 =begin
@@ -1699,162 +1676,176 @@ convert string charset, and set language to "ja".
 
 
   module Html3
-    extend TagMaker
 
     def doctype
       %|<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">|
     end
 
-    # - -
-    %w[ A TT I B U STRIKE BIG SMALL SUB SUP EM STRONG DFN CODE SAMP KBD VAR
-      CITE FONT ADDRESS DIV center MAP APPLET PRE XMP LISTING DL OL UL DIR
-      MENU SELECT table TITLE STYLE SCRIPT H1 H2 H3 H4 H5 H6 TEXTAREA FORM
-      BLOCKQUOTE CAPTION ].
-    each{|element|
-      eval( <<-BEGIN + nn_element_def(element) + <<-END )
-        def #{element.downcase}(attributes = {})
-      BEGIN
-        end
-      END
-    }
+    def element_init
+      extend TagMaker
+      methods = ""
+      # - -
+      for element in %w[ A TT I B U STRIKE BIG SMALL SUB SUP EM STRONG
+          DFN CODE SAMP KBD VAR CITE FONT ADDRESS DIV center MAP
+          APPLET PRE XMP LISTING DL OL UL DIR MENU SELECT table TITLE
+          STYLE SCRIPT H1 H2 H3 H4 H5 H6 TEXTAREA FORM BLOCKQUOTE
+          CAPTION ]
+        methods.concat( <<-BEGIN + nn_element_def(element) + <<-END )
+          def #{element.downcase}(attributes = {})
+        BEGIN
+          end
+        END
+      end
 
-    # - O EMPTY
-    %w[ IMG BASE BASEFONT BR AREA LINK PARAM HR INPUT ISINDEX META ].
-    each{|element|
-      eval( <<-BEGIN + nOE_element_def(element) + <<-END )
-        def #{element.downcase}(attributes = {})
-      BEGIN
-        end
-      END
-    }
+      # - O EMPTY
+      for element in %w[ IMG BASE BASEFONT BR AREA LINK PARAM HR INPUT
+          ISINDEX META ]
+        methods.concat( <<-BEGIN + nOE_element_def(element) + <<-END )
+          def #{element.downcase}(attributes = {})
+        BEGIN
+          end
+        END
+      end
 
-    # O O or - O
-    %w[ HTML HEAD BODY P PLAINTEXT DT DD LI OPTION tr th td ].
-    each{|element|
-      eval( <<-BEGIN + nO_element_def(element) + <<-END )
-        def #{element.downcase}(attributes = {})
-      BEGIN
-        end
-      END
-    }
+      # O O or - O
+      for element in %w[ HTML HEAD BODY P PLAINTEXT DT DD LI OPTION tr
+          th td ]
+        methods.concat( <<-BEGIN + nO_element_def(element) + <<-END )
+          def #{element.downcase}(attributes = {})
+        BEGIN
+          end
+        END
+      end
+      eval(methods)
+    end
 
   end # Html3
 
 
   module Html4
-    extend TagMaker
 
     def doctype
       %|<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0//EN" "http://www.w3.org/TR/REC-html40/strict.dtd">|
     end
 
-    # - -
-    %w[ TT I B BIG SMALL EM STRONG DFN CODE SAMP KBD VAR CITE ABBR ACRONYM
-      SUB SUP SPAN BDO ADDRESS DIV MAP OBJECT H1 H2 H3 H4 H5 H6 PRE Q
-      INS DEL DL OL UL LABEL SELECT OPTGROUP FIELDSET LEGEND BUTTON TABLE
-      TITLE STYLE SCRIPT NOSCRIPT TEXTAREA FORM A BLOCKQUOTE CAPTION ].
-    each{|element|
-      eval( <<-BEGIN + nn_element_def(element) + <<-END )
-        def #{element.downcase}(attributes = {})
-      BEGIN
-        end
-      END
-    }
+    def element_init
+      extend TagMaker
+      methods = ""
+      # - -
+      for element in %w[ TT I B BIG SMALL EM STRONG DFN CODE SAMP KBD
+        VAR CITE ABBR ACRONYM SUB SUP SPAN BDO ADDRESS DIV MAP OBJECT
+        H1 H2 H3 H4 H5 H6 PRE Q INS DEL DL OL UL LABEL SELECT OPTGROUP
+        FIELDSET LEGEND BUTTON TABLE TITLE STYLE SCRIPT NOSCRIPT
+        TEXTAREA FORM A BLOCKQUOTE CAPTION ]
+        methods.concat( <<-BEGIN + nn_element_def(element) + <<-END )
+          def #{element.downcase}(attributes = {})
+        BEGIN
+          end
+        END
+      end
 
-    # - O EMPTY
-    %w[ IMG BASE BR AREA LINK PARAM HR INPUT COL META ].
-    each{|element|
-      eval( <<-BEGIN + nOE_element_def(element) + <<-END )
-        def #{element.downcase}(attributes = {})
-      BEGIN
-        end
-      END
-    }
+      # - O EMPTY
+      for element in %w[ IMG BASE BR AREA LINK PARAM HR INPUT COL META ]
+        methods.concat( <<-BEGIN + nOE_element_def(element) + <<-END )
+          def #{element.downcase}(attributes = {})
+        BEGIN
+          end
+        END
+      end
 
-    # O O or - O
-    %w[ HTML BODY P DT DD LI OPTION THEAD TFOOT TBODY COLGROUP TR TH TD HEAD].
-    each{|element|
-      eval( <<-BEGIN + nO_element_def(element) + <<-END )
-        def #{element.downcase}(attributes = {})
-      BEGIN
-        end
-      END
-    }
+      # O O or - O
+      for element in %w[ HTML BODY P DT DD LI OPTION THEAD TFOOT TBODY
+          COLGROUP TR TH TD HEAD]
+        methods.concat( <<-BEGIN + nO_element_def(element) + <<-END )
+          def #{element.downcase}(attributes = {})
+        BEGIN
+          end
+        END
+      end
+      eval(methods)
+    end
 
   end # Html4
 
 
   module Html4Tr
-    extend TagMaker
 
     def doctype
       %|<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">|
     end
 
-    # - -
-    %w[ TT I B U S STRIKE BIG SMALL EM STRONG DFN CODE SAMP KBD VAR CITE
-      ABBR ACRONYM FONT SUB SUP SPAN BDO ADDRESS DIV CENTER MAP OBJECT
-      APPLET H1 H2 H3 H4 H5 H6 PRE Q INS DEL DL OL UL DIR MENU LABEL SELECT
-      OPTGROUP FIELDSET LEGEND BUTTON TABLE IFRAME NOFRAMES TITLE STYLE
-      SCRIPT NOSCRIPT TEXTAREA FORM A BLOCKQUOTE CAPTION ].
-    each{|element|
-      eval( <<-BEGIN + nn_element_def(element) + <<-END )
-        def #{element.downcase}(attributes = {})
-      BEGIN
-        end
-      END
-    }
+    def element_init
+      extend TagMaker
+      methods = ""
+      # - -
+      for element in %w[ TT I B U S STRIKE BIG SMALL EM STRONG DFN
+          CODE SAMP KBD VAR CITE ABBR ACRONYM FONT SUB SUP SPAN BDO
+          ADDRESS DIV CENTER MAP OBJECT APPLET H1 H2 H3 H4 H5 H6 PRE Q
+          INS DEL DL OL UL DIR MENU LABEL SELECT OPTGROUP FIELDSET
+          LEGEND BUTTON TABLE IFRAME NOFRAMES TITLE STYLE SCRIPT
+          NOSCRIPT TEXTAREA FORM A BLOCKQUOTE CAPTION ]
+        methods.concat( <<-BEGIN + nn_element_def(element) + <<-END )
+          def #{element.downcase}(attributes = {})
+        BEGIN
+          end
+        END
+      end
 
-    # - O EMPTY
-    %w[ IMG BASE BASEFONT BR AREA LINK PARAM HR INPUT COL ISINDEX META ].
-    each{|element|
-      eval( <<-BEGIN + nOE_element_def(element) + <<-END )
-        def #{element.downcase}(attributes = {})
-      BEGIN
-        end
-      END
-    }
+      # - O EMPTY
+      for element in %w[ IMG BASE BASEFONT BR AREA LINK PARAM HR INPUT
+          COL ISINDEX META ]
+        methods.concat( <<-BEGIN + nOE_element_def(element) + <<-END )
+          def #{element.downcase}(attributes = {})
+        BEGIN
+          end
+        END
+      end
 
-    # O O or - O
-    %w[ HTML BODY P DT DD LI OPTION THEAD TFOOT TBODY COLGROUP TR TH TD HEAD ].
-    each{|element|
-      eval( <<-BEGIN + nO_element_def(element) + <<-END )
-        def #{element.downcase}(attributes = {})
-      BEGIN
-        end
-      END
-    }
+      # O O or - O
+      for element in %w[ HTML BODY P DT DD LI OPTION THEAD TFOOT TBODY
+          COLGROUP TR TH TD HEAD ]
+        methods.concat( <<-BEGIN + nO_element_def(element) + <<-END )
+          def #{element.downcase}(attributes = {})
+        BEGIN
+          end
+        END
+      end
+      eval(methods)
+    end
 
   end # Html4Tr
 
 
   module Html4Fr
-    include Html4Tr
-    extend TagMaker
 
     def doctype
       %|<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Frameset//EN" "http://www.w3.org/TR/REC-html40/frameset.dtd">|
     end
 
-    # - -
-    %w[ FRAMESET ].
-    each{|element|
-      eval( <<-BEGIN + nn_element_def(element) + <<-END )
-        def #{element.downcase}(attributes = {})
-      BEGIN
-        end
-      END
-    }
+    def element_init
+      extend TagMaker
+      extend Html4Tr
+      element_init()
+      methods = ""
+      # - -
+      for element in %w[ FRAMESET ]
+        methods.concat( <<-BEGIN + nn_element_def(element) + <<-END )
+          def #{element.downcase}(attributes = {})
+        BEGIN
+          end
+        END
+      end
 
-    # - O EMPTY
-    %w[ FRAME ].
-    each{|element|
-      eval( <<-BEGIN + nOE_element_def(element) + <<-END )
-        def #{element.downcase}(attributes = {})
-      BEGIN
-        end
-      END
-    }
+      # - O EMPTY
+      for element in %w[ FRAME ]
+        methods.concat( <<-BEGIN + nOE_element_def(element) + <<-END )
+          def #{element.downcase}(attributes = {})
+        BEGIN
+          end
+        END
+      end
+      eval(methods)
+    end
 
   end # Html4Fr
 
@@ -1875,17 +1866,22 @@ convert string charset, and set language to "ja".
     case type
     when "html3"
       extend Html3
+      element_init()
       extend HtmlExtension
     when "html4"
       extend Html4
+      element_init()
       extend HtmlExtension
     when "html4Tr"
       extend Html4Tr
+      element_init()
       extend HtmlExtension
     when "html4Fr"
       extend Html4Fr
+      element_init()
       extend HtmlExtension
     end
+
   end
 
   if defined?(MOD_RUBY) and (RUBY_VERSION < "1.4.3")
@@ -1904,6 +1900,25 @@ end
 =begin
 
 == HISTORY
+
+=== Version 1.31 - wakou
+
+2000/05/08 21:51:30
+
+- improvement of time forming new CGI object accompanied with HTML generation methods.
+
+=== Version 1.30 - wakou
+
+2000/05/07 21:51:14
+
+- require English.rb
+- improvement of load time.
+
+=== Version 1.21 - wakou
+
+2000/05/02 21:44:12
+
+- support for ruby 1.5.3 (2000-05-01) (Array#filter --> Array#collect!)
 
 === Version 1.20 - wakou
 

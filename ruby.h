@@ -7,7 +7,7 @@
 
   Copyright (C) 1993-2000 Yukihiro Matsumoto
   Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
-  Copyright (C) 2000  Information-technology Promotion Agancy, Japan
+  Copyright (C) 2000  Information-technology Promotion Agency, Japan
 
 **********************************************************************/
 
@@ -71,16 +71,6 @@ extern "C" {
 
 #if defined(HAVE_ALLOCA_H) && !defined(__GNUC__)
 #include <alloca.h>
-#endif
-
-#if defined(__CYGWIN32__)
-#if defined(USEIMPORTLIB)
-#include "import.h"
-#else
-#if !defined(__CYGWIN__)
-#define environ (*__imp___cygwin_environ)
-#endif
-#endif
 #endif
 
 #ifdef _AIX

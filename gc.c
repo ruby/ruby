@@ -8,7 +8,7 @@
 
   Copyright (C) 1993-2000 Yukihiro Matsumoto
   Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
-  Copyright (C) 2000  Information-technology Promotion Agancy, Japan
+  Copyright (C) 2000  Information-technology Promotion Agency, Japan
 
 **********************************************************************/
 
@@ -141,36 +141,6 @@ xfree(x)
     if (x) free(x);
 }
 #endif
-
-/* The way of garbage collecting which allows use of the cstack is due to */
-/* Scheme In One Defun, but in C this time.
-
- *			  COPYRIGHT (c) 1989 BY				    *
- *	  PARADIGM ASSOCIATES INCORPORATED, CAMBRIDGE, MASSACHUSETTS.	    *
- *			   ALL RIGHTS RESERVED				    *
-
-Permission to use, copy, modify, distribute and sell this software
-and its documentation for any purpose and without fee is hereby
-granted, provided that the above copyright notice appear in all copies
-and that both that copyright notice and this permission notice appear
-in supporting documentation, and that the name of Paradigm Associates
-Inc not be used in advertising or publicity pertaining to distribution
-of the software without specific, written prior permission.
-
-PARADIGM DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE, INCLUDING
-ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL
-PARADIGM BE LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR
-ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
-WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
-ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
-SOFTWARE.
-
-gjc@paradigm.com
-
-Paradigm Associates Inc		 Phone: 617-492-6079
-29 Putnam Ave, Suite 6
-Cambridge, MA 02138
-*/
 
 extern int ruby_in_compile;
 static int dont_gc;
@@ -351,7 +321,7 @@ VALUE *rb_gc_stack_start = 0;
 __inline__
 #endif
 static int
-looks_pointerp(ptr)
+is_pointer_to_heap(ptr)
     void *ptr;
 {
     register RVALUE *p = RANY(ptr);
@@ -376,7 +346,7 @@ mark_locations_array(x, n)
     register long n;
 {
     while (n--) {
-	if (looks_pointerp(*x)) {
+	if (is_pointer_to_heap(*x)) {
 	    rb_gc_mark(*x);
 	}
 	x++;
@@ -438,7 +408,7 @@ void
 rb_gc_mark_maybe(obj)
     void *obj;
 {
-    if (looks_pointerp(obj)) {
+    if (is_pointer_to_heap(obj)) {
 	rb_gc_mark(obj);
     }
 }
@@ -585,13 +555,13 @@ rb_gc_mark(ptr)
 #endif
 
 	  default:
-	    if (looks_pointerp(obj->as.node.u1.node)) {
+	    if (is_pointer_to_heap(obj->as.node.u1.node)) {
 		rb_gc_mark(obj->as.node.u1.node);
 	    }
-	    if (looks_pointerp(obj->as.node.u2.node)) {
+	    if (is_pointer_to_heap(obj->as.node.u2.node)) {
 		rb_gc_mark(obj->as.node.u2.node);
 	    }
-	    if (looks_pointerp(obj->as.node.u3.node)) {
+	    if (is_pointer_to_heap(obj->as.node.u3.node)) {
 		obj = RANY(obj->as.node.u3.node);
 		goto Top;
 	    }
@@ -684,7 +654,7 @@ rb_gc_mark(ptr)
       default:
 	rb_bug("rb_gc_mark(): unknown data type 0x%x(0x%x) %s",
 	       obj->as.basic.flags & T_MASK, obj,
-	       looks_pointerp(obj)?"corrupted object":"non object");
+	       is_pointer_to_heap(obj)?"corrupted object":"non object");
     }
 }
 
@@ -1220,8 +1190,8 @@ id2ref(obj, id)
     if (ptr == Qfalse) return Qfalse;
     if (ptr == Qnil) return Qnil;
 
-    ptr = id ^ FIXNUM_FLAG;
-    if (!looks_pointerp(ptr)) {
+    ptr = id ^ FIXNUM_FLAG;	/* unset FIXNUM_FLAG */
+    if (!is_pointer_to_heap(ptr)) {
 	rb_raise(rb_eRangeError, "0x%x is not id value", ptr);
     }
     if (BUILTIN_TYPE(ptr) == 0) {

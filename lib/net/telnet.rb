@@ -5,7 +5,7 @@ $Date$
 
 net/telnet.rb
 
-Version 1.30
+Version 1.31
 
 Wakou Aoyama <wakou@fsinet.or.jp>
 
@@ -24,7 +24,7 @@ Wakou Aoyama <wakou@fsinet.or.jp>
 	           # if ignore timeout then set "Timeout" to false.
 	         "Waittime"   => 0,            # default: 0
 	         "Proxy"      => proxy         # default: nil
-	                         # proxy is Telnet or TCPsocket object
+	                         # proxy is Net::Telnet or IO object
 	       })
 
 Telnet object has socket class methods.
@@ -156,6 +156,12 @@ of cource, set sync=true or flush is necessary.
 
 
 == HISTORY
+
+=== Version 1.31
+
+2000/05/02 21:48:39
+
+- Proxy option: can receive IO object
 
 === Version 1.30
 
@@ -437,7 +443,7 @@ module Net
     EOL  = CR + LF
   v = $-v
   $-v = false
-    VERSION = "1.30"
+    VERSION = "1.31"
     RELEASE_DATE = "$Date$"
   $-v = v
 
@@ -487,12 +493,12 @@ module Net
       end
 
       if @options.has_key?("Proxy")
-        if @options["Proxy"].kind_of?(Telnet)
+        if @options["Proxy"].kind_of?(Net::Telnet)
           @sock = @options["Proxy"].sock
-        elsif @options["Proxy"].kind_of?(TCPsocket)
+        elsif @options["Proxy"].kind_of?(IO)
           @sock = @options["Proxy"]
         else
-          raise "Error; Proxy is Telnet or TCPSocket object."
+          raise "Error; Proxy is Net::Telnet or IO object."
         end
       else
         message = "Trying " + @options["Host"] + "...\n"

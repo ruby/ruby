@@ -403,6 +403,7 @@ AC_SUBST(STATIC)dnl
 AC_SUBST(CCDLFLAGS)dnl
 AC_SUBST(LDSHARED)dnl
 AC_SUBST(DLEXT)dnl
+AC_SUBST(DLEXT2)dnl
 
 STATIC=
 
@@ -569,6 +570,10 @@ else
 	 	AC_DEFINE(DLEXT, ".bundle");;
     os2_emx*)	DLEXT=dll
 	 	AC_DEFINE(DLEXT, ".dll");;
+    cygwin*)	DLEXT=so
+	 	AC_DEFINE(DLEXT, ".so")
+		DLEXT2=dll
+	 	AC_DEFINE(DLEXT2, ".dll");;
     *)		DLEXT=so
     		AC_DEFINE(DLEXT, ".so");;
   esac
@@ -711,6 +716,15 @@ if test "$target_os" = "beos"; then
   esac
 fi
 
+case "$target_os" in
+  cygwin*|beos*|openstep*|nextstep*|rhapsody*|macos*|os2_emx*)
+    DLDLIBS=""
+    ;;
+  *)
+    DLDLIBS="-lc"
+    ;;
+esac
+
 LIBRUBY_LDSHARED=$LDSHARED
 LIBRUBY_DLDFLAGS=$DLDFLAGS
 LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR).$(TEENY)'
@@ -819,6 +833,7 @@ AC_SUBST(LIBRUBY_ALIASES)
 AC_SUBST(LIBRUBY)
 AC_SUBST(LIBRUBYARG)
 AC_SUBST(SOLIBS)
+AC_SUBST(DLDLIBS)
 
 ri_prefix=
 test "$program_prefix" != NONE &&

@@ -58,6 +58,7 @@ s%@LIBRUBY_ALIASES@%%g
 s%@LIBRUBY@%libruby.lib%g
 s%@LIBRUBYARG@%libruby.lib%g
 s%@SOLIBS@%%g
+s%@DLDLIBS@%%g
 s%@arch@%i386-mswin32%g
 s%@sitedir@%${prefix}/lib/ruby/site_ruby%g
 s%@configure_args@%--with-make-prog=nmake%g

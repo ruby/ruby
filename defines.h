@@ -34,6 +34,14 @@
 #include "win32/win32.h"
 #endif
 
+#if defined __CYGWIN__
+# if defined USEIMPORTLIB
+#  define EXTERN extern __declspec(dllimport)
+# else
+#  define EXTERN extern __declspec(dllexport)
+# endif
+#endif
+
 #ifndef EXTERN
 #define EXTERN extern
 #endif
@@ -62,7 +70,7 @@
 #undef HAVE_SETITIMER
 #endif
 
-#if defined(__CYGWIN__) || defined(DJGPP) || defined(__BOW__)
+#if defined(DJGPP) || defined(__BOW__)
 #undef HAVE_SETITIMER
 #endif
 

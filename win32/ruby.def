@@ -498,6 +498,7 @@ EXPORTS
 	rb_str_new3
 	rb_str_new4
 	rb_str_to_str
+	rb_str_associate
 	rb_obj_as_string
 	rb_str_dup
 	rb_str_plus
@@ -508,6 +509,8 @@ EXPORTS
 	rb_str_dup_frozen
 	rb_str_resize
 	rb_str_cat
+	rb_str_cat2
+	rb_str_append
 	rb_str_concat
 	rb_str_hash
 	rb_str_cmp
@@ -568,17 +571,26 @@ EXPORTS
 	rb_obj_instance_variables
 	rb_obj_remove_instance_variable
 	rb_const_get_at
+	rb_autoload_load
 	rb_const_get
 	rb_mod_remove_const
 	rb_mod_const_at
-	rb_mod_constants
 	rb_mod_const_of
+	rb_mod_constants
 	rb_const_defined_at
 	rb_autoload_defined
 	rb_const_defined
 	rb_const_set
+	rb_const_assign
 	rb_define_const
 	rb_define_global_const
+	rb_cvar_declare
+	rb_cvar_set
+	rb_cvar_get
+	rb_cvar_defined
+	rb_cv_set
+	rb_cv_get
+	rb_define_class_variable
 	rb_iv_get
 	rb_iv_set
 ;version.c

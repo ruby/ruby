@@ -8,7 +8,7 @@
 
   Copyright (C) 1993-2000 Yukihiro Matsumoto
   Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
-  Copyright (C) 2000  Information-technology Promotion Agancy, Japan
+  Copyright (C) 2000  Information-technology Promotion Agency, Japan
 
 **********************************************************************/
 
@@ -3437,7 +3437,7 @@ massign(self, node, val, check)
     list = node->nd_head;
 
     if (TYPE(val) != T_ARRAY) {
-	if (NIL_P(val))
+	if (!check && NIL_P(val))
 	    val = rb_ary_new2(0);
 	else
 	    val = rb_ary_new3(1, val);
@@ -4937,13 +4937,25 @@ rb_f_require(obj, fname)
 	else if (strcmp(".so", ext) == 0 || strcmp(".o", ext) == 0) {
 	    file = feature = RSTRING(fname)->ptr;
 	    if (strcmp(ext, DLEXT) != 0) {
-		buf = ALLOCA_N(char, strlen(file)+sizeof(DLEXT)+1);
+		buf = ALLOCA_N(char, strlen(file)+sizeof(DLEXT)+4);
 		strcpy(buf, feature);
 		ext = strrchr(buf, '.');
+		strcpy(ext, ".so");
+		if (rb_provided(buf)) return Qfalse;
 		strcpy(ext, DLEXT);
 		file = feature = buf;
-		if (rb_provided(feature)) return Qfalse;
 	    }
+#ifdef DLEXT2
+	    else if (strcmp(ext, DLEXT2) != 0) {
+		buf = ALLOCA_N(char, strlen(file)+sizeof(DLEXT2)+4);
+		strcpy(buf, feature);
+		ext = strrchr(buf, '.');
+		strcpy(ext, ".so");
+		if (rb_provided(buf)) return Qfalse;
+		strcpy(ext, DLEXT2);
+		file = feature = buf;
+	    }
+#endif
 	    file = rb_find_file(file);
 	    if (file) goto load_dyna;
 	}
@@ -4969,6 +4981,15 @@ rb_f_require(obj, fname)
 	feature = buf;
 	goto load_dyna;
     }
+#ifdef DLEXT2
+    strcpy(buf, RSTRING(fname)->ptr);
+    strcat(buf, DLEXT2);
+    file = rb_find_file(buf);
+    if (file) {
+	feature = buf;
+	goto load_dyna;
+    }
+#endif
     rb_raise(rb_eLoadError, "No such file to load -- %s",
 	     RSTRING(fname)->ptr);
 
@@ -6359,9 +6380,9 @@ thread_free(th)
     if (th->stk_ptr) free(th->stk_ptr);
     th->stk_ptr = 0;
     if (th->locals) st_free_table(th->locals);
-    if (th->status != THREAD_KILLED && th->prev) {
-	th->prev->next = th->next;
-	th->next->prev = th->prev;
+    if (th->status != THREAD_KILLED) {
+	if (th->prev) th->prev->next = th->next;
+	if (th->next) th->next->prev = th->prev;
     }
     if (th != main_thread) free(th);
 }
@@ -6625,14 +6646,6 @@ rb_thread_schedule()
 	curr = curr->prev;
     }
 
-    FOREACH_THREAD_FROM(curr, th) {
-       if (th->status == THREAD_RUNNABLE || th->status == THREAD_TO_KILL) {
-	   if (!next || next->priority < th->priority)
-	       next = th;
-       }
-    }
-    END_FOREACH_FROM(curr, th); 
-
     if (num_waiting_on_join) {
 	FOREACH_THREAD_FROM(curr, th) {
 	    if ((th->wait_for&WAIT_JOIN) && rb_thread_dead(th->join)) {
@@ -6640,8 +6653,6 @@ rb_thread_schedule()
 		th->wait_for &= ~WAIT_JOIN;
 		th->status = THREAD_RUNNABLE;
 		num_waiting_on_join--;
-		if (!next || next->priority < th->priority)
-		    next = th;
 	    }
 	}
 	END_FOREACH_FROM(curr, th);
@@ -6651,7 +6662,7 @@ rb_thread_schedule()
 	fd_set readfds;
 	struct timeval delay_tv, *delay_ptr;
 	double delay, now;	/* OK */
-	int n, max;
+	int n, max, found;
 
 	do {
 	    max = 0;
@@ -6676,8 +6687,7 @@ rb_thread_schedule()
 			    th->wait_for &= ~WAIT_TIME;
 			    th->status = THREAD_RUNNABLE;
 			    num_waiting_on_timer--;
-			    if (!next || next->priority < th->priority)
-				next = th;
+			    found = 1;
 			} else if (th->delay < delay) {
 			    delay = th->delay;
 			}
@@ -6686,10 +6696,10 @@ rb_thread_schedule()
 		END_FOREACH_FROM(curr, th);
 	    }
 	    /* Do the select if needed */
-	    if (num_waiting_on_fd > 0 || !next) {
+	    if (num_waiting_on_fd > 0 || !found) {
 		/* Convert delay to a timeval */
 		/* If a thread is runnable, just poll */
-		if (next) {
+		if (found) {
 		    delay_tv.tv_sec = 0;
 		    delay_tv.tv_usec = 0;
 		    delay_ptr = &delay_tv;
@@ -6728,8 +6738,7 @@ rb_thread_schedule()
 			    th->fd = 0;
 			    th->wait_for &= ~WAIT_FD;
 			    num_waiting_on_fd--;
-			    if (!next || next->priority < th->priority)
-				next = th; /* Found one. */
+			    found = 1;
 			}
 		    }
 		    END_FOREACH_FROM(curr, th);
@@ -6737,8 +6746,16 @@ rb_thread_schedule()
 	    }
 	    /* The delays for some of the threads should have expired.
 	       Go through the loop once more, to check the delays. */
-	} while (!next && delay != DELAY_INFTY);
+	} while (!found && delay != DELAY_INFTY);
     }
+
+    FOREACH_THREAD_FROM(curr, th) {
+       if (th->status == THREAD_RUNNABLE || th->status == THREAD_TO_KILL) {
+	   if (!next || next->priority < th->priority)
+	       next = th;
+       }
+    }
+    END_FOREACH_FROM(curr, th); 
 
     if (!next) {
 	curr_thread->file = ruby_sourcefile;
@@ -7765,6 +7782,7 @@ rb_callcc(self)
     for (tag=prot_tag; tag; tag=tag->prev) {
 	scope_dup(tag->scope);
     }
+    th->prev = th->next = 0;
     if (THREAD_SAVE_CONTEXT(th)) {
 	return th->result;
     }

@@ -329,6 +329,11 @@ def create_makefile(target)
 
   $DLDFLAGS = '@DLDFLAGS@'
 
+  if $configure_args['--enable-shared']
+    $libs = "@LIBRUBYARG@ " + $libs
+    $DLDFLAGS = $DLDFLAGS + " -L" + $topdir
+  end
+
   if RUBY_PLATFORM =~ /beos/ and not $static
     $libs = $libs + " @LIBRUBYARG@"
     $DLDFLAGS = $DLDFLAGS + " -L" + $topdir
@@ -339,8 +344,6 @@ def create_makefile(target)
     if File.exist? target + ".def"
       defflag = "--def=" + target + ".def"
     end
-    $libs = $libs + " @LIBRUBYARG@"
-    $DLDFLAGS = $DLDFLAGS + " -L" + $topdir
   end
 
   $srcdir = $top_srcdir + "/ext/" + $mdir
@@ -499,16 +502,11 @@ def extmake(target)
   $OBJEXT = "@OBJEXT@"
   $LIBEXT = "a"
   $objs = nil
+  $libs = "@DLDLIBS@"
   $local_flags = ""
-  case RUBY_PLATFORM
-  when /cygwin|beos|openstep|nextstep|rhapsody|macos|i386-os2_emx/
-    $libs = ""
-  when /mswin32/
+  if /mswin32/ =~ RUBY_PLATFORM
     $LIBEXT = "lib"
-    $libs = ""
     $local_flags = "$(topdir)/rubymw.lib -link /EXPORT:Init_$(TARGET)"
-  else
-    $libs = "-lc"
   end
   $LOCAL_LIBS = ""		# to be assigned in extconf.rb
   dir = with_config("opt-dir")

@@ -1,3 +1,65 @@
+Mon May  8 23:47:39 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* eval.c (rb_callcc): prev & next should be initialized to zero.
+
+Mon May  8 23:17:36 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* dln.c (dln_init): remove possible buffer overrun.  This is
+	  suggested by Aleksi Niemela <aleksi.niemela@cinnober.com>
+
+	* dln.c (init_funcname): ditto.
+
+Sat May  6 23:35:47 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (lhs): should allow `obj.Attr = 5' type expression.
+
+Sat May  6 15:46:08 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* ext/socket/extconf.rb: add a new configure option to force use
+	  of the WIDE Project's getaddrinfo(): --enbale-wide-getaddrinfo.
+
+Fri May  5 21:19:22 2000  MOROHOSHI Akihiko  <moro@remus.dti.ne.jp>
+
+	* parse.y (yylex): allow '$1foo' and such.
+
+Fri May  5 03:25:15 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_compile_fastmap): charset_not for multibyte
+	  characters excluded too many characters.
+
+Tue May  2 13:23:43 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_thread_schedule): little bit more impartial context
+	  switching.
+
+Tue May  2 09:50:03 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* configure.in: add DLDLIBS to set platform specific library
+	  for extensions.
+
+	* ext/extmk.rb.in: use @DLDLIBS@ instead of RUBY_PLATFORM choice.
+
+	* lib/mkmf.rb: use CONFIG["DLDLIBS"] instead of RUBY_PLATFORM choice.
+
+	* config_s.dj: add @DLDLIBS@.
+
+	* win32/config.status: ditto.
+
+	* win32/ruby.def: regular maintenance.
+
+Mon May  1 23:42:44 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* configure.in, eval.c: add DLEXT2. now DLEXT on Cygwin is "so".
+
+	* defines.h: use dllimport, dllexport for Cygwin 1.1.x.
+
+	* ruby.h: ditto.
+	
+	* cygwin/GNUmakefile.in: ditto.
+
+	* ext/Win32API/Win32API.c: directly "call" in asm statement for
+	  gcc 2.95.x or newer.
+
 Sat Apr 29 04:58:12  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* array.c (rb_ary_unshift_m): performance improvement.

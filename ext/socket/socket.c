@@ -6,6 +6,8 @@
   $Date$
   created at: Thu Mar 31 12:21:29 JST 1994
 
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
+
 ************************************************/
 
 #include "ruby.h"

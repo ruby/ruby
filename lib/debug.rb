@@ -1,5 +1,5 @@
 # Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
-# Copyright (C) 2000  Information-technology Promotion Agancy, Japan
+# Copyright (C) 2000  Information-technology Promotion Agency, Japan
 
 if $SAFE > 0
   STDERR.print "-r debug.rb is not available in safe mode\n"
@@ -526,7 +526,7 @@ EOHELP
     end
 
     def debug_funcname(id)
-      if id == 0
+      if id.nil?
 	"toplevel"
       else
 	id.id2name

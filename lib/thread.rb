@@ -4,7 +4,7 @@
 #			by Yukihiro Matsumoto <matz@netlab.co.jp>
 #
 # Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
-# Copyright (C) 2000  Information-technology Promotion Agancy, Japan
+# Copyright (C) 2000  Information-technology Promotion Agency, Japan
 #
 
 unless defined? Thread
