@@ -1,3 +1,11 @@
+Mon May 28 02:43:16 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* dir.c (rb_glob_helper): teach has_magic() to handle flags and
+	  get rb_glob_helper to properly support FNM_NOESCAPE.
+
+	* dir.c (fnmatch): fix a bug when FNM_PATHNAME and FNM_PERIOD are
+	  specified at the same time.
+
 Sat May 26 07:19:48 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
 
 	* win32/win32.c (opendir): add const directive.
