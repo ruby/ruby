@@ -5881,7 +5881,6 @@ backtrace(lev)
     NODE *n;
 
     ary = rb_ary_new();
-    fprintf(stderr, "<ary=%p(0x%x)\n", ary, BUILTIN_TYPE(ary));
     if (frame->last_func == ID_ALLOCATOR) {
 	frame = frame->prev;
     }
