@@ -578,12 +578,9 @@ module XMLRPC
     class XMLStreamParser < AbstractStreamParser
       def initialize
         require "xmlparser"
-        eval %{
-          class XMLRPCParser < ::XMLParser
-            include StreamParserMixin
-          end
+        @parser_class = Class.new(::XMLParser) {
+          include StreamParserMixin
         }
-        @parser_class = XMLRPCParser
       end
     end # class XMLStreamParser
     # ---------------------------------------------------------------------------
