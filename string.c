@@ -2581,6 +2581,7 @@ rb_str_split_m(argc, argv, str)
 		else {
 		    end = beg+1;
 		    skip = 0;
+		    if (!NIL_P(limit) && lim <= i) break;
 		}
 	    }
 	    else {
@@ -2588,7 +2589,7 @@ rb_str_split_m(argc, argv, str)
 		    rb_ary_push(result, rb_str_substr(str, beg, end-beg));
 		    skip = 1;
 		    beg = end + 1;
-		    if (!NIL_P(limit) && lim <= ++i) break;
+		    if (!NIL_P(limit)) ++i;
 		}
 		else {
 		    end++;

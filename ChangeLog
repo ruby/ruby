@@ -1,3 +1,8 @@
+Fri Jun 27 14:41:22 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* string.c (rb_str_split_m): remove white spaces on the head of
+	  the last element, when limit is specified.  [ruby-talk:74506]
+
 Fri Jun 27 03:24:54 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* io.c (io_fflush): need to check if closed after thread switch.
