@@ -33,7 +33,7 @@ rb_mem_clear(mem, size)
     }
 }
 
-static void
+static inline void
 memfill(mem, size, val)
     register VALUE *mem;
     register long size;
@@ -72,6 +72,7 @@ rb_ary_modify(ary)
 	RARRAY(ary)->ptr = ptr;
     }
 }
+
 VALUE
 rb_ary_freeze(ary)
     VALUE ary;
@@ -116,7 +117,7 @@ ary_new(klass, len)
     VALUE klass;
     long len;
 {
-    VALUE ary = ary_alloc(klass);
+    VALUE ary;
 
     if (len < 0) {
 	rb_raise(rb_eArgError, "negative array size (or size too big)");
@@ -125,6 +126,8 @@ ary_new(klass, len)
 	rb_raise(rb_eArgError, "array size too big");
     }
     if (len == 0) len++;
+    
+    ary = ary_alloc(klass);
     RARRAY(ary)->ptr = ALLOC_N(VALUE, len);
     RARRAY(ary)->aux.capa = len;
 
@@ -470,6 +473,40 @@ rb_ary_store(ary, idx, val)
     RARRAY(ary)->ptr[idx] = val;
 }
 
+static VALUE
+ary_shared_first(argc, argv, ary)
+    int argc;
+    VALUE *argv;
+    VALUE ary;
+{
+    VALUE nv, result;
+    long n;
+
+    rb_scan_args(argc, argv, "1", &nv);
+    n = NUM2LONG(nv);
+    if (n > RARRAY(ary)->len) {
+	n = RARRAY(ary)->len;
+    }
+    else if (n < 0) {
+	rb_raise(rb_eArgError, "negative array size");
+    }
+    result = ary_shared_array(rb_cArray, ary);
+    RARRAY(result)->len = n;
+    return result;
+}
+
+static VALUE
+ary_shared_last(argc, argv, ary)
+    int argc;
+    VALUE *argv;
+    VALUE ary;
+{
+    VALUE result = ary_shared_first(argc, argv, ary);
+
+    RARRAY(result)->ptr += RARRAY(ary)->len - RARRAY(result)->len;
+    return result;
+}
+
 /* 
  * call-seq:
  *   array << obj            => array
@@ -517,18 +554,6 @@ rb_ary_push_m(argc, argv, ary)
     return ary;
 }
 
-/*
- *  call-seq:
- *     array.pop  => obj or nil
- *  
- *  Removes the last element from <i>self</i> and returns it, or
- *  <code>nil</code> if the array is empty.
- *     
- *     a = [ "a", "m", "z" ]
- *     a.pop   #=> "z"
- *     a       #=> ["a", "m"]
- */
-
 VALUE
 rb_ary_pop(ary)
     VALUE ary;
@@ -546,16 +571,34 @@ rb_ary_pop(ary)
 
 /*
  *  call-seq:
- *     array.shift   =>   obj or nil
+ *     array.pop  => obj or nil
  *  
- *  Returns the first element of <i>self</i> and removes it (shifting all
- *  other elements down by one). Returns <code>nil</code> if the array
- *  is empty.
+ *  Removes the last element from <i>self</i> and returns it, or
+ *  <code>nil</code> if the array is empty.
  *     
- *     args = [ "-m", "-q", "filename" ]
- *     args.shift   #=> "-m"
- *     args         #=> ["-q", "filename"]
+ *     a = [ "a", "m", "z" ]
+ *     a.pop   #=> "z"
+ *     a       #=> ["a", "m"]
  */
+
+static VALUE
+rb_ary_pop_m(argc, argv, ary)
+    int argc;
+    VALUE *argv;
+    VALUE ary;
+{
+    VALUE result;
+
+    if (argc == 0) {
+	return rb_ary_pop(ary);
+    }
+
+    rb_ary_modify_check(ary);
+
+    result = ary_shared_last(argc, argv, ary);
+    RARRAY(ary)->len -= RARRAY(result)->len;
+    return result;
+}
 
 VALUE
 rb_ary_shift(ary)
@@ -571,6 +614,46 @@ rb_ary_shift(ary)
     RARRAY(ary)->len--;
 
     return top;
+}
+
+/*
+ *  call-seq:
+ *     array.shift   =>   obj or nil
+ *  
+ *  Returns the first element of <i>self</i> and removes it (shifting all
+ *  other elements down by one). Returns <code>nil</code> if the array
+ *  is empty.
+ *     
+ *     args = [ "-m", "-q", "filename" ]
+ *     args.shift     #=> "-m"
+ *     args           #=> ["-q", "filename"]
+ *
+ *     args = [ "-m", "-q", "filename" ]
+ *     args.shift(2)  #=> ["-m", "-q"]
+ *     args           #=> ["filename"]
+ */
+
+static VALUE
+rb_ary_shift_m(argc, argv, ary)
+    int argc;
+    VALUE *argv;
+    VALUE ary;
+{
+    VALUE result;
+    long n;
+
+    if (argc == 0) {
+	return rb_ary_shift(ary);
+    }
+
+    rb_ary_modify_check(ary);
+
+    result = ary_shared_first(argc, argv, ary);
+    n = RARRAY(result)->len;
+    RARRAY(ary)->ptr += n;
+    RARRAY(ary)->len -= n;
+
+    return result;
 }
 
 VALUE
@@ -777,13 +860,15 @@ rb_ary_at(ary, pos)
 
 /*
  *  call-seq:
- *     array.first   =>   obj or nil
+ *     array.first     =>   obj or nil
+ *     array.first(n)  =>   an_array
  *  
  *  Returns the first element of the array. If the array is empty,
  *  returns <code>nil</code>.
  *     
  *     a = [ "q", "r", "s", "t" ]
- *     a.first   #=> "q"
+ *     a.first     #=> "q"
+ *     a.first(2)  #=> ["q", "r"]
  */
 
 static VALUE
@@ -797,17 +882,7 @@ rb_ary_first(argc, argv, ary)
 	return RARRAY(ary)->ptr[0];
     }
     else {
-	VALUE nv, result;
-	long n, i;
-
-	rb_scan_args(argc, argv, "01", &nv);
-	n = NUM2LONG(nv);
-	if (n > RARRAY(ary)->len) n = RARRAY(ary)->len;
-	result = rb_ary_new2(n);
-	for (i=0; i<n; i++) {
-	    rb_ary_push(result, RARRAY(ary)->ptr[i]);
-	}
-	return result;
+	return ary_shared_first(argc, argv, ary);
     }
 }
 
@@ -819,7 +894,9 @@ rb_ary_first(argc, argv, ary)
  *  Returns the last element(s) of <i>self</i>. If the array is empty,
  *  the first form returns <code>nil</code>.
  *     
- *     [ "w", "x", "y", "z" ].last   #=> "z"
+ *     a = [ "w", "x", "y", "z" ]
+ *     a.last     #=> "z"
+ *     a.last(2)  #=> ["y", "z"]
  */
 
 static VALUE
@@ -833,17 +910,7 @@ rb_ary_last(argc, argv, ary)
 	return RARRAY(ary)->ptr[RARRAY(ary)->len-1];
     }
     else {
-	VALUE nv, result;
-	long n, i;
-
-	rb_scan_args(argc, argv, "01", &nv);
-	n = NUM2LONG(nv);
-	if (n > RARRAY(ary)->len) n = RARRAY(ary)->len;
-	result = rb_ary_new2(n);
-	for (i=RARRAY(ary)->len-n; n--; i++) {
-	    rb_ary_push(result, RARRAY(ary)->ptr[i]);
-	}
-	return result;
+	return ary_shared_last(argc, argv, ary);
     }
 }
 
@@ -1802,17 +1869,12 @@ rb_ary_values_at(argc, argv, ary)
  */
 
 static VALUE
-rb_ary_select(argc, argv, ary)
-    int argc;
-    VALUE *argv;
+rb_ary_select(ary)
     VALUE ary;
 {
     VALUE result;
     long i;
 
-    if (argc > 0) {
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)", argc);
-    }
     result = rb_ary_new2(RARRAY(ary)->len);
     for (i = 0; i < RARRAY(ary)->len; i++) {
 	if (RTEST(rb_yield(RARRAY(ary)->ptr[i]))) {
@@ -2992,8 +3054,8 @@ Init_Array()
     rb_define_method(rb_cArray, "concat", rb_ary_concat, 1);
     rb_define_method(rb_cArray, "<<", rb_ary_push, 1);
     rb_define_method(rb_cArray, "push", rb_ary_push_m, -1);
-    rb_define_method(rb_cArray, "pop", rb_ary_pop, 0);
-    rb_define_method(rb_cArray, "shift", rb_ary_shift, 0);
+    rb_define_method(rb_cArray, "pop", rb_ary_pop_m, -1);
+    rb_define_method(rb_cArray, "shift", rb_ary_shift_m, -1);
     rb_define_method(rb_cArray, "unshift", rb_ary_unshift_m, -1);
     rb_define_method(rb_cArray, "insert", rb_ary_insert, -1);
     rb_define_method(rb_cArray, "each", rb_ary_each, 0);
@@ -3013,7 +3075,7 @@ Init_Array()
     rb_define_method(rb_cArray, "collect!", rb_ary_collect_bang, 0);
     rb_define_method(rb_cArray, "map", rb_ary_collect, 0);
     rb_define_method(rb_cArray, "map!", rb_ary_collect_bang, 0);
-    rb_define_method(rb_cArray, "select", rb_ary_select, -1);
+    rb_define_method(rb_cArray, "select", rb_ary_select, 0);
     rb_define_method(rb_cArray, "values_at", rb_ary_values_at, -1);
     rb_define_method(rb_cArray, "delete", rb_ary_delete, 1);
     rb_define_method(rb_cArray, "delete_at", rb_ary_delete_at_m, 1);

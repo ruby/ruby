@@ -1,3 +1,15 @@
+Wed Jun 16 16:05:17 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (ary_new): move alloc behind checks.  [ruby-core:02982]
+
+	* array.c (rb_ary_pop_m, rb_ary_shift_m): take arg to behave as push
+	  and unshift.
+
+	* array.c (rb_ary_first, rb_ary_last): make shared array for result
+	  array, and correct doc for Array#first(n) and Array#last(n)
+
+	* array.c (rb_ary_select): not accept any arg.
+
 Wed Jun 16 16:03:59 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (rb_class_inherited_p): singleton class inherits Class
