@@ -1,3 +1,7 @@
+Fri Nov 28 19:28:18 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (env_has_value, env_index): must match exactly.
+
 Fri Nov 28 17:59:20 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* test/ruby/test_env.rb: add tests for ENV.
