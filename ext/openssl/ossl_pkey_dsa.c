@@ -140,7 +140,8 @@ ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
 	arg = ossl_to_der_if_possible(arg);
 	in = ossl_obj2bio(arg);
 	dsa = PEM_read_bio_DSAPrivateKey(in, NULL, ossl_pem_passwd_cb, passwd);
-	if (!dsa) { BIO_reset(in);
+	if (!dsa) {
+	    BIO_reset(in);
 	    dsa = PEM_read_bio_DSAPublicKey(in, NULL, NULL, NULL);
 	}
 	if (!dsa) {
@@ -223,6 +224,31 @@ ossl_dsa_export(int argc, VALUE *argv, VALUE self)
 	}
     }
     str = ossl_membio2str(out);
+
+    return str;
+}
+
+static VALUE
+ossl_dsa_to_der(VALUE self)
+{
+    EVP_PKEY *pkey;
+    int (*i2d_func)_((DSA*, unsigned char**));
+    unsigned char *p;
+    long len;
+    VALUE str;
+
+    GetPKeyDSA(self, pkey);
+    if(DSA_HAS_PRIVATE(pkey->pkey.dsa))
+	i2d_func = (int(*)_((DSA*,unsigned char**)))i2d_DSAPrivateKey;
+    else
+	i2d_func = i2d_DSA_PUBKEY;
+    if((len = i2d_func(pkey->pkey.dsa, NULL)) <= 0)
+	ossl_raise(eDSAError, NULL);
+    str = rb_str_new(0, len);
+    p = RSTRING(str)->ptr;
+    if(i2d_func(pkey->pkey.dsa, &p) < 0)
+	ossl_raise(eDSAError, NULL);
+    ossl_str_adjust(str, p);
 
     return str;
 }
@@ -363,6 +389,7 @@ Init_ossl_dsa()
     rb_define_method(cDSA, "export", ossl_dsa_export, -1);
     rb_define_alias(cDSA, "to_pem", "export");
     rb_define_alias(cDSA, "to_s", "export");
+    rb_define_method(cDSA, "to_der", ossl_dsa_to_der, 0);
     rb_define_method(cDSA, "public_key", ossl_dsa_to_public_key, 0);
     rb_define_method(cDSA, "syssign", ossl_dsa_sign, 1);
     rb_define_method(cDSA, "sysverify", ossl_dsa_verify, 2);

@@ -1,3 +1,17 @@
+Thu Jan  8 21:17:43 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_pkey.c (ossl_pkey_to_der): removed; it returns 
+	  public key only.
+
+	* ext/openssl/ossl_pkey_dh.c (ossl_dh_to_der): new function for
+	  OpenSSL::PKey::DH#to_der.
+
+	* ext/openssl/ossl_pkey_dsa.c (ossl_dsa_to_der): new function for
+	  OpenSSL::PKey::DSA#to_der.
+
+	* ext/openssl/ossl_pkey_rsa.c (ossl_rsa_to_der): new function for
+	  OpenSSL::PKey::RSA#to_der.
+
 Thu Jan  8 18:25:29 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (glob_helper): should not recurse in exceptional status.

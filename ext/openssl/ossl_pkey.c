@@ -145,26 +145,6 @@ ossl_pkey_initialize(VALUE self)
 }
 
 static VALUE
-ossl_pkey_to_der(VALUE self)
-{
-    EVP_PKEY *pkey;
-    VALUE str;
-    long len;
-    unsigned char *p;
-    
-    GetPKey(self, pkey);
-    if((len = i2d_PUBKEY(pkey, NULL)) <= 0)
-	ossl_raise(ePKeyError, NULL);
-    str = rb_str_new(0, len);
-    p = RSTRING(str)->ptr;
-    if(len = i2d_PUBKEY(pkey, &p) <= 0)
-	ossl_raise(ePKeyError, NULL);
-    ossl_str_adjust(str, p);
-
-    return str;
-}
-
-static VALUE
 ossl_pkey_sign(VALUE self, VALUE digest, VALUE data)
 {
     EVP_PKEY *pkey;
@@ -226,7 +206,6 @@ Init_ossl_pkey()
     rb_define_alloc_func(cPKey, ossl_pkey_alloc);
     rb_define_method(cPKey, "initialize", ossl_pkey_initialize, 0);
 
-    rb_define_method(cPKey, "to_der", ossl_pkey_to_der, 0);
     rb_define_method(cPKey, "sign", ossl_pkey_sign, 2);
     rb_define_method(cPKey, "verify", ossl_pkey_verify, 3);
 	

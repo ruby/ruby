@@ -199,6 +199,26 @@ ossl_dh_export(VALUE self)
     return str;
 }
 
+static VALUE
+ossl_dh_to_der(VALUE self)
+{       
+    EVP_PKEY *pkey;
+    unsigned char *p;
+    long len;
+    VALUE str;
+
+    GetPKeyDH(self, pkey);
+    if((len = i2d_DHparams(pkey->pkey.dh, NULL)) <= 0)
+	ossl_raise(eDHError, NULL);
+    str = rb_str_new(0, len);
+    p = RSTRING(str)->ptr;
+    if(i2d_DHparams(pkey->pkey.dh, &p) < 0)
+	ossl_raise(eDHError, NULL);
+    ossl_str_adjust(str, p);
+
+    return str;
+}
+
 /*
  * Stores all parameters of key to the hash
  * INSECURE: PRIVATE INFORMATIONS CAN LEAK OUT!!!
@@ -341,6 +361,7 @@ Init_ossl_dh()
     rb_define_method(cDH, "export", ossl_dh_export, 0);
     rb_define_alias(cDH, "to_pem", "export");
     rb_define_alias(cDH, "to_s", "export");
+    rb_define_method(cDH, "to_der", ossl_dh_to_der, 0);
     rb_define_method(cDH, "public_key", ossl_dh_to_public_key, 0);
 
     rb_define_method(cDH, "params_ok?", ossl_dh_check_params, 0);
