@@ -118,7 +118,7 @@ apply2files(func, vargs, arg)
 
 /*
  *  call-seq:
- *     file.path -> file_ame
+ *     file.path -> filename
  *  
  *  Returns the pathname used to create <i>file</i> as a string. Does
  *  not normalize the name.
