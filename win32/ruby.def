@@ -546,7 +546,8 @@ EXPORTS
 	rb_f_untrace_var
 	rb_gvar_get
 	rb_gvar_set
-	rb_gvar_set2
+	rb_gv_get
+	rb_gv_set
 	rb_gvar_defined
 	rb_f_global_variables
 	rb_alias_variable
