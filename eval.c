@@ -4784,7 +4784,8 @@ struct METHOD {
 };
 
 static void
-bm_mark(struct METHOD *data)
+bm_mark(data)
+    struct METHOD *data;
 {
     gc_mark(data->oklass);
     gc_mark(data->klass);

@@ -1270,16 +1270,16 @@ static VALUE
 str_reverse_bang(str)
     VALUE str;
 {
-    UCHAR *s, *e, *p;
+    UCHAR *s, *e, *p, *q;
 
     s = RSTRING(str)->ptr;
     e = s + RSTRING(str)->len - 1;
-    p = ALLOCA_N(char, RSTRING(str)->len);
+    p = q = ALLOCA_N(char, RSTRING(str)->len);
 
     while (e >= s) {
 	*p++ = *e--;
     }
-    MEMCPY(RSTRING(str)->ptr, p, char, RSTRING(str)->len);
+    MEMCPY(RSTRING(str)->ptr, q, char, RSTRING(str)->len);
 
     return str;
 }

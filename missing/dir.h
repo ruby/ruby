@@ -1,4 +1,4 @@
-/* $RCSfile: dir.h,v $$Revision: 1.1.1.2 $$Date: 1998/01/16 04:14:54 $
+/* $RCSfile: dir.h,v $$Revision: 4.0.1.1 $$Date: 91/06/07  11:22:10 $
  *
  *    (C) Copyright 1987, 1990 Diomidis Spinellis.
  *
@@ -6,9 +6,6 @@
  *    License or the Artistic License, as specified in the README file.
  *
  * $Log: dir.h,v $
- * Revision 1.1.1.2  1998/01/16 04:14:54  matz
- * *** empty log message ***
- *
  * Revision 4.0.1.1  91/06/07  11:22:10  lwall
  * patch4: new copyright notice
  * 
@@ -64,7 +61,7 @@ void rewinddir(DIR *dirp);
 void closedir(DIR *dirp);
 
 #endif /* __DIR_INCLUDED */
-/* $RCSfile: dir.h,v $$Revision: 1.1.1.2 $$Date: 1998/01/16 04:14:54 $
+/* $RCSfile: dir.h,v $$Revision: 1.1.1.2.2.1 $$Date: 1998/01/16 12:36:08 $
  *
  *    (C) Copyright 1987, 1990 Diomidis Spinellis.
  *
@@ -72,6 +69,9 @@ void closedir(DIR *dirp);
  *    License or the Artistic License, as specified in the README file.
  *
  * $Log: dir.h,v $
+ * Revision 1.1.1.2.2.1  1998/01/16 12:36:08  matz
+ * *** empty log message ***
+ *
  * Revision 1.1.1.2  1998/01/16 04:14:54  matz
  * *** empty log message ***
  *
@@ -128,7 +128,7 @@ void rewinddir(DIR *dirp);
 void closedir(DIR *dirp);
 
 #endif /* __DIR_INCLUDED */
-/* $RCSfile: dir.h,v $$Revision: 1.1.1.2 $$Date: 1998/01/16 04:14:54 $
+/* $RCSfile: dir.h,v $$Revision: 1.1.1.2.2.1 $$Date: 1998/01/16 12:36:08 $
  *
  *    (C) Copyright 1987, 1990 Diomidis Spinellis.
  *
@@ -136,6 +136,9 @@ void closedir(DIR *dirp);
  *    License or the Artistic License, as specified in the README file.
  *
  * $Log: dir.h,v $
+ * Revision 1.1.1.2.2.1  1998/01/16 12:36:08  matz
+ * *** empty log message ***
+ *
  * Revision 1.1.1.2  1998/01/16 04:14:54  matz
  * *** empty log message ***
  *

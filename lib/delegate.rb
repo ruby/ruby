@@ -1,8 +1,8 @@
 #  Delegation class that delegates even methods defined in super class,
 # which can not be covered with normal method_missing hack.
 #  
-#  Delegater is the abstract delegation class. Need to redefine
-# `__getobj__' method in the subclass.  SimpleDelegater is the 
+#  Delegator is the abstract delegation class. Need to redefine
+# `__getobj__' method in the subclass.  SimpleDelegator is the 
 # concrete subclass for simple delegation.
 #
 # Usage:

@@ -5,6 +5,10 @@ Thu Mar 26 11:51:09 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* eval.c (block_pass): block argument can be nil, which means no
 	  block is supplied for the method.
 
+Wed Mar 25 21:20:13 1998  Tadayoshi Funaba  <tadf@kt.rim.or.jp>
+
+	* string.c (str_reverse_bang): string copied to wrong place.
+
 Wed Mar 25 08:12:07 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* numeric.c (flo_modulo): caused SEGV if left operand is not a
@@ -29,7 +33,7 @@ Tue Mar 24 12:50:06 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 Mon Mar 23 12:44:12 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
-	* string.c (str_chomp_bang): now takes rs as an argument.
+	* string.c (str_chomp_bang): now takes `rs' as an argument.
 
 	* eval.c (thread_free): main_thread should not be freed.
 

@@ -172,7 +172,11 @@ extern long re_syntax_options;
 extern const unsigned char *mbctab;
 extern int current_mbctype;
 
+#ifdef __STDC__
 void mbcinit (int);
+#else
+void mbcinit ();
+#endif
 
 #undef ismbchar
 #define ismbchar(c) mbctab[(unsigned char)(c)]

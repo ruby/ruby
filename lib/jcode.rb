@@ -11,11 +11,11 @@ class String
   alias original_succ succ
   private :original_succ
 
-  def mbchar?(c)
+  def mbchar?
     if $KCODE =~ /^s/i
-      c =~ /[\x81-\x9f\xe0-\xef][\x40-\x7e\x80-\xfc]/n
+      self =~ /[\x81-\x9f\xe0-\xef][\x40-\x7e\x80-\xfc]/n
     elsif $KCODE =~ /^e/i
-      c =~ /[\xa1-\xfe][\xa1-\xfe]/n
+      self =~ /[\xa1-\xfe][\xa1-\xfe]/n
     else
       FALSE
     end
@@ -25,7 +25,7 @@ class String
     if self[-2] && self[-2] & 0x80 != 0
       s = self.dup
       s[-1] += 1
-      s[-1] += 1 if !mbchar?(s)
+      s[-1] += 1 if !s.mbchar?
       return s
     else
       original_succ
@@ -42,7 +42,7 @@ class String
       if self[0..-2] == to[0..-2]
 	first = self[-2].chr
 	for c in self[-1] .. to[-1]
-	  if mbchar?(first+c.chr)
+	  if first+c.chr.mbchar?
 	    yield self[0..-2]+c.chr
 	  end
 	end

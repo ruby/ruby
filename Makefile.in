@@ -42,8 +42,8 @@ OBJS	      = array.o \
 		hash.o \
 		inits.o \
 		io.o \
-		math.o \
 		marshal.o \
+		math.o \
 		numeric.o \
 		object.o \
 		pack.o \
