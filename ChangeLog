@@ -1,5 +1,7 @@
 Sun Jan 11 02:35:53 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
+	* ext/socket/socket.c (make_hostent): a bug in brace position.
+
 	* configure.in: install rdoc by default. if you do not want to
 	  install rdoc, specify --disable-install-doc.
 

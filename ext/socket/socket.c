@@ -1061,8 +1061,8 @@ make_hostent(addr, ipaddr)
 	    }
 #if defined(HAVE_GETIPNODEBYNAME)
 	    freehostent(h);
-	}
 #endif
+	}
     }
     else {
 	names = rb_ary_new2(0);
@@ -1650,6 +1650,7 @@ unix_sysaccept(sock)
     return s_accept(0, fileno(fptr->f), (struct sockaddr*)&from, &fromlen);
 }
 
+#ifdef HAVE_SYS_UN_H
 static VALUE
 unixaddr(sockaddr)
     struct sockaddr_un *sockaddr;
@@ -1657,6 +1658,7 @@ unixaddr(sockaddr)
     return rb_assoc_new(rb_str_new2("AF_UNIX"),
 			rb_str_new2(sockaddr->sun_path));
 }
+#endif
 
 static VALUE
 unix_addr(sock)
