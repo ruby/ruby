@@ -407,11 +407,21 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    {
 			$$ = NEW_IF(cond($3), $1, 0);
 		        fixpos($$, $3);
+			if (nd_type($$->nd_cond) == NODE_NOT) {
+			    $$->nd_cond = $$->nd_cond->nd_body;
+		            $$->nd_else = $$->nd_body;
+		            $$->nd_body = 0;
+			}
 		    }
 		| stmt kUNLESS_MOD expr_value
 		    {
 			$$ = NEW_UNLESS(cond($3), $1, 0);
 		        fixpos($$, $3);
+			if (nd_type($$->nd_cond) == NODE_NOT) {
+			    $$->nd_cond = $$->nd_cond->nd_body;
+		            $$->nd_body = $$->nd_else;
+		            $$->nd_else = 0;
+			}
 		    }
 		| stmt kWHILE_MOD expr_value
 		    {
@@ -421,6 +431,10 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			else {
 			    $$ = NEW_WHILE(cond($3), $1, 1);
 			}
+			if (nd_type($$->nd_cond) == NODE_NOT) {
+			    $$->nd_cond = $$->nd_cond->nd_body;
+			    nd_set_type($$, NODE_UNTIL);
+			}
 		    }
 		| stmt kUNTIL_MOD expr_value
 		    {
@@ -429,6 +443,10 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			}
 			else {
 			    $$ = NEW_UNTIL(cond($3), $1, 1);
+			}
+			if (nd_type($$->nd_cond) == NODE_NOT) {
+			    $$->nd_cond = $$->nd_cond->nd_body;
+			    nd_set_type($$, NODE_WHILE);
 			}
 		    }
 		| klBEGIN
@@ -1440,6 +1458,12 @@ primary		: literal
 		    {
 			$$ = NEW_IF(cond($2), $4, $5);
 		        fixpos($$, $2);
+			if (nd_type($$->nd_cond) == NODE_NOT) {
+		            NODE *tmp = $$->nd_body;
+			    $$->nd_cond = $$->nd_cond->nd_body;
+		            $$->nd_body = $$->nd_else;
+		            $$->nd_else = tmp;
+			}
 		    }
 		| kUNLESS expr_value then
 		  compstmt
@@ -1448,6 +1472,12 @@ primary		: literal
 		    {
 			$$ = NEW_UNLESS(cond($2), $4, $5);
 		        fixpos($$, $2);
+			if (nd_type($$->nd_cond) == NODE_NOT) {
+		            NODE *tmp = $$->nd_body;
+			    $$->nd_cond = $$->nd_cond->nd_body;
+		            $$->nd_body = $$->nd_else;
+		            $$->nd_else = tmp;
+			}
 		    }
 		| kWHILE {COND_PUSH(1);} expr_value do {COND_POP();}
 		  compstmt
@@ -1455,6 +1485,10 @@ primary		: literal
 		    {
 			$$ = NEW_WHILE(cond($3), $6, 1);
 		        fixpos($$, $3);
+			if (nd_type($$->nd_cond) == NODE_NOT) {
+			    $$->nd_cond = $$->nd_cond->nd_body;
+			    nd_set_type($$, NODE_UNTIL);
+			}
 		    }
 		| kUNTIL {COND_PUSH(1);} expr_value do {COND_POP();} 
 		  compstmt
@@ -1462,6 +1496,10 @@ primary		: literal
 		    {
 			$$ = NEW_UNTIL(cond($3), $6, 1);
 		        fixpos($$, $3);
+			if (nd_type($$->nd_cond) == NODE_NOT) {
+			    $$->nd_cond = $$->nd_cond->nd_body;
+			    nd_set_type($$, NODE_WHILE);
+			}
 		    }
 		| kCASE expr_value opt_terms
 		  case_body

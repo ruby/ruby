@@ -2209,6 +2209,7 @@ rb_eval(self, n)
     VALUE self;
     NODE *n;
 {
+    NODE * volatile contnode = 0;
     NODE * volatile node = n;
     int state;
     volatile VALUE result = Qnil;
@@ -2224,10 +2225,10 @@ rb_eval(self, n)
     ruby_current_node = node;
     switch (nd_type(node)) {
       case NODE_BLOCK:
-	while (node->nd_next) {
-	    rb_eval(self, node->nd_head);
-	    node = node->nd_next;
+	if (contnode) {
+	    rb_bug("nested NODE_BLOCK");
 	}
+	contnode = node->nd_next;
 	node = node->nd_head;
 	goto again;
 
@@ -3391,7 +3392,6 @@ rb_eval(self, n)
 	break;
 
       case NODE_NEWLINE:
-	ruby_sourceline = node->nd_nth;
 	if (trace_func) {
 	    call_trace_func("line", node, self,
 			    ruby_frame->last_func,
@@ -3405,6 +3405,11 @@ rb_eval(self, n)
     }
   finish:
     CHECK_INTS;
+    if (contnode) {
+	node = contnode;
+	contnode = 0;
+	goto again;
+    }
     return result;
 }
 
@@ -4304,7 +4309,7 @@ rb_with_disable_interrupt(proc, data)
     return result;
 }
 
-static void
+static inline void
 stack_check()
 {
     static int overflowing = 0;
