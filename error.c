@@ -702,6 +702,32 @@ rb_sys_fail(mesg)
 }
 
 void
+#ifdef HAVE_STDARG_PROTOTYPES
+rb_sys_warning(const char *fmt, ...)
+#else
+rb_sys_warning(fmt, va_alist)
+     const char *fmt;
+     va_dcl
+#endif
+{
+     char buf[BUFSIZ];
+     va_list args;
+     int errno_save;
+     
+     errno_save = errno;
+
+     if (!RTEST(ruby_verbose)) return;
+
+     snprintf(buf, BUFSIZ, "warning: %s", fmt);
+     snprintf(buf+strlen(buf), BUFSIZ-strlen(buf), ": %s", strerror(errno_save));
+     
+     va_init_list(args, fmt);
+     warn_print(buf, args);
+     va_end(args);
+     errno = errno_save;
+}
+
+void
 rb_load_fail(path)
     char *path;
 {

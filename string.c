@@ -349,7 +349,6 @@ rb_str_substr(str, beg, len)
 
     if (len < 0) return Qnil;
     if (beg > RSTRING(str)->len) return Qnil;
-    if (beg == RSTRING(str)->len && len > 0) return Qnil;
     if (beg < 0) {
 	beg += RSTRING(str)->len;
 	if (beg < 0) return Qnil;

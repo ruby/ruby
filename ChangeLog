@@ -1,3 +1,16 @@
+Mon Feb 19 17:46:37 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_substr): "a"[1,2] should return ""; need
+	  rubicon upgrade.
+
+Mon Feb 19 12:10:36 2001  Triet H. Lai  <thlai@mail.usyd.edu.au>
+
+	* error.c (endif): new function to give warning with strerror()
+	  message. 
+
+	* dir.c (rb_glob_helper): better error handling, along with
+	  performance tune.
+
 Mon Feb 19 01:55:43 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (secure_visibility): visibility check for untainted modules.

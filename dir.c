@@ -594,6 +594,11 @@ rb_glob_helper(path, flag, func, arg)
 	if (rb_sys_stat(path, &st) == 0) {
 	    (*func)(path, arg);
 	}
+	else {
+	    /* In case stat error is other than ENOENT and
+	       we may want to know what is wrong. */
+	    rb_sys_warning(path);
+	}
 	return;
     }
 
@@ -617,27 +622,29 @@ rb_glob_helper(path, flag, func, arg)
 	    else dir = base;
 
 	    magic = extract_elem(p);
-	    if (m && strcmp(magic, "**") == 0) {
-		recursive = 1;
-		buf = ALLOC_N(char, strlen(base)+strlen(m)+3);
-		sprintf(buf, "%s%s%s", base, (*base)?"":".", m);
-		rb_glob_helper(buf, flag, func, arg);
-		free(buf);
-	    }
 	    if (lstat(dir, &st) < 0) {
+	        rb_sys_warning(dir);
 	        free(base);
 	        break;
 	    }
 	    if (S_ISDIR(st.st_mode)) {
+		if (m && strcmp(magic, "**") == 0) {
+		    recursive = 1;
+		    buf = ALLOC_N(char, strlen(base)+strlen(m)+3);
+		    sprintf(buf, "%s%s%s", base, (*base)?"":".", m);
+		    rb_glob_helper(buf, flag, func, arg);
+		    free(buf);
+		}
 	       dirp = opendir(dir);
 	       if (dirp == NULL) {
+		   rb_sys_warning(dir);
 		   free(base);
 		   break;
 	       }
 	    }
 	    else {
-	      free(base);
-	      break;
+		free(base);
+		break;
 	    }
 	    
 #define BASE (*base && !(*base == '/' && !base[1]))
@@ -647,8 +654,16 @@ rb_glob_helper(path, flag, func, arg)
 		    if (strcmp(".", dp->d_name) == 0 || strcmp("..", dp->d_name) == 0)
 			continue;
 		    buf = ALLOC_N(char, strlen(base)+NAMLEN(dp)+strlen(m)+6);
-		    sprintf(buf, "%s%s%s/**%s", base, (BASE)?"/":"", dp->d_name, m);
-		    rb_glob_helper(buf, flag, func, arg);
+		    sprintf(buf, "%s%s%s/", base, (BASE)?"/":"", dp->d_name);
+		    if (lstat(buf, &st) < 0) {
+		        rb_sys_warning(buf);
+			continue;
+		    }
+		    if (S_ISDIR(st.st_mode)) {
+		        strcat(buf, "**");
+			strcat(buf, m);
+			rb_glob_helper(buf, flag, func, arg);
+		    }
 		    free(buf);
 		    continue;
 		}
@@ -670,20 +685,24 @@ rb_glob_helper(path, flag, func, arg)
 	    free(base);
 	    free(magic);
 	    while (link) {
-		lstat(link->path, &st); /* should success */
-		if (S_ISDIR(st.st_mode)) {
-		    int len = strlen(link->path);
-		    int mlen = strlen(m);
-		    char *t = ALLOC_N(char, len+mlen+1);
+		if (lstat(link->path, &st) == 0) {
+		    if (S_ISDIR(st.st_mode)) {
+			int len = strlen(link->path);
+			int mlen = strlen(m);
+			char *t = ALLOC_N(char, len+mlen+1);
 
-		    sprintf(t, "%s%s", link->path, m);
-		    rb_glob_helper(t, flag, func, arg);
-		    free(t);
+			sprintf(t, "%s%s", link->path, m);
+			rb_glob_helper(t, flag, func, arg);
+			free(t);
+		    }
+		    tmp = link;
+		    link = link->next;
+		    free(tmp->path);
+		    free(tmp);
 		}
-		tmp = link;
-		link = link->next;
-		free(tmp->path);
-		free(tmp);
+		else {
+		    rb_sys_warning(link->path);
+		}
 	    }
 	}
 	p = m;
