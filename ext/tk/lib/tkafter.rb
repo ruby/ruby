@@ -5,7 +5,7 @@
 #
 require 'tk'
 
-class TkAfter
+class TkTimer
   include TkCore
   extend TkCore
 
@@ -20,19 +20,19 @@ class TkAfter
   end
 
   INTERP._invoke("proc", "rb_after", "id", 
-                 "ruby [format \"TkAfter.callback %%Q!%s!\" $id]")
+                 "ruby [format \"#{self.name}.callback %%Q!%s!\" $id]")
 
   ###############################
   # class methods
   ###############################
-  def TkAfter.callback(obj_id)
+  def self.callback(obj_id)
     @after_id = nil
     ex_obj = Tk_CBTBL[obj_id]
     return nil if ex_obj == nil; # canceled
     _get_eval_string(ex_obj.do_callback)
   end
 
-  def TkAfter.info
+  def self.info
     tk_call('after', 'info').split(' ').collect!{|id|
       ret = Tk_CBTBL.find{|key,val| val.after_id == id}
       (ret == nil)? id: ret[1]
@@ -68,6 +68,7 @@ class TkAfter
     @after_id = tk_call('after', sleep, @after_script)
     @current_args = args
     @current_script = [sleep, @after_script]
+    self
   end
 
   def set_next_callback(args)
@@ -286,11 +287,12 @@ class TkAfter
   alias stop cancel
 
   def continue(wait=nil)
+    fail RuntimeError, "is already running" if @running
     sleep, cmd = @current_script
-    return nil if cmd == nil || @running == true
+    fail RuntimeError, "no procedure to continue" unless cmd
     if wait
       if not wait.kind_of? Integer
-	fail format("%s need to be Integer", wait.inspect)
+	fail RuntimeError, format("%s need to be Integer", wait.inspect)
       end
       sleep = wait
     end
@@ -301,7 +303,7 @@ class TkAfter
   end
 
   def skip
-    return nil if @running == false
+    fail RuntimeError, "is not running now" unless @running
     cancel
     Tk_CBTBL[@id] = self
     @running = true
@@ -319,4 +321,4 @@ class TkAfter
   end
 end
 
-TkTimer = TkAfter
+TkAfter = TkTimer

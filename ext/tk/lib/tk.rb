@@ -765,7 +765,7 @@ module TkCore
     TclTkLib.mainloop_watchdog(check_root)
   end
 
-  def do_one_event(flag = 0)
+  def do_one_event(flag = TclTkLib::EventFlag::ALL)
     TclTkLib.do_one_event(flag)
   end
 
@@ -775,6 +775,14 @@ module TkCore
 
   def get_eventloop_tick()
     TclTkLib.get_eventloop_tick
+  end
+
+  def set_no_event_wait(wait)
+    TclTkLib.set_no_even_wait(wait)
+  end
+
+  def get_no_event_wait()
+    TclTkLib.get_no_eventloop_wait
   end
 
   def set_eventloop_weight(loop_max, no_event_tick)
@@ -970,6 +978,10 @@ module Tk
 
   def Tk.destroy(*wins)
     tk_call('destroy', *wins)
+  end
+
+  def Tk.exit
+    tk_call('destroy', '.')
   end
 
   def Tk.current_grabs

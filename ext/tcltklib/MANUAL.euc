@@ -1,4 +1,20 @@
 (tof)
+                                    2003/06/19  Hidetoshi NAGAI
+
+本ドキュメントには古い tcltk ライブラリ，tcltklib ライブラリの説明
+が含まれていますが，その記述内容は古いものとなっています．
+
+tcltk ライブラリ（tcltk.rb）は現在ではメンテナンスが事実上行われて
+いないため，古いドキュメントの説明がそのまま有効です．それに対し，
+tcltklib ライブラリについては，現在の Ruby/Tk（tk.rb 以下のライブラ
+リ群）を稼働させるための中心としてメンテナンスされているため，少々
+違いが生じています．
+
+そこで，まず古い説明文書を示した後，現在の tcltklib ライブラリにつ
+いての説明を加えます．
+
+以下がライブラリの古い説明文書です．
+==============================================================
 	MANUAL.euc
 		Sep. 19, 1997	Y. Shigehiro
 
@@ -120,5 +136,155 @@ require "tcltklib" すると, 以下のモジュール, クラスが利用可能です.
       直前の Tcl_Eval の戻り値を返します. 0(TCL_OK) で正常終了です.
     引数: 無し
     戻り値 (Fixnum): 直前の Tcl_Eval() が返した値.
+
+==============================================================
+
+以下が本ドキュメント作成時点での tcltklib ライブラリの説明です．
+==============================================================
+モジュール TclTkLib
+   : 個々の Tcl/Tk インタープリタに依存しない処理 ( == イベントルー
+   : プに関する処理 ) を呼び出すメソッドを定義したモジュール．
+
+   モジュール TclTkLib::EventFlag
+      : do_one_event を呼び出す際の処理対象イベントを指定するための
+      : フラグ ( WINDOW|DONT_WAIT というようにビット演算子で連結して
+      : 指定 ) を定数として定義したモジュール．以下の定数が含まれる．
+
+      定数  NONE
+         : いかなる種類のイベントも処理対象としない ( == 0 )
+
+      定数  WINDOW
+         : window イベントを処理対象とする
+
+      定数  FILE
+         : file イベントを処理対象とする
+
+      定数  TIMER
+         : timer イベントを処理対象とする
+
+      定数  IDLE
+         : アイドルループ処理 ( 再描画など，他の種類のイベントが発生
+         : していないときに行われる処理 ) を処理対象とする
+
+      定数  ALL
+         : すべての種類のイベントを処理対象とする
+         : WINDOW|FILE|TIMER|IDLE と同じ
+
+      定数  DONT_WAIT
+         : 処理対象イベントが存在しない場合に，イベント発生を待たず
+         : に do_one_event を終了 ( false を返す ) する 
+
+   モジュールメソッド
+      mainloop(check_root = true)
+         : イベントループを起動する．check_root が true であれば，
+         : root widget が存在する限り，このメソッドは終了しない．
+         : check_root が false の場合は，root widget が消滅しても
+         : このメソッドは終了しない ( root widget が消滅しても，
+         : WINDOW 以外のイベントは発生しうるため )．終了には，外部
+         : からの働き掛け ( スレッドを活用するなど ) が必要．
+
+      mainloop_watchdog(check_root = true)
+         : 通常のイベントループでは，イベント処理の内容によっては
+         : デッドロックを引き起こす可能性がある (例えばイベントに
+         : 対するコールバック処理中で widget 操作をし，その終了を
+         : 待つなど)．このメソッドは，そうしたデッドロックを回避す
+         : るための監視スレッド付きでイベントループを起動する
+         : ( 監視スレッドを生成した後にイベントループを実行する )．
+         : 引数の意味は mainloop と同じである．
+
+      do_one_event(flag = TclTkLib::EventFlag::ALL)
+         : 処理待ちのイベント 1 個を実行する．
+         : イベントを処理した場合は true を返す．
+         : フラグで DONT_WAIT を指定していない場合，フラグで処理対
+         : 象となっている種類のイベントが発生するまで待ち続ける．
+         : DONT_WAIT を指定していた場合，処理対象イベントがなくても
+         : すぐに終了し false を返す．
+
+      set_eventloop_tick(timer_tick)
+         : イベントループと同時に別スレッドが稼働している場合に，時
+         : 間に基づいた強制的なスレッドスイッチングをどの程度の頻度
+         : ( 時間間隔 ) で発生させるかをミリ秒単位の整数値で指定する．
+         : 0 を指定すると，この強制的なスイッチングは行われない．
+         : 標準では 0 に設定されており，イベント処理数に基づくスイッ
+         : チングだけが行われる ( see set_eventloop_weight )．
+         : ただし，稼働しているスレッドがイベントループだけの場合，
+         : timer_tick を 0 に設定することはできない．もし設定されて
+         : いたら，200 ms ( see NO_THREAD_INTERRUPT_TIME ) に自動設
+         : 定される．
+         : 詳細な説明は略すが，これは CPU パワーを節約しつつ安全で
+         : 安定した動作を実現するために実装した仕様である．
+
+      get_eventloop_tick
+         : timer_tick の現在値を返す．
+
+      set_no_event_wait(no_event_wait)
+         : 複数のスレッドが稼働している場合で，処理待ちイベントが全
+         : く存在しなかった際に sleep 状態に入る時間長を指定する．
+         : 稼働スレッドがイベントループだけの場合には意味をなさない．
+         : デフォルトの値は 20 (ms)
+
+      get_no_event_wait
+         : no_event_wait の現在値を返す．
+
+      set_eventloop_weight(loop_max, no_event_tick)
+         : 複数のスレッドが稼働している際に Ruby/Tk のイベントルー
+         : プに割り当てる比重を定めるためのパラメータを設定する．
+         : 稼働スレッドがイベントループだけの場合には意味をなさない．
+         : 一度のスレッド切り替えの間に処理するイベントの最大数と，
+         : 処理待ちのイベントが存在しない際の加算数とを設定する．
+         : 処理待ちイベントが存在しない場合は no_event_wait ( see 
+         : set_no_event_wait ) だけの間 sleep 状態に入る．
+         : デフォルトではそれぞれ 800 回と 10 回，つまり，800 個のイ
+         : ベント (アイドルイベントを含む) を処理するとか，イベント
+         : が全く発生しないままに 80 回の処理待ちイベント検査が完了
+	 : するとかでカウントが 800 以上になるとスレッドスイッチング
+         : が発生することになる．
+
+      get_eventloop_weight
+         : 現在の loop_max と no_event_tick との値を返す．
+         : ( see set_eventloop_wait )
+
+クラス TclTkIp
+   インスタンスメソッド
+      restart
+         : Tcl/Tk インタープリタの Tk 部分の初期化，再起動を行う．
+         : 一旦 root widget を破壊した後に再度 Tk の機能が必要と
+         : なった場合に用いる．
+
+      _eval(str)
+      _invoke(*args)
+         : Tcl/Tk インタープリタ上で評価を行う．
+         : _eval は評価スクリプトが一つの文字列であることに対し，
+         : _invoke は評価スクリプトの token ごとに一つの引数とな
+         : るように与える．
+         : _invoke の方は Tcl/Tk インタープリタの字句解析器を用い
+         : ないため，評価の負荷がより少なくてすむ．
+
+
+      _toUTF8(str, encoding)
+      _fromUTF8(str, encoding)
+         : Tcl/Tk が内蔵している UTF8 変換処理を呼び出す．
+
+      _return_value
+         : 直前の Tcl/Tk 上での評価の実行結果としての戻り値を返す．
+
+      mainloop             : 引数を含めて TclTkLib.mainloop に同じ
+      mainloop_watchdog    : 引数を含めて TclTkLib.mainloop_watchdog に同じ
+      do_one_event         : 引数を含めて TclTkLib.do_one_event に同じ
+      set_eventloop_tick   : 引数を含めて TclTkLib.set_eventloop_tick に同じ
+      get_eventloop_tick   : 引数を含めて TclTkLib.get_eventloop_tick に同じ
+      set_eventloop_weight : 引数を含めて TclTkLib.set_eventloop_weight に同じ
+      get_eventloop_weight : 引数を含めて TclTkLib.set_eventloop_weight に同じ
+
+クラス TkCallbackBreak < StandardError
+クラス TkCallbackContinue < StandardError
+   : これらはイベントコールバックにおいて，コールバック処理を適切に中
+   : 断したり，次のバインドタグのバインディング処理に進めたりすること
+   : を可能にするための例外クラスである．
+   : コールバックで break や continue を実現するためには，コールバック
+   : である Ruby 手続きが Tcl/Tk インタープリタ側に適切なリターンコー
+   : ドを返す必要がある．Ruby の手続きが普通に値を返すのでは，それが普
+   : 通の戻り値であるのか否かを区別ができないため，例外発生を利用した
+   : 実装を行っている．
 
 (eof)

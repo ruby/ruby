@@ -153,6 +153,30 @@ get_eventloop_tick(self)
 }
 
 static VALUE
+set_no_event_wait(self, wait)
+    VALUE self;
+    VALUE wait;
+{
+    int t_wait = NUM2INT(wait);
+
+    if (t_wait <= 0) {
+      rb_raise(rb_eArgError, 
+	       "no_event_wait parameter must be positive number");
+    }
+
+    no_event_wait = t_wait;
+
+    return wait;
+}
+
+static VALUE
+get_no_event_wait(self)
+    VALUE self;
+{
+    return INT2NUM(no_event_wait);
+}
+
+static VALUE
 set_eventloop_weight(self, loop_max, no_event)
     VALUE self;
     VALUE loop_max;
@@ -389,14 +413,20 @@ lib_do_one_event(argc, argv, self)
 {
     VALUE obj, vflags;
     int flags;
+    int ret;
 
     if (rb_scan_args(argc, argv, "01", &vflags) == 0) {
-      flags = 0;
+      flags = TCL_ALL_EVENTS;
     } else {
       Check_Type(vflags, T_FIXNUM);
       flags = FIX2INT(vflags);
     }
-    return INT2NUM(Tcl_DoOneEvent(flags));
+    ret = Tcl_DoOneEvent(flags);
+    if (ret) {
+      return Qtrue;
+    } else {
+      return Qfalse;
+    }
 }
 
 /*---- class TclTkIp ----*/
@@ -911,6 +941,7 @@ Init_tcltklib()
 	rb_raise(rb_eLoadError, "tcltklib: tcltk_stubs init error(%d)", ret);
 #endif
 
+    rb_define_const(ev_flag, "NONE",      INT2FIX(0));
     rb_define_const(ev_flag, "WINDOW",    INT2FIX(TCL_WINDOW_EVENTS));
     rb_define_const(ev_flag, "FILE",      INT2FIX(TCL_FILE_EVENTS));
     rb_define_const(ev_flag, "TIMER",     INT2FIX(TCL_TIMER_EVENTS));
@@ -919,7 +950,8 @@ Init_tcltklib()
     rb_define_const(ev_flag, "DONT_WAIT", INT2FIX(TCL_DONT_WAIT));
 
     eTkCallbackBreak = rb_define_class("TkCallbackBreak", rb_eStandardError);
-    eTkCallbackContinue = rb_define_class("TkCallbackContinue",rb_eStandardError);
+    eTkCallbackContinue = rb_define_class("TkCallbackContinue",
+                                          rb_eStandardError);
 
     rb_define_module_function(lib, "mainloop", lib_mainloop, -1);
     rb_define_module_function(lib, "mainloop_watchdog", 
@@ -927,6 +959,8 @@ Init_tcltklib()
     rb_define_module_function(lib, "do_one_event", lib_do_one_event, -1);
     rb_define_module_function(lib, "set_eventloop_tick",set_eventloop_tick,1);
     rb_define_module_function(lib, "get_eventloop_tick",get_eventloop_tick,0);
+    rb_define_module_function(lib, "set_no_event_wait", set_no_event_wait, 1);
+    rb_define_module_function(lib, "get_no_event_wait", get_no_event_wait, 0);
     rb_define_module_function(lib, "set_eventloop_weight", 
 			      set_eventloop_weight, 2);
     rb_define_module_function(lib, "get_eventloop_weight", 
@@ -944,6 +978,8 @@ Init_tcltklib()
     rb_define_method(ip, "do_one_event", lib_do_one_event, -1);
     rb_define_method(ip, "set_eventloop_tick", set_eventloop_tick, 1);
     rb_define_method(ip, "get_eventloop_tick", get_eventloop_tick, 0);
+    rb_define_method(ip, "set_no_event_wait", set_no_event_wait, 1);
+    rb_define_method(ip, "get_no_event_wait", get_no_event_wait, 0);
     rb_define_method(ip, "set_eventloop_weight", set_eventloop_weight, 2);
     rb_define_method(ip, "get_eventloop_weight", get_eventloop_weight, 0);
     rb_define_method(ip, "restart", lib_restart, 0);
