@@ -159,7 +159,7 @@ AC_FUNC_ALLOCA
 AC_FUNC_VFORK
 AC_FUNC_MEMCMP
 AC_REPLACE_FUNCS(dup2 setenv memmove mkdir strcasecmp strerror strftime\
-		 strchr strstr strtoul strdup crypt flock)
+		 strchr strstr strtoul strdup crypt flock snprintf)
 AC_CHECK_FUNCS(fmod killpg drand48 random wait4 waitpid syscall getcwd\
 	      truncate chsize times utimes fcntl lockf setitimer\
 	      setruid seteuid setreuid setrgid setegid setregid\

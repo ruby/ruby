@@ -690,7 +690,6 @@ f_system(argc, argv)
     int pid;
     int i;
 
-    fflush(stdin);		/* is it really needed? */
     fflush(stdout);
     fflush(stderr);
     if (argc == 0) {

@@ -11,9 +11,9 @@ when /beos/
   have_library("net", "socket")
 else
   test_func = "socket"
-  have_library("socket", "socket")
   have_library("inet", "gethostbyname")
   have_library("nsl", "gethostbyname")
+  have_library("socket", "socket")
 end
 have_header("sys/un.h")
 if have_func(test_func)

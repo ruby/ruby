@@ -3748,11 +3748,11 @@ backtrace(lev)
     ary = ary_new();
     if (lev < 0) {
 	if (frame->last_func) {
-	    sprintf(buf, "%s:%d:in `%s'", sourcefile, sourceline,
+	    snprintf(buf, BUFSIZ, "%s:%d:in `%s'", sourcefile, sourceline,
 		    rb_id2name(frame->last_func));
 	}
 	else {
-	    sprintf(buf, "%s:%d", sourcefile, sourceline);
+	    snprintf(buf, BUFSIZ, "%s:%d", sourcefile, sourceline);
 	}
 	ary_push(ary, str_new2(buf));
     }
@@ -3764,12 +3764,12 @@ backtrace(lev)
     }
     while (frame && frame->file) {
 	if (frame->prev && frame->prev->last_func) {
-	    sprintf(buf, "%s:%d:in `%s'",
+	    snprintf(buf, BUFSIZ, "%s:%d:in `%s'",
 		    frame->file, frame->line,
 		    rb_id2name(frame->prev->last_func));
 	}
 	else {
-	    sprintf(buf, "%s:%d", frame->file, frame->line);
+	    snprintf(buf, BUFSIZ, "%s:%d", frame->file, frame->line);
 	}
 	ary_push(ary, str_new2(buf));
 	frame = frame->prev;

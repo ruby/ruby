@@ -1,3 +1,13 @@
+Mon Aug 10 14:05:30 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* process.c (f_system): removed fflush(stdin).
+
+Fri Aug  7 17:44:44 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* error.c (err_snprintf): replace sprintf for fixed sized buffer,
+ 	  with snprintf to avoid buffer over-run.  For systems which does
+	  dot provide snprintf, missing/snprintf.c added.
+
 Tue Jul 28 13:03:25 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* array.c (ary_s_new): argument to specify initial value is added.

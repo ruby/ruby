@@ -1,7 +1,23 @@
 #
 # telnet.rb
-# ver0.12 1998/06/01
+# ver0.122 1998/08/05
 # Wakou Aoyama <wakou@fsinet.or.jp>
+#
+# ver0.122 1998/08/05
+# support for HP-UX 10.20    thanks to WATANABE Tetsuya <tetsu@jpn.hp.com>
+# socket.<< --> socket.write
+#
+# ver0.121 1998/07/15
+# string.+= --> string.concat
+#
+# ver0.12 1998/06/01
+# add timeout, waittime.
+#
+# ver0.11 1998/04/21
+# add realtime output.
+#
+# ver0.10 1998/04/13
+# first release.
 #
 # == make new Telnet object
 # host = Telnet.new({"Binmode" => TRUE,              default: TRUE
@@ -139,14 +155,14 @@ class Telnet < SimpleDelegator
     end
 
     message = "Trying " + @options["Host"] + "...\n"
-    STDOUT << message
-    @log << message if @options.include?("Output_log")
+    STDOUT.write(message)
+    @log.write(message) if @options.include?("Output_log")
 
     is_timeout = timeout(@options["Timeout"]){
       begin
         @sock = TCPsocket.open(@options["Host"], @options["Port"])
       rescue
-        @log << $! << "\n" if @options.include?("Output_log")
+        @log.write($! + "\n") if @options.include?("Output_log")
         raise
       end
     }
@@ -155,8 +171,8 @@ class Telnet < SimpleDelegator
     @sock.binmode if @options["Binmode"]
 
     message = "Connected to " + @options["Host"] + ".\n"
-    STDOUT << message
-    @log << message if @options.include?("Output_log")
+    STDOUT.write(message)
+    @log.write(message) if @options.include?("Output_log")
 
     super(@sock)
   end
@@ -166,7 +182,7 @@ class Telnet < SimpleDelegator
 
     # respond to "IAC DO x" or "IAC DON'T x" with "IAC WON'T x"
     str.gsub!(/([^#{IAC}])?#{IAC}[#{DO}#{DONT}](.|\n)/no){
-        @sock << IAC << WONT << $2
+        @sock.write(IAC + WONT + $2)
         $1
     }
 
@@ -175,7 +191,7 @@ class Telnet < SimpleDelegator
 
     # respond to "IAC AYT" (are you there)
     str.gsub!(/([^#{IAC}])?#{IAC}#{AYT}/no){
-        @sock << "nobody here but us pigeons" << CR
+        @sock.write("nobody here but us pigeons" + CR)
         $1
     }
 
@@ -212,7 +228,7 @@ class Telnet < SimpleDelegator
       ensure
         @log.print(buf) if @options.include?("Output_log")
         yield buf if iterator?
-        line += buf
+        line.concat(buf)
       end
     end
     line
@@ -231,7 +247,7 @@ class Telnet < SimpleDelegator
     end
 
     select(nil, [@sock])
-    @sock << string.gsub(/\n/, CR) << CR
+    @sock.write(string.gsub(/\n/, CR) + CR)
     if iterator?
       waitfor({"Prompt" => match, "Timeout" => timeout}){|c| yield c }
     else
@@ -249,14 +265,14 @@ class Telnet < SimpleDelegator
 
     if iterator?
       line = waitfor(/login[: ]*$/){|c| yield c }
-      line += cmd({"String" => username,
-                   "Match" => /Password[: ]*$/}){|c| yield c }
-      line += cmd(password){|c| yield c }
+      line.concat( cmd({"String" => username,
+                        "Match" => /Password[: ]*$/}){|c| yield c } )
+      line.concat( cmd(password){|c| yield c } )
     else
       line = waitfor(/login[: ]*$/)
-      line += cmd({"String" => username,
-                   "Match" => /Password[: ]*$/})
-      line += cmd(password)
+      line.concat( cmd({"String" => username,
+                        "Match" => /Password[: ]*$/}) )
+      line.concat( cmd(password) )
     end
     line
   end

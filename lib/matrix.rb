@@ -1,8 +1,8 @@
 #
 #   matrix.rb - 
 #   	$Release Version: 1.0$
-#   	$Revision: 1.5 $
-#   	$Date: 1998/07/14 14:35:18 $
+#   	$Revision: 1.6 $
+#   	$Date: 1998/07/31 03:39:49 $
 #       Original Version from Smalltalk-80 version
 #	   on July 23, 1985 at 8:37:17 am
 #   	by Keiju ISHITSUKA
@@ -179,7 +179,7 @@ module ExceptionForMatrix
 end
 
 class Matrix
-  @RCS_ID='-$Id: matrix.rb,v 1.5 1998/07/14 14:35:18 keiju Exp keiju $-'
+  @RCS_ID='-$Id: matrix.rb,v 1.6 1998/07/31 03:39:49 keiju Exp keiju $-'
 
   include ExceptionForMatrix
   
@@ -361,7 +361,7 @@ class Matrix
     
     other.compare_by_row_vectors(@rows)
   end
-  alias eqn? ==
+  alias eql? ==
   
   def compare_by_row_vectors(rows)
     return FALSE unless @rows.size == rows.size
@@ -515,7 +515,7 @@ class Matrix
       end
       
       for i in 0 .. size
-	continue if i == k
+	next if i == k
 	q = a[i][k] / akk
 	a[i][k] = 0
 	
@@ -620,7 +620,7 @@ class Matrix
 	    break
 	  end
 	end while a[i][k] == 0
-	continue if nothing
+	next if nothing
 	a[i], a[k] = a[k], a[i]
 	akk = a[k][k]
       end

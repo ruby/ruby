@@ -32,16 +32,19 @@ extern int   sourceline;
 int nerrs;
 
 static void
-err_sprintf(buf, fmt, args)
+err_snprintf(buf, len, fmt, args)
     char *buf, *fmt;
+    int len;
     va_list args;
 {
     if (!sourcefile) {
-	vsprintf(buf, fmt, args);
+	vsnprintf(buf, len, fmt, args);
     }
     else {
-	sprintf(buf, "%s:%d: ", sourcefile, sourceline);
-	vsprintf((char*)buf+strlen(buf), fmt, args);
+	int n = snprintf(buf, len, "%s:%d: ", sourcefile, sourceline); 
+	if (len > n) {
+	    vsnprintf((char*)buf+n, len-n, fmt, args);
+	}
     }
 }
 
@@ -53,7 +56,7 @@ err_print(fmt, args)
 {
     char buf[BUFSIZ];
 
-    err_sprintf(buf, fmt, args);
+    err_snprintf(buf, BUFSIZ, fmt, args);
     err_append(buf);
 }
 
@@ -87,7 +90,7 @@ Error_Append(fmt, va_alist)
     char buf[BUFSIZ];
 
     va_init_list(args, fmt);
-    vsprintf(buf, fmt, args);
+    vsnprintf(buf, BUFSIZ, fmt, args);
     va_end(args);
     err_append(buf);
 }
@@ -104,7 +107,7 @@ Warn(fmt, va_alist)
     char buf[BUFSIZ];
     va_list args;
 
-    sprintf(buf, "warning: %s", fmt);
+    snprintf(buf, BUFSIZ, "warning: %s", fmt);
 
     va_init_list(args, fmt);
     err_print(buf, args);
@@ -126,7 +129,7 @@ Warning(fmt, va_alist)
 
     if (!RTEST(verbose)) return;
 
-    sprintf(buf, "warning: %s", fmt);
+    snprintf(buf, BUFSIZ, "warning: %s", fmt);
 
     va_init_list(args, fmt);
     err_print(buf, args);
@@ -145,7 +148,7 @@ Bug(fmt, va_alist)
     char buf[BUFSIZ];
     va_list args;
 
-    sprintf(buf, "[BUG] %s", fmt);
+    snprintf(buf, BUFSIZ, "[BUG] %s", fmt);
     rb_in_eval = 0;
 
     va_init_list(args, fmt);
@@ -566,7 +569,7 @@ Init_Exception()
     va_list args;\
     char buf[BUFSIZ];\
     va_init_list(args,fmt);\
-    vsprintf(buf, fmt, args);\
+    vsnprintf(buf, BUFSIZ, fmt, args);\
     va_end(args);\
     rb_raise(exc_new2(klass, buf));\
 }
@@ -677,7 +680,7 @@ Fatal(fmt, va_alist)
     char buf[BUFSIZ];
 
     va_init_list(args, fmt);
-    vsprintf(buf, fmt, args);
+    vsnprintf(buf, BUFSIZ, fmt, args);
     va_end(args);
 
     rb_in_eval = 0;
@@ -704,7 +707,7 @@ rb_sys_fail(mesg)
     }
     else {
 	buf = ALLOCA_N(char, strlen(err)+1);
-	sprintf(buf, "%s", err);
+	strcpy(buf, err);
     }
 
     errno = 0;

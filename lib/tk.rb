@@ -903,7 +903,7 @@ class TkVariable
     @trace_var.each_with_index{|i,e| 
       if idx < 0 && e[0] == opts && e[1] == cmd
 	idx = i
-	continue
+	next
       end
       e[0].each_byte{|c| newopts += c.chr unless newopts.index(c)}
     }
@@ -937,7 +937,7 @@ class TkVariable
     @trace_elem[elem].each_with_index{|i,e| 
       if idx < 0 && e[0] == opts && e[1] == cmd
 	idx = i
-	continue
+	next
       end
     }
     if idx >= 0
@@ -1321,6 +1321,24 @@ module TkWinfo
   end
   def winfo_viewable
     TkWinfo.viewable self
+  end
+  def TkWinfo.pointerx(window)
+    number(tk_call('winfo', 'pointerx', window.path))
+  end
+  def winfo_pointerx
+    TkWinfo.pointerx self
+  end
+  def TkWinfo.pointery(window)
+    number(tk_call('winfo', 'pointery', window.path))
+  end
+  def winfo_pointery
+    TkWinfo.pointery self
+  end
+  def TkWinfo.pointerxy(window)
+    list(tk_call('winfo', 'pointerxy', window.path))
+  end
+  def winfo_pointerxy
+    TkWinfo.pointerxy self
   end
 end
 
