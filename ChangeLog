@@ -1,3 +1,8 @@
+Thu Nov  6 18:05:07 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_inspect): show the path also at a closed file.
+	  [ruby-dev:21851]
+
 Thu Nov  6 11:42:07 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_set_string, strio_reopen): check

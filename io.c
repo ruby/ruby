@@ -651,13 +651,19 @@ rb_io_inspect(obj)
     VALUE obj;
 {
     OpenFile *fptr;
-    char *buf, *cname;
+    char *buf, *cname, *st = "";
+    long len;
 
     fptr = RFILE(rb_io_taint_check(obj))->fptr;
-    if (!fptr || !(fptr->f || fptr->f2) || !fptr->path) return rb_any_to_s(obj);
+    if (!fptr || !fptr->path) return rb_any_to_s(obj);
     cname = rb_obj_classname(obj);
-    buf = ALLOCA_N(char, strlen(cname) + strlen(fptr->path) + 5);
-    sprintf(buf, "#<%s:%s>", cname, fptr->path);
+    len = strlen(cname) + strlen(fptr->path) + 5;
+    if (!(fptr->f || fptr->f2)) {
+	st = " (closed)";
+	len += 9;
+    }
+    buf = ALLOCA_N(char, len);
+    sprintf(buf, "#<%s:%s%s>", cname, fptr->path, st);
     return rb_str_new2(buf);
 }
 
