@@ -72,6 +72,7 @@ AC_PROG_YACC
 AC_PROG_RANLIB
 AC_SUBST(AR)
 AC_CHECK_PROGS(AR, ar aal, ar)
+AC_PROG_INSTALL
 AC_PROG_MAKE_SET
 
 # checks for UNIX variants that set C preprocessor variables

@@ -151,7 +151,7 @@ class << File
     o_chmod mode, *files
   end
 
-  def install(from, to, mode, verbose)
+  def install(from, to, mode = nil, verbose = false)
     to = catname(from, to)
     unless FileTest.exist? to and cmp from, to
       cp from, to, verbose

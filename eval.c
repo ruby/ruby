@@ -4685,6 +4685,7 @@ static void
 f_END()
 {
     PUSH_FRAME();
+    the_frame->argc = 0;
     rb_set_end_proc(call_end_proc, f_lambda());
     POP_FRAME();
 }

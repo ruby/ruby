@@ -1,8 +1,30 @@
+Tue Sep  8 18:05:33 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version 1.1c5 released.
+
+Tue Sep  8 10:03:39 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (str_each_line): wrong line splitting with newline at
+ 	  top of the string.
+
+	* string.c: non bang methods return copied string.
+
+	* eval.c (f_END): needed to initialize frame->argc;
+
+Fri Sep  4 11:27:40 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* bignum.c (bigadd): proper sign combination.
+
+	* regex.c (re_search): wrong return value for \A.
+
 Thu Sep  3 14:08:14 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* version 1.1c4 released.
 
 Tue Sep  1 10:47:16 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (slow_search): do not compare llen and blen.  llen may
+	  be longer than blen, if little contains 0xff.
 
 	* regex.c (mbctab_euc): set 0x8e as multibyte character.
 

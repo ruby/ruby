@@ -689,11 +689,8 @@ obj_free(obj)
 	    if ((long)RANY(obj)->as.data.dfree == -1) {
 		free(DATA_PTR(obj));
 	    }
-	    if (RANY(obj)->as.data.dfree) {
+	    else if (RANY(obj)->as.data.dfree) {
 		(*RANY(obj)->as.data.dfree)(DATA_PTR(obj));
-	    }
-	    else {
-		free(DATA_PTR(obj));
 	    }
 	}
 	break;

@@ -72,7 +72,7 @@ char *getenv();
 
 int eaccess();
 
-#if defined(HAVE_DLOPEN) && !defined(USE_DLN_A_OUT)
+#if defined(HAVE_DLOPEN) && !defined(USE_DLN_A_OUT) && !defined(__CYGWIN32__)
 /* dynamic load with dlopen() */
 # define USE_DLN_DLOPEN
 #endif

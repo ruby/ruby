@@ -557,21 +557,10 @@ bigadd(x, y, sign)
     long num;
     unsigned int i, len;
 
-    if (RBIGNUM(x)->sign == (RBIGNUM(y)->sign ^ sign)) {
-	if (RBIGNUM(y)->sign == sign) return bigsub(y, x);
+    sign = (sign == RBIGNUM(y)->sign);
+    if (RBIGNUM(x)->sign != sign) {
+	if (sign) return bigsub(y, x);
 	return bigsub(x, y);
-    }
-    else if (sign == 0) {
-      /* x - y */
-      if ((RBIGNUM(x)->sign == 0) && (RBIGNUM(y)->sign == 1)) {
-	/* x is negative and y is positive. */
-	/* return -(abs(x) + y) */
-	VALUE ret;
-	RBIGNUM(x)->sign = 1;   /* x = abs(x) */
-	ret = bigadd(x, y, 1);  /* ret = x + y  (recursive call) */
-	RBIGNUM(ret)->sign = 0; /* ret = -ret */
-	return ret;
-      }
     }
 
     if (RBIGNUM(x)->len > RBIGNUM(y)->len) {
@@ -581,7 +570,7 @@ bigadd(x, y, sign)
     else {
 	len = RBIGNUM(y)->len + 1;
     }
-    z = bignew(len, sign==RBIGNUM(y)->sign);
+    z = bignew(len, sign);
 
     len = RBIGNUM(x)->len;
     for (i = 0, num = 0; i < len; i++) {

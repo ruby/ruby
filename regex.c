@@ -2329,7 +2329,7 @@ bm_search(little, llen, big, blen, skip, translate)
      unsigned char *big;
      int blen;
      int *skip;
-     char *translate;
+     unsigned char *translate;
 {
   int next[256];
   int i, j, k;

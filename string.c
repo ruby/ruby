@@ -1588,7 +1588,7 @@ static VALUE
 str_upcase(str)
     VALUE str;
 {
-    VALUE val = str_upcase_bang(str_dup(str));
+    VALUE val = str_upcase_bang(str = str_dup(str));
 
     if (NIL_P(val)) return str;
     return val;
@@ -1622,7 +1622,7 @@ static VALUE
 str_downcase(str)
     VALUE str;
 {
-    VALUE val = str_downcase_bang(str_dup(str));
+    VALUE val = str_downcase_bang(str = str_dup(str));
 
     if (NIL_P(val)) return str;
     return val;
@@ -1658,7 +1658,7 @@ static VALUE
 str_capitalize(str)
     VALUE str;
 {
-    VALUE val = str_capitalize_bang(str_dup(str));
+    VALUE val = str_capitalize_bang(str = str_dup(str));
 
     if (NIL_P(val)) return str;
     return val;
@@ -1696,7 +1696,7 @@ static VALUE
 str_swapcase(str)
     VALUE str;
 {
-    VALUE val = str_swapcase_bang(str_dup(str));
+    VALUE val = str_swapcase_bang(str = str_dup(str));
 
     if (NIL_P(val)) return str;
     return val;
@@ -1851,7 +1851,7 @@ static VALUE
 str_tr(str, src, repl)
     VALUE str, src, repl;
 {
-    VALUE val = tr_trans(str_dup(str), src, repl, 0);
+    VALUE val = tr_trans(str = str_dup(str), src, repl, 0);
 
     if (NIL_P(val)) return str;
     return val;
@@ -1914,7 +1914,7 @@ static VALUE
 str_delete(str1, str2)
     VALUE str1, str2;
 {
-    VALUE val = str_delete_bang(str_dup(str1), str2);
+    VALUE val = str_delete_bang(str1 = str_dup(str1), str2);
 
     if (NIL_P(val)) return str1;
     return val;
@@ -1978,7 +1978,7 @@ str_squeeze(argc, argv, str)
     VALUE *argv;
     VALUE str;
 {
-    VALUE val = str_squeeze_bang(argc, argv, str_dup(str));
+    VALUE val = str_squeeze_bang(argc, argv, str = str_dup(str));
 
     if (NIL_P(val)) return str;
     return val;
@@ -1995,7 +1995,7 @@ static VALUE
 str_tr_s(str, src, repl)
     VALUE str, src, repl;
 {
-    VALUE val = tr_trans(str_dup(str), src, repl, 1);
+    VALUE val = tr_trans(str = str_dup(str), src, repl, 1);
 
     if (NIL_P(val)) return str;
     return val;
@@ -2192,17 +2192,16 @@ str_each_line(argc, argv, str)
 	if (rslen == 0 && *p == '\n') {
 	    if (*(p+1) != '\n') continue;
 	    while (*p == '\n') p++;
-	    p--;
 	}
-	if (*p == newline &&
+	if (p[-1] == newline &&
 	    (rslen <= 1 ||
-	     memcmp(RSTRING(rs)->ptr, p-rslen+1, rslen) == 0)) {
-	    line = str_new(s, p - s + 1);
+	     memcmp(RSTRING(rs)->ptr, p-rslen, rslen) == 0)) {
+	    line = str_new(s, p - s);
 	    lastline_set(line);
 	    rb_yield(line);
 	    if (RSTRING(str)->ptr != ptr || RSTRING(str)->len != len)
 		Fail("string modified");
-	    s = p + 1;
+	    s = p;
 	}
     }
 
@@ -2250,7 +2249,7 @@ static VALUE
 str_chop(str)
     VALUE str;
 {
-    VALUE val = str_chop_bang(str_dup(str));
+    VALUE val = str_chop_bang(str = str_dup(str));
 
     if (NIL_P(val)) return str;
     return val;
@@ -2266,12 +2265,13 @@ f_chop_bang(str)
 static VALUE
 f_chop()
 {
-    VALUE str = uscore_get();
+    VALUE str = str_dup(uscore_get());
+    VALUE val;
 
-    str = str_chop_bang(str_dup(str));
-    if (NIL_P(str)) return uscore_get();
-    lastline_set(str);
-    return str;
+    val = str_chop_bang(str);
+    if (NIL_P(val)) return str;
+    lastline_set(val);
+    return val;
 }
 
 static VALUE
@@ -2323,7 +2323,7 @@ str_chomp(argc, argv, str)
     VALUE *argv;
     VALUE str;
 {
-    VALUE val = str_chomp_bang(argc, argv, str_dup(str));
+    VALUE val = str_chomp_bang(argc, argv, str = str_dup(str));
 
     if (NIL_P(val)) return str;
     return val;
@@ -2342,9 +2342,10 @@ f_chomp(argc, argv)
     int argc;
     VALUE *argv;
 {
-    VALUE val = str_chomp_bang(argc, argv, str_dup(uscore_get()));
+    VALUE str = str_dup(uscore_get());
+    VALUE val = str_chomp_bang(argc, argv, str);
 
-    if (NIL_P(val)) return uscore_get();
+    if (NIL_P(val)) return str;
     lastline_set(val);
     return val;
 }
@@ -2389,7 +2390,7 @@ static VALUE
 str_strip(str)
     VALUE str;
 {
-    VALUE val = str_strip_bang(str_dup(str));
+    VALUE val = str_strip_bang(str = str_dup(str));
 
     if (NIL_P(val)) return str;
     return val;
