@@ -1,3 +1,9 @@
+Thu Apr 15 17:12:13 2004  Tanaka Akira  <akr@m17n.org>
+
+	* ext/gdbm/gdbm.c (Init_gdbm): define GDBM::READER, GDBM::WRITER,
+	  GDBM::WRCREAT and GDBM::NEWDB.
+	  (fgdbm_initialize): use specified read/write flag.
+
 Wed Apr 14 11:29:56 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* numeric.c (flo_eq): workaround for bcc32's bug.

@@ -16,6 +16,8 @@
 
 static VALUE rb_cGDBM, rb_eGDBMError, rb_eGDBMFatalError;
 
+#define RUBY_GDBM_RW_BIT 0x20000000
+
 #define MY_BLOCK_SIZE (2048)
 #define MY_FATAL_FUNC rb_gdbm_fatal
 static void
@@ -100,16 +102,23 @@ fgdbm_initialize(argc, argv, obj)
 
     SafeStringValue(file);
 
-    dbm = 0;
-    if (mode >= 0)
+    if (flags & RUBY_GDBM_RW_BIT) {
+        flags &= ~RUBY_GDBM_RW_BIT;
 	dbm = gdbm_open(RSTRING(file)->ptr, MY_BLOCK_SIZE, 
-			GDBM_WRCREAT|flags, mode, MY_FATAL_FUNC);
-    if (!dbm)
-	dbm = gdbm_open(RSTRING(file)->ptr, MY_BLOCK_SIZE, 
-			GDBM_WRITER|flags, 0, MY_FATAL_FUNC);
-    if (!dbm)
-	dbm = gdbm_open(RSTRING(file)->ptr, MY_BLOCK_SIZE, 
-			GDBM_READER|flags, 0, MY_FATAL_FUNC);
+			flags, mode, MY_FATAL_FUNC);
+    }
+    else {
+        dbm = 0;
+        if (mode >= 0)
+            dbm = gdbm_open(RSTRING(file)->ptr, MY_BLOCK_SIZE, 
+                            GDBM_WRCREAT|flags, mode, MY_FATAL_FUNC);
+        if (!dbm)
+            dbm = gdbm_open(RSTRING(file)->ptr, MY_BLOCK_SIZE, 
+                            GDBM_WRITER|flags, 0, MY_FATAL_FUNC);
+        if (!dbm)
+            dbm = gdbm_open(RSTRING(file)->ptr, MY_BLOCK_SIZE, 
+                            GDBM_READER|flags, 0, MY_FATAL_FUNC);
+    }
 
     if (!dbm) {
 	if (mode == -1) return Qnil;
@@ -992,13 +1001,12 @@ Init_gdbm()
     rb_define_method(rb_cGDBM, "to_a", fgdbm_to_a, 0);
     rb_define_method(rb_cGDBM, "to_hash", fgdbm_to_hash, 0);
 
-    /* flags for gdbm_opn() */
-    /*
-    rb_define_const(rb_cGDBM, "READER",  INT2FIX(GDBM_READER));
-    rb_define_const(rb_cGDBM, "WRITER",  INT2FIX(GDBM_WRITER));
-    rb_define_const(rb_cGDBM, "WRCREAT", INT2FIX(GDBM_WRCREAT));
-    rb_define_const(rb_cGDBM, "NEWDB",   INT2FIX(GDBM_NEWDB));
-    */
+    /* flags for gdbm_open() */
+    rb_define_const(rb_cGDBM, "READER",  INT2FIX(GDBM_READER|RUBY_GDBM_RW_BIT));
+    rb_define_const(rb_cGDBM, "WRITER",  INT2FIX(GDBM_WRITER|RUBY_GDBM_RW_BIT));
+    rb_define_const(rb_cGDBM, "WRCREAT", INT2FIX(GDBM_WRCREAT|RUBY_GDBM_RW_BIT));
+    rb_define_const(rb_cGDBM, "NEWDB",   INT2FIX(GDBM_NEWDB|RUBY_GDBM_RW_BIT));
+
     rb_define_const(rb_cGDBM, "FAST", INT2FIX(GDBM_FAST));
     /* this flag is obsolete in gdbm 1.8.
        On gdbm 1.8, fast mode is default behavior. */
