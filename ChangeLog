@@ -1,4 +1,4 @@
-Wed Feb 12 23:42:10 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+Thu Feb 13 00:09:47 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* file.c (strrdirsep): ignore trailing directory separators.
 
@@ -9,6 +9,8 @@ Wed Feb 12 23:42:10 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	  separators, in compliance with SUSv3.  (ruby-bugs-ja:PR#390)
 
 	* file.c (rb_file_s_dirname, rb_file_s_extname): ditto.
+
+	* file.c (rb_file_s_dirname): append "." if drive only.
 
 	* file.c (rb_file_s_split): get rid of converting twice.
 

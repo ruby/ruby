@@ -1784,6 +1784,10 @@ rb_file_s_dirname(klass, fname)
     if (p == name)
 	return rb_str_new2(".");
     dirname = rb_str_new(name, p - name);
+#ifdef DOSISH_DRIVE_LETTER
+    if (root == name + 2 && name[1] == ':')
+	rb_str_cat(dirname, ".", 1);
+#endif
     OBJ_INFECT(dirname, fname);
     return dirname;
 }
