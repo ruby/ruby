@@ -1,4 +1,12 @@
-Sun Oct  5 :00 2003  Nathaniel Talbott  <ntalbott@ruby-lang.org>
+Sun Oct  5 09:52:00 2003  Nathaniel Talbott  <ntalbott@ruby-lang.org>
+
+	* lib/test/unit/assertions.rb: will use pp for output if available.
+	  Can be disabled by setting Assertions.use_pp = false.
+
+	* test/testunit/test_assertions.rb: made a small change to exception
+	  formatting.
+
+Sun Oct  5 07:42:00 2003  Nathaniel Talbott  <ntalbott@ruby-lang.org>
 
 	* lib/test/unit/assertions.rb: made small improvements to assertion
 	  messages. Deprecated Assertions#assert_not_nil; use #assert instead.

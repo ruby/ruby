@@ -336,15 +336,28 @@ EOT
       private
       def add_assertion
       end
+
+      # Select whether or not to use the prettyprinter. If this
+      # option is set to false before any assertions are made, the
+      # prettyprinter will not be required at all.
+      public
+      def self.use_pp=(value)
+        AssertionMessage.use_pp = value
+      end
       
       class AssertionMessage # :nodoc: all
+        @use_pp = true
+        class << self
+          attr_accessor :use_pp
+        end
+
         class Literal
           def initialize(value)
             @value = value
           end
           
           def inspect
-            @value
+            @value.to_s
           end
         end
 
@@ -383,15 +396,25 @@ EOT
         def convert(object)
           case object
             when Exception
-              return <<EOM.chop
-Class: <#{object.class}>
-Message: <#{object.message}>
+              <<EOM.chop
+Class: <#{convert(object.class)}>
+Message: <#{convert(object.message)}>
 ---Backtrace---
 #{filter_backtrace(object.backtrace).join("\n")}
 ---------------
 EOM
             else
-              return object.inspect
+              if(self.class.use_pp)
+                begin
+                  require 'pp'
+                rescue LoadError
+                  self.class.use_pp = false
+                  return object.inspect
+                end unless(defined?(PP))
+                PP.pp(object, '').chomp
+              else
+                object.inspect
+              end
           end
         end
 

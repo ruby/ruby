@@ -133,7 +133,7 @@ module Test
             1 + 1
           }
         }
-        check_fails(%r{\Afailed assert_raises.\n<ArgumentError> exception expected but was\nClass: <RuntimeError>\nMessage: <Error>\n---Backtrace---\n.+\n---------------\Z}m) {
+        check_fails(%r{\Afailed assert_raises.\n<ArgumentError> exception expected but was\nClass: <RuntimeError>\nMessage: <"Error">\n---Backtrace---\n.+\n---------------\Z}m) {
           assert_raises(ArgumentError, "failed assert_raises") {
             raise "Error"
           }
@@ -265,17 +265,17 @@ module Test
           rescue ZeroDivisionError
           end
         }
-        check_fails(%r{\AException raised:\nClass: <RuntimeError>\nMessage: <Error>\n---Backtrace---\n.+\n---------------\Z}m) {
+        check_fails(%r{\AException raised:\nClass: <RuntimeError>\nMessage: <"Error">\n---Backtrace---\n.+\n---------------\Z}m) {
           assert_nothing_raised {
             raise "Error"
           }
         }
-        check_fails(%r{\Afailed assert_nothing_raised\.\nException raised:\nClass: <RuntimeError>\nMessage: <Error>\n---Backtrace---\n.+\n---------------\Z}m) {
+        check_fails(%r{\Afailed assert_nothing_raised\.\nException raised:\nClass: <RuntimeError>\nMessage: <"Error">\n---Backtrace---\n.+\n---------------\Z}m) {
           assert_nothing_raised("failed assert_nothing_raised") {
             raise "Error"
           }
         }
-        check_fails(%r{\AException raised:\nClass: <RuntimeError>\nMessage: <Error>\n---Backtrace---\n.+\n---------------\Z}m) {
+        check_fails(%r{\AException raised:\nClass: <RuntimeError>\nMessage: <"Error">\n---Backtrace---\n.+\n---------------\Z}m) {
           assert_nothing_raised(StandardError, RuntimeError) {
             raise "Error"
           }
