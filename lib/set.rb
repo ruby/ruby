@@ -146,23 +146,21 @@ class Set
   end
   alias member? include?
 
-  # Returns true if the set is a superset of or is equal to the given
-  # set.
+  # Returns true if the set is a superset of the given set.
   def superset?(set)
     set.is_a?(Set) or raise ArgumentError, "value must be a set"
     return false if size < set.size
     set.all? { |o| include?(o) }
   end
 
-  # Returns true if the set is a superset of or is equal to the given
-  # set.
+  # Returns true if the set is a proper superset of the given set.
   def proper_superset?(set)
     set.is_a?(Set) or raise ArgumentError, "value must be a set"
     return false if size <= set.size
     set.all? { |o| include?(o) }
   end
 
-  # Returns true if the set is a proper subset of the given set.
+  # Returns true if the set is a subset of the given set.
   def subset?(set)
     set.is_a?(Set) or raise ArgumentError, "value must be a set"
     return false if set.size < size
