@@ -2677,7 +2677,7 @@ static VALUE
 rb_ary_and(ary1, ary2)
     VALUE ary1, ary2;
 {
-    VALUE hash, ary3;
+    VALUE hash, ary3, v, vv;
     long i;
 
     ary2 = to_ary(ary2);
@@ -2686,8 +2686,8 @@ rb_ary_and(ary1, ary2)
     hash = ary_make_hash(ary2, 0);
 
     for (i=0; i<RARRAY(ary1)->len; i++) {
-	VALUE v = rb_ary_elt(ary1, i);
-	if (st_delete(RHASH(hash)->tbl, (st_data_t*)&v, 0)) {
+	v = vv = rb_ary_elt(ary1, i);
+	if (st_delete(RHASH(hash)->tbl, (st_data_t*)&vv, 0)) {
 	    rb_ary_push(ary3, v);
 	}
     }
@@ -2711,7 +2711,7 @@ rb_ary_or(ary1, ary2)
     VALUE ary1, ary2;
 {
     VALUE hash, ary3;
-    VALUE v;
+    VALUE v, vv;
     long i;
 
     ary2 = to_ary(ary2);
@@ -2719,14 +2719,14 @@ rb_ary_or(ary1, ary2)
     hash = ary_make_hash(ary1, ary2);
 
     for (i=0; i<RARRAY(ary1)->len; i++) {
-	v = rb_ary_elt(ary1, i);
-	if (st_delete(RHASH(hash)->tbl, (st_data_t*)&v, 0)) {
+	v = vv = rb_ary_elt(ary1, i);
+	if (st_delete(RHASH(hash)->tbl, (st_data_t*)&vv, 0)) {
 	    rb_ary_push(ary3, v);
 	}
     }
     for (i=0; i<RARRAY(ary2)->len; i++) {
-	v = rb_ary_elt(ary2, i);
-	if (st_delete(RHASH(hash)->tbl, (st_data_t*)&v, 0)) {
+	v = vv = rb_ary_elt(ary2, i);
+	if (st_delete(RHASH(hash)->tbl, (st_data_t*)&vv, 0)) {
 	    rb_ary_push(ary3, v);
 	}
     }
@@ -2751,7 +2751,7 @@ static VALUE
 rb_ary_uniq_bang(ary)
     VALUE ary;
 {
-    VALUE hash;
+    VALUE hash, v, vv;
     long i, j;
 
     rb_ary_modify(ary); 
@@ -2762,8 +2762,8 @@ rb_ary_uniq_bang(ary)
 	return Qnil;
     }
     for (i=j=0; i<RARRAY(ary)->len; i++) {
-	VALUE v = rb_ary_elt(ary, i);
-	if (st_delete(RHASH(hash)->tbl, (st_data_t*)&v, 0)) {
+	v = vv = rb_ary_elt(ary, i);
+	if (st_delete(RHASH(hash)->tbl, (st_data_t*)&vv, 0)) {
 	    rb_ary_store(ary, j++, v);
 	}
     }

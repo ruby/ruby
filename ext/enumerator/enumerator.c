@@ -87,15 +87,13 @@ each_cons_i(val, memo)
 {
     VALUE ary = memo->u1.value;
     long size = memo->u3.cnt;
-    long len = RARRAY(ary)->len;
 
-    if (len == size) {
+    if (RARRAY(ary)->len == size) {
 	rb_ary_shift(ary);
-	rb_ary_push(ary, val);
-	rb_yield(ary);
-    } else {
-	rb_ary_push(ary, val);
-	if (len + 1 == size) rb_yield(ary);
+    }
+    rb_ary_push(ary, val);
+    if (RARRAY(ary)->len == size) {
+	rb_yield(rb_ary_dup(ary));
     }
     return Qnil;
 }
@@ -106,7 +104,6 @@ enum_each_cons(obj, n)
 {
     long size = NUM2LONG(n);
     NODE *memo;
-    VALUE ary;
 
     if (size <= 0) rb_raise(rb_eArgError, "invalid size");
     memo = rb_node_newnode(NODE_MEMO, rb_ary_new2(size), 0, size);
