@@ -1115,7 +1115,7 @@ dln_sym(name)
 #endif /* USE_DLN_A_OUT */
 
 #ifdef USE_DLN_DLOPEN
-# ifdef __NetBSD__
+# if defined(__NetBSD__) && defined(__NetBSD_Version__) && __NetBSD_Version__ < 105000000
 #  include <nlist.h>
 #  include <link.h>
 # else
