@@ -78,7 +78,6 @@ class Tempfile < SimpleDelegator
     @tmpfile.close if @tmpfile
     @tmpfile = nil
     @data[1] = nil if @data
-    @data = nil
   end
   protected :_close
 
@@ -100,7 +99,7 @@ class Tempfile < SimpleDelegator
     _close
     @clean_proc.call
     ObjectSpace.undefine_finalizer(self)
-    @tmpname = nil
+    @data = @tmpname = nil
   end
 
   # Unlinks the file.  On UNIX-like systems, it is often a good idea
