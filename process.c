@@ -3332,10 +3332,10 @@ Init_process()
 
     rb_define_singleton_method(rb_mProcess, "fork", rb_f_fork, 0);
     rb_define_singleton_method(rb_mProcess, "exit!", rb_f_exit_bang, -1);
-    rb_define_singleton_method(rb_mProcess, "exit", rb_f_exit, -1);   // in eval.c
-    rb_define_singleton_method(rb_mProcess, "abort", rb_f_abort, -1); // in eval.c
+    rb_define_singleton_method(rb_mProcess, "exit", rb_f_exit, -1);   /* in eval.c */
+    rb_define_singleton_method(rb_mProcess, "abort", rb_f_abort, -1); /* in eval.c */
 
-    rb_define_module_function(rb_mProcess, "kill", rb_f_kill, -1); // in signal.c
+    rb_define_module_function(rb_mProcess, "kill", rb_f_kill, -1); /* in signal.c */
     rb_define_module_function(rb_mProcess, "wait", proc_wait, -1);
     rb_define_module_function(rb_mProcess, "wait2", proc_wait2, -1);
     rb_define_module_function(rb_mProcess, "waitpid", proc_wait, -1);

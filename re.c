@@ -2292,6 +2292,6 @@ Init_Regexp()
     rb_define_method(rb_cMatch, "pre_match", rb_reg_match_pre, 0);
     rb_define_method(rb_cMatch, "post_match", rb_reg_match_post, 0);
     rb_define_method(rb_cMatch, "to_s", match_to_s, 0);
-    rb_define_method(rb_cMatch, "inspect", rb_any_to_s, 0); // in object.c
+    rb_define_method(rb_cMatch, "inspect", rb_any_to_s, 0); /* in object.c */
     rb_define_method(rb_cMatch, "string", match_string, 0);
 }
