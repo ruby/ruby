@@ -7553,12 +7553,29 @@ bmcall(args, method)
     return method_call(RARRAY(a)->len, RARRAY(a)->ptr, method);
 }
 
+struct proc_funcall_data {
+    VALUE (*func)(ANYARGS);
+    VALUE val;
+};
+
+static VALUE
+proc_funcall(args, data)
+    VALUE args;
+    struct proc_funcall_data *data;
+{
+    return (*data->func)(svalue_to_avalue(args), data->val);
+}
+
 VALUE
 rb_proc_new(func, val)
     VALUE (*func)(ANYARGS);	/* VALUE yieldarg[, VALUE procarg] */
     VALUE val;
 {
-    return rb_iterate((VALUE(*)_((VALUE)))mproc, 0, func, val);
+    struct proc_funcall_data data;
+
+    data.func = func;
+    data.val = val;
+    return rb_iterate((VALUE(*)_((VALUE)))mproc, 0, proc_funcall, (VALUE)&data);
 }
 
 static VALUE
@@ -9255,6 +9272,11 @@ rb_thread_start_0(fn, arg, th_arg)
     struct BLOCK* saved_block = 0;
     enum thread_status status;
     int state;
+
+    if (OBJ_FROZEN(curr_thread->thgroup)) {
+	rb_raise(rb_eThreadError, 
+		 "can't start a new thread (frozen ThreadGroup)");
+    }
 
 #if defined(HAVE_SETITIMER)
     if (!thread_init) {
