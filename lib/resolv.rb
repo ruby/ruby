@@ -438,9 +438,9 @@ class Resolv
             extract_resources(reply, reply_name, typeclass, &proc)
 	    return
           when RCode::NXDomain
-            raise Config::NXDomain.new(reply_name)
+            raise Config::NXDomain.new(reply_name.to_s)
           else
-            raise Config::OtherResolvError.new(reply_name)
+            raise Config::OtherResolvError.new(reply_name.to_s)
           end
         }
       ensure
