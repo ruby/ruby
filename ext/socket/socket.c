@@ -64,7 +64,9 @@ void SOCKSinit();
 int Rconnect();
 #endif
 
+#ifndef HAVE_STRDUP
 char *strdup();
+#endif
 
 #define INET_CLIENT 0
 #define INET_SERVER 1
