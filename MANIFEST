@@ -292,6 +292,7 @@ lib/rdoc/ri/ri_util.rb
 lib/rdoc/ri/ri_writer.rb
 lib/rdoc/template.rb
 lib/rdoc/tokenstream.rb
+lib/rdoc/usage.rb
 lib/readbytes.rb
 lib/resolv-replace.rb
 lib/resolv.rb

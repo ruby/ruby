@@ -176,16 +176,19 @@ module RI
     end
 
 
-    # Parse command line options.
-
-    def parse
-    
+    def initialize
       @use_stdout   = !STDOUT.tty?
       @width        = 72
       @formatter    = RI::TextFormatter.for("plain") 
       @list_classes = false
       @list_names   = false
+    end
 
+
+    # Parse command line options.
+
+    def parse
+    
       old_argv = ARGV.dup
       if ENV["RI"]
         ARGV.replace(ENV["RI"].split.concat(ARGV))

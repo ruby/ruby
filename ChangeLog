@@ -1,3 +1,8 @@
+Sat Aug 14 02:48:16 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/usage.rb: Added. Allows command line programs
+	  to report usage using their initial RDoc comment.
+
 Sat Aug 14 01:25:48 2004  why the lucky stiff  <why@ruby-lang.org>
 
 	* ext/syck/token.c: re2c no longer compiled with bit vectors.  caused

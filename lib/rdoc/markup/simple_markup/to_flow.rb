@@ -1,6 +1,6 @@
 require 'rdoc/markup/simple_markup/fragments'
 require 'rdoc/markup/simple_markup/inline'
-
+require 'CGI'
 
 module SM
 
