@@ -23,8 +23,17 @@
 
 #ifdef NATINT_PACK
 # define NATINT_LEN(type,len) (natint?sizeof(type):(len))
+# ifndef WORDS_BIGENDIAN
+#   define OFF16(p) ((char*)(p) + (natint?(sizeof(short) - 2):0))
+#   define OFF32(p) ((char*)(p) + (natint?(sizeof(long) - 4):0))
+# endif
 #else
 # define NATINT_LEN(type,len) sizeof(type)
+#endif
+
+#ifndef OFF16
+# define OFF16(p) (char*)(p)
+# define OFF32(p) (char*)(p)
 #endif
 
 #define define_swapx(x, xtype)		\
@@ -546,7 +555,7 @@ pack_pack(ary, fmt)
 		else {
 		    s = NUM2INT(from);
 		}
-		rb_str_cat(res, (char*)&s, NATINT_LEN(short,2));
+		rb_str_cat(res, OFF16(&s), NATINT_LEN(short,2));
 	    }
 	    break;
 
@@ -574,7 +583,7 @@ pack_pack(ary, fmt)
 		else {
 		    l = NUM2ULONG(from);
 		}
-		rb_str_cat(res, (char*)&l, NATINT_LEN(long,4));
+		rb_str_cat(res, OFF32(&l), NATINT_LEN(long,4));
 	    }
 	    break;
 
@@ -588,7 +597,7 @@ pack_pack(ary, fmt)
 		    s = NUM2INT(from);
 		}
 		s = htons(s);
-		rb_str_cat(res, (char*)&s, NATINT_LEN(short,2));
+		rb_str_cat(res, OFF16(&s), NATINT_LEN(short,2));
 	    }
 	    break;
 
@@ -602,7 +611,7 @@ pack_pack(ary, fmt)
 		    l = NUM2ULONG(from);
 		}
 		l = htonl(l);
-		rb_str_cat(res, (char*)&l, NATINT_LEN(long,4));
+		rb_str_cat(res, OFF32(&l), NATINT_LEN(long,4));
 	    }
 	    break;
 
@@ -616,7 +625,7 @@ pack_pack(ary, fmt)
 		    s = NUM2INT(from);
 		}
 		s = htovs(s);
-		rb_str_cat(res, (char*)&s, NATINT_LEN(short,2));
+		rb_str_cat(res, OFF16(&s), NATINT_LEN(short,2));
 	    }
 	    break;
 
@@ -630,7 +639,7 @@ pack_pack(ary, fmt)
 		    l = NUM2ULONG(from);
 		}
 		l = htovl(l);
-		rb_str_cat(res, (char*)&l, NATINT_LEN(long,4));
+		rb_str_cat(res, OFF32(&l), NATINT_LEN(long,4));
 	    }
 	    break;
 
@@ -783,7 +792,7 @@ pack_pack(ary, fmt)
 	    break;
 
 	  case '%':
-	    rb_raise(rb_eArgError, "% may only be used in unpack");
+	    rb_raise(rb_eArgError, "%% is not supported");
 	    break;
 
 	  case 'U':
@@ -1062,7 +1071,7 @@ pack_unpack(str, fmt)
 
 	switch (type) {
 	  case '%':
-	    rb_raise(rb_eArgError, "% is not supported(yet)");
+	    rb_raise(rb_eArgError, "%% is not supported");
 	    break;
 
 	  case 'A':
@@ -1204,8 +1213,8 @@ pack_unpack(str, fmt)
 	  case 's':
 	    PACK_LENGTH_ADJUST(short,2);
 	    while (len-- > 0) {
-		short tmp;
-		memcpy(&tmp, s, NATINT_LEN(short,2));
+		short tmp = 0;
+		memcpy(OFF16(&tmp), s, NATINT_LEN(short,2));
 		s += NATINT_LEN(short,2);
 		rb_ary_push(ary, INT2FIX(tmp));
 	    }
@@ -1215,8 +1224,8 @@ pack_unpack(str, fmt)
 	  case 'S':
 	    PACK_LENGTH_ADJUST(unsigned short,2);
 	    while (len-- > 0) {
-		unsigned short tmp;
-		memcpy(&tmp, s, NATINT_LEN(unsigned short,2));
+		unsigned short tmp = 0;
+		memcpy(OFF16(&tmp), s, NATINT_LEN(unsigned short,2));
 		s += NATINT_LEN(unsigned short,2);
 		rb_ary_push(ary, INT2FIX(tmp));
 	    }
@@ -1248,8 +1257,8 @@ pack_unpack(str, fmt)
 	  case 'l':
 	    PACK_LENGTH_ADJUST(long,4);
 	    while (len-- > 0) {
-		long tmp;
-		memcpy(&tmp, s, NATINT_LEN(long,4));
+		long tmp = 0;
+		memcpy(OFF32(&tmp), s, NATINT_LEN(long,4));
 		s += NATINT_LEN(long,4);
 		rb_ary_push(ary, rb_int2inum(tmp));
 	    }
@@ -1259,8 +1268,8 @@ pack_unpack(str, fmt)
 	  case 'L':
 	    PACK_LENGTH_ADJUST(unsigned long,4);
 	    while (len-- > 0) {
-		unsigned long tmp;
-		memcpy(&tmp, s, NATINT_LEN(unsigned long,4));
+		unsigned long tmp = 0;
+		memcpy(OFF32(&tmp), s, NATINT_LEN(unsigned long,4));
 		s += NATINT_LEN(unsigned long,4);
 		rb_ary_push(ary, rb_uint2inum(tmp));
 	    }
@@ -1270,11 +1279,10 @@ pack_unpack(str, fmt)
 	  case 'n':
 	    PACK_LENGTH_ADJUST(unsigned short,2);
 	    while (len-- > 0) {
-		unsigned short tmp;
-		memcpy(&tmp, s, NATINT_LEN(unsigned short,2));
+		unsigned short tmp = 0;
+		memcpy(OFF16(&tmp), s, NATINT_LEN(unsigned short,2));
 		s += NATINT_LEN(unsigned short,2);
-		tmp = ntohs(tmp);
-		rb_ary_push(ary, rb_uint2inum(tmp));
+		rb_ary_push(ary, rb_uint2inum(ntohs(tmp)));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1282,11 +1290,10 @@ pack_unpack(str, fmt)
 	  case 'N':
 	    PACK_LENGTH_ADJUST(unsigned long,4);
 	    while (len-- > 0) {
-		unsigned long tmp;
-		memcpy(&tmp, s, NATINT_LEN(unsigned long,4));
+		unsigned long tmp = 0;
+		memcpy(OFF32(&tmp), s, NATINT_LEN(unsigned long,4));
 		s += NATINT_LEN(unsigned long,4);
-		tmp = ntohl(tmp);
-		rb_ary_push(ary, rb_uint2inum(tmp));
+		rb_ary_push(ary, rb_uint2inum(ntohl(tmp)));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1294,11 +1301,10 @@ pack_unpack(str, fmt)
 	  case 'v':
 	    PACK_LENGTH_ADJUST(unsigned short,2);
 	    while (len-- > 0) {
-		unsigned short tmp;
-		memcpy(&tmp, s, NATINT_LEN(unsigned short,2));
+		unsigned short tmp = 0;
+		memcpy(OFF16(&tmp), s, NATINT_LEN(unsigned short,2));
 		s += NATINT_LEN(unsigned short,2);
-		tmp = vtohs(tmp);
-		rb_ary_push(ary, rb_uint2inum(tmp));
+		rb_ary_push(ary, rb_uint2inum(vtohs(tmp)));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1306,11 +1312,10 @@ pack_unpack(str, fmt)
 	  case 'V':
 	    PACK_LENGTH_ADJUST(unsigned long,4);
 	    while (len-- > 0) {
-		unsigned long tmp;
-		memcpy(&tmp, s, NATINT_LEN(long,4));
+		unsigned long tmp = 0;
+		memcpy(OFF32(&tmp), s, NATINT_LEN(long,4));
 		s += NATINT_LEN(long,4);
-		tmp = vtohl(tmp);
-		rb_ary_push(ary, rb_uint2inum(tmp));
+		rb_ary_push(ary, rb_uint2inum(vtohl(tmp)));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;

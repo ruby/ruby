@@ -1,3 +1,25 @@
+Mon Oct  4 12:42:32 1999  Kazuhiko Izawa  <izawa@erec.che.tohoku.ac.jp>
+
+	* pack.c (pack_unpack): % in printf format should be %%.
+
+Mon Oct  4 10:01:40 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* variable.c (rb_obj_instance_variables): should always return
+	  array for all object can have instance variables now.
+
+Mon Oct  4 00:08:34 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* pack.c (OFF16): need to adjust pointer address to pack/unpack on
+	  64bit machines.
+
+Sun Oct 03 03:05:59 1999  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* time.c (time_arg): mktime y2k problem.
+
+Sun Sep 26 16:54:45 1999  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* parse.y (here_document): `\r' handling for here documents.
+
 Wed Sep 22 09:20:11 1999  Masahiro Tomita  <tommy@tmtm.org>
 
 	* ext/socket/socket.c: SOCKS5 support.

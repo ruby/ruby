@@ -56,6 +56,10 @@
 #include <string.h>
 #include <stddef.h>
 
+#ifdef SOCKS5
+#include <socks.h>
+#endif
+
 #include "config.h"
 #include "addrinfo.h"
 #include "sockport.h"

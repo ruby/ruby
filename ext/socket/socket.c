@@ -780,6 +780,20 @@ socks_s_open(class, host, serv)
     Check_SafeStr(host);
     return open_inet(class, host, serv, INET_SOCKS);
 }
+
+#ifdef SOCKS5
+static VALUE
+socks_s_close(sock)
+    VALUE sock;
+{
+    OpenFile *fptr;
+
+    GetOpenFile(sock, fptr);
+    shutdown(fileno(fptr->f), 2);
+    shutdown(fileno(fptr->f2), 2);
+    return rb_io_close(sock);
+}
+#endif
 #endif
 
 /*
@@ -1876,6 +1890,9 @@ Init_socket()
     rb_define_global_const("SOCKSsocket", rb_cSOCKSSocket);
     rb_define_singleton_method(rb_cSOCKSSocket, "open", socks_s_open, 2);
     rb_define_singleton_method(rb_cSOCKSSocket, "new", socks_s_open, 2);
+#ifdef SOCKS5
+    rb_define_method(rb_cSOCKSSocket, "close", socks_s_close, 0);
+#endif
 #endif
 
     rb_cTCPServer = rb_define_class("TCPServer", rb_cTCPSocket);

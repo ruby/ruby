@@ -2387,7 +2387,7 @@ here_document(term, indent)
 		p++;
 	    }
 	}
-	if (strncmp(eos, p, len) == 0 && p[len] == '\n') {
+	if (strncmp(eos, p, len) == 0 && (p[len] == '\n' || p[len] == '\r')) {
 	    break;
 	}
 

@@ -2877,7 +2877,7 @@ re_compile_fastmap(bufp)
 	    break;
 	  }
 	  for (j = 0,c = 0;j < (int)size; j++) {
-	    int cc = EXTRACT_MBC(&p[j*8]);
+	    unsigned int cc = EXTRACT_MBC(&p[j*8]);
 	    beg = WC2MBC1ST(cc);
 	    while (c < beg) {
 	      if (ismbchar(c))

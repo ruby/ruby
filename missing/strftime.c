@@ -425,6 +425,7 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 			 */
 			off = -(daylight ? timezone : altzone) / 60;
 #else /* !HAVE_TZNAME */
+			gettimeofday(&tv, &zone);
 			off = -zone.tz_minuteswest;
 #endif /* !HAVE_TZNAME */
 #endif /* !HAVE_TM_ZONE */

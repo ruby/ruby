@@ -136,7 +136,7 @@ UNIXであればconfigureがほとんどの差異を吸収してくれるはずで
 * 配布条件
 
 Rubyはフリーソフトウェアです．GPL(the GNU General Public
-Licence)または以下に示す条件でRubyを再配布できます．GPLにつ
+License)または以下に示す条件でRubyを再配布できます．GPLにつ
 いてはCOPYINGファイルを参照して下さい．
 
   1. 複製は制限なく自由です．

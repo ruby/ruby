@@ -916,7 +916,7 @@ VALUE
 rb_obj_instance_variables(obj)
     VALUE obj;
 {
-    VALUE ary;
+    VALUE ary = rb_ary_new();
 
     if (!FL_TEST(obj, FL_TAINT) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't get metainfo");
@@ -924,24 +924,22 @@ rb_obj_instance_variables(obj)
       case T_OBJECT:
       case T_CLASS:
       case T_MODULE:
-	ary = rb_ary_new();
 	if (ROBJECT(obj)->iv_tbl) {
 	    st_foreach(ROBJECT(obj)->iv_tbl, ivar_i, ary);
 	}
-	return ary;
+	break;
       default:
-	if (!generic_iv_tbl) return Qnil;
+	if (!generic_iv_tbl) break;
 	if (FL_TEST(obj, FL_EXIVAR) || rb_special_const_p(obj)) {
 	    st_table *tbl;
 
 	    if (st_lookup(generic_iv_tbl, obj, &tbl)) {
-		ary = rb_ary_new();
 		st_foreach(tbl, ivar_i, ary);
-		return ary;
 	    }
 	}
+	break;
     }
-    return Qnil;
+    return ary;
 }
 
 VALUE

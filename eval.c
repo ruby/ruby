@@ -1185,9 +1185,9 @@ rb_eval_string_wrap(str, state)
     POP_CLASS();
     if (state) {
 	*state = status;
-	if (status) {
-	    JUMP_TAG(status);
-	}
+    }
+    else if (status) {
+	JUMP_TAG(status);
     }
     return val;
 }
@@ -6414,7 +6414,6 @@ rb_thread_schedule()
 	fd_set readfds;
 	struct timeval delay_tv, *delay_ptr;
 	double delay, now;	/* OK */
-
 	int n, max;
 
 	do {

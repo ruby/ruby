@@ -10,7 +10,7 @@
 
 #undef getc
 #undef ungetc
-#define getc(f)   	(input_ctr>i_len?-1:input[input_ctr++])
+#define getc(f)   	(input_ctr<i_len?input[input_ctr++]:-1)
 #define ungetc(c,f)	input_ctr--
 
 #undef putchar

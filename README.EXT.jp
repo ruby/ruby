@@ -245,8 +245,8 @@ Rubyで提供されている関数を使えばRubyインタプリタに新しい機能
 クラスやモジュールを他のクラスの内部にネストして定義する時に
 は以下の関数を使います．
 
-  VALUE rb_define_class(VALUE outer, char *name, VALUE super)
-  VALUE rb_define_module(VALUE outer, char *name)
+  VALUE rb_define_class_under(VALUE outer, char *name, VALUE super)
+  VALUE rb_define_module_under(VALUE outer, char *name)
 
 2.1.2 メソッド/特異メソッド定義
 
@@ -1099,9 +1099,13 @@ void rb_bug(char *fmt, ...)
 Rubyをアプリケーションに埋め込む場合には以下のインタフェース
 を使う．通常の拡張ライブラリには必要ない．
 
-void ruby_init(int argc, char **argv, char **envp)
+void ruby_init()
 
   Rubyインタプリタの初期化を行なう．
+
+void ruby_options(int argc, char **argv)
+
+  Rubyインタプリタのコマンドライン引数の処理を行なう．
 
 void ruby_run()
 

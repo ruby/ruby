@@ -208,7 +208,7 @@ time_arg(argc, argv, tm)
     }
 
     tm->tm_year = obj2long(v[0]);
-    if (0 < tm->tm_year && tm->tm_year < 69) tm->tm_year += 100;
+    if (0 <= tm->tm_year && tm->tm_year < 69) tm->tm_year += 100;
     if (tm->tm_year >= 1900) tm->tm_year -= 1900;
     if (NIL_P(v[1])) {
 	tm->tm_mon = 0;

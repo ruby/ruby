@@ -892,7 +892,6 @@ Sets the value of the instance variable.
 Calls the function func1, supplying func2 as the block.  func1 will be
 called with the argument arg1.  func2 receives the value from yield as
 the first argument, arg2 as the second argument.
-
  
  VALUE rb_yield(VALUE val)
 
@@ -942,9 +941,13 @@ exception handling nor ensure execution will be done.
 
 The embedding API are below (not needed for extension libraries):
 
- void ruby_init(int argc, char **argv, char **envp)
+ void ruby_init()
 
 Initializes the interpreter.
+
+ void ruby_options(int argc, char **argv)
+
+Process command line arguments for the interpreter.
 
  void ruby_run()
 

@@ -15,6 +15,7 @@ Language Spec.
 
 Hacking Interpreter
 
+* RUBYOPT environment variable
 * non-blocking open (e.g. named pipe) for thread
 * avoid blocking with gethostbyname/gethostbyaddr
 * objectify interpreters

@@ -871,7 +871,7 @@ kanji_convert(f)
             } else if(c1 == SO) {
                 shift_mode = TRUE; 
                 NEXT;
-            } else if(c1 == ESC ) {
+            } else if(c1 == ESC) {
                 if((c1 = GETC(f)) == EOF) {
                     (*oconv)(0, ESC);
                     LAST;
@@ -1826,6 +1826,7 @@ reinit()
     file_out = FALSE;
     add_cr = FALSE;
     del_cr = FALSE;
+    line = 0;
 }
 
 #ifndef PERL_XS
