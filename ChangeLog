@@ -1,4 +1,8 @@
-Sat Oct  4 12:44:45 2003  akira yamada <akira@ruby-lang.org>
+Sat Oct  4 12:58:48 2003  akira yamada  <akira@ruby-lang.org>
+
+	* test/uri/* (6 files): added.
+
+Sat Oct  4 12:44:45 2003  akira yamada  <akira@ruby-lang.org>
 
 	* lib/uri/ftp.rb, lib/uri/mailto.rb: renamed to #to_s from #to_str.
 
