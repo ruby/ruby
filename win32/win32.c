@@ -89,7 +89,6 @@
 bool NtSyncProcess = TRUE;
 
 static struct ChildRecord *CreateChild(char *, char *, SECURITY_ATTRIBUTES *, HANDLE, HANDLE, HANDLE);
-static int make_cmdvector(const char *, char ***);
 static bool has_redirection(const char *);
 static void StartSockets ();
 static DWORD wait_events(HANDLE event, DWORD timeout);
@@ -368,11 +367,6 @@ NtInitialize(int *argc, char ***argv)
 #endif
 
     //
-    // subvert cmd.exe's feeble attempt at command line parsing
-    //
-    *argc = make_cmdvector(GetCommandLine(), argv);
-
-    //
     // Now set up the correct time stuff
     //
 
@@ -380,11 +374,6 @@ NtInitialize(int *argc, char ***argv)
 
     // Initialize Winsock
     StartSockets();
-
-#ifdef _WIN32_WCE
-    // free commandline buffer
-    wce_FreeCommandLine();
-#endif
 }
 
 char *getlogin()
@@ -1098,8 +1087,8 @@ skipspace(char *ptr)
     return ptr;
 }
 
-static int 
-make_cmdvector(const char *cmd, char ***vec)
+int 
+rb_w32_cmdvector(const char *cmd, char ***vec)
 {
     int cmdlen, globbing, len, i;
     int elements, strsz, done;

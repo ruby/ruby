@@ -132,10 +132,8 @@ struct timezone {
   int tz_dsttime;
 };
 #endif
-extern int    NtMakeCmdVector(char *, char ***, int);
 extern void   NtInitialize(int *, char ***);
-extern char * NtGetLib(void);
-extern char * NtGetBin(void);
+extern int    rb_w32_cmdvector(const char *, char ***);
 extern pid_t  pipe_exec(char *, int, FILE **, FILE **);
 extern int    flock(int fd, int oper);
 extern int    rb_w32_accept(int, struct sockaddr *, int *);
