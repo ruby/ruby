@@ -145,19 +145,19 @@ module URI
       X_ABS_URI = "
 	(#{PATTERN::SCHEME}):                     (?# 1: scheme)
 	(?:
+	   (#{PATTERN::OPAQUE_PART})              (?# 2: opaque)
+	|
 	   (?:(?:
 	     //(?:
-		 (?:(?:(#{PATTERN::USERINFO})@)?  (?# 2: userinfo)
-		   (?:(#{PATTERN::HOST})(?::(\\d*))?))?(?# 3: host, 4: port)
+		 (?:(?:(#{PATTERN::USERINFO})@)?  (?# 3: userinfo)
+		   (?:(#{PATTERN::HOST})(?::(\\d*))?))?(?# 4: host, 5: port)
 	       |
-		 (#{PATTERN::REG_NAME})           (?# 5: registry)
+		 (#{PATTERN::REG_NAME})           (?# 6: registry)
 	       )
 	     |
 	     (?!//))                              (?# XXX: '//' is the mark for hostport)
-	     (#{PATTERN::ABS_PATH})?              (?# 6: path)
-	   )(?:\\?(#{PATTERN::QUERY}))?           (?# 7: query)
-	|
-	   (#{PATTERN::OPAQUE_PART})              (?# 8: opaque)
+	     (#{PATTERN::ABS_PATH})?              (?# 7: path)
+	   )(?:\\?(#{PATTERN::QUERY}))?           (?# 8: query)
 	)
 	(?:\\#(#{PATTERN::FRAGMENT}))?            (?# 9: fragment)
       "
@@ -292,8 +292,8 @@ module URI
       # null uri
 
     when ABS_URI
-      scheme, userinfo, host, port, 
-	registry, path, query, opaque, fragment = $~[1..-1]
+      scheme, opaque, userinfo, host, port, 
+	registry, path, query, fragment = $~[1..-1]
 
       # URI-reference = [ absoluteURI | relativeURI ] [ "#" fragment ]
 
