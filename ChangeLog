@@ -1,3 +1,7 @@
+Wed Jul 14 01:20:21  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* array.c: rdoc patch - unified margin.
+
 Wed Jul 14 00:33:48  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* array.c: rdoc patch. merged patch from Johan Holmberg
