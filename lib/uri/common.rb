@@ -151,8 +151,10 @@ module URI
 		   (?:(#{PATTERN::HOST})(?::(\\d*))?))?(?# 3: host, 4: port)
 	       |
 		 (#{PATTERN::REG_NAME})           (?# 5: registry)
-	       ))?
-	       ((?!//)#{PATTERN::ABS_PATH})?      (?# 6: path)
+	       )
+	     |
+	     (?!//))                              (?# XXX: '//' is the mark for hostport)
+	     (#{PATTERN::ABS_PATH})?              (?# 6: path)
 	   )(?:\\?(#{PATTERN::QUERY}))?           (?# 7: query)
 	|
 	   (#{PATTERN::OPAQUE_PART})              (?# 8: opaque)
@@ -396,31 +398,21 @@ module URI
 =end
   def self.extract(str, schemes = [])
     urls = []
-    if schemes.size > 0
-      tmp = Regexp.new('(?:' + schemes.collect{|s| 
-			 Regexp.quote(s + ':')
-		       }.join('|') + ')', 
-		       Regexp::IGNORECASE, 'N')
-      str.scan(tmp) {
-	tmp_str = $& + $'
-	if ABS_URI_REF =~ tmp_str
-	  if block_given?
-	    yield($&)
-	  else
-	    urls << $&
-	  end
-	end
-      }
-
-    else
-      str.scan(ABS_URI_REF) {
-	if block_given?
-	  yield($&)
-	else
-	  urls << $&
-	end
-      }
+    regexp = ABS_URI_REF
+    unless schemes.empty?
+      regexp = Regexp.new('(?=' + schemes.collect{|s| 
+			    Regexp.quote(s + ':')
+			  }.join('|') + ')' + PATTERN::X_ABS_URI, 
+			  Regexp::IGNORECASE, 'N')
     end
+
+    str.scan(ABS_URI_REF) {
+      if block_given?
+	yield($&)
+      else
+	urls << $&
+      end
+    }
 
     if block_given?
       return nil

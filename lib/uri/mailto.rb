@@ -46,19 +46,18 @@ module URI
     # hname      =  *urlc
     # hvalue     =  *urlc
     # header     =  hname "=" hvalue
-    HEADER_PATTERN = "(?:[^?=&]*=[^?=&]*)"
-    HEADER_REGEXP = /#{header_pattern}/
+    HEADER_PATTERN = "(?:[^?=&]*=[^?=&]*)".freeze
+    HEADER_REGEXP  = Regexp.new(HEADER_PATTERN, 'N').freeze
     # headers    =  "?" header *( "&" header )
     # to         =  #mailbox
     # mailtoURL  =  "mailto:" [ to ] [ headers ]
-    MAILBOX_PATTERN = "(?:[^(),%?=&]|#{PATTERN::ESCAPED})"
-    MAILBOX_REGEXP = /#{mailbox_pattern}/
+    MAILBOX_PATTERN = "(?:[^(),%?=&]|#{PATTERN::ESCAPED})".freeze
     MAILTO_REGEXP = Regexp.new("
       \\A
-      (#{mailbox_pattern}*?)                         (?# 1: to)
+      (#{MAILBOX_PATTERN}*?)                          (?# 1: to)
       (?:
         \\?
-        (#{header_pattern}(?:\\&#{header_pattern})*) (?# 2: headers)
+        (#{HEADER_PATTERN}(?:\\&#{HEADER_PATTERN})*)  (?# 2: headers)
       )?
       \\z
     ", Regexp::EXTENDED, 'N').freeze

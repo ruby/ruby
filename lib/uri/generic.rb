@@ -36,7 +36,7 @@ Object
     end
 
     def default_port
-      self.type.default_port
+      self.class.default_port
     end
 
 =begin
@@ -121,7 +121,7 @@ Object
 	end
       else
 	raise ArgumentError, 
-	  "expected Array of or Hash of components of #{self.type} (#{self.type.component.join(', ')})"
+	  "expected Array of or Hash of components of #{self.class} (#{self.class.component.join(', ')})"
       end
 
       tmp << true
@@ -183,6 +183,18 @@ Object
     attr_reader :opaque
     attr_reader :fragment
 
+    # replace self by other URI object
+    def replace!(oth)
+      if self.class != oth.class
+	raise ArgumentError, "expected #{self.class} object"
+      end
+
+      component.each do |c|
+	self.__send__("#{c}=", oth.__send__(c))
+      end
+    end
+    private :replace!
+
 =begin
 
 === Instance Methods
@@ -195,7 +207,7 @@ Object
 
 =end
     def component
-      self.type.component
+      self.class.component
     end
 
     # set_XXX method sets value to @XXX instance variable with no check, 
@@ -436,7 +448,13 @@ Object
     private :check_port
 
     def set_port(v)
-      v = v.to_i if v && !v.kind_of?(Fixnum)
+      unless !v || v.kind_of?(Fixnum)
+	if v.empty?
+	  v = nil
+	else
+	  v = v.to_i
+	end
+      end
       @port = v
     end
     protected :set_port
@@ -683,6 +701,7 @@ Object
 =begin
 
 --- URI::Generic#merge(rel)
+--- URI::Generic#merge!(rel)
 --- URI::Generic#+(rel)
 
 =end
@@ -749,6 +768,16 @@ Object
       end
     end
     private :merge_path
+
+    def merge!(oth)
+      t = merge(oth)
+      if self == t
+	nil
+      else
+	replace!(t)
+	self
+      end
+    end
 
     # abs(self) + rel(oth) => abs(new)
     def merge(oth)
@@ -1085,9 +1114,23 @@ Object
     end
 
 =begin
+--- URI::Generic#select(*components)
+=end
+    def select(*components)
+      components.collect do |c|
+	if component.include?(c)
+	  self.send(c)
+	else
+	  raise ArgumentError, 
+	    "expected of components of #{self.class} (#{self.class.component.join(', ')})"
+	end
+      end
+    end
+
+=begin
 =end
     def inspect
-      sprintf("#<%s:0x%x URL:%s>", self.type.to_s, self.id, self.to_s)
+      sprintf("#<%s:0x%x URL:%s>", self.class.to_s, self.id, self.to_s)
     end
 
 =begin
