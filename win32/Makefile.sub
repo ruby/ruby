@@ -254,7 +254,7 @@ config.h: Makefile $(srcdir)/win32/Makefile.sub
 
 config.status: Makefile $(srcdir)/win32/Makefile.sub $(MINIRUBY)
 	@echo Creating config.status
-	@$(MINIRUBY) -pe "chomp(' ');~/@CFLAGS@/||$$_['$(CFLAGS)']='$$(CFLAGS)'" << > $@
+	@$(MINIRUBY) -pe "~/@CFLAGS@/||$$_.sub!(/#{Regexp.quote('$(CFLAGS)')}/o, '$$(CFLAGS)')" << > $@
 # Generated automatically by Makefile.sub.
 s,@SHELL@,$$(COMSPEC),;t t
 s,@CFLAGS@,$(CFLAGS),;t t
