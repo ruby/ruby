@@ -741,7 +741,9 @@ char *cmd;
     int status = -1;
     char *shell, *cmd2;
     int mode = NtSyncProcess ? P_WAIT : P_NOWAIT;
+    char **env = NULL;
 
+    env = win32_get_environ();
     /* save an extra exec if possible */
     if ((shell = getenv("RUBYSHELL")) != 0) {
 	if (NtHasRedirection(cmd)) {
@@ -765,15 +767,17 @@ char *cmd;
 	    argv[1] = "-c";
 	    argv[2] = cmdline;
 	    argv[4] = NULL;
-	    status = spawnvpe(mode, argv[0], argv, environ);
+	    status = spawnvpe(mode, argv[0], argv, env);
 	    /* return spawnle(mode, shell, shell, "-c", cmd, (char*)0, environ); */
 	    free(cmdline);
+	    if (env) win32_free_environ(env);
 	    return (int)((status & 0xff) << 8);
 	} 
     }
     else if ((shell = getenv("COMSPEC")) != 0) {
 	if (NtHasRedirection(cmd) /* || isInternalCmd(cmd) */) {
-	    status = spawnle(mode, shell, shell, "/c", cmd, (char*)0, environ);
+	    status = spawnle(mode, shell, shell, "/c", cmd, (char*)0, env);
+	    if (env) win32_free_environ(env);
 	    return (int)((status & 0xff) << 8);
 	}
     }
@@ -792,14 +796,16 @@ char *cmd;
     }
     *a = NULL;
     if (argv[0]) {
-	if ((status = spawnvpe(mode, argv[0], argv, environ)) == -1) {
+	if ((status = spawnvpe(mode, argv[0], argv, env)) == -1) {
 	    free(argv);
 	    free(cmd2);
+	    if (env) win32_free_environ(env);
 	    return -1;
 	}
     }
     free(cmd2);
     free(argv);
+    if (env) win32_free_environ(env);
     return (int)((status & 0xff) << 8);
 }
 

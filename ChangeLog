@@ -1,3 +1,8 @@
+Mon Sep  9 20:41:03 2002  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* win32/win32.c (do_spawn): fix the bug which the environment variables
+	  had not spread.
+
 Sun Sep  8 19:21:48 2002  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* dir.c (rb_glob): add prototype of 2nd argument to avoid VC++ warning.
