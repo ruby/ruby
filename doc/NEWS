@@ -1,3 +1,8 @@
+: Curses
+
+  Updated.  New methods and constants for using the mouse, character
+  attributes, colors and key codes have been added.
+
 : Range#step([step=1])
 
   Added.
@@ -30,19 +35,6 @@
 : Module#include?
 
   Added. [ruby-dev:13941] 
-
-: Digest module
-
-  Added as a replacement for md5 and sha1 modules.
-
-    require 'digest/md5'
-    include Digest
-
-    md = MD5.new
-    md << "abc"
-    puts md
-
-    puts MD5.hexdigest("123")
 
 : Dir::chdir
 
@@ -149,15 +141,6 @@
 
   Extended to take an optional expression, which is used as a value
   for termination. [experimental]
-
-: SHA1 module
-
-  ruby-sha1 1.2 is newly imported as a standard library, which shares
-  a common interface with the existing md5 module.
-
-: MD5#<<
-
-  Added as an alias for MD5#update.
 
 : to_str
 
