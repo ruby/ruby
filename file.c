@@ -1046,12 +1046,7 @@ test_wr(obj, fname)
 
     if (rb_stat(fname, &st) < 0) return Qnil;
     if ((st.st_mode & (S_IROTH)) == S_IROTH) {
-#ifdef __BORLANDC__
-      return UINT2NUM((unsigned short)(st.st_mode &
-				       (S_IRUGO|S_IWUGO|S_IXUGO)));
-#else
       return UINT2NUM(st.st_mode & (S_IRUGO|S_IWUGO|S_IXUGO));
-#endif
     }
 #endif
     return Qnil;
@@ -1114,12 +1109,7 @@ test_ww(obj, fname)
 
     if (rb_stat(fname, &st) < 0) return Qfalse;
     if ((st.st_mode & (S_IWOTH)) == S_IWOTH) {
-#ifdef __BORLANDC__
-      return UINT2NUM((unsigned short)(st.st_mode &
-				       (S_IRUGO|S_IWUGO|S_IXUGO)));
-#else
       return UINT2NUM(st.st_mode & (S_IRUGO|S_IWUGO|S_IXUGO));
-#endif
     }
 #endif
     return Qnil;
@@ -3577,6 +3567,33 @@ rb_stat_R(obj)
 }
 
 /*
+ * call-seq:
+ *    stat.world_readable? => fixnum or nil
+ *
+ * If <i>stat</i> is readable by others, returns an integer
+ * representing the file permission bits of <i>stat</i>. Returns
+ * <code>nil</code> otherwise. The meaning of the bits is platform
+ * dependent; on Unix systems, see <code>stat(2)</code>.
+ *     
+ *    m = File.stat("/etc/passwd").world_readable?  # => 420
+ *    sprintf("%o", m)				    # => "644"
+ */
+
+static VALUE
+rb_stat_wr(obj)
+    VALUE obj;
+{
+#ifdef S_IROTH
+    if ((get_stat(obj)->st_mode & (S_IROTH)) == S_IROTH) {
+      return UINT2NUM(get_stat(obj)->st_mode & (S_IRUGO|S_IWUGO|S_IXUGO));
+    }
+    else {
+      return Qnil;
+    }
+#endif
+}
+
+/*
  *  call-seq:
  *     stat.writable? -> true or false
  *  
@@ -3636,6 +3653,33 @@ rb_stat_W(obj)
     if (!(st->st_mode & S_IWOTH)) return Qfalse;
 #endif
     return Qtrue;
+}
+
+/*
+ * call-seq:
+ *    stat.world_writable? => fixnum or nil
+ *
+ * If <i>stat</i> is writable by others, returns an integer
+ * representing the file permission bits of <i>stat</i>. Returns
+ * <code>nil</code> otherwise. The meaning of the bits is platform
+ * dependent; on Unix systems, see <code>stat(2)</code>.
+ *     
+ *    m = File.stat("/tmp").world_writable?	    # => 511
+ *    sprintf("%o", m)				    # => "777"
+ */
+
+static VALUE
+rb_stat_ww(obj)
+    VALUE obj;
+{
+#ifdef S_IROTH
+    if ((get_stat(obj)->st_mode & (S_IWOTH)) == S_IWOTH) {
+      return UINT2NUM(get_stat(obj)->st_mode & (S_IRUGO|S_IWUGO|S_IXUGO));
+    }
+    else {
+      return Qnil;
+    }
+#endif
 }
 
 /*
@@ -4248,8 +4292,10 @@ Init_File()
     rb_define_method(rb_cStat, "directory?",  rb_stat_d, 0);
     rb_define_method(rb_cStat, "readable?",  rb_stat_r, 0);
     rb_define_method(rb_cStat, "readable_real?",  rb_stat_R, 0);
+    rb_define_method(rb_cStat, "world_readable?", rb_stat_wr, 0);
     rb_define_method(rb_cStat, "writable?",  rb_stat_w, 0);
     rb_define_method(rb_cStat, "writable_real?",  rb_stat_W, 0);
+    rb_define_method(rb_cStat, "world_writable?", rb_stat_ww, 0);
     rb_define_method(rb_cStat, "executable?",  rb_stat_x, 0);
     rb_define_method(rb_cStat, "executable_real?",  rb_stat_X, 0);
     rb_define_method(rb_cStat, "file?",  rb_stat_f, 0);

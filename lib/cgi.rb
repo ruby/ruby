@@ -1125,17 +1125,16 @@ class CGI
       @multipart
     end
 
-    class Value < DelegateClass(String)    # :nodoc:
-      def initialize(str, params)
+    module Value    # :nodoc:
+      def set_params(params)
         @params = params
-        super(str)
       end
       def [](idx, *args)
         if args.size == 0
           warn "#{caller(1)[0]}:CAUTION! cgi['key'] == cgi.params['key'][0]; if want Array, use cgi.params['key']"
-          self
+          @params[idx]
         else
-          self.to_s[idx,*args]
+          super[idx,*args]
         end
       end
       def first
@@ -1165,7 +1164,10 @@ class CGI
           Tempfile.new("CGI")
         end
       else
-        Value.new(value || "", params)
+        str = if value then value.dup else "" end
+        str.extend(Value)
+        str.set_params(params)
+        str
       end
     end
 

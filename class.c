@@ -177,7 +177,6 @@ rb_define_class_id(id, super)
 
     if (!super) super = rb_cObject;
     klass = rb_class_new(super);
-    rb_name_class(klass, id);
     rb_make_metaclass(klass, RBASIC(super)->klass);
 
     return klass;
@@ -228,6 +227,7 @@ rb_define_class(name, super)
     }
     klass = rb_define_class_id(id, super);
     st_add_direct(rb_class_tbl, id, klass);
+    rb_name_class(klass, id);
     rb_const_set(rb_cObject, id, klass);
     rb_class_inherited(super, klass);
 

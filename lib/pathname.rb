@@ -720,7 +720,7 @@ class Pathname    # * FileTest *
   def readable?() FileTest.readable?(@path) end
 
   # See <tt>FileTest.readable_world?</tt>.
-  def readable_world?() FileTest.readable_world?(@path) end
+  def world_readable?() FileTest.world_readable?(@path) end
 
   # See <tt>FileTest.readable_real?</tt>.
   def readable_real?() FileTest.readable_real?(@path) end
@@ -747,7 +747,7 @@ class Pathname    # * FileTest *
   def writable?() FileTest.writable?(@path) end
 
   # See <tt>FileTest.writable_world?</tt>.
-  def writable_world?() FileTest.writable_world?(@path) end
+  def world_writable?() FileTest.world_writable?(@path) end
 
   # See <tt>FileTest.writable_real?</tt>.
   def writable_real?() FileTest.writable_real?(@path) end

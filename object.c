@@ -1229,7 +1229,7 @@ rb_mod_to_s(klass)
 
 	return s;
     }
-    return rb_str_dup(rb_class_path(klass));
+    return rb_str_dup(rb_class_name(klass));
 }
 
 /*

@@ -1131,7 +1131,7 @@ error_print()
     else {
 	VALUE epath;
 
-	epath = rb_class_path(eclass);
+	epath = rb_class_name(eclass);
 	if (elen == 0) {
 	    warn_print(": ");
 	    warn_print2(RSTRING(epath)->ptr, RSTRING(epath)->len);
@@ -9060,7 +9060,7 @@ Init_Proc()
     exception_error = rb_exc_new2(rb_eFatal, "exception reentered");
     rb_global_variable(&exception_error);
 
-    rb_eSysStackError = rb_define_class("SystemStackError", rb_eStandardError);
+    rb_eSysStackError = rb_define_class("SystemStackError", rb_eException);
     sysstack_error = rb_exc_new2(rb_eSysStackError, "stack level too deep");
     OBJ_TAINT(sysstack_error);
     rb_global_variable(&sysstack_error);
