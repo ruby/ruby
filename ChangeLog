@@ -1,3 +1,9 @@
+Wed Feb  9 10:02:02 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/tk/make-tkutil, ext/tk/tkutil/subconf.rb: no longer used.
+
+	* ext/tk/tkutil/extconf.rb: need to compile tkutil. [ruby-dev:25607]
+
 Tue Feb  8 23:48:36 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/drb.rb: reject :instance_eval, :class_eval, :module_eval
