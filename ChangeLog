@@ -1,4 +1,6 @@
-Sun May 11 05:50:39 2003  Tanaka Akira  <akr@m17n.org>
+Sun May 11 13:50:12 2003  Tanaka Akira  <akr@m17n.org>
+
+        * lib/pp.rb: refine to_s test.
 
         * lib/pp.rb (PP::ObjectMixin#pretty_print): refine to_s handling.
 

@@ -119,6 +119,8 @@ Christian Lindig, Strictly Pretty, March 2000,
 Philip Wadler, A prettier printer, March 1998,
 ((<URL:http://www.research.avayalabs.com/user/wadler/topics/recent.html#prettier>))
 
+== AUTHOR
+Tanaka Akira <akr@m17n.org>
 =end
 
 class PrettyPrint

@@ -115,6 +115,9 @@ PP#pp to print the object.
     If you implement (({pretty_print})), it can be used as follows.
 
       alias inspect pretty_print_inspect
+
+== AUTHOR
+Tanaka Akira <akr@m17n.org>
 =end
 
 require 'prettyprint'
@@ -524,21 +527,21 @@ if __FILE__ == $0
       assert_equal("#{a.inspect}\n", PP.pp(a, ''))
     end
 
-    class Test_to_s_with_iv
-      def initialize() @a = nil end
-      def to_s() "aaa" end
-    end
     def test_to_s_with_iv
-      a = Test_to_s_with_iv.new
-      assert_equal("#{a.inspect}\n", PP.pp(a, ''))
+      a = Object.new
+      def a.to_s() "aaa" end
+      a.instance_eval { @a = nil }
+      result = PP.pp(a, '')
+      assert_equal("#{a.inspect}\n", result)
+      assert_match(/\A#<Object.*>\n\z/m, result)
     end
     
-    class Test_to_s_without_iv
-      def to_s() "aaa" end
-    end
     def test_to_s_without_iv
-      a = Test_to_s_without_iv.new
-      assert_equal("#{a.inspect}\n", PP.pp(a, ''))
+      a = Object.new
+      def a.to_s() "aaa" end
+      result = PP.pp(a, '')
+      assert_equal("#{a.inspect}\n", result)
+      assert_equal("aaa\n", result)
     end
   end
 
