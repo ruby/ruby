@@ -918,6 +918,7 @@ test/ruby/test_path.rb
 test/ruby/test_pipe.rb
 test/ruby/test_proc.rb
 test/ruby/test_range.rb
+test/ruby/test_readpartial.rb
 test/ruby/test_signal.rb
 test/ruby/test_sprintf.rb
 test/ruby/test_stringchar.rb
