@@ -38,4 +38,4 @@ $(WPROGRAM): $(RUBYW_INSTALL_NAME).res.@OBJEXT@
 $(RUBYDEF): $(LIBRUBY_A)
 	echo EXPORTS > $(RUBYDEF)
 	@NM@ --extern-only --defined-only $(LIBRUBY_A) | \
-	  @MINIRUBY@ -ne 'puts $$1 if / [CDT] _(.*)$$/' >> $(RUBYDEF)
+	  @MINIRUBY@ -ne 'puts $$1 if / [BCDT] _(.*)$$/' >> $(RUBYDEF)
