@@ -1,3 +1,8 @@
+Wed Oct 27 09:17:30 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (str_gsub): use a string object for exception safeness.
+	  [ruby-dev:24601]
+
 Tue Oct 26 23:52:32 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_getline): rs modification check should not interfere in the loop.
