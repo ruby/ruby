@@ -1,3 +1,7 @@
+Fri Feb 13 21:51:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
+
+	* lib/fileutils.rb: slighly improved documentation (sync with 1.8)
+
 Fri Feb 13 19:57:01 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rss/test_trackback.rb: added tests for TrackBack with RSS

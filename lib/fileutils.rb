@@ -37,9 +37,9 @@
 #   touch(list, options)
 #
 # The <tt>options</tt> parameter is a hash of options, taken from the list
-# +:force+, +:noop+, +:preserve+, and +:verbose+.  +:noop+ means that no changes
-# are made.  The other two are obvious.  Each method documents the options that
-# it honours.
+# <tt>:force</tt>, <tt>:noop</tt>, <tt>:preserve</tt>, and <tt>:verbose</tt>.
+# <tt>:noop</tt> means that no changes are made.  The other two are obvious.
+# Each method documents the options that it honours.
 #
 # All methods that have the concept of a "source" file or directory can take
 # either one file or a list of files in that argument.  See the method
@@ -56,14 +56,14 @@
 # == module FileUtils::Verbose
 # 
 # This module has all methods of FileUtils module, but it outputs messages
-# before acting.  This equates to passing the +:verbose+ flag to methods in
-# FileUtils.
+# before acting.  This equates to passing the <tt>:verbose</tt> flag to methods
+# in FileUtils.
 # 
 # == module FileUtils::NoWrite
 # 
 # This module has all methods of FileUtils module, but never changes
-# files/directories.  This equates to passing the +:noop+ flag to methods in
-# FileUtils.
+# files/directories.  This equates to passing the <tt>:noop</tt> flag to methods
+# in FileUtils.
 # 
 
 
@@ -820,7 +820,7 @@ module FileUtils
 
   # 
   # This module has all methods of FileUtils module, but it outputs messages
-  # before acting.  This equates to passing the +:verbose+ flag to methods in
+  # before acting.  This equates to passing the <tt>:verbose</tt> flag to methods in
   # FileUtils.
   # 
   module Verbose
@@ -848,7 +848,7 @@ module FileUtils
 
   # 
   # This module has all methods of FileUtils module, but never changes
-  # files/directories.  This equates to passing the +:noop+ flag to methods in
+  # files/directories.  This equates to passing the <tt>:noop</tt> flag to methods in
   # FileUtils.
   # 
   module NoWrite
@@ -877,8 +877,3 @@ module FileUtils
 
 end
 
-
-# Documentation comments:
-#  - Some RDoc markup used here doesn't work (namely, +file1+, +:noop+,
-#    +dir/file+).  I consider this a bug and expect that these will be valid in
-#    the near future.
