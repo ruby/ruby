@@ -380,6 +380,7 @@ long re_syntax_options = 0;
 /* Macros for re_compile_pattern, which is found below these definitions.  */
 
 #define TRANSLATE_P() ((options&RE_OPTION_IGNORECASE) && translate)
+#define TRY_TRANSLATE() ((bufp->options&(RE_OPTION_IGNORECASE|RE_MAY_IGNORECASE)) && translate)
 /* Fetch the next character in the uncompiled pattern---translating it 
    if necessary.  Also cast from a signed character in the constant
    string passed to us by the user to an unsigned char that we can use
@@ -2228,17 +2229,13 @@ re_compile_fastmap(bufp)
 	{
 	case exactn:
 	  if (p[1] == 0xff) {
-	    if (TRANSLATE_P()) {
+	    if (TRANSLATE_P())
 	      fastmap[translate[p[2]]] = 2;
-	      bufp->options |= RE_MAY_IGNORECASE;
-	    }
 	    else
 	      fastmap[p[2]] = 2;
 	  }
-	  else if (TRANSLATE_P()) {
+	  else if (TRANSLATE_P())
 	    fastmap[translate[p[1]]] = 1;
-	    bufp->options |= RE_MAY_IGNORECASE;
-	  }
 	  else
 	    fastmap[p[1]] = 1;
 	  break;
@@ -2260,10 +2257,8 @@ re_compile_fastmap(bufp)
 	  continue;
 
 	case endline:
-	  if (TRANSLATE_P()) {
+	  if (TRANSLATE_P())
 	    fastmap[translate['\n']] = 1;
-	    bufp->options |= RE_MAY_IGNORECASE;
-	  }
 	  else
 	    fastmap['\n'] = 1;
 
@@ -2386,10 +2381,8 @@ re_compile_fastmap(bufp)
 	  for (j = *p++ * BYTEWIDTH - 1; j >= 0; j--)
 	    if (p[j / BYTEWIDTH] & (1 << (j % BYTEWIDTH)))
 	      {
-		if (TRANSLATE_P()) {
+		if (TRANSLATE_P())
 		  fastmap[translate[j]] = 1;
-		  bufp->options |= RE_MAY_IGNORECASE;
-		}
 		else
 		  fastmap[j] = 1;
 	      }
@@ -2545,8 +2538,7 @@ re_search(bufp, string, size, startpos, range, regs)
       && bufp->must
       && !must_instr(bufp->must+1, bufp->must[0],
 		     string+startpos, size-startpos,
-		     (bufp->options&(RE_OPTION_IGNORECASE|RE_MAY_IGNORECASE))?
-		     translate:0)) {
+		     TRY_TRANSLATE()?translate:0)) {
     return -1;
   }
 
@@ -2584,8 +2576,7 @@ re_search(bufp, string, size, startpos, range, regs)
 		    break;
 		}
 		else 
-		  if (fastmap[(bufp->options&(RE_OPTION_IGNORECASE|RE_MAY_IGNORECASE))?
-			     translate[c] : c])
+		  if (fastmap[TRY_TRANSLATE() ? translate[c] : c])
 		    break;
 		range--;
 	      }
@@ -2597,8 +2588,7 @@ re_search(bufp, string, size, startpos, range, regs)
 
 	      c = string[startpos];
               c &= 0xff;
-	      if ((bufp->options&(RE_OPTION_IGNORECASE|RE_MAY_IGNORECASE)) ?
-		  !fastmap[translate[c]] : !fastmap[c])
+	      if (TRY_TRANSLATE() ? !fastmap[translate[c]] : !fastmap[c])
 		goto advance;
 	    }
 	}
@@ -3394,6 +3384,7 @@ re_match(bufp, string_arg, size, pos, regs)
 	  continue;
 
         case casefold_on:
+	  bufp->options |= RE_MAY_IGNORECASE;
 	  options |= RE_OPTION_IGNORECASE;
 	  continue;
 

@@ -2,7 +2,7 @@
 # $Id$
 # Copyright (C) 1998 Yukihiro Matsumoto. All rights reserved. 
 
-# The ObjectSpace extention:
+# The ObjectSpace extension:
 #
 #  ObjectSpace.define_finalizer(obj, proc=lambda())
 #

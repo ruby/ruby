@@ -1,4 +1,4 @@
-# module to create Makefile for extention modules
+# module to create Makefile for extension modules
 # invoke like: ruby -r mkmf extconf.rb
 
 require 'rbconfig'
