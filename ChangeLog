@@ -1,3 +1,11 @@
+Thu May 29 23:41:34 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
+
+    * ext/syck/handler.c, ext/syck/syck.h: removed syck_fold_format().
+
+    * ext/syck/gram.c: flexibility for aliases and anchors.
+
+    * ext/syck/token.c: folding now handled in the tokenizer.
+
 Fri May 30 06:21:18 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* variable.c (rb_autoload_load): should delete autoloaded
@@ -111,7 +119,7 @@ Fri May 23 14:19:29 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Thu May 22 18:07:46 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
 
-	* lib/token.c: single- and double-quoted root-level fix.
+	* ext/syck/token.c: single- and double-quoted root-level fix.
 
 	* lib/yaml.rb (YAML::object_maker): can create object attributes (such as
 	  found in Exception class)
