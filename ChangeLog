@@ -1,3 +1,9 @@
+Sat Mar  6 02:00:19 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb: net/https is merged.
+
+	* ext/openssl/lib/net/https.rb: ditto.
+
 Fri Mar  6 00:39:21 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
 
 	* oniggnu.h: imported from Oniguruma library.

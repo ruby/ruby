@@ -25,6 +25,10 @@
 
 require 'net/protocol'
 require 'uri'
+begin
+  require 'net/protocols'
+rescue LoadError
+end
 
 
 module Net # :nodoc:
@@ -305,7 +309,17 @@ module Net # :nodoc:
 
     # The default port to use for HTTP requests; defaults to 80.
     def HTTP.default_port
+      http_default_port()
+    end
+
+    # The default port to use for HTTP requests; defaults to 80.
+    def HTTP.http_default_port
       80
+    end
+
+    # The default port to use for HTTPS requests; defaults to 80.
+    def HTTP.https_default_port
+      443
     end
 
     def HTTP.socket_type   #:nodoc: obsolete
@@ -352,6 +366,19 @@ module Net # :nodoc:
       @read_timeout = 60
 
       @debug_output = nil
+
+      # ssl
+      @use_ssl = false
+      @key = nil
+      @cert = nil
+      @ca_file = nil
+      @ca_path = nil
+      @verify_mode = nil
+      @verify_callback = nil
+      @verify_depth = nil
+      @ssl_timeout = nil
+      @cert_store = nil
+      @peer_cert = nil
     end
 
     def inspect
@@ -403,6 +430,31 @@ module Net # :nodoc:
 
     attr_accessor :close_on_empty_response
 
+    # returns true if use SSL/TLS with HTTP.
+    def use_ssl?
+      @use_ssl
+    end
+
+    alias use_ssl use_ssl?   #:nodoc:
+
+    # turn on/off SSL.
+    # This flag must be set before starting session.
+    # If you change use_ssl value after session started,
+    # a Net::HTTP object raises IOError.
+    def use_ssl=(flag)
+      flag = (flag ? true : false)
+      raise IOError, "use_ssl value changed but session already started" if started? and @use_ssl != flag
+      @use_ssl = flag
+    end
+
+    attr_writer :key, :cert
+    attr_writer :ca_file, :ca_path
+    attr_writer :verify_mode, :verify_callback, :verify_depth
+    attr_writer :cert_store, :ssl_timeout
+    attr_reader :peer_cert
+
+    alias timeout= ssl_timeout=   # for backward compatibility
+
     # Opens TCP connection and HTTP session.
     # 
     # When this method is called with block, gives a HTTP object
@@ -427,9 +479,34 @@ module Net # :nodoc:
     end
 
     def do_start
-      @socket = self.class.socket_type.open(conn_address(), conn_port(),
-                                            @open_timeout, @read_timeout,
-                                            @debug_output)
+      if use_ssl?
+        require 'net/protocols'
+        sockclass = SSLIO
+      else
+        sockclass = InternetMessageIO
+      end
+      @socket = sockclass.open(conn_address(), conn_port(),
+                               @open_timeout, @read_timeout, @debug_output)
+      if use_ssl?
+        if proxy?
+          @socket.writeline sprintf('CONNECT %s:%s HTTP/%s',
+                                    @address, @port, HTTP_VERSION)
+          @socket.writeline ''
+          res = HTTPResponse.read_new(@socket)
+          res.value
+        end
+        @socket.key = @key if @key
+        @socket.cert = @cert if @cert
+        @socket.ca_file = @ca_file
+        @socket.ca_path = @ca_path
+        @socket.verify_mode = @verify_mode
+        @socket.verify_callback = @verify_callback
+        @socket.verify_depth = @verify_depth
+        @socket.timeout = @ssl_timeout
+        @socket.cert_store = @cert_store
+        @socket.ssl_connect
+        @peer_cert = @socket.peer_cert
+      end
       on_connect
       @started = true
     end
@@ -565,7 +642,11 @@ module Net # :nodoc:
       end
 
       def edit_path(path)
-        'http://' + addr_port() + path
+        if use_ssl?
+          "https://#{addr_port()}#{path}"
+        else
+          "http://#{addr_port()}#{path}"
+        end
       end
     end
 
@@ -944,7 +1025,11 @@ module Net # :nodoc:
     private
 
     def addr_port
-      address + (port == HTTP.default_port ? '' : ":#{port}")
+      if use_ssl?
+        address() + (port == HTTP.https_default_port ? '' : ":#{port()}")
+      else
+        address() + (port == HTTP.http_default_port ? '' : ":#{port()}")
+      end
     end
 
     def D(msg)

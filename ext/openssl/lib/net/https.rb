@@ -33,7 +33,7 @@ Simple HTTP client is here:
       path   = $3
     end
     h = Net::HTTP.new(host, port)
-    h.get2(path){ |resp| print resp.body }
+    h.request_get(path) {|res| print res.body }
 
 It can be replaced by follow one:
 
@@ -47,7 +47,7 @@ It can be replaced by follow one:
     end
     h = Net::HTTP.new(host, port)
     h.use_ssl = true if scheme == "https" # enable SSL/TLS
-    h.get2(path){ |resp| print resp.body }
+    h.request_get(path) {|res| print res.body }
 
 === Instance Methods
 
@@ -98,91 +98,5 @@ It can be replaced by follow one:
 
 =end
 
-require 'net/protocols'
+# HTTPS implementation is merged in to net/http.
 require 'net/http'
-
-module Net
-  class HTTP
-    class Conn < HTTPRequest
-      REQUEST_HAS_BODY=false
-      RESPONSE_HAS_BODY=false
-      METHOD="connect"
-
-      def initialize
-        super nil, nil
-      end
-
-      def exec( sock, addr, port, ver )
-        @socket = sock
-        request(addr, port, ver)
-      end
-
-      def request( addr, port, ver )
-        @socket.writeline sprintf('CONNECT %s:%s HTTP/%s', addr, port, ver)
-        @socket.writeline ''
-      end
-    end
-
-    module ProxyMod
-      def edit_path( path )
-        if use_ssl
-          'https://' + addr_port + path
-        else
-          'http://' + addr_port + path
-        end
-      end
-    end
-
-    def self.socket_type
-      SSLIO
-    end
-
-    attr_reader :use_ssl
-    attr_writer :key, :cert
-    attr_writer :ca_file, :ca_path
-    attr_writer :verify_mode, :verify_callback, :verify_depth
-    attr_writer :cert_store, :timeout
-    attr_reader :peer_cert
-
-    alias :default_initialize :initialize
-
-    def initialize(*args)
-      default_initialize(*args)
-      @key = @cert = @ca_file = @ca_path = @verify_mode =
-      @verify_callback = @verify_depth = @timeout = @cert_store = nil
-      @already_connected = false
-    end
-
-    def use_ssl=(flag)
-      if @already_connected && !@use_ssl
-        raise ProtocolError, "connection is alrady set up"
-      end
-      @use_ssl = flag
-    end
-
-    def on_connect
-      if use_ssl
-        if proxy?
-          Conn.new.exec(@socket, @address, @port, "1.0")
-          resp = HTTPResponse.read_new(@socket)
-          if resp.code != '200'
-            raise resp.message
-          end
-        end
-        @socket.key             = @key       if @key
-        @socket.cert            = @cert      if @cert
-        @socket.ca_file         = @ca_file
-        @socket.ca_path         = @ca_path
-        @socket.verify_mode     = @verify_mode
-        @socket.verify_callback = @verify_callback
-        @socket.verify_depth    = @verify_depth
-        @socket.timeout         = @timeout
-        @socket.cert_store      = @cert_store
-        @socket.ssl_connect
-        @peer_cert = @socket.peer_cert
-      end
-      @already_connected = true
-    end
-
-  end
-end
