@@ -1,84 +1,193 @@
 =begin
 
-= net/smtp.rb version 1.1.34
+= net/smtp.rb version 1.1.35
 
-written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
+Copyright (c) 1999-2001 Yukihiro Matsumoto
 
-This program is free software.
-You can distribute/modify this program under
-the terms of the Ruby Distribute License.
+written & maintained by Minero Aoki <aamine@loveruby.net>
 
-Japanese version of this document is in "net" full package.
-You can get it from RAA
-(Ruby Application Archive: http://www.ruby-lang.org/en/raa.html).
+This program is free software. You can re-distribute and/or
+modify this program under the same terms as Ruby itself,
+Ruby Distribute License or GNU General Public License.
 
+NOTE: You can get Japanese version of this document from
+Ruby Documentation Project (RDP):
+((<URL:http://www.ruby-lang.org/~rubikitch/RDP.cgi>))
 
-== Net::SMTP
+== What is This Module?
 
-=== Super Class
+This module provides your program the functions to send internet
+mail via SMTP, Simple Mail Transfer Protocol. For details of
+SMTP itself, refer [RFC2821] ((<URL:http://www.ietf.org/rfc/rfc2821.txt>)).
 
-Net::Protocol
+== What This Module is NOT?
+
+This module does NOT provide the functions to compose internet
+mail. You must create it by yourself. For details of internet mail
+format, see [RFC2822] ((<URL:http://www.ietf.org/rfc/rfc2822.txt>)).
+
+== Examples
+
+=== Sending Mail
+
+You must open connection to SMTP server before sending mails.
+First argument is the address of SMTP server, and second argument
+is port number. Using SMTP.start with block is the most simple way
+to do it. SMTP Connection is closed automatically after block is
+executed.
+
+  require 'net/smtp'
+  Net::SMTP.start( 'your.smtp.server', 25 ) {|smtp|
+    # use smtp object only in this block
+  }
+
+Replace 'your.smtp.server' by your SMTP server. Normally
+your system manager or internet provider is supplying a server
+for you.
+
+Then you can send mail.
+
+  require 'net/smtp'
+
+  Net::SMTP.start( 'your.smtp.server', 25 ) {|smtp|
+    smtp.send_mail <<EndOfMail, 'your@mail.address', 'to@some.domain'
+  From: Your Name <your@mail.address>
+  To: Dest Address <to@some.domain>
+  Subject: test mail
+  Date: Sat, 23 Jun 2001 16:26:43 +0900
+  Message-Id: <unique.message.id.string@some.domain>
+
+  This is test mail.
+  EndOfMail
+  }
+
+=== Sending Mails from Any Sources
+
+In an example above I sent mail from String (here document literal).
+SMTP#send_mail accepts any objects which has "each" method
+like File and Array.
+
+  require 'net/smtp'
+  Net::SMTP.start( 'your.smtp.server', 25 ) {|smtp|
+    File.open( 'Mail/draft/1' ) {|f|
+      smtp.send_mail f, 'your@mail.address', 'to@some.domain'
+    }
+  }
+
+=== Giving "Hello" Domain
+
+If your machine does not have canonical host name, maybe you
+must designate the third argument of SMTP.start.
+
+  Net::SMTP.start( 'your.smtp.server', 25,
+                   'mail.from.domain' ) {|smtp|
+
+This argument gives MAILFROM domain, the domain name that
+you send mail from. SMTP server might judge if he (or she?)
+send or reject SMTP session by this data.
+
+== class Net::SMTP
 
 === Class Methods
 
 : new( address = 'localhost', port = 25 )
   creates a new Net::SMTP object.
 
-: start( address = 'localhost', port = 25, *protoargs )
-: start( address = 'localhost', port = 25, *protoargs ) {|smtp| .... }
-  is equal to Net::SMTP.new( address, port ).start( *protoargs )
+: start( address = 'localhost', port = 25, helo_domain = Socket.gethostname, account = nil, password = nil, authtype = nil )
+: start( address = 'localhost', port = 25, helo_domain = Socket.gethostname, account = nil, password = nil, authtype = nil ) {|smtp| .... }
+  is equal to
+    Net::SMTP.new(address,port).start(helo_domain,account,password,authtype)
 
-=== Methods
+    # example
+    Net::SMTP.start( 'your.smtp.server' ) {
+      smtp.send_mail mail_string, 'from@mail.address', 'dest@mail.address'
+    }
 
-: start( helo_domain = Socket.gethostname, account = nil, password = nil, authtype = nil )
-: start( helo_domain = Socket.gethostname, account = nil, password = nil, authtype = nil ) {|smtp| .... }
+=== Instance Methods
+
+: start( helo_domain = <local host name>, account = nil, password = nil, authtype = nil )
+: start( helo_domain = <local host name>, account = nil, password = nil, authtype = nil ) {|smtp| .... }
   opens TCP connection and starts SMTP session.
   If protocol had been started, do nothing and return false.
+  HELO_DOMAIN is a domain that you'll dispatch mails from.
 
   When this methods is called with block, give a SMTP object to block and
   close session after block call finished.
 
-  If account and password are given, is trying to get authentication
-  by using AUTH command. "authtype" is :plain (symbol) or :cram_md5.
+  If both of account and password are given, is trying to get
+  authentication by using AUTH command. :plain or :cram_md5 is
+  allowed for AUTHTYPE.
+
+: active?
+    true if SMTP session is started.
+
+: address
+    the address to connect
+
+: port
+    the port number to connect
+
+: open_timeout
+: open_timeout=(n)
+    seconds to wait until connection is opened.
+    If SMTP object cannot open a conection in this seconds,
+    it raises TimeoutError exception.
+
+: read_timeout
+: read_timeout=(n)
+    seconds to wait until reading one block (by one read(1) call).
+    If SMTP object cannot open a conection in this seconds,
+    it raises TimeoutError exception.
+
+: finish
+    finishes SMTP session.
+    If SMTP session had not started, do nothing and return false.
 
 : send_mail( mailsrc, from_addr, *to_addrs )
-: sendmail( mailsrc, from_addr, *to_addrs )
-  This method sends 'mailsrc' as mail. SMTP read strings
-  from 'mailsrc' by calling 'each' iterator, and convert them
-  into "\r\n" terminated string when write.
+  This method sends MAILSRC as mail. A SMTP object read strings
+  from MAILSRC by calling "each" iterator, with converting them
+  into CRLF ("\r\n") terminated string when write.
 
-  from_addr must be String.
-  to_addrs must be a String(s) or an Array of String.
+  FROM_ADDR must be a String, representing source mail address.
+  TO_ADDRS must be Strings or an Array of Strings, representing
+  destination mail addresses.
 
-  Exceptions which SMTP raises are:
-      * Net::ProtoSyntaxError: syntax error (errno.500)
-      * Net::ProtoFatalError: fatal error (errno.550)
-      * Net::ProtoUnknownError: unknown error
-      * Net::ProtoServerBusy: temporary error (errno.420/450)
+    # example
+    Net::SMTP.start( 'your.smtp.server' ) {|smtp|
+      smtp.send_mail mail_string,
+                     'from@mail.address',
+                     'dest@mail.address' 'dest2@mail.address'
+    }
 
-    # usage example
+: ready( from_addr, *to_addrs ) {|adapter| .... }
+  This method stands by the SMTP object for sending mail and
+  give adapter object to the block. ADAPTER accepts only "write"
+  method.
 
-    Net::SMTP.start( 'localhost', 25 ) do |smtp|
-      smtp.send_mail mail_string, 'from-addr@foo.or.jp', 'to-addr@bar.or.jp'
-    end
+  FROM_ADDR must be a String, representing source mail address.
+  TO_ADDRS must be Strings or an Array of Strings, representing
+  destination mail addresses.
 
-: ready( from_addr, to_addrs ) {|adapter| .... }
-  This method stands by the SMTP object for sending mail.
-  "adapter" object accepts only "write" method.
-
-    # usage example
-
-    Net::SMTP.start( 'localhost', 25 ) do |smtp|
-      smtp.ready( from, to ) do |adapter|
+    # example
+    Net::SMTP.start( 'your.smtp.server', 25 ) {|smtp|
+      smtp.ready( 'from@mail.addr', 'dest@mail.addr' ) do |adapter|
         adapter.write str1
         adapter.write str2
         adapter.write str3
       end
-    end
+    }
 
-: finish
-  finishes SMTP session.
-  If SMTP session had not started, do nothing and return false.
+== Exceptions
+
+SMTP objects raise these exceptions:
+: Net::ProtoSyntaxError
+    syntax error (errno.500)
+: Net::ProtoFatalError
+    fatal error (errno.550)
+: Net::ProtoUnknownError
+    unknown error. (is probably bug)
+: Net::ProtoServerBusy
+    temporary error (errno.420/450)
 
 =end
 

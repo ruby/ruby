@@ -1,60 +1,18 @@
 =begin
 
-= net/protocol.rb version 1.1.34
+= net/protocol.rb version 1.1.35
 
-written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
+Copyright (c) 1999-2001 Yukihiro Matsumoto
 
-This program is free software.
-You can distribute/modify this program under
-the terms of the Ruby Distribute License.
+written & maintained by Minero Aoki <aamine@loveruby.net>
 
-Japanese version of this document is in "net" full package.
-You can get it from RAA
-(Ruby Application Archive: http://www.ruby-lang.org/en/raa.html).
+This program is free software. You can re-distribute and/or
+modify this program under the same terms as Ruby itself,
+Ruby Distribute License or GNU General Public License.
 
-
-== Net::Protocol
-
-the abstract class for Internet protocol
-
-=== Super Class
-
-Object
-
-=== Class Methods
-
-: new( address = 'localhost', port = nil )
-  This method Creates a new protocol object.
-
-: start( address = 'localhost', port = nil, *protoargs )
-: start( address = 'localhost', port = nil, *protoargs ) {|proto| .... }
-  This method creates a new Protocol object and opens a session.
-  equals to Net::Protocol.new( address, port ).start( *protoargs )
-
-=== Methods
-
-: address
-  the address of connecting server (FQDN).
-
-: port
-  connecting port number
-
-: start( *args )
-: start( *args ) {|proto| .... }
-  This method starts protocol. If protocol was already started,
-  do nothing and returns false.
-
-  '*args' are specified in subclasses.
-
-  When is called with block, gives Protocol object to block and
-  close session when block finished.
-
-: finish
-  This method ends protocol. If you call this method before protocol starts,
-  it only return false without doing anything.
-
-: active?
-  true if session have been started
+NOTE: You can get Japanese version of this document from
+Ruby Documentation Project (RDP):
+((<URL:http://www.ruby-lang.org/~rubikitch/RDP.cgi>))
 
 =end
 
@@ -74,8 +32,7 @@ module Net
 
   class Protocol
 
-    Version = '1.1.34'
-
+    Version = '1.1.35'
 
     class << self
 
@@ -104,13 +61,17 @@ module Net
 
 
     #
-    # sub-class requirements
+    # --- Configuration Staffs for Sub Classes ---
     #
-    # protocol_param command_type
-    # protocol_param port
+    #   protocol_param port
+    #   protocol_param command_type
+    #   protocol_param socket_type   (optional)
     #
-    # private method do_start  (optional)
-    # private method do_finish (optional)
+    #   private method do_start      (optional)
+    #   private method do_finish     (optional)
+    #
+    #   private method on_connect    (optional)
+    #   private method on_disconnect (optional)
     #
 
     protocol_param :port,         'nil'
@@ -265,8 +226,8 @@ module Net
       "#<#{type} #{code}>"
     end
 
-    def error!( data = nil )
-      raise code_type.error_type.new( code + ' ' + Net.quote(msg), data )
+    def error!
+      raise code_type.error_type.new( code + ' ' + Net.quote(msg), self )
     end
 
   end
@@ -286,12 +247,13 @@ module Net
 
   class ProtocolError
   
-    def initialize( msg, data = nil )
+    def initialize( msg, resp )
       super msg
-      @data = data
+      @response = resp
     end
 
-    attr :data
+    attr :response
+    alias data response
 
     def inspect
       "#<#{type}>"
@@ -642,7 +604,7 @@ module Net
 
     # private use only (can not handle 'break')
     def read_pendlist
-      D_off 'reading list...'
+    #  D_off 'reading list...'
 
       str = nil
       i = 0
@@ -652,7 +614,7 @@ module Net
         yield str
       end
 
-      D_on "read #{i} items"
+    #  D_on "read #{i} items"
     end
 
 
