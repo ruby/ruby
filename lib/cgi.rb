@@ -1897,7 +1897,10 @@ The hash keys are case sensitive. Ask the samples.
 
 
   def initialize(type = "query")
-    Apache.request.setup_cgi_env if defined?(MOD_RUBY)
+    if defined?(MOD_RUBY) && !ENV.key?("GATEWAY_INTERFACE")
+      Apache.request.setup_cgi_env
+    end
+
     extend QueryExtension
     if "POST" != env_table['REQUEST_METHOD']
       initialize_query()  # set @params, @cookies

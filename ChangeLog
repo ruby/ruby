@@ -1,3 +1,9 @@
+Fri Jul  5 05:00:40 2002  Wakou Aoyama  <wakou@ruby-lang.org>
+
+	* lib/cgi.rb (CGI#initialize): improvement for mod_ruby.
+	thanks to Sean Chittenden <sean@ruby-lang.org>, Shugo Maeda
+	<shugo@modruby.net>
+
 Thu Jul  4 23:43:26 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* parse.y: remove useless function str_extend_p().
