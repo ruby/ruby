@@ -115,8 +115,10 @@
 /*
  * Constants for getnameinfo()
  */
+#ifndef NI_MAXHOST
 #define	NI_MAXHOST	1025
 #define	NI_MAXSERV	32
+#endif
 
 /*
  * Flag values for getnameinfo()
