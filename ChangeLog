@@ -1,3 +1,7 @@
+Fri Jul 23 08:52:22 2004  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (disconnected?): new method.
+
 Mon Jul 19 00:53:46 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httpservlet/cgihandler.rb

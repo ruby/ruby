@@ -289,6 +289,11 @@ module Net
       @sock.close
     end
 
+    # Returns true if disconnected from the server.
+    def disconnected?
+      return @sock.closed?
+    end
+
     # Sends a CAPABILITY command, and returns an array of
     # capabilities that the server supports.  Each capability
     # is a string.  See [IMAP] for a list of possible
