@@ -1,3 +1,8 @@
+Thu Sep  4 12:54:50 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
+
+	* ext/syck/token.c: headerless documents with root-level spacing now
+	  honored.
+
 Wed Sep  3 21:33:20 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 	* test: add test directory.  Test::Unit aware testcases and needed
 	  files should be located in this directory.  dir/file name convention;
