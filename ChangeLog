@@ -1,3 +1,18 @@
+Wed Mar 28 17:39:04 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_str2cstr): warn if string contains \0 and length
+	  value is ignored.
+
+Wed Mar 28 15:00:31 2001  K.Kosako  <kosako@sofnec.co.jp>
+
+	* class.c (rb_singleton_class_clone): should copy class constant
+	  table as well.
+
+Wed Mar 28 15:03:23 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* class.c (rb_include_module): sometimes cache was mistakenly left
+	  uncleared - based on the patch by K.Kosako.
+
 Wed Mar 28 09:52:33 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* win32/Makefile.sub: disable global optimization.

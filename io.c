@@ -2771,6 +2771,7 @@ rb_f_select(argc, argv, obj)
     return res;			/* returns an empty array on interrupt */
 }
 
+#if !defined(MSDOS) && !defined(__human68k__)
 static int
 io_cntl(fd,cmd,narg,io_p)
     int fd, cmd, io_p;
@@ -2796,6 +2797,7 @@ io_cntl(fd,cmd,narg,io_p)
 #endif
     return retval;
 }
+#endif
 
 static VALUE
 rb_io_ctl(io, req, arg, io_p)

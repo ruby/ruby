@@ -4099,6 +4099,7 @@ static int STACK_LEVEL_MAX = 65535;
 #ifdef __human68k__
 extern int _stacksize;
 # define STACK_LEVEL_MAX (_stacksize - 4096)
+#undef HAVE_GETRLIMIT
 #else
 #ifdef HAVE_GETRLIMIT
 static int STACK_LEVEL_MAX = 655300;
