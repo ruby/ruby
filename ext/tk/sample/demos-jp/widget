@@ -261,10 +261,13 @@ txt.insert('end', "1. スクロールバーなし\n", tag_demo, "demo-entry1")
 txt.insert('end', " \n ", tag_demospace)
 txt.insert('end', "2. スクロールバーあり\n", tag_demo, "demo-entry2")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "3. スピンボックス (機能に対応したバージョンのTkが必要)\n", 
+txt.insert('end', "3. 認証処理付きのエントリボックスとパスワードフィールド (機能に対応したバージョンのTkが必要)\n", 
+	   tag_demo, "demo-entry3")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "4. スピンボックス (機能に対応したバージョンのTkが必要)\n", 
 	   tag_demo, "demo-spin")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "4. 簡単なフォーム\n", tag_demo, "demo-form")
+txt.insert('end', "5. 簡単なフォーム\n", tag_demo, "demo-form")
 txt.insert('end', " \n ", tag_demospace)
 
 txt.insert('end', "\n")

@@ -238,9 +238,13 @@ txt.insert('end', "1. Without scrollbars.\n", tag_demo, "demo-entry1")
 txt.insert('end', " \n ", tag_demospace)
 txt.insert('end', "2. With scrollbars.\n", tag_demo, "demo-entry2")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "3. Spin-boxes. (if supported)\n", tag_demo, "demo-spin")
+txt.insert('end', 
+	   "3. Validated entries and password fields. (if supported)\n", 
+	   tag_demo, "demo-entry3")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "4. Simple Rolodex-like form.\n", tag_demo, "demo-form")
+txt.insert('end', "4. Spin-boxes. (if supported)\n", tag_demo, "demo-spin")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "5. Simple Rolodex-like form.\n", tag_demo, "demo-form")
 txt.insert('end', " \n ", tag_demospace)
 
 txt.insert('end', "\n")
