@@ -508,14 +508,12 @@ dyna_var_asgn(id, value)
 {
     struct RVarmap *vars = the_dyna_vars;
 
-    if (id) {
-	while (vars) {
-	    if (vars->id == id) {
-		vars->val = value;
-		return value;
-	    }
-	    vars = vars->next;
+    while (vars) {
+	if (vars->id == id) {
+	    vars->val = value;
+	    return value;
 	}
+	vars = vars->next;
     }
     new_dvar(id, value);
     return value;
@@ -4073,7 +4071,7 @@ f_load(obj, fname)
     Check_SafeStr(fname);
 #ifndef __MACOS__
     if (RSTRING(fname)->ptr[0] == '~') {
-	fname = file_s_expand_path(0, fname);
+	fname = file_s_expand_path(1, &fname);
     }
 #endif
     file = find_file(RSTRING(fname)->ptr);

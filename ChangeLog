@@ -1,3 +1,16 @@
+Mon May 18 14:52:21 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* experimental release 1.1b9_21.
+
+Mon May 18 03:27:57 1998  MAEDA shugo  <shugo@aianet.ne.jp>
+
+	* file.c (file_s_expand_path): optional second argument
+	  `default_directory' added.
+
+Sat May 16 22:06:52 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* error.c (RAISE_ERROR): wrong error message
+
 Fri May 15 14:43:25 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* experimental release 1.1b9_20.

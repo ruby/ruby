@@ -547,6 +547,8 @@ Init_Exception()
     va_list args;\
     char buf[BUFSIZ];\
     va_init_list(args,fmt);\
+    vsprintf(buf, fmt, args);\
+    va_end(args);\
     rb_raise(exc_new2(klass, buf));\
 }
 

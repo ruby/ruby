@@ -1108,11 +1108,15 @@ file_s_umask(argc, argv)
 }
 
 VALUE
-file_s_expand_path(obj, fname)
-    VALUE obj, fname;
+file_s_expand_path(argc, argv)
+    int argc;
+    VALUE *argv;
 {
+    VALUE fname, dname;
     char *s, *p;
     char buf[MAXPATHLEN+2];
+
+    rb_scan_args(argc, argv, "11", &fname, &dname);
 
     s = STR2CSTR(fname);
     p = buf;
@@ -1136,7 +1140,6 @@ file_s_expand_path(obj, fname)
 	    struct passwd *pwPtr;
 	    s++;
 #endif
-
 	    while (*s && *s != '/') {
 		*p++ = *s++;
 	    }
@@ -1154,12 +1157,18 @@ file_s_expand_path(obj, fname)
 	}
     }
     else if (s[0] != '/') {
+	if (argc == 2) {
+	    strcpy(buf, STR2CSTR(dname));
+	}
+	else {
 #ifdef HAVE_GETCWD
-	getcwd(buf, MAXPATHLEN);
+	    getcwd(buf, MAXPATHLEN);
 #else
-	getwd(buf);
+	    getwd(buf);
 #endif
+	}
 	p = &buf[strlen(buf)];
+	while (p > buf && *(p - 1) == '/') p--;
     }
     *p = '/';
 
@@ -1628,7 +1637,7 @@ Init_File()
     rb_define_singleton_method(cFile, "rename", file_s_rename, 2);
     rb_define_singleton_method(cFile, "umask", file_s_umask, -1);
     rb_define_singleton_method(cFile, "truncate", file_s_truncate, 2);
-    rb_define_singleton_method(cFile, "expand_path", file_s_expand_path, 1);
+    rb_define_singleton_method(cFile, "expand_path", file_s_expand_path, -1);
     rb_define_singleton_method(cFile, "basename", file_s_basename, -1);
     rb_define_singleton_method(cFile, "dirname", file_s_dirname, 1);
 

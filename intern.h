@@ -135,7 +135,7 @@ void thread_trap_eval _((VALUE, int));
 /* file.c */
 VALUE file_open _((char*, char*));
 int eaccess _((char*, int));
-VALUE file_s_expand_path _((VALUE, VALUE));
+VALUE file_s_expand_path _((int, VALUE *));
 /* gc.c */
 void rb_global_variable _((VALUE*));
 void gc_mark_locations _((VALUE*, VALUE*));
