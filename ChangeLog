@@ -1,3 +1,8 @@
+Tue Jan 25 17:11:51 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ruby.c (proc_options): correct -T option in RUBYOPT. (backported
+	  from CVS HEAD)
+
 Tue Jan 25 14:05:52 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c: fix SEGV bug; trouble on canceling remained
