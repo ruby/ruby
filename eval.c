@@ -5308,7 +5308,14 @@ int
 rb_provided(feature)
     const char *feature;
 {
-    return rb_feature_p(feature, Qfalse);
+    VALUE f = rb_str_new2(feature);
+
+    if (strrchr(feature, '.') == 0) {
+	if (rb_find_file_noext(&f) == 0) {
+	    return Qfalse;
+	}
+    }
+    return rb_feature_p(RSTRING(f)->ptr, Qfalse);
 }
 
 static void
@@ -5336,8 +5343,6 @@ rb_f_require(obj, fname)
     volatile int safe = ruby_safe_level;
 
     Check_SafeStr(fname);
-    if (rb_feature_p(RSTRING(fname)->ptr, Qtrue))
-	return Qfalse;
     ext = strrchr(RSTRING(fname)->ptr, '.');
     if (ext) {
 	if (strcmp(".rb", ext) == 0) {
@@ -5404,6 +5409,8 @@ rb_f_require(obj, fname)
 	     RSTRING(fname)->ptr);
 
   load_dyna:
+    if (rb_feature_p(RSTRING(feature)->ptr, Qfalse))
+	return Qfalse;
     rb_provide_feature(feature);
     {
 	int volatile old_vmode = scope_vmode;
@@ -5424,6 +5431,8 @@ rb_f_require(obj, fname)
     return Qtrue;
 
   load_rb:
+    if (rb_feature_p(RSTRING(feature)->ptr, Qtrue))
+	return Qfalse;
     ruby_safe_level = 0;
     rb_provide_feature(feature);
     /* loading ruby library should be serialized. */

@@ -1,3 +1,11 @@
+Fri Jul 27 18:07:27 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_provided): extension should be guessed using
+	  rb_find_file_noext().
+
+	* eval.c (rb_f_require): should call rb_feature_p() after
+	  extension completion.
+
 Fri Jul 27 16:25:52 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_eval): add CHECK_INTS before next, redo, retry to
