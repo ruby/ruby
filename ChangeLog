@@ -1,3 +1,9 @@
+Thu Aug 12 01:53:10 2004  Tanaka Akira  <akr@m17n.org>
+
+	* io.c (read_buffered_data): extracted from rb_io_fread.
+	  (io_readpartial): new method IO#readpartial.
+	  [ruby-dev:24055]
+
 Wed Aug 11 17:17:50 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in (RPATHFLAG): stop setting RPATHFLAG on Interix.
