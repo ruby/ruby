@@ -1548,6 +1548,6 @@ Init_GC()
 
     source_filenames = st_init_strtable();
 
-    nomem_error = rb_exc_new(rb_eNoMemError, "failed to allocate memory");
+    nomem_error = rb_exc_new2(rb_eNoMemError, "failed to allocate memory");
     rb_global_variable(&nomem_error);
 }
