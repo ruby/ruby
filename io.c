@@ -255,6 +255,7 @@ io_fflush(f, path)
     n = fflush(f);
     TRAP_END;
     if (n == EOF) rb_sys_fail(path);
+    fptr->mode &= ~FMODE_WBUF;
 }
 
 /* writing functions */
@@ -299,7 +300,6 @@ io_write(io, str)
 #endif
     if (fptr->mode & FMODE_SYNC) {
 	io_fflush(f, fptr->path);
-	fptr->mode &= ~FMODE_WBUF;
     }
     else {
 	fptr->mode |= FMODE_WBUF;
@@ -2668,19 +2668,6 @@ argf_forward()
 		       ruby_frame->argc, ruby_frame->argv);
 }
 
-static VALUE
-argf_binmode()
-{
-    if (TYPE(current_file) != T_FILE) {
-	argf_forward();
-    }
-    else {
-	rb_io_binmode(current_file);
-    }
-    binmode = 1;
-    return argf;
-}
-
 static int
 next_argv()
 {
@@ -3608,13 +3595,29 @@ argf_each_byte()
 static VALUE
 argf_filename()
 {
+    next_argv();
     return filename;
 }
 
 static VALUE
 argf_file()
 {
+    next_argv();
     return current_file;
+}
+
+static VALUE
+argf_binmode()
+{
+    binmode = 1;
+    next_argv();
+    if (TYPE(current_file) != T_FILE) {
+	argf_forward();
+    }
+    else {
+	rb_io_binmode(current_file);
+    }
+    return argf;
 }
 
 static VALUE

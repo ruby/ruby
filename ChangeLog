@@ -9,6 +9,19 @@ Thu Mar 28 18:03:51 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/strscan/strscan.c: refactor struct strscanner.
 
+Thu Mar 28 14:51:38 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (sock_addrinfo): should specify socktype
+	  from outside.
+
+Wed Mar 27 17:04:30 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (argf_binmode): should call next_argv() to initialize ARGF.
+
+	* io.c (argf_filename): ditto.
+
+	* io.c (argf_file): ditto.
+
 Wed Mar 27 14:47:32 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* io.c (READ_DATA_PENDING): configure.in has supported for uClibc,

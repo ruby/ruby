@@ -540,11 +540,11 @@ mkinetaddr(host, buf, len)
 }
 
 static struct addrinfo*
-sock_addrinfo(host, port, flags)
+sock_addrinfo(host, port, socktype, flags)
     VALUE host, port;
-    int flags;
+    int socktype, flags;
 {
-    struct addrinfo hints, *res;
+    struct addrinfo hints, *hintsp, *res;
     char *hostp, *portp;
     int error;
     char hbuf[1024], pbuf[16];
@@ -589,11 +589,17 @@ sock_addrinfo(host, port, flags)
 	portp = RSTRING(port)->ptr;
     }
 
-    MEMZERO(&hints, struct addrinfo, 1);
-    hints.ai_family = PF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_flags = flags;
-    error = getaddrinfo(hostp, portp, &hints, &res);
+    if (socktype == 0 && flags == 0) {
+	hintsp = 0;
+    }
+    else {
+	hintsp = &hints;
+	hints.ai_family = PF_UNSPEC;
+	hints.ai_protocol = 0;
+	hints.ai_socktype = socktype;
+	hints.ai_flags = flags;
+    }
+    error = getaddrinfo(hostp, portp, hintsp, &res);
     if (error) {
 	if (hostp && hostp[strlen(hostp)-1] == '\n') {
 	    rb_raise(rb_eSocket, "newline at the end of hostname");
@@ -609,7 +615,7 @@ setipaddr(name, addr)
     VALUE name;
     struct sockaddr_storage *addr;
 {
-    struct addrinfo *res = sock_addrinfo(name, Qnil, 0);
+    struct addrinfo *res = sock_addrinfo(name, Qnil, SOCK_STREAM, 0);
 
     /* just take the first one */
     memcpy(addr, res->ai_addr, res->ai_addrlen);
@@ -842,14 +848,14 @@ init_inetsock(sock, remote_host, remote_serv, local_host, local_serv, type)
     int fd, status;
     char *syscall;
 
-    res_remote = sock_addrinfo(remote_host, remote_serv,
+    res_remote = sock_addrinfo(remote_host, remote_serv, SOCK_STREAM,
 			       (type == INET_SERVER) ? AI_PASSIVE : 0);
     /*
      * Maybe also accept a local address
      */
 
     if (type != INET_SERVER && (!NIL_P(local_host) || !NIL_P(local_serv))) {
-	res_local = sock_addrinfo(local_host, local_serv,
+	res_local = sock_addrinfo(local_host, local_serv, SOCK_STREAM,
 				  (type == INET_SERVER) ? AI_PASSIVE : 0);
     }
 
@@ -1270,7 +1276,7 @@ udp_connect(sock, host, port)
     rb_secure(3);
     GetOpenFile(sock, fptr);
     fd = fileno(fptr->f);
-    res0 = sock_addrinfo(host, port, 0);
+    res0 = sock_addrinfo(host, port, SOCK_DGRAM, 0);
     for (res = res0; res; res = res->ai_next) {
 	if (ruby_connect(fd, res->ai_addr, res->ai_addrlen, 0) >= 0) {
 	    freeaddrinfo(res0);
@@ -1292,7 +1298,7 @@ udp_bind(sock, host, port)
 
     rb_secure(3);
     GetOpenFile(sock, fptr);
-    res0 = sock_addrinfo(host, port, 0);
+    res0 = sock_addrinfo(host, port, SOCK_DGRAM, 0);
     for (res = res0; res; res = res->ai_next) {
 	if (bind(fileno(fptr->f), res->ai_addr, res->ai_addrlen) < 0) {
 	    continue;
@@ -1324,7 +1330,7 @@ udp_send(argc, argv, sock)
     rb_scan_args(argc, argv, "4", &mesg, &flags, &host, &port);
 
     GetOpenFile(sock, fptr);
-    res0 = sock_addrinfo(host, port, 0);
+    res0 = sock_addrinfo(host, port, SOCK_DGRAM, 0);
     f = GetWriteFile(fptr);
     StringValue(mesg);
     for (res = res0; res; res = res->ai_next) {
@@ -2195,7 +2201,7 @@ static VALUE
 sock_s_pack_sockaddr_in(self, port, host)
     VALUE self, port, host;
 {
-    struct addrinfo *res = sock_addrinfo(host, port, 0);
+    struct addrinfo *res = sock_addrinfo(host, port, 0, 0);
     VALUE addr = rb_str_new((char*)res->ai_addr, res->ai_addrlen);
 
     freeaddrinfo(res);
