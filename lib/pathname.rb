@@ -173,14 +173,9 @@ class Pathname
 
   # parent method returns parent directory.
   #
-  # If self is `.', `..' is returned.
-  # Otherwise, `..' is joined to self.
+  # This is same as self + '..'.
   def parent
-    if @path == '.'
-      Pathname.new('..')
-    else
-      self.join('..')
-    end
+    self + '..'
   end
 
   # mountpoint? method returns true if self points a mountpoint.
@@ -222,22 +217,37 @@ class Pathname
     @path.scan(%r{[^/]+}) { yield $& }
   end
 
-  # Pathname#+ return new pathname which is concatenated with self and
-  # an argument.
-  # If self is the current working directory `.' or
-  # the argument is absolute pathname,
-  # the argument is just returned.
-  # If the argument is `.', self is returned.
+  # Pathname#+ concatenates self and an argument.
+  # I.e. a result is basically same as the argument but the base directory 
+  # is changed to self if the argument is relative.
+  #
+  # Pathname#+ doesn't access actual filesystem.
   def +(other)
     other = Pathname.new(other) unless Pathname === other
-    if @path == '.' || other.absolute?
-      other
-    elsif other.to_s == '.'
-      self
-    elsif %r{/\z} =~ @path
-      Pathname.new(@path + other.to_s)
+
+    return other if other.absolute?
+
+    path1 = @path
+    path2 = other.to_s
+    while m2 = %r{\A\.\.(?:/+|\z)}.match(path2) and
+          m1 = %r{(\A|/+)([^/]+)\z}.match(path1) and
+          %r{\A(?:\.|\.\.)\z} !~ m1[2]
+      path1 = m1[1].empty? ? '.' : '/' if (path1 = m1.pre_match).empty?
+      path2 = '.' if (path2 = m2.post_match).empty?
+    end
+    if %r{\A/+\z} =~ path1
+      while m2 = %r{\A\.\.(?:/+|\z)}.match(path2)
+        path2 = '.' if (path2 = m2.post_match).empty?
+      end
+    end
+
+    return Pathname.new(path2) if path1 == '.'
+    return Pathname.new(path1) if path2 == '.'
+
+    if %r{/\z} =~ path1
+      Pathname.new(path1 + path2)
     else
-      Pathname.new(@path + '/' + other.to_s)
+      Pathname.new(path1 + '/' + path2)
     end
   end
 
@@ -245,8 +255,16 @@ class Pathname
   #
   # path0.join(path1, ... pathN) is same as path0 + path1 + ... + pathN.
   def join(*args)
-    args.map! {|arg| Pathname === arg ? arg : Pathname.new(arg) }
-    args.inject(self) {|pathname, arg| pathname + arg }
+    args.unshift self
+    result = args.pop
+    result = Pathname.new(result) unless Pathname === result
+    return result if result.absolute?
+    args.reverse_each {|arg|
+      arg = Pathname.new(arg) unless Pathname === arg
+      result = arg + result
+      return result if result.absolute?
+    }
+    result
   end
 
   # Pathname#children returns the children of the directory as an array of
@@ -739,12 +757,28 @@ if $0 == __FILE__
       assert_relpath_err(".", "..")
     end
 
+    def assert_pathname_plus(a, b, c)
+      a = Pathname.new(a)
+      b = Pathname.new(b)
+      c = Pathname.new(c)
+      d = b + c
+      assert(a == d,
+        "#{b.inspect} + #{c.inspect}: #{a.inspect} expected but was #{d.inspect}")
+    end
+
     def test_plus
-      assert_equal(Pathname.new('a/b'), Pathname.new('a') + Pathname.new('b'))
-      assert_equal(Pathname.new('a'), Pathname.new('a') + Pathname.new('.'))
-      assert_equal(Pathname.new('b'), Pathname.new('.') + Pathname.new('b'))
-      assert_equal(Pathname.new('.'), Pathname.new('.') + Pathname.new('.'))
-      assert_equal(Pathname.new('/b'), Pathname.new('a') + Pathname.new('/b'))
+      assert_pathname_plus('a/b', 'a', 'b')
+      assert_pathname_plus('a', 'a', '.')
+      assert_pathname_plus('b', '.', 'b')
+      assert_pathname_plus('.', '.', '.')
+      assert_pathname_plus('/b', 'a', '/b')
+
+      assert_pathname_plus('/', '/', '..')
+      assert_pathname_plus('.', 'a', '..')
+      assert_pathname_plus('a', 'a/b', '..')
+      assert_pathname_plus('/c', '/', '../c')
+      assert_pathname_plus('c', 'a', '../c')
+      assert_pathname_plus('a/c', 'a/b', '../c')
     end
   end
 end

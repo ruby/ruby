@@ -1,3 +1,10 @@
+Sun Dec 21 16:25:10 2003  Tanaka Akira  <akr@m17n.org>
+
+	* lib/pathname.rb (Pathname#+): re-implemented to resolve ".." in
+	  beginning of the argument.
+	  (Pathname#join): concatenate from the last argument.
+	  (Pathname#parent): just use Pathname#+.
+
 Sun Dec 21 00:12:37 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: add new methods (TkScrollbar#assign, assign_list)
