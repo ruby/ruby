@@ -1,3 +1,10 @@
+Tue Jun  3 09:59:27 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_call_super): inheritance line adjustment moved from
+	  rb_call(). [ruby-core:01113]
+
+	* eval.c (rb_eval): use rb_call_super() to follow DRY principle.
+
 Mon Jun  2 02:20:52 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (push_values_at): Array#values_at should work with

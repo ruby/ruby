@@ -38,7 +38,7 @@ class TkEntry<TkLabel
       attr :widget
     end
 
-    def initialize(cmd = Proc.new, args=nil)
+    def initialize(cmd = Block.new, args=nil)
       if args
 	@id = install_cmd(proc{|*arg|
 			    TkUtil.eval_cmd cmd, *arg

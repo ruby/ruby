@@ -441,11 +441,11 @@ module TkComm
   private :install_bind, :tk_event_sequence, 
           :_bind_core, :_bind, :_bind_append, :_bind_remove, :_bindinfo
 
-  def bind(tagOrClass, context, cmd=Proc.new, args=nil)
+  def bind(tagOrClass, context, cmd=Block.new, args=nil)
     _bind(["bind", tagOrClass], context, cmd, args)
   end
 
-  def bind_append(tagOrClass, context, cmd=Proc.new, args=nil)
+  def bind_append(tagOrClass, context, cmd=Block.new, args=nil)
     _bind_append(["bind", tagOrClass], context, cmd, args)
   end
 
@@ -457,11 +457,11 @@ module TkComm
     _bindinfo(['bind', tagOrClass], context)
   end
 
-  def bind_all(context, cmd=Proc.new, args=nil)
+  def bind_all(context, cmd=Block.new, args=nil)
     _bind(['bind', 'all'], context, cmd, args)
   end
 
-  def bind_append_all(context, cmd=Proc.new, args=nil)
+  def bind_append_all(context, cmd=Block.new, args=nil)
     _bind_append(['bind', 'all'], context, cmd, args)
   end
 
@@ -513,7 +513,7 @@ module TkCore
     fail TkCallbackContinue, "Tk callback returns 'continue' status"
   end
 
-  def after(ms, cmd=Proc.new)
+  def after(ms, cmd=Block.new)
     myid = _curr_cmd_id
     cmdid = install_cmd(cmd)
     tk_call("after",ms,cmdid)
@@ -531,7 +531,7 @@ module TkCore
 #    end
   end
 
-  def after_idle(cmd=Proc.new)
+  def after_idle(cmd=Block.new)
     myid = _curr_cmd_id
     cmdid = install_cmd(cmd)
     tk_call('after','idle',cmdid)
@@ -871,10 +871,10 @@ module Tk
   end
 
   module Scrollable
-    def xscrollcommand(cmd=Proc.new)
+    def xscrollcommand(cmd=Block.new)
       configure_cmd 'xscrollcommand', cmd
     end
-    def yscrollcommand(cmd=Proc.new)
+    def yscrollcommand(cmd=Block.new)
       configure_cmd 'yscrollcommand', cmd
     end
     def xview(*index)
@@ -1103,11 +1103,11 @@ else
 end
 
 module TkBindCore
-  def bind(context, cmd=Proc.new, args=nil)
+  def bind(context, cmd=Block.new, args=nil)
     Tk.bind(to_eval, context, cmd, args)
   end
 
-  def bind_append(context, cmd=Proc.new, args=nil)
+  def bind_append(context, cmd=Block.new, args=nil)
     Tk.bind_append(to_eval, context, cmd, args)
   end
 
@@ -2161,7 +2161,7 @@ module TkOption
         proc_str = TkOption.get(self::CARRIER, id.id2name, '')
         proc_str = '{' + proc_str + '}' unless /\A\{.*\}\Z/ =~ proc_str
         proc_str = __check_proc_string__(proc_str)
-        res_proc = eval 'Proc.new' + proc_str
+        res_proc = eval 'Block.new' + proc_str
         self::METHOD_TBL[id] = res_proc
       end
       proc{
@@ -2840,7 +2840,7 @@ class TkWindow<TkObject
     self
   end
 
-  def command(cmd=Proc.new)
+  def command(cmd=Block.new)
     configure_cmd 'command', cmd
   end
 
@@ -3458,10 +3458,10 @@ class TkMenu<TkWindow
   def postcascade(index)
     tk_send 'postcascade', index
   end
-  def postcommand(cmd=Proc.new)
+  def postcommand(cmd=Block.new)
     configure_cmd 'postcommand', cmd
   end
-  def tearoffcommand(cmd=Proc.new)
+  def tearoffcommand(cmd=Block.new)
     configure_cmd 'tearoffcommand', cmd
   end
   def menutype(index)

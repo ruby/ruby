@@ -3021,12 +3021,8 @@ rb_eval(self, n)
 		END_CALLARGS;
 	    }
 
-	    PUSH_ITER(ruby_iter->iter?ITER_PRE:ITER_NOT);
 	    SET_CURRENT_SOURCE();
-	    result = rb_call(RCLASS(ruby_frame->last_class)->super,
-			     ruby_frame->self, ruby_frame->orig_func,
-			     argc, argv, 3);
-	    POP_ITER();
+	    result = rb_call_super(argc, argv);
 	}
 	break;
 
@@ -5041,7 +5037,6 @@ rb_call(klass, recv, mid, argc, argv, scope)
     int    noex;
     ID     id = mid;
     struct cache_entry *ent;
-    VALUE k = klass;
 
     if (!klass) {
 	rb_raise(rb_eNotImpError, "method `%s' called on terminated object (0x%lx)",
@@ -5052,7 +5047,7 @@ rb_call(klass, recv, mid, argc, argv, scope)
     if (ent->mid == mid && ent->klass == klass) {
 	if (!ent->method)
 	    return rb_undefined(recv, mid, argc, argv, scope==2?CSTAT_VCALL:0);
-	k = ent->origin;
+	klass = ent->origin;
 	id    = ent->mid0;
 	noex  = ent->noex;
 	body  = ent->method;
@@ -5062,19 +5057,6 @@ rb_call(klass, recv, mid, argc, argv, scope)
 	    return rb_undefined(recv, mid, argc, argv, CSTAT_SUPER);
 	}
 	return rb_undefined(recv, mid, argc, argv, scope==2?CSTAT_VCALL:0);
-    }
-    if (BUILTIN_TYPE(k) == T_MODULE) {
-	while (!(BUILTIN_TYPE(klass) == T_ICLASS && RBASIC(klass)->klass == k)) {
-	    klass = RCLASS(klass)->super;
-	    if (!klass) {
-		rb_raise(rb_eTypeError, "%s is not included in %s",
-			 rb_class2name(k),
-			 rb_class2name(CLASS_OF(recv)));
-	    }
-	}
-    }
-    else {
-	klass = k;
     }
 
     if (mid != missing) {
@@ -5187,7 +5169,7 @@ rb_call_super(argc, argv)
     int argc;
     const VALUE *argv;
 {
-    VALUE result;
+    VALUE result, self, klass, k;
 
     if (ruby_frame->last_class == 0) {	
 	rb_name_error(ruby_frame->last_func,
@@ -5195,10 +5177,25 @@ rb_call_super(argc, argv)
 		      rb_id2name(ruby_frame->last_func));
     }
 
+    self = ruby_frame->self;
+    klass = CLASS_OF(self);
+    k = ruby_frame->last_class;
+    if (BUILTIN_TYPE(k) == T_MODULE) {
+	while (!(BUILTIN_TYPE(klass) == T_ICLASS && RBASIC(klass)->klass == k)) {
+	    klass = RCLASS(klass)->super;
+	    if (!klass) {
+		rb_raise(rb_eTypeError, "%s is not included in %s",
+			 rb_class2name(k),
+			 rb_class2name(CLASS_OF(self)));
+	    }
+	}
+    }
+    else {
+	klass = k;
+    }
+
     PUSH_ITER(ruby_iter->iter?ITER_PRE:ITER_NOT);
-    result = rb_call(RCLASS(ruby_frame->last_class)->super,
-		     ruby_frame->self, ruby_frame->last_func,
-		     argc, argv, 3);
+    result = rb_call(RCLASS(klass)->super, self, ruby_frame->last_func, argc, argv, 3);
     POP_ITER();
 
     return result;

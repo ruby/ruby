@@ -172,11 +172,11 @@ class TkText<TkTextWin
     tk_send 'tag', 'add', tag, index1, index2
   end
 
-  def tag_bind(tag, seq, cmd=Proc.new, args=nil)
+  def tag_bind(tag, seq, cmd=Block.new, args=nil)
     _bind(['tag', 'bind', tag], seq, cmd, args)
   end
 
-  def tag_bind_append(tag, seq, cmd=Proc.new, args=nil)
+  def tag_bind_append(tag, seq, cmd=Block.new, args=nil)
     _bind_append(['tag', 'bind', tag], seq, cmd, args)
   end
 
@@ -419,7 +419,7 @@ class TkText<TkTextWin
 
   def dump(type_info, *index, &block)
     args = type_info.collect{|inf| '-' + inf}
-    args << '-command' << Proc.new(&block) if iterator?
+    args << '-command' << block if block
     str = tk_send('dump', *(args + index))
     result = []
     sel = nil
@@ -663,11 +663,11 @@ class TkTextTag<TkObject
     @t.tag_configinfo @id, key
   end
 
-  def bind(seq, cmd=Proc.new, args=nil)
+  def bind(seq, cmd=Block.new, args=nil)
     _bind([@t.path, 'tag', 'bind', @id], seq, cmd, args)
   end
 
-  def bind_append(seq, cmd=Proc.new, args=nil)
+  def bind_append(seq, cmd=Block.new, args=nil)
     _bind_append([@t.path, 'tag', 'bind', @id], seq, cmd, args)
   end
 

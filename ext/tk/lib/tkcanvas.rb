@@ -81,11 +81,11 @@ class TkCanvas<TkWindow
     list(tk_send('bbox', tagid(tagOrId), *tags.collect{|t| tagid(t)}))
   end
 
-  def itembind(tag, context, cmd=Proc.new, args=nil)
+  def itembind(tag, context, cmd=Block.new, args=nil)
     _bind([path, "bind", tagid(tag)], context, cmd, args)
   end
 
-  def itembind_append(tag, context, cmd=Proc.new, args=nil)
+  def itembind_append(tag, context, cmd=Block.new, args=nil)
     _bind_append([path, "bind", tagid(tag)], context, cmd, args)
   end
 
@@ -346,7 +346,7 @@ module TkcTagAccess
     @c.bbox(@id)
   end
 
-  def bind(seq, cmd=Proc.new, args=nil)
+  def bind(seq, cmd=Block.new, args=nil)
     @c.itembind @id, seq, cmd, args
   end
 
