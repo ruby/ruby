@@ -129,7 +129,6 @@ static NODE *list_concat();
 static NODE *arg_concat();
 static NODE *arg_prepend();
 static NODE *literal_concat();
-static NODE *literal_append();
 static NODE *new_evstr();
 static NODE *call_op();
 static int in_defined = 0;
