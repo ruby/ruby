@@ -1,3 +1,16 @@
+Wed Jan  5 02:30:11 2005  Tanaka Akira  <akr@m17n.org>
+
+	* random.c (init_by_array): imported from mt19937ar-cok.tgz.
+	  (genrand_int32): ditto.
+	  (genrand_real): replaced with genrand_res53 in mt19937ar-cok.
+	  (rand_init): support bignum for longer seed.
+	  (random_seed): generate longer seed.
+	  (make_mask): new function.
+	  (limited_rand): ditto.
+	  (limited_big_rand): ditto.
+	  (rb_f_rand): call limited_rand and limited_big_rand.
+	  [ruby-dev:25403]
+
 Tue Jan  4 21:25:43 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* test/drb/{test_drbssl.rb,test_drbunix.rb,ut_drb.rb}: use 
