@@ -917,11 +917,11 @@ proc_setuid(obj, id)
     int uid;
 
     uid = NUM2INT(id);
-#ifdef HAVE_SETRUID
-    setruid(uid);
-#else
 #ifdef HAVE_SETREUID
     setreuid(uid, -1);
+#else
+#ifdef HAVE_SETRUID
+    setruid(uid);
 #else
     {
 	if (geteuid() == uid)

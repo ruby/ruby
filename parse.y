@@ -178,9 +178,9 @@ static void top_local_setup();
 %type <node> aref_args opt_block_arg block_arg
 %type <node> mrhs opt_list superclass iterator var_ref
 %type <node> f_arglist f_args f_optarg f_opt f_block_arg opt_f_block_arg
-%type <node> array assoc_list assocs assoc undef_list
+%type <node> array assoc_list assocs assoc undef_list backref
 %type <node> iter_var opt_iter_var iter_block iter_do_block
-%type <node> mlhs mlhs_head mlhs_tail mlhs_basic mlhs_item lhs backref
+%type <node> mlhs mlhs_head mlhs_tail mlhs_basic mlhs_entry mlhs_item lhs
 %type <id>   variable symbol operation
 %type <id>   cname fname op f_rest_arg
 %type <num>  f_arg
@@ -434,13 +434,13 @@ command_call	: operation call_args
 		    }
 
 mlhs		: mlhs_basic
-		| tLPAREN mlhs_item ')'
+		| tLPAREN mlhs_entry ')'
 		    {
 			$$ = $2;
 		    }
 
-mlhs_item	: mlhs_basic
-		| tLPAREN mlhs_item ')'
+mlhs_entry	: mlhs_basic
+		| tLPAREN mlhs_entry ')'
 		    {
 			$$ = NEW_MASGN(NEW_LIST($2), 0);
 		    }
@@ -466,21 +466,22 @@ mlhs_basic	: mlhs_head
 			$$ = NEW_MASGN(0, $2);
 		    }
 
-mlhs_head	: lhs ','
-		| tLPAREN mlhs_item ')' ','
+mlhs_item	: lhs
+		| tLPAREN mlhs_entry ')'
 		    {
 			$$ = $2;
 		    }
 
-mlhs_tail	: lhs
+mlhs_head	: mlhs_item ','
+		    {
+			$$ = $1;
+		    }
+
+mlhs_tail	: mlhs_item
 		    {
 			$$ = NEW_LIST($1);
 		    }
-		| tLPAREN  mlhs_item ')'
-		    {
-			$$ = NEW_LIST($2);
-		    }
-		| mlhs_tail ',' lhs
+		| mlhs_tail ',' mlhs_item
 		    {
 			$$ = list_append($1, $3);
 		    }
@@ -3013,7 +3014,7 @@ retry:
 	}
 	c = nextc();
     }
-    if (c == '!' || c == '?') {
+    if ((c == '!' || c == '?') && is_identchar(tok()[0])) {
 	tokadd(c);
     }
     else {
@@ -3047,23 +3048,6 @@ retry:
 		}
 	    }
 
-	    if (lex_state == EXPR_FNAME) {
-		lex_state = EXPR_END;
-		if ((c = nextc()) == '=') {
-		    tokadd(c);
-		}
-		else {
-		    pushback(c);
-		}
-	    }
-	    else if (lex_state == EXPR_BEG ||
-		     lex_state == EXPR_DOT ||
-		     lex_state == EXPR_ARG){
-		lex_state = EXPR_ARG;
-	    }
-	    else {
-		lex_state = EXPR_END;
-	    }
 	    if (ISUPPER(tok()[0])) {
 		result = tCONSTANT;
 	    }
@@ -3071,6 +3055,23 @@ retry:
 		result = tFID;
 	    } else {
 		result = tIDENTIFIER;
+		if (lex_state == EXPR_FNAME) {
+		    lex_state = EXPR_END;
+		    if ((c = nextc()) == '=') {
+			tokadd(c);
+		    }
+		    else {
+			pushback(c);
+		    }
+		}
+	    }
+	    if (lex_state == EXPR_BEG ||
+		lex_state == EXPR_DOT ||
+		lex_state == EXPR_ARG){
+		lex_state = EXPR_ARG;
+	    }
+	    else {
+		lex_state = EXPR_END;
 	    }
 	}
 	tokfix();
@@ -3553,10 +3554,7 @@ attrset(recv, id, val)
     value_expr(recv);
     value_expr(val);
 
-    id &= ~ID_SCOPE_MASK;
-    id |= ID_ATTRSET;
-
-    return NEW_CALL(recv, id, NEW_LIST(val));
+    return NEW_CALL(recv, id_attrset(id), NEW_LIST(val));
 }
 
 static void
@@ -3565,10 +3563,10 @@ backref_error(node)
 {
     switch (nd_type(node)) {
       case NODE_NTH_REF:
-	yyerror("Can't set variable $%d", node->nd_nth);
+	Error("Can't set variable $%d", node->nd_nth);
 	break;
       case NODE_BACK_REF:
-	yyerror("Can't set variable $%c", node->nd_nth);
+	Error("Can't set variable $%c", node->nd_nth);
 	break;
     }
 }
@@ -3969,7 +3967,7 @@ yywhile_loop(chop, split)
     eval_tree = NEW_OPT_N(eval_tree);
 }
 
-static struct op_tbl rb_op_tbl[] = {
+static struct op_tbl op_tbl[] = {
     tDOT2,	"..",
     '+',	"+",
     '-',	"-",
@@ -4015,14 +4013,14 @@ static struct op_tbl rb_op_tbl[] = {
 char *rb_id2name();
 char *rb_class2name();
 
-static st_table *rb_symbol_tbl;
-
-#define sym_tbl rb_symbol_tbl
+static st_table *sym_tbl;
+static st_table *sym_rev_tbl;
 
 void
 Init_sym()
 {
     sym_tbl = st_init_strtable();
+    sym_rev_tbl = st_init_numtable();
     rb_global_variable((VALUE*)&cur_cref);
     rb_global_variable((VALUE*)&lex_lastline);
 }
@@ -4038,8 +4036,7 @@ rb_intern(name)
     if (st_lookup(sym_tbl, name, &id))
 	return id;
 
-    id = ++last_id;
-    id <<= ID_SCOPE_SHIFT;
+    id = 0;
     switch (name[0]) {
       case '$':
 	id |= ID_GLOBAL;
@@ -4052,18 +4049,13 @@ rb_intern(name)
 	    /* operator */
 	    int i;
 
-	    id = 0;
-	    for (i=0; rb_op_tbl[i].token; i++) {
-		if (*rb_op_tbl[i].name == *name &&
-		    strcmp(rb_op_tbl[i].name, name) == 0) {
-		    id = rb_op_tbl[i].token;
-		    break;
+	    for (i=0; op_tbl[i].token; i++) {
+		if (*op_tbl[i].name == *name &&
+		    strcmp(op_tbl[i].name, name) == 0) {
+		    id = op_tbl[i].token;
+		    goto id_regist;
 		}
 	    }
-	    if (id == 0) {
-		NameError("Unknown operator `%s'", name);
-	    }
-	    break;
 	}
 
 	last = strlen(name)-1;
@@ -4073,59 +4065,44 @@ rb_intern(name)
 
 	    strncpy(buf, name, last);
 	    buf[last] = '\0';
-	    id = rb_intern(buf);
-	    id &= ~ID_SCOPE_MASK;
-	    id |= ID_ATTRSET;
+	    id = id_attrset(rb_intern(buf));
+	    goto id_regist;
 	}
 	else if (ISUPPER(name[0])) {
-	    id |= ID_CONST;
+	    id = ID_CONST;
         }
 	else {
-	    id |= ID_LOCAL;
+	    id = ID_LOCAL;
 	}
 	break;
     }
-    st_add_direct(sym_tbl, strdup(name), id);
+    id |= ++last_id << ID_SCOPE_SHIFT;
+  id_regist:
+    name = strdup(name);
+    st_add_direct(sym_tbl, name, id);
+    st_add_direct(sym_rev_tbl, id, name);
     return id;
-}
-
-struct find_ok {
-    ID id;
-    char *name;
-};
-
-static int
-id_find(name, id1, ok)
-    char *name;
-    ID id1;
-    struct find_ok *ok;
-{
-    if (id1 == ok->id) {
-	ok->name = name;
-	return ST_STOP;
-    }
-    return ST_CONTINUE;
 }
 
 char *
 rb_id2name(id)
     ID id;
 {
-    struct find_ok ok;
+    char *name;
 
     if (id < LAST_TOKEN) {
 	int i = 0;
 
-	for (i=0; rb_op_tbl[i].token; i++) {
-	    if (rb_op_tbl[i].token == id)
-		return rb_op_tbl[i].name;
+	for (i=0; op_tbl[i].token; i++) {
+	    if (op_tbl[i].token == id)
+		return op_tbl[i].name;
 	}
     }
 
-    ok.name = 0;
-    ok.id = id;
-    st_foreach(sym_tbl, id_find, &ok);
-    if (!ok.name && is_attrset_id(id)) {
+    if (st_lookup(sym_rev_tbl, id, &name))
+	return name;
+
+    if (is_attrset_id(id)) {
 	char *res;
 	ID id2;
 
@@ -4133,7 +4110,7 @@ rb_id2name(id)
 	res = rb_id2name(id2);
 
 	if (res) {
-	    char *buf = ALLOCA_N(char,strlen(res)+2);
+	    char *buf = ALLOCA_N(char, strlen(res)+2);
 
 	    strcpy(buf, res);
 	    strcat(buf, "=");
@@ -4141,7 +4118,7 @@ rb_id2name(id)
 	    return rb_id2name(id);
 	}
     }
-    return ok.name;
+    return 0;
 }
 
 int
@@ -4158,23 +4135,6 @@ rb_is_instance_id(id)
 {
     if (is_instance_id(id)) return TRUE;
     return FALSE;
-}
-
-void
-local_var_append(id)
-    ID id;
-{
-    struct local_vars tmp;
-    struct local_vars *save = lvtbl;
-
-    if (the_scope->local_tbl) {
-	tmp.cnt = the_scope->local_tbl[0];
-	tmp.tbl = the_scope->local_tbl;
-	lvtbl->dlev = 0;
-    }
-    lvtbl = &tmp;
-    local_cnt(id);
-    lvtbl = save;
 }
 
 static void

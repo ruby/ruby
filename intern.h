@@ -157,7 +157,6 @@ int env_path_tainted _((void));
 /* io.c */
 void eof_error _((void));
 VALUE io_write _((VALUE, VALUE));
-VALUE io_gets_method _((int, VALUE*, VALUE));
 VALUE io_gets _((VALUE));
 VALUE io_getc _((VALUE));
 VALUE io_ungetc _((VALUE, VALUE));

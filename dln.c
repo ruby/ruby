@@ -72,7 +72,7 @@ char *getenv();
 
 int eaccess();
 
-#if defined(HAVE_DLOPEN) && !defined(USE_DLN_A_OUT) && !defined(__CYGWIN32__)
+#if defined(HAVE_DLOPEN) && !defined(USE_DLN_A_OUT) && !defined(__CYGWIN32__) && !defined(_AIX)
 /* dynamic load with dlopen() */
 # define USE_DLN_DLOPEN
 #endif
@@ -1257,7 +1257,7 @@ dln_load(file)
 # endif
 
 	/* Load file */
-	if ((handle = dlopen(file, RTLD_LAZY|RTLD_GLOBAL)) == NULL) {
+	if ((handle = (void*)dlopen(file, RTLD_LAZY|RTLD_GLOBAL)) == NULL) {
 	    goto failed;
 	}
 

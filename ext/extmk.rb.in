@@ -1,7 +1,7 @@
 #! /usr/local/bin/ruby
 
 $".push 'mkmf.rb' #"
-require 'find'
+load '../lib/find.rb'
 
 if ARGV[0] == 'static'
   $force_static = TRUE
@@ -319,7 +319,7 @@ clean:;		@rm -f *.o *.so *.sl
 
 realclean:	clean
 ", target,
-    if $static then "o" else "@DLEXT@" end, $dots, $dots
+    if $static then "a" else "@DLEXT@" end, $dots, $dots
 
   mfile.printf "\
 
@@ -335,7 +335,13 @@ install:
   install_rb(mfile)
   mfile.printf "\n"
 
-  if !$static && "@DLEXT@" != "o"
+  if $static
+      mfile.printf "\
+$(TARGET): $(OBJS)
+	@AR@ cru $(TARGET) $(OBJS)
+	@-@RANLIB@ $(LIBRUBY) 2> /dev/null || true
+"
+  elsif "@DLEXT@" != "o"
     mfile.printf "\
 $(TARGET): $(OBJS)
 	$(LDSHARED) $(DLDFLAGS) -o $(TARGET) $(OBJS) $(LOCAL_LIBS) $(LIBS)
@@ -346,25 +352,10 @@ $(TARGET): $(OBJS)
 $(TARGET): $(OBJS)
 	ar cru $(TARGET) $(OBJS)
 "
-    elsif PLATFORM =~ "-nextstep"
+    elsif PLATFORM =~ "-nextstep" || PLATFORM =~ "-openstep" || PLATFORM =~ "-rhapsody"
       mfile.printf "\
 $(TARGET): $(OBJS)
 	cc -r $(CFLAGS) -o $(TARGET) $(OBJS)
-"
-    elsif PLATFORM =~ "-openstep"
-      mfile.printf "\
-$(TARGET): $(OBJS)
-	cc -r $(CFLAGS) -o $(TARGET) $(OBJS)
-"
-    elsif PLATFORM =~ "-rhapsody"
-      mfile.printf "\
-$(TARGET): $(OBJS)
-	cc -r $(CFLAGS) -o $(TARGET) $(OBJS)
-"
-    elsif $static
-      mfile.printf "\
-$(TARGET): $(OBJS)
-	ld -r -o $(TARGET) $(OBJS)
 "
     else
       mfile.printf "\
@@ -505,7 +496,7 @@ exit if $install or $clean
 $extinit = "" unless $extinit
 if $extlist.size > 0
   for s,t in $extlist
-    f = format("%s/%s.o", s, t)
+    f = format("%s/%s.a", s, t)
     if File.exist?(f)
       $extinit += format("\
 \tInit_%s();\n\

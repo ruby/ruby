@@ -364,7 +364,8 @@ class Shell
       end
     end
     @system_commands[command] = FALSE
-    Shell.fail CommandNotFound, command
+#    Shell.fail CommandNotFound, command
+    raise CommandNotFound, command
   end
 
   #

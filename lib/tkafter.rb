@@ -203,6 +203,7 @@ class TkAfter
     if !sleep == 'idle' && !sleep.kind_of?(Integer)
       fail format("%s need to be Integer", sleep.inspect)
     end
+    @init_sleep = sleep
     @init_proc = init_proc
     @init_args = init_args
     self

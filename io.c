@@ -1359,12 +1359,15 @@ io_reopen(io, nfile)
 
     mode = io_mode_string(fptr);
     fd = fileno(fptr->f);
-    if (fileno(fptr->f) < 3) {
+    if (fd < 3) {
 	/* need to keep stdio */
-	dup2(fileno(orig->f), fd);
+	if (dup2(fileno(orig->f), fd) < 0)
+	    rb_sys_fail(orig->path);
     }
     else {
 	fclose(fptr->f);
+	if (dup2(fileno(orig->f), fd) < 0)
+	    rb_sys_fail(orig->path);
 	fptr->f = rb_fdopen(fd, mode);
     }
 
@@ -1372,7 +1375,8 @@ io_reopen(io, nfile)
 	fd = fileno(fptr->f2);
 	fclose(fptr->f2);
 	if (orig->f2) {
-	    dup2(fileno(orig->f2), fd);
+	    if (dup2(fileno(orig->f2), fd) < 0)
+		rb_sys_fail(orig->path);
 	    fptr->f2 = rb_fdopen(fd, "w");
 	}
 	else {

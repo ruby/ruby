@@ -740,7 +740,7 @@ class TkImage<TkObject
     tk_call('image', 'type', @path)
   end
   def width
-    number(tk_call('image', 'height', @path))
+    number(tk_call('image', 'width', @path))
   end
 
   def TkImage.names

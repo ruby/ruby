@@ -109,6 +109,7 @@ lib/mkmf.rb
 lib/monitor.rb
 lib/mutex_m.rb
 lib/observer.rb
+lib/open3.rb
 lib/ostruct.rb
 lib/parsearg.rb
 lib/parsedate.rb

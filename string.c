@@ -2408,8 +2408,11 @@ scan_once(str, pat, start)
     if (reg_search(pat, str, *start, 0) >= 0) {
 	match = backref_get();
 	regs = RMATCH(match)->regs;
-	if (END(0) == *start) {
-	    *start = END(0)+1;
+	if (BEG(0) == END(0)) {
+	    /*
+	     * Always consume at least one character of the input string
+	     */
+	    *start = END(0)+(ismbchar(RSTRING(str)->ptr[END(0)])?2:1);
 	}
 	else {
 	    *start = END(0);

@@ -169,8 +169,7 @@ extern long re_syntax_options;
 #define RE_MAY_IGNORECASE    (1L<<2)
 #define RE_OPTIMIZE_ANCHOR   (1L<<4)
 #define RE_OPTIMIZE_EXACTN   (1L<<5)
-#define RE_OPTIMIZE_CCLASS   (1L<<6)
-#define RE_OPTIMIZE_NO_BM    (1L<<7)
+#define RE_OPTIMIZE_NO_BM    (1L<<6)
 
 /* For multi-byte char support */
 #define MBCTYPE_ASCII 0
@@ -202,7 +201,8 @@ struct re_pattern_buffer
 			   to skip over totally implausible characters.  */
     char *must;	        /* Pointer to exact pattern which strings should have
 			   to be matched.  */
-    int *must_skip;    /* Pointer to exact pattern skip table for bm_search */
+    int *must_skip;     /* Pointer to exact pattern skip table for bm_search */
+    char *stclass;      /* Pointer to character class list at top */
     long options;	/* Flags for options such as extended_pattern. */
     long re_nsub;	/* Number of subexpressions found by the compiler. */
     char fastmap_accurate;

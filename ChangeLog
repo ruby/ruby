@@ -1,3 +1,54 @@
+Mon Oct  5 18:31:53 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version 1.1c6 released.
+
+Fri Oct  2 14:22:33 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_search): `/\s*(--)$/ =~ "- --"' did not match,
+	  because of wrong optimize condition.
+
+Mon Oct  1 01:55:16 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (rb_intern): should not raise exceptions.
+
+	* parse.y (yylex): symbol like `:foo?=' should not be allowed.
+
+	* ext/extmk.rb.in: makes *.a for static link modules.
+
+Fri Sep 25 12:01:19 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (yylex): `@foo!' should be an error.
+
+Thu Sep 24 14:55:06 1998  WATANABE Tetsuya  <tetsu@jpn.hp.com>
+
+	* ext/etc/etc.c (Init_etc): wrong field definition.
+
+Thu Sep 17 17:09:05 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (io_reopen): was creating FILE* for wrong fd.
+
+Tue Sep 15 05:28:11 1998  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* regex.c (re_compile_pattern): forgot to fixup for the pattern
+ 	  like (?=(A)|(B)).
+
+Mon Sep 14 14:42:27 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_match): beginning and end of the string, do not
+	  automatically match `\b'.
+
+	* string.c (scan_once): comsume at leaset on character.
+
+	* regex.c (re_search): wrong behavior for negative range.
+
+Sat Sep 12 21:21:26 1998  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* regex.c (re_search): range value should be maintained.
+
+Thu Sep 10 10:55:00 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (backref_error): yyerror does not understand formats.
+
 Tue Sep  8 18:05:33 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* version 1.1c5 released.

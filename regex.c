@@ -865,7 +865,7 @@ calculate_must_string(start, end)
     char *start;
     char *end;
 {
-  int mcnt, mcnt2;
+  int mcnt;
   int max = 0;
   char *p = start;
   char *pend = end;
@@ -925,8 +925,7 @@ calculate_must_string(start, end)
 	  p += mcnt;
 	  mcnt = EXTRACT_UNSIGNED_AND_INCR(p);
 	  while (mcnt--) {
-	    EXTRACT_MBC_AND_INCR(p);
-	    EXTRACT_MBC_AND_INCR(p);
+	    p += 4;
 	  }
 	  break;
 
@@ -1069,6 +1068,7 @@ re_compile_pattern(pattern, size, bufp)
     bufp->fastmap_accurate = 0;
     bufp->must = 0;
     bufp->must_skip = 0;
+    bufp->stclass = 0;
 
     /* Initialize the syntax table.  */
     init_syntax_once();
@@ -1585,23 +1585,22 @@ re_compile_pattern(pattern, size, bufp)
 	  if ((options ^ stackp[-1]) & RE_OPTION_IGNORECASE) {
 	    BUFPUSH((options&RE_OPTION_IGNORECASE)?casefold_off:casefold_on);
 	  }
-	  options = *--stackp;
-	  switch (c = *--stackp) {
-	    case '(':
-	    case ':':
-	      pending_exact = 0;
-	      if (fixup_alt_jump)
-		{ /* Push a dummy failure point at the end of the
-		     alternative for a possible future
-		     `finalize_jump' to pop.  See comments at
-		     `push_dummy_failure' in `re_match'.  */
-		  BUFPUSH(push_dummy_failure);
+	  pending_exact = 0;
+	  if (fixup_alt_jump)
+	  { /* Push a dummy failure point at the end of the
+	       alternative for a possible future
+	       `finalize_jump' to pop.  See comments at
+	       `push_dummy_failure' in `re_match'.  */
+	      BUFPUSH(push_dummy_failure);
                   
-		  /* We allocated space for this jump when we assigned
-		     to `fixup_alt_jump', in the `handle_alt' case below.  */
-		  store_jump(fixup_alt_jump, jump, b);
-		}
-	      if (c == '(') {
+	      /* We allocated space for this jump when we assigned
+		 to `fixup_alt_jump', in the `handle_alt' case below.  */
+	      store_jump(fixup_alt_jump, jump, b);
+	  }
+          options = *--stackp;
+          switch (c = *--stackp) {
+            case '(':
+              {
 		char *loc = bufp->buffer + *--stackp;
 		*loc = regnum - stackp[-1];
 		BUFPUSH(stop_memory);
@@ -2034,12 +2033,13 @@ re_compile_pattern(pattern, size, bufp)
       bufp->options |= RE_OPTIMIZE_ANCHOR;
     }
     else if (*laststart == charset || *laststart == charset_not) {
-      mcnt = *++laststart;
-      laststart += mcnt+1;
-      mcnt = EXTRACT_UNSIGNED_AND_INCR(laststart);
-      laststart += 4*mcnt;
-      if (*laststart == maybe_finalize_jump) {
-	bufp->options |= RE_OPTIMIZE_CCLASS;
+      p0 = laststart;
+      mcnt = *++p0 ;
+      p0 += mcnt+1;
+      mcnt = EXTRACT_UNSIGNED_AND_INCR(p0);
+      p0 += 4*mcnt;
+      if (*p0 == maybe_finalize_jump) {
+	bufp->stclass = laststart;
       }
     }
   }
@@ -2331,9 +2331,7 @@ bm_search(little, llen, big, blen, skip, translate)
      int *skip;
      unsigned char *translate;
 {
-  int next[256];
   int i, j, k;
-  unsigned char c;
 
   i = llen-1;
   if (translate) {
@@ -2737,27 +2735,30 @@ re_search(bufp, string, size, startpos, range, regs)
   }
 
   if (bufp->must) {
-    int r = range;
     int len = ((unsigned char*)bufp->must)[0];
-    int pos;
+    int pos, pbeg, pend;
 
-    if (range >= 0) {
-      r = 0;
+    pbeg = startpos;
+    pend = startpos + range;
+    if (pbeg > pend) {		/* swap pbeg,pend */
+      pos = pend; pend = pbeg; pbeg = pos;
     }
+    if (pend > size) pend = size;
     if (bufp->options & RE_OPTIMIZE_NO_BM) {
       pos = slow_search(bufp->must+1, len,
-			string+startpos, size-startpos-r,
+			string+pbeg, pend-pbeg,
 			MAY_TRANSLATE()?translate:0);
     }
     else {
       pos = bm_search(bufp->must+1, len,
-		      string+startpos, size-startpos-r,
+		      string+pbeg, pend-pbeg,
 		      bufp->must_skip,
 		      MAY_TRANSLATE()?translate:0);
     }
     if (pos == -1) return -1;
-    if (bufp->options & RE_OPTIMIZE_EXACTN) {
+    if (range > 0 && (bufp->options & RE_OPTIMIZE_EXACTN)) {
       startpos += pos;
+      range -= pos;
     }
   }
 
@@ -2826,29 +2827,33 @@ re_search(bufp, string, size, startpos, range, regs)
 #endif /* NO_ALLOCA */
 
       if (range > 0) {
-	if (anchor && startpos < size && string[startpos-1] != '\n') {
+	if (anchor && startpos < size && startpos > 0 && string[startpos-1] != '\n') {
 	  while (range > 0 && string[startpos] != '\n') {
 	    range--;
 	    startpos++;
 	  }
 	}
-	else if (fastmap && (bufp->options & RE_OPTIMIZE_CCLASS)) {
-	  register unsigned char *p, c;
+	else if (fastmap && (bufp->stclass)) {
+	  register unsigned char *p;
+	  register unsigned short c;
 	  int irange = range;
 
 	  p = (unsigned char *)string+startpos;
 	  while (range > 0) {
 	    c = *p++;
-	    if (ismbchar(c)) {
-	      if (!fastmap[c]) break;
-	      c = *p++;
-	      range--;
-	      if (fastmap[c] != 2) break;
+	    if (ismbchar(c) && fastmap[c] != 2) {
+	      c = c << 8 | *p++;
 	    }
-	    else 
-	      if (!fastmap[MAY_TRANSLATE() ? translate[c] : c])
-		break;
+	    else if (MAY_TRANSLATE())
+	      c = translate[c];
+	    if (*bufp->stclass == charset) {
+	      if (!is_in_list(c, bufp->stclass+1)) break;
+	    }
+	    else {
+	      if (is_in_list(c, bufp->stclass+1)) break;
+	    }
 	    range--;
+	    if (c > 256) range--;
 	  }
 	  startpos += irange - range;
 	}
@@ -3021,9 +3026,6 @@ typedef union
 
 #define AT_STRINGS_BEG(d)  (d == string)
 #define AT_STRINGS_END(d)  (d == dend)
-
-#define AT_WORD_BOUNDARY(d)						\
-  (AT_STRINGS_BEG(d) || AT_STRINGS_END(d) || IS_A_LETTER(d - 1) != IS_A_LETTER(d))
 
 /* We have two special cases to check for: 
      1) if we're past the end of string1, we have to look at the first
@@ -3751,12 +3753,28 @@ re_match(bufp, string_arg, size, pos, regs)
 	  continue;
 
         case wordbound:
-	  if (AT_WORD_BOUNDARY(d))
+	  if (AT_STRINGS_BEG(d)) {
+	    if (IS_A_LETTER(d)) break;
+	    else goto fail;
+	  }
+	  if (AT_STRINGS_BEG(d)) {
+	    if (IS_A_LETTER(d-1)) break;
+	    else goto fail;
+	  }
+	  if (IS_A_LETTER(d - 1) != IS_A_LETTER(d))
 	    break;
 	  goto fail;
 
 	case notwordbound:
-	  if (AT_WORD_BOUNDARY(d))
+	  if (AT_STRINGS_BEG(d)) {
+	    if (IS_A_LETTER(d)) goto fail;
+	    else break;
+	  }
+	  if (AT_STRINGS_END(d)) {
+	    if (IS_A_LETTER(d-1)) goto fail;
+	    else break;
+	  }
+	  if (IS_A_LETTER(d - 1) != IS_A_LETTER(d))
 	    goto fail;
 	  break;
 

@@ -17,7 +17,7 @@ module TkComm
   Tk_WINDOWS = {}
 
   def error_at
-    frames = caller(1)
+    frames = caller()
     frames.delete_if do |c|
       c =~ %r!/tk(|core|thcore|canvas|text|entry|scrollbox)\.rb:\d+!
     end
@@ -1575,7 +1575,11 @@ class TkObject<TkKernel
     when 1
       configure name, args[0]
     when 0
-      fail NameError, "undefined local variable or method `#{name}' for #{self.to_s}", error_at
+      begin
+	cget name
+      rescue
+	fail NameError, "undefined local variable or method `#{name}' for #{self.to_s}", error_at
+      end
     else
       fail NameError, "undefined method `#{name}' for #{self.to_s}", error_at
     end
