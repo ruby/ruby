@@ -906,7 +906,7 @@ if test "$with_dln_a_out" != yes; then
 	aix*)		: ${LDSHARED='/usr/ccs/bin/ld'}
 			XLDFLAGS="$XLDFLAGS -Wl,-bE:ruby.imp"
 			DLDFLAGS="$DLDFLAGS "'-brtl -eInit_$(TARGET) -bI:$(topdir)/ruby.imp -bM:SRE -T512 -H512 -lc'
-			LDFLAGS="$LDFLAGS -brtl"
+			: LDFLAGS="$LDFLAGS -brtl"
 			: ${ARCHFILE="ruby.imp"}
 			rb_cv_dlopen=yes ;;
 

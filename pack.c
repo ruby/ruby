@@ -90,7 +90,7 @@ TOKEN_PASTE(swap,x)(z)			\
 			|(((x)&0x0000FF00)<<8)	\
 			|(((x)&0x00FF0000)>>8)	)
 #else
-define_swapx(s,short);
+define_swapx(s,short)
 #endif
 #endif
 
@@ -113,7 +113,7 @@ define_swapx(s,short);
 			|(((x)&0x00000000FF000000)<<8)	\
 			|(((x)&0x000000FF00000000)>>8))
 #else
-define_swapx(l,long);
+define_swapx(l,long)
 #endif
 #endif
 
@@ -126,11 +126,11 @@ define_swapx(l,long);
 #define swapf(x)	swaps(x)
 #define FLOAT_SWAPPER	unsigned short
 #else	/* SIZEOF_FLOAT == 4 but undivide by known size of int */
-define_swapx(f,float);
+define_swapx(f,float)
 #endif	/* #if SIZEOF_SHORT == 4 */
 #endif	/* #if SIZEOF_LONG == 4 */
 #else	/* SIZEOF_FLOAT != 4 */
-define_swapx(f,float);
+define_swapx(f,float)
 #endif	/* #if SIZEOF_FLOAT == 4 */
 
 #if SIZEOF_DOUBLE == 8
@@ -174,12 +174,12 @@ swapd(d)
     return dtmp;
 }
 #else	/* SIZEOF_DOUBLE == 8 but undivied by known size of int */
-define_swapx(d, double);
+define_swapx(d, double)
 #endif	/* #if SIZEOF_SHORT == 4 */
 #endif	/* #if SIZEOF_LONG == 4 */
 #endif	/* #if SIZEOF_LONG == 8 */
 #else	/* SIZEOF_DOUBLE != 8 */
-define_swapx(d, double);
+define_swapx(d, double)
 #endif	/* #if SIZEOF_DPOUBLE == 8 */
 
 #undef define_swapx
@@ -929,10 +929,7 @@ pack_pack(ary, fmt)
 		from = NEXTFROM;
 		if (NIL_P(from)) l = 0;
 		else {
-		    l = NUM2ULONG(from);
-		}
-		if (l < 0) {
-		    rb_raise(rb_eArgError, "pack(U): negative value");
+		    l = NUM2UINT(from);
 		}
 		le = uv_to_utf8(buf, l);
 		rb_str_buf_cat(res, (char*)buf, le);

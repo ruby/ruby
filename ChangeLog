@@ -1,3 +1,11 @@
+Tue Dec 23 18:09:40 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* pack.c (pack_pack): remove unnecessary negative value check.
+	  [ruby-dev:22329]
+
+	* io.c (rb_io_ungetc): need fflush before ungetc if write buffer
+	  is filled. [ruby-dev:22330]
+
 Tue Dec 23 17:26:55 2003  KONISHI Hiromasa   <konishih@fd6.so-net.ne.jp>
 
 	* bcc32/Makefile.sub (config.h): bcc has finite(). [ruby-list:38940]

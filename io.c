@@ -1315,6 +1315,7 @@ rb_io_ungetc(io, c)
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
+    flush_before_seek(fptr);
 
     if (ungetc(cc, fptr->f) == EOF && cc != EOF)
 	rb_sys_fail(fptr->path);
