@@ -6359,8 +6359,10 @@ thread_free(th)
     th->stk_ptr = 0;
     if (th->locals) st_free_table(th->locals);
     if (th->status != THREAD_KILLED) {
-	th->prev->next = th->next;
-	th->next->prev = th->prev;
+	if (th->prev)
+	    th->prev->next = th->next;
+	if (th->next)
+	    th->next->prev = th->prev;
     }
     if (th != main_thread) free(th);
 }
