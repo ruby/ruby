@@ -304,8 +304,7 @@ module Scanf
 
   class FormatSpecifier
 
-    attr_reader :re_string, :matched_string, :conversion
-    attr_writer :i
+    attr_reader :re_string, :matched_string, :conversion, :matched
 
     private
 
@@ -456,12 +455,14 @@ module Scanf
     end
 
     def match(str)
+      @matched = false
       s = str.dup
       s.sub!(/\A\s+/,'') unless count_space?
       res = to_re.match(s)
       if res
         @conversion = send(@handler, res[1])
-        @matched_string = @matched_item.to_s
+        @matched_string = @conversion.to_s
+        @matched = true
       end
       res
     end
@@ -472,22 +473,24 @@ module Scanf
 
     def width
       w = /%\*?(\d+)/.match(@spec_string).to_a[1]
-      w && w.to_i || 0
+      w && w.to_i
     end
 
     def mid_match?
-      cc_no_width    =   letter == '[' && width.zero?
-      c_or_cc_width  =   (letter == 'c' || letter == '[') &&! width.zero?
-      c_or_cc_open   =   c_or_cc_width && (matched_string.size < width)
-      
-      return c_or_cc_open || cc_no_width
+      return false unless @matched
+      cc_no_width    = letter == '[' &&! width
+      c_or_cc_width  = (letter == 'c' || letter == '[') && width
+      width_left     = c_or_cc_width && (matched_string.size < width)
+
+      return width_left || cc_no_width
     end
     
   end
 
   class FormatString
 
-    attr_reader :string_left, :last_spec_tried, :last_match_tried, :matched_count, :space
+    attr_reader :string_left, :last_spec_tried,
+                :last_match_tried, :matched_count, :space
 
     SPECIFIERS = 'diuXxofeEgsc'
     REGEX = /
@@ -512,6 +515,7 @@ module Scanf
 
     def initialize(str)
       @specs = []
+      @i = 1
       s = str.to_s
       return unless /\S/.match(s)
       @space = true if /\s\z/.match(s)
@@ -566,16 +570,12 @@ class IO
 # That's why this is much more elaborate than the string
 # version.
 #
+# For each line:
 # Match succeeds (non-emptily)
 # and the last attempted spec/string sub-match succeeded:
 #
-# is the current matched spec a '%[...]' or '%c' with a width?
-#   yes: is current.string.size < available width?
-#     yes: save interim results
-#     no: width is used up, so move on (next)
-#   no: is it a '%[...]' with no width?
-#     yes: evidently nothing violated it yet, so store
-#          interim results and continue (next)
+#   could the last spec keep matching?
+#     yes: save interim results and continue (next line)
 #
 # The last attempted spec/string did not match:
 #
@@ -611,7 +611,7 @@ class IO
 
       spec = fstr.last_spec_tried
 
-      if fstr.last_match_tried
+      if spec.matched
         if spec.mid_match?
           result_buffer.replace(current_match)
           next
