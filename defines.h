@@ -137,10 +137,10 @@ void xfree _((void*));
 #define EXTERN extern
 #endif
 
+#if defined(sparc) || defined(__sparc__)
 static inline void
 flush_register_windows(void)
 {
-#if defined(sparc) || defined(__sparc__)
 # if defined(__sparc_v9__) || defined(__arch64__)
     asm volatile ("flushw" : :);
 # elif defined(linux) || defined(__linux__)
@@ -148,9 +148,11 @@ flush_register_windows(void)
 # else /* Solaris, OpenBSD, NetBSD, etc. */
     asm volatile ("ta  0x03");
 # endif /* trap always to flush register windows if we are on a Sparc system */
-#endif 
 }
-#define FLUSH_REGISTER_WINDOWS	flush_register_windows()
+#  define FLUSH_REGISTER_WINDOWS flush_register_windows()
+#else
+#  define FLUSH_REGISTER_WINDOWS ((void)0)
+#endif 
 
 #if defined(DOSISH)
 #define PATH_SEP ";"

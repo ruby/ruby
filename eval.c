@@ -938,7 +938,7 @@ static void call_trace_func _((char*,NODE*,VALUE,ID,VALUE));
 #define SET_CURRENT_SOURCE() (ruby_sourcefile = ruby_current_node->nd_file, \
 			      ruby_sourceline = nd_line(ruby_current_node))
 #else
-#define SET_CURRENT_SOURCE() do { } while (0)
+#define SET_CURRENT_SOURCE() ((void)0)
 #endif
 
 void
