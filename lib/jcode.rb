@@ -59,13 +59,13 @@ class String
   def end_regexp
     case $KCODE[0]
     when ?s, ?S
-      /#{PATTERN_SJIS}$/o
+      /#{PATTERN_SJIS}$/on
     when ?e, ?E
-      /#{PATTERN_EUC}$/o
+      /#{PATTERN_EUC}$/on
     when ?u, ?U
-      /#{PATTERN_UTF8}$/o
+      /#{PATTERN_UTF8}$/on
     else
-      /.$/o
+      /.$/on
     end
   end
 
