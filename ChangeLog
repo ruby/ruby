@@ -1,7 +1,7 @@
 Fri Jun 25 01:58:01 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* win32/setup.mak: remove RUBY_EXTERN lines when including version.h.
-	  [ruby-talk:104456]
+	* {bcc32,win32,wince}/setup.mak: remove RUBY_EXTERN lines when
+	  including version.h. [ruby-talk:104456]
 
 Thu Jun 24 14:23:29 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

@@ -41,7 +41,7 @@ EXTSTATIC = $(EXTSTATIC)
 RDOCTARGET = $(RDOCTARGET)
 !endif
 |
-	@cpp32 -I$(srcdir) -P- -o$(MAKEFILE) > nul &&|
+	@cpp32 -I$(srcdir) -P- -DRUBY_EXTERN="//" -o$(MAKEFILE) > nul &&|
 \#include "version.h"
 MAJOR = RUBY_VERSION_MAJOR
 MINOR = RUBY_VERSION_MINOR

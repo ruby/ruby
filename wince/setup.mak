@@ -48,7 +48,7 @@ armv4i-sig3-wince: -prologue- -armv4i- -sig3- -epilogue-
 ### Makefile for ruby $(OS) ###
 srcdir = $(srcdir:\=/)
 <<
-	@$(CPP) -I$(srcdir) <<"Creating $(MAKEFILE)" >> $(MAKEFILE)
+	@$(CPP) -I$(srcdir) -DRUBY_EXTERN="//" <<"Creating $(MAKEFILE)" >> $(MAKEFILE)
 #include "version.h"
 MAJOR = RUBY_VERSION_MAJOR
 MINOR = RUBY_VERSION_MINOR
