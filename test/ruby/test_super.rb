@@ -65,4 +65,24 @@ class TestSuper < Test::Unit::TestCase
     assert_equal([1,2,3], Array4.new.array(1, 2, 3))
     assert_equal([1,2,3,4], Array4.new.array(1, 2, 3, 4))
   end
+
+  class A
+    def tt(aa)
+      "A#tt"
+    end
+
+    def uu(a)
+      class << self
+        define_method(:tt) do |sym|
+          super
+        end
+      end
+    end
+  end
+
+  def test_define_method # [ruby-core:03856]
+    a = A.new
+    a.uu(12)
+    assert_raise(RuntimeError) {a.tt(12)}
+  end
 end
