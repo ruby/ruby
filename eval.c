@@ -8264,15 +8264,14 @@ static VALUE method_arity _((VALUE));
  *  call-seq:
  *     prc.arity -> fixnum
  *  
- *  Returns the number of arguments required by the block. If the block
+ *  Returns the number of arguments that would not be ignored. If the block
  *  is declared to take no arguments, returns 0. If the block is known
  *  to take exactly n arguments, returns n. If the block has optional
  *  arguments, return -n-1, where n is the number of mandatory
- *  arguments. A <code>proc</code> with no argument declarations 
- *  returns -1, as it can accept (and ignore) an arbitrary number of
- *  parameters.
+ *  arguments. A <code>proc</code> with no argument declarations
+ *  is the same a block declaring <code>||</code> as its arguments.
  *     
- *     Proc.new {}.arity          #=> -1
+ *     Proc.new {}.arity          #=>  0
  *     Proc.new {||}.arity        #=>  0
  *     Proc.new {|a|}.arity       #=>  1
  *     Proc.new {|a,b|}.arity     #=>  2
