@@ -541,7 +541,6 @@ if __FILE__ == $0
       a.instance_eval { @a = nil }
       result = PP.pp(a, '')
       assert_equal("#{a.inspect}\n", result)
-      a.instance_eval { remove_instance_variable("@a") }
     end
     
     def test_to_s_without_iv

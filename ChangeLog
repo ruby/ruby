@@ -1,3 +1,8 @@
+Fri Feb  6 22:41:22 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* lib/pp.rb (PPInspectTest#test_to_s_with_iv): rollback the previous
+	  commit.  [ruby-dev:22813]
+
 Fri Feb  6 22:22:50 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* lib/pp.rb (PPInspectTest#test_to_s_with_iv): remove instance
