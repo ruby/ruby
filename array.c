@@ -298,16 +298,21 @@ rb_ary_store(ary, idx, val)
     }
 
     if (idx >= RARRAY(ary)->aux.capa) {
-	long capa_inc = RARRAY(ary)->aux.capa / 2;
-	if (capa_inc < ARY_DEFAULT_SIZE) {
-	    capa_inc = ARY_DEFAULT_SIZE;
+	long new_capa = RARRAY(ary)->aux.capa / 2;
+
+	if (new_capa < ARY_DEFAULT_SIZE) {
+	    new_capa = ARY_DEFAULT_SIZE;
 	}
-	RARRAY(ary)->aux.capa = idx + capa_inc;
+	new_capa += idx;
+	if (new_capa > new_capa * (long)sizeof(VALUE)) {
+	    rb_raise(rb_eArgError, "index too big");
+	}
+	RARRAY(ary)->aux.capa = new_capa;
 	REALLOC_N(RARRAY(ary)->ptr, VALUE, RARRAY(ary)->aux.capa);
     }
     if (idx > RARRAY(ary)->len) {
 	rb_mem_clear(RARRAY(ary)->ptr+RARRAY(ary)->len,
-		idx-RARRAY(ary)->len + 1);
+		     idx-RARRAY(ary)->len + 1);
     }
 
     if (idx >= RARRAY(ary)->len) {
@@ -501,9 +506,6 @@ rb_ary_aref(argc, argv, ary)
     /* special case - speeding up */
     if (FIXNUM_P(arg)) {
 	return rb_ary_entry(ary, FIX2LONG(arg));
-    }
-    if (TYPE(arg) == T_BIGNUM) {
-	rb_raise(rb_eIndexError, "index too big");
     }
     /* check if idx is Range */
     switch (rb_range_beg_len(arg, &beg, &len, RARRAY(ary)->len, 0)) {
@@ -705,9 +707,6 @@ rb_ary_aset(argc, argv, ary)
     if (FIXNUM_P(argv[0])) {
 	offset = FIX2LONG(argv[0]);
 	goto fixnum;
-    }
-    if (TYPE(argv[0]) == T_BIGNUM) {
-	rb_raise(rb_eIndexError, "index too big");
     }
     if (rb_range_beg_len(argv[0], &beg, &len, RARRAY(ary)->len, 1)) {
 	/* check if idx is Range */

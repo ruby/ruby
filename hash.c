@@ -260,6 +260,21 @@ rb_hash_clone(hash)
 }
 
 static VALUE
+rb_hash_dup(hash)
+    VALUE hash;
+{
+    VALUE dup = rb_obj_dup(hash);
+
+    if (FL_TEST(hash, HASH_PROC_DEFAULT)) {
+	FL_SET(dup, HASH_PROC_DEFAULT);
+    }
+    if (FL_TEST(hash, HASH_DELETED)) {
+	FL_SET(dup, HASH_DELETED);
+    }
+    return dup;
+}
+
+static VALUE
 to_hash(hash)
     VALUE hash;
 {
@@ -351,6 +366,18 @@ rb_hash_set_default(hash, ifnone)
     RHASH(hash)->ifnone = ifnone;
     FL_UNSET(hash, HASH_PROC_DEFAULT);
     return ifnone;
+}
+
+static VALUE
+rb_hash_default_proc(hash)
+    VALUE hash;
+{
+    VALUE key;
+
+    if (FL_TEST(hash, HASH_PROC_DEFAULT)) {
+	return RHASH(hash)->ifnone;
+    }
+    return Qnil;
 }
 
 static int
@@ -448,8 +475,15 @@ rb_hash_shift(hash)
     var.stop = 0;
     st_foreach(RHASH(hash)->tbl, shift_i, &var);
 
-    if (var.stop == 0) return RHASH(hash)->ifnone;
-    return rb_assoc_new(var.key, var.val);
+    if (var.stop) {
+	return rb_assoc_new(var.key, var.val);
+    }
+    else if (FL_TEST(hash, HASH_PROC_DEFAULT)) {
+	return rb_funcall(RHASH(hash)->ifnone, id_yield, 2, hash, Qnil);
+    }
+    else {
+	return RHASH(hash)->ifnone;
+    }
 }
 
 static int
@@ -573,6 +607,10 @@ rb_hash_replace(hash, hash2)
     hash2 = to_hash(hash2);
     rb_hash_clear(hash);
     st_foreach(RHASH(hash2)->tbl, replace_i, hash);
+    RHASH(hash)->ifnone = RHASH(hash2)->ifnone;
+    if (FL_TEST(hash2, HASH_PROC_DEFAULT)) {
+	FL_SET(hash, HASH_PROC_DEFAULT);
+    }
 
     return hash;
 }
@@ -854,7 +892,8 @@ rb_hash_equal(hash1, hash2)
     if (TYPE(hash2) != T_HASH) return Qfalse;
     if (RHASH(hash1)->tbl->num_entries != RHASH(hash2)->tbl->num_entries)
 	return Qfalse;
-    if (!rb_equal(RHASH(hash1)->ifnone, RHASH(hash2)->ifnone))
+    if (!(rb_equal(RHASH(hash1)->ifnone, RHASH(hash2)->ifnone) &&
+	  FL_TEST(hash1, HASH_PROC_DEFAULT) == FL_TEST(hash2, HASH_PROC_DEFAULT)))
 	return Qfalse;
 
     data.tbl = RHASH(hash2)->tbl;
@@ -1576,6 +1615,7 @@ Init_Hash()
     rb_define_method(rb_cHash,"initialize", rb_hash_initialize, -1);
 
     rb_define_method(rb_cHash,"clone", rb_hash_clone, 0);
+    rb_define_method(rb_cHash,"dup", rb_hash_dup, 0);
     rb_define_method(rb_cHash,"rehash", rb_hash_rehash, 0);
 
     rb_define_method(rb_cHash,"to_hash", rb_hash_to_hash, 0);
@@ -1590,6 +1630,7 @@ Init_Hash()
     rb_define_method(rb_cHash,"store", rb_hash_aset, 2);
     rb_define_method(rb_cHash,"default", rb_hash_default, -1);
     rb_define_method(rb_cHash,"default=", rb_hash_set_default, 1);
+    rb_define_method(rb_cHash,"default_proc", rb_hash_default_proc, 0);
     rb_define_method(rb_cHash,"index", rb_hash_index, 1);
     rb_define_method(rb_cHash,"indexes", rb_hash_indexes, -1);
     rb_define_method(rb_cHash,"indices", rb_hash_indexes, -1);

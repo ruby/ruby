@@ -1464,24 +1464,26 @@ fix_aref(fix, idx)
     VALUE fix, idx;
 {
     long val = FIX2LONG(fix);
+    long i;
 
     if (TYPE(idx) == T_BIGNUM) {
-	if (!RBIGNUM(idx)->sign || val >= 0)
-	    return INT2FIX(0);
-	return INT2FIX(1);
-    }
-    else {
-	int i = NUM2INT(idx);
-
-	if (i < 0) return INT2FIX(0);
-	if (sizeof(VALUE)*CHAR_BIT-1 < i) {
-	    if (val < 0) return INT2FIX(1);
-	    return INT2FIX(0);
-	}
-	if (val & (1L<<i))
+	idx = rb_big_norm(idx);
+	if (!FIXNUM_P(idx)) {
+	    if (!RBIGNUM(idx)->sign || val >= 0)
+		return INT2FIX(0);
 	    return INT2FIX(1);
+	}
+    }
+    i = NUM2LONG(idx);
+
+    if (i < 0) return INT2FIX(0);
+    if (sizeof(VALUE)*CHAR_BIT-1 < i) {
+	if (val < 0) return INT2FIX(1);
 	return INT2FIX(0);
     }
+    if (val & (1L<<i))
+	return INT2FIX(1);
+    return INT2FIX(0);
 }
 
 static VALUE

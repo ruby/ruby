@@ -1,6 +1,42 @@
+Tue Aug 13 15:32:14 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (rb_hash_replace): should copy ifnone.
+
+	* hash.c (rb_hash_dup): should preserve HASH_PROC_DEFAULT and
+	  HASH_DELETED flags.
+
+	* hash.c (rb_hash_shift): shift from empty hash should not return
+	  its default proc.
+
+	* hash.c (rb_hash_default_proc): new method. [new]
+
+Tue Aug 13 00:37:11 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_aref): no need for Bignum check.
+
+	* array.c (rb_ary_aset): explicit Bignum check removd.
+
+	* numeric.c (fix_aref): normalize bignum before bit-op.
+
+	* bignum.c (rb_big_rand): max may be Bignum zero.
+
+	* bignum.c (rb_cstr_to_inum): should normalize bignums, to avoid
+	  returning fixable bignum value.
+
+	* bignum.c (rb_uint2big): there should be no zero sized bignum.
+
+Mon Aug 12 23:45:28 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/extmk.rb.in: extmake() that works properly for both tkutil
+	  (tk/tkutil.so) and digest/sha1.
+
 Mon Aug 12 22:29:35 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ruby.c (set_arg0): Correct the position of #endif.
+
+Mon Aug 12 17:25:06 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (rb_hash_equal): should check HASH_PROC_DEFAULT too.
 
 Mon Aug 12 16:15:37 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 

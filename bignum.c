@@ -142,7 +142,7 @@ rb_uint2big(n)
     }
 
     i = DIGSPERLONG;
-    while (i-- && !digits[i]) ;
+    while (--i && !digits[i]) ;
     RBIGNUM(big)->len = i+1;
     return big;
 }
@@ -398,7 +398,7 @@ rb_cstr_to_inum(str, base, badcheck)
 	else {
 	    VALUE big = rb_uint2big(val);
 	    RBIGNUM(big)->sign = sign;
-	    return big;
+	    return bignorm(big);
 	}
     }
   bigparse:
@@ -1685,6 +1685,9 @@ rb_big_rand(max, rand_buf)
     long len;
 
     len = RBIGNUM(max)->len;
+    if (len == 0 && BDIGITS(max)[0] == 0) {
+	return rb_float_new(rand_buf[0]);
+    }
     v = bignew(len,1);
     while (len--) {
 	BDIGITS(v)[len] = ((BDIGIT)~0) * rand_buf[len];

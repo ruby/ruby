@@ -693,7 +693,7 @@ def extmake(target)
     unless $install or $clean
       if $static_ext.size > 0 ||
 	!File.exist?("./Makefile") ||
-	older("./Makefile", "#{$top_srcdir}/ext/@setup@") ||
+	older("./Makefile", $setup) ||
 	older("./Makefile", "#{$topdir}/ext/extmk.rb") ||
 	older("./Makefile", "#{$top_srcdir}/ext/#{target}/makefile.rb") ||
 	older("./Makefile", "#{$top_srcdir}/ext/#{target}/extconf.rb")
@@ -708,10 +708,9 @@ def extmake(target)
 	end
       end
     end
-    $static = $target if $static
     if File.exist?("./Makefile")
       if $static
- 	$extlist.push [$static, File.basename($target)]
+ 	$extlist.push [$static, $target, File.basename($target)]
       end
       if $install
         if /bccwin32/ =~ RUBY_PLATFORM
@@ -731,6 +730,7 @@ def extmake(target)
     end
     if $static
       $extlibs ||= ""
+      $extlibs += " " + $DLDFLAGS if $DLDFLAGS
       $extlibs += " " + $LDFLAGS unless $LDFLAGS == ""
       $extlibs += " " + $libs unless $libs == ""
       $extlibs += " " + $LOCAL_LIBS unless $LOCAL_LIBS == ""
@@ -761,6 +761,7 @@ for setup in ["@setup@", "#{$top_srcdir}/ext/@setup@"]
       target = target.downcase if /mswin32|bccwin32/ =~ RUBY_PLATFORM
       $static_ext[target] = true
     end
+    $setup = setup
     f.close
     break
   end
@@ -797,13 +798,13 @@ miniruby = "miniruby@EXEEXT@"
 
 $extobjs = "" unless $extobjs
 if $extlist.size > 0
-  for s,t in $extlist
-    f = format("%s/%s.%s", s, t, $LIBEXT)
+  for s,t,i in $extlist
+    f = format("%s/%s.%s", s, i, $LIBEXT)
     if File.exist?(f)
       $extinit += format("\
 \tInit_%s();\n\
 \trb_provide(\"%s\");\n\
-", t, s)
+", i, t)
       $extobjs += "ext/"
       $extobjs += f
       $extobjs += " "
@@ -812,7 +813,7 @@ if $extlist.size > 0
     end
   end
 
-  if older("extinit.c", "#{$top_srcdir}/ext/@setup@")
+  if older("extinit.c", $setup) || older("extinit.c", "#{$topdir}/ext/extmk.rb")
     f = open("extinit.c", "w")
     f.printf "void Init_ext() {\n"
     f.printf $extinit
@@ -827,7 +828,7 @@ if $extlist.size > 0
 
   Dir.chdir ".."
 
-  if older(ruby, "#{$top_srcdir}/ext/@setup@") or older(ruby, miniruby)
+  if older(ruby, $setup) or older(ruby, miniruby)
     rm_f ruby
   end
 

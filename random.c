@@ -224,7 +224,6 @@ rb_f_rand(argc, argv, obj)
 	}
 	vmax = rb_dbl2big(RFLOAT(vmax)->value);
 	/* fall through */
-      case T_BIGNUM:
         {
 	    long len = RBIGNUM(vmax)->len;
 	    double *buf = ALLOCA_N(double, len);
