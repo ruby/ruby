@@ -787,7 +787,7 @@ bigdivrem(x, y, divp, modp)
     yds = BDIGITS(y);
     if (ny == 0 && yds[0] == 0) rb_num_zerodiv();
     if (nx < ny	|| nx == ny && BDIGITS(x)[nx - 1] < BDIGITS(y)[ny - 1]) {
-	if (divp) *divp = INT2FIX(0);
+	if (divp) *divp = rb_int2big(0);
 	if (modp) *modp = x;
 	return;
     }
