@@ -23,6 +23,7 @@ class TkBindTag
       @id = name
       BTagID_TBL[@id] = self
       bind(*args, &b) if args != []
+      self
     }
   end
 

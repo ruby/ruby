@@ -159,6 +159,8 @@ href_binding = proc{|w, x, y|
 #
 #
 last_dir = Dir.pwd
+load_file = nil
+
 sel_load = proc{
   filetypes = [
     ['Html Files', ['.html', '.htm']], 

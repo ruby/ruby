@@ -899,7 +899,7 @@ module Tk::BLT
     end
 
     def _component_bind(target, tag, context, *args)
-      if TkComm._callback_entry?(args[0])
+      if TkComm._callback_entry?(args[0]) || !block_given?
         cmd = args.shift
       else
         cmd = Proc.new
@@ -908,7 +908,7 @@ module Tk::BLT
       self
     end
     def _component_bind_append(target, tag, context, *args)
-      if TkComm._callback_entry?(args[0])
+      if TkComm._callback_entry?(args[0]) || !block_given?
         cmd = args.shift
       else
         cmd = Proc.new

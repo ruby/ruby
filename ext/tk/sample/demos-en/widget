@@ -389,6 +389,11 @@ txt.insert('end', "3. Color picker.\n", tag_demo, "demo-clrpick")
 txt.insert('end', " \n ", tag_demospace)
 
 txt.insert('end', "\n")
+txt.insert('end', "Animation\n", tag_title)
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "1. Animated labels (if supported)\n", tag_demo, "demo-anilabel")
+
+txt.insert('end', "\n")
 txt.insert('end', "Miscellaneous\n", tag_title)
 txt.insert('end', " \n ", tag_demospace)
 txt.insert('end', "1. The built-in bitmaps.\n", tag_demo, "demo-bitmap")
@@ -780,7 +785,7 @@ end
 #
 def aboutBox
   Tk.messageBox('icon'=>'info', 'type'=>'ok', 'title'=>'About Widget Demo', 
-                'message'=>"Ruby/Tk widget demonstration Ver.1.4.4-en\n\n" + 
+                'message'=>"Ruby/Tk widget demonstration Ver.1.5.0-en\n\n" + 
                            "based on demos of Tk8.1 -- 8.5  " + 
                            "( Copyright:: " + 
                            "(c) 1996-1997 Sun Microsystems, Inc. / " + 

@@ -762,7 +762,11 @@ class MultiTkIp
         #slave_ip.delete
         slave_ip._eval_without_enc('exit')
       end
-      top.destroy if top.winfo_exist?
+      begin
+        top.destroy if top.winfo_exist?
+      rescue
+        # ignore
+      end
     }
     tag = TkBindTag.new.bind('Destroy', slave_delete_proc)
 
@@ -1560,8 +1564,12 @@ class << MultiTkIp
     __getip.delete
   end
 
-  def deleteed?
+  def deleted?
     __getip.deleted?
+  end
+
+  def null_namespace?
+    __getip.null_namespace?
   end
 
   def abort(msg = nil)
@@ -1884,6 +1892,10 @@ class MultiTkIp
 
   def deleted?
     @interp.deleted?
+  end
+
+  def null_namespace?
+    @interp.null_namespace?
   end
 
   def abort(msg = nil)
@@ -2217,7 +2229,7 @@ class MultiTkIp
 
   def set_bgerror_handler(cmd = Proc.new, slave = nil, &b)
     unless TkComm._callback_entry?(cmd)
-      unless slave
+      if !slave && b
         slave = cmd
         cmd = Proc.new(&b)
       end
