@@ -1364,7 +1364,7 @@ ole_create_dcom(argc, argv, self)
     if (!gole32)
         gole32 = LoadLibrary("OLE32");
     if (!gole32)
-        rb_raise(rb_eRuntimeError, "Failed to load OLE32.");
+        rb_raise(rb_eRuntimeError, "Failed to load OLE32");
     if (!gCoCreateInstanceEx)
         gCoCreateInstanceEx = (FNCOCREATEINSTANCEEX*)
             GetProcAddress(gole32, "CoCreateInstanceEx");
@@ -1879,7 +1879,7 @@ ole_invoke(argc, argv, self, wFlags)
     rb_scan_args(argc, argv, "1*", &cmd, &paramS);
     OLEData_Get_Struct(self, pole);
     if(!pole->pDispatch) {
-        rb_raise(rb_eRuntimeError, "Failed to get dispatch interface.");
+        rb_raise(rb_eRuntimeError, "Failed to get dispatch interface");
     }
     wcmdname = ole_mb2wc(StringValuePtr(cmd), -1);
     hr = pole->pDispatch->lpVtbl->GetIDsOfNames( pole->pDispatch, &IID_NULL,

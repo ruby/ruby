@@ -462,7 +462,9 @@ io_write(io, str)
     rb_io_check_writable(fptr);
     f = GetWriteFile(fptr);
 
+    rb_str_locktmp(str);
     n = rb_io_fwrite(RSTRING(str)->ptr, RSTRING(str)->len, f);
+    rb_str_unlocktmp(str);
     if (n == -1L) rb_sys_fail(fptr->path);
     if (fptr->mode & FMODE_SYNC) {
 	io_fflush(f, fptr);
@@ -1011,10 +1013,10 @@ read_all(fptr, siz, str)
 	rb_str_resize(str, siz);
     }
     for (;;) {
-	FL_SET(str, FL_FREEZE);
+	rb_str_locktmp(str);
 	READ_CHECK(fptr->f);
 	n = rb_io_fread(RSTRING(str)->ptr+bytes, siz-bytes, fptr->f);
-	FL_UNSET(str, FL_FREEZE);
+	rb_str_unlocktmp(str);
 	if (n == 0 && bytes == 0) {
 	    rb_str_resize(str,0);
 	    if (!fptr->f) break;
@@ -1080,10 +1082,10 @@ io_read(argc, argv, io)
     }
     if (len == 0) return str;
 
-    FL_SET(str, FL_FREEZE);
+    rb_str_locktmp(str);
     READ_CHECK(fptr->f);
     n = rb_io_fread(RSTRING(str)->ptr, len, fptr->f);
-    FL_UNSET(str, FL_FREEZE);
+    rb_str_unlocktmp(str);
     if (n == 0) {
 	rb_str_resize(str,0);
 	if (!fptr->f) return Qnil;

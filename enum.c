@@ -494,6 +494,9 @@ enum_sort_by(obj)
     if (RARRAY(ary)->len > 1) {
 	qsort(RARRAY(ary)->ptr, RARRAY(ary)->len, sizeof(VALUE), sort_by_cmp, 0);
     }
+    if (RBASIC(ary)->klass) {
+	rb_raise(rb_eRuntimeError, "sort_by reentered");
+    }
     for (i=0; i<RARRAY(ary)->len; i++) {
 	RARRAY(ary)->ptr[i] = RNODE(RARRAY(ary)->ptr[i])->u2.value;
     }

@@ -521,10 +521,23 @@ The variable ruby-indent-level controls the amount of indentation.
 	       (looking-at "<<\\(-\\)?\\(\\([\"'`]\\)\\([^\n]+?\\)\\3\\|\\sw+\\)"))
 	  (setq re (regexp-quote (or (match-string 4) (match-string 2))))
 	  (if (match-beginning 1) (setq re (concat "\\s *" re)))
-	  (if (re-search-forward (concat "^" re "$") end 'move)
-	      (forward-line 1)
-	    (setq in-string (match-end 0))
-	    (goto-char end)))
+	  (let* ((id-end (goto-char (match-end 0)))
+		 (line-end-position (save-excursion (end-of-line) (point)))
+		 (state (list in-string nest depth pcol indent)))
+	    ;; parse the rest of the line
+	    (while (and (> line-end-position (point))
+			(setq state (apply 'ruby-parse-partial
+					   line-end-position state))))
+	    (setq in-string (car state)
+		  nest (nth 1 state)
+		  depth (nth 2 state)
+		  pcol (nth 3 state)
+		  indent (nth 4 state))
+	    ;; skip heredoc section
+	    (if (re-search-forward (concat "^" re "$") end 'move)
+		(forward-line 1)
+	      (setq in-string id-end)
+	      (goto-char end))))
 	 (t
 	  (goto-char pnt))))
        ((looking-at "^__END__$")

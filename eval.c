@@ -3649,7 +3649,7 @@ rb_eval(self, n)
 	break;
 
       case NODE_XSTR:
-	result = rb_funcall(self, '`', 1, node->nd_lit);
+	result = rb_funcall(self, '`', 1, rb_str_new3(node->nd_lit));
 	break;
 
       case NODE_LIT:
