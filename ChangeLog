@@ -1,6 +1,50 @@
+Tue Jan  9 16:22:14 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (enum_inject): new method.
+
+Tue Jan  9 02:16:42 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (rb_gc_call_finalizer_at_exit): clear klass member of
+	  terminating object.
+
+	* eval.c (rb_call): raise exception for terminated object.
+
+Mon Jan  8 21:24:37 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (bigdivrem): t2 might be too big for signed long; do
+	  not use rb_int2big(), but rb_uint2big().
+
+Mon Jan  8 03:09:58 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* error.c (rb_load_fail): new func to report LoadError.
+
+	* ruby.c (load_file): use rb_load_fail.
+
 Sat Jan  6 00:17:18 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* pack.c (pack_pack): avoid infinite loop(pack 'm2').
+
+Fri Jan  5 01:02:17 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (ruby_finalize): should enclosed by PUSH_TAG/POP_TAG.
+
+	* gc.c (rb_gc_mark): link 2 of NODE_IFUNC should not be explicitly
+	  marked.  it may contain non object pointer.
+
+Tue Jan  2 00:20:06 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (reg_s_last_match): Regexp::last_match(nth) returns nth
+	  substring of the match  (alternative for $& and $<digit>).
+
+Sun Dec 31 01:39:16 2000  Guy Decoux  <decoux@moulon.inra.fr>
+
+	* eval.c (rb_mod_define_method): wrong comparison for blocks.
+
+Sat Dec 30 19:28:50 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (id2ref): should handle Symbol too.
+
+	* gc.c (id2ref): should print original ptr value
 
 Sat Dec 30 03:14:22 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

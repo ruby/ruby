@@ -569,8 +569,6 @@ Init_Exception()
     rb_eNameError   = rb_define_class("NameError", rb_eScriptError);
     rb_eLoadError   = rb_define_class("LoadError", rb_eScriptError);
     rb_eNotImpError = rb_define_class("NotImplementedError", rb_eScriptError);
-    /* backward compatibility -- will be removed in the future */
-    rb_define_global_const("NotImplementError", rb_eNotImpError);
 
     rb_eRuntimeError = rb_define_class("RuntimeError", rb_eStandardError);
     rb_eSecurityError = rb_define_class("SecurityError", rb_eStandardError);
@@ -692,6 +690,13 @@ rb_sys_fail(mesg)
     ee = rb_exc_new2(ee, buf);
     rb_iv_set(ee, "errno", INT2FIX(n));
     rb_exc_raise(ee);
+}
+
+void
+rb_load_failed(path)
+    char *path;
+{
+    rb_loaderror("%s -- %s", strerror(errno), path);
 }
 
 void

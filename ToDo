@@ -1,12 +1,5 @@
 Language Spec.
 
-- def foo; .. rescue .. end
-- compile time string concatenation, "hello" "world" => "helloworld"
-- rescue modifier; a rescue b => begin a rescue; b end
-- %w(a\ b\ c abc) => ["a b c", "abc"]
-- objectify symbols
-- class variable (prefix @@)
-- rescue RuntimeError => err
 * operator !! for rescue. ???
 * objectify characters
 * ../... outside condition invokes operator method too.
@@ -31,15 +24,11 @@ Language Spec.
 * a +1 to be a+1, not a(+1).
 * unify == and eql? again
 * to_i returns nil if str contains no digit.
+* raise exception by ``
 
 Hacking Interpreter
 
-- use eban's fnmatch
-- RUBYOPT environment variable
-- alias $defout $>
-- retrieve STACK_LEVEL_MAX from users' limit.
-- remove end_proc registered out of require only
-- all object made freezable
+- generational GC
 * non-blocking open (e.g. for named pipe) for thread
 * avoid blocking with gethostbyname/gethostbyaddr (use fork ???)
 * objectify interpreters ???
@@ -48,41 +37,16 @@ Hacking Interpreter
 * scrambled script, or script filter
 * setuid ruby
 * performance tune for in-block (dynamic) local variables.
-* generational GC
 * give warnings to assign magic variables.
 * export rb_io_{addstr,printf,puts,print}
 * autoload should work with threads [ruby-talk:4589]
 * remove stdio dependency from IOs.
 * warn for inconsistent local variable usage (lv m and method m at the same time). 
+* MicroRuby
 
 Standard Libraries
 
-- hash[key] = nil does not remove entry; hashes may have nil as the value.
-- hash.fetch(key) raises exception if key is not found.
-- Array#{first,last,at}
-- Dir.glob(pat){|f|...}
-- sprintf/printf's $ to specify argument order
-- Dir.glob("**/*.c") ala zsh
-- Remove Enumerable#{size,length}
-- Array#slice, Array#slice!
-- String#slice, String#slice!
-- Marshal should handle generic instance variables.
-- debugger for thread programming
-- SyntaxError, NameError, LoadError and NotImplementedError are subclasses of
-  ScriptError<Exception, not StandardError.
-- Thread::start gives arguments, not a thread object to the block
-- regexp: (?>..), \G
-- Struct::new([name,]member,...)
-- IO#reopen accepts path as well
-- Kernel#scan
-- call initialize for builtin classes too
-- performance tune for String's non-bang methods.
-- 'w' template for pack/unpack
-- alternative for interator? => block_given?
-- regex - /p (made obsolete), /m (new)
-- consistent /, %, divmod
-- unbound method object
-- integrate final.rb into the core.
+- Module#define_method which takes a name and a body (block, proc or method).
 * Enumerable#sort_by for Schwartzian transformation
 * String#scanf(?)
 * Object#fmt(?)
@@ -98,31 +62,29 @@ Standard Libraries
 * Process::waitall [ruby-talk:4557]
 * synchronized method - synchronized{...}, synchronized :foo, :bar
 * move Time::times to Process.
-- Module#define_method which takes a name and a body (block, proc or method).
 * IO#for_fd in general
 * Array#&, Array#| to allow duplication. ???
-- fork_and_kill_other_threads.
+* fork_and_kill_other_threads.
 * way to specify immortal (fork endurance) thread;
 * or raise ForkException to every thread but fork caller.
 * Array#fetch
+* Hash::new{default} or recommend Hash#fetch?
+* Enume#inject
 
 Extension Libraries
 
-- FastCGI ruby
 * ptk.rb pTk wrapper that is compatible to tk.rb
 * Berkeley DB extension
 * BitVector
 
 Ruby Libraries
 
-- net/http.rb
 * add uri.rb
 * urllib.rb, nttplib.rb, etc.
 * format like perl's
 
 Tools
 
-- extension library maker using SWIG
 * freeze or undump to bundle everything
 
 Misc

@@ -12,7 +12,13 @@ elsif ARGV[0] == 'install'
   $destdir = ARGV[1] || ''
   ARGV.shift
 elsif ARGV[0] == 'clean'
-  $clean = true
+  $clean = "clean"
+  ARGV.shift
+elsif ARGV[0] == 'distclean'
+  $clean = "distclean"
+  ARGV.shift
+elsif ARGV[0] == 'realclean'
+  $clean = "realclean"
   ARGV.shift
 end
 
@@ -625,7 +631,7 @@ def extmake(target)
       if $install
 	system "#{$make} install DESTDIR=#{$destdir}"
       elsif $clean
-	system "#{$make} clean"
+	system "#{$make} #{$clean}"
       else
 	unless system "#{$make} all"
 	  if ENV["MAKEFLAGS"] != "k" and ENV["MFLAGS"] != "-k"

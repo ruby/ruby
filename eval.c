@@ -1122,9 +1122,15 @@ void rb_exec_end_proc _((void));
 void
 ruby_finalize()
 {
-    rb_trap_exit();
-    rb_exec_end_proc();
-    rb_gc_call_finalizer_at_exit();
+    int state;
+
+    PUSH_TAG(PROT_NONE);
+    if ((state = EXEC_TAG()) == 0) {
+	rb_trap_exit();
+	rb_exec_end_proc();
+	rb_gc_call_finalizer_at_exit();
+    }
+    POP_TAG();
 }
 
 void
@@ -3526,7 +3532,7 @@ rb_yield_0(val, self, klass, acheck)
 	if (!node) {
 	    result = Qnil;
 	}
-	else if (nd_type(node) == NODE_IFUNC) {
+	else if (nd_type(node) == NODE_CFUNC || nd_type(node) == NODE_IFUNC) {
 	    if (val == Qundef) val = rb_ary_new2(0);
 	    result = (*node->nd_cfnc)(val, node->nd_tval, self);
 	}
@@ -4417,6 +4423,9 @@ rb_call(klass, recv, mid, argc, argv, scope)
     ID     id = mid;
     struct cache_entry *ent;
 
+    if (!klass) {
+	rb_raise(rb_eNotImpError, "method call on terminated obejct");
+    }
     /* is it in the method cache? */
     ent = cache + EXPR1(klass, mid);
     if (ent->mid == mid && ent->klass == klass) {
@@ -6635,7 +6644,7 @@ rb_mod_define_method(argc, argv, mod)
     if (RDATA(body)->dmark == (RUBY_DATA_FUNC)bm_mark) {
 	rb_add_method(mod, id, NEW_DMETHOD(method_unbind(body)), NOEX_PUBLIC);
     }
-    else if (RDATA(body)->dmark != (RUBY_DATA_FUNC)blk_mark) {
+    else if (RDATA(body)->dmark == (RUBY_DATA_FUNC)blk_mark) {
 	rb_add_method(mod, id, NEW_BMETHOD(body), NOEX_PUBLIC);
     }
     else {

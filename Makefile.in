@@ -111,12 +111,13 @@ clean:;		@rm -f $(OBJS) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY_ALIASES) $(MAINOBJ)
 		@-@MINIRUBY@ -Cext extmk.rb clean 2> /dev/null || true
 		@rm -f $(PROGRAM) miniruby$(EXEEXT)
 
-distclean:	clean
+distclean:;	@-@MINIRUBY@ -Cext extmk.rb distclean 2> /dev/null || true
+		$(MAKE) clean
 		@rm -f Makefile ext/extmk.rb config.h
 		@rm -f ext/config.cache config.cache config.log config.status
 		@rm -f *~ core *.core gmon.out y.tab.c y.output ruby.imp
 
-realclean:	distclean
+realclean: 	distclean
 		@rm -f parse.c
 		@rm -f lex.c
 
@@ -142,7 +143,7 @@ fake.rb:	miniruby$(EXEEXT)
 config.status:	$(srcdir)/configure
 		$(SHELL) ./config.status --recheck
 
-$(srcdir)/configure: $(srcdir)/configure.in
+	$(srcdir)/configure: $(srcdir)/configure.in
 		cd $(srcdir) && $(AUTOCONF)
 
 .c.@OBJEXT@:

@@ -938,7 +938,11 @@ opt_call_args	: none
 call_args	: command_call
 		    {
 			$$ = NEW_LIST($1);
-		    }
+		    } /*
+		| args ','
+		    {
+			$$ = $1;
+		    } */
 		| args ',' command_call
 		    {
 			$$ = list_append($1, $3);
@@ -952,11 +956,11 @@ call_args	: command_call
 			value_expr($4);
 			$$ = arg_concat($1, $4);
 			$$ = arg_blk_pass($$, $5);
-		    }
+		    } /*
 		| assocs ','
 		    {
 			$$ = NEW_LIST(NEW_HASH($1));
-		    }
+		    } */
 		| assocs opt_block_arg
 		    {
 			$$ = NEW_LIST(NEW_HASH($1));
@@ -972,11 +976,11 @@ call_args	: command_call
 		    {
 			$$ = list_append($1, NEW_HASH($3));
 			$$ = arg_blk_pass($$, $4);
-		    }
+		    } /*
 		| args ',' assocs ','
 		    {
 			$$ = list_append($1, NEW_HASH($3));
-		    }
+		    } */
 		| args ',' assocs ',' tSTAR arg opt_block_arg
 		    {
 			value_expr($6);
@@ -1842,8 +1846,6 @@ none		: /* none */
 			$$ = 0;
 		    }
 %%
-#include <ctype.h>
-#include <sys/types.h>
 #include "regex.h"
 #include "util.h"
 

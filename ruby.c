@@ -728,7 +728,7 @@ load_file(fname, script)
 	FILE *fp = fopen(fname, "r");
 
 	if (fp == NULL) {
-	    rb_raise(rb_eLoadError, "No such file to load -- %s", fname);
+	    rb_load_fail(fname);
 	}
 	fclose(fp);
 

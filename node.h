@@ -21,7 +21,6 @@ enum node_type {
     NODE_METHOD,
     NODE_FBODY,
     NODE_CFUNC,
-    NODE_IFUNC,
     NODE_SCOPE,
     NODE_BLOCK,
     NODE_IF,
@@ -121,6 +120,7 @@ enum node_type {
     NODE_DMETHOD,
     NODE_BMETHOD,
     NODE_MEMO,
+    NODE_IFUNC,
     NODE_LAST
 };
 

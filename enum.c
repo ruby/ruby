@@ -179,6 +179,24 @@ enum_collect(obj)
 }
 
 static VALUE
+inject_i(i, np)
+    VALUE i;
+    VALUE *np;
+{
+    *np = rb_yield(rb_assoc_new(*np, i));
+    return Qnil;
+}
+
+static VALUE
+enum_inject(obj, n)
+    VALUE obj, n;
+{
+    rb_iterate(rb_each, obj, inject_i, (VALUE)&n);
+
+    return n;
+}
+
+static VALUE
 enum_sort(obj)
     VALUE obj;
 {
@@ -339,6 +357,7 @@ Init_Enumerable()
     rb_define_method(rb_mEnumerable,"reject", enum_reject, 0);
     rb_define_method(rb_mEnumerable,"collect", enum_collect, 0);
     rb_define_method(rb_mEnumerable,"map", enum_collect, 0);
+    rb_define_method(rb_mEnumerable,"inject", enum_inject, 1);
     rb_define_method(rb_mEnumerable,"min", enum_min, 0);
     rb_define_method(rb_mEnumerable,"max", enum_max, 0);
     rb_define_method(rb_mEnumerable,"member?", enum_member, 1);
