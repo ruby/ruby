@@ -1,3 +1,7 @@
+Sat Mar 29 09:47:52 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* MANIFEST (ext/aix_mksym.rb): remove obsolete file.
+
 Fri Mar 28 19:33:39 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* variable.c (rb_class_path): hold temporary class path in a
