@@ -39,6 +39,7 @@
 #define HAVE_TELLDIR 1
 #define HAVE_SEEKDIR 1
 
+#define NEED_IO_SEEK_BETWEEN_RW 1
 #define RSHIFT(x,y) ((x)>>y)
 #define FILE_COUNT _cnt
 #define DEFAULT_KCODE KCODE_NONE

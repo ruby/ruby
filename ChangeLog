@@ -1,3 +1,19 @@
+Thu Jan 09 17:05:14 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* configure.in (RUBY_CHECK_IO_NEED): check whether fseek() and
+	  fflush() are needed.
+
+	* io.c (flush_before_seek): flush before seek if buffered data
+	  may remain.
+
+	* io.c (rb_io_check_readable): seek if the last operation was
+	  write.
+
+	* io.c (rb_io_check_writable): seek if the last operation was
+	  read.
+
+	* rubyio.h (FMODE_RBUF, FMODE_WBUF): added.
+
 Mon Jan  6 02:32:46 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* struct.c (make_struct): needs meta class.
