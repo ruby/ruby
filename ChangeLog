@@ -1,3 +1,11 @@
+Fri Dec  5 02:49:35 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit/assertions.rb (Test::Unit::Assertions::assert_raises):
+	  allow multiple exception list.  [ruby-core:01884]
+
+	* lib/test/unit/assertions.rb (Test::Unit::Assertions::assert_nothing_raised):
+	  check whether arguments are subclass of Exception.
+
 Thu Dec  4 21:50:07 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/drb/drb.rb (DRb::DRbMessage::send_request, send_reply):

@@ -58,23 +58,29 @@ EOT
 
       # Passes if block raises exception.
       public
-      def assert_raises(expected_exception_klass, message="")
+      def assert_raises(*args)
         _wrap_assertion do
-          assert_instance_of(Class, expected_exception_klass, "Should expect a class of exception")
+          if Class === args.last and Exception >= args.last
+            message = ""
+          else
+            message = args.pop
+          end
+          args.each do |klass|
+            assert(Exception >= klass, "Should expect a class of exception")
+          end
+          expected = args.size == 1 ? args.first : args
           actual_exception = nil
-          full_message = build_message(message, "<?> exception expected but none was thrown.", expected_exception_klass)
+          full_message = build_message(message, "<?> exception expected but none was thrown.", expected)
           assert_block(full_message) do
-            thrown = false
             begin
               yield
-            rescue Exception => thrown_exception
-              actual_exception = thrown_exception
-              thrown = true
+            rescue Exception => actual_exception
+              break
             end
-            thrown
+            false
           end
-          full_message = build_message(message, "<?> exception expected but was\n?", expected_exception_klass, actual_exception)
-          assert_block(full_message) { expected_exception_klass == actual_exception.class }
+          full_message = build_message(message, "<?> exception expected but was\n?", expected, actual_exception)
+          assert_block(full_message) { args.include?(actual_exception.class) }
           actual_exception
         end
       end
@@ -176,9 +182,13 @@ EOT
       public
       def assert_nothing_raised(*args)
         _wrap_assertion do
-          message = ""
-          if (!args[-1].instance_of?(Class))
+          if Class === args.last and Exception >= args.last
+            message = ""
+          else
             message = args.pop
+          end
+          args.each do |klass|
+            assert(Exception >= klass, "Should expect a class of exception")
           end
           begin
             yield
