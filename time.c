@@ -1382,7 +1382,7 @@ time_load(klass, str)
     int i;
 
     StringValue(str);
-    buf = RSTRING(str)->ptr;
+    buf = (unsigned char *)RSTRING(str)->ptr;
     if (RSTRING(str)->len != 8) {
 	rb_raise(rb_eTypeError, "marshaled time format differ");
     }

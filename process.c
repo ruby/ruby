@@ -713,7 +713,7 @@ static VALUE
 rb_f_fork(obj)
     VALUE obj;
 {
-#if !defined(__human68k__) && !defined(NT) && !defined(__MACOS__) && !defined(__EMX__)
+#if !defined(__human68k__) && !defined(NT) && !defined(__MACOS__) && !defined(__EMX__) && !defined(__VMS)
     int pid;
 
     rb_secure(2);
@@ -886,6 +886,30 @@ rb_f_system(argc, argv)
     last_status_set(status == -1 ? 127 : status);
     return status == 0 ? Qtrue : Qfalse;
 #else
+#if defined(__VMS)
+    VALUE cmd;
+    int status;
+
+    if (argc == 0) {
+	rb_last_status = Qnil;
+	rb_raise(rb_eArgError, "wrong number of arguments");
+    }
+
+    if (TYPE(argv[0]) == T_ARRAY) {
+	if (RARRAY(argv[0])->len != 2) {
+	    rb_raise(rb_eArgError, "wrong first argument");
+	}
+	argv[0] = RARRAY(argv[0])->ptr[0];
+    }
+    cmd = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
+
+    SafeStringValue(cmd);
+    status = system(RSTRING(cmd)->ptr);
+    last_status_set((status & 0xff) << 8);
+
+    if (status == 0) return Qtrue;
+    return Qfalse;
+#else
     volatile VALUE prog = 0;
     int pid;
     int i;
@@ -938,6 +962,7 @@ rb_f_system(argc, argv)
     if (NUM2INT(rb_last_status) == 0)
 	return Qtrue;
     return Qfalse;
+#endif /* __VMS */
 #endif /* __human68k__ */
 #endif /* DJGPP */
 #endif /* NT */

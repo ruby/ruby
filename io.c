@@ -12,6 +12,11 @@
 
 **********************************************************************/
 
+#if defined(__VMS)
+#define _XOPEN_SOURCE
+#define _POSIX_C_SOURCE 2
+#endif
+
 #include "ruby.h"
 #include "rubyio.h"
 #include "rubysig.h"
@@ -131,6 +136,8 @@ static VALUE lineno;
 #  define READ_DATA_PENDING(fp) (fp->_state._eof == 0)
 #elif defined(__UCLIBC__)
 #  define READ_DATA_PENDING(fp) ((fp)->bufpos < (fp)->bufend)
+#elif defined(__VMS)
+#  define READ_DATA_PENDING(fp) (((unsigned int)((*(fp))->_flag) & _IOEOF) == 0)
 #else
 /* requires systems own version of the ReadDataPending() */
 extern int ReadDataPending();
@@ -1643,7 +1650,7 @@ rb_file_sysopen(fname, flags, mode)
     return rb_file_sysopen_internal(io, fname, flags, mode);
 }
 
-#if defined (NT) || defined(DJGPP) || defined(__CYGWIN__) || defined(__human68k__)
+#if defined (NT) || defined(DJGPP) || defined(__CYGWIN__) || defined(__human68k__) || defined(__VMS)
 static struct pipe_list {
     OpenFile *fptr;
     struct pipe_list *next;
@@ -1685,7 +1692,7 @@ pipe_del_fptr(fptr)
     }
 }
 
-#if defined (NT) || defined(DJGPP) || defined(__CYGWIN__) || defined(__human68k__)
+#if defined (NT) || defined(DJGPP) || defined(__CYGWIN__) || defined(__human68k__) || defined(__VMS)
 static void
 pipe_atexit _((void))
 {
@@ -1748,7 +1755,7 @@ pipe_open(pname, mode)
     int modef = rb_io_mode_flags(mode);
     OpenFile *fptr;
 
-#if defined(NT) || defined(DJGPP) || defined(__human68k__)
+#if defined(NT) || defined(DJGPP) || defined(__human68k__) || defined(__VMS)
     FILE *f = popen(pname, mode);
 
     if (!f) rb_sys_fail(pname);

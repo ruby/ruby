@@ -88,6 +88,10 @@ void xfree _((void*));
 #include "win32/win32.h"
 #endif
 
+#if defined(__VMS)
+#include "vms/vms.h"
+#endif
+
 #if defined __CYGWIN__
 # undef EXTERN
 # if defined USEIMPORTLIB

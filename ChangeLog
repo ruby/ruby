@@ -1,3 +1,8 @@
+Fri Mar 22 16:22:55 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* the VMS support patch submitted by Akiyoshi, Masamichi
+	  <Masamichi.Akiyoshi@jp.compaq.com> is merged.
+
 Fri Mar 22 16:27:24 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/racc/parser.rb: new file.
@@ -7,6 +12,13 @@ Fri Mar 22 16:27:24 2002  Minero Aoki  <aamine@loveruby.net>
 	* lib/README: add racc/parser.rb.
 
 	* ext/Setup*: add racc/cparse.
+
+Fri Mar 22 15:04:03 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (exec_under): changing ruby_class is OK, but should not
+	  alter cbase.
+
+	* eval.c (yield_under_i): ditto.
 
 Fri Mar 22 15:44:38 2002  Minero Aoki  <aamine@loveruby.net>
 

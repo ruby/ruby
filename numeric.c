@@ -944,6 +944,10 @@ static VALUE
 int_succ(num)
     VALUE num;
 {
+    if (FIXNUM_P(num)) {
+	long i = FIX2LONG(num) + 1;
+	return rb_int2inum(i);
+    }
     return rb_funcall(num, '+', 1, INT2FIX(1));
 }
 
@@ -1438,15 +1442,6 @@ fix_id2name(fix)
 }
 
 static VALUE
-fix_succ(fix)
-    VALUE fix;
-{
-    long i = FIX2LONG(fix) + 1;
-
-    return rb_int2inum(i);
-}
-
-static VALUE
 fix_size(fix)
     VALUE fix;
 {
@@ -1709,8 +1704,6 @@ Init_Numeric()
 
     rb_define_method(rb_cFixnum, "to_f", fix_to_f, 0);
 
-    rb_define_method(rb_cFixnum, "succ", fix_succ, 0);
-    rb_define_method(rb_cFixnum, "next", fix_succ, 0);
     rb_define_method(rb_cFixnum, "size", fix_size, 0);
 
     rb_define_method(rb_cFixnum, "upto", fix_upto, 1);

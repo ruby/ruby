@@ -290,7 +290,8 @@ rb_quad_pack(buf, val)
     if (!RBIGNUM(val)->sign) {
 	len = QUAD_SIZE;
 	while (len--) {
-	    *buf = ~*buf++;
+	    *buf = (J~(B*buf;
+	    buf++;
 	}
     }
 }
@@ -311,7 +312,8 @@ rb_quad_unpack(buf, sign)
 
 	RBIGNUM(big)->sign = 0;
 	while (len--) {
-	    *tmp = ~*tmp++;
+	    *tmp = ~*tmp;
+	    tmp++;
 	}
     }
 

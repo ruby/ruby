@@ -718,7 +718,7 @@ void
 rb_sys_fail(mesg)
     const char *mesg;
 {
-#ifndef NT
+#if !defined(NT) && !defined(__VMS)
     char *strerror();
 #endif
     char *err;

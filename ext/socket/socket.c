@@ -401,9 +401,9 @@ bsock_send(argc, argv, sock)
     return INT2FIX(n);
 }
 
-static VALUE ipaddr _((struct sockaddr *));
+static VALUE ipaddr _((struct sockaddr*));
 #ifdef HAVE_SYS_UN_H
-static VALUE unixaddr _((struct sockaddr_un *));
+static VALUE unixaddr _((struct sockaddr_un*));
 #endif
 
 enum sock_recv_type {
@@ -465,10 +465,10 @@ s_recvfrom(sock, argc, argv, from)
 	    rb_raise(rb_eTypeError, "sockaddr size differs - should not happen");
 	}
 #endif
-	return rb_assoc_new(str, ipaddr((struct sockaddr *)buf));
+	return rb_assoc_new(str, ipaddr((struct sockaddr*)buf));
 #ifdef HAVE_SYS_UN_H
       case RECV_UNIX:
-	return rb_assoc_new(str, unixaddr((struct sockaddr_un *)buf));
+	return rb_assoc_new(str, unixaddr((struct sockaddr_un*)buf));
 #endif
       case RECV_SOCKET:
 	return rb_assoc_new(str, rb_tainted_str_new(buf, alen));
@@ -535,7 +535,7 @@ mkinetaddr(host, buf, len)
     sin.sin_family = AF_INET;
     SET_SIN_LEN(&sin, sizeof(sin));
     sin.sin_addr.s_addr = host;
-    mkipaddr0((struct sockaddr *)&sin, buf, len);
+    mkipaddr0((struct sockaddr*)&sin, buf, len);
 }
 
 static struct addrinfo*
@@ -590,6 +590,7 @@ ip_addrsetup(host, port)
     MEMZERO(&hints, struct addrinfo, 1);
     hints.ai_family = PF_UNSPEC;
     hints.ai_socktype = SOCK_DGRAM;
+    hints.ai_flags = AI_CANONNAME;
     error = getaddrinfo(hostp, portp, &hints, &res);
     if (error) {
 	if (hostp && hostp[strlen(hostp)-1] == '\n') {
@@ -972,17 +973,19 @@ static VALUE
 tcp_s_gethostbyname(obj, host)
     VALUE obj, host;
 {
+#if 0
     struct sockaddr_storage addr;
     struct hostent *h;
     char **pch;
     VALUE ary, names;
+    size_t size;
 
     rb_secure(3);
     if (rb_obj_is_kind_of(host, rb_cInteger)) {
 	long i = NUM2LONG(host);
 	struct sockaddr_in *sin;
 
-	sin = (struct sockaddr_in *)&addr;
+	sin = (struct sockaddr_in*)&addr;
 	MEMZERO(sin, struct sockaddr_in, 1);
 	sin->sin_family = AF_INET;
 	SET_SIN_LEN(sin, sizeof(*sin));
@@ -995,8 +998,8 @@ tcp_s_gethostbyname(obj, host)
     case AF_INET:
       {
 	struct sockaddr_in *sin;
-	sin = (struct sockaddr_in *)&addr;
-	h = gethostbyaddr((char *)&sin->sin_addr,
+	sin = (struct sockaddr_in*)&addr;
+	h = gethostbyaddr((char*)&sin->sin_addr,
 			  sizeof(sin->sin_addr),
 			  sin->sin_family);
 	break;
@@ -1005,8 +1008,8 @@ tcp_s_gethostbyname(obj, host)
     case AF_INET6:
       {
 	struct sockaddr_in6 *sin6;
-	sin6 = (struct sockaddr_in6 *)&addr;
-	h = gethostbyaddr((char *)&sin6->sin6_addr,
+	sin6 = (struct sockaddr_in6*)&addr;
+	h = gethostbyaddr((char*)&sin6->sin6_addr,
 			  sizeof(sin6->sin6_addr),
 			  sin6->sin6_family);
 	break;
@@ -1019,7 +1022,7 @@ tcp_s_gethostbyname(obj, host)
     if (h == NULL) {
 #ifdef HAVE_HSTERROR
 	extern int h_errno;
-	rb_raise(rb_eSocket, "%s", (char *)hsterror(h_errno));
+	rb_raise(rb_eSocket, "%s", (char*)hsterror(h_errno));
 #else
 	rb_raise(rb_eSocket, "host not found");
 #endif
@@ -1033,48 +1036,83 @@ tcp_s_gethostbyname(obj, host)
     }
     rb_ary_push(ary, INT2NUM(h->h_addrtype));
 #ifdef h_addr
-    for (pch = h->h_addr_list; *pch; pch++) {
+    for (pch = h->h_addr_list; *pch; pch++)
+	;
+    pch++;
+    size = (char*)pch - (char*)h->h_addr_list;
+    pch = (char**)alloca(size);
+    memcpy((char*)pch, (char *)h->h_addr_list, size);
+    size = h->h_length;
+    for (; *pch && h; pch++) {
 	switch (addr.ss_family) {
-	case AF_INET:
-	  {
+	  case AF_INET: {
 	    struct sockaddr_in sin;
+
 	    MEMZERO(&sin, struct sockaddr_in, 1);
 	    sin.sin_family = AF_INET;
 	    SET_SIN_LEN(&sin, sizeof(sin));
-	    memcpy((char *) &sin.sin_addr, *pch, h->h_length);
-	    h = gethostbyaddr((char *)&sin.sin_addr,
+	    memcpy((char*)&sin.sin_addr, *pch, size);
+	    h = gethostbyaddr((char*)&sin.sin_addr,
 			      sizeof(sin.sin_addr),
 			      sin.sin_family);
-	    rb_ary_push(ary, mkipaddr((struct sockaddr *)&sin));
+	    rb_ary_push(ary, mkipaddr((struct sockaddr*)&sin));
 	    break;
 	  }
 #ifdef INET6
-	case AF_INET6:
-	  {
+	  case AF_INET6: {
 	    struct sockaddr_in6 sin6;
+
 	    MEMZERO(&sin6, struct sockaddr_in6, 1);
 	    sin6.sin6_family = AF_INET;
 #ifdef SIN6_LEN
 	    sin6.sin6_len = sizeof(sin6);
 #endif
-	    memcpy((char *) &sin6.sin6_addr, *pch, h->h_length);
-	    h = gethostbyaddr((char *)&sin6.sin6_addr,
+	    memcpy((char*)&sin6.sin6_addr, *pch, size);
+	    h = gethostbyaddr((char*)&sin6.sin6_addr,
 			      sizeof(sin6.sin6_addr),
 			      sin6.sin6_family);
-	    rb_ary_push(ary, mkipaddr((struct sockaddr *)&sin6));
+	    rb_ary_push(ary, mkipaddr((struct sockaddr*)&sin6));
 	    break;
 	  }
 #endif
-	default:
+	  default:
 	    h = NULL;
+	    break;
 	}
     }
 #else
-    memcpy((char *)&addr.sin_addr, h->h_addr, h->h_length);
-    rb_ary_push(ary, mkipaddr((struct sockaddr *)&addr));
+    memcpy((char*)&addr.sin_addr, h->h_addr, h->h_length);
+    rb_ary_push(ary, mkipaddr((struct sockaddr*)&addr));
 #endif
 
     return ary;
+#else
+
+    struct addrinfo hints, *res, *r;
+    VALUE ary, names;
+    int error;
+
+    rb_secure(3);
+    MEMZERO(&hints, struct addrinfo, 1);
+    hints.ai_family = PF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    r = res = ip_addrsetup(host, Qnil);
+    ary = rb_ary_new();
+    rb_ary_push(ary, rb_tainted_str_new2(r->ai_canonname));
+    r = r->ai_next;
+    names = rb_ary_new();
+    rb_ary_push(ary, names);
+    rb_ary_push(ary, INT2NUM(res->ai_family));
+    for (r = res; r; r = r->ai_next) {
+	if (r != res) {
+	    rb_ary_push(names, rb_tainted_str_new2(r->ai_canonname));
+	}
+	rb_ary_push(ary, mkipaddr(r->ai_addr));
+    }
+    freeaddrinfo(res);
+
+    return ary;
+#endif
 }
 
 static VALUE
@@ -1202,7 +1240,7 @@ ip_addr(sock)
 
     if (getsockname(fileno(fptr->f), (struct sockaddr*)&addr, &len) < 0)
 	rb_sys_fail("getsockname(2)");
-    return ipaddr((struct sockaddr *)&addr);
+    return ipaddr((struct sockaddr*)&addr);
 }
 
 static VALUE
@@ -1217,7 +1255,7 @@ ip_peeraddr(sock)
 
     if (getpeername(fileno(fptr->f), (struct sockaddr*)&addr, &len) < 0)
 	rb_sys_fail("getpeername(2)");
-    return ipaddr((struct sockaddr *)&addr);
+    return ipaddr((struct sockaddr*)&addr);
 }
 
 static VALUE
@@ -1236,7 +1274,7 @@ ip_s_getaddress(obj, host)
     struct sockaddr_storage addr;
 
     setipaddr(host, &addr);
-    return mkipaddr((struct sockaddr *)&addr);
+    return mkipaddr((struct sockaddr*)&addr);
 }
 
 static VALUE
@@ -1876,7 +1914,7 @@ mkhostent(h)
     if (h == NULL) {
 #ifdef HAVE_HSTRERROR
 	extern int h_errno;
-	rb_raise(rb_eSocket, "%s", (char *)hstrerror(h_errno));
+	rb_raise(rb_eSocket, "%s", (char*)hstrerror(h_errno));
 #else
 	rb_raise(rb_eSocket, "host not found");
 #endif
@@ -1935,21 +1973,21 @@ sock_s_gethostbyname(obj, host)
     if (rb_obj_is_kind_of(host, rb_cInteger)) {
 	long i = NUM2LONG(host);
 	struct sockaddr_in *sin;
-	sin = (struct sockaddr_in *)&addr;
+	sin = (struct sockaddr_in*)&addr;
 	MEMZERO(sin, struct sockaddr_in, 1);
 	sin->sin_family = AF_INET;
 	SET_SIN_LEN(sin, sizeof(*sin));
 	sin->sin_addr.s_addr = htonl(i);
     }
     else {
-	setipaddr(host, (struct sockaddr *)&addr);
+	setipaddr(host, (struct sockaddr*)&addr);
     }
     switch (addr.ss_family) {
     case AF_INET:
       {
 	struct sockaddr_in *sin;
-	sin = (struct sockaddr_in *)&addr;
-	h = gethostbyaddr((char *)&sin->sin_addr,
+	sin = (struct sockaddr_in*)&addr;
+	h = gethostbyaddr((char*)&sin->sin_addr,
 			  sizeof(sin->sin_addr),
 			  sin->sin_family);
 	break;
@@ -1958,8 +1996,8 @@ sock_s_gethostbyname(obj, host)
     case AF_INET6:
       {
 	struct sockaddr_in6 *sin6;
-	sin6 = (struct sockaddr_in6 *)&addr;
-	h = gethostbyaddr((char *)&sin6->sin6_addr,
+	sin6 = (struct sockaddr_in6*)&addr;
+	h = gethostbyaddr((char*)&sin6->sin6_addr,
 			  sizeof(sin6->sin6_addr),
 			  sin6->sin6_family);
 	break;
@@ -2127,10 +2165,10 @@ sock_s_getnameinfo(argc, argv)
 	    rb_raise(rb_eTypeError, "sockaddr length too big");
 	}
 	memcpy(&ss, RSTRING(sa)->ptr, RSTRING(sa)->len);
-	if (RSTRING(sa)->len != SA_LEN((struct sockaddr *)&ss)) {
+	if (RSTRING(sa)->len != SA_LEN((struct sockaddr*)&ss)) {
 	    rb_raise(rb_eTypeError, "sockaddr size differs - should not happen");
 	}
-	sap = (struct sockaddr *)&ss;
+	sap = (struct sockaddr*)&ss;
     }
     else if (TYPE(sa) == T_ARRAY) {
 	MEMZERO(&hints, struct addrinfo, 1);

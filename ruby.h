@@ -60,6 +60,11 @@ extern "C" {
 #pragma alloca
 #endif
 
+#if defined(__VMS)
+# pragma builtins
+# define alloca __alloca
+#endif
+
 #if SIZEOF_LONG != SIZEOF_VOIDP
 ---->> ruby requires sizeof(void*) == sizeof(long) to be compiled. <<----
 #endif

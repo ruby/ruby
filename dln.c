@@ -48,7 +48,7 @@ void *xrealloc();
 #endif
 
 #include <stdio.h>
-#ifdef NT
+#if defined(NT) || defined(__VMS)
 #include "missing/file.h"
 #endif
 #include <sys/types.h>
@@ -70,6 +70,11 @@ void *xrealloc();
 
 #ifndef NT
 char *getenv();
+#endif
+
+#if defined(__VMS)
+#pragma builtins
+#include <dlfcn.h>
 #endif
 
 #ifdef __MACOS__
@@ -1516,6 +1521,33 @@ dln_load(file)
       return (void*)init_fct;
     }
 #endif /* __MACOS__ */
+
+#if defined(__VMS)
+#define DLN_DEFINED
+    {
+	void *handle, (*init_fct)();
+	char *fname, *p1, *p2;
+
+	fname = (char *)__alloca(strlen(file)+1);
+	strcpy(fname,file);
+	if (p1 = strrchr(fname,'/'))
+	    fname = p1 + 1;
+	if (p2 = strrchr(fname,'.'))
+	    *p2 = '(J\(B0';
+
+	if ((handle = (void*)dlopen(fname, 0)) == NULL) {
+	    goto failed;
+	}
+
+	if ((init_fct = (void (*)())dlsym(handle, buf)) == NULL) {
+	    dlclose(handle);
+	    goto failed;
+	}
+	/* Call the init code */
+	(*init_fct)();
+	return handle;
+    }
+#endif /* __VMS */
 
 #ifndef DLN_DEFINED
     rb_notimplement("dynamic link not supported");

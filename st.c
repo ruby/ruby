@@ -4,6 +4,7 @@ static	char	sccsid[] = "@(#) st.c 5.1 89/12/14 Crucible";
 
 #include "config.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include "st.h"
 
 #ifdef NT
