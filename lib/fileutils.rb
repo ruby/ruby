@@ -824,12 +824,12 @@ module FileUtils
   # FileUtils.
   # 
   module Verbose
-
     include FileUtils
 
     @fileutils_output  = $stderr
     @fileutils_label   = ''
     @fileutils_verbose = true
+    @fileutils_nowrite = false
 
     FileUtils::OPT_TABLE.each do |name, opts|
       next unless opts.include?('verbose')
@@ -842,9 +842,7 @@ module FileUtils
     end
 
     extend self
-
   end
-
 
   # 
   # This module has all methods of FileUtils module, but never changes
@@ -852,28 +850,52 @@ module FileUtils
   # FileUtils.
   # 
   module NoWrite
-
     include FileUtils
 
     @fileutils_output  = $stderr
     @fileutils_label   = ''
+    @fileutils_verbose = false
     @fileutils_nowrite = true
 
     FileUtils::OPT_TABLE.each do |name, opts|
       next unless opts.include?('noop')
       module_eval(<<-EOS, __FILE__, __LINE__ + 1)
         def #{name}(*args)
-          unless defined?(@fileutils_nowrite)
-            @fileutils_nowrite ||= true
-          end
+          @fileutils_nowrite = true unless defined?(@fileutils_nowrite)
           super(*fu_update_option(args, :noop => true))
         end
       EOS
     end
 
     extend self
-  
+  end
+
+  # 
+  # This module has all methods of FileUtils module, but never changes
+  # files/directories, with printing message before acting.
+  # This equates to passing the +:noop+ and +:verbose+ flag
+  # to methods in FileUtils.
+  # 
+  module DryRun
+    include FileUtils
+
+    @fileutils_output  = $stderr
+    @fileutils_label   = ''
+    @fileutils_verbose = true
+    @fileutils_nowrite = true
+
+    FileUtils::OPT_TABLE.each do |name, opts|
+      next unless opts.include?('noop')
+      module_eval(<<-EOS, __FILE__, __LINE__ + 1)
+        def #{name}(*args)
+          @fileutils_verbose = true unless defined?(@fileutils_verbose)
+          @fileutils_nowrite = true unless defined?(@fileutils_nowrite)
+          super(*fu_update_option(args, :noop => true, :verbose => true))
+        end
+      EOS
+    end
+
+    extend self
   end
 
 end
-

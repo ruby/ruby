@@ -1,3 +1,7 @@
+Tue Feb 17 01:20:57 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb: new module FileUtils::DryRun.
+
 Mon Feb 16 23:28:14 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* lib/csv.rb: document reduction.  [ruby-core:02429]
