@@ -190,6 +190,8 @@ mingw*)		LIBS="-lwsock32 -lmsvcrt $LIBS"
 		ac_cv_func_times=yes;;
 os2_emx*)	LIBS="-lm $LIBS"
 		ac_cv_lib_dir_opendir=no;;
+msdosdjgpp*)	LIBS="-lm $LIBS"
+		ac_cv_func_getpgrp_void=yes;;
 freebsd*)	LIBS="-lm $LIBS"
 		AC_CACHE_CHECK([whether -lxpg4 has to be linked],
 		  rb_cv_lib_xpg4_needed,

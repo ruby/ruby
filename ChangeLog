@@ -5,6 +5,8 @@ Sun Feb 11 16:00:30 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* gc.c (rb_gc, Init_stack): ditto.
 
+	* configure.in: add ac_cv_func_getpgrp_void=yes on DJGPP.
+
 Fri Feb 10 00:06:28 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* win32/win32.c (win32_stat): replace stat for enable when pathname
