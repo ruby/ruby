@@ -1,3 +1,8 @@
+Thu Jul 24 03:41:30 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* ext/tcltklib/tcltklib.c (ip_init): need at least one statement after
+	  label.
+
 Thu Jul 24 01:51:08 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick: imported.

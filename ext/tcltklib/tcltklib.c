@@ -623,6 +623,7 @@ ip_init(argc, argv, self)
       }
     case 0:
       /* no args */
+      ;
     }
 
     /* from Tcl_AppInit() */
