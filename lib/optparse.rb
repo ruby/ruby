@@ -899,7 +899,7 @@ Default options, which never appear in option summary.
   end
   private :notwice
 
-  def switch(*opts, &block)
+  def make_switch(*opts, &block)
     short, long, nolong, style, pattern, conv, not_pattern, not_conv, not_style = [], [], []
     ldesc, sdesc, desc, arg = [], [], []
     default_style = Switch::NoArgument
@@ -1022,23 +1022,39 @@ Default options, which never appear in option summary.
 
     cf. ((<OptionParser#switch>)).
 =end #'#"#`#
+  def new(*opts, &block)
+    top.append(*(sw = make_switch(*opts, &block)))
+    sw[0]
+  end
   def on(*opts, &block)
-    top.append(*switch(*opts, &block))
+    new(*opts, &block)
     self
   end
-  alias def_option on
+  alias def_option new
 
+  def new_head(*opts, &block)
+    top.prepend(*(sw = make_switch(*opts, &block)))
+    sw[0]
+  end
   def on_head(*opts, &block)
-    top.prepend(*switch(*opts, &block))
+    new_head(*opts, &block)
     self
   end
-  alias def_head_option on_head
+  alias def_head_option new_head
 
+  def new_tail(*opts, &block)
+    base.append(*(sw = make_switch(*opts, &block)))
+    sw[0]
+  end
   def on_tail(*opts, &block)
-    base.append(*switch(*opts, &block))
+    new_tail(*opts, &block)
     self
   end
-  alias def_tail_option on_tail
+  alias def_tail_option new_tail
+
+  def separator(string)
+    top.append(string, nil, nil)
+  end
 
 
 =begin

@@ -1,3 +1,8 @@
+Sun Dec  1 23:04:03 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* lib/optparse.rb (OptionParser::new): same as OptionParser#on but
+	  returns new OptionParser::switch.
+
 Sun Dec  1 22:43:29 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* win32/win32.c (rb_w32_stat): empty path is invalid, and return
