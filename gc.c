@@ -264,12 +264,14 @@ static RVALUE *freelist = 0;
 static RVALUE *deferred_final_list = 0;
 
 #define HEAPS_INCREMENT 10
-static RVALUE **heaps;
+static struct heaps_slot {
+    RVALUE *slot;
+    int limit;
+} *heaps;
 static int heaps_length = 0;
 static int heaps_used   = 0;
 
 #define HEAP_MIN_SLOTS 10000
-static int *heaps_limits;
 static int heap_slots = HEAP_MIN_SLOTS;
 
 #define FREE_MIN  4096
@@ -283,20 +285,25 @@ add_heap()
 
     if (heaps_used == heaps_length) {
 	/* Realloc heaps */
+	struct heaps_slot *p;
+	int length;
+
 	heaps_length += HEAPS_INCREMENT;
-	RUBY_CRITICAL(heaps = (heaps_used>0)?
-			(RVALUE**)realloc(heaps, heaps_length*sizeof(RVALUE*)):
-			(RVALUE**)malloc(heaps_length*sizeof(RVALUE*)));
-	if (heaps == 0) rb_memerror();
-	RUBY_CRITICAL(heaps_limits = (heaps_used>0)?
-			(int*)realloc(heaps_limits, heaps_length*sizeof(int)):
-			(int*)malloc(heaps_length*sizeof(int)));
-	if (heaps_limits == 0) rb_memerror();
+	length = heaps_length*sizeof(struct heaps_slot);
+	RUBY_CRITICAL(
+	    if (heaps_used > 0) {
+		p = (struct heaps_slot *)realloc(heaps, length);
+		if (p) heaps = p;
+	    }
+	    else {
+		p = heaps = (struct heaps_slot *)malloc(length);
+	    });
+	if (p == 0) rb_memerror();
     }
 
     for (;;) {
-	RUBY_CRITICAL(p = heaps[heaps_used] = (RVALUE*)malloc(sizeof(RVALUE)*heap_slots));
-	heaps_limits[heaps_used] = heap_slots;
+	RUBY_CRITICAL(p = heaps[heaps_used].slot = (RVALUE*)malloc(sizeof(RVALUE)*heap_slots));
+	heaps[heaps_used].limit = heap_slots;
 	if (p == 0) {
 	    if (heap_slots == HEAP_MIN_SLOTS) {
 		rb_memerror();
@@ -499,7 +506,7 @@ gc_mark_all()
 
     init_mark_stack();
     for (i = 0; i < heaps_used; i++) {
-	p = heaps[i]; pend = p + heaps_limits[i];
+	p = heaps[i].slot; pend = p + heaps[i].limit;
 	while (p < pend) {
 	    if ((p->as.basic.flags & FL_MARK) &&
 		(p->as.basic.flags != FL_MARK)) {
@@ -538,8 +545,8 @@ is_pointer_to_heap(ptr)
 
     /* check if p looks like a pointer */
     for (i=0; i < heaps_used; i++) {
-	heap_org = heaps[i];
-	if (heap_org <= p && p < heap_org + heaps_limits[i] &&
+	heap_org = heaps[i].slot;
+	if (heap_org <= p && p < heap_org + heaps[i].limit &&
 	    ((((char*)p)-((char*)heap_org))%sizeof(RVALUE)) == 0)
 	    return Qtrue;
     }
@@ -913,7 +920,7 @@ gc_sweep()
 	/* should not reclaim nodes during compilation
            if yacc's semantic stack is not allocated on machine stack */
 	for (i = 0; i < heaps_used; i++) {
-	    p = heaps[i]; pend = p + heaps_limits[i];
+	    p = heaps[i].slot; pend = p + heaps[i].limit;
 	    while (p < pend) {
 		if (!(p->as.basic.flags&FL_MARK) && BUILTIN_TYPE(p) == T_NODE)
 		    rb_gc_mark((VALUE)p);
@@ -933,7 +940,7 @@ gc_sweep()
 	RVALUE *free = freelist;
 	RVALUE *final = final_list;
 
-	p = heaps[i]; pend = p + heaps_limits[i];
+	p = heaps[i].slot; pend = p + heaps[i].limit;
 	while (p < pend) {
 	    if (!(p->as.basic.flags & FL_MARK)) {
 		if (p->as.basic.flags) {
@@ -961,10 +968,10 @@ gc_sweep()
 	    }
 	    p++;
 	}
-	if (n == heaps_limits[i] && freed + n > FREE_MIN) {
+	if (n == heaps[i].limit && freed + n > FREE_MIN) {
 	    RVALUE *pp;
 
-	    heaps_limits[i] = 0;
+	    heaps[i].limit = 0;
 	    for (pp = final_list; pp != final; pp = pp->as.free.next) {
 		p->as.free.flags |= FL_SINGLETON; /* freeing page mark */
 	    }
@@ -1002,14 +1009,13 @@ gc_sweep()
 	}
     }
     for (i = j = 1; j < heaps_used; i++) {
-	if (heaps_limits[i] == 0) {
-	    free(heaps[i]);
+	if (heaps[i].limit == 0) {
+	    free(heaps[i].slot);
 	    heaps_used--;
 	}
 	else {
 	    if (i != j) {
 		heaps[j] = heaps[i];
-		heaps_limits[j] = heaps_limits[i];
 	    }
 	    j++;
 	}
@@ -1365,7 +1371,7 @@ os_live_obj()
     for (i = 0; i < heaps_used; i++) {
 	RVALUE *p, *pend;
 
-	p = heaps[i]; pend = p + heaps_limits[i];
+	p = heaps[i].slot; pend = p + heaps[i].limit;
 	for (;p < pend; p++) {
 	    if (p->as.basic.flags) {
 		switch (TYPE(p)) {
@@ -1398,7 +1404,7 @@ os_obj_of(of)
     for (i = 0; i < heaps_used; i++) {
 	RVALUE *p, *pend;
 
-	p = heaps[i]; pend = p + heaps_limits[i];
+	p = heaps[i].slot; pend = p + heaps[i].limit;
 	for (;p < pend; p++) {
 	    if (p->as.basic.flags) {
 		switch (TYPE(p)) {
@@ -1585,7 +1591,7 @@ rb_gc_call_finalizer_at_exit()
 	    }
 	}
 	for (i = 0; i < heaps_used; i++) {
-	    p = heaps[i]; pend = p + heaps_limits[i];
+	    p = heaps[i].slot; pend = p + heaps[i].limit;
 	    while (p < pend) {
 		if (FL_TEST(p, FL_FINALIZE)) {
 		    FL_UNSET(p, FL_FINALIZE);
@@ -1598,7 +1604,7 @@ rb_gc_call_finalizer_at_exit()
     }
     /* run data object's finalizers */
     for (i = 0; i < heaps_used; i++) {
-	p = heaps[i]; pend = p + heaps_limits[i];
+	p = heaps[i].slot; pend = p + heaps[i].limit;
 	while (p < pend) {
 	    if (BUILTIN_TYPE(p) == T_DATA &&
 		DATA_PTR(p) && RANY(p)->as.data.dfree) {
