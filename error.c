@@ -26,8 +26,11 @@
 int sys_nerr = 256;
 #endif
 
-#if defined __CYGWIN__ && defined _sys_nerr
-#define sys_nerr _sys_nerr
+#if defined __CYGWIN__
+# include <cygwin/version.h>
+# if (CYGWIN_VERSION_API_MAJOR > 0) || (CYGWIN_VERSION_API_MINOR >= 8)
+#  define sys_nerr _sys_nerr
+# endif
 #endif
 
 int ruby_nerrs;
@@ -442,7 +445,7 @@ static const syserr_index_entry syserr_index[]= {
 static VALUE *syserr_list;
 #endif
 
-#ifndef NT
+#if !defined NT && !defined sys_nerr
 extern int sys_nerr;
 #endif
 

@@ -182,6 +182,21 @@ kcode_reset_option()
     }
 }
 
+int
+rb_mbclen2(c, re)
+    unsigned char c;
+    VALUE re;
+{
+    int len;
+
+    if (!FL_TEST(re, KCODE_FIXED))
+	return mbclen(c);
+    kcode_set_option(re);
+    len = mbclen(c);
+    kcode_reset_option();
+    return len;
+}
+
 extern int ruby_in_compile;
 
 static void
@@ -538,6 +553,7 @@ rb_reg_search(reg, str, pos, reverse)
     }
     result = re_search(RREGEXP(reg)->ptr,RSTRING(str)->ptr,RSTRING(str)->len,
 		       pos, range, regs);
+
     if (FL_TEST(reg, KCODE_FIXED))
 	kcode_reset_option();
 

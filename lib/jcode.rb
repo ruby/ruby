@@ -4,58 +4,82 @@ $vsave, $VERBOSE = $VERBOSE, FALSE
 class String
   printf STDERR, "feel free for some warnings:\n" if $VERBOSE
 
-  def jlength
-    self.split(//).length
-  end
+  PATTERN_SJIS = '[\x81-\x9f\xe0-\xef][\x40-\x7e\x80-\xfc]'
+  PATTERN_EUC = '[\xa1-\xfe][\xa1-\xfe]'
+  PATTERN_UTF8 = '[\xc0-\xdf][\x80-\xbf]|[\xe0-\xef][\x80-\xbf][\x80-\xbf]'
 
-  alias original_succ succ
-  private :original_succ
+  RE_SJIS = Regexp.new(PATTERN_SJIS, 'n')
+  RE_EUC = Regexp.new(PATTERN_EUC, 'n')
+  RE_UTF8 = Regexp.new(PATTERN_UTF8, 'n')
+
+  SUCC = {}
+  SUCC['s'] = Hash.new(1)
+  for i in 0 .. 0x3f
+    SUCC['s'][i.chr] = 0x40 - i
+  end
+  SUCC['s']["\x7e"] = 0x80 - 0x7e
+  SUCC['s']["\xfd"] = 0x100 - 0xfd
+  SUCC['s']["\xfe"] = 0x100 - 0xfe
+  SUCC['s']["\xff"] = 0x100 - 0xff
+  SUCC['e'] = Hash.new(1)
+  for i in 0 .. 0xa0
+    SUCC['e'][i.chr] = 0xa1 - i
+  end
+  SUCC['e']["\xfe"] = 2
+  SUCC['u'] = Hash.new(1)
+  for i in 0 .. 0x7f
+    SUCC['u'][i.chr] = 0x80 - i
+  end
+  SUCC['u']["\xbf"] = 0x100 - 0xbf
 
   def mbchar?
     case $KCODE[0]
     when ?s, ?S
-      self =~ /[\x81-\x9f\xe0-\xef][\x40-\x7e\x80-\xfc]/n
+      self =~ RE_SJIS
     when ?e, ?E
-      self =~ /[\xa1-\xfe][\xa1-\xfe]/n
+      self =~ RE_EUC
+    when ?u, ?U
+      self =~ RE_UTF8
     else
-      false
+      nil
+    end
+  end
+
+  def end_regexp
+    case $KCODE[0]
+    when ?s, ?S
+      /#{PATTERN_SJIS}$/o
+    when ?e, ?E
+      /#{PATTERN_EUC}$/o
+    when ?u, ?U
+      /#{PATTERN_UTF8}$/o
+    else
+      /.$/o
+    end
+  end
+
+  alias original_succ! succ!
+  private :original_succ!
+
+  alias original_succ succ
+  private :original_succ
+
+  def succ!
+    reg = end_regexp
+    if self =~ reg
+      succ_table = SUCC[$KCODE[0,1].downcase]
+      begin
+	self[-1] += succ_table[self[-1]]
+	self[-2] += 1 if self[-1] == 0
+      end while self !~ reg
+      self
+    else
+      original_succ!
     end
   end
 
   def succ
-    if self[-2] and self[-2, 2].mbchar?
-      s = self.dup
-      s[-1] += 1
-      s[-1] += 1 unless s[-2, 2].mbchar?
-      return s
-    else
-      original_succ
-    end
-  end
-
-  def upto(to)
-    return if self > to
-
-    curr = self
-    tail = self[-2..-1]
-    if tail.length == 2 and tail  =~ /^.$/ then
-      if self[0..-2] == to[0..-2]
-	first = self[-2].chr
-	for c in self[-1] .. to[-1]
-	  if (first+c.chr).mbchar?
-	    yield self[0..-2]+c.chr
-	  end
-	end
-      end
-    else
-      loop do
-	yield curr
-	return if curr == to
-	curr = curr.succ
-	return if curr.length > to.length
-      end
-    end
-    return nil
+    (str = self.dup).succ! or str
   end
 
   private
@@ -159,8 +183,23 @@ class String
     (str = self.dup).chop! or str
   end
 
+  def jlength
+    self.gsub(/[^\Wa-zA-Z_\d]/, ' ').length
+  end
+  alias jsize jlength
+
   def jcount(str)
     self.delete("^#{str}").jlength
+  end
+
+  def each_char
+    if iterator?
+      scan(/./) do |x|
+        yield x
+      end
+    else
+      scan(/./)
+    end
   end
 
 end

@@ -1,3 +1,21 @@
+Wed Nov  3 08:52:57 1999  Masaki Fukushima  <fukusima@goto.info.waseda.ac.jp>
+
+	* io.c (Init_IO): forgot to use INT2FIX() around SEEK_SET, etc. 
+
+Wed Nov  3 00:25:20 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (rb_str_split_method): use mbclen2() to handle kcode
+	  option of regexp objects.
+
+Mon Nov  1 14:22:15 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* eval.c (rb_eval): reduce recursive calls to rb_eval()
+	  case of ||= and &&= .
+
+Sun Oct 31 13:12:42 1999  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* regex.c (re_compile_pattern): wrong [\W] match.
+
 Fri Oct 29 16:57:30 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* ext/nkf/lib/kconv.rb: new String methods (kconv, tojis, toeuc,

@@ -757,6 +757,7 @@ rb_str_upto(beg, end, excl)
     int excl;
 {
     VALUE current;
+    ID succ = rb_intern("succ");
 
     if (TYPE(end) != T_STRING) end = rb_str_to_str(end);
 
@@ -764,7 +765,7 @@ rb_str_upto(beg, end, excl)
     while (rb_str_cmp(current, end) <= 0) {
 	rb_yield(current);
 	if (!excl && rb_str_equal(current, end)) break;
-	current = rb_str_succ(current);
+	current = rb_funcall(current, succ, 0, 0);
 	if (excl && rb_str_equal(current, end)) break;
 	if (RSTRING(current)->len > RSTRING(end)->len)
 	    break;
@@ -1110,7 +1111,7 @@ rb_str_gsub_bang(argc, argv, str)
 	     * Always consume at least one character of the input string
 	     * in order to prevent infinite loops.
 	     */
-	    len = mbclen(RSTRING(str)->ptr[END(0)]);
+	    len = mbclen2(RSTRING(str)->ptr[END(0)], pat);
 	    if (RSTRING(str)->len > END(0)) {
 		memcpy(bp, RSTRING(str)->ptr+END(0), len);
 		bp += len;
@@ -1342,12 +1343,6 @@ rb_str_inspect(str)
 		*b++ = *p++;
 	    }
 	}
-#if 0
-	else if ((c & 0x80) && rb_kcode() != MBCTYPE_EUC) {
-	    CHECK(1);
-	    *b++ = c;
-	}
-#endif
 	else if (c == '"'|| c == '\\') {
 	    CHECK(2);
 	    *b++ = '\\';
@@ -2074,11 +2069,11 @@ rb_str_split_method(argc, argv, str)
 	    regs = RMATCH(rb_backref_get())->regs;
 	    if (start == end && BEG(0) == END(0)) {
 		if (last_null == 1) {
-		    rb_ary_push(result, rb_str_substr(str, beg, mbclen(RSTRING(str)->ptr[beg])));
+		    rb_ary_push(result, rb_str_substr(str, beg, mbclen2(RSTRING(str)->ptr[beg],spat)));
 		    beg = start;
 		}
 		else {
-		    start += mbclen(RSTRING(str)->ptr[start]);
+		    start += mbclen2(RSTRING(str)->ptr[start],spat);
 		    last_null = 1;
 		    continue;
 		}
@@ -2384,7 +2379,7 @@ scan_once(str, pat, start)
 	    /*
 	     * Always consume at least one character of the input string
 	     */
-	    *start = END(0)+mbclen(RSTRING(str)->ptr[END(0)]);
+	    *start = END(0)+mbclen2(RSTRING(str)->ptr[END(0)],pat);
 	}
 	else {
 	    *start = END(0);

@@ -1771,7 +1771,7 @@ rb_eval(self, node)
 	/* nodes for speed-up(literal match) */
       case NODE_MATCH2:
 	result = rb_reg_match(rb_eval(self,node->nd_recv),
-			   rb_eval(self,node->nd_value));
+			      rb_eval(self,node->nd_value));
 	break;
 
 	/* nodes for speed-up(literal match) */
@@ -1841,7 +1841,12 @@ rb_eval(self, node)
 	{
 	    VALUE val;
 
-	    val = rb_eval(self, node->nd_head);
+	    if (node->nd_head) {
+		val = rb_eval(self, node->nd_head);
+	    }
+	    else {
+		val = Qtrue;
+	    }
 	    node = node->nd_body;
 	    while (node) {
 		NODE *tag;
@@ -2334,17 +2339,15 @@ rb_eval(self, node)
 
       case NODE_OP_ASGN_AND:
 	result = rb_eval(self, node->nd_head);
-	if (RTEST(result)) {
-	    result = rb_eval(self, node->nd_value);
-	}
-	break;
+	if (!RTEST(result)) break;
+	node = node->nd_value;
+	goto again;
 
       case NODE_OP_ASGN_OR:
 	result = rb_eval(self, node->nd_head);
-	if (!RTEST(result)) {
-	    result = rb_eval(self, node->nd_value);
-	}
-	break;
+	if (RTEST(result)) break;
+	node = node->nd_value;
+	goto again;
 
       case NODE_MASGN:
 	result = massign(self, node, rb_eval(self, node->nd_value),0);

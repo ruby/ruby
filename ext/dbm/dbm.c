@@ -72,12 +72,16 @@ fdbm_s_open(argc, argv, klass)
     Check_SafeStr(file);
 
     dbm = 0;
-    if (mode >= 0)
+    if (mode >= 0) {
 	dbm = dbm_open(RSTRING(file)->ptr, O_RDWR|O_CREAT, mode);
-    if (!dbm)
+    }
+    if (!dbm) {
+	mode = 0666;
 	dbm = dbm_open(RSTRING(file)->ptr, O_RDWR, mode);
-    if (!dbm)
+    }
+    if (!dbm) {
 	dbm = dbm_open(RSTRING(file)->ptr, O_RDONLY, mode);
+    }
 
     if (!dbm) {
 	if (mode == -1) return Qnil;
