@@ -49,6 +49,9 @@ module Tk
     autoload :Datefield,  'tkextlib/tcllib/datefield'
     autoload :DateField,  'tkextlib/tcllib/datefield'
 
+    # package:: ico
+    autoload :ICO,        'tkextlib/tcllib/ico'
+
     # package:: ipentry
     autoload :IP_Entry,   'tkextlib/tcllib/ip_entry'
     autoload :IPEntry,    'tkextlib/tcllib/ip_entry'

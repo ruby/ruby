@@ -1,3 +1,9 @@
+2004-10-16  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* tcllib/ico.rb: new library (Tk::Tcllib:ICO)
+
+	* tcllib.rb: add Tk::Tcllib::ICO (based on tcllib 1.7)
+
 2004-10-06  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* bwidget.rb (BWidget.grab): bug fix
