@@ -1589,33 +1589,42 @@ my_open_osfhandle(long osfhandle, int flags)
     return fh;			/* return handle */
 }
 
-FILE *
-myfdopen (int fd, const char *mode)
+static int
+is_socket(SOCKET fd)
 {
     char sockbuf[80];
     int optlen;
     int retval;
-    int fh;
-    extern int errno;
 
-    //fprintf(stderr, "myfdopen()\n");
-
-	optlen = sizeof(sockbuf);
-    retval = getsockopt((SOCKET)fd, SOL_SOCKET, SO_TYPE, sockbuf, &optlen);
+    optlen = sizeof(sockbuf);
+    retval = getsockopt(fd, SOL_SOCKET, SO_TYPE, sockbuf, &optlen);
     if (retval == SOCKET_ERROR) {
 	int iRet;
 
 	iRet = WSAGetLastError();
 	if (iRet == WSAENOTSOCK || iRet == WSANOTINITIALISED)
-	    return (_fdopen(fd, mode));
+	    return FALSE;
     }
 
     //
     // If we get here, then fd is actually a socket.
     //
 
+    return TRUE;
+}
+
+FILE *
+myfdopen (int fd, const char *mode)
+{
+    if (is_socket((SOCKET)fd)) {
+	int fh;
+
 	fh = my_open_osfhandle((SOCKET)fd, O_RDWR|O_BINARY);
-    return _fdopen(fh, mode);		// return file pointer
+	return _fdopen(fh, mode);		// return file pointer
+    }
+    else {
+	return (_fdopen(fd, mode));
+    }
 }
 
 
@@ -1738,6 +1747,25 @@ myfdset(int fd, fd_set *set)
     }
 }
 
+#undef FD_CLR
+
+void
+myfdclr(int fd, fd_set *set)
+{
+    unsigned int i;
+    SOCKET s = TO_SOCKET(fd);
+
+    for (i = 0; i < set->fd_count; i++) {
+        if (set->fd_array[i] == s) {
+            while (i < set->fd_count - 1) {
+                set->fd_array[i] = set->fd_array[i + 1];
+                i++;
+            }
+            set->fd_count--;
+            break;
+        }
+    }
+}
 
 #undef FD_ISSET
 
@@ -1757,11 +1785,45 @@ myfdisset(int fd, fd_set *set)
 
 static int NtSocketsInitialized = 0;
 
+static int
+extract_file_fd(fd_set *set, fd_set *fileset)
+{
+    int idx;
+
+    fileset->fd_count = 0;
+    if (!set)
+	return 0;
+    for (idx = 0; idx < set->fd_count; idx++) {
+	SOCKET fd = set->fd_array[idx];
+
+	if (!is_socket(fd)) {
+	    int i;
+
+	    for (i = 0; i < fileset->fd_count; i++) {
+		if (fileset->fd_array[i] == fd) {
+		    break;
+		}
+	    }
+	    if (i == fileset->fd_count) {
+		if (fileset->fd_count < FD_SETSIZE) {
+		    fileset->fd_array[i] = fd;
+		    fileset->fd_count++;
+		}
+	    }
+	}
+    }
+    return fileset->fd_count;
+}
+
 long 
 myselect (int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 	       struct timeval *timeout)
 {
     long r;
+    fd_set file_rd;
+    fd_set file_wr;
+    int file_nfds;
+
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
@@ -1769,27 +1831,21 @@ myselect (int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 	Sleep(timeout->tv_sec * 1000 + timeout->tv_usec / 1000);
 	return 0;
     }
+    file_nfds = extract_file_fd(rd, &file_rd);
+    file_nfds += extract_file_fd(wr, &file_wr);
+    if (file_nfds)
+    {
+	// assume normal files are always readable/writable
+	// fake read/write fd_set and return value
+	if (rd) *rd = file_rd;
+	if (wr) *wr = file_wr;
+	return file_nfds;
+    }
     if ((r = select (nfds, rd, wr, ex, timeout)) == SOCKET_ERROR) {
 	errno = WSAGetLastError();
 	switch (errno) {
 	case WSAEINTR:
 	    errno = EINTR;
-	    break;
-	case WSAENOTSOCK:
-	    // assume normal files are always readable/writable
-	    // fake read/write fd_set and return value
-	    r = 0;
-	    if (rd) r += rd->fd_count;
-	    if (wr) r += wr->fd_count;
-	    if (ex && ex->fd_count > 0) {
-		// exceptional condition never happen for normal files
-		if (r > 0)
-		    ex->fd_count = 0;
-		else {
-		    errno = EBADF;
-		    r = SOCKET_ERROR;
-		}
-	    }
 	    break;
 	}
     }

@@ -281,6 +281,9 @@ extern char *mystrerror(int);
 #undef FD_SET
 #define FD_SET myfdset
 
+#undef FD_CLR
+#define FD_CLR myfdclr
+
 #undef FD_ISSET
 #define FD_ISSET myfdisset
 

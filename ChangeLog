@@ -1,3 +1,18 @@
+Tue Jun 27 12:05:10 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* win32.c (myfdclr): new function.
+
+	* win32.h: add FD_CLR.
+
+Mon Jun 26 22:20:03 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* win32/win32.c (is_socket, extract_file_fd): New function.
+
+	* win32/win32.c (myfdopen): use is_socket().
+
+	* win32/win32.c (myselect): return non socket files immediately
+	  if file and socket handles are mixed.
+
 Sun Jun 25 00:55:03 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
 
 	* ext/socket/socket.c (sock_s_getnameinfo): `res' would not
