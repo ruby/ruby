@@ -1,3 +1,8 @@
+Wed Feb  6 02:10:30 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* io.c (fptr_finalize): ignore EBADF when f and f2 use same
+	  descriptor.
+
 Tue Feb  5 16:17:20 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (fptr_finalize): should raise error when fclose fails.

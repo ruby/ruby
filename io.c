@@ -1075,17 +1075,21 @@ static void
 fptr_finalize(fptr, fin)
     OpenFile *fptr;
 {
-    int n1 = 0, n2 = 0, e = 0;
+    int n1 = 0, n2 = 0, e = 0, f1, f2 = -1;
 
-    if (fptr->f) {
-	n1 = fclose(fptr->f);
-	if (n1 < 0) e = errno;
-    }
     if (fptr->f2) {
+	f2 = fileno(fptr->f2);
 	n2 = fclose(fptr->f2);
+	if (n2 < 0) e = errno;
+    }
+    if (fptr->f && fptr->f != fptr->f2) {
+	f1 = fileno(fptr->f);
+	n1 = fclose(fptr->f);
+	if (n1 < 0 && (e = errno) == EBADF && f1 == f2)
+	    n1 = 0;
     }
     if (!fin && (n1 < 0 || n2 < 0)) {
-	if (n2 == 0) errno = e;
+	if (n1 == 0) errno = e;
 	rb_sys_fail(fptr->path);
     }
 }
@@ -1644,7 +1648,7 @@ pipe_finalize(fptr)
 #endif
     rb_last_status = INT2FIX(status);
 #else
-    fptr_finalize(fptr);
+    fptr_finalize(fptr, Qtrue);
 #endif
     pipe_del_fptr(fptr);
 }
