@@ -1,3 +1,7 @@
+Fri Jul 25 03:52:21 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
+
+    * lib/yaml/dbm.rb: replace indexes with values_at.
+
 Fri Jul 25 02:55:59 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/extconf.rb: add check for libsocket and libnsl.

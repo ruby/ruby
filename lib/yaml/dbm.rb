@@ -29,7 +29,7 @@ class DBM < ::DBM
     def index( keystr )
         super( keystr.to_yaml )
     end
-    def indexes( *keys )
+    def values_at( *keys )
         keys.collect { |k| fetch( k ) }
     end
     def delete( key )
@@ -82,7 +82,7 @@ class DBM < ::DBM
         if block_given?
             self.keys.collect { |k| v = self[k]; [k, v] if yield k, v }.compact
         else
-            indexes( *keys )
+            values_at( *keys )
         end
     end
     def store( key, val )
