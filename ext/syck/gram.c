@@ -319,8 +319,8 @@ static const unsigned short yyrline[] =
       83,    84,   102,   103,   106,   109,   112,   113,   121,   126,
      134,   147,   154,   159,   160,   161,   162,   163,   169,   173,
      180,   186,   190,   195,   204,   208,   214,   218,   228,   233,
-     241,   256,   257,   265,   266,   278,   285,   295,   303,   307,
-     313,   314
+     241,   256,   257,   265,   266,   278,   285,   294,   302,   306,
+     312,   313
 };
 #endif
 
@@ -1286,13 +1286,12 @@ yyreduce:
   case 46:
 #line 286 "gram.y"
     { 
-                    apply_seq_in_map( (SyckParser *)parser, yyvsp[-1].nodeData );
                     yyval.nodeData = yyvsp[-1].nodeData;
                 }
     break;
 
   case 47:
-#line 296 "gram.y"
+#line 295 "gram.y"
     {
                     yyval.nodeData = syck_new_map( 
                         syck_hdlr_add_node( (SyckParser *)parser, yyvsp[-2].nodeData ), 
@@ -1301,21 +1300,21 @@ yyreduce:
     break;
 
   case 48:
-#line 304 "gram.y"
+#line 303 "gram.y"
     {
                     yyval.nodeData = yyvsp[-1].nodeData;
                 }
     break;
 
   case 49:
-#line 308 "gram.y"
+#line 307 "gram.y"
     {
                     yyval.nodeData = syck_alloc_map();
                 }
     break;
 
   case 51:
-#line 315 "gram.y"
+#line 314 "gram.y"
     {
                     syck_map_update( yyvsp[-2].nodeData, yyvsp[0].nodeData );
                     syck_free_node( yyvsp[0].nodeData );
@@ -1327,7 +1326,7 @@ yyreduce:
     }
 
 /* Line 1016 of /usr/local/share/bison/yacc.c.  */
-#line 1331 "y.tab.c"
+#line 1330 "y.tab.c"
 
   yyvsp -= yylen;
   yyssp -= yylen;
@@ -1546,7 +1545,7 @@ yyreturn:
 }
 
 
-#line 322 "gram.y"
+#line 321 "gram.y"
 
 
 void

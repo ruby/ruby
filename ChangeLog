@@ -1,3 +1,8 @@
+Mon May 19 16:47:00 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
+
+    * lib/syck.c, lib/syck.h, lib/token.c, lib/gram.c: count line numbers
+      only if line pointer has increased.
+
 Tue May 20 00:45:40 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* dir.c (push_braces): do not push_braces() unless rbrace is found.

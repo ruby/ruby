@@ -155,7 +155,7 @@ struct _syck_parser {
     // Custom buffer size
     size_t bufsize;
     // Buffer pointers
-    char *buffer, *lineptr, *toktmp, *token, *cursor, *marker, *limit;
+    char *buffer, *linectptr, *lineptr, *toktmp, *token, *cursor, *marker, *limit;
     // Line counter
     int linect;
     // Last token from yylex()

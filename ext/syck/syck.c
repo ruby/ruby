@@ -136,6 +136,7 @@ syck_parser_reset_cursor( SyckParser *p )
 
     p->cursor = NULL;
     p->lineptr = NULL;
+    p->linectptr = NULL;
     p->token = NULL;
     p->toktmp = NULL;
     p->marker = NULL;
@@ -397,6 +398,7 @@ syck_move_tokens( SyckParser *p )
         p->toktmp -= count;
         p->limit -= count;
         p->lineptr -= count;
+        p->linectptr -= count;
     }
     return skip;
 }
@@ -408,6 +410,7 @@ syck_check_limit( SyckParser *p, long len )
     {
         p->cursor = p->buffer;
         p->lineptr = p->buffer;
+        p->linectptr = p->buffer;
         p->marker = p->buffer;
     }
     p->limit = p->buffer + len;
