@@ -1,3 +1,7 @@
+Wed Mar 20 20:12:35 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* variable.c (rb_const_list): a temporary table must be freed.
+
 Wed Mar 20 19:44:09 2002  Tanaka Akira  <akr@m17n.org>
 
 	* mkconfig.rb: don't touch rbconfig.rb if there is a trouble.

@@ -1259,6 +1259,7 @@ rb_const_list(data)
     if (!tbl) return rb_ary_new2(0);
     ary = rb_ary_new2(tbl->num_entries);
     st_foreach(tbl, list_i, ary);
+    st_free_table(tbl);
 
     return ary;
 }
