@@ -579,14 +579,15 @@ bignum.obj: {$(srcdir)}bignum.c {$(srcdir)}ruby.h config.h \
 class.obj: {$(srcdir)}class.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
   {$(srcdir)}rubysig.h {$(srcdir)}node.h {$(srcdir)}st.h \
-  {$(srcdir)}/win32/win32.h
+  {$(srcdir)}version.h {$(srcdir)}/win32/win32.h
 compar.obj: {$(srcdir)}compar.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
   {$(srcdir)}/win32/win32.h
 dir.obj: {$(srcdir)}dir.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
   {$(srcdir)}util.h {$(srcdir)}/win32/win32.h
-dln.obj: {$(srcdir)}dln.c config.h {$(srcdir)}defines.h \
+dln.obj: {$(srcdir)}dln.c {$(srcdir)}ruby.h config.h \
+  {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
   {$(srcdir)}dln.h {$(srcdir)}/win32/win32.h
 dmyext.obj: {$(srcdir)}dmyext.c
 enum.obj: {$(srcdir)}enum.c {$(srcdir)}ruby.h config.h \
@@ -594,7 +595,8 @@ enum.obj: {$(srcdir)}enum.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}node.h {$(srcdir)}util.h {$(srcdir)}/win32/win32.h
 error.obj: {$(srcdir)}error.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}env.h {$(srcdir)}version.h {$(srcdir)}/win32/win32.h
+  {$(srcdir)}env.h {$(srcdir)}version.h {$(srcdir)}st.h \
+  {$(srcdir)}/win32/win32.h
 eval.obj: {$(srcdir)}eval.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
   {$(srcdir)}node.h {$(srcdir)}env.h {$(srcdir)}util.h \
@@ -612,7 +614,7 @@ gc.obj: {$(srcdir)}gc.c {$(srcdir)}ruby.h config.h \
 hash.obj: {$(srcdir)}hash.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
   {$(srcdir)}st.h {$(srcdir)}util.h {$(srcdir)}rubysig.h \
-  {$(srcdir)}/win32/win32.h
+  {$(srcdir)}version.h {$(srcdir)}/win32/win32.h
 inits.obj: {$(srcdir)}inits.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
   {$(srcdir)}/win32/win32.h
@@ -625,7 +627,8 @@ main.obj: {$(srcdir)}main.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}/win32/win32.h
 marshal.obj: {$(srcdir)}marshal.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}rubyio.h {$(srcdir)}st.h {$(srcdir)}/win32/win32.h
+  {$(srcdir)}rubyio.h {$(srcdir)}st.h {$(srcdir)}util.h \
+  {$(srcdir)}/win32/win32.h
 math.obj: {$(srcdir)}math.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
   {$(srcdir)}/win32/win32.h
@@ -634,7 +637,7 @@ numeric.obj: {$(srcdir)}numeric.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}/win32/win32.h
 object.obj: {$(srcdir)}object.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}st.h {$(srcdir)}/win32/win32.h
+  {$(srcdir)}st.h {$(srcdir)}util.h {$(srcdir)}/win32/win32.h
 pack.obj: {$(srcdir)}pack.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
   {$(srcdir)}/win32/win32.h
@@ -669,11 +672,11 @@ signal.obj: {$(srcdir)}signal.c {$(srcdir)}ruby.h config.h \
 sprintf.obj: {$(srcdir)}sprintf.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
   {$(srcdir)}/win32/win32.h
-st.obj: {$(srcdir)}st.c config.h {$(srcdir)}st.h \
-  {$(srcdir)}/win32/win32.h
+st.obj: {$(srcdir)}st.c config.h {$(srcdir)}st.h
 string.obj: {$(srcdir)}string.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}re.h {$(srcdir)}regex.h {$(srcdir)}/win32/win32.h
+  {$(srcdir)}re.h {$(srcdir)}regex.h {$(srcdir)}version.h \
+  {$(srcdir)}/win32/win32.h
 struct.obj: {$(srcdir)}struct.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
   {$(srcdir)}/win32/win32.h

@@ -1,3 +1,8 @@
+Wed May 21 20:51:47 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* Makefile.in, bcc32/Makefile.sub, win32/Makefile.sub,
+	  wince/Makefile.sub: update dependencies.
+
 Wed May 21 17:44:16 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* error.c (syserr_initialize): prohibit specifying errno for

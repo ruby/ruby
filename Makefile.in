@@ -306,15 +306,15 @@ array.@OBJEXT@: array.c ruby.h config.h defines.h intern.h missing.h \
   util.h st.h
 bignum.@OBJEXT@: bignum.c ruby.h config.h defines.h intern.h missing.h
 class.@OBJEXT@: class.c ruby.h config.h defines.h intern.h missing.h \
-  rubysig.h node.h st.h
+  rubysig.h node.h st.h version.h
 compar.@OBJEXT@: compar.c ruby.h config.h defines.h intern.h missing.h
 dir.@OBJEXT@: dir.c ruby.h config.h defines.h intern.h missing.h util.h
-dln.@OBJEXT@: dln.c config.h defines.h dln.h
+dln.@OBJEXT@: dln.c ruby.h config.h defines.h intern.h missing.h dln.h
 dmyext.@OBJEXT@: dmyext.c
 enum.@OBJEXT@: enum.c ruby.h config.h defines.h intern.h missing.h node.h \
   util.h
 error.@OBJEXT@: error.c ruby.h config.h defines.h intern.h missing.h \
-  env.h version.h
+  env.h version.h st.h
 eval.@OBJEXT@: eval.c ruby.h config.h defines.h intern.h missing.h node.h \
   env.h util.h rubysig.h st.h dln.h
 file.@OBJEXT@: file.c ruby.h config.h defines.h intern.h missing.h \
@@ -322,17 +322,17 @@ file.@OBJEXT@: file.c ruby.h config.h defines.h intern.h missing.h \
 gc.@OBJEXT@: gc.c ruby.h config.h defines.h intern.h missing.h rubysig.h \
   st.h node.h env.h re.h regex.h
 hash.@OBJEXT@: hash.c ruby.h config.h defines.h intern.h missing.h st.h \
-  util.h rubysig.h
+  util.h rubysig.h version.h
 inits.@OBJEXT@: inits.c ruby.h config.h defines.h intern.h missing.h
 io.@OBJEXT@: io.c ruby.h config.h defines.h intern.h missing.h rubyio.h \
   rubysig.h env.h util.h
 main.@OBJEXT@: main.c ruby.h config.h defines.h intern.h missing.h
 marshal.@OBJEXT@: marshal.c ruby.h config.h defines.h intern.h missing.h \
-  rubyio.h st.h
+  rubyio.h st.h util.h
 math.@OBJEXT@: math.c ruby.h config.h defines.h intern.h missing.h
 numeric.@OBJEXT@: numeric.c ruby.h config.h defines.h intern.h missing.h
 object.@OBJEXT@: object.c ruby.h config.h defines.h intern.h missing.h \
-  st.h
+  st.h util.h
 pack.@OBJEXT@: pack.c ruby.h config.h defines.h intern.h missing.h
 parse.@OBJEXT@: parse.c ruby.h config.h defines.h intern.h missing.h \
   env.h node.h st.h regex.h util.h lex.c
@@ -351,7 +351,7 @@ signal.@OBJEXT@: signal.c ruby.h config.h defines.h intern.h missing.h \
 sprintf.@OBJEXT@: sprintf.c ruby.h config.h defines.h intern.h missing.h
 st.@OBJEXT@: st.c config.h st.h
 string.@OBJEXT@: string.c ruby.h config.h defines.h intern.h missing.h \
-  re.h regex.h
+  re.h regex.h version.h
 struct.@OBJEXT@: struct.c ruby.h config.h defines.h intern.h missing.h
 time.@OBJEXT@: time.c ruby.h config.h defines.h intern.h missing.h
 util.@OBJEXT@: util.c ruby.h config.h defines.h intern.h missing.h util.h
