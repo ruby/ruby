@@ -673,124 +673,120 @@ rb_w32_join_argv(char *cmd, char *const *argv)
     return cmd;
 }
 
+
+static int socketpair_internal(int af, int type, int protocol, SOCKET *sv);
+
 pid_t
-rb_w32_pipe_exec(const char *cmd, const char *prog, int mode,
-		 int *pr, int *pw)
+rb_w32_pipe_exec(const char *cmd, const char *prog, int mode, int *pipe)
 {
     struct ChildRecord* child;
-    HANDLE hReadIn, hReadOut;
-    HANDLE hWriteIn, hWriteOut;
-    HANDLE hDupInFile, hDupOutFile;
+    HANDLE hOrg, hIn, hOut;
+    HANDLE hDupFile;
     HANDLE hCurProc;
     SECURITY_ATTRIBUTES sa;
     BOOL fRet;
     BOOL reading, writing;
+    SOCKET pair[2];
     int fd;
     int pipemode;
     int ret;
 
     /* Figure out what we're doing... */
-    writing = (mode & (O_WRONLY | O_RDWR)) ? TRUE : FALSE;
-    reading = ((mode & O_RDWR) || !writing) ? TRUE : FALSE;
-    if (mode & O_BINARY) {
-	pipemode = O_BINARY;
+    if (mode & O_RDWR) {
+	reading = writing = TRUE;
+	pipemode = _O_RDWR;
+    }
+    else if (mode & O_WRONLY) {
+	reading = FALSE;
+	writing = TRUE;
+	pipemode = _O_WRONLY;
     }
     else {
-	pipemode = O_TEXT;
+	reading = TRUE;
+	writing = FALSE;
+	pipemode = _O_RDONLY;
     }
+    pipemode |= (mode & O_BINARY) ? O_BINARY : O_TEXT;
 
     sa.nLength              = sizeof (SECURITY_ATTRIBUTES);
     sa.lpSecurityDescriptor = NULL;
     sa.bInheritHandle       = TRUE;
     ret = -1;
-    hWriteIn = hReadOut = NULL;
 
     RUBY_CRITICAL(do {
 	/* create pipe */
 	hCurProc = GetCurrentProcess();
-	if (reading) {
-	    fRet = CreatePipe(&hReadIn, &hReadOut, &sa, 2048L);
-	    if (!fRet) {
-		errno = map_errno(GetLastError());
+	if (reading && writing) {
+	    if (socketpair_internal(AF_INET, SOCK_STREAM, 0, pair) < 0) {
 		break;
 	    }
-	    if (!DuplicateHandle(hCurProc, hReadIn, hCurProc, &hDupInFile, 0,
-				 FALSE, DUPLICATE_SAME_ACCESS)) {
+	    if (!DuplicateHandle(hCurProc, (HANDLE)pair[1], hCurProc,
+				 &hDupFile, 0, FALSE,
+				 DUPLICATE_SAME_ACCESS)) {
 		errno = map_errno(GetLastError());
-		CloseHandle(hReadIn);
-		CloseHandle(hReadOut);
+		CloseHandle((HANDLE)pair[0]);
+		CloseHandle((HANDLE)pair[1]);
 		CloseHandle(hCurProc);
 		break;
 	    }
-	    CloseHandle(hReadIn);
+	    hOrg = hIn = hOut = (HANDLE)pair[0];
 	}
-	if (writing) {
-	    fRet = CreatePipe(&hWriteIn, &hWriteOut, &sa, 2048L);
+	else if (reading) {
+	    fRet = CreatePipe(&hIn, &hOut, &sa, 2048L);
 	    if (!fRet) {
 		errno = map_errno(GetLastError());
-	      write_pipe_failed:
-		if (reading) {
-		    CloseHandle(hDupInFile);
-		    CloseHandle(hReadOut);
-		}
 		break;
 	    }
-	    if (!DuplicateHandle(hCurProc, hWriteOut, hCurProc, &hDupOutFile, 0,
+	    if (!DuplicateHandle(hCurProc, hIn, hCurProc, &hDupFile, 0,
 				 FALSE, DUPLICATE_SAME_ACCESS)) {
 		errno = map_errno(GetLastError());
-		CloseHandle(hWriteIn);
-		CloseHandle(hWriteOut);
+		CloseHandle(hIn);
+		CloseHandle(hOut);
 		CloseHandle(hCurProc);
-		goto write_pipe_failed;
+		break;
 	    }
-	    CloseHandle(hWriteOut);
+	    CloseHandle(hIn);
+	    hIn = NULL;
+	    hOrg = hOut;
+	}
+	else {	/* writing */
+	    fRet = CreatePipe(&hIn, &hOut, &sa, 2048L);
+	    if (!fRet) {
+		errno = map_errno(GetLastError());
+		break;
+	    }
+	    if (!DuplicateHandle(hCurProc, hOut, hCurProc, &hDupFile, 0,
+				 FALSE, DUPLICATE_SAME_ACCESS)) {
+		errno = map_errno(GetLastError());
+		CloseHandle(hIn);
+		CloseHandle(hOut);
+		CloseHandle(hCurProc);
+		break;
+	    }
+	    CloseHandle(hOut);
+	    hOut = NULL;
+	    hOrg = hIn;
 	}
 	CloseHandle(hCurProc);
 
 	/* create child process */
-	child = CreateChild(cmd, prog, &sa, hWriteIn, hReadOut, NULL);
+	child = CreateChild(cmd, prog, &sa, hIn, hOut, NULL);
 	if (!child) {
-	    if (reading) {
-		CloseHandle(hReadOut);
-		CloseHandle(hDupInFile);
-	    }
-	    if (writing) {
-		CloseHandle(hWriteIn);
-		CloseHandle(hDupOutFile);
-	    }
+	    CloseHandle(hOrg);
+	    CloseHandle(hDupFile);
 	    break;
 	}
 
-	/* associate handle to fp */
-	if (reading) {
-	    *pr = rb_w32_open_osfhandle((long)hDupInFile,
-					(_O_RDONLY | pipemode));
-	    CloseHandle(hReadOut);
-	    if (*pr == -1) {
-		CloseHandle(hDupInFile);
-	      read_open_failed:
-		if (writing) {
-		    CloseHandle(hWriteIn);
-		    CloseHandle(hDupOutFile);
-		}
-		CloseChildHandle(child);
-		break;
-	    }
+	/* associate handle to file descritor */
+	*pipe = rb_w32_open_osfhandle((long)hDupFile, pipemode);
+	if (!(reading && writing))
+	    CloseHandle(hOrg);
+	if (*pipe == -1) {
+	    CloseHandle(hDupFile);
+	    CloseChildHandle(child);
+	    break;
 	}
-	if (writing) {
-	    *pw = rb_w32_open_osfhandle((long)hDupOutFile,
-					(_O_WRONLY | pipemode));
-	    CloseHandle(hWriteIn);
-	    if (*pw == -1) {
-		CloseHandle(hDupOutFile);
-	      write_open_failed:
-		if (reading) {
-		    close(*pr);
-		}
-		CloseChildHandle(child);
-		break;
-	    }
-	}
+
 	ret = child->pid;
     } while (0));
 
@@ -2371,6 +2367,108 @@ rb_w32_getservbyport (int port, char *proto)
 	    errno = map_errno(WSAGetLastError());
     });
     return r;
+}
+
+static int
+socketpair_internal(int af, int type, int protocol, SOCKET *sv)
+{
+    const char *localhost = NULL;
+    SOCKET svr = INVALID_SOCKET, r = INVALID_SOCKET, w = INVALID_SOCKET;
+    struct sockaddr_in sock_in4;
+#ifdef INET6
+    struct sockaddr_in6 sock_in6;
+#endif
+    struct sockaddr *addr;
+    int ret = -1;
+    int len;
+
+    if (!NtSocketsInitialized) {
+	StartSockets();
+    }
+
+    switch (af) {
+      case AF_INET:
+#if defined PF_INET && PF_INET != AF_INET
+      case PF_INET:
+#endif
+	sock_in4.sin_family = AF_INET;
+	sock_in4.sin_port = 0;
+	sock_in4.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+	addr = (struct sockaddr *)&sock_in4;
+	len = sizeof(sock_in4);
+	break;
+#ifdef INET6
+      case AF_INET6:
+	memset(&sock_in6, 0, sizeof(sock_in6));
+	sock_in6.sin6_family = AF_INET6;
+	sock_in6.sin6_addr = IN6ADDR_LOOPBACK_INIT;
+	addr = (struct sockaddr *)&sock_in6;
+	len = sizeof(sock_in6);
+	break;
+#endif
+      default:
+	errno = EAFNOSUPPORT;
+	return -1;
+    }
+    if (type != SOCK_STREAM) {
+	errno = EPROTOTYPE;
+	return -1;
+    }
+
+    RUBY_CRITICAL({
+	do {
+	    svr = socket(af, type, protocol);
+	    if (svr == INVALID_SOCKET)
+		break;
+	    if (bind(svr, addr, len) < 0)
+		break;
+	    if (getsockname(svr, addr, &len) < 0)
+		break;
+	    if (type == SOCK_STREAM)
+		listen(svr, 5);
+
+	    w = socket(af, type, protocol);
+	    if (w == INVALID_SOCKET)
+		break;
+	    if (connect(w, addr, len) < 0)
+		break;
+
+	    r = accept(svr, addr, &len);
+	    if (r == INVALID_SOCKET)
+		break;
+
+	    ret = 0;
+	} while (0);
+
+	if (ret < 0) {
+	    errno = map_errno(WSAGetLastError());
+	    if (r != INVALID_SOCKET)
+		closesocket(r);
+	    if (w != INVALID_SOCKET)
+		closesocket(w);
+	}
+	else {
+	    sv[0] = r;
+	    sv[1] = w;
+	}
+	if (svr != INVALID_SOCKET)
+	    closesocket(svr);
+    });
+
+    return ret;
+}
+
+int
+rb_w32_socketpair(int af, int type, int protocol, int *sv)
+{
+    SOCKET pair[2];
+
+    if (socketpair_internal(af, type, protocol, pair) < 0)
+	return -1;
+    sv[0] = rb_w32_open_osfhandle(pair[0], O_RDWR|O_BINARY);
+    sv[1] = rb_w32_open_osfhandle(pair[1], O_RDWR|O_BINARY);
+
+    return 0;
 }
 
 //

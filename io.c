@@ -2805,7 +2805,7 @@ pipe_open(argc, argv, mode)
     struct popen_arg arg;
     volatile int doexec;
 #elif defined(_WIN32)
-    int r, w;
+    int fd;
     int openmode = rb_io_mode_modenum(mode);
     char *exename = NULL;
 #endif
@@ -2895,7 +2895,7 @@ pipe_open(argc, argv, mode)
     else {
 	cmd = StringValueCStr(prog);
     }
-    while ((pid = rb_w32_pipe_exec(cmd, exename, openmode, &r, &w)) == -1) {
+    while ((pid = rb_w32_pipe_exec(cmd, exename, openmode, &fd)) == -1) {
 	/* exec failed */
 	switch (errno) {
 	  case EAGAIN:
@@ -2910,14 +2910,13 @@ pipe_open(argc, argv, mode)
 	}
     }
     if ((modef & FMODE_READABLE) && (modef & FMODE_WRITABLE)) {
-	close(w);
-	fp = rb_fdopen(r, "r+");
+	fp = rb_fdopen(fd, "r+");
     }
     else if (modef & FMODE_READABLE) {
-	fp = rb_fdopen(r, "r");
+	fp = rb_fdopen(fd, "r");
     }
     else {
-	fp = rb_fdopen(w, "w");
+	fp = rb_fdopen(fd, "w");
     }
 #else
     prog = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));

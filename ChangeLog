@@ -1,3 +1,14 @@
+Wed Dec 08 00:44:31 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io.c (pipe_open): win32 bidirectional pipe support.
+
+	* win32/win32.[ch] (rb_w32_pipe_exec): ditto.
+
+	* win32/win32.[ch] (socketpair): new function. POSIX socketpair
+	  emulation.
+
+	* win32/win32.c (socketpair_internal): ditto.
+
 Wed Dec  8 00:25:07 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rss/test_version.rb: added version check test.

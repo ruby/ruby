@@ -143,7 +143,7 @@ struct timezone {
 #endif
 extern void   NtInitialize(int *, char ***);
 extern int    rb_w32_cmdvector(const char *, char ***);
-extern pid_t  rb_w32_pipe_exec(const char *, const char *, int, int *, int *);
+extern pid_t  rb_w32_pipe_exec(const char *, const char *, int, int *);
 extern int    flock(int fd, int oper);
 extern int    rb_w32_is_socket(int);
 extern int    rb_w32_accept(int, struct sockaddr *, int *);
@@ -173,6 +173,7 @@ extern struct protoent * rb_w32_getprotobyname(char *);
 extern struct protoent * rb_w32_getprotobynumber(int);
 extern struct servent  * rb_w32_getservbyname(char *, char *);
 extern struct servent  * rb_w32_getservbyport(int, char *);
+extern int    rb_w32_socketpair(int, int, int, int *);
 extern char * rb_w32_getenv(const char *);
 extern int    rb_w32_rename(const char *, const char *);
 extern char **rb_w32_get_environ(void);
@@ -461,6 +462,11 @@ extern char *rb_w32_strerror(int);
 #undef getservbyport
 #endif
 #define getservbyport(p, pr)	rb_w32_getservbyport(p, pr)
+
+#ifdef socketpair
+#undef socketpair
+#endif
+#define socketpair(a, t, p, s)	rb_w32_socketpair(a, t, p, s)
 
 #ifdef get_osfhandle
 #undef get_osfhandle
