@@ -141,12 +141,11 @@ def parse_args()
   if $mflags.set?(?n)
     $dryrun = true
   else
-    $mflags << '-n' if $dryrun
+    $mflags.unshift '-n' if $dryrun
   end
 
-  $mflags << "DESTDIR=#{$destdir}"
-
   $continue = $mflags.set?(?k)
+  $mflags |= ["DESTDIR=#{$destdir}"]
 end
 
 parse_args()
