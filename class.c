@@ -323,12 +323,7 @@ rb_include_module(klass, module)
     if (NIL_P(module)) return;
     if (klass == module) return;
 
-    switch (TYPE(module)) {
-      case T_MODULE:
-      case T_CLASS:
-      case T_ICLASS:
-	break;
-      default:
+    if (TYPE(module) != T_MODULE) {
 	Check_Type(module, T_MODULE);
     }
 

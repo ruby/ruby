@@ -1,3 +1,8 @@
+Wed Dec 18 17:53:05 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* class.c (rb_include_module): argument should be T_MODULE, not
+	  T_class, nor T_ICLASS.
+
 Mon Dec 16 16:35:28 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* stable version 1.6.8 release candidate.
