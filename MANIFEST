@@ -50,6 +50,7 @@ object.c
 pack.c
 parse.c
 parse.y
+prec.c
 process.c
 random.c
 range.c

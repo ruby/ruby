@@ -6,7 +6,7 @@
   $Date$
   created at: Mon Aug  9 16:11:34 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -283,7 +283,7 @@ exc_initialize(argc, argv, exc)
 }
 
 static VALUE
-exc_new(argc, argv, self)
+exc_exception(argc, argv, self)
     int argc;
     VALUE *argv;
     VALUE self;
@@ -412,12 +412,12 @@ exception(argc, argv)
 #ifdef __BEOS__
 typedef struct {
    VALUE *list;
-   size_t n;
+   int n;
 } syserr_list_entry;
 
 typedef struct {
    int ix;
-   size_t n;
+   int n;
 } syserr_index_entry;
 
 static VALUE syserr_list_b_general[16+1];
@@ -533,7 +533,8 @@ void
 Init_Exception()
 {
     rb_eException   = rb_define_class("Exception", rb_cObject);
-    rb_define_method(rb_eException, "new", exc_new, -1);
+    rb_define_singleton_method(rb_eException, "exception", rb_class_new_instance, -1);
+    rb_define_method(rb_eException, "exception", exc_exception, -1);
     rb_define_method(rb_eException, "initialize", exc_initialize, -1);
     rb_define_method(rb_eException, "to_s", exc_to_s, 0);
     rb_define_method(rb_eException, "to_str", exc_to_s, 0);

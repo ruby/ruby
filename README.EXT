@@ -133,11 +133,11 @@ FIXNUMに関しては変換マクロを経由する必要があります．Cの整数
 からVALUEに変換するマクロは以下のものがあります．必要に応じ
 て使い分けてください．
 
-  INT2FIX()	もとの整数が31bit以内に収まる時
-  INT2NUM()	任意の整数からVALUEへ
+  INT2FIX()	for intergers within 31bits.
+  INT2NUM()	for arbitrary sized integer.
 
-INT2NUM()は整数がFIXNUMの範囲に収まらない場合，Bignumに変換
-してくれます(が，少し遅い)．
+INT2NUM() converts integers into Bignums, if it is out of FIXNUM
+range, but bit slower.
 
 1.5 Manipulate Ruby data
 
@@ -204,8 +204,6 @@ Rubyで提供されている関数を使えばRubyインタプリタに新しい機能
  * Classes, Modules
  * Methods, Singleton Methods
  * Constants
-
-では順に紹介します．
 
 2.1.1 Class/module definition
 
@@ -643,23 +641,21 @@ extconf.rbはモジュールのコンパイルに必要な条件のチェックなど
 
 (6) prepare depend (optional)
 
-もし，ディレクトリにdependというファイルが存在すれば，
-Makefileが依存関係をチェックしてくれます．
+If the file named depend exists, Makefile will include that file to
+check dependency.  You can make this file by invoking
 
  % gcc -MM *.c > depend
 
-などで作ることが出来ます．あって損は無いでしょう．
+It's no harm.  Prepare it.
 
 (7) MANIFESTファイルにファイル名を入れる
 
-  % ls > MANIFEST
+  % find * -type f -print > MANIFEST
   % vi MANIFEST
 
-*.o, *~など不必要なファイル以外はMANIFESTに追加しておきます．
-make時にはMANIFESTの内容は参照しませんので，空のままでも問題
-は起きませんが，パッケージングの時に参照することがあるのと，
-必要なファイルを区別できるので，用意しておいた方が良いでしょ
-う．
+Append file names into MANIFEST.  The compilation scheme requires
+MANIFEST only to be exist.  But, you'd better take this step to
+distinguish required files.
 
 (8) make
 
@@ -676,9 +672,9 @@ so that you can inspect the module by the debugger.
 
 (10) done, now you have the extension library
 
-後はこっそり使うなり，広く公開するなり，売るなり，ご自由にお
-使いください．Rubyの作者は拡張ライブラリに関して一切の権利を
-主張しません．
+You can do anything you want with your library.  The author of Ruby
+will not claim any restriction about your code depending Ruby API.
+Feel free to use, modify, distribute or sell your program.
 
 Appendix A. Rubyのソースコードの分類
 
@@ -737,7 +733,7 @@ class library
   struct.c
   time.c
 
-Appendix B. 拡張用関数リファレンス
+Appendix B. Ruby extension API reference
 
 C言語からRubyの機能を利用するAPIは以下の通りである．
 
@@ -764,7 +760,7 @@ const: Qtrue object(default true value)
 
 const: Qfalse object
 
-** Cデータのカプセル化
+** C pointer wrapping
 
  Data_Wrap_Struct(VALUE class, void (*mark)(), void (*free)(), void *sval)
 
@@ -783,33 +779,33 @@ type型のメモリをmallocし，変数svalに代入した後，それをカプセ
 
 dataからtype型のポインタを取り出し変数svalに代入するマクロ．
 
-** クラス/モジュール定義
+** defining class/module
 
  VALUE rb_define_class(char *name, VALUE super)
 
-superのサブクラスとして新しいRubyクラスを定義する．
+Defines new Ruby class as subclass of super.
 
  VALUE rb_define_class_under(VALUE module, char *name, VALUE super)
 
-superのサブクラスとして新しいRubyクラスを定義し，moduleの定
-数として定義する．
+Creates new Ruby class as subclass of super, under the module's
+namespace.
 
  VALUE rb_define_module(char *name)
 
-新しいRubyモジュールを定義する．
+Defines new Ruby module.
 
  VALUE rb_define_module_under(VALUE module, char *name, VALUE super)
 
-新しいRubyモジュールを定義し，moduleの定数として定義する．
+Defines new Ruby module, under the modules's namespace.
 
  void rb_include_module(VALUE class, VALUE module)
 
-モジュールをインクルードする．classがすでにmoduleをインクルー
-ドしている時には何もしない(多重インクルードの禁止)．
+Includes module into class.  If class already includes it, just
+ignore.
 
  void rb_extend_object(VALUE object, VALUE module)
 
-オブジェクトをモジュール(で定義されているメソッド)で拡張する．
+Extend the object with module's attribute.
 
 ** Defining Global Variables
 
@@ -871,19 +867,20 @@ Defines global contant.  This is just work as
 
  rb_define_method(VALUE class, char *name, VALUE (*func)(), int argc)
 
-メソッドを定義する．argcはselfを除く引数の数．argcが-1の時, 
-関数には引数の数(selfを含まない)を第1引数, 引数の配列を第2引
-数とする形式で与えられる(第3引数はself)．argcが-2の時, 第1引
-数がself, 第2引数がargs(argsは引数を含むRubyの配列)という形
-式で与えられる．
+Defines a method for the class.  func is the function pointer.  argc
+is the number of arguments.  if argc is -1, the function will receive
+3 arguments argc, argv, and self.  if argc is -2, the function will
+receive 2 arguments, self and args, where args is the Ruby array of
+the method arguments.
 
  rb_define_private_method(VALUE class, char *name, VALUE (*func)(), int argc)
 
-privateメソッドを定義する．引数はrb_define_method()と同じ．
+Defines a private method for the class.  Arguments are same as
+rb_define_method().
 
  rb_define_singleton_method(VALUE class, char *name, VALUE (*func)(), int argc)
 
-特異メソッドを定義する．引数はrb_define_method()と同じ．
+Defines a singleton method.  Arguments are same as rb_define_method().
 
  rb_scan_args(int atgc, VALUE *argv, char *fmt, ...)
 
@@ -899,42 +896,40 @@ argc,argv形式で与えられた引数を分解する．fmtは必須引数の数,
 
  VALUE rb_funcall(VALUE recv, ID mid, int narg, ...)
 
-メソッド呼び出し．文字列からmidを得るためにはrb_intern()を使う．
+Invokes the method.  To retrieve mid from method name, use rb_intern().
 
  VALUE rb_funcall2(VALUE recv, ID mid, int argc, VALUE *argv)
 
-メソッド呼び出し．引数をargc,argv形式で渡す．
+Invokes method, passing arguments by array of values.
 
  VALUE rb_eval_string(char *str)
 
-文字列をRubyとスクリプトしてコンパイル・実行する．
+Compiles and executes the string as Ruby program.
 
  ID rb_intern(char *name)
 
-文字列に対応するIDを返す．
+Returns ID corresponding the name.
 
  char *rb_id2name(ID id)
 
-IDに対応する文字列を返す(デバッグ用)．
+Returns the name corresponding ID.
 
  char *rb_class2name(VALUE class)
 
-classの名前を返す(デバッグ用)．classが名前を持たない時には, 
-祖先を遡って名前を持つクラスの名前を返す．
+Returns the name of the class.
 
-** インスタンス変数
+** Instance Variables
 
  VALUE rb_iv_get(VALUE obj, char *name)
 
-objのインスタンス変数の値を得る．`@'で始まらないインスタンス
-変数は Rubyプログラムからアクセスできない「隠れた」インスタ
-ンス変数になる．
+Retrieve the value of the instance variable.  If the name is not
+prefixed by `@', that variable shall be inaccessible from Ruby.
 
  VALUE rb_iv_set(VALUE obj, char *name, VALUE val)
 
-objのインスタンス変数をvalにセットする．
+Sets the value of the instance variable.
 
-** 制御構造
+** Control Structure
 
  VALUE rb_iterate(VALUE (*func1)(), void *arg1, VALUE (*func2)(), void *arg2)
 
@@ -1024,6 +1019,6 @@ this method, the compilation will not be done.
 
 /*
  * Local variables:
- * fill-column: 60
+ * fill-column: 70
  * end:
  */

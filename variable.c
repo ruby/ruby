@@ -716,9 +716,11 @@ generic_ivar_set(obj, id, val)
     VALUE val;
 {
     st_table *tbl;
+    int special = Qfalse;
 
     if (rb_special_const_p(obj)) {
 	special_generic_ivar = 1;
+	special = Qtrue;
     }
     if (!generic_iv_tbl) {
 	generic_iv_tbl = st_init_numtable();
@@ -824,6 +826,8 @@ rb_ivar_get(obj, id)
 {
     VALUE val;
 
+    if (!FL_TEST(obj, FL_TAINT) && rb_safe_level() >= 4)
+	rb_raise(rb_eSecurityError, "Insecure: can't access instance variable");
     switch (TYPE(obj)) {
       case T_OBJECT:
       case T_CLASS:
@@ -849,13 +853,13 @@ rb_ivar_set(obj, id, val)
     ID id;
     VALUE val;
 {
+    if (!FL_TEST(obj, FL_TAINT) && rb_safe_level() >= 4)
+	rb_raise(rb_eSecurityError, "Insecure: can't modify instance variable");
     switch (TYPE(obj)) {
       case T_OBJECT:
       case T_CLASS:
       case T_MODULE:
       case T_FILE:
-	if (rb_safe_level() >= 4 && !FL_TEST(obj, FL_TAINT))
-	    rb_raise(rb_eSecurityError, "Insecure: can't modify instance variable");
 	if (!ROBJECT(obj)->iv_tbl) ROBJECT(obj)->iv_tbl = st_init_numtable();
 	st_insert(ROBJECT(obj)->iv_tbl, id, val);
 	break;
@@ -907,6 +911,8 @@ rb_obj_instance_variables(obj)
 {
     VALUE ary;
 
+    if (!FL_TEST(obj, FL_TAINT) && rb_safe_level() >= 4)
+	rb_raise(rb_eSecurityError, "Insecure: can't get metainfo");
     switch (TYPE(obj)) {
       case T_OBJECT:
       case T_CLASS:
@@ -938,6 +944,8 @@ rb_obj_remove_instance_variable(obj, name)
     VALUE val = Qnil;
     ID id = rb_to_id(name);
 
+    if (!FL_TEST(obj, FL_TAINT) && rb_safe_level() >= 4)
+	rb_raise(rb_eSecurityError, "Insecure: can't modify instance variable");
     if (!rb_is_instance_id(id)) {
 	rb_raise(rb_eNameError, "`%s' is not an instance variable",
 		 rb_id2name(id));
@@ -1080,6 +1088,8 @@ VALUE
 rb_mod_const_at(mod, ary)
     VALUE mod, ary;
 {
+    if (!FL_TEST(mod, FL_TAINT) && rb_safe_level() >= 4)
+	rb_raise(rb_eSecurityError, "Insecure: can't get metainfo");
     if (RCLASS(mod)->iv_tbl) {
 	st_foreach(RCLASS(mod)->iv_tbl, const_i, ary);
     }
@@ -1163,7 +1173,7 @@ rb_const_set(klass, id, val)
     ID id;
     VALUE val;
 {
-    if (rb_safe_level() >= 4 && !FL_TEST(klass, FL_TAINT))
+    if (!FL_TEST(klass, FL_TAINT) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't set constant");
     if (!RCLASS(klass)->iv_tbl) {
 	RCLASS(klass)->iv_tbl = st_init_numtable();

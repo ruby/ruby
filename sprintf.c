@@ -6,14 +6,18 @@
   $Date$
   created at: Fri Oct 15 10:39:26 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
 #include "ruby.h"
 #include <ctype.h>
 
+#ifdef USE_CWGUSI
+static void fmt_setup();
+#else
 static void fmt_setup _((char*,char,int,int,int));
+#endif
 
 static char*
 remove_sign_bits(str, base)

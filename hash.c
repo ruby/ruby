@@ -6,7 +6,7 @@
   $Date$
   created at: Mon Nov 22 18:51:18 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -19,6 +19,10 @@
 
 #ifndef HAVE_STRING_H
 char *strchr _((char*,char));
+#endif
+
+#ifdef USE_CWGUSI
+char* strdup(const char*);
 #endif
 
 #define HASH_FREEZE   FL_USER1
@@ -841,7 +845,6 @@ rb_hash_update(hash1, hash2)
     return hash1;
 }
 
-#ifndef __MACOS__ /* no environment variables on MacOS. */
 static int path_tainted = -1;
 
 #ifndef NT
@@ -1362,8 +1365,6 @@ env_to_hash(obj)
     }
     return hash;
 }
-
-#endif  /* ifndef __MACOS__  no environment variables on MacOS. */
 
 void
 Init_Hash()

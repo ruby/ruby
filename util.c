@@ -6,7 +6,7 @@
   $Date$
   created at: Fri Mar 10 17:22:34 JST 1995
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -18,6 +18,10 @@
 
 #define RUBY_NO_INLINE
 #include "ruby.h"
+
+#ifdef USE_CWGUSI
+extern char* mktemp(char*);
+#endif
 
 VALUE
 rb_class_of(obj)

@@ -6,7 +6,7 @@
   $Date$
   created at: Tue Jan 18 17:05:06 JST 1994
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -64,6 +64,7 @@ char *getenv();
 # include <TextUtils.h>
 # include <CodeFragments.h>
 # include <Aliases.h>
+# include "macruby_private.h"
 #endif
 
 #ifdef __BEOS__
@@ -1522,8 +1523,13 @@ dln_find_file(fname, path)
     char *fname;
     char *path;
 {
+#ifndef __MACOS__
     if (!path) path = ".";
     return dln_find_1(fname, path, 0);
+#else
+    if (!path) path = ".";
+    return _macruby_path_conv_posix_to_macos(dln_find_1(fname, path, 0));
+#endif
 }
 
 #if defined(__CYGWIN32__)
@@ -1561,14 +1567,17 @@ dln_find_1(fname, path, exe_flag)
     register char *dp;
     register char *ep;
     register char *bp;
+#ifndef __MACOS__
     struct stat st;
+#else
+    const char* mac_fullpath;
+#endif
 
 #if defined(__CYGWIN32__)
     char rubypath[MAXPATHLEN];
     conv_to_posix_path(path, rubypath);
     path = rubypath;
 #endif
-#ifndef __MACOS__
     if (fname[0] == '/') return fname;
     if (strncmp("./", fname, 2) == 0 || strncmp("../", fname, 3) == 0)
       return fname;
@@ -1580,7 +1589,6 @@ dln_find_1(fname, path, exe_flag)
       return fname;
     if (exe_flag && strchr(fname, '\\')) return fname;
 #endif
-#endif /* __MACOS__ */
 
     for (dp = path;; dp = ++ep) {
 	register int l;
@@ -1632,11 +1640,7 @@ dln_find_1(fname, path, exe_flag)
 
 	    /* add a "/" between directory and filename */
 	    if (ep[-1] != '/')
-#ifdef __MACOS__
-		*bp++ = ':';
-#else
 		*bp++ = '/';
-#endif
 	}
 
 	/* now append the file name */
@@ -1651,11 +1655,19 @@ dln_find_1(fname, path, exe_flag)
 	}
 	memcpy(bp, fname, i + 1);
 
+#ifndef __MACOS__
 	if (stat(fbuf, &st) == 0) {
 	    if (exe_flag == 0) return fbuf;
 	    /* looking for executable */
 	    if (eaccess(fbuf, X_OK) == 0) return fbuf;
 	}
+#else
+	if (mac_fullpath = _macruby_exist_file_in_libdir_as_posix_name(fbuf)) {
+	    if (exe_flag == 0) return mac_fullpath;
+	    /* looking for executable */
+	    if (eaccess(mac_fullpath, X_OK) == 0) return mac_fullpath;
+	}
+#endif
 #if defined(MSDOS) || defined(NT) || defined(__human68k__)
 	if (exe_flag) {
 	    static const char *extension[] = {
@@ -1679,8 +1691,13 @@ dln_find_1(fname, path, exe_flag)
 		    continue;
 		}
 		strcpy(bp + i, extension[j]);
+#ifndef __MACOS__
 		if (stat(fbuf, &st) == 0)
 		    return fbuf;
+#else
+		if (mac_fullpath = _macruby_exist_file_in_libdir_as_posix_name(fbuf))
+		    return mac_fullpath;
+#endif
 	    }
 	}
 #endif /* MSDOS or NT or __human68k__ */

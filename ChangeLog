@@ -1,3 +1,21 @@
+Wed Jan 27 03:16:18 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* variable.c (rb_mod_const_at): can't list constants of the
+	  untainted objects in safe mode.
+
+	* class.c (method_list): can't list methods of untainted objects
+	  in safe mode.
+
+Tue Jan 26 02:40:41 1999  GOTO Kentaro  <gotoken@math.sci.hokudai.ac.jp>
+
+	* prec.c: Precision support for numbers.
+
+Thu Jan 21 19:08:14 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_f_raise): calls `exception' method, not `new'.
+
+	* error.c (exc_exception): renamed from `new'.
+
 Wed Jan 20 03:39:48 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* parse.y (yycompile): rb_in_compile renamed to ruby_in_compile.
