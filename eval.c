@@ -2634,10 +2634,12 @@ rb_eval(self, n)
 	goto again;
 
       case NODE_OP_ASGN_OR:
-	result = rb_eval(self, node->nd_head);
-	if (RTEST(result)) break;
-	node = node->nd_value;
-	goto again;
+	if ((node->nd_aid && !rb_ivar_defined(self, node->nd_aid)) ||
+	    !RTEST(result = rb_eval(self, node->nd_head))) {
+	    node = node->nd_value;
+	    goto again;
+	}
+	break;
 
       case NODE_MASGN:
 	result = massign(self, node, rb_eval(self, node->nd_value),0);

@@ -672,6 +672,9 @@ arg		: lhs '=' arg
 			if ($2 == tOROP) {
 			    $<node>3->nd_value = $4;
 			    $$ = NEW_OP_ASGN_OR(gettable($1), $<node>3);
+			    if (is_instance_id($1)) {
+				$$->nd_aid = $1;
+			    }
 			}
 			else if ($2 == tANDOP) {
 			    $<node>3->nd_value = $4;
