@@ -385,15 +385,15 @@ rb_io_wait_writable(f)
 }
 
 /* writing functions */
-long
-io_fwrite(ptr, len, fptr)
-    const char *ptr;
-    long len;
+static long
+io_fwrite(str, fptr)
+    VALUE str;
     OpenFile *fptr;
 {
-    long n, r;
+    long len, n, r, offset = 0;
     FILE *f = GetWriteFile(fptr);
 
+    len = RSTRING(str)->len;
     if ((n = len) <= 0) return n;
     if (fptr->mode & FMODE_SYNC) {
 	io_fflush(f, fptr);
@@ -401,28 +401,30 @@ io_fwrite(ptr, len, fptr)
 	    rb_io_check_closed(fptr);
 	}
       retry:
-	r = write(fileno(f), ptr, n);
+	r = write(fileno(f), RSTRING(str)->ptr+offset, n);
         if (r == n) return len;
         if (0 <= r) {
-            ptr += r;
+            offset += r;
             n -= r;
             errno = EAGAIN;
         }
         if (rb_io_wait_writable(fileno(f))) {
             rb_io_check_closed(fptr);
-            goto retry;
+	    if (offset < RSTRING(str)->len)
+		goto retry;
         }
         return -1L;
     }
 #if defined(__human68k__) || defined(__vms)
     do {
-	if (fputc(*ptr++, f) == EOF) {
+	if (fputc(RSTRING(str)->ptr+offset, f) == EOF) {
+	    offset++;
 	    if (ferror(f)) return -1L;
 	    break;
 	}
     } while (--n > 0);
 #else
-    while (errno = 0, ptr += (r = fwrite(ptr, 1, n, f)), (n -= r) > 0) {
+    while (errno = 0, offset += (r = fwrite(RSTRING(str)->ptr+offset, 1, n, f)), (n -= r) > 0) {
 	if (ferror(f)
 #if defined __BORLANDC__
 	    || errno
@@ -434,7 +436,8 @@ io_fwrite(ptr, len, fptr)
 	    if (rb_io_wait_writable(fileno(f))) {
 		rb_io_check_closed(fptr);
 		clearerr(f);
-		continue;
+		if (offset < RSTRING(str)->len)
+		    continue;
 	    }
 	    return -1L;
 	}
@@ -455,7 +458,7 @@ rb_io_fwrite(ptr, len, f)
     of.f2 = NULL;
     of.mode = FMODE_WRITABLE;
     of.path = NULL;
-    return io_fwrite(ptr, len, &of);
+    return io_fwrite(rb_str_new(ptr, len), &of);
 }
 
 /*
@@ -496,9 +499,7 @@ io_write(io, str)
     GetOpenFile(io, fptr);
     rb_io_check_writable(fptr);
 
-    rb_str_locktmp(str);
-    n = io_fwrite(RSTRING(str)->ptr, RSTRING(str)->len, fptr);
-    rb_str_unlocktmp(str);
+    n = io_fwrite(str, fptr);
     if (n == -1L) rb_sys_fail(fptr->path);
     if (!(fptr->mode & FMODE_SYNC)) {
 	fptr->mode |= FMODE_WBUF;
