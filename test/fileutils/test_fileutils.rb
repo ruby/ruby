@@ -15,13 +15,13 @@ end
 
 def have_symlink?
   begin
-    File.symlink 'not_exist', 'not_exist_2'
+    File.symlink 'not_exist', 'symlink_test'
+    return true
   rescue NotImplementedError
     return false
-  rescue
-    return true
+  ensure
+    File.unlink 'symlink_test' if File.symlink?('symlink_test')
   end
-  true   # never reach
 end
 
 
