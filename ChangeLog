@@ -1,3 +1,13 @@
+Tue Jun 18 12:50:17 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* parse.y (yylex): should pushback proper char after '<<'.
+
+	* parse.y (range_op, cond0, cond): get rid of doubled warnings.
+
+	* parse.y (value_expr): reduce recursion level.
+
+	* parse.y (logop): ditto.
+
 Mon Jun 17 10:51:37 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* dln.c (dln_load): need to preserve dln_strerror() result,

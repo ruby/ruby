@@ -3215,7 +3215,7 @@ yylex()
 	    return tLEQ;
 	}
 	if (c == '<') {
-	    if (nextc() == '=') {
+	    if ((c = nextc()) == '=') {
 		lex_state = EXPR_BEG;
 		yylval.id = tLSHFT;
 		return tOP_ASGN;
@@ -4643,47 +4643,55 @@ static int
 value_expr(node)
     NODE *node;
 {
-    if (node == 0) return Qtrue;
+    while (node) {
+	switch (nd_type(node)) {
+	  case NODE_CLASS:
+	  case NODE_MODULE:
+	  case NODE_DEFN:
+	  case NODE_DEFS:
+	    rb_warning("void value expression");
+	    return Qfalse;
 
-    switch (nd_type(node)) {
-      case NODE_CLASS:
-      case NODE_MODULE:
-      case NODE_DEFN:
-      case NODE_DEFS:
-	rb_warning("void value expression");
-	return Qfalse;
+	  case NODE_RETURN:
+	  case NODE_BREAK:
+	  case NODE_NEXT:
+	  case NODE_REDO:
+	  case NODE_RETRY:
+	    yyerror("void value expression");
+	    /* or "control never reach"? */
+	    return Qfalse;
 
-      case NODE_RETURN:
-      case NODE_BREAK:
-      case NODE_NEXT:
-      case NODE_REDO:
-      case NODE_RETRY:
-	yyerror("void value expression");
-	/* or "control never reach"? */
-	return Qfalse;
+	  case NODE_BLOCK:
+	    while (node->nd_next) {
+		node = node->nd_next;
+	    }
+	    node = node->nd_head;
+	    break;
 
-      case NODE_BLOCK:
-	while (node->nd_next) {
+	  case NODE_BEGIN:
+	    node = node->nd_body;
+	    break;
+
+	  case NODE_IF:
+	    if (!value_expr(node->nd_body)) return Qfalse;
+	    node = node->nd_else;
+	    break;
+
+	  case NODE_AND:
+	  case NODE_OR:
+	    node = node->nd_2nd;
+	    break;
+
+	  case NODE_NEWLINE:
 	    node = node->nd_next;
+	    break;
+
+	  default:
+	    return Qtrue;
 	}
-	return value_expr(node->nd_head);
-
-      case NODE_BEGIN:
-	return value_expr(node->nd_body);
-
-      case NODE_IF:
-	return value_expr(node->nd_body) && value_expr(node->nd_else);
-
-      case NODE_AND:
-      case NODE_OR:
-	return value_expr(node->nd_2nd);
-
-      case NODE_NEWLINE:
-	return value_expr(node->nd_next);
-
-      default:
-	return Qtrue;
     }
+
+    return Qtrue;
 }
 
 static void
@@ -4876,6 +4884,7 @@ range_op(node)
     if (!e_option_supplied()) return node;
     if (node == 0) return 0;
 
+    value_expr(node);
     node = cond0(node);
     type = nd_type(node);
     if (type == NODE_NEWLINE) node = node->nd_next;
@@ -4893,7 +4902,6 @@ cond0(node)
     enum node_type type = nd_type(node);
 
     assign_in_cond(node);
-    value_expr(node);
 
     switch (type) {
       case NODE_DSTR:
@@ -4945,6 +4953,7 @@ cond(node)
     NODE *node;
 {
     if (node == 0) return 0;
+    value_expr(node);
     if (nd_type(node) == NODE_NEWLINE){
 	node->nd_next = cond0(node->nd_next);
 	return node;
@@ -4958,6 +4967,14 @@ logop(type, left, right)
     NODE *left, *right;
 {
     value_expr(left);
+    if (nd_type(left) == type) {
+	NODE *node = left, *second;
+	while ((second = node->nd_2nd) != 0 && nd_type(second) == type) {
+	    node = second;
+	}
+	node->nd_2nd = rb_node_newnode(type, second, right, 0);
+	return left;
+    }
     return rb_node_newnode(type, left, right, 0);
 }
 
