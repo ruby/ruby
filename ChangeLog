@@ -1,3 +1,7 @@
+Sun Mar 24 00:46:05 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* util.c (push_element): avoid warning for djgpp.
+
 Fri Mar 22 16:46:54 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/extmk.rb.in: replace mkdir with mkpath to compile racc/cparse.
