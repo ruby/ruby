@@ -1,3 +1,10 @@
+Thu Jan 31 20:45:33 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* lib/mkmf.rb (dir_config): prior --with flag.
+
+	* lib/mkmf.rb (arg_config): avoid special variables for
+	  font-lock-mode.
+
 Mon Jan 28 18:33:18 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* parse.y (yylex): strict check for numbers.

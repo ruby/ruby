@@ -300,11 +300,8 @@ def arg_config(config, default=nil)
     $configure_args = {}
     for arg in CONFIG["configure_args"].split + ARGV
       next unless /^--/ =~ arg
-      if /=/ =~ arg
-	$configure_args[$`] = $'
-      else
-	$configure_args[arg] = true
-      end
+      arg, val = arg.split('=', 2)
+      $configure_args[arg] = val || true
     end
   end
   $configure_args.fetch(config, default)
@@ -341,21 +338,13 @@ def create_header()
 end
 
 def dir_config(target, idefault=nil, ldefault=nil)
-  if idefault && ldefault == nil
-    default = idefault
-    idefault = default + "/include"
-    ldefault = default + "/lib"
+  if dir = with_config(target + "-dir", (idefault unless ldefault))
+    idefault = dir + "/include"
+    ldefault = dir + "/lib"
   end
 
-  dir = with_config(target + "-dir", default)
-
-  idir, ldir = if dir then [
-      dir + "/include",
-      dir + "/lib"
-    ] else [
-      with_config(target + "-include", idefault),
-      with_config(target + "-lib", ldefault)
-    ] end
+  idir = with_config(target + "-include", idefault)
+  ldir = with_config(target + "-lib", ldefault)
 
   if idir
     idircflag = "-I" + idir
