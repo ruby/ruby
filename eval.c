@@ -2181,7 +2181,6 @@ rb_eval(self, node)
 	else {
 	    return_value(Qnil);
 	}
-	return_value(rb_eval(self, node->nd_stts));
 	return_check();
 	JUMP_TAG(TAG_RETURN);
 	break;

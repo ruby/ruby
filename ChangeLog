@@ -1,10 +1,22 @@
+Fri Sep 17 01:04:25 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* stable version 1.4.2 released.
+
+Fri Sep 17 00:52:27 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (arg): assignable() may return 0.
+
+Thu Sep 16 20:46:23 1999  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* eval.c (rb_eval): was doubly evaluating the return expression.
+
 Thu Sep 16 18:40:08 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* stable version 1.4.1 released.
 
 Thu Sep 16 11:33:22 1999  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
 
-	* string.c (rb_str_match): should return false.
+	* string.c (rb_str_match): should return nil.
 
 Wed Sep 15 22:46:37 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

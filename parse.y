@@ -626,7 +626,9 @@ arg		: lhs '=' arg
 			}
 			else {
 			    $$ = $<node>3;
-			    $$->nd_value = call_op(gettable($1), $2, 1, $4);
+			    if ($$) {
+				$$->nd_value = call_op(gettable($1),$2,1,$4);
+			    }
 			}
 			fixpos($$, $4);
 		    }
