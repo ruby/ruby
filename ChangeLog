@@ -1,3 +1,8 @@
+Thu Oct  7 17:36:25 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: When CHILDKILLED and so on, Tk.errorCode returns
+	  a Fixnum for 2nd element (it's pid) of the return value. 
+
 Thu Oct  7 12:55:04 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (io_read): should freeze buffer before thread context
