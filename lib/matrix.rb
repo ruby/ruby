@@ -612,8 +612,12 @@ class Matrix
   def rank
     if column_size > row_size
       a = transpose.to_a
+      a_column_size = row_size
+      a_row_size = column_size
     else
       a = to_a
+      a_column_size = column_size
+      a_row_size = row_size
     end
     rank = 0
     k = 0
@@ -622,7 +626,7 @@ class Matrix
 	i = k
 	exists = true
 	begin
-	  if (i += 1) > column_size - 1
+	  if (i += 1) > a_column_size - 1
 	    exists = false
 	    break
 	  end
@@ -634,13 +638,13 @@ class Matrix
 	  i = k
 	  exists = true
 	  begin
-	    if (i += 1) > row_size - 1
+	    if (i += 1) > a_row_size - 1
 	      exists = false
 	      break
 	    end
 	  end while a[k][i] == 0
 	  if exists
-	    k.upto(column_size - 1) do
+	    k.upto(a_column_size - 1) do
 	      |j|
 	      a[j][k], a[j][i] = a[j][i], a[j][k]
 	    end
@@ -650,16 +654,16 @@ class Matrix
 	  end
 	end
       end
-      (k + 1).upto(row_size - 1) do
+      (k + 1).upto(a_row_size - 1) do
 	|i|
 	q = a[i][k] / akk
-	(k + 1).upto(column_size - 1) do
+	(k + 1).upto(a_column_size - 1) do
 	  |j|
 	  a[i][j] -= a[k][j] * q
 	end
       end
       rank += 1
-    end while (k += 1) <= column_size - 1
+    end while (k += 1) <= a_column_size - 1
     return rank
   end
 

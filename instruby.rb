@@ -1,6 +1,6 @@
-#!./miniruby -I.
+#!./miniruby
 
-require "rbconfig.rb"
+load "./rbconfig.rb"
 include Config
 
 destdir = ARGV[0] || ''

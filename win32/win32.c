@@ -1562,8 +1562,10 @@ typedef struct	{
     long osfhnd;    /* underlying OS file HANDLE */
     char osfile;    /* attributes of file (e.g., open in text mode?) */
     char pipech;    /* one char buffer for handles opened on pipes */
+#ifdef _MT
     int lockinitflag;
     CRITICAL_SECTION lock;
+#endif
 }	ioinfo;
 
 #if !defined _CRTIMP
@@ -1596,7 +1598,9 @@ _alloc_osfhnd(void)
     CloseHandle(hF);
     if (fh == -1)
         return fh;
+#ifdef _MT
     EnterCriticalSection(&(_pioinfo(fh)->lock));
+#endif
     return fh;
 }
 
@@ -1631,7 +1635,9 @@ my_open_osfhandle(long osfhandle, int flags)
     fileflags |= FOPEN;		/* mark as open */
 
     _osfile(fh) = fileflags;	/* set osfile entry */
-//    _unlock_fhandle(fh);
+#ifdef _MT
+    LeaveCriticalSection(&_pioinfo(fh)->lock);
+#endif
 
     return fh;			/* return handle */
 }
