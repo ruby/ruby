@@ -1,3 +1,8 @@
+Tue Jan 23 18:51:57 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (rb_gc_call_finalizer_at_exit): should finalize objects in
+	  deferred_final_list too.
+
 Tue Jan 23 16:10:12 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (os_live_obj): do not list terminated object.
