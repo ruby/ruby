@@ -11,7 +11,7 @@ class TestVariable < Test::Unit::TestCase
 
     def self.ruler1		# <= per method definition style
       @@rule
-    end		   
+    end
     class << self			# <= multiple method definition style
       def ruler2
 	@@rule
@@ -33,7 +33,7 @@ class TestVariable < Test::Unit::TestCase
 
   def test_variable
     assert($$.instance_of?(Fixnum))
-    
+
     # read-only variable
     begin
       $$ = 5
@@ -41,18 +41,18 @@ class TestVariable < Test::Unit::TestCase
     rescue NameError
       assert true
     end
-    
+
     foobar = "foobar"
     $_ = foobar
-    assert_equal($_, foobar)
+    assert_equal(foobar, $_)
 
-    assert_equal(Gods.new.ruler0, "Cronus")
-    assert_equal(Gods.ruler1, "Cronus")
-    assert_equal(Gods.ruler2, "Cronus")
-    assert_equal(Titans.ruler1, "Cronus")
-    assert_equal(Titans.ruler2, "Cronus")
+    assert_equal("Cronus", Gods.new.ruler0)
+    assert_equal("Cronus", Gods.ruler1)
+    assert_equal("Cronus", Gods.ruler2)
+    assert_equal("Cronus", Titans.ruler1)
+    assert_equal("Cronus", Titans.ruler2)
     atlas = Titans.new
-    assert_equal(atlas.ruler0, "Cronus")
-    assert_equal(atlas.ruler3, "Zeus")
+    assert_equal("Cronus", atlas.ruler0)
+    assert_equal("Zeus", atlas.ruler3)
   end
 end

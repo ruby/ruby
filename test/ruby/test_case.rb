@@ -10,28 +10,28 @@ class TestCase < Test::Unit::TestCase
     when 5
       assert(true)
     end
-    
+
     case 5
     when 5
       assert(true)
     when 1..10
       assert(false)
     end
-    
+
     case 5
     when 1..10
       assert(true)
     else
       assert(false)
     end
-    
+
     case 5
     when 5
       assert(true)
     else
       assert(false)
     end
-    
+
     case "foobar"
     when /^f.*r$/
       assert(true)

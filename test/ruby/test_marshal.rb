@@ -20,7 +20,7 @@ class TestMarshal < Test::Unit::TestCase
     $y = Marshal.dump($x)
     assert_equal($x, Marshal.load($y))
 
-    assert_equal(Marshal.load(Marshal.dump(StrClone.new("abc"))).class, StrClone)
+    assert_instance_of(StrClone, Marshal.load(Marshal.dump(StrClone.new("abc"))))
 
     [[1,2,3,4], [81, 2, 118, 3146]].each { |w,x,y,z|
       a = (x.to_f + y.to_f / z.to_f) * Math.exp(w.to_f / (x.to_f + y.to_f / z.to_f))

@@ -19,47 +19,36 @@ class TestBignum < Test::Unit::TestCase
     assert_equal($x, fact(40))
     assert($x < $x+2)
     assert($x > $x-2)
-    assert_equal($x, 815915283247897734345611269596115894272000000000)
-    assert_not_equal($x, 815915283247897734345611269596115894272000000001)
-    assert_equal($x+1, 815915283247897734345611269596115894272000000001)
-    assert_equal($x/fact(20), 335367096786357081410764800000)
+    assert_equal(815915283247897734345611269596115894272000000000, $x)
+    assert_not_equal(815915283247897734345611269596115894272000000001, $x)
+    assert_equal(815915283247897734345611269596115894272000000001, $x+1)
+    assert_equal(335367096786357081410764800000, $x/fact(20))
     $x = -$x
-    assert_equal($x, -815915283247897734345611269596115894272000000000)
+    assert_equal(-815915283247897734345611269596115894272000000000, $x)
     assert_equal(2-(2**32), -(2**32-2))
     assert_equal(2**32 - 5, (2**32-3)-2)
 
-    $good = true;
     for i in 1000..1014
-      $good = false if ((1<<i) != (2**i))
+      assert_equal(2 ** i, 1 << i)
     end
-    assert($good)
-    
-    $good = true;
-    n1=1<<1000
+
+    n1 = 1 << 1000
     for i in 1000..1014
-      $good = false if ((1<<i) != n1)
+      assert_equal(n1, 1 << i)
       n1 *= 2
     end
-    assert($good)
-    
-    $good = true;
+
     n2=n1
     for i in 1..10
       n1 = n1 / 2
       n2 = n2 >> 1
-      $good = false if (n1 != n2)
+      assert_equal(n1, n2)
     end
-    assert($good)
-    
-    $good = true;
+
     for i in 4000..4096
       n1 = 1 << i;
-      if (n1**2-1) / (n1+1) != (n1-1)
-        p i
-        $good = false
-      end
+      assert_equal(n1-1, (n1**2-1) / (n1+1))
     end
-    assert($good)
   end
 
   def test_calc
@@ -73,14 +62,14 @@ class TestBignum < Test::Unit::TestCase
     assert_equal(7, a.remainder(-b))
     assert_equal(-7, (-a).remainder(b))
     assert_equal(-7, (-a).remainder(-b))
-    
-    assert_equal(10**40+10**20, 10000000000000000000100000000000000000000)
-    assert_equal(10**40/10**20, 100000000000000000000)
-    
+
+    assert_equal(10000000000000000000100000000000000000000, 10**40+10**20)
+    assert_equal(100000000000000000000, 10**40/10**20)
+
     a = 677330545177305025495135714080
     b = 14269972710765292560
-    assert_equal(a % b, 0)
-    assert_equal(-a % b, 0)
+    assert_equal(0, a % b)
+    assert_equal(0, -a % b)
   end
 
   def test_shift
@@ -88,12 +77,12 @@ class TestBignum < Test::Unit::TestCase
       b = a / (2 ** 32)
       c = a >> 32
       assert_equal(b, c)
-    
+
       b = a * (2 ** 32)
       c = a << 32
       assert_equal(b, c)
     end
-    
+
     shift_test(-4518325415524767873)
     shift_test(-0xfffffffffffffffff)
   end

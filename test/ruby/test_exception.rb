@@ -10,7 +10,7 @@ class TestException < Test::Unit::TestCase
     rescue
       assert(true)
     end
-    
+
     $bad = true
     begin
       raise "this must be handled no.2"
@@ -22,32 +22,33 @@ class TestException < Test::Unit::TestCase
       end
     end
     assert(true)
-    
+
     # exception in rescue clause
     $string = "this must be handled no.3"
-    begin
+    e = assert_raises(RuntimeError) do
       begin
         raise "exception in rescue clause"
-      rescue 
+      rescue
         raise $string
       end
       assert(false)
-    rescue
-      assert(true) if $! == $string
     end
-      
+    assert_equal($string, e.message)
+
     # exception in ensure clause
-    begin
+    $string = "exception in ensure clause"
+    e = assert_raises(RuntimeError) do
       begin
         raise "this must be handled no.4"
-      ensure 
+      ensure
+        assert_instance_of(RuntimeError, $!)
+        assert_equal("this must be handled no.4", $!.message)
         raise "exception in ensure clause"
       end
       assert(false)
-    rescue
-      assert(true)
     end
-    
+    assert_equal($string, e.message)
+
     $bad = true
     begin
       begin
@@ -58,7 +59,7 @@ class TestException < Test::Unit::TestCase
     rescue
     end
     assert(!$bad)
-    
+
     $bad = true
     begin
       begin
@@ -69,7 +70,7 @@ class TestException < Test::Unit::TestCase
     rescue
     end
     assert(!$bad)
-    
+
     $bad = true
     while true
       begin
@@ -79,7 +80,7 @@ class TestException < Test::Unit::TestCase
       end
     end
     assert(!$bad)
-    
+
     assert(catch(:foo) {
          loop do
            loop do
@@ -91,6 +92,6 @@ class TestException < Test::Unit::TestCase
          end
          false
        })
-    
+
   end
 end

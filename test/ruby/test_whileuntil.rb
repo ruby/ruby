@@ -13,25 +13,25 @@ class TestWhileuntil < Test::Unit::TestCase
     tmp.close
 
     tmp = open("while_tmp", "r")
-    assert(tmp.kind_of?(File))
-    
+    assert_kind_of(File, tmp)
+
     while line = tmp.gets()
       break if /vt100/ =~ line
     end
-    
-    assert(!tmp.eof? && /vt100/ =~ line)
+
+    assert(!tmp.eof?)
+    assert_match(/vt100/, line)
     tmp.close
 
-    $bad = false
     tmp = open("while_tmp", "r")
     while line = tmp.gets()
       next if /vt100/ =~ line
-      $bad = 1 if /vt100/ =~ line
+      assert_no_match(/vt100/, line)
     end
-    assert(!(!tmp.eof? || /vt100/ =~ line || $bad))
+    assert(tmp.eof?)
+    assert_no_match(/vt100/, line)
     tmp.close
-    
-    $bad = false
+
     tmp = open("while_tmp", "r")
     while tmp.gets()
       line = $_
@@ -40,12 +40,12 @@ class TestWhileuntil < Test::Unit::TestCase
         $_.gsub!('VT100', 'Vt100')
         redo
       end
-      $bad = 1 if /vt100/ =~ $_
-      $bad = 1 if /VT100/ =~ $_
+      assert_no_match(/vt100/, $_)
+      assert_no_match(/VT100/, $_)
     end
-    assert(tmp.eof? && !$bad)
+    assert(tmp.eof?)
     tmp.close
-    
+
     sum=0
     for i in 1..10
       sum += i
@@ -54,20 +54,17 @@ class TestWhileuntil < Test::Unit::TestCase
         redo
       end
     end
-    assert_equal(sum, 220)
-    
-    $bad = false
+    assert_equal(220, sum)
+
     tmp = open("while_tmp", "r")
     while line = tmp.gets()
       break if 3
-      case line
-      when /vt100/, /Amiga/, /paper/
-        $bad = true
-      end
+      assert_no_match(/vt100/, line)
+      assert_no_match(/Amiga/, line)
+      assert_no_match(/paper/, line)
     end
-    assert(!$bad)
     tmp.close
-    
+
     File.unlink "while_tmp" or `/bin/rm -f "while_tmp"`
     assert(!File.exist?("while_tmp"))
   end

@@ -33,20 +33,23 @@ runners_map = {
 }
 
 runner = 'console'
-ARGV.options do |opt|
-  opt.program_name = $0
-  opt.banner << " [tests...]"
-  opt.on("--runner=mode", runners_map.keys, "UI mode (console, gtk,fox)") do |arg|
-    runner = arg
-  end
-  opt.parse!
-end or abort(ARGV.options.help)
-
-if ARGV.empty?
-  ARGV.replace(Dir.glob(File.join(File.dirname(__FILE__), "**", "test_*.rb")).sort)
+opt = OptionParser.new
+opt.program_name = $0
+opt.banner << " [tests...]"
+opt.on("--runner=mode", runners_map.keys, "UI mode (console, gtk,fox)") do |arg|
+  runner = arg
+end
+begin
+  argv = opt.parse(*ARGV)
+rescue OptionParser::ParseError
+  opt.abort($!)
 end
 
-ARGV.each do |tc_name|
+if argv.empty?
+  argv = Dir.glob(File.join(File.dirname(__FILE__), "**", "test_*.rb")).sort
+end
+
+argv.each do |tc_name|
   require tc_name
 end
 

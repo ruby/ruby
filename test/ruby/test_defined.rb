@@ -22,20 +22,20 @@ class TestDefined < Test::Unit::TestCase
     $x = nil
 
     assert(defined?($x))		# global variable
-    assert_equal(defined?($x), 'global-variable')# returns description
-    
+    assert_equal('global-variable', defined?($x))# returns description
+
     foo=5
     assert(defined?(foo))		# local variable
-    
+
     assert(defined?(::Array))		# constant	!! Array -> ::Array
     assert(defined?(Object.new))	# method
     assert(!defined?(Object.print))	# private method
     assert(defined?(1 == 2))		# operator expression
-    
+
     f = Foo.new
-    assert_equal(defined?(f.foo), nil)
+    assert_nil(defined?(f.foo))
     f.bar(f) { |v| assert(v) }
-    
+
     assert(defined_test)		# not iterator
     assert(!defined_test{})	# called as iterator
   end

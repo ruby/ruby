@@ -1,3 +1,11 @@
+Sat Sep  6 00:15:09 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (OptionParser#order, #permute, #parse): allow an
+	  array as argument.
+
+	* test/ruby/test_*.rb: moved invariants to left side in
+	  assert_equal, and use assert_nil, assert_raises and so on.
+
 Sat Sep  6 00:00:20 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (have_library, find_library): configure by library

@@ -10,23 +10,12 @@ class TestCall < Test::Unit::TestCase
   end
 
   def test_call
-    begin
-      aaa()				# need at least 1 arg
-      assert(false)
-    rescue
-      assert(true)
-    end
-    
-    begin
-      aaa				# no arg given (exception raised)
-      assert(false)
-    rescue
-      assert(true)
-    end
-    
-    assert_equal(aaa(1), [1, 100])
-    assert_equal(aaa(1, 2), [1, 2])
-    assert_equal(aaa(1, 2, 3, 4), [1, 2, 3, 4])
-    assert_equal(aaa(1, *[2, 3, 4]), [1, 2, 3, 4])
+    assert_raises(ArgumentError) {aaa()}
+    assert_raises(ArgumentError) {aaa}
+
+    assert_equal([1, 100], aaa(1))
+    assert_equal([1, 2], aaa(1, 2))
+    assert_equal([1, 2, 3, 4], aaa(1, 2, 3, 4))
+    assert_equal([1, 2, 3, 4], aaa(1, *[2, 3, 4]))
   end
 end

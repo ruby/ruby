@@ -8,16 +8,16 @@ class TestTrace < Test::Unit::TestCase
     $y = 0
     trace_var :$x, proc{$y = $x}
     $x = 40414
-    assert_equal($y, $x)
-    
+    assert_equal($x, $y)
+
     untrace_var :$x
     $x = 19660208
     assert($y != $x)
-    
+
     trace_var :$x, proc{$x *= 2}
     $x = 5
-    assert_equal($x, 10)
-    
+    assert_equal(10, $x)
+
     untrace_var :$x
-  end 
+  end
 end

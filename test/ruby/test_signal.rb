@@ -9,18 +9,16 @@ class TestSignal < Test::Unit::TestCase
       trap "SIGINT", proc{|sig| $x = 2}
       Process.kill "SIGINT", $$
       sleep 0.1
-      assert_equal($x, 2)
-    
+      assert_equal(2, $x)
+
       trap "SIGINT", proc{raise "Interrupt"}
-    
-      x = false
-      begin
+
+      x = assert_raises(RuntimeError) do
         Process.kill "SIGINT", $$
         sleep 0.1
-      rescue
-        x = $!
       end
-      assert(x && /Interrupt/ =~ x.message)
+      assert(x)
+      assert_match(/Interrupt/, x.message)
     end
   end
 end

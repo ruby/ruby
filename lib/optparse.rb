@@ -801,6 +801,14 @@ Default options, which never appear in option summary.
     end
   end
 
+  def warn(mesg = $!)
+    super(program_name + ': ' + mesg)
+  end
+
+  def abort(mesg = $!)
+    super(program_name + ': ' + mesg)
+  end
+
 =begin
 --- OptionParser#top
     Subject of ((<on>))/((<on_head>)), ((<accept>))/((<reject>)).
@@ -1120,7 +1128,10 @@ Default options, which never appear in option summary.
       : (({block}))
         called with each non-option argument.
 =end #'#"#`#
-  def order(*argv, &block) order!(argv, &block) end
+  def order(*argv, &block)
+    argv = argv[0].dup if argv.size == 1 and Array === argv[0]
+    order!(argv, &block)
+  end
 
   def order!(argv = ARGV, &nonopt)
     opt, arg, sw, val, rest = nil
@@ -1198,6 +1209,7 @@ Default options, which never appear in option summary.
         command line arguments to be parsed.
 =end #'#"#`#
   def permute(*argv)
+    argv = argv[0].dup if argv.size == 1 and Array === argv[0]
     permute!(argv)
   end
 
@@ -1223,6 +1235,7 @@ Default options, which never appear in option summary.
         command line arguments to be parsed.
 =end #'#"#`#
   def parse(*argv)
+    argv = argv[0].dup if argv.size == 1 and Array === argv[0]
     parse!(argv)
   end
 
@@ -1607,7 +1620,7 @@ Extends command line arguments array to parse itself.
       begin
 	yield @optparse
       rescue ParseError
-	warn @optparse.program_name + ': ' + $!
+	@optparse.warn $!
 	nil
       end
     end

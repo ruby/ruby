@@ -182,8 +182,8 @@ class TestIterator < Test::Unit::TestCase
   def test_block_in_arg
     assert(m1{p 'test'})
     assert(m2{p 'test'})
-    assert(!m1)
-    assert(!m2)
+    assert(!m1())
+    assert(!m2())
   end
 
   class C
@@ -356,6 +356,6 @@ class TestIterator < Test::Unit::TestCase
   end
 
   def test_iter4
-    ITER_TEST4.new.foo(44){55}   
+    ITER_TEST4.new.foo(44){55}
   end
 end

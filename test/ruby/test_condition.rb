@@ -8,11 +8,11 @@ class TestCondition < Test::Unit::TestCase
 
   def test_condition
     $x = '0';
-    
+
     $x == $x && assert(true)
     $x != $x && assert(false)
     $x == $x || assert(false)
     $x != $x || assert(true)
-    
+
   end
 end

@@ -257,7 +257,7 @@ public
 
     r = CSV::Row[d(nil, true), d(2), d(3)]
     assert_equal([nil, '2', '3'], r.to_a, 'Null in data')
-    
+
     r = CSV::Row[d(nil, true), d(nil, true), d(nil, true)]
     assert_equal([nil, nil, nil], r.to_a, 'Nulls')
 
@@ -270,7 +270,7 @@ public
 
 
   #### CSV::Reader unit test
-  
+
   def test_Reader_each
     file = File.open(@infile, "rb")
     begin
@@ -441,7 +441,7 @@ public
 
 
   #### CSV::Writer unit test
-  
+
   def test_Writer_s_new
     assert_raises(RuntimeError) do
       CSV::Writer.new(nil)
@@ -1139,8 +1139,10 @@ public
   end
 
   def setBufSize(size)
-    CSV::StreamBuf.module_eval('remove_const("BufSize")')
-    CSV::StreamBuf.module_eval("BufSize = #{ size }")
+    CSV::StreamBuf.module_eval do
+      remove_const(:BufSize)
+      const_set(:BufSize, size)
+    end
   end
 
   class StrBuf < CSV::StreamBuf
@@ -1282,7 +1284,7 @@ public
     # At first, check ruby's behaviour.
     assert_equal("", "abc"[3, 1])
     assert_equal(nil, "abc"[4, 1])
-    
+
     setupInputStream(22, 1024) do |s|
       [0, 1, 9, 10, 19, 20, 21].each do |idx|
 	assert_equal(expStr(idx, 1), s[idx, 1], idx.to_s)
@@ -1346,7 +1348,7 @@ public
       assert_equal(nil, s.get(-1))
     end
   end
-  
+
   def test_StreamBuf_get_n
     setupInputStream(22, 1024) do |s|
       [0, 1, 9, 10, 19, 20, 21].each do |idx|

@@ -10,14 +10,11 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_gc
-    begin
+    assert_nothing_raised do
       1.upto(10000) {
         tmp = [0,1,2,3,4,5,6,7,8,9]
       }
       tmp = nil
-      assert true
-    rescue
-      assert false
     end
     l=nil
     100000.times {

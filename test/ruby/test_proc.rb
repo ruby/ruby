@@ -5,13 +5,13 @@ $KCODE = 'none'
 class TestProc < Test::Unit::TestCase
   def test_proc
     $proc = proc{|i| i}
-    assert_equal($proc.call(2), 2)
-    assert_equal($proc.call(3), 3)
-    
+    assert_equal(2, $proc.call(2))
+    assert_equal(3, $proc.call(3))
+
     $proc = proc{|i| i*2}
-    assert_equal($proc.call(2), 4)
-    assert_equal($proc.call(3), 6)
-    
+    assert_equal(4, $proc.call(2))
+    assert_equal(6, $proc.call(3))
+
     proc{
       iii=5				# nested local variable
       $proc = proc{|i|
@@ -24,11 +24,11 @@ class TestProc < Test::Unit::TestCase
       assert(defined?(iii))
     }.call
     assert(!defined?(iii))		# out of scope
-    
+
     loop{iii=5; assert(eval("defined? iii")); break}
     loop {
       iii = 10
-      def dyna_var_check
+      def self.dyna_var_check
         loop {
           assert(!defined?(iii))
           break
@@ -40,6 +40,6 @@ class TestProc < Test::Unit::TestCase
     $x=0
     $proc.call(5)
     $proc2.call
-    assert_equal($x, 5)
+    assert_equal(5, $x)
   end
 end
