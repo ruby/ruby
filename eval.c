@@ -15,6 +15,7 @@
 #include "ruby.h"
 #include "node.h"
 #include "env.h"
+#include "util.h"
 #include "rubysig.h"
 
 #include <stdio.h>

@@ -202,7 +202,6 @@ missing/os2.c
 missing/strcasecmp.c
 missing/strncasecmp.c
 missing/strchr.c
-missing/strdup.c
 missing/strerror.c
 missing/strftime.c
 missing/strstr.c

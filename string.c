@@ -968,6 +968,7 @@ rb_str_replace(str, beg, len, val)
     }
     RSTRING(str)->len += RSTRING(val)->len - len;
     RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
+    OBJ_INFECT(str, val);
 }
 
 static VALUE rb_str_sub_bang _((int, VALUE*, VALUE));
@@ -2634,11 +2635,15 @@ rb_str_crypt(str, salt)
     VALUE str, salt;
 {
     extern char *crypt();
+    VALUE result;
 
     if (TYPE(salt) != T_STRING) salt = rb_str_to_str(salt);
     if (RSTRING(salt)->len < 2)
 	rb_raise(rb_eArgError, "salt too short(need >=2 bytes)");
-    return rb_str_new2(crypt(RSTRING(str)->ptr, RSTRING(salt)->ptr));
+
+    result = rb_str_new2(crypt(RSTRING(str)->ptr, RSTRING(salt)->ptr));
+    OBJ_INFECT(result, str);
+    return result;
 }
 
 static VALUE
@@ -2715,6 +2720,7 @@ rb_str_ljust(str, w)
     while (p < pend) {
 	*p++ = ' ';
     }
+    OBJ_INFECT(res, str);
     return res;
 }
 
@@ -2734,6 +2740,7 @@ rb_str_rjust(str, w)
 	*p++ = ' ';
     }
     memcpy(pend, RSTRING(str)->ptr, RSTRING(str)->len);
+    OBJ_INFECT(res, str);
     return res;
 }
 
@@ -2759,6 +2766,7 @@ rb_str_center(str, w)
     while (p < pend) {
 	*p++ = ' ';
     }
+    OBJ_INFECT(res, str);
     return res;
 }
 

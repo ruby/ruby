@@ -1,3 +1,16 @@
+Fri May 25 14:19:25 2001  K.Kosako  <kosako@sofnec.co.jp>
+
+	* string.c (rb_str_replace): add taint status infection
+	  (OBJ_INFECT()).
+
+	* string.c (rb_str_crypt): ditto.
+
+	* string.c (rb_str_ljust): ditto.
+
+	* string.c (rb_str_rjust): ditto.
+
+	* string.c (rb_str_center): ditto.
+
 Fri May 25 01:55:32 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* MANIFEST: Re-adjust the entries to coincide with HEAD.
