@@ -934,7 +934,7 @@ VALUE rb_define_module(const char *name)
 
   新しいRubyモジュールを定義する．
 
-VALUE rb_define_module_under(VALUE module, const char *name, VALUE super)
+VALUE rb_define_module_under(VALUE module, const char *name)
 
   新しいRubyモジュールを定義し，moduleの定数として定義する．
 
