@@ -3425,19 +3425,19 @@ class TkWindow<TkObject
       widgetname = keys.delete('widgetname')
       install_win(if parent then parent.path end, widgetname)
       without_creating = keys.delete('without_creating')
-      if without_creating && !widgetname 
-        fail ArgumentError, 
-             "if set 'without_creating' to true, need to define 'widgetname'"
-      end
+      # if without_creating && !widgetname 
+      #   fail ArgumentError, 
+      #        "if set 'without_creating' to true, need to define 'widgetname'"
+      # end
     elsif keys
       keys = _symbolkey2str(keys)
       widgetname = keys.delete('widgetname')
       install_win(if parent then parent.path end, widgetname)
       without_creating = keys.delete('without_creating')
-      if without_creating && !widgetname 
-        fail ArgumentError, 
-             "if set 'without_creating' to true, need to define 'widgetname'"
-      end
+      # if without_creating && !widgetname 
+      #   fail ArgumentError, 
+      #        "if set 'without_creating' to true, need to define 'widgetname'"
+      # end
     else
       install_win(if parent then parent.path end)
     end

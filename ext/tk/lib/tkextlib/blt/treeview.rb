@@ -297,7 +297,7 @@ class Tk::BLT::Treeview
     else
       cmd = Proc.new
     end
-    _bind([@path, 'bind', tag], seq, cmd, *args)
+    _bind([@path, 'bind', tagid(tag)], seq, cmd, *args)
     self
   end
   def tag_bind_append(tag, seq, *args)
@@ -306,15 +306,15 @@ class Tk::BLT::Treeview
     else
       cmd = Proc.new
     end
-    _bind_append([@path, 'bind', tag], seq, cmd, *args)
+    _bind_append([@path, 'bind', tagid(tag)], seq, cmd, *args)
     self
   end
   def tag_bind_remove(tag, seq)
-    _bind_remove([@path, 'bind', tag], seq)
+    _bind_remove([@path, 'bind', tagid(tag)], seq)
     self
   end
   def tag_bindinfo(tag, seq=nil)
-    _bindinfo([@path, 'bind', tag], seq)
+    _bindinfo([@path, 'bind', tagid(tag)], seq)
   end
 
   def button_activate(tag)
@@ -328,7 +328,7 @@ class Tk::BLT::Treeview
     else
       cmd = Proc.new
     end
-    _bind([@path, 'button', 'bind', tag], seq, cmd, *args)
+    _bind([@path, 'button', 'bind', tagid(tag)], seq, cmd, *args)
     self
   end
   def button_bind_append(tag, seq, *args)
@@ -337,15 +337,15 @@ class Tk::BLT::Treeview
     else
       cmd = Proc.new
     end
-    _bind_append([@path, 'button', 'bind', tag], seq, cmd, *args)
+    _bind_append([@path, 'button', 'bind', tagid(tag)], seq, cmd, *args)
     self
   end
   def button_bind_remove(tag, seq)
-    _bind_remove([@path, 'button', 'bind', tag], seq)
+    _bind_remove([@path, 'button', 'bind', tagid(tag)], seq)
     self
   end
   def button_bindinfo(tag, seq=nil)
-    _bindinfo([@path, 'button', 'bind', tag], seq)
+    _bindinfo([@path, 'button', 'bind', tagid(tag)], seq)
   end
 
   def close(*tags)
@@ -482,7 +482,7 @@ class Tk::BLT::Treeview
   def find(first, last, keys={})
     keys = _search_flags(keys)
     keys['exec'] = _find_exec_flag_value(keys['exec']) if keys.key?('exec')
-    args = hash_kv(keys) << '--' << first << last
+    args = hash_kv(keys) << '--' << tagid(first) << tagid(last)
     simplelist(tk_send('find', *args)).collect{|id| tagid2obj(id)}
   end
 
@@ -505,7 +505,7 @@ class Tk::BLT::Treeview
     end
     keys = _search_flags(keys)
     args = hash_kv(keys) << '--'
-    args.concat(tags)
+    args.concat(tags.collect{|t| tagid(t)})
     tk_send('hide', *args)
     self
   end
@@ -530,7 +530,7 @@ class Tk::BLT::Treeview
     end
 
     keys = _symbolkey2str(keys)
-    keys['at'] = tag
+    keys['at'] = tagid(tag)
 
     Tk::BLT::Treeview::Node.new(pos, parent, keys)
   end
@@ -634,7 +634,7 @@ class Tk::BLT::Treeview
     end
     keys = _search_flags(keys)
     args = hash_kv(keys) << '--'
-    args.concat(tags)
+    args.concat(tags.collect{|t| tagid(t)})
     tk_send('show', *args)
     self
   end
@@ -991,7 +991,7 @@ class Tk::BLT::Treeview::Node < TkObject
 
     if (id = keys['node'])
       @path = @id = id
-      tk_call(@tpath, 'move', @id, pos, parent) if parent
+      tk_call(@tpath, 'move', @id, pos, tagid(parent)) if parent
     else
       name = TreeNode_ID.join(TkCore::INTERP._ip_id_).freeze
       TreeNode_ID[1].succ!
@@ -1004,7 +1004,7 @@ class Tk::BLT::Treeview::Node < TkObject
           path = [get_full(parent.id)[0], name]
           at = nil # ignore 'at' option
         else
-          path = [parent, name]
+          path = [parent.to_s, name]
         end
       else
         path = name
@@ -1080,20 +1080,32 @@ class Tk::BLT::Treeview::Tag < TkObject
     TreeTagID_TBL[@tpath] = {} unless TreeTagID_TBL[@tpath]
     TreeTagID_TBL[@tpath][@id] = self
 
-    tk_call(@tpath, 'tag', 'add', @id, *ids) unless ids.empty?
+    unless ids.empty?
+      tk_call(@tpath, 'tag', 'add', @id, *(ids.collect{|id| tagid(id)}))
+    end
   end
+
+  def tagid(tag)
+    if tag.kind_of?(Tk::BLT::Treeview::Node) \
+      || tag.kind_of?(Tk::BLT::Treeview::Tag)
+      tag.id
+    else
+      tag
+    end
+  end
+  private :tagid
 
   def id
     @id
   end
 
   def add(*ids)
-    tk_call(@tpath, 'tag', 'add', @id, *ids)
+    tk_call(@tpath, 'tag', 'add', @id, *(ids{|id| tagid(id)}))
     self
   end
 
   def remove(*ids)
-    tk_call(@tpath, 'tag', 'delete', @id, *ids)
+    tk_call(@tpath, 'tag', 'delete', @id, *(ids{|id| tagid(id)}))
     self
   end
 

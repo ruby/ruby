@@ -350,6 +350,7 @@ module Tk::BLT
           @axis = @id = OBJ_ID.join(TkCore::INTERP._ip_id_).freeze
           OBJ_ID[1].succ!
         end
+        @path = @id
         @parent = @chart = chart
         @cpath = @chart.path
         Axis::OBJ_TBL[@cpath][@axis] = self
@@ -442,14 +443,15 @@ module Tk::BLT
         @cpath = @chart.path
         Crosshairs::OBJ_TBL[@cpath] = self
         @chart.crosshair_configure(keys) unless keys.empty?
+        @path = @id = 'crosshairs'
       end
 
       def id
-        'crosshairs'
+        @id
       end
 
       def to_eval
-        'crosshairs'
+        @id
       end
 
       def cget(option)
@@ -531,6 +533,7 @@ module Tk::BLT
           @element = @id = OBJ_ID.join(TkCore::INTERP._ip_id_).freeze
           OBJ_ID[1].succ!
         end
+        @path = @id
         @parent = @chart = chart
         @cpath = @chart.path
         @typename = self.class::ElementTypeName
@@ -570,7 +573,6 @@ module Tk::BLT
 
       def activate(*args)
         @chart.element_activate(@id, *args)
-        self
       end
 
       def closest(x, y, var, keys={})
@@ -625,14 +627,15 @@ module Tk::BLT
         @cpath = @chart.path
         GridLine::OBJ_TBL[@cpath] = self
         @chart.gridline_configure(keys) unless keys.empty?
+        @path = @id = 'grid'
       end
 
       def id
-        'grid'
+        @id
       end
 
       def to_eval
-        'grid'
+        @id
       end
 
       def cget(option)
@@ -678,14 +681,15 @@ module Tk::BLT
         @cpath = @chart.path
         Crosshairs::OBJ_TBL[@cpath] = self
         @chart.crosshair_configure(keys) unless keys.empty?
+        @path = @id = 'legend'
       end
 
       def id
-        'legend'
+        @id
       end
 
       def to_eval
-        'legend'
+        @id
       end
 
       def cget(option)
@@ -704,12 +708,10 @@ module Tk::BLT
 
       def activate(*args)
         @chart.legend_activate(*args)
-        self
       end
 
       def deactivate(*args)
         @chart.legend_deactivate(*args)
-        self
       end
 
       def get(pos, y=nil)
@@ -750,6 +752,7 @@ module Tk::BLT
           @pen = @id = OBJ_ID.join(TkCore::INTERP._ip_id_).freeze
           OBJ_ID[1].succ!
         end
+        @path = @id
         @parent = @chart = chart
         @cpath = @chart.path
         Pen::OBJ_TBL[@cpath][@pen] = self
@@ -807,14 +810,15 @@ module Tk::BLT
         @cpath = @chart.path
         Postscript::OBJ_TBL[@cpath] = self
         @chart.postscript_configure(keys) unless keys.empty?
+        @path = @id = 'postscript'
       end
 
       def id
-        'postscript'
+        @id
       end
 
       def to_eval
-        'postscript'
+        @id
       end
 
       def cget(option)
@@ -925,25 +929,25 @@ module Tk::BLT
         obj = self.allocate
         obj.instance_eval{
           @parent = @chart = chart
-          @path = chart.path
+          @cpath = chart.path
           @id = id
-          unless Tk::BLT::PlotComponent::Marker::MarkerID_TBL[@path]
-            Tk::BLT::PlotComponent::Marker::MarkerID_TBL[@path] = {}
+          unless Tk::BLT::PlotComponent::Marker::MarkerID_TBL[@cpath]
+            Tk::BLT::PlotComponent::Marker::MarkerID_TBL[@cpath] = {}
           end
-          Tk::BLT::PlotComponent::Marker::MarkerID_TBL[@path][@id] = self
+          Tk::BLT::PlotComponent::Marker::MarkerID_TBL[@cpath][@id] = self
         }
         obj
       end
 
       def initialize(parent, *args)
         @parent = @chart = parent
-        @path = parent.path
+        @cpath = parent.path
 
-        @id = create_self(*args) # an integer number as 'item id'
-        unless Tk::BLT::PlotComponent::Marker::MarkerID_TBL[@path]
-          Tk::BLT::PlotComponent::Marker::MarkerID_TBL[@path] = {}
+        @path = @id = create_self(*args) # an integer number as 'item id'
+        unless Tk::BLT::PlotComponent::Marker::MarkerID_TBL[@cpath]
+          Tk::BLT::PlotComponent::Marker::MarkerID_TBL[@cpath] = {}
         end
-        Tk::BLT::PlotComponent::Marker::MarkerID_TBL[@path][@id] = self
+        Tk::BLT::PlotComponent::Marker::MarkerID_TBL[@cpath][@id] = self
       end
       def create_self(*args)
         self.class.create(@chart, *args) # return an integer as 'item id'
@@ -1396,6 +1400,34 @@ module Tk::BLT
     end
 
     ###################
+
+    def legend_window_create(parent=nil, keys=nil)
+      if parent.kind_of?(Hash)
+        keys = _symbolkey2str(parent)
+        parent = keys.delete('parent')
+        widgetname = keys.delete('widgetname')
+        keys.delete('without_creating')
+      elsif keys
+        keys = _symbolkey2str(keys)
+        widgetname = keys.delete('widgetname')
+        keys.delete('without_creating')
+      end
+
+      legend = self.class.new(parent, :without_creating=>true, 
+                              :widgetname=>widgetname)
+      class << legend
+        def __destroy_hook__
+          TkCore::INTERP.tk_windows.delete(@path)
+        end
+      end
+
+      if keys
+        self.legend_configure(keys.update('position'=>legend))
+      else
+        self.legend_configure('position'=>legend)
+      end
+      legend
+    end
 
     def legend_activate(*pats)
       list(tk_send('legend', 'activate', 

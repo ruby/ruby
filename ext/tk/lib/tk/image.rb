@@ -15,9 +15,16 @@ class TkImage<TkObject
   TkCore::INTERP.init_ip_env{ Tk_IMGTBL.clear }
 
   def initialize(keys=nil)
-    # @path = Tk_Image_ID.join('')
-    @path = Tk_Image_ID.join(TkCore::INTERP._ip_id_)
-    Tk_Image_ID[1].succ!
+    @path = nil
+    if keys.kind_of?(Hash)
+      keys = _symbolkey2str(keys)
+      @path = keys.delete('imagename')
+    end
+    unless @path
+      # @path = Tk_Image_ID.join('')
+      @path = Tk_Image_ID.join(TkCore::INTERP._ip_id_)
+      Tk_Image_ID[1].succ!
+    end
     tk_call_without_enc('image', 'create', @type, @path, *hash_kv(keys, true))
     Tk_IMGTBL[@path] = self
   end

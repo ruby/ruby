@@ -1,3 +1,12 @@
+Sat Apr  2 02:19:11 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb (TkWindow.initialize): accept 'without_creating'
+	  option without 'widgetname' option to allow creating a widget object
+	  which is used as an argument of Tcl/Tk's widget allocation commands.
+
+	* ext/tk/lib/tk/image.rb (TkImage.initialize): accept 'imagename'
+	  option to create a image object by the given name. 
+
 Thu Mar 31 23:52:48 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/tk/sample/tkextlib/treectrl/demo.rb: should use Hash#index.
