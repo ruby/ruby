@@ -3,7 +3,7 @@
 = net/http.rb
 
 maintained by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
-This file is derived from http-access.rb
+This file is derived from "http-access.rb".
 
 This library is distributed under the terms of the Ruby license.
 You can freely distribute/modify this library.
@@ -22,7 +22,7 @@ class HTTPBadResponse < HTTPError; end
 
 =begin
 
-= HTTP class
+= class HTTP
 
 == Class Methods
 
@@ -62,39 +62,58 @@ class HTTPBadResponse < HTTPError; end
 
 
     def get( path, u_header = nil, ret = '' )
-      header = connecting {
+      u_header ||= {}
+      header = connecting( u_header ) {
         @command.get ret, edit_path(path), u_header
       }
+
       return header, ret
     end
 
     def head( path, u_header = nil )
-      connecting {
+      u_header ||= {}
+      header = connecting( u_header ) {
         @command.head edit_path(path), u_header
       }
+
+      header
     end
 
 
     private
 
 
-    def connecting
-      if @socket.closed? then
+    # called when connecting
+    def do_finish
+      unless @socket.closed? then
+        @command.head '/', { 'Connection' => 'Close' }
+      end
+    end
+
+    def connecting( u_header )
+      u_header = procheader( u_header )
+
+      if not @socket then
+        u_header['Connection'] = 'Close'
+        start
+      elsif @socket.closed? then
         @socket.reopen
       end
-      header = yield
-      @socket.close unless keep_alive? header
 
-      header
+      yield
+
+      unless keep_alive? u_header then
+        @socket.close
+      end
     end
 
     def keep_alive?( header )
-      if str = header[ 'connection' ] then
-        if /\Aconnection:\s*keep-alive/i === str then
+      if str = header['Connection'] then
+        if /\A\s*keep-alive/i === str then
           return true
         end
       else
-        if @http_version == '1.1' then
+        if @command.http_version == '1.1' then
           return true
         end
       end
@@ -102,14 +121,16 @@ class HTTPBadResponse < HTTPError; end
       false
     end
 
-    
-    def do_finish
-      unless @command.error_occured or @socket.closed? then
-        head '/', { 'Connection' => 'Close' }
+    def procheader( h )
+      new = {}
+      h.each do |k,v|
+        arr = k.split('-')
+        arr.each{|i| i.capitalize! }
+        new[ arr.join('-') ] = v
       end
     end
 
-
+    
     def edit_path( path )
       path
     end
@@ -148,7 +169,7 @@ class HTTPBadResponse < HTTPError; end
     end
 
 
-    attr :http_version
+    attr_reader :http_version
 
     def get( ret, path, u_header = nil )
       header = get_response(
@@ -195,12 +216,6 @@ class HTTPBadResponse < HTTPError; end
     private
 
 
-    def do_quit
-      unless @socket.closed? then
-        @socket.close
-      end
-    end
-
     def get_response( line, u_header )
       @socket.writeline line
       write_header u_header
@@ -231,7 +246,7 @@ class HTTPBadResponse < HTTPError; end
               when ?3 then RetryCode
               when ?4 then ServerBusyCode
               when ?5 then FatalErrorCode
-              else UnknownCode
+              else         UnknownCode
               end
       klass.new( status, discrip )
     end

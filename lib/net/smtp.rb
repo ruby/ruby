@@ -36,7 +36,7 @@ Net::Protocol
   This method opens TCP connection and start SMTP.
   If protocol had been started, do nothing and return false.
 
-: sendmail( mailsrc, from_domain, to_addrs )
+: sendmail( mailsrc, from_addr, to_addrs )
   This method sends 'mailsrc' as mail. SMTPSession read strings
   from 'mailsrc' by calling 'each' iterator, and convert them
   into "\r\n" terminated string when write.
@@ -47,7 +47,7 @@ Net::Protocol
   * Net::ProtoUnknownError: unknown error
   * Net::ProtoServerBusy: temporary error (errno.420/450)
 
-: ready( from_domain, to_addrs ) {|adapter| .... }
+: ready( from_addr, to_addrs ) {|adapter| .... }
   This method stands by the SMTP object for sending mail.
   In the block of this iterator, you can call ONLY 'write' method
   for 'adapter'.
@@ -133,11 +133,11 @@ Net::Command
 
 : mailfrom( from_addr )
   This method sends "MAIL FROM" command.
-  from_addr is your mail address(????@????).
+  from_addr is your mail address (xxxx@xxxx)
 
 : rcpt( to_addrs )
   This method sends "RCPT TO" command.
-  to_addrs is array of mail address(???@???) of destination.
+  to_addrs is array of mail address (xxxx@xxxx) of destination.
 
 : data
   This method sends "DATA" command.

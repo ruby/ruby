@@ -15,7 +15,7 @@ require 'socket'
 
 module Net
 
-  Version = '1.1.5'
+  Version = '1.1.6'
 
 =begin
 
@@ -100,8 +100,7 @@ Object
           end
           private :connect
             
-          attr :proxyaddr
-          attr :proxyport
+          attr_reader :proxyaddr, :proxyport
         -
         def klass.proxy?
           true
@@ -155,11 +154,8 @@ Object
     end
 
 
-    attr :address
-    attr :port
-
-    attr :command
-    attr :socket
+    attr_reader :address, :port,
+                :command, :socket
 
 
     def start( *args )
@@ -176,23 +172,13 @@ Object
     end
 
     def finish
-      if @command then
-        do_finish
-        disconnect
-      end
+      ret = active?
 
-      if @socket and not @socket.closed? then
-        @socket.close
-        @socket = nil
-      end
+      do_finish if @command
+      disconnect
+      @active = false
 
-      if active? then
-        @active = false
-
-        return true
-      else
-        return false
-      end
+      ret
     end
 
     def active?
@@ -211,6 +197,7 @@ Object
     end
 
     def do_finish
+      @command.quit
     end
 
 
@@ -220,8 +207,10 @@ Object
     end
 
     def disconnect
-      @command.quit
       @command = nil
+      if @socket and not @socket.closed? then
+        @socket.close
+      end
       @socket  = nil
     end
 
@@ -257,27 +246,30 @@ Object
     def initialize( sock )
       @socket = sock
       @error_occured = false
+      @last_reply = nil
     end
 
-    attr :socket, true
-    attr :error_occured
+    attr_reader :socket, :error_occured, :last_reply
+    attr_writer :socket
 
     def quit
       if @socket and not @socket.closed? then
-        begin
-          do_quit
-        ensure
-          @socket.close unless @socket.closed?
-          @socket = nil
-        end
+        do_quit
         @error_occured = false
       end
     end
 
+
     private
 
+    def do_quit
+    end
+
+    # abstract get_reply()
+
     def check_reply( *oks )
-      reply_must( get_reply, *oks )
+      @last_reply = get_reply
+      reply_must( @last_reply, *oks )
     end
 
     def reply_must( rep, *oks )
@@ -310,13 +302,25 @@ Object
 
   class ReplyCode
 
+    class << self
+
+      def error_type( err )
+        @err = err
+      end
+
+      def error!( mes )
+        raise @err, mes
+      end
+
+    end
+        
     def initialize( cod, mes )
       @code = cod
       @msg  = mes
     end
 
-    attr :code
-    attr :msg
+    attr_reader :code, :msg
+
 
     def error!( sending )
       mes = <<MES
@@ -328,42 +332,41 @@ writing string is:
 error message from server is:
 %s
 MES
-      raise self.type::Error,
-        sprintf( mes, @code, Net.quote(sending), Net.quote(@msg) )
+      type.error! sprintf( mes, @code, Net.quote(sending), Net.quote(@msg) )
     end
 
   end
 
   class SuccessCode < ReplyCode
-    Error = ProtoUnknownError
+    error_type ProtoUnknownError
   end
 
   class ContinueCode < SuccessCode
-    Error = ProtoUnknownError
+    error_type ProtoUnknownError
   end
 
   class ErrorCode < ReplyCode
-    Error = ProtocolError
+    error_type ProtocolError
   end
 
   class SyntaxErrorCode < ErrorCode
-    Error = ProtoSyntaxError
+    error_type ProtoSyntaxError
   end
 
   class FatalErrorCode < ErrorCode
-    Error = ProtoFatalError
+    error_type ProtoFatalError
   end
 
   class ServerBusyCode < ErrorCode
-    Error = ProtoServerError
+    error_type ProtoServerError
   end
 
   class RetryCode < ReplyCode
-    Error = ProtoRetryError
+    error_type ProtoRetryError
   end
 
   class UnknownCode < ReplyCode
-    Error = ProtoUnknownError
+    error_type ProtoUnknownError
   end
 
 
@@ -498,7 +501,6 @@ Object
       @socket = TCPsocket.new( @addr, @port )
     end
 
-
     attr :socket, true
 
     def close
@@ -515,14 +517,14 @@ Object
     end
     alias addr address
 
-    attr :port
+    attr_reader :port
 
     def ip_address
       @ipaddr.dup
     end
     alias ipaddr ip_address
 
-    attr :sending
+    attr_reader :sending
 
 
     CRLF    = "\r\n"
