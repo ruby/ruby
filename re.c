@@ -1338,7 +1338,9 @@ static void
 match_setter(val)
     VALUE val;
 {
-    Check_Type(val, T_MATCH);
+    if (!NIL_P(val)) {
+	Check_Type(val, T_MATCH);
+    }
     rb_backref_set(val);
 }
 

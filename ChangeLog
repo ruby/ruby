@@ -1,3 +1,7 @@
+Mon Apr  1 10:56:40 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (match_setter): it's OK to assign nil to $~.
+
 Fri Mar 29 20:21:58 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* lib/mkmf.rb (create_makefile): default FLAGS to empty strings.
