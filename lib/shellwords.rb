@@ -16,7 +16,7 @@ module Shellwords
     unless line.kind_of?(String)
       raise ArgumentError, "Argument must be String class object."
     end
-    line.sub!(/\A\s+/, '')
+    line = line.sub(/\A\s+/, '')
     words = []
     while line != ''
       field = ''
