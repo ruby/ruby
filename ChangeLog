@@ -1,3 +1,7 @@
+Mon Dec  1 16:10:52 2003  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/rdoc.rb: (etc) initial merge into main tree.
+
 Mon Dec  1 14:17:49 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (fu_each_src_dest0): call #to_str to allow
