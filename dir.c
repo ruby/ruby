@@ -659,10 +659,13 @@ struct glob_args {
     VALUE v;
 };
 
+static VALUE glob_func_caller _((VALUE));
+
 static VALUE
-glob_func_caller(args)
-    struct glob_args *args;
+glob_func_caller(val)
+    VALUE val;
 {
+    struct glob_args *args = (struct glob_args *)val;
     (*args->func)(args->c, args->v);
     return Qnil;
 }
