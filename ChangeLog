@@ -1,3 +1,7 @@
+Wed Jul 31 14:11:43 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_undef): undef should be done for klass, not ruby_class.
+
 Tue Jul 30 19:48:51 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* misc/ruby-mode.el (ruby-accurate-end-of-block): restrict search

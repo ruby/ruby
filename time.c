@@ -261,15 +261,16 @@ time_arg(argc, argv, tm, usec)
     year = obj2long(v[0]);
 
     if (0 <= year && year < 39) {
-	year += 2000;
+	year += 100;
 	rb_warning("2 digits year is used");
     }
     else if (69 <= year && year < 139) {
-	year += 1900;
 	rb_warning("2 or 3 digits year is used");
     }
+    else {
+	year -= 1900;
+    }
 
-    year -= 1900;
     tm->tm_year = year;
 
     if (NIL_P(v[1])) {

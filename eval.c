@@ -1617,7 +1617,7 @@ rb_undef(klass, id)
     VALUE origin;
     NODE *body;
 
-    if (ruby_class == rb_cObject) {
+    if (ruby_class == rb_cObject && klass == ruby_class) {
 	rb_secure(4);
     }
     if (ruby_safe_level >= 4 && !OBJ_TAINTED(klass)) {
@@ -1630,7 +1630,7 @@ rb_undef(klass, id)
     if (id == __id__ || id == __send__ || id == init) {
 	rb_warn("undefining `%s' may cause serious problem", rb_id2name(id));
     }
-    body = search_method(ruby_class, id, &origin);
+    body = search_method(klass, id, &origin);
     if (!body || !body->nd_body) {
 	char *s0 = " class";
 	VALUE c = klass;
