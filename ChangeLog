@@ -778,6 +778,10 @@ Sat Jul 19 19:03:24 2003  Takaaki Uematsu  <uema2x@jcom.home.ne.jp>
 
 	* wince/stdlib.c: add bsearch().
 
+Sat Jul 19 12:34:45 2003  David Black  <dblack@superlink.net>
+
+	* lib/scanf.rb: import.
+
 Sat Jul 19 11:27:25 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/xmlrpc: import.
