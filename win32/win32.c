@@ -2270,7 +2270,7 @@ void setservent (int stayopen) {}
 #endif
 
 static pid_t
-wait_child(struct ChildRecord *child, int *stat_loc, DWORD timeout)
+poll_child_status(struct ChildRecord *child, int *stat_loc)
 {
     DWORD exitcode;
 
@@ -2311,7 +2311,7 @@ waitpid (pid_t pid, int *stat_loc, int options)
 
 	FOREACH_CHILD(child) {
 	    if (!child->pid || child->pid < 0) continue;
-	    if ((pid = wait_child(child, stat_loc, 0))) return pid;
+	    if ((pid = poll_child_status(child, stat_loc))) return pid;
 	    events[count++] = child->hProcess;
 	} END_FOREACH_CHILD;
 	if (!count) {
@@ -2320,7 +2320,7 @@ waitpid (pid_t pid, int *stat_loc, int options)
 	}
 	events[count] = interrupted_event;
 
-	ret = WaitForMultipleEvents(count, events, FALSE, timeout, TRUE);
+	ret = WaitForMultipleEvents(count + 1, events, FALSE, timeout, TRUE);
 	if (ret == WAIT_TIMEOUT) return 0;
 	if ((ret -= WAIT_OBJECT_0) == count) {
 	    ResetSignal(interrupted_event);
@@ -2332,7 +2332,7 @@ waitpid (pid_t pid, int *stat_loc, int options)
 	    return -1;
 	}
 
-	return wait_child(ChildRecord + ret, stat_loc, 0);
+	return poll_child_status(ChildRecord + ret, stat_loc);
     }
     else {
 	struct ChildRecord* child = FindChildSlot(pid);
@@ -2341,7 +2341,7 @@ waitpid (pid_t pid, int *stat_loc, int options)
 	    return -1;
 	}
 
-	while (!(pid = wait_child(child, stat_loc, timeout))) {
+	while (!(pid = poll_child_status(child, stat_loc))) {
 	    /* wait... */
 	    if (wait_events(child->hProcess, timeout) != WAIT_OBJECT_0) {
 		/* still active */
