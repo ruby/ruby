@@ -1,3 +1,7 @@
+Mon Dec 22 20:09:31 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/soap/test_property.rb: remove duplicated test method.
+
 Mon Dec 22 18:22:04 2003  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* bcc32/Makefile.sub, win32/Makefile.sub (config.h): remove

@@ -81,13 +81,6 @@ __EOP__
     # does hook work?
     assert_equal(1, prop["a"] = 1)
   end
-  def test_initialize
-    prop = ::SOAP::Property.new
-    # store is empty
-    assert_nil(prop["a"])
-    # does hook work?
-    assert_equal(1, prop["a"] = 1)
-  end
 
   def test_aref
     # name_to_a
