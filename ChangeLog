@@ -1,3 +1,8 @@
+Fri Dec 17 16:44:26 2004  Tanaka Akira  <akr@m17n.org>
+
+	* configure.in (ac_cv_sizeof_rlim_t): set 8 for BSD/OS.
+	  Reported by OHARA Shigeki.  [ruby-dev:25236]
+
 Fri Dec 17 16:28:12 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: fix bug on setting up system encoding
