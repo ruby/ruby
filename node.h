@@ -87,9 +87,10 @@ enum node_type {
     NODE_ARGS,
     NODE_ARGSCAT,
     NODE_ARGSPUSH,
-    NODE_RESTARGS,
     NODE_RESTARY,
+    NODE_RESTARY2,
     NODE_REXPAND,
+    NODE_SVALUE,
     NODE_BLOCK_ARG,
     NODE_BLOCK_PASS,
     NODE_DEFN,
@@ -306,9 +307,10 @@ typedef struct RNode {
 #define NEW_ARGS(f,o,r) rb_node_newnode(NODE_ARGS,o,r,f)
 #define NEW_ARGSCAT(a,b) rb_node_newnode(NODE_ARGSCAT,a,b,0)
 #define NEW_ARGSPUSH(a,b) rb_node_newnode(NODE_ARGSPUSH,a,b,0)
-#define NEW_RESTARGS(a) rb_node_newnode(NODE_RESTARGS,a,0,0)
 #define NEW_RESTARY(a) rb_node_newnode(NODE_RESTARY,a,0,0)
+#define NEW_RESTARY2(a) rb_node_newnode(NODE_RESTARY2,a,0,0)
 #define NEW_REXPAND(a) rb_node_newnode(NODE_REXPAND,a,0,0)
+#define NEW_SVALUE(a) rb_node_newnode(NODE_SVALUE,a,0,0)
 #define NEW_BLOCK_ARG(v) rb_node_newnode(NODE_BLOCK_ARG,v,0,local_cnt(v))
 #define NEW_BLOCK_PASS(b) rb_node_newnode(NODE_BLOCK_PASS,0,b,0)
 #define NEW_ALIAS(n,o) rb_node_newnode(NODE_ALIAS,o,n,0)

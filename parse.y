@@ -137,6 +137,7 @@ static NODE *new_evstr();
 static NODE *call_op();
 static int in_defined = 0;
 
+static NODE *yield_args();
 static NODE *ret_args();
 static NODE *arg_blk_pass();
 static NODE *new_call();
@@ -245,7 +246,7 @@ static void top_local_setup();
 %type <node> if_tail opt_else case_body cases opt_rescue exc_list exc_var opt_ensure
 %type <node> args when_args call_args call_args2 open_args paren_args opt_paren_args
 %type <node> command_args aref_args opt_block_arg block_arg var_ref var_lhs
-%type <node> mrhs mrhs_basic superclass block_call block_command
+%type <node> mrhs superclass block_call block_command
 %type <node> f_arglist f_args f_optarg f_opt f_block_arg opt_f_block_arg
 %type <node> assoc_list assocs assoc undef_list backref string_dvar
 %type <node> block_var opt_block_var brace_block cmd_brace_block do_block lhs none
@@ -460,7 +461,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		| mlhs '=' command_call
 		    {
 			value_expr($3);
-			$1->nd_value = $3;
+			$1->nd_value = NEW_RESTARY($3);
 			$$ = $1;
 		    }
 		| var_lhs tOP_ASGN command_call
@@ -546,9 +547,14 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		        rb_backref_error($1);
 			$$ = 0;
 		    }
-		| lhs '=' mrhs_basic
+		| lhs '=' mrhs
 		    {
-			$$ = node_assign($1, NEW_REXPAND($3));
+			$$ = node_assign($1, NEW_SVALUE($3));
+		    }
+		| mlhs '=' arg_value
+		    {
+			$1->nd_value = NEW_RESTARY($3);
+			$$ = $1;
 		    }
 		| mlhs '=' mrhs
 		    {
@@ -689,7 +695,7 @@ command		: operation command_args       %prec tLOWEST
 		    }
 		| kYIELD command_args
 		    {
-			$$ = NEW_YIELD(ret_args($2));
+			$$ = NEW_YIELD(yield_args($2));
 		        fixpos($$, $2);
 		    }
 		;
@@ -1147,7 +1153,7 @@ aref_args	: none
 		| tSTAR arg opt_nl
 		    {
 			value_expr($2);
-			$$ = NEW_RESTARY($2);
+			$$ = NEW_RESTARY2($2);
 		    }
 		;
 
@@ -1212,7 +1218,7 @@ call_args	: command
 		    }
 		| tSTAR arg_value opt_block_arg
 		    {
-			$$ = arg_blk_pass(NEW_RESTARGS($2), $3);
+			$$ = arg_blk_pass(NEW_RESTARY($2), $3);
 		    }
 		| block_arg
 		;
@@ -1267,7 +1273,7 @@ call_args2	: arg_value ',' args opt_block_arg
 		    }
 		| tSTAR arg_value opt_block_arg
 		    {
-			$$ = arg_blk_pass(NEW_RESTARGS($2), $3);
+			$$ = arg_blk_pass(NEW_RESTARY($2), $3);
 		    }
 		| block_arg
 		;
@@ -1322,17 +1328,7 @@ args 		: arg_value
 		    }
 		;
 
-mrhs		: arg_value
-		    {
-			$$ = $1;
-		    }
-		| mrhs_basic
-		    {
-			$$ = NEW_REXPAND($1);
-		    }
-		;
-
-mrhs_basic	: args ',' arg_value
+mrhs		: args ',' arg_value
 		    {
 			$$ = list_append($1, $3);
 		    }
@@ -1342,7 +1338,7 @@ mrhs_basic	: args ',' arg_value
 		    }
 		| tSTAR arg_value
 		    {
-			$$ = $2;
+			$$ = NEW_REXPAND($2);
 		    }
 		;
 
@@ -1408,7 +1404,7 @@ primary		: literal
 		    }
 		| kYIELD '(' call_args ')'
 		    {
-			$$ = NEW_YIELD(ret_args($3));
+			$$ = NEW_YIELD(yield_args($3));
 		    }
 		| kYIELD '(' ')'
 		    {
@@ -4765,7 +4761,7 @@ rb_backref_error(node)
 	rb_compile_error("Can't set variable $%d", node->nd_nth);
 	break;
       case NODE_BACK_REF:
-	rb_compile_error("Can't set variable $%c", node->nd_nth);
+	rb_compile_error("Can't set variable $%c", (int)node->nd_nth);
 	break;
     }
 }
@@ -5198,6 +5194,20 @@ ret_args(node)
 	if (nd_type(node) == NODE_BLOCK_PASS) {
 	    rb_compile_error("block argument should not be given");
 	}
+	if (nd_type(node) == NODE_ARRAY && node->nd_next == 0) {
+	    node = node->nd_head;
+	}
+    }
+    return node;
+}
+
+static NODE *
+yield_args(node)
+    NODE *node;
+{
+    node = ret_args(node);
+    if (node && nd_type(node) == NODE_RESTARY) {
+	nd_set_type(node, NODE_REXPAND);
     }
     return node;
 }
@@ -5222,7 +5232,8 @@ arg_prepend(node1, node2)
       case NODE_ARRAY:
 	return list_concat(NEW_LIST(node1), node2);
 
-      case NODE_RESTARGS:
+      case NODE_RESTARY:
+      case NODE_RESTARY2:
 	return arg_concat(node1, node2->nd_head);
 
       case NODE_BLOCK_PASS:

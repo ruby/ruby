@@ -905,7 +905,7 @@ static VALUE rb_eval _((VALUE,NODE*));
 static VALUE eval _((VALUE,VALUE,VALUE,char*,int));
 static NODE *compile _((VALUE, char*, int));
 
-static VALUE rb_yield_0 _((VALUE, VALUE, VALUE, int));
+static VALUE rb_yield_0 _((VALUE, VALUE, VALUE, int, int));
 static VALUE rb_call _((VALUE,VALUE,ID,int,const VALUE*,int));
 static VALUE module_setup _((VALUE,NODE*));
 
@@ -2157,82 +2157,61 @@ call_trace_func(event, node, self, id, klass)
 }
 
 static VALUE
-svalue_to_avalue(v)
+mrhs_to_svalue(v)
     VALUE v;
 {
-    if (NIL_P(v)) return rb_ary_new2(0);
-    if (v == Qundef) return rb_ary_new2(0);
-    if (TYPE(v) == T_ARRAY) {
-	if (RARRAY(v)->len > 1) return v;
-	return rb_ary_new3(1, v);
-    }
-    else {
-	v = rb_ary_to_ary(v);
-    }
-    return v;
-}
+    VALUE tmp;
 
-static VALUE
-avalue_to_svalue(v)
-    VALUE v;
-{
-    if (TYPE(v) != T_ARRAY) {
-	v = rb_ary_to_ary(v);
-    }
-    if (RARRAY(v)->len == 0) {
-	return Qnil;
-    }
-    if (RARRAY(v)->len == 1) {
-	return RARRAY(v)->ptr[0];
-    }
-    return v;
-}
-
-static VALUE
-avalue_to_yvalue(v)
-    VALUE v;
-{
-    if (TYPE(v) != T_ARRAY) {
-	v = rb_ary_to_ary(v);
-    }
-    if (RARRAY(v)->len == 0) {
-	return Qundef;
-    }
-    if (RARRAY(v)->len == 1) {
-	return RARRAY(v)->ptr[0];
-    }
-    return v;
-}
-
-static VALUE
-svalue_to_mvalue(v)
-    VALUE v;
-{
-    if (v == Qnil || v == Qundef)
-	return rb_ary_new2(0);
-    if (TYPE(v) == T_ARRAY) {
+    if (v == Qundef) return v;
+    tmp = rb_check_array_type(v);
+    if (NIL_P(tmp)) {
 	return v;
     }
-    else {
-	v = rb_ary_to_ary(v);
+    if (RARRAY(tmp)->len == 0) {
+	return Qundef;
+    }
+    if (RARRAY(tmp)->len == 1) {
+	return RARRAY(tmp)->ptr[0];
+    }
+    return tmp;
+}
+
+static VALUE
+mrhs_to_avalue(v)
+    VALUE v;
+{
+    VALUE tmp;
+
+    if (v == Qundef) return rb_ary_new2(0);
+    tmp = rb_check_array_type(v);
+
+    if (NIL_P(tmp)) {
+	return rb_ary_new3(1, v);
     }
     return v;
 }
 
 static VALUE
-mvalue_to_svalue(v)
+args_to_svalue(v)
     VALUE v;
 {
-    if (TYPE(v) != T_ARRAY) {
-	v = rb_ary_to_ary(v);
+    VALUE tmp;
+
+    if (v == Qundef) return v;
+    tmp = rb_check_array_type(v);
+    if (NIL_P(tmp)) {
+	return v;
     }
-    if (RARRAY(v)->len == 0) {
-	return Qnil;
+    if (RARRAY(tmp)->len == 0) {
+	return Qundef;
     }
-    if (RARRAY(v)->len == 1 && TYPE(RARRAY(v)->ptr[0]) != T_ARRAY) {
-	return RARRAY(v)->ptr[0];
+    if (RARRAY(tmp)->len == 1) {
+	v = rb_check_array_type(tmp);
+	if (NIL_P(v)) {
+	    return RARRAY(tmp)->ptr[0];
+	}
     }
-    return v;
+    return tmp;
 }
 
 static void return_check _((void));
@@ -2557,23 +2536,13 @@ rb_eval(self, n)
 	break;
 
       case NODE_BREAK:
-	if (node->nd_stts) {
- 	    return_value(avalue_to_svalue(rb_eval(self, node->nd_stts)));
- 	}
-	else {
-	    return_value(Qnil);
-	}
+	return_value(rb_eval(self, node->nd_stts));
 	JUMP_TAG(TAG_BREAK);
 	break;
 
       case NODE_NEXT:
 	CHECK_INTS;
-	if (node->nd_stts) {
- 	    return_value(avalue_to_svalue(rb_eval(self, node->nd_stts)));
- 	}
-	else {
-	    return_value(Qnil);
-	}
+	return_value(rb_eval(self, node->nd_stts));
 	JUMP_TAG(TAG_NEXT);
 	break;
 
@@ -2587,24 +2556,29 @@ rb_eval(self, n)
 	JUMP_TAG(TAG_RETRY);
 	break;
 
-      case NODE_RESTARGS:
       case NODE_RESTARY:
+      case NODE_RESTARY2:
 	result = rb_ary_to_ary(rb_eval(self, node->nd_head));
 	break;
 
       case NODE_REXPAND:
-	result = avalue_to_svalue(rb_eval(self, node->nd_head));
+	result = mrhs_to_svalue(rb_eval(self, node->nd_head));
+	break;
+
+      case NODE_SVALUE:
+	result = rb_eval(self, node->nd_head);
+	if (result == Qundef) result = Qnil;
 	break;
 
       case NODE_YIELD:
 	if (node->nd_stts) {
-	    result = avalue_to_yvalue(rb_eval(self, node->nd_stts));
+	    result = rb_eval(self, node->nd_head);
 	}
 	else {
 	    result = Qundef;	/* no arg */
 	}
 	SET_CURRENT_SOURCE();
-	result = rb_yield_0(result, 0, 0, 0);
+	result = rb_yield_0(result, 0, 0, 0, 0);
 	break;
 
       case NODE_RESCUE:
@@ -2742,12 +2716,7 @@ rb_eval(self, n)
 	break;
 
       case NODE_RETURN:
-	if (node->nd_stts) {
- 	    return_value(avalue_to_svalue(rb_eval(self, node->nd_stts)));
- 	}
-	else {
-	    return_value(Qnil);
-	}
+	return_value(rb_eval(self, node->nd_stts));
 	return_check();
 	JUMP_TAG(TAG_RETURN);
 	break;
@@ -2958,7 +2927,7 @@ rb_eval(self, n)
 	break;
 
       case NODE_MASGN:
-	result = massign(self, node, rb_eval(self, node->nd_value),0);
+	result = massign(self, node, rb_eval(self, node->nd_value), 0);
 	break;
 
       case NODE_LASGN:
@@ -3826,9 +3795,9 @@ rb_f_block_given_p()
 }
 
 static VALUE
-rb_yield_0(val, self, klass, pcall)
+rb_yield_0(val, self, klass, pcall, avalue)
     VALUE val, self, klass;	/* OK */
-    int pcall;
+    int pcall, avalue;
 {
     NODE *node;
     volatile VALUE result = Qnil;
@@ -3889,17 +3858,13 @@ rb_yield_0(val, self, klass, pcall)
 		massign(self, block->var, val, pcall);
 	    }
 	    else {
-		if (pcall) {
-		    val = avalue_to_yvalue(val);
-		}
+		if (avalue) val = mrhs_to_svalue(val);
+		if (val == Qundef) val = Qnil;
 		assign(self, block->var, val, pcall);
 	    }
 	}
 	POP_TAG();
 	if (state) goto pop_state;
-    }
-    else if (pcall) {
-	val = avalue_to_yvalue(val);
     }
 
     PUSH_ITER(block->iter);
@@ -3981,14 +3946,14 @@ VALUE
 rb_yield(val)
     VALUE val;
 {
-    return rb_yield_0(val, 0, 0, 0);
+    return rb_yield_0(val, 0, 0, 0, 0);
 }
 
 static VALUE
 rb_f_loop()
 {
     for (;;) {
-	rb_yield_0(Qundef, 0, 0, 0);
+	rb_yield_0(Qundef, 0, 0, 0, 0);
 	CHECK_INTS;
     }
     return Qnil;		/* dummy */
@@ -4004,9 +3969,7 @@ massign(self, node, val, pcall)
     NODE *list;
     long i = 0, len;
 
-    if (!pcall) {
-	val = svalue_to_mvalue(val);
-    }
+    val = mrhs_to_avalue(val);
     len = RARRAY(val)->len;
     list = node->nd_head;
     for (i=0; list && i<len; i++) {
@@ -4095,7 +4058,7 @@ assign(self, lhs, val, pcall)
 	break;
 
       case NODE_MASGN:
-	massign(self, lhs, svalue_to_mvalue(val), pcall);
+	massign(self, lhs, val, pcall);
 	break;
 
       case NODE_CALL:
@@ -5329,7 +5292,7 @@ static VALUE
 yield_under_i(self)
     VALUE self;
 {
-    return rb_yield_0(self, self, ruby_class, 0);
+    return rb_yield_0(self, self, ruby_class, 0, 0);
 }
 
 /* block eval under the class/module context */
@@ -6620,14 +6583,11 @@ proc_invoke(proc, args, pcall, self)
     PUSH_ITER(ITER_CUR);
     ruby_frame->iter = ITER_CUR;
 
-    if (!pcall) {
-	args = avalue_to_yvalue(args);
-    }
     PUSH_TAG(PROT_NONE);
     state = EXEC_TAG();
     if (state == 0) {
 	proc_set_safe_level(proc);
-	result = rb_yield_0(args, self, self!=Qundef?CLASS_OF(self):0, pcall);
+	result = rb_yield_0(args, self, self!=Qundef?CLASS_OF(self):0, pcall, Qtrue);
     }
     POP_TAG();
 
@@ -7167,7 +7127,6 @@ static VALUE
 bmcall(args, method)
     VALUE args, method;
 {
-    args = svalue_to_avalue(args);
     return method_call(RARRAY(args)->len, RARRAY(args)->ptr, method);
 }
 
@@ -8951,7 +8910,7 @@ rb_thread_yield(arg, th)
     rb_dvar_push('~', Qnil);
     ruby_block->dyna_vars = ruby_dyna_vars;
 
-    return rb_yield_0(mvalue_to_svalue(arg), 0, 0, Qtrue);
+    return rb_yield_0(arg, 0, 0, Qtrue, Qtrue);
 }
 
 static VALUE
@@ -9546,7 +9505,7 @@ rb_f_catch(dmy, tag)
     t = rb_to_id(tag);
     PUSH_TAG(t);
     if ((state = EXEC_TAG()) == 0) {
-	val = rb_yield_0(tag, 0, 0, 0);
+	val = rb_yield_0(tag, 0, 0, 0, Qfalse);
     }
     else if (state == TAG_THROW && t == prot_tag->dst) {
 	val = prot_tag->retval;

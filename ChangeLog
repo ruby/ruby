@@ -5,6 +5,17 @@ Wed Jan  1 04:16:18 2003  Akinori MUSHA  <knu@iDaemons.org>
 	  sizeof(int) != sizeof(long) and the byte order is big-endian.
 	  This fixes breakage on FreeBSD/sparc64.
 
+Tue Dec 31 23:22:50 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (massign): removed awkward conversion between yvalue,
+	  mvalue, etc.
+
+	* eval.c (rb_yield_0): new parameter added to tell whether val is
+	  an array value or not.
+
+	* parse.y (yield_args): restructuring: new nodes: NODE_RESTARY2,
+	  NODE_SVALUE; removed node: NODE_RESTARGS.
+
 Tue Dec 31 21:13:51 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* Makefile.in, {win32,bcc32}/Makefile.sub: add new target:
