@@ -6,7 +6,7 @@
   $Date$
   created at: Thu Jun 10 14:22:17 JST 1993
 
-  Copyright (C) 1993-2000 Yukihiro Matsumoto
+  Copyright (C) 1993-2001 Yukihiro Matsumoto
   Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
   Copyright (C) 2000  Information-technology Promotion Agency, Japan
 
@@ -6180,7 +6180,7 @@ proc_new(klass)
     struct RVarmap *vars;
 
     if (!rb_block_given_p() && !rb_f_block_given_p()) {
-	rb_raise(rb_eArgError, "tried to create Procedure-Object without a block");
+	rb_raise(rb_eArgError, "tried to create Proc object without a block");
     }
 
     proc = Data_Make_Struct(klass, struct BLOCK, blk_mark, blk_free, data);
@@ -6347,6 +6347,37 @@ proc_arity(proc)
 	if (data->var->nd_args) return INT2FIX(-n-1);
 	return INT2FIX(n);
     }
+}
+
+static VALUE
+proc_eq(self, other)
+    VALUE self, other;
+{
+    struct BLOCK *data, *data2;
+
+    if (TYPE(other) != T_DATA) return Qfalse;
+    if (RDATA(other)->dmark != blk_mark) Qfalse;
+    Data_Get_Struct(self, struct BLOCK, data);
+    Data_Get_Struct(other, struct BLOCK, data2);
+    if (data->tag == data2->tag) return Qtrue;
+    return Qfalse;
+}
+
+static VALUE
+proc_to_s(self, other)
+    VALUE self, other;
+{
+    struct BLOCK *data;
+    char *cname = rb_class2name(CLASS_OF(self));
+    VALUE str;
+
+    Data_Get_Struct(self, struct BLOCK, data);
+    str = rb_str_new(0, strlen(cname)+6+16+1); /* 6:tags 16:addr 1:eos */
+    sprintf(RSTRING(str)->ptr, "#<%s:0x%lx>", cname, data->tag);
+    RSTRING(str)->len = strlen(RSTRING(str)->ptr);
+    if (OBJ_TAINTED(self)) OBJ_TAINT(str);
+
+    return str;
 }
 
 static VALUE
@@ -6766,6 +6797,8 @@ Init_Proc()
     rb_define_method(rb_cProc, "call", proc_call, -2);
     rb_define_method(rb_cProc, "arity", proc_arity, 0);
     rb_define_method(rb_cProc, "[]", proc_call, -2);
+    rb_define_method(rb_cProc, "==", proc_eq, 1);
+    rb_define_method(rb_cProc, "to_s", proc_to_s, 0);
     rb_define_global_function("proc", rb_f_lambda, 0);
     rb_define_global_function("lambda", rb_f_lambda, 0);
     rb_define_global_function("binding", rb_f_binding, 0);

@@ -1,3 +1,14 @@
+Tue Mar  6 10:50:29 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (primary): rescue and ensure clauses should be allowed
+	  to appear in singleton method body.
+
+Mon Mar  5 17:25:13 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (proc_eq): compare Procs using blocktag equality.
+
+	* eval.c (proc_to_s): stringify according to block tag address.
+
 Mon Mar  5 17:19:56 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* win32/win32.c (gettimeofday): use GetLocalTime() instead of ftime()
