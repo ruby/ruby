@@ -1,3 +1,7 @@
+Mon Mar 24 00:09:02 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* parse.y (block_append): warn unused lteral.
+
 Sun Mar 23 22:22:04 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/jcode.rb (tr!, delete!, szueeze!): add empty string checking.

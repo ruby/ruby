@@ -4491,6 +4491,7 @@ block_append(head, tail)
 	goto again;
       case NODE_LIT:
       case NODE_STR:
+	rb_warning("unused literal ignored");
 	return tail;
       default:
 	end = NEW_BLOCK(head);
