@@ -1,3 +1,7 @@
+Sat Aug  2 00:49:31 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb: refine document.
+
 Fri Aug  1 23:57:45 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (rb_gc_mark_locations): no need to swap arguments.
