@@ -48,18 +48,6 @@ class TestDRbSSLCore < Test::Unit::TestCase
 
   def test_05_eq
   end
-
-  def test_06_timeout
-    ten = Onecky.new(3)
-    assert_raises(TimeoutError) do
-      @there.do_timeout(ten)
-    end
-    assert_raises(TimeoutError) do
-      @there.do_timeout(ten)
-    end
-    sleep 3
-  end
-
 end
 
 class TestDRbSSLAry < Test::Unit::TestCase

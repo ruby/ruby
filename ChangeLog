@@ -1,3 +1,8 @@
+Tue Jan  4 21:25:43 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* test/drb/{test_drbssl.rb,test_drbunix.rb,ut_drb.rb}: use 
+	  DRbService.ext_service. reduce sleep.
+
 Mon Jan  3 14:01:54 2005  Tanaka Akira  <akr@m17n.org>
 
 	* random.c (random_seed): don't use /dev/urandom if it is not
