@@ -1,3 +1,8 @@
+Sun Feb  8 15:41:45 2004  akira yamada  <akira@ruby-lang.org>
+
+	* test/yaml/test_yaml.rb (YAML_Unit_Tests::test_range_cycle):
+	  added tests. [ruby-core:02306] [ruby-core:02311]
+
 Sun Feb  8 14:24:35 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb (HTTP#request): should not overwrite Connection

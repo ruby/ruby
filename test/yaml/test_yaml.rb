@@ -1196,6 +1196,23 @@ EOY
     end
 
     #
+    # Test Range cycle
+    #
+    def test_range_cycle
+      #
+      # From Minero Aoki [ruby-core:02306]
+      #
+      t = "a".."z"
+      assert_equal( t, YAML.load( YAML.dump( t ) ) )
+
+      #
+      # From Nobu Nakada [ruby-core:02311]
+      #
+      t = "0".."1"
+      assert_equal( t, YAML.load( YAML.dump( t ) ) )
+    end
+
+    #
     # Circular references
     #
     def test_circular_references
