@@ -432,6 +432,14 @@ module Net
     private
 
 
+    def do_start
+      @seems_1_0 = false
+    end
+
+    def do_finish
+    end
+
+
     def common_oper( u_header, body_exist, block )
       header = procheader( u_header )
       recv = err = nil
@@ -460,10 +468,18 @@ module Net
       elsif @socket.closed? then
         @socket.reopen
       end
+      if @seems_1_0 then
+        header['Connection'] = 'close'
+      end
 
       resp = yield
 
-      unless keep_alive? header, resp then
+      if keep_alive? header, resp then
+        if @socket.closed? then
+          @seems_1_0 = true
+          @socket.close
+        end
+      else
         @socket.close
       end
     end
@@ -509,10 +525,6 @@ module Net
       ret.update tmp
 
       ret
-    end
-
-
-    def do_finish
     end
 
   end
@@ -864,7 +876,8 @@ module Net
       resp = get_reply
 
       while true do
-        line = @socket.readline
+        line = @socket.readuntil( "\n", true )   # ignore EOF
+        line.sub!( /\s+\z/, '' )                 # don't use chop!
         break if line.empty?
 
         m = /\A([^:]+):\s*/.match( line )
@@ -964,7 +977,7 @@ module Net
       else
         clen = content_length( resp )
         if clen then
-          @socket.read clen, dest
+          @socket.read clen, dest, true
         else
           clen = range_length( resp )
           if clen then

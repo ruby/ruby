@@ -500,7 +500,7 @@ module Net
 
     CRLF = "\r\n"
 
-    def read( len, dest = '' )
+    def read( len, dest = '', igneof = false )
       @pipe << "reading #{len} bytes...\n" if @pipe; pipeoff
 
       rsize = 0
@@ -509,10 +509,10 @@ module Net
           rsize += writeinto( dest, @buffer.size )
           fill_rbuf
         end
+        writeinto( dest, len - rsize )
       rescue EOFError
-        len = rsize
+        raise unless igneof
       end
-      writeinto( dest, len - rsize )
 
       @pipe << "read #{len} bytes\n" if pipeon
       dest
@@ -537,7 +537,7 @@ module Net
     end
 
 
-    def readuntil( target )
+    def readuntil( target, igneof = false )
       dest = ''
       begin
         while true do
@@ -547,6 +547,7 @@ module Net
         end
         writeinto( dest, idx + target.size )
       rescue EOFError
+        raise unless igneof
         writeinto( dest, @buffer.size )
       end
       dest
