@@ -153,7 +153,7 @@ module RDoc
     def remove_commented_out_lines
       @body.gsub!(%r{//.*rb_define_}, '//')
     end
-
+    
     def handle_class_module(var_name, class_mod, class_name, parent, in_module)
       @known_classes[var_name] = class_name
       parent_name = @known_classes[parent] || parent
@@ -162,7 +162,7 @@ module RDoc
         enclosure = @classes[in_module]
         unless enclosure
           $stderr.puts("Enclosing class/module '#{in_module}' for " +
-                        class_mod + " #{class_name} not known")
+                        "#{class_mod} #{class_name} not known")
           return
         end
       else
@@ -175,10 +175,17 @@ module RDoc
         cm = enclosure.add_module(NormalModule, class_name)
       end
       cm.record_location(enclosure.toplevel)
+      find_class_comment(class_name, cm)
       @classes[var_name] = cm
     end
     
     
+    def find_class_comment(class_name, class_meth)
+      if @body =~ %r{((?>/\*.*?\*/\s+))
+                     (static\s+)?void\s+Init_#{class_name}\s*\(\)}xm
+        class_meth.comment = mangle_comment($1)
+      end
+    end
     
     def do_classes
       @body.scan(/(\w+)\s* = \s*rb_define_module\(\s*"(\w+)"\s*\)/mx) do 
@@ -224,14 +231,20 @@ module RDoc
       @body.scan(/rb_define_(singleton_method|method|module_function)\(\s*(\w+),
                                \s*"([^"]+)",
                                \s*(?:RUBY_METHOD_FUNC\(|VALUEFUNC\()?(\w+)\)?,
-                               \s*(-?\w+)\s*\)/xm) do 
+                               \s*(-?\w+)\s*\)/xm) do  #"
         |type, var_name, meth_name, meth_body, param_count|
         
+        next if meth_name == "initialize_copy"
+
         class_name = @known_classes[var_name] || var_name
         class_obj  = @classes[var_name]
         if class_obj
+          if meth_name == "initialize"
+            meth_name = "new"
+            type = "singleton_method"
+          end
           meth_obj = AnyMethod.new("", meth_name)
-          meth_obj.singleton = type == "singleton_method"
+          meth_obj.singleton = type == "singleton_method" 
           
           p_count = (Integer(param_count) rescue -1)
           
@@ -265,7 +278,19 @@ module RDoc
           body_text = $&
         end
 
-        meth_obj.params = params
+        # If the comment block contains a section that looks like
+        #    call-seq:
+        #        Array.new
+        #        Array.new(10)
+        # use it for the parameters
+
+        if comment.sub!(/call-seq:(.*?)^\s*\*?\s*$/m, '')
+          seq = $1
+          seq.gsub!(/^\s*\*\s*/, '')
+          meth_obj.params = "!verb!" + seq
+        end
+        
+#        meth_obj.params = params
         meth_obj.start_collecting_tokens
         meth_obj.add_token(RubyToken::Token.new(1,1).set_text(body_text))
         meth_obj.comment = mangle_comment(comment)

@@ -28,7 +28,7 @@ module RI
     def add_method(class_desc, method_desc)
       dir = path_to_dir(class_desc.full_name)
       meth_file_name = File.join(dir, method_desc.name)
-      if method_desc.is_class_method
+      if method_desc.is_singleton
         meth_file_name += "-c.yaml"
       else
         meth_file_name += "-i.yaml"

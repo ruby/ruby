@@ -24,7 +24,7 @@ module RI
     def find_methods(name, is_class_method, namespaces)
       result = []
       namespaces.each do |ns|
-        result.concat ns.methods_matching(name)
+        result.concat ns.methods_matching(name, is_class_method)
       end
       result
     end

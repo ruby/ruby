@@ -56,16 +56,16 @@ module RI
     # return the list of local methods matching name
     # We're split into two because we need distinct behavior
     # when called from the toplevel
-    def methods_matching(name)
-      local_methods_matching(name)
+    def methods_matching(name, is_class_method)
+      local_methods_matching(name, is_class_method)
     end
 
     # Find methods matching 'name' in ourselves and in
     # any classes we contain
-    def recursively_find_methods_matching(name)
-      res = local_methods_matching(name)
+    def recursively_find_methods_matching(name, is_class_method)
+      res = local_methods_matching(name, is_class_method)
       @inferior_classes.each do |c|
-        res.concat(c.recursively_find_methods_matching(name))
+        res.concat(c.recursively_find_methods_matching(name, is_class_method))
       end
       res
     end
@@ -80,10 +80,19 @@ module RI
 
     private
 
-    # Return a list of all our methods matching a given string
-    def local_methods_matching(name)
-      @class_methods.find_all {|m| m.name[name] } +
-                                                   @instance_methods.find_all {|m| m.name[name] }
+    # Return a list of all our methods matching a given string.
+    # Is +is_class_methods+ if 'nil', we don't care if the method
+    # is a class method or not, otherwise we only return
+    # those methods that match
+    def local_methods_matching(name, is_class_method)
+      list = case is_class_method
+             when nil then  @class_methods + @instance
+             when true then @class_methods
+             when false then @instance_methods
+             else fail "Unknown is_class_method"
+             end
+
+      list.find_all {|m| m.name[name]}
     end
   end
 
@@ -91,8 +100,8 @@ module RI
   # for methods searches all classes, not just itself
 
   class TopLevelEntry < ClassEntry
-    def methods_matching(name)
-      res = recursively_find_methods_matching(name)
+    def methods_matching(name, is_class_method)
+      res = recursively_find_methods_matching(name, is_class_method)
     end
 
     def full_name

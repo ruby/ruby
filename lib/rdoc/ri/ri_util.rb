@@ -9,6 +9,8 @@ class NameDescriptor
 
   attr_reader :class_names
   attr_reader :method_name
+
+  # true and false have the obvious meaning. nil means we don't care
   attr_reader :is_class_method
 
   # arg may be
@@ -25,9 +27,9 @@ class NameDescriptor
 
   def initialize(arg)
     @class_names = []
-    separator = "."
+    separator = nil
 
-    tokens = arg.split(/\b/)
+    tokens = arg.split(/(\.|::|#)/)
 
     # Skip leading '::', '#' or '.', but remember it might
     # be a method name qualifier
@@ -57,7 +59,9 @@ class NameDescriptor
       if @method_name =~ /::|\.|#/ or !tokens.empty?
         raise RiError.new("Bad argument: #{arg}") 
       end
-      @is_class_method = separator == "::"
+      if separator
+        @is_class_method = separator == "::"
+      end
     end
   end
 end

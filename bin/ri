@@ -49,7 +49,9 @@ class  RiDisplay
   ######################################################################
   
   def display_params(method)
+
     params = method.params
+
     if params[0,1] == "("
       if method.is_singleton
         params = method.full_name + params
@@ -57,7 +59,7 @@ class  RiDisplay
         params = method.name + params
       end
     end
-    @formatter.wrap(params)
+    params.split(/\n/).each {|p| @formatter.wrap(p) }
   end
 
   ######################################################################
@@ -107,10 +109,16 @@ def display_class_info(class_entry)
     end 
   end
 
-  unless klass.method_list.empty?
+  unless klass.class_methods.empty?
     @formatter.blankline
-    @formatter.wrap("Methods:", "")
-    @formatter.wrap(klass.method_list.map{|m| m.name}.sort.join(', '))
+    @formatter.wrap("Class methods:", "")
+    @formatter.wrap(klass.class_methods.map{|m| m.name}.sort.join(', '))
+  end
+
+  unless klass.instance_methods.empty?
+    @formatter.blankline
+    @formatter.wrap("Instance methods:", "")
+    @formatter.wrap(klass.instance_methods.map{|m| m.name}.sort.join(', '))
   end
 
   unless klass.attributes.empty?

@@ -100,8 +100,6 @@ module Generators
       cls_desc.superclass  = cls.superclass
       cls_desc.comment     = markup(cls.comment)
 
-      cls_desc.method_list = method_list(cls)
-
       cls_desc.attributes =cls.attributes.sort.map do |a|
         RI::Attribute.new(a.name, a.rw, markup(a.comment))
       end
@@ -114,16 +112,23 @@ module Generators
         RI::IncludedModule.new(i.name)
       end
 
-      methods = method_list(cls)
+      class_methods, instance_methods = method_list(cls)
 
-      cls_desc.method_list = methods.map do |m|
+      cls_desc.class_methods = class_methods.map do |m|
+        RI::MethodSummary.new(m.name)
+      end
+      cls_desc.instance_methods = instance_methods.map do |m|
         RI::MethodSummary.new(m.name)
       end
 
       @ri_writer.remove_class(cls_desc)
       @ri_writer.add_class(cls_desc)
 
-      methods.each do |m|
+      class_methods.each do |m|
+        generate_method_info(cls_desc, m)
+      end
+
+      instance_methods.each do |m|
         generate_method_info(cls_desc, m)
       end
     end
@@ -155,7 +160,8 @@ module Generators
 
     private
 
-    # return a list of methods that we'll be documenting
+    # return a list of class and instance methods that we'll be
+    # documenting
 
     def method_list(cls)
       list = cls.method_list
@@ -164,22 +170,37 @@ module Generators
           m.visibility == :public || m.force_documentation 
         end
       end
-      
-      list.sort
+
+      c = []
+      i = []
+      list.sort.each do |m|
+        if m.singleton
+          c << m
+        else
+          i << m
+        end
+      end
+      return c,i
     end
     
     def params_of(method)
-      p = method.params.gsub(/\s*\#.*/, '')
-      p = p.tr("\n", " ").squeeze(" ")
-      p = "(" + p + ")" unless p[0] == ?(
-      
-      if (block = method.block_params)
-        block.gsub!(/\s*\#.*/, '')
-        block = block.tr("\n", " ").squeeze(" ")
-        if block[0] == ?(
-          block.sub!(/^\(/, '').sub!(/\)/, '')
+      params = method.params || ""
+
+      if params =~ /^!verb!(.*)/m
+        p = $1
+      else
+        p = params.gsub(/\s*\#.*/, '')
+        p = p.tr("\n", " ").squeeze(" ")
+        p = "(" + p + ")" unless p[0] == ?(
+        
+        if (block = method.block_params)
+          block.gsub!(/\s*\#.*/, '')
+          block = block.tr("\n", " ").squeeze(" ")
+          if block[0] == ?(
+            block.sub!(/^\(/, '').sub!(/\)/, '')
+          end
+          p << " {|#{block.strip}| ...}"
         end
-        p << " {|#{block.strip}| ...}"
       end
       p
     end

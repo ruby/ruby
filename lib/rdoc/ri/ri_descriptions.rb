@@ -1,5 +1,9 @@
 require 'yaml'
 
+# Descriptions are created by RDoc (in ri_generator) and
+# written out in serialized form into the documentation
+# tree. ri then reads these to generate the documentation
+
 module RI
   Alias          = Struct.new(:old_name, :new_name)
   AliasName      = Struct.new(:name)
@@ -35,7 +39,8 @@ module RI
   
   class ClassDescription < Description
     
-    attr_accessor :method_list
+    attr_accessor :class_methods
+    attr_accessor :instance_methods
     attr_accessor :attributes
     attr_accessor :constants
     attr_accessor :superclass
