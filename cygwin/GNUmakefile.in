@@ -5,8 +5,6 @@ ENABLE_SHARED=@ENABLE_SHARED@
 ifneq (,$(findstring no, $(ENABLE_SHARED)))
   EXTOBJS = $(RUBY_INSTALL_NAME).exp
   LIBRUBYARG = $(LIBRUBY_A)
-else
-  CPPFLAGS += -DLIBRUBY_SO=\"$(LIBRUBY_SO)\"
 endif
 
 ifneq (,$(findstring ruby, $(RUBY_INSTALL_NAME)))

@@ -214,11 +214,12 @@ ruby_init_loadpath()
     char *p;
     int rest;
 #if defined _WIN32 || defined __CYGWIN__
-# if defined LIBRUBY_SO
-    HMODULE libruby = GetModuleHandle(LIBRUBY_SO);
-# else
     HMODULE libruby = NULL;
-# endif
+    MEMORY_BASIC_INFORMATION m;
+
+    memset(&m, 0, sizeof(m));
+    if (VirtualQuery(ruby_init_loadpath, &m, sizeof(m)) && m.State == MEM_COMMIT)
+	libruby = (HMODULE)m.AllocationBase;
     GetModuleFileName(libruby, libpath, sizeof libpath);
 #elif defined(DJGPP)
     extern char *__dos_argv0;
