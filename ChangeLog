@@ -1,3 +1,7 @@
+Tue Feb 20 23:45:35 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* process.c: add W* macro if not available.
+
 Tue Feb 20 16:37:58 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* configure.in: add check for negative time_t for gmtime(3).

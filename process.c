@@ -57,6 +57,25 @@ struct timeval rb_time_interval _((VALUE));
 static VALUE S_Tms;
 #endif
 
+#ifndef WIFEXITED
+#define WIFEXITED(w)    (((w) & 0xff) == 0)
+#endif
+#ifndef WIFSIGNALED
+#define WIFSIGNALED(w)  (((w) & 0x7f) > 0 && (((w) & 0x7f) < 0x7f))
+#endif
+#ifndef WIFSTOPPED
+#define WIFSTOPPED(w)   (((w) & 0xff) == 0x7f)
+#endif
+#ifndef WEXITSTATUS
+#define WEXITSTATUS(w)  (((w) >> 8) & 0xff)
+#endif
+#ifndef WTERMSIG
+#define WTERMSIG(w)     ((w) & 0x7f)
+#endif
+#ifndef WSTOPSIG
+#define WSTOPSIG        WEXITSTATUS
+#endif
+
 static VALUE
 get_pid()
 {
