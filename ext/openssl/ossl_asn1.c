@@ -530,7 +530,7 @@ ossl_asn1_get_asn1type(VALUE obj)
 	break;
     case V_ASN1_OBJECT:
 	ptr = obj_to_asn1obj(value);
-	free_func = ASN1_INTEGER_free;
+	free_func = ASN1_OBJECT_free;
 	break;
     case V_ASN1_UTCTIME:
 	ptr = obj_to_asn1utime(value);
@@ -981,6 +981,47 @@ ossl_asn1obj_s_register(VALUE self, VALUE oid, VALUE sn, VALUE ln)
     return Qtrue;
 }
 
+static VALUE
+ossl_asn1obj_get_sn(VALUE self)
+{
+    VALUE val, ret = Qnil;
+    int nid;
+
+    val = ossl_asn1_get_value(self);
+    if ((nid = OBJ_txt2nid(StringValuePtr(val))) != NID_undef)
+	ret = rb_str_new2(OBJ_nid2sn(nid));
+
+    return ret;
+}
+
+static VALUE
+ossl_asn1obj_get_ln(VALUE self)
+{
+    VALUE val, ret = Qnil;
+    int nid;
+
+    val = ossl_asn1_get_value(self);
+    if ((nid = OBJ_txt2nid(StringValuePtr(val))) != NID_undef)
+	ret = rb_str_new2(OBJ_nid2ln(nid));
+
+    return ret;
+}
+
+static VALUE
+ossl_asn1obj_get_oid(VALUE self)
+{
+    VALUE val;
+    ASN1_OBJECT *a1obj;
+    char buf[128];
+
+    val = ossl_asn1_get_value(self);
+    a1obj = obj_to_asn1obj(val);
+    OBJ_obj2txt(buf, sizeof(buf), a1obj, 1);
+    ASN1_OBJECT_free(a1obj);
+
+    return rb_str_new2(buf);
+}
+
 #define OSSL_ASN1_IMPL_FACTORY_METHOD(klass) \
 static VALUE ossl_asn1_##klass(int argc, VALUE *argv, VALUE self)\
 { return rb_funcall3(cASN1##klass, rb_intern("new"), argc, argv); }
@@ -1084,5 +1125,10 @@ do{\
     OSSL_ASN1_DEFINE_CLASS(Set, Constructive);
 
     rb_define_singleton_method(cASN1ObjectId, "register", ossl_asn1obj_s_register, 3);
+    rb_define_method(cASN1ObjectId, "sn", ossl_asn1obj_get_sn, 0);
+    rb_define_method(cASN1ObjectId, "ln", ossl_asn1obj_get_ln, 0);
+    rb_define_method(cASN1ObjectId, "oid", ossl_asn1obj_get_oid, 0);
+    rb_define_alias(cASN1ObjectId, "short_name", "sn");
+    rb_define_alias(cASN1ObjectId, "long_name", "ln");
     rb_attr(cASN1BitString, rb_intern("unused_bits"), 1, 1, Qtrue);
 }

@@ -1,3 +1,17 @@
+Tue Oct  7 01:42:34 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_asn1.c (ossl_asn1_get_asn1type): use appropriate
+	  free function for ASN1_OBJECT.
+
+	* ext/openssl/ossl_asn1.c (ossl_asn1obj_get_sn): add new function for
+	  ASN1::ObjectId#sn; it returns short name text representation of OID.
+
+	* ext/openssl/ossl_asn1.c (ossl_asn1obj_get_ln): add new function for
+	  ASN1::ObjectId#ln; it returns long name text representation of OID.
+
+	* ext/openssl/ossl_asn1.c (ossl_asn1obj_get_oid): add new function for
+	  ASN1::ObjectId#oid; it returns numerical representation of OID.
+
 Mon Oct  6 22:59:46 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/csv.rb (IOReader, BasicWriter): call binmode when a given IO
