@@ -1,3 +1,8 @@
+Mon Mar  1 23:25:40 2004  David Black  <dblack@wobblini.net>
+
+	* lib/scanf.rb: Partial fix so STDIN#scanf works with new
+     STDIN#pos behavior 
+
 Mon Mar  1 19:42:05  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* bcc32/setup.mak: configure's default is "--enable-install-doc"
