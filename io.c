@@ -2886,6 +2886,17 @@ rb_io_s_new(argc, argv, klass)
     return rb_class_new_instance(argc, argv, klass);
 }
 
+static VALUE
+rb_io_s_for_fd(argc, argv, klass)
+    int argc;
+    VALUE *argv;
+    VALUE klass;
+{
+    VALUE io = rb_obj_alloc(klass);
+    rb_io_initialize(argc, argv, io);
+    return io;
+}
+
 static int binmode = 0;
 
 static VALUE
@@ -3944,7 +3955,7 @@ Init_IO()
     rb_define_singleton_method(rb_cIO, "new", rb_io_s_new, -1);
     rb_define_singleton_method(rb_cIO, "open",  rb_io_s_open, -1);
     rb_define_singleton_method(rb_cIO, "sysopen",  rb_io_s_sysopen, -1);
-    rb_define_singleton_method(rb_cIO, "for_fd", rb_class_new_instance, -1);
+    rb_define_singleton_method(rb_cIO, "for_fd", rb_io_s_for_fd, -1);
     rb_define_singleton_method(rb_cIO, "popen", rb_io_s_popen, -1);
     rb_define_singleton_method(rb_cIO, "foreach", rb_io_s_foreach, -1);
     rb_define_singleton_method(rb_cIO, "readlines", rb_io_s_readlines, -1);

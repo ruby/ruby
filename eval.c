@@ -4509,11 +4509,11 @@ rb_f_missing(argc, argv, obj)
       case T_FALSE:
 	desc = "false";
 	break;
-      case T_OBJECT:
-	d = rb_any_to_s(obj);
-	break;
       default:
-	d = rb_inspect(obj);
+	if (rb_respond_to(obj, rb_intern("inspect")))
+	    d = rb_inspect(obj);
+	else
+	    d = rb_any_to_s(obj);
 	break;
     }
     if (d) {

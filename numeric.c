@@ -1721,8 +1721,8 @@ Init_Numeric()
     rb_cNumeric = rb_define_class("Numeric", rb_cObject);
 
     rb_include_module(rb_cNumeric, rb_mComparable);
-    rb_define_method(rb_cNumeric, "coerce", num_coerce, 1);
     rb_define_method(rb_cNumeric, "copy_object", num_copy_object, 1);
+    rb_define_method(rb_cNumeric, "coerce", num_coerce, 1);
 
     rb_define_method(rb_cNumeric, "+@", num_uplus, 0);
     rb_define_method(rb_cNumeric, "-@", num_uminus, 0);

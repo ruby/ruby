@@ -1915,6 +1915,8 @@ Init_Array()
     rb_define_alloc_func(rb_cArray, ary_alloc);
     rb_define_singleton_method(rb_cArray, "[]", rb_ary_s_create, -1);
     rb_define_method(rb_cArray, "initialize", rb_ary_initialize, -1);
+    rb_define_method(rb_cArray, "copy_object", rb_ary_replace, 1);
+
     rb_define_method(rb_cArray, "to_s", rb_ary_to_s, 0);
     rb_define_method(rb_cArray, "inspect", rb_ary_inspect, 0);
     rb_define_method(rb_cArray, "to_a", rb_ary_to_a, 0);
@@ -1948,7 +1950,6 @@ Init_Array()
     rb_define_method(rb_cArray, "rindex", rb_ary_rindex, 1);
     rb_define_method(rb_cArray, "indexes", rb_ary_indexes, -1);
     rb_define_method(rb_cArray, "indices", rb_ary_indexes, -1);
-    rb_define_method(rb_cArray, "copy_object", rb_ary_replace, 1);
     rb_define_method(rb_cArray, "join", rb_ary_join_m, -1);
     rb_define_method(rb_cArray, "reverse", rb_ary_reverse_m, 0);
     rb_define_method(rb_cArray, "reverse!", rb_ary_reverse_bang, 0);
