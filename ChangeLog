@@ -1,3 +1,8 @@
+Sun Aug 17 11:32:04 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (extmake): should not force to remake Makefile when
+	  installation and so on.
+
 Sat Aug 16 23:58:18 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (w_symbol, w_object): get rid of warnings.

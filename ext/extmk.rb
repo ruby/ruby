@@ -25,8 +25,6 @@ srcdir = Config::CONFIG["srcdir"]
 $:.replace [srcdir, srcdir+"/lib", "."]
 
 require 'mkmf'
-require 'ftools'
-require 'shellwords'
 require 'getopts'
 
 $topdir = File.expand_path(".")
@@ -55,7 +53,7 @@ def extmake(target)
 
   begin
     dir = Dir.pwd
-    File.mkpath target unless File.directory?(target)
+    FileUtils.mkpath target unless File.directory?(target)
     Dir.chdir target
     $target = target
     $mdir = target
@@ -91,6 +89,8 @@ def extmake(target)
       else
 	true
       end
+    else
+      File.exist?(makefile)
     end or open(makefile, "w") do |f|
       f.print dummy_makefile($srcdir)
       return true
@@ -214,7 +214,7 @@ for dir in ["ext", File::join($top_srcdir, "ext")]
   end
 end
 
-File::makedirs('ext')
+FileUtils::makedirs('ext')
 Dir::chdir('ext')
 
 ext_prefix = "#{$top_srcdir}/ext"
