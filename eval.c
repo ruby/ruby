@@ -2231,6 +2231,11 @@ rb_eval(self, n)
 
       case NODE_IF:
 	ruby_sourceline = nd_line(node);
+	if (trace_func) {
+	    call_trace_func("line", node->nd_file, ruby_sourceline, self,
+			    ruby_frame->last_func,
+			    ruby_frame->last_class);	
+	}
 	if (RTEST(rb_eval(self, node->nd_cond))) {
 	    node = node->nd_body;
 	}
@@ -2361,6 +2366,7 @@ rb_eval(self, n)
 	result = Qnil;
 	switch (state = EXEC_TAG()) {
 	  case 0:
+	    ruby_sourceline = nd_line(node);
 	    if (node->nd_state && RTEST(rb_eval(self, node->nd_cond)))
 		goto until_out;
 	    do {

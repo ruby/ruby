@@ -1,3 +1,9 @@
+Tue Feb 26 15:41:30 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): call trace_func for if/while conditions.
+
+	* marshal.c (r_object): separate r_regist from proc calling.
+
 Tue Feb 26 11:25:50 2002  akira yamada  <akira@arika.org>
 
 	* lib/uri/generic.rb: merge0 shuld return [oth, oth] if oth is

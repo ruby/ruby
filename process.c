@@ -797,6 +797,7 @@ rb_syswait(pid)
 	signal(SIGQUIT, qfunc);
 #endif
 	signal(SIGINT, ifunc);
+	overriding = Qfalse;
     }
 }
 

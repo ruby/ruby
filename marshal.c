@@ -764,9 +764,6 @@ r_regist(v, arg)
     VALUE v;
     struct load_arg *arg;
 {
-    if (arg->proc) {
-	rb_funcall(arg->proc, rb_intern("call"), 1, v);
-    }
     rb_hash_aset(arg->data, INT2FIX(RHASH(arg->data)->tbl->num_entries), v);
     if (arg->taint) OBJ_TAINT(v);
     return v;
@@ -793,7 +790,7 @@ static VALUE
 r_object(arg)
     struct load_arg *arg;
 {
-    VALUE v;
+    VALUE v = Qnil;
     int type = r_byte(arg);
     long id;
 
@@ -805,7 +802,6 @@ r_object(arg)
 	    rb_raise(rb_eArgError, "dump format error (unlinked)");
 	}
 	return v;
-      break;
 
       case TYPE_IVAR:
 	v = r_object(arg);
@@ -831,19 +827,22 @@ r_object(arg)
 	}
 
       case TYPE_NIL:
-	return Qnil;
+	v = Qnil;
+	break;
 
       case TYPE_TRUE:
-	return Qtrue;
+	v = Qtrue;
+	break;
 
       case TYPE_FALSE:
-	return Qfalse;
+	v = Qfalse;
 
       case TYPE_FIXNUM:
 	{
 	    long i = r_long(arg);
-	    return INT2FIX(i);
+	    v = INT2FIX(i);
 	}
+	break;
 
       case TYPE_FLOAT:
 	{
@@ -865,8 +864,9 @@ r_object(arg)
 		d = strtod(buf, 0);
 	    }
 	    v = rb_float_new(d);
-	    return r_regist(v, arg);
+	    r_regist(v, arg);
 	}
+	break;
 
       case TYPE_BIGNUM:
 	{
@@ -905,11 +905,13 @@ r_object(arg)
 	    if (TYPE(big) == T_BIGNUM) {
 		r_regist((VALUE)big, arg);
 	    }
-	    return (VALUE)big;
+	    v = (VALUE)big;
 	}
+	break;
 
       case TYPE_STRING:
-	return r_regist(r_string(arg), arg);
+	v = r_regist(r_string(arg), arg);
+	break;
 
       case TYPE_REGEXP:
 	{
@@ -919,19 +921,21 @@ r_object(arg)
 
 	    r_bytes2(buf, len, arg);
 	    options = r_byte(arg);
-	    return r_regist(rb_reg_new(buf, len, options), arg);
+	    v = r_regist(rb_reg_new(buf, len, options), arg);
 	}
+	break;
 
       case TYPE_ARRAY:
 	{
 	    volatile long len = r_long(arg); /* gcc 2.7.2.3 -O2 bug?? */
 
 	    v = rb_ary_new2(len);
+	    r_regist(v, arg);
 	    while (len--) {
 		rb_ary_push(v, r_object(arg));
 	    }
-	    return r_regist(v, arg);;
 	}
+	break;
 
       case TYPE_HASH:
       case TYPE_HASH_DEF:
@@ -939,6 +943,7 @@ r_object(arg)
 	    long len = r_long(arg);
 
 	    v = rb_hash_new();
+	    r_regist(v, arg);
 	    while (len--) {
 		VALUE key = r_object(arg);
 		VALUE value = r_object(arg);
@@ -947,8 +952,8 @@ r_object(arg)
 	    if (type == TYPE_HASH_DEF) {
 		RHASH(v)->ifnone = r_object(arg);
 	    }
-	    return r_regist(v, arg);
 	}
+	break;
 
       case TYPE_STRUCT:
 	{
@@ -969,6 +974,7 @@ r_object(arg)
 		rb_ary_push(values, Qnil);
 	    }
 	    v = rb_struct_alloc(klass, values);
+	    r_regist(v, arg);
 	    for (i=0; i<len; i++) {
 		slot = r_symbol(arg);
 
@@ -980,8 +986,6 @@ r_object(arg)
 		}
 		rb_struct_aset(v, INT2FIX(i), r_object(arg));
 	    }
-	    r_regist(v, arg);
-	    return v;
 	}
 	break;
 
@@ -990,12 +994,12 @@ r_object(arg)
 	    VALUE klass;
 
 	    klass = rb_path2class(r_unique(arg));
-	    if (rb_respond_to(klass, s_load)) {
-		v = rb_funcall(klass, s_load, 1, r_string(arg));
-		return r_regist(v, arg);
+	    if (!rb_respond_to(klass, s_load)) {
+		rb_raise(rb_eTypeError, "class %s needs to have method `_load'",
+			 rb_class2name(klass));
 	    }
-	    rb_raise(rb_eTypeError, "class %s needs to have method `_load'",
-		     rb_class2name(klass));
+	    v = rb_funcall(klass, s_load, 1, r_string(arg));
+	    r_regist(v, arg);
 	}
         break;
 
@@ -1005,11 +1009,11 @@ r_object(arg)
 
 	    klass = rb_path2class(r_unique(arg));
 	    v = rb_obj_alloc(klass);
+	    r_regist(v, arg);
 	    if (TYPE(v) != T_OBJECT) {
 		rb_raise(rb_eArgError, "dump format error");
 	    }
 	    r_ivar(v, arg);
-	    return r_regist(v, arg);
 	}
 	break;
 
@@ -1017,46 +1021,48 @@ r_object(arg)
         {
 	    char *buf;
 	    r_bytes(buf, arg);
-	    return r_regist(rb_path2class(buf), arg);
+	    v = r_regist(rb_path2class(buf), arg);
 	}
+	break;
 
       case TYPE_CLASS:
         {
-	    VALUE c;
-
 	    char *buf;
 	    r_bytes(buf, arg);
-	    c = rb_path2class(buf);
-	    if (TYPE(c) != T_CLASS) {
+	    v = rb_path2class(buf);
+	    if (TYPE(v) != T_CLASS) {
 		rb_raise(rb_eTypeError, "%s is not a class", buf);
 	    }
-	    return r_regist(c, arg);
+	    r_regist(v, arg);
 	}
+	break;
 
       case TYPE_MODULE:
         {
-	    VALUE m;
-
 	    char *buf;
 	    r_bytes(buf, arg);
-	    m = rb_path2class(buf);
-	    if (TYPE(m) != T_MODULE) {
+	    v = rb_path2class(buf);
+	    if (TYPE(v) != T_MODULE) {
 		rb_raise(rb_eTypeError, "%s is not a module", buf);
 	    }
-	    return r_regist(m, arg);
+	    r_regist(v, arg);
 	}
+	break;
 
       case TYPE_SYMBOL:
-	return ID2SYM(r_symreal(arg));
+	v = ID2SYM(r_symreal(arg));
 
       case TYPE_SYMLINK:
-	return ID2SYM(r_symlink(arg));
+	v = ID2SYM(r_symlink(arg));
 
       default:
 	rb_raise(rb_eArgError, "dump format error(0x%x)", type);
 	break;
     }
-    return Qnil;		/* not reached */
+    if (arg->proc) {
+	rb_funcall(arg->proc, rb_intern("yield"), 1, v);
+    }
+    return v;
 }
 
 static VALUE
