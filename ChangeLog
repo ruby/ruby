@@ -1,3 +1,8 @@
+Mon May 17 00:36:21 2004  why the lucky stiff  <why@ruby-lang.org>
+
+	* lib/yaml/baseemitter.rb (indent_text): was forcing a mod value
+	  of zero at times, which kept some blocks from getting indentation.
+
 Mon May 17 00:07:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
 
 	* lib/drb/drb.rb: Cosmetic documentation changes.
