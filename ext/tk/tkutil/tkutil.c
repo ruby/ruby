@@ -8,7 +8,7 @@
 
 ************************************************/
 
-#define TKUTIL_RELEASE_DATE "2005-03-07"
+#define TKUTIL_RELEASE_DATE "2005-03-15"
 
 #include "ruby.h"
 #include "rubysig.h"
@@ -229,6 +229,7 @@ static VALUE ary2list2 _((VALUE, VALUE, VALUE));
 static VALUE hash2list _((VALUE, VALUE));
 static VALUE hash2list_enc _((VALUE, VALUE));
 static VALUE hash2kv _((VALUE, VALUE, VALUE));
+static VALUE hash2kv_enc _((VALUE, VALUE, VALUE));
 
 static VALUE
 ary2list(ary, enc_flag, self)
@@ -262,7 +263,11 @@ ary2list(ary, enc_flag, self)
 
         case T_HASH:
             /* RARRAY(dst)->ptr[RARRAY(dst)->len++] = hash2list(val, self); */
-            val = hash2kv(val, enc_flag, self);
+            if (RTEST(enc_flag)) {
+                val = hash2kv_enc(val, Qnil, self);
+            } else {
+                val = hash2kv(val, Qnil, self);
+            }
             size2 = RARRAY(val)->len;
             for(idx2 = 0; idx2 < size2; idx2++) {
                 val2 = RARRAY(val)->ptr[idx2];

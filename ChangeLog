@@ -1,3 +1,7 @@
+Tue Mar 15 16:38:31 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tkutil/tkutil.c (ary2list): give wrong arguments to hash2kv()
+
 Mon Mar 14 19:39:33 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/timer.rb (TkTimer): forgot to clear @return_value
