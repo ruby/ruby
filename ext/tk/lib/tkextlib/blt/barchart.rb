@@ -26,6 +26,7 @@ module Tk::BLT
     end
     private :__strval_optkeys
 
+=begin
     BarElement_ID = ['blt_barchart_bar'.freeze, '00000'.taint].freeze
 
     def bar(elem=nil, keys={})
@@ -40,6 +41,7 @@ module Tk::BLT
       tk_send('bar', elem, keys)
       Element.new(self, elem, :without_creating=>true)
     end
+=end
 
     def extents(item)
       num_or_str(tk_send_without_enc('extents', item))
