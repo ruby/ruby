@@ -610,9 +610,9 @@ module Net
       req.response
     end
 
-    def request_by_name( name, path, header = nil, body = nil )
+    def request_by_name( name, path, body = nil, header = nil )
       r = ::Net::NetPrivate::HTTPGenericRequest.new(
-              name, body ? true : false, true,
+              name, (body ? true : false), true,
               path, header )
       request r, body
     end

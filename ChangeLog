@@ -1,3 +1,7 @@
+Wed Jul  4 04:22:44 2001  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb (HTTP#request_by_name): arg order changes.
+
 Wed Jul  4 04:07:36 2001  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb (HTTP#request_by_name): bug fix.
