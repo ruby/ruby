@@ -8350,7 +8350,7 @@ rb_thread_restore_context(th, exit)
     FLUSH_REGISTER_WINDOWS;
     MEMCPY(tmp->stk_pos, tmp->stk_ptr, VALUE, tmp->stk_len);
 #ifdef __ia64__
-    MEMCPY((VALUE*)__libc_ia64_register_backing_store_base, tmp->bstr_ptr, tmp->bstr_len);
+    MEMCPY((VALUE*)__libc_ia64_register_backing_store_base, tmp->bstr_ptr, VALUE, tmp->bstr_len);
 #endif
 
     tval = rb_lastline_get();
