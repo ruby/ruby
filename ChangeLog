@@ -1,3 +1,7 @@
+Sun Oct  5 23:27:09 2003  Tanaka Akira  <akr@m17n.org>
+
+	* lib/pathname.rb: version information is added in document.
+
 Sun Oct  5 23:07:03 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_f_END): block should be given.  [ruby-dev:21497]

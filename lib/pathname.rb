@@ -6,12 +6,15 @@
 #
 # Pathname is immutable.  It has no method for destructive update.
 #
+# pathname.rb is distributed with Ruby since 1.8.0.
 class Pathname
   def initialize(path)
     @path = path.to_str.dup
     @path.freeze
 
-    raise ArgumentError, "pathname contains \\0: #{@path.inspect}" if /\0/ =~ @path
+    if /\0/ =~ @path
+      raise ArgumentError, "pathname contains \\0: #{@path.inspect}"
+    end
   end
 
   def ==(other)
@@ -33,6 +36,8 @@ class Pathname
   def to_s
     @path.dup
   end
+
+  # to_str is implemented for Pathname object usable with File.open, etc.
   alias to_str to_s
 
   def inspect
@@ -226,6 +231,8 @@ class Pathname
   # Pathname#children returns the children of the directory as an array of
   # pathnames.  I.e. it is similar to Pathname#entries except '.' and '..'
   # is not returned.
+  #
+  # This method is exist since 1.8.1.
   def children
     Dir.entries(@path).map {|f|
       f == '.' || f == '..' ? nil : Pathname.new(f)
@@ -242,9 +249,11 @@ class Pathname
   #
   # ArgumentError is raised when it cannot find a relative path.
   #
+  # This method is exist since 1.8.1.
   def relative_path_from(base_directory)
     if self.absolute? != base_directory.absolute?
-      raise ArgumentError, "relative path between absolute and relative path: #{self.inspect}, #{base_directory.inspect}"
+      raise ArgumentError,
+        "relative path between absolute and relative path: #{self.inspect}, #{base_directory.inspect}"
     end
 
     dest = []
@@ -281,7 +290,14 @@ end
 
 # IO
 class Pathname
+  # Pathname#each_line iterates over lines of the file.
+  # It's yields String objects for each line.
+  #
+  # This method is exist since 1.8.1.
   def each_line(*args, &block) IO.foreach(@path, *args, &block) end
+
+  # This method is obsoleted at 1.8.1.
+  #
   alias foreachline each_line # compatibility to 1.8.0.  obsoleted.
 
   def read(*args) IO.read(@path, *args) end
@@ -357,6 +373,8 @@ class Pathname
   def Pathname.getwd() Pathname.new(Dir.getwd) end
   class << self; alias pwd getwd end
 
+  # This method is obsoleted at 1.8.1.
+  #
   def chdir(&block) # compatibility to 1.8.0.
     warn "Pathname#chdir is obsoleted.  Use Dir.chdir."
     Dir.chdir(@path, &block)
@@ -366,7 +384,14 @@ class Pathname
   def rmdir() Dir.rmdir(@path) end
   def entries() Dir.entries(@path).map {|f| Pathname.new(f) } end
 
+  # Pathname#each_entry iterates over entries of the directory.
+  # It's yields Pathname objects for each entry.
+  #
+  # This method is exist since 1.8.1.
   def each_entry(&block) Dir.foreach(@path) {|f| yield Pathname.new(f) } end
+
+  # This method is obsoleted at 1.8.1.
+  #
   alias dir_foreach each_entry # compatibility to 1.8.0.  obsoleted.
 
   def mkdir(*args) Dir.mkdir(@path, *args) end
@@ -409,6 +434,8 @@ class Pathname
   end
   alias delete unlink
 
+  # This method is obsoleted at 1.8.1.
+  #
   def foreach(*args, &block) # compatibility to 1.8.0.  obsoleted.
     warn "Pathname#foreach is obsoleted.  Use each_line or each_entry."
     if FileTest.directory? @path
@@ -535,7 +562,8 @@ if $0 == __FILE__
       assert_equal('a/..', Pathname.new('a/../.').cleanpath(true).to_s)
 
       assert_equal('/a', Pathname.new('/../.././../a').cleanpath(true).to_s)
-      assert_equal('a/b/../../../../c/../d', Pathname.new('a/b/../../../../c/../d').cleanpath(true).to_s)
+      assert_equal('a/b/../../../../c/../d',
+        Pathname.new('a/b/../../../../c/../d').cleanpath(true).to_s)
     end
 
     def test_cleanpath_no_symlink
@@ -600,7 +628,13 @@ if $0 == __FILE__
 
     def test_relative_path_from
       assert_relpath("../a", "a", "b")
+      assert_relpath("../a", "a", "b/")
+      assert_relpath("../a", "a/", "b")
+      assert_relpath("../a", "a/", "b/")
       assert_relpath("../a", "/a", "/b")
+      assert_relpath("../a", "/a", "/b/")
+      assert_relpath("../a", "/a/", "/b")
+      assert_relpath("../a", "/a/", "/b/")
 
       assert_relpath("../b", "a/b", "a/c")
       assert_relpath("../a", "../a", "../b")
@@ -620,6 +654,8 @@ if $0 == __FILE__
       assert_relpath("../a", "/../a", "/b")
       assert_relpath("../../a", "../a", "b")
       assert_relpath(".", "/a/../../b", "/b")
+      assert_relpath("..", "a/..", "a")
+      assert_relpath(".", "a/../b", "b")
 
       assert_relpath("a", "a", "b/..")
       assert_relpath("b/c", "b/c", "b/..")
