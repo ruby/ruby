@@ -791,6 +791,7 @@ load_file(fname, script)
 	c = rb_io_getc(f);
 	if (c == INT2FIX('#')) {
 	    line = rb_io_gets(f);
+	    if (NIL_P(line)) return;
 	    line_start++;
 
 	    if (RSTRING(line)->len > 2 && RSTRING(line)->ptr[0] == '!') {

@@ -1,3 +1,7 @@
+Sun Feb 10 16:52:53 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* ruby.c (load_file): avoid SEGV on '#' only input.
+
 Fri Feb  8 23:07:23 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_eval): singleton chech should be moved from yycompile
