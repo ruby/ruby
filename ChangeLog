@@ -1,3 +1,8 @@
+Fri Jun 29 15:29:31 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lex.c (rb_reserved_word): lex_state after tRESCUE should be
+	  EXPR_MID.
+
 Thu Jun 28 00:36:19 2001 Keiju Ishitsuka <keiju@ishitsuka.com>
 	
 	* lib/matrix.rb: resolve 'ruby -w' warnings.
@@ -22,6 +27,11 @@ Wed Jun 27 08:53:04 2001  Minero Aoki  <aamine@loveruby.net>
 	* lib/net/protocol.rb: new method ProtocolError#response
 
 	* lib/net/protocol.rb,smtp.rb,pop.rb,http.rb: add document.
+
+Tue Jun 26 18:42:42 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (add_heap): allocation size of the heap unit is doubled for
+	  each allocation.
 
 Sat Jun 23 19:25:08 2001  Akinori MUSHA  <knu@iDaemons.org>
 

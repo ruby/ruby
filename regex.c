@@ -3496,6 +3496,7 @@ init_regs(regs, num_regs)
   else if (regs->allocated < num_regs) {
     TREALLOC(regs->beg, num_regs, int);
     TREALLOC(regs->end, num_regs, int);
+    regs->allocated = num_regs;
   }
   for (i=0; i<num_regs; i++) {
     regs->beg[i] = regs->end[i] = -1;

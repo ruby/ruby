@@ -32,7 +32,8 @@ module Open3
 
 	exec(*cmd)
       }
-      exit!
+      Process.wait
+      exit! $?>>8
     }
 
     pw[0].close

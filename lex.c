@@ -1,5 +1,5 @@
-/* C code produced by gperf version 2.7.1 (19981006 egcs) */
-/* Command-line: gperf -p -j1 -i 1 -g -o -t -N rb_reserved_word -k1,3,$ ./keywords  */
+/* C code produced by gperf version 2.7.2 */
+/* Command-line: gperf -p -j1 -i 1 -g -o -t -N rb_reserved_word -k'1,3,$' ./keywords  */
 struct kwtable {char *name; int id[2]; enum lex_state state;};
 
 #define TOTAL_KEYWORDS 40
@@ -11,6 +11,10 @@ struct kwtable {char *name; int id[2]; enum lex_state state;};
 
 #ifdef __GNUC__
 __inline
+#else
+#ifdef __cplusplus
+inline
+#endif
 #endif
 static unsigned int
 hash (str, len)
@@ -79,7 +83,7 @@ rb_reserved_word (str, len)
       {"module", kMODULE, kMODULE, EXPR_BEG},
       {"elsif", kELSIF, kELSIF, EXPR_BEG},
       {"def", kDEF, kDEF, EXPR_FNAME},
-      {"rescue", kRESCUE, kRESCUE_MOD, EXPR_END},
+      {"rescue", kRESCUE, kRESCUE_MOD, EXPR_MID},
       {"not", kNOT, kNOT, EXPR_BEG},
       {"then", kTHEN, kTHEN, EXPR_BEG},
       {"yield", kYIELD, kYIELD, EXPR_ARG},

@@ -262,7 +262,10 @@ static RVALUE **heaps;
 static int heaps_length = 0;
 static int heaps_used   = 0;
 
-#define HEAP_SLOTS 10000
+#define HEAP_MIN_SLOTS 10000
+static int *heaps_limits;
+static int heap_slots = HEAP_MIN_SLOTS;
+
 #define FREE_MIN  4096
 
 static RVALUE *himem, *lomem;
@@ -279,13 +282,29 @@ add_heap()
 			(RVALUE**)realloc(heaps, heaps_length*sizeof(RVALUE*)):
 			(RVALUE**)malloc(heaps_length*sizeof(RVALUE*)));
 	if (heaps == 0) mem_error("heaps: can't alloc memory");
+	RUBY_CRITICAL(heaps_limits = (heaps_used>0)?
+			(int*)realloc(heaps_limits, heaps_length*sizeof(int)):
+			(int*)malloc(heaps_length*sizeof(int)));
+	if (heaps_limits == 0) mem_error("heaps_limits: can't alloc memory");
     }
 
-    RUBY_CRITICAL(p = heaps[heaps_used++] = (RVALUE*)malloc(sizeof(RVALUE)*HEAP_SLOTS));
-    if (p == 0) mem_error("add_heap: can't alloc memory");
-    pend = p + HEAP_SLOTS;
+    for (;;) {
+	RUBY_CRITICAL(p = heaps[heaps_used] = (RVALUE*)malloc(sizeof(RVALUE)*heap_slots));
+	heaps_limits[heaps_used] = heap_slots;
+	if (p == 0) {
+	    if (heap_slots == HEAP_MIN_SLOTS) {
+		mem_error("add_heap: can't alloc memory");
+	    }
+	    heap_slots = HEAP_MIN_SLOTS;
+	    continue;
+	}
+	break;
+    }
+    pend = p + heap_slots;
     if (lomem == 0 || lomem > p) lomem = p;
     if (himem < pend) himem = pend;
+    heaps_used++;
+    heap_slots *= 2;
 
     while (p < pend) {
 	p->as.free.flag = 0;
@@ -341,8 +360,8 @@ is_pointer_to_heap(ptr)
     /* check if p looks like a pointer */
     for (i=0; i < heaps_used; i++) {
 	heap_org = heaps[i];
-	if (heap_org <= p && p < heap_org + HEAP_SLOTS
-	    && ((((char*)p)-((char*)heap_org))%sizeof(RVALUE)) == 0)
+	if (heap_org <= p && p < heap_org + heaps_limits[i] &&
+	    ((((char*)p)-((char*)heap_org))%sizeof(RVALUE)) == 0)
 	    return Qtrue;
     }
     return Qfalse;
@@ -516,6 +535,8 @@ rb_gc_mark(ptr)
 	  case NODE_DEFINED:
 	  case NODE_MATCH:
 	  case NODE_RETURN:
+	  case NODE_BREAK:
+	  case NODE_NEXT:
 	  case NODE_YIELD:
 	  case NODE_COLON2:
 	  case NODE_ARGS:
@@ -543,8 +564,6 @@ rb_gc_mark(ptr)
 	  case NODE_BACK_REF:
 	  case NODE_ALIAS:
 	  case NODE_VALIAS:
-	  case NODE_BREAK:
-	  case NODE_NEXT:
 	  case NODE_REDO:
 	  case NODE_RETRY:
 	  case NODE_UNDEF:
@@ -680,7 +699,7 @@ gc_sweep()
     if (ruby_in_compile) {
 	/* should not reclaim nodes during compilation */
 	for (i = 0; i < used; i++) {
-	    p = heaps[i]; pend = p + HEAP_SLOTS;
+	    p = heaps[i]; pend = p + heaps_limits[i];
 	    while (p < pend) {
 		if (!(p->as.basic.flags&FL_MARK) && BUILTIN_TYPE(p) == T_NODE)
 		    rb_gc_mark(p);
@@ -695,7 +714,7 @@ gc_sweep()
     for (i = 0; i < used; i++) {
 	int n = 0;
 
-	p = heaps[i]; pend = p + HEAP_SLOTS;
+	p = heaps[i]; pend = p + heaps_limits[i];
 	while (p < pend) {
 	    if (!(p->as.basic.flags & FL_MARK)) {
 		if (p->as.basic.flags) {
@@ -1049,7 +1068,7 @@ os_live_obj()
     for (i = 0; i < heaps_used; i++) {
 	RVALUE *p, *pend;
 
-	p = heaps[i]; pend = p + HEAP_SLOTS;
+	p = heaps[i]; pend = p + heaps_limits[i];
 	for (;p < pend; p++) {
 	    if (p->as.basic.flags) {
 		switch (TYPE(p)) {
@@ -1082,7 +1101,7 @@ os_obj_of(of)
     for (i = 0; i < heaps_used; i++) {
 	RVALUE *p, *pend;
 
-	p = heaps[i]; pend = p + HEAP_SLOTS;
+	p = heaps[i]; pend = p + heaps_limits[i];
 	for (;p < pend; p++) {
 	    if (p->as.basic.flags) {
 		switch (TYPE(p)) {
@@ -1251,7 +1270,7 @@ rb_gc_call_finalizer_at_exit()
 	    }
 	}
 	for (i = 0; i < heaps_used; i++) {
-	    p = heaps[i]; pend = p + HEAP_SLOTS;
+	    p = heaps[i]; pend = p + heaps_limits[i];
 	    while (p < pend) {
 		if (FL_TEST(p, FL_FINALIZE)) {
 		    FL_UNSET(p, FL_FINALIZE);
@@ -1264,7 +1283,7 @@ rb_gc_call_finalizer_at_exit()
     }
     /* run data object's finaliers */
     for (i = 0; i < heaps_used; i++) {
-	p = heaps[i]; pend = p + HEAP_SLOTS;
+	p = heaps[i]; pend = p + heaps_limits[i];
 	while (p < pend) {
 	    if (BUILTIN_TYPE(p) == T_DATA &&
 		DATA_PTR(p) && RANY(p)->as.data.dfree) {
