@@ -1,0 +1,4 @@
+MANIFEST
+README
+extconf.rb
+readline.c
