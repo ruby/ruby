@@ -1296,21 +1296,16 @@ env_keys()
 }
 
 static VALUE
-env_each_key(hash)
-    VALUE hash;
+env_each_key(ehash)
+    VALUE ehash;
 {
-    char **env;
+    VALUE keys = env_keys();
+    long i;
 
-    env = GET_ENVIRON(environ);
-    while (*env) {
-	char *s = strchr(*env, '=');
-	if (s) {
-	    rb_yield(env_str_new(*env, s-*env));
-	}
-	env++;
+    for (i=0; i<RARRAY(keys)->len; i++) {
+	rb_yield(RARRAY(keys)->ptr[i]);
     }
-    FREE_ENVIRON(environ);
-    return Qnil;
+    return ehash;
 }
 
 static VALUE
@@ -1332,40 +1327,41 @@ env_values()
 }
 
 static VALUE
-env_each_value(hash)
-    VALUE hash;
+env_each_value(ehash)
+    VALUE ehash;
 {
-    char **env;
+    VALUE values = env_values();
+    long i;
 
-    env = GET_ENVIRON(environ);
-    while (*env) {
-	char *s = strchr(*env, '=');
-	if (s) {
-	    rb_yield(env_str_new2(s+1));
-	}
-	env++;
+    for (i=0; i<RARRAY(values)->len; i++) {
+	rb_yield(RARRAY(values)->ptr[i]);
     }
-    FREE_ENVIRON(environ);
-    return Qnil;
+    return ehash;
 }
 
 static VALUE
-env_each(hash)
-    VALUE hash;
+env_each(ehash)
+    VALUE ehash;
 {
     char **env;
+    VALUE ary = rb_ary_new();
+    long i;
 
     env = GET_ENVIRON(environ);
     while (*env) {
 	char *s = strchr(*env, '=');
 	if (s) {
-	    rb_yield_values(2, env_str_new(*env, s-*env),
-			       env_str_new2(s+1));
+	    rb_ary_push(ary, env_str_new(*env, s-*env));
+	    rb_ary_push(ary, env_str_new2(s+1));
 	}
 	env++;
     }
     FREE_ENVIRON(environ);
-    return Qnil;
+
+    for (i=0; i<RARRAY(ary)->len; i+=2) {
+	rb_yield_values(2, RARRAY(ary)->ptr[i], RARRAY(ary)->ptr[i+1]);
+    }
+    return ehash;
 }
 
 static VALUE

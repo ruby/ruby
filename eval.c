@@ -4099,16 +4099,20 @@ rb_yield_0(val, self, klass, flags, avalue)
 		int len = 0;
 		if (avalue) {
 		    len = RARRAY(val)->len;
+		    if (len == 0) {
+			val = Qnil;
+			goto multi_values;
+		    }
 		    if (len == 1) {
 			val = RARRAY(val)->ptr[0];
 		    }
 		    else {
-			goto mult_values;
+			goto multi_values;
 		    }
 		}
 		else if (val == Qundef) {
 		    val = Qnil;
-		  mult_values:
+		  multi_values:
 		    {
 			NODE *curr = ruby_current_node;
 			ruby_current_node = block->var;

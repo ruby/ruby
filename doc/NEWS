@@ -1,44 +1,128 @@
-This file is not actively maintained.  See ChangeLog for recent changes.
+= command line options
 
 : -W option
 
   new option to specify warning level. -W0 to shut up warnings, -W1 for normal level,
   -W2 for verbose level.  -w equals to -W2.
 
-: Marshal to use marshal_dump and marshal_load
+= language syntax
 
-  if a dumping object responds to 'marshal_dump', Marshal.dump calls
-  it, and dumps object returned.  Marshal.load allocates a new instance
-  using "allocate", then calls its "marshal_load" with dumped data.
+: arbitrary delimited string array
 
-: lib/un
+  %W(...) notation, word list literal like %w(...) with the
+  exception that #{} interpolation is allowed.
 
-  Imported.  Used like 'ruby -run -e cp -- -p foo bar'.  Nest, isn't it?
+: expression interpolation in strings
 
-: lib/webrick
+  Now arbitrary statements are allowed inside #{} interpolation
+  without escapes.  In other hand, they can no longer access to
+  variables defined in eval.
 
-  Imported.  Generic Internet server kit.
+: negative number literals
+
+  Digits preceded minus sign is a literal integer.
+
+: array expansion
+
+  Fixed with the following behavior:
+
+    a = *[1]
+    p a #=> [1]
+
+  Now 1-element array in rhs is expanded properly.
+
+    a = *[1]
+    p a #=> 1
+
+: break and next
+
+  Extended to take an optional expression, which is used as a value
+  for termination.
+
+= language core
 
 : $stdin, $stdout, $stderr
 
   can be assignable again.  the original stdio are preserved as STDIN,
   STDOUT, STDERR.
 
-: multiple Tk interpreter
+: allocation framework
 
-  to allow safe Tk, etc.
+  any instance of class can be allocated by class.allocate,
+  (except for a few classes).
 
-: ext/openssl
+: comparison of exception classes in a rescue clause
 
-  Imported.
+  changed to use Module#=== for comparing $! with the exception
+  class specified in each rescue clause.
 
-: ext/io/wait
+  as the previous behavior was to use kind_of?, the effect is limited
+  to the SystemCallError case.  SystemCallError.=== has been newly
+  defined to return true when the two have the same errno.  With this
+  change, SystemCallError's with the same errno, such as Errno::EAGAIN
+  and Errno::EWOULDBLOCK, can both be rescued by listing just one of
+  them.
 
-  Imported.
+: constants lookup
 
-: ext/bigdecimal
+  improved at the performance of searching by using an internal hash
+  table.
 
-  Imported.
+: expression parenthesis in the first argument
+
+  altered to get the following code (note the space after p):
+
+    p ("xx"*2).to_i
+
+  Interpreted as:
+
+    p (("xx"*2).to_i)
+
+  Instead of:
+
+    (p("xx"*2)).to_i
+
+: implicit comparison in conditional expressions
+
+  Obsoleted except when it is used in -e.
+
+  : between Range and $.
+      Use explicit comparison instead.
+
+  : between Regexp and $_
+      Use the unary method ~/re/ instead.
+
+: to_str
+
+  added to get objects which define to_str() treated as String's.
+
+  now almost all the built-in methods try each argument with to_str()
+  when they expect it to be a String.
+
+    foo = Object.new
+    class <<foo
+      def to_str
+        "foo"
+      end
+    end
+    p File.open(foo)
+    => -:7:in `open': wrong argument type Object (expected String) (TypeError)
+       ruby 1.6.4 (2001-04-19) [i586-linux]
+    => -:7:in `open': No such file or directory - "foo" (Errno::ENOENT)
+       ruby 1.7.0 (2001-05-02) [i586-linux]
+
+: multiple assignment behavior
+
+  Fixed so that "*a = nil" results in "a == []".
+
+= changes in core class library
+
+: Marshal to use marshal_dump and marshal_load
+
+  if a dumping object responds to 'marshal_dump', Marshal.dump calls
+  it, and dumps object returned.  Marshal.load allocates a new instance
+  using "allocate", then calls its "marshal_load" with dumped data.
+  Marshal format version is now 4.8 (was 4.6 in 1.6.8).
 
 : Thread#group
 
@@ -56,37 +140,6 @@ This file is not actively maintained.  See ChangeLog for recent changes.
 : Object#instance_variable_set, Object#instance_variable_get
 
   added.
-
-: ext/Win32API/lib/win32/registry
-
-  added.
-
-: lib/open-uri
-
-  Imported.  This is an easy-to-use wrapper for net/http and net/ftp.
-
-: lib/tmpdir
-
-  imported. add Dir::tmpdir() to determine the temporary directory.
-
-: lib/cgi.rb
-
-  cgi[name] returns CGI::QueryExtension::Value that wraps string
-  value, no longer array.
-
-: ext/syck
-: lib/yaml
-
-  Imported.
-
-: lib/rexml
-
-  Imported.
-
-: lib/xmlrpc
-: lib/gserver
-
-  Imported
 
 : Class#inherited
 
@@ -119,234 +172,15 @@ This file is not actively maintained.  See ChangeLog for recent changes.
 	"101".to_i(0)   => 101
 	"0b101".to_i(0) => 5
 	"0101".to_i(0)  => 65
-	"0x101".to_i(0) => 1
+	"0x101".to_i(0) => 257
 
-: Set class (set.rb)
+: SystemCallError
 
-  Imported.
-
-: OptionParser module
-
-  Imported.  Command line options utility library.
-
-: parser
-
-  %W(...) notation, word list literal like %w(...) with the
-  exception that #{} interpolation is allowed.
-
-: parser
-
-  Now arbitrary statements are allowed inside #{} interpolation
-  without escapes.  In other hand, they can no longer access to
-  variables defined in eval.
-
-: parser
-
-  Digits preceded minus sign is a literal integer.
+  SystemCallError's "===" match (used in rescue also) is now based on its errno.
 
 : IO::sysopen
 
   New method to get a raw file descriptor.
-
-: TCPServer#accept, UNIXServer#accept, Socket#accept
-
-  New methods to return an accepted socket fd.
-
-: Date and DateTime
-
-  lib/date.rb now provides both Date and DateTime.
-
-  Some methods have been renamed.  But the old names are still alive.
-
-  Some new methods have been added (Date::parse, Date#strftime, etc.).
-
-  Date#mjd now returns the chronological modified Julian day number.
-
-  All facilities about tjd have been removed.
-
-: Thread#join
-
-  Optional argument limits maximum time to wait the thread in second.
-  And returns nil if timed out.
-
-: Array#filter
-
-  Previously deprecated, now removed.  Use Array#collect!.
-
-: dl module
-
-  Imported. An interface to the dynamic linker.
-
-: IO#sysseek
-
-  Added.
-
-: IO
-
-  64bit off_t support by Janathan Baker.
-
-: abort()
-
-  Takes optional terminate message argument.
-
-: iconv module
-
-  Imported.  Wrapper library of (({iconv})).
-
-: IO.fsync
-
-  New method that copies all in-memory parts of a file to disk and
-  waits until the deice reports that all parts are on stable storage.
-  Implemented with fsync(2) or equivalent.
-
-: Dir#pos=
-
-  Returns the new position instead of self.
-
-: Dir::glob
-
-  Now accepts optional FNM_* flags via the second argument, whereas
-  Dir::[] doesn't.
-
-    Dir.glob("makefile", File::FNM_CASEFOLD) #=> ['Makefile', 'makefile']
-
-: fileutils module
-
-  Imported.  File utility library.
-
-: racc runtime module
-
-  Imported.  Racc runtime library. (Racc is a parser generator for ruby)
-
-: lib/tsort
-
-  Imported.  Topological sorting library.
-
-: ext/stringio
-
-  Imported.  Pseudo (({IO})) class from/to (({String})).
-
-: strscan module
-
-  Imported.  Fast string scanner library.
-
-: Array#pack, String#unpack
-
-  Allows comment in template strings.
-
-: Array#pack, String#unpack
-
-  New templates 'q' and 'Q' for 64bit integer (signed and unsigned respectively).
-
-: Array#new
-
-  Now takes block to fill initial values.  E.g.
-
-	Array.new(10) { |i| i + 1 }
-	=> [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-
-: Array#fill
-
-  Takes block to get the values to fill.
-
-: Array#fetch
-
-  Takes block to get the default value.
-
-: Hash#update
-
-  Takes block to resolve key conflict.
-
-: IO#fsync
-
-  Added.
-
-: Array expansion
-
-  Fixed with the following behavior:
-
-    a = *[1]
-    p a #=> [1]
-
-  Now 1-element array in rhs is expanded properly.
-
-    a = *[1]
-    p a #=> 1
-
-: allocation framework
-
-  any instance of class can be allocated by class.allocate,
-  (except a few classes).
-
-: break and next
-
-  Extended to take an optional expression, which is used as a value
-  for termination. [experimental]
-
-: comparison of exception classes in a rescue clause
-
-  Changed to use Module#=== for comparing $! with the exception
-  class specified in each rescue clause.
-
-  As the previous behavior was to use kind_of?, the effect is limited
-  to the SystemCallError case.  SystemCallError.=== has been newly
-  defined to return true when the two have the same errno.  With this
-  change, SystemCallError's with the same errno, such as Errno::EAGAIN
-  and Errno::EWOULDBLOCK, can both be rescued by listing just one of
-  them.
-
-: constants lookup
-
-  Improved at the performance of searching by using an internal hash
-  table.
-
-: expression parenthesis in the first argument
-
-  Experimentally altered to get the following code (note the space
-  after p):
-
-    p ("xx"*2).to_i
-
-  Interpreted as:
-
-    p (("xx"*2).to_i)
-
-  Instead of:
-
-    (p("xx"*2)).to_i
-
-: implicit comparison in conditional expressions
-
-  Obsoleted except when it is used in -e.
-
-  : between Range and $.
-      Use explicit comparison instead.
-
-  : between Regexp and $_
-      Use the unary method ~/re/ instead.
-
-: to_str
-
-  Added to get objects which define to_str() treated as String's.
-
-  Now almost all the built-in methods try each argument with to_str()
-  when they expect it to be a String.
-
-    foo = Object.new
-    class <<foo
-      def to_str
-        "foo"
-      end
-    end
-    p File.open(foo)
-    => -:7:in `open': wrong argument type Object (expected String) (TypeError)
-       ruby 1.6.4 (2001-04-19) [i586-linux]
-    => -:7:in `open': No such file or directory - "foo" (Errno::ENOENT)
-       ruby 1.7.0 (2001-05-02) [i586-linux]
-
-: pp module
-
-  Imported. Prity Printing library.
 
 : open
 
@@ -381,10 +215,74 @@ This file is not actively maintained.  See ChangeLog for recent changes.
   Beware that this behavior is not guaranteed to continue in the
   future.  Do not rely on its return value. [ruby-dev:12506]
 
-: Curses
+: Thread#join
 
-  Updated.  New methods and constants for using the mouse, character
-  attributes, colors and key codes have been added.
+  Optional argument limits maximum time to wait the thread in second.
+  And returns nil if timed out.
+
+: Array#filter
+
+  Previously deprecated, now removed.  Use Array#collect!.
+
+: IO#sysseek
+
+  Added.
+
+: IO
+
+  64bit off_t support by Janathan Baker.
+
+: abort()
+
+  Takes optional terminate message argument.
+
+: IO.fsync
+
+  New method that copies all in-memory parts of a file to disk and
+  waits until the device reports that all parts are on stable storage.
+  Implemented with fsync(2) or equivalent.
+
+: Dir#pos=
+
+  Returns the new position instead of self.
+
+: Dir::glob
+
+  Now accepts optional FNM_* flags via the second argument, whereas
+  Dir::[] doesn't.
+
+    Dir.glob("makefile", File::FNM_CASEFOLD) #=> ['Makefile', 'makefile']
+
+: Array#pack, String#unpack
+
+  Allows comment in template strings.
+
+: Array#pack, String#unpack
+
+  New templates 'q' and 'Q' for 64bit integer (signed and unsigned respectively).
+
+: Array#new
+
+  Now takes block to fill initial values.  E.g.
+
+	Array.new(10) { |i| i + 1 }
+	=> [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+: Array#fill
+
+  Takes block to get the values to fill.
+
+: Array#fetch
+
+  Takes block to get the default value.
+
+: Hash#update
+
+  Takes block to resolve key conflict.
+
+: IO#fsync
+
+  Added.
 
 : Dir#path
 
@@ -501,15 +399,6 @@ This file is not actively maintained.  See ChangeLog for recent changes.
 
   Extended to take block.
 
-: Multiple assignment behavior
-
-  Fixed so that "*a = nil" results in "a == []".
-
-: Net::HTTP
-
-  New version of Net::HTTP has introduced seriously incompatible
-  changes. For details, see document embedded in net/http.rb itself.
-
 : NameError and NoMethodError
 
   Moved and now NoMethodError < NameError < StandardError.
@@ -559,14 +448,6 @@ This file is not actively maintained.  See ChangeLog for recent changes.
 : Signal
 
   Added. This module has module functions Signal.trap and Signal.list.
-
-: Socket.pack_sockaddr_in, Socket.unpack_sockaddr_in
-
-  Added.  Utility for direct Socket access.
-
-: Socket.pack_sockaddr_un, Socket.unpack_sockaddr_un
-
-  Added.  Utility for direct Socket access.
 
 : String#[regexp, nth]
 
@@ -627,16 +508,6 @@ This file is not actively maintained.  See ChangeLog for recent changes.
 
   Added.
 
-: TCPServer#listen, UNIXServer#listen
-
-  Added.
-
-: TCPSocket.new
-: TCPSocket.open
-
-  Extended to take an address and a port number for the local side in
-  optional 3rd and 4th arguments.
-
 : Time
 
   Extended to accept a negative time_t. (Only when the platform
@@ -650,3 +521,233 @@ This file is not actively maintained.  See ChangeLog for recent changes.
 
   Made to return "UTC" under gmtime.  It used to return a platform
   dependent value, typically "GMT", in 1.6 and prior.
+
+= changes in bundled libraries
+
+: lib/cgi.rb
+
+  cgi[name] returns CGI::QueryExtension::Value that wraps string
+  value, no longer array.
+
+: lib/timeout
+
+  timeout "function" wrapped in Timeout module.
+
+: TCPServer#accept, UNIXServer#accept, Socket#accept
+
+  New methods to return an accepted socket fd.
+
+: Date and DateTime
+
+  lib/date.rb now provides both Date and DateTime.
+
+  Some methods have been renamed.  But the old names are still alive.
+
+  Some new methods have been added (Date::parse, Date#strftime, etc.).
+
+  Date#mjd now returns the chronological modified Julian day number.
+
+  All facilities about tjd have been removed.
+
+: Curses
+
+  Updated.  New methods and constants for using the mouse, character
+  attributes, colors and key codes have been added.
+
+: Net::HTTP
+
+  New version of Net::HTTP has introduced seriously incompatible
+  changes. For details, see document embedded in net/http.rb itself.
+
+: Socket.pack_sockaddr_in, Socket.unpack_sockaddr_in
+
+  Added.  Utility for direct Socket access.
+
+: Socket.pack_sockaddr_un, Socket.unpack_sockaddr_un
+
+  Added.  Utility for direct Socket access.
+
+: TCPServer#listen, UNIXServer#listen
+
+  Added.
+
+: TCPSocket.new
+: TCPSocket.open
+
+  Extended to take an address and a port number for the local side in
+  optional 3rd and 4th arguments.
+
+= new bundled library
+
+: ext/bigdecimal
+
+  variable precision decimal number 
+
+: ext/dl
+
+  an interface to the dynamic linker.
+
+: ext/io/wait
+
+  IO wait methods.
+
+: ext/iconv
+
+  wrapper library of (({iconv})).
+
+: ext/openssl
+
+  OpenSSL for Ruby
+
+: ext/racc/cparse
+
+  Racc runtime library in C. (Racc is a parser generator for ruby)
+
+: ext/stringio
+
+  Pseudo (({IO})) class from/to (({String})).
+
+: ext/strscan
+
+  Fast string scanner library.
+
+: ext/syck
+
+  fast YAML parser.
+
+: lib/benchmark
+
+  Ruby scripts benchmarker
+
+: lib/cgi/session/pstore
+
+  cgi/session back-end using pstore 
+
+: lib/csv
+
+  reads/writes CVS files.
+
+: lib/date/format
+
+  strftime for Date class
+
+: lib/drb
+
+  dRuby or distributed Ruby
+
+: lib/fileutils
+
+  file utility library.
+
+: lib/gserver
+
+  generic server used by xmlrpc
+
+: lib/ipaddr
+
+  manipulates IP address.
+
+: lib/multi-tk
+
+  to allow safe Tk, etc.
+
+: lib/open-uri
+
+  easy-to-use wrapper for net/http and net/ftp
+
+: lib/optparse
+
+  command line options utility library
+
+: lib/pathname
+
+  handles pathname in OO manner.
+
+: lib/pp
+
+  prettyprinter for Ruby objects
+
+: lib/prettyprint
+
+  implements prettyprint algorithm.
+
+: lib/profiler
+
+  library to implement -r "profile"
+
+: lib/racc/parser
+
+  RACC parser generator runtime in Ruby.
+
+: lib/scanf
+
+  scan string and retrieve object with format
+
+: lib/set
+
+  Set class
+
+: lib/runit
+
+  RubyUnit compatible layer for test/unit
+
+: lib/test/unit
+
+  unit testing framework for Ruby
+
+: lib/tmpdir
+
+  get temporary directory path.
+
+: lib/tsort
+
+  topological sorting library.
+
+: lib/rexml
+
+  REXML XML library
+
+: lib/webrick
+
+  generic internet server kit
+
+: lib/xmlrpc
+
+  simple RPC via XML
+
+: lib/un
+
+  used like 'ruby -run -e cp -- -p foo bar'.  neat, isn't it?
+
+: lib/win32/registry
+
+  win32/registry is registry accessor
+
+: lib/yaml
+
+  YAML Ain't Mark-up Language
+
+= removed libraries
+
+: lib/ftplib
+
+  use net/ftp instead.
+
+: lib/telnet
+
+  use net/telnet instead.
+
+= new port
+
+: WindowsCE port
+: Win32 BCC
+
+= interpreter implementation
+
+: garbage collector
+
+  faster, but uses more memory for the worst case.
+
+: string concatenation
+
+  faster by avoiding too frequent realloc(3).

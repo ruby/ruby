@@ -622,12 +622,12 @@ rb_obj_singleton_methods(argc, argv, obj)
     }
     klass = CLASS_OF(obj);
     list = st_init_numtable();
-    while (klass && FL_TEST(klass, FL_SINGLETON)) {
+    if (klass && FL_TEST(klass, FL_SINGLETON)) {
 	st_foreach(RCLASS(klass)->m_tbl, method_entry, (st_data_t)list);
 	klass = RCLASS(klass)->super;
     }
     if (RTEST(recur)) {
-	while (klass && TYPE(klass) == T_ICLASS) {
+	while (klass && (FL_TEST(klass, FL_SINGLETON) || TYPE(klass) == T_ICLASS)) {
 	    st_foreach(RCLASS(klass)->m_tbl, method_entry, (st_data_t)list);
 	    klass = RCLASS(klass)->super;
 	}

@@ -175,7 +175,8 @@ at_exit {
     runners = {
       '--console' => proc do |suite|
         require 'test/unit/ui/console/testrunner'
-        Test::Unit::UI::Console::TestRunner.run(suite)
+        passed = Test::Unit::UI::Console::TestRunner.run(suite).passed?
+	exit(passed ? 0 : 1)
       end,
       '--gtk' => proc do |suite|
         require 'test/unit/ui/gtk/testrunner'
