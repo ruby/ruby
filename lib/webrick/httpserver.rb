@@ -123,7 +123,7 @@ module WEBrick
     def access_log(config, req, res)
       param = AccessLog::setup_params(config, req, res)
       @config[:AccessLog].each{|logger, fmt|
-        logger << AccessLog::format(fmt, param)
+        logger << AccessLog::format(fmt+"\n", param)
       }
     end
 

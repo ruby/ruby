@@ -36,7 +36,10 @@ module WEBrick
 
     def log(level, data)
       if @log && level <= @level
-        @log << (data + "\n")
+        if /\n\Z/ != data
+          @log << data
+          @log << "\n" if /\n\Z/ !~ data
+        end
       end
     end
 
