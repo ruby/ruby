@@ -335,7 +335,7 @@ class Set
   def ==(set)
     equal?(set) and return true
 
-    set.is_a?(type) && size == set.size or return false
+    set.is_a?(Set) && size == set.size or return false
 
     set.each { |o| include?(o) or return false }
 
@@ -347,7 +347,7 @@ class Set
   end
 
   def eql?(o)
-    @hash == o.hash
+    @hash.hash == o.hash
   end
 
   def classify
