@@ -1,3 +1,7 @@
+Tue Jun 20 10:54:19 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* configure.in: add eval sitedir.
+
 Tue Jun 20 06:14:43 2000  Wakou Aoyama <wakou@fsinet.or.jp>
 
 	* lib/cgi.rb: change: version syntax. old: x.yz, now: x.y.z
