@@ -123,20 +123,6 @@ extern int ReadDataPending();
      }\
 } while(0)
 
-#ifndef EWOULDBLOCK
-#define EWOULDBLOCK EAGAIN
-#endif
-
-#ifdef O_NDELAY 
-# define NONBLOCKING O_NDELAY
-#else
-#ifdef O_NBIO
-# define NONBLOCKING O_NBIO
-#else
-# define NONBLOCKING O_NONBLOCK
-#endif
-#endif
-
 void
 rb_eof_error()
 {

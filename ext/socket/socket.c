@@ -769,6 +769,7 @@ ruby_connect(fd, sockaddr, len, socks)
 	    }
 	}
 #ifdef HAVE_FCNTL
+	mode &= ~NONBLOCKING;	/* needed? */
 	fcntl(fd, F_SETFL, mode);
 #endif
 	return status;
