@@ -79,19 +79,17 @@ static int
 rb_any_cmp(a, b)
     VALUE a, b;
 {
+    VALUE args[2];
     if (FIXNUM_P(a)) {
 	if (FIXNUM_P(b)) return a != b;
     }
     else if (TYPE(a) == T_STRING) {
 	if (TYPE(b) == T_STRING) return rb_str_cmp(a, b);
     }
-    else {
-	VALUE args[2];
 
-	args[0] = a;
-	args[1] = b;
-	return !rb_with_disable_interrupt(eql, (VALUE)args);
-    }
+    args[0] = a;
+    args[1] = b;
+    return !rb_with_disable_interrupt(eql, (VALUE)args);
 }
 
 static int

@@ -1,3 +1,12 @@
+Wed Nov 10 21:54:11 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* hash.c (rb_any_cmp): Fixed return without value.
+
+Wed Nov 10 17:57:06 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* sprintf.c: incorporate <yasuf@big.or.jp>'s sprintf patch at
+	  [ruby-dev:7754]. 
+
 Wed Nov 10 08:28:53 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (rb_call0): supply class parameter for each invocation.

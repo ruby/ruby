@@ -136,7 +136,29 @@ double rb_big2dbl _((VALUE));
 }
 
 #define GETARG() \
-    ((argc == 0)?(rb_raise(rb_eArgError, "too few argument."),0):(argc--,((argv++)[0])))
+    ((nextarg >= argc) ? (rb_raise(rb_eArgError, "too few argument."), 0) : argv[nextarg++])
+
+#define GETASTER(val) { \
+    t = p++; \
+    n = 0; \
+    for (; p < end && ISDIGIT(*p); p++) { \
+	n = 10 * n + (*p - '0'); \
+    } \
+    if (p >= end) { \
+	rb_raise(rb_eArgError, "malformed format string - %%*[0-9]"); \
+    } \
+    if (*p == '$') { \
+	int curarg = nextarg; \
+	nextarg = n; \
+	tmp = GETARG(); \
+	nextarg = curarg; \
+    } \
+    else { \
+	tmp = GETARG(); \
+	p = t; \
+    } \
+    val = NUM2INT(tmp); \
+}
 
 VALUE
 rb_f_sprintf(argc, argv)
@@ -149,6 +171,7 @@ rb_f_sprintf(argc, argv)
     VALUE result;
 
     int width, prec, flags = FNONE;
+    int nextarg = 0;
     VALUE tmp;
     VALUE str;
 
@@ -161,6 +184,7 @@ rb_f_sprintf(argc, argv)
 
     for (; p < end; p++) {
 	char *t;
+	int n;
 
 	for (t = p; t < end && *t != '%'; t++) ;
 	CHECK(t - p);
@@ -208,14 +232,20 @@ rb_f_sprintf(argc, argv)
 
 	  case '1': case '2': case '3': case '4':
 	  case '5': case '6': case '7': case '8': case '9':
-	    flags |= FWIDTH;
-	    width = 0;
+	    n = 0;
 	    for (; p < end && ISDIGIT(*p); p++) {
-		width = 10 * width + (*p - '0');
+		n = 10 * n + (*p - '0');
 	    }
 	    if (p >= end) {
 		rb_raise(rb_eArgError, "malformed format string - %%[0-9]");
 	    }
+	    if (*p == '$') {
+		nextarg = n;
+		p++;
+		goto retry;
+	    }
+	    width = n;
+	    flags |= FWIDTH;
 	    goto retry;
 
 	  case '*':
@@ -224,8 +254,7 @@ rb_f_sprintf(argc, argv)
 	    }
 
 	    flags |= FWIDTH;
-	    tmp = GETARG();
-	    width = NUM2INT(tmp);
+	    GETASTER(width);
 	    if (width < 0) {
 		flags |= FMINUS;
 		width = -width;
@@ -241,8 +270,7 @@ rb_f_sprintf(argc, argv)
 	    prec = 0;
 	    p++;
 	    if (*p == '*') {
-		tmp = GETARG();
-		prec = NUM2INT(tmp);
+		GETASTER(prec);
 		if (prec > 0)
 		    flags |= FPREC;
 		p++;
@@ -612,9 +640,14 @@ rb_f_sprintf(argc, argv)
     }
 
   sprint_exit:
-    if (RTEST(ruby_verbose) && argc > 0) {
+#if 0
+    /* XXX - We cannot validiate the number of arguments because
+     *       the format string may contain `n$'-style argument selector.
+     */
+    if (RTEST(ruby_verbose) && nextarg < argc) {
 	rb_raise(rb_eArgError, "too many argument for format string");
     }
+#endif
     result = rb_str_new(buf, blen);
     free(buf);
 

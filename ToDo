@@ -35,6 +35,7 @@ Standard Libraries
 - hash.fetch(key) raises exception if key is not found.
 - Array#{first,last,at}
 - Dir.glob(pat){|f|...}
+- sprintf/printf's $ to specify argument order
 * Dir.glob("**/*.c") ala zsh
 * Struct::new([name,]member,...) ??
 * String#scanf(?)
