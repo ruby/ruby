@@ -32,7 +32,7 @@ Sat Aug  7 00:50:01 2004  Tanaka Akira  <akr@m17n.org>
 
 	* ext/zlib/zlib.c: Zlib::GzipReader#read(0) returns "" instead of nil.
 
-Mon Aug  3 13:49:12 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+Tue Aug  3 13:49:12 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/namespace.rb: bug fix
 
@@ -207,7 +207,7 @@ Sat Jul 17 23:54:59 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/variable.rb: TkVariable#ref returns a TkVariable object
 
-Sat Jul 17 22:04:44  akira yamada  <akira@ruby-lang.org>
+Sat Jul 17 22:04:44 2004  akira yamada  <akira@ruby-lang.org>
 
 	* lib/uri/ldap.rb: method hierarchical? should be in URI::LDAP.
 
@@ -2594,7 +2594,7 @@ Sat Mar  6 02:00:19 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/openssl/lib/net/https.rb: ditto.
 
-Fri Mar  6 00:39:21 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
+Sat Mar  6 00:39:21 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
 
 	* oniggnu.h: imported from Oniguruma library.
 	* oniguruma.h: ditto.
@@ -2943,7 +2943,7 @@ Sun Feb 22 12:58:35 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in, bcc32/Makefile.sub, win32/Makefile.sub: ditto.
 
-Sat Feb 22 09:51:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
+Sun Feb 22 09:51:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
 
 	* re.c: corrected documentation format (rb_reg_initialize_m)
 
@@ -3030,7 +3030,7 @@ Thu Feb 19 02:37:28 2004  Minero Aoki  <aamine@loveruby.net>
 	* ext/strscan/strscan.c: merge documentation from 1.8 branch.
 	  Thanks Gavin Sinclair.
 
-Wed Feb 19 00:20:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
+Thu Feb 19 00:20:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
 
 	* lib/cgi-lib.rb:   deprecated after 1.8.1
 
@@ -3464,11 +3464,11 @@ Sun Feb  8 14:24:35 2004  Minero Aoki  <aamine@loveruby.net>
 	* lib/net/http.rb (HTTP#request): should not overwrite Connection
 	  header. (ruby-bugs:PR#1274)
 
-Sat Feb  8 10:11:21 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+Sun Feb  8 10:11:21 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* dir.c (glob_helper): Dir.glob('**/') did not work. [ruby-dev:22832]
 
-Sat Feb  8 00:29:26 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+Sun Feb  8 00:29:26 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* dir.c (fnmatch): File.fnmatch('*?', 'a') should return true.
 	  [ruby-dev:22815]
@@ -4736,7 +4736,7 @@ Fri Dec 26 10:58:58 2003  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* MANIFEST: add vms/config.h and remove vms/config.h_in.
 
-Thu Dec 26 10:42:00 2003  AKIYOSHI, Masamichi <masamichi.akiyoshi@hp.com>
+Fri Dec 26 10:42:00 2003  AKIYOSHI, Masamichi <masamichi.akiyoshi@hp.com>
 
 	* io.c: [VMS] "rfm=stmlf" is specified for open() and fopen().
 
@@ -8446,7 +8446,7 @@ Fri Sep 12 12:09:54 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (rb_big_xor): ditto.
 
-Fri Sep 11 22:06:14 2003   David Black <dblack@superlink.net>
+Fri Sep 12 07:06:14 2003   David Black <dblack@superlink.net>
 
 	* lib/scanf.rb: Took out useless @matched_item variable; some small
 	  refactoring.
@@ -9030,7 +9030,7 @@ Fri Aug 22 01:00:31 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (block_pass): improve passing current block.
 
-Tue Aug 21 00:13:00 2003  Shigeo Kobayashi  <shigek@ruby-lang.org>
+Fri Aug 22 00:13:00 2003  Shigeo Kobayashi  <shigek@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c: Int. overflow bug in multiplication
 	  fixed, and VpNmlz() speed up.
@@ -9392,7 +9392,7 @@ Thu Aug  7 04:19:15 2003  Akinori MUSHA  <knu@iDaemons.org>
 	  Linux/ia64.  This makes gc.c compile but miniruby coredumps for
 	  the moment.
 
-Wed Aug  7 00:15:00 2003  Shigeo Kobayashi  <shigek@ruby-lang.org>
+Thu Aug  7 00:15:00 2003  Shigeo Kobayashi  <shigek@ruby-lang.org>
 
 	* ext/bigdecimal.c: Comparison results adjusted to Float's.
 	* ext/bigdecimal.c: Use rb_num_coerce_????(x,y) instead of own.
