@@ -636,6 +636,13 @@ rb_reg_search(re, str, pos, reverse)
     if (NIL_P(match) || FL_TEST(match, MATCH_BUSY)) {
 	match = match_alloc();
     }
+    else {
+	if (rb_safe_level() >= 3) 
+	    OBJ_TAINT(match);
+	else
+	    FL_UNSET(match, FL_TAINT);
+    }
+
     re_copy_registers(RMATCH(match)->regs, &regs);
     RMATCH(match)->str = rb_str_new4(str);
     rb_backref_set(match);

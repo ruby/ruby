@@ -3743,6 +3743,7 @@ str_extend(list, term, paren)
 	  case '!': case '@': case ',':
 	  case '.': case '=': case ':':
 	  case '<': case '>': case '\\':
+	  case ';':
 	  refetch:
 	    tokadd(c);
 	    goto fetch_id;

@@ -35,6 +35,7 @@ extern "C" {
 #include <stdio.h>
 
 /* need to include <ctype.h> to use these macros */
+#ifndef ISUPPER
 #undef ISPRINT
 #define ISPRINT(c) isprint((unsigned char)(c))
 #define ISSPACE(c) isspace((unsigned char)(c))
@@ -44,6 +45,7 @@ extern "C" {
 #define ISALPHA(c) isalpha((unsigned char)(c))
 #define ISDIGIT(c) isdigit((unsigned char)(c))
 #define ISXDIGIT(c) isxdigit((unsigned char)(c))
+#endif
 
 #ifndef __STDC__
 # define volatile
