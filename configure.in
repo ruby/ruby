@@ -43,12 +43,6 @@ AC_ARG_ENABLE(fat-binary,
    	        TARGET_ARCHS="ppc i386"
   		fi
 	;;
-    macos*)
-        echo -n "MacOS X : "
-	  	if test "$TARGET_ARCHS" = "" ; then
-   	        TARGET_ARCHS="ppc i386"
-  		fi
-	;;
     nextstep*|openstep*)
   	    echo -n "NeXTSTEP/OPENSTEP: "
 	    if test "$TARGET_ARCHS" = "" ; then
@@ -146,7 +140,6 @@ case "$host_os" in
 nextstep*)	;;
 openstep*)	;;
 rhapsody*)	;;
-macos*)	;;
 human*)		ac_cv_func_getpgrp_void=yes;;
 beos*)		;;
 cygwin*)	;;
@@ -401,7 +394,6 @@ if test "$with_dln_a_out" != yes; then
     nextstep*)	;;
     openstep*)	;;
     rhapsody*)	;;
-    macos*)	;;
     human*)	;;
     bsdi*)	;;
     cygwin*)	;;
@@ -481,10 +473,6 @@ if test "$with_dln_a_out" != yes; then
 			LDFLAGS=""
 			DLDFLAGS="$ARCH_FLAG"
 			rb_cv_dlopen=yes ;;
-	macos*)		LDSHARED='cc -dynamic -bundle -undefined suppress'
-			LDFLAGS=""
-			DLDFLAGS="$ARCH_FLAG"
-			rb_cv_dlopen=yes ;;
 	aix*)		LDSHARED='/usr/ccs/bin/ld'
 			XLDFLAGS='-Wl,-bE:ruby.imp'
 			DLDFLAGS='-eInit_$(TARGET) -bI:$(topdir)/ruby.imp -bM:SRE -T512 -H512 -lc'
@@ -553,8 +541,6 @@ else
 	 	AC_DEFINE(DLEXT, ".bundle");;
     rhapsody*)	DLEXT=bundle
 	 	AC_DEFINE(DLEXT, ".bundle");;
-    macos*)	DLEXT=bundle
-	 	AC_DEFINE(DLEXT, ".bundle");;
     cygwin*)	DLEXT=dll
 	 	AC_DEFINE(DLEXT, ".dll");;
     os2_emx*)	DLEXT=dll
@@ -579,8 +565,6 @@ case "$host_os" in
   openstep*)
 	STRIP='strip -A -n';;
   rhapsody*)
-	STRIP='strip -A -n';;
-  macos*)
 	STRIP='strip -A -n';;
 esac
 

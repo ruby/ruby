@@ -84,10 +84,6 @@ class String
     h
   end
 
-  def bsquote(str)
-    str.gsub(/\\/, '\\\\\\\\')
-  end
-
   HashCache = {}
   TrPatternCache = {}
   DeletePatternCache = {}
@@ -98,7 +94,7 @@ class String
   def tr!(from, to)
     return self.delete!(from) if to.length == 0
 
-    pattern = TrPatternCache[from] ||= /[#{bsquote(from)}]/
+    pattern = TrPatternCache[from] ||= /[#{Regexp::quote(from)}]/
     if from[0] == ?^
       last = /.$/.match(to)[0]
       self.gsub!(pattern, last)
@@ -113,7 +109,7 @@ class String
   end
 
   def delete!(del)
-    self.gsub!(DeletePatternCache[del] ||= /[#{bsquote(del)}]+/, '')
+    self.gsub!(DeletePatternCache[del] ||= /[#{Regexp::quote(del)}]+/, '')
   end
 
   def delete(del)
@@ -123,7 +119,7 @@ class String
   def squeeze!(del=nil)
     pattern =
       if del
-	SqueezePatternCache[del] ||= /([#{bsquote(del)}])\1+/
+	SqueezePatternCache[del] ||= /([#{Regexp::quote(del)}])\1+/
       else
 	/(.|\n)\1+/
       end
@@ -137,7 +133,7 @@ class String
   def tr_s!(from, to)
     return self.delete!(from) if to.length == 0
 
-    pattern = SqueezePatternCache[from] ||= /([#{bsquote(from)}])\1+"/
+    pattern = SqueezePatternCache[from] ||= /([#{Regexp::quote(from)}])\1+"/
     if from[0] == ?^
       last = /.$/.match(to)[0]
       self.gsub!(pattern, last)
@@ -163,5 +159,9 @@ class String
     self.delete("^#{str}").jlength
   end
 
+  def each_char(&block)
+    scan(/.|\n/, &block)
+  end
 end
+
 $VERBOSE = $vsave

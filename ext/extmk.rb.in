@@ -503,7 +503,7 @@ def extmake(target)
   $objs = nil
   $local_flags = ""
   case RUBY_PLATFORM
-  when /cygwin|beos|openstep|nextstep|rhapsody|macos|i386-os2_emx/
+  when /cygwin|beos|openstep|nextstep|rhapsody|i386-os2_emx/
     $libs = ""
   when /mswin32/
     $LIBEXT = "lib"

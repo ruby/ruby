@@ -582,7 +582,10 @@ rb_io_gets_internal(argc, argv, io)
 		c = getc(f);
 		TRAP_END;
 		if (c == EOF) {
-		    if (ferror(f) && errno == EINTR) continue;
+		    if (ferror(f)) {
+			ig (errno == EINTR) continue;
+			rb_sys_fail(fptr->path);
+		    }
 		    break;
 		}
 		if ((*bp++ = c) == newline) break;
@@ -669,7 +672,10 @@ rb_io_gets(io)
 	c = getc(f);
 	TRAP_END;
 	if (c == EOF) {
-	    if (ferror(f) && errno == EINTR) continue;
+	    if (ferror(f)) {
+		ig (errno == EINTR) continue;
+		rb_sys_fail(fptr->path);
+	    }
 	    break;
 	}
 	if ((*bp++ = c) == '\n') break;

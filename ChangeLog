@@ -1,3 +1,7 @@
+Fri Jun  9 15:11:35 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* time.c (make_time_t): supports daylight saving time.
+
 Fri Jun  9 01:05:55 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* regex.h: export re_mbctab properly on cygwin.

@@ -477,14 +477,20 @@ rb_reg_prepare_re(reg)
 {
     int need_recompile = 0;
 
-    /* case-flag not set for the object */
-    if (!FL_TEST(reg, REG_IGNORECASE)) {
-	int state = FL_TEST(reg, REG_CASESTATE);
+    int state;
 
-	if ((ruby_ignorecase || state) && !(ruby_ignorecase && state))  {
-	    RBASIC(reg)->flags ^= REG_CASESTATE;
-	    need_recompile = 1;
-	}
+    rb_reg_check(re);
+    state = FL_TEST(re, REG_CASESTATE);
+    /* ignorecase status */
+    if (ruby_ignorecase && !state) {
+	FL_SET(re, REG_CASESTATE);
+	RREGEXP(re)->ptr->options |= RE_OPTION_IGNORECASE;
+	need_recompile = 1;
+    }
+    if (!ruby_ignorecase && state) {
+	FL_UNSET(re, REG_CASESTATE);
+	RREGEXP(re)->ptr->options &= ~RE_OPTION_IGNORECASE;
+	need_recompile = 1;
     }
 
     if (!FL_TEST(reg, KCODE_FIXED) &&
@@ -558,7 +564,7 @@ rb_reg_search(reg, str, pos, reverse)
 
     if (result == -2) {
 	rb_reg_raise(RREGEXP(reg)->str, RREGEXP(reg)->len,
-		  "Stack overfow in regexp matcher", reg);
+		  "Stack overflow in regexp matcher", reg);
     }
     if (result < 0) {
 	matchcache = match;

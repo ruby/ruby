@@ -195,6 +195,7 @@ time_arg(argc, argv, tm)
     VALUE v[6];
     int i;
 
+    MEMZERO(tm, struct tm, 1);
     if (argc == 10) {
 	v[0] = argv[5];
 	v[1] = argv[4];
@@ -202,6 +203,7 @@ time_arg(argc, argv, tm)
 	v[3] = argv[2];
 	v[4] = argv[1];
 	v[5] = argv[0];
+	tm->tm_isdst = RTEST(argv[9]) ? 1 : 0;
     }
     else {
 	rb_scan_args(argc, argv, "15", &v[0],&v[1],&v[2],&v[3],&v[4],&v[5]);
@@ -258,9 +260,9 @@ static VALUE time_localtime _((VALUE));
 static VALUE time_get_tm _((VALUE, int));
 
 static time_t
-make_time_t(tptr, fn)
+make_time_t(tptr, utc_or_local)
     struct tm *tptr;
-    struct tm *(*fn)();
+    int utc_or_local;
 {
     struct timeval tv;
     time_t oguess, guess;
@@ -272,21 +274,21 @@ make_time_t(tptr, fn)
     }
     guess = tv.tv_sec;
 
-    tm = (*fn)(&guess);
+    tm = gmtime(&guess);
     if (!tm) goto error;
     t = tptr->tm_year;
     if (t < 69) goto out_of_range;
     while (diff = t - tm->tm_year) {
 	oguess = guess;
-	guess += diff * 364 * 24 * 3600;
+	guess += diff * 363 * 24 * 3600;
 	if (diff > 0 && guess <= oguess) goto out_of_range;
-	tm = (*fn)(&guess);
+	tm = gmtime(&guess);
 	if (!tm) goto error;
     }
     t = tptr->tm_mon;
     while (diff = t - tm->tm_mon) {
 	guess += diff * 27 * 24 * 3600;
-	tm = (*fn)(&guess);
+	tm = gmtime(&guess);
 	if (!tm) goto error;
 	if (tptr->tm_year != tm->tm_year) goto out_of_range;
     }
@@ -295,6 +297,49 @@ make_time_t(tptr, fn)
     guess += (tptr->tm_min - tm->tm_min) * 60;
     guess += (tptr->tm_sec - tm->tm_sec);
     if (guess < 0) goto out_of_range;
+
+    if (!utc_or_local) {	/* localtime zone adjust */
+#if defined(HAVE_DAYLIGHT)
+	extern int daylight;
+	extern long timezone;
+
+	localtime(&guess);
+	guess += timezone + daylight;
+#else
+	struct tm gt, lt;
+	long tzsec;
+
+	t = 0;
+	gt = *gmtime(&guess);
+	lt = *localtime(&guess);
+	tzsec = (gt.tm_min-lt.tm_min)*60 + (gt.tm_hour-lt.tm_hour)*3600;
+
+	if(lt.tm_year > gt.tm_year) {
+	    tzsec -= 24*3600;
+	}
+	else if(gt.tm_year > lt.tm_year) {
+	    tzsec += 24*3600;
+	}
+	else {
+	    tzsec += (gt.tm_yday - lt.tm_yday)*24*3600;
+	}
+
+	if (lt.tm_isdst) tzsec += 3600;
+    
+	guess += tzsec;
+	if (guess < 0) {
+	    goto out_of_range;
+	}
+	tm = localtime(&guess);
+	if (!tm) goto error;
+	if (tm->tm_hour != tptr->tm_hour) {
+	    guess -= 3600;
+	}
+#endif
+	if (guess < 0) {
+	    goto out_of_range;
+	}
+    }
 
     return guess;
 

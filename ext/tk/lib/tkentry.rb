@@ -59,6 +59,14 @@ class TkEntry<TkLabel
     tk_send 'selection', 'to', index
   end
 
+  def validate
+    if tk_send('validate') == '0'
+      false
+    else 
+      true
+    end
+  end
+
   def value
     tk_send 'get'
   end

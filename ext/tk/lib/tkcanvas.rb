@@ -217,7 +217,7 @@ class TkCanvas<TkWindow
 
   def find(mode, *args)
     list(tk_send 'find', mode, *args).filter{|id| 
-      TkcItem.id2obj(id)
+      TkcItem.id2obj(self, id)
     }
   end
   def find_above(target)
@@ -250,14 +250,14 @@ class TkCanvas<TkWindow
       if ret == ""
 	nil
       else
-	TkcItem.id2obj(ret)
+	TkcItem.id2obj(self, ret)
       end
     end
   end
 
   def gettags(tagOrId)
     list(tk_send('gettags', tagid(tagOrId))).collect{|tag|
-      TkcTag.id2obj(tag)
+      TkcTag.id2obj(self, tag)
     }
   end
 
@@ -478,6 +478,41 @@ module TkcTagAccess
   def itemtype
     @c.itemtype @id
   end
+
+  # Followings operators supports logical expressions of canvas tags
+  # (for Tk8.3+).
+  # If tag1.path is 't1' and tag2.path is 't2', then
+  #      ltag = tag1 & tag2; ltag.path => "(t1)&&(t2)"
+  #      ltag = tag1 | tag2; ltag.path => "(t1)||(t2)"
+  #      ltag = tag1 ^ tag2; ltag.path => "(t1)^(t2)"
+  #      ltag = - tag1;      ltag.path => "!(t1)"
+  def & (tag)
+    if tag.kind_of? TkObject
+      TkcTagString.new(@c, '(' + @id + ')&&(' + tag.path + ')')
+    else
+      TkcTagString.new(@c, '(' + @id + ')&&(' + tag.to_s + ')')
+    end
+  end
+
+  def | (tag)
+    if tag.kind_of? TkObject
+      TkcTagString.new(@c, '(' + @id + ')||(' + tag.path + ')')
+    else
+      TkcTagString.new(@c, '(' + @id + ')||(' + tag.to_s + ')')
+    end
+  end
+
+  def ^ (tag)
+    if tag.kind_of? TkObject
+      TkcTagString.new(@c, '(' + @id + ')^(' + tag.path + ')')
+    else
+      TkcTagString.new(@c, '(' + @id + ')^(' + tag.to_s + ')')
+    end
+  end
+
+  def -@
+    TkcTagString.new(@c, '!(' + @id + ')')
+  end
 end
 
 class TkcTag<TkObject
@@ -485,8 +520,10 @@ class TkcTag<TkObject
 
   CTagID_TBL = {}
 
-  def TkcTag.id2obj(id)
-    CTagID_TBL[id]? CTagID_TBL[id]: id
+  def TkcTag.id2obj(canvas, id)
+    cpath = canvas.path
+    return id unless CTagID_TBL[cpath]
+    CTagID_TBL[cpath][id]? CTagID_TBL[cpath][id]: id
   end
 
   Tk_CanvasTag_ID = ['ctag0000']
@@ -495,8 +532,10 @@ class TkcTag<TkObject
       fail format("%s need to be TkCanvas", parent.inspect)
     end
     @c = parent
+    @cpath = parent.path
     @path = @id = Tk_CanvasTag_ID[0]
-    CTagID_TBL[@id] = self
+    CTagID_TBL[@cpath] = {} unless CTagID_TBL[@cpath]
+    CTagID_TBL[@cpath][@id] = self
     Tk_CanvasTag_ID[0] = Tk_CanvasTag_ID[0].succ
     if mode
       tk_call @c.path, "addtag", @id, mode, *args
@@ -508,7 +547,7 @@ class TkcTag<TkObject
 
   def delete
     @c.delete @id
-    CTagID_TBL[@id] = nil
+    CTagID_TBL[@path][@id] = nil if CTagID_TBL[@path]
   end
   alias remove  delete
   alias destroy delete
@@ -534,7 +573,7 @@ class TkcTag<TkObject
   alias closest set_to_closest
 
   def set_to_enclosed(x1, y1, x2, y2)
-    @c.addtag_enclosest(@id, x1, y1, x2, y2)
+    @c.addtag_enclosed(@id, x1, y1, x2, y2)
   end
   alias enclosed set_to_enclosed
 
@@ -549,14 +588,40 @@ class TkcTag<TkObject
   alias withtag set_to_withtag
 end
 
+class TkcTagString<TkcTag
+  def self.new(parent, name, *args)
+    if CTagID_TBL[parent.path] && CTagID_TBL[parent.path][name]
+      return CTagID_TBL[parent.path][name]
+    else
+      super(parent, name, *args)
+    end
+  end
+
+  def initialize(parent, name, mode=nil, *args)
+    if not parent.kind_of?(TkCanvas)
+      fail format("%s need to be TkCanvas", parent.inspect)
+    end
+    @c = parent
+    @cpath = parent.path
+    @path = @id = name
+    CTagID_TBL[@cpath] = {} unless CTagID_TBL[@cpath]
+    CTagID_TBL[@cpath][@id] = self
+    if mode
+      tk_call @c.path, "addtag", @id, mode, *args
+    end
+  end
+end
+
 class TkcTagAll<TkcTag
   def initialize(parent)
     if not parent.kind_of?(TkCanvas)
       fail format("%s need to be TkCanvas", parent.inspect)
     end
     @c = parent
+    @cpath = parent.path
     @path = @id = 'all'
-    CTagID_TBL[@id] = self
+    CTagID_TBL[@cpath] = {} unless CTagID_TBL[@cpath]
+    CTagID_TBL[@cpath][@id] = self
   end
 end
 
@@ -566,8 +631,10 @@ class TkcTagCurrent<TkcTag
       fail format("%s need to be TkCanvas", parent.inspect)
     end
     @c = parent
+    @cpath = parent.path
     @path = @id = 'current'
-    CTagID_TBL[@id] = self
+    CTagID_TBL[@cpath] = {} unless CTagID_TBL[@cpath]
+    CTagID_TBL[@cpath][@id] = self
   end
 end
 
@@ -578,8 +645,10 @@ class TkcGroup<TkcTag
       fail format("%s need to be TkCanvas", parent.inspect)
     end
     @c = parent
+    @cpath = parent.path
     @path = @id = Tk_cGroup_ID[0]
-    CTagID_TBL[@id] = self
+    CTagID_TBL[@cpath] = {} unless CTagID_TBL[@cpath]
+    CTagID_TBL[@cpath][@id] = self
     Tk_cGroup_ID[0] = Tk_cGroup_ID[0].succ
     add(*args) if args != []
   end
@@ -597,7 +666,6 @@ class TkcGroup<TkcTag
   end
 end
 
-
 class TkcItem<TkObject
   include TkcTagAccess
 
@@ -608,8 +676,10 @@ class TkcItem<TkObject
     CItemTypeToClass[type]
   end
 
-  def TkcItem.id2obj(id)
-    CItemID_TBL[id]? CItemID_TBL[id]: id
+  def TkcItem.id2obj(canvas, id)
+    cpath = canvas.path
+    return id unless CItemID_TBL[cpath]
+    CItemID_TBL[cpath][id]? CItemID_TBL[cpath][id]: id
   end
 
   def initialize(parent, *args)
@@ -622,7 +692,8 @@ class TkcItem<TkObject
       keys = args.pop
     end
     @id = create_self(*args).to_i ;# 'canvas item id' is integer number
-    CItemID_TBL[@id] = self
+    CItemID_TBL[@path] = {} unless CItemID_TBL[@path]
+    CItemID_TBL[@path][@id] = self
     if keys
       # tk_call @path, 'itemconfigure', @id, *hash_kv(keys)
       configure(keys) if keys
@@ -636,7 +707,7 @@ class TkcItem<TkObject
 
   def delete
     @c.delete @id
-    CItemID_TBL[@id] = nil
+    CItemID_TBL[@path][@id] = nil if CItemID_TBL[@path]
   end
   alias remove  delete
   alias destroy delete
@@ -766,6 +837,10 @@ class TkPhotoImage<TkImage
     }.flatten
 
     tk_send 'copy', source, *args
+  end
+
+  def data(keys=nil)
+    tk_send 'data', *hash_kv(keys)
   end
 
   def get(x, y)

@@ -457,6 +457,21 @@ module TkCore
     _get_eval_string(TkUtil.eval_cmd(Tk_CMDTBL[arg.shift], *arg))
   end
 
+  def scaling(scale=nil)
+    if scale
+      tk_call('tk', 'scaling', scale)
+    else
+      Float(number(tk_call('tk', 'scaling')))
+    end
+  end
+  def scaling_displayof(win, scale=nil)
+    if scale
+      tk_call('tk', 'scaling', '-displayof', win, scale)
+    else
+      Float(number(tk_call('tk', '-displayof', win, 'scaling')))
+    end
+  end
+
   def appname(name=None)
     tk_call('tk', 'appname', name)
   end
@@ -526,7 +541,7 @@ module TkCore
 
   def tk_call(*args)
     print args.join(" "), "\n" if $DEBUG
-    args.filter {|x|_get_eval_string(x)}
+    args.filter{|x|_get_eval_string(x)}
     args.compact!
     args.flatten!
     begin
@@ -769,6 +784,24 @@ class TkBindTag
 
   def inspect
     format "#<TkBindTag: %s>", @id
+  end
+end
+
+class TkBindTagAll<TkBindTag
+  BindTagALL = []
+  def TkBindTagAll.new(*args)
+    if BindTagALL[0]
+      BindTagALL[0].bind(*args) if args != []
+    else
+      new = super()
+      BindTagALL[0] = new
+    end
+    BindTagALL[0]
+  end
+
+  def initialize(*args)
+    @id = 'all'
+    BindTagALL[0].bind(*args) if args != []
   end
 end
 
@@ -1148,6 +1181,31 @@ module TkKinput
   end
   def kanji_input_end
     TkKinput.input_end(self)
+  end
+end
+
+module TkXIM
+  include Tk
+  extend Tk
+
+  def TkXIM.useinputmethods(window=nil,value=nil)
+    if window
+      if value
+        tk_call 'tk', 'useinputmethods', '-displayof', window.path, value
+      else
+        tk_call 'tk', 'useinputmethods', '-displayof', window.path
+      end
+    else
+      if value
+        tk_call 'tk', 'useinputmethods', value
+      else
+        tk_call 'tk', 'useinputmethods'
+      end
+    end
+  end
+
+  def useinputmethods(value=nil)
+    TkXIM.useinputmethods(self,value)
   end
 end
 
@@ -1807,7 +1865,7 @@ class TkWindow<TkObject
     self
   end
 
-  def unpack(keys = nil)
+  def unpack
     tk_call 'pack', 'forget', epath
     self
   end
@@ -1817,7 +1875,7 @@ class TkWindow<TkObject
     self
   end
 
-  def ungrid(keys = nil)
+  def ungrid
     tk_call 'grid', 'forget', epath
     self
   end
@@ -1827,8 +1885,8 @@ class TkWindow<TkObject
     self
   end
 
-  def unplace(keys = nil)
-    tk_call 'place', 'forget', epath, *hash_kv(keys)
+  def unplace
+    tk_call 'place', 'forget', epath
     self
   end
   alias place_forget unplace
@@ -1894,11 +1952,11 @@ class TkWindow<TkObject
   end
 
   def lower(below=None)
-    tk_call 'lower', path, below
+    tk_call 'lower', epath, below
     self
   end
   def raise(above=None)
-    tk_call 'raise', path, above
+    tk_call 'raise', epath, above
     self
   end
 
@@ -1912,7 +1970,7 @@ class TkWindow<TkObject
   end
 
   def destroy
-    tk_call 'destroy', path
+    tk_call 'destroy', epath
     if @cmdtbl
       for id in @cmdtbl
 	uninstall_cmd id
@@ -1927,7 +1985,7 @@ class TkWindow<TkObject
   alias wait wait_visibility
 
   def wait_destroy
-    tk_call 'tkwait', 'window', path
+    tk_call 'tkwait', 'window', epath
   end
 
   def bindtags(taglist=nil)
@@ -2259,6 +2317,41 @@ class TkListbox<TkTextWin
   def selection_set(first, last=None)
     tk_send 'selection', 'set', first, last
   end
+
+  def itemcget(index, key)
+    tk_tcl2ruby tk_send 'itemcget', index, "-#{key}"
+  end
+  def itemconfigure(index, key, val=None)
+    if key.kind_of? Hash
+      if (key['font'] || key['kanjifont'] ||
+	  key['latinfont'] || key['asciifont'])
+	tagfont_configure(index, key.dup)
+      else
+	tk_send 'itemconfigure', index, *hash_kv(key)
+      end
+
+    else
+      if (key == 'font' || key == 'kanjifont' ||
+	  key == 'latinfont' || key == 'asciifont' )
+	tagfont_configure({key=>val})
+      else
+	tk_call 'itemconfigure', index, "-#{key}", val
+      end
+    end
+  end
+
+  def itemconfiginfo(index, key=nil)
+    if key
+      conf = tk_split_list(tk_send('itemconfigure',index,"-#{key}"))
+      conf[0] = conf[0][1..-1]
+      conf
+    else
+      tk_split_list(tk_send('itemconfigure', index)).collect{|conf|
+	conf[0] = conf[0][1..-1]
+	conf
+      }
+    end
+  end
 end
 
 module TkTreatMenuEntryFont
@@ -2397,6 +2490,9 @@ class TkMenu<TkWindow
   def delete(index, last=None)
     tk_send 'delete', index, last
   end
+  def popup(x, y, index=nil)
+    tk_call 'tk_popup', path, x, y, index
+  end
   def post(x, y)
     tk_send 'post', x, y
   end
@@ -2451,6 +2547,34 @@ class TkMenu<TkWindow
   end
 end
 
+module TkSystemMenu
+  def initialize(parent, keys=nil)
+    fail unless parent.kind_of? TkMenu
+    @path = format("%s.%s", parent.path, self.type::SYSMENU_NAME)
+    TkComm::Tk_WINDOWS[@path] = self
+    create_self
+    configure(keys) if keys
+  end
+end
+
+class TkSysMenu_Help<TkMenu
+  # for all platform
+  include TkSystemMenu
+  SYSMENU_NAME = 'help'
+end
+
+class TkSysMenu_System<TkMenu
+  # for Windows
+  include TkSystemMenu
+  SYSMENU_NAME = 'system'
+end
+
+class TkSysMenu_Apple<TkMenu
+  # for Machintosh
+  include TkSystemMenu
+  SYSMENU_NAME = 'apple'
+end
+
 class TkMenubutton<TkLabel
   WidgetClassNames['Menubutton'] = self
   def TkMenubutton.to_eval
@@ -2458,6 +2582,71 @@ class TkMenubutton<TkLabel
   end
   def create_self
     tk_call 'menubutton', path
+  end
+end
+
+class TkOptionMenubutton<TkMenubutton
+  class OptionMenu<TkMenu
+    def initialize(parent)
+      @path = parent.path + '.menu'
+      TkComm::Tk_WINDOWS[@path] = self
+    end
+  end
+
+  def initialize(parent=nil, var=TkVariable.new, firstval=nil, *vals)
+    fail unless var.kind_of? TkVariable
+    @variable = var
+    firstval = @variable.value unless firstval
+    @variable.value = firstval
+    install_win(if parent then parent.path end)
+    @menu = OptionMenu.new(self)
+    tk_call 'tk_optionMenu', @path, @variable.id, firstval, *vals
+  end
+
+  def value
+    @variable.value
+  end
+
+  def activate(index)
+    @menu.activate(index)
+  end
+  def add(value)
+    @menu.add('radiobutton', 'variable'=>@variable, 
+	      'label'=>value, 'value'=>value)
+  end
+  def index(index)
+    @menu.index(index)
+  end
+  def invoke(index)
+    @menu.invoke(index)
+  end
+  def insert(index, value)
+    @menu.add(index, 'radiobutton', 'variable'=>@variable, 
+	      'label'=>value, 'value'=>value)
+  end
+  def delete(index, last=None)
+    @menu.delete(index, last)
+  end
+  def yposition(index)
+    @menu.yposition(index)
+  end
+  def menucget(index, key)
+    @menu.cget(index, key)
+  end
+  def menuconfigure(index, key, val=None)
+    @menu.configure(index, key, val)
+  end
+  def menuconfiginfo(index, key=nil)
+    @menu.configinfo(index, key)
+  end
+  def entrycget(index, key)
+    @menu.entrycget(index, key)
+  end
+  def entryconfigure(index, key, val=None)
+    @menu.entryconfigure(index, key, val)
+  end
+  def entryconfiginfo(index, key=nil)
+    @menu.entryconfiginfo(index, key)
   end
 end
 
