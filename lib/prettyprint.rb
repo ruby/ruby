@@ -41,17 +41,17 @@ non-string formatting, etc.
     The block is used to generate spaces.
     (({{|width| ' ' * width}})) is used if it is not given.
 
---- PrettyPrint.format([output[, maxwidth[, newline[, genspace]]]]) {|pp| ...}
+--- PrettyPrint.format([output[, maxwidth[, newline[, genspace]]]]) {|q| ...}
     is a convenience method which is same as follows:
 
       begin
-        pp = PrettyPrint.new(output, maxwidth, newline, &genspace)
+        q = PrettyPrint.new(output, maxwidth, newline, &genspace)
         ...
-        pp.flush
+        q.flush
         output
       end
 
---- PrettyPrint.singleline_format([output[, maxwidth[, newline[, genspace]]]]) {|pp| ...}
+--- PrettyPrint.singleline_format([output[, maxwidth[, newline[, genspace]]]]) {|q| ...}
     is similar to (({PrettyPrint.format})) but the result has no breaks.
 
     ((|maxwidth|)), ((|newline|)) and ((|genspace|)) are ignored.
@@ -99,11 +99,11 @@ non-string formatting, etc.
     current group.
     It is useful to format comma separated values as:
 
-      pp.group(1, '[', ']') {
+      q.group(1, '[', ']') {
         xxx.each {|yyy|
-          unless pp.first?
-            pp.text ','
-            pp.breakable
+          unless q.first?
+            q.text ','
+            q.breakable
           end
           ... pretty printing yyy ...
         }
@@ -125,15 +125,15 @@ Tanaka Akira <akr@m17n.org>
 
 class PrettyPrint
   def PrettyPrint.format(output='', maxwidth=79, newline="\n", genspace=lambda {|n| ' ' * n})
-    pp = PrettyPrint.new(output, maxwidth, newline, &genspace)
-    yield pp
-    pp.flush
+    q = PrettyPrint.new(output, maxwidth, newline, &genspace)
+    yield q
+    q.flush
     output
   end
 
   def PrettyPrint.singleline_format(output='', maxwidth=nil, newline=nil, genspace=nil)
-    pp = SingleLine.new(output)
-    yield pp
+    q = SingleLine.new(output)
+    yield q
     output
   end
 
@@ -274,12 +274,12 @@ class PrettyPrint
   end
 
   class Breakable
-    def initialize(sep, width, pp)
+    def initialize(sep, width, q)
       @obj = sep
       @width = width
-      @pp = pp
-      @indent = pp.indent
-      @group = pp.current_group
+      @pp = q
+      @indent = q.indent
+      @group = q.current_group
       @group.breakables.push self
     end
     attr_reader :obj, :width, :indent
@@ -474,7 +474,7 @@ End
     end
 
     def tree(width)
-      PrettyPrint.format('', width) {|pp| @tree.show(pp)}
+      PrettyPrint.format('', width) {|q| @tree.show(q)}
     end
 
     def test_tree_00_19
@@ -519,7 +519,7 @@ End
     end
 
     def tree_alt(width)
-      PrettyPrint.format('', width) {|pp| @tree.altshow(pp)}
+      PrettyPrint.format('', width) {|q| @tree.altshow(q)}
     end
 
     def test_tree_alt_00_18
@@ -582,50 +582,50 @@ End
         @children = children
       end
 
-      def show(pp)
-        pp.group {
-          pp.text @string
-          pp.nest(@string.length) {
+      def show(q)
+        q.group {
+          q.text @string
+          q.nest(@string.length) {
             unless @children.empty?
-              pp.text '['
-              pp.nest(1) {
+              q.text '['
+              q.nest(1) {
                 first = true
                 @children.each {|t|
                   if first
                     first = false
                   else
-                    pp.text ','
-                    pp.breakable
+                    q.text ','
+                    q.breakable
                   end
-                  t.show(pp)
+                  t.show(q)
                 }
               }
-              pp.text ']'
+              q.text ']'
             end
           }
         }
       end
 
-      def altshow(pp)
-        pp.group {
-          pp.text @string
+      def altshow(q)
+        q.group {
+          q.text @string
           unless @children.empty?
-            pp.text '['
-            pp.nest(2) {
-              pp.breakable
+            q.text '['
+            q.nest(2) {
+              q.breakable
               first = true
               @children.each {|t|
                 if first
                   first = false
                 else
-                  pp.text ','
-                  pp.breakable
+                  q.text ','
+                  q.breakable
                 end
-                t.altshow(pp)
+                t.altshow(q)
               }
             }
-            pp.breakable
-            pp.text ']'
+            q.breakable
+            q.text ']'
           end
         }
       end
@@ -635,28 +635,28 @@ End
 
   class StrictPrettyExample < Test::Unit::TestCase
     def prog(width)
-      PrettyPrint.format('', width) {|pp|
-        pp.group {
-          pp.group {pp.nest(2) {
-                       pp.text "if"; pp.breakable;
-                       pp.group {
-                         pp.nest(2) {
-                           pp.group {pp.text "a"; pp.breakable; pp.text "=="}
-                           pp.breakable; pp.text "b"}}}}
-          pp.breakable
-          pp.group {pp.nest(2) {
-                       pp.text "then"; pp.breakable;
-                       pp.group {
-                         pp.nest(2) {
-                           pp.group {pp.text "a"; pp.breakable; pp.text "<<"}
-                           pp.breakable; pp.text "2"}}}}
-          pp.breakable
-          pp.group {pp.nest(2) {
-                       pp.text "else"; pp.breakable;
-                       pp.group {
-                         pp.nest(2) {
-                           pp.group {pp.text "a"; pp.breakable; pp.text "+"}
-                           pp.breakable; pp.text "b"}}}}}
+      PrettyPrint.format('', width) {|q|
+        q.group {
+          q.group {q.nest(2) {
+                       q.text "if"; q.breakable;
+                       q.group {
+                         q.nest(2) {
+                           q.group {q.text "a"; q.breakable; q.text "=="}
+                           q.breakable; q.text "b"}}}}
+          q.breakable
+          q.group {q.nest(2) {
+                       q.text "then"; q.breakable;
+                       q.group {
+                         q.nest(2) {
+                           q.group {q.text "a"; q.breakable; q.text "<<"}
+                           q.breakable; q.text "2"}}}}
+          q.breakable
+          q.group {q.nest(2) {
+                       q.text "else"; q.breakable;
+                       q.group {
+                         q.nest(2) {
+                           q.group {q.text "a"; q.breakable; q.text "+"}
+                           q.breakable; q.text "b"}}}}}
       }
     end
 
@@ -780,17 +780,17 @@ End
 
   class TailGroup < Test::Unit::TestCase
     def test_1
-      out = PrettyPrint.format('', 10) {|pp|
-        pp.group {
-          pp.group {
-            pp.text "abc"
-            pp.breakable
-            pp.text "def"
+      out = PrettyPrint.format('', 10) {|q|
+        q.group {
+          q.group {
+            q.text "abc"
+            q.breakable
+            q.text "def"
           }
-          pp.group {
-            pp.text "ghi"
-            pp.breakable
-            pp.text "jkl"
+          q.group {
+            q.text "ghi"
+            q.breakable
+            q.text "jkl"
           }
         }
       }
@@ -800,10 +800,10 @@ End
 
   class NonString < Test::Unit::TestCase
     def format(width)
-      PrettyPrint.format([], width, 'newline', lambda {|n| "#{n} spaces"}) {|pp|
-        pp.text(3, 3)
-        pp.breakable(1, 1)
-        pp.text(3, 3)
+      PrettyPrint.format([], width, 'newline', lambda {|n| "#{n} spaces"}) {|q|
+        q.text(3, 3)
+        q.breakable(1, 1)
+        q.text(3, 3)
       }
     end
 
@@ -819,21 +819,21 @@ End
 
   class Fill < Test::Unit::TestCase
     def format(width)
-      PrettyPrint.format('', width) {|pp|
-        pp.group {
-          pp.text 'abc'
-          pp.fill_breakable
-          pp.text 'def'
-          pp.fill_breakable
-          pp.text 'ghi'
-          pp.fill_breakable
-          pp.text 'jkl'
-          pp.fill_breakable
-          pp.text 'mno'
-          pp.fill_breakable
-          pp.text 'pqr'
-          pp.fill_breakable
-          pp.text 'stu'
+      PrettyPrint.format('', width) {|q|
+        q.group {
+          q.text 'abc'
+          q.fill_breakable
+          q.text 'def'
+          q.fill_breakable
+          q.text 'ghi'
+          q.fill_breakable
+          q.text 'jkl'
+          q.fill_breakable
+          q.text 'mno'
+          q.fill_breakable
+          q.text 'pqr'
+          q.fill_breakable
+          q.text 'stu'
         }
       }
     end

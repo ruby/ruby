@@ -1,3 +1,9 @@
+Tue Dec 16 21:20:47 2003  Tanaka Akira  <akr@m17n.org>
+
+	* lib/pp.rb: don't use local variable `pp'.
+
+	* lib/prettyprint.rb: ditto.
+
 Tue Dec 16 13:20:43 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: condition bug of if statement on 
