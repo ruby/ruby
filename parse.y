@@ -4351,6 +4351,7 @@ yycompile(parser, f, line)
 
     ruby_current_node = 0;
     ruby_sourcefile = rb_source_filename(f);
+    ruby_sourceline = line - 1;
     n = yyparse((void*)parser);
     ruby_debug_lines = 0;
     compile_for_eval = 0;
@@ -4402,7 +4403,11 @@ static VALUE
 lex_getline(parser)
     struct parser_params *parser;
 {
-    return (*parser->parser_lex_gets)(parser, parser->parser_lex_input);
+    VALUE line = (*parser->parser_lex_gets)(parser, parser->parser_lex_input);
+    if (ruby_debug_lines && !NIL_P(line)) {
+	rb_ary_push(ruby_debug_lines, line);
+    }
+    return line;
 }
 
 #ifndef RIPPER
@@ -4419,7 +4424,6 @@ rb_compile_string(f, s, line)
     lex_gets_ptr = 0;
     lex_input = s;
     lex_pbeg = lex_p = lex_pend = 0;
-    ruby_sourceline = line - 1;
     compile_for_eval = ruby_in_eval;
 
     return yycompile(parser, f, line);
@@ -4454,7 +4458,6 @@ rb_compile_file(f, file, start)
     lex_gets = lex_io_gets;
     lex_input = file;
     lex_pbeg = lex_p = lex_pend = 0;
-    ruby_sourceline = start - 1;
 
     return yycompile(parser, f, start);
 }

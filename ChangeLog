@@ -1,3 +1,7 @@
+Wed Oct 20 10:31:33 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (lex_getline): should update ruby_debug_lines.
+
 Wed Oct 20 04:17:55 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/dbm/dbm.c (fdbm_delete_if): should check if deleting element

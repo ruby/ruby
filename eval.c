@@ -2457,6 +2457,7 @@ call_trace_func(event, node, self, id, klass)
     if (!trace_func) return;
     if (tracing) return;
     if (id == ID_ALLOCATOR) return;
+    if (!node && ruby_sourceline == 0) return;
 
     if (!(node_save = ruby_current_node)) {
 	node_save = NEW_BEGIN(0);
@@ -2491,7 +2492,7 @@ call_trace_func(event, node, self, id, klass)
 					    INT2FIX(ruby_sourceline),
 					    id?ID2SYM(id):Qnil,
 					    self?rb_f_binding(self):Qnil,
-					    klass),
+					    klass?klass:Qnil),
 		    Qundef, 0);
     }
     if (raised) thread_set_raised();

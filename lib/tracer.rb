@@ -97,6 +97,7 @@ class Tracer
 	SCRIPT_LINES__[file] = list = []
       end
     end
+
     if l = list[line - 1]
       l
     else
