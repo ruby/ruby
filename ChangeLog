@@ -1,3 +1,7 @@
+Thu Nov 20 19:19:22 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in: don't find the Cygwin's pthread library on MinGW.
+
 Thu Nov 20 19:15:50 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (have_st_ino?): emx (OS/2 with EMX) does not
