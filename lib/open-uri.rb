@@ -221,6 +221,7 @@ module OpenURI
       if StringIO === @io && StringMax < @size
         require 'tempfile'
         io = Tempfile.new('open-uri')
+        io.binmode
         Meta.init io, @io if Meta === @io
         io << @io.string
         @io = io

@@ -1,7 +1,8 @@
-Sun Feb  1 03:07:25 2004  Tanaka Akira  <akr@m17n.org>
+Sun Feb  1 05:30:06 2004  Tanaka Akira  <akr@m17n.org>
 
 	* lib/open-uri.rb (URI::Generic#find_proxy): warn HTTP_PROXY.
 	 raise an errror on non-http proxy URI.
+	 (OpenURI::Buffer#<<): make a tempfile binmode.
 
 Sun Feb  1 00:57:41 2004  Kouhei Sutou  <kou@cozmixng.org>
 
