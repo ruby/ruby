@@ -1,3 +1,8 @@
+Thu Jan  8 08:46:14 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/syck/rubyext.c (yaml_org_handler): lazy-load Date for
+	  static-ext.
+
 Thu Jan  8 07:06:30 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb: preserve order in Setup.  [ruby-dev:22503]
