@@ -279,10 +279,10 @@ fdbm_shift(obj)
     key = dbm_firstkey(dbm); 
     if (!key.dptr) return Qnil;
     val = dbm_fetch(dbm, key);
-    dbm_delete(dbm, key);
-
     keystr = rb_tainted_str_new(key.dptr, key.dsize);
     valstr = rb_tainted_str_new(val.dptr, val.dsize);
+    dbm_delete(dbm, key);
+
     return rb_assoc_new(keystr, valstr);
 }
 

@@ -1,3 +1,7 @@
+Wed May  2 11:46:13 2001  K.Kosako  <kosako@sofnec.co.jp>
+
+	* eval.c (block_pass): should not downgrade safe level.
+
 Tue May  1 17:55:58 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (yylex): lex_state after RESCUE_MOD should be EXPR_BEG.
@@ -24,7 +28,7 @@ Thu Apr 26 22:30:43 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Thu Apr 26 10:36:09 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* eval.c (rb_thread_schedule): inifinite sleep should not cause
+       * eval.c (rb_thread_schedule): infinite sleep should not cause
 	  dead lock.
 
 Wed Apr 25 16:40:44 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -33,7 +37,7 @@ Wed Apr 25 16:40:44 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Wed Apr 25 15:36:15 2001  K.Kosako  <kosako@sofnec.co.jp>
 
-	* eval.c (yield_under): need not to prohibit at safe leve 4.
+       * eval.c (yield_under): need not to prohibit at safe level 4.
 
 Tue Apr 24 16:03:25 2001  Hiroshi Igarashi  <iga@ruby-lang.org>
 

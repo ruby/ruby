@@ -68,10 +68,12 @@ class PStore
   end
 
   def commit
+    in_transaction
     @abort = false
     throw :pstore_abort_transaction
   end
   def abort
+    in_transaction
     @abort = true
     throw :pstore_abort_transaction
   end

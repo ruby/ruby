@@ -6428,6 +6428,8 @@ block_pass(self, node)
     state = EXEC_TAG();
     if (state == 0) {
 	proc_set_safe_level(block);
+	if (safe > ruby_safe_level)
+	    ruby_safe_level = safe;
 	result = rb_eval(self, node->nd_iter);
     }
     POP_TAG();
