@@ -2,7 +2,7 @@
   regerror.c -  Oniguruma (regular expression library)
 **********************************************************************/
 /*-
- * Copyright (c) 2002-2004  K.Kosako  <kosako AT sofnec DOT co DOT jp>
+ * Copyright (c) 2002-2004  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -78,8 +78,8 @@ onig_error_code_to_format(int code)
     p = "empty char-class"; break;
   case ONIGERR_PREMATURE_END_OF_CHAR_CLASS:
     p = "premature end of char-class"; break;
-  case ONIGERR_END_PATTERN_AT_BACKSLASH:
-    p = "end pattern at backslash"; break;
+  case ONIGERR_END_PATTERN_AT_ESCAPE:
+    p = "end pattern at escape"; break;
   case ONIGERR_END_PATTERN_AT_META:
     p = "end pattern at meta"; break;
   case ONIGERR_END_PATTERN_AT_CONTROL:

@@ -4,7 +4,7 @@
   regenc.h -  Oniguruma (regular expression library)
 **********************************************************************/
 /*-
- * Copyright (c) 2002-2004  K.Kosako  <kosako AT sofnec DOT co DOT jp>
+ * Copyright (c) 2002-2004  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -64,6 +64,8 @@
 
 #else  /* ONIG_RUBY_M17N */
 
+#define USE_UNICODE_FULL_RANGE_CTYPE
+
 #define ONIG_ENCODING_INIT_DEFAULT           ONIG_ENCODING_ASCII
 
 /* for encoding system implementation (internal) */
@@ -71,7 +73,7 @@ ONIG_EXTERN int onigenc_ascii_get_all_pair_ambig_codes P_((OnigAmbigType flag, O
 ONIG_EXTERN int onigenc_nothing_get_all_comp_ambig_codes P_((OnigAmbigType flag, OnigCompAmbigCodes** acs));
 ONIG_EXTERN int onigenc_iso_8859_1_get_all_pair_ambig_codes P_((OnigAmbigType flag, OnigPairAmbigCodes** acs));
 ONIG_EXTERN int onigenc_ess_tsett_get_all_comp_ambig_codes P_((OnigAmbigType flag, OnigCompAmbigCodes** acs));
-ONIG_EXTERN int onigenc_not_support_get_ctype_code_range P_((int ctype, int* nsb, int* nmb, OnigCodePointRange* sbr[], OnigCodePointRange* mbr[]));
+ONIG_EXTERN int onigenc_not_support_get_ctype_code_range P_((int ctype, OnigCodePoint* sbr[], OnigCodePoint* mbr[]));
 ONIG_EXTERN int onigenc_is_mbc_newline_0x0a P_((UChar* p, UChar* end));
 
 /* methods for single byte encoding */
@@ -103,7 +105,7 @@ ONIG_EXTERN int onigenc_get_all_fold_match_code_ss_0xdf P_((OnigCodePoint** code
 
 /* in enc/unicode.c */
 ONIG_EXTERN int onigenc_unicode_is_code_ctype P_((OnigCodePoint code, unsigned int ctype));
-ONIG_EXTERN int onigenc_unicode_get_ctype_code_range P_((int ctype, int* nsb, int* nmb, OnigCodePointRange* sbr[], OnigCodePointRange* mbr[]));
+ONIG_EXTERN int onigenc_unicode_get_ctype_code_range P_((int ctype, OnigCodePoint* sbr[], OnigCodePoint* mbr[]));
 
 
 #define ONIGENC_ISO_8859_1_TO_LOWER_CASE(c) \
@@ -125,6 +127,8 @@ onigenc_with_ascii_strncmp P_((OnigEncoding enc, UChar* p, UChar* end, UChar* sa
 ONIG_EXTERN UChar*
 onigenc_step P_((OnigEncoding enc, UChar* p, UChar* end, int n));
 
+/* defined in regexec.c, but used in enc/xxx.c */
+extern int  onig_is_in_code_range P_((UChar* p, OnigCodePoint code));
 
 ONIG_EXTERN OnigEncoding  OnigEncDefaultCharEncoding;
 ONIG_EXTERN UChar* OnigEncAsciiToLowerCaseTable;
