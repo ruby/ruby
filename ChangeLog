@@ -1,3 +1,10 @@
+Wed Aug  2 18:27:47 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_thread_wait_fd): prohibit thread context switch
+	  during compilation.
+
+	* eval.c (rb_cont_call): prohibit Continuation#call across threads.
+
 Wed Aug  2 08:22:04 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* gc.c (rb_gc): clear malloc_memories to zero, to avoid potential

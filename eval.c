@@ -478,6 +478,8 @@ rb_attr(klass, id, read, write, ex)
     }
 }
 
+extern int ruby_in_compile;
+
 VALUE ruby_errinfo = Qnil;
 extern NODE *ruby_eval_tree_begin;
 extern NODE *ruby_eval_tree;
@@ -6892,7 +6894,6 @@ find_bad_fds(dst, src, max)
 void
 rb_thread_schedule()
 {
-    extern int ruby_in_compile;
     rb_thread_t next;		/* OK */
     rb_thread_t th;
     rb_thread_t curr;
@@ -6905,11 +6906,6 @@ rb_thread_schedule()
     double delay, now;	/* OK */
     int n, max;
     int need_select = 0;
-
-    if (ruby_in_compile) {
-	printf("switch during compilation.\n");
-	abort();
-    }
 
     rb_thread_pending = 0;
     if (curr_thread == curr_thread->next
@@ -7093,6 +7089,7 @@ rb_thread_wait_fd(fd)
     int fd;
 {
     if (curr_thread == curr_thread->next) return;
+    if (ruby_in_compile) return;
 
     curr_thread->status = THREAD_STOPPED;
     curr_thread->fd = fd;
