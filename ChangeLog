@@ -1,4 +1,4 @@
-Mon Feb  7 00:13:38 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Feb  7 01:21:50 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/extconf.rb: check if getaddrinfo() works fine only when
 	  wide-getaddrinfo option is not given.  fixed: [ruby-dev:25422]
@@ -21,6 +21,8 @@ Mon Feb  7 00:13:38 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* mkconfig.rb: no longer embed srcdir and compile_dir into
 	  rbconfig.rb.
+
+	* lib/mkmf.rb (create_makefile): fix unbalanced parens.
 
 Sun Feb  6 19:23:01 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 

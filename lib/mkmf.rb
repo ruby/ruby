@@ -996,7 +996,7 @@ static:		$(STATIC_LIB)
       while line = dfile.gets()
 	line.gsub!(/\.o\b/, ".#{$OBJEXT}")
 	if $nmake
-	  line.gsub!(%r"(\s)([^\s\/]+\.(?:#{SRC_EXT.join('|')})(?=\s|\z)", '\1{.;$(VPATH)}\2')
+	  line.gsub!(%r"(\s)([^\s\/]+\.(?:#{SRC_EXT.join('|')}))(?=\s|\z)", '\1{.;$(VPATH)}\2')
 	end
 	line.gsub!(/\$\(hdrdir\)\/config.h/, $config_h) if $config_h
 	mfile.print line
