@@ -238,7 +238,13 @@ rb_reg_expr_str(str, s, len)
     else {
 	p = s; 
 	while (p<pend) {
-	    if (*p == '/') {
+	    if (*p == '\\') {
+		rb_str_buf_cat(str, p++, 1);
+		if (p<pend) {
+		    rb_str_buf_cat(str, p, 1);
+		}
+	    }
+	    else if (*p == '/') {
 		char c = '\\';
 		rb_str_buf_cat(str, &c, 1);
 		rb_str_buf_cat(str, p, 1);

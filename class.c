@@ -772,11 +772,11 @@ rb_define_attr(klass, name, read, write)
 
 int
 #ifdef HAVE_STDARG_PROTOTYPES
-rb_scan_args(int argc, VALUE *argv, const char *fmt, ...)
+rb_scan_args(int argc, const VALUE *argv, const char *fmt, ...)
 #else
 rb_scan_args(argc, argv, fmt, va_alist)
     int argc;
-    VALUE *argv;
+    const VALUE *argv;
     const char *fmt;
     va_dcl
 #endif

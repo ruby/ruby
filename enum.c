@@ -6,7 +6,7 @@
   $Date$
   created at: Fri Oct  1 15:15:19 JST 1993
 
-  Copyright (C) 1993-2001 Yukihiro Matsumoto
+  Copyright (C) 1993-2002 Yukihiro Matsumoto
 
 **********************************************************************/
 
@@ -172,12 +172,12 @@ static VALUE
 enum_collect(obj)
     VALUE obj;
 {
-    VALUE tmp;
+    VALUE ary;
 
-    tmp = rb_ary_new();
-    rb_iterate(rb_each, obj, rb_block_given_p() ? collect_i : collect_all, tmp);
+    ary = rb_ary_new();
+    rb_iterate(rb_each, obj, rb_block_given_p() ? collect_i : collect_all, ary);
 
-    return tmp;
+    return ary;
 }
 
 static VALUE

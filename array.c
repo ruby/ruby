@@ -173,7 +173,7 @@ rb_ary_new3(n, va_alist)
 VALUE
 rb_ary_new4(n, elts)
     long n;
-    VALUE *elts;
+    const VALUE *elts;
 {
     VALUE ary;
 

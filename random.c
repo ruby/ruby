@@ -6,7 +6,7 @@
   $Date$
   created at: Fri Dec 24 16:39:21 JST 1993
 
-  Copyright (C) 1993-2001 Yukihiro Matsumoto
+  Copyright (C) 1993-2002 Yukihiro Matsumoto
 
 **********************************************************************/
 
@@ -77,7 +77,7 @@ void srand48 _((long));
 #endif /* not HAVE_DRAND48 */
 
 static int first = 1;
-#ifdef HAVE_RANDOM
+#ifdef HAVE_INITSTATE
 static char state[256];
 #endif
 
@@ -88,7 +88,7 @@ rand_init(seed)
     int old;
     static unsigned int saved_seed;
 
-#if defined HAVE_INITSTATE
+#ifdef HAVE_INITSTATE
     if (first == 1) {
 	initstate(1, state, sizeof state);
     }
@@ -111,11 +111,11 @@ rb_f_srand(argc, argv, obj)
     VALUE *argv;
     VALUE obj;
 {
-    VALUE a;
+    VALUE sd;
     unsigned int seed, old;
 
     rb_secure(4);
-    if (rb_scan_args(argc, argv, "01", &a) == 0) {
+    if (rb_scan_args(argc, argv, "01", &sd) == 0) {
 	static int n = 0;
 	struct timeval tv;
 
@@ -123,7 +123,7 @@ rb_f_srand(argc, argv, obj)
 	seed = tv.tv_sec ^ tv.tv_usec ^ getpid() ^ n++;
     }
     else {
-	seed = NUM2UINT(a);
+	seed = NUM2UINT(sd);
     }
     old = rand_init(seed);
 

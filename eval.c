@@ -518,12 +518,13 @@ static struct SCOPE *top_scope;
     _frame.argc = 0;			\
     _frame.argv = 0;			\
     _frame.flags = FRAME_ALLOCA;	\
-    ruby_frame = &_frame;		\
+    ruby_frame = &_frame
 
 #define POP_FRAME()  			\
     ruby_sourcefile = _frame.file;	\
     ruby_sourceline = _frame.line;	\
-    ruby_frame = _frame.prev; }
+    ruby_frame = _frame.prev;		\
+}
 
 struct BLOCKTAG {
     struct RBasic super;
@@ -581,7 +582,7 @@ new_blktag()
     _block.flags = BLOCK_D_SCOPE;	\
     _block.dyna_vars = ruby_dyna_vars;	\
     _block.wrapper = ruby_wrapper;	\
-    ruby_block = &_block;
+    ruby_block = &_block
 
 #define POP_BLOCK() 			\
    if (_block.tag->flags & (BLOCK_DYNAMIC)) \
@@ -595,7 +596,7 @@ struct RVarmap *ruby_dyna_vars;
 #define PUSH_VARS() { \
     struct RVarmap * volatile _old; \
     _old = ruby_dyna_vars; \
-    ruby_dyna_vars = 0;
+    ruby_dyna_vars = 0
 
 #define POP_VARS() \
    if (_old && (ruby_scope->flags & SCOPE_DONT_RECYCLE)) {\
@@ -750,7 +751,7 @@ static struct iter *ruby_iter;
     struct iter _iter;			\
     _iter.prev = ruby_iter;		\
     _iter.iter = (i);			\
-    ruby_iter = &_iter;			\
+    ruby_iter = &_iter
 
 #define POP_ITER()			\
     ruby_iter = _iter.prev;		\
@@ -777,7 +778,7 @@ static struct tag *prot_tag;
     _tag.scope = ruby_scope;		\
     _tag.tag = ptag;			\
     _tag.dst = 0;			\
-    prot_tag = &_tag;
+    prot_tag = &_tag
 
 #define PROT_NONE   0
 #define PROT_FUNC   -1
@@ -785,11 +786,11 @@ static struct tag *prot_tag;
 
 #define EXEC_TAG()    setjmp(prot_tag->buf)
 
-#define JUMP_TAG(st) {			\
+#define JUMP_TAG(st) do {		\
     ruby_frame = prot_tag->frame;	\
     ruby_iter = prot_tag->iter;		\
     longjmp(prot_tag->buf,(st));	\
-}
+} while (0)
 
 #define POP_TAG()			\
     if (_tag.prev)			\
@@ -815,9 +816,10 @@ VALUE ruby_class;
 static VALUE ruby_wrapper;	/* security wrapper */
 
 #define PUSH_CLASS() {			\
-    VALUE _class = ruby_class;		\
+    VALUE _class = ruby_class
 
-#define POP_CLASS() ruby_class = _class; }
+#define POP_CLASS() ruby_class = _class; \
+}
 
 static NODE *ruby_cref = 0;
 static NODE *top_cref;
@@ -834,7 +836,7 @@ static NODE *top_cref;
     _scope->flags = 0;			\
     _old = ruby_scope;			\
     ruby_scope = _scope;		\
-    scope_vmode = SCOPE_PUBLIC;
+    scope_vmode = SCOPE_PUBLIC
 
 typedef struct thread * rb_thread_t;
 static rb_thread_t curr_thread = 0;
@@ -863,7 +865,7 @@ static VALUE eval _((VALUE,VALUE,VALUE,char*,int));
 static NODE *compile _((VALUE, char*, int));
 
 static VALUE rb_yield_0 _((VALUE, VALUE, VALUE, int));
-static VALUE rb_call _((VALUE,VALUE,ID,int,VALUE*,int));
+static VALUE rb_call _((VALUE,VALUE,ID,int,const VALUE*,int));
 static VALUE module_setup _((VALUE,NODE*));
 
 static VALUE massign _((VALUE,NODE*,VALUE,int));
@@ -1150,7 +1152,7 @@ ruby_options(argc, argv)
 {
     int state;
 
-    PUSH_TAG(PROT_NONE)
+    PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
 	ruby_process_options(argc, argv);
     }
@@ -1714,7 +1716,7 @@ copy_node_scope(node, rval)
 # define TMP_ALLOC(n) ALLOCA_N(VALUE,n)
 #endif
 
-#define SETUP_ARGS(anode) {\
+#define SETUP_ARGS(anode) do {\
     NODE *n = anode;\
     if (!n) {\
 	argc = 0;\
@@ -1752,14 +1754,14 @@ copy_node_scope(node, rval)
 	ruby_sourcefile = file;\
 	ruby_sourceline = line;\
     }\
-}
+} while (0)
 
 #define BEGIN_CALLARGS {\
     struct BLOCK *tmp_block = ruby_block;\
     if (ruby_iter->iter == ITER_PRE) {\
 	ruby_block = ruby_block->prev;\
     }\
-    PUSH_ITER(ITER_NOT);
+    PUSH_ITER(ITER_NOT)
 
 #define END_CALLARGS \
     ruby_block = tmp_block;\
@@ -4651,7 +4653,7 @@ rb_call(klass, recv, mid, argc, argv, scope)
     VALUE klass, recv;
     ID    mid;
     int argc;			/* OK */
-    VALUE *argv;		/* OK */
+    const VALUE *argv;		/* OK */
     int scope;
 {
     NODE  *body;		/* OK */
@@ -4780,7 +4782,7 @@ rb_funcall2(recv, mid, argc, argv)
     VALUE recv;
     ID mid;
     int argc;
-    VALUE *argv;
+    const VALUE *argv;
 {
     return rb_call(CLASS_OF(recv), recv, mid, argc, argv, 1);
 }
@@ -4790,7 +4792,7 @@ rb_funcall3(recv, mid, argc, argv)
     VALUE recv;
     ID mid;
     int argc;
-    VALUE *argv;
+    const VALUE *argv;
 {
     return rb_call(CLASS_OF(recv), recv, mid, argc, argv, 0);
 }
@@ -4798,7 +4800,7 @@ rb_funcall3(recv, mid, argc, argv)
 VALUE
 rb_call_super(argc, argv)
     int argc;
-    VALUE *argv;
+    const VALUE *argv;
 {
     VALUE result;
 
@@ -8372,7 +8374,7 @@ rb_thread_abort_exc_set(thread, val)
     th->priority = 0;\
     th->gid = 1;\
     th->locals = 0;\
-} while(0)
+} while (0)
 
 static rb_thread_t
 rb_thread_alloc(klass)

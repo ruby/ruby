@@ -58,6 +58,10 @@ str_new(klass, ptr, len)
 {
     VALUE str = rb_obj_alloc(klass);
 
+    if (len < 0) {
+	rb_raise(rb_eArgError, "negative string size (or size too big)");
+    }
+
     RSTRING(str)->len = len;
     RSTRING(str)->aux.capa = len;
     RSTRING(str)->ptr = ALLOC_N(char,len+1);
@@ -460,8 +464,8 @@ void
 rb_str_modify(str)
     VALUE str;
 {
-    if (str_independent(str)) return;
-    str_make_independent(str);
+    if (!str_independent(str))
+	str_make_independent(str);
 }
 
 VALUE

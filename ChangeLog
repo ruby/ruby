@@ -7,9 +7,30 @@ Wed Apr 17 23:55:34 2002  Akinori MUSHA  <knu@iDaemons.org>
 	* ext/Setup*, ext/bigfloat/*: Back out the import of BigFloat in
 	  favor of its forthcoming successor, BigDecimal.
 
+Wed Apr 17 16:53:33 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_expr_str): should treat backslash specially in
+	  escaping.
+
+Wed Apr 17 08:16:41 2002  Michal Rokos  <m.rokos@sh.cvut.cz>
+
+	* io.c: complete off_t handling; missing argument for
+	  fptr_finalize(); polished rb_scan_args call.
+
+Wed Apr 17 00:01:59 2002  Michal Rokos  <m.rokos@sh.cvut.cz>
+
+	* dir.c: wrap multi-statment macro by do { } while (0)
+
+	* eval.c, numeric,c, sprintf.c, util.c: ditto.
+
 Tue Apr 16 08:59:50 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* eval.c (assign): convert mrhs to mvalue.
+
+Mon Apr 15 18:12:57 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_big_eq): check `y == x' if y is neither Fixnum,
+	  Bignum, nor Float.
 
 Mon Apr 15 09:27:31 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

@@ -6,7 +6,7 @@
   $Date$
   created at: Fri Oct 15 10:39:26 JST 1993
 
-  Copyright (C) 1993-2001 Yukihiro Matsumoto
+  Copyright (C) 1993-2002 Yukihiro Matsumoto
   Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
   Copyright (C) 2000  Information-technology Promotion Agency, Japan
 
@@ -62,23 +62,22 @@ remove_sign_bits(str, base)
 #define FWIDTH 32
 #define FPREC  64
 
-#define CHECK(l) {\
+#define CHECK(l) \
     while (blen + (l) >= bsiz) {\
 	REALLOC_N(buf, char, bsiz*2);\
 	bsiz*=2;\
-    }\
-}
+    }
 
-#define PUSH(s, l) { \
+#define PUSH(s, l) do { \
     CHECK(l);\
     memcpy(&buf[blen], s, l);\
     blen += (l);\
-}
+} while (0)
 
 #define GETARG() \
     ((nextarg >= argc) ? (rb_raise(rb_eArgError, "too few argument."), 0) : argv[nextarg++])
 
-#define GETASTER(val) { \
+#define GETASTER(val) do { \
     t = p++; \
     n = 0; \
     for (; p < end && ISDIGIT(*p); p++) { \
@@ -98,7 +97,7 @@ remove_sign_bits(str, base)
 	p = t; \
     } \
     val = NUM2INT(tmp); \
-}
+} while (0)
 
 VALUE
 rb_f_sprintf(argc, argv)

@@ -6,7 +6,7 @@
   $Date$
   created at: Fri Mar 10 17:22:34 JST 1995
 
-  Copyright (C) 1993-2001 Yukihiro Matsumoto
+  Copyright (C) 1993-2002 Yukihiro Matsumoto
 
 **********************************************************************/
 
@@ -464,8 +464,8 @@ static void mmrot3_(a, b, c, mmarg)
 /*****************************************************/
 
 typedef struct { char *LL, *RR; } stack_node; /* Stack structure for L,l,R,r */
-#define PUSH(ll,rr) {top->LL = (ll); top->RR = (rr); ++top;}  /* Push L,l,R,r */
-#define POP(ll,rr)  {--top; ll = top->LL; rr = top->RR;}      /* Pop L,l,R,r */
+#define PUSH(ll,rr) do { top->LL = (ll); top->RR = (rr); ++top; } while (0)  /* Push L,l,R,r */
+#define POP(ll,rr)  do { --top; ll = top->LL; rr = top->RR; } while (0)      /* Pop L,l,R,r */
 
 #define med3(a,b,c) ((*cmp)(a,b)<0 ?                                   \
                        ((*cmp)(b,c)<0 ? b : ((*cmp)(a,c)<0 ? c : a)) : \

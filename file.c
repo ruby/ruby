@@ -1678,7 +1678,7 @@ rb_file_s_truncate(klass, path, len)
     SafeStringValue(path);
 
 #ifdef HAVE_TRUNCATE
-    if (truncate(RSTRING(path)->ptr, NUM2INT(len)) < 0)
+    if (truncate(RSTRING(path)->ptr, NUM2OFFT(len)) < 0)
 	rb_sys_fail(RSTRING(path)->ptr);
 #else
 # ifdef HAVE_CHSIZE
@@ -1694,7 +1694,7 @@ rb_file_s_truncate(klass, path, len)
 	    rb_sys_fail(RSTRING(path)->ptr);
 	}
 #  endif
-	if (chsize(tmpfd, NUM2INT(len)) < 0) {
+	if (chsize(tmpfd, NUM2OFFT(len)) < 0) {
 	    close(tmpfd);
 	    rb_sys_fail(RSTRING(path)->ptr);
 	}
@@ -1719,11 +1719,11 @@ rb_file_truncate(obj, len)
 	rb_raise(rb_eIOError, "not opened for writing");
     }
 #ifdef HAVE_TRUNCATE
-    if (ftruncate(fileno(fptr->f), NUM2INT(len)) < 0)
+    if (ftruncate(fileno(fptr->f), NUM2OFFT(len)) < 0)
 	rb_sys_fail(fptr->path);
 #else
 # ifdef HAVE_CHSIZE
-    if (chsize(fileno(fptr->f), NUM2INT(len)) < 0)
+    if (chsize(fileno(fptr->f), NUM2OFFT(len)) < 0)
 	rb_sys_fail(fptr->path);
 # else
     rb_notimplement();

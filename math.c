@@ -6,7 +6,7 @@
   $Date$
   created at: Tue Jan 25 14:12:56 JST 1994
 
-  Copyright (C) 1993-2001 Yukihiro Matsumoto
+  Copyright (C) 1993-2002 Yukihiro Matsumoto
 
 **********************************************************************/
 
@@ -16,16 +16,17 @@
 VALUE rb_mMath;
 
 #define Need_Float(x) (x) = rb_Float(x)
-#define Need_Float2(x,y) {\
+#define Need_Float2(x,y) do {\
     Need_Float(x);\
     Need_Float(y);\
-}
+} while (0)
 
 static VALUE
 math_atan2(obj, y, x)
     VALUE obj, x, y;
 {
     Need_Float2(y, x);
+    
     return rb_float_new(atan2(RFLOAT(y)->value, RFLOAT(x)->value));
 }
 
@@ -85,6 +86,7 @@ math_atan(obj, x)
     VALUE obj, x;
 {
     Need_Float(x);
+    
     return rb_float_new(atan(RFLOAT(x)->value));
 }
 
@@ -102,6 +104,7 @@ math_cosh(obj, x)
     VALUE obj, x;
 {
     Need_Float(x);
+    
     return rb_float_new(cosh(RFLOAT(x)->value));
 }
 
@@ -119,6 +122,7 @@ math_sinh(obj, x)
     VALUE obj, x;
 {
     Need_Float(x);
+    
     return rb_float_new(sinh(RFLOAT(x)->value));
 }
 
@@ -136,6 +140,7 @@ math_tanh(obj, x)
     VALUE obj, x;
 {
     Need_Float(x);
+    
     return rb_float_new(tanh(RFLOAT(x)->value));
 }
 
@@ -144,6 +149,7 @@ math_acosh(obj, x)
     VALUE obj, x;
 {
     Need_Float(x);
+    
     return rb_float_new(acosh(RFLOAT(x)->value));
 }
 
@@ -152,6 +158,7 @@ math_asinh(obj, x)
     VALUE obj, x;
 {
     Need_Float(x);
+    
     return rb_float_new(asinh(RFLOAT(x)->value));
 }
 
@@ -160,6 +167,7 @@ math_atanh(obj, x)
     VALUE obj, x;
 {
     Need_Float(x);
+    
     return rb_float_new(atanh(RFLOAT(x)->value));
 }
 
@@ -168,6 +176,7 @@ math_exp(obj, x)
     VALUE obj, x;
 {
     Need_Float(x);
+    
     return rb_float_new(exp(RFLOAT(x)->value));
 }
 
@@ -181,6 +190,7 @@ math_log(obj, x)
     VALUE obj, x;
 {
     Need_Float(x);
+    
     return rb_float_new(log(RFLOAT(x)->value));
 }
 
@@ -189,6 +199,7 @@ math_log10(obj, x)
     VALUE obj, x;
 {
     Need_Float(x);
+    
     return rb_float_new(log10(RFLOAT(x)->value));
 }
 
@@ -210,8 +221,8 @@ math_frexp(obj, x)
     int exp;
 
     Need_Float(x);
+    
     d = frexp(RFLOAT(x)->value, &exp);
-
     return rb_assoc_new(rb_float_new(d), INT2NUM(exp));
 }
 
@@ -222,6 +233,7 @@ math_ldexp(obj, x, n)
     double d;
 
     Need_Float(x);
+    
     return rb_float_new(d = ldexp(RFLOAT(x)->value, NUM2INT(n)));
 }
 
@@ -230,6 +242,7 @@ math_hypot(obj, x, y)
     VALUE obj, x, y;
 {
     Need_Float2(x, y);
+    
     return rb_float_new(hypot(RFLOAT(x)->value, RFLOAT(y)->value));
 }
 

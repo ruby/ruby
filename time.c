@@ -6,7 +6,7 @@
   $Date$
   created at: Tue Dec 28 14:31:59 JST 1993
 
-  Copyright (C) 1993-2001 Yukihiro Matsumoto
+  Copyright (C) 1993-2002 Yukihiro Matsumoto
 
 **********************************************************************/
 
@@ -40,9 +40,8 @@ struct time_object {
     int tm_got;
 };
 
-#define GetTimeval(obj, tobj) {\
-    Data_Get_Struct(obj, struct time_object, tobj);\
-}
+#define GetTimeval(obj, tobj) \
+    Data_Get_Struct(obj, struct time_object, tobj)
 
 static VALUE
 time_s_alloc(klass)

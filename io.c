@@ -364,7 +364,7 @@ rb_io_seek(io, offset, whence)
     int whence;
 {
     OpenFile *fptr;
-    long pos;
+    off_t pos;
 
     GetOpenFile(io, fptr);
     pos = fseeko(fptr->f, NUM2OFFT(offset), whence);
@@ -381,11 +381,11 @@ rb_io_seek_m(argc, argv, io)
     VALUE io;
 {
     VALUE offset, ptrname;
-    int whence;
+    int whence = SEEK_SET;
 
-    rb_scan_args(argc, argv, "11", &offset, &ptrname);
-    if (argc == 1) whence = SEEK_SET;
-    else whence = NUM2INT(ptrname);
+    if (rb_scan_args(argc, argv, "11", &offset, &ptrname) == 2) {
+	whence = NUM2INT(ptrname);
+    }
 
     return rb_io_seek(io, offset, whence);
 }
@@ -395,14 +395,14 @@ rb_io_set_pos(io, offset)
      VALUE io, offset;
 {
     OpenFile *fptr;
-    long pos;
+    off_t pos;
 
     GetOpenFile(io, fptr);
     pos = fseeko(fptr->f, NUM2OFFT(offset), SEEK_SET);
     if (pos != 0) rb_sys_fail(fptr->path);
     clearerr(fptr->f);
 
-    return INT2NUM(pos);
+    return OFFT2NUM(pos);
 }
 
 static VALUE
@@ -1161,6 +1161,7 @@ rb_io_isatty(io)
 static void
 fptr_finalize(fptr, fin)
     OpenFile *fptr;
+    int fin;
 {
     int n1 = 0, n2 = 0, e = 0, f1, f2 = -1;
 
@@ -1318,13 +1319,13 @@ rb_io_sysseek(argc, argv, io)
     VALUE io;
 {
     VALUE offset, ptrname;
-    int whence;
+    int whence = SEEK_SET;
     OpenFile *fptr;
     off_t pos;
 
-    rb_scan_args(argc, argv, "11", &offset, &ptrname);
-    if (argc == 1) whence = SEEK_SET;
-    else whence = NUM2INT(ptrname);
+    if (rb_scan_args(argc, argv, "11", &offset, &ptrname) == 2) {
+	whence = NUM2INT(ptrname);
+    }
 
     GetOpenFile(io, fptr);
     if ((fptr->mode & FMODE_READABLE) && READ_DATA_PENDING(fptr->f)) {

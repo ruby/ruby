@@ -6,7 +6,7 @@
   $Date$
   created at: Wed Jan  5 09:51:01 JST 1994
 
-  Copyright (C) 1993-2001 Yukihiro Matsumoto
+  Copyright (C) 1993-2002 Yukihiro Matsumoto
   Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
   Copyright (C) 2000  Information-technology Promotion Agency, Japan
 
@@ -313,10 +313,10 @@ dir_closed()
     rb_raise(rb_eIOError, "closed directory");
 }
 
-#define GetDIR(obj, dirp) {\
+#define GetDIR(obj, dirp) do {\
     Data_Get_Struct(obj, struct dir_data, dirp);\
     if (dirp->dir == NULL) dir_closed();\
-}
+} while (0)
 
 static VALUE
 dir_path(dir)
