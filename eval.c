@@ -6789,14 +6789,12 @@ rb_thread_schedule()
     now = -1.0;
 
     FOREACH_THREAD_FROM(curr, th) {
-	if (!found) {
-	    if (th->status <= THREAD_RUNNABLE)
-		found = 1;
+	if (!found && th->status <= THREAD_RUNNABLE) {
+	    found = 1;
 	}
 	if (th->status != THREAD_STOPPED) continue;
 	if (th->wait_for & WAIT_JOIN) {
 	    if (rb_thread_dead(th->join)) {
-		th->wait_for = 0;
 		th->status = THREAD_RUNNABLE;
 		found = 1;
 	    }
@@ -6820,7 +6818,6 @@ rb_thread_schedule()
 	    if (now < 0.0) now = timeofday();
 	    th_delay = th->delay - now;
 	    if (th_delay <= 0.0) {
-		th->wait_for = 0;
 		th->status = THREAD_RUNNABLE;
 		found = 1;
 	    } else if (th_delay < delay) {
@@ -6905,7 +6902,7 @@ rb_thread_schedule()
 
     FOREACH_THREAD_FROM(curr, th) {
 	if (th->status <= THREAD_RUNNABLE) {
-	    if (!next || next->priority < th->priority)
+	    if (!next || next->priority < th->priority) 
 	       next = th;
 	}
     }
@@ -6928,6 +6925,7 @@ rb_thread_schedule()
 	next->status = THREAD_TO_KILL;
 	rb_thread_deadlock();
     }
+    next->wait_for = 0;
     if (next->status == THREAD_RUNNABLE && next == curr_thread) {
 	return;
     }
