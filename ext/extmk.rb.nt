@@ -451,7 +451,7 @@ if $extlist.size > 0
     if File.exist?(l)
       $extinit += format("\
 \tInit_%s();\n\
-\trb_provide(\"%s.o\");\n\
+\trb_provide(\"%s.so\");\n\
 ", s, s)
       $extobjs += "ext/"
       #$extobjs += f  # *.obj

@@ -331,8 +331,8 @@ VALUE rb_method_booundp();
 #define NOEX_PRIVATE   2
 #define NOEX_PROTECTED 4 
 
-NODE *rb_compile_cstr _((const char*, const char*, int));
-NODE *rb_compile_string _((const char*, VALUE));
+NODE *rb_compile_cstr _((const char*, const char*, int, int));
+NODE *rb_compile_string _((const char*, VALUE, int));
 NODE *rb_compile_file _((const char*, VALUE, int));
 
 void rb_add_method _((VALUE, ID, NODE *, int));

@@ -416,7 +416,6 @@ struct BLOCK {
     struct BLOCK *prev;
 };
 static struct BLOCK *ruby_block;
-static struct BLOCK *ruby_calling_block;
 
 #define PUSH_BLOCK(v,b) {		\
     struct BLOCK _block;		\
@@ -443,12 +442,9 @@ static struct BLOCK *ruby_calling_block;
     struct BLOCK * volatile _old;	\
     struct BLOCK * volatile _old_call;	\
     _old = ruby_block;			\
-    _old_call = ruby_calling_block;	\
-    ruby_calling_block = b;		\
     ruby_block = b;
 
 #define POP_BLOCK2() 			\
-   ruby_calling_block = _old_call;	\
    ruby_block = _old;	 		\
 }
 
@@ -474,6 +470,14 @@ new_dvar(id, value)
     vars->next = ruby_dyna_vars;
 
     return vars;
+}
+
+static void
+mark_dvar(vars)
+    struct RVarmap *vars;
+{
+    ruby_dyna_vars = new_dvar(0, 0);
+    ruby_dyna_vars->next = vars;
 }
 
 VALUE
@@ -512,14 +516,16 @@ rb_dvar_push(id, value)
     ruby_dyna_vars = new_dvar(id, value);
 }
 
-void
-rb_dvar_asgn(id, value)
+static void
+dvar_asgn(id, value, push)
     ID id;
     VALUE value;
+    int push;
 {
     struct RVarmap *vars = ruby_dyna_vars;
 
     while (vars) {
+	if (push && vars->id == 0) break;
 	if (vars->id == id) {
 	    vars->val = value;
 	    return;
@@ -527,7 +533,14 @@ rb_dvar_asgn(id, value)
 	vars = vars->next;
     }
     rb_dvar_push(id, value);
-    return;
+}
+
+void
+rb_dvar_asgn(id, value)
+    ID id;
+    VALUE value;
+{
+    dvar_asgn(id, value, 0);
 }
 
 static void
@@ -535,9 +548,16 @@ dvar_asgn_push(id, value)
     ID id;
     VALUE value;
 {
-    rb_dvar_asgn(id, value);
-    if (ruby_calling_block) {
-	ruby_calling_block->d_vars = ruby_dyna_vars;
+    struct RVarmap* vars = 0;
+
+    if (ruby_dyna_vars && ruby_dyna_vars->id == 0) {
+	vars = ruby_dyna_vars;
+	ruby_dyna_vars = ruby_dyna_vars->next;
+    }
+    dvar_asgn(id, value, 1);
+    if (vars) {
+	vars->next = ruby_dyna_vars;
+	ruby_dyna_vars = vars;
     }
 }
 
@@ -653,7 +673,7 @@ static VALUE ruby_wrapper;	/* security wrapper */
 
 static VALUE rb_eval _((VALUE,NODE*));
 static VALUE eval _((VALUE,VALUE,VALUE,char*,int));
-static NODE *compile _((VALUE));
+static NODE *compile _((VALUE, char*, int));
 static VALUE rb_yield_0 _((VALUE, VALUE, VALUE));
 
 static VALUE rb_call _((VALUE,VALUE,ID,int,VALUE*,int));
@@ -2451,7 +2471,9 @@ rb_eval(self, node)
 		      case NODE_EVSTR:
 			ruby_sourceline = nd_line(node);
 			ruby_in_eval++;
-			list->nd_head = compile(list->nd_head->nd_lit);
+			list->nd_head = compile(list->nd_head->nd_lit,
+						ruby_sourcefile,
+						ruby_sourceline);
 			ruby_eval_tree = 0;
 			ruby_in_eval--;
 			if (ruby_nerrs > 0) {
@@ -3106,7 +3128,7 @@ rb_yield_0(val, self, klass)
     old_scope = ruby_scope;
     ruby_scope = block->scope;
     ruby_block = block->prev;
-    ruby_dyna_vars = block->d_vars;
+    mark_dvar(block->d_vars);
     ruby_class = klass?klass:block->klass;
     if (!self) self = block->self;
     node = block->body;
@@ -4086,13 +4108,15 @@ rb_frame_last_func()
 }
 
 static NODE*
-compile(src)
+compile(src, file, line)
     VALUE src;
+    char *file;
+    int line;
 {
     NODE *node;
 
     Check_Type(src, T_STRING);
-    node = rb_compile_string("(eval)", src);
+    node = rb_compile_string(file, src, line);
 
     if (ruby_nerrs == 0) return node;
     return 0;
@@ -4135,8 +4159,6 @@ eval(self, src, scope, file, line)
 	ruby_frame = &(frame);
 	old_scope = ruby_scope;
 	ruby_scope = data->scope;
-	old_call_block = ruby_calling_block;
-	ruby_calling_block = data;
 	old_block = ruby_block;
 	ruby_block = data->prev;
 	old_d_vars = ruby_dyna_vars;
@@ -4161,9 +4183,7 @@ eval(self, src, scope, file, line)
     }
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
-	ruby_sourcefile = file;
-	ruby_sourceline = line - 1;
-	compile(src);
+	compile(src, file, line);
 	if (ruby_nerrs > 0) {
 	    compile_error(0);
 	}
@@ -4178,9 +4198,6 @@ eval(self, src, scope, file, line)
 	    FL_SET(old_scope, SCOPE_DONT_RECYCLE);
 	ruby_scope = old_scope;
 	ruby_block = old_block;
-	ruby_calling_block = old_call_block;
-	data->d_vars = ruby_dyna_vars;
-	ruby_dyna_vars = old_d_vars;
 	data->vmode = scope_vmode; /* write back visibility mode */
 	scope_vmode = old_vmode;
     }
@@ -4235,7 +4252,7 @@ rb_f_eval(argc, argv, self)
     }
 
     Check_SafeStr(src);
-    return eval(self, src, scope, file, line);
+    return eval(self, src, scope, file, line-1);
 }
 
 static VALUE
@@ -5738,7 +5755,6 @@ struct thread {
     struct SCOPE *scope;
     struct RVarmap *dyna_vars;
     struct BLOCK *block;
-    struct BLOCK *cblock;
     struct iter *iter;
     struct tag *tag;
     VALUE klass;
@@ -5899,7 +5915,6 @@ rb_thread_save_context(th)
     th->wrapper = ruby_wrapper;
     th->dyna_vars = ruby_dyna_vars;
     th->block = ruby_block;
-    th->cblock = ruby_calling_block;
     th->misc = scope_vmode | (rb_trap_immediate<<8);
     th->iter = ruby_iter;
     th->tag = prot_tag;
@@ -5970,7 +5985,6 @@ rb_thread_restore_context(th, exit)
     ruby_wrapper = th->wrapper;
     ruby_dyna_vars = th->dyna_vars;
     ruby_block = th->block;
-    ruby_calling_block = th->cblock;
     scope_vmode = th->misc&SCOPE_MASK;
     rb_trap_immediate = th->misc>>8;
     ruby_iter = th->iter;

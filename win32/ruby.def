@@ -197,7 +197,6 @@ EXPORTS
 	ruby_run
 	rb_eval_string
 	rb_eval_cmd
-	rb_trap_eval
 	rb_test_false_or_nil
 	rb_respond_to
 	rb_exit

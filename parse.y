@@ -245,7 +245,8 @@ program		:  {
 		    }
 		  compstmt
 		    {
-			if ($2) { /* last expression is void */
+			if ($2 && !compile_for_eval) {
+                            /* last expression should not be void */
 			    if (nd_type($2) != NODE_BLOCK) void_expr($2);
 			    else {
 				NODE *node = $2;
@@ -1712,28 +1713,27 @@ lex_get_str(s)
 }
 
 NODE*
-rb_compile_string(f, s)
+rb_compile_string(f, s, line)
     const char *f;
     VALUE s;
+    int line;
 {
     lex_gets = lex_get_str;
     lex_gets_ptr = 0;
     lex_input = s;
     lex_pbeg = lex_p = lex_pend = 0;
-    if (!ruby_sourcefile || strcmp(f, ruby_sourcefile))	/* not in eval() */
-	ruby_sourceline = 0;
-    else			                        /* in eval() */
-	compile_for_eval = 1;
+    ruby_sourceline = line;
+    compile_for_eval = 1;
 
     return yycompile(f);
 }
 
 NODE*
-rb_compile_cstr(f, s, len)
+rb_compile_cstr(f, s, len, line)
     const char *f, *s;
-    int len;
+    int len, line;
 {
-    return rb_compile_string(f, rb_str_new(s, len));
+    return rb_compile_string(f, rb_str_new(s, len), line);
 }
 
 NODE*
@@ -3798,10 +3798,7 @@ void_expr(node)
 	  case '<':
 	  case tLEQ:
 	  case tEQ:
-	  case tEQQ:
 	  case tNEQ:
-	  case tMATCH:
-	  case tNMATCH:
 	  case tAREF:
 	  case tRSHFT:
 	  case tCOLON2:

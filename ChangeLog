@@ -1,5 +1,7 @@
 Fri Apr  9 17:45:11 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
+	* parse.y (rb_compile_string): bug for nested eval().
+
 	* regex.c (re_match): should pop non-greedy stack items on
 	  failure, after best_regs are fixed.
 

@@ -599,14 +599,21 @@ ok(("abc" =~ /d*$/) == 3)
 ok("" =~ /^$/)
 ok("\n" =~ /^$/)
 ok("a\n\n" =~ /^$/)
-"abcabc" =~ /.*a/
-ok($& == "abca")
-"abcabc" =~ /.*c/
-ok($& == "abcabc")
-"abcabc" =~ /.*?a/
-ok($& == "a")
-"abcabc" =~ /.*?c/
-ok($& == "abc")
+ok("abcabc" =~ /.*a/ && $& == "abca")
+ok("abcabc" =~ /.*c/ && $& == "abcabc")
+ok("abcabc" =~ /.*?a/ && $& == "a")
+ok("abcabc" =~ /.*?c/ && $& == "abc")
+ok(/(.|\n)*?\n(b|\n)/ =~ "a\nb\n\n" && $& == "a\nb")
+$x = <<END;
+ABCD
+ABCD
+END
+
+$x.gsub!(/((.|\n)*?)B((.|\n)*?)D/){$1+$3}
+ok($x == "AC\nAC\n")
+
+ok("foobar" =~ /foo(?=(bar)|(baz))/)
+ok("foobaz" =~ /foo(?=(bar)|(baz))/)
 
 $foo = "abc"
 ok("#$foo = abc" == "abc = abc")
@@ -845,9 +852,13 @@ ok($x[4].call == 8)
 proc {
   p = binding
   eval "foo11 = 1", p
+  foo22 = 5
   proc{foo11=22}.call
+  proc{foo22=55}.call
   ok(eval("foo11", p) == eval("foo11"))
   ok(eval("foo11") == 1)
+  ok(eval("foo22", p) == eval("foo22"))
+  ok(eval("foo22") == 55)
 }.call
 
 p1 = proc{i6 = 0; proc{i6}}.call
