@@ -1,3 +1,8 @@
+Mon Nov 24 14:53:10 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* bcc32/Makefile.sub, win32/Makefile.sub, wince/Makefile.sub
+	  (XCFLAGS): output empty value instead of `-DRUBY_EXPORT'.
+
 Sat Nov 22 23:09:45 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in: set enable_pthread to no on MinGW.
