@@ -68,7 +68,7 @@ Object
 
   class Protocol
 
-    Version = '1.1.20'
+    Version = '1.1.21'
 
     class << self
 
@@ -295,8 +295,8 @@ Object
     attr_reader :code_type, :code, :message
     alias msg message
 
-    def error!
-      raise @code_type.error_type, @code + ' ' + Net.quote(@message)
+    def error!( data = nil )
+      raise code_type.error_type.new( code + ' ' + Net.quote(msg), data )
     end
 
   end
@@ -311,6 +311,17 @@ Object
   class ProtoCommandError      < ProtocolError; end
   class ProtoRetriableError    < ProtocolError; end
   ProtocRetryError = ProtoRetriableError
+
+  class ProtocolError
+  
+    def initialize( msg, data )
+      super msg
+      @data = data
+    end
+
+    attr :data
+  
+  end
 
 
   class Code

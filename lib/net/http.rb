@@ -54,6 +54,20 @@ module Net
 
   If called as iterator, give a part String of entity body.
 
+  Note:
+  If status is not 2xx(success), ProtocolError exception is
+  raised. At that time, you can get Response object from 
+  execption object. (same in head/post)
+
+    ex.
+
+    begin
+      head, body = http.get(...)
+    rescue ProtoRetriableError
+      response = $!.data
+      ...
+    end
+
 : head( path, header = nil )
   get only header from "path" on connecting host.
   "header" is a Hash like { 'Accept' => '*/*', ... }.
@@ -375,7 +389,9 @@ All "key" is case-insensitive.
     end
 
     def value
-      error! unless SuccessCode === self
+      unless SuccessCode === self then
+        error! self
+      end
     end
 
   end
