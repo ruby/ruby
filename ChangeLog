@@ -1,3 +1,7 @@
+Fri Jul 12 02:15:58 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* string.c (rb_str_match): fix for string match.
+
 Fri Jul 12 00:02:50 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ext/stringio/stringio.c (strio_gets_internal): fixed for record

@@ -973,7 +973,6 @@ static VALUE
 rb_str_match(x, y)
     VALUE x, y;
 {
-    VALUE reg;
     long start;
 
     switch (TYPE(y)) {
@@ -981,7 +980,7 @@ rb_str_match(x, y)
 	return rb_reg_match(y, x);
 
       case T_STRING:
-	start = rb_str_index(reg, x, 0);
+	start = rb_str_index(x, y, 0);
 	if (start == -1) {
 	    return Qnil;
 	}
