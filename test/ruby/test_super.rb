@@ -83,6 +83,6 @@ class TestSuper < Test::Unit::TestCase
   def test_define_method # [ruby-core:03856]
     a = A.new
     a.uu(12)
-    assert_raise(RuntimeError) {a.tt(12)}
+    assert_equal("A#tt", a.tt(12))
   end
 end

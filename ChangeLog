@@ -1,3 +1,8 @@
+Sun Dec 12 21:32:14 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_super.rb (TestSuper#test_define_method): now methods
+	  from procs can call super.
+
 Sun Dec 12 10:35:10 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/generators/template/html/html.rb (RDoc::Page): Don't
