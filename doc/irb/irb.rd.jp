@@ -4,27 +4,27 @@ irb -- interactive ruby
 			   	$Date$
 			   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
 ==begin
-= irb$B$H$O(B?
+= irb¤È¤Ï?
 
-irb$B$O(Binteractive ruby$B$NN,$G$9(B. ruby$B$N<0$rI8=`F~NO$+$i4JC1$KF~NO(B/$B<B9T$9(B
-$B$k$?$a$N%D!<%k$G$9(B.
+irb¤Ïinteractive ruby¤ÎÎ¬¤Ç¤¹. ruby¤Î¼°¤òÉ¸½àÆþÎÏ¤«¤é´ÊÃ±¤ËÆþÎÏ/¼Â¹Ô¤¹
+¤ë¤¿¤á¤Î¥Ä¡¼¥ë¤Ç¤¹.
 
-= $B5/F0(B
+= µ¯Æ°
 
   % ruby -r irb -e0
   % irb
 
-$B$N$$$:$l$+$G9T$J$$$^$9(B. $BA0<T$N>l9g(Birb$B$X$N%*%W%7%g%s;XDj$O(B, $B0J2<$N$h$&$K(B
-$B$J$j$^$9(B.
+¤Î¤¤¤º¤ì¤«¤Ç¹Ô¤Ê¤¤¤Þ¤¹. Á°¼Ô¤Î¾ì¹çirb¤Ø¤Î¥ª¥×¥·¥ç¥ó»ØÄê¤Ï, °Ê²¼¤Î¤è¤¦¤Ë
+¤Ê¤ê¤Þ¤¹.
 
   % ruby -r irb -e0 -- -v
 
-= $B;H$$J}(B
+= »È¤¤Êý
 
-irb$B$N;H$$J}$O(B, Ruby$B$5$(CN$C$F$$$l$P$$$?$C$F4JC1$G$9(B. $B4pK\E*$K$O(B irb $B$H(B
-$B$$$&%3%^%s%I$r<B9T$9$k$@$1$G$9(B. irb$B$r<B9T$9$k$H(B, $B0J2<$N$h$&$J%W%m%s%W(B
-$B%H$,I=$l$F$-$^$9(B. $B8e$O(B, ruby$B$N<0$rF~$l$F2<$5$$(B. $B<0$,407k$7$?;~E@$G<B9T(B
-$B$5$l$^$9(B.
+irb¤Î»È¤¤Êý¤Ï, Ruby¤µ¤¨ÃÎ¤Ã¤Æ¤¤¤ì¤Ð¤¤¤¿¤Ã¤Æ´ÊÃ±¤Ç¤¹. ´ðËÜÅª¤Ë¤Ï irb ¤È
+¤¤¤¦¥³¥Þ¥ó¥É¤ò¼Â¹Ô¤¹¤ë¤À¤±¤Ç¤¹. irb¤ò¼Â¹Ô¤¹¤ë¤È, °Ê²¼¤Î¤è¤¦¤Ê¥×¥í¥ó¥×
+¥È¤¬É½¤ì¤Æ¤­¤Þ¤¹. ¸å¤Ï, ruby¤Î¼°¤òÆþ¤ì¤Æ²¼¤µ¤¤. ¼°¤¬´°·ë¤·¤¿»þÅÀ¤Ç¼Â¹Ô
+¤µ¤ì¤Þ¤¹.
 
   dim% irb
   irb(main):001:0> 1+2
@@ -37,50 +37,50 @@ irb$B$N;H$$J}$O(B, Ruby$B$5$(CN$C$F$$$l$P$$$?$C$F4JC1$G$9(B. $B4pK\E*$K$O(
   nil
   irb(main):007:0> 
 
-$B$^$?(B, irb$B$O(BReadline$B%b%8%e!<%k$K$bBP1~$7$F$$$^$9(B. Readline$B%b%8%e!<%k$,(B
-$B%$%s%9%H!<%k$5$l$F$$$k;~$K$O(B, $B$=$l$r;H$&$N$,I8=`$NF0:n$K$J$j$^$9(B.
+¤Þ¤¿, irb¤ÏReadline¥â¥¸¥å¡¼¥ë¤Ë¤âÂÐ±þ¤·¤Æ¤¤¤Þ¤¹. Readline¥â¥¸¥å¡¼¥ë¤¬
+¥¤¥ó¥¹¥È¡¼¥ë¤µ¤ì¤Æ¤¤¤ë»þ¤Ë¤Ï, ¤½¤ì¤ò»È¤¦¤Î¤¬É¸½à¤ÎÆ°ºî¤Ë¤Ê¤ê¤Þ¤¹.
 
-= $B%3%^%s%I%*%W%7%g%s(B
+= ¥³¥Þ¥ó¥É¥ª¥×¥·¥ç¥ó
 
   irb.rb [options] file_name opts
   options:
-  -f		    ~/.irbrc $B$rFI$_9~$^$J$$(B.
-  -m		    bc$B%b!<%I(B($BJ,?t(B, $B9TNs$N7W;;$,$G$-$k(B)
-  -d                $DEBUG $B$r(Btrue$B$K$9$k(B(ruby -d $B$HF1$8(B)
-  -r load-module    ruby -r $B$HF1$8(B.
-  --inspect	    $B7k2L=PNO$K(Binspect$B$rMQ$$$k(B(bc$B%b!<%I0J30$O%G%U%)%k%H(B). 
-  --noinspect	    $B7k2L=PNO$K(Binspect$B$rMQ$$$J$$(B.
-  --readline	    readline$B%i%$%V%i%j$rMxMQ$9$k(B.
-  --noreadline	    readline$B%i%$%V%i%j$rMxMQ$7$J$$(B. $B%G%U%)%k%H$NF0:n$O(B,
-		    inf-reuby-mode$B0J30$G(Breadline$B%i%$%V%i%j$rMxMQ$7$h$&(B
-		    $B$H$9$k(B. 
+  -f		    ~/.irbrc ¤òÆÉ¤ß¹þ¤Þ¤Ê¤¤.
+  -m		    bc¥â¡¼¥É(Ê¬¿ô, ¹ÔÎó¤Î·×»»¤¬¤Ç¤­¤ë)
+  -d                $DEBUG ¤òtrue¤Ë¤¹¤ë(ruby -d ¤ÈÆ±¤¸)
+  -r load-module    ruby -r ¤ÈÆ±¤¸.
+  --inspect	    ·ë²Ì½ÐÎÏ¤Ëinspect¤òÍÑ¤¤¤ë(bc¥â¡¼¥É°Ê³°¤Ï¥Ç¥Õ¥©¥ë¥È). 
+  --noinspect	    ·ë²Ì½ÐÎÏ¤Ëinspect¤òÍÑ¤¤¤Ê¤¤.
+  --readline	    readline¥é¥¤¥Ö¥é¥ê¤òÍøÍÑ¤¹¤ë.
+  --noreadline	    readline¥é¥¤¥Ö¥é¥ê¤òÍøÍÑ¤·¤Ê¤¤. ¥Ç¥Õ¥©¥ë¥È¤ÎÆ°ºî¤Ï,
+		    inf-reuby-mode°Ê³°¤Çreadline¥é¥¤¥Ö¥é¥ê¤òÍøÍÑ¤·¤è¤¦
+		    ¤È¤¹¤ë. 
   --prompt prompt-mode
   --prompt-mode prompt-mode
-		    $B%W%m%s%W%H%b!<%I$r@ZBX$($^$9(B. $B8=:_Dj5A$5$l$F$$$k%W(B
-		    $B%m%s%W%H%b!<%I$O(B, defalut, simple, xmp, inf-ruby$B$,(B
-		    $BMQ0U$5$l$F$$$^$9(B. $B%G%U%)%k%H$O(Bdefault$B%W%m%s%W%H%b!<(B
-		    $B%I$K$J$C$F$$$^$9(B.
+		    ¥×¥í¥ó¥×¥È¥â¡¼¥É¤òÀÚÂØ¤¨¤Þ¤¹. ¸½ºßÄêµÁ¤µ¤ì¤Æ¤¤¤ë¥×
+		    ¥í¥ó¥×¥È¥â¡¼¥É¤Ï, defalut, simple, xmp, inf-ruby¤¬
+		    ÍÑ°Õ¤µ¤ì¤Æ¤¤¤Þ¤¹. ¥Ç¥Õ¥©¥ë¥È¤Ïdefault¥×¥í¥ó¥×¥È¥â¡¼
+		    ¥É¤Ë¤Ê¤Ã¤Æ¤¤¤Þ¤¹.
 			    
-  --inf-ruby-mode   emacs$B$N(Binf-ruby-mode$BMQ$N%W%m%s%W%HI=<($r9T$J$&(B. $BFC(B
-		    $B$K;XDj$,$J$$8B$j(B, readline$B%i%$%V%i%j$O;H$o$J$/$J$k(B.
+  --inf-ruby-mode   emacs¤Îinf-ruby-modeÍÑ¤Î¥×¥í¥ó¥×¥ÈÉ½¼¨¤ò¹Ô¤Ê¤¦. ÆÃ
+		    ¤Ë»ØÄê¤¬¤Ê¤¤¸Â¤ê, readline¥é¥¤¥Ö¥é¥ê¤Ï»È¤ï¤Ê¤¯¤Ê¤ë.
   --simple-prompt
-		    $BHs>o$K%7%s%W%k$J%W%m%s%W%H$rMQ$$$k%b!<%I$G$9(B.
-  --noprompt	    $B%W%m%s%W%HI=<($r9T$J$o$J$$(B.
-  --tracer	    $B%3%^%s%I<B9T;~$K%H%l!<%9$r9T$J$&(B.
+		    Èó¾ï¤Ë¥·¥ó¥×¥ë¤Ê¥×¥í¥ó¥×¥È¤òÍÑ¤¤¤ë¥â¡¼¥É¤Ç¤¹.
+  --noprompt	    ¥×¥í¥ó¥×¥ÈÉ½¼¨¤ò¹Ô¤Ê¤ï¤Ê¤¤.
+  --tracer	    ¥³¥Þ¥ó¥É¼Â¹Ô»þ¤Ë¥È¥ì¡¼¥¹¤ò¹Ô¤Ê¤¦.
   --back-trace-limit n
-		    $B%P%C%/%H%l!<%9I=<($r%P%C%/%H%l!<%9$NF,$+$i(B n, $B8e$m(B
-		    $B$+$i(Bn$B$@$19T$J$&(B. $B%G%U%)%k%H$O(B16 
-  --irb_debug n	    irb$B$N%G%P%C%0%G%P%C%0%l%Y%k$r(Bn$B$K@_Dj$9$k(B($BMxMQ$7$J(B
-		    $B$$J}$,L5Fq$G$7$g$&(B).
-  -v, --version	    irb$B$N%P!<%8%g%s$rI=<($9$k(B
+		    ¥Ð¥Ã¥¯¥È¥ì¡¼¥¹É½¼¨¤ò¥Ð¥Ã¥¯¥È¥ì¡¼¥¹¤ÎÆ¬¤«¤é n, ¸å¤í
+		    ¤«¤én¤À¤±¹Ô¤Ê¤¦. ¥Ç¥Õ¥©¥ë¥È¤Ï16 
+  --irb_debug n	    irb¤Î¥Ç¥Ð¥Ã¥°¥Ç¥Ð¥Ã¥°¥ì¥Ù¥ë¤òn¤ËÀßÄê¤¹¤ë(ÍøÍÑ¤·¤Ê
+		    ¤¤Êý¤¬ÌµÆñ¤Ç¤·¤ç¤¦).
+  -v, --version	    irb¤Î¥Ð¡¼¥¸¥ç¥ó¤òÉ½¼¨¤¹¤ë
 
-= $B%3%s%U%#%.%e%l!<%7%g%s(B
+= ¥³¥ó¥Õ¥£¥®¥å¥ì¡¼¥·¥ç¥ó
 
-irb$B5/F0;~$K(B``~/.irbrc''$B$rFI$_9~$_$^$9(B. $B$b$7B8:_$7$J$$>l9g$O(B,
-``.irbrc'', ``irb.rc'', ``_irbrc'', ``$irbrc''$B$N=g$K(Bload$B$r;n$_$^$9(B.
+irbµ¯Æ°»þ¤Ë``~/.irbrc''¤òÆÉ¤ß¹þ¤ß¤Þ¤¹. ¤â¤·Â¸ºß¤·¤Ê¤¤¾ì¹ç¤Ï,
+``.irbrc'', ``irb.rc'', ``_irbrc'', ``$irbrc''¤Î½ç¤Ëload¤ò»î¤ß¤Þ¤¹.
 
-$B%*%W%7%g%s$r@_Dj$9$kBe$o$j$K(B, $B0J2<$N%3%^%s%I$G$b%G%U%)%k%H$NF0:n$r@_Dj(B
-$B$G$-$^$9(B.
+¥ª¥×¥·¥ç¥ó¤òÀßÄê¤¹¤ëÂå¤ï¤ê¤Ë, °Ê²¼¤Î¥³¥Þ¥ó¥É¤Ç¤â¥Ç¥Õ¥©¥ë¥È¤ÎÆ°ºî¤òÀßÄê
+¤Ç¤­¤Þ¤¹.
 
   IRB.conf[:IRB_NAME]="irb"
   IRB.conf[:MATH_MODE]=false
@@ -101,42 +101,42 @@ irb$B5/F0;~$K(B``~/.irbrc''$B$rFI$_9~$_$^$9(B. $B$b$7B8:_$7$J$$>l9g$O(B,
   IRB.conf[:DEBUG_LEVEL]=0
   IRB.conf[:VERBOSE]=true
 
-== $B%W%m%s%W%H$N@_Dj(B
+== ¥×¥í¥ó¥×¥È¤ÎÀßÄê
 
-$B%W%m%s%W%H$r%+%9%?%^%$%:$7$?$$;~$K$O(B, 
+¥×¥í¥ó¥×¥È¤ò¥«¥¹¥¿¥Þ¥¤¥º¤·¤¿¤¤»þ¤Ë¤Ï, 
 
    IRB.conf[:PROMPT]
 
-$B$rMQ$$$^$9(B. $BNc$($P(B, .irbrc$B$NCf$G2<$N$h$&$J<0$r5-=R$7$^$9(B:
+¤òÍÑ¤¤¤Þ¤¹. Îã¤¨¤Ð, .irbrc¤ÎÃæ¤Ç²¼¤Î¤è¤¦¤Ê¼°¤òµ­½Ò¤·¤Þ¤¹:
 
-   IRB.conf[:PROMPT][:MY_PROMPT] = { # $B%W%m%s%W%H%b!<%I$NL>A0(B
-     :PROMPT_I => nil,		  # $BDL>o$N%W%m%s%W%H(B
-     :PROMPT_S => nil,		  # $BJ8;zNs$J$I$N7QB39T$N%W%m%s%W%H(B
-     :PROMPT_C => nil,		  # $B<0$,7QB3$7$F$$$k;~$N%W%m%s%W%H(B
-     :RETURN => "    ==>%s\n"	  # $B%j%?!<%s;~$N%W%m%s%W%H(B
+   IRB.conf[:PROMPT][:MY_PROMPT] = { # ¥×¥í¥ó¥×¥È¥â¡¼¥É¤ÎÌ¾Á°
+     :PROMPT_I => nil,		  # ÄÌ¾ï¤Î¥×¥í¥ó¥×¥È
+     :PROMPT_S => nil,		  # Ê¸»úÎó¤Ê¤É¤Î·ÑÂ³¹Ô¤Î¥×¥í¥ó¥×¥È
+     :PROMPT_C => nil,		  # ¼°¤¬·ÑÂ³¤·¤Æ¤¤¤ë»þ¤Î¥×¥í¥ó¥×¥È
+     :RETURN => "    ==>%s\n"	  # ¥ê¥¿¡¼¥ó»þ¤Î¥×¥í¥ó¥×¥È
    }
 
-$B%W%m%s%W%H%b!<%I$r;XDj$7$?$$;~$K$O(B,
+¥×¥í¥ó¥×¥È¥â¡¼¥É¤ò»ØÄê¤·¤¿¤¤»þ¤Ë¤Ï,
 
   irb --prompt my-prompt
 
-$B$G$=$N%W%m%s%W%H%b!<%I$G5/F0$5$l$^$9(B. $B$^$?$O(B, .irbrc$B$K2<<0$r5-=R$7$F$b(B
-OK$B$G$9(B.
+¤Ç¤½¤Î¥×¥í¥ó¥×¥È¥â¡¼¥É¤Çµ¯Æ°¤µ¤ì¤Þ¤¹. ¤Þ¤¿¤Ï, .irbrc¤Ë²¼¼°¤òµ­½Ò¤·¤Æ¤â
+OK¤Ç¤¹.
 
   IRB.conf[:PROMPT_MODE] = :MY_PROMPT
 
-PROMPT_I, PROMPT_S, PROMPT_C$B$O(B, $B%U%)!<%^%C%H$r;XDj$7$^$9(B.
+PROMPT_I, PROMPT_S, PROMPT_C¤Ï, ¥Õ¥©¡¼¥Þ¥Ã¥È¤ò»ØÄê¤·¤Þ¤¹.
 
-  %N	$B5/F0$7$F$$$k%3%^%s%IL>$,=PNO$5$l$k(B.
-  %m	main$B%*%V%8%'%/%H(B(self)$B$,(Bto_s$B$G=PNO$5$l$k(B.
-  %M	main$B%*%V%8%'%/%H(B(self)$B$,(Binspect$B$5$l$F=PNO$5$l$k(B.
-  %l	$BJ8;zNsCf$N%?%$%W$rI=$9(B(", ', /, ], `]'$B$O(B%w$B$NCf$N;~(B)
-  %NNi	$B%$%s%G%s%H$N%l%Y%k$rI=$9(B. NN$B$O?t;z$,F~$j(Bprintf$B$N(B%NNd$B$HF1$8(B. $B>J(B
-	$BN,2DG=(B
-  %NNn	$B9THV9f$rI=$7$^$9(B.
+  %N	µ¯Æ°¤·¤Æ¤¤¤ë¥³¥Þ¥ó¥ÉÌ¾¤¬½ÐÎÏ¤µ¤ì¤ë.
+  %m	main¥ª¥Ö¥¸¥§¥¯¥È(self)¤¬to_s¤Ç½ÐÎÏ¤µ¤ì¤ë.
+  %M	main¥ª¥Ö¥¸¥§¥¯¥È(self)¤¬inspect¤µ¤ì¤Æ½ÐÎÏ¤µ¤ì¤ë.
+  %l	Ê¸»úÎóÃæ¤Î¥¿¥¤¥×¤òÉ½¤¹(", ', /, ], `]'¤Ï%w¤ÎÃæ¤Î»þ)
+  %NNi	¥¤¥ó¥Ç¥ó¥È¤Î¥ì¥Ù¥ë¤òÉ½¤¹. NN¤Ï¿ô»ú¤¬Æþ¤êprintf¤Î%NNd¤ÈÆ±¤¸. ¾Ê
+	Î¬²ÄÇ½
+  %NNn	¹ÔÈÖ¹æ¤òÉ½¤·¤Þ¤¹.
   %%    %
 
-$BNc$($P(B, $B%G%U%)%k%H$N%W%m%s%W%H%b!<%I$O(B:
+Îã¤¨¤Ð, ¥Ç¥Õ¥©¥ë¥È¤Î¥×¥í¥ó¥×¥È¥â¡¼¥É¤Ï:
 
   IRB.conf[:PROMPT_MODE][:DEFAULT] = {
       :PROMPT_I => "%N(%m):%03n:%i> ",
@@ -145,156 +145,156 @@ PROMPT_I, PROMPT_S, PROMPT_C$B$O(B, $B%U%)!<%^%C%H$r;XDj$7$^$9(B.
       :RETURN => "%s\n"
   } 
 
-$B$H$J$C$F$$$^$9(B.
+¤È¤Ê¤Ã¤Æ¤¤¤Þ¤¹.
 
-RETURN$B$O(B, $B8=:_$N$H$3$m(Bprintf$B7A<0$G$9(B. $B>-Mh;EMM$,JQ$o$k$+$bCN$l$^$;$s(B.
+RETURN¤Ï, ¸½ºß¤Î¤È¤³¤íprintf·Á¼°¤Ç¤¹. ¾­Íè»ÅÍÍ¤¬ÊÑ¤ï¤ë¤«¤âÃÎ¤ì¤Þ¤»¤ó.
 
-== $B%5%V(Birb$B$N@_Dj(B
+== ¥µ¥Öirb¤ÎÀßÄê
 
-$B%3%^%s%I%i%$%s%*%W%7%g%s$*$h$S(BIRB.conf$B$O(B($B%5%V(B)irb$B5/F0;~$N%G%U%)%k%H$N(B
-$B@_Dj$r7h$a$k$b$N$G(B, `5. $B%3%^%s%I(B'$B$K$"$k(Bconf$B$G8DJL$N(B($B%5%V(B)irb$B$N@_Dj$,$G(B
-$B$-$k$h$&$K$J$C$F$$$^$9(B.
+¥³¥Þ¥ó¥É¥é¥¤¥ó¥ª¥×¥·¥ç¥ó¤ª¤è¤ÓIRB.conf¤Ï(¥µ¥Ö)irbµ¯Æ°»þ¤Î¥Ç¥Õ¥©¥ë¥È¤Î
+ÀßÄê¤ò·è¤á¤ë¤â¤Î¤Ç, `5. ¥³¥Þ¥ó¥É'¤Ë¤¢¤ëconf¤Ç¸ÄÊÌ¤Î(¥µ¥Ö)irb¤ÎÀßÄê¤¬¤Ç
+¤­¤ë¤è¤¦¤Ë¤Ê¤Ã¤Æ¤¤¤Þ¤¹.
 
-IRB.conf[:IRB_RC]$B$K(Bproc$B$,@_Dj$5$l$F$$$k$H(B, $B%5%V(Birb$B$r5/F0$9$k;~$K$=$N(B
-proc$B$r(Birb$B$N%3%s%F%-%9%H$r0z?t$H$7$F8F$S=P$7$^$9(B. $B$3$l$K$h$C$F8DJL$N%5(B
-$B%V(Birb$B$4$H$K@_Dj$rJQ$($k$3$H$,$G$-$k$h$&$K$J$j$^$9(B.
+IRB.conf[:IRB_RC]¤Ëproc¤¬ÀßÄê¤µ¤ì¤Æ¤¤¤ë¤È, ¥µ¥Öirb¤òµ¯Æ°¤¹¤ë»þ¤Ë¤½¤Î
+proc¤òirb¤Î¥³¥ó¥Æ¥­¥¹¥È¤ò°ú¿ô¤È¤·¤Æ¸Æ¤Ó½Ð¤·¤Þ¤¹. ¤³¤ì¤Ë¤è¤Ã¤Æ¸ÄÊÌ¤Î¥µ
+¥Öirb¤´¤È¤ËÀßÄê¤òÊÑ¤¨¤ë¤³¤È¤¬¤Ç¤­¤ë¤è¤¦¤Ë¤Ê¤ê¤Þ¤¹.
 
 
-= $B%3%^%s%I(B
+= ¥³¥Þ¥ó¥É
 
-irb$B3HD%%3%^%s%I$O(B, $B4JC1$JL>A0$HF,$K(B`irb_'$B$r$D$1$?L>A0$HN>J}Dj5A$5$l$F(B
-$B$$$^$9(B. $B$3$l$O(B, $B4JC1$JL>A0$,(Boverride$B$5$l$?;~$N$?$a$G$9(B.
+irb³ÈÄ¥¥³¥Þ¥ó¥É¤Ï, ´ÊÃ±¤ÊÌ¾Á°¤ÈÆ¬¤Ë`irb_'¤ò¤Ä¤±¤¿Ì¾Á°¤ÈÎ¾ÊýÄêµÁ¤µ¤ì¤Æ
+¤¤¤Þ¤¹. ¤³¤ì¤Ï, ´ÊÃ±¤ÊÌ¾Á°¤¬override¤µ¤ì¤¿»þ¤Î¤¿¤á¤Ç¤¹.
 
 --- exit, quit, irb_exit	
-    $B=*N;$9$k(B. 
-    $B%5%V(Birb$B$N>l9g(B, $B$=$N%5%V(Birb$B$r=*N;$9$k(B.
-    cb$B$7$F$$$k>l9g(B, $B$=$N%P%$%s%G%#%s%0$N%b!<%I$r=*N;$9$k(B.
+    ½ªÎ»¤¹¤ë. 
+    ¥µ¥Öirb¤Î¾ì¹ç, ¤½¤Î¥µ¥Öirb¤ò½ªÎ»¤¹¤ë.
+    cb¤·¤Æ¤¤¤ë¾ì¹ç, ¤½¤Î¥Ð¥¤¥ó¥Ç¥£¥ó¥°¤Î¥â¡¼¥É¤ò½ªÎ»¤¹¤ë.
 
 --- conf, irb_context
-    irb$B$N8=:_$N@_Dj$rI=<($9$k(B. $B@_Dj$NJQ99$O(B, conf$B$K%a%C%;!<%8$rAw$k$3(B
-    $B$H$K$h$C$F9T$J$($k(B. 
+    irb¤Î¸½ºß¤ÎÀßÄê¤òÉ½¼¨¤¹¤ë. ÀßÄê¤ÎÊÑ¹¹¤Ï, conf¤Ë¥á¥Ã¥»¡¼¥¸¤òÁ÷¤ë¤³
+    ¤È¤Ë¤è¤Ã¤Æ¹Ô¤Ê¤¨¤ë. 
 
 --- conf.back_trace_limit
-    $B%P%C%/%H%l!<%9I=<($r%P%C%/%H%l!<%9$NF,$+$i(Bn, $B8e$m$+$i(Bn$B$@$19T$J$&(B.
-    $B%G%U%)%k%H$O(B16
+    ¥Ð¥Ã¥¯¥È¥ì¡¼¥¹É½¼¨¤ò¥Ð¥Ã¥¯¥È¥ì¡¼¥¹¤ÎÆ¬¤«¤én, ¸å¤í¤«¤én¤À¤±¹Ô¤Ê¤¦.
+    ¥Ç¥Õ¥©¥ë¥È¤Ï16
     
 --- conf.debug_level = N
-    irb$BMQ$N%G%P%C%0%l%Y%k$N@_Dj(B
+    irbÍÑ¤Î¥Ç¥Ð¥Ã¥°¥ì¥Ù¥ë¤ÎÀßÄê
 
 --- conf.ignore_eof = true/false
-    ^D$B$,F~NO$5$l$?;~$NF0:n$r@_Dj$9$k(B. true$B$N;~$O(B^D$B$rL5;k$9$k(B, false$B$N(B
-    $B;~$O(Birb$B$r=*N;$9$k(B. 
+    ^D¤¬ÆþÎÏ¤µ¤ì¤¿»þ¤ÎÆ°ºî¤òÀßÄê¤¹¤ë. true¤Î»þ¤Ï^D¤òÌµ»ë¤¹¤ë, false¤Î
+    »þ¤Ïirb¤ò½ªÎ»¤¹¤ë. 
 
 --- conf.ignore_sigint= true/false
-    ^C$B$,F~NO$5$l$?;~$NF0:n$r@_Dj$9$k(B. false$B;~$O(B, irb$B$r=*N;$9$k(B. true$B$N(B
-    $B;~$NF0:n$O0J2<$N$h$&$K$J$k(B:
-      $BF~NOCf(B: $B$3$l$^$GF~NO$7$?$b$N$r%-%c%s%;%k$7%H%C%W%l%Y%k$KLa$k(B. 
-      $B<B9TCf(B: $B<B9T$rCf;_$9$k(B.
+    ^C¤¬ÆþÎÏ¤µ¤ì¤¿»þ¤ÎÆ°ºî¤òÀßÄê¤¹¤ë. false»þ¤Ï, irb¤ò½ªÎ»¤¹¤ë. true¤Î
+    »þ¤ÎÆ°ºî¤Ï°Ê²¼¤Î¤è¤¦¤Ë¤Ê¤ë:
+      ÆþÎÏÃæ: ¤³¤ì¤Þ¤ÇÆþÎÏ¤·¤¿¤â¤Î¤ò¥­¥ã¥ó¥»¥ë¤·¥È¥Ã¥×¥ì¥Ù¥ë¤ËÌá¤ë. 
+      ¼Â¹ÔÃæ: ¼Â¹Ô¤òÃæ»ß¤¹¤ë.
 
 --- conf.inf_ruby_mode = true/false
-    inf-ruby-mode$BMQ$N%W%m%s%W%HI=<($r9T$J$&(B. $B%G%U%)%k%H$O(Bfalse.
+    inf-ruby-modeÍÑ¤Î¥×¥í¥ó¥×¥ÈÉ½¼¨¤ò¹Ô¤Ê¤¦. ¥Ç¥Õ¥©¥ë¥È¤Ïfalse.
 
 --- conf.inspect_mode = true/false/nil
-    $B%$%s%9%Z%/%H%b!<%I$r@_Dj$9$k(B.
-    true: $B%$%s%9%Z%/%H$7$FI=<($9$k(B.
-    false: $BDL>o$N(Bprint$B$GI=<($9$k(B.
-    nil: $BDL>o%b!<%I$G$"$l$P(B, inspect mode$B$H$J$j(B, math$B%b!<%I$N;~$O(B, non
-	 inspect mode$B$H$J$k(B.   
+    ¥¤¥ó¥¹¥Ú¥¯¥È¥â¡¼¥É¤òÀßÄê¤¹¤ë.
+    true: ¥¤¥ó¥¹¥Ú¥¯¥È¤·¤ÆÉ½¼¨¤¹¤ë.
+    false: ÄÌ¾ï¤Îprint¤ÇÉ½¼¨¤¹¤ë.
+    nil: ÄÌ¾ï¥â¡¼¥É¤Ç¤¢¤ì¤Ð, inspect mode¤È¤Ê¤ê, math¥â¡¼¥É¤Î»þ¤Ï, non
+	 inspect mode¤È¤Ê¤ë.   
 
 --- conf.irb_level
-    $B;2>H$N$_(B. irb$B$,2?CJ(Bcb$B$7$F$$$k$+(B?
+    »²¾È¤Î¤ß. irb¤¬²¿ÃÊcb¤·¤Æ¤¤¤ë¤«?
 
 --- conf.math_mode
-    $B;2>H$N$_(B. bc$B%b!<%I(B($BJ,?t(B, $B9TNs$N7W;;$,$G$-$^$9(B)$B$+$I$&$+(B?
+    »²¾È¤Î¤ß. bc¥â¡¼¥É(Ê¬¿ô, ¹ÔÎó¤Î·×»»¤¬¤Ç¤­¤Þ¤¹)¤«¤É¤¦¤«?
 
 --- conf.use_loader = true/false
-    load/require$B;~$K(Birb$B$N(Bfile$BFI$_9~$_5!G=$rMQ$$$k%b!<%I$N%9%$%C%A(B($B%G%U%)(B
-    $B%k%H$OMQ$$$J$$(B). $B$3$N%b!<%I$O(BIRB$BA4BN$KH?1G$5$l$k(B.
+    load/require»þ¤Ëirb¤ÎfileÆÉ¤ß¹þ¤ßµ¡Ç½¤òÍÑ¤¤¤ë¥â¡¼¥É¤Î¥¹¥¤¥Ã¥Á(¥Ç¥Õ¥©
+    ¥ë¥È¤ÏÍÑ¤¤¤Ê¤¤). ¤³¤Î¥â¡¼¥É¤ÏIRBÁ´ÂÎ¤ËÈ¿±Ç¤µ¤ì¤ë.
 
 --- conf.prompt_c
-    if$B$ND>8e$J$I(B, $B9T$,7QB3$7$F$$$k;~$N%W%m%s%W%H(B.
+    if¤ÎÄ¾¸å¤Ê¤É, ¹Ô¤¬·ÑÂ³¤·¤Æ¤¤¤ë»þ¤Î¥×¥í¥ó¥×¥È.
 
 --- conf.prompt_i
-    $BDL>o$N%W%m%s%W%H(B.
+    ÄÌ¾ï¤Î¥×¥í¥ó¥×¥È.
 
 --- conf.prompt_s
-    $BJ8;zNsCf$J$I$rI=$9%W%m%s%W%H(B.
+    Ê¸»úÎóÃæ¤Ê¤É¤òÉ½¤¹¥×¥í¥ó¥×¥È.
 
 --- conf.rc
-    ~/.irbrc$B$rFI$_9~$s$@$+$I$&$+(B?
+    ~/.irbrc¤òÆÉ¤ß¹þ¤ó¤À¤«¤É¤¦¤«?
 
 --- conf.use_prompt = true/false
-    $B%W%m%s%W%HI=<($9$k$+$I$&$+(B? $B%G%U%)%k%H$G$O%W%m%s%W%H$rI=<($9$k(B.
+    ¥×¥í¥ó¥×¥ÈÉ½¼¨¤¹¤ë¤«¤É¤¦¤«? ¥Ç¥Õ¥©¥ë¥È¤Ç¤Ï¥×¥í¥ó¥×¥È¤òÉ½¼¨¤¹¤ë.
 
 --- conf.use_readline = true/false/nil
-    readline$B$r;H$&$+$I$&$+(B?
-    true: readline$B$r;H$&(B.
-    false: readline$B$r;H$o$J$$(B.
-    nil: ($B%G%U%)%k%H(B)inf-reuby-mode$B0J30$G(Breadline$B%i%$%V%i%j$rMxMQ$7$h(B
-         $B$&$H$9$k(B.  
+    readline¤ò»È¤¦¤«¤É¤¦¤«?
+    true: readline¤ò»È¤¦.
+    false: readline¤ò»È¤ï¤Ê¤¤.
+    nil: (¥Ç¥Õ¥©¥ë¥È)inf-reuby-mode°Ê³°¤Çreadline¥é¥¤¥Ö¥é¥ê¤òÍøÍÑ¤·¤è
+         ¤¦¤È¤¹¤ë.  
 
 --- conf.verbose=T/F
-    irb$B$+$i$$$m$$$m$J%a%C%;!<%8$r=PNO$9$k$+(B?
+    irb¤«¤é¤¤¤í¤¤¤í¤Ê¥á¥Ã¥»¡¼¥¸¤ò½ÐÎÏ¤¹¤ë¤«?
 
 --- cb, irb_change_binding [obj]
-    $B%m!<%+%kJQ?t$N%9%3!<%W$,0c$&?7$?$J(Bbinding$B$K0\$k(B.  obj$B$,;XDj$5$l$?(B
-    $B;~$O(B, $B$=$N(Bobj$B$r(Bself$B$H$9$k(B. 
+    ¥í¡¼¥«¥ëÊÑ¿ô¤Î¥¹¥³¡¼¥×¤¬°ã¤¦¿·¤¿¤Êbinding¤Ë°Ü¤ë.  obj¤¬»ØÄê¤µ¤ì¤¿
+    »þ¤Ï, ¤½¤Îobj¤òself¤È¤¹¤ë. 
 
 --- irb [obj]
-    $B%5%V(Birb$B$rN)$A$"$2$k(B. obj$B$,;XDj$5$l$?;~$O(B, $B$=$N(Bobj$B$r(Bself$B$H$9$k(B.
+    ¥µ¥Öirb¤òÎ©¤Á¤¢¤²¤ë. obj¤¬»ØÄê¤µ¤ì¤¿»þ¤Ï, ¤½¤Îobj¤òself¤È¤¹¤ë.
 
 --- jobs, irb_jobs
-    $B%5%V(Birb$B$N%j%9%H(B
+    ¥µ¥Öirb¤Î¥ê¥¹¥È
 
 --- fg n, irb_fg n
-    $B;XDj$7$?%5%V(Birb$B$K%9%$%C%A$9$k(B. n$B$O(B, $B<!$N$b$N$r;XDj$9$k(B.
+    »ØÄê¤·¤¿¥µ¥Öirb¤Ë¥¹¥¤¥Ã¥Á¤¹¤ë. n¤Ï, ¼¡¤Î¤â¤Î¤ò»ØÄê¤¹¤ë.
 
-      irb$BHV9f(B
-      $B%9%l%C%I(B
-      irb$B%*%V%8%'%/%H(B
-      self(irb obj$B$G5/F0$7$?;~$N(Bobj)
+      irbÈÖ¹æ
+      ¥¹¥ì¥Ã¥É
+      irb¥ª¥Ö¥¸¥§¥¯¥È
+      self(irb obj¤Çµ¯Æ°¤·¤¿»þ¤Îobj)
 
 --- kill n, irb_kill n
-      $B%5%V(Birb$B$r(Bkill$B$9$k(B. n$B$O(Bfg$B$HF1$8(B.
+      ¥µ¥Öirb¤òkill¤¹¤ë. n¤Ïfg¤ÈÆ±¤¸.
 
 
-= $B%7%9%F%`JQ?t(B
+= ¥·¥¹¥Æ¥àÊÑ¿ô
 
-   _  $BA0$N7W;;$N<B9T7k2L$r3P$($F$$$k(B($B%m!<%+%kJQ?t(B).
+   _  Á°¤Î·×»»¤Î¼Â¹Ô·ë²Ì¤ò³Ð¤¨¤Æ¤¤¤ë(¥í¡¼¥«¥ëÊÑ¿ô).
 
-=  $B;HMQNc(B
+=  »ÈÍÑÎã
 
-$B0J2<$N$h$&$J46$8$G$9(B.
+°Ê²¼¤Î¤è¤¦¤Ê´¶¤¸¤Ç¤¹.
 
   dim% ruby irb.rb
-  irb(main):001:0> irb                        # $B%5%V(Birb$B$NN)$A$"$2(B
-  irb#1(main):001:0> jobs                     # $B%5%V(Birb$B$N%j%9%H(B
+  irb(main):001:0> irb                        # ¥µ¥Öirb¤ÎÎ©¤Á¤¢¤²
+  irb#1(main):001:0> jobs                     # ¥µ¥Öirb¤Î¥ê¥¹¥È
   #0->irb on main (#<Thread:0x400fb7e4> : stop)
   #1->irb#1 on main (#<Thread:0x40125d64> : running)
   nil
-  irb#1(main):002:0> fg 0                     # job$B$N%9%$%C%A(B
+  irb#1(main):002:0> fg 0                     # job¤Î¥¹¥¤¥Ã¥Á
   nil
   irb(main):002:0> class Foo;end
   nil
-  irb(main):003:0> irb Foo                    # Foo$B$r%3%s%F%-%9%H$7$F(Birb
-					      # $BN)$A$"$2(B
-  irb#2(Foo):001:0> def foo                   # Foo#foo$B$NDj5A(B
+  irb(main):003:0> irb Foo                    # Foo¤ò¥³¥ó¥Æ¥­¥¹¥È¤·¤Æirb
+					      # Î©¤Á¤¢¤²
+  irb#2(Foo):001:0> def foo                   # Foo#foo¤ÎÄêµÁ
   irb#2(Foo):002:1>   print 1
   irb#2(Foo):003:1> end
   nil
-  irb#2(Foo):004:0> fg 0                      # job$B$r%9%$%C%A(B
+  irb#2(Foo):004:0> fg 0                      # job¤ò¥¹¥¤¥Ã¥Á
   nil
-  irb(main):004:0> jobs                       # job$B$N%j%9%H(B
+  irb(main):004:0> jobs                       # job¤Î¥ê¥¹¥È
   #0->irb on main (#<Thread:0x400fb7e4> : running)
   #1->irb#1 on main (#<Thread:0x40125d64> : stop)
   #2->irb#2 on Foo (#<Thread:0x4011d54c> : stop)
   nil
-  irb(main):005:0> Foo.instance_methods       # Foo#foo$B$,$A$c$s$HDj5A$5(B
-					      # $B$l$F$$$k(B
+  irb(main):005:0> Foo.instance_methods       # Foo#foo¤¬¤Á¤ã¤ó¤ÈÄêµÁ¤µ
+					      # ¤ì¤Æ¤¤¤ë
   ["foo"]
-  irb(main):006:0> fg 2                       # job$B$r%9%$%C%A(B
+  irb(main):006:0> fg 2                       # job¤ò¥¹¥¤¥Ã¥Á
   nil
-  irb#2(Foo):005:0> def bar                   # Foo#bar$B$rDj5A(B
+  irb#2(Foo):005:0> def bar                   # Foo#bar¤òÄêµÁ
   irb#2(Foo):006:1>  print "bar"
   irb#2(Foo):007:1> end
   nil
@@ -304,36 +304,36 @@ irb$B3HD%%3%^%s%I$O(B, $B4JC1$JL>A0$HF,$K(B`irb_'$B$r$D$1$?L>A0$HN>J}Dj5A$5
   nil
   irb(main):007:0> f = Foo.new
   #<Foo:0x4010af3c>
-  irb(main):008:0> irb f                      # Foo$B$N%$%s%9%?%s%9$G(Birb$B$r(B
-					      # $BN)$A$"$2$k(B.
+  irb(main):008:0> irb f                      # Foo¤Î¥¤¥ó¥¹¥¿¥ó¥¹¤Çirb¤ò
+					      # Î©¤Á¤¢¤²¤ë.
   irb#3(#<Foo:0x4010af3c>):001:0> jobs
   #0->irb on main (#<Thread:0x400fb7e4> : stop)
   #1->irb#1 on main (#<Thread:0x40125d64> : stop)
   #2->irb#2 on Foo (#<Thread:0x4011d54c> : stop)
   #3->irb#3 on #<Foo:0x4010af3c> (#<Thread:0x4010a1e0> : running)
   nil
-  irb#3(#<Foo:0x4010af3c>):002:0> foo         # f.foo$B$N<B9T(B
+  irb#3(#<Foo:0x4010af3c>):002:0> foo         # f.foo¤Î¼Â¹Ô
   nil
-  irb#3(#<Foo:0x4010af3c>):003:0> bar         # f.bar$B$N<B9T(B
+  irb#3(#<Foo:0x4010af3c>):003:0> bar         # f.bar¤Î¼Â¹Ô
   barnil
-  irb#3(#<Foo:0x4010af3c>):004:0> kill 1, 2, 3# job$B$N(Bkill
+  irb#3(#<Foo:0x4010af3c>):004:0> kill 1, 2, 3# job¤Îkill
   nil
   irb(main):009:0> jobs
   #0->irb on main (#<Thread:0x400fb7e4> : running)
   nil
-  irb(main):010:0> exit                       # $B=*N;(B
+  irb(main):010:0> exit                       # ½ªÎ»
   dim% 
 
-= $B;HMQ>e$N@)8B(B
+= »ÈÍÑ¾å¤ÎÀ©¸Â
 
-irb$B$O(B, $BI>2A$G$-$k;~E@(B($B<0$,JD$8$?;~E@(B)$B$G$NC`<!<B9T$r9T$J$$$^$9(B. $B$7$?$,$C(B
-$B$F(B, ruby$B$rD>@\;H$C$?;~$H(B, $B<c430[$J$kF0:n$r9T$J$&>l9g$,$"$j$^$9(B.
+irb¤Ï, É¾²Á¤Ç¤­¤ë»þÅÀ(¼°¤¬ÊÄ¤¸¤¿»þÅÀ)¤Ç¤ÎÃà¼¡¼Â¹Ô¤ò¹Ô¤Ê¤¤¤Þ¤¹. ¤·¤¿¤¬¤Ã
+¤Æ, ruby¤òÄ¾ÀÜ»È¤Ã¤¿»þ¤È, ¼ã´³°Û¤Ê¤ëÆ°ºî¤ò¹Ô¤Ê¤¦¾ì¹ç¤¬¤¢¤ê¤Þ¤¹.
 
-$B8=:_L@$i$+$K$J$C$F$$$kLdBjE@$r@bL@$7$^$9(B.
+¸½ºßÌÀ¤é¤«¤Ë¤Ê¤Ã¤Æ¤¤¤ëÌäÂêÅÀ¤òÀâÌÀ¤·¤Þ¤¹.
 
-== $B%m!<%+%kJQ?t$N@k8@(B
+== ¥í¡¼¥«¥ëÊÑ¿ô¤ÎÀë¸À
 
-ruby$B$G$O(B, $B0J2<$N%W%m%0%i%`$O%(%i!<$K$J$j$^$9(B.
+ruby¤Ç¤Ï, °Ê²¼¤Î¥×¥í¥°¥é¥à¤Ï¥¨¥é¡¼¤Ë¤Ê¤ê¤Þ¤¹.
 
   eval "foo = 0"
   foo
@@ -342,24 +342,24 @@ ruby$B$G$O(B, $B0J2<$N%W%m%0%i%`$O%(%i!<$K$J$j$^$9(B.
   ---
   NameError
 
-$B$H$3$m$,(B, irb$B$rMQ$$$k$H(B
+¤È¤³¤í¤¬, irb¤òÍÑ¤¤¤ë¤È
 
   >> eval "foo = 0"
   => 0
   >> foo
   => 0
 
-$B$H$J$j(B, $B%(%i!<$r5/$3$7$^$;$s(B. $B$3$l$O(B, ruby$B$,:G=i$K%9%/%j%W%HA4BN$r%3%s(B
-$B%Q%$%k$7$F%m!<%+%kJQ?t$r7hDj$9$k$+$i$G$9(B. $B$=$l$KBP$7(B, irb$B$O<B9T2DG=$K(B
-$B$J$k(B($B<0$,JD$8$k(B)$B$H<+F0E*$KI>2A$7$F$$$k$+$i$G$9(B. $B>e5-$NNc$G$O(B, 
+¤È¤Ê¤ê, ¥¨¥é¡¼¤òµ¯¤³¤·¤Þ¤»¤ó. ¤³¤ì¤Ï, ruby¤¬ºÇ½é¤Ë¥¹¥¯¥ê¥×¥ÈÁ´ÂÎ¤ò¥³¥ó
+¥Ñ¥¤¥ë¤·¤Æ¥í¡¼¥«¥ëÊÑ¿ô¤ò·èÄê¤¹¤ë¤«¤é¤Ç¤¹. ¤½¤ì¤ËÂÐ¤·, irb¤Ï¼Â¹Ô²ÄÇ½¤Ë
+¤Ê¤ë(¼°¤¬ÊÄ¤¸¤ë)¤È¼«Æ°Åª¤ËÉ¾²Á¤·¤Æ¤¤¤ë¤«¤é¤Ç¤¹. ¾åµ­¤ÎÎã¤Ç¤Ï, 
 
   evel "foo = 0" 
 
-$B$r9T$J$C$?;~E@$GI>2A$r9T$J$$(B, $B$=$N;~E@$GJQ?t$,Dj5A$5$l$k$?$a(B, $B<!<0$G(B 
-$BJQ?t(Bfoo$B$ODj5A$5$l$F$$$k$+$i$G$9(B.
+¤ò¹Ô¤Ê¤Ã¤¿»þÅÀ¤ÇÉ¾²Á¤ò¹Ô¤Ê¤¤, ¤½¤Î»þÅÀ¤ÇÊÑ¿ô¤¬ÄêµÁ¤µ¤ì¤ë¤¿¤á, ¼¡¼°¤Ç 
+ÊÑ¿ôfoo¤ÏÄêµÁ¤µ¤ì¤Æ¤¤¤ë¤«¤é¤Ç¤¹.
 
-$B$3$N$h$&$J(Bruby$B$H(Birb$B$NF0:n$N0c$$$r2r7h$7$?$$>l9g$O(B, begin...end$B$G3g$C$F(B
-$B%P%C%AE*$K<B9T$7$F2<$5$$(B:
+¤³¤Î¤è¤¦¤Êruby¤Èirb¤ÎÆ°ºî¤Î°ã¤¤¤ò²ò·è¤·¤¿¤¤¾ì¹ç¤Ï, begin...end¤Ç³ç¤Ã¤Æ
+¥Ð¥Ã¥ÁÅª¤Ë¼Â¹Ô¤·¤Æ²¼¤µ¤¤:
 
   >> begin
   ?>   eval "foo = 0"
@@ -369,14 +369,14 @@ ruby$B$G$O(B, $B0J2<$N%W%m%0%i%`$O%(%i!<$K$J$j$^$9(B.
   (irb):3
   (irb_local_binding):1:in `eval'
 
-== $B%R%"%I%-%e%a%s%H(B
+== ¥Ò¥¢¥É¥­¥å¥á¥ó¥È
 
-$B8=:_$N$H$3$m%R%"%I%-%e%a%s%H$N<BAu$OIT40A4$G$9(B. 
+¸½ºß¤Î¤È¤³¤í¥Ò¥¢¥É¥­¥å¥á¥ó¥È¤Î¼ÂÁõ¤ÏÉÔ´°Á´¤Ç¤¹. 
 
-== $B%7%s%\%k(B
+== ¥·¥ó¥Ü¥ë
 
-$B%7%s%\%k$G$"$k$+$I$&$+$NH=CG$r4V0c$($k$3$H$,$"$j$^$9(B. $B6qBNE*$K$O<0$,40N;(B
-$B$7$F$$$k$N$K7QB39T$H8+$J$9$3$H$,$"$j$^$9(B.
+¥·¥ó¥Ü¥ë¤Ç¤¢¤ë¤«¤É¤¦¤«¤ÎÈ½ÃÇ¤ò´Ö°ã¤¨¤ë¤³¤È¤¬¤¢¤ê¤Þ¤¹. ¶ñÂÎÅª¤Ë¤Ï¼°¤¬´°Î»
+¤·¤Æ¤¤¤ë¤Î¤Ë·ÑÂ³¹Ô¤È¸«¤Ê¤¹¤³¤È¤¬¤¢¤ê¤Þ¤¹.
 
 ==end
 
