@@ -374,9 +374,10 @@ module Math
   alias sin! sin
   alias tan! tan
   alias log! log
+  alias atan! atan  
   alias log10! log10
   alias atan2! atan2
-  
+
   def sqrt(z)
     if Complex.generic?(z)
       if z >= 0

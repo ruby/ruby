@@ -17,6 +17,14 @@ Mon Jun  3 07:07:07 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	* parse.y (yylex): should pushback proper char after '**'.
 	  (ruby-bugs-ja:PR#240)
 
+Mon Jun  3 05:56:17 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_aset): should raise error if an indexing string
+	  is not found in the receiver.
+
+	* sprintf.c (rb_f_sprintf): "%d" should convert objects into
+	  integers using Integer().
+
 Thu May 30 09:16:36 2002  Wakou Aoyama  <wakou@ruby-lang.org>
 
 	* lib/cgi.rb: if StringIO is usable then use it.

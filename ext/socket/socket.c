@@ -589,7 +589,7 @@ ip_addrsetup(host, port)
 	portp = 0;
     }
     else if (FIXNUM_P(port)) {
-	snprintf(pbuf, sizeof(pbuf), "%ld", FIX2INT(port));
+	snprintf(pbuf, sizeof(pbuf), "%d", FIX2INT(port));
 	portp = pbuf;
     }
     else {
@@ -669,7 +669,7 @@ ipaddr(sockaddr)
     error = getnameinfo(sockaddr, SA_LEN(sockaddr), hbuf, sizeof(hbuf),
 			pbuf, sizeof(pbuf), NI_NUMERICHOST | NI_NUMERICSERV);
     if (error) {
-	rb_raise(rb_eSocket, "getnameinfo %s", gai_strerror(error));
+	rb_raise(rb_eSocket, "getnameinfo: %s", gai_strerror(error));
     }
     addr2 = rb_tainted_str_new2(hbuf);
     if (do_not_reverse_lookup) {

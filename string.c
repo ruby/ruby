@@ -1037,10 +1037,11 @@ rb_str_aset(str, indx, val)
 
       case T_STRING:
 	beg = rb_str_index(str, indx, 0);
-	if (beg != -1) {
-	    if (TYPE(val) != T_STRING) val = rb_str_to_str(val);
-	    rb_str_replace(str, beg, RSTRING(indx)->len, val);
+	if (beg < 0) {
+	    rb_raise(rb_eIndexError, "string not matched");
 	}
+	if (TYPE(val) != T_STRING) val = rb_str_to_str(val);
+	rb_str_replace(str, beg, RSTRING(indx)->len, val);
 	return val;
 
       default:

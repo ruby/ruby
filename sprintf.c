@@ -402,8 +402,8 @@ rb_f_sprintf(argc, argv)
 		    bignum = 1;
 		    break;
 		  default:
-		    v = NUM2LONG(val);
-		    break;
+		    val = rb_Integer(val);
+		    goto bin_retry;
 		  case T_FIXNUM:
 		    v = FIX2LONG(val);
 		    break;

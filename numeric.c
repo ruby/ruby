@@ -646,7 +646,7 @@ static VALUE flo_is_infinite_p(num)
   double value = RFLOAT(num)->value;
 
   if (isinf(value)) {
-    return INT2FIX( value < 0 ? -1 : +1 );
+    return INT2FIX( value < 0 ? -1 : 1 );
   }
 
   return Qnil;
