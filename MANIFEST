@@ -13,6 +13,7 @@ README.EXT.ja
 README.ja
 ToDo
 array.c
+ascii.c
 bignum.c
 class.c
 compar.c
@@ -28,6 +29,7 @@ dmyext.c
 enum.c
 env.h
 error.c
+euc_jp.c
 eval.c
 file.c
 gc.c
@@ -48,6 +50,8 @@ mkconfig.rb
 node.h
 numeric.c
 object.c
+oniggnu.h
+oniguruma.h
 pack.c
 parse.c
 parse.y
@@ -57,8 +61,17 @@ random.c
 range.c
 re.c
 re.h
+regcomp.c
+regenc.c
+regenc.h
+regerror.c
 regex.c
 regex.h
+regexec.c
+reggnu.c
+regint.h
+regparse.c
+regparse.h
 ruby.1
 ruby.c
 ruby.h
@@ -67,12 +80,14 @@ rubysig.h
 rubytest.rb
 runruby.rb
 signal.c
+sjis.c
 sprintf.c
 st.c
 st.h
 string.c
 struct.c
 time.c
+utf8.c
 util.c
 util.h
 variable.c

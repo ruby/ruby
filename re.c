@@ -483,11 +483,13 @@ rb_reg_to_s(re)
 	    goto again;
 	}
 	if (*ptr == ':' && ptr[len-1] == ')') {
+	    int r;
 	    Regexp *rp;
 	    kcode_set_option(re);
-	    rp = ALLOC(Regexp);
-	    MEMZERO((char *)rp, Regexp, 1);
-	    err = re_compile_pattern(++ptr, len -= 2, rp) != 0;
+	    r = re_alloc_pattern(&rp);
+	    if (r == 0) {
+	      err = (re_compile_pattern(++ptr, len -= 2, rp, NULL) != 0);
+	    }
 	    kcode_reset_option();
 	    re_free_pattern(rp);
 	}
@@ -621,7 +623,8 @@ make_regexp(s, len, flags)
     int flags;
 {
     Regexp *rp;
-    char *err;
+    char err[ONIG_MAX_ERROR_MESSAGE_LEN];
+    int r;
 
     /* Handle escaped characters first. */
 
@@ -630,17 +633,18 @@ make_regexp(s, len, flags)
        from that.
     */
 
-    rp = ALLOC(Regexp);
-    MEMZERO((char *)rp, Regexp, 1);
-    rp->buffer = ALLOC_N(char, 16);
-    rp->allocated = 16;
-    rp->fastmap = ALLOC_N(char, 256);
+    r = re_alloc_pattern(&rp);
+    if (r) {
+      re_error_code_to_str((UChar* )err, r);
+      rb_reg_raise(s, len, err, 0);
+    }
+      
     if (flags) {
 	rp->options = flags;
     }
-    err = re_compile_pattern(s, len, rp);
+    r = re_compile_pattern(s, len, rp, err);
 
-    if (err != NULL) {
+    if (r != 0) {
 	rb_reg_raise(s, len, err, 0);
     }
     return rp;
@@ -842,14 +846,14 @@ rb_reg_prepare_re(re)
     }
 
     if (need_recompile) {
-	char *err;
+	char err[ONIG_MAX_ERROR_MESSAGE_LEN];
+	int r;
 
 	if (FL_TEST(re, KCODE_FIXED))
 	    kcode_set_option(re);
 	rb_reg_check(re);
-	RREGEXP(re)->ptr->fastmap_accurate = 0;
-	err = re_compile_pattern(RREGEXP(re)->str, RREGEXP(re)->len, RREGEXP(re)->ptr);
-	if (err != NULL) {
+	r = re_recompile_pattern(RREGEXP(re)->str, RREGEXP(re)->len, RREGEXP(re)->ptr, err);
+	if (r != 0) {
 	    rb_reg_raise(RREGEXP(re)->str, RREGEXP(re)->len, err, re);
 	}
     }

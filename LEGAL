@@ -5,34 +5,29 @@ All the files in this distribution are covered under either the Ruby's
 license (see the file COPYING) or public-domain except some files
 mentioned below.
 
-regex.[ch]:
+oniggnu.h:
+oniguruma.h:
+regcomp.c:
+regenc.[ch]:
+regerror.c:
+regex.c:
+regexec.c:
+reggnu.c:
+regint.h:
+regparse.[ch]:
+ascii.c:
+euc_jp.c:
+sjis.c:
+utf8.c:
 
-  These files are under LGPL.  Treat them as LGPL says. (See the file
-  LGPL for details)
+Oniguruma  ----   (C) K.Kosako <kosako@sofnec.co.jp>
 
-    Extended regular expression matching and search library.
-    Copyright (C) 1993, 94, 95, 96, 97, 98 Free Software Foundation, Inc.
+http://www.ruby-lang.org/cgi-bin/cvsweb.cgi/oniguruma/
+http://www.freebsd.org/cgi/cvsweb.cgi/ports/devel/oniguruma/
+http://www.geocities.jp/kosako1/oniguruma/
 
-    The GNU C Library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Library General Public License as
-    published by the Free Software Foundation; either version 2 of the
-    License, or (at your option) any later version.
-
-    The GNU C Library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Library General Public License for more details.
-
-    You should have received a copy of the GNU Library General Public
-    License along with the GNU C Library; see the file LGPL.  If not,
-    write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
-    Boston, MA 02111-1307, USA.  */
-
-    Multi-byte extension added May, 1993 by t^2 (Takahiro Tanimoto)
-    Last change: May 21, 1993 by t^2
-    removed gapped buffer support, multiple syntax support by matz <matz@nts.co.jp>
-    Perl5 extension added by matz <matz@caelum.co.jp>
-    UTF-8 extension added Jan 16 1999 by Yoshida Masato  <yoshidam@tau.bekkoame.ne.jp>
+   When this software is partly used or it is distributed with Ruby, 
+   this of Ruby follows the license of Ruby.
 
 configure:
 

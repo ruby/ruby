@@ -1,3 +1,30 @@
+Fri Mar  6 00:39:21 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
+
+	* oniggnu.h: imported from Oniguruma library.
+	* oniguruma.h: ditto.
+	* regcomp.c: ditto.
+	* regenc.c: ditto.
+	* regenc.h: ditto.
+	* regerror.c: ditto.
+	* regex.c: ditto.
+	* regexec.c: ditto.
+	* reggnu.c: ditto.
+	* regint.h: ditto.
+	* regparse.c: ditto.
+	* regparse.h: ditto.
+	* ascii.c: ditto.
+	* euc_jp.c: ditto.
+	* sjis.c: ditto.
+	* utf8.c: ditto.
+
+	* MANIFEST: added Oniguruma files listed above.
+
+	* LEGAL: added Oniguruma license.
+
+	* regex.h: now includes oniggnu.h.
+
+	* re.c: applied Oniguruma patch.
+
 Fri Mar  5 23:13:08 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb: support WebDAV methods, PROPPATCH, LOCK,
