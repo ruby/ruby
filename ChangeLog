@@ -1,3 +1,11 @@
+Sat Dec 20 02:18:31 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-calculate-indent): proper indentation
+	  inside of parentheses.  [ruby-dev:22308]
+
+	* hash.c (delete_if_i): do not use ST_DELETE for thread safety.
+	  [ruby-dev:21899]  (not fully solved)
+
 Fri Dec 19 21:24:22 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httprequest.rb (meta_vers): should not set 

@@ -460,12 +460,12 @@ rb_hash_shift(hash)
 }
 
 static enum st_retval
-delete_if_i(key, value)
-    VALUE key, value;
+delete_if_i(key, value, keys)
+    VALUE key, value, keys;
 {
-    if (key == Qundef) return ST_CONTINUE;
-    if (RTEST(rb_yield_values(2, key, value)))
-	return ST_DELETE;
+    if (key != Qundef && RTEST(rb_yield_values(2, key, value))) {
+	rb_ary_push(keys, key);
+    }
     return ST_CONTINUE;
 }
 
@@ -473,8 +473,14 @@ VALUE
 rb_hash_delete_if(hash)
     VALUE hash;
 {
+    VALUE keys = rb_ary_new();
+    long i;
+
     rb_hash_modify(hash);
-    rb_hash_foreach(hash, delete_if_i, 0);
+    rb_hash_foreach(hash, delete_if_i, keys);
+    for (i=0; i<RARRAY(keys)->len; i++) {
+	st_delete(RHASH(hash)->tbl, &RARRAY(keys)->ptr[i], 0);
+    }
     return hash;
 }
 

@@ -611,34 +611,25 @@ The variable ruby-indent-level controls the amount of indentation.
 	 ((nth 0 state)			; within string
 	  (setq indent nil))		;  do nothing
 	 ((car (nth 1 state))		; in paren
-	  (cond
-	   ((and (eq (car (nth 1 state)) ?\{) ; brace block
-		 (save-excursion
-		   (goto-char (1- (cdr (nth 1 state))))
-		   (not (ruby-expr-beg))))
-	    (setq paren nil)
-	    (back-to-indentation)
-	    (setq indent (ruby-indent-size (current-column) (nth 2 state))))
-	   (t
-	    (goto-char (setq begin (cdr (nth 1 state))))
-	    (let ((deep (ruby-deep-indent-paren-p (car (nth 1 state)))))
-	      (if deep
-		  (cond ((and (eq deep t) (eq (car (nth 1 state)) paren))
-			 (skip-syntax-backward " ")
-			 (setq indent (1- (current-column))))
-			((let ((s (ruby-parse-region (point) indent-point)))
-			   (and (nth 2 s) (> (nth 2 s) 0)
-				(or (goto-char (cdr (nth 1 s))) t)))
-			 (forward-word -1)
-			 (setq indent (ruby-indent-size (current-column) (nth 2 state))))
-			(t
-			 (setq indent (current-column))
-			 (cond ((eq deep 'space))
-			       (paren (setq indent (1- indent)))
-			       (t (setq indent (ruby-indent-size (1- indent) 1))))))
-		(if (nth 3 state) (goto-char (nth 3 state))
-		  (goto-char parse-start) (back-to-indentation))
-		(setq indent (ruby-indent-size (current-column) (nth 2 state))))))))
+	  (goto-char (setq begin (cdr (nth 1 state))))
+	  (let ((deep (ruby-deep-indent-paren-p (car (nth 1 state)))))
+	    (if deep
+		(cond ((and (eq deep t) (eq (car (nth 1 state)) paren))
+		       (skip-syntax-backward " ")
+		       (setq indent (1- (current-column))))
+		      ((let ((s (ruby-parse-region (point) indent-point)))
+			 (and (nth 2 s) (> (nth 2 s) 0)
+			      (or (goto-char (cdr (nth 1 s))) t)))
+		       (forward-word -1)
+		       (setq indent (ruby-indent-size (current-column) (nth 2 state))))
+		      (t
+		       (setq indent (current-column))
+		       (cond ((eq deep 'space))
+			     (paren (setq indent (1- indent)))
+			     (t (setq indent (ruby-indent-size (1- indent) 1))))))
+	      (if (nth 3 state) (goto-char (nth 3 state))
+		(goto-char parse-start) (back-to-indentation))
+	      (setq indent (ruby-indent-size (current-column) (nth 2 state))))))
 	 ((and (nth 2 state) (> (nth 2 state) 0)) ; in nest
 	  (if (null (cdr (nth 1 state)))
 	      (error "invalid nest"))
@@ -655,7 +646,6 @@ The variable ruby-indent-level controls the amount of indentation.
 
 	 ((and (nth 2 state) (< (nth 2 state) 0)) ; in negative nest
 	  (setq indent (ruby-indent-size (current-column) (nth 2 state)))))
-
 	(when indent
 	  (goto-char indent-point)
 	  (end-of-line)
@@ -709,22 +699,32 @@ The variable ruby-indent-level controls the amount of indentation.
 			(not (looking-at "[a-z_]"))))
 		 (and (looking-at ruby-operator-re)
 		      (not (ruby-special-char-p))
-		      (or (not (eq ?/ (char-after (point))))
-			  (null (nth 0 (ruby-parse-region parse-start (point)))))
-		      (or (not (eq ?| (char-after (point))))
-			  (save-excursion
-			    (or (eolp) (forward-char -1))
-			    (cond
-			     ((search-backward "|" nil t)
-			      (skip-chars-backward " \t\n")
-			      (and (not (eolp))
-				   (progn
-				     (forward-char -1)
-				     (not (looking-at "{")))
-				   (progn
-				     (forward-word -1)
-				     (not (looking-at "do\\>[^_]")))))
-			     (t t))))))
+		      (let ((c (char-after (point))))
+			(and
+			 (or (not (eq ?, c))
+			     (null begin)
+			     (save-excursion
+			       (goto-char begin)
+			       (skip-chars-forward " \t")
+			       (not (or (eolp) (looking-at "#")
+					(and (eq (car (nth 1 state)) ?{)
+					     (looking-at "|"))))))
+			 (or (not (eq ?/ c))
+			     (null (nth 0 (ruby-parse-region (or begin parse-start) (point)))))
+			 (or (not (eq ?| (char-after (point))))
+			     (save-excursion
+			       (or (eolp) (forward-char -1))
+			       (cond
+				((search-backward "|" nil t)
+				 (skip-chars-backward " \t\n")
+				 (and (not (eolp))
+				      (progn
+					(forward-char -1)
+					(not (looking-at "{")))
+				      (progn
+					(forward-word -1)
+					(not (looking-at "do\\>[^_]")))))
+				(t t))))))))
 	     (setq indent
 		   (cond
 		    ((and

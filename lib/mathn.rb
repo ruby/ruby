@@ -125,7 +125,7 @@ class Rational
   def ** (other)
     if other.kind_of?(Rational)
       if self < 0
-	return Complex(self, 0) ** other
+	return Complex.new!(self, 0) ** other
       elsif other == 0
 	return Rational(1,1)
       elsif self == 0
