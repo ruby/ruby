@@ -222,7 +222,7 @@ load_mantissa(d, buf, len)
 #endif
 
 #ifdef DBL_DIG
-#define FLOAT_DIG (DBL_DIG+1)
+#define FLOAT_DIG (DBL_DIG+2)
 #else
 #define FLOAT_DIG 17
 #endif

@@ -1,3 +1,7 @@
+Mon Apr 21 21:59:48 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* marshal.c: one more digit for decimal point.  [ruby-talk:69808]
+
 Mon Apr 21 21:25:59 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* numeric.c (flo_is_finite_p): use finite() if available.
