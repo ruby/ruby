@@ -12,6 +12,7 @@ lib/bigdecimal/newton.rb
 lib/bigdecimal/ludcmp.rb
 lib/bigdecimal/util.rb
 lib/bigdecimal/nlsolve.rb
+lib/bigdecimal/math.rb
 sample/linear.rb
 sample/nlsolve.rb
 sample/pi.rb
