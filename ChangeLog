@@ -1,3 +1,9 @@
+Sat Apr 14 13:37:32 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
+
+	* win32/config.status.in: no longer use missing/alloca.c.
+
+	* win32/Makefile.sub: ditto.
+
 Mon Apr  9 11:56:52 2001  Shugo Maeda <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb: fix typo.
