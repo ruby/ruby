@@ -6,15 +6,14 @@ dir_config('termcap')
 
 make=false
 have_library("mytinfo", "tgetent") if /bow/ =~ RUBY_PLATFORM
+have_library("tinfo", "tgetent") or have_library("termcap", "tgetent")
 if have_header("ncurses.h") and have_library("ncurses", "initscr")
   make=true
-elsif have_header("ncurses/curses.h") and have_library("ncurses", "initscr") and have_library("tinfo", "tgetent") 
 elsif have_header("ncurses/curses.h") and have_library("ncurses", "initscr")
   make=true
 elsif have_header("curses_colr/curses.h") and have_library("cur_colr", "initscr")
   make=true
 else
-  have_library("termcap", "tgetent") 
   if have_header("curses.h") and have_library("curses", "initscr")
     make=true
   end
