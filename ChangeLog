@@ -1,3 +1,7 @@
+Sat Jan 31 02:28:15 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in (RPATHFLAG): set to -Wl,-R like NetBSD on Interix.
+
 Sat Jan 31 01:09:41 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* lib/logger.rb: leading 0 padding of timestamp usec part.
