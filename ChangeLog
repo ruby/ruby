@@ -1,3 +1,7 @@
+Mon Dec 25 15:52:39 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* stable version 1.6.2 released.
+
 Mon Dec 25 05:11:04 2000  Wakou Aoyama  <wakou@fsinet.or.jp>
 
 	* lib/cgi.rb: version 2.1.2 (some bug fixes).
@@ -20,10 +24,6 @@ Mon Dec 25 00:44:48 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Mon Dec 25 00:04:54 2000  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* eval.c (rb_thread_schedule): initial value of `max' changed to -1.
-
-Fri Dec 22 17:59:30 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
-
-	* stable version 1.6.2 released.
 
 Mon Dec 25 00:16:14 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
