@@ -1565,6 +1565,10 @@ primary		: literal
 			$$ = NEW_CASE($2, $4);
 		        fixpos($$, $2);
 		    }
+		| kCASE expr_value opt_terms kELSE compstmt kEND
+		    {
+			$$ = block_append($2, $5);
+		    }
 		| kCASE opt_terms case_body kEND
 		    {
 			$$ = $3;

@@ -103,6 +103,7 @@
 # - #owned?
 # - #pipe?
 # - #readable?
+# - #world_readable?
 # - #readable_real?
 # - #setgid?
 # - #setuid?
@@ -112,6 +113,7 @@
 # - #sticky?
 # - #symlink?
 # - #writable?
+# - #world_writable?
 # - #writable_real?
 # - #zero?
 #
@@ -717,6 +719,9 @@ class Pathname    # * FileTest *
   # See <tt>FileTest.readable?</tt>.
   def readable?() FileTest.readable?(@path) end
 
+  # See <tt>FileTest.readable_world?</tt>.
+  def readable_world?() FileTest.readable_world?(@path) end
+
   # See <tt>FileTest.readable_real?</tt>.
   def readable_real?() FileTest.readable_real?(@path) end
 
@@ -740,6 +745,9 @@ class Pathname    # * FileTest *
 
   # See <tt>FileTest.writable?</tt>.
   def writable?() FileTest.writable?(@path) end
+
+  # See <tt>FileTest.writable_world?</tt>.
+  def writable_world?() FileTest.writable_world?(@path) end
 
   # See <tt>FileTest.writable_real?</tt>.
   def writable_real?() FileTest.writable_real?(@path) end

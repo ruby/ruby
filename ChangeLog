@@ -1,3 +1,11 @@
+Tue Jan 13 14:48:01 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (primary): allow no "when" case. [ruby-dev:22578]
+
+	* ruby.h (rb_class_of): reduce branch. [ruby-dev:22577]
+
+	* ruby.h (rb_type): ditto.
+
 Tue Jan 13 14:26:59 2004  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* lib/test/unit/ui/testrunnerutilities.rb (TestRunnerUtilities):

@@ -629,13 +629,18 @@ rb_class_of(obj)
     VALUE obj;
 #endif
 {
-    if (FIXNUM_P(obj)) return rb_cFixnum;
-    if (obj == Qnil) return rb_cNilClass;
-    if (obj == Qfalse) return rb_cFalseClass;
-    if (obj == Qtrue) return rb_cTrueClass;
-    if (SYMBOL_P(obj)) return rb_cSymbol;
-
-    return RBASIC(obj)->klass;
+    if(IMMEDIATE_P(obj)){
+	if (FIXNUM_P(obj)) return rb_cFixnum;
+	if (obj == Qtrue)  return rb_cTrueClass;
+	if (SYMBOL_P(obj)) return rb_cSymbol;
+    }
+    else if(!RTEST(obj)){
+	if (obj == Qnil)   return rb_cNilClass;
+	if (obj == Qfalse) return rb_cFalseClass;
+    }
+    else{
+	return RBASIC(obj)->klass;
+    }
 }
 
 static inline int
@@ -646,13 +651,19 @@ rb_type(obj)
    VALUE obj;
 #endif
 {
-    if (FIXNUM_P(obj)) return T_FIXNUM;
-    if (obj == Qnil) return T_NIL;
-    if (obj == Qfalse) return T_FALSE;
-    if (obj == Qtrue) return T_TRUE;
-    if (obj == Qundef) return T_UNDEF;
-    if (SYMBOL_P(obj)) return T_SYMBOL;
-    return BUILTIN_TYPE(obj);
+    if(IMMEDIATE_P(obj)){
+	if (FIXNUM_P(obj)) return T_FIXNUM;
+	if (obj == Qtrue) return T_TRUE;
+	if (SYMBOL_P(obj)) return T_SYMBOL;
+	if (obj == Qundef) return T_UNDEF;
+    }
+    else if(!RTEST(obj)){
+	if (obj == Qnil) return T_NIL;
+	if (obj == Qfalse) return T_FALSE;
+    }
+    else{
+	return BUILTIN_TYPE(obj);
+    }
 }
 
 static inline int
