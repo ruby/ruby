@@ -1,6 +1,7 @@
 Mon Sep  8 22:15:33 2003    <nagai@ai.kyutech.ac.jp>
 
-	* multi-tk.rb: modify security check at creating a new interpreter
+	* ext/tk/lib/multi-tk.rb: modify security check at creating 
+	  a new interpreter
 
 Mon Sep  8 20:00:12 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
