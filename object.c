@@ -655,10 +655,6 @@ rb_class_s_new(argc, argv)
     if (rb_scan_args(argc, argv, "01", &super) == 0) {
 	super = rb_cObject;
     }
-    Check_Type(super, T_CLASS);
-    if (FL_TEST(super, FL_SINGLETON)) {
-	rb_raise(rb_eTypeError, "can't make subclass of virtual class");
-    }
     klass = rb_class_new(super);
     /* make metaclass */
     RBASIC(klass)->klass = rb_singleton_class_new(RBASIC(super)->klass);
@@ -667,13 +663,6 @@ rb_class_s_new(argc, argv)
     rb_funcall(super, rb_intern("inherited"), 1, klass);
 
     return klass;
-}
-
-static VALUE
-rb_class_s_inherited()
-{
-    rb_raise(rb_eTypeError, "can't make subclass of Class");
-    return Qnil;		/* dummy */
 }
 
 static VALUE
@@ -1096,7 +1085,7 @@ boot_defclass(name, super)
     VALUE super;
 {
     extern st_table *rb_class_tbl;
-    VALUE obj = rb_class_new(super);
+    VALUE obj = rb_class_boot(super);
     ID id = rb_intern(name);
 
     rb_name_class(obj, id);
@@ -1271,7 +1260,6 @@ Init_Object()
     rb_define_singleton_method(rb_cClass, "new", rb_class_s_new, -1);
     rb_undef_method(rb_cClass, "extend_object");
     rb_undef_method(rb_cClass, "append_features");
-    rb_define_singleton_method(rb_cClass, "inherited", rb_class_s_inherited, 1);
 
     rb_cData = rb_define_class("Data", rb_cObject);
     rb_undef_method(CLASS_OF(rb_cData), "new");

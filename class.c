@@ -19,7 +19,7 @@
 extern st_table *rb_class_tbl;
 
 VALUE
-rb_class_new(super)
+rb_class_boot(super)
     VALUE super;
 {
     NEWOBJ(klass, struct RClass);
@@ -31,6 +31,20 @@ rb_class_new(super)
     klass->m_tbl = st_init_numtable();
 
     return (VALUE)klass;
+}
+
+VALUE
+rb_class_new(super)
+    VALUE super;
+{
+    Check_Type(super, T_CLASS);
+    if (super == rb_cClass) {
+	rb_raise(rb_eTypeError, "can't make subclass of Class");
+    }
+    if (FL_TEST(super, FL_SINGLETON)) {
+	rb_raise(rb_eTypeError, "can't make subclass of virtual class");
+    }
+    return rb_class_boot(super);
 }
 
 static int
@@ -78,7 +92,7 @@ VALUE
 rb_singleton_class_new(super)
     VALUE super;
 {
-    VALUE klass = rb_class_new(super);
+    VALUE klass = rb_class_boot(super);
 
     FL_SET(klass, FL_SINGLETON);
     return klass;

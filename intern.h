@@ -79,6 +79,7 @@ VALUE rb_big_xor _((VALUE, VALUE));
 VALUE rb_big_lshift _((VALUE, VALUE));
 VALUE rb_big_rand _((VALUE, double));
 /* class.c */
+VALUE rb_class_boot _((VALUE));
 VALUE rb_class_new _((VALUE));
 VALUE rb_mod_clone _((VALUE));
 VALUE rb_mod_dup _((VALUE));

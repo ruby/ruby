@@ -1304,6 +1304,7 @@ rb_file_s_expand_path(argc, argv)
     VALUE fname, dname;
     char *s, *p;
     char buf[MAXPATHLEN+2];
+    char *bend = buf + sizeof(buf) - 2;
     int tainted;
 
     rb_scan_args(argc, argv, "11", &fname, &dname);
@@ -1318,6 +1319,7 @@ rb_file_s_expand_path(argc, argv)
 	    if (!dir) {
 		rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding `%s'", s);
 	    }
+	    if (strlen(dir) > MAXPATHLEN) goto toolong;
 	    strcpy(buf, dir);
 	    p = &buf[strlen(buf)];
 	    s++;
@@ -1330,6 +1332,7 @@ rb_file_s_expand_path(argc, argv)
 #endif
 	    while (*s && !isdirsep(*s)) {
 		*p++ = *s++;
+		if (p >= bend) goto toolong;
 	    }
 	    *p = '\0';
 #ifdef HAVE_PWD_H
@@ -1338,6 +1341,7 @@ rb_file_s_expand_path(argc, argv)
 		endpwent();
 		rb_raise(rb_eArgError, "user %s doesn't exist", buf);
 	    }
+	    if (strlen(pwPtr->pw_dir) > MAXPATHLEN) goto toolong;
 	    strcpy(buf, pwPtr->pw_dir);
 	    p = &buf[strlen(buf)];
 	    endpwent();
@@ -1349,6 +1353,7 @@ rb_file_s_expand_path(argc, argv)
     else if (ISALPHA(s[0]) && s[1] == ':' && isdirsep(s[2])) {
 	while (*s && !isdirsep(*s)) {
 	    *p++ = *s++;
+	    if (p >= bend) goto toolong;
 	}
     }
 #endif
@@ -1356,6 +1361,7 @@ rb_file_s_expand_path(argc, argv)
 	if (!NIL_P(dname)) {
 	    dname = rb_file_s_expand_path(1, &dname);
 	    if (OBJ_TAINTED(dname)) tainted = 1;
+	    if (strlen(RSTRING(dname)->ptr) > MAXPATHLEN) goto toolong;
 	    strcpy(buf, RSTRING(dname)->ptr);
 	}
 	else {
@@ -1372,6 +1378,7 @@ rb_file_s_expand_path(argc, argv)
     else {
 	while (*s && isdirsep(*s)) {
 	    *p++ = '/';
+	    if (p >= bend) goto toolong;
 	    s++;
 	}
 	if (p > buf && *s) p--;
@@ -1391,7 +1398,10 @@ rb_file_s_expand_path(argc, argv)
 		    }
 		    else {
 			*++p = '.';
-			do *++p = '.'; while (*++s == '.');
+			do {
+			    *++p = '.';
+			    if (p >= bend) goto toolong;
+			} while (*++s == '.');
 			--s;
 		    }
 		    break;
@@ -1413,6 +1423,7 @@ rb_file_s_expand_path(argc, argv)
 	    if (!isdirsep(*p)) *++p = '/'; break;
 	  default:
 	    *++p = *s;
+	    if (p >= bend) goto toolong;
 	}
     }
 
@@ -1423,6 +1434,10 @@ rb_file_s_expand_path(argc, argv)
     fname = rb_str_new2(buf);
     if (tainted) OBJ_TAINT(fname);
     return fname;
+
+  toolong:
+    rb_raise(rb_eArgError, "argument too long (size=%d)", RSTRING(fname)->len);
+    return Qnil;		/* not reached */
 }
 
 static int

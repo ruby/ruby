@@ -1,3 +1,8 @@
+Tue Jul 17 11:22:01 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* regex.c (NUM_FAILURE_ITEMS): was confusing NUM_REG_ITEMS and
+	  NUM_NONREG_ITEMS, which have happened to be same value.
+
 Tue Jul 17 11:08:34 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
 
 	* ext/extmk.rb.in: modify RM macro because command.com/cmd.exe don't
@@ -5,9 +10,28 @@ Tue Jul 17 11:08:34 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
 
 	* lib/mkmf.rb: ditto.
 
+Tue Jul 17 01:38:15 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* class.c (rb_class_new): subclass check moved to this function.
+
+	* class.c (rb_class_boot): check less version of rb_class_new().
+
 Man Jul 16 13:21:30 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
 
 	* file.c (file_load_ok): fix typo.
+
+Mon Jul 16 12:58:07 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (proc_invoke): should preserve iter status for embedded
+	  frame in the block.
+
+Mon Jul 16 00:04:39 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* file.c (rb_file_s_expand_path): may overrun buffer on stack.
+
+Sun Jul 15 01:38:28 2001  Guy Decoux  <decoux@moulon.inra.fr>
+
+	* string.c (rb_str_insert): forgot to call rb_str_modify().
 
 Sat Jul 14 12:26:30 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
@@ -73,8 +97,8 @@ Sat Jul  7 17:45:35 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Fri Jul  6 18:01:10 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* object.c (rb_obj_dup): should free generic_ivar if original owns
-	  them.
+	* object.c (rb_obj_dup): copies (actually does not free)
+	  generic_ivar on dupif original owns them.
 
 Fri Jul  6 02:15:06 2001  Akinori MUSHA  <knu@iDaemons.org>
 

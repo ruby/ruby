@@ -3590,7 +3590,8 @@ rb_jump_tag(tag)
 int
 rb_block_given_p()
 {
-    if (ruby_frame->iter) return Qtrue;
+    if (ruby_frame->iter && ruby_block)
+	return Qtrue;
     return Qfalse;
 }
 
@@ -3603,7 +3604,8 @@ rb_iterator_p()
 static VALUE
 rb_f_block_given_p()
 {
-    if (ruby_frame->prev && ruby_frame->prev->iter) return Qtrue;
+    if (ruby_frame->prev && ruby_frame->prev->iter && ruby_block)
+	return Qtrue;
     return Qfalse;
 }
 
@@ -3622,7 +3624,7 @@ rb_yield_0(val, self, klass, pcall)
     int state;
     static unsigned serial = 1;
 
-    if (!(rb_block_given_p() || rb_f_block_given_p()) || !ruby_block) {
+    if (!(rb_block_given_p() || rb_f_block_given_p())) {
 	rb_raise(rb_eLocalJumpError, "yield called out of block");
     }
 
@@ -6409,7 +6411,6 @@ proc_invoke(proc, args, pcall)
     old_block = ruby_block;
     _block = *data;
     ruby_block = &_block;
-    ruby_block->frame.iter = ITER_NOT;
 
     PUSH_ITER(ITER_CUR);
     ruby_frame->iter = ITER_CUR;

@@ -770,6 +770,8 @@ ruby_connect(fd, sockaddr, len, socks)
 		errno = 0;
 		break;
 #endif
+	      default:
+		break;
 	    }
 	}
 #ifdef HAVE_FCNTL

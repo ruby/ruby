@@ -82,6 +82,7 @@ rb_nkf_kconv(obj, opt, src)
   kanji_convert(NULL);
   RSTRING(dst)->ptr[output_ctr] = '\0';
   RSTRING(dst)->len = output_ctr;
+  OBJ_INFECT(dst, src);
 
   return dst;
 }

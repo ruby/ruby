@@ -1208,6 +1208,7 @@ rb_str_insert(str, idx, str2)
 {
     long pos = NUM2LONG(idx);
 
+    rb_str_modify(str);
     if (pos == -1) {
 	pos = RSTRING(str)->len;
     }

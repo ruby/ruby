@@ -170,7 +170,7 @@ VALUE
 rb_mod_name(mod)
     VALUE mod;
 {
-    VALUE path = classname(rb_obj_type(mod));
+    VALUE path = classname(rb_class_real(mod));
 
     if (path) return rb_str_dup(path);
     return rb_str_new(0,0);
