@@ -1,3 +1,18 @@
+Fri Feb 21 05:16:14 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_cmp_m): return nil if str2 does not respond to
+	  both "to_str" and "<=>".
+
+	* compar.c (cmp_gt): return nil if "<=>" returns nil (means
+	  incomparable).
+
+	* compar.c (cmp_ge): ditto.
+
+	* compar.c (cmp_lt): ditto.
+
+	* compar.c (cmp_between): use RTEST(), since cmp_lt and cmp_gt may
+	  return nil.
+
 Thu Feb 20 19:05:51 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_thread_remove): thread may die in the process of

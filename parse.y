@@ -3700,7 +3700,7 @@ yylex()
 	}
 	pushback(c);
 	if (ISDIGIT(c)) {
-	    rb_warning("no .<digit> floating literal anymore; put 0 before dot");
+	    yyerror("no .<digit> floating literal anymore; put 0 before dot");
 	}
 	lex_state = EXPR_DOT;
 	return '.';

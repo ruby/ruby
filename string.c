@@ -804,14 +804,28 @@ static VALUE
 rb_str_cmp_m(str1, str2)
     VALUE str1, str2;
 {
-    int result;
+    long result;
 
     if (TYPE(str2) != T_STRING) {
-	str2 = rb_check_string_type(str2);
-	if (NIL_P(str2)) return Qnil;
+	if (!rb_respond_to(str2, rb_intern("to_str"))) {
+	    return Qnil;
+	}
+	else if (!rb_respond_to(str2, rb_intern("<=>"))) {
+	    return Qnil;
+	}
+	else {
+	    VALUE tmp = rb_funcall(str2, rb_intern("<=>"), 1, str1);
+
+	    if (!FIXNUM_P(tmp)) {
+		return rb_funcall(LONG2FIX(0), '-', tmp);
+	    }
+	    result = FIX2LONG(tmp);
+	}
     }
-    result = rb_str_cmp(str1, str2);
-    return INT2FIX(result);
+    else {
+	result = rb_str_cmp(str1, str2);
+    }
+    return LONG2FIX(result);
 }
 
 static VALUE

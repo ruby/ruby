@@ -50,7 +50,7 @@ cmp_gt(x, y)
 {
     VALUE c = rb_funcall(x, cmp, 1, y);
 
-    if (NIL_P(c)) return Qfalse;
+    if (NIL_P(c)) return Qnil;
     if (rb_cmpint(c) > 0) return Qtrue;
     return Qfalse;
 }
@@ -61,7 +61,7 @@ cmp_ge(x, y)
 {
     VALUE c = rb_funcall(x, cmp, 1, y);
 
-    if (NIL_P(c)) return Qfalse;
+    if (NIL_P(c)) return Qnil;
     if (rb_cmpint(c) >= 0) return Qtrue;
     return Qfalse;
 }
@@ -72,7 +72,7 @@ cmp_lt(x, y)
 {
     VALUE c = rb_funcall(x, cmp, 1, y);
 
-    if (NIL_P(c)) return Qfalse;
+    if (NIL_P(c)) return Qnil;
     if (rb_cmpint(c) < 0) return Qtrue;
     return Qfalse;
 }
@@ -83,7 +83,7 @@ cmp_le(x, y)
 {
     VALUE c = rb_funcall(x, cmp, 1, y);
 
-    if (NIL_P(c)) return Qfalse;
+    if (NIL_P(c)) return Qnil;
     if (rb_cmpint(c) <= 0) return Qtrue;
     return Qfalse;
 }
@@ -92,8 +92,8 @@ static VALUE
 cmp_between(x, min, max)
     VALUE x, min, max;
 {
-    if (cmp_lt(x, min)) return Qfalse;
-    if (cmp_gt(x, max)) return Qfalse;
+    if (RTEST(cmp_lt(x, min))) return Qfalse;
+    if (RTEST(cmp_gt(x, max))) return Qfalse;
     return Qtrue;
 }
 
