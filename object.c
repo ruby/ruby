@@ -448,12 +448,39 @@ main_to_s(obj)
     return rb_str_new2("main");
 }
 
+
+/***********************************************************************
+ * Document-class:  TrueClass
+ *
+ *  The global value <code>true</code> is the only instance of class
+ *  <code>TrueClass</code> and represents a logically true value in
+ *  boolean expressions. The class provides operators allowing
+ *  <code>true</code> to be used in logical expressions.
+ */
+
+
+/*
+ * call-seq:
+ *   true.to_s   =>  "true"
+ *
+ * The string representation of <code>true</code> is "true".
+ */
+
 static VALUE
 true_to_s(obj)
     VALUE obj;
 {
     return rb_str_new2("true");
 }
+
+
+/*
+ *  call-seq:
+ *     true & obj    => true or false
+ *  
+ *  And---Returns <code>false</code> if <i>obj</i> is
+ *  <code>nil</code> or <code>false</code>, <code>true</code> otherwise.
+ */
 
 static VALUE
 true_and(obj, obj2)
@@ -462,12 +489,38 @@ true_and(obj, obj2)
     return RTEST(obj2)?Qtrue:Qfalse;
 }
 
+/*
+ *  call-seq:
+ *     true | obj   => true
+ *  
+ *  Or---Returns <code>true</code>. As <i>anObject</i> is an argument to
+ *  a method call, it is always evaluated; there is no short-circuit
+ *  evaluation in this case.
+ *     
+ *     true |  puts("or")
+ *     true || puts("logical or")
+ *     
+ *  <em>produces:</em>
+ *     
+ *     or
+ */
+
 static VALUE
 true_or(obj, obj2)
     VALUE obj, obj2;
 {
     return Qtrue;
 }
+
+
+/*
+ *  call-seq:
+ *     true ^ obj   => !obj
+ *  
+ *  Exclusive Or---Returns <code>true</code> if <i>obj</i> is
+ *  <code>nil</code> or <code>false</code>, <code>false</code>
+ *  otherwise.
+ */
 
 static VALUE
 true_xor(obj, obj2)
@@ -566,6 +619,52 @@ rb_false(obj)
     return Qfalse;
 }
 
+
+/**********************************************************************
+ * Document-class: Symbol
+ *
+ *  <code>Symbol</code> objects represent names and some strings
+ *  inside the Ruby
+ *  interpreter. They are generated using the <code>:name</code> and
+ *  <code>:"string"</code> literals
+ *  syntax, and by the various <code>to_sym</code> methods. The same
+ *  <code>Symbol</code> object will be created for a given name or string
+ *  for the duration of a program's execution, regardless of the context
+ *  or meaning of that name. Thus if <code>Fred</code> is a constant in
+ *  one context, a method in another, and a class in a third, the
+ *  <code>Symbol</code> <code>:Fred</code> will be the same object in
+ *  all three contexts.
+ *     
+ *     module One
+ *       class Fred
+ *       end
+ *       $f1 = :Fred
+ *     end
+ *     module Two
+ *       Fred = 1
+ *       $f2 = :Fred
+ *     end
+ *     def Fred()
+ *     end
+ *     $f3 = :Fred
+ *     $f1.id   #=> 2514190
+ *     $f2.id   #=> 2514190
+ *     $f3.id   #=> 2514190
+ *     
+ */
+
+/*
+ *  call-seq:
+ *     sym.to_i      => fixnum
+ *     sym.to_int    => fixnum
+ *  
+ *  Returns an integer that is unique for each symbol within a
+ *  particular execution of a program.
+ *     
+ *     :fred.to_i           #=> 9809
+ *     "fred".to_sym.to_i   #=> 9809
+ */
+
 static VALUE
 sym_to_i(sym)
     VALUE sym;
@@ -574,6 +673,16 @@ sym_to_i(sym)
 
     return LONG2FIX(id);
 }
+
+
+/*
+ *  call-seq:
+ *     sym.inspect    => string
+ *  
+ *  Returns the representation of <i>sym</i> as a symbol literal.
+ *     
+ *     :fred.inspect   #=> ":fred"
+ */
 
 static VALUE
 sym_inspect(sym)
@@ -594,12 +703,34 @@ sym_inspect(sym)
     return str;
 }
 
+
+/*
+ *  call-seq:
+ *     sym.id2name   => string
+ *     sym.to_s      => string
+ *  
+ *  Returns the name or string corresponding to <i>sym</i>.
+ *     
+ *     :fred.id2name   #=> "fred"
+ */
+
+
 static VALUE
 sym_to_s(sym)
     VALUE sym;
 {
     return rb_str_new2(rb_id2name(SYM2ID(sym)));
 }
+
+
+/*
+ * call-seq:
+ *   sym.to_sym   => sym
+ *
+ * In general, <code>to_sym</code> returns the <code>Symbol</code> correspopnding
+ * to an object. As <i>sym</i> is already a symbol, <code>self</code> is returned
+ * in this case.
+ */
 
 static VALUE
 sym_to_sym(sym)
