@@ -157,7 +157,7 @@ Mon Feb 16 10:29:52 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* dir.c (CompareImpl): File.fnmatch and Dir.glob get better performance
 	  in Win32. This is achived by calling downcase() for single-byte
-	  characters. CharLower() is only called for multi-byte characters.
+	  characters. (CharLower() is slower than downcase())
 
 Mon Feb 16 02:14:29 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
