@@ -950,7 +950,7 @@ rb_str_aref_m(argc, argv, str)
 }
 
 static void
-rb_str_replace(str, beg, len, val)
+rb_str_update(str, beg, len, val)
     VALUE str;
     long beg;
     long len;
@@ -1018,7 +1018,7 @@ rb_str_aset(str, indx, val)
 	    RSTRING(str)->ptr[idx] = NUM2INT(val) & 0xff;
 	}
 	else {
-	    rb_str_replace(str, idx, 1, val);
+	    rb_str_update(str, idx, 1, val);
 	}
 	return val;
 
@@ -1034,7 +1034,7 @@ rb_str_aset(str, indx, val)
       case T_STRING:
 	beg = rb_str_index(str, indx, 0);
 	if (beg != -1) {
-	    rb_str_replace(str, beg, RSTRING(indx)->len, val);
+	    rb_str_update(str, beg, RSTRING(indx)->len, val);
 	}
 	return val;
 
@@ -1043,7 +1043,7 @@ rb_str_aset(str, indx, val)
 	{
 	    long beg, len;
 	    if (rb_range_beg_len(indx, &beg, &len, RSTRING(str)->len, 2)) {
-		rb_str_replace(str, beg, len, val);
+		rb_str_update(str, beg, len, val);
 		return val;
 	    }
 	}
@@ -1064,7 +1064,7 @@ rb_str_aset_m(argc, argv, str)
 
 	beg = NUM2INT(argv[0]);
 	len = NUM2INT(argv[1]);
-	rb_str_replace(str, beg, len, argv[2]);
+	rb_str_update(str, beg, len, argv[2]);
 	return argv[2];
     }
     if (argc != 2) {
@@ -1077,7 +1077,15 @@ static VALUE
 rb_str_insert(str, idx, str2)
     VALUE str, idx, str2;
 {
-    rb_str_replace(str, NUM2LONG(idx), 0, str2);
+    long pos = NUM2LONG(idx);
+
+    if (pos == -1) {
+	pos = RSTRING(str)->len;
+    }
+    else if (pos < 0) {
+	pos++;
+    }
+    rb_str_update(str, pos, 0, str2);
     return str;
 }
 
@@ -1329,7 +1337,7 @@ rb_str_gsub(argc, argv, str)
 }
 
 static VALUE
-rb_str_replace_m(str, str2)
+rb_str_replace(str, str2)
     VALUE str, str2;
 {
     if (str == str2) return str;
@@ -2789,7 +2797,7 @@ Init_String()
     rb_include_module(rb_cString, rb_mComparable);
     rb_include_module(rb_cString, rb_mEnumerable);
     rb_define_singleton_method(rb_cString, "new", rb_str_s_new, -1);
-    rb_define_method(rb_cString, "initialize", rb_str_replace_m, 1);
+    rb_define_method(rb_cString, "initialize", rb_str_replace, 1);
     rb_define_method(rb_cString, "clone", rb_str_clone, 0);
     rb_define_method(rb_cString, "dup", rb_str_dup, 0);
     rb_define_method(rb_cString, "<=>", rb_str_cmp_m, 1);
@@ -2815,7 +2823,7 @@ Init_String()
     rb_define_method(rb_cString, "upto", rb_str_upto_m, 1);
     rb_define_method(rb_cString, "index", rb_str_index_m, -1);
     rb_define_method(rb_cString, "rindex", rb_str_rindex, -1);
-    rb_define_method(rb_cString, "replace", rb_str_replace_m, 1);
+    rb_define_method(rb_cString, "replace", rb_str_replace, 1);
 
     rb_define_method(rb_cString, "to_i", rb_str_to_i, 0);
     rb_define_method(rb_cString, "to_f", rb_str_to_f, 0);

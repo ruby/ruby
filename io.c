@@ -1531,6 +1531,8 @@ pipe_atexit _((void))
 }
 #endif
 
+static void pipe_finalize _((OpenFile *fptr));
+
 static void
 pipe_finalize(fptr)
     OpenFile *fptr;

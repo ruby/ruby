@@ -2825,7 +2825,7 @@ struct handler_arg_t {
 static void win32_call_handler(struct handler_arg_t* h)
 {
     int status;
-    RUBY_CRITICAL(rb_protect((VALUE (*)())h->handler, (VALUE)h->arg, &h->status);
+    RUBY_CRITICAL(rb_protect((VALUE (*)(VALUE))h->handler, (VALUE)h->arg, &h->status);
 		  status = h->status;
 		  SetEvent(h->handshake));
     if (status) {

@@ -452,7 +452,7 @@ pty_getpty(self, shell)
     wfptr->f = fdopen(dup(info.fd), "w");
     wfptr->path = strdup(RSTRING(shell)->ptr);
 
-    res = rb_ary_new2(2);
+    res = rb_ary_new2(3);
     rb_ary_store(res,0,(VALUE)rport);
     rb_ary_store(res,1,(VALUE)wport);
     rb_ary_store(res,2,INT2FIX(info.child_pid));

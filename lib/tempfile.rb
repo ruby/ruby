@@ -4,7 +4,7 @@
 # The class for temporary files.
 #  o creates a temporary file, which name is "basename.pid.n" with mode "w+".
 #  o Tempfile objects can be used like IO object.
-#  o with tmpfile.close(true) created temporary files are removed.
+#  o with tempfile.close(true) created temporary files are removed.
 #  o created files are also removed on script termination.
 #  o with Tempfile#open, you can reopen the temporary file.
 #  o file mode of the temporary files are 0600.
@@ -35,36 +35,31 @@ class Tempfile < SimpleDelegator
     if $SAFE > 0 and tmpdir.tainted?
       tmpdir = '/tmp'
     end
-    umask = File.umask(0177)
-    begin
-      n = 0
-      while true
-	begin
-	  tmpname = sprintf('%s/%s%d.%d', tmpdir, basename, $$, n)
-	  lock = tmpname + '.lock'
-	  unless File.exist?(tmpname) or File.exist?(lock)
-	    Dir.mkdir(lock)
-	    break
-	  end
-	rescue
-	  raise "cannot generate tmpfile `%s'" % tmpname if n >= Max_try
-	  #sleep(1)
+    n = 0
+    while true
+      begin
+	tmpname = sprintf('%s/%s%d.%d', tmpdir, basename, $$, n)
+	lock = tmpname + '.lock'
+	unless File.exist?(tmpname) or File.exist?(lock)
+	  Dir.mkdir(lock)
+	  break
 	end
-	n += 1
+      rescue
+	raise "cannot generate tempfile `%s'" % tmpname if n >= Max_try
+	#sleep(1)
       end
-
-      @protect = []
-      @clean_files = Tempfile.callback(tmpname, @protect)
-      ObjectSpace.define_finalizer(self, @clean_files)
-
-      @tmpfile = File.open(tmpname, File::RDWR|File::CREAT|File::EXCL)
-      @protect[0] = @tmpfile
-      @tmpname = tmpname
-      super(@tmpfile)
-      Dir.rmdir(lock)
-    ensure
-      File.umask(umask)
+      n += 1
     end
+
+    @protect = []
+    @clean_files = Tempfile.callback(tmpname, @protect)
+    ObjectSpace.define_finalizer(self, @clean_files)
+
+    @tmpfile = File.open(tmpname, File::RDWR|File::CREAT|File::EXCL)
+    @protect[0] = @tmpfile
+    @tmpname = tmpname
+    super(@tmpfile)
+    Dir.rmdir(lock)
   end
 
   def Tempfile.open(*args)

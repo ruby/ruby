@@ -670,7 +670,7 @@ An end of a defun is found by moving forward from the beginning of one."
 	       (setq font-lock-syntactic-keywords
 		     '(("\\$\\([#\"'`$\\]\\)" 1 (1 . nil))
 		       ("\\(#\\)[{$@]" 1 (1 . nil))
-		       ("\\(/\\)\\([^/\n]\\|\\\\/\\)*\\(/\\)"
+		       ("\\(/\\)\\([^/\n]\\|\\/\\)*\\(/\\)"
 			(1 (7 . ?'))
 			(3 (7 . ?')))))
 	       (make-local-variable 'font-lock-defaults)

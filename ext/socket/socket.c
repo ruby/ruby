@@ -155,6 +155,8 @@ rb_getaddrinfo(nodename, servname, hints, res)
 #endif
 
 #ifdef NT
+static void sock_finalize _((OpenFile *fptr));
+
 static void
 sock_finalize(fptr)
     OpenFile *fptr;
@@ -284,7 +286,10 @@ bsock_setsockopt(sock, lev, optname, val)
 	v = (char*)&i; vlen = sizeof(i);
 	break;
       default:
-	v = rb_str2cstr(val, &vlen);
+	StringValue(val);
+	v = RSTRING(val)->ptr;
+	vlen = RSTRING(val)->len;
+	break;
     }
 
     GetOpenFile(sock, fptr);
@@ -353,30 +358,28 @@ bsock_send(argc, argv, sock)
     VALUE *argv;
     VALUE sock;
 {
-    VALUE msg, to;
+    VALUE mesg, to;
     VALUE flags;
     OpenFile *fptr;
     FILE *f;
     int fd, n;
-    char *m, *t;
-    int mlen, tlen;
 
     rb_secure(4);
-    rb_scan_args(argc, argv, "21", &msg, &flags, &to);
+    rb_scan_args(argc, argv, "21", &mesg, &flags, &to);
 
     GetOpenFile(sock, fptr);
     f = GetWriteFile(fptr);
     fd = fileno(f);
   retry:
     rb_thread_fd_writable(fd);
-    m = rb_str2cstr(msg, &mlen);
+    StringValue(mesg);
     if (!NIL_P(to)) {
-	t = rb_str2cstr(to, &tlen);
-	n = sendto(fd, m, mlen, NUM2INT(flags),
-		   (struct sockaddr*)t, tlen);
+	StringValue(to);
+	n = sendto(fd, RSTRING(mesg)->ptr, RSTRING(mesg)->len, NUM2INT(flags),
+		   (struct sockaddr*)RSTRING(to)->ptr, RSTRING(to)->len);
     }
     else {
-	n = send(fd, m, mlen, NUM2INT(flags));
+	n = send(fd, RSTRING(mesg)->ptr, RSTRING(mesg)->len, NUM2INT(flags));
     }
     if (n < 0) {
 	switch (errno) {
@@ -582,8 +585,8 @@ ip_addrsetup(host, port)
 	portp = pbuf;
     }
     else {
-	Check_SafeStr(port);
-	portp = STR2CSTR(port);
+	SafeStringValue(port);
+	portp = RSTRING(port)->ptr;
     }
 
     MEMZERO(&hints, struct addrinfo, 1);
@@ -1295,8 +1298,6 @@ udp_send(argc, argv, sock)
     OpenFile *fptr;
     FILE *f;
     int n;
-    char *m;
-    int mlen;
     struct addrinfo *res0, *res;
 
     if (argc == 2 || argc == 3) {
@@ -1308,11 +1309,11 @@ udp_send(argc, argv, sock)
     GetOpenFile(sock, fptr);
     res0 = ip_addrsetup(host, port);
     f = GetWriteFile(fptr);
-    m = rb_str2cstr(mesg, &mlen);
+    StringValue(mesg);
     for (res = res0; res; res = res->ai_next) {
       retry:
-	n = sendto(fileno(f), m, mlen, NUM2INT(flags), res->ai_addr,
-		    res->ai_addrlen);
+	n = sendto(fileno(f), RSTRING(mesg)->ptr, RSTRING(mesg)->len, NUM2INT(flags),
+		   res->ai_addr, res->ai_addrlen);
 	if (n >= 0) {
 	    freeaddrinfo(res0);
 	    return INT2FIX(n);
@@ -1784,22 +1785,13 @@ sock_s_gethostbyaddr(argc, argv)
     int argc;
     VALUE *argv;
 {
-    VALUE vaddr, vtype;
-    int type;
-    int alen;
-    char *addr;
+    VALUE addr, type;
     struct hostent *h;
 
-    rb_scan_args(argc, argv, "11", &vaddr, &vtype);
-    addr = rb_str2cstr(vaddr, &alen);
-    if (!NIL_P(vtype)) {
-	type = NUM2INT(vtype);
-    }
-    else {
-	type = AF_INET;
-    }
-
-    h = gethostbyaddr(addr, alen, type);
+    rb_scan_args(argc, argv, "11", &addr, &type);
+    StringValue(addr);
+    h = gethostbyaddr(RSTRING(addr)->ptr, RSTRING(addr)->len,
+		      NIL_P(type)?AF_INET:NUM2INT(type));
 
     return mkhostent(h);
 }
@@ -1816,14 +1808,15 @@ sock_s_getservbyaname(argc, argv)
 
     rb_scan_args(argc, argv, "11", &service, &protocol);
     if (NIL_P(protocol)) proto = "tcp";
-    else proto = STR2CSTR(protocol);
+    else proto = StringValuePtr(protocol);
 
-    sp = getservbyname(STR2CSTR(service), proto);
+    StringValue(service);
+    sp = getservbyname(RSTRING(service)->ptr, proto);
     if (sp) {
 	port = ntohs(sp->s_port);
     }
     else {
-	char *s = STR2CSTR(service);
+	char *s = RSTRING(service)->ptr;
 	char *end;
 
 	port = strtoul(s, &end, 0);
@@ -1831,7 +1824,6 @@ sock_s_getservbyaname(argc, argv)
 	    rb_raise(rb_eSocket, "no such service %s/%s", s, proto);
 	}
     }
-    
     return INT2FIX(port);
 }
 
@@ -1852,7 +1844,7 @@ sock_s_getaddrinfo(argc, argv)
 	hptr = NULL;
     }
     else {
-	strncpy(hbuf, STR2CSTR(host), sizeof(hbuf));
+	strncpy(hbuf, StringValuePtr(host), sizeof(hbuf));
 	hbuf[sizeof(hbuf) - 1] = '\0';
 	hptr = hbuf;
     }
@@ -1864,7 +1856,7 @@ sock_s_getaddrinfo(argc, argv)
 	pptr = pbuf;
     }
     else {
-	strncpy(pbuf, STR2CSTR(port), sizeof(pbuf));
+	strncpy(pbuf, StringValuePtr(port), sizeof(pbuf));
 	pbuf[sizeof(pbuf) - 1] = '\0';
 	pptr = pbuf;
     }
@@ -1876,14 +1868,17 @@ sock_s_getaddrinfo(argc, argv)
     else if (FIXNUM_P(family)) {
 	hints.ai_family = FIX2INT(family);
     }
-    else if (strcmp(STR2CSTR(family), "AF_INET") == 0) {
-	hints.ai_family = PF_INET;
-    }
+    else {
+	StringValue(family);
+	if (strcmp(RSTRING(family)->ptr, "AF_INET") == 0) {
+	    hints.ai_family = PF_INET;
+	}
 #ifdef INET6
-    else if (strcmp(STR2CSTR(family), "AF_INET6") == 0) {
-	hints.ai_family = PF_INET6;
-    }
+	else if (strcmp(RSTRING(family)->ptr, "AF_INET6") == 0) {
+	    hints.ai_family = PF_INET6;
+	}
 #endif
+    }
 
     if (!NIL_P(socktype)) {
 	hints.ai_socktype = NUM2INT(socktype);
@@ -1967,7 +1962,7 @@ sock_s_getnameinfo(argc, argv)
 	    hptr = NULL;
 	}
 	else {
-	    strncpy(hbuf, STR2CSTR(host), sizeof(hbuf));
+	    strncpy(hbuf, StringValuePtr(host), sizeof(hbuf));
 	    hbuf[sizeof(hbuf) - 1] = '\0';
 	    hptr = hbuf;
 	}
@@ -1981,7 +1976,7 @@ sock_s_getnameinfo(argc, argv)
 	    pptr = pbuf;
 	}
 	else {
-	    strncpy(pbuf, STR2CSTR(port), sizeof(pbuf));
+	    strncpy(pbuf, StringValuePtr(port), sizeof(pbuf));
 	    pbuf[sizeof(pbuf) - 1] = '\0';
 	    pptr = pbuf;
 	}
@@ -1993,14 +1988,17 @@ sock_s_getnameinfo(argc, argv)
 	else if (FIXNUM_P(af)) {
 	    hints.ai_family = FIX2INT(af);
 	}
-	else if (strcmp(STR2CSTR(af), "AF_INET") == 0) {
-	    hints.ai_family = PF_INET;
-	}
+	else {
+	    StringValue(af);
+	    if (strcmp(RSTRING(af)->ptr, "AF_INET") == 0) {
+		hints.ai_family = PF_INET;
+	    }
 #ifdef INET6
-	else if (strcmp(STR2CSTR(af), "AF_INET6") == 0) {
-	    hints.ai_family = PF_INET6;
-	}
+	    else if (strcmp(RSTRING(af)->ptr, "AF_INET6") == 0) {
+		hints.ai_family = PF_INET6;
+	    }
 #endif
+	}
 	error = getaddrinfo(hptr, pptr, &hints, &res);
 	if (error) goto error_exit_addr;
 	sap = res->ai_addr;

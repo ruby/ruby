@@ -13,6 +13,7 @@
 # end
 
 require "ftools"
+require "md5"
 
 class PStore
   class Error < StandardError
@@ -41,11 +42,10 @@ class PStore
 
   def [](name)
     in_transaction
-    value = @table[name]
-    if value == nil
+    unless @table.key? name
       raise PStore::Error, format("undefined root name `%s'", name)
     end
-    value
+    @table[name]
   end
   def []=(name, value)
     in_transaction
@@ -69,10 +69,12 @@ class PStore
   end
 
   def commit
+    in_transaction
     @abort = false
     throw :pstore_abort_transaction
   end
   def abort
+    in_transaction
     @abort = true
     throw :pstore_abort_transaction
   end
@@ -83,18 +85,21 @@ class PStore
       @transaction = true
       value = nil
       backup = @filename+"~"
-      if File::exist?(@filename)
+      begin
 	file = File::open(@filename, "r+")
 	orig = true
-      else
-	@table = {}
+      rescue Errno::ENOENT
 	file = File::open(@filename, "w+")
-	Marshal::dump(@table, file)
       end
       file.flock(File::LOCK_EX)
       if orig
-	File::copy @filename, backup
-	@table = Marshal::load(file)
+	content = file.read
+	@table = Marshal::load(content)
+	size = content.size
+	md5 = MD5.new(content).digest
+	content = nil		# unreference huge data
+      else
+	@table = {}
       end
       begin
 	catch(:pstore_abort_transaction) do
@@ -105,13 +110,18 @@ class PStore
 	raise
       ensure
 	unless @abort
-	  begin
-	    file.rewind
-	    Marshal::dump(@table, file)
-	    file.truncate(file.pos)
-	  rescue
-	    File::rename backup, @filename if File::exist?(backup)
-	    raise
+	  file.rewind
+	  content = Marshal::dump(@table)
+	  if !md5 || size != content.size || md5 != MD5.new(content).digest
+	    File::copy @filename, backup
+	    begin
+	      file.write(content)
+	      file.truncate(file.pos)
+	      content = nil		# unreference huge data
+	    rescue
+	      File::rename backup, @filename if File::exist?(backup)
+	      raise
+	    end
 	  end
 	end
 	@abort = false
@@ -138,5 +148,9 @@ if __FILE__ == $0
       db["root"][0] += 1
       p db["root"][0]
     end
+  end
+
+  db.transaction do
+    p db["root"]
   end
 end

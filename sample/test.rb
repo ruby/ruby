@@ -644,6 +644,11 @@ test_ok(-7 == (-a).remainder(-b))
 test_ok(10**40+10**20 == 10000000000000000000100000000000000000000)
 test_ok(10**40/10**20 == 100000000000000000000)
 
+a = 677330545177305025495135714080
+b = 14269972710765292560
+test_ok(a % b == 0)
+test_ok(-a % b == 0)
+
 test_check "string & char"
 
 test_ok("abcd" == "abcd")
@@ -1053,7 +1058,7 @@ test_ok(foo.test == "test")
 begin
   foo.test2
   test_ok false
-rescue NameError
+rescue NoMethodError
   test_ok true
 end
 

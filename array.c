@@ -541,12 +541,21 @@ rb_ary_indexes(argc, argv, ary)
 }
 
 static void
-rb_ary_update(ary, beg, len, rpl, rlen)
+rb_ary_update(ary, beg, len, rpl)
     VALUE ary;
     long beg, len;
-    VALUE *rpl;
-    long rlen;
+    VALUE rpl;
 {
+    long rlen;
+
+    if (NIL_P(rpl)) {
+	rpl = rb_ary_new2(0);
+    }
+    else if (TYPE(rpl) != T_ARRAY) {
+	rpl = rb_ary_new3(1, rpl);
+    }
+    rlen = RARRAY(rpl)->len;
+
     if (len < 0) rb_raise(rb_eIndexError, "negative length %d", len);
     if (beg < 0) {
 	beg += RARRAY(ary)->len;
@@ -567,7 +576,7 @@ rb_ary_update(ary, beg, len, rpl, rlen)
 	    REALLOC_N(RARRAY(ary)->ptr, VALUE, RARRAY(ary)->capa);
 	}
 	rb_mem_clear(RARRAY(ary)->ptr+RARRAY(ary)->len, beg-RARRAY(ary)->len);
-	MEMCPY(RARRAY(ary)->ptr+beg, rpl, VALUE, rlen);
+	MEMCPY(RARRAY(ary)->ptr+beg, RARRAY(rpl)->ptr, VALUE, rlen);
 	RARRAY(ary)->len = len;
     }
     else {
@@ -579,7 +588,7 @@ rb_ary_update(ary, beg, len, rpl, rlen)
 
 	alen = RARRAY(ary)->len + rlen - len;
 	if (alen >= RARRAY(ary)->capa) {
-	    RARRAY(ary)->capa=alen;
+	    RARRAY(ary)->capa = alen;
 	    REALLOC_N(RARRAY(ary)->ptr, VALUE, RARRAY(ary)->capa);
 	}
 
@@ -588,24 +597,8 @@ rb_ary_update(ary, beg, len, rpl, rlen)
 		    VALUE, RARRAY(ary)->len-(beg+len));
 	    RARRAY(ary)->len = alen;
 	}
-	MEMMOVE(RARRAY(ary)->ptr+beg, rpl, VALUE, rlen);
+	MEMMOVE(RARRAY(ary)->ptr+beg, RARRAY(rpl)->ptr, VALUE, rlen);
     }
-}
-
-static void
-rb_ary_replace(ary, beg, len, rpl)
-    VALUE ary, rpl;
-    long beg, len;
-{
-    long rlen;
-
-    if (NIL_P(rpl)) {
-	rpl = rb_ary_new2(0);
-    }
-    else if (TYPE(rpl) != T_ARRAY) {
-	rpl = rb_ary_new3(1, rpl);
-    }
-    rb_ary_update(ary, beg, len, RARRAY(rpl)->ptr, RARRAY(rpl)->len);
 }
 
 static VALUE
@@ -617,7 +610,7 @@ rb_ary_aset(argc, argv, ary)
     long offset, beg, len;
 
     if (argc == 3) {
-	rb_ary_replace(ary, NUM2LONG(argv[0]), NUM2LONG(argv[1]), argv[2]);
+	rb_ary_update(ary, NUM2LONG(argv[0]), NUM2LONG(argv[1]), argv[2]);
 	return argv[2];
     }
     if (argc != 2) {
@@ -629,7 +622,7 @@ rb_ary_aset(argc, argv, ary)
     }
     else if (rb_range_beg_len(argv[0], &beg, &len, RARRAY(ary)->len, 1)) {
 	/* check if idx is Range */
-	rb_ary_replace(ary, beg, len, argv[1]);
+	rb_ary_update(ary, beg, len, argv[1]);
 	return argv[1];
     }
     if (TYPE(argv[0]) == T_BIGNUM) {
@@ -648,10 +641,20 @@ rb_ary_insert(argc, argv, ary)
     VALUE *argv;
     VALUE ary;
 {
+    long pos;
+
     if (argc < 2) {
 	rb_raise(rb_eArgError, "wrong # of arguments(at least 2)");
     }
-    rb_ary_update(ary, NUM2LONG(argv[0]), 0, argv+1, argc-1);
+    pos = NUM2LONG(argv[0]);
+    if (pos == -1) {
+	pos = RSTRING(ary)->len;
+    }
+    else if (pos < 0) {
+	pos++;
+    }
+
+    rb_ary_update(ary, pos, 0, rb_ary_new4(argc-1, argv+1));
     return ary;
 }
 
@@ -1146,7 +1149,7 @@ rb_ary_slice_bang(argc, argv, ary)
 	    pos = RARRAY(ary)->len + pos;
 	}
 	arg2 = rb_ary_subseq(ary, pos, len);
-	rb_ary_replace(ary, pos, len, Qnil);	/* Qnil/rb_ary_new2(0) */
+	rb_ary_update(ary, pos, len, Qnil);	/* Qnil/rb_ary_new2(0) */
 	return arg2;
     }
 
@@ -1199,11 +1202,11 @@ rb_ary_delete_if(ary)
 }
 
 static VALUE
-rb_ary_replace_m(ary, ary2)
+rb_ary_replace(ary, ary2)
     VALUE ary, ary2;
 {
     ary2 = to_ary(ary2);
-    rb_ary_replace(ary, 0, RARRAY(ary)->len, ary2);
+    rb_ary_update(ary, 0, RARRAY(ary)->len, ary2);
     return ary;
 }
 
@@ -1292,7 +1295,7 @@ rb_ary_concat(x, y)
 
     y = to_ary(y);
     if (RARRAY(y)->len > 0) {
-	rb_ary_replace(x, RARRAY(x)->len, 0, y);
+	rb_ary_update(x, RARRAY(x)->len, 0, y);
     }
     return x;
 }
@@ -1626,7 +1629,7 @@ flatten(ary, idx, ary2, memo)
 	rb_raise(rb_eArgError, "tried to flatten recursive array");
     }
     rb_ary_push(memo, id);
-    rb_ary_replace(ary, idx, 1, ary2);
+    rb_ary_update(ary, idx, 1, ary2);
     while (i < lim) {
 	if (TYPE(RARRAY(ary)->ptr[i]) == T_ARRAY) {
 	    n = flatten(ary, i, RARRAY(ary)->ptr[i], memo);
@@ -1730,7 +1733,7 @@ Init_Array()
     rb_define_method(rb_cArray, "delete_at", rb_ary_delete_at_m, 1);
     rb_define_method(rb_cArray, "delete_if", rb_ary_delete_if, 0);
     rb_define_method(rb_cArray, "reject!", rb_ary_reject_bang, 0);
-    rb_define_method(rb_cArray, "replace", rb_ary_replace_m, 1);
+    rb_define_method(rb_cArray, "replace", rb_ary_replace, 1);
     rb_define_method(rb_cArray, "clear", rb_ary_clear, 0);
     rb_define_method(rb_cArray, "fill", rb_ary_fill, -1);
     rb_define_method(rb_cArray, "include?", rb_ary_includes, 1);

@@ -47,7 +47,7 @@ VALUE rb_ary_concat _((VALUE, VALUE));
 VALUE rb_ary_assoc _((VALUE, VALUE));
 VALUE rb_ary_rassoc _((VALUE, VALUE));
 VALUE rb_ary_includes _((VALUE, VALUE));
-VALUE rb_protect_inspect _((VALUE(*)(VALUE,VALUE),VALUE,VALUE));
+VALUE rb_protect_inspect _((VALUE(*)(),VALUE,VALUE));
 VALUE rb_inspecting_p _((VALUE));
 /* bignum.c */
 VALUE rb_big_clone _((VALUE));
@@ -144,7 +144,7 @@ void rb_obj_call_init _((VALUE, int, VALUE*));
 VALUE rb_class_new_instance _((int, VALUE*, VALUE));
 VALUE rb_f_lambda _((void));
 VALUE rb_protect _((VALUE (*)(VALUE), VALUE, int*));
-void rb_set_end_proc _((void (*)(void), VALUE));
+void rb_set_end_proc _((void (*)(VALUE), VALUE));
 void rb_mark_end_proc _((void));
 void rb_exec_end_proc _((void));
 void ruby_finalize _((void));

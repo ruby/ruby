@@ -11,7 +11,7 @@
 #   a = SomeSingletonClass.new		# error (`new' is private)
 
 module Singleton
-  def Singleton.append_features(klass)
+  def Singleton.included(klass)
     klass.private_class_method(:new)
     klass.instance_eval %{
       @__instance__ = nil

@@ -77,8 +77,8 @@ end
       elsif boolopts.key? opt then      # ruby --verbose
         boolopts[ opt ] = true
       else
-              return nil
-            end
+	return nil
+      end
       c += 1
 
     when /\A-(.+)/

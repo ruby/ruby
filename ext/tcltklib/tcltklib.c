@@ -163,7 +163,7 @@ ip_ruby(clientData, interp, argc, argv)
     Tcl_ResetResult(interp);
     if (failed) {
         VALUE eclass = CLASS_OF(failed);
-	Tcl_AppendResult(interp, STR2CSTR(failed), (char*)NULL);
+	Tcl_AppendResult(interp, StringValuePtr(failed), (char*)NULL);
         if (eclass == eTkCallbackBreak) {
 	    return TCL_BREAK;
 	} else if (eclass == eTkCallbackContinue) {
@@ -180,9 +180,9 @@ ip_ruby(clientData, interp, argc, argv)
     }
 
     /* copy result to the tcl interpreter */
-    DUMP2("(rb_eval_string result) %s", STR2CSTR(res));
+    DUMP2("(rb_eval_string result) %s", StringValuePtr(res));
     DUMP1("Tcl_AppendResult");
-    Tcl_AppendResult(interp, STR2CSTR(res), (char *)NULL);
+    Tcl_AppendResult(interp, StringValuePtr(res), (char *)NULL);
 
     return TCL_OK;
 }
@@ -254,7 +254,7 @@ ip_eval(self, str)
     Data_Get_Struct(self, struct tcltkip, ptr);
 
     /* call Tcl_Eval() */
-    s = STR2CSTR(str);
+    s = StringValuePtr(str);
     buf = ALLOCA_N(char, strlen(s)+1);
     strcpy(buf, s);
     DUMP2("Tcl_Eval(%s)", buf);
@@ -285,9 +285,11 @@ ip_toUTF8(self, str, encodename)
     Data_Get_Struct(self,struct tcltkip, ptr);
     interp = ptr->ip;
 
-    encoding = Tcl_GetEncoding(interp,STR2CSTR(encodename));
-    buf = ALLOCA_N(char,strlen(STR2CSTR(str))+1);
-    strcpy(buf,STR2CSTR(str));
+    StringValue(encodename);
+    StringValue(str);
+    encoding = Tcl_GetEncoding(interp, RSTRING(encodename)->ptr);
+    buf = ALLOCA_N(char,strlen(RSTRING(str)->ptr)+1);
+    strcpy(buf, RSTRING(str)->ptr);
 
     Tcl_DStringInit(&dstr);
     Tcl_DStringFree(&dstr);
@@ -316,9 +318,11 @@ ip_fromUTF8(self, str, encodename)
     Data_Get_Struct(self,struct tcltkip, ptr);
     interp = ptr->ip;
 
-    encoding = Tcl_GetEncoding(interp,STR2CSTR(encodename));
-    buf = ALLOCA_N(char,strlen(STR2CSTR(str))+1);
-    strcpy(buf,STR2CSTR(str));
+    StringValue(encodename);
+    StringValue(str);
+    encoding = Tcl_GetEncoding(interp,RSTRING(encodename)->ptr);
+    buf = ALLOCA_N(char,strlen(RSTRING(str)->ptr)+1);
+    strcpy(buf,RSTRING(str)->ptr);
 
     Tcl_DStringInit(&dstr);
     Tcl_DStringFree(&dstr);
@@ -339,10 +343,11 @@ ip_invoke_real(argc, argv, obj)
     VALUE *argv;
     VALUE obj;
 {
+    VALUE v;
     struct tcltkip *ptr;	/* tcltkip data struct */
     int i;
     Tcl_CmdInfo info;
-    char *cmd;
+    char *cmd, *s;
     char **av = (char **)NULL;
 #if TCL_MAJOR_VERSION >= 8
     Tcl_Obj **ov = (Tcl_Obj **)NULL;
@@ -353,7 +358,8 @@ ip_invoke_real(argc, argv, obj)
     Data_Get_Struct(obj, struct tcltkip, ptr);
 
     /* get the command name string */
-    cmd = STR2CSTR(argv[0]);
+    v = argv[0];
+    cmd = StringValuePtr(v);
 
     /* map from the command name to a C procedure */
     if (!Tcl_GetCommandInfo(ptr->ip, cmd, &info)) {
@@ -366,8 +372,9 @@ ip_invoke_real(argc, argv, obj)
 	/* object interface */
 	ov = (Tcl_Obj **)ALLOCA_N(Tcl_Obj *, argc+1);
 	for (i = 0; i < argc; ++i) {
-	    char *s = STR2CSTR(argv[i]);
-	    ov[i] = Tcl_NewStringObj(s, strlen(s));
+	    VALUE v = argv[i];
+	    s = StringValuePtr(v);
+	    ov[i] = Tcl_NewStringObj(s, RSTRING(s)->len);
 	    Tcl_IncrRefCount(ov[i]);
 	}
 	ov[argc] = (Tcl_Obj *)NULL;
@@ -378,8 +385,8 @@ ip_invoke_real(argc, argv, obj)
       /* string interface */
 	av = (char **)ALLOCA_N(char *, argc+1);
 	for (i = 0; i < argc; ++i) {
-	    char *s = STR2CSTR(argv[i]);
-
+	    v = argv[i];
+	    s = StringValuePtr(v);
 	    av[i] = ALLOCA_N(char, strlen(s)+1);
 	    strcpy(av[i], s);
 	}

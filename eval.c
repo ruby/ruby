@@ -3929,7 +3929,7 @@ rb_rescue(b_proc, data1, r_proc, data2)
 
 VALUE
 rb_protect(proc, data, state)
-    VALUE (*proc)();
+    VALUE (*proc) _((VALUE));
     VALUE data;
     int *state;
 {
@@ -5731,7 +5731,7 @@ static struct end_proc_data *end_procs, *ephemeral_end_procs;
 
 void
 rb_set_end_proc(func, data)
-    void (*func)();
+    void (*func) _((VALUE));
     VALUE data;
 {
     struct end_proc_data *link = ALLOC(struct end_proc_data);
@@ -5761,6 +5761,8 @@ rb_mark_end_proc()
 	link = link->next;
     }
 }
+
+static void call_end_proc _((VALUE data));
 
 static void
 call_end_proc(data)
@@ -5804,7 +5806,7 @@ rb_exec_end_proc()
 
     link = end_procs;
     while (link) {
-	rb_protect((VALUE(*)())link->func, link->data, &status);
+	rb_protect((VALUE(*)_((VALUE)))link->func, link->data, &status);
 	if (status) {
 	    error_handle(status);
 	}
@@ -5813,7 +5815,7 @@ rb_exec_end_proc()
     while (ephemeral_end_procs) {
 	link = ephemeral_end_procs;
 	ephemeral_end_procs = link->next;
-	rb_protect((VALUE(*)())link->func, link->data, &status);
+	rb_protect((VALUE(*)_((VALUE)))link->func, link->data, &status);
 	if (status) {
 	    error_handle(status);
 	}

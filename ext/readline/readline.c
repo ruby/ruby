@@ -1,5 +1,5 @@
 /* readline.c -- GNU Readline module
-   Copyright (C) 1997-1998  Shugo Maeda */
+   Copyright (C) 1997-2001  Shugo Maeda */
 
 #include <stdio.h>
 #include <readline/readline.h>
@@ -14,6 +14,11 @@ static VALUE mReadline;
 
 #define COMPLETION_PROC "completion_proc"
 #define COMPLETION_CASE_FOLD "completion_case_fold"
+
+#ifndef READLINE_42_OR_LATER
+# define rl_filename_completion_function filename_completion_function
+# define rl_username_completion_function username_completion_function
+#endif
 
 static int
 readline_event()
@@ -33,7 +38,7 @@ readline_readline(argc, argv, self)
     char *buff;
 
     if (rb_scan_args(argc, argv, "02", &tmp, &add_hist) > 0) {
-	prompt = STR2CSTR(tmp);
+	prompt = StringValuePtr(tmp);
     }
     buff = readline(prompt);
     if (RTEST(add_hist) && buff) {
@@ -190,6 +195,7 @@ hist_set(self, index, str)
     VALUE str;
 {
     HISTORY_STATE *state;
+    VALUE s = str;
     int i;
 
     state = history_get_history_state();
@@ -197,7 +203,7 @@ hist_set(self, index, str)
     if (i < 0 || i > state->length - 1) {
 	rb_raise(rb_eIndexError, "Invalid index");
     }
-    replace_history_entry(i, STR2CSTR(str), NULL);
+    replace_history_entry(i, StringValuePtr(s), NULL);
     return str;
 }
 
@@ -206,7 +212,7 @@ hist_push(self, str)
     VALUE self;
     VALUE str;
 {
-    add_history(STR2CSTR(str));
+    add_history(StringValuePtr(str));
     return self;
 }
 
@@ -220,7 +226,7 @@ hist_push_method(argc, argv, self)
     
     while (argc--) {
 	str = *argv++;
-	add_history(STR2CSTR(str));
+	add_history(StringValuePtr(str));
     }
     return self;
 }
@@ -321,8 +327,8 @@ filename_completion_proc_call(self, str)
     char **matches;
     int i;
 
-    matches = completion_matches(STR2CSTR(str),
-				 filename_completion_function);
+    matches = completion_matches(StringValuePtr(str),
+				 rl_filename_completion_function);
     if (matches) {
 	result = rb_ary_new();
 	for (i = 0; matches[i]; i++) {
@@ -348,8 +354,8 @@ username_completion_proc_call(self, str)
     char **matches;
     int i;
 
-    matches = completion_matches(STR2CSTR(str),
-				 username_completion_function);
+    matches = completion_matches(StringValuePtr(str),
+				 rl_username_completion_function);
     if (matches) {
 	result = rb_ary_new();
 	for (i = 0; matches[i]; i++) {

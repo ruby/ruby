@@ -76,8 +76,7 @@ module Sync_m
     end
   end
   
-  def Sync_m.append_features(cl)
-    super
+  def Sync_m.included(cl)
     unless cl.instance_of?(Module)
       # do nothing for Modules
       # make aliases and include the proper module.

@@ -122,7 +122,11 @@ end
 
 class Rational
   Unify = true
-  
+
+  def inspect
+    format "%s/%s", @numerator.inspect, @denominator.inspect
+  end
+
   alias power! **
 
   def ** (other)

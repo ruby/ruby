@@ -52,7 +52,12 @@ typedef char	*pointer;		/* generic pointer type */
 
 #define	NULL	0			/* null pointer constant */
 
-extern void	free();
+#ifdef RUBY_LIB
+#define xmalloc ruby_xmalloc
+#define xfree ruby_xfree
+#endif
+
+extern void	xfree();
 extern pointer	xmalloc();
 
 /*
@@ -157,7 +162,7 @@ alloca (size)			/* returns pointer to storage */
 	{
 	  register header	*np = hp->h.next;
 
-	  free ((pointer) hp);	/* collect garbage */
+	  xfree ((pointer) hp);	/* collect garbage */
 
 	  hp = np;		/* -> next header */
 	}

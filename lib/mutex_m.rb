@@ -16,8 +16,7 @@
 #
 
 module Mutex_m
-  def Mutex_m.append_features(cl)
-    super
+  def Mutex_m.included(cl)
     unless cl.instance_of?(Module)
       cl.module_eval %q{
 	alias locked? mu_locked?

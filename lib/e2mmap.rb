@@ -73,8 +73,7 @@ module Exception2MessageMapper
       end
       alias Fail Raise
 
-      def self.append_features(mod)
-	super
+      def self.included(mod)
 	mod.extend Exception2MessageMapper
       end
     ]
