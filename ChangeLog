@@ -10,7 +10,7 @@ Mon Dec 17 15:19:32 2001  Tanaka Akira  <akr@m17n.org>
 	use long to initialize tm_year.
 	(search_time_t): renamed from `make_time_t'.
 	(make_time_t): call `timegm' and `mktime' instead of `search_time_t'
-	if availabe.
+	if available.
 	(time_to_i): use LONG2NUM instead of INT2NUM.
 	(time_localtime): check localtime failure.
 	(time_gmtime): check gmtime failure.
