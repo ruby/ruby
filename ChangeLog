@@ -1,3 +1,15 @@
+Tue Nov 25 15:03:28 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version 1.0-971125
+
+Fri Nov 21 13:17:12 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (yylex): skip multibyte characters in comments.
+
+Wed Nov 19 17:19:20 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (call_args): wrong node generation.
+
 Tue Nov 18 13:59:59 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* version 1.0-971118
@@ -22,8 +34,6 @@ Wed Nov  2 16:00:00 1997  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
 Thu Oct 30 16:54:01 1997  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
 
 	* string.c (str_chop_bang): "".chop caused SEGV.
-
-	* string.c (str_chomp_bang): method to chop out last newline.
 
 Mon Oct 27 13:49:13 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

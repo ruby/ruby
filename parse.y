@@ -695,6 +695,7 @@ call_args0	: args
 		    }
 		| STAR arg
 		    {
+			value_expr($2);
 			$$ = $2;
 		    }
 
@@ -730,12 +731,15 @@ mrhs		: args
 		    }
 		| STAR arg
 		    {
+			value_expr($2);
 			$$ = $2;
 		    }
 
 ret_args	: call_args0
 		    {
-			if ($1 && $1->nd_next == 0) {
+			if ($1 &&
+			    nd_type($1) == NODE_ARRAY &&
+			    $1->nd_next == 0) {
 			    $$ = $1->nd_head;
 			}
 			else {
@@ -1977,10 +1981,11 @@ retry:
 	while ((c = nextc()) != '\n') {
 	    if (c == -1)
 		return 0;
-	    if (c == '\\') {	/* skip a char */
+	    if (c == '\\') { /* skip a char */
 		c = nextc();
 		if (c == '\n') sourceline++;
 	    }
+	    if (ismbchar(c)) c = nextc();
 	}
 	/* fall through */
       case '\n':

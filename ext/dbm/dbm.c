@@ -206,6 +206,7 @@ fdbm_delete_if(obj)
 
     rb_secure(4);
     GetDBM(obj, dbmp);
+    dbm = dbmp->di_dbm;
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	val = dbm_fetch(dbm, key);
 	keystr = str_taint(str_new(key.dptr, key.dsize));
