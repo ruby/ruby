@@ -167,7 +167,7 @@ rb_gdbm_fetch(dbm, key)
 
     RSTRING(str)->ptr = 0;
     RSTRING(str)->len = val.dsize;
-    RSTRING(str)->orig = 0;
+    RSTRING(str)->aux.capa = val.dsize;
     RSTRING(str)->ptr = REALLOC_N(val.dptr,char,val.dsize+1);
     RSTRING(str)->ptr[val.dsize] = '\0';
 
@@ -214,7 +214,7 @@ rb_gdbm_firstkey(dbm)
 
     RSTRING(str)->ptr = 0;
     RSTRING(str)->len = key.dsize;
-    RSTRING(str)->orig = 0;
+    RSTRING(str)->aux.capa = key.dsize;
     RSTRING(str)->ptr = REALLOC_N(key.dptr,char,key.dsize+1);
     RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
 
@@ -238,7 +238,7 @@ rb_gdbm_nextkey(dbm, keystr)
 
     RSTRING(str)->ptr = 0;
     RSTRING(str)->len = key2.dsize;
-    RSTRING(str)->orig = 0;
+    RSTRING(str)->aux.capa = key2.dsize;
     RSTRING(str)->ptr = REALLOC_N(key2.dptr,char,key2.dsize+1);
     RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
 
