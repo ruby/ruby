@@ -109,6 +109,7 @@ ext/extmk.rb
 lib/English.rb
 lib/Env.rb
 lib/README
+lib/abbrev.rb
 lib/base64.rb
 lib/benchmark.rb
 lib/cgi-lib.rb
@@ -142,6 +143,7 @@ lib/finalize.rb
 lib/find.rb
 lib/forwardable.rb
 lib/ftools.rb
+lib/generator.rb
 lib/getoptlong.rb
 lib/getopts.rb
 lib/gserver.rb
