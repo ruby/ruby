@@ -152,14 +152,6 @@ The variable ruby-indent-level controls the amount of indentation.
   (setq mode-name "Ruby")
   (setq major-mode 'ruby-mode)
   (ruby-mode-variables)
-  ;; for font-lock
-  (make-local-variable 'font-lock-syntactic-keywords)
-  (setq font-lock-syntactic-keywords
-	'(("\\$\\([#\"'`$\\]\\)" 1 (1 . nil))
-	  ("\\(#\\)[{$@]" 1 (1 . nil))))
-  (make-local-variable 'font-lock-defaults)
-  (setq font-lock-defaults '((ruby-font-lock-keywords) nil nil))
-  (setq font-lock-keywords ruby-font-lock-keywords)
 
   (run-hooks 'ruby-mode-hook))
 
@@ -619,43 +611,35 @@ An end of a defun is found by moving forward from the beginning of one."
   (re-search-backward "^\n" (- (point) 1) t))
 
 (cond
- ((featurep 'hilit19)
-  (hilit-set-mode-patterns
-   'ruby-mode
-   '(("[^$\\?]\\(\"[^\\\"]*\\(\\\\\\(.\\|\n\\)[^\\\"]*\\)*\"\\)" 1 string)
-     ("[^$\\?]\\('[^\\']*\\(\\\\\\(.\\|\n\\)[^\\']*\\)*'\\)" 1 string)
-     ("[^$\\?]\\(`[^\\`]*\\(\\\\\\(.\\|\n\\)[^\\`]*\\)*`\\)" 1 string)
-     ("^\\s *#.*$" nil comment)
-     ("[^$@?\\]\\(#[^$@{\n].*$\\)" 1 comment)
-     ("[^a-zA-Z_]\\(\\?\\(\\\\[CM]-\\)*.\\)" 1 string)
-     ("^\\s *\\(require\\|load\\).*$" nil include)
-     ("^\\s *\\(include\\|alias\\|undef\\).*$" nil decl)
-     ("^\\s *\\<\\(class\\|def\\|module\\)\\>" "[)\n;]" defun)
-     ("[^_]\\<\\(begin\\|case\\|else\\|elsif\\|end\\|ensure\\|for\\|if\\|unless\\|rescue\\|then\\|when\\|while\\|until\\|do\\)\\>[^_]" 1 defun)
-     ("[^_]\\<\\(and\\|break\\|next\\|raise\\|fail\\|in\\|not\\|or\\|redo\\|retry\\|return\\|super\\|yield\\|catch\\|throw\\|self\\|nil\\)\\>[^_]" 1 keyword)
-     ("\\$\\(.\\|\\sw+\\)" nil type)
-     ("[$@].[a-zA-Z_0-9]*" nil struct)
-     ("^__END__" nil label))))
- )
+ ((featurep 'font-lock)
+  (or (boundp 'font-lock-variable-name-face)
+      (setq font-lock-variable-name-face font-lock-type-face))
 
-(or (boundp 'font-lock-variable-name-face)
-    (setq font-lock-variable-name-face font-lock-type-face))
+  (add-hook 'ruby-mode-hook
+	    '(lambda ()
+	       (make-local-variable 'font-lock-syntactic-keywords)
+	       (setq font-lock-syntactic-keywords
+		     '(("\\$\\([#\"'`$\\]\\)" 1 (1 . nil))
+		       ("\\(#\\)[{$@]" 1 (1 . nil))))
+	       (make-local-variable 'font-lock-defaults)
+	       (setq font-lock-defaults '((ruby-font-lock-keywords) nil nil))
+	       (setq font-lock-keywords ruby-font-lock-keywords)))
 
-(defun ruby-font-lock-docs (limit)
-  (if (re-search-forward "^=begin\\s *" limit t)
-      (let (beg)
-	(beginning-of-line)
-	(setq beg (point))
-	(forward-line 1)
-	(if (re-search-forward "^=end\\s *" limit t)
-	    (progn
-	      (set-match-data (list beg (point)))
-	      t)))))
+  (defun ruby-font-lock-docs (limit)
+    (if (re-search-forward "^=begin\\s *$" limit t)
+	(let (beg)
+	  (beginning-of-line)
+	  (setq beg (point))
+	  (forward-line 1)
+	  (if (re-search-forward "^=end\\s *$" limit t)
+	      (progn
+		(set-match-data (list beg (point)))
+		t)))))
 
-(defvar ruby-font-lock-keywords
-  (list
-   (cons (concat
-	  "\\(^\\|[^_:.]\\|\\.\\.\\)\\b\\("
+  (defvar ruby-font-lock-keywords
+    (list
+     (cons (concat
+	    "\\(^\\|[^_:.]\\|\\.\\.\\)\\b\\("
 	    (mapconcat
 	     'identity
 	     '("alias"
@@ -696,25 +680,45 @@ An end of a defun is found by moving forward from the beginning of one."
 	       )
 	     "\\|")
 	    "\\)\\b")
-	 2)
-   ;; variables
-   '("\\b\\(nil\\|self\\|true\\|false\\)\\b"
-     1 font-lock-variable-name-face)
-   ;; variables
-   '("[$@].\\(\\w\\|_\\)*"
-     0 font-lock-variable-name-face)
-   ;; embedded document
-   '(ruby-font-lock-docs
-     0 font-lock-comment-face t)
-   ;; constants
-   '("\\(^\\|[^_]\\)\\b\\([A-Z]+\\(\\w\\|_\\)*\\)"
-     2 font-lock-type-face)
-   ;; functions
-   '("^\\s *def\\s *\\<\\(\\(\\w\\|_\\)+\\(\\.\\|::\\)\\)?\\(\\(\\w\\|_\\)+\\??\\)\\>"
-     4 font-lock-function-name-face t)
-   ;; symbols
-   '("\\(^\\|[^:]\\)\\(:\\(\\w\\|_\\)+\\??\\)\\b"
-     2 font-lock-reference-face t))
-  "*Additional expressions to highlight in ruby mode.")
+	   2)
+     ;; variables
+     '("\\b\\(nil\\|self\\|true\\|false\\)\\b"
+       1 font-lock-variable-name-face)
+     ;; variables
+     '("[$@].\\(\\w\\|_\\)*"
+       0 font-lock-variable-name-face)
+     ;; embedded document
+     '(ruby-font-lock-docs
+       0 font-lock-comment-face t)
+     ;; constants
+     '("\\(^\\|[^_]\\)\\b\\([A-Z]+\\(\\w\\|_\\)*\\)"
+       2 font-lock-type-face)
+     ;; functions
+     '("^\\s *def\\s *\\<\\(\\(\\w\\|_\\)+\\(\\.\\|::\\)\\)?\\(\\(\\w\\|_\\)+\\??\\)\\>"
+       4 font-lock-function-name-face t)
+     ;; symbols
+     '("\\(^\\|[^:]\\)\\(:\\(\\w\\|_\\)+\\??\\)\\b"
+       2 font-lock-reference-face))
+    "*Additional expressions to highlight in ruby mode."))
+
+ ((featurep 'hilit19)
+  (hilit-set-mode-patterns
+   'ruby-mode
+   '(("[^$\\?]\\(\"[^\\\"]*\\(\\\\\\(.\\|\n\\)[^\\\"]*\\)*\"\\)" 1 string)
+     ("[^$\\?]\\('[^\\']*\\(\\\\\\(.\\|\n\\)[^\\']*\\)*'\\)" 1 string)
+     ("[^$\\?]\\(`[^\\`]*\\(\\\\\\(.\\|\n\\)[^\\`]*\\)*`\\)" 1 string)
+     ("^\\s *#.*$" nil comment)
+     ("[^$@?\\]\\(#[^$@{\n].*$\\)" 1 comment)
+     ("[^a-zA-Z_]\\(\\?\\(\\\\[CM]-\\)*.\\)" 1 string)
+     ("^\\s *\\(require\\|load\\).*$" nil include)
+     ("^\\s *\\(include\\|alias\\|undef\\).*$" nil decl)
+     ("^\\s *\\<\\(class\\|def\\|module\\)\\>" "[)\n;]" defun)
+     ("[^_]\\<\\(begin\\|case\\|else\\|elsif\\|end\\|ensure\\|for\\|if\\|unless\\|rescue\\|then\\|when\\|while\\|until\\|do\\)\\>[^_]" 1 defun)
+     ("[^_]\\<\\(and\\|break\\|next\\|raise\\|fail\\|in\\|not\\|or\\|redo\\|retry\\|return\\|super\\|yield\\|catch\\|throw\\|self\\|nil\\)\\>[^_]" 1 keyword)
+     ("\\$\\(.\\|\\sw+\\)" nil type)
+     ("[$@].[a-zA-Z_0-9]*" nil struct)
+     ("^__END__" nil label))))
+ )
+
 
 (provide 'ruby-mode)
