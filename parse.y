@@ -3939,8 +3939,6 @@ static st_table *rb_symbol_tbl;
 void
 Init_sym()
 {
-    int strcmp();
-
     sym_tbl = st_init_strtable();
     rb_global_variable((VALUE*)&cur_cref);
     rb_global_variable((VALUE*)&lex_lastline);

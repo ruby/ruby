@@ -537,7 +537,12 @@ load_file(fname, script)
 	RS = rs;
     }
     compile_file(fname, f, line_start);
-    if (f != rb_stdin) io_close(f);
+    if (script) {
+	rb_define_global_const("DATA", f);
+    }
+    else if (f != rb_stdin) {
+	io_close(f);
+    }
 }
 
 void
