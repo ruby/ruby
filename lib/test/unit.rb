@@ -1,6 +1,4 @@
-require 'test/unit/testcase'
-require 'test/unit/autorunner'
-
+#
 # = Test::Unit - Ruby Unit Testing Framework
 # 
 # == Introduction
@@ -256,10 +254,13 @@ require 'test/unit/autorunner'
 # I'd really like to get feedback from all levels of Ruby
 # practitioners about typos, grammatical errors, unclear statements,
 # missing points, etc., in this document (or any other).
+#
 
+require 'test/unit/testcase'
+require 'test/unit/autorunner'
 
-module Test
-  # For documentation, see module Test
+module Test # :nodoc:
+  # For documentation, see file test/unit.rb.
   module Unit
     def self.run=(flag)
       @run = flag

@@ -14,7 +14,7 @@
 # modify this program under the same terms of ruby itself ---
 # Ruby Distribution License or GNU General Public License.
 #
-# See Net:::HTTP for an overview and examples. 
+# See Net::HTTP for an overview and examples. 
 # 
 # NOTE: You can find Japanese version of this document here:
 # http://www.ruby-lang.org/ja/man/?cmd=view;name=net%2Fhttp.rb
@@ -39,7 +39,7 @@ module Net # :nodoc:
   # This library provides your program functions to access WWW
   # documents via HTTP, Hyper Text Transfer Protocol version 1.1.
   # For details of HTTP, refer [RFC2616]
-  # ((<URL:http://www.ietf.org/rfc/rfc2616.txt>)).
+  # (http://www.ietf.org/rfc/rfc2616.txt).
   # 
   # == Examples
   # 
@@ -1787,10 +1787,10 @@ module Net # :nodoc:
   end
 
 
-  # :enddoc:
+  # :stopdoc:
 
-  #--
   # for backward compatibility
+ 
   class HTTP
     ProxyMod = ProxyDelta
   end

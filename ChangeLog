@@ -1,3 +1,9 @@
+Sun Feb  1 16:15:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
+
+	* lib/test/unit.rb: rearranged documentation for RDoc's sake.
+	* lib/matrix.rb: improved documentation.
+	* lib/net/http.rb: slight documentation formatting improvement.
+
 Sun Feb  1 05:30:06 2004  Tanaka Akira  <akr@m17n.org>
 
 	* lib/open-uri.rb (URI::Generic#find_proxy): warn HTTP_PROXY.

@@ -1,170 +1,28 @@
 #!/usr/local/bin/ruby
-#
+#--
 #   matrix.rb - 
-#   	$Release Version: 1.0$
-#   	$Revision: 1.11 $
-#   	$Date: 1999/10/06 11:01:53 $
+#       $Release Version: 1.0$
+#       $Revision: 1.11 $
+#       $Date: 1999/10/06 11:01:53 $
 #       Original Version from Smalltalk-80 version
-#	   on July 23, 1985 at 8:37:17 am
-#   	by Keiju ISHITSUKA
+#          on July 23, 1985 at 8:37:17 am
+#       by Keiju ISHITSUKA
+#++
 #
-# --
+# = matrix.rb
 #
-#   Matrix[[1,2,3],
-#	      :
-#	   [3,4,5]]
-#   Matrix[row0,
-#          row1,
-#	    :
-#          rown]
+# An implementation of Matrix and Vector classes.
 #
+# Author:: Keiju ISHITSUKA
+# Documentation:: Gavin Sinclair (sourced from <i>Ruby in a Nutshell</i> (Matsumoto, O'Reilly)) 
 #
-# module ExceptionForMatrix::
-#   Exceptions:
-#	ErrDimensionMismatch
-#	    number of column/row do not match
-#	ErrNotRegular
-#	    not a regular matrix
-#	ErrOperationNotDefined
-#	    specified operator is not defined (yet)
+# See classes Matrix and Vector for documentation. 
 #
-# class Matrix
-#   include ExceptionForMatrix
-#
-#   Methods:
-#   class methods:
-#	Matrix.[](*rows)
-#	    creates a matrix where `rows' indicates rows. 
-#	    `rows' is an array of arrays, 
-#	    e.g, Matrix[[11, 12], [21, 22]]
-#	Matrix.rows(rows, copy = true)
-#	    creates a matrix where `rows' indicates rows. 
-#           if optional argument `copy' is false, use the array as
-#	    internal structure of the metrix without copying.
-#	Matrix.columns(columns)
-#           creates a new matrix using `columns` as set of colums vectors.
-#	Matrix.diagonal(*values)
-#	    creates a matrix where `columns' indicates columns. 
-#	Matrix.scalar(n, value)
-#	    creates a diagonal matrix such that the diagal compornents is
-#	    given by `values'.
-#	Matrix.scalar(n, value)
-#	    creates an n-by-n scalar matrix such that the diagal compornent is 
-#	    given by `value'.
-#	Matrix.identity(n)
-#	Matrix.unit(n)
-#	Matrix.I(n)
-#	    creates an n-by-n unit matrix.
-#	Matrix.zero(n)
-#	    creates an n-by-n zero matrix.
-#	Matrix.row_vector(row)
-#	    creates a 1-by-n matrix such the row vector is `row'. 
-#	    `row' is specifed as a Vector or an Array.
-#	Matrix.column_vector(column)
-#	    creates a 1-by-n matrix such that column vector is `column'. 
-#	    `column' is specifed as a Vector or an Array.
-#   accessing:
-#	[](i, j)
-#	    returns (i,j) compornent
-#	row_size
-#	    returns the number of rows
-#	column_size
-#	    returns the number of columns
-#	row(i)
-#	    returns the i-th row vector. 
-#	    when the block is supplied for the method, the block is iterated
-#	    over all row vectors. 
-#	column(j)
-#	    returns the jth column vector. 
-#	    when the block is supplied for the method, the block is iterated
-#	    over all column vectors. 
-#	collect
-#	map
-#	    creates a matrix which is the result of iteration of given
-#	    block over all compornents. 
-#	minor(*param)
-#	    returns sub matrix. parameter is specified as the following:
-#	    1. from_row, row_size, from_col, size_col
-#	    2. from_row..to_row, from_col..to_col
-#   TESTING:
-#	regular?
-#	    Is regular?
-#	singular?
-#	    Is singular? i.e. Is non-regular?
-#	square?
-#	    Is square?
-#   ARITHMETIC:
-#	*(m)
-#	    times
-#	+(m)
-#	    plus
-#	-(m)
-#	    minus
-#	/(m)
-#	    self * m.inv
-#	inverse
-#	inv
-#	    inverse
-#	**
-#	    power
-#   Matrix functions:
-#	determinant
-#	det
-#	    returns the determinant
-#	rank
-#	    returns the rank
-#	trace
-#	tr
-#	    returns the trace
-#	transpose
-#	t
-#	    returns the transposed
-#   CONVERTING:
-#	coerce(other)
-#	row_vectors
-#	    array of row vectors
-#	column_vectors
-#	    array of column vectors
-#	to_a
-#	    converts to Array of Arrays
-#   PRINTING:
-#	to_s
-#	    returns string representation
-#	inspect
-#
-# class Vector
-#   include ExceptionForMatrix
-#
-#   INSTANCE CREATION:
-#	Vector.[](*array)
-#	Vector.elements(array, copy = true)
-#   ACCSESSING:
-#	[](i)
-#	size
-#   ENUMRATIONS:
-#	each2(v)
-#	collect2(v)
-#   ARITHMETIC:
-#	*(x) "is matrix or number"
-#	+(v)
-#	-(v)
-#   VECTOR FUNCTIONS:
-#	inner_product(v)
-#	collect
-#	map
-#	map2(v)
-#	r
-#   CONVERTING:
-#	covector
-#	to_a
-#	coerce(other)
-#   PRINTING:
-#	to_s
-#	inspect
+
 
 require "e2mmap.rb"
 
-module ExceptionForMatrix
+module ExceptionForMatrix # :nodoc:
   extend Exception2MessageMapper
   def_e2message(TypeError, "wrong argument type %s (expected %s)")
   def_e2message(ArgumentError, "Wrong # of arguments(%d for %d)")
@@ -175,17 +33,76 @@ module ExceptionForMatrix
 end
 
 #
-# Represents a mathematical matrix, and provides methods for creating
-# special-case matrices (zero, identity, diagonal, singular, vector), operating
-# on them arithmetically and algebraically, and determining their mathematical
-# properties (trace, rank, inverse, determinant).
-#
-# The capabilities of the class indicated in the above paragraph are probably
-# not exhaustive.  Browse the methods and their documentation for more
-# information.
+# The +Matrix+ class represents a mathematical matrix, and provides methods for creating
+# special-case matrices (zero, identity, diagonal, singular, vector), operating on them
+# arithmetically and algebraically, and determining their mathematical properties (trace, rank,
+# inverse, determinant).
 #
 # Note that although matrices should theoretically be rectangular, this is not
 # enforced by the class.
+#
+# Also note that the determinant of integer matrices may be incorrectly calculated unless you
+# also <tt>require 'mathn'</tt>.  This may be fixed in the future.
+#
+# == Method Catalogue
+#
+# To create a matrix:
+# * <tt> Matrix[*rows]                  </tt>
+# * <tt> Matrix.[](*rows)               </tt>
+# * <tt> Matrix.rows(rows, copy = true) </tt>
+# * <tt> Matrix.columns(columns)        </tt>
+# * <tt> Matrix.diagonal(*values)       </tt>
+# * <tt> Matrix.scalar(n, value)        </tt>
+# * <tt> Matrix.scalar(n, value)        </tt>
+# * <tt> Matrix.identity(n)             </tt>
+# * <tt> Matrix.unit(n)                 </tt>
+# * <tt> Matrix.I(n)                    </tt>
+# * <tt> Matrix.zero(n)                 </tt>
+# * <tt> Matrix.row_vector(row)         </tt>
+# * <tt> Matrix.column_vector(column)   </tt>
+#
+# To access Matrix elements/columns/rows/submatrices/properties: 
+# * <tt>  [](i, j)                      </tt>
+# * <tt> #row_size                      </tt>
+# * <tt> #column_size                   </tt>
+# * <tt> #row(i)                        </tt>
+# * <tt> #column(j)                     </tt>
+# * <tt> #collect                       </tt>
+# * <tt> #map                           </tt>
+# * <tt> #minor(*param)                 </tt>
+#
+# Properties of a matrix:
+# * <tt> #regular?                      </tt>
+# * <tt> #singular?                     </tt>
+# * <tt> #square?                       </tt>
+#
+# Matrix arithmetic:
+# * <tt>  *(m)                          </tt>
+# * <tt>  +(m)                          </tt>
+# * <tt>  -(m)                          </tt>
+# * <tt> #/(m)                          </tt>
+# * <tt> #inverse                       </tt>
+# * <tt> #inv                           </tt>
+# * <tt>  **                            </tt>
+#
+# Matrix functions:
+# * <tt> #determinant                   </tt>
+# * <tt> #det                           </tt>
+# * <tt> #rank                          </tt>
+# * <tt> #trace                         </tt>
+# * <tt> #tr                            </tt>
+# * <tt> #transpose                     </tt>
+# * <tt> #t                             </tt>
+#
+# Conversion to other data types:
+# * <tt> #coerce(other)                 </tt>
+# * <tt> #row_vectors                   </tt>
+# * <tt> #column_vectors                </tt>
+# * <tt> #to_a                          </tt>
+#
+# String representations:
+# * <tt> #to_s                          </tt>
+# * <tt> #inspect                       </tt>
 #
 class Matrix
   @RCS_ID='-$Id: matrix.rb,v 1.11 1999/10/06 11:01:53 keiju Exp keiju $-'
@@ -228,8 +145,8 @@ class Matrix
     rows = (0 .. columns[0].size - 1).collect {
       |i|
       (0 .. columns.size - 1).collect {
-	|j|
-	columns[j][i]
+        |j|
+        columns[j][i]
       }
     }
     Matrix.rows(rows, false)
@@ -373,7 +290,7 @@ class Matrix
   def row(i) # :yield: e
     if block_given?
       for e in @rows[i]
-	yield e
+        yield e
       end
     else
       Vector.elements(@rows[i])
@@ -388,13 +305,13 @@ class Matrix
   def column(j) # :yield: e
     if block_given?
       0.upto(row_size - 1) do
-	|i|
-	yield @rows[i][j]
+        |i|
+        yield @rows[i][j]
       end
     else
       col = (0 .. row_size - 1).collect {
-	|i|
-	@rows[i][j]
+        |i|
+        @rows[i][j]
       }
       Vector.elements(col, false)
     end
@@ -515,7 +432,7 @@ class Matrix
     value = 0
     for row in @rows
       for e in row
-	value ^= e.hash
+        value ^= e.hash
       end
     end
     return value
@@ -535,11 +452,11 @@ class Matrix
     case(m)
     when Numeric
       rows = @rows.collect {
-	|row|
-	row.collect {
-	  |e|
-	  e * m
-	}
+        |row|
+        row.collect {
+          |e|
+          e * m
+        }
       }
       return Matrix.rows(rows, false)
     when Vector
@@ -550,16 +467,16 @@ class Matrix
       Matrix.Raise ErrDimensionMismatch if column_size != m.row_size
     
       rows = (0 .. row_size - 1).collect {
-	|i|
-	(0 .. m.column_size - 1).collect {
-	  |j|
-	  vij = 0
-	  0.upto(column_size - 1) do
-	    |k|
-	    vij += self[i, k] * m[k, j]
-	  end
-	  vij
-	}
+        |i|
+        (0 .. m.column_size - 1).collect {
+          |j|
+          vij = 0
+          0.upto(column_size - 1) do
+            |k|
+            vij += self[i, k] * m[k, j]
+          end
+          vij
+        }
       }
       return Matrix.rows(rows, false)
     else
@@ -591,8 +508,8 @@ class Matrix
     rows = (0 .. row_size - 1).collect {
       |i|
       (0 .. column_size - 1).collect {
-	|j|
-	self[i, j] + m[i, j]
+        |j|
+        self[i, j] + m[i, j]
       }
     }
     Matrix.rows(rows, false)
@@ -621,8 +538,8 @@ class Matrix
     rows = (0 .. row_size - 1).collect {
       |i|
       (0 .. column_size - 1).collect {
-	|j|
-	self[i, j] - m[i, j]
+        |j|
+        self[i, j] - m[i, j]
       }
     }
     Matrix.rows(rows, false)
@@ -638,11 +555,11 @@ class Matrix
     case other
     when Numeric
       rows = @rows.collect {
-	|row|
-	row.collect {
-	  |e|
-	  e / other
-	}
+        |row|
+        row.collect {
+          |e|
+          e / other
+        }
       }
       return Matrix.rows(rows, false)
     when Matrix
@@ -674,37 +591,37 @@ class Matrix
     
     for k in 0..size
       if (akk = a[k][k]) == 0
-	i = k
-	begin
-	  Matrix.Raise ErrNotRegular if (i += 1) > size
-	end while a[i][k] == 0
-	a[i], a[k] = a[k], a[i]
-	@rows[i], @rows[k] = @rows[k], @rows[i]
-	akk = a[k][k]
+        i = k
+        begin
+          Matrix.Raise ErrNotRegular if (i += 1) > size
+        end while a[i][k] == 0
+        a[i], a[k] = a[k], a[i]
+        @rows[i], @rows[k] = @rows[k], @rows[i]
+        akk = a[k][k]
       end
       
       for i in 0 .. size
-	next if i == k
-	q = a[i][k] / akk
-	a[i][k] = 0
-	
-	(k + 1).upto(size) do	
-	  |j|
-	  a[i][j] -= a[k][j] * q
-	end
-	0.upto(size) do
-	  |j|
-	  @rows[i][j] -= @rows[k][j] * q
-	end
+        next if i == k
+        q = a[i][k] / akk
+        a[i][k] = 0
+        
+        (k + 1).upto(size) do   
+          |j|
+          a[i][j] -= a[k][j] * q
+        end
+        0.upto(size) do
+          |j|
+          @rows[i][j] -= @rows[k][j] * q
+        end
       end
       
       (k + 1).upto(size) do
-	|j|
-	a[k][j] /= akk
+        |j|
+        a[k][j] /= akk
       end
       0.upto(size) do
-	|j|
-	@rows[k][j] /= akk
+        |j|
+        @rows[k][j] /= akk
       end
     end
     self
@@ -722,20 +639,20 @@ class Matrix
     if other.kind_of?(Integer)
       x = self
       if other <= 0
-	x = self.inverse
-	return Matrix.identity(self.column_size) if other == 0
-	other = -other
+        x = self.inverse
+        return Matrix.identity(self.column_size) if other == 0
+        other = -other
       end
       z = x
       n = other  - 1
       while n != 0
-	while (div, mod = n.divmod(2)
-	       mod == 0)
-	  x = x * x
-	  n = div
-	end
-	z *= x
-	n -= 1
+        while (div, mod = n.divmod(2)
+               mod == 0)
+          x = x * x
+          n = div
+        end
+        z *= x
+        n -= 1
       end
       z
     elsif other.kind_of?(Float) || defined?(Rational) && other.kind_of?(Rational)
@@ -765,28 +682,28 @@ class Matrix
     k = 0
     begin 
       if (akk = a[k][k]) == 0
-	i = k
-	begin
-	  return 0 if (i += 1) > size
-	end while a[i][k] == 0
-	a[i], a[k] = a[k], a[i]
-	akk = a[k][k]
-	det *= -1
+        i = k
+        begin
+          return 0 if (i += 1) > size
+        end while a[i][k] == 0
+        a[i], a[k] = a[k], a[i]
+        akk = a[k][k]
+        det *= -1
       end
       (k + 1).upto(size) do
-	|i|
-	q = a[i][k] / akk
-	(k + 1).upto(size) do
-	  |j|
-	  a[i][j] -= a[k][j] * q
-	end
+        |i|
+        q = a[i][k] / akk
+        (k + 1).upto(size) do
+          |j|
+          a[i][j] -= a[k][j] * q
+        end
       end
       det *= akk
     end while (k += 1) <= size
     det
   end
   alias det determinant
-	
+        
   #
   # Returns the rank of the matrix.  Beware that using Float values, with their
   # usual lack of precision, can affect the value returned by this method.  Use
@@ -808,44 +725,44 @@ class Matrix
     k = 0
     begin
       if (akk = a[k][k]) == 0
-	i = k
-	exists = true
-	begin
-	  if (i += 1) > a_column_size - 1
-	    exists = false
-	    break
-	  end
-	end while a[i][k] == 0
-	if exists
-	  a[i], a[k] = a[k], a[i]
-	  akk = a[k][k]
-	else
-	  i = k
-	  exists = true
-	  begin
-	    if (i += 1) > a_row_size - 1
-	      exists = false
-	      break
-	    end
-	  end while a[k][i] == 0
-	  if exists
-	    k.upto(a_column_size - 1) do
-	      |j|
-	      a[j][k], a[j][i] = a[j][i], a[j][k]
-	    end
-	    akk = a[k][k]
-	  else
-	    next
-	  end
-	end
+        i = k
+        exists = true
+        begin
+          if (i += 1) > a_column_size - 1
+            exists = false
+            break
+          end
+        end while a[i][k] == 0
+        if exists
+          a[i], a[k] = a[k], a[i]
+          akk = a[k][k]
+        else
+          i = k
+          exists = true
+          begin
+            if (i += 1) > a_row_size - 1
+              exists = false
+              break
+            end
+          end while a[k][i] == 0
+          if exists
+            k.upto(a_column_size - 1) do
+              |j|
+              a[j][k], a[j][i] = a[j][i], a[j][k]
+            end
+            akk = a[k][k]
+          else
+            next
+          end
+        end
       end
       (k + 1).upto(a_row_size - 1) do
-	|i|
-	q = a[i][k] / akk
-	(k + 1).upto(a_column_size - 1) do
-	  |j|
-	  a[i][j] -= a[k][j] * q
-	end
+        |i|
+        q = a[i][k] / akk
+        (k + 1).upto(a_column_size - 1) do
+          |j|
+          a[i][j] -= a[k][j] * q
+        end
       end
       rank += 1
     end while (k += 1) <= a_column_size - 1
@@ -961,78 +878,113 @@ class Matrix
     def +(other)
       case other
       when Numeric
-	Scalar.new(@value + other)
+        Scalar.new(@value + other)
       when Vector, Matrix
-	Scalar.Raise WrongArgType, other.class, "Numeric or Scalar"
+        Scalar.Raise WrongArgType, other.class, "Numeric or Scalar"
       when Scalar
-	Scalar.new(@value + other.value)
+        Scalar.new(@value + other.value)
       else
-	x, y = other.coerce(self)
-	x + y
+        x, y = other.coerce(self)
+        x + y
       end
     end
     
     def -(other)
       case other
       when Numeric
-	Scalar.new(@value - other)
+        Scalar.new(@value - other)
       when Vector, Matrix
-	Scalar.Raise WrongArgType, other.class, "Numeric or Scalar"
+        Scalar.Raise WrongArgType, other.class, "Numeric or Scalar"
       when Scalar
-	Scalar.new(@value - other.value)
+        Scalar.new(@value - other.value)
       else
-	x, y = other.coerce(self)
-	x - y
+        x, y = other.coerce(self)
+        x - y
       end
     end
     
     def *(other)
       case other
       when Numeric
-	Scalar.new(@value * other)
+        Scalar.new(@value * other)
       when Vector, Matrix
-	other.collect{|e| @value * e}
+        other.collect{|e| @value * e}
       else
-	x, y = other.coerce(self)
-	x * y
+        x, y = other.coerce(self)
+        x * y
       end
     end
     
     def / (other)
       case other
       when Numeric
-	Scalar.new(@value / other)
+        Scalar.new(@value / other)
       when Vector
-	Scalar.Raise WrongArgType, other.class, "Numeric or Scalar or Matrix"
+        Scalar.Raise WrongArgType, other.class, "Numeric or Scalar or Matrix"
       when Matrix
-	self * _M.inverse
+        self * _M.inverse
       else
-	x, y = other.coerce(self)
-	x / y
+        x, y = other.coerce(self)
+        x / y
       end
     end
     
     def ** (other)
       case other
       when Numeric
-	Scalar.new(@value ** other)
+        Scalar.new(@value ** other)
       when Vector
-	Scalar.Raise WrongArgType, other.class, "Numeric or Scalar or Matrix"
+        Scalar.Raise WrongArgType, other.class, "Numeric or Scalar or Matrix"
       when Matrix
-	other.powered_by(self)
+        other.powered_by(self)
       else
-	x, y = other.coerce(self)
-	x ** y
+        x, y = other.coerce(self)
+        x ** y
       end
     end
   end
 end
 
-#----------------------------------------------------------------------
+
 #
-#    - 
+# The +Vector+ class represents a mathematical vector, which is useful in its own right, and
+# also consitutes a row or column of a Matrix.
 #
-#----------------------------------------------------------------------
+# == Method Catalogue
+#
+# To create a Vector:
+# * <tt>  Vector.[](*array)                   </tt>
+# * <tt>  Vector.elements(array, copy = true) </tt>
+#
+# To access elements:
+# * <tt>  [](i)                               </tt>
+#
+# To enumerate the elements:
+# * <tt> #each2(v)                            </tt>
+# * <tt> #collect2(v)                         </tt>
+#
+# Vector arithmetic:
+# * <tt>  *(x) "is matrix or number"          </tt>
+# * <tt>  +(v)                                </tt>
+# * <tt>  -(v)                                </tt>
+#
+# Vector functions:
+# * <tt> #inner_product(v)                    </tt>
+# * <tt> #collect                             </tt>
+# * <tt> #map                                 </tt>
+# * <tt> #map2(v)                             </tt>
+# * <tt> #r                                   </tt>
+# * <tt> #size                                </tt>
+#
+# Conversion to other data types:
+# * <tt> #covector                            </tt>
+# * <tt> #to_a                                </tt>
+# * <tt> #coerce(other)                       </tt>
+#
+# String representations:
+# * <tt> #to_s                                </tt>
+# * <tt> #inspect                             </tt>
+#
 class Vector
   include ExceptionForMatrix
   
@@ -1075,7 +1027,7 @@ class Vector
   end
   
   # ACCSESSING
-	 
+         
   #
   # Returns element number +i+ (starting at zero) of the vector.
   #
@@ -1180,8 +1132,8 @@ class Vector
     when Vector
       Vector.Raise ErrDimensionMismatch if size != v.size
       els = collect2(v) {
-	|v1, v2|
-	v1 + v2
+        |v1, v2|
+        v1 + v2
       }
       Vector.elements(els, false)
     when Matrix
@@ -1200,8 +1152,8 @@ class Vector
     when Vector
       Vector.Raise ErrDimensionMismatch if size != v.size
       els = collect2(v) {
-	|v1, v2|
-	v1 - v2
+        |v1, v2|
+        v1 - v2
       }
       Vector.elements(els, false)
     when Matrix
@@ -1318,5 +1270,3 @@ end
 
 # Documentation comments:
 #  - Matrix#coerce and Vector#coerce need to be documented
-#  - Matrix class methods (aliases) unit and I don't appear in RDoc output
-#    becuase of "class << Matrix".  This is an RDoc issue.
