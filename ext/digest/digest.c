@@ -73,7 +73,7 @@ rb_digest_base_alloc(klass)
 
     algo = get_digest_base_metadata(klass);
 
-    pctx = xmalloc(algo->ctx_size);
+    pctx = xcalloc(algo->ctx_size, 1);
     algo->init_func(pctx);
 
     obj = Data_Wrap_Struct(klass, 0, free, pctx);
