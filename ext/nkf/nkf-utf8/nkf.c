@@ -41,7 +41,7 @@
 ***********************************************************************/
 /* $Id$ */
 #define NKF_VERSION "2.0.4"
-#define NKF_RELEASE_DATE "2004-12-01"
+#define NKF_RELEASE_DATE "2005-02-02"
 #include "config.h"
 
 static char *CopyRight =
@@ -182,6 +182,7 @@ static char *CopyRight =
 #define         X0201           2
 #define         ISO8859_1       8
 #define         NO_X0201        3
+#define         X0212           16
 
 /* Input Assumption */
 
@@ -298,7 +299,7 @@ STATIC  void    w_oconv PROTO((int c2,int c1));
 STATIC  void    w_oconv16 PROTO((int c2,int c1));
 #endif
 STATIC  void    e_oconv PROTO((int c2,int c1));
-STATIC  void    e2s_conv PROTO((int c2, int c1, int *p2, int *p1));
+STATIC  int     e2s_conv PROTO((int c2, int c1, int *p2, int *p1));
 STATIC  void    s_oconv PROTO((int c2,int c1));
 STATIC  void    j_oconv PROTO((int c2,int c1));
 STATIC  void    fold_conv PROTO((int c2,int c1));
@@ -437,7 +438,14 @@ STATIC int cp932inv_f = TRUE;
 #define CP932INV_TABLE_BEGIN (0xed)
 #define CP932INV_TABLE_END   (0xee)
 
+/* STATIC int cp932_conv PROTO((int c2, int c1)); */
 #endif /* SHIFTJIS_CP932 */
+
+#ifdef X0212_ENABLE
+STATIC int x0212_f = FALSE;
+static int x0212_shift PROTO((int c));
+static int x0212_unshift PROTO((int c));
+#endif
 
 STATIC unsigned char prefix_table[256];
 
@@ -895,6 +903,9 @@ struct {
     {"guess", "g"},
     {"cp932", ""},
     {"no-cp932", ""},
+#ifdef X0212_ENABLE
+    {"x0212", ""},
+#endif
 #ifdef UTF8_OUTPUT_ENABLE
     {"utf8", "w"},
     {"utf16", "w16"},
@@ -956,7 +967,7 @@ options(cp)
 		int j;
                 p = (unsigned char *)long_option[i].name;
                 for (j=0;*p && (*p != '=') && *p == cp[j];p++, j++);
-		if (!*p || *p == cp[j]){
+		if (*p == cp[j]){
 		    p = &cp[j];
 		    break;
 		}
@@ -1024,6 +1035,14 @@ options(cp)
                     continue;
                 }
 #endif
+
+#ifdef X0212_ENABLE
+                if (strcmp(long_option[i].name, "x0212") == 0){
+                    x0212_f = TRUE;
+                    continue;
+                }
+#endif
+
 #ifdef EXEC_IO
                   if (strcmp(long_option[i].name, "exec-in") == 0){
                       exec_f = 1;
@@ -1484,6 +1503,11 @@ void s_status(ptr, c)
               ptr->stat = 2;
               status_push_ch(ptr, c);
 #endif /* SHIFTJIS_CP932 */
+#ifdef X0212_ENABLE
+          }else if (x0212_f && 0xf0 <= c && c <= 0xfc){
+              ptr->stat = 1;
+              status_push_ch(ptr, c);
+#endif /* X0212_ENABLE */
           }else{
               status_disable(ptr);
           }
@@ -1498,8 +1522,8 @@ void s_status(ptr, c)
               status_disable(ptr);
           }
           break;
-#ifdef SHIFTJIS_CP932
       case 2:
+#ifdef SHIFTJIS_CP932
           if ((0x40 <= c && c <= 0x7e) || (0x80 <= c && c <= 0xfc)){
               status_push_ch(ptr, c);
               if (s2e_conv(ptr->buf[0], ptr->buf[1], &ptr->buf[0], &ptr->buf[1]) == 0){
@@ -1508,9 +1532,11 @@ void s_status(ptr, c)
                   break;
               }
           }
+#endif /* SHIFTJIS_CP932 */
+#ifndef X0212_ENABLE
           status_disable(ptr);
           break;
-#endif /* SHIFTJIS_CP932 */
+#endif
     }
 }
 
@@ -1532,6 +1558,11 @@ void e_status(ptr, c)
           }else if (SSO == c || (0xa1 <= c && c <= 0xfe)){
               ptr->stat = 1;
               status_push_ch(ptr, c);
+#ifdef X0212_ENABLE
+          }else if (0x8f == c){
+              ptr->stat = 2;
+              status_push_ch(ptr, c);
+#endif /* X0212_ENABLE */
           }else{
               status_disable(ptr);
           }
@@ -1545,6 +1576,15 @@ void e_status(ptr, c)
               status_disable(ptr);
           }
           break;
+#ifdef X0212_ENABLE
+      case 2:
+          if (0xa1 <= c && c <= 0xfe){
+              ptr->stat = 1;
+              status_push_ch(ptr, c);
+          }else{
+              status_disable(ptr);
+          }
+#endif /* X0212_ENABLE */
     }
 }
 
@@ -1845,7 +1885,7 @@ kanji_convert(f)
             /* second byte */
             if (c2 > DEL) {
                 /* in case of 8th bit is on */
-                if (!estab_f) {
+                if (!estab_f&&!mime_decode_mode) {
                     /* in case of not established yet */
                     /* It is still ambiguious */
                     if (h_conv(f, c2, c1)==EOF) 
@@ -2015,6 +2055,12 @@ kanji_convert(f)
                             input_mode = X0208;
                             shift_mode = FALSE;
                             NEXT;
+#ifdef X0212_ENABLE
+                        } else if (c1 == 'D'){
+                            input_mode = X0212;
+                            shift_mode = FALSE;
+                            NEXT;
+#endif /* X0212_ENABLE */
                         } else {
                             /* could be some special code */
                             (*oconv)(0, ESC);
@@ -2114,6 +2160,10 @@ kanji_convert(f)
         /* send: */
         if (input_mode == X0208) 
             (*oconv)(c2, c1);  /* this is JIS, not SJIS/EUC case */
+#ifdef X0212_ENABLE
+        else if (input_mode == X0212) 
+            (*oconv)((0x8f << 8) | c2, c1);
+#endif /* X0212_ENABLE */
         else if (input_mode) 
             (*oconv)(input_mode, c1);  /* other special case */
         else if ((*iconv)(c2, c1, 0) < 0){  /* can be EUC/SJIS */
@@ -2248,15 +2298,35 @@ int s2e_conv(c2, c1, p2, p1)
      int c2, c1;
      int *p2, *p1;
 {
+    int val;
 #ifdef SHIFTJIS_CP932
     if (cp932_f && CP932_TABLE_BEGIN <= c2 && c2 <= CP932_TABLE_END){
         extern unsigned short shiftjis_cp932[3][189];
-        c1 = shiftjis_cp932[c2 - CP932_TABLE_BEGIN][c1 - 0x40];
-        if (c1 == 0) return 1;
-        c2 = c1 >> 8;
-        c1 &= 0xff;
+        val = shiftjis_cp932[c2 - CP932_TABLE_BEGIN][c1 - 0x40];
+        if (val){
+            c2 = val >> 8;
+            c1 = val & 0xff;
+        }
     }
 #endif /* SHIFTJIS_CP932 */
+#ifdef X0212_ENABLE
+    if (x0212_f && 0xfa <= c2 && c2 <= 0xfc){
+        extern unsigned short shiftjis_x0212[3][189];
+        val = shiftjis_x0212[c2 - 0xfa][c1 - 0x40];
+        if (val){
+            if (val & 0x8000){
+                c2 = (0x8f << 8) | (val >> 8);
+                c1 = val & 0xff;
+            }else{
+                c2 = val >> 8;
+                c1 = val & 0xff;
+            }
+            if (p2) *p2 = c2;
+            if (p1) *p1 = c1;
+            return 0;
+        }
+    }
+#endif
     c2 = c2 + c2 - ((c2 <= 0x9f) ? SJ0162 : SJ6394);
     if (c1 < 0x9f)
         c1 = c1 - ((c1 > DEL) ? SPACE : 0x1f);
@@ -2264,6 +2334,12 @@ int s2e_conv(c2, c1, p2, p1)
         c1 = c1 - 0x7e;
         c2++;
     }
+
+#ifdef X0212_ENABLE
+    if (x0212_f){
+        c2 = x0212_unshift(c2);
+    }
+#endif
     if (p2) *p2 = c2;
     if (p1) *p1 = c1;
     return 0;
@@ -2293,6 +2369,26 @@ e_iconv(c2, c1, c0)
 {
     if (c2 == X0201) {
 	c1 &= 0x7f;
+#ifdef X0212_ENABLE
+    }else if (c2 == 0x8f){
+        if (c0 == 0){
+            return -1;
+        }
+        c2 = (c2 << 8) | (c1 & 0x7f);
+        c1 = c0 & 0x7f;
+#ifdef SHIFTJIS_CP932
+        if (cp932_f){
+            int s2, s1;
+            if (e2s_conv(c2, c1, &s2, &s1) == 0){
+                s2e_conv(s2, s1, &c2, &c1);
+                if ((c2 & 0xff00) == 0){
+                    c1 &= 0x7f;
+                    c2 &= 0x7f;
+                }
+            }
+        }
+#endif /* SHIFTJIS_CP932 */
+#endif /* X0212_ENABLE */
     } else if (c2 == SSO){
         c2 = X0201;
         c1 &= 0x7f;
@@ -2385,7 +2481,7 @@ ww16_conv(c2, c1, c0)
         val |= (c0 & 0x3f);
     }else if (c2 >= 0xc0){
         val = (c2 & 0x1f) << 6;
-        val |= (c1 & 0x3f) << 6;
+        val |= (c1 & 0x3f);
     }else{
         val = c2;
     }
@@ -2422,6 +2518,9 @@ w16e_conv(val, p2, p1)
             ret = 0;
         }
 #endif
+    }else{
+        *p2 = 0;
+        *p1 = c2;
     }
     return ret;
 }
@@ -2477,6 +2576,10 @@ w_iconv_common(c1, c0, pp, psize, p2, p1)
     if (val == 0) return 1;
 
     c2 = val >> 8;
+    if (val & 0x8000){
+        c2 &= 0x7f;
+        c2 |= 0x8f00;
+    }
     if (c2 == SO) c2 = X0201;
     c1 = val & 0x7f;
     if (p2) *p2 = c2;
@@ -2498,6 +2601,15 @@ e2w_conv(c2, c1)
 
     if (c2 == X0201) {
         p = euc_to_utf8_1byte;
+#ifdef X0212_ENABLE
+    } else if (c2 >> 8 == 0x8f){
+        extern unsigned short * x0212_to_utf8_2bytes[];
+        c2 = (c2&0x7f) - 0x21;
+        if (0<=c2 && c2<sizeof_euc_to_utf8_2bytes)
+	    p = x0212_to_utf8_2bytes[c2];
+        else
+            return 0;
+#endif
     } else {
         c2 &= 0x7f;
         c2 = (c2&0x7f) - 0x21;
@@ -2519,16 +2631,6 @@ w_oconv(c2, c1)
                     c1;
 {
     int c0;
-#ifdef NUMCHAR_OPTION
-    if (c2 == 0 && (c1 & CLASS_MASK) == CLASS_UTF16){
-        w16w_conv(c1, &c2, &c1, &c0);
-        (*o_putc)(c2);
-        if (c1){
-            (*o_putc)(c1);
-            if (c0) (*o_putc)(c0);
-        }
-    }
-#endif
     if (c2 == EOF) {
         (*o_putc)(EOF);
         return;
@@ -2541,6 +2643,18 @@ w_oconv(c2, c1)
 	unicode_bom_f=1;
     }
 
+#ifdef NUMCHAR_OPTION
+    if (c2 == 0 && (c1 & CLASS_MASK) == CLASS_UTF16){
+        w16w_conv(c1, &c2, &c1, &c0);
+        (*o_putc)(c2);
+        if (c1){
+            (*o_putc)(c1);
+            if (c0) (*o_putc)(c0);
+        }
+        return;
+    }
+#endif
+
     if (c2 == 0) { 
 	output_mode = ASCII;
         (*o_putc)(c1);
@@ -2548,12 +2662,16 @@ w_oconv(c2, c1)
 	output_mode = ISO8859_1;
         (*o_putc)(c1 | 0x080);
     } else {
+        unsigned short val;
         output_mode = UTF8;
-        w16w_conv((unsigned short)e2w_conv(c2, c1), &c2, &c1, &c0);
-        (*o_putc)(c2);
-        if (c1){
-            (*o_putc)(c1);
-            if (c0) (*o_putc)(c0);
+        val = e2w_conv(c2, c1);
+        if (val){
+            w16w_conv(val, &c2, &c1, &c0);
+            (*o_putc)(c2);
+            if (c1){
+                (*o_putc)(c1);
+                if (c0) (*o_putc)(c0);
+            }
         }
     }
 }
@@ -2588,7 +2706,7 @@ w_oconv16(c2, c1)
         c1 &= 0xff;
 #endif
     } else if (c2) {
-        unsigned short val = (unsigned short)e2w_conv(c2, c1);
+        unsigned short val = e2w_conv(c2, c1);
         c2 = (val >> 8) & 0xff;
         c1 = val & 0xff;
     }
@@ -2611,6 +2729,9 @@ e_oconv(c2, c1)
 #ifdef NUMCHAR_OPTION
     if (c2 == 0 && (c1 & CLASS_MASK) == CLASS_UTF16){
         w16e_conv(c1, &c2, &c1);
+        if (c2 == 0 && (c1 & CLASS_MASK) == CLASS_UTF16){
+            return;
+        }
     }
 #endif
     if (c2 == EOF) {
@@ -2625,6 +2746,28 @@ e_oconv(c2, c1)
     } else if (c2 == ISO8859_1) {
 	output_mode = ISO8859_1;
         (*o_putc)(c1 | 0x080);
+#ifdef X0212_ENABLE
+    } else if ((c2 & 0xff00) >> 8 == 0x8f){
+	output_mode = JAPANESE_EUC;
+#ifdef SHIFTJIS_CP932
+        if (cp932_f){
+            int s2, s1;
+            if (e2s_conv(c2, c1, &s2, &s1) == 0){
+                s2e_conv(s2, s1, &c2, &c1);
+            }
+        }
+#endif
+        if ((c2 & 0xff00) >> 8 == 0x8f){
+            if (x0212_f){
+                (*o_putc)(0x8f);
+                (*o_putc)((c2 & 0x7f) | 0x080);
+                (*o_putc)(c1 | 0x080);
+            }
+        }else{
+            (*o_putc)((c2 & 0x7f) | 0x080);
+            (*o_putc)(c1 | 0x080);
+        }
+#endif
     } else {
         if ((c1<0x21 || 0x7e<c1) ||
            (c2<0x21 || 0x7e<c2)) {
@@ -2637,12 +2780,71 @@ e_oconv(c2, c1)
     }
 }
 
-void
+#ifdef X0212_ENABLE
+int x0212_shift(c)
+     int c;
+{
+    int ret = c;
+    c &= 0x7f;
+    if ((ret & 0xff00) == 0x8f00){
+        if (0x75 <= c && c <= 0x7f){
+            ret = c + (0x109 - 0x75);
+        }
+    }else{
+        if (0x75 <= c && c <= 0x7f){
+            ret = c + (0x113 - 0x75);
+        }
+    }
+    return ret;
+}
+
+
+int x0212_unshift(c)
+     int c;
+{
+    int ret = c;
+    if (0x7f <= c && c <= 0x88){
+        ret = c + (0x75 - 0x7f);
+    }else if (0x89 <= c && c <= 0x92){
+        ret = (0x8f << 8) | 0x80 | (c + (0x75 - 0x89));
+    }
+    return ret;
+}
+#endif /* X0212_ENABLE */
+
+int
 e2s_conv(c2, c1, p2, p1)
      int c2, c1, *p2, *p1;
 {
+    int val = 0;
+    unsigned short *ptr;
+    int ndx;
+    extern unsigned short *x0212_shiftjis[];
+#ifdef X0212_ENABLE
+    if ((c2 & 0xff00) == 0x8f00){
+        ndx = c2 & 0x7f;
+        if (0x21 <= ndx && ndx <= 0x7e){
+            ptr = x0212_shiftjis[ndx - 0x21];
+            if (ptr){
+                val = ptr[(c1 & 0x7f) - 0x21];
+            }
+            if (val){
+                c2 = val >> 8;
+                c1 = val & 0xff;
+                if (p2) *p2 = c2;
+                if (p1) *p1 = c1;
+                return 0;
+            }
+        }
+        c2 = x0212_shift(c2);
+    }
+#endif /* X0212_ENABLE */
+    if ((c2 & 0xff00) == 0x8f00){
+        return 1;
+    }
     if (p2) *p2 = ((c2 - 1) >> 1) + ((c2 <= 0x5e) ? 0x71 : 0xb1);
     if (p1) *p1 = c1 + ((c2 & 1) ? ((c1 < 0x60) ? 0x1f : 0x20) : 0x7e);
+    return 0;
 }
 
 void
@@ -2667,6 +2869,14 @@ s_oconv(c2, c1)
     } else if (c2 == ISO8859_1) {
 	output_mode = ISO8859_1;
         (*o_putc)(c1 | 0x080);
+#ifdef X0212_ENABLE
+    } else if ((c2 & 0xff00) >> 8 == 0x8f){
+	output_mode = SHIFT_JIS;
+        if (e2s_conv(c2, c1, &c2, &c1) == 0){
+            (*o_putc)(c2);
+            (*o_putc)(c1);
+        }
+#endif
     } else {
         if ((c1<0x20 || 0x7e<c1) ||
            (c2<0x20 || 0x7e<c2)) {
@@ -2714,6 +2924,18 @@ j_oconv(c2, c1)
 	    output_mode = ASCII;
         }
         (*o_putc)(EOF);
+#ifdef X0212_ENABLE
+    } else if ((c2 & 0xff00) >> 8 == 0x8f){
+        if (output_mode!=X0212) {
+            output_mode = X0212;
+            (*o_putc)(ESC);
+            (*o_putc)('$');
+            (*o_putc)('(');
+            (*o_putc)('D');
+        }
+        (*o_putc)(c2 & 0x7f);
+        (*o_putc)(c1);
+#endif
     } else if (c2==X0201) {
         if (output_mode!=X0201) {
             output_mode = X0201;
@@ -3325,6 +3547,7 @@ FILE *f;
     }
     mime_decode_mode = p[i-2];
 
+    set_iconv(FALSE, mime_priority_func[j]);
     clr_code_score(find_inputcode_byfunc(mime_priority_func[j]), SCORE_iMIME);
 
     if (mime_decode_mode=='B') {
@@ -4040,7 +4263,13 @@ mimeout_addchar(c)
 {
     switch(mimeout_mode) {
     case 'Q':
-	if(c>=DEL) {
+	if(c==SPACE){
+	    (*o_mputc)('_');
+	    base64_count++;
+	} else if (c==CR||c==NL) {
+	    (*o_mputc)(c);
+	    base64_count = 0;
+	} else if(c<SPACE||c=='='||c=='?'||c=='_'||DEL<=c) {
 	    (*o_mputc)('=');
 	    (*o_mputc)(itoh4(((c>>4)&0xf)));
 	    (*o_mputc)(itoh4((c&0xf)));
@@ -4068,6 +4297,10 @@ mimeout_addchar(c)
         mimeout_mode='B';
         base64_count += 2;
         break;
+    default:
+	(*o_mputc)(c);
+	base64_count++;
+        break;
     }
 }
 
@@ -4078,11 +4311,18 @@ mime_putc(c)
     int i = 0;
     int j = 0;
     
-    if (mimeout_f==FIXED_MIME && base64_count>50) {
-	eof_mime();
-	(*o_mputc)(NL);
+    if (mimeout_f==FIXED_MIME && base64_count>71) {
+	if (mimeout_mode=='Q') {
+	    if (c!=CR && c!=NL) {
+		(*o_mputc)('=');
+		(*o_mputc)(NL);
+	    }
+	} else {
+	    eof_mime();
+	    (*o_mputc)(NL);
+	}
 	base64_count=0;
-    } else if (c==CR||c==NL) {
+    } else if (mimeout_f!=FIXED_MIME && !mimeout_mode && (c==CR||c==NL)) {
 	base64_count=0;
     }
     if (c!=EOF && mimeout_f!=FIXED_MIME) {
@@ -4097,12 +4337,21 @@ mime_putc(c)
 		base64_count++;
 		return;
 	    } else if (mimeout_mode) {
-		if (base64_count>63) {
-		    eof_mime();
-		    (*o_mputc)(NL);
-		    (*o_mputc)(SPACE);
-		    base64_count=1;
-		    mimeout_preserve_space = TRUE;
+		if (mimeout_buf_count>0
+		    && (mimeout_buf[mimeout_buf_count-1]==CR || mimeout_buf[mimeout_buf_count-1]==NL)) {
+		    if (c==SPACE || c==TAB) {
+			for (i=0;i<mimeout_buf_count;i++) {
+			    mimeout_addchar(mimeout_buf[i]);
+			}
+			mimeout_buf_count = 0;
+		    } else if (SPACE<c && c<DEL) {
+			eof_mime();
+			for (i=0;i<mimeout_buf_count;i++) {
+			    (*o_mputc)(mimeout_buf[i]);
+			}
+			base64_count = 0;
+			mimeout_buf_count = 0;
+		    }
 		}
 		if (c==SPACE || c==TAB || c==CR || c==NL) {
 		    for (i=0;i<mimeout_buf_count;i++) {
@@ -4118,20 +4367,25 @@ mime_putc(c)
 		    mimeout_buf[mimeout_buf_count++] = c;
 		    if (mimeout_buf_count>MIMEOUT_BUF_LENGTH) {
 		    	eof_mime();
-			base64_count = 0;
 			for (i=0;i<mimeout_buf_count;i++) {
 			    (*o_mputc)(mimeout_buf[i]);
 			    base64_count++;
 			}
+			mimeout_buf_count = 0;
 		    }
 		    return;
 		}
-		if (mimeout_buf_count>0 && SPACE<c) {
+		
+		if (mimeout_buf_count>0 && SPACE<c && c!='=') {
 		    mimeout_buf[mimeout_buf_count++] = c;
 		    if (mimeout_buf_count>MIMEOUT_BUF_LENGTH) {
-		    } else {
-			return;
+			j = mimeout_buf_count;
+			mimeout_buf_count = 0;
+			for (i=0;i<j;i++) {
+			    mimeout_addchar(mimeout_buf[i]);
+			}
 		    }
+		    return;
 		}
 	    } else if (!mimeout_mode) {
 		if (c==SPACE || c==TAB || c==CR || c==NL) {
@@ -4147,7 +4401,7 @@ mime_putc(c)
 		    mimeout_buf_count = 0;
 		}
 		mimeout_buf[mimeout_buf_count++] = c;
-		if (mimeout_buf_count>75) {
+		if (mimeout_buf_count>MIMEOUT_BUF_LENGTH) {
 		    open_mime(output_mode);
 		}
 		return;
@@ -4163,14 +4417,15 @@ mime_putc(c)
 	    }
 	    open_mime(output_mode);
         }
-    } else { /* c==EOF */
+    } else if (c == EOF) { /* c==EOF */
 	j = mimeout_buf_count;
+	mimeout_buf_count = 0;
 	i = 0;
 	for (;i<j;i++) {
 	    if (mimeout_buf[i]==SPACE || mimeout_buf[i]==TAB
 		|| mimeout_buf[i]==CR || mimeout_buf[i]==NL)
 		break;
-	    (*mime_putc)(mimeout_buf[i]);
+	    mimeout_addchar(mimeout_buf[i]);
 	}
         eof_mime();
 	for (;i<j;i++) {
@@ -4184,7 +4439,17 @@ mime_putc(c)
 	j = mimeout_buf_count;
 	mimeout_buf_count = 0;
 	for (i=0;i<j;i++) {
+	    if (mimeout_buf[i]==CR || mimeout_buf[i]==NL)
+		break;
 	    mimeout_addchar(mimeout_buf[i]);
+	}
+	if (i<j) {
+	    eof_mime();
+	    base64_count=0;
+	    for (;i<j;i++) {
+		(*o_mputc)(mimeout_buf[i]);
+	    }
+	    open_mime(output_mode);
 	}
     }
     mimeout_addchar(c);
@@ -4296,7 +4561,6 @@ reinit()
 #ifdef CHECK_OPTION
     iconv_for_check = 0;
 #endif
-
 }
 #endif
 
@@ -4365,7 +4629,8 @@ usage()
     fprintf(stderr," --fj,--unix,--mac,--windows                        convert for the system\n");
     fprintf(stderr," --jis,--euc,--sjis,--utf8,--utf16,--mime,--base64  convert for the code\n");
     fprintf(stderr," --hiragana, --katakana    Hiragana/Katakana Conversion\n");
-    fprintf(stderr," --cp932, --no-cp932       CP932 compatible\n");
+    fprintf(stderr," --x0212                   Convert JISX0212\n");
+    fprintf(stderr," --cp932, --no-cp932       CP932 compatibility\n");
 #ifdef INPUT_OPTION
     fprintf(stderr," --cap-input, --url-input  Convert hex after ':' or '%%'\n");
 #endif
