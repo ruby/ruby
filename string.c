@@ -1643,6 +1643,7 @@ str_gsub(argc, argv, str, bang)
 	bp += len;
 	memcpy(bp, RSTRING(val)->ptr, RSTRING(val)->len);
 	bp += RSTRING(val)->len;
+       offset = END(0);
 	if (BEG(0) == END(0)) {
 	    /*
 	     * Always consume at least one character of the input string
@@ -1653,9 +1654,6 @@ str_gsub(argc, argv, str, bang)
 	    memcpy(bp, RSTRING(str)->ptr+END(0), len);
 	    bp += len;
 	    offset = END(0) + len;
-	}
-	else {
-	    offset = END(0);
 	}
 	cp = RSTRING(str)->ptr + offset;
 	if (offset > RSTRING(str)->len) break;
@@ -2924,7 +2922,7 @@ rb_str_lstrip_bang(str)
     if (!s || RSTRING(str)->len == 0) return Qnil;
     e = t = s + RSTRING(str)->len;
     /* remove spaces at head */
-    while (s < t && ISSPACE(*s)) s++;
+    while (s < t && (ISSPACE(*s) || !*s)) s++;
 
     RSTRING(str)->len = t-s;
     if (s > RSTRING(str)->ptr) {
@@ -2956,7 +2954,7 @@ rb_str_rstrip_bang(str)
     e = t = s + RSTRING(str)->len;
 
     /* remove trailing spaces */
-    while (s < t && ISSPACE(*(t-1))) t--;
+    while (s < t && (ISSPACE(*(t-1)) || !*(t-1))) t--;
 
     RSTRING(str)->len = t-s;
     if (t < e) {

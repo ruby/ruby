@@ -1536,7 +1536,7 @@ file_expand_path(fname, dname, result)
     long buflen;
     int tainted;
 
-    s = StringValueCStr(fname);
+    s = StringValuePtr(fname);
     BUFINIT();
     tainted = OBJ_TAINTED(fname);
 

@@ -1,3 +1,10 @@
+Wed Jul 23 15:49:01 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_lstrip_bang): strip NUL along with white
+	  spaces. [ruby-talk:76659]
+
+	* string.c (rb_str_rstrip_bang): ditto.
+
 Wed Jul 23 14:19:17 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* lib/mkmf.rb (log_src, checking_for, create_header):
