@@ -68,6 +68,7 @@ class RemoteTkIp
     end
 
     @interp = MultiTkIp.__getip
+    @interp.allow_ruby_exit = false
     @appname = @interp._invoke('tk', 'appname')
     @remote = remote_ip.dup.freeze
     if displayof.kind_of?(TkWindow)
@@ -247,6 +248,18 @@ class RemoteTkIp
 
   def safe?
     _appsend(false, false, 'interp issafe')
+  end
+
+  def safe_base?
+    false
+  end
+
+  def allow_ruby_exit?
+    false
+  end
+
+  def allow_ruby_exit= (mode)
+    fail RuntimeError, 'cannot change mode of the remote interpreter'
   end
 
   def delete

@@ -1,3 +1,24 @@
+Sun Sep 12 02:41:58 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tcltklib/tcltklib.c: add TclTkIp#allow_ruby_exit? and 
+	  allow_ruby_exit=
+
+	* ext/tk/lib/multi-tk.rb: ditto.
+
+	* ext/tk/lib/remote-tk.rb: ditto.
+
+	* ext/tcltklib/MANUAL.euc: ditto.
+
+	* ext/tcltklib/MANUAL.eng: ditto.
+
+	* ext/tcltklib/tcltklib.c: fix some reasons of SEGV
+
+	* ext/tk/tkutil.c: ditto.
+
+	* ext/tk/lib/multi-tk.rb: ditto.
+
+	* ext/tk/lib/tk/timer.rb: ditto.
+
 Sat Sep 11 16:09:46 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/parsers/parse_rb.rb: Fix up cross-file class merging.
