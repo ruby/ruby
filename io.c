@@ -2592,9 +2592,11 @@ pipe_open(pstr, pname, mode)
     int modef = rb_io_mode_flags(mode);
     OpenFile *fptr;
 
-    if (!pname) pname = StringValuePtr(pstr);
 #if defined(DJGPP) || defined(__human68k__) || defined(__VMS)
-    FILE *f = popen(pname, mode);
+    FILE *f;
+
+    if (!pname) pname = StringValuePtr(pstr);
+    f = popen(pname, mode);
     
     if (!f) rb_sys_fail(pname);
     else {
@@ -2617,6 +2619,8 @@ pipe_open(pstr, pname, mode)
 #ifdef _WIN32
     int pid;
     FILE *fpr, *fpw;
+
+    if (!pname) pname = StringValuePtr(pstr);
 
 retry:
     pid = pipe_exec(pname, rb_io_mode_modenum(mode), &fpr, &fpw);
@@ -2649,6 +2653,8 @@ retry:
 #else
     int pid, pr[2], pw[2];
     volatile int doexec;
+
+    if (!pname) pname = StringValuePtr(pstr);
 
     if (((modef & FMODE_READABLE) && pipe(pr) == -1) ||
 	((modef & FMODE_WRITABLE) && pipe(pw) == -1))

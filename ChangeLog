@@ -1,3 +1,7 @@
+Wed Nov  3 17:13:02 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* io.c (pipe_open): fix compile error
+
 Wed Nov  3 16:58:07 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: support to use different Tcl commands between 
