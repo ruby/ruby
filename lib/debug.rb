@@ -299,7 +299,7 @@ class Context
 
 	when /^\s*b(?:reak)?\s+(?:(.+):)?(.+)$/
 	  pos = $2
-	  file = File.basename($1) if $1
+	  file = File.basename($1 || file)
 	  if pos =~ /^\d+$/
 	    pname = pos
 	    pos = pos.to_i

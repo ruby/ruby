@@ -1,3 +1,8 @@
+Tue Feb 25 23:03:08 2003  NAKAMURA Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/debug.rb (DEBUGGER__::Context#debug_command): bp filename must
+          be the basename of it.  [ruby-talk:65644]
+
 Sun Feb 23 17:57:06 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/fileutils (fu_stream_blksize): wrong logial condition.
