@@ -1,3 +1,8 @@
+Thu Oct  9 14:05:38 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_set_end_proc, rb_exec_end_proc): restore safe level.
+	  [ruby-dev:21557]
+
 Thu Oct  9 10:51:04 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_yield_0): no error if block is empty.

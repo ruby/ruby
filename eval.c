@@ -6406,6 +6406,7 @@ NORETURN(static VALUE rb_f_throw _((int,VALUE*)));
 struct end_proc_data {
     void (*func)();
     VALUE data;
+    int safe;
     struct end_proc_data *next;
 };
 
@@ -6424,6 +6425,7 @@ rb_set_end_proc(func, data)
     link->next = *list;
     link->func = func;
     link->data = data;
+    link->safe = ruby_safe_level;
     *list = link;
 }
 
@@ -6489,6 +6491,7 @@ rb_exec_end_proc()
 {
     struct end_proc_data *link, *tmp;
     int status;
+    volatile int safe = ruby_safe_level;
 
     while (ephemeral_end_procs) {
 	link = ephemeral_end_procs;
@@ -6496,6 +6499,7 @@ rb_exec_end_proc()
 	while (link) {
 	    PUSH_TAG(PROT_NONE);
 	    if ((status = EXEC_TAG()) == 0) {
+		ruby_safe_level = link->safe;
 		(*link->func)(link->data);
 	    }
 	    POP_TAG();
@@ -6513,6 +6517,7 @@ rb_exec_end_proc()
 	while (link) {
 	    PUSH_TAG(PROT_NONE);
 	    if ((status = EXEC_TAG()) == 0) {
+		ruby_safe_level = link->safe;
 		(*link->func)(link->data);
 	    }
 	    POP_TAG();
@@ -6524,6 +6529,7 @@ rb_exec_end_proc()
 	    free(tmp);
 	}
     }
+    ruby_safe_level = safe;
 }
 
 void
