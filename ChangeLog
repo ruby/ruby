@@ -1,3 +1,8 @@
+Mon Mar  7 09:18:42 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_cmp_m): should not return false but nil.
+	  fixed: [ruby-dev:25811]
+
 Mon Mar  7 01:22:14 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tkutil.c: remove the some codes which depend on the
@@ -46,6 +51,11 @@ Fri Mar  4 19:39:28 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* ext/iconv/iconv.c: backport Iconv::InvalidEncoding from CVS HEAD.
 
 	* ext/strscan/strscan.c: moved misplaced rdoc.
+
+Fri Mar  4 15:58:12 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/cgi-lib.rb: add deprecation warning. [ruby-dev:25499]
+	  getopts.rb, parsearg.rb, importenv.rb as well.
 
 Fri Mar  4 11:17:06 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 

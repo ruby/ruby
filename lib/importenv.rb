@@ -7,6 +7,8 @@
 #  $USER = "matz"
 #  p ENV["USER"]
 
+warn "Warning:#{caller[0].sub(/:in `.*'\z/, '')}: importenv is deprecated after Ruby 1.8.1 (no replacement)"
+
 for k,v in ENV
   next unless /^[a-zA-Z][_a-zA-Z0-9]*/ =~ k
   eval <<EOS

@@ -1003,7 +1003,7 @@ rb_str_cmp_m(str1, str2)
 
     if (TYPE(str2) != T_STRING) {
 	if (!rb_respond_to(str2, rb_intern("to_str"))) {
-	    return Qfalse;
+	    return Qnil;
 	}
 	else if (!rb_respond_to(str2, rb_intern("<=>"))) {
 	    return Qnil;

@@ -1258,7 +1258,7 @@ class DateTime < Date
     new_with_hash(elem, sg)
   end
 
-  class << self; undef_method :today end
+  class << self; undef_method :today end rescue nil
 
   # Create a new DateTime object representing the current time.
   #
