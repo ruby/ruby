@@ -719,12 +719,12 @@ module FileUtils
 
   def fu_each_src_dest0( src, dest )
     unless src.is_a?(Array)
-      yield src, fu_dest_filename(src, dest)
+      yield src.to_str, fu_dest_filename(src.to_str, dest.to_str)
     else
-      dir = dest
+      dir = dest.to_str
       #raise ArgumentError, "not a directory: #{dir}" unless File.directory?(dir)
       dir += (dir[-1,1] == '/') ? '' : '/'
-      src.each do |fname|
+      src.map {|s| s.to_str }.each do |fname|
         yield fname, dir + File.basename(fname)
       end
     end

@@ -9,9 +9,8 @@ require 'fileasserts'
 require 'tmpdir'
 require 'test/unit'
 
-
 def have_drive_letter?
-  /djgpp|mswin|mingw|bcc|wince|emx/ === RUBY_PLATFORM
+  /djgpp|mswin(?!ce)|mingw|bcc|emx/ === RUBY_PLATFORM
 end
 
 def have_file_perm?
@@ -30,6 +29,12 @@ def have_symlink?
   HAVE_SYMLINK
 end
 
+case RUBY_PLATFORM
+when /openbsd/, /freebsd/
+  ErrorOnLoopedSymlink = Errno::ELOOP
+when /linux/, /netbsd/, /cygwin/,    // # FIXME
+  ErrorOnLoopedSymlink = Errno::EEXIST
+end
 
 class TestFileUtils < Test::Unit::TestCase
 
@@ -109,7 +114,6 @@ class TestFileUtils < Test::Unit::TestCase
     File.utime t-4, t-4, 'data/newer'
   end
 
-
   def test_pwd
     assert_equal Dir.pwd, pwd()
 
@@ -154,16 +158,21 @@ end
       assert_equal a.gid, b.gid
     end
 
-    # src==dest
+    # src==dest (1) same path
     touch 'tmp/cptmp'
     assert_raises(ArgumentError) {
       cp 'tmp/cptmp', 'tmp/cptmp'
     }
 if have_symlink?
+    # src==dest (2) symlink and its target
     File.symlink 'cptmp', 'tmp/cptmp_symlink'
     assert_raises(ArgumentError) {
       cp 'tmp/cptmp', 'tmp/cptmp_symlink'
     }
+    assert_raises(ArgumentError) {
+      cp 'tmp/cptmp_symlink', 'tmp/cptmp'
+    }
+    # src==dest (3) looped symlink
     File.symlink 'symlink', 'tmp/symlink'
     assert_raises(Errno::ELOOP) {
       cp 'tmp/symlink', 'tmp/symlink'
@@ -185,16 +194,21 @@ end
       assert_same_file fname, 'tmp/mvdest'
     end
 
-    # src==dest
+    # src==dest (1) same path
     touch 'tmp/cptmp'
     assert_raises(ArgumentError) {
       mv 'tmp/cptmp', 'tmp/cptmp'
     }
 if have_symlink?
+    # src==dest (2) symlink and its target
     File.symlink 'cptmp', 'tmp/cptmp_symlink'
     assert_raises(ArgumentError) {
       mv 'tmp/cptmp', 'tmp/cptmp_symlink'
     }
+    assert_raises(ArgumentError) {
+      mv 'tmp/cptmp_symlink', 'tmp/cptmp'
+    }
+    # src==dest (3) looped symlink
     File.symlink 'symlink', 'tmp/symlink'
     assert_raises(Errno::ELOOP) {
       mv 'tmp/symlink', 'tmp/symlink'
@@ -293,19 +307,24 @@ end
       File.unlink 'tmp/' + File.basename(fname)
     end
 
-    # src==dest
+    # src==dest (1) same path
     touch 'tmp/cptmp'
     assert_raises(Errno::EEXIST) {
       ln 'tmp/cptmp', 'tmp/cptmp'
     }
 if have_symlink?
-    File.symlink 'tmp/cptmp', 'tmp/cptmp_symlink'
-    assert_raises(Errno::EEXIST) {
-      ln 'tmp/cptmp', 'tmp/cptmp_symlink'
-    }
+    # src==dest (2) symlink and its target
     File.symlink 'cptmp', 'tmp/symlink'
     assert_raises(Errno::EEXIST) {
-      ln 'tmp/symlink', 'tmp/symlink'
+      ln 'tmp/cptmp', 'tmp/symlink'   # normal file -> symlink
+    }
+    assert_raises(Errno::EEXIST) {
+      ln 'tmp/symlink', 'tmp/cptmp'   # symlink -> normal file
+    }
+    # src==dest (3) looped symlink
+    File.symlink 'cptmp_symlink', 'tmp/cptmp_symlink'
+    assert_raises(ErrorOnLoopedSymlink) {
+      ln 'tmp/cptmp_symlink', 'tmp/cptmp_symlink'
     }
 end
   end
@@ -319,7 +338,7 @@ if have_symlink?
       rm_f 'tmp/lnsdest'
     end
     assert_nothing_raised {
-      ln_s 'tmp/symlink', 'tmp/symlink'
+      ln_s 'symlink', 'tmp/symlink'
     }
     assert_symlink 'tmp/symlink'
   end
@@ -334,6 +353,9 @@ if have_symlink?
       ln_sf fname, 'tmp/lnsdest'
       ln_sf fname, 'tmp/lnsdest'
     end
+    assert_nothing_raised {
+      ln_sf 'symlink', 'tmp/symlink'
+    }
   end
 end
 
@@ -390,9 +412,6 @@ end
     rm_rf 'tmp/tmp'
   end
 
-  def try_mkdirp( dirs, del )
-  end
-
   def test_uptodate?
     Dir.chdir('data') {
       assert(   uptodate?('newest', %w(old newer notexist)) )
@@ -417,18 +436,24 @@ end
     File.unlink 'tmp/aaa'
     File.unlink 'tmp/bbb'
 
-    # src==dest
+    # src==dest (1) same path
     touch 'tmp/cptmp'
     assert_raises(ArgumentError) {
       install 'tmp/cptmp', 'tmp/cptmp'
     }
 if have_symlink?
+    # src==dest (2) symlink and its target
     File.symlink 'cptmp', 'tmp/cptmp_symlink'
     assert_raises(ArgumentError) {
       install 'tmp/cptmp', 'tmp/cptmp_symlink'
     }
+    assert_raises(ArgumentError) {
+      install 'tmp/cptmp_symlink', 'tmp/cptmp'
+    }
+    # src==dest (3) looped symlink
     File.symlink 'symlink', 'tmp/symlink'
     assert_raises(Errno::ELOOP) {
+      # File#install invokes open(2), always ELOOP must be raised
       install 'tmp/symlink', 'tmp/symlink'
     }
 end

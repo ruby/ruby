@@ -1,3 +1,11 @@
+Mon Dec  1 14:17:49 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb (fu_each_src_dest0): call #to_str to allow
+	  Pathname for arguments. [ruby-core:01795]
+
+	* test/fileutils/test_fileutils.rb: does much strict test on
+	  "same" files detecting.
+
 Mon Dec  1 09:28:14 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* bcc32/Makefile.sub, win32/Makefile.sub, wince/Makefile.sub
