@@ -1,3 +1,4 @@
+=begin
 #
 # benchmark.rb - a performance benchmarking library 
 # 
@@ -8,40 +9,33 @@
 # Documentation by Gotoken (original RD), Lyle Johnson (RDoc conversion), and
 # Gavin Sinclair (editing). 
 #
+=end
+
 # == Overview
 #
 # The Benchmark module provides methods for benchmarking Ruby code, giving
 # detailed reports on the time taken for each task.
 #
 
-
-#
 # The Benchmark module provides methods to measure and report the time
-# used to execute Ruby code.  Read on for illustrative examples.
-# 
-# == Examples
-# 
+# used to execute Ruby code.
 #
-# === Example 1
-#
-# To measure the time to construct the string given by the expression
-# <tt>"a"*1_000_000</tt>:
+# * Measure the time to construct the string given by the expression
+#   <tt>"a"*1_000_000</tt>:
 #
 #       require 'benchmark'
 #
 #       puts Benchmark.measure { "a"*1_000_000 }
 # 
-# On my machine (FreeBSD 3.2 on P5100MHz) this reported as follows:
+#   On my machine (FreeBSD 3.2 on P5, 100MHz) this generates:
 # 
 #       1.166667   0.050000   1.216667 (  0.571355)
 # 
-# This report shows the user CPU time, system CPU time, the sum of the user and
-# system CPU times, and the elapsed real time. The unit of time is seconds.
+#   This report shows the user CPU time, system CPU time, the sum of
+#   the user and system CPU times, and the elapsed real time. The unit
+#   of time is seconds.
 # 
-#
-# === Example 2
-#
-# To do some experiments sequentially, the #bm method is useful:
+# * Do some experiments sequentially using the #bm method:
 #
 #       require 'benchmark'
 #
@@ -52,17 +46,14 @@
 #         x.report { 1.upto(n) do ; a = "1"; end }
 #       end
 # 
-# The result:
+#   The result:
 #
 #              user     system      total        real
 #          1.033333   0.016667   1.016667 (  0.492106)
 #          1.483333   0.000000   1.483333 (  0.694605)
 #          1.516667   0.000000   1.516667 (  0.711077)
 #
-#
-# === Example 3
-#
-# Continuing the previous example, to put a label in each report:
+# * Continuing the previous example, put a label in each report:
 #
 #       require 'benchmark'
 #
@@ -73,9 +64,6 @@
 #         x.report("upto:")  { 1.upto(n) do ; a = "1"; end }
 #       end
 # 
-# The argument to #bm (7) specifies the offset of each report according to the
-# longest label.
-# 
 # The result:
 # 
 #                     user     system      total        real
@@ -84,14 +72,11 @@
 #        upto:    1.500000   0.016667   1.516667 (  0.711239)
 # 
 #
-# === Example 4
-# 
-# The times for some benchmarks depend on the order in which items are run.
-# These differences are due to the cost of memory allocation and garbage
-# collection.
-#
-# To avoid these discrepancies, the #bmbm method is provided.  For example, to
-# compare ways for sort an array of floats:
+# * The times for some benchmarks depend on the order in which items
+#   are run.  These differences are due to the cost of memory
+#   allocation and garbage collection. To avoid these discrepancies,
+#   the #bmbm method is provided.  For example, to compare ways to
+#   sort an array of floats:
 #
 #       require 'benchmark'
 #       
@@ -102,7 +87,7 @@
 #         x.report("sort")  { array.dup.sort  }
 #       end
 # 
-# The result:
+#   The result:
 # 
 #        Rehearsal -----------------------------------------
 #        sort!  11.928000   0.010000  11.938000 ( 12.756000)
@@ -114,10 +99,8 @@
 #        sort   12.007000   0.000000  12.007000 ( 12.791000)
 #
 #
-# === Example 5
-#
-# To report statistics of sequential experiments with unique labels,
-# #benchmark is available:
+# * Report statistics of sequential experiments with unique labels,
+#   using the #benchmark method:
 #
 #       require 'benchmark'
 #
@@ -129,7 +112,7 @@
 #         [tf+tt+tu, (tf+tt+tu)/3]
 #       end
 # 
-# The result:
+#   The result:
 # 
 #                     user     system      total        real
 #        for:     1.016667   0.016667   1.033333 (  0.485749)
@@ -137,20 +120,25 @@
 #        upto:    1.533333   0.000000   1.533333 (  0.722166)
 #        >total:  4.000000   0.033333   4.033333 (  1.889282)
 #        >avg:    1.333333   0.011111   1.344444 (  0.629761)
-# 
+
 module Benchmark
 
-  # BENCHMARK_VERSION is version string containing the last modification
-  # date (YYYY-MM-DD). 
-  BENCHMARK_VERSION = "2002-04-25"
+  BENCHMARK_VERSION = "2002-04-25" #:nodoc"
 
   def Benchmark::times() # :nodoc:
       Process::times()
   end
 
 
-  #
-  # Reports the time required to execute one or more blocks of code.
+  # Invokes the block with a <tt>Benchmark::Report</tt> object, which
+  # may be used to collect and report on the results of individual
+  # benchmark tests. Reserves <i>label_width</i> leading spaces for
+  # labels on each line. Prints _caption_ at the top of the
+  # report, and uses _fmt_ to format each line.
+  # If the block returns an array of
+  # <tt>Benchmark::Tms</tt> objects, these will be used to format
+  # additional lines of output. If _label_ parameters are
+  # given, these are used to label these extra lines.
   #
   # _Note_: Other methods provide a simpler interface to this one, and are
   # suitable for nearly all benchmarking requirements.  See the examples in
@@ -169,7 +157,7 @@ module Benchmark
   #       [tf+tt+tu, (tf+tt+tu)/3]
   #     end
   # 
-  # The result:
+  # <i>Generates:</i>
   # 
   #                     user     system      total        real
   #        for:     1.016667   0.016667   1.033333 (  0.485749)
@@ -178,23 +166,7 @@ module Benchmark
   #        >total:  4.000000   0.033333   4.033333 (  1.889282)
   #        >avg:    1.333333   0.011111   1.344444 (  0.629761)
   # 
-  # The parameters accepted are as follows:
-  # 
-  # _caption_::
-  #   A string printed once before execution of the given block. 
-  # 
-  # _label_width_::
-  #   An integer used as an offset in each report. 
-  # 
-  # _fmtstr_::
-  #   A string used to format each measurement. See Benchmark::Tms#format.
-  # 
-  # _labels_::
-  #   The remaining parameters are used as prefix of the format to the
-  #   value of block; see the example above.
-  #
-  # This method yields a Benchmark::Report object. 
-  # 
+
   def benchmark(caption = "", label_width = nil, fmtstr = nil, *labels) # :yield: report
     sync = STDOUT.sync
     STDOUT.sync = true
@@ -211,9 +183,8 @@ module Benchmark
   end
 
 
-  # 
-  # A simple interface to #benchmark, #bm is suitable for sequential reports
-  # with labels.  For example:
+  # A simple interface to the #benchmark method, #bm is generates sequential reports
+  # with labels.  The parameters have the same meaning as for #benchmark.
   # 
   #     require 'benchmark'
   #
@@ -224,38 +195,32 @@ module Benchmark
   #       x.report("upto:")  { 1.upto(n) do ; a = "1"; end }
   #     end
   # 
-  # The argument to #bm (7) specifies the offset of each report according to the
-  # longest label.
-  # 
-  # This reports as follows:
+  # <i>Generates:</i>
   # 
   #                     user     system      total        real
   #        for:     1.050000   0.000000   1.050000 (  0.503462)
   #        times:   1.533333   0.016667   1.550000 (  0.735473)
   #        upto:    1.500000   0.016667   1.516667 (  0.711239)
   #
-  # The labels are optional. 
-  # 
+
   def bm(label_width = 0, *labels, &blk) # :yield: report
     benchmark(" "*label_width + CAPTION, label_width, FMTSTR, *labels, &blk)
   end
 
 
-  # 
-  # Similar to #bm, but designed to prevent memory allocation and garbage
-  # collection from influencing the result.  It works like this:
-  # 
-  # 1. The _rehearsal_ step runs all items in the job list to allocate
-  #    enough memory.
-  # 2. Before each measurement, invokes GC.start to prevent the influence of
-  #    previous job. 
+  # Sometimes benchmark results are skewed because code executed
+  # earlier encounters different garbage collection overheads than
+  # that run later. #bmbm attempts to minimize this effect by running
+  # the tests twice, the first time as a rehersal in order to get the
+  # runtime environment stable, the second time for
+  # real. <tt>GC.start</tt> is executed before the start of each of
+  # the real timings; the cost of this is not included in the
+  # timings. In reality, though, there's only so much that #bmbm can
+  # do, and the results are not guaranteed to be isolated from garbage
+  # collection and other effects.
   #
-  # If the specified _label_width_ is less than the width of the widest label
-  # passed as an argument to #item, the latter is used.  (Because #bmbm is a
-  # 2-pass procedure, this is possible.)  Therefore you do not really need to
-  # specify a label width.
-  #
-  # For example:
+  # Because #bmbm takes two passes through the tests, it can
+  # calculate the required label width.
   #
   #       require 'benchmark'
   #       
@@ -266,7 +231,7 @@ module Benchmark
   #         x.report("sort")  { array.dup.sort  }
   #       end
   # 
-  # The result:
+  # <i>Generates:</i>
   # 
   #        Rehearsal -----------------------------------------
   #        sort!  11.928000   0.010000  11.938000 ( 12.756000)
@@ -277,7 +242,7 @@ module Benchmark
   #        sort!  12.959000   0.010000  12.969000 ( 13.793000)
   #        sort   12.007000   0.000000  12.007000 ( 12.791000)
   #
-  # #bmbm yields a Benchmark::Job object and returns an array of one
+  # #bmbm yields a Benchmark::Job object and returns an array of
   # Benchmark::Tms objects.
   #
   def bmbm(width = 0, &blk) # :yield: job
@@ -348,7 +313,7 @@ module Benchmark
   # A Job is a sequence of labelled blocks to be processed by the
   # Benchmark.bmbm method.  It is of little direct interest to the user.
   #
-  class Job
+  class Job # :nodoc:
     #
     # Returns an initialized Job instance.
     # Usually, one doesn't call this method directly, as new
@@ -390,7 +355,7 @@ module Benchmark
   # This class is used by the Benchmark.benchmark and Benchmark.bm methods.
   # It is of little direct interest to the user.
   #
-  class Report
+  class Report # :nodoc:
     #
     # Returns an initialized Report instance.
     # Usually, one doesn't call this method directly, as new
