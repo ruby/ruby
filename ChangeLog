@@ -1,3 +1,7 @@
+Man Jul 16 13:21:30 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
+
+	* file.c (file_load_ok): fix typo.
+
 Sat Jul 14 12:26:30 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* ext/digest/*/extconf.rb: fix so that they build from any

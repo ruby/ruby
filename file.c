@@ -69,7 +69,7 @@ char *strrchr _((const char*,const char));
 #ifndef HAVE_LSTAT
 #define lstat(path,st) stat(path,st)
 #endif
- 
+
 VALUE rb_cFile;
 VALUE rb_mFileTest;
 static VALUE rb_cStat;
@@ -1384,7 +1384,7 @@ rb_file_s_expand_path(argc, argv)
 	    if (*(s+1)) {
 		switch (*++s) {
 		  case '.':
-		    if (*(s+1) == '\0' || isdirsep(*(s+1))) { 
+		    if (*(s+1) == '\0' || isdirsep(*(s+1))) {
 			/* We must go back to the parent */
 			if (isdirsep(*p) && p > buf) p--;
 			while (p > buf && !isdirsep(*p)) p--;
@@ -1399,7 +1399,7 @@ rb_file_s_expand_path(argc, argv)
 #if defined DOSISH
 		  case '\\':
 #endif
-		    if (!isdirsep(*p)) *++p = '/'; 
+		    if (!isdirsep(*p)) *++p = '/';
 		    break;
 		  default:
 		    *++p = '.'; *++p = *s; break;
@@ -1415,7 +1415,7 @@ rb_file_s_expand_path(argc, argv)
 	    *++p = *s;
 	}
     }
-  
+
     /* Place a \0 at end. If path ends with a "/", delete it */
     if (p == buf || !isdirsep(*p)) p++;
     *p = '\0';
@@ -1795,15 +1795,15 @@ rb_f_test(argc, argv)
 	    if (st1.st_dev == st2.st_dev && st1.st_ino == st2.st_ino)
 		return Qtrue;
             return Qfalse;
-                        
+
 	  case '=':
 	    if (st1.st_mtime == st2.st_mtime) return Qtrue;
 	    return Qfalse;
-                        
+
 	  case '>':
 	    if (st1.st_mtime > st2.st_mtime) return Qtrue;
 	    return Qfalse;
-            
+
 	  case '<':
 	    if (st1.st_mtime < st2.st_mtime) return Qtrue;
 	    return Qfalse;
@@ -2174,7 +2174,7 @@ rb_path_check(path)
 
     p = path;
     pend = strchr(path, sep);
-    
+
     for (;;) {
 	int safe;
 
@@ -2208,7 +2208,7 @@ file_load_ok(file)
 {
     FILE *f;
 
-    if (!f) return 0;
+    if (!file) return 0;
     f = fopen(file, "r");
     if (f == NULL) return 0;
     fclose(f);
