@@ -1,3 +1,9 @@
+Wed Mar 16 23:36:02 2005  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* eval.c (rb_call0): call_cfunc() should be protected.
+
+	* test/ruby/test_settracefunc.rb: added test for c-return.
+
 Wed Mar 16 22:20:25 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* object.c (str_to_id): fixed typo.
