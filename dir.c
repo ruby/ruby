@@ -601,11 +601,22 @@ rb_glob_helper(path, flag, func, arg)
 		rb_glob_helper(buf, flag, func, arg);
 		free(buf);
 	    }
-	    dirp = opendir(dir);
-	    if (dirp == NULL) {
-		free(base);
-		break;
+	    if (lstat(dir, &st) < 0) {
+	        free(base);
+	        break;
 	    }
+	    if (S_ISDIR(st.st_mode)) {
+	       dirp = opendir(dir);
+	       if (dirp == NULL) {
+		   free(base);
+		   break;
+	       }
+	    }
+	    else {
+	      free(base);
+	      break;
+	    }
+	    
 #define BASE (*base && !(*base == '/' && !base[1]))
 
 	    for (dp = readdir(dirp); dp != NULL; dp = readdir(dirp)) {
@@ -636,7 +647,7 @@ rb_glob_helper(path, flag, func, arg)
 	    free(base);
 	    free(magic);
 	    while (link) {
-		stat(link->path, &st); /* should success */
+		lstat(link->path, &st); /* should success */
 		if (S_ISDIR(st.st_mode)) {
 		    int len = strlen(link->path);
 		    int mlen = strlen(m);

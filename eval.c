@@ -1298,6 +1298,34 @@ rb_eval_string_wrap(str, state)
     return val;
 }
 
+static void
+jump_tag_but_local_jump(state)
+    int state;
+{
+    switch (state) {
+      case 0:
+	break;
+      case TAG_RETURN:
+	rb_raise(rb_eLocalJumpError, "unexpected return");
+	break;
+      case TAG_NEXT:
+	rb_raise(rb_eLocalJumpError, "unexpected next");
+	break;
+      case TAG_BREAK:
+	rb_raise(rb_eLocalJumpError, "unexpected break");
+	break;
+      case TAG_REDO:
+	rb_raise(rb_eLocalJumpError, "unexpected redo");
+	break;
+      case TAG_RETRY:
+	rb_raise(rb_eLocalJumpError, "retry outside of rescue clause");
+	break;
+      default:
+	JUMP_TAG(state);
+	break;
+    }
+}
+
 VALUE
 rb_eval_cmd(cmd, arg)
     VALUE cmd, arg;
@@ -1333,28 +1361,7 @@ rb_eval_cmd(cmd, arg)
     POP_TAG();
     POP_CLASS();
 
-    switch (state) {
-      case 0:
-	break;
-      case TAG_RETURN:
-	rb_raise(rb_eLocalJumpError, "unexpected return");
-	break;
-      case TAG_NEXT:
-	rb_raise(rb_eLocalJumpError, "unexpected next");
-	break;
-      case TAG_BREAK:
-	rb_raise(rb_eLocalJumpError, "unexpected break");
-	break;
-      case TAG_REDO:
-	rb_raise(rb_eLocalJumpError, "unexpected redo");
-	break;
-      case TAG_RETRY:
-	rb_raise(rb_eLocalJumpError, "retry outside of rescue clause");
-	break;
-      default:
-	JUMP_TAG(state);
-	break;
-    }
+    jump_tag_but_local_jump(state);
     return val;
 }
 
@@ -3644,10 +3651,8 @@ rb_yield_0(val, self, klass, acheck)
 	if (!block->tag) {
 	    switch (state & TAG_MASK) {
 	      case TAG_BREAK:
-		rb_raise(rb_eLocalJumpError, "unexpected break");
-		break;
 	      case TAG_RETURN:
-		rb_raise(rb_eLocalJumpError, "unexpected return");
+		jump_tag_but_local_jump(state & TAG_MASK);
 		break;
 	    }
 	}
@@ -4454,21 +4459,14 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
 	      case 0:
 		break;
 
-	      case TAG_NEXT:
-		rb_raise(rb_eLocalJumpError, "unexpected next");
-		break;
-	      case TAG_BREAK:
-		rb_raise(rb_eLocalJumpError, "unexpected break");
-		break;
-	      case TAG_REDO:
-		rb_raise(rb_eLocalJumpError, "unexpected redo");
-		break;
 	      case TAG_RETRY:
-		if (!rb_block_given_p()) {
-		    rb_raise(rb_eLocalJumpError, "retry outside of rescue clause");
+		if (rb_block_given_p()) {
+		    break;
 		}
+		/* fall through */
 	      default:
-		JUMP_TAG(state);
+		jump_tag_but_local_jump(state);
+		break;
 	    }
 	}
     }
@@ -5189,7 +5187,7 @@ rb_load(fname, wrap)
 	rb_exc_raise(ruby_errinfo);
     }
     TMP_PROTECT_END;
-    if (state) JUMP_TAG(state);
+    if (state) jump_tag_but_local_jump(state);
     if (!NIL_P(ruby_errinfo))	/* exception during load */
 	rb_exc_raise(ruby_errinfo);
 }

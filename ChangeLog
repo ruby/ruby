@@ -7,7 +7,40 @@ Sun Feb 11 16:00:30 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in: add ac_cv_func_getpgrp_void=yes on DJGPP.
 
-Fri Feb 10 00:00:30 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+Tue Feb 13 08:43:10 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_ctl): do not call ioctl/fcntl for f2, if f and f2
+	  have same fileno.
+
+Tue Feb 13 01:13:43 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_load): raise LocaJumpError if unexpected local jumps
+	  appear during load.
+
+	* ext/socket/socket.c (bsock_close_read): don't call rb_thread_fd_close();
+	  it's supposed to be called by io_io_close().
+
+	* ext/socket/socket.c (bsock_close_read): do not modify f and f2.
+
+	* ext/socket/socket.c (bsock_close_write): ditto.
+
+	* ext/socket/socket.c (sock_new): avoid dup(2) on sockets.
+
+	* parse.y (primary): preserve and clear in_single and in_def using
+	  stack to prevent nested method errors in singleton class bodies.
+
+Sat Feb 10 23:43:49 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* hash.c (rb_any_hash): dumped core on machines sizeof(int) != sizeof(long).
+
+Sat Feb 10 23:07:15 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_s_for_fd): IO::for_fd(fd) - new method.
+
+	* regex.c (PREV_IS_A_LETTER): should not treat c>0x7f as a word
+	  character if -Kn.
+
+Sat Feb 10 00:00:30 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* win32/win32.c (win32_stat): replace stat for enable when pathname
 	  ends with '/' or '\' for mswin32 on Win9X / Win2k.
@@ -24,6 +57,10 @@ Fri Feb  9 22:54:57 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ruby.c (ruby_init_loadpath): convert '\\' to '/'
 	  before finding executable file path.
+
+Fri Feb  9 17:41:53 2001  Triet H. Lai  <thlai@mail.usyd.edu.au>
+
+	* dir.c (rb_glob_helper): do not follow symbolic links.
 
 Thu Feb  8 21:27:24 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 

@@ -9,9 +9,8 @@
 
 for k,v in ENV
   next unless /^[a-zA-Z][_a-zA-Z0-9]*/ =~ k
-  v = v.gsub(/\\/) {|s| '\\'+s}
   eval <<EOS
-  $#{k} = %q\0#{v}\0
+  $#{k} = v
   trace_var "$#{k}", proc{|v|
     ENV[%q!#{k}!] = v
     $#{k} = v

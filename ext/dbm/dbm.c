@@ -22,7 +22,7 @@
 #include <fcntl.h>
 #include <errno.h>
 
-VALUE cDBM;
+VALUE cDBM, rb_eDBMError;
 
 struct dbmdata {
     int  di_size;
@@ -37,6 +37,7 @@ closed_dbm()
 
 #define GetDBM(obj, dbmp) {\
     Data_Get_Struct(obj, struct dbmdata, dbmp);\
+    if (dbmp == 0) closed_dbm();\
     if (dbmp->di_dbm == 0) closed_dbm();\
 }
 
@@ -44,21 +45,35 @@ static void
 free_dbm(dbmp)
     struct dbmdata *dbmp;
 {
-    if (dbmp->di_dbm) dbm_close(dbmp->di_dbm);
-    free(dbmp);
+    if (dbmp) {
+	if (dbmp->di_dbm) dbm_close(dbmp->di_dbm);
+	free(dbmp);
+    }
 }
 
+static VALUE fdbm_close _((VALUE));
+
 static VALUE
-fdbm_s_open(argc, argv, klass)
+fdbm_s_new(argc, argv, klass)
     int argc;
     VALUE *argv;
     VALUE klass;
+{
+    VALUE obj = Data_Wrap_Struct(klass, 0, free_dbm, 0);
+    rb_obj_call_init(obj, argc, argv);
+    return obj;
+}
+
+static VALUE
+fdbm_initialize(argc, argv, obj)
+    int argc;
+    VALUE *argv;
+    VALUE obj;
 {
     VALUE file, vmode;
     DBM *dbm;
     struct dbmdata *dbmp;
     int mode;
-    VALUE obj;
 
     if (rb_scan_args(argc, argv, "11", &file, &vmode) == 1) {
 	mode = 0666;		/* default value */
@@ -87,9 +102,29 @@ fdbm_s_open(argc, argv, klass)
 	rb_sys_fail(RSTRING(file)->ptr);
     }
 
-    obj = Data_Make_Struct(klass,struct dbmdata,0,free_dbm,dbmp);
+    dbmp = ALLOC(struct dbmdata);
+    DATA_PTR(obj) = dbmp;
     dbmp->di_dbm = dbm;
     dbmp->di_size = -1;
+
+    return obj;
+}
+
+static VALUE
+fdbm_s_open(argc, argv, klass)
+    int argc;
+    VALUE *argv;
+    VALUE klass;
+{
+    VALUE obj = Data_Wrap_Struct(klass, 0, free_dbm, 0);
+
+    if (NIL_P(fdbm_initialize(argc, argv, obj))) {
+	return Qnil;
+    }
+
+    if (rb_block_given_p()) {
+        return rb_ensure(rb_yield, obj, fdbm_close, obj);
+    }
 
     return obj;
 }
@@ -143,10 +178,14 @@ fdbm_fetch_m(argc, argv, obj)
     VALUE *argv;
     VALUE obj;
 {
-    VALUE keystr, ifnone;
+    VALUE keystr, valstr, ifnone;
 
     rb_scan_args(argc, argv, "11", &keystr, &ifnone);
-    return fdbm_fetch(obj, keystr, ifnone);
+    valstr = fdbm_fetch(obj, keystr, ifnone);
+    if (argc == 1 && !rb_block_given_p() && NIL_P(valstr))
+	rb_raise(rb_eIndexError, "key not found");
+
+    return valstr;
 }
 
 static VALUE
@@ -166,8 +205,9 @@ fdbm_index(obj, valstr)
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	val = dbm_fetch(dbm, key);
 	if (val.dsize == RSTRING(valstr)->len &&
-	    memcmp(val.dptr, RSTRING(valstr)->ptr, val.dsize) == 0)
+	    memcmp(val.dptr, RSTRING(valstr)->ptr, val.dsize) == 0) {
 	    return rb_tainted_str_new(key.dptr, key.dsize);
+	}
     }
     return Qnil;
 }
@@ -213,7 +253,7 @@ fdbm_delete(obj, keystr)
 
     if (dbm_delete(dbm, key)) {
 	dbmp->di_size = -1;
-	rb_raise(rb_eRuntimeError, "dbm_delete failed");
+	rb_raise(rb_eDBMError, "dbm_delete failed");
     }
     else if (dbmp->di_size >= 0) {
 	dbmp->di_size--;
@@ -262,7 +302,7 @@ fdbm_delete_if(obj)
 	valstr = rb_tainted_str_new(val.dptr, val.dsize);
 	if (RTEST(rb_yield(rb_assoc_new(keystr, valstr)))) {
 	    if (dbm_delete(dbm, key)) {
-		rb_raise(rb_eRuntimeError, "dbm_delete failed");
+		rb_raise(rb_eDBMError, "dbm_delete failed");
 	    }
 	}
     }
@@ -283,7 +323,7 @@ fdbm_clear(obj)
     dbmp->di_size = -1;
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	if (dbm_delete(dbm, key)) {
-	    rb_raise(rb_eRuntimeError, "dbm_delete failed");
+	    rb_raise(rb_eDBMError, "dbm_delete failed");
 	}
     }
     return obj;
@@ -374,7 +414,7 @@ fdbm_store(obj, keystr, valstr)
 	dbm_clearerr(dbm);
 #endif
 	if (errno == EPERM) rb_sys_fail(0);
-	rb_raise(rb_eRuntimeError, "dbm_store failed");
+	rb_raise(rb_eDBMError, "dbm_store failed");
     }
 
     return valstr;
@@ -618,10 +658,13 @@ void
 Init_dbm()
 {
     cDBM = rb_define_class("DBM", rb_cObject);
+    rb_eDBMError = rb_define_class("DBMError", rb_eStandardError);
     rb_include_module(cDBM, rb_mEnumerable);
 
+    rb_define_singleton_method(cDBM, "new", fdbm_s_new, -1);
     rb_define_singleton_method(cDBM, "open", fdbm_s_open, -1);
-    rb_define_singleton_method(cDBM, "new", fdbm_s_open, -1);
+
+    rb_define_method(cDBM, "initialize", fdbm_initialize, -1);
     rb_define_method(cDBM, "close", fdbm_close, 0);
     rb_define_method(cDBM, "[]", fdbm_aref, 1);
     rb_define_method(cDBM, "fetch", fdbm_fetch_m, -1);

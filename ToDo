@@ -1,6 +1,5 @@
 Language Spec.
 
-- %q!\!! => "!" (not "\\!")
 * operator !! for rescue. ???
 * objectify characters
 * ../... outside condition invokes operator method too.
@@ -45,13 +44,13 @@ Hacking Interpreter
 * warn for inconsistent local variable usage (lv m and method m at the same time). 
 * MicroRuby
 * Built-in Interactive Ruby.
-* regex /\ba/ on "[a in HIRAGANA]a[a in HIRAGANA]"
 
 Standard Libraries
 
 - Module#define_method which takes a name and a body (block, proc or method).
 - Enume#inject
 - Array#fetch
+- IO::for_fd
 * Enumerable#sort_by for Schwartzian transformation
 * String#scanf(?)
 * Object#fmt(?)
@@ -67,7 +66,6 @@ Standard Libraries
 * Process::waitall [ruby-talk:4557]
 * synchronized method - synchronized{...}, synchronized :foo, :bar
 * move Time::times to Process.
-* IO#for_fd in general
 * Array#&, Array#| to allow duplication. ???
 * fork_and_kill_other_threads.
 * way to specify immortal (fork endurance) thread;

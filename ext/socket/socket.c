@@ -182,9 +182,7 @@ sock_new(class, fd)
     fp->f = rb_fdopen(fd, "r");
 #ifdef NT
     fp->finalize = sock_finalize;
-    fd = myfddup(fd);
 #else
-    fd = dup(fd);
 #endif
     fp->f2 = rb_fdopen(fd, "w");
     fp->mode = FMODE_READWRITE;
@@ -233,18 +231,10 @@ bsock_close_read(sock)
     }
     GetOpenFile(sock, fptr);
     shutdown(fileno(fptr->f), 0);
-    if (fptr->f2 == 0) {
+    if (!(fptr->mode & FMODE_WRITABLE)) {
 	return rb_io_close(sock);
     }
-    rb_thread_fd_close(fileno(fptr->f));
     fptr->mode &= ~FMODE_READABLE;
-#ifdef NT
-    myfdclose(fptr->f);
-#else
-    fclose(fptr->f);
-#endif
-    fptr->f = fptr->f2;
-    fptr->f2 = 0;
 
     return Qnil;
 }
@@ -259,17 +249,11 @@ bsock_close_write(sock)
 	rb_raise(rb_eSecurityError, "Insecure: can't close socket");
     }
     GetOpenFile(sock, fptr);
-    if (fptr->f2 == 0) {
+    if (!(fptr->mode & FMODE_READABLE)) {
 	return rb_io_close(sock);
     }
     shutdown(fileno(fptr->f2), 1);
     fptr->mode &= ~FMODE_WRITABLE;
-#ifdef NT
-    myfdclose(fptr->f2);
-#else
-    fclose(fptr->f2);
-#endif
-    fptr->f2 = 0;
 
     return Qnil;
 }

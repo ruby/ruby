@@ -1960,7 +1960,9 @@ rb_io_clone(io)
     fd = rb_dup(fileno(orig->f));
     fptr->f = rb_fdopen(fd, mode);
     if (fptr->f2) {
-	fd = rb_dup(fileno(orig->f2));
+	if (fileno(orig->f) != fileno(orig->f2)) {
+	    fd = rb_dup(fileno(orig->f2));
+	}
 	fptr->f = rb_fdopen(fd, "w");
     }
     if (fptr->mode & FMODE_BINMODE) {
@@ -2374,6 +2376,30 @@ rb_file_initialize(argc, argv, io)
     }
 
     return file;
+}
+
+static VALUE
+rb_io_s_for_fd(argc, argv, klass)
+    int argc;
+    VALUE *argv;
+    VALUE klass;
+{
+    VALUE fnum, mode;
+    OpenFile *fp;
+    char *m = "r";
+    NEWOBJ(io, struct RFile);
+    OBJSETUP(io, klass, T_FILE);
+    
+    if (rb_scan_args(argc, argv, "11", &fnum, &mode) == 2) {
+	Check_SafeStr(mode);
+	m = RSTRING(mode)->ptr;
+    }
+    MakeOpenFile(io, fp);
+
+    fp->f = rb_fdopen(NUM2INT(fnum), m);
+    fp->mode = rb_io_mode_flags(m);
+
+    return (VALUE)io;
 }
 
 static int binmode = 0;
@@ -2853,7 +2879,8 @@ rb_io_ctl(io, req, arg, io_p)
 	rb_raise(rb_eArgError, "return value overflowed string");
     }
 
-    if (fptr->f2) {		/* call on f2 too; ignore result */
+    if (fptr->f2 && fileno(fptr->f) != fileno(fptr->f2)) {
+	/* call on f2 too; ignore result */
 	io_cntl(fileno(fptr->f2), cmd, narg, io_p);
     }
 
@@ -3382,6 +3409,7 @@ Init_IO()
     rb_include_module(rb_cIO, rb_mEnumerable);
 
     rb_define_singleton_method(rb_cIO, "new", rb_io_s_new, -1);
+    rb_define_singleton_method(rb_cIO, "for_fd", rb_io_s_for_fd, -1);
     rb_define_method(rb_cIO, "initialize", rb_io_initialize, -1);
     rb_define_singleton_method(rb_cIO, "popen", rb_io_s_popen, -1);
     rb_define_singleton_method(rb_cIO, "foreach", rb_io_s_foreach, -1);
