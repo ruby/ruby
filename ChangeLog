@@ -1,3 +1,8 @@
+Thu Oct 10 17:26:12 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/tcltklib/stubs.c (ruby_tcltk_stubs): fix memory leak.
+	  [ruby-dev:18478]
+
 Thu Oct 10 15:20:18 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (ruby_init): Init_stack() with local location.

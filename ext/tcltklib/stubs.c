@@ -34,8 +34,8 @@ ruby_tcltk_stubs()
     int (*p_Tk_Init) _((Tcl_Interp *));
     Tcl_Interp *tcl_ip;
     int n;
-    char *ruby_tcl_dll;
-    char *ruby_tk_dll;
+    char *ruby_tcl_dll = 0;
+    char *ruby_tk_dll = 0;
     char tcl_name[20];
     char tk_name[20];
 
@@ -47,9 +47,6 @@ ruby_tcltk_stubs()
     if (ruby_tcl_dll && ruby_tk_dll) {
 	tcl_dll = (DL_HANDLE)DL_OPEN(ruby_tcl_dll);
 	tk_dll = (DL_HANDLE)DL_OPEN(ruby_tk_dll);
-#if defined NT
-	ruby_xfree(ruby_tcl_dll);
-#endif
     } else {
 	snprintf(tcl_name, sizeof tcl_name, TCL_NAME, DLEXT);
 	snprintf(tk_name, sizeof tk_name, TK_NAME, DLEXT);
@@ -63,6 +60,10 @@ ruby_tcltk_stubs()
 		break;
 	}
     }
+
+#if defined NT
+    if (ruby_tcl_dll) ruby_xfree(ruby_tcl_dll);
+#endif
 
     if (!tcl_dll || !tk_dll)
 	return -1;
