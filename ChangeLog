@@ -5,11 +5,12 @@ Wed Dec 10 15:01:19 2003  Shugo Maeda  <shugo@ruby-lang.org>
 
 Wed Dec 10 14:45:39 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
-	* ext/pty/pty.c (HAVE_SYS_IOCTL_H): already defined at config.h, so
-	  use it.
+	* ext/pty/pty.c (HAVE_SYS_IOCTL_H): need to include <sys/ioctl.h>
+	  for TIOCSCTTY on *BSD.  based on gotoyuzo's patch.
+	  (ruby-bugs:PR#1211)
 
 	* ext/pty/pty.c (establishShell): should close descriptors if fork
-	  failed. (ruby-bugs:PR#1211)  based on gotoyuzo's patch.
+	  failed.
 
 Wed Dec 10 12:53:05 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
@@ -938,7 +939,7 @@ Sun Nov 16 13:26:07 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* marshal.c (w_object): LINK check earlier than anything else,
 	  i.e. do not dump TYPE_IVAR for already dumped objects.
-	  (ruby-bugs PR#1220)
+	  (ruby-bugs:PR#1220)
 
 	* eval.c (rb_eval): call "inherited" only when a new class is
 	  generated; not on reopening.
@@ -1358,7 +1359,7 @@ Fri Oct 31 12:55:24 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 Fri Oct 31 01:38:14 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* wince/Makefile.sub, win32/Makefile.sub (.y.c): allow white spaces
-	  at the beginning of line to remove by sed. (ruby-bugs-ja PR#580)
+	  at the beginning of line to remove by sed. (ruby-bugs-ja:PR#580)
 
 Fri Oct 31 01:02:24 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -1367,7 +1368,7 @@ Fri Oct 31 01:02:24 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  comparison.
 
 	* eval.c (search_required): should update *featurep when DLEXT2 is
-	  defined. (ruby-bugs-ja PR#581)
+	  defined. (ruby-bugs-ja:PR#581)
 
 Thu Oct 30 23:41:04 2003  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
@@ -1497,7 +1498,7 @@ Mon Oct 27 00:23:50 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 Sat Oct 25 09:18:04 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_method_missing): protect exception from within
-	  "inspect".  (ruby-bugs PR#1204)
+	  "inspect".  (ruby-bugs:PR#1204)
 
 Fri Oct 24 23:26:34 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -1668,7 +1669,7 @@ Fri Oct 17 11:15:22 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 Fri Oct 17 03:21:23 2003  William Sobel  <will.sobel@barra.com>
 
 	* ext/socket/socket.c (make_hostent): h_aliases may be NULL.
-	  (ruby-bugs PR#1195)
+	  (ruby-bugs:PR#1195)
 
 	* ext/socket/socket.c (sock_s_gethostbyaddr): ditto.
 
@@ -1686,7 +1687,7 @@ Thu Oct 16 23:51:04 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 Thu Oct 16 17:09:19 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/debug.rb (DEBUGGER__::Context::debug_command): do not call
-	  debug_silent_eval() when $1 is not set. (ruby-bugs PR#1194)
+	  debug_silent_eval() when $1 is not set. (ruby-bugs:PR#1194)
 
 Thu Oct 16 16:54:57 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -2613,7 +2614,7 @@ Mon Sep 29 23:39:13 2003  Minero Aoki  <aamine@loveruby.net>
 Mon Sep 29 19:06:51 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/win32ole/extconf.rb: add windows.h checking.
-	  (ruby-bugs PR#1185)
+	  (ruby-bugs:PR#1185)
 
 Mon Sep 29 16:18:30 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
@@ -2784,7 +2785,7 @@ Mon Sep 22 19:22:26 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 Mon Sep 22 12:34:55 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* util.c (ruby_strtod): skip preceding zeros before counting
-	  digits in the mantissa. (ruby-bugs PR#1181)
+	  digits in the mantissa. (ruby-bugs:PR#1181)
 
 Sun Sep 21 04:12:36 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
@@ -3526,7 +3527,7 @@ Thu Aug 28 17:30:24 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Thu Aug 28 05:02:52 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* parse.y (singleton): typo fixed (ruby-bugs-ja PR#562)
+	* parse.y (singleton): typo fixed (ruby-bugs-ja:PR#562)
 
 Thu Aug 28 02:37:45 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -3885,7 +3886,7 @@ Wed Aug 13 15:58:31 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 Wed Aug 13 13:50:59 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* ext/Win32API/Win32API.c (Win32API_initialize): should pass some
-	  class to first argument of Data_Wrap_Struct(). (ruby-bugs PR#1109)
+	  class to first argument of Data_Wrap_Struct(). (ruby-bugs:PR#1109)
 
 Tue Aug 12 16:55:11 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -3976,7 +3977,7 @@ Thu Aug  7 14:40:37 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 Thu Aug  7 14:21:05 2003  Corinna Vinschen  <vinschen@redhat.com>
 
 	* configure.in: Fix Cygwin specific naming of libraries to
-	  be net distribution compliant. (ruby-bugs PR#1077)
+	  be net distribution compliant. (ruby-bugs:PR#1077)
 	  cygwin-ruby18.dll -> cygruby18.dll
 
 Thu Aug  7 12:51:38 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -3989,7 +3990,7 @@ Thu Aug  7 06:46:06 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* eval.c (rb_call0): forgot to pop ruby_class.
 
 	* eval.c (rb_call0): update ruby_class as well as ruby_cref.
-	  (ruby-bugs-ja PR#540)
+	  (ruby-bugs-ja:PR#540)
 
 Thu Aug  7 04:52:50 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
