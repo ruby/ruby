@@ -51,7 +51,7 @@
 #define S_IREAD  _S_IREAD
 #define S_IWRITE _S_IWRITE
 #define S_IEXEC  _S_IEXEC
-#define S_ISFIFO _S_ISFIFO
+#define S_IFIFO  _S_IFIFO
 
 #define UIDTYPE int
 #define GIDTYPE int

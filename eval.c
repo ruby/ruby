@@ -685,7 +685,10 @@ ruby_options(argc, argv)
 	eval_tree = save;
     }
     POP_TAG();
-    if (state) error_print();
+    if (state) {
+	error_print();
+	exit(1);
+    }
 }
 
 static VALUE

@@ -288,6 +288,11 @@ $(TARGET): $(OBJS)
 $(TARGET): $(OBJS)
 	ar cru $(TARGET) $(OBJS)
 "
+    elsif PLATFORM =~ "-nextstep"
+      mfile.printf "\
+$(TARGET): $(OBJS)
+	cc -r $(CFLAGS) -o $(TARGET) $(OBJS)
+"
     else
     mfile.printf "\
 $(TARGET): $(OBJS)

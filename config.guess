@@ -333,6 +333,9 @@ EOF
     *:NetBSD:*:*)
 	echo ${UNAME_MACHINE}-unknown-netbsd`echo ${UNAME_RELEASE}|sed -e 's/[-_].*/\./'`
 	exit 0 ;;
+    *:OpenBSD:*:*)
+	echo ${UNAME_MACHINE}-unknown-openbsd`echo ${UNAME_RELEASE}|sed -e 's/[-_].*/\./'`
+	exit 0 ;;
     *:*:*BOW*:*)
 	echo i386-pc-bow
 	exit 0 ;;
@@ -572,7 +575,7 @@ main ()
 }
 EOF
 
-${CC-cc} dummy.c -o dummy 2>/dev/null && ./dummy && rm dummy.c dummy.x dummy && exit 0
+${CC-cc} dummy.c -o dummy 2>/dev/null && ./dummy && rm -f dummy.c dummy.x dummy && exit 0
 rm -f dummy.c dummy.x dummy
 
 # Apollos put the system type in the environment.

@@ -46,6 +46,109 @@ static char *str_grow(struct RString *str, size_t new_size);
 
 char *NTLoginName;
 
+DWORD Win32System = (DWORD)-1;
+
+static DWORD
+IdOS(void)
+{
+    static OSVERSIONINFO osver;
+
+    if (osver.dwPlatformId != Win32System) {
+	memset(&osver, 0, sizeof(OSVERSIONINFO));
+	osver.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+	GetVersionEx(&osver);
+	Win32System = osver.dwPlatformId;
+    }
+    return (Win32System);
+}
+
+static int 
+IsWin95(void) {
+    return (IdOS() == VER_PLATFORM_WIN32_WINDOWS);
+}
+
+static int
+IsWinNT(void) {
+    return (IdOS() == VER_PLATFORM_WIN32_NT);
+}
+
+
+/* simulate flock by locking a range on the file */
+
+
+#define LK_ERR(f,i) ((f) ? (i = 0) : (errno = GetLastError()))
+#define LK_LEN      0xffff0000
+
+int
+flock(int fd, int oper)
+{
+    OVERLAPPED o;
+    int i = -1;
+    HANDLE fh;
+
+    fh = (HANDLE)_get_osfhandle(fd);
+    memset(&o, 0, sizeof(o));
+
+    if(IsWinNT()) {
+        switch(oper) {
+        case LOCK_SH:       /* shared lock */
+            LK_ERR(LockFileEx(fh, 0, 0, LK_LEN, 0, &o),i);
+            break;
+        case LOCK_EX:       /* exclusive lock */
+            LK_ERR(LockFileEx(fh, LOCKFILE_EXCLUSIVE_LOCK, 0, LK_LEN, 0, &o),i);
+            break;
+        case LOCK_SH|LOCK_NB:   /* non-blocking shared lock */
+            LK_ERR(LockFileEx(fh, LOCKFILE_FAIL_IMMEDIATELY, 0, LK_LEN, 0, &o),i);
+            break;
+        case LOCK_EX|LOCK_NB:   /* non-blocking exclusive lock */
+            LK_ERR(LockFileEx(fh,
+                   LOCKFILE_EXCLUSIVE_LOCK|LOCKFILE_FAIL_IMMEDIATELY,
+                   0, LK_LEN, 0, &o),i);
+	    if(errno == EDOM) errno = EWOULDBLOCK;
+            break;
+        case LOCK_UN:       /* unlock lock */
+	    if (UnlockFileEx(fh, 0, LK_LEN, 0, &o)) {
+		i = 0;
+	    }
+	    else {
+		/* GetLastError() must returns `ERROR_NOT_LOCKED' */
+		errno = EWOULDBLOCK;
+	    }
+	    if(errno == EDOM) errno = EWOULDBLOCK;
+            break;
+        default:            /* unknown */
+            errno = EINVAL;
+            break;
+        }
+    }
+    else if(IsWin95()) {
+        switch(oper) {
+        case LOCK_EX:
+	    while(i == -1) {
+	        LK_ERR(LockFile(fh, 0, 0, LK_LEN, 0), i);
+		if(errno != EDOM && i == -1) break;
+	    }
+	    break;
+	case LOCK_EX | LOCK_NB:
+	    LK_ERR(LockFile(fh, 0, 0, LK_LEN, 0), i);
+	    if(errno == EDOM) errno = EWOULDBLOCK;
+            break;
+        case LOCK_UN:
+            LK_ERR(UnlockFile(fh, 0, 0, LK_LEN, 0), i);
+	    if(errno == EDOM) errno = EWOULDBLOCK;
+            break;
+        default:
+            errno = EINVAL;
+            break;
+        }
+    }
+    return i;
+}
+
+#undef LK_ERR
+#undef LK_LEN
+
+
 #undef const
 FILE *fdopen(int, const char *);
 
@@ -467,7 +570,7 @@ mypopen (char *cmd, char *mode)
 		    fd = _open_osfhandle((long)hOutFile, (_O_WRONLY | pipemode));
 			CloseHandle(hInFile);
 			DuplicateHandle(GetCurrentProcess(), hStdin,
-			  GetCurrentProcess(), &hDummy,
+			  GetCurrentProcess(), &hDummy,
 			  0, TRUE, (DUPLICATE_SAME_ACCESS | DUPLICATE_CLOSE_SOURCE)
 			);
 		}

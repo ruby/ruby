@@ -20,7 +20,7 @@ PURIFY =
 CFLAGS = -nologo -DNT=1 -Zi -MD 
 LDFLAGS =  $(CFLAGS) -Fm -MD
 LIBS =  $(EXTLIBS)  advapi32.lib wsock32.lib
-MISSING = crypt.obj flock.obj setenv.obj alloca.obj nt.obj
+MISSING = crypt.obj setenv.obj alloca.obj nt.obj
 
 prefix = 
 binprefix = 

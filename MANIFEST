@@ -124,8 +124,8 @@ missing/strftime.c
 missing/strstr.c
 missing/strtol.c
 missing/strtoul.c
+missing/x68.c
 sample/biorhythm.rb
-sample/cbreak.rb
 sample/clnt.rb
 sample/dbmtest.rb
 sample/dir.rb

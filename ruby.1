@@ -191,6 +191,7 @@ mode, ruby executes
 .ne 1
 \&    $F = $_.split 
 at beginning of each loop.
+.fi
 .TP
 .B  -c
 causes ruby to check the syntax of the script and exit without
@@ -225,6 +226,7 @@ example:
 \&    MATZ
 \&    % cat /tmp/junk.bak
 \&    matz
+.fi
 .TP
 .B -I directory
 used to tell ruby where to load the library scripts. Directory
@@ -244,6 +246,7 @@ sed -n or awk.
 \&    while gets
 \&      ...
 \&    end
+.fi
 .TP
 .B -p
 acts mostly same as -n switch, but print the value of variable
@@ -253,6 +256,7 @@ example:
 .ne 2
 \&    % echo matz | ruby -p -e '$_.tr! "a-z", "A-Z"'
 \&    MATZ
+.fi
 .TP
 .B -r filename
 causes ruby to load the file using [4]require. It is useful
@@ -269,6 +273,7 @@ example:
 \&    #! /usr/local/bin/ruby -s
 \&    # prints "true" if invoked with `-xyz' switch.
 \&    print "true\n" if $xyz
+.fi
 .TP
 .B -S
 makes ruby uses the PATH environment variable to search for
@@ -278,8 +283,9 @@ manner:
 .nf
 .ne 2          
 \&    #! /usr/local/bin/ruby
-\&    # This line makes the next one a comment in ruby \
+\&    # This line makes the next one a comment in ruby \\
 \&      exec /usr/local/bin/ruby -S $0 $*
+.fi
 On some systems $0 does not always contain the full pathname,
 so you need -S switch to tell ruby to search for the script if
 necessary.

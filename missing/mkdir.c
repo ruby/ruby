@@ -1,4 +1,4 @@
-*
+/*
  * Written by Robert Rother, Mariah Corporation, August 1985.
  *
  * If you want it, it's yours.  All I ask in return is that if you
@@ -14,6 +14,7 @@
  */
 
 #include <sys/stat.h>
+#include <errno.h>
 /*
  * Make a directory.
  */

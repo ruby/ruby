@@ -23,7 +23,7 @@ __declspec(dllexport) void __stdcall ruby_run(void);
 __declspec(dllexport) void __stdcall NtInitialize(int *, char ***);
 #endif
 
-void
+int
 main(argc, argv, envp)
     int argc;
     char **argv, **envp;

@@ -595,6 +595,11 @@ ruby_prog_init()
     if (rb_safe_level() == 0) {
 	addpath(getenv("RUBYLIB"));
     }
+
+#ifdef RUBY_THIN_ARCHLIB
+    addpath(RUBY_THIN_ARCHLIB);
+#endif
+
 #ifdef RUBY_ARCHLIB
     addpath(RUBY_ARCHLIB);
 #endif

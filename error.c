@@ -313,7 +313,7 @@ void
 Init_Exception()
 {
     eGlobalExit  = rb_define_class("GlobalExit", cString);
-    rb_define_method(eGlobalExit, "new", exc_s_new, -1);
+    rb_define_singleton_method(eGlobalExit, "new", exc_s_new, -1);
     rb_define_method(eGlobalExit, "inspect", exc_inspect, 0);
 
     eSystemExit  = rb_define_class("SystemExit", eGlobalExit);

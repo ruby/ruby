@@ -147,6 +147,7 @@ extern int NtMakeCmdVector(char *, char ***, int);
 extern char *NtGetLib(void);
 extern char *NtGetBin(void);
 extern FILE *mypopen(char *, char *);
+extern int  flock(int fd, int oper);
 
 //
 // define this so we can do inplace editing
@@ -189,6 +190,14 @@ extern char *mystrerror(int);
 #define HAVE_GETLOGIN 1
 #define HAVE_WAITPID 1
 #define HAVE_GETCWD 1
+
+#define LOCK_SH 1
+#define LOCK_EX 2
+#define LOCK_NB 4
+#define LOCK_UN 8
+#ifndef EWOULDBLOCK
+#define EWOULDBLOCK 10035 /* EBASEERR + 35 (winsock.h) */
+#endif
 
 #ifdef popen
 #undef popen

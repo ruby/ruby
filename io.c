@@ -1760,11 +1760,12 @@ io_ctl(io, req, arg, io_p)
 #endif
 	str_modify(arg);
 
-	if (arg->len < len) {
-	    str_resize(arg, len+1);
-	    arg->ptr[len] = 17;	/* a little sanity check here */
-	    narg = (long)arg->ptr;
+	if (len < arg->len) {
+	    len = arg->len;
 	}
+	str_resize(arg, len+1);
+	arg->ptr[len] = 17;	/* a little sanity check here */
+	narg = (long)arg->ptr;
     }
     fd = fileno(fptr->f);
 #ifdef HAVE_FCNTL
