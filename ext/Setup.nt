@@ -17,8 +17,8 @@ fcntl
 #iconv
 #io/wait
 nkf
-#pty
 #openssl
+#pty
 racc/cparse
 #readline
 #ripper
@@ -28,7 +28,6 @@ stringio
 strscan
 syck
 #syslog
-#tcltklib
 #tk
 win32ole
 #zlib

@@ -1,3 +1,7 @@
+Wed Jan 26 14:12:58 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/Setup*: remove tcltklib.
+
 Wed Jan 26 12:45:16 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/tk/extconf.rb: support new tk scheme on mswin32.
