@@ -10,6 +10,8 @@
 
 VALUE rb_cDLCPtr;
 
+static ID id_to_ptr;
+
 static void
 dlptr_free(struct ptr_data *data)
 {
@@ -422,6 +424,15 @@ rb_dlptr_s_to_ptr(VALUE self, VALUE val)
 #endif
 	return rb_dlptr_new(fp, sizeof(FILE), NULL);
     }
+    else if( rb_respond_to(val, id_to_ptr) ){
+	VALUE vptr = rb_funcall(val, id_to_ptr, 0);
+	if( rb_obj_is_kind_of(vptr, rb_cDLCPtr) ){
+	    return vptr;
+	}
+	else{
+	    rb_raise(rb_eDLError, "to_ptr should return a CPtr object.");
+	}
+    }
     else{
 	return rb_dlptr_new(NUM2PTR(rb_Integer(val)), 0, NULL);
     }
@@ -430,6 +441,8 @@ rb_dlptr_s_to_ptr(VALUE self, VALUE val)
 void
 Init_dlptr()
 {
+    id_to_ptr = rb_intern("to_ptr");
+
     rb_cDLCPtr = rb_define_class_under(rb_mDL, "CPtr", rb_cObject);
     rb_define_alloc_func(rb_cDLCPtr, rb_dlptr_s_allocate);
     rb_define_singleton_method(rb_cDLCPtr, "malloc", rb_dlptr_s_malloc, -1);

@@ -62,6 +62,38 @@ module DL
       @type_alias[alias_type] = orig_type
     end
 
+    def sizeof(ty)
+      case ty
+      when String
+        ty = parse_ctype(ty, @type_alias).abs()
+        case ty
+        when TYPE_CHAR
+          return SIZEOF_CHAR
+        when TYPE_SHORT
+          return SIZEOF_SHORT
+        when TYPE_INT
+          return SIZEOF_INT
+        when TYPE_LONG
+          return SIZEOF_LONG
+        when TYPE_LONG_LONG
+          return SIZEOF_LONG_LON
+        when TYPE_FLOAT
+          return SIZEOF_FLOAT
+        when TYPE_DOUBLE
+          return SIZEOF_DOUBLE
+        when TYPE_VOIDP
+          return SIZEOF_VOIDP
+        else
+          raise(DLError, "unknown type: #{ty}")
+        end
+      when Class
+        if( ty.instance_methods().include?("to_ptr") )
+          return ty.size()
+        end
+      end
+      return CPtr[ty].size()
+    end
+
     def parse_bind_options(opts)
       h = {}
       prekey = nil

@@ -40,6 +40,11 @@ module DL
   end
 
   class TestImport < TestBase
+    def test_sizeof()
+      assert_equal(DL::SIZEOF_VOIDP, LIBC.sizeof("FILE*"))
+      assert_equal(LIBC::MyStruct.size(), LIBC.sizeof(LIBC::MyStruct))
+    end
+
     def test_unsigned_result()
       d = (2 ** 31) + 1
       
