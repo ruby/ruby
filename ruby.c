@@ -284,8 +284,8 @@ ruby_init_loadpath()
 struct req_list {
     char *name;
     struct req_list *next;
-} req_list_head;
-struct req_list *req_list_last = &req_list_head;
+};
+static struct req_list req_list_head, *req_list_last = &req_list_head;
 
 static void
 add_modules(mod)
@@ -303,7 +303,7 @@ add_modules(mod)
 
 extern void Init_ext _((void));
 
-void
+static void
 require_libraries()
 {
     extern NODE *ruby_eval_tree;

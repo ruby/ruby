@@ -797,7 +797,7 @@ struct inspect_arg {
     VALUE arg1, arg2;
 };
 
-VALUE
+static VALUE
 inspect_call(arg)
     struct inspect_arg *arg;
 {

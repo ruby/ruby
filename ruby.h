@@ -542,6 +542,8 @@ EXTERN VALUE rb_eNameError;
 EXTERN VALUE rb_eSyntaxError;
 EXTERN VALUE rb_eLoadError;
 
+EXTERN VALUE rb_defout, rb_stdin, rb_stdout, rb_stderr, ruby_errinfo;
+
 static inline VALUE
 #if defined(__cplusplus)
 rb_class_of(VALUE obj)

@@ -1,3 +1,25 @@
+Mon Dec 17 17:06:56 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* intern.h: add prototypes.
+	  rb_str_dup_frozen()
+
+	* ruby.h: added declaration.
+	  rb_defout, rb_stdin, rb_stdout, rb_stderr, ruby_errinfo
+
+	* rubyio.h: changed double include guard macro to RUBYIO_H.
+
+	* array.c (inspect_call): make static.
+
+	* eval.c (dvar_asgn): ditto.
+
+	* io.c (rb_io_close_read): ditto.
+
+	* lex.c (rb_reserved_word): ditto.
+
+	* ruby.c: (req_list_head, req_list_last): ditto.
+
+	* ruby.c (require_libraries): ditto.
+
 Thu Dec 13 10:03:18 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* time.c (time_cmp): should handle Bignums.

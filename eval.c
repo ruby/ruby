@@ -694,7 +694,7 @@ dvar_asgn_internal(id, value, curr)
     }
 }
 
-void
+static void
 dvar_asgn(id, value)
     ID id;
     VALUE value;

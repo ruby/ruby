@@ -1101,7 +1101,7 @@ rb_io_closed(io)
     return (fptr->f || fptr->f2)?Qfalse:Qtrue;
 }
 
-VALUE
+static VALUE
 rb_io_close_read(io)
     VALUE io;
 {
