@@ -1,3 +1,7 @@
+Sun May  9 23:34:51 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* test/ruby/test_float.rb: added test_strtod to test Float("0").
+
 Sun May  9 13:24:24 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/yaml/store.rb: use FileUtils::copy.

@@ -51,4 +51,16 @@ class TestFloat < Test::Unit::TestCase
     b = 100000000000000000000000.0
     assert_equal(a == b, b == a)
   end
+
+  def test_strtod
+    a = Float("0")
+    assert(a.abs < Float::EPSILON)
+    a = Float("0.0")
+    assert(a.abs < Float::EPSILON)
+    a = Float("+0.0")
+    assert(a.abs < Float::EPSILON)
+    a = Float("-0.0")
+    assert(a.abs < Float::EPSILON)
+    # add expected behaviour here.
+  end
 end
