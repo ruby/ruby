@@ -3891,7 +3891,7 @@ VpPower(Real *y, Real *x, S_INT n)
 
     /* Allocate working variables  */
 
-    w1 = VpAlloc((x->Prec + 2) * BASE_FIG, "#0");
+    w1 = VpAlloc((y->MaxPrec + 2) * BASE_FIG, "#0");
     w2 = VpAlloc((w1->MaxPrec * 2 + 1) * BASE_FIG, "#0");
     /* calculation start */
 
@@ -3900,7 +3900,7 @@ VpPower(Real *y, Real *x, S_INT n)
     while(n > 0) {
         VpAsgn(w1, x, 1);
         s = 1;
-loop1:        ss = s;
+loop1:  ss = s;
         s += s;
         if(s >(U_LONG) n) goto out_loop1;
         VpMult(w2, w1, w1);
