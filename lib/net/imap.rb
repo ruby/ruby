@@ -27,6 +27,9 @@ Object
 : debug = val
       Sets the debug mode
 
+: add_authenticator(auth_type, authenticator)
+      Adds an authenticator for Net::IMAP#authenticate.
+
 === Methods
 
 : greeting
@@ -211,6 +214,10 @@ module Net
       return @@debug = val
     end
 
+    def self.add_authenticator(auth_type, authenticator)
+      @@authenticators[auth_type] = authenticator
+    end
+
     def disconnect
       @sock.close
     end
@@ -230,11 +237,11 @@ module Net
 
     def authenticate(auth_type, *args)
       auth_type = auth_type.upcase
-      unless AUTHENTICATORS.has_key?(auth_type)
+      unless @@authenticators.has_key?(auth_type)
 	raise ArgumentError,
 	  format('unknown auth type - "%s"', auth_type)
       end
-      authenticator = AUTHENTICATORS[auth_type].new(*args)
+      authenticator = @@authenticators[auth_type].new(*args)
       send_command("AUTHENTICATE", auth_type) do |resp|
 	if resp.prefix == "+"
 	  data = authenticator.process(resp[0].unpack("m")[0])
@@ -363,6 +370,7 @@ module Net
     PORT = 143
 
     @@debug = false
+    @@authenticators = {}
 
     def initialize(host, port = PORT)
       @host = host
@@ -1019,6 +1027,7 @@ module Net
 	@state = STATE_USER
       end
     end
+    add_authenticator "LOGIN", LoginAuthenticator
 
     class CramMD5Authenticator
       def process(challenge)
@@ -1057,11 +1066,7 @@ module Net
 	return md5.hexdigest
       end
     end
-
-    AUTHENTICATORS = {
-      "LOGIN"		=> LoginAuthenticator,
-      "CRAM-MD5"	=> CramMD5Authenticator
-    }
+    add_authenticator "CRAM-MD5", CramMD5Authenticator
 
     class Error < StandardError
     end
