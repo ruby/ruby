@@ -100,6 +100,108 @@ static int rb_w32_open_osfhandle(long osfhandle, int flags);
 #define rb_w32_open_osfhandle(osfhandle, flags) _open_osfhandle(osfhandle, flags)
 #endif
 
+/* errno mapping */
+static struct {
+    DWORD winerr;
+    int err;
+} errmap[] = {
+    {	ERROR_INVALID_FUNCTION,		EINVAL		},
+    {	ERROR_FILE_NOT_FOUND,		ENOENT		},
+    {	ERROR_PATH_NOT_FOUND,		ENOENT		},
+    {	ERROR_TOO_MANY_OPEN_FILES,	EMFILE		},
+    {	ERROR_ACCESS_DENIED,		EACCES		},
+    {	ERROR_INVALID_HANDLE,		EBADF		},
+    {	ERROR_ARENA_TRASHED,		ENOMEM		},
+    {	ERROR_NOT_ENOUGH_MEMORY,	ENOMEM		},
+    {	ERROR_INVALID_BLOCK,		ENOMEM		},
+    {	ERROR_BAD_ENVIRONMENT,		E2BIG		},
+    {	ERROR_BAD_FORMAT,		ENOEXEC		},
+    {	ERROR_INVALID_ACCESS,		EINVAL		},
+    {	ERROR_INVALID_DATA,		EINVAL		},
+    {	ERROR_INVALID_DRIVE,		ENOENT		},
+    {	ERROR_CURRENT_DIRECTORY,	EACCES		},
+    {	ERROR_NOT_SAME_DEVICE,		EXDEV		},
+    {	ERROR_NO_MORE_FILES,		ENOENT		},
+    {	ERROR_WRITE_PROTECT,		EROFS		},
+    {	ERROR_BAD_UNIT,			ENODEV		},
+    {	ERROR_NOT_READY,		ENXIO		},
+    {	ERROR_BAD_COMMAND,		EACCES		},
+    {	ERROR_CRC,			EACCES		},
+    {	ERROR_BAD_LENGTH,		EACCES		},
+    {	ERROR_SEEK,			EIO		},
+    {	ERROR_NOT_DOS_DISK,		EACCES		},
+    {	ERROR_SECTOR_NOT_FOUND,		EACCES		},
+    {	ERROR_OUT_OF_PAPER,		EACCES		},
+    {	ERROR_WRITE_FAULT,		EIO		},
+    {	ERROR_READ_FAULT,		EIO		},
+    {	ERROR_GEN_FAILURE,		EACCES		},
+    {	ERROR_LOCK_VIOLATION,		EACCES		},
+    {	ERROR_SHARING_VIOLATION,	EACCES		},
+    {	ERROR_WRONG_DISK,		EACCES		},
+    {	ERROR_SHARING_BUFFER_EXCEEDED,	EACCES		},
+    {	ERROR_BAD_NETPATH,		ENOENT		},
+    {	ERROR_NETWORK_ACCESS_DENIED,	EACCES		},
+    {	ERROR_BAD_NET_NAME,		ENOENT		},
+    {	ERROR_FILE_EXISTS,		EEXIST		},
+    {	ERROR_CANNOT_MAKE,		EACCES		},
+    {	ERROR_FAIL_I24,			EACCES		},
+    {	ERROR_INVALID_PARAMETER,	EINVAL		},
+    {	ERROR_NO_PROC_SLOTS,		EAGAIN		},
+    {	ERROR_DRIVE_LOCKED,		EACCES		},
+    {	ERROR_BROKEN_PIPE,		EPIPE		},
+    {	ERROR_DISK_FULL,		ENOSPC		},
+    {	ERROR_INVALID_TARGET_HANDLE,	EBADF		},
+    {	ERROR_INVALID_HANDLE,		EINVAL		},
+    {	ERROR_WAIT_NO_CHILDREN,		ECHILD		},
+    {	ERROR_CHILD_NOT_COMPLETE,	ECHILD		},
+    {	ERROR_DIRECT_ACCESS_HANDLE,	EBADF		},
+    {	ERROR_NEGATIVE_SEEK,		EINVAL		},
+    {	ERROR_SEEK_ON_DEVICE,		EACCES		},
+    {	ERROR_DIR_NOT_EMPTY,		ENOTEMPTY	},
+    {	ERROR_NOT_LOCKED,		EACCES		},
+    {	ERROR_BAD_PATHNAME,		ENOENT		},
+    {	ERROR_MAX_THRDS_REACHED,	EAGAIN		},
+    {	ERROR_LOCK_FAILED,		EACCES		},
+    {	ERROR_ALREADY_EXISTS,		EEXIST		},
+    {	ERROR_INVALID_STARTING_CODESEG,	ENOEXEC		},
+    {	ERROR_INVALID_STACKSEG,		ENOEXEC		},
+    {	ERROR_INVALID_MODULETYPE,	ENOEXEC		},
+    {	ERROR_INVALID_EXE_SIGNATURE,	ENOEXEC		},
+    {	ERROR_EXE_MARKED_INVALID,	ENOEXEC		},
+    {	ERROR_BAD_EXE_FORMAT,		ENOEXEC		},
+    {	ERROR_ITERATED_DATA_EXCEEDS_64k,ENOEXEC		},
+    {	ERROR_INVALID_MINALLOCSIZE,	ENOEXEC		},
+    {	ERROR_DYNLINK_FROM_INVALID_RING,ENOEXEC		},
+    {	ERROR_IOPL_NOT_ENABLED,		ENOEXEC		},
+    {	ERROR_INVALID_SEGDPL,		ENOEXEC		},
+    {	ERROR_AUTODATASEG_EXCEEDS_64k,	ENOEXEC		},
+    {	ERROR_RING2SEG_MUST_BE_MOVABLE,	ENOEXEC		},
+    {	ERROR_RELOC_CHAIN_XEEDS_SEGLIM,	ENOEXEC		},
+    {	ERROR_INFLOOP_IN_RELOC_CHAIN,	ENOEXEC		},
+    {	ERROR_FILENAME_EXCED_RANGE,	ENOENT		},
+    {	ERROR_NESTING_NOT_ALLOWED,	EAGAIN		},
+    {	ERROR_NOT_ENOUGH_QUOTA,		ENOMEM		},
+    {	0,				0		}
+};
+
+static int map_errno(void)
+{
+    DWORD winerr = GetLastError();
+    int i;
+
+    if (winerr == 0) {
+	return 0;
+    }
+
+    for (i = 0; errmap[i].winerr; i++) {
+	if (errmap[i].winerr == winerr) {
+	    return errmap[i].err;
+	}
+    }
+
+    return EINVAL;
+}
+
 char *NTLoginName;
 
 #ifdef WIN95
@@ -476,12 +578,12 @@ pipe_exec(char *cmd, int mode, FILE **fpr, FILE **fpw)
 	if (reading) {
 	    fRet = CreatePipe(&hReadIn, &hReadOut, &sa, 2048L);
 	    if (!fRet) {
-		errno = GetLastError();
+		errno = map_errno();
 		break;
 	    }
 	    if (!DuplicateHandle(hCurProc, hReadIn, hCurProc, &hDupInFile, 0,
 				 FALSE, DUPLICATE_SAME_ACCESS)) {
-		errno = GetLastError();
+		errno = map_errno();
 		CloseHandle(hReadIn);
 		CloseHandle(hReadOut);
 		CloseHandle(hCurProc);
@@ -492,7 +594,7 @@ pipe_exec(char *cmd, int mode, FILE **fpr, FILE **fpw)
 	if (writing) {
 	    fRet = CreatePipe(&hWriteIn, &hWriteOut, &sa, 2048L);
 	    if (!fRet) {
-		errno = GetLastError();
+		errno = map_errno();
 	      write_pipe_failed:
 		if (reading) {
 		    CloseHandle(hDupInFile);
@@ -502,7 +604,7 @@ pipe_exec(char *cmd, int mode, FILE **fpr, FILE **fpw)
 	    }
 	    if (!DuplicateHandle(hCurProc, hWriteOut, hCurProc, &hDupOutFile, 0,
 				 FALSE, DUPLICATE_SAME_ACCESS)) {
-		errno = GetLastError();
+		errno = map_errno();
 		CloseHandle(hWriteIn);
 		CloseHandle(hWriteOut);
 		CloseHandle(hCurProc);
@@ -776,7 +878,7 @@ CreateChild(char *cmd, char *prog, SECURITY_ATTRIBUTES *psa, HANDLE hInput, HAND
 	fRet = CreateProcess(shell, cmd, psa, psa,
 			     psa->bInheritHandle, dwCreationFlags, NULL, NULL,
 			     &aStartupInfo, &aProcessInformation);
-	errno = GetLastError();
+	errno = map_errno();
     });
 
     if (!fRet) {
@@ -1792,12 +1894,7 @@ rb_w32_select (int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
     RUBY_CRITICAL({
 	r = select(nfds, rd, wr, ex, timeout);
 	if (r == SOCKET_ERROR) {
-	    errno = WSAGetLastError();
-	    switch (errno) {
-	      case WSAEINTR:
-		errno = EINTR;
-		break;
-	    }
+	    errno = WSAGetLastError() - WSABASEERR;
 	}
     });
     return r;
@@ -1863,7 +1960,7 @@ rb_w32_accept(int s, struct sockaddr *addr, int *addrlen)
     RUBY_CRITICAL({
 	r = accept(TO_SOCKET(s), addr, addrlen);
 	if (r == INVALID_SOCKET) {
-	    errno = WSAGetLastError();
+	    errno = WSAGetLastError() - WSABASEERR;
 	    s = -1;
 	}
 	else {
@@ -1886,7 +1983,7 @@ rb_w32_bind(int s, struct sockaddr *addr, int addrlen)
     RUBY_CRITICAL({
 	r = bind(TO_SOCKET(s), addr, addrlen);
 	if (r == SOCKET_ERROR)
-	    errno = WSAGetLastError();
+	    errno = WSAGetLastError() - WSABASEERR;
     });
     return r;
 }
@@ -1903,7 +2000,7 @@ rb_w32_connect(int s, struct sockaddr *addr, int addrlen)
     RUBY_CRITICAL({
 	r = connect(TO_SOCKET(s), addr, addrlen);
 	if (r == SOCKET_ERROR)
-	    errno = WSAGetLastError();
+	    errno = WSAGetLastError() - WSABASEERR;
     });
     return r;
 }
@@ -1921,7 +2018,7 @@ rb_w32_getpeername(int s, struct sockaddr *addr, int *addrlen)
     RUBY_CRITICAL({
 	r = getpeername(TO_SOCKET(s), addr, addrlen);
 	if (r == SOCKET_ERROR)
-	    errno = WSAGetLastError();
+	    errno = WSAGetLastError() - WSABASEERR;
     });
     return r;
 }
@@ -1938,7 +2035,7 @@ rb_w32_getsockname(int s, struct sockaddr *addr, int *addrlen)
     RUBY_CRITICAL({
 	r = getsockname(TO_SOCKET(s), addr, addrlen);
 	if (r == SOCKET_ERROR)
-	    errno = WSAGetLastError();
+	    errno = WSAGetLastError() - WSABASEERR;
     });
     return r;
 }
@@ -1953,7 +2050,7 @@ rb_w32_getsockopt(int s, int level, int optname, char *optval, int *optlen)
     RUBY_CRITICAL({
 	r = getsockopt(TO_SOCKET(s), level, optname, optval, optlen);
 	if (r == SOCKET_ERROR)
-	    errno = WSAGetLastError();
+	    errno = WSAGetLastError() - WSABASEERR;
     });
     return r;
 }
@@ -1970,7 +2067,7 @@ rb_w32_ioctlsocket(int s, long cmd, u_long *argp)
     RUBY_CRITICAL({
 	r = ioctlsocket(TO_SOCKET(s), cmd, argp);
 	if (r == SOCKET_ERROR)
-	    errno = WSAGetLastError();
+	    errno = WSAGetLastError() - WSABASEERR;
     });
     return r;
 }
@@ -1987,7 +2084,7 @@ rb_w32_listen(int s, int backlog)
     RUBY_CRITICAL({
 	r = listen(TO_SOCKET(s), backlog);
 	if (r == SOCKET_ERROR)
-	    errno = WSAGetLastError();
+	    errno = WSAGetLastError() - WSABASEERR;
     });
     return r;
 }
@@ -2004,7 +2101,7 @@ rb_w32_recv(int s, char *buf, int len, int flags)
     RUBY_CRITICAL({
 	r = recv(TO_SOCKET(s), buf, len, flags);
 	if (r == SOCKET_ERROR)
-	    errno = WSAGetLastError();
+	    errno = WSAGetLastError() - WSABASEERR;
     });
     return r;
 }
@@ -2022,7 +2119,7 @@ rb_w32_recvfrom(int s, char *buf, int len, int flags,
     RUBY_CRITICAL({
 	r = recvfrom(TO_SOCKET(s), buf, len, flags, from, fromlen);
 	if (r == SOCKET_ERROR)
-	    errno =  WSAGetLastError();
+	    errno = WSAGetLastError() - WSABASEERR;
     });
     return r;
 }
@@ -2039,7 +2136,7 @@ rb_w32_send(int s, char *buf, int len, int flags)
     RUBY_CRITICAL({
 	r = send(TO_SOCKET(s), buf, len, flags);
 	if (r == SOCKET_ERROR)
-	    errno = WSAGetLastError();
+	    errno = WSAGetLastError() - WSABASEERR;
     });
     return r;
 }
@@ -2057,7 +2154,7 @@ rb_w32_sendto(int s, char *buf, int len, int flags,
     RUBY_CRITICAL({
 	r = sendto(TO_SOCKET(s), buf, len, flags, to, tolen);
 	if (r == SOCKET_ERROR)
-	    errno = WSAGetLastError();
+	    errno = WSAGetLastError() - WSABASEERR;
     });
     return r;
 }
@@ -2074,7 +2171,7 @@ rb_w32_setsockopt(int s, int level, int optname, char *optval, int optlen)
     RUBY_CRITICAL({
 	r = setsockopt(TO_SOCKET(s), level, optname, optval, optlen);
 	if (r == SOCKET_ERROR)
-	    errno = WSAGetLastError();
+	    errno = WSAGetLastError() - WSABASEERR;
     });
     return r;
 }
@@ -2091,7 +2188,7 @@ rb_w32_shutdown(int s, int how)
     RUBY_CRITICAL({
 	r = shutdown(TO_SOCKET(s), how);
 	if (r == SOCKET_ERROR)
-	    errno = WSAGetLastError();
+	    errno = WSAGetLastError() - WSABASEERR;
     });
     return r;
 }
@@ -2110,7 +2207,7 @@ rb_w32_socket(int af, int type, int protocol)
     RUBY_CRITICAL({
 	s = socket(af, type, protocol);
 	if (s == INVALID_SOCKET) {
-	    errno = WSAGetLastError();
+	    errno = WSAGetLastError() - WSABASEERR;
 	    fd = -1;
 	}
 	else {
@@ -2132,7 +2229,7 @@ rb_w32_gethostbyaddr (char *addr, int len, int type)
     RUBY_CRITICAL({
 	r = gethostbyaddr(addr, len, type);
 	if (r == NULL)
-	    errno = WSAGetLastError();
+	    errno = WSAGetLastError() - WSABASEERR;
     });
     return r;
 }
@@ -2149,7 +2246,7 @@ rb_w32_gethostbyname (char *name)
     RUBY_CRITICAL({
 	r = gethostbyname(name);
 	if (r == NULL)
-	    errno = WSAGetLastError();
+	    errno = WSAGetLastError() - WSABASEERR;
     });
     return r;
 }
@@ -2166,7 +2263,7 @@ rb_w32_gethostname (char *name, int len)
     RUBY_CRITICAL({
 	r = gethostname(name, len);
 	if (r == SOCKET_ERROR)
-	    errno = WSAGetLastError();
+	    errno = WSAGetLastError() - WSABASEERR;
     });
     return r;
 }
@@ -2183,7 +2280,7 @@ rb_w32_getprotobyname (char *name)
     RUBY_CRITICAL({
 	r = getprotobyname(name);
 	if (r == NULL)
-	    errno = WSAGetLastError();
+	    errno = WSAGetLastError() - WSABASEERR;
     });
     return r;
 }
@@ -2200,7 +2297,7 @@ rb_w32_getprotobynumber (int num)
     RUBY_CRITICAL({
 	r = getprotobynumber(num);
 	if (r == NULL)
-	    errno = WSAGetLastError();
+	    errno = WSAGetLastError() - WSABASEERR;
     });
     return r;
 }
@@ -2217,7 +2314,7 @@ rb_w32_getservbyname (char *name, char *proto)
     RUBY_CRITICAL({
 	r = getservbyname(name, proto);
 	if (r == NULL)
-	    errno = WSAGetLastError();
+	    errno = WSAGetLastError() - WSABASEERR;
     });
     return r;
 }
@@ -2234,7 +2331,7 @@ rb_w32_getservbyport (int port, char *proto)
     RUBY_CRITICAL({
 	r = getservbyport(port, proto);
 	if (r == NULL)
-	    errno = WSAGetLastError();
+	    errno = WSAGetLastError() - WSABASEERR;
     });
     return r;
 }
@@ -2274,13 +2371,15 @@ static pid_t
 poll_child_status(struct ChildRecord *child, int *stat_loc)
 {
     DWORD exitcode;
+    DWORD err;
 
     if (!GetExitCodeProcess(child->hProcess, &exitcode)) {
 	/* If an error occured, return immediatly. */
-	errno = GetLastError();
-	if (errno == ERROR_INVALID_PARAMETER) {
+	err = GetLastError();
+	if (err == ERROR_INVALID_PARAMETER)
 	    errno = ECHILD;
-	}
+	else
+	    errno = map_errno();
 	CloseChildHandle(child);
 	return -1;
     }
@@ -2329,7 +2428,7 @@ waitpid (pid_t pid, int *stat_loc, int options)
 	    return -1;
 	}
 	if (ret > count) {
-	    errno = GetLastError();
+	    errno = map_errno();
 	    return -1;
 	}
 
@@ -2429,6 +2528,7 @@ int
 kill(int pid, int sig)
 {
     int ret = 0;
+    DWORD err;
 
     if (pid <= 0) {
 	errno = EINVAL;
@@ -2443,9 +2543,10 @@ kill(int pid, int sig)
       case SIGINT:
 	RUBY_CRITICAL({
 	    if (!GenerateConsoleCtrlEvent(CTRL_C_EVENT, (DWORD)pid)) {
-		if ((errno = GetLastError()) == 0) {
+		if ((err = GetLastError()) == 0)
 		    errno = EPERM;
-		}
+		else
+		    errno = map_errno();
 		ret = -1;
 	    }
 	});
@@ -2493,12 +2594,12 @@ link(char *from, char *to)
 	if (hKernel) {
 	    pCreateHardLink = (BOOL (WINAPI *)(LPCTSTR, LPCTSTR, LPSECURITY_ATTRIBUTES))GetProcAddress(hKernel, "CreateHardLinkA");
 	    if (!pCreateHardLink) {
-		myerrno = GetLastError();
+		myerrno = map_errno();
 	    }
 	    CloseHandle(hKernel);
 	}
 	else {
-	    myerrno = GetLastError();
+	    myerrno = map_errno();
 	}
     }
     if (!pCreateHardLink) {
@@ -2507,7 +2608,7 @@ link(char *from, char *to)
     }
 
     if (!pCreateHardLink(to, from, NULL)) {
-	errno = GetLastError();
+	errno = map_errno();
 	return -1;
     }
 
@@ -2558,7 +2659,7 @@ rb_w32_rename(const char *oldpath, const char *newpath)
     newatts = GetFileAttributes(newpath);
 
     if (oldatts == -1) {
-	errno = GetLastError();
+	errno = map_errno();
 	return -1;
     }
 
@@ -2590,7 +2691,7 @@ rb_w32_rename(const char *oldpath, const char *newpath)
 	}
 
 	if (res)
-	    errno = GetLastError();
+	    errno = map_errno();
 	else
 	    SetFileAttributes(newpath, oldatts);
     });
@@ -3085,7 +3186,7 @@ rb_w32_fclose(FILE *fp)
     _set_osfhnd(fd, (SOCKET)INVALID_HANDLE_VALUE);
     fclose(fp);
     if (closesocket(sock) == SOCKET_ERROR) {
-	errno = WSAGetLastError();
+	errno = WSAGetLastError() - WSABASEERR;
 	return -1;
     }
     return 0;
@@ -3101,7 +3202,7 @@ rb_w32_close(int fd)
 	return _close(fd);
     }
     if (closesocket(sock) == SOCKET_ERROR) {
-	errno = WSAGetLastError();
+	errno = WSAGetLastError() - WSABASEERR;
 	return -1;
     }
     return 0;
@@ -3123,7 +3224,7 @@ unixtime_to_filetime(time_t time, FILETIME *ft)
     st.wSecond = tm->tm_sec;
     st.wMilliseconds = 0;
     if (!SystemTimeToFileTime(&st, ft)) {
-	errno = GetLastError();
+	errno = map_errno();
 	return -1;
     }
     return 0;
@@ -3160,11 +3261,11 @@ rb_w32_utime(const char *path, struct utimbuf *times)
     hDir = CreateFile(path, GENERIC_WRITE, 0, 0, OPEN_EXISTING,
 		      FILE_FLAG_BACKUP_SEMANTICS, 0);
     if (hDir == INVALID_HANDLE_VALUE) {
-	errno = GetLastError();
+	errno = map_errno();
 	return -1;
     }
     if (!SetFileTime(hDir, NULL, &atime, &mtime)) {
-	errno = GetLastError();
+	errno = map_errno();
 	ret = -1;
     }
     CloseHandle(hDir);

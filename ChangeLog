@@ -1,3 +1,20 @@
+Fri Feb 28 23:50:32 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* win32/win32.c (map_errno): map OS error to errno. [new]
+
+	* win32/win32.c (pipe_exec, CreateChild, poll_child_status, waitpid,
+	  kill, link, rb_w32_rename, unixtime_to_filetime, rb_w32_utime): use
+	  map_errno() instead of using GetLastError() directly.
+
+	* win32/win32.c (rb_w32_select, rb_w32_accept, rb_w32_bind,
+	  rb_w32_connect, rb_w32_getpeername, rb_w32_getsockname,
+	  rb_w32_getsockopt, rb_w32_ioctlsocket, rb_w32_listen, rb_w32_recv,
+	  rb_w32_recvfrom, rb_w32_send, rb_w32_sendto, rb_w32_setsockopt,
+	  rb_w32_shutdown, rb_w32_socket, rb_w32_gethostbyaddr,
+	  rb_w32_gethostbyname, rb_w32_gethostname, rb_w32_getprotobyname,
+	  rb_w32_getprotobynumber, rb_w32_getservbyname, rb_w32_getservbyport,
+	  rb_w32_fclose, rb_w32_close): map winsock error to errno.
+
 Fri Feb 28 22:54:10 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* win32/win32.c (flock): supports larger files, and maps error
