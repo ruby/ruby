@@ -3491,10 +3491,21 @@ rb_abort()
 }
 
 static VALUE
-rb_f_abort()
+rb_f_abort(argc, argv)
+    int argc;
+    VALUE *argv;
 {
     rb_secure(4);
-    rb_abort();
+    if (argc == 0) {
+	rb_abort();
+    }
+    else {
+	VALUE mesg;
+
+	rb_scan_args(argc, argv, "01", &mesg);
+	rb_io_puts(argc, argv, rb_stderr);
+	exit(1);
+    }
     return Qnil;		/* not reached */
 }
 
@@ -6056,7 +6067,7 @@ Init_eval()
     rb_define_global_function("caller", rb_f_caller, -1);
 
     rb_define_global_function("exit", rb_f_exit, -1);
-    rb_define_global_function("abort", rb_f_abort, 0);
+    rb_define_global_function("abort", rb_f_abort, -1);
 
     rb_define_global_function("at_exit", rb_f_at_exit, 0);
 

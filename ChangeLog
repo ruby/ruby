@@ -1,3 +1,9 @@
+Thu Mar 14 00:29:12 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_match): should clear $~ if operand is nil.
+
+	* re.c (rb_reg_match2): ditto.
+
 Thu Mar 14 12:32:59 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* ext/stringio/stringio.c: fixed frozen string bug.  ungetc no
@@ -24,6 +30,16 @@ Wed Mar 13 18:36:55 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/getopts.rb: single_options can be nil[*], and is not not
 	  optional. ([*]Pointed out by gotoken)
+
+Wed Mar 13 17:23:46 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* configure: merge Jonathan Baker's large file support patch
+	  [ruby-talk:35316], with read_all patch in [ruby-talk:35470].
+
+Wed Mar 13 04:06:48 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_f_abort): optional message argument that be printed
+	  on termination.
 
 Tue Mar 12 17:12:06 2002  Tanaka Akira  <akr@m17n.org>
 

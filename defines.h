@@ -56,10 +56,9 @@ void *xrealloc _((void*,long));
 void xfree _((void*));
 
 #if SIZEOF_LONG_LONG > 0
-# define HAVE_LONG_LONG
 # define LONG_LONG long long
 #elif SIZEOF___INT64 > 0
-# define HAVE_LONG_LONG
+# define HAVE_LONG_LONG 1
 # define LONG_LONG __int64
 # undef SIZEOF_LONG_LONG
 # define SIZEOF_LONG_LONG SIZEOF___INT64

@@ -869,6 +869,63 @@ rb_num2fix(val)
     return INT2FIX(v);
 }
 
+#if HAVE_LONG_LONG
+
+long long
+rb_num2ll(val)
+    VALUE val;
+{
+    if (NIL_P(val)) {
+	rb_raise(rb_eTypeError, "no implicit conversion from nil");
+    }
+
+    if (FIXNUM_P(val)) return (long long)FIX2LONG(val);
+
+    switch (TYPE(val)) {
+    case T_FLOAT:
+	if (RFLOAT(val)->value <= (double)LLONG_MAX
+	    && RFLOAT(val)->value >= (double)LLONG_MIN) {
+	    return (long long)(RFLOAT(val)->value);
+	}
+	else {
+	    char buf[24];
+	    char *s;
+
+	    sprintf(buf, "%-.10g", RFLOAT(val)->value);
+	    if (s = strchr(buf, ' ')) *s = '\0';
+	    rb_raise(rb_eRangeError, "float %s out of range of long long", buf);
+	}
+
+    case T_BIGNUM:
+	return rb_big2ll(val);
+
+    case T_STRING:
+	rb_raise(rb_eTypeError, "no implicit conversion from string");
+	return Qnil;            /* not reached */
+
+    case T_TRUE:
+    case T_FALSE:
+	rb_raise(rb_eTypeError, "no implicit conversion from boolean");
+	return Qnil;		/* not reached */
+
+      default:
+	  val = rb_to_int(val);
+	  return NUM2LL(val);
+    }
+}
+
+unsigned long long
+rb_num2ull(val)
+    VALUE val;
+{
+    if (TYPE(val) == T_BIGNUM) {
+	return rb_big2ull(val);
+    }
+    return (unsigned long long)rb_num2ll(val);
+}
+
+#endif  /* HAVE_LONG_LONG */
+
 static VALUE
 int_to_i(num)
     VALUE num;

@@ -103,6 +103,7 @@ lib/English.rb
 lib/Env.rb
 lib/README
 lib/base64.rb
+lib/benchmark.rb
 lib/cgi.rb
 lib/cgi/session.rb
 lib/cgi-lib.rb

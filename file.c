@@ -242,7 +242,7 @@ static VALUE
 rb_stat_size(self)
     VALUE self;
 {
-    return LONG2NUM(get_stat(self)->st_size);
+    return OFFT2NUM(get_stat(self)->st_size);
 }
 
 static VALUE
@@ -730,7 +730,7 @@ test_s(obj, fname)
 
     if (rb_stat(fname, &st) < 0) return Qnil;
     if (st.st_size == 0) return Qnil;
-    return rb_int2inum(st.st_size);
+    return OFFT2NUM(st.st_size);
 }
 
 static VALUE

@@ -637,7 +637,7 @@ rb_reg_search(re, str, pos, reverse)
 
     if (result == -2) {
 	rb_reg_raise(RREGEXP(re)->str, RREGEXP(re)->len,
-		  "Stack overflow in regexp matcher", re);
+		     "Stack overflow in regexp matcher", re);
     }
 
     if (result < 0) {
@@ -1001,7 +1001,10 @@ rb_reg_match(re, str)
 {
     int start;
 
-    if (NIL_P(str)) return Qnil;
+    if (NIL_P(str)) {
+	rb_backref_set(Qnil);
+	return Qnil;
+    }
     StringValue(str);
     start = rb_reg_search(re, str, 0, 0);
     if (start < 0) {
@@ -1017,8 +1020,10 @@ rb_reg_match2(re)
     int start;
     VALUE line = rb_lastline_get();
 
-    if (TYPE(line) != T_STRING)
+    if (TYPE(line) != T_STRING) {
+	rb_backref_set(Qnil);
 	return Qnil;
+    }
 
     start = rb_reg_search(re, line, 0, 0);
     if (start < 0) {

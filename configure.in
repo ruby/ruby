@@ -1,6 +1,8 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(ruby.h)
 
+AC_PREREQ(2.50)
+
 rb_version=`grep RUBY_VERSION $srcdir/version.h`
 MAJOR=`expr "$rb_version" : '#define RUBY_VERSION "\([0-9][0-9]*\)\.[0-9][0-9]*\.[0-9][0-9]*"'`
 MINOR=`expr "$rb_version" : '#define RUBY_VERSION "[0-9][0-9]*\.\([0-9][0-9]*\)\.[0-9][0-9]*"'`
@@ -124,11 +126,16 @@ AC_MINIX
 AC_EXEEXT
 AC_OBJEXT
 
+dnl check for large file stuff
+AC_SYS_LARGEFILE
+
+AC_CHECK_TYPES([long long, off_t])
 AC_CHECK_SIZEOF(int, 4)
 AC_CHECK_SIZEOF(short, 2)
 AC_CHECK_SIZEOF(long, 4)
 AC_CHECK_SIZEOF(long long, 0)
 AC_CHECK_SIZEOF(__int64, 0)
+AC_CHECK_SIZEOF(off_t, 0)
 AC_CHECK_SIZEOF(void*, 4)
 AC_CHECK_SIZEOF(float, 4)
 AC_CHECK_SIZEOF(double, 8)
@@ -292,6 +299,8 @@ AC_TYPE_GETGROUPS
 AC_TYPE_SIGNAL
 AC_FUNC_ALLOCA
 AC_FUNC_MEMCMP
+AC_FUNC_FSEEKO
+AC_CHECK_FUNCS(ftello)
 AC_REPLACE_FUNCS(dup2 memmove mkdir strcasecmp strncasecmp strerror strftime\
 		 strchr strstr strtoul crypt flock vsnprintf\
 		 isinf isnan finite hypot)

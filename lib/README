@@ -2,6 +2,7 @@ English.rb	lets Perl'ish global variables have English names
 Env.rb		loads importenv.rb
 README		this file
 base64.rb	encodes/decodes base64 (obsolete)
+benchmark.rb	a benchmark utility
 cgi-lib.rb	simple CGI support library (old style)
 cgi.rb		CGI support library
 cgi/session	CGI session class

@@ -45,6 +45,16 @@
 #include <sys/fcntl.h>
 #endif
 
+#if !HAVE_OFF_T && !defined(off_t)
+# define off_t  long
+#endif
+#if !HAVE_FSEEKO && !defined(fseeko)
+# define fseeko  fseek
+#endif
+#if !HAVE_FTELLO && !defined(ftello)
+# define ftello  ftell
+#endif
+
 #ifdef HAVE_SYS_TIME_H
 # include <sys/time.h>
 #else
@@ -316,13 +326,20 @@ rb_io_tell(io)
      VALUE io;
 {
     OpenFile *fptr;
-    long pos;
+    off_t pos;
 
     GetOpenFile(io, fptr);
-    pos = ftell(fptr->f);
+    pos = ftello(fptr->f);
     if (ferror(fptr->f)) rb_sys_fail(fptr->path);
 
+#if SIZEOF_OFF_T > SIZEOF_LONG
+# if !HAVE_LONG_LONG
+#  error off_t is bigger than long, but you have no long long...
+# endif
+    return rb_ll2inum(pos);
+#else
     return rb_int2inum(pos);
+#endif
 }
 
 #ifndef SEEK_CUR
@@ -340,7 +357,7 @@ rb_io_seek(io, offset, whence)
     long pos;
 
     GetOpenFile(io, fptr);
-    pos = fseek(fptr->f, NUM2LONG(offset), whence);
+    pos = fseeko(fptr->f, NUM2OFFT(offset), whence);
     if (pos != 0) rb_sys_fail(fptr->path);
     clearerr(fptr->f);
 
@@ -371,7 +388,7 @@ rb_io_set_pos(io, offset)
     long pos;
 
     GetOpenFile(io, fptr);
-    pos = fseek(fptr->f, NUM2LONG(offset), SEEK_SET);
+    pos = fseeko(fptr->f, NUM2OFFT(offset), SEEK_SET);
     if (pos != 0) rb_sys_fail(fptr->path);
     clearerr(fptr->f);
 
@@ -380,12 +397,12 @@ rb_io_set_pos(io, offset)
 
 static VALUE
 rb_io_rewind(io)
-     VALUE io;
+    VALUE io;
 {
     OpenFile *fptr;
 
     GetOpenFile(io, fptr);
-    if (fseek(fptr->f, 0L, 0) != 0) rb_sys_fail(fptr->path);
+    if (fseeko(fptr->f, 0L, 0) != 0) rb_sys_fail(fptr->path);
     clearerr(fptr->f);
     if (io == current_file) {
 	gets_lineno -= fptr->lineno;
@@ -588,7 +605,7 @@ read_all(port)
     OpenFile *fptr;
     VALUE str = Qnil;
     struct stat st;
-    long siz = BUFSIZ;
+    off_t siz = BUFSIZ;
     long bytes = 0;
     int n;
 
@@ -607,16 +624,19 @@ read_all(port)
 	    return rb_str_new(0, 0);
 	}
 	else {
-	    long pos = ftell(fptr->f);
+	    off_t pos = ftello(fptr->f);
 	    if (st.st_size > pos && pos >= 0) {
 		siz = st.st_size - pos + 1;
+		if (siz > LONG_MAX) {
+		    rb_raise(rb_eIOError, "file too big for single read");
+		}
 	    }
 	}
     }
-    str = rb_tainted_str_new(0, siz);
+    str = rb_tainted_str_new(0, (long)siz);
     READ_CHECK(fptr->f);
     for (;;) {
-	n = io_fread(RSTRING(str)->ptr+bytes, siz-bytes, fptr->f);
+	n = io_fread(RSTRING(str)->ptr+bytes, (long)siz-bytes, fptr->f);
 	if (n == 0 && bytes == 0) {
 	    if (feof(fptr->f)) return Qnil;
 	    rb_sys_fail(fptr->path);
@@ -1986,7 +2006,7 @@ io_reopen(io, nfile)
     OpenFile *fptr, *orig;
     char *mode;
     int fd;
-    long pos;
+    off_t pos;
 
     nfile = rb_io_get_io(nfile);
     if (rb_safe_level() >= 4 && (!OBJ_TAINTED(io) || !OBJ_TAINTED(nfile))) {
@@ -1997,7 +2017,7 @@ io_reopen(io, nfile)
 
     if (fptr == orig) return io;
     if (orig->mode & FMODE_READABLE) {
-	pos = ftell(orig->f);
+	pos = ftello(orig->f);
     }
     if (orig->f2) {
 	io_fflush(orig->f2, orig->path);
@@ -2032,8 +2052,8 @@ io_reopen(io, nfile)
 	fptr->f = rb_fdopen(fd, mode);
     }
     if ((orig->mode & FMODE_READABLE) && pos >= 0) {
-	fseek(fptr->f, pos, SEEK_SET);
-	fseek(orig->f, pos, SEEK_SET);
+	fseeko(fptr->f, pos, SEEK_SET);
+	fseeko(orig->f, pos, SEEK_SET);
     }
 
     if (fptr->f2) {

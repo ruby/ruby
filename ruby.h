@@ -85,6 +85,24 @@ typedef unsigned long ID;
 # endif
 #endif
 
+#if HAVE_LONG_LONG
+# ifndef LLONG_MAX
+#  ifdef LONG_LONG_MAX
+#   define LLONG_MAX  LONG_LONG_MAX
+#  else
+    /* assuming 64bit(2's complement) long long */
+#   define LLONG_MAX 9223372036854775807LL
+#  endif
+# endif
+# ifndef LLONG_MIN
+#  ifdef LONG_LONG_MIN
+#   define LLONG_MIN  LONG_LONG_MIN
+#  else
+#   define LLONG_MIN (-LLONG_MAX-1)
+#  endif
+# endif
+#endif
+
 #define FIXNUM_MAX (LONG_MAX>>1)
 #define FIXNUM_MIN RSHIFT((long)LONG_MIN,1)
 
@@ -100,6 +118,19 @@ VALUE rb_uint2inum _((unsigned long));
 #define UINT2NUM(v) rb_uint2inum(v)
 #define ULONG2NUM(v) UINT2NUM(v)
 #define rb_uint_new(v) rb_uint2inum(v)
+
+#if HAVE_LONG_LONG
+VALUE rb_ll2inum _((long long));
+#define LL2NUM(v) rb_ll2inum(v)
+VALUE rb_ull2inum _((unsigned long long));
+#define ULL2NUM(v) rb_ull2inum(v)
+#endif
+
+#if SIZEOF_OFF_T > SIZEOF_LONG && HAVE_LONG_LONG
+# define OFFT2NUM(v) LL2NUM(v)
+#else
+# define OFFT2NUM(v) INT2NUM(v)
+#endif
 
 #define FIX2LONG(x) RSHIFT((long)x,1)
 #define FIX2ULONG(x) (((unsigned long)(x))>>1)
@@ -199,6 +230,18 @@ int rb_fix2int _((VALUE));
 #define NUM2UINT(x) NUM2ULONG(x)
 #define FIX2INT(x) FIX2LONG(x)
 #define FIX2UINT(x) FIX2ULONG(x)
+#endif
+
+#if HAVE_LONG_LONG
+long long rb_num2ll _((VALUE));
+unsigned long long rb_num2ull _((VALUE));
+# define NUM2LL(x) (FIXNUM_P(x)?FIX2LONG(x):rb_num2ll((VALUE)x))
+#endif
+
+#if HAVE_LONG_LONG && SIZEOF_OFF_T > SIZEOF_LONG
+# define NUM2OFFT(x) ((off_t)NUM2LL(x))
+#else
+# define NUM2OFFT(x) NUM2LONG(x)
 #endif
 
 double rb_num2dbl _((VALUE));
