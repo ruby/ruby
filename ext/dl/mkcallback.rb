@@ -34,6 +34,8 @@ def mkfunc(rettype, fnum, argc)
     "  proto = rb_ary_entry(obj, 0);",
     "  proc  = rb_ary_entry(obj, 1);",
     "  Check_Type(proto, T_STRING);",
+    "  if( RSTRING(proto)->len >= #{argc.to_s} )",
+    "    rb_raise(rb_eArgError, \"too many arguments\");",
     "  rb_dl_scan_callback_args(buff, RSTRING(proto)->ptr, &argc, argv);",
     "  retval = rb_funcall2(proc, id_call, argc, argv);",
     "",
