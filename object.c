@@ -2009,7 +2009,8 @@ rb_obj_ivar_get(obj, iv)
  *  
  *  Sets the instance variable names by <i>symbol</i> to
  *  <i>object</i>, thereby frustrating the efforts of the class's
- *  author to attempt to provide proper encapsulation.
+ *  author to attempt to provide proper encapsulation. The variable
+ *  did not have to exist prior to this call.
  *     
  *     class Fred
  *       def initialize(p1, p2)
@@ -2018,7 +2019,8 @@ rb_obj_ivar_get(obj, iv)
  *     end
  *     fred = Fred.new('cat', 99)
  *     fred.instance_variable_set(:@a, 'dog')   #=> "dog"
- *     fred.inspect                             #=> "#<Fred:0x401b3da8 @a=\"dog\", @b=99>"
+ *     fred.instance_variable_set(:@c, 'cat')   #=> "cat"
+ *     fred.inspect                             #=> "#<Fred:0x401b3da8 @a=\"dog\", @b=99, @c=\"cat\">"
  */
 
 static VALUE

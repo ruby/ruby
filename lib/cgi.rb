@@ -770,7 +770,7 @@ class CGI
   #   cookie1.domain  = 'domain'
   #   cookie1.expires = Time.now + 30
   #   cookie1.secure  = true
-  class Cookie < SimpleDelegator
+  class Cookie < DelegateClass(Array)
 
     # Create a new CGI::Cookie object.
     #

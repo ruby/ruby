@@ -1,8 +1,16 @@
+Tue Feb  8 09:30:01 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/cgi.rb (CGI::Cookie): [ruby-talk:130040]
+
 Tue Feb  8 00:19:02 2005  Tanaka Akira  <akr@m17n.org>
 
 	* lib/resolv.rb (Resolv::DNS::Name#subdomain_of?): new method.
 	  (Resolv::DNS::Name#inspect): ditto.
 	  Suggested by Sam Roberts.  [ruby-talk:129086]
+
+Mon Feb  7 10:06:30 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c: [ruby-doc:818]
 
 Mon Feb  7 01:56:20 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -123,7 +131,11 @@ Mon Jan 31 13:33:21 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/remote-tk.rb: ditto
 
-Sat Jan 29 09:42:12 2005  Sam Roberts  <sroberts@uniserve.com>
+Mon Jan 31 10:29:18 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/irb/context.rb (IRB::Context::initialize): [ruby-core:04330]
+
+	Sat Jan 29 09:42:12 2005  Sam Roberts  <sroberts@uniserve.com>
 
 	* lib/resolv.rb (Resolv::DNS::Resource::IN::SRV): Added RFC2782 SRV
 	  resource record for specifying location of services.
@@ -136,6 +148,11 @@ Fri Jan 28 17:16:55 2005  Tanaka Akira  <akr@m17n.org>
 	  (Resolv::DNS#lazy_initialize): ditto.
 	  (Resolv::DNS::Config#lazy_initialize): ditto.
 	  Suggested by Sam Roberts.
+
+Thu Jan 27 13:18:03 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* st.c (st_foreach): report success/failure by return value.
+	  [ruby-Bugs-1396]
 
 Thu Jan 27 00:15:29 2005  Minero Aoki  <aamine@loveruby.net>
 
@@ -2268,6 +2285,14 @@ Mon Oct 18 02:04:11 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	  do_not_reverse_lookup for each socket if :DoNotReverseLookup
 	  is set.  [ruby-core:02357]
 
+Mon Oct 18 00:42:45 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (sock_s_getservbyaname): protocol string
+	  might be altered.  [ruby-dev:24503]
+
+	* string.c (rb_str_upto): check if return value from succ is a
+	  string.  [ruby-dev:24504]
+
 Sun Oct 17 23:03:48 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/timer.rb: TkTimer#start and restart accept a block
@@ -2360,14 +2385,6 @@ Thu Oct  7 12:55:04 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  switch. [ruby-dev:24442]
 
 	* pack.c (pack_unpack): string conversion should at the top of the
-Mon Oct 18 00:42:45 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
-
-	* ext/socket/socket.c (sock_s_getservbyaname): protocol string
-	  might be altered.  [ruby-dev:24503]
-
-	* string.c (rb_str_upto): check if return value from succ is a
-	  string.  [ruby-dev:24504]
-
 	  method.  [ruby-dev:24439]
 
 	* io.c (io_read): buffer should be frozen only after the length

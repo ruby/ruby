@@ -480,7 +480,7 @@ st_cleanup_safe(table, never)
     table->num_entries = num_entries;
 }
 
-void
+int
 st_foreach(table, func, arg)
     st_table *table;
     int (*func)();
@@ -493,7 +493,7 @@ st_foreach(table, func, arg)
     for(i = 0; i < table->num_bins; i++) {
 	last = 0;
 	for(ptr = table->bins[i]; ptr != 0;) {
-	    retval = (*func)(ptr->key, ptr->record, arg, 0);
+	    retval = (*func)(ptr->key, ptr->record, arg);
 	    switch (retval) {
 	    case ST_CHECK:	/* check if hash is modified during iteration */
 	        tmp = 0;
@@ -504,8 +504,7 @@ st_foreach(table, func, arg)
 		}
 		if (!tmp) {
 		    /* call func with error notice */
-		    retval = (*func)(0, 0, arg, 1);
-		    return;
+		    return 1;
 		}
 		/* fall through */
 	    case ST_CONTINUE:
@@ -513,7 +512,7 @@ st_foreach(table, func, arg)
 		ptr = ptr->next;
 		break;
 	    case ST_STOP:
-		return;
+	        return 0;
 	    case ST_DELETE:
 		tmp = ptr;
 		if (last == 0) {
@@ -528,6 +527,7 @@ st_foreach(table, func, arg)
 	    }
 	}
     }
+    return 0;
 }
 
 static int

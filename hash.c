@@ -121,17 +121,14 @@ struct foreach_safe_arg {
 };
 
 static int
-foreach_safe_i(key, value, arg, err)
+foreach_safe_i(key, value, arg)
     st_data_t key, value;
     struct foreach_safe_arg *arg;
 {
     int status;
 
-    if (err) {
-	rb_raise(rb_eRuntimeError, "hash modified during iteration");
-    }
     if (key == Qundef) return ST_CONTINUE;
-    status = (*arg->func)(key, value, arg->arg, err);
+    status = (*arg->func)(key, value, arg->arg);
     if (status == ST_CONTINUE) {
 	return ST_CHECK;
     }
@@ -149,7 +146,9 @@ st_foreach_safe(table, func, a)
     arg.tbl = table;
     arg.func = func;
     arg.arg = a;
-    st_foreach(table, foreach_safe_i, (st_data_t)&arg);
+    if (st_foreach(table, foreach_safe_i, (st_data_t)&arg)) {
+	rb_raise(rb_eRuntimeError, "hash modified during iteration");
+    }
 }
 
 struct hash_foreach_arg {
@@ -159,17 +158,13 @@ struct hash_foreach_arg {
 };
 
 static int
-hash_foreach_iter(key, value, arg, err)
+hash_foreach_iter(key, value, arg)
     VALUE key, value;
     struct hash_foreach_arg *arg;
-    int err;
 {
     int status;
     st_table *tbl;
 
-    if (err) {
- 	rb_raise(rb_eRuntimeError, "hash modified during iteration");
-    }
     tbl = RHASH(arg->hash)->tbl;    
     if (key == Qundef) return ST_CONTINUE;
     status = (*arg->func)(key, value, arg->arg);
@@ -207,7 +202,9 @@ static VALUE
 hash_foreach_call(arg)
     struct hash_foreach_arg *arg;
 {
-    st_foreach(RHASH(arg->hash)->tbl, hash_foreach_iter, (st_data_t)arg);
+    if (st_foreach(RHASH(arg->hash)->tbl, hash_foreach_iter, (st_data_t)arg)) {
+ 	rb_raise(rb_eRuntimeError, "hash modified during iteration");
+    }
     return Qnil;
 }
 

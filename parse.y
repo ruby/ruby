@@ -2559,7 +2559,7 @@ yycompile(f, line)
     ruby_in_compile = 0;
     cond_stack = 0;
     cmdarg_stack = 0;
-    command_start = 1;		  
+    command_start = 1;
     class_nest = 0;
     in_single = 0;
     in_def = 0;
