@@ -6630,19 +6630,20 @@ proc_to_s(self, other)
 {
     struct BLOCK *data;
     char *cname = rb_class2name(CLASS_OF(self));
-    long len = strlen(cname)+6+16+1; /* 6:tags 16:addr 1:nul */
+    const int w = (SIZEOF_LONG * CHAR_BIT) / 4;
+    long len = strlen(cname)+6+w; /* 6:tags 16:addr */
     VALUE str;
 
     Data_Get_Struct(self, struct BLOCK, data);
     if (data->body) {
-	len += strlen(data->body->nd_file)+16;
+	len += strlen(data->body->nd_file) + 2 + (SIZEOF_LONG*CHAR_BIT-NODE_LSHIFT)/3;
 	str = rb_str_new(0, len);
-	sprintf(RSTRING(str)->ptr, "#<%s:0x%p@%s:%d>", cname, data->tag,
+	sprintf(RSTRING(str)->ptr, "#<%s:0x%.*lx@%s:%d>", cname, w, (VALUE)data->tag,
 		data->body->nd_file, nd_line(data->body));
     }
     else {
 	str = rb_str_new(0, len);
-	sprintf(RSTRING(str)->ptr, "#<%s:0x%p>", cname, data->tag);
+	sprintf(RSTRING(str)->ptr, "#<%s:0x%.*lx>", cname, w, (VALUE)data->tag);
     }
     RSTRING(str)->len = strlen(RSTRING(str)->ptr);
     if (OBJ_TAINTED(self)) OBJ_TAINT(str);
