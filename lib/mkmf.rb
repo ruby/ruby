@@ -633,7 +633,8 @@ def dir_config(target, idefault=nil, ldefault=nil)
   idir = with_config(target + "-include", idefault)
   ldir = with_config(target + "-lib", ldefault)
 
-  idirs = idir ? idir.split(File::PATH_SEPARATOR) : []
+#  idirs = idir ? idir.split(File::PATH_SEPARATOR) : []
+  idirs = idir.split(File::PATH_SEPARATOR) rescue []
   if defaults
     idirs.concat(defaults.collect {|dir| dir + "/include"})
     idir = ([idir] + idirs).compact.join(File::PATH_SEPARATOR)

@@ -133,8 +133,13 @@ rb_secure(level)
     int level;
 {
     if (level <= ruby_safe_level) {
-	rb_raise(rb_eSecurityError, "Insecure operation `%s' at level %d",
-		 rb_id2name(ruby_frame->last_func), ruby_safe_level);
+	if (ruby_frame->last_func) {
+	    rb_raise(rb_eSecurityError, "Insecure operation `%s' at level %d",
+		     rb_id2name(ruby_frame->last_func), ruby_safe_level);
+	}
+	else {
+	    rb_raise(rb_eSecurityError, "Insecure operation at level %d", ruby_safe_level);
+	}
     }
 }
 
@@ -5923,7 +5928,10 @@ rb_f_require(obj, fname)
     VALUE feature, tmp;
     char *ext; /* OK */
 
-    SafeStringValue(fname);
+    if (OBJ_TAINTED(fname)) {
+	rb_check_safe_obj(fname);
+    }
+    StringValue(fname);
     ext = strrchr(RSTRING(fname)->ptr, '.');
     if (ext && strchr(ext, '/')) ext = 0;
     if (ext) {
@@ -5993,15 +6001,17 @@ load_dyna(feature, fname)
     VALUE feature, fname;
 {
     int state;
+    volatile int safe = ruby_safe_level;
 
     if (rb_feature_p(RSTRING(feature)->ptr, Qfalse))
 	return Qfalse;
     rb_provide_feature(feature);
     {
-	int volatile old_vmode = scope_vmode;
+	volatile int old_vmode = scope_vmode;
 	NODE *const volatile old_node = ruby_current_node;
 	const volatile ID old_func = ruby_frame->last_func;
 
+	ruby_safe_level = 0;
 	ruby_current_node = 0;
 	ruby_sourcefile = rb_source_filename(RSTRING(fname)->ptr);
 	ruby_sourceline = 0;
@@ -6020,6 +6030,7 @@ load_dyna(feature, fname)
 	ruby_frame->last_func = old_func;
 	SCOPE_SET(old_vmode);
     }
+    ruby_safe_level = safe;
     if (state) JUMP_TAG(state);
     ruby_errinfo = Qnil;
 

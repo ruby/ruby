@@ -1,7 +1,23 @@
+Fri Sep 12 12:09:54 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_big_and): convert argument using 'to_int'.
+
+	* bignum.c (rb_big_or): ditto.
+
+	* bignum.c (rb_big_xor): ditto.
+
 Fri Sep 11 22:06:14 2003   David Black <dblack@superlink.net>
 
 	* lib/scanf.rb: Took out useless @matched_item variable; some small
 	  refactoring.
+
+Thu Sep 11 08:43:44 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_f_require): allow "require" on $SAFE>0, if feature
+	  name is not tainted.
+
+	* lib/rexml/parsers/baseparser.rb (REXML::Parsers::BaseParser::stream): 
+	  Supports StringIO.
 
 Wed Sep 10 22:47:30 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 

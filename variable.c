@@ -1150,8 +1150,7 @@ rb_autoload(mod, id, file)
     struct st_table *tbl;
 
     if (!rb_is_const_id(id)) {
-	rb_raise(rb_eNameError, "autoload must be constant name",
-		 rb_id2name(id));
+	rb_raise(rb_eNameError, "autoload must be constant name", rb_id2name(id));
     }
     if (!file || !*file) {
 	rb_raise(rb_eArgError, "empty file name");

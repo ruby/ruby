@@ -1451,13 +1451,10 @@ rb_big_and(x, y)
     long i, l1, l2;
     char sign;
 
+    y = rb_to_int(y);
     if (FIXNUM_P(y)) {
 	y = rb_int2big(FIX2LONG(y));
     }
-    else {
-	Check_Type(y, T_BIGNUM);
-    }
-
     if (!RBIGNUM(y)->sign) {
 	y = rb_big_clone(y);
 	get2comp(y, Qtrue);
@@ -1502,11 +1499,9 @@ rb_big_or(x, y)
     long i, l1, l2;
     char sign;
 
+    y = rb_to_int(y);
     if (FIXNUM_P(y)) {
 	y = rb_int2big(FIX2LONG(y));
-    }
-    else {
-	Check_Type(y, T_BIGNUM);
     }
 
     if (!RBIGNUM(y)->sign) {
@@ -1554,11 +1549,9 @@ rb_big_xor(x, y)
     long i, l1, l2;
     char sign;
 
+    y = rb_to_int(y);
     if (FIXNUM_P(y)) {
 	y = rb_int2big(FIX2LONG(y));
-    }
-    else {
-	Check_Type(y, T_BIGNUM);
     }
 
     if (!RBIGNUM(y)->sign) {

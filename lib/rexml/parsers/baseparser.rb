@@ -106,9 +106,11 @@ module REXML
 					@source = IOSource.new(source)
 				elsif source.kind_of? Source
 					@source = source
+				elsif defined? StringIO and source.kind_of? StringIO
+					@source = IOSource.new(source)
 				else
-					raise "#{source.type} is not a valid input stream.  It must be \n"+
-					"either a String, IO, or Source."
+					raise "#{source.class} is not a valid input stream.  It must be \n"+
+					"either a String, IO, StringIO or Source."
 				end
 				@closed = nil
 				@document_status = nil

@@ -323,11 +323,20 @@ if $getaddr_info_ok and have_func("getaddrinfo") and have_func("getnameinfo")
   have_getaddrinfo = true
 else
   if try_link(<<EOF)
-#include <sys/types.h>
-#include <netdb.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
+#ifndef _WIN32
+#  include <sys/types.h>
+#  include <netdb.h>
+#  include <string.h>
+#  include <sys/socket.h>
+#  include <netinet/in.h>
+#else
+#  include <windows.h>
+#  ifdef _WIN32_WCE
+#    include <winsock.h>
+#  else
+#    include <winsock.h>
+#  endif
+#endif
 int
 main()
 {
