@@ -153,17 +153,13 @@ research(reg, str, start, ignorecase)
 	OBJSETUP(obj, C_Data, T_DATA);
 	obj->dfree = free_match;
 	data = (struct match*)DATA_PTR(obj);
-	memset(data, 0, sizeof(struct match));
-	beg = reg->ptr->regs.start[0];
-	data->len  = reg->ptr->regs.end[0] - beg;
-	data->ptr = ALLOC_N(char, data->len+1);
-	memcpy(data->ptr, str->ptr + beg, data->len);
+
+	data->len = str->len;
+	data->ptr = ALLOC_N(char, str->len+1);
+	memcpy(data->ptr, str->ptr, data->len);
 	data->ptr[data->len] = '\0';
-	for (i=0; i<RE_NREGS; i++) {
-	    if (reg->ptr->regs.start[i] == -1) break;
-	    data->regs.start[i] = reg->ptr->regs.start[i] - beg;
-	    data->regs.end[i] = reg->ptr->regs.end[i] - beg;
-	}
+	data->regs = reg->ptr->regs;
+
 	last_match_data = (VALUE)obj;
     }
 
@@ -182,7 +178,6 @@ nth_match(nth)
 	struct match *match;
 
 	match = (struct match*)DATA_PTR(last_match_data);
-	if (nth == 0) return str_new(match->ptr, match->len);
 	start = match->regs.start[nth];
 	if (start == -1) return Qnil;
 	end   = match->regs.end[nth];
@@ -197,6 +192,44 @@ re_last_match(id)
     ID id;
 {
     return nth_match(0);
+}
+
+static VALUE
+re_match_pre()
+{
+    struct match *match;
+
+    if (!last_match_data) return Qnil;
+
+    match = (struct match*)DATA_PTR(last_match_data);
+    return str_new(match->ptr, match->regs.start[0]);
+}
+
+static VALUE
+re_match_post()
+{
+    struct match *match;
+
+    if (!last_match_data) return Qnil;
+
+    match = (struct match*)DATA_PTR(last_match_data);
+    return str_new(match->ptr+match->regs.end[0], match->ptr+match->len);
+}
+
+static VALUE
+re_match_last()
+{
+    struct match *match;
+    int i;
+
+    if (!last_match_data) return Qnil;
+
+    match = (struct match*)DATA_PTR(last_match_data);
+    for (i=0; i<RE_NREGS; i++) {
+	if (match->regs.start[i] == -1) break;
+    }
+    i--;
+    return nth_match(i);
 }
 
 #ifdef __STDC__
@@ -405,7 +438,54 @@ re_regsub(str)
     return val;
 }
 
-VALUE rb_readonly_hook();
+void
+rb_set_kanjicode(code)
+    char *code;
+{
+    if (code == Qnil) goto set_no_conversion;
+
+    switch (code[0]) {
+      case 'E':
+      case 'e':
+	obscure_syntax &= ~RE_MBCTYPE_MASK;
+	obscure_syntax |= RE_MBCTYPE_EUC;
+	break;
+      case 'S':
+      case 's':
+	obscure_syntax &= ~RE_MBCTYPE_MASK;
+	obscure_syntax |= RE_MBCTYPE_SJIS;
+	break;
+      default:
+      case 'N':
+      case 'n':
+      set_no_conversion:
+	obscure_syntax &= ~RE_MBCTYPE_MASK;
+	break;
+    }
+    re_set_syntax(obscure_syntax);
+}
+
+static VALUE
+kanji_var_get()
+{
+    switch (obscure_syntax & RE_MBCTYPE_MASK) {
+      case RE_MBCTYPE_SJIS:
+	return str_new2("SJIS");
+      case RE_MBCTYPE_EUC:
+	return str_new2("EUC");
+      default:
+	return Qnil;
+    }
+}
+
+static void
+kanji_var_set(val)
+    struct RString *val;
+{
+    if (val == Qnil) rb_set_kanjicode(Qnil);
+    Check_Type(val, T_STRING);
+    rb_set_kanjicode(val->ptr);
+}
 
 void
 Init_Regexp()
@@ -417,17 +497,22 @@ Init_Regexp()
 
     rb_define_variable("$~", last_match_data, Qnil, store_match_data);
 
-    rb_define_variable("$&", Qnil, re_last_match, rb_readonly_hook);
+    rb_define_variable("$&", Qnil, re_last_match, Qnil);
+    rb_define_variable("$`", Qnil, re_match_pre,  Qnil);
+    rb_define_variable("$'", Qnil, re_match_post, Qnil);
+    rb_define_variable("$+", Qnil, re_match_last, Qnil);
 
-    rb_define_variable("$1", Qnil, GET_MATCH(1), rb_readonly_hook);
-    rb_define_variable("$2", Qnil, GET_MATCH(2), rb_readonly_hook);
-    rb_define_variable("$3", Qnil, GET_MATCH(3), rb_readonly_hook);
-    rb_define_variable("$4", Qnil, GET_MATCH(4), rb_readonly_hook);
-    rb_define_variable("$5", Qnil, GET_MATCH(5), rb_readonly_hook);
-    rb_define_variable("$6", Qnil, GET_MATCH(6), rb_readonly_hook);
-    rb_define_variable("$7", Qnil, GET_MATCH(7), rb_readonly_hook);
-    rb_define_variable("$8", Qnil, GET_MATCH(8), rb_readonly_hook);
-    rb_define_variable("$9", Qnil, GET_MATCH(9), rb_readonly_hook);
+    rb_define_variable("$1", Qnil, GET_MATCH(1), Qnil);
+    rb_define_variable("$2", Qnil, GET_MATCH(2), Qnil);
+    rb_define_variable("$3", Qnil, GET_MATCH(3), Qnil);
+    rb_define_variable("$4", Qnil, GET_MATCH(4), Qnil);
+    rb_define_variable("$5", Qnil, GET_MATCH(5), Qnil);
+    rb_define_variable("$6", Qnil, GET_MATCH(6), Qnil);
+    rb_define_variable("$7", Qnil, GET_MATCH(7), Qnil);
+    rb_define_variable("$8", Qnil, GET_MATCH(8), Qnil);
+    rb_define_variable("$9", Qnil, GET_MATCH(9), Qnil);
+
+    rb_define_variable("$KANJI", Qnil, kanji_var_get, kanji_var_set);
 
     rb_define_variable("$=", &ignorecase, Qnil, Qnil);
 

@@ -14,7 +14,6 @@
 #include "env.h"
 #include "node.h"
 #include "st.h"
-#include "methods.h"
 
 struct st_table *new_idhash();
 
@@ -46,6 +45,16 @@ single_class_new(super)
     return (VALUE)cls;
 }
 
+static int
+clone_method(mid, body, tbl)
+    ID mid;
+    NODE *body;
+    st_table *tbl;
+{
+    st_insert(tbl, mid, NEW_METHOD(body->nd_body, body->nd_noex));
+    return ST_CONTINUE;
+}
+
 VALUE
 single_class_clone(class)
     struct RClass *class;
@@ -54,14 +63,15 @@ single_class_clone(class)
 	return (VALUE)class;
     else {
 	/* copy single(unnamed) class */
-	NEWOBJ(cls, struct RClass);
-	CLONESETUP(cls, class);
+	NEWOBJ(clone, struct RClass);
+	CLONESETUP(clone, class);
 
-	cls->super = class->super;
-	cls->m_tbl = st_copy(class->m_tbl);
-	cls->c_tbl = Qnil;
-	FL_SET(cls, FL_SINGLE);
-	return (VALUE)cls;
+	clone->super = class->super;
+	clone->m_tbl = new_idhash();
+	st_foreach(class->m_tbl, clone_method, clone->m_tbl);
+	clone->c_tbl = Qnil;
+	FL_SET(clone, FL_SINGLE);
+	return (VALUE)clone;
     }
 }
 
@@ -169,13 +179,13 @@ rb_include_module(class, module)
 }
 
 void
-rb_add_method(class, mid, node, undef)
+rb_add_method(class, mid, node, noex)
     struct RClass *class;
     ID mid;
     NODE *node;
-    int undef;
+    int noex;
 {
-    struct SMethod *body;
+    NODE *body;
 
     if (class == Qnil) class = (struct RClass*)C_Object;
     if (st_lookup(class->m_tbl, mid, &body)) {
@@ -183,17 +193,12 @@ rb_add_method(class, mid, node, undef)
 	    Warning("redefine %s", rb_id2name(mid));
 	}
 	rb_clear_cache(body);
-	method_free(body);
+	freenode(body);
     }
-    body = ALLOC(struct SMethod);
-    body->node = node;
-    if (BUILTIN_TYPE(class) == T_MODULE)
-	body->origin = Qnil;
-    else
-	body->origin = class;
-    body->id = mid;
-    body->undef = undef;
-    body->count = 1;
+    if (node && node->type != NODE_FBODY) {
+	node = NEW_FBODY(node, mid);
+    }
+    body = NEW_METHOD(node, noex);
     st_insert(class->m_tbl, mid, body);
 }
 
@@ -204,9 +209,7 @@ rb_define_method(class, name, func, argc)
     VALUE (*func)();
     int argc;
 {
-    NODE *temp = NEW_CFUNC(func, argc);
-
-    rb_add_method(class, rb_intern(name), temp, FALSE);
+    rb_add_method(class, rb_intern(name), NEW_CFUNC(func, argc), 0);
 }
 
 void
@@ -214,7 +217,17 @@ rb_undef_method(class, name)
     struct RClass *class;
     char *name;
 {
-    rb_add_method(class, rb_intern(name), Qnil, TRUE);
+    rb_add_method(class, rb_intern(name), Qnil, 0);
+}
+
+void
+rb_define_private_method(class, name, func, argc)
+    struct RClass *class;
+    char *name;
+    VALUE (*func)();
+    int argc;
+{
+    rb_add_method(class, rb_intern(name), NEW_CFUNC(func, argc), 1);
 }
 
 VALUE
@@ -228,7 +241,7 @@ rb_single_class(obj)
       case T_STRUCT:
 	break;
       default:
-	Fail("can't define single method for built-in classes");
+	Fail("can't define single method for built-in class");
 	break;
     }
 
@@ -245,7 +258,18 @@ rb_define_single_method(obj, name, func, argc)
     VALUE (*func)();
     int argc;
 {
-    rb_define_method(rb_single_class(obj), name, func, argc, FALSE);
+    rb_define_method(rb_single_class(obj), name, func, argc);
+}
+
+void
+rb_define_module_function(module, name, func, argc)
+    VALUE module;
+    char *name;
+    VALUE (*func)();
+    int argc;
+{
+    rb_define_private_method(module, name, func, argc);
+    rb_define_single_method(module, name, func, argc);
 }
 
 void
@@ -272,10 +296,10 @@ rb_define_attr(class, name, pub)
     sprintf(buf, "@%s", name);
     attriv = rb_intern(buf);
     if (rb_method_boundp(class, attr) == Qnil) {
-	rb_add_method(class, attr, NEW_IVAR(attriv), FALSE);
+	rb_add_method(class, attr, NEW_IVAR(attriv), 0);
     }
     if (pub && rb_method_boundp(class, attreq) == Qnil) {
-	rb_add_method(class, attreq, NEW_ATTRSET(attriv), FALSE);
+	rb_add_method(class, attreq, NEW_ATTRSET(attriv), 0);
     }
 }
 

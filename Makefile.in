@@ -154,7 +154,7 @@ parse.o : parse.y ruby.h defines.h env.h node.h st.h ident.h regex.h
 ###
 array.o : array.c ruby.h defines.h 
 bignum.o : bignum.c ruby.h defines.h 
-class.o : class.c ruby.h defines.h env.h node.h st.h methods.h 
+class.o : class.c ruby.h defines.h env.h node.h st.h
 compar.o : compar.c ruby.h defines.h 
 dbm.o : dbm.c ruby.h defines.h 
 dict.o : dict.c ruby.h defines.h st.h 
@@ -163,7 +163,7 @@ dln.o : dln.c defines.h dln.h
 enum.o : enum.c ruby.h defines.h 
 error.o : error.c ruby.h defines.h env.h 
 etc.o : etc.c ruby.h defines.h 
-eval.o : eval.c ruby.h defines.h ident.h env.h node.h methods.h st.h 
+eval.o : eval.c ruby.h defines.h ident.h env.h node.h st.h 
 file.o : file.c ruby.h defines.h io.h 
 fnmatch.o : fnmatch.c fnmatch.h 
 gc.o : gc.c ruby.h defines.h env.h st.h 

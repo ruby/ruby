@@ -128,6 +128,7 @@ Ftime_at(class, time)
     return time_new_internal(class, tp->tv_sec, tp->tv_usec);
 
 }
+
 static VALUE
 Ftime_to_i(time)
     VALUE time;
@@ -136,6 +137,16 @@ Ftime_to_i(time)
 
     GetTimeval(time, tobj);
     return int2inum(tobj->tv.tv_sec);
+}
+
+static VALUE
+Ftime_to_f(time)
+    VALUE time;
+{
+    struct time_object *tobj;
+
+    GetTimeval(time, tobj);
+    return float_new((double)tobj->tv.tv_sec+(double)tobj->tv.tv_usec/1000000);
 }
 
 static VALUE
@@ -516,6 +527,7 @@ Init_Time()
     rb_define_single_method(C_Time, "times", Ftime_times, 0);
 
     rb_define_method(C_Time, "to_i", Ftime_to_i, 0);
+    rb_define_method(C_Time, "to_f", Ftime_to_f, 0);
     rb_define_method(C_Time, "<=>", Ftime_cmp, 1);
     rb_define_method(C_Time, "hash", Ftime_hash, 0);
 

@@ -21,13 +21,15 @@
 
 VALUE rb_ad_string();
 
-VALUE C_IO, C_ARGFILE;
+VALUE C_IO;
 extern VALUE C_File;
 
 VALUE rb_stdin, rb_stdout, rb_stderr, rb_defout;
 
 VALUE FS, OFS;
 VALUE RS, ORS;
+
+static VALUE argf;
 
 ID id_write, id_fd, id_print_on;
 
@@ -178,7 +180,7 @@ read_all(port)
     for (;;) {
 	n = fread(buf, 1, BUFSIZ, fptr->f);
 	if (n == 0) {
-	    if (feof(fptr->f)) return Qnil;
+	    if (feof(fptr->f)) break;
 	    rb_sys_fail(Qnil);
 	}
 	str_cat(str, buf, n);
@@ -1261,26 +1263,26 @@ VALUE rb_readonly_hook();
 
 Init_IO()
 {
-    extern VALUE C_Builtin;
+    extern VALUE C_Kernel;
 
     id_write = rb_intern("write");
     id_fd = rb_intern("fd");
     id_print_on = rb_intern("print_on");
 
-    rb_define_method(C_Builtin, "syscall", Fsyscall, -1);
+    rb_define_private_method(C_Kernel, "syscall", Fsyscall, -1);
 
-    rb_define_method(C_Builtin, "open", Fopen, -2);
-    rb_define_method(C_Builtin, "printf", Fprintf, -1);
-    rb_define_method(C_Builtin, "print", Fprint, -1);
-    rb_define_method(C_Builtin, "gets", Fgets, 0);
-    rb_define_alias(C_Builtin,"readline", "gets");
-    rb_define_method(C_Builtin, "eof", Feof, 0);
-    rb_define_method(C_Builtin, "getc", Fgetc, 0);
-    rb_define_method(C_Builtin, "select", Fselect, -2);
+    rb_define_private_method(C_Kernel, "open", Fopen, -2);
+    rb_define_private_method(C_Kernel, "printf", Fprintf, -1);
+    rb_define_private_method(C_Kernel, "gets", Fgets, 0);
+    rb_define_alias(C_Kernel,"readline", "gets");
+    rb_define_private_method(C_Kernel, "eof", Feof, 0);
+    rb_define_private_method(C_Kernel, "getc", Fgetc, 0);
+    rb_define_private_method(C_Kernel, "select", Fselect, -2);
 
-    rb_define_method(C_Builtin, "readlines", Freadlines, 0);
+    rb_define_private_method(C_Kernel, "readlines", Freadlines, 0);
 
-    rb_define_method(C_Builtin, "print_on", Fprint_on, 1);
+    rb_define_method(C_Kernel, "print_on", Fprint_on, 1);
+    rb_define_method(C_Kernel, "print", Fprint, -1);
 
     C_IO = rb_define_class("IO", C_Object);
     rb_include_module(C_IO, M_Enumerable);
@@ -1340,22 +1342,21 @@ Init_IO()
     rb_define_single_method(C_IO, "default", Fio_defget, 0);
     rb_define_single_method(C_IO, "default=", Fio_defset, 1);
 
-    C_ARGFILE = rb_define_class("ARGFILE", C_Object);
-    rb_include_module(C_ARGFILE, M_Enumerable);
+    argf = obj_alloc(C_Object);
+    rb_define_variable("$ARGF", &argf, Qnil, rb_readonly_hook);
 
-    rb_define_variable("$ARGF", &C_ARGFILE, Qnil, rb_readonly_hook);
+    rb_define_single_method(argf, "each",  Farg_each, 0);
+    rb_define_single_method(argf, "each_byte",  Farg_each_byte, 0);
 
-    rb_define_single_method(C_ARGFILE, "each",  Farg_each, 0);
-    rb_define_single_method(C_ARGFILE, "each_byte",  Farg_each_byte, 0);
+    rb_define_single_method(argf, "read",  Farg_read, 0);
+    rb_define_single_method(argf, "readlines", Freadlines, 0);
+    rb_define_single_method(argf, "gets", Fgets, 0);
+    rb_define_single_method(argf, "realine", Fgets, 0);
+    rb_define_single_method(argf, "getc", Farg_getc, 0);
+    rb_define_single_method(argf, "eof", Feof, 0);
 
-    rb_define_single_method(C_ARGFILE, "read",  Farg_read, 0);
-    rb_define_single_method(C_ARGFILE, "readlines", Freadlines, 0);
-    rb_define_single_method(C_ARGFILE, "gets", Fgets, 0);
-    rb_define_single_method(C_ARGFILE, "realine", Fgets, 0);
-    rb_define_single_method(C_ARGFILE, "getc", Farg_getc, 0);
-    rb_define_single_method(C_ARGFILE, "eof", Feof, 0);
-
-    rb_define_single_method(C_ARGFILE, "to_s", Farg_to_s, 0);
+    rb_define_single_method(argf, "to_s", Farg_to_s, 0);
+    rb_include_module(CLASS_OF(argf), M_Enumerable);
 
     Init_File();
 }

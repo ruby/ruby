@@ -14,6 +14,8 @@
 #define NODE_H
 
 enum node_type {
+    NODE_METHOD,
+    NODE_FBODY,
     NODE_CFUNC,
     NODE_SCOPE,
     NODE_BLOCK,
@@ -23,7 +25,7 @@ enum node_type {
     NODE_WHILE,
     NODE_WHILE2,
     NODE_EXNOT,
-    NODE_DO,
+    NODE_ITER,
     NODE_FOR,
     NODE_PROT,
     NODE_AND,
@@ -141,10 +143,11 @@ typedef struct node {
 #define nd_mid   u2.id
 #define nd_args  u3.node
 
+#define nd_noex  u1.id
 #define nd_defn  u3.node
 
-#define nd_new   u1.id
-#define nd_old   u2.id
+#define nd_new   u2.id
+#define nd_old   u3.id
 
 #define nd_cfnc  u1.cfunc
 #define nd_argc  u2.argc
@@ -157,14 +160,15 @@ typedef struct node {
 #define nd_beg   u1.node
 #define nd_end   u2.node
 #define nd_state u3.state
-
 #define nd_rval  u3.node
 
-#define NEW_DEFN(i,d) newnode(NODE_DEFN,Qnil,i,d)
-#define NEW_DEFS(r,i,d) newnode(NODE_DEFS,r,i,d)
+#define NEW_METHOD(n,x) newnode(NODE_METHOD,x,n,Qnil)
+#define NEW_FBODY(n,i) newnode(NODE_FBODY,n,i,1)
+#define NEW_DEFN(i,d,p) newnode(NODE_DEFN,p,i,NEW_FBODY(d,i))
+#define NEW_DEFS(r,i,d) newnode(NODE_DEFS,r,i,NEW_FBODY(d,i))
 #define NEW_CFUNC(f,c) newnode(NODE_CFUNC,f,c,Qnil)
 #define NEW_RFUNC(b1,b2) NEW_SCOPE(block_append(b1,b2))
-#define NEW_SCOPE(b) newnode(NODE_SCOPE, local_tbl(),(b),local_cnt(0))
+#define NEW_SCOPE(b) newnode(NODE_SCOPE,local_tbl(),(b),local_cnt(0))
 #define NEW_BLOCK(a) newnode(NODE_BLOCK,a,Qnil,Qnil)
 #define NEW_IF(c,t,e) newnode(NODE_IF,c,t,e)
 #define NEW_EXNOT(c) newnode(NODE_EXNOT,c,Qnil,Qnil)
@@ -176,7 +180,7 @@ typedef struct node {
 #define NEW_WHILE2(c,b) newnode(NODE_WHILE2,c,b,Qnil)
 #define NEW_UNTIL2(c,b) newnode(NODE_WHILE2,NEW_EXNOT(c),b,Qnil)
 #define NEW_FOR(v,i,b) newnode(NODE_FOR,v,b,i)
-#define NEW_DO(v,i,b) newnode(NODE_DO,v,b,i)
+#define NEW_ITER(v,i,b) newnode(NODE_ITER,v,b,i)
 #define NEW_PROT(b,ex,en) newnode(NODE_PROT,b,ex,en)
 #define NEW_REDO() newnode(NODE_REDO,Qnil,Qnil,Qnil)
 #define NEW_BREAK() newnode(NODE_BREAK,Qnil,Qnil,Qnil)
@@ -212,7 +216,7 @@ typedef struct node {
 #define NEW_SUPER(a) newnode(NODE_SUPER,Qnil,Qnil,a)
 #define NEW_ZSUPER() newnode(NODE_ZSUPER,Qnil,Qnil,Qnil)
 #define NEW_ARGS(f,r) newnode(NODE_ARGS,f,r,Qnil)
-#define NEW_ALIAS(n,o) newnode(NODE_ALIAS,n,o,Qnil)
+#define NEW_ALIAS(n,o) newnode(NODE_ALIAS,Qnil,n,o)
 #define NEW_UNDEF(i) newnode(NODE_UNDEF,Qnil,i,Qnil)
 #define NEW_CLASS(n,b,s) newnode(NODE_CLASS,n,NEW_SCOPE(b),s)
 #define NEW_MODULE(n,b) newnode(NODE_MODULE,n,NEW_SCOPE(b),Qnil)

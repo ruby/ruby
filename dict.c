@@ -13,7 +13,9 @@
 #include "ruby.h"
 #include "st.h"
 
-VALUE C_Dict, C_EnvDict;
+VALUE C_Dict;
+
+static VALUE envtbl;
 static ID hash, eq;
 VALUE Fgetenv(), Fsetenv();
 
@@ -521,11 +523,16 @@ Fsetenv(obj, name, value)
     return FALSE;		/* not reached */
 }
 
+static VALUE
+Fenv_to_s()
+{
+    return str_new2("$ENV");
+}
+
 Init_Dict()
 {
-    extern VALUE C_Builtin;
+    extern VALUE C_Kernel;
     extern VALUE M_Enumerable;
-    static VALUE envtbl;
 
     hash = rb_intern("hash");
     eq   = rb_intern("==");
@@ -567,17 +574,16 @@ Init_Dict()
     rb_define_method(C_Dict,"has_value", Fdic_has_value, 1);
 
 
-    C_EnvDict = rb_define_class("EnvDict", C_Object);
+    envtbl = obj_alloc(C_Object);
+    rb_define_single_method(envtbl,"[]", Fgetenv, 1);
+    rb_define_single_method(envtbl,"[]=", Fsetenv, 2);
+    rb_define_single_method(envtbl,"each", Fenv_each, 0);
+    rb_define_single_method(envtbl,"delete", Fenv_delete, 1);
+    rb_define_single_method(envtbl,"to_s", Fenv_to_s, 0);
+    rb_include_module(CLASS_OF(envtbl), M_Enumerable);
 
-    rb_include_module(C_EnvDict, M_Enumerable);
-
-    rb_define_method(C_EnvDict,"[]", Fgetenv, 1);
-    rb_define_method(C_EnvDict,"[]=", Fsetenv, 2);
-    rb_define_method(C_EnvDict,"each", Fenv_each, 0);
-    rb_define_method(C_EnvDict,"delete", Fenv_delete, 1);
-    envtbl = obj_alloc(C_EnvDict);
     rb_define_variable("$ENV", &envtbl, Qnil, rb_readonly_hook);
 
-    rb_define_method(C_Builtin, "getenv", Fgetenv, 1);
-    rb_define_method(C_Builtin, "setenv", Fsetenv, 2);
+    rb_define_private_method(C_Kernel, "getenv", Fgetenv, 1);
+    rb_define_private_method(C_Kernel, "setenv", Fsetenv, 2);
 }

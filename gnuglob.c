@@ -86,6 +86,12 @@ extern void bcopy ();
 #  endif /* !RISC6000 */
 #endif /* USG */
 
+#if defined(sparc) && !defined(__GNUC__)
+#include <alloca.h>
+#else
+char *alloca ();
+#endif
+
 #include "fnmatch.h"
 
 /* If the opendir () on your system lets you open non-directory files,

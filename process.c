@@ -693,7 +693,7 @@ Fsleep(argc, argv)
     int beg, end;
 
     beg = time(0);
-    if (argc == 1) {
+    if (argc == 0) {
 	sleep((32767<<16)+32767);
     }
     else if (argc == 1) {
@@ -832,19 +832,19 @@ VALUE M_Process;
 
 Init_process()
 {
-    extern VALUE C_Builtin;
+    extern VALUE C_Kernel;
 
-    rb_define_variable("$$", Qnil, get_pid, rb_readonly_hook);
+    rb_define_variable("$$", Qnil, get_pid, Qnil);
     rb_define_variable("$?", &status, Qnil, rb_readonly_hook);
-    rb_define_method(C_Builtin, "exec", Fexec, 1);
-    rb_define_method(C_Builtin, "fork", Ffork, 0);
-    rb_define_method(C_Builtin, "_exit", Ffork, 1);
-    rb_define_method(C_Builtin, "wait", Fwait, 0);
-    rb_define_method(C_Builtin, "waitpid", Fwaitpid, 2);
-    rb_define_method(C_Builtin, "system", Fsystem, 1);
-    rb_define_method(C_Builtin, "kill", Fkill, -1);
-    rb_define_method(C_Builtin, "trap", Ftrap, -1);
-    rb_define_method(C_Builtin, "sleep", Fsleep, -1);
+    rb_define_private_method(C_Kernel, "exec", Fexec, 1);
+    rb_define_private_method(C_Kernel, "fork", Ffork, 0);
+    rb_define_private_method(C_Kernel, "_exit", Ffork, 1);
+    rb_define_private_method(C_Kernel, "wait", Fwait, 0);
+    rb_define_private_method(C_Kernel, "waitpid", Fwaitpid, 2);
+    rb_define_private_method(C_Kernel, "system", Fsystem, 1);
+    rb_define_private_method(C_Kernel, "kill", Fkill, -1);
+    rb_define_private_method(C_Kernel, "trap", Ftrap, -1);
+    rb_define_private_method(C_Kernel, "sleep", Fsleep, -1);
 
     M_Process = rb_define_module("Process");
 
@@ -854,27 +854,21 @@ Init_process()
     rb_define_single_method(M_Process, "waitpid", Fwaitpid, 2);
     rb_define_single_method(M_Process, "kill", Fkill, -1);
 
-    rb_define_method(M_Process, "pid", get_pid, 0);
-    rb_define_method(M_Process, "ppid", get_ppid, 0);
+    rb_define_module_function(M_Process, "pid", get_pid, 0);
+    rb_define_module_function(M_Process, "ppid", get_ppid, 0);
 
-    rb_define_method(M_Process, "getpgrp", Fproc_getpgrp, -2);
-    rb_define_method(M_Process, "setpgrp", Fproc_setpgrp, 2);
+    rb_define_module_function(M_Process, "getpgrp", Fproc_getpgrp, -2);
+    rb_define_module_function(M_Process, "setpgrp", Fproc_setpgrp, 2);
 
-    rb_define_method(M_Process, "getpriority", Fproc_getpriority, 2);
-    rb_define_method(M_Process, "setpriority", Fproc_setpriority, 3);
+    rb_define_module_function(M_Process, "getpriority", Fproc_getpriority, 2);
+    rb_define_module_function(M_Process, "setpriority", Fproc_setpriority, 3);
     
     rb_define_const(M_Process, "%PRIO_PROCESS", INT2FIX(PRIO_PROCESS));
     rb_define_const(M_Process, "%PRIO_PGRP", INT2FIX(PRIO_PGRP));
     rb_define_const(M_Process, "%PRIO_USER", INT2FIX(PRIO_USER));
 
-    rb_define_single_method(M_Process, "uid", Fproc_getuid, 0);
-    rb_define_method(M_Process, "uid", Fproc_getuid, 0);
-    rb_define_single_method(M_Process, "uid=", Fproc_setuid, 1);
-    rb_define_method(M_Process, "uid=", Fproc_setuid, 1);
-    rb_define_single_method(M_Process, "euid", Fproc_geteuid, 0);
-    rb_define_method(M_Process, "euid", Fproc_geteuid, 0);
-    rb_define_single_method(M_Process, "euid=", Fproc_seteuid, 1);
-    rb_define_method(M_Process, "euid=", Fproc_seteuid, 1);
-
-    rb_include_module(CLASS_OF(M_Process), M_Process);
+    rb_define_module_function(M_Process, "uid", Fproc_getuid, 0);
+    rb_define_module_function(M_Process, "uid=", Fproc_setuid, 1);
+    rb_define_module_function(M_Process, "euid", Fproc_geteuid, 0);
+    rb_define_module_function(M_Process, "euid=", Fproc_seteuid, 1);
 }

@@ -9,8 +9,8 @@ if $_ =~ /"(\d+)\.(\d+)"/;
   if $ARGV[0] == "-f"
     i += 1
   end
-  date = Time.now.strftime("%d %b %y")
-  printf("ruby version %d.%0d (%s)\n", $1, i, date)
+  date = Time.now.strftime("%y/%m/%d")
+  printf("ruby - version %d.%0d (%s)\n", $1, i, date)
   printf(f, "#define RUBY_VERSION \"%d.%0d\"\n", $1, i)
   printf(f, "#define VERSION_DATE \"%s\"\n", date)
   f.close

@@ -1,0 +1,57 @@
+#! /usr/bin/bash
+
+function fdeject() {
+  if type eject > /dev/null 2>&1; then
+    eject
+  fi
+}
+
+function copyfiles() {
+  for d in . missing sample; do
+    if [ ! -d $1/$d ];then mkdir $1/$d; fi
+    for i in $d/*;do
+      case $i in
+       */ruby|*.o|*~|*.sav|*.bak|*.orig|*/core|"#"*);;
+       */Change*|*/config.status|*/Makefile);;
+       *)
+        if [ -f $i ]; then
+          if [ $i -nt $1/$i -o ! -f $1/$i ];then
+            echo copying $i
+            cp -p $i $1/$i
+          fi
+        fi;;
+      esac
+    done
+  done
+}
+
+if [ ! -d exchange ]; then mkdir exchange; fi
+
+if [ "$1" = "in" ]; then
+
+  cd exchange
+
+  mread ruby.tgz ruby.tgz
+  fdeject
+  tar zxf ruby.tgz
+  rm -f ruby.tgz
+  cd ruby
+
+  cp ChangeLog ../../Changes
+  copyfiles ../..
+
+else
+# bring out
+  if [ ! -d exchange/ruby ]; then mkdir exchange/ruby; fi
+
+  cp -p ChangeLog exchange/ruby
+  copyfiles exchange/ruby
+
+  cd exchange
+  (cd ruby; make realclean)
+
+  tar zcf ruby.tgz ruby
+  mwrite ruby.tgz ruby.tgz
+  fdeject
+  rm -f ruby.tgz
+fi

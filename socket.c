@@ -608,15 +608,13 @@ Fsock_accept(sock)
 {
     OpenFile *fptr;
     VALUE addr, sock2;
-    int fd;
     char buf[1024];
     int len = sizeof buf;
 
     GetOpenFile(sock, fptr);
-    if ((fd = accept(fileno(fptr->f), (struct sockaddr*)buf, &len)) < 0)
-	rb_sys_fail("listen(2)");
+    sock2 = sock_accept(C_Socket,fileno(fptr->f),(struct sockaddr*)buf,&len);
 
-    return sock_new(C_Socket, fd);
+    return assoc_new(sock2, str_new(buf, len));
 }
 
 static VALUE
@@ -651,24 +649,50 @@ Fsock_send(sock, args)
 }
 
 static VALUE
-Fsock_recv(sock, len, flags)
-    VALUE sock, len, flags;
+sock_recv(sock, args, from)
+    VALUE sock, args;
+    int from;
 {
     OpenFile *fptr;
     FILE f;
     struct RString *str;
     char buf[1024];
     int fd, alen = sizeof buf;
+    VALUE len, flg;
+    int flags;
+
+    rb_scan_args(args, "11", &len, &flg);
+
+    if (flg == Qnil) flags = 0;
+    else             flags = NUM2INT(flg);
 
     str = (struct RString*)str_new(0, NUM2INT(len));
 
     GetOpenFile(sock, fptr);
     fd = fileno(fptr->f);
-    if (recvfrom(fd, str->ptr, str->len, NUM2INT(flags), 
-		 (struct sockaddr*)buf, &alen) < 0) {
-	rb_sys_fail("recv(2)");
+    if ((str->len = recvfrom(fd, str->ptr, str->len, flags, 
+			     (struct sockaddr*)buf, &alen)) < 0) {
+	rb_sys_fail("recvfrom(2)");
     }
-    return assoc_new(str, str_new(buf, alen));
+
+    if (from)
+	return assoc_new(str, str_new(buf, alen));
+    else
+	return (VALUE)str;
+}
+
+static VALUE
+Fsock_recv(sock, args)
+    VALUE sock, args;
+{
+    return sock_recv(sock, args, 0);
+}
+
+static VALUE
+Fsock_recvfrom(sock, args)
+    VALUE sock, args;
+{
+    return sock_recv(sock, args, 1);
 }
 
 Init_Socket ()
@@ -715,7 +739,8 @@ Init_Socket ()
     rb_define_method(C_Socket, "accept", Fsock_accept, 0);
 
     rb_define_method(C_Socket, "send", Fsock_send, -2);
-    rb_define_method(C_Socket, "recv", Fsock_recv, 2);
+    rb_define_method(C_Socket, "recv", Fsock_recv, -2);
+    rb_define_method(C_Socket, "recvfrom", Fsock_recv, -2);
 
     rb_define_single_method(C_Socket, "socketpair", Fsock_socketpair, 3);
 }

@@ -29,7 +29,7 @@
 #define is_const_id(id) (is_id_nonop(id)&&((id)&ID_SCOPE_MASK)==ID_CONST)
 
 struct op_tbl {
-    ID tok;
+    ID token;
     char *name;
 };
 
@@ -133,7 +133,7 @@ static void setup_top_local();
 %type <node> f_arglist f_args f_arg assoc_list assocs assoc
 %type <node> mlhs mlhs_head mlhs_tail lhs iter_var opt_iter_var
 %type <id>   superclass variable symbol
-%type <id>   fname fname0 op rest_arg
+%type <id>   fname op rest_arg
 
 %token UPLUS 		/* unary+ */
 %token UMINUS 		/* unary- */
@@ -244,10 +244,11 @@ stmt		: CLASS IDENTIFIER superclass
 			cur_mid = $2;
 			push_local();
 		    }
-		  f_arglist compstmts
+		  f_arglist
+		  compstmts
 		  END
 		    {
-			$$ = NEW_DEFN($2, NEW_RFUNC($4, $5));
+			$$ = NEW_DEFN($2, NEW_RFUNC($4, $5), cur_class?0:1);
 		        pop_local();
 			cur_mid = Qnil;
 		    }
@@ -271,7 +272,7 @@ stmt		: CLASS IDENTIFIER superclass
 		    }
 		| DEF fname fname
 		    {
-			$$ = NEW_ALIAS($2, $3);
+		        $$ = NEW_ALIAS($2, $3);
 		    }
 		| INCLUDE inc_list
 		    {
@@ -438,10 +439,7 @@ inc_list	: IDENTIFIER
 			$$ = $1;
 		    }
 
-fname		: fname0
-		| IVAR
-
-fname0		: IDENTIFIER
+fname		: IDENTIFIER
 		| op
 		    {
 			lex_state = EXPR_END;
@@ -844,10 +842,6 @@ expr0		: literal
 		    {
 			$$ = NEW_CALL(Qnil, $1, $3);
 		    }
-		| IVAR '(' call_args rparen
-		    {
-			$$ = NEW_CALL(Qnil, $1, $3);
-		    }
 		| SUPER '(' call_args rparen
 		    {
 			if (!cur_mid && !in_single)
@@ -906,7 +900,7 @@ expr0		: literal
 		    }
 		| expr0 lbrace opt_iter_var '|' compstmts rbrace
 		    {
-			$$ = NEW_DO($3, $1, $5);
+			$$ = NEW_ITER($3, $1, $5);
 		    }
 		| expr0 '.' IDENTIFIER '(' call_args rparen
 		    {
@@ -1002,7 +996,7 @@ opt_iter_var	: /* none */
 		| iter_var
 
 cases		: opt_else
-		| WHEN args term
+		| WHEN args then
 		  compstmts
 		  cases
 		    {
@@ -1039,7 +1033,7 @@ literal		: numeric
 		| GLOB
 
 
-symbol		: fname0
+symbol		: fname
 		| IVAR
 		| GVAR
 		| CONSTANT
@@ -1856,6 +1850,9 @@ retry:
 	  case '.':		/* $.: last read line number */
 	  case '_':		/* $_: last read line string */
 	  case '&':		/* $&: last match */
+	  case '`':		/* $&: string before last match */
+	  case '\'':		/* $&: string after last match */
+	  case '+':		/* $&: string matches last paren. */
 	  case '~':		/* $~: match-data */
 	  case '=':		/* $=: ignorecase */
 	    tokadd(c);
@@ -2286,6 +2283,11 @@ void freenode(node)
     if (node == Qnil) return;
 
     switch (node->type) {
+      case NODE_FBODY:
+	node->nd_cnt--;
+	if (node->nd_cnt > 0) return;
+	freenode(node->nd_head);
+	break;
       case NODE_BLOCK:
       case NODE_ARRAY:
 	freenode(node->nd_head);
@@ -2317,7 +2319,7 @@ void freenode(node)
 	freenode(node->nd_head);
 	freenode(node->nd_body);
 	break;
-      case NODE_DO:
+      case NODE_ITER:
       case NODE_FOR:
 	freenode(node->nd_var);
 	freenode(node->nd_ibdy);
@@ -2377,6 +2379,7 @@ void freenode(node)
 	break;
       case NODE_CLASS:
       case NODE_MODULE:
+      case NODE_METHOD:
 	freenode(node->nd_body);
 	break;
       case NODE_CONST:
@@ -2670,7 +2673,7 @@ push_local()
     lvtbl = local;
 }
 
-void
+static void
 pop_local()
 {
     struct local_vars *local = lvtbl;
@@ -2726,42 +2729,42 @@ init_top_local()
     if (lvtbl == Qnil) {
 	push_local();
     }
-    else if (the_env->local_tbl) {
-	lvtbl->cnt = the_env->local_tbl[0];
+    else if (the_scope->local_tbl) {
+	lvtbl->cnt = the_scope->local_tbl[0];
     }
     else {
 	lvtbl->cnt = 0;
     }
-    lvtbl->tbl = the_env->local_tbl;
+    lvtbl->tbl = the_scope->local_tbl;
 }
 
 static void
 setup_top_local()
 {
     if (lvtbl->cnt > 0) {
-	if (the_env->local_vars == Qnil) {
-	    the_env->local_vars = ALLOC_N(VALUE, lvtbl->cnt);
-	    memset(the_env->local_vars, 0, lvtbl->cnt * sizeof(VALUE));
+	if (the_scope->local_vars == Qnil) {
+	    the_scope->local_vars = ALLOC_N(VALUE, lvtbl->cnt);
+	    memset(the_scope->local_vars, 0, lvtbl->cnt * sizeof(VALUE));
 	}
 	else if (lvtbl->tbl[0] < lvtbl->cnt) {
 	    int i;
 
-	    if (the_env->flags&VARS_MALLOCED) {
-		REALLOC_N(the_env->local_vars, VALUE, lvtbl->cnt);
+	    if (the_scope->flags&VARS_MALLOCED) {
+		REALLOC_N(the_scope->local_vars, VALUE, lvtbl->cnt);
 	    }
 	    else {
-		VALUE *vars = the_env->local_vars;
-		the_env->local_vars = ALLOC_N(VALUE, lvtbl->cnt);
-		memcpy(the_env->local_vars, vars, sizeof(VALUE)*lvtbl->cnt);
-		the_env->flags |= VARS_MALLOCED;
+		VALUE *vars = the_scope->local_vars;
+		the_scope->local_vars = ALLOC_N(VALUE, lvtbl->cnt);
+		memcpy(the_scope->local_vars, vars, sizeof(VALUE)*lvtbl->cnt);
+		the_scope->flags |= VARS_MALLOCED;
 	    }
-	    memset(the_env->local_vars+i, 0, lvtbl->cnt-i);
+	    memset(the_scope->local_vars+i, 0, lvtbl->cnt-i);
 	}
 	lvtbl->tbl[0] = lvtbl->cnt;
-	the_env->local_tbl = lvtbl->tbl;
+	the_scope->local_tbl = lvtbl->tbl;
     }
     else {
-	the_env->local_vars = Qnil;
+	the_scope->local_vars = Qnil;
     }
 }
 
@@ -2879,9 +2882,9 @@ rb_intern(name)
 	    int i;
 
 	    id = Qnil;
-	    for (i=0; rb_op_tbl[i].tok; i++) {
+	    for (i=0; rb_op_tbl[i].token; i++) {
 		if (strcmp(rb_op_tbl[i].name, name) == 0) {
-		    id = rb_op_tbl[i].tok;
+		    id = rb_op_tbl[i].token;
 		    break;
 		}
 	    }
@@ -2931,8 +2934,8 @@ rb_id2name(id)
     if (id < LAST_TOKEN) {
 	int i = 0;
 
-	for (i=0; rb_op_tbl[i].tok; i++) {
-	    if (rb_op_tbl[i].tok == id)
+	for (i=0; rb_op_tbl[i].token; i++) {
+	    if (rb_op_tbl[i].token == id)
 		return rb_op_tbl[i].name;
 	}
     }
@@ -2966,9 +2969,11 @@ rb_class2name(class)
     find_ok = Qnil;
 
     switch (TYPE(class)) {
+      case T_ICLASS:
+        class = (struct RClass*)RBASIC(class)->class;
+	break;
       case T_CLASS:
       case T_MODULE:
-      case T_ICLASS:
 	break;
       default:
 	Fail("0x%x is not a class/module", class);

@@ -18,7 +18,7 @@
 (defconst ruby-block-end-re "end")
 
 (defconst ruby-delimiter
-  (concat "[/<(){}#\"'`]\\|\\[\\|\\]\\|\\b\\("
+  (concat "[$/<(){}#\"'`]\\|\\[\\|\\]\\|\\b\\("
 	  ruby-block-beg-re "\\|" ruby-block-end-re "\\)\\b")
   )
 
@@ -55,6 +55,7 @@
 ;;(modify-syntax-entry ?\n ">" ruby-mode-syntax-table)
 ;;(modify-syntax-entry ?\f ">" ruby-mode-syntax-table)
   (modify-syntax-entry ?# "<" ruby-mode-syntax-table)
+  (modify-syntax-entry ?$ "/" ruby-mode-syntax-table)
   (modify-syntax-entry ?\\ "'" ruby-mode-syntax-table)
   (modify-syntax-entry ?_ "w" ruby-mode-syntax-table)
   (modify-syntax-entry ?< "." ruby-mode-syntax-table)
@@ -193,6 +194,8 @@ The variable ruby-indent-level controls the amount of indentation.
 		    nil
 		  (goto-char indent-point)
 		  (setq in-string t))))))
+	   ((string= "$" w)		;skip $char
+	    (forward-char 1))
 	   ((string= "#" w)		;skip comment
 	    (forward-line 1))
 	   ((string= "(" w)		;skip to matching paren

@@ -17,7 +17,6 @@
 #include <stdio.h>
 
 VALUE C_Kernel;
-VALUE C_Builtin;
 VALUE C_Object;
 VALUE C_Module;
 VALUE C_Class;
@@ -27,15 +26,10 @@ VALUE C_Data;
 struct st_table *new_idhash();
 
 VALUE Fsprintf();
-VALUE Fexit();
-VALUE Feval();
-VALUE Fapply();
 VALUE Fdefined();
-VALUE Fcaller();
 
 VALUE obj_responds_to();
 VALUE obj_alloc();
-VALUE Ffix_clone();
 
 static ID eq, match;
 
@@ -59,13 +53,6 @@ Fkrn_equal(obj, other)
 {
     if (obj == other) return TRUE;
     return FALSE;
-}
-
-static VALUE
-Fkrn_hash(obj)
-    VALUE obj;
-{
-    return obj;
 }
 
 static VALUE
@@ -228,13 +215,6 @@ Fobj_clone(obj)
 }
 
 static VALUE
-Fiterator_p()
-{
-    if (the_env->iterator > 1 && the_env->iterator < 4) return TRUE;
-    return FALSE;
-}
-
-static VALUE
 Fnil_to_s(obj)
     VALUE obj;
 {
@@ -317,6 +297,45 @@ Fcls_attr(class, args)
 }
 
 static VALUE
+Fcls_export_internal(argc, argv, ex)
+    int argc;
+    VALUE *argv;
+    int ex;
+{
+    VALUE self = Qself;
+    int i;
+    ID id;
+
+    for (i=0; i<argc; i++) {
+	if (FIXNUM_P(argv[i])) {
+	    id = FIX2INT(argv[i]);
+	}
+	else {
+	    Check_Type(argv[i], T_STRING);
+	    id = rb_intern(RSTRING(argv[i])->ptr);
+	}
+	rb_export_method(self, id, ex);
+    }
+    return Qnil;
+}
+
+static VALUE
+Fcls_export(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    Fcls_export_internal(argc, argv, 0);
+}
+
+static VALUE
+Fcls_unexport(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    Fcls_export_internal(argc, argv, 1);
+}
+
+static VALUE
 Fcant_clone(obj)
     VALUE obj;
 {
@@ -348,13 +367,11 @@ Init_Object()
     VALUE metaclass;
 
     C_Kernel = boot_defclass("Kernel", Qnil);
-    C_Builtin = boot_defclass("Builtin", C_Kernel);
-    C_Object = boot_defclass("Object", C_Builtin);
+    C_Object = boot_defclass("Object", C_Kernel);
     C_Module = boot_defclass("Module", C_Object);
     C_Class =  boot_defclass("Class",  C_Module);
 
     metaclass = RBASIC(C_Kernel)->class = single_class_new(C_Class);
-    metaclass = RBASIC(C_Builtin)->class = single_class_new(metaclass);
     metaclass = RBASIC(C_Object)->class = single_class_new(metaclass);
     metaclass = RBASIC(C_Module)->class = single_class_new(metaclass);
     metaclass = RBASIC(C_Class)->class = single_class_new(metaclass);
@@ -368,13 +385,10 @@ Init_Object()
      *  |      Kernel----->(Kernel)		    |
      *  |       ^  ^         ^  ^		    |
      *	|       |  |         |  |		    |
-     *	|   +---+  +-----+   |  +---+		    |
-     *	|   |     +------|---+      |		    |
-     *	|   |     |      |          |               |
-     * 	+->Nil->(Nil) Builtin--->(Builtin)	    |
-     *                   ^          ^		    |
-     *                   |          |		    |
-     *                Object---->(Object)	    |
+     *	|   +---+  +----+    |  +---+		    |
+     *	|   |     +-----|----+      |		    |
+     *	|   |     |     |           |               |
+     * 	+->Nil->(Nil) Object---->(Object)	    |
      *	   	       ^ ^         ^  ^	            |
      *	   	       | |         |  |	            |
      *                 | | +-------+  |	            |
@@ -396,7 +410,7 @@ Init_Object()
     rb_define_method(C_Kernel, "!", P_false, 0);
     rb_define_method(C_Kernel, "==", Fkrn_equal, 1);
     rb_define_alias(C_Kernel, "equal", "==");
-    rb_define_method(C_Kernel, "hash", Fkrn_hash, 0);
+    rb_define_method(C_Kernel, "hash", rb_self, 0);
     rb_define_method(C_Kernel, "id", Fkrn_id, 0);
     rb_define_method(C_Kernel, "class", Fkrn_class, 0);
     rb_define_method(C_Kernel, "!=", Fkrn_noteq, 1);
@@ -407,17 +421,9 @@ Init_Object()
     rb_define_method(C_Kernel, "to_s", Fkrn_to_s, 0);
     rb_define_method(C_Kernel, "_inspect", Fkrn_inspect, 0);
 
-#ifdef USE_CALLER
-    rb_define_method(C_Builtin, "caller", Fcaller, -2);
-#endif
-    rb_define_method(C_Builtin, "exit", Fexit, -2);
-    rb_define_method(C_Builtin, "eval", Feval, 1);
-    rb_define_method(C_Builtin, "defined", Fdefined, 1);
-    rb_define_method(C_Builtin, "sprintf", Fsprintf, -1);
-    rb_define_alias(C_Builtin, "format", "sprintf");
-    rb_define_method(C_Builtin, "iterator_p", Fiterator_p, 0);
-
-    rb_define_method(C_Builtin, "apply", Fapply, -2);
+    rb_define_private_method(C_Kernel, "defined", Fdefined, 1);
+    rb_define_private_method(C_Kernel, "sprintf", Fsprintf, -1);
+    rb_define_alias(C_Kernel, "format", "sprintf");
 
     rb_define_method(C_Object, "_inspect", Fobj_inspect, 0);
 
@@ -428,13 +434,15 @@ Init_Object()
 
     rb_define_method(C_Module, "to_s", Fcls_to_s, 0);
     rb_define_method(C_Module, "clone", Fcant_clone, 0);
-    rb_define_method(C_Module, "attr", Fcls_attr, -2);
+    rb_define_private_method(C_Module, "attr", Fcls_attr, -2);
+    rb_define_method(C_Module, "export", Fcls_export, -1);
+    rb_define_method(C_Module, "unexport", Fcls_unexport, -1);
 
     rb_define_method(C_Class, "new", Fcls_new, -2);
 
     C_Nil = rb_define_class("Nil", C_Kernel);
     rb_define_method(C_Nil, "to_s", Fnil_to_s, 0);
-    rb_define_method(C_Nil, "clone", Ffix_clone, 0);
+    rb_define_method(C_Nil, "clone", rb_self, 0);
     rb_define_method(C_Nil, "class", Fnil_class, 0);
 
     rb_define_method(C_Nil, "is_nil", P_true, 0);
@@ -455,7 +463,7 @@ Init_Object()
 
     TRUE = obj_alloc(C_Object);
     rb_define_single_method(TRUE, "to_s", Ftrue_to_s, 0);
-    rb_define_const(C_Builtin, "%TRUE", TRUE);
-    rb_define_const(C_Builtin, "%FALSE", FALSE);
+    rb_define_const(C_Kernel, "%TRUE", TRUE);
+    rb_define_const(C_Kernel, "%FALSE", FALSE);
 }
 

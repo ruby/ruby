@@ -1024,6 +1024,28 @@ Fstr_lcfirst(str)
     return (VALUE)str;
 }
 
+static VALUE
+Fstr_swapcase(str)
+    struct RString *str;
+{
+    char *s;
+    int i;
+
+    str_modify(str);
+    s = str->ptr;
+    for (i=0; i < str->len; i++) {
+	if (isupper(*s)) {
+	    *s = tolower(*s);
+	}
+	else if (islower(*s)) {
+	    *s = toupper(*s);
+	}
+	*s++;
+    }
+
+    return (VALUE)str;
+}
+
 struct tr {
     int last, max;
     char *p, *pend;
@@ -1533,7 +1555,67 @@ Fstr_sum(str, args)
     }
 }
 
-extern VALUE C_Builtin;
+Fstr_ljust(str, w)
+    struct RString *str;
+    VALUE w;
+{
+    int width = NUM2INT(w);
+    struct RString *res;
+    char *p, *pend;
+
+    if (str->len >= width) return (VALUE)str;
+    res = (struct RString*)str_new(0, width);
+    memcpy(res->ptr, str->ptr, str->len);
+    p = res->ptr + str->len; pend = res->ptr + width;
+    while (p < pend) {
+	*p++ = ' ';
+    }
+    return (VALUE)res;
+}
+
+Fstr_rjust(str, w)
+    struct RString *str;
+    VALUE w;
+{
+    int width = NUM2INT(w);
+    struct RString *res;
+    char *p, *pend;
+
+    if (str->len >= width) return (VALUE)str;
+    res = (struct RString*)str_new(0, width);
+    p = res->ptr; pend = p + width - str->len;
+    while (p < pend) {
+	*p++ = ' ';
+    }
+    memcpy(pend, str->ptr, str->len);
+    return (VALUE)res;
+}
+
+Fstr_center(str, w)
+    struct RString *str;
+    VALUE w;
+{
+    int width = NUM2INT(w);
+    struct RString *res;
+    char *p, *pend;
+    int n;
+
+    if (str->len >= width) return (VALUE)str;
+    res = (struct RString*)str_new(0, width);
+    n = (width - str->len)/2;
+    p = res->ptr; pend = p + n;
+    while (p < pend) {
+	*p++ = ' ';
+    }
+    memcpy(pend, str->ptr, str->len);
+    p = pend + str->len; pend = res->ptr + width;
+    while (p < pend) {
+	*p++ = ' ';
+    }
+    return (VALUE)res;
+}
+
+extern VALUE C_Kernel;
 extern VALUE M_Comparable;
 extern VALUE M_Enumerable;
 
@@ -1567,11 +1649,15 @@ Init_String()
     rb_define_method(C_String, "_inspect", Fstr_inspect, 0);
 
     rb_define_method(C_String, "toupper", Fstr_toupper, 0);
+    rb_define_alias(C_String, "upcase", "toupper");
     rb_define_alias(C_String, "uc", "toupper");
     rb_define_method(C_String, "tolower", Fstr_tolower, 0);
+    rb_define_alias(C_String, "downcase", "tolower");
     rb_define_alias(C_String, "lc", "tolower");
     rb_define_method(C_String, "ucfirst", Fstr_ucfirst, 0);
     rb_define_method(C_String, "lcfirst", Fstr_lcfirst, 0);
+    rb_define_method(C_String, "swapcase", Fstr_swapcase, 0);
+
     rb_define_method(C_String, "hex", Fstr_hex, 0);
     rb_define_method(C_String, "oct", Fstr_oct, 0);
     rb_define_method(C_String, "split", Fstr_split, -2);
@@ -1579,6 +1665,10 @@ Init_String()
     rb_define_method(C_String, "concat", Fstr_concat, 1);
     rb_define_method(C_String, "crypt", Fstr_crypt, 1);
     rb_define_method(C_String, "intern", Fstr_intern, 0);
+
+    rb_define_method(C_String, "ljust", Fstr_ljust, 1);
+    rb_define_method(C_String, "rjust", Fstr_rjust, 1);
+    rb_define_method(C_String, "center", Fstr_center, 1);
 
     rb_define_method(C_String, "sub", Fstr_sub, 2);
     rb_define_method(C_String, "gsub", Fstr_gsub, 2);
@@ -1595,8 +1685,8 @@ Init_String()
 
     rb_define_method(C_String, "sum", Fstr_sum, -2);
 
-    rb_define_method(C_Builtin, "sub", Fsub, 2);
-    rb_define_method(C_Builtin, "gsub", Fgsub, 2);
+    rb_define_private_method(C_Kernel, "sub", Fsub, 2);
+    rb_define_private_method(C_Kernel, "gsub", Fgsub, 2);
 
     pr_str = rb_intern("to_s");
 }

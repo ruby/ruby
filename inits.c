@@ -18,6 +18,7 @@ rb_call_inits()
     Init_var_tables();
     Init_Object();
     Init_GC();
+    Init_eval();
     Init_Comparable();
     Init_Enumerable();
     Init_Numeric();

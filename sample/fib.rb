@@ -1,4 +1,4 @@
-def fib (n)
+def fib(n)
   if n<2
     n
   else

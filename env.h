@@ -15,31 +15,24 @@ extern struct ENVIRON {
     VALUE self;
     int argc;
     VALUE *argv;
-    struct RClass *current_module;
-    struct RClass *last_class;
-#ifdef USE_CALLER
-    char *file;
-    int line;
-#endif
     ID last_func;
-    ID *local_tbl;
-    VALUE *local_vars;
-    int in_eval;
-    struct BLOCK *block;
-    int iterator;
-    int flags;
+    struct RClass *last_class;
     struct ENVIRON *prev;
 } *the_env;
 
-#define ITERATOR_P() (the_env->iterator == 1 || the_env->iterator == 2)
-
-#undef Qself
+#undef  Qself
 #define Qself the_env->self
-#define the_class the_env->current_module
 
-#define DURING_ITERATE  1
-#define DURING_RESQUE   2
-#define DURING_CALL     4
-#define VARS_MALLOCED   8
+extern struct SCOPE {
+    ID *local_tbl;
+    VALUE *local_vars;
+    VALUE block;
+    int flags;
+    struct SCOPE *prev;
+} *the_scope;
+
+#define VARS_MALLOCED  (1<<2)
+
+extern int rb_in_eval;
 
 #endif /* ENV_H */

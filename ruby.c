@@ -176,24 +176,7 @@ proc_options(argcp, argvp)
 	    break;
 
 	  case 'C':
-	    switch (optarg[0]) {
-	      case 'E':
-	      case 'e':
-		obscure_syntax &= ~RE_MBCTYPE_MASK;
-		obscure_syntax |= RE_MBCTYPE_EUC;
-		break;
-	      case 'S':
-	      case 's':
-		obscure_syntax &= ~RE_MBCTYPE_MASK;
-		obscure_syntax |= RE_MBCTYPE_SJIS;
-		break;
-	      default:
-	      case 'N':
-	      case 'n':
-		obscure_syntax &= ~RE_MBCTYPE_MASK;
-		break;
-	    }
-	    re_set_syntax(obscure_syntax);
+	    rb_set_kanjicode(optarg);
 	    break;
 
 	  case 'S':

@@ -164,7 +164,7 @@ rb_global_variable(var)
 struct RVALUE {
     union {
 	struct {
-	    int flag;		/* alway 0 for freed obj */
+	    UINT flag;		/* alway 0 for freed obj */
 	    struct RVALUE *next;
 	} free;
 	struct RObject object;
@@ -505,7 +505,7 @@ freemethod(key, body)
     ID key;
     void *body;
 {
-    method_free(body);
+    freenode(body);
     return ST_CONTINUE;
 }
 
@@ -570,6 +570,7 @@ gc()
     struct literal_list *lit;
     struct gc_list *list;
     struct ENVIRON *env;
+    struct SCOPE *scope;
     int i, max;
     jmp_buf save_regs_gc_mark;
     VALUE stack_end;
@@ -582,8 +583,12 @@ gc()
 	gc_mark(env->self);
 	if (env->argv)
 	    mark_locations_array(env->argv, env->argc);
-	if (env->local_vars)
-	    mark_locations_array(env->local_vars, env->local_tbl[0]);
+    }
+
+    /* mark scope stack */
+    for (scope = the_scope; scope; scope = scope->prev) {
+	if (scope->local_vars)
+	    mark_locations_array(scope->local_vars, scope->local_tbl[0]);
     }
 
     FLUSH_REGISTER_WINDOWS;

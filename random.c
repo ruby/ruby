@@ -73,8 +73,8 @@ Frand(obj, max)
 
 Init_Random()
 {
-    extern VALUE C_Builtin;
+    extern VALUE C_Kernel;
 
-    rb_define_method(C_Builtin, "srand", Fsrand, -2);
-    rb_define_method(C_Builtin, "rand", Frand, 1);
+    rb_define_private_method(C_Kernel, "srand", Fsrand, -2);
+    rb_define_private_method(C_Kernel, "rand", Frand, 1);
 }

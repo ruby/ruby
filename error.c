@@ -40,7 +40,7 @@ err_print(fmt, args)
     char buf[BUFSIZ];
 
     err_sprintf(buf, fmt, args);
-    if (the_env->in_eval) {
+    if (rb_in_eval) {
 	if (errstr == Qnil) {
 	    errstr = str_new2(buf);
 	}

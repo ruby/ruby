@@ -260,8 +260,12 @@ rb_gvar_set(entry, val)
     if (entry->set_hook)
 	(*entry->set_hook)(val, entry->id);
 
-    if (entry->mode == GLOBAL_VAR && entry->v.var != Qnil)
+    if (entry->mode == GLOBAL_VAR) {
+	if (entry->v.var == Qnil) {
+	    rb_readonly_hook(val, entry->id);
+	}
 	return *entry->v.var = val;
+    }
     else {
 	if (entry->mode == GLOBAL_UNDEF)
 	    entry->mode = GLOBAL_VAL;
@@ -319,8 +323,8 @@ const_bound(class, id)
     return FALSE;
 }
 
-static void
-rb_const_set_1(class, id, val)
+void
+rb_const_set(class, id, val)
     struct RClass *class;
     ID id;
     VALUE val;
@@ -334,22 +338,13 @@ rb_const_set_1(class, id, val)
     st_insert(class->c_tbl, id, val);
 }
 
-VALUE
-rb_const_set(id, val)
-    ID id;
-    VALUE val;
-{
-    rb_const_set_1(the_class, id, val);
-    return val;
-}
-
 void
 rb_define_const(class, name, val)
     struct RClass *class;
     char *name;
     VALUE val;
 {
-    rb_const_set_1(class, rb_intern(name), val);
+    rb_const_set(class, rb_intern(name), val);
 }
 
 VALUE
@@ -410,9 +405,9 @@ Fdefined(obj, name)
 	{
 	    int i, max;
 
-	    if (the_env->local_tbl) {
-		for (i=1, max=the_env->local_tbl[0]+1; i<max; i++) {
-		    if (the_env->local_tbl[i] == id) return TRUE;
+	    if (the_scope->local_tbl) {
+		for (i=1, max=the_scope->local_tbl[0]+1; i<max; i++) {
+		    if (the_scope->local_tbl[i] == id) return TRUE;
 		}
 	    }
 	}
