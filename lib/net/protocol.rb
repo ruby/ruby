@@ -7,15 +7,6 @@ written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 This library is distributed under the terms of the Ruby license.
 You can freely distribute/modify this library.
 
-=end
-
-
-require 'socket'
-
-
-module Net
-
-=begin
 
 == Net::Protocol
 
@@ -66,9 +57,15 @@ Object
 
 =end
 
+require 'socket'
+
+
+module Net
+
   class Protocol
 
-    Version = '1.1.22'
+    Version = '1.1.23'
+
 
     class << self
 
@@ -480,9 +477,6 @@ Object
 
 
     CRLF    = "\r\n"
-    D_CRLF  = ".\r\n"
-    TERMEXP = /\n|\r\n|\r/o
-
 
     def read( len, dest = '' )
       @pipe << "reading #{len} bytes...\n" if @pipe; pipeoff
@@ -531,7 +525,7 @@ Object
 
         
     def readline
-      ret = readuntil( CRLF )
+      ret = readuntil( "\r\n" )
       ret.chop!
       ret
     end
@@ -542,9 +536,9 @@ Object
 
       rsize = 0
 
-      while (str = readuntil( CRLF )) != D_CRLF do
+      while (str = readuntil( "\r\n" )) != ".\r\n" do
         rsize += str.size
-        str.gsub!( /\A\./o, '' )
+        str.gsub!( /\A\./, '' )
         dest << str
       end
 
@@ -559,7 +553,7 @@ Object
       arr = []
       str = nil
 
-      while (str = readuntil( CRLF )) != D_CRLF do
+      while (str = readuntil( "\r\n" )) != ".\r\n" do
         str.chop!
         arr.push str
         yield str if iterator?
@@ -602,7 +596,7 @@ Object
     def writeline( str )
       do_write_beg
       do_write_do str
-      do_write_do CRLF
+      do_write_do "\r\n"
       do_write_fin
     end
 
@@ -629,8 +623,7 @@ Object
       else
         write_pendstr_inner src
       end
-      each_crlf_line2( :i_w_pend )
-      do_write_do D_CRLF
+      do_write_do ".\r\n"
       wsize = do_write_fin
 
       @pipe << "wrote #{wsize} bytes text\n" if pipeon
@@ -657,32 +650,40 @@ Object
 
 
     def each_crlf_line( src, mid )
-      beg = 0
-      buf = pos = s = bin = nil
+      buf = ''
+      str = m = nil
 
-      adding( src ) do
-        beg = 0
-        buf = @wbuf
+      adding( src, buf ) do
         while true do
-          pos = buf.index( TERMEXP, beg )
-          break unless pos
-          s = $&.size
-          break if pos + s == buf.size - 1 and buf[-1] == ?\r
+          m = /[^\r\n]*(\n|\r\n|\r)/.match( buf )
+          break unless m
 
-          __send__ mid, buf[ beg, pos - beg ] << CRLF
-          beg = pos + s
+          str = m[0]
+          if str.size == buf.size and buf[-1] == ?\r then
+            # "...\r" : can follow "\n..."
+            break
+          end
+          buf[ 0, str.size ] = ''
+          str.chop!
+          str.concat "\r\n"
+          __send__ mid, str
         end
-        @wbuf = buf[ beg, buf.size - beg ] if beg != 0
+      end
+      if not buf.empty? then    # un-terminated last line
+        buf.concat "\r\n"
+        __send__ mid, buf
+      elsif not str then        # empty src
+        __send__ mid, "\r\n"
       end
     end
 
-    def adding( src )
+    def adding( src, buf )
       i = nil
 
       case src
       when String
         0.step( src.size, 512 ) do |i|
-          @wbuf << src[ i, 512 ]
+          buf << src[ i, 512 ]
           yield
         end
 
@@ -690,30 +691,15 @@ Object
         while true do
           i = src.read( 512 )
           break unless i
-          @wbuf << i
+          buf << i
           yield
         end
 
       else
         src.each do |bin|
-          @wbuf << bin
-          yield if @wbuf.size > 512
+          buf << bin
+          yield if buf.size > 512
         end
-      end
-    end
-
-    def each_crlf_line2( mid )
-      buf = @wbuf
-      beg = pos = nil
-
-      buf << "\n" unless /\n|\r/o === buf[-1,1]
-
-      beg = 0
-      while true do
-        pos = buf.index( TERMEXP, beg )
-        break unless pos
-        __send__ mid, buf[ beg, pos - beg ] << CRLF
-        beg = pos + $&.size
       end
     end
 
@@ -721,7 +707,6 @@ Object
     def do_write_beg
       @writtensize = 0
       @sending = ''
-      @wbuf = ''
     end
 
     def do_write_do( arg )
