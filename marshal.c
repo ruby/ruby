@@ -52,7 +52,7 @@ shortlen(len, ds)
 #endif
 
 #define MARSHAL_MAJOR   4
-#define MARSHAL_MINOR   5
+#define MARSHAL_MINOR   6
 
 #define TYPE_NIL	'0'
 #define TYPE_TRUE	'T'
@@ -352,6 +352,14 @@ w_object(obj, arg, limit)
 	    w_byte(TYPE_MODULE, arg);
 	    {
 		VALUE path = rb_class_path(obj);
+		if (RSTRING(path)->ptr[0] == '#') {
+		    rb_raise(rb_eArgError, "can't dump anonymous class %s",
+			     RSTRING(path)->ptr);
+		}
+		if (RSTRING(path)->ptr[0] == '#') {
+		    rb_raise(rb_eArgError, "can't dump anonymous module %s",
+			     RSTRING(path)->ptr);
+		}
 		w_bytes(RSTRING(path)->ptr, RSTRING(path)->len, arg);
 	    }
 	    break;
@@ -986,7 +994,7 @@ r_object(arg)
 	    char *buf;
 	    r_bytes(buf, arg);
 	    m = rb_path2class(buf);
-	    if (TYPE(m) != T_CLASS) {
+	    if (TYPE(m) != T_MODULE) {
 		rb_raise(rb_eTypeError, "%s is not a module", buf);
 	    }
 	    return r_regist(m, arg);

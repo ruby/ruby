@@ -1,3 +1,9 @@
+Tue Jun  5 12:44:59 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (r_object): wrong type check for modules.
+
+	* marshal.c (w_object): should not dump anonymous classes/modules.
+
 Mon Jun  4 17:57:56 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* stable version 1.6.4 released.
