@@ -950,7 +950,7 @@ ossl_asn1prim_to_der(VALUE self)
 }
 
 static VALUE
-ossl_asn1cons_to_der(self)
+ossl_asn1cons_to_der(VALUE self)
 {
     int tag, tn, tc, explicit;
     long seq_len, length;
