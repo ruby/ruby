@@ -9,7 +9,6 @@ srcdir = $(WIN32DIR)/..
 !ENDIF
 OS = mswin32
 
-all: config.h config.status
 all: ext
 all: Makefile
 all:; @echo type `nmake' to make ruby for mswin32.
@@ -19,9 +18,13 @@ Makefile:
 	@echo srcdir = $(srcdir:\=/)>> $@
 	@echo RUBY_INSTALL_NAME = ruby>> $@
 	@echo RUBY_SO_NAME = $(OS)-$$(RUBY_INSTALL_NAME)17>> $@
+	@echo prefix = /usr>> $@
+	@echo CFLAGS = -nologo -MD $$(DEBUGFLAGS) $$(OPTFLAGS) $$(PROCESSOR_FLAG)>> $@
+	@echo CPPFLAGS = -I. -I$$(srcdir) -I$$(srcdir)/missing -DLIBRUBY_SO=\"$$(LIBRUBY_SO)\" -DNT=1>> $@
+	@echo LDFLAGS = $$(CFLAGS) -Fm>> $@
+	@echo XLDFLAGS = >> $@
+	@echo RFLAGS = -r>> $@
+	@echo EXTLIBS =>> $@
 	@echo !INCLUDE $$(srcdir)/win32/Makefile.sub>> $@
-
-config.h config.status: $(srcdir)/win32/$$@.in
-	@type $(srcdir:/=\)\win32\$@.in > $@
 
 ext:;	@if not exist $@\* mkdir $@

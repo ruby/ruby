@@ -1,3 +1,16 @@
+Wed Mar 20 20:16:44 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* win32/Makefile.sub: made variables configurable.
+
+	* win32/Makefile.sub (config.h): updates RUBY_PLATFORM from
+	  Makefile.
+
+	* win32/Makefile.sub (config.status): ditto.
+
+	* win32/Makefile.sub (clean): separate ext and local clean up.
+
+	* win32/Makefile.sub (distclean): ditto.
+
 Wed Mar 20 20:12:35 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* variable.c (rb_const_list): a temporary table must be freed.
