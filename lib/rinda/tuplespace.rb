@@ -89,6 +89,10 @@ module Rinda
       @ary[key]
     end
 
+    def fetch(key)
+      @ary.fetch(key)
+    end
+
     # The size of the tuple.
     def size
       @ary.size

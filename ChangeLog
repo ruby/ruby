@@ -1,3 +1,11 @@
+Wed Apr  7 00:24:34 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/rinda/rinda.rb: fix hash tuple bug.
+
+	* lib/rinda/tuplespace.rb: ditto.
+
+	* test/rinda/test_rinda.rb
+
 Tue Apr  6 16:46:09 2004  Tanaka Akira  <akr@m17n.org>
 
 	* configure.in: check the size of time_t.
