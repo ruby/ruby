@@ -12,7 +12,7 @@
 #   p db["root"]
 # end
 
-require "ftools"
+require "fileutils"
 require "digest/md5"
 
 class PStore
@@ -100,7 +100,7 @@ class PStore
       file = File.open(@filename, File::RDWR | File::CREAT)
       if !read_only
         file.flock(File::LOCK_EX)
-        commit_new() if FileTest.exist?(new_file)
+        commit_new(file) if FileTest.exist?(new_file)
         content = file.read()
       else
         file.flock(File::LOCK_SH)
@@ -138,7 +138,7 @@ class PStore
               t.write(content)
             }
             File.rename(tmp_file, new_file)
-            commit_new()
+            commit_new(file)
           end
           content = nil		# unreference huge data
 	end
@@ -152,10 +152,12 @@ class PStore
   end
 
   private
-  def commit_new()
+  def commit_new(f)
+    f.truncate(0)
+    f.rewind
     new_file = @filename + ".new"
-    if !File.copy(new_file, @filename)
-      raise IOError
+    File.open(new_file) do |nf|
+      FileUtils.copy_stream(nf, f)
     end
     File.unlink(new_file)
   end

@@ -2,6 +2,9 @@ Sun Mar  7 16:22:26 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* Makefile.in (lex.c): use $? instead of $<.
 
+	* lib/pstore.rb (commit_new): use FileUtils.copy_stream for Cygwin.
+	  [ruby-dev:23157]
+
 Sun Mar  7 05:34:42 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb: HTTPHeader keeps its header fields as an array.
