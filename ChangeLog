@@ -1,3 +1,11 @@
+Fri Oct  8 21:36:56 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb (fu_traverse): return value of Dir.entries is
+	  reliable. (pass $SAFE=1)
+
+	* lib/fileutils.rb (remove_dir): return value of Dir.foreach is
+	  reliable. (pass $SAFE=1)
+
 Fri Oct  8 09:49:32 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* pack.c (pack_pack): pointer modification check before each

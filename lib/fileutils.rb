@@ -385,7 +385,7 @@ module FileUtils
       if st.directory? and (deref or not st.symlink?)
         stack.concat Dir.entries("#{prefix}/#{rel}")\
                          .reject {|ent| ent == '.' or ent == '..' }\
-                         .map {|ent| "#{rel}/#{ent}" }.reverse
+                         .map {|ent| "#{rel}/#{ent.untaint}" }.reverse
       end
       yield rel, deref, st
       deref = false
@@ -692,8 +692,8 @@ module FileUtils
 
   def remove_dir(dir, force = false) #:nodoc:
     Dir.foreach(dir) do |file|
-      next if /\A\.\.?\z/ === file
-      path = "#{dir}/#{file}"
+      next if /\A\.\.?\z/ =~ file
+      path = "#{dir}/#{file.untaint}"
       if File.symlink?(path)
         remove_file path, force
       elsif File.directory?(path)
