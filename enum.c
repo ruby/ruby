@@ -92,7 +92,7 @@ enum_find(argc, argv, obj)
 	return arg.val;
     }
     if (!NIL_P(if_none)) {
-	rb_eval_cmd(if_none, Qnil);
+	rb_eval_cmd(if_none, rb_ary_new2(0));
     }
     return Qnil;
 }

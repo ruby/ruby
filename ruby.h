@@ -192,6 +192,7 @@ int rb_fix2int _((VALUE));
 #define FIX2INT(x) FIX2LONG(x)
 #define FIX2UINT(x) FIX2ULONG(x)
 #endif
+#define ID2SYM(x) INT2FIX(x)
 #define SYM2ID(x) FIX2INT(x)
 
 double rb_num2dbl _((VALUE));

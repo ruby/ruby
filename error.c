@@ -663,8 +663,8 @@ rb_sys_fail(mesg)
     else {
 	ee = syserr_list[n];
     }
-    ee = rb_exc_new2(ee, buf);
 #endif
+    ee = rb_exc_new2(ee, buf);
     rb_iv_set(ee, "errno", INT2FIX(n));
     rb_exc_raise(ee);
 }

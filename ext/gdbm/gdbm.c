@@ -264,7 +264,7 @@ fgdbm_invert(obj)
 	valstr = rb_tainted_str_new(val.dptr, val.dsize);
 	rb_hash_aset(hash, valstr, keystr);
     }
-    return obj;
+    return hash;
 }
 
 static VALUE

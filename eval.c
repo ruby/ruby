@@ -393,11 +393,13 @@ rb_attr(klass, id, read, write, ex)
     attriv = rb_intern(buf);
     if (read) {
 	rb_add_method(klass, id, NEW_IVAR(attriv), noex);
+	rb_funcall(klass, rb_intern("method_added"), 1, INT2FIX(id));
     }
     sprintf(buf, "%s=", name);
     id = rb_intern(buf);
     if (write) {
 	rb_add_method(klass, id, NEW_ATTRSET(attriv), noex);
+	rb_funcall(klass, rb_intern("method_added"), 1, INT2FIX(id));
     }
 }
 
@@ -5072,6 +5074,7 @@ rb_mod_modfunc(argc, argv, module)
 	}
 	rb_clear_cache_by_id(id);
 	rb_add_method(rb_singleton_class(module), id, body->nd_body, NOEX_PUBLIC);
+	rb_funcall(module, rb_intern("singleton_method_added"), 1, INT2FIX(id));
     }
     return module;
 }
@@ -6253,6 +6256,10 @@ thread_free(th)
     if (th->stk_ptr) free(th->stk_ptr);
     th->stk_ptr = 0;
     if (th->locals) st_free_table(th->locals);
+    if (th->status != THREAD_KILLED) {
+	th->prev->next = th->next;
+	th->next->prev = th->prev;
+    }
     if (th != main_thread) free(th);
 }
 
@@ -7605,7 +7612,7 @@ static VALUE
 catch_i(tag)
     ID tag;
 {
-    return rb_funcall(Qnil, rb_intern("catch"), 0, INT2FIX(tag));
+    return rb_funcall(Qnil, rb_intern("catch"), 1, INT2FIX(tag));
 }
 
 VALUE

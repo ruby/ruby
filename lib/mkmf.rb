@@ -327,7 +327,7 @@ def create_makefile(target)
   $DLDFLAGS = CONFIG["DLDFLAGS"]
 
   if RUBY_PLATFORM =~ /beos/
-    $libs = $libs + " -lruby"
+    $libs = $libs + " " + CONFIG["LIBRUBYARG"]
     $DLDFLAGS = $DLDFLAGS + " -L" + CONFIG["prefix"] + "/lib"
   end
 

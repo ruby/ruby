@@ -1857,7 +1857,7 @@ rb_io_printf(argc, argv, out)
     VALUE argv[];
     VALUE out;
 {
-    io_write(out, rb_f_sprintf(argc, argv));
+    rb_io_write(out, rb_f_sprintf(argc, argv));
     return Qnil;
 }
 
@@ -1877,7 +1877,7 @@ rb_f_printf(argc, argv)
 	argv++;
 	argc--;
     }
-    io_write(out, rb_f_sprintf(argc, argv));
+    rb_io_write(out, rb_f_sprintf(argc, argv));
 
     return Qnil;
 }

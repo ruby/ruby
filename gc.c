@@ -1134,8 +1134,10 @@ rb_gc_call_finalizer_at_exit()
     for (i = 0; i < heaps_used; i++) {
 	p = heaps[i]; pend = p + HEAP_SLOTS;
 	while (p < pend) {
-	    if (FL_TEST(p, FL_FINALIZE))
+	    if (FL_TEST(p, FL_FINALIZE)) {
+		p->as.free.flag = 0;
 		run_final((VALUE)p);
+	    }
 	    p++;
 	}
     }

@@ -1,3 +1,35 @@
+Thu Apr  6 20:10:47 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* ext/extmk.rb.in (create_makefile): BeOS --program-suffix support.
+	* lib/mkmf.rb (create_makefile): ditto.
+
+Thu Apr  6 09:55:26 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* error.c (rb_sys_fail): need rb_exc_new2() call on BeOS.
+
+Mon Apr  3 17:22:27 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (catch_i): should supply argument.
+
+Sat Apr  1 21:30:53 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* io.c(rb_io_printf, rb_f_printf): should use rb_io_write.
+
+Sat Apr  1 00:16:05 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* gc.c (rb_gc_call_finalizer_at_exit): should be clear flags
+	  before calling finalizers.
+
+Thu Mar 30 12:19:44 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* enum.c (enum_find): rb_eval_cmd() should be called with array.
+
+Tue Mar 28 13:57:05 2000  Clemens Hintze  <c.hintze@gmx.net>
+
+	* ext/dbm/dbm.c (fdbm_invert): should return new hash.
+
+	* ext/gdbm/gdbm.c (fgdbm_invert): ditto.
+
 Fri Mar 24 18:26:51 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* file.c (test_check): should have checked exact number of arguments.

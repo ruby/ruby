@@ -2,7 +2,7 @@
 # ftplib.rb
 #
 
-$stderr.puts 'Warning: ftplib.rb is obsolute: use net/ftp'
+$stderr.puts 'Warning: ftplib.rb is obsolete: use net/ftp'
 
 require 'net/ftp'
 
