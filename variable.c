@@ -703,6 +703,8 @@ rb_alias_variable(name1, name2)
 {
     struct global_entry *entry1, *entry2;
 
+    if (rb_safe_level() >= 4)
+	rb_raise(rb_eSecurityError, "Insecure: can't alias global variable");
     entry1 = rb_global_entry(name1);
     entry2 = rb_global_entry(name2);
 
