@@ -624,9 +624,12 @@ test/fileutils/test_fileutils.rb
 test/fileutils/test_nowrite.rb
 test/logger/test_logger.rb
 test/ostruct/test_ostruct.rb
+test/ruby/beginmainend.rb
+test/ruby/envutil.rb
 test/ruby/test_alias.rb
 test/ruby/test_array.rb
 test/ruby/test_assignment.rb
+test/ruby/test_beginendblock.rb
 test/ruby/test_bignum.rb
 test/ruby/test_call.rb
 test/ruby/test_case.rb
@@ -673,6 +676,10 @@ test/soap/test_basetype.rb
 test/soap/test_soapelement.rb
 test/strscan/test_stringscanner.rb
 test/testunit/collector/test_objectspace.rb
+test/testunit/runit/test_assert.rb
+test/testunit/runit/test_testcase.rb
+test/testunit/runit/test_testresult.rb
+test/testunit/runit/test_testsuite.rb
 test/testunit/test_assertions.rb
 test/testunit/test_error.rb
 test/testunit/test_failure.rb
