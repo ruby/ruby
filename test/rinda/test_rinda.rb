@@ -214,19 +214,19 @@ module TupleSpaceTestModule
     tmpl = Rinda::DRbObjectTemplate.new(/^druby:\/\/host:/)
     assert(tmpl === ro)
 
-    ro.reinit(12345, 1234)
+    ro = DRbObject.new_with(12345, 1234)
     assert(!(tmpl === ro))
 
-    ro.reinit("druby://foo:12345", 1234)
+    ro = DRbObject.new_with("druby://foo:12345", 1234)
     assert(!(tmpl === ro))
 
     tmpl = Rinda::DRbObjectTemplate.new(/^druby:\/\/(foo|bar):/)
     assert(tmpl === ro)
 
-    ro.reinit("druby://bar:12345", 1234)
+    ro = DRbObject.new_with("druby://bar:12345", 1234)
     assert(tmpl === ro)
 
-    ro.reinit("druby://baz:12345", 1234)
+    ro = DRbObject.new_with("druby://baz:12345", 1234)
     assert(!(tmpl === ro))
   end
 
