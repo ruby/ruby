@@ -965,7 +965,6 @@ site-install-rb: install-rb
   mfile.print "$(RUBYARCHDIR)/" if $extout
   mfile.print "$(DLLIB): ", (makedef ? "$(DEFFILE) " : ""), "$(OBJS)\n\t"
   mfile.print "@-$(RM) $@\n\t"
-  mfile.print "@-$(RM) $(TARGET).lib\n\t" if $mswin
   mfile.print "@-$(MAKEDIRS) $(@D)\n\t"
   mfile.print LINK_SO, "\n\n"
   mfile.print "$(STATIC_LIB): $(OBJS)\n\t"
