@@ -361,6 +361,7 @@ lib/rss/2.0.rb
 lib/rss/content.rb
 lib/rss/converter.rb
 lib/rss/dublincore.rb
+lib/rss/maker.rb
 lib/rss/maker/0.9.rb
 lib/rss/maker/1.0.rb
 lib/rss/maker/2.0.rb

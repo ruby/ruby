@@ -1,3 +1,7 @@
+Mon Nov  1 09:37:19 2004  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/maker.rb: added entry point of RSS Maker.
+
 Mon Nov  1 01:14:52 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_f_open): create copy of popen specifier.  [ruby-dev:24656]
