@@ -691,7 +691,7 @@ end
 
 module Kernel
   private
-  def scanf(fs)
-    STDIN.scanf(fs)
+  def scanf(fs,&b)
+    STDIN.scanf(fs,&b)
   end
 end
