@@ -1,3 +1,8 @@
+Thu Oct  4 14:11:03 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/socket/socket.c (ruby_connect): EALREADY is the equivalent
+	  for EINPROGRESS in ws2_32.lib.
+
 Tue Oct  2 19:12:47 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/ftools.rb (catname): allow trailing '/' for the destination.

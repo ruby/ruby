@@ -761,6 +761,7 @@ ruby_connect(fd, sockaddr, len, socks)
 #ifdef EINPROGRESS
 	      case EINPROGRESS:
 #if defined __CYGWIN__
+	      case EALREADY:
 		wait_in_progress = 10;
 #endif
 #endif
@@ -768,9 +769,8 @@ ruby_connect(fd, sockaddr, len, socks)
 		continue;
 
 #if defined __CYGWIN__
-	      case EALREADY:
 	      case EINVAL:
-		if (--wait_in_progress > 0) {
+		if (wait_in_progress-- > 0) {
 		    struct timeval tv = {0, 100000};
 		    rb_thread_wait_for(tv);
 		    continue;
