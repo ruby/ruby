@@ -369,6 +369,7 @@ extern VALUE eException;
 extern VALUE eRuntimeError;
 extern VALUE eSyntaxError;
 static VALUE eLocalJumpError;
+static VALUE eSysStackError;
 extern VALUE eSecurityError;
 
 extern VALUE TopSelf;
@@ -404,7 +405,8 @@ struct BLOCK {
     VALUE orig_thread;
 #endif
     struct BLOCK *prev;
-} *the_block;
+};
+static struct BLOCK  *the_block;
 
 #define PUSH_BLOCK(v,b) {		\
     struct BLOCK _block;		\
@@ -513,10 +515,11 @@ dyna_var_asgn(id, value)
     return value;
 }
 
-static struct iter {
+struct iter {
     int iter;
     struct iter *prev;
-} *the_iter;
+};
+static struct iter *the_iter;
 
 #define ITER_NOT 0
 #define ITER_PRE 1
@@ -532,7 +535,7 @@ static struct iter {
     the_iter = _iter.prev;		\
 }
 
-static struct tag {
+struct tag {
     jmp_buf buf;
     struct FRAME *frame;
     struct iter *iter;
@@ -540,7 +543,8 @@ static struct tag {
     VALUE retval;
     ID dst;
     struct tag *prev;
-} *prot_tag;
+};
+static struct tag *prot_tag;
 
 #define PUSH_TAG(ptag) {		\
     struct tag _tag;			\
@@ -675,9 +679,13 @@ rb_check_safe_str(x)
 	TypeError("wrong argument type %s (expected String)",
 		  rb_class2name(CLASS_OF(x)));
     }
-    if (rb_safe_level() > 0 && str_tainted(x)) {
-	Raise(eSecurityError, "Insecure operation - %s",
-	      rb_id2name(the_frame->last_func));
+    if (str_tainted(x)) {
+	if (safe_level > 0){
+	    Raise(eSecurityError, "Insecure operation - %s",
+		  rb_id2name(the_frame->last_func));
+	}
+	Warning("Insecure operation - %s",
+		rb_id2name(the_frame->last_func));
     }
 }
 
@@ -2402,7 +2410,7 @@ rb_eval(self, node)
 				  rb_id2name(node->nd_cname));
 		    }
 		}
-		if (safe_level >= 4) {
+		if (safe_level >= 3) {
 		    Raise(eSecurityError, "extending class prohibited");
 		}
 		rb_clear_cache();
@@ -2412,6 +2420,7 @@ rb_eval(self, node)
 		klass = rb_define_class_id(node->nd_cname, super);
 		rb_const_set(the_class, node->nd_cname, klass);
 		rb_set_class_path(klass,the_class,rb_id2name(node->nd_cname));
+		obj_call_init(klass);
 	    }
 
 	    return module_setup(klass, node->nd_body);
@@ -2430,7 +2439,7 @@ rb_eval(self, node)
 		if (TYPE(module) != T_MODULE) {
 		    TypeError("%s is not a module", rb_id2name(node->nd_cname));
 		}
-		if (safe_level >= 4) {
+		if (safe_level >= 3) {
 		    Raise(eSecurityError, "extending module prohibited");
 		}
 	    }
@@ -2438,6 +2447,7 @@ rb_eval(self, node)
 		module = rb_define_module_id(node->nd_cname);
 		rb_const_set(the_class, node->nd_cname, module);
 		rb_set_class_path(module,the_class,rb_id2name(node->nd_cname));
+		obj_call_init(module);
 	    }
 
 	    result = module_setup(module, node->nd_body);
@@ -3238,7 +3248,7 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
     }
 
     if ((++tick & 0xfff) == 0 && stack_length() > STACK_LEVEL_MAX)
-	Fatal("stack level too deep");
+	Raise(eSysStackError, "stack level too deep");
 
     PUSH_ITER(itr);
     PUSH_FRAME();
@@ -4738,6 +4748,9 @@ f_binding(self)
     data->orig_thread = thread_current();
 #endif
     data->iter = f_iterator_p();
+    if (the_frame->prev) {
+	data->frame.last_func = the_frame->prev->last_func;
+    }
     data->frame.argv = ALLOC_N(VALUE, data->frame.argc);
     MEMCPY(data->frame.argv, the_block->frame.argv, VALUE, data->frame.argc);
 
@@ -4802,6 +4815,7 @@ proc_s_new(klass)
 	    break;
 	}
     }
+    obj_call_init(proc);
 
     return proc;
 }
@@ -5122,6 +5136,7 @@ void
 Init_Proc()
 {
     eLocalJumpError = rb_define_class("LocalJumpError", eException);
+    eSysStackError = rb_define_class("SystemStackError", eException);
 
     cProc = rb_define_class("Proc", cObject);
     rb_define_singleton_method(cProc, "new", proc_s_new, 0);
@@ -5200,7 +5215,6 @@ struct thread {
 
     struct FRAME *frame;
     struct SCOPE *scope;
-    int vmode;
     struct RVarmap *dyna_vars;
     struct BLOCK *block;
     struct iter *iter;
@@ -5208,6 +5222,7 @@ struct thread {
     VALUE klass;
 
     VALUE trace;
+    int misc;			/* misc. states (vmode/trap_immediate) */
 
     char *file;
     int   line;
@@ -5354,7 +5369,7 @@ thread_save_context(th)
     th->klass = the_class;
     th->dyna_vars = the_dyna_vars;
     th->block = the_block;
-    th->vmode = scope_vmode;
+    th->misc = scope_vmode | (trap_immediate<<8);
     th->iter = the_iter;
     th->tag = prot_tag;
     th->errat = errat;
@@ -5414,7 +5429,8 @@ thread_restore_context(th, exit)
     the_class = th->klass;
     the_dyna_vars = th->dyna_vars;
     the_block = th->block;
-    scope_vmode = th->vmode;
+    scope_vmode = th->misc&SCOPE_MASK;
+    trap_immediate = th->misc>>8;
     the_iter = th->iter;
     prot_tag = th->tag;
     errat = th->errat;
@@ -5445,6 +5461,7 @@ thread_restore_context(th, exit)
 
       case 3:
 	rb_trap_eval(th_cmd, th_sig);
+	errno = EINTR;
 	break;
 
       case 4:
@@ -6058,7 +6075,6 @@ catch_timer(sig)
 #endif
     if (!thread_critical) {
 	if (trap_immediate) {
-	    trap_immediate = 0;
 	    thread_schedule();
 	}
 	else thread_pending = 1;
@@ -6259,6 +6275,7 @@ thread_trap_eval(cmd, sig)
     thread_ready(main_thread);
     if (curr_thread == main_thread) {
 	rb_trap_eval(cmd, sig);
+	return;
     }
     thread_save_context(curr_thread);
     if (setjmp(curr_thread->context)) {

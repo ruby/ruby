@@ -121,8 +121,8 @@ struct_set(obj, val)
 VALUE struct_alloc();
 
 static VALUE
-make_struct(name, member)
-    VALUE name, member;
+make_struct(name, member, klass)
+    VALUE name, member, klass;
 {
     VALUE nstr;
     ID id;
@@ -132,7 +132,7 @@ make_struct(name, member)
     if (!rb_is_const_id(id)) {
 	NameError("identifier %s needs to be constant", RSTRING(name)->ptr);
     }
-    nstr = rb_define_class_under(cStruct, RSTRING(name)->ptr, cStruct);
+    nstr = rb_define_class_under(klass, RSTRING(name)->ptr, klass);
     rb_iv_set(nstr, "__size__", INT2FIX(RARRAY(member)->len));
     rb_iv_set(nstr, "__member__", member);
 
@@ -174,11 +174,11 @@ struct_define(name, va_alist)
     }
     va_end(ar);
 
-    return make_struct(nm, ary);
+    return make_struct(nm, ary, cStruct);
 }
 
 static VALUE
-struct_s_def(argc, argv)
+struct_s_def(argc, argv, klass)
     int argc;
     VALUE *argv;
 {
@@ -193,8 +193,8 @@ struct_s_def(argc, argv)
 	ID id = rb_to_id(rest->ptr[i]);
 	rest->ptr[i] = INT2FIX(id);
     }
-    st = make_struct(name, rest);
-    obj_call_init((VALUE)st);
+    st = make_struct(name, rest, klass);
+    obj_call_init(st);
 
     return st;
 }
@@ -218,7 +218,7 @@ struct_alloc(klass, values)
 	st->ptr = ALLOC_N(VALUE, n);
 	st->len = n;
 	MEMCPY(st->ptr, RARRAY(values)->ptr, VALUE, RARRAY(values)->len);
-	memclear(st->ptr+RARRAY(values)->len, n - RARRAY(values)->len);
+	memclear(st->ptr+RARRAY(values)->len, n-RARRAY(values)->len);
 	obj_call_init((VALUE)st);
 
 	return (VALUE)st;

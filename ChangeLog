@@ -1,3 +1,21 @@
+Tue Apr 14 11:34:50 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* struct.c (struct_s_def): supports subclassing of Struct.
+
+	* io.c (io_s_new): supports subclassing of IO.
+
+Mon Apr 13 11:07:39 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (f_binding): need to restore method name.
+
+	* eval.c (rb_call0): raises SystemStackError, not Fatal.
+
+	* io.c (obj_display): same as `print self'.
+
+	* io.c (f_p): can now be called in the method form.
+
+	* re.c (reg_regsub): needed to be mbchar aware.
+
 Mon Apr 13 13:18:32 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (thread_trap_eval): all handlers executed under main_thread.
@@ -9,6 +27,10 @@ Mon Apr 13 12:47:03 1998  TAKAHASHI Masayoshi  <maki@inac.co.jp>
 Sun Apr 12 22:14:07 1998  Kazunori NISHI  <kazunori@swlab.csce.kyushu-u.ac.jp>
 
 	* array.c (ary_uniq_bang): should be `==', not `='. embarrassing.
+
+Sat Apr 11 02:13:30 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* array.c (ary_subseq): SEGVed for `[][1,1]'.
 
 Fri Apr 10 21:29:06 1998  Tadayoshi Funaba  <tadf@kt.rim.or.jp>
 

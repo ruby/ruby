@@ -328,7 +328,9 @@ fdbm_store(obj, keystr, valstr)
     dbmp->di_size = -1;
     dbm = dbmp->di_dbm;
     if (dbm_store(dbm, key, val, DBM_REPLACE)) {
+#ifdef HAVE_DBM_CLAERERR
 	dbm_clearerr(dbm);
+#endif
 	if (errno == EPERM) rb_sys_fail(Qnil);
 	Fail("dbm_store failed");
     }

@@ -675,8 +675,6 @@ if defined? Process.kill
     x = $!
   end
   ok(x && x =~ /Interrupt/)
-else
-  ok(false)
 end
 
 check "eval"

@@ -141,7 +141,7 @@ The variable ruby-indent-level controls the amount of indentation.
   (use-local-map ruby-mode-map)
   (setq mode-name "ruby")
   (setq major-mode 'ruby-mode)
-  (ruby-mode-variable)
+  (ruby-mode-variables)
   (run-hooks 'ruby-mode-hook))
 
 (defun ruby-current-indentation ()

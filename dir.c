@@ -100,7 +100,6 @@ dir_closed()
     if (dirp == NULL) dir_closed();\
 }
 
-#if 0
 static VALUE
 dir_read(dir)
     VALUE dir;
@@ -109,13 +108,16 @@ dir_read(dir)
     struct dirent *dp;
 
     GetDIR(dir, dirp);
+    errno = 0;
     dp = readdir(dirp);
     if (dp)
 	return str_taint(str_new(dp->d_name, NAMLEN(dp)));
-    else
-	return Qnil;
+    else {
+	if (errno == 0)		/* end of stream */
+	    return Qnil;
+	rb_sys_fail(0);
+    }
 }
-#endif
 
 static VALUE
 dir_each(dir)
@@ -428,9 +430,7 @@ Init_Dir()
     rb_define_singleton_method(cDir, "open", dir_s_open, 1);
     rb_define_singleton_method(cDir, "foreach", dir_foreach, 1);
 
-#if 0
     rb_define_method(cDir,"read", dir_read, 0);
-#endif
     rb_define_method(cDir,"each", dir_each, 0);
     rb_define_method(cDir,"rewind", dir_rewind, 0);
     rb_define_method(cDir,"tell", dir_tell, 0);

@@ -306,9 +306,6 @@ ary_subseq(ary, beg, len)
 	beg = RARRAY(ary)->len + beg;
 	if (beg < 0) beg = 0;
     }
-    if (beg >= RARRAY(ary)->len) {
-	IndexError("out of range %d", beg);
-    }
     if (len < 0) {
 	IndexError("negative length %d", RARRAY(ary)->len);
     }
@@ -317,6 +314,9 @@ ary_subseq(ary, beg, len)
     }
     if (beg + len > RARRAY(ary)->len) {
 	len = RARRAY(ary)->len - beg;
+    }
+    if (len < 0) {
+	len = 0;
     }
 
     ary2 = ary_new2(len);

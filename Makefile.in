@@ -66,7 +66,7 @@ OBJS	      = array.o \
 		$(MISSING)
 
 all:		miniruby$(binsuffix) rbconfig.rb
-		@cd ext; ../miniruby$(binsuffix) ./extmk.rb @EXTSTATIC@
+		@./miniruby$(binsuffix) -Xext extmk.rb @EXTSTATIC@
 
 miniruby$(binsuffix):	$(OBJS) $(MAINOBJ) dmyext.o
 		@rm -f $@
@@ -86,8 +86,7 @@ install:	rbconfig.rb
 clean:;		@rm -f $(OBJS) $(LIBRUBY) $(MAINOBJ) rbconfig.rb
 		@rm -f ext/extinit.c ext/extinit.o dmyext.o
 		@if test -f ./miniruby$(binsuffix); then \
-			cd ext; \
-			../miniruby$(binsuffix) ./extmk.rb clean; \
+			./miniruby$(binsuffix) -Xext extmk.rb clean; \
 		fi
 
 realclean:	clean

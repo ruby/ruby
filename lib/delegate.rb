@@ -13,12 +13,12 @@
 class Delegator
 
   def initialize(obj)
+    preserved = ::Kernel.instance_methods
     for t in self.type.ancestors
       preserved |= t.instance_methods
       break if t == Delegator
     end
-    preserved |= ::Kernel.instance_methods
-    preserved -= ["to_s", "nil?", "to_a", "hash", "dup", "==", "=~"]
+    preserved -= ["__getobj__","to_s","nil?","to_a","hash","dup","==","=~"]
     for method in obj.methods
       next if preserved.include? method
       eval "def self.#{method}(*args,&block); __getobj__.__send__(:#{method}, *args,&block); end"

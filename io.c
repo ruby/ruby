@@ -1002,6 +1002,7 @@ pipe_open(pname, mode)
 	    fptr->f2 = f;
 	    io_unbuffered(fptr);
 	}
+	obj_call_init((VALUE)port);
 	return (VALUE)port;
     }
 #else
@@ -1089,6 +1090,7 @@ pipe_open(pname, mode)
 	    fptr->finalize = pipe_finalize;
 	    pipe_add_fptr(fptr);
 #endif
+	    obj_call_init((VALUE)port);
 	    return (VALUE)port;
 	}
     }
@@ -1454,14 +1456,21 @@ f_puts(argc, argv)
 }
 
 static VALUE
-f_p(obj, val)
-    VALUE obj, val;
+f_p(argc, argv, self)
+    int argc;
+    VALUE *argv;
+    VALUE self;
 {
-    VALUE str = rb_inspect(val);
+    VALUE str;
 
+    if (argc > 0) {
+	rb_scan_args(argc, argv, "1", &self);
+    }
+    str = rb_inspect(self);
     Check_Type(str, T_STRING);
     io_write(rb_defout, str);
     io_write(rb_defout, str_new2("\n"));
+
     return Qnil;
 }
 
@@ -1469,7 +1478,26 @@ void
 rb_p(obj)			/* for debug print within C code */
     VALUE obj;
 {
-    f_p(Qnil, obj);
+    f_p(0, 0, obj);
+}
+
+static VALUE
+obj_display(argc, argv, self)
+    int argc;
+    VALUE *argv;
+    VALUE self;
+{
+    VALUE out;
+    VALUE str;
+
+    rb_scan_args(argc, argv, "01", &out);
+    if (NIL_P(out)) {
+	out = rb_defout;
+    }
+
+    io_write(out, self);
+
+    return Qnil;
 }
 
 static void
@@ -1512,29 +1540,31 @@ io_stdio_set(val, id, var)
 }
 
 static VALUE
-prep_stdio(f, mode)
+prep_stdio(f, mode, klass)
     FILE *f;
     int mode;
+    VALUE klass;
 {
     OpenFile *fp;
     NEWOBJ(obj, struct RFile);
-    OBJSETUP(obj, cIO, T_FILE);
+    OBJSETUP(obj, klass, T_FILE);
 
     MakeOpenFile(obj, fp);
     fp->f = f;
     fp->mode = mode;
+    obj_call_init((VALUE)obj);
 
     return (VALUE)obj;
 }
 
 static VALUE
-io_s_new(argc, argv)
+io_s_new(argc, argv, klass)
     int argc;
     VALUE *argv;
+    VALUE klass;
 {
     VALUE fnum, mode;
     char *m = "r";
-    VALUE io;
 
     rb_scan_args(argc, argv, "11", &fnum, &mode);
 
@@ -1542,10 +1572,7 @@ io_s_new(argc, argv)
 	Check_SafeStr(mode);
 	m = RSTRING(mode)->ptr;
     }
-    io = prep_stdio(rb_fdopen(NUM2INT(fnum), m), io_mode_flags(m));
-    obj_call_init(io);
-
-    return io;
+    return prep_stdio(rb_fdopen(NUM2INT(fnum), m), io_mode_flags(m), klass);
 }
 
 static VALUE filename, file;
@@ -1635,9 +1662,9 @@ next_argv()
 			fchown(fileno(fw), st.st_uid, st.st_gid);
 		    }
 #endif
-		    rb_defout = prep_stdio(fw, FMODE_WRITABLE);
+		    rb_defout = prep_stdio(fw, FMODE_WRITABLE, cIO);
 		}
-		file = prep_stdio(fr, FMODE_READABLE);
+		file = prep_stdio(fr, FMODE_READABLE, cIO);
 	    }
 	}
 	else {
@@ -2135,8 +2162,8 @@ io_s_pipe()
 #endif
 	rb_sys_fail(0);
 
-    r = prep_stdio(fdopen(pipes[0], "r"), FMODE_READABLE);
-    w = prep_stdio(fdopen(pipes[1], "w"), FMODE_WRITABLE);
+    r = prep_stdio(fdopen(pipes[0], "r"), FMODE_READABLE, cIO);
+    w = prep_stdio(fdopen(pipes[1], "w"), FMODE_WRITABLE, cIO);
 
     ary = ary_new2(2);
     ary_push(ary, r);
@@ -2396,7 +2423,8 @@ Init_IO()
     rb_define_global_function("`", f_backquote, 1);
     rb_define_global_function("pipe", io_s_pipe, 0);
 
-    rb_define_global_function("p", f_p, 1);
+    rb_define_method(mKernel, "p", f_p, -1);
+    rb_define_method(mKernel, "display", obj_display, -1);
 
     cIO = rb_define_class("IO", cObject);
     rb_include_module(cIO, mEnumerable);
@@ -2466,11 +2494,11 @@ Init_IO()
     rb_define_method(cIO, "ioctl", io_ioctl, -1);
     rb_define_method(cIO, "fcntl", io_fcntl, -1);
 
-    rb_stdin = prep_stdio(stdin, FMODE_READABLE);
+    rb_stdin = prep_stdio(stdin, FMODE_READABLE, cIO);
     rb_define_hooked_variable("$stdin", &rb_stdin, 0, io_stdio_set);
-    rb_stdout = prep_stdio(stdout, FMODE_WRITABLE);
+    rb_stdout = prep_stdio(stdout, FMODE_WRITABLE, cIO);
     rb_define_hooked_variable("$stdout", &rb_stdout, 0, io_stdio_set);
-    rb_stderr = prep_stdio(stderr, FMODE_WRITABLE);
+    rb_stderr = prep_stdio(stderr, FMODE_WRITABLE, cIO);
     rb_define_hooked_variable("$stderr", &rb_stderr, 0, io_stdio_set);
     rb_defout = rb_stdout;
     rb_define_hooked_variable("$>", &rb_defout, 0, io_defset);

@@ -73,6 +73,7 @@ file_open(fname, mode)
     fptr->mode = io_mode_flags(mode);
     fptr->f = rb_fopen(fname, mode);
     fptr->path = strdup(fname);
+    obj_call_init((VALUE)port);
 
     return (VALUE)port;
 }

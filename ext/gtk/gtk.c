@@ -44,6 +44,7 @@ static VALUE gColorSel;
 static VALUE gColorSelDialog;
 static VALUE gImage;
 static VALUE gDrawArea;
+static VALUE gEditable;
 static VALUE gEntry;
 static VALUE gEventBox;
 static VALUE gFixed;
@@ -4430,6 +4431,98 @@ darea_size(self, w, h)
 }
 
 static VALUE
+edit_sel_region(self, start, end)
+    VALUE self, start, end;
+{
+    gtk_editable_select_region(GTK_EDITABLE(get_widget(self)),
+			       NUM2INT(start), NUM2INT(end));
+    return self;
+}
+
+static VALUE
+edit_insert_text(self, new_text)
+    VALUE self;
+{
+    gint pos;
+
+    Check_Type(new_text, T_STRING);
+    gtk_editable_insert_text(GTK_EDITABLE(get_widget(self)),
+			     RSTRING(new_text)->ptr,
+			     RSTRING(new_text)->len,
+			     &pos);
+    return INT2NUM(pos);
+}
+
+static VALUE
+edit_delete_text(self, start, end)
+    VALUE self, start, end;
+{
+    gtk_editable_delete_text(GTK_EDITABLE(get_widget(self)),
+			     NUM2INT(start), NUM2INT(end));
+    return self;
+}
+
+static VALUE
+edit_get_chars(self, start, end)
+    VALUE self, start, end;
+{
+    gchar *s;
+
+    s = gtk_editable_get_chars(GTK_EDITABLE(get_widget(self)),
+			       NUM2INT(start), NUM2INT(end));
+    return str_new2(s);
+}
+
+static VALUE
+edit_cut_clipboard(self, time)
+    VALUE self, time;
+{
+    gtk_editable_cut_clipboard(GTK_EDITABLE(get_widget(self)),NUM2INT(time));
+    return self;
+}
+
+static VALUE
+edit_copy_clipboard(self, time)
+    VALUE self, time;
+{
+    gtk_editable_copy_clipboard(GTK_EDITABLE(get_widget(self)),NUM2INT(time));
+    return self;
+}
+	
+static VALUE
+edit_paste_clipboard(self, time)
+    VALUE self, time;
+{
+    gtk_editable_paste_clipboard(GTK_EDITABLE(get_widget(self)),NUM2INT(time));
+    return self;
+}
+	
+static VALUE
+edit_claim_selection(self, claim, time)
+    VALUE self, claim, time;
+{
+    gtk_editable_claim_selection(GTK_EDITABLE(get_widget(self)),
+				 RTEST(claim), NUM2INT(time));
+    return self;
+}
+	
+static VALUE
+edit_delete_selection(self)
+    VALUE self;
+{
+    gtk_editable_delete_selection(GTK_EDITABLE(get_widget(self)));
+    return self;
+}
+
+static VALUE
+edit_changed(self)
+    VALUE self;
+{
+    gtk_editable_changed(GTK_EDITABLE(get_widget(self)));
+    return self;
+}
+
+static VALUE
 entry_initialize(self)
     VALUE self;
 {
@@ -5625,7 +5718,8 @@ Init_gtk()
     gColorSelDialog = rb_define_class_under(mGtk, "ColorSelectionDialog", gWindow);
     gImage = rb_define_class_under(mGtk, "Image", gMisc);
     gDrawArea = rb_define_class_under(mGtk, "DrawingArea", gWidget);
-    gEntry = rb_define_class_under(mGtk, "Entry", gWidget);
+    gEditable = rb_define_class_under(mGtk, "Editable", gWidget);
+    gEntry = rb_define_class_under(mGtk, "Entry", gEditable);
     gEventBox = rb_define_class_under(mGtk, "EventBox", gBin);
     gFixed = rb_define_class_under(mGtk, "Fixed", gContainer);
     gGamma = rb_define_class_under(mGtk, "GammaCurve", gVBox);
@@ -5666,7 +5760,7 @@ Init_gtk()
     gProgressBar = rb_define_class_under(mGtk, "ProgressBar", gWidget);
     gScrolledWin = rb_define_class_under(mGtk, "ScrolledWindow", gContainer);
     gTable = rb_define_class_under(mGtk, "Table", gContainer);
-    gText = rb_define_class_under(mGtk, "Text", gWidget);
+    gText = rb_define_class_under(mGtk, "Text", gEditable);
     gToolbar = rb_define_class_under(mGtk, "Toolbar", gContainer);
     gTooltips = rb_define_class_under(mGtk, "Tooltips", cData);
     gTree = rb_define_class_under(mGtk, "Tree", gContainer);
@@ -5957,6 +6051,18 @@ Init_gtk()
     /* DrawingArea */
     rb_define_method(gDrawArea, "initialize", darea_initialize, 0);
     rb_define_method(gDrawArea, "size", darea_size, 2);
+
+    /* Editable */
+    rb_define_method(gEditable, "select_region", edit_sel_region, 2);
+    rb_define_method(gEditable, "insert_text", edit_insert_text, 3);
+    rb_define_method(gEditable, "delete_text", edit_delete_text, 2);
+    rb_define_method(gEditable, "get_chars", edit_get_chars, 2);
+    rb_define_method(gEditable, "cut_clipboard", edit_cut_clipboard, 1);
+    rb_define_method(gEditable, "copy_clipboard", edit_copy_clipboard, 1);
+    rb_define_method(gEditable, "paste_clipboard", edit_paste_clipboard, 1);
+    rb_define_method(gEditable, "claim_selection", edit_claim_selection, 2);
+    rb_define_method(gEditable, "delete_selection", edit_delete_selection, 0);
+    rb_define_method(gEditable, "changed", edit_changed, 0);
 
     /* Entry */
     rb_define_method(gEntry, "initialize", entry_initialize, 0);

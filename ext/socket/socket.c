@@ -94,6 +94,7 @@ sock_new(class, fd)
     fp->f2 = rb_fdopen(fd, "w");
     fp->mode = FMODE_READWRITE;
     io_unbuffered(fp);
+    obj_call_init((VALUE)sock);
 
     return (VALUE)sock;
 }
@@ -543,7 +544,6 @@ tcp_s_open(class, host, serv)
     VALUE s;
     Check_SafeStr(host);
     s = open_inet(class, host, serv, INET_CLIENT);
-    obj_call_init(s);
     return s;
 }
 
@@ -562,7 +562,6 @@ socks_s_open(class, host, serv)
 	
     Check_SafeStr(host);
     s = open_inet(class, host, serv, INET_SOCKS);
-    obj_call_init(s);
     return s;
 }
 #endif
@@ -579,7 +578,6 @@ tcp_svr_s_open(argc, argv, class)
 	s = open_inet(class, arg1, arg2, INET_SERVER);
     else
 	s = open_inet(class, 0, arg1, INET_SERVER);
-    obj_call_init(s);
     return s;
 }
 
@@ -812,7 +810,6 @@ udp_s_open(class)
     VALUE s;
 
     s = sock_new(class, socket(AF_INET, SOCK_DGRAM, 0));
-    obj_call_init(s);
     return s;
 }
 
@@ -958,7 +955,6 @@ unix_s_sock_open(sock, path)
 {
     VALUE s;
     s = open_unix(sock, path, 0);
-    obj_call_init(s);
     return s;
 }
 
@@ -985,7 +981,6 @@ unix_svr_s_open(sock, path)
 {
     VALUE s;
     s = open_unix(sock, path, 1);
-    obj_call_init(s);
     return s;
 }
 
@@ -1144,20 +1139,15 @@ sock_s_open(class, domain, type, protocol)
     setup_domain_and_type(domain, &d, type, &t);
     fd = socket(d, t, NUM2INT(protocol));
     if (fd < 0) rb_sys_fail("socket(2)");
-    s = sock_new(class, fd);
-    obj_call_init(s);
 
-    return s;
+    return sock_new(class, fd);
 }
 
 static VALUE
 sock_s_for_fd(class, fd)
     VALUE class, fd;
 {
-    VALUE s = sock_new(class, NUM2INT(fd));
-
-    obj_call_init(s);
-    return s;
+    return sock_new(class, NUM2INT(fd));
 }
 
 static VALUE
