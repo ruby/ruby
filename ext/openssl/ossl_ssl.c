@@ -435,6 +435,27 @@ ossl_ssl_setup(VALUE self)
     return Qtrue;
 }
 
+static void
+ossl_start_ssl(SSL *ssl, int (*func)())
+{
+    int ret;
+
+    for(;;){
+	if((ret = func(ssl)) > 0) break;
+	switch(SSL_get_error(ssl, ret)){
+	case SSL_ERROR_NONE:
+	    break;
+	case SSL_ERROR_WANT_WRITE:
+	case SSL_ERROR_WANT_READ:
+	case SSL_ERROR_WANT_X509_LOOKUP:
+	    rb_thread_schedule();
+	    continue;
+	default:
+	    ossl_raise(eSSLError, "SSL_accept:");
+	}
+    }
+}
+
 static VALUE
 ossl_ssl_connect(VALUE self)
 {
@@ -445,9 +466,7 @@ ossl_ssl_connect(VALUE self)
     Data_Get_Struct(self, SSL, ssl);
     cb = ossl_sslctx_get_verify_cb(ossl_ssl_get_ctx(self));
     SSL_set_ex_data(ssl, ossl_ssl_ex_vcb_idx, (void *)cb);
-    if (SSL_connect(ssl) <= 0) {
-        ossl_raise(eSSLError, "SSL_connect:");
-    }
+    ossl_start_ssl(ssl, SSL_connect);
 
     return self;
 }
@@ -462,9 +481,7 @@ ossl_ssl_accept(VALUE self)
     Data_Get_Struct(self, SSL, ssl);
     cb = ossl_sslctx_get_verify_cb(ossl_ssl_get_ctx(self));
     SSL_set_ex_data(ssl, ossl_ssl_ex_vcb_idx, (void *)cb);
-    if (SSL_accept(ssl) <= 0) {
-        ossl_raise(eSSLError, "SSL_accept:");
-    }
+    ossl_start_ssl(ssl, SSL_accept);
 
     return self;
 }
@@ -482,7 +499,9 @@ ossl_ssl_read(VALUE self, VALUE len)
     str = rb_str_new(0, ilen);
 
     if (ssl) {
+	TRAP_BEG;
         nread = SSL_read(ssl, RSTRING(str)->ptr, RSTRING(str)->len);
+	TRAP_END;
         if (nread < 0) {
             ossl_raise(eSSLError, "SSL_read:");
         }
