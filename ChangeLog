@@ -1,3 +1,14 @@
+Thu Jan 30 16:46:43 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* lib/optparse.rb (OptionParser::Switch::PlacedArgument): added.
+	  if the next argument doesn't start with '-', use it as the
+	  value.
+
+	* lib/optparse.rb (OptionParser::make_switch): fixed a bug of
+	  pattern.
+
+	* lib/optparse.rb (Array): no need to guard.
+
 Thu Jan 30 08:27:19 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* file.c (rb_file_s_expand_path): removed a sludge.

@@ -142,12 +142,20 @@ Individual switch class.
     def self.guess(arg)
       case arg
       when ""
-        self
-      when /\A[=\s]?\[/
-        Switch::OptionalArgument
+        t = self
+      when /\A=?\[/
+        t = Switch::OptionalArgument
+      when /\A\s+\[/
+        t = Switch::PlacedArgument
       else
-        Switch::RequiredArgument
+        t = Switch::RequiredArgument
       end
+      self >= t or incompatible_argument_styles(arg, t)
+      t
+    end
+
+    def self.incompatible_argument_styles(arg, t)
+      raise ArgumentError, "#{arg}: incompatible argument styles\n  #{self}, #{t}"
     end
 
 =begin private
@@ -284,6 +292,8 @@ Switch that takes no arguments.
 	yield(NeedlessArgument, arg) if arg
 	super(arg)
       end
+      def self.incompatible_argument_styles(*)
+      end
     end
 
 =begin private
@@ -302,11 +312,6 @@ Switch that takes an argument.
 	  arg = argv.shift
 	end
 	super(*parse_arg(arg, &error))
-      end
-      def self.guess(arg)
-	self >= (t = super) or
-	  raise ArgumentError, "#{arg}: incompatible argument styles\n  #{self}, #{t}"
-	t
       end
     end
 
@@ -327,10 +332,14 @@ Switch that can omit argument.
 	  super(arg)
 	end
       end
-      def self.guess(arg)
-	self >= (t = super) or
-	  raise ArgumentError, "#{arg}: incompatible argument styles\n  #{self}, #{t}"
-	t
+    end
+
+    class PlacedArgument < self
+      def parse(arg, argv, &error)
+	unless arg or argv.empty? or /\A-/ =~ argv[0]
+	  arg = argv.shift
+	end
+	super(*parse_arg(arg, &error))
       end
     end
   end
@@ -954,15 +963,17 @@ Default options, which never appear in option summary.
 	not_pattern, not_conv = search(:atype, o) unless not_style
 	not_style = (not_style || default_style).guess(arg = a) if a
 	default_style = Switch::NoArgument
-	default_pattern, conv = search(:atype, FalseClass)
+	default_pattern, conv = search(:atype, FalseClass) unless default_pattern
 	ldesc << "--no-#{q}"
 	long << 'no-' + (q = q.downcase)
 	nolong << q
       when /^--\[no-\]([^][=\s]*)(.+)?/
 	q, a = $1, $2
 	o = notwice(a ? Object : TrueClass, klass, 'type')
-	default_style = default_style.guess(arg = a) if a
-	default_pattern, conv = search(:atype, o)
+	if a
+	  default_style = default_style.guess(arg = a)
+	  default_pattern, conv = search(:atype, o) unless default_pattern
+	end
 	ldesc << "--#{q}"
 	long << (o = q.downcase)
 	not_pattern, not_conv = search(:atype, FalseClass) unless not_style
@@ -971,32 +982,39 @@ Default options, which never appear in option summary.
       when /^--([^][=\s]*)(.+)?/
 	q, a = $1, $2
 	o = notwice(a ? NilClass : TrueClass, klass, 'type')
-	default_style = default_style.guess(arg = a) if a
-	default_pattern, conv = search(:atype, o)
+	if a
+	  default_style = default_style.guess(arg = a)
+	  default_pattern, conv = search(:atype, o) unless default_pattern
+	end
 	ldesc << "--#{q}"
 	long << (o = q.downcase)
       when /^-(\[\^?\]?(?:[^\\\]]|\\.)*\])(.+)?/
 	q, a = $1, $2
 	o = notwice(Object, klass, 'type')
-	default_style = default_style.guess(arg = a) if a
-	default_pattern, conv = search(:atype, o)
+	if a
+	  default_style = default_style.guess(arg = a)
+	  default_pattern, conv = search(:atype, o) unless default_pattern
+	end
 	sdesc << "-#{q}"
 	short << Regexp.new(q)
       when /^-(.)(.+)?/
 	q, a = $1, $2
 	o = notwice((a ? Object : TrueClass), klass, 'type')
-	default_style = default_style.guess(arg = a) if a
-	default_pattern, conv = search(:atype, o)
+	if a
+	  default_style = default_style.guess(arg = a)
+	  default_pattern, conv = search(:atype, o) unless default_pattern
+	end
 	sdesc << "-#{q}"
 	short << q
       when /^=/
 	style = notwice(default_style.guess(arg = o), style, 'style')
-	default_pattern, conv = search(:atype, Object)
+	default_pattern, conv = search(:atype, Object) unless default_pattern
       else
 	desc.push(o)
       end
     end
 
+    default_pattern, conv = search(:atype, Object) unless default_pattern
     s = if short.empty? and long.empty?
 	  raise ArgumentError, "no switch given" if style or pattern or block
 	  desc
@@ -1382,7 +1400,6 @@ Default options, which never appear in option summary.
   accept(Array) do |s|
     if s
       s = s.split(',').collect {|s| s unless s.empty?}
-      s.size > 1 or s = [s]	# guard empty or single.
     end
     s
   end
