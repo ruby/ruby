@@ -1,3 +1,8 @@
+Thu Sep  5 17:18:22 2002  Michal Rokos  <michal@ruby-lang.org>
+
+	* dln.c: fix memory leak in dln_load (ruby-core:405) and 
+	  in load_1 (ruby-core:407)
+
 Thu Sep  5 13:09:22 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (rb_eval): overriding false constant with class/module

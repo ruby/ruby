@@ -103,8 +103,8 @@ int eaccess();
 # endif
 #endif
 
-static void
-init_funcname(buf, file)
+static int
+init_funcname_len(buf, file)
     char **buf;
     char *file;
 {
@@ -131,7 +131,20 @@ init_funcname(buf, file)
 	    *p = '\0'; break;
 	}
     }
+    return p - *buf;
 }
+
+#define init_funcname(buf, file) do {\
+    int len = init_funcname_len(buf, file);\
+    char *tmp = ALLOCA_N(char, len+1);\
+    if (!tmp) {\
+	free(*buf);\
+	rb_memerror();\
+    }\
+    strcpy(tmp, *buf);\
+    free(*buf);\
+    *buf = tmp;\
+} while (0)
 
 #ifdef USE_DLN_A_OUT
 
@@ -646,8 +659,12 @@ load_1(fd, disp, need_init)
     }
     reloc = load_reloc(fd, &hdr, disp);
     if (reloc == NULL) return -1;
+
     syms = load_sym(fd, &hdr, disp);
-    if (syms == NULL) return -1;
+    if (syms == NULL) {
+	free(reloc);
+	return -1;
+    }
 
     sym = syms;
     end = syms + (hdr.a_syms / sizeof(struct nlist));
@@ -871,7 +888,6 @@ load_1(fd, disp, need_init)
 		}
 	    }
 	}
-	free (buf);
 	if (libs_to_be_linked && undef_tbl->num_entries > 0) {
 	    while (*libs_to_be_linked) {
 		load_lib(*libs_to_be_linked);
@@ -1266,7 +1282,6 @@ dln_load(file)
     if ((init_fct = (void(*)())GetProcAddress(handle, buf)) == NULL) {
 	rb_loaderror("%s - %s\n%s", dln_strerror(), buf, file);
     }
-    free(buf);
 
     /* Call the init code */
     (*init_fct)();
@@ -1304,7 +1319,6 @@ dln_load(file)
 	}
 
 	init_fct = (void(*)())dlsym(handle, buf);
-	free(buf);
 	if (init_fct == NULL) {
 	    error = DLN_ERROR();
 	    dlclose(handle);
@@ -1331,7 +1345,6 @@ dln_load(file)
 	    rb_loaderror("%s - %s", strerror(errno), file);
 	}
 	shl_findsym(&lib, buf, TYPE_PROCEDURE, (void*)&init_fct);
-	free(buf);
 	if (init_fct == NULL) {
 	    shl_findsym(&lib, buf, TYPE_UNDEFINED, (void*)&init_fct);
 	    if (init_fct == NULL) {
@@ -1390,11 +1403,9 @@ dln_load(file)
 	if(rld_lookup(NULL, buf, &init_address) == 0) {
 	    rb_loaderror("Failed to lookup Init function %.200s", file);
 	}
-	free(buf);
 
 	 /* Cannot call *init_address directory, so copy this value to
 	    funtion pointer */
-
 	init_fct = (void(*)())init_address;
 	(*init_fct)();
 	return (void*)init_address;
@@ -1425,7 +1436,6 @@ dln_load(file)
 
 	/* NSLookupAndBindSymbol require function name with "_" !! */
 	init_fct = NSAddressOfSymbol(NSLookupAndBindSymbol(buf));
-	free(buf);
 	(*init_fct)();
 
 	return (void*)init_fct;
@@ -1466,17 +1476,14 @@ dln_load(file)
 
       if ((B_BAD_IMAGE_ID == err_stat) || (B_BAD_INDEX == err_stat)) {
 	unload_add_on(img_id);
-	free(buf);
 	rb_loaderror("Failed to lookup Init function %.200s", file);
       }
       else if (B_NO_ERROR != err_stat) {
 	char errmsg[] = "Internal of BeOS version. %.200s (symbol_name = %s)";
 	unload_add_on(img_id);
-	free(buf);
 	rb_loaderror(errmsg, strerror(err_stat), buf);
       }
 
-      free(buf);
       /* call module initialize function. */
       (*init_fct)();
       return (void*)img_id;
@@ -1521,7 +1528,6 @@ dln_load(file)
       /* Locate the address of the correct init function */
       c2pstr(buf);
       err = FindSymbol(connID, buf, &symAddr, &class);
-      free(buf);
       if (err) {
 	  rb_loaderror("Unresolved symbols - %s" , file);
       }
