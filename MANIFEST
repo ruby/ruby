@@ -5,6 +5,7 @@ Makefile.in
 README
 README.jp
 README.EXT
+README.EXT.jp
 ToDo
 array.c
 bignum.c
@@ -81,6 +82,7 @@ ext/extmk.rb.in
 ext/extmk.rb.nt
 ext/aix_ld.rb
 lib/English.rb
+lib/Env.rb
 lib/base64.rb
 lib/cgi-lib.rb
 lib/complex.rb
@@ -110,6 +112,7 @@ lib/pstore.rb
 lib/rational.rb
 lib/shellwords.rb
 lib/sync.rb
+lib/tempfile.rb
 lib/thread.rb
 lib/thwait.rb
 lib/tk.rb
@@ -117,6 +120,7 @@ lib/tkcanvas.rb
 lib/tkclass.rb
 lib/tkdialog.rb
 lib/tkentry.rb
+lib/tkmenubar.rb
 lib/tkscrollbox.rb
 lib/tktext.rb
 lib/tracer.rb

@@ -419,15 +419,11 @@ rb_define_method(klass, name, func, argc)
     VALUE (*func)();
     int argc;
 {
-    rb_add_method(klass, rb_intern(name), NEW_CFUNC(func, argc), NOEX_PUBLIC);
-}
+    ID id = rb_intern(name);
 
-void
-rb_undef_method(klass, name)
-    VALUE klass;
-    char *name;
-{
-    rb_add_method(klass, rb_intern(name), 0, NOEX_PUBLIC);
+    rb_add_method(klass, id, NEW_CFUNC(func, argc), 
+		  (name[0] == 'i' && id == rb_intern("initialize"))?
+		  NOEX_PRIVATE:NOEX_PUBLIC);
 }
 
 void
@@ -438,6 +434,14 @@ rb_define_private_method(klass, name, func, argc)
     int argc;
 {
     rb_add_method(klass, rb_intern(name), NEW_CFUNC(func, argc), NOEX_PRIVATE);
+}
+
+void
+rb_undef_method(klass, name)
+    VALUE klass;
+    char *name;
+{
+    rb_add_method(klass, rb_intern(name), 0, NOEX_PUBLIC);
 }
 
 VALUE

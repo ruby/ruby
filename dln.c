@@ -6,19 +6,19 @@
   $Date$
   created at: Tue Jan 18 17:05:06 JST 1994
 
-  Copyright (C) 1993-1996 Yukihiro Matsumoto
+  Copyright (C) 1993-1998 Yukihiro Matsumoto
 
 ************************************************/
-
-#ifdef _AIX
-#pragma alloca
-#endif
 
 #include "config.h"
 #include "defines.h"
 #include "dln.h"
 
 char *dln_argv0;
+
+#ifdef _AIX
+#pragma alloca
+#endif
 
 #if defined(HAVE_ALLOCA_H) && !defined(__GNUC__)
 #include <alloca.h>

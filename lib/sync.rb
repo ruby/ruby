@@ -43,7 +43,7 @@ unless defined? Thread
   fail "Thread not available for this ruby interpreter"
 end
 
-require "finalize"
+require "final"
 
 module Sync_m
   RCS_ID='-$Header$-'
@@ -321,7 +321,11 @@ module Sync_m
     def For_primitive_object.extend_object(obj)
       super
       obj.sync_extended
-      Finalizer.add(obj, For_primitive_object, :sync_finalize)
+      # Changed to use `final.rb'.
+      # Finalizer.add(obj, For_primitive_object, :sync_finalize)
+      ObjectSpace.define_finalizer(obj) do |id|
+	For_primitive_object.sync_finalize(id)
+      end
     end
     
     def initialize

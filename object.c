@@ -6,7 +6,7 @@
   $Date$
   created at: Thu Jul 15 12:01:24 JST 1993
 
-  Copyright (C) 1993-1996 Yukihiro Matsumoto
+  Copyright (C) 1993-1998 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -386,7 +386,7 @@ static VALUE
 mod_to_s(class)
     VALUE class;
 {
-    return rb_class_path(class);
+    return str_dup(rb_class_path(class));
 }
 
 static VALUE
@@ -719,6 +719,15 @@ f_string(obj, arg)
     VALUE obj, arg;
 {
     return rb_funcall(arg, rb_intern("to_s"), 0);
+}
+
+char*
+str2cstr(str)
+    VALUE str;
+{
+    if (NIL_P(str)) return NULL;
+    Check_Type(str, T_STRING);
+    return RSTRING(str)->ptr;
 }
 
 VALUE

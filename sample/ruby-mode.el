@@ -632,8 +632,8 @@ An end of a defun is found by moving forward from the beginning of one."
      '("\\(^\\|[^_]\\)\\b\\([A-Z]+[a-zA-Z0-9_]*\\)"
        2 font-lock-type-face)
      ;; functions
-     '("^\\s *def[ \t]+.*$"
-       0 font-lock-function-name-face))
+     '("^\\s *def[ \t]+[^ \t(]*"
+       0 font-lock-function-name-face t))
     "*Additional expressions to highlight in ruby mode.")
   (if (and (>= (string-to-int emacs-version) 20)
           (not (featurep 'xemacs)))

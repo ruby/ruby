@@ -6,7 +6,7 @@
   $Date$
   created at: Tue Oct  5 09:44:46 JST 1993
 
-  Copyright (C) 1993-1996 Yukihiro Matsumoto
+  Copyright (C) 1993-1998 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -24,10 +24,6 @@
 #define setjmp(env) _setjmp(env)
 #define longjmp(env,val) _longjmp(env,val)
 #endif
-#endif
-
-#ifdef _AIX
-#pragma alloca
 #endif
 
 #ifdef C_ALLOCA
@@ -389,6 +385,7 @@ gc_mark(ptr)
 	  case NODE_IF:		/* 1,2,3 */
 	  case NODE_FOR:
 	  case NODE_ITER:
+	  case NODE_CREF:
 	    gc_mark(obj->as.node.u2.node);
 	    /* fall through */
 	  case NODE_BLOCK:	/* 1,3 */
@@ -400,6 +397,9 @@ gc_mark(ptr)
 	  case NODE_DREGX_ONCE:
 	  case NODE_FBODY:
 	  case NODE_CALL:
+#ifdef C_ALLOCA
+	  case NODE_ALLOCA:
+#endif
 	    gc_mark(obj->as.node.u1.node);
 	    /* fall through */
 	  case NODE_SUPER:	/* 3 */

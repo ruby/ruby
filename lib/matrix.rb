@@ -2,8 +2,8 @@
 #
 #   matrix.rb - 
 #   	$Release Version: 1.0$
-#   	$Revision: 1.0 $
-#   	$Date: 97/05/23 11:35:28 $
+#   	$Revision: 1.1.1.1 $
+#   	$Date: 1998/01/16 04:05:49 $
 #       Original Version from Smalltalk-80 version
 #	   on July 23, 1985 at 8:37:17 am
 #   	by Keiju ISHITSUKA
@@ -36,7 +36,7 @@ module ExceptionForMatrix
 end
 
 class Matrix
-  RCS_ID='-$Header: ruby-mode,v 1.2 91/04/20 17:24:57 keiju Locked $-'
+  RCS_ID='-$Header: /home/cvsroot/ruby/lib/matrix.rb,v 1.1.1.1 1998/01/16 04:05:49 matz Exp $-'
   
   include ExceptionForMatrix
   

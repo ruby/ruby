@@ -241,6 +241,15 @@ module TkComm
 		    uninstall_cmd myid
 		  })
   end
+
+  def update(idle=nil)
+    if idle
+      tk_call 'update', 'idletasks'
+    else
+      tk_call 'update'
+    end
+  end
+
 end
 
 module TkCore
@@ -963,6 +972,7 @@ class TkRoot<TkWindow
     return ROOT[0] if ROOT[0]
     new = super
     ROOT[0] = new
+    Tk_WINDOWS["."] = new
   end
   def create_self
     @path = '.'
@@ -1220,12 +1230,12 @@ module TkComposite
       @delegates = {} 
       @delegates['DEFAULT'] = @frame
     end
-    if option.kind_of?(String)
-      @delegates[option] = wins
-    else
-      for i in option
-	@delegates[i] = wins
+    if @delegates[option].kind_of?(Array)
+      for i in wins
+	@delegates[option].push(i)
       end
+    else
+      @delegates[option] = wins
     end
   end
 
@@ -1252,3 +1262,5 @@ autoload :TkBitmapImage, 'tkcanvas'
 autoload :TkPhotoImage, 'tkcanvas'
 autoload :TkEntry, 'tkentry'
 autoload :TkText, 'tktext'
+autoload :TkDialog, 'tkdialog'
+autoload :TkMenubar, 'tkmenubar'

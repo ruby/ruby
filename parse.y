@@ -6,7 +6,7 @@
   $Date$
   created at: Fri May 28 18:02:42 JST 1993
 
-  Copyright (C) 1993-1996 Yukihiro Matsumoto
+  Copyright (C) 1993-1998 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -175,8 +175,8 @@ static void top_local_setup();
 %type <id>   variable symbol operation assoc_kw
 %type <id>   cname fname op rest_arg
 %type <num>  f_arg
-%token oUPLUS 		/* unary+ */
-%token MINUS 		/* unary- */
+%token UPLUS 		/* unary+ */
+%token UMINUS 		/* unary- */
 %token POW		/* ** */
 %token CMP  		/* <=> */
 %token EQ  		/* == */
@@ -455,10 +455,6 @@ lhs		: variable
 			$$ = aryset($1, $3, 0);
 		    }
 		| primary '.' IDENTIFIER
-		    {
-			$$ = attrset($1, $3, 0);
-		    }
-		| primary '.' CONSTANT
 		    {
 			$$ = attrset($1, $3, 0);
 		    }
@@ -1988,6 +1984,15 @@ parse_qstring(term)
     return STRING;
 }
 
+static int
+parse_quotedword(term)
+    int term;
+{
+    if (parse_qstring(term) == 0) return 0;
+    yylval.node = NEW_CALL(NEW_STR(yylval.val), rb_intern("split"), 0);
+    return DSTRING;
+}
+
 char *strdup();
 
 static int
@@ -2041,6 +2046,7 @@ here_document(term)
 	    free(eos);
 	    return 0;
 	}
+	sourceline++;
 	if (strncmp(eos, RSTRING(line)->ptr, len) == 0 &&
 	    (RSTRING(line)->ptr[len] == '\n' ||
 	     RSTRING(line)->ptr[len] == '\r')) {
@@ -2049,7 +2055,6 @@ here_document(term)
 
 	lex_pbeg = lex_p = RSTRING(line)->ptr;
 	lex_pend = lex_p + RSTRING(line)->len;
-	sourceline++;
 	switch (parse_string(term, '\n')) {
 	  case STRING:
 	  case XSTRING:
@@ -2600,11 +2605,6 @@ retry:
 	    c = LPAREN;
 	    lex_state = EXPR_BEG;
 	}
-	else if (lex_state == EXPR_ARG && space_seen) {
-	    arg_ambiguous();
-	    c = LPAREN;
-	    lex_state = EXPR_BEG;
-	}
 	else {
 	    lex_state = EXPR_BEG;
 	}
@@ -2686,6 +2686,9 @@ retry:
 	      case 'q':
 		return parse_qstring(term);
 
+	      case 'w':
+		return parse_quotedword(term);
+
 	      case 'x':
 		return parse_string('`', term);
 
@@ -2693,7 +2696,7 @@ retry:
 		return parse_regx(term);
 
 	      default:
-		yyerror("unknown type of string `%c'", c);
+		yyerror("unknown type of %string");
 		return 0;
 	    }
 	}

@@ -6,7 +6,7 @@
   $Date$
   created at: Fri Oct 15 18:08:59 JST 1993
 
-  Copyright (C) 1993-1996 Yukihiro Matsumoto
+  Copyright (C) 1993-1998 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -1001,7 +1001,8 @@ pipe_open(pname, mode)
 	break;
 
       default:			/* parent */
-	{
+	if (pid < 0) rb_sys_fail(pname);
+	else {
 	    NEWOBJ(port, struct RFile);
 	    OBJSETUP(port, cIO, T_FILE);
 	    MakeOpenFile(port, fptr);

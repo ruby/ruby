@@ -6,7 +6,7 @@
   $Date$
   created at: Tue Aug 10 12:47:31 JST 1993
 
-  Copyright (C) 1993-1996 Yukihiro Matsumoto
+  Copyright (C) 1993-1998 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -475,7 +475,7 @@ load_file(fname, script)
 		    char *path;
 		    char *pend = RSTRING(line)->ptr + RSTRING(line)->len;
 
-		    p = RSTRING(line)->ptr + 2;	/* skip `#!' */
+		    p = RSTRING(line)->ptr + 1;	/* skip `#!' */
 		    if (pend[-1] == '\n') pend--; /* chomp line */
 		    if (pend[-1] == '\r') pend--;
 		    *pend = '\0';

@@ -1,8 +1,8 @@
 #
 #               Date.rb - 
 #                       $Release Version: $
-#                       $Revision: 1.2 $
-#                       $Date: 1997/02/14 11:05:29 $
+#                       $Revision: 1.1.1.1 $
+#                       $Date: 1998/01/16 04:05:49 $
 #                       by Yasuo OHBA(SHL Japan Inc. Technology Dept.)
 #
 # --

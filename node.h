@@ -6,7 +6,7 @@
   $Date$
   created at: Fri May 28 15:14:02 JST 1993
 
-  Copyright (C) 1993-1996 Yukihiro Matsumoto
+  Copyright (C) 1993-1998 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -101,6 +101,9 @@ enum node_type {
     NODE_TAG,
     NODE_NEWLINE,
     NODE_POSTEXE,
+#ifdef C_ALLOCA
+    NODE_ALLOCA,
+#endif
 };
 
 typedef struct RNode {

@@ -6,7 +6,7 @@
   $Date$
   created at: Tue Aug 10 14:30:50 JST 1993
 
-  Copyright (C) 1993-1996 Yukihiro Matsumoto
+  Copyright (C) 1993-1998 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -579,6 +579,7 @@ rb_syswait(pid)
 {
     RETSIGTYPE (*hfunc)(), (*qfunc)(), (*ifunc)();
     int status;
+    int i;
 
 #ifdef SIGHUP
     hfunc = signal(SIGHUP, SIG_IGN);
@@ -588,7 +589,9 @@ rb_syswait(pid)
 #endif
     ifunc = signal(SIGINT, SIG_IGN);
 
-    if (rb_waitpid(pid, 0, &status) < 0) rb_sys_fail("wait");
+    do {
+	i = rb_waitpid(pid, 0, &status);
+    } while (i == -1 && errno == EINTR);
 
 #ifdef SIGHUP
     signal(SIGHUP, hfunc);

@@ -6,7 +6,7 @@
   $Date$
   created at: Mon Nov 15 12:24:34 JST 1993
 
-  Copyright (C) 1993-1996 Yukihiro Matsumoto
+  Copyright (C) 1993-1998 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -305,6 +305,28 @@ stat_new(st)
 		      time_new(st->st_ctime, 0));
 }
 
+static int
+rb_stat(file, st)
+    VALUE file;
+    struct stat *st;
+{
+    OpenFile *fptr;
+
+    switch (TYPE(file)) {
+      case T_STRING:
+	Check_SafeStr(file);
+	return stat(RSTRING(file)->ptr, st);
+	break;
+      case T_FILE:
+	GetOpenFile(file, fptr);
+	return fstat(fileno(fptr->f), st);
+	break;
+      default:
+	Check_Type(file, T_STRING); 
+    }
+    return -1;			/* not reached */
+}
+
 static VALUE
 file_s_stat(obj, fname)
     VALUE obj, fname;
@@ -345,7 +367,7 @@ file_s_lstat(obj, fname)
     }
     return stat_new(&st);
 #else
-        rb_notimplement();
+    rb_notimplement();
 #endif
 }
 
@@ -363,7 +385,7 @@ file_lstat(obj)
     }
     return stat_new(&st);
 #else
-        rb_notimplement();
+    rb_notimplement();
 #endif
 }
 
@@ -446,8 +468,7 @@ test_d(obj, fname)
 
     struct stat st;
 
-    Check_SafeStr(fname);
-    if (stat(RSTRING(fname)->ptr, &st) < 0) return FALSE;
+    if (rb_stat(fname, &st) < 0) return FALSE;
     if (S_ISDIR(st.st_mode)) return TRUE;
     return FALSE;
 }
@@ -463,8 +484,7 @@ test_p(obj, fname)
 
     struct stat st;
 
-    Check_SafeStr(fname);
-    if (stat(RSTRING(fname)->ptr, &st) < 0) return FALSE;
+    if (rb_stat(fname, &st) < 0) return FALSE;
     if (S_ISFIFO(st.st_mode)) return TRUE;
 
 #endif
@@ -521,8 +541,7 @@ test_S(obj, fname)
 #ifdef S_ISSOCK
     struct stat st;
 
-    Check_SafeStr(fname);
-    if (stat(RSTRING(fname)->ptr, &st) < 0) return FALSE;
+    if (rb_stat(fname, &st) < 0) return FALSE;
     if (S_ISSOCK(st.st_mode)) return TRUE;
 
 #endif
@@ -544,8 +563,7 @@ test_b(obj, fname)
 #ifdef S_ISBLK
     struct stat st;
 
-    Check_SafeStr(fname);
-    if (stat(RSTRING(fname)->ptr, &st) < 0) return FALSE;
+    if (rb_stat(fname, &st) < 0) return FALSE;
     if (S_ISBLK(st.st_mode)) return TRUE;
 
 #endif
@@ -562,8 +580,7 @@ test_c(obj, fname)
 
     struct stat st;
 
-    Check_SafeStr(fname);
-    if (stat(RSTRING(fname)->ptr, &st) < 0) return FALSE;
+    if (rb_stat(fname, &st) < 0) return FALSE;
     if (S_ISBLK(st.st_mode)) return TRUE;
 
     return FALSE;
@@ -575,8 +592,7 @@ test_e(obj, fname)
 {
     struct stat st;
 
-    Check_SafeStr(fname);
-    if (stat(RSTRING(fname)->ptr, &st) < 0) return FALSE;
+    if (rb_stat(fname, &st) < 0) return FALSE;
     return TRUE;
 }
 
@@ -644,8 +660,7 @@ test_f(obj, fname)
 {
     struct stat st;
 
-    Check_SafeStr(fname);
-    if (stat(RSTRING(fname)->ptr, &st) < 0) return FALSE;
+    if (rb_stat(fname, &st) < 0) return FALSE;
     if (S_ISREG(st.st_mode)) return TRUE;
     return FALSE;
 }
@@ -656,8 +671,7 @@ test_z(obj, fname)
 {
     struct stat st;
 
-    Check_SafeStr(fname);
-    if (stat(RSTRING(fname)->ptr, &st) < 0) return FALSE;
+    if (rb_stat(fname, &st) < 0) return FALSE;
     if (st.st_size == 0) return TRUE;
     return FALSE;
 }
@@ -668,8 +682,7 @@ test_s(obj, fname)
 {
     struct stat st;
 
-    Check_SafeStr(fname);
-    if (stat(RSTRING(fname)->ptr, &st) < 0) return FALSE;
+    if (rb_stat(fname, &st) < 0) return FALSE;
     if (st.st_size == 0) return FALSE;
     return int2inum(st.st_size);
 }
@@ -680,8 +693,7 @@ test_owned(obj, fname)
 {
     struct stat st;
 
-    Check_SafeStr(fname);
-    if (stat(RSTRING(fname)->ptr, &st) < 0) return FALSE;
+    if (rb_stat(fname, &st) < 0) return FALSE;
     if (st.st_uid == geteuid()) return TRUE;
     return FALSE;
 }
@@ -692,8 +704,7 @@ test_rowned(obj, fname)
 {
     struct stat st;
 
-    Check_SafeStr(fname);
-    if (stat(RSTRING(fname)->ptr, &st) < 0) return FALSE;
+    if (rb_stat(fname, &st) < 0) return FALSE;
     if (st.st_uid == getuid()) return TRUE;
     return FALSE;
 }
@@ -705,8 +716,7 @@ test_grpowned(obj, fname)
 #ifndef NT
     struct stat st;
 
-    Check_SafeStr(fname);
-    if (stat(RSTRING(fname)->ptr, &st) < 0) return FALSE;
+    if (rb_stat(fname, &st) < 0) return FALSE;
     if (st.st_gid == getegid()) return TRUE;
 #endif
     return FALSE;
@@ -768,8 +778,7 @@ file_s_size(obj, fname)
 {
     struct stat st;
 
-    Check_SafeStr(fname);
-    if (stat(RSTRING(fname)->ptr, &st) < 0)
+    if (rb_stat(fname, &st) < 0)
 	rb_sys_fail(RSTRING(fname)->ptr);
     return int2inum(st.st_size);
 }
@@ -781,8 +790,7 @@ file_s_ftype(obj, fname)
     struct stat st;
     char *t;
 
-    Check_SafeStr(fname);
-    if (stat(RSTRING(fname)->ptr, &st) < 0)
+    if (rb_stat(fname, &st) < 0)
 	rb_sys_fail(RSTRING(fname)->ptr);
 
     if (S_ISREG(st.st_mode)) {
@@ -825,8 +833,7 @@ file_s_atime(obj, fname)
 {
     struct stat st;
 
-    Check_SafeStr(fname);
-    if (stat(RSTRING(fname)->ptr, &st) < 0)
+    if (rb_stat(fname, &st) < 0)
 	rb_sys_fail(RSTRING(fname)->ptr);
     return time_new(st.st_atime, 0);
 }
@@ -851,8 +858,7 @@ file_s_mtime(obj, fname)
 {
     struct stat st;
 
-    Check_SafeStr(fname);
-    if (stat(RSTRING(fname)->ptr, &st) < 0)
+    if (rb_stat(fname, &st) < 0)
 	rb_sys_fail(RSTRING(fname)->ptr);
     return time_new(st.st_mtime, 0);
 }
@@ -877,8 +883,7 @@ file_s_ctime(obj, fname)
 {
     struct stat st;
 
-    Check_SafeStr(fname);
-    if (stat(RSTRING(fname)->ptr, &st) < 0)
+    if (rb_stat(fname, &st) < 0)
 	rb_sys_fail(RSTRING(fname)->ptr);
     return time_new(st.st_ctime, 0);
 }
@@ -1104,7 +1109,7 @@ file_s_symlink(obj, from, to)
 	rb_sys_fail(RSTRING(from)->ptr);
     return TRUE;
 #else
-        rb_notimplement();
+    rb_notimplement();
 #endif
 }
 
@@ -1446,7 +1451,16 @@ test_check(n, argc, argv)
     n+=1;
     if (n < argc) ArgError("Wrong # of arguments(%d for %d)", argc, n);
     for (i=1; i<n; i++) {
-	Check_SafeStr(argv[i]);
+	switch (TYPE(argv[i])) {
+	  case T_STRING:
+	    Check_SafeStr(argv[i]);
+	    break;
+	  case T_FILE:
+	    break;
+	  default:
+	    Check_Type(argv[i], T_STRING);
+	    break;
+	}
     }
 }
 
@@ -1543,7 +1557,7 @@ f_test(argc, argv)
 	struct stat st;
 
 	CHECK(1);
-	if (stat(RSTRING(argv[1])->ptr, &st) == -1) {
+	if (rb_stat(argv[1], &st) == -1) {
 	    rb_sys_fail(RSTRING(argv[1])->ptr);
 	}
 
@@ -1561,8 +1575,8 @@ f_test(argc, argv)
 	struct stat st1, st2;
 
 	CHECK(2);
-	if (stat(RSTRING(argv[1])->ptr, &st1) < 0) return FALSE;
-	if (stat(RSTRING(argv[2])->ptr, &st2) < 0) return FALSE;
+	if (rb_stat(argv[1], &st1) < 0) return FALSE;
+	if (rb_stat(argv[2], &st2) < 0) return FALSE;
 
 	switch (cmd) {
 	  case '-':

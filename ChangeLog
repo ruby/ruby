@@ -1,3 +1,60 @@
+Fri Jan 23 14:19:28 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version 1.1b6 released.
+
+	* object.c (mod_to_s): need to duplicate classpath.
+
+	* error.c (exc_inspect): need to duplicate classpath.
+
+Thu Jan 22 00:37:47 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ruby.h (STR2CSTR): new macro to retrieve char*.
+
+	* class.c (rb_define_method): `initialize' should always be
+	  private, even if it defined by C extensions.
+
+	* eval.c (rb_eval): `initialize' should always be private.
+
+Thu Jan 22 16:21:08 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_eval): some singleton class def cause SEGV.
+
+	* eval.c (ALLOCTMP): replace ALLOCA_N, where thread context switch 
+	  may happen.
+
+Wed Jan 21 01:43:42 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (PUSH_FRAME): do not use ALLOCA_N().  crash on some
+	  platforms that use missing/alloca.c.
+
+	* regex.c (re_compile_pattern): too many pops for non register
+	  subexpr.
+
+	* parse.y (yylex): open parentheses after identifiers are argument 
+	  list, even if whitespaces have seen.
+
+Tue Jan 20 15:19:59 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (terms): quoted word list by %w(a b c).
+
+	* ext/tcltklib/extconf.rb: more accurate check for tcl/tk libs.
+
+	* file.c (rb_stat): most of the FileTest methods (and function
+ 	  `test') accept File objects as the argument.
+
+Tue Jan 19 18:19:24 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* ext/extmk.rb.in (install): there should be no newline after install:
+
+	* re.c (MIN): renamed from min().  there's a local variable named
+ 	  min in the file, so that some cpp will raise an error.
+
+Mon Jan 19 16:30:05 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version 1.1b5 released.
+
+	* process.c (rb_syswait): no exception raised.
+
 Fri Jan 16 00:43:43 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* ruby.h (CLONESETUP): copies its singleton classes too.
@@ -26,6 +83,8 @@ Tue Jan 13 10:00:18 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* string.c (str_cmp): ignorecase($=) works wrong.
 
 Fri Jan  9 13:19:55 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version 1.1b4 released.
 
 	* eval.c (f_missing): class name omitted from the error message.
 
