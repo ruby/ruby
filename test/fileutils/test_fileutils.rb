@@ -321,6 +321,14 @@ end
     # rm_f 'tmpdatadir'
     Dir.rmdir 'tmpdatadir'
 
+    Dir.mkdir 'tmp/tmpdir'
+    File.open('tmp/tmpdir/a', 'w') {|f| f.puts 'dummy' }
+    File.open('tmp/tmpdir/c', 'w') {|f| f.puts 'dummy' }
+    rm_f ['tmp/tmpdir/a', 'tmp/tmpdir/b', 'tmp/tmpdir/c']
+    assert_file_not_exist 'tmp/tmpdir/a'
+    assert_file_not_exist 'tmp/tmpdir/c'
+    Dir.rmdir 'tmp/tmpdir'
+
     # pathname
     touch 'tmp/rmtmp1'
     touch 'tmp/rmtmp2'
@@ -364,6 +372,14 @@ end
     rm_r 'tmp/tmpdir'
     assert_file_not_exist 'tmp/tmpdir'
     assert_file_exist     'tmp'
+
+    Dir.mkdir 'tmp/tmpdir'
+    File.open('tmp/tmpdir/a', 'w') {|f| f.puts 'dummy' }
+    File.open('tmp/tmpdir/c', 'w') {|f| f.puts 'dummy' }
+    rm_r ['tmp/tmpdir/a', 'tmp/tmpdir/b', 'tmp/tmpdir/c'], :force => true
+    assert_file_not_exist 'tmp/tmpdir/a'
+    assert_file_not_exist 'tmp/tmpdir/c'
+    Dir.rmdir 'tmp/tmpdir'
 
 if have_symlink?
     # [ruby-talk:94635] a symlink to the directory
@@ -644,6 +660,9 @@ end
       mkdir 'tmp/dest'
       install [Pathname.new('tmp/a'), Pathname.new('tmp/b')], Pathname.new('tmp/dest')
     }
+  end
+
+  def test_chmod
   end
 
 end

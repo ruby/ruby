@@ -1,3 +1,7 @@
+Sun May  2 21:56:48 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* test/fileutils/test_fileutils.rb (rm_f, rm_r): test :force flag.
+
 Sun May  2 01:04:38 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib, ext/tk: renewal Ruby/Tk
