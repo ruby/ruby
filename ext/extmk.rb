@@ -358,8 +358,8 @@ if $extlist.size > 0
       l = list.size
       if (while l > 0; break true if r.include?(list[l-=1][1]) end)
         list.insert(l + 1, e)
-        next
       end
+      next
     end
     f = format("%s/%s.%s", s, i, $LIBEXT)
     if File.exist?(f)

@@ -1,3 +1,8 @@
+Fri Apr 16 08:27:08 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb: skip linking when libraries to be preloaded not
+	  compiled.  [ruby-list:39561]
+
 Thu Apr 15 19:57:11 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (pst_success_p): new method Process::Status#success?.
@@ -17,7 +22,7 @@ Thu Apr 15 19:26:54  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 	* dir.c (push_braces, rb_push_glob): Dir.glob() should handle escaped
 	  '{' and '}' and ','.
 
-	[ruby-dev:23376]
+	  [ruby-dev:23376]
 
 Thu Apr 15 17:12:13 2004  Tanaka Akira  <akr@m17n.org>
 
