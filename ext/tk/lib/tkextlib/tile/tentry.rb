@@ -1,5 +1,5 @@
 #
-#  tlabel widget
+#  tentry widget
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
 #
 require 'tk'
@@ -7,19 +7,19 @@ require 'tkextlib/tile.rb'
 
 module Tk
   module Tile
-    class TLabel < TkLabel
+    class TEntry < TkEntry
     end
   end
 end
 
-class Tk::Tile::TLabel < TkLabel
+class Tk::Tile::TEntry < TkEntry
   include Tk::Tile::TileWidget
 
   if Tk::Tile::USE_TTK_NAMESPACE
-    TkCommandNames = ['::ttk::label'.freeze].freeze
+    TkCommandNames = ['::ttk::entry'.freeze].freeze
   else
-    TkCommandNames = ['::tlabel'.freeze].freeze
+    TkCommandNames = ['::tentry'.freeze].freeze
   end
-  WidgetClassName = 'TLabel'.freeze
+  WidgetClassName = 'TEntry'.freeze
   WidgetClassNames[WidgetClassName] = self
 end

@@ -15,16 +15,11 @@ end
 class Tk::Tile::TMenubutton < TkMenubutton
   include Tk::Tile::TileWidget
 
-  TkCommandNames = ['tmenubutton'.freeze].freeze
+  if Tk::Tile::USE_TTK_NAMESPACE
+    TkCommandNames = ['::ttk::menubutton'.freeze].freeze
+  else
+    TkCommandNames = ['::tmenubutton'.freeze].freeze
+  end
   WidgetClassName = 'TMenubutton'.freeze
   WidgetClassNames[WidgetClassName] = self
-
-  def create_self(keys)
-    if keys and keys != None
-      tk_call_without_enc('tmenubutton', @path, *hash_kv(keys, true))
-    else
-      tk_call_without_enc('tmenubutton', @path)
-    end
-  end
-  private :create_self
 end

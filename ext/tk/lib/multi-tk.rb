@@ -71,6 +71,7 @@ class MultiTkIp
     def initialize(ip, cmd)
       @ip = ip
       @cmd = cmd
+      freeze
     end
     attr_reader :ip, :cmd
     def inspect

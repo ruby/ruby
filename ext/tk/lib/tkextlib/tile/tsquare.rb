@@ -1,5 +1,5 @@
 #
-#  tlabel widget
+#  tsquare widget
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
 #
 require 'tk'
@@ -7,19 +7,19 @@ require 'tkextlib/tile.rb'
 
 module Tk
   module Tile
-    class TLabel < TkLabel
+    class TSquare < TkWindow
     end
   end
 end
 
-class Tk::Tile::TLabel < TkLabel
+class Tk::Tile::TSquare < TkWindow
   include Tk::Tile::TileWidget
 
   if Tk::Tile::USE_TTK_NAMESPACE
-    TkCommandNames = ['::ttk::label'.freeze].freeze
+    TkCommandNames = ['::ttk::square'.freeze].freeze
   else
-    TkCommandNames = ['::tlabel'.freeze].freeze
+    TkCommandNames = ['::tsquare'.freeze].freeze
   end
-  WidgetClassName = 'TLabel'.freeze
+  WidgetClassName = 'TSquare'.freeze
   WidgetClassNames[WidgetClassName] = self
 end

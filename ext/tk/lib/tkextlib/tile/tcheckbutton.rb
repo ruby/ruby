@@ -16,16 +16,11 @@ end
 class Tk::Tile::TCheckButton < TkCheckButton
   include Tk::Tile::TileWidget
 
-  TkCommandNames = ['tcheckbutton'.freeze].freeze
+  if Tk::Tile::USE_TTK_NAMESPACE
+    TkCommandNames = ['::ttk::checkbutton'.freeze].freeze
+  else
+    TkCommandNames = ['::tcheckbutton'.freeze].freeze
+  end
   WidgetClassName = 'TCheckbutton'.freeze
   WidgetClassNames[WidgetClassName] = self
-
-  def create_self(keys)
-    if keys and keys != None
-      tk_call_without_enc('tcheckbutton', @path, *hash_kv(keys, true))
-    else
-      tk_call_without_enc('tcheckbutton', @path)
-    end
-  end
-  private :create_self
 end

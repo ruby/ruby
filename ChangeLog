@@ -1,3 +1,9 @@
+Sat Mar  5 16:29:26 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/multi-tk.rb: freeze callback-entry objects
+
+	* ext/tk/lib/tkextlib/tile.rb: support tile-0.6
+
 Sat Mar  5 12:52:08 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): allow putting spaces between target

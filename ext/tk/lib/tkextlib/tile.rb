@@ -13,7 +13,24 @@ require 'tkextlib/tile/setup.rb'
 
 # load package
 # TkPackage.require('tile', '0.4')
-TkPackage.require('tile')
+# TkPackage.require('tile', '0.6')
+verstr = TkPackage.require('tile')
+ver = verstr.split('.')
+if ver[0].to_i == 0 && ver[1].to_i <= 4
+  # version 0.4 or former
+  module Tk
+    module Tile
+      USE_TTK_NAMESPACE = false
+    end
+  end
+else
+  # version 0.5 or later
+  module Tk
+    module Tile
+      USE_TTK_NAMESPACE = true
+    end
+  end
+end
 
 # autoload
 module Tk
@@ -55,6 +72,12 @@ module Tk
     autoload :TCheckButton,  'tkextlib/tile/tcheckbutton'
     autoload :TCheckbutton,  'tkextlib/tile/tcheckbutton'
 
+    autoload :TEntry,        'tkextlib/tile/tentry'
+    autoload :TCombobox,     'tkextlib/tile/tcombobox'
+
+    autoload :TFrame,        'tkextlib/tile/tframe'
+    autoload :TLabelframe,   'tkextlib/tile/tlabelframe'
+
     autoload :TLabel,        'tkextlib/tile/tlabel'
 
     autoload :TMenubutton,   'tkextlib/tile/tmenubutton'
@@ -63,6 +86,14 @@ module Tk
 
     autoload :TRadioButton,  'tkextlib/tile/tradiobutton'
     autoload :TRadiobutton,  'tkextlib/tile/tradiobutton'
+
+    autoload :TScrollbar,    'tkextlib/tile/tsrollbar'
+
+    autoload :TSeparator,    'tkextlib/tile/tseparator'
+
+    autoload :TSquare,       'tkextlib/tile/tsquare'
+
+    autoload :TreeView,      'tkextlib/tile/treeview'
 
     autoload :Style,         'tkextlib/tile/style'
   end

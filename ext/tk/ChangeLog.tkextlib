@@ -1,6 +1,40 @@
+2005-03-05  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tkextlib/tile.rb: support tile-0.6
+
+	* ext/tk/lib/tkextlib/tile/tbutton.rb: ditto
+
+	* ext/tk/lib/tkextlib/tile/tcheckbutton.rb: ditto
+
+	* ext/tk/lib/tkextlib/tile/tlabel.rb: ditto
+
+	* ext/tk/lib/tkextlib/tile/tmenubutton.rb: ditto
+
+	* ext/tk/lib/tkextlib/tile/tnotebook.rb: ditto
+
+	* ext/tk/lib/tkextlib/tile/tradiobutton.rb: ditto
+
+	* ext/tk/lib/tkextlib/tile/tcombobox.rb: [new] ditto
+
+	* ext/tk/lib/tkextlib/tile/tentry.rb: [new] ditto
+
+	* ext/tk/lib/tkextlib/tile/tframe.rb: [new] ditto
+
+	* ext/tk/lib/tkextlib/tile/tlabelframe.rb: [new] ditto
+
+	* ext/tk/lib/tkextlib/tile/tprogressbar.rb: [new] ditto
+
+	* ext/tk/lib/tkextlib/tile/treeview.rb: [new] ditto
+
+	* ext/tk/lib/tkextlib/tile/tscrollbar.rb: [new] ditto
+
+	* ext/tk/lib/tkextlib/tile/tseparator.rb: [new] ditto
+
+	* ext/tk/lib/tkextlib/tile/tsquare.rb: [new] ditto
+
 2005-02-20  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tclx/tclx.rb: warning TclX's 'signal' command.
+	* ext/tk/lib/tkextlib/tclx/tclx.rb: warning TclX's 'signal' command.
 
 2005-01-25  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 

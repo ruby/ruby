@@ -1,5 +1,5 @@
 #
-#  tlabel widget
+#  tseparator widget
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
 #
 require 'tk'
@@ -7,19 +7,19 @@ require 'tkextlib/tile.rb'
 
 module Tk
   module Tile
-    class TLabel < TkLabel
+    class TSeparator < TkWindow
     end
   end
 end
 
-class Tk::Tile::TLabel < TkLabel
+class Tk::Tile::TSeparator < TkWindow
   include Tk::Tile::TileWidget
 
   if Tk::Tile::USE_TTK_NAMESPACE
-    TkCommandNames = ['::ttk::label'.freeze].freeze
+    TkCommandNames = ['::ttk::separator'.freeze].freeze
   else
-    TkCommandNames = ['::tlabel'.freeze].freeze
+    TkCommandNames = ['::tseparator'.freeze].freeze
   end
-  WidgetClassName = 'TLabel'.freeze
+  WidgetClassName = 'TSeparator'.freeze
   WidgetClassNames[WidgetClassName] = self
 end
