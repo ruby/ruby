@@ -1,3 +1,12 @@
+Wed Sep  3 21:33:20 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+	* test: add test directory.  Test::Unit aware testcases and needed
+	  files should be located in this directory.  dir/file name convention;
+	    test/{module_name}/test_{testcase_name}.rb
+	    test/{module_name}/{needed_files}
+	  someday, someone will write testrunner which searches test_*.rb and
+	  run testcases automatically.
+	* test/csv/*: add testcase for lib/csv.rb.
+
 Tue Sep  2 20:37:15 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/lib/net/protocols.rb (SSLIO#ssl_connect): warning
