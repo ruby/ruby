@@ -6387,8 +6387,14 @@ rb_obj_instance_eval(argc, argv, self)
     VALUE *argv;
     VALUE self;
 {
-    VALUE klass = rb_singleton_class(self);
+    VALUE klass;
 
+    if (FIXNUM_P(self) || SYMBOL_P(self)) {
+	klass = Qnil;
+    }
+    else {
+	klass = rb_singleton_class(self);
+    }
     return specific_eval(argc, argv, klass, self);
 }
 
