@@ -1800,8 +1800,7 @@ cv_i(key, value, ary)
  *  call-seq:
  *     mod.class_variables   => array
  *  
- *  Returns an array of the names of class variables in <i>mod</i> and
- *  the ancestors of <i>mod</i>.
+ *  Returns an array of the names of class variables in <i>mod</i>.
  *     
  *     class One
  *       @@var1 = 1
@@ -1810,7 +1809,7 @@ cv_i(key, value, ary)
  *       @@var2 = 2
  *     end
  *     One.class_variables   #=> ["@@var1"]
- *     Two.class_variables   #=> ["@@var2", "@@var1"]
+ *     Two.class_variables   #=> ["@@var2"]
  */
 
 VALUE
@@ -1819,12 +1818,8 @@ rb_mod_class_variables(obj)
 {
     VALUE ary = rb_ary_new();
 
-    for (;;) {
-	if (RCLASS(obj)->iv_tbl) {
-	    st_foreach(RCLASS(obj)->iv_tbl, cv_i, ary);
-	}
-	obj = RCLASS(obj)->super;
-	if (!obj) break;
+    if (RCLASS(obj)->iv_tbl) {
+	st_foreach(RCLASS(obj)->iv_tbl, cv_i, ary);
     }
     return ary;
 }
