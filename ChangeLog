@@ -1,3 +1,7 @@
+Thu Mar  3 23:24:00 2005  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/nkf.c: follow nkf 1.62
+
 Thu Mar  3 18:47:18 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* {bcc32,win32,wince}/Makefile.sub (config.h): check if affected

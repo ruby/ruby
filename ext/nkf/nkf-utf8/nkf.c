@@ -41,7 +41,7 @@
 ***********************************************************************/
 /* $Id$ */
 #define NKF_VERSION "2.0.4"
-#define NKF_RELEASE_DATE "2005-02-02"
+#define NKF_RELEASE_DATE "2005-02-20"
 #include "config.h"
 
 static char *CopyRight =
@@ -149,12 +149,20 @@ static char *CopyRight =
 #ifndef MSDOS /* UNIX, OS/2 */
 #include <unistd.h>
 #include <utime.h>
-#else
+#else /* defined(MSDOS) */
+#ifdef __WIN32__
+#ifdef __BORLANDC__ /* BCC32 */
+#include <utime.h>
+#else /* !defined(__BORLANDC__) */
+#include <sys/utime.h>
+#endif /* (__BORLANDC__) */
+#else /* !defined(__WIN32__) */
 #if defined(_MSC_VER) || defined(__MINGW32__) /* VC++, MinGW */
 #include <sys/utime.h>
 #elif defined(__TURBOC__) /* BCC */
 #include <utime.h>
 #elif defined(LSI_C) /* LSI C */
+#endif /* (__WIN32__) */
 #endif
 #endif
 #endif 
@@ -282,7 +290,7 @@ STATIC  int     noconvert PROTO((FILE *f));
 STATIC  int     kanji_convert PROTO((FILE *f));
 STATIC  int     h_conv PROTO((FILE *f,int c2,int c1));
 STATIC  int     push_hold_buf PROTO((int c2));
-STATIC  void    set_iconv PROTO((int f, int (*iconv_func)()));
+STATIC  void    set_iconv PROTO((int f, int (*iconv_func)(int c2,int c1,int c0)));
 STATIC  int     s_iconv PROTO((int c2,int c1,int c0));
 STATIC  int     s2e_conv PROTO((int c2, int c1, int *p2, int *p1));
 STATIC  int     e_iconv PROTO((int c2,int c1,int c0));
@@ -332,13 +340,14 @@ STATIC  int     mime_ungetc_buf  PROTO((int c,FILE *f));
 STATIC  int     mime_integrity PROTO((FILE *f,unsigned char *p));
 
 STATIC  int     base64decode PROTO((int c));
+STATIC  void    mime_prechar PROTO((int c2, int c1));
 STATIC  void    mime_putc PROTO((int c));
 STATIC  void    open_mime PROTO((int c));
 STATIC  void    close_mime PROTO(());
 STATIC  void    usage PROTO(());
 STATIC  void    version PROTO(());
 STATIC  void    options PROTO((unsigned char *c));
-#ifdef PERL_XS
+#if defined(PERL_XS) || defined(WIN32DLL)
 STATIC  void    reinit PROTO(());
 #endif
 
@@ -369,6 +378,7 @@ static int             hira_f = FALSE;          /* hira/kata henkan */
 static int             input_f = FALSE;        /* non fixed input code  */
 static int             alpha_f = FALSE;        /* convert JIx0208 alphbet to ASCII */
 static int             mime_f = STRICT_MIME;   /* convert MIME B base64 or Q */
+static int             mime_decode_f = FALSE;  /* mime decode is explicitly on */
 static int             mimebuf_f = FALSE;      /* MIME buffered input */
 static int             broken_f = FALSE;       /* convert ESC-less broken JIS */
 static int             iso8859_f = FALSE;      /* ISO8859 through */
@@ -646,7 +656,14 @@ static int             crmode_f = 0;   /* CR, NL, CRLF */
 static int             end_check;
 #endif /*Easy Win */
 
-#ifndef PERL_XS
+#define STD_GC_BUFSIZE (256)
+int std_gc_buf[STD_GC_BUFSIZE];
+int std_gc_ndx;
+
+#ifdef WIN32DLL
+#include "nkf32dll.c"
+#elif defined(PERL_XS)
+#else /* WIN32DLL */
 int
 main(argc, argv)
     int             argc;
@@ -815,7 +832,7 @@ main(argc, argv)
 #ifdef OVERWRITE
               if (overwrite) {
                   struct stat     sb;
-#if defined(MSDOS) && !defined(__MINGW32__)
+#if defined(MSDOS) && !defined(__MINGW32__) && !defined(__WIN32__)
                   time_t tb[2];
 #else
                   struct utimbuf  tb;
@@ -835,7 +852,7 @@ main(argc, argv)
                   }
 
                   /* タイムスタンプを復元 */
-#if defined(MSDOS) && !defined(__MINGW32__)
+#if defined(MSDOS) && !defined(__MINGW32__) && !defined(__WIN32__)
                   tb[0] = tb[1] = sb.st_mtime;
                   if (utime(outfname, tb)) {
                       fprintf(stderr, "Can't set timestamp %s\n", outfname);
@@ -871,10 +888,10 @@ main(argc, argv)
 #else /* for Other OS */
     if (file_out == TRUE) 
         fclose(stdout);
-#endif 
+#endif /*Easy Win */
     return (0);
 }
-#endif
+#endif /* WIN32DLL */
 
 static 
 struct {
@@ -1229,6 +1246,7 @@ options(cp)
 	    }
             continue;
         case 'm':   /* MIME support */
+            mime_decode_f = TRUE;
             if (*cp=='B'||*cp=='Q') {
                 mime_decode_mode = *cp++;
                 mimebuf_f = FIXED_MIME;
@@ -1718,10 +1736,7 @@ code_status(c)
     }
 }
 
-#define STD_GC_BUFSIZE (256)
-int std_gc_buf[STD_GC_BUFSIZE];
-int std_gc_ndx;
-
+#ifndef WIN32DLL
 int 
 std_getc(f)
 FILE *f;
@@ -1731,6 +1746,7 @@ FILE *f;
     }
     return getc(f);
 }
+#endif /*WIN32DLL*/
 
 int 
 std_ungetc(c,f)
@@ -1744,6 +1760,7 @@ FILE *f;
     return c;
 }
 
+#ifndef WIN32DLL
 void 
 std_putc(c)
 int c;
@@ -1751,6 +1768,7 @@ int c;
     if(c!=EOF)
       putchar(c);
 }
+#endif /*WIN32DLL*/
 
 int
 noconvert(f)
@@ -2126,8 +2144,7 @@ kanji_convert(f)
             } else if ((c1 == NL || c1 == CR) && broken_f&4) {
                 input_mode = ASCII; set_iconv(FALSE, 0);
                 SEND;
-	    /*
-	    } else if (c1 == NL && mime_f && !mime_decode_mode ) {
+	    } else if (c1 == NL && mime_decode_f && !mime_decode_mode ) {
 		if ((c1=(*i_getc)(f))!=EOF && c1 == SPACE) {
 		    i_ungetc(SPACE,f);
 		    continue;
@@ -2136,7 +2153,7 @@ kanji_convert(f)
 		}
 		c1 = NL;
 		SEND;
-	    } else if (c1 == CR && mime_f && !mime_decode_mode ) {
+	    } else if (c1 == CR && mime_decode_f && !mime_decode_mode ) {
 		if ((c1=(*i_getc)(f))!=EOF) {
 		    if (c1==SPACE) {
 			i_ungetc(SPACE,f);
@@ -2153,7 +2170,6 @@ kanji_convert(f)
 		}
 		c1 = CR;
 		SEND;
-	    */
 	    } else 
                 SEND;
         }
@@ -2979,14 +2995,7 @@ base64_conv(c2, c1)
     int    c2,
                     c1;
 {
-    if (base64_count>50 && !mimeout_mode && c2==0 && c1==SPACE) {
-	(*o_putc)(EOF);
-	(*o_putc)(NL);
-    } else if (base64_count>66 && mimeout_mode) {
-	(*o_base64conv)(EOF,0);
-	(*o_base64conv)(NL,0);
-	(*o_base64conv)(SPACE,0);
-    }
+    mime_prechar(c2, c1);
     (*o_base64conv)(c2,c1);
 }
 
@@ -3487,6 +3496,10 @@ int      mime_encode_method[] = {
 #define nkf_toupper(c)  (('a'<=c && c<='z')?(c-('a'-'A')):c)
 #define nkf_isdigit(c)  ('0'<=c && c<='9')
 #define nkf_isxdigit(c)  (nkf_isdigit(c) || ('a'<=c && c<='f') || ('A'<=c && c <= 'F'))
+#define nkf_isblank(c) (c == SPACE || c == TAB)
+#define nkf_isspace(c) (nkf_isblank(c) || c == CR || c == NL)
+#define nkf_isalpha(c) (('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z'))
+#define nkf_isalnum(c) (nkf_isdigit(c) || nkf_isalpha(c))
 
 void
 switch_mime_getc()
@@ -3674,6 +3687,7 @@ set_input_codename (codename)
     is_inputcode_set = TRUE;
 }
 
+#ifndef WIN32DLL
 void
 print_guessed_code (filename)
     char *filename;
@@ -3689,6 +3703,7 @@ print_guessed_code (filename)
     if (filename != NULL) printf("%s:", filename);
     printf("%s\n", codename);
 }
+#endif /*WIN32DLL*/
 
 int
 hex2bin(x)
@@ -4188,6 +4203,10 @@ int mode;
     
     i = 0;
     if (base64_count>45) {
+	if (mimeout_buf_count>0 && nkf_isblank(mimeout_buf[i])){
+            (*o_mputc)(mimeout_buf[i]);
+	    i++;
+	}
 	(*o_mputc)(NL);
 	(*o_mputc)(SPACE);
 	base64_count = 1;
@@ -4304,127 +4323,76 @@ mimeout_addchar(c)
     }
 }
 
+int mime_lastchar2, mime_lastchar1;
+
+void mime_prechar(c2, c1)
+     int c2, c1;
+{
+    if (mimeout_mode){
+        if (c2){
+            if (base64_count + mimeout_buf_count/3*4> 66){
+                (*o_base64conv)(EOF,0);
+                (*o_base64conv)(0,NL);
+                (*o_base64conv)(0,SPACE);
+            }
+        }/*else if (mime_lastchar2){
+            if (c1 <=DEL && !nkf_isspace(c1)){
+                (*o_base64conv)(0,SPACE);
+            }
+        }*/
+    }/*else{
+        if (c2 && mime_lastchar2 == 0
+            && mime_lastchar1 && !nkf_isspace(mime_lastchar1)){
+            (*o_base64conv)(0,SPACE);
+        }
+    }*/
+    mime_lastchar2 = c2;
+    mime_lastchar1 = c1;
+}
+
 void
 mime_putc(c)
     int            c;
 {
     int i = 0;
     int j = 0;
-    
-    if (mimeout_f==FIXED_MIME && base64_count>71) {
-	if (mimeout_mode=='Q') {
-	    if (c!=CR && c!=NL) {
-		(*o_mputc)('=');
-		(*o_mputc)(NL);
-	    }
-	} else {
-	    eof_mime();
-	    (*o_mputc)(NL);
-	}
-	base64_count=0;
-    } else if (mimeout_f!=FIXED_MIME && !mimeout_mode && (c==CR||c==NL)) {
-	base64_count=0;
-    }
-    if (c!=EOF && mimeout_f!=FIXED_MIME) {
-        if ( c<=DEL &&(output_mode==ASCII ||output_mode == ISO8859_1 ) ) {
-	    if (mimeout_mode=='Q') {
-		if (c<=SPACE) {
-		    close_mime();
-		    (*o_mputc)(SPACE);
-		    base64_count++;
-		}
-		(*o_mputc)(c);
-		base64_count++;
-		return;
-	    } else if (mimeout_mode) {
-		if (mimeout_buf_count>0
-		    && (mimeout_buf[mimeout_buf_count-1]==CR || mimeout_buf[mimeout_buf_count-1]==NL)) {
-		    if (c==SPACE || c==TAB) {
-			for (i=0;i<mimeout_buf_count;i++) {
-			    mimeout_addchar(mimeout_buf[i]);
-			}
-			mimeout_buf_count = 0;
-		    } else if (SPACE<c && c<DEL) {
-			eof_mime();
-			for (i=0;i<mimeout_buf_count;i++) {
-			    (*o_mputc)(mimeout_buf[i]);
-			}
-			base64_count = 0;
-			mimeout_buf_count = 0;
-		    }
-		}
-		if (c==SPACE || c==TAB || c==CR || c==NL) {
-		    for (i=0;i<mimeout_buf_count;i++) {
-			if (SPACE<mimeout_buf[i] && mimeout_buf[i]<DEL) {
-			    eof_mime();
-			    for (i=0;i<mimeout_buf_count;i++) {
-				(*o_mputc)(mimeout_buf[i]);
-				base64_count++;
-			    }
-			    mimeout_buf_count = 0;
-			}
-		    }
-		    mimeout_buf[mimeout_buf_count++] = c;
-		    if (mimeout_buf_count>MIMEOUT_BUF_LENGTH) {
-		    	eof_mime();
-			for (i=0;i<mimeout_buf_count;i++) {
-			    (*o_mputc)(mimeout_buf[i]);
-			    base64_count++;
-			}
-			mimeout_buf_count = 0;
-		    }
-		    return;
-		}
-		
-		if (mimeout_buf_count>0 && SPACE<c && c!='=') {
-		    mimeout_buf[mimeout_buf_count++] = c;
-		    if (mimeout_buf_count>MIMEOUT_BUF_LENGTH) {
-			j = mimeout_buf_count;
-			mimeout_buf_count = 0;
-			for (i=0;i<j;i++) {
-			    mimeout_addchar(mimeout_buf[i]);
-			}
-		    }
-		    return;
-		}
-	    } else if (!mimeout_mode) {
-		if (c==SPACE || c==TAB || c==CR || c==NL) {
-		    if ((c==CR || c==NL)
-			&&(mimeout_buf[mimeout_buf_count-1]==SPACE
-			   || mimeout_buf[mimeout_buf_count-1]==TAB)) {
-			mimeout_buf_count--;
-		    }
-		    for (i=0;i<mimeout_buf_count;i++) {
-			(*o_mputc)(mimeout_buf[i]);
-			base64_count++;
-		    }
-		    mimeout_buf_count = 0;
-		}
-		mimeout_buf[mimeout_buf_count++] = c;
-		if (mimeout_buf_count>MIMEOUT_BUF_LENGTH) {
-		    open_mime(output_mode);
-		}
-		return;
-	    }
-        } else if (!mimeout_mode) {
-	    if (mimeout_buf_count>0 && mimeout_buf[mimeout_buf_count-1]==SPACE) {
-		for (i=0;i<mimeout_buf_count-1;i++) {
-		    (*o_mputc)(mimeout_buf[i]);
-		    base64_count++;
-		}
-		mimeout_buf[0] = SPACE;
-		mimeout_buf_count = 1;
-	    }
-	    open_mime(output_mode);
+    int lastchar;
+
+    if (mimeout_f == FIXED_MIME){
+        if (mimeout_mode == 'Q'){
+            if (base64_count > 71){
+                if (c!=CR && c!=NL) {
+                    (*o_mputc)('=');
+                    (*o_mputc)(NL);
+                }
+                base64_count = 0;
+            }
+        }else{
+            if (base64_count > 71){
+                eof_mime();
+                (*o_mputc)(NL);
+                base64_count = 0;
+            }
+            if (c == EOF) { /* c==EOF */
+                eof_mime();
+            }
         }
-    } else if (c == EOF) { /* c==EOF */
+        if (c != EOF) { /* c==EOF */
+            mimeout_addchar(c);
+        }
+        return;
+    }
+    
+    /* mimeout_f != FIXED_MIME */
+
+    if (c == EOF) { /* c==EOF */
 	j = mimeout_buf_count;
 	mimeout_buf_count = 0;
 	i = 0;
 	for (;i<j;i++) {
-	    if (mimeout_buf[i]==SPACE || mimeout_buf[i]==TAB
-		|| mimeout_buf[i]==CR || mimeout_buf[i]==NL)
+	    /*if (nkf_isspace(mimeout_buf[i])){
 		break;
+            }*/
 	    mimeout_addchar(mimeout_buf[i]);
 	}
         eof_mime();
@@ -4434,7 +4402,129 @@ mime_putc(c)
 	}
         return;
     }
-    
+
+    if (mimeout_mode=='Q') {
+        if (c <= DEL && (output_mode==ASCII ||output_mode == ISO8859_1 ) ) {
+            if (c <= SPACE) {
+                close_mime();
+                (*o_mputc)(SPACE);
+                base64_count++;
+            }
+            (*o_mputc)(c);
+            base64_count++;
+        }
+        return;
+    }
+
+    if (mimeout_buf_count > 0){
+        lastchar = mimeout_buf[mimeout_buf_count - 1];
+    }else{
+        lastchar = -1;
+    }
+
+    if (!mimeout_mode) {
+        if (c <= DEL && (output_mode==ASCII ||output_mode == ISO8859_1)) {
+            if (nkf_isspace(c)) {
+                if (c==CR || c==NL) {
+                    base64_count=0;
+                }
+                for (i=0;i<mimeout_buf_count;i++) {
+                    (*o_mputc)(mimeout_buf[i]);
+                    if (mimeout_buf[i] == CR || mimeout_buf[i] == NL){
+                        base64_count = 0;
+                    }else{
+                        base64_count++;
+                    }
+                }
+                mimeout_buf[0] = c;
+                mimeout_buf_count = 1;
+            }else{
+                if (base64_count > 1
+                    && base64_count + mimeout_buf_count > 76){
+                    (*o_mputc)(NL);
+                    base64_count = 0;
+                    if (!nkf_isspace(mimeout_buf[0])){
+                        (*o_mputc)(SPACE);
+                        base64_count++;
+                    }
+                }
+                mimeout_buf[mimeout_buf_count++] = c;
+                if (mimeout_buf_count>MIMEOUT_BUF_LENGTH) {
+                    open_mime(output_mode);
+                }
+            }
+            return;
+        }else{
+            if (lastchar==CR || lastchar == NL){
+                for (i=0;i<mimeout_buf_count;i++) {
+                    (*o_mputc)(mimeout_buf[i]);
+                }
+                base64_count = 0;
+                mimeout_buf_count = 0;
+            }
+            if (lastchar==SPACE) {
+                for (i=0;i<mimeout_buf_count-1;i++) {
+                    (*o_mputc)(mimeout_buf[i]);
+                    base64_count++;
+                }
+                mimeout_buf[0] = SPACE;
+                mimeout_buf_count = 1;
+            }
+            open_mime(output_mode);
+        }
+    }else{
+        /* mimeout_mode == 'B', 1, 2 */
+        if ( c<=DEL && (output_mode==ASCII ||output_mode == ISO8859_1 ) ) {
+            if (lastchar == CR || lastchar == NL){
+                if (nkf_isblank(c)) {
+                    for (i=0;i<mimeout_buf_count;i++) {
+                        mimeout_addchar(mimeout_buf[i]);
+                    }
+                    mimeout_buf_count = 0;
+                } else if (SPACE<c && c<DEL) {
+                    eof_mime();
+                    for (i=0;i<mimeout_buf_count;i++) {
+                        (*o_mputc)(mimeout_buf[i]);
+                    }
+                    base64_count = 0;
+                    mimeout_buf_count = 0;
+                }
+            }
+            if (c==SPACE || c==TAB || c==CR || c==NL) {
+                for (i=0;i<mimeout_buf_count;i++) {
+                    if (SPACE<mimeout_buf[i] && mimeout_buf[i]<DEL) {
+                        eof_mime();
+                        for (i=0;i<mimeout_buf_count;i++) {
+                            (*o_mputc)(mimeout_buf[i]);
+                            base64_count++;
+                        }
+                        mimeout_buf_count = 0;
+                    }
+                }
+                mimeout_buf[mimeout_buf_count++] = c;
+                if (mimeout_buf_count>MIMEOUT_BUF_LENGTH) {
+                    eof_mime();
+                    for (i=0;i<mimeout_buf_count;i++) {
+                        (*o_mputc)(mimeout_buf[i]);
+                        base64_count++;
+                    }
+                    mimeout_buf_count = 0;
+                }
+                return;
+            }
+            if (mimeout_buf_count>0 && SPACE<c && c!='=') {
+                mimeout_buf[mimeout_buf_count++] = c;
+                if (mimeout_buf_count>MIMEOUT_BUF_LENGTH) {
+                    j = mimeout_buf_count;
+                    mimeout_buf_count = 0;
+                    for (i=0;i<j;i++) {
+                        mimeout_addchar(mimeout_buf[i]);
+                    }
+                }
+                return;
+            }
+        }
+    }
     if (mimeout_buf_count>0) {
 	j = mimeout_buf_count;
 	mimeout_buf_count = 0;
@@ -4456,7 +4546,7 @@ mime_putc(c)
 }
 
 
-#ifdef PERL_XS
+#if defined(PERL_XS) || defined(WIN32DLL)
 void 
 reinit()
 {
@@ -4475,6 +4565,7 @@ reinit()
     input_f = FALSE;
     alpha_f = FALSE;
     mime_f = STRICT_MIME;
+    mime_decode_f = FALSE;
     mimebuf_f = FALSE;
     broken_f = FALSE;
     iso8859_f = FALSE;
@@ -4561,6 +4652,10 @@ reinit()
 #ifdef CHECK_OPTION
     iconv_for_check = 0;
 #endif
+    input_codename = "";
+#ifdef WIN32DLL
+    reinitdll();
+#endif /*WIN32DLL*/
 }
 #endif
 
@@ -4577,9 +4672,13 @@ int c2,c1,c0;
 {
     fprintf(stderr,"nkf internal module connection failure.\n");
     exit(1);
+    return 0; /* LINT */
 }
 
 #ifndef PERL_XS
+#ifdef WIN32DLL
+#define fprintf dllprintf
+#endif
 void 
 usage()   
 {
@@ -4667,7 +4766,7 @@ version()
                   ,NKF_VERSION,NKF_RELEASE_DATE);
     fprintf(stderr,"\n%s\n",CopyRight);
 }
-#endif
+#endif /*PERL_XS*/
 
 /**
  ** パッチ制作者
