@@ -174,10 +174,10 @@ def install_rb(mfile, srcdir = nil)
   end
   for f in dir
     next if f == "."
-    mfile.printf "\t@$(RUBY) -r ftools -e 'File::makedirs(*ARGV)' $(DESTDIR)$(pkglibdir)/%s\n", f
+    mfile.printf "\t@$(RUBY) -r ftools -e 'File::makedirs(*ARGV)' $(DESTDIR)$(pkglibdir)$(target_prefix)/%s\n", f
   end
   for f in path
-    mfile.printf "\t@$(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0644, true)' $(srcdir)/lib/%s $(DESTDIR)$(pkglibdir)/%s\n", f, f
+    mfile.printf "\t@$(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0644, true)' $(srcdir)/lib/%s $(DESTDIR)$(pkglibdir)$(target_prefix)/%s\n", f, f
   end
 end
 
@@ -436,6 +436,7 @@ libdir = @libdir@
 #pkglibdir = $(libdir)/$(RUBY_INSTALL_NAME)/@MAJOR@.@MINOR@
 pkglibdir = $(libdir)/ruby/@MAJOR@.@MINOR@
 archdir = $(pkglibdir)/@arch@
+target_prefix = #{target_prefix}
 @SET_MAKE@
 
 #### End of system configuration section. ####
@@ -491,11 +492,12 @@ EOS
   mfile.printf <<EOS
 
 install:
-	@$(RUBY) -r ftools -e 'File::makedirs(*ARGV)' $(DESTDIR)$(libdir) $(DESTDIR)$(pkglibdir) $(DESTDIR)$(archdir)
+	@$(RUBY) -r ftools -e 'File::makedirs(*ARGV)' $(DESTDIR)$(libdir) $(DESTDIR)$(pkglibdir) $(DESTDIR)$(archdir)$(target_prefix)
+
 EOS
   unless $static
     mfile.printf "\
-	@$(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0555, true)' $(DLLIB) $(DESTDIR)$(archdir)/$(DLLIB)
+	@$(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0555, true)' $(DLLIB) $(DESTDIR)$(archdir)$(target_prefix)/$(DLLIB)
 "
   end
   install_rb(mfile, $srcdir)
@@ -624,6 +626,7 @@ def extmake(target)
   dir_config("opt")
 
   begin
+    dir = Dir.pwd
     Dir.mkdir target unless File.directory?(target)
     Dir.chdir target
     $target = target
@@ -648,7 +651,7 @@ def extmake(target)
     end
     if File.exist?("./Makefile")
       if $static
- 	$extlist.push [$static,$target]
+ 	$extlist.push [$static, File.basename($target)]
       end
       if $install
 	system "#{$make} install DESTDIR=#{$destdir}"
@@ -670,7 +673,7 @@ def extmake(target)
     end
   ensure
     rm_f "conftest*"
-    Dir.chdir ".."
+    Dir.chdir dir
   end
 end
 
@@ -699,11 +702,12 @@ for setup in ["@setup@", "#{$top_srcdir}/ext/@setup@"]
   end
 end
 
-for d in Dir["#{$top_srcdir}/ext/*"]
+ext_prefix = "#{$top_srcdir}/ext"
+for d in Dir["#{ext_prefix}/**/*"]
   File.directory?(d) || next
   File.file?(d + "/MANIFEST") || next
   
-  d = File.basename(d)
+  d.slice!(0, ext_prefix.length + 1)
   if $install
     print "installing ", d, "\n"
   elsif $clean
@@ -734,7 +738,7 @@ if $extlist.size > 0
       $extinit += format("\
 \tInit_%s();\n\
 \trb_provide(\"%s.so\");\n\
-", t, t)
+", t, s)
       $extobjs += "ext/"
       $extobjs += f
       $extobjs += " "
