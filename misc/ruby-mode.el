@@ -48,19 +48,15 @@
 (defconst ruby-block-end-re "end")
 
 (defconst ruby-here-doc-beg-re
-  (concat "<<\\([-]\\)?\\([a-zA-Z0-9]+\\)\\|"
-          "<<\\([-]\\)?[\"]\\([^\"]+\\)[\"]\\|"
-           "<<\\([-]\\)?[']\\([^']+\\)[']"))
+  "<<\\(-\\)?\\(\\([a-zA-Z0-9_]+\\)\\|[\"]\\([^\"]+\\)[\"]\\|[']\\([^']+\\)[']\\)")
 
 (defun ruby-here-doc-end-match ()
   (concat "^"
-          (if (or (match-string 1)
-                  (match-string 3)
-                  (match-string 5))
-              "[ \t]*" nil)
-          (or (match-string 2)
-              (match-string 4)
-              (match-string 6))))
+	  (if (match-string 1) "[ \t]*" nil)
+	  (regexp-quote
+	   (or (match-string 3)
+	       (match-string 4)
+	       (match-string 5)))))
 
 (defconst ruby-delimiter
   (concat "[?$/%(){}#\"'`.:]\\|<<\\|\\[\\|\\]\\|\\<\\("
@@ -1087,14 +1083,14 @@ balanced expression is found."
 	      (beginning-of-line)
               (forward-line)
 	      (setq beg (point)))))
-      (let ((end-match (ruby-here-doc-end-match)))
-        (if (and beg
+      (if (and beg
+	       (let ((end-match (ruby-here-doc-end-match)))
                  (not (re-search-backward end-match beg t))
-                 (re-search-forward end-match nil t))
-            (progn
-              (set-match-data (list beg (point)))
-              t)
-          nil))))
+                 (re-search-forward end-match nil t)))
+	  (progn
+	    (set-match-data (list beg (point)))
+	    t)
+          nil)))
 
 
   (defvar ruby-font-lock-keywords

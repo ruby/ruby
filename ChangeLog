@@ -1,3 +1,15 @@
+Thu Sep  4 17:41:31 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-here-doc-beg-re): underscore also is
+	  valid delimiter.
+
+	* misc/ruby-mode.el (ruby-here-doc-end-match): must quote
+	  arbitrary string to use as regexp.
+
+	* misc/ruby-mode.el (ruby-font-lock-maybe-here-docs): must not
+	  call `ruby-here-doc-end-match' unless `ruby-here-doc-beg-re'
+	  matched.
+
 Wed Sep  4 15:40:07 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/csv/test_csv.rb: run on test/unit original layer.
@@ -37,7 +49,7 @@ Tue Sep  2 14:02:19 2003    <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c (ip_invoke): fixed bug on passing a exception
 
-	* ext/tk/lib/{tk.rb, tkcanvas.rb, tkfont.rb, tktext.rb} : 
+	* ext/tk/lib/{tk.rb, tkcanvas.rb, tkfont.rb, tktext.rb} :
 	  bug fix and improvement of font control
 
 Tue Sep  2 09:51:36 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
