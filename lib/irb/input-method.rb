@@ -1,6 +1,6 @@
 #
 #   irb/input-method.rb - input methods using irb
-#   	$Release Version: 0.7.3$
+#   	$Release Version: 0.9$
 #   	$Revision$
 #   	$Date$
 #   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
@@ -74,8 +74,9 @@ module IRB
     end
 
     def gets
+      print @prompt
       l = @io.gets
-      print @prompt, l
+#      print @prompt, l
       l
     end
   end
@@ -94,6 +95,7 @@ module IRB
 
       def gets
 	if l = readline(@prompt, true)
+	  HISTORY.pop if l.empty?
 	  @line[@line_no += 1] = l + "\n"
 	else
 	  @eof = true

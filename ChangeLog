@@ -1,3 +1,7 @@
+Tue Jul  9 20:03:55 2002 Keiju Ishitsuka <keiju@ishitsuka.com>
+
+	* irb 0.9
+	
 Fri Jul  5 08:59:15 2002  Michal Rokos <michal@ruby-lang.org>
 
 	* enum.c: Fix bug in enum_sort_by and some code indents

@@ -1,6 +1,6 @@
 #
 #   irb/ruby-token.rb - ruby tokens 
-#   	$Release Version: 0.7.3$
+#   	$Release Version: 0.9$
 #   	$Revision$
 #   	$Date$
 #   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
@@ -155,6 +155,7 @@ module RubyToken
     [:TkIDENTIFIER, TkId],
     [:TkFID,	    TkId],
     [:TkGVAR,	    TkId],
+    [:TkCVAR,	    TkId],
     [:TkIVAR,	    TkId],
     [:TkCONSTANT,   TkId],
 

@@ -1,6 +1,6 @@
 #
 #   irb/locale.rb - internationalization module
-#   	$Release Version: 0.7.4$
+#   	$Release Version: 0.9$
 #   	$Revision$
 #   	$Date$
 #   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
@@ -135,6 +135,7 @@ module IRB
       end
       lc_file.close
       toplevel_load lc_file.path, priv
+      lc_file.close(true)
     end
     private :real_load
 

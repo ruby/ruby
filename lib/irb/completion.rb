@@ -1,6 +1,6 @@
 #
 #   irb/completor.rb - 
-#   	$Release Version: 0.7.1$
+#   	$Release Version: 0.9$
 #   	$Revision$
 #   	$Date$
 #   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
@@ -36,6 +36,9 @@ module IRB
       
     CompletionProc = proc { |input|
       bind = IRB.conf[:MAIN_CONTEXT].workspace.binding
+      
+#      puts "input: #{input}"
+
       case input
       when /^(\/[^\/]*\/)\.([^.]*)$/
 	# Regexp
@@ -61,11 +64,11 @@ module IRB
 	candidates = Proc.instance_methods(true) | Hash.instance_methods(true)
 	select_message(receiver, message, candidates)
 	
-      when /^(:[^:]*)$/
+      when /^(:[^:.]*)$/
  	# Symbol
 	if Symbol.respond_to?(:all_symbols)
 	  sym = $1
-	  candidates = Symbol.all_symbols.collect{|s| s.id2name}
+	  candidates = Symbol.all_symbols.collect{|s| ":" + s.id2name}
 	  candidates.grep(/^#{sym}/)
 	else
 	  []
@@ -88,7 +91,7 @@ module IRB
 	end
 	candidates.grep(/^#{message}/).collect{|e| receiver + "::" + e}
 
-      when /^(:[^.]+)\.([^.]*)$/
+      when /^(:[^:.]+)\.([^.]*)$/
 	# Symbol
 	receiver = $1
 	message = Regexp.quote($2)
@@ -107,6 +110,9 @@ module IRB
 	  candidates
 	end
 	select_message(receiver, message, candidates)
+
+      when /^(\$[^.]*)$/
+	candidates = global_variables.grep Regexp.new(Regexp.quote($1))
 
 #      when /^(\$?(\.?[^.]+)+)\.([^.]*)$/
       when /^((\.?[^.]+)+)\.([^.]*)$/
@@ -132,7 +138,8 @@ module IRB
 	  # func1.func2
 	  candidates = []
 	  ObjectSpace.each_object(Module){|m|
-	    next if /^(IRB|SLex|RubyLex|RubyToken)/ =~ m.name
+	    next if m.name != "IRB::Context" and 
+	      /^(IRB|SLex|RubyLex|RubyToken)/ =~ m.name
 	    candidates.concat m.instance_methods
 	  }
 	  candidates.sort!
@@ -174,4 +181,8 @@ module IRB
   end
 end
 
+if Readline.respond_to?("basic_word_break_characters=")
+  Readline.basic_word_break_characters= "\t\n\"\\'`><=;|&{("
+end
+Readline.completion_append_character = nil
 Readline.completion_proc = IRB::InputCompletor::CompletionProc

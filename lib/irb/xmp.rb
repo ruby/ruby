@@ -1,6 +1,6 @@
 #
 #   xmp.rb - irb version of gotoken xmp
-#   	$Release Version: 0.7.1$
+#   	$Release Version: 0.9$
 #   	$Revision$
 #   	$Date$
 #   	by Keiju ISHITSUKA(Nippon Rational Inc.)
@@ -10,21 +10,23 @@
 #   
 #
 
-require "irb/irb"
+require "irb"
 require "irb/frame"
 
 class XMP
   @RCS_ID='-$Id$-'
 
   def initialize(bind = nil)
+    IRB.init_config(nil)
     #IRB.parse_opts
     #IRB.load_modules
 
+    IRB.conf[:PROMPT_MODE] = :XMP
+
     bind = IRB::Frame.top(1) unless bind
-    main = eval("self", bind)
+    ws = IRB::WorkSpace.new(bind)
     @io = StringInputMethod.new
-    @irb = IRB::Irb.new(main, bind, @io)
-    @irb.context.prompt_mode = :XMP
+    @irb = IRB::Irb.new(ws, @io)
     @irb.context.ignore_sigint = false
 
 #    IRB.conf[:IRB_RC].call(@irb.context) if IRB.conf[:IRB_RC]

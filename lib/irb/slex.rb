@@ -1,6 +1,6 @@
 #
 #   irb/slex.rb - symple lex analizer
-#   	$Release Version: 0.7.3$
+#   	$Release Version: 0.9$
 #   	$Revision$
 #   	$Date$
 #   	by Keiju ISHITSUKA(keiju@ishituska.com)
@@ -68,8 +68,7 @@ class SLex
     case token
     when Array
     when String
-      token = token.split(//)
-      match(token.split(//))
+      return match(token.split(//))
     else
       return @head.match_io(token)
     end

@@ -1,6 +1,6 @@
 #
 #   irb/workspace-binding.rb - 
-#   	$Release Version: 0.7.3$
+#   	$Release Version: 0.9$
 #   	$Revision$
 #   	$Date$
 #   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
@@ -11,11 +11,12 @@
 #
 module IRB
   class WorkSpace
-    # create new workspace. 
-    # set self to main if specified, otherwise inherit main
-    # from TOPLEVEL_BINDING.
+    # create new workspace. set self to main if specified, otherwise
+    # inherit main from TOPLEVEL_BINDING.
     def initialize(*main)
-      if IRB.conf[:SINGLE_IRB]
+      if main[0].kind_of?(Binding)
+	@binding = main.shift
+      elsif IRB.conf[:SINGLE_IRB]
 	@binding = TOPLEVEL_BINDING
       else
 	case IRB.conf[:CONTEXT_MODE]
@@ -76,10 +77,10 @@ EOF
     attr_reader :binding
     attr_reader :main
 
-    def evaluate(statements, file = __FILE__, line = __LINE__)
-      eval statements, @binding, file, line
+    def evaluate(context, statements, file = __FILE__, line = __LINE__)
+      eval(statements, @binding, file, line)
     end
-
+  
     # error message manupilator
     def filter_backtrace(bt)
       case IRB.conf[:CONTEXT_MODE]

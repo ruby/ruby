@@ -1,6 +1,6 @@
 #
 #   irb/init.rb - irb initialize module
-#   	$Release Version: 0.7.3$
+#   	$Release Version: 0.9$
 #   	$Revision$
 #   	$Date$
 #   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
@@ -16,14 +16,19 @@ module IRB
   def IRB.initialize(ap_path)
     IRB.init_config(ap_path)
     IRB.init_error
+    IRB.parse_opts
     IRB.run_config
+    IRB.load_modules
+
+    unless @CONF[:PROMPT][@CONF[:PROMPT_MODE]]
+      IRB.fail(UndefinedPromptMode, @CONF[:PROMPT_MODE]) 
+    end
   end
 
   # @CONF default setting
   def IRB.init_config(ap_path)
     # class instance variables
     @TRACER_INITIALIZED = false
-    @MATHN_INITIALIZED = false
 
     # default configurations
     unless ap_path and @CONF[:AP_NAME]
@@ -45,6 +50,10 @@ module IRB
     @CONF[:USE_LOADER] = false
     @CONF[:IGNORE_SIGINT] = true
     @CONF[:IGNORE_EOF] = false
+    @CONF[:ECHO] = nil
+    @CONF[:VERBOSE] = nil
+
+    @CONF[:EVAL_HISTORY] = nil
 
     @CONF[:BACK_TRACE_LIMIT] = 16
 
@@ -92,7 +101,6 @@ module IRB
     @CONF[:LC_MESSAGES] = Locale.new
     
     @CONF[:DEBUG_LEVEL] = 1
-    @CONF[:VERBOSE] = true
   end
 
   def IRB.init_error
@@ -104,7 +112,6 @@ module IRB
     while opt = ARGV.shift
       case opt
       when "-f"
-	opt = ARGV.shift
 	@CONF[:RC] = false
       when "-m"
 	@CONF[:MATH_MODE] = true
@@ -113,6 +120,8 @@ module IRB
       when "-r"
 	opt = ARGV.shift
 	@CONF[:LOAD_MODULES].push opt if opt
+      when /^-K(.)/
+	$KCODE = $1
       when "--inspect"
 	@CONF[:INSPECT_MODE] = true
       when "--noinspect"
@@ -121,11 +130,16 @@ module IRB
 	@CONF[:USE_READLINE] = true
       when "--noreadline"
 	@CONF[:USE_READLINE] = false
-
+      when "--echo"
+	@CONF[:ECHO] = true
+      when "--noecho"
+	@CONF[:ECHO] = false
+      when "--verbose"
+	@CONF[:VERBOSE] = true
+      when "--noverbose"
+	@CONF[:VERBOSE] = false
       when "--prompt-mode", "--prompt"
 	prompt_mode = ARGV.shift.upcase.tr("-", "_").intern
-	IRB.fail(UndefinedPromptMode,
-		 prompt_mode.id2name) unless @CONF[:PROMPT][prompt_mode]
 	@CONF[:PROMPT_MODE] = prompt_mode
       when "--noprompt"
 	@CONF[:PROMPT_MODE] = :NULL
@@ -133,7 +147,6 @@ module IRB
 	@CONF[:PROMPT_MODE] = :INF_RUBY
       when "--sample-book-mode", "--simple-prompt"
 	@CONF[:PROMPT_MODE] = :SIMPLE
-
       when "--tracer"
 	@CONF[:USE_TRACER] = true
       when "--back-trace-limit"
@@ -154,7 +167,6 @@ module IRB
       when /^-/
 	IRB.fail UnrecognizedSwitch, opt
       else
-	@CONF[:USE_READLINE] = false
 	@CONF[:SCRIPT] = opt
 	$0 = opt
 	break
@@ -201,32 +213,4 @@ module IRB
     end
   end
 
-  # initialize tracing function
-  def IRB.initialize_tracer
-    unless @TRACER_INITIALIZED
-      require("tracer")
-      Tracer.verbose = false
-      Tracer.add_filter {
-	|event, file, line, id, binding|
-	File::dirname(file) != @CONF[:IRB_LIB_PATH]
-      }
-      @TRACER_INITIALIZED = true
-    end
-  end
-
-  # initialize mathn function
-  def IRB.initialize_mathn
-    unless @MATHN_INITIALIZED
-      require "mathn"
-    @MATHN_INITIALIZED = true
-    end
-  end
-
-  # initialize loader function
-  def IRB.initialize_loader
-    unless @LOADER_INITIALIZED
-      require "irb/loader"
-      @LOADER_INITIALIZED = true
-    end
-  end
 end
