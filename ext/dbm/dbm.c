@@ -221,7 +221,7 @@ fdbm_indexes(argc, argv, obj)
 
     new = rb_ary_new2(argc);
     for (i=0; i<argc; i++) {
-	rb_ary_push(new, fdbm_fetch(obj, argv[i]));
+	rb_ary_push(new, fdbm_fetch(obj, argv[i], Qnil));
     }
 
     return new;
@@ -259,7 +259,7 @@ fdbm_select(argc, argv, obj)
     }
     else {
         for (i=0; i<argc; i++) {
-            rb_ary_push(new, fdbm_fetch(obj, argv[i]));
+            rb_ary_push(new, fdbm_fetch(obj, argv[i], Qnil));
         }
     }
 
