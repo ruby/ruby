@@ -992,7 +992,6 @@ syserr_errno(self)
  * if the error numbers _self_ and _other_ are the same.
  */
 
-
 static VALUE
 syserr_eqq(self, exc)
     VALUE self, exc;
@@ -1017,6 +1016,12 @@ syserr_eqq(self, exc)
     return Qfalse;
 }
 
+/*
+ * call-seq:
+ *   Errno.const_missing   => SystemCallError
+ *
+ * Returns default SystemCallError class.
+ */
 static VALUE
 errno_missing(self, id)
     VALUE self, id;
