@@ -1058,7 +1058,7 @@ rb_num2uint(val)
 }
 
 unsigned int
-rb_fix2int(val)
+rb_fix2uint(val)
     VALUE val;
 {
     unsigned long num = FIXNUM_P(val)?FIX2LONG(val):rb_num2ulong(val);

@@ -1,3 +1,7 @@
+Mon Jun 16 18:06:33 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* numeric.c (rb_fix2uint): renamed from rb_fix2int on IA64.
+
 Mon Jun 16 17:02:57 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (proc_invoke): format the message for localjump_error().
