@@ -293,7 +293,7 @@ static void top_local_setup();
 %token tLBRACE_ARG	/* { */
 %token tSTAR		/* * */
 %token tAMPER		/* & */
-%token tSYMBEG tSTRING_BEG tXSTRING_BEG tREGEXP_BEG tWORDS_BEG tQWORDS_BEG
+%token tSYMBEG tSTRING_BEG tXSTRING_BEG tREGEXP_BEG tWORD_BEG tQWORDS_BEG
 %token tSTRING_DBEG tSTRING_DVAR tSTRING_END
 
 /*

@@ -1777,10 +1777,13 @@ setup_domain_and_type(domain, dv, type, tv)
     VALUE domain, type;
     int *dv, *tv;
 {
+    VALUE tmp;
     char *ptr;
 
-    if (TYPE(domain) == T_STRING) {
-	SafeStringValue(domain);
+    tmp = rb_check_string_type(domain);
+    if (!NIL_P(tmp)) {
+	domain = tmp;
+	rb_check_safe_obj(domain);
 	ptr = RSTRING(domain)->ptr;
 	if (strcmp(ptr, "AF_INET") == 0)
 	    *dv = AF_INET;
@@ -1828,8 +1831,10 @@ setup_domain_and_type(domain, dv, type, tv)
     else {
 	*dv = NUM2INT(domain);
     }
-    if (TYPE(type) == T_STRING) {
-	SafeStringValue(type);
+    tmp = rb_check_string_type(type);
+    if (!NIL_P(tmp)) {
+	type = tmp;
+	rb_check_safe_obj(type);
 	ptr = RSTRING(type)->ptr;
 	if (strcmp(ptr, "SOCK_STREAM") == 0)
 	    *tv = SOCK_STREAM;
@@ -2244,7 +2249,7 @@ sock_s_getnameinfo(argc, argv)
     int argc;
     VALUE *argv;
 {
-    VALUE sa, af = Qnil, host = Qnil, port = Qnil, flags;
+    VALUE sa, af = Qnil, host = Qnil, port = Qnil, flags, tmp;
     char *hptr, *pptr;
     char hbuf[1024], pbuf[1024];
     int fl;
@@ -2261,7 +2266,9 @@ sock_s_getnameinfo(argc, argv)
     if (!NIL_P(flags)) {
 	fl = NUM2INT(flags);
     }
-    if (TYPE(sa) == T_STRING) {
+    tmp = rb_check_string_type(sa);
+    if (!NIL_P(tmp)) {
+	sa = tmp;
 	if (sizeof(ss) < RSTRING(sa)->len) {
 	    rb_raise(rb_eTypeError, "sockaddr length too big");
 	}
@@ -2270,8 +2277,11 @@ sock_s_getnameinfo(argc, argv)
 	    rb_raise(rb_eTypeError, "sockaddr size differs - should not happen");
 	}
 	sap = (struct sockaddr*)&ss;
+	goto call_nameinfo;
     }
-    else if (TYPE(sa) == T_ARRAY) {
+    tmp = rb_check_array_type(sa);
+    if (!NIL_P(tmp)) {
+	sa = tmp;
 	MEMZERO(&hints, struct addrinfo, 1);
 	if (RARRAY(sa)->len == 3) {
 	    af = RARRAY(sa)->ptr[0];
@@ -2346,6 +2356,7 @@ sock_s_getnameinfo(argc, argv)
 	rb_raise(rb_eTypeError, "expecting String or Array");
     }
 
+  call_nameinfo:
     error = getnameinfo(sap, SA_LEN(sap), hbuf, sizeof(hbuf),
 			pbuf, sizeof(pbuf), fl);
     if (error) goto error_exit_name;

@@ -7,6 +7,13 @@ Mon May 17 16:04:06  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 	  (p 0.00000000000000000001 was '9.999999999999999e-21', now is
 	  '1.0e-20')
 
+Mon May 17 10:13:33 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (setup_domain_and_type): honor duck typing.
+	  [ruby-dev:23522]
+
+	* ext/socket/socket.c (sock_s_getnameinfo): ditto.
+
 Mon May 17 00:36:21 2004  why the lucky stiff  <why@ruby-lang.org>
 
 	* lib/yaml/baseemitter.rb (indent_text): was forcing a mod value
