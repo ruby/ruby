@@ -1,3 +1,8 @@
+Sat Sep  6 18:45:46 2003  Mauricio Fernandez <batsman.geo@yahoo.com>
+
+	* parse.y (assignable): call rb_compile_error(), not rb_bug().
+	  [ruby-core:01523]
+
 Sat Sep  6 17:40:41 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ruby_missing.c: rid of unnecessary backward 

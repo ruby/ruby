@@ -4856,7 +4856,7 @@ assignable(id, val)
 	return NEW_CVDECL(id, val);
     }
     else {
-	rb_bug("bad id for variable");
+      rb_compile_error("identifier %s is not valid", rb_id2name(id));
     }
     return 0;
 }
