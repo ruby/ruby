@@ -1,7 +1,13 @@
-Fri Nov  7 12:50:28 2003  Tanaka Akira  <akr@m17n.org>
+Fri Nov  7 23:23:04 2003  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pathname.rb (Pathname#+): if self or the argument is `.', return
 	  another.
+	  (Pathname#parent): if self is `.', return `..'.
+	  (Pathname#children): if self is `.', don't prepend self for a
+	  pathname in a result.
+	  (Pathname#join): re-implemented using Pathname#+.
+	  (Pathname#find): if self is `.', remove `./' prefix of yielding
+	  pathname.
 
 Fri Nov  7 10:23:24 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

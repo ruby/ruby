@@ -167,9 +167,16 @@ class Pathname
     end
   end
 
-  # parent method returns parent directory, i.e. ".." is joined at last.
+  # parent method returns parent directory.
+  #
+  # If self is `.', `..' is returned.
+  # Otherwise, `..' is joined to self.
   def parent
-    self.join('..')
+    if @path == '.'
+      Pathname.new('..')
+    else
+      self.join('..')
+    end
   end
 
   # mountpoint? method returns true if self points a mountpoint.
@@ -230,22 +237,36 @@ class Pathname
     end
   end
 
+  # Pathname#join joins pathnames.
+  #
+  # path0.join(path1, ... pathN) is same as path0 + path1 + ... + pathN.
+  def join(*args)
+    args.map! {|arg| Pathname === arg ? arg : Pathname.new(arg) }
+    args.inject(self) {|pathname, arg| pathname + arg }
+  end
+
   # Pathname#children returns the children of the directory as an array of
   # pathnames.  
   #
-  # By default, self is prepended to each pathname in the result.
-  # It is disabled if false is given for the optional argument
-  # prepend_directory.
+  # By default, the returned pathname can be used to access the corresponding
+  # file in the directory.
+  # This is because the pathname contains self as a prefix unless self is `.'.
   #
-  # Note that the result never contain '.' and '..' because they are not
-  # child.
+  # If false is given for the optional argument `with_directory',
+  # just filenames of children is returned.
+  # In this case, the returned pathname cannot be used directly to access the
+  # corresponding file when self doesn't point working directory.
+  #
+  # Note that the result never contain the entry `.' and `..' in the directory
+  # because they are not child.
   #
   # This method is exist since 1.8.1.
-  def children(prepend_directory=true)
+  def children(with_directory=true)
+    with_directory = false if @path == '.'
     result = []
     Dir.foreach(@path) {|e|
       next if e == '.' || e == '..'
-      if prepend_directory
+      if with_directory
         result << Pathname.new(File.join(@path, e))
       else
         result << Pathname.new(e)
@@ -348,7 +369,6 @@ class Pathname
   def dirname() Pathname.new(File.dirname(@path)) end
   def extname() File.extname(@path) end
   def expand_path(*args) Pathname.new(File.expand_path(@path, *args)) end
-  def join(*args) Pathname.new(File.join(@path, *args)) end
   def split() File.split(@path).map {|f| Pathname.new(f) } end
 end
 
@@ -427,9 +447,22 @@ end
 
 # Find
 class Pathname
+  # Pathname#find is a iterator to traverse directory tree in depth first
+  # manner.  It yields a pathname for each file under the directory which
+  # is pointed by self.
+  #
+  # Since it is implemented by find.rb, Find.prune can be used to control the
+  # traverse.
+  #
+  # If self is `.', yielded pathnames begin with a filename in the current
+  # directory, not `./'.
   def find(&block)
     require 'find'
-    Find.find(@path) {|f| yield Pathname.new(f) }
+    if @path == '.'
+      Find.find(@path) {|f| yield Pathname.new(f.sub(%r{\A\./}, '')) }
+    else
+      Find.find(@path) {|f| yield Pathname.new(f) }
+    end
   end
 end
 
