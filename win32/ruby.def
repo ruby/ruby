@@ -125,6 +125,7 @@ EXPORTS
 	mybind
 	myconnect
 	myfdset
+	myfdclr
 	myfdisset
 	myselect
 	mygetpeername

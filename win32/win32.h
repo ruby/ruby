@@ -176,6 +176,7 @@ extern SOCKET  myaccept(SOCKET, struct sockaddr *, int *);
 extern int  mybind(SOCKET, struct sockaddr *, int);
 extern int  myconnect(SOCKET, struct sockaddr *, int);
 extern void myfdset(int, fd_set*);
+extern void myfdclr(int, fd_set*);
 extern int  myfdisset(int, fd_set*);
 extern long myselect(int, fd_set *, fd_set *, fd_set *, struct timeval *);
 extern int  mygetpeername(SOCKET, struct sockaddr *, int *);
