@@ -783,6 +783,7 @@ syck_mark_parser(parser)
 /*
  * YAML::Syck::Parser.new
  */
+VALUE syck_parser_s_alloc _((VALUE));
 VALUE
 syck_parser_s_alloc(class)
     VALUE class;
@@ -1312,6 +1313,7 @@ syck_mark_emitter(emitter)
 /*
  * YAML::Syck::Emitter.new
  */
+VALUE syck_emitter_s_alloc _((VALUE));
 VALUE
 syck_emitter_s_alloc(class)
     VALUE class;

@@ -1,3 +1,7 @@
+Mon Mar 28 20:43:34 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/syck/rubyext.c: get rid of warnings caused by a bug of VC.
+
 Mon Mar 28 16:00:12 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/tk/lib/tkextlib/iwidgets/notebook.rb: fixed typo.
