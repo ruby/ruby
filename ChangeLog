@@ -1,3 +1,7 @@
+Wed May 29 17:32:55 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* time.c (tmcmp, search_time_t): activate unless HAVE_TIMEGM.
+
 Wed May 29 13:45:15 2002  Wakou Aoyama  <wakou@ruby-lang.org>
 
 	* lib/cgi.rb: not use const if GET, HEAD. check multipart form head.

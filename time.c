@@ -323,6 +323,7 @@ static VALUE time_gmtime _((VALUE));
 static VALUE time_localtime _((VALUE));
 static VALUE time_get_tm _((VALUE, int));
 
+#if !defined HAVE_TIMEGM
 static int
 tmcmp(a, b)
     struct tm *a;
@@ -573,6 +574,7 @@ search_time_t(tptr, utc_p)
     rb_raise(rb_eArgError, "gmtime/localtime error");
     return 0;			/* not reached */
 }
+#endif
 
 static time_t
 make_time_t(tptr, utc_p)
