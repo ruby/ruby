@@ -1,9 +1,10 @@
-Thu Feb 13 09:58:12 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+Thu Feb 13 11:54:50 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ruby.c (ruby_init_loadpath): ensures buffer terminated
 	  before use strncpy().
 
 	* ruby.c (proc_options): avoid SEGV at -S with no arguments.
+	  script argument is in effect only when -e is not given.
 	  (ruby-bugs-ja:PR#391)
 
 Sat Feb  8 04:04:13 2003  Akinori MUSHA  <knu@iDaemons.org>
