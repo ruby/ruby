@@ -1,7 +1,12 @@
+Tue Aug 26 20:03:50 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (create_tmpsrc): add the hook for source.
+	  [ruby-list:38122]
+
 Tue Aug 26 15:59:53 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
 
-    * implicit.c (syck_type_id_to_taguri): corrected detection of
-      x-private types.
+	* implicit.c (syck_type_id_to_taguri): corrected detection of
+	  x-private types.
 
 Sun Aug 24 01:02:48 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -522,7 +527,6 @@ Mon Aug  4 17:25:18 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 For the changes before 1.8.0, see doc/ChangeLog-1.8.0
 
-Local variables:
 add-log-time-format: (lambda ()
   (let* ((time (current-time))
   	 (diff (+ (cadr time) 32400))

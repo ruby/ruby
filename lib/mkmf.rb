@@ -194,14 +194,16 @@ EOM
 end
 
 def create_tmpsrc(src)
+  src = yield(src) if block_given?
+  src = src.sub(/[^\n]\z/, "\\&\n")
   open(CONFTEST_C, "w") do |cfile|
     cfile.print src
   end
+  src
 end
 
-def try_do(src, command)
-  src = src.sub(/[^\n]\z/, "\\&\n")
-  create_tmpsrc(src)
+def try_do(src, command, &b)
+  src = create_tmpsrc(src, &b)
   xsystem(command)
 ensure
   log_src(src)
@@ -234,24 +236,24 @@ def libpathflag(libpath=$LIBPATH)
   libpath.map{|x| LIBPATHFLAG % %["#{x}"]}.join
 end
 
-def try_link0(src, opt="")
-  try_do(src, link_command("", opt))
+def try_link0(src, opt="", &b)
+  try_do(src, link_command("", opt), &b)
 end
 
-def try_link(src, opt="")
-  try_link0(src, opt)
+def try_link(src, opt="", &b)
+  try_link0(src, opt, &b)
 ensure
   rm_f "conftest*", "c0x32*"
 end
 
-def try_compile(src, opt="")
-  try_do(src, cc_command(opt))
+def try_compile(src, opt="", &b)
+  try_do(src, cc_command(opt), &b)
 ensure
   rm_f "conftest*"
 end
 
-def try_cpp(src, opt="")
-  try_do(src, cpp_command(CPPOUTFILE, opt))
+def try_cpp(src, opt="", &b)
+  try_do(src, cpp_command(CPPOUTFILE, opt), &b)
 ensure
   rm_f "conftest*"
 end
@@ -265,20 +267,23 @@ def cpp_include(header)
   end
 end
 
-def try_static_assert(expr, headers = nil, opt = "")
+def try_static_assert(expr, headers = nil, opt = "", &b)
   headers = cpp_include(headers)
-  try_compile(<<SRC, opt)
+  try_compile(<<SRC, opt, &b)
 #{COMMON_HEADERS}
 #{headers}
+/*top*/
 int tmp[(#{expr}) ? 1 : -1];
 SRC
 end
 
-def try_constant(const, headers = nil, opt = "")
+def try_constant(const, headers = nil, opt = "", &b)
+  headers = cpp_include(headers)
   if CROSS_COMPILING
-    unless try_compile(<<"SRC", opt)
+    unless try_compile(<<"SRC", opt, &b)
 #{COMMON_HEADERS}
-#{cpp_include(headers)}
+#{headers}
+/*top*/
 int tmp = #{const};
 SRC
       return nil
@@ -306,11 +311,12 @@ SRC
     return upper
   else
     src = %{#{COMMON_HEADERS}
-#{cpp_include(headers)}
+#{headers}
 #include <stdio.h>
+/*top*/
 int main() {printf("%d\\n", (int)(#{const})); return 0;}
 }
-    if try_link0(src, opt)
+    if try_link0(src, opt, &b)
       xpopen("./conftest") do |f|
         return Integer(f.gets)
       end
@@ -319,23 +325,24 @@ int main() {printf("%d\\n", (int)(#{const})); return 0;}
   nil
 end
 
-def try_func(func, libs, headers = nil)
+def try_func(func, libs, headers = nil, &b)
   headers = cpp_include(headers)
-  try_link(<<"SRC", libs) or try_link(<<"SRC", libs)
+  try_link(<<"SRC", libs, &b) or try_link(<<"SRC", libs, &b)
 #{headers}
+/*top*/
 int main() { return 0; }
 int t() { #{func}(); return 0; }
 SRC
 #{COMMON_HEADERS}
 #{headers}
+/*top*/
 int main() { return 0; }
 int t() { void ((*volatile p)()); p = (void ((*)()))#{func}; return 0; }
 SRC
 end
 
-def egrep_cpp(pat, src, opt="")
-  src = src.sub(/[^\n]\z/, "\\&\n")
-  create_tmpsrc(src)
+def egrep_cpp(pat, src, opt = "", &b)
+  src = create_tmpsrc(src, &b)
   xpopen(cpp_command('', opt)) do |f|
     if Regexp === pat
       puts("    ruby -ne 'print if #{pat.inspect}'")
@@ -360,17 +367,18 @@ ensure
   log_src(src)
 end
 
-def macro_defined?(macro, src, opt="")
+def macro_defined?(macro, src, opt = "", &b)
   src = src.sub(/[^\n]\z/, "\\&\n")
-  try_cpp(src + <<"SRC", opt)
+  try_cpp(src + <<"SRC", opt, &b)
+/*top*/
 #ifndef #{macro}
 # error
 #endif
 SRC
 end
 
-def try_run(src, opt="")
-  if try_link0(src, opt)
+def try_run(src, opt = "", &b)
+  if try_link0(src, opt, &b)
     xsystem("./conftest")
   else
     nil
@@ -446,14 +454,14 @@ def checking_for(m)
   r
 end
 
-def have_library(lib, func=nil)
+def have_library(lib, func = nil, &b)
   func = "main" if !func or func.empty?
   checking_for "#{func}() in -l#{lib}" do
     if COMMON_LIBS.include?(lib)
       true
     else
       libs = append_library($libs, lib)
-      if try_func(func, libs)
+      if try_func(func, libs, &b)
         $libs = libs
         true
       else
@@ -463,12 +471,12 @@ def have_library(lib, func=nil)
   end
 end
 
-def find_library(lib, func, *paths)
+def find_library(lib, func, *paths, &b)
   checking_for "#{func}() in -l#{lib}" do
     libpath = $LIBPATH
     libs = append_library($libs, lib)
     begin
-      until r = try_func(func, libs) or paths.empty?
+      until r = try_func(func, libs, &b) or paths.empty?
 	$LIBPATH = libpath | [paths.shift]
       end
       if r
@@ -482,9 +490,9 @@ def find_library(lib, func, *paths)
   end
 end
 
-def have_func(func, header=nil)
+def have_func(func, headers = nil, &b)
   checking_for "#{func}()" do
-    if try_func(func, $libs, header)
+    if try_func(func, $libs, headers, &b)
       $defs.push(format("-DHAVE_%s", func.upcase))
       true
     else
@@ -493,9 +501,9 @@ def have_func(func, header=nil)
   end
 end
 
-def have_header(header)
+def have_header(header, &b)
   checking_for header do
-    if try_cpp(cpp_include(header))
+    if try_cpp(cpp_include(header), &b)
       $defs.push(format("-DHAVE_%s", header.tr("a-z./\055", "A-Z___")))
       true
     else
@@ -504,11 +512,12 @@ def have_header(header)
   end
 end
 
-def have_struct_member(type, member, header=nil)
+def have_struct_member(type, member, header = nil, &b)
   checking_for "#{type}.#{member}" do
-    if try_compile(<<"SRC")
+    if try_compile(<<"SRC", &b)
 #{COMMON_HEADERS}
 #{cpp_include(header)}
+/*top*/
 int main() { return 0; }
 int s = (char *)&((#{type}*)0)->#{member} - (char *)0;
 SRC
@@ -520,15 +529,18 @@ SRC
   end
 end
 
-def have_type(type, header=nil, opt="")
+def have_type(type, header = nil, opt = "", &b)
   checking_for type do
-    if try_compile(<<"SRC", opt) or try_compile(<<"SRC", opt)
+    header = cpp_include(header)
+    if try_compile(<<"SRC", opt, &b) or try_compile(<<"SRC", opt, &b)
 #{COMMON_HEADERS}
-#{cpp_include(header)}
+#{header}
+/*top*/
 static #{type} t;
 SRC
 #{COMMON_HEADERS}
-#{cpp_include(header)}
+#{header}
+/*top*/
 static #{type} *t;
 SRC
       $defs.push(format("-DHAVE_TYPE_%s", type.upcase))
@@ -539,12 +551,12 @@ SRC
   end
 end
 
-def check_sizeof(type, header=nil)
+def check_sizeof(type, header = nil, &b)
   expr = "sizeof(#{type})"
   m = "checking size of #{type}... "
   message "%s", m
   Logging::message "check_sizeof: %s--------------------\n", m
-  if size = try_constant(expr, header)
+  if size = try_constant(expr, header, &b)
     $defs.push(format("-DSIZEOF_%s", type.upcase))
   end
   message(a = size ? "#{size}\n" : "failed\n")
