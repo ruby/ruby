@@ -951,6 +951,7 @@ if test "$with_dln_a_out" != yes; then
 	hiuxmpp)	: ${LDSHARED='ld -r'} ;;
 	atheos*) 	: ${LDSHARED="$CC -shared"}
 			rb_cv_dlopen=yes ;;
+AC_SUBST(TRY_LINK)
 	os2-emx*)	LDFLAGS="$LDFLAGS -Zbsd-signals"
 			;;
 	*) 		: ${LDSHARED='ld'} ;;
