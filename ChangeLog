@@ -1,3 +1,7 @@
+Fri Dec 24 23:27:18 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/image.rb: TkPhotoImage#cget bug fix
+
 Fri Dec 24 03:06:13 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (io_reopen, rb_io_reopen): prohibit to change access mode for
