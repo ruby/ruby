@@ -1,3 +1,8 @@
+Sun Nov 28 12:14:47 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
+
+	* regparse.c (fetch_token): fixed test failure on HP-UX ia64
+	([ruby-dev:24859]).
+
 Sun Nov 28 12:08:15 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
 
 	* regparse.c, test/ruby/test_regexp.rb: fixed problem with UTF-8

@@ -2561,9 +2561,9 @@ fetch_token_in_cc(OnigToken* tok, UChar** src, UChar* end, ScanEnv* env)
 	if (p == prev) {  /* can't read nothing. */
 	  num = 0; /* but, it's not error */
 	}
-	tok->type = TK_CODE_POINT;
-	tok->base = 16;
-	tok->u.c  = num;
+	tok->type    = TK_CODE_POINT;
+	tok->base    = 16;
+	tok->u.code  = (OnigCodePoint )num;
       }
       break;
 
@@ -2588,8 +2588,8 @@ fetch_token_in_cc(OnigToken* tok, UChar** src, UChar* end, ScanEnv* env)
       num = fetch_escaped_value(&p, end, env);
       if (num < 0) return num;
       if (tok->u.c != num) {
-	tok->u.c = num;
-	tok->type = TK_CODE_POINT;
+	tok->u.code = (OnigCodePoint )num;
+	tok->type   = TK_CODE_POINT;
       }
       break;
     }
@@ -2892,9 +2892,9 @@ fetch_token(OnigToken* tok, UChar** src, UChar* end, ScanEnv* env)
 	if (p == prev) {  /* can't read nothing. */
 	  num = 0; /* but, it's not error */
 	}
-	tok->type = TK_CODE_POINT;
-	tok->base = 16;
-	tok->u.c  = num;
+	tok->type    = TK_CODE_POINT;
+	tok->base    = 16;
+	tok->u.code  = (OnigCodePoint )num;
       }
       break;
 
@@ -3042,8 +3042,8 @@ fetch_token(OnigToken* tok, UChar** src, UChar* end, ScanEnv* env)
       if (num < 0) return num;
       /* set_raw: */
       if (tok->u.c != num) {
-	tok->type = TK_CODE_POINT;
-	tok->u.c = num;
+	tok->type   = TK_CODE_POINT;
+	tok->u.code = (OnigCodePoint )num;
       }
       else { /* string */
 	p = tok->backp + enc_len(enc, tok->backp);
