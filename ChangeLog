@@ -1,3 +1,13 @@
+Wed Aug 30 14:23:48 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* ext/tcltklib/tcltklib.c: support --enable-tcltk_stubs
+
+	* ext/tcltklib/extconf.rb: ditto.
+
+	* ext/tcltklib/stubs.c: created. examine candidate shared libraries.
+
+	* ext/tcltklib/depend: add stubs.o.
+
 Wed Aug 30 11:31:47 2000  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* ext/Win32API/Win32API.c (Win32API_initialize): add the
