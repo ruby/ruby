@@ -1,4 +1,4 @@
-Mon Jun 28 14:57:56 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Jun 28 14:57:56 2004  Jeff Mitchell  <quixoticsycophant@yahoo.com>
 
 	* configure.in, lib/mkmf.rb (LIBPATHFLAG): use double quotes due to
 	  DOSISH compilers.  [ruby-core:03107]
