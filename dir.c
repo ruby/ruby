@@ -62,7 +62,7 @@ char *strchr _((char*,char));
 #include <ctype.h>
 
 #ifndef HAVE_LSTAT
-#define lstat rb_sys_stat
+#define lstat(path,st) stat(path,st)
 #endif
 
 #define FNM_NOESCAPE	0x01
@@ -622,7 +622,7 @@ glob_helper(path, flag, func, arg)
 
     if (!has_magic(path, 0)) {
 	remove_backslashes(path);
-	if (rb_sys_stat(path, &st) == 0) {
+	if (stat(path, &st) == 0) {
 	    (*func)(path, arg);
 	}
 	else if (errno != ENOENT) {
@@ -653,7 +653,7 @@ glob_helper(path, flag, func, arg)
 	    else dir = base;
 
 	    magic = extract_elem(p);
-	    if (rb_sys_stat(dir, &st) < 0) {
+	    if (stat(dir, &st) < 0) {
 	        if (errno != ENOENT) rb_sys_warning(dir);
 	        free(base);
 	        break;
@@ -721,7 +721,7 @@ glob_helper(path, flag, func, arg)
 	    free(magic);
 	    if (link) {
 		while (link) {
-		    if (rb_sys_stat(link->path, &st) == 0) {
+		    if (stat(link->path, &st) == 0) {
 			if (S_ISDIR(st.st_mode)) {
 			    int len = strlen(link->path);
 			    int mlen = strlen(m);

@@ -67,7 +67,7 @@ char *strrchr _((const char*,const char));
 #include <sys/stat.h>
 
 #ifndef HAVE_LSTAT
-#define lstat stat
+#define lstat(path,st) stat(path,st)
 #endif
  
 VALUE rb_cFile;
@@ -313,7 +313,7 @@ rb_stat(file, st)
 #if defined DJGPP
     if (RSTRING(file)->len == 0) return -1;
 #endif
-    return rb_sys_stat(RSTRING(file)->ptr, st);
+    return stat(RSTRING(file)->ptr, st);
 }
 
 static VALUE
@@ -323,7 +323,7 @@ rb_file_s_stat(obj, fname)
     struct stat st;
 
     Check_SafeStr(fname);
-    if (rb_sys_stat(RSTRING(fname)->ptr, &st) == -1) {
+    if (stat(RSTRING(fname)->ptr, &st) == -1) {
 	rb_sys_fail(RSTRING(fname)->ptr);
     }
     return stat_new(&st);
@@ -419,7 +419,7 @@ eaccess(path, mode)
   struct stat st;
   static int euid = -1;
 
-  if (rb_sys_stat(path, &st) < 0) return (-1);
+  if (stat(path, &st) < 0) return (-1);
 
   if (euid == -1)
     euid = geteuid ();
@@ -721,7 +721,7 @@ check3rdbyte(file, mode)
 {
     struct stat st;
 
-    if (rb_sys_stat(file, &st) < 0) return Qfalse;
+    if (stat(file, &st) < 0) return Qfalse;
     if (st.st_mode & mode) return Qtrue;
     return Qfalse;
 }
@@ -2115,7 +2115,7 @@ path_check_1(path)
 	return path_check_1(buf);
     }
     for (;;) {
-	if (rb_sys_stat(path, &st) == 0 && (st.st_mode & 002)) {
+	if (stat(path, &st) == 0 && (st.st_mode & 002)) {
            if (p) *p = '/';
 	    return 0;
 	}
@@ -2234,7 +2234,7 @@ rb_find_file(file)
     }
 
     path = dln_find_file(file, path);
-    if (path && rb_sys_stat(path, &st) == 0) {
+    if (path && stat(path, &st) == 0) {
 	return path;
     }
     return 0;
