@@ -1,3 +1,8 @@
+Fri Jun 23 22:34:51 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* bignum.c (rb_big_lshift): reorder xds assignment to avoid
+	  reusing `x' as `len' by VC++ 6.0 SP3 compiler with -Ox switch.
+
 Fri Jun 23 17:36:03 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* stable version 1.4.5 released.

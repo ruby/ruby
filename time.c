@@ -301,17 +301,27 @@ make_time_t(tptr, utc_or_local)
     if (!utc_or_local) {	/* localtime zone adjust */
 #if defined(HAVE_TM_ZONE)
 	tm = localtime(&guess);
+	if (!tm) goto error;
 	guess -= tm->tm_gmtoff;
+	tm = localtime(&guess);
+	if (!tm) goto error;
+	if (tm->tm_hour != tptr->tm_hour) {
+	    guess += (tptr->tm_hour - tm->tm_hour)*3600;
+	}
 #else
 	struct tm gt, lt;
 	long tzsec;
 
 	t = 0;
-	gt = *gmtime(&guess);
-	lt = *localtime(&guess);
+	tm = gmtime(&guess);
+	if (!tm) goto error;
+	gt = *tm;
+	tm = localtime(&guess);
+	if (!tm) goto error;
+	lt = *tm;
 	tzsec = (gt.tm_min-lt.tm_min)*60 + (gt.tm_hour-lt.tm_hour)*3600;
 
-	if(lt.tm_year > gt.tm_year) {
+	if (lt.tm_year > gt.tm_year) {
 	    tzsec -= 24*3600;
 	}
 	else if(gt.tm_year > lt.tm_year) {
@@ -320,16 +330,14 @@ make_time_t(tptr, utc_or_local)
 	else {
 	    tzsec += (gt.tm_yday - lt.tm_yday)*24*3600;
 	}
-
-	if (lt.tm_isdst) tzsec += 3600;
-    
+	if (lt.tm_isdst) guess += 3600;
 	guess += tzsec;
 	if (guess < 0) {
 	    goto out_of_range;
 	}
 	tm = localtime(&guess);
 	if (!tm) goto error;
-	if (tm->tm_hour != tptr->tm_hour) {
+	if (lt.tm_isdst != tm->tm_isdst) {
 	    guess -= 3600;
 	}
 #endif
@@ -362,7 +370,7 @@ time_gm_or_local(argc, argv, gm_or_local, klass)
     fn = (gm_or_local) ? gmtime : localtime;
     time_arg(argc, argv, &tm);
 
-    time = time_new_internal(klass, make_time_t(&tm, fn), 0);
+    time = time_new_internal(klass, make_time_t(&tm, gm_or_local), 0);
     if (gm_or_local) return time_gmtime(time);
     return time_localtime(time);
 }
@@ -434,14 +442,12 @@ time_cmp(time1, time2)
 	{
 	    double t;
 
-	    if (tobj1->tv.tv_sec == (time_t)RFLOAT(time2)->value)
-		return INT2FIX(0);
 	    t = (double)tobj1->tv.tv_sec + (double)tobj1->tv.tv_usec*1e-6;
-	    if (tobj1->tv.tv_sec == (time_t)RFLOAT(time2)->value)
-		return INT2FIX(0);
-	    if (tobj1->tv.tv_sec > (time_t)RFLOAT(time2)->value)
+	    if (t > RFLOAT(time2)->value)
 		return INT2FIX(1);
-	    return INT2FIX(-1);
+	    if (t < RFLOAT(time2)->value)
+		return INT2FIX(-1);
+	    return INT2FIX(0);
 	}
     }
 
@@ -504,15 +510,15 @@ static VALUE
 time_clone(time)
     VALUE time;
 {
-    VALUE obj;
-    struct time_object *tobj, *newtobj;
+    VALUE clone;
+    struct time_object *tobj, *tclone;
 
     GetTimeval(time, tobj);
-    obj = Data_Make_Struct(0, struct time_object, 0, free, newtobj);
-    CLONESETUP(obj, time);
-    MEMCPY(newtobj, tobj, struct time_object, 1);
+    clone = Data_Make_Struct(0, struct time_object, 0, free, tclone);
+    CLONESETUP(clone, time);
+    MEMCPY(tclone, tobj, struct time_object, 1);
 
-    return obj;
+    return clone;
 }
 
 static VALUE
@@ -524,6 +530,9 @@ time_localtime(time)
     time_t t;
 
     GetTimeval(time, tobj);
+    if (tobj->tm_got && !tobj->gmt) {
+	return time;
+    }
     t = tobj->tv.tv_sec;
     tm_tmp = localtime(&t);
     tobj->tm = *tm_tmp;
@@ -541,6 +550,9 @@ time_gmtime(time)
     time_t t;
 
     GetTimeval(time, tobj);
+    if (tobj->tm_got && tobj->gmt) {
+	return time;
+    }
     t = tobj->tv.tv_sec;
     tm_tmp = gmtime(&t);
     tobj->tm = *tm_tmp;

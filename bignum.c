@@ -1199,13 +1199,13 @@ rb_big_lshift(x, y)
     long len, i;
 
     if (shift < 0) return rb_big_rshift(x, INT2FIX(-shift));
-    xds = BDIGITS(x);
     len = RBIGNUM(x)->len;
     z = bignew(len+s1+1, RBIGNUM(x)->sign);
     zds = BDIGITS(z);
     for (i=0; i<s1; i++) {
 	*zds++ = 0;
     }
+    xds = BDIGITS(x);
     for (i=0; i<len; i++) {
 	num = num | *xds++<<s2;
 	*zds++ = BIGLO(num);
