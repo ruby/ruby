@@ -81,7 +81,7 @@ module DL
 	  "  args = enc.call(args) if enc",
 	  "  r,rs = #{func}(*args)",
 	  "  r  = renc.call(r) if rdec",
-	  "  rs = dec.call(rs) if dec",
+	  "  rs = dec.call(rs) if (dec && rs)",
 	  "  @retval = r",
 	  "  @args   = rs",
 	  "  @retval",
