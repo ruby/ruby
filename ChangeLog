@@ -1,3 +1,18 @@
+Mon Jan 20 21:02:50 2003  Akinori MUSHA  <knu@iDaemons.org>
+
+	* mdoc2man.rb: Properly put nested braces, parentheses and angles.
+
+	* mdoc2man.rb: Add support for .An and .Aq/.Ao/.Ac.
+
+	* mdoc2man.rb: Add support for .Dl.
+
+	* mdoc2man.rb: Make .Pf macro actually work.
+
+	* mdoc2man.rb: Properly handle .Os.
+
+	* mdoc2man.rb: Correctly omit spaces around punctuation
+	  characters.
+
 Mon Jan 20 19:43:41 2003  Akinori MUSHA  <knu@iDaemons.org>
 
 	* mdoc2man.rb: Make this work as a library.

@@ -43,6 +43,12 @@
 ###
 
 class Mdoc2Man
+  ANGLE = 1
+  OPTION = 2
+  PAREN = 3
+
+  RE_PUNCT = /^[!"'),\.\/:;>\?\]`]$/
+
   def initialize
     @name = @date = @id = nil
     @refauthors = @reftitle = @refissue = @refdate = @refopt = nil
@@ -80,12 +86,26 @@ class Mdoc2Man
     words = line.split
     retval = ''
 
-    option = false
-    parens = false
+    quote = []
+    dl = false
 
     while word = words.shift
       case word
+      when RE_PUNCT
+	while q = quote.pop
+	  case q
+	  when OPTION
+	    retval << ']'
+	  when PAREN
+	    retval << ')'
+	  when ANGLE
+	    retval << '>'
+	  end
+	end
+	retval << word
+	next
       when 'Li', 'Pf'
+	@nospace = 1
 	next
       when 'Xo'
 	@ext = true
@@ -114,14 +134,14 @@ class Mdoc2Man
 	retval << '``'
 	begin
 	  retval << words.shift << ' '
-	end until words.empty? || /^[\.,]/ =~ words[0]
+	end until words.empty? || RE_PUNCT =~ words[0]
 	retval.chomp!(' ')
 	retval << '\'\''
-	@nospace = 1 if @nospace == 0 && /^[\.,]/ =~ words[0]
+	@nospace = 1 if @nospace == 0 && RE_PUNCT =~ words[0]
 	next
       when 'Sq', 'Ql'
 	retval << '`' << words.shift << '\''
-	@nospace = 1 if @nospace == 0 && /^[\.,]/ =~ words[0]
+	@nospace = 1 if @nospace == 0 && RE_PUNCT =~ words[0]
 	next
 	# when  'Ic'
 	#   retval << '\\fB' << words.shift << '\\fP'
@@ -136,6 +156,13 @@ class Mdoc2Man
 	@extopt = false
 	retval << ']'
 	next
+      when 'Ao'
+	@nospace = 1 if @nospace == 0
+	retval << '<'
+	next
+      when 'Ac'
+	retval << '>'
+	next
       end
 
       retval << ' ' if @nospace == 0 && !(retval.empty? || /[\n ]\z/ =~ retval)
@@ -146,6 +173,11 @@ class Mdoc2Man
 	@date = words.join(' ')
 	return nil
       when 'Dt'
+	if words.size >= 2 && words[1] == '""' &&
+	    /^(.*)\(([0-9])\)$/ =~ words[0]
+	  words[0] = $1
+	  words[1] = $2
+	end
 	@id = words.join(' ')
 	return nil
       when 'Os'
@@ -194,6 +226,12 @@ class Mdoc2Man
 
 	@reference = false
 	break
+      when 'An'
+	next
+      when 'Dl'
+	retval << ".nf\n" << '\\&  '
+	dl = true
+	next
       when 'Ux'
 	retval << "UNIX"
 	next
@@ -227,14 +265,14 @@ class Mdoc2Man
 	@name ||= name
 	retval << ".br\n" if @synopsis
 	retval << "\\fB" << name << "\\fP"
-	@nospace = 1 if @nospace == 0 && /^[\.,]/ =~ words[0]
+	@nospace = 1 if @nospace == 0 && RE_PUNCT =~ words[0]
 	next
       when 'Nd'
 	retval << '\\-'
 	next
       when 'Fl'
 	retval << '\\fB\\-' << words.shift << '\\fP'
-	@nospace = 1 if @nospace == 0 && /^[\.,]/ =~ words[0]
+	@nospace = 1 if @nospace == 0 && RE_PUNCT =~ words[0]
 	next
       when 'Ar'
 	retval << '\\fI'
@@ -245,20 +283,26 @@ class Mdoc2Man
 	  while words[0] == '|'
 	    retval << ' ' << words.shift << ' \\fI' << words.shift << '\\fP'
 	  end
-	  @nospace = 1 if @nospace == 0 && /^[\.,]/ =~ words[0]
+	  @nospace = 1 if @nospace == 0 && RE_PUNCT =~ words[0]
 	  next
 	end
       when 'Cm'
 	retval << '\\fB' << words.shift << '\\fP'
-	while /^[\.,:)]$/ =~ words[0]
+	while RE_PUNCT =~ words[0]
 	  retval << words.shift
 	end
 	next
       when 'Op'
-	option = true
+	quote << OPTION
 	@nospace = 1 if @nospace == 0
 	retval << '['
 	# words.push(words.pop + ']')
+	next
+      when 'Aq'
+	quote << ANGLE
+	@nospace = 1 if @nospace == 0
+	retval << '<'
+	# words.push(words.pop + '>')
 	next
       when 'Pp'
 	retval << "\n"
@@ -268,14 +312,14 @@ class Mdoc2Man
 	next
       end
 
-      if word == 'Pa' && !option
+      if word == 'Pa' && !quote.include?(OPTION)
 	retval << '\\fI'
 	retval << '\\&' if /^\./ =~ words[0]
 	retval << words.shift << '\\fP'
-	while /^[\.,:;)]$/ =~ words[0]
+	while RE_PUNCT =~ words[0]
 	  retval << words.shift
 	end
-	# @nospace = 1 if @nospace == 0 && /^[\.,]/ =~ words[0]
+	# @nospace = 1 if @nospace == 0 && RE_PUNCT =~ words[0]
 	next
       end
 
@@ -289,19 +333,24 @@ class Mdoc2Man
       when 'Pq'
 	retval << '('
 	@nospace = 1
-	parens = true
+	quote << PAREN
 	next
       when 'Sx', 'Sy'
 	retval << '.B ' << words.join(' ')
 	break
       when 'Ic'
 	retval << '\\fB'
-	until words.empty? || /^[\.,]/ =~ words[0]
+	until words.empty? || RE_PUNCT =~ words[0]
 	  case words[0]
 	  when 'Op'
 	    words.shift
 	    retval << '['
 	    words.push(words.pop + ']')
+	    next
+	  when 'Aq'
+	    words.shift
+	    retval << '<'
+	    words.push(words.pop + '>')
 	    next
 	  when 'Ar'
 	    words.shift
@@ -384,15 +433,24 @@ class Mdoc2Man
     retval.sub!(/\A\.([^a-zA-Z])/, "\\1")
     # retval.chomp!(' ')
 
-    retval << ')' if parens
-
-    retval << ']' if option
+    while q = quote.pop
+      case q
+      when OPTION
+	retval << ']'
+      when PAREN
+	retval << ')'
+      when ANGLE
+	retval << '>'
+      end
+    end
 
     # retval << ' ' unless @nospace == 0 || retval.empty? || /\n\z/ =~ retval
 
     retval << ' ' unless !@ext || @extopt || / $/ =~ retval
 
     retval << "\n" unless @ext || @extopt || retval.empty? || /\n\z/ =~ retval
+
+    retval << ".fi\n" if dl
 
     return retval
   end
