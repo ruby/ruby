@@ -1,3 +1,8 @@
+Tue Mar  1 00:47:43 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* test/rinda/test_rinda.rb: backport from CVS_HEAD. use 
+	  MockClock.sleep instead of Kernel.sleep [ruby-dev:25387]
+
 Tue Mar  1 00:34:24 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/rinda/tuplespace.rb (Rinda::TupleSpace): improved keeper thread.
