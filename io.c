@@ -108,11 +108,14 @@ static VALUE lineno;
 #ifdef _STDIO_USES_IOSTREAM  /* GNU libc */
 #  ifdef _IO_fpos_t
 #    define READ_DATA_PENDING(fp) ((fp)->_IO_read_ptr != (fp)->_IO_read_end)
+#    define READ_DATA_PENDING_COUNT(fp) ((fp)->_IO_read_end - (fp)->_IO_read_ptr)
 #  else
 #    define READ_DATA_PENDING(fp) ((fp)->_gptr < (fp)->_egptr)
+#    define READ_DATA_PENDING_COUNT(fp) ((fp)->_egptr - (fp)->_gptr)
 #  endif
 #elif defined(FILE_COUNT)
 #  define READ_DATA_PENDING(fp) ((fp)->FILE_COUNT > 0)
+#  define READ_DATA_PENDING_COUNT(fp) ((fp)->FILE_COUNT)
 #elif defined(__BEOS__)
 #  define READ_DATA_PENDING(fp) (fp->_state._eof == 0)
 #else
@@ -476,14 +479,34 @@ io_fread(ptr, len, f)
     long n = len;
     int c;
 
-    while (n--) {
+    while (n > 0) {
+#ifdef READ_DATA_PENDING_COUNT
+	int i = READ_DATA_PENDING_COUNT(f);
+	if (i <= 0) {
+	    rb_thread_wait_fd(fileno(f));
+	    i = READ_DATA_PENDING_COUNT(f);
+	}
+	if (i > 0) {
+	    if (i > n) i = n;
+	    TRAP_BEG;
+	    c = fread(ptr, 1, i, f);
+	    TRAP_END;
+	    if (c < 0) goto eof;
+	    ptr += c;
+	    n -= c;
+	    if (c < i) goto eof;
+	    continue;
+	}
+#else
 	if (!READ_DATA_PENDING(f)) {
 	    rb_thread_wait_fd(fileno(f));
 	}
+#endif
 	TRAP_BEG;
 	c = getc(f);
 	TRAP_END;
 	if (c == EOF) {
+	  eof:
 	    if (ferror(f)) {
 		if (errno == EINTR) continue;
 		rb_sys_fail(0);
@@ -492,9 +515,10 @@ io_fread(ptr, len, f)
 	    break;
 	}
 	*ptr++ = c;
+	n--;
     }
 
-    return len - n - 1;
+    return len - n;
 }
 
 #ifndef S_ISREG

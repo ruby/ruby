@@ -1,14 +1,44 @@
+Mon Jul 23 00:26:04 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_provide_feature): should not tweak extension used for
+	  loading.
+
 Sun Jul 22 21:16:43 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/extmk.rb.in, lib/mkmf.rb: introduce a couple of new make
 	  variables: CLEANFILES and DISTCLEANFILES.  They'd typically be
 	  defined in a file "depend".
 
+Sat Jul 21 09:40:10 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* io.c (io_fread): use fread(3) if PENDING_COUND is available.
+
 Fri Jul 20 22:55:01 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* gc.c (ruby_xrealloc): fix a dangling bug which led memory
 	  reallocation to fail even though the second try after a GC
 	  succeeds.
+
+Fri Jul 20 03:00:46 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* class.c (rb_mod_include_p): Module#include? added. [new]
+
+Fri Jul 20 01:05:50 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (ignorecase_setter): give warning on modifying $=.
+
+	* string.c (rb_str_casecmp): new method. [new]
+
+	* string.c (rb_str_eql): separated from rb_str_equal(), make it
+	  always be case sensitive. [new]
+
+	* string.c (rb_str_hash): made it always be case sensitive.
+
+Thu Jul 19 13:03:15 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* eval.c (rb_f_require): should not include path in $" value
+
+	* file.c (rb_find_file): should return 0 explicitly on failure.
 
 Tue Jul 17 11:44:40 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
 

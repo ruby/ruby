@@ -90,6 +90,7 @@ VALUE rb_define_class_id _((ID, VALUE));
 VALUE rb_module_new _((void));
 VALUE rb_define_module_id _((ID));
 VALUE rb_mod_included_modules _((VALUE));
+VALUE rb_mod_include_p _((VALUE, VALUE));
 VALUE rb_mod_ancestors _((VALUE));
 VALUE rb_class_instance_methods _((int, VALUE*, VALUE));
 VALUE rb_class_protected_instance_methods _((int, VALUE*, VALUE));
@@ -201,6 +202,7 @@ VALUE rb_hash_freeze _((VALUE));
 VALUE rb_hash_aref _((VALUE, VALUE));
 VALUE rb_hash_aset _((VALUE, VALUE, VALUE));
 VALUE rb_hash_delete_if _((VALUE));
+VALUE rb_hash_delete _((VALUE,VALUE));
 int rb_path_check _((char *));
 int rb_env_path_tainted _((void));
 /* io.c */
@@ -281,6 +283,7 @@ VALUE rb_range_beg_len _((VALUE, long*, long*, long, int));
 VALUE rb_length_by_each _((VALUE));
 /* re.c */
 int rb_memcmp _((char*,char*,long));
+int rb_memcicmp _((char*,char*,long));
 VALUE rb_reg_nth_defined _((int, VALUE));
 VALUE rb_reg_nth_match _((int, VALUE));
 VALUE rb_reg_last_match _((VALUE));

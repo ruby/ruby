@@ -388,7 +388,7 @@ rb_hash_indexes(argc, argv, hash)
     return indexes;
 }
 
-static VALUE
+VALUE
 rb_hash_delete(hash, key)
     VALUE hash, key;
 {

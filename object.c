@@ -956,7 +956,7 @@ rb_Float(val)
 	    d = strtod(p, &end);
 	    if (p == end) {
 	      bad:
-		rb_raise(rb_eArgError, "invalid value for Float: \"%s\"", q);
+		rb_raise(rb_eArgError, "invalid value for Float(): \"%s\"", q);
 	    }
 	    if (*end) {
 		if (*end == '_') {
@@ -1232,6 +1232,7 @@ Init_Object()
     rb_define_method(rb_cModule, "dup", rb_mod_dup, 0);
     rb_define_method(rb_cModule, "to_s", rb_mod_to_s, 0);
     rb_define_method(rb_cModule, "included_modules", rb_mod_included_modules, 0);
+    rb_define_method(rb_cModule, "include?", rb_mod_include_p, 1);
     rb_define_method(rb_cModule, "name", rb_mod_name, 0);
     rb_define_method(rb_cModule, "ancestors", rb_mod_ancestors, 0);
 

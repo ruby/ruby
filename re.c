@@ -72,6 +72,20 @@ static const char casetable[] = {
 #define MIN(a,b) (((a)>(b))?(b):(a))
 
 int
+rb_memcicmp(p1, p2, len)
+    char *p1, *p2;
+    long len;
+{
+    int tmp;
+
+    while (len--) {
+	if (tmp = casetable[(unsigned)*p1++] - casetable[(unsigned)*p2++])
+	    return tmp;
+    }
+    return 0;
+}
+
+int
 rb_memcmp(p1, p2, len)
     char *p1, *p2;
     long len;
@@ -81,12 +95,7 @@ rb_memcmp(p1, p2, len)
     if (!ruby_ignorecase) {
 	return memcmp(p1, p2, len);
     }
-
-    while (len--) {
-	if (tmp = casetable[(unsigned)*p1++] - casetable[(unsigned)*p2++])
-	    return tmp;
-    }
-    return 0;
+    return rb_memcicmp(p1, p2, len);
 }
 
 #define REG_CASESTATE  FL_USER0
@@ -1304,9 +1313,11 @@ ignorecase_getter()
 }
 
 static void
-ignorecase_setter(val)
+ignorecase_setter(val, id)
     VALUE val;
+    ID id;
 {
+    rb_warn("modifying %s is deperecated", rb_id2name(id));
     may_need_recompile = 1;
     ruby_ignorecase = RTEST(val);
 }

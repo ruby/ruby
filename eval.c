@@ -5392,19 +5392,6 @@ static void
 rb_provide_feature(feature)
     VALUE feature;
 {
-    char *ext;
-    char *f = RSTRING(feature)->ptr;
-
-    ext = strrchr(f, '.');
-    if (ext && (strcmp(DLEXT, ext) == 0
-#ifdef DLEXT2
-	     || strcmp(DLEXT2, ext) == 0
-#endif
-	)) {
-	feature = rb_str_new(RSTRING(feature)->ptr, ext-RSTRING(feature)->ptr);
-	rb_str_cat2(feature, ".so");
-    }
-    if (rb_feature_p(RSTRING(feature)->ptr, Qtrue)) return;
     rb_ary_push(rb_features, feature);
 }
 
@@ -5440,19 +5427,19 @@ rb_f_require(obj, fname)
 	}
 	else if (strcmp(".so", ext) == 0 || strcmp(".o", ext) == 0) {
 	    fname = rb_str_new(RSTRING(fname)->ptr, ext-RSTRING(fname)->ptr);
-	    tmp = rb_str_dup(fname);
+	    feature = tmp = rb_str_dup(fname);
 	    rb_str_cat2(tmp, DLEXT);
 	    tmp = rb_find_file(tmp);
 	    if (tmp) {
-		feature = fname = tmp;
+		fname = tmp;
 		goto load_dyna;
 	    }
 #ifdef DLEXT2
-	    tmp = rb_str_dup(fname);
+	    feature = tmp = rb_str_dup(fname);
 	    rb_str_cat2(tmp, DLEXT);
 	    tmp = rb_find_file(tmp);
 	    if (tmp) {
-		feature = fname = tmp;
+		fname = tmp;
 		goto load_dyna;
 	    }
 #endif
@@ -5460,7 +5447,8 @@ rb_f_require(obj, fname)
 	else if (strcmp(DLEXT, ext) == 0) {
 	    tmp = rb_find_file(fname);
 	    if (tmp) {
-		feature = fname = tmp;
+		feature = fname;
+		fname = tmp;
 		goto load_dyna;
 	    }
 	}
@@ -5468,7 +5456,8 @@ rb_f_require(obj, fname)
 	else if (strcmp(DLEXT2, ext) == 0) {
 	    tmp = rb_find_file(fname);
 	    if (tmp) {
-		feature = fname = tmp;
+		feature = fname;
+		fname = tmp;
 		goto load_dyna;
 	    }
 	}
@@ -5480,17 +5469,15 @@ rb_f_require(obj, fname)
 	break;
 
       case 1:
-	feature = fname;
-	fname = tmp;
+	feature = fname = tmp;
 	goto load_rb;
 
       default:
-	feature = fname;
+	feature = tmp;
 	fname = rb_find_file(tmp);
 	goto load_dyna;
     }
-    rb_raise(rb_eLoadError, "No such file to load -- %s",
-	     RSTRING(fname)->ptr);
+    rb_raise(rb_eLoadError, "No such file to load -- %s", RSTRING(fname)->ptr);
 
   load_dyna:
     rb_provide_feature(feature);

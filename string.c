@@ -639,30 +639,14 @@ rb_str_hash(str)
 	key &= ~g;
     }
 #elif HASH_PERL
-    if (ruby_ignorecase) {
-	while (len--) {
-	    key = key*33 + toupper(*p);
-	    p++;
-	}
-    }
-    else {
-	while (len--) {
-	    key = key*33 + *p++;
-	}
+    while (len--) {
+	key = key*33 + *p++;
     }
     key = key + (key>>5);
 #else
-    if (ruby_ignorecase) {
-	while (len--) {
-	    key = key*65599 + toupper(*p);
-	    p++;
-	}
-    }
-    else {
-	while (len--) {
-	    key = key*65599 + *p;
-	    p++;
-	}
+    while (len--) {
+	key = key*65599 + *p;
+	p++;
     }
     key = key + (key>>5);
 #endif
@@ -713,6 +697,20 @@ rb_str_equal(str1, str2)
 }
 
 static VALUE
+rb_str_eql(str1, str2)
+    VALUE str1, str2;
+{
+    if (TYPE(str2) != T_STRING || RSTRING(str1)->len != RSTRING(str2)->len)
+	return Qfalse;
+
+    if (memcmp(RSTRING(str1)->ptr, RSTRING(str2)->ptr,
+	       lesser(RSTRING(str1)->len, RSTRING(str2)->len)) == 0)
+	return Qtrue;
+
+    return Qfalse;
+}
+
+static VALUE
 rb_str_cmp_m(str1, str2)
     VALUE str1, str2;
 {
@@ -721,6 +719,26 @@ rb_str_cmp_m(str1, str2)
     StringValue(str2);
     result = rb_str_cmp(str1, str2);
     return INT2FIX(result);
+}
+
+static VALUE
+rb_str_casecmp(str1, str2)
+    VALUE str1, str2;
+{
+    long len;
+    int retval;
+
+    StringValue(str2);
+    len = lesser(RSTRING(str1)->len, RSTRING(str2)->len);
+    retval = rb_memcicmp(RSTRING(str1)->ptr, RSTRING(str2)->ptr, len);
+    if (retval == 0) {
+	if (RSTRING(str1)->len == RSTRING(str2)->len) return INT2FIX(0);
+	if (RSTRING(str1)->len > RSTRING(str2)->len) return INT2FIX(1);
+	return INT2FIX(-1);
+    }
+    if (retval == 0) return INT2FIX(0);
+    if (retval > 0) return INT2FIX(1);
+    return INT2FIX(-1);
 }
 
 static VALUE
@@ -2934,8 +2952,9 @@ Init_String()
     rb_define_method(rb_cString, "<=>", rb_str_cmp_m, 1);
     rb_define_method(rb_cString, "==", rb_str_equal, 1);
     rb_define_method(rb_cString, "===", rb_str_equal, 1);
-    rb_define_method(rb_cString, "eql?", rb_str_equal, 1);
+    rb_define_method(rb_cString, "eql?", rb_str_eql, 1);
     rb_define_method(rb_cString, "hash", rb_str_hash_m, 0);
+    rb_define_method(rb_cString, "casecmp", rb_str_casecmp, 1);
     rb_define_method(rb_cString, "+", rb_str_plus, 1);
     rb_define_method(rb_cString, "*", rb_str_times, 1);
     rb_define_method(rb_cString, "%", rb_str_format, 1);

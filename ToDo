@@ -26,6 +26,7 @@ Language Spec.
 * to_i returns nil if str contains no digit.
 * raise exception by `` error
 * jar like combined library package.
+* resumable Exception via Exception#resume.
 
 Hacking Interpreter
 

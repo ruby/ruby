@@ -344,6 +344,22 @@ rb_mod_included_modules(mod)
 }
 
 VALUE
+rb_mod_include_p(mod, mod2)
+    VALUE mod;
+    VALUE mod2;
+{
+    VALUE p;
+
+    Check_Type(mod2, T_MODULE);
+    for (p = RCLASS(mod)->super; p; p = RCLASS(p)->super) {
+	if (BUILTIN_TYPE(p) == T_ICLASS) {
+	    if (RBASIC(p)->klass == mod2) return Qtrue;
+	}
+    }
+    return Qfalse;
+}
+
+VALUE
 rb_mod_ancestors(mod)
     VALUE mod;
 {
