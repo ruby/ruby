@@ -115,7 +115,6 @@ static int scope_vmode;
 #define SCOPE_SET(f)  (scope_vmode=(f))
 #define SCOPE_TEST(f) (scope_vmode&(f))
 
-static NODE* ruby_last_node;
 NODE* ruby_current_node;
 int ruby_safe_level = 0;
 /* safe-level:
@@ -2108,7 +2107,7 @@ call_trace_func(event, node, self, id, klass)
 {
     int state;
     struct FRAME *prev;
-    NODE *node_save[2];
+    NODE *node_save;
     VALUE srcfile;
 
     if (!trace_func) return;
@@ -2116,9 +2115,8 @@ call_trace_func(event, node, self, id, klass)
     if (ruby_in_compile) return;
     if (id == ID_ALLOCATOR) return;
 
-    node_save[0] = ruby_last_node;
-    if (!(node_save[1] = ruby_current_node)) {
-	node_save[1] = NEW_NEWLINE(0);
+    if (!(node_save = ruby_current_node)) {
+	node_save = NEW_NEWLINE(0);
     }
     tracing = 1;
     prev = ruby_frame;
@@ -2156,8 +2154,7 @@ call_trace_func(event, node, self, id, klass)
     POP_FRAME();
 
     tracing = 0;
-    ruby_last_node = node_save[0];
-    ruby_current_node = node_save[1];
+    ruby_current_node = node_save;
     SET_CURRENT_SOURCE();
     if (state) JUMP_TAG(state);
 }
@@ -2212,7 +2209,6 @@ rb_eval(self, n)
     VALUE self;
     NODE *n;
 {
-    NODE *nodesave = ruby_current_node;
     NODE * volatile node = n;
     int state;
     volatile VALUE result = Qnil;
@@ -2225,7 +2221,7 @@ rb_eval(self, n)
   again:
     if (!node) RETURN(Qnil);
 
-    ruby_last_node = ruby_current_node = node;
+    ruby_current_node = node;
     switch (nd_type(node)) {
       case NODE_BLOCK:
 	while (node->nd_next) {
@@ -3324,7 +3320,7 @@ rb_eval(self, n)
 		rb_include_module(klass, ruby_wrapper);
 	    }
 	    if (super) rb_class_inherited(super, klass);
-	    result = module_setup(klass, node->nd_body);
+	    result = module_setup(klass, node);
 	}
 	break;
 
@@ -3358,7 +3354,7 @@ rb_eval(self, n)
 		rb_include_module(module, ruby_wrapper);
 	    }
 
-	    result = module_setup(module, node->nd_body);
+	    result = module_setup(module, node);
 	}
 	break;
 
@@ -3380,7 +3376,7 @@ rb_eval(self, n)
 		rb_include_module(klass, ruby_wrapper);
 	    }
 	    
-	    result = module_setup(klass, node->nd_body);
+	    result = module_setup(klass, node);
 	}
 	break;
 
@@ -3409,7 +3405,6 @@ rb_eval(self, n)
     }
   finish:
     CHECK_INTS;
-    ruby_current_node = nodesave;
     return result;
 }
 
@@ -3418,7 +3413,7 @@ module_setup(module, n)
     VALUE module;
     NODE *n;
 {
-    NODE * volatile node = n;
+    NODE * volatile node = n->nd_body;
     int state;
     struct FRAME frame;
     VALUE result;		/* OK */
@@ -3450,9 +3445,7 @@ module_setup(module, n)
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
 	if (trace_func) {
-	    call_trace_func("class", ruby_current_node, ruby_cbase,
-			    ruby_frame->last_func,
-			    ruby_frame->last_class);
+	    call_trace_func("class", n, ruby_cbase, ruby_frame->last_func, ruby_frame->last_class);
 	}
 	result = rb_eval(ruby_cbase, node->nd_next);
     }
@@ -3464,8 +3457,7 @@ module_setup(module, n)
 
     ruby_frame = frame.tmp;
     if (trace_func) {
-	call_trace_func("end", ruby_last_node, 0,
-			ruby_frame->last_func, ruby_frame->last_class);
+	call_trace_func("end", n, 0, ruby_frame->last_func, ruby_frame->last_class);
     }
     if (state) JUMP_TAG(state);
 
@@ -4723,7 +4715,6 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 		if (trace_func) {
 		    call_trace_func("call", b2, recv, id, klass);
 		}
-		ruby_last_node = b2;
 		result = rb_eval(recv, body);
 	    }
 	    else if (state == TAG_RETURN) {
@@ -4735,7 +4726,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 	    POP_SCOPE();
 	    ruby_cref = saved_cref;
 	    if (trace_func) {
-		call_trace_func("return", ruby_last_node, recv, id, klass);
+		call_trace_func("return", ruby_frame->prev->node, recv, id, klass);
 	    }
 	    switch (state) {
 	      case 0:

@@ -17,7 +17,7 @@
  * the kernel.
  */
 
-#define ID_ALLOCATOR 0
+#define ID_ALLOCATOR 1
 
 /* array.c */
 void rb_mem_clear _((register VALUE*, register long));
