@@ -1,3 +1,8 @@
+Thu Oct 17 15:20:11 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): need to push empty varmap node only when
+	  ruby_dyna_var is NULL.
+
 Fri Oct 11 06:05:30 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* win32/win32.c (win32_fclose, win32_close): use closesocket()
