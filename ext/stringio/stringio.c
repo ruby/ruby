@@ -896,6 +896,8 @@ void
 Init_stringio()
 {
     VALUE StringIO = rb_define_class("StringIO", rb_cData);
+
+    rb_include_module(StringIO, rb_mEnumerable);
     rb_define_alloc_func(StringIO, strio_s_allocate);
     rb_define_singleton_method(StringIO, "open", strio_s_open, -1);
     rb_define_method(StringIO, "initialize", strio_initialize, -1);

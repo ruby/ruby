@@ -1,3 +1,8 @@
+Sat Jul 26 14:14:12 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* ext/stringio/stringio.c: includes Enumerable as well as IO.
+	  [ruby-talk:77058]
+
 Sat Jul 26 07:00:53 2003  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/erb.rb: fix % line.
