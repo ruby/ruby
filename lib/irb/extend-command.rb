@@ -100,6 +100,9 @@ module IRB
 	[:fg, NO_OVERRIDE]],
       [:irb_kill, :Kill, "irb/cmd/subirb", 
 	[:kill, OVERRIDE_PRIVATE_ONLY]],
+
+      [:irb_help, :Help, "irb/cmd/help",
+        [:help, NO_OVERRIDE]],
     ]
 
     def EXCB.install_extend_commands

@@ -1,3 +1,9 @@
+Fri Feb  6 09:15:11 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/irb/extend-command.rb: add irb_help command.  [ruby-talk:91610]
+
+	* lib/irb/cmd/help.rb (IRB::ExtendCommand::Help): show RDoc.
+
 Fri Feb  6 00:48:37 2004  Tanaka Akira  <akr@m17n.org>
 
 	* lib/prettyprint.rb (PrettyPrint#first?): obsoleted.
