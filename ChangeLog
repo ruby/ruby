@@ -1,3 +1,8 @@
+Mon Jun 30 17:53:06 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* eval.c (mnew): ignore metaclasses have no influence, for rklass.
+	  [ruby-talk:74706]
+
 Sun Jun 29 06:59:07 2003  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/drb.rb, lib/drb/invokemethod.rb: import drb-2.0.4

@@ -7268,6 +7268,10 @@ mnew(klass, obj, id, mklass)
 	goto again;
     }
 
+    while (rklass != klass &&
+	   (FL_TEST(rklass, FL_SINGLETON) || TYPE(rklass) == T_ICLASS)) {
+	rklass = RCLASS(rklass)->super;
+    }
     if (TYPE(klass) == T_ICLASS) klass = RBASIC(klass)->klass;
     method = Data_Make_Struct(mklass, struct METHOD, bm_mark, free, data);
     data->klass = klass;
