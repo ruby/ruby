@@ -317,6 +317,7 @@ os2-emx*)	LIBS="-lm $LIBS"
 msdosdjgpp*)	LIBS="-lm $LIBS"
 		ac_cv_func_getpgrp_void=yes
 		ac_cv_func_setitimer=no
+		ac_cv_func_fork=no
 		;;
 freebsd*)	LIBS="-lm $LIBS"
 		AC_CACHE_CHECK([whether -lxpg4 has to be linked],
