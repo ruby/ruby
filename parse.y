@@ -3973,7 +3973,7 @@ f_rest_arg	: restarg_mark tIDENTIFIER
 		| restarg_mark
 		    {
 		    /*%%%*/
-			$$ = -2;
+			$$ = local_append((ID)0);
 		    /*%
 			$$ = dispatch1(restparam, Qnil);
 		    %*/
