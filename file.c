@@ -1554,6 +1554,7 @@ rb_file_s_expand_path(argc, argv)
 #endif
 
     if (tainted) OBJ_TAINT(result);
+    *p = '\0';
     RSTRING(result)->len = p - buf;
     return result;
 }

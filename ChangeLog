@@ -1,3 +1,7 @@
+Mon Feb  4 22:44:58 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* file.c (rb_file_s_expand_path): should terminate.
+
 Mon Feb  4 15:38:29 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c (rb_class_real): should not follow ICLASS link
