@@ -1,6 +1,8 @@
-Mon Apr  2 13:54:21 2001  Shugo Maeda <shugo@ruby-lang.org>
+Mon Apr  2 14:25:49 2001  Shugo Maeda <shugo@ruby-lang.org>
 
 	* lib/monitor.rb (wait): ensure reentrance.
+
+	* lib/monitor.rb (wait): fix timeout support.
 
 Mon Apr  2 12:44:53 2001  Shugo Maeda <shugo@ruby-lang.org>
 
