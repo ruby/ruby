@@ -1,3 +1,8 @@
+Sun Mar  6 13:04:10 2005  Dee Zsombor  <zsombor@ruby-lang.org>
+
+	* misc/ruby-electric.el: added.
+	* misc/Readme: updated.
+
 Sun Mar  6 11:47:10 2005  Sam Roberts  <sroberts@uniserve.com>
 
 	* lib/pp.rb: rdoced.  [ruby-core:4490]
