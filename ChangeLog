@@ -1,3 +1,7 @@
+Thu Jun  5 21:31:55 2003  Takaaki Uematsu <uema2x@jcom.home.ne.jp>
+
+	* wince/stdlib.c: add mblen().
+
 Thu Jun  5 18:33:46 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/curses/curses.c (window_s_allocate,curses_finalize):

@@ -20,3 +20,20 @@ char *_fullpath(char *absPath, const char *relPath,
 	return absPath;
 }
 
+int mblen(const char *mbstr, size_t count)
+{
+	const char *p = mbstr;
+	size_t i;
+	int    n=0;
+
+	for( i=0; i<count; i++ )
+	{
+		if( *p=='\0' ) break;
+		if( IsDBCSLeadByteEx( CP_ACP, *p ) )
+			n+=2;
+		else
+			n+=1;
+	}
+
+	return n;
+}
