@@ -212,7 +212,7 @@ ruby_incpush(path)
 #define LOAD_RELATIVE 1
 #endif
 
-#ifdef DOSISH
+#if defined DOSISH || defined __CYGWIN__
 static inline void translate_char _((char *, int, int));
 
 static inline void
@@ -260,7 +260,7 @@ ruby_init_loadpath()
 #endif
 
     libpath[FILENAME_MAX] = '\0';
-#ifdef DOSISH
+#if defined DOSISH || defined __CYGWIN__
     translate_char(libpath, '\\', '/');
 #endif
     p = strrchr(libpath, '/');
@@ -755,7 +755,7 @@ proc_options(argc, argv)
 		script = ruby_sourcefile = rb_source_filename(script);
 		script_node = NEW_NEWLINE(0);
 	    }
-#ifdef DOSISH
+#if defined DOSISH || defined __CYGWIN__
 	    translate_char(script, '\\', '/');
 #endif
 	    argc--; argv++;

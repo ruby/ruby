@@ -1,3 +1,7 @@
+Sun Jan 18 20:47:35 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ruby.c: use translate_char() on Cygwin.
+
 Sun Jan 18 20:00:16 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* lib/soap/wsdlDriver.rb, lib/wsdl/soap/operation.rb: add support of
