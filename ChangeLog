@@ -1,3 +1,11 @@
+Mon Feb 16 14:38:25 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (f_pass_block): pass iterator block to other method.
+
+	* time.c (time_mon): now 1 for January and so on.
+
+	* time.c (time_year): year in 19xx (not + 1900 needed anymore).
+
 Fri Feb 13 08:16:11 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* parse.y (parse_regx): handle \s before read_escape().

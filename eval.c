@@ -3396,6 +3396,28 @@ f_send(argc, argv, recv)
     return vid;
 }
 
+static VALUE
+f_pass_block(argc, argv, recv)
+    int argc;
+    VALUE *argv;
+    VALUE recv;
+{
+    VALUE vid;
+
+    if (argc == 0) ArgError("no iterator name given");
+    if (iterator_p())
+	ArgError("iterator block given to pass_block");
+    if (!f_iterator_p())
+	ArgError("pass_block called out of iterator");
+
+    vid = argv[0]; argc--; argv++;
+    PUSH_ITER(ITER_PRE);
+    vid = rb_call(CLASS_OF(recv), recv, rb_to_id(vid), argc, argv, 1);
+    POP_ITER();
+
+    return vid;
+}
+
 #include <varargs.h>
 
 VALUE
@@ -4248,6 +4270,7 @@ Init_eval()
     rb_define_global_function("global_variables", f_global_variables, 0);
 
     rb_define_method(mKernel, "send", f_send, -1);
+    rb_define_method(mKernel, "pass_block", f_pass_block, -1);
     rb_define_method(mKernel, "instance_eval", obj_instance_eval, 1);
 
     rb_define_private_method(cModule, "append_features", mod_append_features, 1);

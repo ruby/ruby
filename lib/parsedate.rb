@@ -11,7 +11,7 @@ module ParseDate
   
   def parsedate(date) 
     # ISO 8601?
-    if date =~ /(\d\d\d\d)-?(?:(\d\d)-?(\d\d)?)? *(?:(\d\d):(\d\d)(?::(\d\d))?)?/
+    if date =~ /^(\d\d\d\d)-?(?:(\d\d)-?(\d\d)?)? *(?:(\d\d):(\d\d)(?::(\d\d))?)?$/
       return $1.to_i,
 	if $2 then $2.to_i else 1 end,
 	if $3 then $3.to_i else 1 end,
@@ -25,7 +25,7 @@ module ParseDate
     if date.sub!(/(#{DAYPAT})[a-z]*,?/i, ' ')
       wday = DAYS[$1.downcase]
     end
-    if date.sub!(/(\d+):(\d+)(?::(\d+))?\s*(am|pm)?\s*(?:\s+([a-z]{1,4}(?:\s+[a-z]{1,4})|[-+]\d{4}))?/i, ' ')
+    if date.sub!(/(\d+):(\d+)(?::(\d+))?\s*(am|pm)?\s*(?:\s+([a-z]{1,4}(?:\s+[a-z]{1,4})?|[-+]\d{4}))?/i, ' ')
       hour = $1.to_i
       min = $2.to_i
       if $3

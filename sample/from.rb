@@ -32,13 +32,15 @@ end
 if ARGV.length == 0
   user = ENV['USER']
 else
-  user = ARGV[0]
+  file = user = ARGV[0]
   ARGV.clear
 end
 
-file = ARGV[0]
 [ENV['SPOOLDIR'], '/usr/spool', '/var/spool', '/usr', '/var'].each do |m|
-  break if File.exist? file = "#{m}/mail/#{user}" 
+  if File.exist? f = "#{m}/mail/#{user}" 
+    file = f
+    break 
+  end
 end
 
 $outcount = 0;
@@ -63,7 +65,7 @@ def fromout(date, from, subj)
   end
   from = from.kconv(lang).kjust(28)
   subj = subj.kconv(lang).kjust(40)
-  printf "%02d/%02d/%02d [%s] %s\n",y,m,d,from,subj
+  printf "%02d/%02d/%02d [%s] %s\n",y%100,m,d,from,subj
   $outcount += 1
 end
 
