@@ -101,7 +101,7 @@ void
 rb_big_2comp(x)			/* get 2's complement */
     VALUE x;
 {
-    return get2comp(x, Qtrue);
+    get2comp(x, Qtrue);
 }
 
 static VALUE

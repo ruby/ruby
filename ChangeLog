@@ -1,3 +1,7 @@
+Tue Feb 26 21:34:07 2002  Usaku Nakamura <usa@ruby-lang.org>
+
+	* bignum.c (rb_big_2comp): void function cannot return any value.
+
 Tue Feb 26 15:41:30 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_eval): call trace_func for if/while conditions.
