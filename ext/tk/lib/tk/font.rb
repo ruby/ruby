@@ -163,6 +163,82 @@ class TkFont
   ###################################
   # class methods
   ###################################
+  def TkFont.actual(fnt, option=nil)
+    if fnt.kind_of?(TkFont)
+     fnt.actual(option)
+    else
+      actual_core(fnt, nil, option)
+    end
+  end
+
+  def TkFont.actual_displayof(fnt, win, option=nil)
+    if fnt.kind_of?(TkFont)
+     fnt.actual_displayof(win, option)
+    else
+      win = '.' unless win
+      actual_core(fnt, win, option)
+    end
+  end
+
+  def TkFont.configure(fnt, slot, value=None)
+    if fnt.kind_of?(TkFont)
+      fnt.configure(fnt, slot, value)
+    else
+      configure_core(fnt, slot, value)
+    end
+    fnt
+  end
+
+  def TkFont.configinfo(fnt, slot=nil)
+    if fnt.kind_of?(TkFont)
+      fnt.configinfo(fnt, slot)
+    else
+      configinfo_core(fnt, slot)
+    end
+  end
+
+  def TkFont.current_configinfo(fnt, slot=nil)
+    if fnt.kind_of?(TkFont)
+      fnt.current_configinfo(fnt, slot)
+    else
+      current_configinfo_core(fnt, slot)
+    end
+  end
+
+  def TkFont.measure(fnt, text)
+    if fnt.kind_of?(TkFont)
+      fnt.measure(text)
+    else
+      measure_core(fnt, nil, text)
+    end
+  end
+
+  def TkFont.measure_displayof(fnt, win, text)
+    if fnt.kind_of?(TkFont)
+      fnt.measure_displayof(win, text)
+    else
+      win = '.' unless win
+      measure_core(fnt, win, text)
+    end
+  end
+
+  def TkFont.metrics(fnt, option=nil)
+    if fnt.kind_of?(TkFont)
+      fnt.metrics(option)
+    else
+      metrics_core(fnt, nil, option)
+    end
+  end
+
+  def TkFont.metrics_displayof(fnt, win, option=nil)
+    if fnt.kind_of?(TkFont)
+      font.metrics_displayof(win, option=nil)
+    else
+      win = '.' unless win
+      metrics_core(fnt, win, option)
+    end
+  end
+
   def TkFont.families(win=nil)
     case (Tk::TK_VERSION)
     when /^4\.*/
@@ -675,547 +751,6 @@ class TkFont
     end
   end
 
-  def actual_core_tk4x(font, win=nil, option=nil)
-    # dummy
-    if option == 'pointadjust' || option == :pointadjust
-        1.0
-    elsif option
-      case OptionType[option.to_s]
-      when ?n
-        0
-      when ?b
-        false
-      else
-        ''
-      end
-    else
-      [['family',''], ['size',0], ['weight',''], ['slant',''], 
-        ['underline',false], ['overstrike',false], ['charset',''], 
-        ['pointadjust',0]]
-    end
-  end
-
-  def actual_core_tk8x(font, win=nil, option=nil)
-    if option == 'compound' || option == :compound
-      ""
-    elsif option
-      if win
-        val = tk_call('font', 'actual', font, 
-                      "-displayof", win, "-#{option}")
-      else
-        val = tk_call('font', 'actual', font, "-#{option}")
-      end
-      case OptionType[option.to_s]
-      when ?n
-        num_or_str(val)
-      when ?b
-        bool(val)
-      else
-        val
-      end
-    else
-      l = tk_split_simplelist(if win
-                                 tk_call('font', 'actual', font, 
-                                                     "-displayof", win)
-                              else
-                                 tk_call('font', 'actual', font)
-                              end)
-      r = []
-      while key=l.shift
-        if key == '-compound'
-          l.shift
-        else
-          key = key[1..-1]
-          val = l.shift
-          case OptionType[key]
-          when ?n
-            r.push [key, num_or_str(val)]
-          when ?b
-            r.push [key, bool(val)]
-          else
-            r.push [key, val]
-          end
-        end
-      end
-      r
-    end
-  end
-
-  def configure_core_tk4x(font, slot, value=None)
-    #""
-    self
-  end
-
-  def configinfo_core_tk4x(font, option=nil)
-    # dummy
-    if TkComm::GET_CONFIGINFOwoRES_AS_ARRAY
-      if option == 'pointadjust' || option == :pointadjust
-        1.0
-      elsif option
-        case OptionType[option.to_s]
-        when ?n
-          0
-        when ?b
-          false
-        else
-          ''
-        end
-      else
-        [['family',''], ['size',0], ['weight',''], ['slant',''], 
-          ['underline',false], ['overstrike',false], ['charset',''], 
-          ['pointadjust',1.0]]
-      end
-    else # ! TkComm::GET_CONFIGINFOwoRES_AS_ARRAY
-      current_configinfo_core_tk4x(font, option)
-    end
-  end
-
-  def current_configinfo_core_tk4x(font, option=nil)
-    if option
-      case OptionType[option.to_s]
-      when ?n
-        0
-      when ?b
-        false
-      else
-        ''
-      end
-    else
-      {'family'=>'', 'size'=>0, 'weight'=>'', 'slant'=>'', 
-        'underline'=>false, 'overstrike'=>false, 
-        'charset'=>false, 'pointadjust'=>1.0}
-    end
-  end
-
-  def configure_core_tk8x(font, slot, value=None)
-    if JAPANIZED_TK
-      begin
-        padjust = tk_call('font', 'configure', font, '-pointadjust')
-      rescue
-        padjust = nil
-      end
-    else
-      padjust = nil
-    end
-    if slot.kind_of? Hash
-      if JAPANIZED_TK && (slot.key?('family') || slot.key?(:family))
-        slot = _symbolkey2str(slot)
-        configure_core_tk8x(font, 'family', slot.delete('family'))
-      end
-
-      if ((slot.key?('size') || slot.key?(:size)) && 
-          padjust && !slot.key?('pointadjust') && !slot.key?(:pointadjust))
-        tk_call('font', 'configure', font, 
-                '-pointadjust', padjust, *hash_kv(slot))
-      else
-        tk_call('font', 'configure', font, *hash_kv(slot))
-      end
-    elsif (slot == 'size' || slot == :size) && padjust != nil
-      tk_call('font', 'configure', font, 
-              "-#{slot}", value, '-pointadjust', padjust)
-    elsif JAPANIZED_TK && (slot == 'family' || slot == :family)
-      # coumpund font?
-      begin
-        compound = tk_split_simplelist(tk_call('font', 'configure', 
-                                               font, '-compound'))
-      rescue
-        tk_call('font', 'configure', font, '-family', value)
-        return self
-      end
-      if compound == []
-        tk_call('font', 'configure', font, '-family', value)
-        return self
-      end
-      ltn, knj = compound
-
-      lfnt = tk_call('font', 'create', '-copy', ltn)
-      begin
-        tk_call('font', 'configure', lfnt, '-family', value)
-        latin_replace_core_tk8x(lfnt)
-      rescue RuntimeError => e
-        fail e if $DEBUG
-      ensure
-        tk_call('font', 'delete', lfnt) if lfnt != ''
-      end
-
-      kfnt = tk_call('font', 'create', '-copy', knj)
-      begin
-        tk_call('font', 'configure', kfnt, '-family', value)
-        kanji_replace_core_tk8x(lfnt)
-      rescue RuntimeError => e
-        fail e if $DEBUG
-      ensure
-        tk_call('font', 'delete', kfnt) if kfnt != ''
-      end
-      
-    else
-      tk_call('font', 'configure', font, "-#{slot}", value)
-    end
-    self
-  end
-
-  def configinfo_core_tk8x(font, option=nil)
-    if TkComm::GET_CONFIGINFOwoRES_AS_ARRAY
-      if option == 'compound' || option == :compound
-        ""
-      elsif option
-        val = tk_call('font', 'configure', font, "-#{option}")
-        case OptionType[option.to_s]
-        when ?n
-          num_or_str(val)
-        when ?b
-          bool(val)
-        else
-          val
-        end
-      else
-        l = tk_split_simplelist(tk_call('font', 'configure', font))
-        r = []
-        while key=l.shift
-          if key == '-compound'
-            l.shift
-          else
-            key = key[1..-1]
-            val = l.shift
-            case OptionType[key]
-            when ?n
-              r.push [key, num_or_str(val)]
-            when ?b
-              r.push [key, bool(val)]
-            else
-              r.push [key, val]
-            end
-          end
-        end
-        r
-      end
-    else # ! TkComm::GET_CONFIGINFOwoRES_AS_ARRAY
-      current_configinfo_core_tk8x(font, option)
-    end
-  end
-
-  def current_configinfo_core_tk8x(font, option=nil)
-    if option == 'compound'
-      ""
-    elsif option
-      val = tk_call('font', 'configure', font, "-#{option}")
-      case OptionType[option.to_s]
-      when ?n
-        num_or_str(val)
-      when ?b
-        bool(val)
-      else
-        val
-      end
-    else
-      l = tk_split_simplelist(tk_call('font', 'configure', font))
-      r = {}
-      while key=l.shift
-        if key == '-compound'
-          l.shift
-        else
-          key = key[1..-1]
-          val = l.shift
-          case OptionType[key]
-          when ?n
-            r.push [key, num_or_str(val)]
-          when ?b
-            r.push [key, bool(val)]
-          else
-            r.push [key, val]
-          end
-        end
-      end
-      r
-    end
-  end
-
-  def delete_core_tk4x
-    Tk_FontNameTBL.delete(@id)
-    Tk_FontUseTBL.delete_if{|key,value| value == self}
-  end
-
-  def delete_core_tk8x
-    begin
-      tk_call('font', 'delete', @latinfont)
-    rescue
-    end
-    begin
-      tk_call('font', 'delete', @kanjifont)
-    rescue
-    end
-    begin
-      tk_call('font', 'delete', @compoundfont)
-    rescue
-    end
-    Tk_FontNameTBL.delete(@id)
-    Tk_FontUseTBL.delete_if{|key,value| value == self}
-  end
-
-  def latin_replace_core_tk4x(ltn)
-    create_latinfont_tk4x(ltn)
-    @compoundfont[0] = [@latinfont] if JAPANIZED_TK
-    @fontslot['font'] = @latinfont
-    Tk_FontUseTBL.dup.each{|w, fobj|
-      if self == fobj
-        begin
-          if w.include?(';')
-            win, tag, optkey = w.split(';')
-            optkey = 'font' if optkey == nil || optkey == ''
-            winobj = tk_tcl2ruby(win)
-#           winobj.tagfont_configure(tag, {'font'=>@latinfont})
-            if winobj.kind_of? TkText
-              tk_call(win, 'tag', 'configure', tag, "-#{optkey}", @latinfont)
-            elsif winobj.kind_of? TkCanvas
-              tk_call(win, 'itemconfigure', tag, "-#{optkey}", @latinfont)
-            elsif winobj.kind_of? TkMenu
-              tk_call(win, 'entryconfigure', tag, "-#{optkey}", @latinfont)
-            else
-              raise RuntimeError, "unknown widget type"
-            end
-          else
-#           tk_tcl2ruby(w).font_configure('font'=>@latinfont)
-            tk_call(w, 'configure', '-font', @latinfont)
-          end
-        rescue
-          Tk_FontUseTBL.delete(w)
-        end
-      end
-    }
-    self
-  end
-
-  def kanji_replace_core_tk4x(knj)
-    return self unless JAPANIZED_TK
-
-    create_kanjifont_tk4x(knj)
-    @compoundfont[1] = [@kanjifont]
-    @fontslot['kanjifont'] = @kanjifont
-    Tk_FontUseTBL.dup.each{|w, fobj|
-      if self == fobj
-        begin
-          if w.include?(';')
-            win, tag, optkey = w.split(';')
-            optkey = 'kanjifont' unless optkey
-            winobj = tk_tcl2ruby(win)
-#           winobj.tagfont_configure(tag, {'kanjifont'=>@kanjifont})
-            if winobj.kind_of? TkText
-              tk_call(win, 'tag', 'configure', tag, "-#{optkey}", @kanjifont)
-            elsif winobj.kind_of? TkCanvas
-              tk_call(win, 'itemconfigure', tag, "-#{optkey}", @kanjifont)
-            elsif winobj.kind_of? TkMenu
-              tk_call(win, 'entryconfigure', tag, "-#{optkey}", @latinfont)
-            else
-              raise RuntimeError, "unknown widget type"
-            end
-          else
-#           tk_tcl2ruby(w).font_configure('kanjifont'=>@kanjifont)
-            tk_call(w, 'configure', '-kanjifont', @kanjifont)
-          end
-        rescue
-          Tk_FontUseTBL.delete(w)
-        end
-      end
-    }
-    self
-  end
-
-  def latin_replace_core_tk8x(ltn)
-    if JAPANIZED_TK
-      begin
-        tk_call('font', 'delete', '@font_tmp')
-      rescue
-      end
-      begin
-        fnt_bup = tk_call('font', 'create', '@font_tmp', '-copy', @latinfont)
-      rescue
-        #fnt_bup = ''
-        fnt_bup = DEFAULT_LATIN_FONT_NAME
-      end
-    end
-
-    begin
-      tk_call('font', 'delete', @latinfont)
-    rescue
-    end
-    create_latinfont(ltn)
-
-    if JAPANIZED_TK
-      keys = self.configinfo
-      tk_call('font', 'delete', @compoundfont)
-      begin
-        tk_call('font', 'create', @compoundfont, 
-                '-compound', [@latinfont, @kanjifont], *hash_kv(keys))
-=begin
-        latinkeys = {}
-        begin
-          actual_core(@latinfont).each{|key,val| latinkeys[key] = val}
-        rescue
-          latinkeys = {}
-        end
-        if latinkeys != {}
-          tk_call('font', 'configure', @compoundfont, *hash_kv(latinkeys))
-        end
-=end
-      rescue RuntimeError => e
-        tk_call('font', 'delete', @latinfont)
-        if fnt_bup && fnt_bup != ''
-          tk_call('font', 'create', @latinfont, '-copy', fnt_bup)
-          tk_call('font', 'create', @compoundfont, 
-                  '-compound', [@latinfont, @kanjifont], *hash_kv(keys))
-          tk_call('font', 'delete', fnt_bup)
-        else
-          fail e
-        end
-      end
-
-    else
-      latinkeys = {}
-      begin
-        actual_core(@latinfont).each{|key,val| latinkeys[key] = val}
-      rescue
-        latinkeys = {}
-      end
-      if latinkeys != {}
-        tk_call('font', 'configure', @compoundfont, *hash_kv(latinkeys))
-      end
-    end    
-    self
-  end
-
-  def kanji_replace_core_tk8x(knj)
-    if JAPANIZED_TK
-      begin
-        tk_call('font', 'delete', '@font_tmp')
-      rescue
-      end
-      begin
-        fnt_bup = tk_call('font', 'create', '@font_tmp', '-copy', @kanjifont)
-      rescue
-        #fnt_bup = ''
-        fnt_bup = DEFAULT_KANJI_FONT_NAME
-      end
-    end
-
-    begin
-      tk_call('font', 'delete', @kanjifont)
-    rescue
-    end
-    create_kanjifont(knj)
-
-    if JAPANIZED_TK
-      keys = self.configinfo
-      tk_call('font', 'delete', @compoundfont)
-      begin
-        tk_call('font', 'create', @compoundfont, 
-                '-compound', [@latinfont, @kanjifont], *hash_kv(keys))
-      rescue RuntimeError => e
-        tk_call('font', 'delete', @kanjifont)
-        if fnt_bup && fnt_bup != ''
-          tk_call('font', 'create', @kanjifont, '-copy', fnt_bup)
-          tk_call('font', 'create', @compoundfont, 
-                  '-compound', [@latinfont, @kanjifont], *hash_kv(keys))
-          tk_call('font', 'delete', fnt_bup)
-        else
-          fail e
-        end
-      end
-    end    
-    self
-  end
-
-  def measure_core_tk4x(win, text)
-    0
-  end
-
-  def measure_core_tk8x(win, text)
-    if win
-      number(tk_call('font', 'measure', @compoundfont, 
-                     '-displayof', win, text))
-    else
-      number(tk_call('font', 'measure', @compoundfont, text))
-    end
-  end
-
-  def metrics_core_tk4x(font, win, option=nil)
-    # dummy
-    if option
-      ""
-    else
-      [['ascent',[]], ['descent',[]], ['linespace',[]], ['fixed',[]]]
-    end
-  end
-
-  def metrics_core_tk8x(font, win, option=nil)
-    if option
-      if win
-        number(tk_call('font', 'metrics', font, 
-                       "-displayof", win, "-#{option}"))
-      else
-        number(tk_call('font', 'metrics', font, "-#{option}"))
-      end
-    else
-      l = tk_split_list(if win
-                          tk_call('font','metrics',font,"-displayof",win)
-                        else
-                          tk_call('font','metrics',font)
-                        end)
-      r = []
-      while key=l.shift
-        r.push [key[1..-1], l.shift.to_i]
-      end
-      r
-    end
-  end
-
-  ###################################
-  # private alias
-  ###################################
-  case (Tk::TK_VERSION)
-  when /^4\.*/
-    alias create_latinfont        create_latinfont_tk4x
-    alias create_kanjifont        create_kanjifont_tk4x
-    alias create_compoundfont     create_compoundfont_tk4x
-    alias actual_core             actual_core_tk4x
-    alias configure_core          configure_core_tk4x
-    alias configinfo_core         configinfo_core_tk4x
-    alias current_configinfo_core current_configinfo_core_tk4x
-    alias delete_core             delete_core_tk4x
-    alias latin_replace_core      latin_replace_core_tk4x
-    alias kanji_replace_core      kanji_replace_core_tk4x
-    alias measure_core            measure_core_tk4x
-    alias metrics_core            metrics_core_tk4x
-
-  when /^8\.[0-5]/
-    alias create_latinfont        create_latinfont_tk8x
-    alias create_kanjifont        create_kanjifont_tk8x
-    alias create_compoundfont     create_compoundfont_tk8x
-    alias actual_core             actual_core_tk8x
-    alias configure_core          configure_core_tk8x
-    alias configinfo_core         configinfo_core_tk8x
-    alias current_configinfo_core current_configinfo_core_tk8x
-    alias delete_core             delete_core_tk8x
-    alias latin_replace_core      latin_replace_core_tk8x
-    alias kanji_replace_core      kanji_replace_core_tk8x
-    alias measure_core            measure_core_tk8x
-    alias metrics_core            metrics_core_tk8x
-
-  else
-    alias create_latinfont        create_latinfont_tk8x
-    alias create_kanjifont        create_kanjifont_tk8x
-    alias create_compoundfont     create_compoundfont_tk8x
-    alias actual_core             actual_core_tk8x
-    alias configure_core          configure_core_tk8x
-    alias configinfo_core         configinfo_core_tk8x
-    alias current_configinfo_core current_configinfo_core_tk8x
-    alias delete_core             delete_core_tk8x
-    alias latin_replace_core      latin_replace_core_tk8x
-    alias kanji_replace_core      kanji_replace_core_tk8x
-    alias measure_core            measure_core_tk8x
-    alias metrics_core            metrics_core_tk8x
-
-  end
-
   ###################################
   public
   ###################################
@@ -1475,12 +1010,12 @@ class TkFont
   end
 
   def measure(text)
-    measure_core(nil, text)
+    measure_core(@compoundfont, nil, text)
   end
 
   def measure_displayof(win, text)
     win = '.' unless win
-    measure_core(win, text)
+    measure_core(@compoundfont, win, text)
   end
 
   def metrics(option=nil)
@@ -1530,6 +1065,27 @@ class TkFont
   end
 
   ###################################
+  # private alias
+  ###################################
+  case (Tk::TK_VERSION)
+  when /^4\.*/
+    alias create_latinfont        create_latinfont_tk4x
+    alias create_kanjifont        create_kanjifont_tk4x
+    alias create_compoundfont     create_compoundfont_tk4x
+
+  when /^8\.[0-5]/
+    alias create_latinfont        create_latinfont_tk8x
+    alias create_kanjifont        create_kanjifont_tk8x
+    alias create_compoundfont     create_compoundfont_tk8x
+
+  else
+    alias create_latinfont        create_latinfont_tk8x
+    alias create_kanjifont        create_kanjifont_tk8x
+    alias create_compoundfont     create_compoundfont_tk8x
+
+  end
+
+  ###################################
   # public alias
   ###################################
   alias ascii_font             latin_font
@@ -1555,4 +1111,548 @@ class TkFont
     obj.instance_eval{ initialize(src) }
     obj
   end
+end
+
+module TkFont::CoreMethods
+  include Tk
+  extend TkCore
+
+  private
+
+  def actual_core_tk4x(font, win=nil, option=nil)
+    # dummy
+    if option == 'pointadjust' || option == :pointadjust
+        1.0
+    elsif option
+      case TkFont::OptionType[option.to_s]
+      when ?n
+        0
+      when ?b
+        false
+      else
+        ''
+      end
+    else
+      [['family',''], ['size',0], ['weight',''], ['slant',''], 
+        ['underline',false], ['overstrike',false], ['charset',''], 
+        ['pointadjust',0]]
+    end
+  end
+
+  def actual_core_tk8x(font, win=nil, option=nil)
+    if option == 'compound' || option == :compound
+      ""
+    elsif option
+      if win
+        val = tk_call('font', 'actual', font, 
+                      "-displayof", win, "-#{option}")
+      else
+        val = tk_call('font', 'actual', font, "-#{option}")
+      end
+      case TkFont::OptionType[option.to_s]
+      when ?n
+        num_or_str(val)
+      when ?b
+        bool(val)
+      else
+        val
+      end
+    else
+      l = tk_split_simplelist(if win
+                                 tk_call('font', 'actual', font, 
+                                                     "-displayof", win)
+                              else
+                                 tk_call('font', 'actual', font)
+                              end)
+      r = []
+      while key=l.shift
+        if key == '-compound'
+          l.shift
+        else
+          key = key[1..-1]
+          val = l.shift
+          case TkFont::OptionType[key]
+          when ?n
+            r.push [key, num_or_str(val)]
+          when ?b
+            r.push [key, bool(val)]
+          else
+            r.push [key, val]
+          end
+        end
+      end
+      r
+    end
+  end
+
+  def configure_core_tk4x(font, slot, value=None)
+    #""
+    self
+  end
+
+  def configinfo_core_tk4x(font, option=nil)
+    # dummy
+    if TkComm::GET_CONFIGINFOwoRES_AS_ARRAY
+      if option == 'pointadjust' || option == :pointadjust
+        1.0
+      elsif option
+        case TkFont::OptionType[option.to_s]
+        when ?n
+          0
+        when ?b
+          false
+        else
+          ''
+        end
+      else
+        [['family',''], ['size',0], ['weight',''], ['slant',''], 
+          ['underline',false], ['overstrike',false], ['charset',''], 
+          ['pointadjust',1.0]]
+      end
+    else # ! TkComm::GET_CONFIGINFOwoRES_AS_ARRAY
+      current_configinfo_core_tk4x(font, option)
+    end
+  end
+
+  def current_configinfo_core_tk4x(font, option=nil)
+    if option
+      case TkFont::OptionType[option.to_s]
+      when ?n
+        0
+      when ?b
+        false
+      else
+        ''
+      end
+    else
+      {'family'=>'', 'size'=>0, 'weight'=>'', 'slant'=>'', 
+        'underline'=>false, 'overstrike'=>false, 
+        'charset'=>false, 'pointadjust'=>1.0}
+    end
+  end
+
+  def configure_core_tk8x(font, slot, value=None)
+    if JAPANIZED_TK
+      begin
+        padjust = tk_call('font', 'configure', font, '-pointadjust')
+      rescue
+        padjust = nil
+      end
+    else
+      padjust = nil
+    end
+    if slot.kind_of? Hash
+      if JAPANIZED_TK && (slot.key?('family') || slot.key?(:family))
+        slot = _symbolkey2str(slot)
+        configure_core_tk8x(font, 'family', slot.delete('family'))
+      end
+
+      if ((slot.key?('size') || slot.key?(:size)) && 
+          padjust && !slot.key?('pointadjust') && !slot.key?(:pointadjust))
+        tk_call('font', 'configure', font, 
+                '-pointadjust', padjust, *hash_kv(slot))
+      else
+        tk_call('font', 'configure', font, *hash_kv(slot))
+      end
+    elsif (slot == 'size' || slot == :size) && padjust != nil
+      tk_call('font', 'configure', font, 
+              "-#{slot}", value, '-pointadjust', padjust)
+    elsif JAPANIZED_TK && (slot == 'family' || slot == :family)
+      # coumpund font?
+      begin
+        compound = tk_split_simplelist(tk_call('font', 'configure', 
+                                               font, '-compound'))
+      rescue
+        tk_call('font', 'configure', font, '-family', value)
+        return self
+      end
+      if compound == []
+        tk_call('font', 'configure', font, '-family', value)
+        return self
+      end
+      ltn, knj = compound
+
+      lfnt = tk_call('font', 'create', '-copy', ltn)
+      begin
+        tk_call('font', 'configure', lfnt, '-family', value)
+        latin_replace_core_tk8x(lfnt)
+      rescue RuntimeError => e
+        fail e if $DEBUG
+      ensure
+        tk_call('font', 'delete', lfnt) if lfnt != ''
+      end
+
+      kfnt = tk_call('font', 'create', '-copy', knj)
+      begin
+        tk_call('font', 'configure', kfnt, '-family', value)
+        kanji_replace_core_tk8x(lfnt)
+      rescue RuntimeError => e
+        fail e if $DEBUG
+      ensure
+        tk_call('font', 'delete', kfnt) if kfnt != ''
+      end
+      
+    else
+      tk_call('font', 'configure', font, "-#{slot}", value)
+    end
+    self
+  end
+
+  def configinfo_core_tk8x(font, option=nil)
+    if TkComm::GET_CONFIGINFOwoRES_AS_ARRAY
+      if option == 'compound' || option == :compound
+        ""
+      elsif option
+        val = tk_call('font', 'configure', font, "-#{option}")
+        case TkFont::OptionType[option.to_s]
+        when ?n
+          num_or_str(val)
+        when ?b
+          bool(val)
+        else
+          val
+        end
+      else
+        l = tk_split_simplelist(tk_call('font', 'configure', font))
+        r = []
+        while key=l.shift
+          if key == '-compound'
+            l.shift
+          else
+            key = key[1..-1]
+            val = l.shift
+            case TkFont::OptionType[key]
+            when ?n
+              r.push [key, num_or_str(val)]
+            when ?b
+              r.push [key, bool(val)]
+            else
+              r.push [key, val]
+            end
+          end
+        end
+        r
+      end
+    else # ! TkComm::GET_CONFIGINFOwoRES_AS_ARRAY
+      current_configinfo_core_tk8x(font, option)
+    end
+  end
+
+  def current_configinfo_core_tk8x(font, option=nil)
+    if option == 'compound'
+      ""
+    elsif option
+      val = tk_call('font', 'configure', font, "-#{option}")
+      case TkFont::OptionType[option.to_s]
+      when ?n
+        num_or_str(val)
+      when ?b
+        bool(val)
+      else
+        val
+      end
+    else
+      l = tk_split_simplelist(tk_call('font', 'configure', font))
+      r = {}
+      while key=l.shift
+        if key == '-compound'
+          l.shift
+        else
+          key = key[1..-1]
+          val = l.shift
+          case TkFont::OptionType[key]
+          when ?n
+            r.push [key, num_or_str(val)]
+          when ?b
+            r.push [key, bool(val)]
+          else
+            r.push [key, val]
+          end
+        end
+      end
+      r
+    end
+  end
+
+  def delete_core_tk4x
+    TkFont::Tk_FontNameTBL.delete(@id)
+    TkFont::Tk_FontUseTBL.delete_if{|key,value| value == self}
+  end
+
+  def delete_core_tk8x
+    begin
+      tk_call('font', 'delete', @latinfont)
+    rescue
+    end
+    begin
+      tk_call('font', 'delete', @kanjifont)
+    rescue
+    end
+    begin
+      tk_call('font', 'delete', @compoundfont)
+    rescue
+    end
+    TkFont::Tk_FontNameTBL.delete(@id)
+    TkFont::Tk_FontUseTBL.delete_if{|key,value| value == self}
+  end
+
+  def latin_replace_core_tk4x(ltn)
+    create_latinfont_tk4x(ltn)
+    @compoundfont[0] = [@latinfont] if JAPANIZED_TK
+    @fontslot['font'] = @latinfont
+    TkFont::Tk_FontUseTBL.dup.each{|w, fobj|
+      if self == fobj
+        begin
+          if w.include?(';')
+            win, tag, optkey = w.split(';')
+            optkey = 'font' if optkey == nil || optkey == ''
+            winobj = tk_tcl2ruby(win)
+#           winobj.tagfont_configure(tag, {'font'=>@latinfont})
+            if winobj.kind_of? TkText
+              tk_call(win, 'tag', 'configure', tag, "-#{optkey}", @latinfont)
+            elsif winobj.kind_of? TkCanvas
+              tk_call(win, 'itemconfigure', tag, "-#{optkey}", @latinfont)
+            elsif winobj.kind_of? TkMenu
+              tk_call(win, 'entryconfigure', tag, "-#{optkey}", @latinfont)
+            else
+              raise RuntimeError, "unknown widget type"
+            end
+          else
+#           tk_tcl2ruby(w).font_configure('font'=>@latinfont)
+            tk_call(w, 'configure', '-font', @latinfont)
+          end
+        rescue
+          TkFont::Tk_FontUseTBL.delete(w)
+        end
+      end
+    }
+    self
+  end
+
+  def kanji_replace_core_tk4x(knj)
+    return self unless JAPANIZED_TK
+
+    create_kanjifont_tk4x(knj)
+    @compoundfont[1] = [@kanjifont]
+    @fontslot['kanjifont'] = @kanjifont
+    TkFont::Tk_FontUseTBL.dup.each{|w, fobj|
+      if self == fobj
+        begin
+          if w.include?(';')
+            win, tag, optkey = w.split(';')
+            optkey = 'kanjifont' unless optkey
+            winobj = tk_tcl2ruby(win)
+#           winobj.tagfont_configure(tag, {'kanjifont'=>@kanjifont})
+            if winobj.kind_of? TkText
+              tk_call(win, 'tag', 'configure', tag, "-#{optkey}", @kanjifont)
+            elsif winobj.kind_of? TkCanvas
+              tk_call(win, 'itemconfigure', tag, "-#{optkey}", @kanjifont)
+            elsif winobj.kind_of? TkMenu
+              tk_call(win, 'entryconfigure', tag, "-#{optkey}", @latinfont)
+            else
+              raise RuntimeError, "unknown widget type"
+            end
+          else
+#           tk_tcl2ruby(w).font_configure('kanjifont'=>@kanjifont)
+            tk_call(w, 'configure', '-kanjifont', @kanjifont)
+          end
+        rescue
+          TkFont::Tk_FontUseTBL.delete(w)
+        end
+      end
+    }
+    self
+  end
+
+  def latin_replace_core_tk8x(ltn)
+    if JAPANIZED_TK
+      begin
+        tk_call('font', 'delete', '@font_tmp')
+      rescue
+      end
+      begin
+        fnt_bup = tk_call('font', 'create', '@font_tmp', '-copy', @latinfont)
+      rescue
+        #fnt_bup = ''
+        fnt_bup = TkFont::DEFAULT_LATIN_FONT_NAME
+      end
+    end
+
+    begin
+      tk_call('font', 'delete', @latinfont)
+    rescue
+    end
+    create_latinfont(ltn)
+
+    if JAPANIZED_TK
+      keys = self.configinfo
+      tk_call('font', 'delete', @compoundfont)
+      begin
+        tk_call('font', 'create', @compoundfont, 
+                '-compound', [@latinfont, @kanjifont], *hash_kv(keys))
+=begin
+        latinkeys = {}
+        begin
+          actual_core(@latinfont).each{|key,val| latinkeys[key] = val}
+        rescue
+          latinkeys = {}
+        end
+        if latinkeys != {}
+          tk_call('font', 'configure', @compoundfont, *hash_kv(latinkeys))
+        end
+=end
+      rescue RuntimeError => e
+        tk_call('font', 'delete', @latinfont)
+        if fnt_bup && fnt_bup != ''
+          tk_call('font', 'create', @latinfont, '-copy', fnt_bup)
+          tk_call('font', 'create', @compoundfont, 
+                  '-compound', [@latinfont, @kanjifont], *hash_kv(keys))
+          tk_call('font', 'delete', fnt_bup)
+        else
+          fail e
+        end
+      end
+
+    else
+      latinkeys = {}
+      begin
+        actual_core(@latinfont).each{|key,val| latinkeys[key] = val}
+      rescue
+        latinkeys = {}
+      end
+      if latinkeys != {}
+        tk_call('font', 'configure', @compoundfont, *hash_kv(latinkeys))
+      end
+    end    
+    self
+  end
+
+  def kanji_replace_core_tk8x(knj)
+    if JAPANIZED_TK
+      begin
+        tk_call('font', 'delete', '@font_tmp')
+      rescue
+      end
+      begin
+        fnt_bup = tk_call('font', 'create', '@font_tmp', '-copy', @kanjifont)
+      rescue
+        #fnt_bup = ''
+        fnt_bup = TkFont::DEFAULT_KANJI_FONT_NAME
+      end
+    end
+
+    begin
+      tk_call('font', 'delete', @kanjifont)
+    rescue
+    end
+    create_kanjifont(knj)
+
+    if JAPANIZED_TK
+      keys = self.configinfo
+      tk_call('font', 'delete', @compoundfont)
+      begin
+        tk_call('font', 'create', @compoundfont, 
+                '-compound', [@latinfont, @kanjifont], *hash_kv(keys))
+      rescue RuntimeError => e
+        tk_call('font', 'delete', @kanjifont)
+        if fnt_bup && fnt_bup != ''
+          tk_call('font', 'create', @kanjifont, '-copy', fnt_bup)
+          tk_call('font', 'create', @compoundfont, 
+                  '-compound', [@latinfont, @kanjifont], *hash_kv(keys))
+          tk_call('font', 'delete', fnt_bup)
+        else
+          fail e
+        end
+      end
+    end    
+    self
+  end
+
+  def measure_core_tk4x(font, win, text)
+    0
+  end
+
+  def measure_core_tk8x(font, win, text)
+    if win
+      number(tk_call('font', 'measure', font, 
+                     '-displayof', win, text))
+    else
+      number(tk_call('font', 'measure', font, text))
+    end
+  end
+
+  def metrics_core_tk4x(font, win, option=nil)
+    # dummy
+    if option
+      ""
+    else
+      [['ascent',[]], ['descent',[]], ['linespace',[]], ['fixed',[]]]
+    end
+  end
+
+  def metrics_core_tk8x(font, win, option=nil)
+    if option
+      if win
+        number(tk_call('font', 'metrics', font, 
+                       "-displayof", win, "-#{option}"))
+      else
+        number(tk_call('font', 'metrics', font, "-#{option}"))
+      end
+    else
+      l = tk_split_list(if win
+                          tk_call('font','metrics',font,"-displayof",win)
+                        else
+                          tk_call('font','metrics',font)
+                        end)
+      r = []
+      while key=l.shift
+        r.push [key[1..-1], l.shift.to_i]
+      end
+      r
+    end
+  end
+
+  ###################################
+  # private alias
+  ###################################
+  case (Tk::TK_VERSION)
+  when /^4\.*/
+    alias actual_core             actual_core_tk4x
+    alias configure_core          configure_core_tk4x
+    alias configinfo_core         configinfo_core_tk4x
+    alias current_configinfo_core current_configinfo_core_tk4x
+    alias delete_core             delete_core_tk4x
+    alias latin_replace_core      latin_replace_core_tk4x
+    alias kanji_replace_core      kanji_replace_core_tk4x
+    alias measure_core            measure_core_tk4x
+    alias metrics_core            metrics_core_tk4x
+
+  when /^8\.[0-5]/
+    alias actual_core             actual_core_tk8x
+    alias configure_core          configure_core_tk8x
+    alias configinfo_core         configinfo_core_tk8x
+    alias current_configinfo_core current_configinfo_core_tk8x
+    alias delete_core             delete_core_tk8x
+    alias latin_replace_core      latin_replace_core_tk8x
+    alias kanji_replace_core      kanji_replace_core_tk8x
+    alias measure_core            measure_core_tk8x
+    alias metrics_core            metrics_core_tk8x
+
+  else
+    alias actual_core             actual_core_tk8x
+    alias configure_core          configure_core_tk8x
+    alias configinfo_core         configinfo_core_tk8x
+    alias current_configinfo_core current_configinfo_core_tk8x
+    alias delete_core             delete_core_tk8x
+    alias latin_replace_core      latin_replace_core_tk8x
+    alias kanji_replace_core      kanji_replace_core_tk8x
+    alias measure_core            measure_core_tk8x
+    alias metrics_core            metrics_core_tk8x
+
+  end
+end
+
+class TkFont
+  include TkFont::CoreMethods
+  extend  TkFont::CoreMethods
 end

@@ -12,12 +12,12 @@
 # And the format of the menu_info is:
 #   [
 #     [text, underline, configs], # menu button/entry (*1)
-#     [label, command, underline, accelerator, configs],    # command entry
-#     [label, TkVar_obj, underline, accelerator, configs],  # checkbutton entry
+#     [label, command, underline, accelerator, configs],   # command entry
+#     [label, TkVar_obj, underline, accelerator, configs], # checkbutton entry
 #     [label, [TkVar_obj, value], 
-#                        underline, accelerator, configs],  # radiobutton entry
+#                        underline, accelerator, configs], # radiobutton entry
 #     [label, [[...menu_info...], [...menu_info...], ...], 
-#                        underline, accelerator, configs],  # cascade entry
+#                        underline, accelerator, configs], # cascade entry (*2)
 #     '---', # separator
 #     ...
 #   ]
@@ -33,6 +33,10 @@
 #   and *.apple for Mac), append 'menu_name'=>name (name is 'help' for UNIX, 
 #   'system' for Win, and 'apple' for Mac) option to the configs hash of 
 #   menu button/entry information.
+#
+# NOTE: (*2)
+#   If you want to configure a cascade menu, add :menu_config=>{...configs..}
+#   to the configs of the cascade entry.
 
 module TkMenuSpec
   def _create_menu(parent, menu_info, menu_name = nil, 

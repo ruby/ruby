@@ -99,7 +99,7 @@ class Tk::TreeCtrl::NotifyEvent
       }
     ], 
 
-    [ ?o, proc{|val| tk_tcl2ruby(val)} ], 
+    [ ?o, proc{|val| TkComm.tk_tcl2ruby(val)} ], 
 
     nil
   ]
@@ -131,12 +131,19 @@ module Tk::TreeCtrl::ConfigMethod
       key = key.to_s
     end
 
+    if (obj.kind_of?(Tk::TreeCtrl::Column) ||
+        obj.kind_of?(Tk::TreeCtrl::Element) ||
+        obj.kind_of?(Tk::TreeCtrl::Item) ||
+        obj.kind_of?(Tk::TreeCtrl::Style)) 
+      obj = obj.id
+    end
+
     case key
     when 'column'
       obj
 
     when 'debug'
-      obj
+      None
 
     when 'dragimage'
       obj
@@ -162,12 +169,13 @@ module Tk::TreeCtrl::ConfigMethod
   end
 
   def tagid(mixed_id)
-    if mixed_id.kind_of?(Array)
+    if mixed_id == 'debug'
+      ['debug', None]
+    elsif mixed_id.kind_of?(Array)
       [mixed_id[0], treectrl_tagid(*mixed_id)]
     else
       tagid(mixed_id.split(':'))
     end
-    fail ArgumentError, "unknown id format"
   end
 
   def __item_cget_cmd(mixed_id)
@@ -346,17 +354,30 @@ module Tk::TreeCtrl::ConfigMethod
     current_itemconfiginfo(['element', tagOrId], slot)
   end
 
-  def item_element_cget(tagOrId, option)
-    itemcget([['item', 'element'], tagOrId], option)
+  def item_cget(tagOrId, option)
+    itemcget(['item', tagOrId], option)
   end
-  def item_element_configure(tagOrId, slot, value=None)
-    itemconfigure([['item', 'element'], tagOrId], slot, value)
+  def item_configure(tagOrId, slot, value=None)
+    itemconfigure(['item', tagOrId], slot, value)
   end
-  def item_element_configinfo(tagOrId, slot=nil)
-    itemconfiginfo([['item', 'element'], tagOrId], slot)
+  def item_configinfo(tagOrId, slot=nil)
+    itemconfiginfo(['item', tagOrId], slot)
   end
-  def current_item_element_configinfo(tagOrId, slot=nil)
-    current_itemconfiginfo([['item', 'element'], tagOrId], slot)
+  def current_item_configinfo(tagOrId, slot=nil)
+    current_itemconfiginfo(['item', tagOrId], slot)
+  end
+
+  def item_element_cget(item, column, elem, option)
+    itemcget([['item', 'element'], [item, column, elem]], option)
+  end
+  def item_element_configure(item, column, elem, slot, value=None)
+    itemconfigure([['item', 'element'], [item, column, elem]], slot, value)
+  end
+  def item_element_configinfo(item, column, elem, slot=nil)
+    itemconfiginfo([['item', 'element'], [item, column, elem]], slot)
+  end
+  def current_item_element_configinfo(item, column, elem, slot=nil)
+    current_itemconfiginfo([['item', 'element'], [item, column, elem]], slot)
   end
 
   def marquee_cget(tagOrId, option)
@@ -407,8 +428,17 @@ class Tk::TreeCtrl
   include Scrollable
 
   TkCommandNames = ['treectrl'.freeze].freeze
-  WidgetClassName = ''.freeze
+  WidgetClassName = 'TreeCtrl'.freeze
   WidgetClassNames[WidgetClassName] = self
+
+  #########################
+
+  def __destroy_hook__
+    Tk::TreeCtrl::Column::TreeCtrlColumnID_TBL.delete(@path)
+    Tk::TreeCtrl::Element::TreeCtrlElementID_TBL.delete(@path)
+    Tk::TreeCtrl::Item::TreeCtrlItemID_TBL.delete(@path)
+    Tk::TreeCtrl::Style::TreeCtrlStyleID_TBL.delete(@path)
+  end
 
   #########################
 
@@ -480,6 +510,9 @@ class Tk::TreeCtrl
   end
 
   def column_delete(idx)
+    if Tk::TreeCtrl::Column::TreeCtrlColumnID_TBL[self.path]
+      Tk::TreeCtrl::Column::TreeCtrlColumnID_TBL[self.path].delete(idx)
+    end
     tk_send('column', 'delete', idx)
     self
   end
@@ -488,8 +521,8 @@ class Tk::TreeCtrl
     num_or_str(tk_send('column', 'index', idx))
   end
 
-  def column_move(idx, to)
-    tk_send('column', 'move', idx, to)
+  def column_move(idx, before)
+    tk_send('column', 'move', idx, before)
     self
   end
 
@@ -503,7 +536,7 @@ class Tk::TreeCtrl
   end
 
   def compare(item1, op, item2)
-    number(tk_send('compare', item1, op, item2))
+    bool(tk_send('compare', item1, op, item2))
   end
 
   def contentbox()
@@ -563,16 +596,27 @@ class Tk::TreeCtrl
   end
 
   def element_delete(*elems)
+    if Tk::TreeCtrl::Element::TreeCtrlElementID_TBL[self.path]
+      elems.each{|elem|
+        Tk::TreeCtrl::Element::TreeCtrlElementID_TBL[self.path].delete(elem)
+      }
+    end
     tk_send('element', 'delete', *elems)
     self
   end
 
   def element_names()
-    list(tk_send('element', 'names'))
+    list(tk_send('element', 'names')).collect!{|elem|
+      Tk::TreeCtrl::Element.id2obj(self, elem)
+    }
   end
 
   def element_type(elem)
     tk_send('element', 'type', elem)
+  end
+
+  def element_class(elem)
+    Tk::TreeCtrl::Element.type2class(element_type(elem))
   end
 
   def expand(*dsc)
@@ -586,7 +630,37 @@ class Tk::TreeCtrl
   end
 
   def identify(x, y)
-    list(tk_send('identify', x, y))
+    lst = list(tk_send('identify', x, y))
+
+    if lst[0] == 'item'
+      lst[1] = Tk::TreeCtrl::Item.id2obj(self, lst[1])
+      size = lst.size
+      i = 2
+      while i < size
+        case lst[i]
+        when 'line'
+          i += 1
+          lst[i] = Tk::TreeCtrl::Item.id2obj(self, lst[i])
+          i += 1
+
+        when 'button'
+          i += 1
+
+        when 'column'
+          i += 2
+
+        when 'elem'
+          i += 1
+          lst[i] = Tk::TreeCtrl::Element.id2obj(self, lst[i])
+          i += 1
+
+        else
+          i += 1
+        end
+      end
+    end
+
+    lst
   end
 
   def index(idx)
@@ -594,7 +668,9 @@ class Tk::TreeCtrl
   end
 
   def item_ancestors(item)
-    list(tk_send('item', 'ancestors', item))
+    list(tk_send('item', 'ancestors', item)).collect!{|id|
+      Tk::TreeCtrl::Item.id2obj(self, id)
+    }
   end
 
   def item_bbox(item, *args)
@@ -602,7 +678,9 @@ class Tk::TreeCtrl
   end
 
   def item_children(item)
-    list(tk_send('item', 'children', item))
+    list(tk_send('item', 'children', item)).collect!{|id|
+      Tk::TreeCtrl::Item.id2obj(self, id)
+    }
   end
 
   def item_collapse(item)
@@ -624,13 +702,34 @@ class Tk::TreeCtrl
     num_or_str(tk_send('item', 'create', keys))
   end
 
+  def _erase_children(item)
+    item_children(item).each{|i| _erase_children(i)}
+    Tk::TreeCtrl::Item::TreeCtrlItemID_TBL[self.path].delete(item)
+  end
+  private :_erase_children
+
   def item_delete(first, last=None)
+    if Tk::TreeCtrl::Item::TreeCtrlItemID_TBL[self.path]
+      if first == 'all' || first == :all || last == 'all' || last == :all
+        Tk::TreeCtrl::Item::TreeCtrlItemID_TBL[self.path].clear
+      elsif last == None
+        _erase_children(first)
+      else
+        self.range(first, last).each{|id|
+          _erase_children(id)
+        }
+      end
+    end
     tk_send('item', 'delete', first, last)
     self
   end
 
   def item_dump(item)
     list(tk_send('item', 'dump', item))
+  end
+
+  def item_dump_hash(item)
+    Hash[*list(tk_send('item', 'dump', item))]
   end
 
   def item_element_actual(item, column, elem, key)
@@ -652,7 +751,8 @@ class Tk::TreeCtrl
       tk_send('item', 'firstchild', parent, child)
       self
     else
-      num_or_str(tk_send('item', 'firstchild', parent))
+      id = num_or_str(tk_send('item', 'firstchild', parent))
+      Tk::TreeCtrl::Item.id2obj(self, id)
     end
   end
   alias item_first_child item_firstchild
@@ -694,7 +794,8 @@ class Tk::TreeCtrl
       tk_send('item', 'lastchild', parent, child)
       self
     else
-      num_or_str(tk_send('item', 'lastchild', parent))
+      id = num_or_str(tk_send('item', 'lastchild', parent))
+      Tk::TreeCtrl::Item.id2obj(self, id)
     end
   end
   alias item_last_child item_lastchild
@@ -704,7 +805,8 @@ class Tk::TreeCtrl
       tk_send('item', 'nextsibling', sibling, nxt)
       self
     else
-      num_or_str(tk_send('item', 'nextsibling', sibling))
+      id = num_or_str(tk_send('item', 'nextsibling', sibling))
+      Tk::TreeCtrl::Item.id2obj(self, id)
     end
   end
   alias item_next_sibling item_nextsibling
@@ -716,7 +818,8 @@ class Tk::TreeCtrl
   alias item_children_size item_numchildren
 
   def item_parent(item)
-    num_or_str(tk_send('item', 'parent', item))
+    id = num_or_str(tk_send('item', 'parent', item))
+    Tk::TreeCtrl::Item.id2obj(self, id)
   end
 
   def item_prevsibling(sibling, prev=nil)
@@ -724,43 +827,83 @@ class Tk::TreeCtrl
       tk_send('item', 'prevsibling', sibling, prev)
       self
     else
-      num_or_str(tk_send('item', 'prevsibling', sibling))
+      id = num_or_str(tk_send('item', 'prevsibling', sibling))
+      Tk::TreeCtrl::Item.id2obj(self, id)
     end
   end
   alias item_prev_sibling item_prevsibling
 
   def item_remove(item)
-    list(tk_send('item', 'remove', item))
+    tk_send('item', 'remove', item)
+    self
   end
 
   def item_rnc(item)
     list(tk_send('item', 'rnc', item))
   end
 
-  def item_sort(item, *opts)
-    flag = false
-    if opts[-1].kind_of?(Hash)
-      opts[-1,1] = __conv_item_keyonly_opts(item, opts[-1]).to_a
-    end
+  def _item_sort_core(real_sort, item, *opts)
+    # opts ::= sort_param [, sort_param, ... ]
+    # sort_param ::= {key=>val, ...}
+    #                [type, desc, {key=>val, ...}]
+    #                param
+    opts = opts.collect{|param|
+      if param.kind_of?(Hash)
+        param = _symbolkey2str(param)
+        if param.key('column')
+          key = '-column'
+          desc = param.delete('column')
+        elsif param.key('element')
+          key = '-element'
+          desc = param.delete('element')
+        else
+          key = nil
+        end
 
-    opts = opts.collect{|opt|
-      if opt.kind_of?(Array)
-        key = "-#{opt[0]}"
-        flag = true if key == '-notreally'
-        ["-#{opt[0]}", opt[1]]
+        if param.empty?
+          param = None
+        else
+          param = __conv_item_keyonly_opts(item, param).to_a
+        end
+
+        if key
+          [key, desc].concat(param)
+        else
+          param
+        end
+
+      elsif param.kind_of?(Array)
+        if param[2].kind_of?(Hash)
+          param[2] = __conv_item_keyonly_opts(item, param[2]).to_a
+        end
+        param
+
+      elsif param.kind_of?(String) && param =~ /\A[a-z]+\Z/
+        '-' << param
+
+      elsif param.kind_of?(Symbol)
+        '-' << param.to_s
+
       else
-        key = "-#{opt}"
-        flag = true if key == '-notreally'
-        key
+        param
       end
     }.flatten
 
-    ret = tk_send('item', 'sort', item, *opts)
-    if flag
-      list(ret)
+    if real_sort
+      tk_send('item', 'sort', item, *opts)
+      self
     else
-      ret
+      list(tk_send('item', 'sort', item, '-notreally', *opts))
     end
+  end
+  private :_item_sort_core
+
+  def item_sort_not_really(item, *opts)
+    _item_sort_core(false, item, *opts)
+  end
+
+  def item_sort(item, *opts)
+    _item_sort_core(true, item, *opts)
   end
 
   def item_state_forcolumn(item, column, *args)
@@ -783,7 +926,9 @@ class Tk::TreeCtrl
   end
 
   def item_style_elements(item, column)
-    list(tk_send('item', 'style', 'elements', item, column))
+    list(tk_send('item', 'style', 'elements', item, column)).collect!{|id|
+      Tk::TreeCtrl::Style.id2obj(self, id)
+    }
   end
 
   def item_style_map(item, column, style, map)
@@ -794,12 +939,15 @@ class Tk::TreeCtrl
   def item_style_set(item, column=nil, *args)
     if args.empty?
       if column
-        tk_send('item', 'style', 'set', item, column)
+        id = tk_send('item', 'style', 'set', item, column)
+        Tk::TreeCtrl::Style.id2obj(self, id)
       else
-        list(tk_send('item', 'style', 'set', item))
+        list(tk_send('item', 'style', 'set', item)).collect!{|id|
+          Tk::TreeCtrl::Style.id2obj(self, id)
+        }
       end
     else
-      tk_send('item', 'style', 'set', item, *(args.flatten))
+      tk_send('item', 'style', 'set', item, column, *(args.flatten))
       self
     end
   end
@@ -813,7 +961,7 @@ class Tk::TreeCtrl
         tk_send('item', 'text', item, column)
       end
     else
-      tk_send('item', 'text', item, txt, *args)
+      tk_send('item', 'text', item, column, txt, *args)
       self
     end
   end
@@ -868,7 +1016,9 @@ class Tk::TreeCtrl
   end
 
   def marquee_identify()
-    list(tk_send('marquee', 'identify'))
+    list(tk_send('marquee', 'identify')).collect!{|id|
+      Tk::TreeCtrl::Item.id2obj(self, id)
+    }
   end
 
   def marquee_visible(st=None)
@@ -913,7 +1063,7 @@ class Tk::TreeCtrl
     self
   end
 
-  def notify_bindremove(obj, event)
+  def notify_bind_remove(obj, event)
     _bind_remove([@path, 'notify', 'bind', obj], event)
     self
   end
@@ -970,17 +1120,25 @@ class Tk::TreeCtrl
   def numcolumns()
     num_or_str(tk_send('numcolumns'))
   end
+  alias num_columns  numcolumns
+  alias columns_size numcolumns
 
   def numitems()
     num_or_str(tk_send('numitems'))
   end
+  alias num_items  numitems
+  alias items_size numitems
 
   def orphans()
-    list(tk_send('orphans'))
+    list(tk_send('orphans')).collect!{|id|
+      Tk::TreeCtrl::Item.id2obj(self, id)
+    }
   end
 
   def range(first, last)
-    list(tk_send('range', first, last))
+    list(tk_send('range', first, last)).collect!{|id|
+      Tk::TreeCtrl::Item.id2obj(self, id)
+    }
   end
 
   def state_define(name)
@@ -1012,7 +1170,8 @@ class Tk::TreeCtrl
   end
 
   def selection_anchor(item=None)
-    num_or_str(tk_send('selection', 'anchor', item))
+    id = num_or_str(tk_send('selection', 'anchor', item))
+    Tk::TreeCtrl::Item.id2obj(self, id)
   end
 
   def selection_clear(*args) # first, last
@@ -1025,7 +1184,9 @@ class Tk::TreeCtrl
   end
 
   def selection_get()
-    list(tk_send('selection', 'get'))
+    list(tk_send('selection', 'get')).collect!{|id|
+      Tk::TreeCtrl::Item.id2obj(self, id)
+    }
   end
 
   def selection_includes(item)
@@ -1046,18 +1207,41 @@ class Tk::TreeCtrl
   end
 
   def style_delete(*args)
+    if Tk::TreeCtrl::Style::TreeCtrlStyleID_TBL[self.path]
+      args.each{|sty|
+        Tk::TreeCtrl::Style::TreeCtrlStyleID_TBL[self.path].delete(sty)
+      }
+    end
     tk_send('style', 'delete', *args)
     self
   end
 
   def style_elements(style, *elems)
     if elems.empty?
-      list(tk_send('style', 'elements', style))
+      list(tk_send('style', 'elements', style)).collect!{|id|
+        Tk::TreeCtrl::Element.id2obj(self, id)
+      }
     else
       tk_send('style', 'elements', style, elems.flatten)
       self
     end
   end
+
+  def _conv_style_layout_val(sty, val)
+    case sty.to_s
+    when 'padx', 'pady', 'ipadx', 'ipady'
+      number(val)
+    when 'detach'
+      bool(val)
+    when 'union'
+      simplelist(val).collect!{|elem|
+        Tk::TreeCtrl::Element.id2obj(self, elem)
+      }
+    else
+      val
+    end
+  end
+  private :_conv_style_layout_val
 
   def style_layout(style, elem, keys=None)
     if keys && keys != None
@@ -1065,15 +1249,23 @@ class Tk::TreeCtrl
         tk_send('style', 'layout', style, elem, *hash_kv(keys))
         self
       else
-        tk_send('style', 'layout', style, elem, "-#{keys}")
+        _conv_style_layout_val(keys, 
+                               tk_send('style', 'layout', 
+                                       style, elem, "-#{keys}"))
       end
     else
-      list(tk_send('style', 'layout', style, elem))
+      ret = Hash.new
+      Hash[*simplelist(tk_send('style', 'layout', style, elem))].each{|k, v|
+        ret[k] = _conv_style_layout_val(k, v)
+      }
+      ret
     end
   end
 
   def style_names()
-    list(tk_send('style', 'names'))
+    list(tk_send('style', 'names')).collect!{|id|
+      Tk::TreeCtrl::Style.id2obj(self, id)
+    }
   end
 
   def toggle(*items)
@@ -1084,5 +1276,556 @@ class Tk::TreeCtrl
   def toggle_recurse()
     tk_send('toggle', '-recurse', *items)
     self
+  end
+end
+
+#####################
+
+class Tk::TreeCtrl::Column < TkObject
+  TreeCtrlColumnID_TBL = TkCore::INTERP.create_table
+  TreeCtrlColumnID = ['treectrl_column'.freeze, '00000'.taint].freeze
+
+  TkCore::INTERP.init_ip_env{Tk::TreeCtrl::Column::TreeCtrlColumnID_TBL.clear}
+
+  def self.id2obj(tree, id)
+    tpath = tree.path
+    return id unless Tk::TreeCtrl::Column::TreeCtrlColumnID_TBL[tpath]
+    Tk::TreeCtrl::Column::TreeCtrlColumnID_TBL[tpath][id]? \
+                 Tk::TreeCtrl::Column::TreeCtrlColumnID_TBL[tpath][id] : id
+  end
+
+  def initialize(parent, keys={})
+    @tree = parent
+    @tpath = parent.path
+
+    keys = _symbolkey2str(keys)
+
+    @path = @id = 
+      keys.delete('tag') ||
+      Tk::TreeCtrl::Column::TreeCtrlColumnID.join(TkCore::INTERP._ip_id_)
+
+    keys['tag'] = @id
+
+    unless Tk::TreeCtrl::Column::TreeCtrlColumnID_TBL[@tpath]
+      Tk::TreeCtrl::Column::TreeCtrlColumnID_TBL[@tpath] = {} 
+    end
+    Tk::TreeCtrl::Column::TreeCtrlColumnID_TBL[@tpath][@id] = self
+    Tk::TreeCtrl::Column::TreeCtrlColumnID[1].succ!
+
+    @tree.column_create(keys)
+  end
+
+  def id
+    @id
+  end
+
+  def to_s
+    @id.to_s.dup
+  end
+
+  def cget(opt)
+    @tree.column_cget(@tree.column_index(@id), opt)
+  end
+
+  def configure(*args)
+    @tree.column_configure(@tree.column_index(@id), *args)
+  end
+
+  def configinfo(*args)
+    @tree.column_configinfo(@tree.column_index(@id), *args)
+  end
+
+  def current_configinfo(*args)
+    @tree.current_column_configinfo(@tree.column_index(@id), *args)
+  end
+
+  def delete
+    @tree.column_delete(@tree.column_index(@id))
+    self
+  end
+
+  def index
+    @tree.column_index(@id)
+  end
+
+  def move(before)
+    @tree.column_move(@tree.column_index(@id), before)
+    self
+  end
+
+  def needed_width
+    @tree.column_needed_width(@tree.column_index(@id))
+  end
+  alias neededwidth needed_width
+
+  def current_width
+    @tree.column_width(@tree.column_index(@id))
+  end
+end
+
+#####################
+
+class Tk::TreeCtrl::Element < TkObject
+  TreeCtrlElementID_TBL = TkCore::INTERP.create_table
+  TreeCtrlElementID = ['treectrl_element'.freeze, '00000'.taint].freeze
+  TreeCtrlElemTypeToClass = {}
+
+  TkCore::INTERP.init_ip_env{
+    Tk::TreeCtrl::Element::TreeCtrlElementID_TBL.clear
+  }
+
+  def self.type2class(type)
+    TreeCtrlElemTypeToClass[type] || type
+  end
+
+  def self.id2obj(tree, id)
+    tpath = tree.path
+    return id unless Tk::TreeCtrl::Element::TreeCtrlElementID_TBL[tpath]
+    Tk::TreeCtrl::Element::TreeCtrlElementID_TBL[tpath][id]? \
+                 Tk::TreeCtrl::Element::TreeCtrlElementID_TBL[tpath][id] : id
+  end
+
+  def initialize(parent, type, keys=nil)
+    @tree = parent
+    @tpath = parent.path
+    @type = type.to_s
+    @path = @id = 
+      Tk::TreeCtrl::Element::TreeCtrlElementID.join(TkCore::INTERP._ip_id_)
+    unless Tk::TreeCtrl::Element::TreeCtrlElementID_TBL[@tpath]
+      Tk::TreeCtrl::Element::TreeCtrlElementID_TBL[@tpath] = {} 
+    end
+    Tk::TreeCtrl::Element::TreeCtrlElementID_TBL[@tpath][@id] = self
+    Tk::TreeCtrl::Element::TreeCtrlElementID[1].succ!
+
+    @tree.element_create(@id, @type, keys)
+  end
+
+  def id
+    @id
+  end
+
+  def to_s
+    @id.dup
+  end
+
+  def cget(opt)
+    @tree.element_cget(@id, opt)
+  end
+
+  def configure(*args)
+    @tree.element_configure(@id, *args)
+  end
+
+  def configinfo(*args)
+    @tree.element_configinfo(@id, *args)
+  end
+
+  def current_configinfo(*args)
+    @tree.current_element_configinfo(@id, *args)
+  end
+
+  def delete
+    @tree.element_delete(@id)
+    self
+  end
+
+  def element_type
+    @tree.element_type(@id)
+  end
+
+  def element_class
+    @tree.element_class(@id)
+  end
+end
+
+class Tk::TreeCtrl::BitmapElement < Tk::TreeCtrl::Element
+  TreeCtrlElemTypeToClass['bitmap'] = self
+
+  def initialize(parent, keys=nil)
+    super(parent, 'bitmap', keys)
+  end
+end
+
+class Tk::TreeCtrl::BorderElement < Tk::TreeCtrl::Element
+  TreeCtrlElemTypeToClass['border'] = self
+
+  def initialize(parent, keys=nil)
+    super(parent, 'border', keys)
+  end
+end
+
+class Tk::TreeCtrl::ImageElement < Tk::TreeCtrl::Element
+  TreeCtrlElemTypeToClass['image'] = self
+
+  def initialize(parent, keys=nil)
+    super(parent, 'image', keys)
+  end
+end
+
+class Tk::TreeCtrl::RectangleElement < Tk::TreeCtrl::Element
+  TreeCtrlElemTypeToClass['rect'] = self
+
+  def initialize(parent, keys=nil)
+    super(parent, 'rect', keys)
+  end
+end
+
+#####################
+
+class Tk::TreeCtrl::Item < TkObject
+  TreeCtrlItemID_TBL = TkCore::INTERP.create_table
+
+  TkCore::INTERP.init_ip_env{Tk::TreeCtrl::Item::TreeCtrlItemID_TBL.clear}
+
+  def self.id2obj(tree, id)
+    tpath = tree.path
+    return id unless Tk::TreeCtrl::Item::TreeCtrlItemID_TBL[tpath]
+    Tk::TreeCtrl::Item::TreeCtrlItemID_TBL[tpath][id]? \
+                 Tk::TreeCtrl::Item::TreeCtrlItemID_TBL[tpath][id] : id
+  end
+
+  def initialize(parent, keys={})
+    @tree = parent
+    @tpath = parent.path
+    @path = @id = @tree.item_create(keys)
+
+    unless Tk::TreeCtrl::Item::TreeCtrlItemID_TBL[@tpath]
+      Tk::TreeCtrl::Item::TreeCtrlItemID_TBL[@tpath] = {} 
+    end
+    Tk::TreeCtrl::Item::TreeCtrlItemID_TBL[@tpath][@id] = self
+  end
+
+  def id
+    @id
+  end
+
+  def to_s
+    @id.to_s.dup
+  end
+
+  def ancestors
+    @tree.item_ancestors(@id)
+  end
+
+  def bbox(*args)
+    @tree.item_bbox(@id, *args)
+  end
+
+  def children
+    @tree.item_children(@id)
+  end
+
+  def collapse
+    @tree.item_collapse(@id)
+    self
+  end
+
+  def collapse_recurse
+    @tree.item_collapse_recurse(@id)
+    self
+  end
+
+  def complex(*args)
+    @tree.item_complex(@id, *args)
+    self
+  end
+
+  def cget(opt)
+    @tree.item_cget(@id, opt)
+  end
+
+  def configure(*args)
+    @tree.item_configure(@id, *args)
+  end
+
+  def configinfo(*args)
+    @tree.item_configinfo(@id, *args)
+  end
+
+  def current_configinfo(*args)
+    @tree.current_item_configinfo(@id, *args)
+  end
+
+  def delete
+    @tree.item_delete(@id)
+    self
+  end
+
+  def element_dump
+    @tree.item_dump(@id)
+  end
+
+  def element_dump_hash
+    @tree.item_dump_hash(@id)
+  end
+
+  def element_actual(column, elem, key)
+    @tree.item_element_actual(@id, column, elem, key)
+  end
+
+  def element_cget(opt)
+    @tree.item_element_cget(@id, opt)
+  end
+
+  def element_configure(*args)
+    @tree.item_element_configure(@id, *args)
+  end
+
+  def element_configinfo(*args)
+    @tree.item_element_configinfo(@id, *args)
+  end
+
+  def current_element_configinfo(*args)
+    @tree.current_item_element_configinfo(@id, *args)
+  end
+
+  def expand
+    @tree.item_expand(@id)
+    self
+  end
+
+  def expand_recurse
+    @tree.item_expand_recurse(@id)
+    self
+  end
+
+  def firstchild(child=nil)
+    if child
+      @tree.item_firstchild(@id, child)
+      self
+    else
+      @tree.item_firstchild(@id)
+    end
+  end
+  alias first_child firstchild
+
+  def hashbutton(st=None)
+    if st == None
+      @tree.item_hashbutton(@id)
+    else
+      @tree.item_hashbutton(@id, st)
+      self
+    end
+  end
+
+  def hashbutton?
+    @tree.item_hashbutton(@id)
+  end
+
+  def index
+    @tree.item_index(@id)
+  end
+
+  def isancestor(des)
+    @tree.item_isancestor(@id, des)
+  end
+  alias is_ancestor  isancestor
+  alias isancestor?  isancestor
+  alias is_ancestor? isancestor
+  alias ancestor?    isancestor
+
+  def isopen
+    @tree.item_isopen(@id)
+  end
+  alias is_open    isopen
+  alias isopen?    isopen
+  alias is_open?   isopen
+  alias isopened?  isopen
+  alias is_opened? isopen
+  alias open?      isopen
+
+  def lastchild(child=nil)
+    if child
+      @tree.item_lastchild(@id, child)
+      self
+    else
+      @tree.item_lastchild(@id)
+    end
+  end
+  alias last_child lastchild
+
+  def nextsibling(nxt=nil)
+    if nxt
+      @tree.item_nextsibling(@id, nxt)
+      self
+    else
+      @tree.item_nextsibling(@id)
+    end
+  end
+  alias next_sibling nextsibling
+
+  def numchildren
+    @tree.item_numchildren(@id)
+  end
+  alias num_children  numchildren
+  alias children_size numchildren
+
+  def parent_index
+    @tree.item_parent(@id)
+  end
+
+  def prevsibling(nxt=nil)
+    if nxt
+      @tree.item_prevsibling(@id, nxt)
+      self
+    else
+      @tree.item_prevsibling(@id)
+    end
+  end
+  alias prev_sibling prevsibling
+
+  def remove
+    @tree.item_remove(@id)
+  end
+
+  def rnc
+    @tree.item_rnc(@id)
+  end
+
+  def sort(*opts)
+    @tree.item_sort(@id, *opts)
+  end
+
+  def state_forcolumn(column, *args)
+    @tree.item_state_forcolumn(@id, column, *args)
+    self
+  end
+  alias state_for_column state_forcolumn
+
+  def state_get(*args)
+    @tree.item_state_get(@id, *args)
+  end
+
+  def state_set(*args)
+    @tree.item_state_set(@id, *args)
+    self
+  end
+
+  def style_elements(column)
+    @tree.item_style_elements(@id, column)
+  end
+
+  def style_map(column, style, map)
+    @tree.item_style_map(@id, column, style, map)
+    self
+  end
+
+  def style_set(column=nil, *args)
+    if args.empty?
+      @tree.item_style_set(@id, column)
+    else
+      @tree.item_style_set(@id, column, *args)
+      self
+    end
+  end
+
+  def item_text(column, txt=nil, *args)
+    if args.empty?
+      if txt
+        @tree.item_text(@id, column, txt)
+        self
+      else
+        @tree.item_text(@id, column)
+      end
+    else
+      @tree.item_text(@id, column, txt, *args)
+      self
+    end
+  end
+
+  def toggle
+    @tree.item_toggle(@id)
+    self
+  end
+
+  def toggle_recurse
+    @tree.item_toggle_recurse(@id)
+    self
+  end
+
+  def visible(st=None)
+    if st == None
+      @tree.item_visible(@id)
+    else
+      @tree.item_visible(@id, st)
+      self
+    end
+  end
+end
+
+#####################
+
+class Tk::TreeCtrl::Style < TkObject
+  TreeCtrlStyleID_TBL = TkCore::INTERP.create_table
+  TreeCtrlStyleID = ['treectrl_style'.freeze, '00000'.taint].freeze
+
+  TkCore::INTERP.init_ip_env{ Tk::TreeCtrl::Style::TreeCtrlStyleID_TBL.clear }
+
+  def self.id2obj(tree, id)
+    tpath = tree.path
+    return id unless Tk::TreeCtrl::Style::TreeCtrlStyleID_TBL[tpath]
+    Tk::TreeCtrl::Style::TreeCtrlStyleID_TBL[tpath][id]? \
+                 Tk::TreeCtrl::Style::TreeCtrlStyleID_TBL[tpath][id] : id
+  end
+
+  def initialize(parent, keys=nil)
+    @tree = parent
+    @tpath = parent.path
+    @path = @id = 
+      Tk::TreeCtrl::Style::TreeCtrlStyleID.join(TkCore::INTERP._ip_id_)
+    unless Tk::TreeCtrl::Style::TreeCtrlStyleID_TBL[@tpath]
+      Tk::TreeCtrl::Style::TreeCtrlStyleID_TBL[@tpath] = {} 
+    end
+    Tk::TreeCtrl::Style::TreeCtrlStyleID_TBL[@tpath][@id] = self
+    Tk::TreeCtrl::Style::TreeCtrlStyleID[1].succ!
+
+    @tree.style_create(@id, keys)
+  end
+
+  def id
+    @id
+  end
+
+  def to_s
+    @id.dup
+  end
+
+  def cget(opt)
+    @tree.style_cget(@id, opt)
+  end
+
+  def configure(*args)
+    @tree.style_configure(@id, *args)
+  end
+
+  def configinfo(*args)
+    @tree.style_configinfo(@id, *args)
+  end
+
+  def current_configinfo(*args)
+    @tree.current_style_configinfo(@id, *args)
+  end
+
+  def delete
+    @tree.style_delete(@id)
+    self
+  end
+
+  def elements(*elems)
+    if elems.empty?
+      @tree.style_elements(@id)
+    else
+      @tree.style_elements(@id, *elems)
+      self
+    end
+  end
+
+  def layout(elem, keys=None)
+    if keys && keys != None && keys.kind_of?(Hash)
+      @tree.style_layout(@id, elem, keys)
+      self
+    else
+      @tree.style_layout(@id, elem, keys)
+    end
   end
 end
