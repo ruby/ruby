@@ -137,6 +137,21 @@ rb_str_new3(str)
     return str_new3(rb_obj_class(str), str);
 }
 
+static VALUE
+str_new4(klass, str)
+    VALUE klass, str;
+{
+    VALUE str2 = rb_obj_alloc(klass);
+
+    RSTRING(str2)->len = RSTRING(str)->len;
+    RSTRING(str2)->ptr = RSTRING(str)->ptr;
+    RSTRING(str)->aux.shared = str2;
+    FL_SET(str, ELTS_SHARED);
+    OBJ_INFECT(str2, str);
+
+    return str2;
+}
+
 VALUE
 rb_str_new4(orig)
     VALUE orig;
@@ -145,20 +160,20 @@ rb_str_new4(orig)
 
     klass = rb_obj_class(orig);
     if (FL_TEST(orig, ELTS_SHARED)) {
-	str = str_new3(klass, RSTRING(orig)->aux.shared);
+	long ofs;
+	str = RSTRING(orig)->aux.shared;
+	ofs = RSTRING(str)->len - RSTRING(orig)->len;
+	str = str_new3(klass, str);
+	RSTRING(str)->ptr += ofs;
+	RSTRING(str)->len -= ofs;
     }
     else if (FL_TEST(orig, STR_ASSOC)) {
 	str = str_new(klass, RSTRING(orig)->ptr, RSTRING(orig)->len);
+	OBJ_INFECT(str, orig);
     }
     else {
-	str = rb_obj_alloc(klass);
-
-	RSTRING(str)->len = RSTRING(orig)->len;
-	RSTRING(str)->ptr = RSTRING(orig)->ptr;
-	RSTRING(orig)->aux.shared = str;
-	FL_SET(orig, ELTS_SHARED);
+	str = str_new4(klass, orig);
     }
-    OBJ_INFECT(str, orig);
     OBJ_FREEZE(str);
     return str;
 }
@@ -477,7 +492,7 @@ rb_str_substr(str, beg, len)
     if (len > sizeof(struct RString)/2 &&
 	beg + len == RSTRING(str)->len &&
 	!FL_TEST(str, STR_ASSOC)) {
-	if (!FL_TEST(str, ELTS_SHARED)) str = rb_str_new4(str);
+	if (!FL_TEST(str, ELTS_SHARED)) str = str_new4(CLASS_OF(str), str);
 	str2 = rb_str_new3(str);
 	RSTRING(str2)->ptr += beg;
 	RSTRING(str2)->len = len;
