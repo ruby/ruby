@@ -2198,7 +2198,7 @@ rb_find_file_ext(filep, ext)
 	VALUE str = RARRAY(rb_load_path)->ptr[i];
 
 	Check_SafeStr(str);
-	if (RSTRING(str)->len == 0) return 0;
+	if (RSTRING(str)->len == 0) continue;
 	path = RSTRING(str)->ptr;
 	for (j=0; ext[j]; j++) {
 	    fname = rb_str_dup(*filep);

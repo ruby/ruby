@@ -1,3 +1,7 @@
+Thu Jan  9 17:30:55 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* file.c (rb_find_file_ext): sync with Ruby 1.8. ([ruby-talk:56407])
+
 Thu Jan 09 17:05:14 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* configure.in (RUBY_CHECK_IO_NEED): check whether fseek() and
