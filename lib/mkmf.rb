@@ -585,6 +585,16 @@ INSTALL_DATA = $(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0644, true)
 #### End of system configuration section. ####
 
 }
+  if $nmake == ?b
+    mk.each do |x|
+      x.gsub!(/^(MAKEDIRS|INSTALL_(?:PROG|DATA))+\s*=.*\n/) do
+        "!ifndef " + $1 + "\n" +
+        $& +
+	"!endif\n"
+      end
+    end
+  end
+  mk
 end
 
 def dummy_makefile(srcdir)
@@ -792,7 +802,7 @@ def init_mkmf(config = CONFIG)
   $objs = nil
   $libs = ""
   if $enable_shared or Config.expand(config["LIBRUBY"].dup) != Config.expand(config["LIBRUBY_A"].dup)
-    $LIBPATH.unshift("$(libdir)") unless $extmk or defined? CROSS_COMPILING
+    $LIBPATH.unshift("$(libdir)") unless $extmk or CROSS_COMPILING
     $LIBRUBYARG = config['LIBRUBYARG']
   end
 

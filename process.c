@@ -20,6 +20,9 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#ifdef __DJGPP__
+#include <process.h>
+#endif
 
 #include <time.h>
 #include <ctype.h>
@@ -574,7 +577,7 @@ rb_proc_exec(str)
     return -1;
 }
 
-#if defined(__human68k__)
+#if defined(__human68k__) || defined(__DJGPP__)
 static int
 proc_spawn_v(argv, prog)
     char **argv;
@@ -583,16 +586,14 @@ proc_spawn_v(argv, prog)
     char *extension;
     int status;
 
-    if (prog) {
-	security(prog);
-    }
-    else {
-	security(argv[0]);
-	prog = dln_find_exe(argv[0], 0);
-	if (!prog)
-	    return -1;
-    }
+    if (!prog)
+	prog = argv[0];
+    security(prog);
+    prog = dln_find_exe(prog, 0);
+    if (!prog)
+	return -1;
 
+#if defined(__human68k__)
     if ((extension = strrchr(prog, '.')) != NULL && strcasecmp(extension, ".bat") == 0) {
 	char **new_argv;
 	char *p;
@@ -615,8 +616,13 @@ proc_spawn_v(argv, prog)
 	    return -1;
 	}
     }
+#endif
     before_exec();
+#if defined(_WIN32)
+    status = do_aspawn(prog, argv);
+#else
     status = spawnv(P_WAIT, prog, argv);
+#endif
     after_exec();
     return status;
 }
@@ -632,16 +638,18 @@ proc_spawn_n(argc, argv, prog)
 
     args = ALLOCA_N(char*, argc + 1);
     for (i = 0; i < argc; i++) {
-	SafeStr(argv[i]);
+	SafeStringValue(argv[i]);
 	args[i] = RSTRING(argv[i])->ptr;
     }
-    SafeStringValue(prog);
+    if (prog)
+	SafeStringValue(prog);
     args[i] = (char*) 0;
     if (args[0])
-	return proc_spawn_v(args, RSTRING(prog)->ptr);
+	return proc_spawn_v(args, prog ? RSTRING(prog)->ptr : 0);
     return -1;
 }
 
+#if !defined(_WIN32)
 static int
 proc_spawn(sv)
     VALUE sv;
@@ -672,7 +680,8 @@ proc_spawn(sv)
     }
     return argv[0] ? proc_spawn_v(argv, 0) : -1;
 }
-#endif /* __human68k__ */
+#endif
+#endif
 
 VALUE
 rb_f_exec(argc, argv)
@@ -830,34 +839,10 @@ rb_f_system(argc, argv)
 
     if (status == 0) return Qtrue;
     return Qfalse;
-#elif defined(DJGPP)
-    VALUE cmd;
+#elif defined(__human68k__) || defined(__DJGPP__)
+    volatile VALUE prog = 0;
     int status;
 
-    if (argc == 0) {
-	rb_last_status = Qnil;
-	rb_raise(rb_eArgError, "wrong number of arguments");
-    }
-
-    if (TYPE(argv[0]) == T_ARRAY) {
-	if (RARRAY(argv[0])->len != 2) {
-	    rb_raise(rb_eArgError, "wrong first argument");
-	}
-	argv[0] = RARRAY(argv[0])->ptr[0];
-    }
-    cmd = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
-
-    SafeStringValue(cmd);
-    status = system(RSTRING(cmd)->ptr);
-    last_status_set((status & 0xff) << 8, 0);
-
-    if (status == 0) return Qtrue;
-    return Qfalse;
-#elif defined(__human68k__)
-    VALUE prog = 0;
-    int status;
-
-    fflush(stdin);
     fflush(stdout);
     fflush(stderr);
     if (argc == 0) {
@@ -874,12 +859,20 @@ rb_f_system(argc, argv)
     }
 
     if (argc == 1 && prog == 0) {
+#if defined(_WIN32)
+	status = do_spawn(RSTRING(argv[0])->ptr);
+#else
 	status = proc_spawn(argv[0]);
+#endif
     }
     else {
 	status = proc_spawn_n(argc, argv, prog);
     }
+#if defined(_WIN32)
+    last_status_set(status, 0);
+#else
     last_status_set(status == -1 ? 127 : status, 0);
+#endif
     return status == 0 ? Qtrue : Qfalse;
 #elif defined(__VMS)
     VALUE cmd;

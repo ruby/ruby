@@ -127,6 +127,7 @@ print <<EOS
     Config::expand(val)
   end
 end
+CROSS_COMPILING = nil unless defined? CROSS_COMPILING
 EOS
 $stdout.flush
 $stdout.reopen($orgout)

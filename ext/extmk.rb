@@ -8,6 +8,8 @@ $clean = nil
 $nodynamic = nil
 $extinit = nil
 $extobjs = nil
+$ignore = nil
+$message = nil
 
 $extlist = []
 
@@ -25,6 +27,13 @@ require 'shellwords'
 $topdir = File.expand_path(".")
 $top_srcdir = srcdir
 $hdrdir = $top_srcdir
+
+$quote = 
+  /mswin|bccwin|mingw|human|os2|macos/ =~ (CROSS_COMPILING || RUBY_PLATFORM)
+
+def sysquote(x)
+  $quote ? x.quote : x
+end
 
 def extmake(target)
   print "#{$message} #{target}\n"
@@ -73,7 +82,7 @@ def extmake(target)
       if $static
 	$extlist.push [$static, $target, File.basename($target)]
       end
-      unless system($make, *$mflags)
+      unless system($make, *sysquote($mflags))
 	$ignore or $continue or return false
       end
     else
@@ -105,7 +114,7 @@ getopts('', 'extstatic', 'make:', 'make-flags:')
 $force_static = $OPT['extstatic'] == 'static'
 $make = $OPT['make'] || $make
 $mflags = Shellwords.shellwords($OPT['make-flags'] || "")
-$mflags[0].sub!(/^(?=\w+)$/, "-") unless $mflags.empty?
+$mflags[0].sub!(/^[^-]/, '-\&') unless $mflags.empty?
 $make, *$mflags[0, 0] = Shellwords.shellwords($make)
 
 mflags = $mflags.grep(/^-([^-].*)/) {$1}.join
@@ -122,8 +131,9 @@ unless $message
       $ignore ||= true
     when "install"
       $ignore ||= true
-      $mflags.unshift("INSTALL_PROG=install -m 0755",
-		      "INSTALL_DATA=install -m 0644") if $dryrun
+      $mflags.unshift("INSTALL_PROG=install -c -m 0755",
+		      "INSTALL_DATA=install -c -m 0644",
+		      "MAKEDIRS=mkdir -p") if $dryrun
     end
     $message.sub!(/e?$/, "ing")
   else
@@ -132,7 +142,7 @@ unless $message
 end
 
 EXEEXT = CONFIG['EXEEXT']
-if defined? CROSS_COMPILING
+if CROSS_COMPILING
   $ruby = CONFIG['MINIRUBY']
 elsif $nmake
   $ruby = '$(topdir:/=\\)\\miniruby' + EXEEXT
@@ -226,9 +236,12 @@ Dir.chdir ".."
 puts "making #{rubies.join(', ')}"
 $stdout.flush
 $mflags.concat(rubies)
-host = (defined?(CROSS_COMPILING) ? CROSS_COMPILING : RUBY_PLATFORM)
-/mswin|bccwin|mingw|djgpp|human|os2|macos/ =~ host or exec($make, *$mflags)
-system($make, *$mflags.quote) or exit($?.exitstatus)
+
+if $quote
+  system($make, *$mflags.quote) or exit($?.exitstatus)
+else
+  exec($make, *$mflags)
+end
 
 #Local variables:
 # mode: ruby

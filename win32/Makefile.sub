@@ -410,6 +410,10 @@ install:	rbconfig.rb
 		$(MINIRUBY) $(srcdir)/instruby.rb --make-flags "$(MFLAGS)$(MAKEFLAGS)" $(DESTDIR)
 		$(MINIRUBY) $(srcdir)/ext/extmk.rb --make "$(MAKE)" --make-flags "$(MFLAGS)$(MAKEFLAGS) DESTDIR=$(DESTDIR)" install
 
+what-where no-install:	rbconfig.rb
+		$(MINIRUBY) $(srcdir)/instruby.rb --make-flags "$(MFLAGS)$(MAKEFLAGS) -n" $(DESTDIR)
+		$(MINIRUBY) $(srcdir)/ext/extmk.rb --make "$(MAKE)" --make-flags "$(MFLAGS)$(MAKEFLAGS) -n DESTDIR=$(DESTDIR)" install
+
 clean:		clean-ext clean-local
 
 clean-local:

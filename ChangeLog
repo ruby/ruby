@@ -1,3 +1,16 @@
+Tue Dec 31 21:13:51 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* Makefile.in, {win32,bcc32}/Makefile.sub: add new target:
+	  what-where, no-install.
+
+	* mkconfig.rb: add const: CROSS_COMPILING.
+
+	* ext/extmk.rb: no-install support.  add MAKEDIRS macro.
+
+	* lib/mkmf.rb: add !ifdef .. !endif for Borland make.
+
+	* process.c: improve DJGPP support.  system "ls", "-l".
+
 Tue Dec 31 20:16:37 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/socket/addrinfo.h (NI_MAXHOST): Define NI_MAXHOST and

@@ -129,6 +129,10 @@ install:	rbconfig.rb
 		$(MINIRUBY) $(srcdir)/instruby.rb --make="$(MAKE)" --make-flags="$(MFLAGS)$(MAKEFLAGS)" $(DESTDIR)
 		$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" --make-flags="$(MFLAGS)$(MAKEFLAGS) DESTDIR=$(DESTDIR)" install
 
+what-where no-install:	rbconfig.rb
+		$(MINIRUBY) $(srcdir)/instruby.rb --make="$(MAKE)" --make-flags="$(MFLAGS)$(MAKEFLAGS) -n" $(DESTDIR)
+		$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" --make-flags="$(MFLAGS)$(MAKEFLAGS) -n DESTDIR=$(DESTDIR)" install
+
 clean-ext:
 		@-$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" --make-flags="$(MFLAGS)$(MAKEFLAGS)" clean 2> /dev/null || true
 

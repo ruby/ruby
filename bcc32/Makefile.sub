@@ -184,7 +184,7 @@ OBJS          = array.obj \
 
 all:		miniruby$(EXEEXT) rbconfig.rb \
 		$(LIBRUBY) $(MISCLIBS)
-		@.\miniruby$(EXEEXT) $(srcdir)ext/extmk.rb --extstatic=$(EXTSTATIC) --make "$(MAKE)" --make-flags "$(MFLAGS)$(MAKEFLAGS)"
+		.\miniruby$(EXEEXT) $(srcdir)ext/extmk.rb --extstatic=$(EXTSTATIC) --make "$(MAKE)" --make-flags "$(MFLAGS)$(MAKEFLAGS)"
 
 ruby: $(PROGRAM)
 rubyw: $(WPROGRAM)
@@ -409,6 +409,10 @@ $(RUBYDEF):	$(LIBRUBY_A) miniruby$(EXEEXT)
 install:	rbconfig.rb
 		$(MINIRUBY) $(srcdir)instruby.rb --make "$(MAKE)" --make-flags "$(MFLAGS)$(MAKEFLAGS)" $(DESTDIR)
 		$(MINIRUBY) $(srcdir)ext/extmk.rb --make "$(MAKE)" --make-flags "$(MFLAGS)$(MAKEFLAGS) DESTDIR=$(DESTDIR)" install
+
+what-where no-install:	rbconfig.rb
+		$(MINIRUBY) $(srcdir)instruby.rb --make "$(MAKE)" --make-flags "$(MFLAGS)$(MAKEFLAGS) -n" $(DESTDIR)
+		$(MINIRUBY) $(srcdir)ext/extmk.rb --make "$(MAKE)" --make-flags "$(MFLAGS)$(MAKEFLAGS) -n DESTDIR=$(DESTDIR)" install
 
 clean:		clean-ext clean-local
 
