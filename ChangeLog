@@ -1,3 +1,7 @@
+Mon Feb  3 16:32:52 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* re.c (rb_memsearch): a little improvement.
+
 Mon Feb  3 13:18:05 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* re.c (rb_memsearch): algorithm body of String#index.

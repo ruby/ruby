@@ -103,46 +103,47 @@ rb_memsearch(x0, m, y0, n)
 {
     unsigned char *x = x0, *y = y0;
     unsigned char *s, *e;
-    long d, i;
+    long i;
+    int d;
     unsigned long hx, hy;
 
-#define KR_REHASH(a, b, h) ((((h) - (a)*d) << 1) + (b))
+#define KR_REHASH(a, b, h) (((h) << 1) - ((a)<<d) + (b))
 
     s = y; e = s + n - m + 1;
 
     /* Preprocessing */
     /* computes d = 2^(m-1) with
        the left-shift operator */
-    for (d = i = 1; i < m; ++i)
-	d = (d<<1);
+    d = sizeof(hx) * CHAR_BIT - 1;
+    if (d > m) d = m;
 
     if (ruby_ignorecase) {
 	/* Prepare hash value */
-	for (hy = hx = i = 0; i < m; ++i) {
-	    hx = ((hx<<1) + casetable[x[i]]);
-	    hy = ((hy<<1) + casetable[s[i]]);
+	for (hy = hx = i = 0; i < d; ++i) {
+	    hx = KR_REHASH(0, casetable[x[i]], hx);
+	    hy = KR_REHASH(0, casetable[s[i]], hy);
 	}
 	/* Searching */
 	while (s < e) {
 	    if (hx == hy && rb_memcicmp(x, s, m) == 0) {
 		return s-y;
 	    }
-	    hy = KR_REHASH(casetable[*s], casetable[*(s+m)], hy);
+	    hy = KR_REHASH(casetable[*s], casetable[*(s+d)], hy);
 	    s++;
 	}
     }
     else {
 	/* Prepare hash value */
-	for (hy = hx = i = 0; i < m; ++i) {
-	    hx = ((hx<<1) + x[i]);
-	    hy = ((hy<<1) + s[i]);
+	for (hy = hx = i = 0; i < d; ++i) {
+	    hx = KR_REHASH(0, x[i], hx);
+	    hy = KR_REHASH(0, s[i], hy);
 	}
 	/* Searching */
 	while (s < e) {
 	    if (hx == hy && memcmp(x, s, m) == 0) {
 		return s-y;
 	    }
-	    hy = KR_REHASH(*s, *(s+m), hy);
+	    hy = KR_REHASH(*s, *(s+d), hy);
 	    s++;
 	}
     }
