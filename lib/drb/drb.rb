@@ -1422,7 +1422,7 @@ module DRb
 	  ensure
 	    unless succ
 	      client.close
-	      return
+	      break
 	    end
 	  end
 	end
