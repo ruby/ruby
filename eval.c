@@ -5633,7 +5633,6 @@ rb_mod_include(argc, argv, module)
     for (i=0; i<argc; i++) {
 	Check_Type(argv[i], T_MODULE);
 	rb_funcall(argv[i], rb_intern("append_features"), 1, module);
-	rb_funcall(argv[i], rb_intern("included"), 1, module);
     }
     return module;
 }
