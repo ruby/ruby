@@ -1,3 +1,10 @@
+Thu May 20 17:02:03 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (check_sizeof): define result size.  [ruby-core:02911]
+
+	* lib/mkmf.rb (create_header): macro name should not include equal
+	  sign.
+
 Thu May 20 14:35:52 2004  Tanaka Akira  <akr@m17n.org>
 
 	* ext/socket/socket.c: check SCM_RIGHTS macro addition to
@@ -11,7 +18,7 @@ Thu May 20 12:38:06 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Thu May 20 12:34:39 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_visibility): 
+	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_visibility):
 	  At Ryan Davis' suggestion, honor visibility modifers if guarded by a
 	  statement modifier
 

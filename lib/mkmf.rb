@@ -599,7 +599,7 @@ def check_sizeof(type, header = nil, &b)
   message "%s", m
   Logging::message "check_sizeof: %s--------------------\n", m
   if size = try_constant(expr, header, &b)
-    $defs.push(format("-DSIZEOF_%s", type.upcase.tr_s("^A-Z0-9_", "_")))
+    $defs.push(format("-DSIZEOF_%s=%d", type.upcase.tr_s("^A-Z0-9_", "_"), size))
   end
   message(a = size ? "#{size}\n" : "failed\n")
   Logging::message "-------------------- %s\n", a
@@ -652,7 +652,7 @@ def create_header(header = "extconf.h")
       hfile.print "#ifndef #{sym}\n#define #{sym}\n"
       for line in $defs
 	case line
-	when /^-D(.*)(?:=(.*))?/
+	when /^-D([^=]+)(?:=(.*))?/
 	  hfile.print "#define #$1 #{$2 || 1}\n"
 	when /^-U(.*)/
 	  hfile.print "#undef #$1\n"
