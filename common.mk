@@ -140,8 +140,6 @@ $(RBCONFIG): $(srcdir)/mkconfig.rb config.status $(PREP)
 PHONY:
 
 {$(VPATH)}parse.c: parse.y
-ext/extinit.$(OBJEXT): ext/extinit.c $(SETUP)
-	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(OUTFLAG)$@ -c ext/extinit.c
 
 acosh.$(OBJEXT): {$(VPATH)}acosh.c
 alloca.$(OBJEXT): {$(VPATH)}alloca.c

@@ -215,6 +215,7 @@ config.h:
 \#define SIZEOF_VOIDP 4
 \#define SIZEOF_FLOAT 4
 \#define SIZEOF_DOUBLE 8
+\#define SIZEOF_TIME_T 4
 \#define HAVE_PROTOTYPES 1
 \#define TOKEN_PASTE(x,y) x\#\#y
 \#define HAVE_STDARG_PROTOTYPES 1
@@ -419,6 +420,9 @@ distclean-local::
 		@$(RM) ext\config.cache
 		@$(RM) *.map *.pdb *.ilk *.exp $(RUBYDEF)
 		@$(RM) $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc
+
+ext/extinit.obj: ext/extinit.c $(SETUP)
+	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -o$@ -c ext/extinit.c
 
 main.$(OBJEXT): win32.h
 ascii.$(OBJEXT): win32.h

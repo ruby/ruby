@@ -136,8 +136,6 @@ fake.rb:	Makefile
 
 Makefile:	$(srcdir)/Makefile.in
 
-PHONY:
-
 $(MKFILES): config.status $(srcdir)/common.mk
 		MAKE=$(MAKE) $(SHELL) ./config.status
 		@{ \
@@ -172,3 +170,6 @@ clean-local::
 
 distclean-local::
 	@$(RM) ext/config.cache $(RBCONFIG)
+
+ext/extinit.$(OBJEXT): ext/extinit.c $(SETUP)
+	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -o$@ -c ext/extinit.c

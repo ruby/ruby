@@ -1,3 +1,10 @@
+Wed Apr  7 10:43:17 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in, common.mk, */Makefile.sub (ext/extinit.o): OUTFLAG
+	  doesn't work for object files on VC.
+
+	* */Makefile.sub (config.h): need SIZEOF_TIME_T now.
+
 Wed Apr  7 00:24:34 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/rinda/rinda.rb: fix hash tuple bug.
@@ -9,7 +16,7 @@ Wed Apr  7 00:24:34 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 Tue Apr  6 16:46:09 2004  Tanaka Akira  <akr@m17n.org>
 
 	* configure.in: check the size of time_t.
-	  
+
 	* time.c (time_add): new function.
 	  (time_plus): use time_add.
 	  (time_minus): use time_add.
