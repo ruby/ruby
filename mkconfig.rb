@@ -11,7 +11,7 @@ mkconfig = File.basename($0)
 rbconfig_rb = ARGV[0] || 'rbconfig.rb'
 srcdir = $srcdir || '.'
 unless File.directory?(dir = File.dirname(rbconfig_rb))
-  FileUtils.makedirs(File.dirname(rbconfig_rb), :verbose => true)
+  FileUtils.makedirs(dir, :verbose => true)
 end
 
 version = RUBY_VERSION
