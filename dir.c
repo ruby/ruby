@@ -241,10 +241,6 @@ dir_s_new(argc, argv, klass)
 
     rb_obj_call_init(obj, argc, argv);
 
-    if (rb_iterator_p()) {
-	rb_ensure(rb_yield, obj, dir_close, obj);
-    }
-
     return obj;
 }
 
@@ -268,6 +264,7 @@ dir_initialize(dir, dirname)
 	}
     }
     DATA_PTR(dir) = dirp;
+
     return dir;
 }
 
@@ -275,7 +272,13 @@ static VALUE
 dir_s_open(klass, dirname)
     VALUE klass, dirname;
 {
-    return dir_s_new(1, &dirname, klass);
+    VALUE dir = dir_s_new(1, &dirname, klass);
+    if (rb_block_given_p()) {
+	rb_ensure(rb_yield, dir, dir_close, dir);
+	return Qnil;
+    }
+
+    return dir;
 }
 
 static void
@@ -760,7 +763,7 @@ dir_s_glob(dir, str)
     }
     if (buf != buffer)
 	free(buf);
-    if (rb_iterator_p()) {
+    if (rb_block_given_p()) {
 	long len = RARRAY(ary)->len;
 	VALUE *ptr = RARRAY(ary)->ptr;
 

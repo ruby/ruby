@@ -133,7 +133,7 @@ etc_passwd(obj)
 #ifdef HAVE_GETPWENT
     struct passwd *pw;
 
-    if (rb_iterator_p()) {
+    if (rb_block_given_p()) {
 	setpwent();
 	while (pw = getpwent()) {
 	    rb_yield(setup_passwd(pw));
@@ -210,7 +210,7 @@ etc_group(obj)
 #ifdef HAVE_GETGRENT
     struct group *grp;
 
-    if (rb_iterator_p()) {
+    if (rb_block_given_p()) {
 	setgrent();
 	while (grp = getgrent()) {
 	    rb_yield(setup_group(grp));

@@ -971,7 +971,6 @@ File.unlink "script_tmp.bak" or `/bin/rm -f "script_tmp.bak"`
 $bad = false
 for script in Dir["{lib,sample}/**/*.rb"]
   unless `./miniruby -c #{script}`.chomp == "Syntax OK"
-    p `./miniruby -c #{script}`.chomp
     $bad = true
   end
 end

@@ -455,7 +455,7 @@ void rb_warning __((const char*, ...));		/* reports if `-w' specified */
 
 VALUE rb_each _((VALUE));
 VALUE rb_yield _((VALUE));
-int rb_iterator_p _((void));
+int rb_block_given_p _((void));
 VALUE rb_iterate _((VALUE(*)(),VALUE,VALUE(*)(),VALUE));
 VALUE rb_rescue _((VALUE(*)(),VALUE,VALUE(*)(),VALUE));
 VALUE rb_ensure _((VALUE(*)(),VALUE,VALUE(*)(),VALUE));

@@ -584,30 +584,32 @@ rb_ary_aset(argc, argv, ary)
     VALUE *argv;
     VALUE ary;
 {
-    VALUE arg1, arg2, arg3;
     long offset, beg, len;
 
-    if (rb_scan_args(argc, argv, "21", &arg1, &arg2, &arg3) == 3) {
-	rb_ary_replace(ary, NUM2LONG(arg1), NUM2LONG(arg2), arg3);
-	return arg3;
+    if (argc == 3) {
+	rb_ary_replace(ary, NUM2LONG(argv[0]), NUM2LONG(argv[1]), argv[2]);
+	return argv[2];
     }
-    else if (FIXNUM_P(arg1)) {
-	offset = FIX2LONG(arg1);
+    if (argc != 2) {
+	rb_raise(rb_eArgError, "wrong # of arguments(%d for 2)", argc);
+    }
+    if (FIXNUM_P(argv[0])) {
+	offset = FIX2LONG(argv[0]);
 	goto fixnum;
     }
-    else if (rb_range_beg_len(arg1, &beg, &len, RARRAY(ary)->len, 1)) {
+    else if (rb_range_beg_len(argv[0], &beg, &len, RARRAY(ary)->len, 1)) {
 	/* check if idx is Range */
-	rb_ary_replace(ary, beg, len, arg2);
-	return arg2;
+	rb_ary_replace(ary, beg, len, argv[1]);
+	return argv[1];
     }
-    if (TYPE(arg1) == T_BIGNUM) {
+    if (TYPE(argv[0]) == T_BIGNUM) {
 	rb_raise(rb_eIndexError, "index too big");
     }
 
-    offset = NUM2LONG(arg1);
+    offset = NUM2LONG(argv[0]);
   fixnum:
-    rb_ary_store(ary, offset, arg2);
-    return arg2;
+    rb_ary_store(ary, offset, argv[1]);
+    return argv[1];
 }
 
 VALUE
@@ -957,7 +959,7 @@ sort_internal(ary)
     VALUE ary;
 {
     qsort(RARRAY(ary)->ptr, RARRAY(ary)->len, sizeof(VALUE),
-	  rb_iterator_p()?sort_1:sort_2);
+	  rb_block_given_p()?sort_1:sort_2);
     return ary;
 }
 
@@ -997,7 +999,7 @@ rb_ary_collect(ary)
     long len, i;
     VALUE collect;
 
-    if (!rb_iterator_p()) {
+    if (!rb_block_given_p()) {
 	return rb_ary_dup(ary);
     }
 
@@ -1046,7 +1048,7 @@ rb_ary_delete(ary, item)
 	i2++;
     }
     if (RARRAY(ary)->len == i2) {
-	if (rb_iterator_p()) {
+	if (rb_block_given_p()) {
 	    return rb_yield(item);
 	}
 	return Qnil;
@@ -1081,7 +1083,7 @@ rb_ary_delete_at(ary, pos)
 }
 
 static VALUE
-rb_ary_delete_at_m(argc, argv, ary)
+rb_ary_slice_bang(argc, argv, ary)
     int argc;
     VALUE *argv;
     VALUE ary;
@@ -1627,7 +1629,7 @@ Init_Array()
     rb_define_method(rb_cArray, "map!", rb_ary_collect_bang, 0);
     rb_define_method(rb_cArray, "filter", rb_ary_filter, 0);
     rb_define_method(rb_cArray, "delete", rb_ary_delete, 1);
-    rb_define_method(rb_cArray, "delete_at", rb_ary_delete_at_m, -1);
+    rb_define_method(rb_cArray, "delete_at", rb_ary_delete_at, -1);
     rb_define_method(rb_cArray, "delete_if", rb_ary_delete_if, 0);
     rb_define_method(rb_cArray, "reject!", rb_ary_delete_if, 0);
     rb_define_method(rb_cArray, "replace", rb_ary_replace_m, 1);
@@ -1637,7 +1639,7 @@ Init_Array()
     rb_define_method(rb_cArray, "<=>", rb_ary_cmp, 1);
 
     rb_define_method(rb_cArray, "slice", rb_ary_aref, -1);
-    rb_define_method(rb_cArray, "slice!", rb_ary_delete_at_m, -1);
+    rb_define_method(rb_cArray, "slice!", rb_ary_slice_bang, -1);
 
     rb_define_method(rb_cArray, "assoc", rb_ary_assoc, 1);
     rb_define_method(rb_cArray, "rassoc", rb_ary_rassoc, 1);

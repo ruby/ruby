@@ -216,7 +216,7 @@ class TkCanvas<TkWindow
   end
 
   def find(mode, *args)
-    list(tk_send 'find', mode, *args).filter{|id| 
+    list(tk_send 'find', mode, *args).collect!{|id| 
       TkcItem.id2obj(id)
     }
   end
@@ -367,13 +367,6 @@ class TkCanvas<TkWindow
 
   def itemtype(tag)
     TkcItem.type2class(tk_send 'type', tagid(tag))
-  end
-
-  def xview(*index)
-    tk_send 'xview', *index
-  end
-  def yview(*index)
-    tk_send 'yview', *index
   end
 end
 
@@ -725,7 +718,7 @@ class TkImage<TkObject
   end
 
   def TkImage.names
-    Tk.tk_call('image', 'names').split.filter{|id|
+    Tk.tk_call('image', 'names').split.collect!{|id|
       (Tk_IMGTBL[id])? Tk_IMGTBL[id] : id
     }
   end

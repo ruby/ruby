@@ -457,7 +457,7 @@ pty_getpty(self, shell)
     rb_ary_store(res,1,(VALUE)wport);
     rb_ary_store(res,2,INT2FIX(info.child_pid));
 
-    if (rb_iterator_p()) {
+    if (rb_block_given_p()) {
 	rb_yield((VALUE)res);
 	reset_signal_action();
 	return Qnil;

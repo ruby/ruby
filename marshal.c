@@ -148,7 +148,7 @@ w_symbol(id, arg)
     struct dump_arg *arg;
 {
     char *sym = rb_id2name(id);
-    int num;
+    long num;
 
     if (st_lookup(arg->symbol, id, &num)) {
 	w_byte(TYPE_SYMLINK, arg);
@@ -258,7 +258,7 @@ w_object(obj, arg, limit)
 	return;
     }
     else {
-	int num;
+	long num;
 
 	limit--;
 	c_arg.limit = limit;
@@ -381,7 +381,7 @@ w_object(obj, arg, limit)
 		w_long(len, arg);
 		mem = rb_ivar_get(CLASS_OF(obj), rb_intern("__member__"));
 		if (mem == Qnil) {
-		    rb_raise(rb_eTypeError, "non-initialized struct");
+		    rb_raise(rb_eTypeError, "uninitialized struct");
 		}
 		for (i=0; i<len; i++) {
 		    w_symbol(FIX2LONG(RARRAY(mem)->ptr[i]), arg);
@@ -813,7 +813,7 @@ r_object(arg)
 	    klass = rb_path2class(r_unique(arg));
 	    mem = rb_ivar_get(klass, rb_intern("__member__"));
 	    if (mem == Qnil) {
-		rb_raise(rb_eTypeError, "non-initialized struct");
+		rb_raise(rb_eTypeError, "uninitialized struct");
 	    }
 	    len = r_long(arg);
 

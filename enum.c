@@ -50,7 +50,7 @@ enum_grep(obj, pat)
     VALUE tmp, arg[2];
 
     arg[0] = pat; arg[1] = tmp = rb_ary_new();
-    if (rb_iterator_p()) {
+    if (rb_block_given_p()) {
 	rb_iterate(rb_each, obj, grep_iter_i, (VALUE)arg);
     }
     else {
@@ -173,7 +173,7 @@ enum_collect(obj)
     VALUE tmp;
 
     tmp = rb_ary_new();
-    rb_iterate(rb_each, obj, rb_iterator_p() ? collect_i : enum_all, tmp);
+    rb_iterate(rb_each, obj, rb_block_given_p() ? collect_i : enum_all, tmp);
 
     return tmp;
 }
@@ -225,7 +225,7 @@ enum_min(obj)
 {
     NODE *memo = rb_node_newnode(NODE_MEMO, Qnil, 0, 0);
 
-    rb_iterate(rb_each, obj, rb_iterator_p()?min_ii:min_i, (VALUE)memo);
+    rb_iterate(rb_each, obj, rb_block_given_p()?min_ii:min_i, (VALUE)memo);
     rb_gc_force_recycle((VALUE)memo);
     return memo->u1.value;
 }
@@ -270,7 +270,7 @@ enum_max(obj)
 {
     NODE *memo = rb_node_newnode(NODE_MEMO, Qnil, 0, 0);
 
-    rb_iterate(rb_each, obj, rb_iterator_p()?max_ii:max_i, (VALUE)memo);
+    rb_iterate(rb_each, obj, rb_block_given_p()?max_ii:max_i, (VALUE)memo);
     rb_gc_force_recycle((VALUE)memo);
     return memo->u1.value;
 }

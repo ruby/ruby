@@ -26,7 +26,7 @@ class TkAfter
   end
 
   def TkAfter.info
-    tk_call('after', 'info').split(' ').filter{|id|
+    tk_call('after', 'info').split(' ').collect!{|id|
       ret = Tk_CBTBL.find{|key,val| val.after_id == id}
       (ret == nil)? id: ret[1]
     }

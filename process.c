@@ -509,7 +509,7 @@ rb_f_fork(obj)
 #ifdef linux
 	after_exec();
 #endif
-	if (rb_iterator_p()) {
+	if (rb_block_given_p()) {
 	    rb_yield(Qnil);
 	    _exit(0);
 	}

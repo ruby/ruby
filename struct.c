@@ -52,7 +52,7 @@ rb_struct_s_members(obj)
 
     member = iv_get(obj, "__member__");
     if (NIL_P(member)) {
-	rb_bug("non-initialized struct");
+	rb_bug("uninitialized struct");
     }
     ary = rb_ary_new2(RARRAY(member)->len);
     p = RARRAY(member)->ptr; pend = p + RARRAY(member)->len;
@@ -81,9 +81,9 @@ rb_struct_getmember(obj, id)
 
     member = iv_get(class_of(obj), "__member__");
     if (NIL_P(member)) {
-	rb_bug("non-initialized struct");
+	rb_bug("uninitialized struct");
     }
-    slot = INT2NUM(id);
+    slot = ID2SYM(id);
     for (i=0; i<RARRAY(member)->len; i++) {
 	if (RARRAY(member)->ptr[i] == slot) {
 	    return RSTRUCT(obj)->ptr[i];

@@ -69,12 +69,14 @@
 #define RE_OPTION_IGNORECASE (1L)
 /* perl-style extended pattern available */
 #define RE_OPTION_EXTENDED   (RE_OPTION_IGNORECASE<<1)
-/* newline will be included for ., ^ and $ ignore newline */
-#define RE_OPTION_POSIXLINE  (RE_OPTION_EXTENDED<<1)
 /* newline will be included for . */
-#define RE_OPTION_MULTILINE  (RE_OPTION_POSIXLINE<<1)
+#define RE_OPTION_MULTILINE  (RE_OPTION_EXTENDED<<1)
+/* ^ and $ ignore newline */
+#define RE_OPTION_SINGLELINE (RE_OPTION_MULTILINE<<1)
+/* works line Perl's /s; it's called POSIX for wrong reason */
+#define RE_OPTION_POSIXLINE  (RE_OPTION_MULTILINE|RE_OPTION_SINGLELINE)
 /* search for longest match, in accord with POSIX regexp */
-#define RE_OPTION_LONGEST    (RE_OPTION_MULTILINE<<1)
+#define RE_OPTION_LONGEST    (RE_OPTION_POSIXLINE<<1)
 
 #define RE_MAY_IGNORECASE    (RE_OPTION_LONGEST<<1)
 #define RE_OPTIMIZE_ANCHOR   (RE_MAY_IGNORECASE<<1)

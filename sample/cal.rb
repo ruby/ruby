@@ -1,9 +1,10 @@
 #! /usr/local/bin/ruby
 
-# cal.rb: Written by Tadayoshi Funaba 1998, 1999
-# $Id: cal.rb,v 1.6 1999/09/15 05:35:25 tadf Exp $
+# cal.rb: Written by Tadayoshi Funaba 1998-2000
+# $Id: cal.rb,v 1.10 2000/05/20 02:09:47 tadf Exp $
 
 require 'date2'
+require 'getopts'
 
 $tab =
 {
@@ -31,89 +32,81 @@ $tab =
 $cc = 'gb'
 
 def usage
-  $stderr.puts 'usage: cal [-c iso3166] [-jy] [[month] year]'
+  $stderr.puts 'usage: cal [-c iso3166] [-jmty] [[month] year]'
   exit 1
 end
 
-def cal(m, y, sg)
-  for d in 1..31
-    break if jd = Date.exist?(y, m, d, sg)
-  end
-  fst = cur = Date.new1(jd, sg)
-  ti = Date::MONTHNAMES[m]
-  ti << ' ' << y.to_s unless $yr
-  mo = ti.center((($w + 1) * 7) - 1) << "\n"
-  mo << ['S', 'M', 'Tu', 'W', 'Th', 'F', 'S'].
-    collect{|x| x.rjust($w)}.join(' ') << "\n"
-  mo << ' ' * (($w + 1) * fst.wday)
-  while cur.mon == fst.mon
-    mo << (if $jd then cur.yday else cur.mday end).to_s.rjust($w)
-    mo << (if (cur += 1).wday != 0 then "\s" else "\n" end)
-  end
-  mo << "\n" * (6 - ((fst.wday + (cur - fst)) / 7))
-  mo
+def pict(y, m, sg)
+  d = (1..31).detect{|d| Date.exist?(y, m, d, sg)}
+  fi = Date.new3(y, m, d, sg)
+  fi -= (fi.jd - $k + 1) % 7
+
+  ve  = (fi..fi +  6).collect{|cu|
+    %w(S M Tu W Th F S)[cu.wday]
+  }
+  ve += (fi..fi + 41).collect{|cu|
+    if cu.mon == m then cu.send($da) end.to_s
+  }
+
+  ve = ve.collect{|e| e.rjust($dw)}
+
+  gr = group(ve, 7)
+  gr = trans(gr) if $OPT_t
+  ta = gr.collect{|xs| xs.join(' ')}
+
+  ca = %w(January   February  March     April
+	  May       June      July      August
+	  September October   November  December)[m - 1]
+  ca = ca + ' ' + y.to_s if not $OPT_y
+  ca = ca.center($mw)
+
+  ta.unshift(ca)
 end
 
-def zip(xs)
-  yr = ''
-  until xs.empty?
-    ln = (if $jd then l,    r, *xs = xs; [l,    r]
-		 else l, c, r, *xs = xs; [l, c, r] end).
-      collect{|x| x.split(/\n/no, -1)}
-    8.times do
-      yr << ln.collect{|x|
-	x.shift.ljust((($w + 1) * 7) - 1)}.join('  ') << "\n"
-    end
-  end
-  yr
+def group(xs, n)
+  (0..xs.size / n - 1).collect{|i| xs[i * n, n]}
 end
 
-while /^-([^-].*)$/no =~ $*[0]
-  a = $1
-  if /^c(.+)?$/no =~ a
-    if $1
-      $cc = $1.downcase
-    elsif $*.length >= 2
-      $cc = $*[1].downcase
-      $*.shift
-    else
-      usage
-    end
-  else
-    a.scan(/./no) do |c|
-      case c
-      when 'j'; $jd = true
-      when 'y'; $yr = true
-      else usage
-      end
-    end
-  end
-  $*.shift
+def trans(xs)
+  (0..xs[0].size - 1).collect{|i| xs.collect{|x| x[i]}}
 end
-$*.shift if /^--/no =~ $*[0]
-usage if (sg = $tab[$cc]).nil?
-case $*.length
-when 0
-  td = Date.today
-  m = td.mon
-  y = td.year
-when 1
-  y = $*[0].to_i
-  $yr = true
-when 2
-  m = $*[0].to_i
-  y = $*[1].to_i
-else
-  usage
+
+def unite(xs)
+  if xs.empty? then [] else xs[0] + unite(xs[1..-1]) end
 end
-usage unless m.nil? or (1..12) === m
+
+def block(xs, n)
+  unite(group(xs, n).collect{|ys| trans(ys).collect{|zs| zs.join('  ')}})
+end
+
+def unlines(xs)
+  xs.collect{|x| x + "\n"}.join
+end
+
+usage unless getopts('jmty', "c:#{$cc}")
+
+y, m = ARGV.indexes(1, 0).compact.collect{|x| x.to_i}
+$OPT_y ||= (y and not m)
+
+to = Date.today
+y ||= to.year
+m ||= to.mon
+
+usage unless m >= 1 and m <= 12
 usage unless y >= -4712
-$w = if $jd then 3 else 2 end
-unless $yr
-  print cal(m, y, sg)
-else
-  print y.to_s.center(((($w + 1) * 7) - 1) *
-		      (if $jd then 2 else 3 end) +
-		      (if $jd then 2 else 4 end)), "\n\n",
-    zip((1..12).collect{|m| cal(m, y, sg)}), "\n"
-end
+usage unless sg = $tab[$OPT_c]
+
+$dw = if $OPT_j then 3 else 2 end
+$mw = ($dw + 1) * 7 - 1
+$mn = if $OPT_j then 2 else 3 end
+$tw = ($mw + 2) * $mn - 2
+
+$k  = if $OPT_m then 1 else 0 end
+$da = if $OPT_j then :yday else :mday end
+
+print (if not $OPT_y
+	 unlines(pict(y, m, sg))
+       else
+	 y.to_s.center($tw) + "\n\n" +
+	   unlines(block((1..12).collect{|m| pict(y, m, sg)}, $mn)) + "\n"
+       end)

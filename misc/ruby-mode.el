@@ -14,7 +14,11 @@
    (substring ruby-mode-revision (match-beginning 0) (match-end 0))))
 
 (defconst ruby-block-beg-re
-  "class\\|module\\|def\\|if\\|unless\\|case\\|while\\|until\\|for\\|begin\\|do"
+  "class\\|module\\|def\\|if\\|unless\\|case\\|while\\|until\\|for\\|begin"
+  )
+
+(defconst ruby-non-block-do-re
+  "while\\|until\\|for\\|rescue"
   )
 
 (defconst ruby-indent-beg-re
@@ -372,6 +376,39 @@ The variable ruby-indent-level controls the amount of indentation.
 		(goto-char (match-end 0)))
 	       ((looking-at ruby-block-beg-re)
 		(and 
+		 (or (not (looking-at "do\\>[^_]"))
+		     (save-excursion
+		       (back-to-indentation)
+		       (not (looking-at ruby-non-block-do-re))))
+		 (or (bolp)
+		     (progn
+		       (forward-char -1)
+		       (setq w (char-after (point)))
+		       (not (or (eq ?_ w)
+				(eq ?. w)))))
+		 (goto-char pnt)
+		 (setq w (char-after (point)))
+		 (not (eq ?_ w))
+		 (not (eq ?! w))
+		 (not (eq ?? w))
+		 (skip-chars-forward " \t")
+		 (if (not (eolp))
+		     (progn
+		       (goto-char (match-beginning 0))
+		       (if (looking-at ruby-modifier-re)
+			   (ruby-expr-beg 'modifier)
+			 t))
+		   t)
+		 (goto-char pnt)
+		 (setq nest (cons (cons nil pnt) nest))
+		 (setq depth (1+ depth)))
+		(goto-char pnt))
+	       ((looking-at ruby-block-beg-re)
+		(and 
+		 (or (not (looking-at "do\\>[^_]"))
+		     (save-excursion
+		       (back-to-indentation)
+		       (not (looking-at ruby-non-block-do-re))))
 		 (or (bolp)
 		     (progn
 		       (forward-char -1)
@@ -462,7 +499,7 @@ The variable ruby-indent-level controls the amount of indentation.
 	  (goto-char (cdr (nth 1 state)))
 	  (forward-word -1)		; skip back a keyword
 	  (cond
-	   ((looking-at "do")		; iter block is a special case
+	   ((looking-at "do\\>[^_]")	; iter block is a special case
 	    (cond
 	     ((nth 3 state)
 	      (goto-char (nth 3 state))

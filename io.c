@@ -105,7 +105,7 @@ static VALUE lineno;
 #elif defined(FILE_COUNT)
 #  define READ_DATA_PENDING(fp) ((fp)->FILE_COUNT > 0)
 #elif defined(__BEOS__)
-#  define ReadDataPending(fp) (fp->_state._eof == 0)
+#  define READ_DATA_PENDING(fp) (fp->_state._eof == 0)
 #else
 /* requires systems own version of the ReadDataPending() */
 extern int ReadDataPending();
@@ -390,6 +390,18 @@ rb_io_fileno(io)
     GetOpenFile(io, fptr);
     fd = fileno(fptr->f);
     return INT2FIX(fd);
+}
+
+static VALUE
+rb_io_pid(io)
+    VALUE io;
+{
+    OpenFile *fptr;
+
+    GetOpenFile(io, fptr);
+    if (!fptr->pid)
+	return Qnil;
+    return INT2FIX(fptr->pid);
 }
 
 static VALUE
@@ -1572,10 +1584,11 @@ pipe_open(pname, mode)
 }
 
 static VALUE
-rb_io_s_popen(argc, argv, self)
+rb_io_popen(str, argc, argv, klass)
+    char *str;
     int argc;
     VALUE *argv;
-    VALUE self;
+    VALUE klass;
 {
     char *mode;
     VALUE pname, pmode, port, proc;
@@ -1584,66 +1597,42 @@ rb_io_s_popen(argc, argv, self)
 	mode = "r";
     }
     else {
-	int len;
-
 	mode = STR2CSTR(pmode);
-	len = strlen(mode);
-	if (len == 0 || len > 3)
-	    rb_raise(rb_eArgError, "illegal access mode");
     }
     Check_SafeStr(pname);
-    port = pipe_open(RSTRING(pname)->ptr, mode);
+    port = pipe_open(str, mode);
     if (NIL_P(port)) {
 	/* child */
 	if (!NIL_P(proc)) {
 	    rb_eval_cmd(proc, rb_ary_new2(0));
-	    _exit(0);
 	}
-	else if (rb_iterator_p()) {
+	else if (rb_block_given_p()) {
 	    rb_yield(Qnil);
 	}
-	return Qnil;
+	fflush(stdout);
+	fflush(stderr);
+	_exit(0);
     }
-    else if (rb_iterator_p()) {
-	return rb_ensure(rb_yield, port, rb_io_close, port);
+    RBASIC(port)->klass = klass;
+    if (rb_block_given_p()) {
+	rb_ensure(rb_yield, port, rb_io_close, port);
+	return Qnil;
     }
     return port;
 }
 
 static VALUE
-rb_file_initialize(argc, argv, io)
+rb_io_s_popen(argc, argv, klass)
     int argc;
     VALUE *argv;
-    VALUE io;
+    VALUE klass;
 {
-    VALUE fname, vmode, file, perm;
-    char *path, *mode;
+    char *str = 0;
 
-    rb_scan_args(argc, argv, "12", &fname, &vmode, &perm);
-    Check_SafeStr(fname);
-    path = RSTRING(fname)->ptr;
-
-    if (FIXNUM_P(vmode)) {
-	int flags = NUM2INT(vmode);
-	int fmode = NIL_P(perm) ? 0666 : NUM2INT(perm);
-
-	file = rb_file_sysopen_internal(io, path, flags, fmode);
+    if (argc >= 1) {
+	str = STR2CSTR(argv[0]);
     }
-    else {
-	if (!NIL_P(vmode)) {
-	    mode = STR2CSTR(vmode);
-	}
-	else {
-	    mode = "r";
-	}
-	file = rb_file_open_internal(io, RSTRING(fname)->ptr, mode);
-    }
-
-    if (rb_iterator_p()) {
-	return rb_ensure(rb_yield, file, rb_io_close, file);
-    }
-
-    return file;
+    return rb_io_popen(str, argc, argv, klass);
 }
 
 static VALUE
@@ -1668,17 +1657,18 @@ rb_file_s_open(argc, argv, klass)
 	file = rb_file_sysopen_internal((VALUE)io, path, flags, fmode);
     }
     else {
-	if (!NIL_P(vmode)) {
-	    mode = STR2CSTR(vmode);
+	if (NIL_P(vmode)) {
+	    mode = "r";
 	}
 	else {
-	    mode = "r";
+	    mode = STR2CSTR(vmode);
 	}
 	file = rb_file_open_internal((VALUE)io, RSTRING(fname)->ptr, mode);
     }
 
-    if (rb_iterator_p()) {
-	return rb_ensure(rb_yield, file, rb_io_close, file);
+    if (rb_block_given_p()) {
+	rb_ensure(rb_yield, file, rb_io_close, file);
+	return Qnil;
     }
 
     return file;
@@ -1689,41 +1679,14 @@ rb_f_open(argc, argv)
     int argc;
     VALUE *argv;
 {
-    char *mode;
-    VALUE pname, pmode, perm;
-    VALUE port;
+    if (argc >= 1) {
+	char *str = STR2CSTR(argv[0]);
 
-    rb_scan_args(argc, argv, "12", &pname, &pmode, &perm);
-    Check_SafeStr(pname);
-    if (RSTRING(pname)->ptr[0] != '|') /* open file */
-	return rb_file_s_open(argc, argv, rb_cFile);
-
-    /* open pipe */
-    if (NIL_P(pmode)) {
-	mode = "r";
+	if (str[0] == '|') {
+	    return rb_io_popen(str+1, argc, argv, rb_cIO);
+	}
     }
-    else if (FIXNUM_P(pmode)) {
-	mode = rb_io_flags_mode(NUM2INT(pmode));
-    }
-    else {
-	int len;
-
-	mode = STR2CSTR(pmode);
-	len = strlen(mode);
-	if (len == 0 || len > 3)
-	    rb_raise(rb_eArgError, "illegal access mode %s", mode);
-    }
-
-    port = pipe_open(RSTRING(pname)->ptr+1, mode);
-    if (!rb_iterator_p()) return port;
-    if (NIL_P(port)) {
-	rb_yield(port);
-    }
-    else if (rb_iterator_p()) {
-	return rb_ensure(rb_yield, port, rb_io_close, port);
-    }
-
-    return port;
+    return rb_file_s_open(argc, argv, rb_cFile);
 }
 
 static VALUE
@@ -2280,10 +2243,42 @@ rb_io_initialize(argc, argv, io)
     fp->f = rb_fdopen(NUM2INT(fnum), m);
     fp->mode = rb_io_mode_flags(m);
 
-    if (rb_iterator_p()) {
-	return rb_ensure(rb_yield, io, rb_io_close, io);
-    }
     return io;
+}
+
+static VALUE
+rb_file_initialize(argc, argv, io)
+    int argc;
+    VALUE *argv;
+    VALUE io;
+{
+    VALUE fname, vmode, file, perm;
+    char *path, *mode;
+
+    rb_scan_args(argc, argv, "12", &fname, &vmode, &perm);
+    Check_SafeStr(fname);
+    path = RSTRING(fname)->ptr;
+
+    if (FIXNUM_P(vmode)) {
+	int flags = NUM2INT(vmode);
+	int fmode = NIL_P(perm) ? 0666 : NUM2INT(perm);
+
+	file = rb_file_sysopen_internal(io, path, flags, fmode);
+    }
+    else {
+	if (NIL_P(vmode)) {
+	    mode = "r";
+	}
+	else {
+	    mode = STR2CSTR(vmode);
+	}
+	file = rb_file_open_internal(io, RSTRING(fname)->ptr, mode);
+    }
+    if (rb_block_given_p()) {
+	rb_warn("File::new() does not take block; use File::open() instead");
+    }
+
+    return file;
 }
 
 static int binmode = 0;
@@ -3339,6 +3334,7 @@ Init_IO()
 
     rb_define_method(rb_cIO, "ioctl", rb_io_ioctl, -1);
     rb_define_method(rb_cIO, "fcntl", rb_io_fcntl, -1);
+    rb_define_method(rb_cIO, "pid", rb_io_pid, 0);
 
     rb_stdin = orig_stdin = prep_stdio(stdin, FMODE_READABLE, rb_cIO);
     rb_define_hooked_variable("$stdin", &rb_stdin, 0, set_stdin);

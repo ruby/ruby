@@ -36,7 +36,7 @@ for dll in Dir['*.dll']
   File.install dll, "#{bindir}/#{dll}", 0755, true
 end
 File.makedirs libdir, true
-for lib in ["libruby.so.LIB", CONFIG["LIBRUBY_SO"]]
+for lib in [CONFIG["LIBRUBY_SO"]]
   if File.exist? lib
     File.install lib, libdir, 0555, true
   end
@@ -56,10 +56,6 @@ File.makedirs rubylibdir, true
 File.makedirs archlibdir, true
 File.makedirs sitelibdir, true
 File.makedirs sitearchlibdir, true
-
-if RUBY_PLATFORM =~ /cygwin/ and File.exist? "import.h"
-  File.install "import.h", archlibdir, 0644, true
-end
 
 if RUBY_PLATFORM =~ /-aix/
   File.install "ruby.imp", archlibdir, 0644, true

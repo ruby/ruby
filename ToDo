@@ -63,7 +63,7 @@ Standard Libraries
 - Struct::new([name,]member,...)
 - IO#reopen accepts path as well
 - Kernel#scan
-- call initialize for builtin classes too (not yet: Regexp, Class, Module)
+- call initialize for builtin classes too (not yet: Class, Module)
 - performance tune for String's non-bang methods.
 - 'w' template for pack/unpack
 * String#scanf(?)
@@ -107,6 +107,6 @@ Things To Do Before 1.6
 
   * alternative for $! (exception? in? into? =>?)
   * alternative for interator?
-  * regex - /p, /m
+  - regex - /p, /m
   * odd? even?
   * mkmf.rb - create_makefile("net/socket")

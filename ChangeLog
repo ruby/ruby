@@ -1,3 +1,40 @@
+Wed May 24 13:12:31 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* misc/ruby-mode.el (ruby-parse-region): support `while .. do' etc.
+
+Tue May 23 23:50:12 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* re.c (rb_reg_initialize_m): wrong kcode value.
+
+	* re.c (rb_reg_s_new): forgot to initialize re->ptr.
+
+Tue May 23 08:36:24 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_compile_pattern): forgot to restore old option
+	  status by (?ix-ix).
+
+	* regex.c (re_compile_fastmap): anychar may match newline if
+	  RE_OPTION_MULTILINE or RE_OPTION_POSIXLINE is set.
+
+Mon May 22 21:56:43 2000  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* struct.c (rb_struct_getmember): should use ID2SYM, not INT2NUM.
+
+Mon May 22 15:07:37 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* file.c (rb_find_file): should check if the file really exists.
+
+Mon May 22 09:08:12 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (rb_io_popen): _exit(0) after processing block under the
+	  child process.
+
+	* io.c (rb_io_popen): flush stdout/stderr before subprocess
+	  termination.
+
+	* eval.c (rb_check_safe_str): insert rb_secure(4); operation
+	  requires untainted string should be prohibited in level 4.
+
 Sun May 21 21:17:00 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* configure.in: add Setup.dj for djgpp cross-compiling.
@@ -5,6 +42,10 @@ Sun May 21 21:17:00 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 	* Setup.dj: add readline.
 
 	* instruby.rb: copy win32/win32.h to archlibdir on mingw32.
+
+Sun May 21 20:58:08 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* pack.c: fix OFF16 and OFF32 definitions for Alpha and IRIX64.
 
 Sun May 21 17:31:37 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
@@ -17,6 +58,53 @@ Sun May 21 14:22:49 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 	* Makefile.in: rename prep.rb to fake.rb.
 
 	* configure.in: ditto.
+
+Sat May 20 23:29:14 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* dir.c (dir_s_new): does not take block; "open" does.
+
+	* io.c (rb_io_s_new): ditto.
+
+Fri May 19 07:44:26 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* dir.c (dir_s_open): Dir#open does not returns closed Dir if a
+	  block is given to the method.
+
+	* re.c (rb_reg_initialize_m): Regexp::new calls initialize now.
+
+	* string.c (Init_String): String#delete_at removed.
+
+	* string.c (rb_str_aset_m): should have checked argc != 2.
+
+	* eval.c (rb_thread_schedule): select(2) was called too many.
+
+	* regex.c (re_compile_pattern): a bug in (?m) support.  Pointed
+	  out by Dave Thomas <Dave@thomases.com>.
+
+Thu May 18 23:55:26 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* dln.c (search_undef): st_lookup()'s 3rd parameter should be
+	  a pointer of the variable which has the same size and alignment
+	  as `char *'.
+
+	* marshal.c (w_symbol, w_object): ditto.
+
+	* parse.y (rb_intern): ditto.
+
+Thu May 18 13:34:57 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ext/socket/socket.c (ruby_connect): should not have replaced
+	  thread_write_select() by rb_thread_fd_writable().
+
+Wed May 18 09:01:25 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* configure.in, ext/extmk.rb.in, lib/mkmf.rb: remove BeOS R3 support.
+	  Make a shared library (libruby.so) only if the --enable-shared
+	  option is specified.
+
+	* instruby.rb: no longer use libruby.so.LIB and import.h.
+
+	* io.c: fix READ_DATA_PENDING definition for BeOS (PowerPC).
 
 Wed May 17 14:14:23 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
@@ -70,6 +158,11 @@ Mon May 15 15:38:09 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* eval.c (rb_thread_select): remove busy wait for select.
 
 	* dir.c (glob): trailing path may be null, e.g. glob("**").
+
+Mon May 15 14:48:41 2000  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* io.c (rb_io_pid): new method; returns nil if no process attached
+	  to the IO.
 
 Mon May 15 01:18:20 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

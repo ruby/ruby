@@ -1060,22 +1060,20 @@ static int
 rb_reg_get_kcode(re)
     VALUE re;
 {
-    int kcode = 0;
+    int kcode;
 
     switch (RBASIC(re)->flags & KCODE_MASK) {
       case KCODE_NONE:
-	kcode |= 16; break;
+	return 16;
       case KCODE_EUC:
-	kcode |= 32; break;
+	return 32;
       case KCODE_SJIS:
-	kcode |= 48; break;
+	return 48;
       case KCODE_UTF8:
-	kcode |= 64; break;
+	return 64;
       default:
-	break;
+	return 0;
     }
-
-    return kcode;
 }
 
 int

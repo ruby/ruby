@@ -29,7 +29,7 @@ tk_s_new(argc, argv, klass)
 {
     VALUE obj = rb_class_new_instance(argc, argv, klass);
 
-    if (rb_iterator_p()) rb_obj_instance_eval(0, 0, obj);
+    if (rb_block_given_p()) rb_obj_instance_eval(0, 0, obj);
     return obj;
 }
 

@@ -470,7 +470,7 @@ module TkCore
   end
 
   def rb_appsend(interp, async, *args)
-    args = args.filter{|c| _get_eval_string(c).gsub(/[][$"]/, '\\\\\&')}
+    args = args.collect!{|c| _get_eval_string(c).gsub(/[][$"]/, '\\\\\&')}
     args.push(').to_s"')
     appsend(interp, async, 'ruby "(', *args)
   end
@@ -485,7 +485,7 @@ module TkCore
   end
 
   def rb_appsend_displayof(interp, win, async, *args)
-    args = args.filter{|c| _get_eval_string(c).gsub(/[][$"]/, '\\\\\&')}
+    args = args.collect!{|c| _get_eval_string(c).gsub(/[][$"]/, '\\\\\&')}
     args.push(').to_s"')
     appsend_displayof(interp, win, async, 'ruby "(', *args)
   end
@@ -526,7 +526,7 @@ module TkCore
 
   def tk_call(*args)
     print args.join(" "), "\n" if $DEBUG
-    args.filter {|x|_get_eval_string(x)}
+    args.collect! {|x|_get_eval_string(x)}
     args.compact!
     args.flatten!
     begin

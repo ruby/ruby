@@ -162,7 +162,7 @@ fdbm_delete(obj, keystr)
 
     value = dbm_fetch(dbm, key);
     if (value.dptr == 0) {
-	if (rb_iterator_p()) rb_yield(keystr);
+	if (rb_block_given_p()) rb_yield(keystr);
 	return Qnil;
     }
 

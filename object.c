@@ -159,9 +159,8 @@ inspect_i(id, value, str)
     /* need not to show internal data */
     if (CLASS_OF(value) == 0) return ST_CONTINUE;
     if (!rb_is_instance_id(id)) return ST_CONTINUE;
-    if (RSTRING(str)->ptr[0] == '-') {
+    if (RSTRING(str)->ptr[0] == '-') { /* first element */
 	RSTRING(str)->ptr[0] = '#';
-	rb_str_cat2(str, ": ");
     }
     else {
 	rb_str_cat2(str, ", ");
@@ -195,16 +194,17 @@ rb_obj_inspect(obj)
 	&& ROBJECT(obj)->iv_tbl
 	&& ROBJECT(obj)->iv_tbl->num_entries > 0) {
 	VALUE str;
-	char *b;
+	char *c, *b;
 
-	b = rb_class2name(CLASS_OF(obj));
+	c = rb_class2name(CLASS_OF(obj));
 	if (rb_inspecting_p(obj)) {
-	    char *buf = ALLOCA_N(char, strlen(b)+8);
-	    sprintf(buf, "#<%s:...>", b);
-	    return rb_str_new2(buf);
+	    b = ALLOCA_N(char, strlen(c)+8+16+1); /* 8:tags 16:addr 1:eos */
+	    sprintf(b, "#<%s:0x%lx ...>", c, obj);
+	    return rb_str_new2(b);
 	}
-	str = rb_str_new2("-<");
-	rb_str_cat2(str, b);
+	b = ALLOCA_N(char, strlen(c)+4+16+1); 	  /* 4:tags 16:addr 1:eos */
+	sprintf(b, "-<%s:0x%lx ", c, obj);
+	str = rb_str_new2(b);
 	return rb_protect_inspect(inspect_obj, obj, str);
     }
     return rb_funcall(obj, rb_intern("to_s"), 0, 0);
@@ -630,6 +630,7 @@ rb_module_s_new(klass)
     VALUE mod = rb_module_new();
 
     RBASIC(mod)->klass = klass;
+    rb_obj_call_init(klass, 0, 0);
     return mod;
 }
 
@@ -651,6 +652,7 @@ rb_class_s_new(argc, argv)
     /* make metaclass */
     RBASIC(klass)->klass = rb_singleton_class_new(RBASIC(super)->klass);
     rb_singleton_class_attached(RBASIC(klass)->klass, klass);
+    rb_obj_call_init(klass, argc, argv);
     rb_funcall(super, rb_intern("inherited"), 1, klass);
 
     return klass;
@@ -1086,7 +1088,7 @@ Init_Object()
     rb_define_method(rb_mKernel, "private_methods", rb_obj_private_methods, 0);
     rb_define_method(rb_mKernel, "instance_variables", rb_obj_instance_variables, 0);
     rb_define_private_method(rb_mKernel, "remove_instance_variable",
-			     rb_obj_remove_instance_variable, 0);
+			     rb_obj_remove_instance_variable, 1);
 
     rb_define_method(rb_mKernel, "instance_of?", rb_obj_is_instance_of, 1);
     rb_define_method(rb_mKernel, "kind_of?", rb_obj_is_kind_of, 1);

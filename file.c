@@ -2033,6 +2033,7 @@ rb_find_file(file)
     volatile VALUE vpath;
     VALUE fname;
     char *path;
+    struct stat st;
 
 #if defined(__MACOS__) || defined(riscos)
     if (is_macos_native_path(file)) {
@@ -2091,7 +2092,11 @@ rb_find_file(file)
 	path = 0;
     }
 
-    return dln_find_file(file, path);
+    path = dln_find_file(file, path);
+    if (stat(path, &st) == 0) {
+	return path;
+    }
+    return 0;
 }
 
 void

@@ -74,7 +74,7 @@ static VALUE rb_cBinding;
 static VALUE proc_call _((VALUE,VALUE));
 static VALUE rb_f_binding _((VALUE));
 static void rb_f_END _((void));
-static VALUE rb_f_iterator_p _((void));
+static VALUE rb_f_block_given_p _((void));
 static VALUE block_pass _((VALUE,NODE*));
 static VALUE rb_cMethod;
 static VALUE method_proc _((VALUE));
@@ -126,26 +126,32 @@ safe_setter(val)
 }
 
 void
-rb_check_safe_str(x)
-    VALUE x;
-{
-    if (ruby_safe_level > 0 && OBJ_TAINTED(x)){
-	rb_raise(rb_eSecurityError, "Insecure operation - %s",
-		 rb_id2name(ruby_frame->last_func));
-    }
-    if (TYPE(x)!= T_STRING) {
-	rb_raise(rb_eTypeError, "wrong argument type %s (expected String)",
-		 rb_class2name(CLASS_OF(x)));
-    }
-}
-
-void
 rb_secure(level)
     int level;
 {
     if (level <= ruby_safe_level) {
 	rb_raise(rb_eSecurityError, "Insecure operation `%s' for level %d",
 		 rb_id2name(ruby_frame->last_func), ruby_safe_level);
+    }
+}
+
+void
+rb_check_safe_str(x)
+    VALUE x;
+{
+    if (ruby_safe_level > 0 && OBJ_TAINTED(x)){
+	if (ruby_frame->last_func) {
+	    rb_raise(rb_eSecurityError, "Insecure operation - %s",
+		     rb_id2name(ruby_frame->last_func));
+	}
+	else {
+	    rb_raise(rb_eSecurityError, "Insecure operation: -r");
+	}
+    }
+    rb_secure(4);
+    if (TYPE(x)!= T_STRING) {
+	rb_raise(rb_eTypeError, "wrong argument type %s (expected String)",
+		 rb_class2name(CLASS_OF(x)));
     }
 }
 
@@ -1642,7 +1648,7 @@ is_defined(self, node, buf)
 	return "method";
 
       case NODE_YIELD:
-	if (rb_iterator_p()) {
+	if (rb_block_given_p()) {
 	    return "yield";
 	}
 	break;
@@ -2562,7 +2568,7 @@ rb_eval(self, n)
       case NODE_BLOCK_ARG:
 	if (ruby_scope->local_vars == 0)
 	    rb_bug("unexpected block argument");
-	if (rb_iterator_p()) {
+	if (rb_block_given_p()) {
 	    result = rb_f_lambda();
 	    ruby_scope->local_vars[node->nd_cnt] = result;
 	}
@@ -3291,14 +3297,20 @@ rb_jump_tag(tag)
 }
 
 int
-rb_iterator_p()
+rb_block_given_p()
 {
     if (ruby_frame->iter) return Qtrue;
     return Qfalse;
 }
 
+int
+rb_iterator_p()
+{
+    return rb_block_given_p();
+}
+
 static VALUE
-rb_f_iterator_p()
+rb_f_block_given_p()
 {
     if (ruby_frame->prev && ruby_frame->prev->iter) return Qtrue;
     return Qfalse;
@@ -4158,7 +4170,7 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
 		rb_raise(rb_eLocalJumpError, "unexpected redo");
 		break;
 	      case TAG_RETRY:
-		if (!rb_iterator_p()) {
+		if (!rb_block_given_p()) {
 		    rb_raise(rb_eLocalJumpError, "retry outside of rescue clause");
 		}
 	      default:
@@ -4247,7 +4259,7 @@ rb_f_send(argc, argv, recv)
     if (argc == 0) rb_raise(rb_eArgError, "no method name given");
 
     vid = *argv++; argc--;
-    PUSH_ITER(rb_iterator_p()?ITER_PRE:ITER_NOT);
+    PUSH_ITER(rb_block_given_p()?ITER_PRE:ITER_NOT);
     vid = rb_call(CLASS_OF(recv), recv, rb_to_id(vid), argc, argv, 1);
     POP_ITER();
 
@@ -4708,7 +4720,7 @@ specific_eval(argc, argv, klass, self)
 {
     char *file = "(eval)";
     int   line = 1;
-    int   iter = rb_iterator_p();
+    int   iter = rb_block_given_p();
 
     if (argc > 0) {
 	if (ruby_safe_level >= 4) {
@@ -5207,7 +5219,7 @@ rb_obj_call_init(obj, argc, argv)
     int argc;
     VALUE *argv;
 {
-    PUSH_ITER(rb_iterator_p()?ITER_PRE:ITER_NOT);
+    PUSH_ITER(rb_block_given_p()?ITER_PRE:ITER_NOT);
     rb_funcall2(obj, init, argc, argv);
     POP_ITER();
 }
@@ -5447,7 +5459,8 @@ Init_eval()
     rb_define_hooked_variable("$!", &ruby_errinfo, 0, errinfo_setter);
 
     rb_define_global_function("eval", rb_f_eval, -1);
-    rb_define_global_function("iterator?", rb_f_iterator_p, 0);
+    rb_define_global_function("iterator?", rb_f_block_given_p, 0);
+    rb_define_global_function("block_given?", rb_f_block_given_p, 0);
     rb_define_global_function("method_missing", rb_f_missing, -1);
     rb_define_global_function("loop", rb_f_loop, 0);
 
@@ -5678,7 +5691,7 @@ rb_f_binding(self)
     *data = *ruby_block;
 
     data->orig_thread = rb_thread_current();
-    data->iter = rb_f_iterator_p();
+    data->iter = rb_f_block_given_p();
     frame_dup(&data->frame);
     if (ruby_frame->prev) {
 	data->frame.last_func = ruby_frame->prev->last_func;
@@ -5754,7 +5767,7 @@ proc_new(klass)
     struct BLOCK *data;
     struct RVarmap *vars;
 
-    if (!rb_iterator_p() && !rb_f_iterator_p()) {
+    if (!rb_block_given_p() && !rb_f_block_given_p()) {
 	rb_raise(rb_eArgError, "tried to create Procedure-Object out of iterator");
     }
 
@@ -5856,7 +5869,7 @@ proc_call(proc, args)
     }
 
     if (orphan) {/* orphan procedure */
-	if (rb_iterator_p()) {
+	if (rb_block_given_p()) {
 	    ruby_block->frame.iter = ITER_CUR;
 	}
 	else {
@@ -6086,7 +6099,7 @@ method_call(argc, argv, method)
     volatile int safe = ruby_safe_level;
 
     Data_Get_Struct(method, struct METHOD, data);
-    PUSH_ITER(rb_iterator_p()?ITER_PRE:ITER_NOT);
+    PUSH_ITER(rb_block_given_p()?ITER_PRE:ITER_NOT);
     PUSH_TAG(PROT_NONE);
     if (OBJ_TAINTED(data->recv) || OBJ_TAINTED(method)) {
 	OBJ_TAINT(method);
@@ -6612,23 +6625,12 @@ rb_thread_fd_close(fd)
 static void
 rb_thread_deadlock()
 {
-#if 1
     curr_thread = main_thread;
     th_raise_argc = 1;
     th_raise_argv[0] = rb_exc_new2(rb_eFatal, "Thread: deadlock");
     th_raise_file = ruby_sourcefile;
     th_raise_line = ruby_sourceline;
     rb_thread_restore_context(main_thread, RESTORE_RAISE);
-#else
-    static int invoked = 0;
-
-    if (invoked) return;
-    invoked = 1;
-    rb_prohibit_interrupt = 1;
-    ruby_errinfo = rb_exc_new2(rb_eFatal, "Thread: deadlock");
-    set_backtrace(ruby_errinfo, make_backtrace());
-    rb_abort();
-#endif
 }
 
 static void
@@ -6741,7 +6743,7 @@ rb_thread_schedule()
 	if (!next && (th->status == THREAD_RUNNABLE || th->status == THREAD_TO_KILL)) {
 	    found = 1;
 	}
-	if ((th->wait_for&WAIT_JOIN) && rb_thread_dead(th->join)) {
+	if ((th->wait_for & WAIT_JOIN) && rb_thread_dead(th->join)) {
 	    th->join = 0;
 	    th->wait_for = 0;
 	    th->status = THREAD_RUNNABLE;
@@ -6775,7 +6777,7 @@ rb_thread_schedule()
     END_FOREACH_FROM(curr, th);
     
     /* Do the select if needed */
-    if (need_select || !found) {
+    if (need_select) {
 	do {
 	    /* Convert delay to a timeval */
 	    /* If a thread is runnable, just poll */
@@ -6855,6 +6857,7 @@ rb_thread_schedule()
     END_FOREACH_FROM(curr, th); 
 
     if (!next) {
+	/* raise fatal error to main thread */
 	curr_thread->file = ruby_sourcefile;
 	curr_thread->line = ruby_sourceline;
 	FOREACH_THREAD_FROM(curr, th) {
@@ -6864,7 +6867,6 @@ rb_thread_schedule()
 		    th->file, th->line);
 	}
 	END_FOREACH_FROM(curr, th);
-	/* raise fatal error to main thread */
 	rb_thread_deadlock();
 	next = main_thread;
 	rb_thread_ready(next);
@@ -7178,7 +7180,7 @@ rb_thread_stop()
 {
     rb_thread_critical = 0;
     if (curr_thread == curr_thread->next) {
-	rb_raise(rb_eThreadError, "stopping only thread");
+	rb_raise(rb_eThreadError, "stopping only thread\n\tnote: use sleep to stop forever");
     }
     curr_thread->status = THREAD_STOPPED;
     rb_thread_schedule();
@@ -7523,8 +7525,8 @@ static VALUE
 rb_thread_initialize(thread, args)
     VALUE thread, args;
 {
-    if (!rb_iterator_p()) {
-	rb_raise(rb_eThreadError, "must be called as iterator");
+    if (!rb_block_given_p()) {
+	rb_raise(rb_eThreadError, "must be called with a block");
     }
     return rb_thread_start_0(rb_thread_yield, args, rb_thread_check(thread));
 }
@@ -7533,8 +7535,8 @@ static VALUE
 rb_thread_start(klass, args)
     VALUE klass, args;
 {
-    if (!rb_iterator_p()) {
-	rb_raise(rb_eThreadError, "must be called as iterator");
+    if (!rb_block_given_p()) {
+	rb_raise(rb_eThreadError, "must be called with a block");
     }
     return rb_thread_start_0(rb_thread_yield, args, rb_thread_alloc(klass));
 }

@@ -16,7 +16,7 @@ class TkVirtualEvent<TkObject
   end
 
   def TkVirtualEvent.info
-    tk_call('event', 'info').split(/\s+/).filter{|seq|
+    tk_call('event', 'info').split(/\s+/).collect!{|seq|
       TkVirtualEvent.getobj(seq[1..-2])
     }
   end
@@ -49,8 +49,8 @@ class TkVirtualEvent<TkObject
   end
 
   def info
-    tk_call('event', 'info', "<#{@id}>").split(/\s+/).filter{|seq|
-      l = seq.scan(/<*[^<>]+>*/).filter{|subseq|
+    tk_call('event', 'info', "<#{@id}>").split(/\s+/).collect!{|seq|
+      l = seq.scan(/<*[^<>]+>*/).collect!{|subseq|
 	case (subseq)
 	when /^<<[^<>]+>>$/
 	  TkVirtualEvent.getobj(subseq[1..-2])

@@ -641,7 +641,6 @@ proc_options(argc, argv)
 	addpath(getenv("RUBYLIB"));
     }
 
-
     process_sflag();
     xflag = 0;
 }

@@ -23,6 +23,7 @@ def find_tcl(tcllib)
     find_library(tcllib, func, *paths)
   else
     find_library("tcl", func, *paths) or
+      find_library("tcl8.3", func, *paths) or
       find_library("tcl8.2", func, *paths) or
       find_library("tcl8.0", func, *paths) or
       find_library("tcl7.6", func, *paths)
@@ -36,6 +37,7 @@ def find_tk(tklib)
     find_library(tklib, func, *paths)
   else
     find_library("tk", func, *paths) or
+      find_library("tk8.3", func, *paths) or
       find_library("tk8.2", func, *paths) or
       find_library("tk8.0", func, *paths) or
       find_library("tk4.2", func, *paths)

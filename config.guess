@@ -969,10 +969,6 @@ EOF
     *:Rhapsody:*:*)
 	echo ${UNAME_MACHINE}-apple-rhapsody${UNAME_RELEASE}
 	exit 0 ;;
-    *:"Mac OS":*:*)
-        echo `uname -p`-apple-macos${UNAME_RELEASE}
-        exit 0 ;;
-
 esac
 
 #echo '(No uname command or uname output not recognized.)' 1>&2

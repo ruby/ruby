@@ -334,7 +334,7 @@ rb_hash_fetch(argc, argv, hash)
     rb_scan_args(argc, argv, "11", &key, &if_none);
 
     if (!st_lookup(RHASH(hash)->tbl, key, &val)) {
-	if (rb_iterator_p()) {
+	if (rb_block_given_p()) {
 	    if (argc > 1) {
 		rb_raise(rb_eArgError, "wrong # of arguments", argc);
 	    }
@@ -421,7 +421,7 @@ rb_hash_delete(hash, key)
     }
     else if (st_delete(RHASH(hash)->tbl, &key, &val))
 	return val;
-    if (rb_iterator_p()) {
+    if (rb_block_given_p()) {
 	return rb_yield(key);
     }
     return RHASH(hash)->ifnone;
@@ -894,7 +894,7 @@ env_delete_m(obj, name)
     VALUE obj, name;
 {
     VALUE val = env_delete(obj, name);
-    if (rb_iterator_p()) rb_yield(name);
+    if (rb_block_given_p()) rb_yield(name);
     return val;
 }
 
@@ -934,7 +934,7 @@ env_fetch(argc, argv)
     }
     env = getenv(nam);
     if (!env) {
-	if (rb_iterator_p()) {
+	if (rb_block_given_p()) {
 	    if (argc > 1) {
 		rb_raise(rb_eArgError, "wrong # of arguments", argc);
 	    }

@@ -232,27 +232,27 @@ re_set_casetable(table)
 #endif
 
 #ifdef isblank
-# define ISBLANK(c) (ISASCII (c) && isblank (c))
+# define ISBLANK(c) (ISASCII(c) && isblank(c))
 #else
 # define ISBLANK(c) ((c) == ' ' || (c) == '\t')
 #endif
 #ifdef isgraph
-# define ISGRAPH(c) (ISASCII (c) && isgraph (c))
+# define ISGRAPH(c) (ISASCII(c) && isgraph(c))
 #else
-# define ISGRAPH(c) (ISASCII (c) && isprint (c) && !isspace (c))
+# define ISGRAPH(c) (ISASCII(c) && isprint(c) && !isspace(c))
 #endif
 
 #undef ISPRINT
-#define ISPRINT(c) (ISASCII (c) && isprint (c))
-#define ISDIGIT(c) (ISASCII (c) && isdigit (c))
-#define ISALNUM(c) (ISASCII (c) && isalnum (c))
-#define ISALPHA(c) (ISASCII (c) && isalpha (c))
-#define ISCNTRL(c) (ISASCII (c) && iscntrl (c))
-#define ISLOWER(c) (ISASCII (c) && islower (c))
-#define ISPUNCT(c) (ISASCII (c) && ispunct (c))
-#define ISSPACE(c) (ISASCII (c) && isspace (c))
-#define ISUPPER(c) (ISASCII (c) && isupper (c))
-#define ISXDIGIT(c) (ISASCII (c) && isxdigit (c))
+#define ISPRINT(c) (ISASCII(c) && isprint(c))
+#define ISDIGIT(c) (ISASCII(c) && isdigit(c))
+#define ISALNUM(c) (ISASCII(c) && isalnum(c))
+#define ISALPHA(c) (ISASCII(c) && isalpha(c))
+#define ISCNTRL(c) (ISASCII(c) && iscntrl(c))
+#define ISLOWER(c) (ISASCII(c) && islower(c))
+#define ISPUNCT(c) (ISASCII(c) && ispunct(c))
+#define ISSPACE(c) (ISASCII(c) && isspace(c))
+#define ISUPPER(c) (ISASCII(c) && isupper(c))
+#define ISXDIGIT(c) (ISASCII(c) && isxdigit(c))
 
 #ifndef NULL
 # define NULL (void *)0
@@ -264,10 +264,10 @@ re_set_casetable(table)
    (Per Bothner suggested the basic approach.)  */
 #undef SIGN_EXTEND_CHAR
 #if __STDC__
-# define SIGN_EXTEND_CHAR(c) ((signed char) (c))
+# define SIGN_EXTEND_CHAR(c) ((signed char)(c))
 #else  /* not __STDC__ */
 /* As in Harbison and Steele.  */
-# define SIGN_EXTEND_CHAR(c) ((((unsigned char) (c)) ^ 128) - 128)
+# define SIGN_EXTEND_CHAR(c) ((((unsigned char)(c)) ^ 128) - 128)
 #endif
 
 /* These are the command codes that appear in compiled regular
@@ -350,10 +350,7 @@ enum regexpcode
     stop_paren,    /* Place holder at the end of (?:..). */
     casefold_on,   /* Turn on casefold flag. */
     casefold_off,  /* Turn off casefold flag. */
-    mline_on,      /* Turn on multi line match (match with newlines). */
-    mline_off,     /* Turn off multi line match. */
-    posix_on,      /* Turn on POSIXified line match (match with newlines). */
-    posix_off,     /* Turn off POSIXified line match. */
+    option_set,	   /* Turn on multi line match (match with newlines). */
     start_nowidth, /* Save string point to the stack. */
     stop_nowidth,  /* Restore string place at the point start_nowidth. */
     pop_and_fail,  /* Fail after popping nowidth entry from stack. */
@@ -395,7 +392,7 @@ enum regexpcode
    at SOURCE.  */
 #define EXTRACT_NUMBER(destination, source)				\
   do { (destination) = *(source) & 0377;				\
-    (destination) += SIGN_EXTEND_CHAR (*(char*)((source) + 1)) << 8; } while (0)
+    (destination) += SIGN_EXTEND_CHAR(*(char*)((source) + 1)) << 8; } while (0)
 
 /* Same as EXTRACT_NUMBER, except increment the pointer for source to
    point to second byte of SOURCE.  Note that SOURCE has to be a value
@@ -538,7 +535,7 @@ print_mbc(c)
     if (bufp->allocated == (1L<<16)) goto too_big;			\
     bufp->allocated *= 2;						\
     if (bufp->allocated > (1L<<16)) bufp->allocated = (1L<<16);		\
-    bufp->buffer = (char*)xrealloc (bufp->buffer, bufp->allocated);	\
+    bufp->buffer = (char*)xrealloc(bufp->buffer, bufp->allocated);	\
     if (bufp->buffer == 0)						\
       goto memory_exhausted;						\
     b = (b - old_buffer) + bufp->buffer;				\
@@ -572,7 +569,7 @@ print_mbc(c)
      } 									\
   } while (0)
 
-#define STREQ(s1, s2) ((strcmp (s1, s2) == 0))
+#define STREQ(s1, s2) ((strcmp(s1, s2) == 0))
 
 #define CHAR_CLASS_MAX_LENGTH  6 /* Namely, `xdigit'.  */
 
@@ -766,22 +763,12 @@ print_partial_compiled_pattern(start, end)
       printf("/casefold_off");
       break;
 
-    case mline_on:
-      printf("/mline_on");
+    case option_set:
+      printf("/option_set/%d", *p++);
       break;
-
-    case mline_off:
-      printf("/mline_off");
-      break;
-
-    case posix_on:
-      printf("/posix_on");
-
-    case posix_off:
-      printf("/posix_off");
 
     case start_nowidth:
-      EXTRACT_NUMBER_AND_INCR (mcnt, p);
+      EXTRACT_NUMBER_AND_INCR(mcnt, p);
       printf("/start_nowidth//%d", mcnt);
       break;
 
@@ -851,12 +838,12 @@ print_partial_compiled_pattern(start, end)
       break;
 
     case on_failure_jump:
-      EXTRACT_NUMBER_AND_INCR (mcnt, p);
+      EXTRACT_NUMBER_AND_INCR(mcnt, p);
       printf("/on_failure_jump//%d", mcnt);
       break;
 
     case dummy_failure_jump:
-      EXTRACT_NUMBER_AND_INCR (mcnt, p);
+      EXTRACT_NUMBER_AND_INCR(mcnt, p);
       printf("/dummy_failure_jump//%d", mcnt);
       break;
 
@@ -865,56 +852,56 @@ print_partial_compiled_pattern(start, end)
       break;
 
     case finalize_jump:
-      EXTRACT_NUMBER_AND_INCR (mcnt, p);
+      EXTRACT_NUMBER_AND_INCR(mcnt, p);
       printf("/finalize_jump//%d", mcnt);
       break;
 
     case maybe_finalize_jump:
-      EXTRACT_NUMBER_AND_INCR (mcnt, p);
+      EXTRACT_NUMBER_AND_INCR(mcnt, p);
       printf("/maybe_finalize_jump//%d", mcnt);
       break;
 
     case jump_past_alt:
-      EXTRACT_NUMBER_AND_INCR (mcnt, p);
+      EXTRACT_NUMBER_AND_INCR(mcnt, p);
       printf("/jump_past_alt//%d", mcnt);
       break;
 
     case jump:
-      EXTRACT_NUMBER_AND_INCR (mcnt, p);
+      EXTRACT_NUMBER_AND_INCR(mcnt, p);
       printf("/jump//%d", mcnt);
       break;
 
     case succeed_n: 
-      EXTRACT_NUMBER_AND_INCR (mcnt, p);
-      EXTRACT_NUMBER_AND_INCR (mcnt2, p);
+      EXTRACT_NUMBER_AND_INCR(mcnt, p);
+      EXTRACT_NUMBER_AND_INCR(mcnt2, p);
       printf("/succeed_n//%d//%d", mcnt, mcnt2);
       break;
 
     case jump_n: 
-      EXTRACT_NUMBER_AND_INCR (mcnt, p);
-      EXTRACT_NUMBER_AND_INCR (mcnt2, p);
+      EXTRACT_NUMBER_AND_INCR(mcnt, p);
+      EXTRACT_NUMBER_AND_INCR(mcnt2, p);
       printf("/jump_n//%d//%d", mcnt, mcnt2);
       break;
 
     case set_number_at: 
-      EXTRACT_NUMBER_AND_INCR (mcnt, p);
-      EXTRACT_NUMBER_AND_INCR (mcnt2, p);
+      EXTRACT_NUMBER_AND_INCR(mcnt, p);
+      EXTRACT_NUMBER_AND_INCR(mcnt2, p);
       printf("/set_number_at//%d//%d", mcnt, mcnt2);
       break;
 
     case try_next:
-      EXTRACT_NUMBER_AND_INCR (mcnt, p);
+      EXTRACT_NUMBER_AND_INCR(mcnt, p);
       printf("/try_next//%d", mcnt);
       break;
 
     case finalize_push:
-      EXTRACT_NUMBER_AND_INCR (mcnt, p);
+      EXTRACT_NUMBER_AND_INCR(mcnt, p);
       printf("/finalize_push//%d", mcnt);
       break;
 
     case finalize_push_n:
-      EXTRACT_NUMBER_AND_INCR (mcnt, p);
-      EXTRACT_NUMBER_AND_INCR (mcnt2, p);
+      EXTRACT_NUMBER_AND_INCR(mcnt, p);
+      EXTRACT_NUMBER_AND_INCR(mcnt2, p);
       printf("/finalize_push_n//%d//%d", mcnt, mcnt2);
       break;
 
@@ -971,7 +958,7 @@ print_compiled_pattern(bufp)
 {
   unsigned char *buffer = (unsigned char*)bufp->buffer;
 
-  print_partial_compiled_pattern (buffer, buffer + bufp->used);
+  print_partial_compiled_pattern(buffer, buffer + bufp->used);
 }
 
 static char*
@@ -1033,10 +1020,7 @@ calculate_must_string(start, end)
     case push_dummy_failure:
     case start_paren:
     case stop_paren:
-    case mline_on:
-    case mline_off:
-    case posix_on:
-    case posix_off:
+    case option_set:
       break;
 
     case charset:
@@ -1050,11 +1034,11 @@ calculate_must_string(start, end)
       break;
 
     case on_failure_jump:
-      EXTRACT_NUMBER_AND_INCR (mcnt, p);
+      EXTRACT_NUMBER_AND_INCR(mcnt, p);
       if (mcnt > 0) p += mcnt;
       if ((enum regexpcode)p[-3] == jump) {
 	p -= 3;
-	EXTRACT_NUMBER_AND_INCR (mcnt, p);
+	EXTRACT_NUMBER_AND_INCR(mcnt, p);
 	if (mcnt > 0) p += mcnt;
       }
       break;
@@ -1063,7 +1047,7 @@ calculate_must_string(start, end)
     case succeed_n: 
     case try_next:
     case jump:
-      EXTRACT_NUMBER_AND_INCR (mcnt, p);
+      EXTRACT_NUMBER_AND_INCR(mcnt, p);
       if (mcnt > 0) p += mcnt;
       break;
 
@@ -1260,6 +1244,7 @@ re_compile_pattern(pattern, size, bufp)
   int had_char_class = 0;
 
   int options = bufp->options;
+  int old_options = 0;
 
   bufp->fastmap_accurate = 0;
   bufp->must = 0;
@@ -1273,7 +1258,7 @@ re_compile_pattern(pattern, size, bufp)
     bufp->allocated = INIT_BUF_SIZE;
     if (bufp->buffer)
       /* EXTEND_BUFFER loses when bufp->allocated is 0.  */
-      bufp->buffer = (char*)xrealloc (bufp->buffer, INIT_BUF_SIZE);
+      bufp->buffer = (char*)xrealloc(bufp->buffer, INIT_BUF_SIZE);
     else
       /* Caller did not allocate a buffer.  Do it for them.  */
       bufp->buffer = (char*)xmalloc(INIT_BUF_SIZE);
@@ -1286,7 +1271,7 @@ re_compile_pattern(pattern, size, bufp)
 
     switch (c) {
     case '$':
-      if (bufp->options & RE_OPTION_POSIXLINE) {
+      if (bufp->options & RE_OPTION_SINGLELINE) {
 	BUFPUSH(endbuf);
       }
       else {
@@ -1306,7 +1291,7 @@ re_compile_pattern(pattern, size, bufp)
       break;
 
     case '^':
-      if (bufp->options & RE_OPTION_POSIXLINE)
+      if (bufp->options & RE_OPTION_SINGLELINE)
 	BUFPUSH(begbuf);
       else
 	BUFPUSH(begline);
@@ -1576,7 +1561,7 @@ re_compile_pattern(pattern, size, bufp)
 	  /* Leave room for the null.  */
 	  char str[CHAR_CLASS_MAX_LENGTH + 1];
 
-	  PATFETCH_RAW (c);
+	  PATFETCH_RAW(c);
 	  c1 = 0;
 
 	  /* If pattern is `[[:'.  */
@@ -1610,11 +1595,11 @@ re_compile_pattern(pattern, size, bufp)
 	    char is_upper = STREQ(str, "upper");
 	    char is_xdigit = STREQ(str, "xdigit");
 
-	    if (!IS_CHAR_CLASS (str))
+	    if (!IS_CHAR_CLASS(str))
 	      goto invalid_pattern;
 
 	    /* Throw away the ] at the end of the character class.  */
-	    PATFETCH (c);
+	    PATFETCH(c);
 
 	    if (p == pend) 
 	      goto invalid_pattern;
@@ -1632,7 +1617,7 @@ re_compile_pattern(pattern, size, bufp)
 		  || (is_space  && ISSPACE(ch))
 		  || (is_upper  && ISUPPER(ch))
 		  || (is_xdigit && ISXDIGIT(ch)))
-		SET_LIST_BIT (ch);
+		SET_LIST_BIT(ch);
 	    }
 	    had_char_class = 1;
 	  }
@@ -1661,14 +1646,16 @@ re_compile_pattern(pattern, size, bufp)
 	b[-1]--; 
       if (b[-1] != (1 << BYTEWIDTH) / BYTEWIDTH)
 	memmove(&b[b[-1]], &b[(1 << BYTEWIDTH) / BYTEWIDTH],
-		2 + EXTRACT_UNSIGNED (&b[(1 << BYTEWIDTH) / BYTEWIDTH])*8);
-      b += b[-1] + 2 + EXTRACT_UNSIGNED (&b[b[-1]])*8;
+		2 + EXTRACT_UNSIGNED(&b[(1 << BYTEWIDTH) / BYTEWIDTH])*8);
+      b += b[-1] + 2 + EXTRACT_UNSIGNED(&b[b[-1]])*8;
       break;
 
     case '(':
+      old_options = options;
       PATFETCH(c);
       if (c == '?') {
 	int negative = 0;
+	int push_option = 0;
 	PATFETCH_RAW(c);
 	switch (c) {
 	case 'x': case 'p': case 'm': case 'i': case '-':
@@ -1691,28 +1678,26 @@ re_compile_pattern(pattern, size, bufp)
 
 	    case 'p':
 	      if (negative) {
-		if (options&RE_OPTION_POSIXLINE) {
+		if ((options&RE_OPTION_POSIXLINE) == RE_OPTION_POSIXLINE) {
 		  options &= ~RE_OPTION_POSIXLINE;
-		  BUFPUSH(posix_off);
 		}
 	      }
-	      else if (!(options&RE_OPTION_POSIXLINE)) {
+	      else if ((options&RE_OPTION_POSIXLINE) != RE_OPTION_POSIXLINE) {
 		options |= RE_OPTION_POSIXLINE;
-		BUFPUSH(posix_on);
 	      }
+	      push_option = 1;
 	      break;
 
 	    case 'm':
 	      if (negative) {
 		if (options&RE_OPTION_MULTILINE) {
 		  options &= ~RE_OPTION_MULTILINE;
-		  BUFPUSH(mline_off);
 		}
 	      }
 	      else if (!(options&RE_OPTION_MULTILINE)) {
 		options |= RE_OPTION_MULTILINE;
-		BUFPUSH(mline_on);
 	      }
+	      push_option = 1;
 	      break;
 
 	    case 'i':
@@ -1756,6 +1741,10 @@ re_compile_pattern(pattern, size, bufp)
 
 	default:
 	  FREE_AND_RETURN(stackb, "undefined (?...) sequence");
+	}
+	if (push_option) {
+	  BUFPUSH(option_set);
+	  BUFPUSH(options);
 	}
       }
       else {
@@ -1813,7 +1802,7 @@ re_compile_pattern(pattern, size, bufp)
 	break;
       }
       *stackp++ = c;
-      *stackp++ = options;
+      *stackp++ = old_options;
       fixup_alt_jump = 0;
       laststart = 0;
       begalt = b;
@@ -1822,14 +1811,13 @@ re_compile_pattern(pattern, size, bufp)
     case ')':
       if (stackp == stackb) 
 	FREE_AND_RETURN(stackb, "unmatched )");
-      if ((options ^ stackp[-1]) & RE_OPTION_IGNORECASE) {
-	BUFPUSH((options&RE_OPTION_IGNORECASE)?casefold_off:casefold_on);
-      }
-      if ((options ^ stackp[-1]) & RE_OPTION_POSIXLINE) {
-	BUFPUSH((options&RE_OPTION_MULTILINE)?posix_off:posix_on);
-      }
-      if ((options ^ stackp[-1]) & RE_OPTION_MULTILINE) {
-	BUFPUSH((options&RE_OPTION_MULTILINE)?mline_off:mline_on);
+
+      if (options != stackp[-1]) {
+	if ((options ^ stackp[-1]) & RE_OPTION_IGNORECASE) {
+	  BUFPUSH((options&RE_OPTION_IGNORECASE)?casefold_off:casefold_on);
+	}
+	BUFPUSH(option_set);
+	BUFPUSH(stackp[-1]);
       }
       pending_exact = 0;
       if (fixup_alt_jump) {
@@ -2111,7 +2099,7 @@ re_compile_pattern(pattern, size, bufp)
       beg_interval = 0;
 
       /* normal_char and normal_backslash need `c'.  */
-      PATFETCH (c);	
+      PATFETCH(c);	
       goto normal_char;
 
     case '\\':
@@ -2195,7 +2183,7 @@ re_compile_pattern(pattern, size, bufp)
 	break;
 
       case 'Z':
-	if ((bufp->options & RE_OPTION_POSIXLINE) == 0) {
+	if ((bufp->options & RE_OPTION_SINGLELINE) == 0) {
 	  BUFPUSH(endbuf2);
 	  break;
 	}
@@ -2789,14 +2777,8 @@ re_compile_fastmap(bufp)
 	options ^= RE_OPTION_IGNORECASE;
 	continue;
 
-      case mline_on:
-      case mline_off:
-	options ^= RE_OPTION_MULTILINE;
-	continue;
-
-      case posix_on:
-      case posix_off:
-	options ^= RE_OPTION_POSIXLINE;
+      case option_set:
+	options = *p++;
 	continue;
 
       case endline:
@@ -2804,7 +2786,7 @@ re_compile_fastmap(bufp)
 	  fastmap[translate['\n']] = 1;
 	else
 	  fastmap['\n'] = 1;
-	if ((options & RE_OPTION_POSIXLINE) == 0 && bufp->can_be_null == 0)
+	if ((options & RE_OPTION_SINGLELINE) == 0 && bufp->can_be_null == 0)
 	  bufp->can_be_null = 2;
 	break;
 
@@ -2889,7 +2871,7 @@ re_compile_fastmap(bufp)
       case anychar_repeat:
       case anychar:
 	for (j = 0; j < (1 << BYTEWIDTH); j++) {
-	  if (j != '\n' || (options & RE_OPTION_POSIXLINE))
+	  if (j != '\n' || (options & RE_OPTION_MULTILINE))
 	    fastmap[j] = 1;
 	}
 	if (bufp->can_be_null) {
@@ -3167,7 +3149,7 @@ re_search(bufp, string, size, startpos, range, regs)
     }
   }
   if (bufp->options & RE_OPTIMIZE_ANCHOR) {
-    if (bufp->options&RE_OPTION_POSIXLINE) {
+    if (bufp->options&RE_OPTION_SINGLELINE) {
       goto begbuf_match;
     }
     anchor = 1;
@@ -3783,9 +3765,8 @@ re_match(bufp, string_arg, size, pos, regs)
 	  d += mbclen(*d);
 	  break;
 	}
-	if (!(options&RE_OPTION_MULTILINE) &&
-	    !(options&RE_OPTION_POSIXLINE) &&
-	    (TRANSLATE_P() ? translate[*d] : *d) == '\n')
+	if (!(options&RE_OPTION_MULTILINE)
+	    && (TRANSLATE_P() ? translate[*d] : *d) == '\n')
 	  goto fail;
 	SET_REGS_MATCHED;
 	d++;
@@ -4132,20 +4113,8 @@ re_match(bufp, string_arg, size, pos, regs)
 	options &= ~RE_OPTION_IGNORECASE;
 	continue;
 
-      case mline_on:
-	options |= RE_OPTION_MULTILINE;
-	continue;
-
-      case mline_off:
-	options &= ~RE_OPTION_MULTILINE;
-	continue;
-
-      case posix_on:
-	options |= RE_OPTION_POSIXLINE;
-	continue;
-
-      case posix_off:
-	options &= ~RE_OPTION_POSIXLINE;
+      case option_set:
+	options = *p++;
 	continue;
 
       case wordbound:
@@ -4308,7 +4277,7 @@ re_match(bufp, string_arg, size, pos, regs)
 	case finalize_push:
 	case jump:
 	  p1++;
-	  EXTRACT_NUMBER_AND_INCR (mcnt, p1);
+	  EXTRACT_NUMBER_AND_INCR(mcnt, p1);
 
 	  if (mcnt >= 0) break;	/* should be backward jump */
 	  p1 += mcnt;

@@ -333,11 +333,6 @@ def create_makefile(target)
     $DLDFLAGS = $DLDFLAGS + " -L$(topdir)"
   end
 
-  if RUBY_PLATFORM =~ /beos/
-    $libs = $libs + " " + CONFIG["LIBRUBYARG"]
-    $DLDFLAGS = $DLDFLAGS + " -L" + CONFIG["prefix"] + "/lib"
-  end
-
   defflag = ''
   if RUBY_PLATFORM =~ /cygwin|mingw/
     if File.exist? target + ".def"
@@ -447,19 +442,6 @@ EOMF
     dfile.close
   end
   mfile.close
-
-  if RUBY_PLATFORM =~ /beos/
-    if RUBY_PLATFORM =~ /^powerpc/ then
-      deffilename = "ruby.exp"
-    else
-      deffilename = "ruby.def"
-    end
-    print "creating #{deffilename}\n"
-    open(deffilename, "w") do |file|
-      file.print("EXPORTS\n") if RUBY_PLATFORM =~ /^i/
-      file.print("Init_#{target}\n")
-    end
-  end
 end
 
 $OBJEXT = CONFIG["OBJEXT"]

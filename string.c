@@ -898,12 +898,13 @@ rb_str_aref_m(argc, argv, str)
     VALUE *argv;
     VALUE str;
 {
-    VALUE arg1, arg2;
-
-    if (rb_scan_args(argc, argv, "11", &arg1, &arg2) == 2) {
-	return rb_str_substr(str, NUM2INT(arg1), NUM2INT(arg2));
+    if (argc == 2) {
+	return rb_str_substr(str, NUM2INT(argv[0]), NUM2INT(argv[1]));
     }
-    return rb_str_aref(str, arg1);
+    if (argc != 1) {
+	rb_raise(rb_eArgError, "wrong # of arguments(%d for 1)", argc);
+    }
+    return rb_str_aref(str, argv[0]);
 }
 
 static void
@@ -1029,6 +1030,9 @@ rb_str_aset_m(argc, argv, str)
 	rb_str_replace(str, beg, len, argv[2]);
 	return argv[2];
     }
+    if (argc != 2) {
+	rb_raise(rb_eArgError, "wrong # of arguments(%d for 2)", argc);
+    }
     return rb_str_aset(str, argv[0], argv[1]);
 }
 
@@ -1038,43 +1042,20 @@ rb_str_slice_bang(argc, argv, str)
     VALUE *argv;
     VALUE str;
 {
-    VALUE arg1, arg2;
-    long pos, len;
+    VALUE result;
+    VALUE buf[3];
+    int i;
 
-    rb_str_modify(str);
-    if (rb_scan_args(argc, argv, "11", &arg1, &arg2) == 2) {
-	pos = NUM2LONG(arg1);
-	len = NUM2LONG(arg2);
-      delete_pos_len:
-	if (pos < 0) {
-	    pos = RSTRING(str)->len + pos;
-	}
-	if (pos < 0 || RSTRING(str)->len <= pos) {
-	    rb_raise(rb_eIndexError, "index %d out of string", pos);
-	}
-	arg2 = rb_str_substr(str, pos, len);
-	rb_str_replace(str, pos, len, rb_str_new(0,0));
-	return arg2;
+    if (argc < 1 || 2 < argc) {
+	rb_raise(rb_eArgError, "wrong # of arguments(%d for 1)", argc);
     }
-
-    if (!FIXNUM_P(arg1) && rb_range_beg_len(arg1, &pos, &len, RSTRING(str)->len, 0)) {
-	goto delete_pos_len;
+    for (i=0; i<argc; i++) {
+	buf[i] = argv[i];
     }
-
-    pos = NUM2LONG(arg1);
-    len = RSTRING(str)->len;
-
-    if (pos >= len) return Qnil;
-    if (pos < 0) pos += len;
-    if (pos < 0) return Qnil;
-
-    arg2 = INT2FIX(RSTRING(str)->ptr[pos] & 0xff);
-    memmove(RSTRING(str)->ptr + pos,
-	    RSTRING(str)->ptr + pos + 1,
-	    RSTRING(str)->len - (pos + 1));
-    RSTRING(str)->len--;
-
-    return arg2;
+    buf[i] = rb_str_new(0,0);
+    result = rb_str_aref_m(2, buf, str);
+    rb_str_aset_m(3, buf, str);
+    return result;
 }
 
 static VALUE
@@ -1107,7 +1088,7 @@ rb_str_sub_bang(argc, argv, str)
     int iter = 0;
     long plen;
 
-    if (argc == 1 && rb_iterator_p()) {
+    if (argc == 1 && rb_block_given_p()) {
 	iter = 1;
     }
     else if (argc == 2) {
@@ -1177,7 +1158,7 @@ str_gsub(argc, argv, str, bang)
     char *buf, *bp, *cp;
     int tainted = 0;
 
-    if (argc == 1 && rb_iterator_p()) {
+    if (argc == 1 && rb_block_given_p()) {
 	iter = 1;
     }
     else if (argc == 2) {
@@ -2545,7 +2526,7 @@ rb_str_scan(str, pat)
     VALUE match = Qnil;
 
     pat = get_pat(pat);
-    if (!rb_iterator_p()) {
+    if (!rb_block_given_p()) {
 	VALUE ary = rb_ary_new();
 
 	while (!NIL_P(result = scan_once(str, pat, &start))) {
@@ -2849,7 +2830,6 @@ Init_String()
 
     rb_define_method(rb_cString, "slice", rb_str_aref_m, -1);
     rb_define_method(rb_cString, "slice!", rb_str_slice_bang, -1);
-    rb_define_method(rb_cString, "delete_at", rb_str_slice_bang, -1);
 
     to_str = rb_intern("to_s");
 
