@@ -1157,9 +1157,9 @@ class Resolv
           @limit = @index + len
           d = yield(len)
           if @index < @limit
-            raise DecodeError.new("junk exist")
+            raise DecodeError.new("junk exists")
           elsif @limit < @index
-            raise DecodeError.new("limit exceed")
+            raise DecodeError.new("limit exceeded")
           end
           @limit = save_limit
           return d
@@ -1185,7 +1185,7 @@ class Resolv
               raise StandardError.new("unsupported template: '#{byte.chr}' in '#{template}'")
             end
           }
-          raise DecodeError.new("limit exceed") if @limit < @index + len
+          raise DecodeError.new("limit exceeded") if @limit < @index + len
           arr = @data.unpack("@#{@index}#{template}")
           @index += len
           return arr
@@ -1193,7 +1193,7 @@ class Resolv
 
         def get_string
           len = @data[@index]
-          raise DecodeError.new("limit exceed") if @limit < @index + 1 + len
+          raise DecodeError.new("limit exceeded") if @limit < @index + 1 + len
           d = @data[@index + 1, len]
           @index += 1 + len
           return d
@@ -1554,7 +1554,7 @@ class Resolv
           raise ArgumentError.new("IPv4 address with invalid value: " + arg)
         end
       else
-        raise ArgumentError.new("cannot interprete as IPv4 address: #{arg.inspect}")
+        raise ArgumentError.new("cannot interpret as IPv4 address: #{arg.inspect}")
       end
     end
 
@@ -1615,10 +1615,10 @@ class Resolv
       \z/x
 
     Regex = /
-      (?:#{Regex_8Hex.source}) |
-      (?:#{Regex_CompressedHex.source}) |
-      (?:#{Regex_6Hex4Dec.source}) |
-      (?:#{Regex_CompressedHex4Dec.source})/x
+      (?:#{Regex_8Hex}) |
+      (?:#{Regex_CompressedHex}) |
+      (?:#{Regex_6Hex4Dec}) |
+      (?:#{Regex_CompressedHex4Dec})/x
 
     def self.create(arg)
       case arg
@@ -1662,7 +1662,7 @@ class Resolv
         end
         return IPv6.new(address)
       else
-        raise ArgumentError.new("cannot interprete as IPv6 address: #{arg.inspect}")
+        raise ArgumentError.new("cannot interpret as IPv6 address: #{arg.inspect}")
       end
     end
 
@@ -1706,5 +1706,5 @@ class Resolv
   end
 
   DefaultResolver = self.new
-  AddressRegex = /(?:#{IPv4::Regex.source})|(?:#{IPv6::Regex.source})/
+  AddressRegex = /(?:#{IPv4::Regex})|(?:#{IPv6::Regex})/
 end
