@@ -1,3 +1,7 @@
+Tue Sep  2 00:44:37 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* re.c (rb_memsearch): fix overrun.  [ruby-talk:80759]
+
 Tue Sep  2 00:41:27 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv/iconv.c (map_charset): use lower case keys.

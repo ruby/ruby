@@ -107,7 +107,8 @@ rb_memsearch(x0, m, y0, n)
 
 #define KR_REHASH(a, b, h) (((h) << 1) - ((a)<<d) + (b))
 
-    s = y; e = s + n - m + 1;
+    if (m > n) return -1;
+    s = y; e = s + n - m;
 
     /* Preprocessing */
     /* computes d = 2^(m-1) with
@@ -116,36 +117,38 @@ rb_memsearch(x0, m, y0, n)
     if (d > m) d = m;
 
     if (ruby_ignorecase) {
+	if (n == m) {
+	    return rb_memcicmp(x, s, m) == 0 ? 0 : -1;
+	}
 	/* Prepare hash value */
 	for (hy = hx = i = 0; i < d; ++i) {
 	    hx = KR_REHASH(0, casetable[x[i]], hx);
 	    hy = KR_REHASH(0, casetable[s[i]], hy);
 	}
 	/* Searching */
-	while (s < e) {
-	    if (hx == hy && rb_memcicmp(x, s, m) == 0) {
-		return s-y;
-	    }
+	while (hx != hy || rb_memcicmp(x, s, m)) {
+	    if (s >= e) return -1;
 	    hy = KR_REHASH(casetable[*s], casetable[*(s+d)], hy);
 	    s++;
 	}
     }
     else {
+	if (n == m) {
+	    return memcmp(x, s, m) == 0 ? 0 : -1;
+	}
 	/* Prepare hash value */
 	for (hy = hx = i = 0; i < d; ++i) {
 	    hx = KR_REHASH(0, x[i], hx);
 	    hy = KR_REHASH(0, s[i], hy);
 	}
 	/* Searching */
-	while (s < e) {
-	    if (hx == hy && memcmp(x, s, m) == 0) {
-		return s-y;
-	    }
+	while (hx != hy || memcmp(x, s, m)) {
+	    if (s >= e) return -1;
 	    hy = KR_REHASH(*s, *(s+d), hy);
 	    s++;
 	}
     }
-    return -1;
+    return s-y;
 }
 
 #define REG_CASESTATE  FL_USER0
