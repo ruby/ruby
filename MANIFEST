@@ -94,12 +94,10 @@ doc/forwardable.rd.ja
 doc/irb/irb-tools.rd.ja
 doc/irb/irb.rd
 doc/irb/irb.rd.ja
-doc/net/http.rd.ja
-doc/net/pop.rd.ja
-doc/net/smtp.rd.ja
 doc/shell.rd
 doc/shell.rd.ja
 ext/Setup
+ext/Setup.atheos
 ext/Setup.dj
 ext/Setup.emx
 ext/Setup.nt
@@ -159,9 +157,7 @@ lib/irb/lc/error.rb
 lib/irb/lc/help-message
 lib/irb/lc/ja/error.rb
 lib/irb/lc/ja/help-message
-lib/irb/loader.rb
 lib/irb/locale.rb
-lib/irb/multi-irb.rb
 lib/irb/ruby-lex.rb
 lib/irb/ruby-token.rb
 lib/irb/slex.rb
@@ -258,6 +254,7 @@ missing/strerror.c
 missing/strftime.c
 missing/strncasecmp.c
 missing/strstr.c
+missing/strtod.c
 missing/strtol.c
 missing/strtoul.c
 missing/vsnprintf.c
@@ -303,7 +300,6 @@ sample/rcs.awk
 sample/rcs.dat
 sample/rcs.rb
 sample/regx.rb
-sample/rename.rb
 sample/sieve.rb
 sample/svr.rb
 sample/test.rb
@@ -315,8 +311,6 @@ vms/config.h_in
 vms/vms.h
 win32/Makefile.sub
 win32/README.win32
-win32/config.h.in
-win32/config.status.in
 win32/configure.bat
 win32/dir.h
 win32/mkexports.rb
