@@ -8,9 +8,9 @@ when /cygwin/
 when /linux/
   LIBC_SO = "/lib/libc.so.6"
   LIBM_SO = "/lib/libm.so.6"
-when /mingw/, /msvcrt/
-  LIBC_SO = "C:\\WINDOWS\\system32\\msvcrt.dll"
-  LIBM_SO = "C:\\WINDOWS\\system32\\msvcrt.dll"
+when /mingw/, /mswin32/
+  LIBC_SO = "msvcrt.dll"
+  LIBM_SO = "msvcrt.dll"
 else
   LIBC_SO = ARGV[0]
   LIBM_SO = ARGV[1]
