@@ -1,3 +1,7 @@
+Fri Nov 19 22:44:43 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* lib/test/unit/collector/dir.rb: better support for -p/-x option.
+
 Fri Nov 19 17:46:56 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/maker/0.9.rb (RSS::Maker::RSS09::Image#have_required_values): 
