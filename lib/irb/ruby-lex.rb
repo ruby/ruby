@@ -954,7 +954,7 @@ class RubyLex
 	ungetc
       else
 	if (ch = getc) == "\\" #"
-	  read_escape(chrs)
+	  read_escape
 	end
       end
 
@@ -962,7 +962,7 @@ class RubyLex
       if ch == "C" and (ch = getc) != "-"
 	ungetc
       elsif (ch = getc) == "\\" #"
-	read_escape(chrs)
+	read_escape
       end
     else
       # other characters 

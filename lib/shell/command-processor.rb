@@ -241,7 +241,7 @@ class Shell
 
     def transact(&block)
       begin
-	@shell.instance_eval &block
+	@shell.instance_eval(&block)
       ensure
 	check_point
       end
@@ -251,7 +251,7 @@ class Shell
     # internal commands
     #
     def out(dev = STDOUT, &block)
-      dev.print transact &block
+      dev.print transact(&block)
     end
 
     def echo(*strings)
@@ -352,7 +352,7 @@ class Shell
     #
     def self.def_system_command(command, path = command)
       begin
-	eval ((d = %Q[def #{command}(*opts)
+	eval((d = %Q[def #{command}(*opts)
      	          SystemCommand.new(@shell, '#{path}', *opts)
                end]), nil, __FILE__, __LINE__ - 1)
       rescue SyntaxError
@@ -387,14 +387,14 @@ class Shell
 	if iterator?
 	  @alias_map[ali.intern] = proc
 
-	  eval ((d = %Q[def #{ali}(*opts)
+	  eval((d = %Q[def #{ali}(*opts)
                           @shell.__send__(:#{command},
                                           *(CommandProcessor.alias_map[:#{ali}].call *opts))
 	                end]), nil, __FILE__, __LINE__ - 1)
     
 	else
            args = opts.collect{|opt| '"' + opt + '"'}.join ","
-           eval ((d = %Q[def #{ali}(*opts)
+           eval((d = %Q[def #{ali}(*opts)
                           @shell.__send__(:#{command}, #{args}, *opts)
                         end]), nil, __FILE__, __LINE__ - 1)
 	end

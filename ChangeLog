@@ -1,3 +1,18 @@
+Thu Jun 28 00:36:19 2001 Keiju Ishitsuka <keiju@ishitsuka.com>
+	
+	* lib/matrix.rb: resolve 'ruby -w' warnings.
+
+	* lib/irb/locale.rb: resolve 'ruby -w' warnings.
+
+	* lib/irb/multi-irb.rb: resolve 'ruby -w' warnings.
+
+	* lib/irb/ruby-lex.rb: fix problem for "\\M-\\..." and "\\C-\\..."
+	  and resolve 'ruby -w' warnings.  
+
+	* lib/irb/ruby-token.rb: fix typo
+
+	* lib/shell/command-processor.rb: resolve 'ruby -w' warnings.
+	
 Wed Jun 27 08:53:04 2001  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/pop.rb: new methods POP3.auth_only, POP3#auth_only

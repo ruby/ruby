@@ -218,7 +218,7 @@ module RubyToken
 
     [:TkBACKQUOTE,  TkOp,   "`"],
 
-    [:TkASSGIN,     Token,  "="],
+    [:TkASSIGN,     Token,  "="],
     [:TkDOT,	    Token,  "."],
     [:TkLPAREN,     Token,  "("],  #(exp)
     [:TkLBRACK,     Token,  "["],  #[arry]
