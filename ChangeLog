@@ -1,3 +1,8 @@
+Wed Aug 18 17:10:12 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/tcltklib/stubs.c (ruby_tcltk_stubs): need to call
+	  Tcl_FindExecutable() for Tcl/Tk 8.4.
+
 Wed Aug 18 12:52:55 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_obj_instance_eval): evaluates under special singleton

@@ -34,8 +34,9 @@ ruby_tcltk_stubs()
 {
     DL_HANDLE tcl_dll;
     DL_HANDLE tk_dll;
+    void (*p_Tcl_FindExecutable)(const char *);
     Tcl_Interp *(*p_Tcl_CreateInterp)();
-    int (*p_Tk_Init) _((Tcl_Interp *));
+    int (*p_Tk_Init)(Tcl_Interp *);
     Tcl_Interp *tcl_ip;
     int n;
     char *ruby_tcl_dll = 0;
@@ -72,6 +73,12 @@ ruby_tcltk_stubs()
     if (!tcl_dll || !tk_dll)
 	return -1;
 
+    p_Tcl_FindExecutable = (void (*)(const char *))DL_SYM(tcl_dll, "Tcl_FindExecutable");
+    if (!p_Tcl_FindExecutable)
+	return -7;
+
+    p_Tcl_FindExecutable("ruby");
+
     p_Tcl_CreateInterp = (Tcl_Interp *(*)())DL_SYM(tcl_dll, "Tcl_CreateInterp");
     if (!p_Tcl_CreateInterp)
 	return -2;
@@ -80,7 +87,7 @@ ruby_tcltk_stubs()
     if (!tcl_ip)
 	return -3;
 
-    p_Tk_Init = (int (*) _((Tcl_Interp *)))DL_SYM(tk_dll, "Tk_Init");
+    p_Tk_Init = (int (*)(Tcl_Interp *))DL_SYM(tk_dll, "Tk_Init");
     if (!p_Tk_Init)
 	return -4;
     (*p_Tk_Init)(tcl_ip);
