@@ -243,6 +243,10 @@ rb_cstr2inum(str, base)
 	    str += 2;
 	}
 	while (*str && *str == '0') str++;
+	if (ISSPACE(*str)) {
+	    if (badcheck) goto bad;
+	    return INT2FIX(0);
+	}
 	if (!*str) str--;
 	len = 4*strlen(str)*sizeof(char);
     }

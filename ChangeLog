@@ -4,6 +4,20 @@ Tue Jul 31 12:55:35 2001  Nobuyoshi.Nakada <nobu.nokada@softhome.net>  <nobu.nak
 	  with "/.".
 	  removed meaningless code.
 
+Tue Jul 31 11:52:10 2001  akira yamada  <akira@ruby-lang.org>
+
+	* marshal.c (marshal_load): ruby_verbose test should be wrapped by
+	  RTEST().
+
+Mon Jul 30 17:54:23 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (rb_hash_index): should return nil (not the default
+	  value) if value is not in the hash.
+
+Mon Jul 30 03:19:53 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_cstr2inum): "0 ff".hex should return 0, not 255.
+
 Fri Jul 27 18:07:27 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_provided): extension should be guessed using

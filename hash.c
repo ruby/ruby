@@ -361,7 +361,7 @@ rb_hash_index(hash, value)
     VALUE args[2];
 
     args[0] = value;
-    args[1] = RHASH(hash)->ifnone;
+    args[1] = Qnil;
 
     st_foreach(RHASH(hash)->tbl, index_i, args);
 

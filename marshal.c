@@ -1067,7 +1067,7 @@ marshal_load(argc, argv)
 \tformat version %d.%d required; %d.%d given",
 		 MARSHAL_MAJOR, MARSHAL_MINOR, major, minor);
     }
-    if (ruby_verbose && minor != MARSHAL_MINOR) {
+    if (RTEST(ruby_verbose) && minor != MARSHAL_MINOR) {
 	rb_warn("incompatible marshal file format (can be read)\n\
 \tformat version %d.%d required; %d.%d given",
 		MARSHAL_MAJOR, MARSHAL_MINOR, major, minor);
