@@ -869,10 +869,8 @@ class Resolv
             rescue NXDomain
             end
           }
-        rescue OtherResolvError
-          raise ResolvError.new("DNS error: #{$!.message}")
+        rescue ResolvError
         end
-        raise ResolvError.new("DNS resolv error: #{name}")
       end
 
       class NXDomain < ResolvError
