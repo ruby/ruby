@@ -939,41 +939,42 @@ read_buffered_data(ptr, len, f)
 }
 
 long
-rb_io_fread(ptr, len, f)
+io_fread(ptr, len, fptr)
     char *ptr;
     long len;
-    FILE *f;
+    OpenFile *fptr;
 {
     long n = len;
     int c;
 
     while (n > 0) {
-	c = read_buffered_data(ptr, n, f);
+	c = read_buffered_data(ptr, n, fptr->f);
 	if (c < 0) goto eof;
 	if (c > 0) {
 	    ptr += c;
 	    if ((n -= c) <= 0) break;
 	}
-	rb_thread_wait_fd(fileno(f));
+	rb_thread_wait_fd(fileno(fptr->f));
+	rb_io_check_closed(fptr);
 	TRAP_BEG;
-	c = getc(f);
+	c = getc(fptr->f);
 	TRAP_END;
 	if (c == EOF) {
 	  eof:
-	    if (ferror(f)) {
+	    if (ferror(fptr->f)) {
 		switch (errno) {
 		  case EINTR:
 #if defined(ERESTART)
 		  case ERESTART:
 #endif
-		    clearerr(f);
+		    clearerr(fptr->f);
 		    continue;
 		  case EAGAIN:
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
 		  case EWOULDBLOCK:
 #endif
 		    if (len > n) {
-			clearerr(f);
+			clearerr(fptr->f);
 		    }
 		}
 		if (len == n) return 0;
@@ -985,6 +986,19 @@ rb_io_fread(ptr, len, f)
 	n--;
     }
     return len - n;
+}
+
+long
+rb_io_fread(ptr, len, f)
+    char *ptr;
+    long len;
+    FILE *f;
+{
+    OpenFile of;
+
+    of.f = f;
+    of.f2 = NULL;
+    return io_fread(ptr, len, &of);
 }
 
 #ifndef S_ISREG
@@ -1038,7 +1052,7 @@ read_all(fptr, siz, str)
     for (;;) {
 	rb_str_locktmp(str);
 	READ_CHECK(fptr->f);
-	n = rb_io_fread(RSTRING(str)->ptr+bytes, siz-bytes, fptr->f);
+	n = io_fread(RSTRING(str)->ptr+bytes, siz-bytes, fptr);
 	rb_str_unlocktmp(str);
 	if (n == 0 && bytes == 0) {
 	    rb_str_resize(str,0);
@@ -1226,7 +1240,7 @@ io_read(argc, argv, io)
     if (RSTRING(str)->len != len) {
 	rb_raise(rb_eRuntimeError, "buffer string modified");
     }
-    n = rb_io_fread(RSTRING(str)->ptr, len, fptr->f);
+    n = io_fread(RSTRING(str)->ptr, len, fptr);
     rb_str_unlocktmp(str);
     if (n == 0) {
 	rb_str_resize(str,0);
@@ -2274,6 +2288,7 @@ rb_io_sysread(argc, argv, io)
     }
     n = fileno(fptr->f);
     rb_thread_wait_fd(fileno(fptr->f));
+    rb_io_check_closed(fptr);
     TRAP_BEG;
     n = read(fileno(fptr->f), RSTRING(str)->ptr, RSTRING(str)->len);
     TRAP_END;

@@ -1,3 +1,7 @@
+Sat Nov 27 09:41:21 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (io_fread): [ruby-dev:24964]
+
 Fri Nov 26 18:02:44 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: Tk.destroy uses TkWindow#epath
