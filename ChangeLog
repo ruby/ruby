@@ -1,3 +1,8 @@
+Sun Feb 13 11:38:40 2005  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
+
+	* regparse.c (type_cclass_hash): (Thanks Nobu) fixed
+	  overrun. ([ruby-dev:25676]).
+
 Sun Feb 13 10:53:08 2005  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
 
 	* oniggnu.h, oniguruma.h, regcomp.c, st.c: imported

@@ -4533,12 +4533,12 @@ static int type_cclass_hash(type_cclass_key* key)
   val = 0;
 
   p = (unsigned char* )&(key->enc);
-  for (i = 0; i < sizeof(OnigEncodingType); i++) {
+  for (i = 0; i < sizeof(key->enc); i++) {
     val = val * 997 + (int )*p++;
   }
 
   p = (unsigned char* )(&key->type);
-  for (i = 0; i < sizeof(int); i++) {
+  for (i = 0; i < sizeof(key->type); i++) {
     val = val * 997 + (int )*p++;
   }
 
