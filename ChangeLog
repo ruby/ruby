@@ -1,3 +1,7 @@
+Thu Oct 14 13:33:59 2004  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/rss.rb: added link to Tutorial.
+
 Mon Oct 11 13:48:20 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/*: untabify
