@@ -64,12 +64,6 @@
 #include "addrinfo.h"
 #include "sockport.h"
 
-#ifndef INET6
-#ifndef NT
-extern int h_errno;
-#endif
-#endif
-
 #define SUCCESS 0
 #define ANY 0
 #define YES 1

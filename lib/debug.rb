@@ -97,7 +97,7 @@ class DEBUGGER__
       begin
 	val = eval(str, binding)
 	val
-      rescue
+      rescue StandardError, ScriptError
 	at = eval("caller(0)", binding)
 	stdout.printf "%s:%s\n", at.shift, $!.to_s.sub(/\(eval\):1:(in `.*?':)?/, '') #`
 	for i in at

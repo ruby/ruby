@@ -52,9 +52,13 @@ Standard Libraries
 - SyntaxError, NameError, LoadError and NotImplementError are subclasses of
   ScriptError<Exception, not StandardError.
 - String's bang methods return string always
+- Thread::start gives arguments, not a thread object to the block
+- regexp: (?>..)
+* regexp: \G
 * Struct::new([name,]member,...) ??
 * String#scanf(?)
 * Object#fmt(?)
+* Integer#{bin,oct,hex,heX}
 * Time::strptime
 * Integer[num], Float[num];  Fixnum[num]?
 * method to retrieve non-number trailer for to_i/to_f.

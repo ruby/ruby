@@ -77,7 +77,7 @@ void srand48 _((long));
 #endif /* not HAVE_DRAND48 */
 
 static int first = 1;
-#if !defined HAVE_DRAND48 && defined HAVE_RANDOM
+#ifdef HAVE_RANDOM
 static char state[256];
 #endif
 
@@ -88,7 +88,7 @@ rand_init(seed)
     int old;
     static unsigned int saved_seed;
 
-#if !defined HAVE_DRAND48 && defined HAVE_RANDOM
+#ifdef HAVE_RANDOM
     if (first == 1) {
 	initstate(1, state, sizeof state);
     }

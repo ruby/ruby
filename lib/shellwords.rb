@@ -2,43 +2,46 @@
 # original is shellwords.pl
 #
 # Usage:
-#       require 'shellwords.rb'
+#       require 'shellwords'
 #       words = Shellwords.shellwords(line)
 #
 #	   or
 #
+#       require 'shellwords'
 #       include Shellwords
 #       words = shellwords(line)
 
 module Shellwords
   def shellwords(line)
-    return '' unless line
-    line.sub! /^\s+/, ''
+    unless line.kind_of?(String)
+      raise ArgumentError, "Argument must be String class object."
+    end
+    line.sub!(/^\s+/, '')
     words = []
     while line != ''
       field = ''
       while true
-	if line.sub! /^"(([^"\\]|\\.)*)"/, '' then #"
+	if line.sub!(/^"(([^"\\]|\\.)*)"/, '') then #"
 	  snippet = $1
-	  snippet.gsub! /\\(.)/, '\1'
+	  snippet.gsub!(/\\(.)/, '\1')
 	elsif line =~ /^"/ then #"
-	  raise ArgError, "Unmatched double quote: #{line}"
-        elsif line.sub! /^'(([^'\\]|\\.)*)'/, '' then #'
+	  raise ArgumentError, "Unmatched double quote: #{line}"
+        elsif line.sub!(/^'(([^'\\]|\\.)*)'/, '') then #'
 	  snippet = $1
-	  snippet.gsub! /\\(.)/, '\1'
+	  snippet.gsub!(/\\(.)/, '\1')
 	elsif line =~ /^'/ then #'
-	  raise ArgError, "Unmatched single quote: #{line}"
-	elsif line.sub! /^\\(.)/, '' then
+	  raise ArgumentError, "Unmatched single quote: #{line}"
+	elsif line.sub!(/^\\(.)/, '') then
 	  snippet = $1
-	elsif line.sub! /^([^\s\\'"]+)/, '' then #'
+	elsif line.sub!(/^([^\s\\'"]+)/, '') then #'
 	  snippet = $1
 	else
-	  line.sub! /^\s+/, ''
+	  line.sub!(/^\s+/, '')
 	  break
 	end
-	field += snippet
+	field.concat(snippet)
       end
-      words += field
+      words.push(field)
     end
     words
   end

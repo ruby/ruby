@@ -50,7 +50,6 @@ static unsigned long malloc_memories = 0;
 static unsigned long alloc_objects = 0;
 
 static int malloc_called = 0;
-static int free_called = 0;
 static int second_mem_error = 0;
 
 static void
@@ -133,12 +132,11 @@ xrealloc(ptr, size)
     return mem;
 }
 
-static void
+void
 xfree(x)
     void *x;
 {
-    free_called++;
-    free(x);
+    if (x) free(x);
 }
 #endif
 
@@ -203,15 +201,45 @@ static struct gc_list {
 } *Global_List = 0;
 
 void
-rb_global_variable(var)
-    VALUE *var;
+rb_gc_register_address(addr)
+    VALUE *addr;
 {
     struct gc_list *tmp;
 
     tmp = ALLOC(struct gc_list);
     tmp->next = Global_List;
-    tmp->varptr = var;
+    tmp->varptr = addr;
     Global_List = tmp;
+}
+
+void
+rb_gc_unregister_address(addr)
+    VALUE *addr;
+{
+    struct gc_list *tmp = Global_List;
+
+    if (tmp->varptr == addr) {
+	Global_List = tmp->next;
+	free(tmp);
+	return;
+    }
+    while (tmp->next) {
+	if (tmp->next->varptr == addr) {
+	    struct gc_list *t = tmp->next;
+
+	    tmp->next = tmp->next->next;
+	    free(t);
+	    break;
+	}
+	tmp = tmp->next;
+    }
+}
+
+void
+rb_global_variable(var)
+    VALUE *var;
+{
+    rb_gc_register_address(var);
 }
 
 typedef struct RVALUE {
@@ -1219,6 +1247,8 @@ Init_GC()
     rb_define_module_function(rb_mObSpace, "call_finalizer", call_final, 1);
     rb_define_module_function(rb_mObSpace, "_id2ref", id2ref, 1);
 
+    rb_gc_register_address(&rb_mObSpace);
     rb_global_variable(&finalizers);
+    rb_gc_unregister_address(&rb_mObSpace);
     finalizers = rb_ary_new();
 }

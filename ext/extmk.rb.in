@@ -464,6 +464,7 @@ $(DLLIB): $(OBJS)
     dfile = open("#{$srcdir}/depend", "r")
     mfile.printf "###\n"
     while line = dfile.gets()
+      line.gsub!(/\.o/, ".#{$OBJEXT}")
       mfile.printf "%s", line.gsub('\$\(hdrdir\)/config.h', '$(topdir)/config.h')
     end
     dfile.close
@@ -500,7 +501,7 @@ def extmake(target)
   $objs = nil
   $local_flags = ""
   case RUBY_PLATFORM
-  when /cygwin|beos|openstep|nextstep|rhapsody/
+  when /cygwin|beos|openstep|nextstep|rhapsody|i386-os2_emx/
     $libs = ""
   when /mswin32/
     $LIBEXT = "lib"

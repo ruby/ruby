@@ -154,7 +154,6 @@ VALUE rb_file_s_expand_path _((int, VALUE *));
 void rb_file_const _((const char*, VALUE));
 char *rb_find_file _((char*));
 /* gc.c */
-void rb_global_variable _((VALUE*));
 void rb_gc_mark_locations _((VALUE*, VALUE*));
 void rb_mark_tbl _((struct st_table*));
 void rb_mark_hash _((struct st_table*));
@@ -248,10 +247,8 @@ VALUE rb_reg_new _((const char*, long, int));
 VALUE rb_reg_match _((VALUE, VALUE));
 VALUE rb_reg_match2 _((VALUE));
 int rb_reg_options _((VALUE));
-const char* rb_get_kcode _((void));
 void rb_set_kcode _((const char*));
-int rb_ignorecase_p _((void));
-void rb_match_busy _((VALUE, int));
+const char* rb_get_kcode _((void));
 /* ruby.c */
 EXTERN VALUE rb_argv;
 EXTERN VALUE rb_argv0;

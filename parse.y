@@ -1120,7 +1120,7 @@ primary		: literal
 			$$ = NEW_UNLESS(cond($2), $4, $5);
 		        fixpos($$, $2);
 		    }
-		| kWHILE {cond_nest++;} expr do {cond_nest--;} 
+		| kWHILE {cond_nest++;} expr do { cond_nest--; }
 		  compstmt
 		  kEND
 		    {
@@ -1128,7 +1128,7 @@ primary		: literal
 			$$ = NEW_WHILE(cond($3), $6, 1);
 		        fixpos($$, $3);
 		    }
-		| kUNTIL {cond_nest++;} expr do {cond_nest--;} 
+		| kUNTIL {cond_nest++;} expr do { cond_nest--; } 
 		  compstmt
 		  kEND
 		    {

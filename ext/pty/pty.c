@@ -282,7 +282,9 @@ establishShell(shellname, info)
 	dup2(slave,2);
 	close(slave);
 
+#if defined(HAVE_SETEUID) || defined(HAVE_SETREUID) || defined(HAVE_SETRESUID)
 	seteuid(getuid());
+#endif
 
 	argc = 0;
 	for (i = 0; shellname[i];) {

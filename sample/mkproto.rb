@@ -14,7 +14,7 @@ while gets()
 	else
 	  type = ""
 	end
-	while arg.sub!(/(\** *[\w\d_]+)(,|$)/, "")
+	while arg.sub!(/(\** *[\w\d_]+)(,|$)/, "") && $~
 	  args.push type + " " + $1.strip
 	end
       else

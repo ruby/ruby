@@ -7266,21 +7266,21 @@ rb_thread_scope_shared_p()
 
 static VALUE
 rb_thread_yield(arg, th) 
-    int arg;
+    VALUE arg;
     thread_t th;
 {
     scope_dup(ruby_block->scope);
-    return rb_yield_0(th->thread, 0, 0, Qfalse);
+    return rb_yield_0(arg, 0, 0, Qfalse);
 }
 
 static VALUE
-rb_thread_start(klass)
-    VALUE klass;
+rb_thread_start(klass, args)
+    VALUE klass, args;
 {
     if (!rb_iterator_p()) {
 	rb_raise(rb_eThreadError, "must be called as iterator");
     }
-    return rb_thread_create_0(rb_thread_yield, 0, klass);
+    return rb_thread_create_0(rb_thread_yield, args, klass);
 }
 
 static VALUE
@@ -7708,9 +7708,9 @@ Init_Thread()
     rb_eThreadError = rb_define_class("ThreadError", rb_eStandardError);
     rb_cThread = rb_define_class("Thread", rb_cObject);
 
-    rb_define_singleton_method(rb_cThread, "new", rb_thread_start, 0);
-    rb_define_singleton_method(rb_cThread, "start", rb_thread_start, 0);
-    rb_define_singleton_method(rb_cThread, "fork", rb_thread_start, 0);
+    rb_define_singleton_method(rb_cThread, "new", rb_thread_start, -2);
+    rb_define_singleton_method(rb_cThread, "start", rb_thread_start, -2);
+    rb_define_singleton_method(rb_cThread, "fork", rb_thread_start, -2);
 
     rb_define_singleton_method(rb_cThread, "stop", rb_thread_stop, 0);
     rb_define_singleton_method(rb_cThread, "kill", rb_thread_s_kill, 1);

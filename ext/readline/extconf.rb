@@ -2,8 +2,9 @@ require "mkmf"
 
 dir_config("readline")
 have_library("user32", nil) if /cygwin/ === PLATFORM
-have_library("termcap", "tgetnum")
-have_library("curses", "tgetnum")
+have_library("termcap", "tgetnum") or
+  have_library("curses", "tgetnum") or
+  have_library("ncurses", "tgetnum")
 if have_header("readline/readline.h") and
     have_header("readline/history.h") and
     have_library("readline", "readline")

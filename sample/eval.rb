@@ -31,7 +31,7 @@ while TRUE
   end
   begin
     print eval(line).inspect, "\n"
-  rescue
+  rescue ScriptError, StandardError
     $! = 'exception raised' unless $!
     print "ERR: ", $!, "\n"
   end

@@ -1,6 +1,67 @@
+Tue Feb  8 02:07:33 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_search): optimize for \G at top.
+
+	* regex.c (re_compile_pattern): \G introduced.
+
+	* regex.c (re_match): ditto.
+
+	* string.c (str_sub_bang): old behavior restored: bang method
+	  returns nil if string not changed.
+
+	* regex.c (re_compile_pattern): support independent subexpression
+	  `(?>pattern)'. 
+
+	* regex.c (re_match): ditto.
+
+Mon Feb  7 15:51:08 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_match): now understands interrupts under Ruby.
+
+Mon Feb  7 07:51:52 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* array.c (rb_ary_uniq_bang): always return an Array.
+
+	* array.c (rb_ary_compact_bang): ditto.
+
+	* array.c (rb_ary_flatten_bang): ditto.
+
+	* hash.c (rb_hash_reject): returns a Hash, not an Array.
+
+	* hash.c (env_reject): ditto.
+
+Fri Feb  4 10:20:25 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (scan_once): scan now leaves information about the last
+	  successful pattern match in $&.
+
+	* io.c (rb_io_close): should not check closed IO.
+
+Fri Feb  4 05:44:01 2000  Kentaro Inagaki  <inagaki@tg.rim.or.jp>
+
+	* ext/socket/socket.c (s_recv): TRAP_BEG after retry entry.
+
+Wed Feb  2 22:33:45  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* eval.c (rb_thread_start): receives argument from outside, like
+	  `Thread::start(1,2,3){|a,b,c| ... }'.
+
+Wed Feb  2 22:14:40 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* re.c (rb_reg_regsub): should check regs->num_regs.
+
+	* re.c (rb_reg_search): remove matchcache, use static struct
+	  re_register instead. 
+
+	* re.c (match_getter): avoid cloning match data.
+
+Wed Feb  2 17:12:15 2000  Dave Thomas  <Dave@Thomases.com>
+
+	* samples/eval.rb: Rescue new ScriptError exception
+
 Wed Feb  2 02:06:07 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
-	* string.c (str_gsub_bang): gsub! now leaves information about
+	* string.c (str_gsub_bang): gsub! now leaves information about the
 	  last successful pattern match in $&.
 
 Mon Jan 31 15:24:58 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>

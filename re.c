@@ -183,7 +183,7 @@ kcode_reset_option()
 }
 
 int
-rb_mbclen2(c, re)
+rb_reg_mbclen2(c, re)
     unsigned char c;
     VALUE re;
 {
@@ -455,21 +455,14 @@ match_end(match, n)
 #define MATCH_BUSY FL_USER2
 
 void
-rb_match_busy(match, busy)
+rb_match_busy(match)
     VALUE match;
-    int busy;
 {
-    if (busy) {
-	FL_SET(match, MATCH_BUSY);
-    }
-    else {
-	FL_UNSET(match, MATCH_BUSY);
-    }
+    FL_SET(match, MATCH_BUSY);
 }
 
 int ruby_ignorecase;
 static int may_need_recompile;
-static VALUE matchcache;
 
 static void
 rb_reg_prepare_re(reg)
@@ -540,7 +533,7 @@ rb_reg_search(reg, str, pos, reverse)
 {
     int result;
     VALUE match;
-    struct re_registers *regs = 0;
+    static struct re_registers regs;
     int range;
 
     if (pos > RSTRING(str)->len) return -1;
@@ -553,23 +546,6 @@ rb_reg_search(reg, str, pos, reverse)
     else if (reg_kcode != curr_kcode)
 	kcode_reset_option();
 
-    if (rb_thread_scope_shared_p()) {
-	match = Qnil;
-    }
-    else {
-	match = rb_backref_get();
-    }
-    if (NIL_P(match) || FL_TEST(match, MATCH_BUSY)) {
-	if (matchcache) {
-	    match = matchcache;
-	    matchcache = 0;
-	}
-	else {
-	    match = match_alloc();
-	}
-    }
-    regs = RMATCH(match)->regs;
-
     if (reverse) {
 	range = -pos;
     }
@@ -577,7 +553,7 @@ rb_reg_search(reg, str, pos, reverse)
 	range = RSTRING(str)->len - pos;
     }
     result = re_search(RREGEXP(reg)->ptr,RSTRING(str)->ptr,RSTRING(str)->len,
-		       pos, range, regs);
+		       pos, range, &regs);
 
     if (FL_TEST(reg, KCODE_FIXED))
 	kcode_reset_option();
@@ -586,15 +562,24 @@ rb_reg_search(reg, str, pos, reverse)
 	rb_reg_raise(RREGEXP(reg)->str, RREGEXP(reg)->len,
 		  "Stack overfow in regexp matcher", reg);
     }
+
     if (result < 0) {
-	FL_UNSET(match, FL_TAINT);
-	matchcache = match;
 	rb_backref_set(Qnil);
+	return result;
+    }
+
+    if (rb_thread_scope_shared_p()) {
+	match = Qnil;
     }
     else {
-	RMATCH(match)->str = rb_str_new4(str);
-	rb_backref_set(match);
+	match = rb_backref_get();
     }
+    if (NIL_P(match) || FL_TEST(match, MATCH_BUSY)) {
+	match = match_alloc();
+    }
+    re_copy_registers(RMATCH(match)->regs, &regs);
+    RMATCH(match)->str = rb_str_new4(str);
+    rb_backref_set(match);
 
     OBJ_INFECT(match, reg);
     OBJ_INFECT(match, str);
@@ -1150,6 +1135,7 @@ rb_reg_regsub(str, src, regs)
 	}
 
 	if (no >= 0) {
+	    if (no >= regs->num_regs) continue;
 	    if (BEG(no) == -1) continue;
 	    rb_str_cat(val, RSTRING(src)->ptr+BEG(no), END(no)-BEG(no));
 	}
@@ -1247,7 +1233,8 @@ match_getter()
     VALUE match = rb_backref_get();
 
     if (NIL_P(match)) return Qnil;
-    return match_clone(match);
+    rb_match_busy(match);
+    return match;
 }
 
 static void
@@ -1310,7 +1297,6 @@ Init_Regexp()
     rb_define_const(rb_cRegexp, "POSIXLINE", INT2FIX(RE_OPTION_POSIXLINE));
 
     rb_global_variable(&reg_cache);
-    rb_global_variable(&matchcache);
 
     rb_cMatch  = rb_define_class("MatchingData", rb_cObject);
     rb_undef_method(CLASS_OF(rb_cMatch), "new");

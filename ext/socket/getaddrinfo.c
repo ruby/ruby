@@ -130,12 +130,6 @@ static struct afd {
 #define PTON_MAX	4
 #endif
 
-#ifndef INET6
-#ifndef NT
-extern int h_errno;
-#endif
-#endif
-
 static int get_name __P((const char *, struct afd *,
 			  struct addrinfo **, char *, struct addrinfo *,
 			  int));

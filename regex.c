@@ -24,6 +24,11 @@
 #include "config.h"
 #ifdef RUBY_PLATFORM
 # define RUBY
+extern int rb_prohibit_interrupt;
+extern int rb_trap_pending;
+# define CHECK_INTS if (!rb_prohibit_interrupt) {\
+    if (rb_trap_pending) rb_trap_exec();\
+}
 #endif
 
 /* We write fatal error messages on standard error.  */
@@ -59,13 +64,13 @@
 #endif
 
 #ifndef xmalloc
-void *xmalloc _((unsigned long));
-void *xcalloc _((unsigned long,unsigned long));
-void *xrealloc _((void*,unsigned long));
+void *xmalloc _((size_t));
+void *xcalloc _((size_t,size_t));
+void *xrealloc _((void*,size_t));
 void free _((void*));
 #endif
 
-/* #define	NO_ALLOCA */	/* try it out for now */
+#define	NO_ALLOCA */	/* try it out for now */
 #ifndef NO_ALLOCA
 /* Make alloca work the best possible way.  */
 #ifdef __GNUC__
@@ -109,13 +114,13 @@ char *alloca();
 
 #define RE_ALLOCATE xmalloc
 
-#define FREE_VAR(var) do { if (var) free(var); var = NULL; } while(0)
 #define FREE_VARIABLES()
 
 #define FREE_AND_RETURN_VOID(stackb)   do { free(stackb); return; } while(0)
 #define FREE_AND_RETURN(stackb,val)    do { free(stackb); return(val); } while(0)
-#define DOUBLE_STACK(stackx,stackb,len,type) \
-        (type*)xrealloc(stackb, 2 * len * sizeof(type))
+#define DOUBLE_STACK(stackx,stackb,len,type) do {			\
+        stackx = (type*)xrealloc(stackb, 2 * len * sizeof(type));	\
+} while (0)
 #endif /* NO_ALLOCA */
 
 #define RE_TALLOC(n,t)  ((t*)RE_ALLOCATE((n)*sizeof(t)))
@@ -125,7 +130,7 @@ char *alloca();
 #define EXPAND_FAIL_STACK(stackx,stackb,len) 				\
     do {								\
         /* Roughly double the size of the stack.  */			\
-        stackx = DOUBLE_STACK(stackx,stackb,len,unsigned char*);	\
+        DOUBLE_STACK(stackx,stackb,len,unsigned char*);			\
 	/* Rearrange the pointers. */					\
 	stackp = stackx + (stackp - stackb);				\
 	stackb = stackx;						\
@@ -273,6 +278,7 @@ enum regexpcode
                  of string to be matched (if not).  */
     endbuf,   /* Analogously, for end of buffer/string.  */
     endbuf2,  /* End of buffer/string, or newline just before it.  */
+    begpos,   /* Matches where last scan//gsub left off.  */
     jump,     /* Followed by two bytes giving relative address to jump to.  */
     jump_past_alt,/* Same as jump, but marks the end of an alternative.  */
     on_failure_jump,	 /* Followed by two bytes giving relative address of 
@@ -337,6 +343,7 @@ enum regexpcode
     start_nowidth, /* Save string point to the stack. */
     stop_nowidth,  /* Restore string place at the point start_nowidth. */
     pop_and_fail,  /* Fail after popping nowidth entry from stack. */
+    stop_backtrack,  /* Restore backtrack stack at the point start_nowidth. */
     duplicate,   /* Match a duplicate of something remembered.
 		    Followed by one byte containing the index of the memory 
                     register.  */
@@ -354,7 +361,7 @@ enum regexpcode
    so it is not a hard limit.  */
 
 #ifndef NFAILURES
-#define NFAILURES 80
+#define NFAILURES 160
 #endif
 
 /* Store NUMBER in two contiguous bytes starting at DESTINATION.  */
@@ -767,6 +774,11 @@ print_partial_compiled_pattern(start, end)
       printf("/pop_and_fail");
       break;
 
+    case stop_backtrack:
+      printf("/stop_backtrack//");
+      p += 2;
+      break;
+
     case duplicate:
       printf("/duplicate/%d", *p++);
       break;
@@ -921,6 +933,10 @@ print_partial_compiled_pattern(start, end)
       printf("/endbuf2");
       break;
 
+    case begpos:
+      printf("/begpos");
+      break;
+
     default:
       printf("?%d", *(p-1));
     }
@@ -993,6 +1009,7 @@ calculate_must_string(start, end)
     case begbuf:
     case endbuf:
     case endbuf2:
+    case begpos:
     case push_dummy_failure:
     case start_paren:
     case stop_paren:
@@ -1030,6 +1047,7 @@ calculate_must_string(start, end)
 
     case start_nowidth:
     case stop_nowidth:
+    case stop_backtrack:
     case finalize_jump:
     case maybe_finalize_jump:
     case finalize_push:
@@ -1650,6 +1668,7 @@ re_compile_pattern(pattern, size, bufp)
 	case ':':
 	case '=':
 	case '!':
+	case '>':
 	  break;
 
 	default:
@@ -1665,7 +1684,7 @@ re_compile_pattern(pattern, size, bufp)
 	int *stackx;
 	unsigned int len = stacke - stackb;
 
-	stackx = DOUBLE_STACK(stackx,stackb,len,int);
+	DOUBLE_STACK(stackx,stackb,len,int);
 	/* Rearrange the pointers. */
 	stackp = stackx + (stackp - stackb);
 	stackb = stackx;
@@ -1691,11 +1710,12 @@ re_compile_pattern(pattern, size, bufp)
 
       case '=':
       case '!':
+      case '>':
 	BUFPUSH(start_nowidth);
 	*stackp++ = b - bufp->buffer;
 	BUFPUSH(0);	/* temporary value */
 	BUFPUSH(0);
-	if (c == '=') break;
+	if (c != '!') break;
 
 	BUFPUSH(on_failure_jump);
 	*stackp++ = b - bufp->buffer;
@@ -1759,6 +1779,15 @@ re_compile_pattern(pattern, size, bufp)
 	/* fall through */
       case '=':
 	BUFPUSH(stop_nowidth);
+	/* tell stack-pos place to start_nowidth */
+	STORE_NUMBER(bufp->buffer+stackp[-1], b - bufp->buffer - stackp[-1] - 2);
+	BUFPUSH(0);	/* space to hold stack pos */
+	BUFPUSH(0);
+	stackp--;
+	break;
+
+      case '>':
+	BUFPUSH(stop_backtrack);
 	/* tell stack-pos place to start_nowidth */
 	STORE_NUMBER(bufp->buffer+stackp[-1], b - bufp->buffer - stackp[-1] - 2);
 	BUFPUSH(0);	/* space to hold stack pos */
@@ -2087,6 +2116,10 @@ re_compile_pattern(pattern, size, bufp)
 	/* fall through */
       case 'z':
 	BUFPUSH(endbuf);
+	break;
+
+      case 'G':
+	BUFPUSH(begpos);
 	break;
 
 	/* hex */
@@ -2702,6 +2735,7 @@ re_compile_fastmap(bufp)
       case try_next:
       case start_nowidth:
       case stop_nowidth:
+      case stop_backtrack:
 	p += 2;
 	continue;
 
@@ -3003,17 +3037,23 @@ re_search(bufp, string, size, startpos, range, regs)
     case begbuf:
     begbuf_match:
       if (range > 0) {
-	if (startpos > 0)
-	  return -1;
-	else if (re_match(bufp, string, size, 0, regs) >= 0)
-	    return 0;
-	return -1;
+	if (startpos > 0) return -1;
+	else {
+	  val = re_match(bufp, string, size, 0, regs);
+	  if (val >= 0) return 0;
+	  return val;
+	}
       }
       break;
 
     case begline:
       anchor = 1;
       break;
+
+    case begpos:
+      val = re_match(bufp, string, size, startpos, regs);
+      if (val >= 0) return startpos;
+      return val;
 
     default:
       break;
@@ -3106,10 +3146,8 @@ re_search(bufp, string, size, startpos, range, regs)
     if (startpos > size) return -1;
     if (anchor && size > 0 && startpos == size) return -1;
     val = re_match(bufp, string, size, startpos, regs);
-    if (val >= 0)
-      return startpos;
-    if (val == -2)
-      return -2;
+    if (val >= 0) return startpos;
+    if (val == -2) return -2;
 
 #ifndef NO_ALLOCA
 #ifdef C_ALLOCA
@@ -3617,6 +3655,12 @@ re_match(bufp, string_arg, size, pos, regs)
 	POP_FAILURE_POINT();
 	continue;
 
+      case stop_backtrack:
+	EXTRACT_NUMBER_AND_INCR(mcnt, p);
+	stackp = stackb + mcnt;
+	POP_FAILURE_POINT();
+	continue;
+
       case pop_and_fail:
 	EXTRACT_NUMBER(mcnt, p+1);
 	stackp = stackb + mcnt;
@@ -3746,6 +3790,12 @@ re_match(bufp, string_arg, size, pos, regs)
 
 	/* A smart repeat is similar but loops back to the on_failure_jump
 	   so that each repetition makes another failure point.  */
+
+	/* Match at the starting position. */
+      case begpos:
+	if (d - string == pos)
+	  break;
+	goto fail;
 
       case on_failure_jump:
       on_failure:
@@ -4089,6 +4139,9 @@ re_match(bufp, string_arg, size, pos, regs)
 	SET_REGS_MATCHED;
 	break;
       }
+#ifdef RUBY
+    CHECK_INTS;
+#endif
     continue;  /* Successfully executed one pattern command; keep going.  */
 
     /* Jump here if any matching operation fails. */

@@ -400,6 +400,10 @@ void rb_undef_method _((VALUE,const char*));
 void rb_define_alias _((VALUE,const char*,const char*));
 void rb_define_attr _((VALUE,const char*,int,int));
 
+void rb_global_variable _((VALUE*));
+void rb_gc_register_address _((VALUE*));
+void rb_gc_unregister_address _((VALUE*));
+
 ID rb_intern _((const char*));
 char *rb_id2name _((ID));
 ID rb_to_id _((VALUE));

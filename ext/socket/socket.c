@@ -399,8 +399,8 @@ s_recv(sock, argc, argv, from)
     str = rb_str_new(0, NUM2INT(len));
 
     rb_thread_wait_fd(fd);
-    TRAP_BEG;
   retry:
+    TRAP_BEG;
     RSTRING(str)->len = recvfrom(fd, RSTRING(str)->ptr, RSTRING(str)->len, flags,
 				 (struct sockaddr*)buf, &alen);
     TRAP_END;
