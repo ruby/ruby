@@ -698,7 +698,18 @@ set_list_bits(c1, c2, b)
 }
 
 static int
-is_in_list(c, b)
+is_in_list_sbc(c, b)
+    unsigned long c;
+    const unsigned char *b;
+{
+  unsigned short size;
+
+  size = *b++;
+  return ((int)c / BYTEWIDTH < (int)size && b[c / BYTEWIDTH] & 1 << c % BYTEWIDTH);
+}
+  
+static int
+is_in_list_mbc(c, b)
     unsigned long c;
     const unsigned char *b;
 {
@@ -706,9 +717,6 @@ is_in_list(c, b)
   unsigned short i, j;
 
   size = *b++;
-  if ((int)c / BYTEWIDTH < (int)size && b[c / BYTEWIDTH] & 1 << c % BYTEWIDTH) {
-    return 1;
-  }
   b += size + 2;
   size = EXTRACT_UNSIGNED(&b[-2]);
   if (size == 0) return 0;
@@ -725,6 +733,14 @@ is_in_list(c, b)
     return 1;
 
   return 0;
+}
+
+static int
+is_in_list(c, b)
+    unsigned long c;
+    const unsigned char *b;
+{
+  return is_in_list_sbc(c, b) || is_in_list_mbc(c, b);
 }
 
 static void
@@ -3815,19 +3831,25 @@ re_match_exec(bufp, string_arg, size, pos, beg, regs)
 	  int cc, c;
 
 	  PREFETCH;
-	  cc = c = (unsigned char)*d++;
+	  c = (unsigned char)*d++;
 	  if (ismbchar(c)) {
 	    if (d + mbclen(c) - 1 <= dend) {
+	      cc = c;
 	      MBC2WC(c, d);
+	      not = is_in_list_mbc(c, p);
+	      if (!not) {
+		part = not = is_in_list_sbc(cc, p);
+	      }
+	    } else {
+	      not = is_in_list_sbc(c, p);
 	    }
 	  }
-	  else if (TRANSLATE_P())
-	    cc = c = (unsigned char)translate[c];
-
-	  not = is_in_list(c, p);
-	  if (!not && cc != c) {
-	      part = not = is_in_list(cc, p);
+	  else {
+	    if (TRANSLATE_P())
+	      c = (unsigned char)translate[c];
+	    not = is_in_list_sbc(c, p);
 	  }
+
 	  if (*(p - 1) == (unsigned char)charset_not) {
 	    not = !not;
 	  }

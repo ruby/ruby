@@ -375,6 +375,7 @@ r([1,2,[]]){next *[1,2]}
 r([nil,nil,[]]){next *[*[]]}
 r([1,nil,[]]){next *[*[1]]}
 r([1,2,[]]){next *[*[1,2]]}
+
 test_check "condition"
 
 $x = '0';

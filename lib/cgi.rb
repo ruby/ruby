@@ -942,21 +942,24 @@ convert string charset, and set language to "ja".
     private :initialize_query
 
     def [](key)
-      value = @params[key][0]
-      def value.to_ary
-        [self.dup]
-      end
-      def value.[](key)
-        $stderr.puts <<END
+      value, = @params[key]
+      unless value.nil?
+	value = value.dup
+	def value.to_ary
+	  [self]
+	end
+	def value.[](key)
+	  $stderr.puts <<END
 CAUTION! cgi['key'] == cgi.params['key'][0] If want Array, use cgi.params['key']
 END
-        self
-      end
-      def value.first
-        $stderr.puts <<END
+	  self
+	end
+	def value.first
+	  $stderr.puts <<END
 CAUTION! cgi['key'] == cgi.params['key'][0] If want Array, use cgi.params['key']
 END
-        self
+	  self
+	end
       end
       value
     end

@@ -23,6 +23,12 @@ Sun Jan 19 23:08:18 2003  Akinori MUSHA  <knu@iDaemons.org>
 	  quotes should not be regarded as meta character.  This bug or
 	  maybe feature was inherited from Perl's shellwords.pl.
 
+Sun Jan 19 14:01:12 2003  UENO Katsuhiro  <unnie@blue.sky.or.jp>
+
+	* regex.c (is_in_list): should work weill with UTF-8.
+
+	* regex.c (re_match_exec): ditto.
+
 Sat Jan 18 14:53:49 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* bignum.c (rb_cstr_to_inum): should not erase all 0s, but
