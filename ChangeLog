@@ -1,3 +1,10 @@
+Mon Sep 23 23:10:16 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/logger.rb: add Logger#<<(msg) for writing msg without any
+	  formatting.
+
+	* test/logger/test_logger.rb: ditto.
+
 Mon Sep 22 21:28:57 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* MANIFEST: updated.

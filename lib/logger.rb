@@ -186,6 +186,24 @@ class Logger
   alias log add
 
   # SYNOPSIS
+  #   Logger#<<(msg)
+  #
+  # ARGS
+  #   msg	Message.
+  #
+  # RETURN
+  #   Same as IO#<<.  If logdev is not given, returns nil.
+  #
+  # DESCRIPTION
+  #   Dump given message to log device without any formatting.
+  #
+  def <<(msg)
+    unless @logdev.nil?
+      @logdev.write(msg)
+    end
+  end
+
+  # SYNOPSIS
   #   Logger#debug(progname = nil) { ... } = nil
   #   Logger#info(progname = nil) { ... } = nil
   #   Logger#warn(progname = nil) { ... } = nil
