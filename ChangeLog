@@ -1,3 +1,7 @@
+Sat May 15 14:20:13 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/syck/depend: add ruby's headers.
+
 Sat May 15 13:38:33 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/syck/MANIFEST, ext/syck/depend: new file.
