@@ -65,6 +65,7 @@
 #include "sockport.h"
 
 static int do_not_reverse_lookup = 0;
+#define FMODE_NOREVLOOKUP 0x100
 
 VALUE rb_cBasicSocket;
 VALUE rb_cIPSocket;
@@ -178,6 +179,9 @@ init_sock(sock, fd)
     fp->f = rb_fdopen(fd, "r");
     fp->f2 = rb_fdopen(fd, "w");
     fp->mode = FMODE_READWRITE;
+    if (do_not_reverse_lookup) {
+	fp->mode |= FMODE_NOREVLOOKUP;
+    }
     rb_io_synchronized(fp);
 
     return sock;
@@ -392,7 +396,35 @@ bsock_send(argc, argv, sock)
     return INT2FIX(n);
 }
 
-static VALUE ipaddr _((struct sockaddr*));
+static VALUE
+bsock_do_not_reverse_lookup(sock)
+    VALUE sock;
+{
+    OpenFile *fptr;
+
+    GetOpenFile(sock, fptr);
+    return (fptr->mode & FMODE_NOREVLOOKUP) ? Qtrue : Qfalse;
+}
+
+static VALUE
+bsock_do_not_reverse_lookup_set(sock, state)
+    VALUE sock;
+    VALUE state;
+{
+    OpenFile *fptr;
+
+    rb_secure(4);
+    GetOpenFile(sock, fptr);
+    if (RTEST(state)) {
+	fptr->mode |= FMODE_NOREVLOOKUP;
+    }
+    else {
+	fptr->mode &= ~FMODE_NOREVLOOKUP;
+    }
+    return sock;
+}
+
+static VALUE ipaddr _((struct sockaddr*, int));
 #ifdef HAVE_SYS_UN_H
 static VALUE unixaddr _((struct sockaddr_un*));
 #endif
@@ -460,7 +492,7 @@ s_recvfrom(sock, argc, argv, from)
 	    rb_raise(rb_eTypeError, "sockaddr size differs - should not happen");
 	}
 #endif
-	return rb_assoc_new(str, ipaddr((struct sockaddr*)buf));
+	return rb_assoc_new(str, ipaddr((struct sockaddr*)buf, fptr->mode & FMODE_NOREVLOOKUP));
 #ifdef HAVE_SYS_UN_H
       case RECV_UNIX:
 	return rb_assoc_new(str, unixaddr((struct sockaddr_un*)buf));
@@ -655,8 +687,9 @@ sock_addrinfo(host, port, socktype, flags)
 }
 
 static VALUE
-ipaddr(sockaddr)
+ipaddr(sockaddr, norevlookup)
     struct sockaddr *sockaddr;
+    int norevlookup;
 {
     VALUE family, port, addr1, addr2;
     VALUE ary;
@@ -689,7 +722,8 @@ ipaddr(sockaddr)
 	family = rb_str_new2(pbuf);
 	break;
     }
-    if (!do_not_reverse_lookup) {
+    
+    if (!norevlookup) {
 	error = getnameinfo(sockaddr, SA_LEN(sockaddr), hbuf, sizeof(hbuf),
 			    NULL, 0, 0);
 	if (error) {
@@ -703,7 +737,7 @@ ipaddr(sockaddr)
 	rb_raise(rb_eSocket, "getnameinfo: %s", gai_strerror(error));
     }
     addr2 = rb_str_new2(hbuf);
-    if (do_not_reverse_lookup) {
+    if (norevlookup) {
 	addr1 = addr2;
     }
     port = INT2FIX(atoi(pbuf));
@@ -1254,7 +1288,7 @@ ip_addr(sock)
 
     if (getsockname(fileno(fptr->f), (struct sockaddr*)&addr, &len) < 0)
 	rb_sys_fail("getsockname(2)");
-    return ipaddr((struct sockaddr*)&addr);
+    return ipaddr((struct sockaddr*)&addr, fptr->mode & FMODE_NOREVLOOKUP);
 }
 
 static VALUE
@@ -1269,7 +1303,7 @@ ip_peeraddr(sock)
 
     if (getpeername(fileno(fptr->f), (struct sockaddr*)&addr, &len) < 0)
 	rb_sys_fail("getpeername(2)");
-    return ipaddr((struct sockaddr*)&addr);
+    return ipaddr((struct sockaddr*)&addr, fptr->mode & FMODE_NOREVLOOKUP);
 }
 
 static VALUE
@@ -1985,7 +2019,7 @@ make_addrinfo(res0)
     }
     base = rb_ary_new();
     for (res = res0; res; res = res->ai_next) {
-	ary = ipaddr(res->ai_addr);
+	ary = ipaddr(res->ai_addr, do_not_reverse_lookup);
 	if (res->ai_canonname) {
 	    RARRAY(ary)->ptr[2] = rb_str_new2(res->ai_canonname);
 	}
@@ -2400,6 +2434,8 @@ Init_socket()
     rb_define_method(rb_cBasicSocket, "getpeername", bsock_getpeername, 0);
     rb_define_method(rb_cBasicSocket, "send", bsock_send, -1);
     rb_define_method(rb_cBasicSocket, "recv", bsock_recv, -1);
+    rb_define_method(rb_cBasicSocket, "do_not_reverse_lookup", bsock_do_not_reverse_lookup, 0);
+    rb_define_method(rb_cBasicSocket, "do_not_reverse_lookup=", bsock_do_not_reverse_lookup_set, 1);
 
     rb_cIPSocket = rb_define_class("IPSocket", rb_cBasicSocket);
     rb_define_global_const("IPsocket", rb_cIPSocket);

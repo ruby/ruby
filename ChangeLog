@@ -1,3 +1,8 @@
+Fri Feb  6 10:12:06 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/socket.c (bsock_do_not_reverse_lookup): control reverse
+	  lookup for every instance.  [ruby-core:02346]
+
 Fri Feb  6 09:15:11 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/irb/extend-command.rb: add irb_help command.  [ruby-talk:91610]
