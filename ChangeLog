@@ -1,3 +1,7 @@
+Wed Jul  3 02:32:31 2002  Wakou Aoyama  <wakou@ruby-lang.org>
+
+	* lib/cgi.rb (CGI#initialize): improvement for mod_ruby.
+
 Tue Jul  2 14:13:11 2002  Wakou Aoyama  <wakou@ruby-lang.org>
 
 	* lib/cgi.rb (CGI#header): accept any type as value.
