@@ -1,3 +1,13 @@
+Thu May 17 07:16:38 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/sha1/sha1.txt.jp: add the Japanese version derived from
+	ext/md5/md5.txt.jp.
+
+	* ext/sha1/sha1.txt: revise the copyright info and reduce the
+	difference from ext/md5/md5.txt.
+
+	* ext/md5/md5.txt: reduce the difference from ext/sha1/sha1.txt.
+
 Thu May 17 07:11:35 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/sha1/extconf.rb, ext/sha1/sha1.c: use WORDS_BIGENDIAN to
