@@ -1,3 +1,9 @@
+Tue May 14 14:49:05 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* gc.c (is_pointer_to_heap): avoid GCC 3.1 warnings.
+
+	* missing/strftime.c (timezone): it should take no argument on Cygwin.
+
 Tue May 14 09:15:39 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (blk_orphan): the wrong condition; backported from 1.7

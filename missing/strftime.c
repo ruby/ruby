@@ -446,8 +446,12 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 			strcpy(tbuf, timeptr->tm_name);
 #else
 			gettimeofday(& tv, & zone);
+#ifdef __CYGWIN__
+			strcpy(tbuf, timezone());
+#else
 			strcpy(tbuf, timezone(zone.tz_minuteswest,
 						timeptr->tm_isdst > 0));
+#endif
 #endif /* HAVE_TM_NAME */
 #endif /* HAVE_TM_ZONE */
 #endif /* HAVE_TZNAME */

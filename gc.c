@@ -416,7 +416,7 @@ mark_locations_array(x, n)
     register long n;
 {
     while (n--) {
-	if (is_pointer_to_heap(*x)) {
+	if (is_pointer_to_heap((void *)*x)) {
 	    rb_gc_mark(*x);
 	}
 	x++;
@@ -478,7 +478,7 @@ void
 rb_gc_mark_maybe(obj)
     VALUE obj;
 {
-    if (is_pointer_to_heap(obj)) {
+    if (is_pointer_to_heap((void *)obj)) {
 	rb_gc_mark(obj);
     }
 }
@@ -1362,7 +1362,7 @@ id2ref(obj, id)
     }
 
     ptr = id ^ FIXNUM_FLAG;	/* unset FIXNUM_FLAG */
-    if (!is_pointer_to_heap(ptr)) {
+    if (!is_pointer_to_heap((void *)ptr)) {
 	rb_raise(rb_eRangeError, "0x%x is not id value", p0);
     }
     if (BUILTIN_TYPE(ptr) == 0) {
