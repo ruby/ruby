@@ -97,7 +97,6 @@ range(pat, test, flags)
     char test;
     int flags;
 {
-    char *first = pat;
     int not, ok = 0;
     int nocase = flags & FNM_CASEFOLD;
     int escape = !(flags & FNM_NOESCAPE);
@@ -120,13 +119,13 @@ range(pat, test, flags)
 		pat++;
 	    cend = pat[1];
 	    if (!cend)
-		break;
+		return 0;
 	    pat += 2;
 	}
 	if (downcase(cstart) <= test && test <= downcase(cend))
 	    ok = 1;
     }
-    return test == '[' ? first : 0;
+    return 0;
 }
 
 #define ISDIRSEP(c) (pathname && isdirsep(c))

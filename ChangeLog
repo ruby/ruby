@@ -8,6 +8,8 @@ Mon Mar  8 15:31:41  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 	* dir.c (range): treat incomplete '[' as ordinary character (like
 	  has_magic does).
 
+	* dir.c (range):  Cancel above change. More discussion is needed.
+
 Sun Mar  7 22:37:46 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* test/drb/ut_drb.rb: use 'druby://localhost:0'. [ruby-dev:23078]
