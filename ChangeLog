@@ -1,6 +1,6 @@
 Wed Aug 21 16:14:26 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
-	* configure.in: set ac_cv_func__setjump to "no" on Cygwin.
+	* configure.in: set ac_cv_func__setjmp to "no" on Cygwin.
 
 	* configure.in: set ac_cv_func_crypt to "no" on MinGW.
 
