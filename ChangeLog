@@ -1,3 +1,7 @@
+Mon Sep 20 17:46:51 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/ripper/lib/ripper/tokenizer.rb: fix typo.
+
 Mon Sep 20 17:38:43 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* test/ripper/test_scanner_events.rb: tokens must be reordered.

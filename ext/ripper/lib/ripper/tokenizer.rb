@@ -53,7 +53,6 @@ class Ripper
         on__scan(event, tok)
         __send__(event, tok)
       end
-      data
     end
 
     private
