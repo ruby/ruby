@@ -1,3 +1,9 @@
+Tue Jul 31 12:55:35 2001  Nobuyoshi.Nakada <nobu.nokada@softhome.net>  <nobu.nakada@nifty.ne.jp>
+
+	* file.c (rb_file_s_expand_path): expanded path should not end
+	  with "/.".
+	  removed meaningless code.
+
 Fri Jul 27 18:07:27 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_provided): extension should be guessed using
