@@ -55,6 +55,9 @@ class RubyLex
     @skip_space = false
     @readed_auto_clean_up = false
     @exception_on_syntax_error = true
+    @prompt = nil
+    @here_header = nil
+    @lex_state = nil
   end
 
   attr_accessor :skip_space

@@ -4453,7 +4453,7 @@ rb_str_sum(argc, argv, str)
 	return sum;
     }
     else {
-	unsigned int sum = 0;
+       unsigned long sum = 0;
 
 	while (p < pend) {
 	    str_mod_check(str, ptr, len);
@@ -4461,7 +4461,7 @@ rb_str_sum(argc, argv, str)
 	    p++;
 	}
 	if (bits != 0) {
-	    sum &= (1<<bits)-1;
+           sum &= (((unsigned long)1)<<bits)-1;
 	}
 	return rb_int2inum(sum);
     }

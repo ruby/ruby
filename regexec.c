@@ -254,7 +254,7 @@ onig_region_copy(OnigRegion* to, OnigRegion* from)
 
 /** stack **/
 #define INVALID_STACK_INDEX   -1
-typedef int  StackIndex;
+typedef long  StackIndex;
 
 typedef struct _StackType {
   unsigned int type;

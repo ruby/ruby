@@ -1,3 +1,12 @@
+Wed Nov  3 17:19:59 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_uniq_bang): do not push frozen string from hash
+	  table.  [ruby-dev:24695]
+
+	* array.c (rb_ary_and): ditto.
+
+	* array.c (rb_ary_or): ditto.
+
 Wed Nov  3 17:02:48 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: support to use different Tcl commands between 
