@@ -98,13 +98,19 @@ class PrettyPrint
     @group_queue = GroupQueue.new(root_group)
     @indent = 0
   end
+  attr_reader :output, :maxwidth, :newline, :genspace
+  attr_reader :indent, :group_queue
+
+  def current_group
+    @group_stack.last
+  end
 
   def break_outmost_groups
     while @maxwidth < @output_width + @buffer_width
       return unless group = @group_queue.deq
       until group.breakables.empty?
 	data = @buffer.shift
-	@output_width = data.output(@output, @output_width, @newline, @genspace)
+	@output_width = data.output(@output, @output_width)
 	@buffer_width -= data.width
       end
       while !@buffer.empty? && Text === @buffer.first
@@ -140,7 +146,7 @@ class PrettyPrint
       @output_width = @indent
       @buffer_width = 0
     else
-      @buffer << Breakable.new(sep, width, @indent, group)
+      @buffer << Breakable.new(sep, width, self)
       @buffer_width += width
       break_outmost_groups
     end
@@ -154,6 +160,9 @@ class PrettyPrint
       yield
     ensure
       @group_stack.pop
+      if group.breakables.empty?
+        @group_queue.delete group
+      end
     end
   end
 
@@ -168,7 +177,7 @@ class PrettyPrint
 
   def flush
     @buffer.each {|data|
-      @output_width = data.output(@output, @output_width, @newline, @genspace)
+      @output_width = data.output(@output, @output_width)
     }
     @buffer.clear
     @buffer_width = 0
@@ -181,7 +190,7 @@ class PrettyPrint
     end
     attr_reader :width
 
-    def output(out, output_width, newline=nil, genspace=nil)
+    def output(out, output_width)
       @objs.each {|obj| out << obj}
       output_width + @width
     end
@@ -193,22 +202,24 @@ class PrettyPrint
   end
 
   class Breakable
-    def initialize(sep, width, indent, group)
+    def initialize(sep, width, pp)
       @obj = sep
       @width = width
-      @indent = indent
-      @group = group
+      @pp = pp
+      @indent = pp.indent
+      @group = pp.current_group
       @group.breakables.push self
     end
     attr_reader :obj, :width, :indent
 
-    def output(out, output_width, newline, genspace)
+    def output(out, output_width)
       @group.breakables.shift
       if @group.break?
-	out << newline
-	out << genspace.call(@indent)
+	out << @pp.newline
+	out << @pp.genspace.call(@indent)
 	@indent
       else
+	@pp.group_queue.delete @group if @group.breakables.empty?
 	out << @obj
 	output_width + @width
       end
@@ -257,6 +268,10 @@ class PrettyPrint
 	gs.clear
       }
       return nil
+    end
+
+    def delete(group)
+      @queue[group.depth].delete(group)
     end
   end
 end
