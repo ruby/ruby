@@ -44,6 +44,10 @@ Wed Nov 27 06:43:26 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (rb_thread_start_0): initialize SystemExit properly.
 
+Tue Nov 26 10:17:04 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dln.c (init_funcname_len): remove MAXPATHLEN dependency.
+
 Mon Nov 25 19:55:38 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/extmk.rb (extmake): return true if not dynamic and not static.

@@ -61,6 +61,9 @@ void *xrealloc();
 #ifdef HAVE_SYS_PARAM_H
 # include <sys/param.h>
 #endif
+#ifndef MAXPATHLEN
+# define MAXPATHLEN 1024
+#endif
 
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
@@ -107,6 +110,7 @@ init_funcname_len(buf, file)
     char *file;
 {
     char *p, *slash;
+    int len;
 
     /* Load the file as an object one */
     for (p = file, slash = p-1; *p; p++) /* Find position of last '/' */
@@ -116,14 +120,9 @@ init_funcname_len(buf, file)
 	if (*p == '/') slash = p;
 #endif
 
-/* This assumes that systems without length limitation for file names
-   provide asprintf(). This shouldn't be too unlikely. */
-#ifdef MAXPATHLEN
-    *buf = xmalloc(MAXPATHLEN);
-    snprintf(*buf, MAXPATHLEN, FUNCNAME_PATTERN, slash + 1);
-#else
-    asprintf(buf, FUNCNAME_PATTERN, slash + 1);
-#endif
+    len = strlen(FUNCNAME_PATTERN) + strlen(slash + 1);
+    *buf = xmalloc(len);
+    snprintf(*buf, len, FUNCNAME_PATTERN, slash + 1);
     for (p = *buf; *p; p++) {         /* Delete suffix if it exists */
 	if (*p == '.') {
 	    *p = '\0'; break;
@@ -351,10 +350,6 @@ sym_hash(hdrp, syms)
     }
     return tbl;
 }
-
-#ifndef MAXPATHLEN
-# define MAXPATHLEN 1024
-#endif
 
 static int
 dln_init(prog)
@@ -1263,11 +1258,6 @@ dln_load(file)
 #endif
 
 #if defined _WIN32 && !defined __CYGWIN__
-
-#ifndef MAXPATHLEN
-# define MAXPATHLEN 1024
-#endif
-
     HINSTANCE handle;
     char winfile[MAXPATHLEN];
     void (*init_fct)();
