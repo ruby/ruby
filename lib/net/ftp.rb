@@ -25,6 +25,8 @@ module Net
     
     FTP_PORT = 21
     CRLF = "\r\n"
+
+    DEFAULT_BLOCKSIZE = 4096
     
     attr_accessor :passive, :return_code, :debug_mode, :resume
     attr_reader :welcome, :lastresp
@@ -338,7 +340,8 @@ module Net
       end
     end
     
-    def getbinaryfile(remotefile, localfile, blocksize, callback = nil)
+    def getbinaryfile(remotefile, localfile,
+		      blocksize = DEFAULT_BLOCKSIZE, callback = nil)
       if iterator?
 	callback = Proc.new
       end
@@ -378,7 +381,8 @@ module Net
       end
     end
     
-    def putbinaryfile(localfile, remotefile, blocksize = 4096, callback = nil)
+    def putbinaryfile(localfile, remotefile,
+		      blocksize = DEFAULT_BLOCKSIZE, callback = nil)
       if iterator?
 	callback = Proc.new
       end
