@@ -166,7 +166,7 @@ void ossl_debug(const char *, ...);
 #define OSSL_Debug ossl_debug
 #define OSSL_Warning rb_warning
 #define OSSL_Warn rb_warn
-#endif /* __GNUC__ || _STDC_VERSION__ >= 199901L */
+#endif
 
 /*
  * Include all parts

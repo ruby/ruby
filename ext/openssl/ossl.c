@@ -431,8 +431,9 @@ ossl_raise(VALUE exc, const char *fmt, ...)
  */
 VALUE dOSSL;
 
-#if defined(NT) || defined(_WIN32)
-void ossl_debug(const char *fmt, ...)
+#if !defined(HAVE_VA_ARGS_MACRO)
+void
+ossl_debug(const char *fmt, ...)
 {
     va_list args;
 	
