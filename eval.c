@@ -1221,7 +1221,7 @@ rb_eval_string(str)
     VALUE v;
     char *oldsrc = ruby_sourcefile;
 
-    ruby_sourcefile = "(eval)";
+    ruby_sourcefile = rb_source_filename("(eval)");
     v = eval(ruby_top_self, rb_str_new2(str), Qnil, 0, 0);
     ruby_sourcefile = oldsrc;
 

@@ -193,6 +193,7 @@ void rb_gc_mark_maybe();
 void rb_gc_mark();
 void rb_gc_force_recycle _((VALUE));
 void rb_gc _((void));
+char *rb_source_filename _((const char *));
 void rb_gc_call_finalizer_at_exit _((void));
 /* hash.c */
 VALUE rb_hash _((VALUE));

@@ -368,6 +368,48 @@ is_pointer_to_heap(ptr)
     return Qfalse;
 }
 
+static st_table *source_filenames;
+
+char *
+rb_source_filename(f)
+    const char *f;
+{
+    char *name;
+
+    if (!st_lookup(source_filenames, f, &name)) {
+	long len = strlen(f) + 1;
+	char *ptr = name = ALLOC_N(char, len + 1);
+	*ptr++ = 0;
+	MEMCPY(ptr, f, char, len);
+	st_add_direct(source_filenames, ptr, name);
+	return ptr;
+    }
+    return name + 1;
+}
+
+static void
+mark_source_filename(f)
+    char *f;
+{
+    if (f) {
+	f[-1] = 1;
+    }
+}
+
+static enum st_retval
+sweep_source_filename(key, value)
+    char *key, *value;
+{
+    if (*value) {
+	*value = 0;
+	return ST_CONTINUE;
+    }
+    else {
+	free(value);
+	return ST_DELETE;
+    }
+}
+
 static void
 mark_locations_array(x, n)
     register VALUE *x;
@@ -465,6 +507,7 @@ rb_gc_mark(ptr)
 	break;
 
       case T_NODE:
+	mark_source_filename(obj->as.node.nd_file);
 	switch (nd_type(obj)) {
 	  case NODE_IF:		/* 1,2,3 */
 	  case NODE_FOR:
@@ -707,6 +750,9 @@ gc_sweep()
 	    }
 	}
     }
+
+    mark_source_filename(ruby_sourcefile);
+    st_foreach(source_filenames, sweep_source_filename, 0);
 
     freelist = 0;
     final_list = deferred_final_list;
@@ -1353,4 +1399,6 @@ Init_GC()
     rb_global_variable(&finalizers);
     rb_gc_unregister_address(&rb_mObSpace);
     finalizers = rb_ary_new();
+
+    source_filenames = st_init_strtable();
 }
