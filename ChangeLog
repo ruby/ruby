@@ -1,3 +1,8 @@
+Mon Feb 19 17:46:37 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_substr): "a"[1,2] should return ""; need
+	  rubicon upgrade.
+
 Mon Feb 19 01:55:43 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (secure_visibility): visibility check for untainted modules.
