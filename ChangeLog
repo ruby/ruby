@@ -1,3 +1,8 @@
+Mon Oct 18 11:29:32 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_flags_mode, rb_io_mode_flags): distinguish whether file
+	  not existing is created.  [ruby-dev:24505]
+
 Mon Oct 18 07:26:21 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_truncate): discard read buffer before truncation.

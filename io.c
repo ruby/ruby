@@ -2304,6 +2304,9 @@ rb_io_flags_mode(flags)
       case FMODE_WRITABLE:
 	return MODE_BINMODE("w", "wb");
       case FMODE_READWRITE:
+	if (flags & FMODE_CREATE) {
+	    return MODE_BINMODE("w+", "wb+");
+	}
 	return MODE_BINMODE("r+", "rb+");
     }
     rb_raise(rb_eArgError, "illegal access mode %o", flags);
@@ -2322,10 +2325,10 @@ rb_io_mode_flags(mode)
 	flags |= FMODE_READABLE;
 	break;
       case 'w':
-	flags |= FMODE_WRITABLE;
+	flags |= FMODE_WRITABLE | FMODE_CREATE;
 	break;
       case 'a':
-	flags |= FMODE_WRITABLE | FMODE_APPEND;
+	flags |= FMODE_WRITABLE | FMODE_APPEND | FMODE_CREATE;
 	break;
       default:
       error:
