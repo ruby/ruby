@@ -420,6 +420,7 @@ class TkTimer
     @wait_var.value = 0
     tk_call 'after', 'cancel', @after_id if @after_id
     @after_id = nil
+
     Tk_CBTBL.delete(@id) ;# for GC
     self
   end

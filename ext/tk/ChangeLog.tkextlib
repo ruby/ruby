@@ -1,3 +1,7 @@
+2005-02-20  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tclx/tclx.rb: warning TclX's 'signal' command.
+
 2005-01-25  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tkextlib/blt/component.rb: bug fix. cannot accept

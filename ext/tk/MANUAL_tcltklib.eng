@@ -126,11 +126,21 @@ module TclTklib
          : defined as 0. 
 
   [module methods]
-     mainloop(check_root = true)
+    mainloop(check_root = true)
        : Starts the eventloop. If 'check_root' is true, this method 
        : doesn't return when a root widget exists. 
        : If 'check_root' is false, doen't return by the other
        : reasons than exceptions.
+
+    mainloop_thread?
+       : Returns whether the current thread executes the eventloop. 
+       : If true, the eventloop is working on the current thread. 
+       : If no eventloop is working, this method returns nil.
+       : And if the other thread executes the eventloop, returns false.
+       : 
+       :  *** ATTENTION ***
+       : When this methods returns false, it is dangerous to call a Tk 
+       : interpreter directly.
 
     mainloop_watchdog(check_root = true)
        : On the normal eventloop, some kinds of callback operations 

@@ -159,8 +159,10 @@ class TkCanvas<TkWindow
 
   def delete(*args)
     if TkcItem::CItemID_TBL[self.path]
-      find('withtag', *args).each{|item| 
-        TkcItem::CItemID_TBL[self.path].delete(item.id)
+      args.each{|tag|
+        find('withtag', tag).each{|item| 
+          TkcItem::CItemID_TBL[self.path].delete(item.id)
+        }
       }
     end
     tk_send_without_enc('delete', *args.collect{|t| tagid(t)})

@@ -39,7 +39,7 @@ TkFrame.new($anilabel_demo) {|frame|
 
   TkButton.new(frame) {
     text 'コード参照'
-    command proc{showCode 'label'}
+    command proc{showCode 'anilabel'}
   }.pack('side'=>'left', 'expand'=>'yes')
 
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')

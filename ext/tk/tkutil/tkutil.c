@@ -8,11 +8,19 @@
 
 ************************************************/
 
-#define TKUTIL_RELEASE_DATE "2005-01-25"
+#define TKUTIL_RELEASE_DATE "2005-03-02"
 
 #include "ruby.h"
 #include "rubysig.h"
 #include "st.h"
+
+/* check ruby_version */
+#include "version.h"
+#if RUBY_VERSION_MINOR == 9
+#define ST_FOREACH_PASS_ERR_ARG 1  /* Ruby 1.9 */
+#else
+#define ST_FOREACH_PASS_ERR_ARG 0  /* Ruby 1.8 (from 2005/02/08) */
+#endif
 
 static VALUE cMethod;
 
@@ -200,23 +208,35 @@ fromUTF8_toDefaultEnc(str, self)
 }
 
 
+#if ST_FOREACH_PASS_ERR_ARG
 static void
 hash_check(err)
     int err;
 {
     if (err) {
-        rb_raise(rb_eRuntimeError, "hash modified");
+        rb_raise(rb_eRuntimeError, "hash modified during iteration");
     }
 }
+#endif
 
+#if ST_FOREACH_PASS_ERR_ARG
 static int
 to_strkey(key, value, hash, err)
     VALUE key;
     VALUE value;
     VALUE hash;
     int err;
+#else
+static int
+to_strkey(key, value, hash)
+    VALUE key;
+    VALUE value;
+    VALUE hash;
+#endif
 {
+#if ST_FOREACH_PASS_ERR_ARG
     hash_check(err);
+#endif
     if (key == Qundef) return ST_CONTINUE;
     rb_hash_aset(hash, rb_funcall(key, ID_to_s, 0, 0), value);
     return ST_CHECK;
@@ -236,14 +256,16 @@ tk_symbolkey2str(self, keys)
 }
 
 static VALUE get_eval_string_core _((VALUE, VALUE, VALUE));
-static VALUE ary2list _((VALUE, VALUE));
-static VALUE ary2list2 _((VALUE, VALUE));
+static VALUE ary2list _((VALUE, VALUE, VALUE));
+static VALUE ary2list2 _((VALUE, VALUE, VALUE));
 static VALUE hash2list _((VALUE, VALUE));
+static VALUE hash2list_enc _((VALUE, VALUE));
 static VALUE hash2kv _((VALUE, VALUE, VALUE));
 
 static VALUE
-ary2list(ary, self)
+ary2list(ary, enc_flag, self)
     VALUE ary;
+    VALUE enc_flag;
     VALUE self;
 {
     int idx, idx2, size, size2;
@@ -266,29 +288,36 @@ ary2list(ary, self)
         val = RARRAY(ary)->ptr[idx];
         switch(TYPE(val)) {
         case T_ARRAY:
-            RARRAY(dst)->ptr[RARRAY(dst)->len++] = ary2list(val, self);
+            RARRAY(dst)->ptr[RARRAY(dst)->len++] 
+              = ary2list(val, enc_flag, self);
             break;
 
         case T_HASH:
             /* RARRAY(dst)->ptr[RARRAY(dst)->len++] = hash2list(val, self); */
-            val = hash2kv(val, Qnil, self);
+            val = hash2kv(val, enc_flag, self);
             size2 = RARRAY(val)->len;
             for(idx2 = 0; idx2 < size2; idx2++) {
                 val2 = RARRAY(val)->ptr[idx2];
                 switch(TYPE(val2)) {
                 case T_ARRAY:
                     RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-                        = ary2list(val2, self);
+                        = ary2list(val2, enc_flag, self);
                     break;
 
                 case T_HASH:
-                    RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-                        = hash2list(val2, self);
+                    if (RTEST(enc_flag)) {
+                        RARRAY(dst)->ptr[RARRAY(dst)->len++] 
+                            = hash2list_enc(val2, self);
+                    } else {
+                        RARRAY(dst)->ptr[RARRAY(dst)->len++] 
+                            = hash2list(val2, self);
+                    }
+                    break;
 
                 default:
                     if (val2 != TK_None) {
                         RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-                            = get_eval_string_core(val2, Qnil, self);
+                            = get_eval_string_core(val2, enc_flag, self);
                     }
                 }
             }
@@ -297,7 +326,7 @@ ary2list(ary, self)
         default:
             if (val != TK_None) {
                 RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-                    = get_eval_string_core(val, Qnil, self);
+                    = get_eval_string_core(val, enc_flag, self);
             }
         }
     }
@@ -305,8 +334,9 @@ ary2list(ary, self)
 }
 
 static VALUE
-ary2list2(ary, self)
+ary2list2(ary, enc_flag, self)
     VALUE ary;
+    VALUE enc_flag;
     VALUE self;
 {
     int idx, size;
@@ -320,17 +350,23 @@ ary2list2(ary, self)
         val = RARRAY(ary)->ptr[idx];
         switch(TYPE(val)) {
         case T_ARRAY:
-            RARRAY(dst)->ptr[RARRAY(dst)->len++] = ary2list(val, self);
+            RARRAY(dst)->ptr[RARRAY(dst)->len++] 
+              = ary2list(val, enc_flag, self);
             break;
 
         case T_HASH:
-            RARRAY(dst)->ptr[RARRAY(dst)->len++] = hash2list(val, self);
+            if (RTEST(enc_flag)) {
+                RARRAY(dst)->ptr[RARRAY(dst)->len++] = hash2list(val, self);
+            } else {
+                RARRAY(dst)->ptr[RARRAY(dst)->len++] 
+                    = hash2list_enc(val, self);
+            }
             break;
 
         default:
             if (val != TK_None) {
                 RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-                    = get_eval_string_core(val, Qnil, self);
+                    = get_eval_string_core(val, enc_flag, self);
             }
         }
     }
@@ -448,16 +484,26 @@ assoc2kv_enc(assoc, ary, self)
     }
 }
 
+#if ST_FOREACH_PASS_ERR_ARG
 static int
 push_kv(key, val, args, err)
     VALUE key;
     VALUE val;
     VALUE args;
     int err;
+#else
+static int
+push_kv(key, val, args)
+    VALUE key;
+    VALUE val;
+    VALUE args;
+#endif
 {
     volatile VALUE ary;
 
+#if ST_FOREACH_PASS_ERR_ARG
     hash_check(err);
+#endif
     ary = RARRAY(args)->ptr[0];
 
     if (key == Qundef) return ST_CONTINUE;
@@ -498,16 +544,26 @@ hash2kv(hash, ary, self)
     }
 }
 
+#if ST_FOREACH_PASS_ERR_ARG
 static int
 push_kv_enc(key, val, args, err)
     VALUE key;
     VALUE val;
     VALUE args;
     int err;
+#else
+static int
+push_kv_enc(key, val, args)
+    VALUE key;
+    VALUE val;
+    VALUE args;
+#endif
 {
     volatile VALUE ary;
 
+#if ST_FOREACH_PASS_ERR_ARG
     hash_check(err);
+#endif
     ary = RARRAY(args)->ptr[0];
 
     if (key == Qundef) return ST_CONTINUE;
@@ -556,7 +612,7 @@ hash2list(hash, self)
     VALUE hash;
     VALUE self;
 {
-    return ary2list2(hash2kv(hash, Qnil, self), self);
+    return ary2list2(hash2kv(hash, Qnil, self), Qfalse, self);
 }
 
 
@@ -565,7 +621,7 @@ hash2list_enc(hash, self)
     VALUE hash;
     VALUE self;
 {
-    return ary2list2(hash2kv_enc(hash, Qnil, self), self);
+    return ary2list2(hash2kv_enc(hash, Qnil, self), Qfalse, self);
 }
 
 static VALUE
@@ -669,11 +725,7 @@ get_eval_string_core(obj, enc_flag, self)
         }
 
     case T_ARRAY:
-        if (RTEST(enc_flag)) {
-            return fromDefaultEnc_toUTF8(ary2list(obj, self), self);
-        } else {
-            return ary2list(obj, self);
-        }
+        return ary2list(obj, enc_flag, self);
 
     case T_FALSE:
         return rb_str_new2("0");

@@ -1,3 +1,50 @@
+Wed Mar  2 16:03:08 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tcltklib.c: enforce thread-check and exception-handling to
+	  avoid SEGV trouble.
+
+	* ext/tk/tkutil/tkutil.c; fix a bug on converting a SJIS string array
+	  to a Tcl's list string. 
+
+	* ext/tk/tcltklib.c: wrap Tcl's original "namespace" command to
+	  protect from namespace crash.
+
+	* ext/tk/lib/multi-tk.rb: enforce exception-handling.
+
+	* ext/tk/lib/multi-tk.rb: catch IRB_EXIT to work on irb.
+
+	* ext/tk/lib/tk.rb: ditto.
+
+	* ext/tk/tcltklib.c: add TclTkLib.mainloop_thread?
+
+	* ext/tk/lib/multi-tk.rb: (bug fix) callback returns a value.
+
+	* ext/tk/lib/tk/canvas.rb (delete): bug fix when multiple arguments.
+
+	* ext/tk/lib/clock.rb: fix 'no method error'.
+
+	* ext/tk/lib/clock.rb (self.clicks): accept a Symbol argument.
+
+	* ext/tk/lib/variable.rb: be able to set default_value_type; :numeric,
+	  :bool, :string, :symbol, :list, :numlist or nil (default; same to 
+	  :string). If set a type, TkVariable#value returns a value of the
+	  type.
+
+	* ext/tk/lib/tkextlib/tclx/tclx.rb: add Tk::TclX.signal to warn the
+	  risk of using TclX extension's 'signal' command.
+
+	* ext/tk/sample/irbtk.rb: irb with Ruby/Tk.
+
+	* ext/tk/sample/demos-*/anilabel.rb: bug fix on 'show code'
+
+	* ext/tk/sample/demos-*/aniwave.rb: new Ruby/Tk animation demo.
+
+	* ext/tk/sample/demos-*/pendulum.rb: ditto.
+
+	* ext/tk/sample/demos-*/goldberg.rb: ditto.
+
+	* ext/tk/sample/demos-*/widget: add entries of animation demos.
+
 Wed Mar  2 12:21:18 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_eval): [EXPERIMENTAL] NODE_LAMBDA implemented.
