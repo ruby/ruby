@@ -123,30 +123,48 @@ end
 
 class TkText<TkTextWin
   include TkTreatTextTagFont
+  include Scrollable
 
   WidgetClassName = 'Text'.freeze
   WidgetClassNames[WidgetClassName] = self
+
   def self.to_eval
     WidgetClassName
   end
-  include Scrollable
-  def create_self
-    tk_call 'text', @path
+
+  def self.new(*args)
+    obj = super(*args){}
+    obj.init_instance_variable
+    obj.instance_eval &block if defined? yield
+    obj
+  end
+
+  def init_instance_variable
     @tags = {}
   end
+
+  def create_self
+    tk_call 'text', @path
+    init_instance_variable
+  end
+
   def index(index)
     tk_send 'index', index
   end
+
   def value
     tk_send 'get', "1.0", "end - 1 char"
   end
+
   def value= (val)
     tk_send 'delete', "1.0", 'end'
     tk_send 'insert', "1.0", val
   end
+
   def _addcmd(cmd)
     @cmdtbl.push cmd
   end
+
   def _addtag(name, obj)
     @tags[name] = obj
   end
@@ -164,11 +182,19 @@ class TkText<TkTextWin
       tagid2obj(elt)
     }
   end
+
+  def mark_names
+    tk_split_list(tk_send('mark', 'names')).collect{|elt|
+      tagid2obj(elt)
+    }
+  end
+
   def window_names
     tk_send('window', 'names').collect{|elt|
       tagid2obj(elt)
     }
   end
+
   def image_names
     tk_send('image', 'names').collect{|elt|
       tagid2obj(elt)
@@ -178,6 +204,7 @@ class TkText<TkTextWin
   def set_insert(index)
     tk_send 'mark', 'set', 'insert', index
   end
+
   def set_current(index)
     tk_send 'mark', 'set', 'current', index
   end
@@ -187,6 +214,7 @@ class TkText<TkTextWin
   end
 
   def destroy
+    @tags = {} unless @tags
     @tags.each_value do |t|
       t.destroy
     end
@@ -404,14 +432,15 @@ end
 class TkTextTag<TkObject
   include TkTreatTagFont
 
-  $tk_text_tag = 'tag0000'
+  Tk_TextTag_ID = ['tag0000']
+
   def initialize(parent, *args)
     if not parent.kind_of?(TkText)
       fail format("%s need to be TkText", parent.inspect)
     end
     @parent = @t = parent
-    @path = @id = $tk_text_tag
-    $tk_text_tag = $tk_text_tag.succ
+    @path = @id = Tk_TextTag_ID[0]
+    Tk_TextTag_ID[0] = Tk_TextTag_ID[0].succ
     #tk_call @t.path, "tag", "configure", @id, *hash_kv(keys)
     if args != [] then
       keys = args.pop
@@ -537,14 +566,14 @@ class TkTextTagSel<TkTextTag
 end
 
 class TkTextMark<TkObject
-  $tk_text_mark = 'mark0000'
+  Tk_TextMark_ID = ['mark0000']
   def initialize(parent, index)
     if not parent.kind_of?(TkText)
       fail format("%s need to be TkText", parent.inspect)
     end
     @t = parent
-    @path = @id = $tk_text_mark
-    $tk_text_mark = $tk_text_mark.succ
+    @path = @id = Tk_TextMark_ID[0]
+    Tk_TextMark_ID[0] = Tk_TextMark_ID[0].succ
     tk_call @t.path, 'mark', 'set', @id, index
     @t._addtag id, self
   end
@@ -567,6 +596,14 @@ class TkTextMark<TkObject
 
   def gravity=(direction)
     tk_call @t.path, 'mark', 'gravity', @id, direction
+  end
+
+  def next(index)
+    @t.tagid2obj(tk_call(@t.path, 'mark', 'next', index))
+  end
+
+  def previous(index)
+    @t.tagid2obj(tk_call(@t.path, 'mark', 'previous', index))
   end
 end
 

@@ -6,7 +6,7 @@
   $Date$
   created at: Mon Nov 15 12:24:34 JST 1993
 
-  Copyright (C) 1993-1999 Yukihiro Matsumoto
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -1126,7 +1126,7 @@ rb_file_s_expand_path(argc, argv)
 	p = &buf[strlen(buf)];
 	while (p > buf && *(p - 1) == '/') p--;
     }
-    else if (isdirsep(*s)) {
+    else {
 	while (*s && isdirsep(*s)) {
 	    *p++ = '/';
 	    s++;
@@ -1148,7 +1148,8 @@ rb_file_s_expand_path(argc, argv)
 		    }
 		    else {
 			*++p = '.';
-			*++p = '.';
+			do *++p = '.'; while (*++s == '.');
+			--s;
 		    }
 		    break;
 		  case '/':

@@ -229,7 +229,6 @@ char *getlogin()
 struct {
     int inuse;
     int pid;
-    HANDLE oshandle;
     FILE *pipe;
 } MyPopenRecord[MYPOPENSIZE];
 
@@ -509,23 +508,11 @@ mypopen (char *cmd, char *mode)
 		sa.lpSecurityDescriptor = NULL;
 		sa.bInheritHandle       = TRUE;
 
-		if (!reading) {
-        	FILE *fp;
-
-			fp = (_popen)(cmd, mode);
-
-			MyPopenRecord[slot].inuse = TRUE;
-			MyPopenRecord[slot].pipe = fp;
-			MyPopenRecord[slot].pid = -1;
-
-			if (!fp)
-                        rb_fatal("cannot open pipe \"%s\" (%s)", cmd, strerror(errno));
-				return fp;
-		}
-
 		fRet = CreatePipe(&hInFile, &hOutFile, &sa, 2048L);
-		if (!fRet)
-                        rb_fatal("cannot open pipe \"%s\" (%s)", cmd, strerror(errno));
+		if (!fRet) {
+			errno = GetLastError();
+			rb_sys_fail("mypopen: CreatePipe");
+		}
 
 		memset(&aStartupInfo, 0, sizeof (STARTUPINFO));
 		memset(&aProcessInformation, 0, sizeof (PROCESS_INFORMATION));
@@ -547,46 +534,50 @@ mypopen (char *cmd, char *mode)
 		lpCommandLine = cmd;
 		if (NtHasRedirection(cmd) || isInternalCmd(cmd)) {
 		  lpApplicationName = getenv("COMSPEC");
-		  lpCmd2 = malloc(strlen(lpApplicationName) + 1 + strlen(cmd) + sizeof (" /c "));
-		  if (lpCmd2 == NULL)
-                     rb_fatal("Mypopen: malloc failed");
+		  lpCmd2 = xmalloc(strlen(lpApplicationName) + 1 + strlen(cmd) + sizeof (" /c "));
 		  sprintf(lpCmd2, "%s %s%s", lpApplicationName, " /c ", cmd);
 		  lpCommandLine = lpCmd2;
 		}
 
 		fRet = CreateProcess(lpApplicationName, lpCommandLine, &sa, &sa,
 			sa.bInheritHandle, dwCreationFlags, NULL, NULL, &aStartupInfo, &aProcessInformation);
+		errno = GetLastError();
+
+		if (lpCmd2)
+			free(lpCmd2);
+
+		CloseHandle(aProcessInformation.hThread);
 
 		if (!fRet) {
 			CloseHandle(hInFile);
 			CloseHandle(hOutFile);
-                        rb_fatal("cannot fork for \"%s\" (%s)", cmd, strerror(errno));
+			CloseHandle(aProcessInformation.hProcess);
+			return NULL;
 		}
-
-		CloseHandle(aProcessInformation.hThread);
 
 		if (reading) {
 			fd = _open_osfhandle((long)hInFile,  (_O_RDONLY | pipemode));
 			CloseHandle(hOutFile);
 		}
 		else {
-		    fd = _open_osfhandle((long)hOutFile, (_O_WRONLY | pipemode));
+			fd = _open_osfhandle((long)hOutFile, (_O_WRONLY | pipemode));
 			CloseHandle(hInFile);
 		}
 
-		if (fd == -1) 
-                  rb_fatal("cannot open pipe \"%s\" (%s)", cmd, strerror(errno));
+		if (fd == -1) {
+			CloseHandle(reading ? hInFile : hOutFile);
+			CloseHandle(aProcessInformation.hProcess);
+			rb_sys_fail("mypopen: _open_osfhandle");
+		}
 
-
-		if ((fp = (FILE *) fdopen(fd, mode)) == NULL)
-			return NULL;
-
-		if (lpCmd2)
-			free(lpCmd2);
+		if ((fp = (FILE *) fdopen(fd, mode)) == NULL) {
+			_close(fd);
+			CloseHandle(aProcessInformation.hProcess);
+			rb_sys_fail("mypopen: fdopen");
+		}
 
 		MyPopenRecord[slot].inuse = TRUE;
 		MyPopenRecord[slot].pipe  = fp;
-		MyPopenRecord[slot].oshandle = (reading ? hInFile : hOutFile);
 		MyPopenRecord[slot].pid   = (int)aProcessInformation.hProcess;
 		return fp;
     }
@@ -638,14 +629,13 @@ mypclose(FILE *fp)
 			}
 		}
 	}
+	CloseHandle((HANDLE)MyPopenRecord[i].pid);
 #endif
-
 
     //
     // close the pipe
     //
-    // Closehandle() is done by fclose().
-    //CloseHandle(MyPopenRecord[i].oshandle);
+
     fflush(fp);
     fclose(fp);
 

@@ -6,7 +6,7 @@
   $Date$
   created at: Mon Aug  9 17:12:58 JST 1993
 
-  Copyright (C) 1993-1999 Yukihiro Matsumoto
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -860,7 +860,7 @@ rb_str_replace(str, beg, len, val)
     if (RSTRING(str)->len < beg && len < 0) {
 	MEMZERO(RSTRING(str)->ptr + RSTRING(str)->len, char, -len);
     }
-    memcpy(RSTRING(str)->ptr+beg, RSTRING(val)->ptr, RSTRING(val)->len);
+    memmove(RSTRING(str)->ptr+beg, RSTRING(val)->ptr, RSTRING(val)->len);
     RSTRING(str)->len += RSTRING(val)->len - len;
     RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
 }

@@ -6,7 +6,7 @@
   $Date$
   created at: Thu Jun 10 14:22:17 JST 1993
 
-  Copyright (C) 1993-1999 Yukihiro Matsumoto
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -147,6 +147,7 @@ search_method(klass, id, origin)
 {
     NODE *body;
 
+    if (!klass) return 0;
     while (!st_lookup(RCLASS(klass)->m_tbl, id, &body)) {
 	klass = RCLASS(klass)->super;
 	if (!klass) return 0;
@@ -1704,6 +1705,7 @@ call_trace_func(event, file, line, self, id, klass)
     struct FRAME *prev;
     char *file_save = ruby_sourcefile;
     int line_save = ruby_sourceline;
+    VALUE srcfile;
 
     if (!trace_func) return;
 
@@ -1727,8 +1729,9 @@ call_trace_func(event, file, line, self, id, klass)
     }
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
+	srcfile = rb_str_new2(ruby_sourcefile?ruby_sourcefile:"(ruby)");
 	proc_call(trace, rb_ary_new3(6, rb_str_new2(event),
-				     rb_str_new2(ruby_sourcefile),
+				     srcfile,
 				     INT2FIX(ruby_sourceline),
 				     INT2FIX(id),
 				     self?rb_f_binding(self):Qnil,

@@ -6,7 +6,7 @@
   $Date$
   created at: Fri Oct 15 18:08:59 JST 1993
 
-  Copyright (C) 1993-1999 Yukihiro Matsumoto
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -455,7 +455,9 @@ io_fread(ptr, len, f)
 	if (!READ_DATA_PENDING(f)) {
 	    rb_thread_wait_fd(fileno(f));
 	}
+	TRAP_BEG;
 	c = getc(f);
+	TRAP_END;
 	if (c == EOF) {
 	    *ptr = '\0';
 	    break;
@@ -1451,7 +1453,8 @@ pipe_open(pname, mode)
 	pipe_add_fptr(fptr);
 	if (modef & FMODE_READABLE) fptr->f  = f;
 	if (modef & FMODE_WRITABLE) {
-	    fptr->f2 = f;
+	    if (fptr->f) fptr->f2 = f;
+	    else fptr->f = f;
 	    rb_io_synchronized(fptr);
 	}
 	return (VALUE)port;

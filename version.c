@@ -6,7 +6,7 @@
   $Date$
   created at: Thu Sep 30 20:08:01 JST 1993
 
-  Copyright (C) 1993-1999 Yukihiro Matsumoto
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -40,6 +40,6 @@ ruby_show_version()
 void
 ruby_show_copyright()
 {
-    printf("ruby - Copyright (C) 1993-1999 Yukihiro Matsumoto\n");
+    printf("ruby - Copyright (C) 1993-2000 Yukihiro Matsumoto\n");
     exit(0);
 }

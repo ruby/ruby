@@ -1,3 +1,16 @@
+Sat Jan 15 22:21:08 2000  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* eval.c (search_method): argument klass may be 0.
+
+Fri Jan 14 12:22:04 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (rb_str_replace): use memmove instead of memcpy for
+	  overwrapping strings (e.g. a[1] = a).
+
+Fri Jan  7 00:59:29 2000  Masahiro Tomita  <tommy@tmtm.org>
+
+	* io.c (io_fread): TRAP_BEG/TRAP_END added around getc().
+
 Wed Jan  5 02:14:46 2000  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
 
 	* parse.y: Fix SEGV on empty parens with UMINUS or UPLUS.
@@ -43,6 +56,10 @@ Fri Dec 24 00:43:39 1999  KANEKO Naoshi  <wbs01621@mail.wbs.ne.jp>
 Tue Dec 21 17:21:28 1999  Koji Oda  <oda@bsd1.qnes.nec.co.jp>
 
 	* ext/socket/socket.c (sock_finalize): mswin32: fix FILE* leak.
+
+Mon Dec 20 19:08:12 1999  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* file.c (rb_file_s_expand_path): handle dir separetor correctly.
 
 Sun Dec 19 22:56:31 1999  KANEKO Naoshi  <wbs01621@mail.wbs.ne.jp>
 

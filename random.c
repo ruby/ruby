@@ -6,7 +6,7 @@
   $Date$
   created at: Fri Dec 24 16:39:21 JST 1993
 
-  Copyright (C) 1993-1999 Yukihiro Matsumoto
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -81,26 +81,12 @@ static int first = 1;
 static char state[256];
 #endif
 
-static VALUE
-rb_f_srand(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+static int
+rand_init(seed)
+    long seed;
 {
-    VALUE a;
-    unsigned int seed, old;
+    int old;
     static unsigned int saved_seed;
-
-    if (rb_scan_args(argc, argv, "01", &a) == 0) {
-	static int n = 0;
-	struct timeval tv;
-
-	gettimeofday(&tv, 0);
-	seed = tv.tv_sec ^ tv.tv_usec ^ getpid() ^ n++;
-    }
-    else {
-	seed = NUM2UINT(a);
-    }
 
 #ifdef HAVE_RANDOM
     if (first == 1) {
@@ -116,6 +102,30 @@ rb_f_srand(argc, argv, obj)
     old = saved_seed;
     saved_seed = seed;
 
+    return old;
+}
+
+static VALUE
+rb_f_srand(argc, argv, obj)
+    int argc;
+    VALUE *argv;
+    VALUE obj;
+{
+    VALUE a;
+    unsigned int seed, old;
+
+    if (rb_scan_args(argc, argv, "01", &a) == 0) {
+	static int n = 0;
+	struct timeval tv;
+
+	gettimeofday(&tv, 0);
+	seed = tv.tv_sec ^ tv.tv_usec ^ getpid() ^ n++;
+    }
+    else {
+	seed = NUM2UINT(a);
+    }
+    old = rand_init(seed);
+
     return rb_uint2inum(old);
 }
 
@@ -125,6 +135,14 @@ rb_f_rand(obj, vmax)
 {
     long val, max;
 
+    static initialized = 0;
+
+    if (first) {
+	struct timeval tv;
+
+	gettimeofday(&tv, 0);
+	rand_init(tv.tv_sec ^ tv.tv_usec ^ getpid());
+    }
     switch (TYPE(vmax)) {
       case T_FLOAT:
 	if (RFLOAT(vmax)->value <= LONG_MAX && RFLOAT(vmax)->value >= LONG_MIN)

@@ -6,7 +6,7 @@
   $Date$
   created at: Fri May 28 18:02:42 JST 1993
 
-  Copyright (C) 1993-1999 Yukihiro Matsumoto
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -583,8 +583,7 @@ undef_list	: fitem
 			$$ = block_append($1, NEW_UNDEF($4));
 		    }
 
-op		: tDOT2		{ $$ = tDOT2; }
-		| '|'		{ $$ = '|'; }
+op		: '|'		{ $$ = '|'; }
 		| '^'		{ $$ = '^'; }
 		| '&'		{ $$ = '&'; }
 		| tCMP		{ $$ = tCMP; }
@@ -3780,7 +3779,7 @@ arg_add(node1, node2)
 	return list_append(node1, node2);
     }
     else {
-	return NEW_ARGSCAT(node1, node2);
+	return NEW_ARGSCAT(node1, NEW_LIST(node2));
     }
 }
 
