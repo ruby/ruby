@@ -1565,6 +1565,7 @@ unix_send_io(sock, val)
     return Qnil;
 #else
     rb_notimplement();
+    return Qnil;		/* not reached */
 #endif
 }
 
@@ -1656,6 +1657,7 @@ unix_recv_io(argc, argv, sock)
     }
 #else
     rb_notimplement();
+    return Qnil;		/* not reached */
 #endif
 }
 

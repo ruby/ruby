@@ -144,7 +144,7 @@ extern int ReadDataPending();
 
 #ifndef READ_DATA_PENDING_PTR
 # ifdef FILE_READPTR
-#  define READ_DATA_PENDING_PTR(fp) ((fp)->FILE_READPTR)
+#  define READ_DATA_PENDING_PTR(fp) ((char *)(fp)->FILE_READPTR)
 # endif
 #endif
 

@@ -1,3 +1,9 @@
+Fri Aug  1 16:02:46 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (READ_DATA_PENDING_PTR): cast to get rid of warnings.
+
+	* ext/socket/socket.c (unix_send_io, unix_recv_io): ditto.
+
 Fri Aug  1 15:53:24 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* win32/win32.c (isInternalCmd): shouldn't return if find end of str.
