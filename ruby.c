@@ -30,6 +30,8 @@ char *strrchr();
 char *strstr();
 #endif
 
+char *ruby_mktemp _((void));
+
 char *getenv();
 
 static int version, copyright;
@@ -231,13 +233,12 @@ proc_options(argcp, argvp)
 	  case 'e':
 	    forbid_setid("-e");
 	    if (!e_fp) {
-		e_tmpname = strdup("rbXXXXXX");
-		mktemp(e_tmpname);
-		if (!*e_tmpname)
-		    Fatal("Can't mktemp(%s)", e_tmpname);
+		e_tmpname = ruby_mktemp();
+		if (!e_tmpname) Fatal("Can't mktemp");
 		e_fp = fopen(e_tmpname, "w");
-		if (!e_fp)
+		if (!e_fp) {
 		    Fatal("Cannot open temporary file: %s", e_tmpname);
+		}
 		if (script == 0) script = e_tmpname;
 	    }
 	    if (argv[1]) {

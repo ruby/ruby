@@ -2619,7 +2619,6 @@ str_center(str, w)
 extern VALUE mKernel;
 extern VALUE mComparable;
 extern VALUE mEnumerable;
-extern VALUE eGlobalExit;
 
 void
 Init_String()

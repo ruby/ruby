@@ -86,6 +86,47 @@ int *retlen;
     return retval;
 }
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#ifndef S_ISDIR
+#   define S_ISDIR(m) ((m & S_IFMT) == S_IFDIR)
+#endif
+
+static char *
+check_dir(dir)
+    char *dir;
+{
+    struct stat st;
+
+    if (dir == NULL) return NULL;
+    if (stat(dir, &st) < 0) return NULL;
+    if (!S_ISDIR(st.st_mode)) return NULL;
+    if (eaccess(dir, W_OK) < 0) return NULL;
+    return dir;
+}
+
+char *
+ruby_mktemp()
+{
+    char *dir;
+    char *buf;
+
+    dir = check_dir(getenv("TMP"));
+    if (!dir) dir = check_dir(getenv("TMPDIR"));
+    if (!dir) dir = "/tmp";
+
+    buf = ALLOC_N(char,strlen(dir)+10);
+    sprintf(buf, "%s/rbXXXXXX", dir);
+    dir = mktemp(buf);
+    if (dir == NULL) free(buf);
+
+    return dir;
+}
+
 #if defined(MSDOS) || defined(__CYGWIN32__) || defined(NT)
 #include <fcntl.h>
 /*
@@ -267,7 +308,6 @@ valid_filename(char *s)
 #include <go32.h>
 #include <dpmi.h>		/* For dpmisim */
 #include <crt0.h>		/* For crt0 flags */
-#include <sys/stat.h>
 #include <libc/dosio.h>
 
 static unsigned use_lfn;

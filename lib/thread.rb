@@ -9,7 +9,7 @@ unless defined? Thread
 end
 
 unless defined? ThreadError
-  class ThreadError<Exception
+  class ThreadError<StandardError
   end
 end
 

@@ -362,8 +362,8 @@ extern int nerrs;
 extern VALUE mKernel;
 extern VALUE cModule;
 extern VALUE eFatal;
-extern VALUE eThrowable;
-extern VALUE eExceptional;
+extern VALUE eDefaultRescue;
+extern VALUE eStandardError;
 extern VALUE eInterrupt;
 extern VALUE eSystemExit;
 extern VALUE eException;
@@ -1806,6 +1806,7 @@ rb_eval(self, node)
 	    POP_TAG();
 	    if (state == TAG_RAISE) {
 		NODE * volatile resq = node->nd_resq;
+
 		while (resq) {
 		    if (handle_rescue(self, resq)) {
 			state = 0;
@@ -2708,15 +2709,7 @@ rb_longjmp(tag, mesg, at)
     }
 
     if (!NIL_P(mesg)) {
-	if (obj_is_kind_of(mesg, eThrowable)) {
-	    errinfo = mesg;
-	}
-	else {
-	    errinfo = exc_new3(eRuntimeError, mesg);
-	}
-	if (TYPE(errinfo) == T_STRING) {
-	    str_freeze(errinfo);
-	}
+	errinfo = mesg;
     }
 
     trap_restore_mask();
@@ -2765,23 +2758,16 @@ f_raise(argc, argv)
       case 2:
       case 3:
 	etype = arg1;
-	if (obj_is_kind_of(etype, eThrowable)) {
-	    etype = CLASS_OF(etype);
-	}
-	else {
-	    Check_Type(etype, T_CLASS);
-	}
 	mesg = arg2;
 	break;
     }
 
     if (!NIL_P(mesg)) {
-	if (n >= 2 || !obj_is_kind_of(mesg, eThrowable)) {
+	if (n >= 2) {
 	    mesg = rb_funcall(etype, rb_intern("new"), 1, mesg);
 	}
-	if (!obj_is_kind_of(mesg, eThrowable)) {
-	    TypeError("should be Throwable, %s given",
-		      rb_class2name(CLASS_OF(mesg)));
+	else if (TYPE(mesg) == T_STRING) {
+	    mesg = exc_new3(eRuntimeError, mesg);
 	}
     }
 
@@ -3051,7 +3037,7 @@ handle_rescue(self, node)
     TMP_PROTECT;
 
     if (!node->nd_args) {
-	return obj_is_kind_of(errinfo, eExceptional);
+	return obj_is_kind_of(errinfo, eDefaultRescue);
     }
 
     PUSH_ITER(ITER_NOT);
@@ -3080,7 +3066,7 @@ rb_rescue(b_proc, data1, r_proc, data2)
       retry_entry:
 	result = (*b_proc)(data1);
     }
-    else if (state == TAG_RAISE && obj_is_kind_of(errinfo, eExceptional)) {
+    else if (state == TAG_RAISE && obj_is_kind_of(errinfo, eDefaultRescue)) {
 	if (r_proc) {
 	    PUSH_TAG(PROT_NONE);
 	    if ((state = EXEC_TAG()) == 0) {
@@ -4497,19 +4483,6 @@ errat_setter(val, id, var)
     *var = check_errat(val);
 }
 
-static void
-errinfo_setter(val, id, var)
-    VALUE val;
-    ID id;
-    VALUE *var;
-{
-    if (!obj_is_kind_of(val, eThrowable)) {
-	TypeError("$! should be Throwable, %s given",
-		  rb_class2name(CLASS_OF(val)));
-    }
-    *var = val;
-}
-
 VALUE f_global_variables();
 VALUE f_instance_variables();
 
@@ -4617,7 +4590,7 @@ Init_eval()
     rb_global_variable((VALUE*)&the_dyna_vars);
 
     rb_define_hooked_variable("$@", &errat, 0, errat_setter);
-    rb_define_hooked_variable("$!", &errinfo, 0, errinfo_setter);
+    rb_define_variable("$!", &errinfo);
 
     rb_define_global_function("eval", f_eval, -1);
     rb_define_global_function("iterator?", f_iterator_p, 0);
@@ -5188,8 +5161,8 @@ method_proc(method)
 void
 Init_Proc()
 {
-    eLocalJumpError = rb_define_class("LocalJumpError", eException);
-    eSysStackError = rb_define_class("SystemStackError", eException);
+    eLocalJumpError = rb_define_class("LocalJumpError", eStandardError);
+    eSysStackError = rb_define_class("SystemStackError", eStandardError);
 
     cProc = rb_define_class("Proc", cObject);
     rb_define_singleton_method(cProc, "new", proc_s_new, 0);
@@ -6402,7 +6375,7 @@ thread_loading_done()
 void
 Init_Thread()
 {
-    eThreadError = rb_define_class("ThreadError", eException);
+    eThreadError = rb_define_class("ThreadError", eStandardError);
     cThread = rb_define_class("Thread", cObject);
 
     rb_define_singleton_method(cThread, "new", thread_start, 0);

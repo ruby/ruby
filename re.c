@@ -1047,13 +1047,12 @@ match_setter(val)
 }
 
 VALUE any_to_s();
+extern VALUE eStandardError;
 
 void
 Init_Regexp()
 {
-    extern VALUE eException;
-
-    eRegxpError = rb_define_class("RegxpError", eException);
+    eRegxpError = rb_define_class("RegxpError", eStandardError);
 
     re_set_syntax(RE_NO_BK_PARENS | RE_NO_BK_VBAR
 		  | RE_INTERVALS

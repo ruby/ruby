@@ -2405,14 +2405,15 @@ opt_i_set(val)
     inplace = RSTRING(val)->ptr;
 }
 
+extern VALUE mKernel;
+extern VALUE mEnumerable;
+extern VALUE eStandardError;
+
 void
 Init_IO()
 {
-    extern VALUE mKernel;
-    extern VALUE mEnumerable;
-    extern VALUE eException;
-
-    eEOFError = rb_define_class("EOFError", eException);
+    eIOError = rb_define_class("IOError", eStandardError);
+    eEOFError = rb_define_class("EOFError", eIOError);
 
     id_write = rb_intern("write");
 

@@ -1,3 +1,20 @@
+Fri May  1 00:35:51 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* error.c (exception): last argument may be the superclass of the
+	  defining exception(s).
+
+	* io.c (Init_IO): EOFError is now subclass of the IOError.
+
+	* io.c (Init_IO): forgot to define IOError.
+
+	* error.c (Init_Exception): old Exception class renamed to
+	  StandardError.  Exception now replaces old GlobalExit.
+
+	* error.c (Init_Exception): Exception is now the root of the
+	  Global Exits.  There's no longer GlobalExit class.
+
+	* util.c (ruby_mktemp): check TMP, TMPDIR first.
+
 Thu Apr 30 01:08:35 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* lib/tk.rb: call 'unknown', if proc not defined.
@@ -5,7 +22,7 @@ Thu Apr 30 01:08:35 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* eval.c (handle_rescue): default rescue handles `Exceptional' not 
 	  only the instance of the `Exception's.
 
-	* eval.c (errinfo_setter): $! can be any `Throwable' object.
+	* eval.c (f_raise): exception can be any object.
 
 	* time.c (time_gm_or_local): call time_gmtime or time_localtime.
 

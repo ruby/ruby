@@ -1253,7 +1253,7 @@ fix_zero_p(num)
 }
 
 extern VALUE mComparable;
-extern VALUE eException;
+extern VALUE eStandardError;
 
 void
 Init_Numeric()
@@ -1261,7 +1261,7 @@ Init_Numeric()
     coerce = rb_intern("coerce");
     to_i = rb_intern("to_i");
 
-    eZeroDiv = rb_define_class("ZeroDivisionError", eException);
+    eZeroDiv = rb_define_class("ZeroDivisionError", eStandardError);
     cNumeric = rb_define_class("Numeric", cObject);
 
     rb_include_module(cNumeric, mComparable);

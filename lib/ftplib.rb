@@ -8,7 +8,7 @@
 require "socket"
 require "monitor"
 
-class FTPError < Exception; end
+class FTPError < StandardError; end
 class FTPReplyError < FTPError; end
 class FTPTempError < FTPError; end
 class FTPPermError < FTPError; end

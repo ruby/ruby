@@ -48,7 +48,7 @@ VALUE cUNIXserver;
 #endif
 VALUE cSocket;
 
-extern VALUE eException;
+extern VALUE eStandardError;
 static VALUE eSocket;
 
 #ifdef SOCKS
@@ -1394,7 +1394,7 @@ sock_define_const(name, value)
 
 Init_socket()
 {
-    eSocket = rb_define_class("SocketError", eException);
+    eSocket = rb_define_class("SocketError", eStandardError);
 
     cBasicSocket = rb_define_class("BasicSocket", cIO);
     rb_undef_method(CLASS_OF(cBasicSocket), "new");

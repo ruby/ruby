@@ -212,9 +212,10 @@ rb_check_type(x, t)
 #include "errno.h"
 
 extern VALUE cString;
-VALUE eThrowable, eExceptional;
-VALUE eGlobalExit, eException;
+VALUE eException;
 VALUE eSystemExit, eInterrupt, eFatal;
+VALUE eDefaultRescue;
+VALUE eStandardError;
 VALUE eRuntimeError;
 VALUE eSyntaxError;
 VALUE eTypeError;
@@ -328,12 +329,17 @@ exception(argc, argv)
     VALUE *argv;
 {
     void ArgError();
+    VALUE etype = eStandardError;
     VALUE v = Qnil;
     int i;
     ID id;
 
     if (argc == 0) {
 	ArgError("wrong # of arguments");
+    }
+    if (TYPE(argv[argc-1]) == T_CLASS) {
+	etype = argv[argc-1];
+	argc--; argv++;
     }
     for (i=0; i<argc; i++) {	/* argument check */
 	id = rb_to_id(argv[i]);
@@ -345,7 +351,9 @@ exception(argc, argv)
 	}
     }
     for (i=0; i<argc; i++) {
-	v = rb_define_class_under(the_class, rb_id2name(rb_to_id(argv[i])), eException);
+	v = rb_define_class_under(the_class,
+				  rb_id2name(rb_to_id(argv[i])),
+				  etype);
     }
     return v;
 }
@@ -372,31 +380,28 @@ static void init_syserr();
 void
 Init_Exception()
 {
-    eThrowable  = rb_define_module("Throwable");
-    eGlobalExit  = rb_define_class("GlobalExit", cString);
-    rb_include_module(eGlobalExit, eThrowable);
-    rb_define_singleton_method(eGlobalExit, "new", exc_s_new, -1);
-    rb_define_method(eGlobalExit, "new", exc_new_method, 1);
-    rb_define_method(eGlobalExit, "inspect", exc_inspect, 0);
+    eException   = rb_define_class("Exception", cString);
+    rb_define_singleton_method(eException, "new", exc_s_new, -1);
+    rb_define_method(eException, "new", exc_new_method, 1);
+    rb_define_method(eException, "inspect", exc_inspect, 0);
 
-    eSystemExit  = rb_define_class("SystemExit", eGlobalExit);
-    eFatal  	 = rb_define_class("fatal", eGlobalExit);
-    eInterrupt   = rb_define_class("Interrupt", eGlobalExit);
+    eSystemExit  = rb_define_class("SystemExit", eException);
+    eFatal  	 = rb_define_class("fatal", eException);
+    eInterrupt   = rb_define_class("Interrupt", eException);
 
-    eExceptional = rb_define_module("Exceptional");
-    rb_include_module(eExceptional, eThrowable);
-    eException   = rb_define_class("Exception", eGlobalExit);
-    rb_include_module(eException, eExceptional);
-    eSyntaxError = rb_define_class("SyntaxError", eException);
-    eTypeError   = rb_define_class("TypeError", eException);
-    eArgError    = rb_define_class("ArgumentError", eException);
-    eNameError   = rb_define_class("NameError", eException);
-    eIndexError  = rb_define_class("IndexError", eException);
-    eNotImpError = rb_define_class("NotImplementError", eException);
-    eLoadError   = rb_define_class("LoadError", eException);
+    eDefaultRescue = rb_define_module("DefaultRescue");
+    eStandardError = rb_define_class("StandardError", eException);
+    rb_include_module(eStandardError, eDefaultRescue);
+    eSyntaxError = rb_define_class("SyntaxError", eStandardError);
+    eTypeError   = rb_define_class("TypeError", eStandardError);
+    eArgError    = rb_define_class("ArgumentError", eStandardError);
+    eNameError   = rb_define_class("NameError", eStandardError);
+    eIndexError  = rb_define_class("IndexError", eStandardError);
+    eNotImpError = rb_define_class("NotImplementError", eStandardError);
+    eLoadError   = rb_define_class("LoadError", eStandardError);
 
-    eRuntimeError = rb_define_class("RuntimeError", eException);
-    eSecurityError = rb_define_class("SecurityError", eException);
+    eRuntimeError = rb_define_class("RuntimeError", eStandardError);
+    eSecurityError = rb_define_class("SecurityError", eStandardError);
 
     init_syserr();
 
@@ -524,7 +529,7 @@ rb_sys_fail(mesg)
 static void
 init_syserr()
 {
-    eSystemCallError = rb_define_class("SystemCallError", eException);
+    eSystemCallError = rb_define_class("SystemCallError", eStandardError);
     mErrno = rb_define_module("Errno");
     syserr_list = ALLOC_N(VALUE, sys_nerr+1);
     MEMZERO(syserr_list, VALUE, sys_nerr+1);

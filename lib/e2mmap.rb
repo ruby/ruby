@@ -72,11 +72,11 @@ else
 	# def_exception(c, m)
 	#	    n:  exception_name
 	#	    m:  message_form
-	#	    s:	例外スーパークラス(デフォルト: Exception)
+	#	    s:	例外スーパークラス(デフォルト: StandardError)
 	#	例外名``c''をもつ例外を定義し, そのメッセージをmとする.
 	#
 	#def def_exception(n, m)
-	def self.def_exception(n, m, s = Exception)
+	def self.def_exception(n, m, s = StandardError)
 	  n = n.id2name if n.kind_of?(Fixnum)
 	  e = Class.new(s)
 	  const_set(n, e)

@@ -55,7 +55,7 @@ module Sync_m
   EX = :EX
   
   # 例外定義
-  class Err < Exception
+  class Err < StandardError
     def Err.Fail(*opt)
       fail self, sprintf(self::Message, *opt)
     end
