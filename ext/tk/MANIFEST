@@ -60,6 +60,7 @@ sample/demos-en/doc.org/license.terms
 sample/demos-en/doc.org/license.terms.tk80
 sample/demos-en/entry1.rb
 sample/demos-en/entry2.rb
+sample/demos-en/entry3.rb
 sample/demos-en/filebox.rb
 sample/demos-en/floor.rb
 sample/demos-en/form.rb
@@ -137,6 +138,7 @@ sample/demos-jp/doc.org/license.terms
 sample/demos-jp/doc.org/license.terms.tk80
 sample/demos-jp/entry1.rb
 sample/demos-jp/entry2.rb
+sample/demos-jp/entry3.rb
 sample/demos-jp/filebox.rb
 sample/demos-jp/floor.rb
 sample/demos-jp/form.rb
