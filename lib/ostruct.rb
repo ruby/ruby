@@ -30,7 +30,7 @@ class OpenStruct
     elsif args.length == 0
       @table[mid]
     else
-      raise NoMethodError, "undefined method `#{mname}'", caller(1)
+      raise NoMethodError, "undefined method `#{mname}' for #{self}", caller(1)
     end
   end
 
