@@ -723,6 +723,11 @@ test/uri/test_http.rb
 test/uri/test_ldap.rb
 test/uri/test_mailto.rb
 test/wsdl/emptycomplextype.wsdl
+test/wsdl/raa/RAA.rb
+test/wsdl/raa/README.txt
+test/wsdl/raa/raa.wsdl
+test/wsdl/raa/server.rb
+test/wsdl/raa/test_raa.rb
 test/wsdl/test_emptycomplextype.rb
 test/xsd/test_xmlschemaparser.rb
 test/xsd/test_xsd.rb
