@@ -13,7 +13,7 @@ module RDoc
   # The initialize method takes a file name to be used, the body of the
   # file, and an RDoc::Options object. The scan method is then called
   # to return an appropriately parsed TopLevel code object.
-
+  #
   # The ParseFactory is used to redirect to the correct parser given a filename
   # extension. This magic works because individual parsers have to register 
   # themselves with us as they are loaded in. The do this using the following
@@ -37,6 +37,10 @@ module RDoc
   #        end
   #      end
   #    end
+  #
+  # Just to make life interesting, if we suspect a plain text file, we
+  # also look for a shebang line just in case it's a potential
+  # shell script
 
 
 
@@ -74,6 +78,14 @@ module RDoc
     # SimpleParser for ones that we don't know
 
     def ParserFactory.parser_for(top_level, file_name, body, options, stats)
+      # If no extension, look for shebang
+      if file_name !~ /\.\w+$/ && body =~ %r{\A#!(.+)}
+        shebang = $1
+        case shebang
+        when %r{env\s+ruby}, %r{/ruby}
+          file_name = "dummy.rb"
+        end
+      end
       parser_description = can_parse(file_name)
       if parser_description
         parser = parser_description.parser 

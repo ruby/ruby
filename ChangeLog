@@ -1,3 +1,9 @@
+Wed Jan  7 08:21:04 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/parsers/parserfactory.rb: Check for shebang
+	  line in files that would otherwise be treated as
+	  plain text.
+
 Tue Jan  6 21:51:37 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (fptr_finalize): should save errno just after failure.
