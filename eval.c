@@ -1762,11 +1762,13 @@ is_defined(self, node, buf)
 	break;
 
       case NODE_CVAR:
-	if (rb_cvar_defined(ruby_cbase, node->nd_vid)) {
-	    return "class variable";
+	if (!FL_TEST(ruby_cbase, FL_SINGLETON)) {
+	    if (rb_cvar_defined(ruby_cbase, node->nd_vid)) {
+		return "class variable";
+	    }
+	    break;
 	}
-	break;
-
+	/* fall through */
       case NODE_CVAR2:
 	if (rb_cvar_defined_singleton(self, node->nd_vid)) {
 	    return "class variable";
@@ -2629,9 +2631,11 @@ rb_eval(self, n)
 	break;
 
       case NODE_CVAR:
-	result = rb_cvar_get(ruby_cbase, node->nd_vid);
-	break;
-
+	if (!FL_TEST(ruby_cbase, FL_SINGLETON)) {
+	    result = rb_cvar_get(ruby_cbase, node->nd_vid);
+	    break;
+	}
+	/* fall through */
       case NODE_CVAR2:
 	result = rb_cvar_get_singleton(self, node->nd_vid);
 	break;
@@ -7216,9 +7220,7 @@ rb_thread_wait_fd(fd)
     int fd;
 {
     if (curr_thread == curr_thread->next) return;
-#if 0
-    if (ruby_in_compile) return;
-#endif
+    if (curr_thread->status == THREAD_TO_KILL) return;
 
     curr_thread->status = THREAD_STOPPED;
     curr_thread->fd = fd;
@@ -7231,6 +7233,7 @@ rb_thread_fd_writable(fd)
     int fd;
 {
     if (curr_thread == curr_thread->next) return Qtrue;
+    if (curr_thread->status == THREAD_TO_KILL) return Qtrue;
 
     curr_thread->status = THREAD_STOPPED;
     FD_ZERO(&curr_thread->readfds);
@@ -7249,7 +7252,8 @@ rb_thread_wait_for(time)
 {
     double date;
 
-    if (curr_thread == curr_thread->next) {
+    if (curr_thread == curr_thread->next ||
+	curr_thread->status == THREAD_TO_KILL) {
 	int n;
 #ifndef linux
 	double d, limit;
@@ -7313,7 +7317,8 @@ rb_thread_select(max, read, write, except, timeout)
 	    (double)timeout->tv_sec+(double)timeout->tv_usec*1e-6;
     }
 
-    if (curr_thread == curr_thread->next) { /* no other thread */
+    if (curr_thread == curr_thread->next ||
+	curr_thread->status == THREAD_TO_KILL) {
 #ifndef linux
 	struct timeval tv, *tvp = timeout;
 
@@ -7376,16 +7381,20 @@ rb_thread_join(thread)
     VALUE thread;
 {
     rb_thread_t th = rb_thread_check(thread);
+    enum thread_status last_status = THREAD_RUNNABLE;
 
     if (!rb_thread_dead(th)) {
 	if (th == curr_thread)
 	    rb_raise(rb_eThreadError, "thread tried to join itself");
 	if ((th->wait_for & WAIT_JOIN) && th->join == curr_thread)
 	    rb_raise(rb_eThreadError, "Thread#join: deadlock - mutual join");
+	if (curr_thread->status == THREAD_TO_KILL)
+	    last_status = THREAD_TO_KILL;
 	curr_thread->status = THREAD_STOPPED;
 	curr_thread->join = th;
 	curr_thread->wait_for = WAIT_JOIN;
 	rb_thread_schedule();
+	curr_thread->status = last_status;
     }
 
     if (!NIL_P(th->errinfo) && (th->flags & THREAD_RAISED)) {
@@ -7500,12 +7509,17 @@ rb_thread_pass()
 VALUE
 rb_thread_stop()
 {
+    enum thread_status last_status = THREAD_RUNNABLE;
+
     rb_thread_critical = 0;
     if (curr_thread == curr_thread->next) {
 	rb_raise(rb_eThreadError, "stopping only thread\n\tnote: use sleep to stop forever");
     }
+    if (curr_thread->status == THREAD_TO_KILL)
+	last_status = THREAD_TO_KILL;
     curr_thread->status = THREAD_STOPPED;
     rb_thread_schedule();
+    curr_thread->status = last_status;
 
     return Qnil;
 }
@@ -7547,7 +7561,8 @@ rb_thread_sleep(sec)
 void
 rb_thread_sleep_forever()
 {
-    if (curr_thread == curr_thread->next) {
+    if (curr_thread == curr_thread->next ||
+	curr_thread->status == THREAD_TO_KILL) {
 	TRAP_BEG;
 	pause();
 	TRAP_END;

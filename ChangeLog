@@ -1,3 +1,20 @@
+Fri Nov 17 02:54:15 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_close): need not to flush before closing.
+
+	* eval.c (rb_thread_join): should preserve last thread status when
+	  THREAD_TO_KILL.
+
+	* eval.c (rb_thread_stop): ditto.
+
+	* io.c (io_fflush): wrap fflush by TRAP_BEG, TRAP_END.
+
+	* eval.c (rb_eval): method defined within singleton class
+	  definition should behave like singleton method about class
+	  variables.
+
+	* eval.c (is_defined): ditto.
+
 Thu Nov 16 23:06:07 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/http.rb: can call {old,new}_implementation any times.
@@ -12,6 +29,10 @@ Thu Nov 16 23:06:07 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 	  always read until eof.
 
 	* lib/net/protocol: detects and catches "break" from block.
+
+Thu Nov 16 16:32:45 2000  Masahiro Tanaka  <masa@stars.gsfc.nasa.gov>
+
+	* bignum.c (bigdivrem): should have incremented ny first.
 
 Thu Nov 16 14:58:00 2000  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 

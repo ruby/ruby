@@ -208,8 +208,13 @@ io_fflush(f, path)
     FILE *f;
     const char *path;
 {
+    int n;
+
     rb_thread_fd_writable(fileno(f));
-    if (fflush(f) == EOF) rb_sys_fail(path);
+    TRAP_BEG;
+    n = fflush(f);
+    TRAP_END;
+    if (n == EOF) rb_sys_fail(path);
 }
 
 /* writing functions */
@@ -1050,9 +1055,6 @@ rb_io_close(io)
     OpenFile *fptr;
 
     fptr = RFILE(io)->fptr;
-    if (fptr->mode & FMODE_WRITABLE) {
-	rb_io_flush(io);
-    }
     rb_io_fptr_close(fptr);
     if (fptr->pid) {
 	rb_syswait(fptr->pid);

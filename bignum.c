@@ -903,7 +903,8 @@ bigdivrem(x, y, divp, modp)
 	*modp = rb_big_clone(z);
 	if (dd) {
 	    zds = BDIGITS(*modp);
-	    t2 = 0; i = ny;
+	    while (ny-- && !zds[ny]) ;
+	    t2 = 0; i = ++ny;
 	    while(i--) {
 		t2 = (t2 | zds[i]) >> dd;
 		q = zds[i];
