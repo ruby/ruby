@@ -6730,6 +6730,7 @@ rb_mod_define_method(argc, argv, mod)
     }
     if (TYPE(body) != T_DATA) {
 	/* type error */
+	rb_raise(rb_eTypeError, "wrong argument type (expected Proc)");
     }
     if (RDATA(body)->dmark == (RUBY_DATA_FUNC)bm_mark) {
 	rb_add_method(mod, id, NEW_DMETHOD(method_unbind(body)), NOEX_PUBLIC);
@@ -6739,8 +6740,10 @@ rb_mod_define_method(argc, argv, mod)
     }
     else {
 	/* type error */
+	rb_raise(rb_eTypeError, "wrong argument type (expected Proc)");
     }
 
+    rb_clear_cache_by_id(id);
     return body;
 }
 
