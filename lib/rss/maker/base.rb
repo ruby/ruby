@@ -21,17 +21,17 @@ module RSS
 
           subclass.module_eval(<<-EOEOC, __FILE__, __LINE__)
             def self.other_elements
-              const_get("OTHER_ELEMENTS") + super
+              OTHER_ELEMENTS + super
             end
 
             def self.need_initialize_variables
-              const_get("NEED_INITIALIZE_VARIABLES") + super
+              NEED_INITIALIZE_VARIABLES + super
             end
           EOEOC
         end
 
         def self.add_other_element(variable_name)
-          const_get("OTHER_ELEMENTS") << variable_name
+          OTHER_ELEMENTS << variable_name
         end
 
         def self.other_elements
@@ -39,7 +39,7 @@ module RSS
         end
 
         def self.add_need_initialize_variable(variable_name, init_value="nil")
-          const_get("NEED_INITIALIZE_VARIABLES") << [variable_name, init_value]
+          NEED_INITIALIZE_VARIABLES << [variable_name, init_value]
         end
 
         def self.need_initialize_variables
