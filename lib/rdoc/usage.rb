@@ -96,7 +96,7 @@ module RDoc
 
   # Display usage
   def RDoc.usage_no_exit(*args)
-    main_program_file, = caller[-1].split(/:/, 2)
+    main_program_file, = caller[-1].split(/:\d+/, 2)
     comment = File.open(main_program_file) do |file|
       find_comment(file)
     end

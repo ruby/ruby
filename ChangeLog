@@ -1,3 +1,8 @@
+Thu Jan  6 07:58:28 2005  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/usage.rb (RDoc::RDoc.usage_no_exit): Allow for colons
+	  in path names on DOS machines. (thanks to Johan Nilsson)
+
 Thu Jan  6 00:02:35 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* test/rinda/test_rinda.rb: use MockClock.sleep instead of Kernel.sleep
