@@ -170,7 +170,7 @@ module FileUtils
     return *list if options[:noop]
 
     mode = options[:mode] || (0777 & ~File.umask)
-    list.each do |path|
+    list.map {|path| path.sub(%r</\z>, '') }.each do |path|
       stack = []
       until path == stack.last   # dirname("/")=="/", dirname("C:/")=="C:/"
         stack.push path
@@ -711,7 +711,7 @@ module FileUtils
   end
 
   def fu_list(arg)
-    arg.is_a?(Array) ? arg : [arg]
+    Array(arg).map {|path| path.to_str }
   end
 
   def fu_each_src_dest(src, dest)

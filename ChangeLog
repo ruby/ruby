@@ -1,3 +1,10 @@
+Thu Dec 11 20:54:28 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb (mkdir_p): remove trailing `/' befere mkdir(2).
+	  mkdir("nonexistdir/") does not work on NetBSD/Alpha 1.6.1.
+
+	* lib/fileutils.rb (fu_list): call to_str for all arguments.
+
 Thu Dec 11 20:07:01 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/ftools.rb (makedirs): sync with fileutils.
