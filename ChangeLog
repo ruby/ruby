@@ -1,3 +1,7 @@
+Fri Jul  5 08:59:15 2002  Michal Rokos <michal@ruby-lang.org>
+
+	* enum.c: Fix bug in enum_sort_by and some code indents
+
 Fri Jul  5 05:00:40 2002  Wakou Aoyama  <wakou@ruby-lang.org>
 
 	* lib/cgi.rb (CGI#initialize): improvement for mod_ruby.

@@ -48,16 +48,15 @@ static VALUE
 enum_grep(obj, pat)
     VALUE obj, pat;
 {
-    VALUE tmp, arg[2];
+    VALUE ary = rb_ary_new();
+    VALUE arg[2];
 
-    arg[0] = pat; arg[1] = tmp = rb_ary_new();
-    if (rb_block_given_p()) {
-	rb_iterate(rb_each, obj, grep_iter_i, (VALUE)arg);
-    }
-    else {
-	rb_iterate(rb_each, obj, grep_i, (VALUE)arg);
-    }
-    return tmp;
+    arg[0] = pat;
+    arg[1] = ary;
+
+    rb_iterate(rb_each, obj, rb_block_given_p() ? grep_iter_i : grep_i, (VALUE)arg);
+    
+    return ary;
 }
 
 static VALUE
@@ -97,11 +96,11 @@ enum_find(argc, argv, obj)
 }
 
 static VALUE
-find_all_i(i, tmp)
-    VALUE i, tmp;
+find_all_i(i, ary)
+    VALUE i, ary;
 {
     if (RTEST(rb_yield(i))) {
-	rb_ary_push(tmp, i);
+	rb_ary_push(ary, i);
     }
     return Qnil;
 }
@@ -110,20 +109,19 @@ static VALUE
 enum_find_all(obj)
     VALUE obj;
 {
-    VALUE tmp;
+    VALUE ary = rb_ary_new();
+    
+    rb_iterate(rb_each, obj, find_all_i, ary);
 
-    tmp = rb_ary_new();
-    rb_iterate(rb_each, obj, find_all_i, tmp);
-
-    return tmp;
+    return ary;
 }
 
 static VALUE
-reject_i(i, tmp)
-    VALUE i, tmp;
+reject_i(i, ary)
+    VALUE i, ary;
 {
     if (!RTEST(rb_yield(i))) {
-	rb_ary_push(tmp, i);
+	rb_ary_push(ary, i);
     }
     return Qnil;
 }
@@ -132,19 +130,19 @@ static VALUE
 enum_reject(obj)
     VALUE obj;
 {
-    VALUE tmp;
+    VALUE ary = rb_ary_new();
+    
+    rb_iterate(rb_each, obj, reject_i, ary);
 
-    tmp = rb_ary_new();
-    rb_iterate(rb_each, obj, reject_i, tmp);
-
-    return tmp;
+    return ary;
 }
 
 static VALUE
-collect_i(i, tmp)
-    VALUE i, tmp;
+collect_i(i, ary)
+    VALUE i, ary;
 {
-    rb_ary_push(tmp, rb_yield(i));
+    rb_ary_push(ary, rb_yield(i));
+    
     return Qnil;
 }
 
@@ -153,6 +151,7 @@ collect_all(i, ary)
     VALUE i, ary;
 {
     rb_ary_push(ary, i);
+    
     return Qnil;
 }
 
@@ -160,9 +159,8 @@ static VALUE
 enum_to_a(obj)
     VALUE obj;
 {
-    VALUE ary;
-
-    ary = rb_ary_new();
+    VALUE ary = rb_ary_new();
+    
     rb_iterate(rb_each, obj, collect_all, ary);
 
     return ary;
@@ -172,9 +170,8 @@ static VALUE
 enum_collect(obj)
     VALUE obj;
 {
-    VALUE ary;
-
-    ary = rb_ary_new();
+    VALUE ary = rb_ary_new();
+    
     rb_iterate(rb_each, obj, rb_block_given_p() ? collect_i : collect_all, ary);
 
     return ary;
@@ -192,7 +189,6 @@ inject_i(i, memo)
     else {
         memo->u1.value = rb_yield(rb_assoc_new(memo->u1.value, i));
     }
-
     return Qnil;
 }
 
@@ -204,14 +200,14 @@ enum_inject(argc, argv, obj)
     NODE *memo;
     VALUE n;
 
-    if (rb_scan_args(argc, argv, "01", &n) == 1)
+    if (rb_scan_args(argc, argv, "01", &n) == 1) {
         memo = rb_node_newnode(NODE_MEMO, n, Qfalse, 0);
-    else
+    }
+    else {
         memo = rb_node_newnode(NODE_MEMO, Qnil, Qtrue, 0);
-
+    }
     rb_iterate(rb_each, obj, inject_i, (VALUE)memo);
     n = memo->u1.value;
-
     rb_gc_force_recycle((VALUE)memo);
     return n;
 }
@@ -236,7 +232,7 @@ enum_partition(obj)
     VALUE ary[2];
 
     ary[0] = rb_ary_new();
-    ary[1]  =  rb_ary_new();
+    ary[1] = rb_ary_new();
     rb_iterate(rb_each, obj, partition_i, (VALUE)ary);
 
     return rb_assoc_new(ary[0], ary[1]);
@@ -280,14 +276,13 @@ enum_sort_by(obj)
 
     ary  = rb_ary_new2((TYPE(obj) == T_ARRAY) ? RARRAY(obj)->len : 2000);
     rb_iterate(rb_each, obj, sort_by_i, ary);
-    if (RARRAY(obj)->len > 1) {
+    if (RARRAY(ary)->len > 1) {
 	qsort(RARRAY(ary)->ptr, RARRAY(ary)->len, sizeof(VALUE), sort_by_cmp);
     }
     for (i=0; i<RARRAY(ary)->len; i++) {
 	VALUE e = RARRAY(ary)->ptr[i];
 	RARRAY(ary)->ptr[i] = RARRAY(e)->ptr[1];
     }
-
     return ary;
 }
 
@@ -350,12 +345,14 @@ min_i(i, memo)
 {
     VALUE cmp;
 
-    if (NIL_P(memo->u1.value))
+    if (NIL_P(memo->u1.value)) {
 	memo->u1.value = i;
+    }
     else {
 	cmp = rb_funcall(i, id_cmp, 1, memo->u1.value);
-	if (rb_cmpint(cmp) < 0)
+	if (rb_cmpint(cmp) < 0) {
 	    memo->u1.value = i;
+	}
     }
     return Qnil;
 }
@@ -367,12 +364,14 @@ min_ii(i, memo)
 {
     VALUE cmp;
 
-    if (NIL_P(memo->u1.value))
+    if (NIL_P(memo->u1.value)) {
 	memo->u1.value = i;
+    }
     else {
 	cmp = rb_yield(rb_assoc_new(i, memo->u1.value));
-	if (rb_cmpint(cmp) < 0)
+	if (rb_cmpint(cmp) < 0) {
 	    memo->u1.value = i;
+	}
     }
     return Qnil;
 }
@@ -384,7 +383,7 @@ enum_min(obj)
     VALUE result;
     NODE *memo = rb_node_newnode(NODE_MEMO, Qnil, 0, 0);
 
-    rb_iterate(rb_each, obj, rb_block_given_p()?min_ii:min_i, (VALUE)memo);
+    rb_iterate(rb_each, obj, rb_block_given_p() ? min_ii : min_i, (VALUE)memo);
     result = memo->u1.value;
     rb_gc_force_recycle((VALUE)memo);
     return result;
@@ -397,12 +396,14 @@ max_i(i, memo)
 {
     VALUE cmp;
 
-    if (NIL_P(memo->u1.value))
+    if (NIL_P(memo->u1.value)) {
 	memo->u1.value = i;
+    }
     else {
 	cmp = rb_funcall(i, id_cmp, 1, memo->u1.value);
-	if (rb_cmpint(cmp) > 0)
+	if (rb_cmpint(cmp) > 0) {
 	    memo->u1.value = i;
+	}
     }
     return Qnil;
 }
@@ -414,12 +415,14 @@ max_ii(i, memo)
 {
     VALUE cmp;
 
-    if (NIL_P(memo->u1.value))
+    if (NIL_P(memo->u1.value)) {
 	memo->u1.value = i;
+    }
     else {
 	cmp = rb_yield(rb_assoc_new(i, memo->u1.value));
-	if (rb_cmpint(cmp) > 0)
+	if (rb_cmpint(cmp) > 0) {
 	    memo->u1.value = i;
+	}
     }
     return Qnil;
 }
@@ -431,7 +434,7 @@ enum_max(obj)
     VALUE result;
     NODE *memo = rb_node_newnode(NODE_MEMO, Qnil, 0, 0);
 
-    rb_iterate(rb_each, obj, rb_block_given_p()?max_ii:max_i, (VALUE)memo);
+    rb_iterate(rb_each, obj, rb_block_given_p() ? max_ii : max_i, (VALUE)memo);
     result = memo->u1.value;
     rb_gc_force_recycle((VALUE)memo);
     return result;
@@ -515,3 +518,4 @@ Init_Enumerable()
     id_each = rb_intern("each");
     id_cmp  = rb_intern("<=>");
 }
+
