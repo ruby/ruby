@@ -15,6 +15,11 @@ static VALUE mReadline;
 #define COMPLETION_PROC "completion_proc"
 #define COMPLETION_CASE_FOLD "completion_case_fold"
 
+#ifndef READLINE_42_OR_LATER
+# define rl_filename_completion_function filename_completion_function
+# define rl_username_completion_function username_completion_function
+#endif
+
 static int
 readline_event()
 {
@@ -322,7 +327,7 @@ filename_completion_proc_call(self, str)
     int i;
 
     matches = completion_matches(STR2CSTR(str),
-				 filename_completion_function);
+				 rl_filename_completion_function);
     if (matches) {
 	result = rb_ary_new();
 	for (i = 0; matches[i]; i++) {
@@ -349,7 +354,7 @@ username_completion_proc_call(self, str)
     int i;
 
     matches = completion_matches(STR2CSTR(str),
-				 username_completion_function);
+				 rl_username_completion_function);
     if (matches) {
 	result = rb_ary_new();
 	for (i = 0; matches[i]; i++) {

@@ -160,42 +160,42 @@ static VALUE
 rb_stat_dev(self)
     VALUE self;
 {
-    return INT2FIX((int)get_stat(self)->st_dev);
+    return INT2NUM(get_stat(self)->st_dev);
 }
 
 static VALUE
 rb_stat_ino(self)
     VALUE self;
 {
-    return INT2FIX((int)get_stat(self)->st_ino);
+    return UINT2NUM(get_stat(self)->st_ino);
 }
 
 static VALUE
 rb_stat_mode(self)
     VALUE self;
 {
-    return INT2FIX((int)get_stat(self)->st_mode);
+    return UINT2NUM(get_stat(self)->st_mode);
 }
 
 static VALUE
 rb_stat_nlink(self)
     VALUE self;
 {
-    return INT2FIX((int)get_stat(self)->st_nlink);
+    return UINT2NUM(get_stat(self)->st_nlink);
 }
 
 static VALUE
 rb_stat_uid(self)
     VALUE self;
 {
-    return INT2FIX((int)get_stat(self)->st_uid);
+    return UINT2NUM(get_stat(self)->st_uid);
 }
 
 static VALUE
 rb_stat_gid(self)
     VALUE self;
 {
-    return INT2FIX((int)get_stat(self)->st_gid);
+    return UINT2NUM(get_stat(self)->st_gid);
 }
 
 static VALUE
@@ -203,7 +203,7 @@ rb_stat_rdev(self)
     VALUE self;
 {
 #ifdef HAVE_ST_RDEV
-    return INT2FIX((int)get_stat(self)->st_rdev);
+    return INT2NUM(get_stat(self)->st_rdev);
 #else
     return INT2FIX(0);
 #endif
@@ -213,7 +213,7 @@ static VALUE
 rb_stat_size(self)
     VALUE self;
 {
-    return INT2FIX((int)get_stat(self)->st_size);
+    return INT2NUM(get_stat(self)->st_size);
 }
 
 static VALUE
@@ -221,7 +221,7 @@ rb_stat_blksize(self)
     VALUE self;
 {
 #ifdef HAVE_ST_BLKSIZE
-    return INT2FIX((int)get_stat(self)->st_blksize);
+    return UINT2NUM(get_stat(self)->st_blksize);
 #else
     return INT2FIX(0);
 #endif
@@ -232,7 +232,7 @@ rb_stat_blocks(self)
     VALUE self;
 {
 #ifdef HAVE_ST_BLOCKS
-    return INT2FIX((int)get_stat(self)->st_blocks);
+    return UINT2NUM(get_stat(self)->st_blocks);
 #else
     return INT2FIX(0);
 #endif
@@ -1523,11 +1523,14 @@ rb_thread_flock(fd, op, fptr)
     op |= LOCK_NB;
     while (flock(fd, op) < 0) {
 	switch (errno) {
-	  case EINTR:			/* can be happen? */
+          case EAGAIN:
+          case EACCES:
+#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
 	  case EWOULDBLOCK:
+#endif
 	    rb_thread_polling();	/* busy wait */
 	    rb_io_check_closed(fptr);
-	    break;
+            continue;
 	  default:
 	    return -1;
 	}
@@ -1556,11 +1559,14 @@ rb_file_flock(obj, operation)
     ret = flock(fileno(fptr->f), NUM2INT(operation));
     TRAP_END;
     if (ret < 0) {
-#ifdef EWOULDBLOCK
-	if (errno == EWOULDBLOCK) {
-	    return Qfalse;
-	}
+        switch (errno) {
+          case EAGAIN:
+          case EACCES:
+#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
+          case EWOULDBLOCK:
 #endif
+              return Qfalse;
+        }
 	rb_sys_fail(fptr->path);
     }
 #endif
@@ -2201,6 +2207,7 @@ define_filetest_function(name, func, argc)
     rb_define_singleton_method(rb_cFile, name, func, argc);
 }
 
+void
 Init_File()
 {
     rb_mFileTest = rb_define_module("FileTest");

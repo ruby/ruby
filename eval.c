@@ -1449,7 +1449,7 @@ rb_mod_nesting()
     VALUE ary = rb_ary_new();
 
     while (cbase && cbase->nd_next) {
-	rb_ary_push(ary, cbase->nd_clss);
+	if (!NIL_P(cbase->nd_clss)) rb_ary_push(ary, cbase->nd_clss);
 	cbase = cbase->nd_next;
     }
     return ary;
@@ -1462,11 +1462,11 @@ rb_mod_s_constants()
     VALUE ary = rb_ary_new();
 
     while (cbase) {
-	rb_mod_const_at(cbase->nd_clss, ary);
+	if (!NIL_P(cbase->nd_clss)) rb_mod_const_at(cbase->nd_clss, ary);
 	cbase = cbase->nd_next;
     }
 
-    rb_mod_const_of(ruby_cbase, ary);
+    if (!NIL_P(ruby_cbase)) rb_mod_const_of(ruby_cbase, ary);
     return ary;
 }
 
@@ -6015,6 +6015,7 @@ blk_copy_prev(block)
     struct BLOCK *block;
 {
     struct BLOCK *tmp;
+    struct RVarmap* vars;
 
     while (block->prev) {
 	tmp = ALLOC_N(struct BLOCK, 1);
@@ -6025,6 +6026,12 @@ blk_copy_prev(block)
 	}
 	scope_dup(tmp->scope);
 	tmp->tag->flags |= BLOCK_DYNAMIC;
+
+	for (vars = tmp->dyna_vars; vars; vars = vars->next) {
+	    if (FL_TEST(vars, DVAR_DONT_RECYCLE)) break;
+	    FL_SET(vars, DVAR_DONT_RECYCLE);
+	}
+
 	block->prev = tmp;
 	block = tmp;
     }
@@ -6869,6 +6876,7 @@ struct thread {
     VALUE klass;
     VALUE wrapper;
     NODE *cref;
+    NODE *cref;
 
     int flags;		/* misc. states (vmode/rb_trap_immediate/raised) */
 
@@ -6936,6 +6944,7 @@ safe_setter(val)
     int level = NUM2INT(val);
 
     if (level < ruby_safe_level) {
+    rb_gc_mark((VALUE)th->cref);
 	rb_raise(rb_eSecurityError, "tried to downgrade safe level from %d to %d",
 		 ruby_safe_level, level);
     }
@@ -7053,6 +7062,7 @@ static VALUE th_raise_argv[2];
 static char *th_raise_file;
 static int   th_raise_line;
 static VALUE th_cmd;
+    th->cref = ruby_cref;
 static int   th_sig;
 static char *th_signm;
 
@@ -7143,6 +7153,7 @@ thread_switch(n)
 static void rb_thread_restore_context _((rb_thread_t,int));
 
 static void
+    ruby_cref = th->cref;
 stack_extend(th, exit)
     rb_thread_t th;
     int exit;
@@ -7547,7 +7558,14 @@ rb_thread_fd_writable(fd)
     if (rb_thread_critical) return Qtrue;
     if (curr_thread == curr_thread->next) return Qtrue;
     if (curr_thread->status == THREAD_TO_KILL) return Qtrue;
-
+	    if (n < 0) {
+		switch (errno) {
+		  case EINTR:
+		    return;
+		  default:
+		    rb_sys_fail("sleep");
+		}
+	    }
     curr_thread->status = THREAD_STOPPED;
     FD_ZERO(&curr_thread->readfds);
     FD_ZERO(&curr_thread->writefds);
@@ -7951,6 +7969,7 @@ rb_thread_s_abort_exc_set(self, val)
 
 static VALUE
 rb_thread_abort_exc(thread)
+    th->cref = ruby_cref;\
     VALUE thread;
 {
     return rb_thread_check(thread)->abort?Qtrue:Qfalse;
@@ -8079,6 +8098,7 @@ rb_thread_start_0(fn, arg, th_arg)
 {
     volatile rb_thread_t th = th_arg;
     volatile VALUE thread = th->thread;
+    struct BLOCK* saved_block = 0;
     enum thread_status status;
     int state;
 
@@ -8096,7 +8116,11 @@ rb_thread_start_0(fn, arg, th_arg)
 #endif
 
     if (ruby_block) {		/* should nail down higher scopes */
-	blk_copy_prev(ruby_block);
+	struct BLOCK dummy;
+
+	dummy.prev = ruby_block;
+	blk_copy_prev(&dummy);
+	saved_block = ruby_block = dummy.prev;
     }
     scope_dup(ruby_scope);
     FL_SET(ruby_scope, SCOPE_SHARED);
@@ -8123,6 +8147,16 @@ rb_thread_start_0(fn, arg, th_arg)
     }
     POP_TAG();
     status = th->status;
+
+    while (saved_block) {
+	struct BLOCK *tmp = saved_block;
+
+	if (tmp->frame.argc > 0)
+	    free(tmp->frame.argv);
+	saved_block = tmp->prev;
+	free(tmp);
+    }
+
     if (th == main_thread) ruby_stop(state);
     rb_thread_remove(th);
     if (state && status != THREAD_TO_KILL && !NIL_P(ruby_errinfo)) {

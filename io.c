@@ -27,6 +27,10 @@
 # define NO_LONG_FNAME
 #endif
 
+#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(sun)
+# define USE_SETVBUF
+#endif
+
 #include <sys/types.h>
 #if !defined(DJGPP) && !defined(NT) && !defined(__human68k__)
 #include <sys/ioctl.h>
@@ -1362,6 +1366,9 @@ rb_fopen(fname, mode)
 	    rb_sys_fail(fname);
 	}
     }
+#ifdef USE_SETVBUF
+    setvbuf(file, NULL, _IOFBF, 0);
+#endif
 #ifdef __human68k__
     fmode(file, _IOTEXT);
 #endif
@@ -1385,6 +1392,10 @@ rb_fdopen(fd, mode)
 	    rb_sys_fail(0);
 	}
     }
+#ifdef USE_SETVBUF
+    setvbuf(file, NULL, _IOFBF, 0);
+#endif
+
     return file;
 }
 
@@ -1902,12 +1913,14 @@ rb_io_reopen(argc, argv, file)
 	    fclose(fptr->f2);
 	    fptr->f2 = 0;
 	}
+
 	return file;
     }
 
     if (freopen(RSTRING(fname)->ptr, mode, fptr->f) == 0) {
 	rb_sys_fail(fptr->path);
     }
+
     if (fptr->f2) {
 	if (freopen(RSTRING(fname)->ptr, "w", fptr->f2) == 0) {
 	    rb_sys_fail(fptr->path);

@@ -1049,7 +1049,7 @@ calculate_must_string(start, end)
       EXTRACT_NUMBER_AND_INCR(mcnt, p);
       if (mcnt > 0) p += mcnt;
       if ((enum regexpcode)p[-3] == jump) {
-	p -= 3;
+       p -= 2;
 	EXTRACT_NUMBER_AND_INCR(mcnt, p);
 	if (mcnt > 0) p += mcnt;
       }

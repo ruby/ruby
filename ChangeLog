@@ -1,8 +1,37 @@
+Sat Apr 14 22:46:43 2001  Guy Decoux  <decoux@moulon.inra.fr>
+
+	* regex.c (calculate_must_string): wrong length calculation.
+
 Sat Apr 14 13:33:32 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
 
 	* win32/config.status.in: no longer use missing/alloca.c.
 
 	* win32/Makefile.sub: ditto.
+
+Fri Apr 13 12:40:48 2001  K.Kosako  <kosako@sofnec.co.jp>
+
+	* eval.c (rb_thread_start_0): fixed memory leak.
+
+Fri Apr 13 16:41:18 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (none): should clear cmdarg_stack too.
+
+Fri Apr 13 06:19:29 2001  GOTOU YUUZOU  <gotoyuzo@notwork.org>
+
+	* io.c (rb_fopen): use setvbuf() to avoid recursive malloc() on
+	  some platforms.
+
+Wed Apr 11 23:36:26 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* file.c (rb_stat_dev): device functions should honor stat field
+	  types (except long long such as dev_t).
+
+Wed Apr 11 18:07:53 2001  K.Kosako  <kosako@sofnec.co.jp>
+
+	* eval.c (rb_mod_nesting): should not push nil for nesting array.
+
+	* eval.c (rb_mod_s_constants): should not search array by
+	  rb_mod_const_at() for nil (happens for singleton class).
 
 Wed Apr 11 13:29:26 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -3628,6 +3657,13 @@ Sat Mar 25 23:21:10 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* marshal.c (w_object): symbols should be converted to ID before
 	  dumping out.
+
+Sun Mar 25 16:52:48 2001  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* file.c (rb_file_flock): do not trap EINTR.
+
+	* missing/flock.c (flock): returns the value from lockf(2)
+	  directly.
 
 Fri Mar 24 18:26:51 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
