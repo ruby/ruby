@@ -1,3 +1,7 @@
+Sat Jun 12 11:15:53 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in (target_os): strip -gnu suffix on Linux.
+
 Fri Jun 11 17:08:21 2004  Akinori MUSHA  <knu@iDaemons.org>
 
 	* config.guess: Restore a wrongly removed hyphen.
