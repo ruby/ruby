@@ -283,7 +283,7 @@ rb_add_method(klass, mid, node, noex)
     if (!FL_TEST(klass, FL_SINGLETON) &&
 	node && nd_type(node) != NODE_ZSUPER &&
 	(mid == rb_intern("initialize" )|| mid == rb_intern("initialize_copy"))) {
-	noex = NOEX_PRIVATE | (noex & NOEX_NOSUPER);
+	noex = NOEX_PRIVATE | noex;
     }
     else if (FL_TEST(klass, FL_SINGLETON) && node && nd_type(node) == NODE_CFUNC &&
 	     mid == rb_intern("allocate")) {
@@ -459,20 +459,7 @@ rb_disable_super(klass, name)
     VALUE klass;
     const char *name;
 {
-    VALUE origin;
-    NODE *body;
-    ID mid = rb_intern(name);
-
-    body = search_method(klass, mid, &origin);
-    if (!body || !body->nd_body) {
-	print_undef(klass, mid);
-    }
-    if (origin == klass) {
-	body->nd_noex |= NOEX_NOSUPER;
-    }
-    else {
-	rb_add_method(klass, mid, 0, NOEX_UNDEF);
-    }
+    /* obsolete - no use */
 }
 
 void
@@ -480,20 +467,7 @@ rb_enable_super(klass, name)
     VALUE klass;
     const char *name;
 {
-    VALUE origin;
-    NODE *body;
-    ID mid = rb_intern(name);
-
-    body = search_method(klass, mid, &origin);
-    if (!body) {
-	print_undef(klass, mid);
-    }
-    if (!body->nd_body) {
-	remove_method(klass, mid);
-    }
-    else {
-	body->nd_noex &= ~NOEX_NOSUPER;
-    }
+    rb_warning("rb_enable_super() is obsolete");
 }
 
 static void
@@ -5222,8 +5196,7 @@ rb_call_super(argc, argv)
     VALUE result, self, klass, k;
 
     if (ruby_frame->last_class == 0) {	
-	rb_name_error(ruby_frame->last_func,
-		      "superclass method `%s' must be enabled by rb_enable_super()",
+	rb_name_error(ruby_frame->last_func, "calling `super' from `%s' is prohibited",
 		      rb_id2name(ruby_frame->last_func));
     }
 
@@ -7870,7 +7843,7 @@ struct thread {
 
     int abort;
     int priority;
-    int gid;
+    VALUE thgroup;
 
     st_table *locals;
 
@@ -8326,7 +8299,7 @@ static void
 rb_thread_die(th)
     rb_thread_t th;
 {
-    th->gid = 0;
+    th->thgroup = 0;
     th->status = THREAD_KILLED;
     if (th->stk_ptr) free(th->stk_ptr);
     th->stk_ptr = 0;
@@ -9012,7 +8985,7 @@ rb_thread_kill(thread)
     if (th == th->next || th == main_thread) rb_exit(0);
 
     rb_thread_ready(th);
-    th->gid = 0;
+    th->thgroup = 0;
     th->status = THREAD_TO_KILL;
     if (!rb_thread_critical) rb_thread_schedule();
     return thread;
@@ -9134,6 +9107,7 @@ rb_thread_safe_level(thread)
 }
 
 static int thread_abort;
+static VALUE thgroup_default;
 
 static VALUE
 rb_thread_s_abort_exc()
@@ -9202,7 +9176,7 @@ rb_thread_abort_exc_set(thread, val)
     th->last_match = Qnil;\
     th->abort = 0;\
     th->priority = 0;\
-    th->gid = 1;\
+    th->thgroup = thgroup_default;\
     th->locals = 0;\
 } while (0)
 
@@ -9315,7 +9289,7 @@ rb_thread_start_0(fn, arg, th_arg)
 	th->next = curr_thread->next;
 	curr_thread->next = th;
 	th->priority = curr_thread->priority;
-	th->gid = curr_thread->gid;
+	th->thgroup = curr_thread->thgroup;
     }
 
     PUSH_TAG(PROT_THREAD);
@@ -9528,7 +9502,7 @@ rb_thread_cleanup()
     FOREACH_THREAD_FROM(curr, th) {
 	if (th->status != THREAD_KILLED) {
 	    rb_thread_ready(th);
-	    th->gid = 0;
+	    th->thgroup = 0;
 	    th->priority = 0;
 	    if (th != main_thread) {
 		th->status = THREAD_TO_KILL;
@@ -9864,7 +9838,8 @@ rb_cont_call(argc, argv, cont)
 }
 
 struct thgroup {
-    int gid;
+    int enclosed;
+    VALUE group;
 };
 
 static VALUE thgroup_s_alloc _((VALUE));
@@ -9874,10 +9849,10 @@ thgroup_s_alloc(klass)
 {
     VALUE group;
     struct thgroup *data;
-    static int serial = 1;
 
     group = Data_Make_Struct(klass, struct thgroup, 0, free, data);
-    data->gid = serial++;
+    data->enclosed = 0;
+    data->group = group;
 
     return group;
 }
@@ -9894,13 +9869,37 @@ thgroup_list(group)
     ary = rb_ary_new();
 
     FOREACH_THREAD(th) {
-	if (th->gid == data->gid) {
+	if (th->thgroup == data->group) {
 	    rb_ary_push(ary, th->thread);
 	}
     }
     END_FOREACH(th);
 
     return ary;
+}
+
+VALUE
+thgroup_enclose(group)
+    VALUE group;
+{
+    struct thgroup *data;
+    rb_thread_t th;
+
+    Data_Get_Struct(group, struct thgroup, data);
+    data->enclosed = 1;
+
+    return group;
+}
+
+static VALUE
+thgroup_enclosed_p(group)
+    VALUE group;
+{
+    struct thgroup *data;
+
+    Data_Get_Struct(group, struct thgroup, data);
+    if (data->enclosed) return Qtrue;
+    return Qfalse;
 }
 
 static VALUE
@@ -9912,9 +9911,27 @@ thgroup_add(group, thread)
 
     rb_secure(4);
     th = rb_thread_check(thread);
-    Data_Get_Struct(group, struct thgroup, data);
 
-    th->gid = data->gid;
+    if (OBJ_FROZEN(th->thgroup)) {
+	rb_raise(rb_eThreadError, "can't move from the frozen thread group");
+    }
+    if (!th->thgroup) {
+	rb_raise(rb_eThreadError, "terminated thread");
+    }
+    Data_Get_Struct(th->thgroup, struct thgroup, data);
+    if (data->enclosed) {
+	rb_raise(rb_eThreadError, "can't move from the enclosed thread group");
+    }
+
+    if (OBJ_FROZEN(group)) {
+      rb_raise(rb_eThreadError, "can't move to the frozen thread group");
+    }
+    Data_Get_Struct(group, struct thgroup, data);
+    if (data->enclosed) {
+	rb_raise(rb_eThreadError, "can't move to the enclosed thread group");
+    }
+
+    th->thgroup = group;
     return group;
 }
 
@@ -9972,10 +9989,6 @@ Init_Thread()
 
     rb_define_method(rb_cThread, "inspect", rb_thread_inspect, 0);
 
-    /* allocate main thread */
-    main_thread = rb_thread_alloc(rb_cThread);
-    curr_thread = main_thread->prev = main_thread->next = main_thread;
-
     rb_cCont = rb_define_class("Continuation", rb_cObject);
     rb_undef_alloc_func(rb_cCont);
     rb_undef_method(CLASS_OF(rb_cCont), "new");
@@ -9985,8 +9998,15 @@ Init_Thread()
     cThGroup = rb_define_class("ThreadGroup", rb_cObject);
     rb_define_alloc_func(cThGroup, thgroup_s_alloc);
     rb_define_method(cThGroup, "list", thgroup_list, 0);
+    rb_define_method(cThGroup, "enclose", thgroup_enclose, 0);
+    rb_define_method(cThGroup, "enclosed?", thgroup_enclosed_p, 0);
     rb_define_method(cThGroup, "add", thgroup_add, 1);
-    rb_define_const(cThGroup, "Default", rb_obj_alloc(cThGroup));
+    thgroup_default = rb_obj_alloc(cThGroup);
+    rb_define_const(cThGroup, "Default", thgroup_default);
+
+    /* allocate main thread */
+    main_thread = rb_thread_alloc(rb_cThread);
+    curr_thread = main_thread->prev = main_thread->next = main_thread;
 }
 
 static VALUE

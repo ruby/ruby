@@ -1,3 +1,11 @@
+Wed Jul 16 00:31:00 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_disable_super, rb_enable_super): deprecate.
+
+	* eval.c (thgroup_s_alloc): re-implement group struct.
+
+	* eval.c (thgroup_add): add check for enclose and frozen status.
+
 Tue Jul 15 19:50:49 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (rb_add_method, rb_alias): need to clear cache by

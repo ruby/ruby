@@ -5275,7 +5275,6 @@ Init_win32ole()
     rb_define_alloc_func(cWIN32OLE, fole_s_allocate);
 
     rb_define_method(cWIN32OLE, "initialize", fole_initialize, -1);
-    rb_enable_super(cWIN32OLE, "initialize");
 
     rb_define_singleton_method(cWIN32OLE, "connect", fole_s_connect, -1);
     rb_define_singleton_method(cWIN32OLE, "const_load", fole_s_const_load, -1);
@@ -5344,7 +5343,6 @@ Init_win32ole()
     rb_define_singleton_method(cWIN32OLE_TYPE, "progids", foletype_s_progids, 0);
     rb_define_alloc_func(cWIN32OLE_TYPE, foletype_s_allocate);
     rb_define_method(cWIN32OLE_TYPE, "initialize", foletype_initialize, 2);
-    rb_enable_super(cWIN32OLE_TYPE, "initialize");
     rb_define_method(cWIN32OLE_TYPE, "name", foletype_name, 0);
     rb_define_method(cWIN32OLE_TYPE, "ole_type", foletype_ole_type, 0);
     rb_define_method(cWIN32OLE_TYPE, "guid", foletype_guid, 0);
@@ -5375,7 +5373,6 @@ Init_win32ole()
     cWIN32OLE_METHOD = rb_define_class("WIN32OLE_METHOD", rb_cObject);
     rb_define_alloc_func(cWIN32OLE_METHOD, folemethod_s_allocate);
     rb_define_method(cWIN32OLE_METHOD, "initialize", folemethod_initialize, 2);
-    rb_enable_super(cWIN32OLE_METHOD, "initialize");
 
     rb_define_method(cWIN32OLE_METHOD, "name", folemethod_name, 0);
     rb_define_method(cWIN32OLE_METHOD, "return_type", folemethod_return_type, 0);
@@ -5411,7 +5408,6 @@ Init_win32ole()
 
     rb_define_alloc_func(cWIN32OLE_EVENT, fev_s_allocate);
     rb_define_method(cWIN32OLE_EVENT, "initialize", fev_initialize, -1);
-    rb_enable_super(cWIN32OLE_EVENT, "initialize");
     rb_define_singleton_method(cWIN32OLE_EVENT, "message_loop", fev_s_msg_loop, 0);
 
     rb_define_method(cWIN32OLE_EVENT, "on_event", fev_on_event, -1);
