@@ -50,12 +50,6 @@ tcps = TCPServer.new("0.0.0.0", port)
 ssls = OpenSSL::SSL::SSLServer.new(tcps, ctx)
 ssls.start_immediately = start_immediately
 
-Thread.start{
-  while true
-    $stdin.gets || exit
-  end
-}
-
 $stdout.sync = true
 $stdout.puts Process.pid
 

@@ -70,9 +70,8 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
       block.call(server)
     ensure
       if server
-        server.close_write
-        Process.kill(:TERM, pid) rescue nil
-        Process.waitpid(pid)
+        Process.kill(:KILL, pid)
+        server.close
       end
     end
   end
