@@ -304,6 +304,7 @@ Init_ossl_x509name()
     rb_hash_aset(hash, rb_str_new2("countryName"), ptrstr);
     rb_hash_aset(hash, rb_str_new2("serialNumber"), ptrstr);
     rb_hash_aset(hash, rb_str_new2("dnQualifier"), ptrstr);
+    rb_hash_aset(hash, rb_str_new2("DC"), ia5str);
     rb_hash_aset(hash, rb_str_new2("domainComponent"), ia5str);
     rb_hash_aset(hash, rb_str_new2("emailAddress"), ia5str);
     rb_define_const(cX509Name, "OBJECT_TYPE_TEMPLATE", hash);
