@@ -263,9 +263,9 @@ module REXML
 							raise REXML::ParseException.new( "error parsing notation: no matching pattern", @source )
 						end
 						return [ :notationdecl, md[1], md[2], md[3] ]
-					when /^\s*]\s*>/um
+					when /^\s*\]\s*>/um
 						@document_status = :after_doctype
-						@source.match( /^\s*]\s*>/um, true )
+						@source.match( /^\s*\]\s*>/um, true )
 						return [ :end_doctype ]
 					end
 				end

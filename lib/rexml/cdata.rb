@@ -4,7 +4,7 @@ module REXML
 	class CData < Text
 		START = '<![CDATA['
 		STOP = ']]>'
-		ILLEGAL = /(]]>)/
+		ILLEGAL = /(\]\]>)/
 
 		#	Constructor.  CData is data between <![CDATA[ ... ]]>
 		#
