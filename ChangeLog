@@ -1,3 +1,7 @@
+Tue Dec  7 19:08:00 2004  Akiyoshi, Masamichi <akiyoshi@hp.com>
+
+	* io.c (io_fwrite): fix offset incrementation (for VMS and Human68k)
+
 Tue Dec  7 00:27:37 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* process.c (proc_setgroups): [ruby-dev:25081]
