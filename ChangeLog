@@ -1,3 +1,7 @@
+Thu Apr 10 01:52:24 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* eval.c (rb_obj_is_method): indefinite return value.
+
 Thu Apr 10 00:39:32 2003  Tanaka Akira  <akr@m17n.org>
 
         * regex.c (re_compile_pattern): /[\--\-]/ was warned.  warn /]/.

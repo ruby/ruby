@@ -7346,6 +7346,7 @@ rb_obj_is_method(m)
     if (TYPE(m) == T_DATA && RDATA(m)->dmark == (RUBY_DATA_FUNC)bm_mark) {
 	return Qtrue;
     }
+    return Qfalse;
 }
 
 static VALUE
