@@ -341,7 +341,7 @@ def create_makefile(target)
   end
   $DLDFLAGS = CONFIG["DLDFLAGS"]
 
-  if $configure_args['--enable-shared']
+  if $configure_args['--enable-shared'] or /cygwin|mingw/ == RUBY_PLATFORM
     $libs = CONFIG["LIBRUBYARG"] + " " + $libs
     $DLDFLAGS += " -L" + CONFIG["libdir"]
   end

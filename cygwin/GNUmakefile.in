@@ -1,18 +1,26 @@
 include Makefile
 
 ARCH=@arch@
+ENABLE_SHARED=@ENABLE_SHARED@
 
-ifneq (,$(findstring mingw, $(ARCH)))
-DLL = rubymg.dll
-DLLWRAP_FLAGS =
+ifneq (,$(findstring no, $(ENABLE_SHARED)))
+  DLL = dummy.exe
+  DLLNAME = ruby.exe
+  RUBYEXP = --output-exp=ruby.exp
+  MAINOBJ := ruby.exp $(MAINOBJ)
+  LIBRUBYARG := librubys.a
 else
-DLL = rubycw.dll
-DLLWRAP_FLAGS = -Wl,-e,__cygwin_noncygwin_dll_entry@12
+  ifneq (,$(findstring mingw, $(ARCH)))
+    DLL = rubymg.dll
+    DLLNAME = rubymg.dll
+  else
+    DLL = rubycw.dll
+    DLLNAME = rubycw.dll
+  endif
+  RUBYEXP =
 endif
 
-ifeq (,$(strip $(LIBRUBY_ALIASES)))
 miniruby$(EXEEXT): $(DLL)
-endif
 
 $(DLL): $(OBJS) dmyext.o
-	$(LDSHARED) $(DLDFLAGS) -o $(DLL) --output-lib=$(LIBRUBY_SO) --dllname=$(DLL) --add-stdcall-alias $(OBJS) dmyext.o $(LIBS)
+	$(LDSHARED) $(DLDFLAGS) -o $(DLL) --output-lib=$(LIBRUBY_SO) --dllname=$(DLLNAME) --add-stdcall-alias $(RUBYEXP) $(OBJS) dmyext.o $(LIBS)

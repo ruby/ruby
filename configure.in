@@ -723,6 +723,8 @@ LIBRUBY_LDSHARED=$LDSHARED
 LIBRUBY_DLDFLAGS=$DLDFLAGS
 LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR).$(TEENY)'
 LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so'
+ENABLE_SHARED=no
+
 AC_ARG_ENABLE(enable-shared,
        [--enable-shared           build a shared library for Ruby. ],
        [enable_shared=$enableval])
@@ -730,6 +732,7 @@ if test "$enable_shared" = 'yes'; then
   LIBRUBY='$(LIBRUBY_SO)'
   LIBRUBYARG='-L. -l$(RUBY_INSTALL_NAME)'
   CFLAGS="$CFLAGS $CCDLFLAGS"
+  ENABLE_SHARED=yes
   case "$target_os" in
     sunos4*)
 	LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_INSTALL_NAME).so'
@@ -779,20 +782,6 @@ if test "$enable_shared" = 'yes'; then
 	    ;;
 	esac
 	;;
-    cygwin*|mingw*)
-	LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).a'
-	LIBRUBY_ALIASES=''
-	LIBRUBY_A='lib$(RUBY_INSTALL_NAME)s.a'
-	LIBRUBYARG='-L. -l$(RUBY_INSTALL_NAME)'
-	FIRSTMAKEFILE=GNUmakefile:cygwin/GNUmakefile.in
-	case "$target_os" in
-	cygwin*)
-	    CCDLFLAGS=-DUSEIMPORTLIB ;;
-	mingw*)
-	    CCDLFLAGS=-DIMPORT
-	    SOLIBS='-lwsock32 -lmsvcrt' ;;
-	esac
-	;;
     *)
 	;;
   esac
@@ -833,12 +822,22 @@ case "$target_os" in
 	    ;;
 	esac
 	;;
-    cygwin*)
-	LIBOBJS="$LIBOBJS strftime.o"
-	;;
-    mingw*)
-	LIBOBJS="$LIBOBJS win32.o"
-	CFLAGS="-DNT -D__MSVCRT__ $CFLAGS"
+    cygwin*|mingw*)
+	LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).a'
+	LIBRUBY_ALIASES=''
+	LIBRUBY_A='lib$(RUBY_INSTALL_NAME)s.a'
+	LIBRUBYARG='-L. -l$(RUBY_INSTALL_NAME)'
+	FIRSTMAKEFILE=GNUmakefile:cygwin/GNUmakefile.in
+	case "$target_os" in
+	cygwin*)
+	    LIBOBJS="$LIBOBJS strftime.o"
+	    CCDLFLAGS=-DUSEIMPORTLIB ;;
+	mingw*)
+	    LIBOBJS="$LIBOBJS win32.o"
+	    CFLAGS="-DNT -D__MSVCRT__ $CFLAGS"
+	    CCDLFLAGS=-DIMPORT
+	    SOLIBS='-lwsock32 -lmsvcrt' ;;
+	esac
 	;;
     *)
 	;;	
@@ -854,6 +853,7 @@ AC_SUBST(LIBRUBY)
 AC_SUBST(LIBRUBYARG)
 AC_SUBST(SOLIBS)
 AC_SUBST(DLDLIBS)
+AC_SUBST(ENABLE_SHARED)
 
 ri_prefix=
 test "$program_prefix" != NONE &&

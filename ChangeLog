@@ -1,3 +1,15 @@
+Sun Jul  2 21:17:37 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* configure.in: support without --enable-shared for cygwin/mingw32.
+
+	* cygwin/GNUmakefile: ditto.
+
+	* ext/extmk.rb.in: use null device if it exists for cross-compiling.
+
+	* lib/mkmf.rb: ditto.
+
+	* util.c (ruby_mktemp): remove unused ruby_mktemp().
+
 Sun Jul  2 03:37:50 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.25.

@@ -126,24 +126,6 @@ check_dir(dir)
     return dir;
 }
 
-char *
-ruby_mktemp()
-{
-    char *dir;
-    char *buf;
-
-    dir = check_dir(getenv("TMP"));
-    if (!dir) dir = check_dir(getenv("TMPDIR"));
-    if (!dir) dir = "/tmp";
-
-    buf = ALLOC_N(char,strlen(dir)+10);
-    sprintf(buf, "%s/rbXXXXXX", dir);
-    dir = mktemp(buf);
-    if (dir == NULL) free(buf);
-
-    return dir;
-}
-
 #if defined(MSDOS) || defined(__CYGWIN32__) || defined(NT)
 /*
  *  Copyright (c) 1993, Intergraph Corporation
