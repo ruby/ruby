@@ -1,3 +1,10 @@
+Sat Mar  5 18:06:21 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* dir.c (fnmatch): removed unnecessary code. (ruby_1_8 didn't have
+	  String#clear, so [ruby-dev:24749] didn't affect it)
+
+	* win32/win32.c (NtInitialize): ditto. (by numeric.c 1.101.2.14)
+
 Sat Mar  5 16:29:26 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/multi-tk.rb: freeze callback-entry objects
@@ -3713,10 +3720,6 @@ Wed Jul 14 12:29:07 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 	  "-I.FE-X" which both "I" and "F" are ommitted. [ruby-dev:23883]
 
 	* test/ruby/test_float.rb (test_strtod): add test for bug fix.
-
-Wed Jul 14 01:18:45 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
-
-	* array.c: rdoc patch - unified margin.
 
 Wed Jul 14 00:31:15 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 

@@ -145,8 +145,6 @@ fnmatch(pat, string, flags)
     int period = !(flags & FNM_DOTMATCH);
     int nocase = flags & FNM_CASEFOLD;
 
-    if (!pat) pat = "";
-    if (!string) string = "";
     while (c = *pat++) {
 	switch (c) {
 	case '?':
