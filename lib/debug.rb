@@ -297,14 +297,9 @@ class Context
             stdout.print "Trace off.\n"
           end
 
-	when /^\s*b(?:reak)?\s+((?:.+:)?.+)$/
-	  pos = $1
-	  if pos.index(":")
-	    pos = pos.split(":")
-	    file = pos[0...-1].join(":")
-	    pos = pos[-1]
-	  end
-	  file = File.basename(file)
+	when /^\s*b(?:reak)?\s+(?:(.+):)?(.+)$/
+	  pos = $2
+	  file = File.basename($1) if $1
 	  if pos =~ /^\d+$/
 	    pname = pos
 	    pos = pos.to_i
