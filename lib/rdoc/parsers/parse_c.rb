@@ -65,6 +65,30 @@
   #
   #    rb_define_method(....);  // in: filename
   #
+  # As an example, we might have an extension that defines multiple classes
+  # in its Init_xxx method. We could document them using
+  #
+  #  
+  #  /*
+  #   * Document-class:  MyClass
+  #   *
+  #   * Encapsulate the writing and reading of the configuration
+  #   * file. ...
+  #   */
+  #  
+  #  /*
+  #   * Document-method: read_value
+  #   *
+  #   * call-seq:
+  #   *   cfg.read_value(key)            -> value
+  #   *   cfg.read_value(key} { |key| }  -> value
+  #   *
+  #   * Return the value corresponding to +key+ from the configuration.
+  #   * In the second form, if the key isn't found, invoke the
+  #   * block and return its value.
+  #   */
+  #
+
 
   # Classes and modules built in to the interpreter. We need
   # these to define superclasses of user objects
