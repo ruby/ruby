@@ -1,3 +1,7 @@
+Thu Apr 11 07:02:31 2002  Takaaki Tateishi <ttate@kt.jaist.ac.jp>
+
+	* ext/dl: Add dl.txt instead of README and README.html.
+
 Thu Apr 11 01:55:52 2002  Wakou Aoyama  <wakou@fsinet.or.jp>
 
 	* lib/cgi/session.rb: support for multipart form.
