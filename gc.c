@@ -235,6 +235,7 @@ typedef struct RVALUE {
 } RVALUE;
 
 static RVALUE *freelist = 0;
+static RVALUE *deferred_final_list = 0;
 
 #define HEAPS_INCREMENT 10
 static RVALUE **heaps;
@@ -659,8 +660,21 @@ gc_sweep()
     int freed = 0;
     int i, used = heaps_used;
 
+    if (ruby_in_compile) {
+	/* sould not reclaim nodes during compilation */
+	for (i = 0; i < used; i++) {
+	    p = heaps[i]; pend = p + HEAP_SLOTS;
+	    while (p < pend) {
+		if (!(p->as.basic.flags&FL_MARK) && BUILTIN_TYPE(p) == T_NODE)
+		    rb_gc_mark(p);
+		p++;
+	    }
+	}
+    }
+
     freelist = 0;
-    final_list = 0;
+    final_list = deferred_final_list;
+    deferred_final_list = 0;
     for (i = 0; i < used; i++) {
 	int n = 0;
 
@@ -699,8 +713,13 @@ gc_sweep()
     during_gc = 0;
 
     /* clear finalization list */
-    if (need_call_final) {
+    if (need_call_final && final_list) {
 	RVALUE *tmp;
+
+	if (rb_prohibit_interrupt || ruby_in_compile) {
+	    deferred_final_list = final_list;
+	    return;
+	}
 
 	for (p = final_list; p; p = tmp) {
 	    tmp = p->as.free.next;
@@ -914,7 +933,7 @@ rb_gc()
 # define STACK_END (stack_end)
 #endif
 
-    if (dont_gc || during_gc || rb_prohibit_interrupt || ruby_in_compile) {
+    if (dont_gc || during_gc) {
 	if (!freelist || malloc_memories > GC_MALLOC_LIMIT) {
 	    malloc_memories = 0;
 	    add_heap();

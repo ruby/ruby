@@ -1,5 +1,11 @@
 Mon Nov 20 13:45:21 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
+	* gc.c (gc_sweep): defer finalization in GC during compilation or
+	  interrupt prohibit section.
+
+	* gc.c (gc_sweep): mark all nodes before sweeping if GC happened
+	  during compilation.
+
 	* eval.c (rb_eval): should treat class variables specially in a
 	  method defined in the singleton class.
 
