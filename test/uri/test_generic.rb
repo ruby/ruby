@@ -117,11 +117,26 @@ class TestGeneric < Test::Unit::TestCase
     assert_raises(URI::InvalidURIError) { URI.parse('http://a_b/') }
 
     # 8
-    # reporte by m_seki
+    # reported by m_seki
     uri = URI.parse('file:///foo/bar.txt')
     assert_kind_of(URI::Generic, url)
     uri = URI.parse('file:/foo/bar.txt')
     assert_kind_of(URI::Generic, url)
+
+    # 9
+    # [ruby-dev:25667]
+    url = URI.parse('ftp://:pass@localhost/')
+    assert_equal('', url.user)
+    assert_equal('pass', url.password)
+    assert_equal(':pass', url.userinfo)
+    url = URI.parse('ftp://user@localhost/')
+    assert_equal('user', url.user)
+    assert_equal(nil, url.password)
+    assert_equal('user', url.userinfo)
+    url = URI.parse('ftp://localhost/')
+    assert_equal(nil, url.user)
+    assert_equal(nil, url.password)
+    assert_equal(nil, url.userinfo)
   end
 
   def test_merge
