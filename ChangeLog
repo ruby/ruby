@@ -1,3 +1,7 @@
+Fri Jul 26 23:03:53 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* eval.c (rb_eval): no need to convert to string twice.
+
 Fri Jul 26 18:32:37 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* misc/ruby-mode.el (ruby-expr-beg): wrong indent at modifiers

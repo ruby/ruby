@@ -3074,6 +3074,7 @@ rb_eval(self, n)
 	break;
 
       case NODE_EVSTR:
+	ruby_sourceline = nd_line(node);
 	result = rb_obj_as_string(rb_eval(self, node->nd_body));
 	break;
 
@@ -3093,8 +3094,7 @@ rb_eval(self, n)
 			str2 = list->nd_head->nd_lit;
 			break;
 		      default:
-			ruby_sourceline = nd_line(list->nd_head);
-			str2 = rb_obj_as_string(rb_eval(self, list->nd_head));
+			str2 = rb_eval(self, list->nd_head);
 			break;
 		    }
 		    rb_str_append(str, str2);
