@@ -1,7 +1,13 @@
+Wed May 31 04:06:41 2000  Wakou Aoyama <wakou@fsinet.or.jp>
+
+	* lib/cgi.rb: change: CGI#out()
+	  if "HEAD" == REQUEST_METHOD then output only HTTP header.
+
 Wed May 24 16:03:06 2000  Wakou Aoyama <wakou@fsinet.or.jp>
 
-	* lib/cgi.rb bug fix: CGI::escape(), CGI::Cookie::new()
-	* lib/net/telnet.rb improve: binmode(), telnetmode() interface
+	* lib/cgi.rb: bug fix: CGI::escape(), CGI::Cookie::new()
+
+	* lib/net/telnet.rb: improve: binmode(), telnetmode() interface
 
 Tue May 23 08:36:24 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
