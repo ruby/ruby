@@ -53,7 +53,7 @@ extern unsigned long __libc_ia64_register_backing_store_base;
 #endif
 
 void re_free_registers _((struct re_registers*));
-int rb_io_fptr_finalize _((struct OpenFile*));
+void rb_io_fptr_finalize _((struct OpenFile*));
 
 #if !defined(setjmp) && defined(HAVE__SETJMP)
 #define setjmp(env) _setjmp(env)

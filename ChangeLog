@@ -1,3 +1,8 @@
+Wed Oct 27 18:49:11 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* gc.c: prototype; rb_io_fptr_finalize() doesn't return any value
+	  at this version.
+
 Wed Oct 27 17:27:45 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (gc_sweep): recover ruby_in_compile variable.
