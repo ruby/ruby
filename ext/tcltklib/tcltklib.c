@@ -718,6 +718,7 @@ ivq_safelevel_handler(arg, ivq)
     return ip_invoke_real(q->argc, q->argv, q->obj);
 }
 
+int invoke_queue_handler _((Tcl_Event *, int));
 int
 invoke_queue_handler(evPtr, flags)
     Tcl_Event *evPtr;
