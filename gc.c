@@ -1336,7 +1336,7 @@ Init_stack(addr)
 	struct rlimit rlim;
 
 	if (getrlimit(RLIMIT_STACK, &rlim) == 0) {
-	    double space = (double)rlim.rlim_cur*0.2;
+	    unsigned int space = rlim.rlim_cur/5;
 
 	    if (space > 1024*1024) space = 1024*1024;
 	    STACK_LEVEL_MAX = (rlim.rlim_cur - space) / sizeof(VALUE);
