@@ -214,13 +214,23 @@ ruby_init_loadpath()
 #elif defined(DJGPP)
     extern char *__dos_argv0;
     strncpy(libpath, __dos_argv0, FILENAME_MAX);
+#define CharNext(p) ((p) + mblen(p, MB_CUR_MAX))
 #elif defined(__EMX__)
     _execname(libpath, FILENAME_MAX);
 #endif
-    p = strrchr(libpath, '\\');
+
+#ifndef CharNext		/* defined as CharNext[AW] on Windows. */
+#define CharNext(p) ((p) + 1)
+#endif
+
+    for (p = libpath; *p; p = CharNext(p))
+	if (*p == '\\')
+	    *p = '/';
+
+    p = strrchr(libpath, '/');
     if (p) {
 	*p = 0;
-	if (p-libpath > 3 && !strcasecmp(p-4, "\\bin")) {
+	if (p-libpath > 3 && !strcasecmp(p-4, "/bin")) {
 	    p -= 4;
 	    *p = 0;
 	}
@@ -229,14 +239,6 @@ ruby_init_loadpath()
 	p = libpath + 1;
     }
 
-#if !defined(__CYGWIN32__)
-#ifndef CharNext		/* defined as CharNext[AW] on Windows. */
-#define CharNext(p) ((p) + 1)
-#endif
-    for (p = libpath; *p; p = CharNext(p))
-	if (*p == '\\')
-	    *p = '/';
-#endif
     rest = FILENAME_MAX - (p - libpath);
 
 #define RUBY_RELATIVE(path) (strncpy(p, (path), rest), libpath)

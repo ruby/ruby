@@ -1,3 +1,8 @@
+Fri Feb  9 22:54:57 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ruby.c (ruby_init_loadpath): convert '\\' to '/'
+	  before finding executable file path.
+
 Thu Feb  8 21:27:24 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/mkmf.rb (install_rb): fix handling of relative path.
