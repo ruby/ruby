@@ -254,7 +254,7 @@ dir_initialize(dir, dirname)
 {
     DIR *dirp;
 
-    Check_SafeStr(dirname);
+    SafeStr(dirname);
     if (DATA_PTR(dir)) closedir(DATA_PTR(dir));
     DATA_PTR(dir) = NULL;
     dirp = opendir(RSTRING(dirname)->ptr);
@@ -425,7 +425,7 @@ dir_s_chdir(argc, argv, obj)
 
     rb_secure(2);
     if (rb_scan_args(argc, argv, "01", &path) == 1) {
-	Check_SafeStr(path);
+	SafeStr(path);
 	dist = RSTRING(path)->ptr;
     }
     else {
@@ -467,7 +467,7 @@ dir_s_chroot(dir, path)
 {
 #if defined(HAVE_CHROOT) && !defined(__CHECKER__)
     rb_secure(2);
-    Check_SafeStr(path);
+    SafeStr(path);
 
     if (chroot(RSTRING(path)->ptr) == -1)
 	rb_sys_fail(RSTRING(path)->ptr);
@@ -495,7 +495,7 @@ dir_s_mkdir(argc, argv, obj)
 	mode = 0777;
     }
 
-    Check_SafeStr(path);
+    SafeStr(path);
     rb_secure(2);
 #if !defined(NT)
     if (mkdir(RSTRING(path)->ptr, mode) == -1)
@@ -512,7 +512,7 @@ static VALUE
 dir_s_rmdir(obj, dir)
     VALUE obj, dir;
 {
-    Check_SafeStr(dir);
+    SafeStr(dir);
     rb_secure(2);
     if (rmdir(RSTRING(dir)->ptr) < 0)
 	rb_sys_fail(RSTRING(dir)->ptr);
@@ -853,7 +853,7 @@ dir_s_glob(dir, str)
     int nest;
     VALUE ary = 0;
 
-    Check_SafeStr(str);
+    SafeStr(str);
     if (!rb_block_given_p()) {
 	ary = rb_ary_new();
     }

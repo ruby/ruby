@@ -177,7 +177,14 @@ VALUE rb_uint2inum _((unsigned long));
 void rb_check_type _((VALUE,int));
 #define Check_Type(v,t) rb_check_type((VALUE)(v),t)
 void rb_check_safe_str _((VALUE));
+/* obsolete macro - use SafeStr(v) */
 #define Check_SafeStr(v) rb_check_safe_str((VALUE)(v))
+VALUE rb_str_to_str _((VALUE));
+#define SafeStr(v) do {\
+    v = rb_str_to_str(v);\
+    rb_check_safe_str(v);\
+} while (0)
+
 void rb_secure _((int));
 
 EXTERN int ruby_safe_level;

@@ -4091,6 +4091,7 @@ static int STACK_LEVEL_MAX = 65535;
 #ifdef __human68k__
 extern int _stacksize;
 # define STACK_LEVEL_MAX (_stacksize - 4096)
+#undef HAVE_GETRLIMIT
 #else
 #ifdef HAVE_GETRLIMIT
 static int STACK_LEVEL_MAX = 655300;
@@ -4857,10 +4858,10 @@ rb_f_eval(argc, argv, self)
     }
 
     if (ruby_safe_level >= 4) {
-	Check_Type(src, T_STRING);
+	src = rb_str_to_str(src);
     }
     else {
-	Check_SafeStr(src);
+	SafeStr(src);
     }
     if (NIL_P(scope) && ruby_frame->prev) {
 	struct FRAME *prev;
@@ -4932,10 +4933,10 @@ eval_under(under, self, src, file, line)
     VALUE args[4];
 
     if (ruby_safe_level >= 4) {
-	Check_Type(src, T_STRING);
+	src = rb_str_to_str(src);
     }
     else {
-	Check_SafeStr(src);
+	SafeStr(src);
     }
     args[0] = self;
     args[1] = src;
@@ -5002,16 +5003,17 @@ specific_eval(argc, argv, klass, self)
     else {
 	char *file = "(eval)";
 	int   line = 1;
+	VALUE src = argv[0];
 
 	if (argc == 0) {
 	    rb_raise(rb_eArgError, "block not supplied");
 	}
 	else {
 	    if (ruby_safe_level >= 4) {
-		Check_Type(argv[0], T_STRING);
+		src = rb_str_to_str(src);
 	    }
 	    else {
-		Check_SafeStr(argv[0]);
+		SafeStr(src);
 	    }
 	    if (argc > 3) {
 		rb_raise(rb_eArgError, "wrong # of arguments: %s(src) or %s{..}",
@@ -5067,10 +5069,10 @@ rb_load(fname, wrap)
     TMP_PROTECT;
 
     if (wrap) {
-	Check_Type(fname, T_STRING);
+	fname = rb_str_to_str(fname);
     }
     else {
-	Check_SafeStr(fname);
+	SafeStr(fname);
     }
     file = rb_find_file(RSTRING(fname)->ptr);
     if (!file) {
@@ -5264,7 +5266,7 @@ rb_f_require(obj, fname)
     int state;
     volatile int safe = ruby_safe_level;
 
-    Check_SafeStr(fname);
+    SafeStr(fname);
     if (rb_feature_p(RSTRING(fname)->ptr, Qtrue))
 	return Qfalse;
     ext = strrchr(RSTRING(fname)->ptr, '.');

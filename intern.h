@@ -310,7 +310,6 @@ VALUE rb_str_new4 _((VALUE));
 VALUE rb_tainted_str_new _((const char*, long));
 VALUE rb_tainted_str_new2 _((const char*));
 VALUE rb_obj_as_string _((VALUE));
-VALUE rb_str_to_str _((VALUE));
 VALUE rb_str_dup _((VALUE));
 VALUE rb_str_plus _((VALUE, VALUE));
 VALUE rb_str_times _((VALUE, VALUE));

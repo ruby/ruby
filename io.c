@@ -606,11 +606,11 @@ rb_io_gets_internal(argc, argv, io)
     VALUE rs;
 
     if (argc == 0) {
-	rs = rb_rs;
+	rs = rb_str_to_str(rb_rs);
     }
     else {
 	rb_scan_args(argc, argv, "1", &rs);
-	if (!NIL_P(rs)) Check_Type(rs, T_STRING);
+	if (!NIL_P(rs)) rs = rb_str_to_str(rs);
     }
 
     if (NIL_P(rs)) {
@@ -1687,7 +1687,7 @@ rb_io_popen(str, argc, argv, klass)
     else {
 	mode = STR2CSTR(pmode);
     }
-    Check_SafeStr(pname);
+    SafeStr(pname);
     port = pipe_open(str, mode);
     if (NIL_P(port)) {
 	/* child */
@@ -1732,7 +1732,7 @@ rb_file_s_open(argc, argv, klass)
     NEWOBJ(io, struct RFile);
     OBJSETUP(io, klass, T_FILE);
     rb_scan_args(argc, argv, "12", &fname, &vmode, &perm);
-    Check_SafeStr(fname);
+    SafeStr(fname);
     path = RSTRING(fname)->ptr;
 
     RFILE(io)->fptr = 0;
@@ -1897,7 +1897,7 @@ rb_io_reopen(argc, argv, file)
 	}
     }
 
-    Check_SafeStr(fname);
+    SafeStr(fname);
     if (!NIL_P(nmode)) {
 	mode = STR2CSTR(nmode);
     }
@@ -2361,7 +2361,7 @@ rb_io_initialize(argc, argv, io)
 	RFILE(io)->fptr = 0;
     }
     if (rb_scan_args(argc, argv, "11", &fnum, &mode) == 2) {
-	Check_SafeStr(mode);
+	SafeStr(mode);
 	m = RSTRING(mode)->ptr;
     }
     MakeOpenFile(io, fp);
@@ -2381,7 +2381,7 @@ rb_file_initialize(argc, argv, io)
     char *path, *mode;
 
     rb_scan_args(argc, argv, "12", &fname, &vmode, &perm);
-    Check_SafeStr(fname);
+    SafeStr(fname);
     path = RSTRING(fname)->ptr;
 
     if (RFILE(io)->fptr) {
@@ -2424,7 +2424,7 @@ rb_io_s_for_fd(argc, argv, klass)
     OBJSETUP(io, klass, T_FILE);
     
     if (rb_scan_args(argc, argv, "11", &fnum, &mode) == 2) {
-	Check_SafeStr(mode);
+	SafeStr(mode);
 	m = RSTRING(mode)->ptr;
     }
     MakeOpenFile(io, fp);
@@ -2681,7 +2681,7 @@ rb_f_backquote(obj, str)
 {
     VALUE port, result;
 
-    Check_SafeStr(str);
+    SafeStr(str);
     port = pipe_open(RSTRING(str)->ptr, "r");
     if (NIL_P(port)) return rb_str_new(0,0);
     result = read_all(port);
@@ -2832,6 +2832,7 @@ rb_f_select(argc, argv, obj)
     return res;			/* returns an empty array on interrupt */
 }
 
+#if !defined(MSDOS) && !defined(__human68k__)
 static int
 io_cntl(fd,cmd,narg,io_p)
     int fd, cmd, io_p;
@@ -2857,6 +2858,7 @@ io_cntl(fd,cmd,narg,io_p)
 #endif
     return retval;
 }
+#endif
 
 static VALUE
 rb_io_ctl(io, req, arg, io_p)
@@ -2979,13 +2981,15 @@ rb_f_syscall(argc, argv)
     arg[0] = NUM2INT(argv[0]); argv++;
     while (items--) {
 	if (FIXNUM_P(*argv)) {
-	    arg[i] = (unsigned long)NUM2INT(*argv); argv++;
+	    arg[i] = (unsigned long)NUM2INT(*argv);
 	}
 	else {
-	    Check_Type(*argv, T_STRING);
-	    rb_str_modify(*argv);
-	    arg[i] = (unsigned long)RSTRING(*argv)->ptr; argv++;
+	    VALUE v = rb_str_to_str(*argv);
+
+	    rb_str_modify(v);
+	    arg[i] = (unsigned long)RSTRING(*argv)->ptr;
 	}
+	argv++;
 	i++;
     }
     TRAP_BEG;
@@ -3103,7 +3107,7 @@ rb_io_s_foreach(argc, argv, io)
     struct foreach_arg arg;
 
     rb_scan_args(argc, argv, "11", &fname, &arg.sep);
-    Check_SafeStr(fname);
+    SafeStr(fname);
 
     arg.argc = argc - 1;
     arg.io = rb_io_open(RSTRING(fname)->ptr, "r");
@@ -3128,7 +3132,7 @@ rb_io_s_readlines(argc, argv, io)
     struct foreach_arg arg;
 
     rb_scan_args(argc, argv, "11", &fname, &arg.sep);
-    Check_SafeStr(fname);
+    SafeStr(fname);
 
     arg.argc = argc - 1;
     arg.io = rb_io_open(RSTRING(fname)->ptr, "r");
@@ -3153,7 +3157,7 @@ rb_io_s_read(argc, argv, io)
     struct foreach_arg arg;
 
     rb_scan_args(argc, argv, "12", &fname, &arg.sep, &offset);
-    Check_SafeStr(fname);
+    SafeStr(fname);
 
     arg.argc = argc ? 1 : 0;
     arg.io = rb_io_open(RSTRING(fname)->ptr, "r");

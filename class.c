@@ -67,6 +67,9 @@ rb_singleton_class_clone(klass)
 	clone->super = RCLASS(klass)->super;
 	clone->iv_tbl = 0;
 	clone->m_tbl = 0;
+	if (RCLASS(klass)->iv_tbl) {
+	    clone->iv_tbl = st_copy(RCLASS(klass)->iv_tbl);
+	}
 	clone->m_tbl = st_init_numtable();
 	st_foreach(RCLASS(klass)->m_tbl, clone_method, clone->m_tbl);
 	FL_SET(clone, FL_SINGLETON);
@@ -217,6 +220,7 @@ rb_include_module(klass, module)
     VALUE klass, module;
 {
     VALUE p;
+    int changed = 0;
 
     if (NIL_P(module)) return;
     if (klass == module) return;
@@ -238,16 +242,17 @@ rb_include_module(klass, module)
 		if (RCLASS(module)->super) {
 		    rb_include_module(p, RCLASS(module)->super);
 		}
+		if (changed) rb_clear_cache();
 		return;
 	    }
 	}
 	rb_frozen_class_p(klass);
-	RCLASS(klass)->super =
-	    include_class_new(module, RCLASS(klass)->super);
+	RCLASS(klass)->super = include_class_new(module, RCLASS(klass)->super);
 	klass = RCLASS(klass)->super;
 	module = RCLASS(module)->super;
+	changed = 1;
     }
-    rb_clear_cache();
+    if (changed) rb_clear_cache();
 }
 
 VALUE

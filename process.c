@@ -564,6 +564,7 @@ proc_exec_n(argc, argv, progv)
     }
     args = ALLOCA_N(char*, argc+1);
     for (i=0; i<argc; i++) {
+	SafeStr(argv[i]);
 	args[i] = RSTRING(argv[i])->ptr;
     }
     args[i] = 0;
@@ -690,10 +691,10 @@ proc_spawn_n(argc, argv, prog)
 
     args = ALLOCA_N(char*, argc + 1);
     for (i = 0; i < argc; i++) {
-	Check_SafeStr(argv[i]);
+	SafeStr(argv[i]);
 	args[i] = RSTRING(argv[i])->ptr;
     }
-    Check_SafeStr(prog);
+    SafeStr(prog);
     args[i] = (char*) 0;
     if (args[0])
 	return proc_spawn_v(args, RSTRING(prog)->ptr);
@@ -709,7 +710,7 @@ proc_spawn(sv)
     char **argv, **a;
     int status;
 
-    Check_SafeStr(sv);
+    SafeStr(sv);
     str = s = RSTRING(sv)->ptr;
     for (s = str; *s; s++) {
 	if (*s != ' ' && !ISALPHA(*s) && strchr("*?{}[]<>()~&|\\$;'`\"\n",*s)) {
@@ -752,13 +753,13 @@ rb_f_exec(argc, argv)
 	argv[0] = RARRAY(argv[0])->ptr[1];
     }
     if (prog) {
-	Check_SafeStr(prog);
-    }
-    for (i = 0; i < argc; i++) {
-	Check_SafeStr(argv[i]);
+	SafeStr(prog);
     }
     if (argc == 1 && prog == 0) {
-	rb_proc_exec(RSTRING(argv[0])->ptr);
+	VALUE cmd = argv[0];
+
+	SafeStr(cmd);
+	rb_proc_exec(RSTRING(cmd)->ptr);
     }
     else {
 	proc_exec_n(argc, argv, prog);
@@ -875,7 +876,7 @@ rb_f_system(argc, argv)
     }
     cmd = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
 
-    Check_SafeStr(cmd);
+    SafeStr(cmd);
     status = do_spawn(RSTRING(cmd)->ptr);
     last_status_set(status);
 
@@ -899,7 +900,7 @@ rb_f_system(argc, argv)
     }
     cmd = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
 
-    Check_SafeStr(cmd);
+    SafeStr(cmd);
     status = system(RSTRING(cmd)->ptr);
     last_status_set((status & 0xff) << 8);
 
@@ -956,10 +957,10 @@ rb_f_system(argc, argv)
     }
 
     if (prog) {
-	Check_SafeStr(prog);
+	SafeStr(prog);
     }
     for (i = 0; i < argc; i++) {
-	Check_SafeStr(argv[i]);
+	SafeStr(argv[i]);
     }
   retry:
     switch (pid = vfork()) {

@@ -85,11 +85,8 @@ apply2files(func, vargs, arg)
     struct RArray *args = RARRAY(vargs);
 
     for (i=0; i<args->len; i++) {
-	Check_SafeStr(args->ptr[i]);
-    }
-
-    for (i=0; i<args->len; i++) {
 	path = args->ptr[i];
+	SafeStr(path);
 	if ((*func)(RSTRING(path)->ptr, arg) < 0)
 	    rb_sys_fail(RSTRING(path)->ptr);
     }
@@ -309,7 +306,7 @@ rb_stat(file, st)
 	GetOpenFile(file, fptr);
 	return fstat(fileno(fptr->f), st);
     }
-    Check_SafeStr(file);
+    SafeStr(file);
 #if defined DJGPP
     if (RSTRING(file)->len == 0) return -1;
 #endif
@@ -322,7 +319,7 @@ rb_file_s_stat(obj, fname)
 {
     struct stat st;
 
-    Check_SafeStr(fname);
+    SafeStr(fname);
     if (stat(RSTRING(fname)->ptr, &st) == -1) {
 	rb_sys_fail(RSTRING(fname)->ptr);
     }
@@ -350,7 +347,7 @@ rb_file_s_lstat(obj, fname)
 #ifdef HAVE_LSTAT
     struct stat st;
 
-    Check_SafeStr(fname);
+    SafeStr(fname);
     if (lstat(RSTRING(fname)->ptr, &st) == -1) {
 	rb_sys_fail(RSTRING(fname)->ptr);
     }
@@ -503,7 +500,7 @@ test_l(obj, fname)
 #ifdef S_ISLNK
     struct stat st;
 
-    Check_SafeStr(fname);
+    SafeStr(fname);
     if (lstat(RSTRING(fname)->ptr, &st) < 0) return Qfalse;
     if (S_ISLNK(st.st_mode)) return Qtrue;
 #endif
@@ -591,7 +588,7 @@ static VALUE
 test_r(obj, fname)
     VALUE obj, fname;
 {
-    Check_SafeStr(fname);
+    SafeStr(fname);
     if (eaccess(RSTRING(fname)->ptr, R_OK) < 0) return Qfalse;
     return Qtrue;
 }
@@ -600,7 +597,7 @@ static VALUE
 test_R(obj, fname)
     VALUE obj, fname;
 {
-    Check_SafeStr(fname);
+    SafeStr(fname);
     if (access(RSTRING(fname)->ptr, R_OK) < 0) return Qfalse;
     return Qtrue;
 }
@@ -609,7 +606,7 @@ static VALUE
 test_w(obj, fname)
     VALUE obj, fname;
 {
-    Check_SafeStr(fname);
+    SafeStr(fname);
     if (eaccess(RSTRING(fname)->ptr, W_OK) < 0) return Qfalse;
     return Qtrue;
 }
@@ -618,7 +615,7 @@ static VALUE
 test_W(obj, fname)
     VALUE obj, fname;
 {
-    Check_SafeStr(fname);
+    SafeStr(fname);
     if (access(RSTRING(fname)->ptr, W_OK) < 0) return Qfalse;
     return Qtrue;
 }
@@ -627,7 +624,7 @@ static VALUE
 test_x(obj, fname)
     VALUE obj, fname;
 {
-    Check_SafeStr(fname);
+    SafeStr(fname);
     if (eaccess(RSTRING(fname)->ptr, X_OK) < 0) return Qfalse;
     return Qtrue;
 }
@@ -636,7 +633,7 @@ static VALUE
 test_X(obj, fname)
     VALUE obj, fname;
 {
-    Check_SafeStr(fname);
+    SafeStr(fname);
     if (access(RSTRING(fname)->ptr, X_OK) < 0) return Qfalse;
     return Qtrue;
 }
@@ -732,7 +729,7 @@ test_suid(obj, fname)
     VALUE obj, fname;
 {
 #ifdef S_ISUID
-    Check_SafeStr(fname);
+    SafeStr(fname);
     return check3rdbyte(RSTRING(fname)->ptr, S_ISUID);
 #else
     return Qfalse;
@@ -744,7 +741,7 @@ test_sgid(obj, fname)
     VALUE obj, fname;
 {
 #ifdef S_ISGID
-    Check_SafeStr(fname);
+    SafeStr(fname);
     return check3rdbyte(RSTRING(fname)->ptr, S_ISGID);
 #else
     return Qfalse;
@@ -819,7 +816,7 @@ rb_file_s_ftype(obj, fname)
 {
     struct stat st;
 
-    Check_SafeStr(fname);
+    SafeStr(fname);
     if (lstat(RSTRING(fname)->ptr, &st) == -1) {
 	rb_sys_fail(RSTRING(fname)->ptr);
     }
@@ -1182,8 +1179,8 @@ static VALUE
 rb_file_s_link(obj, from, to)
     VALUE obj, from, to;
 {
-    Check_SafeStr(from);
-    Check_SafeStr(to);
+    SafeStr(from);
+    SafeStr(to);
 
     if (link(RSTRING(from)->ptr, RSTRING(to)->ptr) < 0)
 	rb_sys_fail(RSTRING(from)->ptr);
@@ -1195,8 +1192,8 @@ rb_file_s_symlink(obj, from, to)
     VALUE obj, from, to;
 {
 #ifdef HAVE_SYMLINK
-    Check_SafeStr(from);
-    Check_SafeStr(to);
+    SafeStr(from);
+    SafeStr(to);
 
     if (symlink(RSTRING(from)->ptr, RSTRING(to)->ptr) < 0)
 	rb_sys_fail(RSTRING(from)->ptr);
@@ -1215,8 +1212,7 @@ rb_file_s_readlink(obj, path)
     char buf[MAXPATHLEN];
     int cc;
 
-    Check_SafeStr(path);
-
+    SafeStr(path);
     if ((cc = readlink(RSTRING(path)->ptr, buf, MAXPATHLEN)) < 0)
 	rb_sys_fail(RSTRING(path)->ptr);
 
@@ -1249,8 +1245,8 @@ static VALUE
 rb_file_s_rename(obj, from, to)
     VALUE obj, from, to;
 {
-    Check_SafeStr(from);
-    Check_SafeStr(to);
+    SafeStr(from);
+    SafeStr(to);
 
     if (rename(RSTRING(from)->ptr, RSTRING(to)->ptr) < 0) {
 #if defined __CYGWIN__
@@ -1514,7 +1510,7 @@ rb_file_s_truncate(obj, path, len)
     VALUE obj, path, len;
 {
     rb_secure(2);
-    Check_SafeStr(path);
+    SafeStr(path);
 
 #ifdef HAVE_TRUNCATE
     if (truncate(RSTRING(path)->ptr, NUM2INT(len)) < 0)
@@ -1659,7 +1655,7 @@ test_check(n, argc, argv)
     for (i=1; i<n; i++) {
 	switch (TYPE(argv[i])) {
 	  case T_STRING:
-	    Check_SafeStr(argv[i]);
+	    SafeStr(argv[i]);
 	    break;
 	  case T_FILE:
 	    break;
@@ -2224,7 +2220,7 @@ rb_find_file(file)
 	vpath = rb_ary_new();
 	for (i=0;i<RARRAY(rb_load_path)->len;i++) {
 	    VALUE str = RARRAY(rb_load_path)->ptr[i];
-	    Check_SafeStr(str);
+	    SafeStr(str);
 	    if (RSTRING(str)->len > 0) {
 		rb_ary_push(vpath, str);
 	    }

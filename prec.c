@@ -47,6 +47,7 @@ prec_induced_from(module, x)
 {
     rb_raise(rb_eTypeError, "undefined conversion from %s into %s",
             rb_class2name(CLASS_OF(x)), rb_class2name(module));
+    return Qnil;		/* not reached */
 }
 
 static VALUE
