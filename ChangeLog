@@ -1,3 +1,10 @@
+Wed Jan  1 04:16:18 2003  Akinori MUSHA  <knu@iDaemons.org>
+
+	* node.h (struct RNode): Change argc from int to long.  Otherwize
+	  NEW_CFUNC() sets argc to a wrong value on platforms where
+	  sizeof(int) != sizeof(long) and the byte order is big-endian.
+	  This fixes breakage on FreeBSD/sparc64.
+
 Tue Dec 31 21:13:51 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* Makefile.in, {win32,bcc32}/Makefile.sub: add new target:
