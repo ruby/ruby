@@ -123,7 +123,7 @@ def xsystem command
     puts command
     return system(command)
   end
-  logfile = $extmk ? File.join($topdir, 'ext', 'extmk.log') : 'mkmf.rb'
+  logfile = $extmk ? File.join($topdir, 'ext', 'extmk.log') : 'mkmf.log'
   $log ||= open(logfile, 'w')
   $stderr.reopen($log) 
   $stdout.reopen($log) 
