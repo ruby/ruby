@@ -1,3 +1,7 @@
+Wed Oct 10 03:11:47 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (parse_quotedwords): %w(...) is not a string.
+
 Tue Oct  9 17:08:00 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* eval.c (thread_status_name): separated from
