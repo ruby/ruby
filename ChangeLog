@@ -1,3 +1,7 @@
+Tue Nov 30 14:58:33 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* instruby.rb (install): add arguments explicitly to "super".
+
 Tue Nov 30 00:49:08 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_eval): [ruby-core:03856]

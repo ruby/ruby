@@ -59,7 +59,7 @@ include FileUtils::NoWrite if $dryrun
 
 def install(src, dest, options = {})
   options[:preserve] = true
-  super
+  super src, dest, options
 end
 
 $made_dirs = {}
