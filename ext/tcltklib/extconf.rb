@@ -28,10 +28,16 @@ stubs = enable_config("tcltk_stubs") || with_config("tcltk_stubs")
 
 def find_tcl(tcllib, stubs)
   paths = ["/usr/local/lib", "/usr/pkg/lib", "/usr/lib"]
-  func = stubs ? "Tcl_InitStubs" : "Tcl_FindExecutable"
+  if stubs
+    func = "Tcl_InitStubs"
+    lib = "tclstub"
+  else
+    func = "Tcl_FindExecutable"
+    lib = "tcl"
+  end
   if tcllib
     find_library(tcllib, func, *paths)
-  elsif find_library("tcl", func, *paths)
+  elsif find_library(lib, func, *paths)
     true
   else
     %w[8.5 8.4 8.3 8.2 8.1 8.0 7.6].find { |ver|
@@ -43,10 +49,16 @@ end
 
 def find_tk(tklib, stubs)
   paths = ["/usr/local/lib", "/usr/pkg/lib", "/usr/lib"]
-  func = stubs ? "Tk_InitStubs" : "Tk_Init"
+  if stubs
+    func = "Tk_InitStubs"
+    lib = "tkstub"
+  else
+    func = "Tk_Init"
+    lib = "tk"
+  end
   if tklib
     find_library(tklib, func, *paths)
-  elsif find_library("tk", func, *paths)
+  elsif find_library(lib, func, *paths)
     true
   else
     %w[8.5 8.4 8.3 8.2 8.1 8.0 4.2].find { |ver|
@@ -230,5 +242,5 @@ if mac_need_framework ||
     $LDFLAGS += ' -framework Tk -framework Tcl'
   end
 
-  create_makefile("tcltklib") if pthread_check
+  create_makefile("tcltklib") if stubs or pthread_check
 end

@@ -1,6 +1,13 @@
+Sat Aug 21 06:41:16 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/tcltklib/extconf.rb (find_tcl, find_tk): find stub library.
+
+	* lib/mkmf.rb (arg_config, with_config): deal with '-' and '_'
+	  uniformly.  [ruby-dev:24118]
+
 Thu Aug 19 16:29:45 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tk.rb: Fail to treat a hash value of 'font' option. 
+	* ext/tk/lib/tk.rb: Fail to treat a hash value of 'font' option.
 
 	* ext/tk/lib/tk.rb: bindinfo cannot return '%' substiturion infomation.
 
