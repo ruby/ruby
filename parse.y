@@ -5196,6 +5196,28 @@ range_op(node)
     return node;
 }
 
+static int
+literal_node(node)
+    NODE *node;
+{
+    if (!node) return 1;	/* same as NODE_NIL */
+    switch (nd_type(node)) {
+      case NODE_LIT:
+      case NODE_STR:
+      case NODE_DSTR:
+      case NODE_EVSTR:
+      case NODE_DREGX:
+      case NODE_DREGX_ONCE:
+      case NODE_DSYM:
+	return 2;
+      case NODE_TRUE:
+      case NODE_FALSE:
+      case NODE_NIL:
+	return 1;
+    }
+    return 0;
+}
+
 static NODE*
 cond0(node)
     NODE *node;
@@ -5206,6 +5228,7 @@ cond0(node)
 
     switch (type) {
       case NODE_DSTR:
+      case NODE_EVSTR:
       case NODE_STR:
 	rb_warn("string literal in condition");
 	break;
@@ -5230,7 +5253,17 @@ cond0(node)
 	if (type == NODE_DOT2) nd_set_type(node,NODE_FLIP2);
 	else if (type == NODE_DOT3) nd_set_type(node, NODE_FLIP3);
 	node->nd_cnt = local_append(internal_id());
-	warning_unless_e_option("range literal in condition");
+	if (!e_option_supplied()) {
+	    int b = literal_node(node->nd_beg);
+	    int e = literal_node(node->nd_end);
+	    if ((b == 1 && e == 1) || (b + e >= 2 && RTEST(ruby_verbose))) {
+		rb_warn("range literal in condition");
+	    }
+	}
+	break;
+
+      case NODE_DSYM:
+	rb_warning("literal in condition");
 	break;
 
       case NODE_LIT:
