@@ -15,6 +15,8 @@
 #define SYCK_YAML_MINOR 0
 #define SYCK_BUFFERSIZE 262144
 
+void syck_parser_pop_level( SyckParser * );
+
 /*
  * Custom assert
  */
@@ -34,6 +36,7 @@ syck_strndup( char *buf, long len )
     char *new = S_ALLOC_N( char, len + 1 );
     S_MEMZERO( new, char, len + 1 );
     S_MEMCPY( new, buf, char, len );
+    return new;
 }
 
 /*

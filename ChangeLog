@@ -1,3 +1,9 @@
+Thu May 15 09:50:51 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* ext/syck/syck.c (syck_parser_pop_level): add prototype.
+
+	* ext/syck/syck.c (syck_strndup): should return value.
+
 Thu May 15 09:32:25 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* win32/win32.c (kill): fix typo and add signal 0 support.
