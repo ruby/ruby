@@ -1194,17 +1194,7 @@ rb_autoload_load(klass, id)
     ID id;
 {
     VALUE file, value;
-    ID tmp = id;
 
-    if (!st_delete(RCLASS(klass)->iv_tbl, &tmp, &value) || value != Qundef) {
-	if (klass != rb_cObject)
-	    rb_name_error(id, "not autoload constant %s::%s",
-			  RSTRING(rb_class_path(klass))->ptr,
-			  rb_id2name(id));
-	else {
-	    rb_name_error(id, "not autoload constant %s", rb_id2name(id));
-	}
-    }
     file = autoload_delete(klass, id);
     if (NIL_P(file)) {
 	uninitialized_constant(klass, id);

@@ -1,3 +1,8 @@
+Sun Jun  1 10:38:28 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* variable.c (rb_autoload_load): autoloaded constants under a module
+	  belong to the module.  [ruby-core:01094], [ruby-dev:20309]
+
 Sat May 31 04:36:54 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* parse.y (rb_intern): should handle multibyte name.
