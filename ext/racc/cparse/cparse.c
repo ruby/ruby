@@ -519,7 +519,7 @@ parse_main(v, tok, val, resume)
         }
         else if (act == -(v->reduce_n)) {
             goto error;
-          error_return:
+          error_return: ;
         }
         else if (act == v->shift_n) {
             D(puts("accept"));
