@@ -1,3 +1,9 @@
+Mon Feb  2 19:33:49 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in: backport from 1.9 for Interix.
+
+	* dln.c (dln_load): ditto.
+
 Mon Feb  2 13:31:51 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/net/http.rb (canonical_each): fix merge miss.
