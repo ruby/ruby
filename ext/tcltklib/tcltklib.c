@@ -2884,12 +2884,14 @@ ip_init(argc, argv, self)
 	    /* without Tk */
 	    with_tk = 0;
 	} else {
-	    Tcl_SetVar(ptr->ip, "argv", StringValuePtr(opts), 0);
+	    /* Tcl_SetVar(ptr->ip, "argv", StringValuePtr(opts), 0); */
+	    Tcl_SetVar(ptr->ip, "argv", StringValuePtr(opts), TCL_GLOBAL_ONLY);
 	}
     case 1:
 	/* argv0 */
 	if (!NIL_P(argv0)) {
-	    Tcl_SetVar(ptr->ip, "argv0", StringValuePtr(argv0), 0);
+	    /* Tcl_SetVar(ptr->ip, "argv0", StringValuePtr(argv0), 0); */
+	    Tcl_SetVar(ptr->ip, "argv0", StringValuePtr(argv0), TCL_GLOBAL_ONLY);
 	}
     case 0:
 	/* no args */
@@ -2917,6 +2919,7 @@ ip_init(argc, argv, self)
 
     /* get main window */
     mainWin = Tk_MainWindow(ptr->ip);
+    Tk_Preserve((ClientData)mainWin);
 
     /* add ruby command to the interpreter */
 #if TCL_MAJOR_VERSION >= 8
@@ -3014,6 +3017,8 @@ ip_init(argc, argv, self)
     Tcl_CreateCommand(ptr->ip, "thread_tkwait", ip_rb_threadTkWaitCommand, 
 		      (ClientData)mainWin, (Tcl_CmdDeleteProc *)NULL);
 #endif
+
+    Tk_Release((ClientData)mainWin);
 
     return self;
 }

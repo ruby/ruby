@@ -14,6 +14,17 @@ class MultiTkIp
   @@TK_TABLE_LIST = [].taint unless defined?(@@TK_TABLE_LIST)
   def self._IP_TABLE; @@IP_TABLE; end
   def self._TK_TABLE_LIST; @@TK_TABLE_LIST; end
+
+  @flag = true
+  def self._DEFAULT_MASTER
+    # work only once
+    if @flag
+      @flag = nil
+      @@DEFAULT_MASTER
+    else
+      nil
+    end
+  end
 end
 class RemoteTkIp
   @@IP_TABLE = MultiTkIp._IP_TABLE unless defined?(@@IP_TABLE)
@@ -25,6 +36,15 @@ class << MultiTkIp
 end
 
 require 'multi-tk'
+
+class RemoteTkIp
+  if defined?(@@DEFAULT_MASTER)
+    MultiTkIp._DEFAULT_MASTER
+  else
+    @@DEFAULT_MASTER = MultiTkIp._DEFAULT_MASTER
+  end
+end
+
 
 ###############################
 
@@ -73,14 +93,19 @@ class RemoteTkIp
 
     @threadgroup  = ThreadGroup.new
 
+    @safe_level = [$SAFE]
+
     @cmd_queue = Queue.new
 
+=begin
     @cmd_receiver, @receiver_watchdog = _create_receiver_and_watchdog()
 
     @threadgroup.add @cmd_receiver
     @threadgroup.add @receiver_watchdog
 
     @threadgroup.enclose
+=end
+    @@DEFAULT_MASTER.assign_receiver_and_watchdog(self)
 
     @@IP_TABLE[@threadgroup] = self
     @@TK_TABLE_LIST.size.times{ 
@@ -93,6 +118,10 @@ class RemoteTkIp
       fail RuntimeError, "cannot create connection"
     end
     @ip_id = _create_connection
+
+    class << self
+      undef :instance_eval
+    end
 
     self.freeze  # defend against modification
   end
