@@ -532,7 +532,7 @@ class Date
     module_eval <<-"end;"
       def self.#{old}(*args, &block)
 	if $VERBOSE
-	  $stderr.puts("\#{caller.shift.sub(/:in .*/, '')}: " \
+	  $deferr.puts("\#{caller.shift.sub(/:in .*/, '')}: " \
 		       "warning: \#{self}::#{old} is deprecated; " \
 		       "use \#{self}::#{new}")
 	end
@@ -549,7 +549,7 @@ class Date
     module_eval <<-"end;"
       def #{old}(*args, &block)
 	if $VERBOSE
-	  $stderr.puts("\#{caller.shift.sub(/:in .*/, '')}: " \
+	  $deferr.puts("\#{caller.shift.sub(/:in .*/, '')}: " \
 		       "warning: \#{self.class}\##{old} is deprecated; " \
 		       "use \#{self.class}\##{new}")
 	end

@@ -1,3 +1,7 @@
+Mon May 19 00:24:13 2003  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date.rb: use $deferr instead of $stderr.
+
 Sat May 17 02:17:42 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* lib/rational.rb (Integer::denominator): fixed typo.
