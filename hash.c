@@ -862,8 +862,6 @@ static VALUE
 rb_hash_clear(hash)
     VALUE hash;
 {
-    void *tmp;
-
     rb_hash_modify(hash);
     if (RHASH(hash)->tbl->num_entries > 0) {
 	rb_hash_foreach(hash, clear_i, 0);

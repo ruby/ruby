@@ -1243,9 +1243,6 @@ static VALUE
 rb_str_match(x, y)
     VALUE x, y;
 {
-    VALUE reg;
-    long start;
-
     switch (TYPE(y)) {
       case T_STRING:
 	rb_raise(rb_eTypeError, "type mismatch: String given");
@@ -4462,18 +4459,17 @@ rb_str_justify(argc, argv, str, jflag)
     long n;
     VALUE pad;
 
-    if (rb_scan_args(argc, argv, "11", &w, &pad) == 2) {
-        if (!NIL_P(pad)) {
-            StringValue(pad);
-            if (RSTRING(pad)->len > 0) {
-                f = RSTRING(pad)->ptr;
-                flen = RSTRING(pad)->len;
-            }
-        }
-    }
+    rb_scan_args(argc, argv, "11", &w, &pad);
     width = NUM2LONG(w);
     if (width < 0 || RSTRING(str)->len >= width) return rb_str_dup(str);
     res = rb_str_new5(str, 0, width);
+    if (argc == 2) {
+	StringValue(pad);
+	if (RSTRING(pad)->len > 0) {
+	    f = RSTRING(pad)->ptr;
+	    flen = RSTRING(pad)->len;
+	}
+    }
     p = RSTRING(res)->ptr;
     if (jflag != 'l') {
         n = width - RSTRING(str)->len;

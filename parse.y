@@ -4413,7 +4413,7 @@ rb_compile_string(f, s, line)
     int line;
 {
     struct parser_params *parser = parser_new();
-    volatile VALUE p = parser->value;		  
+    volatile VALUE p = parser->value;
 
     lex_gets = lex_get_str;
     lex_gets_ptr = 0;

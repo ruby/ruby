@@ -230,18 +230,8 @@ str_step(args)
     return rb_str_upto(args[0], args[1], EXCL(args[2]));
 }
 
-static VALUE
-step_i(i, iter)
-    VALUE i;
-    long *iter;
-{
-    iter[0]--;
-    if (iter[0] == 0) {
-	rb_yield(i);
-	iter[0] = iter[1];
-    }
-    return Qnil;
-}
+#define RANGE_EACH_BREAK    Qfalse
+#define RANGE_EACH_CONTINUE Qtrue
 
 static void
 range_each_func(range, func, v, e, arg)
@@ -254,17 +244,30 @@ range_each_func(range, func, v, e, arg)
 
     if (EXCL(range)) {
 	while (r_lt(v, e)) {
-	    (*func)(v, arg);
+	    if ((*func)(v, arg) == RANGE_EACH_BREAK) break;
 	    v = rb_funcall(v, id_succ, 0, 0);
 	}
     }
     else {
 	while (RTEST(c = r_le(v, e))) {
-	    (*func)(v, arg);
+	    if ((*func)(v, arg) == RANGE_EACH_BREAK) break;
 	    if (c == INT2FIX(0)) break;
 	    v = rb_funcall(v, id_succ, 0, 0);
 	}
     }
+}
+
+static VALUE
+step_i(i, iter)
+    VALUE i;
+    long *iter;
+{
+    iter[0]--;
+    if (iter[0] == 0) {
+	rb_yield(i);
+	iter[0] = iter[1];
+    }
+    return RANGE_EACH_CONTINUE;
 }
 
 /*
@@ -335,7 +338,7 @@ range_step(argc, argv, range)
 	    if (unit == 0) rb_raise(rb_eArgError, "step can't be 0");
 	    args[0] = b; args[1] = e; args[2] = range;
 	    iter[0] = 1; iter[1] = unit;
-	    rb_iterate((VALUE(*)_((VALUE)))str_step, (VALUE)args, step_i, (VALUE)iter);
+	    rb_iterate(str_step, (VALUE)args, step_i, (VALUE)iter);
 	}
 	else if (rb_obj_is_kind_of(b, rb_cNumeric)) {
 	    ID c = rb_intern(EXCL(range) ? "<" : "<=");
@@ -368,7 +371,8 @@ each_i(v, arg)
     VALUE v;
     void *arg;
 {
-    return rb_yield(v);
+    rb_yield(v);
+    return RANGE_EACH_CONTINUE; 
 }
 
 /*
@@ -417,7 +421,7 @@ range_each(range)
 
 	args[0] = beg; args[1] = end; args[2] = range;
 	iter[0] = 1; iter[1] = 1;
-	rb_iterate((VALUE(*)_((VALUE)))str_step, (VALUE)args, step_i, (VALUE)iter);
+	rb_iterate(str_step, (VALUE)args, step_i, (VALUE)iter);
     }
     else {
 	range_each_func(range, each_i, beg, end, NULL);
@@ -548,14 +552,16 @@ range_inspect(range)
     return str;
 }
 
-static void
+static VALUE
 member_i(v, args)
     VALUE v;
     VALUE *args;
 {
     if (rb_equal(v, args[0])) {
 	args[1] = Qtrue;
+	return RANGE_EACH_BREAK;
     }
+    return RANGE_EACH_CONTINUE;
 }
 
 /*

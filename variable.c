@@ -1695,15 +1695,6 @@ rb_define_global_const(name, val)
     rb_define_const(rb_cObject, name, val);
 }
 
-static VALUE
-original_module(c)
-    VALUE c;
-{
-    if (TYPE(c) == T_ICLASS)
-	return RBASIC(c)->klass;
-    return c;
-}
-
 void
 rb_cvar_set(klass, id, val, warn)
     VALUE klass;
@@ -1720,7 +1711,6 @@ rb_cvar_get(klass, id)
     ID id;
 {
     VALUE value;
-    VALUE tmp;
 
     if (RCLASS(klass)->iv_tbl && st_lookup(RCLASS(klass)->iv_tbl,id,&value)) {
 	return value;

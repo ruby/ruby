@@ -134,6 +134,7 @@ class PStore
 	  content = dump(@table)
 	  if !md5 || size != content.size || md5 != Digest::MD5.digest(content)
             File.open(tmp_file, "w") {|t|
+              t.binmode
               t.write(content)
             }
             File.rename(tmp_file, new_file)
@@ -168,6 +169,7 @@ class PStore
     f.rewind
     new_file = @filename + ".new"
     File.open(new_file) do |nf|
+      nf.binmode
       FileUtils.copy_stream(nf, f)
     end
     File.unlink(new_file)

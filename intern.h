@@ -253,7 +253,7 @@ VALUE rb_gc_enable _((void));
 VALUE rb_gc_disable _((void));
 VALUE rb_gc_start _((void));
 /* hash.c */
-void st_foreach _((struct st_table *, int (*)(), unsigned long));
+void st_foreach_safe _((struct st_table *, int (*)(), unsigned long));
 void rb_hash_foreach _((VALUE, int (*)(), VALUE));
 VALUE rb_hash _((VALUE));
 VALUE rb_hash_new _((void));

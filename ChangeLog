@@ -1,3 +1,18 @@
+Wed Oct  6 09:21:00 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_mode_flags): preserve append mode flag.
+	  [ruby-dev:24436]
+
+	* io.c (rb_io_modenum_mode): do not use external output buffer.
+
+	* string.c (rb_str_justify): differ pointer retrieval to prevent
+	  padding string modification.  [ruby-dev:24434]
+
+	* range.c (range_each_func): allow func to terminate loop by
+	  returning RANGE_EACH_BREAK.
+
+	* range.c (member_i): use RANGE_EACH_BREAK. [ruby-talk:114959]
+
 Tue Oct  5 09:53:22 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_fopen): mode string copy at the lowest level.

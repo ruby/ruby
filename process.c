@@ -1559,7 +1559,6 @@ rb_spawn(argc, argv)
     int status;
     VALUE prog;
 #if defined HAVE_FORK
-    int pid;
     struct rb_exec_arg earg;
 #endif
 

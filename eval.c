@@ -2187,7 +2187,6 @@ is_defined(self, node, buf, noeval)
     int state;
     static const char *ex = "expression";
 
-  again:
     if (!node) return ex;
     switch (nd_type(node)) {
       case NODE_SUPER:
@@ -7745,7 +7744,6 @@ static void
 frame_dup(frame)
     struct FRAME *frame;
 {
-    VALUE *argv;
     struct FRAME *tmp;
 
     for (;;) {
@@ -7873,7 +7871,6 @@ bind_eval(argc, argv, bind)
 {
     struct BLOCK *data;
     VALUE args[4];
-    VALUE dummy;
 
     rb_scan_args(argc, argv, "12", &args[0], &args[2], &args[3]);
     args[1] = bind;
@@ -11343,7 +11340,7 @@ rb_thread_start_0(fn, arg, th)
 {
     volatile rb_thread_t th_save = th;
     volatile VALUE thread = th->thread;
-    struct BLOCK *volatile saved_block = 0, *block;
+    struct BLOCK *volatile saved_block = 0;
     enum thread_status status;
     int state;
 
@@ -12146,7 +12143,6 @@ rb_callcc(self)
     volatile rb_thread_t th_save;
     struct tag *tag;
     struct RVarmap *vars;
-    struct BLOCK *blk;
 
     THREAD_ALLOC(th);
     cont = Data_Wrap_Struct(rb_cCont, thread_mark, thread_free, th);

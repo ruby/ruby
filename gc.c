@@ -614,8 +614,6 @@ mark_locations_array(x, n)
     register VALUE *x;
     register long n;
 {
-    VALUE tmp;
-
     while (n--) {
 	if (is_pointer_to_heap((void *)*x)) {
 	    gc_mark(*x, 0);
@@ -1033,7 +1031,7 @@ gc_sweep()
 {
     RVALUE *p, *pend, *final_list;
     int freed = 0;
-    int i, j;
+    int i;
     unsigned long live = 0;
 
     mark_source_filename(ruby_sourcefile);
