@@ -1284,7 +1284,6 @@ rb_big_div(x, y)
     return bignorm(z);
 }
 
-
 static VALUE
 rb_big_modulo(x, y)
     VALUE x, y;
@@ -1349,6 +1348,32 @@ rb_big_divmod(x, y)
     bigdivmod(x, y, &div, &mod);
 
     return rb_assoc_new(bignorm(div), bignorm(mod));
+}
+
+static VALUE
+rb_big_quo(x, y)
+    VALUE x, y;
+{
+    double dx = rb_big2dbl(x);
+    double dy;
+
+    switch (TYPE(y)) {
+      case T_FIXNUM:
+	dy = (double)FIX2LONG(y);
+	break;
+
+      case T_BIGNUM:
+	dy = rb_big2dbl(y);
+	break;
+
+      case T_FLOAT:
+	dy = RFLOAT(y)->value;
+	break;
+
+      default:
+	return rb_num_coerce_bin(x, y);
+    }
+    return rb_float_new(dx / dy);
 }
 
 VALUE
@@ -1739,6 +1764,7 @@ Init_Bignum()
     rb_define_method(rb_cBignum, "divmod", rb_big_divmod, 1);
     rb_define_method(rb_cBignum, "modulo", rb_big_modulo, 1);
     rb_define_method(rb_cBignum, "remainder", rb_big_remainder, 1);
+    rb_define_method(rb_cBignum, "quo", rb_big_quo, 1);
     rb_define_method(rb_cBignum, "**", rb_big_pow, 1);
     rb_define_method(rb_cBignum, "&", rb_big_and, 1);
     rb_define_method(rb_cBignum, "|", rb_big_or, 1);

@@ -57,7 +57,7 @@
 #define DBL_EPSILON 2.2204460492503131e-16
 #endif
 
-static ID id_coerce, id_to_i, id_div;
+static ID id_coerce, id_to_i;
 
 VALUE rb_cNumeric;
 VALUE rb_cFloat;
@@ -170,28 +170,24 @@ num_uminus(num)
 }
 
 static VALUE
+num_quo(x, y)
+    VALUE x, y;
+{
+    return rb_funcall(x, '/', 1, y);
+}
+
+static VALUE
 num_div(x, y)
     VALUE x, y;
 {
-    return rb_funcall(x, id_div, 1, y);
+    return rb_Integer(rb_funcall(x, '/', 1, y));
 }
 
 static VALUE
 num_divmod(x, y)
     VALUE x, y;
 {
-    VALUE div, mod;
-
-    div = rb_funcall(x, id_div, 1, y);
-    if (TYPE(div) == T_FLOAT) {
-	double d = floor(RFLOAT(div)->value);
-
-	if (RFLOAT(div)->value > d) {
-	    div = rb_float_new(d);
-	}
-    }
-    mod = rb_funcall(x, '%', 1, y);
-    return rb_assoc_new(div, mod);
+    return rb_assoc_new(num_div(x, y), rb_funcall(x, '%', 1, y));
 }
 
 static VALUE
@@ -1304,6 +1300,16 @@ fixdivmod(x, y, divp, modp)
 }
 
 static VALUE
+fix_quo(x, y)
+    VALUE x, y;
+{
+    if (FIXNUM_P(y)) {
+	return rb_float_new((double)FIX2LONG(x) / (double)FIX2LONG(y));
+    }
+    return rb_num_coerce_bin(x, y);
+}
+
+static VALUE
 fix_div(x, y)
     VALUE x, y;
 {
@@ -1706,7 +1712,6 @@ Init_Numeric()
 #endif
     id_coerce = rb_intern("coerce");
     id_to_i = rb_intern("to_i");
-    id_div = rb_intern("div");
 
     rb_eZeroDivError = rb_define_class("ZeroDivisionError", rb_eStandardError);
     rb_eFloatDomainError = rb_define_class("FloatDomainError", rb_eRangeError);
@@ -1721,7 +1726,8 @@ Init_Numeric()
     rb_define_method(rb_cNumeric, "===", num_equal, 1);
     rb_define_method(rb_cNumeric, "<=>", num_cmp, 1);
     rb_define_method(rb_cNumeric, "eql?", num_eql, 1);
-    rb_define_method(rb_cNumeric, "/", num_div, 1);
+    rb_define_method(rb_cNumeric, "quo", num_quo, 1);
+    rb_define_method(rb_cNumeric, "div", num_div, 1);
     rb_define_method(rb_cNumeric, "divmod", num_divmod, 1);
     rb_define_method(rb_cNumeric, "modulo", num_modulo, 1);
     rb_define_method(rb_cNumeric, "remainder", num_remainder, 1);
@@ -1776,6 +1782,7 @@ Init_Numeric()
     rb_define_method(rb_cFixnum, "%", fix_mod, 1);
     rb_define_method(rb_cFixnum, "modulo", fix_mod, 1);
     rb_define_method(rb_cFixnum, "divmod", fix_divmod, 1);
+    rb_define_method(rb_cFixnum, "quo", fix_quo, 1);
     rb_define_method(rb_cFixnum, "**", fix_pow, 1);
 
     rb_define_method(rb_cFixnum, "abs", fix_abs, 0);

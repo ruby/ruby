@@ -106,18 +106,11 @@ class Prime
 end
 
 class Fixnum
-  alias divmod! divmod
-  alias / rdiv
-  def divmod(other)
-    a = self.div(other)
-    b = self % other
-    return a,b
-  end
+  alias / quo
 end
 
 class Bignum
-  alias divmod! divmod
-  alias / rdiv
+  alias / quo
 end
 
 class Rational

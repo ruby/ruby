@@ -31,8 +31,9 @@
 #   Integer::to_r
 #
 #   Fixnum::**
+#   Fixnum::quo
 #   Bignum::**
-#   
+#   Bignum::quo
 #
 
 def Rational(a, b = 1)
@@ -312,41 +313,14 @@ class Integer
 end
 
 class Fixnum
-  alias div! /;
-  def div(other)
-    if other.kind_of?(Fixnum)
-      self.div!(other)
-    elsif other.kind_of?(Bignum)
-      x, y = other.coerce(self)
-      x.div!(y)
-    else
-      x, y = other.coerce(self)
-      x / y
-    end
-  end
-  
-#  alias divmod! divmod
-  
   if not defined? Complex
     alias power! **;
   end
   
-#   def rdiv(other)
-#     if other.kind_of?(Fixnum)
-#       Rational(self, other)
-#     elsif
-#       x, y = other.coerce(self)
-#       if defined?(x.div())
-# 	x.div(y)
-#       else
-# 	x / y
-#       end
-#     end
-  #   end
-  
-  def rdiv(other)
+  def quo(other)
     Rational.new!(self,1) / other
   end
+  alias rdiv quo
   
   def rpower (other)
     if other >= 0
@@ -362,17 +336,14 @@ class Fixnum
 end
 
 class Bignum
-  alias div! /;
-  alias div /;
-  alias divmod! divmod
-  
   if not defined? power!
     alias power! **
   end
   
-  def rdiv(other)
+  def quo(other)
     Rational.new!(self,1) / other
   end
+  alias rdiv quo
   
   def rpower (other)
     if other >= 0
@@ -385,6 +356,4 @@ class Bignum
   if not defined? Complex
     alias ** rpower
   end
-  
 end
-
