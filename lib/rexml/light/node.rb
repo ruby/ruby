@@ -135,8 +135,8 @@ module REXML
 			end
 
 			def text=( foo )
-				replace = at(4).kind_of?(String) ? 1 : 0
-				_old_put(4, replace, normalizefoo)
+				replace = at(4).kind_of?(String)? 1 : 0
+				self._old_put(4,replace, normalizefoo)
 			end
 
 			def root

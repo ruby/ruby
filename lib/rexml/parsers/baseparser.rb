@@ -56,6 +56,7 @@ module REXML
 			IDENTITY = /^([!\*\w\-]+)(\s+#{NCNAME_STR})?(\s+["'].*?['"])?(\s+['"].*?["'])?/u
 			ELEMENTDECL_START = /^\s*<!ELEMENT/um
 			ELEMENTDECL_PATTERN = /^\s*(<!ELEMENT.*?)>/um
+			SYSTEMENTITY = /^\s*(%.*?;)\s*$/um
 			ENUMERATION = "\\(\\s*#{NMTOKEN}(?:\\s*\\|\\s*#{NMTOKEN})*\\s*\\)"
 			NOTATIONTYPE = "NOTATION\\s+\\(\\s*#{NAME}(?:\\s*\\|\\s*#{NAME})*\\s*\\)"
 			ENUMERATEDTYPE = "(?:(?:#{NOTATIONTYPE})|(?:#{ENUMERATION}))"
@@ -214,8 +215,13 @@ module REXML
 				if @document_status == :in_doctype
 					md = @source.match(/\s*(.*?>)/um)
 					case md[1]
+					when SYSTEMENTITY 
+						match = @source.match( SYSTEMENTITY, true )[1]
+						return [ :externalentity, match ]
+
 					when ELEMENTDECL_START
 						return [ :elementdecl, @source.match( ELEMENTDECL_PATTERN, true )[1] ]
+
 					when ENTITY_START
 						match = @source.match( ENTITYDECL, true ).to_a.compact
 						match[0] = :entitydecl

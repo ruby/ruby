@@ -18,20 +18,26 @@ module REXML
 				if enc and enc != UTF_8
 					@encoding = enc.upcase
 					begin
-						load 'rexml/encodings/ICONV.rb'
+            load 'rexml/encodings/ICONV.rb'
+						instance_eval @@__REXML_encoding_methods
 						Iconv::iconv( UTF_8, @encoding, "" )
 					rescue LoadError, Exception => err
+						raise "Bad encoding name #@encoding" unless @encoding =~ /^[\w-]+$/
+						@encoding.untaint 
 						enc_file = File.join( "rexml", "encodings", "#@encoding.rb" )
 						begin
-							load enc_file
+              load enc_file
+							instance_eval @@__REXML_encoding_methods
 						rescue LoadError
+              puts $!.message
 							raise Exception.new( "No decoder found for encoding #@encoding.  Please install iconv." )
 						end
 					end
 				else
 					enc = UTF_8
 					@encoding = enc.upcase
-					load 'rexml/encodings/UTF-8.rb'
+          load 'rexml/encodings/UTF-8.rb' 
+					instance_eval @@__REXML_encoding_methods
 				end
 			ensure
 				$VERBOSE = old_verbosity

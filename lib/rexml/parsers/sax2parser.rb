@@ -1,3 +1,7 @@
+require 'rexml/parsers/baseparser'
+require 'rexml/parseexception'
+require 'rexml/namespace'
+
 module REXML
 	module Parsers
 		class SAX2Parser
@@ -85,7 +89,7 @@ module REXML
 						if procs or listeners
 							# break out the namespace declarations
 							# The attributes live in event[2]
-							nsdecl = event[2].find_all { |n, value| n =~ /^xmlns:/ }
+							nsdecl = event[2].find_all { |n, value| n =~ /^xmlns(:|$)/ }
 							nsdecl.collect! { |n, value| [ n[6..-1], value ] }
 							@namespace_stack.push({})
 							nsdecl.each do |n,v|
@@ -194,10 +198,9 @@ module REXML
 			end
 
 			def get_namespace( prefix ) 
-				uri = @namespace_stack.find do |ns|
-					not ns[prefix].nil?
-				end
-				uri[prefix] unless uri.nil?
+        uris = (@namespace_stack.find_all { |ns| not ns[prefix].nil? }) ||
+					(@namespace_stack.find { |ns| not ns[nil].nil? })
+				uris[-1][prefix] unless uris.nil? or 0 == uris.size
 			end
 		end
 	end

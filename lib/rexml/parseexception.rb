@@ -29,8 +29,6 @@ module REXML
 				err << "Position: #{position}\n"
 				err << "Last 80 unconsumed characters:\n"
 				err << @source.buffer[0..80].gsub(/\n/, ' ')
-				err << "\n"
-				err << @source.buffer[0..80].unpack("U*").inspect
 			end
 			
 			err

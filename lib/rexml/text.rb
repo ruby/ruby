@@ -245,7 +245,7 @@ module REXML
 		def Text::unnormalize( string, doctype=nil, filter=nil, illegal=nil )
 			rv = string.clone
 			rv.gsub!( /\r\n?/, "\n" )
-			matches = rv.scan(REFERENCE)
+			matches = rv.scan( REFERENCE )
 			return rv if matches.size == 0
 			rv.gsub!( NUMERICENTITY ) {|m|
 				m=$1

@@ -28,7 +28,7 @@ module REXML
 
 		# Constructor
 		# @param arg must be a String, and should be a valid XML document
-		def initialize arg
+		def initialize(arg)
 			@orig = @buffer = arg
 			self.encoding = check_encoding( @buffer )
 			#@buffer = decode(@buffer) unless @encoding == UTF_8
@@ -64,10 +64,10 @@ module REXML
 		# everything after it in the Source.
 		# @return the pattern, if found, or nil if the Source is empty or the
 		# pattern is not found.
-		def scan pattern, consume=false
+		def scan(pattern, cons=false)
 			return nil if @buffer.nil?
 			rv = @buffer.scan(pattern)
-			@buffer = $' if consume and rv.size>0
+			@buffer = $' if cons and rv.size>0
 			rv
 		end
 
@@ -88,21 +88,21 @@ module REXML
 			return md
 		end
 
-		def match pattern, consume=false
+		def match(pattern, cons=false)
 			md = pattern.match(@buffer)
-			@buffer = $' if consume and md
+			@buffer = $' if cons and md
 			return md
 		end
 
 		# @return true if the Source is exhausted
 		def empty?
-			@buffer.nil? or @buffer.strip.nil?
+			@buffer.nil?
 		end
 
 		# @return the current line in the source
 		def current_line
 			lines = @orig.split
-			res = lines.grep(@buffer[0..30])
+			res = lines.grep @buffer[0..30]
 			res = res[-1] if res.kind_of? Array
 			lines.index( res ) if res
 		end
@@ -113,7 +113,7 @@ module REXML
 	class IOSource < Source
 		#attr_reader :block_size
 
-		def initialize arg, block_size=500
+		def initialize(arg, block_size=500)
 			@er_source = @source = arg
 			@to_utf = false
 			# READLINE OPT
@@ -127,7 +127,7 @@ module REXML
 			@line_break = encode( '>' )
 		end
 
-		def scan pattern, consume=false
+		def scan(pattern, cons=false)
 			rv = super
 			# You'll notice that this next section is very similar to the same
 			# section in match(), but just a liiittle different.  This is
@@ -166,16 +166,16 @@ module REXML
 			match( pattern, true )
 		end
 
-		def match pattern, consume=false
+		def match( pattern, cons=false )
 			rv = pattern.match(@buffer)
-			@buffer = $' if consume and rv
+			@buffer = $' if cons and rv
 			while !rv and @source
 				begin
 					str = @source.readline('>')
 					str = decode(str) if @to_utf and str
 					@buffer << str
 					rv = pattern.match(@buffer)
-					@buffer = $' if consume and rv
+					@buffer = $' if cons and rv
 				rescue
 					@source = nil
 				end

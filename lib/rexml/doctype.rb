@@ -163,6 +163,20 @@ module REXML
 		end
 	end
 
+	class ExternalEntity < Child
+		def initialize( src )
+			super()
+			@entity = src
+		end
+		def to_s
+			@entity
+		end
+		def write( output, indent )
+			output << @entity
+			output << "\n"
+		end
+	end
+
 	class NotationDecl < Child
 		def initialize name, middle, rest
 			@name = name

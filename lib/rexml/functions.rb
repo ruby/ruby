@@ -27,7 +27,13 @@ module REXML
 		def Functions::namespace_context; @@namespace_context; end
 
 		def Functions::text( )
-			return true if @@node.node_type == :text
+			if @@node.node_type == :element
+				return @@node.text
+			elsif @@node.node_type == :text
+				return @@node.value
+			else
+				return false
+			end
 		end
 
 		def Functions::last( )

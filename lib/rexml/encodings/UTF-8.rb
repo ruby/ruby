@@ -1,11 +1,13 @@
 module REXML
-	module Encoding
-		def encode content
-			content
-		end
+  module Encoding
+    @@__REXML_encoding_methods =<<-EOL
+    def encode content
+      content
+    end
 
-		def decode(str)
-			str
-		end
-	end
+    def decode(str)
+      str
+    end
+    EOL
+  end
 end
