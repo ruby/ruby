@@ -15,6 +15,11 @@
 #include <ctype.h>
 
 VALUE rb_cBignum;
+
+#if defined __MINGW32__
+#define USHORT _USHORT
+#endif
+
 typedef unsigned short USHORT;
 
 #define BDIGITS(x) ((USHORT*)RBIGNUM(x)->digits)

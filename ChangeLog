@@ -1,3 +1,11 @@
+Mon Jun  5 00:18:08 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* bignum.c: avoid conflict with USHORT on mingw32.
+
+Mon Jun  5 00:13:35 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* eval.c (rb_thread_schedule): =/== typo.
+
 Sun Jun  4 03:17:36 2000  Wakou Aoyama <wakou@fsinet.or.jp>
 
 	* lib/cig.rb: improve: CGI::pretty()
