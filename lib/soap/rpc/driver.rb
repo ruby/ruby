@@ -27,17 +27,13 @@ class Driver
   class << self
     def __attr_proxy(symbol, assignable = false)
       name = symbol.to_s
-      module_eval <<-EOD
-    	def #{name}
-  	  @servant.#{name}
-   	end
-      EOD
+      self.__send__(:define_method, name, proc {
+        @servant.__send__(name)
+      })
       if assignable
-	module_eval <<-EOD
-  	  def #{name}=(rhs)
-  	    @servant.#{name} = rhs
-  	  end
-	EOD
+        self.__send__(:define_method, name + '=', proc { |rhs|
+          @servant.__send__(name + '=', rhs)
+        })
       end
     end
   end
@@ -292,28 +288,27 @@ private
     end
 
     def add_rpc_method_interface(name, param_def)
-      param_names = []
-      i = 0
+      param_count = 0
       @proxy.operation[name].each_param_name(RPC::SOAPMethod::IN,
   	  RPC::SOAPMethod::INOUT) do |param_name|
-   	i += 1
-    	param_names << "arg#{ i }"
+   	param_count += 1
       end
-      callparam = (param_names.collect { |pname| ", " + pname }).join
-      @host.instance_eval <<-EOS
-     	def #{ name }(#{ param_names.join(", ") })
-      	  @servant.call(#{ name.dump }#{ callparam })
-       	end
-      EOS
+      sclass = class << @host; self; end
+      sclass.__send__(:define_method, name, proc { |*arg|
+        unless arg.size == param_count
+          raise ArgumentError.new(
+            "wrong number of arguments (#{arg.size} for #{param_count})")
+        end
+        @servant.call(name, *arg)
+      })
       @host.method(name)
     end
 
     def add_document_method_interface(name, paramname)
-      @host.instance_eval <<-EOS
-     	def #{ name }(param)
-      	  @servant.call(#{ name.dump }, param)
-       	end
-      EOS
+      sclass = class << @host; self; end
+      sclass.__send__(:define_method, name, proc { |param|
+        @servant.call(name, param)
+      })
       @host.method(name)
     end
 

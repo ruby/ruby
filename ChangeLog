@@ -1,3 +1,7 @@
+Wed Dec 22 00:05:10 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* lib/soap/*, test/soap/*, sample/soap/authheader/*: eval cleanup.
+
 Tue Dec 21 22:07:41 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_asn1.c (ossl_asn1_decode_all): use rb_str_new4

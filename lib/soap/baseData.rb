@@ -595,20 +595,13 @@ private
     if self.respond_to?(methodname)
       methodname = safe_accessor_name(methodname)
     end
-    begin
-      instance_eval <<-EOS
-        def #{ methodname }()
-	  @data[@array.index('#{ name }')]
-        end
-
-        def #{ methodname }=(value)
-	  @data[@array.index('#{ name }')] = value
-        end
-      EOS
-    rescue SyntaxError
-      methodname = safe_accessor_name(methodname)
-      retry
-    end
+    sclass = class << self; self; end
+    sclass.__send__(:define_method, methodname, proc {
+      @data[@array.index(name)]
+    })
+    sclass.__send__(:define_method, methodname + '=', proc { |value|
+      @data[@array.index(name)] = value
+    })
   end
 
   def safe_accessor_name(name)

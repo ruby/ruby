@@ -6,10 +6,6 @@ require 'authmgr'
 
 class AuthHeaderPortServer < SOAP::RPC::StandaloneServer
   class AuthHeaderService
-    def self.create
-      new
-    end
-
     def initialize(authmgr)
       @authmgr = authmgr
     end
@@ -34,13 +30,19 @@ class AuthHeaderPortServer < SOAP::RPC::StandaloneServer
   Name = 'http://tempuri.org/authHeaderPort'
   def initialize(*arg)
     super
-    add_rpc_servant(AuthHeaderService.new, Name)
-    ServerAuthHeaderHandler.init
+    authmgr = Authmgr.new
+    add_rpc_servant(AuthHeaderService.new(authmgr), Name)
+    ServerAuthHeaderHandler.init(authmgr)
+    # header handler must be a per request handler.
     add_rpc_request_headerhandler(ServerAuthHeaderHandler)
   end
 
   class ServerAuthHeaderHandler < SOAP::Header::SimpleHandler
     MyHeaderName = XSD::QName.new("http://tempuri.org/authHeader", "auth")
+
+    def self.init(authmgr)
+      @authmgr = authmgr
+    end
 
     def self.create
       new(@authmgr)
@@ -63,7 +65,7 @@ class AuthHeaderPortServer < SOAP::RPC::StandaloneServer
       if sessionid = my_header["sessionid"]
 	if userid = @authmgr.auth(sessionid)
 	  @authmgr.destroy_session(sessionid)
-          @session_id = @authmgr.create_session(userid)
+          @sessionid = @authmgr.create_session(userid)
 	  auth = true
 	end
       end
@@ -73,5 +75,9 @@ class AuthHeaderPortServer < SOAP::RPC::StandaloneServer
 end
 
 if $0 == __FILE__
-  status = AuthHeaderPortServer.new('AuthHeaderPortServer', nil, '0.0.0.0', 7000).start
+  svr = AuthHeaderPortServer.new('AuthHeaderPortServer', nil, '0.0.0.0', 7000)
+  trap(:INT) do
+    svr.shutdown
+  end
+  status = svr.start
 end

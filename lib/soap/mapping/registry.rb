@@ -64,75 +64,50 @@ end
 # For anyType object: SOAP::Mapping::Object not ::Object
 class Object; include Marshallable
   def initialize
-    @__soap_members = []
     @__soap_value_type = {}
+    @__soap_value = {}
   end
 
   def [](name)
-    if @__soap_members.include?(name)
-      self.__send__(name)
-    else
-      self.__send__(Object.safe_name(name))
-    end
+    @__soap_value[name]
   end
 
   def []=(name, value)
-    if @__soap_members.include?(name)
-      self.__send__(name + '=', value)
-    else
-      self.__send__(Object.safe_name(name) + '=', value)
-    end
+    @__soap_value[name] = value
   end
 
   def __soap_set_property(name, value)
-    var_name = name
-    unless @__soap_members.include?(name)
-      var_name = __define_attr_accessor(var_name)
+    unless @__soap_value.key?(name)
+      __define_attr_accessor(name)
     end
-    __soap_set_property_value(var_name, value)
-    var_name
+    __soap_set_property_value(name, value)
   end
 
 private
 
   def __soap_set_property_value(name, value)
-    org = self.__send__(name)
+    org = self[name]
     case @__soap_value_type[name]
     when :single
-      self.__send__(name + '=', [org, value])
+      self[name] = [org, value]
       @__soap_value_type[name] = :multi
     when :multi
       org << value
     else
-      self.__send__(name + '=', value)
+      self[name] = value
       @__soap_value_type[name] = :single
     end
     value
   end
 
   def __define_attr_accessor(name)
-    var_name = name
-    begin
-      instance_eval <<-EOS
-	def #{ var_name }
-	  @#{ var_name }
-	end
-
-	def #{ var_name }=(value)
-  	  @#{ var_name } = value
-	end
-      EOS
-    rescue SyntaxError
-      var_name = Object.safe_name(var_name)
-      retry
-    end
-    @__soap_members << var_name
-    var_name
-  end
-
-  def Object.safe_name(name)
-    require 'md5'
-    "var_" << MD5.new(name).hexdigest
+    sclass = class << self; self; end
+    sclass.__send__(:define_method, name, proc {
+      self[name]
+    })
+    sclass.__send__(:define_method, name + '=', proc { |value|
+      self[name] = value
+    })
   end
 end
 

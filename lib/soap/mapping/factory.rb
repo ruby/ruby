@@ -41,7 +41,7 @@ class Factory
     obj.instance_variables.each do |var|
       name = var.sub(/^@/, '')
       node.add(Mapping.name2elename(name),
-        Mapping._obj2soap(obj.instance_eval(var), map))
+        Mapping._obj2soap(obj.instance_variable_get(var), map))
     end
   end
 
