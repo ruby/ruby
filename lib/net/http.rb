@@ -851,7 +851,7 @@ SRC
 
       while true do
         line = @socket.readline
-        m = /[0-9a-hA-H]+/.match( line )
+        m = /[0-9a-fA-F]+/.match( line )
         unless m then
           raise HTTPBadResponse, "wrong chunk size line: #{line}"
         end

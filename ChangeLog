@@ -1,3 +1,7 @@
+Mon Oct 16 06:39:32 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/http.rb: hex-alpha is not [a-h] but [a-f].
+
 Sat Oct 14 03:32:13 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_thread_alloc): should not link a new thread in the
