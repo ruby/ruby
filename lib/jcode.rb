@@ -5,8 +5,8 @@ class String
   printf STDERR, "feel free for some warnings:\n" if $VERBOSE
 
   def _regex_quote(str)
-    str.gsub(/\W/){|s|
-      if s == "-" then s elsif s == "\\" then "\\\\" else "\\\\#{s}" end
+    str.gsub(/[][.\\|*?+{}()]/n){|s|
+      if s == "\\" then "\\\\" else "\\\\#{s}" end
     }
   end
   private :_regex_quote
@@ -93,7 +93,7 @@ class String
 
   def _expand_ch str
     a = []
-    str.scan(/(.|\n)-(.|\n)|(.|\n)/) do |r|
+    str.scan(/(.)-(.)|(.)/m) do |r|
       if $3
 	a.push $3
       elsif $1.length != $2.length

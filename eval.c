@@ -4947,6 +4947,7 @@ rb_load(fname, wrap)
 	rb_raise(rb_eLoadError, "No such file to load -- %s", RSTRING(fname)->ptr);
     }
 
+    ruby_errinfo = Qnil;	/* ensure */
     PUSH_VARS();
     PUSH_CLASS();
     wrapper = ruby_wrapper;
@@ -5013,6 +5014,8 @@ rb_load(fname, wrap)
     }
     TMP_PROTECT_END;
     if (state) JUMP_TAG(state);
+    if (!NIL_P(ruby_errinfo))	/* exception during load */
+	rb_exc_raise(ruby_errinfo);
 }
 
 void

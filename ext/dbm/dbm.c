@@ -76,14 +76,14 @@ fdbm_s_open(argc, argv, klass)
 	dbm = dbm_open(RSTRING(file)->ptr, O_RDWR|O_CREAT, mode);
     }
     if (!dbm) {
-	mode = 0666;
-	dbm = dbm_open(RSTRING(file)->ptr, O_RDWR, mode);
+	dbm = dbm_open(RSTRING(file)->ptr, O_RDWR, 0);
     }
     if (!dbm) {
-	dbm = dbm_open(RSTRING(file)->ptr, O_RDONLY, mode);
+	dbm = dbm_open(RSTRING(file)->ptr, O_RDONLY, 0);
     }
 
     if (!dbm) {
+	printf("mode: %o\n", mode);
 	if (mode == -1) return Qnil;
 	rb_sys_fail(RSTRING(file)->ptr);
     }

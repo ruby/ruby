@@ -41,7 +41,7 @@ module Open3
     pi = [pw[1], pr[0], pe[0]]
     if defined? yield
       begin
-	return yield *pi
+	return yield(*pi)
       ensure
 	pi.each{|p| p.close unless p.closed?}
       end

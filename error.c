@@ -100,6 +100,19 @@ rb_compile_error_append(fmt, va_alist)
     err_append(buf);
 }
 
+static void
+warn_print(fmt, args)
+    const char *fmt;
+    va_list args;
+{
+    char buf[BUFSIZ];
+
+    err_snprintf(buf, BUFSIZ, fmt, args);
+    fputs(buf, stderr);
+    fputs("\n", stderr);
+    fflush(stderr);
+}
+
 void
 #ifdef HAVE_STDARG_PROTOTYPES
 rb_warn(const char *fmt, ...)
@@ -115,7 +128,7 @@ rb_warn(fmt, va_alist)
     snprintf(buf, BUFSIZ, "warning: %s", fmt);
 
     va_init_list(args, fmt);
-    err_print(buf, args);
+    warn_print(buf, args);
     va_end(args);
 }
 
@@ -137,7 +150,7 @@ rb_warning(fmt, va_alist)
     snprintf(buf, BUFSIZ, "warning: %s", fmt);
 
     va_init_list(args, fmt);
-    err_print(buf, args);
+    warn_print(buf, args);
     va_end(args);
 }
 
@@ -157,7 +170,7 @@ rb_bug(fmt, va_alist)
     ruby_in_eval = 0;
 
     va_init_list(args, fmt);
-    err_print(buf, args);
+    warn_print(buf, args);
     va_end(args);
     ruby_show_version();
     abort();

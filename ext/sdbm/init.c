@@ -70,9 +70,9 @@ fsdbm_s_open(argc, argv, klass)
     if (mode >= 0)
 	dbm = sdbm_open(RSTRING(file)->ptr, O_RDWR|O_CREAT, mode);
     if (!dbm)
-	dbm = sdbm_open(RSTRING(file)->ptr, O_RDWR, mode);
+	dbm = sdbm_open(RSTRING(file)->ptr, O_RDWR, 0);
     if (!dbm)
-	dbm = sdbm_open(RSTRING(file)->ptr, O_RDONLY, mode);
+	dbm = sdbm_open(RSTRING(file)->ptr, O_RDONLY, 0);
 
     if (!dbm) {
 	if (mode == -1) return Qnil;

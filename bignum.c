@@ -830,31 +830,39 @@ bigdivrem(x, y, divp, modp)
     zds = BDIGITS(z);
     if (nx==ny) zds[nx+1] = 0;
     while (!yds[ny-1]) ny--;
-    if ((dd = BIGRAD/(BDIGIT_DBL_SIGNED)(yds[ny-1]+1)) != 1) {
+
+    dd = 0;
+    q = yds[ny-1];
+    while ((q & (1<<(BITSPERDIG-1))) == 0) {
+	q <<= 1;
+	dd++;
+    }
+    if (dd) {
 	yy = rb_big_clone(y);
 	tds = BDIGITS(yy);
 	j = 0;
-	num = 0;
+	t2 = 0;
 	while (j<ny) {
-	    num += (BDIGIT_DBL)yds[j]*dd;
-	    tds[j++] = BIGLO(num);
-	    num = BIGDN(num);
+	    t2 += (BDIGIT_DBL)yds[j]<<dd;
+	    tds[j++] = BIGLO(t2);
+	    t2 = BIGDN(t2);
 	}
 	yds = tds;
 	j = 0;
-	num = 0;
+	t2 = 0;
 	while (j<nx) {
-	    num += (BDIGIT_DBL)xds[j]*dd;
-	    zds[j++] = BIGLO(num);
-	    num = BIGDN(num);
+	    t2 += (BDIGIT_DBL)xds[j]<<dd;
+	    zds[j++] = BIGLO(t2);
+	    t2 = BIGDN(t2);
 	}
-	zds[j] = (BDIGIT)num;
+	zds[j] = (BDIGIT)t2;
     }
     else {
 	zds[nx] = 0;
 	j = nx;
 	while (j--) zds[j] = xds[j];
     }
+
     j = nx==ny?nx+1:nx;
     do {
 	if (zds[j] ==  yds[ny-1]) q = BIGRAD-1;
@@ -897,9 +905,10 @@ bigdivrem(x, y, divp, modp)
 	    zds = BDIGITS(*modp);
 	    t2 = 0; i = ny;
 	    while(i--) {
-		t2 = BIGUP(t2) + zds[i];
-		zds[i] = (BDIGIT)(t2 / dd);
-		t2 %= dd;
+		t2 = (t2 | zds[i]) >> dd;
+		q = zds[i];
+		zds[i] = BIGLO(t2);
+		t2 = BIGUP(q);
 	    }
 	}
 	RBIGNUM(*modp)->len = ny;

@@ -123,6 +123,20 @@ extern int ReadDataPending();
      }\
 } while(0)
 
+#ifndef EWOULDBLOCK
+#define EWOULDBLOCK EAGAIN
+#endif
+
+#ifdef O_NDELAY 
+# define NONBLOCKING O_NDELAY
+#else
+#ifdef O_NBIO
+# define NONBLOCKING O_NBIO
+#else
+# define NONBLOCKING O_NONBLOCK
+#endif
+#endif
+
 void
 rb_eof_error()
 {
@@ -194,6 +208,15 @@ rb_dup(orig)
     return fd;
 }
 
+static void
+io_fflush(f, path)
+    FILE *f;
+    const char *path;
+{
+    rb_thread_fd_writable(fileno(f));
+    if (fflush(f) == EOF) rb_sys_fail(path);
+}
+
 /* writing functions */
 static VALUE
 io_write(io, str)
@@ -235,7 +258,7 @@ io_write(io, str)
     }
 #endif
     if (fptr->mode & FMODE_SYNC) {
-	if (fflush(f) == EOF) rb_sys_fail(fptr->path);
+	io_fflush(f, fptr->path);
     }
 
     return INT2FIX(n);
@@ -266,8 +289,8 @@ rb_io_flush(io)
     GetOpenFile(io, fptr);
     rb_io_check_writable(fptr);
     f = GetWriteFile(fptr);
-
-    if (fflush(f) == EOF) rb_sys_fail(fptr->path);
+    
+    io_fflush(f, fptr->path);
 
     return io;
 }
@@ -1779,10 +1802,10 @@ io_reopen(io, nfile)
 	pos = ftell(orig->f);
     }
     if (orig->f2) {
-	if (fflush(orig->f2) == EOF) rb_sys_fail(orig->path);
+	io_fflush(orig->f2, orig->path);
     }
     else if (orig->mode & FMODE_WRITABLE) {
-	if (fflush(orig->f) == EOF) rb_sys_fail(orig->path);
+	io_fflush(orig->f, orig->path);
     }
     rb_thread_fd_close(fileno(fptr->f));
 
@@ -1905,10 +1928,10 @@ rb_io_clone(io)
     MakeOpenFile(clone, fptr);
 
     if (orig->f2) {
-	if (fflush(orig->f2) == EOF) rb_sys_fail(orig->path);
+	io_fflush(orig->f2, orig->path);
     }
     else if (orig->mode & FMODE_WRITABLE) {
-	if (fflush(orig->f) == EOF) rb_sys_fail(orig->path);
+	io_fflush(orig->f, orig->path);
     }
 
     /* copy OpenFile structure */
@@ -2033,7 +2056,7 @@ rb_io_putc(io, ch)
     if (fputc(c, f) == EOF)
 	rb_sys_fail(fptr->path);
     if (fptr->mode & FMODE_SYNC) {
-	if (fflush(f) == EOF) rb_sys_fail(fptr->path);
+	io_fflush(f, fptr->path);
     }
 
     return ch;

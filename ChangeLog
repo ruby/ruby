@@ -1,3 +1,8 @@
+Wed Nov  8 03:08:53 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (io_fflush): ensure fflush(3) would not block by calling
+	  rb_thread_fd_writable(). 
+
 Tue Nov  7 20:29:56 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.30
@@ -5,6 +10,25 @@ Tue Nov  7 20:29:56 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 	* lib/net/protocol.rb, smtp.rb: Command#critical_ok -> error_ok
 
 	* lib/net/http.rb: read header when also "100 Continue"
+
+Tue Nov  7 04:32:19 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (bigdivrem): use bit shift to make y's MSB set.
+
+Mon Nov  6  1:22:49 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* error.c (warn_print): do not use err_append(), to ensure output
+	  to stderr.
+
+	* error.c (rb_warn): use warn_print() instead of err_print().
+
+	* error.c (rb_warning): ditto.
+
+	* error.c (rb_bug): ditto.
+
+	* eval.c (rb_load): re-raise exceptions during load.
+
+	* time.c (make_time_t): remove useless adjust
 
 Thu Nov  2 18:01:16 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

@@ -72,10 +72,10 @@ fgdbm_s_open(argc, argv, klass)
 			O_RDWR|O_CREAT, mode, MY_FATAL_FUNC);
     if (!dbm)
 	dbm = gdbm_open(RSTRING(file)->ptr, MY_BLOCK_SIZE, 
-			O_RDWR, mode, MY_FATAL_FUNC);
+			O_RDWR, 0, MY_FATAL_FUNC);
     if (!dbm)
 	dbm = gdbm_open(RSTRING(file)->ptr, MY_BLOCK_SIZE, 
-			O_RDONLY, mode, MY_FATAL_FUNC);
+			O_RDONLY, 0, MY_FATAL_FUNC);
 
     if (!dbm) {
 	if (mode == -1) return Qnil;
