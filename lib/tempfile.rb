@@ -15,16 +15,19 @@ class Tempfile < SimpleDelegator
   Max_try = 10
 
   def Tempfile.callback(path, data)
+    pid = $$
     lambda{
-      print "removing ", path, "..." if $DEBUG
-      data[0].close if data[0]
-      if File.exist?(path)
-	File.unlink(path) 
+      if pid == $$ 
+	print "removing ", path, "..." if $DEBUG
+	data[0].close if data[0]
+	if File.exist?(path)
+	  File.unlink(path) 
+	end
+	if File.exist?(path + '.lock')
+	  Dir.rmdir(path + '.lock')
+	end
+	print "done\n" if $DEBUG
       end
-      if File.exist?(path + '.lock')
-	Dir.rmdir(path + '.lock')
-      end
-      print "done\n" if $DEBUG
     }
   end
 

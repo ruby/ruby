@@ -1,3 +1,8 @@
+Fri Jan 26 01:42:40 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y: clarify do ambiguity, bit more complex but natural
+	  from my point of view.
+
 Wed Jan 24 14:58:08 2001  Akinori MUSHA  <knu@ruby-lang.org>
 
 	* lib/cgi.rb: fix the problem that when running under mod_ruby
