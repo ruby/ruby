@@ -1,3 +1,7 @@
+Sun Mar 13 10:09:17 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* test/rinda/test_rinda.rb: remove test_gc. [ruby-dev:25871]
+
 Sun Mar 13 02:32:54 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_ssl.c (ossl_tmp_dh_callback): should get DH
