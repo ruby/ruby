@@ -4754,7 +4754,7 @@ STDMETHODIMP EVENTSINK_Invoke(
     unsigned int i;
     ITypeInfo *pTypeInfo;
     VARIANT *pvar;
-    VALUE ary, obj, event, handler, args, argv, ev;
+    VALUE ary, obj, event, handler, args, argv, ev, result;
     BOOL is_default_handler = FALSE;
 
     PIEVENTSINKOBJ pEV = (PIEVENTSINKOBJ)pEventSink;
@@ -4794,12 +4794,17 @@ STDMETHODIMP EVENTSINK_Invoke(
     if (rb_ary_entry(event, 3) == Qtrue) {
         argv = rb_ary_new();
 	rb_ary_push(args, argv);
-        rb_apply(handler, rb_intern("call"), args);
+        result = rb_apply(handler, rb_intern("call"), args);
         ary2ptr_dispparams(argv, pdispparams);
     }
     else {
-        rb_apply(handler, rb_intern("call"), args);
+        result = rb_apply(handler, rb_intern("call"), args);
     }
+
+    if (pvarResult) {
+        ole_val2variant(result, pvarResult);
+    }
+    
     return NOERROR;
 }
 
