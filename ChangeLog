@@ -1,3 +1,17 @@
+Tue Jul 24 23:10:47 2001  Nobuyoshi.Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* file.c (strrdirsep): multi-byte pathname and DOSish separater
+	  supprot. originally comes from Patrick Cheng. [new]
+
+	* file.c (rb_file_s_basename, rb_file_s_dirname): use
+	  strrdirsep(). comes from Patrick Cheng.
+
+	* file.c (is_absolute_path): restricted in DOSish absolute path
+	  with drive letter, and UNC support. originally comes from
+	  Patrick Cheng.
+
+	* file.c (getcwd): define macro using getwd() unless provided.
+
 Tue Jul 24 19:23:15 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/extmk.rb.in, lib/mkmf.rb: dig the target subdirectory for
@@ -16,7 +30,7 @@ Sun Jul 22 21:16:43 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 Sat Jul 21 09:40:10 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
-	* io.c (io_fread): use fread(3) if PENDING_COUND is available.
+	* io.c (io_fread): use fread(3) if PENDING_COUNT is available.
 
 Fri Jul 20 22:55:01 2001  Akinori MUSHA  <knu@iDaemons.org>
 

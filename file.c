@@ -1290,11 +1290,41 @@ rb_file_s_umask(argc, argv)
     return INT2FIX(omask);
 }
 
+#ifndef HAVE_GETCWD
+#define getcwd(buf, len) ((void)(len), getwd(buf))
+#endif
+
 #if defined DOSISH
 #define isdirsep(x) ((x) == '/' || (x) == '\\')
 #else
 #define isdirsep(x) ((x) == '/')
 #endif
+#ifndef CharNext		/* defined as CharNext[AW] on Windows. */
+# if defined(DJGPP)
+#   define CharNext(p) ((p) + mblen(p, MB_CUR_MAX))
+# else
+#   define CharNext(p) ((p) + 1)
+# endif
+#endif
+
+static char *
+strrdirsep(path)
+    char *path;
+{
+    char *last = NULL;
+#ifdef DOSISH
+    if (ISALPHA(path[0]) && path[1] == ':') path += 2;
+#endif
+    while (*path) {
+	if (isdirsep(*path)) {
+	    last = path++;
+	}
+	else {
+	    path = CharNext(path);
+	}
+    }
+    return last;
+}
 
 VALUE
 rb_file_s_expand_path(argc, argv)
@@ -1366,11 +1396,7 @@ rb_file_s_expand_path(argc, argv)
 	}
 	else {
 	    tainted = 1;
-#ifdef HAVE_GETCWD
 	    getcwd(buf, MAXPATHLEN);
-#else
-	    getwd(buf);
-#endif
 	}
 	p = &buf[strlen(buf)];
 	while (p > buf && *(p - 1) == '/') p--;
@@ -1476,7 +1502,7 @@ rb_file_s_basename(argc, argv)
 	ext = StringValuePtr(fext);
     }
     name = StringValuePtr(fname);
-    p = strrchr(name, '/');
+    p = strrdirsep(name);
     if (!p) {
 	if (NIL_P(fext) || !(f = rmext(name, ext)))
 	    return fname;
@@ -1503,7 +1529,7 @@ rb_file_s_dirname(klass, fname)
     VALUE dirname;
 
     name = StringValuePtr(fname);
-    p = strrchr(name, '/');
+    p = strrdirsep(name);
     if (!p) {
 	return rb_str_new2(".");
     }
@@ -2136,11 +2162,12 @@ static int
 is_absolute_path(path)
     const char *path;
 {
+#ifdef DOSISH
+    if (ISALPHA(path[0]) && path[1] == ':' && isdirsep(path[2])) return 1;
+    if (isdirsep(path[0]) && isdirsep(path[1])) return 1;
+#else
     if (path[0] == '/') return 1;
-# if defined DOSISH
-    if (path[0] == '\\') return 1;
-    if (strlen(path) > 2 && path[1] == ':') return 1;
-# endif
+#endif
     return 0;
 }
 
@@ -2155,11 +2182,7 @@ path_check_1(path)
     if (!is_absolute_path(path)) {
 	char buf[MAXPATHLEN+1];
 
-#ifdef HAVE_GETCWD
 	if (getcwd(buf, MAXPATHLEN) == 0) return 0;
-#else
-	if (getwd(buf) == 0) return 0;
-#endif
 	strncat(buf, "/", MAXPATHLEN);
 	strncat(buf, path, MAXPATHLEN);
 	buf[MAXPATHLEN] = '\0';
@@ -2167,10 +2190,10 @@ path_check_1(path)
     }
     for (;;) {
 	if (stat(path, &st) == 0 && (st.st_mode & 002)) {
-           if (p) *p = '/';
+	    if (p) *p = '/';
 	    return 0;
 	}
-	s = strrchr(path, '/');
+	s = strrdirsep(path);
 	if (p) *p = '/';
 	if (!s || s == path) return 1;
 	p = s;
