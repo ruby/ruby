@@ -758,6 +758,22 @@ class TkFont
   ###################################
   public
   ###################################
+  def method_missing(id, *args)
+    name = id.id2name
+    case args.length
+    when 1
+      configure name, args[0]
+    when 0
+      begin
+	configinfo name
+      rescue
+	fail NameError, "undefined local variable or method `#{name}' for #{self.to_s}", error_at
+      end
+    else
+      fail NameError, "undefined method `#{name}' for #{self.to_s}", error_at
+    end
+  end
+
   def call_font_configure(path, *args)
     args += hash_kv(args.pop.update(@fontslot))
     tk_call *args

@@ -120,6 +120,30 @@ ip_eval_rescue(failed, einfo)
     return Qnil;
 }
 
+/* restart Tk */
+static VALUE
+lib_restart(self)
+    VALUE self;
+{
+    struct tcltkip *ptr;	/* tcltkip data struct */
+
+    /* get the data struct */
+    Data_Get_Struct(self, struct tcltkip, ptr);
+
+    /* destroy the root wdiget */
+    ptr->return_value = Tcl_Eval(ptr->ip, "destroy .");
+    /* ignore ERROR */
+    DUMP2("(TCL_Eval result) %d", ptr->return_value);
+
+    /* execute Tk_Init */
+    DUMP1("Tk_Init");
+    if (Tk_Init(ptr->ip) == TCL_ERROR) {
+	rb_raise(rb_eRuntimeError, "%s", ptr->ip->result);
+    }
+
+    return Qnil;
+}
+
 static int
 #if TCL_MAJOR_VERSION >= 8
 ip_ruby(clientData, interp, argc, argv)
@@ -512,6 +536,7 @@ Init_tcltklib()
     rb_define_method(ip, "_invoke", ip_invoke, -1);
     rb_define_method(ip, "_return_value", ip_retval, 0);
     rb_define_method(ip, "mainloop", lib_mainloop, 0);
+    rb_define_method(ip, "restart", lib_restart, 0);
 
     main_thread = rb_thread_current();
 #ifdef __MACOS__

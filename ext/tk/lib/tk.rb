@@ -620,6 +620,12 @@ module TkCore
     TclTkLib.mainloop
   end
 
+  def restart
+    TkCore::INTERP.restart
+    TkComm::Tk_WINDOWS.clear
+    nil
+  end
+
   def event_generate(window, context, keys=nil)
     window = window.path if window.kind_of? TkObject
     if keys
