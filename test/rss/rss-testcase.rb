@@ -189,5 +189,52 @@ EOI
 EOC
     end
 
+    private
+    def setup_dummy_channel(maker)
+      about = "http://hoge.com"
+      title = "fugafuga"
+      link = "http://hoge.com"
+      description = "fugafugafugafuga"
+      language = "ja"
+
+      maker.channel.about = about
+      maker.channel.title = title
+      maker.channel.link = link
+      maker.channel.description = description
+      maker.channel.language = language
+    end
+
+    def setup_dummy_image(maker)
+      title = "fugafuga"
+      link = "http://hoge.com"
+      url = "http://hoge.com/hoge.png"
+
+      maker.channel.link = link if maker.channel.link.nil?
+      
+      maker.image.title = title
+      maker.image.url = url
+    end
+
+    def setup_dummy_textinput(maker)
+      title = "fugafuga"
+      description = "text hoge fuga"
+      name = "hoge"
+      link = "http://hoge.com/search.cgi"
+
+      maker.textinput.title = title
+      maker.textinput.description = description
+      maker.textinput.name = name
+      maker.textinput.link = link
+    end
+
+    def setup_dummy_item(maker)
+      title = "TITLE"
+      link = "http://hoge.com/"
+
+      item = maker.items.new_item
+      item.title = title
+      item.link = link
+    end
+    
   end
 end

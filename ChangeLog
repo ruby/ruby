@@ -1,3 +1,11 @@
+Wed Nov  3 15:53:34 2004  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rss/test_maker_*.rb: added tests for RSS Maker.
+
+	* lib/rss/maker.rb: added RSS Maker.
+	
+	* lib/rss/maker/*.rb: ditto.
+
 Tue Nov  2 16:05:21 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* process.c (rb_f_fork): need to flush stdout and stderr before

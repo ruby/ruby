@@ -16,7 +16,7 @@ module RSS
     def self.append_features(klass)
       super
       
-      klass.module_eval(<<-EOC)
+      klass.module_eval(<<-EOC, *get_file_and_line_from_caller(1))
         %w(title description creator subject publisher
             contributor type format identifier source
             language relation coverage rights).each do |x|

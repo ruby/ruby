@@ -16,7 +16,7 @@ module RSS
     def self.append_features(klass)
       super
       
-      klass.module_eval(<<-EOC)
+      klass.module_eval(<<-EOC, *get_file_and_line_from_caller(1))
         %w(updatePeriod updateFrequency).each do |x|
           install_text_element("\#{SY_PREFIX}_\#{x}")
         end
@@ -34,7 +34,6 @@ module RSS
 
         alias_method(:_sy_updateFrequency=, :sy_updateFrequency=)
         def sy_updateFrequency=(new_value)
-          new_value = new_value.strip
           validate_sy_updateFrequency(new_value) if @do_validate
           self._sy_updateFrequency = new_value.to_i
         end
@@ -65,6 +64,7 @@ module RSS
 
     SY_UPDATEFREQUENCY_AVAILABLE_RE = /\A\s*\+?\d+\s*\z/
     def validate_sy_updateFrequency(value)
+      value = value.to_s.strip
       if SY_UPDATEFREQUENCY_AVAILABLE_RE !~ value
         raise NotAvailableValueError.new("updateFrequency", value)
       end
