@@ -7,6 +7,8 @@ Mon May 17 16:04:06  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 	  (p 0.00000000000000000001 was '9.999999999999999e-21', now is
 	  '1.0e-20')
 
+	 [ruby-dev:23480]
+
 Mon May 17 10:13:33 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/socket/socket.c (setup_domain_and_type): honor duck typing.
