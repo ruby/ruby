@@ -1,6 +1,6 @@
 Sat Mar 13 14:28:16 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
-	* test/drb/test_drbssl.rb: rescue LoadError. (Barkport from main 
+	* test/drb/test_drbssl.rb: rescue LoadError. (Barkport from main
 	  trunk)
 
 	* test/drb/test_drbunix.rb: ditto.
@@ -60,7 +60,7 @@ Sun Mar  7 16:22:26 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 Fri Mar  5 00:54:14 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/test/unit.rb: MOve RDoc documentation so that you can 
+	* lib/test/unit.rb: MOve RDoc documentation so that you can
 	  now say 'ri Test::Unit'
 
 Tue Mar  2 12:32:59 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
@@ -75,7 +75,7 @@ Mon Mar  1 12:24:10 2004  Dave Thomas  <dave@pragprog.com>
 
 Sun Feb 29 23:14:53 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_class): 
+	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_class):
 	  Handle :nodoc: on singleton classes.
 
 Sat Feb 28 10:58:49 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
