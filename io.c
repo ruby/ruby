@@ -3331,11 +3331,13 @@ rb_io_init_copy(dest, io)
     }
     fd = ruby_dup(fileno(orig->f));
     fptr->f = rb_fdopen(fd, mode);
+    fseeko(fptr->f, ftello(orig->f), SEEK_SET);
     if (orig->f2) {
 	if (fileno(orig->f) != fileno(orig->f2)) {
 	    fd = ruby_dup(fileno(orig->f2));
 	}
 	fptr->f2 = rb_fdopen(fd, "w");
+	fseeko(fptr->f2, ftello(orig->f2), SEEK_SET);
     }
     if (fptr->mode & FMODE_BINMODE) {
 	rb_io_binmode(dest);
