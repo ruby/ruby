@@ -28,13 +28,13 @@
 class TimeoutError<Interrupt
 end
 
-def timeout(sec)
+def timeout(sec, exception=TimeoutError)
   return yield if sec == nil
   begin
     x = Thread.current
     y = Thread.start {
       sleep sec
-      x.raise TimeoutError, "execution expired" if x.alive?
+      x.raise exception, "execution expired" if x.alive?
     }
     yield sec
 #    return true

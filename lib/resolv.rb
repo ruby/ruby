@@ -258,6 +258,9 @@ class Resolv
   class ResolvError < StandardError
   end
 
+  class ResolvTimeout < TimeoutError
+  end
+
   class Hosts
     DefaultFileName = '/etc/hosts'
 
@@ -426,7 +429,7 @@ class Resolv
           end
           sender.send
           reply = reply_name = nil
-          timeout(tout) { reply, reply_name = q.pop }
+          timeout(tout, ResolvTimeout) { reply, reply_name = q.pop }
           case reply.rcode
           when RCode::NoError
             extract_resources(reply, reply_name, typeclass, &proc)
@@ -753,7 +756,7 @@ class Resolv
                 @nameserver.each {|nameserver|
                   begin
                     yield candidate, tout, nameserver
-                  rescue TimeoutError
+                  rescue ResolvTimeout
                   end
                 }
               }

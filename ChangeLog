@@ -1,3 +1,11 @@
+Wed Jan 16 12:29:14 2002  Tanaka Akira  <akr@m17n.org>
+
+	* lib/timeout.rb (timeout): new optional argument to specify an
+	exception class.
+
+	* lib/resolv.rb: use Resolv::ResolvTimeout for internal timeout to
+	avoid problem with timeout of application. 
+
 Wed Jan 16 11:12:30 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* object.c (rb_Float): remove underscores between digits.
