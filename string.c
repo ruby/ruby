@@ -1252,6 +1252,7 @@ rb_str_subpat_set(str, re, nth, val)
     }
     end = RMATCH(match)->END(nth);
     len = end - start;
+    rb_str_modify(str);
     rb_str_update(str, start, len, val);
 }
 
