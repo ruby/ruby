@@ -1,5 +1,6 @@
-ripper.o: ripper.c lex.c eventids1.c eventids2.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c ripper.c
+# Do not remove "./"; nmake requires this.
+ripper.o: ./ripper.c lex.c eventids1.c eventids2.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c ./ripper.c
 
 ripper.c: ripper.y
 	bison -t -v -o$@ ripper.y
