@@ -1,3 +1,8 @@
+Thu Aug  1 13:51:30 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* io.c (io_fread): return value was longer when EWOULDBLOCK
+	  occurred.
+
 Wed Jul 31 14:11:43 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_undef): undef should be done for klass, not ruby_class.

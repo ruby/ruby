@@ -463,7 +463,7 @@ io_fread(ptr, len, f)
     long n = len;
     int c;
 
-    while (n--) {
+    while (n > 0) {
 	if (!READ_DATA_PENDING(f)) {
 	    rb_thread_wait_fd(fileno(f));
 	}
@@ -473,9 +473,9 @@ io_fread(ptr, len, f)
 	if (c == EOF) {
 	    if (ferror(f)) {
 		if (errno == EINTR) continue;
-		if (errno == EAGAIN) return len - n;
+		if (errno == EAGAIN) break;
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
-		if (errno == EWOULDBLOCK) return len - n;
+		if (errno == EWOULDBLOCK) break;
 #endif
 		return 0;
 	    }
@@ -483,9 +483,10 @@ io_fread(ptr, len, f)
 	    break;
 	}
 	*ptr++ = c;
+	--n;
     }
 
-    return len - n - 1;
+    return len - n;
 }
 
 #ifndef S_ISREG
