@@ -116,7 +116,7 @@ Summary of the changes since 1.6.3:
 
 : $SAFE / alias
 
-  Fixed so aliasing global valiables is disallowed under $SAFE == 4.
+  Fixed so aliasing global variables is disallowed under $SAFE == 4.
   ((<ruby-dev:13287>))
 
 : Open3::popen3
@@ -166,7 +166,7 @@ Summary of the changes since 1.6.3:
 
 : irb & irb-tools
 
-    irb and irb-tolls are updated to 0.7.4 and 0.7.1, respectively.
+    irb and irb-tools are updated to 0.7.4 and 0.7.1, respectively.
 
 : Daylight saving time
 

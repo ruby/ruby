@@ -2,6 +2,29 @@ Mon Jun 11 14:29:41 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* confgure.in: add RUBY_CANONICAL_BUILD.
 
+Sat Jun  9 17:04:30 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* hash.c (ruby_setenv): readline library leaves their environment
+	  strings uncopied.  "free" check revised.
+
+Fri Jun  8 18:14:12 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* st.c (numhash): should shuffle bits by dividing by prime number.
+
+Fri Jun  8 22:37:40 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (Init_stack): avoid __builtin_frame_address(2) to retrieve
+	  stack bottom line.
+
+Fri Jun  8 18:14:12 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* st.c (numhash): should shuffle bits by dividing by prime number.
+
+Fri Jun  8 15:25:09 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_f_require): should set SCOPE_PUBLIC before calling
+	  dln_load().
+
 Wed Jun  6 16:11:06 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_load): should check if tainted even when wrap is

@@ -1063,8 +1063,12 @@ ruby_setenv(name, value)
 	environ = tmpenv;		/* tell exec where it is now */
     }
     if (!value) {
-	if (environ[i] != origenviron[i])
-	    free(environ[i]);
+	if (environ != origenviron) {
+	    char **envp = origenviron;
+	    while (*envp && *envp != environ[i]) envp++;
+	    if (!*envp)
+		free(environ[i]);
+	}
 	while (environ[i]) {
 	    environ[i] = environ[i+1];
 	    i++;

@@ -5400,17 +5400,22 @@ rb_f_require(obj, fname)
 
   load_dyna:
     rb_provide(feature);
+    {
+	int old_vmode = scope_vmode;
 
-    PUSH_TAG(PROT_NONE);
-    if ((state = EXEC_TAG()) == 0) {
-	void *handle;
+	PUSH_TAG(PROT_NONE);
+	if ((state = EXEC_TAG()) == 0) {
+	    void *handle;
 
-	load = rb_str_new2(file);
-	file = RSTRING(load)->ptr;
-	handle = dln_load(file);
-	rb_ary_push(ruby_dln_librefs, INT2NUM((long)handle));
+	    SCOPE_SET(SCOPE_PUBLIC);
+	    load = rb_str_new2(file);
+	    file = RSTRING(load)->ptr;
+	    handle = dln_load(file);
+	    rb_ary_push(ruby_dln_librefs, INT2NUM((long)handle));
+	}
+	POP_TAG();
+	SCOPE_SET(old_vmode);
     }
-    POP_TAG();
     if (state) JUMP_TAG(state);
 
     return Qtrue;
