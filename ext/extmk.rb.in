@@ -39,6 +39,7 @@ $topdir = File.expand_path("..")
 $:.replace [$top_srcdir, $top_srcdir+"/lib", "."]
 
 require 'find'
+require 'shellwords'
 
 def rm_f(*files)
   targets = []
@@ -297,8 +298,7 @@ def arg_config(config, default=nil)
     if /mswin32|mingw/ =~ RUBY_PLATFORM and ENV["CONFIGURE_ARGS"]
       args << " " << ENV["CONFIGURE_ARGS"]
     end
-    for arg in args.split
-      arg.gsub! /^'|'$/, ''
+    for arg in Shellwords::shellwords(args)
       next unless /^--/ =~ arg
       if /=/ =~ arg
 	$configure_args[$`] = $'

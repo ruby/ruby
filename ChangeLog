@@ -7,6 +7,8 @@ Mon Mar 25 19:30:25 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 	* ext/extmk.rb.in (arg_config): get rid of single quotes
 	  for autoconf 2.53.
 
+	* ext/extmk.rb.in (arg_config): should use Shellwords::shellwords.
+
 Mon Mar 25 13:24:20 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/socket/socket.c (bsock_do_not_rev_lookup_set): should not be
