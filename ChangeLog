@@ -1,11 +1,7 @@
-Sun Feb 11 16:00:30 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+Tue Feb 13 23:05:38 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
-	* eval.c (stack_length): use __builtin_frame_address() only if
-	  GCC and i386 CPU.
-
-	* gc.c (rb_gc, Init_stack): ditto.
-
-	* configure.in: add ac_cv_func_getpgrp_void=yes on DJGPP.
+	* dir.c (lstat): should use rb_sys_stat if lstat(2) is not
+	  available.
 
 Tue Feb 13 08:43:10 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -28,6 +24,15 @@ Tue Feb 13 01:13:43 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (primary): preserve and clear in_single and in_def using
 	  stack to prevent nested method errors in singleton class bodies.
+
+Sun Feb 11 16:00:30 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* eval.c (stack_length): use __builtin_frame_address() only if
+	  GCC and i386 CPU.
+
+	* gc.c (rb_gc, Init_stack): ditto.
+
+	* configure.in: add ac_cv_func_getpgrp_void=yes on DJGPP.
 
 Sat Feb 10 23:43:49 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
