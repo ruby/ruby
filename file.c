@@ -1434,6 +1434,26 @@ nextdirsep(s)
     return (char *)s;
 }
 
+
+static inline char *
+skipprefix(path)
+    const char *path;
+{
+#ifdef DOSISH_UNC
+    if (isdirsep(path[0]) && isdirsep(path[1])) {
+	if (*(path = nextdirsep(path + 2)))
+	    path = nextdirsep(path + 1);
+	return (char *)path;
+    }
+#endif
+#ifdef DOSISH_DRIVE_LETTER
+    if (has_drive_letter(path))
+	return (char *)(path + 2);
+#endif
+    while (isdirsep(*path)) path++;
+    return (char *)path;
+}
+
 static char *
 strrdirsep(path)
     const char *path;
@@ -1494,7 +1514,7 @@ static VALUE
 file_expand_path(fname, dname, result)
     VALUE fname, dname, result;
 {
-    char *s, *buf, *b, *p, *pend;
+    char *s, *buf, *b, *p, *pend, *root;
     long buflen;
     int tainted;
 
@@ -1594,14 +1614,8 @@ file_expand_path(fname, dname, result)
 #ifdef DOSISH
 	if (isdirsep(*s)) {
 	    /* specified full path, but not drive letter nor UNC */
-	    if (has_drive_letter(buf)) {
-		/* we need to get the drive letter */
-		p = &buf[2];
-	    }
-	    else if (isdirsep(buf[0]) && isdirsep(buf[1])) {
-		/* or UNC share name */
-		if (*(p = nextdirsep(buf + 2))) p = nextdirsep(p + 1);
-	    }
+	    /* we need to get the drive letter or UNC share name */
+	    p = skipprefix(buf);
 	}
 	else
 #endif
@@ -1619,6 +1633,9 @@ file_expand_path(fname, dname, result)
     else
 	*p = '/';
 
+    p[1] = 0;
+    root = skipprefix(buf);
+
     b = s;
     while (*s) {
 	switch (*s) {
@@ -1632,7 +1649,7 @@ file_expand_path(fname, dname, result)
 		    if (*(s+1) == '\0' || isdirsep(*(s+1))) {
 			/* We must go back to the parent */
 			*p = '\0';
-			if (!(b = strrdirsep(buf))) {
+			if (!(b = strrdirsep(root))) {
 			    *p = '/';
 			}
 			else {
@@ -1685,6 +1702,13 @@ file_expand_path(fname, dname, result)
 }
 
 VALUE
+rb_file_expand_path(fname, dname)
+    VALUE fname, dname;
+{
+    return file_expand_path(fname, dname, rb_str_new(0, MAXPATHLEN + 2));
+}
+
+VALUE
 rb_file_s_expand_path(argc, argv)
     int argc;
     VALUE *argv;
@@ -1692,7 +1716,7 @@ rb_file_s_expand_path(argc, argv)
     VALUE fname, dname;
     rb_scan_args(argc, argv, "11", &fname, &dname);
 
-    return file_expand_path(fname, dname, rb_str_new(0, MAXPATHLEN + 2));
+    return rb_file_expand_path(fname, dname);
 }
 
 static int
@@ -2653,7 +2677,7 @@ rb_find_file_ext(filep, ext)
     long i, j;
 
     if (f[0] == '~') {
-	fname = rb_file_s_expand_path(1, filep);
+	fname = rb_file_expand_path(*filep, Qnil);
 	if (rb_safe_level() >= 2 && OBJ_TAINTED(fname)) {
 	    rb_raise(rb_eSecurityError, "loading from unsafe file %s", f);
 	}
@@ -2704,7 +2728,7 @@ rb_find_file(path)
     char *lpath;
 
     if (f[0] == '~') {
-	path = rb_file_s_expand_path(1, &path);
+	path = rb_file_expand_path(path, Qnil);
 	if (rb_safe_level() >= 2 && OBJ_TAINTED(path)) {
 	    rb_raise(rb_eSecurityError, "loading from unsafe file %s", f);
 	}

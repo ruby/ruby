@@ -1,3 +1,7 @@
+Thu Feb 20 18:11:01 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* file.c (file_expand_path): should not upward beyond share name.
+
 Thu Feb 20 15:45:33 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* missing.h (strtoul): fix prototype of strtoul.
