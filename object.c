@@ -298,13 +298,6 @@ rb_obj_untaint(obj)
     VALUE obj;
 {
     rb_secure(3);
-Tue Jan  9 17:41:40 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
-
-	* object.c (rb_obj_taint): check frozen status before modifying
-	  taint status.
-
-	* object.c (rb_obj_untaint): ditto.
-
     FL_UNSET(obj, FL_TAINT);
     return obj;
 }

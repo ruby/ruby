@@ -315,7 +315,10 @@ rb_data_object_alloc(klass, datap, dmark, dfree)
 extern st_table *rb_class_tbl;
 VALUE *rb_gc_stack_start = 0;
 
-static inline int
+#if defined(__GNUC__) && __GNUC__ >= 2
+__inline__
+#endif
+static int
 is_pointer_to_heap(ptr)
     void *ptr;
 {

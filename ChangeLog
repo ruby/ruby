@@ -13,6 +13,11 @@ Mon Jan  8 21:35:10 2001  Guy Decoux  <decoux@moulon.inra.fr>
 
 	* file.c (path_check_1): should restore modified path.
 
+Mon Jan  8 21:24:37 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (bigdivrem): t2 might be too big for signed long; do
+	  not use rb_int2big(), but rb_uint2big().
+
 Sat Jan  6 00:55:59 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* pack.c (pack_pack): template "m2" or "u2" caused inifinite loop.
