@@ -593,7 +593,8 @@ struct RVarmap *ruby_dyna_vars;
 
 #define POP_VARS()			\
    if (_old && (ruby_scope->flag & SCOPE_DONT_RECYCLE)) \
-       FL_SET(_old, DVAR_DONT_RECYCLE); \
+       if (RBASIC(_old)->flags) /* unless it's already recycled */ \
+           FL_SET(_old, DVAR_DONT_RECYCLE); \
     ruby_dyna_vars = _old;		\
 }
 
