@@ -59,22 +59,34 @@
 
 #include <sys/types.h>
 
-
-# undef  __P
+#undef __P
 #if defined(__STDC__)
-# define __P(x) x
 # include <stdarg.h>
 # if !defined(__P)
 #  define __P(x) x
 # endif
 #else
-# undef  __P
 # define __P(x) ()
-# define const
+# if !defined(const)
+#  define const
+# endif
 # include <varargs.h>
 #endif
 #ifndef _BSD_VA_LIST_ 
 #define	_BSD_VA_LIST_ va_list
+#endif
+
+#ifdef __STDC__
+# include <limits.h>
+#else
+# ifndef LONG_MAX
+#  ifdef HAVE_LIMITS_H
+#   include <limits.h>
+#  else
+    /* assuming 32bit(2's compliment) long */
+#   define LONG_MAX 2147483647
+#  endif
+# endif
 #endif
 
 #if defined(__hpux) && !defined(__GNUC__)
@@ -359,21 +371,12 @@ err:
 #define u_short unsigned short
 #define u_int unsigned int
 
-#if !defined(__CYGWIN32__) && (defined(__hpux) && !defined(__GNUC__))
+#if !defined(__CYGWIN32__) && defined(__hpux) && !defined(__GNUC__)
 #include <stdlib.h>
 #endif
 #if defined(__hpux) && !defined(__GNUC__)
 #include <string.h>
 #endif
-
-#if defined(__STDC__)
-# include <stdarg.h>
-#else
-# include <varargs.h>
-# undef  __P
-# define __P(x) ()
-#endif
-
 
 /*
  * Flush out all the vectors defined by the given uio,
