@@ -311,6 +311,13 @@ rb_class2name(klass)
     return RSTRING(rb_class_path(klass))->ptr;
 }
 
+char *
+rb_obj_classname(obj)
+    VALUE obj;
+{
+    return rb_obj_classname(obj);
+}
+
 struct trace_var {
     int removed;
     void (*func)();

@@ -313,7 +313,7 @@ w_uclass(obj, base_klass, arg)
     w_extended(klass, arg);
     if (klass != base_klass) {
 	w_byte(TYPE_UCLASS, arg);
-	w_unique(rb_class2name(CLASS_OF(obj)), arg);
+	w_unique(rb_obj_classname(obj), arg);
     }
 }
 
@@ -518,7 +518,7 @@ w_object(obj, arg, limit)
 		VALUE mem;
 		long i;
 
-		w_unique(rb_class2name(CLASS_OF(obj)), arg);
+		w_unique(rb_obj_classname(obj), arg);
 		w_long(len, arg);
 		mem = rb_struct_iv_get(rb_obj_class(obj), "__member__");
 		if (mem == Qnil) {
@@ -544,7 +544,7 @@ w_object(obj, arg, limit)
                if (!rb_respond_to(obj, s_dump_data)) {
                    rb_raise(rb_eTypeError,
                             "class %s needs to have instance method `_dump_data'",
-                            rb_class2name(CLASS_OF(obj)));
+                            rb_obj_classname(obj));
                }
                v = rb_funcall(obj, s_dump_data, 0);
                w_object(v, arg, limit);
@@ -553,7 +553,7 @@ w_object(obj, arg, limit)
 
 	  default:
 	    rb_raise(rb_eTypeError, "can't dump %s",
-		     rb_class2name(CLASS_OF(obj)));
+		     rb_obj_classname(obj));
 	    break;
 	}
     }

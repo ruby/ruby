@@ -1704,7 +1704,7 @@ rb_big_coerce(x, y)
     }
     else {
 	rb_raise(rb_eTypeError, "Can't coerce %s to Bignum",
-		 rb_class2name(CLASS_OF(y)));
+		 rb_obj_classname(y));
     }
     /* not reached */
     return Qnil;

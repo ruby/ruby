@@ -110,7 +110,7 @@ copy_object(dest, obj)
     VALUE dest, obj;
 {
     if (OBJ_FROZEN(dest)) {
-        rb_raise(rb_eTypeError, "[bug] frozen object (%s) allocated", rb_class2name(CLASS_OF(dest)));
+        rb_raise(rb_eTypeError, "[bug] frozen object (%s) allocated", rb_obj_classname(dest));
     }
     RBASIC(dest)->flags &= ~(T_MASK|FL_EXIVAR);
     RBASIC(dest)->flags |= RBASIC(obj)->flags & (T_MASK|FL_EXIVAR|FL_TAINT);
@@ -140,7 +140,7 @@ rb_obj_clone(obj)
     VALUE clone;
 
     if (rb_special_const_p(obj)) {
-        rb_raise(rb_eTypeError, "can't clone %s", rb_class2name(CLASS_OF(obj)));
+        rb_raise(rb_eTypeError, "can't clone %s", rb_obj_classname(obj));
     }
     clone = rb_obj_alloc(rb_obj_class(obj));
     copy_object(clone, obj);
@@ -157,7 +157,7 @@ rb_obj_dup(obj)
     VALUE dup;
 
     if (rb_special_const_p(obj)) {
-        rb_raise(rb_eTypeError, "can't dup %s", rb_class2name(CLASS_OF(obj)));
+        rb_raise(rb_eTypeError, "can't dup %s", rb_obj_classname(obj));
     }
     dup = rb_obj_alloc(rb_obj_class(obj));
     copy_object(dup, obj);
@@ -189,7 +189,7 @@ VALUE
 rb_any_to_s(obj)
     VALUE obj;
 {
-    char *cname = rb_class2name(CLASS_OF(obj));
+    char *cname = rb_obj_classname(obj);
     VALUE str;
 
     str = rb_str_new(0, strlen(cname)+6+16+1); /* 6:tags 16:addr 1:nul */
@@ -258,7 +258,7 @@ rb_obj_inspect(obj)
 	VALUE str;
 	char *c;
 
-	c = rb_class2name(CLASS_OF(obj));
+	c = rb_obj_classname(obj);
 	if (rb_inspecting_p(obj)) {
 	    str = rb_str_new(0, strlen(c)+10+16+1); /* 10:tags 16:addr 1:nul */
 	    sprintf(RSTRING(str)->ptr, "#<%s:0x%lx ...>", c, obj);
@@ -429,7 +429,7 @@ nil_plus(x, y)
       default:
 	rb_raise(rb_eTypeError, "tried to add %s(%s) to nil",
 		 RSTRING(rb_inspect(y))->ptr,
-		 rb_class2name(CLASS_OF(y)));
+		 rb_obj_classname(y));
     }
     /* not reached */
 }
@@ -940,7 +940,7 @@ convert_type(val, tname, method, raise)
 		     NIL_P(val) ? "nil" :
 		     val == Qtrue ? "true" :
 		     val == Qfalse ? "false" :
-		     rb_class2name(CLASS_OF(val)), 
+		     rb_obj_classname(val), 
 		     tname);
 	}
 	else {
@@ -962,7 +962,7 @@ rb_convert_type(val, type, tname, method)
     v = convert_type(val, tname, method, Qtrue);
     if (TYPE(v) != type) {
 	rb_raise(rb_eTypeError, "%s#%s should return %s",
-		 rb_class2name(CLASS_OF(val)), method, tname);
+		 rb_obj_classname(val), method, tname);
     }
     return v;
 }
@@ -981,7 +981,7 @@ rb_check_convert_type(val, type, tname, method)
     if (NIL_P(v)) return Qnil;
     if (TYPE(v) != type) {
 	rb_raise(rb_eTypeError, "%s#%s should return %s",
-		 rb_class2name(CLASS_OF(val)), method, tname);
+		 rb_obj_classname(val), method, tname);
     }
     return v;
 }
@@ -995,7 +995,7 @@ rb_to_integer(val, method)
     VALUE v = convert_type(val, "Integer", method, Qtrue);
     if (!rb_obj_is_kind_of(v, rb_cInteger)) {
 	rb_raise(rb_eTypeError, "%s#%s should return Integer",
-		 rb_class2name(CLASS_OF(val)), method);
+		 rb_obj_classname(val), method);
     }
     return v;
 }

@@ -154,7 +154,7 @@ rb_check_safe_str(x)
     rb_secure(4);
     if (TYPE(x)!= T_STRING) {
 	rb_raise(rb_eTypeError, "wrong argument type %s (expected String)",
-		 rb_class2name(CLASS_OF(x)));
+		 rb_obj_classname(x));
     }
 }
 
@@ -1555,7 +1555,7 @@ superclass(self, node)
     }
     if (TYPE(val) != T_CLASS) {
 	rb_raise(rb_eTypeError, "superclass must be a Class (%s given)",
-		 rb_class2name(CLASS_OF(val)));
+		 rb_obj_classname(val));
     }
     if (FL_TEST(val, FL_SINGLETON)) {
 	rb_raise(rb_eTypeError, "can't make subclass of virtual class");
@@ -3255,7 +3255,7 @@ rb_eval(self, n)
 		rb_raise(rb_eTypeError,
 			 "can't define singleton method \"%s\" for %s",
 			 rb_id2name(node->nd_mid),
-			 rb_class2name(CLASS_OF(recv)));
+			 rb_obj_classname(recv));
 	    }
 
 	    if (OBJ_FROZEN(recv)) rb_error_frozen("object");
@@ -3389,7 +3389,7 @@ rb_eval(self, n)
 	    result = rb_eval(self, node->nd_recv);
 	    if (FIXNUM_P(result) || SYMBOL_P(result)) {
 		rb_raise(rb_eTypeError, "no virtual class for %s",
-			 rb_class2name(CLASS_OF(result)));
+			 rb_obj_classname(result));
 	    }
 	    if (ruby_safe_level >= 4 && !OBJ_TAINTED(result))
 		rb_raise(rb_eSecurityError, "Insecure: can't extend object");
@@ -3678,7 +3678,7 @@ rb_longjmp(tag, mesg)
 
 	StringValue(e);
 	fprintf(stderr, "Exception `%s' at %s:%d - %s\n",
-		rb_class2name(CLASS_OF(ruby_errinfo)),
+		rb_obj_classname(ruby_errinfo),
 		ruby_sourcefile, ruby_sourceline,
 		RSTRING(e)->ptr);
 	fflush(stderr);
@@ -4425,7 +4425,7 @@ rb_f_missing(argc, argv, obj)
 
 	snprintf(buf, BUFSIZ, format, rb_id2name(id),
 		 desc, noclass ? "" : ":",
-		 noclass ? "" : rb_class2name(CLASS_OF(obj)));
+		 noclass ? "" : rb_obj_classname(obj));
 	exc = rb_exc_new2(exc, buf);
 	rb_iv_set(exc, "name", argv[0]);
 	rb_iv_set(exc, "args", rb_ary_new4(argc-1, argv+1));
@@ -5076,7 +5076,7 @@ eval(self, src, scope, file, line)
     if (!NIL_P(scope)) {
 	if (!rb_obj_is_block(scope)) {
 	    rb_raise(rb_eTypeError, "wrong argument type %s (expected Proc/Binding)",
-		     rb_class2name(CLASS_OF(scope)));
+		     rb_obj_classname(scope));
 	}
 
 	Data_Get_Struct(scope, struct BLOCK, data);
@@ -6607,7 +6607,7 @@ proc_invoke(proc, args, pcall, self)
 
     if (rb_block_given_p() && ruby_frame->last_func) {
 	rb_warning("block for %s#%s is useless",
-		   rb_class2name(CLASS_OF(proc)),
+		   rb_obj_classname(proc),
 		   rb_id2name(ruby_frame->last_func));
     }
 
@@ -6727,7 +6727,7 @@ proc_to_s(self, other)
 {
     struct BLOCK *data;
     NODE *node;
-    char *cname = rb_class2name(CLASS_OF(self));
+    char *cname = rb_obj_classname(self);
     const int w = (SIZEOF_LONG * CHAR_BIT) / 4;
     long len = strlen(cname)+6+w; /* 6:tags 16:addr */
     VALUE str;
@@ -6803,7 +6803,7 @@ block_pass(self, node)
 	b = rb_check_convert_type(block, T_DATA, "Proc", "to_proc");
 	if (!rb_obj_is_proc(b)) {
 	    rb_raise(rb_eTypeError, "wrong argument type %s (expected Proc)",
-		     rb_class2name(CLASS_OF(block)));
+		     rb_obj_classname(block));
 	}
 	block = b;
     }
@@ -7119,7 +7119,7 @@ method_inspect(method)
 
     Data_Get_Struct(method, struct METHOD, data);
     str = rb_str_buf_new2("#<");
-    s = rb_class2name(CLASS_OF(method));
+    s = rb_obj_classname(method);
     rb_str_buf_cat2(str, s);
     rb_str_buf_cat2(str, ": ");
 
@@ -7228,7 +7228,7 @@ rb_mod_define_method(argc, argv, mod)
 	body = argv[1];
 	if (!rb_obj_is_kind_of(body, rb_cMethod) && !rb_obj_is_proc(body)) {
 	    rb_raise(rb_eTypeError, "wrong argument type %s (expected Proc/Method)",
-		     rb_class2name(CLASS_OF(body)));
+		     rb_obj_classname(body));
 	}
     }
     else {
@@ -7698,7 +7698,7 @@ rb_thread_check(data)
 {
     if (TYPE(data) != T_DATA || RDATA(data)->dmark != (RUBY_DATA_FUNC)thread_mark) {
 	rb_raise(rb_eTypeError, "wrong argument type %s (expected Thread)",
-		 rb_class2name(CLASS_OF(data)));
+		 rb_obj_classname(data));
     }
     return (rb_thread_t)RDATA(data)->data;
 }
@@ -9320,7 +9320,7 @@ static VALUE
 rb_thread_inspect(thread)
     VALUE thread;
 {
-    char *cname = rb_class2name(CLASS_OF(thread));
+    char *cname = rb_obj_classname(thread);
     rb_thread_t th = rb_thread_check(thread);
     const char *status = thread_status_name(th->status);
     VALUE str;

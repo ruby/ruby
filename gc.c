@@ -1380,7 +1380,7 @@ add_final(os, proc)
     rb_warn("ObjectSpace::add_finalizer is deprecated; use define_finalizer");
     if (!rb_obj_is_kind_of(proc, rb_cProc)) {
 	rb_raise(rb_eArgError, "wrong type argument %s (Proc required)",
-		 rb_class2name(CLASS_OF(proc)));
+		 rb_obj_classname(proc));
     }
     rb_ary_push(finalizers, proc);
     return proc;
@@ -1436,7 +1436,7 @@ define_final(argc, argv, os)
     }
     else if (!rb_obj_is_kind_of(proc, rb_cProc)) {
 	rb_raise(rb_eArgError, "wrong type argument %s (Proc required)",
-		 rb_class2name(CLASS_OF(proc)));
+		 rb_obj_classname(proc));
     }
     need_call_final = 1;
     FL_SET(obj, FL_FINALIZE);

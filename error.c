@@ -230,7 +230,7 @@ rb_check_type(x, t)
 		    etype = RSTRING(rb_obj_as_string(x))->ptr;
 		}
 		else {
-		    etype = rb_class2name(CLASS_OF(x));
+		    etype = rb_obj_classname(x);
 		}
 		rb_raise(rb_eTypeError, "wrong argument type %s (expected %s)",
 			 etype, type->name);
@@ -724,7 +724,7 @@ void
 rb_check_frozen(obj)
     VALUE obj;
 {
-    if (OBJ_FROZEN(obj)) rb_error_frozen(rb_class2name(CLASS_OF(obj)));
+    if (OBJ_FROZEN(obj)) rb_error_frozen(rb_obj_classname(obj));
 }
 
 static void

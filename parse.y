@@ -68,6 +68,7 @@ static enum lex_state {
     EXPR_BEG,			/* ignore newline, +/- is a sign. */
     EXPR_END,			/* newline significant, +/- is a operator. */
     EXPR_ARG,			/* newline significant, +/- is a operator. */
+    EXPR_CMDARG,		/* newline significant, +/- is a operator. */
     EXPR_ENDARG,		/* newline significant, +/- is a operator. */
     EXPR_MID,			/* newline significant, +/- is a operator. */
     EXPR_FNAME,			/* ignore newline, no reserved words. */
@@ -3239,7 +3240,7 @@ arg_ambiguous()
     rb_warning("ambiguous first argument; make sure");
 }
 
-#define IS_ARG() (lex_state == EXPR_ARG)
+#define IS_ARG() (lex_state == EXPR_ARG || lex_state == EXPR_CMDARG)
 
 static int
 yylex()
@@ -3463,7 +3464,10 @@ yylex()
 	    return c;
 	}
 	if (lex_state == EXPR_DOT) {
-	    lex_state = EXPR_ARG;
+	    if (cmd_state)
+		lex_state = EXPR_CMDARG;
+	    else
+		lex_state = EXPR_ARG;
 	    return c;
 	}
 	lex_strterm = NEW_STRTERM(str_xquote, '`', 0);
@@ -3994,7 +3998,10 @@ yylex()
 	    c = tLPAREN;
 	}
 	else if (space_seen) {
-	    if (lex_state == EXPR_ARG) {
+	    if (lex_state == EXPR_CMDARG) {
+		c = tLPAREN_ARG;
+	    }
+	    else if (lex_state == EXPR_ARG) {
 		c = tLPAREN_ARG;
 		yylval.id = last_id;
 	    }
@@ -4343,7 +4350,7 @@ yylex()
 		    }
 		    if (kw->id[0] == kDO) {
 			if (COND_P()) return kDO_COND;
-			if (CMDARG_P())
+			if (CMDARG_P() && state != EXPR_CMDARG)
 			    return kDO_BLOCK;
 			if (state == EXPR_ENDARG)
 			    return kDO_BLOCK;
@@ -4362,8 +4369,14 @@ yylex()
 	    if (lex_state == EXPR_BEG ||
 		lex_state == EXPR_MID ||
 		lex_state == EXPR_DOT ||
-		lex_state == EXPR_ARG) {
-		lex_state = EXPR_ARG;
+		lex_state == EXPR_ARG ||
+		lex_state == EXPR_CMDARG) {
+		if (cmd_state) {
+		    lex_state = EXPR_CMDARG;
+		}
+		else {
+		    lex_state = EXPR_ARG;
+		}
 	    }
 	    else {
 		lex_state = EXPR_END;

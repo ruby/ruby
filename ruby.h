@@ -490,6 +490,7 @@ char *rb_id2name _((ID));
 ID rb_to_id _((VALUE));
 
 char *rb_class2name _((VALUE));
+char *rb_obj_classname _((VALUE));
 
 void rb_p _((VALUE));
 

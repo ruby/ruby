@@ -293,7 +293,7 @@ rb_define_module(name)
 	module = rb_const_get(rb_cObject, id);
 	if (TYPE(module) == T_MODULE)
 	    return module;
-	rb_raise(rb_eTypeError, "%s is not a module", rb_class2name(CLASS_OF(module)));
+	rb_raise(rb_eTypeError, "%s is not a module", rb_obj_classname(module));
     }
     module = rb_define_module_id(id);
     st_add_direct(rb_class_tbl, id, module);
@@ -315,7 +315,7 @@ rb_define_module_under(outer, name)
 	if (TYPE(module) == T_MODULE)
 	    return module;
 	rb_raise(rb_eTypeError, "%s::%s is not a module",
-		 rb_class2name(outer), rb_class2name(CLASS_OF(module)));
+		 rb_class2name(outer), rb_obj_classname(module));
     }
     module = rb_define_module_id(id);
     rb_const_set(outer, id, module);

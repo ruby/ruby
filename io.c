@@ -647,7 +647,7 @@ rb_io_inspect(obj)
 
     fptr = RFILE(rb_io_taint_check(obj))->fptr;
     if (!fptr || !(fptr->f || fptr->f2) || !fptr->path) return rb_any_to_s(obj);
-    cname = rb_class2name(CLASS_OF(obj));
+    cname = rb_obj_classname(obj);
     buf = ALLOCA_N(char, strlen(cname) + strlen(fptr->path) + 5);
     sprintf(buf, "#<%s:%s>", cname, fptr->path);
     return rb_str_new2(buf);
@@ -2677,7 +2677,7 @@ rb_io_defset(val, id)
 {
     if (!rb_respond_to(val, id_write)) {
 	rb_raise(rb_eTypeError, "$> must have write method, %s given",
-		 rb_class2name(CLASS_OF(val)));
+		 rb_obj_classname(val));
     }
     rb_defout = val;
 }

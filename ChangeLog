@@ -1,3 +1,14 @@
+Fri Jan 31 12:45:11 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* variable.c (rb_obj_classname): new function.
+
+	* string.c (rb_str_dup): should preserve original's class (but not
+	  hidden singleton class).
+
+	* string.c (rb_str_substr): ditto.
+
+	* parse.y: backout EXPR_CMDARG removal.
+
 Fri Jan 31 09:40:07 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* lib/optparse.rb (OptionParser::List::accept): default
@@ -81,10 +92,6 @@ Sun Jan 26 03:37:18 2003  Akinori MUSHA  <knu@iDaemons.org>
 	  command line often did not make sense especially when BSD make
 	  is used with extra arguments given.  Tested with FreeBSD and
 	  Linux by me and mswin32, bccwin32 and mingw by usa.
-
-Sat Jan 25 21:04:57 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
-
-	* parse.y (yylex): remove EXPR_CMDARG according to the RHG book.
 
 Fri Jan 24 18:15:33 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

@@ -158,7 +158,7 @@ time_timeval(time, interval)
 
       default:
 	rb_raise(rb_eTypeError, "can't convert %s into %s",
-		 rb_class2name(CLASS_OF(time)), tstr);
+		 rb_obj_classname(time), tstr);
 	break;
     }
     return t;

@@ -240,7 +240,7 @@ rb_f_kill(argc, argv)
 		goto str_signal;
 	    }
 	    rb_raise(rb_eArgError, "bad signal type %s",
-		     rb_class2name(CLASS_OF(argv[0])));
+		     rb_obj_classname(argv[0]));
 	}
 	break;
     }

@@ -96,8 +96,8 @@ coerce_rescue(x)
     rb_raise(rb_eTypeError, "%s can't be coerced into %s",
 	     rb_special_const_p(x[1])?
 	     RSTRING(rb_inspect(x[1]))->ptr:
-	     rb_class2name(CLASS_OF(x[1])),
-	     rb_class2name(CLASS_OF(x[0])));
+	     rb_obj_classname(x[1]),
+	     rb_obj_classname(x[0]));
     return Qnil;		/* dummy */
 }
 
@@ -146,7 +146,7 @@ num_copy_object(x, y)
     VALUE x, y;
 {
     /* Numerics are immutable values, which should not be copied */
-    rb_raise(rb_eTypeError, "can't copy %s", rb_class2name(CLASS_OF(x)));
+    rb_raise(rb_eTypeError, "can't copy %s", rb_obj_classname(x));
     return Qnil;		/* not reached */
 }
 
@@ -1127,7 +1127,7 @@ rb_int_induced_from(klass, x)
        return rb_funcall(x, id_to_i, 0);
     default:
        rb_raise(rb_eTypeError, "failed to convert %s into Integer",
-                rb_class2name(CLASS_OF(x)));
+                rb_obj_classname(x));
     }
 }
 
@@ -1143,7 +1143,7 @@ rb_flo_induced_from(klass, x)
        return x;
     default:
        rb_raise(rb_eTypeError, "failed to convert %s into Float",
-                rb_class2name(CLASS_OF(x)));
+                rb_obj_classname(x));
     }
 }
 

@@ -282,7 +282,7 @@ VALUE
 rb_str_dup(str)
     VALUE str;
 {
-    VALUE dup = str_alloc(rb_cString);
+    VALUE dup = str_alloc(rb_obj_class(str));
     rb_str_replace(dup, str);
     return dup;
 }
@@ -503,7 +503,7 @@ rb_str_substr(str, beg, len)
 	if (FL_TEST(str, ELTS_SHARED))
 	    str = RSTRING(str)->aux.shared;
 	else
-	    str = str_new4(CLASS_OF(str), str);
+	    str = str_new4(rb_obj_class(str), str);
 	str2 = rb_str_new3(str);
 	RSTRING(str2)->ptr += RSTRING(str2)->len - len;
 	RSTRING(str2)->len = len;
@@ -910,7 +910,7 @@ rb_str_index_m(argc, argv, str)
 	  tmp = rb_check_string_type(sub);
 	  if (NIL_P(tmp)) {
 	      rb_raise(rb_eTypeError, "type mismatch: %s given",
-		       rb_class2name(CLASS_OF(sub)));
+		       rb_obj_classname(sub));
 	  }
 	  sub = tmp;
       }
@@ -1010,7 +1010,7 @@ rb_str_rindex_m(argc, argv, str)
 
       default:
 	rb_raise(rb_eTypeError, "type mismatch: %s given",
-		 rb_class2name(CLASS_OF(sub)));
+		 rb_obj_classname(sub));
     }
     return Qnil;
 }
@@ -1710,7 +1710,7 @@ uscore_get()
     line = rb_lastline_get();
     if (TYPE(line) != T_STRING) {
 	rb_raise(rb_eTypeError, "$_ value need to be String (%s given)",
-		 NIL_P(line) ? "nil" : rb_class2name(CLASS_OF(line)));
+		 NIL_P(line) ? "nil" : rb_obj_classname(line));
     }
     return line;
 }

@@ -275,7 +275,7 @@ range_step(argc, argv, range)
 
 	if (!rb_respond_to(b, id_succ)) {
 	    rb_raise(rb_eTypeError, "cannot iterate from %s",
-		     rb_class2name(CLASS_OF(b)));
+		     rb_obj_classname(b));
 	}
 	
 	args[0] = 1;
@@ -304,7 +304,7 @@ range_each(range)
 
     if (!rb_respond_to(beg, id_succ)) {
 	rb_raise(rb_eTypeError, "cannot iterate from %s",
-		 rb_class2name(CLASS_OF(beg)));
+		 rb_obj_classname(beg));
     }
     if (FIXNUM_P(beg) && FIXNUM_P(end)) { /* fixnums are special */
 	long lim = FIX2LONG(end);
@@ -471,7 +471,7 @@ range_member(range, val)
 
     if (!rb_respond_to(beg, id_succ)) {
 	rb_raise(rb_eTypeError, "cannot iterate from %s",
-		 rb_class2name(CLASS_OF(beg)));
+		 rb_obj_classname(beg));
     }
     args[0] = val;
     args[1] = Qfalse;

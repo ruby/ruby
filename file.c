@@ -307,7 +307,7 @@ rb_stat_inspect(self)
     };
 
     str = rb_str_buf_new2("#<");
-    rb_str_buf_cat2(str, rb_class2name(CLASS_OF(self)));
+    rb_str_buf_cat2(str, rb_obj_classname(self));
     rb_str_buf_cat2(str, " ");
 
     for (i = 0; i < sizeof(member)/sizeof(member[0]); i++) {
