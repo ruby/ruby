@@ -1,3 +1,8 @@
+Tue Dec  2 00:43:00 2003  why the lucky stiff  <why@ruby-lang.org>
+
+	* ext/syck/syck.c: string buffering bug.  decrementing by full
+	  max_size now. [ruby-core:01834]
+
 Mon Dec  1 21:33:08 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (num_sadded): prohibit singleton method definition for
@@ -187,7 +192,7 @@ Wed Nov 26 15:38:47 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 	* test/fileutils/test_fileutils.rb (test_ln_s): should take the
 	  existing symbolic link for OpenBSD.
 
-Wed Nov 26 04:48:42 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
+Wed Nov 26 04:48:42 2003  why the lucky stiff  <why@ruby-lang.org>
 
 	* ext/syck/token.c: removed YYTOKTMP references which
 	  were causing buffer overflows on large block scalars,
@@ -1033,7 +1038,7 @@ Thu Oct 30 23:19:11 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 	* test/soap/calc/test_calc_cgi.rb: take over $DEBUG to ruby process
 	  through CGI.
 
-Thu Oct 30 22:59:39 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
+Thu Oct 30 22:59:39 2003  why the lucky stiff  <why@ruby-lang.org>
 
 	* ext/syck/yaml2byte.c: HASH const too long.  Thanks, matz.
 
@@ -1272,7 +1277,7 @@ Sat Oct 18 23:01:32 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* missing/acosh.c (DBL_MANT_DIG): typo fix(ifdef -> ifndef).
 
-Sat Oct 18 05:48:59 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
+Sat Oct 18 05:48:59 2003  why the lucky stiff  <why@ruby-lang.org>
 
 	* ext/syck/rubyext.c: YAML::Syck::compile method.
 
@@ -1390,7 +1395,7 @@ Wed Oct 15 09:30:34 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* ext/syck/syck.h: include stdio.h for definition of FILE.
 
-Wed Oct 15 08:09:07 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
+Wed Oct 15 08:09:07 2003  why the lucky stiff  <why@ruby-lang.org>
 
 	* ext/syck/bytecode.c: Checkin of YAML bytecode support.
 
@@ -1938,7 +1943,7 @@ Sat Oct  4 07:33:00 2003  Nathaniel Talbott  <ntalbott@ruby-lang.org>
 
 	* test/testunit/collector/test_objectspace.rb: ditto.
 
-Sat Oct  4 04:48:49 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
+Sat Oct  4 04:48:49 2003  why the lucky stiff  <why@ruby-lang.org>
 
 	* ext/syck/rubyext.c: default keys handled.
 
@@ -2978,7 +2983,7 @@ Thu Sep  4 15:40:07 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/csv/test_csv.rb: run on test/unit original layer.
 
-Thu Sep  4 12:54:50 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
+Thu Sep  4 12:54:50 2003  why the lucky stiff  <why@ruby-lang.org>
 
 	* ext/syck/token.c: headerless documents with root-level spacing now
 	  honored.
@@ -3223,7 +3228,7 @@ Tue Aug 26 20:03:50 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* lib/mkmf.rb (create_tmpsrc): add the hook for source.
 	  [ruby-list:38122]
 
-Tue Aug 26 15:59:53 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
+Tue Aug 26 15:59:53 2003  why the lucky stiff  <why@ruby-lang.org>
 
 	* implicit.c (syck_type_id_to_taguri): corrected detection of
 	  x-private types.
@@ -3268,7 +3273,7 @@ Fri Aug 22 17:07:05 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_scan): use rb_yield_splat().
 
-Fri Aug 22 06:13:22 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
+Fri Aug 22 06:13:22 2003  why the lucky stiff <why@ruby-lang.org>
 
 	* ext/syck/rubyext.c: refactoring of the transfer method
 	  dispatch.  added yaml_org_handler for faster dispatch of
@@ -3295,7 +3300,7 @@ Wed Aug 20 16:44:49 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* ext/socket/socket.c (ruby_connect): many systems seem to have
 	  a problem in select() after EINPROGRESS.  [ruby-list:38080]
 
-Wed Aug 20 01:31:17 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
+Wed Aug 20 01:31:17 2003  why the lucky stiff  <why@ruby-lang.org>
 
 	* ext/syck/syck.h: Parser definition problems on HP-UX.
 	  [ruby-talk:79389]
