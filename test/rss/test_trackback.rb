@@ -88,19 +88,19 @@ EOR
       @elems.each do |name, value|
         @parents.each do |parent|
           accessor = "#{RSS::TRACKBACK_PREFIX}_#{name}"
-          target_accessor = "resource"
-          target = @rss.send(parent).send(accessor)
+          target = @rss.send(parent)
           target20 = @rss20.channel.send(parent, -1)
-          assert_equal(value, target.send(target_accessor))
+          assert_equal(value, target.send(accessor))
           assert_equal(value, target20.send(accessor))
-          target.send("#{target_accessor}=", new_value[name].to_s)
           if name == :about
             # abount is zero or more
+            target.send("#{accessor}=", 0, new_value[name].to_s)
             target20.send("#{accessor}=", 0, new_value[name].to_s)
           else
+            target.send("#{accessor}=", new_value[name].to_s)
             target20.send("#{accessor}=", new_value[name].to_s)
           end
-          assert_equal(new_value[name], target.send(target_accessor))
+          assert_equal(new_value[name], target.send(accessor))
           assert_equal(new_value[name], target20.send(accessor))
         end
       end

@@ -60,17 +60,14 @@ module RSS
     end
     
     def to_s(convert=true, indent=calc_indent)
-      next_indent = indent + INDENT
-      rv = <<-EOR
-#{xmldecl}
-#{xml_stylesheet_pi}
-#{indent}<rss version="#{@rss_version}"#{ns_declaration(next_indent)}>
-#{channel_element(false, next_indent)}
-#{other_element(false, next_indent)}
-#{indent}</rss>
-EOR
+      rv = tag(indent, ns_declarations) do |next_indent|
+        [
+          channel_element(false, next_indent),
+          other_element(false, next_indent),
+        ]
+      end
       rv = @converter.convert(rv) if convert and @converter
-      remove_empty_newline(rv)
+      rv
     end
 
     private
@@ -86,7 +83,7 @@ EOR
 
     def _attrs
       [
-        ["version", true],
+        ["version", true, "rss_version"],
       ]
     end
 
@@ -104,8 +101,6 @@ EOR
         ["webMaster", "?"],
         ["rating", "?"],
         ["docs", "?"],
-        ["skipDays", "?"],
-        ["skipHours", "?"],
       ].each do |x, occurs|
         install_text_element(x)
         install_model(x, occurs)
@@ -120,6 +115,8 @@ EOR
       end
 
       [
+        ["skipDays", "?"],
+        ["skipHours", "?"],
         ["image", nil],
         ["textInput", "?"],
       ].each do |x, occurs|
@@ -146,35 +143,35 @@ EOR
       end
 
       def to_s(convert=true, indent=calc_indent)
-        next_indent = indent + INDENT
-        rv = <<-EOT
-#{indent}<channel>
-#{title_element(false, next_indent)}
-#{link_element(false, next_indent)}
-#{description_element(false, next_indent)}
-#{language_element(false, next_indent)}
-#{copyright_element(false, next_indent)}
-#{managingEditor_element(false, next_indent)}
-#{webMaster_element(false, next_indent)}
-#{rating_element(false, next_indent)}
-#{pubDate_element(false, next_indent)}
-#{lastBuildDate_element(false, next_indent)}
-#{docs_element(false, next_indent)}
-#{skipDays_element(false, next_indent)}
-#{skipHours_element(false, next_indent)}
-#{image_element(false, next_indent)}
-#{item_elements(false, next_indent)}
-#{textInput_element(false, next_indent)}
-#{other_element(false, next_indent)}
-#{indent}</channel>
-EOT
+        rv = tag(indent) do |next_indent|
+          [
+            title_element(false, next_indent),
+            link_element(false, next_indent),
+            description_element(false, next_indent),
+            language_element(false, next_indent),
+            copyright_element(false, next_indent),
+            managingEditor_element(false, next_indent),
+            webMaster_element(false, next_indent),
+            rating_element(false, next_indent),
+            pubDate_element(false, next_indent),
+            lastBuildDate_element(false, next_indent),
+            docs_element(false, next_indent),
+            cloud_element(false, next_indent),
+            skipDays_element(false, next_indent),
+            skipHours_element(false, next_indent),
+            image_element(false, next_indent),
+            item_elements(false, next_indent),
+            textInput_element(false, next_indent),
+            other_element(false, next_indent),
+          ]
+        end
         rv = @converter.convert(rv) if convert and @converter
         rv
       end
 
       private
       def children
-        [@image, @textInput, @cloud, *@item]
+        [@skipDays, @skipHours, @image, @textInput, @cloud, *@item]
       end
 
       def _tags
@@ -206,6 +203,121 @@ EOT
         rv
       end
 
+      def maker_target(maker)
+        maker.channel
+      end
+
+      def setup_maker_elements(channel)
+        super
+        [
+          [skipDays, "day"],
+          [skipHours, "hour"],
+        ].each do |skip, key|
+          if skip
+            skip.__send__("#{key}s").each do |val|
+              target_skips = channel.__send__("skip#{key.capitalize}s")
+              new_target = target_skips.__send__("new_#{key}")
+              new_target.content = val.content
+            end
+          end
+        end
+      end
+
+      class SkipDays < Element
+        include RSS09
+
+        [
+          ["day", "*"]
+        ].each do |x, occurs|
+          install_have_children_element(x)
+          install_model(x, occurs)
+        end
+
+        def to_s(convert=true, indent=calc_indent)
+          rv = tag(indent) do |next_indent|
+            [
+              day_elements(false, next_indent)
+            ]
+          end
+          rv = @converter.convert(rv) if convert and @converter
+          rv
+        end
+
+        private
+        def children
+          @day
+        end
+
+        def _tags
+          @day.compact.collect do
+            [nil, "day"]
+          end
+        end
+
+        class Day < Element
+          include RSS09
+
+          content_setup
+
+          def initialize(content=nil)
+            super()
+            @content = content
+          end
+      
+        end
+        
+      end
+      
+      class SkipHours < Element
+        include RSS09
+
+        [
+          ["hour", "*"]
+        ].each do |x, occurs|
+          install_have_children_element(x)
+          install_model(x, occurs)
+        end
+
+        def to_s(convert=true, indent=calc_indent)
+          rv = tag(indent) do |next_indent|
+            [
+              hour_elements(false, next_indent)
+            ]
+          end
+          rv = @converter.convert(rv) if convert and @converter
+          rv
+        end
+
+        private
+        def children
+          @hour
+        end
+
+        def _tags
+          @hour.compact.collect do
+            [nil, "hour"]
+          end
+        end
+
+        class Hour < Element
+          include RSS09
+
+          content_setup
+
+          def initialize(content=nil)
+            super()
+            @content = content
+          end
+
+          remove_method :content=
+          def content=(value)
+            @content = value.to_i
+          end
+          
+        end
+        
+      end
+      
       class Image < Element
 
         include RSS09
@@ -220,19 +332,18 @@ EOT
         end
 
         def to_s(convert=true, indent=calc_indent)
-          next_indent = indent + INDENT
-          rv = <<-EOT
-#{indent}<image>
-#{url_element(false, next_indent)}
-#{title_element(false, next_indent)}
-#{link_element(false, next_indent)}
-#{width_element(false, next_indent)}
-#{height_element(false, next_indent)}
-#{description_element(false, next_indent)}
-#{other_element(false, next_indent)}
-#{indent}</image>
-EOT
-       		rv = @converter.convert(rv) if convert and @converter
+          rv = tag(indent) do |next_indent|
+            [
+              url_element(false, next_indent),
+              title_element(false, next_indent),
+              link_element(false, next_indent),
+              width_element(false, next_indent),
+              height_element(false, next_indent),
+              description_element(false, next_indent),
+              other_element(false, next_indent),
+            ]
+          end
+          rv = @converter.convert(rv) if convert and @converter
     	    rv
         end
 
@@ -244,8 +355,12 @@ EOT
             [nil, elem]
           end
         end
+
+        def maker_target(maker)
+          maker.image
+        end
       end
-      
+
       class Cloud < Element
 
         include RSS09
@@ -270,16 +385,8 @@ EOT
         end
 
         def to_s(convert=true, indent=calc_indent)
-          next_indent = indent + INDENT
-          rv = <<-EOT
-#{indent}<cloud
-#{next_indent}domain="#{h @domain}"
-#{next_indent}port="#{h @port}"
-#{next_indent}path="#{h @path}"
-#{next_indent}registerProcedure="#{h @registerProcedure}"
-#{next_indent}protocol="#{h @protocol}"/>
-EOT
-       		rv = @converter.convert(rv) if convert and @converter
+          rv = tag(indent)
+          rv = @converter.convert(rv) if convert and @converter
     	    rv
         end
 
@@ -300,15 +407,21 @@ EOT
           install_text_element(x)
         end
 
-        %w(category source enclosure).each do |x|
+        %w(source enclosure).each do |x|
           install_have_child_element(x)
         end
 
         [
+          %w(category categories),
+        ].each do |name, plural_name|
+          install_have_children_element(name, plural_name)
+        end
+        
+        [
           ["title", '?'],
           ["link", '?'],
           ["description", '?'],
-          ["category", '?'],
+          ["category", '*'],
           ["source", '?'],
           ["enclosure", '?'],
         ].each do |tag, occurs|
@@ -316,36 +429,51 @@ EOT
         end
 
         def to_s(convert=true, indent=calc_indent)
-          next_indent = indent + INDENT
-          rv = <<-EOT
-#{indent}<item>
-#{title_element(false, next_indent)}
-#{link_element(false, next_indent)}
-#{description_element(false, next_indent)}
-#{category_element(false, next_indent)}
-#{source_element(false, next_indent)}
-#{enclosure_element(false, next_indent)}
-#{other_element(false, next_indent)}
-#{indent}</item>
-EOT
-       		rv = @converter.convert(rv) if convert and @converter
+          rv = tag(indent) do |next_indent|
+            [
+              title_element(false, next_indent),
+              link_element(false, next_indent),
+              description_element(false, next_indent),
+              category_elements(false, next_indent),
+              source_element(false, next_indent),
+              enclosure_element(false, next_indent),
+              other_element(false, next_indent),
+            ]
+          end
+          rv = @converter.convert(rv) if convert and @converter
     	    rv
         end
 
         private
         def children
-          [@category, @source, @enclosure,].compact
+          [@source, @enclosure, *@category].compact
         end
 
         def _tags
-          %w(title link description author comments category
+          rv = %w(title link description author comments
             source enclosure).delete_if do |x|
             send(x).nil?
           end.collect do |x|
             [nil, x]
           end
+
+          @category.each do
+            rv << [nil, "category"]
+          end
+          
+          rv
         end
 
+        def maker_target(maker)
+          maker.items.new_item
+        end
+
+        def setup_maker_element(item)
+          super
+          @enclosure.setup_maker(item) if @enclosure
+          @source.setup_maker(item) if @source
+        end
+        
         class Source < Element
 
           include RSS09
@@ -364,17 +492,6 @@ EOT
             @content = content
           end
 
-          def to_s(convert=true, indent=calc_indent)
-            if @url
-              rv = %Q!				<source url="#{@url}">!
-              rv << %Q!#{@content}</source>!
-              rv = @converter.convert(rv) if convert and @converter
-              rv
-            else
-              ''
-            end
-          end
-
           private
           def _tags
             []
@@ -386,6 +503,15 @@ EOT
             ]
           end
 
+
+          def maker_target(item)
+            item.source
+          end
+
+          def setup_maker_attributes(source)
+            source.url = url
+            source.content = content
+          end
         end
 
         class Enclosure < Element
@@ -408,14 +534,9 @@ EOT
           end
 
           def to_s(convert=true, indent=calc_indent)
-            if @url and @length and @type
-              rv = %Q!<enclosure url="#{h @url}" !
-              rv << %Q!length="#{h @length}" type="#{h @type}"/>!
-              rv = @converter.convert(rv) if convert and @converter
-              rv
-            else
-              ''
-            end
+            rv = tag(indent)
+            rv = @converter.convert(rv) if convert and @converter
+            rv
           end
 
           private
@@ -427,6 +548,15 @@ EOT
             ]
           end
 
+          def maker_target(item)
+            item.enclosure
+          end
+
+          def setup_maker_attributes(enclosure)
+            enclosure.url = url
+            enclosure.length = length
+            enclosure.type = type
+          end
         end
 
         class Category < Element
@@ -447,17 +577,6 @@ EOT
             @content = content
           end
 
-          def to_s(convert=true, indent=calc_indent)
-            if @domain
-              rv = %Q!<category domain="#{h @domain}">!
-              rv << %Q!#{h @content}</category>!
-              rv = @converter.convert(rv) if convert and @converter
-              rv
-            else
-              ''
-            end
-          end
-
           private
           def _attrs
             [
@@ -465,12 +584,21 @@ EOT
             ]
           end
 
+          def maker_target(item)
+            item.new_category
+          end
+
+          def setup_maker_attributes(category)
+            category.domain = domain
+            category.content = content
+          end
+          
         end
 
       end
       
       class TextInput < Element
-        
+
         include RSS09
 
         %w(title description name link).each do |x|
@@ -479,16 +607,15 @@ EOT
         end
 
         def to_s(convert=true, indent=calc_indent)
-          next_indent = indent + INDENT
-          rv = <<-EOT
-#{indent}<textInput>
-#{title_element(false, next_indent)}
-#{description_element(false, next_indent)}
-#{name_element(false, next_indent)}
-#{link_element(false, next_indent)}
-#{other_element(false, next_indent)}
-#{indent}</textInput>
-EOT
+          rv = tag(indent) do |next_indent|
+            [
+              title_element(false, next_indent),
+              description_element(false, next_indent),
+              name_element(false, next_indent),
+              link_element(false, next_indent),
+              other_element(false, next_indent),
+            ]
+          end
        		rv = @converter.convert(rv) if convert and @converter
     	    rv
         end
@@ -500,6 +627,10 @@ EOT
           end.collect do |elem|
             [nil, elem]
           end
+        end
+
+        def maker_target(maker)
+          maker.textinput
         end
       end
       

@@ -7,12 +7,7 @@ module RSS
     MAKERS = {}
     
     class << self
-      def make(version, modules=[], &block)
-        prefix = "rss/maker"
-        require "#{prefix}/#{version}"
-        modules.each do |mod|
-          require "#{prefix}/#{mod}"
-        end
+      def make(version, &block)
         maker(version).make(&block)
       end
 
@@ -31,3 +26,10 @@ module RSS
   end
   
 end
+
+require "rss/maker/1.0"
+require "rss/maker/2.0"
+require "rss/maker/content"
+require "rss/maker/dublincore"
+require "rss/maker/syndication"
+require "rss/maker/trackback"

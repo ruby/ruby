@@ -1,3 +1,7 @@
+Wed Dec  8 21:56:31 2004  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss, test/rss, sample/rss: backported from CVS HEAD.
+
 Wed Dec  8 14:31:36 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (io_fwrite): change dereference for cosmetic reason.

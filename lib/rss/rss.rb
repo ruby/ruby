@@ -58,7 +58,7 @@ require "rss/xml-stylesheet"
 
 module RSS
 
-  VERSION = "0.1.0"
+  VERSION = "0.1.2"
 
   URI = "http://purl.org/rss/1.0/"
 
@@ -144,6 +144,15 @@ module RSS
     end
   end
 
+  class NotSetError < Error
+    attr_reader :name, :variables
+    def initialize(name, variables)
+      @name = name
+      @variables = variables
+      super("required variables of #{@name} are not set: #{@variables.join(', ')}")
+    end
+  end
+  
   module BaseModel
 
     include Utils
@@ -164,17 +173,20 @@ EOC
     end
     alias_method(:install_have_attribute_element, :install_have_child_element)
 
-    def install_have_children_element(name, postfix="s")
-      add_have_children_element(name)
-
-      def_children_accessor(name, postfix)
-      install_element(name, postfix) do |n, elem_name|
+    def install_have_children_element(name, plural_name=nil)
+      plural_name ||= "#{name}s"
+      add_have_children_element(name, plural_name)
+      add_plural_form(name, plural_name)
+      
+      def_children_accessor(name, plural_name)
+      install_element(name, "s") do |n, elem_name|
         <<-EOC
-        rv = ''
+        rv = []
         @#{n}.each do |x|
-          rv << "\#{x.to_s(convert, indent)}"
+          value = "\#{x.to_s(convert, indent)}"
+          rv << value if /\\A\\s*\\z/ !~ value
         end
-        rv
+        rv.join("\n")
 EOC
       end
     end
@@ -289,9 +301,9 @@ EOC
       end
     end
 
-    def def_children_accessor(accessor_name, postfix="s")
+    def def_children_accessor(accessor_name, plural_name)
       module_eval(<<-EOC, *get_file_and_line_from_caller(2))
-      def #{accessor_name}#{postfix}
+      def #{plural_name}
         @#{accessor_name}
       end
 
@@ -302,8 +314,12 @@ EOC
           @#{accessor_name}.send("[]", *args)
         end
       end
-        
+
       def #{accessor_name}=(*args)
+        warn("Warning:\#{caller.first.sub(/:in `.*'\z/, '')}: " \
+             "Don't use `#{accessor_name} = XXX'/`set_#{accessor_name}(XXX)'. " \
+             "Those APIs are not sense of Ruby. " \
+             "Use `#{plural_name} << XXX' instead of them.")
         if args.size == 1
           @#{accessor_name}.push(args[0])
         else
@@ -314,6 +330,22 @@ EOC
 EOC
     end
 
+    def def_content_only_to_s
+      module_eval(<<-EOC, *get_file_and_line_from_caller(2))
+      def to_s(convert=true, indent=calc_indent)
+        if @content
+          rv = tag(indent) do |next_indent|
+            h(@content)
+          end
+          rv = @converter.convert(rv) if convert and @converter
+          rv
+        else
+          ""
+        end
+      end
+EOC
+    end
+    
   end
 
   class Element
@@ -329,7 +361,8 @@ EOC
         klass.module_eval(<<-EOC)
         public
         
-        @tag_name = name.split(/::/).last.downcase
+        @tag_name = name.split(/::/).last
+        @tag_name[0,1] = @tag_name[0,1].downcase
         @indent_size = name.split(/::/).size - 2
 
         @@must_call_validators = {}
@@ -373,6 +406,7 @@ EOC
         def self.content_setup
           attr_writer :content
           convert_attr_reader :content
+          def_content_only_to_s
           @@have_content = true
         end
 
@@ -386,8 +420,8 @@ EOC
           @@have_children_elements
         end
 
-        def self.add_have_children_element(variable_name)
-          @@have_children_elements << variable_name
+        def self.add_have_children_element(variable_name, plural_name)
+          @@have_children_elements << [variable_name, plural_name]
         end
         
         @@need_initialize_variables = []
@@ -400,6 +434,16 @@ EOC
           @@need_initialize_variables
         end
 
+        @@plural_forms = {}
+        
+        def self.add_plural_form(singular, plural)
+          @@plural_forms[singular] = plural
+        end
+        
+        def self.plural_forms
+          @@plural_forms
+        end
+        
         EOC
       end
 
@@ -440,6 +484,14 @@ EOC
       self.class.tag_name
     end
 
+    def full_name
+      tag_name
+    end
+    
+    def indent_size
+      self.class.indent_size
+    end
+    
     def converter=(converter)
       @converter = converter
       children.each do |child|
@@ -457,6 +509,15 @@ EOC
       __validate(tags, false)
     end
 
+    def setup_maker(maker)
+      target = maker_target(maker)
+      unless target.nil?
+        setup_maker_attributes(target)
+        setup_maker_element(target)
+        setup_maker_elements(target)
+      end
+    end
+    
     private
     def initialize_variables
       self.class.need_initialize_variables.each do |variable_name|
@@ -467,11 +528,111 @@ EOC
     end
 
     def initialize_have_children_elements
-      self.class.have_children_elements.each do |variable_name|
+      self.class.have_children_elements.each do |variable_name, plural_name|
         instance_eval("@#{variable_name} = []")
       end
     end
 
+    def tag(indent, additional_attrs=[], &block)
+      next_indent = indent + INDENT
+
+      attrs = collect_attrs
+      return "" if attrs.nil?
+
+      attrs += additional_attrs
+      start_tag = make_start_tag(indent, next_indent, attrs)
+
+      if block
+        content = block.call(next_indent)
+      else
+        content = []
+      end
+
+      if content.is_a?(String)
+        content = [content]
+        start_tag << ">"
+        end_tag = "</#{full_name}>"
+      else
+        content = content.reject{|x| x.empty?}
+        if content.empty?
+          end_tag = "/>"
+        else
+          start_tag << ">\n"
+          end_tag = "\n#{indent}</#{full_name}>"
+        end
+      end
+      
+      start_tag + content.join("\n") + end_tag
+    end
+
+    def make_start_tag(indent, next_indent, attrs)
+      start_tag = ["#{indent}<#{full_name}"]
+      unless attrs.empty?
+        start_tag << attrs.collect do |key, value|
+          %Q[#{h key}="#{h value}"]
+        end.join("\n#{next_indent}")
+      end
+      start_tag.join(" ")
+    end
+
+    def collect_attrs
+      _attrs.collect do |name, required, alias_name|
+        value = __send__(alias_name || name)
+        return nil if required and value.nil?
+        [name, value]
+      end.reject do |name, value|
+        value.nil?
+      end
+    end
+    
+    def tag_name_with_prefix(prefix)
+      "#{prefix}:#{tag_name}"
+    end
+    
+    def calc_indent
+      INDENT * (self.class.indent_size)
+    end
+
+    def maker_target(maker)
+      nil
+    end
+    
+    def setup_maker_attributes(target)
+    end
+    
+    def setup_maker_element(target)
+      self.class.need_initialize_variables.each do |var|
+        setter = "#{var}="
+        if target.respond_to?(setter)
+          target.__send__(setter, __send__(var))
+        end
+      end
+    end
+    
+    def setup_maker_elements(parent)
+      self.class.have_children_elements.each do |name, plural_name|
+        real_name = name.sub(/^[^_]+_/, '')
+        if parent.respond_to?(plural_name)
+          target = parent.__send__(plural_name)
+          __send__(plural_name).each do |elem|
+            elem.__send__("setup_maker", target)
+          end
+        end
+      end
+    end
+
+    def set_next_element(prefix, tag_name, next_element)
+      klass = next_element.class
+      prefix = ""
+      prefix << "#{klass.required_prefix}_" if klass.required_prefix
+      if self.class.plural_forms.has_key?(tag_name)
+        ary = __send__("#{prefix}#{self.class.plural_forms[tag_name]}")
+        ary << next_element
+      else
+        __send__("#{prefix}#{tag_name}=", next_element)
+      end
+    end
+    
     # not String class children.
     def children
       []
@@ -507,23 +668,23 @@ EOC
     end
 
     def validate_attribute
-      _attrs.each do |a_name, required|
-        if required and send(a_name).nil?
-          raise MissingAttributeError.new(self.class.tag_name, a_name)
+      _attrs.each do |a_name, required, alias_name|
+        if required and __send__(alias_name || a_name).nil?
+          raise MissingAttributeError.new(tag_name, a_name)
         end
       end
     end
 
     def other_element(convert, indent='')
-      rv = ''
+      rv = []
       private_methods.each do |meth|
         if /\A([^_]+)_[^_]+_elements?\z/ =~ meth and
             self.class::NSPOOL.has_key?($1)
-          res = send(meth, convert)
-          rv << "#{indent}#{res}\n" if /\A\s*\z/ !~ res
+          res = __send__(meth, convert)
+          rv << "#{indent}#{res}" if /\A\s*\z/ !~ res
         end
       end
-      rv
+      rv.join("\n")
     end
 
     def _validate(tags, model=self.class.model)
@@ -626,19 +787,12 @@ EOC
       rv
     end
 
-    private
-    def calc_indent
-      INDENT * (self.class.indent_size)
-    end
-    
-    def remove_empty_newline(string)
-      string.gsub(/^\s*$(?:\r?\n?)/, '')
-    end
-    
   end
 
   module RootElementMixin
 
+    include XMLStyleSheetMixin
+    
     attr_reader :output_encoding
 
     def initialize(rss_version, version=nil, encoding=nil, standalone=nil)
@@ -655,26 +809,50 @@ EOC
       self.converter = Converter.new(@output_encoding, @encoding)
     end
 
+    def setup_maker(maker)
+      maker.version = version
+      maker.encoding = encoding
+      maker.standalone = standalone
+
+      xml_stylesheets.each do |xss|
+        xss.setup_maker(maker)
+      end
+
+      setup_maker_elements(maker)
+    end
+    
     private
+    def tag(indent, attrs, &block)
+      rv = xmldecl + xml_stylesheet_pi
+      rv << super(indent, attrs, &block)
+      rv
+    end
+
     def xmldecl
       rv = %Q[<?xml version="#{@version}"]
       if @output_encoding or @encoding
         rv << %Q[ encoding="#{@output_encoding or @encoding}"]
       end
-      rv << %Q[ standalone="#{@standalone}"] if @standalone
-      rv << '?>'
+      rv << %Q[ standalone="yes"] if @standalone
+      rv << "?>\n"
       rv
     end
     
-    def ns_declaration(indent)
-      rv = ''
-      self.class::NSPOOL.each do |prefix, uri|
+    def ns_declarations
+      self.class::NSPOOL.collect do |prefix, uri|
         prefix = ":#{prefix}" unless prefix.empty?
-        rv << %Q|\n#{indent}xmlns#{prefix}="#{html_escape(uri)}"|
+        ["xmlns#{prefix}", uri]
       end
-      rv
     end
     
+    def setup_maker_elements(maker)
+      channel.setup_maker(maker) if channel
+      image.setup_maker(maker) if image
+      textinput.setup_maker(maker) if textinput
+      items.each do |item|
+        item.setup_maker(maker)
+      end
+    end
   end
 
 end

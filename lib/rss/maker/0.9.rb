@@ -11,23 +11,15 @@ module RSS
         super
       end
       
-      def to_rss
-        rss = Rss.new(@rss_version, @version, @encoding, @standalone)
-        setup_xml_stylesheets(rss)
-        setup_channel(rss)
-        setup_other_elements(rss)
-        if rss.channel
-          rss
-        else
-          nil
-        end
-      end
-      
       private
-      def setup_channel(rss)
-        @channel.to_rss(rss)
+      def make_rss
+        Rss.new(@rss_version, @version, @encoding, @standalone)
       end
-      
+
+      def setup_elements(rss)
+        setup_channel(rss)
+      end
+
       class Channel < ChannelBase
         
         def to_rss(rss)
@@ -44,12 +36,13 @@ module RSS
             else
               nil
             end
+          elsif variable_is_set?
+            raise NotSetError.new("maker.channel", not_set_required_variables)
           end
         end
         
         def have_required_values?
-          @title and @link and @description and @language and
-            @maker.image.have_required_values?
+          @title and @link and @description and @language
         end
         
         private
@@ -69,9 +62,76 @@ module RSS
           super + ["pubDate"]
         end
 
+        def required_variable_names
+          %w(title link description language)
+        end
+        
+        class SkipDays < SkipDaysBase
+          def to_rss(rss, channel)
+            unless @days.empty?
+              skipDays = Rss::Channel::SkipDays.new
+              channel.skipDays = skipDays
+              @days.each do |day|
+                day.to_rss(rss, skipDays.days)
+              end
+            end
+          end
+          
+          class Day < DayBase
+            def to_rss(rss, days)
+              day = Rss::Channel::SkipDays::Day.new
+              set = setup_values(day)
+              if set
+                days << day
+                setup_other_elements(rss)
+              end
+            end
+
+            def have_required_values?
+              @content
+            end
+          end
+        end
+        
+        class SkipHours < SkipHoursBase
+          def to_rss(rss, channel)
+            unless @hours.empty?
+              skipHours = Rss::Channel::SkipHours.new
+              channel.skipHours = skipHours
+              @hours.each do |hour|
+                hour.to_rss(rss, skipHours.hours)
+              end
+            end
+          end
+          
+          class Hour < HourBase
+            def to_rss(rss, hours)
+              hour = Rss::Channel::SkipHours::Hour.new
+              set = setup_values(hour)
+              if set
+                hours << hour
+                setup_other_elements(rss)
+              end
+            end
+
+            def have_required_values?
+              @content
+            end
+          end
+        end
+        
         class Cloud < CloudBase
+          def to_rss(*args)
+          end
         end
 
+        class Categories < CategoriesBase
+          def to_rss(*args)
+          end
+
+          class Category < CategoryBase
+          end
+        end
       end
       
       class Image < ImageBase
@@ -130,8 +190,11 @@ module RSS
             end
           end
         
-          class Category < CategoryBase
+          class Categories < CategoriesBase
             def to_rss(*args)
+            end
+
+            class Category < CategoryBase
             end
           end
           
@@ -156,5 +219,6 @@ module RSS
     end
     
     add_maker(filename_to_version(__FILE__), RSS09)
+    add_maker(filename_to_version(__FILE__) + "1", RSS09)
   end
 end

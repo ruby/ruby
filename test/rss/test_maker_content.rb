@@ -14,7 +14,7 @@ module RSS
     end
 
     def test_rss10
-      rss = RSS::Maker.make("1.0", ["content"]) do |maker|
+      rss = RSS::Maker.make("1.0") do |maker|
         setup_dummy_channel(maker)
 
         setup_dummy_item(maker)

@@ -11,11 +11,18 @@ module RSS
         install_model(x, '?')
       end
 
-      %w(category).each do |x|
-        install_have_child_element(x)
-        install_model(x, '?')
+      remove_method :ttl=
+      def ttl=(value)
+        @ttl = value.to_i
       end
-
+      
+      [
+        %w(category categories),
+      ].each do |name, plural_name|
+        install_have_children_element(name, plural_name)
+        install_model(name, '*')
+      end
+        
       [
         ["image", "?"],
         ["language", "?"],
@@ -25,7 +32,7 @@ module RSS
 
       def other_element(convert, indent)
         rv = <<-EOT
-#{category_element(convert, indent)}
+#{category_elements(convert, indent)}
 #{generator_element(convert, indent)}
 #{ttl_element(convert, indent)}
 EOT
@@ -35,16 +42,22 @@ EOT
       private
       alias children09 children
       def children
-        children09 + [@category].compact
+        children09 + @category.compact
       end
 
       alias _tags09 _tags
       def _tags
-        %w(generator ttl category).delete_if do |x|
+        rv = %w(generator ttl).delete_if do |x|
           send(x).nil?
         end.collect do |elem|
           [nil, elem]
         end + _tags09
+
+        @category.each do
+          rv << [nil, "category"]
+        end
+        
+        rv
       end
 
       Category = Item::Category
@@ -74,13 +87,15 @@ EOT
         end
       
         def other_element(convert, indent)
-          rv = <<-EOT
-#{author_element(false, indent)}
-#{comments_element(false, indent)}
-#{pubDate_element(false, indent)}
-#{guid_element(false, indent)}
-EOT
-          rv << super
+          rv = [
+            super,
+            *%w(author comments pubDate guid).collect do |name|
+              __send__("#{name}_element", false, indent)
+            end
+          ].reject do |value|
+            /\A\s*\z/.match(value)
+          end
+          rv.join("\n")
         end
 
         private
@@ -98,6 +113,12 @@ EOT
           end + _tags09
         end
 
+        alias _setup_maker_element setup_maker_element
+        def setup_maker_element(item)
+          _setup_maker_element(item)
+          @guid.setup_maker(item) if @guid
+        end
+        
         class Guid < Element
           
           include RSS09
@@ -116,18 +137,6 @@ EOT
             @content = content
           end
 
-          def to_s(convert=true, indent=calc_indent)
-            if @content
-              rv = %Q!<guid!
-              rv << %Q! isPermaLink="#{h @isPermaLink}"! if @isPermaLink
-              rv << %Q!>#{h @content}</guid>!
-              rv = @converter.convert(rv) if convert and @converter
-              rv
-            else
-              ''
-            end
-          end
-
           private
           def _attrs
             [
@@ -135,6 +144,14 @@ EOT
             ]
           end
 
+          def maker_target(item)
+            item.guid
+          end
+
+          def setup_maker_attributes(guid)
+            guid.isPermaLink = isPermaLink
+            guid.content = content
+          end
         end
 
       end

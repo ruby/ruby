@@ -51,11 +51,20 @@ module RSS
       webMaster = "web master"
       rating = "6"
       docs = "http://foo.com/doc"
-      skipDays = "Sunday"
-      skipHours = "13"
+      skipDays = [
+        "Sunday",
+        "Monday",
+      ]
+      skipHours = [
+        0,
+        13,
+      ]
       pubDate = Time.now
       lastBuildDate = Time.now
-      category = "Nespapers"
+      categories = [
+        "Nespapers",
+        "misc",
+      ]
       generator = "RSS Maker"
       ttl = 60
       
@@ -69,11 +78,23 @@ module RSS
         maker.channel.webMaster = webMaster
         maker.channel.rating = rating
         maker.channel.docs = docs
-        maker.channel.skipDays = skipDays
-        maker.channel.skipHours = skipHours
         maker.channel.pubDate = pubDate
         maker.channel.lastBuildDate = lastBuildDate
-        maker.channel.category = category
+
+        skipDays.each do |day|
+          new_day = maker.channel.skipDays.new_day
+          new_day.content = day
+        end
+        skipHours.each do |hour|
+          new_hour = maker.channel.skipHours.new_hour
+          new_hour.content = hour
+        end
+        
+        categories.each do |category|
+          new_category = maker.channel.categories.new_category
+          new_category.content = category
+        end
+        
         maker.channel.generator = generator
         maker.channel.ttl = ttl
       end
@@ -88,11 +109,20 @@ module RSS
       assert_equal(webMaster, channel.webMaster)
       assert_equal(rating, channel.rating)
       assert_equal(docs, channel.docs)
-      assert_equal(skipDays, channel.skipDays)
-      assert_equal(skipHours, channel.skipHours)
       assert_equal(pubDate, channel.pubDate)
       assert_equal(lastBuildDate, channel.lastBuildDate)
-      assert_equal(category, channel.category)
+
+      skipDays.each_with_index do |day, i|
+        assert_equal(day, channel.skipDays.days[i].content)
+      end
+      skipHours.each_with_index do |hour, i|
+        assert_equal(hour, channel.skipHours.hours[i].content)
+      end
+      
+      channel.categories.each_with_index do |category, i|
+        assert_equal(categories[i], category.content)
+      end
+      
       assert_equal(generator, channel.generator)
       assert_equal(ttl, channel.ttl)
 
@@ -107,29 +137,32 @@ module RSS
       description = "fugafugafugafuga"
       language = "ja"
       
-      rss = RSS::Maker.make("2.0") do |maker|
-        # maker.channel.title = title
-        maker.channel.link = link
-        maker.channel.description = description
-        maker.channel.language = language
+      assert_not_set_error("maker.channel", %w(title)) do
+        RSS::Maker.make("2.0") do |maker|
+          # maker.channel.title = title
+          maker.channel.link = link
+          maker.channel.description = description
+          maker.channel.language = language
+        end
       end
-      assert_nil(rss)
 
-      rss = RSS::Maker.make("2.0") do |maker|
-        maker.channel.title = title
-        # maker.channel.link = link
-        maker.channel.description = description
-        maker.channel.language = language
+      assert_not_set_error("maker.channel", %w(link)) do
+        RSS::Maker.make("2.0") do |maker|
+          maker.channel.title = title
+          # maker.channel.link = link
+          maker.channel.description = description
+          maker.channel.language = language
+        end
       end
-      assert_nil(rss)
 
-      rss = RSS::Maker.make("2.0") do |maker|
-        maker.channel.title = title
-        maker.channel.link = link
-        # maker.channel.description = description
-        maker.channel.language = language
+      assert_not_set_error("maker.channel", %w(description)) do
+        RSS::Maker.make("2.0") do |maker|
+          maker.channel.title = title
+          maker.channel.link = link
+          # maker.channel.description = description
+          maker.channel.language = language
+        end
       end
-      assert_nil(rss)
 
       rss = RSS::Maker.make("2.0") do |maker|
         maker.channel.title = title
@@ -255,17 +288,18 @@ module RSS
       assert_equal(height, image.height)
       assert_equal(description, image.description)
 
-      rss = RSS::Maker.make("2.0") do |maker|
-        # setup_dummy_channel(maker)
-        maker.channel.link = link
+      assert_not_set_error("maker.channel", %w(title description)) do
+        RSS::Maker.make("2.0") do |maker|
+          # setup_dummy_channel(maker)
+          maker.channel.link = link
         
-        maker.image.title = title
-        maker.image.url = url
-        maker.image.width = width
-        maker.image.height = height
-        maker.image.description = description
+          maker.image.title = title
+          maker.image.url = url
+          maker.image.width = width
+          maker.image.height = height
+          maker.image.description = description
+        end
       end
-      assert_nil(rss)
     end
 
     def test_not_valid_image
@@ -288,18 +322,19 @@ module RSS
       end
       assert_nil(rss.image)
 
-      rss = RSS::Maker.make("2.0") do |maker|
-        setup_dummy_channel(maker)
-        # maker.channel.link = link
-        maker.channel.link = nil
+      assert_not_set_error("maker.channel", %w(link)) do
+        RSS::Maker.make("2.0") do |maker|
+          setup_dummy_channel(maker)
+          # maker.channel.link = link
+          maker.channel.link = nil
         
-        maker.image.title = title
-        maker.image.url = url
-        maker.image.width = width
-        maker.image.height = height
-        maker.image.description = description
+          maker.image.title = title
+          maker.image.url = url
+          maker.image.width = width
+          maker.image.height = height
+          maker.image.description = description
+        end
       end
-      assert_nil(rss)
 
       rss = RSS::Maker.make("2.0") do |maker|
         setup_dummy_channel(maker)
@@ -519,11 +554,11 @@ module RSS
         setup_dummy_channel(maker)
         setup_dummy_item(maker)
 
-        category = maker.items.last.category
+        category = maker.items.last.categories.new_category
         category.domain = domain
         category.content = content
       end
-      category = rss.channel.items.last.category
+      category = rss.channel.items.last.categories.last
       assert_equal(domain, category.domain)
       assert_equal(content, category.content)
     end
@@ -535,10 +570,10 @@ module RSS
         setup_dummy_channel(maker)
         setup_dummy_item(maker)
 
-        category = maker.items.last.category
+        category = maker.items.last.categories.new_category
         # category.content = content
       end
-      assert_nil(rss.channel.items.last.category)
+      assert(rss.channel.items.last.categories.empty?)
     end
     
     def test_textInput

@@ -116,7 +116,7 @@ EOR
 
     def test_channel
 
-      assert_parse(make_RDF(<<-EOR), :missing_attribute, "channel", "about")
+      assert_parse(make_RDF(<<-EOR), :missing_attribute, "channel", "rdf:about")
 <channel />
 EOR
 
@@ -145,7 +145,7 @@ EOR
 </channel>
 EOR
 
-      assert_parse(make_RDF(<<-EOR), :missing_attribute, "image", "resource")
+      assert_parse(make_RDF(<<-EOR), :missing_attribute, "image", "rdf:resource")
 <channel rdf:about="http://example.com/">
   <title>hoge</title>
   <link>http://example.com/</link>
@@ -194,7 +194,7 @@ EOR
 </channel>
 EOR
 
-      assert_parse(make_RDF(<<-EOR), :missing_attribute, "textinput", "resource")
+      assert_parse(make_RDF(<<-EOR), :missing_attribute, "textinput", "rdf:resource")
 <channel rdf:about="http://example.com/">
   <title>hoge</title>
   <link>http://example.com/</link>
@@ -257,7 +257,7 @@ EOR
 
     def test_image
 
-      assert_parse(make_RDF(<<-EOR), :missing_attribute, "image", "about")
+      assert_parse(make_RDF(<<-EOR), :missing_attribute, "image", "rdf:about")
 #{make_channel}
 <image>
 </image>
@@ -314,7 +314,7 @@ EOR
 
     def test_item
 
-      assert_parse(make_RDF(<<-EOR), :missing_attribute, "item", "about")
+      assert_parse(make_RDF(<<-EOR), :missing_attribute, "item", "rdf:about")
 #{make_channel}
 #{make_image}
 <item>
@@ -371,7 +371,7 @@ EOR
 
     def test_textinput
 
-      assert_parse(make_RDF(<<-EOR), :missing_attribute, "textinput", "about")
+      assert_parse(make_RDF(<<-EOR), :missing_attribute, "textinput", "rdf:about")
 #{make_channel}
 #{make_image}
 #{make_item}
