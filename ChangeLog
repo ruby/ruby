@@ -1,3 +1,7 @@
+Wed Oct 29 11:27:39 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (ret_args): node may be NULL. [ruby-talk:84530]
+
 Tue Oct 28 15:20:12 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* ext/tcltklib/tcltklib.c (VwaitVarProc, ip_rbVwaitObjCmd, 

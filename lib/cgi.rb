@@ -891,7 +891,7 @@ class CGI
   #     #  "name2" => ["value1", "value2", ...], ... }
   #
   def CGI::parse(query)
-    params = Hash.new([])
+    params = Hash.new{|hash,key|hash[key]=[]}
 
     query.split(/[&;]/n).each do |pairs|
       key, value = pairs.split('=',2).collect{|v| CGI::unescape(v) }

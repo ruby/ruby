@@ -5366,7 +5366,7 @@ ret_args(node)
 	if (nd_type(node) == NODE_ARRAY && node->nd_next == 0) {
 	    node = node->nd_head;
 	}
-	if (nd_type(node) == NODE_SPLAT) {
+	if (node && nd_type(node) == NODE_SPLAT) {
 	    node = NEW_SVALUE(node);
 	}
     }
