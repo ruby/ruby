@@ -453,7 +453,7 @@ module SM  #:nodoc:
           else
             wantedType = line.type
           end
-          wantedLevel = line.level
+          wantedLevel = line.type == Line::HEADING ? line.param : line.level
         end
       end
 
