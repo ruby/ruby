@@ -784,7 +784,8 @@ def create_makefile(target, srcprefix = nil)
   unless $objs then
     $objs = []
     for f in Dir[File.join(srcdir, "*.{#{SRC_EXT.join(%q{,})}}")]
-      $objs.push(File.basename(f, ".*") << "." << $OBJEXT)
+      obj = File.basename(f, ".*") << "." << $OBJEXT
+      $objs.push(obj) unless $objs.index(obj)
     end
   else
     for i in $objs
