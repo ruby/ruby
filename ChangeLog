@@ -1,3 +1,15 @@
+Tue Apr  9 12:44:59 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* ext/stringio/stringio.c (check_modifiable): performance
+	  improvement.  avoid calling rb_str_modify() twice.
+
+	* ext/stringio/stringio.c (strio_ungetc): ditto.
+
+	* ext/stringio/stringio.c (strio_putc): ditto.
+
+	* ext/stringio/stringio.c (strio_write): ditto, and use
+	  rb_str_cat() as possible.
+
 Tue Apr  9 05:17:48 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* re.c (match_select): fix index references and make

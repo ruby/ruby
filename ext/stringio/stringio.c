@@ -125,7 +125,6 @@ check_modifiable(ptr)
     if (OBJ_FROZEN(ptr->string)) {
 	rb_raise(rb_eIOError, "not modifiable string");
     }
-    rb_str_modify(ptr->string);
 }
 
 static VALUE strio_s_allocate _((VALUE));
@@ -548,6 +547,7 @@ strio_ungetc(self, ch)
 	if ((unsigned char)RSTRING(ptr->string)->ptr[--ptr->pos] !=
 	    (unsigned char)cc) {
 	    check_modifiable(ptr);
+	    rb_str_modify(ptr->string);
 	    RSTRING(ptr->string)->ptr[ptr->pos] = cc;
 	}
     }
@@ -740,10 +740,18 @@ strio_write(self, str)
     if (ptr->flags & STRIO_APPEND) {
 	ptr->pos = RSTRING(ptr->string)->len;
     }
-    if (ptr->pos + len > RSTRING(ptr->string)->len) {
-	rb_str_resize(ptr->string, ptr->pos + len);
+    if (ptr->pos == RSTRING(ptr->string)->len) {
+	rb_str_cat(ptr->string, RSTRING(str)->ptr, len);
     }
-    rb_str_update(ptr->string, ptr->pos, len, str);
+    else {
+	if (ptr->pos + len > RSTRING(ptr->string)->len) {
+	    rb_str_resize(ptr->string, ptr->pos + len);
+	}
+	else {
+	    rb_str_modify(ptr->string);
+	}
+	rb_str_update(ptr->string, ptr->pos, len, str);
+    }
     ptr->pos += len;
     return LONG2NUM(len);
 }
@@ -767,6 +775,9 @@ strio_putc(self, ch)
     }
     if (ptr->pos >= RSTRING(ptr->string)->len) {
 	rb_str_resize(ptr->string, ptr->pos + 1);
+    }
+    else {
+	rb_str_modify(ptr->string);
     }
     RSTRING(ptr->string)->ptr[ptr->pos++] = c;
     return ch;
