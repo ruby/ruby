@@ -3004,31 +3004,38 @@ yylex()
 
       case '*':
 	if ((c = nextc()) == '*') {
-	    lex_state = EXPR_BEG;
 	    if (nextc() == '=') {
+		lex_state = EXPR_BEG;
 		yylval.id = tPOW;
 		return tOP_ASGN;
 	    }
 	    pushback(c);
-	    return tPOW;
-	}
-	if (c == '=') {
-	    yylval.id = '*';
-	    lex_state = EXPR_BEG;
-	    return tOP_ASGN;
-	}
-	pushback(c);
-	if (IS_ARG() && space_seen && !ISSPACE(c)){
-	    rb_warning("`*' interpreted as argument prefix");
-	    c = tSTAR;
-	}
-	else if (lex_state == EXPR_BEG || lex_state == EXPR_MID) {
-	    c = tSTAR;
+	    c = tPOW;
 	}
 	else {
-	    c = '*';
+	    if (c == '=') {
+		yylval.id = '*';
+		lex_state = EXPR_BEG;
+		return tOP_ASGN;
+	    }
+	    pushback(c);
+	    if (IS_ARG() && space_seen && !ISSPACE(c)){
+		rb_warning("`*' interpreted as argument prefix");
+		c = tSTAR;
+	    }
+	    else if (lex_state == EXPR_BEG || lex_state == EXPR_MID) {
+		c = tSTAR;
+	    }
+	    else {
+		c = '*';
+	    }
 	}
-	lex_state = EXPR_BEG;
+	switch (lex_state) {
+	  case EXPR_FNAME: case EXPR_DOT:
+	    lex_state = EXPR_ARG; break;
+	  default:
+	    lex_state = EXPR_BEG; break;
+	}
 	return c;
 
       case '!':
@@ -3064,7 +3071,12 @@ yylex()
 	    }
 	}
 
-	lex_state = EXPR_BEG;
+	switch (lex_state) {
+	  case EXPR_FNAME: case EXPR_DOT:
+	    lex_state = EXPR_ARG; break;
+	  default:
+	    lex_state = EXPR_BEG; break;
+	}
 	if ((c = nextc()) == '=') {
 	    if ((c = nextc()) == '=') {
 		return tEQQ;
@@ -3099,7 +3111,12 @@ yylex()
 	    }
 	    pushback(c2);
 	}
-	lex_state = EXPR_BEG;
+	switch (lex_state) {
+	  case EXPR_FNAME: case EXPR_DOT:
+	    lex_state = EXPR_ARG; break;
+	  default:
+	    lex_state = EXPR_BEG; break;
+	}
 	if (c == '=') {
 	    if ((c = nextc()) == '>') {
 		return tCMP;
@@ -3109,6 +3126,7 @@ yylex()
 	}
 	if (c == '<') {
 	    if (nextc() == '=') {
+		lex_state = EXPR_BEG;
 		yylval.id = tLSHFT;
 		return tOP_ASGN;
 	    }
@@ -3119,12 +3137,18 @@ yylex()
 	return '<';
 
       case '>':
-	lex_state = EXPR_BEG;
+	switch (lex_state) {
+	  case EXPR_FNAME: case EXPR_DOT:
+	    lex_state = EXPR_ARG; break;
+	  default:
+	    lex_state = EXPR_BEG; break;
+	}
 	if ((c = nextc()) == '=') {
 	    return tGEQ;
 	}
 	if (c == '>') {
 	    if ((c = nextc()) == '=') {
+		lex_state = EXPR_BEG;
 		yylval.id = tRSHFT;
 		return tOP_ASGN;
 	    }
@@ -3193,12 +3217,17 @@ yylex()
 	else {
 	    c = '&';
 	}
-	lex_state = EXPR_BEG;
+	switch (lex_state) {
+	  case EXPR_FNAME: case EXPR_DOT:
+	    lex_state = EXPR_ARG; break;
+	  default:
+	    lex_state = EXPR_BEG;
+	}
 	return c;
 
       case '|':
-	lex_state = EXPR_BEG;
 	if ((c = nextc()) == '|') {
+	    lex_state = EXPR_BEG;
 	    if ((c = nextc()) == '=') {
 		yylval.id = tOROP;
 		return tOP_ASGN;
@@ -3206,9 +3235,16 @@ yylex()
 	    pushback(c);
 	    return tOROP;
 	}
-	else if (c == '=') {
+	if (c == '=') {
+	    lex_state = EXPR_BEG;
 	    yylval.id = '|';
 	    return tOP_ASGN;
+	}
+	if (lex_state == EXPR_FNAME || lex_state == EXPR_DOT) {
+	    lex_state = EXPR_ARG;
+	}
+	else {
+	    lex_state = EXPR_BEG;
 	}
 	pushback(c);
 	return '|';
@@ -3216,6 +3252,7 @@ yylex()
       case '+':
 	c = nextc();
 	if (lex_state == EXPR_FNAME || lex_state == EXPR_DOT) {
+	    lex_state = EXPR_ARG;
 	    if (c == '@') {
 		return tUPLUS;
 	    }
@@ -3245,6 +3282,7 @@ yylex()
       case '-':
 	c = nextc();
 	if (lex_state == EXPR_FNAME || lex_state == EXPR_DOT) {
+	    lex_state = EXPR_ARG;
 	    if (c == '@') {
 		return tUMINUS;
 	    }
@@ -3509,14 +3547,25 @@ yylex()
 		return parse_regx('/', '/');
 	    }
 	}
-	lex_state = EXPR_BEG;
+	switch (lex_state) {
+	  case EXPR_FNAME: case EXPR_DOT:
+	    lex_state = EXPR_ARG; break;
+	  default:
+	    lex_state = EXPR_BEG; break;
+	}
 	return '/';
 
       case '^':
-	lex_state = EXPR_BEG;
 	if ((c = nextc()) == '=') {
+	    lex_state = EXPR_BEG;
 	    yylval.id = '^';
 	    return tOP_ASGN;
+	}
+	switch (lex_state) {
+	  case EXPR_FNAME: case EXPR_DOT:
+	    lex_state = EXPR_ARG; break;
+	  default:
+	    lex_state = EXPR_BEG; break;
 	}
 	pushback(c);
 	return '^';
@@ -3533,7 +3582,12 @@ yylex()
 		pushback(c);
 	    }
 	}
-	lex_state = EXPR_BEG;
+	switch (lex_state) {
+	  case EXPR_FNAME: case EXPR_DOT:
+	    lex_state = EXPR_ARG; break;
+	  default:
+	    lex_state = EXPR_BEG; break;
+	}
 	return '~';
 
       case '(':
@@ -3557,6 +3611,7 @@ yylex()
 
       case '[':
 	if (lex_state == EXPR_FNAME || lex_state == EXPR_DOT) {
+	    lex_state = EXPR_ARG;
 	    if ((c = nextc()) == ']') {
 		if ((c = nextc()) == '=') {
 		    return tASET;
@@ -3656,7 +3711,12 @@ yylex()
 	if (IS_ARG() && space_seen && !ISSPACE(c)) {
 	    goto quotation;
 	}
-	lex_state = EXPR_BEG;
+	switch (lex_state) {
+	  case EXPR_FNAME: case EXPR_DOT:
+	    lex_state = EXPR_ARG; break;
+	  default:
+	    lex_state = EXPR_BEG; break;
+	}
 	pushback(c);
 	return '%';
 

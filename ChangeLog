@@ -1,3 +1,8 @@
+Tue Feb 19 14:24:36 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (yylex): operators in the "op" rule should make
+	  lex_state EXPR_ARG on EXPR_FNAME and EXPR_DOT.
+
 Tue Feb 19 13:38:10 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_eval_string_wrap): should hide the toplevel local
