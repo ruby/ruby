@@ -1,4 +1,4 @@
-/************************************************
+/**********************************************************************
 
   eval.c -
 
@@ -7,8 +7,10 @@
   created at: Thu Jun 10 14:22:17 JST 1993
 
   Copyright (C) 1993-2000 Yukihiro Matsumoto
+  Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
+  Copyright (C) 2000  Information-technology Promotion Agancy, Japan
 
-************************************************/
+**********************************************************************/
 
 #include "ruby.h"
 #include "node.h"
@@ -1837,10 +1839,11 @@ static void return_check _((void));
 #define return_value(v) prot_tag->retval = (v)
 
 static VALUE
-rb_eval(self, node)
+rb_eval(self, n)
     VALUE self;
-    NODE * volatile node;
+    NODE *n;
 {
+    NODE * volatile node = n;
     int state;
     volatile VALUE result = Qnil;
 
@@ -2745,6 +2748,10 @@ rb_eval(self, node)
 		    rb_warning("discarding old %s", rb_id2name(node->nd_mid));
 		}
 		rb_clear_cache_by_id(node->nd_mid);
+		if (node->nd_noex) { /* toplevel */
+		    rb_warning("overriding global function `%s'",
+			       rb_id2name(node->nd_mid));
+		}
 	    }
 
 	    if (SCOPE_TEST(SCOPE_PRIVATE) || node->nd_mid == init) {
@@ -2754,7 +2761,7 @@ rb_eval(self, node)
 		noex = NOEX_PROTECTED;
 	    }
 	    else {
-		noex = NOEX_PUBLIC;
+		noex =  node->nd_noex;
 	    }
 	    if (body && origin == ruby_class && body->nd_noex & NOEX_UNDEF) {
 		noex |= NOEX_UNDEF;
@@ -2782,16 +2789,16 @@ rb_eval(self, node)
 	    VALUE klass;
 	    NODE *body = 0;
 
-	    if (rb_special_const_p(recv)) {
+	    if (rb_safe_level() >= 4 && !OBJ_TAINTED(recv)) {
+		rb_raise(rb_eSecurityError, "Insecure; can't define singleton method");
+	    }
+	    if (FIXNUM_P(recv) || SYMBOL_P(recv)) {
 		rb_raise(rb_eTypeError,
-			 "can't define method \"%s\" for %s",
+			 "can't define singleton method \"%s\" for %s",
 			 rb_id2name(node->nd_mid),
 			 rb_class2name(CLASS_OF(recv)));
 	    }
 
-	    if (rb_safe_level() >= 4 && !OBJ_TAINTED(recv)) {
-		rb_raise(rb_eSecurityError, "can't define singleton method");
-	    }
 	    if (OBJ_FROZEN(recv)) rb_error_frozen("object");
 	    klass = rb_singleton_class(recv);
 	    if (st_lookup(RCLASS(klass)->m_tbl, node->nd_mid, &body)) {
@@ -2995,10 +3002,11 @@ rb_eval(self, node)
 }
 
 static VALUE
-module_setup(module, node)
+module_setup(module, n)
     VALUE module;
-    NODE * volatile node;
+    NODE *n;
 {
+    NODE * volatile node = n;
     int state;
     struct FRAME frame;
     VALUE result;		/* OK */
@@ -3428,37 +3436,30 @@ massign(self, node, val, check)
 
     list = node->nd_head;
 
-    if (val) {
-	if (TYPE(val) != T_ARRAY) {
-	    if (NIL_P(val))
-		val = rb_ary_new2(0);
-	    else
-		val = rb_ary_new3(1, val);
-	}
-	len = RARRAY(val)->len;
-	for (i=0; list && i<len; i++) {
-	    assign(self, list->nd_head, RARRAY(val)->ptr[i], check);
-	    list = list->nd_next;
-	}
-	if (check && list) goto arg_error;
-	if (node->nd_args) {
-	    if (node->nd_args == (NODE*)-1) {
-		/* ignore rest args */
-	    }
-	    else if (!list && i<len) {
-		assign(self, node->nd_args, rb_ary_new4(len-i, RARRAY(val)->ptr+i), check);
-	    }
-	    else {
-		assign(self, node->nd_args, rb_ary_new2(0), check);
-	    }
-	}
-	else if (check && i<len) goto arg_error;
+    if (TYPE(val) != T_ARRAY) {
+	if (NIL_P(val))
+	    val = rb_ary_new2(0);
+	else
+	    val = rb_ary_new3(1, val);
     }
-    else if (node->nd_args && node->nd_args != (NODE*)-1) {
-	assign(self, node->nd_args, Qnil, check);
+    len = RARRAY(val)->len;
+    for (i=0; list && i<len; i++) {
+	assign(self, list->nd_head, RARRAY(val)->ptr[i], check);
+	list = list->nd_next;
+    }
+    if (check && list) goto arg_error;
+    if (node->nd_args) {
+	if (node->nd_args == (NODE*)-1) {
+	    /* ignore rest args */
+	}
+	else if (!list && i<len) {
+	    assign(self, node->nd_args, rb_ary_new4(len-i, RARRAY(val)->ptr+i), check);
+	}
+	else {
+	    assign(self, node->nd_args, rb_ary_new2(0), check);
+	}
     }
 
-    if (check && list) goto arg_error;
     while (list) {
 	i++;
 	assign(self, list->nd_head, Qnil, check);
@@ -6199,7 +6200,7 @@ enum thread_status {
     THREAD_RUNNABLE,
     THREAD_STOPPED,
     THREAD_TO_KILL,
-    THREAD_KILLED,
+    THREAD_KILLED
 };
 
 #define WAIT_FD		(1<<0)
@@ -6261,7 +6262,9 @@ struct thread {
 
 #define THREAD_RAISED 0x200
 
+static thread_t main_thread;
 static thread_t curr_thread = 0;
+
 static int num_waiting_on_fd = 0;
 static int num_waiting_on_timer = 0;
 static int num_waiting_on_join = 0;
@@ -6280,8 +6283,6 @@ timeofday()
     gettimeofday(&tv, NULL);
     return (double)tv.tv_sec + (double)tv.tv_usec * 1e-6;
 }
-
-static thread_t main_thread;
 
 #define STACK(addr) (th->stk_pos<(VALUE*)(addr) && (VALUE*)(addr)<th->stk_pos+th->stk_len)
 #define ADJ(addr) (void*)(STACK(addr)?(((VALUE*)(addr)-th->stk_pos)+th->stk_ptr):(VALUE*)(addr))
@@ -6358,11 +6359,9 @@ thread_free(th)
     if (th->stk_ptr) free(th->stk_ptr);
     th->stk_ptr = 0;
     if (th->locals) st_free_table(th->locals);
-    if (th->status != THREAD_KILLED) {
-	if (th->prev)
-	    th->prev->next = th->next;
-	if (th->next)
-	    th->next->prev = th->prev;
+    if (th->status != THREAD_KILLED && th->prev) {
+	th->prev->next = th->next;
+	th->next->prev = th->prev;
     }
     if (th != main_thread) free(th);
 }
@@ -7990,7 +7989,6 @@ rb_f_throw(argc, argv)
     return_value(value);
     rb_trap_restore_mask();
     JUMP_TAG(TAG_THROW);
-    /* not reached */
 }
 
 void

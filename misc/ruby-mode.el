@@ -114,6 +114,31 @@
 (defvar ruby-indent-level 2
   "*Indentation of ruby statements.")
 
+(eval-when-compile (require 'cl))
+(defun ruby-imenu-create-index ()
+  (let ((index-alist '())
+	class-name class-begin method-name method-begin decl)
+    (goto-char (point-min))
+    (while (re-search-forward "^\\s *\\(class\\|def\\)\\s *\\([^(\n ]+\\)" nil t)
+      (setq decl (buffer-substring (match-beginning 1) (match-end 1)))
+      (cond
+       ((string= "class" decl)
+	(setq class-begin (match-beginning 2))
+	(setq class-name (buffer-substring class-begin (match-end 2)))
+	(push (cons class-name (match-beginning 0)) index-alist)
+	(ruby-mark-defun)
+	(save-restriction
+	  (narrow-to-region (region-beginning) (region-end))
+	  (while (re-search-forward "^\\s *def\\s *\\([^(\n ]+\\)" nil t)
+	    (setq method-begin (match-beginning 1))
+	    (setq method-name (buffer-substring method-begin (match-end 1)))
+	    (push (cons (concat class-name "#" method-name) (match-beginning 0)) index-alist))))
+       ((string= "def" decl)
+	(setq method-begin (match-beginning 2))
+	(setq method-name (buffer-substring method-begin (match-end 2)))
+	(push (cons method-name (match-beginning 0)) index-alist))))
+    index-alist))
+
 (defun ruby-mode-variables ()
   (set-syntax-table ruby-mode-syntax-table)
   (setq local-abbrev-table ruby-mode-abbrev-table)
@@ -152,6 +177,9 @@ The variable ruby-indent-level controls the amount of indentation.
   (setq mode-name "Ruby")
   (setq major-mode 'ruby-mode)
   (ruby-mode-variables)
+
+  (make-local-variable 'imenu-create-index-function)
+  (setq imenu-create-index-function 'ruby-imenu-create-index)
 
   (run-hooks 'ruby-mode-hook))
 
@@ -250,8 +278,8 @@ The variable ruby-indent-level controls the amount of indentation.
 		  (goto-char indent-point))))
 	       ((looking-at "/")
 		(cond
-		 ((and (not (eobp)) (ruby-expr-beg 'expr-arg))
-		  (if (re-search-forward "[^\\]/" indent-point t)
+		 ((and (not (eobp)) (ruby-expr-beg))
+		  (if (re-search-forward "[^\\]\\(\\\\\\\\\\)*/" indent-point t)
 		      nil
 		    (setq in-string (point))
 		    (goto-char indent-point)))
@@ -262,15 +290,21 @@ The variable ruby-indent-level controls the amount of indentation.
 		 ((and (not (eobp)) (ruby-expr-beg 'expr-arg)
 		       (not (looking-at "%="))
 		       (looking-at "%[Qqrxw]?\\(.\\)"))
+		  (goto-char (match-beginning 1))
 		  (setq w (buffer-substring (match-beginning 1)
 					    (match-end 1)))
 		  (cond
-		   ((string= w "[") (setq w "]"))
+		   ((string= w "[") (setq w "\\]"))
 		   ((string= w "{") (setq w "}"))
 		   ((string= w "(") (setq w ")"))
-		   ((string= w "<") (setq w ">")))
-		  (goto-char (match-end 0))
-		  (if (search-forward w indent-point t)
+		   ((string= w "<") (setq w ">"))
+		   ((member w '("*" "." "+" "?" "^" "$"))
+		    (setq w (concat "\\" w))))
+		  (if (re-search-forward
+		       (if (string= w "\\")
+			   "\\\\[^\\]*\\\\"
+			 (concat "[^\\]\\(\\\\\\\\\\)*" w))
+		       indent-point t)
 		      nil
 		    (setq in-string (point))
 		    (goto-char indent-point)))

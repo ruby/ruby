@@ -1,3 +1,6 @@
+# Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
+# Copyright (C) 2000  Information-technology Promotion Agancy, Japan
+
 if $SAFE > 0
   STDERR.print "-r debug.rb is not available in safe mode\n"
   exit 1
@@ -190,159 +193,158 @@ class DEBUGGER__
 
     def debug_command(file, line, id, binding)
       MUTEX.lock
-	DEBUGGER__.set_last_thread(Thread.current)
-	frame_pos = 0
-	binding_file = file
-	binding_line = line
-	previous_line = nil
-	if (ENV['EMACS'] == 't')
-	  stdout.printf "\032\032%s:%d:\n", binding_file, binding_line
-	else
-	  stdout.printf "%s:%d:%s", binding_file, binding_line,
-	    line_at(binding_file, binding_line)
-	end
-	@frames[0] = [binding, file, line, id]
-	display_expressions(binding)
-	while input = readline("(rdb:%d) "%thnum(), true)
-	  catch (:debug_error) do
-	    if input == ""
-	      input = DEBUG_LAST_CMD[0]
-	      stdout.print input, "\n"
+      DEBUGGER__.set_last_thread(Thread.current)
+      frame_pos = 0
+      binding_file = file
+      binding_line = line
+      previous_line = nil
+      if (ENV['EMACS'] == 't')
+	stdout.printf "\032\032%s:%d:\n", binding_file, binding_line
+      else
+	stdout.printf "%s:%d:%s", binding_file, binding_line,
+	  line_at(binding_file, binding_line)
+      end
+      @frames[0] = [binding, file, line, id]
+      display_expressions(binding)
+      while input = readline("(rdb:%d) "%thnum(), true)
+	catch (:debug_error) do
+	  if input == ""
+	    input = DEBUG_LAST_CMD[0]
+	    stdout.print input, "\n"
+	  else
+	    DEBUG_LAST_CMD[0] = input
+	  end
+
+	  case input
+	  when /^\s*b(?:reak)?\s+((?:.*?+:)?.+)$/
+	    pos = $1
+	    if pos.index(":")
+	      file, pos = pos.split(":")
+	    end
+	    file = File.basename(file)
+	    if pos =~ /^\d+$/
+	      pname = pos
+	      pos = pos.to_i
 	    else
-	      DEBUG_LAST_CMD[0] = input
+	      pname = pos = pos.intern.id2name
+	    end
+	    break_points.push [true, 0, file, pos]
+	    stdout.printf "Set breakpoint %d at %s:%s\n", break_points.size, file, pname
+
+	  when /^\s*wat(?:ch)?\s+(.+)$/
+	    exp = $1
+	    break_points.push [true, 1, exp]
+	    stdout.printf "Set watchpoint %d\n", break_points.size, exp
+
+	  when /^\s*b(?:reak)?$/
+	    if break_points.find{|b| b[1] == 0}
+	      n = 1
+	      stdout.print "breakpoints:\n"
+	      for b in break_points
+		if b[0] and b[1] == 0
+		  stdout.printf "  %d %s:%s\n", n, b[2], b[3] 
+		end
+		n += 1
+	      end
+	    end
+	    if break_points.find{|b| b[1] == 1}
+	      n = 1
+	      stdout.print "\n"
+	      stdout.print "watchpoints:\n"
+	      for b in break_points
+		if b[0] and b[1] == 1
+		  stdout.printf "  %d %s\n", n, b[2]
+		end
+		n += 1
+	      end
+	    end
+	    if break_points.size == 0
+	      stdout.print "no breakpoints\n"
+	    else
+	      stdout.print "\n"
 	    end
 
-	    case input
-	    when /^\s*b(?:reak)?\s+((?:.*?+:)?.+)$/
-	      pos = $1
-	      if pos.index(":")
-		file, pos = pos.split(":")
-	      end
-	      file = File.basename(file)
-	      if pos =~ /^\d+$/
-		pname = pos
-		pos = pos.to_i
-	      else
-		pname = pos = pos.intern.id2name
-	      end
-	      break_points.push [true, 0, file, pos]
-	      stdout.printf "Set breakpoint %d at %s:%s\n", break_points.size, file,
-		pname
-
-	    when /^\s*wat(?:ch)?\s+(.+)$/
-	      exp = $1
-	      break_points.push [true, 1, exp]
-	      stdout.printf "Set watchpoint %d\n", break_points.size, exp
-
-	    when /^\s*b(?:reak)?$/
-	      if break_points.find{|b| b[1] == 0}
-		n = 1
-		stdout.print "breakpoints:\n"
+	  when /^\s*del(?:ete)?(?:\s+(\d+))?$/
+	    pos = $1
+	    unless pos
+	      input = readline("clear all breakpoints? (y/n) ", false)
+	      if input == "y"
 		for b in break_points
-		  if b[0] and b[1] == 0
-		    stdout.printf "  %d %s:%s\n", n, b[2], b[3] 
-		  end
-		  n += 1
+		  b[0] = false
 		end
 	      end
-	      if break_points.find{|b| b[1] == 1}
-		n = 1
-		stdout.print "\n"
-		stdout.print "watchpoints:\n"
-		for b in break_points
-		  if b[0] and b[1] == 1
-		    stdout.printf "  %d %s\n", n, b[2]
-		  end
-		  n += 1
+	    else
+	      pos = pos.to_i
+	      if break_points[pos-1]
+		break_points[pos-1][0] = false
+	      else
+		stdout.printf "Breakpoint %d is not defined\n", pos
+	      end
+	    end
+
+	  when /^\s*disp(?:lay)?\s+(.+)$/
+	    exp = $1
+	    display.push.push [true, exp]
+	    stdout.printf "  %d: %s = %s\n", display.size, exp,
+	      eval(exp, binding) rescue "--"
+
+	  when /^\s*disp(?:lay)?$/
+	    display_expressions(binding)
+
+	  when /^\s*undisp(?:lay)?(?:\s+(\d+))?$/
+	    pos = $1
+	    unless pos
+	      input = readline("clear all expressions? (y/n) ", false)
+	      if input == "y"
+		for d in display
+		  d[0] = false
 		end
 	      end
-	      if break_points.size == 0
-		stdout.print "no breakpoints\n"
+	    else
+	      pos = pos.to_i
+	      if display[pos-1]
+		display[pos-1][0] = false
 	      else
-		stdout.print "\n"
+		stdout.printf "display expression %d is not defined\n", pos
 	      end
+	    end
 
-	    when /^\s*del(?:ete)?(?:\s+(\d+))?$/
-	      pos = $1
-	      unless pos
-		input = readline("clear all breakpoints? (y/n) ", false)
-		if input == "y"
-		  for b in break_points
-		    b[0] = false
-		  end
-		end
-	      else
-		pos = pos.to_i
-		if break_points[pos-1]
-		  break_points[pos-1][0] = false
-		else
-		  stdout.printf "Breakpoint %d is not defined\n", pos
-		end
-	      end
+	  when /^\s*c(?:ont)?$/
+	    MUTEX.unlock
+	    return
 
-	    when /^\s*disp(?:lay)?\s+(.+)$/
-	      exp = $1
-	      display.push.push [true, exp]
-	      stdout.printf "  %d: %s = %s\n", display.size, exp,
-		eval(exp, binding) rescue "--"
+	  when /^\s*s(?:tep)?(?:\s+(\d+))?$/
+	    if $1
+	      lev = $1.to_i
+	    else
+	      lev = 1
+	    end
+	    @stop_next = lev
+	    return
 
-	    when /^\s*disp(?:lay)?$/
-	      display_expressions(binding)
+	  when /^\s*n(?:ext)?(?:\s+(\d+))?$/
+	    if $1
+	      lev = $1.to_i
+	    else
+	      lev = 1
+	    end
+	    @stop_next = lev
+	    @no_step = @frames.size - frame_pos
+	    return
 
-	    when /^\s*undisp(?:lay)?(?:\s+(\d+))?$/
-	      pos = $1
-	      unless pos
-		input = readline("clear all expressions? (y/n) ", false)
-		if input == "y"
-		  for d in display
-		    d[0] = false
-		  end
-		end
-	      else
-		pos = pos.to_i
-		if display[pos-1]
-		  display[pos-1][0] = false
-		else
-		  stdout.printf "display expression %d is not defined\n", pos
-		end
-	      end
+	  when /^\s*w(?:here)?$/, /^\s*f(?:rame)?$/
+	    display_frames(frame_pos)
 
-	    when /^\s*c(?:ont)?$/
-	      MUTEX.unlock
-	      return
-
-	    when /^\s*s(?:tep)?(?:\s+(\d+))?$/
-	      if $1
-		lev = $1.to_i
-	      else
-		lev = 1
-	      end
-	      @stop_next = lev
-	      return
-
-	    when /^\s*n(?:ext)?(?:\s+(\d+))?$/
-	      if $1
-		lev = $1.to_i
-	      else
-		lev = 1
-	      end
-	      @stop_next = lev
-	      @no_step = @frames.size - frame_pos
-	      return
-
-	    when /^\s*w(?:here)?$/, /^\s*f(?:rame)?$/
-	      display_frames(frame_pos)
-
-	    when /^\s*l(?:ist)?(?:\s+(.+))?$/
-	      if not $1
-		b = previous_line ? previous_line + 10 : binding_line - 5
-		e = b + 9
-	      elsif $1 == '-'
-		b = previous_line ? previous_line - 10 : binding_line - 5
-		e = b + 9
-	      else
-		b, e = $1.split(/[-,]/)
-		if e
+	  when /^\s*l(?:ist)?(?:\s+(.+))?$/
+	    if not $1
+	      b = previous_line ? previous_line + 10 : binding_line - 5
+	      e = b + 9
+	    elsif $1 == '-'
+	      b = previous_line ? previous_line - 10 : binding_line - 5
+	      e = b + 9
+	    else
+	      b, e = $1.split(/[-,]/)
+	      if e
 		b = b.to_i
 		e = e.to_i
 	      else
@@ -412,6 +414,9 @@ class DEBUGGER__
 	  when /^\s*p\s+/
 	    p debug_eval($', binding)
 
+	  when /^\s*h(?:elp)?/
+	    debug_print_help()
+
 	  else
 	    v = debug_eval(input, binding)
 	    p v unless (v == nil)
@@ -419,6 +424,45 @@ class DEBUGGER__
 	end
       end
     end
+
+    def debug_print_help
+      print <<EOHELP
+Debugger help v.-0.002b
+Commands
+  b[reak] [file or method:]<line>  set breakpoint to some position
+  wat[ch] <expression>       set watchpoint to some expression
+  b[reak]                    list breakpoints
+  del[ele][ nnn]             delete some or all breakpoints
+  disp[lay] <expression>     add expression into display expression list
+  undisp[lay][ nnn]          delete one particular or all display expressions
+  c[ont]                     run until program ends or hit breakpoint
+  s[tep][ nnn]               step (into methods) one line or till line nnn
+  n[ext][ nnn]               go over one line or till line nnn
+  w[here]                    display frames
+  f[rame]                    alias for where
+  l[ist][ (-|nn-mm)]         list program, - lists backwards
+                             nn-mm lists given lines
+  up[ nn]                    move to higher frame
+  down[ nn]                  move to lower frame
+  fin[ish]                   return to outer frame
+  q[uit]                     exit from debugger
+  v[ar] g[lobal]             show global variables
+  v[ar] l[ocal]              show local variables
+  v[ar] i[nstance] <object>  show instance variables of object
+  v[ar] c[onst] <object>     show constants of object
+  m[ethod] i[nstance] <obj>  show methods of object
+  m[ethod] <class or module> show instance methods of class or module
+  th[read] l[ist]            list all threads
+  th[read] c[ur[rent]]       show current threads
+  th[read] <nnn>             stop thread nnn
+  th[read] stop <nnn>        alias for th[read] <nnn>
+  th[read] c[ur[rent]] <nnn> alias for th[read] <nnn>
+  th[read] resume <nnn>      run thread nnn
+  p expression               evaluate expression and print its value
+  h[elp]                     print this help
+  <everything else>          evaluate
+EOHELP
+     end
 
     def display_expressions(binding)
       n = 1

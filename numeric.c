@@ -1,4 +1,4 @@
-/************************************************
+/**********************************************************************
 
   numeric.c -
 
@@ -8,12 +8,12 @@
 
   Copyright (C) 1993-2000 Yukihiro Matsumoto
 
-************************************************/
+**********************************************************************/
 
 #include "ruby.h"
 #include <math.h>
 #include <stdio.h>
-#if defined(FreeBSD) && __FreeBSD_version < 400012
+#if defined(__FreeBSD__) && __FreeBSD__ < 4
 #include <floatingpoint.h>
 #endif
 
@@ -27,10 +27,6 @@ VALUE rb_cFixnum;
 
 VALUE rb_eZeroDivError;
 VALUE rb_eFloatDomainError;
-
-ID rb_frame_last_func();
-VALUE rb_float_new();
-double rb_big2dbl();
 
 void
 rb_num_zerodiv()
@@ -1451,7 +1447,7 @@ fix_zero_p(num)
 void
 Init_Numeric()
 {
-#if defined(FreeBSD) && __FreeBSD_version < 400012
+#if defined(__FreeBSD__) && __FreeBSD__ < 4
     /* allow divide by zero -- Inf */
     fpsetmask(fpgetmask() & ~(FP_X_DZ|FP_X_INV|FP_X_OFL));
 #endif
@@ -1459,7 +1455,7 @@ Init_Numeric()
     to_i = rb_intern("to_i");
 
     rb_eZeroDivError = rb_define_class("ZeroDivisionError", rb_eStandardError);
-    rb_eFloatDomainError = rb_define_class("FloatDomainError", rb_eStandardError);
+    rb_eFloatDomainError = rb_define_class("FloatDomainError", rb_eRangeError);
     rb_cNumeric = rb_define_class("Numeric", rb_cObject);
 
     rb_include_module(rb_cNumeric, rb_mComparable);

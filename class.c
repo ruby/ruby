@@ -1,4 +1,4 @@
-/************************************************
+/**********************************************************************
 
   class.c -
 
@@ -8,7 +8,7 @@
 
   Copyright (C) 1993-2000 Yukihiro Matsumoto
 
-************************************************/
+**********************************************************************/
 
 #include "ruby.h"
 #include "node.h"
@@ -502,15 +502,30 @@ rb_undef_method(klass, name)
     rb_add_method(klass, rb_intern(name), 0, NOEX_UNDEF);
 }
 
+#define SPECIAL_SINGLETON(x,c) if (obj == (x)) {\
+    if (!FL_TEST(c, FL_SINGLETON)) {\
+	c = rb_singleton_class_new(c);\
+	rb_singleton_class_attached(c,obj);\
+    }\
+    return c;\
+}
+
 VALUE
 rb_singleton_class(obj)
     VALUE obj;
 {
     VALUE klass;
 
-    if (rb_special_const_p(obj)) {
+    if (FIXNUM_P(obj) || SYMBOL_P(obj)) {
 	rb_raise(rb_eTypeError, "can't define singleton");
     }
+    if (rb_special_const_p(obj)) {
+	SPECIAL_SINGLETON(Qnil, rb_cNilClass);
+	SPECIAL_SINGLETON(Qfalse, rb_cFalseClass);
+	SPECIAL_SINGLETON(Qtrue, rb_cTrueClass);
+	rb_bug("unknown immediate %d", obj);
+    }
+
     if (FL_TEST(RBASIC(obj)->klass, FL_SINGLETON)) {
 	klass = RBASIC(obj)->klass;
     }

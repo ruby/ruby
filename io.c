@@ -1,4 +1,4 @@
-/************************************************
+/**********************************************************************
 
   io.c -
 
@@ -7,8 +7,10 @@
   created at: Fri Oct 15 18:08:59 JST 1993
 
   Copyright (C) 1993-2000 Yukihiro Matsumoto
+  Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
+  Copyright (C) 2000  Information-technology Promotion Agancy, Japan
 
-************************************************/
+**********************************************************************/
 
 #include "ruby.h"
 #include "rubyio.h"
@@ -209,7 +211,7 @@ io_write(io, str)
     }
 #endif
     if (fptr->mode & FMODE_SYNC) {
-	fflush(f);
+	if (fflush(f) == EOF) rb_sys_fail(fptr->path);
     }
 
     return INT2FIX(n);
@@ -241,7 +243,7 @@ rb_io_flush(io)
     rb_io_check_writable(fptr);
     f = GetWriteFile(fptr);
 
-    if (fflush(f) == EOF) rb_sys_fail(0);
+    if (fflush(f) == EOF) rb_sys_fail(fptr->path);
 
     return io;
 }
@@ -530,6 +532,9 @@ rb_io_gets_internal(argc, argv, io)
     if (NIL_P(rs)) {
 	rsptr = 0;
 	rslen = 0;
+    }
+    else if (rs == rb_default_rs) {
+	return rb_io_gets(io);
     }
     else {
 	rslen = RSTRING(rs)->len;
@@ -919,15 +924,13 @@ fptr_finalize(fptr)
     }
 }
 
-static void
-rb_io_fptr_close(fptr)
+void
+rb_io_fptr_finalize(fptr)
     OpenFile *fptr;
 {
-    int fd;
-
+    if (!fptr) return;
     if (fptr->f == NULL && fptr->f2 == NULL) return;
 
-    fd = fileno(fptr->f);
     if (fptr->finalize) {
 	(*fptr->finalize)(fptr);
     }
@@ -935,19 +938,25 @@ rb_io_fptr_close(fptr)
 	fptr_finalize(fptr);
     }
     fptr->f = fptr->f2 = NULL;
-    rb_thread_fd_close(fd);
-}
 
-void
-rb_io_fptr_finalize(fptr)
-    OpenFile *fptr;
-{
-    if (!fptr) return;
-    rb_io_fptr_close(fptr);
     if (fptr->path) {
 	free(fptr->path);
 	fptr->path = NULL;
     }
+}
+
+static void
+rb_io_fptr_close(fptr)
+    OpenFile *fptr;
+{
+    int fd;
+
+    if (!fptr) return;
+    if (fptr->f == NULL && fptr->f2 == NULL) return;
+
+    fd = fileno(fptr->f);
+    rb_io_fptr_finalize(fptr);
+    rb_thread_fd_close(fd);
 }
 
 VALUE
@@ -957,6 +966,9 @@ rb_io_close(io)
     OpenFile *fptr;
 
     fptr = RFILE(io)->fptr;
+    if (fptr->mode & FMODE_WRITABLE) {
+	rb_io_flush(io);
+    }
     rb_io_fptr_close(fptr);
     if (fptr->pid) {
 	rb_syswait(fptr->pid);
@@ -1335,7 +1347,7 @@ rb_file_sysopen(fname, flags, mode)
 {
     NEWOBJ(io, struct RFile);
     OBJSETUP(io, rb_cFile, T_FILE);
-    return rb_file_sysopen_internal((VALUE)io, fname, mode);
+    return rb_file_sysopen_internal((VALUE)io, fname, flags, mode);
 }
 
 #if defined (NT) || defined(DJGPP) || defined(__CYGWIN__) || defined(__human68k__)
@@ -1736,10 +1748,10 @@ io_reopen(io, nfile)
 
     if (fptr == orig) return io;
     if (orig->f2) {
-	fflush(orig->f2);
+	if (fflush(orig->f2) == EOF) rb_sys_fail(orig->path);
     }
     else if (orig->mode & FMODE_WRITABLE) {
-	fflush(orig->f);
+	if (fflush(orig->f) == EOF) rb_sys_fail(orig->path);
     }
     rb_thread_fd_close(fileno(fptr->f));
 
@@ -1852,10 +1864,10 @@ rb_io_clone(io)
     MakeOpenFile(clone, fptr);
 
     if (orig->f2) {
-	fflush(orig->f2);
+	if (fflush(orig->f2) == EOF) rb_sys_fail(orig->path);
     }
     else if (orig->mode & FMODE_WRITABLE) {
-	fflush(orig->f);
+	if (fflush(orig->f) == EOF) rb_sys_fail(orig->path);
     }
 
     /* copy OpenFile structure */
@@ -1979,8 +1991,9 @@ rb_io_putc(io, ch)
 
     if (fputc(c, f) == EOF)
 	rb_sys_fail(fptr->path);
-    if (fptr->mode & FMODE_SYNC)
-	fflush(f);
+    if (fptr->mode & FMODE_SYNC) {
+	if (fflush(f) == EOF) rb_sys_fail(fptr->path);
+    }
 
     return ch;
 }
@@ -2250,7 +2263,7 @@ rb_io_initialize(argc, argv, io)
     char *m = "r";
 
     if (RFILE(io)->fptr) {
-	rb_io_fptr_finalize(RFILE(io)->fptr);
+	rb_io_close_m(io);
 	free(RFILE(io)->fptr);
 	RFILE(io)->fptr = 0;
     }
@@ -2883,7 +2896,7 @@ rb_io_s_pipe()
 	rb_sys_fail(0);
 
     r = prep_stdio(rb_fdopen(pipes[0], "r"), FMODE_READABLE, rb_cIO);
-    w = prep_stdio(rb_fdopen(pipes[1], "w"), FMODE_WRITABLE, rb_cIO);
+    w = prep_stdio(rb_fdopen(pipes[1], "w"), FMODE_WRITABLE|FMODE_SYNC, rb_cIO);
 
     ary = rb_ary_new2(2);
     rb_ary_push(ary, r);

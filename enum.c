@@ -1,4 +1,4 @@
-/************************************************
+/**********************************************************************
 
   enum.c -
 
@@ -8,7 +8,7 @@
 
   Copyright (C) 1993-2000 Yukihiro Matsumoto
 
-************************************************/
+**********************************************************************/
 
 #include "ruby.h"
 #include "node.h"
@@ -338,6 +338,7 @@ Init_Enumerable()
     rb_define_method(rb_mEnumerable,"select", enum_find_all, 0);
     rb_define_method(rb_mEnumerable,"reject", enum_reject, 0);
     rb_define_method(rb_mEnumerable,"collect", enum_collect, 0);
+    rb_define_method(rb_mEnumerable,"map", enum_collect, 0);
     rb_define_method(rb_mEnumerable,"min", enum_min, 0);
     rb_define_method(rb_mEnumerable,"max", enum_max, 0);
     rb_define_method(rb_mEnumerable,"member?", enum_member, 1);

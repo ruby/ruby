@@ -70,7 +70,7 @@ void *xrealloc _((void*,size_t));
 void free _((void*));
 #endif
 
-#define	NO_ALLOCA */	/* try it out for now */
+#define	NO_ALLOCA /*	/* try it out for now */
 #ifndef NO_ALLOCA
 /* Make alloca work the best possible way.  */
 #ifdef __GNUC__
@@ -162,7 +162,7 @@ static char re_syntax_table[256];
 static void init_syntax_once _((void));
 static const unsigned char *translate = 0;
 static void init_regs _((struct re_registers*, unsigned int));
-static void bm_init_skip _((int *, unsigned char*, int, const char*));
+static void bm_init_skip _((int *, unsigned char*, int, const unsigned char*));
 static int current_mbctype = MBCTYPE_ASCII;
 
 #undef P
@@ -2618,7 +2618,7 @@ bm_init_skip(skip, pat, m, translate)
      int *skip;
      unsigned char *pat;
      int m;
-     const char *translate;
+     const unsigned char *translate;
 {
   int j, c;
 

@@ -1,4 +1,4 @@
-/************************************************
+/**********************************************************************
 
   re.h -
 
@@ -8,7 +8,7 @@
 
   Copyright (C) 1993-2000 Yukihiro Matsumoto
 
-************************************************/
+**********************************************************************/
 
 #ifndef RE_H
 #define RE_H
@@ -39,6 +39,6 @@ void rb_match_busy _((VALUE));
 
 extern int ruby_ignorecase;
 
-int rb_reg_mbclen2 _((unsigned char, VALUE));
+int rb_reg_mbclen2 _((unsigned int, VALUE));
 #define mbclen2(c,re) rb_reg_mbclen2((c),(re))
 #endif

@@ -1,4 +1,4 @@
-/************************************************
+/**********************************************************************
 
   error.c -
 
@@ -8,7 +8,7 @@
 
   Copyright (C) 1993-2000 Yukihiro Matsumoto
 
-************************************************/
+**********************************************************************/
 
 #include "ruby.h"
 #include "env.h"
@@ -404,6 +404,7 @@ typedef struct {
    int n;
 } syserr_index_entry;
 
+static VALUE syserr_error;
 static VALUE syserr_list_b_general[16+1];
 static VALUE syserr_list_b_os0[2+1];
 static VALUE syserr_list_b_os1[5+1];
@@ -464,6 +465,11 @@ set_syserr(i, name)
     VALUE error = rb_define_class_under(rb_mErrno, name, rb_eSystemCallError);
     rb_define_const(error, "Errno", INT2FIX(i));
 #ifdef __BEOS__
+   if (i == B_ERROR) {
+      syserr_error = error;
+      rb_global_variable(&syserr_error);
+      return error;
+   }
    i -= B_GENERAL_ERROR_BASE;
    ix = (i >> 12) & 0xf;
    offset = (i >> 8) & 0xf;
@@ -497,6 +503,7 @@ get_syserr(int i)
    VALUE *list;
    int ix, offset;
    
+   if (i == B_ERROR) return syserr_error;
    i -= B_GENERAL_ERROR_BASE;
    ix = (i >> 12) & 0xf;
    offset = (i >> 8) & 0xf;
@@ -690,6 +697,7 @@ init_syserr()
 	 MEMZERO(syserr_list[ix + offset].list, VALUE, syserr_list[ix + offset].n);
       }
    }
+   set_syserr(B_ERROR, "ERROR");
 #else
     syserr_list = ALLOC_N(VALUE, sys_nerr+1);
     MEMZERO(syserr_list, VALUE, sys_nerr+1);

@@ -1,4 +1,4 @@
-/************************************************
+/**********************************************************************
 
   parse.y -
 
@@ -8,7 +8,7 @@
 
   Copyright (C) 1993-2000 Yukihiro Matsumoto
 
-************************************************/
+**********************************************************************/
 
 %{
 
@@ -360,7 +360,7 @@ stmt		: block_call
 			    $$ = 0;
 			}
 		    }
-		| stmt kRESCUE_MOD expr
+		| stmt kRESCUE_MOD stmt
 		    {
 			$$ = NEW_RESCUE($1, NEW_RESBODY(0,$3,0), 0);
 		    }
@@ -1210,7 +1210,7 @@ primary		: literal
 			if ($8) $5 = NEW_ENSURE($5, $8);
 
 		        /* NOEX_PRIVATE for toplevel */
-			$$ = NEW_DEFN($2, $4, $5, class_nest?0:1);
+			$$ = NEW_DEFN($2, $4, $5, class_nest?NOEX_PUBLIC:NOEX_PRIVATE);
 		        fixpos($$, $4);
 		        local_pop();
 			cur_mid = 0;
@@ -1654,10 +1654,6 @@ singleton	: var_ref
 		    {
 			if (nd_type($1) == NODE_SELF) {
 			    $$ = NEW_SELF();
-			}
-			else if (nd_type($1) == NODE_NIL) {
-			    yyerror("Can't define single method for nil.");
-			    $$ = 0;
 			}
 			else {
 			    $$ = $1;
@@ -2454,9 +2450,13 @@ parse_quotedwords(term, paren)
 		c = '\\';
 		break;
 	      default:
-		if (ISSPACE(c))
+		if (c == term) {
+		    tokadd(c);
+		    continue;
+		}
+		if (!ISSPACE(c))
 		    tokadd('\\');
-		tokadd(c);
+		break;
 	    }
 	}
 	else if (ISSPACE(c)) {

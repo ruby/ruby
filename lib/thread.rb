@@ -1,7 +1,10 @@
 #
 #		thread.rb - thread support classes
 #			$Date$
-#			by Yukihiro Matsumoto <matz@caelum.co.jp>
+#			by Yukihiro Matsumoto <matz@netlab.co.jp>
+#
+# Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
+# Copyright (C) 2000  Information-technology Promotion Agancy, Japan
 #
 
 unless defined? Thread
@@ -71,6 +74,7 @@ class Mutex
       retry
     end
     Thread.critical = false
+    t.run if t
     self
   end
 

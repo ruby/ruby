@@ -1,3 +1,58 @@
+Sat Apr 29 04:58:12  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* array.c (rb_ary_unshift_m): performance improvement.
+
+Fri Apr 28 00:19:22  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* array.c (rb_ary_unshift_m): takes items to push.
+
+Wed Apr 26 15:23:02 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (rb_str_succ): insert carrying character just before
+	  the leftmost alpha numeric character.
+
+	* string.c (rb_str_succ): proper behavior for "".succ and "\377".succ.
+
+	* string.c (rb_str_succ): use realloc and memmove.
+
+Tue Apr 25 14:30:13 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (rb_io_gets_internal): shortcut when rs == rb_default_rs.
+
+Sat Apr 22 23:14:41 2000  SHIROYAMA Takayuki  <psi@fortune.nest.or.jp>
+
+	* configure.in: MacOS X support.
+
+Fri Apr 21 21:44:34 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* io.c (rb_io_s_pipe): should set FMODE_SYNC.
+
+Thu Apr 20 16:59:22 2000  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* eval.c (massign): `*lvalue = false' should assign `[false]' to
+	  lvalue.
+
+Wed Apr 19 08:35:08 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* class.c (rb_singleton_class): generate singleton class for
+	  special constants: nil, true, false.
+
+Wed Apr 19 02:09:30 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* class.c (rb_singleton_class): singleton method for nil, true,
+	  false is possible now.
+
+	* eval.c (rb_eval): ditto.
+
+Mon Apr 17 15:16:31 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (rb_io_close): to detect some exceptional status, writable
+	  IO should be flushed before close;
+
+Sat Apr 15 18:29:00 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* array.c (rb_ary_collect_bang): Array#filter renamed.
+
 Tue Apr 11 21:14:42 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
 
 	* config_s.dj: add @sitedir@.
@@ -115,7 +170,7 @@ Tue Mar 21 12:57:50 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 Sat Mar 18 12:36:09 2000  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
-	* eval.c (rb_backtrace, make_backtrace): removed unsed variable
+	* eval.c (rb_backtrace, make_backtrace): removed unused variable
 	  `lev'.
 
 	* eval.c (rb_attr): calls `method_added' at attribute definition.
@@ -548,7 +603,7 @@ Mon Jan 24 02:56:44 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* eval.c (rb_eval): when defining class is already there, and
 	  superclass differ, throw away the old class.
 
-	* variable.c (rb_const_set): gives warining again on constant
+	* variable.c (rb_const_set): gives warning again on constant
 	  redefinition.
 
 	* error.c (Init_Exception): SyntaxError, NameError, LoadError and
@@ -704,7 +759,7 @@ Mon Dec 27 12:35:47 1999  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
 Sun Dec 26 23:15:13 1999  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
 
 	* win32/win32.c (mypopen): raise catchable error instead of rb_fatal.
-	* win32/win32.c (mypclose): fix process handle laek.
+	* win32/win32.c (mypclose): fix process handle leak.
 
 Sun Dec 26 16:17:11 1999  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
 
@@ -735,7 +790,7 @@ Tue Dec 21 17:21:28 1999  Koji Oda  <oda@bsd1.qnes.nec.co.jp>
 
 Mon Dec 20 19:08:12 1999  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
-	* file.c (rb_file_s_expand_path): handle dir separetor correctly.
+	* file.c (rb_file_s_expand_path): handle dir separator correctly.
 
 Sun Dec 19 22:56:31 1999  KANEKO Naoshi  <wbs01621@mail.wbs.ne.jp>
 
@@ -768,7 +823,7 @@ Wed Dec 15 01:35:29 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 Mon Dec 13 15:15:31 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* regex.c (re_adjust_startpos): separate startpos adjustment
-	  because of major performace drawback.
+	  because of major performance drawback.
 
 	* class.c (rb_singleton_class): tainted status of the singleton
 	  class must be synchronized with the object.
@@ -931,7 +986,7 @@ Sat Nov 20 10:10:41 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 Fri Nov 19 18:06:21 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
-	* dir.c (glob): recurseve wildcard match by `**' ala zsh.
+	* dir.c (glob): recursive wildcard match by `**' ala zsh.
 
 Fri Nov 19 11:44:26 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
 
@@ -981,7 +1036,7 @@ Sat Nov 13 07:34:18 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	  assign shared variables within methods.
 
 	* eval.c (rb_eval): remove warnings from constants modification,
-	  becase they are no longer constants.
+	  because they are no longer constants.
 
 	* parse.y (node_assign): modified for shared variables.
 
@@ -1364,7 +1419,7 @@ Wed Sep  1 00:28:27 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 Fri Aug 28 17:32:55 1999  Yasuhiro Fukuma  <yasuf@big.or.jp>
 
 	* eval.c (rb_eval): should set return value (nil) explicitly if a
-	  value is ommited for return statement.
+	  value is omitted for return statement.
 
 Thu Aug 26 15:06:11 1999  Masaki Fukushima  <fukusima@goto.info.waseda.ac.jp>
 
@@ -1389,7 +1444,7 @@ Fri Aug 20 20:50:58 1999  Kenji Nagasawa  <kenn@hma.att.ne.jp>
 
 Thu Aug 19 10:50:43 1999  WATANABE Tetsuya  <tetsu@jpn.hp.com>
 
-	* gc.c (rb_gc): add volatile to avoid GCC optimaize bug(?).
+	* gc.c (rb_gc): add volatile to avoid GCC optimize bug(?).
 
 Wed Aug 18 23:48:10 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
@@ -1404,7 +1459,7 @@ Fri Aug 13 15:41:39 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 Fri Aug 13 03:16:07 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* io.c (argf_forward): since $stdout may be non-IO, ARGF.file is
-	  not granteed to be IO.  check and forwarding added to every ARGF
+	  not guaranteed to be IO.  check and forwarding added to every ARGF
 	  method.
 
 	* io.c (set_outfile): $stdout/$stderr may not be IO now.
@@ -1544,7 +1599,7 @@ Fri Jul 30 02:11:48 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* io.c (rb_io_fptr_close): do not call rb_sys_wait() on finalize.
 
-	* eval.c (yield_under_i): cbase context should be maintaind for
+	* eval.c (yield_under_i): cbase context should be maintained for
 	  Module#module_eval().  suggested by <inaba@st.rim.or.jp>.
 
 Wed Jul 28 01:18:28 1999  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
@@ -1583,7 +1638,7 @@ Fri Jul 23 02:49:49 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 Thu Jul 22 19:37:22 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
-	* eval.c (rb_thread_join): get_backtrace() may retrun Qnil.
+	* eval.c (rb_thread_join): get_backtrace() may return Qnil.
 	  typecheck added.
 
 Tue Jul 20 14:36:43 1999  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
@@ -1634,7 +1689,7 @@ Fri Jul 16 10:58:22 1999  WATANABE Tetsuya  <tetsu@jpn.hp.com>
 
 Fri Jul 16 09:58:15 1999  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
 
-	* many files: clean up unsed variables found by gcc -Wall.
+	* many files: clean up unused variables found by gcc -Wall.
 
 	* lib/mkmf.rb: better cygwin support etc.
 
@@ -1966,7 +2021,7 @@ Fri Jun 11 23:27:00 1999  Tadayoshi Funaba  <tadf@kt.rim.or.jp>
 
 Fri Jun 11 15:21:21 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
-	* gc.c (rb_gc_mark_locations): add safty margin 1.
+	* gc.c (rb_gc_mark_locations): add safety margin 1.
 
 	* eval.c (ruby_run): should protect toplevel node tree.
 
@@ -1975,7 +2030,7 @@ Fri Jun 11 15:21:21 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 Fri Jun 11 01:50:25 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (ruby_run): Init_stack() was called too late; local
-	  variables happend to be higher (or lower) than stack_start.
+	  variables happened to be higher (or lower) than stack_start.
 
 Thu Jun 10 16:41:48 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
@@ -2080,7 +2135,7 @@ Tue Jun  1 15:29:33 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* eval.c (module_setup): need to add PUSH_VAR/POP_VAR to clear
 	  dyna vars link list.
 
-	* version.h (RUBY_RELEASE_CODE): integer macro contant for source
+	* version.h (RUBY_RELEASE_CODE): integer macro constant for source
 	  version detection.
 
 Sun May 30 22:19:12 1999  Kenji Nagasawa  <kenn@tcp-ip.or.jp>
@@ -2133,7 +2188,7 @@ Fri May 28 17:16:49 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* ext/socket/socket.c (setipaddr): re-wrote using ip_addrsetup().
 
-	* ext/sockt/socket.c (ip_addrsetup): decode symbolic address
+	* ext/socket/socket.c (ip_addrsetup): decode symbolic address
 	  <broadcast>.
 
 Thu May 27 12:27:42 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
@@ -2331,7 +2386,7 @@ Thu May  6 13:21:41 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 Thu May  4 12:34:18 1999  Koji Arai  <JCA02266@nifty.ne.jp>
 
-	* parse.y (parse_string): there shuould be newline escape by
+	* parse.y (parse_string): there should be newline escape by
 	  backslashes in strings.
 
 	* parse.y (parse_qstring): ditto.
@@ -2696,7 +2751,7 @@ Fri Mar 12 02:12:50 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 Thu Mar 11 18:23:50 1999  WATANABE Tetsuya  <tetsu@jpn.hp.com>
 
-	* ext/socket/socket.c (Init_socket): UDPsocket was ommited.
+	* ext/socket/socket.c (Init_socket): UDPsocket was omitted.
 
 Thu Mar 11 16:43:30 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
@@ -2775,8 +2830,8 @@ Tue Mar  2 17:04:19 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 Mon Mar  1 14:05:12 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (rb_call0): adjust argv for optional arguments.  super
-	  without arguments emit superclasse method with the value from
-	  optinal arguments.  enabled as experiment.
+	  without arguments emit superclass method with the value from
+	  optional arguments.  enabled as experiment.
 
 Sun Feb 28 14:04:07 1999  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
@@ -2864,9 +2919,9 @@ Tue Feb 23 14:21:41 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 Tue Feb 23 12:32:41 1999  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
 
-	* eval.c (rb_load): tilde expandion moved to find_file.
+	* eval.c (rb_load): tilde expansion moved to find_file.
 
-	* eval.c (find_file): tilde expandion added.
+	* eval.c (find_file): tilde expansion added.
 
 Tue Feb 23 10:50:20 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
@@ -2913,18 +2968,18 @@ Fri Feb 19 00:25:57 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* time.c (time_plus): Time#+ should not receive Time object
 	  operand.
 
-	* string.c (rb_str_substr): nagative length raises exception now.
+	* string.c (rb_str_substr): negative length raises exception now.
 
 	* array.c (beg_len): if end == -1, it points end of the array.
 
-	* array.c (rb_ary_subseq): nagative length raises exception now.
+	* array.c (rb_ary_subseq): negative length raises exception now.
 
 Thu Feb 18 20:57:04 1999  Tadayoshi Funaba  <tadf@kt.rim.or.jp>
 
 	* time.c (rb_strftime): strftime() may return 0 on success too.
 
-	* time.c (time_strftime): `\0' within format string shoule not be
-	  ommited in the result.
+	* time.c (time_strftime): `\0' within format string should not be
+	  omitted in the result.
 
 	* time.c (rb_strftime): zero length format.
 
@@ -2992,7 +3047,7 @@ Mon Feb 15 11:43:22 1999  GOTO Kentaro  <gotoken@math.sci.hokudai.ac.jp>
 
 Sun Feb 14 22:36:40 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
 
-	* sprintf.c (rb_f_sprintf): `%G' was ommited.
+	* sprintf.c (rb_f_sprintf): `%G' was omitted.
 
 Sun Feb 14 12:47:48 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
 
@@ -3001,7 +3056,7 @@ Sun Feb 14 12:47:48 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
 	* numeric.c (Init_Numeric): FloatDomainError added.
 
 	* configure.in (AC_REPLACE_FUNCS): add checks for functions
-	  insinf, isnan, and finite.
+	  isinf, isnan, and finite.
 
 Sat Feb 13 01:24:16 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
@@ -3075,7 +3130,7 @@ Sat Feb  6 22:56:21 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 Sat Feb  6 03:06:17 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
-	* re.c (match_getter): accessng $~ without matching caused SEGV.
+	* re.c (match_getter): accessing $~ without matching caused SEGV.
 
 Fri Feb  5 22:11:08 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
 
@@ -3107,7 +3162,7 @@ Thu Feb  4 11:56:24 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* configure.in (strtod): add strtod compatible check.
 
-	* numeric.c (rb_num2long): missing/vsnprintf.c does not supprt
+	* numeric.c (rb_num2long): missing/vsnprintf.c does not support
 	  floating points.
 
 	* numeric.c (flo_to_s): ditto.
@@ -3147,7 +3202,7 @@ Wed Feb  3 15:03:16 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 Tue Feb  2 17:11:26 1999  WATANABE Tetsuya  <tetsu@jpn.hp.com>
 
-	* string.c (rb_str_gsub_bang): too small realoc condition.
+	* string.c (rb_str_gsub_bang): too small realloc condition.
 
 Mon Feb  1 10:01:17 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
 
@@ -3164,7 +3219,7 @@ Sat Jan 30 08:45:16 1999  IKARASHI Akira  <ikarashi@itlb.te.noda.sut.ac.jp>
 Sat Jan 30 13:38:24 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* regex.c (re_compile_pattern): mbchars should match with \w
-	  within character classs.  Was matching with \W.
+	  within character class.  Was matching with \W.
 
 	* regex.c (re_match): \w should match with multi byte characters,
 	  not its first byte.
@@ -3461,7 +3516,7 @@ Mon Dec  7 22:08:22 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 Mon Dec  7 18:24:50 1998  WATANABE Tetsuya  <tetsu@jpn.hp.com>
 
-	* ruby.c (set_arg0): $0 supprt for HP-UX.
+	* ruby.c (set_arg0): $0 support for HP-UX.
 
 Mon Dec  7 01:30:28 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
 
@@ -3624,7 +3679,7 @@ Wed Nov 11 10:54:57 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 Tue Nov 10 00:22:11 1998  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
 
-	* configure.in: elf supprt for FreeBSD 3.x
+	* configure.in: elf support for FreeBSD 3.x
 
 Tue Nov 10 00:05:43 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
@@ -3755,7 +3810,7 @@ Fri Oct 16 15:31:45 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 Thu Oct 15 13:54:48 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
-	* parse.y (arg): local variabls can be accessed within right side
+	* parse.y (arg): local variables can be accessed within right side
  	  expression in assignment, notably in blocks.
 
 Wed Oct 14 00:18:33 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
@@ -3869,7 +3924,7 @@ Mon Sep 14 14:42:27 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* regex.c (re_match): beginning and end of the string, do not
 	  automatically match `\b'.
 
-	* string.c (scan_once): comsume at leaset on character.
+	* string.c (scan_once): consume at least on character.
 
 	* regex.c (re_search): wrong behavior for negative range.
 
@@ -4197,7 +4252,7 @@ Fri Jul  3 11:20:46 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* numeric.c (fix_mul): use FIX2LONG() instead of FIX2INT() for
 	  64bit architectures.
 
-	* marshal.c (r_bytes): remove weird casting bwetween pointer and int.
+	* marshal.c (r_bytes): remove weird casting between pointer and int.
 
 	* process.c (proc_setsid): new method Process#setsid().
 
@@ -4656,7 +4711,7 @@ Tue Apr 28 00:07:38 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 Mon Apr 27 16:59:17 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* ext/gtk/gtk.c (Init_gtk): use timeout, not idle to avoid
-	  comsuming CPU too much.
+	  consuming CPU too much.
 
 	* lib/tk.rb: use tcltklib#_invoke instead of `_eval'.
 
@@ -4997,7 +5052,7 @@ Tue Mar 31 13:23:58 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 Mon Mar 30 11:12:29 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
-	* file.c (f_test): raises exception for unkown command.
+	* file.c (f_test): raises exception for unknown command.
 
 	* eval.c (Init_eval): `class_eval': alias to the module_eval.
 
@@ -5114,7 +5169,7 @@ Wed Mar 18 17:46:31 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* ruby.c (load_file): new file object constant DATA.  Only
 	  available for the script from the file.
 
-	* regex.c (re_match): forwading failure point popped too much. 
+	* regex.c (re_match): forwarding failure point popped too much. 
 
 Tue Mar 17 18:23:06 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
@@ -5229,7 +5284,7 @@ Fri Mar  6 17:23:07 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	  primitive classes (mostly perfect).
 
 	* ext/curses/curses.c (curses_finalize): restore original state at 
-	  interpreter temination.
+	  interpreter termination.
 
 	* ext/curses/curses.c (curses_addstr): forgot to check argument
 	  type (caused SEGV).  now uses STR2CSTR() macro.
@@ -5273,7 +5328,7 @@ Tue Mar  3 11:21:28 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 Tue Mar  3 08:04:56 1998  Tadayoshi Funaba  <tadf@kt.rim.or.jp>
 
-	* struct.c (struct_alloc): imcomplete struct initialization made
+	* struct.c (struct_alloc): incomplete struct initialization made
  	  GC to access unallocated addresses.
 
 Mon Mar  2 16:28:27 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
@@ -5644,7 +5699,7 @@ Tue Jan  6 00:27:43 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 Mon Jan  5 16:59:13 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
 
-	* file.c (file_s_basename): removes any extention by ".*".
+	* file.c (file_s_basename): removes any extension by ".*".
 
 Sun Jan  4 19:36:22 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
 
@@ -5782,7 +5837,7 @@ Fri Dec 12 00:50:25 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (rb_eval): new visibility status `function'.
 
-	* parse.y (yycompile): do not clear eval_tree. thus enable multipe 
+	* parse.y (yycompile): do not clear eval_tree. thus enable multiple 
 	  command line script by option `-e'.
 
 	* eval.c (rb_eval): END execute just once.
@@ -5863,7 +5918,7 @@ Mon Dec  1 15:24:41 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 Wed Nov 26 18:18:05 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
-	* lib/mkmf.rb: generate Makefile for extention modules out of ruby 
+	* lib/mkmf.rb: generate Makefile for extension modules out of ruby 
 	  source tree. use like `ruby -r mkmf extconf.rb'.
 
 	* numeric.c (fix2str): enlarge buffer to prevent overflow on some
@@ -6061,7 +6116,7 @@ Fri Oct  3 10:51:10 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (ruby_options): f_require() called too early.
 
-	* eval.c (rb_provide): module extentions should always be `.o'.
+	* eval.c (rb_provide): module extensions should always be `.o'.
 
 Thu Oct  2 11:38:31 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
@@ -6257,7 +6312,7 @@ Mon Sep  1 13:42:48 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* class.c (rb_define_attr): always defines accessors.
 
-	* eval.c (rb_call): alias occured in the module body caused SEGV.
+	* eval.c (rb_call): alias occurred in the module body caused SEGV.
 
 	* parse.y: did not generate here document strings properly.
 
@@ -6276,7 +6331,7 @@ Fri Aug 29 11:10:21 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	  unnamed fundamental classes, such as Object, String, etc.
 
 	* variable.c (rb_name_class): can't name class before String class
- 	  is initilialized.
+ 	  is initialized.
 
 	* inits.c (rb_call_inits): unrecognized dependency from GC to
 	  Array.
@@ -6310,7 +6365,7 @@ Wed Aug 27 11:32:42 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* variable.c (fc_i): some classes/modules does not have iv_tbl.
 
-	* variable.c (find_class_path): avoid inifinite loop.
+	* variable.c (find_class_path): avoid infinite loop.
 
 Tue Aug 26 13:43:47 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
@@ -6327,7 +6382,7 @@ Tue Aug 26 13:43:47 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* object.c (Init_Object): superclass()'s method argument setting
  	  was wrong again.
 
-	* class.c (mod_anscestors): list superclasses and included modules 
+	* class.c (mod_ancestors): list superclasses and included modules 
 	  in priority order.
 
 Mon Aug 25 11:53:11 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
@@ -6342,7 +6397,7 @@ Mon Aug 25 11:53:11 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 Sat Aug 23 21:39:05 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
-	* parse.y (asignable): remove unnecessary local variable
+	* parse.y (assignable): remove unnecessary local variable
 	  initialize by nil.
 
 Fri Aug 22 14:26:40 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
@@ -6407,7 +6462,7 @@ Fri Aug 15 15:49:46 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* eval.c (call_trace_func): block context switch in the trace
           function.
 
-	* eval.c (rb_eval): clear method cache at class extention.
+	* eval.c (rb_eval): clear method cache at class extension.
 
 	* object.c (obj_type): returns object's class even if it defines
 	  singleton methods.

@@ -3,11 +3,12 @@ $Date$
 
 == CGI SUPPORT LIBRARY
 
-CGI.rb
+cgi.rb
 
-Version 1.10
+Version 1.20
 
-Copyright (C) 1999  Network Applied Communication Laboratory, Inc.
+Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
+Copyright (C) 2000  Information-technology Promotion Agancy, Japan
 
 Wakou Aoyama <wakou@fsinet.or.jp>
 
@@ -182,7 +183,7 @@ class CGI
   EOL = CR + LF
 v = $-v
 $-v = false
-  VERSION = "1.10"
+  VERSION = "1.20"
   RELEASE_DATE = "$Date$"
 $-v = v
 
@@ -237,7 +238,8 @@ $-v = v
 =end
   def CGI::escape(string)
     str = string.dup
-    str.gsub!(/[^a-zA-Z0-9_.-]/n){ sprintf("%%%02X", $&.unpack("C")[0]) }
+    str.gsub!(/ /n, '+')
+    str.gsub!(/([^a-zA-Z0-9_.-])/n){ sprintf("%%%02X", $1.unpack("C")[0]) }
     str
   end
 
@@ -281,7 +283,16 @@ $-v = v
       when /\Aquot\z/ni          then '"'
       when /\Agt\z/ni            then '>'
       when /\Alt\z/ni            then '<'
-      when /\A#(\d+)\z/n         then Integer($1).chr
+      when /\A#(\d+)\z/n         then
+        if Integer($1) < 256
+          Integer($1).chr
+        else
+          if $KCODE[0] == ?u or $KCODE[0] == ?U
+            [Integer($1)].pack("U")
+          else
+            "#" + $1
+          end
+        end
       when /\A#x([0-9a-f]+)\z/ni then $1.hex.chr
       end
     }
@@ -594,7 +605,17 @@ convert string charset, and set language to "ja".
 
       @name = options["name"]
       @value = Array(options["value"])
-      @path = options["path"]
+      # simple support for IE
+      if options["path"]
+        @path = options["path"]
+      elsif ENV["REQUEST_URI"]
+        @path = ENV["REQUEST_URI"].sub(/\?.*/n,'')
+        if ENV["PATH_INFO"]
+          @path = @path[0...@path.rindex(ENV["PATH_INFO"])]
+        end
+      else
+        @path = ENV["SCRIPT_NAME"] or ""
+      end
       @domain = options["domain"]
       @expires = options["expires"]
       @secure = options["secure"] == true ? true : false
@@ -960,7 +981,7 @@ convert string charset, and set language to "ja".
     def nn_element_def(element)
       <<-END.gsub(/element\.downcase/n, element.downcase).gsub(/element\.upcase/n, element.upcase)
           "<element.upcase" + attributes.collect{|name, value|
-            next if value == nil
+            next unless value
             " " + CGI::escapeHTML(name) +
             if true == value
               ""
@@ -981,7 +1002,7 @@ convert string charset, and set language to "ja".
     def nOE_element_def(element)
       <<-END.gsub(/element\.downcase/n, element.downcase).gsub(/element\.upcase/n, element.upcase)
           "<element.upcase" + attributes.collect{|name, value|
-            next if value == nil
+            next unless value
             " " + CGI::escapeHTML(name) +
             if true == value
               ""
@@ -996,7 +1017,7 @@ convert string charset, and set language to "ja".
     def nO_element_def(element)
       <<-END.gsub(/element\.downcase/n, element.downcase).gsub(/element\.upcase/n, element.upcase)
           "<element.upcase" + attributes.collect{|name, value|
-            next if value == nil
+            next unless value
             " " + CGI::escapeHTML(name) +
             if true == value
               ""
@@ -1340,8 +1361,9 @@ convert string charset, and set language to "ja".
                      { "TYPE" => "image", "SRC" => src, "NAME" => name,
                        "ALT" => alt }
                    else
-                     name["TYPE"] = "image"
-                     name
+                     src["TYPE"] = "image"
+                     src["SRC"] ||= ""
+                     src
                    end
       input(attributes)
     end
@@ -1881,7 +1903,20 @@ end
 
 =begin
 
-== HISTRY
+== HISTORY
+
+=== Version 1.20 - wakou
+
+2000/04/03 18:31:42
+
+- bug fix: CGI#image_button() can't get Hash option
+  thanks to Takashi Ikeda <ikeda@auc.co.jp>
+- CGI::unescapeHTML()
+  simple support for "&#12345;"
+- CGI::Cookie::new()
+  simple support for IE
+- CGI::escape()
+  ' ' replaced by '+'
 
 === Version 1.10 - wakou
 

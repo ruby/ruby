@@ -6,6 +6,10 @@
   $Date$
   created at: Tue Dec 20 10:13:44 JST 1994
 
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
+  Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
+  Copyright (C) 2000  Information-technology Promotion Agancy, Japan
+
 ************************************************/
 
 #include "ruby.h"

@@ -1,4 +1,4 @@
-/************************************************
+/**********************************************************************
 
   array.c -
 
@@ -7,8 +7,10 @@
   created at: Fri Aug  6 09:46:12 JST 1993
 
   Copyright (C) 1993-2000 Yukihiro Matsumoto
+  Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
+  Copyright (C) 2000  Information-technology Promotion Agancy, Japan
 
-************************************************/
+**********************************************************************/
 
 #include "ruby.h"
 #include "util.h"
@@ -276,8 +278,15 @@ rb_ary_push_m(argc, argv, ary)
     VALUE *argv;
     VALUE ary;
 {
-    while (argc--) {
-	rb_ary_store(ary, RARRAY(ary)->len, *argv++);
+    if (argc > 0) {
+	long len = RARRAY(ary)->len;
+
+	--argc;
+	/* make rooms by copying the last item */
+	rb_ary_store(ary, len + argc, argv[argc]);
+
+	if (argc)		/* if any rest */
+	    MEMCPY(RARRAY(ary)->ptr + len, argv, VALUE, argc);
     }
     return ary;
 }
@@ -337,6 +346,26 @@ rb_ary_unshift(ary, item)
     RARRAY(ary)->len++;
     RARRAY(ary)->ptr[0] = item;
 
+    return ary;
+}
+
+static VALUE
+rb_ary_unshift_m(argc, argv, ary)
+    int argc;
+    VALUE *argv;
+    VALUE ary;
+{
+    if (argc > 0) {
+	long len = RARRAY(ary)->len;
+
+	/* make rooms by setting the last item */
+	rb_ary_store(ary, len + argc - 1, Qnil);
+
+	/* sliding items */
+	MEMMOVE(RARRAY(ary)->ptr + argc, RARRAY(ary)->ptr, VALUE, len);
+
+	MEMCPY(RARRAY(ary)->ptr, argv, VALUE, argc);
+    }
     return ary;
 }
 
@@ -980,6 +1009,27 @@ rb_ary_collect(ary)
     return collect;
 }
 
+static VALUE
+rb_ary_collect_bang(ary)
+    VALUE ary;
+{
+    long i;
+
+    rb_ary_modify(ary);
+    for (i = 0; i < RARRAY(ary)->len; i++) {
+	RARRAY(ary)->ptr[i] = rb_yield(RARRAY(ary)->ptr[i]);
+    }
+    return ary;
+}
+
+static VALUE
+rb_ary_filter(ary)
+    VALUE ary;
+{
+    rb_warn("Array#filter is deprecated; use Array#collect!");
+    return rb_ary_collect_bang(ary);
+}
+
 VALUE
 rb_ary_delete(ary, item)
     VALUE ary;
@@ -1092,19 +1142,6 @@ rb_ary_delete_if(ary)
 }
 
 static VALUE
-rb_ary_filter(ary)
-    VALUE ary;
-{
-    long i;
-
-    rb_ary_modify(ary);
-    for (i = 0; i < RARRAY(ary)->len; i++) {
-	RARRAY(ary)->ptr[i] = rb_yield(RARRAY(ary)->ptr[i]);
-    }
-    return ary;
-}
-
-static VALUE
 rb_ary_replace_m(ary, ary2)
     VALUE ary, ary2;
 {
@@ -1195,17 +1232,9 @@ VALUE
 rb_ary_concat(x, y)
     VALUE x, y;
 {
-    VALUE *p, *pend;
-
-    rb_ary_modify(x);
     Check_Type(y, T_ARRAY);
 
-    p = RARRAY(y)->ptr;
-    pend = p + RARRAY(y)->len;
-    while (p < pend) {
-	rb_ary_store(x, RARRAY(x)->len, *p);
-	p++;
-    }
+    rb_ary_push_m(RARRAY(y)->len, RARRAY(y)->ptr, x);
     return x;
 }
 
@@ -1575,7 +1604,7 @@ Init_Array()
     rb_define_method(rb_cArray, "push", rb_ary_push_m, -1);
     rb_define_method(rb_cArray, "pop", rb_ary_pop, 0);
     rb_define_method(rb_cArray, "shift", rb_ary_shift, 0);
-    rb_define_method(rb_cArray, "unshift", rb_ary_unshift, 1);
+    rb_define_method(rb_cArray, "unshift", rb_ary_unshift_m, -1);
     rb_define_method(rb_cArray, "each", rb_ary_each, 0);
     rb_define_method(rb_cArray, "each_index", rb_ary_each_index, 0);
     rb_define_method(rb_cArray, "reverse_each", rb_ary_reverse_each, 0);
@@ -1594,11 +1623,13 @@ Init_Array()
     rb_define_method(rb_cArray, "sort", rb_ary_sort, 0);
     rb_define_method(rb_cArray, "sort!", rb_ary_sort_bang, 0);
     rb_define_method(rb_cArray, "collect", rb_ary_collect, 0);
+    rb_define_method(rb_cArray, "collect!", rb_ary_collect_bang, 0);
+    rb_define_method(rb_cArray, "map!", rb_ary_collect_bang, 0);
+    rb_define_method(rb_cArray, "filter", rb_ary_filter, 0);
     rb_define_method(rb_cArray, "delete", rb_ary_delete, 1);
     rb_define_method(rb_cArray, "delete_at", rb_ary_delete_at_m, -1);
     rb_define_method(rb_cArray, "delete_if", rb_ary_delete_if, 0);
     rb_define_method(rb_cArray, "reject!", rb_ary_delete_if, 0);
-    rb_define_method(rb_cArray, "filter", rb_ary_filter, 0);
     rb_define_method(rb_cArray, "replace", rb_ary_replace_m, 1);
     rb_define_method(rb_cArray, "clear", rb_ary_clear, 0);
     rb_define_method(rb_cArray, "fill", rb_ary_fill, -1);

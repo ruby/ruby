@@ -1,4 +1,4 @@
-/************************************************
+/**********************************************************************
 
   hash.c -
 
@@ -7,8 +7,10 @@
   created at: Mon Nov 22 18:51:18 JST 1993
 
   Copyright (C) 1993-2000 Yukihiro Matsumoto
+  Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
+  Copyright (C) 2000  Information-technology Promotion Agancy, Japan
 
-************************************************/
+**********************************************************************/
 
 #include "ruby.h"
 #include "st.h"

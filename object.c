@@ -1,4 +1,4 @@
-/************************************************
+/**********************************************************************
 
   object.c -
 
@@ -7,8 +7,10 @@
   created at: Thu Jul 15 12:01:24 JST 1993
 
   Copyright (C) 1993-2000 Yukihiro Matsumoto
+  Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
+  Copyright (C) 2000  Information-technology Promotion Agancy, Japan
 
-************************************************/
+**********************************************************************/
 
 #include "ruby.h"
 #include "st.h"
@@ -829,6 +831,7 @@ fail_to_type(arg)
 	     arg->val == Qfalse ? "false" :
 	     rb_class2name(CLASS_OF(arg->val)), 
 	     arg->s);
+    return Qnil;		/* not reached */
 }
 
 VALUE
@@ -1062,6 +1065,7 @@ Init_Object()
     rb_define_method(rb_mKernel, "id", rb_obj_id, 0);
     rb_define_method(rb_mKernel, "__id__", rb_obj_id, 0);
     rb_define_method(rb_mKernel, "type", rb_obj_type, 0);
+    rb_define_method(rb_mKernel, "class", rb_obj_type, 0);
 
     rb_define_method(rb_mKernel, "clone", rb_obj_clone, 0);
     rb_define_method(rb_mKernel, "dup", rb_obj_dup, 0);

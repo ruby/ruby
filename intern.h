@@ -1,5 +1,20 @@
-/* Functions and variables that are used by more than one source file of
- * the kernel.  Not available to extensions and applications.
+/**********************************************************************
+
+  intern.h -
+
+  $Author$
+  $Date$
+  created at: Thu Jun 10 14:22:17 JST 1993
+
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
+  Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
+  Copyright (C) 2000  Information-technology Promotion Agancy, Japan
+
+**********************************************************************/
+
+/* 
+ * Functions and variables that are used by more than one source file of
+ * the kernel.
  */
 
 /* array.c */

@@ -421,7 +421,11 @@ getaddrinfo(hostname, servname, hints, res)
 			s = socket(afd->a_af, SOCK_DGRAM, 0);
 			if (s < 0)
 				continue;
+#if defined(HAVE_CLOSESOCKET)
+			closesocket(s);
+#else
 			close(s);
+#endif
 
 			if (pai->ai_flags & AI_PASSIVE) {
 				GET_AI(cur->ai_next, afd, afd->a_addrany, port);

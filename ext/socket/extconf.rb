@@ -6,6 +6,7 @@ case PLATFORM
 when /mswin32/
   test_func = "WSACleanup"
   have_library("wsock32", "WSACleanup")
+  have_func("closesocket")
 when /cygwin/
 #  $LDFLAGS << " -L/usr/lib" if File.directory?("/usr/lib")
 #  $CFLAGS << " -I/usr/include"
@@ -14,6 +15,7 @@ when /cygwin/
 when /beos/
   test_func = "socket"
   have_library("net", "socket")
+  have_func("closesocket")
 when /i386-os2_emx/
   test_func = "socket"
   have_library("socket", "socket")

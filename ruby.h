@@ -1,4 +1,4 @@
-/************************************************
+/**********************************************************************
 
   ruby.h -
 
@@ -6,8 +6,10 @@
   created at: Thu Jun 10 14:26:32 JST 1993
 
   Copyright (C) 1993-2000 Yukihiro Matsumoto
+  Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
+  Copyright (C) 2000  Information-technology Promotion Agancy, Japan
 
-*************************************************/
+**********************************************************************/
 
 #ifndef RUBY_H
 #define RUBY_H
@@ -552,7 +554,7 @@ rb_type(VALUE obj)
     if (obj == Qnil) return T_NIL;
     if (obj == Qfalse) return T_FALSE;
     if (obj == Qtrue) return T_TRUE;
-    if (obj == Qtrue) return T_UNDEF;
+    if (obj == Qundef) return T_UNDEF;
     if (SYMBOL_P(obj)) return T_SYMBOL;
     return BUILTIN_TYPE(obj);
 }
