@@ -1,3 +1,10 @@
+Mon Dec 22 20:44:36 2003  akira yamada  <akira@ruby-lang.org>
+
+	* lib/uri/generic.rb (URI::Generic#route_from): accepts urls which
+	  has no host-part.
+	
+	* test/uri/test_generic.rb (TestGeneric::test_route): added a test.
+
 Mon Dec 22 20:38:44 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/cgi.rb: reduce eval.

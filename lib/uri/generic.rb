@@ -947,7 +947,7 @@ Object
 			     self.query, self.fragment)
 
       if rel.userinfo != oth.userinfo ||
-	  rel.host.downcase != oth.host.downcase ||
+	  rel.host.to_s.downcase != oth.host.to_s.downcase ||
 	  rel.port != oth.port
 	rel.set_port(nil) if rel.port == oth.default_port
 	return rel, rel

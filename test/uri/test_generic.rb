@@ -177,6 +177,9 @@ class TestGeneric < Test::Unit::TestCase
 
     url = URI.parse('http://hoge/a/b/').route_to('http://MOGE/b/')
     assert_equal('//MOGE/b/', url.to_s)
+
+    url = URI.parse('file:///a/b/').route_to('file:///a/b/')
+    assert_equal('', url.to_s)
   end
 
   def test_rfc2396_examples
