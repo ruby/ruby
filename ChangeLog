@@ -1,3 +1,12 @@
+Sat Feb  8 00:29:26 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* dir.c (fnmatch):
+	  File.fnmatch('*?', 'a') should return true. [ruby-dev:22815]
+	  File.fnmatch('\[1\]' , '[1]') should return true. [ruby-dev:22819]
+
+	* dir.c
+	  Did some styles (no change to behavior)
+
 Sat Feb  7 19:56:11 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/irb/init.rb (IRB.rc_files): yield possible rc file names.
