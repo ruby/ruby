@@ -18,7 +18,7 @@ module Test
           @source.each_object(Class) do |klass|
             tests.concat(klass.suite.tests) if(Test::Unit::TestCase > klass)
           end
-          tests.each{|test| suite << test if(include(test))}
+          tests.sort_by{|t| t.name}.each{|test| suite << test if(include(test))}
           suite
         end
         

@@ -29,7 +29,7 @@ module Test
       # Creates a new instance of the fixture for running the
       # test represented by test_method_name.
       def initialize(test_method_name)
-        if ((!respond_to?(test_method_name)) || (method(test_method_name).arity != 0))
+        unless(respond_to?(test_method_name) && method(test_method_name).arity == 0)
           throw :invalid_test
         end
         @method_name = test_method_name
@@ -41,9 +41,9 @@ module Test
       # each method.
       def self.suite
         method_names = public_instance_methods(true)
-        tests = method_names.delete_if { |method_name| method_name !~ /^test.+/ }
+        tests = method_names.delete_if {|method_name| method_name !~ /^test./}
         suite = TestSuite.new(name)
-        tests.each do
+        tests.sort.each do
           |test|
           catch(:invalid_test) do
             suite << new(test)

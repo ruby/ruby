@@ -30,7 +30,7 @@ module Test
       # TestSuite.
       def run(result, &progress_block)
         yield(STARTED, name)
-        @tests.sort { |test1, test2| test1.name <=> test2.name }.each do |test|
+        @tests.each do |test|
           test.run(result, &progress_block)
         end
         yield(FINISHED, name)

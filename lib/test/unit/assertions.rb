@@ -182,15 +182,15 @@ module Test # :nodoc:
           end
           begin
             yield
-          rescue Exception => thrown_exception
-            if (args.empty? || args.include?(thrown_exception.class))
-              full_message = build_message(message, thrown_exception) do |arg1|
+          rescue Exception => e
+            if ((args.empty? && !e.instance_of?(AssertionFailedError)) || args.include?(e.class))
+              full_message = build_message(message, e) do |arg1|
                 "Exception raised:\n" +
                 arg1
               end
               flunk(full_message)
             else
-              raise thrown_exception.class, thrown_exception.message, thrown_exception.backtrace
+              raise e.class, e.message, e.backtrace
             end
           end
           nil

@@ -17,7 +17,7 @@ module Test
           end
 
           @tc2 = Class.new(TestCase) do
-            def test_3
+            def test_0
             end
           end
 
@@ -34,9 +34,9 @@ module Test
         
         def test_basic_collection
           expected = TestSuite.new("name")
+          expected << @tc2.new('test_0')
           expected << @tc1.new('test_1')
           expected << @tc1.new('test_2')
-          expected << @tc2.new('test_3')
           assert_equal(expected, ObjectSpace.new(@object_space).collect("name"))
         end
         
@@ -47,25 +47,25 @@ module Test
           assert_equal(expected, collector.collect)
 
           expected = TestSuite.new(ObjectSpace::NAME)
+          expected << @tc2.new('test_0')
           expected << @tc1.new('test_1')
           expected << @tc1.new('test_2')
-          expected << @tc2.new('test_3')
           collector = ObjectSpace.new(@object_space)
           collector.filter = proc{|test| true}
           assert_equal(expected, collector.collect)
 
           expected = TestSuite.new(ObjectSpace::NAME)
+          expected << @tc2.new('test_0')
           expected << @tc1.new('test_1')
-          expected << @tc2.new('test_3')
           collector = ObjectSpace.new(@object_space)
-          collector.filter = proc{|test| ['test_1', 'test_3'].include?(test.method_name)}
+          collector.filter = proc{|test| ['test_1', 'test_0'].include?(test.method_name)}
           assert_equal(expected, collector.collect)
 
           expected = TestSuite.new(ObjectSpace::NAME)
+          expected << @tc2.new('test_0')
           expected << @tc1.new('test_1')
-          expected << @tc2.new('test_3')
           collector = ObjectSpace.new(@object_space)
-          collector.filter = [proc{|test| test.method_name == 'test_1'}, proc{|test| test.method_name == 'test_3'}]
+          collector.filter = [proc{|test| test.method_name == 'test_1'}, proc{|test| test.method_name == 'test_0'}]
           assert_equal(expected, collector.collect)
         end
       end

@@ -1,3 +1,21 @@
+Thu Oct  2 11:17:00 2003  Nathaniel Talbott  <ntalbott@ruby-lang.org>
+
+	* lib/test/unit/assertions.rb: should not capture an
+	  AssertionFailedError unless explicitly requested.
+
+	* test/testunit/test_assertions.rb: ditto.
+
+	* test/testunit/collector/test_objectspace.rb: fixed a test failure
+	  caused by methods being returned in different orders on different
+	  platforms by moving test sorting from TestSuite into the locations
+	  where suites are constructed. [ruby-talk:83156]
+
+	* lib/test/unit/testcase.rb: ditto.
+
+	* lib/test/unit/testsuite.rb: ditto.
+
+	* lib/test/unit/collector/objectspace.rb: ditto.
+
 Thu Oct  2 03:25:01 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* eval.c (rb_thread_raise): prototype; avoid VC++ warning.
@@ -1554,7 +1572,7 @@ For the changes before 1.8.0, see doc/ChangeLog-1.8.0
 Local variables:
 add-log-time-format: (lambda ()
   (let* ((time (current-time))
-  	 (diff (+ (cadr time) 32400))
+	 (diff (+ (cadr time) 32400))
 	 (lo (% diff 65536))
 	 (hi  (+ (car time) (/ diff 65536))))
   (format-time-string "%a %b %e %H:%M:%S %Y" (list hi lo) t)))

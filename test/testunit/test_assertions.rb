@@ -283,6 +283,11 @@ module Test
             raise "Error"
           }
         }
+        check_fails("Failure") do
+          assert_nothing_raised do
+            flunk("Failure")
+          end
+        end
       end
       
       def test_flunk
