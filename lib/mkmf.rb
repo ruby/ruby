@@ -727,6 +727,10 @@ end
 
 def configuration(srcdir)
   mk = []
+  vpath = %w[$(srcdir) $(topdir) $(hdrdir)]
+  if $mingw && CONFIG['build_os'] == 'cygwin'
+    vpath.each {|p| p.sub!(/.*/, '$(shell cygpath -u \&)')}
+  end
   mk << %{
 SHELL = /bin/sh
 
@@ -735,7 +739,7 @@ SHELL = /bin/sh
 srcdir = #{srcdir}
 topdir = #{$topdir}
 hdrdir = #{$hdrdir}
-VPATH = #{$mingw && CONFIG['build_os'] == 'cygwin' ? '$(shell cygpath -u $(srcdir))' : '$(srcdir)'}
+VPATH = #{vpath.join(File::PATH_SEPARATOR)}
 }
   drive = File::PATH_SEPARATOR == ';' ? /\A\w:/ : /\A/
   if destdir = CONFIG["prefix"].scan(drive)[0] and !destdir.empty?
@@ -982,6 +986,9 @@ site-install-rb: install-rb
 	mfile.print line
       end
     end
+  else
+    vpath = ($nmake ? "{$(hdrdir)}" : "")
+    mfile.print "$(OBJS): #{vpath}ruby.h #{vpath}defines.h #{$config_h}\n"
   end
 ensure
   mfile.close if mfile

@@ -1,9 +1,21 @@
+Fri Mar 12 20:19:16 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (rb_cv_noreturn): default for platforms not support
+	  prototypes.
+
+	* ruby.c (ruby_init_loadpath): buffer for path name should have
+	  MAXPATHLEN.
+
+	* lib/mkmf.rb (configuration): include topdir and hdrdir in VPATH.
+
+	* lib/mkmf.rb (create_makefile): default dependency rule.
+
 Fri Mar 12 07:35:36 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/config.rb (WEBrick::Config::General): add
 	  :DoNotReverseLookup.
 
-	* lib/webrick/server.rb (WEBrick::GenericServer#accept): call 
+	* lib/webrick/server.rb (WEBrick::GenericServer#accept): call
 	  do_not_reverse_lookup for each socket if :DoNotReverseLookup
 	  is set.  [ruby-code:02357]
 
@@ -95,7 +107,7 @@ Mon Mar  8 01:05:55 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	* lib/webrick/httpserver.rb (WEBrick::HTTPServer#run): should print
 	  error message for WEBrick::HTTPSataus::Error.
 
-	* lib/webrick/httpserver.rb (WEBrick::HTTPServer#lookup_server): 
+	* lib/webrick/httpserver.rb (WEBrick::HTTPServer#lookup_server):
 	  lookup for hostname from :ServerAlias if the req.host is not match
 	  to :ServerName.
 

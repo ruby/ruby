@@ -246,7 +246,7 @@ if test "$rb_cv_stdarg" = yes; then
 fi
 
 AC_CACHE_CHECK([for noreturn], rb_cv_noreturn,
-[rb_cv_noreturn=no
+[rb_cv_noreturn=x
 for mac in "x __attribute__ ((noreturn))" "__declspec(noreturn) x" x; do
   AC_TRY_COMPILE(
     [#define NORETURN(x) $mac

@@ -33,6 +33,12 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#ifdef HAVE_SYS_PARAM_H
+# include <sys/param.h>
+#endif
+#ifndef MAXPATHLEN
+# define MAXPATHLEN 1024
+#endif
 
 #ifndef HAVE_STRING_H
 char *strchr _((const char*,const char));
@@ -236,7 +242,7 @@ void
 ruby_init_loadpath()
 {
 #if defined LOAD_RELATIVE
-    char libpath[FILENAME_MAX+1];
+    char libpath[MAXPATHLEN+1];
     char *p;
     int rest;
 #if defined _WIN32 || defined __CYGWIN__
@@ -251,15 +257,15 @@ ruby_init_loadpath()
     GetModuleFileName(libruby, libpath, sizeof libpath);
 #elif defined(DJGPP)
     extern char *__dos_argv0;
-    strncpy(libpath, __dos_argv0, FILENAME_MAX);
+    strncpy(libpath, __dos_argv0, sizeof(libpath) - 1);
 #elif defined(__human68k__)
     extern char **_argv;
-    strncpy(libpath, _argv[0], FILENAME_MAX);
+    strncpy(libpath, _argv[0], sizeof(libpath) - 1);
 #elif defined(__EMX__)
-    _execname(libpath, FILENAME_MAX);
+    _execname(libpath, sizeof(libpath) - 1);
 #endif
 
-    libpath[FILENAME_MAX] = '\0';
+    libpath[sizeof(libpath) - 1] = '\0';
 #if defined DOSISH || defined __CYGWIN__
     translate_char(libpath, '\\', '/');
 #endif
@@ -276,7 +282,7 @@ ruby_init_loadpath()
 	p = libpath + 1;
     }
 
-    rest = FILENAME_MAX - (p - libpath);
+    rest = sizeof(libpath) - 1 - (p - libpath);
 
 #define RUBY_RELATIVE(path) (strncpy(p, (path), rest), libpath)
 #else
