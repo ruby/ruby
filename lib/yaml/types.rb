@@ -46,7 +46,7 @@ module YAML
 	#
 	# YAML Hash class to support comments and defaults
 	#
-	class SpecialHash < Kernel::Hash 
+	class SpecialHash < Object::Hash 
 		attr_accessor :default
         def inspect
             self.default.to_s
