@@ -446,14 +446,14 @@ def checking_for(m)
   r
 end
 
-def have_library(lib, func="main")
-  func &&= ((m = "#{func}() in "; func) unless func.empty?)
-  checking_for "#{m}-l#{lib}" do
+def have_library(lib, func=nil)
+  func = "main" if !func or func.empty?
+  checking_for "#{func}() in -l#{lib}" do
     if COMMON_LIBS.include?(lib)
       true
     else
       libs = append_library($libs, lib)
-      if !func || try_func(func, libs)
+      if try_func(func, libs)
         $libs = libs
         true
       else

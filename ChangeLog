@@ -1,4 +1,4 @@
-Wed Aug  6 12:11:10 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Aug  6 17:28:10 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (extmake): pass LIBPATH to make ruby.  [ruby-dev:21137]
 
@@ -11,8 +11,8 @@ Wed Aug  6 12:11:10 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* lib/mkmf.rb (macro_defined?): append newline to src unless ended
 	  with it.
 
-	* lib/mkmf.rb (have_library): allow nil function name to just
-	  append a library.  (ruby-bugs:PR#1083)
+	* lib/mkmf.rb (have_library): treat nil function name as "main".
+	  (ruby-bugs:PR#1083)
 
 	* lib/mkmf.rb (pkg_config): should append additional libraries to
 	  $libs but not $LIBS.  [ruby-dev:21137]
