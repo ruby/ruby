@@ -1,3 +1,8 @@
+Wed Jul 28 18:59:17 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/cgi.rb (CGI::initialize): remove at_exit code for CGI_PARAMS
+	  and CGI_COOKIES.  they will no longer be used.
+
 Wed Jul 28 15:44:08 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_call0): should call rb_call_super() directly for
