@@ -86,6 +86,10 @@ extern void Init_File _((void));
 
 #include "util.h"
 
+#ifndef O_ACCMODE
+#define O_ACCMODE (O_RDONLY | O_WRONLY | O_RDWR)
+#endif
+
 #if SIZEOF_OFF_T > SIZEOF_LONG && !defined(HAVE_LONG_LONG)
 # error off_t is bigger than long, but you have no long long...
 #endif
@@ -2378,7 +2382,7 @@ rb_io_mode_modenum(mode)
 #endif
             break;
         case '+':
-            flags |= O_RDWR;
+            flags = (flags & ~O_ACCMODE) | O_RDWR;
             break;
         default:
             goto error;

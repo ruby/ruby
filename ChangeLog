@@ -1,3 +1,8 @@
+Wed Dec 22 11:14:55 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_mode_modenum): replace O_ACCMODE with O_RDWR.
+	  fixed: [ruby-dev:25273]
+
 Wed Dec 22 08:34:32 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/dl/sym.c (rb_dlsym_initialize): extract internal pointers after
