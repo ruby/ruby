@@ -169,7 +169,7 @@ kcode_reset_option()
     }
 }
 
-extern int rb_in_eval;
+extern int rb_in_compile;
 
 static void
 reg_expr_str(str, s, len)
@@ -262,10 +262,10 @@ reg_raise(s, len, err, re)
 {
     VALUE desc = reg_desc(s, len, re);
 
-    if (rb_in_eval)
-	Raise(eRegxpError, "%s: %s", err, RSTRING(desc)->ptr);
-    else
+    if (rb_in_compile)
 	Error("%s: %s", err, RSTRING(desc)->ptr);
+    else
+	Raise(eRegxpError, "%s: %s", err, RSTRING(desc)->ptr);
 }
 
 static VALUE
