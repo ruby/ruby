@@ -45,8 +45,10 @@ readline_readline(argc, argv, self)
     char *buff;
     int status;
 
+    rb_secure(4);
     if (rb_scan_args(argc, argv, "02", &tmp, &add_hist) > 0) {
-	prompt = StringValuePtr(tmp);
+	SafeStringValue(tmp);
+	prompt = RSTRING(tmp)->ptr;
     }
 
     if (!isatty(0) && errno == EBADF) rb_raise(rb_eIOError, "stdin closed");
@@ -82,6 +84,7 @@ readline_s_set_completion_proc(self, proc)
     VALUE self;
     VALUE proc;
 {
+    rb_secure(4);
     if (!rb_respond_to(proc, rb_intern("call")))
 	rb_raise(rb_eArgError, "argument must respond to `call'");
     return rb_iv_set(mReadline, COMPLETION_PROC, proc);
@@ -91,6 +94,7 @@ static VALUE
 readline_s_get_completion_proc(self)
     VALUE self;
 {
+    rb_secure(4);
     return rb_iv_get(mReadline, COMPLETION_PROC);
 }
 
@@ -99,6 +103,7 @@ readline_s_set_completion_case_fold(self, val)
     VALUE self;
     VALUE val;
 {
+    rb_secure(4);
     return rb_iv_set(mReadline, COMPLETION_CASE_FOLD, val);
 }
 
@@ -106,6 +111,7 @@ static VALUE
 readline_s_get_completion_case_fold(self)
     VALUE self;
 {
+    rb_secure(4);
     return rb_iv_get(mReadline, COMPLETION_CASE_FOLD);
 }
 
@@ -178,6 +184,7 @@ static VALUE
 readline_s_vi_editing_mode(self)
     VALUE self;
 {
+    rb_secure(4);
     rl_vi_editing_mode(1,0);
     return Qnil;
 }
@@ -186,6 +193,7 @@ static VALUE
 readline_s_emacs_editing_mode(self)
     VALUE self;
 {
+    rb_secure(4);
     rl_emacs_editing_mode(1,0);
     return Qnil;
 }
@@ -195,7 +203,9 @@ readline_s_set_completion_append_character(self, str)
     VALUE self, str;
 {
 #ifdef READLINE_21_OR_LATER
-    if (NIL_P(str) || !StringValuePtr(str) || !RSTRING(str)->len) {
+    rb_secure(4);
+    SafeStringValue(str);
+    if (NIL_P(str) || RSTRING(str)->len == 0) {
 	rl_completion_append_character = '\0';
     } else {
 	rl_completion_append_character = RSTRING(str)->ptr[0];
@@ -214,6 +224,7 @@ readline_s_get_completion_append_character(self)
 #ifdef READLINE_21_OR_LATER
     VALUE str;
 
+    rb_secure(4);
     if (rl_completion_append_character == '\0')
 	return Qnil;
 
@@ -233,7 +244,8 @@ readline_s_set_basic_word_break_characters(self, str)
 #ifdef READLINE_21_OR_LATER
     static char *basic_word_break_characters = NULL;
 
-    StringValue(str);
+    rb_secure(4);
+    SafeStringValue(str);
     if (basic_word_break_characters == NULL) {
 	basic_word_break_characters =
 	    ALLOC_N(char, RSTRING(str)->len + 1);
@@ -257,9 +269,10 @@ readline_s_get_basic_word_break_characters(self, str)
     VALUE self, str;
 {
 #ifdef READLINE_21_OR_LATER
+    rb_secure(4);
     if (rl_basic_word_break_characters == NULL)
 	return Qnil;
-    return rb_str_new2(rl_basic_word_break_characters);
+    return rb_tainted_str_new2(rl_basic_word_break_characters);
 #else
     rb_notimplement();
 #endif /* READLINE_21_OR_LATER */
@@ -272,7 +285,8 @@ readline_s_set_completer_word_break_characters(self, str)
 #ifdef READLINE_21_OR_LATER
     static char *completer_word_break_characters = NULL;
 
-    StringValue(str);
+    rb_secure(4);
+    SafeStringValue(str);
     if (completer_word_break_characters == NULL) {
 	completer_word_break_characters =
 	    ALLOC_N(char, RSTRING(str)->len + 1);
@@ -296,9 +310,10 @@ readline_s_get_completer_word_break_characters(self, str)
     VALUE self, str;
 {
 #ifdef READLINE_21_OR_LATER
+    rb_secure(4);
     if (rl_completer_word_break_characters == NULL)
 	return Qnil;
-    return rb_str_new2(rl_completer_word_break_characters);
+    return rb_tainted_str_new2(rl_completer_word_break_characters);
 #else
     rb_notimplement();
 #endif /* READLINE_21_OR_LATER */
@@ -311,7 +326,8 @@ readline_s_set_basic_quote_characters(self, str)
 #ifdef READLINE_21_OR_LATER
     static char *basic_quote_characters = NULL;
 
-    StringValue(str);
+    rb_secure(4);
+    SafeStringValue(str);
     if (basic_quote_characters == NULL) {
 	basic_quote_characters =
 	    ALLOC_N(char, RSTRING(str)->len + 1);
@@ -335,9 +351,10 @@ readline_s_get_basic_quote_characters(self, str)
     VALUE self, str;
 {
 #ifdef READLINE_21_OR_LATER
+    rb_secure(4);
     if (rl_basic_quote_characters == NULL)
 	return Qnil;
-    return rb_str_new2(rl_basic_quote_characters);
+    return rb_tainted_str_new2(rl_basic_quote_characters);
 #else
     rb_notimplement();
 #endif /* READLINE_21_OR_LATER */
@@ -350,7 +367,8 @@ readline_s_set_completer_quote_characters(self, str)
 #ifdef READLINE_21_OR_LATER
     static char *completer_quote_characters = NULL;
 
-    StringValue(str);
+    rb_secure(4);
+    SafeStringValue(str);
     if (completer_quote_characters == NULL) {
 	completer_quote_characters =
 	    ALLOC_N(char, RSTRING(str)->len + 1);
@@ -374,9 +392,10 @@ readline_s_get_completer_quote_characters(self, str)
     VALUE self, str;
 {
 #ifdef READLINE_21_OR_LATER
+    rb_secure(4);
     if (rl_completer_quote_characters == NULL)
 	return Qnil;
-    return rb_str_new2(rl_completer_quote_characters);
+    return rb_tainted_str_new2(rl_completer_quote_characters);
 #else
     rb_notimplement();
 #endif /* READLINE_21_OR_LATER */
@@ -389,7 +408,8 @@ readline_s_set_filename_quote_characters(self, str)
 #ifdef READLINE_21_OR_LATER
     static char *filename_quote_characters = NULL;
 
-    StringValue(str);
+    rb_secure(4);
+    SafeStringValue(str);
     if (filename_quote_characters == NULL) {
 	filename_quote_characters =
 	    ALLOC_N(char, RSTRING(str)->len + 1);
@@ -413,9 +433,10 @@ readline_s_get_filename_quote_characters(self, str)
     VALUE self, str;
 {
 #ifdef READLINE_21_OR_LATER
+    rb_secure(4);
     if (rl_filename_quote_characters == NULL)
 	return Qnil;
-    return rb_str_new2(rl_filename_quote_characters);
+    return rb_tainted_str_new2(rl_filename_quote_characters);
 #else
     rb_notimplement();
 #endif /* READLINE_21_OR_LATER */
@@ -428,6 +449,7 @@ rb_remove_history(index)
     HIST_ENTRY *entry;
     VALUE val;
 
+    rb_secure(4);
     entry = remove_history(index);
     if (entry) {
         val = rb_tainted_str_new2(entry->line);
@@ -453,6 +475,7 @@ hist_get(self, index)
     HISTORY_STATE *state;
     int i;
 
+    rb_secure(4);
     state = history_get_history_state();
     i = NUM2INT(index);
     if (i < 0) {
@@ -474,6 +497,7 @@ hist_set(self, index, str)
     VALUE s = str;
     int i;
 
+    rb_secure(4);
     state = history_get_history_state();
     i = NUM2INT(index);
     if (i < 0) {
@@ -482,7 +506,8 @@ hist_set(self, index, str)
     if (i < 0 || i > state->length - 1) {
 	rb_raise(rb_eIndexError, "Invalid index");
     }
-    replace_history_entry(i, StringValuePtr(s), NULL);
+    SafeStringValue(str);
+    replace_history_entry(i, RSTRING(str)->ptr, NULL);
     return str;
 }
 
@@ -491,7 +516,9 @@ hist_push(self, str)
     VALUE self;
     VALUE str;
 {
-    add_history(StringValuePtr(str));
+    rb_secure(4);
+    SafeStringValue(str);
+    add_history(RSTRING(str)->ptr);
     return self;
 }
 
@@ -503,9 +530,11 @@ hist_push_method(argc, argv, self)
 {
     VALUE str;
     
+    rb_secure(4);
     while (argc--) {
 	str = *argv++;
-	add_history(StringValuePtr(str));
+	SafeStringValue(str);
+	add_history(RSTRING(str)->ptr);
     }
     return self;
 }
@@ -516,6 +545,7 @@ hist_pop(self)
 {
     HISTORY_STATE *state;
 
+    rb_secure(4);
     state = history_get_history_state();
     if (state->length > 0) {
 	return rb_remove_history(state->length - 1);
@@ -530,6 +560,7 @@ hist_shift(self)
 {
     HISTORY_STATE *state;
 
+    rb_secure(4);
     state = history_get_history_state();
     if (state->length > 0) {
 	return rb_remove_history(0);
@@ -545,6 +576,7 @@ hist_each(self)
     HISTORY_STATE *state;
     int i;
 
+    rb_secure(4);
     state = history_get_history_state();
     for (i = 0; i < state->length; i++) {
 	rb_yield(rb_tainted_str_new2(state->entries[i]->line));
@@ -558,6 +590,7 @@ hist_length(self)
 {
     HISTORY_STATE *state;
 
+    rb_secure(4);
     state = history_get_history_state();
     return INT2NUM(state->length);
 }
@@ -568,6 +601,7 @@ hist_empty_p(self)
 {
     HISTORY_STATE *state;
 
+    rb_secure(4);
     state = history_get_history_state();
     if (state->length == 0)
 	return Qtrue;
@@ -583,6 +617,7 @@ hist_delete_at(self, index)
     HISTORY_STATE *state;
     int i;
 
+    rb_secure(4);
     state = history_get_history_state();
     i = NUM2INT(index);
     if (i < 0)

@@ -1,3 +1,9 @@
+Thu Nov 18 14:58:42 2004  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* ext/readline/readline.c: check $SAFE.
+
+	* test/readline/test_readline.rb: added tests for readline.
+
 Thu Nov 18 00:21:15 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* process.c (proc_getpgrp): prohibit for $SAFE=2.
