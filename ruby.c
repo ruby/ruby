@@ -882,7 +882,7 @@ set_arg0(val, id)
 {
     char *s;
     int i;
-    static int len;
+    int len = origarglen;
 
     if (origargv == 0) rb_raise(rb_eRuntimeError, "$0 not initialized");
     StringValue(val);
