@@ -1791,7 +1791,10 @@ trnext(t)
 	if (!t->gen) {
 	    if (t->p == t->pend) return -1;
 	    t->now = *(USTR)t->p++;
-	    if (t->p < t->pend - 1 && *t->p == '-') {
+	    if (t->p < t->pend - 1 && *t->p == '\\') {
+		t->p++;
+	    }
+	    else if (t->p < t->pend - 1 && *t->p == '-') {
 		t->p++;
 		if (t->p < t->pend) {
 		    if (t->now > *(USTR)t->p) {

@@ -1,3 +1,7 @@
+Sun Mar  4 17:01:09 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* string.c (trnext): support backslash escape in String#tr.
+
 Wed Feb 28 11:02:41 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_delete_bang): delete! should take at least 1
