@@ -635,7 +635,12 @@ module REXML
 			end unless @attributes.empty?
 
 			if @children.empty?
-				writer << " " if ie_hack
+        if transitive and indent>-1
+          writer << "\n"
+          indent( writer, indent )
+        elsif ie_hack
+          writer << " " 
+        end
 				writer << "/" 
 			else
 				if transitive and indent>-1 and !@children[0].kind_of? Text
@@ -646,7 +651,7 @@ module REXML
 				write_children( writer, indent, transitive, ie_hack )
 				writer << "</#{expanded_name}"
 			end
-			if transitive and indent>-1
+			if transitive and indent>-1 and !@children.empty?
 				writer << "\n"
 				indent -= 1 if next_sibling.nil?
 				indent(writer, indent)

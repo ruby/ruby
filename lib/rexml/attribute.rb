@@ -36,7 +36,7 @@ module REXML
 			elsif first.kind_of? String
 				@element = parent if parent.kind_of? Element
 				self.name = first
-				@value = second
+				@value = second.to_s
 			else
 				raise "illegal argument #{first.class.name} to Attribute constructor"
 			end

@@ -1,4 +1,8 @@
 require 'rexml/entity'
+require 'rexml/doctype'
+require 'rexml/child'
+require 'rexml/doctype'
+require 'rexml/parseexception'
 
 module REXML
 	# Represents text nodes in an XML document
@@ -271,16 +275,16 @@ module REXML
 			copy = input.clone
 			# Doing it like this rather than in a loop improves the speed
 			if doctype
-				copy.gsub!( EREFERENCE, '&amp;' )
+				copy = copy.gsub( EREFERENCE, '&amp;' )
 				doctype.entities.each_value do |entity|
-					copy.gsub!( entity.value, 
+					copy = copy.gsub( entity.value, 
 						"&#{entity.name};" ) if entity.value and 
 							not( entity_filter and entity_filter.include?(entity) )
 				end
 			else
-				copy.gsub!( EREFERENCE, '&amp;' )
+				copy = copy.gsub( EREFERENCE, '&amp;' )
 				DocType::DEFAULT_ENTITIES.each_value do |entity|
-					copy.gsub!(entity.value, "&#{entity.name};" )
+					copy = copy.gsub(entity.value, "&#{entity.name};" )
 				end
 			end
 			copy

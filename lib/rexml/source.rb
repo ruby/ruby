@@ -150,7 +150,7 @@ module REXML
 
 		def read
 			begin
-				str = @source.readline('>')
+        str = @source.readline(@line_break)
 				str = decode(str) if @to_utf and str 
 				@buffer << str
 			rescue Exception, NameError
@@ -167,7 +167,7 @@ module REXML
 			@buffer = $' if cons and rv
 			while !rv and @source
 				begin
-					str = @source.readline('>')
+          str = @source.readline(@line_break)
 					str = decode(str) if @to_utf and str
 					@buffer << str
 					rv = pattern.match(@buffer)
@@ -186,17 +186,22 @@ module REXML
 
 		# @return the current line in the source
 		def current_line
-			pos = @er_source.pos				# The byte position in the source
-			lineno = @er_source.lineno	# The XML < position in the source
-			@er_source.rewind
-			line = 0										# The \r\n position in the source
-			begin
-				while @er_source.pos < pos
-					@er_source.readline
-					line += 1
-				end
-			rescue
-			end
+      begin
+        pos = @er_source.pos				# The byte position in the source
+        lineno = @er_source.lineno	# The XML < position in the source
+        @er_source.rewind
+        line = 0										# The \r\n position in the source
+        begin
+          while @er_source.pos < pos
+            @er_source.readline
+            line += 1
+          end
+        rescue
+        end
+      rescue IOError
+        pos = -1
+        line = -1
+      end
 			[pos, lineno, line]
 		end
 	end
