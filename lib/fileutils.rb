@@ -101,13 +101,13 @@ module FileUtils
   # Returns true if +newer+ is newer than all +old_list+.
   # Non-existent files are older than any file.
   # 
-  #   FileUtils.uptodate? 'hello.o', %w(hello.c hello.h) or system 'make'
+  #   FileUtils.uptodate? 'hello.o', %w(hello.c hello.h) or system 'make hello.o'
   # 
   def uptodate?( new, old_list, *options )
     raise ArgumentError, 'uptodate? does not accept any option' unless options.empty?
 
     return false unless FileTest.exist? new
-    new_time = File.ctime(new)
+    new_time = File.mtime(new)
     old_list.each do |old|
       if FileTest.exist? old
         return false unless new_time > File.mtime(old)

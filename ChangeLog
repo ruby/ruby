@@ -1,3 +1,8 @@
+Mon Feb 10 19:54:30 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb (FileUtils#uptodate?): use mtime for
+	  comparison.
+
 Mon Feb 10 10:14:26 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_to_a): return value should be an Array if the
