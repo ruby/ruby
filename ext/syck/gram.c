@@ -99,7 +99,7 @@
 #define YYLEX_PARAM     parser
 
 #define NULL_NODE(parser, node) \
-        SyckNode *node = syck_new_str( "" ); \
+        SyckNode *node = syck_new_str( "", scalar_plain ); \
         if ( ((SyckParser *)parser)->taguri_expansion == 1 ) \
         { \
             node->type_id = syck_taguri( YAML_DOMAIN, "null", 4 ); \

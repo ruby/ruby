@@ -63,7 +63,7 @@
 
 
 #ifndef YYSTYPE
-#line 23 "gram.y"
+#line 33 "gram.y"
 typedef union {
     SYMID nodeId;
     SyckNode *nodeData;

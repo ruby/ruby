@@ -1,3 +1,26 @@
+Sat May 15 12:04:58 2004  why the lucky stiff  <why@ruby-lang.org>
+
+	* lib/yaml.rb: removed fallback to pure Ruby parser.
+
+	* lib/yaml/baseemitter.rb (node_text): rewriting folded scalars.
+
+	* ext/syck/syck.h: reports style of scalars now, be they plain, block
+	  single-, or double-quoted.
+
+	* ext/syck/syck.c: ditto.
+
+	* ext/syck/gram.c: ditto.
+
+	* ext/syck/node.c: ditto.
+
+	* ext/syck/token.c: ditto.
+
+	* ext/syck/rubyext.c (yaml_org_handler): symbols loaded only
+	  if scalar style is plain.
+
+	* test/yaml/test_yaml.rb (test_perl_regexp): updated test to
+	  match new regexp serialization.
+
 Sat May 15 01:41:34 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (eval): forgot to restore $SAFE value before evaluating

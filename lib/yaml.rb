@@ -5,21 +5,12 @@
 #
 #   Loads the parser/loader and emitter/writer.
 #
-
 module YAML
 
-    begin
-        require 'yaml/syck'
-        @@parser = YAML::Syck::Parser
-        @@loader = YAML::Syck::DefaultLoader
-        @@emitter = YAML::Syck::Emitter
-    rescue LoadError
-        require 'yaml/parser'
-        @@parser = YAML::Parser
-        @@loader = YAML::DefaultLoader
-        require 'yaml/emitter'
-        @@emitter = YAML::Emitter
-    end
+    require 'yaml/syck'
+    @@parser = YAML::Syck::Parser
+    @@loader = YAML::Syck::DefaultLoader
+    @@emitter = YAML::Syck::Emitter
     require 'yaml/loader'
     require 'yaml/stream'
 
@@ -148,7 +139,7 @@ module YAML
 	end
 
     #
-    # Method to extract colon-separated type and class, returning
+    # Method to extract colon-seperated type and class, returning
     # the type and the constant of the class
     #
     def YAML.read_type_class( type, obj_class )
@@ -160,20 +151,12 @@ module YAML
     #
     # Allocate blank object
     #
-    def YAML.object_maker( obj_class, val, is_attr = false )
+    def YAML.object_maker( obj_class, val )
         if Hash === val
-            # name = obj_class.name
-            # ostr = sprintf( "%c%co:%c%s\000", ::Marshal::MAJOR_VERSION, ::Marshal::MINOR_VERSION,
-            #                 name.length + 5, name )
-            # if is_attr
-            #     ostr[ -1, 1 ] = ::Marshal.dump( val ).sub( /^[^{]+\{/, '' )
-            # end
             o = obj_class.allocate
-            unless is_attr
-                val.each_pair { |k,v|
-                    o.instance_variable_set("@#{k}", v)
-                }
-            end
+            val.each_pair { |k,v|
+                o.instance_variable_set("@#{k}", v)
+            }
             o
         else
             raise YAML::Error, "Invalid object explicitly tagged !ruby/Object: " + val.inspect

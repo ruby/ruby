@@ -1045,8 +1045,8 @@ EOY
 		assert_parse_only(
 			[ /bozo$/i ], <<EOY
 - !perl/regexp:
-  REGEXP: bozo$
-  MODIFIERS: i
+  regexp: bozo$
+  mods: i
 EOY
 		)
 	end
