@@ -403,10 +403,10 @@ module URI
       regexp = Regexp.new('(?=' + schemes.collect{|s| 
 			    Regexp.quote(s + ':')
 			  }.join('|') + ')' + PATTERN::X_ABS_URI, 
-			  Regexp::IGNORECASE, 'N')
+			  Regexp::EXTENDED, 'N')
     end
 
-    str.scan(ABS_URI_REF) {
+    str.scan(regexp) {
       if block_given?
 	yield($&)
       else
