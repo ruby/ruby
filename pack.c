@@ -3,7 +3,7 @@
   pack.c -
 
   $Author: matz $
-  $Date: 1994/08/12 04:47:44 $
+  $Date: 1994/10/14 06:19:34 $
   created at: Thu Feb 10 15:17:05 JST 1994
 
   Copyright (C) 1994 Yukihiro Matsumoto

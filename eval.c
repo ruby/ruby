@@ -3,7 +3,7 @@
   eval.c -
 
   $Author: matz $
-  $Date: 1994/08/24 09:25:28 $
+  $Date: 1994/10/14 10:00:53 $
   created at: Thu Jun 10 14:22:17 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -1139,7 +1139,9 @@ rb_exit(status)
     int status;
 {
     last_val = INT2FIX(status);
-    JUMP_TAG(TAG_EXIT);
+    if (prot_tag)
+	JUMP_TAG(TAG_EXIT);
+    exit(FIX2UINT(last_val));
 }
 
 VALUE
@@ -1519,7 +1521,6 @@ rb_call(class, recv, mid, argc, argv)
     int   argc;
     ID    mid;
 {
-    int    state, go_out;
     NODE  *body;
     VALUE  result;
     VALUE  saved_self = Qself;
@@ -1655,6 +1656,8 @@ rb_call(class, recv, mid, argc, argv)
 	}
     }
     else {
+	int    state;
+
 	PUSH_ENV();
 
 	the_env->local_vars = Qnil;
@@ -1670,10 +1673,13 @@ rb_call(class, recv, mid, argc, argv)
 #endif
 
 	PUSH_TAG();
-	switch (state = EXEC_TAG()) {
-	  case 0:
+	state = EXEC_TAG();
+	if (state == 0) {
 	    result = rb_eval(body);
-	    go_out=0;
+	}
+	POP_TAG();
+	switch (state) {
+	  case 0:
 	    break;
 	  case TAG_CONTINUE:
 	    Fatal("unexpected continue");
@@ -1691,11 +1697,9 @@ rb_call(class, recv, mid, argc, argv)
 	    result = last_val;
 	    break;
 	  default:
-	    go_out=1;
+	    JUMP_TAG(state);
 	}
-	POP_TAG();
 	POP_ENV();
-	if (go_out) JUMP_TAG(state);
     }
     Qself = saved_self;
     the_env->iterator = saved_ilevel;
@@ -2004,7 +2008,7 @@ addpath(path)
 
 Init_load()
 {
-    extern VALUE C_Kernel;
+    extern VALUE C_Builtin;
     extern VALUE rb_check_str();
     char *path;
 
@@ -2015,6 +2019,6 @@ Init_load()
     addpath(getenv("RUBYLIB"));
     addpath(RUBY_LIB);
 
-    rb_define_method(C_Kernel, "load", Fload, 1);
-    rb_define_method(C_Kernel, "require", Frequire, 1);
+    rb_define_method(C_Builtin, "load", Fload, 1);
+    rb_define_method(C_Builtin, "require", Frequire, 1);
 }

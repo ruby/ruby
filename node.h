@@ -3,7 +3,7 @@
   node.h -
 
   $Author: matz $
-  $Date: 1994/08/24 09:25:29 $
+  $Date: 1994/10/14 06:19:30 $
   created at: Fri May 28 15:14:02 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto

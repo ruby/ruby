@@ -3,7 +3,7 @@
   ruby.c -
 
   $Author: matz $
-  $Date: 1994/08/24 09:25:34 $
+  $Date: 1994/10/14 06:19:43 $
   created at: Tue Aug 10 12:47:31 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto

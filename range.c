@@ -3,7 +3,7 @@
   range.c -
 
   $Author: matz $
-  $Date: 1994/08/12 04:47:49 $
+  $Date: 1994/10/14 06:19:39 $
   created at: Thu Aug 19 17:46:47 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto

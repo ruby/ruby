@@ -3,7 +3,7 @@
   class.c -
 
   $Author: matz $
-  $Date: 1994/08/12 11:06:35 $
+  $Date: 1994/10/14 06:19:04 $
   created at: Tue Aug 10 15:05:44 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto

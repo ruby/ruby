@@ -4,7 +4,7 @@
   file.c -
 
   $Author: matz $
-  $Date: 1994/08/18 07:06:21 $
+  $Date: 1994/10/14 06:19:20 $
   created at: Mon Nov 15 12:24:34 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto

@@ -142,7 +142,7 @@ install: $(bindir)/$(PROGRAM)
 clean:;		@rm -f $(OBJS)
 
 realclean:;	@rm -f $(OBJS)
-		@rm -f core ruby *~
+		@rm -f core ruby *~ config.status Makefile
 
 dbm.o:dbm.c
 	$(CC) -c $(DBM) $(CFLAGS) $(CPPFLAGS) $(DEFS) -I$(srcdir) -I$(srcdir)/lib dbm.c

@@ -3,7 +3,7 @@
   process.c -
 
   $Author: matz $
-  $Date: 1994/08/12 04:47:47 $
+  $Date: 1994/10/14 10:00:58 $
   created at: Tue Aug 10 14:30:50 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -832,19 +832,19 @@ VALUE M_Process;
 
 Init_process()
 {
-    extern VALUE C_Kernel;
+    extern VALUE C_Builtin;
 
     rb_define_variable("$$", Qnil, get_pid, rb_readonly_hook);
     rb_define_variable("$?", &status, Qnil, rb_readonly_hook);
-    rb_define_method(C_Kernel, "exec", Fexec, 1);
-    rb_define_method(C_Kernel, "fork", Ffork, 0);
-    rb_define_method(C_Kernel, "_exit", Ffork, 1);
-    rb_define_method(C_Kernel, "wait", Fwait, 0);
-    rb_define_method(C_Kernel, "waitpid", Fwaitpid, 2);
-    rb_define_method(C_Kernel, "system", Fsystem, 1);
-    rb_define_method(C_Kernel, "kill", Fkill, -1);
-    rb_define_method(C_Kernel, "trap", Ftrap, -1);
-    rb_define_method(C_Kernel, "sleep", Fsleep, -1);
+    rb_define_method(C_Builtin, "exec", Fexec, 1);
+    rb_define_method(C_Builtin, "fork", Ffork, 0);
+    rb_define_method(C_Builtin, "_exit", Ffork, 1);
+    rb_define_method(C_Builtin, "wait", Fwait, 0);
+    rb_define_method(C_Builtin, "waitpid", Fwaitpid, 2);
+    rb_define_method(C_Builtin, "system", Fsystem, 1);
+    rb_define_method(C_Builtin, "kill", Fkill, -1);
+    rb_define_method(C_Builtin, "trap", Ftrap, -1);
+    rb_define_method(C_Builtin, "sleep", Fsleep, -1);
 
     M_Process = rb_define_module("Process");
 

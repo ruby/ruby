@@ -3,7 +3,7 @@
   compar.c -
 
   $Author: matz $
-  $Date: 1994/08/12 04:47:09 $
+  $Date: 1994/10/14 06:19:05 $
   created at: Thu Aug 26 14:39:48 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto

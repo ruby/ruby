@@ -3,7 +3,7 @@
   string.c -
 
   $Author: matz $
-  $Date: 1994/08/12 11:06:44 $
+  $Date: 1994/10/14 10:01:01 $
   created at: Mon Aug  9 17:12:58 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -1533,7 +1533,7 @@ Fstr_sum(str, args)
     }
 }
 
-extern VALUE C_Kernel;
+extern VALUE C_Builtin;
 extern VALUE M_Comparable;
 extern VALUE M_Enumerable;
 
@@ -1595,8 +1595,8 @@ Init_String()
 
     rb_define_method(C_String, "sum", Fstr_sum, -2);
 
-    rb_define_method(C_Kernel, "sub", Fsub, 2);
-    rb_define_method(C_Kernel, "gsub", Fgsub, 2);
+    rb_define_method(C_Builtin, "sub", Fsub, 2);
+    rb_define_method(C_Builtin, "gsub", Fgsub, 2);
 
     pr_str = rb_intern("to_s");
 }

@@ -1,3 +1,4 @@
+* trからBSDコードを取り除く
 * 適切なsignal handling
 * dlnのCOFF対応
 * rubyで定義する変数hookの実現

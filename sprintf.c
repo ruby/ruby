@@ -3,7 +3,7 @@
   sprintf.c -
 
   $Author: matz $
-  $Date: 1994/08/12 04:47:57 $
+  $Date: 1994/10/14 06:19:50 $
   created at: Fri Oct 15 10:39:26 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto

@@ -3,7 +3,7 @@
   array.c -
 
   $Author: matz $
-  $Date: 1994/08/12 11:06:34 $
+  $Date: 1994/10/14 06:19:01 $
   created at: Fri Aug  6 09:46:12 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto

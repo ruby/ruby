@@ -3,7 +3,7 @@
   dbm.c -
 
   $Author: matz $
-  $Date: 1994/08/12 11:06:37 $
+  $Date: 1994/10/14 10:00:51 $
   created at: Mon Jan 24 15:59:52 JST 1994
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -243,7 +243,7 @@ Fdbm_length(obj)
 }
 
 static VALUE
-Fdbm_each(obj)
+Fdbm_each_value(obj)
     VALUE obj;
 {
     datum key, val;
@@ -396,8 +396,8 @@ Init_DBM()
     rb_define_method(C_DBM, "indexes",  Fdbm_indexes, -2);
     rb_define_method(C_DBM, "length", Fdbm_length, 0);
     rb_define_alias(C_DBM,  "size", "length");
-    rb_define_method(C_DBM, "each", Fdbm_each, 0);
-    rb_define_method(C_DBM, "each_value", Fdbm_each, 0);
+    rb_define_method(C_DBM, "each", Fdbm_each_pair, 0);
+    rb_define_method(C_DBM, "each_value", Fdbm_each_value, 0);
     rb_define_method(C_DBM, "each_key", Fdbm_each_key, 0);
     rb_define_method(C_DBM, "each_pair", Fdbm_each_pair, 0);
     rb_define_method(C_DBM, "keys", Fdbm_keys, 0);

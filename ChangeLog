@@ -1,3 +1,17 @@
+Fri Oct 14 13:22:18 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* version 0.52: ……なんてこったい.
+
+	* eval.c(rb_call): returnの処理が間違っていたので, マシンによって
+	  はreturnで関数を終了するだけでなくtoplevelまでつき抜けていた.
+
+	* object.c: Builtinクラスを新設. 組み込み関数をKernelから移した.
+	  nilが組み込み関数を理解するとトラブルの元である.
+
+	* dbm.c: Dictと同様にeachが[key,value]を返すように.
+
+	* version 0.51
+
 Thu Oct 13 12:13:48 1994  Yukihiro Matsumoto  (matz@ix-02)
 
 	* eval.c(SETUP_ARGS): 付加演算子が配列でない時には配列に変換する.
@@ -26,9 +40,9 @@ Tue Oct 11 17:10:46 1994  Yukihiro Matsumoto  (matz@ix-02)
 	* io.c(to_i): IOクラスのインスタンスを整数に変換するとそのファイル
 	  記述子を返すように.
 
-	* numeric.c(num2int): to_iメソッドを使って, できる限り整数に変換す
-	  る. 以前はnum2fixだけが全てのオブジェクトに対してto_iメソッドを
-	  適用していた.
+	* numeric.c(num2int): to_iメソッドを使ってできる限り整数に変換する. 
+	  以前はnum2fixだけが全てのオブジェクトに対してto_iメソッドを適用
+	  していた.
 
 	* sprintf.c(Fsprintf): 整数表示の際, オブジェクトをできる限り整数
 	  に変換するように(to_iメソッドを使う).

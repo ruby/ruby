@@ -3,7 +3,7 @@
   parse.y -
 
   $Author: matz $
-  $Date: 1994/08/25 09:21:07 $
+  $Date: 1994/10/14 06:19:35 $
   created at: Fri May 28 18:02:42 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto

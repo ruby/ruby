@@ -3,7 +3,7 @@
   dict.c -
 
   $Author: matz $
-  $Date: 1994/08/12 04:47:13 $
+  $Date: 1994/10/14 10:00:52 $
   created at: Mon Nov 22 18:51:18 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -523,7 +523,7 @@ Fsetenv(obj, name, value)
 
 Init_Dict()
 {
-    extern VALUE C_Kernel;
+    extern VALUE C_Builtin;
     extern VALUE M_Enumerable;
     static VALUE envtbl;
 
@@ -578,6 +578,6 @@ Init_Dict()
     envtbl = obj_alloc(C_EnvDict);
     rb_define_variable("$ENV", &envtbl, Qnil, rb_readonly_hook);
 
-    rb_define_method(C_Kernel, "getenv", Fgetenv, 1);
-    rb_define_method(C_Kernel, "setenv", Fsetenv, 2);
+    rb_define_method(C_Builtin, "getenv", Fgetenv, 1);
+    rb_define_method(C_Builtin, "setenv", Fsetenv, 2);
 }

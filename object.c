@@ -3,7 +3,7 @@
   object.c -
 
   $Author: matz $
-  $Date: 1994/08/12 04:47:42 $
+  $Date: 1994/10/14 10:00:56 $
   created at: Thu Jul 15 12:01:24 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -17,12 +17,12 @@
 #include <stdio.h>
 
 VALUE C_Kernel;
+VALUE C_Builtin;
 VALUE C_Object;
 VALUE C_Module;
 VALUE C_Class;
 VALUE C_Nil;
 VALUE C_Data;
-VALUE C_Method;
 
 struct st_table *new_idhash();
 
@@ -348,11 +348,13 @@ Init_Object()
     VALUE metaclass;
 
     C_Kernel = boot_defclass("Kernel", Qnil);
-    C_Object = boot_defclass("Object", C_Kernel);
+    C_Builtin = boot_defclass("Builtin", C_Kernel);
+    C_Object = boot_defclass("Object", C_Builtin);
     C_Module = boot_defclass("Module", C_Object);
     C_Class =  boot_defclass("Class",  C_Module);
 
     metaclass = RBASIC(C_Kernel)->class = single_class_new(C_Class);
+    metaclass = RBASIC(C_Builtin)->class = single_class_new(metaclass);
     metaclass = RBASIC(C_Object)->class = single_class_new(metaclass);
     metaclass = RBASIC(C_Module)->class = single_class_new(metaclass);
     metaclass = RBASIC(C_Class)->class = single_class_new(metaclass);
@@ -366,10 +368,13 @@ Init_Object()
      *  |      Kernel----->(Kernel)		    |
      *  |       ^  ^         ^  ^		    |
      *	|       |  |         |  |		    |
-     *	|   +---+  +----+    |  +---+		    |
-     *	|   |     +-----|----+      |		    |
-     *	|   |     |     |           |		    |
-     * 	+->Nil->(Nil) Object---->(Object)	    |
+     *	|   +---+  +-----+   |  +---+		    |
+     *	|   |     +------|---+      |		    |
+     *	|   |     |      |          |               |
+     * 	+->Nil->(Nil) Builtin--->(Builtin)	    |
+     *                   ^          ^		    |
+     *                   |          |		    |
+     *                Object---->(Object)	    |
      *	   	       ^ ^         ^  ^	            |
      *	   	       | |         |  |	            |
      *                 | | +-------+  |	            |
@@ -403,16 +408,16 @@ Init_Object()
     rb_define_method(C_Kernel, "_inspect", Fkrn_inspect, 0);
 
 #ifdef USE_CALLER
-    rb_define_method(C_Kernel, "caller", Fcaller, -2);
+    rb_define_method(C_Builtin, "caller", Fcaller, -2);
 #endif
-    rb_define_method(C_Kernel, "exit", Fexit, -2);
-    rb_define_method(C_Kernel, "eval", Feval, 1);
-    rb_define_method(C_Kernel, "defined", Fdefined, 1);
-    rb_define_method(C_Kernel, "sprintf", Fsprintf, -1);
-    rb_define_alias(C_Kernel, "format", "sprintf");
-    rb_define_method(C_Kernel, "iterator_p", Fiterator_p, 0);
+    rb_define_method(C_Builtin, "exit", Fexit, -2);
+    rb_define_method(C_Builtin, "eval", Feval, 1);
+    rb_define_method(C_Builtin, "defined", Fdefined, 1);
+    rb_define_method(C_Builtin, "sprintf", Fsprintf, -1);
+    rb_define_alias(C_Builtin, "format", "sprintf");
+    rb_define_method(C_Builtin, "iterator_p", Fiterator_p, 0);
 
-    rb_define_method(C_Kernel, "apply", Fapply, -2);
+    rb_define_method(C_Builtin, "apply", Fapply, -2);
 
     rb_define_method(C_Object, "_inspect", Fobj_inspect, 0);
 
@@ -442,9 +447,6 @@ Init_Object()
     rb_define_method(C_Data, "clone", Fcant_clone, 0);
     rb_define_method(C_Data, "class", Fdata_class, 0);
 
-    C_Method = rb_define_class("Method", C_Kernel);
-    rb_define_method(C_Method, "clone", Fcant_clone, 0);
-
     eq = rb_intern("==");
     match = rb_intern("=~");
 
@@ -453,7 +455,7 @@ Init_Object()
 
     TRUE = obj_alloc(C_Object);
     rb_define_single_method(TRUE, "to_s", Ftrue_to_s, 0);
-    rb_define_const(C_Kernel, "%TRUE", TRUE);
-    rb_define_const(C_Kernel, "%FALSE", FALSE);
+    rb_define_const(C_Builtin, "%TRUE", TRUE);
+    rb_define_const(C_Builtin, "%FALSE", FALSE);
 }
 
