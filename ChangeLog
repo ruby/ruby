@@ -1,3 +1,7 @@
+Fri Jun 20 00:45:19 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>
+
+	* lib/csv.rb: Import csv module.
+
 Thu Jun 19 22:51:41 2003  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb.rb, lib/drb/drb.rb, lib/drb/eq.rb, 
@@ -22,28 +26,28 @@ Wed Jun 18 23:41:27 2003  Marc Cartright  <marc@isri.unlv.edu>
 
 Wed Jun 18 01:13:36 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
 
-    * ext/syck/rubyext.c (rb_syck_load_handler): merge key implemented.
+	* ext/syck/rubyext.c (rb_syck_load_handler): merge key implemented.
 
-    * ext/syck/rubyext.c (transfer_find_i): removed use of String#=~ in favor
-        of Regexp#match.
+	* ext/syck/rubyext.c (transfer_find_i): removed use of String#=~ in favor
+	    of Regexp#match.
 
-    * lib/yaml.rb: YAML::try_implicit returns.
+	* lib/yaml.rb: YAML::try_implicit returns.
 
-    * lib/yaml/rubytypes.rb: Regexps added for type matching.
+	* lib/yaml/rubytypes.rb: Regexps added for type matching.
 
-    * lib/yaml/emitter.rb: fix String + nil error.
+	* lib/yaml/emitter.rb: fix String + nil error.
 
 Tue Jun 17 17:01:08 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
 
-    * ext/syck/gram.c: added grammar for certain empty sequence entries.
+	* ext/syck/gram.c: added grammar for certain empty sequence entries.
 
-    * ext/syck/handler.c, ext/syck/syck.c, ext/syck/syck.h: track bad anchors.
+	* ext/syck/handler.c, ext/syck/syck.c, ext/syck/syck.h: track bad anchors.
 
-    * ext/syck/token.c: added pause token, tag possible circular references.
+	* ext/syck/token.c: added pause token, tag possible circular references.
 
-    * lib/yaml/rubytypes.rb: parsing YMD time as Date instance.
+	* lib/yaml/rubytypes.rb: parsing YMD time as Date instance.
 
-    * ext/syck/rubyext.c: ditto. DomainType, PrivateType, BadAlias classes.
+	* ext/syck/rubyext.c: ditto. DomainType, PrivateType, BadAlias classes.
 
 Tue Jun 17 21:28:27 2003  Ariff Abdullah <skywizard@time.net.my>
 
@@ -220,9 +224,9 @@ Thu Jun  5 18:33:46 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 Thu Jun  5 17:44:11 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
 
-    * ext/syck/rubyext.c (syck_parser_mark): was a bit heavy on the GC.
+	* ext/syck/rubyext.c (syck_parser_mark): was a bit heavy on the GC.
 
-    * lib/yaml.rb (YAML::transfer): added.
+	* lib/yaml.rb (YAML::transfer): added.
 
 Thu Jun  5 16:11:50 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 

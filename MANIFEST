@@ -115,6 +115,7 @@ lib/cgi-lib.rb
 lib/cgi.rb
 lib/cgi/session.rb
 lib/complex.rb
+lib/csv.rb
 lib/date.rb
 lib/date/format.rb
 lib/date2.rb
