@@ -179,7 +179,7 @@ void rb_check_safe_str _((VALUE));
 #define Check_SafeStr(v) rb_check_safe_str((VALUE)(v))
 void rb_secure _((int));
 
-extern int ruby_safe_level;
+EXTERN int ruby_safe_level;
 #define rb_safe_level() (ruby_safe_level)
 void rb_set_safe_level _((int));
 

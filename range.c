@@ -33,12 +33,11 @@ range_failed()
     return Qnil;		/* dummy */
 }
 
-static VALUE
-range_new(klass, beg, end, exclude_end)
-    VALUE klass, beg, end;
+static void
+range_init(obj, beg, end, exclude_end)
+    VALUE obj, beg, end;
     int exclude_end;
 {
-    VALUE obj;
     VALUE args[2];
 
     args[0] = beg; args[1] = end;
@@ -46,15 +45,12 @@ range_new(klass, beg, end, exclude_end)
 	rb_rescue(range_check, (VALUE)args, range_failed, 0);
     }
 
-    obj = rb_obj_alloc(klass);
     if (exclude_end) {
 	SET_EXCL(obj);
     }
 
     rb_ivar_set(obj, id_beg, beg);
     rb_ivar_set(obj, id_end, end);
-
-    return obj;
 }
 
 VALUE
@@ -62,19 +58,27 @@ rb_range_new(beg, end, exclude_end)
     VALUE beg, end;
     int exclude_end;
 {
-    return range_new(rb_cRange, beg, end, exclude_end);
+    VALUE obj = rb_obj_alloc(rb_cRange);
+
+    range_init(obj, beg, end, exclude_end);
+    return obj;
 }
 
 static VALUE
-range_s_new(argc, argv, klass)
+range_initialize(argc, argv, obj)
     int argc;
     VALUE *argv;
-    VALUE klass;
+    VALUE obj;
 {
     VALUE beg, end, flag;
     
     rb_scan_args(argc, argv, "21", &beg, &end, &flag);
-    return range_new(klass, beg, end, RTEST(flag));
+    /* Ranges are immutable, so that they should be initialized only once. */
+    if (rb_ivar_defined(obj, id_beg)) {
+	rb_raise(rb_eNameError, "`initialize' called twice");
+    }
+    range_init(obj, beg, end, RTEST(flag));
+    return Qnil;
 }
 
 static VALUE
@@ -328,7 +332,7 @@ Init_Range()
 {
     rb_cRange = rb_define_class("Range", rb_cObject);
     rb_include_module(rb_cRange, rb_mEnumerable);
-    rb_define_singleton_method(rb_cRange, "new", range_s_new, -1);
+    rb_define_method(rb_cRange, "initialize", range_initialize, -1);
     rb_define_method(rb_cRange, "===", range_eqq, 1);
     rb_define_method(rb_cRange, "each", range_each, 0);
     rb_define_method(rb_cRange, "first", range_first, 0);

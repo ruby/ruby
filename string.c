@@ -191,27 +191,16 @@ rb_str_dup(str)
 }
 
 static VALUE
-rb_str_s_new(klass, orig)
+rb_str_s_new(argc, argv, klass)
+    int argc;
+    VALUE *argv;
     VALUE klass;
-    VALUE orig;
 {
-    NEWOBJ(str, struct RString);
+    VALUE str = rb_str_new(0, 0);
     OBJSETUP(str, klass, T_STRING);
 
-    str->orig = 0;
-    orig = rb_obj_as_string(orig);
-    str->len = RSTRING(orig)->len;
-    if (RSTRING(orig)->ptr) {
-	str->ptr = ALLOC_N(char, RSTRING(orig)->len+1);
-	memcpy(str->ptr, RSTRING(orig)->ptr, RSTRING(orig)->len);
-	str->ptr[RSTRING(orig)->len] = '\0';
-    }
-
-    if (rb_safe_level() >= 3) {
-	OBJ_TAINT(str);
-    }
-
-    return (VALUE)str;
+    rb_obj_call_init(str, argc, argv);
+    return str;
 }
 
 static VALUE
@@ -257,8 +246,12 @@ rb_str_times(str, times)
     long i, len;
 
     len = NUM2LONG(times);
+    if (len == 0) return rb_str_new(0,0);
     if (len < 0) {
 	rb_raise(rb_eArgError, "negative argument");
+    }
+    if (LONG_MAX/len <  RSTRING(str)->len) {
+	rb_raise(rb_eArgError, "argument too big");
     }
 
     str2 = rb_str_new(0, RSTRING(str)->len*len);
@@ -811,6 +804,7 @@ rb_str_aref(str, indx)
       case T_FIXNUM:
 	idx = FIX2LONG(indx);
 
+      num_index:
 	if (idx < 0) {
 	    idx = RSTRING(str)->len + idx;
 	}
@@ -841,7 +835,8 @@ rb_str_aref(str, indx)
 		return rb_str_substr(str, beg, len);
 	    }
 	}
-	rb_raise(rb_eIndexError, "invalid index for string");
+	idx = NUM2LONG(indx);
+	goto num_index;
     }
     return Qnil;		/* not reached */
 }
@@ -863,8 +858,8 @@ rb_str_aref_m(argc, argv, str)
 static void
 rb_str_replace(str, beg, len, val)
     VALUE str, val;
-    int beg;
-    int len;
+    long beg;
+    long len;
 {
     if (len < RSTRING(val)->len) {
 	/* expand string */
@@ -891,12 +886,12 @@ rb_str_aset(str, indx, val)
     VALUE str;
     VALUE indx, val;
 {
-    int idx;
-    int beg;
+    long idx, beg;
 
     switch (TYPE(indx)) {
       case T_FIXNUM:
-	beg = idx = NUM2INT(indx);
+      num_index:
+	idx = NUM2INT(indx);
 	if (idx < 0) {
 	    idx += RSTRING(str)->len;
 	}
@@ -943,7 +938,8 @@ rb_str_aset(str, indx, val)
 		return val;
 	    }
 	}
-	rb_raise(rb_eIndexError, "invalid index for string");
+	idx = NUM2LONG(indx);
+	goto num_index;
     }
 }
 
@@ -955,7 +951,7 @@ rb_str_aset_m(argc, argv, str)
 {
     rb_str_modify(str);
     if (argc == 3) {
-	int beg, len;
+	long beg, len;
 
 	if (TYPE(argv[2]) != T_STRING) argv[2] = rb_str_to_str(argv[2]);
 	beg = NUM2INT(argv[0]);
@@ -1049,7 +1045,7 @@ rb_str_sub_bang(argc, argv, str)
     VALUE pat, repl, match;
     struct re_registers *regs;
     int iter = 0;
-    int plen;
+    long plen;
 
     if (argc == 1 && rb_iterator_p()) {
 	iter = 1;
@@ -1113,10 +1109,10 @@ rb_str_gsub_bang(argc, argv, str)
 {
     VALUE pat, val, repl, match;
     struct re_registers *regs;
-    int beg, n;
+    long beg, n;
+    long offset, blen, len;
     int iter = 0;
     char *buf, *bp, *cp;
-    int offset, blen, len;
     int tainted = 0;
 
     if (argc == 1 && rb_iterator_p()) {
@@ -1462,7 +1458,7 @@ static VALUE
 rb_str_dump(str)
     VALUE str;
 {
-    int len;
+    long len;
     char *p, *pend;
     char *q, *qend;
     VALUE result;
@@ -2038,7 +2034,7 @@ rb_str_split_m(argc, argv, str)
     VALUE spat;
     VALUE limit;
     int char_sep = -1;
-    int beg, end, i;
+    long beg, end, i;
     int lim = 0;
     VALUE result, tmp;
 
@@ -2078,7 +2074,7 @@ rb_str_split_m(argc, argv, str)
     beg = 0;
     if (char_sep >= 0) {
 	char *ptr = RSTRING(str)->ptr;
-	int len = RSTRING(str)->len;
+	long len = RSTRING(str)->len;
 	char *eptr = ptr + len;
 
 	if (char_sep == ' ') {	/* AWK emulation */
@@ -2120,9 +2116,9 @@ rb_str_split_m(argc, argv, str)
 	}
     }
     else {
-	int start = beg;
+	long start = beg;
+	long idx;
 	int last_null = 0;
-	int idx;
 	struct re_registers *regs;
 
 	while ((end = rb_reg_search(spat, str, start, 0)) >= 0) {
@@ -2198,7 +2194,7 @@ rb_str_each_line(argc, argv, str)
     int rslen;
     char *p = RSTRING(str)->ptr, *pend = p + RSTRING(str)->len, *s;
     char *ptr = p;
-    int len = RSTRING(str)->len;
+    long len = RSTRING(str)->len;
     VALUE line;
 
     if (rb_scan_args(argc, argv, "01", &rs) == 0) {
@@ -2251,7 +2247,7 @@ static VALUE
 rb_str_each_byte(str)
     VALUE str;
 {
-    int i;
+    long i;
 
     for (i=0; i<RSTRING(str)->len; i++) {
 	rb_yield(INT2FIX(RSTRING(str)->ptr[i] & 0xff));
@@ -2314,7 +2310,7 @@ rb_str_chomp_bang(argc, argv, str)
     int newline;
     int rslen;
     char *p = RSTRING(str)->ptr;
-    int len = RSTRING(str)->len;
+    long len = RSTRING(str)->len;
 
     if (rb_scan_args(argc, argv, "01", &rs) == 0) {
 	rs = rb_rs;
@@ -2654,7 +2650,8 @@ Init_String()
     rb_cString  = rb_define_class("String", rb_cObject);
     rb_include_module(rb_cString, rb_mComparable);
     rb_include_module(rb_cString, rb_mEnumerable);
-    rb_define_singleton_method(rb_cString, "new", rb_str_s_new, 1);
+    rb_define_singleton_method(rb_cString, "new", rb_str_s_new, -1);
+    rb_define_method(rb_cString, "initialize", rb_str_replace_m, 1);
     rb_define_method(rb_cString, "clone", rb_str_clone, 0);
     rb_define_method(rb_cString, "dup", rb_str_dup, 0);
     rb_define_method(rb_cString, "<=>", rb_str_cmp_m, 1);

@@ -20,6 +20,7 @@ Language Spec.
 * def Foo::Bar::baz() .. end ??
 * I18N (or M17N) script/string/regexp
 * Fixnum 0 as false ????
+* discourage use of symbol variable (e.g. $/, etc.) in manual
 
 Hacking Interpreter
 
@@ -56,6 +57,7 @@ Standard Libraries
 - Thread::start gives arguments, not a thread object to the block
 - regexp: (?>..), \G
 - Struct::new([name,]member,...)
+- IO#reopen accepts path as well
 * String#scanf(?)
 * Object#fmt(?)
 * Integer#{bin,oct,hex,heX}
@@ -67,6 +69,7 @@ Standard Libraries
 * optional stepsize argument for succ()
 * performance tune for String's non-bang methods.
 * Ruby module -- Ruby::Version, Ruby::Interpreter
+* call initialize for builtin class too
 
 Extension Libraries
 

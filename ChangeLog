@@ -1,6 +1,44 @@
+Tue Feb 29 01:08:26 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* range.c (range_initialize): initialization done in `initialize';
+	  `initialize; should not be called more than once.
+
+	* object.c (Init_Object): default `initialize' should take zero
+	  argument.
+
+	* time.c (time_s_new): call `initialize' in Time::new.
+
+Sat Feb 26 22:39:31 2000  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* Fix String#* with huge string.
+
+Sat Feb 26 00:14:59 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* dir.c (dir_s_new): call `initialize' in Dir::new.
+
+Fri Feb 25 23:01:49 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* ruby.h: export ruby_safe_level by EXTERN for mswin32.
+	* win32/ruby.def: regular maintenance.
+
+Fri Feb 25 22:12:46 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (rb_io_reopen): IO#reopen should accept path as well.
+
+	* string.c (rb_str_s_new): call `initialize' in String::new.
+
+	* hash.c (rb_hash_s_new): call `initialize' in Hash::new.
+
+	* array.c (rb_ary_s_new): call `initialize' in Array::new.
+
 Fri Feb 25 12:50:20 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
-	* eval.c (rb_thread_start_timer): interval made 10ms from 50ms.
+	* eval.c (rb_thread_start_timer): interval changed to 10ms from 50ms.
+
+Fri Feb 25 06:42:26 2000  GOTOU YUUZOU  <gotoyuzo@notwork.org>
+
+	* ext/socket/socket.c (ip_addrsetup): hostp should remain NULL if
+	  host is nil.
 
 Thu Feb 24 16:53:47 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

@@ -266,8 +266,7 @@ rb_obj_is_kind_of(obj, c)
 }
 
 static VALUE
-rb_obj_dummy(obj)
-    VALUE obj;
+rb_obj_dummy()
 {
     return Qnil;
 }
@@ -587,6 +586,7 @@ rb_mod_cmp(mod, arg)
 
 static VALUE
 rb_module_s_new(klass)
+    VALUE klass;
 {
     VALUE mod = rb_module_new();
 
@@ -979,7 +979,7 @@ Init_Object()
 
     rb_mKernel = rb_define_module("Kernel");
     rb_include_module(rb_cObject, rb_mKernel);
-    rb_define_private_method(rb_cObject, "initialize", rb_obj_dummy, -1);
+    rb_define_private_method(rb_cObject, "initialize", rb_obj_dummy, 0);
     rb_define_private_method(rb_cClass, "inherited", rb_obj_dummy, 1);
 
     /*

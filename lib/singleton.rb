@@ -16,8 +16,8 @@ module Singleton
     klass.instance_eval %{
       @__instance__ = nil
       def instance
+	Thread.critical = true
 	unless @__instance__
-	  Thread.critical = true
 	  begin
 	    @__instance__ = new
 	  ensure

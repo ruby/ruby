@@ -233,14 +233,31 @@ free_dir(dir)
 static VALUE dir_close _((VALUE));
 
 static VALUE
-dir_s_open(dir_class, dirname)
-    VALUE dir_class, dirname;
+dir_s_new(argc, argv, klass)
+    int argc;
+    VALUE *argv;
+    VALUE klass;
 {
-    VALUE obj;
+    VALUE obj = Data_Wrap_Struct(klass, 0, free_dir, 0);
+
+    rb_obj_call_init(obj, argc, argv);
+
+    if (rb_iterator_p()) {
+	rb_ensure(rb_yield, obj, dir_close, obj);
+    }
+
+    return obj;
+}
+
+static VALUE
+dir_initialize(dir, dirname)
+    VALUE dir, dirname;
+{
     DIR *dirp;
 
     Check_SafeStr(dirname);
-
+    if (DATA_PTR(dir)) closedir(DATA_PTR(dir));
+    DATA_PTR(dir) = NULL;
     dirp = opendir(RSTRING(dirname)->ptr);
     if (dirp == NULL) {
 	if (errno == EMFILE || errno == ENFILE) {
@@ -251,14 +268,15 @@ dir_s_open(dir_class, dirname)
 	    rb_sys_fail(RSTRING(dirname)->ptr);
 	}
     }
+    DATA_PTR(dir) = dirp;
+    return dir;
+}
 
-    obj = Data_Wrap_Struct(dir_class, 0, free_dir, dirp);
-
-    if (rb_iterator_p()) {
-	return rb_ensure(rb_yield, obj, dir_close, obj);
-    }
-
-    return obj;
+static VALUE
+dir_s_open(klass, dirname)
+    VALUE klass, dirname;
+{
+    return dir_s_new(1, &dirname, klass);
 }
 
 static void
@@ -781,11 +799,12 @@ Init_Dir()
 
     rb_include_module(rb_cDir, rb_mEnumerable);
 
-    rb_define_singleton_method(rb_cDir, "new", dir_s_open, 1);
+    rb_define_singleton_method(rb_cDir, "new", dir_s_new, -1);
     rb_define_singleton_method(rb_cDir, "open", dir_s_open, 1);
     rb_define_singleton_method(rb_cDir, "foreach", dir_foreach, 1);
     rb_define_singleton_method(rb_cDir, "entries", dir_entries, 1);
 
+    rb_define_method(rb_cDir,"initialize", dir_initialize, 1);
     rb_define_method(rb_cDir,"read", dir_read, 0);
     rb_define_method(rb_cDir,"each", dir_each, 0);
     rb_define_method(rb_cDir,"rewind", dir_rewind, 0);

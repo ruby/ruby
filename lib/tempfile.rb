@@ -15,9 +15,10 @@ require 'final'
 class Tempfile < SimpleDelegator
   Max_try = 10
 
-  def Tempfile.callback(path)
+  def Tempfile.callback(path, data)
     lambda{
       print "removing ", path, "..." if $DEBUG
+      data[0].close if data[0]
       if File.exist?(path)
 	File.unlink(path) 
       end
@@ -47,10 +48,12 @@ class Tempfile < SimpleDelegator
 	n += 1
       end
 
-      @clean_files = Tempfile.callback(tmpname)
+      @protect = []
+      @clean_files = Tempfile.callback(tmpname, @protect)
       ObjectSpace.define_finalizer(self, @clean_files)
 
       @tmpfile = File.open(tmpname, 'w+')
+      @protect[0] = @tmpfile
       @tmpname = tmpname
       super(@tmpfile)
       Dir.rmdir(lock)
@@ -66,12 +69,13 @@ class Tempfile < SimpleDelegator
   def open
     @tmpfile.close if @tmpfile
     @tmpfile = File.open(@tmpname, 'r+')
+    @protect[0] = @tmpfile
     __setobj__(@tmpfile)
   end
 
   def close(real=false)
     @tmpfile.close if @tmpfile
-    @tmpfile = nil
+    @protect[0] = @tmpfile = nil
     if real
       @clean_files.call
       ObjectSpace.undefine_finalizer(self)

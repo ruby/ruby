@@ -171,29 +171,6 @@ rb_hash_foreach(hash, func, farg)
 }
 
 static VALUE
-rb_hash_s_new(argc, argv, klass)
-    int argc;
-    VALUE *argv;
-    VALUE klass;
-{
-    VALUE ifnone;
-
-    NEWOBJ(hash, struct RHash);
-    OBJSETUP(hash, klass, T_HASH);
-
-    hash->iter_lev = 0;
-    hash->ifnone = Qnil;
-    hash->tbl = 0;		/* avoid GC crashing  */
-
-    rb_scan_args(argc, argv, "01", &ifnone);
-
-    hash->ifnone = ifnone;
-    hash->tbl = st_init_table(&objhash);
-
-    return (VALUE)hash;
-}
-
-static VALUE
 rb_hash_new2(klass)
     VALUE klass;
 {
@@ -212,6 +189,33 @@ VALUE
 rb_hash_new()
 {
     return rb_hash_new2(rb_cHash);
+}
+
+static VALUE
+rb_hash_s_new(argc, argv, klass)
+    int argc;
+    VALUE *argv;
+    VALUE klass;
+{
+    VALUE hash = rb_hash_new2(klass);
+
+    rb_obj_call_init(hash, argc, argv);
+    return hash;
+}
+
+static VALUE
+rb_hash_initialize(argc, argv, hash)
+    int argc;
+    VALUE *argv;
+    VALUE hash;
+{
+    VALUE ifnone;
+
+    rb_scan_args(argc, argv, "01", &ifnone);
+    rb_hash_modify(hash);
+    RHASH(hash)->ifnone = ifnone;
+
+    return hash;
 }
 
 static VALUE
@@ -1382,6 +1386,7 @@ Init_Hash()
 
     rb_define_singleton_method(rb_cHash, "new", rb_hash_s_new, -1);
     rb_define_singleton_method(rb_cHash, "[]", rb_hash_s_create, -1);
+    rb_define_method(rb_cHash,"initialize", rb_hash_initialize, -1);
 
     rb_define_method(rb_cHash,"clone", rb_hash_clone, 0);
     rb_define_method(rb_cHash,"dup", rb_hash_dup, 0);

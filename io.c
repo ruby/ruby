@@ -1707,7 +1707,7 @@ rb_io_mode_string(fptr)
 }
 
 static VALUE
-rb_io_reopen(io, nfile)
+io_reopen(io, nfile)
     VALUE io, nfile;
 {
     OpenFile *fptr, *orig;
@@ -1775,7 +1775,7 @@ rb_io_reopen(io, nfile)
 }
 
 static VALUE
-rb_file_reopen(argc, argv, file)
+rb_io_reopen(argc, argv, file)
     int argc;
     VALUE *argv;
     VALUE file;
@@ -1787,7 +1787,7 @@ rb_file_reopen(argc, argv, file)
     rb_secure(4);
     if (rb_scan_args(argc, argv, "11", &fname, &nmode) == 1) {
 	if (TYPE(fname) == T_FILE) { /* fname must be IO */
-	    return rb_io_reopen(file, fname);
+	    return io_reopen(file, fname);
 	}
     }
 
@@ -3248,7 +3248,7 @@ Init_IO()
     rb_define_virtual_variable("$_", rb_lastline_get, rb_lastline_set);
 
     rb_define_method(rb_cIO, "clone", rb_io_clone, 0);
-    rb_define_method(rb_cIO, "reopen", rb_io_reopen, 1);
+    rb_define_method(rb_cIO, "reopen", rb_io_reopen, -1);
 
     rb_define_method(rb_cIO, "print", rb_io_print, -1);
     rb_define_method(rb_cIO, "putc", rb_io_putc, 1);
@@ -3371,8 +3371,6 @@ Init_IO()
 #endif
 
     Init_File();
-
-    rb_define_method(rb_cFile, "reopen",  rb_file_reopen, -1);
 
     rb_define_singleton_method(rb_cFile, "new",  rb_file_s_open, -1);
     rb_define_singleton_method(rb_cFile, "open",  rb_file_s_open, -1);

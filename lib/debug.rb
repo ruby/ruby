@@ -383,11 +383,12 @@ class DEBUGGER__
 	    binding, binding_file, binding_line = @frames[frame_pos]
 	    stdout.printf "#%d %s:%s\n", frame_pos, binding_file, binding_line
 
-	  when /^\s*fi(?:nish)?$/
-	    if frame_pos == 0
+	  when /^\s*fin(?:ish)?$/
+	    if frame_pos == @frames.size
 	      stdout.print "\"finish\" not meaningful in the outermost frame.\n"
 	    else
 	      @finish_pos = @frames.size - frame_pos
+	      p @finish_pos
 	      frame_pos = 0
 	      return
 	    end
@@ -563,10 +564,10 @@ class DEBUGGER__
 	@frames.unshift [binding, file, line, id]
 
       when 'return', 'end'
-	@frames.shift
 	if @frames.size == @finish_pos
 	  @stop_next = 1
 	end
+	@frames.shift
 
       when 'end'
 	@frames.shift

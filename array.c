@@ -167,33 +167,42 @@ rb_ary_s_new(argc, argv, klass)
     VALUE *argv;
     VALUE klass;
 {
-    long len = 0;
-    VALUE size, val;
-    NEWOBJ(ary, struct RArray);
+    VALUE ary = rb_ary_new();
     OBJSETUP(ary, klass, T_ARRAY);
+    rb_obj_call_init(ary, argc, argv);
 
-    ary->len = 0;
-    ary->ptr = 0;
+    return ary;
+}
+
+static VALUE
+rb_ary_initialize(argc, argv, ary)
+    int argc;
+    VALUE *argv;
+    VALUE ary;
+{
+    long len;
+    VALUE size, val;
+
     if (rb_scan_args(argc, argv, "02", &size, &val) == 0) {
-	ary->capa = ARY_DEFAULT_SIZE;
+	return ary;
     }
-    else {
-	long capa = NUM2LONG(size);
 
-	if (capa < 0) {
-	    rb_raise(rb_eArgError, "negative array size");
-	}
-	if (capa > 0 && capa*sizeof(VALUE) <= 0) {
-	    rb_raise(rb_eArgError, "array size too big");
-	}
-	ary->capa = capa;
-	len = capa;
+    rb_ary_modify(ary);
+    len = NUM2LONG(size);
+    if (len < 0) {
+	rb_raise(rb_eArgError, "negative array size");
     }
-    ary->ptr = ALLOC_N(VALUE, ary->capa);
-    memfill(ary->ptr, len, val);
-    ary->len = len;
+    if (len > 0 && len*sizeof(VALUE) <= 0) {
+	rb_raise(rb_eArgError, "array size too big");
+    }
+    if (len > RARRAY(ary)->capa) {
+	RARRAY(ary)->capa = len;
+	REALLOC_N(RARRAY(ary)->ptr, VALUE, RARRAY(ary)->capa);
+    }
+    memfill(RARRAY(ary)->ptr, len, val);
+    RARRAY(ary)->len = len;
 
-    return (VALUE)ary;
+    return ary;
 }
 
 static VALUE
@@ -1544,6 +1553,7 @@ Init_Array()
 
     rb_define_singleton_method(rb_cArray, "new", rb_ary_s_new, -1);
     rb_define_singleton_method(rb_cArray, "[]", rb_ary_s_create, -1);
+    rb_define_method(rb_cArray, "initialize", rb_ary_initialize, -1);
     rb_define_method(rb_cArray, "to_s", rb_ary_to_s, 0);
     rb_define_method(rb_cArray, "inspect", rb_ary_inspect, 0);
     rb_define_method(rb_cArray, "to_a", rb_ary_to_a, 0);
