@@ -12,7 +12,11 @@ SRC_EXT = ["c", "cc", "m", "cxx", "cpp", "C"]
 
 unless defined? $configure_args
   $configure_args = {}
-  for arg in Shellwords.shellwords(CONFIG["configure_args"])
+  args = CONFIG["configure_args"]
+  if /mswin32|bccwin32|mingw/ =~ RUBY_PLATFORM and ENV["CONFIGURE_ARGS"]
+    args << " " << ENV["CONFIGURE_ARGS"]
+  end
+  for arg in Shellwords::shellwords(args)
     arg, val = arg.split('=', 2)
     if arg.sub!(/^(?!--)/, '--')
       val or next
@@ -81,8 +85,8 @@ elsif /bccwin32/ =~ RUBY_PLATFORM
 else
   OUTFLAG = '-o '
 end
-LINK = "#{CONFIG['CC']} #{OUTFLAG}conftest -I#{$hdrdir} #{CFLAGS} %s %s #{CONFIG['LDFLAGS']} %s conftest.c %s %s #{CONFIG['LIBS']}"
-CPP = "#{CONFIG['CPP']} -E %s -I#{$hdrdir} #{CFLAGS} %s %s conftest.c"
+$LINK = "#{CONFIG['CC']} #{OUTFLAG}conftest -I#{$hdrdir} #{CFLAGS} %s %s #{CONFIG['LDFLAGS']} %s conftest.c %s %s #{CONFIG['LIBS']}"
+$CPP = "#{CONFIG['CPP']} -E %s -I#{$hdrdir} #{CFLAGS} %s %s conftest.c"
 
 def rm_f(*files)
   targets = []
@@ -93,6 +97,19 @@ def rm_f(*files)
     File::chmod(0777, *targets)
     File::unlink(*targets)
   end
+end
+
+def older(file1, file2)
+  if !File.exist?(file1) then
+    return true
+  end
+  if !File.exist?(file2) then
+    return false
+  end
+  if File.mtime(file1) < File.mtime(file2)
+    return true
+  end
+  return false
 end
 
 $log = nil
@@ -127,7 +144,7 @@ def try_link0(src, opt="")
     $LIBPATH.each {|d| $LDFLAGS << " -L" + d}
   end
   begin
-    xsystem(Config.expand(format(LINK, $CFLAGS, $CPPFLAGS, $LDFLAGS, opt, $LOCAL_LIBS)))
+    xsystem(Config.expand(format($LINK, $CFLAGS, $CPPFLAGS, $LDFLAGS, opt, $LOCAL_LIBS)))
   ensure
     $LDFLAGS = ldflags
     ENV['LIB'] = ORIG_LIBPATH if /mswin32|bccwin32/ =~ RUBY_PLATFORM
@@ -150,7 +167,7 @@ def try_cpp(src, opt="")
   cfile.print src
   cfile.close
   begin
-    xsystem(Config.expand(format(CPP, $CPPFLAGS, $CFLAGS, opt)))
+    xsystem(Config.expand(format($CPP, $CPPFLAGS, $CFLAGS, opt)))
   ensure
     rm_f "conftest*"
   end
@@ -161,7 +178,7 @@ def egrep_cpp(pat, src, opt="")
   cfile.print src
   cfile.close
   begin
-    xsystem(Config.expand(format(CPP, $CPPFLAGS, $CFLAGS, opt))+"|egrep #{pat}")
+    xsystem(Config.expand(format($CPP, $CPPFLAGS, $CFLAGS, opt))+"|egrep #{pat}")
   ensure
     rm_f "conftest*"
   end
@@ -232,15 +249,19 @@ def append_library(libs, lib)
   end
 end
 
-def have_library(lib, func="main")
-  printf "checking for %s() in -l%s... ", func, lib
+def message(*s)
+  print(*s) unless /extmk\.rb/ =~ $0
   STDOUT.flush
+end
+
+def have_library(lib, func="main")
+  message "checking for #{func}() in -l#{lib}... "
 
   if func && func != ""
     libs = append_library($libs, lib)
     if /mswin32|bccwin32|mingw/ =~ RUBY_PLATFORM
       if lib == 'm'
-	print "yes\n"
+	message "yes\n"
 	return true
       end
       r = try_link(<<"SRC", libs)
@@ -264,7 +285,7 @@ int t() { #{func}(); return 0; }
 SRC
     end
     unless r
-      print "no\n"
+      message "no\n"
       return false
     end
   else
@@ -272,13 +293,12 @@ SRC
   end
 
   $libs = libs
-  print "yes\n"
+  message "yes\n"
   return true
 end
 
 def find_library(lib, func, *paths)
-  printf "checking for %s() in -l%s... ", func, lib
-  STDOUT.flush
+  message "checking for #{func}() in -l#{lib}... "
 
   libpath = $LIBPATH
   libs = append_library($libs, lib)
@@ -288,19 +308,18 @@ int t() { #{func}(); return 0; }
 SRC
     if paths.size == 0
       $LIBPATH = libpath
-      print "no\n"
+      message "no\n"
       return false
     end
     $LIBPATH = libpath | [paths.shift]
   end
   $libs = libs
-  print "yes\n"
+  message "yes\n"
   return true
 end
 
 def have_func(func, header=nil)
-  printf "checking for %s()... ", func
-  STDOUT.flush
+  message "checking for #{func}()... "
 
   libs = $libs
   src = 
@@ -328,32 +347,30 @@ int t() { void ((*p)()); p = (void ((*)()))#{func}; return 0; }
 SRC
   end
   unless r
-    print "no\n"
+    message "no\n"
     return false
   end
   $defs.push(format("-DHAVE_%s", func.upcase))
-  print "yes\n"
+  message "yes\n"
   return true
 end
 
 def have_header(header)
-  printf "checking for %s... ", header
-  STDOUT.flush
+  message "checking for #{header}... "
 
   unless try_cpp(<<"SRC")
 #include <#{header}>
 SRC
-    print "no\n"
+    message "no\n"
     return false
   end
   $defs.push(format("-DHAVE_%s", header.tr("a-z./\055", "A-Z___")))
-  print "yes\n"
+  message "yes\n"
   return true
 end
 
 def find_executable(bin, path = nil)
-  printf "checking for %s... ", bin
-  STDOUT.flush
+  message "checking for #{bin}... "
 
   if path.nil?
     path = ENV['PATH'].split(Config::CONFIG['PATH_SEPARATOR'])
@@ -365,13 +382,13 @@ def find_executable(bin, path = nil)
   for dir in path
     file = File.join(dir, bin)
     if FileTest.executable?(file)
-      print "yes\n"
+      message "yes\n"
       return file
     else
       next
     end
   end
-  print "no\n"
+  message "no\n"
   return nil
 end
 
@@ -397,15 +414,14 @@ def enable_config(config, default=nil)
 end
 
 def create_header()
-  print "creating extconf.h\n"
-  STDOUT.flush
+  message "creating extconf.h\n"
   if $defs.length > 0
-    hfile = open("extconf.h", "w")
-    for line in $defs
-      line =~ /^-D(.*)/
-      hfile.printf "#define %s 1\n", $1
+    open("extconf.h", "w") do |hfile|
+      for line in $defs
+	line =~ /^-D(.*)/
+	hfile.printf "#define %s 1\n", $1
+      end
     end
-    hfile.close
   end
 end
 
@@ -441,9 +457,8 @@ end
 def create_makefile(target, srcprefix = nil)
   save_libs = $libs.dup
   save_libpath = $LIBPATH.dup
-  print "creating Makefile\n"
+  message "creating Makefile\n"
   rm_f "conftest*"
-  STDOUT.flush
   if target.include?('/')
     target_prefix, target = File.split(target)
     target_prefix[0,0] = '/'
