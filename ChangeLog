@@ -1,3 +1,8 @@
+Tue Jun 25 18:53:34 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* parse.y (string1, xstring, regexp): moved lex_strnest
+	  initialization to string_contents/xstring_contents.
+
 Tue Jun 25 19:24:38 2002  KONISHI Hiromasa <konishih@fd6.so-net.ne.jp>
 
 	* dln.c: remove definition rb_loaderror().

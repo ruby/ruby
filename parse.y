@@ -1787,15 +1787,15 @@ string		: string1
 		    }
 		;
 
-string1		: tSTRING_BEG {lex_strnest = 0;} string_contents tSTRING_END
+string1		: tSTRING_BEG string_contents tSTRING_END
 		    {
-			$$ = $3;
+			$$ = $2;
 		    }
 		;
 
-xstring		: tXSTRING_BEG {lex_strnest = 0;} xstring_contents tSTRING_END
+xstring		: tXSTRING_BEG xstring_contents tSTRING_END
 		    {
-			NODE *node = $3;
+			NODE *node = $2;
 			if (!node) {
 			    node = NEW_XSTR(rb_str_new(0, 0));
 			}
@@ -1808,8 +1808,8 @@ xstring		: tXSTRING_BEG {lex_strnest = 0;} xstring_contents tSTRING_END
 				nd_set_type(node, NODE_DXSTR);
 				break;
 			      default:
-				node = rb_node_newnode(NODE_DXSTR,
-						       rb_str_new(0, 0), 1, NEW_LIST(node));
+				node = rb_node_newnode(NODE_DXSTR, rb_str_new(0, 0),
+						       1, NEW_LIST(node));
 				break;
 			    }
 			}
@@ -1817,10 +1817,10 @@ xstring		: tXSTRING_BEG {lex_strnest = 0;} xstring_contents tSTRING_END
 		    }
 		;
 
-regexp		: tREGEXP_BEG {lex_strnest = 0;} xstring_contents tREGEXP_END
+regexp		: tREGEXP_BEG xstring_contents tREGEXP_END
 		    {
-			int options = $4;
-			NODE *node = $3;
+			int options = $3;
+			NODE *node = $2;
 			if (!node) {
 			    node = NEW_LIT(rb_reg_new("", 0, options & ~RE_OPTION_ONCE));
 			}
@@ -1853,6 +1853,7 @@ regexp		: tREGEXP_BEG {lex_strnest = 0;} xstring_contents tREGEXP_END
 
 string_contents : /* none */
 		    {
+			lex_strnest = 0;
 			$$ = 0;
 		    }
 		| string_contents string_content
@@ -1863,6 +1864,7 @@ string_contents : /* none */
 
 xstring_contents: /* none */
 		    {
+			lex_strnest = 0;
 			$$ = 0;
 		    }
 		| xstring_contents string_content
@@ -1910,7 +1912,7 @@ string_dvar	: tGVAR {$$ = NEW_GVAR($1);}
 		| backref
 		;
 
-term_push	: /* */
+term_push	: /* none */
 		    {
 			if (($$ = quoted_term) == -1 &&
 			    nd_type(lex_strterm) == NODE_STRTERM &&
