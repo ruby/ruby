@@ -1,41 +1,52 @@
-# shellwords.rb
-# original is shellwords.pl
 #
-# Usage:
-#       require 'shellwords'
-#       words = Shellwords.shellwords(line)
+# shellwords.rb: Split text into an array of tokens a la UNIX shell
 #
-#	   or
-#
-#       require 'shellwords'
-#       include Shellwords
-#       words = shellwords(line)
 
+#
+# This module is originally a port of shellwords.pl, but modified to
+# conform to POSIX / SUSv3 (IEEE Std 1003.1-2001).
+#
+# Examples:
+#
+#   require 'shellwords'
+#   words = Shellwords.shellwords(line)
+#
+# or
+#
+#   require 'shellwords'
+#   include Shellwords
+#   words = shellwords(line)
+#
 module Shellwords
+
+  #
+  # Split text into an array of tokens in the same way the UNIX Bourne
+  # shell does.
+  #
+  # See the +Shellwords+ module documentation for an example.
+  #
   def shellwords(line)
-    unless line.kind_of?(String)
-      raise ArgumentError, "Argument must be String class object."
-    end
-    line = line.sub(/\A\s+/, '')
+    line = String.new(line) rescue
+      raise(ArgumentError, "Argument must be a string")
+    line.lstrip!
     words = []
-    while line != ''
+    until line.empty?
       field = ''
-      while true
-	if line.sub!(/\A"(([^"\\]|\\.)*)"/, '') then #"
-	  snippet = $1
-	  snippet.gsub!(/\\(.)/, '\1')
-	elsif line =~ /\A"/ then #"
+      loop do
+	if line.sub!(/\A"(([^"\\]|\\.)*)"/, '') then
+	  snippet = $1.gsub(/\\(.)/, '\1')
+	elsif line =~ /\A"/ then
 	  raise ArgumentError, "Unmatched double quote: #{line}"
-	elsif line.sub!(/\A'([^']*)'/, '') then #'
+	elsif line.sub!(/\A'([^']*)'/, '') then
 	  snippet = $1
-	elsif line =~ /\A'/ then #'
+	elsif line =~ /\A'/ then
 	  raise ArgumentError, "Unmatched single quote: #{line}"
 	elsif line.sub!(/\A\\(.)/, '') then
 	  snippet = $1
-	elsif line.sub!(/\A([^\s\\'"]+)/, '') then #'
+	elsif line.sub!(/\A([^\s\\'"]+)/, '') then
 	  snippet = $1
 	else
-	  line.sub!(/\A\s+/, '')
+	  line.lstrip!
 	  break
 	end
 	field.concat(snippet)
@@ -44,5 +55,6 @@ module Shellwords
     end
     words
   end
+
   module_function :shellwords
 end
