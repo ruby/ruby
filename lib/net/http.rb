@@ -517,7 +517,7 @@ module Net
     end
 
     def proxy?
-      type.proxy?
+      type.proxy_class?
     end
 
     def proxy_address
@@ -543,7 +543,7 @@ module Net
         klass = Class.new( HTTP )
         klass.module_eval {
           include mod
-          @is_proxy = true
+          @is_proxy_class = true
           @proxy_address = p_addr
           @proxy_port    = p_port
         }

@@ -129,7 +129,7 @@ module Net
           _start args
           yield self
         ensure
-          finish
+          finish if active?
         end
       else
         _start args
