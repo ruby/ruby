@@ -896,7 +896,8 @@ rb_gc()
     alloca(0);
 # define STACK_END (&stack_end)
 #else
-# define STACK_END alloca(1)
+    VALUE *stack_end = alloca(1);
+# define STACK_END (stack_end)
 #endif
 
     alloc_objects = 0;

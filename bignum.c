@@ -1262,7 +1262,7 @@ rb_big_rand(max, rand)
     VALUE v;
     long len;
 
-    len = RBIGNUM(v)->len;
+    len = RBIGNUM(max)->len;
     v = bignew(len,1);
     while (len--) {
 	BDIGITS(v)[len] = ((USHORT)~0) * rand;
