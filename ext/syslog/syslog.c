@@ -3,7 +3,7 @@
  * Amos Gouaux, University of Texas at Dallas
  * <amos+ruby@utdallas.edu>
  *
- * $RoughId: syslog.c,v 1.17 2001/11/24 12:42:39 knu Exp $
+ * $RoughId: syslog.c,v 1.21 2002/02/25 12:21:17 knu Exp $
  * $Id$
  */
 
@@ -11,9 +11,9 @@
 #include <syslog.h>
 
 /* Syslog class */
-static VALUE cSyslog, mSyslogConstants;
-static VALUE syslog_instance = Qnil, syslog_ident, syslog_options,
-  syslog_facility, syslog_mask;
+static VALUE mSyslog, mSyslogConstants;
+static VALUE syslog_ident = Qnil, syslog_options = INT2FIX(-1),
+  syslog_facility = INT2FIX(-1), syslog_mask = INT2FIX(-1);
 static int syslog_opened = 0;
 
 /* Package helper routines */
@@ -34,8 +34,8 @@ static void syslog_write(int pri, int argc, VALUE *argv)
     syslog(pri, "%s", RSTRING(str)->ptr);
 }
 
-/* Syslog instance methods */
-static VALUE cSyslog_close(VALUE self)
+/* Syslog module methods */
+static VALUE mSyslog_close(VALUE self)
 {
     closelog();
     syslog_opened = 0;
@@ -43,7 +43,7 @@ static VALUE cSyslog_close(VALUE self)
     return Qnil;
 }
 
-static VALUE cSyslog_open(int argc, VALUE *argv, VALUE self)
+static VALUE mSyslog_open(int argc, VALUE *argv, VALUE self)
 {
     VALUE ident, opt, fac;
     int mask;
@@ -62,7 +62,11 @@ static VALUE cSyslog_open(int argc, VALUE *argv, VALUE self)
         fac = INT2NUM(LOG_USER);
     }
 
+#ifdef SafeStringValue
+    SafeStringValue(ident);
+#else
     Check_SafeStr(ident);
+#endif
     syslog_ident = ident;
     syslog_options = opt;
     syslog_facility = fac;
@@ -74,55 +78,45 @@ static VALUE cSyslog_open(int argc, VALUE *argv, VALUE self)
 
     /* be like File.new.open {...} */
     if (rb_block_given_p()) {
-        rb_ensure(rb_yield, self, cSyslog_close, self);
+        rb_ensure(rb_yield, self, mSyslog_close, self);
     }
 
     return self;
 }
 
-static VALUE cSyslog_init(VALUE self)
+static VALUE mSyslog_reopen(int argc, VALUE *argv, VALUE self)
 {
-    syslog_instance = self;
-    syslog_opened = 0;
-    syslog_ident = Qnil;
-    syslog_options = syslog_facility = syslog_mask = INT2FIX(-1);
+    mSyslog_close(self);
 
-    return self;
+    return mSyslog_open(argc, argv, self);
 }
 
-static VALUE cSyslog_reopen(int argc, VALUE *argv, VALUE self)
-{
-    cSyslog_close(self);
-
-    return cSyslog_open(argc, argv, self);
-}
-
-static VALUE cSyslog_isopen(VALUE self)
+static VALUE mSyslog_isopen(VALUE self)
 {
     return syslog_opened ? Qtrue : Qfalse;
 }
 
-static VALUE cSyslog_ident(VALUE self)
+static VALUE mSyslog_ident(VALUE self)
 {
     return syslog_ident;
 }
 
-static VALUE cSyslog_options(VALUE self)
+static VALUE mSyslog_options(VALUE self)
 {
     return syslog_options;
 }
 
-static VALUE cSyslog_facility(VALUE self)
+static VALUE mSyslog_facility(VALUE self)
 {
     return syslog_facility;
 }
 
-static VALUE cSyslog_get_mask(VALUE self)
+static VALUE mSyslog_get_mask(VALUE self)
 {
     return syslog_mask;
 }
 
-static VALUE cSyslog_set_mask(VALUE self, VALUE mask)
+static VALUE mSyslog_set_mask(VALUE self, VALUE mask)
 {
     if (!syslog_opened) {
         rb_raise(rb_eRuntimeError, "must open syslog before setting log mask");
@@ -134,7 +128,7 @@ static VALUE cSyslog_set_mask(VALUE self, VALUE mask)
     return mask;
 }
 
-static VALUE cSyslog_log(int argc, VALUE *argv, VALUE self)
+static VALUE mSyslog_log(int argc, VALUE *argv, VALUE self)
 {
     VALUE pri;
 
@@ -154,7 +148,7 @@ static VALUE cSyslog_log(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
-static VALUE cSyslog_inspect(VALUE self)
+static VALUE mSyslog_inspect(VALUE self)
 {
 #define N 7
     int argc = N;
@@ -163,7 +157,7 @@ static VALUE cSyslog_inspect(VALUE self)
       "<#%s: opened=%s, ident=\"%s\", options=%d, facility=%d, mask=%d>";
 
     argv[0] = rb_str_new(fmt, sizeof(fmt) - 1);
-    argv[1] = cSyslog;
+    argv[1] = mSyslog;
     argv[2] = syslog_opened ? Qtrue : Qfalse;
     argv[3] = syslog_ident;
     argv[4] = syslog_options;
@@ -174,8 +168,13 @@ static VALUE cSyslog_inspect(VALUE self)
 #undef N
 }
 
+static VALUE mSyslog_instance(VALUE self)
+{
+    return self;
+}
+
 #define define_syslog_shortcut_method(pri, name) \
-static VALUE cSyslog_##name(int argc, VALUE *argv, VALUE self) \
+static VALUE mSyslog_##name(int argc, VALUE *argv, VALUE self) \
 { \
     syslog_write(pri, argc, argv); \
 \
@@ -207,38 +206,12 @@ define_syslog_shortcut_method(LOG_INFO, info)
 define_syslog_shortcut_method(LOG_DEBUG, debug)
 #endif
 
-/* Syslog class methods */
-static VALUE cSyslog_s_instance(VALUE klass)
-{
-    VALUE obj;
-
-    obj = syslog_instance;
-
-    if (NIL_P(obj)) {
-	obj = rb_obj_alloc(klass);
-	rb_obj_call_init(obj, 0, NULL);
-    }
-
-    return obj;
-}
-
-static VALUE cSyslog_s_open(int argc, VALUE *argv, VALUE klass)
-{
-    VALUE obj;
-
-    obj = cSyslog_s_instance(klass);
-
-    cSyslog_open(argc, argv, obj);
-
-    return obj;
-}
-
-static VALUE cSyslog_s_LOG_MASK(VALUE klass, VALUE pri)
+static VALUE mSyslogConstants_LOG_MASK(VALUE klass, VALUE pri)
 {
     return INT2FIX(LOG_MASK(FIX2INT(pri)));
 }
 
-static VALUE cSyslog_s_LOG_UPTO(VALUE klass, VALUE pri)
+static VALUE mSyslogConstants_LOG_UPTO(VALUE klass, VALUE pri)
 {
     return INT2FIX(LOG_UPTO(FIX2INT(pri)));
 }
@@ -246,35 +219,34 @@ static VALUE cSyslog_s_LOG_UPTO(VALUE klass, VALUE pri)
 /* Init for package syslog */
 void Init_syslog()
 {
-    cSyslog = rb_define_class("Syslog", rb_cObject);
+    mSyslog = rb_define_module("Syslog");
  
-    mSyslogConstants = rb_define_module_under(cSyslog, "Constants");
+    mSyslogConstants = rb_define_module_under(mSyslog, "Constants");
 
-    rb_include_module(cSyslog, mSyslogConstants);
+    rb_include_module(mSyslog, mSyslogConstants);
 
-    rb_define_module_function(cSyslog, "open", cSyslog_s_open, -1);
-    rb_define_module_function(cSyslog, "instance", cSyslog_s_instance, 0);
-    rb_define_module_function(cSyslog, "LOG_MASK", cSyslog_s_LOG_MASK, 1);
-    rb_define_module_function(cSyslog, "LOG_UPTO", cSyslog_s_LOG_UPTO, 1);
+    rb_define_module_function(mSyslog, "open", mSyslog_open, -1);
+    rb_define_module_function(mSyslog, "reopen", mSyslog_reopen, -1);
+    rb_define_module_function(mSyslog, "open!", mSyslog_reopen, -1);
+    rb_define_module_function(mSyslog, "opened?", mSyslog_isopen, 0);
 
-    rb_undef_method(CLASS_OF(cSyslog), "new");
+    rb_define_module_function(mSyslog, "ident", mSyslog_ident, 0);
+    rb_define_module_function(mSyslog, "options", mSyslog_options, 0);
+    rb_define_module_function(mSyslog, "facility", mSyslog_facility, 0);
 
-    rb_define_method(cSyslog, "initialize", cSyslog_init, 0);
-    rb_define_method(cSyslog, "open", cSyslog_open, -1);
-    rb_define_method(cSyslog, "reopen", cSyslog_reopen, -1);
-    rb_define_method(cSyslog, "open!", cSyslog_reopen, -1);
-    rb_define_method(cSyslog, "opened?", cSyslog_isopen, 0);
+    rb_define_module_function(mSyslog, "log", mSyslog_log, -1);
+    rb_define_module_function(mSyslog, "close", mSyslog_close, 0);
+    rb_define_module_function(mSyslog, "mask", mSyslog_get_mask, 0);
+    rb_define_module_function(mSyslog, "mask=", mSyslog_set_mask, 1);
 
-    rb_define_method(cSyslog, "ident", cSyslog_ident, 0);
-    rb_define_method(cSyslog, "options", cSyslog_options, 0);
-    rb_define_method(cSyslog, "facility", cSyslog_facility, 0);
+    rb_define_module_function(mSyslog, "LOG_MASK", mSyslogConstants_LOG_MASK, 1);
+    rb_define_module_function(mSyslog, "LOG_UPTO", mSyslogConstants_LOG_UPTO, 1);
 
-    rb_define_method(cSyslog, "log", cSyslog_log, -1);
-    rb_define_method(cSyslog, "close", cSyslog_close, 0);
-    rb_define_method(cSyslog, "mask", cSyslog_get_mask, 0);
-    rb_define_method(cSyslog, "mask=", cSyslog_set_mask, 1);
+    rb_define_module_function(mSyslog, "inspect", mSyslog_inspect, 0);
+    rb_define_module_function(mSyslog, "instance", mSyslog_instance, 0);
 
-    rb_define_method(cSyslog, "inspect", cSyslog_inspect, 0);
+    rb_define_module_function(mSyslogConstants, "LOG_MASK", mSyslogConstants_LOG_MASK, 1);
+    rb_define_module_function(mSyslogConstants, "LOG_UPTO", mSyslogConstants_LOG_UPTO, 1);
 
 #define rb_define_syslog_const(id) \
     rb_define_const(mSyslogConstants, #id, INT2NUM(id))
@@ -371,7 +343,7 @@ void Init_syslog()
 #endif
 
 #define rb_define_syslog_shortcut(name) \
-    rb_define_method(cSyslog, #name, cSyslog_##name, -1)
+    rb_define_module_function(mSyslog, #name, mSyslog_##name, -1)
 
     /* Various syslog priorities and the shortcut methods */
 #ifdef LOG_EMERG
