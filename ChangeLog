@@ -1,9 +1,54 @@
+Wed Mar 21 01:26:14 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (id2ref): sometimes confused symbol and reference.
+
+Wed Mar 21 08:05:35 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* win32/dir.h: replace missing/dir.h .
+
+	* win32/win32.h: ditto.
+
+	* win32/win32.c: ditto.
+
+Wed Mar 21 01:26:14 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (id2ref): sometimes confused symbol and reference.
+
 Tue Mar 20 23:09:33 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* win32/win32.c (win32_stat): UNC support.
 
 	* dir.c (extract_path): fix "./*" problem.
 
+Mon Mar 19 19:14:47 2001  Guy Decoux  <decoux@moulon.inra.fr>
+
+	* marshal.c (shortlen): shortlen should return number of bytes
+	  written.
+
+Mon Mar 19 18:56:55 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* stable version 1.6.3 released.
+
+Tue Mar 20 15:10:00 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dir.c (glob_helper): breaks loop after calling recusive
+	  glob_helper; all wild cards should be consumed; no need for
+	  further match.
+
+	* dir.c (dir_s_glob): gives warning if no match found.
+
+Tue Mar 20 14:13:45  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* object.c (sym_inspect): did allocate extra byte space.
+
+Mon Mar 19 19:14:47 2001  Guy Decoux  <decoux@moulon.inra.fr>
+
+	* marshal.c (shortlen): shortlen should return number of bytes
+	  written.
+
+>>>>>>> 1.378
+=======
+>>>>>>> 1.285.2.67
 Mon Mar 19 16:52:23 2001  K.Kosako  <kosako@sofnec.co.jp>
 
 	* eval.c (ev_const_defined): need not to check if cbase->nd_class
@@ -31,8 +76,24 @@ Sun Mar 18 08:58:18 2001  Wakou Aoyama  <wakou@fsinet.or.jp>
 
 	* lib/net/cgi.rb: cgi#header(): bug fix.
 	  thanks to IWATSUKI Hiroyuki <don@na.rim.or.jp>.
+<<<<<<< ChangeLog
 
+Sat Mar 17 11:11:24 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dir.c (glob_helper): * should follow symlink, whereas ** should
+	  not follow.
+=======
+>>>>>>> 1.285.2.67
+
+<<<<<<< ChangeLog
+Thu Mar 15 01:28:02 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+=======
 Fri Mar 16 17:21:25 2001  Akinori MUSHA  <knu@iDaemons.org>
+>>>>>>> 1.285.2.67
+
+	* dir.c (dir_s_chdir): block form of Dir.chdir. (RCR#U016).
+
+Fri Mar 16 17:14:17 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* configure.in: Set SOLIBS properly for all ELF and
 	  FreeBSD/NetBSD/OpenBSD a.out platforms so that the shlib
@@ -71,8 +132,20 @@ Tue Mar 13 15:01:12 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 Tue Mar 13 14:41:16 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* io.c (argf_seek): wrong calling sequence of rb_io_seek().
+	* io.c (argf_seek_m): wrong calling sequence of rb_io_seek().
 
+<<<<<<< ChangeLog
+Tue Mar 13 09:14:19 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+=======
+	* io.c (argf_seek): wrong calling sequence of rb_io_seek().
+>>>>>>> 1.285.2.67
+
+<<<<<<< ChangeLog
+	* parse.y (cond0): no special treatment of string literal in
+	  condition.
+
+=======
+>>>>>>> 1.285.2.67
 Mon Mar 12 18:59:38 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): save/restore $libs and $LIBPATH.
@@ -84,8 +157,27 @@ Sun Mar 11 00:55:31 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 Sat Mar 10 02:34:18 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* math.c (math_log, math_log10): use nan() instead of 0.0/0.0 on Cygwin.
+<<<<<<< ChangeLog
 
+Fri Mar  9 09:56:19 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+=======
+>>>>>>> 1.285.2.67
+
+<<<<<<< ChangeLog
+	* marshal.c (marshal_load): do not give warning unless explicitly
+	  set to verbose.
+=======
 Thu Mar  8 17:43:59 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+>>>>>>> 1.285.2.67
+
+Fri Mar  9 02:07:53 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_exit): give string value "exit" to SystemExit.
+
+	* ruby.c (proc_options): -v should not print version if
+	  proc_options called via moreswitches().
+
+Thu Mar  8 17:45:19 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/protocol.rb: one write(2) per one line.
 
@@ -239,7 +331,15 @@ Sun Feb 18 15:42:38 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* missing/flock.c: use fcntl(2) instead of lockf(2).
 
+<<<<<<< ChangeLog
+Sun Feb 18 05:46:03 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+=======
 Sun Feb 18 13:02:03 2001  Yasushi Shoji  <yashi@yashi.com>
+>>>>>>> 1.285.2.67
+
+	* lib/net/http.rb: Response#range_length was not debugged.
+
+Sun Feb 18 04:02:03 2001  Yasushi Shoji  <yashi@yashi.com>
 
 	* array.c (rb_ary_subseq): wrong boundary check.
 
@@ -266,11 +366,38 @@ Tue Feb 13 23:05:38 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* dir.c (lstat): should use rb_sys_stat if lstat(2) is not
 	  available.
+<<<<<<< ChangeLog
+<<<<<<< ChangeLog
+=======
+>>>>>>> 1.285.2.67
 
 Tue Feb 13 17:00:18 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
+<<<<<<< ChangeLog
 	* lib/net/http.rb: supports HTTP 1.0 server.
+=======
+=======
+	* lib/net/http.rb: supports HTTP 1.0 server.
+>>>>>>> 1.285.2.67
 
+Sun Feb 11 16:00:30 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* eval.c (stack_length): use __builtin_frame_address() only if
+	  GCC and i386 CPU.
+
+	* gc.c (rb_gc, Init_stack): ditto.
+
+	* configure.in: add ac_cv_func_getpgrp_void=yes on DJGPP.
+
+Tue Feb 13 08:43:10 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+>>>>>>> 1.378
+
+<<<<<<< ChangeLog
+=======
+	* io.c (rb_io_ctl): do not call ioctl/fcntl for f2, if f and f2
+	  have same fileno.
+
+>>>>>>> 1.378
 Tue Feb 13 01:13:43 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (primary): preserve and clear in_single and in_def using
@@ -334,15 +461,56 @@ Wed Feb  7 00:57:42 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (parse_qstring): %q should allow terminator escape.
 
+<<<<<<< ChangeLog
+	* re.c (rb_reg_options): new method to give an option values.
+
+	* parse.y (cond0): disable special treating of integer literal in
+	  conditional unless option -e is supplied.  changes current
+	  behavior.  experimental.
+
+	* parse.y (cond0): give warning for string/integer literals and
+	  dot operators in conditionals unless option -e is supplied.
+=======
 Wed Feb  7 00:57:42 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+>>>>>>> 1.285.2.67
 
 	* re.c (rb_reg_equal): all option flags should be same to be equal.
+<<<<<<< ChangeLog
 
+Tue Feb  6 21:30:44 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/http.rb: call on_connect() on re-opening socket.
+
+	* lib/net/pop.rb: also POP3 can use APOP auth.
+
+Tue Feb  6 20:19:10 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/http.rb: add HTTP#request.
+
+	* lib/net/http.rb: take HTTP 1.0 server into account (incomplete).
+=======
+>>>>>>> 1.285.2.67
+
+<<<<<<< ChangeLog
+	* lib/net/protocol.rb: timeout for open/read.
+=======
 Tue Feb  6 21:01:29 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+>>>>>>> 1.285.2.67
 
+<<<<<<< ChangeLog
+	* lib/net/protocol.rb: add Protocol#on_connect,on_disconnect.
+=======
 	* lib/net/protocol.rb: ignore EOFError on only specified case.
+>>>>>>> 1.285.2.67
 
+<<<<<<< ChangeLog
+Mon Feb  5 23:15:46 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+=======
 	* lib/net/http.rb: take HTTP 1.0 server into account.
+>>>>>>> 1.285.2.67
+
+	* error.c (Init_Exception): make Interrupt a subclass of
+	  SignalException.
 
 Mon Feb 5 00:39:06 2001  KANEKO Naoshi  <wbs01621@mail.wbs.ne.jp>
 
@@ -360,10 +528,27 @@ Mon Feb 5 00:39:06 2001  KANEKO Naoshi  <wbs01621@mail.wbs.ne.jp>
 
 	* win32/win32.c (opendir): ditto.
 
-Fri Feb  3 00:48:50 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
+Sat Feb  3 14:44:53 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
+	* configure.in (AC_C_INLINE): check inline attribute.
+
+<<<<<<< ChangeLog
+	* gc.c (is_pointer_to_heap): use inline rather than __inline__.
+=======
+Fri Feb  3 00:48:50 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
+>>>>>>> 1.285.2.67
+
+<<<<<<< ChangeLog
+	* pack.c (hex2num): ditto.
+
+	* ruby.h (rb_class_of, rb_type, rb_special_const_p): ditto.
+
+	* util.c (rb_class_of, rb_type, rb_special_const_p): defined in
+	  ruby.h.
+=======
 	* win32/win32.c (isInternalCmd): ignore case for shell's internal
 	  command. (marge from HEAD)
+>>>>>>> 1.285.2.67
 
 Fri Feb  2 16:14:51 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -439,18 +624,73 @@ Wed Jan 17 13:28:26 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 	* mkconfig.rb: ditto.
 
 	* win32/config.status.in: ditto.
+<<<<<<< ChangeLog
+<<<<<<< ChangeLog
+=======
+=======
+>>>>>>> 1.285.2.67
 
+<<<<<<< ChangeLog
+Tue Jan 16 17:00:50 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/protocol.rb: ignore EOFError for read.
+>>>>>>> 1.378
+
+<<<<<<< ChangeLog
 Tue Jan 16 16:59:14 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+=======
+	* lib/net/http.rb: user specified header was not used.
+>>>>>>> 1.378
+=======
+Tue Jan 16 16:59:14 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+>>>>>>> 1.285.2.67
 
+<<<<<<< ChangeLog
+<<<<<<< ChangeLog
 	* lib/net/protocol.rb: ignore EOFError for read
+=======
+	* lib/net/protocol.rb: ignore EOFError for read
+>>>>>>> 1.285.2.67
 
+<<<<<<< ChangeLog
+=======
+Mon Jan 15 16:00:07 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* pack.c (pack_unpack): should check associated pointer packed by
+	  pack("P").  Thus pointers can be retrieved only from pointer
+	  packed strings.  restriction added.
+
+>>>>>>> 1.378
+=======
+>>>>>>> 1.285.2.67
 Sun Jan 14 21:49:28 2001  Koji Arai  <JCA02266@nifty.ne.jp>
 
 	* sprintf.c (rb_f_sprintf): simple typo.  binary base should be 2,
 	  not '2'.
+<<<<<<< ChangeLog
 
+	* re.c (rb_reg_s_last_match): should explicitly return nth match.
+
+Sun Jan 14 18:21:30 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
+=======
+>>>>>>> 1.285.2.67
+
+<<<<<<< ChangeLog
+	* win32/config.status.in: add some field.
+=======
 Sun Jan 14 02:49:57 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+>>>>>>> 1.285.2.67
 
+<<<<<<< ChangeLog
+	* win32/win32.c (isInternalCmd): ignore case for shell's internal
+	  command.
+
+	* win32/win32.c (do_spawn): recognize quoted command line.
+
+Sun Jan 14 04:10:27 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+=======
+>>>>>>> 1.285.2.67
 	* lib/net/protocol.rb (adding): too few "yield" in case of arg is
 	  not String/File.
 
