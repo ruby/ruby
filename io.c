@@ -4597,7 +4597,7 @@ rb_f_select(argc, argv, obj)
 		GetOpenFile(rb_io_get_io(RARRAY(read)->ptr[i]), fptr);
 		if (FD_ISSET(fptr->fd, rp)
 		    || FD_ISSET(fptr->fd, &pset)) {
-		    rb_ary_push(list, RARRAY(read)->ptr[i]);
+		    rb_ary_push(list, rb_ary_entry(read, i));
 		}
 	    }
 	}
@@ -4607,7 +4607,7 @@ rb_f_select(argc, argv, obj)
 	    for (i=0; i< RARRAY(write)->len; i++) {
 		GetOpenFile(rb_io_get_io(RARRAY(write)->ptr[i]), fptr);
 		if (FD_ISSET(fptr->fd, wp)) {
-		    rb_ary_push(list, RARRAY(write)->ptr[i]);
+		    rb_ary_push(list, rb_ary_entry(write, i));
 		}
 	    }
 	}
@@ -4617,7 +4617,7 @@ rb_f_select(argc, argv, obj)
 	    for (i=0; i< RARRAY(except)->len; i++) {
 		GetOpenFile(rb_io_get_io(RARRAY(except)->ptr[i]), fptr);
 		if (FD_ISSET(fptr->fd, ep)) {
-		    rb_ary_push(list, RARRAY(except)->ptr[i]);
+		    rb_ary_push(list, rb_ary_entry(except, i));
 		}
 	    }
 	}

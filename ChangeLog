@@ -1,3 +1,7 @@
+Sun Jan  9 14:12:17 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_f_select): IO list could be altered.  [ruby-dev:25312]
+
 Sun Jan  9 04:08:40 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* test/webrick/test_server.rb (test_daemon): delete an assertion
@@ -26,10 +30,10 @@ Fri Jan  7 20:01:31 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	  - should delete trailing LF from the result of pack("m*").
 	  - clear Request-Line not to send the response by HTTPServer#run.
 
-	* lib/webrick/httputils (WEBrick::HTTPUtils.parse_qvalues): 
+	* lib/webrick/httputils (WEBrick::HTTPUtils.parse_qvalues):
 	  refine regexp (and change the name of a local variable).
 
-	* lib/webrick/server.rb (WEBrick::Daemon.start): prepared stdio 
+	* lib/webrick/server.rb (WEBrick::Daemon.start): prepared stdio
 	  don't allow changing its mode.
 
 	* test/webrick/*, sample/webrick/httpproxy.rb: add new files.
