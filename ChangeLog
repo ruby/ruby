@@ -1,3 +1,8 @@
+Tue Apr 24 16:03:25 2001  Hiroshi Igarashi  <iga@ruby-lang.org>
+
+	* ext/extmk.rb.in: add target `distclean' in Makefile for extlib.
+	target `clean' doesn't remove Makefile.
+
 Tue Apr 24 15:57:45 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/extmk.rb.in, lib/mkmf.rb: (dir_config) do not add the

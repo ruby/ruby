@@ -12,7 +12,13 @@ elsif ARGV[0] == 'install'
   $destdir = ARGV[1] || ''
   ARGV.shift
 elsif ARGV[0] == 'clean'
-  $clean = true
+  $clean = "clean"
+  ARGV.shift
+elsif ARGV[0] == 'distclean'
+  $clean = "distclean"
+  ARGV.shift
+elsif ARGV[0] == 'realclean'
+  $clean = "realclean"
   ARGV.shift
 end
 
@@ -646,7 +652,7 @@ def extmake(target)
       if $install
 	system "#{$make} install DESTDIR=#{$destdir}"
       elsif $clean
-	system "#{$make} clean"
+	system "#{$make} #{$clean}"
       else
 	unless system "#{$make} all"
 	  if ENV["MAKEFLAGS"] != "k" and ENV["MFLAGS"] != "-k"
@@ -675,15 +681,15 @@ $static_ext = {}
 for setup in ["@setup@", "#{$top_srcdir}/ext/@setup@"]
   if File.file? setup
     f = open(setup) 
-    while f.gets()
-      $_.chomp!
-      sub!(/#.*$/, '')
-      next if /^\s*$/
-      if /^option +nodynamic/
+    while line = f.gets()
+      line.chomp!
+      line.sub!(/#.*$/, '')
+      next if /^\s*$/ =~ line
+      if /^option +nodynamic/ =~ line
 	$nodynamic = true
 	next
       end
-      target = $_.split[0]
+      target = line.split[0]
       target = target.downcase if /mswin32/ =~ RUBY_PLATFORM
       $static_ext[target] = true
     end
