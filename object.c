@@ -29,10 +29,7 @@ static VALUE cNilClass;
 static VALUE cTrueClass;
 static VALUE cFalseClass;
 
-struct st_table *new_idhash();
-
 VALUE f_sprintf();
-
 VALUE obj_alloc();
 
 static ID eq, eql;
@@ -785,7 +782,7 @@ rb_convert_type(val, type, tname, method)
     return val;
 }
 
-double big2dbl();
+double big2dbl _((VALUE));
 
 VALUE
 f_float(obj, arg)

@@ -4152,8 +4152,8 @@ rb_provided(feature)
 }
 
 #ifdef THREAD
-static int thread_loading();
-static void thread_loading_done();
+static int thread_loading _((char*));
+static void thread_loading_done _((void));
 #endif
 
 void
@@ -5407,11 +5407,6 @@ thread_check(data)
     return (thread_t)RDATA(data)->data;
 }
 
-VALUE lastline_get();
-void lastline_set();
-VALUE backref_get();
-void backref_set();
-
 static void
 thread_save_context(th)
     thread_t th;
@@ -5447,7 +5442,7 @@ thread_save_context(th)
     th->line = sourceline;
 }
 
-static void thread_restore_context();
+static void thread_restore_context _((thread_t,int));
 
 static void
 stack_extend(th, exit)
@@ -5811,7 +5806,7 @@ thread_wait_for(time)
     thread_schedule();
 }
 
-void thread_sleep_forever();
+void thread_sleep_forever _((void));
 
 int
 thread_alone()

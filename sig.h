@@ -24,9 +24,9 @@ void trap_restore_mask _((void));
 
 #ifdef THREAD
 extern int thread_critical;
+void thread_schedule _((void));
 #if defined(HAVE_SETITIMER) && !defined(__BOW__)
 extern int thread_pending;
-void thread_schedule();
 # define CHECK_INTS if (!prohibit_interrupt) {\
     if (trap_pending) rb_trap_exec();\
     if (thread_pending && !thread_critical) thread_schedule();\
@@ -35,7 +35,6 @@ void thread_schedule();
 /* pseudo preemptive thread switching */
 extern int thread_tick;
 #define THREAD_TICK 500
-void thread_schedule();
 # define CHECK_INTS if (!prohibit_interrupt) {\
     if (trap_pending) rb_trap_exec();\
     if (!thread_critical) {\

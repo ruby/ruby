@@ -12,7 +12,7 @@
 #ifndef UTIL_H
 #define UTIL_H
 
-unsigned long scan_hex();
-unsigned long scan_oct();
+unsigned long scan_oct _((char*,int,int*));
+unsigned long scan_hex _((char*,int,int*));
 
 #endif /* UTIL_H */

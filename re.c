@@ -1047,7 +1047,6 @@ match_setter(val)
     backref_set(val);
 }
 
-VALUE any_to_s();
 extern VALUE eStandardError;
 
 void

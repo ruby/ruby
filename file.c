@@ -43,16 +43,11 @@ struct timeval {
 #endif
 
 #ifndef HAVE_STRING_H
-char *strrchr();
+char *strrchr _((char*,char));
 #endif
 
 #include <sys/types.h>
 #include <sys/stat.h>
-
-#ifndef NT
-char *strdup();
-char *getenv();
-#endif
 
 #ifdef USE_CWGUSI
  #include "macruby_missing.h"
@@ -64,8 +59,6 @@ extern VALUE cIO;
 VALUE cFile;
 VALUE mFileTest;
 static VALUE sStat;
-
-VALUE time_new();
 
 VALUE
 file_open(fname, mode)

@@ -507,7 +507,7 @@ syserr_errno(self)
     return rb_iv_get(self, "errno");
 }
 
-static void init_syserr();
+static void init_syserr _((void));
 
 void
 Init_Exception()

@@ -11,8 +11,8 @@
 ************************************************/
 
 #include "ruby.h"
-#include <ctype.h>
 #include <sys/types.h>
+#include <ctype.h>
 
 #define swaps(x)	((((x)&0xFF)<<8) + (((x)>>8)&0xFF))
 #define swapl(x)	((((x)&0xFF)<<24)	\
@@ -75,13 +75,10 @@ endian()
 #endif
 
 extern VALUE cString, cArray;
-#ifndef atof
-double atof();
-#endif
 
 static char *toofew = "too few arguments";
 
-static void encodes();
+static void encodes _((VALUE,char*,int,int));
 
 static void
 pack_add_ptr(str, add)
@@ -126,7 +123,7 @@ pack_pack(ary, fmt)
 	    len = strchr("@Xxu", type) ? 0 : items;
             p++;
 	}
-	else if (isdigit(*p)) {
+	else if (ISDIGIT(*p)) {
 	    len = strtoul(p, (char**)&p, 10);
 	}
 	else {
@@ -222,8 +219,8 @@ pack_pack(ary, fmt)
 		    int i;
 
 		    for (i=0; i++ < len; ptr++) {
-			if (isxdigit(*ptr)) {
-			    if (isalpha(*ptr))
+			if (ISXDIGIT(*ptr)) {
+			    if (ISALPHA(*ptr))
 				byte |= (((*ptr & 15) + 9) & 15) << 4;
 			    else
 				byte |= (*ptr & 15) << 4;
@@ -249,8 +246,8 @@ pack_pack(ary, fmt)
 		    int i;
 
 		    for (i=0; i++ < len; ptr++) {
-			if (isxdigit(*ptr)) {
-			    if (isalpha(*ptr))
+			if (ISXDIGIT(*ptr)) {
+			    if (ISALPHA(*ptr))
 				byte |= ((*ptr & 15) + 9) & 15;
 			    else
 				byte |= *ptr & 15;
@@ -570,7 +567,7 @@ pack_unpack(str, fmt)
 	    len = send - s;
 	    p++;
 	}
-	else if (isdigit(*p)) {
+	else if (ISDIGIT(*p)) {
 	    len = strtoul(p, (char**)&p, 10);
 	}
 	else {

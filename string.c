@@ -16,8 +16,8 @@
 #define BEG(no) regs->beg[no]
 #define END(no) regs->end[no]
 
-#include <stdio.h>
 #include <ctype.h>
+
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -726,7 +726,7 @@ str_succ(orig)
     sbeg = RSTRING(str)->ptr; s = sbeg + RSTRING(str)->len - 1;
 
     while (sbeg <= s) {
-	if (isalnum(*s) && (c = succ_char(s)) == 0) break;
+	if (ISALNUM(*s) && (c = succ_char(s)) == 0) break;
 	s--;
     }
     if (s < sbeg) {
@@ -1360,10 +1360,6 @@ str_to_i(str)
     return str2inum(RSTRING(str)->ptr, 10);
 }
 
-#ifndef atof
-double atof();
-#endif
-
 static VALUE
 str_to_f(str)
     VALUE str;
@@ -1422,7 +1418,7 @@ str_inspect(str)
 	    *b++ = '\\';
 	    *b++ = '\\';
 	}
-	else if (isprint(c)) {
+	else if (ISPRINT(c)) {
 	    CHECK(1);
 	    *b++ = c;
 	}
@@ -1494,7 +1490,7 @@ str_dump(str)
 	    break;
 
 	  default:
-	    if (isascii(c) && isprint(c)) {
+	    if (ISPRINT(c)) {
 		len++;
 	    }
 	    else {
@@ -1605,7 +1601,7 @@ str_downcase_bang(str)
 	if (ismbchar(*s)) {
 	    s++;
 	}
-	else if (isupper(*s)) {
+	else if (ISUPPER(*s)) {
 	    *s = tolower(*s);
 	    modify = 1;
 	}
@@ -1635,7 +1631,7 @@ str_capitalize_bang(str)
 
     str_modify(str);
     s = RSTRING(str)->ptr; send = s + RSTRING(str)->len;
-    if (islower(*s)) {
+    if (ISLOWER(*s)) {
 	*s = toupper(*s);
 	modify = 1;
     }
@@ -1643,7 +1639,7 @@ str_capitalize_bang(str)
 	if (ismbchar(*s)) {
 	    s++;
 	}
-	else if (isupper(*s)) {
+	else if (ISUPPER(*s)) {
 	    *s = tolower(*s);
 	    modify = 1;
 	}
@@ -1675,11 +1671,11 @@ str_swapcase_bang(str)
 	if (ismbchar(*s)) {
 	    s++;
 	}
-	else if (isupper(*s)) {
+	else if (ISUPPER(*s)) {
 	    *s = tolower(*s);
 	    modify = 1;
 	}
-	else if (islower(*s)) {
+	else if (ISLOWER(*s)) {
 	    *s = toupper(*s);
 	    modify = 1;
 	}
@@ -1738,7 +1734,7 @@ trnext(t)
     }
 }
 
-static VALUE str_delete_bang();
+static VALUE str_delete_bang _((VALUE,VALUE));
 
 static VALUE
 tr_trans(str, src, repl, sflag)
@@ -1910,7 +1906,7 @@ str_delete_bang(str1, str2)
 
 static VALUE
 str_delete(str1, str2)
-    VALUE str1, *str2;
+    VALUE str1, str2;
 {
     VALUE val = str_delete_bang(str_dup(str1), str2);
 
@@ -2057,7 +2053,7 @@ str_split_method(argc, argv, str)
 
 	    for (end = beg = 0; ptr<eptr; ptr++) {
 		if (skip) {
-		    if (isspace(*ptr)) {
+		    if (ISSPACE(*ptr)) {
 			beg++;
 		    }
 		    else {
@@ -2066,7 +2062,7 @@ str_split_method(argc, argv, str)
 		    }
 		}
 		else {
-		    if (isspace(*ptr)) {
+		    if (ISSPACE(*ptr)) {
 			ary_push(result, str_substr(str, beg, end-beg));
 			skip = 1;
 			beg = end + 1;
@@ -2358,11 +2354,11 @@ str_strip_bang(str)
     s = RSTRING(str)->ptr;
     e = t = s + RSTRING(str)->len;
     /* remove spaces at head */
-    while (s < t && isspace(*s)) s++;
+    while (s < t && ISSPACE(*s)) s++;
 
     /* remove trailing spaces */
     t--;
-    while (s <= t && isspace(*t)) t--;
+    while (s <= t && ISSPACE(*t)) t--;
     t++;
 
     RSTRING(str)->len = t-s;

@@ -64,8 +64,6 @@ struct timeval {
 #include <net/socket.h>
 #endif
 
-VALUE rb_ad_string();
-
 VALUE cIO;
 extern VALUE cFile;
 VALUE eEOFError;
@@ -81,12 +79,9 @@ static VALUE argf;
 
 ID id_write;
 
-VALUE lastline_get();
-void lastline_set();
-
 extern char *inplace;
 
-struct timeval time_timeval();
+struct timeval time_timeval _((VALUE));
 
 #ifdef _STDIO_USES_IOSTREAM  /* GNU libc */
 #  ifdef _IO_fpos_t

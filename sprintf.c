@@ -13,7 +13,7 @@
 #include "ruby.h"
 #include <ctype.h>
 
-static void fmt_setup();
+static void fmt_setup _((char*,char,int,int,int));
 
 static char*
 remove_sign_bits(str, base)
@@ -99,10 +99,7 @@ remove_sign_bits(str, base)
     return str;
 }
 
-double big2dbl();
-#ifndef atof
-double atof();
-#endif
+double big2dbl _((VALUE));
 
 VALUE
 f_sprintf(argc, argv)
@@ -165,7 +162,7 @@ f_sprintf(argc, argv)
       retry:
 	switch (*p) {
 	  default:
-	    if (isprint(*p))
+	    if (ISPRINT(*p))
 		ArgError("malformed format string - %%%c", *p);
 	    else
 		ArgError("malformed format string");
@@ -199,7 +196,7 @@ f_sprintf(argc, argv)
 	  case '5': case '6': case '7': case '8': case '9':
 	    flags |= FWIDTH;
 	    width = 0;
-	    for (; p < end && isdigit(*p); p++) {
+	    for (; p < end && ISDIGIT(*p); p++) {
 		width = 10 * width + (*p - '0');
 	    }
 	    if (p >= end) {
@@ -239,7 +236,7 @@ f_sprintf(argc, argv)
 		goto retry;
 	    }
 
-	    for (; p < end && isdigit(*p); p++) {
+	    for (; p < end && ISDIGIT(*p); p++) {
 		prec = 10 * prec + (*p - '0');
 	    }
 	    if (p >= end) {

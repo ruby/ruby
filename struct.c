@@ -14,7 +14,6 @@
 #include <stdio.h>
 #endif
 
-ID rb_frame_last_func();
 VALUE cStruct;
 extern VALUE mEnumerable;
 
@@ -129,8 +128,6 @@ struct_set(obj, val)
     NameError("not struct member");
     /* not reached */
 }
-
-VALUE struct_alloc();
 
 static VALUE
 make_struct(name, member, klass)
@@ -285,8 +282,6 @@ struct_each(s)
     }
     return Qnil;
 }
-
-char *rb_class2name();
 
 static VALUE
 struct_to_s(s)

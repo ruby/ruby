@@ -151,6 +151,7 @@ VALUE rb_hash _((VALUE));
 VALUE hash_new _((void));
 VALUE hash_aref _((VALUE, VALUE));
 VALUE hash_aset _((VALUE, VALUE, VALUE));
+int env_path_tainted _((void));
 /* io.c */
 void eof_error _((void));
 VALUE io_write _((VALUE, VALUE));
@@ -273,6 +274,7 @@ void add_suffix _((VALUE, char*));
 unsigned long scan_oct _((char*, int, int*));
 unsigned long scan_hex _((char*, int, int*));
 /* variable.c */
+struct st_table *new_idhash _((void));
 VALUE mod_name _((VALUE));
 VALUE rb_class_path _((VALUE));
 void rb_set_class_path _((VALUE, VALUE, char*));

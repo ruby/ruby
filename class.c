@@ -18,7 +18,6 @@
 #include <stdio.h>
 #endif
 
-struct st_table *new_idhash();
 extern st_table *rb_class_tbl;
 
 extern VALUE cClass;
@@ -572,7 +571,6 @@ rb_define_attr(klass, name, read, write)
 #include <varargs.h>
 #define va_init_list(a,b) va_start(a)
 #endif
-#include <ctype.h>
 
 int
 #ifdef HAVE_STDARG_PROTOTYPES
@@ -598,7 +596,7 @@ rb_scan_args(argc, argv, fmt, va_alist)
 	return argc;
     }
 
-    if (isdigit(*p)) {
+    if (ISDIGIT(*p)) {
 	n = *p - '0';
 	if (n > argc)
 	    ArgError("Wrong # of arguments (%d for %d)", argc, n);
@@ -612,7 +610,7 @@ rb_scan_args(argc, argv, fmt, va_alist)
 	goto error;
     }
 
-    if (isdigit(*p)) {
+    if (ISDIGIT(*p)) {
 	n = i + *p - '0';
 	for (; i<n; i++) {
 	    var = va_arg(vargs, VALUE*);

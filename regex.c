@@ -42,10 +42,6 @@
 #define const
 #endif
 
-#ifdef __MWERKS__
-#include "ruby.h"
-#else
-
 #include "config.h"
 #include "defines.h"
 
@@ -53,8 +49,6 @@ void *xmalloc P((unsigned long));
 void *xcalloc P((unsigned long,unsigned long));
 void *xrealloc P((void*,unsigned long));
 void free P((void*));
-
-#endif
 
 /* #define	NO_ALLOCA	/* try it out for now */
 #ifndef NO_ALLOCA

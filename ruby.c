@@ -16,9 +16,9 @@
 #include "ruby.h"
 #include "dln.h"
 #include <stdio.h>
-#include <ctype.h>
 #include <sys/types.h>
 #include <fcntl.h>
+#include <ctype.h>
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -35,9 +35,9 @@ void show_copyright();
 #endif
 
 #ifndef HAVE_STRING_H
-char *strchr();
-char *strrchr();
-char *strstr();
+char *strchr _((char*,char));
+char *strrchr _((char*,char));
+char *strstr _((char*,char*));
 #endif
 
 char *ruby_mktemp _((void));
@@ -61,7 +61,7 @@ extern int nerrs;
 static int xflag = FALSE;
 extern VALUE RS, RS_default, ORS, FS;
 
-static void load_stdin();
+static void load_stdin _((void));
 static void load_file _((char *, int));
 static void forbid_setid _((char *));
 
@@ -91,7 +91,6 @@ extern char *sourcefile;
 #endif
 
 extern VALUE rb_load_path;
-VALUE Frequire();
 
 static FILE *e_fp;
 static char *e_tmpname;
@@ -525,10 +524,10 @@ load_file(fname, script)
 		    if (pend[-1] == '\n') pend--; /* chomp line */
 		    if (pend[-1] == '\r') pend--;
 		    *pend = '\0';
-		    while (p < pend && isspace(*p))
+		    while (p < pend && ISSPACE(*p))
 			p++;
 		    path = p;	/* interpreter path */
-		    while (p < pend && !isspace(*p))
+		    while (p < pend && !ISSPACE(*p))
 			p++;
 		    *p++ = '\0';
 		    if (p < pend) {
@@ -559,13 +558,13 @@ load_file(fname, script)
 
 		    argc = 2; argv[0] = 0;
 		    while (*p == '-') {
-			while (*s && !isspace(*s))
+			while (*s && !ISSPACE(*s))
 			    s++;
 			*s = '\0';
 			argv[1] = p;
 			proc_options(&argc, &argvp);
 			p = ++s;
-			while (*p && isspace(*p))
+			while (*p && ISSPACE(*p))
 			    p++;
 		    }
 		}

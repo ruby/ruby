@@ -31,6 +31,18 @@ extern "C" {
 # include <strings.h>
 #endif
 
+#include <stdio.h>
+
+/* need to include <ctype.h> to use these macros */
+#define ISSPACE(c) isspace((unsigned char)(c))
+#define ISUPPER(c) isupper((unsigned char)(c))
+#define ISLOWER(c) islower((unsigned char)(c))
+#define ISPRINT(c) isprint((unsigned char)(c))
+#define ISALNUM(c) isalnum((unsigned char)(c))
+#define ISALPHA(c) isalpha((unsigned char)(c))
+#define ISDIGIT(c) isdigit((unsigned char)(c))
+#define ISXDIGIT(c) isxdigit((unsigned char)(c))
+
 #ifndef __STDC__
 # define volatile
 # ifdef __GNUC__

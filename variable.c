@@ -22,8 +22,6 @@ st_table *rb_class_tbl;
 #define global_tbl rb_global_tbl
 #define class_tbl rb_class_tbl
 
-int rb_const_defined();
-
 st_table*
 new_idhash()
 {

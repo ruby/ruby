@@ -18,7 +18,7 @@
 #include <sys/stat.h>
 
 #ifndef HAVE_STRING_H
-char *strchr();
+char *strchr _((char*,char));
 #endif
 
 #define HASH_FREEZE   FL_USER1
@@ -50,10 +50,6 @@ hash_frozen_p(hash)
 	return TRUE;
     return FALSE;
 }
-
-#ifndef NT
-char *getenv();
-#endif
 
 VALUE cHash;
 
@@ -775,8 +771,6 @@ hash_update(hash1, hash2)
 }
 
 #ifndef __MACOS__ /* environment variables nothing on MacOS. */
-
-int env_path_tainted();
 static int path_tainted = -1;
 
 #ifndef NT

@@ -9,8 +9,8 @@
 ************************************************/
 
 #include "ruby.h"
-#include <ctype.h>
 #include <math.h>
+#include <ctype.h>
 
 extern VALUE cInteger;
 VALUE cBignum;
@@ -175,7 +175,7 @@ str2inum(str, base)
     VALUE z;
     USHORT *zds;
 
-    while (isspace(*str)) str++;
+    while (ISSPACE(*str)) str++;
     if (*str == '-') {
 	str++;
 	sign = 0;
@@ -1108,7 +1108,7 @@ big_xor(x, y)
     return bignorm(z);
 }
 
-static VALUE big_rshift();
+static VALUE big_rshift _((VALUE,VALUE));
 
 VALUE
 big_lshift(x, y)

@@ -1518,7 +1518,7 @@ terms		: term
 #include "regex.h"
 #include "util.h"
 
-#define is_identchar(c) ((c)!=-1&&(isalnum(c) || (c) == '_' || ismbchar(c)))
+#define is_identchar(c) ((c)!=-1&&(ISALNUM(c) || (c) == '_' || ismbchar(c)))
 
 static char *tokenbuf = NULL;
 static int   tokidx, toksiz = 0;
@@ -1769,7 +1769,7 @@ read_escape()
 	    for (i=0; i<2; i++) {
 		buf[i] = nextc();
 		if (buf[i] == -1) goto eof;
-		if (!isxdigit(buf[i])) {
+		if (!ISXDIGIT(buf[i])) {
 		    pushback(buf[i]);
 		    break;
 		}
@@ -2301,7 +2301,7 @@ retry:
 	    return tOP_ASGN;
 	}
 	pushback(c);
-	if (lex_state == EXPR_ARG && space_seen && !isspace(c)){
+	if (lex_state == EXPR_ARG && space_seen && !ISSPACE(c)){
 	    arg_ambiguous();
 	    lex_state = EXPR_BEG;
 	    return tSTAR;
@@ -2327,7 +2327,7 @@ retry:
       case '=':
 	if (lex_p == lex_pbeg + 1) {
 	    /* skip embedded rd document */
-	    if (strncmp(lex_p, "begin", 5) == 0 && isspace(lex_p[5])) {
+	    if (strncmp(lex_p, "begin", 5) == 0 && ISSPACE(lex_p[5])) {
 		for (;;) {
 		    sourceline++;
 		    lex_p = lex_pend;
@@ -2337,7 +2337,7 @@ retry:
 			return 0;
 		    }
 		    if (c != '=') continue;
-		    if (strncmp(lex_p, "end", 3) == 0 && isspace(lex_p[3])) {
+		    if (strncmp(lex_p, "end", 3) == 0 && ISSPACE(lex_p[3])) {
 			break;
 		    }
 		}
@@ -2370,7 +2370,7 @@ retry:
 	    lex_state != EXPR_END && lex_state != EXPR_CLASS &&
 	    (lex_state != EXPR_ARG || space_seen)) {
  	    int c2 = nextc();
-	    if (!isspace(c2) && (strchr("\"'`", c2) || is_identchar(c2))) {
+	    if (!ISSPACE(c2) && (strchr("\"'`", c2) || is_identchar(c2))) {
 		if (!lex_input) {
 		    ArgError("here document not available");
 		}
@@ -2429,7 +2429,7 @@ retry:
 	    return '?';
 	}
 	c = nextc();
-	if (lex_state == EXPR_ARG && isspace(c)){
+	if (lex_state == EXPR_ARG && ISSPACE(c)){
 	    pushback(c);
 	    arg_ambiguous();
 	    lex_state = EXPR_BEG;
@@ -2455,7 +2455,7 @@ retry:
 	    return tOP_ASGN;
 	}
 	pushback(c);
-	if (lex_state == EXPR_ARG && space_seen && !isspace(c)){
+	if (lex_state == EXPR_ARG && space_seen && !ISSPACE(c)){
 	    arg_ambiguous();
 	    lex_state = EXPR_BEG;
 	    return tAMPER;
@@ -2494,7 +2494,7 @@ retry:
 	    return tOP_ASGN;
 	}
 	if (lex_state == EXPR_ARG) {
-	    if (space_seen && !isspace(c)) {
+	    if (space_seen && !ISSPACE(c)) {
 		arg_ambiguous();
 	    }
 	    else {
@@ -2502,7 +2502,7 @@ retry:
 	    }
 	}
 	if (lex_state != EXPR_END) {
- 	    if (isdigit(c)) {
+ 	    if (ISDIGIT(c)) {
 		goto start_num;
 	    }
 	    pushback(c);
@@ -2528,7 +2528,7 @@ retry:
 	    return tOP_ASGN;
 	}
 	if (lex_state == EXPR_ARG) {
-	    if (space_seen && !isspace(c)) {
+	    if (space_seen && !ISSPACE(c)) {
 		arg_ambiguous();
 	    }
 	    else {
@@ -2536,7 +2536,7 @@ retry:
 	    }
 	}
 	if (lex_state != EXPR_END) {
-	    if (isdigit(c)) {
+	    if (ISDIGIT(c)) {
 		pushback(c);
 		c = '-';
 		goto start_num;
@@ -2559,7 +2559,7 @@ retry:
 	    return tDOT2;
 	}
 	pushback(c);
-	if (!isdigit(c)) {
+	if (!ISDIGIT(c)) {
 	    lex_state = EXPR_DOT;
 	    return '.';
 	}
@@ -2585,7 +2585,7 @@ retry:
 		    /* hexadecimal */
 		    while (c = nextc()) {
 			if (c == '_') continue;
-			if (!isxdigit(c)) break;
+			if (!ISXDIGIT(c)) break;
 			tokadd(c);
 		    }
 		    pushback(c);
@@ -2631,7 +2631,7 @@ retry:
 		    }
 		    else {
 			int c0 = nextc();
-			if (!isdigit(c0)) {
+			if (!ISDIGIT(c0)) {
 			    pushback(c0);
 			    goto decode_num;
 			}
@@ -2699,7 +2699,7 @@ retry:
 	    return tCOLON2;
 	}
 	pushback(c);
-	if (lex_state == EXPR_END || isspace(c)) {
+	if (lex_state == EXPR_END || ISSPACE(c)) {
 	    lex_state = EXPR_BEG;
 	    return ':';
 	}
@@ -2716,7 +2716,7 @@ retry:
 	    return tOP_ASGN;
 	}
 	if (lex_state == EXPR_ARG) {
-	    if (space_seen && !isspace(c)) {
+	    if (space_seen && !ISSPACE(c)) {
 		pushback(c);
 		arg_ambiguous();
 		return parse_regx('/', '/');
@@ -2804,7 +2804,7 @@ retry:
 
 	    c = nextc();
 	  quotation:
-	    if (!isalnum(c)) {
+	    if (!ISALNUM(c)) {
 		term = c;
 		switch (c) {
 		  case '\'':
@@ -2856,7 +2856,7 @@ retry:
 	    return tOP_ASGN;
 	}
 	if (lex_state == EXPR_ARG) {
-	    if (space_seen && !isspace(c)) {
+	    if (space_seen && !ISSPACE(c)) {
 		arg_ambiguous();
 		goto quotation;
 	    }
@@ -2915,7 +2915,7 @@ retry:
 	  case '1': case '2': case '3':
 	  case '4': case '5': case '6':
 	  case '7': case '8': case '9':
-	    while (isdigit(c)) {
+	    while (ISDIGIT(c)) {
 		tokadd(c);
 		c = nextc();
 	    }
@@ -2945,7 +2945,7 @@ retry:
 	break;
 
       default:
-	if (c != '_' && !isalpha(c) && !ismbchar(c)) {
+	if (c != '_' && !ISALPHA(c) && !ismbchar(c)) {
 	    Error("Invalid char '%c' in expression", c);
 	    goto retry;
 	}
@@ -3011,7 +3011,7 @@ retry:
 	    else {
 		lex_state = EXPR_END;
 	    }
-	    if (isupper(tok()[0])) {
+	    if (ISUPPER(tok()[0])) {
 		result = tCONSTANT;
 	    }
 	    else if (toklast() == '!' || toklast() == '?') {
@@ -3066,7 +3066,7 @@ str_extend(list, term)
 	  case '1': case '2': case '3':
 	  case '4': case '5': case '6':
 	  case '7': case '8': case '9':
-	    while (isdigit(c)) {
+	    while (ISDIGIT(c)) {
 		tokadd(c);
 		c = nextc();
 	    }
@@ -3993,7 +3993,7 @@ rb_intern(name)
 	id |= ID_INSTANCE;
 	break;
       default:
-	if (name[0] != '_' && !isalpha(name[0]) && !ismbchar(name[0])) {
+	if (name[0] != '_' && !ISALPHA(name[0]) && !ismbchar(name[0])) {
 	    /* operator */
 	    int i;
 
@@ -4020,7 +4020,7 @@ rb_intern(name)
 	    id &= ~ID_SCOPE_MASK;
 	    id |= ID_ATTRSET;
 	}
-	else if (isupper(name[0])) {
+	else if (ISUPPER(name[0])) {
 	    id |= ID_CONST;
         }
 	else {

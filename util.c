@@ -48,7 +48,7 @@ rb_test_false_or_nil(v)
 
 #include "util.h"
 #ifndef HAVE_STRING_H
-char *strchr();
+char *strchr _((char*,char));
 #endif
 
 unsigned long
@@ -305,7 +305,6 @@ valid_filename(char *s)
 #include <libc/stubs.h>
 #include <stdio.h>		/* For FILENAME_MAX */
 #include <errno.h>		/* For errno */
-#include <ctype.h>		/* For tolower */
 #include <fcntl.h>		/* For LFN stuff */
 #include <go32.h>
 #include <dpmi.h>		/* For dpmisim */

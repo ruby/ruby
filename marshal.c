@@ -43,7 +43,7 @@ extern VALUE cRegexp;
 extern VALUE cArray;
 extern VALUE cHash;
 
-VALUE rb_path2class();
+VALUE rb_path2class _((char*));
 
 static ID s_dump, s_load;
 

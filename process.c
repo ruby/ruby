@@ -14,7 +14,6 @@
 #include "sig.h"
 #include <stdio.h>
 #include <errno.h>
-#include <ctype.h>
 #include <signal.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -29,8 +28,9 @@ struct timeval {
 };
 #endif
 #endif /* NT */
+#include <ctype.h>
 
-struct timeval time_timeval();
+struct timeval time_timeval _((VALUE));
 
 #ifdef HAVE_SYS_WAIT_H
 # include <sys/wait.h>
@@ -252,7 +252,6 @@ after_exec()
 #endif
 
 extern char *dln_find_exe();
-int env_path_tainted();
 
 static void
 security(str)
@@ -364,7 +363,7 @@ rb_proc_exec(str)
 
     security(str);
     for (s=str; *s; s++) {
-	if (*s != ' ' && !isalpha(*s) && strchr("*?{}[]<>()~&|\\$;'`\"\n",*s)) {
+	if (*s != ' ' && !ISALPHA(*s) && strchr("*?{}[]<>()~&|\\$;'`\"\n",*s)) {
 #if defined(MSDOS)
 	    int state;
 	    before_exec();
@@ -489,7 +488,7 @@ proc_spawn(str)
     int state;
 
     for (s = str; *s; s++) {
-	if (*s != ' ' && !isalpha(*s) && strchr("*?{}[]<>()~&|\\$;'`\"\n",*s)) {
+	if (*s != ' ' && !ISALPHA(*s) && strchr("*?{}[]<>()~&|\\$;'`\"\n",*s)) {
 	    char *shell = dln_find_exe("sh", 0);
 	    before_exec();
 	    state = shell ? spawnl(P_WAIT, shell, "sh", "-c", str, (char *) NULL) : system(str) ;
