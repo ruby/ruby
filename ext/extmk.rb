@@ -269,7 +269,7 @@ SRC
 end
 rubies = []
 %w[RUBY RUBYW].each {|r|
-  config_string(r+"_INSTALL_NAME") {|r| l << r+EXEEXT}
+  config_string(r+"_INSTALL_NAME") {|r| rubies << r+EXEEXT}
 }
 
 Dir.chdir ".."
