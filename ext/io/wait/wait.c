@@ -14,6 +14,7 @@
 #include "ruby.h"
 #include "rubyio.h"
 
+#include <sys/time.h>
 #include <sys/types.h>
 #include FIONREAD_HEADER
 
