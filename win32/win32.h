@@ -105,7 +105,6 @@ extern "C++" {
 #define eof()			_eof()
 #define filelength(h)		_filelength(h)
 #define mktemp(t)		_mktemp(t)
-#define read(h, b, l)		_read(h, b, l)
 #define tell(h)			_tell(h)
 #define unlink(p)		_unlink(p)
 #define write(h, b, l)		_write(h, b, l)
@@ -205,7 +204,7 @@ extern int rb_w32_rmdir(const char *);
 #ifdef __BORLANDC__
 extern int rb_w32_fstat(int, struct stat *);
 extern FILE *rb_w32_fopen(const char *, const char *);
-extern FILE *rb_w32_fdopen(int, char *);
+extern FILE *rb_w32_fdopen(int, const char *);
 extern FILE *rb_w32_fsopen(const char *, const char *, int);
 #endif
 

@@ -1033,6 +1033,7 @@ site-install-rb: install-rb
 
   return unless target
 
+  mfile.puts SRC_EXT.collect {|ext| ".path.#{ext} = $(VPATH)"} if $nmake == ?b
   mfile.print ".SUFFIXES: .#{SRC_EXT.join(' .')} .#{$OBJEXT}\n"
   mfile.print "\n"
 
@@ -1068,13 +1069,22 @@ site-install-rb: install-rb
   end
 
   depend = File.join(srcdir, "depend")
+  cont = rule = false
   if File.exist?(depend)
     open(depend, "r") do |dfile|
       mfile.printf "###\n"
       while line = dfile.gets()
 	line.gsub!(/\.o\b/, ".#{$OBJEXT}")
-	line.gsub!(/(\s)([^\s\/]+\.[ch])/, '\1{$(srcdir)}\2') if $nmake
 	line.gsub!(/\$\(hdrdir\)\/config.h/, $config_h) if $config_h
+	if $nmake
+	  rule = /^[$\w][^#]*:/ =~ line unless cont
+	  cont = /(?:^|[^\\])(?:\\\\)*\\$/ =~ line
+	  if rule
+	    line.gsub!(%r"(?<=\s)(?!\.)(?=[^\s\/]+\.(?:#{(SRC_EXT + ['h']).join('|')})(?\s|\z))"o, '{.;$(VPATH)}')
+	  else
+	    line.sub!(/^(\.\w+)(\.\w+)(?=\s*:)/, '{.;$(VPATH)}\1{}\2')
+	  end
+	end
 	mfile.print line
       end
     end

@@ -3244,6 +3244,23 @@ catch_interrupt(void)
     CHECK_INTS;
 }
 
+#if defined __BORLANDC__ || defined _WIN32_WCE
+#undef read
+int
+read(int fd, void *buf, size_t size)
+{
+    int trap_immediate = rb_trap_immediate;
+    int ret = _read(fd, buf, size);
+    if ((ret < 0) && (errno == EPIPE)) {
+	errno = 0;
+	ret = 0;
+    }
+    rb_trap_immediate = trap_immediate;
+    catch_interrupt();
+    return ret;
+}
+#endif
+
 #undef fgetc
 int
 rb_w32_getc(FILE* stream)
