@@ -9786,6 +9786,7 @@ thread_mark(th)
     rb_gc_mark(th->last_line);
     rb_gc_mark(th->last_match);
     rb_mark_tbl(th->locals);
+    rb_gc_mark(th->thgroup);
 
     /* mark data in copied stack */
     if (th == curr_thread) return;
@@ -12480,6 +12481,10 @@ thgroup_add(group, thread)
 
     rb_secure(4);
     th = rb_thread_check(thread);
+    if (!th->next || !th->prev) {
+	rb_raise(rb_eTypeError, "wrong argument type %s (expected Thread)",
+		 rb_obj_classname(thread));
+    }
 
     if (OBJ_FROZEN(group)) {
       rb_raise(rb_eThreadError, "can't move to the frozen thread group");
