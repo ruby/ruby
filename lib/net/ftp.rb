@@ -28,7 +28,7 @@ module Net
 
     DEFAULT_BLOCKSIZE = 4096
     
-    attr_accessor :passive, :return_code, :debug_mode, :resume
+    attr_accessor :binary, :passive, :return_code, :debug_mode, :resume
     attr_reader :welcome, :lastresp
     
     def FTP.open(host, user = nil, passwd = nil, acct = nil)
@@ -37,6 +37,7 @@ module Net
     
     def initialize(host = nil, user = nil, passwd = nil, acct = nil)
       super()
+      @binary = true
       @passive = false
       @return_code = "\n"
       @debug_mode = false
@@ -48,7 +49,7 @@ module Net
 	end
       end
     end
-    
+
     def open_socket(host, port)
       if defined? SOCKSsocket and ENV["SOCKS_SERVER"]
 	@passive = true
@@ -326,7 +327,7 @@ module Net
 	voidresp
       end
     end
-    
+
     def getbinaryfile(remotefile, localfile = File.basename(remotefile),
 		      blocksize = DEFAULT_BLOCKSIZE, &block)
       if @resume
@@ -359,8 +360,17 @@ module Net
 	f.close
       end
     end
+
+    def get(localfile, remotefile = File.basename(localfile),
+	    blocksize = DEFAULT_BLOCKSIZE, &block)
+      unless @binary
+	gettextfile(localfile, remotefile, &block)
+      else
+	getbinaryfile(localfile, remotefile, blocksize, &block)
+      end
+    end
     
-    def putbinaryfile(localfile, remotefile,
+    def putbinaryfile(localfile, remotefile = File.basename(localfile),
 		      blocksize = DEFAULT_BLOCKSIZE, &block)
       if @resume
 	rest_offset = size(remotefile)
@@ -376,7 +386,7 @@ module Net
       end
     end
     
-    def puttextfile(localfile, remotefile, &block)
+    def puttextfile(localfile, remotefile = File.basename(localfile), &block)
       f = open(localfile)
       begin
 	storlines("STOR " + remotefile, f, &block)
@@ -384,7 +394,16 @@ module Net
 	f.close
       end
     end
-    
+
+    def put(localfile, remotefile = File.basename(localfile),
+	    blocksize = DEFAULT_BLOCKSIZE, &block)
+      unless @binary
+	puttextfile(localfile, remotefile, &block)
+      else
+	putbinaryfile(localfile, remotefile, blocksize, &block)
+      end
+    end
+
     def acct(account)
       cmd = "ACCT " + account
       voidcmd(cmd)
