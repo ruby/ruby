@@ -868,10 +868,10 @@ pack_pack(ary, fmt)
 		from = NEXTFROM;
 		from = rb_to_int(from);
 		l = num2i32(from);
-		le = uv_to_utf8(buf, l);
-		if (TYPE(from) == T_BIGNUM) {
+		if (l < 0) {
 		    rb_raise(rb_eRangeError, "pack(U): value out of range");
 		}
+		le = uv_to_utf8(buf, l);
 		rb_str_buf_cat(res, (char*)buf, le);
 	    }
 	    break;

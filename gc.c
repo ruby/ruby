@@ -45,7 +45,7 @@ extern unsigned long __libc_ia64_register_backing_store_base;
 #endif
 
 void re_free_registers _((struct re_registers*));
-void rb_io_fptr_finalize _((struct OpenFile*));
+int rb_io_fptr_finalize _((struct OpenFile*));
 
 #if !defined(setjmp) && defined(HAVE__SETJMP)
 #define setjmp(env) _setjmp(env)
@@ -1786,11 +1786,12 @@ rb_gc_call_finalizer_at_exit()
 	}
     }
     /* run data object's finalizers */
-    for (i = 0; i < heaps_used; i++) {
+    for (i = heaps_used-1; 0 <= i; i--) {
 	p = heaps[i].slot; pend = p + heaps[i].limit;
 	while (p < pend) {
 	    if (BUILTIN_TYPE(p) == T_DATA &&
-		DATA_PTR(p) && RANY(p)->as.data.dfree) {
+		DATA_PTR(p) && RANY(p)->as.data.dfree &&
+		RANY(p)->as.basic.klass != rb_cThread) {
 		p->as.free.flags = 0;
 		if ((long)RANY(p)->as.data.dfree == -1) {
 		    RUBY_CRITICAL(free(DATA_PTR(p)));
@@ -1800,8 +1801,9 @@ rb_gc_call_finalizer_at_exit()
 		}
 	    }
 	    else if (BUILTIN_TYPE(p) == T_FILE) {
-		p->as.free.flags = 0;
-		rb_io_fptr_finalize(RANY(p)->as.file.fptr);
+		if (rb_io_fptr_finalize(RANY(p)->as.file.fptr)) {
+		    p->as.free.flags = 0;
+		}
 	    }
 	    p++;
 	}

@@ -223,7 +223,7 @@ class Pathname
   end
 
   # to_str is implemented so Pathname objects are usable with File.open, etc.
-  alias to_str to_s
+  alias to_path to_s
 
   def inspect # :nodoc:
     "#<#{self.class}:#{@path}>"

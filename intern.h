@@ -30,6 +30,8 @@ VALUE rb_ary_new _((void));
 VALUE rb_ary_new2 _((long));
 VALUE rb_ary_new3 __((long,...));
 VALUE rb_ary_new4 _((long, const VALUE *));
+VALUE rb_values_new __((long,...));
+VALUE rb_values_new2 _((long, const VALUE *));
 VALUE rb_ary_freeze _((VALUE));
 VALUE rb_ary_aref _((int, VALUE*, VALUE));
 void rb_ary_store _((VALUE, long, VALUE));
@@ -59,7 +61,7 @@ VALUE rb_ary_cmp _((VALUE, VALUE));
 VALUE rb_protect_inspect _((VALUE(*)(ANYARGS),VALUE,VALUE));
 VALUE rb_inspecting_p _((VALUE));
 VALUE rb_check_array_value _((VALUE));
-VALUE rb_values_at _((VALUE, long, int, VALUE*, VALUE(*) _((VALUE,long))));
+VALUE rb_get_values_at _((VALUE, long, int, VALUE*, VALUE(*) _((VALUE,long))));
 /* bignum.c */
 VALUE rb_big_clone _((VALUE));
 void rb_big_2comp _((VALUE));
@@ -222,6 +224,7 @@ VALUE rb_thread_local_aset _((VALUE, ID, VALUE));
 void rb_thread_atfork _((void));
 /* file.c */
 int eaccess _((const char*, int));
+VALUE rb_get_path _((VALUE));
 VALUE rb_file_s_expand_path _((int, VALUE *));
 void rb_file_const _((const char*, VALUE));
 int rb_find_file_ext _((VALUE*, const char* const*));

@@ -1757,6 +1757,7 @@ gzfile_close(gz, closeflag)
     int closeflag;
 {
     VALUE io = gz->io;
+
     gz->end(gz);
     gz->io = Qnil;
     gz->orig_name = Qnil;
@@ -2157,6 +2158,7 @@ gzfile_writer_end(gz)
     gzfile_make_footer(gz);
 
     if (ZSTREAM_IS_FINALIZE(&gz->z)) {
+	if (NIL_P(gz->io)) return;
 	rb_warn("Zlib::GzipWriter object must be closed explicitly.");
 	if (OBJ_IS_FREED(gz->io)) {
 	    aborted = 1;

@@ -65,7 +65,7 @@ long rb_io_fwrite _((const char *, long, FILE *));
 int  rb_io_mode_flags _((const char*));
 void rb_io_check_writable _((OpenFile*));
 void rb_io_check_readable _((OpenFile*));
-void rb_io_fptr_finalize _((OpenFile*));
+int rb_io_fptr_finalize _((OpenFile*));
 void rb_io_synchronized _((OpenFile*));
 void rb_io_check_closed _((OpenFile*));
 int rb_io_wait_readable _((int));

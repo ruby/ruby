@@ -6385,11 +6385,11 @@ rb_load(fname, wrap)
     NODE *saved_cref = ruby_cref;
     TMP_PROTECT;
 
-    if (wrap && ruby_safe_level >= 4) {
+    if (wrap && ruby_safe_level >= 4 && OBJ_TAINTED(fname)) {
 	StringValue(fname);
     }
     else {
-	SafeStringValue(fname);
+	fname = rb_get_path(fname);
     }
     tmp = rb_find_file(fname);
     if (!tmp) {
@@ -6714,10 +6714,7 @@ rb_require_safe(fname, safe)
     } volatile saved;
     char *volatile ftptr = 0;
 
-    if (OBJ_TAINTED(fname)) {
-	rb_check_safe_obj(fname);
-    }
-    StringValue(fname);
+    fname = rb_get_path(fname);
     saved.vmode = scope_vmode;
     saved.node = ruby_current_node;
     saved.func = ruby_frame->last_func;

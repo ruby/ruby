@@ -195,6 +195,20 @@ rb_io_check_closed(fptr)
 
 static void io_fflush _((FILE *, OpenFile *));
 
+static VALUE
+rb_io_get_io(io)
+    VALUE io;
+{
+    return rb_convert_type(io, T_FILE, "IO", "to_io");
+}
+
+static VALUE
+rb_io_check_io(io)
+    VALUE io;
+{
+    return rb_check_convert_type(io, T_FILE, "IO", "to_io");
+}
+
 static OpenFile *
 flush_before_seek(fptr)
     OpenFile *fptr;
@@ -435,15 +449,16 @@ io_write(io, str)
     OpenFile *fptr;
     FILE *f;
     long n;
+    VALUE tmp;
 
     rb_secure(4);
-    if (TYPE(str) != T_STRING)
-	str = rb_obj_as_string(str);
-
-    if (TYPE(io) != T_FILE) {
+    str = rb_obj_as_string(str);
+    tmp = rb_io_check_io(io);
+    if (NIL_P(tmp)) {
 	/* port is not IO, call write method for it. */
 	return rb_funcall(io, id_write, 1, str);
     }
+    io = tmp;
     if (RSTRING(str)->len == 0) return INT2FIX(0);
 
     GetOpenFile(io, fptr);
@@ -1775,20 +1790,22 @@ rb_io_fptr_cleanup(fptr, noraise)
     }
 }
 
-void
+int
 rb_io_fptr_finalize(fptr)
     OpenFile *fptr;
 {
-    if (!fptr) return;
-    if (fptr->refcnt <= 0 || --fptr->refcnt) return;
+    if (!fptr) return 0;
+    if (fptr->refcnt <= 0 || --fptr->refcnt) return 0;
     if (fptr->path) {
 	free(fptr->path);
+	fptr->path = 0;
     }
-    if (!fptr->f && !fptr->f2) return;
-    if (fileno(fptr->f) < 3) return;
+    if (!fptr->f && !fptr->f2) return 0;
+    if (fileno(fptr->f) < 3) return 0;
 
     rb_io_fptr_cleanup(fptr, Qtrue);
     free(fptr);
+    return 1;
 }
 
 VALUE
@@ -2866,7 +2883,7 @@ rb_open_file(argc, argv, io)
     int flags, fmode;
 
     rb_scan_args(argc, argv, "12", &fname, &vmode, &perm);
-    SafeStringValue(fname);
+    fname = rb_get_path(fname);
     path = RSTRING(fname)->ptr;
 
     if (FIXNUM_P(vmode) || !NIL_P(perm)) {
@@ -2936,7 +2953,7 @@ rb_io_s_sysopen(argc, argv)
     int flags, fmode, fd;
 
     rb_scan_args(argc, argv, "12", &fname, &vmode, &perm);
-    SafeStringValue(fname);
+    fname = rb_get_path(fname);
 
     if (NIL_P(vmode)) flags = O_RDONLY;
     else if (FIXNUM_P(vmode)) flags = FIX2INT(vmode);
@@ -3045,10 +3062,12 @@ rb_f_open(argc, argv)
 	    return rb_funcall2(argv[0], to_open, argc-1, argv+1);
 	}
 	else {
-	    char *str = StringValuePtr(argv[0]);
-
-	    if (str[0] == '|') {
-		return rb_io_popen(str+1, argc, argv, rb_cIO);
+	    VALUE tmp = rb_check_string_type(argv[0]);
+	    if (!NIL_P(tmp)) {
+		char *str = StringValuePtr(tmp);
+		if (str && str[0] == '|') {
+		    return rb_io_popen(str+1, argc, argv, rb_cIO);
+		}
 	    }
 	}
     }
@@ -3065,20 +3084,6 @@ rb_io_open(fname, mode)
     else {
 	return rb_file_open(fname, mode);
     }
-}
-
-static VALUE
-rb_io_get_io(io)
-    VALUE io;
-{
-    return rb_convert_type(io, T_FILE, "IO", "to_io");
-}
-
-static VALUE
-rb_io_check_io(io)
-    VALUE io;
-{
-    return rb_check_convert_type(io, T_FILE, "IO", "to_io");
 }
 
 static char*
@@ -3210,13 +3215,13 @@ rb_io_reopen(argc, argv, file)
 
     rb_secure(4);
     if (rb_scan_args(argc, argv, "11", &fname, &nmode) == 1) {
-	if (TYPE(fname) != T_STRING) { /* fname must be IO */
-	    return io_reopen(file, fname);
+	VALUE tmp = rb_io_check_io(fname);
+	if (!NIL_P(tmp)) {
+	    return io_reopen(file, tmp);
 	}
     }
 
-    SafeStringValue(fname);
-
+    fname = rb_get_path(fname);
     rb_io_taint_check(file);
     fptr = RFILE(file)->fptr;
     if (!fptr) {
@@ -4864,8 +4869,7 @@ rb_io_s_foreach(argc, argv)
     struct foreach_arg arg;
 
     rb_scan_args(argc, argv, "11", &fname, &arg.sep);
-    SafeStringValue(fname);
-
+    fname = rb_get_path(fname);
     if (argc == 1) {
 	arg.sep = rb_default_rs;
     }
@@ -4907,8 +4911,7 @@ rb_io_s_readlines(argc, argv, io)
     struct foreach_arg arg;
 
     rb_scan_args(argc, argv, "11", &fname, &arg.sep);
-    SafeStringValue(fname);
-
+    fname = rb_get_path(fname);
     arg.argc = argc - 1;
     arg.io = rb_io_open(RSTRING(fname)->ptr, "r");
     if (NIL_P(arg.io)) return Qnil;
@@ -4945,8 +4948,7 @@ rb_io_s_read(argc, argv, io)
     struct foreach_arg arg;
 
     rb_scan_args(argc, argv, "12", &fname, &arg.sep, &offset);
-    SafeStringValue(fname);
-
+    fname = rb_get_path(fname);
     arg.argc = argc ? 1 : 0;
     arg.io = rb_io_open(RSTRING(fname)->ptr, "r");
     if (NIL_P(arg.io)) return Qnil;

@@ -13,6 +13,16 @@ Wed Apr  7 00:24:34 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* test/rinda/test_rinda.rb
 
+Tue Apr  6 18:24:18 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* file.c (rb_get_path): get path string via "to_path" method if
+	  path object is not a string. [Ruby2]
+
+	* gc.c (rb_gc_call_finalizer_at_exit): do not free threads in the
+	  exit finalizers.
+
+	* io.c (rb_io_reopen): should use rb_io_check_io().
+
 Tue Apr  6 16:46:09 2004  Tanaka Akira  <akr@m17n.org>
 
 	* configure.in: check the size of time_t.

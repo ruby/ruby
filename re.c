@@ -1233,7 +1233,7 @@ match_values_at(argc, argv, match)
     VALUE *argv;
     VALUE match;
 {
-    return rb_values_at(match, RMATCH(match)->regs->num_regs, argc, argv, match_entry);
+    return rb_get_values_at(match, RMATCH(match)->regs->num_regs, argc, argv, match_entry);
 }
 
 

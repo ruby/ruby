@@ -16,10 +16,12 @@
 #include "util.h"
 #include "st.h"
 
-VALUE rb_cArray;
+VALUE rb_cArray, rb_cValues;
+
 static ID id_cmp;
 
 #define ARY_DEFAULT_SIZE 16
+
 
 void
 rb_mem_clear(mem, size)
@@ -193,17 +195,50 @@ rb_ary_new4(n, elts)
 }
 
 VALUE
+#ifdef HAVE_STDARG_PROTOTYPES
+rb_values_new(long n, ...)
+#else
+rb_values_new(n, va_alist)
+    long n;
+    va_dcl
+#endif
+{
+    va_list ar;
+    VALUE val;
+    long i;
+
+    val = ary_new(rb_cValues, n);
+    va_init_list(ar, n);
+    for (i=0; i<n; i++) {
+	RARRAY(val)->ptr[i] = va_arg(ar, VALUE);
+    }
+    va_end(ar);
+    RARRAY(val)->len = n;
+
+    return val;
+}
+
+VALUE
+rb_values_new2(n, elts)
+    long n;
+    const VALUE *elts;
+{
+    VALUE val;
+
+    val = ary_new(rb_cValues, n);
+    if (n > 0 && elts) {
+	MEMCPY(RARRAY(val)->ptr, elts, VALUE, n);
+    }
+    RARRAY(val)->len = n;
+
+    return val;
+}
+
+VALUE
 rb_assoc_new(car, cdr)
     VALUE car, cdr;
 {
-    VALUE ary;
-
-    ary = rb_ary_new2(2);
-    RARRAY(ary)->ptr[0] = car;
-    RARRAY(ary)->ptr[1] = cdr;
-    RARRAY(ary)->len = 2;
-
-    return ary;
+    return rb_values_new(2, car, cdr);
 }
 
 static VALUE
@@ -905,7 +940,6 @@ rb_ary_indexes(argc, argv, ary)
     VALUE new_ary;
     long i;
 
-    rb_warn("Array#%s is deprecated; use Array#values_at", rb_id2name(rb_frame_last_func()));
     new_ary = rb_ary_new2(argc);
     for (i=0; i<argc; i++) {
 	rb_ary_push(new_ary, rb_ary_aref(1, argv+i, ary));
@@ -1696,7 +1730,7 @@ rb_ary_collect_bang(ary)
 }
 
 VALUE
-rb_values_at(obj, olen, argc, argv, func)
+rb_get_values_at(obj, olen, argc, argv, func)
     VALUE obj;
     long olen;
     int argc;
@@ -1749,7 +1783,7 @@ rb_ary_values_at(argc, argv, ary)
     VALUE *argv;
     VALUE ary;
 {
-    return rb_values_at(ary, RARRAY(ary)->len, argc, argv, rb_ary_entry);
+    return rb_get_values_at(ary, RARRAY(ary)->len, argc, argv, rb_ary_entry);
 }
 
 /*
@@ -3016,4 +3050,6 @@ Init_Array()
 
     id_cmp = rb_intern("<=>");
     inspect_key = rb_intern("__inspect_key__");
+
+    rb_cValues  = rb_define_class("Values", rb_cArray);
 }

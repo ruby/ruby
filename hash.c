@@ -576,8 +576,6 @@ rb_hash_indexes(argc, argv, hash)
     VALUE indexes;
     int i;
 
-    rb_warn("Hash#%s is deprecated; use Hash#values_at",
-	    rb_id2name(rb_frame_last_func()));
     indexes = rb_ary_new2(argc);
     for (i=0; i<argc; i++) {
 	RARRAY(indexes)->ptr[i] = rb_hash_aref(hash, argv[i]);
@@ -2214,8 +2212,6 @@ env_indexes(argc, argv)
     int i;
     VALUE indexes = rb_ary_new2(argc);
 
-    rb_warn("ENV.%s is deprecated; use ENV.values_at",
-	    rb_id2name(rb_frame_last_func()));
     for (i=0;i<argc;i++) {
 	VALUE tmp = rb_check_string_type(argv[i]);
 	if (NIL_P(tmp)) {

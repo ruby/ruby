@@ -717,7 +717,7 @@ module FileUtils
   end
 
   def fu_list(arg)
-    Array(arg).map {|path| path.to_str }
+    Array(arg).map {|path| File.path(path) }
   end
 
   def fu_each_src_dest(src, dest)
@@ -730,13 +730,15 @@ module FileUtils
   def fu_each_src_dest0(src, dest)
     if src.is_a?(Array)
       src.each do |s|
-        yield s.to_str, File.join(dest, File.basename(s))
+        s = File.path(s)
+        yield s, File.join(dest, File.basename(s))
       end
     else
+      src = File.path(src)
       if File.directory?(dest)
-        yield src.to_str, File.join(dest, File.basename(src))
+        yield src, File.join(dest, File.basename(src))
       else
-        yield src.to_str, dest.to_str
+        yield src, File.path(dest)
       end
     end
   end

@@ -701,7 +701,7 @@ rb_struct_values_at(argc, argv, s)
     VALUE *argv;
     VALUE s;
 {
-    return rb_values_at(s, RSTRUCT(s)->len, argc, argv, struct_entry);
+    return rb_get_values_at(s, RSTRUCT(s)->len, argc, argv, struct_entry);
 }
 
 /*

@@ -379,7 +379,7 @@ dir_initialize(dir, dirname)
 {
     struct dir_data *dp;
 
-    SafeStringValue(dirname);
+    dirname = rb_get_path(dirname);
     Data_Get_Struct(dir, struct dir_data, dp);
     if (dp->dir) closedir(dp->dir);
     if (dp->path) free(dp->path);
@@ -744,7 +744,7 @@ dir_s_chdir(argc, argv, obj)
 
     rb_secure(2);
     if (rb_scan_args(argc, argv, "01", &path) == 1) {
-	SafeStringValue(path);
+	path = rb_get_path(path);
 	dist = RSTRING(path)->ptr;
     }
     else {
@@ -806,8 +806,8 @@ check_dirname(dir)
 {
     char *path, *pend;
 
-    SafeStringValue(*dir);
     rb_secure(2);
+    *dir = rb_get_path(*dir);
     path = RSTRING(*dir)->ptr;
     if (path && *(pend = rb_path_end(rb_path_skip_prefix(path)))) {
 	*dir = rb_str_new(path, pend - path);
@@ -1439,7 +1439,7 @@ rb_push_glob(str, flags)
     else
 	ary = rb_ary_new();
 
-    SafeStringValue(str);
+    str = rb_get_path(str);
     buf = xmalloc(RSTRING(str)->len + 1);
 
     p = RSTRING(str)->ptr;
