@@ -322,21 +322,21 @@ Fary_indexes(ary, args)
     struct RArray *ary, *args;
 {
     VALUE *p, *pend;
-    VALUE new;
+    VALUE new_ary;
     int i = 0;
 
     if (!args || args->len == 1) {
 	args = (struct RArray*)rb_to_a(args->ptr[0]);
     }
 
-    new = ary_new2(args->len);
+    new_ary = ary_new2(args->len);
 
     p = args->ptr; pend = p + args->len;
     while (p < pend) {
-	astore(new, i++, ary_entry(ary, NUM2INT(*p)));
+	astore(new_ary, i++, ary_entry(ary, NUM2INT(*p)));
 	p++;
     }
-    return new;
+    return new_ary;
 }
 
 static VALUE

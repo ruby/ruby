@@ -177,7 +177,7 @@ typedef struct RVALUE {
 	struct RString string;
 	struct RArray  array;
 	struct RRegexp regexp;
-	struct RDict   dict;
+	struct RHash   hash;
 	struct RData   data;
 	struct RStruct rstruct;
 	struct RBignum bignum;
@@ -326,7 +326,7 @@ mark_tbl(tbl)
 }
 
 static
-mark_dicentry(key, value)
+mark_hashentry(key, value)
     ID key;
     VALUE value;
 {
@@ -336,10 +336,10 @@ mark_dicentry(key, value)
 }
 
 static
-mark_dict(tbl)
+mark_hash(tbl)
     st_table *tbl;
 {
-    st_foreach(tbl, mark_dicentry, 0);
+    st_foreach(tbl, mark_hashentry, 0);
 }
 
 void
@@ -408,8 +408,8 @@ gc_mark(obj)
 	}
 	break;
 
-      case T_DICT:
-	mark_dict(obj->as.dict.tbl);
+      case T_HASH:
+	mark_hash(obj->as.hash.tbl);
 	break;
 
       case T_STRING:
@@ -523,8 +523,8 @@ obj_free(obj)
       case T_ARRAY:
 	free(obj->as.array.ptr);
 	break;
-      case T_DICT:
-	st_free_table(obj->as.dict.tbl);
+      case T_HASH:
+	st_free_table(obj->as.hash.tbl);
 	break;
       case T_REGEXP:
 	reg_free(obj->as.regexp.ptr);

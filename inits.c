@@ -24,7 +24,7 @@ rb_call_inits()
     Init_Numeric();
     Init_Bignum();
     Init_Array();
-    Init_Dict();
+    Init_Hash();
     Init_Struct();
     Init_String();
     Init_Regexp();
@@ -40,12 +40,6 @@ rb_call_inits()
     Init_load();
     Init_Block();
     Init_Math();
-#ifdef USE_DBM
-    Init_DBM();
-#endif
-#ifdef HAVE_SOCKET
-    Init_Socket();
-#endif
     /* new Inits comes between here.. */
 
     /* .. and here. */

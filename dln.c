@@ -10,162 +10,132 @@
 
 ************************************************/
 
-#include <stdio.h>
-#include <sys/param.h>
-#include <sys/file.h>
 #include "config.h"
 #include "defines.h"
 #include "dln.h"
-#include <sys/types.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
+
+#if defined(HAVE_ALLOCA_H) && !defined(__GNUC__)
+#include <alloca.h>
 #endif
 
-char *strdup();
+#include <stdio.h>
+#include <sys/param.h>
+#include <sys/file.h>
 
-extern int errno;
-int dln_errno;
-
-static int dln_init_p = 0;
-
-#include <sys/stat.h>
-
-static char fbuf[MAXPATHLEN];
-static char *dln_find_1();
-char *getenv();
-char *strchr();
-int strcmp();
-
-char *
-dln_find_exe(fname, path)
-    char *fname;
-    char *path;
-{
-    if (!path) path = getenv("PATH");
-    if (!path) path = "/usr/local/bin:/usr/ucb:/usr/bin:/bin:.";
-    return dln_find_1(fname, path, 1);
-}
-
-char *
-dln_find_file(fname, path)
-    char *fname;
-    char *path;
-{
-    if (!path) path = ".";
-    return dln_find_1(fname, path, 0);
-}
-
-static char *
-dln_find_1(fname, path, exe_flag)
-    char *fname;
-    char *path;
-    int exe_flag;		/* non 0 if looking for executable. */
-{
-    register char *dp;
-    register char *ep;
-    register char *bp;
-    struct stat st;
-
-    if (fname[0] == '/') return fname;
-
-    for (dp = path;; dp = ++ep)
-    {
-	register int l;
-	int i;
-	int fspace;
-
-	/* extract a component */
-	ep = strchr(dp, ':');
-	if (ep == NULL)
-	    ep = dp+strlen(dp);
-
-	/* find the length of that component */
-	l = ep - dp;
-	bp = fbuf;
-	fspace = sizeof fbuf - 2;
-	if (l > 0)
-	{
-	    /*
-	    **	If the length of the component is zero length,
-	    **	start from the current directory.  If the
-	    **	component begins with "~", start from the
-	    **	user's $HOME environment variable.  Otherwise
-	    **	take the path literally.
-	    */
-
-	    if (*dp == '~' && (l == 1 || dp[1] == '/'))
-	    {
-		char *home;
-
-		home = getenv("HOME");
-		if (home != NULL)
-		{
-		    i = strlen(home);
-		    if ((fspace -= i) < 0)
-			goto toolong;
-		    memcpy(bp, home, i);
-		    bp += i;
-		}
-		dp++;
-		l--;
-	    }
-	    if (l > 0)
-	    {
-		if ((fspace -= l) < 0)
-		    goto toolong;
-		memcpy(bp, dp, l);
-		bp += l;
-	    }
-
-	    /* add a "/" between directory and filename */
-	    if (ep[-1] != '/')
-		*bp++ = '/';
-	}
-
-	/* now append the file name */
-	i = strlen(fname);
-	if ((fspace -= i) < 0)
-	{
-    toolong:
-	    fprintf(stderr, "openpath: pathname too long (ignored)\n");
-	    *bp = '\0';
-	    fprintf(stderr, "\tDirectory \"%s\"\n", fbuf);
-	    fprintf(stderr, "\tFile \"%s\"\n", fname);
-	    continue;
-	}
-	memcpy(bp, fname, i + 1);
-
-	if (stat(fbuf, &st) == 0) {
-	    if (exe_flag == 0) return fbuf;
-	    /* looking for executable */
-#ifdef RUBY
-	    if (eaccess(fbuf, X_OK) == 0) return fbuf;
+#ifdef HAVE_STDLIB_H
+# include <stdlib.h>
 #else
-	    {
-		uid_t uid = getuid();
-		gid_t gid = getgid();
-
-		if (uid == st.st_uid &&
-		    (st.st_mode & S_IEXEC) ||
-		    gid == st.st_gid &&
-		    (st.st_mode & (S_IEXEC>>3)) ||
-		    st.st_mode & (S_IEXEC>>6)) {
-		    return fbuf;
-		}
-	    }
+char *getenv();
 #endif
-	}
-	/* if not, and no other alternatives, life is bleak */
-	if (*ep == '\0') {
-	    dln_errno = DLN_ENOENT;
-	    return NULL;
-	}
 
-	/* otherwise try the next component in the search path */
+#if defined (HAVE_STRING_H)
+#  include <string.h>
+#else /* !HAVE_STRING_H */
+#  include <strings.h>
+#endif /* !HAVE_STRING_H */
+
+#ifdef RUBY
+int eaccess();
+#endif
+
+#ifdef USE_DL
+static void
+init_funcname(buf, file)
+    char *buf, *file;
+{
+    char *p, *slash;
+
+    /* Load the file as an object one */
+    for (p = file, slash = p-1; *p; p++) /* Find position of last '/' */
+	if (*p == '/') slash = p;
+
+    sprintf(buf, "init_%s", slash + 1);
+    for (p = buf; *p; p++) {         /* Delete suffix it it exists */
+	if (*p == '.') {
+	    *p = '\0'; break;
+	}
     }
 }
 
-#ifdef USE_DLN
+# if defined(HAVE_DLOPEN) && !defined(USE_MY_DLN)
+
+/* dynamic load with dlopen() */
+#include <dlfcn.h>
+
+int
+dln_init(file)
+    char *file;
+{
+    return 0;
+}
+
+int
+dln_load(file)
+    char *file;
+{
+    void *handle;
+    char buf[MAXPATHLEN];
+    void (*init_fct)();
+    int len = strlen(file);
+#ifndef RTLD_LAZY
+# define RTLD_LAZY 1
+#endif
+
+    strcpy(buf, file);
+    if (len > 3
+	&& (buf[len-1] == 'o' || buf[len-1] == 'a')
+	&& buf[len-2] == '.') {
+	buf[len-1] = 's'; buf[len] = 'o'; buf[len+1] = '\0';
+    }
+
+    /* Load file */
+    if ((handle = dlopen(buf, RTLD_LAZY)) == NULL) {
+	return -1;
+    }
+
+    /* Load the file as an object one */
+    init_funcname(buf, file);
+
+    if ((init_fct = dlsym(handle, buf)) == NULL) {
+	buf[0] = 'I';		/* try Init_.. */
+	if ((init_fct = dlsym(handle, buf)) == NULL) {
+	    return -1;
+	}
+    }
+    /* Call the init code */
+    (*init_fct)();
+
+    return 0;
+}
+
+char *
+dln_strerror()
+{
+    return dlerror();
+}
+
+int
+dln_load_lib(lib)
+    char *lib;
+{
+    return 0;
+}
+
+# else
+
+#include <errno.h>
+
+static int dln_errno;
+
+#define DLN_ENOEXEC	ENOEXEC	/* Exec format error */
+#define DLN_ECONFL	101	/* Symbol name conflict */
+#define DLN_ENOINIT	102	/* No inititalizer given */
+#define DLN_EUNDEF	103	/* Undefine symbol remains */
+#define DLN_ENOTLIB	104	/* Not a library file */
+#define DLN_EBADLIB	105	/* Malformed library file */
+#define DLN_EINIT	106	/* Not initialized */
+
+static int dln_init_p = 0;
 
 #include "st.h"
 #include <ar.h>
@@ -573,10 +543,11 @@ unlink_undef(name, value)
     st_foreach(reloc_tbl, reloc_undef, &arg);
 }
 
-static int dln_load_1(fd, disp, need_init)
+static int
+dln_load_1(fd, disp, need_init)
     int fd;
     long disp;
-    int need_init;
+    char *need_init;
 {
     static char *libc = LIBC_NAME;
     struct exec hdr;
@@ -587,6 +558,7 @@ static int dln_load_1(fd, disp, need_init)
     struct nlist *sym;
     struct nlist *end;
     int init_p = 0;
+    char buf[256];
 
     if (dln_load_header(fd, &hdr, disp) == -1) return -1;
     if (INVALID_OBJECT(hdr)) {
@@ -764,21 +736,38 @@ static int dln_load_1(fd, disp, need_init)
     }
 
     if (need_init) {
+	int len;
+
 	if (undef_tbl->num_entries > 0) {
 	    if (dln_load_lib(libc) == -1) goto err_exit;
 	}
 
+	init_funcname(buf, need_init);
+	len = strlen(buf);
+
+#if 1	
 	sym = syms;
 	while (sym < end) {
 	    char *name = sym->n_un.n_name;
 	    if (name[0] == '_' && sym->n_value >= block
-		&& ((bcmp (name, "_Init_", 6) == 0
+		&& ((bcmp (name, "_Init_", 6) == 0 
 		     || bcmp (name, "_init_", 6) == 0) && name[6] != '_')) {
 		init_p = 1;
 		((int (*)())sym->n_value)();
 	    }
 	    sym++;
 	}
+#else
+	for (sym = syms; sym<end; sym++) {
+	    char *name = sym->n_un.n_name;
+	    if (name[0] == '_' && sym->n_value >= block
+		&& (name[1] == 'i' || name[1] == 'I')
+		&& bcmp(name+2, buf+1, len-1) == 0) {
+		init_p = 1;
+		((int (*)())sym->n_value)();
+	    }
+	}
+#endif
     }
     free(reloc);
     free(syms);
@@ -815,13 +804,17 @@ dln_load(file)
 	dln_errno = DLN_ENOINIT;
 	return -1;
     }
+    result = strlen(file);
+    if (file[result-1] == 'a') {
+	return dln_load_lib(file);
+    }
 
     fd = open(file, O_RDONLY);
     if (fd == -1) {
 	dln_errno = errno;
 	return -1;
     }
-    result = dln_load_1(fd, 0, 1);
+    result = dln_load_1(fd, 0, file);
     close(fd);
 
     return result;
@@ -872,6 +865,12 @@ dln_load_lib(lib)
 
     if (undef_tbl->num_entries == 0) return 0;
     dln_errno = DLN_EBADLIB;
+
+    if (lib[0] == '-' && lib[1] == 'l') {
+	char *p = alloca(strlen(lib) + 4);
+	sprintf(p, "lib%s.a", lib+2);
+	lib = p;
+    }
 
     /* library search path: */
     /* look for environment variable DLN_LIBRARY_PATH first. */
@@ -983,6 +982,17 @@ dln_load_lib(lib)
     return -1;
 }
 
+void*
+dln_sym(name)
+    char *name;
+{
+    struct nlist *sym;
+
+    if (st_lookup(sym_tbl, name, &sym))
+	return (void*)sym->n_value;
+    return NULL;
+}
+
 char *
 dln_strerror()
 {
@@ -1006,87 +1016,144 @@ dln_strerror()
     }
 }
 
+# endif
+#endif /* USE_DL */
+
+static char *dln_find_1();
+
+char *
+dln_find_exe(fname, path)
+    char *fname;
+    char *path;
+{
+    if (!path) path = getenv("PATH");
+    if (!path) path = "/usr/local/bin:/usr/ucb:/usr/bin:/bin:.";
+    return dln_find_1(fname, path, 1);
+}
+
+char *
+dln_find_file(fname, path)
+    char *fname;
+    char *path;
+{
+    if (!path) path = ".";
+    return dln_find_1(fname, path, 0);
+}
+
+static char fbuf[MAXPATHLEN];
+
+static char *
+dln_find_1(fname, path, exe_flag)
+    char *fname;
+    char *path;
+    int exe_flag;		/* non 0 if looking for executable. */
+{
+    register char *dp;
+    register char *ep;
+    register char *bp;
+    struct stat st;
+
+    if (fname[0] == '/') return fname;
+
+    for (dp = path;; dp = ++ep)
+    {
+	register int l;
+	int i;
+	int fspace;
+
+	/* extract a component */
+	ep = strchr(dp, ':');
+	if (ep == NULL)
+	    ep = dp+strlen(dp);
+
+	/* find the length of that component */
+	l = ep - dp;
+	bp = fbuf;
+	fspace = sizeof fbuf - 2;
+	if (l > 0)
+	{
+	    /*
+	    **	If the length of the component is zero length,
+	    **	start from the current directory.  If the
+	    **	component begins with "~", start from the
+	    **	user's $HOME environment variable.  Otherwise
+	    **	take the path literally.
+	    */
+
+	    if (*dp == '~' && (l == 1 || dp[1] == '/'))
+	    {
+		char *home;
+
+		home = getenv("HOME");
+		if (home != NULL)
+		{
+		    i = strlen(home);
+		    if ((fspace -= i) < 0)
+			goto toolong;
+		    memcpy(bp, home, i);
+		    bp += i;
+		}
+		dp++;
+		l--;
+	    }
+	    if (l > 0)
+	    {
+		if ((fspace -= l) < 0)
+		    goto toolong;
+		memcpy(bp, dp, l);
+		bp += l;
+	    }
+
+	    /* add a "/" between directory and filename */
+	    if (ep[-1] != '/')
+		*bp++ = '/';
+	}
+
+	/* now append the file name */
+	i = strlen(fname);
+	if ((fspace -= i) < 0)
+	{
+    toolong:
+	    fprintf(stderr, "openpath: pathname too long (ignored)\n");
+	    *bp = '\0';
+	    fprintf(stderr, "\tDirectory \"%s\"\n", fbuf);
+	    fprintf(stderr, "\tFile \"%s\"\n", fname);
+	    continue;
+	}
+	memcpy(bp, fname, i + 1);
+
+	if (stat(fbuf, &st) == 0) {
+	    if (exe_flag == 0) return fbuf;
+	    /* looking for executable */
+#ifdef RUBY
+	    if (eaccess(fbuf, X_OK) == 0) return fbuf;
+#else
+	    {
+		uid_t uid = getuid();
+		gid_t gid = getgid();
+
+		if (uid == st.st_uid &&
+		    (st.st_mode & S_IEXEC) ||
+		    gid == st.st_gid &&
+		    (st.st_mode & (S_IEXEC>>3)) ||
+		    st.st_mode & (S_IEXEC>>6)) {
+		    return fbuf;
+		}
+	    }
+#endif
+	}
+	/* if not, and no other alternatives, life is bleak */
+	if (*ep == '\0') {
+	    return NULL;
+	}
+
+	/* otherwise try the next component in the search path */
+    }
+}
+
+void
 dln_perror(str)
     char *str;
 {
     fprintf(stderr, "%s: %s\n", str, dln_strerror());
 }
-
-void*
-dln_get_sym(name)
-    char *name;
-{
-    struct nlist *sym;
-
-    if (st_lookup(sym_tbl, name, &sym))
-	return (void*)sym->n_value;
-    return NULL;
-}
-
-#ifdef TEST
-xmalloc(size)
-    int size;
-{
-    return malloc(size);
-}
-
-xcalloc(size, n)
-    int size, n;
-{
-    return calloc(size, n);
-}
-
-main(argc, argv)
-    int argc;
-    char **argv;
-{
-    if (dln_init(argv[0]) == -1) {
-	dln_perror("dln_init");
-	exit(1);
-    }
-
-    while (argc > 1) {
-	printf("obj: %s\n", argv[1]);
-	if (dln_load(argv[1]) == -1) {
-	    dln_perror("dln_load");
-	    exit(1);
-	}
-	argc--;
-	argv++;
-    }
-    if (dln_load_lib("libdln.a") == -1) {
-	dln_perror("dln_init");
-	exit(1);
-    }
-
-    if (dln_get_sym("_foo"))
-	printf("_foo defined\n");
-    else
-	printf("_foo undefined\n");
-}
-#endif				/* TEST */
-
-#else				/* USE_DLN */
-
-int
-dln_init(file)
-    char *file;
-{
-    return 0;
-}
-
-int
-dln_load(file)
-    char *file;
-{
-    return 0;
-}
-
-int
-dln_load_lib(file)
-    char *file;
-{
-    return 0;
-}
-
-#endif				/* USE_DLN */

@@ -18,6 +18,12 @@
 #include <unistd.h>
 #endif
 
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#else
+char *getenv();
+#endif
+
 /* unistd.h defines _POSIX_VERSION on POSIX.1 systems.  */
 #if defined(DIRENT) || defined(_POSIX_VERSION)
 #include <dirent.h>
@@ -144,8 +150,6 @@ Fdir_close(dir)
 
     return Qnil;
 }
-
-char *getenv();
 
 static VALUE
 Sdir_chdir(argc, argv, obj)

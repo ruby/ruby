@@ -166,7 +166,7 @@ static char *builtin_types[] = {
     "Regexp",
     "Array",
     "Fixnum",
-    "Dict",
+    "Hash",
     "Data",
     "Method",
     "Struct",

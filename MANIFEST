@@ -12,7 +12,6 @@ compar.c
 configure
 configure.in
 cons.c
-dbm.c
 defines.h
 dict.c
 dir.c
@@ -30,6 +29,7 @@ gc.c
 glob.c
 ident.h
 inits.c
+install-sh
 io.c
 io.h
 main.c
@@ -50,7 +50,6 @@ ruby.1
 ruby.c
 ruby.h
 signal.c
-socket.c
 spec
 sprintf.c
 st.c

@@ -17,6 +17,14 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <signal.h>
+#include "dln.h"
+
+#ifdef HAVE_STRING_H
+# include <string.h>
+#else
+char *strchr();
+char *strstr();
+#endif
 
 static int version, copyright;
 
@@ -26,16 +34,13 @@ static int sflag = FALSE;
 
 char *inplace = Qnil;
 char *strdup();
-char *strstr();
-char *strchr();
-char *dln_find_file();
 
 extern int yydebug;
 extern int nerrs;
 
 int xflag = FALSE;
 
-#ifdef USE_DLN
+#ifdef USE_DL
 char *rb_dln_argv0;
 #endif
 
@@ -455,7 +460,7 @@ ruby_init0(argc, argv, envp)
     rb_define_variable("$VERBOSE", &verbose, Qnil, Qnil, 0);
     rb_define_variable("$DEBUG", &debug, Qnil, Qnil, 0);
 
-#ifdef USE_DLN
+#ifdef USE_DL
     rb_dln_argv0 = argv[0];
 #endif
 

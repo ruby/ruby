@@ -7,11 +7,18 @@
   $Date$
   created at: Fri Mar 10 17:22:34 JST 1995
 
+  Copyright (C) 1995 Yukihiro Matsumoto
+
 ************************************************/
 
 #include "defines.h"
 #include "config.h"
 #include "util.h"
+#ifdef HAVE_STRING_H
+# include <string.h>
+#else
+char *strchr();
+#endif
 
 unsigned long
 scan_oct(start, len, retlen)
@@ -29,8 +36,6 @@ int *retlen;
     *retlen = s - start;
     return retval;
 }
-
-extern char *strchr();
 
 unsigned long
 scan_hex(start, len, retlen)

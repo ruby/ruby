@@ -1,3 +1,40 @@
+Mon Apr  3 15:19:41 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* regexp.c(re_match): バグがあった．match_2を削除した時にenbugして
+	  いたのだった．
+
+Mon Mar 27 15:41:43 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* dict.c: Dict->Hashに全面的に移行．
+
+Thu Mar 23 20:30:00 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* dbm.c,socket.c: extディレクトリに分離．
+
+	* configure: dln周りのチェックの強化
+
+	* dln.c: initの呼び出しをdlopen()版に合わせた．
+
+Mon Mar 20 17:45:08 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* configure: autoconf 2.2に対応(一部)．
+
+Fri Mar 17 15:56:44 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* dln.c: dlopenのあるマシンではそちらを使うように．ただし，ちゃん
+	  と動いているかどうかは自信がない．
+
+	* regex.c: virtual concatinationをやめた．
+
+Thu Mar 16 11:32:57 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* version 0.70
+
+	* eval.c,regex.c: gccでのコンパイルエラー．
+
+	* io.c: inplace-editで拡張子が指定されない場合，もとのファイルを削
+	  除する．
+
 Wed Mar 15 14:59:18 1995  Yukihiro Matsumoto  (matz@ix-02)
 
 	* version 0.69

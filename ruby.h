@@ -97,7 +97,7 @@ extern VALUE C_Data;
 #define T_REGEXP 0x07
 #define T_ARRAY  0x08
 #define T_FIXNUM 0x09
-#define T_DICT   0x0a
+#define T_HASH   0x0a
 #define T_STRUCT 0x0b
 #define T_BIGNUM 0x0c
 #define T_CONS   0x0f
@@ -166,7 +166,7 @@ struct RRegexp {
     char *str;
 };
 
-struct RDict {
+struct RHash {
     struct RBasic basic;
     struct st_table *tbl;
 };
@@ -232,7 +232,7 @@ struct RCons {
 #define RSTRING(obj) (R_CAST(RString)(obj))
 #define RREGEXP(obj) (R_CAST(RRegexp)(obj))
 #define RARRAY(obj)  (R_CAST(RArray)(obj))
-#define RDICT(obj)   (R_CAST(RDict)(obj))
+#define RHASH(obj)   (R_CAST(RHash)(obj))
 #define RDATA(obj)   (R_CAST(RData)(obj))
 #define RSTRUCT(obj) (R_CAST(RStruct)(obj))
 #define RBIGNUM(obj) (R_CAST(RBignum)(obj))

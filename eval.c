@@ -18,6 +18,19 @@
 #include <stdio.h>
 #include <setjmp.h>
 #include "st.h"
+#include "dln.h"
+
+#ifdef HAVE_STRING_H
+# include <string.h>
+#else
+char *strchr();
+#endif
+
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#else
+char *getenv();
+#endif
 
 static void rb_clear_cache_body();
 static void rb_clear_cache_entry();
@@ -1113,7 +1126,7 @@ rb_eval(node)
       case NODE_HASH:
 	{
 	    NODE *list;
-	    VALUE hash = dic_new();
+	    VALUE hash = hash_new();
 	    VALUE key, val;
 
 	    list = node->nd_head;
@@ -1121,10 +1134,10 @@ rb_eval(node)
 		key = rb_eval(list->nd_head);
 		list = list->nd_next;
 		if (list == Qnil)
-		    Bug("odd number list for Dict");
+		    Bug("odd number list for Hash");
 		val = rb_eval(list->nd_head);
 		list = list->nd_next;
-		Fdic_aset(hash, key, val);
+		Fhash_aset(hash, key, val);
 	    }
 	    return hash;
 	}
@@ -1266,7 +1279,7 @@ rb_eval(node)
 		    while (TYPE(tmp) == T_ICLASS) {
 			tmp = RCLASS(tmp)->super;
 		    }
-		    if (tmp != super)
+		    if (tmp != RCLASS(super))
 			Fail("%s's superclass differs",
 			     rb_id2name(node->nd_cname));
 		}
@@ -2220,13 +2233,16 @@ Fload(obj, fname)
     Check_Type(fname, T_STRING);
     file = find_file(fname->ptr);
 
-#ifdef USE_DLN
+#ifdef USE_DL
     {
 	static int rb_dln_init = 0;
 	extern char *rb_dln_argv0;
 	int len = strlen(file);
 
-	if (len > 2 && file[len-1] == 'o' && file[len-2] == '.') {
+	if (len > 3
+	    && file[len-1] == 'o' && file[len-2] == '.'
+	    || len > 4
+	    && file[len-1] == 'o' && file[len-2] == 's' && file[len-3] == '.'){
 	    if (rb_dln_init == 0 && dln_init(rb_dln_argv0) == -1) {
 		Fail("%s: %s", rb_dln_argv0, dln_strerror());
 	    }
@@ -2287,9 +2303,6 @@ Frequire(obj, fname)
     Fload(obj, fname);
     return TRUE;
 }
-
-char *getenv();
-char *strchr();
 
 #ifndef RUBY_LIB
 #define RUBY_LIB "/usr/local/lib/ruby:."

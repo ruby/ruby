@@ -1034,7 +1034,7 @@ assoc_list	: /* none */
 		| args trailer
 		    {
 			if ($1->nd_alen%2 != 0) {
-			    Error("odd number list for Dict");
+			    Error("odd number list for Hash");
 			}
 			$$ = $1;
 		    }
@@ -2117,12 +2117,13 @@ read_escape(flag)
 	break;
 
       case 'c':
-	if (c == '?')
+	if ((c = nextc()) == '?')
 	    tokadd(0177);
 	else {
 	    if (islower(c))
 		c = toupper(c);
-	    tokadd(c ^ 64);
+	    c = c - '@';
+	    tokadd(c);
 	}
 	break;
 

@@ -3,62 +3,98 @@ AC_INIT(ruby.h)
 PROGS="ruby"
 AC_SUBST(PROGS)dnl
 AC_PROG_CC
-AC_GCC_TRADITIONAL
-if test "$HOSTTYPE" = sparc; then
-  if test "$GCC" = 1 ; then
-    STATIC=-static
-  else
-    STATIC=-Bstatic
-  fi
-else
-  STATIC=
-fi
-AC_SUBST(STATIC)dnl
+AC_PROG_GCC_TRADITIONAL
 AC_PROG_YACC
 AC_PROG_INSTALL
-AC_HAVE_HEADERS(unistd.h stdlib.h syscall.h a.out.h dirent.h\
-		string.h strings.h)
-AC_DIR_HEADER
-AC_GETGROUPS_T
-AC_RETSIGTYPE
-AC_HAVE_LIBRARY(m, [LIBS="$LIBS -lm"])
-AC_HAVE_LIBRARY(dbm, [LIBS="$LIBS -ldbm"])
-AC_HAVE_LIBRARY(socket, [LIBS="$LIBS -lsocket"])
-AC_HAVE_LIBRARY(crypt, [LIBS="$LIBS -lcrypt"])
-AC_VFORK
+AC_CHECK_HEADERS(unistd.h stdlib.h syscall.h a.out.h dirent.h\
+		string.h)
+AC_HEADER_DIRENT
+AC_TYPE_GETGROUPS
+AC_TYPE_SIGNAL
+AC_CHECK_LIB(m, pow, [LIBS="$LIBS -lm"])
+AC_CHECK_LIB(dbm, dbm_open, AC_DEFINE(HAVE_LIBDBM))
+AC_CHECK_LIB(socket, socket, AC_DEFINE(HAVE_LIBSOKCET))
+AC_CHECK_LIB(crypt, crypt, [LIBS="$LIBS -lcrypt"])
+AC_FUNC_VFORK
 AC_REPLACE_FUNCS(memmove mkdir strerror strftime\
-		 strstr strtol strtoul strdup)
-AC_HAVE_FUNCS(fmod killpg socket random wait4 waitpid syscall getcwd\
+		 strstr strtoul strdup)
+AC_CHECK_FUNCS(fmod killpg socket random wait4 waitpid syscall getcwd\
 	      setruid seteuid setreuid setrgid setegid setregid\
-	      getpriority sigprocmask)
-AC_FUNC_CHECK(setenv, [], AC_HAVE_FUNCS(putenv))
+	      getpriority sigprocmask dlopen)
+AC_CHECK_FUNC(setenv, [], AC_CHECK_FUNCS(putenv))
+if test $ac_cv_func strftime = no; then
+    AC_STRUCT_TIMEZONE
+    AC_TRY_LINK([],
+	 [extern int daylight; int i = daylight;], AC_DEFINE(HAVE_DAYLIGHT))
+fi
 
-case "$LIBOBJS" in
- *) ;;
- *strftime*)
-    AC_TIMEZONE
-    AC_COMPILE_CHECK([daylight], [],
-	 [extern int daylight; int i = daylight;], AC_DEFINE(HAVE_DAYLIGHT));;
-esac
+AC_FUNC_ALLOCA
+AC_C_BIGENDIAN
+AC_STRUCT_ST_BLKSIZE
+AC_STRUCT_ST_BLOCKS
+AC_STRUCT_ST_RDEV
+AC_MSG_CHECKING(std stdio)
+AC_CACHE_VAL(rb_cv_stdstdio,
+[AC_TRY_COMPILE([#include <stdio.h>], 
+	        [stdin->_cnt > 0;], 
+	        rb_cv_stdstdio=yes,
+	        rb_cv_stdstdio=no)])
+AC_MSG_RESULT($rb_cv_stdstdio)
+if test $rb_cv_stdstdio = yes; then
+  AC_DEFINE(STDSTDIO)
+fi
+AC_MSG_CHECKING(struct passwd)
+AC_EGREP_HEADER(pw_change, pwd.h, AC_DEFINE(PW_CHANGE))
+AC_EGREP_HEADER(pw_quota, pwd.h, AC_DEFINE(PW_QUOTA))
+AC_EGREP_HEADER(pw_age, pwd.h, AC_DEFINE(PW_AGE))
+AC_EGREP_HEADER(pw_class, pwd.h, AC_DEFINE(PW_CLASS))
+AC_EGREP_HEADER(pw_comment, pwd.h, AC_DEFINE(PW_COMMENT))
+AC_EGREP_HEADER(pw_expire, pwd.h, AC_DEFINE(PW_EXPIRE))
+AC_MSG_RESULT(done)
+AC_MSG_CHECKING(whether matz's dln works)
+cp confdefs.h config.h
+if test $ac_cv_header_a_out_h = yes; then
+ AC_CACHE_VAL(rb_cv_mydln,
+ [AC_TRY_COMPILE([#include "config.h"],
+	        [], 
+	        rb_cv_mydln=yes,
+	        rb_cv_mydln=no)])
+ AC_MSG_RESULT($rb_cv_mydln)
+ if test $rb_cv_mydln = yes; then
+   AC_DEFINE(USE_MY_DLN)
+ fi
+fi
 
-AC_ALLOCA
-AC_WORDS_BIGENDIAN
-AC_ST_BLKSIZE
-AC_ST_BLOCKS
-AC_ST_RDEV
-AC_COMPILE_CHECK([std stdio], [#include <stdio.h>],
-[stdin->_cnt > 0;], AC_DEFINE(STDSTDIO))
-AC_COMPILE_CHECK([pw_change in struct passwd], [#include <pwd.h>],
-[struct passwd pw; pw.pw_change;], AC_DEFINE(PW_CHANGE))
-AC_COMPILE_CHECK([pw_quota in struct passwd], [#include <pwd.h>],
-[struct passwd pw; pw.pw_quota;], AC_DEFINE(PW_QUOTA))
-AC_COMPILE_CHECK([pw_age in struct passwd], [#include <pwd.h>],
-[struct passwd pw; pw.pw_age;], AC_DEFINE(PW_AGE))
-AC_COMPILE_CHECK([pw_class in struct passwd], [#include <pwd.h>],
-[struct passwd pw; pw.pw_class;], AC_DEFINE(PW_CLASSS))
-AC_COMPILE_CHECK([pw_comment in struct passwd], [#include <pwd.h>],
-[struct passwd pw; pw.pw_comment;], AC_DEFINE(PW_COMMENT))
-AC_COMPILE_CHECK([pw_expire in struct passwd], [#include <pwd.h>],
-[struct passwd pw; pw.pw_expire;], AC_DEFINE(PW_EXPIRE))
-AC_OUTPUT(Makefile)
-mv confdefs.h config.h
+AC_SUBST(STATIC)dnl
+AC_SUBST(CCDLFLAGS)dnl
+AC_SUBST(EXT)dnl
+AC_SUBST(EXTMAKE)dnl
+
+EXTMAKE=
+STATIC=
+
+if test $ac_cv_func_dlopen = yes -o $rb_cv_mydln = yes; then
+  EXTMAKE=extmake
+  if test "$rb_cv_mydln" = yes; then
+    if test "$HOSTTYPE" = sparc; then
+      if test $ac_cv_prog_CC = gcc; then
+        STATIC=-static
+      else
+        STATIC=-Bstatic
+      fi
+    fi
+    EXT=o
+    CCDLFLAGS=
+    LDCMD=
+  else
+    EXT=so
+    if test $ac_cv_prog_CC = gcc; then
+      CCDLFLAGS=-fpic
+    else
+      CCDLFLAGS=-pic
+    fi
+  fi
+fi
+
+cp confdefs.h config.h
+AC_OUTPUT(Makefile ext/Makefile)

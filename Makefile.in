@@ -1,4 +1,4 @@
-SHELL = /bin/sh
+2SHELL = /bin/sh
 
 #### Start of system configuration section. ####
 
@@ -6,44 +6,30 @@ srcdir = @srcdir@
 VPATH = @srcdir@
 
 CC = @CC@
-DBMCC = cc
 YACC = @YACC@
 INSTALL = @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_DATA = @INSTALL_DATA@
 PURIFY=
 
-CFLAGS = -g
+CFLAGS = @CFLAGS@
 STATIC = @STATIC@
-LDFLAGS = $(CFLAGS)
+LDFLAGS = $(CFLAGS) @LDFLAGS@
 LIBS = @LIBS@
 MISSING = @LIBOBJS@ @ALLOCA@
 
-prefix = /usr/local
+prefix = @prefix@
 binprefix = 
-exec_prefix = $(prefix)
+exec_prefix = @exec_prefix@
 bindir = $(exec_prefix)/bin
 
 #### End of system configuration section. ####
-
-HDRS          = defines.h \
-		dln.h \
-		ident.h \
-		io.h \
-		node.h \
-		re.h \
-		regex.h \
-		ruby.h \
-		st.h \
-		version.h
 
 OBJS	      = array.o \
 		bignum.o \
 		class.o \
 		compar.o \
 		cons.o \
-		dbm.o \
-		dict.o \
 		dir.o \
 		dln.o \
 		enum.o \
@@ -54,6 +40,7 @@ OBJS	      = array.o \
 		fnmatch.o \
 		gc.o \
 		glob.o \
+		hash.o \
 		inits.o \
 		io.o \
 		main.o \
@@ -69,7 +56,6 @@ OBJS	      = array.o \
 		regex.o \
 		ruby.o \
 		signal.o \
-		socket.o \
 		sprintf.o \
 		st.o \
 		string.o \
@@ -82,11 +68,13 @@ OBJS	      = array.o \
 
 PROGRAM	      = ruby
 
-all:		$(PROGRAM)
+all:		$(PROGRAM) @EXTMAKE@
 
 $(PROGRAM):     $(OBJS)
 		@rm -f $(PROGRAM)
 		$(PURIFY) $(CC) $(STATIC) $(LDFLAGS) $(OBJS) $(LIBS) -o $(PROGRAM)
+
+extmake:;	cd ext; make
 
 $(bindir)/$(PROGRAM): $(PROGRAM)
 	$(INSTALL_PROGRAM) $(PROGRAM) $(bindir)/$(PROGRAM)
@@ -99,9 +87,6 @@ realclean:;	@rm -f $(OBJS)
 		@rm -f core ruby *~ config.status Makefile
 .c.o:
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $<
-
-dbm.o:dbm.c
-	$(DBMCC) $(CFLAGS) $(CPPFLAGS) -c dbm.c
 
 alloca.o: missing/alloca.c
 	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c missing/alloca.c
@@ -140,18 +125,17 @@ bignum.o: bignum.c ruby.h config.h defines.h
 class.o: class.c ruby.h config.h defines.h env.h node.h st.h
 compar.o: compar.c ruby.h config.h defines.h
 cons.o: cons.c ruby.h config.h defines.h
-dbm.o: dbm.c ruby.h config.h defines.h
-dict.o: dict.c ruby.h config.h defines.h st.h
 dir.o: dir.c ruby.h config.h defines.h
-dln.o: dln.c config.h defines.h dln.h st.h
+dln.o: dln.c config.h defines.h dln.h
 enum.o: enum.c ruby.h config.h defines.h
 error.o: error.c ruby.h config.h defines.h env.h
 etc.o: etc.c ruby.h config.h defines.h
-eval.o: eval.c ruby.h config.h defines.h ident.h env.h node.h st.h
+eval.o: eval.c ruby.h config.h defines.h ident.h env.h node.h st.h dln.h
 file.o: file.c ruby.h config.h defines.h io.h
 fnmatch.o: fnmatch.c config.h fnmatch.h
 gc.o: gc.c ruby.h config.h defines.h env.h st.h node.h
 glob.o: glob.c config.h fnmatch.h
+hash.o: hash.c ruby.h config.h defines.h st.h
 inits.o: inits.c ruby.h config.h defines.h
 io.o: io.c ruby.h config.h defines.h io.h
 main.o: main.c
@@ -164,9 +148,8 @@ random.o: random.c ruby.h config.h defines.h
 range.o: range.c ruby.h config.h defines.h
 re.o: re.c ruby.h config.h defines.h re.h regex.h
 regex.o: regex.c config.h defines.h regex.h util.h
-ruby.o: ruby.c ruby.h config.h defines.h re.h regex.h
+ruby.o: ruby.c ruby.h config.h defines.h re.h regex.h dln.h
 signal.o: signal.c ruby.h config.h defines.h
-socket.o: socket.c ruby.h config.h defines.h io.h
 sprintf.o: sprintf.c ruby.h config.h defines.h
 st.o: st.c config.h st.h
 string.o: string.c ruby.h config.h defines.h re.h regex.h

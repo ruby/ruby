@@ -816,18 +816,23 @@ next_argv()
 		    VALUE str;
 		    FILE *fw;
 
-		    if (!*inplace) {
-			Fatal("Can't do inplace edit without backup");
-		    }
 		    if (rb_defout != rb_stdout) {
 			Fio_close(rb_defout);
 		    }
 		    fstat(fileno(fr), &st);
-		    str = str_new2(fn);
-		    str_cat(str, inplace, strlen(inplace));
-		    if (rename(fn, RSTRING(str)->ptr) < 0) {
-			Warning("Can't rename %s to %s: %s, skipping file",
-				fn, RSTRING(str)->ptr, strerror(errno));
+		    if (*inplace) {
+			str = str_new2(fn);
+			str_cat(str, inplace, strlen(inplace));
+			if (rename(fn, RSTRING(str)->ptr) < 0) {
+			    Warning("Can't rename %s to %s: %s, skipping file",
+				    fn, RSTRING(str)->ptr, strerror(errno));
+			    fclose(fr);
+			    goto retry;
+			}
+		    }
+		    else if (unlink(fn) < 0) {
+			Warning("Can't remove %s: %s, skipping file",
+				fn, strerror(errno));
 			fclose(fr);
 			goto retry;
 		    }

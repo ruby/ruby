@@ -345,7 +345,7 @@ Freg_match(re, str)
 
     Check_Type(str, T_STRING);
     start = research(re, str, 0);
-    if (start == -1) {
+    if (start < 0) {
 	return Qnil;
     }
     return INT2FIX(start);
