@@ -120,6 +120,7 @@ lib/date2.rb
 lib/debug.rb
 lib/delegate.rb
 lib/e2mmap.rb
+lib/erb.rb
 lib/eregex.rb
 lib/fileutils.rb
 lib/final.rb
