@@ -274,8 +274,7 @@ exc_s_new(argc, argv, etype)
 	exc = exc_new(etype, 0, 0);
     }
     else {
-	Check_Type(arg, T_STRING);
-	exc = exc_new3(etype, arg);
+	exc = exc_new3(etype, obj_as_string(arg));
     }
     obj_call_init(exc);
     return exc;

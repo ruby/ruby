@@ -8,12 +8,12 @@
 # Usage:
 #   foo = Object.new
 #   foo = SimpleDelegator.new(foo)
-#   foo.type # => Object
+#   foo.hash == foo2.hash # => true
 
 class Delegator
 
   def initialize(obj)
-    preserved = ["id", "equal?", "__getobj__"]
+    preserved = ["type", "id", "equal?", "__getobj__"]
     for t in self.type.ancestors
       preserved |= t.instance_methods
       break if t == Delegator
@@ -52,6 +52,6 @@ SimpleDelegater = SimpleDelegator
 
 if __FILE__ == $0
   foo = Object.new
-  foo = SimpleDelegator.new(foo)
-  p foo.type # => Object
+  foo2 = SimpleDelegator.new(foo)
+  p foo.hash == foo2.hash # => true
 end

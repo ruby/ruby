@@ -638,14 +638,14 @@ ok($proc.call(2) == 4)
 ok($proc.call(3) == 6)
 
 proc{
-  iii=5				# dynamic local variable
+  iii=5				# nested local variable
   $proc = proc{|i|
     iii = i
   }
   $proc2 = proc {
-    $x = iii			# dynamic variables shared by procs
+    $x = iii			# nested variables shared by procs
   }
-  # scope of dynamic variables
+  # scope of nested variables
   ok(defined?(iii))
 }.call
 ok(!defined?(iii))		# out of scope
@@ -653,6 +653,7 @@ ok(!defined?(iii))		# out of scope
 $x=0
 $proc.call(5)
 $proc2.call
+p $x
 ok($x == 5)
 
 if defined? Process.kill
@@ -715,8 +716,8 @@ def test_ev
 end
 
 $x = test_ev
-ok(eval("local1", $x) == "local1") # static local var
-ok(eval("local2", $x) == "local2") # dynamic local var
+ok(eval("local1", $x) == "local1") # normal local var
+ok(eval("local2", $x) == "local2") # nested local var
 $bad = true
 begin
   p eval("local1")

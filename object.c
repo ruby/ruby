@@ -558,6 +558,7 @@ VALUE mod_name();
 VALUE mod_included_modules();
 VALUE mod_ancestors();
 VALUE class_instance_methods();
+VALUE class_protected_instance_methods();
 VALUE class_private_instance_methods();
 
 static VALUE
@@ -676,6 +677,16 @@ obj_methods(obj)
 }
 
 VALUE obj_singleton_methods();
+
+static VALUE
+obj_protected_methods(obj)
+    VALUE obj;
+{
+    VALUE argv[1];
+
+    argv[0] = TRUE;
+    return class_protected_instance_methods(1, argv, CLASS_OF(obj));
+}
 
 static VALUE
 obj_private_methods(obj)
@@ -915,7 +926,9 @@ Init_Object()
     rb_define_method(mKernel, "to_s", any_to_s, 0);
     rb_define_method(mKernel, "inspect", obj_inspect, 0);
     rb_define_method(mKernel, "methods", obj_methods, 0);
+    rb_define_method(mKernel, "public_methods", obj_methods, 0);
     rb_define_method(mKernel, "singleton_methods", obj_singleton_methods, 0);
+    rb_define_method(mKernel, "protected_methods", obj_protected_methods, 0);
     rb_define_method(mKernel, "private_methods", obj_private_methods, 0);
     rb_define_method(mKernel, "instance_variables", obj_instance_variables, 0);
     rb_define_method(mKernel, "remove_instance_variable", obj_remove_instance_variable, 0);
@@ -969,6 +982,8 @@ Init_Object()
 
     rb_define_singleton_method(cModule, "new", module_s_new, 0);
     rb_define_method(cModule, "instance_methods", class_instance_methods, -1);
+    rb_define_method(cModule, "public_instance_methods", class_instance_methods, -1);
+    rb_define_method(cModule, "protected_instance_methods", class_protected_instance_methods, -1);
     rb_define_method(cModule, "private_instance_methods", class_private_instance_methods, -1);
 
     rb_define_method(cModule, "constants", mod_constants, 0);

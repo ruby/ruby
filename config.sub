@@ -1,6 +1,6 @@
 #! /bin/sh
 # Configuration validation subroutine script, version 1.1.
-#   Copyright (C) 1991, 92, 93, 94, 95, 1996 Free Software Foundation, Inc.
+#   Copyright (C) 1991, 92, 93, 94, 95, 96, 1997 Free Software Foundation, Inc.
 # This file is (in principle) common to ALL GNU software.
 # The presence of a machine in this file suggests that SOME GNU software
 # can handle that machine.  It does not imply ALL GNU software can.
@@ -149,35 +149,43 @@ esac
 case $basic_machine in
 	# Recognize the basic CPU types without company name.
 	# Some are omitted here because they have special meanings below.
-	tahoe | i860 | m68k | m68000 | m88k | ns32k | arm \
-		| arme[lb] | pyramid \
-		| tron | a29k | 580 | i960 | h8300 | hppa1.0 | hppa1.1 \
-		| alpha | we32k | ns16k | clipper | i370 | sh \
-		| powerpc | powerpcle | 1750a | dsp16xx | mips64 | mipsel \
-		| pdp11 | mips64el | mips64orion | mips64orionel \
-		| sparc | sparclet | sparclite | sparc64)
-	  basic_machine=$basic_machine-unknown
-	  ;;
+	tahoe | i860 | m32r | m68k | m68000 | m88k | ns32k | arc | arm \
+		| arme[lb] | pyramid | mn10200 | mn10300 \
+		| tron | a29k | 580 | i960 | h8300 | hppa | hppa1.0 | hppa1.1 \
+		| alpha | alphaev5 | alphaev56 | we32k | ns16k | clipper \
+		| i370 | sh | powerpc | powerpcle | 1750a | dsp16xx | pdp11 \
+		| mips64 | mipsel | mips64el | mips64orion | mips64orionel \
+		| mipstx39 | mipstx39el \
+		| sparc | sparclet | sparclite | sparc64 | v850)
+		basic_machine=$basic_machine-unknown
+		;;
 	# We use `pc' rather than `unknown'
 	# because (1) that's what they normally are, and
 	# (2) the word "unknown" tends to confuse beginning users.
 	i[3456]86)
 	  basic_machine=$basic_machine-pc
 	  ;;
+	i[3456]86-TOWNS-pc)
+	  basic_machine=`echo $basic_machine | sed -e 's/-pc//'`
+	  ;;
 	# Object if more than one company name word.
 	*-*-*)
-	  echo Invalid configuration \`$1\': machine \`$basic_machine\' not recognized 1>&2
-	  exit 1
+		echo Invalid configuration \`$1\': machine \`$basic_machine\' not recognized 1>&2
+		exit 1
 		;;
 	# Recognize the basic CPU types with company name.
-	vax-* | tahoe-* | i[3456]86-* | i860-* | m68k-* | m68000-* | m88k-* \
-	      | sparc-* | ns32k-* | fx80-* | arm-* | c[123]* \
-	      | mips-* | pyramid-* | tron-* | a29k-* | romp-* | rs6000-* | power-* \
-	      | none-* | 580-* | cray2-* | h8300-* | i960-* | xmp-* | ymp-* \
-	      | hppa1.0-* | hppa1.1-* | alpha-* | we32k-* | cydra-* | ns16k-* \
-	      | pn-* | np1-* | xps100-* | clipper-* | orion-* | sparclite-* \
-	      | pdp11-* | sh-* | powerpc-* | powerpcle-* | sparc64-* | mips64-* | mipsel-* \
-	      | mips64el-* | mips64orion-* | mips64orionel-*)
+	vax-* | tahoe-* | i[3456]86-* | i860-* | m32r-* | m68k-* | m68000-* \
+	      | m88k-* | sparc-* | ns32k-* | fx80-* | arc-* | arm-* | c[123]* \
+	      | mips-* | pyramid-* | tron-* | a29k-* | romp-* | rs6000-* \
+	      | power-* | none-* | 580-* | cray2-* | h8300-* | i960-* \
+	      | xmp-* | ymp-* | hppa-* | hppa1.0-* | hppa1.1-* \
+	      | alpha-* | alphaev5-* | alphaev56-* | we32k-* | cydra-* \
+	      | ns16k-* | pn-* | np1-* | xps100-* | clipper-* | orion-* \
+	      | sparclite-* | pdp11-* | sh-* | powerpc-* | powerpcle-* \
+	      | sparc64-* | mips64-* | mipsel-* \
+	      | mips64el-* | mips64orion-* | mips64orionel-*  \
+	      | mipstx39-* | mipstx39el-* \
+	      | f301-*)
 		;;
 	# Recognize the various machine names and aliases which stand
 	# for a CPU type and a company and sometimes even an OS.
@@ -204,9 +212,9 @@ case $basic_machine in
 	amiga | amiga-*)
 		basic_machine=m68k-cbm
 		;;
-	amigados)
+	amigaos | amigados)
 		basic_machine=m68k-cbm
-		os=-amigados
+		os=-amigaos
 		;;
 	amigaunix | amix)
 		basic_machine=m68k-cbm
@@ -292,10 +300,6 @@ case $basic_machine in
 	encore | umax | mmax)
 		basic_machine=ns32k-encore
 		;;
-	ews4800)
-		basic_machine=mips-nec
-		os=-sysv4
-		;;
 	fx2800)
 		basic_machine=i860-alliant
 		;;
@@ -340,6 +344,9 @@ case $basic_machine in
 		;;
 	hp9k8[0-9][0-9] | hp8[0-9][0-9])
 		basic_machine=hppa1.0-hp
+		;;
+	hppa-next)
+		os=-nextstep3
 		;;
 	i370-ibm* | ibm*)
 		basic_machine=i370-ibm
@@ -389,6 +396,14 @@ case $basic_machine in
 		;;
 	miniframe)
 		basic_machine=m68000-convergent
+		;;
+	mipsel*-linux*)
+		basic_machine=mipsel-unknown
+		os=-linux
+		;;
+	mips*-linux*)
+		basic_machine=mips-unknown
+		os=-linux
 		;;
 	mips3*-*)
 		basic_machine=`echo $basic_machine | sed -e 's/mips3/mips64/'`
@@ -559,6 +574,12 @@ case $basic_machine in
 		basic_machine=i386-sequent
 		os=-dynix
 		;;
+	tx39)
+		basic_machine=mipstx39-unknown
+		;;
+	tx39el)
+		basic_machine=mipstx39el-unknown
+		;;
 	tower | tower-32)
 		basic_machine=m68k-ncr
 		;;
@@ -578,6 +599,9 @@ case $basic_machine in
 		basic_machine=vax-dec
 		os=-vms
 		;;
+	vpp*|vx|vx-*)
+               basic_machine=f301-fujitsu
+               ;;
 	vxworks960)
 		basic_machine=i960-wrs
 		os=-vxworks
@@ -605,7 +629,11 @@ case $basic_machine in
 # Here we handle the default manufacturer of certain CPU types.  It is in
 # some cases the only manufacturer, in others, it is the most popular.
 	mips)
-		basic_machine=mips-mips
+		if [ x$os = x-linux ]; then
+			basic_machine=mips-unknown
+		else
+			basic_machine=mips-mips
+		fi
 		;;
 	romp)
 		basic_machine=romp-ibm
@@ -633,10 +661,6 @@ case $basic_machine in
 		;;
 	orion105)
 		basic_machine=clipper-highlevel
-		;;
-	human)
-		basic_machine=m68k-sharp
-		os=-human
 		;;
 	*)
 		echo Invalid configuration \`$1\': machine \`$basic_machine\' not recognized 1>&2
@@ -670,8 +694,11 @@ case $os in
 	-solaris)
 		os=-solaris2
 		;;
-	-unixware* | svr4*)
+	-svr4*)
 		os=-sysv4
+		;;
+	-unixware*)
+		os=-sysv4.2uw
 		;;
 	-gnu/linux*)
 		os=`echo $os | sed -e 's|gnu/linux|linux-gnu|'`
@@ -683,9 +710,10 @@ case $os in
 	-gnu* | -bsd* | -mach* | -minix* | -genix* | -ultrix* | -irix* \
 	      | -*vms* | -sco* | -esix* | -isc* | -aix* | -sunos | -sunos[34]*\
 	      | -hpux* | -unos* | -osf* | -luna* | -dgux* | -solaris* | -sym* \
-	      | -amigados* | -msdos* | -newsos* | -unicos* | -aof* | -aos* \
-	      | -nindy* | -vxworks* | -ebmon* | -hms* | -mvs* | -clix* \
-	      | -riscos* | -uniplus* | -iris* | -rtu* | -xenix* \
+	      | -amigaos* | -amigados* | -msdos* | -newsos* | -unicos* | -aof* \
+	      | -aos* \
+	      | -nindy* | -vxsim* | -vxworks* | -ebmon* | -hms* | -mvs* \
+	      | -clix* | -riscos* | -uniplus* | -iris* | -rtu* | -xenix* \
 	      | -hiux* | -386bsd* | -netbsd* | -openbsd* | -freebsd* | -riscix* \
 	      | -lynxos* | -bosx* | -nextstep* | -cxux* | -aout* | -elf* \
 	      | -ptx* | -coff* | -ecoff* | -winnt* | -domain* | -vsta* \
@@ -748,11 +776,6 @@ case $os in
 		;;
 	-xenix)
 		os=-xenix
-		;;
-	-uxpds)
-		os=-uxpds
-		;;
-	-human)
 		;;
 	-none)
 		;;
@@ -819,7 +842,7 @@ case $basic_machine in
 		os=-sysv
 		;;
 	*-cbm)
-		os=-amigados
+		os=-amigaos
 		;;
 	*-dg)
 		os=-dgux
@@ -869,6 +892,9 @@ case $basic_machine in
 	*-masscomp)
 		os=-rtu
 		;;
+	f301-fujitsu)
+		os=-uxpv
+		;;
 	*)
 		os=-none
 		;;
@@ -886,9 +912,6 @@ case $basic_machine in
 				;;
 			-sunos*)
 				vendor=sun
-				;;
-			-lynxos*)
-				vendor=lynx
 				;;
 			-aix*)
 				vendor=ibm
@@ -917,7 +940,7 @@ case $basic_machine in
 			-ptx*)
 				vendor=sequent
 				;;
-			-vxworks*)
+			-vxsim* | -vxworks*)
 				vendor=wrs
 				;;
 			-aux*)

@@ -3778,7 +3778,7 @@ local_id(id)
     int i, max;
 
     if (lvtbl == 0) return FALSE;
-    for (i=1, max=lvtbl->cnt+1; i<max; i++) {
+    for (i=3, max=lvtbl->cnt+1; i<max; i++) {
 	if (lvtbl->tbl[i] == id) return TRUE;
     }
     return FALSE;
@@ -3796,7 +3796,7 @@ top_local_init()
     else {
 	lvtbl->tbl = 0;
     }
-    if (the_dyna_vars && the_dyna_vars->id)
+    if (the_dyna_vars)
 	lvtbl->dlev = 1;
     else
 	lvtbl->dlev = 0;

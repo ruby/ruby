@@ -526,11 +526,14 @@ hash_each_key(hash)
 }
 
 static int
-each_pair_i(key, value)
+each_pair_i(key, value, rev)
     VALUE key, value;
 {
     if (key == Qnil) return ST_CONTINUE;
-    rb_yield(assoc_new(key, value));
+    if (rev) 
+	rb_yield(assoc_new(value, key));
+    else
+	rb_yield(assoc_new(key, value));
     return ST_CONTINUE;
 }
 
@@ -538,7 +541,15 @@ static VALUE
 hash_each_pair(hash)
     VALUE hash;
 {
-    hash_foreach(hash, each_pair_i);
+    hash_foreach(hash, each_pair_i, 0);
+    return hash;
+}
+
+static VALUE
+hash_each_with_index(hash)
+    VALUE hash;
+{
+    hash_foreach(hash, each_pair_i, 1);
     return hash;
 }
 
@@ -1138,6 +1149,7 @@ Init_Hash()
     rb_define_method(cHash,"each_value", hash_each_value, 0);
     rb_define_method(cHash,"each_key", hash_each_key, 0);
     rb_define_method(cHash,"each_pair", hash_each_pair, 0);
+    rb_define_method(cHash,"each_with_index", hash_each_with_index, 0);
 
     rb_define_method(cHash,"keys", hash_keys, 0);
     rb_define_method(cHash,"values", hash_values, 0);

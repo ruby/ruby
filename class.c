@@ -285,7 +285,7 @@ ins_methods_i(key, body, ary)
     NODE *body;
     VALUE ary;
 {
-    if ((body->nd_noex&NOEX_PRIVATE) == 0) {
+    if ((body->nd_noex&(NOEX_PRIVATE|NOEX_PROTECTED)) == 0) {
 	VALUE name = str_new2(rb_id2name(key));
 
 	if (!ary_includes(ary, name)) {
@@ -296,6 +296,30 @@ ins_methods_i(key, body, ary)
 	}
     }
     else if (body->nd_body && nd_type(body->nd_body) == NODE_ZSUPER) {
+	ary_push(ary, Qnil);
+	ary_push(ary, str_new2(rb_id2name(key)));
+    }
+    return ST_CONTINUE;
+}
+
+static int
+ins_methods_prot_i(key, body, ary)
+    ID key;
+    NODE *body;
+    VALUE ary;
+{
+    if (!body->nd_body) {
+	ary_push(ary, Qnil);
+	ary_push(ary, str_new2(rb_id2name(key)));
+    }
+    else if (body->nd_noex & NOEX_PROTECTED) {
+	VALUE name = str_new2(rb_id2name(key));
+
+	if (!ary_includes(ary, name)) {
+	    ary_push(ary, name);
+	}
+    }
+    else if (nd_type(body->nd_body) == NODE_ZSUPER) {
 	ary_push(ary, Qnil);
 	ary_push(ary, str_new2(rb_id2name(key)));
     }
@@ -366,6 +390,18 @@ class_instance_methods(argc, argv, mod)
 }
 
 VALUE
+class_protected_instance_methods(argc, argv, mod)
+    int argc;
+    VALUE *argv;
+    VALUE mod;
+{
+    VALUE option;
+
+    rb_scan_args(argc, argv, "01", &option);
+    return method_list(mod, RTEST(option), ins_methods_prot_i);
+}
+
+VALUE
 class_private_instance_methods(argc, argv, mod)
     int argc;
     VALUE *argv;
@@ -426,6 +462,17 @@ rb_define_method(klass, name, func, argc)
     rb_add_method(klass, id, NEW_CFUNC(func, argc), 
 		  ((name[0] == 'i' && id == rb_intern("initialize"))?
 		   NOEX_PRIVATE:NOEX_PUBLIC)|NOEX_CFUNC);
+}
+
+void
+rb_define_protected_method(klass, name, func, argc)
+    VALUE klass;
+    char *name;
+    VALUE (*func)();
+    int argc;
+{
+    rb_add_method(klass, rb_intern(name), NEW_CFUNC(func, argc),
+		  NOEX_PROTECTED|NOEX_CFUNC);
 }
 
 void

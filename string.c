@@ -204,7 +204,11 @@ str_plus(str1, str2)
 {
     VALUE str3;
 
+#if 0
     str2 = obj_as_string(str2);
+#else
+    Check_Type(str2, T_STRING);
+#endif
     str3 = str_new(0, RSTRING(str1)->len+RSTRING(str2)->len);
     memcpy(RSTRING(str3)->ptr, RSTRING(str1)->ptr, RSTRING(str1)->len);
     memcpy(RSTRING(str3)->ptr+RSTRING(str1)->len, RSTRING(str2)->ptr, RSTRING(str2)->len);
@@ -422,7 +426,11 @@ static VALUE
 str_concat(str1, str2)
     VALUE str1, str2;
 {
+#if 0
     str2 = obj_as_string(str2);
+#else
+    Check_Type(str2, T_STRING);
+#endif
     str_cat(str1, RSTRING(str2)->ptr, RSTRING(str2)->len);
     return str1;
 }
@@ -499,7 +507,11 @@ str_cmp_method(str1, str2)
 {
     int result;
 
+#if 0
     str2 = obj_as_string(str2);
+#else
+    Check_Type(str2, T_STRING);
+#endif
     result = str_cmp(str1, str2);
     return INT2FIX(result);
 }
@@ -1386,7 +1398,7 @@ str_inspect(str)
 	    *b++ = c;
 	    *b++ = *p++;
 	}
-	if (c & 0x80) {
+	else if (c & 0x80) {
 	    CHECK(1);
 	    *b++ = c;
 	}
@@ -2459,7 +2471,8 @@ str_crypt(str, salt)
     VALUE str, salt;
 {
     extern char *crypt();
-    salt = obj_as_string(salt);
+
+    Check_Type(salt, T_STRING);
     if (RSTRING(salt)->len < 2)
 	ArgError("salt too short(need >2 bytes)");
     return str_new2(crypt(RSTRING(str)->ptr, RSTRING(salt)->ptr));

@@ -150,6 +150,26 @@ num_abs(num)
     return num;
 }
 
+static VALUE
+num_zero_p(num)
+    VALUE num;
+{
+    if (RTEST(rb_equal(num, INT2FIX(0)))) {
+	return TRUE;
+    }
+    return FALSE;
+}
+
+static VALUE
+num_nonzero_p(num)
+    VALUE num;
+{
+    if (RTEST(rb_funcall(num, rb_intern("zero?"), 0, 0))) {
+	return FALSE;
+    }
+    return num;
+}
+
 VALUE
 float_new(d)
     double d;
@@ -566,6 +586,16 @@ flo_abs(flt)
 }
 
 static VALUE
+flo_zero_p(num)
+    VALUE num;
+{
+    if (RFLOAT(num)->value == 0.0) {
+	return TRUE;
+    }
+    return FALSE;
+}
+
+static VALUE
 to_integer(val)
     VALUE val;
 {
@@ -589,33 +619,35 @@ num2int(val)
     switch (TYPE(val)) {
       case T_FIXNUM:
 	if (sizeof(int) < sizeof(INT)) {
-#ifndef INT_MAX
-/* assuming 32bit(2's compliment) int */
-#  define INT_MAX       2147483647
-#  define INT_MIN       (- INT_MAX - 1)
-#endif
 	    INT i = FIX2INT(val);
 	    if (INT_MIN < i && i < INT_MAX) {
 		return i;
 	    }
-	    ArgError("Fixnum too big to convert into `int'");
+	    TypeError("Fixnum too big to convert into `int'");
 	}
 	return FIX2INT(val);
 
       case T_FLOAT:
-	if (RFLOAT(val)->value <= (double) LONG_MAX
-	    && RFLOAT(val)->value >= (double) LONG_MIN) {
+	if (RFLOAT(val)->value <= (double)INT_MAX
+	    && RFLOAT(val)->value >= (double)INT_MIN) {
 	    return (int)(RFLOAT(val)->value);
 	}
 	else {
-	    Fail("float %g out of rang of integer", RFLOAT(val)->value);
+	    TypeError("float %g out of rang of integer", RFLOAT(val)->value);
 	}
 
       case T_BIGNUM:
 	return big2int(val);
 
+      case T_STRING:
+	TypeError("no implicit conversion from string");
+	return Qnil;		/* not reached */
+
       default:
 	val = rb_rescue(to_integer, val, fail_to_integer, val);
+	if (!obj_is_kind_of(val, cInteger)) {
+	    TypeError("`to_i' need to return integer");
+	}
 	return NUM2INT(val);
     }
 }
@@ -1220,6 +1252,16 @@ fix_dotimes(num)
     return num;
 }
 
+static VALUE
+fix_zero_p(num)
+    VALUE num;
+{
+    if (FIX2INT(num) == 0) {
+	return TRUE;
+    }
+    return FALSE;
+}
+
 extern VALUE mComparable;
 extern VALUE eException;
 
@@ -1247,6 +1289,8 @@ Init_Numeric()
     rb_define_method(cNumeric, "times", num_dotimes, 0);
     rb_define_method(cNumeric, "integer?", num_int_p, 0);
     rb_define_method(cNumeric, "chr", num_chr, 0);
+    rb_define_method(cNumeric, "zero?", num_zero_p, 0);
+    rb_define_method(cNumeric, "nonzero?", num_nonzero_p, 0);
 
     cInteger = rb_define_class("Integer", cNumeric);
     rb_define_method(cInteger, "integer?", int_int_p, 0);
@@ -1300,6 +1344,7 @@ Init_Numeric()
     rb_define_method(cFixnum, "downto", fix_downto, 1);
     rb_define_method(cFixnum, "step", fix_step, 2);
     rb_define_method(cFixnum, "times", fix_dotimes, 0);
+    rb_define_method(cFixnum, "zero?", fix_zero_p, 0);
 
     cFloat  = rb_define_class("Float", cNumeric);
 
@@ -1326,4 +1371,5 @@ Init_Numeric()
     rb_define_method(cFloat, "to_i", flo_to_i, 0);
     rb_define_method(cFloat, "to_f", flo_to_f, 0);
     rb_define_method(cFloat, "abs", flo_abs, 0);
+    rb_define_method(cFloat, "zero?", flo_zero_p, 0);
 }

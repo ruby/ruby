@@ -1060,6 +1060,27 @@ ary_includes(ary, item)
     return FALSE;
 }
 
+VALUE
+ary_cmp(ary, ary2)
+    VALUE ary;
+    VALUE ary2;
+{
+    int i, len;
+
+    Check_Type(ary2, T_ARRAY);
+    len = RARRAY(ary)->len;
+    if (len > RARRAY(ary2)->len) {
+	len = RARRAY(ary2)->len;
+    }
+    for (i=0; i<len; i++) {
+	VALUE v = rb_funcall(RARRAY(ary)->ptr[i],cmp,1,RARRAY(ary2)->ptr[i]);
+	if (v != INT2FIX(0)) {
+	    return v;
+	}
+    }
+    return INT2FIX(0);
+}
+
 static VALUE
 ary_diff(ary1, ary2)
     VALUE ary1, ary2;
@@ -1261,6 +1282,7 @@ Init_Array()
     rb_define_method(cArray, "fill", ary_fill, -1);
     rb_define_method(cArray, "include?", ary_includes, 1);
     rb_define_method(cArray, "===", ary_includes, 1);
+    rb_define_method(cArray, "<=>", ary_cmp, 1);
 
     rb_define_method(cArray, "assoc", ary_assoc, 1);
     rb_define_method(cArray, "rassoc", ary_rassoc, 1);

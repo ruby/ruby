@@ -1,3 +1,37 @@
+Tue Apr  7 01:16:45 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* array.c (ary_cmp): compare each element using `<=>'.
+
+	* hash.c (hash_each_with_index): yields [value, key] pair.
+
+	* class.c (class_protected_instance_methods): list protected
+	  method names.
+
+	* class.c (ins_methods_i): exclude protected methods.
+
+	* eval.c (PUSH_BLOCK): dynamic variables can be accessed from
+ 	  eval() with bindings.
+
+Mon Apr  6 14:49:06 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (thread_yield): must return evaluated value.
+
+Fri Apr  3 11:25:45 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* numeric.c (num2int): no implicit conversion from string.
+
+	* numeric.c (num2int): check that `to_i' returned Integer.
+
+	* numeric.c (num_zero_p): new method.
+
+	* numeric.c (num_nonzero_p): new method.  returns the receiver if
+ 	  it's not zero.
+
+	* eval.c (obj_instance_eval): the_class should be the object's
+	  singleton class.
+
+	* error.c (exc_s_new): message is converted into a string.
+
 Thu Apr  2 18:31:46 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (obj_call_init): every object call `initialize'.

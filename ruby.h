@@ -51,13 +51,14 @@
 #pragma alloca
 #endif
 
-typedef unsigned short USHORT;
-typedef unsigned long UINT;
-
 #if SIZEOF_INT == SIZEOF_VOIDP
 typedef int INT;
+typedef unsigned int UINT;
+# define PTR_SIZED_MAX INT_MAX
 #elif SIZEOF_LONG == SIZEOF_VOIDP
 typedef long INT;
+typedef unsigned long UINT;
+# define PTR_SIZED_MAX LONG_MAX
 #else
 ---->> ruby requires sizeof(void*) == sizeof(int/long) to be compiled. <<----
 #endif
@@ -65,6 +66,7 @@ typedef UINT VALUE;
 typedef unsigned int ID;
 
 typedef unsigned char UCHAR;
+typedef unsigned short USHORT;
 
 #ifdef __STDC__
 # include <limits.h>
@@ -73,23 +75,26 @@ typedef unsigned char UCHAR;
 #  ifdef HAVE_LIMITS_H
 #   include <limits.h>
 #  else
-#   define LONG_MAX 2147483647	/* assuming 32bit(2's compliment) LONG */
+    /* assuming 32bit(2's compliment) LONG */
+#   define LONG_MAX 2147483647	
 #  endif
 # endif
 # ifndef LONG_MIN
-#  if (0 != ~0)
-#   define LONG_MIN (-LONG_MAX-1)
-#  else
-#   define LONG_MIN (-LONG_MAX)
-#  endif
+#  define LONG_MIN (-LONG_MAX-1)
+# endif
+# ifndef INT_MAX
+   /* assuming 32bit(2's compliment) int */
+#  define INT_MAX       2147483647
+#  define INT_MIN       (-INT_MAX-1)
 # endif
 # ifndef CHAR_BIT
 #  define CHAR_BIT 8
 # endif
 #endif
 
-#define FIXNUM_MAX (LONG_MAX>>1)
-#define FIXNUM_MIN RSHIFT((INT)LONG_MIN,1)
+#define PTR_SIZED_MIN (-PTR_SIZED_MAX-1)
+#define FIXNUM_MAX (PTR_SIZED_MAX>>1)
+#define FIXNUM_MIN RSHIFT((INT)PTR_SIZED_MIN,1)
 
 #define FIXNUM_FLAG 0x01
 #define INT2FIX(i) (VALUE)(((INT)(i))<<1 | FIXNUM_FLAG)

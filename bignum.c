@@ -1241,6 +1241,13 @@ big_size(big)
     return INT2FIX(RBIGNUM(big)->len*sizeof(USHORT));
 }
 
+static VALUE
+big_zero_p(big)
+    VALUE big;
+{
+    return FALSE;
+}
+
 void
 Init_Bignum()
 {
@@ -1274,4 +1281,5 @@ Init_Bignum()
     rb_define_method(cBignum, "to_f", big_to_f, 0);
     rb_define_method(cBignum, "abs", big_abs, 0);
     rb_define_method(cBignum, "size", big_size, 0);
+    rb_define_method(cBignum, "zero?", big_zero_p, 0);
 }

@@ -69,6 +69,7 @@ VALUE class_private_instance_methods _((int, VALUE *, VALUE));
 VALUE obj_singleton_methods _((VALUE));
 void rb_define_method_id _((VALUE, ID, VALUE (*)(), int));
 void rb_undef_method _((VALUE, char *));
+void rb_define_protected_method _((VALUE, char *, VALUE (*)(), int));
 void rb_define_private_method _((VALUE, char *, VALUE (*)(), int));
 void rb_define_singleton_method _((VALUE,char*,VALUE(*)(),int));
 void rb_define_private_method _((VALUE,char*,VALUE(*)(),int));

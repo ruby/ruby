@@ -45,12 +45,14 @@ static VALUE block_pass _((VALUE,NODE*));
 static VALUE cMethod;
 static VALUE method_proc _((VALUE));
 
+static int scope_vmode;
 #define SCOPE_PUBLIC    0
-#define SCOPE_PRIVATE   FL_USER4
-#define SCOPE_PROTECTED FL_USER5
-#define SCOPE_MODFUNC   (FL_USER4|FL_USER5)
-#define SCOPE_MASK      (FL_USER4|FL_USER5)
-#define SCOPE_SET(x,f)  do {FL_UNSET(x,SCOPE_MASK);FL_SET(x,(f))} while(0)
+#define SCOPE_PRIVATE   1
+#define SCOPE_PROTECTED 2
+#define SCOPE_MODFUNC   5
+#define SCOPE_MASK      7
+#define SCOPE_SET(f)  do {scope_vmode=(f);} while(0)
+#define SCOPE_TEST(f) (scope_vmode&(f))
 
 #define CACHE_SIZE 0x200
 #define CACHE_MASK 0x1ff
@@ -324,11 +326,11 @@ rb_attr(klass, id, read, write, ex)
 
     if (!ex) noex = NOEX_PUBLIC;
     else {
-	if (FL_TEST(the_scope, SCOPE_PRIVATE)) {
+	if (SCOPE_TEST(SCOPE_PRIVATE)) {
 	    noex = NOEX_PRIVATE;
 	    Warning("private attribute?");
 	}
-	else if (FL_TEST(the_scope, SCOPE_PROTECTED)) {
+	else if (SCOPE_TEST(SCOPE_PROTECTED)) {
 	    noex = NOEX_PROTECTED;
 	}
 	else {
@@ -396,6 +398,7 @@ struct BLOCK {
     VALUE klass;
     struct tag *tag;
     int iter;
+    int vmode;
     struct RVarmap *d_vars;
 #ifdef THREAD
     VALUE orig_thread;
@@ -417,6 +420,7 @@ struct BLOCK {
     _block.d_vars = the_dyna_vars;	\
     _block.prev = the_block;		\
     _block.iter = the_iter->iter;	\
+    _block.vmode = scope_vmode;		\
     the_block = &_block;
 
 #define PUSH_BLOCK2(b) {		\
@@ -431,12 +435,36 @@ struct BLOCK {
 
 struct RVarmap *the_dyna_vars;
 #define PUSH_VARS() {			\
-    struct RVarmap *_old;		\
+    struct RVarmap * volatile _old;	\
     _old = the_dyna_vars;		\
     the_dyna_vars = 0;
 
 #define POP_VARS()			\
     the_dyna_vars = _old;		\
+}
+
+static struct RVarmap*
+new_dvar(id, value)
+    ID id;
+    VALUE value;
+{
+    NEWOBJ(vars, struct RVarmap);
+    OBJSETUP(vars, 0, T_VARMAP);
+    vars->id = id;
+    vars->val = value;
+    if (id == 0) {
+	vars->next = the_dyna_vars;
+    }
+    else if (the_dyna_vars) {
+	vars->next = the_dyna_vars->next;
+	the_dyna_vars->next = vars;
+    }
+    else {			/* complie time dyna_var check */
+	vars->next = the_dyna_vars;
+	the_dyna_vars = vars;
+    }
+
+    return vars;
 }
 
 VALUE
@@ -481,14 +509,7 @@ dyna_var_asgn(id, value)
 	}
 	vars = vars->next;
     }
-    {
-	NEWOBJ(_vars, struct RVarmap);
-	OBJSETUP(_vars, 0, T_VARMAP);
-	_vars->id = id;
-	_vars->val = value;
-	_vars->next = the_dyna_vars;
-	the_dyna_vars = _vars;
-    }
+    new_dvar(id, value);
     return value;
 }
 
@@ -568,7 +589,8 @@ VALUE the_class;
 #define POP_CLASS() the_class = _class; }
 
 #define PUSH_SCOPE() {			\
-    struct SCOPE *_old;			\
+    int volatile _vmode = scope_vmode;	\
+    struct SCOPE * volatile _old;	\
     NEWOBJ(_scope, struct SCOPE);	\
     OBJSETUP(_scope, 0, T_SCOPE);	\
     _scope->local_tbl = 0;		\
@@ -576,6 +598,7 @@ VALUE the_class;
     _scope->flag = 0;			\
     _old = the_scope;			\
     the_scope = _scope;			\
+    scope_vmode = SCOPE_PUBLIC;
 
 #define POP_SCOPE() \
     if (the_scope->flag == SCOPE_ALLOCA) {\
@@ -798,7 +821,7 @@ ruby_init()
     the_scope->local_tbl  = 0;
     top_scope = the_scope;
     /* default visibility is private at toplevel */
-    SCOPE_SET(top_scope, SCOPE_PRIVATE);
+    SCOPE_SET(SCOPE_PRIVATE);
 
     PUSH_TAG(PROT_NONE)
     if ((state = EXEC_TAG()) == 0) {
@@ -1355,8 +1378,9 @@ is_defined(self, node, buf)
 	return "assignment";
 
       case NODE_LVAR:
-      case NODE_DVAR:
 	return "local-variable";
+      case NODE_DVAR:
+	return "local-variable(nested)";
 
       case NODE_GVAR:
 	if (rb_gvar_defined(node->nd_entry)) {
@@ -1679,6 +1703,7 @@ rb_eval(self, node)
 	{
 	  iter_retry:
 	    PUSH_BLOCK(node->nd_var, node->nd_body);
+	    _block.d_vars = new_dvar(0,0);
 	    PUSH_TAG(PROT_FUNC);
 
 	    state = EXEC_TAG();
@@ -2241,10 +2266,10 @@ rb_eval(self, node)
 		rb_clear_cache_by_id(node->nd_mid);
 	    }
 
-	    if (FL_TEST(the_scope, SCOPE_PRIVATE) || node->nd_mid == init) {
+	    if (SCOPE_TEST(SCOPE_PRIVATE) || node->nd_mid == init) {
 		noex = NOEX_PRIVATE;
 	    }
-	    else if (FL_TEST(the_scope, SCOPE_PROTECTED)) {
+	    else if (SCOPE_TEST(SCOPE_PROTECTED)) {
 		noex = NOEX_PROTECTED;
 	    }
 	    else {
@@ -2254,7 +2279,7 @@ rb_eval(self, node)
 		noex |= NOEX_UNDEF;
 	    }
 	    rb_add_method(the_class, node->nd_mid, node->nd_defn, noex);
-	    if (FL_TEST(the_scope,SCOPE_MODFUNC) == SCOPE_MODFUNC) {
+	    if (scope_vmode == SCOPE_MODFUNC) {
 		rb_add_method(rb_singleton_class(the_class),
 			      node->nd_mid, node->nd_defn, NOEX_PUBLIC);
 		rb_funcall(the_class, rb_intern("singleton_method_added"),
@@ -2942,6 +2967,7 @@ rb_iterate(it_proc, data1, bl_proc, data2)
   iter_retry:
     PUSH_ITER(ITER_PRE);
     PUSH_BLOCK(0, node);
+    _block.d_vars = new_dvar(0,0);
     PUSH_TAG(PROT_NONE);
 
     state = EXEC_TAG();
@@ -3703,6 +3729,7 @@ eval(self, src, scope, file, line)
     struct SCOPE * volatile old_scope;
     struct BLOCK * volatile old_block;
     struct RVarmap * volatile old_d_vars;
+    int volatile old_vmode;
     struct FRAME frame;
     char *filesave = sourcefile;
     int linesave = sourceline;
@@ -3712,12 +3739,6 @@ eval(self, src, scope, file, line)
     if (file == 0) {
 	file = sourcefile;
 	line = sourceline;
-    }
-    else {
-	sourcefile = file;
-	if (line > 0) {
-	    sourceline = line;
-	}
     }
     if (!NIL_P(scope)) {
 	if (TYPE(scope) != T_DATA || RDATA(scope)->dfree != blk_free) {
@@ -3737,6 +3758,8 @@ eval(self, src, scope, file, line)
 	the_block = data->prev;
 	old_d_vars = the_dyna_vars;
 	the_dyna_vars = data->d_vars;
+	old_vmode = scope_vmode;
+	scope_vmode = data->vmode;
 
 	self = data->self;
 	the_frame->iter = data->iter;
@@ -3770,6 +3793,8 @@ eval(self, src, scope, file, line)
 	the_scope = old_scope;
 	the_block = old_block;
 	the_dyna_vars = old_d_vars;
+	data->vmode = scope_vmode; /* write back visibility mode */
+	scope_vmode = old_vmode;
     }
     else {
 	the_frame->iter = iter;
@@ -3827,6 +3852,7 @@ exec_under(func, under, args)
 {
     VALUE val;			/* OK */
     int state;
+    int mode;
     VALUE cbase = the_frame->cbase;
 
     PUSH_CLASS();
@@ -3837,11 +3863,14 @@ exec_under(func, under, args)
     the_frame->argc = _frame.prev->argc;
     the_frame->argv = _frame.prev->argv;
     the_frame->cbase = (VALUE)node_newnode(NODE_CREF,under,0,cbase);
+    mode = scope_vmode;
+    SCOPE_SET(SCOPE_PUBLIC);
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
 	val = (*func)(args);
     }
     POP_TAG();
+    SCOPE_SET(mode);
     POP_FRAME();
     POP_CLASS();
     if (state) JUMP_TAG(state);
@@ -3887,36 +3916,6 @@ obj_instance_eval(argc, argv, self)
     VALUE *argv;
     VALUE self;
 {
-    VALUE src;
-
-    if (argc == 0) {
-	if (!iterator_p()) {
-	    ArgError("block not supplied");
-	}
-	return yield_under(CLASS_OF(self), self);
-    }
-    if (argc == 1) {
-	Check_SafeStr(argv[0]);
-    }
-    else {
-	ArgError("Wrong # of arguments: %s(src) or %s{..}",
-		 rb_id2name(the_frame->last_func),
-		 rb_id2name(the_frame->last_func));
-    }
-
-    return eval_under(CLASS_OF(self), self, argv[0]);
-}
-
-static VALUE
-mod_module_eval(argc, argv, mod)
-    int argc;
-    VALUE *argv;
-    VALUE mod;
-{
-    int state;
-    int mode;
-    VALUE result = Qnil;
-
     if (argc == 0) {
 	if (!iterator_p()) {
 	    ArgError("block not supplied");
@@ -3931,21 +3930,40 @@ mod_module_eval(argc, argv, mod)
 		 rb_id2name(the_frame->last_func));
     }
 
-    mode = FL_TEST(the_scope, SCOPE_MASK);
-    SCOPE_SET(the_scope, SCOPE_PUBLIC);
-    PUSH_TAG(PROT_NONE);
-    if ((state = EXEC_TAG()) == 0) {
-	if (argc == 0) {
-	    result = yield_under(mod, mod);
-	}
-	else {
-	    result = eval_under(mod, mod, argv[0]);
+    if (argc == 0) {
+	return yield_under(rb_singleton_class(self), self);
+    }
+    else {
+	return eval_under(rb_singleton_class(self), self, argv[0]);
+    }
+}
+
+static VALUE
+mod_module_eval(argc, argv, mod)
+    int argc;
+    VALUE *argv;
+    VALUE mod;
+{
+    if (argc == 0) {
+	if (!iterator_p()) {
+	    ArgError("block not supplied");
 	}
     }
-    POP_TAG();
-    SCOPE_SET(the_scope, mode);
-    if (state) JUMP_TAG(state);
-    return result;
+    else if (argc == 1) {
+	Check_SafeStr(argv[0]);
+    }
+    else {
+	ArgError("Wrong # of arguments: %s(src) or %s{..}",
+		 rb_id2name(the_frame->last_func),
+		 rb_id2name(the_frame->last_func));
+    }
+
+    if (argc == 0) {
+	return yield_under(mod, mod);
+    }
+    else {
+	return eval_under(mod, mod, argv[0]);
+    }
 }
 
 VALUE rb_load_path;
@@ -4017,7 +4035,7 @@ f_load(obj, fname)
 	the_scope->local_vars = vars;
     }
     /* default visibility is private at loading toplevel */
-    SCOPE_SET(the_scope, SCOPE_PRIVATE);
+    SCOPE_SET(SCOPE_PRIVATE);
 
     state = EXEC_TAG();
     last_func = the_frame->last_func;
@@ -4209,7 +4227,7 @@ mod_public(argc, argv, module)
     VALUE module;
 {
     if (argc == 0) {
-	SCOPE_SET(the_scope, SCOPE_PUBLIC);
+	SCOPE_SET(SCOPE_PUBLIC);
     }
     else {
 	set_method_visibility(module, argc, argv, NOEX_PUBLIC);
@@ -4224,7 +4242,7 @@ mod_protected(argc, argv, module)
     VALUE module;
 {
     if (argc == 0) {
-	SCOPE_SET(the_scope, SCOPE_PROTECTED);
+	SCOPE_SET(SCOPE_PROTECTED);
     }
     else {
 	set_method_visibility(module, argc, argv, NOEX_PROTECTED);
@@ -4239,7 +4257,7 @@ mod_private(argc, argv, module)
     VALUE module;
 {
     if (argc == 0) {
-	SCOPE_SET(the_scope, SCOPE_PRIVATE);
+	SCOPE_SET(SCOPE_PRIVATE);
     }
     else {
 	set_method_visibility(module, argc, argv, NOEX_PRIVATE);
@@ -4294,7 +4312,7 @@ mod_modfunc(argc, argv, module)
     NODE *body;
 
     if (argc == 0) {
-	SCOPE_SET(the_scope, SCOPE_MODFUNC);
+	SCOPE_SET(SCOPE_MODFUNC);
 	return module;
     }
 
@@ -4714,7 +4732,6 @@ f_binding(self)
     data->orig_thread = thread_current();
 #endif
     data->iter = f_iterator_p();
-    data->frame.last_func = 0;
     data->frame.argv = ALLOC_N(VALUE, data->frame.argc);
     MEMCPY(data->frame.argv, the_block->frame.argv, VALUE, data->frame.argc);
 
@@ -5177,6 +5194,7 @@ struct thread {
 
     struct FRAME *frame;
     struct SCOPE *scope;
+    int vmode;
     struct RVarmap *dyna_vars;
     struct BLOCK *block;
     struct iter *iter;
@@ -5330,6 +5348,7 @@ thread_save_context(th)
     th->klass = the_class;
     th->dyna_vars = the_dyna_vars;
     th->block = the_block;
+    th->vmode = scope_vmode;
     th->iter = the_iter;
     th->tag = prot_tag;
     th->errat = errat;
@@ -5387,6 +5406,7 @@ thread_restore_context(th, exit)
     the_class = th->klass;
     the_dyna_vars = th->dyna_vars;
     the_block = th->block;
+    scope_vmode = th->vmode;
     the_iter = th->iter;
     prot_tag = th->tag;
     errat = th->errat;
@@ -6105,8 +6125,7 @@ thread_yield(arg, th)
     thread_t th;
 {
     scope_dup(the_block->scope);
-    rb_yield(th->thread);
-    return th->thread;
+    return rb_yield(th->thread);
 }
 
 static VALUE
