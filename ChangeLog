@@ -1,3 +1,7 @@
+Thu Feb 19 02:30:34 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/strscan/strscan.c: documentation checked.
+
 Thu Feb 19 00:11:05 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/markup/simple_markup/preprocess.rb (SM::PreProcess::handle): 

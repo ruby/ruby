@@ -191,11 +191,10 @@ strscan_s_allocate(klass)
 }
 
 /*
- * call-seq: StringScanner.new(string, dup)
+ * call-seq: StringScanner.new(string, dup = false)
  *
- * Creates a new StringScanner object to scan over the given +string+.  If
- * +dup+ is +true+, a copy of the string is used instead.  Either way, the string
- * is frozen before scanning commences.
+ * Creates a new StringScanner object to scan over the given +string+.
+ * +dup+ argument is obsolete and not used now.
  */
 static VALUE
 strscan_initialize(argc, argv, self)
@@ -220,7 +219,9 @@ strscan_initialize(argc, argv, self)
    ======================================================================= */
 
 /*
- * FIXME: prevent this method from being documented.
+ * call-seq: StringScanner.must_C_version
+ *
+ * This method is defined for backward compatibility.
  */
 static VALUE
 strscan_s_mustc(self)
@@ -279,8 +280,8 @@ strscan_get_string(self)
 /*
  * call-seq: string=(str)
  *
- * Changes the string being scanned to +str+ and resets the scanner.  Returns
- * +str+.
+ * Changes the string being scanned to +str+ and resets the scanner.
+ * Returns +str+.
  */
 static VALUE
 strscan_set_string(self, str)
@@ -300,13 +301,16 @@ strscan_set_string(self, str)
 /*
  * call-seq:
  *   concat(str)
- *   << (str)
+ *   <<(str)
  *
  * Appends +str+ to the string being scanned.
+ * This method does not affect scan pointer.
  *
  *   s = StringScanner.new("Fri Dec 12 1975 14:39")
+ *   s.scan(/Fri /)
  *   s << " +1000 GMT"
- *   s.string             # -> "Fri Dec 12 1975 14:39 +1000 GMT"
+ *   s.string            # -> "Fri Dec 12 1975 14:39 +1000 GMT"
+ *   s.scan(/Dec/)       # -> "Dec"
  */
 static VALUE
 strscan_concat(self, str)
@@ -429,8 +433,7 @@ strscan_do_scan(self, regex, succptr, getstr, headonly)
  */
 
 /*
- * call-seq:
- *   scan(pattern)
+ * call-seq: scan(pattern)
  *
  * Tries to match with +pattern+ at the current position. If there's a match,
  * the scanner advances the "scan pointer" and returns the matched string.
@@ -516,7 +519,14 @@ strscan_check(self, re)
 }
 
 /*
- * DOCUMENTATION
+ * call-seq: scan_full(pattern, return_string_p, advance_pointer_p)
+ *
+ * Tests whether the given +pattern+ is matched from the current scan pointer.
+ * Returns the matched string if +return_string_p+ is true.
+ * Advances the scan pointer if +advance_pointer_p+ is true.
+ * The match register is affected.
+ *
+ * "full" means "#scan with full parameters".
  */
 static VALUE
 strscan_scan_full(self, re, s, f)
@@ -569,11 +579,11 @@ strscan_exist_p(self, re)
  * call-seq: skip_until(pattern)
  *
  * Advances the scan pointer until +pattern+ is matched and consumed.  Returns
- * the number of characters advanced, or +nil+ if no match was found.
+ * the number of bytes advanced, or +nil+ if no match was found.
  *
- * Look ahead to match +pattern+, and advance the scan pointer to the _end_ of the
- * match.  Return the number of characters advanced, or +nil+ if the match was
- * unsuccessful.
+ * Look ahead to match +pattern+, and advance the scan pointer to the _end_
+ * of the match.  Return the number of characters advanced, or +nil+ if the
+ * match was unsuccessful.
  *
  * It's similar to #scan_until, but without returning the intervening string.
  *
@@ -609,7 +619,13 @@ strscan_check_until(self, re)
 }
 
 /*
- * DOCUMENTATION
+ * call-seq: search_full(pattern, return_string_p, advance_pointer_p)
+ *
+ * Scans the string _until_ the +pattern+ is matched.
+ * Returns the matched string if +return_string_p+ is true, otherwise
+ * returns the number of bytes advanced.
+ * Advances the scan pointer if +advance_pointer_p+, otherwise not.
+ * This method does affect the match register.
  */
 static VALUE
 strscan_search_full(self, re, s, f)
@@ -637,8 +653,8 @@ adjust_registers_to_matched(p)
  * Scans one character and returns it.
  *
  *   s = StringScanner.new('ab')
- *   s.getch           # => 'a'
- *   s.getch           # => 'b'
+ *   s.getch           # => "a"
+ *   s.getch           # => "b"
  *   s.getch           # => nil
  */
 static VALUE
@@ -666,6 +682,11 @@ strscan_getch(self)
 
 /*
  * Scans one byte and returns it.  Similar to, but not the same as, #getch.
+ *
+ *  s = StringScanner.new('ab')
+ *  s.get_byte         # => "a"
+ *  s.get_byte         # => "b"
+ *  s.get_byte         # => nil
  */
 static VALUE
 strscan_get_byte(self)
@@ -686,7 +707,6 @@ strscan_get_byte(self)
                             p->prev + p->regs.end[0]);
 }
 
-
 /*
  * call-seq: peek(len)
  *
@@ -694,8 +714,8 @@ strscan_get_byte(self)
  * advancing the scan pointer.
  *
  *   s = StringScanner.new('test string')
- *   s.peek(7)                # -> "test st"
- *   s.peek(7)                # -> "test st"
+ *   s.peek(7)          # => "test st"
+ *   s.peek(7)          # => "test st"
  *
  */
 static VALUE
@@ -721,10 +741,10 @@ strscan_peek(self, vlen)
  * remembered, and it changes with each scanning operation.
  *
  *   s = StringScanner.new('test string')
- *   s.scan(/\w+/)        # -> "test"
+ *   s.scan(/\w+/)        # => "test"
  *   s.unscan
- *   s.scan(/../)         # -> "te"
- *   s.scan(/\d/)         # -> nil
+ *   s.scan(/../)         # => "te"
+ *   s.scan(/\d/)         # => nil
  *   s.unscan             # ScanError: cannot unscan: prev match had failed
  */
 static VALUE
@@ -743,11 +763,16 @@ strscan_unscan(self)
 }
 
 /*
- * Returns +true+ iff the scan pointer is at the beginning of the string.
+ * Returns +true+ iff the scan pointer is at the beginning of the line.
  *
- *   s = StringScanner.new('test string')
- *   s.bol?                 # These two
- *   s.pos == 0             # are equivalent.
+ *   s = StringScanner.new("test\ntest\n")
+ *   s.bol?           # => true
+ *   s.scan(/te/)
+ *   s.bol?           # => false
+ *   s.scan(/st\n/)
+ *   s.bol?           # => true
+ *   s.terminate
+ *   s.bol?           # => true
  */
 static VALUE
 strscan_bol_p(self)
@@ -779,6 +804,7 @@ strscan_eos_p(self)
 
 /*
  * Returns true iff there is more data in the string.  See #eos?.
+ * This method is obsolete; use #eos? instead.
  *
  *   s = StringScanner.new('test string')
  *   s.eos?              # These two
@@ -797,15 +823,14 @@ strscan_rest_p(self)
         return Qtrue;
 }
 
-
 /*
  * Returns +true+ iff the last match was successful.
  *
  *   s = StringScanner.new('test string')
- *   s.match?(/\w+/)     # -> 4
- *   s.matched?          # -> true
- *   s.match?(/\d+/)     # -> nil
- *   s.matched?          # -> false
+ *   s.match?(/\w+/)     # => 4
+ *   s.matched?          # => true
+ *   s.match?(/\d+/)     # => nil
+ *   s.matched?          # => false
  */
 static VALUE
 strscan_matched_p(self)
@@ -939,7 +964,6 @@ strscan_post_match(self)
     return extract_range(p, p->prev + p->regs.end[0], S_LEN(p));
 }
 
-
 /*
  * Returns the "rest" of the string (i.e. everything after the scan pointer).
  * If there is no more data, it returns <tt>""</tt>.
@@ -975,7 +999,6 @@ strscan_rest_size(self)
     i = S_LEN(p) - p->curr;
     return INT2FIX(i);
 }
-
 
 #define INSPECT_LENGTH 5
 #define BUFSIZE 256
@@ -1146,8 +1169,7 @@ inspect2(p)
  *
  * bol?
  * eos?
- * rest?
- * rest_size
+ * pos
  *
  * === Setting Where we Are
  *
@@ -1160,20 +1182,17 @@ inspect2(p)
  * matched
  * matched?
  * matched_size
+ * []
  * pre_match
  * post_match
  *
  * === Miscellaneous
  *
  * <<
- * string=
+ * concat
  * string
+ * string=
  * unscan
- *
- * === Unknown
- *
- * scan_full
- * search_full
  *
  * There are aliases to several of the methods.
  */
