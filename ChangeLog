@@ -1,509 +1,509 @@
 Sat Aug 23 18:56:53 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/nkf/nkf.c (rb_nkf_putchar): should use rb_str_resize() to just
-	  resize a string, rb_str_cat() disallows NULL.  [ruby-dev:21237]
+	resize a string, rb_str_cat() disallows NULL.  [ruby-dev:21237]
 
 Sat Aug 23 16:48:41 2003  Keiju Ishitsuka <keiju@ishitsuka.com>
 
-	  * lib/irb/ruby-lex.rb: bug fix for "foo" !~ /bar/. [ruby-talk:79942]
+	* lib/irb/ruby-lex.rb: bug fix for "foo" !~ /bar/. [ruby-talk:79942]
 
 Sat Aug 23 15:59:58 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	  * eval.c (rb_eval, rb_iterate, block_pass): reduce PUSH/POP_TAG and
-	    EXEC_TAG() for retry.  [ruby-dev:21216]
+	* eval.c (rb_eval, rb_iterate, block_pass): reduce PUSH/POP_TAG and
+	  EXEC_TAG() for retry.  [ruby-dev:21216]
 
 Sat Aug 23 02:32:33 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	  * eval.c (rb_yield_splat): should check if "values" is array.
+	* eval.c (rb_yield_splat): should check if "values" is array.
 
-	  * enum.c (each_with_index_i): typo.
+	* enum.c (each_with_index_i): typo.
 
 Fri Aug 22 17:07:05 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	  * enum.c (inject_i): use rb_yield_values.
+	* enum.c (inject_i): use rb_yield_values.
 
-	  * enum.c (each_with_index_i): ditto.
+	* enum.c (each_with_index_i): ditto.
 
-	  * eval.c (rb_yield_splat): new function to call "yield *values".
+	* eval.c (rb_yield_splat): new function to call "yield *values".
 
-	  * string.c (rb_str_scan): use rb_yield_splat().
+	* string.c (rb_str_scan): use rb_yield_splat().
 
 Fri Aug 22 06:13:22 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
 
-	  * ext/syck/rubyext.c: refactoring of the transfer method
-	    dispatch.  added yaml_org_handler for faster dispatch of
-	    transfers to base types.
+	* ext/syck/rubyext.c: refactoring of the transfer method
+	  dispatch.  added yaml_org_handler for faster dispatch of
+	  transfers to base types.
 
-	  * lib/yaml/rubytypes.rb: removed handling of builtins from
-	    Ruby library.
+	* lib/yaml/rubytypes.rb: removed handling of builtins from
+	  Ruby library.
 
-	  * ext/syck/token.c: quoted and block scalars are now implicit !str
+	* ext/syck/token.c: quoted and block scalars are now implicit !str
 
-	  * ext/syck/implicit.c: empty string detected as !null.
+	* ext/syck/implicit.c: empty string detected as !null.
 
 Fri Aug 22 01:00:31 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	  * eval.c (block_pass): improve passing current block.
+	* eval.c (block_pass): improve passing current block.
 
 Tue Aug 21 00:13:00 2003  Shigeo Kobayashi  <shigek@ruby-lang.org>
 
-	  * ext/bigdecimal/bigdecimal.c: Int. overflow bug in multiplication
-	    fixed, and VpNmlz() speed up.
+	* ext/bigdecimal/bigdecimal.c: Int. overflow bug in multiplication
+	  fixed, and VpNmlz() speed up.
 
 Wed Aug 20 16:44:49 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	  * ext/socket/socket.c (ruby_connect): many systems seem to have
-	    a problem in select() after EINPROGRESS.  [ruby-list:38080]
+	* ext/socket/socket.c (ruby_connect): many systems seem to have
+	  a problem in select() after EINPROGRESS.  [ruby-list:38080]
 
 Wed Aug 20 01:31:17 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
 
-	  * ext/syck/syck.h: Parser definition problems on HP-UX.
-	    [ruby-talk:79389]
+	* ext/syck/syck.h: Parser definition problems on HP-UX.
+	  [ruby-talk:79389]
 
-	  * ext/syck/handler.c (syck_hdlr_get_anchor): Memory leak.
+	* ext/syck/handler.c (syck_hdlr_get_anchor): Memory leak.
 
-	  * ext/syck/syck.s (syck_io_file_read): Bad arguments to fread.
+	* ext/syck/syck.s (syck_io_file_read): Bad arguments to fread.
 
-	  * ext/syck/rubyext.c: Tainting issues.
+	* ext/syck/rubyext.c: Tainting issues.
 
 Tue Aug 19 23:20:00 2003  Shigeo Kobayashi  <shigek@ruby-lang.org>
 
-	  * ext/bigdecimal/bigdecimal.c .h .html: to_s("+") implemented.
+	* ext/bigdecimal/bigdecimal.c .h .html: to_s("+") implemented.
 
-	  * ext/bigdecimal/lib/bigdecimal/math.rb: E implemented.
+	* ext/bigdecimal/lib/bigdecimal/math.rb: E implemented.
 
 Tue Aug 19 07:47:09 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
-	  * lib/webrick/ssl.rb: new file; SSL/TLS enhancement for GenericServer.
+	* lib/webrick/ssl.rb: new file; SSL/TLS enhancement for GenericServer.
 
-	  * lib/webrick/https.rb: SSLSocket handling is moved to webrick/ssl.rb.
+	* lib/webrick/https.rb: SSLSocket handling is moved to webrick/ssl.rb.
 
-	  * lib/webrick/compat.rb (File::fnmatch): remove old migration code.
+	* lib/webrick/compat.rb (File::fnmatch): remove old migration code.
 
-	  * lib/webrick/httpserver.rb (HTTPServer#run): ditto.
+	* lib/webrick/httpserver.rb (HTTPServer#run): ditto.
 
-	  * lib/webrick/server.rb (GenericServer#listen): the body of this
-	    method is pull out as Utils::create_lisnteners.
+	* lib/webrick/server.rb (GenericServer#listen): the body of this
+	  method is pull out as Utils::create_lisnteners.
 
-	  * lib/webrick/utils.rb (Utils::create_lisnteners): new method.
+	* lib/webrick/utils.rb (Utils::create_lisnteners): new method.
 
-	  * lib/webrick/server.rb (GenericServer#start): should not
-	    through unknown errors. and refine comments.
+	* lib/webrick/server.rb (GenericServer#start): should not
+	  through unknown errors. and refine comments.
 
-	  * ext/openssl/lib/openssl/ssl.rb (SSLServer#accept): should close
-	    socket if SSLSocket raises error.
+	* ext/openssl/lib/openssl/ssl.rb (SSLServer#accept): should close
+	  socket if SSLSocket raises error.
 
 Tue Aug 19 11:19:33 2003  Shugo Maeda  <shugo@ruby-lang.org>
 
-	  * io.c (next_argv): should not call GetOpenFile() if rb_stdout is
-	    not a IO (T_FILE).
+	* io.c (next_argv): should not call GetOpenFile() if rb_stdout is
+	  not a IO (T_FILE).
 
 Tue Aug 19 07:47:09 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
-	  * ext/openssl/ossl_ssl.c: sync_close is moved to SSLSocket as
-	    a builtin.
+	* ext/openssl/ossl_ssl.c: sync_close is moved to SSLSocket as
+	  a builtin.
 
-	  * ext/openssl/lib/openssl/buffering.rb (Buffering#close): ditto.
+	* ext/openssl/lib/openssl/buffering.rb (Buffering#close): ditto.
 
-	  * ext/openssl/lib/openssl/buffering.rb (Buffering#puts): should
-	    add a return to the tails of each line.
+	* ext/openssl/lib/openssl/buffering.rb (Buffering#puts): should
+	  add a return to the tails of each line.
 
-	  * ext/openssl/lib/openssl/ssl.rb: new class OpenSSL::SSL::SSLServer.
+	* ext/openssl/lib/openssl/ssl.rb: new class OpenSSL::SSL::SSLServer.
 
-	  * ext/openssl/lib/net/protocols.rb (SSLIO#ssl_connect): use sync_close.
+	* ext/openssl/lib/net/protocols.rb (SSLIO#ssl_connect): use sync_close.
 
-	  * ext/openssl/sample/echo_svr.rb: use SSLServer.
+	* ext/openssl/sample/echo_svr.rb: use SSLServer.
 
-	  * ext/openssl/sample/echo_cli.rb: add example of SSLSocket#sync_close.
+	* ext/openssl/sample/echo_cli.rb: add example of SSLSocket#sync_close.
 
 Tue Aug 19 01:24:34 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	  * ext/curses/curses.c (_XOPEN_SOURCE_EXTENDED): Mac OS X standard
-	    headers are inconsistent at this macro.  [ruby-core:01432]
+	* ext/curses/curses.c (_XOPEN_SOURCE_EXTENDED): Mac OS X standard
+	  headers are inconsistent at this macro.  [ruby-core:01432]
 
-	  * ext/curses/extconf.rb: check if _XOPEN_SOURCE_EXTENDED breaks.
+	* ext/curses/extconf.rb: check if _XOPEN_SOURCE_EXTENDED breaks.
 
-	  * ext/tcltklib/stubs.c: Status macro in X11/Xthreads.h bothers
-	    winspool.h
+	* ext/tcltklib/stubs.c: Status macro in X11/Xthreads.h bothers
+	  winspool.h
 
-	  * instruby.rb: make list at first instead of iterator.
-	    [ruby-talk:79347]
+	* instruby.rb: make list at first instead of iterator.
+	  [ruby-talk:79347]
 
 Mon Aug 18 11:23:11 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	  * dir.c (glob_helper): preserve raw order for **.
+	* dir.c (glob_helper): preserve raw order for **.
 
 Sun Aug 17 23:39:55 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	  * ext/openssl/extconf.rb (HAVE_VA_ARGS_MACRO): need to compile.
+	* ext/openssl/extconf.rb (HAVE_VA_ARGS_MACRO): need to compile.
 
 Sun Aug 17 17:10:03 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
-	  * ext/openssl/lib/openssl/ssl.rb (SSLSocket#sync_close=): add a
-	    method to specify if the underlying IO will be closed in
-	    SSLSocket#close.
+	* ext/openssl/lib/openssl/ssl.rb (SSLSocket#sync_close=): add a
+	  method to specify if the underlying IO will be closed in
+	  SSLSocket#close.
 
-	  * ext/openssl/lib/openssl/buffering.rb: add forwarders to
-	    setsockopt, getsockopt and fcntl.
+	* ext/openssl/lib/openssl/buffering.rb: add forwarders to
+	  setsockopt, getsockopt and fcntl.
 
-	  * ext/openssl/lib/net/protocols.rb: enable sync for SSLSocket.
+	* ext/openssl/lib/net/protocols.rb: enable sync for SSLSocket.
 
 Sun Aug 17 11:32:04 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	  * ext/extmk.rb (extmake): should not force to remake Makefile when
-	    installation and so on.
+	* ext/extmk.rb (extmake): should not force to remake Makefile when
+	  installation and so on.
 
 Sat Aug 16 23:58:18 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	  * marshal.c (w_symbol, w_object): get rid of warnings.
+	* marshal.c (w_symbol, w_object): get rid of warnings.
 
-	  * re.c (rb_memsearch): ditto.
+	* re.c (rb_memsearch): ditto.
 
-	  * time.c (time_dump): ditto.
+	* time.c (time_dump): ditto.
 
-	  * ext/extmk.rb (extmake): not continue making when extconf.rb
-	    failed.
+	* ext/extmk.rb (extmake): not continue making when extconf.rb
+	  failed.
 
-	  * ext/openssl/extconf.rb: check __VA_ARGS__ macro more precisely.
+	* ext/openssl/extconf.rb: check __VA_ARGS__ macro more precisely.
 
-	  * ext/openssl/ossl.h: remove version.h dependency.
+	* ext/openssl/ossl.h: remove version.h dependency.
 
-	  * ext/openssl/ruby_missing.h: ditto.
+	* ext/openssl/ruby_missing.h: ditto.
 
-	  * lib/mkmf.rb (pkg_config): use --libs output except with
-	    only-L for other options.  [ruby-list:38099]
+	* lib/mkmf.rb (pkg_config): use --libs output except with
+	  only-L for other options.  [ruby-list:38099]
 
-	  * lib/mkmf.rb (create_makefile): separate rule for static
-	    library from shared object.
+	* lib/mkmf.rb (create_makefile): separate rule for static
+	  library from shared object.
 
-	  * win32/Makefile.sub, bcc32/Makefile.sub, wince/Makefile.sub:
-	    define exec_prefix and libdir.
+	* win32/Makefile.sub, bcc32/Makefile.sub, wince/Makefile.sub:
+	  define exec_prefix and libdir.
 
 Fri Aug 15 23:15:00 2003  Shigeo Kobayashi  <shigek@ruby-lang.org>
 
-	  * ext/bigdecimal/bigdecimal.c .h: Bug in combination of limit & div
-	    method fixed.
+	* ext/bigdecimal/bigdecimal.c .h: Bug in combination of limit & div
+	  method fixed.
 
-	  * ext/bigdecimal/lib/bigdecimal/math.rb: atan() & sqrt() added.
-
-Fri Aug 15 12:01:43 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	  * configure.in (HUGE_ST_INO): check whether struct stat.st_ino
-	    is larger than long.  [ruby-dev:21194]
-	    http://www.geocities.co.jp/SiliconValley-PaloAlto/1409/ruby/beos.html
-
-	  * error.c (syserr_eqq): errno might exceed Fixnum limit.
-
-	  * error.c (Init_Exception): moved base initialization from
-	    init_syserr().
-
-	  * inits.c (rb_call_inits): postpone initializing errnos until
-	    Bignum is available.
+	* ext/bigdecimal/lib/bigdecimal/math.rb: atan() & sqrt() added.
 
 Fri Aug 15 12:01:43 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	  * ext/curses/curses.c (_XOPEN_SOURCE_EXTENDED): needed to let
-	    keyname() and so on be declared.
+	* configure.in (HUGE_ST_INO): check whether struct stat.st_ino
+	  is larger than long.  [ruby-dev:21194]
+	  http://www.geocities.co.jp/SiliconValley-PaloAlto/1409/ruby/beos.html
 
-	  * ext/curses/curses.c (curses_resizeterm, window_resize):
-	    arguments conflicted with macros in term.h.
+	* error.c (syserr_eqq): errno might exceed Fixnum limit.
 
-	  * ext/curses/curses.c (Curses module methods): ensure
-	    initialized.  [ruby-dev:21191]
+	* error.c (Init_Exception): moved base initialization from
+	  init_syserr().
+
+	* inits.c (rb_call_inits): postpone initializing errnos until
+	  Bignum is available.
+
+Fri Aug 15 12:01:43 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/curses/curses.c (_XOPEN_SOURCE_EXTENDED): needed to let
+	  keyname() and so on be declared.
+
+	* ext/curses/curses.c (curses_resizeterm, window_resize):
+	  arguments conflicted with macros in term.h.
+
+	* ext/curses/curses.c (Curses module methods): ensure
+	  initialized.  [ruby-dev:21191]
 
 Fri Aug 15 02:08:53 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	  * gc.c (id2ref): recycle check should be done by klass == 0.
-	    [ruby-core:01408]
+	* gc.c (id2ref): recycle check should be done by klass == 0.
+	  [ruby-core:01408]
 
 Fri Aug 15 00:38:00 2003  Shigeo Kobayashi  <shigek@ruby-lang.org>
 
-	  * ext/bigdecimal/bigdecimal.c: Bug in div method fixed.
+	* ext/bigdecimal/bigdecimal.c: Bug in div method fixed.
 
-	  * ext/bigdecimal/lib/bigdecimal/math.rb: Newly added.
+	* ext/bigdecimal/lib/bigdecimal/math.rb: Newly added.
 
-	  * ext/bigdecimal/sample/pi.rb: Changed so as to use math.rb.
+	* ext/bigdecimal/sample/pi.rb: Changed so as to use math.rb.
 
 Thu Aug 14 21:19:14 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	  * eval.c (Init_Thread): Continuation#[] added.  [ruby-talk:79028]
+	* eval.c (Init_Thread): Continuation#[] added.  [ruby-talk:79028]
 
 Thu Aug 14 20:03:34 2003  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	  * ext/win32ole/win32ole.c (OLE_FREE): should not call
-	    ole_message_loop.
+	* ext/win32ole/win32ole.c (OLE_FREE): should not call
+	  ole_message_loop.
 
-	  * ext/win32ole/win32ole.c (ole_event_free): ditto.
+	* ext/win32ole/win32ole.c (ole_event_free): ditto.
 
-	  * ext/win32ole/win32ole.c (ole_initialize): stop calling
-	    OleUninitialize at exit.
+	* ext/win32ole/win32ole.c (ole_initialize): stop calling
+	  OleUninitialize at exit.
 
 Thu Aug 14 11:27:37 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
-	  * gc.c (rb_data_object_alloc): check type of 1st argument.
-	    [ruby-dev:21192]
+	* gc.c (rb_data_object_alloc): check type of 1st argument.
+	  [ruby-dev:21192]
 
 Thu Aug 14 00:21:14 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	  * parse.y (mlhs_node): should allow "::Foo" (colon3) as lhs.
+	* parse.y (mlhs_node): should allow "::Foo" (colon3) as lhs.
 
-	  * parse.y (lhs): ditto.
+	* parse.y (lhs): ditto.
 
-	  * parse.y (yylex): should return tCOLON3 right after kCLASS.
-	    [ruby-talk:78918]
+	* parse.y (yylex): should return tCOLON3 right after kCLASS.
+	  [ruby-talk:78918]
 
-	  * error.c (exc_initialize): was converting argument to string too
-	    eagerly.  Only check was needed. [ruby-talk:78958]
+	* error.c (exc_initialize): was converting argument to string too
+	  eagerly.  Only check was needed. [ruby-talk:78958]
 
 Wed Aug 13 23:31:00 2003  Shigeo Kobayashi  <shigek@ruby-lang.org>
 
-	  * ext/bigdecimal/bigdecimal.c .h .html: Ambiguity of
-	    BigDecimal::limit removed.
+	* ext/bigdecimal/bigdecimal.c .h .html: Ambiguity of
+	  BigDecimal::limit removed.
 
 Wed Aug 13 19:21:34 2003  Christian Neukirchen  <chneukirchen@yahoo.de>
 
-	  * lib/webrick/https.rb (HTTPServer#run): should set syncing-mode
-	    to SSLSocket. [ruby-talk:78919]
+	* lib/webrick/https.rb (HTTPServer#run): should set syncing-mode
+	  to SSLSocket. [ruby-talk:78919]
 
 Wed Aug 13 18:13:49 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	  * eval.c (POP_BLOCK): turn on BLOCK_LEFT flag when leaving block.
+	* eval.c (POP_BLOCK): turn on BLOCK_LEFT flag when leaving block.
 
-	  * eval.c (proc_invoke): unpack return/break destination when block
-	    is already left.
+	* eval.c (proc_invoke): unpack return/break destination when block
+	  is already left.
 
 Wed Aug 13 15:58:31 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
-	  * object.c (rb_class_s_alloc): add function prototype to avoid VC++
-	    warning.
+	* object.c (rb_class_s_alloc): add function prototype to avoid VC++
+	  warning.
 
 Wed Aug 13 13:50:59 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
-	  * ext/Win32API/Win32API.c (Win32API_initialize): should pass some
-	    class to first argument of Data_Wrap_Struct(). (ruby-bugs PR#1109)
+	* ext/Win32API/Win32API.c (Win32API_initialize): should pass some
+	  class to first argument of Data_Wrap_Struct(). (ruby-bugs PR#1109)
 
 Tue Aug 12 16:55:11 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	  * Makefile.in: static link libraries to LIBRUBY_SO with static linked
-	    ext.  [ruby-dev:21157]
+	* Makefile.in: static link libraries to LIBRUBY_SO with static linked
+	  ext.  [ruby-dev:21157]
 
-	  * ext/extmk.rb (extmake): sort extension library initialization order.
+	* ext/extmk.rb (extmake): sort extension library initialization order.
 
-	  * ext/extmk.rb (extmake): compact $extlibs.
+	* ext/extmk.rb (extmake): compact $extlibs.
 
 Tue Aug 12 02:48:56 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	  * eval.c (THREAD_SAVE_CONTEXT): should explicitly turn off the
-	    flag before calling getcontext(2).
+	* eval.c (THREAD_SAVE_CONTEXT): should explicitly turn off the
+	  flag before calling getcontext(2).
 
-	  * eval.c (struct thread): add member to save backing store on
-	    IA64. (ruby-bugs PR1086)
+	* eval.c (struct thread): add member to save backing store on
+	  IA64. (ruby-bugs PR1086)
 
-	  * eval.c (thread_mark): mark IA64 backing store region.
+	* eval.c (thread_mark): mark IA64 backing store region.
 
-	  * eval.c (thread_free): free saved IA64 backing store.
+	* eval.c (thread_free): free saved IA64 backing store.
 
-	  * eval.c (rb_thread_save_context): save IA64 backing store as well.
+	* eval.c (rb_thread_save_context): save IA64 backing store as well.
 
-	  * eval.c (rb_thread_restore_context): restore IA64 backing store.
+	* eval.c (rb_thread_restore_context): restore IA64 backing store.
 
-	  * eval.c (THREAD_ALLOC): initialize IA64 members.
+	* eval.c (THREAD_ALLOC): initialize IA64 members.
 
 Mon Aug 11 22:31:50 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
-	  * lib/debug.rb(debug_command): inspection command should inspect
-	    resulting value even if it's nil.  [ruby-dev:21180] by OMAE, jun
-	    <jun66j5@ybb.ne.jp>.
+	* lib/debug.rb(debug_command): inspection command should inspect
+	  resulting value even if it's nil.  [ruby-dev:21180] by OMAE, jun
+	  <jun66j5@ybb.ne.jp>.
 
-	  * lib/debug.rb(debug_command): incomplete regexp.
+	* lib/debug.rb(debug_command): incomplete regexp.
 
 Mon Aug 11 17:33:07 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	  * eval.c (rb_call_super): do not use rb_block_given_p() for
-	    check. [ruby-talk:78656]
+	* eval.c (rb_call_super): do not use rb_block_given_p() for
+	  check. [ruby-talk:78656]
 
-	  * eval.c (BEGIN_CALLARGS): push ITER_NOT only when ITER_PRE.
+	* eval.c (BEGIN_CALLARGS): push ITER_NOT only when ITER_PRE.
 
 Sun Aug 10 10:43:05 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
-	  * ext/openssl/lib/openssl/buffering.rb: increase BLOCK_SIZE
-	    from 1k to 16k bytes. [ruby-talk:78603]
+	* ext/openssl/lib/openssl/buffering.rb: increase BLOCK_SIZE
+	  from 1k to 16k bytes. [ruby-talk:78603]
 
-	  * ext/openssl/ossl_ssl.c (ossl_sslctx_s_alloc): enable
-	    partial write to allow interruption in SSLSocket#write.
+	* ext/openssl/ossl_ssl.c (ossl_sslctx_s_alloc): enable
+	  partial write to allow interruption in SSLSocket#write.
 
 Sun Aug 10 00:34:16 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
-	  * cygwin/GNUmakefile: remove unnecessary '--drive-name=$(CC)'
-	    for ccache.
+	* cygwin/GNUmakefile: remove unnecessary '--drive-name=$(CC)'
+	  for ccache.
 
 Sat Aug  9 10:36:21 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	  * marshal.c (w_object): do not dump generic instance variable when
-	    marshal_dump is defined.
+	* marshal.c (w_object): do not dump generic instance variable when
+	  marshal_dump is defined.
 
 Sat Aug  9 00:35:00 2003  Shigeo Kobayashi  <shigek@ruby-lang.org>
 
-	  * ext/bigdecimal.c: F style output(like 1234.56789) implemented
-	    to to_s method.
-	  * ext/bigdecimal_??.html: F style output(like 1234.56789)
-	    implemented to to_s method.
+	* ext/bigdecimal.c: F style output(like 1234.56789) implemented
+	  to to_s method.
+	* ext/bigdecimal_??.html: F style output(like 1234.56789)
+	  implemented to to_s method.
 
 Fri Aug  8 12:33:17 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
-	  * bcc32/Makefile.sub: rubyw.exe should be a Windows GUI program.
-	    add the -aa option to WLDFLAGS.
+	* bcc32/Makefile.sub: rubyw.exe should be a Windows GUI program.
+	  add the -aa option to WLDFLAGS.
 
 Fri Aug  8 11:29:26 2003  Koji Arai  <jca02266@nifty.ne.jp>
 
-	  * marshal.c (w_object): should set `c_arg' at first.
+	* marshal.c (w_object): should set `c_arg' at first.
 
 Fri Aug  8 03:22:28 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
-	  * lib/webrick/httputils.rb (FormData#list): should not take
-	    a side effect for the receiver.
+	* lib/webrick/httputils.rb (FormData#list): should not take
+	  a side effect for the receiver.
 
 Thu Aug  7 14:40:37 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
-	  * cygwin/GNUmakefile: better --disbale-shared option support.
+	* cygwin/GNUmakefile: better --disbale-shared option support.
 
-	  * cygwin/GNUmakefile: add forwarding DLL target for cygwin.
+	* cygwin/GNUmakefile: add forwarding DLL target for cygwin.
 
 Thu Aug  7 14:21:05 2003  Corinna Vinschen  <vinschen@redhat.com>
 
-	  * configure.in: Fix Cygwin specific naming of libraries to
-	    be net distribution compliant. (ruby-bugs PR#1077)
-	    cygwin-ruby18.dll -> cygruby18.dll
+	* configure.in: Fix Cygwin specific naming of libraries to
+	  be net distribution compliant. (ruby-bugs PR#1077)
+	  cygwin-ruby18.dll -> cygruby18.dll
 
 Thu Aug  7 12:51:38 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	  * eval.c (rb_f_at_exit): should not be called without a block.
-	    block_given check added.
+	* eval.c (rb_f_at_exit): should not be called without a block.
+	  block_given check added.
 
 Thu Aug  7 06:46:06 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	  * eval.c (rb_call0): forgot to pop ruby_class.
+	* eval.c (rb_call0): forgot to pop ruby_class.
 
-	  * eval.c (rb_call0): update ruby_class as well as ruby_cref.
-	    (ruby-bugs-ja PR#540)
+	* eval.c (rb_call0): update ruby_class as well as ruby_cref.
+	  (ruby-bugs-ja PR#540)
 
 Thu Aug  7 04:52:50 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	  * eval.c (rb_yield_0): remove ruby_frame->cbase and unify to
-	    ruby_cref.  [ruby-talk:78141]
+	* eval.c (rb_yield_0): remove ruby_frame->cbase and unify to
+	  ruby_cref.  [ruby-talk:78141]
 
 Thu Aug  7 04:19:15 2003  Akinori MUSHA  <knu@iDaemons.org>
 
-	  * gc.c: FreeBSD/ia64's mcontext_t is a bit different from that of
-	    Linux/ia64.  This makes gc.c compile but miniruby coredumps for
-	    the moment.
+	* gc.c: FreeBSD/ia64's mcontext_t is a bit different from that of
+	  Linux/ia64.  This makes gc.c compile but miniruby coredumps for
+	  the moment.
 
 Wed Aug  7 00:15:00 2003  Shigeo Kobayashi  <shigek@ruby-lang.org>
 
-	  * ext/bigdecimal.c: Comparison results adjusted to Float's.
-	  * ext/bigdecimal.c: Use rb_num_coerce_????(x,y) instead of own.
+	* ext/bigdecimal.c: Comparison results adjusted to Float's.
+	* ext/bigdecimal.c: Use rb_num_coerce_????(x,y) instead of own.
 
 Wed Aug  6 22:58:00 2003  Nathaniel Talbott  <ntalbott@ruby-lang.org>
 
-	  * lib/test/unit/testcase.rb: Added equality checking.
-	  * lib/test/unit/testsuite.rb: Added equality checking.
-	  * lib/test/unit/assertions.rb: Fixed a warning.
+	* lib/test/unit/testcase.rb: Added equality checking.
+	* lib/test/unit/testsuite.rb: Added equality checking.
+	* lib/test/unit/assertions.rb: Fixed a warning.
 
 Wed Aug  6 17:28:10 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	  * ext/extmk.rb (extmake): pass LIBPATH to make ruby.  [ruby-dev:21137]
+	* ext/extmk.rb (extmake): pass LIBPATH to make ruby.  [ruby-dev:21137]
 
-	  * ext/extmk.rb (extmake): set library name as source file name in
-	    Init_ext().  [ruby-dev:21137]
+	* ext/extmk.rb (extmake): set library name as source file name in
+	  Init_ext().  [ruby-dev:21137]
 
-	  * lib/mkmf.rb (Logging::postpone): postpone logging messages after
-	    heading message as the result of the block.
+	* lib/mkmf.rb (Logging::postpone): postpone logging messages after
+	  heading message as the result of the block.
 
-	  * lib/mkmf.rb (macro_defined?): append newline to src unless ended
-	    with it.
+	* lib/mkmf.rb (macro_defined?): append newline to src unless ended
+	  with it.
 
-	  * lib/mkmf.rb (have_library): treat nil function name as "main".
-	    (ruby-bugs:PR#1083)
+	* lib/mkmf.rb (have_library): treat nil function name as "main".
+	  (ruby-bugs:PR#1083)
 
-	  * lib/mkmf.rb (pkg_config): should append additional libraries to
-	    $libs but not $LIBS.  [ruby-dev:21137]
+	* lib/mkmf.rb (pkg_config): should append additional libraries to
+	  $libs but not $LIBS.  [ruby-dev:21137]
 
-	  * ext/io/wait/extconf.rb: check DOSISH macro instead of platform.
+	* ext/io/wait/extconf.rb: check DOSISH macro instead of platform.
 
-	  * ext/digest/sha1/extconf.rb: have_library already appends library
-	    name.
+	* ext/digest/sha1/extconf.rb: have_library already appends library
+	  name.
 
 Wed Aug  6 17:23:57 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	  * eval.c: initialize /* OK */ variables by Qnil to stop warnings.
+	* eval.c: initialize /* OK */ variables by Qnil to stop warnings.
 
 Wed Aug  6 04:58:32 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
-	  * ext/Setup*: add io/wait and openssl.
+	* ext/Setup*: add io/wait and openssl.
 
 Wed Aug  6 01:13:38 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	  * eval.c (rb_f_autoload): use ruby_cbase instead of ruby_class.
+	* eval.c (rb_f_autoload): use ruby_cbase instead of ruby_class.
 
-	  * eval.c (rb_f_autoload_p): ditto.
+	* eval.c (rb_f_autoload_p): ditto.
 
-	  * class.c (rb_mod_init_copy): no longer implements independent
-	    clone and dup methods.  override "initialize_copy" instead.
-	    [ruby-core:01352]
+	* class.c (rb_mod_init_copy): no longer implements independent
+	  clone and dup methods.  override "initialize_copy" instead.
+	  [ruby-core:01352]
 
-	  * object.c (rb_class_s_alloc): define Class allocation function.
-	    this makes Classes to follow clone framework that uses
-	    initialize_copy.
+	* object.c (rb_class_s_alloc): define Class allocation function.
+	  this makes Classes to follow clone framework that uses
+	  initialize_copy.
 
-	  * object.c (rb_class_initialize): separate instantiation and
-	    initialization.
+	* object.c (rb_class_initialize): separate instantiation and
+	  initialization.
 
-	  * object.c (rb_obj_alloc): prohibit instantiation from
-	    uninitialized class.
+	* object.c (rb_obj_alloc): prohibit instantiation from
+	  uninitialized class.
 
-	  * object.c (rb_class_superclass): check uninitialized class.
+	* object.c (rb_class_superclass): check uninitialized class.
 
-	  * array.c (rb_ary_fill): wrong index processing with block.  this
-	    fix was done by Koji Arai <JCA02266@nifty.ne.jp> [ruby-list:38029]
+	* array.c (rb_ary_fill): wrong index processing with block.  this
+	  fix was done by Koji Arai <JCA02266@nifty.ne.jp> [ruby-list:38029]
 
-	  * marshal.c (w_object): should preserve generic ivar for nil,
-	    true, false, symbols, and fixnums.
+	* marshal.c (w_object): should preserve generic ivar for nil,
+	  true, false, symbols, and fixnums.
 
-	  * marshal.c (w_uclass): base_klass check should be done after
-	    rb_class_real().
+	* marshal.c (w_uclass): base_klass check should be done after
+	  rb_class_real().
 
 Wed Aug  6 01:18:50 2003  Minero Aoki  <aamine@loveruby.net>
 
-	  * lib/net/http.rb: update document.
+	* lib/net/http.rb: update document.
 
-	  * lib/net/pop.rb: ditto.
+	* lib/net/pop.rb: ditto.
 
-	  * lib/net/protocol.rb: ditto.
+	* lib/net/protocol.rb: ditto.
 
 Wed Aug  6 00:48:37 2003  Koji Arai  <jca02266@nifty.ne.jp>
 
-	  * marshal.c (w_object): should recommend marshal_dump rather than
-	    _dump_data.
+	* marshal.c (w_object): should recommend marshal_dump rather than
+	  _dump_data.
 
 Tue Aug  5 17:58:57 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
-	  * lib/fileutils.rb (install): should preserve timestamp only.
+	* lib/fileutils.rb (install): should preserve timestamp only.
 
 Tue Aug  5 17:31:59 2003  Ian Macdonald  <ian@caliban.org>
 
-	  * lib/shell/command-processor.rb (Shell::CommandProcessor::rmdir):
-	    simple typo.
+	* lib/shell/command-processor.rb (Shell::CommandProcessor::rmdir):
+	  simple typo.
 
 Tue Aug  5 15:47:34 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	  * eval.c (rb_load): should preserve current source file/line.
+	* eval.c (rb_load): should preserve current source file/line.
 
 Tue Aug  5 10:04:42 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	  * string.c (str_new4): ptr may refer null_str.
+	* string.c (str_new4): ptr may refer null_str.
 
 Mon Aug  4 17:25:18 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	  * stable version 1.8.0 released.
+	* stable version 1.8.0 released.
 
 For the changes before 1.8.0, see doc/ChangeLog-1.8.0
 
@@ -511,9 +511,9 @@ Local variables:
 add-log-time-format: (lambda ()
   (let* ((time (current-time))
   	 (diff (+ (cadr time) 32400))
-	    (lo (% diff 65536))
-	    (hi  (+ (car time) (/ diff 65536))))
-	(format-time-string "%a %b %e %H:%M:%S %Y" (list hi lo) t)))
+	  (lo (% diff 65536))
+	  (hi  (+ (car time) (/ diff 65536))))
+    (format-time-string "%a %b %e %H:%M:%S %Y" (list hi lo) t)))
 indent-tabs-mode: t
 tab-width: 8
 end:
