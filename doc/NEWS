@@ -1,3 +1,15 @@
+: String#casecmp
+
+  Added.  This is a case insensitive version of String#<=>.
+
+: String#eql?
+
+  Changed to be always case sensitive.
+
+: Module#include?
+
+  Added. [ruby-dev:13941] 
+
 : Digest module
 
   Added as a replacement for md5 and sha1 modules.
