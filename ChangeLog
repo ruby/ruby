@@ -1,3 +1,7 @@
+Mon Sep 13 10:22:05 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* object.c (nil_inspect): fix typo.
+
 Mon Sep 13 09:29:58 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/ripper/depend: (nmake hack) prepend "./" to ripper.c to
