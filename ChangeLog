@@ -1,3 +1,13 @@
+Mon Jan 19 06:49:07 2004  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date.rb: zone was wrong when it was behind UTC.
+	  Thanks Mark J. Reed.
+
+	* lib/date/format.rb: %z is now always replaced by four digits
+	  with a leading plus or minus sign.
+
+	* sample/cal.rb: added a class, anyway.
+
 Sun Jan 18 23:59:44 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv/charset_alias.rb: prefer us_EN locale encodings or
