@@ -1,3 +1,10 @@
+Fri Sep  3 01:54:20 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (extmake): extact target prefix from Makefiles.
+
+	* ext/extmk.rb: already built-in libraries satisfy dependencies.
+	  [ruby-dev:24028]
+
 Wed Sep  1 21:16:50 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/tk/lib/tk/spinbox.rb: fix typo

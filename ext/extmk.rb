@@ -103,7 +103,11 @@ def extmake(target)
       else
 	if $static
 	  m = File.read(makefile)
-	  $target = m[/^TARGET[ \s]*=[ \s]*(\S*)/, 1] or $static = nil
+	  if !($target = m[/^TARGET[ \t]*=[ \t]*(\S*)/, 1])
+	    $static = nil
+	  elsif target_prefix = m[/^target_prefix[ \t]*=[ \t]*\/(.*)/, 1]
+	    $target = "#{target_prefix}/#{$target}"
+	  end
 	  /^STATIC_LIB[ \t]*=[ \t]*\S+/ =~ m or $static = nil
 	  $preload = Shellwords.shellwords(m[/^preload[ \t]*=[ \t]*(.*)/, 1] || "")
 	  $DLDFLAGS += " " + (m[/^DLDFLAGS[ \t]*=[ \t]*(.*)/, 1] || "")
@@ -353,9 +357,10 @@ if $extlist.size > 0
   $extinit ||= ""
   $extobjs ||= ""
   list = $extlist.dup
+  built = []
   while e = list.shift
     s,t,i,r = e
-    if r and !r.empty?
+    if r and !(r -= built).empty?
       l = list.size
       if (while l > 0; break true if r.include?(list[l-=1][1]) end)
         list.insert(l + 1, e)
@@ -366,6 +371,7 @@ if $extlist.size > 0
     if File.exist?(f)
       $extinit += "\tinit(Init_#{i}, \"#{t}.so\");\n"
       $extobjs += "ext/#{f} "
+      built << t
     end
   end
 
