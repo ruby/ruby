@@ -2286,7 +2286,7 @@ extern VALUE rb_load_path;
 int
 rb_find_file_ext(filep, ext)
     VALUE *filep;
-    const char *const *ext;
+    const char * const *ext;
 {
     char *path, *e, *found;
     char *f = RSTRING(*filep)->ptr;

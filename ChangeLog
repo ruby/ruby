@@ -3,6 +3,17 @@ Sat Sep  8 07:13:42 2001  Wakou Aoyama  <wakou@fsinet.or.jp>
 	* lib/net/telnet.rb: waitfor(): improvement. thanks to
 	  nobu.nakada@nifty.ne.jp
 
+Sat Sep  8 04:34:17 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_thread_restore_context): save current value of
+	  lastline and lastmatch in the thread struct for later restore.
+
+	* eval.c (rb_thread_save_context): restore lastline and lastmatch.
+
+Fri Sep  7 11:27:56 2001  akira yamada  <akira@ruby-lang.org>
+
+	* numeric.c (flo_to_s): should handle negative float value.
+
 Fri Sep  7 09:44:44 2001  Wakou Aoyama  <wakou@fsinet.or.jp>
 
 	* lib/net/telnet.rb: waitfor(): bug fix.
@@ -31,28 +42,6 @@ Thu Sep  6 14:25:15 2001  Akinori MUSHA  <knu@iDaemons.org>
 	* ext/digest/digest.c (rb_digest_base_s_hexdigest): remove a debug
 	  print.
 
-Sun Aug 26 20:26:40 2001  Koji Arai  <JCA02266@nifty.ne.jp>
-
-	* ext/readline/readline.c: restore terminal mode
-	  even if readline() interrupted.
-
-	* ext/readline/readline.c: returned string need to
-	  be tainted.
-
-	* ext/readline/readline.c: fixed memory leak.
-
-	* ext/readline/readline.c: allow negative index.
-
-	* ext/readline/readline.c: added Readline::HISTORY.size
-	  same as Readline::HISTORY.length
-
-	* ext/readline/readline.c: allow conditional parsing
-	  of the ~/.inputrc file by `$if Ruby'.
-
-	* ext/readline/extconf.rb: check whether the
-	  libreadline has the variable `rl_completion_append_character'
-	  (this feature was implemented from GNU readline 2.1).
-
 Thu Sep  6 13:56:14 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/digest.c (rb_digest_base_s_digest,
@@ -71,6 +60,16 @@ Thu Sep  6 07:28:56 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 Thu Sep  6 07:16:14 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* ext/socket/socket.c (Init_socket): remove duplicating constants.
+
+Thu Sep  6 03:15:24 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* class.c (rb_include_module): should check whole ancestors to
+	  avoid duplicate module inclusion.
+
+Wed Sep  5 20:02:27 2001  Shin'ya Adzumi  <adzumi@denpa.org>
+
+	* string.c (trnext): should check backslash before updating "now"
+	  position.
 
 Wed Sep  5 17:41:11 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
@@ -7204,6 +7203,28 @@ Fri Aug 28 17:32:55 1999  Yasuhiro Fukuma  <yasuf@big.or.jp>
 
 	* eval.c (rb_eval): should set return value (nil) explicitly if a
 	  value is omitted for return statement.
+
+Sun Aug 26 20:26:40 2001  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* ext/readline/readline.c: restore terminal mode
+	  even if readline() interrupted.
+
+	* ext/readline/readline.c: returned string need to
+	  be tainted.
+
+	* ext/readline/readline.c: fixed memory leak.
+
+	* ext/readline/readline.c: allow negative index.
+
+	* ext/readline/readline.c: added Readline::HISTORY.size
+	  same as Readline::HISTORY.length
+
+	* ext/readline/readline.c: allow conditional parsing
+	  of the ~/.inputrc file by `$if Ruby'.
+
+	* ext/readline/extconf.rb: check whether the
+	  libreadline has the variable `rl_completion_append_character'
+	  (this feature was implemented from GNU readline 2.1).
 
 Thu Aug 26 15:06:11 1999  Masaki Fukushima  <fukusima@goto.info.waseda.ac.jp>
 

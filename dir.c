@@ -75,6 +75,13 @@ char *strchr _((char*,char));
 
 #define downcase(c) (nocase && ISUPPER(c) ? tolower(c) : (c))
 
+#ifndef CharNext		/* defined as CharNext[AW] on Windows. */
+# if defined(DJGPP)
+#   define CharNext(p) ((p) + mblen(p, MB_CUR_MAX))
+# else
+#   define CharNext(p) ((p) + 1)
+# endif
+#endif
 #if defined DOSISH
 #define isdirsep(c) ((c) == '/' || (c) == '\\')
 static char *
@@ -84,7 +91,7 @@ find_dirsep(s)
     while (*s) {
 	if (isdirsep(*s))
 	    return s;
-	s++;
+	s = CharNext(s);
     }
     return 0;
 }

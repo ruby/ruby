@@ -1112,17 +1112,19 @@ proc_setuid(obj, id)
 
     uid = NUM2INT(id);
 #if defined(HAVE_SETRESUID) &&  !defined(__CHECKER__)
-    setresuid(uid, -1, -1);
+    if (setresuid(uid, -1, -1) < 0) rb_sys_fail(0);
 #elif defined HAVE_SETREUID
-    setreuid(uid, -1);
+    if (setreuid(uid, -1) < 0) rb_sys_fail(0);
 #elif defined HAVE_SETRUID
-    setruid(uid);
+    if (setruid(uid) < 0) rb_sys_fail(0);
 #else
     {
-	if (geteuid() == uid)
-	    setuid(uid);
-	else
+	if (geteuid() == uid) {
+	    if (setuid(uid) < 0) rb_sys_fail(0);
+	}
+	else {
 	    rb_notimplement();
+	}
     }
 #endif
     return INT2FIX(uid);
@@ -1144,17 +1146,19 @@ proc_setgid(obj, id)
 
     gid = NUM2INT(id);
 #if defined(HAVE_SETRESGID) && !defined(__CHECKER__)
-    setresgid(gid, -1, -1);
+    if (setresgid(gid, -1, -1) < 0) rb_sys_fail(0);
 #elif defined HAVE_SETREGID
-    setregid(gid, -1);
+    if (setregid(gid, -1) < 0) rb_sys_fail(0);
 #elif defined HAS_SETRGID
-    setrgid((GIDTYPE)gid);
+    if (setrgid((GIDTYPE)gid) < 0) rb_sys_fail(0);
 #else
     {
-	if (getegid() == gid)
-	    setgid(gid);
-	else
+	if (getegid() == gid) {
+	    if (setgid(gid) < 0) rb_sys_fail(0);
+	}
+	else {
 	    rb_notimplement();
+	}
     }
 #endif
     return INT2FIX(gid);
@@ -1180,10 +1184,12 @@ proc_seteuid(obj, euid)
     if (seteuid(NUM2INT(euid)) < 0) rb_sys_fail(0);
 #else
     euid = NUM2INT(euid);
-    if (euid == getuid())
-	setuid(euid);
-    else
+    if (euid == getuid()) {
+	if (setuid(euid) < 0) rb_sys_fail(0);
+    }
+    else {
 	rb_notimplement();
+    }
 #endif
     return euid;
 }
@@ -1209,10 +1215,12 @@ proc_setegid(obj, egid)
     if (setegid(NUM2INT(egid)) < 0) rb_sys_fail(0);
 #else
     egid = NUM2INT(egid);
-    if (egid == getgid())
-	setgid(egid);
-    else
+    if (egid == getgid()) {
+	if (setgid(egid) < 0) rb_sys_fail(0);
+    }
+    else {
 	rb_notimplement();
+    }
 #endif
     return egid;
 }

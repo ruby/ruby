@@ -291,7 +291,7 @@ void
 rb_include_module(klass, module)
     VALUE klass, module;
 {
-    VALUE p;
+    VALUE p, c;
     int changed = 0;
 
     rb_frozen_class_p(klass);
@@ -312,22 +312,20 @@ rb_include_module(klass, module)
     }
 
     OBJ_INFECT(klass, module);
+    c = klass;
     while (module) {
 	/* ignore if the module included already in superclasses */
 	for (p = RCLASS(klass)->super; p; p = RCLASS(p)->super) {
 	    if (BUILTIN_TYPE(p) == T_ICLASS &&
 		RCLASS(p)->m_tbl == RCLASS(module)->m_tbl) {
-		if (RCLASS(module)->super) {
-		    rb_include_module(p, RCLASS(module)->super);
-		}
-		if (changed) rb_clear_cache();
-		return;
+		goto skip;
 	    }
 	}
-	RCLASS(klass)->super = include_class_new(module, RCLASS(klass)->super);
-	klass = RCLASS(klass)->super;
-	module = RCLASS(module)->super;
+	RCLASS(c)->super = include_class_new(module, RCLASS(c)->super);
+	c = RCLASS(c)->super;
 	changed = 1;
+      skip:
+	module = RCLASS(module)->super;
     }
     if (changed) rb_clear_cache();
 }
