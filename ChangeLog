@@ -1,3 +1,7 @@
+Mon Dec 29 11:00:16 2003  Dave Thomas  <dave@wireless_3.local.thomases.com>
+
+	* array.c: Tidy up RDoc loose ends.
+
 Mon Dec 29 05:05:51 2003  Dave Thomas  <dave@wireless_3.local.thomases.com>
 
 	* struct.c, random: Add RDoc comments
