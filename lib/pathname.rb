@@ -1180,7 +1180,18 @@ if $0 == __FILE__
     end
 
     def test_kernel_open
-      assert_equal(1, Kernel.open(Pathname.new("/dev/null")) {|f| 1 })
+      count = 0
+      stat1 = File.stat(__FILE__)
+      result = Kernel.open(Pathname.new(__FILE__)) {|f|
+        stat2 = f.stat
+        assert_equal(stat1.dev, stat2.dev)
+        assert_equal(stat1.ino, stat2.ino)
+        assert_equal(stat1.size, stat2.size)
+        count += 1
+        2
+      }
+      assert_equal(1, count)
+      assert_equal(2, result)
     end
   end
 end
