@@ -374,6 +374,13 @@ AC_CHECK_FUNCS(fmod killpg wait4 waitpid syscall chroot fsync\
 	      getpgrp setpgrp getpgid setpgid initgroups getgroups setgroups\
 	      getpriority getrlimit dlopen sigprocmask sigaction _setjmp\
 	      setsid telldir seekdir fchmod mktime timegm cosh sinh tanh)
+AC_ARG_ENABLE(setreuid,
+       [  --enable-setreuid       use setreuid()/setregid() according to need even if obsolete.],
+       [use_setreuid=$enableval])
+if test "$use_setreuid" = yes; then
+    AC_DEFINE(USE_SETREUID)
+    AC_DEFINE(USE_SETREGID)
+fi
 AC_STRUCT_TIMEZONE
 AC_CACHE_CHECK(for struct tm.tm_gmtoff, rb_cv_member_struct_tm_tm_gmtoff,
   [AC_TRY_COMPILE([#include <time.h>],

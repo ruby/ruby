@@ -8,6 +8,7 @@ require 'tk.rb'
 class TkEntry<TkLabel
   include Scrollable
 
+  TkCommandNames = ['entry'.freeze].freeze
   WidgetClassName = 'Entry'.freeze
   WidgetClassNames[WidgetClassName] = self
 
@@ -221,6 +222,7 @@ class TkEntry<TkLabel
 end
 
 class TkSpinbox<TkEntry
+  TkCommandNames = ['spinbox'.freeze].freeze
   WidgetClassName = 'Spinbox'.freeze
   WidgetClassNames[WidgetClassName] = self
 

@@ -7,6 +7,8 @@ require 'tk'
 module TkBgError
   extend Tk
 
+  TkCommandNames = ['bgerror'.freeze].freeze
+
   def bgerror(message)
     tk_call 'bgerror', message
   end

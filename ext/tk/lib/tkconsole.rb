@@ -7,6 +7,8 @@ module TkConsole
   include Tk
   extend Tk
 
+  TkCommandNames = ['console'.freeze].freeze
+
   def self.title(str=None)
     tk_call 'console', str
   end

@@ -29,6 +29,7 @@ class TkCanvas<TkWindow
   include TkTreatCItemFont
   include Scrollable
 
+  TkCommandNames = ['canvas'.freeze].freeze
   WidgetClassName = 'Canvas'.freeze
   WidgetClassNames[WidgetClassName] = self
 
@@ -527,15 +528,10 @@ end
 class TkcTag<TkObject
   include TkcTagAccess
 
-  CTagID_TBL = {}
-  Tk_CanvasTag_ID = ['ctag0000']
+  CTagID_TBL = TkCore::INTERP.create_table
+  Tk_CanvasTag_ID = ['ctag', '00000']
 
-  TkComm.__add_target_for_init__(self)
-
-  def self.__init_tables__
-    CTagID_TBL.clear
-    Tk_CanvasTag_ID[0] = 'ctag0000'
-  end
+  TkCore::INTERP.init_ip_env{ CTagID_TBL.clear }
 
   def TkcTag.id2obj(canvas, id)
     cpath = canvas.path
@@ -549,10 +545,10 @@ class TkcTag<TkObject
     end
     @c = parent
     @cpath = parent.path
-    @path = @id = Tk_CanvasTag_ID[0]
+    @path = @id = Tk_CanvasTag_ID.join
     CTagID_TBL[@cpath] = {} unless CTagID_TBL[@cpath]
     CTagID_TBL[@cpath][@id] = self
-    Tk_CanvasTag_ID[0] = Tk_CanvasTag_ID[0].succ
+    Tk_CanvasTag_ID[1] = Tk_CanvasTag_ID[1].succ
     if mode
       tk_call @c.path, "addtag", @id, mode, *args
     end
@@ -664,17 +660,17 @@ class TkcTagCurrent<TkcTag
 end
 
 class TkcGroup<TkcTag
-  Tk_cGroup_ID = ['tkcg00000']
+  Tk_cGroup_ID = ['tkcg', '00000']
   def create_self(parent, *args)
     if not parent.kind_of?(TkCanvas)
       fail format("%s need to be TkCanvas", parent.inspect)
     end
     @c = parent
     @cpath = parent.path
-    @path = @id = Tk_cGroup_ID[0]
+    @path = @id = Tk_cGroup_ID.join
     CTagID_TBL[@cpath] = {} unless CTagID_TBL[@cpath]
     CTagID_TBL[@cpath][@id] = self
-    Tk_cGroup_ID[0] = Tk_cGroup_ID[0].succ
+    Tk_cGroup_ID[1] = Tk_cGroup_ID[1].succ
     add(*args) if args != []
   end
   
@@ -697,13 +693,9 @@ class TkcItem<TkObject
   include TkcTagAccess
 
   CItemTypeToClass = {}
-  CItemID_TBL = {}
+  CItemID_TBL = TkCore::INTERP.create_table
 
-  TkComm.__add_target_for_init__(self)
-
-  def self.__init_tables__
-    CItemID_TBL.clear
-  end
+  TkCore::INTERP.init_ip_env{ CItemID_TBL.clear }
 
   def TkcItem.type2class(type)
     CItemTypeToClass[type]
@@ -828,19 +820,16 @@ end
 class TkImage<TkObject
   include Tk
 
-  Tk_IMGTBL = {}
-  Tk_Image_ID = ['i00000']
+  TkCommandNames = ['image'.freeze].freeze
 
-  TkComm.__add_target_for_init__(self)
+  Tk_IMGTBL = TkCore::INTERP.create_table
+  Tk_Image_ID = ['i', '00000']
 
-  def self.__init_tables__
-    Tk_IMGTBL.clear
-    Tk_Image_ID[0] = 'i00000'
-  end
+  TkCore::INTERP.init_ip_env{ Tk_IMGTBL.clear }
 
   def initialize(keys=nil)
-    @path = Tk_Image_ID[0]
-    Tk_Image_ID[0] = Tk_Image_ID[0].succ
+    @path = Tk_Image_ID.join
+    Tk_Image_ID[1] = Tk_Image_ID[1].succ
     tk_call 'image', 'create', @type, @path, *hash_kv(keys)
     Tk_IMGTBL[@path] = self
   end

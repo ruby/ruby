@@ -12,6 +12,8 @@ module TkMacResource
   extend Tk
   extend TkMacResource
 
+  TkCommandNames = ['resource'.freeze].freeze
+
   tk_call('package', 'require', 'resource')
 
   def close(rsrcRef)

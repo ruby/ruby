@@ -28,6 +28,7 @@ class TkText<TkTextWin
   include TkTreatTextTagFont
   include Scrollable
 
+  TkCommandNames = ['text'.freeze].freeze
   WidgetClassName = 'Text'.freeze
   WidgetClassNames[WidgetClassName] = self
 
@@ -765,15 +766,10 @@ end
 class TkTextTag<TkObject
   include TkTreatTagFont
 
-  TTagID_TBL = {}
-  Tk_TextTag_ID = ['tag0000']
+  TTagID_TBL = TkCore::INTERP.create_table
+  Tk_TextTag_ID = ['tag', '00000']
 
-  TkComm.__add_target_for_init__(self)
-
-  def self.__init_tables__
-    TTagID_TBL.clear
-    Tk_TextTag_ID[0] = 'tag0000'
-  end
+  TkCore::INTERP.init_ip_env{ TTagID_TBL.clear }
 
   def TkTextTag.id2obj(text, id)
     tpath = text.path
@@ -787,11 +783,11 @@ class TkTextTag<TkObject
     end
     @parent = @t = parent
     @tpath = parent.path
-    @path = @id = Tk_TextTag_ID[0]
+    @path = @id = Tk_TextTag_ID.join
     TTagID_TBL[@id] = self
     TTagID_TBL[@tpath] = {} unless TTagID_TBL[@tpath]
     TTagID_TBL[@tpath][@id] = self
-    Tk_TextTag_ID[0] = Tk_TextTag_ID[0].succ
+    Tk_TextTag_ID[1].succ!
     #tk_call @t.path, "tag", "configure", @id, *hash_kv(keys)
     if args != [] then
       keys = args.pop
@@ -974,15 +970,10 @@ class TkTextTagSel<TkTextNamedTag
 end
 
 class TkTextMark<TkObject
-  TMarkID_TBL = {}
-  Tk_TextMark_ID = ['mark0000']
+  TMarkID_TBL = TkCore::INTERP.create_table
+  Tk_TextMark_ID = ['mark', '00000']
 
-  TkComm.__add_target_for_init__(self)
-
-  def self.__init_tables__
-    TMarkID_TBL.clear
-    Tk_TextMark_ID[0] = 'mark0000'
-  end
+  TkCore::INTERP.init_ip_env{ TMarkID_TBL.clear }
 
   def TkTextMark.id2obj(text, id)
     tpath = text.path
@@ -996,7 +987,7 @@ class TkTextMark<TkObject
     end
     @parent = @t = parent
     @tpath = parent.path
-    @path = @id = Tk_TextMark_ID[0]
+    @path = @id = Tk_TextMark_ID.join
     TMarkID_TBL[@id] = self
     TMarkID_TBL[@tpath] = {} unless TMarkID_TBL[@tpath]
     TMarkID_TBL[@tpath][@id] = self

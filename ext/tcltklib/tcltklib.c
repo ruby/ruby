@@ -530,7 +530,7 @@ ip_ruby(clientData, interp, argc, argv)
     DUMP2("rb_eval_string(%s)", arg);
     old_trapflg = rb_trap_immediate;
     rb_trap_immediate = 0;
-    res = rb_rescue2(rb_eval_string, (VALUE)arg,
+    res = rb_rescue2(rb_eval_string, (VALUE)arg, 
                      ip_eval_rescue, (VALUE)&failed,
                      rb_eStandardError, rb_eScriptError, 0);
     rb_trap_immediate = old_trapflg;
@@ -584,10 +584,14 @@ ip_alloc(self)
 }
 
 static VALUE
-ip_init(self)
+ip_init(argc, argv, self)
+    int   argc;
+    VALUE *argv;
     VALUE self;
 {
     struct tcltkip *ptr;	/* tcltkip data struct */
+    VALUE argv0, opts, opt_n;
+    int cnt;
 
     /* create object */
     Data_Get_Struct(self, struct tcltkip, ptr);
@@ -605,6 +609,23 @@ ip_init(self)
     if (Tcl_Init(ptr->ip) == TCL_ERROR) {
 	rb_raise(rb_eRuntimeError, "%s", ptr->ip->result);
     }
+
+    /* set variables */
+    cnt = rb_scan_args(argc, argv, "02", &argv0, &opts);
+    switch(cnt) {
+    case 2:
+      /* options */
+      Tcl_SetVar(ptr->ip, "argv", StringValuePtr(opts), 0);
+    case 1:
+      /* argv0 */
+      if (argv0 != Qnil) {
+	Tcl_SetVar(ptr->ip, "argv0", StringValuePtr(argv0), 0);
+      }
+    case 0:
+      /* no args */
+    }
+
+    /* from Tcl_AppInit() */
     DUMP1("Tk_Init");
     if (Tk_Init(ptr->ip) == TCL_ERROR) {
       rb_raise(rb_eRuntimeError, "%s", ptr->ip->result);
@@ -989,7 +1010,7 @@ Init_tcltklib()
 			      get_eventloop_weight, 0);
 
     rb_define_alloc_func(ip, ip_alloc);
-    rb_define_method(ip, "initialize", ip_init, 0);
+    rb_define_method(ip, "initialize", ip_init, -1);
     rb_define_method(ip, "_eval", ip_eval, 1);
     rb_define_method(ip, "_toUTF8",ip_toUTF8,2);
     rb_define_method(ip, "_fromUTF8",ip_fromUTF8,2);

@@ -9,21 +9,13 @@ class TkTimer
   include TkCore
   extend TkCore
 
-  Tk_CBID = [0]
-  Tk_CBTBL = {}
+  TkCommandNames = ['after'.freeze].freeze
 
-  # this constant must be defined befor calling __add_target_for_init__
-  TkINTERP_SETUP_SCRIPTS = [
-    ["proc", "rb_after", "id", 
-      "ruby [format \"#{self.name}.callback %%Q!%s!\" $id]"]
-  ]
+  Tk_CBID = ['a'.freeze, '00000']
+  Tk_CBTBL = TkCore::INTERP.create_table
 
-  TkComm.__add_target_for_init__(self)
-
-  def self.__init_tables__
-    # cannot clear
-    # Tcl interpreter may keep callbacks
-  end
+  TkCore::INTERP.add_tk_procs('rb_after', 'id', 
+      "ruby [format \"#{self.name}.callback %%Q!%s!\" $id]")
 
 
   ###############################
@@ -108,8 +100,8 @@ class TkTimer
   end
 
   def initialize(*args)
-    @id = format("a%.4d", Tk_CBID[0])
-    Tk_CBID[0] += 1
+    @id = Tk_CBID.join
+    Tk_CBID[1].succ!
 
     @set_next = true
 

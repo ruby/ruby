@@ -12,6 +12,8 @@ module TkWinDDE
   extend Tk
   extend TkWinDDE
 
+  TkCommandNames = ['dde'.freeze].freeze
+
   tk_call('package', 'require', 'dde')
 
   def servername(topic=nil)
@@ -49,6 +51,8 @@ end
 module TkWinRegistry
   extend Tk
   extend TkWinRegistry
+
+  TkCommandNames = ['registry'.freeze].freeze
 
   tk_call('package', 'require', 'registry')
 

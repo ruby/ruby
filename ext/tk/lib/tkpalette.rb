@@ -8,6 +8,12 @@ module TkPalette
   include Tk
   extend Tk
 
+  TkCommandNames = [
+    'tk_setPalette'.freeze, 
+    'tk_bisque'.freeze, 
+    'tkDarken'.freeze
+  ].freeze
+
   def TkPalette.set(*args)
     args = args.to_a.flatten if args.kind_of? Hash
     tk_call 'tk_setPalette', *args

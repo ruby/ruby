@@ -7,6 +7,12 @@ require 'tk'
 module TkManageFocus
   extend Tk
 
+  TkCommandNames = [
+    'tk_focusFollowMouse'.freeze, 
+    'tk_focusNext'.freeze, 
+    'tk_focusPrev'.freeze
+  ].freeze
+
   def TkManageFocus.followsMouse
     tk_call 'tk_focusFollowsMouse'
   end

@@ -7,15 +7,12 @@ require 'tk'
 class TkVirtualEvent<TkObject
   extend Tk
 
-  TkVirtualEventID = [0]
-  TkVirtualEventTBL = {}
+  TkCommandNames = ['event'.freeze].freeze
 
-  TkComm.__add_target_for_init__(self)
+  TkVirtualEventID = ["<VirtEvent".freeze, "00000", ">".freeze]
+  TkVirtualEventTBL = TkCore::INTERP.create_table
 
-  def self.__init_tables__
-    TkVirtualEventTBL.clear
-    TkVirtualEventID[0] = 0
-  end
+  TkCore::INTERP.init_ip_env{ TkVirtualEventTBL.clear }
 
   class PreDefVirtEvent<self
     def initialize(event)
@@ -44,8 +41,8 @@ class TkVirtualEvent<TkObject
   end
 
   def initialize(*sequences)
-    @path = @id = format("<VirtEvent%.4d>", TkVirtualEventID[0])
-    TkVirtualEventID[0] += 1
+    @path = @id = TkVirtualEventID.join
+    TkVirtualEventID[1].succ!
     add(*sequences)
   end
 

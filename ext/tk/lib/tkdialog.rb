@@ -3,6 +3,8 @@ require "tk"
 class TkDialog2 < TkWindow
   extend Tk
 
+  TkCommandNames = ['tk_dialog'.freeze].freeze
+
   def self.show(*args)
     dlog = self.new(*args)
     dlog.show

@@ -9,17 +9,16 @@ class TkFont
   include Tk
   extend TkCore
 
-  Tk_FontID = [0]
-  Tk_FontNameTBL = {}
-  Tk_FontUseTBL = {}
+  TkCommandNames = ['font'.freeze].freeze
 
-  TkComm.__add_target_for_init__(self)
+  Tk_FontID = ["@font".freeze, "00000"]
+  Tk_FontNameTBL = TkCore::INTERP.create_table
+  Tk_FontUseTBL  = TkCore::INTERP.create_table
 
-  def self.__init_tables__
+  TkCore::INTERP.init_ip_env{ 
     Tk_FontNameTBL.clear
     Tk_FontUseTBL.clear
-    Tk_FontID[0] = 0
-  end
+  }
 
   # set default font
   case Tk::TK_VERSION
@@ -222,8 +221,8 @@ class TkFont
   private
   ###################################
   def initialize(ltn=DEFAULT_LATIN_FONT_NAME, knj=nil, keys=nil)
-    @id = format("@font%.4d", Tk_FontID[0])
-    Tk_FontID[0] += 1
+    @id = Tk_FontID.join
+    Tk_FontID[1].succ!
     Tk_FontNameTBL[@id] = self
     knj = DEFAULT_KANJI_FONT_NAME if JAPANIZED_TK && !knj
     create_compoundfont(ltn, knj, keys)
