@@ -2387,7 +2387,7 @@ rb_gzreader_getc(obj)
 
     dst = gzfile_read(gz, 1);
     if (!NIL_P(dst)) {
-	dst = INT2FIX(RSTRING(dst)->ptr[0]);
+	dst = INT2FIX((unsigned int)(RSTRING(dst)->ptr[0]) & 0xff);
     }
     return dst;
 }
