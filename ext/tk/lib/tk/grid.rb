@@ -158,13 +158,13 @@ module TkGrid
     list(tk_call_without_enc('grid', 'location', master, x, y))
   end
 
-  def propagate(master, bool=None)
+  def propagate(master, mode=None)
     # master = master.epath if master.kind_of?(TkObject)
     master = _epath(master)
-    if bool == None
+    if mode == None
       bool(tk_call_without_enc('grid', 'propagate', master))
     else
-      tk_call_without_enc('grid', 'propagate', master, bool)
+      tk_call_without_enc('grid', 'propagate', master, mode)
     end
   end
 

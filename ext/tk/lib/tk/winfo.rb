@@ -36,30 +36,30 @@ module TkWinfo
     TkWinfo.atomname(id, self)
   end
 
-  def TkWinfo.cells(window)
-    number(tk_call_without_enc('winfo', 'cells', window))
+  def TkWinfo.cells(win)
+    number(tk_call_without_enc('winfo', 'cells', win))
   end
   def winfo_cells
     TkWinfo.cells self
   end
 
-  def TkWinfo.children(window)
-    list(tk_call_without_enc('winfo', 'children', window))
+  def TkWinfo.children(win)
+    list(tk_call_without_enc('winfo', 'children', win))
   end
   def winfo_children
     TkWinfo.children self
   end
 
-  def TkWinfo.classname(window)
-    tk_call_without_enc('winfo', 'class', window)
+  def TkWinfo.classname(win)
+    tk_call_without_enc('winfo', 'class', win)
   end
   def winfo_classname
     TkWinfo.classname self
   end
   alias winfo_class winfo_classname
 
-  def TkWinfo.colormapfull(window)
-     bool(tk_call_without_enc('winfo', 'colormapfull', window))
+  def TkWinfo.colormapfull(win)
+     bool(tk_call_without_enc('winfo', 'colormapfull', win))
   end
   def winfo_colormapfull
     TkWinfo.colormapfull self
@@ -77,52 +77,52 @@ module TkWinfo
     TkWinfo.containing(x, y, self)
   end
 
-  def TkWinfo.depth(window)
-    number(tk_call_without_enc('winfo', 'depth', window))
+  def TkWinfo.depth(win)
+    number(tk_call_without_enc('winfo', 'depth', win))
   end
   def winfo_depth
     TkWinfo.depth self
   end
 
-  def TkWinfo.exist?(window)
-    bool(tk_call_without_enc('winfo', 'exists', window))
+  def TkWinfo.exist?(win)
+    bool(tk_call_without_enc('winfo', 'exists', win))
   end
   def winfo_exist?
     TkWinfo.exist? self
   end
 
-  def TkWinfo.fpixels(window, dist)
-    number(tk_call_without_enc('winfo', 'fpixels', window, dist))
+  def TkWinfo.fpixels(win, dist)
+    number(tk_call_without_enc('winfo', 'fpixels', win, dist))
   end
   def winfo_fpixels(dist)
     TkWinfo.fpixels self, dist
   end
 
-  def TkWinfo.geometry(window)
-    tk_call_without_enc('winfo', 'geometry', window)
+  def TkWinfo.geometry(win)
+    tk_call_without_enc('winfo', 'geometry', win)
   end
   def winfo_geometry
     TkWinfo.geometry self
   end
 
-  def TkWinfo.height(window)
-    number(tk_call_without_enc('winfo', 'height', window))
+  def TkWinfo.height(win)
+    number(tk_call_without_enc('winfo', 'height', win))
   end
   def winfo_height
     TkWinfo.height self
   end
 
-  def TkWinfo.id(window)
-    tk_call_without_enc('winfo', 'id', window)
+  def TkWinfo.id(win)
+    tk_call_without_enc('winfo', 'id', win)
   end
   def winfo_id
     TkWinfo.id self
   end
 
-  def TkWinfo.interps(window=nil)
-    if window
+  def TkWinfo.interps(win=nil)
+    if win
       tk_split_simplelist(tk_call_without_enc('winfo', 'interps',
-                                              '-displayof', window))
+                                              '-displayof', win))
     else
       tk_split_simplelist(tk_call_without_enc('winfo', 'interps'))
     end
@@ -131,29 +131,29 @@ module TkWinfo
     TkWinfo.interps self
   end
 
-  def TkWinfo.mapped?(window)
-    bool(tk_call_without_enc('winfo', 'ismapped', window))
+  def TkWinfo.mapped?(win)
+    bool(tk_call_without_enc('winfo', 'ismapped', win))
   end
   def winfo_mapped?
     TkWinfo.mapped? self
   end
 
-  def TkWinfo.manager(window)
-    tk_call_without_enc('winfo', 'manager', window)
+  def TkWinfo.manager(win)
+    tk_call_without_enc('winfo', 'manager', win)
   end
   def winfo_manager
     TkWinfo.manager self
   end
 
-  def TkWinfo.appname(window)
-    tk_call('winfo', 'name', window)
+  def TkWinfo.appname(win)
+    tk_call('winfo', 'name', win)
   end
   def winfo_appname
     TkWinfo.appname self
   end
 
-  def TkWinfo.parent(window)
-    window(tk_call_without_enc('winfo', 'parent', window))
+  def TkWinfo.parent(win)
+    window(tk_call_without_enc('winfo', 'parent', win))
   end
   def winfo_parent
     TkWinfo.parent self
@@ -170,216 +170,216 @@ module TkWinfo
     TkWinfo.widget id, self
   end
 
-  def TkWinfo.pixels(window, dist)
-    number(tk_call_without_enc('winfo', 'pixels', window, dist))
+  def TkWinfo.pixels(win, dist)
+    number(tk_call_without_enc('winfo', 'pixels', win, dist))
   end
   def winfo_pixels(dist)
     TkWinfo.pixels self, dist
   end
 
-  def TkWinfo.reqheight(window)
-    number(tk_call_without_enc('winfo', 'reqheight', window))
+  def TkWinfo.reqheight(win)
+    number(tk_call_without_enc('winfo', 'reqheight', win))
   end
   def winfo_reqheight
     TkWinfo.reqheight self
   end
 
-  def TkWinfo.reqwidth(window)
-    number(tk_call_without_enc('winfo', 'reqwidth', window))
+  def TkWinfo.reqwidth(win)
+    number(tk_call_without_enc('winfo', 'reqwidth', win))
   end
   def winfo_reqwidth
     TkWinfo.reqwidth self
   end
 
-  def TkWinfo.rgb(window, color)
-    list(tk_call_without_enc('winfo', 'rgb', window, color))
+  def TkWinfo.rgb(win, color)
+    list(tk_call_without_enc('winfo', 'rgb', win, color))
   end
   def winfo_rgb(color)
     TkWinfo.rgb self, color
   end
 
-  def TkWinfo.rootx(window)
-    number(tk_call_without_enc('winfo', 'rootx', window))
+  def TkWinfo.rootx(win)
+    number(tk_call_without_enc('winfo', 'rootx', win))
   end
   def winfo_rootx
     TkWinfo.rootx self
   end
 
-  def TkWinfo.rooty(window)
-    number(tk_call_without_enc('winfo', 'rooty', window))
+  def TkWinfo.rooty(win)
+    number(tk_call_without_enc('winfo', 'rooty', win))
   end
   def winfo_rooty
     TkWinfo.rooty self
   end
 
-  def TkWinfo.screen(window)
-    tk_call('winfo', 'screen', window)
+  def TkWinfo.screen(win)
+    tk_call('winfo', 'screen', win)
   end
   def winfo_screen
     TkWinfo.screen self
   end
 
-  def TkWinfo.screencells(window)
-    number(tk_call_without_enc('winfo', 'screencells', window))
+  def TkWinfo.screencells(win)
+    number(tk_call_without_enc('winfo', 'screencells', win))
   end
   def winfo_screencells
     TkWinfo.screencells self
   end
 
-  def TkWinfo.screendepth(window)
-    number(tk_call_without_enc('winfo', 'screendepth', window))
+  def TkWinfo.screendepth(win)
+    number(tk_call_without_enc('winfo', 'screendepth', win))
   end
   def winfo_screendepth
     TkWinfo.screendepth self
   end
 
-  def TkWinfo.screenheight (window)
-    number(tk_call_without_enc('winfo', 'screenheight', window))
+  def TkWinfo.screenheight (win)
+    number(tk_call_without_enc('winfo', 'screenheight', win))
   end
   def winfo_screenheight
     TkWinfo.screenheight self
   end
 
-  def TkWinfo.screenmmheight(window)
-    number(tk_call_without_enc('winfo', 'screenmmheight', window))
+  def TkWinfo.screenmmheight(win)
+    number(tk_call_without_enc('winfo', 'screenmmheight', win))
   end
   def winfo_screenmmheight
     TkWinfo.screenmmheight self
   end
 
-  def TkWinfo.screenmmwidth(window)
-    number(tk_call_without_enc('winfo', 'screenmmwidth', window))
+  def TkWinfo.screenmmwidth(win)
+    number(tk_call_without_enc('winfo', 'screenmmwidth', win))
   end
   def winfo_screenmmwidth
     TkWinfo.screenmmwidth self
   end
 
-  def TkWinfo.screenvisual(window)
-    tk_call_without_enc('winfo', 'screenvisual', window)
+  def TkWinfo.screenvisual(win)
+    tk_call_without_enc('winfo', 'screenvisual', win)
   end
   def winfo_screenvisual
     TkWinfo.screenvisual self
   end
 
-  def TkWinfo.screenwidth(window)
-    number(tk_call_without_enc('winfo', 'screenwidth', window))
+  def TkWinfo.screenwidth(win)
+    number(tk_call_without_enc('winfo', 'screenwidth', win))
   end
   def winfo_screenwidth
     TkWinfo.screenwidth self
   end
 
-  def TkWinfo.server(window)
-    tk_call('winfo', 'server', window)
+  def TkWinfo.server(win)
+    tk_call('winfo', 'server', win)
   end
   def winfo_server
     TkWinfo.server self
   end
 
-  def TkWinfo.toplevel(window)
-    window(tk_call_without_enc('winfo', 'toplevel', window))
+  def TkWinfo.toplevel(win)
+    window(tk_call_without_enc('winfo', 'toplevel', win))
   end
   def winfo_toplevel
     TkWinfo.toplevel self
   end
 
-  def TkWinfo.visual(window)
-    tk_call_without_enc('winfo', 'visual', window)
+  def TkWinfo.visual(win)
+    tk_call_without_enc('winfo', 'visual', win)
   end
   def winfo_visual
     TkWinfo.visual self
   end
 
-  def TkWinfo.visualid(window)
-    tk_call_without_enc('winfo', 'visualid', window)
+  def TkWinfo.visualid(win)
+    tk_call_without_enc('winfo', 'visualid', win)
   end
   def winfo_visualid
     TkWinfo.visualid self
   end
 
-  def TkWinfo.visualsavailable(window, includeids=false)
+  def TkWinfo.visualsavailable(win, includeids=false)
     if includeids
       list(tk_call_without_enc('winfo', 'visualsavailable', 
-                               window, "includeids"))
+                               win, "includeids"))
     else
-      list(tk_call_without_enc('winfo', 'visualsavailable', window))
+      list(tk_call_without_enc('winfo', 'visualsavailable', win))
     end
   end
   def winfo_visualsavailable(includeids=false)
     TkWinfo.visualsavailable self, includeids
   end
 
-  def TkWinfo.vrootheight(window)
-    number(tk_call_without_enc('winfo', 'vrootheight', window))
+  def TkWinfo.vrootheight(win)
+    number(tk_call_without_enc('winfo', 'vrootheight', win))
   end
   def winfo_vrootheight
     TkWinfo.vrootheight self
   end
 
-  def TkWinfo.vrootwidth(window)
-    number(tk_call_without_enc('winfo', 'vrootwidth', window))
+  def TkWinfo.vrootwidth(win)
+    number(tk_call_without_enc('winfo', 'vrootwidth', win))
   end
   def winfo_vrootwidth
     TkWinfo.vrootwidth self
   end
 
-  def TkWinfo.vrootx(window)
-    number(tk_call_without_enc('winfo', 'vrootx', window))
+  def TkWinfo.vrootx(win)
+    number(tk_call_without_enc('winfo', 'vrootx', win))
   end
   def winfo_vrootx
     TkWinfo.vrootx self
   end
 
-  def TkWinfo.vrooty(window)
-    number(tk_call_without_enc('winfo', 'vrooty', window))
+  def TkWinfo.vrooty(win)
+    number(tk_call_without_enc('winfo', 'vrooty', win))
   end
   def winfo_vrooty
     TkWinfo.vrooty self
   end
 
-  def TkWinfo.width(window)
-    number(tk_call_without_enc('winfo', 'width', window))
+  def TkWinfo.width(win)
+    number(tk_call_without_enc('winfo', 'width', win))
   end
   def winfo_width
     TkWinfo.width self
   end
 
-  def TkWinfo.x(window)
-    number(tk_call_without_enc('winfo', 'x', window))
+  def TkWinfo.x(win)
+    number(tk_call_without_enc('winfo', 'x', win))
   end
   def winfo_x
     TkWinfo.x self
   end
 
-  def TkWinfo.y(window)
-    number(tk_call_without_enc('winfo', 'y', window))
+  def TkWinfo.y(win)
+    number(tk_call_without_enc('winfo', 'y', win))
   end
   def winfo_y
     TkWinfo.y self
   end
 
-  def TkWinfo.viewable(window)
-    bool(tk_call_without_enc('winfo', 'viewable', window))
+  def TkWinfo.viewable(win)
+    bool(tk_call_without_enc('winfo', 'viewable', win))
   end
   def winfo_viewable
     TkWinfo.viewable self
   end
 
-  def TkWinfo.pointerx(window)
-    number(tk_call_without_enc('winfo', 'pointerx', window))
+  def TkWinfo.pointerx(win)
+    number(tk_call_without_enc('winfo', 'pointerx', win))
   end
   def winfo_pointerx
     TkWinfo.pointerx self
   end
 
-  def TkWinfo.pointery(window)
-    number(tk_call_without_enc('winfo', 'pointery', window))
+  def TkWinfo.pointery(win)
+    number(tk_call_without_enc('winfo', 'pointery', win))
   end
   def winfo_pointery
     TkWinfo.pointery self
   end
 
-  def TkWinfo.pointerxy(window)
-    list(tk_call_without_enc('winfo', 'pointerxy', window))
+  def TkWinfo.pointerxy(win)
+    list(tk_call_without_enc('winfo', 'pointerxy', win))
   end
   def winfo_pointerxy
     TkWinfo.pointerxy self

@@ -112,8 +112,8 @@ module TkcTagAccess
     self
   end
 
-  def index(index)
-    @c.index(@id, index)
+  def index(idx)
+    @c.index(@id, idx)
   end
 
   def insert(beforethis, string)

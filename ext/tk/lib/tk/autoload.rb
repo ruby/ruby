@@ -148,6 +148,7 @@ autoload :TkTextWindow,       'tk/textwindow'
 
 autoload :TkAfter,            'tk/timer'
 autoload :TkTimer,            'tk/timer'
+autoload :TkRTTimer,          'tk/timer'
 
 autoload :TkToplevel,         'tk/toplevel'
 

@@ -51,13 +51,13 @@ module TkPack
     return info
   end
 
-  def propagate(master, bool=None)
+  def propagate(master, mode=None)
     # master = master.epath if master.kind_of?(TkObject)
     master = _epath(master)
-    if bool == None
+    if mode == None
       bool(tk_call_without_enc('pack', 'propagate', master))
     else
-      tk_call_without_enc('pack', 'propagate', master, bool)
+      tk_call_without_enc('pack', 'propagate', master, mode)
     end
   end
 

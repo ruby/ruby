@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2005-03-02"
+#define TCLTKLIB_RELEASE_DATE "2005-03-10"
 
 #include "ruby.h"
 #include "rubysig.h"
@@ -652,7 +652,7 @@ _timer_for_tcl(clientData)
     /* struct invoke_queue *q, *tmp; */
     /* VALUE thread; */
 
-    DUMP1("called timer_for_tcl");
+    DUMP1("call _timer_for_tcl");
 
     thr_crit_bup = rb_thread_critical;
     rb_thread_critical = Qtrue;
@@ -1402,9 +1402,6 @@ lib_eventloop_ensure(args)
     struct evloop_params *ptr = (struct evloop_params *)args;
     volatile VALUE current_evloop = rb_thread_current();
 
-    Tk_DeleteTimerHandler(timer_token);
-    timer_token = (Tcl_TimerToken)NULL;
-
     DUMP2("eventloop_ensure: current-thread : %lx", current_evloop);
     DUMP2("eventloop_ensure: eventloop-thread : %lx", eventloop_thread);
     if (eventloop_thread != current_evloop) {
@@ -1422,7 +1419,12 @@ lib_eventloop_ensure(args)
             break;
         }
 
-        if (NIL_P(eventloop_thread)) break; 
+        if (NIL_P(eventloop_thread)) {
+          Tk_DeleteTimerHandler(timer_token);
+          timer_token = (Tcl_TimerToken)NULL;
+
+          break; 
+        }
 
         if (RTEST(rb_funcall(eventloop_thread, ID_alive_p, 0, 0))) {
             DUMP2("eventloop-enshure: wake up parent %lx", eventloop_thread);

@@ -221,18 +221,18 @@ module TkTreatItemFont
     self
   end
 
-  def tagfont_copy(tagOrId, window, wintag=nil, winkey=nil, targetkey=nil)
+  def tagfont_copy(tagOrId, win, wintag=nil, winkey=nil, targetkey=nil)
     if wintag
       if winkey
-        fnt = window.tagfontobj(wintag, winkey).dup
+        fnt = win.tagfontobj(wintag, winkey).dup
       else
-        fnt = window.tagfontobj(wintag).dup
+        fnt = win.tagfontobj(wintag).dup
       end
     else
       if winkey
-        fnt = window.fontobj(winkey).dup
+        fnt = win.fontobj(winkey).dup
       else
-        fnt = window.fontobj.dup
+        fnt = win.fontobj.dup
       end
     end
 
@@ -247,7 +247,7 @@ module TkTreatItemFont
   end
 
 
-  def latintagfont_copy(tagOrId, window, wintag=nil, winkey=nil, targetkey=nil)
+  def latintagfont_copy(tagOrId, win, wintag=nil, winkey=nil, targetkey=nil)
     if targetkey
       fontobj(targetkey).dup.call_font_configure([__item_pathname(tagid(tagOrId)), targetkey], 
                                                  *(__item_config_cmd(tagid(tagOrId)) << {}))
@@ -258,22 +258,22 @@ module TkTreatItemFont
 
     if wintag
       if winkey
-        fontobj.latin_replace(window.tagfontobj(wintag, winkey).latin_font_id)
+        fontobj.latin_replace(win.tagfontobj(wintag, winkey).latin_font_id)
       else
-        fontobj.latin_replace(window.tagfontobj(wintag).latin_font_id)
+        fontobj.latin_replace(win.tagfontobj(wintag).latin_font_id)
       end
     else
       if winkey
-        fontobj.latin_replace(window.fontobj(winkey).latin_font_id)
+        fontobj.latin_replace(win.fontobj(winkey).latin_font_id)
       else
-        fontobj.latin_replace(window.fontobj.latin_font_id)
+        fontobj.latin_replace(win.fontobj.latin_font_id)
       end
     end
     self
   end
   alias asciitagfont_copy latintagfont_copy
 
-  def kanjifont_copy(tagOrId, window, wintag=nil, winkey=nil, targetkey=nil)
+  def kanjifont_copy(tagOrId, win, wintag=nil, winkey=nil, targetkey=nil)
     if targetkey
       fontobj(targetkey).dup.call_font_configure([__item_pathname(tagid(tagOrId)), targetkey], 
                                                  *(__item_config_cmd(tagid(tagOrId)) << {}))
@@ -284,15 +284,15 @@ module TkTreatItemFont
 
     if wintag
       if winkey
-        fontobj.kanji_replace(window.tagfontobj(wintag, winkey).kanji_font_id)
+        fontobj.kanji_replace(win.tagfontobj(wintag, winkey).kanji_font_id)
       else
-        fontobj.kanji_replace(window.tagfontobj(wintag).kanji_font_id)
+        fontobj.kanji_replace(win.tagfontobj(wintag).kanji_font_id)
       end
     else
       if winkey
-        fontobj.kanji_replace(window.fontobj(winkey).kanji_font_id)
+        fontobj.kanji_replace(win.fontobj(winkey).kanji_font_id)
       else
-        fontobj.kanji_replace(window.fontobj.kanji_font_id)
+        fontobj.kanji_replace(win.fontobj.kanji_font_id)
       end
     end
     self

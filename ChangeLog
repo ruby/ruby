@@ -1,3 +1,22 @@
+Thu Mar 10 19:10:29 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tcltklib.c (lib_eventloop_ensure): mis-delete a timer handler
+	  when exit from a recursive called eventloop
+
+	* ext/tk/lib/tk/timer.rb: new TkRTTimer class, which can works for a
+	  realtime operation
+
+	* ext/tk/sample/tkrttimer.rb: sample of TkRTTimer class
+
+	* ext/tk/lib/tk/textmark.rb: move  TkTextMark#+ and TkTextMark#- to 
+	  TkText::IndexModMethods
+
+	* ext/tk/lib/tk/text.rb: improve TkTextMark#+ and TkTextMark#-, and 
+	  add them to TkText::IndexModMethods module
+
+	* ext/tk/sample/tktextio.rb: add test part of "seek by text index
+	  modifiers"
+
 Wed Mar  9 23:55:34 2005  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pp.rb (PP::PPMethods#guard_inspect_key): support

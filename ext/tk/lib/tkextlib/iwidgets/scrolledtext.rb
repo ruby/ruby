@@ -240,8 +240,8 @@ class Tk::Iwidgets::Scrolledtext
     }
   end
 
-  def index(index)
-    tk_send_without_enc('index', _get_eval_enc_str(index))
+  def index(idx)
+    tk_send_without_enc('index', _get_eval_enc_str(idx))
   end
 
   def insert(index, *args)

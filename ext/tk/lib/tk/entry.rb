@@ -32,8 +32,8 @@ class TkEntry<TkLabel
     #self
     index
   end
-  def index(index)
-    number(tk_send_without_enc('index', index))
+  def index(idx)
+    number(tk_send_without_enc('index', idx))
   end
   def insert(pos,text)
     tk_send_without_enc('insert', pos, _get_eval_enc_str(text))

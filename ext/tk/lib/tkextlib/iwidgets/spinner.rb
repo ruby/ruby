@@ -91,8 +91,8 @@ class Tk::Iwidgets::Spinner
   end
   alias icursor cursor=
 
-  def index(index)
-    number(tk_send_without_enc('index', index))
+  def index(idx)
+    number(tk_send_without_enc('index', idx))
   end
 
   def insert(pos,text)

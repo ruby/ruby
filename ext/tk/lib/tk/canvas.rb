@@ -227,8 +227,8 @@ class TkCanvas<TkWindow
     self
   end
 
-  def index(tagOrId, index)
-    number(tk_send_without_enc('index', tagid(tagOrId), index))
+  def index(tagOrId, idx)
+    number(tk_send_without_enc('index', tagid(tagOrId), idx))
   end
 
   def insert(tagOrId, index, string)

@@ -192,11 +192,11 @@ module Tk
       end
     end
 
-    def overrideredirect(bool=None)
-      if bool == None
+    def overrideredirect(mode=None)
+      if mode == None
         bool(tk_call_without_enc('wm', 'overrideredirect', path))
       else
-        tk_call_without_enc('wm', 'overrideredirect', path, bool)
+        tk_call_without_enc('wm', 'overrideredirect', path, mode)
         self
       end
     end
@@ -257,9 +257,9 @@ module Tk
       bool(tk_call('wm', 'stackorder', path, 'isbelow', win))
     end
 
-    def state(state=nil)
-      if state
-        tk_call_without_enc('wm', 'state', path, state)
+    def state(st=nil)
+      if st
+        tk_call_without_enc('wm', 'state', path, st)
         self
       else
         tk_call_without_enc('wm', 'state', path)

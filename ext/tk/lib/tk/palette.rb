@@ -30,22 +30,22 @@ module TkPalette
     tk_call('tkDarken', color, percent)
   end
 
-  def TkPalette.recolorTree(window, colors)
+  def TkPalette.recolorTree(win, colors)
     if not colors.kind_of?(Hash)
       fail "2nd arg need to be Hash"
     end
 
     colors.each{|key, value|
       begin
-        if window.cget(key) == tk_call('set', "tkPalette(#{key})")
-          window[key] = colors[key]
+        if win.cget(key) == tk_call('set', "tkPalette(#{key})")
+          win[key] = colors[key]
         end
       rescue
         # ignore
       end
     }
 
-    TkWinfo.children(window).each{|w| TkPalette.recolorTree(w, colors)}
+    TkWinfo.children(win).each{|w| TkPalette.recolorTree(w, colors)}
   end
 
   def recolorTree(colors)

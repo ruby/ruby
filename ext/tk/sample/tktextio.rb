@@ -581,5 +581,23 @@ if __FILE__ == $0
 
   STDOUT.print("\n================================================\n\n")
 
+  STDOUT.print("\n========= reverse order (seek by lines) ========\n\n")
+
+  tio.seek(-1, IO::SEEK_END)
+  begin
+    begin
+      tio.seek(:linestart, IO::SEEK_CUR)
+    rescue
+      # maybe use old version of tk/textmark.rb
+      tio.seek('0 char linestart', IO::SEEK_CUR)
+    end
+    STDOUT.print(gets)
+    tio.seek('-1 char linestart -1 char', IO::SEEK_CUR)
+  end while(tio.pos > 0)
+
+  STDOUT.print("\n================================================\n\n")
+
+  tio.seek(0, IO::SEEK_END)
+
   Tk.mainloop
 end

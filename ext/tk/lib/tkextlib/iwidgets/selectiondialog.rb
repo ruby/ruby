@@ -57,8 +57,8 @@ class Tk::Iwidgets::Selectiondialog
     tk_send_without_enc('delete', first, last)
     self
   end
-  def index(index)
-    tk_send_without_enc('index', index).to_i
+  def index(idx)
+    tk_send_without_enc('index', idx).to_i
   end
   def nearest(y)
     tk_send_without_enc('nearest', y).to_i
