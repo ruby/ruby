@@ -35,13 +35,18 @@ if defined? Zlib
       w << "abc"
       w.close
       r = Zlib::GzipReader.new(StringIO.new(s))
-      $/ = ""
-      r.ungetc ?\n
-      assert_equal("abc", r.gets)
-      assert_nothing_raised {
-        r.read
-        r.close
-      }
+      begin
+        old_rs = $/
+        $/ = ""
+        r.ungetc ?\n
+        assert_equal("abc", r.gets)
+        assert_nothing_raised {
+          r.read
+          r.close
+        }
+      ensure
+        $/ = old_rs
+      end
     end
   end
 
