@@ -10,11 +10,13 @@ module DL
 	init_types()
 	Struct.new(@types, contents)
       end
+      alias struct define_struct
 
       def define_union(contents)
 	init_types()
 	Union.new(@types, contents)
       end
+      alias union define_union
 
       class Memory
 	def initialize(ptr, names, ty, len, enc, dec)
@@ -56,8 +58,11 @@ module DL
 	  parse(contents)
 	end
 
-	def new
-	  ptr = DL::malloc(@size)
+	def new(size = nil)
+	  if( !size )
+	    size = @size
+	  end
+	  ptr = DL::malloc(size)
 	  ptr.struct!(@tys, *@names)
 	  mem = Memory.new(ptr, @names, @ty, @len, @enc, @dec)
 	  return mem
