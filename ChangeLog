@@ -1,3 +1,7 @@
+Wed Aug 25 15:18:52 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_longjmp): Exception#to_str is no longer defined.
+
 Tue Aug 24 16:41:48 2004  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/cgi/session.rb (CGI::Session::FileStore#initialize): do not
@@ -914,7 +918,7 @@ Wed Jun 23 00:10:17 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 Wed Jun 23 00:00:25 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* eval.c (return_jump, break_jump): raise unexpceted local jump
+	* eval.c (return_jump, break_jump): raise unexpected local jump
 	  exception directly.  [ruby-dev:23740]
 
 	* io.c (rb_io_initialize): should check fcntl result.  [ruby-dev:23742]

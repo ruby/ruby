@@ -4310,7 +4310,7 @@ rb_longjmp(tag, mesg)
 
 	PUSH_TAG(PROT_NONE);
 	if ((status = EXEC_TAG()) == 0) {
-	    StringValue(e);
+	    e = rb_obj_as_string(e);
 	    warn_printf("Exception `%s' at %s:%d - %s\n",
 			rb_obj_classname(ruby_errinfo),
 			ruby_sourcefile, ruby_sourceline,
