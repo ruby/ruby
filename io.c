@@ -2876,9 +2876,9 @@ pipe_open(argc, argv, pname, mode)
 	fptr->f = PIPE_FDOPEN(0);
     }
     if (modef & FMODE_WRITABLE) {
-	FILE *fpw = PIPE_FDOPEN(1);
-	if (fptr->f) fptr->f2 = fpw;
-	else fptr->f = fpw;
+	FILE *fpwt = PIPE_FDOPEN(1);
+	if (fptr->f) fptr->f2 = fpwt;
+	else fptr->f = fpwt;
     }
 #if defined (__CYGWIN__) || !defined(HAVE_FORK)
     fptr->finalize = pipe_finalize;

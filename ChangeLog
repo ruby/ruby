@@ -1,3 +1,7 @@
+Thu Oct 21 13:11:31 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* io.c (pipe_open): variable name "fpw" is conflicted.
+
 Thu Oct 21 00:36:41 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (lex_getline): should not touch ruby_debug_lines if
