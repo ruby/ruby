@@ -195,6 +195,8 @@ rubyw: $(WPROGRAM)
 
 !include $(srcdir)/common.mk
 
+PHONY: Makefile
+
 config: config.h config.status
 
 config.h:

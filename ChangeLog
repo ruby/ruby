@@ -1,3 +1,8 @@
+Tue Apr 13 21:50:57 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bcc32/Makefile.sub (PHONY): Borland make disallows empty command
+	  rules.
+
 Tue Apr 13 17:55:16 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb (begin_transport): should not overwrite HTTP
