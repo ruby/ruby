@@ -50,7 +50,7 @@ rb_ary_modify_check(ary)
 {
     if (OBJ_FROZEN(ary)) rb_error_frozen("array");
     if (FL_TEST(ary, ARY_TMPLOCK))
-	rb_raise(rb_eTypeError, "can't modify array during sort");
+	rb_raise(rb_eTypeError, "can't modify array during iteration");
     if (!OBJ_TAINTED(ary) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify array");
 }
@@ -839,6 +839,9 @@ rb_ary_reverse_each(ary)
 
     while (len--) {
 	rb_yield(RARRAY(ary)->ptr[len]);
+	if (RARRAY(ary)->len < len) {
+	    len = RARRAY(ary)->len;
+	}
     }
     return ary;
 }
@@ -1423,12 +1426,11 @@ rb_ary_zip(argc, argv, ary)
     long len;
     VALUE result;
 
-    len = RARRAY(ary)->len;
     for (i=0; i<argc; i++) {
 	argv[i] = to_ary(argv[i]);
     }
     if (rb_block_given_p()) {
-	for (i=0; i<len; i++) {
+	for (i=0; i<RARRAY(ary)->len; i++) {
 	    VALUE tmp = rb_ary_new2(argc+1);
 
 	    rb_ary_push(tmp, rb_ary_entry(ary, i));
@@ -1439,6 +1441,7 @@ rb_ary_zip(argc, argv, ary)
 	}
 	return Qnil;
     }
+    len = RARRAY(ary)->len;
     result = rb_ary_new2(len);
     for (i=0; i<len; i++) {
 	VALUE tmp = rb_ary_new2(argc+1);
@@ -1562,15 +1565,21 @@ rb_ary_fill(argc, argv, ary)
 	}
 	RARRAY(ary)->len = end;
     }
-    p = RARRAY(ary)->ptr + beg;
-    pend = p + len;
 
     if (block_p) {
-	while (p < pend) {
-	    *p++ = rb_yield(LONG2NUM(beg++));
+	VALUE v;
+	long i;
+
+	for (i=0; i<RARRAY(ary)->len; i++) {
+	    beg++;
+	    v = rb_yield(LONG2NUM(beg++));
+	    if (i>=RARRAY(ary)->len) break;
+	    RARRAY(ary)->ptr[i] = v;
 	}
     }
     else {
+	p = RARRAY(ary)->ptr + beg;
+	pend = p + len;
 	while (p < pend) {
 	    *p++ = item;
 	}

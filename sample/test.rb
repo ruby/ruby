@@ -1064,6 +1064,20 @@ marity_test(:p)
 lambda(&method(:test_ok)).call(true)
 lambda(&get_block{|a,n| test_ok(a,n)}).call(true, 2)
 
+class ITER_TEST1
+   def a
+     block_given?
+   end
+end
+
+class ITER_TEST2 < ITER_TEST1
+   def a
+     test_ok(super)
+     super
+   end
+end
+test_ok(ITER_TEST2.new.a {})
+
 test_check "float"
 test_ok(2.6.floor == 2)
 test_ok((-2.6).floor == -3)

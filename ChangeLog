@@ -1,3 +1,20 @@
+Fri Aug  1 09:54:38 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (BEGIN_CALLARGS): should not always  reset ruby_iter,
+	  need to restore previous value. [ruby-talk:77577]
+
+	* array.c (rb_ary_fill): array length may be changed during the
+	  block execution. [ruby-talk:77579]
+
+	* array.c (rb_ary_zip): ditto.
+
+	* array.c (rb_ary_fill): ditto.
+
+	* hash.c (env_reject_bang): length may be changed during the block
+	  execution.
+
+	* hash.c (env_clear): ditto.
+
 Fri Aug  1 00:52:58 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (Init_stack): IA64 requires STACK_LEVEL_MAX to be less than

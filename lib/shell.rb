@@ -267,4 +267,3 @@ class Shell
   CommandProcessor.initialize
   CommandProcessor.run_config
 end
-

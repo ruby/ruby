@@ -1372,25 +1372,21 @@ static VALUE
 env_reject_bang()
 {
     volatile VALUE keys;
-    VALUE *ptr;
-    long len;
+    long i;
     int del = 0;
 
     rb_secure(4);
     keys = env_keys();
-    ptr = RARRAY(keys)->ptr;
-    len = RARRAY(keys)->len; 
 
-    while (len--) {
-	VALUE val = rb_f_getenv(Qnil, *ptr);
+    for (i=0; i<RARRAY(keys)->len; i++) {
+	VALUE val = rb_f_getenv(Qnil, RARRAY(keys)->ptr[i]);
 	if (!NIL_P(val)) {
-	    if (RTEST(rb_yield_values(2, *ptr, val))) {
-		FL_UNSET(*ptr, FL_TAINT);
-		env_delete(Qnil, *ptr);
+	    if (RTEST(rb_yield_values(2, RARRAY(keys)->ptr[i], val))) {
+		FL_UNSET(RARRAY(keys)->ptr[i], FL_TAINT);
+		env_delete(Qnil, RARRAY(keys)->ptr[i]);
 		del++;
 	    }
 	}
-	ptr++;
     }
     if (del == 0) return Qnil;
     return envtbl;
@@ -1454,20 +1450,16 @@ static VALUE
 env_clear()
 {
     volatile VALUE keys;
-    VALUE *ptr;
-    long len;
+    long i;
     
     rb_secure(4);
     keys = env_keys();
-    ptr = RARRAY(keys)->ptr;
-    len = RARRAY(keys)->len; 
 
-    while (len--) {
-	VALUE val = rb_f_getenv(Qnil, *ptr);
+    for (i=0; i<RARRAY(keys)->len; i++) {
+	VALUE val = rb_f_getenv(Qnil, RARRAY(keys)->ptr[i]);
 	if (!NIL_P(val)) {
-	    env_delete(Qnil, *ptr);
+	    env_delete(Qnil, RARRAY(keys)->ptr[i]);
 	}
-	ptr++;
     }
     return envtbl;
 }
@@ -1719,18 +1711,14 @@ env_replace(env, hash)
     VALUE env, hash;
 {
     volatile VALUE keys = env_keys();
-    VALUE *ptr;
-    long len;
+    long i;
 
     if (env == hash) return env;
     hash = to_hash(hash);
     st_foreach(RHASH(hash)->tbl, env_replace_i, keys);
 
-    ptr = RARRAY(keys)->ptr;
-    len = RARRAY(keys)->len; 
-
-    while (len--) {
-	env_delete(env, *ptr++);
+    for (i=0; i<RARRAY(keys)->len; i++) {
+	env_delete(env, RARRAY(keys)->ptr[i]);
     }
     return env;
 }
