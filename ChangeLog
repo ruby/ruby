@@ -1,3 +1,7 @@
+Wed Jun  9 11:20:05 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c: remove unused functions and variables.
+
 Wed Jun  2 20:16:03 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (str_new4): should share shared instance if it already
