@@ -1,3 +1,7 @@
+: OptionParser module
+
+  Imported.  Command line options utility library.
+
 : parser
 
   %W(...) notation, word list literal like %w(...) with the
