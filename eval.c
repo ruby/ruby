@@ -4362,11 +4362,13 @@ eval(self, src, scope, file, line)
     }
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
+	DEFER_INTS;
 	compile(src, file, line);
 	if (ruby_nerrs > 0) {
 	    compile_error(0);
 	}
 	result = eval_node(self);
+	ALLOW_INTS;
     }
     POP_TAG();
     POP_CLASS();
@@ -4759,12 +4761,14 @@ rb_load(fname, wrap)
     state = EXEC_TAG();
     last_func = ruby_frame->last_func;
     if (state == 0) {
+	DEFER_INTS;
 	ruby_in_eval++;
 	rb_load_file(file);
 	ruby_in_eval--;
 	if (ruby_nerrs == 0) {
 	    eval_node(self);
 	}
+	ALLOW_INTS;
     }
     ruby_frame->last_func = last_func;
     if (ruby_scope->flag == SCOPE_ALLOCA && ruby_class == rb_cObject) {
@@ -5394,7 +5398,6 @@ Init_eval()
     rb_define_method(rb_cModule, "module_eval", rb_mod_module_eval, -1);
     rb_define_method(rb_cModule, "class_eval", rb_mod_module_eval, -1);
 
-    rb_undef_method(rb_cClass, "include");
     rb_undef_method(rb_cClass, "module_function");
 
     rb_define_private_method(rb_cModule, "remove_method", rb_mod_remove_method, 1);

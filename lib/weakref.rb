@@ -19,18 +19,24 @@ class WeakRef<Delegator
   ID_MAP =  {}		    # obj -> [ref,...]
   ID_REV_MAP =  {}          # ref -> obj
   ObjectSpace.add_finalizer(lambda{|id|
-			      rids = ID_MAP[id]
-			      if rids
-				for rid in rids
-				  ID_REV_MAP[rid] = nil
+			      __old_status = Thread.critical
+			      Thread.critical = true
+			      begin
+				rids = ID_MAP[id]
+				if rids
+				  for rid in rids
+				    ID_REV_MAP[rid] = nil
+				  end
+				  ID_MAP[id] = nil
 				end
-				ID_MAP[id] = nil
-			      end
-			      rid = ID_REV_MAP[id]
-			      if rid
-				ID_REV_MAP[id] = nil
-				ID_MAP[rid].delete(id)
-      				ID_MAP[rid] = nil if ID_MAP[rid].empty?
+				rid = ID_REV_MAP[id]
+				if rid
+				  ID_REV_MAP[id] = nil
+				  ID_MAP[rid].delete(id)
+				  ID_MAP[rid] = nil if ID_MAP[rid].empty?
+				end
+			      ensure
+				Thread.critical = __old_status
 			      end
 			    })
 

@@ -1,3 +1,8 @@
+Wed Jul 26 15:07:00 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (eval): disable interrupts and thread context switching
+	  during compilation and execution.
+
 Mon Jul 24 18:52:55 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* win32/win32.c (win32_getenv): should remove `static'.
