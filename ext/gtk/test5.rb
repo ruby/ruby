@@ -21,10 +21,11 @@ button = []
 end
 0.upto(8) do |i|
   button[i].signal_connect("clicked") do |w|
-    if button[i+1].visible?
-      button[i+1].hide
+    j = (i+1)%9
+    if button[j].visible?
+      button[j].hide
     else
-      button[i+1].show
+      button[j].show
     end
   end
   button[i].show

@@ -633,7 +633,7 @@ An end of a defun is found by moving forward from the beginning of one."
        2 font-lock-type-face)
      ;; functions
      '("^\\s *def[ \t]+.*$"
-       0 font-lock-function-name-face))
+       0 font-lock-function-name-face t))
     "*Additional expressions to highlight in ruby mode.")
   (if (and (>= (string-to-int emacs-version) 20)
           (not (featurep 'xemacs)))

@@ -196,19 +196,20 @@ static void
 gobj_free(obj)
     GtkObject *obj;
 {
-    VALUE self = get_value_from_gobject(obj);
-
-    if (GTK_OBJECT_NEED_DESTROY(obj)) {
-	gtk_object_destroy(obj);
-    }
-    rb_ivar_set(self, id_relatives, Qnil);
+    /* just a type mark */
 }
 
 static void
-delete_gobject(obj)
-    GtkObject *obj;
+delete_gobject(gtkobj, obj)
+    GtkObject *gtkobj;
+    VALUE obj;
 {
-    ary_delete(gtk_object_list, get_value_from_gobject(obj));
+    struct RData *data;
+
+    data = RDATA(rb_ivar_get(obj, id_gtkdata));
+    data->dfree = 0;
+    data->data = 0;
+    ary_delete(gtk_object_list, obj);
 }
 
 static VALUE
@@ -223,7 +224,8 @@ make_gobject(klass, gtkobj)
     gtk_object_set_user_data(gtkobj, (gpointer)obj);
 
     rb_ivar_set(obj, id_gtkdata, data);
-    gtk_signal_connect(gtkobj, "destroy", (GtkSignalFunc)delete_gobject, 0);
+    gtk_signal_connect(gtkobj, "destroy",
+		       (GtkSignalFunc)delete_gobject, (gpointer)obj);
     ary_push(gtk_object_list, obj);
     return obj;
 }

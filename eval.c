@@ -43,6 +43,7 @@ static VALUE f_binding _((VALUE));
 static void f_END _((void));
 
 #define SCOPE_PRIVATE  FL_USER4
+#define SCOPE_MODFUNC  FL_USER5
 
 #define CACHE_SIZE 0x200
 #define CACHE_MASK 0x1ff
@@ -717,6 +718,7 @@ ruby_init()
     top_scope = the_scope;
     /* default visibility is private at toplevel */
     FL_SET(top_scope, SCOPE_PRIVATE);
+    FL_UNSET(top_scope, SCOPE_MODFUNC);
 
     PUSH_TAG(PROT_NONE)
     if ((state = EXEC_TAG()) == 0) {
@@ -2119,6 +2121,15 @@ rb_eval(self, node)
 		noex = NOEX_PUBLIC;
 	    }
 	    rb_add_method(the_class, node->nd_mid, node->nd_defn, noex);
+	    if (FL_TEST(the_scope,SCOPE_MODFUNC)) {
+		rb_add_method(rb_singleton_class(the_class),
+			      node->nd_mid, node->nd_defn, NOEX_PUBLIC);
+	    }
+
+	    if (FL_TEST(the_scope, SCOPE_MODFUNC)) {
+		rb_funcall(the_class, rb_intern("singleton_method_added"),
+			   1, INT2FIX(node->nd_mid));
+	    }
 	    if (FL_TEST(the_class, FL_SINGLETON)) {
 		VALUE recv = rb_iv_get(the_class, "__attached__");
 		rb_funcall(recv, rb_intern("singleton_method_added"),
@@ -3746,6 +3757,7 @@ f_load(obj, fname)
     }
     /* default visibility is private at loading toplevel */
     FL_SET(the_scope, SCOPE_PRIVATE);
+    FL_UNSET(top_scope, SCOPE_MODFUNC);
 
     state = EXEC_TAG();
     last_func = the_frame->last_func;
@@ -3938,6 +3950,7 @@ mod_public(argc, argv, module)
 {
     if (argc == 0) {
 	FL_UNSET(the_scope, SCOPE_PRIVATE);
+	FL_UNSET(top_scope, SCOPE_MODFUNC);
     }
     else {
 	set_method_visibility(module, argc, argv, NOEX_PUBLIC);
@@ -3953,6 +3966,7 @@ mod_private(argc, argv, module)
 {
     if (argc == 0) {
 	FL_SET(the_scope, SCOPE_PRIVATE);
+	FL_UNSET(top_scope, SCOPE_MODFUNC);
     }
     else {
 	set_method_visibility(module, argc, argv, NOEX_PRIVATE);
@@ -4006,7 +4020,12 @@ mod_modfunc(argc, argv, module)
     ID id;
     NODE *body;
 
-    rb_clear_cache();
+    if (argc == 0) {
+	FL_SET(the_scope, SCOPE_PRIVATE);
+	FL_SET(the_scope, SCOPE_MODFUNC);
+	return module;
+    }
+
     set_method_visibility(module, argc, argv, NOEX_PRIVATE);
     for (i=0; i<argc; i++) {
 	id = rb_to_id(argv[i]);
@@ -4015,6 +4034,7 @@ mod_modfunc(argc, argv, module)
 	    NameError("undefined method `%s' for module `%s'",
 		      rb_id2name(id), rb_class2name(module));
 	}
+	rb_clear_cache_by_id(id);
 	rb_add_method(rb_singleton_class(module), id, body->nd_body, NOEX_PUBLIC);
     }
     return module;

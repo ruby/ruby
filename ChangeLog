@@ -1,7 +1,5 @@
 Fri Jan 16 00:43:43 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
-	* variable.c (rb_ivar_get): Files can have instance variables now.
-
 	* ruby.h (CLONESETUP): copies its singleton classes too.
 
 	* class.c (singleton_class_attached): saves binded object in the

@@ -1,7 +1,7 @@
 ### ftplib.rb			-*- Mode: ruby; tab-width: 8; -*-
 
-## $Revision: 1.1.1.1 $
-## $Date: 1998/01/16 04:05:49 $
+## $Revision: 1.1.1.1.4.1 $
+## $Date: 1998/01/16 12:36:05 $
 ## by maeda shugo <shugo@po.aianet.ne.jp>
 
 ### Code:
@@ -17,7 +17,7 @@ class FTPProtoError < FTPError; end
 
 class FTP
    
-  RCS_ID = '$Id: ftplib.rb,v 1.1.1.1 1998/01/16 04:05:49 matz Exp $'
+  RCS_ID = '$Id: ftplib.rb,v 1.1.1.1.4.1 1998/01/16 12:36:05 matz Exp $ '
    
    FTP_PORT = 21
    CRLF = "\r\n"

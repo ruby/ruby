@@ -6,11 +6,11 @@
 # The class for temporary files.
 #  o creates a temporary file, which name is "basename.pid.n" with mode "w+".
 #  o Tempfile objects can be used like IO object.
-#  o created temporary files are removed if it is closed or garbage collected,
-#    or script termination.
+#  o created temporary files are removed on closing or script termination.
 #  o file mode of the temporary files are 0600.
 
 require 'delegate'
+require 'final'
 
 class Tempfile < SimpleDelegater
   Max_try = 10
@@ -45,8 +45,7 @@ class Tempfile < SimpleDelegater
 	  File.unlink(@tmpdir + '/' + @tmpname + '.lock')
 	end
       }
-      ObjectSpace.call_finalizer(self)
-      ObjectSpace.add_finalizer(@clean_files)
+      ObjectSpace.define_finalizer(self, @clean_files)
 
       @tmpfile = open(@tmpname, 'w+')
       super(@tmpfile)
@@ -57,8 +56,13 @@ class Tempfile < SimpleDelegater
     end
   end
 
+  def Tempfile.open(*args)
+    Tempfile.new(*args)
+  end
+
   def close
-    super
+    @tmpfile.close
     @clean_files.call
+    ObjectSpace.undefine_finalizer(self)
   end
 end

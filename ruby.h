@@ -227,7 +227,6 @@ struct RHash {
 
 struct RFile {
     struct RBasic basic;
-    struct st_table *iv_tbl;
     struct OpenFile *fptr;
 };
 
