@@ -263,8 +263,7 @@ class Set
 
   def contain?(enum)
     enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
-    enum.each { |o| include?(o) or return false }
-    true
+    enum.all? { |o| include?(o) }
   end
 
   def each
@@ -338,9 +337,7 @@ class Set
 
     set.is_a?(Set) && size == set.size or return false
 
-    set.each { |o| include?(o) or return false }
-
-    true
+    set.all? { |o| include?(o) }
   end
 
   def hash
