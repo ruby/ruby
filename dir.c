@@ -605,23 +605,23 @@ rb_glob_helper(path, flags, func, arg)
 	    else dir = base;
 
 	    magic = extract_elem(p);
-	    if (m && strcmp(magic, "**") == 0) {
-		recursive = 1;
-		buf = ALLOC_N(char, strlen(base)+strlen(m)+3);
-		sprintf(buf, "%s%s%s", base, (*base)?"":".", m);
-		rb_glob_helper(buf, flags, func, arg);
-		free(buf);
-	    }
 	    if (rb_sys_stat(dir, &st) < 0) {
 	        free(base);
 	        break;
 	    }
 	    if (S_ISDIR(st.st_mode)) {
-	       dirp = opendir(dir);
-	       if (dirp == NULL) {
-		   free(base);
-		   break;
-	       }
+		if (m && strcmp(magic, "**") == 0) {
+		    recursive = 1;
+		    buf = ALLOC_N(char, strlen(base)+strlen(m)+3);
+		    sprintf(buf, "%s%s%s", base, (*base)?"":".", m);
+		    rb_glob_helper(buf, flags, func, arg);
+		    free(buf);
+		}
+		dirp = opendir(dir);
+		if (dirp == NULL) {
+		    free(base);
+		    break;
+		}
 	    }
 	    else {
 	      free(base);
@@ -639,7 +639,6 @@ rb_glob_helper(path, flags, func, arg)
 		    if (strcmp(".", dp->d_name) == 0 || strcmp("..", dp->d_name) == 0)
 			continue;
 		    buf = ALLOC_N(char, strlen(base)+NAMLEN(dp)+strlen(m)+6);
-		    sprintf(buf, "%s%s%s/**%s", base, (BASE)?"/":"", dp->d_name, m);
 		    sprintf(buf, "%s%s%s", base, (BASE)?"/":"", dp->d_name);
 		    if (lstat(buf, &st) < 0) {
 			continue;

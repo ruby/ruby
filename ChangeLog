@@ -1,3 +1,8 @@
+Mon Aug 27 07:32:23 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* dir.c (rb_glob_helper): merge from 1.7: traversed files twice
+	  with pattern "*/**".  don't descend to non-existing directories.
+
 Fri Aug 24 15:17:40 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_equal): check identiry equality first.
