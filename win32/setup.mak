@@ -33,7 +33,7 @@ alpha-$(OS): -prologue- -alpha- -epilogue-
 ### Makefile for ruby $(OS) ###
 srcdir = $(srcdir:\=/)
 <<
-	@cl -nologo -EP -I$(srcdir) <<"Creating $(MAKEFILE)" >> $(MAKEFILE)
+	@cl -nologo -EP -I$(srcdir) -DRUBY_EXTERN="//" <<"Creating $(MAKEFILE)" >> $(MAKEFILE)
 #include "version.h"
 MAJOR = RUBY_VERSION_MAJOR
 MINOR = RUBY_VERSION_MINOR
