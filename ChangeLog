@@ -1,3 +1,10 @@
+Wed Feb 16 17:07:57 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tkutil.c: Follow the change of st.c (st_foreach)
+	  [ruby-list:40623].
+	  Sometimes mis-convert from a Ruby's Array of SJIS Strings, which
+	  includes some kind of SJIS characters, to a Tcl's UTF8 list string.
+
 Mon Feb 14 23:58:17 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/parser.rb (RSS::ListenerMixin::tag_end):
