@@ -99,8 +99,6 @@ EXPORTS
 	definekey
 	encrypt
 	crypt
-;missing/fnmatch.c
-	fnmatch
 ;missing/isinf.c
 	isinf
 ;missing/isnan.c

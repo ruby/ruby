@@ -387,8 +387,9 @@ if test "$with_dln_a_out" != yes; then
   else
     case "$host_os" in
 	hpux*)		CCDLFLAGS='+z';;
-	solaris*|irix*)	CCDLFLAGS='-K PIC' ;;
+	solaris*)	CCDLFLAGS='-K PIC' ;;
 	sunos*)		CCDLFLAGS='-PIC' ;;
+	irix*)		CCDLFLAGS='-KPIC' ;;
 	esix*|uxpds*)   CCDLFLAGS='-KPIC' ;;
 	*)		CCDLFLAGS='' ;;
     esac
@@ -408,7 +409,7 @@ if test "$with_dln_a_out" != yes; then
 			rb_cv_dlopen=yes;;
 	sunos*) 	LDSHARED='ld -assert nodefinitions'
 			rb_cv_dlopen=yes;;
-	irix*) 	 	LDSHARED='ld -ignore_unresolved'
+	irix*) 	 	LDSHARED='ld -shared'
 			rb_cv_dlopen=yes;;
 	sysv4*) 	LDSHARED='ld -G'
 			rb_cv_dlopen=yes;;

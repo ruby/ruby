@@ -295,8 +295,8 @@ eaccess(path, mode)
   if (st.st_mode & mode) return 0;
 
   return -1;
-#else  /* !NT*/
-	return 0;
+#else  /* !NT */
+  return access(path, mode);
 #endif
 }
 
