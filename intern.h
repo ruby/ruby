@@ -247,6 +247,7 @@ void rb_gc_mark _((VALUE));
 void rb_gc_force_recycle _((VALUE));
 void rb_gc _((void));
 void rb_gc_copy_finalizer _((VALUE,VALUE));
+void rb_gc_finalize_deferred _((void));
 void rb_gc_call_finalizer_at_exit _((void));
 VALUE rb_gc_enable _((void));
 VALUE rb_gc_disable _((void));

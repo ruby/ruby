@@ -5466,6 +5466,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
     if ((++tick & 0xff) == 0) {
 	CHECK_INTS;		/* better than nothing */
 	stack_check();
+	rb_gc_finalize_deferred();
     }
     PUSH_ITER(itr);
     PUSH_FRAME();

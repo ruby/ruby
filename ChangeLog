@@ -1,3 +1,11 @@
+Mon Sep 27 21:25:12 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_call0): invoke finalizers periodically.
+
+	* gc.c (gc_sweep): defer running finalizers.
+
+	* gc.c (rb_gc_finalize_deferred): run deferred finalizers.
+
 Mon Sep 27 15:01:59 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* parse.y [ripper]: missing ';'.

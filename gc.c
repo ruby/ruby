@@ -92,6 +92,7 @@ static unsigned long malloc_increase = 0;
 static unsigned long malloc_limit = GC_MALLOC_LIMIT;
 static void run_final();
 static VALUE nomem_error;
+static void gc_internal();
 
 void
 rb_memerror()
@@ -119,11 +120,11 @@ ruby_xmalloc(size)
     malloc_increase += size;
 
     if (malloc_increase > malloc_limit) {
-	rb_gc();
+	gc_internal();
     }
     RUBY_CRITICAL(mem = malloc(size));
     if (!mem) {
-	rb_gc();
+	gc_internal();
 	RUBY_CRITICAL(mem = malloc(size));
 	if (!mem) {
 	    rb_memerror();
@@ -160,7 +161,7 @@ ruby_xrealloc(ptr, size)
     malloc_increase += size;
     RUBY_CRITICAL(mem = realloc(ptr, size));
     if (!mem) {
-	rb_gc();
+	gc_internal();
 	RUBY_CRITICAL(mem = realloc(ptr, size));
 	if (!mem) {
 	    rb_memerror();
@@ -380,7 +381,7 @@ rb_newobj()
 {
     VALUE obj;
 
-    if (!freelist) rb_gc();
+    if (!freelist) gc_internal();
 
     obj = (VALUE)freelist;
     freelist = freelist->as.free.next;
@@ -993,6 +994,41 @@ gc_mark_children(ptr, lev)
 static void obj_free _((VALUE));
 
 static void
+finalize_list(p)
+    RVALUE *p;
+{
+    while (p) {
+	RVALUE *tmp = p->as.free.next;
+	run_final((VALUE)p);
+	if (!FL_TEST(p, FL_SINGLETON)) { /* not freeing page */
+	    p->as.free.flags = 0;
+	    p->as.free.next = freelist;
+	    freelist = p;
+	}
+	p = tmp;
+    }
+}
+
+static void
+free_unused_heaps()
+{
+    int i, j;
+
+    for (i = j = 1; j < heaps_used; i++) {
+	if (heaps[i].limit == 0) {
+	    free(heaps[i].slot);
+	    heaps_used--;
+	}
+	else {
+	    if (i != j) {
+		heaps[j] = heaps[i];
+	    }
+	    j++;
+	}
+    }
+}
+
+static void
 gc_sweep()
 {
     RVALUE *p, *pend, *final_list;
@@ -1064,35 +1100,10 @@ gc_sweep()
 
     /* clear finalization list */
     if (final_list) {
-	RVALUE *tmp;
-
-	if (rb_prohibit_interrupt) {
-	    deferred_final_list = final_list;
-	    return;
-	}
-
-	for (p = final_list; p; p = tmp) {
-	    tmp = p->as.free.next;
-	    run_final((VALUE)p);
-	    if (!FL_TEST(p, FL_SINGLETON)) { /* not freeing page */
-		p->as.free.flags = 0;
-		p->as.free.next = freelist;
-		freelist = p;
-	    }
-	}
+	deferred_final_list = final_list;
+	return;
     }
-    for (i = j = 1; j < heaps_used; i++) {
-	if (heaps[i].limit == 0) {
-	    free(heaps[i].slot);
-	    heaps_used--;
-	}
-	else {
-	    if (i != j) {
-		heaps[j] = heaps[i];
-	    }
-	    j++;
-	}
-    }
+    free_unused_heaps();
 }
 
 void
@@ -1276,8 +1287,8 @@ int rb_setjmp (rb_jmp_buf);
 #endif /* __human68k__ or DJGPP */
 #endif /* __GNUC__ */
 
-void
-rb_gc()
+static void
+gc_internal()
 {
     struct gc_list *list;
     struct FRAME * volatile frame; /* gcc 2.7.2.3 -O2 bug??  */
@@ -1387,6 +1398,13 @@ rb_gc()
 	}
     }
     gc_sweep();
+}
+
+void
+rb_gc()
+{
+    gc_internal();
+    rb_gc_finalize_deferred();
 }
 
 /*
@@ -1774,6 +1792,18 @@ run_final(obj)
 }
 
 void
+rb_gc_finalize_deferred()
+{
+    RVALUE *p = deferred_final_list;
+
+    deferred_final_list = 0;
+    if (p) {
+	finalize_list(p);
+	free_unused_heaps();
+    }
+}
+
+void
 rb_gc_call_finalizer_at_exit()
 {
     RVALUE *p, *pend;
@@ -1781,14 +1811,7 @@ rb_gc_call_finalizer_at_exit()
 
     /* run finalizers */
     if (need_call_final) {
-	if (deferred_final_list) {
-	    p = deferred_final_list;
-	    while (p) {
-		RVALUE *tmp = p;
-		p = p->as.free.next;
-		run_final((VALUE)tmp);
-	    }
-	}
+	finalize_list(deferred_final_list);
 	for (i = 0; i < heaps_used; i++) {
 	    p = heaps[i].slot; pend = p + heaps[i].limit;
 	    while (p < pend) {
