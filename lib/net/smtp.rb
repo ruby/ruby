@@ -2,15 +2,17 @@
 
 = net/smtp.rb version 1.2.0
 
-written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
+  Copyright (C) 1999-2001 Yukihiro Matsumoto
 
-This program is free software.
-You can distribute/modify this program under
-the terms of the Ruby Distribute License.
+  written & maintained by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 
-Japanese version of this document is in "net" full package.
-You can get it from RAA
-(Ruby Application Archive: http://www.ruby-lang.org/en/raa.html).
+  This program is free software. You can re-distribute and/or
+  modify this program under the same terms as Ruby itself,
+  GNU General Public License or Ruby License.
+
+  Japanese version of this document is in "net" full package.
+  You can get it from RAA (Ruby Application Archive). RAA is:
+  http://www.ruby-lang.org/en/raa.html
 
 
 == Net::SMTP

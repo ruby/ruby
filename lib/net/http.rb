@@ -2,21 +2,23 @@
 
 = net/http.rb version 1.2.0
 
-  maintained by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
+  Copyright (C) 1999-2001 Yukihiro Matsumoto
+
+  written & maintained by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
   This file is derived from "http-access.rb".
 
-  This program is free software.
-  You can distribute/modify this program under
-  the terms of the Ruby Distribute License.
+  This program is free software. You can re-distribute and/or
+  modify this program under the same terms as Ruby itself,
+  GNU General Public License or Ruby License.
 
   Japanese version of this document is in "net" full package.
-  You can get it from RAA
-  (Ruby Application Archive: http://www.ruby-lang.org/en/raa.html).
+  You can get it from RAA (Ruby Application Archive). RAA is:
+  http://www.ruby-lang.org/en/raa.html
 
 
-= class Net::HTTP
+== class Net::HTTP
 
-== Class Methods
+=== Class Methods
 
 : new( address = 'localhost', port = 80, proxy_addr = nil, proxy_port = nil )
   creates a new Net::HTTP object.
@@ -58,7 +60,7 @@
   HTTP default port (80).
 
 
-== Instance Methods
+=== Instance Methods
 
 : start
 : start {|http| .... }
@@ -119,12 +121,12 @@
   If called with block, gives a HTTP response object to the block.
 
 
-= class Net::HTTP::Get, Head, Post
+== class Net::HTTP::Get, Head, Post
 
 HTTP request classes. These classes wraps request header and
 entity path. All "key" is case-insensitive.
 
-== Methods
+=== Methods
 
 : self[ key ]
   returns header field for "key".
@@ -133,53 +135,58 @@ entity path. All "key" is case-insensitive.
   set header to "val".
 
 
-= class Net::HTTPResponse
+== class Net::HTTPResponse
 
 HTTP response class. This class wraps response header and entity.
-All "key" is case-insensitive.
+All arguments named KEY is case-insensitive.
 
-== Methods
-
-: body
-  the entity body. ("dest" argument for HTTP#get, post, put)
+=== Methods
 
 : self[ key ]
-  returns header field for "key".
-  for HTTP, value is a string like 'text/plain'(for Content-Type),
-  '2045'(for Content-Length), 'bytes 0-1024/10024'(for Content-Range).
-  Multiple header had be joined by HTTP1.1 scheme.
+    returns header field for KEY.
+    for HTTP, value is a string like 'text/plain' (for Content-Type),
+    '2045' (for Content-Length), 'bytes 0-1024/10024' (for Content-Range).
+    More than one fields which has same names are joined with ','.
+    KEY is case insensitive.
 
 : self[ key ] = val
-  set field value for "key".
+    set field value for KEY.
+    KEY is inseisitive.
 
 : key?( key )
-  true if key exists
+    true if key exists.
+    KEY is case insensitive.
 
 : each {|name,value| .... }
-  iterates for each field name and value pair
+    iterates for each field name and value pair.
+
+: canonical_each {|name,value| .... }
+    iterates for each canonical field name and value pair.
 
 : code
-  HTTP result code string. For example, '302'
+    HTTP result code string. For example, '302'.
 
 : message
-  HTTP result message. For example, 'Not Found'
+    HTTP result message. For example, 'Not Found'.
 
 : read_body( dest = '' )
-: body( dest = '' )
-  gets response body.
-  It is written into "dest" using "<<" method.
-  If this method is called twice or more, nothing will be done and
-  returns first "dest".
+    gets response body and write it into DEST using "<<" method.
+    If this method is called twice or more, nothing will be done
+    and returns first DEST.
 
 : read_body {|str| .... }
-: body {|str| .... }
-  gets response body with block.
+    gets response body little by little and pass it to block.
+
+: body
+    response body. If #read_body has been called, this method
+    returns arg of #read_body, DEST. Else gets body as String
+    and returns it.
 
 
-= Swithing Net::HTTP versions
+== Swithing Net::HTTP versions
 
-You can use Net::HTTP 1.1 features by calling HTTP.old_implementation.
-And calling Net::HTTP.new_implementation allows you to use 1.2 features
+You can use Net::HTTP 1.1 features by calling HTTP.version_1_1 .
+And calling Net::HTTP.version_1_2 allows you to use 1.2 features
 again.
 
   # example
@@ -206,9 +213,9 @@ module Net
 
     HTTPVersion = '1.1'
 
-    ###
-    ### connection
-    ###
+    #
+    # connection
+    #
 
     protocol_param :port, '80'
 
@@ -223,6 +230,7 @@ module Net
       @seems_1_0_server = false
     end
 
+
     private
 
     def conn_command( sock )
@@ -232,9 +240,9 @@ module Net
     end
 
 
-    ###
-    ### proxy
-    ###
+    #
+    # proxy
+    #
 
     public
 
@@ -417,9 +425,7 @@ module Net
     def request( req, *args )
       common_oper( req ) {
         req.__send__( :exec,
-                      @socket, @curr_http_version,
-                      edit_path(req.path),
-                      header_defaults, *args )
+                @socket, @curr_http_version, edit_path(req.path), *args )
         yield req.response if block_given?
       }
       req.response
@@ -430,70 +436,58 @@ module Net
 
 
     def common_oper( req )
+      req['connection'] ||= 'keep-alive'
       if not @socket then
         start
         req['connection'] = 'close'
       elsif @socket.closed? then
         re_connect
       end
-      if @seems_1_0_server then
+      if not req.body_exist? or @seems_1_0_server then
         req['connection'] = 'close'
       end
+      req['host'] = addr_port
 
       yield req
       req.response.__send__ :terminate
       @curr_http_version = req.response.http_version
 
-      if keep_alive? req, req.response then
-        if @socket.closed? then
+      if not req.response.body then
+        @socket.close
+      elsif keep_alive? req, req.response then
+        D 'Conn keep-alive'
+        if @socket.closed? then   # (only) read stream had been closed
+          D 'Conn (but seems 1.0 server)'
           @seems_1_0_server = true
           @socket.close
         end
       else
+        D 'Conn close'
         @socket.close
       end
 
       req.response
     end
 
-    def header_defaults
-      h = {}
-      h['host']       = addr_port
-      h['connection'] = 'Keep-Alive'
-      h['accept']     = '*/*'
-      h
-    end
+    def keep_alive?( req, res )
+      /close/i === req['connection'].to_s            and return false
+      @seems_1_0_server                              and return false
 
-    def keep_alive?( request, response )
-      if response.key? 'connection' then
-        if /keep-alive/i === response['connection'] then
-          return true
-        end
-      elsif response.key? 'proxy-connection' then
-        if /keep-alive/i === response['proxy-connection'] then
-          return true
-        end
-      elsif request.key? 'Connection' then
-        if /keep-alive/i === request['Connection'] then
-          return true
-        end
-      else
-        if @curr_http_version == '1.1' then
-          return true
-        end
-      end
+      /keep-alive/i === res['connection'].to_s       and return true
+      /close/i      === res['connection'].to_s       and return false
+      /keep-alive/i === res['proxy-connection'].to_s and return true
+      /close/i      === res['proxy-connection'].to_s and return false
 
+      @curr_http_version == '1.1'                    and return true
       false
-    end
-
-    def addr_port
-      address + (port == HTTP.port ? '' : ":#{port}")
     end
 
 
     #
     # utils
     #
+
+    public
 
     def self.get( addr, path, port = nil )
       req = Get.new( path )
@@ -506,6 +500,20 @@ module Net
 
     def self.get_print( addr, path, port = nil )
       print get( addr, path, port )
+    end
+
+
+    private
+
+    def addr_port
+      address + (port == HTTP.port ? '' : ":#{port}")
+    end
+
+    def D( msg )
+      if @dout then
+        @dout << msg
+        @dout << "\n"
+      end
     end
 
   end
@@ -580,7 +588,7 @@ module Net
 
 
   ###
-  ### request
+  ### header
   ###
 
   net_private {
@@ -657,7 +665,11 @@ module Net
       return *arr
     end
 
-    def range=( r )
+    def range=( r, fin = nil )
+      if fin then
+        r = r ... r+fin
+      end
+
       case r
       when Numeric
         s = r > 0 ? "0-#{r - 1}" : "-#{-r}"
@@ -684,6 +696,8 @@ module Net
       r
     end
 
+    alias set_range range=
+
     def content_length
       s = @header['content-length']
       s or return nil
@@ -695,7 +709,7 @@ module Net
 
     def chunked?
       s = @header['transfer-encoding']
-      s and /(?:\A|[^\-\w])chunked(?:[^\-\w]|\z)/i === s
+      (s and /(?:\A|[^\-\w])chunked(?:[^\-\w]|\z)/i === s) ? true : false
     end
 
     def content_range
@@ -713,8 +727,20 @@ module Net
       r and r.length
     end
 
+    def basic_auth( acc, pass )
+      @header['authorization'] = ["#{acc}:#{pass}"].pack('m').gsub(/\s+/, '')
+    end
+
   end
 
+  }
+
+
+  ###
+  ### request
+  ###
+
+  net_private {
 
   class HTTPRequest
 
@@ -731,6 +757,7 @@ module Net
         end
         tmp[ key ] = v.strip
       end
+      tmp['accept'] ||= '*/*'
 
       @socket = nil
       @response = nil
@@ -743,6 +770,10 @@ module Net
       "\#<#{type}>"
     end
 
+    def body_exist?
+      type::HAS_BODY
+    end
+
 
     private
 
@@ -750,26 +781,25 @@ module Net
     # write
     #
 
-    def exec( sock, ver, path, ihead )
-      ready( sock, ihead ) {|header|
-        request ver, path, header
+    def exec( sock, ver, path )
+      ready( sock ) {
+        request ver, path
       }
       @response
     end
 
-    def ready( sock, ihead )
+    def ready( sock )
       @response = nil
       @socket = sock
-      ihead.update @header
-      yield ihead
+      yield
       @response = get_response
-      @sock = nil
+      @socket = nil
     end
 
-    def request( ver, path, header )
+    def request( ver, path )
       @socket.writeline sprintf('%s %s HTTP/%s', type::METHOD, path, ver)
-      header.each do |n,v|
-        @socket.writeline canonical(n) + ': ' + v
+      canonical_each do |k,v|
+        @socket.writeline k + ': ' + v
       end
       @socket.writeline ''
     end
@@ -822,11 +852,11 @@ module Net
   end
 
 
-  class HTTPRequestWithData < HTTPRequest
+  class HTTPRequestWithBody < HTTPRequest
   
     private
 
-    def exec( sock, ver, path, ihead, str = nil )
+    def exec( sock, ver, path, str = nil )
       check_arg str, block_given?
 
       if block_given? then
@@ -836,11 +866,11 @@ module Net
       else
         data = str
       end
+      @header['content-length'] = data.size.to_s
+      @header.delete 'transfer-encoding'
 
-      ready( sock, ihead ) {|header|
-        header['Content-Length'] = data.size.to_s
-        header.delete 'Transfer-Encoding'
-        request ver, path, header
+      ready( sock ) {
+        request ver, path
         @socket.write data
       }
       @response
@@ -893,12 +923,12 @@ module Net
       METHOD = 'HEAD'
     end
 
-    class Post < ::Net::NetPrivate::HTTPRequestWithData
+    class Post < ::Net::NetPrivate::HTTPRequestWithBody
       HAS_BODY = true
       METHOD = 'POST'
     end
 
-    class Put < ::Net::NetPrivate::HTTPRequestWithData
+    class Put < ::Net::NetPrivate::HTTPRequestWithBody
       HAS_BODY = true
       METHOD = 'PUT'
     end
@@ -990,9 +1020,7 @@ module Net
     end
 
     def value
-      unless SuccessCode === self then
-        error! self
-      end
+      SuccessCode === self or error! self
     end
 
 
@@ -1080,9 +1108,7 @@ module Net
     end
 
     def stream_check
-      if @socket.closed? then
-        raise IOError, 'try to read body out of block'
-      end
+      @socket.closed? and raise IOError, 'try to read body out of block'
     end
 
     def procdest( dest, block )

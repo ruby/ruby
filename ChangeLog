@@ -1,3 +1,10 @@
+Sat Feb 24 13:58:48 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/http.rb: always close connection on request without
+	  body.
+
+	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: change copyright.
+
 Fri Feb 23 08:28:58 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/protocol.rb: clear read buffer after reopen.
