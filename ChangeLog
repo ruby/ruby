@@ -1,3 +1,7 @@
+Wed Feb 18 10:23:34 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* sprintf.c (rb_f_sprintf): clean up.
+
 Tue Feb 17 23:40:34 2004  Guy Decoux  <ts@moulon.inra.fr>
 
 	* sprintf.c (rb_f_sprintf): preserve original val for

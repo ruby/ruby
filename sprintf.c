@@ -444,7 +444,6 @@ rb_f_sprintf(argc, argv)
 		long v = 0;
 		int base, bignum = 0;
 		int len, pos;
-		VALUE tmp;
 
 		switch (*p) {
 		  case 'd':
@@ -514,6 +513,7 @@ rb_f_sprintf(argc, argv)
 		  default:
 		    base = 10; break;
 		}
+
 		if (!bignum) {
 		    if (base == 2) {
 			val = rb_int2big(v);
@@ -537,92 +537,90 @@ rb_f_sprintf(argc, argv)
 			}
 			sprintf(fbuf, "%%l%c", c);
 			sprintf(nbuf, fbuf, v);
-			s = nbuf;
-			goto format_integer;
-		    }
-		    s = nbuf;
-		    if (v < 0) {
-			if (base == 10) {
-			    rb_warning("negative number for %%u specifier");
-			}
-			else if (!(flags&FPREC)) {
-			    strcpy(s, "..");
-			    s += 2;
-			}
-		    }
-		    sprintf(fbuf, "%%l%c", *p);
-		    sprintf(s, fbuf, v);
-		    if (v < 0) {
-			char d = 0;
-
-			remove_sign_bits(s, base);
-			switch (base) {
-			  case 16:
-			    d = 'f'; break;
-			  case 8:
-			    d = '7'; break;
-			}
-			if (d && *s != d) {
-			    memmove(s+1, s, strlen(s)+1);
-			    *s = d;
-			}
-		    }
-		    s = nbuf;
-		    goto format_integer;
-		}
-
-		if (sign) {
-		    tmp = rb_big2str(val, base);
-		    s = RSTRING(tmp)->ptr;
-		    if (s[0] == '-') {
-			s++;
-			sc = '-';
-                        width--;
-		    }
-		    else if (flags & FPLUS) {
-			sc = '+';
-                        width--;
-		    }
-		    else if (flags & FSPACE) {
-			sc = ' ';
-                        width--;
-		    }
-		    goto format_integer;
-		}
-		if (!RBIGNUM(val)->sign) {
-		    val = rb_big_clone(val);
-		    rb_big_2comp(val);
-		}
-		tmp = rb_big2str(val, base);
-		s = RSTRING(tmp)->ptr;
-		if (*s == '-') {
-		    if (base == 10) {
-			rb_warning("negative number for %%u specifier");
-			s++;
 		    }
 		    else {
-			remove_sign_bits(++s, base);
-			tmp = rb_str_new(0, 3+strlen(s));
-			t = RSTRING(tmp)->ptr;
-			if (!(flags&FPREC)) {
-			    strcpy(t, "..");
-			    t += 2;
+			s = nbuf;
+			if (v < 0) {
+			    if (base == 10) {
+				rb_warning("negative number for %%u specifier");
+			    }
+			    else if (!(flags&FPREC)) {
+				strcpy(s, "..");
+				s += 2;
+			    }
 			}
-			switch (base) {
-			  case 16:
-			    if (s[0] != 'f') strcpy(t++, "f"); break;
-			  case 8:
-			    if (s[0] != '7') strcpy(t++, "7"); break;
-			  case 2:
-			    if (s[0] != '1') strcpy(t++, "1"); break;
+			sprintf(fbuf, "%%l%c", *p);
+			sprintf(s, fbuf, v);
+			if (v < 0) {
+			    char d = 0;
+
+			    remove_sign_bits(s, base);
+			    switch (base) {
+			      case 16:
+				d = 'f'; break;
+			      case 8:
+				d = '7'; break;
+			    }
+			    if (d && *s != d) {
+				memmove(s+1, s, strlen(s)+1);
+				*s = d;
+			    }
 			}
-			strcpy(t, s);
-			bignum = 2;
+		    }
+		    s = nbuf;
+		}
+		else {
+		    if (sign) {
+			tmp = rb_big2str(val, base);
+			s = RSTRING(tmp)->ptr;
+			if (s[0] == '-') {
+			    s++;
+			    sc = '-';
+			    width--;
+			}
+			else if (flags & FPLUS) {
+			    sc = '+';
+			    width--;
+			}
+			else if (flags & FSPACE) {
+			    sc = ' ';
+			    width--;
+			}
+		    }
+		    else {
+			if (!RBIGNUM(val)->sign) {
+			    val = rb_big_clone(val);
+			    rb_big_2comp(val);
+			}
+			tmp = rb_big2str(val, base);
+			s = RSTRING(tmp)->ptr;
+			if (*s == '-') {
+			    if (base == 10) {
+				rb_warning("negative number for %%u specifier");
+			    }
+			    else {
+				remove_sign_bits(++s, base);
+				tmp = rb_str_new(0, 3+strlen(s));
+				t = RSTRING(tmp)->ptr;
+				if (!(flags&FPREC)) {
+				    strcpy(t, "..");
+				    t += 2;
+				}
+				switch (base) {
+				  case 16:
+				    if (s[0] != 'f') strcpy(t++, "f"); break;
+				  case 8:
+				    if (s[0] != '7') strcpy(t++, "7"); break;
+				  case 2:
+				    if (s[0] != '1') strcpy(t++, "1"); break;
+				}
+				strcpy(t, s);
+				s  = RSTRING(tmp)->ptr;
+			    }
+			}
 		    }
 		}
-		s  = RSTRING(tmp)->ptr;
 
-	      format_integer:
 		pos = -1;
 		len = strlen(s);
 
