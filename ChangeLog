@@ -1,3 +1,8 @@
+Wed Mar 24 10:05:22 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/tempfile.rb (Tempfile::_close): should not clear @tmpname
+	  until the file is really removed. [ruby-core:02684]
+
 Wed Mar 24 04:12:44 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c (rb_mod_cvar_get): new method Module#class_variable_get.

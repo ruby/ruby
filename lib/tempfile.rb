@@ -76,12 +76,13 @@ class Tempfile < SimpleDelegator
 
   def _close	# :nodoc:
     @tmpfile.close if @tmpfile
-    @data[1] = @tmpfile = nil
-    @data = @tmpname = nil
+    @tmpfile = nil
+    @data[1] = nil if @data
+    @data = nil
   end
   protected :_close
 
-  # Closes the file.  If the optional flag is true, unlinks the file
+  #Closes the file.  If the optional flag is true, unlinks the file
   # after closing.
   #
   # If you don't explicitly unlink the temporary file, the removal
@@ -99,6 +100,7 @@ class Tempfile < SimpleDelegator
     _close
     @clean_proc.call
     ObjectSpace.undefine_finalizer(self)
+    @tmpname = nil
   end
 
   # Unlinks the file.  On UNIX-like systems, it is often a good idea
@@ -108,7 +110,8 @@ class Tempfile < SimpleDelegator
   def unlink
     # keep this order for thread safeness
     File.unlink(@tmpname) if File.exist?(@tmpname)
-    @@cleanlist.delete(@tmpname) if @@cleanlist
+    @@cleanlist.delete(@tmpname)
+    @tmpname = nil
   end
   alias delete unlink
 
