@@ -20,6 +20,10 @@ module DL
 	end
       end
 
+      def [](name)
+	return @SYM[name.to_s][0]
+      end
+
       def dlload(*libnames)
 	if( !defined?(@LIBS) )
 	  @LIBS = []
@@ -107,7 +111,7 @@ module DL
 	    "module_function :#{mname}",
 	  ].join("\n")
 
-	  return @SYM[mname]
+	  return sym
 	}
 	raise(RuntimeError, "can't find #{name}.")
       end
