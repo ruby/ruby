@@ -1,3 +1,7 @@
+Thu Aug 16 03:54:36 2001  Usaku Nakamura  <usa@ruby-lang.org>
+
+	* lib/mkmf.rb: add -I$(srcdir) to CPPFLAGS.
+
 Tue Aug 14 11:49:00 2001  TOYOFUKU Chikanobu  <toyofuku@juice.or.jp>
 
 	* string.c (rb_str_cmp): remove needless conditional.

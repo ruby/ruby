@@ -431,7 +431,7 @@ VPATH = $(srcdir)
 CC = #{CONFIG["CC"]}
 
 CFLAGS   = #{CONFIG["CCDLFLAGS"]} #{CFLAGS} #{$CFLAGS}
-CPPFLAGS = -I$(hdrdir) -I#{CONFIG["includedir"]} #{$defs.join(" ")} #{CONFIG["CPPFLAGS"]} #{$CPPFLAGS}
+CPPFLAGS = -I$(hdrdir) -I$(srcdir) -I#{CONFIG["includedir"]} #{$defs.join(" ")} #{CONFIG["CPPFLAGS"]} #{$CPPFLAGS}
 CXXFLAGS = $(CFLAGS)
 DLDFLAGS = #{$DLDFLAGS} #{$LDFLAGS}
 LDSHARED = #{CONFIG["LDSHARED"]} #{defflag}
