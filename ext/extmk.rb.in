@@ -382,7 +382,7 @@ def create_makefile(target)
 #  end
 
   if $configure_args['--enable-shared'] or "@LIBRUBY@" != "@LIBRUBY_A@"
-    $libs = "@LIBRUBYARG@ " + $libs
+    $libs = "@LIBRUBYARG@ " + $libs + " @LIBS@"
     $LIBPATH.unshift $topdir
   end
 

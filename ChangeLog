@@ -1,3 +1,7 @@
+Wed Apr  9 16:14:24 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* ext/extmk.rb.in (create_makefile): link @LIBS@.
+
 Wed Mar 26 20:26:17 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* dln.c (dln_find_1): break if path list end, even for too long
