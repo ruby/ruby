@@ -19,20 +19,20 @@ class HTTPBadResponse < HTTPError; end
 
 class HTTPSession < Session
 
-  Version = '1.1.1'
+  Version = '1.1.2'
 
   session_setvar :port,         '80'
-  session_setvar :command_type, 'HTTPCommand'
+  session_setvar :command_type, 'Net::HTTPCommand'
 
 
   def get( path = '/', header = nil, ret = '' )
     confirm_connection
-    @proto.get path, header, ret
+    @proto.get edit_path(path), header, ret
   end
 
   def head( path = '/', header = nil )
     confirm_connection
-    @proto.head path, header
+    @proto.head edit_path(path), header
   end
 
 
@@ -44,11 +44,33 @@ class HTTPSession < Session
       @socket.reopen
     end
   end
+  
+  def do_finish
+    unless @proto.error_occured or @socket.closed? then
+      head '/', { 'Connection' => 'Close' }
+    end
+  end
+
+
+  def edit_path( path )
+    path
+  end
+
+  class << self
+    def Proxy( addr, port )
+      klass = super
+      klass.module_eval %-
+        def edit_path( path )
+          'http://' + address + (port == self.port ? '' : ":\#{port}") + path
+        end
+      -
+      klass
+    end
+  end
 
 end
 
 HTTP = HTTPSession
-
 
 
 class HTTPCommand < Command
@@ -61,7 +83,7 @@ class HTTPCommand < Command
     @in_header = {}
     @in_header[ 'Host' ]       = sock.addr
     #@in_header[ 'User-Agent' ] = "Ruby http version #{HTTPSession::Version}"
-    @in_header[ 'Connection' ] = 'Keep-Alive'
+    @in_header[ 'Connection' ] = 'keep-alive'
     @in_header[ 'Accept' ]     = '*/*'
 
     super sock
@@ -71,10 +93,9 @@ class HTTPCommand < Command
   attr :http_version
 
   def get( path, u_header = nil, ret = '' )
-    @socket.writeline sprintf( 'GET %s HTTP/%s', path, HTTPVersion )
-    write_header u_header
-    check_reply SuccessCode
-    header = read_header
+    header = get_response(
+      sprintf( 'GET %s HTTP/%s', path, HTTPVersion ), u_header )
+    
     if chunked? header then
       clen = read_chunked_body( ret )
       header.delete 'transfer-encoding'
@@ -89,10 +110,8 @@ class HTTPCommand < Command
 
 
   def head( path, u_header = nil )
-    @socket.writeline sprintf( 'HEAD %s HTTP/%s', path, HTTPVersion )
-    write_header u_header
-    check_reply SuccessCode
-    header = read_header
+    header = get_response(
+      sprintf( 'HEAD %s HTTP/%s', path, HTTPVersion ), u_header )
     @socket.close unless keep_alive? header
 
     header
@@ -113,14 +132,25 @@ class HTTPCommand < Command
 
   def do_quit
     unless @socket.closed? then
-      head '/', { 'Connection' => 'Close' }
+      @socket.close
     end
   end
 
+  def get_response( line, u_header )
+    @socket.writeline line
+    write_header u_header
+    rep = get_reply
+    header = read_header
+    reply_must rep, SuccessCode
+
+    header
+  end
 
   def get_reply
     str = @socket.readline
-    /\AHTTP\/(\d+\.\d+)?\s+(\d\d\d)\s+(.*)\z/i === str
+    unless /\AHTTP\/(\d+\.\d+)?\s+(\d\d\d)\s*(.*)\z/i === str then
+      raise HTTPBadResponse, "wrong status line format: #{str}"
+    end
     @http_version = $1
     status  = $2
     discrip = $3

@@ -58,10 +58,10 @@ Net::Session
 
   class SMTPSession < Session
 
-    Version = '1.1.1'
+    Version = '1.1.2'
 
     session_setvar :port,         '25'
-    session_setvar :command_type, 'SMTPCommand'
+    session_setvar :command_type, 'Net::SMTPCommand'
 
 
     def sendmail( mailsrc, fromaddr, toaddrs )

@@ -52,10 +52,10 @@ Net::Session
 
   class POP3Session < Session
 
-    Version = '1.1.1'
+    Version = '1.1.2'
 
     session_setvar :port,         '110'
-    session_setvar :command_type, 'POP3Command'
+    session_setvar :command_type, 'Net::POP3Command'
 
         
     attr :mails
@@ -189,7 +189,7 @@ Net::POP3Session
 
   class APOPSession < POP3Session
 
-    session_setvar :command_type, 'APOPCommand'
+    session_setvar :command_type, 'Net::APOPCommand'
 
   end
 

@@ -1,6 +1,6 @@
 =begin
 
-= net/session.rb version 1.1.1
+= net/session.rb version 1.1.2
 
 written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 
@@ -20,7 +20,7 @@ module Net
 
 == Net::Session
 
-the abstruct class for Internet session
+the abstruct class for Internet protocol session
 
 === Super Class
 
@@ -30,7 +30,7 @@ Object
 
 : Version
 
-  The version of Session class. It is a string like "1.1.1".
+  The version of Session class. It is a string like "1.1.2".
 
 
 === Class Methods
@@ -77,7 +77,7 @@ Object
 
   class Session
 
-    Version = '1.1.1'
+    Version = '1.1.2'
 
     class << self
 
@@ -91,6 +91,41 @@ Object
           session
         end
       end
+
+      def Proxy( p_addr, p_port )
+        klass = Class.new( self )
+        klass.module_eval %-
+
+          def initialize( addr, port )
+            @proxyaddr = '#{p_addr}'
+            @proxyport = '#{p_port}'
+            super @proxyaddr, @proxyport
+            @address = addr
+            @port    = port
+          end
+
+          def connect
+            tmpa, tmpp      = @address, @port
+            @address, @port = @proxyaddr, @proxyport
+            super
+            @address, @port = tmpa, tmpp
+          end
+          private :connect
+            
+          attr :proxyaddr
+          attr :proxyport
+        -
+        def klass.proxy?
+          true
+        end
+
+        klass
+      end
+
+      def proxy?
+        false
+      end
+            
 
       private
 
@@ -108,17 +143,16 @@ Object
     #
     # sub-class requirements
     #
-    # class method command_type
-    # class method port
+    # session_setvar command_type
+    # session_setvar port
     #
-    # private method proto_initialize
     # private method do_start  (optional)
     # private method do_finish (optional)
     #
 
     session_setvar :port,         'nil'
     session_setvar :command_type, 'nil'
-    session_setvar :socket_type,  'ProtocolSocket'
+    session_setvar :socket_type,  'Net::ProtocolSocket'
 
 
     def initialize( addr = 'localhost', port = nil )
@@ -233,9 +267,11 @@ Object
 
     def initialize( sock )
       @socket = sock
+      @error_occured = false
     end
 
     attr :socket, true
+    attr :error_occured
 
     def quit
       if @socket and not @socket.closed? then
@@ -245,19 +281,24 @@ Object
           @socket.close unless @socket.closed?
           @socket = nil
         end
+        @error_occured = false
       end
     end
 
     private
 
     def check_reply( *oks )
-      rep = get_reply
+      reply_must( get_reply, *oks )
+    end
+
+    def reply_must( rep, *oks )
       oks.each do |i|
         if i === rep then
           return rep
         end
       end
 
+      @error_occured = true
       rep.error! @socket.sending
     end
     
@@ -271,6 +312,7 @@ Object
   class   ProtoServerError   <   ProtocolError ; end
   class   ProtoAuthError     <   ProtocolError ; end
   class   ProtoCommandError  <   ProtocolError ; end
+  class   ProtoRetryError    <   ProtocolError ; end
 
   class ReplyCode
 
@@ -320,6 +362,10 @@ MES
 
   class ServerBusyCode < ErrorCode
     Error = ProtoServerError
+  end
+
+  class RetryCode < ReplyCode
+    Error = ProtoRetryError
   end
 
   class UnknownCode < ReplyCode
@@ -618,18 +664,18 @@ Object
     def each_crlf_line( src )
       buf = ''
       beg = 0
-      pos = nil
+      pos = s = bin = nil
 
-      src.each do |b|
-        buf << b
+      src.each do |bin|
+        buf << bin
 
         beg = 0
-        while (pos = buf.index(TERMEXP, beg)) and (pos < buf.size - 2) do
-          pos += $&.size
-          tmp = buf[ beg, pos - beg ]
-          tmp.chop!
-          yield tmp << CRLF
-          beg = pos
+        while pos = buf.index( TERMEXP, beg ) do
+          s = $&.size
+          break if pos + s == buf.size - 1 and buf[-1] == ?\r
+
+          yield buf[ beg, pos - beg ] << CRLF
+          beg = pos + s
         end
         buf = buf[ beg, buf.size - beg ] if beg != 0
       end
@@ -638,11 +684,8 @@ Object
 
       beg = 0
       while pos = buf.index( TERMEXP, beg ) do
-        pos += $&.size
-        tmp = buf[ beg, pos - beg ]
-        tmp.chop!
-        yield tmp << CRLF
-        beg = pos
+        yield buf[ beg, pos - beg ] << CRLF
+        beg = pos + $&.size
       end
     end
 
