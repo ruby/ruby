@@ -253,6 +253,8 @@ racc_yyparse(parser, recv, mid, arg, indebug)
     return v->retval;
 }
 
+static VALUE call_scaniter _((VALUE));
+
 static VALUE
 call_scaniter(data)
     VALUE data;

@@ -1194,7 +1194,10 @@ rb_io_fptr_cleanup(fptr, fin)
     OpenFile *fptr;
     int fin;
 {
-    if (fptr->mode & FMODE_FDOPEN) return;
+    if (fptr->mode & FMODE_FDOPEN) {
+	io_fflush(GetWriteFile(fptr), fptr);
+	return;
+    }
     if (fptr->finalize) {
 	(*fptr->finalize)(fptr);
     }
@@ -2609,7 +2612,7 @@ rb_io_initialize(argc, argv, io)
     fd = NUM2INT(fnum);
     if (argc == 2) {
 	SafeStringValue(mode);
-	flags = rb_io_mode_flags(RSTRING(mode)->ptr);
+	flags = rb_io_mode_modenum(RSTRING(mode)->ptr);
     }
     else {
 #if defined(HAVE_FCNTL) && defined(F_GETFL)

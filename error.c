@@ -200,7 +200,7 @@ static struct types {
     T_FALSE,	"false",
     T_SYMBOL,	"Symbol",	/* :symbol */
     T_DATA,	"Data",		/* internal use: wrapped C pointers */
-    T_MATCH,	"Match",	/* data of $~ */
+    T_MATCH,	"MatchData",	/* data of $~ */
     T_VARMAP,	"Varmap",	/* internal use: dynamic variables */
     T_SCOPE,	"Scope",	/* internal use: variable scope */
     T_NODE,	"Node",		/* internal use: syntax tree node */

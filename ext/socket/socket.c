@@ -186,7 +186,6 @@ init_sock(sock, fd)
     fp->f = rb_fdopen(fd, "r");
 #ifdef NT
     fp->finalize = sock_finalize;
-#else
 #endif
     fp->f2 = rb_fdopen(fd, "w");
     fp->mode = FMODE_READWRITE;
@@ -199,7 +198,13 @@ static VALUE
 bsock_s_for_fd(klass, fd)
     VALUE klass, fd;
 {
-    return init_sock(rb_obj_alloc(klass), NUM2INT(fd));
+    OpenFile *fptr;
+    VALUE sock = init_sock(rb_obj_alloc(klass), NUM2INT(fd));
+
+    GetOpenFile(sock, fptr);
+    fptr->mode |= FMODE_FDOPEN;
+
+    return sock;
 }
 
 static VALUE

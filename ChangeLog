@@ -1,3 +1,11 @@
+Mon Apr  1 17:25:50 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_fptr_cleanup): need flush even when io will not be
+	  closed. 
+
+	* io.c (rb_io_initialize): was calling wrong function
+	  rb_io_mode_flags().
+
 Mon Apr  1 16:52:00 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* ext/sdbm/init.c (each_pair): moved prototype before the
