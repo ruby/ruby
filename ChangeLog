@@ -1,3 +1,7 @@
+Sat Jul 17 18:29:07 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (stmt): not to show same error messages twice.
+
 Sat Jul 17 14:18:11 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_match_m): String#match should also take

@@ -496,7 +496,6 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    }
 		| lhs '=' command_call
 		    {
-			value_expr($3);
 			$$ = node_assign($1, $3);
 		    }
 		| mlhs '=' command_call
