@@ -1,3 +1,12 @@
+Sun Jun  1 21:50:01 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in: should not use def file, use ld with
+	  --export-all-symbols option on Cygwin/MinGW.
+
+	* defines.h: ditto.
+
+	* cygwin/GNUmakefile.in: ditto.
+
 Sun Jun 01 13:33:49 2003 Takaaki Uematsu <uema2x@jcom.home.ne.jp>
 
 	* wince/string_wce.c: add strpbrk() for hpcpro support.
@@ -19,14 +28,14 @@ Sat May 31 04:36:54 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 Fri May 30 23:18:01 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
 
-    * ext/syck/rubyext.c (rb_syck_mktime): seconds calculated wrong.
+	* ext/syck/rubyext.c (rb_syck_mktime): seconds calculated wrong.
 
-    * ext/syck/gram.c: flexibility to anchors and transfer methods on
-      collections.
+	* ext/syck/gram.c: flexibility to anchors and transfer methods on
+	  collections.
 
-    * ext/syck/token.c: hex escapes.
+	* ext/syck/token.c: hex escapes.
 
-    * lib/yaml/basenode.rb: YamlNode references changed to YAML::BaseNode.
+	* lib/yaml/basenode.rb: YamlNode references changed to YAML::BaseNode.
 
 Fri May 30 22:28:04 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 

@@ -6,6 +6,7 @@ ifneq ($(ENABLE_SHARED),yes)
   RUBY_EXP = $(RUBY_INSTALL_NAME).exp
   EXTOBJS = $(RUBY_EXP)
   LIBRUBYARG = $(LIBRUBY_A)
+  LIBRUBY_SO =
 endif
 
 ifeq ($(RUBY_INSTALL_NAME),ruby)
@@ -14,12 +15,11 @@ else
   RUBYW_INSTALL_NAME = $(subst ruby,rubyw,$(RUBY_INSTALL_NAME))
 endif
 WPROGRAM = $(RUBYW_INSTALL_NAME)$(EXEEXT)
-RUBYDEF = $(RUBY_INSTALL_NAME).def
 SOLIBS := $(RUBY_SO_NAME).res.@OBJEXT@ $(SOLIBS)
 EXTOBJS += $(@:$(EXEEXT)=.res.@OBJEXT@)
 
-$(LIBRUBY_SO): $(RUBYDEF) $(RUBY_SO_NAME).res.@OBJEXT@ $(RUBY_EXP)
-$(LIBRUBY): $(LIBRUBY_SO)
+$(LIBRUBY): $(RUBY_EXP) $(LIBRUBY_SO)
+$(RUBY_EXP) $(LIBRUBY_SO): $(RUBY_SO_NAME).res.@OBJEXT@
 
 %.res.@OBJEXT@: %.rc
 	@WINDRES@ --include-dir . --include-dir $(<D) --include-dir $(srcdir)/win32 $< $@
@@ -36,14 +36,12 @@ $(WPROGRAM): $(RUBYW_INSTALL_NAME).res.@OBJEXT@
 	$(PURIFY) $(CC) -mwindows -e _mainCRTStartup $(LDFLAGS) $(XLDFLAGS) \
 	  $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(LIBS) -o $@
 
-$(RUBYDEF): $(LIBRUBY_A)
-	echo EXPORTS > $(RUBYDEF)
-	@NM@ --extern-only --defined-only $(LIBRUBY_A) | sed -n 's/.* [CDT] _//p' >> $(RUBYDEF)
-
-$(RUBY_EXP): $(RUBYDEF)
-	@DLLWRAP@ --output-exp=$(RUBY_EXP) --output-lib=$(LIBRUBY) \
-	  --def=$(RUBYDEF) $(LIBRUBY_A) $(LIBS) -o $(PROGRAM)
-	rm $(PROGRAM)
+$(RUBY_EXP): $(LIBRUBY_A)
+	@DLLWRAP@ --target=@target_os@ --driver-name=$(CC) \
+	  --output-exp=$(RUBY_EXP) \
+	  --export-all $(LIBRUBY_A) $(LIBS) -o $(PROGRAM)
+	$(LDSHARED) $(DLDFLAGS) $(OBJS) dmyext.o $(SOLIBS) -o $(PROGRAM)
+	@rm -f $(PROGRAM)
 
 GNUmakefile:	$(srcdir)/cygwin/GNUmakefile.in
 

@@ -125,7 +125,7 @@ void xfree _((void*));
 #endif
 
 #undef RUBY_EXTERN
-#if defined __CYGWIN__ || defined _WIN32
+#if defined _WIN32 && !defined __GNUC__
 # ifndef RUBY_EXPORT
 #  define RUBY_EXTERN extern __declspec(dllimport)
 # endif

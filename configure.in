@@ -833,7 +833,7 @@ if test "$with_dln_a_out" != yes; then
 			rb_cv_dlopen=yes;;
 	cygwin*|mingw*)	: ${LDSHARED="${CC} -shared -s"}
 			XLDFLAGS='-Wl,--stack,0x02000000'
-			DLDFLAGS="${DLDFLAGS} -Wl,--enable-auto-import "'$(DEFFILE)'
+			DLDFLAGS="${DLDFLAGS} -Wl,--enable-auto-import,--export-all"
 			rb_cv_dlopen=yes ;;
 	hiuxmpp)	LDSHARED='ld -r' ;;
 	atheos*) 	LDSHARED="$CC -shared"
@@ -1166,7 +1166,6 @@ case "$target_os" in
 	esac
 	;;
     cygwin*|mingw*)
-	EXPORT_PREFIX=' '
 	case "$target_os" in
 	cygwin*)
 	    RUBY_SO_NAME=$target_os-'$(RUBY_INSTALL_NAME)'${MAJOR}${MINOR}
@@ -1180,14 +1179,13 @@ case "$target_os" in
 	    COMMON_HEADERS="windows.h winsock.h"
 	    ;;
 	esac
-	XCFLAGS="$XCFLAGS -DRUBY_EXPORT"
+	XCFLAGS="$XCFLAGS"
+	LIBRUBY_DLDFLAGS="${DLDFLAGS}"' -Wl,--out-implib=$(LIBRUBY)'
 	if test x"$enable_shared" = xyes; then
 	    LIBRUBY_SO='$(RUBY_SO_NAME)'.dll
-	    LIBRUBY_DLDFLAGS='-Wl,--out-implib=$(LIBRUBY) $(RUBYDEF)'
 	    LIBRUBY='lib$(LIBRUBY_SO).a'
 	else
 	    LIBRUBY_SO=dummy
-	    LIBRUBY_DLDFLAGS=''
 	    LIBRUBY='lib$(RUBY_SO_NAME).a'
 	    LIBRUBYARG='-l$(RUBY_SO_NAME)'
 	fi
