@@ -1845,7 +1845,7 @@ io_reopen(io, nfile)
 {
     OpenFile *fptr, *orig;
     char *mode;
-    int fd;
+    int fd, fd2;
     long pos;
 
     nfile = rb_io_get_io(nfile);
@@ -1878,33 +1878,37 @@ io_reopen(io, nfile)
 
     mode = rb_io_mode_string(fptr);
     fd = fileno(fptr->f);
-    if (fd < 3) {
-	clearerr(fptr->f);
-	/* need to keep stdio objects */
-	if (dup2(fileno(orig->f), fd) < 0)
-	    rb_sys_fail(orig->path);
-    }
-    else {
-	fclose(fptr->f);
-	if (dup2(fileno(orig->f), fd) < 0)
-	    rb_sys_fail(orig->path);
-	fptr->f = rb_fdopen(fd, mode);
-    }
-    if ((orig->mode & FMODE_READABLE) && pos >= 0) {
-	io_seek(fptr, pos, SEEK_SET);
-	io_seek(orig, pos, SEEK_SET);
+    fd2 = fileno(orig->f);
+    if (fd != fd2) {
+	if (fd < 3) {
+	    clearerr(fptr->f);
+	    /* need to keep stdio objects */
+	    if (dup2(fd2, fd) < 0)
+		rb_sys_fail(orig->path);
+	}
+	else {
+	    fclose(fptr->f);
+	    if (dup2(fd2, fd) < 0)
+		rb_sys_fail(orig->path);
+	    fptr->f = rb_fdopen(fd, mode);
+	}
+	if ((orig->mode & FMODE_READABLE) && pos >= 0) {
+	    io_seek(fptr, pos, SEEK_SET);
+	    io_seek(orig, pos, SEEK_SET);
+	}
     }
 
     if (fptr->f2) {
 	fd = fileno(fptr->f2);
-	fclose(fptr->f2);
-	if (orig->f2) {
-	    if (dup2(fileno(orig->f2), fd) < 0)
+	if (!orig->f2) {
+	    fclose(fptr->f2);
+	    fptr->f2 = 0;
+	}
+	else if (fd != (fd2 = fileno(orig->f2))) {
+	    fclose(fptr->f2);
+	    if (dup2(fd2, fd) < 0)
 		rb_sys_fail(orig->path);
 	    fptr->f2 = rb_fdopen(fd, "w");
-	}
-	else {
-	    fptr->f2 = 0;
 	}
     }
 

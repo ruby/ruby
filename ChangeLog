@@ -1,3 +1,8 @@
+Sun Jul 27 03:10:31 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* io.c (io_reopen): avoid dup2() equal handles not to close itself and
+	  to get rid of a msvcrt bug.  [ruby-dev:20919]
+
 Thu Jul 17 13:42:53 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/ftools.rb (File::makedirs): do not handle "//" as a directory.
