@@ -1,3 +1,7 @@
+Thu Mar 14 22:17:45 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* ext/iconv: imported.
+
 Thu Mar 14 16:18:12 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in: autoconf 2.53 support. use AC_LIBOBJ.

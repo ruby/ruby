@@ -1,3 +1,7 @@
+: iconv module
+
+  Imported.  Wrapper library of (({iconv})).
+
 : Dir::glob
 
   Now accepts optional FNM_* flags via the second argument, whereas
