@@ -956,7 +956,7 @@ syserr_initialize(argc, argv, self)
     if (!NIL_P(mesg)) {
 	VALUE str = mesg;
 	StringValue(str);
-	mesg = rb_str_new(0, strlen(err)+RSTRING(mesg)->len+3);
+	mesg = rb_str_new(0, strlen(err)+RSTRING(str)->len+3);
 	sprintf(RSTRING(mesg)->ptr, "%s - %.*s", err,
 		(int)RSTRING(str)->len, RSTRING(str)->ptr);
 	rb_str_resize(mesg, strlen(RSTRING(mesg)->ptr));
