@@ -7,15 +7,16 @@ Copyright (C) 2000  Shugo Maeda <shugo@ruby-lang.org>
 This library is distributed under the terms of the Ruby license.
 You can freely distribute/modify this library.
 
-== class Net::IMAP
+== Net::IMAP
 
 Net::IMAP implements Internet Message Access Protocol (IMAP) clients.
+(The protocol is described in ((<[IMAP]>)).)
 
 === Super Class
 
 Object
 
-=== Class Methods
+=== Methods
 
 : new(host, port = 143)
       Creates a new Net::IMAP object and connects it to the specified
@@ -102,21 +103,24 @@ Object
 : list(refname, mailbox)
       Sends a LIST command, and returns a subset of names from
       the complete set of all names available to the client.
+      The return value is an array of ((<Net::IMAP::MailboxList>)).
 
       ex).
         imap.create("foo/bar")
         imap.create("foo/baz")
         p imap.list("", "foo/%")
-        #=> [#<Net::IMAP::MailboxList attr=[:NoSelect], delim="/", name="foo/">, #<Net::IMAP::MailboxList attr=[:NoInferiors, :Marked], delim="/", name="foo/bar">, #<Net::IMAP::MailboxList attr=[:NoInferiors], delim="/", name="foo/baz">]
+        #=> [#<Net::IMAP::MailboxList attr=[:Noselect], delim="/", name="foo/">, #<Net::IMAP::MailboxList attr=[:Noinferiors, :Marked], delim="/", name="foo/bar">, #<Net::IMAP::MailboxList attr=[:Noinferiors], delim="/", name="foo/baz">]
 
 : lsub(refname, mailbox)
       Sends a LSUB command, and returns a subset of names from the set
       of names that the user has declared as being "active" or
       "subscribed".
+      The return value is an array of ((<Net::IMAP::MailboxList>)).
 
 : status(mailbox, attr)
       Sends a STATUS command, and returns the status of the indicated
       mailbox.
+      The return value is a hash of attributes.
 
       ex).
         p imap.status("inbox", ["MESSAGES", "RECENT"])
@@ -166,6 +170,7 @@ Object
       in the mailbox. the set parameter is a number or an array of
       numbers or a Range object. the number is a message sequence
       number (fetch) or a unique identifier (uid_fetch).
+      The return value is an array of ((<Net::IMAP::FetchData>)).
 
       ex).
         p imap.fetch(6..8, "UID")
@@ -188,6 +193,7 @@ Object
       in the mailbox. the set parameter is a number or an array of
       numbers or a Range object. the number is a message sequence
       number (store) or a unique identifier (uid_store).
+      The return value is an array of ((<Net::IMAP::FetchData>)).
 
       ex).
         p imap.store(6..8, "+FLAGS", [:Deleted])
@@ -209,6 +215,443 @@ Object
         #=> [1, 2, 3, 5, 6, 7, 8, 4, 9]
         p imap.sort(["DATE"], ["SUBJECT", "hello"], "US-ASCII")
         #=> [6, 7, 8, 1]
+
+== Net::IMAP::ContinuationRequest
+
+Net::IMAP::ContinuationRequest represents command continuation requests.
+
+The command continuation request response is indicated by a "+" token
+instead of a tag.  This form of response indicates that the server is
+ready to accept the continuation of a command from the client.  The
+remainder of this response is a line of text.
+
+  continue_req    ::= "+" SPACE (resp_text / base64)
+
+=== Super Class
+
+Struct
+
+=== Methods
+
+: data
+      Returns the data (Net::IMAP::ResponseText).
+
+: raw_data
+      Returns the raw data string.
+
+== Net::IMAP::UntaggedResponse
+
+Net::IMAP::UntaggedResponse represents untagged responses.
+
+Data transmitted by the server to the client and status responses
+that do not indicate command completion are prefixed with the token
+"*", and are called untagged responses.
+
+  response_data   ::= "*" SPACE (resp_cond_state / resp_cond_bye /
+                      mailbox_data / message_data / capability_data)
+
+=== Super Class
+
+Struct
+
+=== Methods
+
+: name
+      Returns the name such as "FLAGS", "LIST", "FETCH"....
+
+: data
+      Returns the data such as an array of flag symbols,
+      a ((<Net::IMAP::MailboxList>)) object....
+
+: raw_data
+      Returns the raw data string.
+
+== Net::IMAP::TaggedResponse
+
+Net::IMAP::TaggedResponse represents tagged responses.
+
+The server completion result response indicates the success or
+failure of the operation.  It is tagged with the same tag as the
+client command which began the operation.
+
+  response_tagged ::= tag SPACE resp_cond_state CRLF
+  
+  tag             ::= 1*<any ATOM_CHAR except "+">
+  
+  resp_cond_state ::= ("OK" / "NO" / "BAD") SPACE resp_text
+
+=== Super Class
+
+Struct
+
+=== Methods
+
+: tag
+      Returns the tag.
+
+: name
+      Returns the name. the name is one of "OK", "NO", "BAD".
+
+: data
+      Returns the data. See ((<Net::IMAP::ResponseText>)).
+
+: raw_data
+      Returns the raw data string.
+
+== Net::IMAP::ResponseText
+
+Net::IMAP::ResponseText represents texts of responses.
+The text may be prefixed by the response code.
+
+  resp_text       ::= ["[" resp_text_code "]" SPACE] (text_mime2 / text)
+                      ;; text SHOULD NOT begin with "[" or "="
+  
+=== Super Class
+
+Struct
+
+=== Methods
+
+: code
+      Returns the response code. See ((<Net::IMAP::ResponseCode>)).
+      
+: text
+      Returns the text.
+
+== Net::IMAP::ResponseCode
+
+Net::IMAP::ResponseCode represents response codes.
+
+  resp_text_code  ::= "ALERT" / "PARSE" /
+                      "PERMANENTFLAGS" SPACE "(" #(flag / "\*") ")" /
+                      "READ-ONLY" / "READ-WRITE" / "TRYCREATE" /
+                      "UIDVALIDITY" SPACE nz_number /
+                      "UNSEEN" SPACE nz_number /
+                      atom [SPACE 1*<any TEXT_CHAR except "]">]
+
+=== SuperClass
+
+Struct
+
+=== Methods
+
+: name
+      Returns the name such as "ALERT", "PERMANENTFLAGS", "UIDVALIDITY"....
+
+: data
+      Returns the data if it exists.
+
+== Net::IMAP::MailboxList
+
+Net::IMAP::MailboxList represents contents of the LIST response.
+
+  mailbox_list    ::= "(" #("\Marked" / "\Noinferiors" /
+                      "\Noselect" / "\Unmarked" / flag_extension) ")"
+                      SPACE (<"> QUOTED_CHAR <"> / nil) SPACE mailbox
+
+=== Super Class
+
+Struct
+
+=== Methods
+
+: attr
+      Returns the name attributes. Each name attribute is a symbol
+      capitalized by String#capitalize, such as :Noselect (not :NoSelect).
+
+: delim
+      Returns the hierarchy delimiter
+
+: name
+      Returns the mailbox name.
+
+== Net::IMAP::StatusData
+
+Net::IMAP::StatusData represents contents of the STATUS response.
+
+=== Super Class
+
+Object
+
+=== Methods
+
+: mailbox
+      Returns the mailbox name.
+
+: attr
+      Returns a hash. Each key is one of "MESSAGES", "RECENT", "UIDNEXT",
+      "UIDVALIDITY", "UNSEEN". Each value is a number.
+
+== Net::IMAP::FetchData
+
+Net::IMAP::FetchData represents contents of the FETCH response.
+
+=== Super Class
+
+Object
+
+=== Methods
+
+: seqno
+      Returns the message sequence number.
+      (Note: not the unique identifier, even for the UID command response.)
+
+: attr
+      Returns a hash. Each key is a data item name, and each value is
+      its value.
+
+      The current data items are:
+
+      : BODY
+          A form of BODYSTRUCTURE without extension data.
+      : BODY[<section>]<<origin_octet>>
+          A string expressing the body contents of the specified section.
+      : BODYSTRUCTURE
+          An object that describes the ((<[MIME-IMB]>)) body structure of a message.
+          See ((<Net::IMAP::BodyTypeBasic>)), ((<Net::IMAP::BodyTypeText>)),
+          ((<Net::IMAP::BodyTypeMessage>)), ((<Net::IMAP::BodyTypeMultipart>)).
+      : ENVELOPE
+          A ((<Net::IMAP::Envelope>)) object that describes the envelope
+          structure of a message.
+      : FLAGS
+          A array of flag symbols that are set for this message. flag symbols
+          are capitalized by String#capitalize.
+      : INTERNALDATE
+          A string representing the internal date of the message.
+      : RFC822
+          Equivalent to BODY[].
+      : RFC822.HEADER
+          Equivalent to BODY.PEEK[HEADER].
+      : RFC822.SIZE
+          A number expressing the ((<[RFC-822]>)) size of the message.
+      : RFC822.TEXT
+          Equivalent to BODY[TEXT].
+      : UID
+          A number expressing the unique identifier of the message.
+
+== Net::IMAP::Envelope
+
+Net::IMAP::Envelope represents envelope structures of messages.
+
+=== Super Class
+
+Struct
+
+=== Methods
+
+: date
+      Retunns a string that represents the date.
+
+: subject
+      Retunns a string that represents the subject.
+
+: from
+      Retunns an array of ((<Net::IMAP::Address>)) that represents the from.
+
+: sender
+      Retunns an array of ((<Net::IMAP::Address>)) that represents the sender.
+
+: reply_to
+      Retunns an array of ((<Net::IMAP::Address>)) that represents the reply-to.
+
+: to
+      Retunns an array of ((<Net::IMAP::Address>)) that represents the to.
+
+: cc
+      Retunns an array of ((<Net::IMAP::Address>)) that represents the cc.
+
+: bcc
+      Retunns an array of ((<Net::IMAP::Address>)) that represents the bcc.
+
+: in_reply_to
+      Retunns a string that represents the in-reply-to.
+
+: message_id
+      Retunns a string that represents the message-id.
+
+== Net::IMAP::Address
+
+((<Net::IMAP::Address>)) represents electronic mail addresses.
+
+=== Super Class
+
+Struct
+
+=== Methods
+
+: name
+      Returns the phrase from ((<[RFC-822]>)) mailbox.
+
+: route
+      Returns the route from ((<[RFC-822]>)) route-addr.
+
+: mailbox
+      nil indicates end of ((<[RFC-822]>)) group.
+      If non-nil and host is nil, returns ((<[RFC-822]>)) group name.
+      Otherwise, returns ((<[RFC-822]>)) local-part
+
+: host
+      nil indicates ((<[RFC-822]>)) group syntax.
+      Otherwise, returns ((<[RFC-822]>)) domain name.
+
+== Net::IMAP::ContentDisposition
+
+Net::IMAP::ContentDisposition represents Content-Disposition fields.
+
+=== Super Class
+
+Struct
+
+=== Methods
+
+: dsp_type
+      Returns the disposition type.
+
+: param
+      Returns a hash that represents parameters of the Content-Disposition
+      field.
+
+== Net::IMAP::BodyTypeBasic
+
+Net::IMAP::BodyTypeBasic represents basic body structures of messages.
+
+=== Super Class
+
+Struct
+
+=== Methods
+
+: media_type
+      Returns the content media type name as defined in ((<[MIME-IMB]>)).
+
+: subtype
+      Returns the content subtype name as defined in ((<[MIME-IMB]>)).
+
+: param
+      Returns a hash that represents parameters as defined in
+      ((<[MIME-IMB]>)).
+
+: content_id
+      Returns a string giving the content id as defined in ((<[MIME-IMB]>)).
+
+: description
+      Returns a string giving the content description as defined in
+      ((<[MIME-IMB]>)).
+
+: encoding
+      Returns a string giving the content transfer encoding as defined in
+      ((<[MIME-IMB]>)).
+
+: size
+      Returns a number giving the size of the body in octets.
+
+: md5
+      Returns a string giving the body MD5 value as defined in ((<[MD5]>)).
+
+: disposition
+      Returns a ((<Net::IMAP::ContentDisposition>)) object giving
+      the content disposition.
+
+: language
+      Returns a string or an array of strings giving the body
+      language value as defined in [LANGUAGE-TAGS].
+
+: extension
+      Returns extension data.
+
+: multipart?
+      Returns false.
+
+== Net::IMAP::BodyTypeText
+
+Net::IMAP::BodyTypeText represents TEXT body structures of messages.
+
+=== Super Class
+
+Struct
+
+=== Methods
+
+: lines
+      Returns the size of the body in text lines.
+
+And Net::IMAP::BodyTypeText has all methods of ((<Net::IMAP::BodyTypeBasic>)).
+
+== Net::IMAP::BodyTypeMessage
+
+Net::IMAP::BodyTypeMessage represents MESSAGE/RFC822 body structures of messages.
+
+=== Super Class
+
+Struct
+
+=== Methods
+
+: envelope
+      Returns a ((<Net::IMAP::Envelope>)) giving the envelope structure.
+
+: body
+      Returns an object giving the body structure.
+
+And Net::IMAP::BodyTypeMessage has all methods of ((<Net::IMAP::BodyTypeText>)).
+
+== Net::IMAP::BodyTypeText
+
+=== Super Class
+
+Struct
+
+=== Methods
+
+: media_type
+      Returns the content media type name as defined in ((<[MIME-IMB]>)).
+
+: subtype
+      Returns the content subtype name as defined in ((<[MIME-IMB]>)).
+
+: parts
+      Returns multiple parts.
+
+: param
+      Returns a hash that represents parameters as defined in
+      ((<[MIME-IMB]>)).
+
+: disposition
+      Returns a ((<Net::IMAP::ContentDisposition>)) object giving
+      the content disposition.
+
+: language
+      Returns a string or an array of strings giving the body
+      language value as defined in [LANGUAGE-TAGS].
+
+: extension
+      Returns extension data.
+
+: multipart?
+      Returns true.
+
+== References
+
+: [IMAP]
+    M. Crispin, "INTERNET MESSAGE ACCESS PROTOCOL - VERSION 4rev1",
+    RFC 2060, December 1996.
+
+: [LANGUAGE-TAGS]
+    Alvestrand, H., "Tags for the Identification of
+    Languages", RFC 1766, March 1995.
+
+: [MD5]
+    Myers, J., and M. Rose, "The Content-MD5 Header Field", RFC
+    1864, October 1995.
+
+: [MIME-IMB]
+    Freed, N., and N. Borenstein, "MIME (Multipurpose Internet
+    Mail Extensions) Part One: Format of Internet Message Bodies", RFC
+    2045, November 1996.
+
+: [RFC-822]
+    Crocker, D., "Standard for the Format of ARPA Internet Text
+    Messages", STD 11, RFC 822, University of Delaware, August 1982.
 
 =end
 
@@ -702,7 +1145,7 @@ module Net
     Address = Struct.new(:name, :route, :mailbox, :host)
     ContentDisposition = Struct.new(:dsp_type, :param)
 
-    class BodyTypeBasic < Struct.new(:media_type, :media_subtype,
+    class BodyTypeBasic < Struct.new(:media_type, :subtype,
 				     :param, :content_id,
 				     :description, :encoding, :size,
 				     :md5, :disposition, :language,
@@ -710,9 +1153,15 @@ module Net
       def multipart?
 	return false
       end
+
+      def media_subtype
+	$stderr.printf("warning: media_subtype is obsolete.\n")
+	$stderr.printf("         use subtype instead.\n")
+	return subtype
+      end
     end
 
-    class BodyTypeText < Struct.new(:media_type, :media_subtype,
+    class BodyTypeText < Struct.new(:media_type, :subtype,
 				    :param, :content_id,
 				    :description, :encoding, :size,
 				    :lines,
@@ -721,9 +1170,15 @@ module Net
       def multipart?
 	return false
       end
+
+      def media_subtype
+	$stderr.printf("warning: media_subtype is obsolete.\n")
+	$stderr.printf("         use subtype instead.\n")
+	return subtype
+      end
     end
 
-    class BodyTypeMessage < Struct.new(:media_type, :media_subtype,
+    class BodyTypeMessage < Struct.new(:media_type, :subtype,
 				       :param, :content_id,
 				       :description, :encoding, :size,
 				       :envelope, :body, :lines,
@@ -732,14 +1187,26 @@ module Net
       def multipart?
 	return false
       end
+
+      def media_subtype
+	$stderr.printf("warning: media_subtype is obsolete.\n")
+	$stderr.printf("         use subtype instead.\n")
+	return subtype
+      end
     end
 
-    class BodyTypeMultipart < Struct.new(:media_type, :media_subtype,
+    class BodyTypeMultipart < Struct.new(:media_type, :subtype,
 					 :parts,
 					 :param, :disposition, :language,
 					 :extension)
       def multipart?
 	return true
+      end
+
+      def media_subtype
+	$stderr.printf("warning: media_subtype is obsolete.\n")
+	$stderr.printf("         use subtype instead.\n")
+	return subtype
       end
     end
 
@@ -1585,7 +2052,7 @@ module Net
 	if @str.index(/\(([^)]*)\)/ni, @pos)
 	  @pos = $~.end(0)
 	  return $1.scan(FLAG_REGEXP).collect { |flag, atom|
-	    atom || flag.intern
+	    atom || flag.capitalize.intern
 	  }
 	else
 	  parse_error("invalid flag list")

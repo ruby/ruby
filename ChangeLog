@@ -1,3 +1,7 @@
+Mon Apr  2 12:44:53 2001  Shugo Maeda <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb: backport from ruby-1.7.
+
 Mon Apr  2 01:16:24 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* win32/win32.c: use ruby's opendir on mingw32.
