@@ -1,3 +1,7 @@
+Thu Apr 11 19:10:37 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* io.c (remain_size): IO#read returns "" if file.size == 0.
+
 Thu Apr 11 09:31:19 2002  Takaaki Tateishi <ttate@kt.jaist.ac.jp>
 
 	* ext/dl/ptr.c: raise() -> rb_raise(). (Thanks Tetsuya Watanabe)

@@ -625,9 +625,6 @@ remain_size(fptr)
     {
 	off_t pos;
 
-	if (st.st_size == 0) {
-	    return 1;		/* force EOF */
-	}
 	pos = ftello(fptr->f);
 	if (st.st_size > pos && pos >= 0) {
 	    siz = st.st_size - pos + 1;
