@@ -1,3 +1,7 @@
+Wed Feb  4 22:39:46 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_stat_mode): should not sign-expand, so backout.
+
 Wed Feb  4 02:12:06 2004  Tanaka Akira  <akr@m17n.org>
 
 	* file.c (test_l): fix wrong method name in document.
@@ -67,7 +71,7 @@ Sun Feb  1 23:00:00 2004  Shigeo Kobayashi <shigek@ruby-lang.org>
 
 Sun Feb  1 18:21:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
 
-	From ruby_1_8 branch:
+	  From ruby_1_8 branch:
 	* lib/test/unit.rb: rearranged documentation for RDoc's sake.
 	* lib/matrix.rb: improved documentation.
 	* lib/net/http.rb: slight documentation formatting improvement.
