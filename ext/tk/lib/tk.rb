@@ -350,6 +350,10 @@ module TkComm
     _bind_core('+', what, context, cmd, args)
   end
 
+  def _bind_remove(what, context)
+    tk_call(*(what + ["<#{tk_event_sequence(context)}>", '']))
+  end
+
   def _bindinfo(what, context=nil)
     if context
       tk_call(*what+["<#{tk_event_sequence(context)}>"]).collect {|cmdline|
@@ -366,7 +370,7 @@ module TkComm
     end
   end
   private :install_bind, :tk_event_sequence, 
-          :_bind_core, :_bind, :_bind_append, :_bindinfo
+          :_bind_core, :_bind, :_bind_append, ,:_bind_remove, :_bindinfo
 
   def bind(tagOrClass, context, cmd=Proc.new, args=nil)
     _bind(["bind", tagOrClass], context, cmd, args)
@@ -374,6 +378,10 @@ module TkComm
 
   def bind_append(tagOrClass, context, cmd=Proc.new, args=nil)
     _bind_append(["bind", tagOrClass], context, cmd, args)
+  end
+
+  def bind_remove(tagOrClass, context)
+    _bind_remove(['bind', tagOrClass], context)
   end
 
   def bindinfo(tagOrClass, context=nil)
@@ -727,6 +735,10 @@ module TkBindCore
 
   def bind_append(context, cmd=Proc.new, args=nil)
     Tk.bind_append(to_eval, context, cmd, args)
+  end
+
+  def bind_remove(context)
+    Tk.bind_remove(to_eval, context)
   end
 
   def bindinfo(context=nil)
