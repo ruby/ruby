@@ -561,7 +561,13 @@ rb_big_cmp(x, y)
 	break;
 
       case T_FLOAT:
-	y = dbl2big(RFLOAT(y)->value);
+        {
+	  double d = rb_big2dbl(x);
+
+	  if (d == RFLOAT(y)->value) return INT2FIX(0);
+	  if (d > RFLOAT(y)->value) return INT2FIX(1);
+	  if (d < RFLOAT(y)->value) return INT2FIX(-1);
+	}
 	break;
 
       default:

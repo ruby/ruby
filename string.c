@@ -2661,15 +2661,37 @@ rb_str_chomp_bang(argc, argv, str)
     long len = RSTRING(str)->len;
 
     if (rb_scan_args(argc, argv, "01", &rs) == 0) {
+	if (len == 0) return Qnil;
 	rs = rb_rs;
+	if (rs == rb_default_rs) {
+	  smart_chomp:
+	    rb_str_modify(str);
+	    if (RSTRING(str)->ptr[len-1] == '\n') {
+		RSTRING(str)->len--;
+		if (RSTRING(str)->len > 0 &&
+		    RSTRING(str)->ptr[RSTRING(str)->len-1] == '\r') {
+		    RSTRING(str)->len--;
+		}
+		return str;
+	    }
+	    else if (RSTRING(str)->ptr[len-1] == '\r') {
+		RSTRING(str)->len--;
+		return str;
+	    }
+	    return Qnil;
+	}
     }
     if (NIL_P(rs)) return Qnil;
+    if (len == 0) return Qnil;
 
     StringValue(rs);
+    rb_str_modify(str);
     rslen = RSTRING(rs)->len;
     if (rslen == 0) {
 	while (len>0 && p[len-1] == '\n') {
 	    len--;
+	    if (len>0 && p[len-1] == '\r')
+		len--;
 	}
 	if (len < RSTRING(str)->len) {
 	    rb_str_modify(str);
@@ -2681,6 +2703,8 @@ rb_str_chomp_bang(argc, argv, str)
     }
     if (rslen > len) return Qnil;
     newline = RSTRING(rs)->ptr[rslen-1];
+    if (rslen == 1 && newline == '\n')
+	goto smart_chomp;
 
     if (p[len-1] == newline &&
 	(rslen <= 1 ||

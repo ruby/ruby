@@ -671,26 +671,30 @@ An end of a defun is found by moving forward from the beginning of one."
 		     '(
 		       ;; #{ }, #$hoge, #@foo are not comments
 		       ("\\(#\\)[{$@]" 1 (1 . nil))
-		       ;; the last $' in the string ,'...$' is not variable    
-		       ("\\(^\\|[[\\s <+(,]\\)\\('\\)[^'\n\\\\]*\\(\\\\.[^'\n\\\\]*\\)*[\\?\\$]\\('\\)"
+		       ;; the last $' in the string ,'...$' is not variable 
+		       ;; the last ?' in the string ,'...?' is not ascii code 
+		       ("\\(^\\|[[\\s <+(,=]\\)\\('\\)[^'\n\\\\]*\\(\\\\.[^'\n\\\\]*\\)*[\\?\\$]\\('\\)"
 			(2 (7 . nil))
 			(4 (7 . nil)))	
-		       ;; the last $` in the string ,`...$` is not variable   
-		       ("\\(^\\|[[\\s <+(,]\\)\\(`\\)[^`\n\\\\]*\\(\\\\.[^`\n\\\\]*\\)*[\\?\\$]\\(`\\)"
+		       ;; the last $` in the string ,`...$` is not variable
+		       ;; the last ?` in the string ,`...?` is not ascii code
+		       ("\\(^\\|[[\\s <+(,=]\\)\\(`\\)[^`\n\\\\]*\\(\\\\.[^`\n\\\\]*\\)*[\\?\\$]\\(`\\)"
 			(2 (7 . nil))
 			(4 (7 . nil)))
-		       ;; the last $" in the string ,"...$" is not variable   
-		       ("\\(^\\|[[\\s <+(,]\\)\\(\"\\)[^\"\n\\\\]*\\(\\\\.[^\"\n\\\\]*\\)*[\\?\\$]\\(\"\\)"
+		       ;; the last $" in the string ,"...$" is not variable
+		       ;; the last ?" in the string ,"...?" is not ascii code
+		       ("\\(^\\|[[\\s <+(,=]\\)\\(\"\\)[^\"\n\\\\]*\\(\\\\.[^\"\n\\\\]*\\)*[\\?\\$]\\(\"\\)"
 			(2 (7 . nil))
 			(4 (7 . nil)))
 		       ;; $' $" $` .... are variables
+		       ;; ?' ?" ?` are ascii codes
 		       ("[\\?\\$][#\"'`]" 0 (1 . nil))
 		       ;; regexps 
 		       ("\\(^\\|[=(,~?:;]\\|\\(^\\|\\s \\)\\(if\\|elsif\\|unless\\|while\\|until\\|when\\|and\\|or\\|&&\\|||\\)\\|g?sub!?\\|scan\\|split!?\\)\\s *\\(/\\)[^/\n\\\\]*\\(\\\\.[^/\n\\\\]*\\)*\\(/\\)"
 			(4 (7 . ?/))
 			(6 (7 . ?/)))
 		       ;; %Q!...! 
-		       ("\\(^\\|[[\\s <+(,]\\)%[xrqQ]?\\([^a-zA-Z0-9 \n]\\)[^\n\\\\]*\\(\\\\.[^\n\\\\]*\\)*\\(\\2\\)" 
+		       ("\\(^\\|[[\\s <+(,=]\\)%[xrqQ]?\\([^a-zA-Z0-9 \n]\\)[^\n\\\\]*\\(\\\\.[^\n\\\\]*\\)*\\(\\2\\)" 
 			(2 (7 . nil))
 			(4 (7 . nil)))		       
 		       ("^\\(=\\)begin\\(\\s \\|$\\)" 1 (7 . nil))

@@ -5052,6 +5052,9 @@ rb_f_eval(argc, argv, self)
     rb_scan_args(argc, argv, "13", &src, &scope, &vfile, &vline);
     if (ruby_safe_level >= 4) {
 	StringValue(src);
+	if (!NIL_P(scope) && !OBJ_TAINTED(scope)) {
+	    rb_raise(rb_eSecurityError, "Insecure: can't modify trusted binding");
+	}
     }
     else {
 	SafeStringValue(src);

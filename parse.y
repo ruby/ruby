@@ -425,6 +425,81 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			$1->nd_value = $3;
 			$$ = $1;
 		    }
+		| variable tOP_ASGN command_call
+		    {
+		        NODE *n = assignable($1, 0);
+			if ($2 == tOROP) {
+			    n->nd_value = $3;
+			    $$ = NEW_OP_ASGN_OR(gettable($1), n);
+			    if (is_instance_id($1)) {
+				$$->nd_aid = $1;
+			    }
+			}
+			else if ($2 == tANDOP) {
+			    n->nd_value = $3;
+			    $$ = NEW_OP_ASGN_AND(gettable($1), n);
+			}
+			else {
+			    $$ = n;
+			    if ($$) {
+				$$->nd_value = call_op(gettable($1),$2,1,$3);
+			    }
+			}
+			fixpos($$, $3);
+		    }
+		| primary '[' aref_args ']' tOP_ASGN command_call
+		    {
+                        NODE *tmp, *args = NEW_LIST($6);
+
+			$3 = list_append($3, NEW_NIL());
+			list_concat(args, $3);
+			if ($5 == tOROP) {
+			    $5 = 0;
+			}
+			else if ($5 == tANDOP) {
+			    $5 = 1;
+			}
+			$$ = NEW_OP_ASGN1($1, $5, args);
+		        fixpos($$, $1);
+		    }
+		| primary '.' tIDENTIFIER tOP_ASGN command_call
+		    {
+			if ($4 == tOROP) {
+			    $4 = 0;
+			}
+			else if ($4 == tANDOP) {
+			    $4 = 1;
+			}
+			$$ = NEW_OP_ASGN2($1, $3, $4, $5);
+		        fixpos($$, $1);
+		    }
+		| primary '.' tCONSTANT tOP_ASGN command_call
+		    {
+			if ($4 == tOROP) {
+			    $4 = 0;
+			}
+			else if ($4 == tANDOP) {
+			    $4 = 1;
+			}
+			$$ = NEW_OP_ASGN2($1, $3, $4, $5);
+		        fixpos($$, $1);
+		    }
+		| primary tCOLON2 tIDENTIFIER tOP_ASGN command_call
+		    {
+			if ($4 == tOROP) {
+			    $4 = 0;
+			}
+			else if ($4 == tANDOP) {
+			    $4 = 1;
+			}
+			$$ = NEW_OP_ASGN2($1, $3, $4, $5);
+		        fixpos($$, $1);
+		    }
+		| backref tOP_ASGN command_call
+		    {
+		        rb_backref_error($1);
+			$$ = 0;
+		    }
 		| lhs '=' mrhs_basic
 		    {
 			$$ = node_assign($1, NEW_REXPAND($3));
@@ -692,26 +767,27 @@ arg		: lhs '=' arg
 			value_expr($3);
 			$$ = node_assign($1, $3);
 		    }
-		| variable tOP_ASGN {$$ = assignable($1, 0);} arg
+		| variable tOP_ASGN arg
 		    {
+		        NODE *n = assignable($1, 0);
 			if ($2 == tOROP) {
-			    $<node>3->nd_value = $4;
-			    $$ = NEW_OP_ASGN_OR(gettable($1), $<node>3);
+			    n->nd_value = $3;
+			    $$ = NEW_OP_ASGN_OR(gettable($1), n);
 			    if (is_instance_id($1)) {
 				$$->nd_aid = $1;
 			    }
 			}
 			else if ($2 == tANDOP) {
-			    $<node>3->nd_value = $4;
-			    $$ = NEW_OP_ASGN_AND(gettable($1), $<node>3);
+			    n->nd_value = $3;
+			    $$ = NEW_OP_ASGN_AND(gettable($1), n);
 			}
 			else {
-			    $$ = $<node>3;
+			    $$ = n;
 			    if ($$) {
-				$$->nd_value = call_op(gettable($1),$2,1,$4);
+				$$->nd_value = call_op(gettable($1),$2,1,$3);
 			    }
 			}
-			fixpos($$, $4);
+			fixpos($$, $3);
 		    }
 		| primary '[' aref_args ']' tOP_ASGN arg
 		    {
