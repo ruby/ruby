@@ -1005,7 +1005,7 @@ NtCmdGlob (NtCmdLineElement *patt)
     for (p = buf; *p; p = CharNext(p))
 	if (*p == '\\')
 	    *p = '/';
-    rb_globi(buf, insert, (VALUE)&listinfo);
+    rb_globi(buf, (void (*) _((const char*, VALUE)))insert, (VALUE)&listinfo);
     if (buf != buffer)
 	free(buf);
 
