@@ -2842,6 +2842,9 @@ rb_io_ctl(io, req, arg, io_p)
     else if (arg == Qtrue) {
 	narg = 1;
     }
+    else if (rb_obj_is_kind_of(arg, rb_cInteger)) {
+	narg = NUM2LONG(arg);
+    }
     else {
 	Check_Type(arg, T_STRING);
 

@@ -227,10 +227,7 @@ rb_add_method(klass, mid, node, noex)
     NODE *body;
 
     if (NIL_P(klass)) klass = rb_cObject;
-    if (klass == rb_cObject) {
-	rb_secure(4);
-    }
-    if (rb_safe_level() >= 4 && !OBJ_TAINTED(klass)) {
+    if (rb_safe_level() >= 4 && (klass == rb_cObject || !OBJ_TAINTED(klass))) {
 	rb_raise(rb_eSecurityError, "Insecure: can't define method");
     }
     if (OBJ_FROZEN(klass)) rb_error_frozen("class/module");

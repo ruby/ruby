@@ -1,3 +1,11 @@
+Tue Jun  5 15:16:06 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_add_method): should not call rb_secure(), for
+	  last_func may not be set.
+
+	* io.c (rb_io_ctl): ioctl should accept any integer within C long
+	  range.
+
 Tue Jun  5 13:41:13 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/etc/extconf.rb: use egrep_cpp.
