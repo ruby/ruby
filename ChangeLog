@@ -1,3 +1,7 @@
+Sat Jan 22 22:59:08 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/ssl.rb (accept): rescue SSLError. [druby-ja:110]
+
 Sat Jan 22 22:27:28 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/unix.rb: fail if UNIXFileOwner is set. [druby-ja:111]
