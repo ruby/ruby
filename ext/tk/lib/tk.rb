@@ -2841,6 +2841,7 @@ class TkWindow<TkObject
   end
 
   def destroy
+    super
     tk_call 'destroy', epath
     if @cmdtbl
       for id in @cmdtbl

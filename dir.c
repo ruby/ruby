@@ -653,7 +653,38 @@ remove_backslashes(p)
 #   define S_ISDIR(m) ((m & S_IFMT) == S_IFDIR)
 #endif
 
-static void
+struct glob_args {
+    void (*func) _((const char*, VALUE));
+    const char *c;
+    VALUE v;
+};
+
+static VALUE
+glob_func_caller(args)
+    struct glob_args *args;
+{
+    (*args->func)(args->c, args->v);
+    return Qnil;
+}
+
+static int
+glob_call_func(func, path, arg)
+    void (*func) _((const char*, VALUE));
+    const char *path;
+    VALUE arg;
+{
+    int status;
+    struct glob_args args;
+
+    args.func = func;
+    args.c = path;
+    args.v = arg;
+
+    rb_protect(glob_func_caller, (VALUE)&args, &status);
+    return status;
+}
+
+static int
 glob_helper(path, sub, flags, func, arg)
     char *path;
     char *sub;
@@ -663,6 +694,7 @@ glob_helper(path, sub, flags, func, arg)
 {
     struct stat st;
     char *p, *m;
+    int status = 0;
 
     p = sub ? sub : path;
     if (!has_magic(p, 0, flags)) {
@@ -672,17 +704,18 @@ glob_helper(path, sub, flags, func, arg)
 	if (!(flags & FNM_NOESCAPE)) remove_backslashes(p);
 #endif
 	if (lstat(path, &st) == 0) {
-	    (*func)(path, arg);
+	    status = glob_call_func(func, path, arg);
+	    if (status) return status;
 	}
 	else if (errno != ENOENT) {
 	    /* In case stat error is other than ENOENT and
 	       we may want to know what is wrong. */
 	    rb_sys_warning(path);
 	}
-	return;
+	return 0;
     }
 
-    while (p) {
+    while (p && !status) {
 	if (*p == '/') p++;
 	m = strchr(p, '/');
 	if (has_magic(p, m, flags)) {
@@ -704,6 +737,7 @@ glob_helper(path, sub, flags, func, arg)
 	    if (stat(dir, &st) < 0) {
 	        if (errno != ENOENT) rb_sys_warning(dir);
 	        free(base);
+	        free(magic);
 	        break;
 	    }
 	    if (S_ISDIR(st.st_mode)) {
@@ -712,18 +746,21 @@ glob_helper(path, sub, flags, func, arg)
 		    recursive = 1;
 		    buf = ALLOC_N(char, n+strlen(m)+3);
 		    sprintf(buf, "%s%s", base, *base ? m : m+1);
-		    glob_helper(buf, buf+n, flags, func, arg);
+		    status = glob_helper(buf, buf+n, flags, func, arg);
 		    free(buf);
+		    if (status) goto finalize;
 		}
 		dirp = opendir(dir);
 		if (dirp == NULL) {
 		    rb_sys_warning(dir);
 		    free(base);
+		    free(magic);
 		    break;
 		}
 	    }
 	    else {
 		free(base);
+		free(magic);
 		break;
 	    }
 	    
@@ -747,7 +784,9 @@ glob_helper(path, sub, flags, func, arg)
 			char *t = buf+strlen(buf);
 		        strcpy(t, "/**");
 			strcpy(t+3, m);
-			glob_helper(buf, t, flags, func, arg);
+			status = glob_helper(buf, t, flags, func, arg);
+			free(buf);
+			if (status) goto finalize;
 		    }
 		    free(buf);
 		    continue;
@@ -756,8 +795,8 @@ glob_helper(path, sub, flags, func, arg)
 		    buf = ALLOC_N(char, strlen(base)+NAMLEN(dp)+2);
 		    sprintf(buf, "%s%s%s", base, (BASE) ? "/" : "", dp->d_name);
 		    if (!m) {
-			(*func)(buf, arg);
-			free(buf);
+			status = glob_call_func(func, path, arg);
+			if (status) goto finalize;
 			continue;
 		    }
 		    tmp = ALLOC(struct d_link);
@@ -766,24 +805,27 @@ glob_helper(path, sub, flags, func, arg)
 		    link = tmp;
 		}
 	    }
+	  finalize:
 	    closedir(dirp);
 	    free(base);
 	    free(magic);
 	    if (link) {
 		while (link) {
-		    if (stat(link->path, &st) == 0) {
-			if (S_ISDIR(st.st_mode)) {
-			    int len = strlen(link->path);
-			    int mlen = strlen(m);
-			    char *t = ALLOC_N(char, len+mlen+1);
+		    if (status == 0) {
+			if (stat(link->path, &st) == 0) {
+			    if (S_ISDIR(st.st_mode)) {
+				int len = strlen(link->path);
+				int mlen = strlen(m);
+				char *t = ALLOC_N(char, len+mlen+1);
 
-			    sprintf(t, "%s%s", link->path, m);
-			    glob_helper(t, t+len, flags, func, arg);
-			    free(t);
+				sprintf(t, "%s%s", link->path, m);
+				status = glob_helper(t, t+len, flags, func, arg);
+				free(t);
+			    }
 			}
-		    }
-		    else {
-			rb_sys_warning(link->path);
+			else {
+			    rb_sys_warning(link->path);
+			}
 		    }
 		    tmp = link;
 		    link = link->next;
@@ -795,6 +837,7 @@ glob_helper(path, sub, flags, func, arg)
 	}
 	p = m;
     }
+    return status;
 }
 
 static void
@@ -804,7 +847,8 @@ rb_glob2(path, flags, func, arg)
     void (*func) _((const char*, VALUE));
     VALUE arg;
 {
-    glob_helper(path, 0, flags, func, arg);
+    int status = glob_helper(path, 0, flags, func, arg);
+    if (status) rb_jump_tag(status);
 }
 
 void

@@ -66,6 +66,26 @@ Wed Sep 11 00:41:10 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	* eval.c (rb_mod_define_method): initialize orig_func too.
 	  (ruby-bugs-ja:PR#330)
 
+Wed Sep 11 00:01:32 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dir.c (glob_helper): prevent memory leak using rb_protect().
+
+	* string.c (rb_str_associate): no need to check freeze flag.
+
+	* string.c (rb_str_resize): should honor STR_ASSOC flag on
+	  resize.
+
+	* string.c (rb_str_resize): proper STR_ASSOC handling.  pointed
+	  out by Michal Rokos.
+
+	* string.c (rb_str_buf_cat): ditto.
+
+	* string.c (rb_str_cat): ditto.
+
+	* string.c (rb_str_buf_append): ditto.
+
+	* string.c (rb_str_append): ditto.
+
 Tue Sep 10 23:35:46 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* parse.y (nextc): restore line number after here documents.
