@@ -23,14 +23,15 @@ module REXML
 		#
 		# Nat Price gave me some good ideas for the API.
 		class BaseParser
-			NCNAME_STR= '[\w:][-\w\d.]*'
+			NCNAME_STR= '[\w:][\-\w\d.]*'
 			NAME_STR= "(?:#{NCNAME_STR}:)?#{NCNAME_STR}"
 
-			NAMECHAR = '[-\w\d\.:]'
+			NAMECHAR = '[\-\w\d\.:]'
 			NAME = "([\\w:]#{NAMECHAR}*)"
 			NMTOKEN = "(?:#{NAMECHAR})+"
 			NMTOKENS = "#{NMTOKEN}(\\s+#{NMTOKEN})*"
 			REFERENCE = "(?:&#{NAME};|&#\\d+;|&#x[0-9a-fA-F]+;)"
+			REFERENCE_RE = /#{REFERENCE}/
 
 			DOCTYPE_START = /\A\s*<!DOCTYPE\s/um
 			DOCTYPE_PATTERN = /\s*<!DOCTYPE\s+(.*?)(\[|>)/um
@@ -38,6 +39,7 @@ module REXML
 			COMMENT_START = /\A<!--/u
 			COMMENT_PATTERN = /<!--(.*?)-->/um
 			CDATA_START = /\A<!\[CDATA\[/u
+			CDATA_END = /^\s*\]\s*>/um
 			CDATA_PATTERN = /<!\[CDATA\[(.*?)\]\]>/um
 			XMLDECL_START = /\A<\?xml\s/u;
 			XMLDECL_PATTERN = /<\?xml\s+(.*?)\?>*/um
@@ -51,7 +53,7 @@ module REXML
 			STANDALONE = /\bstandalone=["'](.*?)['"]/um
 
 			ENTITY_START = /^\s*<!ENTITY/
-			IDENTITY = /^([!\*\w-]+)(\s+#{NCNAME_STR})?(\s+["'].*?['"])?(\s+['"].*?["'])?/u
+			IDENTITY = /^([!\*\w\-]+)(\s+#{NCNAME_STR})?(\s+["'].*?['"])?(\s+['"].*?["'])?/u
 			ELEMENTDECL_START = /^\s*<!ELEMENT/um
 			ELEMENTDECL_PATTERN = /^\s*(<!ELEMENT.*?)>/um
 			ENUMERATION = "\\(\\s*#{NMTOKEN}(?:\\s*\\|\\s*#{NMTOKEN})*\\s*\\)"
@@ -61,16 +63,17 @@ module REXML
 			ATTVALUE = "(?:\"((?:[^<&\"]|#{REFERENCE})*)\")|(?:'((?:[^<&']|#{REFERENCE})*)')"
 			DEFAULTDECL = "(#REQUIRED|#IMPLIED|(?:(#FIXED\\s+)?#{ATTVALUE}))"
 			ATTDEF = "\\s+#{NAME}\\s+#{ATTTYPE}\\s+#{DEFAULTDECL}"
+			ATTDEF_RE = /#{ATTDEF}/
 			ATTLISTDECL_START = /^\s*<!ATTLIST/um
 			ATTLISTDECL_PATTERN = /^\s*<!ATTLIST\s+#{NAME}(?:#{ATTDEF})*\s*>/um
 			NOTATIONDECL_START = /^\s*<!NOTATION/um
-			PUBLIC = /^\s*<!NOTATION\s+(\w[-\w]*)\s+(PUBLIC)\s+((["']).*?\4)\s*>/um
-			SYSTEM = /^\s*<!NOTATION\s+(\w[-\w]*)\s+(SYSTEM)\s+((["']).*?\4)\s*>/um
+			PUBLIC = /^\s*<!NOTATION\s+(\w[\-\w]*)\s+(PUBLIC)\s+((["']).*?\4)\s*>/um
+			SYSTEM = /^\s*<!NOTATION\s+(\w[\-\w]*)\s+(SYSTEM)\s+((["']).*?\4)\s*>/um
 
 			TEXT_PATTERN = /\A([^<]*)/um
 
 			# Entity constants
-			PUBIDCHAR = "\x20\x0D\x0Aa-zA-Z0-9-()+,./:=?;!*@$_%#"
+			PUBIDCHAR = "\x20\x0D\x0Aa-zA-Z0-9\\-()+,./:=?;!*@$_%#"
 			SYSTEMLITERAL = %Q{((?:"[^"]*")|(?:'[^']*'))}
 			PUBIDLITERAL = %Q{("[#{PUBIDCHAR}']*"|'[#{PUBIDCHAR}]*')}
 			EXTERNALID = "(?:(?:(SYSTEM)\\s+#{SYSTEMLITERAL})|(?:(PUBLIC)\\s+#{PUBIDLITERAL}\\s+#{SYSTEMLITERAL}))"
@@ -243,7 +246,7 @@ module REXML
 						contents = md[0]
 
 						pairs = {}
-						values = md[0].scan( ATTDEF )
+						values = md[0].scan( ATTDEF_RE )
 						values.each do |attdef|
 							unless attdef[3] == "#IMPLIED"
 								attdef.compact!
@@ -263,9 +266,9 @@ module REXML
 							raise REXML::ParseException.new( "error parsing notation: no matching pattern", @source )
 						end
 						return [ :notationdecl, md[1], md[2], md[3] ]
-					when /^\s*\]\s*>/um
+					when CDATA_END
 						@document_status = :after_doctype
-						@source.match( /^\s*\]\s*>/um, true )
+						@source.match( CDATA_END, true )
 						return [ :end_doctype ]
 					end
 				end
@@ -358,7 +361,7 @@ module REXML
 			def unnormalize( string, entities=nil, filter=nil )
 				rv = string.clone
 				rv.gsub!( /\r\n?/, "\n" )
-				matches = rv.scan( REFERENCE)
+				matches = rv.scan( REFERENCE_RE )
 				return rv if matches.size == 0
 				rv.gsub!( /&#0*((?:\d+)|(?:x[a-fA-F0-9]+));/ ) {|m|
 					m=$1

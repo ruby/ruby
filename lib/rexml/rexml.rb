@@ -22,5 +22,5 @@
 module REXML
 	Copyright = "Copyright #{Time.now.year} Sean Russell <ser@germane-software.com>"
 	Date = "+2003/110"
-	Version = "2.7.0"
+	Version = "2.7.1"
 end

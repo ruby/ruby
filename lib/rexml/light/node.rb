@@ -42,7 +42,9 @@ module REXML
 				if node.kind_of? String
 					node = [ :text, node ]
 				elsif node.nil?
-					node = [ :start_document, nil, nil ]
+					node = [ :document, nil, nil ]
+				elsif node[0] == :start_element
+					node[0] = :element
 				end
 				replace( node )
 				_old_put( 1, 0, 1 )
@@ -117,6 +119,10 @@ module REXML
 				end
 			end
 
+			def =~( path )
+				XPath.match( self, path )
+			end
+
 			# Doesn't handle namespaces yet
 			def []=( reference, ns, value=nil )
 				el!()
@@ -139,7 +145,7 @@ module REXML
 			# object.  Otherwise, the element argument is a string, the namespace (if
 			# provided) is the namespace the element is created in.
 			def << element
-				if text?
+				if node_type() == :text
 					at(-1) << element
 				else
 					newnode = Node.new( element )
@@ -150,7 +156,7 @@ module REXML
 			end
 
 			def node_type
-				self[0]
+				_old_get(0)
 			end
 
 			def text=( foo )
@@ -161,10 +167,6 @@ module REXML
 			def root
 				context = self
 				context = context.at(1) while context.at(1)
-			end
-
-			def element?
-				at(0) == :start_element
 			end
 
 			def has_name?( name, namespace = '' )
@@ -181,19 +183,16 @@ module REXML
 				at(1)
 			end
 
-			def text?
-				at(0) == :text
-			end
-			
 			def to_s
 
 			end
 
 			def el!
-				if text?()
-					_old_put( 0, :start_element )
+				if node_type() != :element and node_type() != :document
+					_old_put( 0, :element )
 					push({})
 				end
+				self
 			end
 
 			private
