@@ -1,3 +1,8 @@
+Sun Feb  9 08:34:45 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb: 4xx raises Net::ProtoServerError, 5xx raises
+	  Net::ProtoFatalError (for backward compatibility).
+
 Sun Feb  9 07:07:26 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb: new method FileUtils.pwd (really).

@@ -1257,11 +1257,11 @@ module Net
   end
   class HTTPClientError < HTTPResponse           # 4xx
     HAS_BODY = true
-    EXCEPTION_TYPE = ProtoFatalError
+    EXCEPTION_TYPE = ProtoServerError   # for backward compatibility
   end
   class HTTPServerError < HTTPResponse           # 5xx
     HAS_BODY = true
-    EXCEPTION_TYPE = ProtoServerError
+    EXCEPTION_TYPE = ProtoFatalError    # for backward compatibility
   end
 
   class HTTPContinue < HTTPInformation           # 100
