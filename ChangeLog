@@ -1,3 +1,8 @@
+Wed Apr  9 17:24:21 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (rb_gc_mark_children): introduce this function again; this
+	  is required when stack was very tight. [ruby-talk:68916]
+
 Wed Apr  9 15:49:30 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (bigdivmod): small typo.

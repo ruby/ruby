@@ -462,6 +462,27 @@ sweep_source_filename(key, value)
     }
 }
 
+static void rb_gc_mark_children _((VALUE ptr));
+
+static void
+gc_mark_all()
+{
+    RVALUE *p, *pend;
+    int i;
+
+    init_mark_stack();
+    for (i = 0; i < heaps_used; i++) {
+	p = heaps[i]; pend = p + heaps_limits[i];
+	while (p < pend) {
+	    if ((p->as.basic.flags & FL_MARK) &&
+		(p->as.basic.flags != FL_MARK)) {
+		rb_gc_mark_children((VALUE)p);
+	    }
+	    p++;
+	}
+    }
+}
+
 static void
 gc_mark_rest()
 {
@@ -474,29 +495,7 @@ gc_mark_rest()
     init_mark_stack();
     while(p != tmp_arry){
 	p--;
-	FL_UNSET(*p, FL_MARK);
-	rb_gc_mark(*p);
-    }
-}
-
-static void
-gc_mark_all()
-{
-    RVALUE *p, *pend;
-    int i;
-
-    gc_mark_rest();
-    init_mark_stack();
-    for (i = 0; i < heaps_used; i++) {
-	p = heaps[i]; pend = p + heaps_limits[i];
-	while (p < pend) {
-	    if ((p->as.basic.flags & FL_MARK) &&
-		(p->as.basic.flags != FL_MARK)) {
-		FL_UNSET(p, FL_MARK);
-		rb_gc_mark((VALUE)p);
-	    }
-	    p++;
-	}
+	rb_gc_mark_children(*p);
     }
 }
 
@@ -600,13 +599,14 @@ rb_gc_mark(ptr)
     int ret;
     register RVALUE *obj;
 
+    obj = RANY(ptr);
+    if (rb_special_const_p(ptr)) return; /* special const not marked */
+    if (obj->as.basic.flags == 0) return;       /* free cell */
+    if (obj->as.basic.flags & FL_MARK) return;  /* already marked */ 
+    obj->as.basic.flags |= FL_MARK;
+
     CHECK_STACK(ret);
     if (ret) {
-	obj = RANY(ptr);
-	if (rb_special_const_p(ptr)) return; /* special const not marked */
-	if (obj->as.basic.flags == 0) return;       /* free cell */
-	if (obj->as.basic.flags & FL_MARK) return;  /* already marked */ 
-	obj->as.basic.flags |= FL_MARK;
 	if (!mark_stack_overflow) {
 	    if (mark_stack_ptr - mark_stack < MARK_STACK_MAX) {
 		*mark_stack_ptr = ptr;
@@ -618,15 +618,25 @@ rb_gc_mark(ptr)
 	}
 	return;
     }
+    rb_gc_mark_children(ptr);
+}
+
+static void
+rb_gc_mark_children(ptr)
+    VALUE ptr;
+{
+    register RVALUE *obj = RANY(ptr);
+
+    goto marking;		/* skip */
 
   again:
     obj = RANY(ptr);
     if (rb_special_const_p(ptr)) return; /* special const not marked */
     if (obj->as.basic.flags == 0) return;       /* free cell */
     if (obj->as.basic.flags & FL_MARK) return;  /* already marked */ 
-
     obj->as.basic.flags |= FL_MARK;
 
+  marking:
     if (FL_TEST(obj, FL_EXIVAR)) {
 	rb_mark_generic_ivar(ptr);
     }
