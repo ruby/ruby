@@ -1,3 +1,9 @@
+Fri Jan 10 01:23:45 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* misc/ruby-mode.el (ruby-font-lock-syntactic-keywords): syntax
+	  classes are not allowed inside character classes.
+	  [ruby-talk:60996]
+
 Thu Jan  9 23:28:01 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* configure.in: AC_MSG_FAILURE is a new macro in 2.54b or later.
