@@ -222,7 +222,7 @@ def create_makefile(target)
   end
   $libs = "" unless $libs
 
-  if !$objs then
+  unless $objs then
     $objs = Dir["*.c"]
     for f in $objs
       f.sub!(/\.(c|cc)$/, ".o")

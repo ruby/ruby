@@ -142,6 +142,7 @@ missing/nt.c
 missing/nt.h
 missing/setenv.c
 missing/strcasecmp.c
+missing/strchr.c
 missing/strdup.c
 missing/strerror.c
 missing/strftime.c

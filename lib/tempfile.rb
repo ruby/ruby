@@ -81,7 +81,6 @@ if __FILE__ == $0
   f = Tempfile.new("foo")
   f.print("foo\n")
   f.close
-  f = nil
   f.open
   p f.gets # => "foo\n"
   f.close(true)

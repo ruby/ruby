@@ -13,59 +13,59 @@ window.border_width(0)
 window.realize
 
 toolbar = Gtk::Toolbar::new(Gtk::ORIENTATION_HORIZONTAL, Gtk::TOOLBAR_BOTH)
-toolbar.append_item "Horizontal", "Horizontal toolbar layout",
+toolbar.append_item "Horizontal", "Horizontal toolbar layout", "Toolbar/Horizontal",
   Gtk::Pixmap::new(*Gdk::Pixmap::create_from_xpm(window.window,
 						 nil,
 						 #window.style.bg[Gtk::STATE_NORMAL],
 						 "test.xpm")), nil do
   toolbar.set_orientation Gtk::ORIENTATION_HORIZONTAL
 end
-toolbar.append_item "Vertival", "Vertical toolbar layout",
+toolbar.append_item "Vertival", "Vertical toolbar layout", "Toolbar/Vertical",
   Gtk::Pixmap::new(*Gdk::Pixmap::create_from_xpm(window.window,
 						 nil, #window.style.bg[Gtk::STATE_NORMAL],
 						 "test.xpm")), nil do
   toolbar.set_orientation Gtk::ORIENTATION_VERTICAL
 end
 toolbar.append_space
-toolbar.append_item "Icons", "Only show toolbar icons",
+toolbar.append_item "Icons", "Only show toolbar icons", "Toolbar/IconsOnly",
   Gtk::Pixmap::new(*Gdk::Pixmap::create_from_xpm(window.window,
 						 nil, #window.style.bg[Gtk::STATE_NORMAL],
 						 "test.xpm")), nil do
   toolbar.set_style Gtk::TOOLBAR_ICONS
 end
-toolbar.append_item "Text", "Only show toolbar text",
+toolbar.append_item "Text", "Only show toolbar text", "Toolbar/TextOnly",
   Gtk::Pixmap::new(*Gdk::Pixmap::create_from_xpm(window.window,
 						 nil,#window.style.bg[Gtk::STATE_NORMAL],
 						 "test.xpm")), nil do
   toolbar.set_style Gtk::TOOLBAR_TEXT
 end
-toolbar.append_item "Both", "Show toolbar icons and text",
+toolbar.append_item "Both", "Show toolbar icons and text", "Toolbar/Both",
   Gtk::Pixmap::new(*Gdk::Pixmap::create_from_xpm(window.window,
 						 nil, #window.style.bg[Gtk::STATE_NORMAL],
 						 "test.xpm")), nil do
   toolbar.set_style Gtk::TOOLBAR_BOTH
 end
 toolbar.append_space
-toolbar.append_item "Small", "User small spaces",
+toolbar.append_item "Small", "User small spaces", "Toolbar/Small",
   Gtk::Pixmap::new(*Gdk::Pixmap::create_from_xpm(window.window,
 						 nil,#window.style.bg[Gtk::STATE_NORMAL],
 						 "test.xpm")), nil do
   toolbar.set_space_size 5
 end
-toolbar.append_item "Big", "User big spaces",
+toolbar.append_item "Big", "User big spaces", "Toolbar/Big",
   Gtk::Pixmap::new(*Gdk::Pixmap::create_from_xpm(window.window,
 						 nil,#window.style.bg[Gtk::STATE_NORMAL],
 						 "test.xpm")), nil do
   toolbar.set_space_size 10
 end
 toolbar.append_space
-toolbar.append_item "Enable", "Enable tooltips",
+toolbar.append_item "Enable", "Enable tooltips",nil,
   Gtk::Pixmap::new(*Gdk::Pixmap::create_from_xpm(window.window,
 						 nil,#window.style.bg[Gtk::STATE_NORMAL],
 						 "test.xpm")), nil do
   toolbar.set_tooltips TRUE
 end
-toolbar.append_item "Disable", "Disable tooltips",
+toolbar.append_item "Disable", "Disable tooltips",nil,
   Gtk::Pixmap::new(*Gdk::Pixmap::create_from_xpm(window.window,
 						 nil,#window.style.bg[Gtk::STATE_NORMAL],
 						 "test.xpm")), nil do

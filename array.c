@@ -1229,7 +1229,4 @@ Init_Array()
     rb_define_method(cArray, "nitems", ary_nitems, 0);
 
     cmp = rb_intern("<=>");
-
-    /* turn on premitive flag for the class */
-    FL_SET(cArray, FL_PRIMITIVE);
 }

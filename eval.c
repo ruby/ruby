@@ -35,8 +35,6 @@ char *strrchr();
 #endif
 #endif
 
-extern VALUE cData;
-
 VALUE cProc;
 static VALUE cBinding;
 static VALUE proc_call _((VALUE,VALUE));
@@ -104,20 +102,6 @@ rb_add_method(klass, mid, node, noex)
     if (NIL_P(klass)) klass = cObject;
     body = NEW_METHOD(node, noex);
     st_insert(RCLASS(klass)->m_tbl, mid, body);
-}
-
-void
-rb_remove_method(klass, mid)
-    VALUE klass;
-    ID mid;
-{
-    NODE *body;
-
-    if (!st_delete(RCLASS(klass)->m_tbl, &mid, &body)) {
-	NameError("method `%s' not defined in %s",
-		  rb_id2name(mid), rb_class2name(klass));
-    }
-    rb_clear_cache_by_id(mid);
 }
 
 static NODE*
@@ -207,6 +191,68 @@ rb_alias(klass, name, def)
 }
 
 static void
+remove_method(klass, mid)
+    VALUE klass;
+    ID mid;
+{
+    NODE *body;
+
+    if (!st_delete(RCLASS(klass)->m_tbl, &mid, &body)) {
+	NameError("method `%s' not defined in %s",
+		  rb_id2name(mid), rb_class2name(klass));
+    }
+    rb_clear_cache_by_id(mid);
+}
+
+void
+rb_remove_method(klass, name)
+    VALUE klass;
+    char *name;
+{
+    remove_method(klass, rb_intern(name));
+}
+
+void
+rb_disable_super(klass, name)
+    VALUE klass;
+    char *name;
+{
+    VALUE origin;
+    NODE *body;
+    ID mid = rb_intern(name);
+
+    body = search_method(klass, mid, &origin);
+    if (!body || !body->nd_body) {
+	NameError("undefined method `%s' for `%s'",
+		  rb_id2name(mid), rb_class2name(klass));
+    }
+    if (origin == klass) {
+	body->nd_noex |= NOEX_UNDEF;
+    }
+    else {
+	rb_clear_cache_by_id(mid);
+	rb_add_method(the_class, mid, 0, NOEX_UNDEF);
+    }
+}
+
+void
+rb_enable_super(klass, name)
+    VALUE klass;
+    char *name;
+{
+    VALUE origin;
+    NODE *body;
+    ID mid = rb_intern(name);
+
+    body = search_method(klass, mid, &origin);
+    if (!body || !body->nd_body || origin != klass) {
+	NameError("undefined method `%s' for `%s'",
+		  rb_id2name(mid), rb_class2name(klass));
+    }
+    body->nd_noex &= ~NOEX_UNDEF;
+}
+
+static void
 rb_export_method(klass, name, noex)
     VALUE klass;
     ID name;
@@ -243,7 +289,7 @@ method_boundp(klass, id, ex)
     int noex;
 
     if (rb_get_method_body(&klass, &id, &noex)) {
-	if (ex && noex == NOEX_PRIVATE)
+	if (ex && noex & NOEX_PRIVATE)
 	    return FALSE;
 	return TRUE;
     }
@@ -1083,7 +1129,7 @@ static VALUE
 mod_remove_method(mod, name)
     VALUE mod, name;
 {
-    rb_remove_method(mod, rb_to_id(name));
+    remove_method(mod, rb_to_id(name));
     return mod;
 }
 
@@ -1818,6 +1864,10 @@ rb_eval(self, node)
 	    int argc; VALUE *argv; /* used in SETUP_ARGS */
 	    TMP_PROTECT;
 
+	    if (the_frame->last_class == 0) {	
+		NameError("superclass method `%s' disabled",
+			  rb_id2name(the_frame->last_func));
+	    }
 	    if (nd_type(node) == NODE_ZSUPER) {
 		argc = the_frame->argc;
 		argv = the_frame->argv;
@@ -1830,7 +1880,7 @@ rb_eval(self, node)
 
 	    PUSH_ITER(the_iter->iter?ITER_PRE:ITER_NOT);
 	    result = rb_call(RCLASS(the_frame->last_class)->super, self,
-			     the_frame->last_func, argc, argv, 1);
+			     the_frame->last_func, argc, argv, 3);
 	    POP_ITER();
 	}
 	break;
@@ -2157,6 +2207,9 @@ rb_eval(self, node)
 	    else {
 		noex = NOEX_PUBLIC;
 	    }
+	    if (body && origin == the_class && body->nd_noex & NOEX_UNDEF) {
+		noex |= NOEX_UNDEF;
+	    }
 	    rb_add_method(the_class, node->nd_mid, node->nd_defn, noex);
 	    if (FL_TEST(the_scope,SCOPE_MODFUNC)) {
 		rb_add_method(rb_singleton_class(the_class),
@@ -2201,7 +2254,8 @@ rb_eval(self, node)
 		Warning("redefine %s", rb_id2name(node->nd_mid));
 	    }
 	    rb_clear_cache_by_id(node->nd_mid);
-	    rb_add_method(klass, node->nd_mid, node->nd_defn, NOEX_PUBLIC);
+	    rb_add_method(klass, node->nd_mid, node->nd_defn, 
+			  NOEX_PUBLIC|(body?body->nd_noex&NOEX_UNDEF:0));
 	    rb_funcall(recv, rb_intern("singleton_method_added"),
 		       1, INT2FIX(node->nd_mid));
 	    result = Qnil;
@@ -3084,13 +3138,13 @@ stack_length()
 }
 
 static VALUE
-rb_call0(klass, recv, id, argc, argv, scope, body)
+rb_call0(klass, recv, id, argc, argv, body, nosuper)
     VALUE klass, recv;
     ID    id;
     int argc;			/* OK */
     VALUE *argv;		/* OK */
-    int scope;
     NODE *body;
+    int nosuper;
 {
     NODE *b2;		/* OK */
     volatile VALUE result = Qnil;
@@ -3114,7 +3168,7 @@ rb_call0(klass, recv, id, argc, argv, scope, body)
     PUSH_ITER(itr);
     PUSH_FRAME();
     the_frame->last_func = id;
-    the_frame->last_class = klass;
+    the_frame->last_class = nosuper?0:klass;
     the_frame->argc = argc;
     the_frame->argv = argv;
 
@@ -3393,14 +3447,17 @@ rb_call(klass, recv, mid, argc, argv, scope)
 	body  = ent->method;
     }
     else if ((body = rb_get_method_body(&klass, &id, &noex)) == 0) {
+	if (scope == 3) {
+	    NameError("super: no superclass method `%s'", rb_id2name(mid));
+	}
 	return rb_undefined(recv, mid, argc, argv, scope==2?CSTAT_VCALL:0);
     }
 
     /* receiver specified form for private method */
-    if (noex == NOEX_PRIVATE && scope == 0)
+    if (noex & NOEX_PRIVATE && scope == 0)
 	return rb_undefined(recv, mid, argc, argv, CSTAT_NOEX);
 
-    return rb_call0(klass, recv, id, argc, argv, scope, body);
+    return rb_call0(klass, recv, id, argc, argv, body, noex & NOEX_UNDEF);
 }
 
 VALUE
@@ -4323,7 +4380,7 @@ Init_eval()
     rb_define_method(cModule, "private_class_method", mod_private_method, -1);
     rb_define_method(cModule, "module_eval", mod_module_eval, 1);
 
-    rb_define_method(cModule, "remove_method", mod_remove_method, -1);
+    rb_define_method(cModule, "remove_method", mod_remove_method, 1);
     rb_define_method(cModule, "undef_method", mod_undef_method, 1);
     rb_define_method(cModule, "alias_method", mod_alias_method, 2);
 
@@ -4761,7 +4818,7 @@ method_call(argc, argv, method)
     Data_Get_Struct(method, struct METHOD, data);
     PUSH_ITER(iterator_p()?ITER_PRE:ITER_NOT);
     result = rb_call0(data->klass, data->recv, data->id,
-		      argc, argv, 1, data->body);
+		      argc, argv, data->body, 0);
     POP_ITER();
     return result;
 }
@@ -4833,7 +4890,7 @@ Init_Proc()
     rb_define_global_function("proc", f_lambda, 0);
     rb_define_global_function("lambda", f_lambda, 0);
     rb_define_global_function("binding", f_binding, 0);
-    cBinding = rb_define_class("Binding", cData);
+    cBinding = rb_define_class("Binding", cObject);
 
     cMethod = rb_define_class("Method", cObject);
     rb_undef_method(CLASS_OF(cMethod), "new");

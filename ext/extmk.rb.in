@@ -1,6 +1,6 @@
 #! /usr/local/bin/ruby
 
-$".push 'mkmf.rb'
+$".push 'mkmf.rb' #"
 
 if ARGV[0] == 'static'
   $force_static = TRUE

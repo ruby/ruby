@@ -119,7 +119,6 @@ void
 io_readable(fptr)
     OpenFile *fptr;
 {
-    io_check_closed(fptr);
     if (!(fptr->mode & FMODE_READABLE)) {
 	Raise(eIOError, "not opened for reading");
     }
@@ -129,7 +128,6 @@ void
 io_writable(fptr)
     OpenFile *fptr;
 {
-    io_check_closed(fptr);
     if (!(fptr->mode & FMODE_WRITABLE)) {
 	Raise(eIOError, "not opened for writing");
     }
@@ -370,15 +368,13 @@ io_gets_method(argc, argv, io)
     int rslen, rspara = 0;
     VALUE rs;
 
-    if (argc == 0) rs = RS;
+    if (argc == 0) {
+	return io_gets(io);
+    }
     else {
 	rb_scan_args(argc, argv, "1", &rs);
 	if (!NIL_P(rs)) Check_Type(rs, T_STRING);
     }
-
-    GetOpenFile(io, fptr);
-    io_readable(fptr);
-    f = fptr->f;
 
     if (!NIL_P(rs)) {
 	rslen = RSTRING(rs)->len;
@@ -386,6 +382,9 @@ io_gets_method(argc, argv, io)
 	    rsptr = "\n\n";
 	    rslen = 2;
 	    rspara = 1;
+	}
+	else if (rslen == 1 && RSTRING(rs)->ptr[0] == '\n') {
+	    return io_gets(io);
 	}
 	else {
 	    rsptr = RSTRING(rs)->ptr;
@@ -396,6 +395,10 @@ io_gets_method(argc, argv, io)
 	rslen = 0;
     }
     newline = rslen ? rsptr[rslen - 1] : 0777;
+
+    GetOpenFile(io, fptr);
+    io_readable(fptr);
+    f = fptr->f;
 
     if (rspara) {
 	do {
@@ -488,7 +491,58 @@ VALUE
 io_gets(io)
     VALUE io;
 {
-    return io_gets_method(0, 0, io);
+    OpenFile *fptr;
+    FILE *f;
+    VALUE str = Qnil;
+    int c;
+    char buf[8192];
+    char *bp, *bpe = buf + sizeof buf - 3;
+    int cnt;
+    int append = 0;
+
+    GetOpenFile(io, fptr);
+    io_readable(fptr);
+    f = fptr->f;
+
+  again:
+    bp = buf;
+    for (;;) {
+	READ_CHECK(f);
+	TRAP_BEG;
+	c = getc(f);
+	TRAP_END;
+	if (c == EOF) break;
+	if ((*bp++ = c) == '\n') break;
+	if (bp == bpe) break;
+    }
+    cnt = bp - buf;
+
+    if (c == EOF) {
+	if (!append && cnt == 0) {
+	    str = Qnil;
+	    goto return_gets;
+	}
+    }
+
+    if (append)
+	str_cat(str, buf, cnt);
+    else
+	str = str_new(buf, cnt);
+
+    if (c != EOF && RSTRING(str)->ptr[RSTRING(str)->len-1] != '\n') {
+	append = 1;
+	goto again;
+    }
+
+  return_gets:
+    if (!NIL_P(str)) {
+	fptr->lineno++;
+	lineno = INT2FIX(fptr->lineno);
+	str_taint(str);
+    }
+    lastline_set(str);
+
+    return str;
 }
 
 static VALUE
@@ -616,7 +670,6 @@ io_isatty(io)
     OpenFile *fptr;
 
     GetOpenFile(io, fptr);
-    io_check_closed(fptr);
     if (isatty(fileno(fptr->f)) == 0)
 	return FALSE;
     return TRUE;
@@ -1746,7 +1799,6 @@ f_select(argc, argv, obj)
 	for (i=0; i<RARRAY(read)->len; i++) {
 	    Check_Type(RARRAY(read)->ptr[i], T_FILE);
 	    GetOpenFile(RARRAY(read)->ptr[i], fptr);
-	    io_check_closed(fptr);
 	    FD_SET(fileno(fptr->f), rp);
 	    if (READ_DATA_PENDING(fptr->f)) { /* check for buffered data */
 		pending++;
@@ -1769,7 +1821,6 @@ f_select(argc, argv, obj)
 	for (i=0; i<RARRAY(write)->len; i++) {
 	    Check_Type(RARRAY(write)->ptr[i], T_FILE);
 	    GetOpenFile(RARRAY(write)->ptr[i], fptr);
-	    io_check_closed(fptr);
 	    FD_SET(fileno(fptr->f), wp);
 	    if (max > fileno(fptr->f)) max = fileno(fptr->f);
 	    if (fptr->f2) {
@@ -1788,7 +1839,6 @@ f_select(argc, argv, obj)
 	for (i=0; i<RARRAY(except)->len; i++) {
 	    Check_Type(RARRAY(except)->ptr[i], T_FILE);
 	    GetOpenFile(RARRAY(except)->ptr[i], fptr);
-	    io_check_closed(fptr);
 	    FD_SET(fileno(fptr->f), ep);
 	    if (max < fileno(fptr->f)) max = fileno(fptr->f);
 	    if (fptr->f2) {
@@ -2458,7 +2508,5 @@ Init_IO()
     atexit(pipe_atexit);
 #endif
 
-    /* turn on premitive flag for the class */
-    FL_SET(cIO, FL_PRIMITIVE);
     Init_File();
 }

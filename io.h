@@ -34,7 +34,7 @@ typedef struct OpenFile {
 #define FMODE_BINMODE   4
 #define FMODE_SYNC      8
 
-#define GetOpenFile(obj,fp) ((fp) = RFILE(obj)->fptr)
+#define GetOpenFile(obj,fp) io_check_closed((fp) = RFILE(obj)->fptr)
 
 #define MakeOpenFile(obj, fp) do {\
     fp = RFILE(obj)->fptr = ALLOC(OpenFile);\

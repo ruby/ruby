@@ -93,6 +93,9 @@ void IndexError();
 void LoadError();
 #endif
 /* eval.c */
+void rb_remove_method _((VALUE, char *));
+void rb_disable_super _((VALUE, char *));
+void rb_enable_super _((VALUE, char *));
 void rb_clear_cache _((void));
 void rb_alias _((VALUE, ID, ID));
 int rb_method_boundp _((VALUE, ID, int));

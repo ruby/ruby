@@ -250,6 +250,8 @@ struct RData {
     void *data;
 };
 
+extern VALUE cData;
+
 #define DATA_PTR(dta) (RDATA(dta)->data)
 
 VALUE data_object_alloc _((VALUE,void*,void (*)(),void (*)()));
@@ -318,8 +320,6 @@ struct RBignum {
 #define FL_SET(x,f) if (FL_ABLE(x)) {RBASIC(x)->flags |= (f);}
 #define FL_UNSET(x,f) if(FL_ABLE(x)){RBASIC(x)->flags &= ~(f);}
 #define FL_REVERSE(x,f) if(FL_ABLE(x)){RBASIC(x)->flags ^= f;}
-
-#define FL_PRIMITIVE FL_USER1
 
 #if defined(__GNUC__) && __GNUC__ >= 2 && !defined(RUBY_NO_INLINE)
 extern __inline__ int

@@ -186,7 +186,6 @@ file_tell(obj)
     long pos;
 
     GetOpenFile(obj, fptr);
-    io_check_closed(fptr);
     pos = ftell(fptr->f);
     if (ferror(fptr->f) != 0) rb_sys_fail(0);
 
@@ -201,7 +200,6 @@ file_seek(obj, offset, ptrname)
     long pos;
 
     GetOpenFile(obj, fptr);
-    io_check_closed(fptr);
     pos = fseek(fptr->f, NUM2INT(offset), NUM2INT(ptrname));
     if (pos != 0) rb_sys_fail(0);
     clearerr(fptr->f);
@@ -217,7 +215,6 @@ file_set_pos(obj, offset)
     long pos;
 
     GetOpenFile(obj, fptr);
-    io_check_closed(fptr);
     pos = fseek(fptr->f, NUM2INT(offset), 0);
     if (pos != 0) rb_sys_fail(0);
     clearerr(fptr->f);
@@ -232,7 +229,6 @@ file_rewind(obj)
     OpenFile *fptr;
 
     GetOpenFile(obj, fptr);
-    io_check_closed(fptr);
     if (fseek(fptr->f, 0L, 0) != 0) rb_sys_fail(0);
     clearerr(fptr->f);
 
@@ -246,7 +242,6 @@ file_eof(obj)
     OpenFile *fptr;
 
     GetOpenFile(obj, fptr);
-    io_check_closed(fptr);
     if (feof(fptr->f) == 0) return FALSE;
     return TRUE;
 }
@@ -376,7 +371,6 @@ file_lstat(obj)
     struct stat st;
 
     GetOpenFile(obj, fptr);
-    io_check_closed(fptr);
     if (lstat(fptr->path, &st) == -1) {
 	rb_sys_fail(fptr->path);
     }
@@ -936,7 +930,6 @@ file_chmod(obj, vmode)
 
     GetOpenFile(obj, fptr);
 #if defined(DJGPP) || defined(__CYGWIN32__) || defined(NT)
-    io_check_closed(fptr);
     if (chmod(fptr->path, mode) == -1)
 	rb_sys_fail(fptr->path);
 #else
@@ -996,7 +989,6 @@ file_chown(obj, owner, group)
     rb_secure(2);
     GetOpenFile(obj, fptr);
 #if defined(DJGPP) || defined(__CYGWIN32__) || defined(NT)
-    io_check_closed(fptr);
     if (chown(fptr->path, NUM2INT(owner), NUM2INT(group)) == -1)
 	rb_sys_fail(fptr->path);
 #else
@@ -1399,9 +1391,8 @@ file_truncate(obj, len)
 {
     OpenFile *fptr;
 
-    GetOpenFile(obj, fptr);
-
     rb_secure(2);
+    GetOpenFile(obj, fptr);
     if (!(fptr->mode & FMODE_WRITABLE)) {
 	Fail("not opened for writing");
     }
@@ -1426,9 +1417,9 @@ file_flock(obj, operation)
 {
     OpenFile *fptr;
 
+    rb_secure(2);
     GetOpenFile(obj, fptr);
 
-    rb_secure(2);
     if (flock(fileno(fptr->f), NUM2INT(operation)) < 0) {
 #ifdef EWOULDBLOCK
 	if (errno == EWOULDBLOCK) {

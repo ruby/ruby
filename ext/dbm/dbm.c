@@ -240,6 +240,65 @@ fdbm_clear(obj)
 }
 
 static VALUE
+fdbm_invert(obj)
+    VALUE obj;
+{
+    datum key, val;
+    struct dbmdata *dbmp;
+    DBM *dbm;
+    VALUE keystr, valstr;
+    VALUE hash = hash_new();
+
+    GetDBM(obj, dbmp);
+    dbm = dbmp->di_dbm;
+    for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
+	val = dbm_fetch(dbm, key);
+	keystr = str_taint(str_new(key.dptr, key.dsize));
+	valstr = str_taint(str_new(val.dptr, val.dsize));
+	hash_aset(hash, valstr, keystr);
+    }
+    return obj;
+}
+
+static VALUE
+each_pair(obj)
+    VALUE obj;
+{
+    return rb_funcall(obj, rb_intern("each_pair"), 0, 0);
+}
+
+static VALUE fdbm_store _((VALUE,VALUE,VALUE));
+
+static VALUE
+update_i(pair, dbm)
+    VALUE pair, dbm;
+{
+    Check_Type(pair, T_ARRAY);
+    if (RARRAY(pair)->len < 2) {
+	ArgError("pair must be [key, value]");
+    }
+    fdbm_store(dbm, RARRAY(pair)->ptr[0], RARRAY(pair)->ptr[1]);
+    return Qnil;
+}
+
+static VALUE
+fdbm_update(obj, other)
+    VALUE obj, other;
+{
+    rb_iterate(each_pair, other, update_i, obj);
+    return obj;
+}
+
+static VALUE
+fdbm_replace(obj, other)
+    VALUE obj, other;
+{
+    fdbm_clear(obj);
+    rb_iterate(each_pair, other, update_i, obj);
+    return obj;
+}
+
+static VALUE
 fdbm_store(obj, keystr, valstr)
     VALUE obj, keystr, valstr;
 {
@@ -487,6 +546,7 @@ Init_dbm()
     rb_include_module(cDBM, mEnumerable);
 
     rb_define_singleton_method(cDBM, "open", fdbm_s_open, -1);
+    rb_define_singleton_method(cDBM, "new", fdbm_s_open, -1);
     rb_define_method(cDBM, "close", fdbm_close, 0);
     rb_define_method(cDBM, "[]", fdbm_fetch, 1);
     rb_define_method(cDBM, "[]=", fdbm_store, 2);
@@ -505,6 +565,10 @@ Init_dbm()
     rb_define_method(cDBM, "delete", fdbm_delete, 1);
     rb_define_method(cDBM, "delete_if", fdbm_delete_if, 0);
     rb_define_method(cDBM, "clear", fdbm_clear, 0);
+    rb_define_method(cDBM,"invert", fdbm_invert, 0);
+    rb_define_method(cDBM,"update", fdbm_update, 1);
+    rb_define_method(cDBM,"replace", fdbm_replace, 1);
+
     rb_define_method(cDBM, "include?", fdbm_has_key, 1);
     rb_define_method(cDBM, "has_key?", fdbm_has_key, 1);
     rb_define_method(cDBM, "has_value?", fdbm_has_value, 1);

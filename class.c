@@ -98,9 +98,6 @@ rb_define_class_id(id, super)
     RBASIC(klass)->klass = singleton_class_new(RBASIC(super)->klass);
     singleton_class_attached(RBASIC(klass)->klass, klass);
     rb_funcall(super, rb_intern("inherited"), 1, klass);
-    if (FL_TEST(super, FL_PRIMITIVE)) {
-	FL_SET(klass, FL_PRIMITIVE);
-    }
 
     return klass;
 }
@@ -414,7 +411,7 @@ rb_define_method_id(klass, name, func, argc)
     VALUE (*func)();
     int argc;
 {
-    rb_add_method(klass, name, NEW_CFUNC(func, argc), NOEX_PUBLIC);
+    rb_add_method(klass, name, NEW_CFUNC(func,argc), NOEX_PUBLIC|NOEX_CFUNC);
 }
 
 void
@@ -427,8 +424,8 @@ rb_define_method(klass, name, func, argc)
     ID id = rb_intern(name);
 
     rb_add_method(klass, id, NEW_CFUNC(func, argc), 
-		  (name[0] == 'i' && id == rb_intern("initialize"))?
-		  NOEX_PRIVATE:NOEX_PUBLIC);
+		  ((name[0] == 'i' && id == rb_intern("initialize"))?
+		   NOEX_PRIVATE:NOEX_PUBLIC)|NOEX_CFUNC);
 }
 
 void
@@ -438,7 +435,8 @@ rb_define_private_method(klass, name, func, argc)
     VALUE (*func)();
     int argc;
 {
-    rb_add_method(klass, rb_intern(name), NEW_CFUNC(func, argc), NOEX_PRIVATE);
+    rb_add_method(klass, rb_intern(name), NEW_CFUNC(func, argc),
+		  NOEX_PRIVATE|NOEX_CFUNC);
 }
 
 void

@@ -2516,7 +2516,4 @@ Init_String()
     rb_define_global_function("split", f_split, -1);
 
     pr_str = rb_intern("to_s");
-
-    /* turn on premitive flag for the class */
-    FL_SET(cString, FL_PRIMITIVE);
 }

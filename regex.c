@@ -452,6 +452,17 @@ long re_syntax_options = 0;
         } 								\
   }
 
+#define STREQ(s1, s2) ((strcmp (s1, s2) == 0))
+
+#define CHAR_CLASS_MAX_LENGTH  6 /* Namely, `xdigit'.  */
+
+#define IS_CHAR_CLASS(string)						\
+   (STREQ (string, "alpha") || STREQ (string, "upper")			\
+    || STREQ (string, "lower") || STREQ (string, "digit")		\
+    || STREQ (string, "alnum") || STREQ (string, "xdigit")		\
+    || STREQ (string, "space") || STREQ (string, "print")		\
+    || STREQ (string, "punct") || STREQ (string, "graph")		\
+    || STREQ (string, "cntrl") || STREQ (string, "blank"))
 
 #define STORE_MBC(p, c) \
   ((p)[0] = (unsigned char)(c >> 8), (p)[1] = (unsigned char)(c))
@@ -993,7 +1004,9 @@ re_compile_pattern(pattern, size, bufp)
        command.  */
 
     int regnum = 1;
+
     int range = 0;
+    int had_char_class = 0;
 
     /* How to translate the characters in the pattern.  */
     char *translate = bufp->translate;
@@ -1191,7 +1204,7 @@ re_compile_pattern(pattern, size, bufp)
 	  if ((re_syntax_options & RE_HAT_NOT_NEWLINE) && b[-2] == charset_not)
             SET_LIST_BIT('\n');
 
-
+	  had_char_class = 0;
 	  /* Read in characters and ranges, setting map bits.  */
 	  for (;;)
 	    {
@@ -1221,6 +1234,10 @@ re_compile_pattern(pattern, size, bufp)
                        expression.  */
 		      break;
 	      }
+	      /* Look ahead to see if it's a range when the last thing
+		 was a character class.  */
+	      if (had_char_class && c == '-' && *p != ']')
+		  goto invalid_pattern;
 	      if (ismbchar(c)) {
 		PATFETCH(c1);
 		c = c << BYTEWIDTH | c1;
@@ -1329,7 +1346,84 @@ re_compile_pattern(pattern, size, bufp)
 		  range = 1;
 		  goto range_retry;
 	      }
-              else if (c < 1 << BYTEWIDTH)
+	      else if ((re_syntax_options & RE_CHAR_CLASSES)
+		       && c == '[' && *p == ':') {
+		  /* Leave room for the null.  */
+		  char str[CHAR_CLASS_MAX_LENGTH + 1];
+
+		  PATFETCH_RAW (c);
+		  c1 = 0;
+
+		  /* If pattern is `[[:'.  */
+		  if (p == pend) 
+		      goto invalid_pattern;
+
+		  for (;;) {
+		      PATFETCH (c);
+		      if (c == ':' || c == ']' || p == pend
+			  || c1 == CHAR_CLASS_MAX_LENGTH)
+                          break;
+		      str[c1++] = c;
+		  }
+		  str[c1] = '\0';
+
+		  /* If isn't a word bracketed by `[:' and:`]':
+		     undo the ending character, the letters, and leave 
+		     the leading `:' and `[' (but set bits for them).  */
+		  if (c == ':' && *p == ']') {
+		      int ch;
+		      char is_alnum = STREQ (str, "alnum");
+		      char is_alpha = STREQ (str, "alpha");
+		      char is_blank = STREQ (str, "blank");
+		      char is_cntrl = STREQ (str, "cntrl");
+		      char is_digit = STREQ (str, "digit");
+		      char is_graph = STREQ (str, "graph");
+		      char is_lower = STREQ (str, "lower");
+		      char is_print = STREQ (str, "print");
+		      char is_punct = STREQ (str, "punct");
+		      char is_space = STREQ (str, "space");
+		      char is_upper = STREQ (str, "upper");
+		      char is_xdigit = STREQ (str, "xdigit");
+
+		      if (!IS_CHAR_CLASS (str))
+			  goto invalid_pattern;
+
+		      /* Throw away the ] at the end of the character
+			 class.  */
+		      PATFETCH (c);					
+
+		      if (p == pend) 
+			  goto invalid_pattern;
+
+
+		      for (ch = 0; ch < 1 << BYTEWIDTH; ch++) {
+			  if (   (is_alnum  && ISALNUM (ch))
+			      || (is_alpha  && ISALPHA (ch))
+			      || (is_blank  && ISBLANK (ch))
+			      || (is_cntrl  && ISCNTRL (ch))
+			      || (is_digit  && ISDIGIT (ch))
+			      || (is_graph  && ISGRAPH (ch))
+			      || (is_lower  && ISLOWER (ch))
+			      || (is_print  && ISPRINT (ch))
+			      || (is_punct  && ISPUNCT (ch))
+			      || (is_space  && ISSPACE (ch))
+			      || (is_upper  && ISUPPER (ch))
+			      || (is_xdigit && ISXDIGIT (ch)))
+			      SET_LIST_BIT (ch);
+		      }
+		      had_char_class = 1;
+		  }
+		  else {
+		      c1++;
+		      while (c1--)    
+                          PATUNFETCH;
+		      SET_LIST_BIT(translate?translate['[']:'[');
+		      SET_LIST_BIT(translate?translate[':']:':');
+		      had_char_class = 0;
+		      last = ':';
+                  }
+	      }
+	      else if (c < 1 << BYTEWIDTH)
 		SET_LIST_BIT(c);
 	      else
 		set_list_bits(c, c, (unsigned char*)b);

@@ -1,4 +1,25 @@
+Wed Mar 11 02:14:17 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (io_gets): handle normal case specially for speed.
+
+	* eval.c (rb_disable_super): function to disable superclass's
+	  method explicitly.
+
+	* eval.c (rb_eval): inherits previous method definition's
+	  NOEX_UNDEF-ness, if exists.
+
+	* class.c (rb_define_method): disables superclass's overriding
+ 	  method by default.
+
+Tue Mar 10 00:03:24 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ruby.c (load_file): understands multiple options in #! line.
+
+	* regex.c (re_compile_pattern): support for [:alpha:] etc.
+
 Mon Mar  9 16:53:51 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.h (GetOpenFile): embed io_check_closed in GetOpenFile.
 
 	* sprintf.c (f_sprintf): zero padding failed for negative
 	  integers.

@@ -307,12 +307,13 @@ VALUE rb_method_booundp();
 
 #define NOEX_PUBLIC  0
 #define NOEX_PRIVATE 1
+#define NOEX_UNDEF   2
+#define NOEX_CFUNC   2
 
 NODE *compile_string _((char *, char *, int));
 NODE *compile_file _((char *, VALUE, int));
 
 void rb_add_method _((VALUE, ID, NODE *, int));
-void rb_remove_method _((VALUE, ID));
 NODE *node_newnode();
 
 enum node_type nodetype _((NODE *));

@@ -422,6 +422,7 @@ proc_options(argcp, argvp)
 	    else {
 		rb_gvar_set2(argv[0], TRUE);
 	    }
+	    argv[0][0] = '-';
 	}
 	*argcp = argc; *argvp = argv;
     }
@@ -448,6 +449,7 @@ load_file(fname, script)
 	VALUE c;
 	VALUE line;
 	VALUE rs = RS;
+	char *p;
 
 	RS = RS_default;
 	if (xflag) {
@@ -458,7 +460,7 @@ load_file(fname, script)
 		if (RSTRING(line)->len > 2
 		    && RSTRING(line)->ptr[0] == '#'
 		    && RSTRING(line)->ptr[1] == '!') {
-		    if (strstr(RSTRING(line)->ptr, "ruby")) {
+		    if (p = strstr(RSTRING(line)->ptr, "ruby")) {
 			goto start_read;
 		    }
 		}
@@ -474,8 +476,6 @@ load_file(fname, script)
 
 	    if (RSTRING(line)->len > 2
 		&& RSTRING(line)->ptr[0] == '!') {
-
-		char *p;
 
 		if ((p = strstr(RSTRING(line)->ptr, "ruby")) == 0) {
 		    /* not ruby script, kick the program */
@@ -509,19 +509,25 @@ load_file(fname, script)
 		}
 
 	      start_read:
-		if (p = strstr(RSTRING(line)->ptr, "ruby -")) {
+		p += 4;
+		RSTRING(line)->ptr[RSTRING(line)->len-1] = '\0';
+		if (RSTRING(line)->ptr[RSTRING(line)->len-2] == '\r')
+		    RSTRING(line)->ptr[RSTRING(line)->len-2] = '\0';
+		if (p = strstr(p, " -")) {
 		    int argc; char *argv[2]; char **argvp = argv;
-		    UCHAR *s;
+		    UCHAR *s = ++p;
 
-		    s = RSTRING(line)->ptr;
-		    while (isspace(*s))
-			s++;
-		    *s = '\0';
-		    RSTRING(line)->ptr[RSTRING(line)->len-1] = '\0';
-		    if (RSTRING(line)->ptr[RSTRING(line)->len-2] == '\r')
-			RSTRING(line)->ptr[RSTRING(line)->len-2] = '\0';
-		    argc = 2; argv[0] = 0; argv[1] = p + 5;
-		    proc_options(&argc, &argvp);
+		    argc = 2; argv[0] = 0;
+		    while (*p == '-') {
+			while (*s && !isspace(*s))
+			    s++;
+			*s = '\0';
+			argv[1] = p;
+			proc_options(&argc, &argvp);
+			p = ++s;
+			while (*p && isspace(*p))
+			    p++;
+		    }
 		}
 	    }
 	}

@@ -1172,7 +1172,4 @@ Init_Hash()
     rb_define_singleton_method(envtbl,"value?", env_has_value, 1);
 
     rb_define_global_const("ENV", envtbl);
-
-    /* turn on premitive flag for the class */
-    FL_SET(cHash, FL_PRIMITIVE);
 }

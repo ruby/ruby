@@ -17,11 +17,8 @@ def create_menu(depth)
     end
     menu.append menuitem
     menuitem.show
-    if depth > 0
-      unless submenu
-	submenu = create_menu(depth - 1)
-      end
-      menuitem.set_submenu submenu
+    if depth > 1
+      menuitem.set_submenu create_menu(depth - 1)
     end
   end
   return menu
@@ -52,12 +49,12 @@ menubar.append menuitem
 menuitem.show
 
 menuitem = Gtk::MenuItem::new("foo")
-menuitem.set_submenu menu
+menuitem.set_submenu create_menu(3)
 menubar.append menuitem
 menuitem.show
 
 menuitem = Gtk::MenuItem::new("bar")
-menuitem.set_submenu menu
+menuitem.set_submenu create_menu(4)
 menubar.append menuitem
 menuitem.show
 

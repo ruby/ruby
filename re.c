@@ -329,7 +329,6 @@ make_regexp(s, len, flag)
     return rp;
 }
 
-extern VALUE cData;
 static VALUE cMatch;
 
 static VALUE
@@ -1055,6 +1054,7 @@ Init_Regexp()
 		  | RE_INTERVALS
 		  | RE_NO_BK_BRACES
 		  | RE_CONTEXTUAL_INVALID_OPS
+		  | RE_CHAR_CLASSES
 		  | RE_BACKSLASH_ESCAPE_IN_LISTS);
 
     rb_define_virtual_variable("$~", match_getter, match_setter);
@@ -1084,9 +1084,6 @@ Init_Regexp()
 
     rb_global_variable(&reg_cache);
     rb_global_variable(&matchcache);
-
-    /* turn on premitive flag for the class */
-    FL_SET(cRegexp, FL_PRIMITIVE);
 
     cMatch  = rb_define_class("MatchingData", cData);
     rb_define_method(cMatch, "to_a", match_to_a, 0);

@@ -261,9 +261,6 @@ data_object_alloc(klass, datap, dmark, dfree)
     data->dfree = dfree;
     data->dmark = dmark;
 
-    /* turn on premitive flag for the class */
-    FL_SET(klass, FL_PRIMITIVE);
-
     return (VALUE)data;
 }
 
