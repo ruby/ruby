@@ -33,6 +33,8 @@ VALUE rb_cBignum;
 #define BIGLO(x) ((BDIGIT)((x) & (BIGRAD-1)))
 #define BDIGMAX ((BDIGIT)-1)
 
+#define BIGZEROP(x) (RBIGNUM(x)->len == 0 || (RBIGNUM(x)->len == 1 && BDIGITS(x)[0] == 0))
+
 static VALUE
 bignew_1(klass, len, sign)
     VALUE klass;
@@ -612,7 +614,7 @@ rb_big2str(x, base)
 	return rb_fix2str(x, base);
     }
     i = RBIGNUM(x)->len;
-    if (i == 0 || (i == 1 && BDIGITS(x)[0] == 0)) {
+    if (BIGZEROP(x)) {
 	return rb_str_new2("0");
     }
     if (base == 10) {
@@ -1123,8 +1125,8 @@ bigdivrem(x, y, divp, modp)
     BDIGIT_DBL_SIGNED num;
     BDIGIT dd, q;
 
+    if (BIGZEROP(y)) rb_num_zerodiv();
     yds = BDIGITS(y);
-    if (ny == 0 && yds[0] == 0) rb_num_zerodiv();
     if (nx < ny || (nx == ny && BDIGITS(x)[nx - 1] < BDIGITS(y)[ny - 1])) {
 	if (divp) *divp = rb_int2big(0);
 	if (modp) *modp = x;
@@ -1248,8 +1250,7 @@ bigdivmod(x, y, divp, modp)
     VALUE mod;
 
     bigdivrem(x, y, divp, &mod);
-    if (RBIGNUM(x)->sign != RBIGNUM(y)->sign &&
-	!(RBIGNUM(mod)->len == 1 && BDIGITS(mod)[0] == 0)) {
+    if (RBIGNUM(x)->sign != RBIGNUM(y)->sign && !BIGZEROP(x)) {
 	if (divp) *divp = bigadd(*divp, rb_int2big(1), 0);
 	if (modp) *modp = bigadd(mod, y, 1);
     }
@@ -1728,8 +1729,8 @@ rb_big_rand(max, rand_buf)
 {
     VALUE v;
     long len = RBIGNUM(max)->len;
-    
-    if (len == 0 && BDIGITS(max)[0] == 0) {
+
+    if (BIGZEROP(max)) {
 	return rb_float_new(rand_buf[0]);
     }
     v = bignew(len,1);

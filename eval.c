@@ -5083,7 +5083,7 @@ backtrace(lev)
 {
     struct FRAME *frame = ruby_frame;
     char buf[BUFSIZ];
-    VALUE ary;
+    volatile VALUE ary;
     NODE *n;
 
     ary = rb_ary_new();

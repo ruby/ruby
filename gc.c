@@ -381,9 +381,11 @@ static unsigned int STACK_LEVEL_MAX = 655300;
                                            : STACK_END - rb_gc_stack_start)
 #endif
 
+#define GC_WARTER_MARK 512
+
 #define CHECK_STACK(ret) do {\
     SET_STACK_END;\
-    (ret) = (STACK_LENGTH > STACK_LEVEL_MAX);\
+    (ret) = (STACK_LENGTH > STACK_LEVEL_MAX + GC_WARTER_MARK);\
 } while (0)
 
 int
@@ -461,25 +463,6 @@ sweep_source_filename(key, value)
 }
 
 static void
-gc_mark_all()
-{
-    RVALUE *p, *pend;
-    int i;
-
-    init_mark_stack();
-    for (i = 0; i < heaps_used; i++) {
-	p = heaps[i]; pend = p + heaps_limits[i];
-	while (p < pend) {
-	    if ((p->as.basic.flags & FL_MARK) &&
-		(p->as.basic.flags != FL_MARK)) {
-		rb_gc_mark((VALUE)p);
-	    }
-	    p++;
-	}
-    }
-}
-
-static void
 gc_mark_rest()
 {
     VALUE tmp_arry[MARK_STACK_MAX];
@@ -491,7 +474,29 @@ gc_mark_rest()
     init_mark_stack();
     while(p != tmp_arry){
 	p--;
+	FL_UNSET(*p, FL_MARK);
 	rb_gc_mark(*p);
+    }
+}
+
+static void
+gc_mark_all()
+{
+    RVALUE *p, *pend;
+    int i;
+
+    gc_mark_rest();
+    init_mark_stack();
+    for (i = 0; i < heaps_used; i++) {
+	p = heaps[i]; pend = p + heaps_limits[i];
+	while (p < pend) {
+	    if ((p->as.basic.flags & FL_MARK) &&
+		(p->as.basic.flags != FL_MARK)) {
+		FL_UNSET(p, FL_MARK);
+		rb_gc_mark((VALUE)p);
+	    }
+	    p++;
+	}
     }
 }
 
@@ -597,6 +602,11 @@ rb_gc_mark(ptr)
 
     CHECK_STACK(ret);
     if (ret) {
+	obj = RANY(ptr);
+	if (rb_special_const_p(ptr)) return; /* special const not marked */
+	if (obj->as.basic.flags == 0) return;       /* free cell */
+	if (obj->as.basic.flags & FL_MARK) return;  /* already marked */ 
+	obj->as.basic.flags |= FL_MARK;
 	if (!mark_stack_overflow) {
 	    if (mark_stack_ptr - mark_stack < MARK_STACK_MAX) {
 		*mark_stack_ptr = ptr;

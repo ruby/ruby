@@ -8,9 +8,9 @@ Wed Apr  9 14:05:00 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	* marshal.c (w_object): preserve extended module on struct.
 	  (ruby-bugs-ja:PR#422)
 
-Tue Apr  8 17:13:53 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Wed Apr  9 03:43:14 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* random.c (rb_f_rand): normalize bignum argument.
+	* bignum.c (BIGZEROP): macro to determine if x is a bignum zero.
 
 Tue Apr  8 11:49:31 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
