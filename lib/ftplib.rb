@@ -1,9 +1,4 @@
-## ftplib.rb
-
-# Author: Shugo Maeda <shugo@po.aianet.ne.jp>
-# Version: $Revision: 1.7 $
-
-## Code:
+# ftplib.rb by Shugo Maeda <shugo@netlab.co.jp>
 
 require "socket"
 require "monitor"
@@ -15,9 +10,6 @@ class FTPPermError < FTPError; end
 class FTPProtoError < FTPError; end
 
 class FTP
-  
-  RCS_ID = %q$Id: ftplib.rb,v 1.7 1998/04/13 12:34:24 shugo Exp shugo $ 
-  
   include MonitorMixin
   
   FTP_PORT = 21
@@ -311,7 +303,7 @@ class FTP
 	buf = file.gets
 	break if buf == nil
 	if buf[-2, 2] != CRLF
-	  buf = buf.chop + CRLF
+	  buf = buf.chomp + CRLF
 	end
 	conn.write(buf)
 	callback.call(buf) if use_callback
@@ -635,5 +627,3 @@ class FTP
   end
   private :parse257
 end
-
-## ftplib.rb ends here
