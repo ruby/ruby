@@ -1188,15 +1188,15 @@ class TkVariable
   end
 
   def to_i
-    Integer(number(value))
+    number(value).to_i
   end
 
   def to_f
-    Float(number(value))
+    number(value).to_f
   end
 
   def to_s
-    String(string(value))
+    string(value).to_s
   end
 
   def inspect

@@ -52,6 +52,7 @@ static enum lex_state {
     EXPR_END,			/* newline significant, +/- is a operator. */
     EXPR_ARG,			/* newline significant, +/- is a operator. */
     EXPR_CMDARG,		/* newline significant, +/- is a operator. */
+    EXPR_ENDARG,		/* newline significant, +/- is a operator. */
     EXPR_MID,			/* newline significant, +/- is a operator. */
     EXPR_FNAME,			/* ignore newline, no reserved words. */
     EXPR_DOT,			/* right after `.' or `::', no reserved words. */
@@ -1089,13 +1090,13 @@ command_args	:  {
 		    }
 
 open_args	: call_args
-		| tLPAREN_ARG  ')'
+		    | tLPAREN_ARG  {lex_state = EXPR_ENDARG;} ')'
 		    {
 		        rb_warning("%s (...) interpreted as method call",
 		                   rb_id2name(last_id));
 			$$ = 0;
 		    }
-		| tLPAREN_ARG call_args2 ')'
+		| tLPAREN_ARG call_args2 {lex_state = EXPR_ENDARG;} ')'
 		    {
 		        rb_warning("%s (...) interpreted as method call",
 		                   rb_id2name(last_id));
@@ -1185,7 +1186,7 @@ primary		: literal
 			}
 		        fixpos($$, $2);
 		    }
-		| tLPAREN_ARG expr ')'
+		| tLPAREN_ARG expr {lex_state = EXPR_ENDARG;} ')'
 		    {
 		        rb_warning("%s (...) interpreted as command call", rb_id2name(last_id));
 			$$ = $2;
@@ -3008,7 +3009,9 @@ yylex()
       case '<':
 	c = nextc();
 	if (c == '<' &&
-	    lex_state != EXPR_END && lex_state != EXPR_CLASS &&
+	    lex_state != EXPR_END &&
+	    lex_state != EXPR_ENDARG
+	    && lex_state != EXPR_CLASS &&
 	    (!IS_ARG() || space_seen)) {
  	    int c2 = nextc();
 	    int indent = 0;
@@ -3067,7 +3070,7 @@ yylex()
 	return parse_qstring(c,0);
 
       case '?':
-	if (lex_state == EXPR_END) {
+	if (lex_state == EXPR_END || lex_state == EXPR_ENDARG) {
 	    lex_state = EXPR_BEG;
 	    return '?';
 	}
@@ -3390,7 +3393,7 @@ yylex()
 	    return tCOLON2;
 	}
 	pushback(c);
-	if (lex_state == EXPR_END || ISSPACE(c)) {
+	if (lex_state == EXPR_END || lex_state == EXPR_ENDARG || ISSPACE(c)) {
 	    lex_state = EXPR_BEG;
 	    return ':';
 	}
@@ -3484,10 +3487,10 @@ yylex()
 
       case '{':
 	if (!IS_ARG()) {
-	    if (lex_state != EXPR_END)
-		c = tLBRACE;
-	    if (space_seen && CMDARG_P())
+	    if (space_seen && lex_state == EXPR_ENDARG)
 		c = tLBRACE_ARG;
+	    if (lex_state != EXPR_END && lex_state != EXPR_ENDARG)
+		c = tLBRACE;
 	}
 	COND_PUSH(0);
 	CMDARG_PUSH(0);

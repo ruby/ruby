@@ -1,8 +1,21 @@
+Fri Jun  1 15:01:40 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (yylex): fixed 'print CGI::bar() {}, "\n"' syntax
+	  breakage, adding new lex_state status.  sigh. [new]
+
 Fri Jun  1 11:21:04 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in: use waitpid on mingw32.
 
 	* ext/dbm/extconf.rb: include <ndbm.h>, not <gdbm.h>.
+
+Thu May 31 18:34:57 2001  K.Kosako  <kosako@sofnec.co.jp>
+
+	* file.c (rb_file_s_unlink): should not allow if $SAFE >= 2.
+
+Thu May 31 17:23:25 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* range.c (Init_Range): define "to_ary".
 
 Thu May 31 13:30:25 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
