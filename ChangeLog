@@ -1,3 +1,8 @@
+Tue Oct 26 23:30:39 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/code_objects.rb (RDoc::Context::add_class_or_module): 
+	  Restore correct :nopdoc: behavior with nested classes and modules.
+
 Mon Oct 25 18:35:39 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* win32/win32.c (isUNCRoot): should check NUL after '.'.

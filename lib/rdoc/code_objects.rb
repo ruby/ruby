@@ -233,7 +233,8 @@ module RDoc
       else
         cls = class_type.new(name, superclass)
         puts "Adding class/module #{name} to #@name" if $DEBUG
-        collection[name] = cls if @document_self  && !@done_documenting
+#        collection[name] = cls if @document_self  && !@done_documenting
+        collection[name] = cls if !@done_documenting
         cls.parent = self
       end
       cls
