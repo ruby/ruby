@@ -11,10 +11,10 @@ line = readline("Prompt> ", true)
 
 <モジュール関数>
 
-readline(prompt, add=nil)
+readline(prompt, add_history=nil)
 
   一行入力を読み込みます。
-  addがtrueの場合、ヒストリに読み込んだ文字列を追加します。
+  add_historyがtrueの場合、ヒストリに読み込んだ文字列を追加します。
 
 <クラスメソッド>
 

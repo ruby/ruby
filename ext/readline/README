@@ -11,17 +11,18 @@ Example:
 
 <module function>
 
-readline(prompt, add_hostory=nil)
+readline(prompt, add_history=nil)
 
-  Reads one line wit line edit.  the line is added to the
-  history also if "add" is true.
+  Reads one line with line editing.  The inputted line is added to the
+  history if add_history is true.
 
-<class mehods>
+<class methods>
 
 completion_proc = proc
 
-  Specifies Proc object to determin completion behavior.  It
-  shoule take input-string, and return completion candidates.
+  Specifies a Proc object to determine completion behavior.  It
+  should take input-string, and return an array of completion
+  candidates.
 
 completion_proc
 
@@ -37,12 +38,13 @@ completion_case_fold
 
 completion_append_character = char
 
-  Specifies a chacatcter to be appended on completion.
-  Nothing will be appended if empty string ("") or nil is specified.
+  Specifies a character to be appended on completion.
+  Nothing will be appended if an empty string ("") or nil is
+  specified.
 
 completion_append_character
 
-  Returns a string contains a character to be appended on
+  Returns a string containing a character to be appended on
   completion.  The default is a space (" ").
 
 vi_editing_mode
