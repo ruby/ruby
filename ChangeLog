@@ -1,7 +1,39 @@
+Thu Nov 22 00:28:13 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (str_extend): should check nesting parentheses in #{}.
+
 Wed Nov 21 12:22:52 2001  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/cgi.rb: CGI#header: do not set Apache.request.status for
 	Location: if Apache.request.status is already set.
+
+Wed Nov 21 02:24:18 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* process.c (pst_wstopsig): returns nil unless WIFSTOPPED() is
+	  non-zero.
+
+	* process.c (pst_wtermsig): returns nil unless WIFSIGNALED() is
+	  non-zero.
+
+	* process.c (pst_wexitstatus): returns nil unless WIFEXITED() is
+	  non-zero.
+
+Wed Nov 21 00:17:54 2001  Ville Mattila  <mulperi@iki.fi>
+
+	* eval.c (rb_thread_select): tv_sec and tv_usec should not be
+	  negative.
+
+	* signal.c (posix_signal): do not set SA_RESTART for SIGVTALRM.
+
+Tue Nov 20 21:09:22 2001  Guy Decoux  <ts@moulon.inra.fr>
+
+	* parse.y (call_args2): block_arg may follow the first argument in
+	  call_args2.
+
+Tue Nov 20 02:01:15 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (stack_check): should avoid stack length check during
+	  raising SystemStackError exception.
 
 Tue Nov 20 01:07:13 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

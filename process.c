@@ -161,7 +161,9 @@ pst_wstopsig(st)
 {
     int status = NUM2INT(st);
 
-    return INT2NUM(WSTOPSIG(status));
+    if (WIFSTOPPED(status))
+	return INT2NUM(WSTOPSIG(status));
+    return Qnil;
 }
 
 static VALUE
@@ -182,7 +184,9 @@ pst_wtermsig(st)
 {
     int status = NUM2INT(st);
 
-    return INT2NUM(WTERMSIG(status));
+    if (WIFSIGNALED(status))
+	return INT2NUM(WTERMSIG(status));
+    return Qnil;
 }
 
 static VALUE
@@ -203,7 +207,9 @@ pst_wexitstatus(st)
 {
     int status = NUM2INT(st);
 
-    return INT2NUM(WEXITSTATUS(status));
+    if (WIFEXITED(status))
+	return INT2NUM(WEXITSTATUS(status));
+    return Qnil;
 }
 
 static VALUE

@@ -76,7 +76,7 @@ SimpleDelegater = SimpleDelegator
 #
 def DelegateClass(superclass)
   klass = Class.new
-  methods = superclass.instance_methods
+  methods = superclass.instance_methods(true)
   methods -= ::Kernel.instance_methods
   methods |= ["to_s","to_a","inspect","==","=~","==="]
   klass.module_eval <<-EOS

@@ -189,7 +189,7 @@ void rb_file_const _((const char*, VALUE));
 int rb_find_file_ext _((VALUE*, const char* const*));
 VALUE rb_find_file _((VALUE));
 /* gc.c */
-void ruby_stack_check _((void));
+int ruby_stack_check _((void));
 int ruby_stack_length _((VALUE**));
 void rb_gc_mark_locations _((VALUE*, VALUE*));
 void rb_mark_tbl _((struct st_table*));

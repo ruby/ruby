@@ -496,6 +496,7 @@ extern NODE *ruby_eval_tree;
 extern int ruby_nerrs;
 
 static VALUE rb_eLocalJumpError;
+static VALUE rb_eSysStackError;
 
 extern VALUE ruby_top_self;
 
@@ -4135,6 +4136,24 @@ rb_with_disable_interrupt(proc, data)
     return result;
 }
 
+static void
+stack_check()
+{
+    static int overflowing = 0;
+
+    if (!overflowing && ruby_stack_check()) {
+	int state;
+	overflowing = 1;
+	PUSH_TAG(PROT_NONE);
+	if ((state = EXEC_TAG()) == 0) {
+	    rb_raise(rb_eSysStackError, "stack level too deep");
+	}
+	POP_TAG();
+	overflowing = 0;
+	JUMP_TAG(state);
+    }
+}
+
 static int last_call_status;
 
 #define CSTAT_PRIV  1
@@ -4159,7 +4178,7 @@ rb_f_missing(argc, argv, obj)
 	rb_raise(rb_eArgError, "no id given");
     }
 
-    ruby_stack_check();
+    stack_check();
 
     id = SYM2ID(argv[0]);
 
@@ -4365,7 +4384,7 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
 
     if ((++tick & 0xff) == 0) {
 	CHECK_INTS;		/* better than nothing */
-	ruby_stack_check();
+	stack_check();
     }
     PUSH_ITER(itr);
     PUSH_FRAME();
@@ -6956,6 +6975,7 @@ void
 Init_Proc()
 {
     rb_eLocalJumpError = rb_define_class("LocalJumpError", rb_eStandardError);
+    rb_eSysStackError = rb_define_class("SystemStackError", rb_eStandardError);
 
     rb_cProc = rb_define_class("Proc", rb_cObject);
     rb_undef_method(CLASS_OF(rb_cProc), "allocate");
@@ -7881,6 +7901,8 @@ rb_thread_select(max, read, write, except, timeout)
 
 			tv.tv_sec = (unsigned int)d;
 			tv.tv_usec = (long)((d-(double)tv.tv_sec)*1e6);
+			if (tv.tv_sec < 0)  tv.tv_sec = 0;
+			if (tv.tv_usec < 0) tv.tv_usec = 0;
 		    }
 		    continue;
 		  default:

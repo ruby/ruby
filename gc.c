@@ -404,17 +404,13 @@ ruby_stack_length(p)
     return STACK_LENGTH;
 }
 
-static VALUE rb_eSysStackError;
-
-void
+int
 ruby_stack_check()
 {
     int ret;
 
     CHECK_STACK(ret);
-    if (ret) {
-	rb_raise(rb_eSysStackError, "stack level too deep");
-    }
+    return ret;
 }
 
 #define MARK_STACK_MAX 1024
@@ -1522,6 +1518,4 @@ Init_GC()
     rb_global_variable(&finalizers);
     rb_gc_unregister_address(&rb_mObSpace);
     finalizers = rb_ary_new();
-
-    rb_eSysStackError = rb_define_class("SystemStackError", rb_eStandardError);
 }
