@@ -53,9 +53,20 @@ include FileUtils::NoWrite if $dryrun
 alias makelink ln_sf
 class << self
   body = proc {|*args|super(*args<<:verbose)}
-  for func in [:install, :makedirs, :makelink]
+  for func in [:install, :makelink]
     define_method(func, body)
   end
+end
+$made_dirs = {}
+def makedirs(dirs)
+  dirs = fu_list(dirs)
+  dirs.reject! do |dir|
+    $made_dirs.fetch(dir) do
+      $made_dirs[dir] = true
+      File.directory?(dir)
+    end
+  end
+  super(dirs, :verbose) unless dirs.empty?
 end
 
 exeext = CONFIG["EXEEXT"]
@@ -151,7 +162,7 @@ end
 
 Dir.glob("lib/**/*{.rb,help-message}") do |f|
   dir = File.dirname(f).sub!(/\Alib/, rubylibdir) || rubylibdir
-  makedirs dir unless File.directory? dir
+  makedirs dir
   install f, dir, 0644
 end
 

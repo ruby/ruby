@@ -1,8 +1,11 @@
-Sun Jan 26 06:43:48 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+Sun Jan 26 07:18:42 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* instruby.rb: re-define individual methods verbosely rather than
 	  including FileUtils::Verbose, in order to suppress messages from
 	  FileUtils#cmp.
+
+	* instruby.rb (makedirs): make same directory only once even if
+	  dryrun.
 
 	* lib/fileutils.rb (FileUtils::Verbose, FileUtils::NoWrite):
 	  re-define methods with define_method instead of module_eval.
