@@ -662,10 +662,6 @@ waitall_each(pid, status, ary)
  *			 
  *  0::     Waits for any child whose process group ID equals that of the
  *          calling process.
- *          adsasdasd sads adada dsa a sad ad asd sad sa dsa dasdsad asd asd
- *          adsasdasd sads adada dsa a sad ad asd sad sa dsa dasdsad asd asd
- *          adsasdasd sads adada dsa a sad ad asd sad sa dsa dasdsad asd asd
- *          adsasdasd sads adada dsa a sad ad asd sad sa dsa dasdsad asd asd
  *
  *  -1::    Waits for any child process (the default if no _pid_ is
  *          given).

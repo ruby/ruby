@@ -1,3 +1,8 @@
+Mon Jan 12 02:24:07 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/ri/ri_formatter.rb (RI::HtmlFormatter): Add HTML
+	  generation support to ri (Elliot Hughes)
+
 Sun Jan 11 23:54:41 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* env.h (ruby_frame, ruby_scope, ruby_in_eval, ruby_class,

@@ -2,14 +2,15 @@ module RI
   class TextFormatter
 
     def TextFormatter.list
-      "plain, bs, ansi"
+      "plain, html, bs, ansi"
     end
 
     def TextFormatter.for(name)
       case name
       when /plain/i then TextFormatter
-      when /bs/i then OverstrikeFormatter
-      when /ansi/i then AnsiFormatter
+      when /html/i  then HtmlFormatter
+      when /bs/i    then OverstrikeFormatter
+      when /ansi/i  then AnsiFormatter
       else nil
       end
     end
@@ -159,10 +160,7 @@ module RI
         display_list(item)
 
       when SM::Flow::VERB
-        item.body.split(/\n/).each do |line|
-          print @indent, conv_html(line), "\n"
-        end
-        blankline
+        display_verbatim_flow_item(item, @indent)
 
       when SM::Flow::H
         display_heading(conv_html(item.text.join), item.level, @indent)
@@ -173,6 +171,15 @@ module RI
       else
         fail "Unknown flow element: #{item.class}"
       end
+    end
+
+    ######################################################################
+
+    def display_verbatim_flow_item(item, prefix=@indent)
+        item.body.split(/\n/).each do |line|
+          print @indent, conv_html(line), "\n"
+        end
+        blankline
     end
 
     ######################################################################
@@ -431,24 +438,144 @@ module RI
     end
   end
 
-# options = "options"
-# def options.width
-#   70
-# end
-# a = OverstrikeFormatter.new(options, "   ")  
-# a.wrap(
-# "The quick <b>brown</b> and <i>italic</i> dog " +
-# "The quick <b>brown and <i>italic</i></b> dog " +
-# "The quick <b>brown and <i>italic</i></b> dog " +
-# "The quick <b>brown and <i>italic</i></b> dog " +
-# "The quick <b>brown and <i>italic</i></b> dog " +
-# "The quick <b>brown and <i>italic</i></b> dog " +
-# "The quick <b>brown and <i>italic</i></b> dog " +
-# "The quick <b>brown and <i>italic</i></b> dog " +
-# "The quick <b>brown and <i>italic</i></b> dog " +
-# "The quick <b>brown and <i>italic</i></b> dog " +
-# "The quick <b>brown and <i>italic</i></b> dog " 
-# )
+  ##################################################
+  
+  # This formatter uses HTML.
+
+  class HtmlFormatter < AttributeFormatter
+
+    def initialize(*args)
+      super
+    end
+
+    def write_attribute_text(prefix, line)
+      curr_attr = 0
+      line.each do |achar|
+        attr = achar.attr
+        if achar.attr != curr_attr
+          update_attributes(curr_attr, achar.attr)
+          curr_attr = achar.attr
+        end
+        print(escape(achar.char))
+      end
+      update_attributes(curr_attr, 0) unless curr_attr.zero?
+      puts
+    end
+
+    def draw_line(label=nil)
+      if label != nil
+        bold_print(label)
+      end
+      puts("<hr /><p />")
+    end
+
+    def bold_print(txt)
+      tag("b") { txt }
+    end
+
+    def blankline()
+      puts("<p>")
+    end
+
+    def display_heading(text, level, indent)
+      level = 4 if level > 4
+      tag("h#{level}") { text }
+      puts
+    end
+    
+    ######################################################################
+
+    def display_list(list)
+
+      case list.type
+      when SM::ListBase::BULLET 
+        list_type = "ul"
+        prefixer = proc { |ignored| "<li>" }
+
+      when SM::ListBase::NUMBER,
+      SM::ListBase::UPPERALPHA,
+      SM::ListBase::LOWERALPHA
+        list_type = "ol"
+        prefixer = proc { |ignored| "<li>" }
+        
+      when SM::ListBase::LABELED
+        list_type = "dl"
+        prefixer = proc do |li|
+          "<dt><b>" + escape(li.label) + "</b><dd>"
+        end
+
+      when SM::ListBase::NOTE
+        list_type = "table"
+        prefixer = proc do |li|
+          %{<tr valign="top"><td>#{li.label.gsub(/ /, '&nbsp;')}</td><td>}
+        end
+      else
+        fail "unknown list type"
+      end
+
+      print "<#{list_type}>"
+      list.contents.each do |item|
+        if item.kind_of? SM::Flow::LI
+          prefix = prefixer.call(item)
+          print prefix
+          display_flow_item(item, prefix)
+        else
+          display_flow_item(item)
+        end
+      end
+      print "</#{list_type}>"
+    end
+
+    def display_verbatim_flow_item(item, prefix=@indent)
+        print("<pre>")
+        item.body.split(/\n/).each do |line|
+          puts conv_html(line)
+        end
+        puts("</pre>")
+    end
+
+    private
+
+    ATTR_MAP = {
+      BOLD   => "b>",
+      ITALIC => "i>",
+      CODE   => "tt>"
+    }
+
+    def update_attributes(current, wanted)
+      str = ""
+      # first turn off unwanted ones
+      off = current & ~wanted
+      for quality in [ BOLD, ITALIC, CODE]
+        if (off & quality) > 0
+          str << "</" + ATTR_MAP[quality]
+        end
+      end
+
+      # now turn on wanted
+      for quality in [ BOLD, ITALIC, CODE]
+        unless (wanted & quality).zero?
+          str << "<" << ATTR_MAP[quality]
+        end
+      end
+      print str
+    end
+
+    def tag(code)
+        print("<#{code}>")
+        print(yield)
+        print("</#{code}>")
+    end
+
+    def escape(str)
+      str.
+          gsub(/&/n, '&amp;').
+          gsub(/\"/n, '&quot;').
+          gsub(/>/n, '&gt;').
+          gsub(/</n, '&lt;')
+    end
+
+  end
 end
 
 
