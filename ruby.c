@@ -576,7 +576,7 @@ proc_options(argc, argv)
 	    goto reswitch;
 
 	  case '-':
-	    if (!s[1]) {
+	    if (!s[1] || s[1] == '\r' && !s[2]) {
 		argc--,argv++;
 		goto switch_end;
 	    }

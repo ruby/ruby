@@ -1,3 +1,7 @@
+Wed Dec 13 12:41:27 2000  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ruby.c (proc_options): accept "--^M" for DOS line endings.
+
 Tue Dec 12 15:45:42 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (newline_node): cancel newline unification.
