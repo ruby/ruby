@@ -193,6 +193,9 @@ rb_define_class(name, super)
 	}
 	return klass;
     }
+    if (!super) {
+	rb_warn("no super class for `%s', Object assumed", name);
+    }
     klass = rb_define_class_id(id, super);
     rb_class_inherited(super, klass);
     st_add_direct(rb_class_tbl, id, klass);
@@ -219,6 +222,10 @@ rb_define_class_under(outer, name, super)
 	    rb_name_error(id, "%s is already defined", name);
 	}
 	return klass;
+    }
+    if (!super) {
+	rb_warn("no super class for `%s::%s', Object assumed",
+		rb_class2name(outer), name);
     }
     klass = rb_define_class_id(id, super);
     rb_set_class_path(klass, outer, name);
