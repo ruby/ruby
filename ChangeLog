@@ -7,6 +7,12 @@ Thu Jun  5 18:33:46 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 	* ext/curses/curses.c (window_s_allocate,curses_finalize):
 	  avoid VC++ warnings.
 
+Thu Jun  5 17:44:11 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
+
+    * ext/syck/rubyext.c (syck_parser_mark): was a bit heavy on the GC.
+
+    * lib/yaml.rb (YAML::transfer): added.
+
 Thu Jun  5 16:11:50 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* bcc32/Makefile.sub, win32/Makefile.sub, wince/Makefile.sub

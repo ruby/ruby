@@ -454,12 +454,6 @@ syck_mark_parser(parser)
 {
     rb_gc_mark(parser->root);
     rb_gc_mark(parser->root_on_error);
-    if ( parser->bonus != 0 )
-    {
-        struct parser_xtra *bonus = (struct parser_xtra *)parser->bonus;
-        rb_gc_mark(bonus->proc);
-        rb_gc_mark(bonus->data);
-    }
 }
 
 /*

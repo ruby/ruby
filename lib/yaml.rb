@@ -112,6 +112,13 @@ module YAML
     end
 
     #
+    # Apply a transfer method to a Ruby object
+    #
+    def YAML.transfer( type_id, obj )
+        @@loader.transfer( type_id, obj )
+    end
+
+    #
     # Method to extract colon-seperated type and class, returning
     # the type and the constant of the class
     #
@@ -147,6 +154,7 @@ module YAML
 end
 
 require 'yaml/rubytypes'
+require 'yaml/types'
 
 #
 # ryan: You know how Kernel.p is a really convenient way to dump ruby
