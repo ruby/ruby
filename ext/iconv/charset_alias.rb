@@ -13,10 +13,13 @@ class Hash::Ordered < Hash
   end
   def []=(key, val)
     ary = fetch(key) {return super(key, [self.size, key, val])} and
-      ary.last = val
+      ary << val
   end
-  def each
-    values.sort.each {|i, key, val| yield key, val}
+  def sort
+    values.sort.collect {|i, *rest| rest}
+  end
+  def each(&block)
+    sort.each(&block)
   end
 end
 
@@ -32,17 +35,40 @@ def charset_alias(config_charset, mapfile, target = OS)
   end
   case target
   when /linux|-gnu/
-    map.delete('ascii')
-  when /cygwin/
+#    map.delete('ascii')
+  when /cygwin|os2-emx/
     # get rid of tilde/yen problem.
     map['shift_jis'] = 'cp932'
   end
+  st = Hash.new(0)
+  map = map.sort.collect do |can, *sys|
+    if sys.grep(/^en_us(?=.|$)/i) {break true} == true
+      noen = %r"^(?!en_us)\w+_\w+#{Regexp.new($')}$"i
+      sys.reject! {|s| noen =~ s}
+    end
+    sys = sys.first
+    st[sys] += 1
+    [can, sys]
+  end
+  st.delete_if {|sys, i| i == 1}.empty?
+  st.keys.each {|sys| st[sys] = nil}
+  st.default = nil
   open(mapfile, "w") do |f|
     f.puts("require 'iconv.so'")
     f.puts
     f.puts(comments)
     f.puts("class Iconv")
-    map.each {|can, sys| f.puts("  charset_map['#{can}'.freeze] = '#{sys}'.freeze")}
+    i = 0
+    map.each do |can, sys|
+      if s = st[sys]
+        sys = s
+      elsif st.key?(sys)
+        sys = (st[sys] = "sys#{i+=1}") + " = '#{sys}'.freeze"
+      else
+        sys = "'#{sys}'.freeze"
+      end
+      f.puts("  charset_map['#{can}'.freeze] = #{sys}")
+    end
     f.puts("end")
   end
 end

@@ -1,3 +1,11 @@
+Sun Jan 18 23:59:44 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/iconv/charset_alias.rb: prefer us_EN locale encodings or
+	  former.  [ruby-dev:22609]
+
+	* ext/iconv/iconv.c (iconv_create): raise InvalidEncoding
+	  exception when EINVAL.
+
 Sun Jan 18 23:16:34 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c, error.c, file.c, io.c, numeric.c, object.c, re.c, struct.c,

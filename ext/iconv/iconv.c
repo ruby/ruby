@@ -53,6 +53,7 @@ struct iconv_env_t
     VALUE (*append)_((VALUE, VALUE));
 };
 
+static VALUE rb_eIconvInvalidEncoding;
 static VALUE rb_eIconvFailure;
 static VALUE rb_eIconvIllegalSeq;
 static VALUE rb_eIconvInvalidChar;
@@ -143,10 +144,15 @@ iconv_create
 	    cd = iconv_open(tocode, fromcode);
 	}
 	if (cd == (iconv_t)-1) {
-	    volatile VALUE msg = rb_str_new2("iconv(\"");
+	    int inval = errno == EINVAL;
+	    volatile VALUE msg = rb_str_new2("iconv(\"" + (inval ? 5 : 0));
+	    char *s;
+
 	    rb_str_buf_cat2(rb_str_buf_append(msg, to), "\", \"");
 	    rb_str_buf_cat2(rb_str_buf_append(msg, from), "\")");
-	    rb_sys_fail(StringValuePtr(msg));
+	    s = StringValuePtr(msg);
+	    if (!inval) rb_sys_fail(s);
+	    rb_raise(rb_eIconvInvalidEncoding, "invalid encoding %s", s);
 	}
     }
 
@@ -847,6 +853,7 @@ Init_iconv _((void))
     rb_define_method(rb_eIconvFailure, "failed", iconv_failure_failed, 0);
     rb_define_method(rb_eIconvFailure, "inspect", iconv_failure_inspect, 0);
 
+    rb_eIconvInvalidEncoding = rb_define_class_under(rb_cIconv, "InvalidEncoding", rb_eArgError);
     rb_eIconvIllegalSeq = rb_define_class_under(rb_cIconv, "IllegalSequence", rb_eArgError);
     rb_eIconvInvalidChar = rb_define_class_under(rb_cIconv, "InvalidCharacter", rb_eArgError);
     rb_eIconvOutOfRange = rb_define_class_under(rb_cIconv, "OutOfRange", rb_eRuntimeError);
