@@ -6,6 +6,7 @@ depend
 tkutil.c
 lib/README
 lib/multi-tk.rb
+lib/remote-tk.rb
 lib/tk.rb
 lib/tkafter.rb
 lib/tkbgerror.rb
@@ -95,6 +96,8 @@ sample/propagate.rb
 sample/resource.en
 sample/resource.ja
 sample/safe-tk.rb
+sample/remote-ip_sample.rb
+sample/remote-ip_sample2.rb
 sample/tkalignbox.rb
 sample/tkballoonhelp.rb
 sample/tkbiff.rb

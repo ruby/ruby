@@ -1,22 +1,20 @@
 #!/usr/bin/env ruby
 
-ip_name = 'remote_ip'
+require 'remote-tk'
 
+# start sub-process
+ip_name = 'remote_ip'
+ip_list = TkWinfo.interps
 fork{
   exec "/usr/bin/env ruby -r tk -e \"Tk.appname('#{ip_name}');Tk.mainloop\""
 }
-
-require 'remote-tk'
-
-15.times{
-  break if TkWinfo.interps.find{|ip| ip =~ /^#{ip_name}/}
-  sleep 1
-}
-
+sleep 1 until (app = (TkWinfo.interps - ip_list)[0]) && app =~ /^#{ip_name}/
 p TkWinfo.interps
 
-ip = RemoteTkIp.new(ip_name)
+# create RemoteTkIp object
+ip = RemoteTkIp.new(app)
 
+# setup remote-ip window
 btns = []
 ip.eval_proc{
   btns << 
@@ -41,6 +39,7 @@ ip.eval_proc{
   TkButton.new(:command=>'exit', :text=>'QUIT').pack(:fill=>:x)
 }
 
+# setup controller-ip window
 btns.each_with_index{|b, idx|
   TkButton.new(:command=>proc{ip.eval_proc{b.flash}}, 
 	       :text=>"flash button-#{idx}", 
@@ -50,4 +49,5 @@ btns.each_with_index{|b, idx|
 TkButton.new(:command=>proc{exit}, :text=>'QUIT', 
 	     :padx=>10, :pady=>7).pack(:padx=>10, :pady=>7)
 
+# start eventloop
 Tk.mainloop
