@@ -207,7 +207,7 @@ module TkComm
 	"{#{e.to_a.collect{|ee| array2tk_list(ee)}.join(' ')}}"
       else
 	s = _get_eval_string(e)
-	(s.index(/\s/))? "{#{s}}": s
+	(s.index(/\s/) || s.size == 0)? "{#{s}}": s
       end
     }.join(" ")
   end
