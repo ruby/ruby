@@ -37,13 +37,15 @@ For details of HTTP, refer [RFC2616]
 
     require 'net/http'
     Net::HTTP.get_print 'some.www.server', '/index.html'
+    # or
+    Net::HTTP.get_print URI.parse('http://www.example.com/index.html')
 
 === Posting Form Data
 
     require 'net/http'
     Net::HTTP.start( 'some.www.server', 80 ) {|http|
-        response = http.post( '/cgi-bin/any.rhtml',
-                              'querytype=subject&target=ruby' )
+        response = http.post('/cgi-bin/any.rhtml',
+                             'querytype=subject&target=ruby')
     }
 
 === Accessing via Proxy
@@ -56,22 +58,21 @@ proxy, instead of given host.
 
     $proxy_addr = 'your.proxy.addr'
     $proxy_port = 8080
-          :
-    Net::HTTP::Proxy($proxy_addr, $proxy_port).start( 'some.www.server' ) {|http|
-      # always connect to your.proxy.addr:8080
-          :
+            :
+    Net::HTTP::Proxy($proxy_addr, $proxy_port).start('some.www.server') {|http|
+        # always connect to your.proxy.addr:8080
+            :
     }
 
 Since Net::HTTP.Proxy() returns Net::HTTP itself when $proxy_addr is nil,
 there's no need to change code if there's proxy or not.
 
-=== Redirect
+=== Following Redirection
 
     require 'net/http'
-    require 'uri'
 
-    def read_uri( uri )
-      response = HTTP.get_uri(URI.parse(uri))
+    def read_uri( uri_str )
+      response = Net::HTTP.get_response(URI.parse(uri_str))
       case response
       when Net::HTTPSuccess     then response
       when Net::HTTPRedirection then read_uri(response['location'])
@@ -80,7 +81,7 @@ there's no need to change code if there's proxy or not.
       end
     end
 
-    p read_uri('http://www.ruby-lang.org')
+    print read_uri('http://www.ruby-lang.org')
 
 Net::HTTPSuccess and Net::HTTPRedirection is a HTTPResponse class.
 All HTTPResponse objects belong to its own response class which
@@ -192,12 +193,26 @@ This function is not thread-safe.
 
     This method returns the return value of the block.
 
-: get( address, path, port = 80 )
-    gets entity body from path and returns it.
-    return value is a String.
-
+: get_print( uri )
 : get_print( address, path, port = 80 )
-    gets entity body from path and output it to $stdout.
+    gets entity body from the target and output it to stdout.
+
+        Net::HTTP.get_print URI.parse('http://www.example.com')
+
+: get( uri )
+: get( address, path, port = 80 )
+    send GET request to the target and get a response.
+    This method returns a String.
+
+        print Net::HTTP.get(URI.parse('http://www.example.com'))
+
+: get_response( uri )
+: get_response( address, path, port = 80 )
+    send GET request to the target and get a response.
+    This method returns a Net::HTTPResponse object.
+
+        res = Net::HTTP.get_response(URI.parse('http://www.example.com'))
+        print res.body
 
 : Proxy( address, port = 80 )
     creates a HTTP proxy class.
@@ -492,6 +507,7 @@ All arguments named KEY is case-insensitive.
 =end
 
 require 'net/protocol'
+require 'uri'
 
 
 module Net
@@ -534,33 +550,48 @@ module Net
     # short cut methods
     #
 
-    def HTTP.get_print( addr, path, port = nil )
-      new( addr, port || HTTP.default_port ).start {|http|
+    def HTTP.get_print( arg1, arg2 = nil, port = nil )
+      if arg2
+        addr, path = arg1, arg2
+      else
+        uri = arg1
+        addr = uri.host
+        path = uri.request_uri
+        port = uri.port
+      end
+      new(addr, port || HTTP.default_port).start {|http|
           http.get path, nil, $stdout
       }
       nil
     end
 
     def HTTP.get( arg1, arg2 = nil, arg3 = nil )
+      get_response(arg1,arg2,arg3).body
+    end
+
+    def HTTP.get_response( arg1, arg2 = nil, arg3 = nil )
       if arg2 then
-        get_path(arg1, arg2, arg3).body
+        get_by_path(arg1, arg2, arg3)
       else
-        get_uri(arg1).body
+        get_by_uri(arg1)
       end
     end
 
-    def HTTP.get_path( addr, path, port = nil )
+    def HTTP.get_by_path( addr, path, port = nil )
       new( addr, port || HTTP.default_port ).start {|http|
           return http.request(Get.new(path))
       }
     end
-    private_class_method :get_path
+    private_class_method :get_by_path
 
-    def HTTP.get_uri( uri )
-      new(uri.addr, uri.port).start {|http|
-          return http.request(Get.new(http_path(uri)))
+    def HTTP.get_by_uri( uri )
+      # Should we allow this?
+      # uri = URI.parse(uri) unless uri.respond_to?(:host)
+      new(uri.host, uri.port).start {|http|
+          return http.request(Get.new(uri.request_uri))
       }
     end
+    private_class_method :get_by_uri
 
 
     #

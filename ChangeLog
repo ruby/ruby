@@ -1,3 +1,11 @@
+Fri Jul 12 06:34:05 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb: rename HTTP.get_uri get_response.
+
+	* lib/net/http.rb: HTTP.get_print accepts URI objects.
+
+	* lib/net/http.rb: HTTP.get did not work with URI.
+
 Fri Jul 12 02:15:58 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* string.c (rb_str_match): fix for string match.
