@@ -402,13 +402,20 @@ class TkOptionMenubutton<TkMenubutton
     end
   end
 
-  def initialize(parent=nil, var=TkVariable.new, firstval=nil, *vals)
+  def initialize(parent=nil, var=nil, firstval=nil, *vals)
     if parent.kind_of? Hash
        keys = _symbolkey2str(parent)
        parent = keys['parent']
        var = keys['variable'] if keys['variable']
        firstval, *vals = keys['values']
     end
+    if parent.kind_of? TkVariable
+      vals.unshift(firstval) if firstval
+      firstval = var 
+      var = parent
+      parent = nil
+    end
+    var = TkVariable.new unless var
     fail 'variable option must be TkVariable' unless var.kind_of? TkVariable
     @variable = var
     firstval = @variable.value unless firstval
