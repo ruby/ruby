@@ -161,7 +161,11 @@ static VALUE
 rb_stat_ino(self)
     VALUE self;
 {
+#ifdef HUGE_ST_INO
+    return ULL2NUM(get_stat(self)->st_ino);
+#else
     return ULONG2NUM(get_stat(self)->st_ino);
+#endif
 }
 
 static VALUE
@@ -171,7 +175,7 @@ rb_stat_mode(self)
 #ifdef __BORLANDC__
     return UINT2NUM((unsigned short)(get_stat(self)->st_mode));
 #else
-     return UINT2NUM(get_stat(self)->st_mode);
+    return UINT2NUM(get_stat(self)->st_mode);
 #endif
 }
 

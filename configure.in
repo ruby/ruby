@@ -624,6 +624,18 @@ if test "$rb_cv_need_io_flush_before_seek" = yes; then
   AC_DEFINE(NEED_IO_FLUSH_BEFORE_SEEK, 1)
 fi
 
+AC_CACHE_CHECK([whether st_ino is huge], rb_cv_huge_st_ino,
+[AC_COMPILE_IFELSE([AC_LANG_BOOL_COMPILE_TRY([
+#include <sys/stat.h>
+struct stat test_stat;
+], [sizeof(test_stat.st_ino)>sizeof(long)])],
+rb_cv_huge_st_ino=yes,
+rb_cv_huge_st_ino=no)
+])
+if test $rb_cv_huge_st_ino = yes; then
+  AC_DEFINE(HUGE_ST_INO)
+fi
+
 case "$target_cpu" in
 m68*|i?86|sparc) rb_cv_stack_grow_dir=-1;;
 esac

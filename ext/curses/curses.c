@@ -15,6 +15,10 @@
 
 #include "ruby.h"
 
+#include <stdio.h>
+#include "rubyio.h"
+
+#define _XOPEN_SOURCE_EXTENDED 1
 #if defined(HAVE_NCURSES_H)
 # include <ncurses.h>
 #elif defined(HAVE_NCURSES_CURSES_H)
@@ -24,18 +28,20 @@
 # include <curses_colr/curses.h>
 #else
 # include <curses.h>
-# if (defined(__bsdi__) || defined(__NetBSD__) || defined(__APPLE__)) && !defined(_maxx)
+# if defined(__bsdi__) || defined(__NetBSD__) || defined(__APPLE__)
+#  if !defined(_maxx)
 #  define _maxx maxx
 # endif
-# if (defined(__bsdi__) || defined(__NetBSD__) || defined(__APPLE__)) && !defined(_maxy)
+#  if !defined(_maxy)
 #  define _maxy maxy
 # endif
-# if (defined(__bsdi__) || defined(__NetBSD__) || defined(__APPLE__)) && !defined(_begx)
+#  if !defined(_begx)
 #  define _begx begx
 # endif
-# if (defined(__bsdi__) || defined(__NetBSD__) || defined(__APPLE__)) && !defined(_begy)
+#  if !defined(_begy)
 #  define _begy begy
 # endif
+#endif
 #endif
 
 #ifdef HAVE_INIT_COLOR
@@ -46,9 +52,6 @@
 #ifdef NCURSES_MOUSE_VERSION
 # define USE_MOUSE 1
 #endif
-
-#include <stdio.h>
-#include "rubyio.h"
 
 static VALUE mCurses;
 static VALUE mKey;
@@ -174,6 +177,7 @@ static VALUE
 curses_clear(obj)
     VALUE obj;
 {
+    curses_stdscr();
     wclear(stdscr);
     return Qnil;
 }
@@ -183,6 +187,7 @@ static VALUE
 curses_refresh(obj)
     VALUE obj;
 {
+    curses_stdscr();
     refresh();
     return Qnil;
 }
@@ -192,6 +197,7 @@ static VALUE
 curses_doupdate(obj)
     VALUE obj;
 {
+    curses_stdscr();
 #ifdef HAVE_DOUPDATE
     doupdate();
 #else
@@ -205,6 +211,7 @@ static VALUE
 curses_echo(obj)
     VALUE obj;
 {
+    curses_stdscr();
     echo();
     return Qnil;
 }
@@ -214,6 +221,7 @@ static VALUE
 curses_noecho(obj)
     VALUE obj;
 {
+    curses_stdscr();
     noecho();
     return Qnil;
 }
@@ -223,6 +231,7 @@ static VALUE
 curses_raw(obj)
     VALUE obj;
 {
+    curses_stdscr();
     raw();
     return Qnil;
 }
@@ -232,6 +241,7 @@ static VALUE
 curses_noraw(obj)
     VALUE obj;
 {
+    curses_stdscr();
     noraw();
     return Qnil;
 }
@@ -241,6 +251,7 @@ static VALUE
 curses_cbreak(obj)
     VALUE obj;
 {
+    curses_stdscr();
     cbreak();
     return Qnil;
 }
@@ -250,6 +261,7 @@ static VALUE
 curses_nocbreak(obj)
     VALUE obj;
 {
+    curses_stdscr();
     nocbreak();
     return Qnil;
 }
@@ -259,6 +271,7 @@ static VALUE
 curses_nl(obj)
     VALUE obj;
 {
+    curses_stdscr();
     nl();
     return Qnil;
 }
@@ -268,6 +281,7 @@ static VALUE
 curses_nonl(obj)
     VALUE obj;
 {
+    curses_stdscr();
     nonl();
     return Qnil;
 }
@@ -278,6 +292,7 @@ curses_beep(obj)
     VALUE obj;
 {
 #ifdef HAVE_BEEP
+    curses_stdscr();
     beep();
 #endif
     return Qnil;
@@ -289,6 +304,7 @@ curses_flash(obj)
     VALUE obj;
 {
 #ifdef HAVE_FLASH
+    curses_stdscr();
     flash();
 #endif
     return Qnil;
@@ -301,6 +317,7 @@ curses_ungetch(obj, ch)
     VALUE ch;
 {
 #ifdef HAVE_UNGETCH
+    curses_stdscr();
     ungetch(NUM2INT(ch));
 #else
     rb_notimplement();
@@ -315,6 +332,7 @@ curses_setpos(obj, y, x)
     VALUE y;
     VALUE x;
 {
+    curses_stdscr();
     move(NUM2INT(y), NUM2INT(x));
     return Qnil;
 }
@@ -342,6 +360,7 @@ static VALUE
 curses_inch(obj)
     VALUE obj;
 {
+    curses_stdscr();
     return CHR2FIX(inch());
 }
 
@@ -351,6 +370,7 @@ curses_addch(obj, ch)
     VALUE obj;
     VALUE ch;
 {
+    curses_stdscr();
     addch(NUM2CHR(ch));
     return Qnil;
 }
@@ -361,6 +381,7 @@ curses_insch(obj, ch)
     VALUE obj;
     VALUE ch;
 {
+    curses_stdscr();
     insch(NUM2CHR(ch));
     return Qnil;
 }
@@ -371,6 +392,7 @@ curses_addstr(obj, str)
     VALUE obj;
     VALUE str;
 {
+    curses_stdscr();
     if (!NIL_P(str)) {
 	addstr(STR2CSTR(str));
     }
@@ -383,6 +405,7 @@ curses_getch(obj)
     VALUE obj;
 {
     rb_read_check(stdin);
+    curses_stdscr();
     return UINT2NUM(getch());
 }
 
@@ -510,10 +533,10 @@ curses_bkgd(VALUE obj, VALUE ch)
 }
 
 static VALUE
-curses_resizeterm(VALUE obj, VALUE lines, VALUE columns)
+curses_resizeterm(VALUE obj, VALUE lin, VALUE col)
 {
 #if defined(HAVE_RESIZETERM)
-  return (resizeterm(NUM2INT(lines),NUM2INT(columns)) == OK) ? Qtrue : Qfalse;
+  return (resizeterm(NUM2INT(lin),NUM2INT(col)) == OK) ? Qtrue : Qfalse;
 #else
   return Qnil;
 #endif
@@ -1199,13 +1222,13 @@ window_getbkgd(VALUE obj)
 }
 
 static VALUE
-window_resize(VALUE obj, VALUE lines, VALUE columns)
+window_resize(VALUE obj, VALUE lin, VALUE col)
 {
 #if defined(HAVE_WRESIZE)
   struct windata *winp;
 
   GetWINDOW(obj,winp);
-  return wresize(winp->window, NUM2INT(lines), NUM2INT(columns)) == OK ? Qtrue : Qfalse;
+  return wresize(winp->window, NUM2INT(lin), NUM2INT(col)) == OK ? Qtrue : Qfalse;
 #else
   return Qnil;
 #endif

@@ -1,3 +1,28 @@
+Fri Aug 15 12:01:43 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (HUGE_ST_INO): check whether struct stat.st_ino
+	  is larger than long.  [ruby-dev:21194]
+	  http://www.geocities.co.jp/SiliconValley-PaloAlto/1409/ruby/beos.html
+
+	* error.c (syserr_eqq): errno might exceed Fixnum limit.
+
+	* error.c (Init_Exception): moved base initialization from
+	  init_syserr().
+
+	* inits.c (rb_call_inits): postpone initializing errnos until
+	  Bignum is available.
+
+Fri Aug 15 12:01:43 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/curses/curses.c (_XOPEN_SOURCE_EXTENDED): needed to let
+	  keyname() and so on be declared.
+
+	* ext/curses/curses.c (curses_resizeterm, window_resize):
+	  arguments conflicted with macros in term.h.
+
+	* ext/curses/curses.c (Curses module methods): ensure
+	  initialized.  [ruby-dev:21191]
+
 Fri Aug 15 02:08:53 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (id2ref): recycle check should be done by klass == 0.

@@ -18,6 +18,7 @@ void Init_Comparable _((void));
 void Init_Dir _((void));
 void Init_Enumerable _((void));
 void Init_Exception _((void));
+void Init_syserr _((void));
 void Init_eval _((void));
 void Init_load _((void));
 void Init_Proc _((void));
@@ -59,6 +60,7 @@ rb_call_inits()
     Init_Thread();
     Init_Numeric();
     Init_Bignum();
+    Init_syserr();
     Init_Array();
     Init_Hash();
     Init_Struct();

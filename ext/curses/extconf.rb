@@ -13,10 +13,8 @@ elsif have_header("ncurses/curses.h") and have_library("ncurses", "initscr")
   make=true
 elsif have_header("curses_colr/curses.h") and have_library("cur_colr", "initscr")
   make=true
-else
-  if have_header("curses.h") and have_library("curses", "initscr")
+elsif have_header("curses.h") and have_library("curses", "initscr")
     make=true
-  end
 end
 
 if make

@@ -607,7 +607,7 @@ static VALUE
 syserr_eqq(self, exc)
     VALUE self, exc;
 {
-    VALUE num;
+    VALUE num, e;
 
     if (!rb_obj_is_kind_of(exc, rb_eSystemCallError)) return Qfalse;
     if (self == rb_eSystemCallError) return Qtrue;
@@ -621,7 +621,8 @@ syserr_eqq(self, exc)
 	}
 	num = rb_const_get(klass, rb_intern("Errno"));
     }
-    if (rb_const_get(self, rb_intern("Errno")) == num)
+    e = rb_const_get(self, rb_intern("Errno"));
+    if (FIXNUM_P(num) ? num == e : rb_equal(num, e))
 	return Qtrue;
     return Qfalse;
 }
@@ -671,7 +672,13 @@ Init_Exception()
     rb_eSecurityError = rb_define_class("SecurityError", rb_eStandardError);
     rb_eNoMemError = rb_define_class("NoMemoryError", rb_eException);
 
-    init_syserr();
+    syserr_tbl = st_init_numtable();
+    rb_eSystemCallError = rb_define_class("SystemCallError", rb_eStandardError);
+    rb_define_method(rb_eSystemCallError, "initialize", syserr_initialize, -1);
+    rb_define_method(rb_eSystemCallError, "errno", syserr_errno, 0);
+    rb_define_singleton_method(rb_eSystemCallError, "===", syserr_eqq, 1);
+
+    rb_mErrno = rb_define_module("Errno");
 
     rb_define_global_function("warn", rb_warn_m, 1);
 }
@@ -805,16 +812,9 @@ rb_check_frozen(obj)
     if (OBJ_FROZEN(obj)) rb_error_frozen(rb_obj_classname(obj));
 }
 
-static void
-init_syserr()
+void
+Init_syserr()
 {
-    syserr_tbl = st_init_numtable();
-    rb_eSystemCallError = rb_define_class("SystemCallError", rb_eStandardError);
-    rb_define_method(rb_eSystemCallError, "initialize", syserr_initialize, -1);
-    rb_define_method(rb_eSystemCallError, "errno", syserr_errno, 0);
-    rb_define_singleton_method(rb_eSystemCallError, "===", syserr_eqq, 1);
-
-    rb_mErrno = rb_define_module("Errno");
 #ifdef EPERM
     set_syserr(EPERM, "EPERM");
 #endif
