@@ -14,7 +14,7 @@
 
 #if defined(HAVE_SYS_TIME_H)
 #  include <sys/time.h>
-#elif !defined(NT) && !defined(_WIN32_WCE)
+#elif !defined(_WIN32)
 #  define time_t long
 struct timeval {
     time_t tv_sec;	/* seconds */

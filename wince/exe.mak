@@ -9,7 +9,7 @@ CFG=MIPS
 CESubsystem=windowsce,3.0
 #!MESSAGE CESubsystem not specified. use windowsce,2.11.
 !MESSAGE CESubsystem not specified. use windowsce,3.0.
-!ENDIF 
+!ENDIF
 
 !IF "$(CEVersion)" == ""
 #CEVersion=200

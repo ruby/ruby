@@ -1,3 +1,16 @@
+Sat Dec 15 12:15:00 2002  Takaaki Uematsu <mail@uema2.cjb.net>
+
+    * configure.in, defines.h, dir.c, dir.h, dln.c, error.c,
+      eval.c, file.c, hash.c, io.c, main.c, missing.c, 
+      process.c, ruby.c, rubysig.h, signal.c, st.c, util.c, util.h,
+      bcc/Makefile.sub, win32/Makefile.sub, win32/win32.h,
+      ext/Win32API/Win32API.c, ext/socket/getaddrinfo.c, 
+      ext/socket/getnameinfo.c, ext/socket/socket.c,
+      ext/tcltklib/stubs.c
+      : replace "NT" with "_WIN32", add DOSISH_DRIVE_LETTER
+    * wince/exe.mak : delete \r at the end of lines.
+    * wince/mswince-ruby17.def : delete rb_obj_become
+
 Sun Dec 15 11:43:26 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* parse.y (dispose_string): dispose String object.

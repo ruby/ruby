@@ -12,7 +12,7 @@
 
 **********************************************************************/
 
-#if defined NT || defined _WIN32_WCE
+#ifdef _WIN32
 #include "missing/file.h"
 #endif
 
@@ -40,21 +40,13 @@ int flock _((int, int));
 #endif
 
 #include <time.h>
-#ifdef HAVE_SYS_TIME_H
-# include <sys/time.h>
-#else
-#if !defined(NT) && !defined(_WIN32_WCE)
-struct timeval {
-        long    tv_sec;         /* seconds */
-        long    tv_usec;        /* and microseconds */
-};
-#endif /* NT, WINCE */
-#endif
 
 VALUE rb_time_new _((time_t, time_t));
 
 #ifdef HAVE_UTIME_H
 #include <utime.h>
+#elif defined HAVE_SYS_UTIME_H
+#include <sys/utime.h>
 #endif
 
 #ifdef HAVE_PWD_H
@@ -74,11 +66,6 @@ char *strrchr _((const char*,const char));
 
 #ifndef HAVE_LSTAT
 #define lstat(path,st) stat(path,st)
-#endif
-
-#ifdef _WIN32_WCE
-#undef CharNext
-#define CharNext CharNextA
 #endif
 
 VALUE rb_cFile;
@@ -114,10 +101,6 @@ rb_file_path(obj)
     if (!fptr->path) return Qnil;
     return rb_str_new2(fptr->path);
 }
-
-#if defined NT || defined _WIN32_WCE
-#include "missing/file.h"
-#endif
 
 static VALUE
 stat_new_0(klass, st)
@@ -445,7 +428,7 @@ static int
 group_member(gid)
     GETGROUPS_T gid;
 {
-#if !defined(NT) && !defined(_WIN32_WCE)
+#ifndef _WIN32
     if (getgid() ==  gid)
 	return Qtrue;
 
@@ -785,7 +768,7 @@ static VALUE
 test_grpowned(obj, fname)
     VALUE obj, fname;
 {
-#if !defined(NT) && !defined(_WIN32_WCE)
+#ifndef _WIN32
     struct stat st;
 
     if (rb_stat(fname, &st) < 0) return Qfalse;
@@ -1120,7 +1103,7 @@ rb_file_chown(obj, owner, group)
 
     rb_secure(2);
     GetOpenFile(obj, fptr);
-#if defined(DJGPP) || defined(__CYGWIN32__) || defined(NT) || defined(__EMX__) || defined(_WIN32_WCE)
+#if defined(DJGPP) || defined(__CYGWIN32__) || defined(_WIN32) || defined(__EMX__)
     if (!fptr->path) return Qnil;
     if (chown(fptr->path, NUM2INT(owner), NUM2INT(group)) == -1)
 	rb_sys_fail(fptr->path);
@@ -1212,22 +1195,11 @@ rb_file_s_utime(argc, argv)
 
 #else
 
-#ifndef HAVE_UTIME_H
-# if defined NT || defined _WIN32_WCE
-#   if defined(__BORLANDC__)
-#     include <utime.h>
-#   else
-#  include <sys/utime.h>
-#   endif
-#   if defined(_MSC_VER) || defined __MINGW32__
-#  define utimbuf _utimbuf
-#   endif
-# else
+#if !defined HAVE_UTIME_H && !defined HAVE_SYS_UTIME_H
 struct utimbuf {
     long actime;
     long modtime;
 };
-# endif
 #endif
 
 static void
@@ -1474,7 +1446,7 @@ rb_file_s_expand_path(argc, argv)
 #endif
 	}
     }
-#if defined DOSISH || defined __CYGWIN__
+#if defined DOSISH_DRIVE_LETTER || defined __CYGWIN__
     /* skip drive letter */
     else if (ISALPHA(s[0]) && s[1] == ':' && isdirsep(s[2])) {
 	b = s;
@@ -1572,7 +1544,7 @@ rb_file_s_expand_path(argc, argv)
 	memcpy(++p, b, s-b);
 	p += s-b;
     }
-#if defined DOSISH || defined __CYGWIN__
+#if defined DOSISH_DRIVE_LETTER || defined __CYGWIN__
     else if (ISALPHA(buf[0]) && (buf[1] == ':') && isdirsep(buf[2])) {
 	/* root directory needs a trailing backslash,
 	   otherwise it mean the current directory of the drive */
@@ -1716,7 +1688,7 @@ rb_file_s_truncate(klass, path, len)
     {
 	int tmpfd;
 
-#  if defined(NT) || defined(_WIN32_WCE)
+#  ifdef _WIN32
 	if ((tmpfd = open(RSTRING(path)->ptr, O_RDWR)) < 0) {
 	    rb_sys_fail(RSTRING(path)->ptr);
 	}
@@ -2141,7 +2113,7 @@ static VALUE
 rb_stat_grpowned(obj)
     VALUE obj;
 {
-#if !defined(NT) && !defined(_WIN32_WCE)
+#ifndef _WIN32
     if (get_stat(obj)->st_gid == getegid()) return Qtrue;
 #endif
     return Qfalse;
@@ -2339,8 +2311,10 @@ static int
 is_absolute_path(path)
     const char *path;
 {
-#if defined DOSISH || defined __CYGWIN__
+#if defined DOSISH_DRIVE_LETTER || defined __CYGWIN__
     if (ISALPHA(path[0]) && path[1] == ':' && isdirsep(path[2])) return 1;
+#endif
+#if defined DOSISH || defined __CYGWIN__
     if (isdirsep(path[0]) && isdirsep(path[1])) return 1;
 #endif
 #ifndef DOSISH

@@ -41,7 +41,7 @@ ruby_tcltk_stubs()
     char tk_name[20];
 
     ruby_tcl_dll = getenv("RUBY_TCL_DLL");
-#if defined NT
+#if defined _WIN32
     if (ruby_tcl_dll) ruby_tcl_dll = ruby_strdup(ruby_tcl_dll);
 #endif
     ruby_tk_dll = getenv("RUBY_TK_DLL");
@@ -62,7 +62,7 @@ ruby_tcltk_stubs()
 	}
     }
 
-#if defined NT
+#if defined _WIN32
     if (ruby_tcl_dll) ruby_xfree(ruby_tcl_dll);
 #endif
 

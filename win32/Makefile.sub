@@ -78,7 +78,7 @@ prefix = /usr
 DESTDIR = $(prefix)
 !endif
 !if !defined(CFLAGS)
-CFLAGS = -MD -DNT=1 $(DEBUGFLAGS) $(OPTFLAGS) $(PROCESSOR_FLAG)
+CFLAGS = -MD $(DEBUGFLAGS) $(OPTFLAGS) $(PROCESSOR_FLAG)
 !endif
 !if !defined(CPPFLAGS)
 CPPFLAGS = -I. -I$(srcdir) -I$(srcdir)/missing -DLIBRUBY_SO=\"$(LIBRUBY_SO)\"
@@ -265,7 +265,6 @@ config.h: Makefile $(srcdir)/win32/Makefile.sub
 #define DEFAULT_KCODE KCODE_NONE
 #define DLEXT ".so"
 #define DLEXT2 ".dll"
-#define NT 1
 #define RUBY_LIB "/lib/ruby/1.7"
 #define RUBY_SITE_LIB "/lib/ruby/site_ruby"
 #define RUBY_SITE_LIB2 "/lib/ruby/site_ruby/1.7"

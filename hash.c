@@ -942,7 +942,7 @@ rb_hash_update(hash1, hash2)
 static int path_tainted = -1;
 
 static char **origenviron;
-#if defined(NT) || defined(_WIN32_WCE)
+#ifdef _WIN32
 #define GET_ENVIRON(e) (e = rb_w32_get_environ())
 #define FREE_ENVIRON(e) rb_w32_free_environ(e)
 static char **my_environ;

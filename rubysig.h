@@ -13,7 +13,7 @@
 #ifndef SIG_H
 #define SIG_H
 
-#if defined(NT) || defined(_WIN32_WCE)
+#ifdef _WIN32
 typedef LONG rb_atomic_t;
 
 # define ATOMIC_TEST(var) InterlockedExchange(&(var), 0)

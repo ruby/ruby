@@ -1050,7 +1050,7 @@ error_print()
 
 #if defined(__APPLE__)
 #define environ (*_NSGetEnviron())
-#elif !defined(NT) && !defined(__MACOS__)
+#elif !defined(_WIN32) && !defined(__MACOS__) || defined(_WIN32_WCE)
 extern char **environ;
 #endif
 char **rb_origenviron;

@@ -645,7 +645,7 @@ void
 rb_sys_fail(mesg)
     const char *mesg;
 {
-#if !defined(NT) && !defined(__VMS) && !defined(_WIN32_WCE)
+#if !defined(_WIN32) && !defined(__VMS)
     char *strerror();
 #endif
     char *err;

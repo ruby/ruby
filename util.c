@@ -16,7 +16,7 @@
 #include <stdio.h>
 #include <errno.h>
 
-#if defined(NT) || defined(_WIN32_WCE)
+#ifdef _WIN32
 #include "missing/file.h"
 #endif
 
@@ -75,11 +75,11 @@ scan_hex(start, len, retlen)
 #   define S_ISDIR(m) ((m & S_IFMT) == S_IFDIR)
 #endif
 
-#if defined(NT) || defined(_WIN32_WCE)
+#ifdef _WIN32
 #include "missing/file.h"
 #endif
 
-#if defined(MSDOS) || defined(__CYGWIN32__) || defined(NT) || defined(_WIN32_WCE)
+#if defined(MSDOS) || defined(__CYGWIN32__) || defined(_WIN32)
 /*
  *  Copyright (c) 1993, Intergraph Corporation
  *
@@ -173,7 +173,7 @@ ruby_add_suffix(str, suffix)
         rb_fatal("Cannot do inplace edit on long filename (%ld characters)",
 		 RSTRING(str)->len);
 
-#if defined(DJGPP) || defined(__CYGWIN32__) || defined(NT) || defined(_WIN32_WCE)
+#if defined(DJGPP) || defined(__CYGWIN32__) || defined(_WIN32)
     /* Style 0 */
     slen = RSTRING(str)->len;
     rb_str_cat(str, suffix, extlen);
@@ -229,7 +229,7 @@ fallback:
     memcpy(RSTRING(str)->ptr, buf, RSTRING(str)->len);
 }
 
-#if defined(__CYGWIN32__) || defined(NT) || defined(_WIN32_WCE)
+#if defined(__CYGWIN32__) || defined(_WIN32)
 static int 
 valid_filename(char *s)
 {

@@ -24,7 +24,7 @@
 #include <sys/uio.h>
 #endif
 
-#ifndef NT
+#ifndef _WIN32
 #if defined(__BEOS__)
 # include <net/socket.h>
 #else
@@ -903,7 +903,7 @@ init_inetsock_internal(arg)
 	}
 	arg->fd = fd;
 	if (type == INET_SERVER) {
-#ifndef NT
+#ifndef _WIN32
 	    status = 1;
 	    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR,
 		       (char*)&status, sizeof(status));
@@ -1816,7 +1816,7 @@ static VALUE
 sock_s_socketpair(klass, domain, type, protocol)
     VALUE klass, domain, type, protocol;
 {
-#if !defined(NT) && !defined(__BEOS__) && !defined(__EMX__) && !defined(__QNXNTO__)
+#if !defined(_WIN32) && !defined(__BEOS__) && !defined(__EMX__) && !defined(__QNXNTO__)
     int d, t, sp[2];
 
     setup_domain_and_type(domain, &d, type, &t);

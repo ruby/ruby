@@ -33,6 +33,14 @@
 #include <winsock.h>
 #undef OpenFile
 #endif
+
+#define NT 1			/* deprecated */
+
+#ifdef _WIN32_WCE
+#undef CharNext
+#define CharNext CharNextA
+#endif
+
 //
 // We're not using Microsoft's "extensions" to C for
 // Structured Exception Handling (SEH) so we can nuke these

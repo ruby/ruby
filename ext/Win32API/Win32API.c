@@ -2,7 +2,7 @@
   Win32API - Ruby Win32 API Import Facility
 */
 
-#if !defined _MSC_VER && !defined NT
+#if !defined _MSC_VER && !defined _WIN32
 #define  WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <stdio.h>

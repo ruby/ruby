@@ -48,7 +48,7 @@ void *xrealloc();
 #endif
 
 #include <stdio.h>
-#if defined(NT) || defined(__VMS) ||  defined(_WIN32_WCE)
+#if defined(_WIN32) || defined(__VMS)
 #include "missing/file.h"
 #endif
 #include <sys/types.h>
@@ -69,7 +69,7 @@ void *xrealloc();
 # include <unistd.h>
 #endif
 
-#if !defined(NT) && !defined(_WIN32_WCE)
+#ifndef _WIN32
 char *getenv();
 #endif
 
@@ -1598,7 +1598,7 @@ dln_find_exe(fname, path)
     }
 
     if (!path) {
-#if defined(MSDOS) || defined(NT) || defined(__human68k__) || defined(__MACOS__) || defined(_WIN32_WCE)
+#if defined(MSDOS) || defined(_WIN32) || defined(__human68k__) || defined(__MACOS__)
 	path = "/usr/local/bin;/usr/ucb;/usr/bin;/bin;.";
 #else
 	path = "/usr/local/bin:/usr/ucb:/usr/bin:/bin:.";
@@ -1669,9 +1669,11 @@ dln_find_1(fname, path, exe_flag)
     if (strncmp("./", fname, 2) == 0 || strncmp("../", fname, 3) == 0)
       return fname;
     if (exe_flag && strchr(fname, '/')) return fname;
-#if defined(MSDOS) || defined(NT) || defined(__human68k__) || defined(__EMX__) || defined(_WIN32_WCE)
+#ifdef DOSISH
     if (fname[0] == '\\') return fname;
+# ifdef DOSISH_DRIVE_LETTER
     if (strlen(fname) > 2 && fname[1] == ':') return fname;
+# endif
     if (strncmp(".\\", fname, 2) == 0 || strncmp("..\\", fname, 3) == 0)
       return fname;
     if (exe_flag && strchr(fname, '\\')) return fname;
@@ -1701,7 +1703,7 @@ dln_find_1(fname, path, exe_flag)
 	    */
 
 	    if (*dp == '~' && (l == 1 ||
-#if defined(MSDOS) || defined(NT) || defined(__human68k__) || defined(__EMX__) || defined(_WIN32_WCE)
+#if defined(DOSISH)
 			       dp[1] == '\\' || 
 #endif
 			       dp[1] == '/')) {
@@ -1759,7 +1761,7 @@ dln_find_1(fname, path, exe_flag)
 	    }
 	}
 #endif
-#if defined(MSDOS) || defined(NT) || defined(__human68k__) || defined(__EMX__) || defined(_WIN32_WCE)
+#if defined(DOSISH)
 	if (exe_flag) {
 	    static const char *extension[] = {
 #if defined(MSDOS)
@@ -1767,9 +1769,9 @@ dln_find_1(fname, path, exe_flag)
 #if defined(DJGPP)
 		".btm", ".sh", ".ksh", ".pl", ".sed",
 #endif
-#elif defined(__EMX__) || defined(NT) || defined(_WIN32_WCE)
+#elif defined(__EMX__) || defined(_WIN32)
 		".exe", ".com", ".cmd", ".bat",
-/* end of __EMX__ or NT or WINCE */
+/* end of __EMX__ or _WIN32 */
 #else
 		".r", ".R", ".x", ".X", ".bat", ".BAT",
 /* __human68k__ */
@@ -1795,7 +1797,7 @@ dln_find_1(fname, path, exe_flag)
 #endif
 	    }
 	}
-#endif /* MSDOS or NT or __human68k__ or __EMX__ */
+#endif /* MSDOS or _WIN32 or __human68k__ or __EMX__ */
 	/* if not, and no other alternatives, life is bleak */
 	if (*ep == '\0') {
 	    return NULL;

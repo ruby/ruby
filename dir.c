@@ -21,10 +21,10 @@
 #include <unistd.h>
 #endif
 
-#if defined HAVE_DIRENT_H && !defined NT && !defined _WIN32_WCE
+#if defined HAVE_DIRENT_H && !defined _WIN32
 # include <dirent.h>
 # define NAMLEN(dirent) strlen((dirent)->d_name)
-#elif defined HAVE_DIRECT_H && !defined NT && !defined _WIN32_WCE
+#elif defined HAVE_DIRECT_H && !defined _WIN32
 # include <direct.h>
 # define NAMLEN(dirent) strlen((dirent)->d_name)
 #else
@@ -39,7 +39,7 @@
 # if HAVE_NDIR_H
 #  include <ndir.h>
 # endif
-# if defined(NT) || defined(_WIN32_WCE)
+# ifdef _WIN32
 #  include "win32/dir.h"
 # endif
 #endif
@@ -79,10 +79,7 @@ char *strchr _((char*,char));
 #   define CharNext(p) ((p) + 1)
 # endif
 #endif
-#ifdef _WIN32_WCE
-#undef CharNext
-#define CharNext CharNextA
-#endif
+
 #if defined DOSISH
 #define isdirsep(c) ((c) == '/' || (c) == '\\')
 static char *
@@ -538,7 +535,7 @@ dir_s_mkdir(argc, argv, obj)
 
     SafeStringValue(path);
     rb_secure(2);
-#if !defined(NT) && !defined(_WIN32_WCE)
+#ifndef _WIN32
     if (mkdir(RSTRING(path)->ptr, mode) == -1)
 	rb_sys_fail(RSTRING(path)->ptr);
 #else
@@ -607,7 +604,7 @@ extract_path(p, pend)
     alloc = ALLOC_N(char, len+1);
     memcpy(alloc, p, len);
     if (len > 1 && pend[-1] == '/'
-#if defined DOSISH
+#if defined DOSISH_DRIVE_LETTER
     && pend[-2] != ':'
 #endif
     ) {
@@ -766,10 +763,10 @@ glob_helper(path, sub, flags, func, arg)
 		break;
 	    }
 	    
-#if defined DOSISH
+#if defined DOSISH_DRIVE_LETTER
 #define BASE (*base && !((isdirsep(*base) && !base[1]) || (base[1] == ':' && isdirsep(base[2]) && !base[3])))
 #else
-#define BASE (*base && !(*base == '/' && !base[1]))
+#define BASE (*base && !(isdirsep(*base) && !base[1]))
 #endif
 
 	    for (dp = readdir(dirp); dp != NULL; dp = readdir(dirp)) {

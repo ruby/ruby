@@ -53,7 +53,7 @@
 #include <string.h>
 #include <time.h>
 #endif
-#if defined(TM_IN_SYS_TIME) || ! defined(GAWK)
+#if defined(TM_IN_SYS_TIME) || !defined(GAWK) && !defined(_WIN32_WCE)
 #include <sys/types.h>
 #include <sys/time.h>
 #endif

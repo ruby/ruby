@@ -15,6 +15,9 @@
 #if defined _WIN32 || defined __CYGWIN__
 #include <windows.h>
 #endif
+#ifdef _WIN32_WCE
+#include <winsock.h>
+#endif
 #include "ruby.h"
 #include "dln.h"
 #include "node.h"

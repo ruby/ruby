@@ -87,7 +87,7 @@ prefix = /usr
 DESTDIR = $(prefix)
 !endif
 !ifndef CFLAGS
-CFLAGS = -q -DNT=1 $(DEBUGFLAGS) $(OPTFLAGS) $(PROCESSOR_FLAG) -w-
+CFLAGS = -q $(DEBUGFLAGS) $(OPTFLAGS) $(PROCESSOR_FLAG) -w-
 !endif
 !ifndef CPPFLAGS
 CPPFLAGS = -I. -I$(srcdir) -I$(srcdir)missing -DLIBRUBY_SO=\"$(LIBRUBY_SO)\"

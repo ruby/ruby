@@ -354,7 +354,7 @@ AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS(stdlib.h string.h unistd.h limits.h sys/file.h sys/ioctl.h\
 		 fcntl.h sys/fcntl.h sys/select.h sys/time.h sys/times.h sys/param.h\
 		 syscall.h pwd.h a.out.h utime.h memory.h direct.h sys/resource.h \
-		 sys/mkdev.h)
+		 sys/mkdev.h sys/utime.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_UID_T
@@ -1156,7 +1156,7 @@ case "$target_os" in
 	    COMMON_LIBS=m
 	    COMMON_MACROS="WIN32_LEAN_AND_MEAN="
 	    COMMON_HEADERS="windows.h winsock.h"
-	    CFLAGS="-DNT -D__NO_ISOCEXT $CFLAGS"
+	    CFLAGS="-D__NO_ISOCEXT $CFLAGS"
 	    CCDLFLAGS=-DIMPORT ;;
 	esac
 	if test x"$enable_shared" = xyes; then

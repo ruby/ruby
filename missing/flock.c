@@ -122,7 +122,7 @@ flock(fd, operation)
         return -1;
     }
 }
-#elif !defined NT
+#elif !defined _WIN32
 int
 flock(fd, operation)
     int fd;

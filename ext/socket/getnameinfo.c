@@ -36,7 +36,7 @@
 
 #include "config.h"
 #include <sys/types.h>
-#ifndef NT
+#ifndef _WIN32
 #if defined(__BEOS__)
 # include <net/socket.h>
 #else
@@ -54,7 +54,7 @@
 #include <resolv.h>
 #endif
 #endif
-#ifdef NT
+#ifdef _WIN32
 #include <winsock2.h>
 #include <stdio.h>
 #define snprintf _snprintf
