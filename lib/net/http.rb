@@ -611,6 +611,11 @@ module Net
       nil
     end
 
+    #
+    # Use as either of the following:
+    #   Net::HTTP.get(uri)
+    #   Net::HTTP.get(host, path [, port])
+    #
     def HTTP.get( arg1, arg2 = nil, arg3 = nil )
       get_response(arg1,arg2,arg3).body
     end
