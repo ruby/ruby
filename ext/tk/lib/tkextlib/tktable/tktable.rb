@@ -547,6 +547,9 @@ class Tk::TkTable
   def selection_include?(idx)
     bool(tk_send('selection', 'includes', tagid(idx)))
   end
+  def selection_present
+    bool(tk_send('selection', 'present'))
+  end
   def selection_set(first, last=None)
     tk_send('selection', 'set', tagid(first), tagid(last))
     self

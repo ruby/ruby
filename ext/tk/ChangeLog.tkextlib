@@ -1,3 +1,7 @@
+2005-04-04  ocean  <ocean@ruby-lang.org>
+
+	* lib/tkextlib/tktable/tktable.rb: added Tk::TkTable#selection_present.
+
 2005-04-02  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* lib/tkextlib/treectrl/tktreectrl.rb: support TreeCtrl's cvs head.
@@ -26,12 +30,12 @@
 
 2005-03-31  ocean  <ocean@ruby-lang.org>
 
-	* ext/tk/sample/tkextlib/treectrl/demo.rb: should use Hash#index.
+	* sample/tkextlib/treectrl/demo.rb: should use Hash#index.
 
-	* ext/tk/sample/tkextlib/treectrl/demo.rb: TkImage was not
+	* sample/tkextlib/treectrl/demo.rb: TkImage was not
 	  cached properly.
 
-	* ext/tk/sample/tkextlib/treectrl/random.rb: fixed typo.
+	* sample/tkextlib/treectrl/random.rb: fixed typo.
 
 2005-03-31  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
@@ -86,6 +90,10 @@
 	* sample/tkextlib/blt/calendar.rb: new sample.
 
 	* sample/tkextlib/blt/pareto.rb: ditto.
+
+2005-03-28  ocean  <ocean@ruby-lang.org>
+
+	* lib/tkextlib/iwidgets/notebook.rb: fixed typo.
 
 2005-03-26  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 

@@ -1,3 +1,7 @@
+Mon Apr  4 10:26:48 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ext/tk/lib/tk/dialog.rb: fixed typo.
+
 Sat Apr  2 23:38:54 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (CP, INSTALL): get rid of less portable options.
@@ -38,14 +42,6 @@ Sat Apr  2 02:19:11 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/image.rb (TkImage.initialize): accept 'imagename'
 	  option to create a image object by the given name.
-
-Thu Mar 31 23:52:48 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
-
-	* ext/tk/sample/tkextlib/treectrl/demo.rb: should use Hash#index.
-
-	* ext/tk/sample/tkextlib/treectrl/demo.rb: TkImage was not cached properly.
-
-	* ext/tk/sample/tkextlib/treectrl/random.rb: fixed typo.
 
 Thu Mar 31 22:23:51 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -137,10 +133,6 @@ Mon Mar 28 20:53:44 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  was deleted.
 
 	* ext/extmk.rb (extmake): restore srcdir.
-
-Mon Mar 28 16:23:26 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
-
-	* ext/tk/lib/tkextlib/iwidgets/notebook.rb: fixed typo.
 
 Mon Mar 28 08:39:49 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
