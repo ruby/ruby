@@ -1580,23 +1580,6 @@ module RDoc
         
         non_comment_seen = true unless tk.kind_of?(TkCOMMENT)
         
-#         $stderr.puts "===== #{tk.inspect}"
-#         blank_line_seen = true
-#         while tk.kind_of?(TkNL)
-#           skip_tkspace(false)
-#           if peek_tk.kind_of?(TkCOMMENT)
-#             if blank_line_seen
-#               comment = ''
-#               blank_line_seen = false
-#             end
-#             tk = get_tk
-#             comment << tk.text << "\n"
-#           else
-#             blank_line_seen = true
-#           end
-#           tk = get_tk
-#         end
-
 	case tk
 
         when TkNL
@@ -2326,6 +2309,10 @@ module RDoc
           options.title = param
           ""
 
+        when "section"
+          context.set_current_section(param, comment)
+          comment.clear
+          ""
         else
           warn "Unrecognized directive '#{directive}'"
           break
@@ -2548,7 +2535,7 @@ module RDoc
 	    break
 	  when TkCOMMA
 	  else
-	    warn("unexpected token: '#{tk.inspect}'")
+	    warn("unexpected token: '#{tk2.inspect}'") if $DEBBUG
 	    break
 	  end
 	end

@@ -336,8 +336,10 @@ module Generators
 
     # Build a list of aliases for which we couldn't find a
     # corresponding method
-    def build_alias_summary_list
-      @context.aliases.map do |al|
+    def build_alias_summary_list(section)
+      values = []
+      @context.aliases.each do |al|
+        next unless al.section == section
         res = {
           'old_name' => al.old_name,
           'new_name' => al.new_name,
@@ -345,20 +347,24 @@ module Generators
         if al.comment && !al.comment.empty?
           res['desc'] = markup(al.comment, true)
         end
-        res
+        values << res
       end
+      values
     end
     
     # Build a list of constants
-    def build_constants_summary_list
-      @context.constants.map do |co|
+    def build_constants_summary_list(section)
+      values = []
+      @context.constants.each do |co|
+        next unless co.section == section
         res = {
           'name'  => co.name,
           'value' => CGI.escapeHTML(co.value)
         }
         res['desc'] = markup(co.comment, true) if co.comment && !co.comment.empty?
-        res
+        values << res
       end
+      values
     end
     
     def build_requires_list(context)
@@ -416,7 +422,7 @@ module Generators
     # methods, the other for instance methods. The inner arrays contain
     # a hash for each method
 
-    def build_method_detail_list
+    def build_method_detail_list(section)
       outer = []
 
       methods = @methods.sort
@@ -424,7 +430,10 @@ module Generators
         for vis in [ :public, :protected, :private ] 
           res = []
           methods.each do |m|
-            if m.document_self and m.visibility == vis and m.singleton == singleton
+            if m.section == section and
+                m.document_self and 
+                m.visibility == vis and 
+                m.singleton == singleton
               row = {}
               if m.call_seq
                 row["callseq"] = m.call_seq.gsub(/->/, '&rarr;')
@@ -478,11 +487,12 @@ module Generators
     # Build the structured list of classes and modules contained
     # in this context. 
 
-    def build_class_list(level, from, infile=nil)
+    def build_class_list(level, from, section, infile=nil)
       res = ""
       prefix = "&nbsp;&nbsp;::" * level;
 
       from.modules.sort.each do |mod|
+        next unless mod.section == section
         next if infile && !mod.defined_in?(infile)
         if mod.document_self
           res << 
@@ -490,11 +500,12 @@ module Generators
             "Module " <<
             href(url(mod.viewer.path), "link", mod.full_name) <<
             "<br />\n" <<
-            build_class_list(level + 1, mod, infile)
+            build_class_list(level + 1, mod, section, infile)
         end
       end
 
       from.classes.sort.each do |cls|
+        next unless cls.section == section
         next if infile && !cls.defined_in?(infile)
         if cls.document_self
           res      <<
@@ -502,7 +513,7 @@ module Generators
             "Class " <<
             href(url(cls.viewer.path), "link", cls.full_name) <<
             "<br />\n" <<
-            build_class_list(level + 1, cls, infile)
+            build_class_list(level + 1, cls, section, infile)
         end
       end
 
@@ -541,6 +552,24 @@ module Generators
       end
       res
     end
+
+    # create table of contents if we contain sections
+      
+    def add_table_of_sections
+      toc = []
+      @context.sections.each do |section|
+        if section.title
+          toc << {
+            'secname' => section.title,
+            'href'    => section.sequence
+          }
+        end
+      end
+      
+      @values['toc'] = toc unless toc.empty?
+    end
+
+
   end
 
   #####################################################################
@@ -604,6 +633,7 @@ module Generators
 
     def value_hash
       class_attribute_values
+      add_table_of_sections
 
       @values["charset"] = @options.charset
       @values["style_url"] = style_url(path, @options.css)
@@ -614,30 +644,43 @@ module Generators
       ml = build_method_summary_list
       @values["methods"] = ml unless ml.empty?
 
-      al = build_alias_summary_list
-      @values["aliases"] = al unless al.empty?
-
-      co = build_constants_summary_list
-      @values["constants"] = co unless co.empty?
-
       il = build_include_list(@context)
       @values["includes"] = il unless il.empty?
 
-      al = build_attribute_list
-      @values["attributes"] = al unless al.empty?
-      
-      cl = build_class_list(0, @context)
-      @values["classlist"] = cl unless cl.empty?
+      @values["sections"] = @context.sections.map do |section|
 
-      mdl = build_method_detail_list
-      @values["method_list"] = mdl unless mdl.empty?
+        secdata = {
+          "sectitle" => section.title,
+          "secsequence" => section.sequence,
+          "seccomment" => markup(section.comment)
+        }
+
+        al = build_alias_summary_list(section)
+        secdata["aliases"] = al unless al.empty?
+        
+        co = build_constants_summary_list(section)
+        secdata["constants"] = co unless co.empty?
+        
+        al = build_attribute_list(section)
+        secdata["attributes"] = al unless al.empty?
+        
+        cl = build_class_list(0, @context, section)
+        secdata["classlist"] = cl unless cl.empty?
+        
+        mdl = build_method_detail_list(section)
+        secdata["method_list"] = mdl unless mdl.empty?
+
+        secdata
+      end
+
       @values
     end
 
-    def build_attribute_list
+    def build_attribute_list(section)
       atts = @context.attributes.sort
       res = []
       atts.each do |att|
+        next unless att.section == section
         if att.visibility == :public || @options.show_all
           entry = {
             "name"   => CGI.escapeHTML(att.name), 
@@ -701,7 +744,6 @@ module Generators
       end
 
       @values['infiles'] = files
-
     end
 
     def <=>(other)
@@ -759,6 +801,7 @@ module Generators
 
     def value_hash
       file_attribute_values
+      add_table_of_sections
 
       @values["charset"]   = @options.charset
       @values["href"]      = path
@@ -778,23 +821,36 @@ module Generators
       rl = build_requires_list(@context)
       @values["requires"] = rl unless rl.empty?
 
-      co = build_constants_summary_list
-      @values["constants"] = co unless co.empty?
-
-      al = build_alias_summary_list
-      @values["aliases"] = al unless al.empty?
-
       if @options.promiscuous
         file_context = nil
       else
         file_context = @context
       end
 
-      cl = build_class_list(0, @context, file_context)
-      @values["classlist"] = cl unless cl.empty?
 
-      mdl = build_method_detail_list
-      @values["method_list"] = mdl unless mdl.empty?
+      @values["sections"] = @context.sections.map do |section|
+
+        secdata = {
+          "sectitle" => section.title,
+          "secsequence" => section.sequence,
+          "seccomment" => markup(section.comment)
+        }
+
+        cl = build_class_list(0, @context, section, file_context)
+        @values["classlist"] = cl unless cl.empty?
+
+        mdl = build_method_detail_list(section)
+        secdata["method_list"] = mdl unless mdl.empty?
+
+        al = build_alias_summary_list(section)
+        secdata["aliases"] = al unless al.empty?
+        
+        co = build_constants_summary_list(section)
+        @values["constants"] = co unless co.empty?
+
+        secdata
+      end
+      
       @values
     end
     
@@ -883,6 +939,10 @@ module Generators
 
     def name
       @context.name
+    end
+
+    def section
+      @context.section
     end
 
     def index_name
