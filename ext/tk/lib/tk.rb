@@ -1607,6 +1607,16 @@ module Tk
     end
   end
 
+  def Tk.errorInfo
+    INTERP._invoke_without_enc('global', 'errorInfo')
+    INTERP._invoke_without_enc('set', 'errorInfo')
+  end
+
+  def Tk.errorCode
+    INTERP._invoke_without_enc('global', 'errorCode')
+    tk_split_simplelist(INTERP._invoke_without_enc('set', 'errorCode'))
+  end
+
   def root
     TkRoot.new
   end
