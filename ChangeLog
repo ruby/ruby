@@ -160,7 +160,7 @@ Tue May 21 04:48:37 2002  Sean Chittenden <sean@chittenden.org>
 Tue May 21 01:16:46 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* parse.y (bodystmt): ensure clause was excuted on else clause
-	  without rescue clase.
+	  without rescue clause.
 
 Tue May 21 00:20:25 2002  Takaaki Tateishi <ttate@kt.jaist.ac.jp>
 
