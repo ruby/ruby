@@ -11,8 +11,6 @@
 #if !defined(_OSSL_RUBY_MISSING_H_)
 #define _OSS_RUBY_MISSING_H_
 
-#define DEFINE_ALLOC_WRAPPER(func)
-
 #define rb_define_copy_func(klass, func) \
 	rb_define_method(klass, "initialize_copy", func, 1)
 
