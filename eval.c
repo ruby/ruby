@@ -11793,6 +11793,9 @@ rb_thread_raise(argc, argv, th)
 {
     volatile rb_thread_t th_save = th;
 
+    if (!th->next) {
+	rb_raise(rb_eArgError, "unstarted thread");
+    }
     if (rb_thread_dead(th)) return Qnil;
     if (curr_thread == th) {
 	rb_f_raise(argc, argv);

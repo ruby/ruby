@@ -1,3 +1,7 @@
+Sun Mar 14 22:07:38 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_thread_raise): err at unstarted thread.  (PR#1302)
+
 Sat Mar 13 14:56:32 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* test/drb/ut_drb.rb: use 'druby://localhost:0'. [ruby-dev:23078]
