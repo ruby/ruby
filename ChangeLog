@@ -1,3 +1,8 @@
+Thu Oct 31 09:31:51 2002  K.Kosako  <kosako@sofnec.co.jp>
+
+	* eval.c (rb_export_method): undef'ed method visibility should not
+	  be changed.
+
 Sun Oct 27 00:55:21 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* array.c, class.c, eval.c, file.c, gc.c, node.h, numeric.c,
