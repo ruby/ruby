@@ -1,11 +1,14 @@
 include Makefile
 
 ENABLE_SHARED=@ENABLE_SHARED@
+DLLWRAP = @DLLWRAP@ --target=@target_os@
 
 ifeq (@target_os@,cygwin)
   DLL_BASE_NAME := $(subst .dll,,$(LIBRUBY_SO))
 else
   DLL_BASE_NAME := $(RUBY_SO_NAME)
+  DLLWRAP += -mno-cygwin
+  VPATH += $(srcdir)/win32
 endif
 
 ifneq ($(ENABLE_SHARED),yes)
@@ -24,6 +27,10 @@ endif
 WPROGRAM = $(RUBYW_INSTALL_NAME)$(EXEEXT)
 SOLIBS := $(DLL_BASE_NAME).res.@OBJEXT@ $(SOLIBS)
 EXTOBJS += $(@:$(EXEEXT)=.res.@OBJEXT@)
+RCFILES = $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(DLL_BASE_NAME).rc
+
+ruby: $(PROGRAM)
+rubyw: $(WPROGRAM)
 
 $(LIBRUBY): $(RUBY_EXP) $(LIBRUBY_SO)
 $(RUBY_EXP) $(LIBRUBY_SO): $(DLL_BASE_NAME).res.@OBJEXT@
@@ -31,7 +38,7 @@ $(RUBY_EXP) $(LIBRUBY_SO): $(DLL_BASE_NAME).res.@OBJEXT@
 %.res.@OBJEXT@: %.rc
 	@WINDRES@ --include-dir . --include-dir $(<D) --include-dir $(srcdir)/win32 $< $@
 
-$(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(DLL_BASE_NAME).rc: rbconfig.rb
+$(RCFILES): $(RBCONFIG)
 	@$(MINIRUBY) $(srcdir)/win32/resource.rb \
 	  -ruby_name=$(RUBY_INSTALL_NAME) -rubyw_name=$(RUBYW_INSTALL_NAME) \
 	  -so_name=$(DLL_BASE_NAME) \
@@ -44,7 +51,7 @@ $(WPROGRAM): $(RUBYW_INSTALL_NAME).res.@OBJEXT@
 	  $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(LIBS) -o $@
 
 $(RUBY_EXP): $(LIBRUBY_A)
-	@DLLWRAP@ --target=@target_os@ --driver-name=$(CC) \
+	$(DLLWRAP) \
 	  --output-exp=$(RUBY_EXP) \
 	  --export-all $(LIBRUBY_A) $(LIBS) -o $(PROGRAM)
 	$(LDSHARED) $(DLDFLAGS) $(OBJS) dmyext.o $(SOLIBS) -o $(PROGRAM)
@@ -63,3 +70,9 @@ cygwin-$(RUBY_INSTALL_NAME)$(MAJOR)$(MINOR).dll: $(LIBRUBY_A)
 	@DLLWRAP@ -s --def=rubydll.def -o $@
 	@rm -f rubydll.def
 endif
+
+clean-local::
+	@$(RM) $(RUBY_EXP) $(RCFILES:.rc=.res.@OBJEXT@)
+
+distclean-local::
+	@$(RM) $(RCFILES)

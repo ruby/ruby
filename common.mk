@@ -9,7 +9,6 @@ DMYEXT	      = dmyext.$(OBJEXT)
 MAINOBJ	      = main.$(OBJEXT)
 
 OBJS	      = array.$(OBJEXT) \
-		ascii.$(OBJEXT) \
 		bignum.$(OBJEXT) \
 		class.$(OBJEXT) \
 		compar.$(OBJEXT) \
@@ -17,7 +16,6 @@ OBJS	      = array.$(OBJEXT) \
 		dln.$(OBJEXT) \
 		enum.$(OBJEXT) \
 		error.$(OBJEXT) \
-		euc_jp.$(OBJEXT) \
 		eval.$(OBJEXT) \
 		file.$(OBJEXT) \
 		gc.$(OBJEXT) \
@@ -35,20 +33,14 @@ OBJS	      = array.$(OBJEXT) \
 		random.$(OBJEXT) \
 		range.$(OBJEXT) \
 		re.$(OBJEXT) \
-		regcomp.$(OBJEXT) \
-		regenc.$(OBJEXT) \
-		regerror.$(OBJEXT) \
-		regexec.$(OBJEXT) \
-		regparse.$(OBJEXT) \
+		regex.$(OBJEXT) \
 		ruby.$(OBJEXT) \
 		signal.$(OBJEXT) \
-		sjis.$(OBJEXT) \
 		sprintf.$(OBJEXT) \
 		st.$(OBJEXT) \
 		string.$(OBJEXT) \
 		struct.$(OBJEXT) \
 		time.$(OBJEXT) \
-		utf8.$(OBJEXT) \
 		util.$(OBJEXT) \
 		variable.$(OBJEXT) \
 		version.$(OBJEXT) \
@@ -198,8 +190,6 @@ win32.$(OBJEXT): {$(VPATH)}win32.c
 array.$(OBJEXT): {$(VPATH)}array.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
   {$(VPATH)}util.h {$(VPATH)}st.h
-ascii.$(OBJEXT): {$(VPATH)}ascii.c {$(VPATH)}regenc.h \
-  {$(VPATH)}oniguruma.h config.h
 bignum.$(OBJEXT): {$(VPATH)}bignum.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
 class.$(OBJEXT): {$(VPATH)}class.c {$(VPATH)}ruby.h config.h \
@@ -220,8 +210,6 @@ enum.$(OBJEXT): {$(VPATH)}enum.c {$(VPATH)}ruby.h config.h \
 error.$(OBJEXT): {$(VPATH)}error.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
   {$(VPATH)}env.h {$(VPATH)}st.h
-euc_jp.$(OBJEXT): {$(VPATH)}euc_jp.c {$(VPATH)}regenc.h \
-  {$(VPATH)}oniguruma.h
 eval.$(OBJEXT): {$(VPATH)}eval.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
   {$(VPATH)}node.h {$(VPATH)}env.h {$(VPATH)}util.h \
@@ -273,24 +261,13 @@ range.$(OBJEXT): {$(VPATH)}range.c {$(VPATH)}ruby.h config.h \
 re.$(OBJEXT): {$(VPATH)}re.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
   {$(VPATH)}re.h {$(VPATH)}regex.h
-regcomp.$(OBJEXT): {$(VPATH)}regcomp.c {$(VPATH)}oniguruma.h \
-  {$(VPATH)}regint.h {$(VPATH)}regparse.h {$(VPATH)}regenc.h config.h
-regenc.$(OBJEXT): {$(VPATH)}regenc.c {$(VPATH)}regint.h \
-  {$(VPATH)}regenc.h {$(VPATH)}oniguruma.h config.h
-regerror.$(OBJEXT): {$(VPATH)}regerror.c {$(VPATH)}regint.h \
-  {$(VPATH)}regenc.h {$(VPATH)}oniguruma.h config.h
-regexec.$(OBJEXT): {$(VPATH)}regexec.c {$(VPATH)}regint.h \
-  {$(VPATH)}regenc.h {$(VPATH)}oniguruma.h config.h
-regparse.$(OBJEXT): {$(VPATH)}regparse.c {$(VPATH)}oniguruma.h \
-  {$(VPATH)}regint.h {$(VPATH)}regparse.h {$(VPATH)}regenc.h config.h
+regex.$(OBJEXT): {$(VPATH)}regex.c config.h {$(VPATH)}regex.h
 ruby.$(OBJEXT): {$(VPATH)}ruby.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
   {$(VPATH)}dln.h {$(VPATH)}node.h {$(VPATH)}util.h
 signal.$(OBJEXT): {$(VPATH)}signal.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
   {$(VPATH)}rubysig.h
-sjis.$(OBJEXT): {$(VPATH)}sjis.c {$(VPATH)}regenc.h \
-  {$(VPATH)}oniguruma.h config.h
 sprintf.$(OBJEXT): {$(VPATH)}sprintf.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
 st.$(OBJEXT): {$(VPATH)}st.c config.h {$(VPATH)}st.h
@@ -301,8 +278,6 @@ struct.$(OBJEXT): {$(VPATH)}struct.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
 time.$(OBJEXT): {$(VPATH)}time.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
-utf8.$(OBJEXT): {$(VPATH)}utf8.c {$(VPATH)}regenc.h \
-  {$(VPATH)}oniguruma.h config.h
 util.$(OBJEXT): {$(VPATH)}util.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
   {$(VPATH)}util.h

@@ -1,3 +1,10 @@
+Wed Mar 30 23:44:50 2005  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* Makefile.in, */Makefile.sub, */configure.bat,
+	  cygwin/GNUmakefile.in, common.mk, configure.in, ext/extmk.rb,
+	  lib/mkmf.rb, instruby.rb, runruby.rb: backport extout.
+	  [ruby-dev:25963]
+
 Wed Mar 30 17:41:48 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c: add TclTkIp#_create_console() method to 

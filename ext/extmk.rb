@@ -16,6 +16,8 @@ alias $PROGRAM_NAME $0
 alias $0 $progname
 
 $extlist = []
+$extupdate = false
+$compiled = {}
 
 $:.replace ["."]
 require 'rbconfig'
@@ -24,12 +26,11 @@ srcdir = File.dirname(File.dirname(__FILE__))
 
 $:.replace [srcdir, srcdir+"/lib", "."]
 
-require 'mkmf'
-require 'getopts'
-
 $topdir = "."
 $top_srcdir = srcdir
-$hdrdir = $top_srcdir
+
+require 'mkmf'
+require 'optparse/shellwords'
 
 def sysquote(x)
   @quote ||= /human|os2|macos/ =~ (CROSS_COMPILING || RUBY_PLATFORM)
@@ -42,6 +43,43 @@ def relative_from(path, base)
   else
     File.join(base, path)
   end
+end
+
+def extract_makefile(makefile, keep = true)
+  m = File.read(makefile)
+  if !(target = m[/^TARGET[ \t]*=[ \t]*(\S*)/, 1])
+    return keep
+  end
+  installrb = {}
+  m.scan(/^install-rb-default:[ \t]*(\S+)\n\1:[ \t]*(\S+)/) {installrb[$2] = $1}
+  oldrb = installrb.keys.sort
+  newrb = install_rb(nil, "").collect {|d, *f| f}.flatten.sort
+  if target_prefix = m[/^target_prefix[ \t]*=[ \t]*\/(.*)/, 1]
+    target = "#{target_prefix}/#{target}"
+  end
+  unless oldrb == newrb
+    if $extout
+      newrb.each {|f| installrb.delete(f)}
+      unless installrb.empty?
+        config = CONFIG.dup
+        install_dirs(target_prefix).each {|var, val| config[var] = val}
+        FileUtils.rm_f(installrb.values.collect {|f| Config.expand(f, config)}, :verbose => true)
+      end
+    end
+    return false
+  end
+  $target = target
+  /^STATIC_LIB[ \t]*=[ \t]*\S+/ =~ m or $static = nil
+  $preload = Shellwords.shellwords(m[/^preload[ \t]*=[ \t]*(.*)/, 1] || "")
+  $DLDFLAGS += " " + (m[/^DLDFLAGS[ \t]*=[ \t]*(.*)/, 1] || "")
+  if s = m[/^LIBS[ \t]*=[ \t]*(.*)/, 1]
+    s.sub!(/^#{Regexp.quote($LIBRUBYARG)} */, "")
+    s.sub!(/ *#{Regexp.quote($LIBS)}$/, "")
+    $libs = s
+  end
+  $LOCAL_LIBS = m[/^LOCAL_LIBS[ \t]*=[ \t]*(.*)/, 1] || ""
+  $LIBPATH = Shellwords.shellwords(m[/^libpath[ \t]*=[ \t]*(.*)/, 1] || "") - %w[$(libdir) $(topdir)]
+  true
 end
 
 def extmake(target)
@@ -57,8 +95,7 @@ def extmake(target)
     return true if $nodynamic and not $static
   end
 
-  init_mkmf
-
+  FileUtils.mkpath target unless File.directory?(target)
   begin
     dir = Dir.pwd
     FileUtils.mkpath target unless File.directory?(target)
@@ -72,18 +109,21 @@ def extmake(target)
     $mdir = target
     $srcdir = File.join($top_srcdir, "ext", $mdir)
     $preload = nil
+    $compiled[target] = false
     makefile = "./Makefile"
+    ok = File.exist?(makefile)
     unless $ignore
-      if $static ||
-	 !(t = modified?(makefile, MTIMES)) ||
-	 %W<#{$srcdir}/makefile.rb #{$srcdir}/extconf.rb
-	    #{$srcdir}/depend>.any? {|f| modified?(f, [t])}
-      then
-	$defs = []
-	Logging::logfile 'mkmf.log'
-	Config::CONFIG["srcdir"] = $srcdir
-	rm_f makefile
-	begin
+      Config::CONFIG["srcdir"] = $srcdir
+      Config::CONFIG["topdir"] = $topdir
+      begin
+	if (!(ok &&= extract_makefile(makefile)) ||
+	    !(t = modified?(makefile, MTIMES)) ||
+            %W"#{$srcdir}/makefile.rb #{$srcdir}/extconf.rb #{$srcdir}/depend".any? {|f| modified?(f, [t])})
+        then
+	  ok = false
+          init_mkmf
+	  Logging::logfile 'mkmf.log'
+	  rm_f makefile
 	  if File.exist?($0 = "#{$srcdir}/makefile.rb")
 	    load $0
 	  elsif File.exist?($0 = "#{$srcdir}/extconf.rb")
@@ -91,30 +131,37 @@ def extmake(target)
 	  else
 	    create_makefile(target)
 	  end
-	  File.exist?(makefile)
-	rescue SystemExit
-	  # ignore
-	ensure
-	  rm_f "conftest*"
-	  $0 = $PROGRAM_NAME
-	  Config::CONFIG["srcdir"] = $top_srcdir
+	  $extupdate = true
+	  ok = File.exist?(makefile)
 	end
-      else
-	true
+      rescue SystemExit
+	# ignore
+      ensure
+	rm_f "conftest*"
+	config = $0
+	$0 = $PROGRAM_NAME
+	Config::CONFIG["srcdir"] = $top_srcdir
+	Config::CONFIG["topdir"] = topdir
       end
-    else
-      File.exist?(makefile)
-    end or open(makefile, "w") do |f|
-      f.print dummy_makefile($srcdir)
+    end
+    ok = yield(ok) if block_given?
+    unless ok
+      open(makefile, "w") do |f|
+	f.print dummy_makefile($srcdir)
+      end
       return true
     end
     args = sysquote($mflags)
     if $static
-      args += ["static"]
+      args += ["static"] unless $clean
       $extlist.push [$static, $target, File.basename($target), $preload]
     end
     unless system($make, *args)
       $ignore or $continue or return false
+    end
+    $compiled[target] = true
+    if $clean and $clean != true
+      File.unlink(makefile) rescue nil
     end
     if $static
       $extflags ||= ""
@@ -131,24 +178,65 @@ def extmake(target)
     $topdir = topdir
     Dir.chdir dir
   end
+  begin
+    Dir.rmdir target
+    target = File.dirname(target)
+  rescue SystemCallError
+    break
+  end while true
   true
 end
 
+def compiled?(target)
+  $compiled[target]
+end
+
 def parse_args()
-  getopts('n', 'extstatic:', 'dest-dir:',
-	  'make:', 'make-flags:', 'mflags:')
+  $mflags = []
 
-  $dryrun = $OPT['n']
-  $force_static = $OPT['extstatic'] == 'static'
-  $destdir = $OPT['dest-dir'] || ''
-  $make = $OPT['make'] || $make || 'make'
-  mflags = ($OPT['make-flags'] || '').strip
-  mflags = ($OPT['mflags'] || '').strip if mflags.empty?
-
-  $mflags = Shellwords.shellwords(mflags)
-  if arg = $mflags.first
-    arg.insert(0, '-') if /\A[^-][^=]*\Z/ =~ arg
+  opts = nil
+  $optparser ||= OptionParser.new do |opts|
+    opts.on('-n') {$dryrun = true}
+    opts.on('--[no-]extension [EXTS]', Array) do |v|
+      $extension = (v == false ? [] : v)
+    end
+    opts.on('--[no-]extstatic [STATIC]', Array) do |v|
+      if ($extstatic = v) == false
+        $extstatic = []
+      elsif v
+        $force_static = true
+        $extstatic.delete("static")
+        $extstatic = nil if $extstatic.empty?
+      end
+    end
+    opts.on('--dest-dir=DIR') do |v|
+      $destdir = v
+    end
+    opts.on('--extout=DIR') do |v|
+      $extout = (v unless v.empty?)
+    end
+    opts.on('--make=MAKE') do |v|
+      $make = v || 'make'
+    end
+    opts.on('--make-flags=FLAGS', '--mflags', Shellwords) do |v|
+      if arg = v.first
+        arg.insert(0, '-') if /\A[^-][^=]*\Z/ =~ arg
+      end
+      $mflags.concat(v)
+    end
+    opts.on('--message [MESSAGE]', String) do |v|
+      $message = v
+    end
   end
+  begin
+    $optparser.parse!(ARGV)
+  rescue OptionParser::InvalidOption => e
+    retry if /^--/ =~ e.args[0]
+    $optparser.warn(e)
+    abort opts.to_s
+  end
+
+  $destdir ||= ''
 
   $make, *rest = Shellwords.shellwords($make)
   $mflags.unshift(*rest) unless rest.empty?
@@ -173,24 +261,33 @@ def parse_args()
     $destdir = File.expand_path($destdir)
     $mflags.defined?("DESTDIR") or $mflags << "DESTDIR=#{$destdir}"
   end
+  if $extout
+    $extout = '$(topdir)/'+$extout
+    $extout_prefix = $extout ? "$(extout)$(target_prefix)/" : ""
+    $mflags << "extout=#$extout" << "extout_prefix=#$extout_prefix"
+  end
 end
 
 parse_args()
 
+if target = ARGV.shift and /^[a-z-]+$/ =~ target
+  $mflags.push(target)
+  target = target.sub(/^(dist|real)(?=(?:clean)?$)/, '')
+  case target
+  when /clean/
+    $ignore ||= true
+    $clean = $1 ? $1[0] : true
+  when /^install\b/
+    $install = true
+    $ignore ||= true
+    $mflags.unshift("INSTALL_PROG=install -c -p -m 0755",
+                    "INSTALL_DATA=install -c -p -m 0644",
+                    "MAKEDIRS=mkdir -p") if $dryrun
+  end
+end
 unless $message
-  if $message = ARGV.shift and /^[a-z]+$/ =~ $message
-    $mflags.push($message)
-    $message = $message.sub(/^(?:dist|real)(?=(?:clean)?$)/, '\1')
-    case $message
-    when "clean"
-      $ignore ||= true
-    when "install"
-      $ignore ||= true
-      $mflags.unshift("INSTALL_PROG=install -c -p -m 0755",
-		      "INSTALL_DATA=install -c -p -m 0644",
-		      "MAKEDIRS=mkdir -p") if $dryrun
-    end
-    $message.sub!(/e?$/, "ing")
+  if target
+    $message = target.sub(/^(\w+)e?\b/, '\1ing').tr('-', ' ')
   else
     $message = "compiling"
   end
@@ -204,13 +301,19 @@ elsif $nmake
 else
   $ruby = '$(topdir)/miniruby' + EXEEXT
 end
-$ruby << " -I$(topdir) -I$(hdrdir)/lib"
+$ruby << " -I'$(topdir)' -I'$(hdrdir)/lib'"
 $config_h = '$(topdir)/config.h'
 
 MTIMES = [__FILE__, 'rbconfig.rb', srcdir+'/lib/mkmf.rb'].collect {|f| File.mtime(f)}
 
 # get static-link modules
 $static_ext = {}
+if $extstatic
+  $extstatic.each do |target|
+    target = target.downcase if /mswin32|bccwin32/ =~ RUBY_PLATFORM
+    $static_ext[target] = $static_ext.size
+  end
+end
 for dir in ["ext", File::join($top_srcdir, "ext")]
   setup = File::join(dir, CONFIG['setup'])
   if File.file? setup
@@ -228,12 +331,33 @@ for dir in ["ext", File::join($top_srcdir, "ext")]
 	next
       end
       target = target.downcase if /mswin32|bccwin32/ =~ RUBY_PLATFORM
-      $static_ext[target] = true
+      $static_ext[target] = $static_ext.size
     end
     MTIMES << f.mtime
     $setup = setup
     f.close
     break
+  end
+end unless $extstatic
+
+ext_prefix = "#{$top_srcdir}/ext"
+exts = $static_ext.sort_by {|t, i| i}.collect {|t, i| t}
+exts |= $extension if $extension
+exts |= Dir.glob("#{ext_prefix}/*/**/extconf.rb").collect {|d|
+  d = File.dirname(d)
+  d.slice!(0, ext_prefix.length + 1)
+  d
+}.sort unless $extension
+
+if $extout
+  Config.expand(extout = "#$extout", Config::CONFIG.merge("topdir"=>$topdir))
+  if $install
+    Config.expand(dest = "#{$destdir}#{$rubylibdir}")
+    FileUtils.cp_r(extout+"/.", dest, :verbose => true, :noop => $dryrun)
+    exit
+  end
+  unless $ignore
+    FileUtils.mkpath(extout)
   end
 end
 
@@ -242,17 +366,19 @@ FileUtils::makedirs('ext')
 Dir::chdir('ext')
 
 $hdrdir = $top_srcdir = relative_from(srcdir, $topdir = "..")
-ext_prefix = "#{$top_srcdir}/ext"
-Dir.glob("#{ext_prefix}/*/**/extconf.rb") do |d|
-  d = File.dirname(d)
-  d.slice!(0, ext_prefix.length + 1)
-  extmake(d) or exit(1)
+exts.each do |d|
+  extmake(d) or abort
 end
 $hdrdir = $top_srcdir = srcdir
 $topdir = "."
 
 if $ignore
+  FileUtils.rm_f(%W"extinit.c extinit.#{$OBJEXT}") if $clean
   Dir.chdir ".."
+  if $clean
+    Dir.rmdir('ext') rescue nil
+    FileUtils.rm_rf(extout) if $extout
+  end
   exit
 end
 
@@ -305,11 +431,13 @@ SRC
 end
 rubies = []
 %w[RUBY RUBYW].each {|r|
-  config_string(r+"_INSTALL_NAME", Config::CONFIG) {|r| rubies << r+EXEEXT}
+  if r = arg_config("--"+r.downcase) || config_string(r+"_INSTALL_NAME")
+    rubies << r+EXEEXT
+  end
 }
 
 Dir.chdir ".."
-if $extlist.size > 0
+if !$extlist.empty? and $extupdate
   rm_f(Config::CONFIG["LIBRUBY_SO"])
 end
 puts "making #{rubies.join(', ')}"
