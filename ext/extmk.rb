@@ -320,7 +320,7 @@ if $ignore
   Dir.chdir ".."
   if $clean
     Dir.rmdir('ext') rescue nil
-    FileUtils.rm_rf(extout) if $extout
+    FileUtils.rm_rf($extout) if $extout
   end
   exit
 end

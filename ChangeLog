@@ -1,3 +1,7 @@
+Sat Mar 20 21:21:03 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/extmk.rb: rm -rf $extout, not extout.
+
 Sat Mar 20 15:25:36 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/generators/template/html/html.rb (RDoc::Page): Force
