@@ -14,7 +14,7 @@
 #include <fcntl.h>
 #include <errno.h>
 
-static VALUE cGDBM, rb_eGDBMError, rb_eGDBMFatalErrors;
+static VALUE cGDBM, rb_eGDBMError, rb_eGDBMFatalError;
 
 #define MY_BLOCK_SIZE (2048)
 #define MY_FATAL_FUNC rb_gdbm_fatal
@@ -22,7 +22,7 @@ void
 rb_gdbm_fatal(msg)
     char *msg;
 {
-    rb_raise(rb_eGDBMFatalErrors, msg);
+    rb_raise(rb_eGDBMFatalError, msg);
 }
 
 struct dbmdata {
