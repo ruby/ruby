@@ -1,6 +1,19 @@
+Mon Oct  2 05:28:58 2000  akira yamada  <akira@ruby-lang.org>
+
+	* string.c (trnext): minus at the end of pattern.
+
 Sun Oct  1 00:43:34 2000  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in: exp-name was wrong on cygwin and mingw32.
+
+Thu Sep 28 14:57:09 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* regex.c (re_compile_pattern): should try must_string calculation
+	  every time.
+
+Tue Sep 19 23:47:44 2000  SHIROYAMA Takayuki  <psi@fortune.nest.or.jp>
+
+	* configure.in, config.guess, config.sub: MacOS X support.
 
 Wed Sep 27 18:40:05 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

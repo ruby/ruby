@@ -57,9 +57,11 @@ AC_ARG_ENABLE(fat-binary,
 	# to ensure AC_HEADER_SYS_WAIT works
 	AC_DEFINE(_POSIX_SOURCE)
         ;;
-    darwin*)
+    macos*|darwin*)
         echo -n "MacOS X (Darwin): "
-   	        TARGET_ARCHS="ppc"
+            if test "$TARGET_ARCHS" = "" ; then
+                TARGET_ARCHS="ppc i386"
+            fi
 	;;
     esac
     # /usr/lib/arch_tool -archify_list $TARGET_ARCHS
@@ -164,7 +166,7 @@ case "$target_os" in
 nextstep*)	;;
 openstep*)	;;
 rhapsody*)	;;
-darwin*)	;;
+darwin*)	LIBS="-lobjc $LIBS";;
 human*)		ac_cv_func_getpgrp_void=yes;;
 beos*)		;;
 cygwin*)	rb_cv_have_daylight=no;;
@@ -731,7 +733,7 @@ LIBRUBYARG='$(LIBRUBY_A)'
 SOLIBS=
 
 case "$target_os" in
-  cygwin*|mingw*|beos*|openstep*|nextstep*|rhapsody*|os2_emx*)
+  cygwin*|mingw*|beos*|openstep*|nextstep*|rhapsody*|darwin*|os2_emx*)
     DLDLIBS=""
     ;;
   *)
@@ -900,7 +902,7 @@ test "$program_suffix" != NONE &&
 
 RUBY_INSTALL_NAME="${ri_prefix}ruby${ri_suffix}"
 case "$target_os" in
-  cygwin*|mingw*|*djgpp*)
+  cygwin*|mingw*|*djgpp*|os2_emx*)
     RUBY_LIB_PREFIX="/lib/ruby"
     ;;
   *)
@@ -913,9 +915,9 @@ AC_ARG_WITH(sitedir,
 	    [--with-sitedir=DIR        site libraries in DIR [PREFIX/lib/ruby/site_ruby]],
             [sitedir=$withval],
             [sitedir='${prefix}/lib/ruby/site_ruby'])
-SITE_DIR="`eval "echo ${sitedir}"`"
+SITE_DIR="`eval \"echo ${sitedir}\"`"
 case "$target_os" in
-  cygwin*|mingw*|*djgpp*)
+  cygwin*|mingw*|*djgpp*|os2_emx*)
     RUBY_SITE_LIB_PATH="`expr "$SITE_DIR" : "$prefix\(/.*\)"`" ||
     RUBY_SITE_LIB_PATH="$SITE_DIR";;
   *)

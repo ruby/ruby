@@ -343,7 +343,7 @@ def create_makefile(target)
   print "creating Makefile\n"
   rm_f "conftest*"
   STDOUT.flush
-  if target.rindex(%r!/!)
+  if target.rindex(%r!/!) #/
     target = $'
     target_prefix = "/"+$`
   else
@@ -529,3 +529,5 @@ end
 
 $CFLAGS = idir || ""
 $LDFLAGS = ldir || ""
+
+$hdrdir.gsub!('/', '\\') if RUBY_PLATFORM =~ /mswin32/

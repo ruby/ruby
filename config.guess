@@ -970,7 +970,7 @@ EOF
 	echo ${UNAME_MACHINE}-apple-rhapsody${UNAME_RELEASE}
 	exit 0 ;;
     *:Darwin:*:*)
-	echo ${UNAME_MACHINE}-apple-darwin${UNAME_RELEASE}
+	echo `uname -p`-apple-darwin${UNAME_RELEASE}
 	exit 0 ;;
 esac
 

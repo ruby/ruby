@@ -2395,7 +2395,7 @@ re_compile_pattern(pattern, size, bufp)
       bufp->must = laststart+1;
     }
   }
-  else {
+  if (!bufp->must) {
     bufp->must = calculate_must_string(bufp->buffer, b);
   }
   if (current_mbctype == MBCTYPE_SJIS) bufp->options |= RE_OPTIMIZE_NO_BM;

@@ -205,7 +205,7 @@ ruby_incpush(path)
 void
 ruby_init_loadpath()
 {
-#if defined(_WIN32) || defined(DJGPP)
+#if defined(_WIN32) || defined(DJGPP) || defined(__EMX__)
     char libpath[FILENAME_MAX+1];
     char *p;
     size_t rest;
@@ -214,6 +214,8 @@ ruby_init_loadpath()
 #elif defined(DJGPP)
     extern char *__dos_argv0;
     strncpy(libpath, __dos_argv0, FILENAME_MAX);
+#elif defined(__EMX__)
+    _execname(libpath, FILENAME_MAX);
 #endif
     p = strrchr(libpath, '\\');
     if (p) {

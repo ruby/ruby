@@ -1904,7 +1904,6 @@ myselect (int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
     long r;
     fd_set file_rd;
     fd_set file_wr;
-    fd_set trap;
     int file_nfds;
     int trap_immediate = rb_trap_immediate;
 
@@ -1925,16 +1924,9 @@ myselect (int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 	if (wr) *wr = file_wr;
 	return file_nfds;
     }
-    if (ex)
-	trap = *ex;
-    else
-	trap.fd_count = 0;
-    if (trap.fd_count < FD_SETSIZE)
-	trap.fd_array[trap.fd_count++] = rb_InterruptEvent;
-    // else unable to catch interrupt.
     if (trap_immediate)
 	TRAP_END;
-    if ((r = select (nfds, rd, wr, &trap, timeout)) == SOCKET_ERROR) {
+    if ((r = select (nfds, rd, wr, ex, timeout)) == SOCKET_ERROR) {
 	errno = WSAGetLastError();
 	switch (errno) {
 	case WSAEINTR:
