@@ -480,7 +480,7 @@ io_fread(ptr, len, f)
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
 		if (errno == EWOULDBLOCK) return len - n;
 #endif
-		rb_sys_fail(0);
+		return 0;
 	    }
 	    *ptr = '\0';
 	    break;

@@ -760,11 +760,16 @@ match_to_a(match)
     VALUE ary = rb_ary_new2(regs->num_regs);
     char *ptr = RSTRING(RMATCH(match)->str)->ptr;
     int i;
-
+    int taint = OBJ_TAINTED(match);
+    
     for (i=0; i<regs->num_regs; i++) {
-	if (regs->beg[i] == -1) rb_ary_push(ary, Qnil);
-	else rb_ary_push(ary, rb_str_new(ptr+regs->beg[i],
-				   regs->end[i]-regs->beg[i]));
+	if (regs->beg[i] == -1) {
+	    rb_ary_push(ary, Qnil);
+	} else {
+	    VALUE str = rb_str_new(ptr+regs->beg[i], regs->end[i]-regs->beg[i]);
+	    if (taint) OBJ_TAINT(str);
+	    rb_ary_push(ary, str);
+	}
     }
     return ary;
 }
@@ -1082,7 +1087,7 @@ rb_reg_s_quote(argc, argv)
     }
     kcode_reset_option();
     rb_str_resize(tmp, t - RSTRING(tmp)->ptr);
-
+    OBJ_INFECT(tmp, str);
     return tmp;
 }
 
