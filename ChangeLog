@@ -1,3 +1,7 @@
+Tue Feb 19 13:16:08 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* io.c (rb_io_ungetc): don't fail pushed EOF back.
+
 Mon Feb 18 13:56:44 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (block_pass): "&nil" should clear block given.
