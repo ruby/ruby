@@ -313,9 +313,9 @@ def with_config(config, default=nil)
 end
 
 def enable_config(config, default=nil)
-  if arg_config("--enable-"+config, default)
+  if arg_config("--enable-"+config)
     true
-  elsif arg_config("--disable-"+config, false)
+  elsif arg_config("--disable-"+config)
     false
   else
     default

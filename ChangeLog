@@ -1,3 +1,7 @@
+Wed Apr  3 01:54:10 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* ext/extmk.rb.in (enable_config): follow lib/mkmf.rb.
+
 Tue Apr  2 19:59:13 2002  Takaaki Tateishi <ttate@kt.jaist.ac.jp>
 
 	* ext/dl: Merge from rough.
