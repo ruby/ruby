@@ -695,8 +695,7 @@ ip_invoke_real(argc, argv, obj)
 }
 
 VALUE
-ivq_safelevel_handler(arg, ivq)
-    VALUE arg;
+ivq_safelevel_handler(ivq)
     VALUE ivq;
 {
     struct invoke_queue *q;
@@ -729,8 +728,9 @@ invoke_queue_handler(evPtr, flags)
 
     /* check safe-level */
     if (rb_safe_level() != q->safe_level) {
-      *(q->result) = rb_funcall(rb_iterate(rb_f_lambda, 0, ivq_safelevel_handler, 
-					   Data_Wrap_Struct(rb_cData,0,0,q)), 
+      VALUE v = Data_Wrap_Struct(rb_cData,0,0,q);
+      rb_define_singleton_method(v, "handler", ivq_safelevel_handler, 0);
+      *(q->result) = rb_funcall(rb_funcall(v, rb_intern("method"), 1, rb_intern("handler")),
 				rb_intern("call"), 0);
     } else {
       *(q->result) = ip_invoke_real(q->argc, q->argv, q->obj);
@@ -755,6 +755,9 @@ ip_invoke(argc, argv, obj)
     VALUE *alloc_argv, *alloc_result;
     Tcl_QueuePosition position;
 
+    if (argc < 1) {
+	rb_raise(rb_eArgError, "command name missing");
+    }
     if (eventloop_thread == 0 || current == eventloop_thread) {
       DUMP2("invoke from current eventloop %lx", current);
       return ip_invoke_real(argc, argv, obj);

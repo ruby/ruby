@@ -1,3 +1,11 @@
+Thu Oct  3 20:09:52 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* ext/tcltklib/tcltklib.c (invoke_queue_handler): make singleton
+	  method object to run handler in separated safe level.
+
+	* ext/tcltklib/tcltklib.c (ip_invoke): requires command name
+	  argument.
+
 Wed Oct  2 13:03:58 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in: set ac_cv_func_setitimer to "no" on Cygwin.
