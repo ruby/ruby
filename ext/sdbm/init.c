@@ -334,6 +334,7 @@ fsdbm_delete_if(obj)
 
     for (i = 0; i < RARRAY(ary)->len; i++) {
 	keystr = RARRAY(ary)->ptr[i];
+	StringValue(keystr);
 	key.dptr = RSTRING(keystr)->ptr;
 	key.dsize = RSTRING(keystr)->len;
 	if (sdbm_delete(dbm, key)) {

@@ -1,3 +1,10 @@
+Wed Oct 20 04:17:55 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/dbm/dbm.c (fdbm_delete_if): should check if deleting element
+	  is a string.  [ruby-dev:24490]
+
+	* ext/sdbm/init.c (fsdbm_delete_if): ditto.
+
 Wed Oct 20 01:37:18 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_times): Array#* should return an instance of
