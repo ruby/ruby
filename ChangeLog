@@ -1,3 +1,7 @@
+Mon Sep  3 20:26:08 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* intern.h (rb_find_file_ext): changed from rb_find_file_noext().
+
 Mon Sep  3 14:38:24 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* eval.c (rb_f_require): should check static linked libraries
