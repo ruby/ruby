@@ -1,3 +1,13 @@
+Thu Aug  7 14:40:37 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* cygwin/GNUmakefile: better --disbale-shared option support.
+
+Thu Aug  7 14:21:05 2003  Corinna Vinschen  <vinschen@redhat.com>
+
+	* configure.in: Fix Cygwin specific naming of libraries to
+	  be net distribution compliant. (ruby-bugs PR#1077)
+	  cygwin-ruby18.dll -> cygruby18.dll
+
 Thu Aug  7 12:51:38 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_f_at_exit): should not be called without a block.

@@ -1201,11 +1201,18 @@ case "$target_os" in
     cygwin*|mingw*)
 	case "$target_os" in
 	cygwin*)
-	    RUBY_SO_NAME=$target_os-'$(RUBY_INSTALL_NAME)'${MAJOR}${MINOR}
+	    if test x"$enable_shared" = xyes; then
+		LIBRUBY_SO='cyg$(RUBY_SO_NAME)'${MAJOR}${MINOR}.dll
+		LIBRUBY='lib$(RUBY_SO_NAME).dll.a'
+	    fi
 	    AC_LIBOBJ([strftime])
 	    ;;
 	mingw*)
 	    RUBY_SO_NAME=msvcrt-'$(RUBY_INSTALL_NAME)'${MAJOR}${MINOR}
+	    if test x"$enable_shared" = xyes; then
+		LIBRUBY_SO='$(RUBY_SO_NAME)'.dll
+		LIBRUBY='lib$(LIBRUBY_SO).a'
+	    fi
 	    AC_LIBOBJ([win32])
 	    COMMON_LIBS=m
 	    COMMON_MACROS="WIN32_LEAN_AND_MEAN="
@@ -1214,17 +1221,14 @@ case "$target_os" in
 	esac
 	XCFLAGS="$XCFLAGS"
 	LIBRUBY_DLDFLAGS="${DLDFLAGS}"' -Wl,--out-implib=$(LIBRUBY)'
-	if test x"$enable_shared" = xyes; then
-	    LIBRUBY_SO='$(RUBY_SO_NAME)'.dll
-	    LIBRUBY='lib$(LIBRUBY_SO).a'
-	else
+	LIBRUBY_ALIASES=''
+	FIRSTMAKEFILE=GNUmakefile:cygwin/GNUmakefile.in
+	SOLIBS='$(LIBS)'
+	if test x"$enable_shared" = xno; then
 	    LIBRUBY_SO=dummy
 	    LIBRUBY='lib$(RUBY_SO_NAME).a'
 	    LIBRUBYARG='-l$(RUBY_SO_NAME)'
 	fi
-	LIBRUBY_ALIASES=''
-	FIRSTMAKEFILE=GNUmakefile:cygwin/GNUmakefile.in
-	SOLIBS='$(LIBS)'
 	;;
     hpux*)
 	case "$YACC" in
