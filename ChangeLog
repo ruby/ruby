@@ -1,3 +1,7 @@
+Sat Mar 31 04:47:55 2001  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb: add document and example code.
+
 Fri Mar 30 22:56:56 2001  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb: rename ContinueRequest to ContinuationRequest.
