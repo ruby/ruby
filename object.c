@@ -836,26 +836,33 @@ rb_obj_private_methods(obj)
 struct arg_to {
     VALUE val;
     const char *s;
+    ID m;
 };
 
 static VALUE
-to_type(arg)
-    struct arg_to *arg;
+convert_type(val, tname, method, raise)
+    VALUE val;
+    const char *tname, *method;
+    int raise;
 {
-    return rb_funcall(arg->val, rb_intern(arg->s), 0);
-}
+    struct arg_to arg1, arg2;
+    ID m;
 
-static VALUE
-fail_to_type(arg)
-    struct arg_to *arg;
-{
-    rb_raise(rb_eTypeError, "failed to convert %s into %s",
-	     NIL_P(arg->val) ? "nil" :
-	     arg->val == Qtrue ? "true" :
-	     arg->val == Qfalse ? "false" :
-	     rb_class2name(CLASS_OF(arg->val)), 
-	     arg->s);
-    return Qnil;		/* not reached */
+    m = rb_intern(method);
+    if (!rb_respond_to(val, m)) {
+	if (raise) {
+	    rb_raise(rb_eTypeError, "failed to convert %s into %s",
+		     NIL_P(val) ? "nil" :
+		     val == Qtrue ? "true" :
+		     val == Qfalse ? "false" :
+		     rb_class2name(CLASS_OF(val)), 
+		     tname);
+	}
+	else {
+	    return Qnil;
+	}
+    }
+    return rb_funcall(val, m, 0);
 }
 
 VALUE
@@ -864,18 +871,15 @@ rb_convert_type(val, type, tname, method)
     int type;
     const char *tname, *method;
 {
-    struct arg_to arg1, arg2;
+    VALUE v;
 
     if (TYPE(val) == type) return val;
-    arg1.val = arg2.val = val;
-    arg1.s = method;
-    arg2.s = tname;
-    val = rb_rescue(to_type, (VALUE)&arg1, fail_to_type, (VALUE)&arg2);
-    if (TYPE(val) != type) {
+    v = convert_type(val, tname, method, Qtrue);
+    if (TYPE(v) != type) {
 	rb_raise(rb_eTypeError, "%s#%s should return %s",
-		 rb_class2name(CLASS_OF(arg1.val)), method, tname);
+		 rb_class2name(CLASS_OF(val)), method, tname);
     }
-    return val;
+    return v;
 }
 
 VALUE
@@ -884,18 +888,16 @@ rb_check_convert_type(val, type, tname, method)
     int type;
     const char *tname, *method;
 {
-    struct arg_to arg1, arg2;
+    VALUE v;
 
     if (TYPE(val) == type) return val;
-    arg1.val = arg2.val = val;
-    arg1.s = method;
-    arg2.s = tname;
-    val = rb_rescue(to_type, (VALUE)&arg1, 0, 0);
-    if (!NIL_P(val) && TYPE(val) != type) {
+    v = convert_type(val, tname, method, Qfalse);
+    if (NIL_P(v)) return Qnil;
+    if (TYPE(v) != type) {
 	rb_raise(rb_eTypeError, "%s#%s should return %s",
-		 rb_class2name(CLASS_OF(arg1.val)), method, tname);
+		 rb_class2name(CLASS_OF(val)), method, tname);
     }
-    return val;
+    return v;
 }
 
 static VALUE
@@ -903,18 +905,12 @@ rb_to_integer(val, method)
     VALUE val;
     char *method;
 {
-    struct arg_to arg1, arg2;
-
-
-    arg1.val = arg2.val = val;
-    arg1.s = method;
-    arg2.s = "Integer";
-    val = rb_rescue(to_type, (VALUE)&arg1, fail_to_type, (VALUE)&arg2);
-    if (!rb_obj_is_kind_of(val, rb_cInteger)) {
+    VALUE v = convert_type(val, "Integer", method, Qtrue);
+    if (!rb_obj_is_kind_of(v, rb_cInteger)) {
 	rb_raise(rb_eTypeError, "%s#%s should return Integer",
-		 rb_class2name(CLASS_OF(arg1.val)), method);
+		 rb_class2name(CLASS_OF(val)), method);
     }
-    return val;
+    return v;
 }
 
 VALUE
@@ -983,7 +979,7 @@ rb_Float(val)
 	    d = strtod(p, &end);
 	    if (p == end) {
 	      bad:
-		rb_raise(rb_eArgError, "invalid value for Float(): \"%s\"", q);
+		rb_invalid_str(q, "Float()");
 	    }
 	    if (*end) {
 		if (*end == '_') {

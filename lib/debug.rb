@@ -7,6 +7,7 @@ if $SAFE > 0
 end
 
 require 'tracer'
+require 'pp'
 
 class Tracer
   def Tracer.trace_func(*vars)
@@ -509,6 +510,9 @@ class DEBUGGER__
 	    if DEBUGGER__.debug_thread_info($', binding) == :cont
 	      prompt = false
 	    end
+
+	  when /^\s*pp\s+/
+	    PP.pp(debug_eval($', binding), 79, stdout)
 
 	  when /^\s*p\s+/
 	    stdout.printf "%s\n", debug_eval($', binding).inspect

@@ -447,6 +447,15 @@ nometh_args(self)
     return rb_iv_get(self, "args");
 }
 
+void
+rb_invalid_str(str, type)
+    const char *str, *type;
+{
+    VALUE s = rb_str_inspect(rb_str_new2(str));
+
+    rb_raise(rb_eArgError, "invalid value for %s: %s", type, RSTRING(s)->ptr);
+}
+
 #ifdef __BEOS__
 typedef struct {
    VALUE *list;

@@ -8455,8 +8455,7 @@ rb_thread_start_0(fn, arg, th_arg)
 		rb_thread_raise(1, &ruby_errinfo, main_thread);
 	    }
 	}
-	else if (th->safe < 4 &&
-		 (thread_abort || th->abort || RTEST(ruby_debug))) {
+	else if (th->safe < 4 && (thread_abort || th->abort || RTEST(ruby_debug))) {
 	    VALUE err = rb_exc_new(rb_eSystemExit, 0, 0);
 	    error_print();
 	    /* exit on main_thread */

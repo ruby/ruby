@@ -270,7 +270,7 @@ The variable ruby-indent-level controls the amount of indentation.
 	  (while (and (> indent-point (point))
 		      (re-search-forward ruby-delimiter indent-point t))
 	    (or depth (setq depth 0))
-	    (let ((pnt (point)) w)
+	    (let ((pnt (point)) w re)
 	      (goto-char (match-beginning 0))
 	      (cond
 	       ((or (looking-at "\"")	;skip string
@@ -302,17 +302,27 @@ The variable ruby-indent-level controls the amount of indentation.
 		  (setq w (buffer-substring (match-beginning 1)
 					    (match-end 1)))
 		  (cond
-		   ((string= w "[") (setq w "\\]"))
-		   ((string= w "{") (setq w "}"))
-		   ((string= w "(") (setq w ")"))
-		   ((string= w "<") (setq w ">"))
+		   ((string= w "[") (setq re "]["))
+		   ((string= w "{") (setq re "}{"))
+		   ((string= w "(") (setq re ")("))
+		   ((string= w "<") (setq re "><"))
 		   ((member w '("*" "." "+" "?" "^" "$"))
 		    (setq w (concat "\\" w))))
-		  (if (re-search-forward
-		       (if (string= w "\\")
-			   "\\\\[^\\]*\\\\"
-			 (concat "[^\\]\\(\\\\\\\\\\)*" w))
-		       indent-point t)
+		  (if (if re
+			  (let ((n 1))
+			    (setq re (concat "[^\\]\\(\\\\\\\\\\)*[" re "]"))
+			    (while (and (re-search-forward re indent-point t)
+					(> (setq n (if (eq (char-before (point))
+							   (string-to-char w))
+						       (1+ n) (1- n)))
+					   0))
+			      (forward-char -1))
+			    (zerop n))
+			(re-search-forward
+			 (if (string= w "\\")
+			     "\\\\[^\\]*\\\\"
+			   (concat "[^\\]\\(\\\\\\\\\\)*" w))
+			 indent-point t))
 		      nil
 		    (setq in-string (point))
 		    (goto-char indent-point)))
@@ -674,8 +684,8 @@ An end of a defun is found by moving forward from the beginning of one."
 
   (add-hook 'ruby-mode-hook
 	    '(lambda ()
-	       (make-local-variable 'font-lock-syntactic-keywords)
-	       (setq font-lock-syntactic-keywords
+	       (make-local-variable 'ruby-font-lock-syntactic-keywords)
+	       (setq ruby-font-lock-syntactic-keywords
 		     '(
 		       ;; #{ }, #$hoge, #@foo are not comments
 		       ("\\(#\\)[{$@]" 1 (1 . nil))

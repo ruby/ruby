@@ -105,7 +105,7 @@ ruby_xmalloc(size)
 	RUBY_CRITICAL(mem = malloc(size));
 	if (!mem) {
 	    if (size >= 10 * 1024 * 1024) {
-		rb_raise(rb_eNoMemError, "tried to allocate too big memory");
+		mem_error("tried to allocate too big memory");
 	    }
 	    mem_error("failed to allocate memory");
 	}
