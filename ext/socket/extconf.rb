@@ -1,7 +1,5 @@
 require 'mkmf'
 
-$CPPFLAGS += " -Dss_family=__ss_family -Dss_len=__ss_len"
-
 case RUBY_PLATFORM
 when /bccwin32/
   test_func = "WSACleanup"
@@ -150,6 +148,29 @@ main()
 }
 EOF
     $CFLAGS="-DHAVE_SOCKADDR_STORAGE "+$CFLAGS
+else      #   doug's fix, NOW add -Dss_family... only if required!
+$CPPFLAGS += " -Dss_family=__ss_family -Dss_len=__ss_len"
+  if try_link(<<EOF)
+#ifdef _WIN32
+# include <windows.h>
+# include <winsock.h>
+#else
+# include <sys/types.h>
+# include <netdb.h>
+# include <string.h>
+# include <sys/socket.h>
+#endif
+int
+main()
+{
+   struct sockaddr_storage ss;
+
+   ss.ss_family;
+   return 0;
+}
+EOF
+    $CFLAGS="-DHAVE_SOCKADDR_STORAGE "+$CFLAGS
+end
 end
 
   if try_link(<<EOF)

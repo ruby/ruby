@@ -21,27 +21,26 @@ module IRB
     LOCALE_DIR = "/lc/"
 
     def initialize(locale = nil)
-      @lang = locale || ENV["IRB_LANG"] || ENV["LC_MESSAGES"] || ENV["LC_ALL"] || ENV["LANG"]
-      @lang = "C" unless @lang
+      @lang = locale || ENV["IRB_LANG"] || ENV["LC_MESSAGES"] || ENV["LC_ALL"] || ENV["LANG"] || "C" 
     end
 
     attr_reader :lang
 
-    @@LC2KCONV = {
-      #      "ja" => Kconv::JIS,
-      #      "ja_JP" => Kconv::JIS,
-      "ja_JP.ujis" => Kconv::EUC,
-      "ja_JP.euc" => Kconv::EUC,
-      "ja_JP.eucJP" => Kconv::EUC,
-      "ja_JP.sjis" => Kconv::SJIS,
-      "ja_JP.SJIS" => Kconv::SJIS,
-    }
+    def lc2kconv(lang)
+      case lang
+      when "ja_JP.ujis", "ja_JP.euc", "ja_JP.eucJP"
+        Kconv::EUC
+      when "ja_JP.sjis", "ja_JP.SJIS"
+        Kconv::SJIS
+      end
+    end
+    private :lc2kconv
 
     def String(mes)
       mes = super(mes)
       case @lang
       when /^ja/
-	mes = Kconv::kconv(mes, @@LC2KCONV[@lang])
+	mes = Kconv::kconv(mes, lc2kconv(@lang))
       else
 	mes
       end

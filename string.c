@@ -2557,7 +2557,11 @@ rb_str_split_m(argc, argv, str)
     if (rb_scan_args(argc, argv, "02", &spat, &limit) == 2) {
 	lim = NUM2INT(limit);
 	if (lim <= 0) limit = Qnil;
-	else if (lim == 1) return rb_ary_new3(1, str);
+	else if (lim == 1) {
+	    if (RSTRING(str)->len == 0)
+		return rb_ary_new2(0);
+	    return rb_ary_new3(1, str);
+	}
 	i = 1;
     }
 

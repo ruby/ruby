@@ -1,3 +1,7 @@
+Thu Jul 24 13:32:56 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (thgroup_add): no warning for terminated threads.
+
 Thu Jul 24 13:09:26 2003  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pathname.rb: added.
@@ -39,6 +43,14 @@ Thu Jul 24 03:41:30 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 	* ext/tcltklib/tcltklib.c (ip_init): need at least one statement after
 	  label.
 
+Thu Jul 24 01:48:03 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/cgi.rb (CGI::QueryExtension::[]): should return StringIO (or
+	  Tempfile) for multipart/form.
+
+	* variable.c (rb_define_const): give warning for non constant
+	  name. [ruby-core:01287]
+
 Thu Jul 24 01:51:08 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick: imported.
@@ -57,6 +69,10 @@ Thu Jul 24 01:08:43 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 Wed Jul 23 23:06:59 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* file.c (DOSISH): better Cygwin support.
+
+Wed Jul 23 19:13:21 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_split_m): the receiver may be empty string.
 
 Wed Jul 23 18:43:00 2003  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
@@ -23203,5 +23219,10 @@ Wed Aug 13 17:51:46 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* version 1.1 alpha0 released.
 
 Local variables:
-add-log-time-format: current-time-string
+add-log-time-format: (lambda ()
+  (let* ((time (current-time))
+  	 (diff (+ (cadr time) 32400))
+	  (lo (% diff 65536))
+	  (hi  (+ (car time) (/ diff 65536))))
+    (format-time-string "%c" (list hi lo) t)))
 end:

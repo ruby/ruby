@@ -800,7 +800,7 @@ convert string charset, and set language to "ja".
           body = Tempfile.new("CGI")
         else
           begin
-            require "stringio" if not defined? StringIO
+            require "stringio"
             body = StringIO.new
           rescue LoadError
             require "tempfile"
@@ -917,6 +917,7 @@ convert string charset, and set language to "ja".
       if ("POST" == env_table['REQUEST_METHOD']) and
          %r|\Amultipart/form-data.*boundary=\"?([^\";,]+)\"?|n.match(env_table['CONTENT_TYPE'])
         boundary = $1.dup
+        @multipart = true
         @params = read_multipart(boundary, Integer(env_table['CONTENT_LENGTH']))
       else
         @params = CGI::parse(
@@ -947,7 +948,6 @@ convert string charset, and set language to "ja".
         super(str)
       end
       def [](idx)
-        p caller(1)
         warn "#{caller(1)[0]}:CAUTION! cgi['key'] == cgi.params['key'][0]; if want Array, use cgi.params['key']"
         self
       end
@@ -964,8 +964,17 @@ convert string charset, and set language to "ja".
     def [](key)
       params = @params[key]
       value = params[0]
-      value ||= ""
-      Value.new(value,params)
+      if @multipart
+        if value
+          return value
+        elsif defined? StringIO
+          StringIO.new("")
+        else
+          Tempfile.new("CGI")
+        end
+      else
+        Value.new(value || "", params)
+      end
     end
 
     def keys(*args)
@@ -1931,6 +1940,7 @@ The hash keys are case sensitive. Ask the samples.
     end
 
     extend QueryExtension
+    @multipart = false
     if "POST" != env_table['REQUEST_METHOD']
       initialize_query()  # set @params, @cookies
     else

@@ -1536,20 +1536,26 @@ run_final(obj)
     int status, critical_save;
     VALUE args[2], table;
 
-    critical_save = rb_thread_critical;
-    rb_thread_critical = Qtrue;
     args[1] = rb_ary_new3(1, rb_obj_id(obj)); /* make obj into id */
     for (i=0; i<RARRAY(finalizers)->len; i++) {
 	args[0] = RARRAY(finalizers)->ptr[i];
+	critical_save = rb_thread_critical;
+	rb_thread_critical = Qtrue;
 	rb_protect((VALUE(*)_((VALUE)))run_single_final, (VALUE)args, &status);
+	rb_thread_critical = critical_save;
+	CHECK_INTS;
     }
+    CHECK_INTS;
     if (finalizer_table && st_delete(finalizer_table, &obj, &table)) {
 	for (i=0; i<RARRAY(table)->len; i++) {
 	    args[0] = RARRAY(table)->ptr[i];
+	    critical_save = rb_thread_critical;
+	    rb_thread_critical = Qtrue;
 	    rb_protect((VALUE(*)_((VALUE)))run_single_final, (VALUE)args, &status);
+	    rb_thread_critical = critical_save;
+	    CHECK_INTS;
 	}
     }
-    rb_thread_critical = critical_save;
 }
 
 void

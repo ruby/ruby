@@ -9024,7 +9024,6 @@ rb_thread_kill(thread)
     if (th == th->next || th == main_thread) rb_exit(0);
 
     rb_thread_ready(th);
-    th->thgroup = 0;
     th->status = THREAD_TO_KILL;
     if (!rb_thread_critical) rb_thread_schedule();
     return thread;
@@ -9965,8 +9964,7 @@ thgroup_add(group, thread)
     }
 
     if (!th->thgroup) {
-	rb_warn("terminated thread");
-	return group;
+	return Qnil;
     }
     if (OBJ_FROZEN(th->thgroup)) {
 	rb_raise(rb_eThreadError, "can't move from the frozen thread group");
