@@ -621,11 +621,6 @@ proc_options(argc, argv)
 	    }
 	    break;
 
-	  case '*':
-	  case ' ':
-	    if (s[1] == '-') s+=2;
-	    break;
-
 	  default:
 	    fprintf(stderr, "%s: invalid option -%c  (-h will show valid options)\n",
 		    origargv[0], *s);
