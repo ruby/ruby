@@ -808,7 +808,7 @@ AC_SUBST(DLEXT2)dnl
 AC_SUBST(LIBEXT)dnl
 
 STATIC=
-: ${LIBPATHFLAG=" -L'%s'"}
+: ${LIBPATHFLAG=' -L"%s"'}
 : ${PATHFLAG=''}
 
 if test "$with_dln_a_out" != yes; then

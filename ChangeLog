@@ -1,3 +1,8 @@
+Mon Jun 28 14:57:56 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in, lib/mkmf.rb (LIBPATHFLAG): use double quotes due to
+	  DOSISH compilers.  [ruby-core:03107]
+
 Mon Jun 28 00:35:29 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* sample/drb/*.rb: using 'DRb.thread.join' instead of 'gets'
