@@ -192,7 +192,7 @@ module WEBrick
       meta["CONTENT_LENGTH"]    = cl if cl.to_i > 0
       meta["CONTENT_TYPE"]      = ct.dup if ct
       meta["GATEWAY_INTERFACE"] = "CGI/1.1"
-      meta["PATH_INFO"]         = @path_info.dup
+      meta["PATH_INFO"]         = @path_info ? @path_info.dup : ""
      #meta["PATH_TRANSLATED"]   = nil      # no plan to be provided
       meta["QUERY_STRING"]      = @query_string ? @query_string.dup : ""
       meta["REMOTE_ADDR"]       = @peeraddr[3]
