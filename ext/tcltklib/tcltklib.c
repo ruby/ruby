@@ -69,15 +69,20 @@ Tcl_Interp  *current_interp;
  *  'timer_tick' is a limit of one term of thread scheduling. 
  *  If 'timer_tick' == 0, then not use the timer for thread scheduling.
  */
-#define DEFAULT_EVENT_LOOP_MAX  800/*counts*/
-#define DEFAULT_NO_EVENT_TICK    10/*counts*/
-#define DEFAULT_TIMER_TICK        0/*milliseconds*/
-#define DEFAULT_INTERRUPT_TIME  200/*milliseconds*/
+#define DEFAULT_EVENT_LOOP_MAX    800/*counts*/
+#define DEFAULT_NO_EVENT_TICK      10/*counts*/
+#define DEFAULT_NO_EVENT_WAIT      20/*milliseconds ( 1 -- 999 ) */
+#define WATCHDOG_INTERVAL          10/*milliseconds ( 1 -- 999 ) */
+#define DEFAULT_TIMER_TICK          0/*milliseconds*/
+#define NO_THREAD_INTERRUPT_TIME  200/*milliseconds*/
+
 static int event_loop_max = DEFAULT_EVENT_LOOP_MAX;
 static int no_event_tick  = DEFAULT_NO_EVENT_TICK;
+static int no_event_wait  = DEFAULT_NO_EVENT_WAIT;
 static int timer_tick     = DEFAULT_TIMER_TICK;
 static int req_timer_tick = DEFAULT_TIMER_TICK;
 static int run_timer_flag = 0;
+
 
 #if TCL_MAJOR_VERSION >= 8
 static int ip_ruby _((ClientData, Tcl_Interp *, int, Tcl_Obj *CONST*));
@@ -180,6 +185,10 @@ lib_mainloop_core(check_root_widget)
   VALUE current = eventloop_thread;
   int check = (check_root_widget == Qtrue);
   int tick_counter;
+  struct timeval t;
+
+  t.tv_sec = (time_t)0;
+  t.tv_usec = (time_t)(no_event_wait*1000.0);
 
   Tk_DeleteTimerHandler(timer_token);
   run_timer_flag = 0;
@@ -194,7 +203,7 @@ lib_mainloop_core(check_root_widget)
     if (rb_thread_alone()) {
       DUMP1("no other thread");
       if (timer_tick == 0) {
-	timer_tick = DEFAULT_INTERRUPT_TIME;
+	timer_tick = NO_THREAD_INTERRUPT_TIME;
 	timer_token = Tk_CreateTimerHandler(timer_tick, _timer_for_tcl, 
 					    (ClientData)0);
       }
@@ -219,6 +228,13 @@ lib_mainloop_core(check_root_widget)
 	  tick_counter++;
 	} else {
 	  tick_counter += no_event_tick;
+
+	  DUMP1("check Root Widget");
+	  if (check && Tk_GetNumMainWindows() == 0) {
+	    return Qnil;
+	  }
+
+	  rb_thread_wait_for(t);
 	}
 
 	if (watchdog_thread != 0 && eventloop_thread != current) {
@@ -303,6 +319,10 @@ lib_watchdog_core(check_rootwidget)
     VALUE evloop;
     int   check = (check_rootwidget == Qtrue);
     ID    stop = rb_intern("stop?");
+    struct timeval t;
+
+    t.tv_sec  = (time_t)0;
+    t.tv_usec = (time_t)((WATCHDOG_INTERVAL)*1000.0);
 
     /* check other watchdog thread */
     if (watchdog_thread != 0) {
@@ -325,7 +345,8 @@ lib_watchdog_core(check_rootwidget)
 	DUMP2("create new eventloop thread %lx", evloop);
 	rb_thread_run(evloop);
       } else {
-	rb_thread_schedule();
+	rb_thread_wait_for(t);
+	/* rb_thread_schedule(); */
       }
     } while(!check || Tk_GetNumMainWindows() != 0);
 
