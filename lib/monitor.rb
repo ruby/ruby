@@ -93,21 +93,20 @@ module MonitorMixin
       rescue Timeout
 	@waiters.delete(Thread.current)
       ensure
+	Thread.critical = true
 	if timeout && timeout_thread.alive?
 	  Thread.kill(timeout_thread)
 	end
+	while @monitor.mon_owner &&
+	    @monitor.mon_owner != Thread.current
+	  @monitor.mon_waiting_queue.push(Thread.current)
+	  Thread.stop
+	  Thread.critical = true
+	end
+	@monitor.mon_owner = Thread.current
+	@monitor.mon_count = count
+	Thread.critical = false
       end
-      
-      Thread.critical = true
-      while @monitor.mon_owner &&
-	  @monitor.mon_owner != Thread.current
-	@monitor.mon_waiting_queue.push(Thread.current)
-	Thread.stop
-	Thread.critical = true
-      end
-      @monitor.mon_owner = Thread.current
-      @monitor.mon_count = count
-      Thread.critical = false
     end
     
     def wait_while
