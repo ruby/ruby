@@ -1850,6 +1850,16 @@ uv_to_utf8(buf, uv)
 #endif
 }
 
+static const long utf8_limits[] = {
+    0x0,			/* 1 */
+    0x80,			/* 2 */
+    0x800,			/* 3 */
+    0x1000,			/* 4 */
+    0x200000,			/* 5 */
+    0x4000000,			/* 6 */
+    0x80000000,			/* 7 */
+};
+
 static unsigned long
 utf8_to_uv(p, lenp)
     char *p;
@@ -1882,7 +1892,6 @@ utf8_to_uv(p, lenp)
 	return 0xfffd;
     }
     *lenp = n--;
-
     if (n != 0) {
 	while (n--) {
 	    c = *p++ & 0xff;
@@ -1893,18 +1902,14 @@ utf8_to_uv(p, lenp)
 	    }
 	    else {
 		c &= 0x3f;
-		if (uv == 0 && c == 0) {
-		    int i;
-
-		    for (i=0; n-i>0 && (p[i] & 0x3f) == 0; i++)
-			;
-		    rb_warning("redundant UTF-8 sequence (skip %d bytes)", i+1);
-		    n -= i;
-		    p += i;
-		    continue;
-		}
 		uv = uv << 6 | c;
 	    }
+	}
+    }
+    n = *lenp - 1;
+    if (n < 6) {
+	if (uv < utf8_limits[n] || utf8_limits[n+1] <= uv) {
+	    rb_warning("redundant UTF-8 sequence");
 	}
     }
     return uv;

@@ -11,7 +11,7 @@ ChangeLog.pre1_1
 Makefile
 README.fat-patch
 README.v6
-a.rb
+README.atheos
 archive
 autom4te*.cache
 automake

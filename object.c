@@ -119,6 +119,7 @@ copy_object(dest, obj)
     if (FL_TEST(obj, FL_EXIVAR)) {
 	rb_copy_generic_ivar(dest, obj);
     }
+    rb_gc_copy_finalizer(dest, obj);
     switch (TYPE(obj)) {
       case T_OBJECT:
       case T_CLASS:

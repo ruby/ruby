@@ -1,3 +1,9 @@
+Wed Dec  4 16:37:11 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (copy_object): copy finalizers as well if any.
+
+	* gc.c (rb_gc_copy_finalizer): new function to copy finalizers.
+
 Tue Dec  3 01:13:41 2002  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pp.rb (PP.singleline_pp): new method.

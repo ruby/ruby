@@ -1475,6 +1475,22 @@ define_final(argc, argv, os)
     return proc;
 }
 
+void
+rb_gc_copy_finalizer(dest, obj)
+    VALUE dest, obj;
+{
+    VALUE table;
+
+    if (!finalizer_table) return;
+    if (!FL_TEST(obj, FL_FINALIZE)) return;
+    if (FL_TEST(dest, FL_FINALIZE)) {
+	rb_warn("copy_finalizer: descarding old finalizers");
+    }
+    if (st_lookup(finalizer_table, obj, &table)) {
+	st_insert(finalizer_table, dest, table);
+    }
+}
+
 static VALUE
 run_single_final(args)
     VALUE *args;
