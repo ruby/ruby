@@ -58,7 +58,6 @@ module IRB
       @current_job = irb
       th.run
       Thread.stop
-      p "X"
       @current_job = irb(Thread.current)
     end
 
@@ -218,9 +217,9 @@ module IRB
       when :IN_LOAD
 	IRB.irb_abort(self, LoadAbort)
       when :IN_IRB
-	# ignore (JP: 何もしない.)
+	# ignore
       else
-	# ignore (JP: その他の場合も何もしない.)
+	# ignore 
       end
     end
   end

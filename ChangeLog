@@ -1,3 +1,7 @@
+Mon May 21 15:26:05 JST 2001  Keiju Ishitsuka <keiju@ishitsuka.com>
+	* lib/irb/multi-irb.rb
+	  delete japanese messages.
+
 Mon May 21 13:15:25 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (rb_big2str): t should be protected from GC.
