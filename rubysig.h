@@ -53,9 +53,9 @@ typedef int rb_atomic_t;
     rb_trap_immediate = trap_immediate;\
 } while (0)
 #endif
-EXTERN rb_atomic_t rb_trap_immediate;
+RUBY_EXTERN rb_atomic_t rb_trap_immediate;
 
-EXTERN int rb_prohibit_interrupt;
+RUBY_EXTERN int rb_prohibit_interrupt;
 #define DEFER_INTS (rb_prohibit_interrupt++)
 #define ALLOW_INTS do {\
     rb_prohibit_interrupt--;\
@@ -65,13 +65,13 @@ EXTERN int rb_prohibit_interrupt;
 
 VALUE rb_with_disable_interrupt _((VALUE(*)(ANYARGS),VALUE));
 
-EXTERN rb_atomic_t rb_trap_pending;
+RUBY_EXTERN rb_atomic_t rb_trap_pending;
 void rb_trap_restore_mask _((void));
 
-EXTERN int rb_thread_critical;
+RUBY_EXTERN int rb_thread_critical;
 void rb_thread_schedule _((void));
 #if defined(HAVE_SETITIMER) && !defined(__BOW__)
-EXTERN int rb_thread_pending;
+RUBY_EXTERN int rb_thread_pending;
 # define CHECK_INTS do {\
     if (!rb_prohibit_interrupt) {\
 	if (rb_trap_pending) rb_trap_exec();\
@@ -81,7 +81,7 @@ EXTERN int rb_thread_pending;
 } while (0)
 #else
 /* pseudo preemptive thread switching */
-EXTERN int rb_thread_tick;
+RUBY_EXTERN int rb_thread_tick;
 #define THREAD_TICK 500
 #define CHECK_INTS do {\
     if (!rb_prohibit_interrupt) {\

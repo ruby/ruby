@@ -1169,15 +1169,16 @@ case "$target_os" in
 	cygwin*)
 	    RUBY_SO_NAME=$target_os-'$(RUBY_INSTALL_NAME)'${MAJOR}${MINOR}
 	    AC_LIBOBJ([strftime])
-	    CCDLFLAGS=-DUSEIMPORTLIB ;;
+	    ;;
 	mingw*)
 	    RUBY_SO_NAME=msvcrt-'$(RUBY_INSTALL_NAME)'${MAJOR}${MINOR}
 	    AC_LIBOBJ([win32])
 	    COMMON_LIBS=m
 	    COMMON_MACROS="WIN32_LEAN_AND_MEAN="
 	    COMMON_HEADERS="windows.h winsock.h"
-	    CCDLFLAGS=-DIMPORT ;;
+	    ;;
 	esac
+	XCFLAGS="$XCFLAGS -DRUBY_EXPORT"
 	if test x"$enable_shared" = xyes; then
 	    LIBRUBY_SO='$(RUBY_SO_NAME)'.dll
 	    LIBRUBY_DLDFLAGS='-Wl,--out-implib=$(LIBRUBY) $(RUBYDEF)'

@@ -124,7 +124,7 @@ VALUE rb_singleton_class _((VALUE));
 int rb_cmpint _((VALUE));
 /* enum.c */
 /* error.c */
-EXTERN int ruby_nerrs;
+RUBY_EXTERN int ruby_nerrs;
 VALUE rb_exc_new _((VALUE, const char*, long));
 VALUE rb_exc_new2 _((VALUE, const char*));
 VALUE rb_exc_new3 _((VALUE, VALUE));
@@ -137,7 +137,7 @@ NORETURN(void rb_load_fail _((char*)));
 NORETURN(void rb_error_frozen _((char*)));
 void rb_check_frozen _((VALUE));
 /* eval.c */
-EXTERN struct RNode *ruby_current_node;
+RUBY_EXTERN struct RNode *ruby_current_node;
 void ruby_set_current_source _((void));
 NORETURN(void rb_exc_raise _((VALUE)));
 NORETURN(void rb_exc_fatal _((VALUE)));
@@ -244,11 +244,11 @@ VALUE rb_hash_delete _((VALUE,VALUE));
 int rb_path_check _((char*));
 int rb_env_path_tainted _((void));
 /* io.c */
-EXTERN VALUE rb_fs;
-EXTERN VALUE rb_output_fs;
-EXTERN VALUE rb_rs;
-EXTERN VALUE rb_default_rs;
-EXTERN VALUE rb_output_rs;
+RUBY_EXTERN VALUE rb_fs;
+RUBY_EXTERN VALUE rb_output_fs;
+RUBY_EXTERN VALUE rb_rs;
+RUBY_EXTERN VALUE rb_default_rs;
+RUBY_EXTERN VALUE rb_output_rs;
 VALUE rb_io_write _((VALUE, VALUE));
 VALUE rb_io_gets _((VALUE));
 VALUE rb_io_getc _((VALUE));
@@ -299,8 +299,8 @@ VALUE rb_Array _((VALUE));
 double rb_cstr_to_dbl _((const char*, int));
 double rb_str_to_dbl _((VALUE, int));
 /* parse.y */
-EXTERN int   ruby_sourceline;
-EXTERN char *ruby_sourcefile;
+RUBY_EXTERN int   ruby_sourceline;
+RUBY_EXTERN char *ruby_sourcefile;
 int ruby_yyparse _((void));
 ID rb_id_attrset _((ID));
 void rb_parser_append_print _((void));
@@ -344,8 +344,8 @@ int rb_reg_options _((VALUE));
 void rb_set_kcode _((const char*));
 const char* rb_get_kcode _((void));
 /* ruby.c */
-EXTERN VALUE rb_argv;
-EXTERN VALUE rb_argv0;
+RUBY_EXTERN VALUE rb_argv;
+RUBY_EXTERN VALUE rb_argv0;
 void rb_load_file _((char*));
 void ruby_script _((char*));
 void ruby_prog_init _((void));

@@ -225,7 +225,7 @@ void rb_check_safe_str _((VALUE));
 #define Check_SafeStr(v) rb_check_safe_str((VALUE)(v))
 
 void rb_secure _((int));
-EXTERN int ruby_safe_level;
+RUBY_EXTERN int ruby_safe_level;
 #define rb_safe_level() (ruby_safe_level)
 void rb_set_safe_level _((int));
 
@@ -511,7 +511,7 @@ VALUE rb_iv_set _((VALUE, const char*, VALUE));
 
 VALUE rb_equal _((VALUE,VALUE));
 
-EXTERN VALUE ruby_verbose, ruby_debug;
+RUBY_EXTERN VALUE ruby_verbose, ruby_debug;
 
 NORETURN(void rb_raise __((VALUE, const char*, ...)));
 NORETURN(void rb_fatal __((const char*, ...)));
@@ -541,69 +541,69 @@ void ruby_init _((void));
 void ruby_options _((int, char**));
 void ruby_run _((void));
 
-EXTERN VALUE rb_mKernel;
-EXTERN VALUE rb_mComparable;
-EXTERN VALUE rb_mEnumerable;
-EXTERN VALUE rb_mPrecision;
-EXTERN VALUE rb_mErrno;
-EXTERN VALUE rb_mFileTest;
-EXTERN VALUE rb_mGC;
-EXTERN VALUE rb_mMath;
-EXTERN VALUE rb_mProcess;
+RUBY_EXTERN VALUE rb_mKernel;
+RUBY_EXTERN VALUE rb_mComparable;
+RUBY_EXTERN VALUE rb_mEnumerable;
+RUBY_EXTERN VALUE rb_mPrecision;
+RUBY_EXTERN VALUE rb_mErrno;
+RUBY_EXTERN VALUE rb_mFileTest;
+RUBY_EXTERN VALUE rb_mGC;
+RUBY_EXTERN VALUE rb_mMath;
+RUBY_EXTERN VALUE rb_mProcess;
 
-EXTERN VALUE rb_cObject;
-EXTERN VALUE rb_cArray;
-EXTERN VALUE rb_cBignum;
-EXTERN VALUE rb_cClass;
-EXTERN VALUE rb_cDir;
-EXTERN VALUE rb_cData;
-EXTERN VALUE rb_cFalseClass;
-EXTERN VALUE rb_cFile;
-EXTERN VALUE rb_cFixnum;
-EXTERN VALUE rb_cFloat;
-EXTERN VALUE rb_cHash;
-EXTERN VALUE rb_cInteger;
-EXTERN VALUE rb_cIO;
-EXTERN VALUE rb_cModule;
-EXTERN VALUE rb_cNilClass;
-EXTERN VALUE rb_cNumeric;
-EXTERN VALUE rb_cProc;
-EXTERN VALUE rb_cRange;
-EXTERN VALUE rb_cRegexp;
-EXTERN VALUE rb_cString;
-EXTERN VALUE rb_cSymbol;
-EXTERN VALUE rb_cThread;
-EXTERN VALUE rb_cTime;
-EXTERN VALUE rb_cTrueClass;
-EXTERN VALUE rb_cStruct;
+RUBY_EXTERN VALUE rb_cObject;
+RUBY_EXTERN VALUE rb_cArray;
+RUBY_EXTERN VALUE rb_cBignum;
+RUBY_EXTERN VALUE rb_cClass;
+RUBY_EXTERN VALUE rb_cDir;
+RUBY_EXTERN VALUE rb_cData;
+RUBY_EXTERN VALUE rb_cFalseClass;
+RUBY_EXTERN VALUE rb_cFile;
+RUBY_EXTERN VALUE rb_cFixnum;
+RUBY_EXTERN VALUE rb_cFloat;
+RUBY_EXTERN VALUE rb_cHash;
+RUBY_EXTERN VALUE rb_cInteger;
+RUBY_EXTERN VALUE rb_cIO;
+RUBY_EXTERN VALUE rb_cModule;
+RUBY_EXTERN VALUE rb_cNilClass;
+RUBY_EXTERN VALUE rb_cNumeric;
+RUBY_EXTERN VALUE rb_cProc;
+RUBY_EXTERN VALUE rb_cRange;
+RUBY_EXTERN VALUE rb_cRegexp;
+RUBY_EXTERN VALUE rb_cString;
+RUBY_EXTERN VALUE rb_cSymbol;
+RUBY_EXTERN VALUE rb_cThread;
+RUBY_EXTERN VALUE rb_cTime;
+RUBY_EXTERN VALUE rb_cTrueClass;
+RUBY_EXTERN VALUE rb_cStruct;
 
-EXTERN VALUE rb_eException;
-EXTERN VALUE rb_eStandardError;
-EXTERN VALUE rb_eSystemExit;
-EXTERN VALUE rb_eInterrupt;
-EXTERN VALUE rb_eSignal;
-EXTERN VALUE rb_eFatal;
-EXTERN VALUE rb_eArgError;
-EXTERN VALUE rb_eEOFError;
-EXTERN VALUE rb_eIndexError;
-EXTERN VALUE rb_eRangeError;
-EXTERN VALUE rb_eIOError;
-EXTERN VALUE rb_eRuntimeError;
-EXTERN VALUE rb_eSecurityError;
-EXTERN VALUE rb_eSystemCallError;
-EXTERN VALUE rb_eTypeError;
-EXTERN VALUE rb_eZeroDivError;
-EXTERN VALUE rb_eNotImpError;
-EXTERN VALUE rb_eNoMemError;
-EXTERN VALUE rb_eNoMethodError;
-EXTERN VALUE rb_eFloatDomainError;
+RUBY_EXTERN VALUE rb_eException;
+RUBY_EXTERN VALUE rb_eStandardError;
+RUBY_EXTERN VALUE rb_eSystemExit;
+RUBY_EXTERN VALUE rb_eInterrupt;
+RUBY_EXTERN VALUE rb_eSignal;
+RUBY_EXTERN VALUE rb_eFatal;
+RUBY_EXTERN VALUE rb_eArgError;
+RUBY_EXTERN VALUE rb_eEOFError;
+RUBY_EXTERN VALUE rb_eIndexError;
+RUBY_EXTERN VALUE rb_eRangeError;
+RUBY_EXTERN VALUE rb_eIOError;
+RUBY_EXTERN VALUE rb_eRuntimeError;
+RUBY_EXTERN VALUE rb_eSecurityError;
+RUBY_EXTERN VALUE rb_eSystemCallError;
+RUBY_EXTERN VALUE rb_eTypeError;
+RUBY_EXTERN VALUE rb_eZeroDivError;
+RUBY_EXTERN VALUE rb_eNotImpError;
+RUBY_EXTERN VALUE rb_eNoMemError;
+RUBY_EXTERN VALUE rb_eNoMethodError;
+RUBY_EXTERN VALUE rb_eFloatDomainError;
 
-EXTERN VALUE rb_eScriptError;
-EXTERN VALUE rb_eNameError;
-EXTERN VALUE rb_eSyntaxError;
-EXTERN VALUE rb_eLoadError;
+RUBY_EXTERN VALUE rb_eScriptError;
+RUBY_EXTERN VALUE rb_eNameError;
+RUBY_EXTERN VALUE rb_eSyntaxError;
+RUBY_EXTERN VALUE rb_eLoadError;
 
-EXTERN VALUE rb_defout, rb_stdin, rb_stdout, rb_stderr, ruby_errinfo;
+RUBY_EXTERN VALUE rb_defout, rb_stdin, rb_stdout, rb_stderr, ruby_errinfo;
 
 static inline VALUE
 #if defined(HAVE_PROTOTYPES)

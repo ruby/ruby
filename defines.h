@@ -124,17 +124,19 @@ void xfree _((void*));
 #include "vms/vms.h"
 #endif
 
-#if defined __CYGWIN__
-# undef EXTERN
-# if defined USEIMPORTLIB
-#  define EXTERN extern __declspec(dllimport)
-# else
-#  define EXTERN extern __declspec(dllexport)
+#undef RUBY_EXTERN
+#if defined __CYGWIN__ || defined _WIN32
+# ifndef RUBY_EXPORT
+#  define RUBY_EXTERN extern __declspec(dllimport)
 # endif
 #endif
 
+#ifndef RUBY_EXTERN
+#define RUBY_EXTERN extern
+#endif
+
 #ifndef EXTERN
-#define EXTERN extern
+#define EXTERN RUBY_EXTERN	/* deprecated */
 #endif
 
 #if defined(sparc) || defined(__sparc__)
