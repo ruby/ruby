@@ -1,3 +1,9 @@
+Thu Nov  1 14:08:42 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_big_aref): idx may be a Bignum.
+
+	* numeric.c (fix_aref): negative index must return zero.
+
 Wed Oct 31 16:59:25 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (exec_under): should initialize ruby_frame->self;

@@ -1316,9 +1316,15 @@ rb_big_aref(x, y)
     VALUE x, y;
 {
     BDIGIT *xds;
-    int shift = NUM2INT(y);
+    int shift;
     int s1, s2;
 
+    if (TYPE(y) == T_BIGNUM) {
+	if (!RBIGNUM(y)->sign || RBIGNUM(x)->sign)
+	    return INT2FIX(0);
+	return INT2FIX(1);
+    }
+    shift = NUM2INT(y);
     if (shift < 0) return INT2FIX(0);
     s1 = shift/BITSPERDIG;
     s2 = shift%BITSPERDIG;
