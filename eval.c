@@ -5027,7 +5027,6 @@ rb_feature_p(feature, wait)
 {
     VALUE *p, *pend;
     char *f;
-    int len;
 
     p = RARRAY(rb_features)->ptr;
     pend = p + RARRAY(rb_features)->len;
@@ -5036,12 +5035,12 @@ rb_feature_p(feature, wait)
 	if (strcmp(f, feature) == 0) {
 	    goto load_wait;
 	}
-	len = strlen(f);
 	if (strncmp(f, feature, strlen(feature)) == 0) {
-	    if (strcmp(f+len, ".so") == 0) {
+	    char *ext = strrchr(f, '.');
+	    if (strcmp(ext, ".so") == 0) {
 		return Qtrue;
 	    }
-	    if (strcmp(f+len, ".rb") == 0) {
+	    if (strcmp(ext, ".rb") == 0) {
 		if (wait) goto load_wait;
 		return Qtrue;
 	    }
