@@ -244,9 +244,9 @@ ruby_dup(orig)
 }
 
 static void
-io_fflush(f, path)
+io_fflush(f, fptr)
     FILE *f;
-    const char *path;
+    OpenFile *fptr;
 {
     int n;
 
@@ -254,7 +254,7 @@ io_fflush(f, path)
     TRAP_BEG;
     n = fflush(f);
     TRAP_END;
-    if (n == EOF) rb_sys_fail(path);
+    if (n == EOF) rb_sys_fail(fptr->path);
     fptr->mode &= ~FMODE_WBUF;
 }
 
@@ -299,7 +299,7 @@ io_write(io, str)
     }
 #endif
     if (fptr->mode & FMODE_SYNC) {
-	io_fflush(f, fptr->path);
+	io_fflush(f, fptr);
     }
     else {
 	fptr->mode |= FMODE_WBUF;
@@ -333,9 +333,8 @@ rb_io_flush(io)
     GetOpenFile(io, fptr);
     rb_io_check_writable(fptr);
     f = GetWriteFile(fptr);
-    
-    io_fflush(f, fptr->path);
-    fptr->mode &= ~FMODE_WBUF;
+
+    io_fflush(f, fptr);
 
     return io;
 }
@@ -484,9 +483,8 @@ rb_io_fsync(io)
     GetOpenFile(io, fptr);
     rb_io_check_writable(fptr);
     f = GetWriteFile(fptr);
-    
-    io_fflush(f, fptr->path);
-    fptr->mode &= ~FMODE_WBUF;
+
+    io_fflush(f, fptr);
     if (fsync(fileno(f)) < 0)
 	rb_sys_fail(fptr->path);
     return INT2FIX(0);
@@ -1477,7 +1475,7 @@ rb_io_binmode_flags(mode)
     int flags;
 
     switch (mode & (O_RDONLY|O_WRONLY|O_RDWR)) {
-      case O_RDONLY:	
+      case O_RDONLY:
 	flags = FMODE_READABLE;
 	break;
       case O_WRONLY:
@@ -1543,7 +1541,7 @@ rb_io_binmode_mode(flags, mode)
     char *p = mode;
 
     switch (flags & (O_RDONLY|O_WRONLY|O_RDWR)) {
-      case O_RDONLY:	
+      case O_RDONLY:
 	*p++ = 'r';
 	break;
       case O_WRONLY:
@@ -2075,12 +2073,11 @@ io_reopen(io, nfile)
 	pos = ftello(orig->f);
     }
     if (orig->f2) {
-	io_fflush(orig->f2, orig->path);
+	io_fflush(orig->f2, orig);
     }
     else if (orig->mode & FMODE_WRITABLE) {
-	io_fflush(orig->f, orig->path);
+	io_fflush(orig->f, orig);
     }
-    orig->mode &= ~FMODE_WBUF;
     rb_thread_fd_close(fileno(fptr->f));
 
     /* copy OpenFile structure */
@@ -2205,12 +2202,11 @@ rb_io_clone(io)
     MakeOpenFile(clone, fptr);
 
     if (orig->f2) {
-	io_fflush(orig->f2, orig->path);
+	io_fflush(orig->f2, orig);
     }
     else if (orig->mode & FMODE_WRITABLE) {
-	io_fflush(orig->f, orig->path);
+	io_fflush(orig->f, orig);
     }
-    orig->mode &= ~FMODE_WBUF;
 
     /* copy OpenFile structure */
     fptr->mode = orig->mode;
@@ -2335,10 +2331,8 @@ rb_io_putc(io, ch)
 
     if (fputc(c, f) == EOF)
 	rb_sys_fail(fptr->path);
-    fptr->mode |= FMODE_WBUF;
     if (fptr->mode & FMODE_SYNC) {
-	io_fflush(f, fptr->path);
-	fptr->mode &= ~FMODE_WBUF;
+	io_fflush(f, fptr);
     }
     else {
 	fptr->mode |= FMODE_WBUF;
@@ -2593,7 +2587,7 @@ rb_io_s_alloc(klass)
 {
     NEWOBJ(io, struct RFile);
     OBJSETUP(io, klass, T_FILE);
-    
+
     io->fptr = 0;
 
     return (VALUE)io;

@@ -20,6 +20,10 @@ Fri Mar 29 15:49:29 2002  Usaku Nakamura <usa@ruby-lang.org>
 
 	* win32/README.win32: follow recent changes.
 
+Fri Mar 29 14:44:05 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (io_fflush): DRY patch from /Christoph applied.
+
 Thu Mar 28 18:58:13 2002  Usaku Nakamura <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (config.status): reflect user defined $CC in
