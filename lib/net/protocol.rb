@@ -146,8 +146,8 @@ module Net
 
     def connect
       conn_socket @address, @port
-      conn_command @socket
       on_connect
+      conn_command @socket
     end
 
     def re_connect
