@@ -220,7 +220,7 @@ kcode_set_option(re)
 	re_mbcinit(MBCTYPE_UTF8);
 	break;
     }
-}	  
+}
 
 static void
 kcode_reset_option()
@@ -289,7 +289,7 @@ rb_reg_expr_str(str, s, len)
 	rb_str_buf_cat(str, s, len);
     }
     else {
-	p = s; 
+	p = s;
 	while (p<pend) {
 	    if (*p == '\\') {
 		int n = mbclen(p[1]) + 1;
@@ -342,7 +342,7 @@ rb_reg_desc(s, len, re)
 	    rb_str_buf_cat2(str, "i");
 	if (RREGEXP(re)->ptr->options & RE_OPTION_EXTENDED)
 	    rb_str_buf_cat2(str, "x");
-	
+
 	if (FL_TEST(re, KCODE_FIXED)) {
 	    switch ((RBASIC(re)->flags & KCODE_MASK)) {
 	      case KCODE_NONE:
@@ -488,7 +488,7 @@ rb_reg_to_s(re)
 	    kcode_set_option(re);
 	    r = re_alloc_pattern(&rp);
 	    if (r == 0) {
-	      err = (re_compile_pattern(++ptr, len -= 2, rp, NULL) != 0);
+		err = (re_compile_pattern(++ptr, len -= 2, rp, NULL) != 0);
 	    }
 	    kcode_reset_option();
 	    re_free_pattern(rp);
@@ -635,10 +635,10 @@ make_regexp(s, len, flags)
 
     r = re_alloc_pattern(&rp);
     if (r) {
-      re_error_code_to_str((UChar* )err, r);
-      rb_reg_raise(s, len, err, 0);
+	re_error_code_to_str((UChar* )err, r);
+	rb_reg_raise(s, len, err, 0);
     }
-      
+
     if (flags) {
 	rp->options = flags;
     }
@@ -935,7 +935,7 @@ rb_reg_search(re, str, pos, reverse)
 	match = match_alloc(rb_cMatch);
     }
     else {
-	if (rb_safe_level() >= 3) 
+	if (rb_safe_level() >= 3)
 	    OBJ_TAINT(match);
 	else
 	    FL_UNSET(match, FL_TAINT);
@@ -1101,7 +1101,7 @@ match_array(match, start)
     VALUE target = RMATCH(match)->str;
     int i;
     int taint = OBJ_TAINTED(match);
-    
+
     for (i=start; i<regs->num_regs; i++) {
 	if (regs->beg[i] == -1) {
 	    rb_ary_push(ary, Qnil);
@@ -1454,7 +1454,7 @@ rb_reg_hash(re)
 	hashval = hashval * 33 + *p++;
     }
     hashval = hashval + (hashval>>5);
-    
+
     return INT2FIX(hashval);
 }
 
