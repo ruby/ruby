@@ -172,7 +172,7 @@ module Generators
       list = cls.method_list
       unless @options.show_all
         list = list.find_all do |m|
-          m.visibility == :public || m.force_documentation 
+          m.visibility == :public || m.visibility == :protected || m.force_documentation
         end
       end
 

@@ -410,7 +410,11 @@ Init_etc()
     rb_global_variable(&sPasswd);
 
 #ifdef HAVE_GETGRENT
-    sGroup = rb_struct_define("Group", "name", "passwd", "gid", "mem", NULL);
+    sGroup = rb_struct_define("Group", "name",
+#ifdef HAVE_ST_GR_PASSWD
+			      "passwd",
+#endif
+			      "gid", "mem", NULL);
     rb_global_variable(&sGroup);
 #endif
 }

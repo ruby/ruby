@@ -302,7 +302,8 @@ The variable ruby-indent-level controls the amount of indentation.
 (defun ruby-expr-beg (&optional option)
   (save-excursion
     (store-match-data nil)
-    (let ((space (skip-chars-backward " \t")))
+    (let ((start (point))
+	  (space (skip-chars-backward " \t")))
       (cond
        ((bolp) t)
        ((progn
@@ -311,7 +312,8 @@ The variable ruby-indent-level controls the amount of indentation.
 	       (or (eq (char-syntax (char-before (point))) ?w)
 		   (ruby-special-char-p))))
 	nil)
-       ((or (looking-at ruby-operator-re)
+       ((or (goto-char start)
+	    (looking-at ruby-operator-re)
 	    (looking-at "[\\[({,;]")
 	    (and (or (not (eq option 'heredoc))
 		     (< space 0))

@@ -4531,14 +4531,15 @@ rb_str_justify(argc, argv, str, jflag)
 
 /*
  *  call-seq:
- *     str.ljust(integer)   => new_str
+ *     str.ljust(integer, padstr=' ')   => new_str
  *  
  *  If <i>integer</i> is greater than the length of <i>str</i>, returns a new
  *  <code>String</code> of length <i>integer</i> with <i>str</i> left justified
- *  and space padded; otherwise, returns <i>str</i>.
+ *  and padded with <i>padstr</i>; otherwise, returns <i>str</i>.
  *     
- *     "hello".ljust(4)    #=> "hello"
- *     "hello".ljust(20)   #=> "hello               "
+ *     "hello".ljust(4)            #=> "hello"
+ *     "hello".ljust(20)           #=> "hello               "
+ *     "hello".ljust(20, '1234')   #=> "hello123412341234123"
  */
 
 static VALUE
@@ -4553,14 +4554,15 @@ rb_str_ljust(argc, argv, str)
 
 /*
  *  call-seq:
- *     str.rjust(integer)   => new_str
+ *     str.rjust(integer, padstr=' ')   => new_str
  *  
  *  If <i>integer</i> is greater than the length of <i>str</i>, returns a new
  *  <code>String</code> of length <i>integer</i> with <i>str</i> right justified
- *  and space padded; otherwise, returns <i>str</i>.
+ *  and padded with <i>padstr</i>; otherwise, returns <i>str</i>.
  *     
- *     "hello".rjust(4)    #=> "hello"
- *     "hello".rjust(20)   #=> "               hello"
+ *     "hello".rjust(4)            #=> "hello"
+ *     "hello".rjust(20)           #=> "               hello"
+ *     "hello".rjust(20, '1234')   #=> "123412341234123hello"
  */
 
 static VALUE
@@ -4575,14 +4577,15 @@ rb_str_rjust(argc, argv, str)
 
 /*
  *  call-seq:
- *     str.center(integer)   => new_str
+ *     str.center(integer, padstr)   => new_str
  *  
  *  If <i>integer</i> is greater than the length of <i>str</i>, returns a new
- *  <code>String</code> of length <i>integer</i> with <i>str</i> centered
- *  between spaces; otherwise, returns <i>str</i>.
+ *  <code>String</code> of length <i>integer</i> with <i>str</i> centered and
+ *  padded with <i>padstr</i>; otherwise, returns <i>str</i>.
  *     
- *     "hello".center(4)    #=> "hello"
- *     "hello".center(20)   #=> "       hello        "
+ *     "hello".center(4)         #=> "hello"
+ *     "hello".center(20)        #=> "       hello        "
+ *     "hello".center(20, '123') #=> "1231231hello12312312"
  */
 
 static VALUE
