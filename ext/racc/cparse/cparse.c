@@ -733,7 +733,7 @@ reduce0(val, data, self)
 
     /* calculate transition state */
     if (RARRAY(v->state)->len == 0)
-        rb_raise(RaccBug, "state stack unexpected empty");
+        rb_raise(RaccBug, "state stack unexpectedly empty");
     k2 = num_to_long(LAST_I(v->state));
     k1 = num_to_long(reduce_to) - v->nt_base;
     D_printf("(goto) k1=%ld\n", k1);

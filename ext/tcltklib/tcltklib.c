@@ -811,7 +811,7 @@ ip_ruby(clientData, interp, argc, argv)
 
     /* ruby command has 1 arg. */
     if (argc != 2) {
-	rb_raise(rb_eArgError, "wrong # of arguments (%d for 1)", argc);
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1)", argc);
     }
 
     /* get C string from Tcl object */

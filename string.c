@@ -1588,7 +1588,7 @@ rb_str_aref_m(argc, argv, str)
 	return rb_str_substr(str, NUM2LONG(argv[0]), NUM2LONG(argv[1]));
     }
     if (argc != 1) {
-	rb_raise(rb_eArgError, "wrong number of arguments(%d for 1)", argc);
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1)", argc);
     }
     return rb_str_aref(str, argv[0]);
 }
@@ -1782,7 +1782,7 @@ rb_str_aset_m(argc, argv, str)
 	return argv[2];
     }
     if (argc != 2) {
-	rb_raise(rb_eArgError, "wrong number of arguments(%d for 2)", argc);
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for 2)", argc);
     }
     return rb_str_aset(str, argv[0], argv[1]);
 }
@@ -1854,7 +1854,7 @@ rb_str_slice_bang(argc, argv, str)
     int i;
 
     if (argc < 1 || 2 < argc) {
-	rb_raise(rb_eArgError, "wrong number of arguments(%d for 1)", argc);
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1)", argc);
     }
     for (i=0; i<argc; i++) {
 	buf[i] = argv[i];
@@ -1928,7 +1928,7 @@ rb_str_sub_bang(argc, argv, str)
 	if (OBJ_TAINTED(repl)) tainted = 1;
     }
     else {
-	rb_raise(rb_eArgError, "wrong number of arguments(%d for 2)", argc);
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for 2)", argc);
     }
 
     pat = get_pat(argv[0], 1);
@@ -2032,7 +2032,7 @@ str_gsub(argc, argv, str, bang)
 	if (OBJ_TAINTED(repl)) tainted = 1;
     }
     else {
-	rb_raise(rb_eArgError, "wrong number of arguments(%d for 2)", argc);
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for 2)", argc);
     }
 
     pat = get_pat(argv[0], 1);

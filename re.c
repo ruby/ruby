@@ -1251,7 +1251,7 @@ match_select(argc, argv, match)
     VALUE match;
 {
     if (argc > 0) {
-	rb_raise(rb_eArgError, "wrong number arguments(%d for 0)", argc);
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)", argc);
     }
     else {
 	struct re_registers *regs = RMATCH(match)->regs;
@@ -1651,7 +1651,7 @@ rb_reg_initialize_m(argc, argv, self)
 
     rb_check_frozen(self);
     if (argc == 0 || argc > 3) {
-	rb_raise(rb_eArgError, "wrong number of argument");
+	rb_raise(rb_eArgError, "wrong number of arguments");
     }
     if (TYPE(argv[0]) == T_REGEXP) {
 	if (argc > 1) {

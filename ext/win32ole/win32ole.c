@@ -73,7 +73,7 @@
 #define OLEData_Get_Struct(obj, pole) {\
     Data_Get_Struct(obj, struct oledata, pole);\
     if(!pole->pDispatch) {\
-        rb_raise(rb_eRuntimeError, "Fail to get Dispatch Interface");\
+        rb_raise(rb_eRuntimeError, "failed to get Dispatch Interface");\
     }\
 }
 
@@ -769,7 +769,7 @@ ole_val2variant(val, var)
             if(pub) free(pub);
             if(psab) free(psab);
             if(pid) free(pid);
-            rb_raise(rb_eRuntimeError, "memory allocate error");
+            rb_raise(rb_eRuntimeError, "memory allocation error");
         }
         val1 = val;
         i = 0;
@@ -907,7 +907,7 @@ ole_variant2val(pvar)
             if(pID) free(pID);
             if(pLB) free(pLB);
             if(pUB) free(pUB);
-            rb_raise(rb_eRuntimeError, "memory allocate error");
+            rb_raise(rb_eRuntimeError, "memory allocation error");
         }
 
         obj = Qnil;
@@ -1361,7 +1361,7 @@ ole_create_dcom(argc, argv, self)
     if (!gole32)
         gole32 = LoadLibrary("OLE32");
     if (!gole32)
-        rb_raise(rb_eRuntimeError, "Fail to load OLE32.");
+        rb_raise(rb_eRuntimeError, "failed to load OLE32.");
     if (!gCoCreateInstanceEx)
         gCoCreateInstanceEx = (FNCOCREATEINSTANCEEX*)
             GetProcAddress(gole32, "CoCreateInstanceEx");
@@ -1388,7 +1388,7 @@ ole_create_dcom(argc, argv, self)
     SysFreeString(serverinfo.pwszName);
     if (FAILED(hr))
         ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, 
-                  "Fail to create DCOM server : `%s' in `%s'",
+                  "failed to create DCOM server : `%s' in `%s'",
                   StringValuePtr(ole),
                   StringValuePtr(host));
 
@@ -1415,7 +1415,7 @@ ole_bind_obj(moniker, argc, argv, self)
     hr = CreateBindCtx(0, &pBindCtx);
     if(FAILED(hr)) {
         ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, 
-                  "Fail to create bind context");
+                  "failed to create bind context");
     }
 
     pbuf  = ole_mb2wc(StringValuePtr(moniker), -1);
@@ -1492,7 +1492,7 @@ fole_s_connect(argc, argv, self)
     if(FAILED(hr)) {
         OLE_RELEASE(pUnknown);
         ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, 
-                  "Fail to create WIN32OLE server : `%s'", 
+                  "failed to create WIN32OLE server : `%s'", 
                   StringValuePtr(svr_name));
     }
 
@@ -1536,12 +1536,12 @@ fole_s_const_load(argc, argv, self)
         hr = pole->pDispatch->lpVtbl->GetTypeInfo(pole->pDispatch,
                                                   0, lcid, &pTypeInfo);
         if(FAILED(hr)) {
-            ole_raise(hr, rb_eRuntimeError, "fail to GetTypeInfo");
+            ole_raise(hr, rb_eRuntimeError, "failed to GetTypeInfo");
         }
         hr = pTypeInfo->lpVtbl->GetContainingTypeLib(pTypeInfo, &pTypeLib, &index);
         if(FAILED(hr)) {
             OLE_RELEASE(pTypeInfo);
-            ole_raise(hr, rb_eRuntimeError, "fail to GetContainingTypeLib");
+            ole_raise(hr, rb_eRuntimeError, "failed to GetContainingTypeLib");
         }
         OLE_RELEASE(pTypeInfo);
         if(TYPE(klass) != T_NIL) {
@@ -1561,7 +1561,7 @@ fole_s_const_load(argc, argv, self)
         hr = LoadTypeLibEx(pBuf, REGKIND_NONE, &pTypeLib);
         SysFreeString(pBuf);
         if (FAILED(hr))
-          ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Fail to LoadTypeLibEx");
+          ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to LoadTypeLibEx");
         if(TYPE(klass) != T_NIL) {
             ole_const_load(pTypeLib, klass, self);
         }
@@ -1717,11 +1717,11 @@ fole_s_show_help(argc, argv, self)
         helpfile = target;
     }
     if (TYPE(helpfile) != T_STRING) {
-        rb_raise(rb_eTypeError, "1st parametor must be (String|WIN32OLE_TYPE|WIN32OLE_METHOD).");
+        rb_raise(rb_eTypeError, "1st parameter must be (String|WIN32OLE_TYPE|WIN32OLE_METHOD).");
     }
     hwnd = ole_show_help(helpfile, helpcontext);
     if(hwnd == 0) {
-        rb_raise(rb_eRuntimeError, "fail to open help file:%s",
+        rb_raise(rb_eRuntimeError, "failed to open help file:%s",
                  StringValuePtr(helpfile));
     }
     return Qnil;
@@ -1775,7 +1775,7 @@ fole_initialize(argc, argv, self)
                           &IID_IDispatch, (void**)&pDispatch);
     if(FAILED(hr)) {
         ole_raise(hr, eWIN32OLE_RUNTIME_ERROR,
-                  "Fail to create WIN32OLE object from `%s'",
+                  "failed to create WIN32OLE object from `%s'",
                   StringValuePtr(svr_name));
     }
     
@@ -1876,7 +1876,7 @@ ole_invoke(argc, argv, self, wFlags)
     rb_scan_args(argc, argv, "1*", &cmd, &paramS);
     OLEData_Get_Struct(self, pole);
     if(!pole->pDispatch) {
-        rb_raise(rb_eRuntimeError, "Fail to get dispatch interface.");
+        rb_raise(rb_eRuntimeError, "failed to get dispatch interface.");
     }
     wcmdname = ole_mb2wc(StringValuePtr(cmd), -1);
     hr = pole->pDispatch->lpVtbl->GetIDsOfNames( pole->pDispatch, &IID_NULL,
@@ -2431,7 +2431,7 @@ fole_each(self)
 
     if (FAILED(hr)) {
         VariantClear(&result);
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Fail to get IEnum Interface");
+        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to get IEnum Interface");
     }
 
     if (V_VT(&result) == VT_UNKNOWN)
@@ -2444,7 +2444,7 @@ fole_each(self)
                                                          (void**)&pEnum);
     if (FAILED(hr) || !pEnum) {
         VariantClear(&result);
-        ole_raise(hr, rb_eRuntimeError, "Fail to get IEnum Interface");
+        ole_raise(hr, rb_eRuntimeError, "failed to get IEnum Interface");
     }
 
     VariantClear(&result);
@@ -2499,7 +2499,7 @@ ole_method_sub(self, pOwnerTypeInfo, pTypeInfo, name)
     VALUE method = Qnil;
     hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
     if (FAILED(hr)) {
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Fail to GetTypeAttr");
+        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to GetTypeAttr");
     }
     for(i = 0; i < pTypeAttr->cFuncs && method == Qnil; i++) {
         hr = pTypeInfo->lpVtbl->GetFuncDesc(pTypeInfo, i, &pFuncDesc);
@@ -2538,7 +2538,7 @@ olemethod_from_typeinfo(self, pTypeInfo, name)
     VALUE method = Qnil;
     hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
     if (FAILED(hr)) {
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Fail to GetTypeAttr");
+        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to GetTypeAttr");
     }
     method = ole_method_sub(self, 0, pTypeInfo, name);
     if (method != Qnil) {
@@ -2574,7 +2574,7 @@ ole_methods_sub(pOwnerTypeInfo, pTypeInfo, methods, mask)
     WORD i;
     hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
     if (FAILED(hr)) {
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Fail to GetTypeAttr");
+        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to GetTypeAttr");
     }
     for(i = 0; i < pTypeAttr->cFuncs; i++) {
         pstr = NULL;
@@ -2615,7 +2615,7 @@ ole_methods_from_typeinfo(pTypeInfo, mask)
     VALUE methods = rb_ary_new();
     hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
     if (FAILED(hr)) {
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Fail to GetTypeAttr");
+        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to GetTypeAttr");
     }
 
     ole_methods_sub(0, pTypeInfo, methods, mask);
@@ -2648,7 +2648,7 @@ typeinfo_from_ole(pole, ppti)
     HRESULT hr = pole->pDispatch->lpVtbl->GetTypeInfo(pole->pDispatch,
                                                       0, lcid, &pTypeInfo);
     if(FAILED(hr)) {
-        ole_raise(hr, rb_eRuntimeError, "fail to GetTypeInfo");
+        ole_raise(hr, rb_eRuntimeError, "failed to GetTypeInfo");
     }
     hr = pTypeInfo->lpVtbl->GetDocumentation(pTypeInfo,
                                              -1,
@@ -2658,7 +2658,7 @@ typeinfo_from_ole(pole, ppti)
     hr = pTypeInfo->lpVtbl->GetContainingTypeLib(pTypeInfo, &pTypeLib, &i);
     OLE_RELEASE(pTypeInfo);
     if (FAILED(hr)) {
-        ole_raise(hr, rb_eRuntimeError, "fail to GetContainingTypeLib");
+        ole_raise(hr, rb_eRuntimeError, "failed to GetContainingTypeLib");
     }
     count = pTypeLib->lpVtbl->GetTypeInfoCount(pTypeLib);
     for (i = 0; i < count; i++) {
@@ -2773,12 +2773,12 @@ fole_obj_help( self )
 
     hr = pole->pDispatch->lpVtbl->GetTypeInfo( pole->pDispatch, 0, lcid, &pTypeInfo );
     if(FAILED(hr)) {
-        ole_raise(hr, rb_eRuntimeError, "fail to GetTypeInfo");
+        ole_raise(hr, rb_eRuntimeError, "failed to GetTypeInfo");
     }
     hr = pTypeInfo->lpVtbl->GetContainingTypeLib( pTypeInfo, &pTypeLib, &index );
     if(FAILED(hr)) {
         OLE_RELEASE(pTypeInfo);
-        ole_raise(hr, rb_eRuntimeError, "fail to GetContainingTypeLib");
+        ole_raise(hr, rb_eRuntimeError, "failed to GetContainingTypeLib");
     }
     hr = pTypeLib->lpVtbl->GetDocumentation( pTypeLib, index,
                                              &bstr, NULL, NULL, NULL);
@@ -3011,7 +3011,7 @@ fole_method_help( self, cmdname )
     OLEData_Get_Struct(self, pole);
     hr = typeinfo_from_ole(pole, &pTypeInfo);
     if(FAILED(hr))
-        ole_raise(hr, rb_eRuntimeError, "fail to get ITypeInfo");
+        ole_raise(hr, rb_eRuntimeError, "failed to get ITypeInfo");
     method = folemethod_s_allocate(cWIN32OLE_METHOD);
     obj = olemethod_from_typeinfo(method, pTypeInfo, cmdname);
     OLE_RELEASE(pTypeInfo);
@@ -3046,7 +3046,7 @@ foletype_s_ole_classes(self, typelib)
         pbuf = ole_mb2wc(StringValuePtr(file), -1);
         hr = LoadTypeLibEx(pbuf, REGKIND_NONE, &pTypeLib);
         if (FAILED(hr))
-          ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Fail to LoadTypeLibEx");
+          ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to LoadTypeLibEx");
         SysFreeString(pbuf);
         ole_classes_from_typelib(pTypeLib, classes);
         OLE_RELEASE(pTypeLib);
@@ -3221,7 +3221,7 @@ foletype_initialize(self, typelib, oleclass)
     pbuf = ole_mb2wc(StringValuePtr(file), -1);
     hr = LoadTypeLibEx(pbuf, REGKIND_NONE, &pTypeLib);
     if (FAILED(hr))
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Fail to LoadTypeLibEx");
+        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to LoadTypeLibEx");
     SysFreeString(pbuf);
     if (oleclass_from_typelib(self, pTypeLib, oleclass) == Qfalse) {
         OLE_RELEASE(pTypeLib);
@@ -3414,7 +3414,7 @@ ole_type_major_version(pTypeInfo)
     HRESULT hr;
     hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
     if (FAILED(hr))
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Fail to GetTypeAttr");
+        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to GetTypeAttr");
     ver = INT2FIX(pTypeAttr->wMajorVerNum);
     OLE_RELEASE_TYPEATTR(pTypeInfo, pTypeAttr);
     return ver;
@@ -3443,7 +3443,7 @@ ole_type_minor_version(pTypeInfo)
     HRESULT hr;
     hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
     if (FAILED(hr))
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Fail to GetTypeAttr");
+        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to GetTypeAttr");
     ver = INT2FIX(pTypeAttr->wMinorVerNum);
     OLE_RELEASE_TYPEATTR(pTypeInfo, pTypeAttr);
     return ver;
@@ -3472,7 +3472,7 @@ ole_type_typekind(pTypeInfo)
     HRESULT hr;
     hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
     if (FAILED(hr))
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Fail to GetTypeAttr");
+        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to GetTypeAttr");
     typekind = INT2FIX(pTypeAttr->typekind);
     OLE_RELEASE_TYPEATTR(pTypeInfo, pTypeAttr);
     return typekind;
@@ -3622,7 +3622,7 @@ ole_variables(pTypeInfo)
     VALUE variables = rb_ary_new();
     hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
     if (FAILED(hr)) {
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Fail to GetTypeAttr");
+        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to GetTypeAttr");
     }
     
     for(i = 0; i < pTypeAttr->cVars; i++) {
@@ -3702,7 +3702,7 @@ static ole_variable_ole_type(pTypeInfo, var_index)
     VALUE type;
     hr = pTypeInfo->lpVtbl->GetVarDesc(pTypeInfo, var_index, &pVarDesc);
     if (FAILED(hr))
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Fail to GetVarDesc");
+        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to GetVarDesc");
     type = ole_typedesc2val(pTypeInfo, &(pVarDesc->elemdescVar.tdesc), Qnil);
     pTypeInfo->lpVtbl->ReleaseVarDesc(pTypeInfo, pVarDesc);
     return type;
@@ -3731,7 +3731,7 @@ static ole_variable_ole_type_detail(pTypeInfo, var_index)
     VALUE type = rb_ary_new();
     hr = pTypeInfo->lpVtbl->GetVarDesc(pTypeInfo, var_index, &pVarDesc);
     if (FAILED(hr))
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Fail to GetVarDesc");
+        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to GetVarDesc");
     ole_typedesc2val(pTypeInfo, &(pVarDesc->elemdescVar.tdesc), type);
     pTypeInfo->lpVtbl->ReleaseVarDesc(pTypeInfo, pVarDesc);
     return type;
@@ -3970,7 +3970,7 @@ ole_method_return_type(pTypeInfo, method_index)
 
     hr = pTypeInfo->lpVtbl->GetFuncDesc(pTypeInfo, method_index, &pFuncDesc);
     if (FAILED(hr)) 
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Fail to GetFuncDesc");
+        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to GetFuncDesc");
     
     type = ole_typedesc2val(pTypeInfo, &(pFuncDesc->elemdescFunc.tdesc), Qnil);
     pTypeInfo->lpVtbl->ReleaseFuncDesc(pTypeInfo, pFuncDesc);
@@ -4002,7 +4002,7 @@ ole_method_return_vtype(pTypeInfo, method_index)
 
     hr = pTypeInfo->lpVtbl->GetFuncDesc(pTypeInfo, method_index, &pFuncDesc);
     if (FAILED(hr)) 
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Fail to GetFuncDesc");
+        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to GetFuncDesc");
     
     vt = INT2FIX(pFuncDesc->elemdescFunc.tdesc.vt);
     pTypeInfo->lpVtbl->ReleaseFuncDesc(pTypeInfo, pFuncDesc);
@@ -4066,7 +4066,7 @@ ole_method_invkind(pTypeInfo, method_index)
     VALUE invkind;
     hr = pTypeInfo->lpVtbl->GetFuncDesc(pTypeInfo, method_index, &pFuncDesc);
     if(FAILED(hr)) 
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Fail to GetFuncDesc");
+        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to GetFuncDesc");
     invkind = INT2FIX(pFuncDesc->invkind);
     pTypeInfo->lpVtbl->ReleaseFuncDesc(pTypeInfo, pFuncDesc);
     return invkind;
@@ -5269,7 +5269,7 @@ fev_initialize(argc, argv, self)
     rb_scan_args(argc, argv, "11", &ole, &itf);
 
     if (!rb_obj_is_kind_of(ole, cWIN32OLE)) {
-        rb_raise(rb_eTypeError, "1st parametor must be WIN32OLE object.");
+        rb_raise(rb_eTypeError, "1st parameter must be WIN32OLE object.");
     }
 
     if(TYPE(itf) != T_NIL) {
@@ -5285,7 +5285,7 @@ fev_initialize(argc, argv, self)
         hr = find_default_source(ole, &iid, &pTypeInfo);
     }
     if (FAILED(hr)) {
-        ole_raise(hr, rb_eRuntimeError, "not found interface");
+        ole_raise(hr, rb_eRuntimeError, "interface not found");
     }
 
     OLEData_Get_Struct(ole, pole);
@@ -5296,7 +5296,7 @@ fev_initialize(argc, argv, self)
     if (FAILED(hr)) {
         OLE_RELEASE(pTypeInfo);
         ole_raise(hr, rb_eRuntimeError,
-                  "fail to query IConnectionPointContainer");
+                  "failed to query IConnectionPointContainer");
     }
 
     hr = pContainer->lpVtbl->FindConnectionPoint(pContainer,
@@ -5305,7 +5305,7 @@ fev_initialize(argc, argv, self)
     OLE_RELEASE(pContainer);
     if (FAILED(hr)) {
         OLE_RELEASE(pTypeInfo);
-        ole_raise(hr, rb_eRuntimeError, "fail to query IConnectionPoint");
+        ole_raise(hr, rb_eRuntimeError, "failed to query IConnectionPoint");
     }
     pIEV = EVENTSINK_Constructor();
     pIEV->m_iid = iid;

@@ -879,7 +879,7 @@ strio_read(argc, argv, self)
 	}
 	break;
       default:
-	rb_raise(rb_eArgError, "wrong number arguments (%d for 0)", argc);
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)", argc);
     }
     if (NIL_P(str)) {
 	str = rb_str_substr(ptr->string, ptr->pos, len);

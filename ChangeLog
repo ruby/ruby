@@ -34,11 +34,34 @@ Sat Apr  3 17:11:05 2004  why the lucky stiff  <why@ruby-lang.org>
 	* ext/syck/rubyext.c: handle base60, as well as hex and octal
 	  with commas.  implicit typing of ruby symbols.
 
+Fri Apr  2 17:27:17 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (top_include): include in the wrapped load is done for
+	  the wrapper, not for a singleton class for wrapped main.
+	  [ruby-dev:23305]
+
+Fri Apr  2 15:13:44 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_big_eq): use temporary double variable to save the
+	  result (internal float register may be bigger than 64 bits, for
+	  example, 80 bits on x86).  [ruby-dev:23311]
+
+Fri Apr  2 14:35:26 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (block_pass): should generate unique identifier of the
+	  pushing block.  [ruby-talk:96363]
+
+Fri Apr  2 07:31:38 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (make_hostent): fix memory leak, based on
+	  the patch from HORIKAWA Hisashi <vzw00011@nifty.ne.jp>.
+
 Thu Apr  1 19:58:37 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* lib/soap/mapping/{factory.rb,registry.rb}: fixed illegal mapped URI
           object with soap/marshal.
           added URIFactory class for URI mapping.  BasetypeFactory checks
+
 Thu Apr  1 22:55:33 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/parsers/parse_rb.rb: Allow rdoc comments in
@@ -97,6 +120,11 @@ Sat Mar 27 10:40:48 2004  Tanaka Akira  <akr@m17n.org>
 
 	* (lib/pp.rb, lib/prettyprint.rb): define seplist in PP::PPMethods
 	  instead of PrettyPrint.
+
+Thu Mar 25 23:28:52 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (time_overflow_p): backport 1.9 usec overflow function.
+	  (ruby-bugs PR#1307)
 
 Thu Mar 25 23:15:24 2004  Dave Thomas  <dave@pragprog.com>
 
@@ -168,6 +196,14 @@ Sat Mar 20 20:57:10 2004  David Black  <dblack@wobblini.net>
 
 	* lib/scanf.rb: Backported 1.9 branch
 	  modifications/corrections to 1.8 branch
+
+Sat Mar 20 23:51:03 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* eval.c (rb_require_safe): preserve old ruby_errinfo.
+	  [ruby-talk:95409]
+
+	* eval.c (rb_f_raise): should not clear backtrace information if
+	  exception object already have one.
 
 Sat Mar 20 15:25:36 2004  Dave Thomas  <dave@pragprog.com>
 

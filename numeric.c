@@ -842,7 +842,6 @@ flo_eq(x, y)
 	return num_equal(x, y);
     }
     a = RFLOAT(x)->value;
-    if (isnan(a) || isnan(b)) return Qfalse;
     return (a == b)?Qtrue:Qfalse;
 }
 

@@ -110,10 +110,10 @@ time_init(time)
 #define NMOD(x,y) ((y)-(-((x)+1)%(y))-1)
 
 void
-time_overflow_p(sec, usec)
-    time_t sec, usec;
+time_overflow_p(secp, usecp)
+    time_t *secp, *usecp;
 {
-    time_t tmp;
+    time_t tmp, sec = *secp, usec = *usecp;
 
     if (usec >= 1000000) {	/* usec positive overflow */
 	tmp = sec + usec / 1000000;
@@ -135,6 +135,8 @@ time_overflow_p(sec, usec)
     if (sec < 0 || (sec == 0 && usec < 0))
 	rb_raise(rb_eArgError, "time must be positive");
 #endif
+    *secp = sec;
+    *usecp = usec;
 }
 
 static VALUE
@@ -146,7 +148,7 @@ time_new_internal(klass, sec, usec)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    time_overflow_p(sec, usec);
+    time_overflow_p(&sec, &usec);
     tobj->tv.tv_sec = sec;
     tobj->tv.tv_usec = usec;
 
@@ -1895,7 +1897,7 @@ time_mdump(time)
     tm = gmtime(&t);
 
     if ((tm->tm_year & 0x1ffff) != tm->tm_year)
-	rb_raise(rb_eArgError, "too big year to marshal");
+	rb_raise(rb_eArgError, "year too big to marshal");
 
     p = 0x1          << 31 | /*  1 */
 	tm->tm_year  << 14 | /* 17 */
@@ -1990,7 +1992,7 @@ time_mload(time, str)
 	sec = make_time_t(&tm, Qtrue);
 	usec = (time_t)(s & 0xfffff);
     }
-    time_overflow_p(sec, usec);
+    time_overflow_p(&sec, &usec);
 
     GetTimeval(time, tobj);
     tobj->tm_got = 0;

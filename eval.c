@@ -3668,7 +3668,7 @@ rb_eval(self, n)
 
       case NODE_ATTRSET:
 	if (ruby_frame->argc != 1)
-	    rb_raise(rb_eArgError, "wrong number of arguments(%d for 1)",
+	    rb_raise(rb_eArgError, "wrong number of arguments (%d for 1)",
 		     ruby_frame->argc);
 	result = rb_ivar_set(self, node->nd_vid, ruby_frame->argv[0]);
 	break;
@@ -4448,7 +4448,8 @@ rb_f_raise(argc, argv)
     if (argc > 0) {
 	if (!rb_obj_is_kind_of(mesg, rb_eException))
 	    rb_raise(rb_eTypeError, "exception object expected");
-	set_backtrace(mesg, (argc>2)?argv[2]:Qnil);
+	if (argc>2)
+	    set_backtrace(mesg, argv[2]);
     }
 
     if (ruby_frame != top_frame) {
@@ -4890,7 +4891,7 @@ massign(self, node, val, pcall)
     }
     if (pcall && list) goto arg_error;
     if (node->nd_args) {
-	if (node->nd_args == (NODE*)-1) {
+	if ((int)(node->nd_args) == -1) {
 	    /* no check for mere `*' */
 	}
 	else if (!list && i<len) {
@@ -5370,7 +5371,7 @@ call_cfunc(func, recv, len, argc, argv)
     VALUE *argv;
 {
     if (len >= 0 && argc != len) {
-	rb_raise(rb_eArgError, "wrong number of arguments(%d for %d)",
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
 		 argc, len);
     }
 
@@ -5521,7 +5522,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 	/* for attr get/set */
       case NODE_IVAR:
 	if (argc != 0) {
-	    rb_raise(rb_eArgError, "wrong number of arguments(%d for 0)", argc);
+	    rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)", argc);
 	}
 	result = rb_attr_get(recv, body->nd_vid);
 	break;
@@ -5588,10 +5589,10 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 
 		    i = node->nd_cnt;
 		    if (i > argc) {
-			rb_raise(rb_eArgError, "wrong number of arguments(%d for %d)",
+			rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
 				 argc, i);
 		    }
-		    if (node->nd_rest == -1) {
+		    if ((int)node->nd_rest == -1) {
 			int opt = i;
 			NODE *optnode = node->nd_opt;
 
@@ -5600,7 +5601,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 			    optnode = optnode->nd_next;
 			}
 			if (opt < argc) {
-			    rb_raise(rb_eArgError, "wrong number of arguments(%d for %d)",
+			    rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
 				     argc, opt);
 			}
 			ruby_frame->argc = opt;
@@ -5626,7 +5627,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 			    }
 			}
 			local_vars = ruby_scope->local_vars;
-			if (node->nd_rest >= 0) {
+			if ((int)node->nd_rest >= 0) {
 			    VALUE v;
 
 			    if (argc > 0)
@@ -6747,6 +6748,7 @@ rb_require_safe(fname, safe)
     int safe;
 {
     VALUE result = Qnil;
+    volatile VALUE errinfo = ruby_errinfo;
     int state;
     struct {
 	NODE *node;
@@ -6824,7 +6826,7 @@ rb_require_safe(fname, safe)
     if (NIL_P(result)) {
 	load_failed(fname);
     }
-    ruby_errinfo = Qnil;
+    ruby_errinfo = errinfo;
 
     return result;
 }
@@ -7236,7 +7238,7 @@ rb_obj_extend(argc, argv, obj)
     int i;
 
     if (argc == 0) {
-	rb_raise(rb_eArgError, "wrong number of arguments(0 for 1)");
+	rb_raise(rb_eArgError, "wrong number of arguments (0 for 1)");
     }
     for (i=0; i<argc; i++) Check_Type(argv[i], T_MODULE);
     while (argc--) {
@@ -7263,12 +7265,10 @@ top_include(argc, argv, self)
 {
     rb_secure(4);
     if (ruby_wrapper) {
-	rb_warn("main#include in the wrapped load is effective only for toplevel");
-	return rb_obj_extend(argc, argv, self);
+	rb_warning("main#include in the wrapped load is effective only in wrapper module");
+	return rb_mod_include(argc, argv, ruby_wrapper);
     }
-    else {
-	return rb_mod_include(argc, argv, rb_cObject);
-    }
+    return rb_mod_include(argc, argv, rb_cObject);
 }
 
 VALUE rb_f_trace_var();
@@ -8392,6 +8392,7 @@ block_pass(self, node)
     old_block = ruby_block;
     _block = *data;
     _block.outer = ruby_block;
+    _block.uniq = block_unique++;
     ruby_block = &_block;
     PUSH_ITER(ITER_PRE);
     if (ruby_frame->iter == ITER_NOT)
@@ -9089,7 +9090,7 @@ rb_mod_define_method(argc, argv, mod)
 	}
     }
     else {
-	rb_raise(rb_eArgError, "wrong number of arguments(%d for 1)", argc);
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1)", argc);
     }
     if (RDATA(body)->dmark == (RUBY_DATA_FUNC)bm_mark) {
 	node = NEW_DMETHOD(method_unbind(body));

@@ -567,7 +567,7 @@ ossl_asn1_default_tag(VALUE obj)
 	    return i;
 	}
     }
-    ossl_raise(eASN1Error, "not found universal tag for %s",
+    ossl_raise(eASN1Error, "universal tag for %s not found",
 	       rb_class2name(CLASS_OF(obj)));
 
     return -1; /* dummy */
@@ -650,7 +650,7 @@ ossl_asn1data_initialize(VALUE self, VALUE value, VALUE tag, VALUE tag_class)
     if(!SYMBOL_P(tag_class))
 	ossl_raise(eASN1Error, "invalid tag class");
     if((SYM2ID(tag_class) == sUNIVERSAL) && NUM2INT(tag) > 31)
-	ossl_raise(eASN1Error, "too large tag number for Universal");
+	ossl_raise(eASN1Error, "tag number for Universal too large");
     ossl_asn1_set_tag(self, tag);
     ossl_asn1_set_value(self, value);
     ossl_asn1_set_tag_class(self, tag_class);
@@ -865,13 +865,13 @@ ossl_asn1_initialize(int argc, VALUE *argv, VALUE self)
         if(NIL_P(tagging))
 	    tagging = ID2SYM(sEXPLICIT);
 	if(!SYMBOL_P(tagging))
-	    ossl_raise(eASN1Error, "invelid tag default");
+	    ossl_raise(eASN1Error, "invalid tag default");
 	if(NIL_P(tag_class))
 	    tag_class = ID2SYM(sCONTEXT_SPECIFIC);
 	if(!SYMBOL_P(tag_class))
-	    ossl_raise(eASN1Error, "invelid tag class");
+	    ossl_raise(eASN1Error, "invalid tag class");
 	if(SYM2ID(tagging) == sIMPLICIT && NUM2INT(tag) > 31)
-	    ossl_raise(eASN1Error, "too large tag number for Universal");
+	    ossl_raise(eASN1Error, "tag number for Universal too large");
     }
     else{
 	tag = INT2NUM(ossl_asn1_default_tag(self));

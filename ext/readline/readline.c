@@ -83,7 +83,7 @@ readline_s_set_completion_proc(self, proc)
     VALUE proc;
 {
     if (!rb_respond_to(proc, rb_intern("call")))
-	rb_raise(rb_eArgError, "argument have to respond to `call'");
+	rb_raise(rb_eArgError, "argument must respond to `call'");
     return rb_iv_set(mReadline, COMPLETION_PROC, proc);
 }
 

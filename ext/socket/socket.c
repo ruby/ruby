@@ -625,7 +625,8 @@ sock_addrinfo(host, port, socktype, flags)
     VALUE host, port;
     int socktype, flags;
 {
-    struct addrinfo hints, *hintsp, *res;
+    struct addrinfo hints;
+    struct addrinfo* res = NULL;
     char *hostp, *portp;
     int error;
     char hbuf[NI_MAXHOST], pbuf[NI_MAXSERV];
@@ -637,13 +638,11 @@ sock_addrinfo(host, port, socktype, flags)
        socktype = SOCK_DGRAM;
     }
 
-    hintsp = &hints;
     MEMZERO(&hints, struct addrinfo, 1);
-    hints.ai_family = PF_UNSPEC;
-    hints.ai_protocol = 0;
+    hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = socktype;
     hints.ai_flags = flags;
-    error = getaddrinfo(hostp, portp, hintsp, &res);
+    error = getaddrinfo(hostp, portp, &hints, &res);
     if (error) {
 	if (hostp && hostp[strlen(hostp)-1] == '\n') {
 	    rb_raise(rb_eSocket, "newline at the end of hostname");
@@ -1043,39 +1042,43 @@ socks_s_close(sock)
 #endif
 #endif
 
+struct hostent_arg {
+    VALUE host;
+    struct addrinfo* addr;
+    VALUE (*ipaddr)_((struct sockaddr*, size_t));
+};
+
 static VALUE
-make_hostent(addr, ipaddr)
-    struct addrinfo *addr;
-    VALUE (*ipaddr) _((struct sockaddr*, size_t));
+make_hostent_internal(arg)
+    struct hostent_arg *arg;
 {
+    VALUE host = arg->host;
+    struct addrinfo* addr = arg->addr;
+    VALUE (*ipaddr)_((struct sockaddr*, size_t)) = arg->ipaddr;
+
     struct addrinfo *ai;
     struct hostent *h;
     VALUE ary, names;
     char **pch;
+    const char* hostp;
+    char hbuf[NI_MAXHOST];
 
     ary = rb_ary_new();
-    rb_ary_push(ary, rb_str_new2(addr->ai_canonname));
-#if defined(HAVE_GETIPNODEBYNAME)
-    {
-	int error;
-
-	h = getipnodebyname(addr->ai_canonname, addr->ai_family, AI_ALL, &error);
+    if (addr->ai_canonname) {
+	hostp = addr->ai_canonname;
     }
-#elif defined(HAVE_GETHOSTBYNAME2)
-    h = gethostbyname2(addr->ai_canonname, addr->ai_family);
-#else
-    h = gethostbyname(addr->ai_canonname);
-#endif
-    if (h) {
+    else {
+	hostp = host_str(host, hbuf, sizeof(hbuf));
+    }
+    rb_ary_push(ary, rb_str_new2(hostp));
+
+    if (addr->ai_canonname && (h = gethostbyname(addr->ai_canonname))) {
 	names = rb_ary_new();
 	if (h->h_aliases != NULL) {
 	    for (pch = h->h_aliases; *pch; pch++) {
 		rb_ary_push(names, rb_str_new2(*pch));
 	    }
 	}
-#if defined(HAVE_GETIPNODEBYNAME)
-	freehostent(h);
-#endif
     }
     else {
 	names = rb_ary_new2(0);
@@ -1087,6 +1090,22 @@ make_hostent(addr, ipaddr)
     }
 
     return ary;
+}
+
+static VALUE
+make_hostent(host, addr, ipaddr)
+    VALUE host;
+    struct addrinfo* addr;
+    VALUE (*ipaddr)_((struct sockaddr*, size_t));
+{
+    VALUE ary;
+    struct hostent_arg arg;
+
+    arg.host = host;
+    arg.addr = addr;
+    arg.ipaddr = ipaddr;
+    ary = rb_ensure(make_hostent_internal, (VALUE)&arg,
+		    RUBY_METHOD_FUNC(freeaddrinfo), (VALUE)addr);
 }
 
 VALUE
@@ -1102,7 +1121,7 @@ tcp_s_gethostbyname(obj, host)
     VALUE obj, host;
 {
     rb_secure(3);
-    return make_hostent(sock_addrinfo(host, Qnil, SOCK_STREAM, AI_CANONNAME), tcp_sockaddr);
+    return make_hostent(host, sock_addrinfo(host, Qnil, SOCK_STREAM, AI_CANONNAME), tcp_sockaddr);
 }
 
 static VALUE
@@ -2013,7 +2032,7 @@ sock_s_gethostbyname(obj, host)
     VALUE obj, host;
 {
     rb_secure(3);
-    return make_hostent(sock_addrinfo(host, Qnil, SOCK_STREAM, AI_CANONNAME), sock_sockaddr);
+    return make_hostent(host, sock_addrinfo(host, Qnil, SOCK_STREAM, AI_CANONNAME), sock_sockaddr);
 }
 
 static VALUE
