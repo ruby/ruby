@@ -25,7 +25,7 @@ Wed Dec 31 11:17:37 2003  Dave Thomas  <dave@pragprog.com>
 Wed Dec 31 01:33:05 2003  Dave Thomas  <dave@pragprog.com>
 
 	* array.c, error.c, eval.c, io.c, prec.c, range.c, re.c,
-          string.c, time.c: Add RDoc for Kernel functions, and tidy.
+	  string.c, time.c: Add RDoc for Kernel functions, and tidy.
 
 Tue Dec 30 19:39:14 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -46,14 +46,12 @@ Tue Dec 30 12:30:30 2003  Dave Thomas  <dave@pragprog.com>
 	  class and a method have the same name, finding Xxx.abc was trying
 	  to find 'abc' in method 'Xxx', not class 'Xxx'.
 
-
 Tue Dec 30 08:32:32 2003  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_method):
 	  Handle undoing nsting of yield parameters correctly for:
 
 	    def each_entry(&b) Dir.foreach(@path) {|f| yield P.new(f) } end
-
 
 Tue Dec 30 07:30:00 2003  Gavin Sinclair <gsinclair@soyabean.com.au>
 
