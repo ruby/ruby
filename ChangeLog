@@ -1,3 +1,13 @@
+Fri Nov 26 13:49:06 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_initialize): should retrieve flags from copying file
+	  descriptor. [ruby-dev:24961]
+
+	* eval.c (method_missing): raise TypeError for classes do not
+	  have allocators.  [ruby-core:03752]
+
+	* lib/erb.rb: [ruby-core:03786]
+
 Fri Nov 26 13:29:02 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::look_for_directives_in): Break

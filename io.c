@@ -3971,11 +3971,13 @@ rb_io_initialize(argc, argv, io)
 	    flags = rb_io_mode_modenum(RSTRING(mode)->ptr);
 	}
     }
-    else if (!NIL_P(orig)) {
-	GetOpenFile(orig, ofp);
-	if (ofp->refcnt == LONG_MAX) {
-	    VALUE s = rb_inspect(orig);
-	    rb_raise(rb_eIOError, "too many shared IO for %s", StringValuePtr(s));
+    else {
+	if (!NIL_P(orig)) {
+	    GetOpenFile(orig, ofp);
+	    if (ofp->refcnt == LONG_MAX) {
+		VALUE s = rb_inspect(orig);
+		rb_raise(rb_eIOError, "too many shared IO for %s", StringValuePtr(s));
+	    }
 	}
 #if defined(HAVE_FCNTL) && defined(F_GETFL)
 	flags = fcntl(fd, F_GETFL);
