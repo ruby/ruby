@@ -26,6 +26,7 @@ typedef LONG rb_atomic_t;
     rb_atomic_t trap_immediate = ATOMIC_SET(rb_trap_immediate, 1)
 # define TRAP_END\
 	ATOMIC_SET(rb_trap_immediate, trap_immediate);\
+	CHECK_INTS;\
 } while (0)
 # define RUBY_CRITICAL(statements) do {\
     rb_w32_enter_critical();\
@@ -44,6 +45,7 @@ typedef int rb_atomic_t;
     int trap_immediate = rb_trap_immediate;\
     rb_trap_immediate = 1
 # define TRAP_END rb_trap_immediate = trap_immediate;\
+  CHECK_INTS;\
 } while (0)
 
 # define RUBY_CRITICAL(statements) do {\

@@ -247,7 +247,9 @@ rb_io_check_writable(fptr)
 	io_seek(fptr, 0, SEEK_CUR);
     }
 #endif
-    fptr->mode &= ~FMODE_RBUF;
+    if (!fptr->f2) {
+	fptr->mode &= ~FMODE_RBUF;
+    }
 }
 
 int
@@ -309,9 +311,7 @@ io_fflush(f, fptr)
         rb_io_check_closed(fptr);
     }
     for (;;) {
-	TRAP_BEG;
 	n = fflush(f);
-	TRAP_END;
 	if (n != EOF) break;
 	if (!rb_io_wait_writable(fileno(f)))
 	    rb_sys_fail(fptr->path);

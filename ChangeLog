@@ -1,3 +1,20 @@
+Wed Dec 24 16:46:08 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (catch_timer): do not call rb_thread_schedule() inside to
+	  avoid pthread_mutex_lock() deadlock.  interrupts to system calls
+	  are detected by TRAP_END via EINTR error.
+
+	* eval.c (thread_timer): do not post signal unless it is
+	  absolutely necessary.
+
+	* rubysig.h (TRAP_END): add CHECK_INTS to switch thread.
+
+	* regex.c (re_compile_pattern): check if nextp is smaller than
+	  pend.  [ruby-dev:22372]
+
+	* eval.c (umethod_bind): remove method overridden check.
+	  [ruby-dev:22366]
+
 Wed Dec 24 16:13:05 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_ssl.c (ossl_ssl_read): should check for error

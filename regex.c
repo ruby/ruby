@@ -2373,9 +2373,10 @@ re_compile_pattern(pattern, size, bufp)
       nextp = p + mbclen(c) - 1;
       if (!pending_exact || pending_exact + *pending_exact + 1 != b
 	  || *pending_exact >= (c1 ? 0176 : 0177)
-	  || *nextp == '+' || *nextp == '?'
-	  || *nextp == '*' || *nextp == '^'
-	  || *nextp == '{') {
+	  || (nextp < pend &&
+	      (   *nextp == '+' || *nextp == '?'
+	       || *nextp == '*' || *nextp == '^'
+	       || *nextp == '{'))) {
 	laststart = b;
 	BUFPUSH(exactn);
 	pending_exact = b;

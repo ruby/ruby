@@ -7602,10 +7602,12 @@ umethod_bind(method, recv)
 	if (FL_TEST(data->rklass, FL_SINGLETON)) {
 	    rb_raise(rb_eTypeError, "singleton method called for a different object");
 	}
+#if 0
 	if (FL_TEST(CLASS_OF(recv), FL_SINGLETON) &&
 	    st_lookup(RCLASS(CLASS_OF(recv))->m_tbl, data->oid, 0)) {
 	    rb_raise(rb_eTypeError, "method `%s' overridden", rb_id2name(data->oid));
 	}
+#endif
 	if(!rb_obj_is_kind_of(recv, data->rklass)) {
 	    rb_raise(rb_eTypeError, "bind argument must be an instance of %s",
 		     rb_class2name(data->rklass));
@@ -8417,13 +8419,12 @@ rb_thread_save_context(th)
     th->stk_len = len;
     FLUSH_REGISTER_WINDOWS;
     MEMCPY(th->stk_ptr, th->stk_pos, VALUE, th->stk_len);
-#ifdef USE_CONTEXT
+#ifdef __ia64__
     {
 	ucontext_t ctx;
 	VALUE *top, *bot;
 
 	getcontext(&ctx);
-#ifdef __ia64__
 	bot = (VALUE*)__libc_ia64_register_backing_store_base;
 #if defined(__FreeBSD__)
 	top = (VALUE*)ctx.uc_mcontext.mc_special.bspstore;
@@ -8433,7 +8434,6 @@ rb_thread_save_context(th)
 	th->bstr_len = top - bot;
 	REALLOC_N(th->bstr_ptr, VALUE, th->bstr_len);
 	MEMCPY(th->bstr_ptr, (VALUE*)__libc_ia64_register_backing_store_base, VALUE, th->bstr_len);
-#endif
     }
 #endif
 #ifdef SAVE_WIN32_EXCEPTION_LIST
@@ -9535,11 +9535,7 @@ rb_thread_alloc(klass)
 
 static int thread_init = 0;
 
-#if defined(HAVE_LIBPTHREAD) && defined(_REENTRANT)
-# define PTHREAD_TIMER
-#endif
-
-#if defined(PTHREAD_TIMER) || defined(HAVE_SETITIMER)
+#if defined(_THREAD_SAFE)
 static void
 catch_timer(sig)
     int sig;
@@ -9547,15 +9543,9 @@ catch_timer(sig)
 #if !defined(POSIX_SIGNAL) && !defined(BSD_SIGNAL)
     signal(sig, catch_timer);
 #endif
-    if (!rb_thread_critical) {
-	if (rb_trap_immediate) {
-	    rb_thread_schedule();
-	}
-	else rb_thread_pending = 1;
-    }
+    /* cause EINTR */
 }
 
-#ifdef PTHREAD_TIMER
 static pthread_t time_thread;
 
 static void*
@@ -9568,7 +9558,12 @@ thread_timer(dummy)
 	req.tv_sec = 0;
 	req.tv_nsec = 10000000;
 	nanosleep(&req, &rem);
-	pthread_kill(ruby_thid, SIGVTALRM);
+	if (!rb_thread_critical) {
+	    rb_thread_pending = 1;
+	    if (rb_trap_immediate) {
+		pthread_kill(ruby_thid, SIGVTALRM);
+	    }
+	}
     }
 }
 
@@ -9581,7 +9576,20 @@ void
 rb_thread_stop_timer()
 {
 }
-#else  /* HAVE_SETITIMER */
+#elif defined(HAVE_SETITIMER)
+static void
+catch_timer(sig)
+    int sig;
+{
+#if !defined(POSIX_SIGNAL) && !defined(BSD_SIGNAL)
+    signal(sig, catch_timer);
+#endif
+    if (!rb_thread_critical) {
+	rb_thread_pending = 1;
+    }
+    /* cause EINTR */
+}
+
 void
 rb_thread_start_timer()
 {
@@ -9605,8 +9613,7 @@ rb_thread_stop_timer()
     tval.it_value = tval.it_interval;
     setitimer(ITIMER_VIRTUAL, &tval, NULL);
 }
-#endif
-#else  /* !(PTHREAD_TIMER || HAVE_SETITIMER) */
+#else  /* !(_THREAD_SAFE || HAVE_SETITIMER) */
 int rb_thread_tick = THREAD_TICK;
 #endif
 
@@ -9629,14 +9636,14 @@ rb_thread_start_0(fn, arg, th)
 
     if (!thread_init) {
 	thread_init = 1;
-#if defined(HAVE_SETITIMER) || defined(PTHREAD_TIMER)
+#if defined(HAVE_SETITIMER) || defined(_THREAD_SAFE)
 #if defined(POSIX_SIGNAL)
 	posix_signal(SIGVTALRM, catch_timer);
 #else
 	signal(SIGVTALRM, catch_timer);
 #endif
 
-#ifdef PTHREAD_TIMER
+#ifdef _THREAD_SAFE
 	pthread_create(&time_thread, 0, thread_timer, 0);
 #else
 	rb_thread_start_timer();
