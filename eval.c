@@ -7756,33 +7756,6 @@ blk_free(data)
 }
 
 static void
-blk_copy_prev(block)
-    struct BLOCK *block;
-{
-    struct BLOCK *tmp;
-    struct RVarmap* vars;
-
-    while (block->prev) {
-	tmp = ALLOC_N(struct BLOCK, 1);
-	MEMCPY(tmp, block->prev, struct BLOCK, 1);
-	if (tmp->frame.argc > 0) {
-	    tmp->frame.argv = ALLOC_N(VALUE, tmp->frame.argc);
-	    MEMCPY(tmp->frame.argv, block->prev->frame.argv, VALUE, tmp->frame.argc);
-	    tmp->frame.flags |= FRAME_MALLOC;
-	}
-	scope_dup(tmp->scope);
-
-	for (vars = tmp->dyna_vars; vars; vars = vars->next) {
-	    if (FL_TEST(vars, DVAR_DONT_RECYCLE)) break;
-	    FL_SET(vars, DVAR_DONT_RECYCLE);
-	}
-
-	block->prev = tmp;
-	block = tmp;
-    }
-}
-
-static void
 frame_dup(frame)
     struct FRAME *frame;
 {
@@ -7805,6 +7778,34 @@ frame_dup(frame)
     }
 }
 
+
+static void
+blk_copy_prev(block)
+    struct BLOCK *block;
+{
+    struct BLOCK *tmp;
+    struct RVarmap* vars;
+
+    while (block->prev) {
+	tmp = ALLOC_N(struct BLOCK, 1);
+	MEMCPY(tmp, block->prev, struct BLOCK, 1);
+	if (tmp->frame.argc > 0) {
+	    tmp->frame.argv = ALLOC_N(VALUE, tmp->frame.argc);
+	    MEMCPY(tmp->frame.argv, block->prev->frame.argv, VALUE, tmp->frame.argc);
+	    tmp->frame.flags |= FRAME_MALLOC;
+	}
+	scope_dup(tmp->scope);
+	frame_dup(&tmp->frame);
+
+	for (vars = tmp->dyna_vars; vars; vars = vars->next) {
+	    if (FL_TEST(vars, DVAR_DONT_RECYCLE)) break;
+	    FL_SET(vars, DVAR_DONT_RECYCLE);
+	}
+
+	block->prev = tmp;
+	block = tmp;
+    }
+}
 
 
 /*

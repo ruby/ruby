@@ -1,3 +1,7 @@
+Mon Sep 13 19:16:33 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* eval.c (blk_copy_prev): need frame_dup().  [ruby-dev:24103]
+
 Mon Sep 13 16:23:27 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/multi-tk.rb: MultiTkIp.new_master and new_slave accept
