@@ -1,6 +1,6 @@
 module REXML
 	module Encoding
-		def to_utf_16 content
+		def encode content
 			array_utf8 = content.unpack("U*")
 			array_enc = []
 			array_utf8.each do |num|
@@ -15,7 +15,7 @@ module REXML
 			array_enc.pack('C*')
 		end
 
-		def from_utf_16(str)
+		def decode(str)
 			array_enc=str.unpack('C*')
 			array_utf8 = []
 			2.step(arrayEnc.size-1, 2){|i| 

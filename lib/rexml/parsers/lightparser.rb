@@ -16,25 +16,25 @@ module REXML
       end
 
 			def parse
-				root = context = REXML::Light::Node.new([ :document ])
+				root = context = [ :document ]
 				while true
 					event = @parser.pull
 					case event[0]
 					when :end_document
 						break
 					when :end_doctype
-						context = context.parent
+						context = context[1]
 					when :start_element, :start_doctype
-						new_node = REXML::Light::Node.new(event)
+						new_node = event
 						context << new_node
-						new_node.parent = context
+						new_node[1,0] = [context]
 						context = new_node
 					when :end_element, :end_doctype
-						context = context.parent
+						context = context[1]
 					else
-						new_node = REXML::Light::Node.new(event)
+						new_node = event
 						context << new_node
-						new_node.parent = context
+						new_node[1,0] = [context]
 					end
 				end
 				root

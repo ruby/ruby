@@ -1,5 +1,5 @@
 module REXML
-	class ParseException < Exception
+	class ParseException < RuntimeError
 		attr_accessor :source, :parser, :continued_exception
 
 		def initialize( message, source=nil, parser=nil, exception=nil )
@@ -12,9 +12,9 @@ module REXML
 		def to_s
 			# Quote the original exception, if there was one
 			if @continued_exception
-				err = @continued_exception.message
+				err = @continued_exception.inspect
 				err << "\n"
-				err << @continued_exception.backtrace[0..3].join("\n")
+				err << @continued_exception.backtrace.join("\n")
 				err << "\n...\n"
 			else
 				err = ""
@@ -24,17 +24,24 @@ module REXML
 			err << super
 
 			# Add contextual information
-			err << "\n#{@source.current_line}\nLast 80 unconsumed characters:\n#{@source.buffer[0..80].gsub(/\n/, ' ')}\n" if @source
-			err << "\nContext:\n#{@parser.context}" if @parser
+			if @source
+				err << "\nLine: #{line}\n"
+				err << "Position: #{position}\n"
+				err << "Last 80 unconsumed characters:\n"
+				err << @source.buffer[0..80].gsub(/\n/, ' ')
+				err << "\n"
+				err << @source.buffer[0..80].unpack("U*").inspect
+			end
+			
 			err
 		end
 
 		def position
-			@source.current_line[0] if @source
+			@source.current_line[0] if @source and @source.current_line
 		end
 
 		def line
-			@source.current_line[2] if @source
+			@source.current_line[2] if @source and @source.current_line
 		end
 
 		def context

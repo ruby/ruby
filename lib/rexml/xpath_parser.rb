@@ -2,16 +2,6 @@ require 'rexml/namespace'
 require 'rexml/xmltokens'
 require 'rexml/parsers/xpathparser'
 
-# Ignore this class.  It adds a __ne__ method, because Ruby doesn't seem to
-# understand object.send( "!=", foo ), whereas it *does* understand "<", "==",
-# and all of the other comparison methods.  Stupid, and annoying, and not at
-# all POLS.
-class Object
-	def __ne__(b)
-		self != b
-	end
-end
-
 module REXML
 	# You don't want to use this class.  Really.  Use XPath, which is a wrapper
 	# for this class.  Believe me.  You don't want to poke around in here.
@@ -132,11 +122,10 @@ module REXML
 			when :child
 				#puts "CHILD"
 				new_nodeset = []
-				ps_clone = nil
+				nt = nil
 				for node in nodeset
-					#ps_clone = path_stack.clone
-					#new_nodeset += internal_parse( ps_clone, node.children ) if node.parent?
-					new_nodeset += node.children if node.parent?
+					nt = node.node_type
+					new_nodeset += node.children if nt == :element or nt == :document
 				end
 				#path_stack[0,(path_stack.size-ps_clone.size)] = []
 				return new_nodeset
@@ -238,9 +227,11 @@ module REXML
 			when :descendant
 				#puts ":DESCENDANT"
 				results = []
+				nt = nil
 				for node in nodeset
+					nt = node.node_type
 					results += internal_parse( path_stack.clone.unshift( :descendant_or_self ),
-						node.children ) if node.parent?
+						node.children ) if nt == :element or nt == :document
 				end
 				return results
 
@@ -310,11 +301,13 @@ module REXML
 		def d_o_s( p, ns, r )
 			#puts r.collect{|n|n.to_s}.inspect
 			#puts ns.collect{|n|n.to_s}.inspect
+			nt = nil
 			ns.each_index do |i|
 				n = ns[i]
 				x = match( p.clone, [ n ] )
 				#puts "Got a match on #{p.inspect} for #{ns.collect{|n|n.to_s+"("+n.type.to_s+")"}.inspect}"
-				d_o_s( p, n.children, x ) if n.parent?
+				nt = n.node_type
+				d_o_s( p, n.children, x ) if nt == :element or nt == :document
 				r[i,0] = [x] if x.size > 0
 			end
 		end

@@ -8,10 +8,6 @@ module REXML
 			@output = real_IO
 			self.encoding = encd
 
-			eval <<-EOL
-				alias :encode :to_#{encoding.tr('-', '_').downcase}
-				alias :decode :from_#{encoding.tr('-', '_').downcase}
-			EOL
 			@to_utf = encd == UTF_8 ? false : true
 		end
 

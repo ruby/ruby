@@ -39,10 +39,6 @@ module REXML
 		# Overridden to support optimized en/decoding
 		def encoding=(enc)
 			super
-			eval <<-EOL
-				alias :encode :to_#{encoding.tr('-', '_').downcase}
-				alias :decode :from_#{encoding.tr('-', '_').downcase}
-			EOL
 			@line_break = encode( '>' )
 			if enc != UTF_8
 				@buffer = decode(@buffer)
@@ -78,8 +74,22 @@ module REXML
 		def read
 		end
 
+		def consume( pattern )
+			@buffer = $' if pattern.match( @buffer )
+		end
+
+		def match_to( char, pattern )
+			return pattern.match(@buffer)
+		end
+
+		def match_to_consume( char, pattern )
+			md = pattern.match(@buffer)
+			@buffer = $'
+			return md
+		end
+
 		def match pattern, consume=false
-			md = pattern.match @buffer
+			md = pattern.match(@buffer)
 			@buffer = $' if consume and md
 			return md
 		end
@@ -112,7 +122,9 @@ module REXML
 			#@block_size = block_size
 			#super @source.read(@block_size)
 			@line_break = '>'
-			super @source.readline( @line_break )
+			#super @source.readline( "\n" )
+			super @source.readline( @line_break )+@source.read
+			@line_break = encode( '>' )
 		end
 
 		def scan pattern, consume=false
@@ -145,9 +157,13 @@ module REXML
 				str = @source.readline('>')
 				str = decode(str) if @to_utf and str 
 				@buffer << str
-			rescue
+			rescue Exception, NameError
 				@source = nil
 			end
+		end
+
+		def consume( pattern )
+			match( pattern, true )
 		end
 
 		def match pattern, consume=false

@@ -1,7 +1,7 @@
 module REXML
 	module Encoding
 		# Convert from UTF-8
-		def to_iso_8859_1 content
+		def encode content
 			array_utf8 = content.unpack('U*')
 			array_enc = []
 			array_utf8.each do |num|
@@ -16,7 +16,7 @@ module REXML
 		end
 
 		# Convert to UTF-8
-		def from_iso_8859_1(str)
+		def decode(str)
 			str.unpack('C*').pack('U*')
 		end
 	end

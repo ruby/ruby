@@ -1,76 +1,58 @@
 require 'rexml/xmltokens'
 require 'rexml/light/node'
 
-# Development model
-# document = Node.new
-
-# Add an element "foo" to the document
-# foo = document << "foo"
-# # Set attribute "attr" on foo
-# foo["attr"] = "la"
-# # Set another attribute in a different namespace
-# foo["attr", "namespace"] = "too"
-# # Swap foo into another namespace
-# foo.namespace = "blah"
-# # Add a couple of element nodes to foo
-# foo << "a"
-# foo << "b"
-# # Access the children of foo in various ways
-# a = foo[0]
-# foo.each { |child|
-#         #...
-# }
-# # Add text to foo
-# # Add instruction
-# # Add comment
-# # Get the root of the document
-# document == a.root
-# # Write the document out
-# puts document.to_s
+# [ :element, parent, name, attributes, children* ]
+	# a = Node.new
+	# a << "B"		# => <a>B</a>
+	# a.b			# => <a>B<b/></a>
+	# a.b[1]			# => <a>B<b/><b/><a>
+	# a.b[1]["x"] = "y"	# => <a>B<b/><b x="y"/></a>
+	# a.b[0].c		# => <a>B<b><c/></b><b x="y"/></a>
+	# a.b.c << "D"		# => <a>B<b><c>D</c></b><b x="y"/></a>
 module REXML
 	module Light
 		# Represents a tagged XML element.  Elements are characterized by
 		# having children, attributes, and names, and can themselves be
 		# children.
-		class Node < Array
-			alias :_old_get :[]
-			alias :_old_put :[]=
-
+		class Node
 			NAMESPLIT = /^(?:(#{XMLTokens::NCNAME_STR}):)?(#{XMLTokens::NCNAME_STR})/u
+			PARENTS = [ :element, :document, :doctype ]
 			# Create a new element.
 			def initialize node=nil
+				@node = node
 				if node.kind_of? String
 					node = [ :text, node ]
 				elsif node.nil?
 					node = [ :document, nil, nil ]
 				elsif node[0] == :start_element
 					node[0] = :element
+				elsif node[0] == :start_doctype
+					node[0] = :doctype
+				elsif node[0] == :start_document
+					node[0] = :document
 				end
-				replace( node )
-				_old_put( 1, 0, 1 )
-				_old_put( 1, nil )
 			end
 
 			def size
-				el!()
-				super-4
+				if PARENTS.include? @node[0]
+					@node[-1].size
+				else
+					0
+				end
 			end
 
 			def each( &block )
-				el!()
 				size.times { |x| yield( at(x+4) ) }
 			end
 
 			def name
-				el!()
 				at(2)
 			end
 
 			def name=( name_str, ns=nil )
-				el!()
 				pfx = ''
 				pfx = "#{prefix(ns)}:" if ns
-				_old_put(1, "#{pfx}#{name_str}")
+				_old_put(2, "#{pfx}#{name_str}")
 			end
 
 			def parent=( node )
@@ -78,28 +60,23 @@ module REXML
 			end
 
 			def local_name
-				el!()
 				namesplit
 				@name
 			end
 
 			def local_name=( name_str )
-				el!()
 				_old_put( 1, "#@prefix:#{name_str}" )
 			end
 
 			def prefix( namespace=nil )
-				el!()
 				prefix_of( self, namespace )
 			end
 
 			def namespace( prefix=prefix() )
-				el!()
 				namespace_of( self, prefix )
 			end
 
 			def namespace=( namespace )
-				el!()
 				@prefix = prefix( namespace )
 				pfx = ''
 				pfx = "#@prefix:" if @prefix.size > 0
@@ -107,7 +84,6 @@ module REXML
 			end
 
 			def []( reference, ns=nil )
-				el!()
 				if reference.kind_of? String
 					pfx = ''
 					pfx = "#{prefix(ns)}:" if ns
@@ -125,7 +101,6 @@ module REXML
 
 			# Doesn't handle namespaces yet
 			def []=( reference, ns, value=nil )
-				el!()
 				if reference.kind_of? String
 					value = ns unless value
 					at( 3 )[reference] = value
@@ -170,12 +145,10 @@ module REXML
 			end
 
 			def has_name?( name, namespace = '' )
-				el!()
 				at(3) == name and namespace() == namespace
 			end
 
 			def children
-				el!()
 				self
 			end
 
@@ -185,14 +158,6 @@ module REXML
 
 			def to_s
 
-			end
-
-			def el!
-				if node_type() != :element and node_type() != :document
-					_old_put( 0, :element )
-					push({})
-				end
-				self
 			end
 
 			private

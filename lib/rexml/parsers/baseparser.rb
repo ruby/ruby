@@ -89,10 +89,10 @@ module REXML
 			EREFERENCE = /&(?!#{NAME};)/
 
 			DEFAULT_ENTITIES = { 
-				'gt' => [/&gt;/, '&gt;', '>'], 
-				'lt' => [/&lt;/, '&lt;', '<'], 
-				'quot' => [/&quot;/, '&quot;', '"'], 
-				"apos" => [/&apos;/, "&apos;", "'"] 
+				'gt' => [/&gt;/, '&gt;', '>', />/], 
+				'lt' => [/&lt;/, '&lt;', '<', /</], 
+				'quot' => [/&quot;/, '&quot;', '"', /"/], 
+				"apos" => [/&apos;/, "&apos;", "'", /'/] 
 			}
 
 			def initialize( source )
@@ -126,6 +126,7 @@ module REXML
 
 			# Returns true if there are more events.  Synonymous with !empty?
 			def has_next?
+				return true if @closed
 				@source.read if @source.buffer.size==0 and !@source.empty?
 				(!@source.empty? and @source.buffer.strip.size>0) or @stack.size>0 or @closed
 			end
@@ -143,7 +144,7 @@ module REXML
 			# event, so you can effectively pre-parse the entire document (pull the 
 			# entire thing into memory) using this method.  
 			def peek depth=0
-				raise 'Illegal argument "#{depth}"' if depth < -1
+				raise %Q[Illegal argument "#{depth}"] if depth < -1
 				temp = []
 				if depth == -1
 					temp.push(pull()) until empty?
@@ -166,8 +167,9 @@ module REXML
 				return @stack.shift if @stack.size > 0
 				@source.read if @source.buffer.size==0
 				if @document_status == nil
-					@source.match( /^\s*/um, true )
-					word = @source.match( /^\s*(<.*?)>/um )
+					@source.consume( /^\s*/um )
+					word = @source.match( /(<.*?)>/um )
+					#word = @source.match_to( '>', /(<.*?)>/um )
 					word = word[1] unless word.nil?
 					case word
 					when COMMENT_START
@@ -190,7 +192,7 @@ module REXML
 						close = md[2]
 						identity =~ IDENTITY
 						name = $1
-						raise "DOCTYPE is missing a name" if name.nil?
+						raise REXML::ParseException("DOCTYPE is missing a name") if name.nil?
 						pub_sys = $2.nil? ? nil : $2.strip
 						long_name = $3.nil? ? nil : $3.strip
 						uri = $4.nil? ? nil : $4.strip
@@ -274,10 +276,11 @@ module REXML
 						return [ :end_doctype ]
 					end
 				end
-				begin 
+				begin
 					if @source.buffer[0] == ?<
 						if @source.buffer[1] == ?/
 							last_tag = @tags.pop
+							#md = @source.match_to_consume( '>', CLOSE_MATCH)
 							md = @source.match( CLOSE_MATCH, true )
 							raise REXML::ParseException.new( "Missing end tag for '#{last_tag}' "+
 								"(got \"#{md[1]}\")", @source) unless last_tag == md[1]
@@ -286,18 +289,20 @@ module REXML
 							md = @source.match(/\A(\s*[^>]*>)/um)
 							#puts "SOURCE BUFFER = #{source.buffer}, #{source.buffer.size}"
 							raise REXML::ParseException.new("Malformed node", @source) unless md
-							case md[1]
-							when CDATA_START
-								return [ :cdata, @source.match( CDATA_PATTERN, true )[1] ]
-							when COMMENT_START
-								return [ :comment, @source.match( COMMENT_PATTERN, true )[1] ]
+							if md[0][2] == ?-
+								md = @source.match( COMMENT_PATTERN, true )
+								return [ :comment, md[1] ] if md
 							else
-								raise REXML::ParseException.new( "Declarations can only occur "+
-								"in the doctype declaration.", @source)
+								md = @source.match( CDATA_PATTERN, true )
+								return [ :cdata, md[1] ] if md
 							end
+							raise REXML::ParseException.new( "Declarations can only occur "+
+								"in the doctype declaration.", @source)
 						elsif @source.buffer[1] == ??
 							md = @source.match( INSTRUCTION_PATTERN, true )
-							return [ :processing_instruction, md[1], md[2] ]
+							return [ :processing_instruction, md[1], md[2] ] if md
+							raise REXML::ParseException.new( "Bad instruction declaration",
+								@source)
 						else
 							# Get the next tag
 							md = @source.match(TAG_MATCH, true)
@@ -318,17 +323,19 @@ module REXML
 							return [ :start_element, md[1], attributes ]
 						end
 					else
-						md = @source.match(TEXT_PATTERN, true)
-						raise "no text to add" if md[0].length == 0
+						md = @source.match( TEXT_PATTERN, true )
+						#md = @source.match_to_consume( '<', TEXT_PATTERN )
+						#@source.read
+						raise REXML::ParseException("no text to add") if md[0].length == 0
 						# unnormalized = Text::unnormalize( md[1], self )
 						# return PullEvent.new( :text, md[1], unnormalized )
 						return [ :text, md[1] ]
 					end
-        rescue REXML::ParseException
-          raise $!
+				rescue REXML::ParseException
+					raise
 				rescue Exception, NameError => error
 					raise REXML::ParseException.new( "Exception parsing",
-						@source, self, error )
+						@source, self, (error ? error : $!) )
 				end
 				return [ :dummy ]
 			end
@@ -354,7 +361,7 @@ module REXML
 				end if entities
 				copy.gsub!( EREFERENCE, '&amp;' )
 				DEFAULT_ENTITIES.each do |key, value|
-					copy.gsub!( value[2], value[1] )
+					copy.gsub!( value[3], value[1] )
 				end
 				copy
 			end
