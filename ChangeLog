@@ -1,3 +1,10 @@
+Tue Jul 17 11:08:34 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
+
+	* ext/extmk.rb.in: modify RM macro because command.com/cmd.exe don't
+	  recognize single quotation as quote character.
+
+	* lib/mkmf.rb: ditto.
+
 Man Jul 16 13:21:30 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
 
 	* file.c (file_load_ok): fix typo.
