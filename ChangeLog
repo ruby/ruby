@@ -1,4 +1,10 @@
-Fri Jul 17 06:01:12 2001  Minero Aoki  <aamine@loveruby.net>
+Tue Jul 17 11:44:40 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
+
+	* ruby.h: enable volatile directive with VC++.
+
+	* regex.c: ditto.
+
+Tue Jul 17 06:01:12 2001  Minero Aoki  <aamine@loveruby.net>
 
 	* doc/net/smtp.rd.ja, pop.rd.ja, http.rd.ja: new files.
 

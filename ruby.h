@@ -45,7 +45,7 @@ extern "C" {
 #define ISDIGIT(c) isdigit((unsigned char)(c))
 #define ISXDIGIT(c) isxdigit((unsigned char)(c))
 
-#ifndef __STDC__
+#if !defined(__STDC__) && !defined(_MSC_VER)
 # define volatile
 #endif
 

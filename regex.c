@@ -51,7 +51,7 @@
 # include <sys/types.h>
 #endif
 
-#ifndef __STDC__
+#if !defined(__STDC__) && !defined(_MSC_VER)
 # define volatile
 #endif
 
