@@ -326,7 +326,7 @@ rb_stat_inspect(self)
 	if (i == 2) {		/* mode */
 	    char buf[32];
 
-	    sprintf(buf, "0%o", NUM2INT(v));
+	    sprintf(buf, "0%lo", NUM2ULONG(v));
 	    rb_str_buf_cat2(str, buf);
 	}
 	else if (i == 0 || i == 6) { /* dev/rdev */

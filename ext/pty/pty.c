@@ -38,7 +38,7 @@
 #define	DEVICELEN	16
 
 #if !defined(HAVE_OPENPTY)
-#ifdef __hpux
+#if defined(__hpux)
 static
 char	*MasterDevice = "/dev/ptym/pty%s",
 	*SlaveDevice =  "/dev/pty/tty%s",
@@ -61,8 +61,7 @@ char	*MasterDevice = "/dev/ptym/pty%s",
 		"w8","w9","wa","wb","wc","wd","we","wf",
 		0,
 	};
-#else  /* NOT HPUX */
-#ifdef _IBMESA  /* AIX/ESA */
+#elif defined(_IBMESA)  /* AIX/ESA */
 static 
 char	*MasterDevice = "/dev/ptyp%s",
   	*SlaveDevice = "/dev/ttyp%s",
@@ -84,7 +83,7 @@ char	*MasterDevice = "/dev/ptyp%s",
 "e0","e1","e2","e3","e4","e5","e6","e7","e8","e9","ea","eb","ec","ed","ee","ef",
 "f0","f1","f2","f3","f4","f5","f6","f7","f8","f9","fa","fb","fc","fd","fe","ff",
 		};
-#else
+#elif !defined(HAVE_PTSNAME)
 static 
 char	*MasterDevice = "/dev/pty%s",
 	*SlaveDevice = "/dev/tty%s",
@@ -99,8 +98,7 @@ char	*MasterDevice = "/dev/pty%s",
 		"s8","s9","sa","sb","sc","sd","se","sf",
 		0,
 	};
-#endif /* _IBMESA */
-#endif /* HPUX */
+#endif
 #endif /* !defined(HAVE_OPENPTY) */
 
 static char SlaveName[DEVICELEN];
@@ -342,9 +340,7 @@ static void
 getDevice(master,slave)
     int	*master,*slave;
 {
-    char **p;
     int	 i,j;
-    char MasterName[DEVICELEN];
 
 #ifdef HAVE_PTSNAME
     char *pn;
@@ -381,6 +377,9 @@ getDevice(master,slave)
     }
     rb_raise(rb_eRuntimeError, "Cannot get Master/Slave device");
 #else
+    char **p;
+    char MasterName[DEVICELEN];
+
     for (p = deviceNo; *p != NULL; p++) {
 	sprintf(MasterName,MasterDevice,*p);
 	if ((i = open(MasterName,O_RDWR,0)) >= 0) {

@@ -5443,7 +5443,7 @@ static NODE*
 arg_prepend(node1, node2)
     NODE *node1, *node2;
 {
-    switch (nodetype(node2)) {
+    switch (nd_type(node2)) {
       case NODE_ARRAY:
 	return list_concat(NEW_LIST(node1), node2);
 
@@ -5455,7 +5455,7 @@ arg_prepend(node1, node2)
 	return node2;
 
       default:
-	rb_bug("unknown nodetype(%d) for arg_prepend", nodetype(node2));
+	rb_bug("unknown nodetype(%d) for arg_prepend", nd_type(node2));
     }
     return 0;			/* not reached */
 }

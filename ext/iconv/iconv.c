@@ -426,7 +426,7 @@ iconv_convert
 	}
 	else {
 	    /* Some iconv() have a bug, return *outlen out of range */
-	    sprintf(errmsg, "bug?(output length = %ld)", sizeof(buffer) - outlen);
+	    sprintf(errmsg, "bug?(output length = %ld)", (long)(sizeof(buffer) - outlen));
 	    error = rb_eIconvOutOfRange;
 	}
 

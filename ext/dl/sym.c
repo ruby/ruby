@@ -362,7 +362,7 @@ __declspec(noinline)
 static int
 rb_dlsym_guardcall(char type, ANY_TYPE *ret, long *stack, void *func)
 {
-  volatile char *guard = ALLOCA_N(char, 1); /* guard stack pointer */
+  char *volatile guard = ALLOCA_N(char, 1); /* guard stack pointer */
   switch(type){
   case '0':
     {

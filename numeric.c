@@ -23,6 +23,10 @@
 #include <float.h>
 #endif
 
+#ifdef HAVE_IEEEFP_H
+#include <ieeefp.h>
+#endif
+
 /* use IEEE 64bit values if not defined */
 #ifndef FLT_RADIX
 #define FLT_RADIX 2

@@ -1,3 +1,47 @@
+Thu Dec 11 11:39:43 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (ieeefp.h), numeric.c: needed for finite() on
+	  Solaris.  [ruby-core:01921]
+
+	* file.c (rb_stat_inspect): adjust format specifier.
+
+	* parse.c (arg_prepend): nodetype() is for debug use.
+
+	* ruby.h (ISASCII, etc): cast to int to get rid of warning.
+
+	* ruby.h (alloca.h): include even in GCC.  [ruby-core:01925]
+
+	* ext/bigdecimal/bigdecimal.c (GetVpValue): adjust format
+	  specifier.
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_prec, BigDecimal_coerce,
+	  BigDecimal_divmod): use rb_assoc_new() to suppress memory usage.
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_split): ditto.
+
+	* ext/dl/sym.c (rb_dlsym_guardcall): guard itself should be
+	  volatile.
+
+	* ext/iconv/iconv.c (iconv_convert): ensure actual parameter with
+	  format specifier.
+
+	* ext/pty/pty.c (MasterDevice, SlaveDevice, deviceNo): do not
+	  define unless used.
+
+	* ext/pty/pty.c (getDevice): get rid of warning.
+
+	* ext/socket/socket.c (port_str, sock_s_getaddrinfo,
+	  sock_s_getnameinfo): FIX2INT() now returns long.
+
+	* ext/socket/socket.c (init_inetsock_internal): uninitialized
+	  variable.
+
+	* ext/syck/rubyext.c (syck_parser_assign_io): add prototype.
+
+	* ext/syck/rubyext.c (rb_syck_mktime, yaml_org_handler): use
+	  ISDIGIT() instead of isdigit() to avoid warnings and for
+	  platforms which don't support non-ascii charater.
+
 Wed Dec 10 19:28:56 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_read): set EOF flag at short read.

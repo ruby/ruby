@@ -72,6 +72,7 @@ SYMID rb_syck_load_handler _((SyckParser *, SyckNode *));
 void rb_syck_err_handler _((SyckParser *, char *));
 SyckNode * rb_syck_bad_anchor_handler _((SyckParser *, char *));
 void rb_syck_output_handler _((SyckEmitter *, char *, long));
+int syck_parser_assign_io _((SyckParser *, VALUE));
 
 struct parser_xtra {
     VALUE data;  /* Borrowed this idea from marshal.c to fix [ruby-core:8067] problem */
@@ -204,27 +205,27 @@ rb_syck_mktime(str)
 
     /* Month*/
     ptr += 4;
-    while ( !isdigit( *ptr ) ) ptr++;
+    while ( !ISDIGIT( *ptr ) ) ptr++;
     mon = INT2FIX(strtol(ptr, NULL, 10));
 
     /* Day*/
     ptr += 2;
-    while ( !isdigit( *ptr ) ) ptr++;
+    while ( !ISDIGIT( *ptr ) ) ptr++;
     day = INT2FIX(strtol(ptr, NULL, 10));
 
     /* Hour*/
     ptr += 2;
-    while ( !isdigit( *ptr ) ) ptr++;
+    while ( !ISDIGIT( *ptr ) ) ptr++;
     hour = INT2FIX(strtol(ptr, NULL, 10));
 
     /* Minute */
     ptr += 2;
-    while ( !isdigit( *ptr ) ) ptr++;
+    while ( !ISDIGIT( *ptr ) ) ptr++;
     min = INT2FIX(strtol(ptr, NULL, 10));
 
     /* Second */
     ptr += 2;
-    while ( !isdigit( *ptr ) ) ptr++;
+    while ( !ISDIGIT( *ptr ) ) ptr++;
     sec = INT2FIX(strtol(ptr, NULL, 10));
 
     /* Millisecond */
@@ -485,12 +486,12 @@ yaml_org_handler( n, ref )
 
                 /* Month*/
                 ptr += 4;
-                while ( !isdigit( *ptr ) ) ptr++;
+                while ( !ISDIGIT( *ptr ) ) ptr++;
                 mon = INT2FIX(strtol(ptr, NULL, 10));
 
                 /* Day*/
                 ptr += 2;
-                while ( !isdigit( *ptr ) ) ptr++;
+                while ( !ISDIGIT( *ptr ) ) ptr++;
                 day = INT2FIX(strtol(ptr, NULL, 10));
 
                 obj = rb_funcall( cDate, s_new, 3, year, mon, day );

@@ -36,16 +36,16 @@ extern "C" {
 
 /* need to include <ctype.h> to use these macros */
 #ifndef ISPRINT
-#define ISASCII(c) isascii((unsigned char)(c))
+#define ISASCII(c) isascii((int)(unsigned char)(c))
 #undef ISPRINT
-#define ISPRINT(c) (ISASCII(c) && isprint((unsigned char)(c)))
-#define ISSPACE(c) (ISASCII(c) && isspace((unsigned char)(c)))
-#define ISUPPER(c) (ISASCII(c) && isupper((unsigned char)(c)))
-#define ISLOWER(c) (ISASCII(c) && islower((unsigned char)(c)))
-#define ISALNUM(c) (ISASCII(c) && isalnum((unsigned char)(c)))
-#define ISALPHA(c) (ISASCII(c) && isalpha((unsigned char)(c)))
-#define ISDIGIT(c) (ISASCII(c) && isdigit((unsigned char)(c)))
-#define ISXDIGIT(c) (ISASCII(c) && isxdigit((unsigned char)(c)))
+#define ISPRINT(c) (ISASCII(c) && isprint((int)(unsigned char)(c)))
+#define ISSPACE(c) (ISASCII(c) && isspace((int)(unsigned char)(c)))
+#define ISUPPER(c) (ISASCII(c) && isupper((int)(unsigned char)(c)))
+#define ISLOWER(c) (ISASCII(c) && islower((int)(unsigned char)(c)))
+#define ISALNUM(c) (ISASCII(c) && isalnum((int)(unsigned char)(c)))
+#define ISALPHA(c) (ISASCII(c) && isalpha((int)(unsigned char)(c)))
+#define ISDIGIT(c) (ISASCII(c) && isdigit((int)(unsigned char)(c)))
+#define ISXDIGIT(c) (ISASCII(c) && isxdigit((int)(unsigned char)(c)))
 #endif
 
 #define NORETURN_STYLE_NEW 1
@@ -53,7 +53,7 @@ extern "C" {
 # define NORETURN(x) x
 #endif
 
-#if defined(HAVE_ALLOCA_H) && !defined(__GNUC__)
+#if defined(HAVE_ALLOCA_H)
 #include <alloca.h>
 #endif
 

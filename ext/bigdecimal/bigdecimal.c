@@ -103,7 +103,7 @@ GetVpValue(VALUE v, int must)
         }
         break;
     case T_FIXNUM:
-        sprintf(szD, "%d", FIX2INT(v));
+        sprintf(szD, "%ld", FIX2LONG(v));
         return VpCreateRbObject(VpBaseFig() * 2 + 1, szD);
 
 #ifdef ENABLE_NUMERIC_STRING
@@ -146,9 +146,8 @@ BigDecimal_prec(VALUE self)
     VALUE obj;
 
     GUARD_OBJ(p,GetVpValue(self,1));
-    obj = rb_ary_new();
-    obj = rb_ary_push(obj,INT2NUM(p->Prec*VpBaseFig()));
-    obj = rb_ary_push(obj,INT2NUM(p->MaxPrec*VpBaseFig()));
+    obj = rb_assoc_new(INT2NUM(p->Prec*VpBaseFig()),
+		       INT2NUM(p->MaxPrec*VpBaseFig()));
     return obj;
 }
 
@@ -427,14 +426,10 @@ BigDecimal_coerce(VALUE self, VALUE other)
     VALUE obj;
     Real *b;
     if(TYPE(other) == T_FLOAT) {
-       obj = rb_ary_new();
-       obj = rb_ary_push(obj,other);
-       obj = rb_ary_push(obj,BigDecimal_to_f(self));
+       obj = rb_assoc_new(other, BigDecimal_to_f(self));
     } else {
        GUARD_OBJ(b,GetVpValue(other,1));
-       obj = rb_ary_new();
-       obj = rb_ary_push(obj, b->obj);
-       obj = rb_ary_push(obj, self);
+       obj = rb_assoc_new(b->obj, self);
     }
     return obj;
 }
@@ -780,9 +775,7 @@ BigDecimal_divmod(VALUE self, VALUE r)
     obj = BigDecimal_DoDivmod(self,r,&div,&mod);
     if(obj!=(VALUE)0) return obj;
     SAVE(div);SAVE(mod);
-    obj = rb_ary_new();
-    rb_ary_push(obj, ToValue(div));
-    rb_ary_push(obj, ToValue(mod));
+    obj = rb_assoc_new(ToValue(div), ToValue(mod));
     return obj;
 }
 
@@ -1124,7 +1117,7 @@ BigDecimal_split(VALUE self)
     if(psz1[0]=='N') s=0; /* NaN */
     e = VpExponent10(vp);
     obj1 = rb_str_new2(psz1);
-    obj  = rb_ary_new();
+    obj  = rb_ary_new2(4);
     rb_ary_push(obj, INT2FIX(s));
     rb_ary_push(obj, obj1);
     rb_ary_push(obj, INT2FIX(10));

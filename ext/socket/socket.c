@@ -596,7 +596,7 @@ port_str(port, pbuf, len)
 	return 0;
     }
     else if (FIXNUM_P(port)) {
-	snprintf(pbuf, len, "%d", FIX2INT(port));
+	snprintf(pbuf, len, "%ld", FIX2LONG(port));
 	return pbuf;
     }
     else {
@@ -893,7 +893,7 @@ init_inetsock_internal(arg)
 {
     int type = arg->type;
     struct addrinfo *res;
-    int fd, status;
+    int fd, status = 0;
     char *syscall;
 
     arg->remote.res = sock_addrinfo(arg->remote.host, arg->remote.serv, SOCK_STREAM,
@@ -2106,7 +2106,7 @@ sock_s_getaddrinfo(argc, argv)
 	pptr = NULL;
     }
     else if (FIXNUM_P(port)) {
-	snprintf(pbuf, sizeof(pbuf), "%d", FIX2INT(port));
+	snprintf(pbuf, sizeof(pbuf), "%ld", FIX2LONG(port));
 	pptr = pbuf;
     }
     else {
@@ -2225,7 +2225,7 @@ sock_s_getnameinfo(argc, argv)
 	    pptr = NULL;
 	}
 	else if (FIXNUM_P(port)) {
-	    snprintf(pbuf, sizeof(pbuf), "%d", NUM2INT(port));
+	    snprintf(pbuf, sizeof(pbuf), "%ld", NUM2LONG(port));
 	    pptr = pbuf;
 	}
 	else {
