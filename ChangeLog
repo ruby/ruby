@@ -1,3 +1,7 @@
+Fri Mar  7 15:05:35 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/dbm/extconf.rb: add QDBM support.
+
 Fri Mar  7 03:31:36 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (dsym): :"symbol string" style should not contain `\0'.

@@ -11,6 +11,7 @@ $dbm_conf_headers = {
   "dbm" => ["ndbm.h"],
   "gdbm" => ["gdbm-ndbm.h", "ndbm.h"],
   "gdbm_compat" => ["gdbm-ndbm.h", "ndbm.h"],
+  "qdbm" => ["relic.h"],
 }
 
 def db_check(db)
