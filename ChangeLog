@@ -1,3 +1,8 @@
+Tue Jun 12 14:24:02 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* lib/mkmf.rb: target_prefix is only for installation, not for
+	  build.
+
 Mon Jun 11 14:29:41 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* confgure.in: add RUBY_CANONICAL_BUILD.

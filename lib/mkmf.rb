@@ -447,12 +447,13 @@ end
 }
 prefix = $(DESTDIR)#{CONFIG["prefix"].sub(drive, '')}
 exec_prefix = #{CONFIG["exec_prefix"].sub(drive, '')}
-libdir = #{$libdir.sub(drive, '')}#{target_prefix}
-rubylibdir = #{$rubylibdir.sub(drive, '')}#{target_prefix}
-archdir = #{$archdir.sub(drive, '')}#{target_prefix}
-sitedir = #{$sitedir.sub(drive, '')}#{target_prefix}
-sitelibdir = #{$sitelibdir.sub(drive, '')}#{target_prefix}
-sitearchdir = #{$sitearchdir.sub(drive, '')}#{target_prefix}
+libdir = #{$libdir.sub(drive, '')}
+rubylibdir = #{$rubylibdir.sub(drive, '')}
+archdir = #{$archdir.sub(drive, '')}
+sitedir = #{$sitedir.sub(drive, '')}
+sitelibdir = #{$sitelibdir.sub(drive, '')}
+sitearchdir = #{$sitearchdir.sub(drive, '')}
+target_prefix = #{target_prefix}
 
 #### End of system configuration section. ####
 
@@ -479,23 +480,23 @@ distclean:	clean
 
 realclean:	distclean
 
-install:	$(archdir)/$(DLLIB)
+install:	$(archdir)$(target_prefix)/$(DLLIB)
 
-site-install:	$(sitearchdir)/$(DLLIB)
+site-install:	$(sitearchdir)$(target_prefix)/$(DLLIB)
 
-$(archdir)/$(DLLIB): $(DLLIB)
-	@$(RUBY) -r ftools -e 'File::makedirs(*ARGV)' $(rubylibdir) $(archdir)
-	@$(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0555, true)' $(DLLIB) $(archdir)/$(DLLIB)
+$(archdir)$(target_prefix)/$(DLLIB): $(DLLIB)
+	@$(RUBY) -r ftools -e 'File::makedirs(*ARGV)' $(rubylibdir) $(archdir)$(target_prefix)
+	@$(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0555, true)' $(DLLIB) $(archdir)$(target_prefix)/$(DLLIB)
 EOMF
-  install_rb(mfile, "$(rubylibdir)", srcdir)
+  install_rb(mfile, "$(rubylibdir)$(target_prefix)", srcdir)
   mfile.printf "\n"
 
   mfile.printf <<EOMF
-$(sitearchdir)/$(DLLIB): $(DLLIB)
-	@$(RUBY) -r ftools -e 'File::makedirs(*ARGV)' $(libdir) $(sitearchdir)
-	@$(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0555, true)' $(DLLIB) $(sitearchdir)/$(DLLIB)
+$(sitearchdir)$(target_prefix)/$(DLLIB): $(DLLIB)
+	@$(RUBY) -r ftools -e 'File::makedirs(*ARGV)' $(libdir) $(sitearchdir)$(target_prefix)
+	@$(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0555, true)' $(DLLIB) $(sitearchdir)$(target_prefix)/$(DLLIB)
 EOMF
-  install_rb(mfile, "$(sitelibdir)", srcdir)
+  install_rb(mfile, "$(sitelibdir)$(target_prefix)", srcdir)
   mfile.printf "\n"
 
   if /mswin32/ !~ RUBY_PLATFORM
