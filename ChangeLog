@@ -1,3 +1,15 @@
+Sun Nov 10 03:46:18 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/set.rb: retire contain?() and add superset?(),
+	  proper_superset?() subset?(), and proper_subset?().
+	  [obtained from: Jason Voegele's set.rb]
+
+	* lib/set.rb: define several aliases: union() for |(),
+	  difference() for -(), ande intersection() for &().
+	  [obtained from: Jason Voegele's set.rb]
+
+	* lib/set.rb: deal with a s/id/object_id/ leftover.
+
 Sat Nov  9 16:06:57 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/tcltklib/stubs.c: should include "util.h" for ruby_strdup.

@@ -87,9 +87,19 @@ Object#eql? and Object#hash, since Set uses Hash as storage.
 --- member?(o)
     Returns true if the set contains the given object.
 
---- contain?(enum)
-    Returns true if the set contains every element of the given
-    enumerable object.
+--- superset?(set)
+    Returns true if the set is a superset of or is equal to the given
+    set.
+
+--- proper_superset?(set)
+    Returns true if the set is a superset of or is equal to the given
+    set.
+
+--- subset?(set)
+    Returns true if the set is a proper subset of the given set.
+
+--- proper_subset?(set)
+    Returns true if the set is a proper subset of the given set.
 
 --- each { |o| ... }
     Calls the given block once for each element in the set, passing
@@ -132,6 +142,7 @@ Object#eql? and Object#hash, since Set uses Hash as storage.
 
 --- + enum
 --- | enum
+--- union(enum)
     Returns a new set built by merging the set and the elements of the
     given enumerable object.
 
@@ -140,6 +151,7 @@ Object#eql? and Object#hash, since Set uses Hash as storage.
     element that appear in the given enumerable object.
 
 --- & enum
+--- intersection(enum)
     Returns a new array containing elements common to the set and the
     given enumerable object.
 
@@ -298,9 +310,28 @@ class Set
   end
   alias member? include?
 
-  def contain?(enum)
-    enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
-    enum.all? { |o| include?(o) }
+  def superset?(set)
+    set.is_a?(Set) or raise ArgumentError, "value must be a set"
+    return false if size < set.size
+    set.all? { |o| include?(o) }
+  end
+
+  def proper_superset?(set)
+    set.is_a?(Set) or raise ArgumentError, "value must be a set"
+    return false if size <= set.size
+    set.all? { |o| include?(o) }
+  end
+
+  def subset?(set)
+    set.is_a?(Set) or raise ArgumentError, "value must be a set"
+    return false if set.size < size
+    all? { |o| set.include?(o) }
+  end
+
+  def proper_subset?(set)
+    set.is_a?(Set) or raise ArgumentError, "value must be a set"
+    return false if set.size <= size
+    all? { |o| set.include?(o) }
   end
 
   def each
@@ -369,16 +400,18 @@ class Set
     self
   end
 
-  def +(enum)
+  def |(enum)
     enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
     dup.merge(enum)
   end
-  alias | +	##
+  alias + |		##
+  alias union |		##
 
   def -(enum)
     enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
     dup.subtract(enum)
   end
+  alias difference -	##
 
   def &(enum)
     enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
@@ -386,6 +419,7 @@ class Set
     enum.each { |o| include?(o) and n.add(o) }
     n
   end
+  alias intersection &	##
 
   def ^(enum)
     enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
@@ -454,12 +488,12 @@ class Set
   def inspect
     ids = (Thread.current[InspectKey] ||= [])
 
-    if ids.include?(id)
+    if ids.include?(object_id)
       return sprintf('#<%s: {...}>', self.class.name)
     end
 
     begin
-      ids << id
+      ids << object_id
       return sprintf('#<%s: {%s}>', self.class, to_a.inspect[1..-2])
     ensure
       ids.pop
@@ -859,22 +893,99 @@ class TC_Set < Test::Unit::TestCase
     assert_equal(false, set.include?(true))
   end
 
-  def test_contain?
+  def test_superset?
     set = Set[1,2,3]
 
     assert_raises(ArgumentError) {
-      set.contain?()
+      set.superset?()
     }
 
     assert_raises(ArgumentError) {
-      set.contain?(2)
+      set.superset?(2)
     }
 
-    assert_equal(true, set.contain?([]))
-    assert_equal(true, set.contain?([3,1]))
-    assert_equal(false, set.contain?([1,2,0]))
+    assert_raises(ArgumentError) {
+      set.superset?([2])
+    }
 
-    assert_equal(true, Set[].contain?([]))
+    assert_equal(true, set.superset?(Set[]))
+    assert_equal(true, set.superset?(Set[1,2]))
+    assert_equal(true, set.superset?(Set[1,2,3]))
+    assert_equal(false, set.superset?(Set[1,2,3,4]))
+    assert_equal(false, set.superset?(Set[1,4]))
+
+    assert_equal(true, Set[].superset?(Set[]))
+  end
+
+  def test_proper_superset?
+    set = Set[1,2,3]
+
+    assert_raises(ArgumentError) {
+      set.proper_superset?()
+    }
+
+    assert_raises(ArgumentError) {
+      set.proper_superset?(2)
+    }
+
+    assert_raises(ArgumentError) {
+      set.proper_superset?([2])
+    }
+
+    assert_equal(true, set.proper_superset?(Set[]))
+    assert_equal(true, set.proper_superset?(Set[1,2]))
+    assert_equal(false, set.proper_superset?(Set[1,2,3]))
+    assert_equal(false, set.proper_superset?(Set[1,2,3,4]))
+    assert_equal(false, set.proper_superset?(Set[1,4]))
+
+    assert_equal(false, Set[].proper_superset?(Set[]))
+  end
+
+  def test_subset?
+    set = Set[1,2,3]
+
+    assert_raises(ArgumentError) {
+      set.subset?()
+    }
+
+    assert_raises(ArgumentError) {
+      set.subset?(2)
+    }
+
+    assert_raises(ArgumentError) {
+      set.subset?([2])
+    }
+
+    assert_equal(true, set.subset?(Set[1,2,3,4]))
+    assert_equal(true, set.subset?(Set[1,2,3]))
+    assert_equal(false, set.subset?(Set[1,2]))
+    assert_equal(false, set.subset?(Set[]))
+
+    assert_equal(true, Set[].subset?(Set[1]))
+    assert_equal(true, Set[].subset?(Set[]))
+  end
+
+  def test_proper_subset?
+    set = Set[1,2,3]
+
+    assert_raises(ArgumentError) {
+      set.proper_subset?()
+    }
+
+    assert_raises(ArgumentError) {
+      set.proper_subset?(2)
+    }
+
+    assert_raises(ArgumentError) {
+      set.proper_subset?([2])
+    }
+
+    assert_equal(true, set.proper_subset?(Set[1,2,3,4]))
+    assert_equal(false, set.proper_subset?(Set[1,2,3]))
+    assert_equal(false, set.proper_subset?(Set[1,2]))
+    assert_equal(false, set.proper_subset?(Set[]))
+
+    assert_equal(false, Set[].proper_subset?(Set[]))
   end
 
   def test_each
