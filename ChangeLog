@@ -1,3 +1,8 @@
+Sat Dec 13 17:17:59 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (proc_alloc): cache the created object at first time.
+	  [ruby-talk:61288], [ruby-dev:22240]
+
 Sat Dec 13 09:01:23 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: check ucontext.h.

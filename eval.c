@@ -7066,6 +7066,7 @@ proc_alloc(klass, proc)
     data->orig_thread = rb_thread_current();
     data->wrapper = ruby_wrapper;
     data->iter = data->prev?Qtrue:Qfalse;
+    data->block_obj = block;
     frame_dup(&data->frame);
     if (data->iter) {
 	blk_copy_prev(data);
