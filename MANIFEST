@@ -161,8 +161,6 @@ lib/profile.rb
 lib/pstore.rb
 lib/rational.rb
 lib/readbytes.rb
-lib/resolv.rb
-lib/resolv-replace.rb
 lib/shell.rb
 lib/shell/builtin-command.rb
 lib/shell/command-processor.rb
@@ -202,7 +200,6 @@ missing/os2.c
 missing/strcasecmp.c
 missing/strncasecmp.c
 missing/strchr.c
-missing/strdup.c
 missing/strerror.c
 missing/strftime.c
 missing/strstr.c
