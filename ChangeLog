@@ -1,3 +1,7 @@
+Wed Dec  8 03:26:41 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* runruby.rb: prepend LIBRUBY_SO to LD_PRELOAD as well as rubytest.rb.
+
 Wed Dec 08 01:35:44 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (is_socket): reorder of function definitions.

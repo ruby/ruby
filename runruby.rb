@@ -44,9 +44,14 @@ if e = ENV["RUBYLIB"]
 end
 ENV["RUBYLIB"] = $:.replace(libs).join(File::PATH_SEPARATOR)
 
-if File.file?(File.join(archdir, config['LIBRUBY_SO'])) and
-    e = config['LIBPATHENV'] and !e.empty?
-  ENV[e] = [abs_archdir, ENV[e]].compact.join(File::PATH_SEPARATOR)
+libruby_so = File.join(abs_archdir, config['LIBRUBY_SO'])
+if File.file?(libruby_so)
+  if e = config['LIBPATHENV'] and !e.empty?
+    ENV[e] = [abs_archdir, ENV[e]].compact.join(File::PATH_SEPARATOR)
+  end
+  if /linux/ =~ RUBY_PLATFORM
+    ENV["LD_PRELOAD"] = [libruby_so, ENV["LD_PRELOAD"]].compact.join(' ')
+  end
 end
 
 exec ruby, *ARGV
