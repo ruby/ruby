@@ -187,7 +187,7 @@ hash_alloc(klass)
     OBJSETUP(hash, klass, T_HASH);
 
     hash->ifnone = Qnil;
-    hash->tbl = 0;
+    hash->tbl = st_init_table(&objhash);
 
     return (VALUE)hash;
 }
@@ -202,12 +202,10 @@ static void
 rb_hash_modify(hash)
     VALUE hash;
 {
+    if (!RHASH(hash)->tbl) rb_raise(rb_eTypeError, "uninitialized Hash");
     if (OBJ_FROZEN(hash)) rb_error_frozen("hash");
     if (!OBJ_TAINTED(hash) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify hash");
-    if (RHASH(hash)->tbl == 0) {
-	RHASH(hash)->tbl = st_init_table(&objhash);
-    }
 }
 
 /*

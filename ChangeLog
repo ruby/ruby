@@ -1,3 +1,8 @@
+Wed Sep 22 13:50:49 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (hash_alloc): was using tbl pointer without
+	  initialization.
+
 Wed Sep 22 13:38:12 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* hash.c (rb_hash_rehash): add iteration check.  [ruby-dev:24301]
