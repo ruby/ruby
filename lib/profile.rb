@@ -21,7 +21,7 @@ module Profiler__
 	else
 	  name += "."
 	end
-	data = [0, 0, 0, name+id.id2name]
+	data = [0.0, 0.0, 0.0, name+id.id2name]
 	MAP[id] = data
       end
       data[0] += 1
@@ -43,7 +43,7 @@ module Profiler__
     f.printf " time   seconds   seconds    calls  ms/call  ms/call  name\n"
     for d in data
       sum += d[2]
-      f.printf "%6.2f %8.2f  %8.2f %8d ", d[2]/total*100, sum, d[2], d[0]
+      f.printf "%6.2f %8.2f  %8.2f %8d ", d[2]*100/total, sum, d[2], d[0]
       f.printf "%8.2f %8.2f  %s\n", d[2]*1000/d[0], d[1]*1000/d[0], d[3]
     end
     p total

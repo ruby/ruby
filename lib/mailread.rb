@@ -43,6 +43,6 @@ class Mail
   end
 
   def [](field)
-    @header[field]
+    @header[field.capitalize]
   end
 end
