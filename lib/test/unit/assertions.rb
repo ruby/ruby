@@ -229,7 +229,7 @@ EOT
       public
       def assert_no_match(regexp, string, message="")
         _wrap_assertion do
-          assert_instance_of(Regexp, regexp, "The first argument to assert_does_not_match should be a Regexp.")
+          assert_instance_of(Regexp, regexp, "The first argument to assert_no_match should be a Regexp.")
           full_message = build_message(message, "<?> expected to not match\n<?>.", regexp, string)
           assert_block(full_message) { regexp !~ string }
         end

@@ -1,3 +1,9 @@
+Tue Dec  2 04:22:00 2003  Nathaniel Talbott  <ntalbott@ruby-lang.org>
+
+	* lib/test/unit/assertions.rb: fixed #assert_no_match message.
+
+	* test/testunit/test_assertions.rb: ditto.
+
 Tue Dec  2 00:43:00 2003  why the lucky stiff  <why@ruby-lang.org>
 
 	* ext/syck/syck.c: string buffering bug.  decrementing by full

@@ -336,18 +336,17 @@ module Test
       end
       
       def test_assert_no_match
-        check_nothing_fails {
-          assert_no_match(/sling/, "string")
-        }
-        check_nothing_fails {
-          assert_no_match(/sling/, "string", "message")
-        }
-        check_fails(%Q{</string/> expected to not match\n<"string">.}) {
+        check_nothing_fails{assert_no_match(/sling/, "string")}
+        check_nothing_fails{assert_no_match(/sling/, "string", "message")}
+        check_fails(%Q{The first argument to assert_no_match should be a Regexp.\n<"asdf"> expected to be an instance of\n<Regexp> but was\n<String>.}) do
+          assert_no_match("asdf", "asdf")
+        end
+        check_fails(%Q{</string/> expected to not match\n<"string">.}) do
           assert_no_match(/string/, "string")
-        }
-        check_fails(%Q{message.\n</string/> expected to not match\n<"string">.}) {
+        end
+        check_fails(%Q{message.\n</string/> expected to not match\n<"string">.}) do
           assert_no_match(/string/, "string", "message")
-        }
+        end
       end
       
       def test_assert_throws
