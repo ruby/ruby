@@ -118,10 +118,14 @@ extern char *strchr();
 #if !defined(OS2) && !defined(MSDOS) && defined(HAVE_TZNAME)
 extern char *tzname[2];
 extern int daylight;
-#if defined SOLARIS || defined __hpux
+#ifdef SOLARIS
 extern long timezone, altzone;
 #else
+#ifdef __hpux
+extern long timezone;
+#else
 extern int timezone, altzone;
+#endif
 #endif
 #endif
 
@@ -189,6 +193,11 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 	extern char *timezone();
 	struct timeval tv;
 	struct timezone zone;
+#else
+#ifdef __hpux
+	struct timeval tv;
+	struct timezone zone;
+#endif
 #endif /* HAVE_TZNAME */
 #endif /* HAVE_TM_NAME */
 #endif /* HAVE_TM_ZONE */
@@ -418,7 +427,12 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 			 * Systems with tzname[] probably have timezone as
 			 * secs west of GMT.  Convert to mins east of GMT.
 			 */
+#ifdef __hpux
+			gettimeofday(&tv, &zone);
+			off = -zone.tz_minuteswest;
+#else
 			off = -(daylight ? timezone : altzone) / 60;
+#endif
 #else /* !HAVE_TZNAME */
 			gettimeofday(&tv, &zone);
 			off = -zone.tz_minuteswest;

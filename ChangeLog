@@ -1,3 +1,7 @@
+Tue Nov 13 14:39:11 2001  WATANABE Tetsuya  <tetsu@jpn.hp.com>
+
+	* missing/strftime.c: HP-UX support.
+
 Tue Mar  4 15:08:08 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in: better HP-UX support.
