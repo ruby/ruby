@@ -500,7 +500,7 @@ test_ok(begin
 test_ok($x.length == 3)
 test_ok($x.has_key?(1))
 test_ok($x.has_value?(4))
-test_ok($x.indexes(2,3) == [4,6])
+test_ok($x.select(2,3) == [4,6])
 test_ok($x == {1=>2, 2=>4, 3=>6})
 
 $z = $y.keys.join(":")

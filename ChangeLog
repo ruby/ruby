@@ -1,11 +1,15 @@
-Mon Dec 17 18:53:49 2001  K.Kosako  <kosako@sofnec.co.jp>
+Tue Dec 18 17:54:53 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
-	* string.c (rb_str_replace): swap arguments of OBJ_INFECT.
+	* sample/test.rb: Hash#indexes -> Hash#select.
 
 Tue Dec 18 01:02:13 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_thread_schedule): should not select a thread which is
 	  not yet initialized.
+
+Mon Dec 17 18:53:49 2001  K.Kosako  <kosako@sofnec.co.jp>
+
+	* string.c (rb_str_replace): swap arguments of OBJ_INFECT.
 
 Mon Dec 17 16:52:20 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
