@@ -1332,7 +1332,7 @@ rb_file_s_expand_path(argc, argv)
     VALUE *argv;
 {
     VALUE fname, dname;
-    char *s, *p, *sbeg, *b;
+    char *s, *p, *b;
     char buf[MAXPATHLEN+2];
     char *bend = buf + sizeof(buf) - 2;
     int tainted;
@@ -1340,7 +1340,7 @@ rb_file_s_expand_path(argc, argv)
     rb_scan_args(argc, argv, "11", &fname, &dname);
 
     tainted = OBJ_TAINTED(fname);
-    s = sbeg = StringValuePtr(fname);
+    s = StringValuePtr(fname);
     p = buf;
     if (s[0] == '~') {
 	if (isdirsep(s[1]) || s[1] == '\0') {
@@ -1417,61 +1417,78 @@ rb_file_s_expand_path(argc, argv)
     }
     *p = '/';
 
+    b = s;
     while (*s) {
 	switch (*s) {
 	  case '.':
-           if (*(s+1) && (s == sbeg || isdirsep(*(s - 1)))) {
-		switch (*++s) {
+	    if (b == s++) {	/* beginning of path element */
+		switch (*s) {
+		  case '\0':
+		    b = s;
+		    break;
 		  case '.':
 		    if (*(s+1) == '\0' || isdirsep(*(s+1))) {
 			/* We must go back to the parent */
-			if (isdirsep(*p) && p > buf) p--;
-			while (p > buf && !isdirsep(*p)) p--;
-		    }
-		    else {
-			*++p = '.';
-			do {
-			    *++p = '.';
-			    if (p >= bend) goto toolong;
-			} while (*++s == '.');
-			--s;
+			*p = '\0';
+			if (!(b = strrdirsep(buf))) {
+			    *p = '/';
+			}
+			else {
+			    p = b;
+			}
+			b = ++s;
 		    }
 		    break;
 		  case '/':
 #if defined DOSISH
 		  case '\\':
 #endif
-		    if (!isdirsep(*p)) *++p = '/';
+		    b = ++s;
 		    break;
 		  default:
-		    *++p = '.'; *++p = *s; break;
+		    /* ordinary path element, beginning don't move */
+		    break;
 		}
-           }
-           else {
-               *++p = '.';
 	    }
 	    break;
 	  case '/':
 #if defined DOSISH
 	  case '\\':
 #endif
-	    if (!isdirsep(*p)) *++p = '/'; break;
+	    if (s > b) {
+		if (p + (s-b+1) >= bend) goto toolong;
+		memcpy(++p, b, s-b);
+		p += s-b;
+		*p = '/';
+	    }
+	    b = ++s;
+	    break;
 	  default:
-	    b = s;
 	    s = CharNext(s);
-	    p = CharNext(p);
-	    if (p + (s-b) >= bend) goto toolong;
-	    memcpy(p, b, s-b);
-	    continue;
+	    break;
 	}
-	s = CharNext(s);
     }
 
-    /* Place a \0 at end. If path ends with a "/", delete it */
-    if (p == buf || !isdirsep(*p)) p++;
-    *p = '\0';
+    if (s > b) {
+	if (p + (s-b) >= bend) goto toolong;
+	memcpy(++p, b, s-b);
+	p += s-b;
+    }
+    else if (p == buf) {
+	p++;
+    }
+#if defined(DOSISH)
+    else if (ISALPHA(buf[0]) && (buf[1] == ':') && isdirsep(buf[2])) {
+	/* root directory needs a trailing backslash,
+	   otherwise it mean the current directory of the drive */
+	if (p == (buf+2)) p++;
+    }
+    else if (isdirsep(buf[0]) && isdirsep(buf[1])) {
+	if (p == (buf+1)) p++;
+    }
+#endif
 
-    fname = rb_str_new2(buf);
+    fname = rb_str_new(buf, p - buf);
     if (tainted) OBJ_TAINT(fname);
     return fname;
 

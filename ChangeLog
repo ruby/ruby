@@ -1,7 +1,13 @@
+Tue Jul 31 07:18:04 2001  Nobuyoshi Nakada <nobu.nokada@softhome.net>
+
+	* file.c (rb_file_s_expand_path): scans per path element not per
+	  byte/character, including fix of [ruby-talk:18152] and
+	  multi-byte pathname support.
+
 Mon Jul 30 11:12:14 2001  Amos Gouaux <amos+ruby@utdallas.edu>
 
 	* lib/net/imap.rb: added new commands for managing folder quotas
-	and folder ACLs.
+	  and folder ACLs.
 
 Fri Jul 27 18:07:27 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -40,7 +46,7 @@ Wed Jul 25 12:15:32 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* file.c (rb_find_file): ditto.
 
-Tue Jul 24 23:10:47 2001  Nobuyoshi.Nakada  <nobu.nakada@nifty.ne.jp>
+Tue Jul 24 23:10:47 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* file.c (strrdirsep): multi-byte pathname and DOSish separater
 	  supprot. originally comes from Patrick Cheng. [new]
