@@ -130,7 +130,7 @@ rb_define_class_under(outer, name, super)
 
     id = rb_intern(name);
     klass = rb_define_class_id(id, super);
-    rb_shvar_set(outer, id, klass);
+    rb_const_set(outer, id, klass);
     rb_set_class_path(klass, outer, name);
 
     return klass;
@@ -186,7 +186,7 @@ rb_define_module_under(outer, name)
 
     id = rb_intern(name);
     module = rb_define_module_id(id);
-    rb_shvar_set(outer, id, module);
+    rb_const_set(outer, id, module);
     rb_set_class_path(module, outer, name);
 
     return module;
@@ -368,7 +368,7 @@ method_list(mod, option, func)
     VALUE klass;
     VALUE *p, *q, *pend;
 
-    if (!FL_TEST(mod, FL_TAINT) && rb_safe_level() >= 4)
+    if (!OBJ_TAINTED(mod) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't get metainfo");
     ary = rb_ary_new();
     for (klass = mod; klass; klass = RCLASS(klass)->super) {
@@ -431,7 +431,7 @@ rb_obj_singleton_methods(obj)
     VALUE klass;
     VALUE *p, *q, *pend;
 
-    if (rb_safe_level() >= 4 && !FL_TEST(obj, FL_TAINT))
+    if (rb_safe_level() >= 4 && !OBJ_TAINTED(obj))
 	rb_raise(rb_eSecurityError, "Insecure: can't get metainfo");
     ary = rb_ary_new();
     klass = CLASS_OF(obj);
@@ -510,15 +510,26 @@ VALUE
 rb_singleton_class(obj)
     VALUE obj;
 {
+    VALUE klass;
     if (rb_special_const_p(obj)) {
 	rb_raise(rb_eTypeError, "can't define singleton");
     }
     if (FL_TEST(RBASIC(obj)->klass, FL_SINGLETON)) {
-	return RBASIC(obj)->klass;
+	klass = RBASIC(obj)->klass;
     }
-    RBASIC(obj)->klass = rb_singleton_class_new(RBASIC(obj)->klass);
-    rb_singleton_class_attached(RBASIC(obj)->klass, obj);
-    return RBASIC(obj)->klass;
+    else {
+	klass = rb_singleton_class_new(RBASIC(obj)->klass);
+	RBASIC(obj)->klass = klass;
+	rb_singleton_class_attached(klass, obj);
+    }
+    if (OBJ_TAINTED(obj)) {
+	OBJ_TAINT(klass);
+    }
+    else {
+	FL_UNSET(klass, FL_TAINT);
+    }
+
+    return klass;
 }
 
 void

@@ -2922,6 +2922,47 @@ re_compile_fastmap(bufp)
   FREE_AND_RETURN_VOID(stackb);
 }
 
+/* adjust startpos value to the position between characters. */
+int
+re_adjust_startpos(bufp, string, size, startpos, range)
+     struct re_pattern_buffer *bufp;
+     const char *string;
+     int size, startpos, range;
+{
+  /* Update the fastmap now if not correct already.  */
+  if (!bufp->fastmap_accurate) {
+    re_compile_fastmap(bufp);
+  }
+
+  /* Adjust startpos for mbc string */
+  if (current_mbctype && startpos>0 && !(bufp->options&RE_OPTIMIZE_BMATCH)) {
+    int i = 0;
+
+    if (range > 0) {
+      while (i<size) {
+	i += mbclen(string[i]);
+	if (startpos <= i) {
+	  startpos = i;
+	  break;
+	}
+      }
+    }
+    else {
+      int w;
+
+      while (i<size) {
+	w = mbclen(string[i]);
+	if (startpos < i + w) {
+	  startpos = i;
+	  break;
+	}
+	i += w;
+      }
+    }
+  }
+  return startpos;
+}
+
 
 /* Using the compiled pattern in BUFP->buffer, first tries to match
    STRING, starting first at index STARTPOS, then at STARTPOS + 1, and
@@ -2954,32 +2995,6 @@ re_search(bufp, string, size, startpos, range, regs)
     re_compile_fastmap(bufp);
   }
 
-  /* Adjust startpos for mbc string */
-  if (current_mbctype && startpos>0 && !(bufp->options&RE_OPTIMIZE_BMATCH)) {
-    int i = 0;
-
-    if (range > 0) {
-      while (i<size) {
-	i += mbclen(string[i]);
-	if (startpos <= i) {
-	  startpos = i;
-	  break;
-	}
-      }
-    }
-    else {
-      int w;
-
-      while (i<size) {
-	w = mbclen(string[i]);
-	if (startpos < i + w) {
-	  startpos = i;
-	  break;
-	}
-	i += w;
-      }
-    }
-  }
 
   /* If the search isn't to be a backwards one, don't waste time in a
      search for a pattern that must be anchored.  */

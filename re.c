@@ -508,6 +508,32 @@ rb_reg_prepare_re(reg)
 }
 
 int
+rb_reg_adjust_startpos(reg, str, pos, reverse)
+    VALUE reg, str;
+    int pos, reverse;
+{
+    int range;
+
+    if (may_need_recompile)
+	rb_reg_prepare_re(reg);
+
+    if (FL_TEST(reg, KCODE_FIXED))
+	kcode_set_option(reg);
+    else if (reg_kcode != curr_kcode)
+	kcode_reset_option();
+
+    if (reverse) {
+	range = -pos;
+    }
+    else {
+	range = RSTRING(str)->len - pos;
+    }
+    return re_adjust_startpos(RREGEXP(reg)->ptr,
+			      RSTRING(str)->ptr, RSTRING(str)->len,
+			      pos, range);
+}
+
+int
 rb_reg_search(reg, str, pos, reverse)
     VALUE reg, str;
     int pos, reverse;

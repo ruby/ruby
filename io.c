@@ -969,7 +969,9 @@ static VALUE
 rb_io_close_method(io)
     VALUE io;
 {
-    rb_secure(4);
+    if (rb_safe_level() >= 4 && !OBJ_TAINTED(io)) {
+	rb_raise(rb_eSecurityError, "Insecure: can't close");
+    }
     rb_io_close(io);
     return Qnil;
 }
@@ -991,7 +993,9 @@ rb_io_close_read(io)
     OpenFile *fptr;
     int n;
 
-    rb_secure(4);
+    if (rb_safe_level() >= 4 && !OBJ_TAINTED(io)) {
+	rb_raise(rb_eSecurityError, "Insecure: can't close");
+    }
     GetOpenFile(io, fptr);
     if (fptr->f2 == 0 && (fptr->mode & FMODE_WRITABLE)) {
 	rb_raise(rb_eIOError, "closing non-duplex IO for reading");
@@ -1015,7 +1019,9 @@ rb_io_close_write(io)
     OpenFile *fptr;
     int n;
 
-    rb_secure(4);
+    if (rb_safe_level() >= 4 && !OBJ_TAINTED(io)) {
+	rb_raise(rb_eSecurityError, "Insecure: can't close");
+    }
     GetOpenFile(io, fptr);
     if (fptr->f2 == 0 && (fptr->mode & FMODE_READABLE)) {
 	rb_raise(rb_eIOError, "closing non-duplex IO for writing");
@@ -1685,9 +1691,11 @@ rb_io_reopen(io, nfile)
     char *mode;
     int fd;
 
-    rb_secure(4);
-    GetOpenFile(io, fptr);
     nfile = rb_io_get_io(nfile);
+    if (rb_safe_level() >= 4 && (!OBJ_TAINTED(io) || !OBJ_TAINTED(nfile))) {
+	rb_raise(rb_eSecurityError, "Insecure: can't reopen");
+    }
+    GetOpenFile(io, fptr);
     GetOpenFile(nfile, orig);
 
     if (fptr == orig) return io;
@@ -3069,6 +3077,8 @@ static VALUE
 argf_eof()
 {
     if (init_p == 0 && !next_argv())
+	return Qtrue;
+    if (next_p == -1)
 	return Qtrue;
     if (TYPE(current_file) != T_FILE) {
 	return argf_forward();

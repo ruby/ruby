@@ -51,6 +51,17 @@ static unsigned long alloc_objects = 0;
 
 static int malloc_called = 0;
 static int free_called = 0;
+static int second_mem_error = 0;
+
+static void
+mem_error(mesg)
+    char *mesg;
+{
+    if (rb_safe_level() >= 4) {
+	rb_raise(rb_eNoMemError, mesg);
+    }
+    rb_fatal(mesg);
+}
 
 #ifndef xmalloc
 void *
@@ -72,8 +83,12 @@ xmalloc(size)
     if (!mem) {
 	rb_gc();
 	mem = malloc(size);
-	if (!mem)
-	    rb_fatal("failed to allocate memory");
+	if (!mem) {
+	    if (size >= 10 * 1024 * 1024) {
+		rb_raise(rb_eNoMemError, "try to allocate too big memory");
+	    }
+	    mem_error("failed to allocate memory");
+	}
     }
 
     return mem;
@@ -109,7 +124,10 @@ xrealloc(ptr, size)
 	rb_gc();
 	mem = realloc(ptr, size);
 	if (!mem)
-	    rb_fatal("failed to allocate memory(realloc)");
+	    if (size >= 10 * 1024 * 1024) {
+		rb_raise(rb_eNoMemError, "try to re-allocate too big memory");
+	    }
+	    mem_error("failed to allocate memory(realloc)");
     }
 
     return mem;
@@ -244,11 +262,11 @@ add_heap()
 	heaps = (heaps_used>0)?
 	    (RVALUE**)realloc(heaps, heaps_length*sizeof(RVALUE*)):
 	    (RVALUE**)malloc(heaps_length*sizeof(RVALUE*));
-	if (heaps == 0) rb_fatal("can't alloc memory");
+	if (heaps == 0) mem_error("heaps: can't alloc memory");
     }
 
     p = heaps[heaps_used++] = (RVALUE*)malloc(sizeof(RVALUE)*HEAP_SLOTS);
-    if (p == 0) rb_fatal("add_heap: can't alloc memory");
+    if (p == 0) mem_error("add_heap: can't alloc memory");
     pend = p + HEAP_SLOTS;
     if (lomem == 0 || lomem > p) lomem = p;
     if (himem < pend) himem = pend;
@@ -370,7 +388,7 @@ rb_mark_tbl(tbl)
 
 static int
 mark_hashentry(key, value)
-    ID key;
+    VALUE key;
     VALUE value;
 {
     rb_gc_mark(key);

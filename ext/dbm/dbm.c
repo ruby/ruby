@@ -315,18 +315,11 @@ fdbm_store(obj, keystr, valstr)
     struct dbmdata *dbmp;
     DBM *dbm;
 
-    if (valstr == Qnil) {
-	fdbm_delete(obj, keystr);
-	return Qnil;
-    }
-
     rb_secure(4);
     keystr = rb_obj_as_string(keystr);
 
     key.dptr = RSTRING(keystr)->ptr;
     key.dsize = RSTRING(keystr)->len;
-
-    if (NIL_P(valstr)) return fdbm_delete(obj, keystr);
 
     valstr = rb_obj_as_string(valstr);
     val.dptr = RSTRING(valstr)->ptr;

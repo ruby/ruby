@@ -138,6 +138,16 @@ range_each(range)
     else if (TYPE(b) == T_STRING) {
 	rb_str_upto(b, e, EXCL(range));
     }
+    else if (rb_obj_is_kind_of(b, rb_cNumeric)) {
+	b = rb_Integer(b);
+	e = rb_Integer(e);
+
+	if (!EXCL(range)) e = rb_funcall(e, '+', 1, INT2FIX(1));
+	while (RTEST(rb_funcall(b, '<', 1, e))) {
+	    rb_yield(b);
+	    b = rb_funcall(b, '+', 1, INT2FIX(1));
+	}
+    }
     else {			/* generic each */
 	VALUE v = b;
 	ID succ = rb_intern("succ");
@@ -286,7 +296,7 @@ range_length(range)
     VALUE range;
 {
     VALUE beg, end;
-    VALUE size;
+    long size;
 
     beg = rb_ivar_get(range, id_beg);
     end = rb_ivar_get(range, id_end);
@@ -302,7 +312,7 @@ range_length(range)
 	    return INT2NUM(NUM2LONG(end) - NUM2LONG(beg) + 1);
 	}
     }
-    if (!rb_obj_is_kind_of(beg, rb_cNumeric)) {
+    if (!rb_obj_is_kind_of(beg, rb_cInteger)) {
 	return rb_length_by_each(range);
     }
     size = rb_funcall(end, '-', 1, beg);

@@ -115,7 +115,6 @@ sock_new(class, fd)
     NEWOBJ(sock, struct RFile);
     OBJSETUP(sock, class, T_FILE);
 
-    rb_secure(4);
     MakeOpenFile(sock, fp);
     fp->f = rb_fdopen(fd, "r");
 #ifdef NT
@@ -140,7 +139,9 @@ bsock_shutdown(argc, argv, sock)
     int how;
     OpenFile *fptr;
 
-    rb_secure(4);
+    if (rb_safe_level() >= 4 && !OBJ_TAINTED(sock)) {
+	rb_raise(rb_eSecurityError, "Insecure: can't shutdown socket");
+    }
     rb_scan_args(argc, argv, "01", &howto);
     if (howto == Qnil)
 	how = 2;
@@ -163,7 +164,9 @@ bsock_close_read(sock)
 {
     OpenFile *fptr;
 
-    rb_secure(4);
+    if (rb_safe_level() >= 4 && !OBJ_TAINTED(sock)) {
+	rb_raise(rb_eSecurityError, "Insecure: can't close socket");
+    }
     GetOpenFile(sock, fptr);
     shutdown(fileno(fptr->f), 0);
     if (fptr->f2 == 0) {
@@ -188,7 +191,9 @@ bsock_close_write(sock)
 {
     OpenFile *fptr;
 
-    rb_secure(4);
+    if (rb_safe_level() >= 4 && !OBJ_TAINTED(sock)) {
+	rb_raise(rb_eSecurityError, "Insecure: can't close socket");
+    }
     GetOpenFile(sock, fptr);
     if (fptr->f2 == 0) {
 	return rb_io_close(sock);
@@ -215,7 +220,6 @@ bsock_setsockopt(sock, lev, optname, val)
     char *v;
     int vlen;
 
-    rb_secure(2);
     level = NUM2INT(lev);
     option = NUM2INT(optname);
     switch (TYPE(val)) {
@@ -794,6 +798,9 @@ socks_s_close(sock)
 {
     OpenFile *fptr;
 
+    if (rb_safe_level() >= 4 && !OBJ_TAINTED(sock)) {
+	rb_raise(rb_eSecurityError, "Insecure: can't close socket");
+    }
     GetOpenFile(sock, fptr);
     shutdown(fileno(fptr->f), 2);
     shutdown(fileno(fptr->f2), 2);

@@ -831,6 +831,7 @@ proc_setpgid(obj, pid, pgrp)
 #ifdef HAVE_SETPGID
     int ipid, ipgrp;
 
+    rb_secure(2);
     ipid = NUM2INT(pid);
     ipgrp = NUM2INT(pgrp);
 
@@ -845,8 +846,10 @@ static VALUE
 proc_setsid()
 {
 #ifdef HAVE_SETSID
-    int pid = setsid();
+    int pid;
 
+    rb_secure(2);
+    pid = setsid();
     if (pid < 0) rb_sys_fail(0);
     return INT2FIX(pid);
 #else
@@ -879,6 +882,7 @@ proc_setpriority(obj, which, who, prio)
 #ifdef HAVE_GETPRIORITY
     int iwhich, iwho, iprio;
 
+    rb_secure(2);
     iwhich = NUM2INT(which);
     iwho   = NUM2INT(who);
     iprio  = NUM2INT(prio);
@@ -995,6 +999,7 @@ static VALUE
 proc_setegid(obj, egid)
     VALUE obj, egid;
 {
+    rb_secure(2);
 #ifdef HAVE_SETEGID
     if (setegid(NUM2INT(egid)) < 0) rb_sys_fail(0);
 #else

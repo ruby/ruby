@@ -89,7 +89,7 @@ extern "C" {
 ---->> ruby requires sizeof(void*) == sizeof(long) to be compiled. <<----
 #endif
 typedef unsigned long VALUE;
-typedef unsigned int ID;
+typedef unsigned long ID;
 
 #ifdef __STDC__
 # include <limits.h>
@@ -117,6 +117,8 @@ typedef unsigned int ID;
 #define INT2FIX(i) (VALUE)(((long)(i))<<1 | FIXNUM_FLAG)
 VALUE rb_int2inum _((long));
 #define INT2NUM(v) rb_int2inum(v)
+VALUE rb_uint2inum _((unsigned long));
+#define UINT2NUM(v) rb_uint2inum(v)
 
 #define FIX2LONG(x) RSHIFT((long)x,1)
 #define FIX2ULONG(x) (((unsigned long)(x))>>1)
@@ -271,14 +273,14 @@ struct RFile {
 
 struct RData {
     struct RBasic basic;
-    void (*dmark)();
-    void (*dfree)();
+    void (*dmark) _((void*));
+    void (*dfree) _((void*));
     void *data;
 };
 
 #define DATA_PTR(dta) (RDATA(dta)->data)
 
-VALUE rb_data_object_alloc _((VALUE,void*,void (*)(),void (*)()));
+VALUE rb_data_object_alloc _((VALUE,void*,void (*) _((void*)),void (*) _((void*))));
 #define Data_Make_Struct(klass,type,mark,free,sval) (\
     sval = ALLOC(type),\
     memset(sval, 0, sizeof(type)),\
@@ -375,8 +377,8 @@ void rb_define_variable _((const char*,VALUE*));
 void rb_define_virtual_variable _((const char*,VALUE(*)(),void(*)()));
 void rb_define_hooked_variable _((const char*,VALUE*,VALUE(*)(),void(*)()));
 void rb_define_readonly_variable _((const char*,VALUE*));
-void rb_define_shared_variable _((VALUE,const char*,VALUE));
-void rb_define_global_shared_variable _((const char*,VALUE));
+void rb_define_constants _((VALUE,const char*,VALUE));
+void rb_define_global_constants _((const char*,VALUE));
 
 void rb_define_method _((VALUE,const char*,VALUE(*)(),int));
 void rb_define_module_function _((VALUE,const char*,VALUE(*)(),int));
@@ -494,6 +496,7 @@ EXTERN VALUE rb_eSystemCallError;
 EXTERN VALUE rb_eTypeError;
 EXTERN VALUE rb_eZeroDivError;
 EXTERN VALUE rb_eNotImpError;
+EXTERN VALUE rb_eNoMemError;
 EXTERN VALUE rb_eFloatDomainError;
 
 #if defined(__GNUC__) && __GNUC__ >= 2 && !defined(RUBY_NO_INLINE)

@@ -90,6 +90,73 @@ static int scope_vmode;
 #define SCOPE_SET(f)  do {scope_vmode=(f);} while(0)
 #define SCOPE_TEST(f) (scope_vmode&(f))
 
+static int safe_level = 0;
+/* safe-level:
+   0 - strings from streams/environment/ARGV are tainted (default)
+   1 - no dangerous operation by tainted string
+   2 - process/file operations prohibited
+   3 - all genetated strings are tainted
+   4 - no global (non-tainted) variable modification/no direct output
+*/
+
+int
+rb_safe_level()
+{
+    return safe_level;
+}
+
+void
+rb_set_safe_level(level)
+    int level;
+{
+    if (level > safe_level) {
+	safe_level = level;
+    }
+}
+
+static VALUE
+safe_getter()
+{
+    return INT2FIX(safe_level);
+}
+
+static void
+safe_setter(val)
+    VALUE val;
+{
+    int level = NUM2INT(val);
+
+    if (level < safe_level) {
+	rb_raise(rb_eSecurityError, "tried to downgrade safe level from %d to %d",
+		 safe_level, level);
+    }
+    safe_level = level;
+}
+
+void
+rb_check_safe_str(x)
+    VALUE x;
+{
+    if (safe_level > 0 && OBJ_TAINTED(x)){
+	rb_raise(rb_eSecurityError, "Insecure operation - %s",
+		 rb_id2name(ruby_frame->last_func));
+    }
+    if (TYPE(x)!= T_STRING) {
+	rb_raise(rb_eTypeError, "wrong argument type %s (expected String)",
+		 rb_class2name(CLASS_OF(x)));
+    }
+}
+
+void
+rb_secure(level)
+    int level;
+{
+    if (level <= safe_level) {
+	rb_raise(rb_eSecurityError, "Insecure operation `%s' for level %d",
+		 rb_id2name(ruby_frame->last_func), safe_level);
+    }
+}
+
 static void print_undef _((VALUE, ID)) NORETURN;
 static void
 print_undef(klass, id)
@@ -158,6 +225,9 @@ rb_add_method(klass, mid, node, noex)
     if (klass == rb_cObject) {
 	rb_secure(4);
     }
+    if (safe_level >= 4 && !OBJ_TAINTED(klass)) {
+	rb_raise(rb_eSecurityError, "Insecure: can't define method");
+    }
     body = NEW_METHOD(node, noex);
     st_insert(RCLASS(klass)->m_tbl, mid, body);
 }
@@ -225,38 +295,6 @@ rb_get_method_body(klassp, idp, noexp)
     return body;
 }
 
-void
-rb_alias(klass, name, def)
-    VALUE klass;
-    ID name, def;
-{
-    VALUE origin;
-    NODE *orig, *body;
-
-    if (name == def) return;
-    if (klass == rb_cObject) {
-	rb_secure(4);
-    }
-    orig = search_method(klass, def, &origin);
-    if (!orig || !orig->nd_body) {
-	if (TYPE(klass) == T_MODULE) {
-	    orig = search_method(rb_cObject, def, &origin);
-	}
-    }
-    if (!orig || !orig->nd_body) {
-	print_undef(klass, def);
-    }
-    body = orig->nd_body;
-    if (nd_type(body) == NODE_FBODY) { /* was alias */
-	def = body->nd_mid;
-	origin = body->nd_orig;
-	body = body->nd_head;
-    }
-
-    st_insert(RCLASS(klass)->m_tbl, name,
-	      NEW_METHOD(NEW_FBODY(body, def, origin), orig->nd_noex));
-}
-
 static void
 remove_method(klass, mid)
     VALUE klass;
@@ -266,6 +304,9 @@ remove_method(klass, mid)
 
     if (klass == rb_cObject) {
 	rb_secure(4);
+    }
+    if (safe_level >= 4 && !OBJ_TAINTED(klass)) {
+	rb_raise(rb_eSecurityError, "Insecure: can't remove method");
     }
     if (!st_delete(RCLASS(klass)->m_tbl, &mid, &body)) {
 	rb_raise(rb_eNameError, "method `%s' not defined in %s",
@@ -280,6 +321,14 @@ rb_remove_method(klass, name)
     const char *name;
 {
     remove_method(klass, rb_intern(name));
+}
+
+static VALUE
+rb_mod_remove_method(mod, name)
+    VALUE mod, name;
+{
+    remove_method(mod, rb_to_id(name));
+    return mod;
 }
 
 void
@@ -739,75 +788,6 @@ static VALUE module_setup _((VALUE,NODE*));
 
 static VALUE massign _((VALUE,NODE*,VALUE,int));
 static void assign _((VALUE,NODE*,VALUE,int));
-
-static int safe_level = 0;
-/* safe-level:
-   0 - strings from streams/environment/ARGV are tainted (default)
-   1 - no dangerous operation by tainted string
-   2 - process/file operations prohibited
-   3 - all genetated strings are tainted
-   4 - no global (non-tainted) variable modification/no direct output
-*/
-
-int
-rb_safe_level()
-{
-    return safe_level;
-}
-
-void
-rb_set_safe_level(level)
-    int level;
-{
-    if (level > safe_level) {
-	safe_level = level;
-    }
-}
-
-static VALUE
-safe_getter()
-{
-    return INT2FIX(safe_level);
-}
-
-static void
-safe_setter(val)
-    VALUE val;
-{
-    int level = NUM2INT(val);
-
-    if (level < safe_level) {
-	rb_raise(rb_eSecurityError, "tried to downgrade safe level from %d to %d",
-		 safe_level, level);
-    }
-    safe_level = level;
-}
-
-void
-rb_check_safe_str(x)
-    VALUE x;
-{
-    if (TYPE(x)!= T_STRING) {
-	rb_raise(rb_eTypeError, "wrong argument type %s (expected String)",
-		 rb_class2name(CLASS_OF(x)));
-    }
-    if (OBJ_TAINTED(x)) {
-	if (safe_level > 0){
-	    rb_raise(rb_eSecurityError, "Insecure operation - %s",
-		     rb_id2name(ruby_frame->last_func));
-	}
-    }
-}
-
-void
-rb_secure(level)
-    int level;
-{
-    if (level <= safe_level) {
-	rb_raise(rb_eSecurityError, "Insecure operation `%s' for level %d",
-		 rb_id2name(ruby_frame->last_func), safe_level);
-    }
-}
 
 static VALUE trace_func = 0;
 static void call_trace_func _((char*,char*,int,VALUE,ID,VALUE));
@@ -1322,7 +1302,7 @@ superclass(self, node)
 }
 
 static VALUE
-ev_shvar_defined(cref, id)
+ev_const_defined(cref, id)
     NODE *cref;
     ID id;
 {
@@ -1337,11 +1317,11 @@ ev_shvar_defined(cref, id)
 	}
 	cbase = cbase->nd_next;
     }
-    return rb_shvar_defined(cref->nd_clss, id);
+    return rb_const_defined(cref->nd_clss, id);
 }
 
 static VALUE
-ev_shvar_get(cref, id)
+ev_const_get(cref, id)
     NODE *cref;
     ID id;
 {
@@ -1356,11 +1336,11 @@ ev_shvar_get(cref, id)
 	}
 	cbase = cbase->nd_next;
     }
-    return rb_shvar_get(cref->nd_clss, id);
+    return rb_const_get(cref->nd_clss, id);
 }
 
 static VALUE
-ev_shvar_set(cref, id, val)
+ev_const_set(cref, id, val)
     NODE *cref;
     ID id;
     VALUE val;
@@ -1377,7 +1357,7 @@ ev_shvar_set(cref, id, val)
 	}
 	cbase = cbase->nd_next;
     }
-    rb_shvar_assign(cbase->nd_clss, id, val);
+    rb_const_assign(cbase->nd_clss, id, val);
     return val;
 }
 
@@ -1395,47 +1375,103 @@ rb_mod_nesting()
 }
 
 static VALUE
-rb_mod_s_shvars()
+rb_mod_s_constants()
 {
     NODE *cbase = (NODE*)ruby_frame->cbase;
     VALUE ary = rb_ary_new();
 
     while (cbase && cbase->nd_clss != rb_cObject) {
-	rb_mod_shvar_at(cbase->nd_clss, ary);
+	rb_mod_const_at(cbase->nd_clss, ary);
 	cbase = cbase->nd_next;
     }
 
-    rb_mod_shvar_of(((NODE*)ruby_frame->cbase)->nd_clss, ary);
+    rb_mod_const_of(((NODE*)ruby_frame->cbase)->nd_clss, ary);
     return ary;
 }
 
-static VALUE
-rb_mod_remove_method(mod, name)
-    VALUE mod, name;
+void
+rb_undef(klass, id)
+    VALUE klass;
+    ID id;
 {
-    remove_method(mod, rb_to_id(name));
-    return mod;
+    VALUE origin;
+    NODE *body;
+
+    if (safe_level >= 4 && !OBJ_TAINTED(klass)) {
+	rb_raise(rb_eSecurityError, "Insecure: can't undef");
+    }
+    body = search_method(ruby_class, id, &origin);
+    if (!body || !body->nd_body) {
+	char *s0 = " class";
+	VALUE c = klass;
+
+	if (FL_TEST(c, FL_SINGLETON)) {
+	    VALUE obj = rb_iv_get(klass, "__attached__");
+
+	    switch (TYPE(obj)) {
+	      case T_MODULE:
+	      case T_CLASS:
+		c = obj;
+		s0 = "";
+	    }
+	}
+	else if (TYPE(c) == T_MODULE) {
+	    s0 = " module";
+	}
+	rb_raise(rb_eNameError, "undefined method `%s' for%s `%s'",
+		 rb_id2name(id),s0,rb_class2name(c));
+    }
+    rb_clear_cache_by_id(id);
+    rb_add_method(klass, id, 0, NOEX_PUBLIC);
+    rb_clear_cache_by_id(id);
 }
 
 static VALUE
 rb_mod_undef_method(mod, name)
     VALUE mod, name;
 {
-    ID id = rb_to_id(name);
-
-    rb_add_method(mod, id, 0, NOEX_PUBLIC);
-    rb_clear_cache_by_id(id);
+    rb_undef(mod, rb_to_id(name));
     return mod;
+}
+
+void
+rb_alias(klass, name, def)
+    VALUE klass;
+    ID name, def;
+{
+    VALUE origin;
+    NODE *orig, *body;
+
+    if (name == def) return;
+    if (klass == rb_cObject) {
+	rb_secure(4);
+    }
+    orig = search_method(klass, def, &origin);
+    if (!orig || !orig->nd_body) {
+	if (TYPE(klass) == T_MODULE) {
+	    orig = search_method(rb_cObject, def, &origin);
+	}
+    }
+    if (!orig || !orig->nd_body) {
+	print_undef(klass, def);
+    }
+    body = orig->nd_body;
+    if (nd_type(body) == NODE_FBODY) { /* was alias */
+	def = body->nd_mid;
+	origin = body->nd_orig;
+	body = body->nd_head;
+    }
+
+    st_insert(RCLASS(klass)->m_tbl, name,
+	      NEW_METHOD(NEW_FBODY(body, def, origin), orig->nd_noex));
+    rb_clear_cache_by_id(name);
 }
 
 static VALUE
 rb_mod_alias_method(mod, newname, oldname)
     VALUE mod, newname, oldname;
 {
-    ID id = rb_to_id(newname);
-
-    rb_alias(mod, id, rb_to_id(oldname));
-    rb_clear_cache_by_id(id);
+    rb_alias(mod, rb_to_id(newname), rb_to_id(oldname));
     return mod;
 }
 
@@ -1628,7 +1664,7 @@ is_defined(self, node, buf)
 	break;
 
       case NODE_CVAR:
-	if (ev_shvar_defined((NODE*)ruby_frame->cbase, node->nd_vid)) {
+	if (ev_const_defined((NODE*)ruby_frame->cbase, node->nd_vid)) {
 	    return "constant";
 	}
 	break;
@@ -1644,7 +1680,7 @@ is_defined(self, node, buf)
 	    switch (TYPE(val)) {
 	      case T_CLASS:
 	      case T_MODULE:
-		if (rb_shvar_defined_at(val, node->nd_mid))
+		if (rb_const_defined_at(val, node->nd_mid))
 		    return "constant";
 	      default:
 		if (rb_method_boundp(val, node->nd_mid, 1)) {
@@ -2435,7 +2471,7 @@ rb_eval(self, node)
 	    rb_raise(rb_eTypeError, "no class/module to define constant");
 	}
 	result = rb_eval(self, node->nd_value);
-	ev_shvar_set((NODE*)ruby_frame->cbase, node->nd_vid, result);
+	ev_const_set((NODE*)ruby_frame->cbase, node->nd_vid, result);
 	break;
 
       case NODE_CDECL:
@@ -2443,7 +2479,7 @@ rb_eval(self, node)
 	    rb_raise(rb_eTypeError, "no class/module to define constant");
 	}
 	result = rb_eval(self, node->nd_value);
-	rb_shvar_set(ruby_class, node->nd_vid, result);
+	rb_const_set(ruby_class, node->nd_vid, result);
 	break;
 
       case NODE_LVAR:
@@ -2466,7 +2502,7 @@ rb_eval(self, node)
 	break;
 
       case NODE_CVAR:
-	result = ev_shvar_get((NODE*)ruby_frame->cbase, node->nd_vid);
+	result = ev_const_get((NODE*)ruby_frame->cbase, node->nd_vid);
 	break;
 
       case NODE_BLOCK_ARG:
@@ -2493,12 +2529,12 @@ rb_eval(self, node)
 	      default:
 		return rb_funcall(klass, node->nd_mid, 0, 0);
 	    }
-	    result = rb_shvar_get(klass, node->nd_mid);
+	    result = rb_const_get(klass, node->nd_mid);
 	}
 	break;
 
       case NODE_COLON3:
-	result = rb_shvar_get(rb_cObject, node->nd_mid);
+	result = rb_const_get(rb_cObject, node->nd_mid);
 	break;
 
       case NODE_NTH_REF:
@@ -2654,14 +2690,9 @@ rb_eval(self, node)
 		rb_warn("re-defining Object#initialize may cause infinite loop");
 	    }
 	    body = search_method(ruby_class, node->nd_mid, &origin);
-	    if (body) {
-		if (origin == ruby_class) {
-		    if (safe_level >= 4) {
-			rb_raise(rb_eSecurityError, "re-defining method prohibited");
-		    }
-		    if (RTEST(ruby_verbose)) {
-			rb_warning("discarding old %s", rb_id2name(node->nd_mid));
-		    }
+	    if (body){
+		if (RTEST(ruby_verbose)) {
+		    rb_warning("discarding old %s", rb_id2name(node->nd_mid));
 		}
 		rb_clear_cache_by_id(node->nd_mid);
 	    }
@@ -2711,7 +2742,7 @@ rb_eval(self, node)
 			 rb_class2name(CLASS_OF(recv)));
 	    }
 
-	    if (rb_safe_level() >= 4 && !FL_TEST(recv, FL_TAINT)) {
+	    if (safe_level >= 4 && !OBJ_TAINTED(recv)) {
 		rb_raise(rb_eSecurityError, "can't define singleton method");
 	    }
 	    klass = rb_singleton_class(recv);
@@ -2733,40 +2764,14 @@ rb_eval(self, node)
 	break;
 
       case NODE_UNDEF:
-	{
-	    VALUE origin;
-	    NODE *body;
-
-	    if (NIL_P(ruby_class)) {
-		rb_raise(rb_eTypeError, "no class to undef method");
-	    }
-	    if (ruby_class == rb_cObject) {
-		rb_secure(4);
-	    }
-	    body = search_method(ruby_class, node->nd_mid, &origin);
-	    if (!body || !body->nd_body) {
-		char *s0 = " class";
-		VALUE klass = ruby_class;
-
-		if (FL_TEST(ruby_class, FL_SINGLETON)) {
-		    VALUE obj = rb_iv_get(ruby_class, "__attached__");
-		    switch (TYPE(obj)) {
-		      case T_MODULE:
-		      case T_CLASS:
-			klass = obj;
-			s0 = "";
-		    }
-		}
-		else if (TYPE(klass) == T_MODULE) {
-		    s0 = " module";
-		}
-		rb_raise(rb_eNameError, "undefined method `%s' for%s `%s'",
-			 rb_id2name(node->nd_mid),s0,rb_class2name(klass));
-	    }
-	    rb_clear_cache_by_id(node->nd_mid);
-	    rb_add_method(ruby_class, node->nd_mid, 0, NOEX_PUBLIC);
-	    result = Qnil;
+	if (NIL_P(ruby_class)) {
+	    rb_raise(rb_eTypeError, "no class to undef method");
 	}
+	if (ruby_class == rb_cObject) {
+	    rb_secure(4);
+	}
+	rb_undef(ruby_class, node->nd_mid);
+	result = Qnil;
 	break;
 
       case NODE_ALIAS:
@@ -2799,12 +2804,16 @@ rb_eval(self, node)
 	    }
 
 	    klass = 0;
-	    if (rb_shvar_defined_at(ruby_class, node->nd_cname) &&
-		(ruby_class != rb_cObject || !rb_autoload_defined(node->nd_cname))) {
-		klass = rb_shvar_get(ruby_class, node->nd_cname);
+	    if ((ruby_class == rb_cObject || ruby_class == ruby_wrapper) &&
+		rb_autoload_defined(node->nd_cname)) {
+		rb_autoload_load(node->nd_cname);
 	    }
-	    if (ruby_wrapper && rb_shvar_defined_at(rb_cObject, node->nd_cname)) {
-		klass = rb_shvar_get(rb_cObject, node->nd_cname);
+	    if (rb_const_defined_at(ruby_class, node->nd_cname)) {
+		klass = rb_const_get(ruby_class, node->nd_cname);
+	    }
+	    if (!klass && ruby_class == ruby_wrapper &&
+		rb_const_defined_at(rb_cObject, node->nd_cname)) {
+		klass = rb_const_get(rb_cObject, node->nd_cname);
 	    }
 	    if (klass) {
 		if (TYPE(klass) != T_CLASS) {
@@ -2832,7 +2841,7 @@ rb_eval(self, node)
 	    else {
 		if (!super) super = rb_cObject;
 		klass = rb_define_class_id(node->nd_cname, super);
-		rb_shvar_set(ruby_class, node->nd_cname, klass);
+		rb_const_set(ruby_class, node->nd_cname, klass);
 		rb_set_class_path(klass,ruby_class,rb_id2name(node->nd_cname));
 	    }
 	    if (ruby_wrapper) {
@@ -2852,13 +2861,16 @@ rb_eval(self, node)
 		rb_raise(rb_eTypeError, "no outer class/module");
 	    }
 	    module = 0;
-	    if (rb_shvar_defined_at(ruby_class, node->nd_cname) &&
-		(ruby_class != rb_cObject ||
-		 !rb_autoload_defined(node->nd_cname))) {
-		module = rb_shvar_get(ruby_class, node->nd_cname);
+	    if ((ruby_class == rb_cObject || ruby_class == ruby_wrapper) &&
+		rb_autoload_defined(node->nd_cname)) {
+		rb_autoload_load(node->nd_cname);
 	    }
-	    if (ruby_wrapper && rb_shvar_defined_at(rb_cObject, node->nd_cname)) {
-		module = rb_shvar_get(rb_cObject, node->nd_cname);
+	    if (rb_const_defined_at(ruby_class, node->nd_cname)) {
+		module = rb_const_get(ruby_class, node->nd_cname);
+	    }
+	    if (!module && ruby_class == ruby_wrapper &&
+		rb_const_defined_at(rb_cObject, node->nd_cname)) {
+		module = rb_const_get(rb_cObject, node->nd_cname);
 	    }
 	    if (module) {
 		if (TYPE(module) != T_MODULE) {
@@ -2871,7 +2883,7 @@ rb_eval(self, node)
 	    }
 	    else {
 		module = rb_define_module_id(node->nd_cname);
-		rb_shvar_set(ruby_class, node->nd_cname, module);
+		rb_const_set(ruby_class, node->nd_cname, module);
 		rb_set_class_path(module,ruby_class,rb_id2name(node->nd_cname));
 	    }
 	    if (ruby_wrapper) {
@@ -2892,10 +2904,13 @@ rb_eval(self, node)
 		rb_raise(rb_eTypeError, "no virtual class for %s",
 			 rb_class2name(CLASS_OF(klass)));
 	    }
+	    if (safe_level >= 4 && !OBJ_TAINTED(klass))
+		rb_raise(rb_eSecurityError, "Insecure: can't extend object");
 	    if (FL_TEST(CLASS_OF(klass), FL_SINGLETON)) {
 		rb_clear_cache();
 	    }
 	    klass = rb_singleton_class(klass);
+	    
 	    if (ruby_wrapper) {
 		rb_extend_object(klass, ruby_wrapper);
 		rb_include_module(klass, ruby_wrapper);
@@ -3414,11 +3429,11 @@ assign(self, lhs, val, check)
 	break;
 
       case NODE_CASGN:
-	ev_shvar_set((NODE*)ruby_frame->cbase, lhs->nd_vid, val);
+	ev_const_set((NODE*)ruby_frame->cbase, lhs->nd_vid, val);
 	break;
 
       case NODE_CDECL:
-	rb_shvar_set(ruby_class, lhs->nd_vid, val);
+	rb_const_set(ruby_class, lhs->nd_vid, val);
 	break;
 
       case NODE_MASGN:
@@ -4557,7 +4572,7 @@ static VALUE
 yield_under(under, self)
     VALUE under, self;
 {
-    if (rb_safe_level() >= 4 && !FL_TEST(self, FL_TAINT))
+    if (safe_level >= 4 && !OBJ_TAINTED(self))
 	rb_raise(rb_eSecurityError, "Insecure: can't eval");
     return exec_under(yield_under_i, under, self);
 }
@@ -4649,7 +4664,6 @@ static char*
 find_file(file)
     char *file;
 {
-    extern VALUE rb_load_path;
     volatile VALUE vpath;
     char *path;
 
@@ -4692,7 +4706,7 @@ find_file(file)
 	vpath = rb_ary_join(vpath, rb_str_new2(PATH_SEP));
 	path = STR2CSTR(vpath);
 	if (safe_level >= 2 && !rb_path_check(path)) {
-	    rb_raise(rb_eSecurityError, "loading from unsefe path %s", path);
+	    rb_raise(rb_eSecurityError, "loading from unsafe path %s", path);
 	}
     }
     else {
@@ -4868,8 +4882,8 @@ rb_f_require(obj, fname)
     char *ext, *file, *feature, *buf; /* OK */
     volatile VALUE load;
     int state;
+    volatile int safe = safe_level;
 
-    rb_secure(4);
     Check_SafeStr(fname);
     if (rb_provided(RSTRING(fname)->ptr))
 	return Qfalse;
@@ -4936,6 +4950,7 @@ rb_f_require(obj, fname)
     return Qtrue;
 
   load_rb:
+    safe_level = 0;
     if (rb_thread_loading(feature)) return Qfalse;
     rb_provide(feature);
 
@@ -4945,6 +4960,7 @@ rb_f_require(obj, fname)
     }
     POP_TAG();
     rb_thread_loading_done(feature);
+    safe_level = safe;
     if (state) JUMP_TAG(state);
 
     return Qtrue;
@@ -5399,9 +5415,7 @@ Init_eval()
     rb_define_private_method(rb_cModule, "alias_method", rb_mod_alias_method, 2);
 
     rb_define_singleton_method(rb_cModule, "nesting", rb_mod_nesting, 0);
-    rb_define_singleton_method(rb_cModule, "shared_variables", rb_mod_s_shvars, 0);
-    /* to be removed at 1.6 */
-    rb_define_singleton_method(rb_cModule, "constants", rb_mod_s_shvars, 0);
+    rb_define_singleton_method(rb_cModule, "constants", rb_mod_s_constants, 0);
 
     rb_define_singleton_method(ruby_top_self, "include", top_include, -1);
     rb_define_singleton_method(ruby_top_self, "public", top_public, -1);
@@ -5617,7 +5631,7 @@ static void
 proc_save_safe_level(data)
     VALUE data;
 {
-    if (FL_TEST(data, FL_TAINT)) {
+    if (OBJ_TAINTED(data)) {
 	switch (safe_level) {
 	  case 3:
 	    FL_SET(data, PROC_T3);
@@ -5636,7 +5650,7 @@ static void
 proc_set_safe_level(data)
     VALUE data;
 {
-    if (FL_TEST(data, FL_TAINT)) {
+    if (OBJ_TAINTED(data)) {
 	switch (RBASIC(data)->flags & PROC_TMASK) {
 	  case PROC_T3:
 	    safe_level = 3;
@@ -5923,8 +5937,8 @@ rb_obj_method(obj, vid)
     data->body = body;
     data->oklass = CLASS_OF(obj);
     data->oid = rb_to_id(vid);
-    if (FL_TEST(obj, FL_TAINT)) {
-	FL_SET(method, FL_TAINT);
+    if (OBJ_TAINTED(obj)) {
+	OBJ_TAINT(method);
     }
 
     return method;
@@ -5944,8 +5958,8 @@ method_call(argc, argv, method)
     Data_Get_Struct(method, struct METHOD, data);
     PUSH_ITER(rb_iterator_p()?ITER_PRE:ITER_NOT);
     PUSH_TAG(PROT_NONE);
-    if (FL_TEST(data->recv, FL_TAINT) || FL_TEST(method, FL_TAINT)) {
-	FL_SET(method, FL_TAINT);
+    if (OBJ_TAINTED(data->recv) || OBJ_TAINTED(method)) {
+	OBJ_TAINT(method);
 	if (safe_level < 4) safe_level = 4;
     }
     if ((state = EXEC_TAG()) == 0) {
@@ -6140,6 +6154,7 @@ struct thread {
     thread_t join;
 
     int abort;
+    int priority;
 
     st_table *locals;
 
@@ -6270,8 +6285,8 @@ rb_thread_save_context(th)
     th->stk_len = 0;
     th->stk_pos = (rb_gc_stack_start<(VALUE*)&v)?rb_gc_stack_start
 				                :rb_gc_stack_start - len;
-    if (len > th->stk_max)  {
-	REALLOC_N(th->stk_ptr, VALUE, len);
+    if (len > th->stk_max)  {	
+REALLOC_N(th->stk_ptr, VALUE, len);
 	th->stk_max = len;
     }
     th->stk_len = len;
@@ -6501,8 +6516,8 @@ rb_thread_schedule()
 
     FOREACH_THREAD_FROM(curr, th) {
        if (th->status != THREAD_STOPPED && th->status != THREAD_KILLED) {
-           next = th;
-           break;
+	   if (!next || next->priority < th->priority)
+	       next = th;
        }
     }
     END_FOREACH_FROM(curr, th); 
@@ -6514,7 +6529,8 @@ rb_thread_schedule()
 		th->wait_for &= ~WAIT_JOIN;
 		th->status = THREAD_RUNNABLE;
 		num_waiting_on_join--;
-		if (!next) next = th;
+		if (!next || next->priority < th->priority)
+		    next = th;
 	    }
 	}
 	END_FOREACH_FROM(curr, th);
@@ -6600,7 +6616,8 @@ rb_thread_schedule()
 			    th->fd = 0;
 			    th->wait_for &= ~WAIT_FD;
 			    num_waiting_on_fd--;
-			    if (!next) next = th; /* Found one. */
+			    if (!next || next->priority < th->priority)
+				next = th; /* Found one. */
 			}
 		    }
 		    END_FOREACH_FROM(curr, th);
@@ -6972,6 +6989,31 @@ rb_thread_sleep_forever()
     rb_thread_schedule();
 }
 
+static VALUE
+rb_thread_priority(thread)
+    VALUE thread;
+{
+    thread_t th = rb_thread_check(thread);;
+
+    if (safe_level >= 4 && th != curr_thread) {
+	rb_raise(rb_eSecurityError, "Insecure: can't get priority");
+    }
+    return INT2NUM(th->priority);
+}
+
+static VALUE
+rb_thread_priority_set(thread, prio)
+    VALUE thread, prio;
+{
+    thread_t th;
+
+    rb_secure(4);
+    th = rb_thread_check(thread);
+
+    th->priority = NUM2INT(prio);
+    return thread;
+}
+
 static int thread_abort;
 
 static VALUE
@@ -6984,6 +7026,7 @@ static VALUE
 rb_thread_s_abort_exc_set(self, val)
     VALUE self, val;
 {
+    rb_secure(4);
     thread_abort = RTEST(val);
     return val;
 }
@@ -7003,6 +7046,7 @@ rb_thread_abort_exc_set(thread, val)
 {
     thread_t th = rb_thread_check(thread);
 
+    rb_secure(4);
     th->abort = RTEST(val);
     return val;
 }
@@ -7035,6 +7079,7 @@ rb_thread_abort_exc_set(thread, val)
     th->last_line = 0;\
     th->last_match = 0;\
     th->abort = 0;\
+    th->priority = 0;\
     th->locals = 0;\
 } while(0)
 
@@ -7052,6 +7097,7 @@ rb_thread_alloc(klass)
 	curr_thread->next->prev = th;
 	th->next = curr_thread->next;
 	curr_thread->next = th;
+	th->priority = curr_thread->priority;
     }
     else {
 	curr_thread = th->prev = th->next = th;
@@ -7278,13 +7324,13 @@ rb_thread_cleanup()
 int rb_thread_critical;
 
 static VALUE
-rb_thread_get_critical()
+rb_thread_critical_get()
 {
     return rb_thread_critical?Qtrue:Qfalse;
 }
 
 static VALUE
-rb_thread_set_critical(obj, val)
+rb_thread_critical_set(obj, val)
     VALUE obj, val;
 {
     rb_thread_critical = RTEST(val);
@@ -7417,6 +7463,9 @@ rb_thread_local_aref(thread, id)
     VALUE val;
 
     th = rb_thread_check(thread);
+    if (safe_level >= 4 && th != curr_thread) {
+	rb_raise(rb_eSecurityError, "Insecure: thread locals");
+    }
     if (!th->locals) return Qnil;
     if (st_lookup(th->locals, id, &val)) {
 	return val;
@@ -7439,8 +7488,9 @@ rb_thread_local_aset(thread, id, val)
 {
     thread_t th = rb_thread_check(thread);
 
-    if (safe_level >= 4 && !FL_TEST(thread, FL_TAINT))
-	rb_raise(rb_eSecurityError, "Insecure: can't modify thread values");
+    if (safe_level >= 4 && th != curr_thread) {
+	rb_raise(rb_eSecurityError, "Insecure: can't modify thread locals");
+    }
 
     if (!th->locals) {
 	th->locals = st_init_numtable();
@@ -7541,8 +7591,8 @@ Init_Thread()
     rb_define_singleton_method(rb_cThread, "current", rb_thread_current, 0);
     rb_define_singleton_method(rb_cThread, "main", rb_thread_main, 0);
 
-    rb_define_singleton_method(rb_cThread, "critical", rb_thread_get_critical, 0);
-    rb_define_singleton_method(rb_cThread, "critical=", rb_thread_set_critical, 1);
+    rb_define_singleton_method(rb_cThread, "critical", rb_thread_critical_get, 0);
+    rb_define_singleton_method(rb_cThread, "critical=", rb_thread_critical_set, 1);
 
     rb_define_singleton_method(rb_cThread, "abort_on_exception", rb_thread_s_abort_exc, 0);
     rb_define_singleton_method(rb_cThread, "abort_on_exception=", rb_thread_s_abort_exc_set, 1);
@@ -7559,6 +7609,9 @@ Init_Thread()
 
     rb_define_method(rb_cThread, "abort_on_exception", rb_thread_abort_exc, 0);
     rb_define_method(rb_cThread, "abort_on_exception=", rb_thread_abort_exc_set, 1);
+
+    rb_define_method(rb_cThread, "priority", rb_thread_priority, 0);
+    rb_define_method(rb_cThread, "priority=", rb_thread_priority_set, 1);
 
     rb_define_method(rb_cThread, "[]", rb_thread_aref, 1);
     rb_define_method(rb_cThread, "[]=", rb_thread_aset, 2);

@@ -28,6 +28,7 @@
 
 /* symbol mangling for ruby */
 #ifdef RUBY
+# define re_adjust_startpos ruby_re_adjust_startpos
 # define re_compile_fastmap ruby_re_compile_fastmap
 # define re_compile_pattern ruby_re_compile_pattern
 # define re_copy_registers ruby_re_copy_registers
@@ -186,6 +187,7 @@ typedef struct
 extern char *re_compile_pattern (const char *, int, struct re_pattern_buffer *);
 void re_free_pattern (struct re_pattern_buffer *);
 /* Is this really advertised?  */
+extern int re_adjust_startpos (struct re_pattern_buffer *, const char*, int, int, int);
 extern void re_compile_fastmap (struct re_pattern_buffer *);
 extern int re_search (struct re_pattern_buffer *, const char*, int, int, int,
 		      struct re_registers *);
@@ -206,6 +208,7 @@ extern int re_exec (const char *);
 extern char *re_compile_pattern ();
 void re_free_regexp ();
 /* Is this really advertised? */
+extern int re_adjust_startpos ();
 extern void re_compile_fastmap ();
 extern int re_search ();
 extern int re_match ();

@@ -435,7 +435,6 @@ dir_s_mkdir(argc, argv, obj)
     VALUE path, vmode;
     int mode;
 
-    rb_secure(2);
     if (rb_scan_args(argc, argv, "11", &path, &vmode) == 2) {
 	mode = NUM2INT(vmode);
     }
@@ -444,6 +443,7 @@ dir_s_mkdir(argc, argv, obj)
     }
 
     Check_SafeStr(path);
+    rb_secure(2);
 #if !defined(NT) && !defined(USE_CWGUSI)
     if (mkdir(RSTRING(path)->ptr, mode) == -1)
 	rb_sys_fail(RSTRING(path)->ptr);
@@ -459,8 +459,8 @@ static VALUE
 dir_s_rmdir(obj, dir)
     VALUE obj, dir;
 {
-    rb_secure(2);
     Check_SafeStr(dir);
+    rb_secure(2);
     if (rmdir(RSTRING(dir)->ptr) < 0)
 	rb_sys_fail(RSTRING(dir)->ptr);
 

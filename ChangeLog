@@ -1,3 +1,55 @@
+Mon Dec 13 15:15:31 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_adjust_startpos): separate startpos adjustment
+	  because of major performace drawback.
+
+	* class.c (rb_singleton_class): tainted status of the singleton
+	  class must synchronize with the object.
+
+	* eval.c (rb_thread_schedule): implement thread priority.
+
+Sat Dec 11 03:34:38 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* gc.c (mark_hashentry): key should be VALUE, not ID.
+
+	* io.c (argf_eof): should check next_p too.
+
+Thu Dec  9 18:09:13 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* error.c (exc_set_backtrace): forgot to declare a VALUE argument.
+
+Thu Dec  9 14:19:31 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* object.c (rb_obj_taint): explicit tainting must be prohibited at
+	  level 4 to prevent polluting trusted object by untrusted code.
+
+	* file.c: file operations (stat, lstat, chmod, chown, umask,
+	  truncate, flock) are prohibited in level 2 (was level 4).
+
+Wed Dec  8 11:48:23 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_f_require): prohibiting require() in the secure mode
+	  cause serious autoloading error.
+
+	* variable.c (rb_obj_instance_variables): don't need to prohibit
+	  to get list of instance variable names of untainted objects.
+
+	* variable.c (rb_ivar_get): don't need to prohibit to get instance
+	  variables of untainted objects.
+
+	* variable.c (rb_mod_remove_const): should prohibit constant
+	  removals too. 
+
+Wed Dec  8 09:23:01 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_eval): should try autoloading before defining
+	  class/module at the toplevel.
+
+Tue Dec  7 22:15:30 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* configure.in: Modified rb_cv_rshift_sign detect routine and
+	  more simple/fast RSHIFT() for hpux-10.x.
+
 Tue Dec  7 11:16:30 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (Init_eval): calculate stack limit from rlimit where

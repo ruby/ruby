@@ -102,7 +102,7 @@ rb_file_path(obj)
     OpenFile *fptr;
 
     GetOpenFile(obj, fptr);
-    if (fptr->path == NULL) return Qnil;
+    if (!fptr->path) return Qnil;
     return rb_str_new2(fptr->path);
 }
 
@@ -261,7 +261,7 @@ rb_stat(file, st)
     if (TYPE(file) == T_FILE) {
 	OpenFile *fptr;
 
-	rb_secure(4);
+	rb_secure(2);
 	GetOpenFile(file, fptr);
 	return fstat(fileno(fptr->f), st);
     }
@@ -325,8 +325,9 @@ rb_file_lstat(obj)
     OpenFile *fptr;
     struct stat st;
 
-    rb_secure(4);
+    rb_secure(2);
     GetOpenFile(obj, fptr);
+    if (!fptr->path) return Qnil;
     if (lstat(fptr->path, &st) == -1) {
 	rb_sys_fail(fptr->path);
     }
@@ -463,8 +464,8 @@ test_l(obj, fname)
     Check_SafeStr(fname);
     if (lstat(RSTRING(fname)->ptr, &st) < 0) return Qfalse;
     if (S_ISLNK(st.st_mode)) return Qtrue;
-
 #endif
+
     return Qfalse;
 }
 
@@ -896,11 +897,12 @@ rb_file_chmod(obj, vmode)
     OpenFile *fptr;
     int mode;
 
-    rb_secure(4);
+    rb_secure(2);
     mode = NUM2INT(vmode);
 
     GetOpenFile(obj, fptr);
 #if defined(DJGPP) || defined(NT) || defined(USE_CWGUSI) || defined(__BEOS__) || defined(__EMX__)
+    if (!fptr->path) return Qnil;
     if (chmod(fptr->path, mode) == -1)
 	rb_sys_fail(fptr->path);
 #else
@@ -957,9 +959,10 @@ rb_file_chown(obj, owner, group)
 {
     OpenFile *fptr;
 
-    rb_secure(4);
+    rb_secure(2);
     GetOpenFile(obj, fptr);
 #if defined(DJGPP) || defined(__CYGWIN32__) || defined(NT) || defined(USE_CWGUSI) || defined(__EMX__)
+    if (!fptr->path) return Qnil;
     if (chown(fptr->path, NUM2INT(owner), NUM2INT(group)) == -1)
 	rb_sys_fail(fptr->path);
 #else
@@ -1147,7 +1150,7 @@ rb_file_s_umask(argc, argv)
 #else
     int omask = 0;
 
-    rb_secure(4);
+    rb_secure(2);
     if (argc == 0) {
 	omask = umask(0);
 	umask(omask);
@@ -1426,7 +1429,7 @@ rb_file_truncate(obj, len)
 {
     OpenFile *fptr;
 
-    rb_secure(4);
+    rb_secure(2);
     GetOpenFile(obj, fptr);
     if (!(fptr->mode & FMODE_WRITABLE)) {
 	rb_raise(rb_eIOError, "not opened for writing");
@@ -1494,7 +1497,7 @@ rb_file_flock(obj, operation)
 #else
     OpenFile *fptr;
 
-    rb_secure(4);
+    rb_secure(2);
     GetOpenFile(obj, fptr);
 
     if (flock(fileno(fptr->f), NUM2INT(operation)) < 0) {

@@ -32,6 +32,7 @@ int rb_str_cicmp _((VALUE, VALUE));
 VALUE rb_reg_regcomp _((VALUE));
 int rb_reg_search _((VALUE, VALUE, int, int));
 VALUE rb_reg_regsub _((VALUE, VALUE, struct re_registers *));
+int rb_reg_adjust_startpos _((VALUE, VALUE, int, int));
 
 int rb_kcode _((void));
 

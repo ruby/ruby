@@ -35,7 +35,7 @@ rb_hash_modify(hash)
 {
     if (FL_TEST(hash, HASH_FREEZE))
 	rb_raise(rb_eTypeError, "can't modify frozen hash");
-    if (!FL_TEST(hash, FL_TAINT) && rb_safe_level() >= 4)
+    if (!OBJ_TAINTED(hash) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify hash");
 }
 
@@ -43,6 +43,9 @@ VALUE
 rb_hash_freeze(hash)
     VALUE hash;
 {
+    if (rb_safe_level() >= 4 && !OBJ_TAINTED(hash))
+	rb_raise(rb_eSecurityError, "Insecure: can't freeze hash");
+	
     FL_SET(hash, HASH_FREEZE);
     return hash;
 }

@@ -49,7 +49,7 @@ rb_ary_modify(ary)
 	rb_raise(rb_eTypeError, "can't modify frozen array");
     if (FL_TEST(ary, ARY_TMPLOCK))
 	rb_raise(rb_eTypeError, "can't modify array during sort");
-    if (!FL_TEST(ary, FL_TAINT) && rb_safe_level() >= 4)
+    if (!OBJ_TAINTED(ary) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify array");
 }
 
@@ -57,6 +57,9 @@ VALUE
 rb_ary_freeze(ary)
     VALUE ary;
 {
+    if (rb_safe_level() >= 4 && !OBJ_TAINTED(ary))
+	rb_raise(rb_eSecurityError, "Insecure: can't freeze array");
+	
     FL_SET(ary, ARY_FREEZE);
     return ary;
 }

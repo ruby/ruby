@@ -283,6 +283,7 @@ VALUE
 rb_obj_taint(obj)
     VALUE obj;
 {
+    rb_secure(4);
     OBJ_TAINT(obj);
     return obj;
 }
@@ -688,25 +689,25 @@ rb_mod_attr_accessor(argc, argv, klass)
 }
 
 static VALUE
-rb_mod_shvar_get(mod, name)
+rb_mod_const_get(mod, name)
     VALUE mod, name;
 {
-    return rb_shvar_get(mod, rb_to_id(name));
+    return rb_const_get(mod, rb_to_id(name));
 }
 
 static VALUE
-rb_mod_shvar_set(mod, name, value)
+rb_mod_const_set(mod, name, value)
     VALUE mod, name, value;
 {
-    rb_shvar_set(mod, rb_to_id(name), value);
+    rb_const_set(mod, rb_to_id(name), value);
     return value;
 }
 
 static VALUE
-rb_mod_shvar_defined(mod, name)
+rb_mod_const_defined(mod, name)
     VALUE mod, name;
 {
-    return rb_shvar_defined_at(mod, rb_to_id(name));
+    return rb_const_defined_at(mod, rb_to_id(name));
 }
 
 static VALUE
@@ -1070,17 +1071,11 @@ Init_Object()
     rb_define_method(rb_cModule, "protected_instance_methods", rb_class_protected_instance_methods, -1);
     rb_define_method(rb_cModule, "private_instance_methods", rb_class_private_instance_methods, -1);
 
-    rb_define_method(rb_cModule, "shared_variable", rb_mod_shvars, 0);
-    rb_define_method(rb_cModule, "shared_variable_get", rb_mod_shvar_get, 1);
-    rb_define_method(rb_cModule, "shared_variable_set", rb_mod_shvar_set, 2);
-    rb_define_method(rb_cModule, "shared_variable_defined?", rb_mod_shvar_defined, 1);
-    rb_define_private_method(rb_cModule, "remove_shared_variable", rb_mod_remove_shvar, 1);
-    /* to be remove at 1.6*/
-    rb_define_method(rb_cModule, "constants", rb_mod_shvars, 0);
-    rb_define_method(rb_cModule, "const_get", rb_mod_shvar_get, 1);
-    rb_define_method(rb_cModule, "const_set", rb_mod_shvar_set, 2);
-    rb_define_method(rb_cModule, "const_defined?", rb_mod_shvar_defined, 1);
-    rb_define_private_method(rb_cModule, "remove_const", rb_mod_remove_shvar, 1);
+    rb_define_method(rb_cModule, "constants", rb_mod_constants, 0);
+    rb_define_method(rb_cModule, "const_get", rb_mod_const_get, 1);
+    rb_define_method(rb_cModule, "const_set", rb_mod_const_set, 2);
+    rb_define_method(rb_cModule, "const_defined?", rb_mod_const_defined, 1);
+    rb_define_private_method(rb_cModule, "remove_const", rb_mod_remove_const, 1);
     rb_define_private_method(rb_cModule, "method_added", rb_obj_dummy, 1);
 
     rb_define_method(rb_cClass, "new", rb_class_new_instance, -1);

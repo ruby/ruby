@@ -247,6 +247,7 @@ VALUE rb_eIndexError;
 VALUE rb_eLoadError;
 VALUE rb_eSecurityError;
 VALUE rb_eNotImpError;
+VALUE rb_eNoMemError;
 
 VALUE rb_eSystemCallError;
 VALUE rb_mErrno;
@@ -387,6 +388,7 @@ check_backtrace(bt)
 static VALUE
 exc_set_backtrace(exc, bt)
     VALUE exc;
+    VALUE bt;
 {
     return rb_iv_set(exc, "bt", check_backtrace(bt));
 }
@@ -541,6 +543,7 @@ Init_Exception()
     rb_eRuntimeError = rb_define_class("RuntimeError", rb_eStandardError);
     rb_eSecurityError = rb_define_class("SecurityError", rb_eStandardError);
     rb_eNotImpError = rb_define_class("NotImplementError", rb_eException);
+    rb_eNoMemError = rb_define_class("NoMemoryError", rb_eException);
 
     init_syserr();
 }

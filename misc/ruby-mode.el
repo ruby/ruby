@@ -203,7 +203,12 @@ The variable ruby-indent-level controls the amount of indentation.
 	  (looking-at "[\\[({]")
 	  (and (not modifier) (looking-at "[!?]"))
 	  (and (looking-at ruby-symbol-re)
-	       (forward-word -1)
+	       (save-restriction
+		 (let ((p (point)))
+		   (beginning-of-line)
+		   (narrow-to-region (point) p)
+		   (goto-char p)
+		   (forward-word -1)))
 	       (if (and (not modifier) (bolp))
 		   t
 		 (if (or (looking-at ruby-block-beg-re)

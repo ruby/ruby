@@ -161,7 +161,7 @@ make_struct(name, member, klass)
     else {
 	char *cname = STR2CSTR(name);
 	id = rb_intern(cname);
-	if (!rb_is_shared_id(id)) {
+	if (!rb_is_const_id(id)) {
 	    rb_raise(rb_eNameError, "identifier %s needs to be constant", cname);
 	}
 	nstr = rb_define_class_under(klass, cname, klass);
@@ -207,7 +207,8 @@ rb_struct_define(name, va_alist)
     VALUE nm, ary;
     char *mem;
 
-    nm = rb_str_new2(name);
+    if (!name) nm = Qnil;
+    else nm = rb_str_new2(name);
     ary = rb_ary_new();
 
     va_init_list(ar, name);
@@ -224,15 +225,22 @@ static VALUE
 rb_struct_s_def(argc, argv, klass)
     int argc;
     VALUE *argv;
+    VALUE klass;
 {
     VALUE name, rest;
     long i;
     VALUE st;
+    ID id;
 
     rb_scan_args(argc, argv, "1*", &name, &rest);
     for (i=0; i<RARRAY(rest)->len; i++) {
-	ID id = rb_to_id(RARRAY(rest)->ptr[i]);
+	id = rb_to_id(RARRAY(rest)->ptr[i]);
 	RARRAY(rest)->ptr[i] = INT2FIX(id);
+    }
+    if (TYPE(name) != T_STRING) {
+	id = rb_to_id(name);
+	rb_ary_unshift(rest, INT2FIX(id));
+	name = Qnil;
     }
     st = make_struct(name, rest, klass);
 

@@ -169,7 +169,7 @@ fgdbm_delete(obj, keystr)
 
     if (gdbm_delete(dbm, key)) {
 	dbmp->di_size = -1;
-	rb_raise(rb_eRuntimeError, "dbm_delete failed");
+	rb_raise(rb_eRuntimeError, "gdbm_delete failed");
     }
     else if (dbmp->di_size >= 0) {
 	dbmp->di_size--;
@@ -218,7 +218,7 @@ fgdbm_delete_if(obj)
 	valstr = rb_tainted_str_new(val.dptr, val.dsize);
 	if (RTEST(rb_yield(rb_assoc_new(keystr, valstr)))) {
 	    if (gdbm_delete(dbm, key)) {
-		rb_raise(rb_eRuntimeError, "dbm_delete failed");
+		rb_raise(rb_eRuntimeError, "gdbm_delete failed");
 	    }
 	}
     }
@@ -240,7 +240,7 @@ fgdbm_clear(obj)
     for (key = gdbm_firstkey(dbm); key.dptr; key = nextkey) {
 	nextkey = gdbm_nextkey(dbm, key);
 	if (gdbm_delete(dbm, key)) {
-	    rb_raise(rb_eRuntimeError, "dbm_delete failed");
+	    rb_raise(rb_eRuntimeError, "gdbm_delete failed");
 	}
     }
     return obj;
@@ -313,18 +313,11 @@ fgdbm_store(obj, keystr, valstr)
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
 
-    if (valstr == Qnil) {
-	fgdbm_delete(obj, keystr);
-	return Qnil;
-    }
-
     rb_secure(4);
     keystr = rb_obj_as_string(keystr);
 
     key.dptr = RSTRING(keystr)->ptr;
     key.dsize = RSTRING(keystr)->len;
-
-    if (NIL_P(valstr)) return fgdbm_delete(obj, keystr);
 
     valstr = rb_obj_as_string(valstr);
     val.dptr = RSTRING(valstr)->ptr;
@@ -335,7 +328,7 @@ fgdbm_store(obj, keystr, valstr)
     dbm = dbmp->di_dbm;
     if (gdbm_store(dbm, key, val, GDBM_REPLACE)) {
 	if (errno == EPERM) rb_sys_fail(0);
-	rb_raise(rb_eRuntimeError, "dbm_store failed");
+	rb_raise(rb_eRuntimeError, "gdbm_store failed");
     }
 
     return valstr;

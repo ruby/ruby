@@ -66,7 +66,7 @@ rb_tainted_str_new(ptr, len)
 {
     VALUE str = rb_str_new(ptr, len);
 
-    FL_SET(str, FL_TAINT);
+    OBJ_TAINT(str);
     return str;
 }
 
@@ -76,7 +76,7 @@ rb_tainted_str_new2(ptr)
 {
     VALUE str = rb_str_new2(ptr);
 
-    FL_SET(str, FL_TAINT);
+    OBJ_TAINT(str);
     return str;
 }
 
@@ -112,8 +112,8 @@ rb_str_new4(orig)
 	str->ptr = RSTRING(orig)->ptr;
 	RSTRING(orig)->orig = (VALUE)str;
 	str->orig = 0;
-	if (FL_TEST(orig, FL_TAINT)) {
-	    FL_SET(str, FL_TAINT);
+	if (OBJ_TAINTED(orig)) {
+	    OBJ_TAINT(str);
 	}
 	FL_SET(str, STR_FREEZE);
 	return (VALUE)str;
@@ -213,7 +213,7 @@ rb_str_s_new(klass, orig)
     }
 
     if (rb_safe_level() >= 3) {
-	FL_SET(str, FL_TAINT);
+	OBJ_TAINT(str);
     }
 
     return (VALUE)str;
@@ -334,7 +334,7 @@ rb_str_modify(str)
 
     if (FL_TEST(str, STR_FREEZE))
 	rb_raise(rb_eTypeError, "can't modify frozen string");
-    if (!FL_TEST(str, FL_TAINT) && rb_safe_level() >= 4)
+    if (!OBJ_TAINTED(str) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify string");
     if (!RSTRING(str)->orig || FL_TEST(str, STR_NO_ORIG)) return;
     ptr = RSTRING(str)->ptr;
@@ -350,6 +350,9 @@ VALUE
 rb_str_freeze(str)
     VALUE str;
 {
+    if (rb_safe_level() >= 4 && !OBJ_TAINTED(str))
+	rb_raise(rb_eSecurityError, "Insecure: can't freeze string");
+
     FL_SET(str, STR_FREEZE);
     return str;
 }
@@ -585,6 +588,7 @@ rb_str_index_method(argc, argv, str)
 
     switch (TYPE(sub)) {
       case T_REGEXP:
+	pos = rb_reg_adjust_startpos(sub, str, pos, 0);
 	pos = rb_reg_search(sub, str, pos, 0);
 	break;
 
@@ -635,6 +639,7 @@ rb_str_rindex(argc, argv, str)
     switch (TYPE(sub)) {
       case T_REGEXP:
 	if (RREGEXP(sub)->len) {
+	    pos = rb_reg_adjust_startpos(sub, str, pos, 1);
 	    pos = rb_reg_search(sub, str, pos, 1);
 	}
 	if (pos >= 0) return INT2NUM(pos);

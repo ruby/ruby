@@ -26,14 +26,14 @@
 #define ID_INSTANCE 0x02
 #define ID_GLOBAL   0x03
 #define ID_ATTRSET  0x04
-#define ID_SHARED   0x05
+#define ID_CONST    0x05
 
 #define is_notop_id(id) ((id)>LAST_TOKEN)
 #define is_local_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_LOCAL)
 #define is_global_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_GLOBAL)
 #define is_instance_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_INSTANCE)
 #define is_attrset_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_ATTRSET)
-#define is_shared_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_SHARED)
+#define is_const_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_CONST)
 
 NODE *ruby_eval_tree_begin = 0;
 NODE *ruby_eval_tree = 0;
@@ -717,7 +717,7 @@ arg		: lhs '=' arg
 			    $$ = $2;
 			}
 			else {
-			    $$ = call_op($2, tUPLUS, 0);
+			    $$ = call_op($2, tUPLUS, 0, 0);
 			}
 		    }
 		| tUMINUS arg
@@ -729,7 +729,7 @@ arg		: lhs '=' arg
 			    $$ = $2;
 			}
 			else {
-			    $$ = call_op($2, tUMINUS, 0);
+			    $$ = call_op($2, tUMINUS, 0, 0);
 			}
 		    }
 		| arg '|' arg
@@ -791,7 +791,7 @@ arg		: lhs '=' arg
 		    }
 		| '~' arg
 		    {
-			$$ = call_op($2, '~', 0);
+			$$ = call_op($2, '~', 0, 0);
 		    }
 		| arg tLSHFT arg
 		    {
@@ -1787,10 +1787,10 @@ yycompile(f)
     int n;
 
     if (!ruby_in_eval && rb_safe_level() == 0 &&
-	rb_shvar_defined(rb_cObject, rb_intern("LINES__"))) {
+	rb_const_defined(rb_cObject, rb_intern("LINES__"))) {
 	VALUE hash, fname;
 
-	hash = rb_shvar_get(rb_cObject, rb_intern("LINES__"));
+	hash = rb_const_get(rb_cObject, rb_intern("LINES__"));
 	if (TYPE(hash) == T_HASH) {
 	    fname = rb_str_new2(f);
 	    ruby_debug_lines = rb_hash_aref(hash, fname);
@@ -2880,7 +2880,7 @@ yylex()
 		    /* binary */
 		    c = nextc();
 		    if (c != '0' && c != '1') {
-			yyerror("numeric constant with no digits");
+			yyerror("numeric literal without digits");
 		    }
 		    do {
 			if (c == '_') continue;
@@ -3715,7 +3715,7 @@ gettable(id)
     else if (is_instance_id(id)) {
 	return NEW_IVAR(id);
     }
-    else if (is_shared_id(id)) {
+    else if (is_const_id(id)) {
 	return NEW_CVAR(id);
     }
     rb_bug("invalid id for gettable");
@@ -3766,11 +3766,10 @@ assignable(id, val)
     else if (is_instance_id(id)) {
 	lhs = NEW_IASGN(id, val);
     }
-    else if (is_shared_id(id)) {
+    else if (is_const_id(id)) {
 	if (cur_mid || in_single)
-	    lhs = NEW_CASGN(id, val);
-	else
-	    lhs = NEW_CDECL(id, val);
+	    yyerror("dynamic constant assignment");
+	lhs = NEW_CDECL(id, val);
     }
     else {
 	rb_bug("bad id for variable");
@@ -4496,7 +4495,7 @@ rb_intern(name)
 	    id = ID_ATTRSET;
 	}
 	else if (ISUPPER(name[0])) {
-	    id = ID_SHARED;
+	    id = ID_CONST;
         }
 	else {
 	    id = ID_LOCAL;
@@ -4549,18 +4548,11 @@ rb_id2name(id)
 }
 
 int
-rb_is_shared_id(id)
-    ID id;
-{
-    if (is_shared_id(id)) return Qtrue;
-    return Qfalse;
-}
-
-int
 rb_is_const_id(id)
     ID id;
 {
-    return rb_is_shared_id(id);
+    if (is_const_id(id)) return Qtrue;
+    return Qfalse;
 }
 
 int
