@@ -71,7 +71,7 @@ range_s_new(argc, argv, klass)
     VALUE *argv;
     VALUE klass;
 {
-    VALUE beg, end, flag, range;
+    VALUE beg, end, flag;
     
     rb_scan_args(argc, argv, "21", &beg, &end, &flag);
     return range_new(klass, beg, end, RTEST(flag));
@@ -94,12 +94,12 @@ range_eqq(range, obj)
     end = rb_ivar_get(range, id_end);
 
     if (FIXNUM_P(beg) && FIXNUM_P(obj) && FIXNUM_P(end)) {
-	if (FIX2INT(beg) <= FIX2INT(obj)) {
+	if (NUM2LONG(beg) <= NUM2LONG(obj)) {
 	    if (EXCL(range)) {
-		if (FIX2INT(obj) < FIX2INT(end)) return Qtrue;
+		if (NUM2LONG(obj) < NUM2LONG(end)) return Qtrue;
 	    }
 	    else {
-		if (FIX2INT(obj) <= FIX2INT(end)) return Qtrue;
+		if (NUM2LONG(obj) <= NUM2LONG(end)) return Qtrue;
 	    }
 	}
 	return Qfalse;
@@ -132,7 +132,7 @@ range_each(range)
 
 	if (!EXCL(range)) end += 1;
 	for (i=FIX2LONG(b); i<end; i++) {
-	    rb_yield(INT2FIX(i));
+	    rb_yield(INT2NUM(i));
 	}
     }
     else if (TYPE(b) == T_STRING) {
@@ -175,15 +175,16 @@ range_last(obj)
 VALUE
 rb_range_beg_len(range, begp, lenp, len, err)
     VALUE range;
-    int *begp, *lenp;
-    int len, err;
+    long *begp, *lenp;
+    long len;
+    int err;
 {
-    int beg, end, b, e;
+    long beg, end, b, e;
 
     if (!rb_obj_is_kind_of(range, rb_cRange)) return Qfalse;
 
-    beg = b = NUM2INT(rb_ivar_get(range, id_beg));
-    end = e = NUM2INT(rb_ivar_get(range, id_end));
+    beg = b = NUM2LONG(rb_ivar_get(range, id_beg));
+    end = e = NUM2LONG(rb_ivar_get(range, id_end));
 
     if (beg < 0) {
 	beg += len;
@@ -265,10 +266,10 @@ range_length(range)
     }
     if (FIXNUM_P(beg) && FIXNUM_P(end)) {
 	if (EXCL(range)) {
-	    return INT2FIX(FIX2INT(end) - FIX2INT(beg));
+	    return INT2NUM(NUM2LONG(end) - NUM2LONG(beg));
 	}
 	else {
-	    return INT2FIX(FIX2INT(end) - FIX2INT(beg) + 1);
+	    return INT2NUM(NUM2LONG(end) - NUM2LONG(beg) + 1);
 	}
     }
     if (!rb_obj_is_kind_of(beg, rb_cNumeric)) {

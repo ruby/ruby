@@ -75,7 +75,7 @@ class GetoptLong
     #
     # Whether error messages are output to stderr.
     #
-    @quiet_flag = FALSE
+    @quiet = FALSE
 
     #
     # Status code.
@@ -259,7 +259,7 @@ class GetoptLong
   # Set an error (protected).
   #
   def set_error(type, message)
-    $stderr.print("#{$0}: #{message}\n") if !@quiet_flag
+    $stderr.print("#{$0}: #{message}\n") if !@quiet
 
     @error = type
     @error_message = message

@@ -460,6 +460,10 @@ mlhs_basic	: mlhs_head
 		    {
 			$$ = NEW_MASGN(NEW_LIST($1), $3);
 		    }
+		| mlhs_head tSTAR
+		    {
+			$$ = NEW_MASGN(NEW_LIST($1), -1);
+		    }
 		| mlhs_head mlhs_tail
 		    {
 			$$ = NEW_MASGN(list_concat(NEW_LIST($1),$2), 0);
@@ -468,9 +472,17 @@ mlhs_basic	: mlhs_head
 		    {
 			$$ = NEW_MASGN(list_concat(NEW_LIST($1),$2),$5);
 		    }
+		| mlhs_head mlhs_tail ',' tSTAR
+		    {
+			$$ = NEW_MASGN(list_concat(NEW_LIST($1),$2),-1);
+		    }
 		| tSTAR mlhs_node
 		    {
 			$$ = NEW_MASGN(0, $2);
+		    }
+		| tSTAR
+		    {
+			$$ = NEW_MASGN(0, -1);
 		    }
 
 mlhs_item	: mlhs_node
@@ -1500,6 +1512,10 @@ f_rest_arg	: tSTAR tIDENTIFIER
 			    yyerror("rest argument must be local variable");
 			$$ = local_cnt($2);
 		    }
+		| tSTAR
+		    {
+			$$ = -2;
+		    }
 
 f_block_arg	: tAMPER tIDENTIFIER
 		    {
@@ -1609,7 +1625,7 @@ none		: /* none */
 #include "regex.h"
 #include "util.h"
 
-#define is_identchar(c) ((c)!=-1&&(ISALNUM(c) || (c) == '_' || ismbchar(c)))
+#define is_identchar(c) (((int)(c))!=-1&&(ISALNUM(c) || (c) == '_' || ismbchar(c)))
 
 static char *tokenbuf = NULL;
 static int   tokidx, toksiz = 0;
@@ -2013,6 +2029,7 @@ parse_regx(term, paren)
 		    tokadd(c);
 		}
 		else {
+#if 0
 		    int c1;
 		    pushback(c);
 		    c1 = read_escape();
@@ -2023,6 +2040,10 @@ parse_regx(term, paren)
 			tokadd('\\');
 			tokadd(c);
 		    }
+#else
+		    tokadd('\\');
+		    tokadd(c);
+#endif
 		}
 	    }
 	    continue;

@@ -168,7 +168,7 @@ rb_class_path(klass)
 	char *s = "Class";
 
 	if (TYPE(klass) == T_MODULE) s = "Module";
-	sprintf(buf, "#<%s 0x%x>", s, klass);
+	sprintf(buf, "#<%s 0lx%lx>", s, klass);
 	return rb_str_new2(buf);
     }
 }

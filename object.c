@@ -130,7 +130,7 @@ rb_any_to_s(obj)
     VALUE str;
 
     s = ALLOCA_N(char, strlen(cname)+6+16+1); /* 6:tags 16:addr 1:eos */
-    sprintf(s, "#<%s:0x%x>", cname, obj);
+    sprintf(s, "#<%s:0x%lx>", cname, obj);
     str = rb_str_new2(s);
     if (OBJ_TAINTED(obj)) OBJ_TAINT(str);
 

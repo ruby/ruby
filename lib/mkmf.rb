@@ -35,10 +35,9 @@ $libdir = CONFIG["libdir"]+"/ruby/"+CONFIG["MAJOR"]+"."+CONFIG["MINOR"]
 $archdir = $libdir+"/"+CONFIG["arch"]
 $install = CONFIG["INSTALL_PROGRAM"]
 $install_data = CONFIG["INSTALL_DATA"]
-$ruby_inc = $archdir
 if $install =~ %r!^[^\s/]+/! then
-  $install = CONFIG["srcdir"]+"/"+$install
-  $install_data = CONFIG["srcdir"]+"/"+$install_data
+  $install = CONFIG["compile_dir"]+"/"+$install
+  $install_data = CONFIG["compile_dir"]+"/"+$install_data
 end
 
 if File.exist? $archdir + "/ruby.h"
@@ -361,7 +360,6 @@ prefix = #{CONFIG["prefix"]}
 exec_prefix = #{CONFIG["exec_prefix"]}
 libdir = #{$libdir}
 archdir = #{$archdir}
-ruby_inc = #{$ruby_inc}
 
 #### End of system configuration section. ####
 

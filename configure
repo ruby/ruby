@@ -4009,7 +4009,7 @@ echo "configure:3935: checking whether OS depend dynamic link works" >&5
 			rb_cv_dlopen=yes ;;
 	aix*)		LDSHARED='/usr/ccs/bin/ld'
 			XLDFLAGS='-Wl,-bE:ruby.imp'
-			DLDFLAGS='-eInit_$(TARGET) -bI:$(ruby_inc)/ruby.imp -bM:SRE -T512 -H512 -lc'
+			DLDFLAGS='-eInit_$(TARGET) -bI:$(hdrdir)/ruby.imp -bM:SRE -T512 -H512 -lc'
 			rb_cv_dlopen=yes ;;
 
 	human*)		DLDFLAGS=''

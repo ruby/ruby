@@ -1593,13 +1593,14 @@ myfdopen (int fd, const char *mode)
 
     //fprintf(stderr, "myfdopen()\n");
 
+    optlen = sizeof(sockbuf);
     retval = getsockopt((SOCKET)fd, SOL_SOCKET, SO_TYPE, sockbuf, &optlen);
     if (retval == SOCKET_ERROR) {
 	int iRet;
 
 	iRet = WSAGetLastError();
 	if (iRet == WSAENOTSOCK || iRet == WSANOTINITIALISED)
-	return (_fdopen(fd, mode));
+	    return (_fdopen(fd, mode));
     }
 
     //

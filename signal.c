@@ -301,7 +301,7 @@ posix_signal(signum, handler)
 #define ruby_signal(sig,handle) signal((sig),(handle))
 #endif
 
-static int
+static void
 signal_exec(sig)
     int sig;
 {

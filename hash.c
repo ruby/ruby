@@ -193,7 +193,6 @@ rb_hash_s_new(argc, argv, klass)
     VALUE klass;
 {
     VALUE ifnone;
-    int size;
 
     NEWOBJ(hash, struct RHash);
     OBJSETUP(hash, klass, T_HASH);
@@ -857,7 +856,7 @@ static VALUE
 env_delete(obj, name)
     VALUE obj, name;
 {
-    int i, len;
+    int len;
     char *nam, *val;
 
     rb_secure(4);

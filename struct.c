@@ -79,13 +79,13 @@ rb_struct_getmember(obj, id)
     ID id;
 {
     VALUE member, slot;
-    int i;
+    long i;
 
     member = iv_get(class_of(obj), "__member__");
     if (NIL_P(member)) {
 	rb_bug("non-initialized struct");
     }
-    slot = INT2FIX(id);
+    slot = INT2NUM(id);
     for (i=0; i<RARRAY(member)->len; i++) {
 	if (RARRAY(member)->ptr[i] == slot) {
 	    return RSTRUCT(obj)->ptr[i];
@@ -131,7 +131,7 @@ rb_struct_set(obj, val)
     VALUE obj, val;
 {
     VALUE member, slot;
-    int i;
+    long i;
 
     member = iv_get(class_of(obj), "__member__");
     if (NIL_P(member)) {
@@ -153,7 +153,7 @@ make_struct(name, member, klass)
 {
     VALUE nstr;
     ID id;
-    int i;
+    long i;
 
     if (NIL_P(name)) {
 	nstr = rb_class_new(klass);
@@ -166,7 +166,7 @@ make_struct(name, member, klass)
 	}
 	nstr = rb_define_class_under(klass, cname, klass);
     }
-    rb_iv_set(nstr, "__size__", INT2FIX(RARRAY(member)->len));
+    rb_iv_set(nstr, "__size__", INT2NUM(RARRAY(member)->len));
     rb_iv_set(nstr, "__member__", member);
 
     rb_define_singleton_method(nstr, "new", struct_alloc, -1);
@@ -226,7 +226,7 @@ rb_struct_s_def(argc, argv, klass)
     VALUE *argv;
 {
     VALUE name, rest;
-    int i;
+    long i;
     VALUE st;
 
     rb_scan_args(argc, argv, "1*", &name, &rest);
@@ -246,7 +246,7 @@ rb_struct_initialize(self, values)
 {
     VALUE klass = CLASS_OF(self);
     VALUE size;
-    int n;
+    long n;
 
     size = iv_get(klass, "__size__");
     n = FIX2INT(size);
@@ -264,13 +264,13 @@ struct_alloc(argc, argv, klass)
     VALUE klass;
 {
     VALUE size;
-    int n;
+    long n;
 
     NEWOBJ(st, struct RStruct);
     OBJSETUP(st, klass, T_STRUCT);
 
     size = iv_get(klass, "__size__");
-    n = FIX2INT(size);
+    n = FIX2LONG(size);
 
     st->len = 0;		/* avoid GC crashing  */
     st->ptr = ALLOC_N(VALUE, n);
@@ -298,11 +298,11 @@ rb_struct_new(klass, va_alist)
 #endif
 {
     VALUE sz, *mem;
-    int size, i;
+    long size, i;
     va_list args;
 
     sz = iv_get(klass, "__size__");
-    size = FIX2INT(sz); 
+    size = FIX2LONG(sz); 
     mem = ALLOCA_N(VALUE, size);
     va_init_list(args, klass);
     for (i=0; i<size; i++) {
@@ -317,7 +317,7 @@ static VALUE
 rb_struct_each(s)
     VALUE s;
 {
-    int i;
+    long i;
 
     for (i=0; i<RSTRUCT(s)->len; i++) {
 	rb_yield(RSTRUCT(s)->ptr[i]);
@@ -342,7 +342,7 @@ inspect_struct(s)
 {
     char *cname = rb_class2name(CLASS_OF(s));
     VALUE str, member;
-    int i;
+    long i;
 
     member = iv_get(CLASS_OF(s), "__member__");
     if (NIL_P(member)) {
@@ -360,7 +360,7 @@ inspect_struct(s)
 	    rb_str_cat(str, ", ", 2);
 	}
 	slot = RARRAY(member)->ptr[i];
-	p = rb_id2name(FIX2INT(slot));
+	p = rb_id2name(FIX2LONG(slot));
 	rb_str_cat(str, p, strlen(p));
 	rb_str_cat(str, "=", 1);
 	str2 = rb_inspect(RSTRUCT(s)->ptr[i]);
@@ -412,7 +412,7 @@ rb_struct_aref_id(s, id)
     ID id;
 {
     VALUE member;
-    int i, len;
+    long i, len;
 
     member = iv_get(CLASS_OF(s), "__member__");
     if (NIL_P(member)) {
@@ -433,13 +433,13 @@ VALUE
 rb_struct_aref(s, idx)
     VALUE s, idx;
 {
-    int i;
+    long i;
 
     if (TYPE(idx) == T_STRING) {
 	return rb_struct_aref_id(s, rb_to_id(idx));
     }
 
-    i = NUM2INT(idx);
+    i = NUM2LONG(idx);
     if (i < 0) i = RSTRUCT(s)->len + i;
     if (i < 0)
         rb_raise(rb_eIndexError, "offset %d too small for struct(size:%d)",
@@ -456,7 +456,7 @@ rb_struct_aset_id(s, id, val)
     ID id;
 {
     VALUE member;
-    int i, len;
+    long i, len;
 
     member = iv_get(CLASS_OF(s), "__member__");
     if (NIL_P(member)) {
@@ -477,13 +477,13 @@ VALUE
 rb_struct_aset(s, idx, val)
     VALUE s, idx, val;
 {
-    int i;
+    long i;
 
     if (TYPE(idx) == T_STRING) {
 	return rb_struct_aset_id(s, rb_to_id(idx), val);
     }
 
-    i = NUM2INT(idx);
+    i = NUM2LONG(idx);
     if (i < 0) i = RSTRUCT(s)->len + i;
     if (i < 0)
         rb_raise(rb_eIndexError, "offset %d too small for struct(size:%d)",
@@ -498,7 +498,7 @@ static VALUE
 rb_struct_equal(s, s2)
     VALUE s, s2;
 {
-    int i;
+    long i;
 
     if (TYPE(s2) != T_STRUCT) return Qfalse;
     if (CLASS_OF(s) != CLASS_OF(s2)) return Qfalse;
@@ -516,7 +516,7 @@ static VALUE
 rb_struct_eql(s, s2)
     VALUE s, s2;
 {
-    int i;
+    long i;
 
     if (TYPE(s2) != T_STRUCT) return Qfalse;
     if (CLASS_OF(s) != CLASS_OF(s2)) return Qfalse;
@@ -534,7 +534,8 @@ static VALUE
 rb_struct_hash(s)
     VALUE s;
 {
-    int i, h;
+    long i;
+    int h;
 
     h = CLASS_OF(s);
     for (i=0; i<RSTRUCT(s)->len; i++) {

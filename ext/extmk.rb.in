@@ -14,6 +14,7 @@ elsif ARGV[0] == 'clean'
   ARGV.shift
 end
 
+SRC_EXT = ["c", "cc", "cxx", "C"]
 $extlist = []
 
 $cache_mod = FALSE;
@@ -27,7 +28,6 @@ if $top_srcdir !~ "^/"
 end
 # get absolute path
 $topdir = File.expand_path("..")
-$ruby_inc = $top_srcdir
 
 load "#{$top_srcdir}/lib/find.rb"
 
@@ -355,7 +355,6 @@ libdir = @libdir@
 #pkglibdir = $(libdir)/$(RUBY_INSTALL_NAME)/@MAJOR@.@MINOR@
 pkglibdir = $(libdir)/ruby/@MAJOR@.@MINOR@
 archdir = $(pkglibdir)/@arch@
-ruby_inc = #{$ruby_inc}
 @SET_MAKE@
 
 #### End of system configuration section. ####
@@ -366,7 +365,7 @@ ruby_inc = #{$ruby_inc}
   mfile.printf "OBJS = "
   if !$objs then
     $objs = []
-    for f in Dir["#{$top_srcdir}/ext/#{$mdir}/*.{c,cc}"]
+    for f in Dir["#{$top_srcdir}/ext/#{$mdir}/*.{#{SRC_EXT.join(%q{,})}}"]
       f = File.basename(f)
       f.sub!(/\.(c|cc)$/, ".o")
       $objs.push f
@@ -419,7 +418,7 @@ $(DLLIB): $(OBJS)
 $(DLLIB): $(OBJS)
 	$(LDSHARED) $(DLDFLAGS) -o $(DLLIB) $(OBJS) $(LIBS) $(LOCAL_LIBS)
 "
-  elsif not File.exist?(target + ".c") and not File.exist?(target + ".cc")
+  elsif not SRC_EXT.detect{|ext| File.exist?(target + ext)}
     if PLATFORM == "m68k-human"
       mfile.printf "\
 $(DLLIB): $(OBJS)
@@ -499,11 +498,11 @@ def extmake(target)
 	$extlist.push [$static,target]
       end
       if $install
-	system "make install DESTDIR=#{$destdir}"
+	system "#{$make} install DESTDIR=#{$destdir}"
       elsif $clean
-	system "make clean"
+	system "#{$make} clean"
       else
-	system "make all" or exit
+	system "#{$make} all" or exit
       end
     end
     if $static
@@ -517,6 +516,9 @@ def extmake(target)
     Dir.chdir ".."
   end
 end
+
+$make = ENV["MAKE"]
+$make ||= with_config("make-prog", "make")
 
 # get static-link modules
 $static_ext = {}
@@ -620,7 +622,7 @@ if $extlist.size > 0
   if PLATFORM =~ /m68k-human|beos/
     $extlibs.gsub!("-L/usr/local/lib", "") if $extlibs
   end
-  system format(%[make #{ruby} EXTOBJS="%s" EXTLIBS="%s"], $extobjs, $extlibs)
+  system format(%[#{$make} #{ruby} EXTOBJS="%s" EXTLIBS="%s"], $extobjs, $extlibs)
 else
   Dir.chdir ".."
   if older(ruby, miniruby)

@@ -1,3 +1,51 @@
+Tue May 25 16:45:11 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (rb_f_syscall): syscall may return values other than zero
+	  on success.
+
+	* regex.c (re_match): handle empty loop properly (hopefully).
+
+	* regex.c (re_match): remove empty group check, because it does
+	  not help non-grouping parentheses (?:..).
+
+	* regex.c (re_compile_fastmap): treating try_next, finalize_push
+	  wrong way.
+
+	* regex.c: remove some obsolete functions such as
+	  group_match_null_string_p().
+
+Mon May 24 14:47:54 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (read_backslash): read backslash by regex.
+
+Sun May 23 19:44:58 1999  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* ext/pty/pty.c (getDevice): portability patch.
+
+Fri May 21 23:01:26 1999  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* ext/socket/getaddrinfo.c (GET_AI): should set error code.
+
+Thu May 20 03:43:44 1999  Jun-ichiro itojun Hagino  <itojun@itojun.org>
+
+	* ext/socket/socket.c: you should use sockaddr_storage to handle
+	  IPv6 addresses.
+
+	* ext/socket/getaddrinfo.c (getaddrinfo): prevent retrieving
+	  AF_INET6 address if hints.ai_flags == AI_PASSIVE.
+
+Wed May 19 12:27:07 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (exec_end_proc): should protect exceptions.
+
+	* gc.c (run_final): ditto.
+
+	* parse.y (f_rest_arg): allow just * for rest arg.
+
+	* parse.y (mlhs_basic): allow * without formal argument.
+
+	* regex.c (re_match): the variable `part' should be initialized.
+
 Tue May 18 15:25:45 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* regex.c (re_search): a bug in range adjustment.

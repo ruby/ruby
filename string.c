@@ -36,7 +36,7 @@ extern VALUE rb_rs;
 VALUE
 rb_str_new(ptr, len)
     const char *ptr;
-    int len;
+    long len;
 {
     NEWOBJ(str, struct RString);
     OBJSETUP(str, rb_cString, T_STRING);
@@ -62,7 +62,7 @@ rb_str_new2(ptr)
 VALUE
 rb_tainted_str_new(ptr, len)
     const char *ptr;
-    int len;
+    long len;
 {
     VALUE str = rb_str_new(ptr, len);
 
@@ -223,7 +223,7 @@ static VALUE
 rb_str_length(str)
     VALUE str;
 {
-    return INT2FIX(RSTRING(str)->len);
+    return INT2NUM(RSTRING(str)->len);
 }
 
 static VALUE
@@ -259,9 +259,9 @@ rb_str_times(str, times)
     VALUE times;
 {
     VALUE str2;
-    int i, len;
+    long i, len;
 
-    len = NUM2INT(times);
+    len = NUM2LONG(times);
     if (len < 0) {
 	rb_raise(rb_eArgError, "negative argument");
     }
@@ -302,7 +302,7 @@ rb_str_format(str, arg)
 VALUE
 rb_str_substr(str, beg, len)
     VALUE str;
-    int beg, len;
+    long beg, len;
 {
     VALUE str2;
 
@@ -378,7 +378,7 @@ rb_str_dup_frozen(str)
 VALUE
 rb_str_resize(str, len)
     VALUE str;
-    int len;
+    long len;
 {
     rb_str_modify(str);
 
@@ -396,7 +396,7 @@ VALUE
 rb_str_cat(str, ptr, len)
     VALUE str;
     const char *ptr;
-    int len;
+    long len;
 {
     if (len > 0) {
 	rb_str_modify(str);
@@ -429,7 +429,7 @@ int
 rb_str_hash(str)
     VALUE str;
 {
-    register int len = RSTRING(str)->len;
+    register long len = RSTRING(str)->len;
     register char *p = RSTRING(str)->ptr;
     register int key = 0;
 
@@ -462,7 +462,8 @@ int
 rb_str_cmp(str1, str2)
     VALUE str1, str2;
 {
-    int len, retval;
+    long len;
+    int retval;
 
     if (ruby_ignorecase) {
 	return rb_str_cicmp(str1, str2);
@@ -510,7 +511,7 @@ rb_str_match(x, y)
     VALUE x, y;
 {
     VALUE reg;
-    int start;
+    long start;
 
     switch (TYPE(y)) {
       case T_REGEXP:
@@ -522,7 +523,7 @@ rb_str_match(x, y)
 	if (start == -1) {
 	    return Qfalse;
 	}
-	return INT2FIX(start);
+	return INT2NUM(start);
 
       default:
 	return rb_funcall(y, rb_intern("=~"), 1, x);
@@ -536,13 +537,13 @@ rb_str_match2(str)
     return rb_reg_match2(rb_reg_regcomp(str));
 }
 
-static int
+static long
 rb_str_index(str, sub, offset)
     VALUE str, sub;
-    int offset;
+    long offset;
 {
     char *s, *e, *p;
-    int len;
+    long len;
 
     if (offset < 0) {
 	offset += RSTRING(str)->len;
@@ -571,10 +572,10 @@ rb_str_index_method(argc, argv, str)
 {
     VALUE sub;
     VALUE initpos;
-    int pos;
+    long pos;
 
     if (rb_scan_args(argc, argv, "11", &sub, &initpos) == 2) {
-	pos = NUM2INT(initpos);
+	pos = NUM2LONG(initpos);
     }
     else {
 	pos = 0;
@@ -592,11 +593,11 @@ rb_str_index_method(argc, argv, str)
       case T_FIXNUM:
       {
 	  int c = FIX2INT(sub);
-	  int len = RSTRING(str)->len;
+	  long len = RSTRING(str)->len;
 	  char *p = RSTRING(str)->ptr;
 
 	  for (;pos<len;pos++) {
-	      if (p[pos] == c) return INT2FIX(pos);
+	      if (p[pos] == c) return INT2NUM(pos);
 	  }
 	  return Qnil;
       }
@@ -607,7 +608,7 @@ rb_str_index_method(argc, argv, str)
     }
 
     if (pos == -1) return Qnil;
-    return INT2FIX(pos);
+    return INT2NUM(pos);
 }
 
 static VALUE
@@ -632,7 +633,7 @@ rb_str_rindex(argc, argv, str)
     switch (TYPE(sub)) {
       case T_REGEXP:
 	pos = rb_reg_search(sub, str, pos, 1);
-	if (pos >= 0) return INT2FIX(pos); 
+	if (pos >= 0) return INT2NUM(pos); 
 	break;
 
       case T_STRING:
@@ -644,7 +645,7 @@ rb_str_rindex(argc, argv, str)
 	len = RSTRING(sub)->len;
 	while (sbeg <= s) {
 	    if (*s == *t && memcmp(s, t, len) == 0) {
-		return INT2FIX(s - RSTRING(str)->ptr);
+		return INT2NUM(s - RSTRING(str)->ptr);
 	    }
 	    s--;
 	}
@@ -657,7 +658,7 @@ rb_str_rindex(argc, argv, str)
 	  char *pbeg = RSTRING(str)->ptr + pos;
 
 	  while (pbeg <= p) {
-	      if (*p == c) return INT2FIX(p - RSTRING(str)->ptr);
+	      if (*p == c) return INT2NUM(p - RSTRING(str)->ptr);
 	      p--;
 	  }
 	  return Qnil;
@@ -774,11 +775,11 @@ rb_str_aref(str, indx)
     VALUE str;
     VALUE indx;
 {
-    int idx;
+    long idx;
 
     switch (TYPE(indx)) {
       case T_FIXNUM:
-	idx = FIX2INT(indx);
+	idx = FIX2LONG(indx);
 
 	if (idx < 0) {
 	    idx = RSTRING(str)->len + idx;
@@ -800,7 +801,7 @@ rb_str_aref(str, indx)
       default:
 	/* check if indx is Range */
 	{
-	    int beg, len;
+	    long beg, len;
 	    switch (rb_range_beg_len(indx, &beg, &len, RSTRING(str)->len, 0)) {
 	      case Qfalse:
 		break;
@@ -861,7 +862,7 @@ rb_str_aset(str, indx, val)
     VALUE indx, val;
 {
     int idx;
-    int beg, end;
+    int beg;
 
     switch (TYPE(indx)) {
       case T_FIXNUM:
@@ -905,7 +906,7 @@ rb_str_aset(str, indx, val)
       default:
 	/* check if indx is Range */
 	{
-	    int beg, len;
+	    long beg, len;
 	    if (rb_range_beg_len(indx, &beg, &len, RSTRING(str)->len, 2)) {
 		if (TYPE(val) != T_STRING) val = rb_str_to_str(val);
 		rb_str_replace(str, beg, len, val);
@@ -1256,16 +1257,16 @@ static VALUE
 rb_str_include(str, arg)
     VALUE str, arg;
 {
-    int i;
+    long i;
 
     if (FIXNUM_P(arg)) {
 	int c = FIX2INT(arg);
-	int len = RSTRING(str)->len;
+	long len = RSTRING(str)->len;
 	char *p = RSTRING(str)->ptr;
 
 	for (i=0; i<len; i++) {
 	    if (p[i] == c) {
-		return INT2FIX(i);
+		return INT2NUM(i);
 	    }
 	}
 	return Qfalse;
@@ -1275,7 +1276,7 @@ rb_str_include(str, arg)
     i = rb_str_index(str, arg, 0);
 
     if (i == -1) return Qfalse;
-    return INT2FIX(i);
+    return INT2NUM(i);
 }
 
 static VALUE
@@ -2318,11 +2319,11 @@ rb_str_strip(str)
 static VALUE
 scan_once(str, pat, start)
     VALUE str, pat;
-    int *start;
+    long *start;
 {
     VALUE result, match;
     struct re_registers *regs;
-    int i;
+    long i;
 
     if (rb_reg_search(pat, str, *start, 0) >= 0) {
 	match = rb_backref_get();
@@ -2354,7 +2355,7 @@ rb_str_scan(str, pat)
     VALUE str, pat;
 {
     VALUE result;
-    int start = 0;
+    long start = 0;
 
     pat = get_pat(pat);
     if (!rb_iterator_p()) {
@@ -2467,7 +2468,7 @@ rb_str_ljust(str, w)
     VALUE str;
     VALUE w;
 {
-    int width = NUM2INT(w);
+    long width = NUM2LONG(w);
     VALUE res;
     char *p, *pend;
 
@@ -2486,7 +2487,7 @@ rb_str_rjust(str, w)
     VALUE str;
     VALUE w;
 {
-    int width = NUM2INT(w);
+    long width = NUM2LONG(w);
     VALUE res;
     char *p, *pend;
 
@@ -2505,10 +2506,10 @@ rb_str_center(str, w)
     VALUE str;
     VALUE w;
 {
-    int width = NUM2INT(w);
+    long width = NUM2LONG(w);
     VALUE res;
     char *p, *pend;
-    int n;
+    long n;
 
     if (width < 0 || RSTRING(str)->len >= width) return str;
     res = rb_str_new(0, width);

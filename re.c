@@ -783,7 +783,7 @@ rb_reg_new_1(klass, s, len, options)
 VALUE
 rb_reg_new(s, len, options)
     const char *s;
-    int len;
+    long len;
     int options;
 {
     return rb_reg_new_1(rb_cRegexp, s, len, options);

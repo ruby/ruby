@@ -111,8 +111,8 @@ Win32API_initialize(self, dllname, proc, import, export)
 
 static VALUE
 Win32API_Call(argc, argv, obj)
-    VALUE argc;
-    VALUE argv;
+    int argc;
+    VALUE *argv;
     VALUE obj;
 {
     VALUE args;

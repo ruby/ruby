@@ -79,13 +79,13 @@ OBJS          = array.obj \
 
 all:		miniruby$(binsuffix) rbconfig.rb ext/Setup $(MISCLIBS)
 		set LIB=..\..\win32;$(ORGLIBPATH)
-		@./miniruby$(binsuffix) -Xext extmk.rb static
+		@.\miniruby$(binsuffix) -Xext extmk.rb static
 
 miniruby$(binsuffix):	$(OBJS) $(MAINOBJ) $(EXTOBJS) 
 		@echo $(EXTOBJS)
 		@echo $(LIBS)
 		@rm -f miniruby$(binsuffix)
-		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBS) -o $@
+		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(EXTOBJS) $(OBJS) $(LIBS) -o $@
 
 $(PROGRAM):     $(LIBRUBY) $(MAINOBJ) rubymw.dll
 		@rm -f $(PROGRAM)
@@ -119,6 +119,12 @@ realclean:	distclean
 
 test:		miniruby$(binsuffix)
 		@.\miniruby$(binsuffix) $(srcdir)/rubytest.rb
+
+rbconfig.rb:	miniruby$(binsuffix)
+		@.\miniruby$(binsuffix) $(srcdir)/mkconfig.rb rbconfig.rb
+
+config.status:	$(srcdir)/configure
+#		$(SHELL) ./config.status --recheck
 
 .c.obj:
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $<

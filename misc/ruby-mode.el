@@ -235,6 +235,7 @@ The variable ruby-indent-level controls the amount of indentation.
 	  (narrow-to-region (point) end)
 	  (while (and (> indent-point (point))
 		      (re-search-forward ruby-delimiter indent-point t))
+	    (or depth (setq depth 0))
 	    (let ((pnt (point)) w)
 	      (goto-char (match-beginning 0))
 	      (cond

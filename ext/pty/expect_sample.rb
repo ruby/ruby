@@ -11,7 +11,7 @@ require 'expect'
 
 fnames = []
 PTY.spawn("ftp ftp.netlab.co.jp") do
-  |r_f,w_f|
+  |r_f,w_f,pid|
   w_f.sync = true
   
   $expect_verbose = true

@@ -160,7 +160,10 @@ if (pai->ai_flags & AI_CANONNAME) {\
 	char *p;\
 	if (((ai) = (struct addrinfo *)malloc(sizeof(struct addrinfo) +\
 					      ((afd)->a_socklen)))\
-	    == NULL) goto free;\
+	    == NULL) {\
+		error = EAI_MEMORY;\
+		goto free;\
+	}\
 	memcpy(ai, pai, sizeof(struct addrinfo));\
 	(ai)->ai_addr = (struct sockaddr *)((ai) + 1);\
 	memset((ai)->ai_addr, 0, (afd)->a_socklen);\
@@ -394,12 +397,22 @@ getaddrinfo(hostname, servname, hints, res)
 	 */
 	if (hostname == NULL) {
 		struct afd *afd;
+		int s;
 
 		for (afd = &afdl[0]; afd->a_af; afd++) {
 			if (!(pai->ai_family == PF_UNSPEC
 			   || pai->ai_family == afd->a_af)) {
 				continue;
 			}
+
+			/*
+			 * filter out AFs that are not supported by the kernel
+			 * XXX errno?
+			 */
+			s = socket(afd->a_af, SOCK_DGRAM, 0);
+			if (s < 0)
+				continue;
+			close(s);
 
 			if (pai->ai_flags & AI_PASSIVE) {
 				GET_AI(cur->ai_next, afd, afd->a_addrany, port);

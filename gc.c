@@ -1072,15 +1072,26 @@ call_final(os, obj)
     return obj;
 }
 
+static VALUE
+run_single_final(args)
+    VALUE *args;
+{
+    rb_eval_cmd(args[0], args[1]);
+    return Qnil;
+}
+
 static void
 run_final(obj)
     VALUE obj;
 {
-    int i;
+    int i, status;
+    VALUE args[2];
 
     obj = rb_obj_id(obj);	/* make obj into id */
+    args[1] = rb_ary_new3(1, obj);
     for (i=0; i<RARRAY(finalizers)->len; i++) {
-	rb_eval_cmd(RARRAY(finalizers)->ptr[i], rb_ary_new3(1, obj));
+	args[0] = RARRAY(finalizers)->ptr[i];
+	rb_protect(run_single_final, (VALUE)args, &status);
     }
 }
 

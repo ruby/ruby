@@ -871,7 +871,7 @@ error_print()
 		fprintf(stderr, "\tfrom %s\n", RSTRING(ep->ptr[i])->ptr);
 	    }
 	    if (i == TRACE_HEAD && ep->len > TRACE_MAX) {
-		fprintf(stderr, "\t ... %d levels...\n",
+		fprintf(stderr, "\t ... %ld levels...\n",
 			ep->len - TRACE_HEAD - TRACE_TAIL);
 		i = ep->len - TRACE_TAIL;
 	    }
@@ -1052,11 +1052,12 @@ ruby_run()
       case TAG_RAISE:
       case TAG_FATAL:
 	if (rb_obj_is_kind_of(ruby_errinfo, rb_eSystemExit)) {
-	    exec_end_proc();
-	    exit(exit_status);
+	    ex = exit_status;
 	}
-	error_print();
-	ex = 1;
+	else {
+	    error_print();
+	    ex = 1;
+	}
 	break;
       default:
 	rb_bug("Unknown longjmp status %d", ex);
@@ -3074,7 +3075,6 @@ rb_f_raise(argc, argv)
     VALUE *argv;
 {
     VALUE mesg;
-    int n;
 
     mesg = Qnil;
     switch (argc) {
@@ -3255,7 +3255,10 @@ massign(self, node, val, check)
 	}
 	if (check && list) goto arg_error;
 	if (node->nd_args) {
-	    if (!list && i<len) {
+	    if (node->nd_args == (NODE*)-1) {
+		/* ignore rest args */
+	    }
+	    else if (!list && i<len) {
 		assign(self, node->nd_args, rb_ary_new4(len-i, RARRAY(val)->ptr+i), check);
 	    }
 	    else {
@@ -3264,7 +3267,7 @@ massign(self, node, val, check)
 	}
 	else if (check && i<len) goto arg_error;
     }
-    else if (node->nd_args) {
+    else if (node->nd_args && node->nd_args != (NODE*)-1) {
 	assign(self, node->nd_args, Qnil, check);
     }
 
@@ -4181,7 +4184,6 @@ eval(self, src, scope, file, line)
     volatile VALUE result = Qnil;
     struct SCOPE * volatile old_scope;
     struct BLOCK * volatile old_block;
-    struct BLOCK * volatile old_call_block;
     struct RVarmap * volatile old_d_vars;
     int volatile old_vmode;
     struct FRAME frame;
@@ -5114,9 +5116,10 @@ static void
 exec_end_proc()
 {
     struct end_proc_data *link = end_proc_data;
+    int status;
 
     while (link) {
-	(*link->func)(link->data);
+	rb_protect((VALUE(*)())link->func, link->data, &status);
 	link = link->next;
     }
 }
@@ -5447,7 +5450,7 @@ proc_call(proc, args)
     struct BLOCK * volatile old_block;
     struct BLOCK *data;
     volatile VALUE result = Qnil;
-    int state, n;
+    int state;
     volatile int orphan;
     volatile int safe = safe_level;
 
@@ -6357,7 +6360,7 @@ rb_thread_schedule()
 	curr_thread->file = ruby_sourcefile;
 	curr_thread->line = ruby_sourceline;
 	FOREACH_THREAD_FROM(curr, th) {
-	    fprintf(stderr, "%s:%d:deadlock 0x%x: %d:%d %s\n", 
+	    fprintf(stderr, "%s:%d:deadlock 0x%lx: %d:%d %s\n", 
 		    th->file, th->line, th->thread, th->status,
 		    th->wait_for, th==main_thread?"(main)":"");
 	    if (th->status == THREAD_STOPPED) {

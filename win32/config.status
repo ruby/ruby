@@ -1,0 +1,52 @@
+s%@CFLAGS@% -O%g
+s%@CPPFLAGS@%%g
+s%@CXXFLAGS@%%g
+s%@DEFS@%
+ -DUSE_THREAD -DSIZEOF_INT=4 -DSIZEOF_SHORT=2 -DSIZEOF_LONG=4 -DSIZEOF_VOIDP=4 -DSIZEOF_FLOAT= 4 -DSIZEOF_DOUBLE 8 -DHAVE_PROTOTYPES=1 -DHAVE_STDARG_PROTOTYPES=1 -DHAVE_STDLIB_H=1 -DHAVE_LIMITS_H=1 -DHAVE_SYS_FILE_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_ST_RDEV=1 -DGETGROUPS_T=int -DRETSIGTYPE=void -DHAVE_ALLOCA=1 -DHAVE_FMOD=1 -DHAVE_WAITPID=1 -DHAVE_GETCWD=1 -DHAVE_CHSIZE=1 -DHAVE_GETGROUPS=1 -DHAVE_GETLOGIN=1 RSHIFT\(x,y\)\ \(\(x\)\>\>y\) FILE_COUNT _cnt DLEXT \".dll\" RUBY_LIB \";/usr/local/lib/ruby;.\" RUBY_ARCHLIB \"/usr/local/lib/ruby/i386-mswin32\" RUBY_PLATFORM \"i386-mswin32\" %g
+s%@LDFLAGS@%%g
+s%@LIBS@%advapi32.lib wsock32.lib%g
+s%@exec_prefix@%${prefix}%g
+s%@prefix@%/usr/local%g
+s%@program_transform_name@%s,x,x,%g
+s%@bindir@%${exec_prefix}/bin%g
+s%@sbindir@%${exec_prefix}/sbin%g
+s%@libexecdir@%${exec_prefix}/libexec%g
+s%@datadir@%${prefix}/share%g
+s%@sysconfdir@%${prefix}/etc%g
+s%@sharedstatedir@%${prefix}/com%g
+s%@localstatedir@%${prefix}/var%g
+s%@libdir@%${exec_prefix}/lib%g
+s%@includedir@%${prefix}/include%g
+s%@oldincludedir@%/usr/include%g
+s%@infodir@%${prefix}/info%g
+s%@mandir@%${prefix}/man%g
+s%@host@%i386-pc-mswin32%g
+s%@host_alias@%i386-mswin32%g
+s%@host_cpu@%i386%g
+s%@host_vendor@%pc%g
+s%@host_os@%i386-mswin32%g
+s%@CC@%cl%g
+s%@CPP@%cl -E%g
+s%@YACC@%bison -y%g
+s%@RANLIB@%ranlib%g
+s%@AR@%lib%g
+s%@INSTALL_PROGRAM@%${INSTALL}%g
+s%@INSTALL_DATA@%${INSTALL} -m 644%g
+s%@SET_MAKE@%%g
+s%@LIBOBJS@% crypt.obj alloca.obj win32.obj fnmatch.obj isinf.obj isnan.obj%g
+s%@ALLOCA@%%g
+s%@DLDFLAGS@%%g
+s%@STATIC@%%g
+s%@CCDLFLAGS@%%g
+s%@LDSHARED@%ld%g
+s%@DLEXT@%dll%g
+s%@STRIP@%%g
+s%@EXTSTATIC@%%g
+s%@binsuffix@%.exe%g
+s%@setup@%Setup%g
+s%@LIBRUBY@%libruby.lib%g
+s%@LIBRUBYARG@%libruby.lib%g
+s%@SOLIBS@%%g
+s%@srcdir%.%g
+s%@arch@%i386-mswin32%g
+ac_given_srcdir=.

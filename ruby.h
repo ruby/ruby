@@ -244,21 +244,21 @@ struct RFloat {
 
 struct RString {
     struct RBasic basic;
-    int len;
+    long len;
     char *ptr;
     VALUE orig;
 };
 
 struct RArray {
     struct RBasic basic;
-    int len, capa;
+    long len, capa;
     VALUE *ptr;
 };
 
 struct RRegexp {
     struct RBasic basic;
     struct re_pattern_buffer *ptr;
-    int len;
+    long len;
     char *str;
 };
 
@@ -303,14 +303,14 @@ VALUE rb_data_object_alloc _((VALUE,void*,void (*)(),void (*)()));
 
 struct RStruct {
     struct RBasic basic;
-    int len;
+    long len;
     VALUE *ptr;
 };
 
 struct RBignum {
     struct RBasic basic;
     char sign;
-    int len;
+    long len;
     unsigned short *digits;
 };
 

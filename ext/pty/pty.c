@@ -365,14 +365,18 @@ getDevice(master,slave)
 	    if(unlockpt(i) != -1) {
 		if((pn = ptsname(i)) != NULL) {
 		    if((j = open(pn, O_RDWR, 0)) != -1) {
+#if defined I_PUSH
 			if(ioctl(j, I_PUSH, "ptem") != -1) {
 			    if(ioctl(j, I_PUSH, "ldterm") != -1) {
+#endif
 				*master = i;
 				*slave = j;
 				strcpy(SlaveName, pn);
 				return;
+#if defined I_PUSH
 			    }
 			}
+#endif
 		    }
 		}
 	    }

@@ -1348,15 +1348,15 @@ pack_unpack(str, fmt)
 			b64_xtable[i] = -1;
 		    }
 		    for (i = 0; i < 64; i++) {
-			b64_xtable[b64_table[i]] = i;
+			b64_xtable[(int)b64_table[i]] = i;
 		    }
 		}
 		for (;;) {
 		    while (s[0] == '\r' || s[0] == '\n') { s++; }
-		    if ((a = b64_xtable[s[0]]) == -1) break;
-		    if ((b = b64_xtable[s[1]]) == -1) break;
-		    if ((c = b64_xtable[s[2]]) == -1) break;
-		    if ((d = b64_xtable[s[3]]) == -1) break;
+		    if ((a = b64_xtable[(int)s[0]]) == -1) break;
+		    if ((b = b64_xtable[(int)s[1]]) == -1) break;
+		    if ((c = b64_xtable[(int)s[2]]) == -1) break;
+		    if ((d = b64_xtable[(int)s[3]]) == -1) break;
 		    *ptr++ = a << 2 | b >> 4;
 		    *ptr++ = b << 4 | c >> 2;
 		    *ptr++ = c << 6 | d;

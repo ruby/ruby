@@ -251,7 +251,6 @@ end
 if have_getaddrinfo
   $CFLAGS="-DHAVE_GETADDRINFO "+$CFLAGS
 else
-  sockaddr_storage=true
   $CFLAGS="-I. "+$CFLAGS
   $objs += "getaddrinfo.o"
   $objs += "getnameinfo.o"
