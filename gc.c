@@ -430,17 +430,18 @@ static unsigned int STACK_LEVEL_MAX = 655300;
 # define STACK_LEVEL_MAX 655300
 #endif
 
-#ifdef C_ALLOCA
-# define SET_STACK_END VALUE stack_end; alloca(0);
-# define STACK_END (&stack_end)
-#else
-# if defined(__GNUC__) && defined(USE_BUILTIN_FRAME_ADDRESS) && !defined(__ia64__)
-#  define  SET_STACK_END    VALUE *stack_end = __builtin_frame_address(0)
-# else
-#  define  SET_STACK_END    VALUE *stack_end = alloca(1)
-# endif
-# define STACK_END (stack_end)
+#ifdef __GNUC__
+__attribute__ ((noinline)) 
 #endif
+static void
+set_stack_end(VALUE **stack_end_p)
+{
+    VALUE stack_end;
+    *stack_end_p = &stack_end;
+}
+#define SET_STACK_END    VALUE *stack_end; set_stack_end(&stack_end)
+#define STACK_END        (stack_end)
+
 #if defined(sparc) || defined(__sparc__)
 # define STACK_LENGTH  (rb_gc_stack_start - STACK_END + 0x80)
 #elif STACK_GROW_DIRECTION < 0

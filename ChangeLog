@@ -1,3 +1,14 @@
+Mon Dec 13 18:13:52 2004  Tanaka Akira  <akr@m17n.org>
+
+	* gc.c (set_stack_end): new function to obtain stack end address.
+	  set_stack_end obtains a stack end address by an address of local
+	  variable in the function.
+	  (SET_STACK_END, STACK_END): use set_stack_end.  don't use alloca.
+	  This makes the conservative garbage collector to scan a stack frame
+	  of the garbage_collect function itself.  This is required because
+	  callee-save registers may be stored in the frame.
+	  [ruby-dev:25158]
+
 Mon Dec 13 02:45:51 2004  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* ext/curses/curses.c (window_subwin): call NUM2INT() before
