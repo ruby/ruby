@@ -1,3 +1,8 @@
+Mon Mar 15 10:14:51 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/lib/openssl/ssl.rb (OpenSSL::SSL::SocketForwarder):
+	  add do_not_reverse_lookup.
+
 Sun Mar 14 22:07:38 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_thread_raise): err at unstarted thread.  (PR#1302)
