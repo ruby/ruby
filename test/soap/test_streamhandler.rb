@@ -143,7 +143,7 @@ __EOX__
 
   def test_basic_auth
     unless Object.const_defined?('HTTPAccess2')
-      STDERR.puts("basic_auth is not supported")
+      STDERR.puts("basic_auth is not supported under soap4r + net/http for now.")
       return
     end
     str = ""
