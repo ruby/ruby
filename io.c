@@ -1991,7 +1991,8 @@ f_select(argc, argv, obj)
     int interrupt = 0;
     int pending = 0;
 
-    if (rb_scan_args(argc, argv, "13", &read, &write, &except, &timeout)<4) {
+    rb_scan_args(argc, argv, "13", &read, &write, &except, &timeout);
+    if (NIL_P(timeout)) {
 	tp = NULL;
     }
     else {
