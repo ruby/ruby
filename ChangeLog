@@ -1,3 +1,7 @@
+Tue Jan  1 02:16:48 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* Makefile.in (fake.rb): set RUBY_VERSION.
+
 Mon Dec 31 14:20:46 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* parse.y (yycompile): always store copy of filename.
