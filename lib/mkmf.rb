@@ -113,6 +113,21 @@ def modified?(target, times)
   t if times.all? {|n| n <= t}
 end
 
+def merge_libs(*libs)
+  libs.inject([]) do |x, y|
+    xy = x & y
+    xn = yn = 0
+    y.each_with_index do |v, yi|
+      if xy.include?(v)
+        xi = [x.index(v), xn].max()
+        x[xi, 1] = y[yn..yi]
+        xn, yn = xi + (yi - yn + 1), yi + 1
+      end
+    end
+    x.concat(y[yn..-1] || [])
+  end
+end
+
 module Logging
   @log = nil
   @logfile = 'mkmf.log'
