@@ -1,6 +1,6 @@
 # sieve of Eratosthenes
 sieve = []
-if ! max = $ARGV.shift; max = 100; end
+if ! max = ARGV.shift; max = 100; end
 max = max.to_i
 
 print "1"

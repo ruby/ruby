@@ -17,7 +17,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
 /* Multi-byte extension added May, 1993 by t^2 (Takahiro Tanimoto)
    Last change: May 21, 1993 by t^2  */
-
+/* modifis for Ruby by matz@caelum.co.jp */
 
 #ifndef __REGEXP_LIBRARY
 #define __REGEXP_LIBRARY

@@ -5,7 +5,7 @@
 
 require 'tk.rb'
 
-class TkText:TkTextWin
+class TkText<TkTextWin
   include Scrollable
   def create_self
     tk_call 'text', @path
@@ -77,16 +77,16 @@ class TkText:TkTextWin
   end
 end
 
-class TkTextTag:TkObject
+class TkTextTag<TkObject
   $tk_text_tag = 'tag0000'
   def initialize(parent)
-    if not parent.is_kind_of?(TkText)
+    if not parent.kind_of?(TkText)
       fail format("%s need to be TkText", parent.inspect)
     end
     @t = parent
     @path = parent.path
     @id = $tk_text_tag
-    $tk_text_tag = $tk_text_tag.next
+    $tk_text_tag = $tk_text_tag.succ
     @t._addtag id, self
   end
   def id
@@ -116,16 +116,16 @@ class TkTextTag:TkObject
   end
 end
 
-class TkTextMark:TkObject
+class TkTextMark<TkObject
   $tk_text_mark = 'mark0000'
   def initialize(parent, index)
-    if not parent.is_kind_of?(TkText)
+    if not parent.kind_of?(TkText)
       fail format("%s need to be TkText", parent.inspect)
     end
     @t = parent
     @path = parent.path
     @id = $tk_text_mark
-    $tk_text_mark = $tk_text_mark.next
+    $tk_text_mark = $tk_text_mark.succ
     tk_call @t, 'set', @id, index
     @t._addtag id, self
   end
@@ -143,9 +143,9 @@ class TkTextMark:TkObject
   alias destroy unset
 end
 
-class TkTextWindow:TkObject
+class TkTextWindow<TkObject
   def initialize(parent, index, *args)
-    if not parent.is_kind_of?(TkText)
+    if not parent.kind_of?(TkText)
       fail format("%s need to be TkText", parent.inspect)
     end
     @t = parent

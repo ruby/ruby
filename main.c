@@ -8,6 +8,10 @@
 
 ************************************************/
 
+#ifdef DJGPP
+unsigned int _stklen = 0x100000;
+#endif
+
 void
 main(argc, argv, envp)
     int argc;

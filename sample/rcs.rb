@@ -7,7 +7,7 @@ hdw = dw / 2.0
 w = 20.0	# —¼Šá‚Ì•
 h =1.0		# ‰æ–Ê‚ÆŠî€–Ê‚Ì‹——£
 d = 0.2		# ’PˆÊ“–‚½‚è‚Ì•‚‚«ã‚ª‚è•û
-ss="abcdefghijklmnopqrstuvwxyz0123456789!#$%^&*()-=\\[];'`,./"
+ss="abcdefghijklmnopqrstuvwxyz0123456789#!$%^&*()-=\\[];'`,./"
 rnd = srand()
 
 while gets()

@@ -47,7 +47,6 @@ Init_tkutil()
     VALUE mTK = rb_define_module("TkUtil");
     VALUE cTK = rb_define_class("TkKernel", cObject);
 
-    rb_define_const(mTK, "WISH_PATH", str_new2(WISHPATH));
     rb_define_singleton_method(mTK, "eval_cmd", tk_eval_cmd, -1);
 
     rb_define_singleton_method(cTK, "new", tk_s_new, -1);

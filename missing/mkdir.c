@@ -1,4 +1,4 @@
-/*
+*
  * Written by Robert Rother, Mariah Corporation, August 1985.
  *
  * If you want it, it's yours.  All I ask in return is that if you
@@ -96,7 +96,7 @@ rmdir (dpath)
   if (WIFSIGNALED (status) || WEXITSTATUS (status) != 0)
     {
       errno = EIO;		/* We don't know why, but */
-      return -1;		/* /bin/mkdir failed */
+      return -1;		/* /bin/rmdir failed */
     }
 
   return 0;

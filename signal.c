@@ -13,6 +13,10 @@
 #include <signal.h>
 #include <stdio.h>
 
+#ifndef NSIG
+#define NSIG (_SIGMAX + 1)      /* For QNX */
+#endif
+
 static struct signals {
     char *signm;
     int  signo;
@@ -172,13 +176,13 @@ f_kill(argc, argv)
     char *s;
 
     if (argc < 2)
-	Fail("wrong # of arguments -- kill(sig, pid...)");
+	ArgError("wrong # of arguments -- kill(sig, pid...)");
     switch (TYPE(argv[0])) {
       case T_FIXNUM:
 	sig = FIX2UINT(argv[0]);
 	if (sig >= NSIG) {
 	    s = rb_id2name(sig);
-	    if (!s) Fail("Bad signal");
+	    if (!s) ArgError("Bad signal");
 	    goto str_signal;
 	}
 	break;
@@ -196,7 +200,7 @@ f_kill(argc, argv)
 	    if (strncmp("SIG", s, 3) == 0)
 		s += 3;
 	    if((sig = signm2signo(s)) == 0)
-		Fail("Unrecognized signal name `%s'", s);
+		ArgError("Unrecognized signal name `%s'", s);
 
 	    if (negative)
 		sig = -sig;
@@ -204,7 +208,7 @@ f_kill(argc, argv)
 	break;
 
       default:
-	Fail("bad signal type %s", rb_class2name(CLASS_OF(argv[0])));
+	ArgError("bad signal type %s", rb_class2name(CLASS_OF(argv[0])));
 	break;
     }
 
@@ -217,25 +221,24 @@ f_kill(argc, argv)
 #else
 	    if (kill(-pid, sig) < 0)
 #endif
-		rb_sys_fail(Qnil);
+		rb_sys_fail(0);
 	}
     }
     else {
 	for (i=1; i<argc; i++) {
 	    Check_Type(argv[i], T_FIXNUM);
 	    if (kill(FIX2UINT(argv[i]), sig) < 0)
-		rb_sys_fail(Qnil);
+		rb_sys_fail(0);
 	}
     }
     return INT2FIX(i-1);
 }
 
 static VALUE trap_list[NSIG];
-#ifdef SAFE_SIGHANDLE
 static int trap_pending_list[NSIG];
 int trap_pending;
 int trap_immediate;
-#endif
+int prohibit_interrupt;
 
 void
 gc_mark_trap_list()
@@ -248,40 +251,75 @@ gc_mark_trap_list()
     }
 }
 
+#ifdef POSIX_SIGNAL
+void
+posix_signal(signum, handler)
+    int signum;
+    RETSIGTYPE (*handler)();
+{
+    struct sigaction sigact;
+
+    sigact.sa_handler = handler;
+    sigemptyset(&sigact.sa_mask);
+    sigact.sa_flags = 0;
+    sigaction(signum, &sigact, 0);
+}
+#endif
+
 static RETSIGTYPE
 sighandle(sig)
     int sig;
 {
-    if (sig >= NSIG ||(sig != SIGINT && trap_list[sig] == Qnil))
-	Fail("trap_handler: Bad signal %d", sig);
+    if (sig >= NSIG ||(sig != SIGINT && !trap_list[sig]))
+	Bug("trap_handler: Bad signal %d", sig);
 
-#ifndef HAVE_BSD_SIGNALS
+#if !defined(POSIX_SIGNAL) && !defined(BSD_SIGNAL)
     signal(sig, sighandle);
 #endif
 
-#ifdef SAFE_SIGHANDLE
     if (trap_immediate) {
-	if (sig == SIGINT && !trap_list[sig]) Fail("Interrupt");
+	trap_immediate = 0;
+	if (sig == SIGINT && !trap_list[SIGINT]) {
+#ifdef THREAD
+	    thread_interrupt();
+#else
+	    rb_interrupt();
+#endif
+	}
 	rb_trap_eval(trap_list[sig], sig);
+	trap_immediate = 1;
     }
     else {
 	trap_pending++;
 	trap_pending_list[sig]++;
     }
-#else
-    if (sig == SIGINT && !trap_list[sig]) Fail("Interrupt");
-    rb_trap_eval(trap_list[sig], sig);
-#endif
 }
+
+#ifdef SIGBUS
+static RETSIGTYPE
+sigbus(sig)
+    int sig;
+{
+    Bug("Bus Error");
+}
+#endif
+
+#ifdef SIGSEGV
+static RETSIGTYPE
+sigsegv(sig)
+    int sig;
+{
+    Bug("Segmentation fault");
+}
+#endif
 
 void
 rb_trap_exit()
 {
     if (trap_list[0])
-	rb_trap_eval(trap_list[0], 0);
+	rb_eval_cmd(trap_list[0], ary_new3(1, INT2FIX(0)));
 }
 
-#ifdef SAFE_SIGHANDLE
 void
 rb_trap_exec()
 {
@@ -290,14 +328,18 @@ rb_trap_exec()
     for (i=0; i<NSIG; i++) {
 	if (trap_pending_list[i]) {
 	    trap_pending_list[i] = 0;
-	    if (i == SIGINT && trap_list[SIGINT] == 0)
-		Fail("Interrupt");
+	    if (i == SIGINT && trap_list[SIGINT] == 0) {
+#ifdef THREAD
+		thread_interrupt();
+#else
+		rb_interrupt();
+#endif
+	    }
 	    rb_trap_eval(trap_list[i], i);
 	}
     }
     trap_pending = 0;
 }
-#endif
 
 struct trap_arg {
 #ifndef NT
@@ -313,7 +355,7 @@ struct trap_arg {
 static RETSIGTYPE
 sigexit()
 {
-    rb_exit(1);
+    rb_exit(0);
 }
 
 static VALUE
@@ -321,12 +363,12 @@ trap(arg)
     struct trap_arg *arg;
 {
     RETSIGTYPE (*func)();
-    VALUE command;
+    VALUE command, old;
     int i, sig;
 
     func = sighandle;
     command = arg->cmd;
-    if (command == Qnil) {
+    if (NIL_P(command)) {
 	func = SIG_IGN;
     }
     else if (TYPE(command) == T_STRING) {
@@ -356,7 +398,7 @@ trap(arg)
 	}
     }
     if (func == SIG_IGN || func == SIG_DFL) {
-	command = Qnil;
+	command = 0;
     }
 
     if (TYPE(arg->sig) == T_STRING) {
@@ -366,15 +408,44 @@ trap(arg)
 	    s += 3;
 	sig = signm2signo(s);
 	if (sig == 0 && strcmp(s, "EXIT") != 0)
-	    Fail("Invalid signal SIG%s", s);
+	    ArgError("Invalid signal SIG%s", s);
     }
     else {
 	sig = NUM2INT(arg->sig);
     }
     if (sig < 0 || sig > NSIG) {
-	Fail("Invalid signal no %d", sig);
+	ArgError("Invalid signal no %d", sig);
     }
+#if defined(THREAD) && defined(HAVE_SETITIMER) && !defined(__BOW__)
+    if (sig == SIGVTALRM) {
+	ArgError("SIGVTALRM reserved for Thread; cannot set handler");
+    }
+#endif
+    if (func == SIG_DFL) {
+	switch (sig) {
+	  case SIGINT:
+	    func = sighandle;
+	    break;
+#ifdef SIGBUS
+	  case SIGBUS:
+	    func = sigbus;
+	    break;
+#endif
+#ifdef SIGSEGV
+	  case SIGSEGV:
+	    func = sigsegv;
+	    break;
+#endif
+	}
+    }
+#ifdef POSIX_SIGNAL
+    posix_signal(sig, func);
+#else
     signal(sig, func);
+#endif
+    old = trap_list[sig];
+    if (!old) old = Qnil;
+
     trap_list[sig] = command;
     /* enable at least specified signal. */
 #ifdef HAVE_SIGPROCMASK
@@ -382,7 +453,7 @@ trap(arg)
 #else
     arg->mask &= ~sigmask(sig);
 #endif
-    return Qnil;
+    return old;
 }
 
 #ifndef NT
@@ -407,7 +478,7 @@ f_trap(argc, argv)
     struct trap_arg arg;
 
     if (argc == 0 || argc > 2) {
-	Fail("wrong # of arguments -- trap(sig, cmd)/trap(sig){...}");
+	ArgError("wrong # of arguments -- trap(sig, cmd)/trap(sig){...}");
     }
 
     arg.sig = argv[0];
@@ -433,29 +504,21 @@ f_trap(argc, argv)
 #endif
 }
 
-SIGHANDLE
-sig_beg()
-{
-    if (!trap_list[SIGINT]) {
-	return signal(SIGINT, sighandle);
-    }
-    return 0;
-}
-
-void
-sig_end(handle)
-    SIGHANDLE handle;
-{
-    if (!trap_list[SIGINT]) {
-	signal(SIGINT, handle);
-    }
-}
-
 void
 Init_signal()
 {
     extern VALUE cKernel;
 
-    rb_define_method(cKernel, "kill", f_kill, -1);
-    rb_define_method(cKernel, "trap", f_trap, -1);
+    rb_define_private_method(cKernel, "trap", f_trap, -1);
+#ifdef POSIX_SIGNAL
+    posix_signal(SIGINT, sighandle);
+#else
+    signal(SIGINT, sighandle);
+#endif
+#ifdef SIGBUS
+    signal(SIGBUS, sigbus);
+#endif
+#ifdef SIGSEGV
+    signal(SIGSEGV, sigsegv);
+#endif
 }

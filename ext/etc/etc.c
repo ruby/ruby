@@ -24,12 +24,16 @@ static VALUE
 etc_getlogin(obj)
     VALUE obj;
 {
+    char *getenv();
+    char *login;
+
 #ifdef HAVE_GETLOGIN
     char *getlogin();
-    char *login = getlogin();
+
+    login = getlogin();
+    if (!login) login = getenv("USER");
 #else
-    char *getenv();
-    char *login = getenv("USER");
+    login = getenv("USER");
 #endif
 
     if (login)
@@ -42,7 +46,7 @@ static VALUE
 setup_passwd(pwd)
     struct passwd *pwd;
 {
-    if (pwd == Qnil) rb_sys_fail("/etc/passwd");
+    if (pwd == 0) rb_sys_fail("/etc/passwd");
     return struct_new(sPasswd,
 		      str_new2(pwd->pw_name),
 		      str_new2(pwd->pw_passwd),
@@ -69,7 +73,8 @@ setup_passwd(pwd)
 #ifdef PW_EXPIRE
 		      INT2FIX(pwd->pw_expire),
 #endif
-		      Qnil);
+		      0		/*dummy*/
+		      );
 }
 #endif
 
@@ -91,7 +96,7 @@ etc_getpwuid(argc, argv, obj)
 	uid = getuid();
     }
     pwd = getpwuid(uid);
-    if (pwd == Qnil) Fail("can't find user for %d", uid);
+    if (pwd == 0) Fail("can't find user for %d", uid);
     return setup_passwd(pwd);
 #else 
     return Qnil;
@@ -107,7 +112,7 @@ etc_getpwnam(obj, nam)
 
     Check_Type(nam, T_STRING);
     pwd = getpwnam(RSTRING(nam)->ptr);
-    if (pwd == Qnil) Fail("can't find user for %s", RSTRING(nam)->ptr);
+    if (pwd == 0) Fail("can't find user for %s", RSTRING(nam)->ptr);
     return setup_passwd(pwd);
 #else 
     return Qnil;
@@ -130,7 +135,7 @@ etc_passwd(obj)
 	return obj;
     }
     pw = getpwent();
-    if (pw == Qnil) Fail("can't fetch next -- /etc/passwd");
+    if (pw == 0) Fail("can't fetch next -- /etc/passwd");
     return setup_passwd(pw);
 #else 
     return Qnil;
@@ -155,8 +160,7 @@ setup_group(grp)
 		      str_new2(grp->gr_name),
 		      str_new2(grp->gr_passwd),
 		      INT2FIX(grp->gr_gid),
-		      mem,
-		      Qnil);
+		      mem);
 }
 #endif
 
@@ -170,7 +174,7 @@ etc_getgrgid(obj, id)
 
     gid = NUM2INT(id);
     grp = getgrgid(gid);
-    if (grp == Qnil) Fail("can't find group for %d", gid);
+    if (grp == 0) Fail("can't find group for %d", gid);
     return setup_group(grp);
 #else
     return Qnil;
@@ -186,7 +190,7 @@ etc_getgrnam(obj, nam)
 
     Check_Type(nam, T_STRING);
     grp = getgrnam(RSTRING(nam)->ptr);
-    if (grp == Qnil) Fail("can't find group for %s", RSTRING(nam)->ptr);
+    if (grp == 0) Fail("can't find group for %s", RSTRING(nam)->ptr);
     return setup_group(grp);
 #else
     return Qnil;
@@ -214,7 +218,7 @@ etc_group(obj)
 #endif
 }
 
-VALUE mEtc;
+static VALUE mEtc;
 
 void
 Init_etc()
@@ -252,9 +256,11 @@ Init_etc()
 #ifdef PW_EXPIRE
 			     "expire",
 #endif
-			     Qnil);
+			     0);
+    rb_global_variable(&sPasswd);
 
 #ifdef HAVE_GETGRENT
-    sGroup = struct_define("Group", "name", "passwd", "gid", "mem", Qnil);
+    sGroup = struct_define("Group", "name", "passwd", "gid", "mem", 0);
+    rb_global_variable(&sGroup);
 #endif
 }

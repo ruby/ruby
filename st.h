@@ -16,13 +16,15 @@ struct st_table_entry {
 
 typedef struct st_table st_table;
 
-struct st_table {
+struct st_hash_type {
     int (*compare)();
     int (*hash)();
+};
+
+struct st_table {
+    struct st_hash_type *type;
     int num_bins;
     int num_entries;
-    int max_density;
-    int reorder_flag;
     st_table_entry **bins;
 };
 
@@ -30,25 +32,19 @@ struct st_table {
 
 enum st_retval {ST_CONTINUE, ST_STOP, ST_DELETE};
 
+st_table *st_init_table();
+st_table *st_init_table_with_size();
+st_table *st_init_numtable();
+st_table *st_init_strtable();
 int st_delete(), st_insert(), st_foreach(), st_free_table();
 int st_lookup(), st_find_or_add(), st_add_direct();
-st_table *st_init_table(), *st_init_table_with_params();
 st_table *st_copy();
 
 #define ST_NUMCMP	((int (*)()) 0)
 #define ST_NUMHASH	((int (*)()) -2)
 
-#define ST_PTRCMP	((int (*)()) 0)
-#define ST_PTRHASH	((int (*)()) -1)
-
 #define st_numcmp	ST_NUMCMP
 #define st_numhash	ST_NUMHASH
-#define st_ptrcmp	ST_PTRCMP
-#define st_ptrhash	ST_PTRHASH
-
-#define ST_DEFAULT_MAX_DENSITY 5
-#define ST_DEFAULT_INIT_TABLE_SIZE 11
-#define ST_DEFAULT_REORDER_FLAG 0
 
 int st_strhash();
 

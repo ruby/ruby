@@ -6,7 +6,7 @@
   $Date: 1994/12/09 09:40:22 $
   created at: Thu Feb 10 15:17:05 JST 1994
 
-  Copyright (C) 1993-1995 Yukihiro Matsumoto
+  Copyright (C) 1993-1996 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -20,19 +20,23 @@
 			+(((x)&0x0000FF00)<<8)	\
 			+(((x)&0x00FF0000)>>8)	)
 #ifdef WORDS_BIGENDIAN
+#ifndef ntohs
 #define ntohs(x) (x)
 #define ntohl(x) (x)
 #define htons(x) (x)
 #define htonl(x) (x)
+#endif
 #define htovs(x) swaps(x)
 #define htovl(x) swapl(x)
 #define vtohs(x) swaps(x)
 #define vtohl(x) swapl(x)
 #else /* LITTLE ENDIAN */
+#ifndef ntohs
 #define ntohs(x) swaps(x)
 #define ntohl(x) swapl(x)
 #define htons(x) swaps(x)
 #define htonl(x) swapl(x)
+#endif
 #define htovs(x) (x)
 #define htovl(x) (x)
 #define vtohs(x) (x)
@@ -70,7 +74,7 @@ pack_pack(ary, fmt)
     items = ary->len;
     idx = 0;
 
-#define NEXTFROM (items-- > 0 ? ary->ptr[idx++] : (Fail(toofew),0))
+#define NEXTFROM (items-- > 0 ? ary->ptr[idx++] : (ArgError(toofew),0))
 
     while (p < pend) {
 	type = *p++;		/* get data type */
@@ -91,7 +95,7 @@ pack_pack(ary, fmt)
 	  case 'B': case 'b':
 	  case 'H': case 'h':
 	    from = NEXTFROM;
-	    if (from == Qnil) {
+	    if (NIL_P(from)) {
 		ptr = 0;
 		plen = 0;
 	    }
@@ -106,30 +110,20 @@ pack_pack(ary, fmt)
 
 	    switch (type) {
 	      case 'a':
-		if (plen > len)
+	      case 'A':
+		if (plen >= len)
 		    str_cat(res, ptr, len);
 		else {
 		    str_cat(res, ptr, plen);
-		    len = plen;
+		    len -= plen;
 		    while (len >= 10) {
-			str_cat(res, nul10, 10);
+			if (type == 'A')
+			    str_cat(res, spc10, 10);
+			else
+			    str_cat(res, nul10, 10);
 			len -= 10;
 		    }
 		    str_cat(res, nul10, len);
-		}
-		break;
-
-	      case 'A':
-		if (plen > len)
-		    str_cat(res, ptr, len);
-		else {
-		    str_cat(res, ptr, plen);
-		    len = plen;
-		    while (len >= 10) {
-			str_cat(res, spc10, 10);
-			len -= 10;
-		    }
-		    str_cat(res, spc10, len);
 		}
 		break;
 
@@ -244,7 +238,7 @@ pack_pack(ary, fmt)
 		char c;
 
 		from = NEXTFROM;
-		if (from == Qnil) c = 0;
+		if (NIL_P(from)) c = 0;
 		else {
 		    c = NUM2INT(from);
 		}
@@ -258,7 +252,7 @@ pack_pack(ary, fmt)
 		short s;
 
 		from = NEXTFROM;
-		if (from == Qnil) s = 0;
+		if (NIL_P(from)) s = 0;
 		else {
 		    s = NUM2INT(from);
 		}
@@ -272,7 +266,7 @@ pack_pack(ary, fmt)
 		int i;
 
 		from = NEXTFROM;
-		if (from == Qnil) i = 0;
+		if (NIL_P(from)) i = 0;
 		else {
 		    i = NUM2INT(from);
 		}
@@ -286,7 +280,7 @@ pack_pack(ary, fmt)
 		long l;
 
 		from = NEXTFROM;
-		if (from == Qnil) l = 0;
+		if (NIL_P(from)) l = 0;
 		else {
 		    l = NUM2INT(from);
 		}
@@ -299,7 +293,7 @@ pack_pack(ary, fmt)
 		short s;
 
 		from = NEXTFROM;
-		if (from == Qnil) s = 0;
+		if (NIL_P(from)) s = 0;
 		else {
 		    s = NUM2INT(from);
 		}
@@ -313,7 +307,7 @@ pack_pack(ary, fmt)
 		long l;
 
 		from = NEXTFROM;
-		if (from == Qnil) l = 0;
+		if (NIL_P(from)) l = 0;
 		else {
 		    l = NUM2INT(from);
 		}
@@ -367,7 +361,7 @@ pack_pack(ary, fmt)
 		short s;
 
 		from = NEXTFROM;
-		if (from == Qnil) s = 0;
+		if (NIL_P(from)) s = 0;
 		else {
 		    s = NUM2INT(from);
 		}
@@ -381,7 +375,7 @@ pack_pack(ary, fmt)
 		long l;
 
 		from = NEXTFROM;
-		if (from == Qnil) l = 0;
+		if (NIL_P(from)) l = 0;
 		else {
 		    l = NUM2INT(from);
 		}
@@ -402,7 +396,7 @@ pack_pack(ary, fmt)
 	  case 'X':
 	  shrink:
 	    if (RSTRING(res)->len < len)
-		Fail("X outside of string");
+		ArgError("X outside of string");
 	    RSTRING(res)->len -= len;
 	    RSTRING(res)->ptr[RSTRING(res)->len] = '\0';
 	    break;
@@ -415,7 +409,7 @@ pack_pack(ary, fmt)
 	    break;
 
 	  case '%':
-	    Fail("% may only be used in unpack");
+	    ArgError("% may only be used in unpack");
 	    break;
 
 	  case 'u':
@@ -457,7 +451,6 @@ encodes(str, s, len)
     char hunk[4];
     char *p, *pend;
 
-    p = str->ptr + str->len;
     *hunk = len + ' ';
     str_cat(str, hunk, 1);
     while (len > 0) {
@@ -469,6 +462,7 @@ encodes(str, s, len)
 	s += 3;
 	len -= 3;
     }
+    p = str->ptr;
     pend = str->ptr + str->len;
     while (p < pend) {
 	if (*p == ' ')
@@ -512,7 +506,7 @@ pack_unpack(str, fmt)
 
 	switch (type) {
 	  case '%':
-	    Fail("% is not supported(yet)");
+	    ArgError("% is not supported(yet)");
 	    break;
 
 	  case 'A':
@@ -616,7 +610,10 @@ pack_unpack(str, fmt)
 	    if (len > send - s)
 		len = send - s;
 	    while (len-- > 0) {
-		char c = *s++;
+                int c = *s++;
+#ifdef __CHAR_UNSIGNED__
+                if (c > (char)127) c-=256;
+#endif
 		ary_push(ary, INT2FIX(c));
 	    }
 	    break;
@@ -781,6 +778,7 @@ pack_unpack(str, fmt)
 		    hunk[3] = '\0';
 		    len = (*s++ - ' ') & 077;
 		    total += len;
+
 		    while (len > 0) {
 			if (s < send && *s >= ' ')
 			    a = (*s++ - ' ') & 077;
@@ -805,10 +803,10 @@ pack_unpack(str, fmt)
 			ptr += 3;
 			len -= 3;
 		    }
-		    if (*s == '\n')
+		    if (*s == '\n' || *s == '\r')
 			s++;
-		    else if (s[1] == '\n') /* possible checksum byte */
-			s += 2;
+		    else if (s+1 == send || s[1] == '\n' || s[1] == '\r')
+			s += 2;	/* possible checksum byte */
 		}
 		RSTRING(str)->len = total;
 		ary_push(ary, str);
@@ -821,13 +819,13 @@ pack_unpack(str, fmt)
 
 	  case 'X':
 	    if (len > s - str->ptr)
-		Fail("X outside of string");
+		ArgError("X outside of string");
 	    s -= len;
 	    break;
 
 	  case 'x':
 	    if (len > send - s)
-		Fail("x outside of string");
+		ArgError("x outside of string");
 	    s += len;
 	    break;
 

@@ -11,7 +11,7 @@ socks = [gs]
 
 while TRUE
   nsock = select(socks);
-  if nsock == nil; continue end
+  next if nsock == nil
   for s in nsock[0]
     if s == gs
       ns = s.accept

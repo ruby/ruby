@@ -46,7 +46,7 @@ def j2e(str)
 end
 
 def decode_b(str)
-  str.gsub!(/=\?ISO-2022-JP\?B\?([!->@-~]+)\?=/) {
+  str.gsub!(/=\?ISO-2022-JP\?B\?([!->@-~]+)\?=/i) {
     decode64($1)
   }
   str.gsub!(/\n/, ' ') 

@@ -6,7 +6,7 @@
   $Date: 1995/01/10 10:42:36 $
   created at: Mon Nov 15 12:24:34 JST 1993
 
-  Copyright (C) 1993-1995 Yukihiro Matsumoto
+  Copyright (C) 1993-1996 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -26,7 +26,7 @@
 #ifdef HAVE_SYS_TIME_H
 # include <sys/time.h>
 #else
-struct timeval {
+stuct timeval {
         long    tv_sec;         /* seconds */
         long    tv_usec;        /* and microseconds */
 };
@@ -60,28 +60,37 @@ VALUE
 file_open(fname, mode)
     char *fname, *mode;
 {
-    VALUE port;
     OpenFile *fptr;
-
-    port = obj_alloc(cFile);
-
+    NEWOBJ(port, struct RFile);
+    OBJSETUP(port, cFile, T_FILE);
     MakeOpenFile(port, fptr);
+
     fptr->mode = io_mode_flags(mode);
 
-    fptr->f = fopen(fname, mode);
-    if (fptr->f == NULL) {
-	if (errno == EMFILE) {
-	    gc();
-	    fptr->f = fopen(fname, mode);
-	}
-	if (fptr->f == NULL) {
-	    rb_sys_fail(fname);
-	}
-    }
-
+    fptr->f = rb_fopen(fname, mode);
     fptr->path = strdup(fname);
 
-    return port;
+    return (VALUE)port;
+}
+
+static VALUE
+file_s_open(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    VALUE fname, vmode;
+    char *mode;
+
+    rb_scan_args(argc, argv, "11", &fname, &mode);
+    Check_Type(fname, T_STRING);
+    if (!NIL_P(mode)) {
+	Check_Type(mode, T_STRING);
+	mode = RSTRING(mode)->ptr;
+    }
+    else {
+	mode = "r";
+    }
+    return file_open(RSTRING(fname)->ptr, mode);
 }
 
 static int
@@ -113,7 +122,7 @@ file_tell(obj)
     GetOpenFile(obj, fptr);
 
     pos = ftell(fptr->f);
-    if (ferror(fptr->f) != 0) rb_sys_fail(Qnil);
+    if (ferror(fptr->f) != 0) rb_sys_fail(0);
 
     return int2inum(pos);
 }
@@ -128,7 +137,7 @@ file_seek(obj, offset, ptrname)
     GetOpenFile(obj, fptr);
 
     pos = fseek(fptr->f, NUM2INT(offset), NUM2INT(ptrname));
-    if (pos != 0) rb_sys_fail(Qnil);
+    if (pos != 0) rb_sys_fail(0);
     clearerr(fptr->f);
 
     return obj;
@@ -143,7 +152,7 @@ file_set_pos(obj, offset)
 
     GetOpenFile(obj, fptr);
     pos = fseek(fptr->f, NUM2INT(offset), 0);
-    if (pos != 0) rb_sys_fail(Qnil);
+    if (pos != 0) rb_sys_fail(0);
     clearerr(fptr->f);
 
     return obj;
@@ -156,7 +165,7 @@ file_rewind(obj)
     OpenFile *fptr;
 
     GetOpenFile(obj, fptr);
-    if (fseek(fptr->f, 0L, 0) != 0) rb_sys_fail(Qnil);
+    if (fseek(fptr->f, 0L, 0) != 0) rb_sys_fail(0);
     clearerr(fptr->f);
 
     return obj;
@@ -191,14 +200,14 @@ file_isatty(obj)
 }
 
 #include <sys/types.h>
-#include <sys/stat.h>
 #include <sys/file.h>
+#include <sys/stat.h>
 
 static VALUE
 stat_new(st)
     struct stat *st;
 {
-    if (st == Qnil) Bug("stat_new() called with nil");
+    if (!st) Bug("stat_new() called with bad value");
     return struct_new(sStat,
 		      INT2FIX((int)st->st_dev),
 		      INT2FIX((int)st->st_ino),
@@ -224,26 +233,7 @@ stat_new(st)
 #endif
 		      time_new(st->st_atime, 0),
 		      time_new(st->st_mtime, 0),
-		      time_new(st->st_ctime, 0),
-		      Qnil);
-}
-
-static struct stat laststat;
-
-int
-cache_stat(path, st)
-    char *path;
-    struct stat *st;
-{
-    if (strcmp("&", path) == 0) {
-	*st = laststat;
-	return 0;
-    }
-    if (stat(path, st) == -1)
-	return -1;
-
-    laststat = *st;
-    return 0;
+		      time_new(st->st_ctime, 0));
 }
 
 static VALUE
@@ -254,7 +244,7 @@ file_s_stat(obj, fname)
     struct stat st;
 
     Check_Type(fname, T_STRING);
-    if (cache_stat(fname->ptr, &st) == -1) {
+    if (stat(fname->ptr, &st) == -1) {
 	rb_sys_fail(fname->ptr);
     }
     return stat_new(&st);
@@ -265,12 +255,13 @@ file_stat(obj)
     VALUE obj;
 {
     OpenFile *fptr;
+    struct stat st;
 
     GetOpenFile(obj, fptr);
-    if (fstat(fileno(fptr->f), &laststat) == -1) {
+    if (fstat(fileno(fptr->f), &st) == -1) {
 	rb_sys_fail(fptr->path);
     }
-    return stat_new(&laststat);
+    return stat_new(&st);
 }
 
 static VALUE
@@ -278,6 +269,7 @@ file_s_lstat(obj, fname)
     VALUE obj;
     struct RString *fname;
 {
+#if !defined(MSDOS)
     struct stat st;
 
     Check_Type(fname, T_STRING);
@@ -285,12 +277,16 @@ file_s_lstat(obj, fname)
 	rb_sys_fail(fname->ptr);
     }
     return stat_new(&st);
+#else
+        rb_notimplement();
+#endif
 }
 
 static VALUE
 file_lstat(obj)
     VALUE obj;
 {
+#if !defined(MSDOS)
     OpenFile *fptr;
     struct stat st;
 
@@ -299,6 +295,9 @@ file_lstat(obj)
 	rb_sys_fail(fptr->path);
     }
     return stat_new(&st);
+#else
+        rb_notimplement();
+#endif
 }
 
 static int
@@ -339,7 +338,7 @@ eaccess(path, mode)
   struct stat st;
   static int euid = -1;
 
-  if (cache_stat(path, &st) < 0) return (-1);
+  if (stat(path, &st) < 0) return (-1);
 
   if (euid == -1)
     euid = geteuid ();
@@ -378,7 +377,7 @@ test_d(obj, fname)
     struct stat st;
 
     Check_Type(fname, T_STRING);
-    if (cache_stat(fname->ptr, &st) < 0) return FALSE;
+    if (stat(fname->ptr, &st) < 0) return FALSE;
     if (S_ISDIR(st.st_mode)) return TRUE;
     return FALSE;
 }
@@ -396,7 +395,7 @@ test_p(obj, fname)
     struct stat st;
 
     Check_Type(fname, T_STRING);
-    if (cache_stat(fname->ptr, &st) < 0) return FALSE;
+    if (stat(fname->ptr, &st) < 0) return FALSE;
     if (S_ISFIFO(st.st_mode)) return TRUE;
 
 #endif
@@ -426,7 +425,7 @@ test_l(obj, fname)
     struct stat st;
 
     Check_Type(fname, T_STRING);
-    if (cache_stat(fname->ptr, &st) < 0) return FALSE;
+    if (lstat(fname->ptr, &st) < 0) return FALSE;
     if (S_ISLNK(st.st_mode)) return TRUE;
 
 #endif
@@ -456,7 +455,7 @@ test_S(obj, fname)
     struct stat st;
 
     Check_Type(fname, T_STRING);
-    if (cache_stat(fname->ptr, &st) < 0) return FALSE;
+    if (stat(fname->ptr, &st) < 0) return FALSE;
     if (S_ISSOCK(st.st_mode)) return TRUE;
 
 #endif
@@ -478,7 +477,7 @@ test_b(obj, fname)
     struct stat st;
 
     Check_Type(fname, T_STRING);
-    if (cache_stat(fname->ptr, &st) < 0) return FALSE;
+    if (stat(fname->ptr, &st) < 0) return FALSE;
     if (S_ISBLK(st.st_mode)) return TRUE;
 
 #endif
@@ -497,7 +496,7 @@ test_c(obj, fname)
     struct stat st;
 
     Check_Type(fname, T_STRING);
-    if (cache_stat(fname->ptr, &st) < 0) return FALSE;
+    if (stat(fname->ptr, &st) < 0) return FALSE;
     if (S_ISBLK(st.st_mode)) return TRUE;
 
     return FALSE;
@@ -511,7 +510,7 @@ test_e(obj, fname)
     struct stat st;
 
     Check_Type(fname, T_STRING);
-    if (cache_stat(fname->ptr, &st) < 0) return FALSE;
+    if (stat(fname->ptr, &st) < 0) return FALSE;
     return TRUE;
 }
 
@@ -583,7 +582,7 @@ test_f(obj, fname)
     struct stat st;
 
     Check_Type(fname, T_STRING);
-    if (cache_stat(fname->ptr, &st) < 0) return FALSE;
+    if (stat(fname->ptr, &st) < 0) return FALSE;
     if (S_ISREG(st.st_mode)) return TRUE;
     return FALSE;
 }
@@ -596,7 +595,7 @@ test_z(obj, fname)
     struct stat st;
 
     Check_Type(fname, T_STRING);
-    if (cache_stat(fname->ptr, &st) < 0) return FALSE;
+    if (stat(fname->ptr, &st) < 0) return FALSE;
     if (st.st_size == 0) return TRUE;
     return FALSE;
 }
@@ -609,7 +608,7 @@ test_s(obj, fname)
     struct stat st;
 
     Check_Type(fname, T_STRING);
-    if (cache_stat(fname->ptr, &st) < 0) return FALSE;
+    if (stat(fname->ptr, &st) < 0) return FALSE;
     if (st.st_size == 0) return FALSE;
     return int2inum(st.st_size);
 }
@@ -622,7 +621,7 @@ test_owned(obj, fname)
     struct stat st;
 
     Check_Type(fname, T_STRING);
-    if (cache_stat(fname->ptr, &st) < 0) return FALSE;
+    if (stat(fname->ptr, &st) < 0) return FALSE;
     if (st.st_uid == geteuid()) return TRUE;
     return FALSE;
 }
@@ -635,7 +634,7 @@ test_rowned(obj, fname)
     struct stat st;
 
     Check_Type(fname, T_STRING);
-    if (cache_stat(fname->ptr, &st) < 0) return FALSE;
+    if (stat(fname->ptr, &st) < 0) return FALSE;
     if (st.st_uid == getuid()) return TRUE;
     return FALSE;
 }
@@ -649,7 +648,7 @@ test_grpowned(obj, fname)
     struct stat st;
 
     Check_Type(fname, T_STRING);
-    if (cache_stat(fname->ptr, &st) < 0) return FALSE;
+    if (stat(fname->ptr, &st) < 0) return FALSE;
     if (st.st_gid == getegid()) return TRUE;
 #else
     Check_Type(fname, T_STRING);
@@ -665,7 +664,7 @@ check3rdbyte(file, mode)
 {
     struct stat st;
 
-    if (cache_stat(file, &st) < 0) return FALSE;
+    if (stat(file, &st) < 0) return FALSE;
     if (st.st_mode & mode) return TRUE;
     return FALSE;
 }
@@ -719,7 +718,7 @@ file_s_type(obj, fname)
     char *t;
 
     Check_Type(fname, T_STRING);
-    if (cache_stat(fname->ptr, &st) < 0) rb_sys_fail(fname->ptr);
+    if (stat(fname->ptr, &st) < 0) rb_sys_fail(fname->ptr);
 
     if (S_ISREG(st.st_mode)) {
 	t = "file";
@@ -763,7 +762,7 @@ file_s_atime(obj, fname)
     struct stat st;
 
     Check_Type(fname, T_STRING);
-    if (cache_stat(fname->ptr, &st) < 0) rb_sys_fail(fname->ptr);
+    if (stat(fname->ptr, &st) < 0) rb_sys_fail(fname->ptr);
     return time_new(st.st_atime, 0);
 }
 
@@ -789,7 +788,7 @@ file_s_mtime(obj, fname)
     struct stat st;
 
     Check_Type(fname, T_STRING);
-    if (cache_stat(fname->ptr, &st) < 0) rb_sys_fail(fname->ptr);
+    if (stat(fname->ptr, &st) < 0) rb_sys_fail(fname->ptr);
     return time_new(st.st_mtime, 0);
 }
 
@@ -815,7 +814,7 @@ file_s_ctime(obj, fname)
     struct stat st;
 
     Check_Type(fname, T_STRING);
-    if (cache_stat(fname->ptr, &st) < 0) rb_sys_fail(fname->ptr);
+    if (stat(fname->ptr, &st) < 0) rb_sys_fail(fname->ptr);
     return time_new(st.st_ctime, 0);
 }
 
@@ -868,8 +867,13 @@ file_chmod(obj, vmode)
     mode = NUM2INT(vmode);
 
     GetOpenFile(obj, fptr);
+#if defined(DJGPP) || defined(__CYGWIN32__)
+    if (chmod(fptr->path, mode) == -1)
+	rb_sys_fail(fptr->path);
+#else
     if (fchmod(fileno(fptr->f), mode) == -1)
 	rb_sys_fail(fptr->path);
+#endif
 
     return INT2FIX(0);
 }
@@ -897,13 +901,13 @@ file_s_chown(argc, argv)
     int n;
 
     rb_scan_args(argc, argv, "2*", &o, &g, &rest);
-    if (o == Qnil) {
+    if (NIL_P(o)) {
 	arg.owner = -1;
     }
     else {
 	arg.owner = NUM2INT(o);
     }
-    if (g == Qnil) {
+    if (NIL_P(g)) {
 	arg.group = -1;
     }
     else {
@@ -921,13 +925,18 @@ file_chown(obj, owner, group)
     OpenFile *fptr;
 
     GetOpenFile(obj, fptr);
+#if defined(DJGPP) || defined(__CYGWIN32__)
+    if (chown(fptr->path, NUM2INT(owner), NUM2INT(group)) == -1)
+	rb_sys_fail(fptr->path);
+#else
     if (fchown(fileno(fptr->f), NUM2INT(owner), NUM2INT(group)) == -1)
 	rb_sys_fail(fptr->path);
+#endif
 
     return INT2FIX(0);
 }
 
-struct timeval *time_timeval();
+struct timeval time_timeval();
 
 #ifdef HAVE_UTIMES
 
@@ -951,8 +960,8 @@ file_s_utime(argc, argv)
 
     rb_scan_args(argc, argv, "2*", &atime, &mtime, &rest);
 
-    tvp[0] = *time_timeval(atime);
-    tvp[1] = *time_timeval(mtime);
+    tvp[0] = time_timeval(atime);
+    tvp[1] = time_timeval(mtime);
 
     n = apply2files(utime_internal, rest, tvp);
     return INT2FIX(n);
@@ -987,15 +996,15 @@ file_s_utime(argc, argv)
 {
     VALUE atime, mtime, rest;
     int n;
-    struct timeval *tv;
+    struct timeval tv;
     struct utimbuf utbuf;
 
     rb_scan_args(argc, argv, "2*", &atime, &mtime, &rest);
 
     tv = time_timeval(atime);
-    utbuf.actime = tv->tv_sec;
+    utbuf.actime = tv.tv_sec;
     tv = time_timeval(mtime);
-    utbuf.modtime = tv->tv_sec;
+    utbuf.modtime = tv.tv_sec;
 
     n = apply2files(utime_internal, rest, &utbuf);
     return INT2FIX(n);
@@ -1021,12 +1030,16 @@ file_s_symlink(obj, from, to)
     VALUE obj;
     struct RString *from, *to;
 {
+#if !defined(MSDOS)
     Check_Type(from, T_STRING);
     Check_Type(to, T_STRING);
 
     if (symlink(from->ptr, to->ptr) < 0)
 	rb_sys_fail(from->ptr);
     return TRUE;
+#else
+        rb_notimplement();
+#endif
 }
 
 static VALUE
@@ -1034,6 +1047,7 @@ file_s_readlink(obj, path)
     VALUE obj;
     struct RString *path;
 {
+#if !defined(MSDOS)
     char buf[MAXPATHLEN];
     int cc;
 
@@ -1043,6 +1057,9 @@ file_s_readlink(obj, path)
 	rb_sys_fail(path->ptr);
 
     return str_new(buf, cc);
+#else
+        rb_notimplement();
+#endif
 }
 
 static void
@@ -1060,7 +1077,7 @@ file_s_unlink(obj, args)
 {
     int n;
 
-    n = apply2files(unlink_internal, args, Qnil);
+    n = apply2files(unlink_internal, args, 0);
     return INT2FIX(n);
 }
 
@@ -1093,81 +1110,10 @@ file_s_umask(argc, argv)
 	omask = umask(NUM2INT(argv[1]));
     }
     else {
-	Fail("wrong # of argument");
+	ArgError("wrong # of argument");
     }
     return INT2FIX(omask);
 }
-
-#if defined(HAVE_TRUNCATE) || defined(HAVE_CHSIZE)
-static VALUE
-file_s_truncate(obj, path, len)
-    VALUE obj, len;
-    struct RString *path;
-{
-    Check_Type(path, T_STRING);
-
-#ifdef HAVE_TRUNCATE
-    if (truncate(path->ptr, NUM2INT(len)) < 0)
-	rb_sys_fail(path->ptr);
-#else
-# ifdef HAVE_CHSIZE
-    {
-	int tmpfd;
-
-#if defined(NT)
-	if ((tmpfd = open(path->ptr, O_RDWR)) < 0) {
-	    rb_sys_fail(path->ptr);
-	}
-#else
-	if ((tmpfd = open(path->ptr, 0)) < 0) {
-	    rb_sys_fail(path->ptr);
-	}
-#endif
-	if (chsize(tmpfd, NUM2INT(len)) < 0) {
-	    close(tmpfd);
-	    rb_sys_fail(path->ptr);
-	}
-	close(tmpfd);
-    }
-# endif
-#endif
-    return TRUE;
-}
-
-static VALUE
-file_truncate(obj, len)
-    VALUE obj, len;
-{
-    OpenFile *fptr;
-
-    GetOpenFile(obj, fptr);
-
-    if (!(fptr->mode & FMODE_WRITABLE)) {
-	Fail("not opened for writing");
-    }
-#ifdef HAVE_TRUNCATE
-    if (ftruncate(fileno(fptr->f), NUM2INT(len)) < 0)
-	rb_sys_fail(fptr->path);
-#else
-# ifdef HAVE_CHSIZE
-    if (chsize(fileno(fptr->f), NUM2INT(len)) < 0)
-	rb_sys_fail(fptr->path);
-# endif
-#endif
-    return TRUE;
-}
-#endif
-
-#ifdef HAVE_FCNTL
-static VALUE
-file_fcntl(obj, req, arg)
-    VALUE obj, req;
-    struct RString *arg;
-{
-    io_ctl(obj, req, arg, 0);
-    return obj;
-}
-#endif
 
 static VALUE
 file_s_expand_path(obj, fname)
@@ -1218,7 +1164,7 @@ file_s_expand_path(obj, fname)
 #ifdef HAVE_GETCWD
 	getcwd(buf, MAXPATHLEN);
 #else
-	getwd(buf)l
+	getwd(buf);
 #endif
 	p = &buf[strlen(buf)];
     }
@@ -1292,17 +1238,17 @@ file_s_basename(argc, argv)
 
     rb_scan_args(argc, argv, "11", &fname, &ext);
     Check_Type(fname, T_STRING);
-    if (ext) Check_Type(ext, T_STRING);
+    if (!NIL_P(ext)) Check_Type(ext, T_STRING);
     p = strrchr(fname->ptr, '/');
-    if (p == Qnil) {
-	if (ext) {
+    if (!p) {
+	if (!NIL_P(ext)) {
 	    f = rmext(fname->ptr, ext->ptr);
 	    if (f) return str_new(fname->ptr, f);
 	}
 	return (VALUE)fname;
     }
     p++;			/* skip last `/' */
-    if (ext) {
+    if (!NIL_P(ext)) {
 	f = rmext(p, ext->ptr);
 	if (f) return str_new(p, f);
     }
@@ -1315,10 +1261,117 @@ file_s_dirname(obj, fname)
     struct RString *fname;
 {
     char *p;
+
     Check_Type(fname, T_STRING);
     p = strrchr(fname->ptr, '/');
-    if (p == Qnil) return (VALUE)fname;
+    if (!p) {
+	return str_new(0,0);
+    }
     return str_new(fname->ptr, p - fname->ptr);
+}
+
+static VALUE separator;
+
+static VALUE
+file_s_split(obj, path)
+    VALUE obj, path;
+{
+    return assoc_new(file_s_dirname(Qnil, path), file_s_basename(1,&path));
+}
+
+static VALUE
+file_s_truncate(obj, path, len)
+    VALUE obj, len;
+    struct RString *path;
+{
+    Check_Type(path, T_STRING);
+
+#ifdef HAVE_TRUNCATE
+    if (truncate(path->ptr, NUM2INT(len)) < 0)
+	rb_sys_fail(path->ptr);
+#else
+# ifdef HAVE_CHSIZE
+    {
+	int tmpfd;
+
+#  if defined(NT)
+	if ((tmpfd = open(path->ptr, O_RDWR)) < 0) {
+	    rb_sys_fail(path->ptr);
+	}
+#  else
+	if ((tmpfd = open(path->ptr, 0)) < 0) {
+	    rb_sys_fail(path->ptr);
+	}
+#  endif
+	if (chsize(tmpfd, NUM2INT(len)) < 0) {
+	    close(tmpfd);
+	    rb_sys_fail(path->ptr);
+	}
+	close(tmpfd);
+    }
+# else
+    rb_notimplement();
+# endif
+#endif
+    return TRUE;
+}
+
+static VALUE
+file_truncate(obj, len)
+    VALUE obj, len;
+{
+    OpenFile *fptr;
+
+    GetOpenFile(obj, fptr);
+
+    if (!(fptr->mode & FMODE_WRITABLE)) {
+	Fail("not opened for writing");
+    }
+#ifdef HAVE_TRUNCATE
+    if (ftruncate(fileno(fptr->f), NUM2INT(len)) < 0)
+	rb_sys_fail(fptr->path);
+#else
+# ifdef HAVE_CHSIZE
+    if (chsize(fileno(fptr->f), NUM2INT(len)) < 0)
+	rb_sys_fail(fptr->path);
+# else
+    rb_notimplement();
+# endif
+#endif
+    return TRUE;
+}
+
+static VALUE
+file_fcntl(obj, req, arg)
+    VALUE obj, req;
+    struct RString *arg;
+{
+#ifdef HAVE_FCNTL
+    io_ctl(obj, req, arg, 0);
+#else
+    rb_notimplement();
+#endif
+    return obj;
+}
+
+static VALUE
+file_flock(obj, operation)
+    VALUE obj;
+    VALUE operation;
+{
+     OpenFile *fptr;
+
+    GetOpenFile(obj, fptr);
+
+    if (flock(fileno(fptr->f), NUM2INT(operation)) < 0) {
+#ifdef EWOULDBLOCK
+	if (errno = EWOULDBLOCK) {
+	    return FALSE;
+	}
+#endif
+	rb_sys_fail(fptr->path);
+    }
+    return obj;
 }
 
 static void
@@ -1329,7 +1382,7 @@ test_check(n, argc, argv)
     int i;
 
     n+=1;
-    if (n < argc) Fail("Wrong # of arguments(%d for %d)", argc, n);
+    if (n < argc) ArgError("Wrong # of arguments(%d for %d)", argc, n);
     for (i=1; i<n; i++) {
 	Check_Type(argv[i], T_STRING);
     }
@@ -1344,7 +1397,7 @@ f_test(argc, argv)
 {
     int cmd;
 
-    if (argc == 0) Fail("Wrong # of arguments");
+    if (argc == 0) ArgError("Wrong # of arguments");
     Need_Fixnum(argv[0]);
     cmd = FIX2INT(argv[0]);
     if (strchr("bcdefgGkloOprRsSuwWxXz", cmd)) {
@@ -1423,7 +1476,7 @@ f_test(argc, argv)
 	struct stat st;
 
 	CHECK(1);
-	if (cache_stat(RSTRING(argv[1])->ptr, &st) == -1) {
+	if (stat(RSTRING(argv[1])->ptr, &st) == -1) {
 	    rb_sys_fail(RSTRING(argv[1])->ptr);
 	}
 
@@ -1474,7 +1527,8 @@ Init_File()
     mFileTest = rb_define_module("FileTest");
 
     rb_define_module_function(mFileTest, "directory?",  test_d, 1);
-    rb_define_module_function(mFileTest, "exists?",  test_e, 1);
+    rb_define_module_function(mFileTest, "exist?",  test_e, 1);
+    rb_define_module_function(mFileTest, "exists?",  test_e, 1); /* temporary */
     rb_define_module_function(mFileTest, "readable?",  test_r, 1);
     rb_define_module_function(mFileTest, "readable_real?",  test_R, 1);
     rb_define_module_function(mFileTest, "writable?",  test_w, 1);
@@ -1501,9 +1555,11 @@ Init_File()
     cFile = rb_define_class("File", cIO);
     rb_extend_object(cFile, CLASS_OF(mFileTest));
 
+    rb_define_singleton_method(cFile, "open",  file_s_open, -1);
+
     rb_define_singleton_method(cFile, "stat",  file_s_stat, 1);
     rb_define_singleton_method(cFile, "lstat", file_s_lstat, 1);
-    rb_define_singleton_method(cFile, "type",  file_s_type, 1);
+    rb_define_singleton_method(cFile, "ftype", file_s_type, 1);
 
     rb_define_singleton_method(cFile, "atime", file_s_atime, 1);
     rb_define_singleton_method(cFile, "mtime", file_s_mtime, 1);
@@ -1521,12 +1577,14 @@ Init_File()
     rb_define_singleton_method(cFile, "delete", file_s_unlink, -2);
     rb_define_singleton_method(cFile, "rename", file_s_rename, 2);
     rb_define_singleton_method(cFile, "umask", file_s_umask, -1);
-#if defined(HAVE_TRUNCATE) || defined(HAVE_CHSIZE)
     rb_define_singleton_method(cFile, "truncate", file_s_truncate, 2);
-#endif
     rb_define_singleton_method(cFile, "expand_path", file_s_expand_path, 1);
     rb_define_singleton_method(cFile, "basename", file_s_basename, -1);
     rb_define_singleton_method(cFile, "dirname", file_s_dirname, 1);
+
+    separator = INT2FIX('/');
+    rb_define_const(cFile, "Separator", separator);
+    rb_define_singleton_method(cFile, "split",  file_s_split, 1);
 
     rb_define_method(cFile, "stat",  file_stat, 0);
     rb_define_method(cFile, "lstat",  file_lstat, 0);
@@ -1537,9 +1595,7 @@ Init_File()
 
     rb_define_method(cFile, "chmod", file_chmod, 1);
     rb_define_method(cFile, "chown", file_chown, 2);
-#if defined(HAVE_TRUNCATE) || defined(HAVE_CHSIZE)
     rb_define_method(cFile, "truncate", file_truncate, 1);
-#endif
 
     rb_define_method(cFile, "tell",  file_tell, 0);
     rb_define_method(cFile, "seek",  file_seek, 2);
@@ -1553,9 +1609,26 @@ Init_File()
     rb_define_method(cFile, "eof",  file_eof, 0);
     rb_define_method(cFile, "eof?", file_eof, 0);
 
-#ifdef HAVE_FCNTL
     rb_define_method(cIO, "fcntl", file_fcntl, 2);
-#endif
+    rb_define_method(cFile, "flock", file_flock, 1);
+
+# ifndef LOCK_SH
+#  define LOCK_SH 1
+# endif
+# ifndef LOCK_EX
+#  define LOCK_EX 2
+# endif
+# ifndef LOCK_NB
+#  define LOCK_NB 4
+# endif
+# ifndef LOCK_UN
+#  define LOCK_UN 8
+# endif
+
+    rb_define_const(cFile, "LOCK_SH", INT2FIX(LOCK_SH));
+    rb_define_const(cFile, "LOCK_EX", INT2FIX(LOCK_EX));
+    rb_define_const(cFile, "LOCK_UN", INT2FIX(LOCK_UN));
+    rb_define_const(cFile, "LOCK_NB", INT2FIX(LOCK_NB));
 
     rb_define_method(cFile, "path",  file_path, 0);
 
@@ -1564,5 +1637,5 @@ Init_File()
     sStat = struct_define("Stat", "dev", "ino", "mode",
 			  "nlink", "uid", "gid", "rdev",
 			  "size", "blksize", "blocks", 
-			  "atime", "mtime", "ctime", Qnil);
+			  "atime", "mtime", "ctime", 0);
 }

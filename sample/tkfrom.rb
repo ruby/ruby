@@ -7,7 +7,7 @@ include ParseDate
 
 class Mail
   def Mail.new(f)
-    if !f.is_kind_of?(IO)
+    if !f.kind_of?(IO)
       f = open(f, "r")
       me = super
       f.close
@@ -22,7 +22,7 @@ class Mail
     @body = []
     while f.gets()
       $_.chop!
-      continue if /^From /	# skip From-line  
+      next if /^From /	# skip From-line  
       break if /^$/		# end of header
       if /^(\S+):\s*(.*)/
 	@header[attr = $1.capitalize] = $2
@@ -50,7 +50,7 @@ class Mail
 
 end
 
-$ARGV[0] = '/usr/spool/mail/' + ENV['USER'] if $ARGV.length == 0
+ARGV[0] = '/usr/spool/mail/' + ENV['USER'] if ARGV.length == 0
 
 require "tk"
 list = scroll = nil
@@ -85,13 +85,13 @@ root.bind "Control-q", proc{exit}
 root.bind "space", proc{exit}
 
 $outcount = 0;
-for file in $ARGV
-  continue if !File.exists?(file)
+for file in ARGV
+  next if !File.exist?(file)
   f = open(file, "r")
   while !f.eof
     mail = Mail.new(f)
     date, from, subj =  mail.header['Date'], mail.header['From'], mail.header['Subject']
-    continue if !date
+    next if !date
     y = m = d = 0
     y, m, d = parsedate(date) if date
     from = "sombody@somewhere" if ! from
@@ -102,6 +102,7 @@ for file in $ARGV
     $outcount += 1
   end
   f.close
+  list.see 'end'
 end
 
 limit = 10000

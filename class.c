@@ -39,7 +39,7 @@ singleton_class_new(super)
 {
     struct RClass *cls = (struct RClass*)class_new(super);
 
-    FL_SET(cls, FL_SINGLE);
+    FL_SET(cls, FL_SINGLETON);
 
     return (VALUE)cls;
 }
@@ -58,7 +58,7 @@ VALUE
 singleton_class_clone(class)
     struct RClass *class;
 {
-    if (!FL_TEST(class, FL_SINGLE))
+    if (!FL_TEST(class, FL_SINGLETON))
 	return (VALUE)class;
     else {
 	/* copy singleton(unnamed) class */
@@ -68,7 +68,7 @@ singleton_class_clone(class)
 	clone->super = class->super;
 	clone->m_tbl = new_idhash();
 	st_foreach(class->m_tbl, clone_method, clone->m_tbl);
-	FL_SET(clone, FL_SINGLE);
+	FL_SET(clone, FL_SINGLETON);
 	return (VALUE)clone;
     }
 }
@@ -78,7 +78,7 @@ rb_define_class_id(id, super)
     ID id;
     struct RBasic *super;
 {
-    struct RClass *cls = (struct RClass*)class_new(super);
+    struct RClass *cls;
 
     if (!super) super = (struct RBasic*)cClass;
     cls = (struct RClass*)class_new(super);
@@ -100,7 +100,6 @@ rb_define_class(name, super)
     id = rb_intern(name);
     class = rb_define_class_id(id, super);
     st_add_direct(rb_class_tbl, id, class);
-    rb_set_class_path(class, 0, name);
 
     return class;
 }
@@ -128,7 +127,7 @@ module_new()
     NEWOBJ(mdl, struct RClass);
     OBJSETUP(mdl, cModule, T_MODULE);
 
-    mdl->super = Qnil;
+    mdl->super = 0;
     mdl->m_tbl = new_idhash();
 
     return (VALUE)mdl;
@@ -171,6 +170,7 @@ rb_define_module_under(under, name)
     id = rb_intern(name);
     module = rb_define_module_id(id);
     rb_const_set(under, id, module);
+    rb_set_class_path(module, under, name);
 
     return module;
 }
@@ -201,7 +201,7 @@ rb_include_module(class, module)
 {
     struct RClass *p;
 
-    if (!module) return;
+    if (NIL_P(module)) return;
 
     switch (TYPE(module)) {
       case T_MODULE:
@@ -212,10 +212,8 @@ rb_include_module(class, module)
     }
 
     if (class == module) return;
-    if (BUILTIN_TYPE(class) == T_CLASS) {
-	rb_clear_cache(class);
-    }
-
+    rb_clear_cache();
+ 
     while (module) {
 	/* ignore if the module included already in superclasses */
 	for (p = class->super; p; p = p->super) {
@@ -258,7 +256,7 @@ rb_undef_method(class, name)
     struct RClass *class;
     char *name;
 {
-    rb_add_method(class, rb_intern(name), Qnil, NOEX_PUBLIC);
+    rb_add_method(class, rb_intern(name), 0, NOEX_PUBLIC);
 }
 
 void
@@ -275,18 +273,7 @@ VALUE
 rb_singleton_class(obj)
     struct RBasic *obj;
 {
-    switch (TYPE(obj)) {
-      case T_OBJECT:
-      case T_CLASS:
-      case T_MODULE:
-      case T_STRUCT:
-	break;
-      default:
-	Fail("can't define singleton method for built-in class");
-	break;
-    }
-
-    if (FL_TEST(obj->class, FL_SINGLE)) {
+    if (FL_TEST(obj->class, FL_SINGLETON)) {
 	return (VALUE)obj->class;
     }
     return obj->class = singleton_class_new(obj->class);
@@ -338,10 +325,10 @@ rb_define_attr(class, id, pub)
     attreq = rb_intern(buf);
     sprintf(buf, "@%s", name);
     attriv = rb_intern(buf);
-    if (rb_method_boundp(class, attr) == FALSE) {
+    if (!rb_method_boundp(class, attr)) {
 	rb_add_method(class, attr, NEW_IVAR(attriv), 0);
     }
-    if (pub && rb_method_boundp(class, attreq) == FALSE) {
+    if (pub && !rb_method_boundp(class, attreq)) {
 	rb_add_method(class, attreq, NEW_ATTRSET(attriv), 0);
     }
 }
@@ -372,7 +359,7 @@ rb_scan_args(argc, argv, fmt, va_alist)
     if (isdigit(*p)) {
 	n = *p - '0';
 	if (n > argc)
-	    Fail("Wrong number of arguments (%d for %d)", argc, n);
+	    ArgError("Wrong # of arguments (%d for %d)", argc, n);
 	for (i=0; i<n; i++) {
 	    var = va_arg(vargs, VALUE*);
 	    *var = argv[i];
@@ -408,7 +395,7 @@ rb_scan_args(argc, argv, fmt, va_alist)
     }
     else if (*p == '\0') {
 	if (argc > i) {
-	    Fail("Wrong # of arguments(%d for %d)", argc, i);
+	    ArgError("Wrong # of arguments(%d for %d)", argc, i);
 	}
     }
     else {
@@ -419,6 +406,6 @@ rb_scan_args(argc, argv, fmt, va_alist)
     return argc;
 
   error:
-    Fail("bad scan arg format: %s", fmt);
+    Fatal("bad scan arg format: %s", fmt);
     return 0;
 }

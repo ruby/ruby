@@ -6,38 +6,39 @@
   $Date: 1995/01/10 10:42:51 $
   created at: Tue Aug 10 12:47:31 JST 1993
 
-  Copyright (C) 1993-1995 Yukihiro Matsumoto
+  Copyright (C) 1993-1996 Yukihiro Matsumoto
 
 ************************************************/
 
 #include "ruby.h"
 #include "re.h"
-#include <stdio.h>
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include "dln.h"
+#include <stdio.h>
+#include <sys/types.h>
+#include <fcntl.h>
 
 #ifdef HAVE_STRING_H
 # include <string.h>
 #else
 char *strchr();
+char *strrchr();
 char *strstr();
 #endif
 
 static int version, copyright;
 
-int debug = 0;
-int verbose = 0;
+int debug = FALSE;
+int verbose = FALSE;
 static int sflag = FALSE;
 
-char *inplace = 0;
+char *inplace = FALSE;
 char *strdup();
 
 extern int yydebug;
 extern int nerrs;
 
-int xflag = FALSE;
+static int xflag = FALSE;
+extern VALUE RS, RS_default, ORS, FS;
 
 static void load_stdin();
 static void load_file();
@@ -49,10 +50,18 @@ static int do_split = FALSE;
 static char *script;
 
 #ifndef RUBY_LIB
-#define RUBY_LIB ".:/usr/local/lib/ruby"
+#if defined(MSDOS)
+#define RUBY_LIB "/usr/local/lib/ruby;."
+#else
+#define RUBY_LIB "/usr/local/lib/ruby:."
+#endif
 #endif
 
+#if defined(MSDOS)
+#define RUBY_LIB_SEP ';'
+#else
 #define RUBY_LIB_SEP ':'
+#endif
 
 extern VALUE rb_load_path;
 VALUE Frequire();
@@ -62,21 +71,24 @@ addpath(path)
     char *path;
 {
     char *p, *s;
+    VALUE ary;
 
     if (path == 0) return;
 
+    ary = ary_new();
     p = s = path;
     while (*p) {
 	while (*p == RUBY_LIB_SEP) p++;
-	if (s = strchr(p, RUBY_LIB_SEP)) {
-	    ary_push(rb_load_path, str_new(p, (int)(s-p)));
+	if (s = strrchr(p, RUBY_LIB_SEP)) {
+	    ary_push(ary, str_new(p, (int)(s-p)));
 	    p = s + 1;
 	}
 	else {
-	    ary_push(rb_load_path, str_new2(p));
+	    ary_push(ary, str_new2(p));
 	    break;
 	}
     }
+    rb_load_path = ary_plus(ary, rb_load_path);
 }
 
 static void
@@ -89,13 +101,11 @@ proc_options(argcp, argvp)
     int script_given, do_search;
     char *s;
 
-    extern VALUE RS, ORS, FS;
-
     if (argc == 0) return;
 
     version = FALSE;
-    script_given = FALSE;
     do_search = FALSE;
+    script_given = 0;
 
     for (argc--,argv++; argc > 0; argc--,argv++) {
 	if (argv[0][0] != '-' || !argv[0][1]) break;
@@ -127,8 +137,10 @@ proc_options(argcp, argvp)
 	    goto reswitch;
 
 	  case 'v':
-	    verbose = TRUE;
 	    show_version();
+	    verbose = 2;
+	  case 'w':
+	    verbose |= 1;
 	    s++;
 	    goto reswitch;
 
@@ -157,13 +169,12 @@ proc_options(argcp, argvp)
 	    script_given++;
 	    if (script == 0) script = "-e";
 	    if (argv[1]) {
-		lex_setsrc("-e", argv[1], strlen(argv[1]));
+		compile_string("-e", argv[1], strlen(argv[1]));
 		argc--,argv++;
 	    }
 	    else {
-		lex_setsrc("-e", "", 0);
+		compile_string("-e", "", 0);
 	    }
-	    yyparse();
 	    break;
 
 	  case 'r':
@@ -211,9 +222,9 @@ proc_options(argcp, argvp)
 
 	  case 'I':
 	    if (*++s)
-		ary_push(rb_load_path, str_new2(s));
+		addpath(s);
 	    else if (argv[1]) {
-		ary_push(rb_load_path, str_new2(argv[1]));
+		addpath(argv[1]);
 		argc--,argv++;
 	    }
 	    break;
@@ -250,7 +261,7 @@ proc_options(argcp, argvp)
 	    else if (strcmp("version", s) == 0)
 		version = 1;
 	    else if (strcmp("verbose", s) == 0)
-		verbose = 1;
+		verbose = 2;
 	    else if (strcmp("yydebug", s) == 0)
 		yydebug = 1;
 	    else {
@@ -277,22 +288,29 @@ proc_options(argcp, argvp)
 	show_copyright();
     }
 
-    if (script_given == 0) {
+    if (script_given == FALSE) {
 	if (argc == 0) {	/* no more args */
-	    if (verbose) exit(0);
+	    if (verbose == 3) exit(0);
 	    script = "-";
 	    load_stdin();
 	}
 	else {
 	    script = argv[0];
-	    if (do_search) {
-		script = dln_find_file(script, getenv("PATH"));
-		if (!script) script = argv[0];
+	    if (script[0] == '\0') {
+		script = "-";
+		load_stdin();
 	    }
-	    load_file(script, 1);
-	    argc--,argv++;
+	    else {
+		if (do_search) {
+		    script = dln_find_file(script, getenv("PATH"));
+		    if (!script) script = argv[0];
+		}
+		load_file(script, 1);
+	    }
+	    argc--; argv++;
 	}
     }
+    if (verbose) verbose = TRUE;
 
     xflag = FALSE;
     *argvp = argv;
@@ -321,75 +339,10 @@ proc_options(argcp, argvp)
 
 }
 
-static void
-readin(fd, fname, script)
-    int fd;
+static VALUE
+open_to_load(fname)
     char *fname;
-    int script;
 {
-    struct stat st;
-    char *ptr, *p, *pend;
-
-    if (fstat(fd, &st) < 0) rb_sys_fail(fname);
-    if (!S_ISREG(st.st_mode))
-	Fail("script is not a regular file - %s", fname);
-
-    p = ptr = ALLOC_N(char, st.st_size+1);
-    if (read(fd, ptr, st.st_size) != st.st_size) {
-	free(ptr);
-	rb_sys_fail(fname);
-    }
-    pend = p + st.st_size;
-    *pend = '\0';
-
-    if (script) {
-	if (xflag) {
-	    xflag = FALSE;
-	    while (p < pend) {
-		if (p[0] == '#' && p[1] == '!') {
-		    char *s = p;
-		    while (s < pend && *s != '\n') s++;
-		    if (*s == '\n') {
-			*s = '\0';
-			if (strstr(p, "ruby")) {
-			    *s = '\n';
-			    goto start_read;
-			}
-		    }
-		    p = s + 1;
-		}
-		else {
-		    while (p < pend && *p++ != '\n')
-			;
-		    if (p >= pend) break;
-		}
-	    }
-	    free(ptr);
-	    Fail("No Ruby script found in input");
-	}
-
-      start_read:
-	if (p[0] == '#' && p[1] == '!') {
-	    char *s = p, *q;
-
-	    while (s < pend && *s != '\n') s++;
-	    if (*s == '\n') {
-		*s = '\0';
-		if (q = strstr(p, "ruby -")) {
-		    int argc; char *argv[2]; char **argvp = argv;
-		    argc = 2; argv[0] = Qnil; argv[1] = q + 5;
-		    proc_options(&argc, &argvp);
-		    p = s + 1;
-		}
-		else {
-		    *s = '\n';
-		}
-	    }
-	}
-    }
-    lex_setsrc(fname, p, pend - p);
-    yyparse();
-    free(ptr);
 }
 
 static void
@@ -397,17 +350,74 @@ load_file(fname, script)
     char *fname;
     int script;
 {
-    int fd;
+    extern VALUE rb_stdin;
+    VALUE f;
+    int line_start = 1;
 
-    if (fname[0] == '\0') {
-	load_stdin();
-	return;
+    if (strcmp(fname, "-") == 0) {
+	f = rb_stdin;
+    }
+    else {
+	f = file_open(fname, "r");
     }
 
-    fd = open(fname, O_RDONLY, 0);
-    if (fd < 0) rb_sys_fail(fname);
-    readin(fd, fname, script);
-    close(fd);
+    if (script) {
+	VALUE c;
+	VALUE line;
+	VALUE rs = RS;
+
+	RS = RS_default;
+	if (xflag) {
+	    xflag = FALSE;
+	    while (!NIL_P(line = io_gets(f))) {
+		line_start++;
+		if (RSTRING(line)->len > 2
+		    || RSTRING(line)->ptr[0] != '#'
+		    || RSTRING(line)->ptr[1] != '!') {
+		    if (strstr(RSTRING(line)->ptr, "ruby")) {
+			goto start_read;
+		    }
+		}
+	    }
+	    RS = rs;
+	    LoadError("No Ruby script found in input");
+	}
+
+	c = io_getc(f);
+	if (c == INT2FIX('#')) {
+	    line = io_gets(f);
+	    line_start++;
+
+	    if (RSTRING(line)->len > 2
+		|| RSTRING(line)->ptr[0] != '#'
+		|| RSTRING(line)->ptr[1] != '!') {
+
+		char *p;
+
+	      start_read:
+		if (p = strstr(RSTRING(line)->ptr, "ruby -")) {
+		    int argc; char *argv[2]; char **argvp = argv;
+		    char *s;
+
+		    s = RSTRING(line)->ptr;
+		    while (isspace(*s++))
+			;
+		    *s = '\0';
+		    RSTRING(line)->ptr[RSTRING(line)->len-1] = '\0';
+		    if (RSTRING(line)->ptr[RSTRING(line)->len-2] == '\r')
+			RSTRING(line)->ptr[RSTRING(line)->len-2] = '\0';
+		    argc = 2; argv[0] = 0; argv[1] = p + 5;
+		    proc_options(&argc, &argvp);
+		}
+	    }
+	}
+	else if (!NIL_P(c)) {
+	    io_ungetc(f, c);
+	}
+	RS = rs;
+    }
+    compile_file(fname, f, line_start);
+    if (f != rb_stdin) io_close(f);
 }
 
 void
@@ -420,21 +430,7 @@ rb_load_file(fname)
 static void
 load_stdin()
 {
-    char buf[32];
-    FILE *f;
-    char c;
-    int fd;
-
-    sprintf(buf, "/tmp/ruby-f%d", getpid());
-    f = fopen(buf, "w");
-    fd = open(buf, O_RDONLY, 0);
-    if (fd < 0) rb_sys_fail(buf);
-    unlink(buf);
-    while ((c = getchar()) != EOF) {
-	putc(c, f);
-    }
-    fclose(f);
-    readin(fd, "-");
+    load_file("-", 1);
 }
 
 VALUE Progname;
@@ -500,16 +496,28 @@ ruby_options(argc, argv, envp)
 
     origargc = argc; origargv = argv; origenvp = envp;
 
-    rb_define_variable("$@", &errat);
     errat = str_new2(argv[0]);
     rb_define_variable("$VERBOSE", &verbose);
     rb_define_variable("$DEBUG", &debug);
 
+    addpath(getenv("RUBYLIB"));
+    addpath(RUBY_LIB);
+#ifdef RUBY_ARCHLIB
+    addpath(RUBY_ARCHLIB);
+#endif
 #if defined(USE_DLN_A_OUT)
     dln_argv0 = argv[0];
 #endif
 
+    rb_define_hooked_variable("$0", &Progname, 0, set_arg0);
+
+    Argv = ary_new2(argc);
+    rb_define_readonly_variable("$*", &Argv);
+    rb_define_global_const("ARGV", Argv);
+
     proc_options(&argc, &argv);
+    ruby_script(script);
+
     if (do_check && nerrs == 0) {
 	printf("Syntax OK\n");
 	exit(0);
@@ -518,18 +526,9 @@ ruby_options(argc, argv, envp)
 	yyappend_print();
     }
     if (do_loop) {
-	yywhole_loop(do_line, do_split);
+	yywhile_loop(do_line, do_split);
     }
 
-    rb_define_hooked_variable("$0", &Progname, 0, set_arg0);
-    ruby_script(script);
-
-    addpath(getenv("RUBYLIB"));
-    addpath(RUBY_LIB);
-
-    rb_define_readonly_variable("$ARGV", &Argv);
-    rb_define_readonly_variable("$*", &Argv);
-    Argv = ary_new2(argc);
     for (i=0; i < argc; i++) {
 	ary_push(Argv, str_new2(argv[i]));
     }

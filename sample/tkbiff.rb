@@ -1,17 +1,23 @@
 #! /usr/local/bin/ruby
 
-if $ARGV.length == 0
+if ARGV[0] != '-d'
+  unless $DEBUG
+    exit if fork
+  end
+else
+  ARGV.shift
+end
+
+if ARGV.length == 0
   if ENV['MAIL']
     $spool = ENV['MAIL']
   else  
     $spool = '/usr/spool/mail/' + ENV['USER']
   end
 else 
-  $spool = $ARGV[0]
+  $spool = ARGV[0]
 end
 
-exit if fork
-  
 require "parsedate"
 require "base64"
 
@@ -19,7 +25,7 @@ include ParseDate
 
 class Mail
   def Mail.new(f)
-    if !f.is_kind_of?(IO)
+    if !f.kind_of?(IO)
       f = open(f, "r")
       me = super
       f.close
@@ -34,7 +40,7 @@ class Mail
     @body = []
     while f.gets()
       $_.chop!
-      continue if /^From /	# skip From-line  
+      next if /^From /	# skip From-line  
       break if /^$/		# end of header
       if /^(\S+):\s*(.*)/
 	@header[attr = $1.capitalize] = $2
@@ -83,23 +89,37 @@ $top.bind "Control-q", proc{exit}
 $top.bind "space", proc{exit}
 
 $spool_size = 0
+$check_time = Time.now
+
 def check
+  $check_time = Time.now
   size = File.size($spool)
   if size and size != $spool_size
+    $spool_size = size
     pop_up if size > 0
   end
   Tk.after 5000, proc{check}
 end
 
+if defined? Thread
+  Thread.start do
+    loop do
+      sleep 600
+      if Time.now - $check_time > 200
+	Tk.after 5000, proc{check}
+      end
+    end
+  end
+end
+
 def pop_up
   outcount = 0;
-  $spool_size = File.size($spool)
   $list.delete 0, 'end'
   f = open($spool, "r")
   while !f.eof
     mail = Mail.new(f)
     date, from, subj =  mail.header['Date'], mail.header['From'], mail.header['Subject']
-    continue if !date
+    next if !date
     y = m = d = 0
     y, m, d = parsedate(date) if date
     from = "sombody@somewhere" if ! from
@@ -112,10 +132,18 @@ def pop_up
   f.close
   if outcount == 0
     $list.insert 'end', "You have no mail."
+  else
+    $list.see 'end'
   end
   $top.deiconify
   Tk.after 2000, proc{$top.withdraw}
 end
 
+$list.insert 'end', "You have no mail."
 check
-Tk.mainloop
+Tk.after 2000, proc{$top.withdraw}
+begin
+  Tk.mainloop
+rescue
+  `echo #$! > /tmp/tkbiff`
+end

@@ -6,7 +6,7 @@
   $Date: 1995/01/10 10:42:48 $
   created at: Fri Dec 24 16:39:21 JST 1993
 
-  Copyright (C) 1993-1995 Yukihiro Matsumoto
+  Copyright (C) 1993-1996 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -54,19 +54,35 @@ f_srand(argc, argv, obj)
 }
 
 static VALUE
-f_rand(obj, max)
-    VALUE obj, max;
+f_rand(obj, vmax)
+    VALUE obj, vmax;
 {
-    int val;
+    int val, max;
 
 #ifdef HAVE_RANDOM
     if (first == 1) {
 	initstate(1, state, sizeof state);
 	first = 0;
     }
-    val = random() % NUM2INT(max);
+#endif
+
+    switch (TYPE(vmax)) {
+      case T_BIGNUM:
+	return big_rand(vmax);
+	
+      case T_FLOAT:
+	if (RFLOAT(vmax)->value > LONG_MAX || RFLOAT(vmax)->value < LONG_MIN)
+	    return big_rand(dbl2big(RFLOAT(vmax)->value));
+	break;
+    }
+
+    max = NUM2INT(vmax);
+    if (max == 0) ArgError("rand(0)");
+
+#ifdef HAVE_RANDOM
+    val = random() % max;
 #else
-    val = rand() % NUM2INT(max);
+    val = rand() % max;
 #endif
 
     if (val < 0) val = -val;

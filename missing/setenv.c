@@ -19,8 +19,8 @@ char *nam;
     register int i, len = strlen(nam);
 
     for (i = 0; environ[i]; i++) {
-	if (memcmp(environ[i],nam,len) && environ[i][len] == '=')
-	    break;			/* strnEQ must come first to avoid */
+	if (memcmp(environ[i],nam,len) == 0 && environ[i][len] == '=')
+	    break;			/* memcmp must come first to avoid */
     }					/* potential SEGV's */
     return i;
 }

@@ -77,30 +77,30 @@ extruby:	miniruby ext/Setup
 		@if test -z "$$UNDER_EXTMAKE_RB"; \
 		then echo "Compiling ext modules"; \
 		UNDER_EXTMAKE_RB=yes; export UNDER_EXTMAKE_RB; \
-		cd ext; ../miniruby ./extmk.rb; fi
+		cd ext; ../miniruby ./extmk.rb @EXTSTATIC@; fi
 
 $(PROGRAM):     $(OBJS)
 		@rm -f $(PROGRAM)
 		$(PURIFY) $(CC) $(STATIC) $(LDFLAGS) $(OBJS) $(LIBS) -o $(PROGRAM)
 
-$(bindir)/ruby: extruby
-		$(INSTALL_PROGRAM) ruby $(bindir)/ruby
-		strip $(bindir)/ruby
-
-install:	$(bindir)/ruby
+install:;	$(INSTALL_PROGRAM) ruby $(bindir)/ruby
+		@-@STRIP@ $(bindir)/ruby
+		@test -d $(libdir) || mkdir $(libdir)
 		cd ext; ../miniruby ./extmk.rb install
-		$(INSTALL_DATA) lib/*.rb $(libdir)
+		@for rb in `grep '^lib/' MANIFEST`; do \
+		  $(INSTALL_DATA) $$rb $(libdir); \
+		done
 
 clean:;		@rm -f $(OBJS)
 		@rm -f ext/extinit.c ext/extinit.o
-		cd ext; ../ruby ./extmk.rb install
+		cd ext; ../miniruby ./extmk.rb clean
 
 realclean:	clean
 		@rm -f Makefile ext/extmk.rb
 		@rm -f config.cache config.h config.log config.status
 		@rm -f core ruby miniruby *~
 
-test:;		@-./ruby sample/test.rb > ./ruby_test 2>&1;\
+test:;		@-./ruby sample/test.rb > ./ruby_test 2>&1; \
 		 if grep '^end of test' ./ruby_test > /dev/null; then \
 		   echo "test succeeded"; \
 		 else \
@@ -121,6 +121,9 @@ crypt.o: missing/crypt.c
 
 dup2.o: missing/dup2.c
 	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c missing/dup2.c
+
+flock.o: missing/flock.c
+	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c missing/flock.c
 
 memmove.o: missing/memmove.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c missing/memmove.c
@@ -162,22 +165,21 @@ bignum.o: bignum.c ruby.h config.h defines.h
 class.o: class.c ruby.h config.h defines.h node.h st.h
 compar.o: compar.c ruby.h config.h defines.h
 dir.o: dir.c ruby.h config.h defines.h
-dln.o: dln.c config.h defines.h dln.h
+dln.o: dln.c config.h defines.h dln.h st.h
 dmyext.o: dmyext.c
-dummy.o: dummy.c config.h dln.c defines.h dln.h
 enum.o: enum.c ruby.h config.h defines.h
 error.o: error.c ruby.h config.h defines.h env.h
 eval.o: eval.c ruby.h config.h defines.h env.h node.h sig.h st.h dln.h
 file.o: file.c ruby.h config.h defines.h io.h sig.h
 fnmatch.o: fnmatch.c config.h fnmatch.h
-gc.o: gc.c ruby.h config.h defines.h env.h st.h node.h re.h regex.h
+gc.o: gc.c ruby.h config.h defines.h env.h sig.h st.h node.h re.h regex.h
 glob.o: glob.c config.h fnmatch.h
 hash.o: hash.c ruby.h config.h defines.h st.h
 inits.o: inits.c ruby.h config.h defines.h
 io.o: io.c ruby.h config.h defines.h io.h sig.h
 main.o: main.c
 math.o: math.c ruby.h config.h defines.h
-numeric.o: numeric.c ruby.h config.h defines.h env.h
+numeric.o: numeric.c ruby.h config.h defines.h
 object.o: object.c ruby.h config.h defines.h st.h
 pack.o: pack.c ruby.h config.h defines.h
 process.o: process.c ruby.h config.h defines.h sig.h st.h
@@ -190,7 +192,7 @@ signal.o: signal.c ruby.h config.h defines.h sig.h
 sprintf.o: sprintf.c ruby.h config.h defines.h
 st.o: st.c config.h st.h
 string.o: string.c ruby.h config.h defines.h re.h regex.h
-struct.o: struct.c ruby.h config.h defines.h env.h
+struct.o: struct.c ruby.h config.h defines.h
 time.o: time.c ruby.h config.h defines.h
 util.o: util.c defines.h config.h util.h
 variable.o: variable.c ruby.h config.h defines.h env.h st.h

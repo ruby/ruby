@@ -25,10 +25,10 @@ list = TkScrollbox.new {
 def browse (dir, file)
   if dir != "."
     file="#{dir}/#{file}"
-    if File.isdirectory? file
+    if File.directory? file
       system "browse #{file} &"
     else
-      if File.isfile? file
+      if File.file? file
 	if ENV['EDITOR']
 	  system format("%s %s&", ENV['EDITOR'], file)
 	else
@@ -44,8 +44,8 @@ end
 # Fill the listbox with a list of all the files in the directory (run
 # the "ls" command to get that information).
 
-if $ARGV.length>0 
-  dir = $ARGV[0]
+if ARGV.length>0 
+  dir = ARGV[0]
 else
   dir="."
 end

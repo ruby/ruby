@@ -1,8 +1,8 @@
 #!/usr/local/bin/ruby
 
-if $ARGV[0] == "-c"
+if ARGV[0] == "-c"
   out_stdout = 1;
-  $ARGV.shift
+  ARGV.shift
 end
 
 while gets()
@@ -27,8 +27,8 @@ while gets()
     break
   end
   sub(/[a-z]+$/, ""); # handle stupid trailing lowercase letters
-  continue if /[a-z]/
-  continue if !(((($_[0] - 32) & 077) + 2) / 3 == $_.length / 4)
+  next if /[a-z]/
+  next if !(((($_[0] - 32) & 077) + 2) / 3 == $_.length / 4)
   out << $_.unpack("u");
 end
 

@@ -2,6 +2,8 @@
 
 #dbm
 #etc
+#kconv
 #marshal
+#md5
 #socket
-tkutil
+#tkutil

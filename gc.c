@@ -6,17 +6,22 @@
   $Date: 1995/01/12 08:54:47 $
   created at: Tue Oct  5 09:44:46 JST 1993
 
-  Copyright (C) 1993-1995 Yukihiro Matsumoto
+  Copyright (C) 1993-1996 Yukihiro Matsumoto
 
 ************************************************/
 
 #include "ruby.h"
-#include "env.h"
+#include "sig.h"
 #include "st.h"
 #include "node.h"
+#include "env.h"
 #include "re.h"
 #include <stdio.h>
 #include <setjmp.h>
+
+#ifdef _AIX
+#pragma alloca
+#endif
 
 void *malloc();
 void *calloc();
@@ -36,10 +41,10 @@ xmalloc(size)
 
     if (size == 0) size = 1;
     mem = malloc(size);
-    if (mem == Qnil) {
+    if (!mem) {
 	gc();
 	mem = malloc(size);
-	if (mem == Qnil)
+	if (!mem)
 	    Fatal("failed to allocate memory");
     }
 
@@ -65,12 +70,12 @@ xrealloc(ptr, size)
 {
     void *mem;
 
-    if (ptr == Qnil) return xmalloc(size);
+    if (!ptr) return xmalloc(size);
     mem = realloc(ptr, size);
-    if (mem == Qnil) {
+    if (!mem) {
 	gc();
 	mem = realloc(ptr, size);
-	if (mem == Qnil)
+	if (!mem)
 	    Fatal("failed to allocate memory(realloc)");
     }
 
@@ -107,12 +112,6 @@ Paradigm Associates Inc		 Phone: 617-492-6079
 Cambridge, MA 02138
 */
 
-#ifdef sparc
-#define FLUSH_REGISTER_WINDOWS asm("ta 3")
-#else
-#define FLUSH_REGISTER_WINDOWS /* empty */
-#endif
-
 static int dont_gc;
 
 VALUE
@@ -136,10 +135,9 @@ gc_s_disable()
 VALUE mGC;
 
 static struct gc_list {
-    int n;
     VALUE *varptr;
     struct gc_list *next;
-} *Global_List = Qnil;
+} *Global_List = 0;
 
 void
 rb_global_variable(var)
@@ -150,7 +148,6 @@ rb_global_variable(var)
     tmp = ALLOC(struct gc_list);
     tmp->next = Global_List;
     tmp->varptr = var;
-    tmp->n = 1;
     Global_List = tmp;
 }
 
@@ -171,6 +168,7 @@ typedef struct RVALUE {
 	struct RData   data;
 	struct RStruct rstruct;
 	struct RBignum bignum;
+	struct RFile   file;
 	struct RNode   node;
 	struct RMatch  match;
 	struct RVarmap varmap; 
@@ -236,15 +234,15 @@ newobj()
 }
 
 VALUE
-data_new(datap, dmark, dfree)
+data_object_alloc(class, datap, dmark, dfree)
+    VALUE class;
     void *datap;
     void (*dfree)();
     void (*dmark)();
 {
-    extern VALUE cData;
     struct RData *data = (struct RData*)newobj();
 
-    OBJSETUP(data, cData, T_DATA);
+    OBJSETUP(data, class, T_DATA);
     data->data = datap;
     data->dfree = dfree;
     data->dmark = dmark;
@@ -253,9 +251,9 @@ data_new(datap, dmark, dfree)
 }
 
 extern st_table *rb_class_tbl;
-static VALUE *stack_start_ptr;
+VALUE *gc_stack_start;
 
-static long
+static int
 looks_pointerp(p)
     register RVALUE *p;
 {
@@ -288,8 +286,8 @@ mark_locations_array(x, n)
     }
 }
 
-static void
-mark_locations(start, end)
+void
+gc_mark_locations(start, end)
     VALUE *start, *end;
 {
     VALUE *tmp;
@@ -351,8 +349,8 @@ gc_mark(obj)
     register RVALUE *obj;
 {
   Top:
-    if (obj == Qnil) return;	/* nil not marked */
     if (FIXNUM_P(obj)) return;	/* fixnum not marked */
+    if (rb_special_const_p(obj)) return; /* special const not marked */
     if (obj->as.basic.flags == 0) return; /* free cell */
     if (obj->as.basic.flags & FL_MARK) return; /* marked */
 
@@ -408,7 +406,10 @@ gc_mark(obj)
 	break;
 
       case T_STRING:
-	if (obj->as.string.orig) gc_mark(obj->as.string.orig);
+	if (obj->as.string.orig) {
+	    obj = (RVALUE*)obj->as.string.orig;
+	    goto Top;
+	}
 	break;
 
       case T_DATA:
@@ -419,6 +420,7 @@ gc_mark(obj)
 	if (obj->as.object.iv_tbl) mark_tbl(obj->as.object.iv_tbl);
 	break;
 
+      case T_FILE:
       case T_MATCH:
       case T_REGEXP:
       case T_FLOAT:
@@ -426,7 +428,9 @@ gc_mark(obj)
 	break;
 
       case T_VARMAP:
-	gc_mark(obj->as.varmap.next);
+	gc_mark(obj->as.varmap.val);
+	obj = (RVALUE*)obj->as.varmap.next;
+	goto Top;
 	break;
 
       case T_SCOPE:
@@ -435,7 +439,7 @@ gc_mark(obj)
 	    VALUE *tbl = obj->as.scope.local_vars;
 
 	    while (n--) {
-		gc_mark(*tbl);
+		gc_mark_maybe(*tbl);
 		tbl++;
 	    }
 	}
@@ -512,12 +516,12 @@ obj_free(obj)
 	break;
       case T_MODULE:
       case T_CLASS:
-	rb_clear_cache(obj);
+	rb_clear_cache();
 	st_free_table(obj->as.class.m_tbl);
 	if (obj->as.object.iv_tbl) st_free_table(obj->as.object.iv_tbl);
 	break;
       case T_STRING:
-	if (obj->as.string.orig == Qnil) free(obj->as.string.ptr);
+	if (!obj->as.string.orig) free(obj->as.string.ptr);
 	break;
       case T_ARRAY:
 	free(obj->as.array.ptr);
@@ -538,17 +542,26 @@ obj_free(obj)
 	free(obj->as.match.regs);
 	if (obj->as.match.ptr) free(obj->as.match.ptr);
 	break;
+      case T_FILE:
+	io_fptr_finalize(obj->as.file.fptr);
+	free(obj->as.file.fptr);
+	break;
       case T_ICLASS:
 	/* iClass shares table with the module */
+	break;
+
       case T_FLOAT:
       case T_VARMAP:
+      case T_TRUE:
+      case T_FALSE:
 	break;
+
       case T_BIGNUM:
-	free(obj->as.bignum.digits);
+	if (obj->as.bignum.digits) free(obj->as.bignum.digits);
 	break;
       case T_NODE:
-	if (nd_type(obj) == NODE_SCOPE && obj->as.node.nd_tbl) {
-	    free(obj->as.node.nd_tbl);
+	if (nd_type(obj) == NODE_SCOPE && obj->as.node.u1.tbl) {
+	    free(obj->as.node.u1.tbl);
 	}
 	return;			/* no need to free iv_tbl */
 
@@ -576,7 +589,7 @@ gc_mark_frame(frame)
     VALUE *tbl = frame->argv;
 
     while (n--) {
-	gc_mark(*tbl);
+	gc_mark_maybe(*tbl);
 	tbl++;
     }
 }
@@ -601,16 +614,21 @@ gc()
 	gc_mark_frame(frame);
     }
     gc_mark(the_scope);
+    gc_mark(the_dyna_vars);
 
     FLUSH_REGISTER_WINDOWS;
     /* This assumes that all registers are saved into the jmp_buf */
     setjmp(save_regs_gc_mark);
-    mark_locations((VALUE*)save_regs_gc_mark,
-		   (VALUE*)(((char*)save_regs_gc_mark)+sizeof(save_regs_gc_mark)));
-    mark_locations(stack_start_ptr, (VALUE*) &stack_end);
-#if defined(THINK_C)
-    mark_locations((VALUE*)((char*)stack_start_ptr + 2),
+    gc_mark_locations((VALUE*)save_regs_gc_mark,
+		      (VALUE*)(((char*)save_regs_gc_mark)+sizeof(save_regs_gc_mark)));
+    gc_mark_locations(gc_stack_start, (VALUE*) &stack_end);
+#ifdef THINK_C
+    gc_mark_locations((VALUE*)((char*)gc_stack_start + 2),
 		   (VALUE*)((char*)&stack_end + 2));
+#endif
+
+#ifdef THREAD
+    gc_mark_threads();
 #endif
 
     /* mark protected global variables */
@@ -631,7 +649,7 @@ init_stack()
 {
     VALUE start;
 
-    stack_start_ptr = &start;
+    gc_stack_start = &start;
 }
 
 void
@@ -641,12 +659,87 @@ init_heap()
     add_heap();
 }
 
+static VALUE
+os_live_obj(obj)
+    VALUE obj;
+{
+    int i;
+    int n = 0;
+
+    for (i = 0; i < heaps_used; i++) {
+	RVALUE *p, *pend;
+
+	p = heaps[i]; pend = p + HEAP_SLOTS;
+	for (;p < pend; p++) {
+	    if (p->as.basic.flags) {
+		switch (TYPE(p)) {
+		  case T_ICLASS:
+		  case T_VARMAP:
+		  case T_SCOPE:
+		  case T_NODE:
+		    continue;
+		  case T_CLASS:
+		    if (FL_TEST(p, FL_SINGLETON)) continue;
+		  default:
+		    rb_yield(p);
+		    n++;
+		}
+	    }
+	}
+    }
+
+    return INT2FIX(n);
+}
+
+static VALUE
+os_obj_of(obj, of)
+    VALUE obj, of;
+{
+    int i;
+    int n = 0;
+
+    for (i = 0; i < heaps_used; i++) {
+	RVALUE *p, *pend;
+
+	p = heaps[i]; pend = p + HEAP_SLOTS;
+	for (;p < pend; p++) {
+	    if (p->as.basic.flags) {
+		switch (TYPE(p)) {
+		  case T_ICLASS:
+		  case T_VARMAP:
+		  case T_SCOPE:
+		  case T_NODE:
+		    continue;
+		  case T_CLASS:
+		    if (FL_TEST(p, FL_SINGLETON)) continue;
+		  default:
+		    if (obj_is_kind_of(p, of)) {
+			rb_yield(p);
+			n++;
+		    }
+		}
+	    }
+	}
+    }
+
+    return INT2FIX(n);
+}
+
+extern VALUE cModule;
+
 void
 Init_GC()
 {
+    VALUE mObSpace;
+
     mGC = rb_define_module("GC");
     rb_define_singleton_method(mGC, "start", gc, 0);
     rb_define_singleton_method(mGC, "enable", gc_s_enable, 0);
     rb_define_singleton_method(mGC, "disable", gc_s_disable, 0);
     rb_define_method(mGC, "garbage_collect", gc, 0);
+
+    mObSpace = rb_define_module("ObjectSpace");
+    rb_define_module_function(mObSpace, "each_live_object", os_live_obj, 0);
+    rb_define_module_function(mObSpace, "each_object_of", os_obj_of, 1);
+    rb_define_module_function(mObSpace, "garbage_collect", gc, 0);
 }

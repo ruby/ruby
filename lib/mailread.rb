@@ -1,9 +1,8 @@
 class Mail
-
   def Mail.new(f)
-    if !f.is_kind_of?(IO)
+    unless f.kind_of?(IO)
       f = open(f, "r")
-      me = super
+      me = super(f)
       f.close
     else
       me = super
@@ -16,17 +15,18 @@ class Mail
     @body = []
     while f.gets()
       $_.chop!
-      continue if /^From /	# skip From-line  
+      next if /^From /		# skip From-line
       break if /^$/		# end of header
+
       if /^(\S+):\s*(.*)/
-	@header[attr = $1.capitalize] = $2
+	@header[attr = $1.capitalize!] = $2
       elsif attr
-	sub(/^\s*/, '')
+	sub!(/^\s*/, '')
 	@header[attr] += "\n" + $_
       end
     end
-
-    return if ! $_
+  
+    return unless $_
 
     while f.gets()
       break if /^From /
@@ -42,4 +42,7 @@ class Mail
     return @body
   end
 
+  def [](field)
+    @header[field]
+  end
 end

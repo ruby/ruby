@@ -21,6 +21,17 @@ then
 (it is also a good idea to do 'make clean' before compiling))
 fi
 
+dnl checks for thread
+rb_thread=yes
+AC_ARG_ENABLE(thread, [--disable-thread          never use user-level thread], [
+	rb_thread=$enableval
+])
+if test $rb_thread = yes; then
+  AC_DEFINE(THREAD)
+fi
+
+AC_CANONICAL_HOST
+
 dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_GCC_TRADITIONAL
@@ -29,19 +40,18 @@ AC_PROG_INSTALL
 AC_PROG_MAKE_SET
 
 # checks for UNIX variants that set C preprocessor variables
-AC_AIX
 AC_MINIX
 
 dnl Checks for libraries.
 AC_CHECK_LIB(crypt, crypt)
-AC_CHECK_LIB(dl, dlopen, [:])	# Dynamic linking for SunOS/Solaris and SYSV
+AC_CHECK_LIB(dl, dlopen)	# Dynamic linking for SunOS/Solaris and SYSV
 AC_CHECK_LIB(dld, shl_load)	# Dynamic linking for HP-UX
 
 dnl Checks for header files.
 AC_HEADER_DIRENT
 AC_HEADER_STDC
-AC_CHECK_HEADERS(limits.h sys/file.h sys/ioctl.h pwd.h\
-		 sys/time.h sys/times.h sys/param.h unistd.h\
+AC_CHECK_HEADERS(unistd.h limits.h sys/file.h sys/ioctl.h pwd.h sys/select.h\
+		 sys/time.h sys/times.h sys/param.h sys/wait.h\
 		 syscall.h a.out.h string.h utime.h memory.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
@@ -57,40 +67,75 @@ AC_TYPE_SIGNAL
 AC_FUNC_ALLOCA
 AC_FUNC_VFORK
 AC_REPLACE_FUNCS(dup2 setenv memmove mkdir strerror strftime\
-		 strstr strtoul strdup crypt)
+		 strstr strtoul strdup strcasecmp crypt flock)
 AC_CHECK_FUNCS(fmod killpg random wait4 waitpid syscall getcwd\
-	      truncate chsize times utimes fcntl\
+	      truncate chsize times utimes fcntl lockf setitimer\
 	      setruid seteuid setreuid setrgid setegid setregid\
-	      getgroups getpriority sigprocmask dlopen)
-if test "$ac_cv_func strftime" = no; then
+	      getgroups getpgid getpriority dlopen sigprocmask sigaction)
+if test "$ac_cv_func_strftime" = no; then
     AC_STRUCT_TIMEZONE
     AC_TRY_LINK([],
 	 [extern int daylight; int i = daylight;], AC_DEFINE(HAVE_DAYLIGHT))
 fi
 
+if test "$ac_cv_func_sigprocmask" = yes && test "$ac_cv_func_sigaction" = yes; then
+   AC_DEFINE(POSIX_SIGNAL)
+else
+  AC_MSG_CHECKING(for BSD signal semantics)
+  AC_CACHE_VAL(rb_cv_bsd_signal,
+  [AC_TRY_RUN([
+#include <stdio.h>
+#include <signal.h>
+
+void sig_handler(dummy)
+     int dummy;
+{
+}
+
+int main(argc, argv)
+     int argc;
+     char ** argv;
+{
+  signal(SIGINT, sig_handler);
+  kill(getpid(), SIGINT);
+  kill(getpid(), SIGINT);
+  return 0;
+}
+],
+	rb_cv_bsd_signal=yes,
+	rb_cv_bsd_signal=no,
+	[:])])
+  AC_MSG_RESULT($rb_cv_bsd_signal)
+  if test "$rb_cv_bsd_signal" = yes; then
+    AC_DEFINE(BSD_SIGNAL)
+  fi
+fi
+
 AC_C_BIGENDIAN
+AC_CHAR_UNSIGNED
 
 AC_MSG_CHECKING([count field in FILE structures])
 AC_CACHE_VAL(rb_cv_fcnt,
 [AC_TRY_COMPILE([#include <stdio.h>],
 	[FILE *f = stdin; f->_cnt = 0;], rb_cv_fcnt="_cnt", )
-if test "$rb_cv_fcnt=" = ""; then
+if test "$rb_cv_fcnt" = ""; then
     AC_TRY_COMPILE([#include <stdio.h>],
 	[FILE *f = stdin; f->__cnt = 0;], rb_cv_fcnt="__cnt", )
 fi
-if test "$rb_cv_fcnt=" = ""; then
+if test "$rb_cv_fcnt" = ""; then
     AC_TRY_COMPILE([#include <stdio.h>],
 	[FILE *f = stdin; f->_r = 0;], rb_cv_fcnt="_r", )
 fi
-if test "$rb_cv_fcnt=" = ""; then
+if test "$rb_cv_fcnt" = ""; then
     AC_TRY_COMPILE([#include <stdio.h>],
-	[FILE *f = stdin; f->readCount = 0;], rb_cv_fcnt="readCount", )
+	[FILE *f = stdin; f->readCount = 0;],
+	rb_cv_fcnt="readCount", rb_cv_fcnt="not found")
 fi])
-if test "$rb_cv_fcnt"; then
+if test "$rb_cv_fcnt" = "not found"; then
+  AC_MSG_RESULT([not found(OK if using GNU libc)])
+else
   AC_MSG_RESULT($rb_cv_fcnt)
   AC_DEFINE_UNQUOTED(FILE_COUNT, $rb_cv_fcnt)
-else
-  AC_MSG_RESULT([not found(OK if using GNU libc)])
 fi
 
 if test "$ac_cv_func_getpwent" = yes; then
@@ -105,31 +150,45 @@ if test "$ac_cv_func_getpwent" = yes; then
 fi
 
 dnl wheather use dln_a_out ot not
-AC_ARG_WITH(dln-a-out, [--with-dln-a-out     use dln_a_out if possible], [
+AC_ARG_WITH(dln-a-out, [--with-dln-a-out          use dln_a_out if possible], [
 	case $withval in
 	yes) with_dln_a_out=yes;;
 	*)   with_dln_a_out=no;;
 	esac], [with_dln_a_out=no])
 
-if test "$with_dln_a_out" = yes && test "$ac_cv_header_a_out_h" = yes; then
-
- AC_MSG_CHECKING(whether matz's dln works)
- cat confdefs.h > config.h
- AC_CACHE_VAL(rb_cv_dln_a_out,
- [AC_TRY_COMPILE([
-#define USE_DLN_A_OUT
-#include "dln.c"
+case "$host_os" in
+    linux*)
+  AC_MSG_CHECKING(whether ELF binaries are produced)
+  AC_CACHE_VAL(rb_cv_linux_elf,
+  [AC_TRY_RUN([
+/* Test for whether ELF binaries are produced */
+#include <fcntl.h>
+#include <stdlib.h>
+main() {
+	char buffer[4];
+	int i=open("conftest",O_RDONLY);
+	if(i==-1)
+		exit(1); /* fail */
+	if(read(i,&buffer[0],4)<4)
+		exit(1); /* fail */
+	if(buffer[0] != 127 || buffer[1] != 'E' ||
+           buffer[2] != 'L' || buffer[3] != 'F')
+		exit(1); /* fail */
+	exit(0); /* succeed (yes, it's ELF) */
+}
 ],
-	        [], 
-	        rb_cv_dln_a_out=yes,
-	        rb_cv_dln_a_out=no)])
- AC_MSG_RESULT($rb_cv_dln_a_out)
- if test "$rb_cv_dln_a_out" = yes; then
-   AC_DEFINE(USE_DLN_A_OUT)
- fi
-else
-  rb_cv_dln_a_out=no
-fi
+	rb_cv_linux_elf=yes,
+	rb_cv_linux_elf=no,
+	[:])])
+  AC_MSG_RESULT($rb_cv_linux_elf)
+  if test "$rb_cv_linux_elf" = no; then
+    with_dln_a_out=yes
+  else
+    LDFLAGS="-rdynamic"
+  fi;;
+esac
+
+AC_SUBST(DLDFLAGS)dnl
 
 AC_SUBST(STATIC)dnl
 AC_SUBST(CCDLFLAGS)dnl
@@ -138,27 +197,9 @@ AC_SUBST(DLEXT)dnl
 
 STATIC=
 
-if test "$rb_cv_dln_a_out" = yes; then
-  if test "$GCC" = yes; then
-    STATIC=-static
-  else
-    STATIC=-Bstatic
-  fi
-  DLEXT=o
-  AC_DEFINE(DLEXT, ".o")
-  CCDLFLAGS=
-  LDCMD=
-
-else
-
-  AC_CANONICAL_HOST
-  case "$host_os" in
-    hpux*)	DLEXT=sl
-	 	AC_DEFINE(DLEXT, ".sl");;
-    *)		DLEXT=so
-    		AC_DEFINE(DLEXT, ".so");;
-  esac
-
+if test "$with_dln_a_out" != yes; then
+  rb_cv_dlopen=unknown
+  AC_MSG_CHECKING(whether OS depend dynamic link works)
   if test "$GCC" = yes; then
     CCDLFLAGS=-fpic
   else
@@ -172,20 +213,97 @@ else
   fi
 
   case "$host_os" in
-	hpux*)		LDSHARED='ld -b' ;;
-	solaris*) 	LDSHARED='ld -G' ;;
-	sunos*) 	LDSHARED='ld -assert nodefinitions' ;;
-	svr4*|esix*) 	LDSHARED="ld -G" ;;
-	linux*) 	LDSHARED="gcc-elf -shared" ;;
+	hpux*)		DLDFLAGS="-E"
+			LDSHARED='ld -b'
+			LDFLAGS="-Wl,-E"
+			rb_cv_dlopen=yes;;
+	solaris*) 	LDSHARED='ld -G'
+			rb_cv_dlopen=yes;;
+	sunos*) 	LDSHARED='ld -assert nodefinitions'
+			rb_cv_dlopen=yes;;
+	svr4*|esix*) 	LDSHARED="ld -G"
+			rb_cv_dlopen=yes ;;
+	linux*) 	LDSHARED="gcc -shared"
+			rb_cv_dlopen=yes ;;
+	freebsd*) 	LDSHARED="ld -Bshareable"
+			rb_cv_dlopen=yes ;;
 	*) 		LDSHARED='ld' ;;
+  esac
+  AC_MSG_RESULT($rb_cv_dlopen)
+fi
+
+dln_a_out_works=no
+if test "$ac_cv_header_a_out_h" = yes; then
+  if test "$with_dln_a_out" = yes || test "$rb_cv_dlopen" = unknown; then
+    AC_MSG_CHECKING(whether matz's dln works)
+    cat confdefs.h > config.h
+    AC_CACHE_VAL(rb_cv_dln_a_out,
+    [AC_TRY_COMPILE([
+#define USE_DLN_A_OUT
+#include "dln.c"
+],
+	[], 
+	rb_cv_dln_a_out=yes,
+	rb_cv_dln_a_out=no)])
+    AC_MSG_RESULT($rb_cv_dln_a_out)
+    if test "$rb_cv_dln_a_out" = yes; then
+      dln_a_out_works=yes
+      AC_DEFINE(USE_DLN_A_OUT)
+    fi
+  fi
+fi
+
+if test "$dln_a_out_works" = yes; then
+  if test "$GCC" = yes; then
+    STATIC=-static
+  else
+    STATIC=-Bstatic
+  fi
+  DLEXT=o
+  AC_DEFINE(DLEXT, ".o")
+  CCDLFLAGS=
+else
+  case "$host_os" in
+    hpux*)	DLEXT=sl
+	 	AC_DEFINE(DLEXT, ".sl");;
+    nextstep*)	DLEXT=o
+	 	AC_DEFINE(DLEXT, ".o");;
+    *)		DLEXT=so
+    		AC_DEFINE(DLEXT, ".so");;
   esac
 fi
 
-if test "$prefix" = NONE; then
-  AC_DEFINE_UNQUOTED(RUBY_LIB, ".:${ac_default_prefix}/lib/ruby")
+AC_SUBST(STRIP)dnl
+if test "$with_dln_a_out" = yes; then
+  STRIP=true
 else
-  AC_DEFINE_UNQUOTED(RUBY_LIB, ".:${prefix}/lib/ruby")
+  STRIP=strip
 fi
+
+case "$host_os" in
+  linux*)
+	STRIP='strip -S -x';;
+  nextstep*)
+	STRIP='strip -A -n';;
+esac
+
+EXTSTATIC=
+AC_SUBST(EXTSTATIC)dnl
+AC_ARG_WITH(static-linked-ext,
+	    [--with-static-linked-ext  link external modules statically],
+            [case $withval in
+	     yes) STATIC=
+		  EXTSTATIC=static;;
+	     *)	;;
+	     esac])
+
+if test "$prefix" = NONE; then
+  prefix=$ac_default_prefix
+fi
+AC_DEFINE_UNQUOTED(RUBY_LIB, "${prefix}/lib/ruby:.")
+AC_SUBST(archlib)dnl
+archlib="${prefix}/lib/ruby/${host_cpu}-${host_os}"
+AC_DEFINE_UNQUOTED(RUBY_ARCHLIB, "$archlib")
 
 echo "creating config.h"
 cat confdefs.h > config.h

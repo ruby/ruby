@@ -6,7 +6,7 @@
   $Date: 1995/01/10 10:42:59 $
   created at: Fri Oct 15 10:39:26 JST 1993
 
-  Copyright (C) 1993-1995 Yukihiro Matsumoto
+  Copyright (C) 1993-1996 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -51,7 +51,7 @@ f_sprintf(argc, argv)
 }
 
 #define GETARG() \
-    ((argc == 0)?Fail("too few argument."),0:(argc--, (argv++)[0]))
+    ((argc == 0)?(ArgError("too few argument."),0):(argc--,((argv++)[0])))
 
     fmt = (struct RString*)GETARG();
     Check_Type(fmt, T_STRING);
@@ -77,9 +77,9 @@ f_sprintf(argc, argv)
 	switch (*p) {
 	  default:
 	    if (isprint(*p))
-		Fail("malformed format string - %%%c", *p);
+		ArgError("malformed format string - %%%c", *p);
 	    else
-		Fail("malformed format string");
+		ArgError("malformed format string");
 	    break;
 
 	  case ' ':
@@ -114,13 +114,13 @@ f_sprintf(argc, argv)
 		width = 10 * width + (*p - '0');
 	    }
 	    if (p >= end) {
-		Fail("malformed format string - %%[0-9]");
+		ArgError("malformed format string - %%[0-9]");
 	    }
 	    goto retry;
 
 	  case '*':
 	    if (flags & FWIDTH) {
-		Fail("width given twice");
+		ArgError("width given twice");
 	    }
 
 	    flags |= FWIDTH;
@@ -135,7 +135,7 @@ f_sprintf(argc, argv)
 
 	  case '.':
 	    if (flags & FPREC) {
-		Fail("precision given twice");
+		ArgError("precision given twice");
 	    }
 
 	    prec = 0;
@@ -154,12 +154,15 @@ f_sprintf(argc, argv)
 		prec = 10 * prec + (*p - '0');
 	    }
 	    if (p >= end) {
-		Fail("malformed format string - %%.[0-9]");
+		ArgError("malformed format string - %%.[0-9]");
 	    }
 	    if (prec > 0)
 		flags |= FPREC;
 	    goto retry;
 
+	  case '\n':
+	    p--;
+	  case '\0':
 	  case '%':
 	    PUSH("%", 1);
 	    break;
@@ -220,33 +223,61 @@ f_sprintf(argc, argv)
 	  case 'x':
 	    {
 		VALUE val = GETARG();
-		char fbuf[32], *s, *t, *end;
-		int v, base;
+		char fbuf[32], nbuf[64], *s, *t, *end;
+		int v, base, bignum = 0;
 
 	      bin_retry:
 		switch (TYPE(val)) {
 		  case T_FIXNUM:
 		    v = FIX2INT(val);
-		    val = int2big(v);
 		    break;
 		  case T_FLOAT:
-		    v = RFLOAT(val)->value;
-		    val = int2big(v);
+		    val = dbl2big(RFLOAT(val)->value);
+		    bignum = 1;
 		    break;
 		  case T_STRING:
 		    val = str2inum(RSTRING(val)->ptr, 0);
 		    goto bin_retry;
 		  case T_BIGNUM:
-		    val = big_clone(val);
+		    bignum = 1;
 		    break;
 		  default:
-		    WrongType(val, T_FIXNUM);
+		    Check_Type(val, T_FIXNUM);
 		    break;
+		}
+
+		if (!bignum) {
+		    if (*p == 'b' || *p == 'B') {
+			val = int2big(v);
+		    }
+		    else {
+			int len;
+
+			fmt_setup(fbuf, *p, flags, width, prec);
+			sprintf(nbuf, fbuf, v);
+			len = strlen(nbuf);
+
+			if (flags&FPREC) {
+			    CHECK(prec);
+			}
+			else if ((flags&FWIDTH) && width > len) {
+			    CHECK(width);
+			}
+			else {
+			    CHECK(len);
+			}
+			memcpy(&buf[blen], nbuf, len);
+			blen += len;
+			break;
+		    }
 		}
 		if (*p == 'x') base = 16;
 		else if (*p == 'o') base = 8;
 		else if (*p == 'b' || *p == 'B') base = 2;
-		if (*p != 'B' && !RBIGNUM(val)->sign) big_2comp(val);
+		if (*p != 'B' && !RBIGNUM(val)->sign) {
+		    val = big_clone(val);
+		    big_2comp(val);
+		}
 		val = big2str(val, base);
 		fmt_setup(fbuf, 's', flags, width, prec);
 
@@ -284,6 +315,11 @@ f_sprintf(argc, argv)
 		    }
 		    while (t<end) *s++ = *t++;
 		    *s = '\0';
+		}
+		else if (flags & FZERO) {
+		    while (*s == ' ') {
+			*s++ = '0';
+		    }
 		}
 		s  = RSTRING(val)->ptr;
 		if (flags&FPREC) {
@@ -387,7 +423,7 @@ f_sprintf(argc, argv)
 		    fval = atof(RSTRING(val)->ptr);
 		    break;
 		  default:
-		    WrongType(val, T_FLOAT);
+		    Check_Type(val, T_FLOAT);
 		    break;
 		}
 
@@ -404,7 +440,7 @@ f_sprintf(argc, argv)
 
   sprint_exit:
     if (verbose && argc > 1) {
-	Fail("too many argument for format string");
+	ArgError("too many argument for format string");
     }
     result = str_new(buf, blen);
     free(buf);

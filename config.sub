@@ -1,9 +1,9 @@
 #! /bin/sh
 # Configuration validation subroutine script, version 1.1.
-#   Copyright (C) 1991, 1992, 1993, 1994, 1995 Free Software Foundation, Inc.
+#   Copyright (C) 1991, 92, 93, 94, 95, 1996 Free Software Foundation, Inc.
 # This file is (in principle) common to ALL GNU software.
 # The presence of a machine in this file suggests that SOME GNU software
-# can handle that machine.  It does not imply ALL GNU software can. 
+# can handle that machine.  It does not imply ALL GNU software can.
 #
 # This file is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,7 +17,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+# Foundation, Inc., 59 Temple Place - Suite 330,
+# Boston, MA 02111-1307, USA.
 
 # As a special exception to the GNU General Public License, if you
 # distribute this file as part of a program that contains a
@@ -40,6 +41,8 @@
 # The goal of this file is to map all the various variations of a given
 # machine specification into a single specification in the form:
 #	CPU_TYPE-MANUFACTURER-OPERATING_SYSTEM
+# or in some cases, the newer four-part form:
+#	CPU_TYPE-MANUFACTURER-KERNEL-OPERATING_SYSTEM
 # It is wrong to echo any other type of specification.
 
 if [ x$1 = x ]
@@ -61,11 +64,21 @@ case $1 in
 	;;
 esac
 
-# Separate what the user gave into CPU-COMPANY and OS (if any).
-basic_machine=`echo $1 | sed 's/-[^-]*$//'`
-if [ $basic_machine != $1 ]
-then os=`echo $1 | sed 's/.*-/-/'`
-else os=; fi
+# Separate what the user gave into CPU-COMPANY and OS or KERNEL-OS (if any).
+# Here we must recognize all the valid KERNEL-OS combinations.
+maybe_os=`echo $1 | sed 's/^\(.*\)-\([^-]*-[^-]*\)$/\2/'`
+case $maybe_os in
+  linux-gnu*)
+    os=-$maybe_os
+    basic_machine=`echo $1 | sed 's/^\(.*\)-\([^-]*-[^-]*\)$/\1/'`
+    ;;
+  *)
+    basic_machine=`echo $1 | sed 's/-[^-]*$//'`
+    if [ $basic_machine != $1 ]
+    then os=`echo $1 | sed 's/.*-/-/'`
+    else os=; fi
+    ;;
+esac
 
 ### Let's recognize common machines as not being operating systems so
 ### that things like config.sub decstation-3100 work.  We also
@@ -80,38 +93,43 @@ case $os in
 	-unicom* | -ibm* | -next | -hp | -isi* | -apollo | -altos* | \
 	-convergent* | -ncr* | -news | -32* | -3600* | -3100* | -hitachi* |\
 	-c[123]* | -convex* | -sun | -crds | -omron* | -dg | -ultra | -tti* | \
-	-harris | -dolphin | -highlevel | -gould | -cbm | -ns | -masscomp )
+	-harris | -dolphin | -highlevel | -gould | -cbm | -ns | -masscomp | \
+	-apple)
 		os=
 		basic_machine=$1
 		;;
 	-hiux*)
 		os=-hiuxwe2
 		;;
+	-sco5)
+		os=sco3.2v5
+		basic_machine=`echo $1 | sed -e 's/86-.*/86-pc/'`
+		;;
 	-sco4)
 		os=-sco3.2v4
-		basic_machine=`echo $1 | sed -e 's/86-.*/86-unknown/'`
+		basic_machine=`echo $1 | sed -e 's/86-.*/86-pc/'`
 		;;
 	-sco3.2.[4-9]*)
 		os=`echo $os | sed -e 's/sco3.2./sco3.2v/'`
-		basic_machine=`echo $1 | sed -e 's/86-.*/86-unknown/'`
+		basic_machine=`echo $1 | sed -e 's/86-.*/86-pc/'`
 		;;
 	-sco3.2v[4-9]*)
 		# Don't forget version if it is 3.2v4 or newer.
-		basic_machine=`echo $1 | sed -e 's/86-.*/86-unknown/'`
+		basic_machine=`echo $1 | sed -e 's/86-.*/86-pc/'`
 		;;
 	-sco*)
 		os=-sco3.2v2
-		basic_machine=`echo $1 | sed -e 's/86-.*/86-unknown/'`
+		basic_machine=`echo $1 | sed -e 's/86-.*/86-pc/'`
 		;;
 	-isc)
 		os=-isc2.2
-		basic_machine=`echo $1 | sed -e 's/86-.*/86-unknown/'`
+		basic_machine=`echo $1 | sed -e 's/86-.*/86-pc/'`
 		;;
 	-clix*)
 		basic_machine=clipper-intergraph
 		;;
 	-isc*)
-		basic_machine=`echo $1 | sed -e 's/86-.*/86-unknown/'`
+		basic_machine=`echo $1 | sed -e 's/86-.*/86-pc/'`
 		;;
 	-lynx*)
 		os=-lynxos
@@ -122,33 +140,43 @@ case $os in
 	-windowsnt*)
 		os=`echo $os | sed -e 's/windowsnt/winnt/'`
 		;;
+	-psos*)
+		os=-psos
+		;;
 esac
 
 # Decode aliases for certain CPU-COMPANY combinations.
 case $basic_machine in
 	# Recognize the basic CPU types without company name.
 	# Some are omitted here because they have special meanings below.
-	tahoe | i[345]86 | i860 | m68k | m68000 | m88k | ns32k | arm | pyramid \
+	tahoe | i860 | m68k | m68000 | m88k | ns32k | arm \
+		| arme[lb] | pyramid \
 		| tron | a29k | 580 | i960 | h8300 | hppa1.0 | hppa1.1 \
-		| alpha | we32k | ns16k | clipper | sparclite | i370 | sh \
-		| powerpc | sparc64 | 1750a | dsp16xx | mips64 | mipsel \
+		| alpha | we32k | ns16k | clipper | i370 | sh \
+		| powerpc | powerpcle | 1750a | dsp16xx | mips64 | mipsel \
 		| pdp11 | mips64el | mips64orion | mips64orionel \
-		| sparc)
-		basic_machine=$basic_machine-unknown
-		;;
+		| sparc | sparclet | sparclite | sparc64)
+	  basic_machine=$basic_machine-unknown
+	  ;;
+	# We use `pc' rather than `unknown'
+	# because (1) that's what they normally are, and
+	# (2) the word "unknown" tends to confuse beginning users.
+	i[3456]86)
+	  basic_machine=$basic_machine-pc
+	  ;;
 	# Object if more than one company name word.
 	*-*-*)
-		echo Invalid configuration \`$1\': machine \`$basic_machine\' not recognized 1>&2
-		exit 1
+	  echo Invalid configuration \`$1\': machine \`$basic_machine\' not recognized 1>&2
+	  exit 1
 		;;
 	# Recognize the basic CPU types with company name.
-	vax-* | tahoe-* | i[345]86-* | i860-* | m68k-* | m68000-* | m88k-* \
+	vax-* | tahoe-* | i[3456]86-* | i860-* | m68k-* | m68000-* | m88k-* \
 	      | sparc-* | ns32k-* | fx80-* | arm-* | c[123]* \
-	      | mips-* | pyramid-* | tron-* | a29k-* | romp-* | rs6000-* \
+	      | mips-* | pyramid-* | tron-* | a29k-* | romp-* | rs6000-* | power-* \
 	      | none-* | 580-* | cray2-* | h8300-* | i960-* | xmp-* | ymp-* \
 	      | hppa1.0-* | hppa1.1-* | alpha-* | we32k-* | cydra-* | ns16k-* \
 	      | pn-* | np1-* | xps100-* | clipper-* | orion-* | sparclite-* \
-	      | pdp11-* | sh-* | powerpc-* | sparc64-* | mips64-* | mipsel-* \
+	      | pdp11-* | sh-* | powerpc-* | powerpcle-* | sparc64-* | mips64-* | mipsel-* \
 	      | mips64el-* | mips64orion-* | mips64orionel-*)
 		;;
 	# Recognize the various machine names and aliases which stand
@@ -188,6 +216,10 @@ case $basic_machine in
 		basic_machine=m68k-apollo
 		os=-sysv
 		;;
+	aux)
+		basic_machine=m68k-apple
+		os=-aux
+		;;
 	balance)
 		basic_machine=ns32k-sequent
 		os=-dynix
@@ -218,6 +250,10 @@ case $basic_machine in
 		;;
 	cray2)
 		basic_machine=cray2-cray
+		os=-unicos
+		;;
+	[ctj]90-cray)
+		basic_machine=c90-cray
 		os=-unicos
 		;;
 	crds | unos)
@@ -255,6 +291,10 @@ case $basic_machine in
 		;;
 	encore | umax | mmax)
 		basic_machine=ns32k-encore
+		;;
+	ews4800)
+		basic_machine=mips-nec
+		os=-sysv4
 		;;
 	fx2800)
 		basic_machine=i860-alliant
@@ -306,20 +346,20 @@ case $basic_machine in
 		os=-mvs
 		;;
 # I'm not sure what "Sysv32" means.  Should this be sysv3.2?
-	i[345]86v32)
-		basic_machine=`echo $1 | sed -e 's/86.*/86-unknown/'`
+	i[3456]86v32)
+		basic_machine=`echo $1 | sed -e 's/86.*/86-pc/'`
 		os=-sysv32
 		;;
-	i[345]86v4*)
-		basic_machine=`echo $1 | sed -e 's/86.*/86-unknown/'`
+	i[3456]86v4*)
+		basic_machine=`echo $1 | sed -e 's/86.*/86-pc/'`
 		os=-sysv4
 		;;
-	i[345]86v)
-		basic_machine=`echo $1 | sed -e 's/86.*/86-unknown/'`
+	i[3456]86v)
+		basic_machine=`echo $1 | sed -e 's/86.*/86-pc/'`
 		os=-sysv
 		;;
-	i[345]86sol2)
-		basic_machine=`echo $1 | sed -e 's/86.*/86-unknown/'`
+	i[3456]86sol2)
+		basic_machine=`echo $1 | sed -e 's/86.*/86-pc/'`
 		os=-solaris2
 		;;
 	iris | iris4d)
@@ -417,13 +457,40 @@ case $basic_machine in
         pc532 | pc532-*)
 		basic_machine=ns32k-pc532
 		;;
-	pentium-*)
-		# We will change tis to say i586 once there has been
-		# time for various packages to start to recognize that.
-		basic_machine=i486-`echo $basic_machine | sed 's/^[^-]*-//'`
+	pentium | p5)
+		basic_machine=i586-intel
+		;;
+	pentiumpro | p6)
+		basic_machine=i686-intel
+		;;
+	pentium-* | p5-*)
+		basic_machine=i586-`echo $basic_machine | sed 's/^[^-]*-//'`
+		;;
+	pentiumpro-* | p6-*)
+		basic_machine=i686-`echo $basic_machine | sed 's/^[^-]*-//'`
+		;;
+	k5)
+		# We don't have specific support for AMD's K5 yet, so just call it a Pentium
+		basic_machine=i586-amd
+		;;
+	nexen)
+		# We don't have specific support for Nexgen yet, so just call it a Pentium
+		basic_machine=i586-nexgen
 		;;
 	pn)
 		basic_machine=pn-gould
+		;;
+	power)	basic_machine=rs6000-ibm
+		;;
+	ppc)	basic_machine=powerpc-unknown
+	        ;;
+	ppc-*)	basic_machine=powerpc-`echo $basic_machine | sed 's/^[^-]*-//'`
+		;;
+	ppcle | powerpclittle | ppc-le | powerpc-little)
+		basic_machine=powerpcle-unknown
+	        ;;
+	ppcle-* | powerpclittle-*)
+		basic_machine=powerpcle-`echo $basic_machine | sed 's/^[^-]*-//'`
 		;;
 	ps2)
 		basic_machine=i386-ibm
@@ -519,6 +586,10 @@ case $basic_machine in
 		basic_machine=m68k-wrs
 		os=-vxworks
 		;;
+	vxworks29k)
+		basic_machine=a29k-wrs
+		os=-vxworks
+		;;
 	xmp)
 		basic_machine=xmp-cray
 		os=-unicos
@@ -586,6 +657,8 @@ esac
 if [ x"$os" != x"" ]
 then
 case $os in
+        # First match some system type aliases
+        # that might get confused with valid system types.
 	# -solaris* is a basic system type, with this one exception.
 	-solaris1 | -solaris1.*)
 		os=`echo $os | sed -e 's|solaris1|sunos4|'`
@@ -597,21 +670,25 @@ case $os in
 		os=-sysv4
 		;;
 	-gnu/linux*)
-		os=`echo $os | sed -e 's|gnu/linux|linux|'`
+		os=`echo $os | sed -e 's|gnu/linux|linux-gnu|'`
 		;;
 	# First accept the basic system types.
 	# The portable systems comes first.
-	# Each alternative must end in a *, to match a version number.
+	# Each alternative MUST END IN A *, to match a version number.
 	# -sysv* is not here because it comes later, after sysvr4.
 	-gnu* | -bsd* | -mach* | -minix* | -genix* | -ultrix* | -irix* \
-	      | -vms* | -sco* | -esix* | -isc* | -aix* | -sunos | -sunos[345]* \
+	      | -*vms* | -sco* | -esix* | -isc* | -aix* | -sunos | -sunos[34]*\
 	      | -hpux* | -unos* | -osf* | -luna* | -dgux* | -solaris* | -sym* \
-	      | -amigados* | -msdos* | -newsos* | -unicos* | -aos* \
+	      | -amigados* | -msdos* | -newsos* | -unicos* | -aof* | -aos* \
 	      | -nindy* | -vxworks* | -ebmon* | -hms* | -mvs* | -clix* \
-	      | -riscos* | -linux* | -uniplus* | -iris* | -rtu* | -xenix* \
+	      | -riscos* | -uniplus* | -iris* | -rtu* | -xenix* \
 	      | -hiux* | -386bsd* | -netbsd* | -freebsd* | -riscix* \
 	      | -lynxos* | -bosx* | -nextstep* | -cxux* | -aout* | -elf* \
-	      | -ptx* | -coff* | -ecoff* | -winnt* | -domain* | -vsta | -udi | -eabi)
+	      | -ptx* | -coff* | -ecoff* | -winnt* | -domain* | -vsta* \
+	      | -udi* | -eabi* | -lites* | -ieee* | -go32* | -aux* \
+	      | -cygwin32* | -pe* | -psos* | -moss* | -proelf* \
+	      | -linux*)
+	# Remember, each alternative MUST END IN *, to match a version number.
 		;;
 	-sunos5*)
 		os=`echo $os | sed -e 's|sunos5|solaris2|'`
@@ -636,6 +713,9 @@ case $os in
 		;;
 	-ctix* | -uts*)
 		os=-sysv
+		;;
+	-ns2 )
+	        os=-nextstep2
 		;;
 	# Preserve the version number of sinix5.
 	-sinix5.*)
@@ -690,6 +770,9 @@ case $basic_machine in
 	*-acorn)
 		os=-riscix1.2
 		;;
+	arm*-semi)
+		os=-aout
+		;;
         pdp11-*)
 		os=-none
 		;;
@@ -740,6 +823,9 @@ case $basic_machine in
 		;;
 	m88k-omron*)
 		os=-luna
+		;;
+	*-next )
+		os=-nextstep
 		;;
 	*-sequent)
 		os=-ptx
@@ -824,6 +910,9 @@ case $basic_machine in
 				;;
 			-vxworks*)
 				vendor=wrs
+				;;
+			-aux*)
+				vendor=apple
 				;;
 		esac
 		basic_machine=`echo $basic_machine | sed "s/unknown/$vendor/"`

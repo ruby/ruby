@@ -2,4 +2,3 @@ MANIFEST
 depend
 extconf.rb
 socket.c
-socket.doc

@@ -6,7 +6,7 @@
   $Date: 1995/01/10 10:42:42 $
   created at: Fri Aug 13 18:33:09 JST 1993
 
-  Copyright (C) 1993-1995 Yukihiro Matsumoto
+  Copyright (C) 1993-1996 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -21,26 +21,40 @@ VALUE cFloat;
 VALUE cInteger;
 VALUE cFixnum;
 
+VALUE eZeroDiv;
+
 ID rb_frame_last_func();
+VALUE float_new();
 double big2dbl();
 
-VALUE
-float_new(d)
-    double d;
+void
+num_zerodiv()
 {
-    NEWOBJ(flt, struct RFloat);
-    OBJSETUP(flt, cFloat, T_FLOAT);
-
-    flt->value = d;
-    return (VALUE)flt;
+    rb_raise(exc_new(eZeroDiv, "divided by 0"));
 }
 
 static VALUE
+num_coerce(x, y)
+    VALUE x, y;
+{
+    return assoc_new(f_float(x,x),f_float(y,y));
+}
+
+VALUE
 num_coerce_bin(x, y)
     VALUE x, y;
 {
-    return rb_funcall(rb_funcall(y, coerce, 1, x),
-		      rb_frame_last_func(), 1, y);
+    VALUE ary;
+
+    ary = rb_funcall(y, coerce, 1, x);
+    if (TYPE(ary) != T_ARRAY || RARRAY(ary)->len != 2) {
+	TypeError("coerce must return [x, y]");
+    }
+
+    x = RARRAY(ary)->ptr[0];
+    y = RARRAY(ary)->ptr[1];
+
+    return rb_funcall(x, rb_frame_last_func(), 1, y);
 }
 
 static VALUE
@@ -54,81 +68,17 @@ static VALUE
 num_uminus(num)
     VALUE num;
 {
-    return rb_funcall(rb_funcall(num, coerce, 1, INT2FIX(0)), 1, num);
-}
+    VALUE ary, x, y;
 
-static VALUE
-num_next(num)
-    VALUE num;
-{
-    num = rb_funcall(num, rb_intern("to_i"), 0);
-    return rb_funcall(num, '+', 1, INT2FIX(1));
-}
-
-VALUE
-num_upto(from, to)
-    VALUE from, to;
-{
-    int i, end;
-
-    end = NUM2INT(to);
-    for (i = NUM2INT(from); i <= end; i++) {
-	rb_yield(INT2FIX(i));
+    ary = rb_funcall(num, coerce, 1, INT2FIX(0));
+    if (TYPE(ary) != T_ARRAY || RARRAY(ary)->len != 2) {
+	TypeError("coerce must return [x, y]");
     }
 
-    return from;
-}
+    x = RARRAY(ary)->ptr[0];
+    y = RARRAY(ary)->ptr[1];
 
-static VALUE
-num_downto(from, to)
-    VALUE from, to;
-{
-    int i, end;
-
-    end = NUM2INT(to);
-    for (i=NUM2INT(from); i >= end; i--) {
-	rb_yield(INT2FIX(i));
-    }
-
-    return from;
-}
-
-static VALUE
-num_step(from, to, step)
-    VALUE from, to, step;
-{
-    int i, end, diff;
-
-    end = NUM2INT(to);
-    diff = NUM2INT(step);
-
-    if (diff == 0) {
-	Fail("step cannot be 0");
-    }
-    else if (diff > 0) {
-	for (i=NUM2INT(from); i <= end; i+=diff) {
-	    rb_yield(INT2FIX(i));
-	}
-    }
-    else {
-	for (i=NUM2INT(from); i >= end; i+=diff) {
-	    rb_yield(INT2FIX(i));
-	}
-    }
-    return from;
-}
-
-static VALUE
-num_dotimes(num)
-    VALUE num;
-{
-    int i, end;
-
-    end = NUM2INT(num);
-    for (i=0; i<end; i++) {
-	rb_yield(INT2FIX(i));
-    }
-    return num;
+    return rb_funcall(x, '-', 1, y);
 }
 
 static VALUE
@@ -170,12 +120,45 @@ num_chr(num)
 }
 
 static VALUE
+num_abs(num)
+    VALUE num;
+{
+    if (RTEST(rb_funcall(num, '<', 1, INT2FIX(0)))) {
+	return rb_funcall(num, rb_intern("-@"), 0);
+    }
+    return num;
+}
+
+VALUE
+float_new(d)
+    double d;
+{
+    NEWOBJ(flt, struct RFloat);
+    OBJSETUP(flt, cFloat, T_FLOAT);
+
+    flt->value = d;
+    return (VALUE)flt;
+}
+
+static VALUE
 flo_to_s(flt)
     struct RFloat *flt;
 {
     char buf[32];
 
     sprintf(buf, "%g", flt->value);
+    if (index(buf, '.') == 0) {
+	int len = strlen(buf);
+
+	if (len > 1 && buf[1] == 'e') {
+	    memmove(buf+3, buf+1, len-1);
+	    buf[1] = '.';
+	    buf[2] = '0';
+	}
+	else {
+	    strcat(buf, ".0");
+	}
+    }
 
     return str_new2(buf);
 }
@@ -184,18 +167,7 @@ static VALUE
 flo_coerce(x, y)
     VALUE x, y;
 {
-    switch (TYPE(y)) {
-      case T_FIXNUM:
-	return float_new((double)FIX2INT(y));
-      case T_FLOAT:
-	return y;
-      case T_BIGNUM:
-	return big_to_f(y);
-      default:
-	Fail("can't coerce %s to Float", rb_class2name(CLASS_OF(y)));
-    }
-    /* not reached */
-    return Qnil;
+    return assoc_new(f_float(x, y), x);
 }
 
 static VALUE
@@ -267,14 +239,14 @@ flo_div(x, y)
     switch (TYPE(y)) {
       case T_FIXNUM:
 	f_y = FIX2INT(y);
-	if (f_y == 0) Fail("devided by 0");
+	if (f_y == 0) num_zerodiv();
 	return float_new(x->value / (double)f_y);
       case T_BIGNUM:
 	d = big2dbl(y);
-	if (d == 0.0) Fail("devided by 0");
-	return float_new(x->value + d);
+	if (d == 0.0) num_zerodiv();
+	return float_new(x->value / d);
       case T_FLOAT:
-	if (y->value == 0.0) Fail("devided by 0");
+	if (y->value == 0.0) num_zerodiv();
 	return float_new(x->value / y->value);
       default:
 	return num_coerce_bin(x, y);
@@ -333,30 +305,21 @@ flo_pow(x, y)
     }
 }
 
-struct xy {
+static VALUE
+num_eql(x, y)
     VALUE x, y;
-};
-
-static VALUE
-eq(arg)
-    struct xy *arg;
 {
-    return rb_funcall(arg->y, rb_intern("=="), 1, arg->x);
+    if (TYPE(x) != TYPE(y)) return FALSE;
+
+    return rb_equal(x, y);
 }
 
-static VALUE
-eq_rescue()
-{
-    return FALSE;
-}
 
 static VALUE
 num_equal(x, y)
     VALUE x, y;
 {
-    struct xy arg;
-    arg.x = x; arg.y = y;
-    return rb_rescue(eq, &arg, eq_rescue, Qnil);
+    return rb_equal(y, x);
 }
 
 static VALUE
@@ -364,13 +327,11 @@ flo_eq(x, y)
     struct RFloat *x, *y;
 {
     switch (TYPE(y)) {
-      case T_NIL:
-	return Qnil;
       case T_FIXNUM:
 	if (x->value == FIX2INT(y)) return TRUE;
 	return FALSE;
       case T_BIGNUM:
-	return float_new(x->value == big2dbl(y));
+	return (x->value == big2dbl(y))?TRUE:FALSE;
       case T_FLOAT:
 	return (x->value == y->value)?TRUE:FALSE;
       default:
@@ -463,14 +424,15 @@ static VALUE
 fail_to_integer(val)
     VALUE val;
 {
-    Fail("failed to convert %s into integer", rb_class2name(CLASS_OF(val)));
+    TypeError("failed to convert %s into Integer",
+	      rb_class2name(CLASS_OF(val)));
 }
 
 int
 num2int(val)
     VALUE val;
 {
-    if (val == Qnil) return 0;
+    if (NIL_P(val)) return 0;
 
     switch (TYPE(val)) {
       case T_FIXNUM:
@@ -483,7 +445,6 @@ num2int(val)
 	}
 	else {
 	    Fail("float %g out of rang of integer", RFLOAT(val)->value);
-	    return Qnil;	/* not reached */
 	}
 
       case T_BIGNUM:
@@ -501,7 +462,7 @@ num2fix(val)
 {
     int v;
 
-    if (val == Qnil) return INT2FIX(0);
+    if (NIL_P(val)) return INT2FIX(0);
     switch (TYPE(val)) {
       case T_FIXNUM:
 	return val;
@@ -511,7 +472,7 @@ num2fix(val)
       default:
 	v = num2int(val);
 	if (!FIXABLE(v))
-	    Fail("integer %d out of rang of Fixnum", v);
+	    Fail("integer %d out of range of Fixnum", v);
 	return INT2FIX(v);
     }
 }
@@ -521,6 +482,13 @@ int_int_p(num)
     VALUE num;
 {
     return TRUE;
+}
+
+static VALUE
+int_succ(num)
+    VALUE num;
+{
+    return rb_funcall(num, '+', 1, INT2FIX(1));
 }
 
 static VALUE
@@ -541,7 +509,7 @@ fix2str(x, base)
     if (base == 10) fmt[1] = 'd';
     else if (base == 16) fmt[1] = 'x';
     else if (base == 8) fmt[1] = 'o';
-    else Fail("fixnum cannot treat base %d", base);
+    else Fatal("fixnum cannot treat base %d", base);
 
     sprintf(buf, fmt, FIX2INT(x));
     return str_new2(buf);
@@ -618,11 +586,17 @@ fix_mul(x, y)
     switch (TYPE(y)) {
       case T_FIXNUM:
 	{
-	    int a = FIX2INT(x), b = FIX2INT(y);
-	    int c = a * b;
-	    VALUE r = INT2FIX(c);
+	    int a, b, c;
+	    VALUE r;
 
-	    if (FIX2INT(r) != c) {
+	    a = FIX2INT(x);
+	    if (a == 0) return x;
+
+	    b = FIX2INT(y);
+	    c = a * b;
+	    r = INT2FIX(c);
+
+	    if (FIX2INT(r) != c || c/a != b) {
 		r = big_mul(int2big(a), int2big(b));
 	    }
 	    return r;
@@ -643,7 +617,7 @@ fix_div(x, y)
 
     if (TYPE(y) == T_FIXNUM) {
 	i = FIX2INT(y);
-	if (i == 0) Fail("devided by 0");
+	if (i == 0) num_zerodiv();
 	i = FIX2INT(x)/i;
 	return INT2FIX(i);
     }
@@ -658,7 +632,7 @@ fix_mod(x, y)
 
     if (TYPE(y) == T_FIXNUM) {
 	i = FIX2INT(y);
-	if (i == 0) Fail("devided by 0");
+	if (i == 0) num_zerodiv();
 	i = FIX2INT(x)%i;
 	return INT2FIX(i);
     }
@@ -669,8 +643,6 @@ static VALUE
 fix_pow(x, y)
     VALUE x, y;
 {
-    extern double pow();
-
     if (FIXNUM_P(y)) {
 	int a, b;
 
@@ -694,9 +666,6 @@ fix_equal(x, y)
 {
     if (FIXNUM_P(y)) {
 	return (FIX2INT(x) == FIX2INT(y))?TRUE:FALSE;
-    }
-    else if (NIL_P(y)) {
-	return Qnil;
     }
     else {
 	return num_equal(x, y);
@@ -837,7 +806,7 @@ fix_lshift(x, y)
     val = NUM2INT(x);
     width = NUM2INT(y);
     if (width > (sizeof(VALUE)*CHAR_BIT-1)
-	|| (unsigned)val>>(sizeof(VALUE)*CHAR_BIT-width) > 0) {
+	|| (unsigned)val>>(sizeof(VALUE)*CHAR_BIT-1-width) > 0) {
 	return big_lshift(int2big(val), y);
     }
     val = val << width;
@@ -848,10 +817,15 @@ static VALUE
 fix_rshift(x, y)
     VALUE x, y;
 {
-    long val;
+    long i, val;
 
-    val = RSHIFT(NUM2INT(x), NUM2INT(y));
-    return INT2FIX(val);
+    i = NUM2INT(y);
+    if (y < 32) {
+	val = RSHIFT(FIX2INT(x), i);
+	return INT2FIX(val);
+    }
+
+    return INT2FIX(0);
 }
 
 static VALUE
@@ -890,7 +864,7 @@ static VALUE
 fix_type(fix)
     VALUE fix;
 {
-    return cFixnum;
+    return str_new2("Fixnum");
 }
 
 static VALUE
@@ -914,7 +888,7 @@ fix_id2name(fix)
 }
 
 static VALUE
-fix_next(fix)
+fix_succ(fix)
     VALUE fix;
 {
     int i = FIX2INT(fix) + 1;
@@ -922,7 +896,153 @@ fix_next(fix)
     return int2inum(i);
 }
 
+static VALUE
+fix_size(fix)
+    VALUE fix;
+{
+    return INT2FIX(sizeof(VALUE));
+}
+
+VALUE
+num_upto(from, to)
+    VALUE from, to;
+{
+    VALUE i = from;
+
+    for (;;) {
+	if (RTEST(rb_funcall(i, '>', 1, to))) break;
+	rb_yield(i);
+	i = rb_funcall(i, '+', 1, INT2FIX(1));
+    }
+    return from;
+}
+
+static VALUE
+num_downto(from, to)
+    VALUE from, to;
+{
+    VALUE i = from;
+
+    for (;;) {
+	if (RTEST(rb_funcall(i, '<', 1, to))) break;
+	rb_yield(i);
+	i = rb_funcall(i, '-', 1, INT2FIX(1));
+    }
+    return from;
+}
+
+static VALUE
+num_step(from, to, step)
+    VALUE from, to, step;
+{
+    VALUE i = from;
+    ID cmp;
+
+    if (step == INT2FIX(0)) {
+	IndexError("step cannot be 0");
+    }
+
+    if (RTEST(rb_funcall(step, '>', 1, INT2FIX(0)))) {
+	cmp = '>';
+    }
+    else {
+	cmp = '<';
+    }
+    for (;;) {
+	if (RTEST(rb_funcall(i, cmp, 1, to))) break;
+	rb_yield(i);
+	i = rb_funcall(i, '+', 1, step);
+    }
+    return from;
+}
+
+static VALUE
+num_dotimes(num)
+    VALUE num;
+{
+    VALUE i = INT2FIX(0);
+
+    for (;;) {
+	if (!RTEST(rb_funcall(i, '<', 1, num))) break;
+	rb_yield(i);
+	i = rb_funcall(i, '+', 1, INT2FIX(1));
+    }
+    return num;
+}
+
+VALUE
+fix_upto(from, to)
+    VALUE from, to;
+{
+    int i, end;
+
+    if (!FIXNUM_P(to)) return num_upto(from, to);
+    end = FIX2INT(to);
+    for (i = FIX2INT(from); i <= end; i++) {
+	rb_yield(INT2FIX(i));
+    }
+
+    return from;
+}
+
+static VALUE
+fix_downto(from, to)
+    VALUE from, to;
+{
+    int i, end;
+
+    if (!FIXNUM_P(to)) return num_downto(from, to);
+    end = FIX2INT(to);
+    for (i=FIX2INT(from); i >= end; i--) {
+	rb_yield(INT2FIX(i));
+    }
+
+    return from;
+}
+
+static VALUE
+fix_step(from, to, step)
+    VALUE from, to, step;
+{
+    int i, end, diff;
+
+    if (!FIXNUM_P(to) || !FIXNUM_P(step))
+	return num_step(from, to, step);
+
+    end = FIX2INT(to);
+    diff = FIX2INT(step);
+
+    if (diff == 0) {
+	ArgError("step cannot be 0");
+    }
+    else if (diff > 0) {
+	for (i=FIX2INT(from); i <= end; i+=diff) {
+	    rb_yield(INT2FIX(i));
+	}
+    }
+    else {
+	for (i=FIX2INT(from); i >= end; i+=diff) {
+	    rb_yield(INT2FIX(i));
+	}
+    }
+    return from;
+}
+
+static VALUE
+fix_dotimes(num)
+    VALUE num;
+{
+    int i, end;
+
+    end = FIX2INT(num);
+    for (i=0; i<end; i++) {
+	rb_yield(INT2FIX(i));
+    }
+    return num;
+}
+
 extern VALUE mComparable;
+extern VALUE eException;
 
 void
 Init_Numeric()
@@ -930,16 +1050,18 @@ Init_Numeric()
     coerce = rb_intern("coerce");
     to_i = rb_intern("to_i");
 
+    eZeroDiv = rb_define_class("ZeroDivisionError", eException);
     cNumeric = rb_define_class("Numeric", cObject);
 
-    rb_undef_method(CLASS_OF(cNumeric), "new");
-
     rb_include_module(cNumeric, mComparable);
+    rb_define_method(cNumeric, "coerce", num_coerce, 1);
+
     rb_define_method(cNumeric, "+@", num_uplus, 0);
     rb_define_method(cNumeric, "-@", num_uminus, 0);
+    rb_define_method(cNumeric, "eql?", num_eql, 1);
     rb_define_method(cNumeric, "divmod", num_divmod, 1);
+    rb_define_method(cNumeric, "abs", num_abs, 0);
 
-    rb_define_method(cNumeric, "next", num_next, 0);
     rb_define_method(cNumeric, "upto", num_upto, 1);
     rb_define_method(cNumeric, "downto", num_downto, 1);
     rb_define_method(cNumeric, "step", num_step, 2);
@@ -949,8 +1071,11 @@ Init_Numeric()
 
     cInteger = rb_define_class("Integer", cNumeric);
     rb_define_method(cInteger, "integer?", int_int_p, 0);
+    rb_define_method(cInteger, "succ", int_succ, 0);
 
     cFixnum = rb_define_class("Fixnum", cInteger);
+
+    rb_undef_method(CLASS_OF(cFixnum), "new");
 
     rb_define_method(cFixnum, "to_s", fix_to_s, 0);
     rb_define_method(cFixnum, "type", fix_type, 0);
@@ -986,9 +1111,17 @@ Init_Numeric()
     rb_define_method(cFixnum, "to_i", fix_to_i, 0);
     rb_define_method(cFixnum, "to_f", fix_to_f, 0);
 
-    rb_define_method(cFixnum, "next", fix_next, 0);
+    rb_define_method(cFixnum, "succ", fix_succ, 0);
+    rb_define_method(cFixnum, "size", fix_size, 0);
+
+    rb_define_method(cFixnum, "upto", fix_upto, 1);
+    rb_define_method(cFixnum, "downto", fix_downto, 1);
+    rb_define_method(cFixnum, "step", fix_step, 2);
+    rb_define_method(cFixnum, "times", fix_dotimes, 0);
 
     cFloat  = rb_define_class("Float", cNumeric);
+
+    rb_undef_method(CLASS_OF(cFloat), "new");
 
     rb_define_method(cFloat, "to_s", flo_to_s, 0);
     rb_define_method(cFloat, "coerce", flo_coerce, 1);

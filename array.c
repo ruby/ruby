@@ -6,7 +6,7 @@
   $Date: 1995/01/10 10:42:18 $
   created at: Fri Aug  6 09:46:12 JST 1993
 
-  Copyright (C) 1993-1995 Yukihiro Matsumoto
+  Copyright (C) 1993-1996 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -17,6 +17,16 @@ VALUE cArray;
 VALUE rb_to_a();
 
 #define ARY_DEFAULT_SIZE 16
+
+void
+memclear(mem, size)
+    VALUE *mem;
+    int size;
+{
+    while (size--) {
+	*mem++ = Qnil;
+    }
+}
 
 VALUE
 ary_new2(len)
@@ -29,8 +39,10 @@ ary_new2(len)
     ary->capa = len;
     if (len == 0)
 	ary->ptr = 0;
-    else
+    else {
 	ary->ptr = ALLOC_N(VALUE, len);
+	memclear(ary->ptr, len);
+    }
 
     return (VALUE)ary;
 }
@@ -53,7 +65,7 @@ ary_new3(n, va_alist)
     int i;
 
     if (n < 0) {
-	Fail("Negative number of items(%d)", n);
+	IndexError("Negative number of items(%d)", n);
     }
     ary = (struct RArray*)ary_new2(n<ARY_DEFAULT_SIZE?ARY_DEFAULT_SIZE:n);
 
@@ -96,15 +108,20 @@ assoc_new(car, cdr)
 }
 
 static VALUE
-ary_s_new(class)
+ary_s_new(argc, argv, class)
+    int argc;
+    VALUE *argv;
     VALUE class;
 {
+    VALUE size;
     NEWOBJ(ary, struct RArray);
     OBJSETUP(ary, class, T_ARRAY);
 
+    rb_scan_args(argc, argv, "01", &size);
     ary->len = 0;
-    ary->capa = ARY_DEFAULT_SIZE;
-    ary->ptr = ALLOC_N(VALUE, ARY_DEFAULT_SIZE);
+    ary->capa = NIL_P(size)?ARY_DEFAULT_SIZE:NUM2INT(size);
+    ary->ptr = ALLOC_N(VALUE, ary->capa);
+    memclear(ary->ptr, ary->capa);
 
     return (VALUE)ary;
 }
@@ -138,7 +155,7 @@ astore(ary, idx, val)
     VALUE val;
 {
     if (idx < 0) {
-	Fail("negative index for array");
+	IndexError("negative index for array");
     }
 
     if (idx >= ary->capa) {
@@ -146,7 +163,7 @@ astore(ary, idx, val)
 	REALLOC_N(ary->ptr, VALUE, ary->capa);
     }
     if (idx > ary->len) {
-	MEMZERO(ary->ptr+ary->len, VALUE, idx-ary->len+1);
+	memclear(ary->ptr+ary->len, idx-ary->len+1);
     }
 
     if (idx >= ary->len) {
@@ -165,11 +182,14 @@ ary_push(ary, item)
 }
 
 static VALUE
-ary_append(ary, item)
+ary_push_method(argc, argv, ary)
+    int argc;
+    VALUE *argv;
     struct RArray *ary;
-    VALUE item;
 {
-    astore(ary, ary->len, item);
+    while (argc--) {
+	astore(ary, ary->len, *argv++);
+    }
     return (VALUE)ary;
 }
 
@@ -178,6 +198,10 @@ ary_pop(ary)
     struct RArray *ary;
 {
     if (ary->len == 0) return Qnil;
+    if (ary->len * 10 < ary->capa && ary->capa > ARY_DEFAULT_SIZE) {
+	ary->capa = ary->len * 2;
+	REALLOC_N(ary->ptr, VALUE, ary->capa);
+    }
     return ary->ptr[--ary->len];
 }
 
@@ -194,6 +218,10 @@ ary_shift(ary)
 
     /* sliding items */
     MEMMOVE(ary->ptr, ary->ptr+1, VALUE, ary->len);
+    if (ary->len * 10 < ary->capa && ary->capa > ARY_DEFAULT_SIZE) {
+	ary->capa = ary->len * 2;
+	REALLOC_N(ary->ptr, VALUE, ary->capa);
+    }
 
     return top;
 }
@@ -213,6 +241,18 @@ ary_unshift(ary, item)
 
     ary->len++;
     return ary->ptr[0] = item;
+}
+
+static VALUE
+ary_unshift_method(argc, argv, ary)
+    int argc;
+    VALUE *argv;
+    VALUE ary;
+{
+    while (argc--) {
+	ary_unshift(ary, argv[argc]);
+    }
+    return (VALUE)ary;
 }
 
 VALUE
@@ -244,10 +284,10 @@ ary_subseq(ary, beg, len)
 	if (beg < 0) beg = 0;
     }
     if (len < 0) {
-	Fail("negative length for sub-array(size: %d)", ary->len);
+	IndexError("negative length %d", ary->len);
     }
     if (len == 0) {
-	return ary_new();
+	return ary_new2(0);
     }
     if (beg + len > ary->len) {
 	len = ary->len - beg;
@@ -270,6 +310,10 @@ beg_len(range, begp, lenp, len)
 
     if (!range_beg_end(range, &beg, &end)) return FALSE;
 
+    if ((beg > 0 && end > 0 || beg < 0 && end < 0) && beg > end) {
+	IndexError("end smaller than beg [%d..%d]", beg, end);
+    }
+
     if (beg < 0) {
 	beg = len + beg;
 	if (beg < 0) beg = 0;
@@ -281,10 +325,10 @@ beg_len(range, begp, lenp, len)
     else {
 	if (end < 0) {
 	    end = len + end;
-	    if (end < 0) end = 0;
+	    if (end < 0) end = -1;
 	}
-	if (len < end) end = len;
-	if (beg < end) {
+	if (end > len) end = len;
+	if (beg > end) {
 	    *lenp = 0;
 	}
 	else {
@@ -301,10 +345,9 @@ ary_aref(argc, argv, ary)
     struct RArray *ary;
 {
     VALUE arg1, arg2;
+    int beg, len;
 
     if (rb_scan_args(argc, argv, "11", &arg1, &arg2) == 2) {
-	int beg, len;
-
 	beg = NUM2INT(arg1);
 	len = NUM2INT(arg2);
 	if (len <= 0) {
@@ -315,16 +358,16 @@ ary_aref(argc, argv, ary)
 
     /* special case - speeding up */
     if (FIXNUM_P(arg1)) {
-	return ary_entry(ary, NUM2INT(arg1));
+	return ary_entry(ary, FIX2INT(arg1));
     }
-
-    /* check if idx is Range */
-    {
-	int beg, len;
-
+    else {
+	/* check if idx is Range */
 	if (beg_len(arg1, &beg, &len, ary->len)) {
 	    return ary_subseq(ary, beg, len);
 	}
+    }
+    if (TYPE(arg1) == T_BIGNUM) {
+	IndexError("index too big");
     }
     return ary_entry(ary, NUM2INT(arg1));
 }
@@ -340,7 +383,7 @@ ary_index(ary, val)
 	if (rb_equal(ary->ptr[i], val))
 	    return INT2FIX(i);
     }
-    return Qnil;		/* should be FALSE? */
+    return Qnil;
 }
 
 static VALUE
@@ -351,8 +394,8 @@ ary_indexes(ary, args)
     VALUE new_ary;
     int i = 0;
 
-    if (!args || args->len == 1) {
-	args = (struct RArray*)rb_to_a(args->ptr[0]);
+    if (!args || NIL_P(args)) {
+	return ary_new2(0);
     }
 
     new_ary = ary_new2(args->len);
@@ -365,6 +408,53 @@ ary_indexes(ary, args)
     return new_ary;
 }
 
+static void
+ary_replace(ary, beg, len, rpl)
+    struct RArray *ary, *rpl;
+    int beg, len;
+{
+    if (TYPE(rpl) != T_ARRAY) {
+	rpl = (struct RArray*)rb_to_a(rpl);
+    }
+    if (beg < 0) {
+	beg = ary->len + beg;
+	if (beg < 0) beg = 0;
+    }
+    if (beg >= ary->len) {
+	len = beg + rpl->len;
+	if (len >= ary->capa) {
+	    ary->capa=len;
+	    REALLOC_N(ary->ptr, VALUE, ary->capa);
+	}
+	memclear(ary->ptr+ary->len, beg-ary->len);
+	MEMCPY(ary->ptr+beg, rpl->ptr, VALUE, rpl->len);
+	ary->len = len;
+    }
+    else {
+	int alen;
+
+	if (beg + len > ary->len) {
+	    len = ary->len - beg;
+	}
+	if (len < 0) {
+	    IndexError("negative length %d", ary->len);
+	}
+
+	alen = ary->len + rpl->len - len;
+	if (alen >= ary->capa) {
+	    ary->capa=alen;
+	    REALLOC_N(ary->ptr, VALUE, ary->capa);
+	}
+
+	if (len != RARRAY(rpl)->len) {
+	    MEMMOVE(ary->ptr+beg+rpl->len, ary->ptr+beg+len,
+		    VALUE, ary->len-(beg+len));
+	    ary->len = alen;
+	}
+	MEMCPY(ary->ptr+beg, rpl->ptr, VALUE, rpl->len);
+    }
+}
+
 static VALUE
 ary_aset(argc, argv, ary)
     int argc;
@@ -374,90 +464,29 @@ ary_aset(argc, argv, ary)
     VALUE arg1, arg2;
     struct RArray *arg3;
     int offset;
+    int beg, len;
 
     if (rb_scan_args(argc, argv, "21", &arg1, &arg2, &arg3) == 3) {
-	int beg, len;
-
 	beg = NUM2INT(arg1);
-	if (TYPE(arg3) != T_ARRAY) {
-	    arg3 = (struct RArray*)rb_to_a(arg3);
-	}
-	if (beg < 0) {
-	    beg = ary->len + beg;
-	    if (beg < 0) {
-		Fail("negative index for array(size: %d)", ary->len);
-	    }
-	}
-	if (beg >= ary->len) {
-	    len = beg + arg3->len;
-	    if (len >= ary->capa) {
-		ary->capa=len;
-		REALLOC_N(ary->ptr, VALUE, ary->capa);
-	    }
-	    MEMZERO(ary->ptr+ary->len, VALUE, beg-ary->len);
-	    MEMCPY(ary->ptr+beg, arg3->ptr, VALUE, arg3->len);
-	    ary->len = len;
-	}
-	else {
-	    int alen;
-
-	    len = NUM2INT(arg2);
-	    if (beg + len > ary->len) {
-		len = ary->len - beg;
-	    }
-	    if (len < 0) {
-		Fail("negative length for sub-array(size: %d)", ary->len);
-	    }
-
-	    alen = ary->len + arg3->len - len;
-	    if (alen >= ary->capa) {
-		ary->capa=alen;
-		REALLOC_N(ary->ptr, VALUE, ary->capa);
-	    }
-
-	    MEMMOVE(ary->ptr+beg+arg3->len, ary->ptr+beg+len,
-		    VALUE, ary->len-(beg+len));
-	    MEMCPY(ary->ptr+beg, arg3->ptr, VALUE, arg3->len);
-	    ary->len = alen;
-	}
+	len = NUM2INT(arg2);
+	ary_replace(ary, beg, len, arg3);
 	return (VALUE)arg3;
     }
-
-    /* check if idx is Range */
-    {
-	int beg, len;
-
-	if (beg_len(arg1, &beg, &len, ary->len)) {
-	    Check_Type(arg2, T_ARRAY);
-	    if (ary->len < beg) {
-		len = beg + RARRAY(arg2)->len;
-		if (len >= ary->capa) {
-		    ary->capa=len;
-		    REALLOC_N(ary->ptr, VALUE, ary->capa);
-		}
-		MEMZERO(ary->ptr+ary->len, VALUE, beg-ary->len);
-		MEMCPY(ary->ptr+beg, RARRAY(arg2)->ptr, VALUE, RARRAY(arg2)->len);
-		ary->len = len;
-	    }
-	    else {
-		int alen;
-
-		alen = ary->len + RARRAY(arg2)->len - len;
-		if (alen >= ary->capa) {
-		    ary->capa=alen;
-		    REALLOC_N(ary->ptr, VALUE, ary->capa);
-		}
-
-		MEMMOVE(ary->ptr+beg+RARRAY(arg2)->len, ary->ptr+beg+len,
-			VALUE, ary->len-(beg+len));
-		MEMCPY(ary->ptr+beg, RARRAY(arg2)->ptr, VALUE, RARRAY(arg2)->len);
-		ary->len = alen;
-	    }
-	    return arg2;
-	}
+    else if (FIXNUM_P(arg1)) {
+	offset = FIX2INT(arg1);
+	goto fixnum;
+    }
+    else if (beg_len(arg1, &beg, &len, ary->len)) {
+	/* check if idx is Range */
+	ary_replace(ary, beg, len, arg2);
+	return arg2;
+    }
+    if (TYPE(arg1) == T_BIGNUM) {
+	IndexError("index too big");
     }
 
     offset = NUM2INT(arg1);
+  fixnum:
     if (offset < 0) {
 	offset = ary->len + offset;
     }
@@ -471,15 +500,10 @@ ary_each(ary)
 {
     int i;
 
-    if (iterator_p()) {
-	for (i=0; i<ary->len; i++) {
-	    rb_yield(ary->ptr[i]);
-	}
-	return Qnil;
+    for (i=0; i<ary->len; i++) {
+	rb_yield(ary->ptr[i]);
     }
-    else {
-	return (VALUE)ary;
-    }
+    return Qnil;
 }
 
 static VALUE
@@ -499,6 +523,15 @@ ary_length(ary)
     struct RArray *ary;
 {
     return INT2FIX(ary->len);
+}
+
+static VALUE
+ary_empty_p(ary)
+    struct RArray *ary;
+{
+    if (ary->len == 0)
+	return TRUE;
+    return FALSE;
 }
 
 static VALUE
@@ -540,7 +573,7 @@ ary_join(ary, sep)
 	  default:
 	    tmp = obj_as_string(tmp);
 	}
-	if (sep) str_cat(result, sep->ptr, sep->len);
+	if (!NIL_P(sep)) str_cat(result, sep->ptr, sep->len);
 	str_cat(result, RSTRING(tmp)->ptr, RSTRING(tmp)->len);
     }
 
@@ -556,9 +589,9 @@ ary_join_method(argc, argv, ary)
     VALUE sep;
 
     rb_scan_args(argc, argv, "01", &sep);
-    if (sep == Qnil) sep = OFS;
+    if (NIL_P(sep)) sep = OFS;
 
-    if (sep != Qnil)
+    if (!NIL_P(sep))
 	Check_Type(sep, T_STRING);
 
     return ary_join(ary, sep);
@@ -569,7 +602,7 @@ ary_to_s(ary)
     VALUE ary;
 {
     VALUE str = ary_join(ary, OFS);
-    if (str == Qnil) return str_new(0, 0);
+    if (NIL_P(str)) return str_new(0, 0);
     return str;
 }
 
@@ -581,7 +614,7 @@ ary_print_on(ary, port)
     int i;
 
     for (i=0; i<ary->len; i++) {
-	if (OFS && i>1) {
+	if (!NIL_P(OFS) && i>0) {
 	    io_write(port, OFS);
 	}
 	io_write(port, ary->ptr[i]);
@@ -602,7 +635,7 @@ ary_inspect(ary)
     len = 1;
 
     for (i=0; i<ary->len; i++) {
-	s = rb_funcall(ary->ptr[i], rb_intern("inspect"), 0, 0);
+	s = rb_inspect(ary->ptr[i]);
 	if (i > 0) str_cat(str, ", ", 2);
 	str_cat(str, RSTRING(s)->ptr, RSTRING(s)->len);
 	len += RSTRING(s)->len + 2;
@@ -635,15 +668,27 @@ VALUE
 ary_reverse(ary)
     struct RArray *ary;
 {
-    VALUE ary2 = ary_new2(ary->len);
-    int i, j;
+    VALUE *p1, *p2;
+    VALUE tmp;
 
-    for (i=ary->len-1, j=0; i >=0; i--, j++) {
-	RARRAY(ary2)->ptr[j] = ary->ptr[i];
+    p1 = ary->ptr;
+    p2 = p1 + ary->len - 1;	/* points last item */
+
+    while (p1 < p2) {
+	tmp = *p1;
+	*p1 = *p2;
+	*p2 = tmp;
+	p1++; p2--;
     }
-    RARRAY(ary2)->len = ary->len;
 
-    return ary2;
+    return (VALUE)ary;
+}
+
+static VALUE
+ary_reverse_method(ary)
+    struct RArray *ary;
+{
+    return ary_reverse(ary_clone(ary));
 }
 
 static ID cmp;
@@ -662,17 +707,23 @@ sort_2(a, b)
 {
     VALUE retval;
 
-    if (!cmp) cmp = rb_intern("<=>");
     retval = rb_funcall(*a, cmp, 1, *b);
     return NUM2INT(retval);
 }
 
 VALUE
-ary_sort(ary)
+ary_sort_bang(ary)
     struct RArray *ary;
 {
     qsort(ary->ptr, ary->len, sizeof(VALUE), iterator_p()?sort_1:sort_2);
     return (VALUE)ary;
+}
+
+VALUE
+ary_sort(ary)
+    VALUE ary;
+{
+    return ary_sort_bang(ary_clone(ary));
 }
 
 static VALUE
@@ -689,9 +740,38 @@ ary_delete(ary, item)
 	}
 	i2++;
     }
-    ary->len = i2;
+    if (ary->len == i2) {
+	if (iterator_p()) rb_yield(Qnil);
+    }
+    else {
+	ary->len = i2;
+    }
 
     return (VALUE)ary;
+}
+
+VALUE
+ary_delete_at(ary, at)
+    struct RArray *ary;
+    VALUE at;
+{
+    int i1, i2, pos;
+    VALUE del = Qnil;
+
+    pos = NUM2INT(at);
+    for (i1 = i2 = 0; i1 < ary->len; i1++) {
+	if (i1 == pos) {
+	    del = ary->ptr[i1];
+	    continue;
+	}
+	if (i1 != i2) {
+	    ary->ptr[i2] = ary->ptr[i1];
+	}
+	i2++;
+    }
+    ary->len = i2;
+
+    return del;
 }
 
 static VALUE
@@ -717,6 +797,10 @@ ary_clear(ary)
     struct RArray *ary;
 {
     ary->len = 0;
+    if (ARY_DEFAULT_SIZE*3 < ary->capa) {
+	ary->capa = ARY_DEFAULT_SIZE * 2;
+	REALLOC_N(ary->ptr, VALUE, ary->capa);
+    }
     return (VALUE)ary;
 }
 
@@ -731,7 +815,7 @@ ary_fill(argc, argv, ary)
     VALUE *p, *pend;
 
     rb_scan_args(argc, argv, "12", &item, &arg1, &arg2);
-    if (arg2 == Qnil && beg_len(arg1, &beg, &len, ary->len)) {
+    if (NIL_P(arg2) && beg_len(arg1, &beg, &len, ary->len)) {
 	/* beg and len set already */
     }
     else {
@@ -754,7 +838,7 @@ ary_fill(argc, argv, ary)
 	    REALLOC_N(ary->ptr, VALUE, ary->capa);
 	}
 	if (beg > ary->len) {
-	    MEMZERO(ary->ptr+ary->len, VALUE, end-ary->len);
+	    memclear(ary->ptr+ary->len, end-ary->len);
 	}
 	ary->len = end;
     }
@@ -766,26 +850,41 @@ ary_fill(argc, argv, ary)
     return (VALUE)ary;
 }
 
-static VALUE
+VALUE
 ary_plus(x, y)
     struct RArray *x, *y;
 {
     struct RArray *z;
 
-    switch (TYPE(y)) {
-      case T_ARRAY:
-	z = (struct RArray*)ary_new2(x->len + y->len);
-	MEMCPY(z->ptr, x->ptr, VALUE, x->len);
-	MEMCPY(z->ptr+x->len, y->ptr, VALUE, y->len);
-	z->len = x->len + RARRAY(y)->len;
-	break;
-
-      default:
-	z = (struct RArray*)ary_clone(x);
-	ary_push(z, y);
-	break;
+    if (TYPE(y) != T_ARRAY) {
+	return ary_plus(x, rb_to_a(y));
     }
+
+    z = (struct RArray*)ary_new2(x->len + y->len);
+    MEMCPY(z->ptr, x->ptr, VALUE, x->len);
+    MEMCPY(z->ptr+x->len, y->ptr, VALUE, y->len);
+    z->len = x->len + RARRAY(y)->len;
     return (VALUE)z;
+}
+
+VALUE
+ary_concat(x, y)
+    struct RArray *x, *y;
+{
+    struct RArray *z;
+    VALUE *p, *pend;
+
+    if (TYPE(y) != T_ARRAY) {
+	return ary_concat(x, rb_to_a(y));
+    }
+
+    p = y->ptr;
+    pend = p + y->len;
+    while (p < pend) {
+	astore(x, x->len, *p);
+	p++;
+    }
+    return (VALUE)x;
 }
 
 static VALUE
@@ -795,6 +894,10 @@ ary_times(ary, times)
 {
     struct RArray *ary2;
     int i, len;
+
+    if (TYPE(times) == T_STRING) {
+	return ary_join(ary, times);
+    }
 
     len = NUM2INT(times) * ary->len;
     ary2 = (struct RArray*)ary_new2(len);
@@ -820,8 +923,9 @@ ary_assoc(ary, key)
 	    && RARRAY(*p)->len > 1
 	    && rb_equal(RARRAY(*p)->ptr[0], key))
 	    return *p;
+	p++;
     }
-    return Qnil;		/* should be FALSE? */
+    return Qnil;
 }
 
 VALUE
@@ -834,11 +938,12 @@ ary_rassoc(ary, value)
     p = ary->ptr; pend = p + ary->len;
     while (p < pend) {
 	if (TYPE(*p) == T_ARRAY
-	    && RARRAY(*p)->len > 2
+	    && RARRAY(*p)->len > 1
 	    && rb_equal(RARRAY(*p)->ptr[1], value))
 	    return *p;
+	p++;
     }
-    return Qnil;		/* should be FALSE? */
+    return Qnil;
 }
 
 static VALUE
@@ -944,7 +1049,47 @@ ary_or(ary1, ary2)
     return ary3;
 }
 
-extern VALUE cKernel;
+static VALUE
+ary_compact_bang(ary)
+    struct RArray *ary;
+{
+    VALUE *p, *t, *end;
+
+    p = t = ary->ptr;
+    end = p + ary->len;
+    while (t < end) {
+	if (NIL_P(*t)) t++;
+	else *p++ = *t++;
+    }
+    ary->len = ary->capa = (p - ary->ptr);
+    REALLOC_N(ary->ptr, VALUE, ary->len);
+
+    return (VALUE)ary;
+}
+
+static VALUE
+ary_compact(ary)
+    struct RArray *ary;
+{
+    return ary_compact_bang(ary_clone(ary));
+}
+
+static VALUE
+ary_nitems(ary)
+    struct RArray *ary;
+{
+    int n = 0;
+    VALUE *p, *pend;
+
+    p = ary->ptr;
+    pend = p + ary->len;
+    while (p < pend) {
+	if (!NIL_P(*p)) n++;
+	p++;
+    }
+    return INT2FIX(n);
+}
+
 extern VALUE mEnumerable;
 
 void
@@ -953,7 +1098,7 @@ Init_Array()
     cArray  = rb_define_class("Array", cObject);
     rb_include_module(cArray, mEnumerable);
 
-    rb_define_singleton_method(cArray, "new", ary_s_new, 0);
+    rb_define_singleton_method(cArray, "new", ary_s_new, -1);
     rb_define_singleton_method(cArray, "[]", ary_s_create, -1);
     rb_define_method(cArray, "to_s", ary_to_s, 0);
     rb_define_method(cArray, "inspect", ary_inspect, 0);
@@ -965,26 +1110,32 @@ Init_Array()
     rb_define_method(cArray, "hash", ary_hash, 0);
     rb_define_method(cArray, "[]", ary_aref, -1);
     rb_define_method(cArray, "[]=", ary_aset, -1);
-    rb_define_method(cArray, "<<", ary_append, 1);
-    rb_define_method(cArray, "push", ary_push, 1);
+    rb_define_method(cArray, "concat", ary_concat, 1);
+    rb_define_method(cArray, "<<", ary_push, 1);
+    rb_define_method(cArray, "push", ary_push_method, -1);
     rb_define_method(cArray, "pop", ary_pop, 0);
     rb_define_method(cArray, "shift", ary_shift, 0);
-    rb_define_method(cArray, "unshift", ary_unshift, 1);
+    rb_define_method(cArray, "unshift", ary_unshift_method, -1);
     rb_define_method(cArray, "each", ary_each, 0);
     rb_define_method(cArray, "each_index", ary_each_index, 0);
     rb_define_method(cArray, "length", ary_length, 0);
     rb_define_alias(cArray,  "size", "length");
+    rb_define_method(cArray, "empty?", ary_empty_p, 0);
     rb_define_method(cArray, "index", ary_index, 1);
     rb_define_method(cArray, "indexes", ary_indexes, -2);
     rb_define_method(cArray, "clone", ary_clone, 0);
     rb_define_method(cArray, "join", ary_join_method, -1);
-    rb_define_method(cArray, "reverse", ary_reverse, 0);
+    rb_define_method(cArray, "reverse", ary_reverse_method, 0);
+    rb_define_method(cArray, "reverse!", ary_reverse, 0);
     rb_define_method(cArray, "sort", ary_sort, 0);
+    rb_define_method(cArray, "sort!", ary_sort_bang, 0);
     rb_define_method(cArray, "delete", ary_delete, 1);
+    rb_define_method(cArray, "delete_at", ary_delete_at, 1);
     rb_define_method(cArray, "delete_if", ary_delete_if, 0);
     rb_define_method(cArray, "clear", ary_clear, 0);
     rb_define_method(cArray, "fill", ary_fill, -1);
-    rb_define_method(cArray, "includes", ary_includes, 1);
+    rb_define_method(cArray, "include?", ary_includes, 1);
+    rb_define_method(cArray, "includes?", ary_includes, 1); /* obsolate */
 
     rb_define_method(cArray, "assoc", ary_assoc, 1);
     rb_define_method(cArray, "rassoc", ary_rassoc, 1);
@@ -995,4 +1146,10 @@ Init_Array()
     rb_define_method(cArray, "-", ary_diff, 1);
     rb_define_method(cArray, "&", ary_and, 1);
     rb_define_method(cArray, "|", ary_or, 1);
+
+    rb_define_method(cArray, "compact", ary_compact, 0);
+    rb_define_method(cArray, "compact!", ary_compact_bang, 0);
+    rb_define_method(cArray, "nitems", ary_nitems, 0);
+
+    cmp = rb_intern("<=>");
 }

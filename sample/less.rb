@@ -3,8 +3,8 @@
 ZCAT = "/usr/local/bin/zcat"
 LESS = "/usr/local/bin/less"
 
-FILE = $ARGV.pop
-OPTION = (if $ARGV.length == 0; "" else $ARGV.join(" "); end)
+FILE = ARGV.pop
+OPTION = (if ARGV.length == 0; "" else ARGV.join(" "); end)
 
 if FILE =~ /\.(Z|gz)$/
   exec(format("%s %s | %s %s", ZCAT, FILE, LESS, OPTION))

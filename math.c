@@ -6,7 +6,7 @@
   $Date: 1994/11/01 08:28:03 $
   created at: Tue Jan 25 14:12:56 JST 1994
 
-  Copyright (C) 1993-1995 Yukihiro Matsumoto
+  Copyright (C) 1993-1996 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -15,12 +15,13 @@
 
 VALUE mMath;
 VALUE float_new();
+VALUE f_float();
 
 #define Need_Float(x) \
 if (FIXNUM_P(x)) {\
     (x) = (struct RFloat*)float_new((double)FIX2INT(x));\
 } else {\
-    Check_Type(x, T_FLOAT);\
+    (x) = (struct RFloat*)f_float(x, x);\
 }
 
 #define Need_Float2(x,y) {\
@@ -34,7 +35,7 @@ math_atan2(obj, x, y)
     struct RFloat *x, *y;
 {
     Need_Float2(x, y);
-    return float_new(atan2(x->value, x->value));
+    return float_new(atan2(x->value, y->value));
 }
 
 static VALUE
@@ -101,7 +102,7 @@ math_sqrt(obj, x)
 {
     Need_Float(x);
 
-    if (x->value < 0.0) Fail("square root for negative number");
+    if (x->value < 0.0) ArgError("square root for negative number");
     return float_new(sqrt(x->value));
 }
 

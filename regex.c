@@ -62,6 +62,10 @@ char *alloca();
 #endif
 #endif /* __GNUC__ */
 
+#ifdef _AIX
+#pragma alloca
+#endif
+
 #define RE_ALLOCATE alloca
 #define FREE_VARIABLES() alloca(0)
 
@@ -143,6 +147,8 @@ init_syntax_once()
 
    for (c = '0'; c <= '9'; c++)
      re_syntax_table[c] = Sword;
+
+   re_syntax_table['_'] = Sword;
 
    /* Add specific syntax for ISO Latin-1.  */
    for (c = 0300; c <= 0377; c++)
@@ -238,7 +244,7 @@ enum regexpcode
 #define NFAILURES 80
 #endif
 
-#ifdef CHAR_UNSIGNED
+#if defined(CHAR_UNSIGNED) || defined(__CHAR_UNSIGNED__)
 #define SIGN_EXTEND_CHAR(c) ((c)>(char)127?(c)-256:(c)) /* for IBM RT */
 #endif
 #ifndef SIGN_EXTEND_CHAR
@@ -795,7 +801,7 @@ re_compile_pattern(pattern, size, bufp)
 	  while (1)
 	    {
 	      int size;
-	      unsigned last = -1;
+	      unsigned last = (unsigned)-1;
 
 	      if ((size = EXTRACT_UNSIGNED(&b[(1 << BYTEWIDTH) / BYTEWIDTH]))) {
 		/* Ensure the space is enough to hold another interval
@@ -830,8 +836,8 @@ re_compile_pattern(pattern, size, bufp)
 	          PATFETCH(c);
 		  switch (c) {
 		    case 'w':
-		      for (c = 0; c < 256; c++)
-			  if (isalnum(c))
+		      for (c = 0; c < (1 << BYTEWIDTH); c++)
+		          if (SYNTAX(c) == Sword)
 			      SET_LIST_BIT(c);
 		      last = -1;
 		      continue;
@@ -839,8 +845,8 @@ re_compile_pattern(pattern, size, bufp)
 		    case 'W':
 		      if (re_syntax_options & RE_MBCTYPE_MASK)
 			  goto invalid_char;
-		      for (c = 0; c < 256; c++)
-			  if (!isalnum(c))
+		      for (c = 0; c < (1 << BYTEWIDTH); c++)
+		          if (SYNTAX(c) != Sword)
 			      SET_LIST_BIT(c);
 		      last = -1;
 		      continue;
@@ -1072,7 +1078,9 @@ re_compile_pattern(pattern, size, bufp)
 		     || *laststart == charset
 		     || *laststart == charset_not
 		     || *laststart == start_memory
-		     || (*laststart == exactn  &&  laststart[1] == 1)
+		     || (*laststart == exactn
+			 && (laststart[1] == 1
+			     || laststart[1] == 2 && ismbchar(laststart[2])))
 		     || (! (re_syntax_options & RE_NO_BK_REFS)
                          && *laststart == duplicate)))
                 {
@@ -1277,6 +1285,7 @@ re_compile_pattern(pattern, size, bufp)
 
 		  c1 = 0;
 		  GET_UNSIGNED_NUMBER(c1);
+		  PATUNFETCH;
 
 		  if (c1 >= regnum) {
 		      if (c1 < RE_NREGS)
@@ -1722,27 +1731,27 @@ re_compile_fastmap(bufp)
 
 
 
-/* Using the compiled pattern in PBUFP->buffer, first tries to match
+/* Using the compiled pattern in BUFP->buffer, first tries to match
    STRING, starting first at index STARTPOS, then at STARTPOS + 1, and
    so on.  RANGE is the number of places to try before giving up.  If
    RANGE is negative, it searches backwards, i.e., the starting
    positions tried are STARTPOS, STARTPOS - 1, etc.  STRING is of SIZE.
    In REGS, return the indices of STRING that matched the entire
-   PBUFP->buffer and its contained subexpressions.
+   BUFP->buffer and its contained subexpressions.
 
    The value returned is the position in the strings at which the match
    was found, or -1 if no match was found, or -2 if error (such as
    failure stack overflow).  */
 
 int
-re_search(pbufp, string, size, startpos, range, regs)
-     struct re_pattern_buffer *pbufp;
+re_search(bufp, string, size, startpos, range, regs)
+     struct re_pattern_buffer *bufp;
      char *string;
      int size, startpos, range;
      struct re_registers *regs;
 {
-  register char *fastmap = pbufp->fastmap;
-  register unsigned char *translate = (unsigned char *) pbufp->translate;
+  register char *fastmap = bufp->fastmap;
+  register unsigned char *translate = (unsigned char *) bufp->translate;
   int val;
 
   /* Check for out-of-range starting position.  */
@@ -1750,8 +1759,8 @@ re_search(pbufp, string, size, startpos, range, regs)
     return -1;
 
   /* Update the fastmap now if not correct already.  */
-  if (fastmap && !pbufp->fastmap_accurate) {
-      re_compile_fastmap (pbufp);
+  if (fastmap && !bufp->fastmap_accurate) {
+      re_compile_fastmap (bufp);
   }
 
   while (1)
@@ -1762,7 +1771,7 @@ re_search(pbufp, string, size, startpos, range, regs)
          test it at each starting point so that we take the first null
          string we get.  */
 
-      if (fastmap && startpos < size && pbufp->can_be_null != 1)
+      if (fastmap && startpos < size && bufp->can_be_null != 1)
 	{
 	  if (range > 0)	/* Searching forwards.  */
 	    {
@@ -1781,7 +1790,7 @@ re_search(pbufp, string, size, startpos, range, regs)
 		  p++;
 		  range--;
 		}
-		else
+		else 
 		  if (fastmap[translate ? translate[c] : c])
 		    break;
 		range--;
@@ -1799,11 +1808,12 @@ re_search(pbufp, string, size, startpos, range, regs)
 	    }
 	}
 
-      if (range >= 0 && startpos == size
-	  && fastmap && pbufp->can_be_null == 0)
-	return -1;
+      if (range >= 0 && startpos == size && fastmap) {
+	  if (bufp->can_be_null == 0 || (bufp->can_be_null == 2 && size > 0))
+	      return -1;
+      }
 
-      val = re_match(pbufp, string, size, startpos, regs);
+      val = re_match(bufp, string, size, startpos, regs);
       if (val >= 0)
 	return startpos;
       if (val == -2)
@@ -2006,12 +2016,12 @@ init_regs(regs, num_regs)
     }
 }
 
-/* Match the pattern described by PBUFP against STRING, which is of
+/* Match the pattern described by BUFP against STRING, which is of
    SIZE.  Start the match at index POS in STRING.  In REGS, return the
-   indices of STRING that matched the entire PBUFP->buffer and its
+   indices of STRING that matched the entire BUFP->buffer and its
    contained subexpressions.
 
-   If pbufp->fastmap is nonzero, then it had better be up to date.
+   If bufp->fastmap is nonzero, then it had better be up to date.
 
    The reason that the data to match are specified as two components
    which are to be regarded as concatenated is so this function can be
@@ -2022,24 +2032,24 @@ init_regs(regs, num_regs)
    length of the substring which was matched.  */
 
 int
-re_match(pbufp, string_arg, size, pos, regs)
-     struct re_pattern_buffer *pbufp;
+re_match(bufp, string_arg, size, pos, regs)
+     struct re_pattern_buffer *bufp;
      char *string_arg;
      int size, pos;
      struct re_registers *regs;
 {
-  register unsigned char *p = (unsigned char *) pbufp->buffer;
+  register unsigned char *p = (unsigned char *) bufp->buffer;
 
   /* Pointer to beyond end of buffer.  */
-  register unsigned char *pend = p + pbufp->used;
+  register unsigned char *pend = p + bufp->used;
 
-  unsigned num_regs = pbufp->re_nsub + 1;
+  unsigned num_regs = bufp->re_nsub;
 
   unsigned char *string = (unsigned char *) string_arg;
 
   register unsigned char *d, *dend;
   register int mcnt;			/* Multipurpose.  */
-  unsigned char *translate = (unsigned char *) pbufp->translate;
+  unsigned char *translate = (unsigned char *) bufp->translate;
   unsigned is_a_jump_n = 0;
 
  /* Failure point stack.  Each place that can handle a failure further
@@ -2133,7 +2143,7 @@ re_match(pbufp, string_arg, size, pos, regs)
 #ifdef DEBUG_REGEX
       fprintf(stderr,
 	      "regex loop(%d):  matching 0x%02d\n",
-	      p - (unsigned char *) pbufp->buffer,
+	      p - (unsigned char *) bufp->buffer,
 	      *p);
 #endif
       is_a_jump_n = 0;
@@ -2666,21 +2676,25 @@ re_copy_registers(regs1, regs2)
     if (regs1->allocated == 0) {
 	regs1->beg = TMALLOC(regs2->num_regs, int);
 	regs1->end = TMALLOC(regs2->num_regs, int);
+	regs1->allocated = regs2->num_regs;
     }
     else if (regs1->allocated < regs2->num_regs) {
 	TREALLOC(regs1->beg, regs2->num_regs, int);
 	TREALLOC(regs1->end, regs2->num_regs, int);
+	regs1->allocated = regs2->num_regs;
     }
     for (i=0; i<regs2->num_regs; i++) {
 	regs1->beg[i] = regs2->beg[i];
 	regs1->end[i] = regs2->end[i];
     }
+    regs1->num_regs = regs2->num_regs;
 }
 
 void
 re_free_registers(regs)
      struct re_registers *regs;
 {
+    if (regs->allocated == 0) return;
     if (regs->beg) free(regs->beg);
     if (regs->end) free(regs->end);
 }

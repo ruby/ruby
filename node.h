@@ -6,14 +6,14 @@
   $Date: 1995/01/10 10:42:41 $
   created at: Fri May 28 15:14:02 JST 1993
 
-  Copyright (C) 1993-1995 Yukihiro Matsumoto
+  Copyright (C) 1993-1996 Yukihiro Matsumoto
 
 ************************************************/
 
 #ifndef NODE_H
 #define NODE_H
 
-struct global_entry* rb_global_entry();
+struct global_entry *rb_global_entry();
 
 enum node_type {
     NODE_METHOD,
@@ -22,13 +22,18 @@ enum node_type {
     NODE_SCOPE,
     NODE_BLOCK,
     NODE_IF,
+    NODE_UNLESS,
     NODE_CASE,
     NODE_WHEN,
+    NODE_OPT_N,
     NODE_WHILE,
-    NODE_WHILE2,
+    NODE_UNTIL,
     NODE_ITER,
     NODE_FOR,
     NODE_BEGIN,
+    NODE_RESCUE,
+    NODE_RESBODY,
+    NODE_ENSURE,
     NODE_AND,
     NODE_OR,
     NODE_NOT,
@@ -47,12 +52,7 @@ enum node_type {
     NODE_ARRAY,
     NODE_ZARRAY,
     NODE_HASH,
-    NODE_REDO,
-    NODE_BREAK,
-    NODE_CONTINUE,
     NODE_RETURN,
-    NODE_RETRY,
-    NODE_FAIL,
     NODE_YIELD,
     NODE_LVAR,
     NODE_DVAR,
@@ -62,12 +62,17 @@ enum node_type {
     NODE_CONST,
     NODE_NTH_REF,
     NODE_BACK_REF,
+    NODE_MATCH_REF,
+    NODE_LASTLINE,
+    NODE_MATCH,
     NODE_LIT,
     NODE_STR,
-    NODE_STR2,
+    NODE_DSTR,
     NODE_XSTR,
-    NODE_XSTR2,
+    NODE_DXSTR,
+    NODE_EVSTR,
     NODE_DREGX,
+    NODE_DREGX_ONCE,
     NODE_ARGS,
     NODE_DEFN,
     NODE_DEFS,
@@ -76,6 +81,7 @@ enum node_type {
     NODE_CLASS,
     NODE_MODULE,
     NODE_COLON2,
+    NODE_CNAME,
     NODE_CREF,
     NODE_DOT2,
     NODE_DOT3,
@@ -85,12 +91,12 @@ enum node_type {
     NODE_SELF,
     NODE_NIL,
     NODE_DEFINED,
+    NODE_TAG,
 };
 
 typedef struct RNode {
     UINT flags;
     char *file;
-    unsigned int line;
     union {
 	struct RNode *node;
 	ID id;
@@ -102,6 +108,7 @@ typedef struct RNode {
 	struct RNode *node;
 	ID id;
 	int argc;
+	VALUE value;
     } u2;
     union {
 	struct RNode *node;
@@ -115,9 +122,13 @@ typedef struct RNode {
 
 #define RNODE(obj)  (R_CAST(RNode)(obj))
 
-#define nd_type(n) (((RNODE(n))->flags>>10)&0xff)
+#define nd_type(n) (((RNODE(n))->flags>>10)&0x7f)
 #define nd_set_type(n,t) \
-    RNODE(n)->flags=((RNODE(n)->flags&~FL_UMASK)|(((t)<<10)&FL_UMASK))
+    RNODE(n)->flags=(RNODE(n)->flags&~FL_UMASK|(((t)<<10)&FL_UMASK))
+
+#define nd_line(n) (((RNODE(n))->flags>>17)&0x7fff)
+#define nd_set_line(n,l) \
+    RNODE(n)->flags=(RNODE(n)->flags&~(-1<<17)|(((l)&0x7fff)<<17))
 
 #define nd_head  u1.node
 #define nd_alen  u2.argc
@@ -126,7 +137,6 @@ typedef struct RNode {
 #define nd_cond  u1.node
 #define nd_body  u2.node
 #define nd_else  u3.node
-#define nd_break u3.state
 
 #define nd_orig  u3.value
 
@@ -181,9 +191,13 @@ typedef struct RNode {
 #define nd_beg   u1.node
 #define nd_end   u2.node
 #define nd_state u3.state
-#define nd_rval  u3.node
+#define nd_rval  u3.value
 
 #define nd_nth   u2.argc
+
+#define nd_tag   u1.id
+#define nd_tlev  u3.cnt
+#define nd_tval  u2.value
 
 #define NEW_METHOD(n,x) newnode(NODE_METHOD,x,n,0)
 #define NEW_FBODY(n,i,o) newnode(NODE_FBODY,n,i,o)
@@ -191,30 +205,28 @@ typedef struct RNode {
 #define NEW_DEFS(r,i,a,d) newnode(NODE_DEFS,r,i,NEW_RFUNC(a,d))
 #define NEW_CFUNC(f,c) newnode(NODE_CFUNC,f,c,0)
 #define NEW_RFUNC(b1,b2) NEW_SCOPE(block_append(b1,b2))
-#define NEW_SCOPE(b) newnode(NODE_SCOPE,local_tbl(),(b),local_cnt(0))
+#define NEW_SCOPE(b) newnode(NODE_SCOPE,local_tbl(),(b),cur_cref)
 #define NEW_BLOCK(a) newnode(NODE_BLOCK,a,1,0)
 #define NEW_IF(c,t,e) newnode(NODE_IF,c,t,e)
+#define NEW_UNLESS(c,t,e) newnode(NODE_UNLESS,c,t,e)
 #define NEW_EXNOT(c) newnode(NODE_EXNOT,c,0,0)
 #define NEW_CASE(h,b) newnode(NODE_CASE,h,b,0)
 #define NEW_WHEN(c,t,e) newnode(NODE_WHEN,c,t,e)
-#define NEW_WHILE(c,b) newnode(NODE_WHILE,c,b,0)
-#define NEW_WHILE2(c,b) newnode(NODE_WHILE2,c,b,0)
+#define NEW_OPT_N(b) newnode(NODE_OPT_N,0,b,0)
+#define NEW_WHILE(c,b,n) newnode(NODE_WHILE,c,b,n)
+#define NEW_UNTIL(c,b,n) newnode(NODE_UNTIL,c,b,n)
 #define NEW_FOR(v,i,b) newnode(NODE_FOR,v,b,i)
 #define NEW_ITER(v,i,b) newnode(NODE_ITER,v,b,i)
-#define NEW_BEGIN(b,ex,en) newnode(NODE_BEGIN,b,ex,en)
-#define NEW_REDO() newnode(NODE_REDO,0,0,0)
-#define NEW_BREAK() newnode(NODE_BREAK,0,0,0)
-#define NEW_CONT()  newnode(NODE_CONTINUE,0,0,0)
-#define NEW_RETRY() newnode(NODE_RETRY,0,0,0)
+#define NEW_BEGIN(b) newnode(NODE_BEGIN,0,b,0)
+#define NEW_RESCUE(b,res) newnode(NODE_RESCUE,b,res,0)
+#define NEW_RESBODY(a,ex,n) newnode(NODE_RESBODY,n,ex,a)
+#define NEW_ENSURE(b,en) newnode(NODE_ENSURE,b,0,en)
 #define NEW_RET(s)  newnode(NODE_RETURN,s,0,0)
-#define NEW_FAIL(s)  newnode(NODE_FAIL,s,0,0)
 #define NEW_YIELD(a) newnode(NODE_YIELD,a,0,0)
 #define NEW_LIST(a) NEW_ARRAY(a)
 #define NEW_ARRAY(a) newnode(NODE_ARRAY,a,1,0)
 #define NEW_ZARRAY() newnode(NODE_ZARRAY,0,0,0)
 #define NEW_HASH(a) newnode(NODE_HASH,a,0,0)
-#define NEW_AND(a,b) newnode(NODE_AND,a,b,0)
-#define NEW_OR(a,b)  newnode(NODE_OR,a,b,0)
 #define NEW_NOT(a)   newnode(NODE_NOT,0,a,0)
 #define NEW_MASGN(l,r) newnode(NODE_MASGN,l,0,r)
 #define NEW_GASGN(v,val) newnode(NODE_GASGN,v,val,rb_global_entry(v))
@@ -223,19 +235,22 @@ typedef struct RNode {
 #define NEW_IASGN(v,val) newnode(NODE_IASGN,v,val,0)
 #define NEW_CASGN(v,val) newnode(NODE_CASGN,v,val,0)
 #define NEW_OP_ASGN1(p,id,a) newnode(NODE_OP_ASGN1,p,id,a)
-#define NEW_OP_ASGN2(r,i,val) newnode(NODE_OP_ASGN1,r,val,i)
+#define NEW_OP_ASGN2(r,i,o,val) newnode(NODE_OP_ASGN2,r,val,NEW_OP_ASGN3(i,o))
+#define NEW_OP_ASGN3(i,o) newnode(NODE_OP_ASGN2,i,o,0)
 #define NEW_GVAR(v) newnode(NODE_GVAR,v,0,rb_global_entry(v))
 #define NEW_LVAR(v) newnode(NODE_LVAR,v,0,local_cnt(v))
 #define NEW_DVAR(v) newnode(NODE_DVAR,v,0,0);
 #define NEW_IVAR(v) newnode(NODE_IVAR,v,0,0)
-#define NEW_CVAR(v) newnode(NODE_CVAR,v,0,cref_list)
+#define NEW_CVAR(v) newnode(NODE_CVAR,v,0,0)
 #define NEW_NTH_REF(n) newnode(NODE_NTH_REF,0,n,local_cnt('~'))
 #define NEW_BACK_REF(n) newnode(NODE_BACK_REF,0,n,local_cnt('~'))
+#define NEW_MATCH(c) newnode(NODE_MATCH,c,0,0)
 #define NEW_LIT(l) newnode(NODE_LIT,l,0,0)
 #define NEW_STR(s) newnode(NODE_STR,s,0,0)
-#define NEW_STR2(s) newnode(NODE_STR2,s,0,0)
+#define NEW_DSTR(s) newnode(NODE_DSTR,s,0,0)
 #define NEW_XSTR(s) newnode(NODE_XSTR,s,0,0)
-#define NEW_XSTR2(s) newnode(NODE_XSTR2,s,0,0)
+#define NEW_DXSTR(s) newnode(NODE_DXSTR,s,0,0)
+#define NEW_EVSTR(s,l) newnode(NODE_EVSTR,str_new(s,l),0,0)
 #define NEW_CALL(r,m,a) newnode(NODE_CALL,r,m,a)
 #define NEW_FCALL(m,a) newnode(NODE_FCALL,0,m,a)
 #define NEW_SUPER(a) newnode(NODE_SUPER,0,0,a)
@@ -246,9 +261,9 @@ typedef struct RNode {
 #define NEW_CLASS(n,b,s) newnode(NODE_CLASS,n,NEW_CBODY(b),s)
 #define NEW_MODULE(n,b) newnode(NODE_MODULE,n,NEW_CBODY(b),0)
 #define NEW_COLON2(c,i) newnode(NODE_COLON2,c,i,0)
-#define NEW_CREF0() (cref_list=newnode(NODE_CREF,the_class,0,0))
-#define NEW_CREF(b) (cref_list=newnode(NODE_CREF,0,0,cref_list))
-#define NEW_CBODY(b) (cref_list->nd_body=NEW_SCOPE(b),cref_list)
+#define NEW_CREF0() (cur_cref=newnode(NODE_CREF,RNODE(the_frame->cbase)->nd_clss,0,0))
+#define NEW_CREF() (cur_cref=newnode(NODE_CREF,0,0,cur_cref))
+#define NEW_CBODY(b) (cur_cref->nd_body=NEW_SCOPE(b),cur_cref)
 #define NEW_DOT2(b,e) newnode(NODE_DOT2,b,e,0)
 #define NEW_DOT3(b,e) newnode(NODE_DOT3,b,e,0)
 #define NEW_ATTRSET(a) newnode(NODE_ATTRSET,a,0,0)
@@ -261,5 +276,8 @@ VALUE rb_method_booundp();
 
 #define NOEX_PUBLIC  0
 #define NOEX_PRIVATE 1
+
+NODE *compile_string();
+NODE *compile_file();
 
 #endif

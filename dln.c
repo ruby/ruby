@@ -6,9 +6,13 @@
   $Date: 1994/12/09 01:28:23 $
   created at: Tue Jan 18 17:05:06 JST 1994
 
-  Copyright (C) 1993-1995 Yukihiro Matsumoto
+  Copyright (C) 1993-1996 Yukihiro Matsumoto
 
 ************************************************/
+
+#ifdef _AIX
+#pragma alloca
+#endif
 
 #include "config.h"
 #include "defines.h"
@@ -57,7 +61,7 @@ int eaccess();
 #endif
 
 #ifndef FUNCNAME_PATTERN
-# if defined(hpux) || defined(__NetBSD__) || defined(__BORLANDC__)
+# if defined(__hp9000s300) || defined(__NetBSD__) || defined(__BORLANDC__) || defined(__FreeBSD__)
 #  define FUNCNAME_PATTERN "_Init_%.200s"
 # else
 #  define FUNCNAME_PATTERN "Init_%.200s"
@@ -276,7 +280,7 @@ sym_hash(hdrp, syms)
     struct nlist *sym = syms;
     struct nlist *end = syms + (hdrp->a_syms / sizeof(struct nlist));
 
-    tbl = st_init_table(strcmp, st_strhash);
+    tbl = st_init_strtable();
     if (tbl == NULL) {
 	dln_errno = errno;
 	return NULL;
@@ -345,12 +349,11 @@ dln_init(prog)
 	    p++;
 	}
 	*p = '\0';
-	printf("%s\n", buf);
 
 	return dln_init(buf);
     }
     dln_init_p = 1;
-    undef_tbl = st_init_table(strcmp, st_strhash);
+    undef_tbl = st_init_strtable();
     close(fd);
     return 0;
 
@@ -462,7 +465,7 @@ link_undef(name, base, reloc)
 	break;
     }
     if (reloc_tbl == NULL) {
-	reloc_tbl = st_init_table(ST_NUMCMP, ST_NUMHASH);
+	reloc_tbl = st_init_numtable();
     }
     st_insert(reloc_tbl, u_no++, obj);
 }
@@ -548,6 +551,25 @@ unlink_undef(name, value)
     st_foreach(reloc_tbl, reloc_undef, &arg);
 }
 
+#ifdef N_INDR
+struct indr_data {
+    char *name0, *name1;
+};
+
+static int
+reloc_repl(no, undef, data)
+    int no;
+    struct undef *undef;
+    struct indr_data *data;
+{
+    if (strcmp(data->name0, undef->name) == 0) {
+	free(undef->name);
+	undef->name = strdup(data->name1);
+    }
+    return ST_CONTINUE;
+}
+#endif
+
 static int
 load_1(fd, disp, need_init)
     int fd;
@@ -581,6 +603,32 @@ load_1(fd, disp, need_init)
 	struct nlist *old_sym;
 	int value = sym->n_value;
 
+#ifdef N_INDR
+	if (sym->n_type == (N_INDR | N_EXT)) {
+	    char *key = sym->n_un.n_name;
+
+	    if (st_lookup(sym_tbl, sym[1].n_un.n_name, &old_sym)) {
+		if (st_delete(undef_tbl, &key, NULL)) {
+		    unlink_undef(key, old_sym->n_value);
+		    free(key);
+		}
+	    }
+	    else {
+		struct indr_data data;
+
+		data.name0 = sym->n_un.n_name;
+		data.name1 = sym[1].n_un.n_name;
+		st_foreach(reloc_tbl, reloc_repl, &data);
+
+		st_insert(undef_tbl, strdup(sym[1].n_un.n_name), NULL);
+		if (st_delete(undef_tbl, &key, NULL)) {
+		    free(key);
+		}
+	    }
+	    sym += 2;
+	    continue;
+	}
+#endif
 	if (sym->n_type == (N_UNDF | N_EXT)) {
 	    if (st_lookup(sym_tbl, sym->n_un.n_name, &old_sym) == 0) {
 		old_sym = NULL;
@@ -624,7 +672,7 @@ load_1(fd, disp, need_init)
     sym = syms;
     while (sym < end) {
 	struct nlist *new_sym;
-	char *key;
+	char *key, *name;
 
 	switch (sym->n_type) {
 	  case N_COMM:
@@ -764,7 +812,7 @@ load_1(fd, disp, need_init)
 		if (strcmp(name+1, "libs_to_be_linked") == 0) {
 		    libs_to_be_linked = (char**)sym->n_value;
 		}
-		if (strcmp(name+1, buf) == 0) {
+		else if (strcmp(name+1, buf) == 0) {
 		    init_p = 1;
 		    ((int (*)())sym->n_value)();
 		}
@@ -808,6 +856,7 @@ search_undef(key, value, lib_tbl)
     int value;
     st_table *lib_tbl;
 {
+#if 0
     static char *last = "";
     int offset;
 
@@ -817,6 +866,13 @@ search_undef(key, value, lib_tbl)
 	target_offset = offset;
     }
     return ST_STOP;
+#else
+    int offset;
+
+    if (st_lookup(lib_tbl, key, &offset) == 0) return ST_CONTINUE;
+    target_offset = offset;
+    return ST_STOP;
+#endif
 }
 
 struct symdef {
@@ -879,7 +935,7 @@ load_lib(lib)
     if (strncmp(ahdr.ar_name, "__.SYMDEF", 9) == 0) {
 	/* make hash table from __.SYMDEF */
 
-	lib_tbl = st_init_table(strcmp, st_strhash);
+	lib_tbl = st_init_strtable();
 	data = (int*)xmalloc(size);
 	if (data == NULL) goto syserr;
 	size = read(fd, data, size);
@@ -1020,6 +1076,11 @@ dln_sym(name)
 #include <ctype.h>	/* for isdigit()	*/
 #include <errno.h>	/* for global errno	*/
 #include <string.h>	/* for strerror()	*/
+#include <sys/ldr.h>
+#endif
+
+#ifdef NeXT
+/*#include <mach-o/rld.h>*/
 #endif
 
 static char *
@@ -1095,8 +1156,8 @@ aix_loaderror(char *pathname)
 	ERRBUF_APPEND("\n");
     }
     errbuf[strlen(errbuf)-1] = '\0';	/* trim off last newline */
-    Fail(errbuf);
-return;
+    LoadError(errbuf);
+    return;
 }
 #endif
 
@@ -1125,9 +1186,12 @@ dln_load(file)
 # ifndef RTLD_LAZY
 #  define RTLD_LAZY 1
 # endif
+# ifndef RTLD_GLOBAL
+#  define RTLD_GLOBAL 0
+# endif
 
 	/* Load file */
-	if ((handle = dlopen(file, RTLD_LAZY)) == NULL) {
+	if ((handle = dlopen(file, RTLD_LAZY|RTLD_GLOBAL)) == NULL) {
 	    goto failed;
 	}
 
@@ -1150,13 +1214,14 @@ dln_load(file)
 	flags = BIND_DEFERRED;
 	lib = shl_load(file, flags, 0);
 	if (lib == NULL) {
-	    char buf[256];
-	    Fail("Failed to load %.200s", file);
+	    rb_sys_fail(file);
 	}
 	shl_findsym(&lib, buf, TYPE_PROCEDURE, (void*)&init_fct);
 	if (init_fct == NULL) {
-	    shl_findsym(&lib, buf, TYPE_DATA, (void*)&init_fct);
+	    shl_findsym(&lib, buf, TYPE_UNDEFINED, (void*)&init_fct);
 	    if (init_fct == NULL) {
+		extern int errno;
+		errno = ENOSYM;
 		rb_sys_fail(file);
 	    }
 	}
@@ -1179,14 +1244,54 @@ dln_load(file)
     }
 #endif /* _AIX */
 
+#ifdef NeXT
+#define DLN_DEFINED
+/*----------------------------------------------------
+   By SHIROYAMA Takayuki Psi@fortune.nest.or.jp
+ 
+   Special Thanks...
+    Yu tomoak-i@is.aist-nara.ac.jp,
+    Mi hisho@tasihara.nest.or.jp,
+    and... Miss ARAI Akino(^^;)
+ ----------------------------------------------------*/
+    {
+	unsigned long init_address;
+	char *object_files[2] = {NULL, NULL};
+
+	void (*init_fct)();
+	int len = strlen(file);
+	char *point;
+	char init_name[len +7];
+	
+	object_files[0] = file;
+	
+	/* Load object file, if return value ==0 ,  load failed*/
+	if(rld_load(NULL, NULL, object_files, NULL) == 0) {
+	    LoadError("Failed to load %.200s", file);
+	}
+
+	/* lookup the initial function */
+	if(rld_lookup(NULL, buf, &init_address) == 0) {
+	    LoadError("Failed to lookup Init function %.200s",file);
+	}
+
+	 /* Cannot call *init_address directory, so copy this value to
+	    funtion pointer */
+
+	init_fct = (void(*)())init_address;
+	(*init_fct)();
+	return ;
+    }
+#endif
+
 #ifndef DLN_DEFINED
-    Fail("dynamic link not supported");
+    rb_notimplement("dynamic link not supported");
 #endif
 
 #endif /* USE_DLN_A_OUT */
-#ifndef _AIX
+#if !defined(_AIX) && !defined(NeXT)
   failed:
-    Fail("%s - %s", dln_strerror(), file);
+    LoadError("%s - %s", dln_strerror(), file);
 #endif
 }
 
@@ -1228,8 +1333,7 @@ dln_find_1(fname, path, exe_flag)
     if (strncmp("./", fname, 2) == 0 || strncmp("../", fname, 3) == 0)
       return fname;
 
-    for (dp = path;; dp = ++ep)
-    {
+    for (dp = path;; dp = ++ep) {
 	register int l;
 	int i;
 	int fspace;
@@ -1243,8 +1347,7 @@ dln_find_1(fname, path, exe_flag)
 	l = ep - dp;
 	bp = fbuf;
 	fspace = sizeof fbuf - 2;
-	if (l > 0)
-	{
+	if (l > 0) {
 	    /*
 	    **	If the length of the component is zero length,
 	    **	start from the current directory.  If the
@@ -1253,13 +1356,11 @@ dln_find_1(fname, path, exe_flag)
 	    **	take the path literally.
 	    */
 
-	    if (*dp == '~' && (l == 1 || dp[1] == '/'))
-	    {
+	    if (*dp == '~' && (l == 1 || dp[1] == '/')) {
 		char *home;
 
 		home = getenv("HOME");
-		if (home != NULL)
-		{
+		if (home != NULL) {
 		    i = strlen(home);
 		    if ((fspace -= i) < 0)
 			goto toolong;
@@ -1269,8 +1370,7 @@ dln_find_1(fname, path, exe_flag)
 		dp++;
 		l--;
 	    }
-	    if (l > 0)
-	    {
+	    if (l > 0) {
 		if ((fspace -= l) < 0)
 		    goto toolong;
 		memcpy(bp, dp, l);
@@ -1284,9 +1384,8 @@ dln_find_1(fname, path, exe_flag)
 
 	/* now append the file name */
 	i = strlen(fname);
-	if ((fspace -= i) < 0)
-	{
-    toolong:
+	if ((fspace -= i) < 0) {
+	  toolong:
 	    fprintf(stderr, "openpath: pathname too long (ignored)\n");
 	    *bp = '\0';
 	    fprintf(stderr, "\tDirectory \"%s\"\n", fbuf);

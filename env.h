@@ -16,9 +16,11 @@ extern struct FRAME {
     VALUE *argv;
     ID last_func;
     struct RClass *last_class;
+    VALUE cbase;
     struct FRAME *prev;
     char *file;
     int line;
+    int iter;
 } *the_frame;
 
 extern struct SCOPE {
@@ -28,8 +30,9 @@ extern struct SCOPE {
     int flag;
 } *the_scope;
 
-#define SCOPE_ALLOCA 0
-#define SCOPE_MALLOC 1
+#define SCOPE_ALLOCA  0
+#define SCOPE_MALLOC  1
+#define SCOPE_NOSTACK 2
 
 extern int rb_in_eval;
 

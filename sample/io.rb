@@ -15,8 +15,8 @@ for i in "abc\n\ndef\nghi\n"
   print("tt: ", i)
 end
 
-printf("%s:(%d)%s\n", $0, $ARGV.length, $ARGV[0])
-passwd = open($ARGV[0], "r")
+printf("%s:(%d)%s\n", $0, ARGV.length, ARGV[0])
+passwd = open(ARGV[0], "r")
 #printf("%s", passwd.find{i|i =~ /\*/})
 
 n = 1

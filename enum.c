@@ -6,20 +6,19 @@
   $Date: 1995/01/10 10:42:29 $
   created at: Fri Oct  1 15:15:19 JST 1993
 
-  Copyright (C) 1993-1995 Yukihiro Matsumoto
+  Copyright (C) 1993-1996 Yukihiro Matsumoto
 
 ************************************************/
 
 #include "ruby.h"
 
 VALUE mEnumerable;
-static ID id_each, id_match, id_cmp;
+static ID id_each, id_eqq, id_cmp;
 
 void
 rb_each(obj)
     VALUE obj;
 {
-    if (!id_each) id_each = rb_intern("each");
     rb_funcall(obj, id_each, 0, 0);
 }
 
@@ -27,8 +26,7 @@ static void
 grep_i(i, arg)
     VALUE i, *arg;
 {
-    if (!id_match) id_match = rb_intern("=~");
-    if (rb_funcall(arg[0], id_match, 1, i)) {
+    if (RTEST(rb_funcall(arg[0], id_eqq, 1, i))) {
 	ary_push(arg[1], i);
     }
 }
@@ -37,8 +35,7 @@ static void
 grep_iter_i(i, pat)
     VALUE i, pat;
 {
-    if (!id_match) id_match = rb_intern("=~");
-    if (rb_funcall(pat, id_match, 1, i)) {
+    if (RTEST(rb_funcall(pat, id_eqq, 1, i))) {
 	rb_yield(i);
     }
 }
@@ -61,33 +58,47 @@ enum_grep(obj, pat)
     }
 }
 
+struct find_arg {
+    int found;
+    VALUE val;
+};
+    
 static void
-find_i(i, foundp)
+find_i(i, arg)
     VALUE i;
-    int *foundp;
+    struct find_arg *arg;
 {
-    if (rb_yield(i)) {
-	*foundp = TRUE;
+    if (RTEST(rb_yield(i))) {
+	arg->found = TRUE;
+	arg->val = i;
 	rb_break();
     }
 }
 
 static VALUE
-enum_find(obj)
+enum_find(argc, argv, obj)
+    int argc;
+    VALUE argv;
     VALUE obj;
 {
-    int enum_found;
+    struct find_arg arg;
+    VALUE if_none;
 
-    enum_found = FALSE;
-    rb_iterate(rb_each, obj, find_i, &enum_found);
-    return enum_found;
+    rb_scan_args(argc, argv, "01", &if_none);
+    arg.found = FALSE;
+    rb_iterate(rb_each, obj, find_i, &arg);
+    if (arg.found) {
+	return arg.val;
+    }
+    if (NIL_P(if_none)) return Qnil;
+    return rb_eval_cmd(if_none, Qnil);
 }
 
 static void
 find_all_i(i, tmp)
     VALUE i, tmp;
 {
-    if (rb_yield(i)) {
+    if (RTEST(rb_yield(i))) {
 	ary_push(tmp, i);
     }
 }
@@ -99,7 +110,7 @@ enum_find_all(obj)
     VALUE tmp;
 
     tmp = ary_new();
-    rb_iterate(rb_each, obj, find_all_i, 0);
+    rb_iterate(rb_each, obj, find_all_i, tmp);
 
     return tmp;
 }
@@ -111,7 +122,7 @@ collect_i(i, tmp)
     VALUE retval;
 
     retval = rb_yield(i);
-    if (retval) {
+    if (RTEST(retval)) {
 	ary_push(tmp, retval);
     }
 }
@@ -179,11 +190,25 @@ min_i(i, min)
 {
     VALUE cmp;
 
-    if (*min == Qnil)
+    if (NIL_P(*min))
 	*min = i;
     else {
-	if (!id_cmp) id_cmp   = rb_intern("<=>");
 	cmp = rb_funcall(i, id_cmp, 1, *min);
+	if (FIX2INT(cmp) < 0)
+	    *min = i;
+    }
+}
+
+static void
+min_ii(i, min)
+    VALUE i, *min;
+{
+    VALUE cmp;
+
+    if (NIL_P(*min))
+	*min = i;
+    else {
+	cmp = rb_yield(assoc_new(i, *min));
 	if (FIX2INT(cmp) < 0)
 	    *min = i;
     }
@@ -195,7 +220,7 @@ enum_min(obj)
 {
     VALUE min = Qnil;
 
-    rb_iterate(rb_each, obj, min_i, &min);
+    rb_iterate(rb_each, obj, iterator_p()?min_ii:min_i, &min);
     return min;
 }
 
@@ -205,11 +230,25 @@ max_i(i, max)
 {
     VALUE cmp;
 
-    if (*max == Qnil)
+    if (NIL_P(*max))
 	*max = i;
     else {
-	if (!id_cmp) id_cmp   = rb_intern("<=>");
 	cmp = rb_funcall(i, id_cmp, 1, *max);
+	if (FIX2INT(cmp) > 0)
+	    *max = i;
+    }
+}
+
+static void
+max_ii(i, max)
+    VALUE i, *max;
+{
+    VALUE cmp;
+
+    if (NIL_P(*max))
+	*max = i;
+    else {
+	cmp = rb_yield(assoc_new(i, *max));
 	if (FIX2INT(cmp) > 0)
 	    *max = i;
     }
@@ -221,7 +260,7 @@ enum_max(obj)
 {
     VALUE max = Qnil;
 
-    rb_iterate(rb_each, obj, max_i, &max);
+    rb_iterate(rb_each, obj, iterator_p()?max_ii:max_i, &max);
     return max;
 }
 
@@ -291,7 +330,7 @@ length_i(i, length)
     (*length)++;
 }
 
-static VALUE
+VALUE
 enum_length(obj)
     VALUE obj;
 {
@@ -310,7 +349,7 @@ Init_Enumerable()
 
     rb_define_method(mEnumerable,"sort", enum_sort, 0);
     rb_define_method(mEnumerable,"grep", enum_grep, 1);
-    rb_define_method(mEnumerable,"find", enum_find, 0);
+    rb_define_method(mEnumerable,"find", enum_find, -1);
     rb_define_method(mEnumerable,"find_all", enum_find_all, 0);
     rb_define_method(mEnumerable,"collect", enum_collect, 0);
     rb_define_method(mEnumerable,"reverse", enum_reverse, 0);
@@ -319,4 +358,9 @@ Init_Enumerable()
     rb_define_method(mEnumerable,"index", enum_index, 1);
     rb_define_method(mEnumerable,"member?", enum_member, 1);
     rb_define_method(mEnumerable,"length", enum_length, 0);
+    rb_define_method(mEnumerable,"size", enum_length, 0);
+
+    id_eqq  = rb_intern("===");
+    id_each = rb_intern("each");
+    id_cmp  = rb_intern("<=>");
 }

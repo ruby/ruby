@@ -1,5 +1,5 @@
 #! /usr/local/bin/ruby
-cmd = $ARGV.join(" ")
+cmd = ARGV.join(" ")
 b = Time.now
 system(cmd)
 e = Time.now

@@ -4,20 +4,20 @@ class MyElem
   def initialize(item)
     # @変数はインスタンス変数(宣言は要らない)
     @data = item
-    @next = nil
+    @succ = nil
   end
 
   def data
     @data
   end
 
-  def next
-    @next
+  def succ
+    @succ
   end
 
   # 「obj.data = val」としたときに暗黙に呼ばれるメソッド
-  def next=(new)
-    @next = new
+  def succ=(new)
+    @succ = new
   end
 end
 
@@ -25,7 +25,7 @@ class MyList
   def add_to_list(obj)
     elt = MyElem.new(obj)
     if @head
-      @tail.next = elt
+      @tail.succ = elt
     else
       @head = elt
     end
@@ -36,7 +36,7 @@ class MyList
     elt = @head
     while elt
       yield elt
-      elt = elt.next
+      elt = elt.succ
     end
   end
 

@@ -6,7 +6,7 @@
   $Date: 1994/10/14 06:19:05 $
   created at: Thu Aug 26 14:39:48 JST 1993
 
-  Copyright (C) 1993-1995 Yukihiro Matsumoto
+  Copyright (C) 1993-1996 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -34,7 +34,7 @@ cmp_gt(x, y)
     VALUE c = rb_funcall(x, cmp, 1, y);
     int t = NUM2INT(c);
 
-    if (t > 0) return y;
+    if (t > 0) return TRUE;
     return FALSE;
 }
 
@@ -45,7 +45,7 @@ cmp_ge(x, y)
     VALUE c = rb_funcall(x, cmp, 1, y);
     int t = NUM2INT(c);
 
-    if (t >= 0) return y;
+    if (t >= 0) return TRUE;
     return FALSE;
 }
 
@@ -56,7 +56,7 @@ cmp_lt(x, y)
     VALUE c = rb_funcall(x, cmp, 1, y);
     int t = NUM2INT(c);
 
-    if (t < 0) return y;
+    if (t < 0) return TRUE;
     return FALSE;
 }
 
@@ -67,7 +67,7 @@ cmp_le(x, y)
     VALUE c = rb_funcall(x, cmp, 1, y);
     int t = NUM2INT(c);
 
-    if (t <= 0) return y;
+    if (t <= 0) return TRUE;
     return FALSE;
 }
 

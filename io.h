@@ -7,7 +7,7 @@
   $Date: 1994/08/12 11:06:42 $
   created at: Fri Nov 12 16:47:09 JST 1993
 
-  Copyright (C) 1993-1995 Yukihiro Matsumoto
+  Copyright (C) 1993-1996 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -18,7 +18,7 @@
 #include <stdio.h>
 #include <errno.h>
 
-typedef struct {
+typedef struct OpenFile {
     FILE *f;			/* stdio ptr for read/write */
     FILE *f2;			/* additional ptr for rw pipes */
     int mode;			/* mode flags */
@@ -33,14 +33,10 @@ typedef struct {
 #define FMODE_READWRITE 3
 #define FMODE_SYNC      4
 
-extern ID id_fd;
-
-#define GetOpenFile(obj,fp) Get_Data_Struct(obj, id_fd, OpenFile, fp)
-
-void io_fptr_finalize();
+#define GetOpenFile(obj,fp) fp = RFILE(obj)->fptr
 
 #define MakeOpenFile(obj, fp) do {\
-    Make_Data_Struct(obj, id_fd, OpenFile, 0, io_fptr_finalize, fp);\
+    fp = RFILE(obj)->fptr = ALLOC(OpenFile);\
     fp->f = fp->f2 = NULL;\
     fp->mode = 0;\
     fp->pid = 0;\
@@ -48,5 +44,7 @@ void io_fptr_finalize();
     fp->path = NULL;\
     fp->finalize = 0;\
 } while (0)
+
+FILE *rb_fopen();
 
 #endif

@@ -10,20 +10,21 @@
 
 #include "ruby.h"
 #include "env.h"
+#include "node.h"
 #include "st.h"
 
-st_table *rb_global_tbl;
+static st_table *rb_global_tbl;
 st_table *rb_class_tbl;
 #define global_tbl rb_global_tbl
 #define class_tbl rb_class_tbl
 
-VALUE rb_const_defined();
+int rb_const_defined();
 VALUE rb_const_get();
 
 st_table *
 new_idhash()
 {
-    return st_init_table(ST_NUMCMP, ST_NUMHASH);
+    return st_init_numtable();
 }
 
 void
@@ -39,10 +40,13 @@ rb_class2path(class)
 {
     VALUE path;
 
-    while (TYPE(class) == T_ICLASS) {
+    while (TYPE(class) == T_ICLASS || FL_TEST(class, FL_SINGLETON)) {
 	class = (VALUE)RCLASS(class)->super;
     }
     path = rb_ivar_get(class, rb_intern("__classpath__"));
+    if (NIL_P(path)) {
+	return rb_class2name(class);
+    }
     if (TYPE(path) != T_STRING) Bug("class path does not set properly");
     return RSTRING(path)->ptr;
 }
@@ -55,7 +59,6 @@ rb_class_path(class)
 
     if (strchr(name, ':')) {
 	VALUE ary = str_split(str_new2(name), ":");
-	ary_pop(ary);
 	ary = ary_reverse(ary);
 	return ary_join(ary, str_new2("::"));
     }
@@ -70,6 +73,7 @@ rb_set_class_path(class, under, name)
     VALUE str;
     char *s;
 
+    if (cObject == under) return;
     str = str_new2(name);
     if (under) {
 	str_cat(str, ":", 1);
@@ -93,8 +97,9 @@ rb_path2class(path)
 	*p++;
     }
     if (*p == '\0') {		/* pre-defined class */
-	if (!st_lookup(class_tbl, rb_intern(path), &class)) {
-	    Fail("Undefined class -- %s", path);
+	if (!st_lookup(RCLASS(cObject)->iv_tbl, rb_intern(path), &class)
+	    && !st_lookup(class_tbl, rb_intern(path), &class)) {
+	    NameError("Undefined class -- %s", path);
 	}
 	return class;
     }
@@ -107,14 +112,14 @@ rb_path2class(path)
     *s = '\0';
     id = rb_intern(name);
     if (!rb_const_defined(class, id))
-	Fail("%s not defined", name);
+	Fatal("%s not defined", name);
     class = rb_const_get(class, id);
     switch (TYPE(class)) {
       case T_CLASS:
       case T_MODULE:
 	break;
       default:
-	Fail("%s not a module/class");
+	Fatal("0x%x is not a class/module", class);
     }
     return class;
 }
@@ -124,7 +129,7 @@ rb_name_class(class, id)
     VALUE class;
     ID id;
 {
-    rb_ivar_set(class, rb_intern("__classname__"), INT2FIX(id));
+    rb_ivar_set(class, rb_intern("__classname__"), id);
 }
 
 static st_table *autoload_tbl = 0;
@@ -173,16 +178,15 @@ rb_class2name(class)
       case T_MODULE:
 	break;
       default:
-	Fail("0x%x is not a class/module", class);
+	Fatal("0x%x is not a class/module", class);
     }
 
-    while (FL_TEST(class, FL_SINGLE) || TYPE(class) == T_ICLASS) {
+    while (FL_TEST(class, FL_SINGLETON) || TYPE(class) == T_ICLASS) {
 	class = (struct RClass*)class->super;
     }
 
     name = rb_ivar_get(class, rb_intern("__classname__"));
-    if (name) {
-	name = FIX2INT(name);
+    if (!NIL_P(name)) {
 	return rb_id2name((ID)name);
     }
     Bug("class 0x%x not named", class);
@@ -193,6 +197,8 @@ struct trace_var {
     void *data;
     struct trace_var *next;
 };
+
+VALUE f_untrace_var();
 
 struct global_entry {
     ID id;
@@ -241,7 +247,7 @@ static VALUE
 undef_getter(id)
     ID id;
 {
-    Warning("global var %s not initialized", rb_id2name(id));
+    Warning("global variable `%s' not initialized", rb_id2name(id));
     return Qnil;
 }
 
@@ -315,12 +321,12 @@ var_marker(var)
 }
 
 static void
-readonly_setter(id, var, val)
+readonly_setter(val, id, var)
     ID id;
     void *var;
     VALUE val;
 {
-    Fail("Can't set variable %s", rb_id2name(id));
+    NameError("Can't set variable %s", rb_id2name(id));
 }
 
 static int
@@ -405,8 +411,6 @@ rb_define_virtual_variable(name, getter, setter)
     rb_define_hooked_variable(name, 0, getter, setter);
 }
 
-void rb_trace_eval();
-
 void
 rb_trace_eval(cmd, val)
     VALUE cmd, val;
@@ -427,9 +431,12 @@ f_trace_var(argc, argv)
     if (rb_scan_args(argc, argv, "11", &var, &cmd) == 1) {
 	cmd = f_lambda();
     }
+    if (NIL_P(cmd)) {
+	return f_untrace_var(argc, argv, Qnil);
+    }
     id = rb_to_id(var);
     if (!st_lookup(global_tbl, id, &entry)) {
-	Fail("undefined global variable %s", rb_id2name(id));
+	NameError("undefined global variable %s", rb_id2name(id));
     }
     trace = ALLOC(struct trace_var);
     trace->next = entry->trace;
@@ -441,29 +448,52 @@ f_trace_var(argc, argv)
 }
 
 VALUE
-f_untrace_var(obj, var)
-    VALUE obj, var;
+f_untrace_var(argc, argv)
+    int argc;
+    VALUE *argv;
 {
+    VALUE var, cmd;
     ID id;
     struct global_entry *entry;
     struct trace_var *trace;
-    VALUE ary;
 
+    rb_scan_args(argc, argv, "11", &var, &cmd);
     id = rb_to_id(var);
     if (!st_lookup(global_tbl, id, &entry)) {
-	Fail("undefined global variable %s", rb_id2name(id));
+	NameError("undefined global variable %s", rb_id2name(id));
     }
-    ary = ary_new();
-    trace = entry->trace;
-    while (trace) {
-	struct trace_var *next = trace->next;
-	ary_push(ary, trace->data);
-	free(trace);
-	trace = next;
-    }
-    entry->trace = 0;
+    if (NIL_P(cmd)) {
+	VALUE ary = ary_new();
 
-    return ary;
+	trace = entry->trace;
+	while (trace) {
+	    struct trace_var *next = trace->next;
+	    ary_push(ary, trace->data);
+	    free(trace);
+	    trace = next;
+	}
+	entry->trace = 0;
+
+	return ary;
+    }
+    else {
+	struct trace_var t;
+	struct trace_var *next;
+
+	t.next = entry->trace;
+	trace = &t;
+	while (trace->next) {
+	    next = trace->next;
+	    if (next->data == (void*)cmd) {
+		trace->next = next->next;
+		free(next);
+		entry->trace = t.next;
+		return ary_new3(1, cmd);
+	    }
+	    trace = next;
+	}
+    }
+    return Qnil;
 }
 
 VALUE
@@ -549,8 +579,8 @@ rb_ivar_get(obj, id)
 	    return val;
 	return Qnil;
       default:
-	Fail("class %s can not have instance variables",
-	     rb_class2name(CLASS_OF(obj)));
+	Fatal("class %s can not have instance variables",
+	      rb_class2name(CLASS_OF(obj)));
 	break;
     }
     Warning("instance var %s not initialized", rb_id2name(id));
@@ -571,8 +601,8 @@ rb_ivar_set(obj, id, val)
 	st_insert(obj->iv_tbl, id, val);
 	break;
       default:
-	Fail("class %s can not have instance variables",
-	     rb_class2name(CLASS_OF(obj)));
+	Fatal("class %s can not have instance variables",
+	      rb_class2name(CLASS_OF(obj)));
 	break;
     }
     return val;
@@ -592,6 +622,22 @@ rb_ivar_defined(obj, id)
 	break;
     }
     return FALSE;
+}
+
+VALUE
+rb_const_get_at(class, id)
+    struct RClass *class;
+    ID id;
+{
+    VALUE value;
+
+    if (class->iv_tbl && st_lookup(class->iv_tbl, id, &value)) {
+	return value;
+    }
+    NameError("Uninitialized constant %s::%s",
+	      RSTRING(rb_class_path(class))->ptr,
+	      rb_id2name(id));
+    /* not reached */
 }
 
 VALUE
@@ -624,21 +670,32 @@ rb_const_get(class, id)
 	st_delete(autoload_tbl, &id, &modname);
 	module = str_new2(modname);
 	free(modname);
-	f_require(Qnil, module);
+	f_require(0, module);
 	return rb_const_get(class, id);
     }
 
     /* Uninitialized constant */
     if (class && (VALUE)class != cObject)
-	Fail("Uninitialized constant %s::%s",
-	     RSTRING(rb_class_path(class))->ptr,
-	     rb_id2name(id));
+	NameError("Uninitialized constant %s::%s",
+		  RSTRING(rb_class_path(class))->ptr,
+		  rb_id2name(id));
     else
-	Fail("Uninitialized constant %s",rb_id2name(id));
+	NameError("Uninitialized constant %s",rb_id2name(id));
     /* not reached */
 }
 
-VALUE
+int
+rb_const_defined_at(class, id)
+    struct RClass *class;
+    ID id;
+{
+    if (class->iv_tbl && st_lookup(class->iv_tbl, id, 0)) {
+	return TRUE;
+    }
+    return FALSE;
+}
+
+int
 rb_const_defined(class, id)
     struct RClass *class;
     ID id;
@@ -656,16 +713,31 @@ rb_const_defined(class, id)
     return FALSE;
 }
 
+int
+rb_autoload_defined(id)
+    ID id;
+{
+    if (autoload_tbl && st_lookup(autoload_tbl, id, 0))
+	return TRUE;
+    return FALSE;
+}
+
 void
 rb_const_set(class, id, val)
     struct RClass *class;
     ID id;
     VALUE val;
 {
-    if (rb_const_defined(class, id))
-	Fail("already initialized constnant %s", rb_id2name(id));
+    if (!class->iv_tbl) {
+	class->iv_tbl = new_idhash();
+    }
+    else if (st_lookup(class->iv_tbl, id, 0)) {
+	NameError("already initialized constnant %s", rb_id2name(id));
+    }
+    if (!rb_autoload_defined(id) && rb_const_defined(class, id)) {
+	Warning("already initialized constnant %s", rb_id2name(id));
+    }
 
-    if (!class->iv_tbl) class->iv_tbl = new_idhash();
     st_insert(class->iv_tbl, id, val);
 }
 
@@ -676,6 +748,16 @@ rb_define_const(class, name, val)
     VALUE val;
 {
     rb_const_set(class, rb_intern(name), val);
+}
+
+extern VALUE cKernel;
+
+void
+rb_define_global_const(name, val)
+    char *name;
+    VALUE val;
+{
+    rb_define_const(cKernel, name, val);
 }
 
 VALUE
@@ -697,34 +779,4 @@ rb_iv_set(obj, name, val)
     ID id = rb_intern(name);
 
     return rb_ivar_set(obj, id, val);
-}
-
-VALUE
-backref_get()
-{
-    int cnt, max;
-
-    if (!the_scope->local_vars) return Qnil;
-    for (cnt=1, max=the_scope->local_tbl[0]+1; cnt<max ;cnt++) {
-	if (the_scope->local_tbl[cnt] == '~') {
-	    cnt--;
-	    if (the_scope->local_vars[cnt]) 
-		return the_scope->local_vars[cnt];
-	    else
-		return 1;
-	}
-    }
-    return Qnil;
-}
-
-void
-backref_set(val)
-    VALUE val;
-{
-    int cnt, max;
-
-    for (cnt=1, max=the_scope->local_tbl[0]+1; cnt<max ;cnt++) {
-	if (the_scope->local_tbl[cnt] == '~') break;
-    }
-    the_scope->local_vars[cnt-1] = val;
 }

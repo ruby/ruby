@@ -5,12 +5,12 @@
 
 require "tk"
 
-class TkCanvas:TkWindow
+class TkCanvas<TkWindow
   def create_self
     tk_call 'canvas', path
   end
   def tagid(tag)
-    if tag.is_kind_of?(TkcItem)
+    if tag.kind_of?(TkcItem)
       tag.id
     else
       tag
@@ -89,6 +89,9 @@ class TkCanvas:TkWindow
   def move(tag, x, y)
     tk_send 'move', tagid(tag), x, y
   end
+  def itemtype(tag)
+    tk_send 'type', tagid(tag)
+  end
   def postscript(keys=None)
     tk_call "pack", *hash_kv(keys)
   end
@@ -115,9 +118,9 @@ class TkCanvas:TkWindow
   end
 end
 
-class TkcItem:TkObject
+class TkcItem<TkObject
   def initialize(parent, *args)
-    if not parent.is_kind_of?(TkCanvas)
+    if not parent.kind_of?(TkCanvas)
       fail format("%s need to be TkCanvas", parent.inspect)
     end
     @c = parent
@@ -137,7 +140,7 @@ class TkcItem:TkObject
   end
 
   def configure(slot, value)
-    tk_call path, 'itemconfigure', id, "-#{slot}", value
+    tk_call path, 'itemconfigure', @id, "-#{slot}", value
   end
 
   def addtag(tag)
@@ -185,59 +188,59 @@ class TkcItem:TkObject
   def scale(xorigin, yorigin, xscale, yscale)
     @c.scale @id, xorigin, yorigin, xscale, yscale
   end
-  def type
-    @c.type @id
+  def itemtype
+    @c.itemtype @id
   end
   def destroy
     tk_call path, 'delete', @id
   end
 end
 
-class TkcArc:TkcItem
+class TkcArc<TkcItem
   def create_self(*args)
     tk_call(@path, 'create', 'arc', *args)
   end
 end
-class TkcBitmap:TkcItem
+class TkcBitmap<TkcItem
   def create_self(*args)
     tk_call(@path, 'create', 'bitmap', *args)
   end
 end
-class TkcImage:TkcItem
+class TkcImage<TkcItem
   def create_self(*args)
     tk_call(@path, 'create', 'image', *args)
   end
 end
-class TkcLine:TkcItem
+class TkcLine<TkcItem
   def create_self(*args)
     tk_call(@path, 'create', 'line', *args)
   end
 end
-class TkcOval:TkcItem
+class TkcOval<TkcItem
   def create_self(*args)
     tk_call(@path, 'create', 'oval', *args)
   end
 end
-class TkcPolygon:TkcItem
+class TkcPolygon<TkcItem
   def create_self(*args)
     tk_call(@path, 'create', 'polygon', *args)
   end
 end
-class TkcText:TkcItem
+class TkcText<TkcItem
   def create_self(*args)
     tk_call(@path, 'create', 'text', *args)
   end
 end
-class TkcWindow:TkcItem
+class TkcWindow<TkcItem
   def create_self(*args)
     tk_call(@path, 'create', 'window', *args)
   end
 end
-class TkcGroup:TkcItem
+class TkcGroup<TkcItem
   $tk_group_id = 'tkg00000'
   def create_self(*args)
     @id = $tk_group_id
-    $tk_group_id = $tk_group_id.next
+    $tk_group_id = $tk_group_id.succ
   end
   
   def add(*tags)
@@ -262,20 +265,20 @@ class TkcGroup:TkcItem
 end
 
 
-class TkImage:TkObject
+class TkImage<TkObject
   include Tk
 
   $tk_image_id = 'i00000'
   def initialize(keys=nil)
     @path = $tk_image_id
-    $tk_image_id = $tk_image_id.next
+    $tk_image_id = $tk_image_id.succ
     tk_call 'image', @type, @path, *hash_kv(keys)
   end
 
   def height
     number(tk_call('image', 'height', @path))
   end
-  def type
+  def itemtype
     tk_call('image', 'type', @path)
   end
   def width
@@ -290,14 +293,14 @@ class TkImage:TkObject
   end
 end
 
-class TkBitmapImage:TkImage
+class TkBitmapImage<TkImage
   def initialize(*args)
     @type = 'bitmap'
     super
   end
 end
 
-class TkPhotoImage:TkImage
+class TkPhotoImage<TkImage
   def initialize(*args)
     @type = 'bitmap'
     super

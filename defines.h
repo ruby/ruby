@@ -16,10 +16,21 @@
 #define EUC
 #undef SJIS
 
-#define SAFE_SIGHANDLE
+#ifdef NeXT
+#define S_IXUSR _S_IXUSR        /* execute/search permission, owner */
+#define S_IXGRP 0000010         /* execute/search permission, group */
+#define S_IXOTH 0000001         /* execute/search permission, other */
+#define S_ISREG(mode)   (((mode) & (_S_IFMT)) == (_S_IFREG))
+#endif /* NeXT */
 
 #ifdef NT
 #include "missing/nt.h"
+#endif
+
+#ifdef sparc
+#define FLUSH_REGISTER_WINDOWS asm("ta 3")
+#else
+#define FLUSH_REGISTER_WINDOWS /* empty */
 #endif
 
 #endif

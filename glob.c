@@ -48,7 +48,7 @@
 #  endif /* !USG */
 #endif /* !HAVE_DIRENT_H */
 
-#if defined (_POSIX_SOURCE)
+#if defined (_POSIX_SOURCE) || defined(DJGPP)
 /* Posix does not require that the d_ino field be present, and some
    systems do not provide it. */
 #  define REAL_DIR_ENTRY(dp) 1
@@ -70,10 +70,14 @@
 
 # define bcopy(s, d, n) (memcpy ((d), (s), (n)))
 
+#ifdef _AIX
+#pragma alloca
+#else
 #if defined(HAVE_ALLOCA_H) && !defined(__GNUC__)
 #include <alloca.h>
 #else
 char *alloca ();
+#endif
 #endif
 
 #include "fnmatch.h"
@@ -376,7 +380,9 @@ char **
 glob_filename (pathname)
      char *pathname;
 {
+#ifndef strrchr
   char *strrchr();
+#endif
 
   char **result;
   unsigned int result_size;

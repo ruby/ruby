@@ -17,9 +17,13 @@
 #include <errno.h>
 
 VALUE cDBM;
-static ID id_dbm;
 
 extern VALUE mEnumerable;
+
+struct dbmdata {
+    int  di_size;
+    DBM *di_dbm;
+};
 
 static void
 closeddbm()
@@ -28,24 +32,15 @@ closeddbm()
 }
 
 #define GetDBM(obj, dbmp) {\
-    DBM **_dbm;\
-    Get_Data_Struct(obj, id_dbm, DBM*, _dbm);\
-    dbmp = *_dbm;\
-    if (dbmp == Qnil) closeddbm();\
+    Get_Data_Struct(obj, struct dbmdata, dbmp);\
+    if (dbmp->di_dbm == 0) closeddbm();\
 }
 
 static void
 free_dbm(dbmp)
-    DBM **dbmp;
+    struct dbmdata *dbmp;
 {
-    if (*dbmp) dbm_close(*dbmp);
-}
-
-#define MakeDBM(obj, dp) {\
-    DBM **_dbm;\
-    if (!id_dbm) id_dbm = rb_intern("dbm");\
-    Make_Data_Struct(obj,id_dbm,DBM*,Qnil,free_dbm,_dbm);\
-    *_dbm=dp;\
+    if (dbmp->di_dbm) dbm_close(dbmp->di_dbm);
 }
 
 static VALUE
@@ -55,7 +50,8 @@ fdbm_s_open(argc, argv, class)
     VALUE class;
 {
     VALUE file, vmode;
-    DBM *dbm, **dbm2;
+    DBM *dbm;
+    struct dbmdata *dbmp;
     int mode;
     VALUE obj;
 
@@ -70,7 +66,7 @@ fdbm_s_open(argc, argv, class)
     }
     Check_Type(file, T_STRING);
 
-    dbm = Qnil;
+    dbm = 0;
     if (mode >= 0)
 	dbm = dbm_open(RSTRING(file)->ptr, O_RDWR|O_CREAT, mode);
     if (!dbm)
@@ -83,8 +79,9 @@ fdbm_s_open(argc, argv, class)
 	rb_sys_fail(RSTRING(file)->ptr);
     }
 
-    obj = obj_alloc(class);
-    MakeDBM(obj, dbm);
+    obj = Make_Data_Struct(class,struct dbmdata,0,free_dbm,dbmp);
+    dbmp->di_dbm = dbm;
+    dbmp->di_size = -1;
 
     return obj;
 }
@@ -93,12 +90,12 @@ static VALUE
 fdbm_close(obj)
     VALUE obj;
 {
-    DBM **dbmp;
+    struct dbmdata *dbmp;
 
-    Get_Data_Struct(obj, id_dbm, DBM*, dbmp);
-    if (*dbmp == Qnil) Fail("already closed DBM file");
-    dbm_close(*dbmp);
-    *dbmp = Qnil;
+    Get_Data_Struct(obj, struct dbmdata, dbmp);
+    if (dbmp->di_dbm == 0) closeddbm();
+    dbm_close(dbmp->di_dbm);
+    dbmp->di_dbm = 0;
 
     return Qnil;
 }
@@ -108,15 +105,17 @@ fdbm_fetch(obj, keystr)
     VALUE obj, keystr;
 {
     datum key, value;
+    struct dbmdata *dbmp;
     DBM *dbm;
 
     Check_Type(keystr, T_STRING);
     key.dptr = RSTRING(keystr)->ptr;
     key.dsize = RSTRING(keystr)->len;
 
-    GetDBM(obj, dbm);
+    GetDBM(obj, dbmp);
+    dbm = dbmp->di_dbm;
     value = dbm_fetch(dbm, key);
-    if (value.dptr == Qnil) {
+    if (value.dptr == 0) {
 	return Qnil;
     }
     return str_new(value.dptr, value.dsize);
@@ -128,37 +127,46 @@ fdbm_indexes(obj, args)
     struct RArray *args;
 {
     VALUE *p, *pend;
-    struct RArray *new;
+    VALUE new;
     int i = 0;
 
-    if (!args || args->len == 1 && TYPE(args->ptr) != T_ARRAY) {
-	args = (struct RArray*)rb_to_a(args->ptr[0]);
-    }
-
-    new = (struct RArray*)ary_new2(args->len);
+    args = (struct RArray*)rb_to_a(args);
+    new = ary_new2(args->len);
 
     p = args->ptr; pend = p + args->len;
     while (p < pend) {
-	new->ptr[i++] = fdbm_fetch(obj, *p++);
-	new->len = i;
+	ary_push(new, fdbm_fetch(obj, *p++));
     }
-    return (VALUE)new;
+    return new;
 }
 
 static VALUE
 fdbm_delete(obj, keystr)
     VALUE obj, keystr;
 {
-    datum key;
+    datum key, value;
+    struct dbmdata *dbmp;
     DBM *dbm;
 
     Check_Type(keystr, T_STRING);
     key.dptr = RSTRING(keystr)->ptr;
     key.dsize = RSTRING(keystr)->len;
 
-    GetDBM(obj, dbm);
+    GetDBM(obj, dbmp);
+    dbm = dbmp->di_dbm;
+
+    value = dbm_fetch(dbm, key);
+    if (value.dptr == 0) {
+	if (iterator_p()) rb_yield(Qnil);
+	return Qnil;
+    }
+
     if (dbm_delete(dbm, key)) {
+	dbmp->di_size = -1;
 	Fail("dbm_delete failed");
+    }
+    else if (dbmp->di_size >= 0) {
+	dbmp->di_size--;
     }
     return obj;
 }
@@ -168,10 +176,12 @@ fdbm_shift(obj)
     VALUE obj;
 {
     datum key, val;
+    struct dbmdata *dbmp;
     DBM *dbm;
     VALUE keystr, valstr;
 
-    GetDBM(obj, dbm);
+    GetDBM(obj, dbmp);
+    dbm = dbmp->di_dbm;
 
     key = dbm_firstkey(dbm); 
     if (!key.dptr) return Qnil;
@@ -188,17 +198,19 @@ fdbm_delete_if(obj)
     VALUE obj;
 {
     datum key, val;
+    struct dbmdata *dbmp;
     DBM *dbm;
     VALUE keystr, valstr;
 
-    GetDBM(obj, dbm);
+    GetDBM(obj, dbmp);
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	val = dbm_fetch(dbm, key);
 	keystr = str_new(key.dptr, key.dsize);
 	valstr = str_new(val.dptr, val.dsize);
-	if (rb_yield(assoc_new(keystr, valstr))
-	    && dbm_delete(dbm, key)) {
-	    Fail("dbm_delete failed");
+	if (RTEST(rb_yield(assoc_new(keystr, valstr)))) {
+	    if (dbm_delete(dbm, key)) {
+		Fail("dbm_delete failed");
+	    }
 	}
     }
     return obj;
@@ -209,9 +221,12 @@ fdbm_clear(obj)
     VALUE obj;
 {
     datum key;
+    struct dbmdata *dbmp;
     DBM *dbm;
 
-    GetDBM(obj, dbm);
+    GetDBM(obj, dbmp);
+    dbm = dbmp->di_dbm;
+    dbmp->di_size = -1;
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	if (dbm_delete(dbm, key)) {
 	    Fail("dbm_delete failed");
@@ -225,6 +240,7 @@ fdbm_store(obj, keystr, valstr)
     VALUE obj, keystr, valstr;
 {
     datum key, val;
+    struct dbmdata *dbmp;
     DBM *dbm;
 
     if (valstr == Qnil) {
@@ -232,19 +248,26 @@ fdbm_store(obj, keystr, valstr)
 	return Qnil;
     }
 
-    Check_Type(keystr, T_STRING);
+    keystr = obj_as_string(keystr);
+
     key.dptr = RSTRING(keystr)->ptr;
     key.dsize = RSTRING(keystr)->len;
-    Check_Type(valstr, T_STRING);
+
+    if (NIL_P(valstr)) return fdbm_delete(obj, keystr);
+
+    valstr = obj_as_string(valstr);
     val.dptr = RSTRING(valstr)->ptr;
     val.dsize = RSTRING(valstr)->len;
 
-    GetDBM(obj, dbm);
+    Get_Data_Struct(obj, struct dbmdata, dbmp);
+    dbmp->di_size = -1;
+    dbm = dbmp->di_dbm;
     if (dbm_store(dbm, key, val, DBM_REPLACE)) {
 	dbm_clearerr(dbm);
 	if (errno == EPERM) rb_sys_fail(Qnil);
 	Fail("dbm_store failed");
     }
+
     return valstr;
 }
 
@@ -253,14 +276,44 @@ fdbm_length(obj)
     VALUE obj;
 {
     datum key;
+    struct dbmdata *dbmp;
     DBM *dbm;
     int i = 0;
 
-    GetDBM(obj, dbm);
+    Get_Data_Struct(obj, struct dbmdata, dbmp);
+    if (dbmp->di_size > 0) return INT2FIX(dbmp->di_size);
+    dbm = dbmp->di_dbm;
+
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	i++;
     }
+    dbmp->di_size = i;
+
     return INT2FIX(i);
+}
+
+static VALUE
+fdbm_empty(obj)
+    VALUE obj;
+{
+    datum key;
+    struct dbmdata *dbmp;
+    DBM *dbm;
+    int i = 0;
+
+    Get_Data_Struct(obj, struct dbmdata, dbmp);
+    if (dbmp->di_size < 0) {
+	dbm = dbmp->di_dbm;
+
+	for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
+	    i++;
+	}
+    }
+    else {
+	i = dbmp->di_size;
+    }
+    if (i == 0) return TRUE;
+    return FALSE;
 }
 
 static VALUE
@@ -268,9 +321,11 @@ fdbm_each_value(obj)
     VALUE obj;
 {
     datum key, val;
+    struct dbmdata *dbmp;
     DBM *dbm;
 
-    GetDBM(obj, dbm);
+    GetDBM(obj, dbmp);
+    dbm = dbmp->di_dbm;
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	val = dbm_fetch(dbm, key);
 	rb_yield(str_new(val.dptr, val.dsize));
@@ -283,9 +338,11 @@ fdbm_each_key(obj)
     VALUE obj;
 {
     datum key;
+    struct dbmdata *dbmp;
     DBM *dbm;
 
-    GetDBM(obj, dbm);
+    GetDBM(obj, dbmp);
+    dbm = dbmp->di_dbm;
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	rb_yield(str_new(key.dptr, key.dsize));
     }
@@ -298,9 +355,11 @@ fdbm_each_pair(obj)
 {
     datum key, val;
     DBM *dbm;
+    struct dbmdata *dbmp;
     VALUE keystr, valstr;
 
-    GetDBM(obj, dbm);
+    GetDBM(obj, dbmp);
+    dbm = dbmp->di_dbm;
 
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	val = dbm_fetch(dbm, key);
@@ -317,11 +376,14 @@ fdbm_keys(obj)
     VALUE obj;
 {
     datum key;
+    struct dbmdata *dbmp;
     DBM *dbm;
     VALUE ary;
 
+    GetDBM(obj, dbmp);
+    dbm = dbmp->di_dbm;
+
     ary = ary_new();
-    GetDBM(obj, dbm);
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	ary_push(ary, str_new(key.dptr, key.dsize));
     }
@@ -334,11 +396,14 @@ fdbm_values(obj)
     VALUE obj;
 {
     datum key, val;
+    struct dbmdata *dbmp;
     DBM *dbm;
     VALUE ary;
 
+    GetDBM(obj, dbmp);
+    dbm = dbmp->di_dbm;
+
     ary = ary_new();
-    GetDBM(obj, dbm);
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	val = dbm_fetch(dbm, key);
 	ary_push(ary, str_new(val.dptr, val.dsize));
@@ -352,13 +417,15 @@ fdbm_has_key(obj, keystr)
     VALUE obj, keystr;
 {
     datum key, val;
+    struct dbmdata *dbmp;
     DBM *dbm;
 
     Check_Type(keystr, T_STRING);
     key.dptr = RSTRING(keystr)->ptr;
     key.dsize = RSTRING(keystr)->len;
 
-    GetDBM(obj, dbm);
+    GetDBM(obj, dbmp);
+    dbm = dbmp->di_dbm;
     val = dbm_fetch(dbm, key);
     if (val.dptr) return TRUE;
     return FALSE;
@@ -369,13 +436,15 @@ fdbm_has_value(obj, valstr)
     VALUE obj, valstr;
 {
     datum key, val;
+    struct dbmdata *dbmp;
     DBM *dbm;
 
     Check_Type(valstr, T_STRING);
     val.dptr = RSTRING(valstr)->ptr;
     val.dsize = RSTRING(valstr)->len;
 
-    GetDBM(obj, dbm);
+    GetDBM(obj, dbmp);
+    dbm = dbmp->di_dbm;
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	val = dbm_fetch(dbm, key);
 	if (val.dsize == RSTRING(valstr)->len &&
@@ -390,10 +459,12 @@ fdbm_to_a(obj)
     VALUE obj;
 {
     datum key, val;
+    struct dbmdata *dbmp;
     DBM *dbm;
     VALUE ary;
 
-    GetDBM(obj, dbm);
+    GetDBM(obj, dbmp);
+    dbm = dbmp->di_dbm;
 
     ary = ary_new();
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
@@ -417,6 +488,7 @@ Init_dbm()
     rb_define_method(cDBM, "indexes",  fdbm_indexes, -2);
     rb_define_method(cDBM, "length", fdbm_length, 0);
     rb_define_alias(cDBM,  "size", "length");
+    rb_define_method(cDBM, "empty?", fdbm_empty, 0);
     rb_define_method(cDBM, "each", fdbm_each_pair, 0);
     rb_define_method(cDBM, "each_value", fdbm_each_value, 0);
     rb_define_method(cDBM, "each_key", fdbm_each_key, 0);
@@ -427,9 +499,11 @@ Init_dbm()
     rb_define_method(cDBM, "delete", fdbm_delete, 1);
     rb_define_method(cDBM, "delete_if", fdbm_delete_if, 0);
     rb_define_method(cDBM, "clear", fdbm_clear, 0);
-    rb_define_method(cDBM, "includes", fdbm_has_key, 1);
-    rb_define_method(cDBM, "has_key", fdbm_has_key, 1);
-    rb_define_method(cDBM, "has_value", fdbm_has_value, 1);
+    rb_define_method(cDBM, "include?", fdbm_has_key, 1);
+    rb_define_method(cDBM, "has_key?", fdbm_has_key, 1);
+    rb_define_method(cDBM, "has_value?", fdbm_has_value, 1);
+    rb_define_method(cDBM, "key?", fdbm_has_key, 1);
+    rb_define_method(cDBM, "value?", fdbm_has_value, 1);
 
     rb_define_method(cDBM, "to_a", fdbm_to_a, 0);
 }

@@ -6,7 +6,7 @@
   $Date: 1995/01/10 10:42:28 $
   created at: Wed Jan  5 09:51:01 JST 1994
 
-  Copyright (C) 1993-1995 Yukihiro Matsumoto
+  Copyright (C) 1993-1996 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -43,10 +43,11 @@
 # endif
 #endif
 
+#include <errno.h>
+
 char *getenv();
 
 static VALUE cDir;
-static ID id_dir;
 
 static void
 free_dir(dir)
@@ -66,11 +67,17 @@ dir_s_open(dir_class, dirname)
     Check_Type(dirname, T_STRING);
 
     dirp = opendir(dirname->ptr);
-    if (dirp == NULL) Fail("Can't open directory %s", dirname->ptr);
+    if (dirp == NULL) {
+	if (errno == EMFILE || errno == ENFILE) {
+	    gc();
+	    dirp = opendir(dirname->ptr);
+	}
+	if (dirp == NULL) {
+	    rb_sys_fail(dirname->ptr);
+	}
+    }
 
-    obj = obj_alloc(dir_class);
-    if (!id_dir) id_dir = rb_intern("dir");
-    Make_Data_Struct(obj, id_dir, DIR*, 0, free_dir, d);
+    obj = Make_Data_Struct(dir_class, DIR*, 0, free_dir, d);
     *d = dirp;
 
     return obj;
@@ -84,8 +91,7 @@ closeddir()
 
 #define GetDIR(obj, dirp) {\
     DIR **_dp;\
-    if (!id_dir) id_dir = rb_intern("dir");\
-    Get_Data_Struct(obj, id_dir, DIR*, _dp);\
+    Get_Data_Struct(obj, DIR*, _dp);\
     dirp = *_dp;\
     if (dirp == NULL) closeddir();\
 }
@@ -94,14 +100,14 @@ static VALUE
 dir_each(dir)
     VALUE dir;
 {
-    extern VALUE rb_lastline;
     DIR *dirp;
     struct dirent *dp;
+    VALUE file;
 
     GetDIR(dir, dirp);
     for (dp = readdir(dirp); dp != NULL; dp = readdir(dirp)) {
-	rb_lastline = str_new(dp->d_name, NAMLEN(dp));
-	rb_yield(rb_lastline);
+	file = str_new(dp->d_name, NAMLEN(dp));
+	rb_yield(file);
     }
     return dir;
 }
@@ -113,9 +119,13 @@ dir_tell(dir)
     DIR *dirp;
     int pos;
 
+#if !defined(__CYGWIN32__)
     GetDIR(dir, dirp);
     pos = telldir(dirp);
     return int2inum(pos);
+#else
+    rb_notimplement();
+#endif
 }
 
 static VALUE
@@ -124,9 +134,13 @@ dir_seek(dir, pos)
 {
     DIR *dirp;
 
+#if !defined(__CYGWIN32__)
     GetDIR(dir, dirp);
     seekdir(dirp, NUM2INT(pos));
     return dir;
+#else
+    rb_notimplement();
+#endif
 }
 
 static VALUE
@@ -146,8 +160,8 @@ dir_close(dir)
 {
     DIR **dirpp;
 
-    Get_Data_Struct(dir, id_dir, DIR*, dirpp);
-    if (*dirpp == NULL) Fail("already closed directory");
+    Get_Data_Struct(dir, DIR*, dirpp);
+    if (*dirpp == NULL) closeddir();
     closedir(*dirpp);
     *dirpp = NULL;
 
@@ -176,7 +190,7 @@ dir_s_chdir(argc, argv, obj)
     }
 
     if (chdir(dist) < 0)
-	rb_sys_fail(Qnil);
+	rb_sys_fail(0);
 
     return INT2FIX(0);
 }
@@ -189,9 +203,9 @@ dir_s_getwd(dir)
     char path[MAXPATHLEN];
 
 #ifdef HAVE_GETCWD
-    if (getcwd(path, sizeof(path)) == 0) Fail(path);
+    if (getcwd(path, sizeof(path)) == 0) rb_sys_fail(path);
 #else
-    if (getwd(path) == 0) Fail(path);
+    if (getwd(path) == 0) rb_sys_fail(path);
 #endif
 
     return str_new2(path);
@@ -201,12 +215,16 @@ static VALUE
 dir_s_chroot(dir, path)
     VALUE dir, path;
 {
+#if !defined(DJGPP) && !defined(__CYGWIN32__)
     Check_Type(path, T_STRING);
 
     if (chroot(RSTRING(path)->ptr) == -1)
-	rb_sys_fail(Qnil);
+	rb_sys_fail(0);
 
     return INT2FIX(0);
+#else
+    rb_notimplement();
+#endif
 }
 
 static VALUE
@@ -346,6 +364,17 @@ dir_s_glob(dir, str)
     return ary;
 }
 
+static VALUE
+dir_foreach(io, dirname)
+    VALUE io;
+    struct RString *dirname;
+{
+    VALUE dir;
+
+    dir = dir_s_open(cDir, dirname);
+    return rb_ensure(dir_each, dir, dir_close, dir);
+}
+
 void
 Init_Dir()
 {
@@ -356,6 +385,7 @@ Init_Dir()
     rb_include_module(cDir, mEnumerable);
 
     rb_define_singleton_method(cDir, "open", dir_s_open, 1);
+    rb_define_singleton_method(cDir, "foreach", dir_foreach, 1);
 
     rb_define_method(cDir,"each", dir_each, 0);
     rb_define_method(cDir,"rewind", dir_rewind, 0);

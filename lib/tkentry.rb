@@ -5,7 +5,7 @@
 
 require 'tk.rb'
 
-class TkEntry:TkLabel
+class TkEntry<TkLabel
   def create_self
     tk_call 'entry', @path
   end

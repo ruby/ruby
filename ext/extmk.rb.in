@@ -1,21 +1,24 @@
 #! /usr/local/bin/ruby
 
-if $ARGV[0] == 'install'
+if ARGV[0] == 'static'
+  $force_static = TRUE
+  ARGV.shift
+elsif ARGV[0] == 'install'
   $install = TRUE
-  $ARGV.shift
+  ARGV.shift
+elsif ARGV[0] == 'clean'
+  $clean = TRUE
+  ARGV.shift
 end
 
-if $ARGV[0] == 'clean'
-  $clean = TRUE
-  $ARGV.shift
-end
+$extlist = []
 
 $cache_mod = FALSE;
 $lib_cache = {}
 $func_cache = {}
 $hdr_cache = {}
 
-if File.exists?("config.cache") then
+if File.exist?("config.cache") then
   f = open("config.cache", "r")
   while f.gets
     case $_
@@ -31,10 +34,10 @@ if File.exists?("config.cache") then
 end
 
 def older(file1, file2)
-  if !File.exists?(file1) then
+  if !File.exist?(file1) then
     return TRUE
   end
-  if !File.exists?(file2) then
+  if !File.exist?(file2) then
     return FALSE
   end
   if File.mtime(file1) < File.mtime(file2)
@@ -61,7 +64,7 @@ def have_library(lib, func)
   end
 
   cfile = open("conftest.c", "w")
-  printf cfile, "\
+  cfile.printf "\
 int main() { return 0; }
 int t() { %s(); return 0; }
 ", func
@@ -99,7 +102,7 @@ def have_func(func)
   end
 
   cfile = open("conftest.c", "w")
-  printf cfile, "\
+  cfile.printf "\
 char %s();
 int main() { return 0; }
 int t() { %s(); return 0; }
@@ -136,7 +139,7 @@ def have_header(header)
   end
 
   cfile = open("conftest.c", "w")
-  printf cfile, "\
+  cfile.printf "\
 #include <%s>
 ", header
   cfile.close
@@ -162,7 +165,7 @@ def create_header()
     hfile = open("extconf.h", "w")
     for line in $defs
       line =~ /^-D(.*)/
-      printf hfile, "#define %s 1\n", $1
+      hfile.printf "#define %s 1\n", $1
     end
     hfile.close
   end
@@ -180,7 +183,7 @@ def create_makefile(target)
   $libs = "" if not $libs
 
   mfile = open("Makefile", "w")
-  printf mfile, "\
+  mfile.printf "\
 SHELL = /bin/sh
 
 #### Start of system configuration section. ####
@@ -191,36 +194,37 @@ VPATH = @srcdir@
 CC = @CC@
 
 CFLAGS = %s #$CFLAGS %s
+LDFLAGS =  @LDFLAGS@
+DLDFLAGS = @DLDFLAGS@
 LDSHARED = @LDSHARED@
 ", if $static then "" else "@CCDLFLAGS@" end, $defs.join(" ")
 
-  printf mfile, "\
+  mfile.printf "\
 
 prefix = @prefix@
-binprefix = 
 exec_prefix = @exec_prefix@
 bindir = $(exec_prefix)/bin
-libdir = @prefix@/lib/ruby
+libdir = @archlib@
 @SET_MAKE@
 
 #### End of system configuration section. ####
 "
-  printf mfile, "LIBS = %s\n", $libs
-  printf mfile, "OBJS = "
+  mfile.printf "LIBS = %s\n", $libs
+  mfile.printf "OBJS = "
   if !$objs then
     $objs = Dir["*.c"]
     for f in $objs
       f.sub!(/\.c$/, ".o")
     end
   end
-  printf mfile, $objs.join(" ")
-  printf mfile, "\n"
+  mfile.printf $objs.join(" ")
+  mfile.printf "\n"
 
-  printf mfile, "\
+  dots = if "@INSTALL@" =~ /^\// then "" else "../" end
+  mfile.printf "\
 TARGET = %s.%s
 
-INSTALL = @INSTALL@
-INSTALL_DATA = @INSTALL_DATA@
+INSTALL = %s@INSTALL@
 
 all:		$(TARGET)
 
@@ -229,56 +233,53 @@ clean:;		@rm -f *.o *.so *.sl
 		@rm -f core ruby *~
 
 realclean:	clean
-", target, if $static then "o" else "@DLEXT@" end
+", target,
+    if $static then "o" else "@DLEXT@" end, dots
 
   if !$static
-    printf mfile, "\
+    mfile.printf "\
 
 install:	$(libdir)/$(TARGET)
 
 $(libdir)/$(TARGET): $(TARGET)
 	@test -d $(libdir) || mkdir $(libdir)
-	$(INSTALL_DATA) $(TARGET) $(libdir)/$(TARGET)
+	$(INSTALL) $(TARGET) $(libdir)/$(TARGET)
 "
   else
-    printf mfile, "\
+    mfile.printf "\
 
 install:;
 "
   end
 
   if !$static && "@DLEXT@" != "o"
-    printf mfile, "\
+    mfile.printf "\
 $(TARGET): $(OBJS)
-	$(LDSHARED) -o $(TARGET) $(OBJS) $(LIBS)
+	$(LDSHARED) $(DLDFLAGS) -o $(TARGET) $(OBJS) $(LIBS)
 "
-  elsif !File.exists?(target + ".c")
-    printf mfile, "\
+  elsif !File.exist?(target + ".c")
+    mfile.printf "\
 $(TARGET): $(OBJS)
-	ld $(LDDLFLAGS) -r $(TARGET) $(OBJS)
+	ld $(LDFLAGS) -r -o $(TARGET) $(OBJS)
 "
   end
 
-  if File.exists?("depend")
+  if File.exist?("depend")
     dfile = open("depend", "r")
-    printf mfile, "###\n"
+    mfile.printf "###\n"
     while line = dfile.gets()
-      printf mfile, "%s", line
+      mfile.printf "%s", line
     end
     dfile.close
   end
   mfile.close
   if $static
-    $extinit += format("\
-\tInit_%s();\n\
-\trb_provide(\"%s.o\");\n\
-", target, target)
-    $extobjs += format("ext/%s/%s.o ", $static, target)
+    $extlist.push [$static,target]
   end
 end
 
 def extmake(target)
-  if $static_ext[target]
+  if $force_static or $static_ext[target]
     $static = target
   else
     $static = FALSE
@@ -294,19 +295,19 @@ def extmake(target)
   begin
     Dir.chdir target
     if $static_ext.size > 0 ||
-      !File.exists?("./Makefile") ||
+      !File.exist?("./Makefile") ||
       older("./Makefile", "../Setup") ||
       older("./Makefile", "../extmk.rb") ||
       older("./Makefile", "./extconf.rb")
     then
       $defs = []
-      if File.exists?("extconf.rb")
+      if File.exist?("extconf.rb")
 	load "extconf.rb"
       else
 	create_makefile(target);
       end
     end
-    if File.exists?("./Makefile")
+    if File.exist?("./Makefile")
       if $install
 	system "make install"
       elsif $clean
@@ -328,10 +329,10 @@ if File.file? "./Setup"
   while f.gets()
     $_.chop!
     sub!(/#.*$/, '')
-    continue if /^\s*$/
+    next if /^\s*$/
     if /^option +nodynamic/
       $nodynamic = TRUE
-      continue
+      next
     end
     $static_ext[$_.split[0]] = TRUE
   end
@@ -339,36 +340,56 @@ if File.file? "./Setup"
 end
 
 for d in Dir["*"]
-  File.directory?(d) || continue
-  File.file?(d + "/MANIFEST") || continue
+  File.directory?(d) || next
+  File.file?(d + "/MANIFEST") || next
   
   d = $1 if d =~ /\/([\/]*)$/
-  print "compiling ", d, "\n"
-
+  if $install
+    print "installing ", d, "\n"
+  elsif $clean
+    print "cleaning ", d, "\n"
+  else
+    print "compiling ", d, "\n"
+  end
   extmake(d)
 end
 
 if $cache_mod
   f = open("config.cache", "w")
   for k,v in $lib_cache
-    printf f, "lib: %s %s\n", k, v
+    f.printf "lib: %s %s\n", k, v
   end
   for k,v in $func_cache
-    printf f, "func: %s %s\n", k, v
+    f.printf "func: %s %s\n", k, v
   end
   for k,v in $hdr_cache
-    printf f, "hdr: %s %s\n", k, v
+    f.printf "hdr: %s %s\n", k, v
   end
   f.close
 end
 
-exit if $install
-if $extobjs
+exit if $install or $clean
+if $extlist.size > 0
+  for s,t in $extlist
+    f = format("%s/%s.o", s, t)
+    if File.exist?(f)
+      $extinit += format("\
+\tInit_%s();\n\
+\trb_provide(\"%s.o\");\n\
+", t, t)
+      $extobjs += "ext/"
+      $extobjs += f
+      $extobjs += " "
+    else
+      FALSE
+    end
+  end
+
   if older("extinit.c", "Setup")
     f = open("extinit.c", "w")
-    printf f, "void Init_ext() {\n"
-    printf f, $extinit
-    printf f, "}\n"
+    f.printf "void Init_ext() {\n"
+    f.printf $extinit
+    f.printf "}\n"
     f.close
   end
   if older("extinit.o", "extinit.c")
@@ -378,16 +399,19 @@ if $extobjs
   end
 
   Dir.chdir ".."
-  $extobjs = "ext/extinit.o " + $extobjs
 
   if older("ruby", "ext/Setup") or older("ruby", "miniruby")
     `rm -f ruby`
   end
+
+  $extobjs = "ext/extinit.o " + $extobjs
   system format('make ruby PROGRAM=ruby EXTOBJS="%s" EXTLIBS="%s"', $extobjs, $extlibs)
 else
   Dir.chdir ".."
-  `rm -f ruby`
-  `cp miniruby ruby`
+  if older("ruby", "miniruby")
+    `rm -f ruby`
+    `cp miniruby ruby`
+  end
 end
 
 #Local variables:

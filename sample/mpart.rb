@@ -4,12 +4,12 @@
 
 lines = 1000
 
-if ($ARGV[0] =~ /^-(\d+)$/ )
+if (ARGV[0] =~ /^-(\d+)$/ )
   lines = $1.to_i;
-  $ARGV.shift;
+  ARGV.shift;
 end
 
-basename = $ARGV[0]
+basename = ARGV[0]
 extname = "part"
 
 part = 1

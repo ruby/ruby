@@ -1,9 +1,9 @@
 #! /usr/local/bin/ruby
 # convert ls-lR filename into fullpath.
 
-if $ARGV[0] =~ /-p/
-  $ARGV.shift
-  path = $ARGV.shift 
+if ARGV[0] =~ /-p/
+  ARGV.shift
+  path = ARGV.shift 
 end
 
 if path == nil

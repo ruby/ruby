@@ -6,7 +6,7 @@
   $Date: 1995/01/10 10:42:26 $
   created at: Mon Nov 22 18:51:18 JST 1993
 
-  Copyright (C) 1993-1995 Yukihiro Matsumoto
+  Copyright (C) 1993-1996 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -27,37 +27,84 @@ static VALUE envtbl;
 static ID hash;
 VALUE f_getenv(), f_setenv();
 
-static VALUE
+static int
 rb_cmp(a, b)
     VALUE a, b;
 {
-    return rb_equal(a, b)?0:1;
+    if (FIXNUM_P(a)) {
+	if (FIXNUM_P(b)) return a != b;
+    }
+
+    if (TYPE(a) == T_STRING) {
+	if (TYPE(b) == T_STRING) return str_cmp(a, b);
+    }
+
+    return !rb_eql(a, b);
 }
 
-static VALUE
+static int
 rb_hash(a, mod)
     VALUE a;
     int mod;
 {
-    return rb_funcall(a, hash, 0) % mod;
+    unsigned int hval;
+
+    switch (TYPE(a)) {
+      case T_FIXNUM:
+	hval = a;
+	break;
+
+      case T_STRING:
+	hval = str_hash(a);
+	break;
+
+      default:
+	hval = rb_funcall(a, hash, 0);
+	hval = FIX2INT(hval);
+    }
+    return  hval % mod;
 }
 
-#define ASSOC_KEY(a) RASSOC(a)->car
-#define ASSOC_VAL(a) RASSOC(a)->cdr
+static struct st_hash_type objhash = {
+    rb_cmp,
+    rb_hash,
+};
 
 static VALUE
-hash_s_new(class)
+hash_s_new(argc, argv, class)
+    int argc;
+    VALUE *argv;
     VALUE class;
 {
+    VALUE sz;
+    int size;
+
     NEWOBJ(hash, struct RHash);
     OBJSETUP(hash, class, T_HASH);
 
-    hash->tbl = st_init_table(rb_cmp, rb_hash);
+    rb_scan_args(argc, argv, "01", &sz);
+    if (NIL_P(sz)) size = 0;
+    else size = NUM2INT(sz);
+
+    hash->tbl = st_init_table_with_size(&objhash, size);
 
     return (VALUE)hash;
 }
 
 static VALUE hash_clone();
+
+VALUE
+hash_new2(class)
+    VALUE class;
+{
+    return hash_s_new(0, 0, class);
+}
+
+VALUE
+hash_new()
+{
+    return hash_new2(cHash);
+}
 
 static VALUE
 hash_s_create(argc, argv, class)
@@ -80,21 +127,15 @@ hash_s_create(argc, argv, class)
     }
 
     if (argc % 2 != 0) {
-	Fail("odd number args for Hash");
+	ArgError("odd number args for Hash");
     }
-    hash = (struct RHash*)hash_s_new(class);
+    hash = (struct RHash*)hash_new2(class);
 
     for (i=0; i<argc; i+=2) {
 	st_insert(hash->tbl, argv[i], argv[i+1]);
     }
 
     return (VALUE)hash;
-}
-
-VALUE
-hash_new()
-{
-    return hash_s_new(cHash);
 }
 
 static VALUE
@@ -109,7 +150,7 @@ hash_clone(hash)
     return (VALUE)hash2;
 }
 
-static VALUE
+VALUE
 hash_aref(hash, key)
     struct RHash *hash;
     VALUE key;
@@ -128,29 +169,21 @@ hash_indexes(hash, args)
     struct RArray *args;
 {
     VALUE *p, *pend;
-    struct RArray *new_hash;
+    struct RArray *indexes;
     int i = 0;
 
-    if (!args || args->len == 0) {
-	Fail("wrong # of argment");
-    }
-    else if (args->len == 1) {
-	if (TYPE(args->ptr[0])) {
-	    args = (struct RArray*)rb_to_a(args->ptr[0]);
-	}
-	else {
-	    args = (struct RArray*)args->ptr[0];
-	}
+    if (!args || NIL_P(args)) {
+	return ary_new2(0);
     }
 
-    new_hash = (struct RArray*)ary_new2(args->len);
+    indexes = (struct RArray*)ary_new2(args->len);
 
     p = args->ptr; pend = p + args->len;
     while (p < pend) {
-	new_hash->ptr[i++] = hash_aref(hash, *p++);
+	indexes->ptr[i++] = hash_aref(hash, *p++);
     }
-    new_hash->len = i;
-    return (VALUE)new_hash;
+    indexes->len = i;
+    return (VALUE)indexes;
 }
 
 static VALUE
@@ -162,6 +195,7 @@ hash_delete(hash, key)
 
     if (st_delete(hash->tbl, &key, &val))
 	return val;
+    if (iterator_p()) rb_yield(Qnil);
     return Qnil;
 }
 
@@ -209,7 +243,7 @@ static VALUE
 hash_delete_if(hash)
     struct RHash *hash;
 {
-    st_foreach(hash->tbl, delete_if_i, Qnil);
+    st_foreach(hash->tbl, delete_if_i, 0);
 
     return (VALUE)hash;
 }
@@ -235,7 +269,7 @@ hash_aset(hash, key, val)
     struct RHash *hash;
     VALUE key, val;
 {
-    if (val == Qnil) {
+    if (NIL_P(val)) {
 	hash_delete(hash, key);
 	return Qnil;
     }
@@ -251,6 +285,15 @@ hash_length(hash)
     struct RHash *hash;
 {
     return INT2FIX(hash->tbl->num_entries);
+}
+
+VALUE
+hash_empty_p(hash)
+    struct RHash *hash;
+{
+    if (hash->tbl->num_entries == 0)
+	return TRUE;
+    return FALSE;
 }
 
 static int
@@ -327,15 +370,14 @@ inspect_i(key, value, str)
     struct RString *str;
 {
     VALUE str2;
-    ID inspect = rb_intern("inspect");
 
     if (str->len > 1) {
 	str_cat(str, ", ", 2);
     }
-    str2 = rb_funcall(key, inspect, 0, 0);
+    str2 = rb_inspect(key);
     str_cat(str, RSTRING(str2)->ptr, RSTRING(str2)->len);
     str_cat(str, "=>", 2);
-    str2 = rb_funcall(value, inspect, 0, 0);
+    str2 = rb_inspect(value);
     str_cat(str, RSTRING(str2)->ptr, RSTRING(str2)->len);
 
     return ST_CONTINUE;
@@ -554,7 +596,7 @@ f_getenv(obj, name)
     Check_Type(name, T_STRING);
 
     if (strlen(name->ptr) != name->len)
-	Fail("Bad environment name");
+	ArgError("Bad environment name");
 
     env = getenv(name->ptr);
     if (env) {
@@ -569,7 +611,7 @@ f_setenv(obj, name, value)
     struct RString *name, *value;
 {
     Check_Type(name, T_STRING);
-    if (value == Qnil) {
+    if (NIL_P(value)) {
 	env_delete(obj, name);
 	return Qnil;
     }
@@ -577,9 +619,9 @@ f_setenv(obj, name, value)
     Check_Type(value, T_STRING);
 
     if (strlen(name->ptr) != name->len)
-	Fail("Bad environment name");
+	ArgError("Bad environment name");
     if (strlen(value->ptr) != value->len)
-	Fail("Bad environment value");
+	ArgError("Bad environment value");
 
     setenv(name->ptr, value->ptr, 1);
     return TRUE;
@@ -588,7 +630,7 @@ f_setenv(obj, name, value)
 static VALUE
 env_to_s()
 {
-    return str_new2("$ENV");
+    return str_new2("ENV");
 }
 
 void
@@ -603,7 +645,7 @@ Init_Hash()
 
     rb_include_module(cHash, mEnumerable);
 
-    rb_define_singleton_method(cHash, "new", hash_s_new, 0);
+    rb_define_singleton_method(cHash, "new", hash_s_new, -1);
     rb_define_singleton_method(cHash, "[]", hash_s_create, -1);
 
     rb_define_method(cHash,"clone",  hash_clone, 0);
@@ -619,6 +661,8 @@ Init_Hash()
     rb_define_method(cHash,"indexes", hash_indexes, -2);
     rb_define_method(cHash,"length", hash_length, 0);
     rb_define_alias(cHash, "size", "length");
+    rb_define_method(cHash,"empty?", hash_empty_p, 0);
+
     rb_define_method(cHash,"each", hash_each_pair, 0);
     rb_define_method(cHash,"each_value", hash_each_value, 0);
     rb_define_method(cHash,"each_key", hash_each_key, 0);
@@ -632,8 +676,11 @@ Init_Hash()
     rb_define_method(cHash,"delete_if", hash_delete_if, 0);
     rb_define_method(cHash,"clear", hash_clear, 0);
 
+    rb_define_method(cHash,"include?", hash_has_key, 1);
     rb_define_method(cHash,"has_key?", hash_has_key, 1);
     rb_define_method(cHash,"has_value?", hash_has_value, 1);
+    rb_define_method(cHash,"key?", hash_has_key, 1);
+    rb_define_method(cHash,"value?", hash_has_value, 1);
 
     envtbl = obj_alloc(cObject);
     rb_extend_object(envtbl, mEnumerable);
@@ -645,5 +692,5 @@ Init_Hash()
     rb_define_singleton_method(envtbl,"to_s", env_to_s, 0);
 
     rb_define_readonly_variable("$ENV", &envtbl);
-    rb_define_const(cKernel, "ENV", envtbl);
+    rb_define_global_const("ENV", envtbl);
 }

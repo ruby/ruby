@@ -1,151 +1,115 @@
-* Rubyとは
+* What's Ruby
 
-Rubyはシンプルかつ強力なオブジェクト指向スクリプト言語です．
-Rubyは最初から純粋なオブジェクト指向言語として設計されていま
-すから，オブジェクト指向プログラミングを手軽に行う事が出来ま
-す．もちろん通常の手続き型のプログラミングも可能です．
+Ruby is the interpreted scripting language for quick and
+easy object-oriented programming.  It has many features to
+process text files and to do system management tasks (as in
+perl).  It is simple, straight-forward, and extensible.
 
-Rubyはテキスト処理関係の能力などに優れ，perlと同じくらい強力
-です．さらにシンプルな文法と，例外処理やイテレータなどの機構
-によって，より分かりやすいプログラミングが出来ます．
+* Features of ruby
 
-* Rubyの特長．
+  + Simple Syntax
+  + *Normal* Object-Oriented features(ex. class, method calls)
+  + *Advanced* Object-Oriented features(ex. Mix-in, Singleton-method)
+  + Operator Overloading
+  + Exception Handling
+  + Iterators and Closures
+  + Garbage Collection
+  + Dynamic Loading of Object files(on some architecture)
+  + Highly Portable(works on many UNIX machines)
 
-  + シンプルな文法
-  + 普通のオブジェクト指向機能(クラス，メソッドコールなど)
-  + 特殊なオブジェクト指向機能(Mixin, 特異メソッドなど)
-  + 演算子オーバーロード
-  + 例外処理機能
-  + イテレータとクロージャ
-  + ガーベージコレクタ
-  + ダイナミックローディング (アーキテクチャによる)
-  + 移植性が高い．多くのUNIX上で動く
+* How to get ruby
 
-* 入手法
+** by ftp
 
-** ftpで
+The ruby distribution can be found on
 
-以下の場所においてあります．
+  ftp://ftp.caelum.co.jp/pub/lang/ruby/
 
-  ftp://ftp.kk.info.kanagawa-u.ac.jp/pub/languages/ruby/
+** by mail
 
-** メイルで
-
-以下のアドレスに`send'というSubjectのメイルを送って下さい．
+Send the mail which subject is 'send' to the address below.
 
   ruby-archive@caelum.co.jp
 
-本文には何を書いても構いません．折り返し，最新版のrubyが送っ
-て来ます．
+You will receive the uuencoded gzipped tar file of the newest ruby
+distribution.
 
-* メイリングリスト
+* How to compile and install
 
- Rubyに関わる話題のためのメイリングリストを解説しました．ア
- ドレスは
+This is what you need to do to compile and install ruby:
 
-   ruby-list@caelum.co.jp
+  1. Run ./configure, which will generate config.h and Makefile.
 
- です．このアドレスにメイルを送れば，自動的に登録されます．
+  2. Edit defines.h if you need.  Probably this step will not need.
 
-* コンパイル・インストール
+  3. Remove comment mark(#) before the module names from ext/Setup, if 
+     you want to link modules statically.
 
-以下の手順で行ってください．
+     If you want to link all the extension modules, remove comment
+     mark from the line "#option nodynamic".
 
-  1. configureを実行してMakefileなどを生成する
+  4. Run make.
 
-  2. (必要ならば)defines.hを編集する
+  5. Optionally, run 'make test' to check that the compiled ruby
+     interpreter works well.  If you see the message "test succeeded", 
+     your ruby works as it should.
 
-     多分，必要無いと思います．
+  6. Run 'make install'
 
-  3. (必要ならば)ext/Setupに静的にリンクする拡張モジュールを
-     指定する
+If you fail to compile ruby, please send the detailed error report with
+the error log and machine/OS type, to help others.
 
-     ext/Setupに記述したモジュールは静的にリンクされます．
+* Copying
 
-     ダイナミックローディングをサポートしていないアーキテク
-     チャではSetupの1行目の「option nodynamic」という行のコ
-     メントを外す必要があります．また，このアーキテクチャで
-     拡張モジュールを利用するためには，あらかじめ静的にリン
-     クしておく必要があります．
+Ruby is copyrighted by Yukihiro Matsumoto <matz@caelum.co.jp>.
 
-  4. makeを実行してコンパイルする
+This source is distributed under the conditions blow:
 
-  5. make testでテストを行う．
+ 1. You may make and give away verbatim copies of the source form of
+    the software without restriction, provided that you do not modify
+    the original distribution file.
 
-     「test succeeded」と表示されれば成功です．
+    If you want to distribute the modified version in any way, contact 
+    the author.
 
-  6. make install
+  2. You may distribute the software in object code or executable
+     form, provided that you distribute it with instructions on where
+     to get the software.
 
-もし，コンパイル時にエラーが発生した場合にはエラーのログとマ
-シン，OSの種類を含むできるだけ詳しいレポートを作者に送ってく
-ださると他の方のためにもなります．
+  3. You may modify the software in any way, provided that you do not
+     distribute the modified version.
 
-* 移植
+  4. You may modify and include the part of the software into any other
+     software (possibly commercial).  But some files in the
+     distribution are not written by the author, so that they are not
+     under this terms.  They are gc.c(partly)，regex.[ch]，fnmatch.[ch]，
+     glob.c, st.[ch] and somme files under ./missing directory.  See
+     each files for the condition.
 
-UNIXであればconfigureがほとんどの差異を吸収してくれるはずで
-すが，思わぬ見落としがあった場合(あるに違いない)，作者にその
-ことをレポートすれば，解決できるかも知れません．
+  5. The scripts and library files supplied as input to or produced as 
+     output from the software do not automatically fall under the
+     copyright of the software, but belong to whomever generated them, 
+     and may be sold commercially, and may be aggregated with this
+     software.
 
-アークテクチャにもっとも依存するのはGC部です．rubyのGCは対象
-のアーキテクチャがsetjmp()によって，全てのレジスタを jmp_buf
-に格納することと，jmp_bufとスタックが32bitアラインメントされ
-ていることを仮定しています．前者が成立しない場合の対応は困難
-を極めるでしょう．後者の解決は比較的簡単で，gc.cでスタックを
-マークしている部分にアラインメントのバイト数だけずらしてマー
-クするコードを追加するだけで済みます．「defined(THINK_C)」で
-括られている部分を参考にしてください
+  6. THIS SOFTWARE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR
+     IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
+     WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR
+     PURPOSE.
 
-# 実際にはrubyはThink Cでコンパイルできません．
+* ruby home-page
 
-sparc以外のレジスタウィンドウを持つCPUでは，レジスタウィンド
-ウをフラッシュするコードを追加する必要があるかも知れません．
+ The URL of the ruby home-page is:
 
-* 配布条件
+   http://www.caelum.co.jp/~matz/ruby/index-en.html
 
-Rubyの配布に関して著作権保持者である作者<matz@caelum.co.jp>
-は以下の条件をつけます．
+* The Author
 
-  + 更新
+Feel free to send comments and bug reports to the author.  Here is the 
+author's latest mail address:
 
-    いかなる目的であれ自由です．ただし，機能拡張やバグ修正は
-    作者へのフィードバックを期待します(もちろん強制ではあり
-    ません)．
+  matz@ruby.club.or.jp
 
-  + 他のプログラムへの引用
-
-    いかなる目的であれ自由です．ただし，rubyに含まれる他の作
-    者によるコードは，それぞれの作者の意向による制限が加えら
-    れます．具体的にはgc.c(一部)，regex.[ch]，fnmatch.[ch]，
-    glob.c, st.[ch]とmissingディレクトリ下のファイル群が該当
-    します．
-
-  + 再配布
-
-    配布した状態を維持する限り自由です．変更を行ったものを再
-    配布することを希望する時には作者に連絡してください．オリ
-    ジナルのrubyと明確に区別できるようであれば，再配布を認め
-    る方針です．
-
-    変更を行なわないrubyをコンパイルしたバイナリの配布は禁止
-    しませんが，コンパイル条件に起因するトラブルを減らすため
-    に，コンパイル時の情報をできるだけ詳しく明記する事を希望
-    します．
-
-  + Rubyスクリプトの権利
-
-    全てのrubyスクリプトの権利はそれぞれの著作者に属します．
-    作者はこれらに関して一切の権利を主張しません．またrubyに
-    組み込むための拡張モジュールに関しても同様です．
-
-  + 無保証
-
-    Rubyは無保証です．作者はrubyをサポートする意志はあります
-    が，ruby自身のバグあるいはrubyスクリプトのバグなどから発
-    生するいかなる損害に対しても責任を持ちません．
-
-* 著者
-
-コメント，バグレポートその他は matz@caelum.co.jp まで．
 -------------------------------------------------------
 created at: Thu Aug  3 11:57:36 JST 1995
 Local variables:

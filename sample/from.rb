@@ -5,15 +5,15 @@ require "base64"
 
 include ParseDate
 
-if $ARGV[0] == '-w'
+if ARGV[0] == '-w'
   wait = TRUE
-  $ARGV.shift
+  ARGV.shift
 end
 
 class Mail
 
   def Mail.new(f)
-    if !f.is_kind_of?(IO)
+    if !f.kind_of?(IO)
       f = open(f, "r")
       me = super
       f.close
@@ -28,7 +28,7 @@ class Mail
     @body = []
     while f.gets()
       $_.chop!
-      continue if /^From /	# skip From-line  
+      next if /^From /	# skip From-line  
       break if /^$/		# end of header
       if /^(\S+):\s*(.*)/
 	@header[attr = $1.capitalize] = $2
@@ -56,7 +56,7 @@ class Mail
 
 end
 
-$ARGV[0] = '/usr/spool/mail/' + ENV['USER'] if $ARGV.length == 0
+ARGV[0] = '/usr/spool/mail/' + ENV['USER'] if ARGV.length == 0
 
 $outcount = 0;
 def fromout(date, from, subj)
@@ -72,8 +72,8 @@ def fromout(date, from, subj)
   $outcount += 1
 end
 
-for file in $ARGV
-  continue if !File.exists?(file)
+for file in ARGV
+  next if !File.exist?(file)
   f = open(file, "r")
   while !f.eof
     mail = Mail.new(f)
