@@ -71,11 +71,9 @@ module RSS
 		class Channel; include SyndicationModel; end
 	end
 
-	if const_defined? :BaseListener
-		prefix_size = SY_PREFIX.size + 1
-		SyndicationModel::ELEMENTS.each do |x|
-			BaseListener.install_get_text_element(x[prefix_size..-1], SY_URI, "#{x}=")
-		end
+	prefix_size = SY_PREFIX.size + 1
+	SyndicationModel::ELEMENTS.each do |x|
+		BaseListener.install_get_text_element(x[prefix_size..-1], SY_URI, "#{x}=")
 	end
 
 end

@@ -1,4 +1,4 @@
-require "rss/rss"
+require "rss/parser"
 
 module RSS
 
@@ -643,10 +643,8 @@ EOT
 
 	end
 
-	if const_defined?(:BaseListener)
-		RSS10::ELEMENTS.each do |x|
-			BaseListener.install_get_text_element(x, URI, "#{x}=")
-		end
+	RSS10::ELEMENTS.each do |x|
+		BaseListener.install_get_text_element(x, URI, "#{x}=")
 	end
 
 end

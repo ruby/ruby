@@ -9,10 +9,10 @@ module RSS
 			[file, line]
 		end
 
-    def html_escape(s)
-      s.to_s.gsub(/&/, "&amp;").gsub(/\"/, "&quot;").gsub(/>/, "&gt;").gsub(/</, "&lt;")
-    end
-    alias h html_escape
+		def html_escape(s)
+			s.to_s.gsub(/&/, "&amp;").gsub(/\"/, "&quot;").gsub(/>/, "&gt;").gsub(/</, "&lt;")
+		end
+		alias h html_escape
 		
 	end
 

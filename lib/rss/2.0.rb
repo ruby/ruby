@@ -123,26 +123,22 @@ EOT
 
 	end
 
-	if const_defined?(:BaseListener)
-		RSS09::ELEMENTS.each do |x|
-			BaseListener.install_get_text_element(x, Rss::URI, "#{x}=")
-		end
+	RSS09::ELEMENTS.each do |x|
+		BaseListener.install_get_text_element(x, Rss::URI, "#{x}=")
 	end
 
-	if const_defined?(:ListenerMixin)
-		module ListenerMixin
-			private
-			def start_rss(tag_name, prefix, attrs, ns)
-				check_ns(tag_name, prefix, ns, Rss::URI)
-
-				@rss = Rss.new(attrs['version'], @version, @encoding, @standalone)
-				@last_element = @rss
-				@proc_stack.push Proc.new { |text, tags|
-					@rss.validate_for_stream(tags) if @do_validate
-				}
-			end
-					
+	module ListenerMixin
+		private
+		def start_rss(tag_name, prefix, attrs, ns)
+			check_ns(tag_name, prefix, ns, Rss::URI)
+			
+			@rss = Rss.new(attrs['version'], @version, @encoding, @standalone)
+			@last_element = @rss
+			@proc_stack.push Proc.new { |text, tags|
+				@rss.validate_for_stream(tags) if @do_validate
+			}
 		end
+					
 	end
 
 end

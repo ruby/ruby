@@ -1,3 +1,7 @@
+Thu Jan 29 00:00:46 2004  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss: rss/parser.rb is always required.
+
 Wed Jan 28 15:09:14 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/rss/*.rb: remove "test/" prefix.

@@ -37,11 +37,9 @@ module RSS
 		class Item; include ContentModel; end
 	end
 
-	if const_defined? :BaseListener
-		prefix_size = CONTENT_PREFIX.size + 1
-		ContentModel::ELEMENTS.each do |x|
-			BaseListener.install_get_text_element(x[prefix_size..-1], CONTENT_URI, "#{x}=")
-		end
+	prefix_size = CONTENT_PREFIX.size + 1
+	ContentModel::ELEMENTS.each do |x|
+		BaseListener.install_get_text_element(x[prefix_size..-1], CONTENT_URI, "#{x}=")
 	end
 
 end

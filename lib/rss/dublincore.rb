@@ -46,11 +46,9 @@ module RSS
 		class Textinput; include DublincoreModel; end
 	end
 
-	if const_defined? :BaseListener
-		prefix_size = DC_PREFIX.size + 1
-		DublincoreModel::ELEMENTS.each do |x|
-			BaseListener.install_get_text_element(x[prefix_size..-1], DC_URI, "#{x}=")
-		end
+	prefix_size = DC_PREFIX.size + 1
+	DublincoreModel::ELEMENTS.each do |x|
+		BaseListener.install_get_text_element(x[prefix_size..-1], DC_URI, "#{x}=")
 	end
 
 end
