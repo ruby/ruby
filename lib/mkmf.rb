@@ -797,30 +797,19 @@ def create_makefile(target, srcprefix = nil)
   target = nil if $objs == ""
 
   if target and EXPORT_PREFIX
-    origdef = target + '.def'
-    deffile = EXPORT_PREFIX + origdef
-    unless File.exist? deffile
-      if File.exist? File.join(srcdir, deffile)
-	deffile = File.join(srcdir, deffile)
-      elsif !EXPORT_PREFIX.empty? and File.exist?(origdef = File.join(srcdir, origdef))
-	open(origdef) do |d|
-	  open(deffile, 'wb') do |f|
-	    d.each do |l|
-	      f.print l
-	      break if /^EXPORTS$/i =~ l
-	    end
-	    d.each do |l|
-	      f.print l.sub(/\S/, EXPORT_PREFIX+'\&')
-	    end
-	  end
-	end
-      else
-	open(deffile, 'wb') do |f|
-	  f.print "EXPORTS\n", EXPORT_PREFIX, "Init_", target, "\n"
-	end
+    if File.exist?(File.join(srcdir, target + '.def'))
+      deffile = "$(srcdir)/$(TARGET).def"
+      unless EXPORT_PREFIX.empty?
+        makedef = %{-pe "sub!(/^(?=\\w)/,'#{EXPORT_PREFIX}') unless 1../^EXPORTS$/i"}
       end
+    else
+      makedef = %{-e "puts 'EXPORTS', '#{EXPORT_PREFIX}Init_$(TARGET)'"}
     end
-    $distcleanfiles << deffile unless deffile == origdef
+    if makedef
+      $distcleanfiles << '$(DEFFILE)'
+      origdef = deffile
+      deffile = "$(TARGET)-$(arch).def"
+    end
   end
 
   libpath = libpathflag(libpath)
@@ -914,7 +903,11 @@ static:		$(STATIC_LIB)
     end
   end
 
-  mfile.print "$(DLLIB): $(OBJS)\n\t"
+  if makedef
+    mfile.print "$(DLLIB): $(OBJS) $(DEFFILE)\n\t"
+  else
+    mfile.print "$(DLLIB): $(OBJS)\n\t"
+  end
   mfile.print "@-$(RM) $@\n\t"
   mfile.print "@-$(RM) $(TARGET).lib\n\t" if $mswin
   mfile.print LINK_SO, "\n\n"
@@ -924,6 +917,10 @@ static:		$(STATIC_LIB)
     mfile.print "\n\t@-#{ranlib} $(DLLIB) 2> /dev/null || true"
   end
   mfile.print "\n\n"
+  if makedef
+    mfile.print "$(DEFFILE): #{origdef}\n"
+    mfile.print "\t$(RUBY) #{makedef} #{origdef} > $@\n\n"
+  end
 
   depend = File.join(srcdir, "depend")
   if File.exist?(depend)

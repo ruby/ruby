@@ -66,8 +66,10 @@ DEBUGFLAGS = -Zi
 !if !defined(OPTFLAGS)
 OPTFLAGS = -O2b2xg-
 !endif
+!if !defined(OS) || !defined(RT)
 OS = mswin32
 RT = msvcrt
+!endif
 
 !ifndef RUBY_SO_NAME
 RUBY_SO_NAME = $(RT)-$(RUBY_INSTALL_NAME)$(MAJOR)$(MINOR)
@@ -91,8 +93,11 @@ CFLAGS = -MD $(DEBUGFLAGS) $(OPTFLAGS) $(PROCESSOR_FLAG)
 !if !defined(CPPFLAGS)
 CPPFLAGS = -I. -I$(srcdir) -I$(srcdir)/missing
 !endif
+!if !defined(LDFLAGS)
+LDFLAGS = -link -incremental:no -debug -opt:ref -opt:icf
+!endif
 !if !defined(XLDFLAGS)
-XLDFLAGS = 
+XLDFLAGS = -stack:$(STACK)
 !endif
 !if !defined(RFLAGS)
 RFLAGS = -r
@@ -108,9 +113,7 @@ CC = $(CC) -nologo
 LD = $(CC)
 LDSHARED = $(LD) -LD
 XCFLAGS = -DRUBY_EXPORT
-LDFLAGS = -link -incremental:no -pdb:none
 DLDFLAGS = $(LDFLAGS) -dll
-XLDFLAGS = -stack:$(STACK)
 SOLIBS = 
 
 LIBRUBY_LDSHARED = $(LDSHARED)

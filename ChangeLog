@@ -1,3 +1,17 @@
+Thu Dec 18 21:47:35 2003  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/mkmf.rb (create_makefile): should remove deffile if it's
+	  made by miniruby. based on nobu's patch.
+
+Thu Dec 18 21:44:21 2003  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* eval.c (stack_extend): ignore inline optimization on VC7.
+
+	* win32/Makefile.sub (OS, RT): can override.
+
+	* win32/Makefile.sub (LDFLAGS): ditto. shouldn't use pdb:none
+	  option. based on Tietew's patch [ruby-dev:22289]
+
 Thu Dec 18 16:38:44 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (fnmatch): unlike find_dirsep(), rb_path_next() never
