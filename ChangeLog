@@ -1,3 +1,11 @@
+Wed Apr 11 13:29:26 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* class.c (rb_singleton_class_attached): should modify iv_tbl by
+	  itself, no longer use rb_iv_set() to avoid freeze check error.
+
+	* variable.c (rb_const_get): error message "uninitialized constant
+	  Foo at Bar::Baz" instead of "uninitialized constantBar::Baz::Foo".
+
 Tue Apr 10 02:24:40 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* io.c (opt_i_set): should strdup() inplace_edit string.

@@ -1084,9 +1084,9 @@ rb_const_get(klass, id)
 
     /* Uninitialized constant */
     if (klass && klass != rb_cObject)
-	rb_raise(rb_eNameError, "uninitialized constant %s::%s",
-		 RSTRING(rb_class_path(klass))->ptr,
-		 rb_id2name(id));
+	rb_raise(rb_eNameError, "uninitialized constant %s at %s",
+		 rb_id2name(id),
+		 RSTRING(rb_class_path(klass))->ptr);
     else {
 	rb_raise(rb_eNameError, "uninitialized constant %s",rb_id2name(id));
     }

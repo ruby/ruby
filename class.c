@@ -112,8 +112,12 @@ void
 rb_singleton_class_attached(klass, obj)
     VALUE klass, obj;
 {
-    if (FL_TEST(klass, FL_SINGLETON))
-	rb_iv_set(klass, "__attached__", obj);
+    if (FL_TEST(klass, FL_SINGLETON)) {
+	if (!RCLASS(klass)->iv_tbl) {
+	    RCLASS(klass)->iv_tbl = st_init_numtable();
+	}
+	st_insert(RCLASS(klass)->iv_tbl, rb_intern("__attached__"), obj);
+    }
 }
 
 VALUE
@@ -253,11 +257,6 @@ rb_include_module(klass, module)
     VALUE p;
     int changed = 0;
 
-    rb_frozen_class_p(klass);
-    if (!OBJ_TAINTED(klass)) {
-	rb_secure(4);
-    }
-    
     rb_frozen_class_p(klass);
     if (!OBJ_TAINTED(klass)) {
 	rb_secure(4);
