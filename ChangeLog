@@ -1,3 +1,7 @@
+Sun Oct  5 04:10:00 2003  Nathaniel Talbott  <ntalbott@ruby-lang.org>
+
+	* lib/test/unit/assertions.rb: refactored message building.
+
 Sun Oct  5 03:40:22 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_asn1.h: global symbols should be declared
