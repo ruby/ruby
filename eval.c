@@ -6165,7 +6165,8 @@ method_arity(method)
 	    body = body->nd_head;
 	if (!body) return INT2FIX(0);
 	n = body->nd_cnt;
-	if (body->nd_rest >= 0) n = -n-1;
+	if (body->nd_opt || body->nd_rest >= 0)
+	    n = -n-1;
 	return INT2FIX(n);
     }
 }

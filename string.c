@@ -1313,11 +1313,13 @@ rb_f_sub(argc, argv)
     int argc;
     VALUE *argv;
 {
-    VALUE str = rb_str_dup(uscore_get());
+    VALUE str = uscore_get();
+    VALUE dup = rb_str_dup(str);
 
-    rb_str_sub_bang(argc, argv, str);
-    rb_lastline_set(str);
-    return str;
+    if (NIL_P(rb_str_sub_bang(argc, argv, dup)))
+	return str;
+    rb_lastline_set(dup);
+    return dup;
 }
 
 static VALUE
@@ -1333,11 +1335,13 @@ rb_f_gsub(argc, argv)
     int argc;
     VALUE *argv;
 {
-    VALUE str = rb_str_dup(uscore_get());
+    VALUE str = uscore_get();
+    VALUE dup = rb_str_dup(str);
 
-    rb_str_gsub_bang(argc, argv, str);
-    rb_lastline_set(str);
-    return str;
+    if (NIL_P(rb_str_gsub_bang(argc, argv, dup)))
+	return str;
+    rb_lastline_set(dup);
+    return dup;
 }
 
 static VALUE
@@ -2356,10 +2360,13 @@ rb_f_chop_bang(str)
 static VALUE
 rb_f_chop()
 {
-    VALUE str = rb_str_dup(uscore_get());
+    VALUE str = uscore_get();
 
-    rb_str_chop_bang(str);
-    rb_lastline_set(str);
+    if (RSTRING(str)->len > 0) {
+	str = rb_str_dup(str);
+	rb_str_chop_bang(str);
+	rb_lastline_set(str);
+    }
     return str;
 }
 
@@ -2432,11 +2439,13 @@ rb_f_chomp(argc, argv)
     int argc;
     VALUE *argv;
 {
-    VALUE str = rb_str_dup(uscore_get());
+    VALUE str = uscore_get();
+    VALUE dup = rb_str_dup(str);
 
-    rb_str_chomp_bang(argc, argv, str);
-    rb_lastline_set(str);
-    return str;
+    if (NIL_P(rb_str_chomp_bang(argc, argv, dup)))
+	return str;
+    rb_lastline_set(dup);
+    return dup;
 }
 
 static VALUE

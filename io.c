@@ -1755,6 +1755,7 @@ io_reopen(io, nfile)
     OpenFile *fptr, *orig;
     char *mode;
     int fd;
+    long pos;
 
     nfile = rb_io_get_io(nfile);
     if (rb_safe_level() >= 4 && (!OBJ_TAINTED(io) || !OBJ_TAINTED(nfile))) {
@@ -1764,6 +1765,9 @@ io_reopen(io, nfile)
     GetOpenFile(nfile, orig);
 
     if (fptr == orig) return io;
+    if (orig->mode & FMODE_READABLE) {
+	pos = ftell(orig->f);
+    }
     if (orig->f2) {
 	if (fflush(orig->f2) == EOF) rb_sys_fail(orig->path);
     }
@@ -1793,6 +1797,9 @@ io_reopen(io, nfile)
 	if (dup2(fileno(orig->f), fd) < 0)
 	    rb_sys_fail(orig->path);
 	fptr->f = rb_fdopen(fd, mode);
+	if (orig->mode & FMODE_READABLE && pos >= 0) {
+	    fseek(fptr->f, pos, SEEK_SET);
+	}
     }
 
     if (fptr->f2) {

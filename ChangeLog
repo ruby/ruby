@@ -1,4 +1,22 @@
+Wed Jun 14 17:01:41 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* rubytest.rb: add CONFIG['EXEEXT'] to the executable file name.
+
 Wed Jun 14 14:50:00 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (rb_f_sub): assign to $_ only if modification happens.
+
+	* string.c (rb_f_gsub): ditto.
+
+	* string.c (rb_f_chop): ditto.
+
+	* string.c (rb_f_chomp): ditto.
+
+	* io.c (io_reopen): preserve file position by ftell/fseek, if io
+	  is a seekable.
+
+	* eval.c (method_arity): wrong arity number for the methods with
+	  optional arguments.
 
 	* time.c (make_time_t): opposite timezone shift (should be negative).
 
@@ -73,7 +91,7 @@ Fri Jun  9 15:11:35 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* time.c (make_time_t): supports daylight saving time.
 
-	* eval.c (rb_thread_safe_level): should retrive current $SAFE
+	* eval.c (rb_thread_safe_level): should retrieve current $SAFE
 	  value if a thread is the current thread.
 
 Thu Jun  8 14:25:45 2000  Hiroshi Igarashi  <iga@ruby-lang.org>
@@ -111,7 +129,7 @@ Mon Jun  5 00:13:35 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 Sun Jun  4 03:17:36 2000  Wakou Aoyama <wakou@fsinet.or.jp>
 
-	* lib/cig.rb: improve: CGI::pretty()
+	* lib/cgi.rb: improve: CGI::pretty()
 
 Sun Jun  4 02:01:10 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
@@ -381,7 +399,7 @@ May 16 19:45:32 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
 
 	* intern.h: use EXTERN instead of extern.
 
-	* win32/ruby.h: add rb_defout, rb_stdout, ruby_errinfo,
+	* win32/ruby.def: add rb_defout, rb_stdout, ruby_errinfo,
 	  ruby_sourceline, ruby_sourcefile to work with eruby
 	  reported by Hiroshi Saito <HiroshiSaito@pob.org>.
 	  Export both ruby_xmalloc and xmalloc etc.
