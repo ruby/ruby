@@ -568,7 +568,6 @@ EXPORTS
 	rb_special_const_p
 	ruby_scan_oct
 	ruby_scan_hex
-	ruby_mktemp
 	ruby_add_suffix
 	ruby_qsort
 ;variable.c
