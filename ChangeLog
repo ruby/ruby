@@ -1,3 +1,7 @@
+Fri Mar 22 14:32:14 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/protocol.rb: Protocol#start should return self.
+
 Fri Mar 22 14:14:21 2002  Tanaka Akira  <akr@m17n.org>
 
 	* lib/resolv.rb: fix arguments to create exceptions.

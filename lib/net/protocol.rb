@@ -136,7 +136,7 @@ module Net
 
       do_start( *args )
       @active = true
-      nil
+      self
     end
 
     private
