@@ -1,3 +1,7 @@
+Mon Apr 12 19:11:21 2004  Eric Hodel  <drbrain@segment7.net>
+
+	* gc.c (rb_gc_copy_finalizer): typo.  [ruby-core:02774]
+
 Mon Apr 12 18:45:58 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_x509name.c (ossl_x509name_init_i): should return
