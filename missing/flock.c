@@ -99,6 +99,8 @@ flock(fd, operation)
 
 	/* LOCK_SH - get a shared lock */
       case LOCK_SH:
+        rb_notimplement();
+        return -1;
 	/* LOCK_EX - get an exclusive lock */
       case LOCK_EX:
 	i = lockf (fd, F_LOCK, 0);
@@ -106,6 +108,8 @@ flock(fd, operation)
 
 	/* LOCK_SH|LOCK_NB - get a non-blocking shared lock */
       case LOCK_SH|LOCK_NB:
+        rb_notimplement();
+        return -1;
 	/* LOCK_EX|LOCK_NB - get a non-blocking exclusive lock */
       case LOCK_EX|LOCK_NB:
 	i = lockf (fd, F_TLOCK, 0);

@@ -270,7 +270,8 @@ check(tm, y, m, d, h, s)
     struct tm *tm;
     int y, m, d, h, s;
 {
-    if (tm->tm_year != y ||
+    if (!tm ||
+	tm->tm_year != y ||
 	tm->tm_mon  != m-1 ||
 	tm->tm_mday != d ||
 	tm->tm_hour != h ||

@@ -29,4 +29,3 @@ if __FILE__ == $0
   $TERM = "foo"
   p ENV["TERM"]
 end
-

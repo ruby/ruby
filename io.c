@@ -81,6 +81,7 @@ VALUE rb_eIOError;
 
 VALUE rb_stdin, rb_stdout, rb_stderr, rb_defout;
 static VALUE orig_stdin, orig_stdout, orig_stderr;
+static int saved_fd[3] = {0, 1, 2};
 
 VALUE rb_output_fs;
 VALUE rb_rs;
@@ -1187,7 +1188,12 @@ rb_io_sysread(io, len)
     }
     str = rb_str_new(0, ilen);
 
+    n = fileno(fptr->f);
     rb_thread_wait_fd(fileno(fptr->f));
+    if (fptr->f == 0) {
+	fprintf(stderr, "bingo\n");
+	exit(1);
+    }
     TRAP_BEG;
     n = read(fileno(fptr->f), RSTRING(str)->ptr, RSTRING(str)->len);
     TRAP_END;
@@ -2212,7 +2218,15 @@ set_stdin(val, id, var)
 
     GetOpenFile(val, fptr);
     rb_io_check_readable(fptr);
-    dup2(fileno(fptr->f), 0);
+    if (fileno(fptr->f) == 0 && saved_fd[0] != 0) {
+	dup2(saved_fd[0], 0);
+	close(saved_fd[0]);
+	saved_fd[0] = 0;
+    }
+    else {
+	saved_fd[0] = dup(0);
+	dup2(fileno(fptr->f), 0);
+    }
 
     *var = val;
 }
@@ -2226,6 +2240,7 @@ set_outfile(val, var, orig, stdf)
 {
     OpenFile *fptr;
     FILE *f;
+    int fd;
 
     if (val == *var) return;
 
@@ -2243,7 +2258,16 @@ set_outfile(val, var, orig, stdf)
     GetOpenFile(val, fptr);
     rb_io_check_writable(fptr);
     f = GetWriteFile(fptr);
-    dup2(fileno(f), fileno(stdf));
+    fd = fileno(stdf);
+    if (fileno(fptr->f) == fd && saved_fd[fd] != fd) {
+	dup2(saved_fd[fd], fd);
+	close(saved_fd[fd]);
+	saved_fd[fd] = fd;
+    }
+    else {
+	saved_fd[fd] = dup(fd);
+	dup2(fileno(fptr->f), fd);
+    }
 
     *var = val;
 }

@@ -283,14 +283,8 @@ rb_ary_push_m(argc, argv, ary)
 	rb_raise(rb_eArgError, "wrong # of arguments(at least 1)");
     }
     if (argc > 0) {
-	long len = RARRAY(ary)->len;
-
-	--argc;
-	/* make rooms by copying the last item */
-	rb_ary_store(ary, len + argc, argv[argc]);
-
-	if (argc) {		/* if any rest */
-	    MEMCPY(RARRAY(ary)->ptr + len, argv, VALUE, argc);
+	while (argc--) {
+	    rb_ary_push(ary, *argv++);
 	}
     }
     return ary;

@@ -3608,24 +3608,6 @@ rb_yield_0(val, self, klass, acheck)
   pop_state:
     POP_ITER();
     POP_CLASS();
-#if 0
-    if (ruby_dyna_vars && (block->flags & BLOCK_D_SCOPE) &&
-	(!(ruby_scope->flags & SCOPE_DONT_RECYCLE) ||
-	 !(block->tag->flags & BLOCK_DYNAMIC) ||
-	 !FL_TEST(ruby_dyna_vars, DVAR_DONT_RECYCLE))) {
-	struct RVarmap *vars, *tmp;
-
-	if (ruby_dyna_vars->id == 0) {
-	    vars = ruby_dyna_vars->next;
-	    rb_gc_force_recycle((VALUE)ruby_dyna_vars);
-	    while (vars && vars->id != 0) {
-		tmp = vars->next;
-		rb_gc_force_recycle((VALUE)vars);
-		vars = tmp;
-	    }
-	}
-    }
-#else
     if (ruby_dyna_vars && (block->flags & BLOCK_D_SCOPE) &&
 	!FL_TEST(ruby_dyna_vars, DVAR_DONT_RECYCLE)) {
 	struct RVarmap *vars = ruby_dyna_vars;
@@ -3640,7 +3622,6 @@ rb_yield_0(val, self, klass, acheck)
 	    }
 	}
     }
-#endif
     POP_VARS();
     ruby_block = block;
     ruby_frame = ruby_frame->prev;
@@ -6182,7 +6163,7 @@ proc_new(klass)
     struct RVarmap *vars;
 
     if (!rb_block_given_p() && !rb_f_block_given_p()) {
-	rb_raise(rb_eArgError, "tried to create Procedure-Object without a block");
+	rb_raise(rb_eArgError, "tried to create Proc object without a block");
     }
 
     proc = Data_Make_Struct(klass, struct BLOCK, blk_mark, blk_free, data);
@@ -6280,17 +6261,6 @@ proc_call(proc, args)
     Data_Get_Struct(proc, struct BLOCK, data);
     orphan = blk_orphan(data);
 
-    /* PUSH BLOCK from data */
-    old_block = ruby_block;
-    _block = *data;
-    ruby_block = &_block;
-    PUSH_ITER(ITER_CUR);
-    ruby_frame->iter = ITER_CUR;
-
-    if (args != Qundef && TYPE(args) == T_ARRAY) {
-	args = callargs(args);
-    }
-
     if (orphan) {/* orphan procedure */
 	if (rb_block_given_p()) {
 	    ruby_block->frame.iter = ITER_CUR;
@@ -6298,6 +6268,18 @@ proc_call(proc, args)
 	else {
 	    ruby_block->frame.iter = ITER_NOT;
 	}
+    }
+
+    /* PUSH BLOCK from data */
+    old_block = ruby_block;
+    _block = *data;
+    ruby_block = &_block;
+
+    PUSH_ITER(ITER_CUR);
+    ruby_frame->iter = ITER_CUR;
+
+    if (args != Qundef && TYPE(args) == T_ARRAY) {
+	args = callargs(args);
     }
 
     PUSH_TAG(PROT_NONE);
@@ -6993,6 +6975,8 @@ rb_thread_check(data)
     return (rb_thread_t)RDATA(data)->data;
 }
 
+static VALUE rb_thread_raise _((int, VALUE*, rb_thread_t));
+
 static int   th_raise_argc;
 static VALUE th_raise_argv[2];
 static char *th_raise_file;
@@ -7176,20 +7160,15 @@ void
 rb_thread_fd_close(fd)
     int fd;
 {
-    rb_thread_t th;
+    rb_thread_t th, curr = curr_thread;
 
-    FOREACH_THREAD(th) {
+    FOREACH_THREAD_FROM(curr, th) {
 	if ((th->wait_for & WAIT_FD) && fd == th->fd) {
-	    th_raise_argc = 1;
-	    th_raise_argv[0] = rb_exc_new2(rb_eIOError, "stream closed");
-	    th_raise_file = ruby_sourcefile;
-	    th_raise_line = ruby_sourceline;
-	    curr_thread = th;
-	    rb_thread_ready(th);
-	    rb_thread_restore_context(curr_thread, RESTORE_RAISE);
+	    VALUE exc = rb_exc_new2(rb_eIOError, "stream closed");
+	    rb_thread_raise(1, &exc, th);
 	}
     }
-    END_FOREACH(th);
+    END_FOREACH_FROM(curr, th);
 }
 
 static void
@@ -7976,8 +7955,6 @@ catch_timer(sig)
 int rb_thread_tick = THREAD_TICK;
 #endif
 
-static VALUE rb_thread_raise _((int, VALUE*, rb_thread_t));
-
 #define SCOPE_SHARED  FL_USER1
 
 #if defined(HAVE_SETITIMER)
@@ -8460,7 +8437,7 @@ rb_thread_inspect(thread)
 void
 rb_thread_atfork()
 {
-#if 0				/* enable on 1.7 */
+#if 1				/* enable on 1.7 */
     rb_thread_t th;
 
     if (rb_thread_alone()) return;

@@ -1,3 +1,8 @@
+Mon Feb 26 00:04:52 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (proc_call): should not modify ruby_block->frame.iter
+	  based on ruby_frame->iter altered by PUSH_ITER().
+
 Mon Feb 26 05:27:52 2001  Wakou Aoyama  <wakou@fsinet.or.jp>
 
 	* lib/net/telnet.rb: #telnetmode(), #binmode(): bug fix.
@@ -18,6 +23,11 @@ Sun Feb 25 02:45:30 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* file.c (rb_file_s_rename): avoid Cygwin's bug.
 
+Sat Feb 24 23:32:55 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_thread_fd_close): should save current context before
+	  raising exception.
+
 Sat Feb 24 22:14:00 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* win32/win32.c (myrename): fix error handling.
@@ -28,6 +38,12 @@ Sat Feb 24 13:58:48 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 	  body.
 
 	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: change copyright.
+
+Sat Feb 24 03:15:49 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (set_stdin): preserve original stdin.
+
+	* io.c (set_outfile): preserve original stdout/stderr.
 
 Fri Feb 23 08:28:58 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
