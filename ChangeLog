@@ -12,7 +12,7 @@ Sun Nov 28 15:51:40 2004  Kouhei Sutou  <kou@cozmixng.org>
 	
 	* lib/rss/maker/{1.0,0.9,2.0}.rb: changed RSS Maker to raise
 	  RSS::NotSetError if required values of maker.channel are not
-	  set.
+	  set. [ruby-talk:120061]
 
 	* test/rss/test_maker_{1.0,0.9,2.0}.rb: changed tests to check RSS
 	  Maker raises or not.
