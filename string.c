@@ -2478,7 +2478,7 @@ rb_str_count(argc, argv, str)
     }
 
     s = RSTRING(str)->ptr;
-    if (!s || RSTRING(str)->len == 0) return Qnil;
+    if (!s || RSTRING(str)->len == 0) return INT2FIX(0);
     send = s + RSTRING(str)->len;
     i = 0;
     while (s < send) {

@@ -1,3 +1,12 @@
+Thu Feb  6 11:44:40 2003  MoonWolf  <moonwolf@moonwolf.com>
+
+	* re.c (rb_reg_initialize_m): 3rd argument was ignored.
+
+Thu Feb  6 01:09:05 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_count): return 0 for empty string (was
+	  returning nil).
+
 Wed Feb  5 19:41:37 2003  Tanaka Akira  <akr@m17n.org>
 
 	* lib/open-uri.rb: dispatch code restructured to make it openable
@@ -8,7 +17,7 @@ Wed Feb  5 19:41:37 2003  Tanaka Akira  <akr@m17n.org>
 
 Wed Feb  5 17:11:02 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* parse.y (yylex): no .<digit> floating literal anymore.
+	* parse.y (yylex): no .<digit> float literal anymore.
 
 Tue Feb  4 16:11:30 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

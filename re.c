@@ -1265,7 +1265,7 @@ rb_reg_initialize_m(argc, argv, self)
 	    if (FIXNUM_P(argv[1])) flags = FIX2INT(argv[1]);
 	    else if (RTEST(argv[1])) flags = RE_OPTION_IGNORECASE;
 	}
-	else if (argc == 3) {
+	if (argc == 3) {
 	    char *kcode = StringValuePtr(argv[2]);
 
 	    switch (kcode[0]) {
