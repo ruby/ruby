@@ -172,6 +172,7 @@ module URI
     def to=(v)
       check_to(v)
       set_to(v)
+      v
     end
 
 =begin
@@ -213,6 +214,7 @@ module URI
     def headers=(v)
       check_headers(v)
       set_headers(v)
+      v
     end
 
     def to_str

@@ -140,6 +140,7 @@ URI::LDAP is copyrighted free software by Takaaki Tateishi and akira yamada.
 
     def dn=(val)
       set_dn(val)
+      val
     end
 
 =begin
@@ -163,6 +164,7 @@ URI::LDAP is copyrighted free software by Takaaki Tateishi and akira yamada.
 
     def attributes=(val)
       set_attributes(val)
+      val
     end
 
 =begin
@@ -186,6 +188,7 @@ URI::LDAP is copyrighted free software by Takaaki Tateishi and akira yamada.
 
     def scope=(val)
       set_scope(val)
+      val
     end
 
 =begin
@@ -209,6 +212,7 @@ URI::LDAP is copyrighted free software by Takaaki Tateishi and akira yamada.
 
     def filter=(val)
       set_filter(val)
+      val
     end
 
 =begin
@@ -232,6 +236,7 @@ URI::LDAP is copyrighted free software by Takaaki Tateishi and akira yamada.
 
     def extensions=(val)
       set_extensions(val)
+      val
     end
   end
 

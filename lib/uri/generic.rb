@@ -243,6 +243,7 @@ Object
     def scheme=(v)
       check_scheme(v)
       set_scheme(v)
+      v
     end
 
 =begin
@@ -315,16 +316,19 @@ Object
       end
       check_userinfo(*userinfo)
       set_userinfo(*userinfo)
+      userinfo
     end
 
     def user=(user)
       check_user(user)
       set_user(user)
+      user
     end
 
     def password=(password)
       check_password(password)
       set_password(password)
+      password
     end
 
     def set_userinfo(user, password = nil)
@@ -420,6 +424,7 @@ Object
     def host=(v)
       check_host(v)
       set_host(v)
+      v
     end
 
 =begin
@@ -463,6 +468,7 @@ Object
     def port=(v)
       check_port(v)
       set_port(v)
+      port
     end
 
 =begin
@@ -502,6 +508,7 @@ Object
     def registry=(v)
       check_registry(v)
       set_registry(v)
+      v
     end
 
 =begin
@@ -548,6 +555,7 @@ Object
     def path=(v)
       check_path(v)
       set_path(v)
+      v
     end
 
 =begin
@@ -589,6 +597,7 @@ Object
     def query=(v)
       check_query(v)
       set_query(v)
+      v
     end
 
 =begin
@@ -628,6 +637,7 @@ Object
     def opaque=(v)
       check_opaque(v)
       set_opaque(v)
+      v
     end
 
 =begin
@@ -661,6 +671,7 @@ Object
     def fragment=(v)
       check_fragment(v)
       set_fragment(v)
+      v
     end
 
 =begin
@@ -1030,7 +1041,7 @@ Object
     end
     private :path_query
 
-    def to_str
+    def to_s
       str = ''
       if @scheme
 	str << @scheme
@@ -1071,20 +1082,12 @@ Object
       str
     end
 
-    def to_s
-      to_str
-    end
-
 =begin
 
 --- URI::Generic#==(oth)
 
 =end
     def ==(oth)
-      if oth.kind_of?(String)
-	oth = URI.parse(oth)
-      end
-
       if self.class == oth.class
 	self.normalize.component_ary == oth.normalize.component_ary
       else
