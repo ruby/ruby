@@ -1,3 +1,13 @@
+Tue Sep 14 16:59:37 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tcltklib/tcltklib.c: fix SEGV
+
+	* ext/tk/lib/multi-tk.rb: improve safe-level handling of argument proc
+
+	* ext/tk/sample/multi-ip_sample.rb: rename of old 'safe-tk.rb'
+
+	* ext/tk/sample/safe-tk.rb: new sample script
+
 Tue Sep 14 00:15:15 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/zlib/zlib.c: backported from HEAD.

@@ -3,100 +3,83 @@
 
 require "multi-tk"
 
-# create slave interpreters
-trusted_slave = MultiTkIp.new_slave
-safe_slave1   = MultiTkIp.new_safeTk
-safe_slave2   = MultiTkIp.new_safeTk('fill'=>:none, 'expand'=>false)
-#safe_slave2   = MultiTkIp.new_safeTk('fill'=>:none)
-#safe_slave2   = MultiTkIp.new_safeTk('expand'=>false)
+###############################
 
-cmd = Proc.new{|txt|
-  #####################
-  ## from TkTimer2.rb
+TkLabel.new(:text=>'Default Master Ipnterpreter').pack(:padx=>5, :pady=>7)
+TkButton.new(:text=>'QUIT', :command=>proc{exit}).pack(:pady=>3)
 
-  if TkCore::INTERP.safe?
-    # safeTk doesn't have permission to call 'wm' command
-  else
-    root = TkRoot.new(:title=>'timer sample')
-  end
+###############################
 
-  label = TkLabel.new(:parent=>root, :relief=>:raised, :width=>10) \
-                  .pack(:side=>:bottom, :fill=>:both)
+puts "---- create a safe slave IP with Ruby's safe-level == 1 ----------"
+ip = MultiTkIp.new_safe_slave(1)
 
-  tick = proc{|aobj|
-    cnt = aobj.return_value + 5
-    label.text format("%d.%02d", *(cnt.divmod(100)))
-    cnt
-  }
+puts "\n---- create procs ----------"
+puts 'x = proc{p [\'proc x\', "$SAFE==#{$SAFE}"]; exit}'
+x = proc{p ['proc x', "$SAFE==#{$SAFE}"]; exit}
 
-  timer = TkTimer.new(50, -1, tick).start(0, proc{ label.text('0.00'); 0 })
+puts 'y = proc{|label| p [\'proc y\', "$SAFE==#{$SAFE}", label]; label.text($SAFE)}'
+y = proc{|label| p ['proc y', "$SAFE==#{$SAFE}", label]; label.text($SAFE)}
 
-=begin
-  TkButton.new(:text=>'Start') {
-    command proc{ timer.continue unless timer.running? }
-    pack(:side=>:left, :fill=>:both, :expand=>true)
-  }
-  TkButton.new(:text=>'Restart') {
-    command proc{ timer.restart(0, proc{ label.text('0.00'); 0 }) }
-    pack('side'=>'right','fill'=>'both','expand'=>'yes')
-  }
-  TkButton.new(:text=>'Stop') {
-    command proc{ timer.stop if timer.running? }
-    pack('side'=>'right','fill'=>'both','expand'=>'yes')
-  }
-=end
-  b_start = TkButton.new(:text=>'Start', :state=>:disabled) {
-    pack(:side=>:left, :fill=>:both, :expand=>true)
-  }
-  b_stop  = TkButton.new(:text=>'Stop', :state=>:normal) {
-    pack('side'=>'left', 'fill'=>'both', 'expand'=>'yes')
-  }
+puts 'z = proc{p [\'proc z\', "$SAFE==#{$SAFE}"]; exit}'
+z = proc{p ['proc z', "$SAFE==#{$SAFE}"]; exit}
 
-  b_start.command {
-    timer.continue
-    b_stop.state(:normal)
-    b_start.state(:disabled)
-  }
+puts "\n---- call 1st eval_proc ----------"
+print 'lbl = '
+p lbl = ip.eval_proc{
+  TkLabel.new(:text=>"1st eval_prpc : $SAFE == #{$SAFE}").pack
 
-  b_stop.command {
-    timer.stop
-    b_start.state(:normal)
-    b_stop.state(:disabled)
-  }
+  f = TkFrame.new.pack
+  TkLabel.new(f, :text=>"$SAFE == ").pack(:side=>:left)
+  l = TkLabel.new(f).pack(:side=>:right)
 
-  TkButton.new(:text=>'Reset', :state=>:normal) {
-    command { timer.reset }
-    pack('side'=>'right', 'fill'=>'both', 'expand'=>'yes')
-  }
-
-  ev_quit = TkVirtualEvent.new('Control-c', 'Control-q')
-  Tk.root.bind(ev_quit, proc{Tk.exit}).focus
+  TkButton.new(:text=>':command=>proc{l.text($SAFE)}', 
+	       :command=>proc{l.text($SAFE)}).pack(:fill=>:x, :padx=>5)
+  TkButton.new(:text=>':command=>x', :command=>x).pack(:fill=>:x, :padx=>5)
+  TkButton.new(:text=>':command=>proc{exit}', 
+	       :command=>proc{exit}).pack(:fill=>:x, :padx=>5)
+  TkFrame.new(:borderwidth=>2, :height=>3, 
+	      :relief=>:sunken).pack(:fill=>:x, :expand=>true,
+				     :padx=>10, :pady=>7)
+  l # return the label widget
 }
 
-# call on the default master interpreter
-trusted_slave.eval_proc(cmd, 'trusted')  # label -> .w00012
-safe_slave1.eval_proc(cmd, 'safe1')      # label -> .w00016
-safe_slave2.eval_proc(cmd, 'safe2')      # label -> .w00020
-cmd.call('master')                       # label -> .w00024
+puts "\n---- change the safe slave IP's safe-level ==> 3 ----------"
+ip.safe_level = 3
 
-#second_master = MultiTkIp.new(&cmd)
+puts "\n---- call 2nd eval_proc ----------"
+p ip.eval_proc(proc{
+		 TkLabel.new(:text=>"2nd eval_prpc : $SAFE == #{$SAFE}").pack
+		 f = TkFrame.new.pack
+		 TkLabel.new(f, :text=>"$SAFE == ").pack(:side=>:left)
+		 l = TkLabel.new(f, :text=>$SAFE).pack(:side=>:right)
+		 TkButton.new(:text=>':command=>proc{l.text($SAFE)}', 
+			      :command=>proc{l.text($SAFE)}).pack(:fill=>:x, 
+								  :padx=>5)
+		 TkButton.new(:text=>':command=>proc{y.call(l)}', 
+			      :command=>proc{y.call(l)}).pack(:fill=>:x, 
+							      :padx=>5)
+		 TkButton.new(:text=>':command=>proc{Thread.new(l, &y).value}',
+			      :command=>proc{
+				Thread.new(l, &y).value
+			      }).pack(:fill=>:x, :padx=>5)
+		 TkButton.new(:text=>':command=>proc{z.call}', 
+			      :command=>proc{z.call}).pack(:fill=>:x, :padx=>5)
+		 TkFrame.new(:borderwidth=>2, :height=>3, 
+			     :relief=>:sunken).pack(:fill=>:x, :expand=>true,
+						    :padx=>10, :pady=>7)
+	       })
 
-TkTimer.new(2000, -1, proc{p ['safe1', safe_slave1.deleted?]}).start
-TkTimer.new(2000, -1, proc{p ['safe2', safe_slave2.deleted?]}).start
-TkTimer.new(2000, -1, proc{p ['trusted', trusted_slave.deleted?]}).start
 
-TkTimer.new(7000, 1, 
-	    proc{
-	      safe_slave1.eval_proc{Tk.root.destroy}
-	      safe_slave1.delete
-	      print "*** The safe_slave1 is deleted by the timer.\n"
-	    }).start
+puts "\n---- change the safe slave IP's safe-level ==> 4 ----------"
+ip.safe_level = 4
 
-TkTimer.new(10000, 1, 
-	    proc{
-	      trusted_slave.eval_proc{Tk.root.destroy}
-	      trusted_slave.delete
-	      print "*** The trusted_slave is deleted by the timer.\n"
-	    }).start
+puts "\n---- call 3rd and 4th eval_proc ----------"
+p ip.eval_proc{ TkLabel.new(:text=>"3rd+ eval_prpc : $SAFE == #{$SAFE}").pack }
+p ip.eval_proc{
+  TkButton.new(:text=>':command=>proc{ lbl.text = $SAFE }', 
+	       :command=>proc{ lbl.text = $SAFE }).pack(:fill=>:x, :padx=>5)
+}
+
+puts "\n---- start event-loop ( current $SAFE == #{$SAFE} ) ----------"
 
 Tk.mainloop
