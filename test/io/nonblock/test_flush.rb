@@ -13,10 +13,14 @@ class TestIONonblock < Test::Unit::TestCase
       Thread.pass
       w.close
     }
-    Thread.new {
-      Thread.pass
-      nil while r.read(4096)
+    result = ""
+    t = Thread.new {
+      while (Thread.pass; s = r.read(4096))
+        result << s
+      end
     }
     assert_raise(IOError) {w.flush}
+    t.join
+    assert_equal("b", result)
   end
 end
