@@ -13,13 +13,31 @@ module RSS
 		
 		ELEMENTS = []
 		
-		%w(updatePeriod updateFrequency).each do |x|
-			install_text_element("#{SY_PREFIX}_#{x}")
-    end
+		def self.included(mod)
+			mod.module_eval(<<-EOC)
+				%w(updatePeriod updateFrequency).each do |x|
+					install_text_element("\#{SY_PREFIX}_\#{x}")
+				end
 
-		%w(updateBase).each do |x|
-			install_date_element("#{SY_PREFIX}_#{x}", 'iso8601', x)
-    end
+				%w(updateBase).each do |x|
+					install_date_element("\#{SY_PREFIX}_\#{x}", 'iso8601', x)
+				end
+
+				alias_method(:_sy_updatePeriod=, :sy_updatePeriod=)
+				def sy_updatePeriod=(new_value)
+					new_value = new_value.strip
+					validate_sy_updatePeriod(new_value) if @do_validate
+					self._sy_updatePeriod = new_value
+				end
+
+				alias_method(:_sy_updateFrequency=, :sy_updateFrequency=)
+				def sy_updateFrequency=(new_value)
+					new_value = new_value.strip
+					validate_sy_updateFrequency(new_value) if @do_validate
+					self._sy_updateFrequency = new_value.to_i
+				end
+			EOC
+		end
 
 		def sy_validate(tags)
 			counter = {}
@@ -35,21 +53,6 @@ module RSS
 			end
 		end
 
-
-		alias_method(:_sy_updatePeriod=, :sy_updatePeriod=)
-		def sy_updatePeriod=(new_value)
-			new_value = new_value.strip
-			validate_sy_updatePeriod(new_value) if @do_validate
-			self._sy_updatePeriod = new_value
-		end
-		
-		alias_method(:_sy_updateFrequency=, :sy_updateFrequency=)
-		def sy_updateFrequency=(new_value)
-			new_value = new_value.strip
-			validate_sy_updateFrequency(new_value) if @do_validate
-			self._sy_updateFrequency = new_value.to_i
-		end
-		
 		private
 		SY_UPDATEPERIOD_AVAILABLE_VALUES = %w(hourly daily weekly monthly yearly)
 		def validate_sy_updatePeriod(value)
@@ -72,6 +75,7 @@ module RSS
 	end
 
 	prefix_size = SY_PREFIX.size + 1
+	SyndicationModel::ELEMENTS.uniq!
 	SyndicationModel::ELEMENTS.each do |x|
 		BaseListener.install_get_text_element(x[prefix_size..-1], SY_URI, "#{x}=")
 	end

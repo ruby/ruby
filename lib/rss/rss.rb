@@ -92,6 +92,8 @@ module RSS
 		include Utils
 
 		def install_have_child_element(name)
+			add_need_initialize_variable(name)
+
 			attr_accessor name
 			install_element(name) do |n, elem_name|
 				<<-EOC
@@ -106,8 +108,9 @@ EOC
 		alias_method(:install_have_attribute_element, :install_have_child_element)
 
 		def install_have_children_element(name, postfix="s")
-			def_children_accessor(name, postfix)
 			add_have_children_element(name)
+
+			def_children_accessor(name, postfix)
 			install_element(name, postfix) do |n, elem_name|
 				<<-EOC
 				rv = ''
@@ -121,6 +124,8 @@ EOC
 
 		def install_text_element(name)
 			self::ELEMENTS << name
+			add_need_initialize_variable(name)
+
 			attr_writer name
 			convert_attr_reader name
 			install_element(name) do |n, elem_name|
@@ -144,6 +149,7 @@ EOC
 
 		def install_date_element(name, type, disp_name=name)
 			self::ELEMENTS << name
+			add_need_initialize_variable(name)
 
 			# accessor
 			convert_attr_reader name
@@ -323,6 +329,16 @@ EOC
 					@@have_children_elements << variable_name
 				end
 				
+				@@need_initialize_variables = []
+				
+				def self.add_need_initialize_variable(variable_name)
+					@@need_initialize_variables << variable_name
+				end
+				
+				def self.need_initialize_variables
+					@@need_initialize_variables
+				end
+
 				EOC
 			end
 
@@ -346,8 +362,9 @@ EOC
 		attr_accessor :do_validate
 
 		def initialize(do_validate=true)
+			@converter = nil
 			@do_validate = do_validate
-			initialize_have_children_elements
+			initialize_variables
 		end
 
 		def tag_name
@@ -371,6 +388,13 @@ EOC
 		end
 
     private
+		def initialize_variables
+			self.class.need_initialize_variables.each do |variable_name|
+				instance_eval("@#{variable_name} = nil")
+			end
+			initialize_have_children_elements
+		end
+
 		def initialize_have_children_elements
 			self.class.have_children_elements.each do |variable_name|
 				instance_eval("@#{variable_name} = []")

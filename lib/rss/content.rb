@@ -13,9 +13,13 @@ module RSS
 
 		ELEMENTS = []
 
-		%w(encoded).each do |x|
-			install_text_element("#{CONTENT_PREFIX}_#{x}")
-    end
+		def self.included(mod)
+			mod.module_eval(<<-EOC)
+				%w(encoded).each do |x|
+					install_text_element("\#{CONTENT_PREFIX}_\#{x}")
+				end
+			EOC
+		end
 
 		def content_validate(tags)
 			counter = {}
@@ -38,6 +42,7 @@ module RSS
 	end
 
 	prefix_size = CONTENT_PREFIX.size + 1
+	ContentModel::ELEMENTS.uniq!
 	ContentModel::ELEMENTS.each do |x|
 		BaseListener.install_get_text_element(x[prefix_size..-1], CONTENT_URI, "#{x}=")
 	end

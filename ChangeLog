@@ -1,3 +1,17 @@
+Tue Feb  3 22:36:25 2004  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/2.0.rb, lib/rss/content.rb, lib/rss/dublincore.rb,
+	  lib/rss/rss.rb, lib/rss/syndication.rb: removed warnings.
+
+	* lib/rss/converter.rb: removed handling load error of nkf.
+
+	* test/rss/test_syndication.rb, test/rss/test_trackback.rb,
+	  test/rss/test_dublincore.rb, test/rss/test_content.rb: replaced
+	  'require "rss/parser"' by 'require "rss/1.0"'.
+
+	* test/rss/test_parser.rb, test/rss/test_accessor.rb: removed
+	  'require "rss/parser"'.
+
 Tue Feb  3 11:23:17 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (reduce_nodes): remove tail returns.  [ruby-talk:90934]

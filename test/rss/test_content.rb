@@ -4,7 +4,7 @@ require "test/unit"
 require "cgi-lib"
 require "rexml/document"
 
-require "rss/parser"
+require "rss/1.0"
 require "rss/content"
 require "common"
 

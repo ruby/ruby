@@ -129,6 +129,7 @@ EOT
 
 	module ListenerMixin
 		private
+		alias start_rss09 start_rss
 		def start_rss(tag_name, prefix, attrs, ns)
 			check_ns(tag_name, prefix, ns, Rss::URI)
 			

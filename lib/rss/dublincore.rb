@@ -13,14 +13,18 @@ module RSS
 
 		ELEMENTS = []
 
-		%w(title description creator subject publisher
-		   contributor type format identifier source
-		   language relation coverage rights).each do |x|
-				install_text_element("#{DC_PREFIX}_#{x}")
-		end
+		def self.included(mod)
+			mod.module_eval(<<-EOC)
+				%w(title description creator subject publisher
+						contributor type format identifier source
+						language relation coverage rights).each do |x|
+					install_text_element("\#{DC_PREFIX}_\#{x}")
+				end
 
-		%w(date).each do |x|
-			install_date_element("#{DC_PREFIX}_#{x}", 'iso8601', x)
+				%w(date).each do |x|
+					install_date_element("\#{DC_PREFIX}_\#{x}", 'iso8601', x)
+				end
+			EOC
 		end
 
 		def dc_validate(tags)
@@ -47,6 +51,7 @@ module RSS
 	end
 
 	prefix_size = DC_PREFIX.size + 1
+	DublincoreModel::ELEMENTS.uniq!
 	DublincoreModel::ELEMENTS.each do |x|
 		BaseListener.install_get_text_element(x[prefix_size..-1], DC_URI, "#{x}=")
 	end

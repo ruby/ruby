@@ -111,44 +111,28 @@ EOC
 		end
 		
 		def def_to_euc_jp_from_shift_jis
-      begin
-        require "nkf"
-      rescue LoadError
-        raise UnknownConversionMethodError.new('EUC-JP', 'Shift_JIS')
-      end
+			require "nkf"
 			def_convert do |value|
 				"NKF.nkf('-Se', #{value})"
 			end
 		end
 		
 		def def_to_shift_jis_from_euc_jp
-      begin
-        require "nkf"
-      rescue LoadError
-        raise UnknownConversionMethodError.new('Shift_JIS', 'EUC-JP')
-      end
+			require "nkf"
 			def_convert do |value|
 				"NKF.nkf('-Es', #{value})"
 			end
 		end
 		
 		def def_to_euc_jp_from_iso_2022_jp
-      begin
-        require "nkf"
-      rescue LoadError
-        raise UnknownConversionMethodError.new('EUC-JP', 'ISO-2022-JP')
-      end
+			require "nkf"
 			def_convert do |value|
 				"NKF.nkf('-Je', #{value})"
 			end
 		end
 		
 		def def_to_iso_2022_jp_from_euc_jp
-      begin
-        require "nkf"
-      rescue LoadError
-        raise UnknownConversionMethodError.new('ISO-2022-JP', 'EUC-JP')
-      end
+			require "nkf"
 			def_convert do |value|
 				"NKF.nkf('-Ej', #{value})"
 			end
