@@ -1,3 +1,8 @@
+Thu May  2 18:27:13 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/extmk.rb.in, lib/mkmf.rb: use 'do...end' instead of '{}' for
+	  Borland make.
+
 Mon Apr 29 18:46:42 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* file.c (rb_find_file): load must be done from an abolute path if
