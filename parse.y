@@ -1018,7 +1018,7 @@ call_args	: command
 
 call_args2	: arg ',' args opt_block_arg
 		    {
-			$$ = arg_blk_pass(list_append(NEW_LIST($1),$3), $4);
+			$$ = arg_blk_pass(list_concat(NEW_LIST($1),$3), $4);
 		    }
 		| arg ',' tSTAR arg opt_block_arg
 		    {
@@ -1031,7 +1031,7 @@ call_args2	: arg ',' args opt_block_arg
 		    {
 			value_expr($1);
 			value_expr($6);
-			$$ = arg_concat(list_append($1,$3), $6);
+			$$ = arg_concat(list_concat($1,$3), $6);
 			$$ = arg_blk_pass($$, $7);
 		    }
 		| assocs opt_block_arg
@@ -1054,7 +1054,7 @@ call_args2	: arg ',' args opt_block_arg
 		    {
 			value_expr($1);
 			value_expr($6);
-			$$ = list_append(list_append($1,$3), NEW_HASH($5));
+			$$ = list_append(list_concat($1,$3), NEW_HASH($5));
 			$$ = arg_blk_pass($$, $6);
 		    }
 		| arg ',' assocs ',' tSTAR arg opt_block_arg
@@ -1068,7 +1068,7 @@ call_args2	: arg ',' args opt_block_arg
 		    {
 			value_expr($1);
 			value_expr($8);
-			$$ = arg_concat(list_append(list_append(NEW_LIST($1), $3), NEW_HASH($5)), $8);
+			$$ = arg_concat(list_append(list_concat(NEW_LIST($1), $3), NEW_HASH($5)), $8);
 			$$ = arg_blk_pass($$, $9);
 		    }
 		| tSTAR arg opt_block_arg

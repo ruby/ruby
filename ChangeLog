@@ -1,3 +1,8 @@
+Fri Jun  1 16:50:59 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (call_args2): confusion with list_append() and
+	  list_concat() was fixed.
+
 Fri Jun  1 15:01:40 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (yylex): fixed 'print CGI::bar() {}, "\n"' syntax
