@@ -1,3 +1,8 @@
+Sun Nov 14 13:27:03 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/pp.rb (PP#object_address_group): remove odd number of 'f'
+	  prefixed to negative address.
+
 Sun Nov 14 08:46:33 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* test/logger/test_logger.rb: Logger just expects

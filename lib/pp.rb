@@ -219,7 +219,9 @@ class PP < PrettyPrint
     end
 
     def object_address_group(obj, &block)
-      group(1, "\#<#{obj.class}:#{("0x%x" % (obj.__id__ * 2)).sub(/\.\.f/, '')}", '>', &block)
+      id = "%x" % (obj.__id__ * 2)
+      id.sub!(/\Af(?=[[:xdigit:]]{2}+\z)/, '') if id.sub!(/\A\.\./, '')
+      group(1, "\#<#{obj.class}:0x#{id}", '>', &block)
     end
 
     def comma_breakable
