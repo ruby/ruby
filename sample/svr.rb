@@ -9,7 +9,7 @@ addr.shift
 printf("server is on %s\n", addr.join(":"))
 socks = [gs]
 
-while TRUE
+loop do
   nsock = select(socks);
   next if nsock == nil
   for s in nsock[0]
@@ -23,7 +23,7 @@ while TRUE
 	s.close
 	socks.delete(s)
       else
-	if str = s.gets;
+	if str = s.gets
 	  s.write(str)
 	end
       end

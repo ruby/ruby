@@ -79,40 +79,38 @@ else
   if $OPT_birthday
     bd = Date.new(*parsedate($OPT_birthday))
   else
-    printf(STDERR, "Birthday                      (YYYYMMDD) : ")
-    if (si = STDIN.gets.chop) != ""
+    STDERR.print("Birthday                      (YYYYMMDD) : ")
+    unless (si = STDIN.gets.chop).empty?
       bd = Date.new(*parsedate(si))
     end
   end
   if !bd
-    printf STDERR, "BAD Input Birthday!!\n"
+    STDERR.print "BAD Input Birthday!!\n"
     exit()
   end
-  
+
   if $OPT_sdate
     dd = Date.today
   elsif $OPT_date
     dd = Date.new(*parsedate($OPT_date))
   else
-    printf(STDERR, "Date        [<RETURN> for Systemdate] (YYYYMMDD) : ")
-    if (si = STDIN.gets.chop) != ""
+    STDERR.print("Date        [<RETURN> for Systemdate] (YYYYMMDD) : ")
+    unless (si = STDIN.gets.chop).empty?
       dd = Date.new(*parsedate(si))
     end
   end
-  if !dd
-    dd = Date.today
-  end
+  dd ||= Date.today
 
   if $OPT_v
     ausgabeart = "v"
   elsif $OPT_g
     ausgabeart = "g"
   else
-    printf(STDERR, "Values for today or Graph  (v/g) [default g] : ")
+    STDERR.print("Values for today or Graph  (v/g) [default g] : ")
     ausgabeart = STDIN.gets.chop
   end
 end
-if (ausgabeart == "v")
+if ausgabeart == "v"
   printHeader(bd.year, bd.month, bd.day, dd - bd, name_of_week(bd))
   print "\n"
   
@@ -128,9 +126,9 @@ else
   elsif $OPT_D
     display_period = 9
   else
-    printf(STDERR, "Graph for how many days     [default 10] : ")
+    STDERR.printf("Graph for how many days     [default 10] : ")
     display_period = STDIN.gets.chop
-    if (display_period == "")
+    if display_period.empty?
       display_period = 9
     else
       display_period = display_period.to_i - 1

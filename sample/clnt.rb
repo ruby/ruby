@@ -3,15 +3,19 @@
 
 require "socket"
 
-host=(if ARGV.length == 2; ARGV.shift; else "localhost"; end)
+if ARGV.length >= 2
+  host = ARGV.shift
+else
+  host = "localhost"
+end
 print("Trying ", host, " ...")
 STDOUT.flush
 s = TCPSocket.open(host, ARGV.shift)
 print(" done\n")
 print("addr: ", s.addr.join(":"), "\n")
 print("peer: ", s.peeraddr.join(":"), "\n")
-while gets()
-  s.write($_)
+while line = gets()
+  s.write(line)
   print(s.readline)
 end
 s.close
