@@ -20,6 +20,7 @@ unless defined? $configure_args
   for arg in Shellwords::shellwords(args)
     arg, val = arg.split('=', 2)
     next unless arg
+    arg.tr!('_', '-')
     if arg.sub!(/^(?!--)/, '--')
       val or next
       arg.downcase!
@@ -30,6 +31,7 @@ unless defined? $configure_args
   for arg in ARGV
     arg, val = arg.split('=', 2)
     next unless arg
+    arg.tr!('_', '-')
     if arg.sub!(/^(?!--)/, '--')
       val or next
       arg.downcase!
@@ -623,11 +625,11 @@ def find_executable(bin, path = nil)
 end
 
 def arg_config(config, default=nil)
-  $configure_args.fetch(config, default)
+  $configure_args.fetch(config.tr('_', '-'), default)
 end
 
 def with_config(config, default=nil)
-  unless /^--with-/ =~ config
+  unless /^--with[-_]/ =~ config
     config = '--with-' + config
   end
   arg_config(config, default)

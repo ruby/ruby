@@ -1,3 +1,10 @@
+Sat Aug 21 06:41:16 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/tcltklib/extconf.rb (find_tcl, find_tk): find stub library.
+
+	* lib/mkmf.rb (arg_config, with_config): deal with '-' and '_'
+	  uniformly.  [ruby-dev:24118]
+
 Fri Aug 20 14:49:42 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (rb_io_check_writable): no need to check read buffer if
@@ -9,7 +16,7 @@ Fri Aug 20 11:46:43 2004  UENO Katsuhiro  <katsu@blue.sky.or.jp>
 
 Thu Aug 19 16:29:45 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tk.rb: Fail to treat a hash value of 'font' option. 
+	* ext/tk/lib/tk.rb: Fail to treat a hash value of 'font' option.
 
 	* ext/tk/lib/tk.rb: bindinfo cannot return '%' substiturion infomation.
 
