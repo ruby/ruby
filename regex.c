@@ -1398,6 +1398,7 @@ re_compile_pattern(pattern, size, bufp)
 		store_jump(fixup_jump, jump, b);
 	      BUFPUSH(stop_memory);
 	      BUFPUSH(stackp[-1]);
+	      stackp--;
 	      break;
 
 	    case '!':
@@ -1412,13 +1413,13 @@ re_compile_pattern(pattern, size, bufp)
 	      STORE_NUMBER(bufp->buffer+stackp[-1], b - bufp->buffer - stackp[-1] - 2);
 	      BUFPUSH(0);	/* space to hold stack pos */
 	      BUFPUSH(0);
+	      stackp--;
 	      break;
 
 	    case ':':
 	    default:
 	      break;
 	  }
-	  stackp--;
 	  begalt = *--stackp + bufp->buffer;
 	  stackp--;
 	  fixup_jump = *stackp ? *stackp + bufp->buffer - 1 : 0;
