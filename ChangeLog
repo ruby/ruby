@@ -1,7 +1,7 @@
 Tue Mar 30 20:25:34 2004  Tanaka Akira  <akr@m17n.org>
 
 	* time.c (search_time_t): limit guess range by mktime if it is
-	  availabe.
+	  available.
 
 Tue Mar 30 18:19:00 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
