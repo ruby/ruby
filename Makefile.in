@@ -97,7 +97,7 @@ $(LIBRUBY_A):	$(OBJS) dmyext.@OBJEXT@
 		@-@RANLIB@ $@ 2> /dev/null || true
 
 $(LIBRUBY_SO):	$(OBJS) dmyext.@OBJEXT@
-		$(LDSHARED) $(DLDFLAGS) $(SOLIBS) $(OBJS) dmyext.@OBJEXT@ -o $@
+		$(LDSHARED) $(DLDFLAGS) $(OBJS) dmyext.@OBJEXT@ $(SOLIBS) -o $@
 		@-@MINIRUBY@ -e 'ARGV.each{|link| File.delete link if File.exist? link; \
 						  File.symlink "$(LIBRUBY_SO)", link}' \
 				$(LIBRUBY_ALIASES) || true

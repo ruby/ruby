@@ -824,9 +824,16 @@ case "$target_os" in
 	esac
 	;;
     cygwin*|mingw*)
-	LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).a'
+	if test x"$enable_shared" = xyes; then
+	    LIBRUBY_SO='$(RUBY_INSTALL_NAME)-'$target_os.dll
+	    LIBRUBY_DLDFLAGS='--dllname=$@ --output-lib=$(LIBRUBY) --add-stdcall-alias --def=$(RUBYDEF)'
+	else
+	    LIBRUBY_SO=nul
+	    LIBRUBY_DLDFLAGS='--output-exp=$(RUBY_INSTALL_NAME).exp --dllname=$(RUBY_INSTALL_NAME)$(EXEEXT) --output-lib=$(LIBRUBY) --add-stdcall-alias --def=$(RUBYDEF)'
+	fi
 	LIBRUBY_ALIASES=''
 	LIBRUBY_A='lib$(RUBY_INSTALL_NAME)s.a'
+	LIBRUBY='lib$(RUBY_INSTALL_NAME).a'
 	LIBRUBYARG='-L. -l$(RUBY_INSTALL_NAME)'
 	FIRSTMAKEFILE=GNUmakefile:cygwin/GNUmakefile.in
 	case "$target_os" in
@@ -837,7 +844,7 @@ case "$target_os" in
 	    LIBOBJS="$LIBOBJS win32.o"
 	    CFLAGS="-DNT -D__MSVCRT__ $CFLAGS"
 	    CCDLFLAGS=-DIMPORT
-	    SOLIBS='-lwsock32 -lmsvcrt' ;;
+	    SOLIBS='$(LIBS)' ;;
 	esac
 	;;
     *)

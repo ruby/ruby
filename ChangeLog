@@ -1,7 +1,17 @@
 Tue Jul 25 19:03:04 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* cygwin/GNUmakefile: use puts instead of print, because
-	  Cygwin DLL's behavior is changed.
+	  Cygwin DLL's behavior is changed(or bug?).
+
+	* configure.in: LIBRUBY_SO='$(RUBY_INSTALL_NAME)'-$target_os.dll
+	  on cygwin and mingw32.
+
+	* cygwin/GNUmakefile: ditto.
+
+	* Makefile.in: $(SOLIBS) should be put after dmyext.@OBJEXT@.
+
+	* instruby.rb: install $(LIBRUBY) to libdir
+	  if $(LIBRUBY) != $(LIBRUBY_A_).
 
 Tue Jul 25 15:16:00 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

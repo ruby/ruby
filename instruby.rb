@@ -36,9 +36,11 @@ for dll in Dir['*.dll']
   File.install dll, "#{bindir}/#{dll}", 0755, true
 end
 File.makedirs libdir, true
-for lib in [CONFIG["LIBRUBY_SO"]]
-  if File.exist? lib
-    File.install lib, libdir, 0555, true
+if CONFIG["LIBRUBY"] != CONFIG["LIBRUBY_A"]
+  for lib in [CONFIG["LIBRUBY"]]
+    if File.exist? lib
+      File.install lib, libdir, 0555, true
+    end
   end
 end
 Dir.chdir libdir

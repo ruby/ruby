@@ -1,35 +1,18 @@
 include Makefile
 
-ARCH=@arch@
 ENABLE_SHARED=@ENABLE_SHARED@
 
 ifneq (,$(findstring no, $(ENABLE_SHARED)))
-  DLL = dummy.exe
-  DLLNAME = $(RUBY_INSTALL_NAME)$(EXEEXT)
-  RUBYEXP = --output-exp=$(RUBY_INSTALL_NAME).exp
-  MAINOBJ := $(RUBY_INSTALL_NAME).exp $(MAINOBJ)
-  LIBRUBYARG := lib$(RUBY_INSTALL_NAME)s.a
-else
-  ifneq (,$(findstring mingw, $(ARCH)))
-    DLL = $(RUBY_INSTALL_NAME)mg.dll
-    DLLNAME = $(RUBY_INSTALL_NAME)mg.dll
-  else
-    DLL = $(RUBY_INSTALL_NAME)cw.dll
-    DLLNAME = $(RUBY_INSTALL_NAME)cw.dll
-  endif
-  RUBYEXP =
+  EXTOBJS = $(RUBY_INSTALL_NAME).exp
+  LIBRUBYARG = $(LIBRUBY_A)
 endif
 
 RUBYDEF = $(RUBY_INSTALL_NAME).def
 
-rbconfig.rb: $(DLL)
+$(LIBRUBY_SO): $(RUBYDEF)
+$(LIBRUBY): $(LIBRUBY_SO)
 
-$(DLL): $(OBJS) dmyext.@OBJEXT@ $(RUBYDEF)
-	$(LDSHARED) $(DLDFLAGS) -o $(DLL) --output-lib=$(LIBRUBY_SO) \
-	  --dllname=$(DLLNAME) --add-stdcall-alias --def=$(RUBYDEF) \
-	  $(RUBYEXP) $(OBJS) dmyext.@OBJEXT@ $(LIBS)
-
-$(RUBYDEF): $(OBJS) dmyext.@OBJEXT@
+$(RUBYDEF): $(LIBRUBY_A)
 	echo EXPORTS > $(RUBYDEF)
-	@NM@ --extern-only --defined-only $(OBJS) dmyext.@OBJEXT@ | \
+	@NM@ --extern-only --defined-only $(LIBRUBY_A) | \
 	  @MINIRUBY@ -ne 'puts $$1 if / [CDT] _(.*)$$/' >> $(RUBYDEF)
