@@ -47,7 +47,7 @@ const char *start;
 int len;
 int *retlen;
 {
-    static char hexdigit[] = "0123456789abcdef0123456789ABCDEFx";
+    static char hexdigit[] = "0123456789abcdef0123456789ABCDEF";
     register const char *s = start;
     register unsigned long retval = 0;
     char *tmp;

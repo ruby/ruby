@@ -7487,6 +7487,7 @@ rb_thread_schedule()
     double delay, now;	/* OK */
     int n, max;
     int need_select = 0;
+    int select_timeout = 0;
 
     rb_thread_pending = 0;
     if (curr_thread == curr_thread->next
@@ -7530,6 +7531,9 @@ rb_thread_schedule()
 	    copy_fds(&exceptfds, &th->exceptfds, th->fd);
 	    if (max < th->fd) max = th->fd;
 	    need_select = 1;
+	    if (th->wait_for & WAIT_TIME) {
+		select_timeout = 1;
+	    }
 	    th->select_value = 0;
 	}
 	if (th->wait_for & WAIT_TIME) {
@@ -7587,6 +7591,21 @@ rb_thread_schedule()
 			th->select_value = n;
 			n = max;
 		    }
+		}
+	    }
+	    END_FOREACH_FROM(curr, th);
+	}
+ 	if (select_timeout && n == 0) {
+ 	    if (now < 0.0) now = timeofday();
+ 	    FOREACH_THREAD_FROM(curr, th) {
+ 		if ((th->wait_for & (WAIT_SELECT|WAIT_TIME)) && th->delay < now) {
+ 		    th->status = THREAD_RUNNABLE;
+ 		    th->wait_for = 0;
+ 		    th->select_value = 0;
+ 		    found = 1;
+                    intersect_fds(&readfds, &th->readfds, max);
+                    intersect_fds(&writefds, &th->writefds, max);
+                    intersect_fds(&exceptfds, &th->exceptfds, max);
 		}
 	    }
 	    END_FOREACH_FROM(curr, th);
@@ -7814,7 +7833,7 @@ rb_thread_select(max, read, write, except, timeout)
 		  case ERESTART:
 #endif
 		    if (timeout) {
-			double d = timeofday() - limit;
+                       double d = limit - timeofday();
 
 			tv.tv_sec = (unsigned int)d;
 			tv.tv_usec = (long)((d-(double)tv.tv_sec)*1e6);

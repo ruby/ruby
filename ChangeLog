@@ -1,3 +1,19 @@
+Wed Nov 28 18:46:28 2001  Ville Mattila  <mulperi@iki.fi>
+
+	* eval.c (rb_thread_select): should subtract timeofday() from
+	  limit, not reverse.
+
+Wed Nov 28 16:03:28 2001  K.Kosako  <kosako@sofnec.co.jp>
+
+	* util.c (scan_hex): x is not a hexadecimal digit.
+
+Wed Nov 28 13:38:04 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_thread_schedule): should treat the case that
+	  select(2) returns 0, if a thread is under both WAIT_SELECT and
+	  WAIT_TIME.  Jakub Travnik <J.Travnik@sh.cvut.cz> actually fixed
+	  this bug.
+
 Sun Nov 25 21:03:43 2001  Usaku Nakamura  <usa@ruby-lang.org>
 
 	* parse.y (str_extend): change types of second and third arguments
