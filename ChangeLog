@@ -1,3 +1,10 @@
+Thu Mar 25 19:37:35 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/resource.rb: default rubyw icon to ruby.ico, and let DLL also
+	  include them.
+
+	* win32/resource.rb: include winver.h for older WindowsCE.
+
 Thu Mar 25 14:01:03 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk, */Makefile.sub (lib, dll): phony targets.
