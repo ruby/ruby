@@ -1,3 +1,9 @@
+Thu May 20 14:35:52 2004  Tanaka Akira  <akr@m17n.org>
+
+	* ext/socket/socket.c: check SCM_RIGHTS macro addition to
+	  the msg_control field to test existence of file descriptor passing
+	  by msg_control.
+
 Thu May 20 12:38:06 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (flo_eq): alway check if operands are NaN.

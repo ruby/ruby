@@ -1530,18 +1530,30 @@ unix_recvfrom(argc, argv, sock)
     return s_recvfrom(sock, argc, argv, RECV_UNIX);
 }
 
+#if defined(HAVE_ST_MSG_CONTROL) && defined(SCM_RIGHTS)
+#define FD_PASSING_BY_MSG_CONTROL 1
+#else
+#define FD_PASSING_BY_MSG_CONTROL 0
+#endif
+
+#if defined(HAVE_ST_MSG_ACCRIGHTS)
+#define FD_PASSING_BY_MSG_ACCRIGHTS 1
+#else
+#define FD_PASSING_BY_MSG_ACCRIGHTS 0
+#endif
+
 static VALUE
 unix_send_io(sock, val)
     VALUE sock, val;
 {
-#if defined(HAVE_SENDMSG) && (defined(HAVE_ST_MSG_CONTROL) || defined(HAVE_ST_MSG_ACCRIGHTS))
+#if defined(HAVE_SENDMSG) && (FD_PASSING_BY_MSG_CONTROL || FD_PASSING_BY_MSG_ACCRIGHTS)
     int fd;
     OpenFile *fptr;
     struct msghdr msg;
     struct iovec vec[1];
     char buf[1];
 
-#if defined(HAVE_ST_MSG_CONTROL)
+#if FD_PASSING_BY_MSG_CONTROL
     struct {
 	struct cmsghdr hdr;
 	int fd;
@@ -1572,7 +1584,7 @@ unix_send_io(sock, val)
     msg.msg_iov = vec;
     msg.msg_iovlen = 1;
 
-#if defined(HAVE_ST_MSG_CONTROL)
+#if FD_PASSING_BY_MSG_CONTROL
     msg.msg_control = (caddr_t)&cmsg;
     msg.msg_controllen = sizeof(struct cmsghdr) + sizeof(int);
     msg.msg_flags = 0;
@@ -1595,7 +1607,7 @@ unix_send_io(sock, val)
 #endif
 }
 
-#if defined(HAVE_RECVMSG) && (defined(HAVE_ST_MSG_CONTROL) || defined(HAVE_ST_MSG_ACCRIGHTS))
+#if defined(HAVE_RECVMSG) && (FD_PASSING_BY_MSG_CONTROL || FD_PASSING_BY_MSG_ACCRIGHTS)
 static void
 thread_read_select(fd)
     int fd;
@@ -1614,7 +1626,7 @@ unix_recv_io(argc, argv, sock)
     VALUE *argv;
     VALUE sock;
 {
-#if defined(HAVE_RECVMSG) && (defined(HAVE_ST_MSG_CONTROL) || defined(HAVE_ST_MSG_ACCRIGHTS))
+#if defined(HAVE_RECVMSG) && (FD_PASSING_BY_MSG_CONTROL || FD_PASSING_BY_MSG_ACCRIGHTS)
     VALUE klass, mode;
     OpenFile *fptr;
     struct msghdr msg;
@@ -1622,7 +1634,7 @@ unix_recv_io(argc, argv, sock)
     char buf[1];
 
     int fd;
-#if defined(HAVE_ST_MSG_CONTROL)
+#if FD_PASSING_BY_MSG_CONTROL
     struct {
 	struct cmsghdr hdr;
 	int fd;
@@ -1647,7 +1659,7 @@ unix_recv_io(argc, argv, sock)
     msg.msg_iov = vec;
     msg.msg_iovlen = 1;
 
-#if defined(HAVE_ST_MSG_CONTROL)
+#if FD_PASSING_BY_MSG_CONTROL
     msg.msg_control = (caddr_t)&cmsg;
     msg.msg_controllen = sizeof(struct cmsghdr) + sizeof(int);
     msg.msg_flags = 0;
@@ -1665,7 +1677,7 @@ unix_recv_io(argc, argv, sock)
 	rb_sys_fail("recvmsg(2)");
 
     if (
-#if defined(HAVE_ST_MSG_CONTROL)
+#if FD_PASSING_BY_MSG_CONTROL
 	msg.msg_controllen != sizeof(struct cmsghdr) + sizeof(int) ||
         cmsg.hdr.cmsg_len != sizeof(struct cmsghdr) + sizeof(int) ||
 	cmsg.hdr.cmsg_level != SOL_SOCKET ||
@@ -1677,7 +1689,7 @@ unix_recv_io(argc, argv, sock)
 	rb_raise(rb_eSocket, "File descriptor was not passed");
     }
 
-#if defined(HAVE_ST_MSG_CONTROL)
+#if FD_PASSING_BY_MSG_CONTROL
     fd = cmsg.fd;
 #endif
 
