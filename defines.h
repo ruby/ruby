@@ -82,6 +82,10 @@ void xfree _((void*));
 # define BDIGIT_DBL_SIGNED long
 #endif
 
+#ifdef __CYGWIN__
+#undef _WIN32
+#endif
+
 #if defined(MSDOS) || defined(_WIN32) || defined(__human68k__) || defined(__EMX__)
 #define DOSISH 1
 #ifndef _WIN32_WCE
@@ -176,9 +180,6 @@ typedef int pid_t;
 #endif /* __APPLE__ */
 #endif /* NeXT */
 
-#ifdef __CYGWIN__
-#undef _WIN32
-#endif
 #ifdef _WIN32
 #include "win32/win32.h"
 #endif
