@@ -87,21 +87,10 @@ char *strchr _((char*,char));
 
 #if defined DOSISH
 #define isdirsep(c) ((c) == '/' || (c) == '\\')
-static const char *
-find_dirsep(s)
-    const char *s;
-{
-    while (*s) {
-	if (isdirsep(*s))
-	    return s;
-	s = CharNext(s);
-    }
-    return 0;
-}
 #else
 #define isdirsep(c) ((c) == '/')
-#define find_dirsep(s) strchr(s, '/')
 #endif
+#define find_dirsep(s) rb_path_next(s)
 
 static char *
 range(pat, test, flags)
@@ -509,13 +498,27 @@ dir_s_getwd(dir)
     return cwd;
 }
 
+static void check_dirname _((volatile VALUE *));
+static void
+check_dirname(dir)
+    volatile VALUE *dir;
+{
+    char *path, *pend;
+
+    SafeStringValue(*dir);
+    rb_secure(2);
+    path = RSTRING(*dir)->ptr;
+    if (*(path && pend = rb_path_end(rb_path_skip_prefix(path)))) {
+	*dir = rb_str_new(path, pend - path);
+    }
+}
+
 static VALUE
 dir_s_chroot(dir, path)
     VALUE dir, path;
 {
 #if defined(HAVE_CHROOT) && !defined(__CHECKER__)
-    rb_secure(2);
-    SafeStringValue(path);
+    check_dirname(&path);
 
     if (chroot(RSTRING(path)->ptr) == -1)
 	rb_sys_fail(RSTRING(path)->ptr);
@@ -543,8 +546,7 @@ dir_s_mkdir(argc, argv, obj)
 	mode = 0777;
     }
 
-    SafeStringValue(path);
-    rb_secure(2);
+    check_dirname(&path);
 #ifndef _WIN32
     if (mkdir(RSTRING(path)->ptr, mode) == -1)
 	rb_sys_fail(RSTRING(path)->ptr);
@@ -560,8 +562,7 @@ static VALUE
 dir_s_rmdir(obj, dir)
     VALUE obj, dir;
 {
-    SafeStringValue(dir);
-    rb_secure(2);
+    check_dirname(&dir);
     if (rmdir(RSTRING(dir)->ptr) < 0)
 	rb_sys_fail(RSTRING(dir)->ptr);
 

@@ -222,6 +222,10 @@ VALUE rb_file_s_expand_path _((int, VALUE *));
 void rb_file_const _((const char*, VALUE));
 int rb_find_file_ext _((VALUE*, const char* const*));
 VALUE rb_find_file _((VALUE));
+char *rb_path_next _((const char *));
+char *rb_path_skip_prefix _((const char *));
+char *rb_path_last_separator _((const char *));
+char *rb_path_end _((const char *));
 /* gc.c */
 NORETURN(void rb_memerror __((void)));
 int ruby_stack_check _((void));

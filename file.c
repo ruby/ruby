@@ -1459,7 +1459,8 @@ skiproot(path)
     return (char *)path;
 }
 
-static inline char *
+#define nextdirsep rb_path_next
+char *
 nextdirsep(s)
     const char *s;
 {
@@ -1469,11 +1470,12 @@ nextdirsep(s)
     return (char *)s;
 }
 
-#if defined(DOSISH_UNC) || defined(DOSISH_DRIVE_LETTER) 
-static inline char *
+#define skipprefix rb_path_skip_prefix
+char *
 skipprefix(path)
     const char *path;
 {
+#if defined(DOSISH_UNC) || defined(DOSISH_DRIVE_LETTER) 
 #ifdef DOSISH_UNC
     if (isdirsep(path[0]) && isdirsep(path[1])) {
 	if (*(path = nextdirsep(path + 2)))
@@ -1485,13 +1487,12 @@ skipprefix(path)
     if (has_drive_letter(path))
 	return (char *)(path + 2);
 #endif
+#endif
     return (char *)path;
 }
-#else
-#define skipprefix(path) (path)
-#endif
 
-static char *
+#define strrdirsep rb_path_last_separator
+char *
 strrdirsep(path)
     const char *path;
 {
@@ -1510,7 +1511,8 @@ strrdirsep(path)
     return last;
 }
 
-static char *
+#define chompdirsep rb_path_end
+char *
 chompdirsep(path)
     const char *path;
 {
