@@ -331,10 +331,6 @@ class CGI
     # user is responsible for converting other types to Strings when
     # storing and from Strings when retrieving.
     class FileStore
-      def check_id(id) #:nodoc:
-	/[^0-9a-zA-Z]/ =~ id.to_s ? false : true
-      end
-
       # Create a new FileStore instance.
       #
       # This constructor is used internally by CGI::Session.  The
@@ -361,10 +357,9 @@ class CGI
 	dir = option['tmpdir'] || Dir::tmpdir
 	prefix = option['prefix'] || ''
 	id = session.session_id
-	unless check_id(id)
-	  raise ArgumentError, "session_id `%s' is invalid" % id
-	end
-	@path = dir+"/"+prefix+id.dup.untaint
+        require 'digest/md5'
+        md5 = Digest::MD5.hexdigest(id)[0,16]
+	@path = dir+"/"+prefix+md5
 	unless File::exist? @path
 	  @hash = {}
 	end
