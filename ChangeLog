@@ -1,3 +1,14 @@
+Thu Dec 23 13:13:33 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tcltklib/tcltklib.c: define TclTkLib::COMPILE_INFO and
+	  RELEASE_DATE
+
+	* ext/tcltklib/extconf.rb: ditto
+
+	* ext/tk/tkutil.c: define TkUtil::RELEASE_DATE
+
+	* ext/tk/lib/tk.rb: define Tk::RELEASE_DATE
+
 Thu Dec 23 00:16:32 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (bsdi): use $(CC) for LDSHARED.  fixed [ruby-dev:25270]

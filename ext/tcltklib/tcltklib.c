@@ -4,8 +4,11 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
+#define TCLTKLIB_RELEASE_DATE "2004-12-23"
+
 #include "ruby.h"
 #include "rubysig.h"
+#include "version.h"
 #undef EXTERN   /* avoid conflict with tcl.h of tcl8.2 or before */
 #include <stdio.h>
 #ifdef HAVE_STDARG_PROTOTYPES
@@ -63,6 +66,9 @@ fprintf(stderr, ARG1, ARG2); fprintf(stderr, "\n"); fflush(stderr); }
 #define DUMP1(ARG1)
 #define DUMP2(ARG1, ARG2)
 */
+
+/* release date */
+const char tcltklib_release_date[] = TCLTKLIB_RELEASE_DATE;
 
 /*finalize_proc_name */
 static char *finalize_hook_name = "INTERP_FINALIZE_HOOK";
@@ -6178,6 +6184,66 @@ _macinit()
 }
 #endif
 
+static VALUE
+tcltklib_compile_info()
+{
+    volatile VALUE ret;
+    int size;
+    char form[] 
+      = "tcltklib %s :: Ruby%s (%s) %s pthread :: Tcl%s(%s)/Tk%s(%s) %s";
+    char *info;
+
+    size = strlen(form)
+        + strlen(TCLTKLIB_RELEASE_DATE)
+        + strlen(RUBY_VERSION)
+        + strlen(RUBY_RELEASE_DATE)
+        + strlen("without") 
+        + strlen(TCL_PATCH_LEVEL)
+        + strlen("without stub")
+        + strlen(TK_PATCH_LEVEL)
+        + strlen("without stub") 
+        + strlen("unknown tcl_threads");
+
+    info = ALLOC_N(char, size);
+
+    sprintf(info, form,
+            TCLTKLIB_RELEASE_DATE, 
+            RUBY_VERSION, RUBY_RELEASE_DATE, 
+#ifdef HAVE_NATIVETHREAD
+            "with",
+#else
+            "without",
+#endif
+            TCL_PATCH_LEVEL, 
+#ifdef USE_TCL_STUBS
+            "with stub",
+#else
+            "without stub",
+#endif
+            TK_PATCH_LEVEL, 
+#ifdef USE_TK_STUBS
+            "with stub",
+#else
+            "without stub",
+#endif
+#ifdef WITH_TCL_ENABLE_THREAD
+# if WITH_TCL_ENABLE_THREAD
+            "with tcl_threads"
+# else
+            "without tcl_threads"
+# endif
+#else
+            "unknown tcl_threads"
+#endif
+        );
+
+    ret = rb_obj_freeze(rb_str_new2(info));
+
+    free(info);
+
+    return ret;
+}
+
 /*---- initialization ----*/
 void
 Init_tcltklib()
@@ -6210,6 +6276,11 @@ Init_tcltklib()
     rb_global_variable(&watchdog_thread);
 
    /* --------------------------------------------------------------- */
+
+    rb_define_const(lib, "COMPILE_INFO", tcltklib_compile_info());
+
+    rb_define_const(lib, "RELEASE_DATE", 
+                    rb_obj_freeze(rb_str_new2(tcltklib_release_date)));
 
     rb_define_const(lib, "FINALIZE_PROC_NAME", 
                     rb_str_new2(finalize_hook_name));
