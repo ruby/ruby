@@ -607,7 +607,7 @@ ip_init(self)
     }
     DUMP1("Tk_Init");
     if (Tk_Init(ptr->ip) == TCL_ERROR) {
-	rb_raise(rb_eRuntimeError, "%s", ptr->ip->result);
+      rb_raise(rb_eRuntimeError, "%s", ptr->ip->result);
     }
     DUMP1("Tcl_StaticPackage(\"Tk\")");
 #if TCL_MAJOR_VERSION >= 8

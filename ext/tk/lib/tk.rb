@@ -62,19 +62,32 @@ module TkComm
       return path
     end
 
-    ruby_class = WidgetClassNames[tk_class]
-    gen_class_name = ruby_class.name + 'GeneratedOnTk'
-    unless Object.const_defined? gen_class_name
-      eval "class #{gen_class_name}<#{ruby_class.name}
-              def initialize(path)
-                @path=path
-                Tk_WINDOWS[@path] = self
-              end
-            end"
+    if ruby_class = WidgetClassNames[tk_class]
+      ruby_class_name = ruby_class.name
+      gen_class_name = ruby_class_name + 'GeneratedOnTk'
+      classname_def = ''
+    elsif Object.const_defined?('Tk' + tk_class)
+      ruby_class_name = 'Tk' + tk_class
+      gen_class_name = ruby_class_name + 'GeneratedOnTk'
+      classname_def = ''
+    else
+      ruby_class_name = 'TkWindow'
+      gen_class_name = ruby_class_name + tk_class + 'GeneratedOnTk'
+      classname_def = "WidgetClassName = '#{tk_class}'.freeze"
     end
-    eval "#{gen_class_name}.new('#{path}')"
+    unless Object.const_defined? gen_class_name
+      Object.class_eval "class #{gen_class_name}<#{ruby_class_name}
+                           #{classname_def}
+                           def initialize(path)
+                             @path=path
+                             Tk_WINDOWS[@path] = self
+                           end
+                         end"
+    end
+    Object.class_eval "#{gen_class_name}.new('#{path}')"
   end
   private :_genobj_for_tkwidget
+  module_function :_genobj_for_tkwidget
 
   def tk_tcl2ruby(val)
     if val =~ /^rb_out (c\d+)/
@@ -3224,6 +3237,7 @@ class TkObject<TkKernel
 end
 
 class TkWindow<TkObject
+  include TkWinfo
   extend TkBindCore
 
   WidgetClassName = ''.freeze
