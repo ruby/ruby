@@ -1,3 +1,8 @@
+Thu Jun  5 18:33:46 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/curses/curses.c (window_s_allocate,curses_finalize):
+	  avoid VC++ warnings.
+
 Thu Jun  5 15:09:06 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* math.c (math_erf,math_erfc): new function. [ruby-list:37753]

@@ -143,7 +143,7 @@ curses_close_screen()
 }
 
 static void
-curses_finalize()
+curses_finalize(VALUE dummy)
 {
     if (stdscr
 #ifdef HAVE_ISENDWIN
@@ -663,8 +663,7 @@ DEFINE_MOUSE_GET_MEMBER(curs_mouse_bstate, bstate)
 
 /* def self.allocate */
 static VALUE
-window_s_allocate(class)
-    VALUE class;
+window_s_allocate(VALUE class)
 {
     struct windata *winp;
 
