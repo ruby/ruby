@@ -115,10 +115,12 @@ module Test
           
           def output(something, level=NORMAL)
             @io.puts(something) if (output?(level))
+            @io.flush
           end
           
           def output_single(something, level=NORMAL)
             @io.write(something) if (output?(level))
+            @io.flush
           end
           
           def output?(level)

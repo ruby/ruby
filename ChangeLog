@@ -1,3 +1,8 @@
+Mon Aug  4 10:42:00 2003  Nathaniel Talbott  <ntalbott@ruby-lang.org>
+
+	* lib/test/unit/ui/console/testrunner.rb: Flushed io in the
+	  Console::TestRunner so that it will output immediately.
+
 Mon Aug  4 10:27:22 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* util.h: remove unnecessary parentheses.  [ruby-dev:20879]
