@@ -7349,6 +7349,7 @@ void
 rb_thread_wait_fd(fd)
     int fd;
 {
+    if (rb_thread_critical) return;
     if (curr_thread == curr_thread->next) return;
     if (curr_thread->status == THREAD_TO_KILL) return;
 
@@ -7362,6 +7363,7 @@ int
 rb_thread_fd_writable(fd)
     int fd;
 {
+    if (rb_thread_critical) return Qtrue;
     if (curr_thread == curr_thread->next) return Qtrue;
     if (curr_thread->status == THREAD_TO_KILL) return Qtrue;
 
@@ -7382,7 +7384,8 @@ rb_thread_wait_for(time)
 {
     double date;
 
-    if (curr_thread == curr_thread->next ||
+    if (rb_thread_critical ||
+	curr_thread == curr_thread->next ||
 	curr_thread->status == THREAD_TO_KILL) {
 	int n;
 #ifndef linux
@@ -7447,7 +7450,8 @@ rb_thread_select(max, read, write, except, timeout)
 	    (double)timeout->tv_sec+(double)timeout->tv_usec*1e-6;
     }
 
-    if (curr_thread == curr_thread->next ||
+    if (rb_thread_critical ||
+	curr_thread == curr_thread->next ||
 	curr_thread->status == THREAD_TO_KILL) {
 #ifndef linux
 	struct timeval tv, *tvp = timeout;
@@ -7513,6 +7517,7 @@ rb_thread_join(thread)
     rb_thread_t th = rb_thread_check(thread);
     enum thread_status last_status = THREAD_RUNNABLE;
 
+    if (rb_thread_critical) rb_thread_deadlock();
     if (!rb_thread_dead(th)) {
 	if (th == curr_thread)
 	    rb_raise(rb_eThreadError, "thread tried to join itself");
@@ -7612,8 +7617,8 @@ rb_thread_kill(thread)
     rb_thread_ready(th);
     th->gid = 0;
     th->status = THREAD_TO_KILL;
-    rb_thread_schedule();
-    return Qnil;		/* not reached */
+    if (!rb_thread_critical) rb_thread_schedule();
+    return thread;
 }
 
 static VALUE

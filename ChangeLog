@@ -1,3 +1,22 @@
+Fri Dec 29 11:41:55 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (mem_error): prohibit recursive mem_error().
+	  (ruby-bugs-ja:PR#36)
+
+Fri Dec 29 11:05:41 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_thread_fd_writable): should not switch context if
+	  rb_thread_critical is set.
+
+	* eval.c (rb_thread_wait_fd): ditto.
+
+	* eval.c (rb_thread_wait_for): ditto.
+
+	* eval.c (rb_thread_select): ditto.
+
+	* eval.c (rb_thread_join): join during critical section causes
+	  deadlock. 
+
 Tue Dec 26 18:46:41 2000  NAKAMURA Hiroshi  <nakahiro@sarion.co.jp>
 
 	* lib/debug.rb: Avoid thread deadlock in debugging stopped thread.
@@ -116,7 +135,7 @@ Tue Dec 19 13:44:50 2000  K.Kosako  <kosako@sofnec.co.jp>
 
 Tue Dec 19 00:57:10 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* time.c (time_minus): usec might overflow (ruby-bugs-ja:#PR#35).
+	* time.c (time_minus): usec might overflow. (ruby-bugs-ja:PR#35)
 
 	* eval.c (rb_obj_extend): Object#extend should take at least one
 	  argument.

@@ -53,10 +53,17 @@ static void
 mem_error(mesg)
     char *mesg;
 {
+    static int recurse = 0;
+
     if (rb_safe_level() >= 4) {
 	rb_raise(rb_eNoMemError, mesg);
     }
-    rb_fatal(mesg);
+    if (recurse == 0) {
+	recurse++;
+	rb_fatal(mesg);
+    }
+    fprintf(stderr, "[FATAL] failed to allocate memory\n");
+    exit(1);
 }
 
 void *
