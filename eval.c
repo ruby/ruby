@@ -3785,6 +3785,9 @@ rb_eval(self, n)
 	    ID cname;
 	    int gen = Qfalse;
 
+	    cbase = class_prefix(self, node->nd_cpath);
+	    cname = node->nd_cpath->nd_mid;
+
 	    if (NIL_P(ruby_cbase)) {
 		rb_raise(rb_eTypeError, "no outer class/module");
 	    }
@@ -3795,8 +3798,6 @@ rb_eval(self, n)
 		super = 0;
 	    }
 
-	    cbase = class_prefix(self, node->nd_cpath);
-	    cname = node->nd_cpath->nd_mid;
 	    if (rb_const_defined_at(cbase, cname)) {
 		klass = rb_const_get_at(cbase, cname);
 		if (TYPE(klass) != T_CLASS) {
@@ -4909,7 +4910,7 @@ massign(self, node, val, pcall)
     }
     if (pcall && list) goto arg_error;
     if (node->nd_args) {
-	if ((int)(node->nd_args) == -1) {
+	if ((long)(node->nd_args) == -1) {
 	    /* no check for mere `*' */
 	}
 	else if (!list && i<len) {
@@ -5610,7 +5611,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 			rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
 				 argc, i);
 		    }
-		    if ((int)node->nd_rest == -1) {
+		    if ((long)node->nd_rest == -1) {
 			int opt = i;
 			NODE *optnode = node->nd_opt;
 
@@ -5645,7 +5646,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 			    }
 			}
 			local_vars = ruby_scope->local_vars;
-			if ((int)node->nd_rest >= 0) {
+			if ((long)node->nd_rest >= 0) {
 			    VALUE v;
 
 			    if (argc > 0)

@@ -1,3 +1,8 @@
+Sat Aug 28 23:04:41 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_big_and): protect parameters from GC.
+	  [ruby-talk:110664]
+
 Thu Aug 26 04:38:29 2004  Dave Thomas  <dave@pragprog.com>
 
 	* eval.c (return_jump): Minor typo in error message. Now reads
