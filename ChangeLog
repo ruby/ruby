@@ -1,3 +1,8 @@
+Tue Sep 14 23:45:44 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/ri/ri_formatter.rb (RI::TextFormatter::TextFormatter.for):
+	  Add Eric Hodel's simpleformatter.
+
 Tue Sep 14 16:59:37 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c: fix SEGV
@@ -44,6 +49,7 @@ Sun Sep 12 02:41:58 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c: add TclTkIp#allow_ruby_exit? and 
 	  allow_ruby_exit=
+
 
 	* ext/tk/lib/multi-tk.rb: ditto.
 
