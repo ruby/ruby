@@ -1,3 +1,8 @@
+Tue Nov 16 11:19:07 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit/autorunner.rb (Test::Unit::AutoRunner::options): use
+	  Regexp conversion.
+
 Tue Nov 16 01:41:31 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_update): pedantic check to detect
