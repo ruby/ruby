@@ -25,6 +25,29 @@ link(char *from, char *to)
 }
 #endif
 
+#if defined(EMX_REPLACE_GETCWD) && (EMX_REPLACE_GETCWD)  \
+ || defined(EMX_REPLACE_CHDIR)  && (EMX_REPLACE_CHDIR)
+#include <unistd.h>
+
+#if defined(EMX_REPLACE_GETCWD) && (EMX_REPLACE_GETCWD)
+/* to handle the drive letter and DBCS characters within a given path */
+char *
+getcwd(char *path, size_t len)
+{
+    return _getcwd2(path, (int)len);
+}
+#endif
+
+#if defined(EMX_REPLACE_CHDIR) && (EMX_REPLACE_CHDIR)
+/* to handle the drive letter and DBCS characters within a given path */
+int
+chdir(__const__ char *path)
+{
+    return _chdir2(path);
+}
+#endif
+#endif
+
 typedef char* CHARP;
 
 int

@@ -1,3 +1,8 @@
+Thu Jan 22 01:12:12 2004  Siena.  <siena@faculty.chiba-u.jp>
+
+	* missing/os2.c (chdir, getcwd):
+	  use _chdir2 and _getcwd2 supporting multiple drives in OS/2 with EMX.
+
 Thu Jan 22 00:33:52 2004  Siena.  <siena@faculty.chiba-u.jp>
 
 	* configure.in: check availability of link(). [ruby-dev:22237]
