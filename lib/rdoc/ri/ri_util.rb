@@ -43,6 +43,7 @@ class NameDescriptor
       @class_names << tokens.shift
       unless tokens.empty?
         separator = tokens.shift
+        break unless separator == "::"
       end
     end
     
