@@ -485,7 +485,7 @@ io_fwrite(str, fptr)
     }
     if ((fptr->mode & FMODE_SYNC) ||
         (fptr->wbuf && fptr->wbuf_capa <= fptr->wbuf_len + len) ||
-        ((fptr->mode & FMODE_LINEBUF) && memchr(RSTRING(str)->ptr+offset, '\n', len))) {
+        ((fptr->mode & FMODE_TTY) && memchr(RSTRING(str)->ptr+offset, '\n', len))) {
         /* xxx: use writev to avoid double write if available */
         if (fptr->wbuf_len && fptr->wbuf_len+len <= fptr->wbuf_capa) {
             if (fptr->wbuf_capa < fptr->wbuf_off+fptr->wbuf_len+len) {
@@ -801,6 +801,9 @@ static int
 io_getc(OpenFile *fptr)
 {
     int r;
+    if (fptr->fd == 0 && (fptr->mode & FMODE_TTY)) {
+        rb_io_flush(rb_stdout);
+    }
     if (fptr->rbuf == NULL) {
         fptr->rbuf_off = 0;
         fptr->rbuf_len = 0;
@@ -2643,8 +2646,8 @@ rb_fdopen(fd, mode)
 static void
 io_check_tty(OpenFile *fptr)
 {
-    if ((fptr->mode & FMODE_WRITABLE) && isatty(fptr->fd))
-        fptr->mode |= FMODE_LINEBUF|FMODE_DUPLEX;
+    if (isatty(fptr->fd))
+        fptr->mode |= FMODE_TTY|FMODE_DUPLEX;
 }
 
 static VALUE
@@ -3938,9 +3941,7 @@ prep_io(fd, mode, klass, path)
     }
 #endif
     fp->mode = mode;
-    if (fp->mode & FMODE_WRITABLE) {
-        io_check_tty(fp);
-    }
+    io_check_tty(fp);
     if (path) fp->path = strdup(path);
 
     return io;
