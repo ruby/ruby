@@ -341,6 +341,14 @@ static RETSIGTYPE
 sighandle(sig)
     int sig;
 {
+#ifdef NT
+#define end_interrupt() win32_thread_resume_main()
+    if (win32_main_context(sig, sighandle)) return;
+
+#else
+#define end_interrupt() (void)0
+#endif
+
     if (sig >= NSIG) {
 	rb_bug("trap_handler: Bad signal %d", sig);
     }
@@ -358,6 +366,7 @@ sighandle(sig)
 	rb_trap_pending++;
 	trap_pending_list[sig]++;
     }
+    end_interrupt();
 }
 
 #ifdef SIGBUS

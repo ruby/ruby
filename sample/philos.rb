@@ -46,8 +46,8 @@ def philosopher(n)
   end
 end
 
-for i in 0..N-1
-  Thread.start{philosopher(i)}
+for n in 0..N-1
+  Thread.start(n){|i| philosopher(i)}
   sleep 0.1
 end
 

@@ -143,7 +143,7 @@ extern "C++" {
 #define execvp	   _execvp
 #define execvpe    _execvpe
 #define getpid	   _getpid
-#define sleep(x)   Sleep((x)*1000)
+#define sleep(x)   win32_sleep((x)*1000)
 #define spawnl	   _spawnl
 #define spawnle    _spawnle
 #define spawnlp    _spawnlp
@@ -425,5 +425,19 @@ struct tms {
 #undef times
 #endif
 #define times mytimes
+
+/* thread stuff */
+/* initialized by NtInitialize() */
+HANDLE rb_CurrentProcessHandle;
+HANDLE rb_MainThreadHandle;
+HANDLE rb_InterruptEvent;
+DWORD rb_MainThreadId;
+
+HANDLE GetCurrentThreadHandle(void);
+int win32_main_context(int arg, void (*handler)(int));
+int win32_interruptible(void);
+void win32_thread_resume_main(void);
+void win32_sleep(unsigned long msec);
+#define Sleep(msec) win32_sleep(msec)
 
 #endif

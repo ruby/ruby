@@ -14,8 +14,13 @@
 #define SIG_H
 
 EXTERN int rb_trap_immediate;
+#ifdef NT
+#define TRAP_BEG (rb_trap_immediate=1, SetEvent(rb_InterruptEvent))
+#define TRAP_END (rb_trap_immediate=0, ResetEvent(rb_InterruptEvent))
+#else
 #define TRAP_BEG (rb_trap_immediate=1)
 #define TRAP_END (rb_trap_immediate=0)
+#endif
 
 EXTERN int rb_prohibit_interrupt;
 #define DEFER_INTS {rb_prohibit_interrupt++;}

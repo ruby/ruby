@@ -75,6 +75,22 @@ IsWinNT(void) {
     return (IdOS() == VER_PLATFORM_WIN32_NT);
 }
 
+/* main thread constants */
+HANDLE rb_CurrentProcessHandle;
+HANDLE rb_MainThreadHandle;
+DWORD rb_MainThreadId;
+HANDLE rb_InterruptEvent;
+
+HANDLE GetCurrentThreadHandle(void)
+{
+    HANDLE h;
+    HANDLE proc = rb_CurrentProcessHandle;
+
+    if (!DuplicateHandle(proc, GetCurrentThread(), proc, &h,
+			 0, FALSE, DUPLICATE_SAME_ACCESS))
+	return NULL;
+    return h;
+}
 
 /* simulate flock by locking a range on the file */
 
@@ -160,7 +176,8 @@ flock(int fd, int oper)
 // Initialization stuff
 //
 void
-NtInitialize(int *argc, char ***argv) {
+NtInitialize(int *argc, char ***argv)
+{
 
     WORD version;
     int ret;
@@ -1215,7 +1232,7 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
 //
 
 DIR *
-opendir(const char *filename)
+opendir(char *filename)
 {
     DIR            *p;
     long            len;
@@ -1887,6 +1904,7 @@ myselect (int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
     long r;
     fd_set file_rd;
     fd_set file_wr;
+    fd_set trap;
     int file_nfds;
     int trap_immediate = rb_trap_immediate;
 
@@ -1907,9 +1925,16 @@ myselect (int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 	if (wr) *wr = file_wr;
 	return file_nfds;
     }
+    if (ex)
+	trap = *ex;
+    else
+	trap.fd_count = 0;
+    if (trap.fd_count < FD_SETSIZE)
+	trap.fd_array[trap.fd_count++] = rb_InterruptEvent;
+    // else unable to catch interrupt.
     if (trap_immediate)
 	TRAP_END;
-    if ((r = select (nfds, rd, wr, ex, timeout)) == SOCKET_ERROR) {
+    if ((r = select (nfds, rd, wr, &trap, timeout)) == SOCKET_ERROR) {
 	errno = WSAGetLastError();
 	switch (errno) {
 	case WSAEINTR:
@@ -1923,7 +1948,8 @@ myselect (int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 }
 
 static void
-StartSockets () {
+StartSockets ()
+{
     WORD version;
     WSADATA retdata;
     int ret;
@@ -1950,6 +1976,11 @@ StartSockets () {
      */
     setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE,
 		(char *)&iSockOpt, sizeof(iSockOpt));
+
+    rb_CurrentProcessHandle = GetCurrentProcess();
+    rb_MainThreadHandle = GetCurrentThreadHandle();
+    rb_MainThreadId = GetCurrentThreadId();
+    rb_InterruptEvent = CreateEvent(NULL, FALSE, TRUE, NULL);
 }
 
 #undef accept
@@ -2512,4 +2543,91 @@ mytimes(struct tms *tmbuf)
 	tmbuf->tms_cstime = 0;
     }
     return 0;
+}
+
+
+static int win32_thread_exclusive(void)
+{
+    if (GetCurrentThreadId() == rb_MainThreadId) return FALSE;
+
+    SuspendThread(rb_MainThreadHandle);
+    return TRUE;
+}
+
+void win32_thread_resume_main(void)
+{
+    if (GetCurrentThreadId() != rb_MainThreadId)
+	ResumeThread(rb_MainThreadHandle);
+}
+
+static void win32_suspend_self(void)
+{
+    SuspendThread(GetCurrentThread());
+}
+
+static void win32_call_handler(int arg, void (*handler)(int), CONTEXT ctx)
+{
+    handler(arg);
+    ctx.ContextFlags = CONTEXT_FULL | CONTEXT_FLOATING_POINT;
+    SetThreadContext(rb_MainThreadHandle, &ctx);
+}
+
+static int catch_interrupt(unsigned long msec)
+{
+    return !WaitForSingleObject(rb_InterruptEvent, msec);
+}
+
+int win32_interruptible(void)
+{
+    if (catch_interrupt(0)) return TRUE;
+    SetEvent(rb_InterruptEvent);
+    return FALSE;
+}
+
+int win32_main_context(int arg, void (*handler)(int))
+{
+    if (!win32_thread_exclusive()) return FALSE;
+
+    if (!catch_interrupt(0)) {
+	SetEvent(rb_InterruptEvent);
+	return FALSE;
+    }
+
+    {
+	CONTEXT ctx;
+
+	ZeroMemory(&ctx, sizeof(CONTEXT));
+	ctx.ContextFlags = CONTEXT_FULL | CONTEXT_FLOATING_POINT;
+	GetThreadContext(rb_MainThreadHandle, &ctx);
+#ifdef _M_IX86
+	{
+	    DWORD *esp = (DWORD *)(ctx.Esp - sizeof(CONTEXT));
+	    *(CONTEXT *)esp = ctx;
+	    *--esp = (DWORD)handler;
+	    *--esp = arg;
+	    *--esp = ctx.Eip;
+	    ctx.Esp = (DWORD)esp;
+	}
+	ctx.Eip = (DWORD)win32_call_handler;
+#else
+#error
+#endif
+
+	ctx.ContextFlags = CONTEXT_CONTROL;
+	SetThreadContext(rb_MainThreadHandle, &ctx);
+    }
+    ResumeThread(rb_MainThreadHandle);
+
+    return TRUE;
+}
+
+void win32_sleep(unsigned long msec)
+{
+    int trap_immediate = rb_trap_immediate;
+
+    if (trap_immediate)
+	TRAP_END;
+    catch_interrupt(msec);
+    if (trap_immediate)
+	TRAP_BEG;
 }
