@@ -28,7 +28,6 @@ Thu Jan 29 17:03:49 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* dir.c: merge tuning from H.Yamamoto <ocean@m2.ccsnet.ne.jp>.
 	  [ruby-dev:22761]
 
->>>>>>> 1.2844
 Thu Jan 29 11:32:14 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* test/rss/test_*: do $: trick while searching a module in the current
