@@ -697,7 +697,7 @@
 
 : lib/csv
 
-  reads/writes CVS files.
+  reads/writes CSV files.
 
 : lib/date/format
 
