@@ -39,9 +39,9 @@
 **        E-Mail: furukawa@tcp-ip.or.jp
 **    まで御連絡をお願いします。
 ***********************************************************************/
-/* $NKF_Id: nkf.c,v 1.38 2004/11/09 13:08:39 naruse Exp $ */
+/* $Id$ */
 #define NKF_VERSION "2.0.4"
-#define NKF_RELEASE_DATE "2004-11-09"
+#define NKF_RELEASE_DATE "2004-11-15"
 #include "config.h"
 
 static char *CopyRight =
@@ -110,6 +110,8 @@ static char *CopyRight =
 #include <stdio.h>
 #endif
 
+#include <stdlib.h>
+
 #if defined(MSDOS) || defined(__OS2__) 
 #include <fcntl.h>
 #include <io.h>
@@ -142,7 +144,6 @@ static char *CopyRight =
 
 #ifdef OVERWRITE
 /* added by satoru@isoternet.org */
-#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #ifndef MSDOS /* UNIX, OS/2 */
@@ -206,6 +207,7 @@ static char *CopyRight =
 /* ASCII CODE */
 
 #define         BS      0x08
+#define         TAB     0x09
 #define         NL      0x0a
 #define         CR      0x0d
 #define         ESC     0x1b
@@ -216,6 +218,7 @@ static char *CopyRight =
 #define         SI      0x0f
 #define         SO      0x0e
 #define         SSO     0x8e
+#define         SS3     0x8f
 
 #define		is_alnum(c)  \
             (('a'<=c && c<='z')||('A'<= c && c<='Z')||('0'<=c && c<='9'))
@@ -2066,6 +2069,32 @@ kanji_convert(f)
             } else if ((c1 == NL || c1 == CR) && broken_f&4) {
                 input_mode = ASCII; set_iconv(FALSE, 0);
                 SEND;
+	    } else if (c1 == NL && mime_f && !mime_decode_mode ) {
+		if ((c1=(*i_getc)(f))!=EOF && c1 == SPACE) {
+		    i_ungetc(SPACE,f);
+		    continue;
+		} else {
+		    i_ungetc(c1,f);
+		}
+		c1 = NL;
+		SEND;
+	    } else if (c1 == CR && mime_f && !mime_decode_mode ) {
+		if ((c1=(*i_getc)(f))!=EOF) {
+		    if (c1==SPACE) {
+			i_ungetc(SPACE,f);
+			continue;
+		    } else if (c1 == NL && (c1=(*i_getc)(f))!=EOF && c1 == SPACE) {
+			i_ungetc(SPACE,f);
+			continue;
+		    } else {
+			i_ungetc(c1,f);
+		    }
+		    i_ungetc(NL,f);
+		} else {
+		    i_ungetc(c1,f);
+		}
+		c1 = CR;
+		SEND;
 	    } else 
                 SEND;
         }
@@ -2716,11 +2745,12 @@ base64_conv(c2, c1)
                     c1;
 {
     if (base64_count>50 && !mimeout_mode && c2==0 && c1==SPACE) {
+	(*o_putc)(EOF);
 	(*o_putc)(NL);
     } else if (base64_count>66 && mimeout_mode) {
 	(*o_base64conv)(EOF,0);
-	(*o_putc)(NL);
-	(*o_putc)('\t'); base64_count += 7;
+	(*o_base64conv)(NL,0);
+	(*o_base64conv)(SPACE,0);
     }
     (*o_base64conv)(c2,c1);
 }
@@ -3567,6 +3597,10 @@ FILE *f;
 {
     int c1, c2, c3, c4, cc;
     int t1, t2, t3, t4, mode, exit_mode;
+    int lwsp_count;
+    char *lwsp_buf;
+    char *lwsp_buf_new;
+    int lwsp_size = 128;
 
     if (mime_top != mime_last) {  /* Something is in FIFO */
         return  Fifo(mime_top++);
@@ -3595,8 +3629,69 @@ restart_mime_q:
         if (c1=='?'&&c2=='=' && mimebuf_f != FIXED_MIME) {
             /* end Q encoding */
             input_mode = exit_mode;
-            while((c1=(*i_getc)(f))!=EOF && c1==SPACE 
-                        /* && (c1==NL||c1==TAB||c1=='\r') */ ) ;
+	    lwsp_count = 0;
+	    lwsp_buf = malloc((lwsp_size+5)*sizeof(char));
+	    if (lwsp_buf==NULL) {
+		perror("can't malloc");
+		return -1;
+	    }
+	    while ((c1=(*i_getc)(f))!=EOF) {
+		switch (c1) {
+		case NL:
+		case CR:
+		    if (c1==NL) {
+			if ((c1=(*i_getc)(f))!=EOF && (c1==SPACE||c1==TAB)) {
+			    i_ungetc(SPACE,f);
+			    continue;
+			} else {
+			    i_ungetc(c1,f);
+			}
+			c1 = NL;
+		    } else {
+			if ((c1=(*i_getc)(f))!=EOF && c1 == NL) {
+			    if ((c1=(*i_getc)(f))!=EOF && (c1==SPACE||c1==TAB)) {
+				i_ungetc(SPACE,f);
+				continue;
+			    } else {
+				i_ungetc(c1,f);
+			    }
+			    i_ungetc(NL,f);
+			} else {
+			    i_ungetc(c1,f);
+			}
+			c1 = CR;
+		    }
+		    break;
+		case SPACE:
+		case TAB:
+		    lwsp_buf[lwsp_count] = c1;
+		    if (lwsp_count++>lwsp_size){
+			lwsp_size *= 2;
+			lwsp_buf_new = realloc(lwsp_buf, (lwsp_size+5)*sizeof(char));
+			if (lwsp_buf_new==NULL) {
+			    free(lwsp_buf);
+			    lwsp_buf = NULL;
+			    perror("can't realloc");
+			    return -1;
+			}
+			lwsp_buf = lwsp_buf_new;
+		    }
+		    continue;
+		}
+		break;
+	    }
+	    if (lwsp_count > 0) {
+		if (c1=='=' && (lwsp_buf[lwsp_count-1]==SPACE||lwsp_buf[lwsp_count-1]==TAB)) {
+		    lwsp_count = 0;
+		} else {
+		    i_ungetc(c1,f);
+		    for(lwsp_count--;lwsp_count>0;lwsp_count--)
+			i_ungetc(lwsp_buf[lwsp_count],f);
+		    c1 = lwsp_buf[0];
+		}
+	    }
+	    free(lwsp_buf);
+	    lwsp_buf = NULL;
             return c1;
         }
         if (c1=='='&&c2<' ') { /* this is soft wrap */
@@ -3650,8 +3745,72 @@ mime_c2_retry:
     }
     if ((c1 == '?') && (c2 == '=')) {
         input_mode = ASCII;
-        while((c1=(*i_getc)(f))!=EOF && c1==SPACE 
-                    /* && (c1==NL||c1==TAB||c1=='\r') */ ) ;
+	lwsp_count = 0;
+	lwsp_buf = malloc((lwsp_size+5)*sizeof(char));
+	if (lwsp_buf==NULL) {
+	    perror("can't malloc");
+	    return -1;
+	}
+	while ((c1=(*i_getc)(f))!=EOF) {
+	    switch (c1) {
+	    case NL:
+	    case CR:
+		if (c1==NL) {
+		    if ((c1=(*i_getc)(f))!=EOF && (c1==SPACE||c1==TAB)) {
+			i_ungetc(SPACE,f);
+			continue;
+		    } else {
+			i_ungetc(c1,f);
+		    }
+		    c1 = NL;
+		} else {
+		    if ((c1=(*i_getc)(f))!=EOF) {
+			if (c1==SPACE) {
+			    i_ungetc(SPACE,f);
+			    continue;
+			} else if ((c1=(*i_getc)(f))!=EOF && (c1==SPACE||c1==TAB)) {
+			    i_ungetc(SPACE,f);
+			    continue;
+			} else {
+			    i_ungetc(c1,f);
+			}
+			i_ungetc(NL,f);
+		    } else {
+			i_ungetc(c1,f);
+		    }
+		    c1 = CR;
+		}
+		break;
+	    case SPACE:
+	    case TAB:
+		lwsp_buf[lwsp_count] = c1;
+		if (lwsp_count++>lwsp_size){
+		    lwsp_size *= 2;
+		    lwsp_buf_new = realloc(lwsp_buf, (lwsp_size+5)*sizeof(char));
+		    if (lwsp_buf_new==NULL) {
+			free(lwsp_buf);
+			lwsp_buf = NULL;
+			perror("can't realloc");
+			return -1;
+		    }
+		    lwsp_buf = lwsp_buf_new;
+		}
+		continue;
+	    }
+	    break;
+	}
+	if (lwsp_count > 0) {
+	    if (c1=='=' && (lwsp_buf[lwsp_count-1]==SPACE||lwsp_buf[lwsp_count-1]==TAB)) {
+		lwsp_count = 0;
+	    } else {
+		i_ungetc(c1,f);
+		for(lwsp_count--;lwsp_count>0;lwsp_count--)
+		    i_ungetc(lwsp_buf[lwsp_count],f);
+		c1 = lwsp_buf[0];
+	    }
+	}
+	free(lwsp_buf);
+	lwsp_buf = NULL;
         return c1;
     }
 mime_c3_retry:
@@ -3769,6 +3928,11 @@ static char basis_64[] =
    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 static int b64c;
+#define MIMEOUT_BUF_LENGTH (60)
+char mimeout_buf[MIMEOUT_BUF_LENGTH+1];
+int mimeout_buf_count = 0;
+int mimeout_preserve_space = 0;
+#define itoh4(c)   (c>=10?c+'A'-10:c+'0')
 
 void
 open_mime(mode)
@@ -3776,19 +3940,48 @@ int mode;
 {
     unsigned char *p;
     int i;
+    int j;
     p  = mime_pattern[0];
     for(i=0;mime_encode[i];i++) {
 	if (mode == mime_encode[i]) {
 	    p = mime_pattern[i];
-		break;
+	    break;
 	}
     }
     mimeout_mode = mime_encode_method[i];
-	    
-    /* (*o_mputc)(' '); */
+    
+    i = 0;
+    if (base64_count>45) {
+	(*o_mputc)(NL);
+	(*o_mputc)(SPACE);
+	base64_count = 1;
+	if (!mimeout_preserve_space && mimeout_buf_count>0
+	    && (mimeout_buf[i]==SPACE || mimeout_buf[i]==TAB
+	    	|| mimeout_buf[i]==CR || mimeout_buf[i]==NL )) {
+	    i++;
+	}
+    }
+    if (!mimeout_preserve_space) {
+	for (;i<mimeout_buf_count;i++) {
+	    if (mimeout_buf[i]==SPACE || mimeout_buf[i]==TAB
+		|| mimeout_buf[i]==CR || mimeout_buf[i]==NL ) {
+		(*o_mputc)(mimeout_buf[i]);
+		base64_count ++;
+	    } else {
+		break;
+	    }
+	}
+    }
+    mimeout_preserve_space = FALSE;
+    
     while(*p) {
         (*o_mputc)(*p++);
         base64_count ++;
+    }
+    j = mimeout_buf_count;
+    mimeout_buf_count = 0;
+    for (;i<j;i++) {
+	mime_putc(mimeout_buf[i]);
     }
 }
 
@@ -3797,80 +3990,51 @@ close_mime()
 {
     (*o_mputc)('?');
     (*o_mputc)('=');
-    (*o_mputc)(' ');
-    base64_count += 3;
+    base64_count += 2;
     mimeout_mode = 0;
 }
 
-#define itoh4(c)   (c>=10?c+'A'-10:c+'0')
+void
+eof_mime()
+{
+    switch(mimeout_mode) {
+    case 'Q':
+    case 'B':
+	break;
+    case 2:
+	(*o_mputc)(basis_64[((b64c & 0x3)<< 4)]);
+	(*o_mputc)('=');
+	(*o_mputc)('=');
+	base64_count += 3;
+	break;
+    case 1:
+	(*o_mputc)(basis_64[((b64c & 0xF) << 2)]);
+	(*o_mputc)('=');
+	base64_count += 2;
+	break;
+    }
+    if (mimeout_mode) {
+	if (mimeout_f!=FIXED_MIME) {
+	    close_mime(); 
+	} else if (mimeout_mode != 'Q')
+	    mimeout_mode = 'B';
+    }
+}
 
 void
-mime_putc(c)
+mimeout_addchar(c)
     int            c;
 {
-    if (mimeout_f==FIXED_MIME) {
-	if (base64_count>71) {
-            (*o_mputc)('\n');
-            base64_count=0;
-        }
-    } else if (c==NL) {
-	base64_count=0;
-    } 
-    if (c!=EOF) {
-        if ( c<=DEL &&(output_mode==ASCII ||output_mode == ISO8859_1 )
-		&& mimeout_f!=FIXED_MIME) {
-	    if (mimeout_mode=='Q') {
-		if (c<=SPACE) {
-		    close_mime();
-		}
-		(*o_mputc)(c);
-		return;
-	    }
-            if (mimeout_mode!='B' || c!=SPACE) {
-		if (mimeout_mode) {
-		    mime_putc(EOF);
-		    mimeout_mode=0;
-		}
-		(*o_mputc)(c);
-		base64_count ++;
-		return;
-	    }
-        } else if (!mimeout_mode && mimeout_f!=FIXED_MIME) {
-	    open_mime(output_mode);
-        }
-    } else { /* c==EOF */
-        switch(mimeout_mode) {
-        case 'Q':
-        case 'B':
-            break;
-        case 2:
-            (*o_mputc)(basis_64[((b64c & 0x3)<< 4)]);
-            (*o_mputc)('=');
-            (*o_mputc)('=');
-            base64_count += 3;
-            break;
-        case 1:
-            (*o_mputc)(basis_64[((b64c & 0xF) << 2)]);
-            (*o_mputc)('=');
-            base64_count += 2;
-            break;
-        }
-        if (mimeout_mode) {
-            if (mimeout_f!=FIXED_MIME) {
-                close_mime(); 
-            } else if (mimeout_mode != 'Q')
-                mimeout_mode = 'B';
-        }
-        return;
-    }
     switch(mimeout_mode) {
     case 'Q':
 	if(c>=DEL) {
 	    (*o_mputc)('=');
 	    (*o_mputc)(itoh4(((c>>4)&0xf)));
 	    (*o_mputc)(itoh4((c&0xf)));
+	    base64_count += 3;
 	} else {
 	    (*o_mputc)(c);
+	    base64_count++;
 	}
         break;
     case 'B':
@@ -3892,6 +4056,125 @@ mime_putc(c)
         base64_count += 2;
         break;
     }
+}
+
+void
+mime_putc(c)
+    int            c;
+{
+    int i = 0;
+    int j = 0;
+    
+    if (mimeout_f==FIXED_MIME && base64_count>50) {
+	eof_mime();
+	(*o_mputc)(NL);
+	base64_count=0;
+    } else if (c==CR||c==NL) {
+	base64_count=0;
+    }
+    if (c!=EOF && mimeout_f!=FIXED_MIME) {
+        if ( c<=DEL &&(output_mode==ASCII ||output_mode == ISO8859_1 ) ) {
+	    if (mimeout_mode=='Q') {
+		if (c<=SPACE) {
+		    close_mime();
+		    (*o_mputc)(SPACE);
+		    base64_count++;
+		}
+		(*o_mputc)(c);
+		base64_count++;
+		return;
+	    } else if (mimeout_mode) {
+		if (base64_count>63) {
+		    eof_mime();
+		    (*o_mputc)(NL);
+		    (*o_mputc)(SPACE);
+		    base64_count=1;
+		    mimeout_preserve_space = TRUE;
+		}
+		if (c==SPACE || c==TAB || c==CR || c==NL) {
+		    for (i=0;i<mimeout_buf_count;i++) {
+			if (SPACE<mimeout_buf[i] && mimeout_buf[i]<DEL) {
+			    eof_mime();
+			    for (i=0;i<mimeout_buf_count;i++) {
+				(*o_mputc)(mimeout_buf[i]);
+				base64_count++;
+			    }
+			    mimeout_buf_count = 0;
+			}
+		    }
+		    mimeout_buf[mimeout_buf_count++] = c;
+		    if (mimeout_buf_count>MIMEOUT_BUF_LENGTH) {
+		    	eof_mime();
+			base64_count = 0;
+			for (i=0;i<mimeout_buf_count;i++) {
+			    (*o_mputc)(mimeout_buf[i]);
+			    base64_count++;
+			}
+		    }
+		    return;
+		}
+		if (mimeout_buf_count>0 && SPACE<c) {
+		    mimeout_buf[mimeout_buf_count++] = c;
+		    if (mimeout_buf_count>MIMEOUT_BUF_LENGTH) {
+		    } else {
+			return;
+		    }
+		}
+	    } else if (!mimeout_mode) {
+		if (c==SPACE || c==TAB || c==CR || c==NL) {
+		    if ((c==CR || c==NL)
+			&&(mimeout_buf[mimeout_buf_count-1]==SPACE
+			   || mimeout_buf[mimeout_buf_count-1]==TAB)) {
+			mimeout_buf_count--;
+		    }
+		    for (i=0;i<mimeout_buf_count;i++) {
+			(*o_mputc)(mimeout_buf[i]);
+			base64_count++;
+		    }
+		    mimeout_buf_count = 0;
+		}
+		mimeout_buf[mimeout_buf_count++] = c;
+		if (mimeout_buf_count>75) {
+		    open_mime(output_mode);
+		}
+		return;
+	    }
+        } else if (!mimeout_mode) {
+	    if (mimeout_buf_count>0 && mimeout_buf[mimeout_buf_count-1]==SPACE) {
+		for (i=0;i<mimeout_buf_count-1;i++) {
+		    (*o_mputc)(mimeout_buf[i]);
+		    base64_count++;
+		}
+		mimeout_buf[0] = SPACE;
+		mimeout_buf_count = 1;
+	    }
+	    open_mime(output_mode);
+        }
+    } else { /* c==EOF */
+	j = mimeout_buf_count;
+	i = 0;
+	for (;i<j;i++) {
+	    if (mimeout_buf[i]==SPACE || mimeout_buf[i]==TAB
+		|| mimeout_buf[i]==CR || mimeout_buf[i]==NL)
+		break;
+	    (*mime_putc)(mimeout_buf[i]);
+	}
+        eof_mime();
+	for (;i<j;i++) {
+	    (*o_mputc)(mimeout_buf[i]);
+	    base64_count++;
+	}
+        return;
+    }
+    
+    if (mimeout_buf_count>0) {
+	j = mimeout_buf_count;
+	mimeout_buf_count = 0;
+	for (i=0;i<j;i++) {
+	    mimeout_addchar(mimeout_buf[i]);
+	}
+    }
+    mimeout_addchar(c);
 }
 
 

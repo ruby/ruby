@@ -83,8 +83,8 @@ def test(opt, input, expects)
     end
   end
   puts "Fail"
-#  puts result.unpack('H*').first
-#  puts expects.map{|x|x.unpack('H*').first}.join("\n")
+  puts result.unpack('H*').first
+  puts expects.map{|x|x.unpack('H*').first}.join("\n\n")
 end
 
 
@@ -650,19 +650,66 @@ eofeof
 
 $example['test_data/mime_out.ans'] = <<'eofeof'.unpack('u')[0]
 M"BTM+2T*4W5B:F5C=#H@86%A82!A86%A(&%A86$@86%A82!A86%A(&%A86$@
-M86%A82!A86%A(&%A86$*(&%A86$@86%A82!A86%A(&%A86$@86%A80HM+2TM
-M"E-U8FIE8W0Z(#T_25-/+3(P,C(M2E`_0C]'>5)#2D-):TI#46U*0V=K2VE1
-M<DI#,&M,>5%X2D1-:TY343-*1&MK3WAS;U%G/3T_/2`*"3T_25-/+3(P,C(M
-M2E`_0C]'>5)#2D0P:U!Y4D)*15%K4FE224I%;VM3>5)-2D4P:U1I4E!*1DEK
-M5E-264=Y:$,_/2`*"3T_25-/+3(P,C(M2E`_0C]'>5)#2D9S:UAI4F9*1T%K
-M65-2:4I'46M*0U)M2D-G:V%"<V]19ST]/ST@"BTM+2T*4W5B:F5C=#H@86%A
-M82!A86%A(&%A86$@86%A82!A86%A(&%A86$@86%A82`]/TE33RTR,#(R+4I0
-M/T(_1WE20TI#26)+14D]/ST@"@D]/TE33RTR,#(R+4I0/T(_1WE20TI#46M*
-J:5%O2D-O8DM%23T_/2`@86%A80H@86%A82!A86%A(&%A86$*+2TM+0H*
+M86%A82!A86%A(&%A86$@86%A80H@86%A82!A86%A(&%A86$@86%A82!A86%A
+M"BTM+2T*4W5B:F5C=#H@/3])4T\M,C`R,BU*4#]"/T=Y4D-*0TEK2D-1;4I#
+M9VM+:5%R2D,P:TQY47A*1$UK3E-1,T=Y:$,_/0H@/3])4T\M,C`R,BU*4#]"
+M/T=Y4D-*1&MK3WE1.4I$.&M14U)%2D59:U-#4DM*17-K5$-23DI%-&M4>5)3
+M2D95:U=#4F)'>6A#/ST*(#T_25-/+3(P,C(M2E`_0C]'>5)#2D8T:UAY4F=*
+M1T5K66E2:TI#46M::5%O2D=G8DM%23T_/0HM+2TM"E-U8FIE8W0Z(&%A86$@
+M86%A82!A86%A(&%A86$@86%A82!A86%A(&%A86$*(#T_25-/+3(P,C(M2E`_
+M0C]'>5)#2D-):TI#46U*0V=K2VAS;U%G/3T_/2!A86%A(&%A86$@86%A82!A
+086%A"B!A86%A"BTM+2T*"@``
 eofeof
 
 print "test_data/mime_out    ";
     test("-jM",$example['test_data/mime_out'],[$example['test_data/mime_out.ans']])
+# test_data/mime_out2
+
+$example['test_data/mime_out2'] = <<'eofeof'.unpack('u')[0]
+M5&AI<R!M96UO(&1E<V-R:6)E<R!S:6UI;&%R('1E8VAN:7%U97,@=&\@86QL
+M;W<@=&AE(&5N8V]D:6YG(&]F(&YO;BU!4T-)22!T97AT(&EN('9A<FEO=7,@
+M<&]R=&EO;G,@;V8@82!21D,@.#(R(%LR72!M97-S86=E(&AE861E<BP@:6X@
+M82!M86YN97(@=VAI8V@@:7,@=6YL:6ME;'D@=&\@8V]N9G5S92!E>&ES=&EN
+M9R!M97-S86=E(&AA;F1L:6YG('-O9G1W87)E+@H*4W5B:F5C=#H@=&5S=#$@
+M=&5S=#(@@L2"MX+&@J<@=&5S=#,@@L2"MX+&@O$@=&5S=#0*"E-U8FIE8W0Z
+M('1E<W0Q("!T97-T,B""Q"""MR""QB""IR!T97-T,R`@@L2"MX+&@O$@('1E
+M<W0T"@I!4T-)22"3^I9[C.H@05-#24D@05-#24D@D_J6>XSJ()/ZEGN,ZB!!
+M4T-)22!!4T-)29/ZEGN,ZB!!4T-)20H*@J`@@J(@@J0@@J8@@J@@@JD@@JL@
+M@JT@@J\@@K$@@K,@@K4@@K<@@KD@@KL@@KT@@K\@@L(@@L0@@L8@@L@@@LD@
+8@LH@@LL@@LP*"@H*"@H*"@H*"@H*"@H*
+eofeof
+
+$example['test_data/mime_out2.ans'] = <<'eofeof'.unpack('u')[0]
+M5&AI<R!M96UO(&1E<V-R:6)E<R!S:6UI;&%R('1E8VAN:7%U97,@=&\@86QL
+M;W<@=&AE(&5N8V]D:6YG(&5N8V]D:6YG"B!O9B!N;VXM05-#24D@=&5X="!I
+M;B!V87)I;W5S('!O<G1I;VYS(&]F(&$@80H@4D9#(#@R,B!;,ET@;65S<V%G
+M92!H96%D97(L(&EN(&$@;6%N;F5R('=H:6-H(&ES('5N;&EK96QY('5N;&EK
+M96QY"B!T;R!C;VYF=7-E(&5X:7-T:6YG(&UE<W-A9V4@:&%N9&QI;F<@<V]F
+M='=A<F4N"@I3=6)J96-T.B!T97-T,2!T97-T,B`]/TE33RTR,#(R+4I0/T(_
+M1WE20TI%66M/4U))2D-K8DM%23T_/2!T97-T,PH@/3])4T\M,C`R,BU*4#]"
+M/T=Y4D-*15EK3U-224I(36)+14D]/ST@=&5S=#0*"E-U8FIE8W0Z('1E<W0Q
+M("!T97-T,B`]/TE33RTR,#(R+4I0/T(_1WE20TI%66)+14EG1WE20TI$:V)+
+M14EG1WE20TI%9V)+14D]/ST*(#T_25-/+3(P,C(M2E`_0C]'>5)#1WEH0TE"
+M<VM1:5%P1WEH0S\]('1E<W0S(`H@/3])4T\M,C`R,BU*4#]"/T=Y4D-*15EK
+M3U-224I(36)+14D]/ST@('1E<W0T"@I!4T-)22`]/TE33RTR,#(R+4I0/T(_
+M1WE20U)N>$Q81&AS1WEH0S\]($%30TE)($%30TE)"B`]/TE33RTR,#(R+4I0
+M/T(_1WE20U)N>$Q81&AS1WEH0TE"<VM1:UHX4S%W-&)"<V]19ST]/ST@05-#
+M24D*(#T_25-/+3(P,C(M2E`_0C]15DY$4U5K8DI%2D=F171C3T=W8DM%23T_
+M/2!!4T-)20H*/3])4T\M,C`R,BU*4#]"/T=Y4D-*0TEB2T5)9T=Y4D-*0U%B
+M2T5)9T=Y4D-*0UEB2T5)9T=Y4D-*0V=B2T5)/3\]"B`]/TE33RTR,#(R+4I0
+M/T(_24)S:U%I47%'>6A#24)S:U%I47)'>6A#24)S:U%I471'>6A#24)S:U%I
+M479'>6A#/ST*(#T_25-/+3(P,C(M2E`_0C])0G-K46E1>$=Y:$-)0G-K46E1
+M>D=Y:$-)0G-K46E1,4=Y:$-)0G-K46E1,T=Y:$,_/0H@/3])4T\M,C`R,BU*
+M4#]"/TE"<VM1:5$U1WEH0TE"<VM1:5$W1WEH0TE"<VM1:5$Y1WEH0TE"<VM1
+M:5$O1WEH0S\]"B`]/TE33RTR,#(R+4I0/T(_24)S:U%I4D)'>6A#24)S:U%I
+M4D5'>6A#24)S:U%I4D='>6A#24)S:U%I4DE'>6A#/ST*(#T_25-/+3(P,C(M
+M2E`_0C])0G-K46E22T=Y:$-)0G-K46E23$=Y:$-)0G-K46E234=Y:$-)0G-K
+M46E23D=Y:$,_/0H@/3])4T\M,C`R,BU*4#]"/TE"<VM1:5)/1WEH0S\]"@H*
+-"@H*"@H*"@H*"@H*"@``
+eofeof
+
+print "test_data/mime_out2    ";
+    test("-jM",$example['test_data/mime_out2'],["\x0a"+$example['test_data/mime_out2.ans']])
 # test_data/multi-line
 
 $example['test_data/multi-line'] = <<'eofeof'.unpack('u')[0]
