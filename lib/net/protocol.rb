@@ -98,7 +98,12 @@ module Net
     attr_reader :socket
 
     attr_accessor :open_timeout
-    attr_accessor :read_timeout
+    attr_reader :read_timeout
+
+    def read_timeout=( sec )
+      @socket.read_timeout = sec if @socket
+      @read_timeout = sec
+    end
 
     def active?
       @active
@@ -452,6 +457,8 @@ module Net
       @socket or return ''
       @socket.addr[3]
     end
+
+    attr_accessor :read_timeout
 
     attr_reader :socket
 

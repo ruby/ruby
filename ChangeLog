@@ -1,3 +1,7 @@
+Fri Feb 22 22:00:08 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/protocol.rb: set read_timeout dynamically.
+
 Fri Feb 22 19:59:33 2002  Usaku Nakamura <usa@ruby-lang.org>
 
 	* win32/config.status.in: set LIBRUBY_SO.
