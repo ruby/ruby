@@ -1,3 +1,9 @@
+Thu Jan 22 22:54:53 2004  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (BEG_REGEXP): allow 8-bit characters in quoted
+	strings for Novell GroupWise Internet Agent.
+	* lib/net/imap.rb (DATA_REGEXP): ditto.
+
 Thu Jan 22 16:21:33 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (string_content): reset lexical states at the beginning of
