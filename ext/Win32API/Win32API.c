@@ -70,36 +70,44 @@ Win32API_initialize(self, dllname, proc, import, export)
     rb_iv_set(self, "__proc__", UINT2NUM((unsigned long)hproc));
 
     a_import = rb_ary_new();
-    ptr = RARRAY(import)->ptr;
-    for (i = 0, len = RARRAY(import)->len; i < len; i++) {
-	int c = *(char *)RSTRING(ptr[i])->ptr;
-	switch (c) {
-	case 'N': case 'n': case 'L': case 'l':
-	    rb_ary_push(a_import, INT2FIX(_T_NUMBER));
-	    break;
-	case 'P': case 'p':
-	    rb_ary_push(a_import, INT2FIX(_T_POINTER));
-	    break;
-	case 'I': case 'i':
-	    rb_ary_push(a_import, INT2FIX(_T_INTEGER));
-	    break;
+    if (!NIL_P(import)) {
+	Check_Type(import, T_ARRAY);
+	ptr = RARRAY(import)->ptr;
+	for (i = 0, len = RARRAY(import)->len; i < len; i++) {
+	    Check_Type(ptr[i], T_STRING);
+	    switch (*(char *)RSTRING(ptr[i])->ptr) {
+	      case 'N': case 'n': case 'L': case 'l':
+		rb_ary_push(a_import, INT2FIX(_T_NUMBER));
+		break;
+	      case 'P': case 'p':
+		rb_ary_push(a_import, INT2FIX(_T_POINTER));
+		break;
+	      case 'I': case 'i':
+		rb_ary_push(a_import, INT2FIX(_T_INTEGER));
+		break;
+	    }
 	}
     }
     rb_iv_set(self, "__import__", a_import);
 
-    switch (*RSTRING(export)->ptr) {
-    case 'V': case 'v':
+    if (NIL_P(export)) {
 	ex = _T_VOID;
-	break;
-    case 'N': case 'n': case 'L': case 'l':
-	ex = _T_NUMBER;
-	break;
-    case 'P': case 'p':
-	ex = _T_POINTER;
-	break;
-    case 'I': case 'i':
-	ex = _T_INTEGER;
-	break;
+    } else {
+	Check_Type(export, T_STRING);
+	switch (*RSTRING(export)->ptr) {
+	  case 'V': case 'v':
+	    ex = _T_VOID;
+	    break;
+	  case 'N': case 'n': case 'L': case 'l':
+	    ex = _T_NUMBER;
+	    break;
+	  case 'P': case 'p':
+	    ex = _T_POINTER;
+	    break;
+	  case 'I': case 'i':
+	    ex = _T_INTEGER;
+	    break;
+	}
     }
     rb_iv_set(self, "__export__", INT2FIX(ex));
 
