@@ -6995,9 +6995,10 @@ proc_invoke(proc, args, self, klass)
 	    result = prot_tag->retval;
 	}
 	else if (orphan) {	/* orphan block */
-	    localjump_error("%s from block-closure",
-			    state == TAG_BREAK ? "break" : "return", 
-			    prot_tag->retval, state);
+	    char mesg[32];
+	    snprintf(mesg, sizeof mesg, "%s from block-closure",
+		     state == TAG_BREAK ? "break" : "return");
+	    localjump_error(mesg, prot_tag->retval, state);
 	}
 	else {
 	    ruby_block->tag->dst = incoming_state;
