@@ -406,6 +406,7 @@ pack_pack(ary, fmt)
 		StringValue(from);
 		ptr = RSTRING(from)->ptr;
 		plen = RSTRING(from)->len;
+		OBJ_INFECT(res, from);
 	    }
 
 	    if (p[-1] == '*')
@@ -1053,6 +1054,18 @@ hex2num(c)
 #define PACK_ITEM_ADJUST() while (tmp--) rb_ary_push(ary, Qnil)
 
 static VALUE
+infected_str_new(ptr, len, str)
+    const char *ptr;
+    long len;
+    VALUE str;
+{
+    VALUE s = rb_str_new(ptr, len);
+
+    OBJ_INFECT(s, str);
+    return s;
+}
+    
+static VALUE
 pack_unpack(str, fmt)
     VALUE str, fmt;
 {
@@ -1130,7 +1143,7 @@ pack_unpack(str, fmt)
 		    if (*t != ' ' && *t != '\0') break;
 		    t--; len--;
 		}
-		rb_ary_push(ary, rb_str_new(s, len));
+		rb_ary_push(ary, infected_str_new(s, len, str));
 		s += end;
 	    }
 	    break;
@@ -1145,14 +1158,14 @@ pack_unpack(str, fmt)
 		    if (*t) break;
 		    t--; len--;
 		}
-		rb_ary_push(ary, rb_str_new(s, len));
+		rb_ary_push(ary, infected_str_new(s, len, str));
 		s += end;
 	    }
 	    break;
 
 	  case 'a':
 	    if (len > send - s) len = send - s;
-	    rb_ary_push(ary, rb_str_new(s, len));
+	    rb_ary_push(ary, infected_str_new(s, len, str));
 	    s += len;
 	    break;
 
@@ -1478,7 +1491,7 @@ pack_unpack(str, fmt)
 
 	  case 'u':
 	    {
-		VALUE str = rb_str_new(0, (send - s)*3/4);
+		VALUE str = infected_str_new(0, (send - s)*3/4, str);
 		char *ptr = RSTRING(str)->ptr;
 		int total = 0;
 
@@ -1534,7 +1547,7 @@ pack_unpack(str, fmt)
 
 	  case 'm':
 	    {
-		VALUE str = rb_str_new(0, (send - s)*3/4);
+		VALUE str = infected_str_new(0, (send - s)*3/4, str);
 		char *ptr = RSTRING(str)->ptr;
 		int a,b,c,d;
 		static int first = 1;
@@ -1577,7 +1590,7 @@ pack_unpack(str, fmt)
 
 	  case 'M':
 	    {
-		VALUE str = rb_str_new(0, send - s);
+		VALUE str = infected_str_new(0, send - s, str);
 		char *ptr = RSTRING(str)->ptr;
 		int c1, c2;
 
@@ -1686,6 +1699,7 @@ pack_unpack(str, fmt)
 			    rb_raise(rb_eArgError, "non associated pointer");
 			}
 			tmp = rb_str_new2(t);
+			OBJ_INFECT(tmp, str);
 		    }
 		    else {
 			tmp = Qnil;

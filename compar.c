@@ -17,32 +17,14 @@ VALUE rb_mComparable;
 static ID cmp;
 
 static VALUE
-cmp_eq(a)
-    VALUE *a;
-{
-    VALUE c = rb_funcall(a[0], cmp, 1, a[1]);
-    int t = NUM2INT(c);
-
-    if (t == 0) return Qtrue;
-    return Qfalse;
-}
-
-static VALUE
-cmp_failed()
-{
-    return Qfalse;
-}
-
-static VALUE
 cmp_equal(x, y)
     VALUE x, y;
 {
-    VALUE a[2];
+    VALUE c = rb_funcall(x, cmp, 1, y);
 
-    if (x == y) return Qtrue;
-
-    a[0] = x; a[1] = y;
-    return rb_rescue(cmp_eq, (VALUE)a, cmp_failed, 0);
+    if (NIL_P(c)) return Qnil;
+    if (NUM2LONG(c) == 0) return Qtrue;
+    return Qfalse;
 }
 
 static VALUE
@@ -50,9 +32,9 @@ cmp_gt(x, y)
     VALUE x, y;
 {
     VALUE c = rb_funcall(x, cmp, 1, y);
-    int t = NUM2INT(c);
 
-    if (t > 0) return Qtrue;
+    if (NIL_P(c)) return Qfalse;
+    if (NUM2LONG(c) > 0) return Qtrue;
     return Qfalse;
 }
 
@@ -61,9 +43,9 @@ cmp_ge(x, y)
     VALUE x, y;
 {
     VALUE c = rb_funcall(x, cmp, 1, y);
-    int t = NUM2INT(c);
 
-    if (t >= 0) return Qtrue;
+    if (NIL_P(c)) return Qfalse;
+    if (NUM2LONG(c) >= 0) return Qtrue;
     return Qfalse;
 }
 
@@ -72,9 +54,9 @@ cmp_lt(x, y)
     VALUE x, y;
 {
     VALUE c = rb_funcall(x, cmp, 1, y);
-    int t = NUM2INT(c);
 
-    if (t < 0) return Qtrue;
+    if (NIL_P(c)) return Qfalse;
+    if (NUM2LONG(c) < 0) return Qtrue;
     return Qfalse;
 }
 
@@ -83,9 +65,9 @@ cmp_le(x, y)
     VALUE x, y;
 {
     VALUE c = rb_funcall(x, cmp, 1, y);
-    int t = NUM2INT(c);
 
-    if (t <= 0) return Qtrue;
+    if (NIL_P(c)) return Qfalse;
+    if (NUM2LONG(c) <= 0) return Qtrue;
     return Qfalse;
 }
 
@@ -94,12 +76,13 @@ cmp_between(x, min, max)
     VALUE x, min, max;
 {
     VALUE c = rb_funcall(x, cmp, 1, min);
-    long t = NUM2LONG(c);
-    if (t < 0) return Qfalse;
+
+    if (NIL_P(c)) return Qfalse;
+    if (NUM2LONG(c) < 0) return Qfalse;
 
     c = rb_funcall(x, cmp, 1, max);
-    t = NUM2LONG(c);
-    if (t > 0) return Qfalse;
+    if (NIL_P(c)) return Qfalse;
+    if (NUM2LONG(c) > 0) return Qfalse;
     return Qtrue;
 }
 

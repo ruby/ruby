@@ -604,8 +604,7 @@ rb_mod_cmp(mod, arg)
 	    return INT2FIX(1);
 	arg = RCLASS(arg)->super;
     }
-    rb_raise(rb_eArgError, "non related class/module");
-    return Qnil;		/* not reached */
+    return Qnil;
 }
 
 static VALUE
@@ -1308,6 +1307,7 @@ Init_Object()
     rb_define_method(rb_cSymbol, "intern", sym_intern, 0);
 
     rb_define_method(rb_cModule, "===", rb_mod_eqq, 1);
+    rb_define_method(rb_cModule, "==", rb_obj_equal, 1);
     rb_define_method(rb_cModule, "<=>",  rb_mod_cmp, 1);
     rb_define_method(rb_cModule, "<",  rb_mod_lt, 1);
     rb_define_method(rb_cModule, "<=", rb_mod_le, 1);
