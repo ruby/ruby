@@ -147,6 +147,7 @@ module WEBrick
         if path_info = @env["PATH_INFO"]
           url << path_info
         end
+        url = WEBrick::HTTPUtils.escape_path(url)
         if query_string = @env["QUERY_STRING"]
           unless query_string.empty?
             url << "?" << query_string

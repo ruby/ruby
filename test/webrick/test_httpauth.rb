@@ -3,34 +3,11 @@ require "net/http"
 require "tempfile"
 require "webrick"
 require "webrick/httpauth/basicauth"
+require File.join(File.dirname(__FILE__), "utils.rb")
 
 class TestWEBrickHTTPAuth < Test::Unit::TestCase
-  class NullWriter
-    def NullWriter.<<(msg)
-      puts msg if $DEBUG
-      return self
-    end
-  end
-
-  def start_httpserver
-    server = WEBrick::HTTPServer.new(
-      :BindAddress => "0.0.0.0", :Port => 0,
-      :Logger => WEBrick::Log.new(NullWriter),
-      :AccessLog => [[NullWriter, ""]]
-    )
-    thread = nil
-    begin
-      thread = Thread.start{ server.start }
-      addr = server.listeners[0].addr
-      yield([server, addr[3], addr[1]])
-    ensure
-      server.stop
-      thread.join
-    end
-  end
-
   def test_basic_auth
-    start_httpserver{|server, addr, port|
+    TestWEBrick.start_httpserver{|server, addr, port|
       realm = "WEBrick's realm"
       path = "/basic_auth"
 
@@ -50,7 +27,7 @@ class TestWEBrickHTTPAuth < Test::Unit::TestCase
   end
 
   def test_basic_auth2
-    start_httpserver{|server, addr, port|
+    TestWEBrick.start_httpserver{|server, addr, port|
       realm = "WEBrick's realm"
       path = "/basic_auth2"
 

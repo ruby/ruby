@@ -14,7 +14,7 @@ module WEBrick
     osslv = ::OpenSSL::OPENSSL_VERSION.split[1]
     SSL = {
       :ServerSoftware       => "#{svrsoft} OpenSSL/#{osslv}",
-      :SSLEnable            => true,
+      :SSLEnable            => false,
       :SSLCertificate       => nil,
       :SSLPrivateKey        => nil,
       :SSLClientCA          => nil,
