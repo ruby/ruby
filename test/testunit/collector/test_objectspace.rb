@@ -2,6 +2,7 @@
 # Copyright:: Copyright (c) 2000-2003 Nathaniel Talbott. All rights reserved.
 # License:: Ruby license.
 
+require 'test/unit'
 require 'test/unit/collector/objectspace'
 
 module Test
@@ -38,6 +39,10 @@ module Test
           expected << @tc1.new('test_1')
           expected << @tc1.new('test_2')
           assert_equal(expected, ObjectSpace.new(@object_space).collect("name"))
+
+          c = ObjectSpace.new(@object_space)
+          c.filter = []
+          assert_equal(expected, c.collect("name"))
         end
         
         def test_filtered_collection

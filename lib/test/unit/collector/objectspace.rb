@@ -10,6 +10,7 @@ module Test
         
         def initialize(source=::ObjectSpace)
           @source = source
+          @filters = []
         end
         
         def collect(name=NAME)
@@ -23,7 +24,7 @@ module Test
         end
         
         def include(test)
-          return true unless(@filters)
+          return true if(@filters.empty?)
           @filters.each do |filter|
             return true if(filter.call(test))
           end

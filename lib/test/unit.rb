@@ -276,51 +276,109 @@ require 'test/unit/ui/testrunnermediator'
 require 'test/unit/collector/objectspace'
 
 at_exit {
-  # We can't debug tests run with at_exit unless we add the following:
-  set_trace_func DEBUGGER__.context.method(:trace_func).to_proc if (defined? DEBUGGER__)
-
+  require 'optparse'
   if (!Test::Unit::UI::TestRunnerMediator.run?)
+    output_level = nil
     runners = {
-      '--console' => proc do |suite|
+      :console => proc do |suite|
         require 'test/unit/ui/console/testrunner'
-        passed = Test::Unit::UI::Console::TestRunner.run(suite).passed?
+        output_level ||= Test::Unit::UI::Console::TestRunner::NORMAL
+        passed = Test::Unit::UI::Console::TestRunner.run(suite, output_level).passed?
 	exit(passed ? 0 : 1)
       end,
-      '--gtk' => proc do |suite|
+      :gtk => proc do |suite|
         require 'test/unit/ui/gtk/testrunner'
         Test::Unit::UI::GTK::TestRunner.run(suite)
       end,
-      '--fox' => proc do |suite|
+      :fox => proc do |suite|
         require 'test/unit/ui/fox/testrunner'
         Test::Unit::UI::Fox::TestRunner.run(suite)
       end,
     }
-        
-    unless (ARGV.empty?)
-      runner = runners[ARGV[0]]
-      ARGV.shift unless (runner.nil?)
-    end
-    runner = runners['--console'] if (runner.nil?)
+    
+    runner = runners[:console]
+    filters = []
+    catch(:stop_processing) do
+      ARGV.options do |o|
+        o.program_name = "test/unit.rb"
+        o.banner = "Test::Unit automatic runner."
+        o.banner = "#{$0} [options] [-- untouched arguments]"
 
-    collector = Test::Unit::Collector::ObjectSpace::new
+        o.on
+        runner_display = runners.keys.collect{|r| r.to_s.sub(/^(.)/, '[\\1]')}.join(", ")
+        o.on('-r', '--runner=RUNNER', runners.keys,
+          "Use the given runner.",
+          "(" + runner_display + ")"){|r| runner = runners[r]}
+        o.on('-n', '--name=NAME', String,
+          "Runs tests matching NAME",
+          "(patterns may be used).") do |n|
+          n = (%r{\A/(.*)/\Z} =~ n ? Regexp.new($1) : n)
+          case n
+            when Regexp
+              filters << proc{|t| n =~ t.method_name}
+            else
+              filters << proc{|t| n == t.method_name}
+          end
+        end
+        o.on('-t', '--testcase=TESTCASE', String,
+          "Runs tests in TestCases matching TESTCASE",
+          "(patterns may be used).") do |n|
+          n = (%r{\A/(.*)/\Z} =~ n ? Regexp.new($1) : n)
+          case n
+            when Regexp
+              filters << proc{|t| n =~ t.class.name}
+            else
+              filters << proc{|t| n == t.class.name}
+          end
+        end
+        o.on('-v', '--verbose=[LEVEL]', (0..3).to_a.collect{|i| i.to_s},
+          "Set output level.",
+          "Levels are:",
+          "  0 = SILENT",
+          "  1 = PROGRESS_ONLY",
+          "  2 = NORMAL",
+          "  3 = VERBOSE (default)",
+          "  Only valid for the console runner."){|l| output_level = (l ? l.to_i : 3)}
+        o.on('--',
+          "Stop processing options so that",
+          "remaining options will be passed",
+          "to the test."){throw :stop_processing}
+        o.on('-h', '--help', 'Display this help.'){puts o; exit(0)}
 
-    unless ARGV.empty?
-      criteria = ARGV.map { |arg| (arg =~ %r{^/(.*)/$}) ? Regexp.new($1) : arg }
-      filters = []
-      criteria.each do
-        | criterion |
-        case criterion
-          when Regexp
-            filters << proc{|test| criterion =~ test.name}
-          when /^A-Z/
-            filters << proc{|test| criterion == test.class.name}
-          else
-            filters << proc{|test| criterion == test.method_name}
+        o.on_tail
+        o.on_tail('Deprecated options:')
+        o.on_tail('--console', 'Console runner (use --runner).') do
+          warn("Deprecated option (--console).")
+          runner = runners[:console]
+        end
+        o.on_tail('--gtk', 'GTK runner (use --runner).') do
+          warn("Deprecated option (--gtk).")
+          runner = runners[:gtk]
+        end
+        o.on_tail('--fox', 'Fox runner (use --runner).') do
+          warn("Deprecated option (--fox).")
+          runner = runners[:fox]
+        end
+        o.on_tail
+
+        begin
+          o.parse!
+        rescue OptionParser::ParseError => e
+          puts e
+          puts o
+          exit(1)
         end
       end
-      collector.filter = filters
     end
-    
+
+    if(output_level && !(runner == runners[:console]))
+      puts "Invalid arguments: You can only specify an output level with the console runner."
+      exit(1)
+    end
+
+    collector = Test::Unit::Collector::ObjectSpace::new
+    collector.filter = filters
+
     suite_name = $0.sub(/\.rb$/, '')
     runner.call(collector.collect(suite_name))
   end
