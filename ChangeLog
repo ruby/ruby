@@ -1,3 +1,9 @@
+Mon Jan 20 21:25:18 2003  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/tempfile.rb (self.open): If a block is given, call it with
+	  tempfile as an argument and automatically close the tempfile
+	  when the block terminates.
+
 Mon Jan 20 21:02:50 2003  Akinori MUSHA  <knu@iDaemons.org>
 
 	* mdoc2man.rb: Properly put nested braces, parentheses and angles.
