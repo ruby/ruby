@@ -1,3 +1,7 @@
+Mon Oct 25 08:03:26 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (get_backtrace): ignore illegal backtrace.  [ruby-dev:24587]
+
 Sun Oct 24 00:40:50 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_load, search_required, rb_require_safe, rb_require): use
