@@ -1,4 +1,4 @@
-Mon Dec 15 13:06:58 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Dec 15 13:11:32 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (check_dirname): check string safety and remove extraneous
 	  trailing directory separators.  [ruby-dev:22279]

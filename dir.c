@@ -508,7 +508,7 @@ check_dirname(dir)
     SafeStringValue(*dir);
     rb_secure(2);
     path = RSTRING(*dir)->ptr;
-    if (*(path && pend = rb_path_end(rb_path_skip_prefix(path)))) {
+    if (path && *(pend = rb_path_end(rb_path_skip_prefix(path)))) {
 	*dir = rb_str_new(path, pend - path);
     }
 }
