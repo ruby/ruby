@@ -897,8 +897,9 @@ static struct tag *prot_tag;
 VALUE ruby_class;
 static VALUE ruby_wrapper;	/* security wrapper */
 
-#define PUSH_CLASS() do {		\
-    VALUE _class = ruby_class
+#define PUSH_CLASS(c) do {		\
+    VALUE _class = ruby_class;		\
+    ruby_class = (c)
 
 #define POP_CLASS() ruby_class = _class; \
 } while (0)
@@ -1475,8 +1476,7 @@ rb_eval_string_wrap(str, state)
     VALUE wrapper = ruby_wrapper;
     VALUE val;
 
-    PUSH_CLASS();
-    ruby_class = ruby_wrapper = rb_module_new();
+    PUSH_CLASS(ruby_wrapper = rb_module_new());
     ruby_top_self = rb_obj_clone(ruby_top_self);
     rb_extend_object(ruby_top_self, ruby_wrapper);
     PUSH_FRAME();
@@ -3664,8 +3664,7 @@ module_setup(module, n)
     frame.tmp = ruby_frame;
     ruby_frame = &frame;
 
-    PUSH_CLASS();
-    ruby_class = module;
+    PUSH_CLASS(module);
     PUSH_SCOPE();
     PUSH_VARS();
 
@@ -4047,7 +4046,6 @@ rb_yield_0(val, self, klass, flags, avalue)
     }
 
     PUSH_VARS();
-    PUSH_CLASS();
     block = ruby_block;
     frame = block->frame;
     frame.prev = ruby_frame;
@@ -4069,12 +4067,8 @@ rb_yield_0(val, self, klass, flags, avalue)
 	/* FOR does not introduce new scope */
 	ruby_dyna_vars = block->dyna_vars;
     }
-    if (klass) {
-	ruby_class = klass;
-	PUSH_CREF(klass);
-    }
-    else {
-	ruby_class = block->klass;
+    PUSH_CLASS(klass ? klass : block->klass);
+    if (!klass) {
 	self = block->self;
     }
     node = block->body;
@@ -4946,8 +4940,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 		saved_cref = ruby_cref;
 		ruby_cref = (NODE*)body->nd_rval;
 	    }
-	    PUSH_CLASS();
-	    ruby_class = ruby_cbase;
+	    PUSH_CLASS(ruby_cbase);
 	    if (body->nd_tbl) {
 		local_vars = TMP_ALLOC(body->nd_tbl[0]+1);
 		*local_vars++ = (VALUE)body;
@@ -5429,9 +5422,7 @@ eval(self, src, scope, file, line)
 	file = ruby_sourcefile;
 	line = ruby_sourceline;
     }
-    PUSH_CLASS();
-    ruby_class = ruby_cbase;
-
+    PUSH_CLASS(ruby_cbase);
     ruby_in_eval++;
     if (TYPE(ruby_class) == T_ICLASS) {
 	ruby_class = RBASIC(ruby_class)->klass;
@@ -5567,8 +5558,7 @@ exec_under(func, under, cbase, args)
     int state;
     int mode;
 
-    PUSH_CLASS();
-    ruby_class = under;
+    PUSH_CLASS(under);
     PUSH_FRAME();
     ruby_frame->self = _frame.prev->self;
     ruby_frame->last_func = _frame.prev->last_func;
@@ -5736,8 +5726,7 @@ rb_load(fname, wrap)
 
     ruby_errinfo = Qnil;	/* ensure */
     PUSH_VARS();
-    PUSH_CLASS();
-    wrapper = ruby_wrapper;
+    PUSH_CLASS(ruby_wrapper);
     ruby_cref = top_cref;
     if (!wrap) {
 	rb_secure(4);		/* should alter global state */
@@ -6455,6 +6444,9 @@ rb_f_at_exit()
 {
     VALUE proc;
 
+    if (!rb_block_given_p()) {
+	rb_raise(rb_eArgError, "called without a block");
+    }
     proc = rb_block_proc();
     rb_set_end_proc(call_end_proc, proc);
     return proc;

@@ -1,3 +1,8 @@
+Thu Aug  7 12:51:38 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_f_at_exit): should not be called without a block.
+	  block_given check added.
+
 Thu Aug  7 06:46:06 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_call0): forgot to pop ruby_class.
