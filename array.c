@@ -1636,7 +1636,7 @@ rb_ary_sort(ary)
  *  
  *  Invokes <i>block</i> once for each element of <i>self</i>. Creates a 
  *  new array containing the values returned by the block.
- *  See also Enumerable#collect</code>.
+ *  See also <code>Enumerable#collect</code>.
  *     
  *     a = [ "a", "b", "c", "d" ]
  *     a.collect {|x| x + "!" }   #=> ["a!", "b!", "c!", "d!"]
