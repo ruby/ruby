@@ -1,3 +1,8 @@
+Sun Nov 25 21:03:43 2001  Usaku Nakamura  <usa@ruby-lang.org>
+
+	* parse.y (str_extend): change types of second and third arguments
+	  from char to int.
+
 Fri Nov 23 03:13:49 2001  Usaku Nakamura  <usa@ruby-lang.org>
 
 	* process.c (Init_process): enable getpid and getppid on NT.
