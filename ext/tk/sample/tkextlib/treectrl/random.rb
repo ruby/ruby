@@ -184,7 +184,7 @@ def randomButton1(t, x, y)
 
   elsif id[0] == 'header'
     # Click in header
-    Tk::TreeCtrl::BindCallback.buttonPress1(w, x, y)
+    Tk::TreeCtrl::BindCallback.buttonPress1(t, x, y)
 
   else
     # Click in item
