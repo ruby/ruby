@@ -353,6 +353,8 @@ exc_initialize(argc, argv, exc)
 }
 
 /*
+ *  Document-method: exception
+ *
  *  call-seq:
  *     exc.exception(string) -> an_exception or exc
  *  

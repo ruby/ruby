@@ -264,7 +264,10 @@ module RDoc
         next if meth_name == "initialize_copy"
 
         # Ignore top-object and weird struct.c dynamic stuff
-        next if var_name  == "ruby_top_self" || var_name == "nstr"
+        next if var_name == "ruby_top_self" 
+        next if var_name == "nstr"
+        next if var_name == "envtbl"
+        next if var_name == "argf"   # it'd be nice to handle this one
                           
         var_name = "rb_cObject" if var_name == "rb_mKernel"
         handle_method(type, var_name, meth_name, 
@@ -358,18 +361,7 @@ module RDoc
         override_comment = find_override_comment(meth_obj.name)
         comment = override_comment if override_comment
 
-        # 
-        # If the comment block contains a section that looks like
-        #    call-seq:
-        #        Array.new
-        #        Array.new(10)
-        # use it for the parameters
-
-        if comment.sub!(/call-seq:(.*?)^\s*\*?\s*$/m, '')
-          seq = $1
-          seq.gsub!(/^\s*\*\s*/, '')
-          meth_obj.call_seq = seq
-        end
+        find_call_seq(comment, meth_obj) if comment
         
 #        meth_obj.params = params
         meth_obj.start_collecting_tokens
@@ -377,7 +369,32 @@ module RDoc
         meth_obj.comment = mangle_comment(comment)
         
       else
-        $stderr.puts "No definition for #{meth_name}"
+
+        # No body, but might still have an override comment
+        comment = find_override_comment(meth_obj.name)
+
+        if comment
+          find_call_seq(comment, meth_obj)
+          meth_obj.comment = mangle_comment(comment)
+        else
+          $stderr.puts "No definition for #{meth_name}"
+        end
+      end
+    end
+
+
+    ##################################################
+    # 
+    # If the comment block contains a section that looks like
+    #    call-seq:
+    #        Array.new
+    #        Array.new(10)
+    # use it for the parameters
+    def find_call_seq(comment, meth_obj)
+      if comment.sub!(/call-seq:(.*?)^\s*\*?\s*$/m, '')
+        seq = $1
+        seq.gsub!(/^\s*\*\s*/, '')
+        meth_obj.call_seq = seq
       end
     end
 

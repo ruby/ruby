@@ -67,6 +67,13 @@ time_modify(time)
 }
 
 /*
+ *  Document-method: now
+ *
+ *  Synonym for <code>Time.new</code>. Returns a +Time+ object
+ *  initialized tot he current system time.
+ */
+
+/*
  *  call-seq:
  *     Time.new -> time
  *  
@@ -1780,6 +1787,10 @@ time_s_times(obj)
     return rb_proc_times(obj);
 }
 
+/*
+ * undocumented
+ */
+
 static VALUE
 time_mdump(time)
     VALUE time;
@@ -1820,6 +1831,13 @@ time_mdump(time)
     return rb_str_new(buf, 8);
 }
 
+/*
+ * call-seq:
+ *   time._dump   => string
+ *
+ * Dump _time_ for marshaling.
+ */
+
 static VALUE
 time_dump(argc, argv, time)
     int argc;
@@ -1837,6 +1855,10 @@ time_dump(argc, argv, time)
 
     return str;
 }
+
+/*
+ * undocumented
+ */
 
 static VALUE
 time_mload(time, str)
@@ -1889,6 +1911,13 @@ time_mload(time, str)
     tobj->tv.tv_usec = usec;
     return time;
 }
+
+/*
+ * call-seq:
+ *   Time._load(string)   => time
+ *
+ * Unmarshal a dumped +Time+ object.
+ */
 
 static VALUE
 time_load(klass, str)

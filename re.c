@@ -386,6 +386,17 @@ rb_reg_source(re)
     return str;
 }
 
+/*
+ * call-seq:
+ *    rxp.inspect   => string
+ *
+ * Produce a nicely formatted string-version of _rxp_. Perhaps surprisingly,
+ * <code>#inspect</code> actually produces the more natural version of
+ * the string than <code>#to_s</code>.
+ *
+ *     /ab+c/ix.to_s         #=> /ab+c/ix
+*/
+
 static VALUE
 rb_reg_inspect(re)
     VALUE re;
@@ -1416,6 +1427,13 @@ rb_reg_cur_kcode(re)
     return 0;
 }
 
+/*
+ * call-seq:
+ *   rxp.hash   => fixnum
+ *
+ * Produce a hash based on the text and options of this regular expression.
+ */
+
 static VALUE
 rb_reg_hash(re)
     VALUE re;
@@ -1590,6 +1608,13 @@ rb_reg_match_m(re, str)
     rb_match_busy(result);
     return result;
 }
+
+/*
+ * Document-method: compile
+ *
+ * Synonym for <code>Regexp.new</code>
+ */
+
 
 /*
  *  call-seq:
@@ -2267,6 +2292,6 @@ Init_Regexp()
     rb_define_method(rb_cMatch, "pre_match", rb_reg_match_pre, 0);
     rb_define_method(rb_cMatch, "post_match", rb_reg_match_post, 0);
     rb_define_method(rb_cMatch, "to_s", match_to_s, 0);
-    rb_define_method(rb_cMatch, "inspect", rb_any_to_s, 0);
+    rb_define_method(rb_cMatch, "inspect", rb_any_to_s, 0); // in object.c
     rb_define_method(rb_cMatch, "string", match_string, 0);
 }

@@ -1727,7 +1727,7 @@ rb_values_at(obj, olen, argc, argv, func)
  *   Returns an array containing the elements in
  *   _self_ corresponding to the given selector(s). The selectors
  *   may be either integer indices or ranges. 
- *   See also </code>.select<code>.
+ *   See also <code>.select</code>.
  * 
  *      a = %w{ a b c d e f }
  *      a.values_at(1, 3, 5)
@@ -1754,9 +1754,6 @@ rb_ary_values_at(argc, argv, ary)
  *  returns a true value (equivalent to <code>Enumerable#select</code>).
  *     
  *     a = %w{ a b c d e f }
- *     a.select(1, 3, 5)               #=> ["b", "d", "f"]
- *     a.select(1, 3, 5, 7)            #=> ["b", "d", "f", nil]
- *     a.select(-1, -3, -5, -7)        #=> ["f", "d", "b", nil]
  *     a.select {|v| v =~ /[aeiou]/}   #=> ["a", "e"]
  */
 

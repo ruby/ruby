@@ -837,6 +837,13 @@ rb_str_hash(str)
     return key;
 }
 
+/*
+ * call-seq:
+ *    str.hash   => fixnum
+ *
+ * Return a hash based on the string's length and content.
+ */
+
 static VALUE
 rb_str_hash_m(str)
     VALUE str;
@@ -892,6 +899,13 @@ rb_str_equal(str1, str2)
     }
     return Qfalse;
 }
+
+/*
+ * call-seq:
+ *   str.eql?(other)   => true or false
+ *
+ * Two strings are equal if the have the same length and content.
+ */
 
 static VALUE
 rb_str_eql(str1, str2)
@@ -2223,6 +2237,14 @@ uscore_get()
 }
 
 static VALUE
+/*
+ *  call-seq:
+ *     sub!(pattern, replacement)    => $_ or nil
+ *     sub!(pattern) {|...| block }  => $_ or nil
+ *  
+ *  Equivalent to <code>$_.sub!(<i>args</i>)</code>.
+ */
+
 rb_f_sub_bang(argc, argv)
     int argc;
     VALUE *argv;
@@ -2231,6 +2253,15 @@ rb_f_sub_bang(argc, argv)
 }
 
 static VALUE
+/*
+ *  call-seq:
+ *     sub(pattern, replacement)   => $_
+ *     sub(pattern) { block }      => $_
+ *  
+ *  Equivalent to <code>$_.sub(<i>args</i>)</code>, except that
+ *  <code>$_</code> will be updated if substitution occurs.
+ */
+
 rb_f_sub(argc, argv)
     int argc;
     VALUE *argv;
@@ -2244,6 +2275,19 @@ rb_f_sub(argc, argv)
 }
 
 static VALUE
+/*
+ *  call-seq:
+ *     gsub!(pattern, replacement)    => string or nil
+ *     gsub!(pattern) {|...| block }  => string or nil
+ *  
+ *  Equivalent to <code>Kernel::gsub</code>, except <code>nil</code> is
+ *  returned if <code>$_</code> is not modified.
+ *     
+ *     $_ = "quick brown fox"
+ *     gsub! /cat/, '*'   #=> nil
+ *     $_                 #=> "quick brown fox"
+ */
+
 rb_f_gsub_bang(argc, argv)
     int argc;
     VALUE *argv;
@@ -2252,6 +2296,19 @@ rb_f_gsub_bang(argc, argv)
 }
 
 static VALUE
+/*
+ *  call-seq:
+ *     gsub(pattern, replacement)    => string
+ *     gsub(pattern) {|...| block }  => string
+ *  
+ *  Equivalent to <code>$_.gsub...</code>, except that <code>$_</code>
+ *  receives the modified result.
+ *     
+ *     $_ = "quick brown fox"
+ *     gsub /[aeiou]/, '*'   #=> "q**ck br*wn f*x"
+ *     $_                    #=> "q**ck br*wn f*x"
+ */
+
 rb_f_gsub(argc, argv)
     int argc;
     VALUE *argv;
@@ -2448,6 +2505,18 @@ rb_str_to_s(str)
 }
 
 VALUE
+/*
+ * call-seq:
+ *   str.inspect   => string
+ *
+ * Returns a printable version of _str_, with special characters
+ * escaped.
+ *
+ *    str = "hello"
+ *    str[3] = 8
+ *    str.inspect       #=> "hel\010o"
+ */
+
 rb_str_inspect(str)
     VALUE str;
 {
@@ -3494,6 +3563,14 @@ rb_str_split(str, sep0)
 }
 
 static VALUE
+/*
+ *  call-seq:
+ *     split([pattern [, limit]])    => array
+ *  
+ *  Equivalent to <code>$_.split(<i>pattern</i>, <i>limit</i>)</code>.
+ *  See <code>String#split</code>.
+ */
+
 rb_f_split(argc, argv)
     int argc;
     VALUE *argv;
@@ -3677,11 +3754,19 @@ rb_str_chop(str)
 
 /*
  *  call-seq:
- *     str.chop!   => str or nil
+ *     chop!    => $_ or nil
  *  
- *  Processes <i>str</i> as for <code>String#chop</code>, returning <i>str</i>,
- *  or <code>nil</code> if <i>str</i> is the empty string.  See also
- *  <code>String#chomp!</code>.
+ *  Equivalent to <code>$_.chop!</code>.
+ *     
+ *     a  = "now\r\n"
+ *     $_ = a
+ *     chop!   #=> "now"
+ *     chop!   #=> "no"
+ *     chop!   #=> "n"
+ *     chop!   #=> ""
+ *     chop!   #=> nil
+ *     $_      #=> ""
+ *     a       #=> ""
  */
 
 static VALUE
@@ -3690,6 +3775,24 @@ rb_f_chop_bang(str)
 {
     return rb_str_chop_bang(uscore_get());
 }
+
+/*
+ *  call-seq:
+ *     chop   => string
+ *  
+ *  Equivalent to <code>($_.dup).chop!</code>, except <code>nil</code>
+ *  is never returned. See <code>String#chop!</code>.
+ *     
+ *     a  =  "now\r\n"
+ *     $_ = a
+ *     chop   #=> "now"
+ *     $_     #=> "now"
+ *     chop   #=> "no"
+ *     chop   #=> "n"
+ *     chop   #=> ""
+ *     chop   #=> ""
+ *     a      #=> "now\r\n"
+ */
 
 static VALUE
 rb_f_chop()
@@ -3814,6 +3917,21 @@ rb_str_chomp(argc, argv, str)
     return str;
 }
 
+/*
+ *  call-seq:
+ *     chomp!             => $_ or nil
+ *     chomp!(string)     => $_ or nil
+ *  
+ *  Equivalent to <code>$_.chomp!(<em>string</em>)</code>. See
+ *  <code>String#chomp!</code>
+ *     
+ *     $_ = "now\n"
+ *     chomp!       #=> "now"
+ *     $_           #=> "now"
+ *     chomp! "x"   #=> nil
+ *     $_           #=> "now"
+ */
+
 static VALUE
 rb_f_chomp_bang(argc, argv)
     int argc;
@@ -3821,6 +3939,23 @@ rb_f_chomp_bang(argc, argv)
 {
     return rb_str_chomp_bang(argc, argv, uscore_get());
 }
+
+/*
+ *  call-seq:
+ *     chomp            => $_
+ *     chomp(string)    => $_
+ *  
+ *  Equivalent to <code>$_ = $_.chomp(<em>string</em>)</code>. See
+ *  <code>String#chomp</code>.
+ *     
+ *     $_ = "now\n"
+ *     chomp         #=> "now"
+ *     $_            #=> "now"
+ *     chomp "ow"    #=> "n"
+ *     $_            #=> "n"
+ *     chomp "xxx"   #=> "n"
+ *     $_            #=> "n"
+ */
 
 static VALUE
 rb_f_chomp(argc, argv)
@@ -4089,6 +4224,15 @@ rb_str_scan(str, pat)
     rb_backref_set(match);
     return str;
 }
+
+/*
+ *  call-seq:
+ *     scan(pattern)                   => array
+ *     scan(pattern) {|///| block }    => $_
+ *  
+ *  Equivalent to calling <code>$_.scan</code>. See
+ *  <code>String#scan</code>.
+ */
 
 static VALUE
 rb_f_scan(self, pat)
