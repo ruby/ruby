@@ -110,10 +110,11 @@ class Pathname
   # The real pathname doesn't contain a symlink and useless dots.
   #
   # It returns absolute pathname.
-  def realpath(force_absolute=true)
-    unless force_absolute
-      warn "Pathname#realpath's force_absolute argument is obsoleted."
+  def realpath(*args)
+    unless args.empty?
+      warn "The argument for Pathname#realpath is obsoleted."
     end
+    force_absolute = args.fetch(0, true)
 
     if %r{\A/} =~ @path
       top = '/'
