@@ -1,3 +1,10 @@
+Wed Jan  5 20:16:32 2005  Tanaka Akira  <akr@m17n.org>
+
+	* random.c (limited_big_rand): didn't work if SIZEOF_BDIGITS == 2.
+	  [ruby-dev:25408]
+
+	* random.c (random_seed): refined.
+
 Wed Jan  5 16:39:54 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* parse.y (BITSTACK_POP): workaround for bcc32 compiler's bug.
